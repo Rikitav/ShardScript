@@ -1,8 +1,16 @@
 #pragma once
 #include <shard/syntax/structures/SyntaxTree.h>
 #include <shard/syntax/analysis/DiagnosticsContext.h>
+#include <shard/syntax/nodes/ExpressionSyntax.h>
+#include <shard/syntax/nodes/CompilationUnitSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarationSyntax.h>
+#include <shard/syntax/nodes/MethodDeclarationSyntax.h>
+#include <shard/syntax/nodes/StatementSyntax.h>
+#include <shard/syntax/nodes/TypeDeclarations.h>
+#include <memory>
 
 using namespace shard::syntax::structures;
+using namespace shard::syntax::nodes;
 
 namespace shard::parsing
 {
@@ -16,7 +24,7 @@ namespace shard::parsing
 
 		}
 
-		void EnsureNormalizedSyntax(shared_ptr<SyntaxTree> tree);
+		void EnsureSyntaxTree(shared_ptr<SyntaxTree> tree);
 
 	//private:
 		void EnsureCompilationUnit(shared_ptr<CompilationUnitSyntax> syntax);

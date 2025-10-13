@@ -1,41 +1,28 @@
-#include <shard/parsing/SourceReader.h>
-#include <shard/syntax/analysis/TextLocation.h>
-#include <sstream>
-#include <string>
+#include <shard/parsing/StringStreamReader.h>
 
-using namespace std;
+using namespace shard::parsing;
 
-namespace shard::parsing
+StringStreamReader::StringStreamReader(const string& source) : SourceReader()
 {
-	class StringStreamReader : public SourceReader
-	{
-		istringstream stringStream;
+	stringStream = istringstream(source);
+}
 
-	public:
-		StringStreamReader(const string& source)
-		{
-			stringStream = istringstream(source);
-		}
+TextLocation StringStreamReader::GetLocation(string& word)
+{
+	return TextLocation("<STRING>", Line, Offset, static_cast<int>(word.length()));
+}
 
-	protected:
-		TextLocation GetLocation(string word)
-		{
-			return TextLocation("<STRING>", Line, Offset, word.length());
-		}
+bool StringStreamReader::ReadNext()
+{
+	if (!stringStream.get(Symbol))
+		return false;
 
-		bool ReadNext()
-		{
-			if (!stringStream.get(Symbol))
-				return false;
+	Offset++;
+	return true;
+}
 
-			Offset++;
-			return true;
-		}
-
-		bool PeekNext()
-		{
-			PeekSymbol = stringStream.peek();
-			return PeekSymbol != -1;
-		}
-	};
+bool StringStreamReader::PeekNext()
+{
+	PeekSymbol = stringStream.peek();
+	return PeekSymbol != -1;
 }

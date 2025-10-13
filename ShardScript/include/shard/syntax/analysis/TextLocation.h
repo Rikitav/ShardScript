@@ -1,14 +1,12 @@
 #pragma once
 #include <string>
 
-using namespace std;
-
 namespace shard::syntax::analysis
 {
 	struct TextLocation
 	{
 	public:
-		string FileName;
+		std::string FileName;
 		int Line;
 		int Offset;
 		int Length;
@@ -16,7 +14,7 @@ namespace shard::syntax::analysis
 		TextLocation()
 			: FileName(""), Line(0), Offset(0), Length(0) { }
 
-		TextLocation(string filename, int line, int offset, int length)
+		TextLocation(std::string filename, int line, int offset, int length)
 			: FileName(filename), Line(line), Offset(offset), Length(length) {}
 	};
 }

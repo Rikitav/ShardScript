@@ -3,24 +3,14 @@
 #include <shard/syntax/TokenType.h>
 #include <shard/parsing/SourceReader.h>
 #include <cctype>
-#include <fstream>
-#include <stdexcept>
 #include <string>
+#include <memory>
 
 using namespace std;
 using namespace shard::syntax;
 using namespace shard::parsing;
 
-SourceReader::SourceReader()
-{
-	Line = 0;
-    Offset = 0;
-	Symbol = 0;
-	PeekSymbol = 0;
-
-	PeekBuffer = nullptr;
-	ConsumeBuffer = nullptr;
-}
+SourceReader::~SourceReader() { }
 
 SyntaxToken SourceReader::Current()
 {
@@ -129,6 +119,8 @@ bool SourceReader::ReadNextWord(string& word, TokenType& type)
 {
 	type = TokenType::Unknown;
 	word = "";
+
+	// Reading next non whitespace character
 	if (!ReadNextReal())
 	{
 		type = TokenType::EndOfFile;
@@ -142,14 +134,27 @@ bool SourceReader::ReadNextWord(string& word, TokenType& type)
 		return true;
 
 	bool wasClosed, dontEcran;
-	if (IsStringLiteral(word, type, dontEcran))
+	if (IsStringLiteral(type, dontEcran))
 		return ReadStringLiteral(word, dontEcran, wasClosed);
 
-	if (IsNumberLiteral(word, type))
+	if (IsNumberLiteral(type))
 		return ReadNumberLiteral(word);
 
+	if (IsNativeLiteral(type))
+		return ReadNativeLiteral(word);
+
+	// Reading next non whitespace word
 	if (!ReadNextWhileAlpha(word))
 		return false;
+
+	if (IsBooleanLiteral(word, type))
+		return true;
+
+	if (IsNullLiteral(word, type))
+		return true;
+
+	if (IsDirectiveDecl(word, type))
+		return true;
 
 	if (IsTypeDecl(word, type))
 		return true;
@@ -263,4 +268,497 @@ bool SourceReader::ReadNumberLiteral(string& word)
 	}
 
 	return false;
+}
+
+bool SourceReader::ReadNativeLiteral(string& word)
+{
+	while (PeekNext())
+	{
+		if (PeekSymbol == '_' || PeekSymbol == '`')
+			continue;
+
+		if (!isalnum(PeekSymbol))
+			return true;
+
+		word += PeekSymbol;
+		ReadNext();
+		continue;
+	}
+
+	return false;
+}
+
+bool SourceReader::IsPunctuation(string& word, TokenType& type)
+{
+	switch (Symbol)
+	{
+		case '{':
+		{
+			type = TokenType::OpenBrace;
+			word = "{";
+			return true;
+		}
+
+		case '}':
+		{
+			type = TokenType::CloseBrace;
+			word = "}";
+			return true;
+		}
+
+		case '(':
+		{
+			type = TokenType::OpenCurl;
+			word = "(";
+			return true;
+		}
+
+		case ')':
+		{
+			type = TokenType::CloseCurl;
+			word = ")";
+			return true;
+		}
+
+		case '[':
+		{
+			type = TokenType::OpenSquare;
+			word = "[";
+			return true;
+		}
+
+		case ']':
+		{
+			type = TokenType::CloseSquare;
+			word = "]";
+			return true;
+		}
+
+		case '.':
+		{
+			type = TokenType::Delimeter;
+			word = '.';
+			return true;
+		}
+
+		case ',':
+		{
+			type = TokenType::Comma;
+			word = ",";
+			return true;
+		}
+
+		case ';':
+		{
+			type = TokenType::Semicolon;
+			word = ";";
+			return true;
+		}
+
+		default:
+		{
+			return false;
+		}
+	}
+}
+
+bool SourceReader::IsOperator(string& word, TokenType& type)
+{
+	switch (Symbol)
+	{
+		case '=':
+		{
+			if (PeekNext())
+			{
+				if (PeekSymbol == '=')
+				{
+					type = TokenType::EqualsOperator;
+					word = "==";
+					return true;
+				}
+			}
+
+			type = TokenType::AssignOperator;
+			word = "=";
+			return true;
+		}
+
+		case '!':
+		{
+			if (PeekNext())
+			{
+				if (PeekSymbol == '=')
+				{
+					type = TokenType::NotEqualsOperator;
+					word = "!=";
+					return true;
+				}
+			}
+
+			type = TokenType::NotOperator;
+			word = "!";
+			return true;
+		}
+
+		case '>':
+		{
+			if (PeekNext())
+			{
+				if (PeekSymbol == '=')
+				{
+					type = TokenType::GreaterOrEqualsOperator;
+					word = ">=";
+					return true;
+				}
+			}
+
+			type = TokenType::GreaterOperator;
+			word = ">";
+			return true;
+		}
+
+		case '<':
+		{
+			if (PeekNext())
+			{
+				if (PeekSymbol == '=')
+				{
+					type = TokenType::LessOrEqualsOperator;
+					word = "<=";
+					return true;
+				}
+			}
+
+			type = TokenType::LessOperator;
+			word = "<";
+			return true;
+		}
+
+		case '+':
+		{
+			if (PeekNext())
+			{
+				if (PeekSymbol == '=')
+				{
+					type = TokenType::AddAssignOperator;
+					word = "+=";
+					return true;
+				}
+			}
+
+			word = "+";
+			type = TokenType::AddOperator;
+			return true;
+		}
+
+		case '-':
+		{
+			if (PeekNext())
+			{
+				if (PeekSymbol == '=')
+				{
+					type = TokenType::SubAssignOperator;
+					word = "-=";
+					return true;
+				}
+			}
+
+			word = "-";
+			type = TokenType::SubOperator;
+			return true;
+		}
+
+		case '*':
+		{
+			if (PeekNext())
+			{
+				if (PeekSymbol == '=')
+				{
+					type = TokenType::MultAssignOperator;
+					word = "*=";
+					return true;
+				}
+			}
+
+			word = "*";
+			type = TokenType::MultOperator;
+			return true;
+		}
+
+		case '/':
+		{
+			if (PeekNext())
+			{
+				if (PeekSymbol == '=')
+				{
+					type = TokenType::DivAssignOperator;
+					word = "/=";
+					return true;
+				}
+			}
+
+			word = "/";
+			type = TokenType::DivOperator;
+			return true;
+		}
+
+		case '%':
+		{
+			if (PeekNext())
+			{
+				if (PeekSymbol == '=')
+				{
+					type = TokenType::ModAssignOperator;
+					word = "%=";
+					return true;
+				}
+			}
+
+			word = "%";
+			type = TokenType::ModOperator;
+			return true;
+		}
+
+		case '^':
+		{
+			if (PeekNext())
+			{
+				if (PeekSymbol == '=')
+				{
+					type = TokenType::PowAssignOperator;
+					word = "^=";
+					return true;
+				}
+			}
+
+			word = "^";
+			type = TokenType::PowOperator;
+			return true;
+		}
+
+		default:
+		{
+			return false;
+		}
+	}
+}
+
+bool SourceReader::IsNullLiteral(string& word, TokenType& type)
+{
+	if (word == "null")
+	{
+		type = TokenType::NullLiteral;
+		return true;
+	}
+	else if (word == "nil")
+	{
+		type = TokenType::NullLiteral;
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+bool SourceReader::IsBooleanLiteral(string& word, TokenType& type)
+{
+	if (word == "true")
+	{
+		type = TokenType::BooleanLiteral;
+		return true;
+	}
+	else if (word == "false")
+	{
+		type = TokenType::BooleanLiteral;
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+bool SourceReader::IsNumberLiteral(TokenType& type)
+{
+	if (isdigit(Symbol))
+	{
+		type = TokenType::NumberLiteral;
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+bool SourceReader::IsNativeLiteral(TokenType& type)
+{
+	if (Symbol == 'n')
+	{
+		if (!PeekNext())
+			return false;
+
+		if (isdigit(PeekSymbol))
+		{
+			type = TokenType::NativeLiteral;
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool SourceReader::IsStringLiteral(TokenType& type, bool& dontEcran)
+{
+	switch (Symbol)
+	{
+		case '@':
+		{
+			if (!PeekNext())
+				return false;
+
+			if (PeekSymbol != '"')
+				return false;
+
+			dontEcran = true;
+			return IsStringLiteral(type, dontEcran);
+		}
+
+		case '"':
+		{
+			type = TokenType::StringLiteral;
+			return true;
+		}
+
+		default:
+			return false;
+	}
+}
+
+bool SourceReader::IsModifier(string& word, TokenType& type)
+{
+	if (word == "public")
+	{
+		type = TokenType::PublicKeyword;
+		return true;
+	}
+	else if (word == "private")
+	{
+		type = TokenType::PrivateKeyword;
+		return true;
+	}
+	else if (word == "protected")
+	{
+		type = TokenType::ProtectedKeyword;
+		return true;
+	}
+	else if (word == "internal")
+	{
+		type = TokenType::InternalKeyword;
+		return true;
+	}
+	else if (word == "static")
+	{
+		type = TokenType::StaticKeyword;
+		return true;
+	}
+	else if (word == "abstract")
+	{
+		type = TokenType::AbstractKeyword;
+		return true;
+	}
+	else if (word == "sealed")
+	{
+		type = TokenType::SealedKeyword;
+		return true;
+	}
+	else if (word == "partial")
+	{
+		type = TokenType::PartialKeyword;
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+bool SourceReader::IsDirectiveDecl(string& word, TokenType& type)
+{
+	if (word == "from")
+	{
+		type = TokenType::FromKeyword;
+		return true;
+	}
+	else if (word == "import")
+	{
+		type = TokenType::ImportKeyword;
+		return true;
+	}
+	else if (word == "using")
+	{
+		type = TokenType::UsingKeyword;
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+bool SourceReader::IsTypeDecl(string& word, TokenType& type)
+{
+	if (word == "method")
+	{
+		type = TokenType::MethodKeyword;
+		return true;
+	}
+	else if (word == "class")
+	{
+		type = TokenType::ClassKeyword;
+		return true;
+	}
+	else if (word == "struct")
+	{
+		type = TokenType::StructKeyword;
+		return true;
+	}
+	else if (word == "interface")
+	{
+		type = TokenType::InterfaceKeyword;
+		return true;
+	}
+	else if (word == "namespace")
+	{
+		type = TokenType::NamespaceKeyword;
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+bool SourceReader::IsType(string& word, TokenType& type)
+{
+	if (word == "void")
+	{
+		type = TokenType::VoidKeyword;
+		return true;
+	}
+	else if (word == "string")
+	{
+		type = TokenType::StringKeyword;
+		return true;
+	}
+	else if (word == "int")
+	{
+		type = TokenType::IntegerKeyword;
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 }

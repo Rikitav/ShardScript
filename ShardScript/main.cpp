@@ -1,24 +1,33 @@
 ﻿#include <shard/syntax/SyntaxToken.h>
+#include <shard/syntax/TokenType.h>
 
 #include <shard/parsing/SourceReader.h>
 #include <shard/parsing/LexicalAnalyzer.h>
 #include <shard/parsing/SyntaxTreeParser.h>
+#include <shard/parsing/structures/MemberDeclarationInfo.h>
 
 #include <shard/syntax/analysis/Diagnostic.h>
 #include <shard/syntax/analysis/DiagnosticsContext.h>
-#include <shard/syntax/structures/SyntaxTree.h>
 #include <shard/syntax/analysis/DiagnosticSeverity.h>
-#include <shard/runtime/AbstarctInterpreter.h>
+#include <shard/syntax/analysis/TextLocation.h>
 
-#include "src/parsing/FileReader.cpp"
-#include "src/parsing/SequenceSourceReader.cpp"
-#include "src/parsing/StringStreamReader.cpp"
+#include <shard/syntax/nodes/MethodDeclarationSyntax.h>
+#include <shard/syntax/nodes/ParametersListSyntax.h>
+#include <shard/syntax/nodes/StatementSyntax.h>
+#include <shard/syntax/structures/SyntaxTree.h>
+
+#include <shard/runtime/AbstarctInterpreter.h>
+#include <shard/runtime/CallStackFrame.h>
+
+#include <shard/parsing/FileReader.h>
+#include <shard/parsing/SequenceSourceReader.h>
+#include <shard/parsing/StringStreamReader.h>
 #include <shard/parsing/ReaderExtensions.h>
 
 #include <iostream>
 #include <memory>
 #include <string>
-#include <Windows.h>
+#include <vector>
 
 using namespace std;
 using namespace shard::parsing;
@@ -35,7 +44,7 @@ static void WriteDiagnostic(Diagnostic& diag)
 	cout << diag.Description << endl;
 }
 
-int InterpretFiles(int argc, char** argv)
+static int InterpretFiles(int argc, char** argv)
 {
 	shared_ptr<SyntaxTree> tree = make_shared<SyntaxTree>();
 	DiagnosticsContext diagnostics = DiagnosticsContext();
@@ -47,6 +56,9 @@ int InterpretFiles(int argc, char** argv)
 		unique_ptr<SourceReader> reader = make_unique<FileReader>(argi);
 		lexer.FromSourceReader(*reader);
 	}
+
+	SyntaxTreeParser parser(diagnostics);
+	parser.EnsureSyntaxTree(tree);
 
 	if (diagnostics.AnyError)
 	{
@@ -62,7 +74,7 @@ int InterpretFiles(int argc, char** argv)
 	return 0;
 }
 
-shared_ptr<MethodDeclarationSyntax> InitImplicitEntryPoint()
+static shared_ptr<MethodDeclarationSyntax> InitImplicitEntryPoint()
 {
 	MemberDeclarationInfo info;
 	info.ReturnType = SyntaxToken(TokenType::VoidKeyword, "", TextLocation());
@@ -72,9 +84,9 @@ shared_ptr<MethodDeclarationSyntax> InitImplicitEntryPoint()
 	return make_shared<MethodDeclarationSyntax>(info);
 }
 
-int ExecuteLineStatement()
+static int ExecuteLineStatement()
 {
-
+	return 1;
 }
 
 int main(int argc, char** argv)
@@ -114,9 +126,7 @@ int main(int argc, char** argv)
 			for (Diagnostic& diag : diagnostics.Diagnostics)
 				WriteDiagnostic(diag);
 
-			//*tree = *treeSnapshot;
-			diagnostics.AnyError = false;
-			diagnostics.Diagnostics.clear();
+			diagnostics.Reset();
 		}
 		else
 		{

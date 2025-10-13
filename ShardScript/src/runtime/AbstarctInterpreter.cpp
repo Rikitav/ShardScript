@@ -11,12 +11,14 @@
 #include <shard/syntax/nodes/StatementSyntax.h>
 #include <shard/syntax/nodes/Expressions.h>
 #include <shard/syntax/nodes/Statements.h>
+#include <shard/syntax/SyntaxKind.h>
 
 #include <memory>
 #include <stdexcept>
 #include <string>
 #include <vector>
 #include <iostream>
+#include <cmath>
 
 using namespace std;
 using namespace shard::runtime;

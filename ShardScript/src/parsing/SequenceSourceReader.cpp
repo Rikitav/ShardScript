@@ -1,87 +1,76 @@
-#include <shard/parsing/SourceReader.h>
-#include <vector>
+#include <shard/parsing/SequenceSourceReader.h>
 
 using namespace std;
+using namespace shard::syntax;
+using namespace shard::syntax::analysis;
+using namespace shard::parsing;
 
-namespace shard::parsing
+SequenceSourceReader::SequenceSourceReader()
+	: Sequence(), CurrentIndex(0) { }
+
+void SequenceSourceReader::Populate(vector<SyntaxToken> fromVector)
 {
-	class SequenceSourceReader : public SourceReader
-	{
-		vector<SyntaxToken> Sequence;
-		size_t VectorIndex;
+	for (const SyntaxToken& fromToken : fromVector)
+		Sequence.push_back(fromToken);
+}
 
-	public:
-		SequenceSourceReader() : Sequence(), VectorIndex(0)
-		{
+void SequenceSourceReader::SetSequence(vector<SyntaxToken> setVector)
+{
+	Clear();
+	Sequence = setVector;
+}
 
-		}
+void SequenceSourceReader::SetIndex(size_t newIndex)
+{
+	CurrentIndex = newIndex;
+}
 
-		void Populate(vector<SyntaxToken> fromVector)
-		{
-			for (const SyntaxToken& fromToken : fromVector)
-				Sequence.push_back(fromToken);
-		}
+void SequenceSourceReader::Clear()
+{
+	CurrentIndex = 0;
+	Sequence.clear();
+}
 
-		void Clear()
-		{
-			VectorIndex = 0;
-			Sequence.clear();
-		}
+SyntaxToken SequenceSourceReader::Current()
+{
+	if (CurrentIndex >= Sequence.size())
+		return SyntaxToken(TokenType::EndOfFile, "", TextLocation());
 
-		void SetSequence(vector<SyntaxToken> setVector)
-		{
-			Clear();
-			Sequence = setVector;
-		}
+	return Sequence[CurrentIndex];
+}
 
-		void SetIndex(size_t newIndex)
-		{
-			VectorIndex = newIndex;
-		}
+SyntaxToken SequenceSourceReader::Consume()
+{
+	CurrentIndex += 1;
+	return Current();
+}
 
-		SyntaxToken Current()
-		{
-			if (VectorIndex >= Sequence.size())
-				return SyntaxToken(TokenType::EndOfFile, "", TextLocation());
+SyntaxToken SequenceSourceReader::Peek()
+{
+	return Sequence[CurrentIndex + 1];
+}
 
-			return Sequence[VectorIndex];
-		}
+bool SequenceSourceReader::CanConsume()
+{
+	return CurrentIndex < Sequence.size();
+}
 
-		SyntaxToken Consume()
-		{
-			VectorIndex += 1;
-			return Current();
-		}
+bool SequenceSourceReader::CanPeek()
+{
+	return CurrentIndex < Sequence.size() - 1;
+}
 
-		SyntaxToken Peek()
-		{
-			return Sequence[VectorIndex + 1];
-		}
+TextLocation SequenceSourceReader::GetLocation(string& word)
+{
+	return TextLocation();
+}
 
-		bool CanConsume()
-		{
-			return VectorIndex < Sequence.size();
-		}
+bool SequenceSourceReader::ReadNext()
+{
+	return false;
+}
 
-		bool CanPeek()
-		{
-			return VectorIndex < Sequence.size() - 1;
-		}
-
-	protected:
-		TextLocation GetLocation(string word)
-		{
-			return TextLocation();
-		}
-
-		bool ReadNext()
-		{
-			return false;
-		}
-
-		bool PeekNext()
-		{
-			return false;
-		}
-	};
+bool SequenceSourceReader::PeekNext()
+{
+	return false;
 }

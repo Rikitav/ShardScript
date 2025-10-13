@@ -1,46 +1,37 @@
-#include <shard/parsing/SourceReader.h>
-#include <fstream>
-#include <stdexcept>
-#include <string>
+#include <shard/parsing/FileReader.h>
 
-using namespace std;
+using namespace shard::parsing;
 
-namespace shard::parsing
+FileReader::FileReader(const string& fileName) : SourceReader()
 {
-	class FileReader : public SourceReader
-	{
-		string Filename;
-		fstream InputStream;
+	Filename = fileName;
 
-	public:
-		FileReader(const string fileName)
-		{
-			Filename = fileName;
+	InputStream = fstream(fileName, ios::in);
+	if (!InputStream)
+		throw new runtime_error("Cannot open file");
+}
 
-			InputStream = fstream(fileName, ios::in);
-			if (!InputStream)
-				throw new runtime_error("Cannot open file");
-		}
+FileReader::~FileReader()
+{
+	InputStream.close();
+}
 
-	protected:
-		TextLocation GetLocation(string word)
-		{
-			return TextLocation(Filename, Line, Offset, word.length());
-		}
+TextLocation FileReader::GetLocation(string& word)
+{
+	return TextLocation(Filename, Line, Offset, static_cast<int>(word.length()));
+}
 
-		bool ReadNext()
-		{
-			if (!InputStream.get(Symbol))
-				return false;
+bool FileReader::ReadNext()
+{
+	if (!InputStream.get(Symbol))
+		return false;
 
-			Offset++;
-			return true;
-		}
+	Offset++;
+	return true;
+}
 
-		bool PeekNext()
-		{
-			PeekSymbol = InputStream.peek();
-			return PeekSymbol != -1;
-		}
-	};
+bool FileReader::PeekNext()
+{
+	PeekSymbol = InputStream.peek();
+	return PeekSymbol != -1;
 }

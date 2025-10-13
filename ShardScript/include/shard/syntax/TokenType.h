@@ -6,11 +6,10 @@ namespace shard::syntax
 	{
 		// Generic
 		Unknown,
-		EndOfFile,			  // End of file
-		Trivia,				  // any non visible
-		VarName,			  // variable name
-		Identifier,			  // member name
-		Type,				  // return type of method
+		EndOfFile,   // End of file
+		Trivia,		 // any non visible
+		VarName,	 // variable name
+		Identifier,	 // member name
 
 		// Binary arithmetic operators
 		AddOperator,    // +
@@ -37,11 +36,15 @@ namespace shard::syntax
 		ModAssignOperator,    // %=
 		PowAssignOperator,    // ^=
 
+		// Unary boolean operators
+		NotOperator,   // !
+
 		// Literals
+		NullLiteral,          // 'null'
 		StringLiteral,		  // Value in ""
 		BooleanLiteral,		  // 'true' or 'false'
 		NumberLiteral,	      // Number value
-		NativeLiteral,		  // Pointer
+		NativeLiteral,		  // native pointer
 
 		// Punctuation
 		Semicolon,			  // ;
@@ -72,8 +75,12 @@ namespace shard::syntax
 		StringKeyword,		  // string
 		BooleanKeyword,		  // bool
 
-		// Type declaration keywords
+		// Directive declaration keywords
 		UsingKeyword,		  // using
+		FromKeyword,		  // from
+		ImportKeyword,		  // import
+
+		// Type declaration keywords
 		MethodKeyword,		  // method
 		ClassKeyword,		  // class
 		StructKeyword,		  // struct
