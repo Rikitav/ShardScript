@@ -1,0 +1,164 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Исходные файлы">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Файлы заголовков">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="syntax">
+      <UniqueIdentifier>{26b475cf-358b-420e-82d5-1990aa93db15}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы заголовков\syntax">
+      <UniqueIdentifier>{5735bee0-b699-4ef3-b86d-884570aad392}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="NewFilter1">
+      <UniqueIdentifier>{49a40784-006c-49a4-8a97-d0f4d7a2efff}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsing\SourceReader.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="src\syntax\analysis\SyntaxTree.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsing\LexicalAnalyzer.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="src\syntax\analysis\Diagnostic.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="include\shard\syntax\nodes\UsingDirectiveSyntax.h">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="src\syntax\analysis\DiagnosticsContext.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="include\shard\syntax\nodes\ParametersListSyntax.h">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="include\shard\syntax\nodes\MethodBodySyntax.h">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="src\runtime\AbstarctInterpreter.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsing\FileReader.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsing\SequenceSourceReader.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsing\StringStreamReader.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\shard\syntax\structures\SyntaxTree.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\syntax\nodes\TypeSyntax.h">
+      <Filter>Файлы заголовков\syntax</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\syntax\nodes\MethodDeclarationSyntax.h">
+      <Filter>Файлы заголовков\syntax</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\syntax\SyntaxToken.h">
+      <Filter>Файлы заголовков\syntax</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\syntax\SyntaxNode.h">
+      <Filter>Файлы заголовков\syntax</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\parsing\SourceReader.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\syntax\TokenType.h">
+      <Filter>Файлы заголовков\syntax</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\syntax\nodes\BlockDeclarationSyntax.h">
+      <Filter>Файлы заголовков\syntax</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\syntax\nodes\StatementSyntax.h">
+      <Filter>Файлы заголовков\syntax</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\syntax\nodes\CompilationUnitSyntax.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\syntax\nodes\TypeDeclarationSyntax.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\syntax\nodes\MemberDeclarationSyntax.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\syntax\analysis\Diagnostic.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\syntax\analysis\TextLocation.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\syntax\SyntaxKind.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\parsing\LexicalAnalyzer.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\parsing\SyntaxTreeParser.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\syntax\analysis\DiagnosticSeverity.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\syntax\nodes\ExpressionSyntax.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\runtime\CallStackFrame.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\runtime\Register.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\syntax\analysis\DiagnosticsContext.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\parsing\structures\MemberDeclarationInfo.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\syntax\nodes\ArgumentsListSyntax.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\syntax\SyntaxFacts.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\syntax\structures\SyntaxTokenList.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\runtime\AbstarctInterpreter.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\syntax\nodes\Expressions.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\syntax\nodes\TypeDeclarations.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\syntax\nodes\Statements.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\parsing\ReaderExtensions.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\syntax\nodes\ImportDirectiveSyntax.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="framework.ss" />
+  </ItemGroup>
+</Project>
