@@ -24,6 +24,8 @@
 #include <initializer_list>
 #include <stdexcept>
 #include <vector>
+#include <shard/syntax/nodes/StatementsBlockSyntax.h>
+#include <shard/syntax/nodes/Loops.h>
 
 using namespace shard::syntax;
 using namespace shard::syntax::nodes;
@@ -49,6 +51,7 @@ namespace shard::parsing
 		shared_ptr<CompilationUnitSyntax> ReadCompilationUnit(SourceReader& reader);
 
 		shared_ptr<UsingDirectiveSyntax> ReadUsingDirective(SourceReader& reader);
+		shared_ptr<ImportDirectiveSyntax> ReadImportDirective(SourceReader& reader);
 		
 		// Second layer - objects and members
 		shared_ptr<NamespaceDeclarationSyntax> ReadNamespaceDeclaration(SourceReader& reader);
@@ -59,9 +62,12 @@ namespace shard::parsing
 		void ReadTypeBody(SourceReader& reader, shared_ptr<TypeDeclarationSyntax> syntax);
 
 		// Third layer - code
+		shared_ptr<StatementsBlockSyntax> ReadStatementsBlock(SourceReader& reader);
 		shared_ptr<MethodBodySyntax> ReadMethodBody(SourceReader& reader);
 		shared_ptr<StatementSyntax> ReadStatement(SourceReader& reader);
+
 		shared_ptr<KeywordStatementSyntax> ReadKeywordStatement(SourceReader& reader);
+		shared_ptr<ForStatementSyntax> ReadForStatement(SourceReader& reader);
 
 		shared_ptr<ExpressionSyntax> ReadExpression(SourceReader& reader, int bindingPower);
 		shared_ptr<ExpressionSyntax> ReadNullDenotation(SourceReader& reader);

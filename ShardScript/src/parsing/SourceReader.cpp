@@ -165,6 +165,12 @@ bool SourceReader::ReadNextWord(string& word, TokenType& type)
 	if (IsType(word, type))
 		return true;
 
+	if (IsLoopKeyword(word, type))
+		return true;
+
+	if (IsFunctionalKeyword(word, type))
+		return true;
+
 	type = TokenType::Identifier;
 	return true;
 }
@@ -755,6 +761,62 @@ bool SourceReader::IsType(string& word, TokenType& type)
 	else if (word == "int")
 	{
 		type = TokenType::IntegerKeyword;
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+bool SourceReader::IsLoopKeyword(string& word, TokenType& type)
+{
+	if (word == "for")
+	{
+		type = TokenType::ForKeyword;
+		return true;
+	}
+	else if (word == "while")
+	{
+		type = TokenType::WhileKeyword;
+		return true;
+	}
+	else if (word == "do")
+	{
+		type = TokenType::DoKeyword;
+		return true;
+	}
+	else if (word == "foreach")
+	{
+		type = TokenType::ForeachKeyword;
+		return true;
+	}
+	else if (word == "forever")
+	{
+		type = TokenType::ForeverKeyword;
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+bool SourceReader::IsFunctionalKeyword(string& word, TokenType& type)
+{
+	if (word == "return")
+	{
+		type = TokenType::ReturnKeyword;
+		return true;
+	}
+	else if (word == "continue")
+	{
+		type = TokenType::ContinueKeyword;
+		return true;
+	}
+	else if (word == "break")
+	{
+		type = TokenType::BreakKeyword;
 		return true;
 	}
 	else

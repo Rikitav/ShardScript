@@ -88,7 +88,7 @@
     <ClInclude Include="include\shard\syntax\TokenType.h">
       <Filter>Файлы заголовков\syntax</Filter>
     </ClInclude>
-    <ClInclude Include="include\shard\syntax\nodes\BlockDeclarationSyntax.h">
+    <ClInclude Include="include\shard\syntax\nodes\BodyDeclarationSyntax.h">
       <Filter>Файлы заголовков\syntax</Filter>
     </ClInclude>
     <ClInclude Include="include\shard\syntax\nodes\StatementSyntax.h">
@@ -170,6 +170,12 @@
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="include\shard\parsing\FileReader.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\syntax\nodes\StatementsBlockSyntax.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\syntax\nodes\Loops.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>

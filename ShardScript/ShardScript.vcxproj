@@ -160,11 +160,13 @@
     <ClInclude Include="include\shard\syntax\nodes\Expressions.h" />
     <ClInclude Include="include\shard\syntax\nodes\ExpressionSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\ImportDirectiveSyntax.h" />
+    <ClInclude Include="include\shard\syntax\nodes\Loops.h" />
     <ClInclude Include="include\shard\syntax\nodes\MethodDeclarationSyntax.h" />
     <ClInclude Include="include\shard\parsing\SourceReader.h" />
     <ClInclude Include="include\shard\syntax\nodes\Statements.h" />
+    <ClInclude Include="include\shard\syntax\nodes\StatementsBlockSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\StatementSyntax.h" />
-    <ClInclude Include="include\shard\syntax\nodes\BlockDeclarationSyntax.h" />
+    <ClInclude Include="include\shard\syntax\nodes\BodyDeclarationSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\TypeDeclarations.h" />
     <ClInclude Include="include\shard\syntax\structures\SyntaxTokenList.h" />
     <ClInclude Include="include\shard\syntax\SyntaxFacts.h" />

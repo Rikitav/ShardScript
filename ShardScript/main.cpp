@@ -69,9 +69,17 @@ static int InterpretFiles(int argc, char** argv)
 		return 1;
 	}
 
-	AbstarctInterpreter interpreter(tree);
-	interpreter.Execute();
-	return 0;
+	try
+	{
+		AbstarctInterpreter interpreter(tree);
+		interpreter.Execute();
+		return 0;
+	}
+	catch (const runtime_error& err)
+	{
+		cout << err.what() << endl;
+		return 1;
+	}
 }
 
 static shared_ptr<MethodDeclarationSyntax> InitImplicitEntryPoint()
@@ -130,7 +138,14 @@ int main(int argc, char** argv)
 		}
 		else
 		{
-			interpreter.ExecuteStatement(statement, frame);
+			try
+			{
+				interpreter.ExecuteStatement(statement, frame);
+			}
+			catch (const runtime_error& err)
+			{
+				cout << err.what() << endl;
+			}
 		}
 	}
 

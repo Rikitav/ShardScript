@@ -20,14 +20,15 @@ namespace shard::syntax
 		Parameter,
 		ArgumentsList,
 		Argument,
-		Block,
+		StatementsBlock,
 		MethodBody,
 
 		Statement,
 		KeywordStatement,
 		ExpressionStatement,
 		VariableStatement,
-		BlockStatement,
+		//BlockStatement,
+		ForStatementSyntax,
 
 		Expression,
 		AssignExpression,

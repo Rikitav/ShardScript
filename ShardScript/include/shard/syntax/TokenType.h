@@ -12,12 +12,18 @@ namespace shard::syntax
 		Identifier,	 // member name
 
 		// Binary arithmetic operators
-		AddOperator,    // +
-		SubOperator,	// -
-		MultOperator,	// *
-		DivOperator,	// /
-		ModOperator,	// %
-		PowOperator,	// ^
+		AddOperator,		  // +
+		SubOperator,		  // -
+		MultOperator,		  // *
+		DivOperator,		  // /
+		ModOperator,		  // %
+		PowOperator,	      // ^
+		AddAssignOperator,    // +=
+		SubAssignOperator,    // -=
+		MultAssignOperator,   // *=
+		DivAssignOperator,    // /=
+		ModAssignOperator,    // %=
+		PowAssignOperator,    // ^=
 
 		// Binary boolean operators
 		EqualsOperator,		     // ==
@@ -29,12 +35,7 @@ namespace shard::syntax
 		AssignOperator,          // =
 
 		// Unary arithmetic operators
-		AddAssignOperator,    // +=
-		SubAssignOperator,    // -=
-		MultAssignOperator,   // *=
-		DivAssignOperator,    // /=
-		ModAssignOperator,    // %=
-		PowAssignOperator,    // ^=
+		UnarMinusOpaerator,
 
 		// Unary boolean operators
 		NotOperator,   // !
@@ -87,7 +88,14 @@ namespace shard::syntax
 		InterfaceKeyword,	  // interface
 		NamespaceKeyword,	  // namespace
 
-		// functional keywords
+		// Loops keywords
+		ForKeyword,
+		WhileKeyword,
+		DoKeyword,
+		ForeachKeyword,
+		ForeverKeyword,
+
+		// Functional keywords
 		ReturnKeyword,		  // return
 		BreakKeyword,		  // break
 		ContinueKeyword,	  // continue

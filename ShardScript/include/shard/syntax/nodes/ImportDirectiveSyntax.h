@@ -11,9 +11,11 @@ namespace shard::syntax::nodes
 	class ImportDirectiveSyntax : public SyntaxNode
 	{
 	public:
-		vector<SyntaxToken> Tokens;
+		SyntaxToken FromToken;
+		SyntaxToken LibPathToken;
+		SyntaxToken ImportToken;
+		vector<SyntaxToken> Funtctions;
 		SyntaxToken Semicolon;
-		SyntaxToken DeclareKeyword;
 
 		ImportDirectiveSyntax()
 			: SyntaxNode(SyntaxKind::DllImportDirective) {

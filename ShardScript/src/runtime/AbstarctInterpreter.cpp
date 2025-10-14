@@ -20,6 +20,8 @@
 #include <iostream>
 #include <cmath>
 
+#define GetStatement(type) std::static_pointer_cast<type>(statement);
+
 using namespace std;
 using namespace shard::runtime;
 using namespace shard::syntax::nodes;
@@ -47,91 +49,115 @@ shared_ptr<Register> AbstarctInterpreter::ExecuteMethod(shared_ptr<MethodDeclara
 
 shared_ptr<Register> AbstarctInterpreter::ExecuteStatement(shared_ptr<StatementSyntax> statement, shared_ptr<CallStackFrame> frame)
 {
-	if (auto exprStatement = dynamic_pointer_cast<ExpressionStatementSyntax>(statement))
+	switch (statement->Kind)
 	{
-		shared_ptr<Register> exprReg = EvaluateExpression(exprStatement->Expression, frame);
-		return exprReg;
-	}
-	else if (auto varStatement = dynamic_pointer_cast<VariableStatementSyntax>(statement))
-	{
-		string varName = varStatement->Name.Word;
-		if (frame->VariablesHeap.find(varName) != frame->VariablesHeap.end())
-			throw runtime_error("variable already created");
+		case SyntaxKind::ExpressionStatement:
+		{
+			auto exprStatement = dynamic_pointer_cast<ExpressionStatementSyntax>(statement);
+			shared_ptr<Register> exprReg = EvaluateExpression(exprStatement->Expression, frame);
+			return exprReg;
+		}
 
-		shared_ptr<Register> assignExprReg = EvaluateExpression(varStatement->Expression, frame);
-		return frame->VariablesHeap[varName] = assignExprReg;
-	}
-	else
-	{
-		throw runtime_error("unknown statement type");
+		case SyntaxKind::KeywordStatement:
+		{
+
+		}
+
+		case SyntaxKind::VariableStatement:
+		{
+			auto varStatement = dynamic_pointer_cast<VariableStatementSyntax>(statement);
+			string varName = varStatement->Name.Word;
+			
+			if (frame->VariablesHeap.find(varName) != frame->VariablesHeap.end())
+				throw runtime_error("variable already created");
+
+			shared_ptr<Register> assignExprReg = EvaluateExpression(varStatement->Expression, frame);
+			return frame->VariablesHeap[varName] = assignExprReg;
+		}
+
+		default:
+		{
+			throw runtime_error("unknown statement type");
+		}
 	}
 }
 
 shared_ptr<Register> AbstarctInterpreter::EvaluateExpression(shared_ptr<ExpressionSyntax> expression, shared_ptr<CallStackFrame> frame)
 {
-	if (auto constExpr = dynamic_pointer_cast<ConstValueExpressionSyntax>(expression))
+	switch (expression->Kind)
 	{
-		SyntaxToken constToken = constExpr->Constant;
-		return CreateRegisterFromConstToken(constToken);
-	}
-	else if (auto binaryExpr = dynamic_pointer_cast<BinaryExpressionSyntax>(expression))
-	{
-		shared_ptr<Register> leftReg = EvaluateExpression(binaryExpr->Left, frame);
-		shared_ptr<Register> rightReg = EvaluateExpression(binaryExpr->Right, frame);
-		return EvaluateBinaryExpressionValues(leftReg, binaryExpr->OperatorToken, rightReg);
-	}
-	else if (auto accessExpr = dynamic_pointer_cast<MemberAccessExpressionSyntax>(expression))
-	{
-		if (accessExpr->Path.size() == 1)
+		case SyntaxKind::ConstExpression:
 		{
-			string varName = accessExpr->Path[0].Word;
-			return frame->VariablesHeap[varName];
+			auto constExpr = dynamic_pointer_cast<ConstValueExpressionSyntax>(expression);
+			SyntaxToken constToken = constExpr->Constant;
+			return CreateRegisterFromConstToken(constToken);
 		}
 
-		throw runtime_error("Unknown member access");
-	}
-	else if (auto invokeExpr = dynamic_pointer_cast<InvokationExpressionSyntax>(expression))
-	{
-		string accessName = invokeExpr->MemberAccess->Path[0].Word;
-		if (accessName == "print")
+		case SyntaxKind::BinaryExpression:
 		{
-			vector<shared_ptr<ArgumentSyntax>> vArgs = invokeExpr->ArgumentsList->Arguments;
-			if (vArgs.size() == 1)
+			auto binaryExpr = dynamic_pointer_cast<BinaryExpressionSyntax>(expression);
+			shared_ptr<Register> leftReg = EvaluateExpression(binaryExpr->Left, frame);
+			shared_ptr<Register> rightReg = EvaluateExpression(binaryExpr->Right, frame);
+			return EvaluateBinaryExpressionValues(leftReg, binaryExpr->OperatorToken, rightReg);
+		}
+
+		case SyntaxKind::MemberAccessExpression:
+		{
+			auto accessExpr = dynamic_pointer_cast<MemberAccessExpressionSyntax>(expression);
+			if (accessExpr->Path.size() == 1)
 			{
-				shared_ptr<Register> exprReg = EvaluateExpression(vArgs[0]->Expression, frame);
-				switch (exprReg->TypeCode)
-				{
-					case TYPE_CODE_BOOLEAN:
-					{
-						bool data = *static_pointer_cast<bool>(exprReg->DataPtr);
-						cout << data << endl;
-						break;
-					}
-
-					case TYPE_CODE_INTEGER:
-					{
-						int data = *static_pointer_cast<int>(exprReg->DataPtr);
-						cout << data << endl;
-						break;
-					}
-
-					case TYPE_CODE_STRING:
-					{
-						string data = *static_pointer_cast<string, void>(exprReg->DataPtr);
-						cout << data << endl;
-						break;
-					}
-				}
-
-				return exprReg;
+				string varName = accessExpr->Path[0].Word;
+				return frame->VariablesHeap[varName];
 			}
+
+			throw runtime_error("Unknown member access");
 		}
 
-		throw runtime_error("unknown invokation member");
-	}
-	else
-	{
-		throw runtime_error("unknown expression type");
+		case SyntaxKind::InvokationExpression:
+		{
+			auto invokeExpr = dynamic_pointer_cast<InvokationExpressionSyntax>(expression);
+			string accessName = invokeExpr->MemberAccess->Path[0].Word;
+			if (accessName == "print")
+			{
+				vector<shared_ptr<ArgumentSyntax>> vArgs = invokeExpr->ArgumentsList->Arguments;
+				if (vArgs.size() == 1)
+				{
+					shared_ptr<Register> exprReg = EvaluateExpression(vArgs[0]->Expression, frame);
+					switch (exprReg->TypeCode)
+					{
+						case TYPE_CODE_BOOLEAN:
+						{
+							bool data = *static_pointer_cast<bool>(exprReg->DataPtr);
+							cout << data << endl;
+							break;
+						}
+
+						case TYPE_CODE_INTEGER:
+						{
+							int data = *static_pointer_cast<int>(exprReg->DataPtr);
+							cout << data << endl;
+							break;
+						}
+
+						case TYPE_CODE_STRING:
+						{
+							string data = *static_pointer_cast<string, void>(exprReg->DataPtr);
+							cout << data << endl;
+							break;
+						}
+					}
+
+					return exprReg;
+				}
+			}
+
+			throw runtime_error("unknown invokation member");
+		}
+
+		default:
+		{
+			throw runtime_error("unknown expression type");
+		}
 	}
 }
 

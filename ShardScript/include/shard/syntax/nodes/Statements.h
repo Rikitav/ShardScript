@@ -14,8 +14,8 @@ namespace shard::syntax::nodes
 	public:
 		SyntaxToken Keyword;
 
-		KeywordStatementSyntax(SyntaxToken keyword)
-			: StatementSyntax(SyntaxKind::KeywordStatement), Keyword(keyword) {
+		KeywordStatementSyntax(SyntaxKind kind)
+			: StatementSyntax(kind) {
 		}
 	};
 

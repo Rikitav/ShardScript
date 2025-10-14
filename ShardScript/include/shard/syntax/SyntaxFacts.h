@@ -25,11 +25,21 @@ static int GetOperatorPrecendence(TokenType type)
 		case TokenType::SubOperator:
 			return 3;
 
+		case TokenType::AddAssignOperator:
+		case TokenType::SubAssignOperator:
+			return 4;
+
 		case TokenType::MultOperator:
 		case TokenType::DivOperator:
 		case TokenType::ModOperator:
 		case TokenType::PowOperator:
-			return 4;
+			return 5;
+
+		case TokenType::MultAssignOperator:
+		case TokenType::DivAssignOperator:
+		case TokenType::ModAssignOperator:
+		case TokenType::PowAssignOperator:
+			return 5;
 	}
 }
 
@@ -42,6 +52,12 @@ bool IsBinaryArithmeticOperator(TokenType type)
 		case TokenType::MultOperator:
 		case TokenType::DivOperator:
 		case TokenType::PowOperator:
+		case TokenType::AddAssignOperator:
+		case TokenType::SubAssignOperator:
+		case TokenType::MultAssignOperator:
+		case TokenType::DivAssignOperator:
+		case TokenType::ModAssignOperator:
+		case TokenType::PowAssignOperator:
 			return true;
 
 		default:
@@ -64,6 +80,47 @@ bool IsBinaryBooleanOperator(TokenType type)
 		default:
 			return false;
 	}
+}
+
+bool IsUnaryArithmeticOperator(TokenType type)
+{
+	switch (type)
+	{
+		case TokenType::UnarMinusOpaerator:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
+bool IsUnaryBooleanOperator(TokenType type)
+{
+	switch (type)
+	{
+		case TokenType::NotOperator:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
+bool IsOperator(TokenType type)
+{
+	if (IsBinaryArithmeticOperator(type))
+		return true;
+
+	if (IsBinaryBooleanOperator(type))
+		return true;
+
+	if (IsBinaryArithmeticOperator(type))
+		return true;
+
+	if (IsBinaryArithmeticOperator(type))
+		return true;
+
+	return false;
 }
 
 bool IsMemberKeyword(TokenType type)
@@ -128,7 +185,23 @@ bool IsMemberDeclaration(TokenType type)
 	return false;
 }
 
-bool IsKeyword(TokenType type)
+bool IsLoopKeyword(TokenType type)
+{
+	switch (type)
+	{
+		case TokenType::ForKeyword:
+		case TokenType::ForeverKeyword:
+		case TokenType::WhileKeyword:
+		case TokenType::DoKeyword:
+		case TokenType::ForeachKeyword:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
+bool IsFunctionalKeyword(TokenType type)
 {
 	switch (type)
 	{
@@ -140,6 +213,17 @@ bool IsKeyword(TokenType type)
 		default:
 			return false;
 	}
+}
+
+bool IsKeyword(TokenType type)
+{
+	if (IsFunctionalKeyword(type))
+		return true;
+
+	if (IsLoopKeyword(type))
+		return true;
+
+	return false;
 }
 
 bool IsKeywordHasExpression(TokenType type)

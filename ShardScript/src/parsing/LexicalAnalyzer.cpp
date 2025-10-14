@@ -8,7 +8,7 @@
 #include <shard/syntax/nodes/MemberDeclarationSyntax.h>
 #include <shard/syntax/nodes/MethodDeclarationSyntax.h>
 #include <shard/syntax/nodes/ParametersListSyntax.h>
-#include <shard/syntax/nodes/BlockDeclarationSyntax.h>
+#include <shard/syntax/nodes/BodyDeclarationSyntax.h>
 #include <shard/syntax/nodes/MethodBodySyntax.h>
 #include <shard/syntax/nodes/StatementSyntax.h>
 #include <shard/syntax/nodes/ArgumentsListSyntax.h>
@@ -85,14 +85,92 @@ shared_ptr<CompilationUnitSyntax> LexicalAnalyzer::ReadCompilationUnit(SourceRea
 
 shared_ptr<UsingDirectiveSyntax> LexicalAnalyzer::ReadUsingDirective(SourceReader& reader)
 {
-	reader.Consume();
-	return shared_ptr<UsingDirectiveSyntax>();
+	shared_ptr<UsingDirectiveSyntax> syntax = make_shared<UsingDirectiveSyntax>();
+	syntax->UsingKeyword = Expect(reader, TokenType::UsingKeyword, "Exprected 'using' keyword");
+
+	while (reader.CanConsume())
+	{
+		SyntaxToken current = reader.Current();
+		while (!Matches(reader, { TokenType::Identifier }))
+		{
+			Diagnostics.ReportError(current, "Expected identifier");
+			current = reader.Consume();
+		}
+
+		syntax->Tokens.push_back(current);
+		SyntaxToken separatorToken = reader.Consume();
+
+		while (!Matches(reader, { TokenType::Delimeter, TokenType::Semicolon }))
+		{
+			Diagnostics.ReportError(separatorToken, "Expected separator token '.' or closing token ';'");
+			separatorToken = reader.Consume();
+		}
+
+		if (separatorToken.Type == TokenType::Semicolon)
+		{
+			syntax->Semicolon = separatorToken;
+			break;
+		}
+	}
+	
+	return syntax;
+}
+
+shared_ptr<ImportDirectiveSyntax> LexicalAnalyzer::ReadImportDirective(SourceReader& reader)
+{
+	shared_ptr<ImportDirectiveSyntax> syntax = make_shared<ImportDirectiveSyntax>();
+	syntax->FromToken = Expect(reader, TokenType::FromKeyword, "Expected 'from' keyword");
+
+	SyntaxToken current = reader.Current();
+	while (!Matches(reader, { TokenType::StringLiteral }))
+	{
+		Diagnostics.ReportError(current, "Expected library path");
+		current = reader.Consume();
+	}
+
+	syntax->LibPathToken = current;
+	current = reader.Consume();
+
+	while (!Matches(reader, { TokenType::ImportKeyword }))
+	{
+		Diagnostics.ReportError(current, "Expected 'import' keyword");
+		current = reader.Consume();
+	}
+
+	syntax->ImportToken = current;
+	current = reader.Consume();
+
+	while (reader.CanConsume())
+	{
+		while (!Matches(reader, { TokenType::Identifier }))
+		{
+			Diagnostics.ReportError(current, "Expected identifier");
+			current = reader.Consume();
+		}
+
+		syntax->Funtctions.push_back(current);
+		SyntaxToken separatorToken = reader.Consume();
+
+		while (!Matches(reader, { TokenType::Comma, TokenType::Semicolon }))
+		{
+			Diagnostics.ReportError(separatorToken, "Expected separator token ',' or closing token ';'");
+			separatorToken = reader.Consume();
+		}
+
+		if (separatorToken.Type == TokenType::Semicolon)
+		{
+			syntax->Semicolon = separatorToken;
+			break;
+		}
+	}
+
+	return syntax;
 }
 
 shared_ptr<NamespaceDeclarationSyntax> LexicalAnalyzer::ReadNamespaceDeclaration(SourceReader& reader)
 {
 	shared_ptr<NamespaceDeclarationSyntax> syntax = make_shared<NamespaceDeclarationSyntax>();
-	syntax->DeclareKeyword = Expect(reader, TokenType::NamespaceKeyword, "Expected namespace keyword");
+	syntax->DeclareKeyword = Expect(reader, TokenType::NamespaceKeyword, "Expected 'namespace' keyword");
 
 	// reading identifier
 	while (!Matches(reader, { TokenType::Identifier }))
@@ -336,7 +414,10 @@ shared_ptr<ParametersListSyntax> LexicalAnalyzer::ReadParametersList(SourceReade
 		}
 
 		if (separatorToken.Type == TokenType::CloseCurl)
+		{
+			syntax->CloseCurlToken = separatorToken;
 			break;
+		}
 	}
 
 	return syntax;
@@ -367,6 +448,41 @@ void LexicalAnalyzer::ReadTypeBody(SourceReader& reader, shared_ptr<TypeDeclarat
 			reader.Consume();
 		}
 	}
+}
+
+shared_ptr<StatementsBlockSyntax> LexicalAnalyzer::ReadStatementsBlock(SourceReader& reader)
+{
+	shared_ptr<StatementsBlockSyntax> syntax = make_shared<StatementsBlockSyntax>();
+
+	SyntaxToken current = reader.Current();
+	if (current.Type == TokenType::OpenBrace)
+	{
+		syntax->OpenBraceToken = current;
+		current = reader.Consume();
+
+		while (reader.CanConsume())
+		{
+			if (current.Type == TokenType::CloseBrace)
+			{
+				syntax->CloseBraceToken = current;
+				reader.Consume();
+				break;
+			}
+			else
+			{
+				shared_ptr<StatementSyntax> statement = ReadStatement(reader);
+				syntax->Statements.push_back(statement);
+				continue;
+			}
+		}
+	}
+	else
+	{
+		shared_ptr<StatementSyntax> statement = ReadStatement(reader);
+		syntax->Statements.push_back(statement);
+	}
+
+	return syntax;
 }
 
 shared_ptr<MethodBodySyntax> LexicalAnalyzer::ReadMethodBody(SourceReader& reader)
@@ -438,7 +554,42 @@ shared_ptr<StatementSyntax> LexicalAnalyzer::ReadStatement(SourceReader& reader)
 
 shared_ptr<KeywordStatementSyntax> LexicalAnalyzer::ReadKeywordStatement(SourceReader& reader)
 {
-	return shared_ptr<KeywordStatementSyntax>();
+	SyntaxToken current = reader.Current();
+
+	if (current.Type == TokenType::ForKeyword)
+		return ReadForStatement(reader);
+}
+
+shared_ptr<ForStatementSyntax> LexicalAnalyzer::ReadForStatement(SourceReader& reader)
+{
+	shared_ptr<ForStatementSyntax> syntax = make_shared<ForStatementSyntax>();
+	syntax->Keyword = Expect(reader, TokenType::ForKeyword, "Expected 'for' keyword");
+
+	// Reading open curl token
+	SyntaxToken current = reader.Current();
+
+	// Reading open curl token
+	syntax->OpenCurlToken = Expect(reader, TokenType::OpenCurl, "expected '(' token");
+
+	// Reading init statement
+	syntax->InitializerStatement = ReadStatement(reader);
+
+	// Reading first semicolon
+	syntax->FirstSemicolon = Expect(reader, TokenType::Semicolon, "expected ';' token");
+
+	// Reading looping consition
+	syntax->ConditionExpression = ReadExpression(reader, 0);
+
+	// Reading second semicolon
+	syntax->FirstSemicolon = Expect(reader, TokenType::Semicolon, "expected ';' token");
+
+	// Reading after loop statement
+	syntax->AfterRepeatStatement = ReadStatement(reader);
+
+	// Reading close curl token
+    syntax->OpenCurlToken = Expect(reader, TokenType::CloseCurl, "expected ')' token");
+	
+	return syntax;
 }
 
 shared_ptr<ExpressionSyntax> LexicalAnalyzer::ReadExpression(SourceReader& reader, int bindingPower)
@@ -508,7 +659,7 @@ shared_ptr<ExpressionSyntax> LexicalAnalyzer::ReadLeftDenotation(SourceReader& r
 	while (reader.CanConsume())
 	{
 		SyntaxToken current = reader.Current();
-		if (IsBinaryArithmeticOperator(current.Type) || IsBinaryBooleanOperator(current.Type) || current.Type == TokenType::AssignOperator)
+		if (IsOperator(current.Type) || current.Type == TokenType::AssignOperator)
 		{
 			int precendce = GetOperatorPrecendence(current.Type);
 			if (precendce == 0)

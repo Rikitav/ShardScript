@@ -56,5 +56,7 @@ namespace shard::parsing
 		bool IsDirectiveDecl(std::string& word, shard::syntax::TokenType& type);
 		bool IsTypeDecl(std::string& word, shard::syntax::TokenType& type);
 		bool IsType(std::string& word, shard::syntax::TokenType& type);
+		bool IsLoopKeyword(std::string& word, shard::syntax::TokenType& type);
+		bool IsFunctionalKeyword(std::string& word, shard::syntax::TokenType& type);
 	};
 }

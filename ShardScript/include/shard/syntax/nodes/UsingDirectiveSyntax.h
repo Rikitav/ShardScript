@@ -11,9 +11,9 @@ namespace shard::syntax::nodes
 	class UsingDirectiveSyntax : public SyntaxNode
 	{
 	public:
+		SyntaxToken UsingKeyword;
 		vector<SyntaxToken> Tokens;
 		SyntaxToken Semicolon;
-		SyntaxToken DeclareKeyword;
 
 		UsingDirectiveSyntax()
 			: SyntaxNode(SyntaxKind::UsingDirective) {}
