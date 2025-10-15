@@ -27,8 +27,8 @@ namespace shard::syntax
 		KeywordStatement,
 		ExpressionStatement,
 		VariableStatement,
-		//BlockStatement,
-		ForStatementSyntax,
+		ForStatement,
+		ReturnStatement,
 
 		Expression,
 		AssignExpression,

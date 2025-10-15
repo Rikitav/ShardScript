@@ -2,6 +2,7 @@
 #include <shard/syntax/nodes/StatementSyntax.h>
 #include <shard/syntax/nodes/ExpressionSyntax.h>
 #include <shard/syntax/nodes/Statements.h>
+#include <shard/syntax/nodes/StatementsBlockSyntax.h>
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxToken.h>
 #include <memory>
@@ -18,8 +19,9 @@ namespace shard::syntax::nodes
 		SyntaxToken SecondSemicolon;
 		shared_ptr<StatementSyntax> AfterRepeatStatement = nullptr;
 		SyntaxToken CloseCurlToken;
+		shared_ptr<StatementsBlockSyntax> Block = nullptr;
 
 		ForStatementSyntax()
-			: KeywordStatementSyntax(SyntaxKind::ForStatementSyntax) { }
+			: KeywordStatementSyntax(SyntaxKind::ForStatement) { }
 	};
 }

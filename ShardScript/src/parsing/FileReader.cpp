@@ -1,4 +1,10 @@
+#include <shard/parsing/SourceReader.h>
 #include <shard/parsing/FileReader.h>
+#include <shard/syntax/analysis/TextLocation.h>
+
+#include <fstream>
+#include <stdexcept>
+#include <string>
 
 using namespace shard::parsing;
 

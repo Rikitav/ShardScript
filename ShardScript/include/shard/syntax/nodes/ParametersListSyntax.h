@@ -1,9 +1,10 @@
 #pragma once
-#include <shard/syntax/analysis/DiagnosticsContext.h>
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxNode.h>
 #include <shard/syntax/SyntaxToken.h>
+
 #include <vector>
+#include <memory>
 
 using namespace std;
 

@@ -2,6 +2,7 @@
 #include <shard/runtime/CallStackFrame.h>
 #include <shard/runtime/Register.h>
 
+#include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxToken.h>
 #include <shard/syntax/TokenType.h>
 
@@ -11,7 +12,7 @@
 #include <shard/syntax/nodes/StatementSyntax.h>
 #include <shard/syntax/nodes/Expressions.h>
 #include <shard/syntax/nodes/Statements.h>
-#include <shard/syntax/SyntaxKind.h>
+#include <shard/syntax/nodes/Loops.h>
 
 #include <memory>
 #include <stdexcept>
@@ -19,6 +20,7 @@
 #include <vector>
 #include <iostream>
 #include <cmath>
+#include <shard/runtime/TypeInfo.h>
 
 #define GetStatement(type) std::static_pointer_cast<type>(statement);
 
@@ -39,11 +41,22 @@ shared_ptr<Register> AbstarctInterpreter::ExecuteMethod(shared_ptr<MethodDeclara
 {
 	shared_ptr<CallStackFrame> frame = make_shared<CallStackFrame>(prevFrame, method);
 	CallStack.push(frame);
-
-	for (const shared_ptr<StatementSyntax>& statement : method->Body->Statements)
-		ExecuteStatement(statement, frame);
-
+	
+	shared_ptr<Register> retReg = ExecuteBlock(method->Body, frame);
 	CallStack.pop();
+	
+	return retReg;
+}
+
+shared_ptr<Register> AbstarctInterpreter::ExecuteBlock(shared_ptr<StatementsBlockSyntax> block, shared_ptr<CallStackFrame> frame)
+{
+	for (const shared_ptr<StatementSyntax>& statement : block->Statements)
+	{
+		shared_ptr<Register> retReg = ExecuteStatement(statement, frame);
+		if (retReg != retReg)
+			return retReg;
+	}
+
 	return nullptr;
 }
 
@@ -55,12 +68,27 @@ shared_ptr<Register> AbstarctInterpreter::ExecuteStatement(shared_ptr<StatementS
 		{
 			auto exprStatement = dynamic_pointer_cast<ExpressionStatementSyntax>(statement);
 			shared_ptr<Register> exprReg = EvaluateExpression(exprStatement->Expression, frame);
-			return exprReg;
+			return nullptr; //exprReg;
 		}
 
-		case SyntaxKind::KeywordStatement:
+		case SyntaxKind::ForStatement:
 		{
+			auto forStatement = dynamic_pointer_cast<ForStatementSyntax>(statement);
+			shared_ptr<Register> initReg = ExecuteStatement(forStatement->InitializerStatement, frame);
+			
+			while (true)
+			{
+				shared_ptr<Register> loopAgainReg = EvaluateExpression(forStatement->ConditionExpression, frame);
+				bool loopAgain = *static_pointer_cast<bool>(loopAgainReg->DataPtr);
 
+				if (!loopAgain)
+					break;
+
+				ExecuteBlock(forStatement->Block, frame);
+				ExecuteStatement(forStatement->AfterRepeatStatement, frame);
+			}
+
+			return nullptr;
 		}
 
 		case SyntaxKind::VariableStatement:
@@ -72,7 +100,8 @@ shared_ptr<Register> AbstarctInterpreter::ExecuteStatement(shared_ptr<StatementS
 				throw runtime_error("variable already created");
 
 			shared_ptr<Register> assignExprReg = EvaluateExpression(varStatement->Expression, frame);
-			return frame->VariablesHeap[varName] = assignExprReg;
+			frame->VariablesHeap[varName] = assignExprReg;
+			return nullptr;
 		}
 
 		default:
@@ -123,7 +152,7 @@ shared_ptr<Register> AbstarctInterpreter::EvaluateExpression(shared_ptr<Expressi
 				if (vArgs.size() == 1)
 				{
 					shared_ptr<Register> exprReg = EvaluateExpression(vArgs[0]->Expression, frame);
-					switch (exprReg->TypeCode)
+					switch (exprReg->Type.Id)
 					{
 						case TYPE_CODE_BOOLEAN:
 						{
@@ -166,13 +195,13 @@ static shared_ptr<Register> CreateRegisterFromConstToken(SyntaxToken& constToken
 	switch (constToken.Type)
 	{
 		case TokenType::BooleanLiteral:
-			return make_shared<Register>(TYPE_CODE_BOOLEAN, make_shared<bool>(constToken.Word == "true"));
+			return make_shared<Register>(TYPEINFO_BOOLEAN, make_shared<bool>(constToken.Word == "true"));
 
 		case TokenType::NumberLiteral:
-			return make_shared<Register>(TYPE_CODE_INTEGER, make_shared<int>(stoi(constToken.Word)));
+			return make_shared<Register>(TYPEINFO_INTEGER, make_shared<int>(stoi(constToken.Word)));
 
 		case TokenType::StringLiteral:
-			return make_shared<Register>(TYPE_CODE_STRING, make_shared<string>(constToken.Word));
+			return make_shared<Register>(TYPEINFO_STRING, make_shared<string>(constToken.Word));
 
 		default:
 			throw runtime_error("Unknown constant literal type");
@@ -181,10 +210,10 @@ static shared_ptr<Register> CreateRegisterFromConstToken(SyntaxToken& constToken
 
 static shared_ptr<Register> EvaluateBinaryExpressionValues(shared_ptr<Register> leftReg, SyntaxToken& op, shared_ptr<Register> rightReg)
 {
-	if (leftReg->TypeCode != rightReg->TypeCode)
+	if (leftReg->Type.Id != rightReg->Type.Id)
 		throw runtime_error("cannot evaluate binary expression with different type codes");
 
-	if (leftReg->TypeCode != TYPE_CODE_INTEGER)
+	if (leftReg->Type.Id != TYPE_CODE_INTEGER)
 		throw runtime_error("unsupported type");
 
 	switch (op.Type)
@@ -199,77 +228,77 @@ static shared_ptr<Register> EvaluateBinaryExpressionValues(shared_ptr<Register> 
 		{
 			int left = *static_pointer_cast<int>(leftReg->DataPtr);
 			int right = *static_pointer_cast<int>(rightReg->DataPtr);
-			return make_shared<Register>(TYPE_CODE_INTEGER, make_shared<int>(left + right));
+			return make_shared<Register>(TYPEINFO_INTEGER, make_shared<int>(left + right));
 		}
 
 		case TokenType::SubOperator:
 		{
 			int left = *static_pointer_cast<int>(leftReg->DataPtr);
 			int right = *static_pointer_cast<int>(rightReg->DataPtr);
-			return make_shared<Register>(TYPE_CODE_INTEGER, make_shared<int>(left - right));
+			return make_shared<Register>(TYPEINFO_INTEGER, make_shared<int>(left - right));
 		}
 
 		case TokenType::MultOperator:
 		{
 			int left = *static_pointer_cast<int>(leftReg->DataPtr);
 			int right = *static_pointer_cast<int>(rightReg->DataPtr);
-			return make_shared<Register>(TYPE_CODE_INTEGER, make_shared<int>(left * right));
+			return make_shared<Register>(TYPEINFO_INTEGER, make_shared<int>(left * right));
 		}
 
 		case TokenType::DivOperator:
 		{
 			int left = *static_pointer_cast<int>(leftReg->DataPtr);
 			int right = *static_pointer_cast<int>(rightReg->DataPtr);
-			return make_shared<Register>(TYPE_CODE_INTEGER, make_shared<int>(left / right));
+			return make_shared<Register>(TYPEINFO_INTEGER, make_shared<int>(left / right));
 		}
 
 		case TokenType::PowOperator:
 		{
 			int left = *static_pointer_cast<int>(leftReg->DataPtr);
 			int right = *static_pointer_cast<int>(rightReg->DataPtr);
-			return make_shared<Register>(TYPE_CODE_INTEGER, make_shared<int>(pow(left, right)));
+			return make_shared<Register>(TYPEINFO_INTEGER, make_shared<int>(pow(left, right)));
 		}
 
 		case TokenType::LessOperator:
 		{
 			int left = *static_pointer_cast<int>(leftReg->DataPtr);
 			int right = *static_pointer_cast<int>(rightReg->DataPtr);
-			return make_shared<Register>(TYPE_CODE_BOOLEAN, make_shared<bool>(left < right));
+			return make_shared<Register>(TYPEINFO_BOOLEAN, make_shared<bool>(left < right));
 		}
 
 		case TokenType::LessOrEqualsOperator:
 		{
 			int left = *static_pointer_cast<int>(leftReg->DataPtr);
 			int right = *static_pointer_cast<int>(rightReg->DataPtr);
-			return make_shared<Register>(TYPE_CODE_BOOLEAN, make_shared<bool>(left <= right));
+			return make_shared<Register>(TYPEINFO_BOOLEAN, make_shared<bool>(left <= right));
 		}
 
 		case TokenType::GreaterOperator:
 		{
 			int left = *static_pointer_cast<int>(leftReg->DataPtr);
 			int right = *static_pointer_cast<int>(rightReg->DataPtr);
-			return make_shared<Register>(TYPE_CODE_BOOLEAN, make_shared<bool>(left > right));
+			return make_shared<Register>(TYPEINFO_BOOLEAN, make_shared<bool>(left > right));
 		}
 
 		case TokenType::GreaterOrEqualsOperator:
 		{
 			int left = *static_pointer_cast<int>(leftReg->DataPtr);
 			int right = *static_pointer_cast<int>(rightReg->DataPtr);
-			return make_shared<Register>(TYPE_CODE_BOOLEAN, make_shared<bool>(left <= right));
+			return make_shared<Register>(TYPEINFO_BOOLEAN, make_shared<bool>(left <= right));
 		}
 
 		case TokenType::EqualsOperator:
 		{
 			int left = *static_pointer_cast<int>(leftReg->DataPtr);
 			int right = *static_pointer_cast<int>(rightReg->DataPtr);
-			return make_shared<Register>(TYPE_CODE_BOOLEAN, make_shared<bool>(left == right));
+			return make_shared<Register>(TYPEINFO_BOOLEAN, make_shared<bool>(left == right));
 		}
 
 		case TokenType::NotEqualsOperator:
 		{
 			int left = *static_pointer_cast<int>(leftReg->DataPtr);
 			int right = *static_pointer_cast<int>(rightReg->DataPtr);
-			return make_shared<Register>(TYPE_CODE_BOOLEAN, make_shared<bool>(left != right));
+			return make_shared<Register>(TYPEINFO_BOOLEAN, make_shared<bool>(left != right));
 		}
 
 		default:

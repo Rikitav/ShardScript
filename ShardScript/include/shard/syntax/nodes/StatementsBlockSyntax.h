@@ -1,16 +1,18 @@
 #pragma once
-#include <shard/syntax/SyntaxNode.h>
+#include <shard/syntax/SyntaxKind.h>
+#include <shard/syntax/nodes/BodyDeclarationSyntax.h>
+#include <shard/syntax/nodes/StatementSyntax.h>
+#include <memory>
+#include <vector>
 
 namespace shard::syntax::nodes
 {
-	class StatementsBlockSyntax : public SyntaxNode
+	class StatementsBlockSyntax : public BodyDeclarationSyntax
 	{
 	public:
-		SyntaxToken OpenBraceToken;
-		SyntaxToken CloseBraceToken;
 		vector<shared_ptr<StatementSyntax>> Statements;
 
-		StatementsBlockSyntax() : SyntaxNode(SyntaxKind::StatementsBlock)
+		StatementsBlockSyntax() : BodyDeclarationSyntax(SyntaxKind::StatementsBlock)
 		{
 
 		}

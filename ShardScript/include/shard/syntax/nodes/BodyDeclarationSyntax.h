@@ -17,7 +17,7 @@ namespace shard::syntax::nodes
 		BodyDeclarationSyntax(SyntaxKind kind)
 			: MemberDeclarationSyntax(kind) {}
 
-		bool IsLiner()
+		bool IsLiner() const
 		{
 			return OpenBraceToken.IsMissing && CloseBraceToken.IsMissing && Semicolon.IsMissing;
 		}

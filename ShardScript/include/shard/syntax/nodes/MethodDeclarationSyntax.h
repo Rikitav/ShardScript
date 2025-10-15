@@ -3,13 +3,13 @@
 #include <shard/syntax/SyntaxToken.h>
 
 #include <shard/syntax/nodes/MemberDeclarationSyntax.h>
-#include <shard/syntax/nodes/MethodBodySyntax.h>
 #include <shard/syntax/nodes/ParametersListSyntax.h>
+#include <shard/syntax/nodes/StatementsBlockSyntax.h>
 
-#include <shard/syntax/analysis/DiagnosticsContext.h>
 #include <shard/parsing/structures/MemberDeclarationInfo.h>
 
 #include <memory>
+#include <vector>
 
 using namespace std;
 using namespace shard::parsing::structures;
@@ -20,8 +20,8 @@ namespace shard::syntax::nodes
 	{
 	public:
 		SyntaxToken ReturnType;
-		shared_ptr<MethodBodySyntax> Body;
-		shared_ptr<ParametersListSyntax> Params;
+		shared_ptr<StatementsBlockSyntax> Body = nullptr;
+		shared_ptr<ParametersListSyntax> Params = nullptr;
 
 		MethodDeclarationSyntax() : MemberDeclarationSyntax(SyntaxKind::MethodDeclaration), Body(nullptr), Params(nullptr)
 		{
@@ -33,18 +33,6 @@ namespace shard::syntax::nodes
 			Modifiers = info.Modifiers;
 			Identifier = info.Identifier;
 			ReturnType = info.ReturnType;
-		}
-
-		void ReportMissing(DiagnosticsContext& diagnostics)
-		{
-			if (ReturnType.IsMissing)
-				diagnostics.ReportError(DeclareKeyword, "Missing return type of method");
-
-			//if (Body != nullptr)
-				//Body->ReportMissing(diagnostics);
-			
-			//if (Params != nullptr)
-				//Params.ReportMissing(diagnostics);
 		}
 	};
 }

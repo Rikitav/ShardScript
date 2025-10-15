@@ -9,23 +9,23 @@
 #include <shard/syntax/analysis/DiagnosticsContext.h>
 
 #include <shard/syntax/nodes/UsingDirectiveSyntax.h>
+#include <shard/syntax/nodes/ImportDirectiveSyntax.h>
 #include <shard/syntax/nodes/TypeDeclarationSyntax.h>
 #include <shard/syntax/nodes/ArgumentsListSyntax.h>
 #include <shard/syntax/nodes/ExpressionSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarationSyntax.h>
 #include <shard/syntax/nodes/ParametersListSyntax.h>
 #include <shard/syntax/nodes/CompilationUnitSyntax.h>
-#include <shard/syntax/nodes/MethodBodySyntax.h>
 #include <shard/syntax/nodes/StatementSyntax.h>
 #include <shard/syntax/nodes/TypeDeclarations.h>
 #include <shard/syntax/nodes/Statements.h>
+#include <shard/syntax/nodes/StatementsBlockSyntax.h>
+#include <shard/syntax/nodes/Loops.h>
 
 #include <memory>
 #include <initializer_list>
 #include <stdexcept>
 #include <vector>
-#include <shard/syntax/nodes/StatementsBlockSyntax.h>
-#include <shard/syntax/nodes/Loops.h>
 
 using namespace shard::syntax;
 using namespace shard::syntax::nodes;
@@ -63,8 +63,7 @@ namespace shard::parsing
 
 		// Third layer - code
 		shared_ptr<StatementsBlockSyntax> ReadStatementsBlock(SourceReader& reader);
-		shared_ptr<MethodBodySyntax> ReadMethodBody(SourceReader& reader);
-		shared_ptr<StatementSyntax> ReadStatement(SourceReader& reader);
+		shared_ptr<StatementSyntax> ReadStatement(SourceReader& reader, bool expectSemicolon);
 
 		shared_ptr<KeywordStatementSyntax> ReadKeywordStatement(SourceReader& reader);
 		shared_ptr<ForStatementSyntax> ReadForStatement(SourceReader& reader);

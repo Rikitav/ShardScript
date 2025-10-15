@@ -127,8 +127,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ArgumentsParser.cpp" />
     <ClCompile Include="include\shard\parsing\SequenceSourceReader.h" />
-    <ClCompile Include="include\shard\syntax\nodes\MethodBodySyntax.h" />
     <ClCompile Include="include\shard\syntax\nodes\ParametersListSyntax.h" />
     <ClCompile Include="include\shard\syntax\nodes\UsingDirectiveSyntax.h" />
     <ClCompile Include="src\parsing\FileReader.cpp" />
@@ -149,6 +149,7 @@
     <ClInclude Include="include\shard\runtime\AbstarctInterpreter.h" />
     <ClInclude Include="include\shard\runtime\Register.h" />
     <ClInclude Include="include\shard\runtime\CallStackFrame.h" />
+    <ClInclude Include="include\shard\runtime\TypeInfo.h" />
     <ClInclude Include="include\shard\syntax\analysis\Diagnostic.h" />
     <ClInclude Include="include\shard\syntax\analysis\DiagnosticsContext.h" />
     <ClInclude Include="include\shard\syntax\analysis\DiagnosticSeverity.h" />

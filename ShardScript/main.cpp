@@ -24,10 +24,13 @@
 #include <shard/parsing/StringStreamReader.h>
 #include <shard/parsing/ReaderExtensions.h>
 
+#include "ArgumentsParser.cpp"
+
 #include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
+#include <stdexcept>
 
 using namespace std;
 using namespace shard::parsing;
@@ -41,7 +44,9 @@ static void WriteDiagnostic(Diagnostic& diag)
 	cout << "Line: " << diag.Location.Line << " | ";
 	cout << "Offset: " << diag.Location.Offset << " | ";
 	cout << "Word: '" << diag.Token.Word << "' | ";
-	cout << diag.Description << endl;
+	cout << "Index: '" << diag.Token.Index << "' | ";
+	cout << diag.Description;
+	cout << endl;
 }
 
 static int InterpretFiles(int argc, char** argv)
@@ -52,7 +57,7 @@ static int InterpretFiles(int argc, char** argv)
 
 	for (int i = 1; i < argc; i++)
 	{
-		string argi = argv[i];
+		string argi = shard::utilities::normalizePath(argv[i]);
 		unique_ptr<SourceReader> reader = make_unique<FileReader>(argi);
 		lexer.FromSourceReader(*reader);
 	}
@@ -127,7 +132,7 @@ int main(int argc, char** argv)
 		StringStreamReader stringStreamReader(line);
 		vector<SyntaxToken> lineSequence = ReadToEnd(stringStreamReader);
 		sequenceReader.SetSequence(lineSequence);
-		shared_ptr<StatementSyntax> statement = lexer.ReadStatement(sequenceReader);
+		shared_ptr<StatementSyntax> statement = lexer.ReadStatement(sequenceReader, false);
 
 		if (diagnostics.AnyError)
 		{
