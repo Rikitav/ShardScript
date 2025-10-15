@@ -781,6 +781,7 @@ shared_ptr<MemberAccessExpressionSyntax> LexicalAnalyzer::ReadMemberAccessExpres
 
 	return nullptr;
 }
+*/
 
 shared_ptr<ArgumentsListSyntax> LexicalAnalyzer::ReadArgumentsList(SourceReader& reader)
 {
