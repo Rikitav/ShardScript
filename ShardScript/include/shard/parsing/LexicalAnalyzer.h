@@ -21,6 +21,8 @@
 #include <shard/syntax/nodes/Statements.h>
 #include <shard/syntax/nodes/StatementsBlockSyntax.h>
 #include <shard/syntax/nodes/Loops.h>
+#include <shard/syntax/nodes/Expressions.h>
+#include <shard/syntax/nodes/IndexatorListSyntax.h>
 
 #include <memory>
 #include <initializer_list>
@@ -72,8 +74,9 @@ namespace shard::parsing
 		shared_ptr<ExpressionSyntax> ReadNullDenotation(SourceReader& reader);
 		shared_ptr<ExpressionSyntax> ReadLeftDenotation(SourceReader& reader, shared_ptr<ExpressionSyntax> leftExpr);
 
-		shared_ptr<ExpressionSyntax> ReadMemberAccessExpression(SourceReader& reader);
+		shared_ptr<MemberAccessExpressionSyntax> ReadMemberAccessExpression(SourceReader& reader);
 		shared_ptr<ArgumentsListSyntax> ReadArgumentsList(SourceReader& reader);
+		shared_ptr<IndexatorListSyntax> ReadIndexatorList(SourceReader& reader);
 
 	private:
 		// Fourth layer - lexing helpers

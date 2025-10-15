@@ -130,57 +130,12 @@ shared_ptr<Register> AbstarctInterpreter::EvaluateExpression(shared_ptr<Expressi
 			return EvaluateBinaryExpressionValues(leftReg, binaryExpr->OperatorToken, rightReg);
 		}
 
-		case SyntaxKind::MemberAccessExpression:
+		case SyntaxKind::InvokationExpression:
+		case SyntaxKind::IndexatorExpression:
+		case SyntaxKind::FieldAccessExpression:
 		{
 			auto accessExpr = dynamic_pointer_cast<MemberAccessExpressionSyntax>(expression);
-			if (accessExpr->Path.size() == 1)
-			{
-				string varName = accessExpr->Path[0].Word;
-				return frame->VariablesHeap[varName];
-			}
-
-			throw runtime_error("Unknown member access");
-		}
-
-		case SyntaxKind::InvokationExpression:
-		{
-			auto invokeExpr = dynamic_pointer_cast<InvokationExpressionSyntax>(expression);
-			string accessName = invokeExpr->MemberAccess->Path[0].Word;
-			if (accessName == "print")
-			{
-				vector<shared_ptr<ArgumentSyntax>> vArgs = invokeExpr->ArgumentsList->Arguments;
-				if (vArgs.size() == 1)
-				{
-					shared_ptr<Register> exprReg = EvaluateExpression(vArgs[0]->Expression, frame);
-					switch (exprReg->Type.Id)
-					{
-						case TYPE_CODE_BOOLEAN:
-						{
-							bool data = *static_pointer_cast<bool>(exprReg->DataPtr);
-							cout << data << endl;
-							break;
-						}
-
-						case TYPE_CODE_INTEGER:
-						{
-							int data = *static_pointer_cast<int>(exprReg->DataPtr);
-							cout << data << endl;
-							break;
-						}
-
-						case TYPE_CODE_STRING:
-						{
-							string data = *static_pointer_cast<string, void>(exprReg->DataPtr);
-							cout << data << endl;
-							break;
-						}
-					}
-
-					return exprReg;
-				}
-			}
-
-			throw runtime_error("unknown invokation member");
+			return EvaluateMemberAccesExpression(accessExpr, frame);
 		}
 
 		default:
@@ -188,6 +143,75 @@ shared_ptr<Register> AbstarctInterpreter::EvaluateExpression(shared_ptr<Expressi
 			throw runtime_error("unknown expression type");
 		}
 	}
+}
+
+shared_ptr<Register> AbstarctInterpreter::EvaluateMemberAccesExpression(shared_ptr<MemberAccessExpressionSyntax> expression, shared_ptr<CallStackFrame> frame)
+{
+	switch (expression->Kind)
+	{
+		case SyntaxKind::FieldAccessExpression:
+		{
+			string varName = expression->IdentifierToken.Word;
+			return frame->VariablesHeap[varName];
+		}
+
+		case SyntaxKind::InvokationExpression:
+		{
+			auto invokeExpr = dynamic_pointer_cast<InvokationExpressionSyntax>(expression);
+			if (expression->NextAccess != nullptr)
+				throw runtime_error("Recursive member acces paths are currently unsupported!");
+
+			if (expression->IdentifierToken.Word == "print" && invokeExpr->ArgumentsList->Arguments.size() == 1)
+				return EvaluatePrintInvokationExpression(invokeExpr->ArgumentsList->Arguments[0], frame);
+
+			throw runtime_error("unknown invokation member");
+		}
+
+		case SyntaxKind::IndexatorExpression:
+		{
+			if (expression->NextAccess != nullptr)
+				throw runtime_error("Recursive member acces paths are currently unsupported!");
+		
+			throw runtime_error("Indexation expression are currently unupported!");
+		}
+
+		default:
+		{
+			throw runtime_error("Unknown member access");
+		}
+	}
+
+	return nullptr;
+}
+
+shared_ptr<Register> AbstarctInterpreter::EvaluatePrintInvokationExpression(shared_ptr<ArgumentSyntax> argument, shared_ptr<CallStackFrame> frame)
+{
+	shared_ptr<Register> exprReg = EvaluateExpression(argument->Expression, frame);
+	switch (exprReg->Type.Id)
+	{
+		case TYPE_CODE_BOOLEAN:
+		{
+			bool data = *static_pointer_cast<bool>(exprReg->DataPtr);
+			cout << data << endl;
+			break;
+		}
+
+		case TYPE_CODE_INTEGER:
+		{
+			int data = *static_pointer_cast<int>(exprReg->DataPtr);
+			cout << data << endl;
+			break;
+		}
+
+		case TYPE_CODE_STRING:
+		{
+			string data = *static_pointer_cast<string, void>(exprReg->DataPtr);
+			cout << data << endl;
+			break;
+		}
+	}
+
+	return nullptr;
 }
 
 static shared_ptr<Register> CreateRegisterFromConstToken(SyntaxToken& constToken)

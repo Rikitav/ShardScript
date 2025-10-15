@@ -6,12 +6,16 @@
 #include <shard/syntax/nodes/ExpressionSyntax.h>
 #include <shard/syntax/nodes/MethodDeclarationSyntax.h>
 #include <shard/syntax/nodes/StatementSyntax.h>
+#include <shard/syntax/nodes/ArgumentsListSyntax.h>
+#include <shard/syntax/nodes/Expressions.h>
+#include <shard/syntax/nodes/StatementsBlockSyntax.h>
 
 #include <stack>
 #include <memory>
 
 using namespace std;
 using namespace shard::syntax::structures;
+using namespace shard::syntax::nodes;
 
 namespace shard::runtime
 {
@@ -30,5 +34,7 @@ namespace shard::runtime
 		shared_ptr<Register> ExecuteBlock(shared_ptr<StatementsBlockSyntax> block, shared_ptr<CallStackFrame> frame);
 		shared_ptr<Register> ExecuteStatement(shared_ptr<StatementSyntax> statement, shared_ptr<CallStackFrame> frame);
 		shared_ptr<Register> EvaluateExpression(shared_ptr<ExpressionSyntax> expression, shared_ptr<CallStackFrame> frame);
+		shared_ptr<Register> EvaluateMemberAccesExpression(shared_ptr<MemberAccessExpressionSyntax> expression, shared_ptr<CallStackFrame> frame);
+		shared_ptr<Register> EvaluatePrintInvokationExpression(shared_ptr<ArgumentSyntax> argument, shared_ptr<CallStackFrame> frame);
 	};
 }
