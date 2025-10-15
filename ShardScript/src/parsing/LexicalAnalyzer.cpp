@@ -18,6 +18,7 @@
 #include <shard/syntax/nodes/ImportDirectiveSyntax.h>
 #include <shard/syntax/nodes/Loops.h>
 #include <shard/syntax/nodes/StatementsBlockSyntax.h>
+#include <shard/syntax/nodes/IndexatorListSyntax.h>
 
 #include <shard/syntax/SyntaxToken.h>
 #include <shard/syntax/TokenType.h>
@@ -781,36 +782,9 @@ shared_ptr<MemberAccessExpressionSyntax> LexicalAnalyzer::ReadMemberAccessExpres
 			}
 		}
 	}
+
+	return nullptr;
 }
-
-/*
-shared_ptr<ExpressionSyntax> LexicalAnalyzer::WalkIdentifierExpression(SourceReader& reader, shared_ptr<ExpressionSyntax> previous)
-{
-	shared_ptr<MemberAccessExpressionSyntax> memberAccess = make_shared<MemberAccessExpressionSyntax>();
-	while (reader.CanConsume())
-	{
-		SyntaxToken identifierToken = Expect(reader, TokenType::Identifier, "Expected identifier");
-		memberAccess->Path.push_back(identifierToken);
-
-		if (!reader.CanConsume())
-			break;
-
-		SyntaxToken separatorToken = reader.Current();
-		if (separatorToken.Type != TokenType::Delimeter)
-			break;
-
-		reader.Consume();
-	}
-
-	if (reader.CanConsume() && reader.Current().Type == TokenType::OpenCurl)
-	{
-		shared_ptr<ArgumentsListSyntax> arguments = ReadArgumentsList(reader);
-		return make_shared<InvokationExpressionSyntax>(memberAccess, arguments);
-	}
-
-	return memberAccess;
-}
-*/
 
 shared_ptr<ArgumentsListSyntax> LexicalAnalyzer::ReadArgumentsList(SourceReader& reader)
 {

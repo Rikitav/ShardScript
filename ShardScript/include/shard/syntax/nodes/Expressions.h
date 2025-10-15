@@ -7,7 +7,6 @@
 #include <shard/syntax/SyntaxToken.h>
 
 #include <memory>
-#include <vector>
 
 namespace shard::syntax::nodes
 {

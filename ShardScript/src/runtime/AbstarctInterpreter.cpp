@@ -1,6 +1,7 @@
 #include <shard/runtime/AbstarctInterpreter.h>
 #include <shard/runtime/CallStackFrame.h>
 #include <shard/runtime/Register.h>
+#include <shard/runtime/TypeInfo.h>
 
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxToken.h>
@@ -13,6 +14,7 @@
 #include <shard/syntax/nodes/Expressions.h>
 #include <shard/syntax/nodes/Statements.h>
 #include <shard/syntax/nodes/Loops.h>
+#include <shard/syntax/nodes/StatementsBlockSyntax.h>
 
 #include <memory>
 #include <stdexcept>
@@ -20,7 +22,6 @@
 #include <vector>
 #include <iostream>
 #include <cmath>
-#include <shard/runtime/TypeInfo.h>
 
 #define GetStatement(type) std::static_pointer_cast<type>(statement);
 
