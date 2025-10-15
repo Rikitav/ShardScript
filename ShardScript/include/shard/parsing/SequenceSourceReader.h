@@ -15,9 +15,16 @@ namespace shard::parsing
 	public:
 		SequenceSourceReader();
 
+		static SequenceSourceReader BufferFrom(SourceReader& reader);
+		void PopulateFrom(SourceReader& reader);
+		void Push(shard::syntax::SyntaxToken token);
 		void Populate(vector<shard::syntax::SyntaxToken> fromVector);
 		void SetSequence(vector<shard::syntax::SyntaxToken> setVector);
 		void SetIndex(size_t newIndex);
+		shard::syntax::SyntaxToken At(size_t index);
+		shard::syntax::SyntaxToken Front();
+		shard::syntax::SyntaxToken Back();
+		size_t Size();
 		void Clear();
 
 		shard::syntax::SyntaxToken Current() override;

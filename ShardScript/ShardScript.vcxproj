@@ -131,6 +131,7 @@
     <ClCompile Include="include\shard\parsing\SequenceSourceReader.h" />
     <ClCompile Include="include\shard\syntax\nodes\ParametersListSyntax.h" />
     <ClCompile Include="include\shard\syntax\nodes\UsingDirectiveSyntax.h" />
+    <ClCompile Include="InterpreterConsole.cpp" />
     <ClCompile Include="src\parsing\FileReader.cpp" />
     <ClCompile Include="src\parsing\SequenceSourceReader.cpp" />
     <ClCompile Include="src\parsing\StringStreamReader.cpp" />
@@ -142,6 +143,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="src\parsing\SourceReader.cpp" />
     <ClCompile Include="src\syntax\analysis\SyntaxTree.cpp" />
+    <ClCompile Include="src\syntax\SyntaxFacts.cpp" />
     <ClInclude Include="include\shard\parsing\FileReader.h" />
     <ClInclude Include="include\shard\parsing\ReaderExtensions.h" />
     <ClInclude Include="include\shard\parsing\StringStreamReader.h" />

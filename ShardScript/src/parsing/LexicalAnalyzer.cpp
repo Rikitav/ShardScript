@@ -493,9 +493,16 @@ shared_ptr<StatementsBlockSyntax> LexicalAnalyzer::ReadStatementsBlock(SourceRea
 				current = reader.Consume();
 				break;
 			}
+			else if (IsKeyword(current.Type))
+			{
+				shared_ptr<KeywordStatementSyntax> statement = ReadKeywordStatement(reader);
+				syntax->Statements.push_back(statement);
+				continue;
+			}
 			else
 			{
-				shared_ptr<StatementSyntax> statement = ReadStatement(reader, true);
+				shared_ptr<StatementSyntax> statement = ReadStatement(reader);
+				statement->Semicolon = Expect(reader, TokenType::Semicolon, "Missing ';' token");
 				syntax->Statements.push_back(statement);
 				continue;
 			}
@@ -504,23 +511,20 @@ shared_ptr<StatementsBlockSyntax> LexicalAnalyzer::ReadStatementsBlock(SourceRea
 	else
 	{
 		// Single statement block
-		shared_ptr<StatementSyntax> statement = ReadStatement(reader, true);
+		shared_ptr<StatementSyntax> statement = ReadStatement(reader);
+		statement->Semicolon = Expect(reader, TokenType::Semicolon, "Missing ';' token");
 		syntax->Statements.push_back(statement);
 	}
 
 	return syntax;
 }
 
-shared_ptr<StatementSyntax> LexicalAnalyzer::ReadStatement(SourceReader& reader, bool expectSemicolon)
+shared_ptr<StatementSyntax> LexicalAnalyzer::ReadStatement(SourceReader& reader)
 {
 	SyntaxToken startToken = reader.Current();
 	if (startToken.Type == TokenType::Semicolon)
 	{
-		shared_ptr<StatementSyntax> statement = make_shared<StatementSyntax>(SyntaxKind::Statement);
-		if (expectSemicolon)
-			statement->Semicolon = Expect(reader, TokenType::Semicolon, "Missing ';' token");
-
-		return statement;
+		return make_shared<StatementSyntax>(SyntaxKind::Statement);
 	}
 
 	if (IsType(startToken.Type))
@@ -536,26 +540,12 @@ shared_ptr<StatementSyntax> LexicalAnalyzer::ReadStatement(SourceReader& reader,
 
 			SyntaxToken assignOp = Expect(reader, TokenType::AssignOperator, "Missing '=' token");
 			shared_ptr<ExpressionSyntax> expr = ReadExpression(reader, 0);
-			shared_ptr<VariableStatementSyntax> statement = make_shared<VariableStatementSyntax>(startToken, followingToken, assignOp, expr);
-			if (expectSemicolon)
-				statement->Semicolon = Expect(reader, TokenType::Semicolon, "Missing ';' token");
-
-			return statement;
+			return make_shared<VariableStatementSyntax>(startToken, followingToken, assignOp, expr);
 		}
 	}
 
-	if (IsKeyword(startToken.Type))
-	{
-		shared_ptr<KeywordStatementSyntax> statement = ReadKeywordStatement(reader);
-		return statement;
-	}
-
 	shared_ptr<ExpressionSyntax> expression = ReadExpression(reader, 0);
-	shared_ptr<ExpressionStatementSyntax> statement = make_shared<ExpressionStatementSyntax>(expression);
-	if (expectSemicolon)
-		statement->Semicolon = Expect(reader, TokenType::Semicolon, "Missing ';' token");
-
-	return statement;
+	return make_shared<ExpressionStatementSyntax>(expression);
 }
 
 shared_ptr<KeywordStatementSyntax> LexicalAnalyzer::ReadKeywordStatement(SourceReader& reader)
@@ -565,23 +555,12 @@ shared_ptr<KeywordStatementSyntax> LexicalAnalyzer::ReadKeywordStatement(SourceR
 	{
 		case TokenType::ForKeyword:
 		{
-			if (current.Type == TokenType::ForKeyword)
-				return ReadForStatement(reader);
-
-			return nullptr;
+			return ReadForStatement(reader);
 		}
 
 		case TokenType::ReturnKeyword:
 		{
-			shared_ptr<ReturnStatementSyntax> statement = make_shared<ReturnStatementSyntax>();
-			statement->Keyword = current;
-			
-			current = reader.Consume();
-			if (current.Type != TokenType::Semicolon)
-				statement->Expression = ReadExpression(reader, 0);
-
-			statement->Semicolon = Expect(reader, TokenType::Semicolon, "Missing ';' token");
-			return statement;
+			return ReeadReturnStatement(reader);
 		}
 
 		default:
@@ -590,6 +569,19 @@ shared_ptr<KeywordStatementSyntax> LexicalAnalyzer::ReadKeywordStatement(SourceR
 			return nullptr;
 		}
 	}
+}
+
+shared_ptr<ReturnStatementSyntax> LexicalAnalyzer::ReeadReturnStatement(SourceReader& reader)
+{
+	shared_ptr<ReturnStatementSyntax> syntax = make_shared<ReturnStatementSyntax>();
+	syntax->Keyword = Expect(reader, TokenType::ReturnKeyword, "Expected return keyword");
+
+	SyntaxToken current = reader.Current();
+	if (current.Type != TokenType::Semicolon)
+		syntax->Expression = ReadExpression(reader, 0);
+
+	syntax->Semicolon = Expect(reader, TokenType::Semicolon, "Missing ';' token");
+	return syntax;
 }
 
 shared_ptr<ForStatementSyntax> LexicalAnalyzer::ReadForStatement(SourceReader& reader)
@@ -602,7 +594,9 @@ shared_ptr<ForStatementSyntax> LexicalAnalyzer::ReadForStatement(SourceReader& r
 	syntax->OpenCurlToken = Expect(reader, TokenType::OpenCurl, "expected '(' token");
 
 	// Reading init statement
-	syntax->InitializerStatement = ReadStatement(reader, false);
+	syntax->InitializerStatement = ReadStatement(reader);
+	if (auto keywordStatement = dynamic_pointer_cast<KeywordStatementSyntax>(syntax->InitializerStatement))
+		Diagnostics.ReportError(keywordStatement->Keyword, "Cannot use keyword statements inside for loop initializer");
 
 	// Reading first semicolon
 	syntax->FirstSemicolon = Expect(reader, TokenType::Semicolon, "expected ';' token");
@@ -614,7 +608,9 @@ shared_ptr<ForStatementSyntax> LexicalAnalyzer::ReadForStatement(SourceReader& r
 	syntax->SecondSemicolon = Expect(reader, TokenType::Semicolon, "expected ';' token");
 
 	// Reading after loop statement
-	syntax->AfterRepeatStatement = ReadStatement(reader, false);
+	syntax->AfterRepeatStatement = ReadStatement(reader);
+	if (auto keywordStatement = dynamic_pointer_cast<KeywordStatementSyntax>(syntax->AfterRepeatStatement))
+		Diagnostics.ReportError(keywordStatement->Keyword, "Cannot use keyword statements inside for loop repeater");
 
 	// Reading close curl token
     syntax->OpenCurlToken = Expect(reader, TokenType::CloseCurl, "expected ')' token");
@@ -673,7 +669,7 @@ shared_ptr<ExpressionSyntax> LexicalAnalyzer::ReadNullDenotation(SourceReader& r
 
 		case TokenType::EndOfFile:
 		{
-			Diagnostics.ReportError(current, "Unexpected file end");
+			//Diagnostics.ReportError(current, "Unexpected file end");
 			return nullptr;
 		}
 

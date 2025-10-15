@@ -234,7 +234,10 @@ bool SourceReader::ReadNumberLiteral(string& word)
 	if (Symbol == '0')
 	{
 		if (!PeekNext())
-			return false;
+		{
+			word = "0";
+			return true;
+		}
 
 		switch (PeekSymbol)
 		{

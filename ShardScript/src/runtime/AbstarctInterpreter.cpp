@@ -101,8 +101,7 @@ shared_ptr<Register> AbstarctInterpreter::ExecuteStatement(shared_ptr<StatementS
 				throw runtime_error("variable already created");
 
 			shared_ptr<Register> assignExprReg = EvaluateExpression(varStatement->Expression, frame);
-			frame->VariablesHeap[varName] = assignExprReg;
-			return nullptr;
+			return frame->VariablesHeap[varName] = assignExprReg;
 		}
 
 		default:
@@ -162,8 +161,13 @@ shared_ptr<Register> AbstarctInterpreter::EvaluateMemberAccesExpression(shared_p
 			if (expression->NextAccess != nullptr)
 				throw runtime_error("Recursive member acces paths are currently unsupported!");
 
-			if (expression->IdentifierToken.Word == "print" && invokeExpr->ArgumentsList->Arguments.size() == 1)
-				return EvaluatePrintInvokationExpression(invokeExpr->ArgumentsList->Arguments[0], frame);
+			string methodName = expression->IdentifierToken.Word;
+			vector<shared_ptr<ArgumentSyntax>> arguments = invokeExpr->ArgumentsList->Arguments;
+			if (methodName == "print" && arguments.size() == 1)
+				return EvaluatePrintInvokationExpression(arguments[0], frame, false);
+
+			if (methodName == "println" && arguments.size() == 1)
+				return EvaluatePrintInvokationExpression(arguments[0], frame, true);
 
 			throw runtime_error("unknown invokation member");
 		}
@@ -185,34 +189,42 @@ shared_ptr<Register> AbstarctInterpreter::EvaluateMemberAccesExpression(shared_p
 	return nullptr;
 }
 
-shared_ptr<Register> AbstarctInterpreter::EvaluatePrintInvokationExpression(shared_ptr<ArgumentSyntax> argument, shared_ptr<CallStackFrame> frame)
+shared_ptr<Register> AbstarctInterpreter::EvaluatePrintInvokationExpression(shared_ptr<ArgumentSyntax> argument, shared_ptr<CallStackFrame> frame, bool line)
 {
 	shared_ptr<Register> exprReg = EvaluateExpression(argument->Expression, frame);
-	switch (exprReg->Type.Id)
+	PrintRegister(exprReg);
+
+	if (line)
+		cout << endl;
+
+	return nullptr;
+}
+
+void AbstarctInterpreter::PrintRegister(shared_ptr<Register> pRegister)
+{
+	switch (pRegister->Type.Id)
 	{
 		case TYPE_CODE_BOOLEAN:
 		{
-			bool data = *static_pointer_cast<bool>(exprReg->DataPtr);
-			cout << data << endl;
+			bool data = *static_pointer_cast<bool>(pRegister->DataPtr);
+			cout << data;
 			break;
 		}
 
 		case TYPE_CODE_INTEGER:
 		{
-			int data = *static_pointer_cast<int>(exprReg->DataPtr);
-			cout << data << endl;
+			int data = *static_pointer_cast<int>(pRegister->DataPtr);
+			cout << data;
 			break;
 		}
 
 		case TYPE_CODE_STRING:
 		{
-			string data = *static_pointer_cast<string, void>(exprReg->DataPtr);
-			cout << data << endl;
+			string data = *static_pointer_cast<string, void>(pRegister->DataPtr);
+			cout << data;
 			break;
 		}
 	}
-
-	return nullptr;
 }
 
 static shared_ptr<Register> CreateRegisterFromConstToken(SyntaxToken& constToken)

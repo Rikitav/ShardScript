@@ -1,5 +1,6 @@
 ﻿#include <shard/syntax/SyntaxToken.h>
 #include <shard/syntax/TokenType.h>
+#include <shard/syntax/SyntaxFacts.h>
 
 #include <shard/parsing/SourceReader.h>
 #include <shard/parsing/LexicalAnalyzer.h>
@@ -22,14 +23,13 @@
 #include <shard/parsing/FileReader.h>
 #include <shard/parsing/SequenceSourceReader.h>
 #include <shard/parsing/StringStreamReader.h>
-#include <shard/parsing/ReaderExtensions.h>
 
 #include "ArgumentsParser.cpp"
+//#include "InterpreterConsole.cpp"
 
 #include <iostream>
 #include <memory>
 #include <string>
-#include <vector>
 #include <stdexcept>
 
 using namespace std;
@@ -90,16 +90,144 @@ static int InterpretFiles(int argc, char** argv)
 static shared_ptr<MethodDeclarationSyntax> InitImplicitEntryPoint()
 {
 	MemberDeclarationInfo info;
-	info.ReturnType = SyntaxToken(TokenType::VoidKeyword, "", TextLocation());
-	info.Identifier = SyntaxToken(TokenType::Identifier, "", TextLocation());
+	info.ReturnType = SyntaxToken(TokenType::VoidKeyword, "void", TextLocation());
+	info.Identifier = SyntaxToken(TokenType::Identifier, "Main", TextLocation());
 	info.Params = make_shared<ParametersListSyntax>();
 
 	return make_shared<MethodDeclarationSyntax>(info);
 }
 
-static int ExecuteLineStatement()
+static string ReadLine()
 {
-	return 1;
+	string line;
+	cout << ">>> ";
+	getline(cin, line);
+
+	if (line == "exit")
+		exit(0);
+
+	return line;
+}
+
+static bool LocateOpenBraceToken(TokenType keywordType, SequenceSourceReader& reader)
+{
+	enum LocatinoProgress
+	{
+		None,
+		Keyword,
+		OpenCurl,
+		CloseCurl
+	};
+
+	LocatinoProgress progress = None;
+	reader.SetIndex(0);
+
+	while (reader.CanConsume())
+	{
+		SyntaxToken current = reader.Current();
+		switch (progress)
+		{
+			case None:
+			{
+				if (progress >= Keyword)
+					return false;
+
+				if (current.Type == keywordType)
+					progress = Keyword;
+
+				reader.Consume();
+				break;
+			}
+
+			case Keyword:
+			{
+				if (progress >= OpenCurl)
+					return false;
+
+				if (current.Type == TokenType::OpenCurl)
+					progress = OpenCurl;
+
+				reader.Consume();
+				break;
+			}
+
+			case OpenCurl:
+			{
+				if (progress >= CloseCurl)
+					return false;
+
+				if (current.Type == TokenType::CloseCurl)
+					progress = CloseCurl;
+
+				reader.Consume();
+				break;
+			}
+
+			case CloseCurl:
+			{
+				if (current.Type == TokenType::OpenBrace)
+				{
+					reader.SetIndex(0);
+					return true;
+				}
+
+				reader.Consume();
+				break;
+			}
+
+			default:
+			{
+				// unknown progress, fault
+				reader.SetIndex(0);
+				return false;
+			}
+		}
+	}
+
+	reader.SetIndex(0);
+	return false;
+}
+
+static shared_ptr<StatementSyntax> ReadStatement(LexicalAnalyzer& lexer)
+{
+	string line = ReadLine();
+	StringStreamReader stringStreamReader(line);
+
+	SequenceSourceReader sequenceReader = SequenceSourceReader();
+	sequenceReader.PopulateFrom(stringStreamReader);
+
+	SyntaxToken current = sequenceReader.Current();
+	if (IsLoopKeyword(current.Type))
+	{
+		string nextLine = ReadLine();
+		stringStreamReader = StringStreamReader(nextLine);
+
+		sequenceReader.PopulateFrom(stringStreamReader);
+		if (LocateOpenBraceToken(current.Type, sequenceReader))
+		{
+			while (sequenceReader.Back().Type != TokenType::CloseBrace)
+			{
+				nextLine = ReadLine();
+				stringStreamReader = StringStreamReader(nextLine);
+				sequenceReader.PopulateFrom(stringStreamReader);
+			}
+
+			return lexer.ReadKeywordStatement(sequenceReader);
+		}
+		else
+		{
+			sequenceReader.PopulateFrom(stringStreamReader);
+			return lexer.ReadKeywordStatement(sequenceReader);
+		}
+	}
+	else if (IsFunctionalKeyword(current.Type))
+	{
+		return lexer.ReadKeywordStatement(sequenceReader);
+	}
+	else
+	{
+		return lexer.ReadStatement(sequenceReader);
+	}
 }
 
 int main(int argc, char** argv)
@@ -115,25 +243,10 @@ int main(int argc, char** argv)
 
 	shared_ptr<CallStackFrame> frame = make_shared<CallStackFrame>(nullptr, InitImplicitEntryPoint());
 	AbstarctInterpreter interpreter(tree);
-	SequenceSourceReader sequenceReader;
 
 	while (true)
 	{
-		string line;
-		cout << ">>> ";
-		getline(cin, line);
-
-		if (line == "")
-			continue;
-
-		if (line == "exit")
-			break;
-
-		StringStreamReader stringStreamReader(line);
-		vector<SyntaxToken> lineSequence = ReadToEnd(stringStreamReader);
-		sequenceReader.SetSequence(lineSequence);
-		shared_ptr<StatementSyntax> statement = lexer.ReadStatement(sequenceReader, false);
-
+		shared_ptr<StatementSyntax> statement = ReadStatement(lexer);
 		if (diagnostics.AnyError)
 		{
 			for (Diagnostic& diag : diagnostics.Diagnostics)
@@ -141,16 +254,20 @@ int main(int argc, char** argv)
 
 			diagnostics.Reset();
 		}
-		else
+
+		try
 		{
-			try
+			shared_ptr<Register> pRegister = interpreter.ExecuteStatement(statement, frame);
+			if (pRegister != nullptr)
 			{
-				interpreter.ExecuteStatement(statement, frame);
+				interpreter.PrintRegister(pRegister);
+				cout << endl;
 			}
-			catch (const runtime_error& err)
-			{
-				cout << err.what() << endl;
-			}
+		}
+		catch (const runtime_error& err)
+		{
+			cout << err.what() << endl;
+			continue;
 		}
 	}
 

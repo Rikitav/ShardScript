@@ -65,9 +65,10 @@ namespace shard::parsing
 
 		// Third layer - code
 		shared_ptr<StatementsBlockSyntax> ReadStatementsBlock(SourceReader& reader);
-		shared_ptr<StatementSyntax> ReadStatement(SourceReader& reader, bool expectSemicolon);
+		shared_ptr<StatementSyntax> ReadStatement(SourceReader& reader);
 
 		shared_ptr<KeywordStatementSyntax> ReadKeywordStatement(SourceReader& reader);
+		shared_ptr<ReturnStatementSyntax> ReeadReturnStatement(SourceReader& reader);
 		shared_ptr<ForStatementSyntax> ReadForStatement(SourceReader& reader);
 
 		shared_ptr<ExpressionSyntax> ReadExpression(SourceReader& reader, int bindingPower);

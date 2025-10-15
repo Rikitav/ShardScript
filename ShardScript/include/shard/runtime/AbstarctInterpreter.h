@@ -35,6 +35,7 @@ namespace shard::runtime
 		shared_ptr<Register> ExecuteStatement(shared_ptr<StatementSyntax> statement, shared_ptr<CallStackFrame> frame);
 		shared_ptr<Register> EvaluateExpression(shared_ptr<ExpressionSyntax> expression, shared_ptr<CallStackFrame> frame);
 		shared_ptr<Register> EvaluateMemberAccesExpression(shared_ptr<MemberAccessExpressionSyntax> expression, shared_ptr<CallStackFrame> frame);
-		shared_ptr<Register> EvaluatePrintInvokationExpression(shared_ptr<ArgumentSyntax> argument, shared_ptr<CallStackFrame> frame);
+		shared_ptr<Register> EvaluatePrintInvokationExpression(shared_ptr<ArgumentSyntax> argument, shared_ptr<CallStackFrame> frame, bool line);
+		void PrintRegister(shared_ptr<Register> pRegister);
 	};
 }
