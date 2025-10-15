@@ -1,6 +1,7 @@
 #pragma once
 #include <shard/syntax/nodes/ExpressionSyntax.h>
 #include <shard/syntax/nodes/ArgumentsListSyntax.h>
+#include <shard/syntax/nodes/IndexatorListSyntax.h>
 
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxToken.h>
@@ -16,18 +17,7 @@ namespace shard::syntax::nodes
 		SyntaxToken Constant;
 
 		ConstValueExpressionSyntax(SyntaxToken constant)
-			: ExpressionSyntax(SyntaxKind::ConstExpression), Constant(constant) {
-		}
-	};
-
-	class MemberAccessExpressionSyntax : public ExpressionSyntax
-	{
-	public:
-		vector<SyntaxToken> Path;
-
-		MemberAccessExpressionSyntax()
-			: ExpressionSyntax(SyntaxKind::MemberAccessExpression) {
-		}
+			: ExpressionSyntax(SyntaxKind::ConstExpression), Constant(constant) { }
 	};
 
 	class BinaryExpressionSyntax : public ExpressionSyntax
@@ -38,18 +28,42 @@ namespace shard::syntax::nodes
 		shared_ptr<ExpressionSyntax> Right;
 
 		BinaryExpressionSyntax(shared_ptr<ExpressionSyntax> left, SyntaxToken operatorToken, shared_ptr<ExpressionSyntax> right)
-			: ExpressionSyntax(SyntaxKind::BinaryExpression), Left(left), OperatorToken(operatorToken), Right(right) {
-		}
+			: ExpressionSyntax(SyntaxKind::BinaryExpression), Left(left), OperatorToken(operatorToken), Right(right) { }
 	};
 
-	class InvokationExpressionSyntax : public ExpressionSyntax
+	class MemberAccessExpressionSyntax : public ExpressionSyntax
 	{
 	public:
-		shared_ptr<MemberAccessExpressionSyntax> MemberAccess;
+		SyntaxToken IdentifierToken;
+		SyntaxToken DelimeterToken;
+		shared_ptr<MemberAccessExpressionSyntax> NextAccess;
+
+		MemberAccessExpressionSyntax(SyntaxKind kind)
+			: ExpressionSyntax(kind) { }
+	};
+
+	class FieldAccesExpressionSyntax : public MemberAccessExpressionSyntax
+	{
+	public:
+		FieldAccesExpressionSyntax()
+			: MemberAccessExpressionSyntax(SyntaxKind::FieldAccessExpression) { }
+	};
+
+	class InvokationExpressionSyntax : public MemberAccessExpressionSyntax
+	{
+	public:
 		shared_ptr<ArgumentsListSyntax> ArgumentsList;
 
-		InvokationExpressionSyntax(shared_ptr<MemberAccessExpressionSyntax> memberAccess, shared_ptr<ArgumentsListSyntax> argumentsList)
-			: ExpressionSyntax(SyntaxKind::InvokationExpression), MemberAccess(memberAccess), ArgumentsList(argumentsList) {
-		}
+		InvokationExpressionSyntax()
+			: MemberAccessExpressionSyntax(SyntaxKind::InvokationExpression) { }
+	};
+
+	class IndexatorExpressionSyntax : public MemberAccessExpressionSyntax
+	{
+	public:
+		shared_ptr<IndexatorListSyntax> IndexatorList;
+
+		IndexatorExpressionSyntax()
+			: MemberAccessExpressionSyntax(SyntaxKind::IndexatorExpression) { }
 	};
 }

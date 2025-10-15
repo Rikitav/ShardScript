@@ -181,6 +181,9 @@
     <ClInclude Include="include\shard\runtime\TypeInfo.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
+    <ClInclude Include="include\shard\syntax\nodes\IndexatorListSyntax.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="framework.ss" />

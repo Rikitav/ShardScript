@@ -566,6 +566,8 @@ shared_ptr<KeywordStatementSyntax> LexicalAnalyzer::ReadKeywordStatement(SourceR
 		{
 			if (current.Type == TokenType::ForKeyword)
 				return ReadForStatement(reader);
+
+			return nullptr;
 		}
 
 		case TokenType::ReturnKeyword:
@@ -580,8 +582,13 @@ shared_ptr<KeywordStatementSyntax> LexicalAnalyzer::ReadKeywordStatement(SourceR
 			statement->Semicolon = Expect(reader, TokenType::Semicolon, "Missing ';' token");
 			return statement;
 		}
-	}
 
+		default:
+		{
+			Diagnostics.ReportError(current, "unknown/unsupported keyword");
+			return nullptr;
+		}
+	}
 }
 
 shared_ptr<ForStatementSyntax> LexicalAnalyzer::ReadForStatement(SourceReader& reader)
@@ -639,38 +646,41 @@ shared_ptr<ExpressionSyntax> LexicalAnalyzer::ReadExpression(SourceReader& reade
 
 shared_ptr<ExpressionSyntax> LexicalAnalyzer::ReadNullDenotation(SourceReader& reader)
 {
-	while (reader.CanConsume())
+	SyntaxToken current = reader.Current();
+	switch (current.Type)
 	{
-		SyntaxToken current = reader.Current();
-		switch (current.Type)
+		case TokenType::BooleanLiteral:
+		case TokenType::StringLiteral:
+		case TokenType::NumberLiteral:
 		{
-			case TokenType::BooleanLiteral:
-			case TokenType::StringLiteral:
-			case TokenType::NumberLiteral:
-			{
-				reader.Consume();
-				return make_shared<ConstValueExpressionSyntax>(current);
-			}
+			reader.Consume();
+			return make_shared<ConstValueExpressionSyntax>(current);
+		}
 
-			case TokenType::OpenCurl:
-			{
-				reader.Consume();
-				shared_ptr<ExpressionSyntax> expression = ReadExpression(reader, 0);
-				Expect(reader, TokenType::CloseCurl, "Expected ')' token");
-				return expression;
-			}
+		case TokenType::OpenCurl:
+		{
+			reader.Consume();
+			shared_ptr<ExpressionSyntax> expression = ReadExpression(reader, 0);
+			Expect(reader, TokenType::CloseCurl, "Expected ')' token");
+			return expression;
+		}
 
-			case TokenType::Identifier:
-			{
-				return ReadMemberAccessExpression(reader);
-			}
+		case TokenType::Identifier:
+		{
+			return ReadMemberAccessExpression(reader);
+		}
 
-			default:
-			{
-				reader.Consume();
-				Diagnostics.ReportError(current, "Unknown expression token");
-				break;
-			}
+		case TokenType::EndOfFile:
+		{
+			Diagnostics.ReportError(current, "Unexpected file end");
+			return nullptr;
+		}
+
+		default:
+		{
+			reader.Consume();
+			Diagnostics.ReportError(current, "Unknown expression token");
+			break;
 		}
 	}
 	
@@ -710,7 +720,72 @@ shared_ptr<ExpressionSyntax> LexicalAnalyzer::ReadLeftDenotation(SourceReader& r
 	return nullptr;
 }
 
-shared_ptr<ExpressionSyntax> LexicalAnalyzer::ReadMemberAccessExpression(SourceReader& reader)
+shared_ptr<MemberAccessExpressionSyntax> LexicalAnalyzer::ReadMemberAccessExpression(SourceReader& reader)
+{
+	SyntaxToken identifier = Expect(reader, TokenType::Identifier, "Expected identifier");
+	while (reader.CanConsume())
+	{
+		SyntaxToken current = reader.Current();
+		switch (current.Type)
+		{
+			case TokenType::Delimeter:
+			{
+				shared_ptr<MemberAccessExpressionSyntax> syntax = make_shared<FieldAccesExpressionSyntax>();
+				syntax->IdentifierToken = identifier;
+				syntax->DelimeterToken = current;
+				reader.Consume();
+
+				syntax->NextAccess = ReadMemberAccessExpression(reader);
+				return syntax;
+			}
+
+			case TokenType::OpenSquare:
+			{
+				shared_ptr<IndexatorExpressionSyntax> syntax = make_shared<IndexatorExpressionSyntax>();
+				syntax->IdentifierToken = identifier;
+				syntax->IndexatorList = ReadIndexatorList(reader);
+
+				current = reader.Current();
+				if (current.Type == TokenType::Delimeter)
+				{
+					syntax->DelimeterToken = current;
+					reader.Consume();
+					syntax->NextAccess = ReadMemberAccessExpression(reader);
+				}
+
+				return syntax;
+			}
+
+			case TokenType::OpenCurl:
+			{
+				shared_ptr<InvokationExpressionSyntax> syntax = make_shared<InvokationExpressionSyntax>();
+				syntax->IdentifierToken = identifier;
+				syntax->ArgumentsList = ReadArgumentsList(reader);
+
+				current = reader.Current();
+				if (current.Type == TokenType::Delimeter)
+				{
+					syntax->DelimeterToken = current;
+					reader.Consume();
+					syntax->NextAccess = ReadMemberAccessExpression(reader);
+				}
+
+				return syntax;
+			}
+
+			default:
+			{
+				shared_ptr<MemberAccessExpressionSyntax> syntax = make_shared<FieldAccesExpressionSyntax>();
+				syntax->IdentifierToken = identifier;
+				return syntax;
+				continue;
+			}
+		}
+	}
+}
+
+/*
+shared_ptr<ExpressionSyntax> LexicalAnalyzer::WalkIdentifierExpression(SourceReader& reader, shared_ptr<ExpressionSyntax> previous)
 {
 	shared_ptr<MemberAccessExpressionSyntax> memberAccess = make_shared<MemberAccessExpressionSyntax>();
 	while (reader.CanConsume())
@@ -736,6 +811,7 @@ shared_ptr<ExpressionSyntax> LexicalAnalyzer::ReadMemberAccessExpression(SourceR
 
 	return memberAccess;
 }
+*/
 
 shared_ptr<ArgumentsListSyntax> LexicalAnalyzer::ReadArgumentsList(SourceReader& reader)
 {
@@ -766,6 +842,42 @@ shared_ptr<ArgumentsListSyntax> LexicalAnalyzer::ReadArgumentsList(SourceReader&
 		if (separatorToken.Type == TokenType::CloseCurl)
 		{
 			arguments->CloseCurlToken = separatorToken;
+			reader.Consume();
+			break;
+		}
+	}
+
+	return arguments;
+}
+
+shared_ptr<IndexatorListSyntax> LexicalAnalyzer::ReadIndexatorList(SourceReader& reader)
+{
+	shared_ptr<IndexatorListSyntax> arguments = make_shared<IndexatorListSyntax>();
+	arguments->OpenSquareToken = Expect(reader, TokenType::OpenSquare, "Exprected '[' token");
+
+	SyntaxToken checkCloser = reader.Current();
+	if (checkCloser.Type == TokenType::CloseCurl)
+	{
+		arguments->CloseSquareToken = checkCloser;
+		reader.Consume();
+		return arguments;
+	}
+
+	while (reader.CanConsume())
+	{
+		shared_ptr<ExpressionSyntax> expr = ReadExpression(reader, 0);
+		arguments->Arguments.push_back(expr);
+
+		SyntaxToken separatorToken = reader.Current();
+		while (!Matches(reader, { TokenType::Comma, TokenType::CloseSquare }))
+		{
+			Diagnostics.ReportError(separatorToken, "Expected separator token ',' or closing token ']'");
+			separatorToken = reader.Consume();
+		}
+
+		if (separatorToken.Type == TokenType::CloseSquare)
+		{
+			arguments->CloseSquareToken = separatorToken;
 			reader.Consume();
 			break;
 		}

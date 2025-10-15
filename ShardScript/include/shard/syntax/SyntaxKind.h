@@ -19,6 +19,7 @@ namespace shard::syntax
 		ParametersList,
 		Parameter,
 		ArgumentsList,
+		IndexatorList,
 		Argument,
 		StatementsBlock,
 		MethodBody,
@@ -35,8 +36,9 @@ namespace shard::syntax
 		ConstExpression,
 		BinaryExpression,
 		UnaryExpression,
-		MemberAccessExpression,
+		FieldAccessExpression,
 		InvokationExpression,
+		IndexatorExpression,
 		
 		Type
 	};

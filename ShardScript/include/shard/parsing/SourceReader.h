@@ -19,7 +19,7 @@ namespace shard::parsing
 		char PeekSymbol;
 
 	public:
-		SourceReader() : Line(0), Offset(0), Symbol(0), PeekSymbol(0) {}
+		SourceReader() : Line(1), Offset(0), Symbol(0), PeekSymbol(0) {}
 		virtual ~SourceReader() = 0;
 
 		virtual shard::syntax::SyntaxToken Current();
