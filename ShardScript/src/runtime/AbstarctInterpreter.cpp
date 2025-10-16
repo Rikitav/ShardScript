@@ -234,7 +234,11 @@ shared_ptr<VariableRegister> AbstarctInterpreter::EvaluateMemberAccessExpression
 			if (prevRegister == nullptr)
 			{
 				string varName = expression->IdentifierToken.Word;
-				return context->TryFind(varName);
+				shared_ptr<VariableRegister> retReg = context->TryFind(varName);
+				if (retReg == nullptr)
+					throw runtime_error("field doesnt exists in current context");
+
+				return retReg;
 			}
 
 			throw runtime_error("field access currently unsupported");

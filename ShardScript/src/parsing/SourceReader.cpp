@@ -106,13 +106,13 @@ bool SourceReader::ReadNextWhileAlpha(string& word)
 	while (PeekNext())
 	{
 		if (!isalpha(PeekSymbol) && PeekSymbol != '_')
-			return true;
+			break;
 
 		ReadNext();
 		word += Symbol;
 	}
 	
-	return false;
+	return true;
 }
 
 bool SourceReader::ReadNextWord(string& word, TokenType& type)

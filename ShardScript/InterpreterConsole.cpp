@@ -174,7 +174,7 @@ void RunInterpreter(shared_ptr<SyntaxTree> tree, DiagnosticsContext& diagnostics
 		}
 		catch (const runtime_error& err)
 		{
-			cout << err.what() << endl;
+			cout << "### " << err.what() << endl;
 			continue;
 		}
 	}

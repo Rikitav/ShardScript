@@ -530,18 +530,18 @@ shared_ptr<StatementSyntax> LexicalAnalyzer::ReadStatement(SourceReader& reader)
 
 	if (IsType(startToken.Type))
 	{
-		if (!reader.CanPeek())
-			return nullptr;
-
-		SyntaxToken followingToken = reader.Peek();
-		if (followingToken.Type == TokenType::Identifier)
+		if (reader.CanPeek())
 		{
-			reader.Consume(); // Id
-			reader.Consume(); // Id
+			SyntaxToken followingToken = reader.Peek();
+			if (followingToken.Type == TokenType::Identifier)
+			{
+				reader.Consume(); // Id
+				reader.Consume(); // Id
 
-			SyntaxToken assignOp = Expect(reader, TokenType::AssignOperator, "Missing '=' token");
-			shared_ptr<ExpressionSyntax> expr = ReadExpression(reader, 0);
-			return make_shared<VariableStatementSyntax>(startToken, followingToken, assignOp, expr);
+				SyntaxToken assignOp = Expect(reader, TokenType::AssignOperator, "Missing '=' token");
+				shared_ptr<ExpressionSyntax> expr = ReadExpression(reader, 0);
+				return make_shared<VariableStatementSyntax>(startToken, followingToken, assignOp, expr);
+			}
 		}
 	}
 
@@ -819,62 +819,60 @@ shared_ptr<ExpressionSyntax> LexicalAnalyzer::ReadLeftDenotation(SourceReader& r
 shared_ptr<MemberAccessExpressionSyntax> LexicalAnalyzer::ReadMemberAccessExpression(SourceReader& reader)
 {
 	SyntaxToken identifier = Expect(reader, TokenType::Identifier, "Expected identifier");
-	while (reader.CanConsume())
+
+	SyntaxToken current = reader.Current();
+	switch (current.Type)
 	{
-		SyntaxToken current = reader.Current();
-		switch (current.Type)
+		case TokenType::Delimeter:
 		{
-			case TokenType::Delimeter:
+			shared_ptr<MemberAccessExpressionSyntax> syntax = make_shared<FieldAccesExpressionSyntax>();
+			syntax->IdentifierToken = identifier;
+			syntax->DelimeterToken = current;
+			reader.Consume();
+
+			syntax->NextAccess = ReadMemberAccessExpression(reader);
+			return syntax;
+		}
+
+		case TokenType::OpenSquare:
+		{
+			shared_ptr<IndexatorExpressionSyntax> syntax = make_shared<IndexatorExpressionSyntax>();
+			syntax->IdentifierToken = identifier;
+			syntax->IndexatorList = ReadIndexatorList(reader);
+
+			current = reader.Current();
+			if (current.Type == TokenType::Delimeter)
 			{
-				shared_ptr<MemberAccessExpressionSyntax> syntax = make_shared<FieldAccesExpressionSyntax>();
-				syntax->IdentifierToken = identifier;
 				syntax->DelimeterToken = current;
 				reader.Consume();
-
 				syntax->NextAccess = ReadMemberAccessExpression(reader);
-				return syntax;
 			}
 
-			case TokenType::OpenSquare:
+			return syntax;
+		}
+
+		case TokenType::OpenCurl:
+		{
+			shared_ptr<InvokationExpressionSyntax> syntax = make_shared<InvokationExpressionSyntax>();
+			syntax->IdentifierToken = identifier;
+			syntax->ArgumentsList = ReadArgumentsList(reader);
+
+			current = reader.Current();
+			if (current.Type == TokenType::Delimeter)
 			{
-				shared_ptr<IndexatorExpressionSyntax> syntax = make_shared<IndexatorExpressionSyntax>();
-				syntax->IdentifierToken = identifier;
-				syntax->IndexatorList = ReadIndexatorList(reader);
-
-				current = reader.Current();
-				if (current.Type == TokenType::Delimeter)
-				{
-					syntax->DelimeterToken = current;
-					reader.Consume();
-					syntax->NextAccess = ReadMemberAccessExpression(reader);
-				}
-
-				return syntax;
+				syntax->DelimeterToken = current;
+				reader.Consume();
+				syntax->NextAccess = ReadMemberAccessExpression(reader);
 			}
 
-			case TokenType::OpenCurl:
-			{
-				shared_ptr<InvokationExpressionSyntax> syntax = make_shared<InvokationExpressionSyntax>();
-				syntax->IdentifierToken = identifier;
-				syntax->ArgumentsList = ReadArgumentsList(reader);
+			return syntax;
+		}
 
-				current = reader.Current();
-				if (current.Type == TokenType::Delimeter)
-				{
-					syntax->DelimeterToken = current;
-					reader.Consume();
-					syntax->NextAccess = ReadMemberAccessExpression(reader);
-				}
-
-				return syntax;
-			}
-
-			default:
-			{
-				shared_ptr<MemberAccessExpressionSyntax> syntax = make_shared<FieldAccesExpressionSyntax>();
-				syntax->IdentifierToken = identifier;
-				return syntax;
-			}
+		default:
+		{
+			shared_ptr<MemberAccessExpressionSyntax> syntax = make_shared<FieldAccesExpressionSyntax>();
+			syntax->IdentifierToken = identifier;
+			return syntax;
 		}
 	}
 
