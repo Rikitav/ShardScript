@@ -35,10 +35,11 @@ namespace shard::syntax
 		AssignOperator,          // =
 
 		// Unary arithmetic operators
-		UnarMinusOpaerator,
+		IncrementOperator,   // ++
+		DecrementOperator,   // --
 
 		// Unary boolean operators
-		NotOperator,   // !
+		NotOperator,         // !
 
 		// Literals
 		NullLiteral,          // 'null'
@@ -94,6 +95,11 @@ namespace shard::syntax
 		DoKeyword,
 		ForeachKeyword,
 		ForeverKeyword,
+
+		// Conditional keywords
+		IfKeyword,
+		UnlessKeyword,
+		ElseKeyword,
 
 		// Functional keywords
 		ReturnKeyword,		  // return

@@ -71,6 +71,12 @@
     <ClCompile Include="src\syntax\SyntaxFacts.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
+    <ClCompile Include="src\runtime\VariableRegister.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="src\runtime\InboundVariablesContext.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\shard\syntax\structures\SyntaxTree.h">
@@ -133,7 +139,7 @@
     <ClInclude Include="include\shard\runtime\CallStackFrame.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="include\shard\runtime\Register.h">
+    <ClInclude Include="include\shard\runtime\VariableRegister.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="include\shard\syntax\analysis\DiagnosticsContext.h">
@@ -188,6 +194,24 @@
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="include\shard\syntax\nodes\IndexatorListSyntax.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\runtime\GarbageCollector.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\runtime\InboundVariablesContext.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\runtime\TypeboundVariablesContext.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\InterpreterConsole.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\syntax\nodes\Desides.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\ShardScript.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>

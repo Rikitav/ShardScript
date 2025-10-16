@@ -39,7 +39,11 @@ int GetOperatorPrecendence(TokenType type)
 		case TokenType::DivAssignOperator:
 		case TokenType::ModAssignOperator:
 		case TokenType::PowAssignOperator:
-			return 5;
+			return 6;
+
+		case TokenType::IncrementOperator:
+		case TokenType::DecrementOperator:
+			return 7;
 	}
 }
 
@@ -82,11 +86,23 @@ bool IsBinaryBooleanOperator(TokenType type)
 	}
 }
 
+bool IsBinaryOperator(TokenType type)
+{
+	if (IsBinaryArithmeticOperator(type))
+		return true;
+
+	if (IsBinaryBooleanOperator(type))
+		return true;
+
+	return false;
+}
+
 bool IsUnaryArithmeticOperator(TokenType type)
 {
 	switch (type)
 	{
-		case TokenType::UnarMinusOpaerator:
+		case TokenType::IncrementOperator:
+		case TokenType::DecrementOperator:
 			return true;
 
 		default:
@@ -104,6 +120,17 @@ bool IsUnaryBooleanOperator(TokenType type)
 		default:
 			return false;
 	}
+}
+
+bool IsUnaryOperator(TokenType type)
+{
+	if (IsUnaryArithmeticOperator(type))
+		return true;
+
+	if (IsUnaryBooleanOperator(type))
+		return true;
+
+	return false;
 }
 
 bool IsOperator(TokenType type)
@@ -201,6 +228,20 @@ bool IsLoopKeyword(TokenType type)
 	}
 }
 
+bool IsConditionalKeyword(TokenType type)
+{
+	switch (type)
+	{
+		case TokenType::IfKeyword:
+		case TokenType::UnlessKeyword:
+		case TokenType::ElseKeyword:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
 bool IsFunctionalKeyword(TokenType type)
 {
 	switch (type)
@@ -218,6 +259,9 @@ bool IsFunctionalKeyword(TokenType type)
 bool IsKeyword(TokenType type)
 {
 	if (IsFunctionalKeyword(type))
+		return true;
+
+	if (IsConditionalKeyword(type))
 		return true;
 
 	if (IsLoopKeyword(type))

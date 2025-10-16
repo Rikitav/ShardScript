@@ -3,6 +3,7 @@
 #include <shard/syntax/SyntaxToken.h>
 #include <string>
 #include <vector>
+#include <ostream>
 
 namespace shard::syntax::analysis
 {
@@ -17,6 +18,7 @@ namespace shard::syntax::analysis
 		void ReportError(SyntaxToken token, string message);
 		void ReportWarning(SyntaxToken token, string message);
 		void ReportInfo(SyntaxToken token, string message);
+		void WriteDiagnostics(ostream& out);
 		void Reset();
 	};
 }

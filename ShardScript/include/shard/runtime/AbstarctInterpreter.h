@@ -1,6 +1,7 @@
 #pragma once
 #include <shard/runtime/CallStackFrame.h>
-#include <shard/runtime/Register.h>
+#include <shard/runtime/VariableRegister.h>
+#include <shard/runtime/InboundVariablesContext.h>
 
 #include <shard/syntax/structures/SyntaxTree.h>
 #include <shard/syntax/nodes/ExpressionSyntax.h>
@@ -13,29 +14,27 @@
 #include <stack>
 #include <memory>
 
-using namespace std;
-using namespace shard::syntax::structures;
-using namespace shard::syntax::nodes;
-
 namespace shard::runtime
 {
 	class AbstarctInterpreter
 	{
 	private:
-		stack<shared_ptr<CallStackFrame>> CallStack;
-		shared_ptr<SyntaxTree> Tree;
+		stack<shared_ptr<shard::runtime::CallStackFrame>> CallStack;
+		std::shared_ptr<shard::syntax::structures::SyntaxTree> Tree;
 
 	public:
-		AbstarctInterpreter(shared_ptr<SyntaxTree> tree)
+		AbstarctInterpreter(std::shared_ptr<shard::syntax::structures::SyntaxTree> tree)
 			: Tree(tree) { }
 
 		void Execute();
-		shared_ptr<Register> ExecuteMethod(shared_ptr<MethodDeclarationSyntax> method, shared_ptr<CallStackFrame> prevFrame);
-		shared_ptr<Register> ExecuteBlock(shared_ptr<StatementsBlockSyntax> block, shared_ptr<CallStackFrame> frame);
-		shared_ptr<Register> ExecuteStatement(shared_ptr<StatementSyntax> statement, shared_ptr<CallStackFrame> frame);
-		shared_ptr<Register> EvaluateExpression(shared_ptr<ExpressionSyntax> expression, shared_ptr<CallStackFrame> frame);
-		shared_ptr<Register> EvaluateMemberAccesExpression(shared_ptr<MemberAccessExpressionSyntax> expression, shared_ptr<CallStackFrame> frame);
-		shared_ptr<Register> EvaluatePrintInvokationExpression(shared_ptr<ArgumentSyntax> argument, shared_ptr<CallStackFrame> frame, bool line);
-		void PrintRegister(shared_ptr<Register> pRegister);
+		std::shared_ptr<VariableRegister> ExecuteMethod(std::shared_ptr<shard::syntax::nodes::MethodDeclarationSyntax> method, std::shared_ptr<shard::runtime::CallStackFrame> prevFrame);
+		std::shared_ptr<VariableRegister> ExecuteBlock(std::shared_ptr<shard::syntax::nodes::StatementsBlockSyntax> block, std::shared_ptr<shard::runtime::InboundVariablesContext> prevContext, std::shared_ptr<shard::runtime::CallStackFrame> frame);
+		std::shared_ptr<VariableRegister> ExecuteStatement(std::shared_ptr<shard::syntax::nodes::StatementSyntax> statement, std::shared_ptr<shard::runtime::InboundVariablesContext> context, std::shared_ptr<shard::runtime::CallStackFrame> frame);
+		std::shared_ptr<VariableRegister> EvaluateExpression(std::shared_ptr<shard::syntax::nodes::ExpressionSyntax> expression, std::shared_ptr<shard::runtime::InboundVariablesContext> context);
+		std::shared_ptr<VariableRegister> EvaluateMemberAccessChain(std::shared_ptr<shard::syntax::nodes::MemberAccessExpressionSyntax> expression, std::shared_ptr<shard::runtime::InboundVariablesContext> context, std::shared_ptr<shard::runtime::VariableRegister> prevRegister);
+		std::shared_ptr<VariableRegister> EvaluateMemberAccessExpression(std::shared_ptr<shard::syntax::nodes::MemberAccessExpressionSyntax> expression, std::shared_ptr<shard::runtime::InboundVariablesContext> context, std::shared_ptr<shard::runtime::VariableRegister> prevRegister);
+
+		std::shared_ptr<VariableRegister> EvaluatePrintInvokationExpression(std::shared_ptr<shard::syntax::nodes::ArgumentSyntax> argument, std::shared_ptr<shard::runtime::InboundVariablesContext> context, bool line);
+		void PrintRegister(std::shared_ptr<VariableRegister> pRegister);
 	};
 }

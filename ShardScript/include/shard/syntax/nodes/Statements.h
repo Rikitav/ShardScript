@@ -48,4 +48,25 @@ namespace shard::syntax::nodes
 		ReturnStatementSyntax()
 			: KeywordStatementSyntax(SyntaxKind::ReturnStatement) { }
 	};
+
+	class DesideStatementSyntax : public KeywordStatementSyntax
+	{
+	public:
+		shared_ptr<StatementsBlockSyntax> Block;
+
+		DesideStatementSyntax(SyntaxKind kind)
+			: KeywordStatementSyntax(kind) { }
+	};
+
+	class ConditionalStatementSyntax : public DesideStatementSyntax
+	{
+	public:
+		SyntaxToken OpenCurlToken;
+		shared_ptr<StatementSyntax> Condition;
+		SyntaxToken CloseCurlToken;
+		shared_ptr<DesideStatementSyntax> NextStatement;
+
+		ConditionalStatementSyntax(SyntaxKind kind)
+			: DesideStatementSyntax(kind) { }
+	};
 }

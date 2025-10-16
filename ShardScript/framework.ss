@@ -1,3 +1,5 @@
+from ""
+
 namespace System
 {
 	public class string

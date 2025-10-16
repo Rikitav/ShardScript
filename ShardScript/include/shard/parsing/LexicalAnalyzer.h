@@ -23,6 +23,7 @@
 #include <shard/syntax/nodes/Loops.h>
 #include <shard/syntax/nodes/Expressions.h>
 #include <shard/syntax/nodes/IndexatorListSyntax.h>
+#include <shard/syntax/nodes/Desides.h>
 
 #include <memory>
 #include <initializer_list>
@@ -68,7 +69,9 @@ namespace shard::parsing
 		shared_ptr<StatementSyntax> ReadStatement(SourceReader& reader);
 
 		shared_ptr<KeywordStatementSyntax> ReadKeywordStatement(SourceReader& reader);
-		shared_ptr<ReturnStatementSyntax> ReeadReturnStatement(SourceReader& reader);
+		shared_ptr<ReturnStatementSyntax> ReadReturnStatement(SourceReader& reader);
+
+		shared_ptr<DesideStatementSyntax> ReadDesideStatement(SourceReader& reader);
 		shared_ptr<ForStatementSyntax> ReadForStatement(SourceReader& reader);
 
 		shared_ptr<ExpressionSyntax> ReadExpression(SourceReader& reader, int bindingPower);

@@ -30,6 +30,11 @@ namespace shard::syntax
 		VariableStatement,
 		ForStatement,
 		ReturnStatement,
+		IfStatement,
+		UnlessStatement,
+		//ElseIfStatement,
+		//ElseUnlessStatement,
+		ElseStatement,
 
 		Expression,
 		AssignExpression,

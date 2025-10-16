@@ -19,6 +19,7 @@
 #include <shard/syntax/nodes/Loops.h>
 #include <shard/syntax/nodes/StatementsBlockSyntax.h>
 #include <shard/syntax/nodes/IndexatorListSyntax.h>
+#include <shard/syntax/nodes/Desides.h>
 
 #include <shard/syntax/SyntaxToken.h>
 #include <shard/syntax/TokenType.h>
@@ -560,9 +561,16 @@ shared_ptr<KeywordStatementSyntax> LexicalAnalyzer::ReadKeywordStatement(SourceR
 
 		case TokenType::ReturnKeyword:
 		{
-			return ReeadReturnStatement(reader);
+			return ReadReturnStatement(reader);
 		}
 
+		case TokenType::IfKeyword:
+		case TokenType::UnlessKeyword:
+		case TokenType::ElseKeyword:
+		{
+			return ReadDesideStatement(reader);
+		}
+		
 		default:
 		{
 			Diagnostics.ReportError(current, "unknown/unsupported keyword");
@@ -571,7 +579,7 @@ shared_ptr<KeywordStatementSyntax> LexicalAnalyzer::ReadKeywordStatement(SourceR
 	}
 }
 
-shared_ptr<ReturnStatementSyntax> LexicalAnalyzer::ReeadReturnStatement(SourceReader& reader)
+shared_ptr<ReturnStatementSyntax> LexicalAnalyzer::ReadReturnStatement(SourceReader& reader)
 {
 	shared_ptr<ReturnStatementSyntax> syntax = make_shared<ReturnStatementSyntax>();
 	syntax->Keyword = Expect(reader, TokenType::ReturnKeyword, "Expected return keyword");
@@ -582,6 +590,78 @@ shared_ptr<ReturnStatementSyntax> LexicalAnalyzer::ReeadReturnStatement(SourceRe
 
 	syntax->Semicolon = Expect(reader, TokenType::Semicolon, "Missing ';' token");
 	return syntax;
+}
+
+shared_ptr<DesideStatementSyntax> LexicalAnalyzer::ReadDesideStatement(SourceReader& reader)
+{
+	while (reader.CanConsume())
+	{
+		SyntaxToken current = reader.Current();
+		switch (current.Type)
+		{
+			case TokenType::IfKeyword:
+			{
+				shared_ptr<IfStatementSyntax> syntax = make_shared<IfStatementSyntax>();
+				syntax->Keyword = current;
+				reader.Consume();
+
+				syntax->OpenCurlToken = Expect(reader, TokenType::OpenCurl, "Expected '(' token");
+				syntax->Condition = ReadStatement(reader);
+				syntax->CloseCurlToken = Expect(reader, TokenType::CloseCurl, "Expected ')' token");
+				syntax->Block = ReadStatementsBlock(reader);
+
+				TokenType nextType = reader.Current().Type;
+				if (nextType == TokenType::ElseKeyword)
+					syntax->NextStatement = ReadDesideStatement(reader);
+
+				return syntax;
+			}
+
+			case TokenType::UnlessKeyword:
+			{
+				shared_ptr<UnlessStatementSyntax> syntax = make_shared<UnlessStatementSyntax>();
+				syntax->Keyword = current;
+				reader.Consume();
+
+				syntax->OpenCurlToken = Expect(reader, TokenType::OpenCurl, "Expected '(' token");
+				syntax->Condition = ReadStatement(reader);
+				syntax->CloseCurlToken = Expect(reader, TokenType::CloseCurl, "Expected ')' token");
+				syntax->Block = ReadStatementsBlock(reader);
+
+				TokenType nextType = reader.Current().Type;
+				if (nextType == TokenType::ElseKeyword)
+					syntax->NextStatement = ReadDesideStatement(reader);
+
+				return syntax;
+			}
+
+			case TokenType::ElseKeyword:
+			{
+				SyntaxToken elseKeyword = current;
+				current = reader.Consume();
+				switch (current.Type)
+				{
+					case TokenType::IfKeyword:
+					case TokenType::UnlessKeyword:
+						return ReadDesideStatement(reader);
+
+					case TokenType::OpenBrace:
+					{
+						shared_ptr<ElseSatetmentSyntax> syntax = make_shared<ElseSatetmentSyntax>();
+						syntax->Keyword = elseKeyword;
+						syntax->Block = ReadStatementsBlock(reader);
+						return syntax;
+					}
+				}
+			}
+
+			default:
+			{
+				Diagnostics.ReportError(current, "Unknown token in deside statement");
+				continue;
+			}
+		}
+	}
 }
 
 shared_ptr<ForStatementSyntax> LexicalAnalyzer::ReadForStatement(SourceReader& reader)
@@ -646,6 +726,15 @@ shared_ptr<ExpressionSyntax> LexicalAnalyzer::ReadNullDenotation(SourceReader& r
 	SyntaxToken current = reader.Current();
 	switch (current.Type)
 	{
+		case TokenType::SubOperator:
+		case TokenType::IncrementOperator:
+		case TokenType::DecrementOperator:
+		{
+			reader.Consume();
+			shared_ptr<ExpressionSyntax> expression = ReadExpression(reader, 0);
+			return make_shared<UnaryExpressionSyntax>(current, expression, false);
+		}
+
 		case TokenType::BooleanLiteral:
 		case TokenType::StringLiteral:
 		case TokenType::NumberLiteral:
@@ -692,7 +781,17 @@ shared_ptr<ExpressionSyntax> LexicalAnalyzer::ReadLeftDenotation(SourceReader& r
 	while (reader.CanConsume())
 	{
 		SyntaxToken current = reader.Current();
-		if (IsOperator(current.Type) || current.Type == TokenType::AssignOperator)
+		if (IsUnaryOperator(current.Type))
+		{
+			int precendce = GetOperatorPrecendence(current.Type);
+			if (precendce == 0)
+				return leftExpr;
+
+			reader.Consume();
+			return make_shared<UnaryExpressionSyntax>(current, leftExpr, true);
+		}
+
+		if (IsBinaryOperator(current.Type) || current.Type == TokenType::AssignOperator)
 		{
 			int precendce = GetOperatorPrecendence(current.Type);
 			if (precendce == 0)

@@ -19,6 +19,17 @@ namespace shard::syntax::nodes
 			: ExpressionSyntax(SyntaxKind::ConstExpression), Constant(constant) { }
 	};
 
+	class UnaryExpressionSyntax : public ExpressionSyntax
+	{
+	public:
+		SyntaxToken OperatorToken;
+		shared_ptr<ExpressionSyntax> Expression;
+		bool IsRightDetermined;
+
+		UnaryExpressionSyntax(SyntaxToken operatorToken, shared_ptr<ExpressionSyntax> expression, bool isRightDetermined)
+			: ExpressionSyntax(SyntaxKind::UnaryExpression), OperatorToken(operatorToken), Expression(expression), IsRightDetermined(isRightDetermined) { }
+	};
+
 	class BinaryExpressionSyntax : public ExpressionSyntax
 	{
 	public:

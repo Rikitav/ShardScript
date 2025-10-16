@@ -137,6 +137,8 @@
     <ClCompile Include="src\parsing\StringStreamReader.cpp" />
     <ClCompile Include="src\parsing\SyntaxTreeParser.cpp" />
     <ClCompile Include="src\runtime\AbstarctInterpreter.cpp" />
+    <ClCompile Include="src\runtime\InboundVariablesContext.cpp" />
+    <ClCompile Include="src\runtime\VariableRegister.cpp" />
     <ClCompile Include="src\syntax\analysis\Diagnostic.cpp" />
     <ClCompile Include="src\syntax\analysis\DiagnosticsContext.cpp" />
     <ClCompile Include="src\parsing\LexicalAnalyzer.cpp" />
@@ -144,14 +146,19 @@
     <ClCompile Include="src\parsing\SourceReader.cpp" />
     <ClCompile Include="src\syntax\analysis\SyntaxTree.cpp" />
     <ClCompile Include="src\syntax\SyntaxFacts.cpp" />
+    <ClInclude Include="include\shard\InterpreterConsole.h" />
     <ClInclude Include="include\shard\parsing\FileReader.h" />
     <ClInclude Include="include\shard\parsing\ReaderExtensions.h" />
     <ClInclude Include="include\shard\parsing\StringStreamReader.h" />
     <ClInclude Include="include\shard\parsing\structures\MemberDeclarationInfo.h" />
     <ClInclude Include="include\shard\runtime\AbstarctInterpreter.h" />
-    <ClInclude Include="include\shard\runtime\Register.h" />
+    <ClInclude Include="include\shard\runtime\GarbageCollector.h" />
+    <ClInclude Include="include\shard\runtime\InboundVariablesContext.h" />
+    <ClInclude Include="include\shard\runtime\TypeboundVariablesContext.h" />
+    <ClInclude Include="include\shard\runtime\VariableRegister.h" />
     <ClInclude Include="include\shard\runtime\CallStackFrame.h" />
     <ClInclude Include="include\shard\runtime\TypeInfo.h" />
+    <ClInclude Include="include\shard\ShardScript.h" />
     <ClInclude Include="include\shard\syntax\analysis\Diagnostic.h" />
     <ClInclude Include="include\shard\syntax\analysis\DiagnosticsContext.h" />
     <ClInclude Include="include\shard\syntax\analysis\DiagnosticSeverity.h" />
@@ -160,6 +167,7 @@
     <ClInclude Include="include\shard\syntax\nodes\ArgumentsListSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\CompilationUnitSyntax.h" />
     <ClInclude Include="include\shard\parsing\LexicalAnalyzer.h" />
+    <ClInclude Include="include\shard\syntax\nodes\Desides.h" />
     <ClInclude Include="include\shard\syntax\nodes\Expressions.h" />
     <ClInclude Include="include\shard\syntax\nodes\ExpressionSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\ImportDirectiveSyntax.h" />

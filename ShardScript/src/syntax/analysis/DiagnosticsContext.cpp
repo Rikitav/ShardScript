@@ -28,3 +28,18 @@ void DiagnosticsContext::Reset()
 	AnyError = false;
 	Diagnostics.clear();
 }
+
+void DiagnosticsContext::WriteDiagnostics(ostream& out)
+{
+	for (const Diagnostic& diag : Diagnostics)
+	{
+		out << toString(diag.Severity) << " | ";
+		out << "File: '" << diag.Location.FileName << "' | ";
+		out << "Line: " << diag.Location.Line << " | ";
+		out << "Offset: " << diag.Location.Offset << " | ";
+		out << "Word: '" << diag.Token.Word << "' | ";
+		out << "Index: '" << diag.Token.Index << "' | ";
+		out << diag.Description;
+		out << endl;
+	}
+}

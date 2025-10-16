@@ -165,10 +165,7 @@ bool SourceReader::ReadNextWord(string& word, TokenType& type)
 	if (IsType(word, type))
 		return true;
 
-	if (IsLoopKeyword(word, type))
-		return true;
-
-	if (IsFunctionalKeyword(word, type))
+	if (IsKeyword(word, type))
 		return true;
 
 	type = TokenType::Identifier;
@@ -381,6 +378,7 @@ bool SourceReader::IsOperator(string& word, TokenType& type)
 			{
 				if (PeekSymbol == '=')
 				{
+					ReadNext();
 					type = TokenType::EqualsOperator;
 					word = "==";
 					return true;
@@ -398,6 +396,7 @@ bool SourceReader::IsOperator(string& word, TokenType& type)
 			{
 				if (PeekSymbol == '=')
 				{
+					ReadNext();
 					type = TokenType::NotEqualsOperator;
 					word = "!=";
 					return true;
@@ -415,6 +414,7 @@ bool SourceReader::IsOperator(string& word, TokenType& type)
 			{
 				if (PeekSymbol == '=')
 				{
+					ReadNext();
 					type = TokenType::GreaterOrEqualsOperator;
 					word = ">=";
 					return true;
@@ -432,6 +432,7 @@ bool SourceReader::IsOperator(string& word, TokenType& type)
 			{
 				if (PeekSymbol == '=')
 				{
+					ReadNext();
 					type = TokenType::LessOrEqualsOperator;
 					word = "<=";
 					return true;
@@ -449,8 +450,16 @@ bool SourceReader::IsOperator(string& word, TokenType& type)
 			{
 				if (PeekSymbol == '=')
 				{
+					ReadNext();
 					type = TokenType::AddAssignOperator;
 					word = "+=";
+					return true;
+				}
+				else if (PeekSymbol == '+')
+				{
+					ReadNext();
+					type = TokenType::IncrementOperator;
+					word = "++";
 					return true;
 				}
 			}
@@ -466,8 +475,16 @@ bool SourceReader::IsOperator(string& word, TokenType& type)
 			{
 				if (PeekSymbol == '=')
 				{
+					ReadNext();
 					type = TokenType::SubAssignOperator;
 					word = "-=";
+					return true;
+				}
+				else if (PeekSymbol == '-')
+				{
+					ReadNext();
+					type = TokenType::DecrementOperator;
+					word = "--";
 					return true;
 				}
 			}
@@ -483,6 +500,7 @@ bool SourceReader::IsOperator(string& word, TokenType& type)
 			{
 				if (PeekSymbol == '=')
 				{
+					ReadNext();
 					type = TokenType::MultAssignOperator;
 					word = "*=";
 					return true;
@@ -500,6 +518,7 @@ bool SourceReader::IsOperator(string& word, TokenType& type)
 			{
 				if (PeekSymbol == '=')
 				{
+					ReadNext();
 					type = TokenType::DivAssignOperator;
 					word = "/=";
 					return true;
@@ -517,6 +536,7 @@ bool SourceReader::IsOperator(string& word, TokenType& type)
 			{
 				if (PeekSymbol == '=')
 				{
+					ReadNext();
 					type = TokenType::ModAssignOperator;
 					word = "%=";
 					return true;
@@ -534,6 +554,7 @@ bool SourceReader::IsOperator(string& word, TokenType& type)
 			{
 				if (PeekSymbol == '=')
 				{
+					ReadNext();
 					type = TokenType::PowAssignOperator;
 					word = "^=";
 					return true;
@@ -764,6 +785,41 @@ bool SourceReader::IsType(string& word, TokenType& type)
 	else if (word == "int")
 	{
 		type = TokenType::IntegerKeyword;
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+bool SourceReader::IsKeyword(string& word, TokenType& type)
+{
+	if (IsConditionalKeyword(word, type))
+		return true;
+	
+	if (IsFunctionalKeyword(word, type))
+		return true;
+
+	if (IsLoopKeyword(word, type))
+		return true;
+}
+
+bool SourceReader::IsConditionalKeyword(string& word, TokenType& type)
+{
+	if (word == "if")
+	{
+		type = TokenType::IfKeyword;
+		return true;
+	}
+	else if (word == "unless")
+	{
+		type = TokenType::UnlessKeyword;
+		return true;
+	}
+	else if (word == "else")
+	{
+		type = TokenType::ElseKeyword;
 		return true;
 	}
 	else
