@@ -257,7 +257,7 @@ MemberDeclarationSyntax* LexicalAnalyzer::ReadMemberDeclaration(SourceReader& re
 		if (IsType(token.Type, peek.Type))
 		{
 			info.ReturnType = ReadType(reader, parent);
-			reader.Consume();
+			//reader.Consume();
 			break;
 		}
 
@@ -267,7 +267,7 @@ MemberDeclarationSyntax* LexicalAnalyzer::ReadMemberDeclaration(SourceReader& re
 	}
 
 	// reading identifier
-	while (!Matches(reader, { TokenType::Identifier }))
+	while (!Matches(reader, { TokenType::Identifier, TokenType::OpenCurl, TokenType::Semicolon, TokenType::AssignOperator }))
 	{
 		Diagnostics.ReportError(reader.Current(), "Expected member identifier");
 		reader.Consume();
@@ -327,7 +327,7 @@ MemberDeclarationSyntax* LexicalAnalyzer::ReadMemberDeclaration(SourceReader& re
 	}
 
 	// reading anchor token
-	while (reader.CanConsume() && !Matches(reader, { TokenType::OpenBrace, TokenType::Semicolon, TokenType::NumberLiteral }))
+	while (reader.CanConsume() && !Matches(reader, { TokenType::OpenBrace, TokenType::Semicolon }))
 	{
 		Diagnostics.ReportError(reader.Current(), "Unknown token in member declaration");
 		reader.Consume();
@@ -554,9 +554,17 @@ StatementsBlockSyntax* LexicalAnalyzer::ReadStatementsBlock(SourceReader& reader
 	else
 	{
 		// Single statement block
-		StatementSyntax* statement = ReadStatement(reader, syntax);
-		statement->SemicolonToken = Expect(reader, TokenType::Semicolon, "Missing ';' token");
-		syntax->Statements.push_back(statement);
+		if (IsKeyword(current.Type))
+		{
+			KeywordStatementSyntax* statement = ReadKeywordStatement(reader, syntax);
+			syntax->Statements.push_back(statement);
+		}
+		else
+		{
+			StatementSyntax* statement = ReadStatement(reader, syntax);
+			statement->SemicolonToken = Expect(reader, TokenType::Semicolon, "Missing ';' token");
+			syntax->Statements.push_back(statement);
+		}
 	}
 
 	return syntax;
@@ -569,7 +577,7 @@ StatementSyntax* LexicalAnalyzer::ReadStatement(SourceReader& reader, SyntaxNode
 	{
 		return new StatementSyntax(SyntaxKind::ExpressionStatement, parent);
 	}
-
+	
 	if (reader.CanPeek())
 	{
 		SyntaxToken peek = reader.Peek();
@@ -978,7 +986,7 @@ ObjectExpressionSyntax* LexicalAnalyzer::ReadObjectExpression(SourceReader& read
 {
 	ObjectExpressionSyntax* syntax = new ObjectExpressionSyntax(parent);
 	syntax->NewToken = Expect(reader, TokenType::NewKeyword, "Expected 'new' keyword");
-	syntax->IdentifierToken = Expect(reader, TokenType::Identifier, "Expected identifier");
+	//syntax->IdentifierToken = Expect(reader, TokenType::Identifier, "Expected identifier");
 	syntax->Type = ReadType(reader, syntax);
 	syntax->Arguments = ReadArgumentsList(reader, syntax);
 	return syntax;

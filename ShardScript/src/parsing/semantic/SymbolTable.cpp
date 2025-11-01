@@ -15,6 +15,7 @@
 
 #include <vector>
 #include <ranges>
+#include <string>
 
 using namespace std;
 using namespace std::ranges;
@@ -25,12 +26,17 @@ using namespace shard::parsing::semantic;
 
 void SymbolTable::ResolvePrmitives()
 {
-	Primitives::Void = new SyntaxSymbol(L"void", SyntaxKind::Unknown);
-
+	Primitives::Void = new StructSymbol(L"Void");
 	Primitives::Boolean = new StructSymbol(L"Boolean");
 	Primitives::Integer = new StructSymbol(L"Integer");
 	Primitives::Char = new StructSymbol(L"Char");
 	Primitives::String = new ClassSymbol(L"String");
+
+	Primitives::Void->MemoryBytesSize = 0;
+	Primitives::Boolean->MemoryBytesSize = sizeof(bool);
+	Primitives::Integer->MemoryBytesSize = sizeof(int);
+	Primitives::Char->MemoryBytesSize = sizeof(wchar_t);
+	Primitives::String->MemoryBytesSize = sizeof(wstring*);
 
 	GlobalScope->DeclareSymbol(Primitives::Boolean);
 	GlobalScope->DeclareSymbol(Primitives::Integer);

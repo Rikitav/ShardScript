@@ -4,6 +4,7 @@
 #include <shard/parsing/semantic/SemanticModel.h>
 #include <shard/parsing/visiting/DeclarationCollector.h>
 #include <shard/parsing/visiting/TypeBinder.h>
+#include <shard/parsing/visiting/ExpressionBinder.h>
 
 using namespace std;
 using namespace shard::parsing;
@@ -19,8 +20,11 @@ SemanticModel SemanticAnalyzer::Analyze(SyntaxTree& syntaxTree)
 	DeclarationCollector collector(semanticModel.Table, Diagnostics);
 	collector.VisitSyntaxTree(syntaxTree);
 
-	TypeBinder binder(semanticModel.Table, Diagnostics);
-	binder.VisitSyntaxTree(syntaxTree);
+	TypeBinder typeBinder(semanticModel.Table, Diagnostics);
+	typeBinder.VisitSyntaxTree(syntaxTree);
+
+	ExpressionBinder expressionBinder(semanticModel.Table, Diagnostics);
+	expressionBinder.VisitSyntaxTree(syntaxTree);
 
 	return semanticModel;
 }

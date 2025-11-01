@@ -20,7 +20,7 @@ namespace shard::parsing::semantic
 
         struct Primitives
         {
-            inline static shard::syntax::SyntaxSymbol* Void;
+            inline static shard::syntax::symbols::TypeSymbol* Void;
             inline static shard::syntax::symbols::TypeSymbol* Boolean;
             inline static shard::syntax::symbols::TypeSymbol* Integer;
             inline static shard::syntax::symbols::TypeSymbol* Char;

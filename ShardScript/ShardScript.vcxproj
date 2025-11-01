@@ -134,6 +134,7 @@
     <ClCompile Include="src\parsing\semantic\primitives\IntegerPrimitive.cpp" />
     <ClCompile Include="src\parsing\semantic\primitives\StringPrimitive.cpp" />
     <ClCompile Include="src\parsing\semantic\SymbolTable.cpp" />
+    <ClCompile Include="src\parsing\visiting\ExpressionBinder.cpp" />
     <ClCompile Include="src\parsing\visiting\TypeBinder.cpp" />
     <ClCompile Include="src\parsing\visiting\DeclarationCollector.cpp" />
     <ClCompile Include="src\parsing\semantic\SemanticModel.cpp" />
@@ -174,6 +175,7 @@
     <ClInclude Include="include\shard\parsing\semantic\SemanticModel.h" />
     <ClInclude Include="include\shard\parsing\semantic\SemanticScope.h" />
     <ClInclude Include="include\shard\parsing\semantic\SymbolTable.h" />
+    <ClInclude Include="include\shard\parsing\visiting\ExpressionBinder.h" />
     <ClInclude Include="include\shard\parsing\visiting\SyntaxVisitor.h" />
     <ClInclude Include="include\shard\parsing\visiting\TypeBinder.h" />
     <ClInclude Include="include\shard\runtime\interactive\InteractiveConsole.h" />

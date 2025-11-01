@@ -132,19 +132,37 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax* node)
         symbol->Parameters.push_back(paramSymbol);
     }
 
-    scopeStack.top()->DeclareSymbol(symbol);
-    symbolTable->BindSymbol(node, symbol);
-
-    if (node->Body != nullptr)
+    TypeSymbol* ownerType = static_cast<TypeSymbol*>((SyntaxSymbol*)scopeStack.top()->Parent->Owner);
+    if (ownerType == nullptr)
     {
-        pushScope(symbol);
-        for (ParameterSymbol* parameter : symbol->Parameters)
-        {
-            scopeStack.top()->DeclareSymbol(parameter);
-        }
+        Diagnostics.ReportError(node->IdentifierToken, "Cannot resolve method's owner type");
+    }
+    else
+    {
+        scopeStack.top()->DeclareSymbol(symbol);
+        symbolTable->BindSymbol(node, symbol);
 
-        VisitStatementsBlock(node->Body);
-        scopeStack.pop();
+        if (node->Body != nullptr)
+        {
+            pushScope(symbol);
+            if (!symbol->IsStatic)
+            {
+                if (ownerType->IsStatic)
+                    Diagnostics.ReportError(node->IdentifierToken, "Cannot declare a non static method's in static type");
+
+                VariableSymbol* thisVarSymbol = new VariableSymbol(L"this");
+                thisVarSymbol->Type = ownerType;
+                scopeStack.top()->DeclareSymbol(thisVarSymbol);
+            }
+
+            for (ParameterSymbol* parameter : symbol->Parameters)
+            {
+                scopeStack.top()->DeclareSymbol(parameter);
+            }
+
+            VisitStatementsBlock(node->Body);
+            scopeStack.pop();
+        }
     }
 }
 

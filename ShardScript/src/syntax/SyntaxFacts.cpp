@@ -199,29 +199,12 @@ bool IsType(TokenType type, TokenType peekType)
 		switch (peekType)
 		{
 			case TokenType::LessOperator:
-			case TokenType::Delimeter:
+			case TokenType::Identifier:
 			case TokenType::Question:
 				return true;
 
-			case TokenType::Semicolon:
-				return false;
-
 			default:
-			{
-				if (IsOperator(peekType))
-					return false;
-
-				if (IsKeyword(peekType))
-					return false;
-
-				if (IsModifier(peekType))
-					return false;
-
-				if (IsMemberKeyword(peekType))
-					return false;
-
-				return true;
-			}
+				return false;
 		}
 	}
 }

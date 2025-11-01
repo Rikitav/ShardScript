@@ -14,5 +14,8 @@ namespace shard::parsing
 			: Diagnostics(diagnostics) { }
 
 		void Generate(shard::parsing::semantic::SemanticModel& syntaxTree);
+
+	private:
+		void FixObjectLayout(shard::syntax::symbols::TypeSymbol* objectInfo);
 	};
 }

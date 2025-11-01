@@ -16,100 +16,94 @@ using namespace shard::parsing::analysis;
 
 SourceReader::SourceReader() : Line(1), Offset(0), Symbol(0), PeekSymbol(0)
 {
-	ConsumeBuffer = nullptr;
 	loc = locale("en_US.UTF8");
 }
 
 SourceReader::~SourceReader()
 {
-	delete ConsumeBuffer;
-
-	while (!PeekBuffer.empty())
+	/*
+	while (!ReadBuffer.empty())
 	{
-		delete PeekBuffer.front();
-		PeekBuffer.pop_front();
+		delete ReadBuffer.front();
+		ReadBuffer.pop_front();
 	}
+	*/
+
+	ReadBuffer.clear();
 }
 
 SyntaxToken SourceReader::Current()
 {
-	if (ConsumeBuffer == nullptr)
+	if (ReadBuffer.empty())
 	{
-		ConsumeBuffer = new SyntaxToken();
 		return Consume();
 	}
 
-	return SyntaxToken(*ConsumeBuffer);
+	return SyntaxToken(ReadBuffer.front());
 }
 
 SyntaxToken SourceReader::Consume()
 {
 	static int eofConsumeCounter = 0;
-	if (!PeekBuffer.empty())
+	switch (ReadBuffer.size())
 	{
-		ConsumeBuffer = PeekBuffer.front();
-		PeekBuffer.pop_front();
-		return SyntaxToken(*ConsumeBuffer);
+		case 0: // no tokens
+			break;
+
+		case 1: // no nned to read peeks
+			ReadBuffer.pop_front();
+			break;
+
+		default: // read peeks
+		{
+			SyntaxToken token = ReadBuffer.front();
+			ReadBuffer.pop_front();
+			return SyntaxToken(token);
+		}
 	}
 
-	if (!ReadNextToken(ConsumeBuffer))
+	SyntaxToken consumeBuffer = SyntaxToken();
+	if (!ReadNextToken(consumeBuffer))
 	{
 		if (++eofConsumeCounter == 10)
 			throw runtime_error("critical bug: eof consume overflow");
 
-		new (ConsumeBuffer) SyntaxToken(TokenType::EndOfFile, L"", TextLocation());
+		consumeBuffer = SyntaxToken(TokenType::EndOfFile, L"", TextLocation());
 	}
 
-	return SyntaxToken(*ConsumeBuffer);
+	ReadBuffer.push_back(consumeBuffer);
+	return SyntaxToken(consumeBuffer);
 }
 
 SyntaxToken SourceReader::Peek(int index)
 {
 	static int eofPeekCounter = 0;
 
-	int bufferSize = PeekBuffer.size();
-	if (bufferSize > index)
-	{
-		return *PeekBuffer.at(index);
-	}
+	index += 1;
+	int bufferSize = ReadBuffer.size();
 
-	int extendFor = index - bufferSize + 1;
-	for (int i = 0; i <= extendFor; i++)
+	if (index + 1 > bufferSize)
 	{
-		SyntaxToken* peekToken = new SyntaxToken();
-		if (!ReadNextToken(peekToken))
+		int extendFor = index - bufferSize + 1;
+		for (int i = 0; i < extendFor; i++)
 		{
+			SyntaxToken peekToken = SyntaxToken();
+			if (ReadNextToken(peekToken))
+			{
+				ReadBuffer.push_back(peekToken);
+				continue;
+			}
+
 			if (++eofPeekCounter == 10)
 				throw runtime_error("critical bug: eof peek overflow");
 
-			new (peekToken) SyntaxToken(TokenType::EndOfFile, L"", TextLocation());
-			PeekBuffer.push_back(peekToken);
-			return *peekToken;
-		}
-
-		PeekBuffer.push_back(peekToken);
-	}
-
-	/*
-	while (!PeekBuffer.empty())
-	{
-		SyntaxToken* current = PeekBuffer.front();
-	}
-
-	if (PeekBuffer == nullptr)
-	{
-		PeekBuffer = new SyntaxToken();
-		if (!ReadNextToken(PeekBuffer))
-		{
-			if (++eofPeekCounter == 10)
-				throw runtime_error("critical bug: eof peek overflow");
-
-			new (PeekBuffer) SyntaxToken(TokenType::EndOfFile, L"", TextLocation());
+			peekToken = SyntaxToken(TokenType::EndOfFile, L"", TextLocation());
+			ReadBuffer.push_back(peekToken);
+			return SyntaxToken(peekToken);
 		}
 	}
-	*/
-
-	return *PeekBuffer.front();
+	
+	return SyntaxToken(ReadBuffer.at(index));
 }
 
 bool SourceReader::CanConsume()
@@ -122,7 +116,7 @@ bool SourceReader::CanPeek()
 	return Peek().Type != TokenType::EndOfFile;
 }
 
-bool SourceReader::ReadNextToken(SyntaxToken* pToken)
+bool SourceReader::ReadNextToken(SyntaxToken& token)
 {
 	wstring word = L"";
 	TokenType type = TokenType::Unknown;
@@ -130,8 +124,7 @@ bool SourceReader::ReadNextToken(SyntaxToken* pToken)
 	if (!ReadNextWord(word, type))
 		return false;
 
-	//delete pToken;
-	new (pToken) SyntaxToken(type, word, GetLocation(word));
+	token = SyntaxToken(type, word, GetLocation(word));
 	return true;
 }
 
@@ -145,17 +138,21 @@ bool SourceReader::ReadNextReal()
 			{
 				Line += 1;
 				Offset = 0;
-
-				ReadNext();
+				
+				if (!ReadNext())
+					return false;
+				
 				continue;
 			}
 
 			default:
 			{
-				if (!isspace(PeekSymbol, loc))
-					return ReadNext();
+				if (!ReadNext())
+					return false;
 
-				ReadNext();
+				if (!isspace(PeekSymbol, loc))
+					return true;
+
 				continue;
 			}
 		}

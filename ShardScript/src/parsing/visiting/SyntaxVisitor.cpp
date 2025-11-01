@@ -83,28 +83,28 @@ void SyntaxVisitor::VisitTypeDeclaration(MemberDeclarationSyntax* node)
 
 		case SyntaxKind::NamespaceDeclaration:
 		{
-			NamespaceDeclarationSyntax* declNode = dynamic_cast<NamespaceDeclarationSyntax*>(node);
+			NamespaceDeclarationSyntax* declNode = static_cast<NamespaceDeclarationSyntax*>(node);
 			VisitNamespaceDeclaration(declNode);
 			return;
 		}
 
 		case SyntaxKind::ClassDeclaration:
 		{
-			ClassDeclarationSyntax* declNode = dynamic_cast<ClassDeclarationSyntax*>(node);
+			ClassDeclarationSyntax* declNode = static_cast<ClassDeclarationSyntax*>(node);
 			VisitClassDeclaration(declNode);
 			return;
 		}
 
 		case SyntaxKind::StructDeclaration:
 		{
-			StructDeclarationSyntax* declNode = dynamic_cast<StructDeclarationSyntax*>(node);
+			StructDeclarationSyntax* declNode = static_cast<StructDeclarationSyntax*>(node);
 			VisitStructDeclaration(declNode);
 			return;
 		}
 
 		case SyntaxKind::MethodDeclaration:
 		{
-			MethodDeclarationSyntax* declNode = dynamic_cast<MethodDeclarationSyntax*>(node);
+			MethodDeclarationSyntax* declNode = static_cast<MethodDeclarationSyntax*>(node);
 			VisitMethodDeclaration(declNode);
 			return;
 		}
@@ -138,28 +138,35 @@ void SyntaxVisitor::VisitMemberDeclaration(MemberDeclarationSyntax* node)
 
 		case SyntaxKind::NamespaceDeclaration:
 		{
-			NamespaceDeclarationSyntax* declNode = dynamic_cast<NamespaceDeclarationSyntax*>(node);
+			NamespaceDeclarationSyntax* declNode = static_cast<NamespaceDeclarationSyntax*>(node);
 			VisitNamespaceDeclaration(declNode);
 			return;
 		}
 
 		case SyntaxKind::ClassDeclaration:
 		{
-			ClassDeclarationSyntax* declNode = dynamic_cast<ClassDeclarationSyntax*>(node);
+			ClassDeclarationSyntax* declNode = static_cast<ClassDeclarationSyntax*>(node);
 			VisitClassDeclaration(declNode);
 			return;
 		}
 
 		case SyntaxKind::StructDeclaration:
 		{
-			StructDeclarationSyntax* declNode = dynamic_cast<StructDeclarationSyntax*>(node);
+			StructDeclarationSyntax* declNode = static_cast<StructDeclarationSyntax*>(node);
 			VisitStructDeclaration(declNode);
+			return;
+		}
+
+		case SyntaxKind::FieldDeclaration:
+		{
+			FieldDeclarationSyntax* declNode = static_cast<FieldDeclarationSyntax*>(node);
+			VisitFieldDeclaration(declNode);
 			return;
 		}
 
 		case SyntaxKind::MethodDeclaration:
 		{
-			MethodDeclarationSyntax* declNode = dynamic_cast<MethodDeclarationSyntax*>(node);
+			MethodDeclarationSyntax* declNode = static_cast<MethodDeclarationSyntax*>(node);
 			VisitMethodDeclaration(declNode);
 			return;
 		}
@@ -168,7 +175,8 @@ void SyntaxVisitor::VisitMemberDeclaration(MemberDeclarationSyntax* node)
 
 void SyntaxVisitor::VisitFieldDeclaration(FieldDeclarationSyntax* node)
 {
-	VisitExpression(node->InitializerExpression);
+	if (node->InitializerExpression != nullptr)
+		VisitExpression(node->InitializerExpression);
 }
 
 void SyntaxVisitor::VisitMethodDeclaration(MethodDeclarationSyntax* node)
@@ -281,7 +289,8 @@ void SyntaxVisitor::VisitForStatement(ForStatementSyntax* node)
 
 void SyntaxVisitor::VisitReturnStatement(ReturnStatementSyntax* node)
 {
-	VisitExpression(node->Expression);
+	if (node->Expression != nullptr)
+		VisitExpression(node->Expression);
 }
 
 void SyntaxVisitor::VisitConditionalClause(ConditionalClauseBaseSyntax* node)
@@ -372,6 +381,13 @@ void SyntaxVisitor::VisitExpression(ExpressionSyntax* node)
 		{
 			LinkedExpressionSyntax* expression = dynamic_cast<LinkedExpressionSyntax*>(node);
 			VisitLinkedExpression(expression);
+			return;
+		}
+
+		case SyntaxKind::ObjectExpression:
+		{
+			ObjectExpressionSyntax* expression = dynamic_cast<ObjectExpressionSyntax*>(node);
+			VisitObjectCreationExpression(expression);
 			return;
 		}
 	}

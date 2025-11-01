@@ -12,8 +12,7 @@ namespace shard::parsing
 	{
 	protected:
 		std::locale loc;
-		std::deque<shard::syntax::SyntaxToken*> PeekBuffer;
-		shard::syntax::SyntaxToken* ConsumeBuffer;
+		std::deque<shard::syntax::SyntaxToken> ReadBuffer;
 
 		int Line;
 		int Offset;
@@ -33,7 +32,7 @@ namespace shard::parsing
 		virtual shard::parsing::analysis::TextLocation GetLocation(std::wstring& word) = 0;
 
 	protected:
-		virtual bool ReadNextToken(shard::syntax::SyntaxToken* pToken);
+		virtual bool ReadNextToken(shard::syntax::SyntaxToken& pToken);
 
 		virtual bool ReadNext() = 0;
 		virtual bool PeekNext() = 0;
