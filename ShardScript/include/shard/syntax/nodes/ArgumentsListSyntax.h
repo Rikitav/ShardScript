@@ -1,6 +1,5 @@
 #pragma once
 #include <vector>
-#include <memory>
 #include <shard/syntax/SyntaxNode.h>
 #include <shard/syntax/nodes/ExpressionSyntax.h>
 #include <shard/syntax/SyntaxKind.h>
@@ -11,10 +10,20 @@ namespace shard::syntax::nodes
 	class ArgumentSyntax : public SyntaxNode
 	{
 	public:
-		shared_ptr<ExpressionSyntax> Expression;
+		const ExpressionSyntax* Expression;
+		const bool IsByReference;
 
-		ArgumentSyntax(shared_ptr<ExpressionSyntax> expr)
-			: SyntaxNode(SyntaxKind::Argument), Expression(expr) {}
+		inline ArgumentSyntax(const ExpressionSyntax* expression, const SyntaxNode* parent)
+			: SyntaxNode(SyntaxKind::Argument, parent), Expression(expression), IsByReference(false) { }
+
+		inline ArgumentSyntax(const ArgumentSyntax& other)
+			: SyntaxNode(other), Expression(other.Expression), IsByReference(false) { }
+
+		inline virtual ~ArgumentSyntax()
+		{
+			Expression->~ExpressionSyntax();
+			delete Expression;
+		}
 	};
 
 	class ArgumentsListSyntax : public SyntaxNode
@@ -22,8 +31,48 @@ namespace shard::syntax::nodes
 	public:
 		SyntaxToken OpenCurlToken;
 		SyntaxToken CloseCurlToken;
-		vector<shared_ptr<ArgumentSyntax>> Arguments;
+		std::vector<ArgumentSyntax*> Arguments;
 
-		ArgumentsListSyntax() : SyntaxNode(SyntaxKind::ArgumentsList) {}
+		inline ArgumentsListSyntax(const SyntaxNode* parent)
+			: SyntaxNode(SyntaxKind::ArgumentsList, parent) { }
+
+		inline ArgumentsListSyntax(const ArgumentsListSyntax& other)
+			: SyntaxNode(other), OpenCurlToken(other.OpenCurlToken), CloseCurlToken(other.CloseCurlToken) { }
+
+		inline virtual ~ArgumentsListSyntax()
+		{
+			for (const ArgumentSyntax* argument : Arguments)
+			{
+				argument->~ArgumentSyntax();
+				delete argument;
+			}
+
+			Arguments.~vector();
+		}
+	};
+
+	class IndexatorListSyntax : public SyntaxNode
+	{
+	public:
+		SyntaxToken OpenSquareToken;
+		SyntaxToken CloseSquareToken;
+		std::vector<ArgumentSyntax*> Arguments;
+
+		inline IndexatorListSyntax(const SyntaxNode* parent)
+			: SyntaxNode(SyntaxKind::IndexatorList, parent) { }
+
+		inline IndexatorListSyntax(const IndexatorListSyntax& other)
+			: SyntaxNode(other), OpenSquareToken(other.OpenSquareToken), CloseSquareToken(other.CloseSquareToken) { }
+
+		inline virtual ~IndexatorListSyntax()
+		{
+			for (const ArgumentSyntax* argument : Arguments)
+			{
+				argument->~ArgumentSyntax();
+				delete argument;
+			}
+
+			Arguments.~vector();
+		}
 	};
 }

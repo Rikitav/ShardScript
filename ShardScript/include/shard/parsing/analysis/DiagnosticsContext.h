@@ -1,0 +1,24 @@
+#pragma once
+#include <shard/syntax/SyntaxToken.h>
+#include <shard/parsing/analysis/Diagnostic.h>
+#include <string>
+#include <vector>
+#include <ostream>
+
+namespace shard::parsing::analysis
+{
+	class DiagnosticsContext
+	{
+	public:
+		bool AnyError = false;
+		std::vector<Diagnostic> Diagnostics;
+
+		DiagnosticsContext() : Diagnostics() {}
+
+		void ReportError(shard::syntax::SyntaxToken token, std::string message);
+		void ReportWarning(shard::syntax::SyntaxToken token, std::string message);
+		void ReportInfo(shard::syntax::SyntaxToken token, std::string message);
+		void WriteDiagnostics(std::wostream& out);
+		void Reset();
+	};
+}

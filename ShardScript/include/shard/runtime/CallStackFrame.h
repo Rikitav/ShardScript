@@ -1,22 +1,20 @@
 #pragma once
 #include <shard/runtime/InboundVariablesContext.h>
-#include <shard/syntax/nodes/MethodDeclarationSyntax.h>
-
-#include <memory>
-
-using namespace std;
+#include <shard/syntax/symbols/TypeSymbol.h>
+#include <shard/syntax/symbols/MethodSymbol.h>
 
 namespace shard::runtime
 {
 	class CallStackFrame
 	{
 	public:
-		shared_ptr<CallStackFrame> PreviousFrame;
-		shared_ptr<MethodDeclarationSyntax> Declaration;
-		shared_ptr<InboundVariablesContext> Context;
+		const shard::syntax::symbols::TypeSymbol* OwnerObject;
+		const shard::syntax::symbols::MethodSymbol* Method;
+		const CallStackFrame* PreviousFrame;
+		const InboundVariablesContext* VariablesContext;
 		bool IsInterrupted = false;
 
-		CallStackFrame(shared_ptr<CallStackFrame> previousFrame, shared_ptr<MethodDeclarationSyntax> declaration)
-			: Declaration(declaration), PreviousFrame(previousFrame), Context(make_shared<InboundVariablesContext>()) {}
+		CallStackFrame(const shard::syntax::symbols::TypeSymbol* ownerObject, const shard::syntax::symbols::MethodSymbol* method, const CallStackFrame* previousFrame, const InboundVariablesContext* prevVarCcontext)
+			: OwnerObject(ownerObject), Method(method), PreviousFrame(previousFrame), VariablesContext(new InboundVariablesContext(prevVarCcontext)) { }
 	};
 }

@@ -1,7 +1,5 @@
 #pragma once
-#include <shard/runtime/VariableRegister.h>
-
-#include <memory>
+#include <shard/runtime/ObjectInstance.h>
 #include <unordered_map>
 #include <string>
 
@@ -10,11 +8,15 @@ namespace shard::runtime
 	class InboundVariablesContext
 	{
 	public:
-		std::shared_ptr<InboundVariablesContext> Previous;
-		std::unordered_map<std::string, std::shared_ptr<shard::runtime::VariableRegister>> Heap;
+		const InboundVariablesContext* Previous;
+		std::unordered_map<std::wstring, ObjectInstance*> Variables;
 
-		~InboundVariablesContext();
+		inline InboundVariablesContext(const InboundVariablesContext* prevVarContext)
+			: Previous(prevVarContext) { }
 
-		std::shared_ptr<VariableRegister> TryFind(std::string name);
+		inline ~InboundVariablesContext();
+
+		ObjectInstance* AddVariable(const std::wstring name, ObjectInstance* instance);
+		ObjectInstance* TryFind(const std::wstring& name);
 	};
 }

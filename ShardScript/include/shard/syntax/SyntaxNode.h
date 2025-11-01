@@ -1,26 +1,26 @@
 #pragma once
-#include <shard/syntax/analysis/DiagnosticsContext.h>
 #include <shard/syntax/SyntaxKind.h>
-#include <memory>
-
-using namespace std;
-using namespace shard::syntax::analysis;
 
 namespace shard::syntax
 {
 	class SyntaxNode
 	{
 	public:
-		shared_ptr<SyntaxNode> Parent;
-		SyntaxKind Kind;
-		//bool IsMissing;
+		const SyntaxKind Kind;
+		SyntaxNode* Parent;
+		
+		inline SyntaxNode(const SyntaxKind kind, const SyntaxNode* parent)
+			: Kind(kind), Parent((SyntaxNode*)parent) { }
 
-		SyntaxNode(SyntaxKind kind)
-			: Kind(kind) {}
+		inline SyntaxNode(const SyntaxNode& other)
+			: Kind(other.Kind), Parent(other.Parent) { }
 
-		virtual ~SyntaxNode()
+		inline virtual ~SyntaxNode()
 		{
-
+			Parent = nullptr;
 		}
+
+		//virtual vector<SyntaxNode> GetChildNodes();
+		//virtual void Accept();
 	};
 }

@@ -1,9 +1,8 @@
 #pragma once
+#include <shard/syntax/SyntaxNode.h>
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxToken.h>
 #include <shard/syntax/nodes/MemberDeclarationSyntax.h>
-
-using namespace std;
 
 namespace shard::syntax::nodes
 {
@@ -12,14 +11,17 @@ namespace shard::syntax::nodes
 	public:
 		SyntaxToken OpenBraceToken;
 		SyntaxToken CloseBraceToken;
-		SyntaxToken Semicolon;
+		SyntaxToken SemicolonToken;
+		
+		inline BodyDeclarationSyntax(const SyntaxKind kind, const SyntaxNode* parent)
+			: MemberDeclarationSyntax(kind, parent) { }
 
-		BodyDeclarationSyntax(SyntaxKind kind)
-			: MemberDeclarationSyntax(kind) {}
+		inline BodyDeclarationSyntax(const BodyDeclarationSyntax& other)
+			: MemberDeclarationSyntax(other), OpenBraceToken(other.OpenBraceToken), CloseBraceToken(other.CloseBraceToken), SemicolonToken(other.SemicolonToken) { }
 
-		bool IsLiner() const
+		inline virtual ~BodyDeclarationSyntax()
 		{
-			return OpenBraceToken.IsMissing && CloseBraceToken.IsMissing && Semicolon.IsMissing;
+
 		}
 	};
 }

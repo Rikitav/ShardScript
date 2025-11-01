@@ -2,20 +2,29 @@
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/nodes/MemberDeclarationSyntax.h>
 #include <shard/syntax/nodes/BodyDeclarationSyntax.h>
-#include <memory>
+#include <shard/syntax/SyntaxNode.h>
 #include <vector>
-
-using namespace std;
-using namespace shard::parsing::structures;
 
 namespace shard::syntax::nodes
 {
 	class TypeDeclarationSyntax : public BodyDeclarationSyntax
 	{
 	public:
-		vector<shared_ptr<MemberDeclarationSyntax>> Members;
+		std::vector<MemberDeclarationSyntax*> Members;
 
-		TypeDeclarationSyntax(SyntaxKind kind)
-			: BodyDeclarationSyntax(kind) {}
+		inline TypeDeclarationSyntax(const SyntaxKind kind, const SyntaxNode* parent)
+			: BodyDeclarationSyntax(kind, parent) { }
+
+		inline TypeDeclarationSyntax(const TypeDeclarationSyntax& other)
+			: BodyDeclarationSyntax(other), Members(other.Members) { }
+
+		inline virtual ~TypeDeclarationSyntax()
+		{
+			for (const MemberDeclarationSyntax* member : Members)
+			{
+				member->~MemberDeclarationSyntax();
+				delete member;
+			}
+		}
 	};
 }

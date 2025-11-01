@@ -1,0 +1,29 @@
+#include <shard/syntax/SyntaxSymbol.h>
+#include <shard/parsing/semantic/SemanticScope.h>
+#include <stdexcept>
+#include <string>
+
+using namespace std;
+using namespace shard::syntax;
+using namespace shard::parsing::semantic;
+
+SyntaxSymbol* SemanticScope::Lookup(wstring& name)
+{
+    auto lookup = _symbols.find(name);
+    if (lookup != _symbols.end())
+        return lookup->second;
+
+    SemanticScope* parent = (SemanticScope*)Parent;
+    if (parent != nullptr)
+        return parent->Lookup(name);
+
+    return nullptr;
+}
+
+void SemanticScope::DeclareSymbol(SyntaxSymbol* symbol)
+{
+    if (_symbols.find(symbol->Name) != _symbols.end())
+        throw runtime_error("Symbol already defined");
+
+    _symbols[symbol->Name] = symbol;
+}

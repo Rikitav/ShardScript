@@ -1,5 +1,6 @@
 #include <string>
 #include <filesystem>
+#include <vector>
 
 using namespace std;
 using namespace std::filesystem;
@@ -8,25 +9,25 @@ namespace shard::utilities
 {
     struct ConsoleArguments
     {
-        bool UseInterpreter = false;
-        vector<string> FilesToCompile;
+        bool UseInteractive = false;
+        vector<wstring> FilesToCompile;
     };
 
-	static ConsoleArguments ParseArguments(int argc, char** argv)
+	static ConsoleArguments ParseArguments(int argc, wchar_t* argv[])
 	{
         ConsoleArguments args;
         if (argc <= 1)
         {
-            args.UseInterpreter = true;
+            args.UseInteractive = true;
             return args;
         }
 
         for (int i = 1; i < argc; i++)
         {
-            string arg = argv[i];
-            if (arg == "-interpret")
+            wstring arg = argv[i];
+            if (arg == L"--interactive")
             {
-                args.UseInterpreter = true;
+                args.UseInteractive = true;
             }
             else
             {

@@ -1,15 +1,13 @@
 #pragma once
-#include <shard/parsing/SourceReader.h>
-#include <shard/parsing/structures/MemberDeclarationInfo.h>
+#include <shard/parsing/reading/SourceReader.h>
+#include <shard/parsing/analysis/DiagnosticsContext.h>
+#include <shard/parsing/lexical/MemberDeclarationInfo.h>
+#include <shard/parsing/lexical/SyntaxTree.h>
 
 #include <shard/syntax/SyntaxToken.h>
 #include <shard/syntax/TokenType.h>
+#include <shard/syntax/SyntaxNode.h>
 
-#include <shard/syntax/structures/SyntaxTree.h>
-#include <shard/syntax/analysis/DiagnosticsContext.h>
-
-#include <shard/syntax/nodes/UsingDirectiveSyntax.h>
-#include <shard/syntax/nodes/ImportDirectiveSyntax.h>
 #include <shard/syntax/nodes/TypeDeclarationSyntax.h>
 #include <shard/syntax/nodes/ArgumentsListSyntax.h>
 #include <shard/syntax/nodes/ExpressionSyntax.h>
@@ -17,116 +15,82 @@
 #include <shard/syntax/nodes/ParametersListSyntax.h>
 #include <shard/syntax/nodes/CompilationUnitSyntax.h>
 #include <shard/syntax/nodes/StatementSyntax.h>
-#include <shard/syntax/nodes/TypeDeclarations.h>
-#include <shard/syntax/nodes/Statements.h>
 #include <shard/syntax/nodes/StatementsBlockSyntax.h>
-#include <shard/syntax/nodes/Loops.h>
-#include <shard/syntax/nodes/Expressions.h>
-#include <shard/syntax/nodes/IndexatorListSyntax.h>
-#include <shard/syntax/nodes/Desides.h>
+#include <shard/syntax/nodes/TypeSyntax.h>
 
-#include <memory>
+#include <shard/syntax/nodes/Directives/UsingDirectiveSyntax.h>
+#include <shard/syntax/nodes/Directives/ImportDirectiveSyntax.h>
+
+#include <shard/syntax/nodes/Statements/ConditionalClauseSyntax.h>
+#include <shard/syntax/nodes/Statements/ReturnStatementSyntax.h>
+
+#include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.h>
+
+#include <shard/syntax/nodes/Expressions/LinkedExpressionSyntax.h>
+#include <shard/syntax/nodes/Expressions/ObjectExpressionSyntax.h>
+
+#include <shard/syntax/nodes/Loops/ForStatementSyntax.h>
+#include <shard/syntax/nodes/Loops/WhileStatementSyntax.h>
+#include <shard/syntax/nodes/Loops/UntilStatementSyntax.h>
+
 #include <initializer_list>
-#include <stdexcept>
 #include <vector>
-
-using namespace shard::syntax;
-using namespace shard::syntax::nodes;
-using namespace shard::syntax::analysis;
-using namespace shard::syntax::structures;
-using namespace shard::parsing::structures;
 
 namespace shard::parsing
 {
 	class LexicalAnalyzer
 	{
 	private:
-		shared_ptr<SyntaxTree> Tree;
-		DiagnosticsContext& Diagnostics;
-		//shared_ptr<CompilationUnitSyntax> CompilationUnit;
+		shard::parsing::analysis::DiagnosticsContext& Diagnostics;
 
 	public:
-		LexicalAnalyzer(shared_ptr<SyntaxTree> tree, DiagnosticsContext& diagnostics);
+		LexicalAnalyzer(shard::parsing::analysis::DiagnosticsContext& diagnostics)
+			: Diagnostics(diagnostics) { }
 
-		void FromSourceReader(SourceReader& Reader);
+		void FromSourceReader(shard::parsing::lexical::SyntaxTree & syntaxTree, shard::parsing::SourceReader& reader);
 
 		// First layer - top tier compilation
-		shared_ptr<CompilationUnitSyntax> ReadCompilationUnit(SourceReader& reader);
+		shard::syntax::nodes::CompilationUnitSyntax* ReadCompilationUnit(shard::parsing::SourceReader& reader);
 
-		shared_ptr<UsingDirectiveSyntax> ReadUsingDirective(SourceReader& reader);
-		shared_ptr<ImportDirectiveSyntax> ReadImportDirective(SourceReader& reader);
+		shard::syntax::nodes::UsingDirectiveSyntax* ReadUsingDirective(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
+		shard::syntax::nodes::ImportDirectiveSyntax* ReadImportDirective(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
 		
 		// Second layer - objects and members
-		shared_ptr<NamespaceDeclarationSyntax> ReadNamespaceDeclaration(SourceReader& reader);
-		shared_ptr<MemberDeclarationSyntax> ReadMemberDeclaration(SourceReader& reader);
+		shard::syntax::nodes::NamespaceDeclarationSyntax* ReadNamespaceDeclaration(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
+		shard::syntax::nodes::MemberDeclarationSyntax* ReadMemberDeclaration(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
 
-		vector<SyntaxToken> ReadMemberModifiers(SourceReader& reader);
-		shared_ptr<ParametersListSyntax> ReadParametersList(SourceReader& reader);
-		void ReadTypeBody(SourceReader& reader, shared_ptr<TypeDeclarationSyntax> syntax);
+		std::vector<shard::syntax::SyntaxToken> ReadMemberModifiers(shard::parsing::SourceReader& reader);
+		shard::syntax::nodes::ParametersListSyntax* ReadParametersList(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
+		void ReadTypeBody(shard::parsing::SourceReader& reader, shard::syntax::nodes::TypeDeclarationSyntax* syntax);
 
 		// Third layer - code
-		shared_ptr<StatementsBlockSyntax> ReadStatementsBlock(SourceReader& reader);
-		shared_ptr<StatementSyntax> ReadStatement(SourceReader& reader);
+		shard::syntax::nodes::StatementsBlockSyntax* ReadStatementsBlock(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
+		shard::syntax::nodes::StatementSyntax* ReadStatement(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
 
-		shared_ptr<KeywordStatementSyntax> ReadKeywordStatement(SourceReader& reader);
-		shared_ptr<ReturnStatementSyntax> ReadReturnStatement(SourceReader& reader);
+		shard::syntax::nodes::KeywordStatementSyntax* ReadKeywordStatement(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
+		shard::syntax::nodes::ReturnStatementSyntax* ReadReturnStatement(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
 
-		shared_ptr<DesideStatementSyntax> ReadDesideStatement(SourceReader& reader);
-		shared_ptr<ForStatementSyntax> ReadForStatement(SourceReader& reader);
+		shard::syntax::nodes::ConditionalClauseBaseSyntax* ReadConditionalClause(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
+		shard::syntax::nodes::WhileStatementSyntax* ReadWhileStatement(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
+		shard::syntax::nodes::UntilStatementSyntax* ReadUntilStatement(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
+		shard::syntax::nodes::ForStatementSyntax* ReadForStatement(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
 
-		shared_ptr<ExpressionSyntax> ReadExpression(SourceReader& reader, int bindingPower);
-		shared_ptr<ExpressionSyntax> ReadNullDenotation(SourceReader& reader);
-		shared_ptr<ExpressionSyntax> ReadLeftDenotation(SourceReader& reader, shared_ptr<ExpressionSyntax> leftExpr);
+		shard::syntax::nodes::ExpressionSyntax* ReadExpression(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent, int bindingPower);
+		shard::syntax::nodes::ExpressionSyntax* ReadNullDenotation(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
+		shard::syntax::nodes::ExpressionSyntax* ReadLeftDenotation(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent, shard::syntax::nodes::ExpressionSyntax* leftExpr);
 
-		shared_ptr<MemberAccessExpressionSyntax> ReadMemberAccessExpression(SourceReader& reader);
-		shared_ptr<ArgumentsListSyntax> ReadArgumentsList(SourceReader& reader);
-		shared_ptr<IndexatorListSyntax> ReadIndexatorList(SourceReader& reader);
+		shard::syntax::nodes::LinkedExpressionSyntax* ReadLinkedExpression(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
+		shard::syntax::nodes::LinkedExpressionNode* ReadLinkedExpressionNode(shard::parsing::SourceReader& reader, shard::syntax::nodes::LinkedExpressionSyntax* parent, shard::syntax::nodes::LinkedExpressionNode* lastNode);
+		shard::syntax::nodes::ObjectExpressionSyntax* ReadObjectExpression(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
+		shard::syntax::nodes::ArgumentsListSyntax* ReadArgumentsList(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
+		shard::syntax::nodes::IndexatorListSyntax* ReadIndexatorList(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
+
+		shard::syntax::nodes::TypeSyntax* ReadType(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
 
 	private:
 		// Fourth layer - lexing helpers
-		SyntaxToken Expect(SourceReader& reader, TokenType kind, const char* message)
-		{
-			SyntaxToken current = reader.Current();
-			if (current.Type == kind)
-			{
-				reader.Consume();
-				return current;
-			}
-
-			if (message != nullptr)
-				Diagnostics.ReportError(current, message);
-			
-			return SyntaxToken(kind, "", current.Location, true);
-		}
-
-		bool Matches(SourceReader& reader, initializer_list<TokenType> types)
-		{
-			if (!reader.CanConsume())
-				return false;
-
-			SyntaxToken current = reader.Current();
-			for (const TokenType& type : types)
-			{
-				if (current.Type == type)
-					return true;
-			}
-
-			return false;
-		}
-
-		shared_ptr<TypeDeclarationSyntax> make_type(MemberDeclarationInfo& info)
-		{
-			if (info.DeclareType.IsMissing)
-				throw runtime_error("declare type is missing");
-
-			switch (info.DeclareType.Type)
-			{
-				case TokenType::ClassKeyword:
-					return make_shared<ClassDeclarationSyntax>(info);
-				
-				default:
-					throw runtime_error("unknown type delcaration");
-			}
-		}
+		shard::syntax::SyntaxToken Expect(shard::parsing::SourceReader& reader, shard::syntax::TokenType kind, const char* message);
+		bool Matches(shard::parsing::SourceReader& reader, std::initializer_list<shard::syntax::TokenType> types);
+		shard::syntax::nodes::TypeDeclarationSyntax* make_type(shard::parsing::lexical::MemberDeclarationInfo& info, shard::syntax::SyntaxNode* parent);
 	};
 }

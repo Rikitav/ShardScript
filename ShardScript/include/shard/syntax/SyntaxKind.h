@@ -6,45 +6,60 @@ namespace shard::syntax
 	{
 		Unknown,
 
+		// Top-tier Units
 		CompilationUnit,
 		UsingDirective,
 		DllImportDirective,
 
+		// Types
 		NamespaceDeclaration,
 		ClassDeclaration,
 		StructDeclaration,
 		InterfaceDeclaration,
 
+		// Members
+		FieldDeclaration,
 		MethodDeclaration,
-		ParametersList,
+
+		// Method parts
 		Parameter,
+		ParametersList,
+		Argument,
 		ArgumentsList,
 		IndexatorList,
-		Argument,
 		StatementsBlock,
 		MethodBody,
 
-		Statement,
-		KeywordStatement,
+		// Statements
 		ExpressionStatement,
 		VariableStatement,
+
+		// Keyword statements
 		ForStatement,
+		WhileStatement,
+		UntilStatement,
 		ReturnStatement,
 		IfStatement,
 		UnlessStatement,
-		//ElseIfStatement,
-		//ElseUnlessStatement,
 		ElseStatement,
 
-		Expression,
-		AssignExpression,
-		ConstExpression,
+		// Expressions
+		ObjectExpression,
+		LiteralExpression,
 		BinaryExpression,
 		UnaryExpression,
-		FieldAccessExpression,
+
+		// Linked expressions
+		LinkedExpression,
+		MemberAccessExpression,
 		InvokationExpression,
 		IndexatorExpression,
 		
-		Type
+		// Type identifiers
+		PredefinedType,
+		IdentifierNameType,
+		ArrayType,
+		NullableType,
+		GenericType,
 	};
 }

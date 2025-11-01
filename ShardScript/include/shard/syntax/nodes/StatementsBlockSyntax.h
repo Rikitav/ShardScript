@@ -1,8 +1,8 @@
 #pragma once
+#include <shard/syntax/SyntaxNode.h>
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/nodes/BodyDeclarationSyntax.h>
 #include <shard/syntax/nodes/StatementSyntax.h>
-#include <memory>
 #include <vector>
 
 namespace shard::syntax::nodes
@@ -10,11 +10,23 @@ namespace shard::syntax::nodes
 	class StatementsBlockSyntax : public BodyDeclarationSyntax
 	{
 	public:
-		vector<shared_ptr<StatementSyntax>> Statements;
+		std::vector<StatementSyntax*> Statements;
 
-		StatementsBlockSyntax() : BodyDeclarationSyntax(SyntaxKind::StatementsBlock)
+		inline StatementsBlockSyntax(const SyntaxNode* parent)
+			: BodyDeclarationSyntax(SyntaxKind::StatementsBlock, parent) { }
+
+		inline StatementsBlockSyntax(const StatementsBlockSyntax& other)
+			: BodyDeclarationSyntax(other), Statements(other.Statements) { }
+
+		inline virtual ~StatementsBlockSyntax()
 		{
+			for (const StatementSyntax* statement : Statements)
+			{
+				statement->~StatementSyntax();
+				delete statement;
+			}
 
+			Statements.~vector();
 		}
 	};
 }

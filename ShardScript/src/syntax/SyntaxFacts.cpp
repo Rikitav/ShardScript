@@ -7,43 +7,53 @@ int GetOperatorPrecendence(TokenType type)
 {
 	switch (type)
 	{
-		default:
-			return 0;
-
-		case TokenType::AssignOperator:
-			return 1;
-
-		case TokenType::EqualsOperator:
-		case TokenType::NotEqualsOperator:
-		case TokenType::LessOperator:
-		case TokenType::LessOrEqualsOperator:
-		case TokenType::GreaterOperator:
-		case TokenType::GreaterOrEqualsOperator:
-			return 2;
-
-		case TokenType::AddOperator:
-		case TokenType::SubOperator:
-			return 3;
-
-		case TokenType::AddAssignOperator:
-		case TokenType::SubAssignOperator:
-			return 4;
+		case TokenType::IncrementOperator:
+		case TokenType::DecrementOperator:
+			return 9;
 
 		case TokenType::MultOperator:
 		case TokenType::DivOperator:
 		case TokenType::ModOperator:
 		case TokenType::PowOperator:
+			return 8;
+
+		case TokenType::AddOperator:
+		case TokenType::SubOperator:
+			return 7;
+
+		case TokenType::LessOperator:
+		case TokenType::LessOrEqualsOperator:
+		case TokenType::GreaterOperator:
+		case TokenType::GreaterOrEqualsOperator:
+			return 6;
+
+		case TokenType::LeftShiftOperator:
+		case TokenType::RightShiftOperator:
 			return 5;
 
+		case TokenType::EqualsOperator:
+		case TokenType::NotEqualsOperator:
+			return 4;
+
+		case TokenType::OrOperator:
+		case TokenType::AndOperator:
+			return 3;
+
+		case TokenType::AddAssignOperator:
+		case TokenType::SubAssignOperator:
 		case TokenType::MultAssignOperator:
 		case TokenType::DivAssignOperator:
 		case TokenType::ModAssignOperator:
 		case TokenType::PowAssignOperator:
-			return 6;
+		case TokenType::OrAssignOperator:
+		case TokenType::AndAssignOperator:
+			return 2;
 
-		case TokenType::IncrementOperator:
-		case TokenType::DecrementOperator:
-			return 7;
+		case TokenType::AssignOperator:
+			return 1;
+
+		default:
+			return 0;
 	}
 }
 
@@ -164,18 +174,55 @@ bool IsMemberKeyword(TokenType type)
 	}
 }
 
-bool IsType(TokenType type)
+bool IsPredefinedType(TokenType type)
 {
 	switch (type)
 	{
 		case TokenType::VoidKeyword:
 		case TokenType::IntegerKeyword:
+		case TokenType::CharKeyword:
 		case TokenType::StringKeyword:
-		case TokenType::Identifier:
 			return true;
 
 		default:
 			return false;
+	}
+}
+
+bool IsType(TokenType type, TokenType peekType)
+{
+	if (IsPredefinedType(type))
+		return true;
+
+	if (type == TokenType::Identifier)
+	{
+		switch (peekType)
+		{
+			case TokenType::LessOperator:
+			case TokenType::Delimeter:
+			case TokenType::Question:
+				return true;
+
+			case TokenType::Semicolon:
+				return false;
+
+			default:
+			{
+				if (IsOperator(peekType))
+					return false;
+
+				if (IsKeyword(peekType))
+					return false;
+
+				if (IsModifier(peekType))
+					return false;
+
+				if (IsMemberKeyword(peekType))
+					return false;
+
+				return true;
+			}
+		}
 	}
 }
 
@@ -195,19 +242,30 @@ bool IsModifier(TokenType type)
 	}
 }
 
-bool IsMemberDeclaration(TokenType type)
+bool IsMemberDeclaration(TokenType currentType, TokenType peekType)
 {
-	if (IsMemberKeyword(type))
+	if (IsModifier(currentType))
 		return true;
 
-	if (IsModifier(type))
-		return true;
+	/*
+	if (IsType(currentType, peekType))
+	{
+		if (peekType == TokenType::Identifier)
+			return true;
+	}
+	*/
 
-	if (IsType(type))
-		return true;
+	if (IsMemberKeyword(currentType))
+	{
+		if (peekType == TokenType::Identifier)
+			return true;
+	}
 
-	if (type == TokenType::Identifier)
-		return true;
+	if (currentType == TokenType::Identifier)
+	{
+		if (peekType == TokenType::Identifier)
+			return true;
+	}
 
 	return false;
 }
@@ -217,8 +275,8 @@ bool IsLoopKeyword(TokenType type)
 	switch (type)
 	{
 		case TokenType::ForKeyword:
-		case TokenType::ForeverKeyword:
 		case TokenType::WhileKeyword:
+		case TokenType::UntilKeyword:
 		case TokenType::DoKeyword:
 		case TokenType::ForeachKeyword:
 			return true;

@@ -7,9 +7,13 @@ namespace shard::syntax
 		// Generic
 		Unknown,
 		EndOfFile,   // End of file
-		Trivia,		 // any non visible
-		VarName,	 // variable name
+		//Trivia,    // any non visible
+		//VarName,	 // variable name
+		NewKeyword,  // new keyword
 		Identifier,	 // member name
+
+		// Generic operators
+		AssignOperator,     // =
 
 		// Binary arithmetic operators
 		AddOperator,		  // +
@@ -18,6 +22,8 @@ namespace shard::syntax
 		DivOperator,		  // /
 		ModOperator,		  // %
 		PowOperator,	      // ^
+
+		// Assigning binary arithmetic operator
 		AddAssignOperator,    // +=
 		SubAssignOperator,    // -=
 		MultAssignOperator,   // *=
@@ -25,25 +31,37 @@ namespace shard::syntax
 		ModAssignOperator,    // %=
 		PowAssignOperator,    // ^=
 
-		// Binary boolean operators
+		// Unary arithmetic operators
+		IncrementOperator,   // ++
+		DecrementOperator,   // --
+
+		// Binary bitwise operators
+		OrOperator,				// |
+		AndOperator,			// &
+		RightShiftOperator,		// >>
+		LeftShiftOperator,		// <<
+
+		// Assigning binary bitwise operators
+		OrAssignOperator,			// |=
+		AndAssignOperator,			// &=
+		//RightShiftAssignOperator,	// >>=
+		//LeftShiftAssignOperator,	// <<=
+
+		// Binary boolean-returning operators
 		EqualsOperator,		     // ==
 		NotEqualsOperator,	     // !=
 		GreaterOperator,		 // >
 		GreaterOrEqualsOperator, // >=
 		LessOperator,		     // <
 		LessOrEqualsOperator,    // <=
-		AssignOperator,          // =
-
-		// Unary arithmetic operators
-		IncrementOperator,   // ++
-		DecrementOperator,   // --
 
 		// Unary boolean operators
 		NotOperator,         // !
 
 		// Literals
 		NullLiteral,          // 'null'
-		StringLiteral,		  // Value in ""
+		CharLiteral,		  // single character in ''
+		StringLiteral,		  // string in ""
 		BooleanLiteral,		  // 'true' or 'false'
 		NumberLiteral,	      // Number value
 		NativeLiteral,		  // native pointer
@@ -58,6 +76,7 @@ namespace shard::syntax
 		CloseSquare,		  // ]
 		Delimeter,			  // .
 		Comma,				  // ,
+		Question,			  // ?
 
 		// Member modifier keywords
 		PublicKeyword,		  // public
@@ -68,12 +87,15 @@ namespace shard::syntax
 		AbstractKeyword,	  // abstract
 		SealedKeyword,		  // sealed
 		PartialKeyword,		  // partial
+		OverrideKeyword,	  // override
+		VirtualKeyword,		  // virtual
 
 		// Built-in type keywords
 		VoidKeyword,		  // void
 		IntegerKeyword,		  // int
 		ShortKeyword,		  // short
 		LongKeyword,		  // long
+		CharKeyword,		  // char
 		StringKeyword,		  // string
 		BooleanKeyword,		  // bool
 
@@ -90,16 +112,16 @@ namespace shard::syntax
 		NamespaceKeyword,	  // namespace
 
 		// Loops keywords
-		ForKeyword,
-		WhileKeyword,
-		DoKeyword,
-		ForeachKeyword,
-		ForeverKeyword,
+		ForKeyword,			// for
+		WhileKeyword,		// while
+		UntilKeyword,		// until
+		DoKeyword,			// do
+		ForeachKeyword,		// foreach
 
-		// Conditional keywords
-		IfKeyword,
-		UnlessKeyword,
-		ElseKeyword,
+		// Conditional clause keywords
+		IfKeyword,		 // if
+		UnlessKeyword,	 // unless
+		ElseKeyword,	 // else
 
 		// Functional keywords
 		ReturnKeyword,		  // return
