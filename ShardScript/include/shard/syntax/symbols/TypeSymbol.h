@@ -13,6 +13,13 @@ namespace shard::syntax::symbols
     class MethodSymbol;
     class FieldSymbol;
 
+    enum class TypeLayoutingState
+    {
+        Unvisited,
+        Visiting,
+        Visited
+    };
+
 	class TypeSymbol : public SyntaxSymbol
 	{
 	public:
@@ -22,6 +29,7 @@ namespace shard::syntax::symbols
         std::vector<MethodSymbol*> Methods;
         std::vector<FieldSymbol*> Fields;
 
+        TypeLayoutingState State = TypeLayoutingState::Unvisited;
         size_t MemoryBytesSize = -1;
         bool IsReferenceType = false;
         bool IsValueType = false;

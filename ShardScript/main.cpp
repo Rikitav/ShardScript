@@ -15,6 +15,7 @@
 #include <stdexcept>
 #include <exception>
 #include <clocale>
+#include <shard/parsing/LayoutGenerator.h>
 
 using namespace std;
 using namespace shard::utilities;
@@ -44,6 +45,9 @@ int wmain(int argc, wchar_t* argv[])
 
 		SemanticAnalyzer semanticAnalyzer(diagnostics);
 		SemanticModel semanticModel = semanticAnalyzer.Analyze(syntaxTree);
+
+		LayoutGenerator layoutGenerator(diagnostics);
+		layoutGenerator.Generate(semanticModel);
 
 		if (args.UseInteractive)
 		{

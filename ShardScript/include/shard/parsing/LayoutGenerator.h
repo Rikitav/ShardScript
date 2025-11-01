@@ -13,9 +13,9 @@ namespace shard::parsing
 		LayoutGenerator(shard::parsing::analysis::DiagnosticsContext& diagnostics)
 			: Diagnostics(diagnostics) { }
 
-		void Generate(shard::parsing::semantic::SemanticModel& syntaxTree);
+		void Generate(shard::parsing::semantic::SemanticModel& semanticModel);
 
 	private:
-		void FixObjectLayout(shard::syntax::symbols::TypeSymbol* objectInfo);
+		void FixObjectLayout(shard::parsing::semantic::SemanticModel& semanticModel, shard::syntax::symbols::TypeSymbol* objectInfo);
 	};
 }
