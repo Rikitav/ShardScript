@@ -14,7 +14,7 @@ namespace shard::syntax::symbols
 
 		inline ClassSymbol(const std::wstring& name) : TypeSymbol(name, SyntaxKind::ClassDeclaration)
 		{
-			MemoryBytesSize += sizeof(long);
+			MemoryBytesSize += sizeof(unsigned long);
 			IsReferenceType = true;
 		}
 	};

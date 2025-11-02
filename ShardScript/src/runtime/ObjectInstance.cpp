@@ -77,17 +77,26 @@ void ObjectInstance::CopyTo(ObjectInstance* to)
 
 unsigned long ObjectInstance::GetReferencesCount()
 {
+	if (!Info->IsReferenceType)
+		return 0;
+
 	return *static_cast<long*>(OffsetMemory(0, sizeof(long)));
 }
 
 void ObjectInstance::IncrementReference()
 {
+	if (!Info->IsReferenceType)
+		return;
+
 	unsigned long* refCounter = static_cast<unsigned long*>(OffsetMemory(0, sizeof(unsigned long)));
 	refCounter[0] += 1;
 }
 
 void ObjectInstance::DecrementReference()
 {
+	if (!Info->IsReferenceType)
+		return;
+
 	unsigned long* refCounter = static_cast<unsigned long*>(OffsetMemory(0, sizeof(unsigned long)));
 	refCounter[0] -= 1;
 }

@@ -30,7 +30,7 @@ namespace shard::syntax::symbols
         std::vector<FieldSymbol*> Fields;
 
         TypeLayoutingState State = TypeLayoutingState::Unvisited;
-        size_t MemoryBytesSize = -1;
+        size_t MemoryBytesSize = 0;
         bool IsReferenceType = false;
         bool IsValueType = false;
         bool IsStatic = false;

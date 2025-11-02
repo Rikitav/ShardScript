@@ -1,3 +1,4 @@
+#include <shard/syntax/SyntaxToken.h>
 #include <shard/parsing/SemanticAnalyzer.h>
 #include <shard/parsing/lexical/SyntaxTree.h>
 
@@ -7,6 +8,7 @@
 #include <shard/parsing/visiting/ExpressionBinder.h>
 
 using namespace std;
+using namespace shard::syntax;
 using namespace shard::parsing;
 using namespace shard::parsing::lexical;
 using namespace shard::parsing::semantic;
@@ -25,6 +27,16 @@ SemanticModel SemanticAnalyzer::Analyze(SyntaxTree& syntaxTree)
 
 	ExpressionBinder expressionBinder(semanticModel.Table, Diagnostics);
 	expressionBinder.VisitSyntaxTree(syntaxTree);
+
+	if (semanticModel.Table->EntryPointCandidates.empty())
+	{
+		Diagnostics.ReportError(SyntaxToken(), "Entry point for script not found");
+	}
+	
+	if (semanticModel.Table->EntryPointCandidates.size() > 1)
+	{
+		Diagnostics.ReportError(SyntaxToken(), "model has multiple entry points");
+	}
 
 	return semanticModel;
 }

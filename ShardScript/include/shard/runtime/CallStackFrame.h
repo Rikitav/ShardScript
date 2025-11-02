@@ -5,6 +5,13 @@
 
 namespace shard::runtime
 {
+	enum class FrameInterruptionReason
+	{
+		None,
+		ValueReturned,
+		ExcpetionRaised,
+	};
+
 	class CallStackFrame
 	{
 	public:
@@ -12,7 +19,9 @@ namespace shard::runtime
 		const shard::syntax::symbols::MethodSymbol* Method;
 		const CallStackFrame* PreviousFrame;
 		const InboundVariablesContext* VariablesContext;
-		bool IsInterrupted = false;
+		
+		FrameInterruptionReason InterruptionReason = FrameInterruptionReason::None;
+		ObjectInstance* InterruptionRegister = nullptr;
 
 		CallStackFrame(const shard::syntax::symbols::TypeSymbol* ownerObject, const shard::syntax::symbols::MethodSymbol* method, const CallStackFrame* previousFrame, const InboundVariablesContext* prevVarCcontext)
 			: OwnerObject(ownerObject), Method(method), PreviousFrame(previousFrame), VariablesContext(new InboundVariablesContext(prevVarCcontext)) { }

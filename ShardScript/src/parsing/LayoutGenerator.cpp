@@ -49,6 +49,7 @@ void LayoutGenerator::FixObjectLayout(SemanticModel& semanticModel, TypeSymbol* 
 			if (returnType->State == TypeLayoutingState::Unvisited)
 				FixObjectLayout(semanticModel, returnType);
 
+			field->MemoryBytesOffset = objectInfo->MemoryBytesSize;
 			objectInfo->MemoryBytesSize += returnType->MemoryBytesSize;
 		}
 	}

@@ -116,6 +116,16 @@ void DeclarationCollector::VisitFieldDeclaration(FieldDeclarationSyntax* node)
     FieldSymbol* symbol = new FieldSymbol(fieldName);
     SetAccesibility(symbol, node->Modifiers);
 
+    TypeSymbol* ownerType = static_cast<TypeSymbol*>((SyntaxSymbol*)scopeStack.top()->Owner);
+    if (ownerType == nullptr)
+    {
+        Diagnostics.ReportError(node->IdentifierToken, "Cannot resolve method's owner type");
+    }
+    else
+    {
+        ownerType->Fields.push_back(symbol);
+    }
+
     scopeStack.top()->DeclareSymbol(symbol);
     symbolTable->BindSymbol(node, symbol);
 }
@@ -132,13 +142,14 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax* node)
         symbol->Parameters.push_back(paramSymbol);
     }
 
-    TypeSymbol* ownerType = static_cast<TypeSymbol*>((SyntaxSymbol*)scopeStack.top()->Parent->Owner);
+    TypeSymbol* ownerType = static_cast<TypeSymbol*>((SyntaxSymbol*)scopeStack.top()->Owner);
     if (ownerType == nullptr)
     {
         Diagnostics.ReportError(node->IdentifierToken, "Cannot resolve method's owner type");
     }
     else
     {
+        ownerType->Methods.push_back(symbol);
         scopeStack.top()->DeclareSymbol(symbol);
         symbolTable->BindSymbol(node, symbol);
 
@@ -150,15 +161,19 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax* node)
                 if (ownerType->IsStatic)
                     Diagnostics.ReportError(node->IdentifierToken, "Cannot declare a non static method's in static type");
 
+                /*
                 VariableSymbol* thisVarSymbol = new VariableSymbol(L"this");
                 thisVarSymbol->Type = ownerType;
                 scopeStack.top()->DeclareSymbol(thisVarSymbol);
+                */
             }
 
+            /*
             for (ParameterSymbol* parameter : symbol->Parameters)
             {
                 scopeStack.top()->DeclareSymbol(parameter);
             }
+            */
 
             VisitStatementsBlock(node->Body);
             scopeStack.pop();
@@ -173,4 +188,7 @@ void DeclarationCollector::VisitVariableStatement(VariableStatementSyntax* node)
 
     scopeStack.top()->DeclareSymbol(symbol);
     symbolTable->BindSymbol(node, symbol);
+
+    if (node->Expression != nullptr)
+        VisitExpression(node->Expression);
 }

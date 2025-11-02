@@ -28,6 +28,9 @@ ObjectInstance* InboundVariablesContext::TryFind(const wstring& name)
 
 InboundVariablesContext::~InboundVariablesContext()
 {
+	if (Variables.empty())
+		return;
+
 	for (auto const& instance : Variables)
 		GarbageCollector::DestroyInstance(instance.second);
 

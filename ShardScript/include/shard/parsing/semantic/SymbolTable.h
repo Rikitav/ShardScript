@@ -15,7 +15,7 @@ namespace shard::parsing::semantic
         std::unordered_map<shard::syntax::SyntaxSymbol*, shard::syntax::SyntaxNode*> symbolToNodeMap;
     
     public:
-        shard::syntax::symbols::MethodSymbol* EntryPoint = nullptr;
+        std::vector<shard::syntax::symbols::MethodSymbol*> EntryPointCandidates;
         SemanticScope* GlobalScope = new SemanticScope(nullptr, nullptr);
 
         struct Primitives

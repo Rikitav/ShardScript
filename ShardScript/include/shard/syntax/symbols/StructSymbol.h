@@ -14,6 +14,7 @@ namespace shard::syntax::symbols
 
 		inline StructSymbol(const std::wstring& name) : TypeSymbol(name, SyntaxKind::StructDeclaration)
 		{
+			MemoryBytesSize += 0;
 			IsValueType = true;
 		}
 	};

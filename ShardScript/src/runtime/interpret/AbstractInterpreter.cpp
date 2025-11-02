@@ -90,31 +90,36 @@ static ObjectInstance* CreateRegisterFromConstToken(SyntaxToken& constToken)
 
 void AbstractInterpreter::Execute()
 {
-	MethodSymbol* entryPoint = semanticModel.Table->EntryPoint;
+	MethodSymbol* entryPoint = semanticModel.Table->EntryPointCandidates.at(0);
 	ExecuteMethod(nullptr, entryPoint, nullptr);
 }
 
 ObjectInstance* AbstractInterpreter::ExecuteMethod(CallStackFrame* prevCallFrame, MethodSymbol* method, InboundVariablesContext* argumentsContext)
 {
-	InboundVariablesContext* variablesContext = new InboundVariablesContext(argumentsContext);
-	CallStackFrame* callFrame = new CallStackFrame(nullptr, method, prevCallFrame, variablesContext);
+	CallStackFrame* callFrame = new CallStackFrame(nullptr, method, prevCallFrame, argumentsContext);
 	callStack.push(callFrame);
-
-	ObjectInstance* retReg = ExecuteBlock(callFrame, method->Body, (InboundVariablesContext*)callFrame->VariablesContext);
+    ExecuteBlock(callFrame, method->Body, argumentsContext);
+	
+	ObjectInstance* retReg = callFrame->InterruptionRegister;
 	callStack.pop();
+	delete callFrame;
 	
 	return retReg;
 }
 
 ObjectInstance* AbstractInterpreter::ExecuteBlock(CallStackFrame* callFrame, StatementsBlockSyntax* block, InboundVariablesContext* variablesContext)
 {
+	InboundVariablesContext* currentVariablesContext = new InboundVariablesContext(variablesContext);
+	ObjectInstance* retReg = nullptr;
+
 	for (StatementSyntax* statement : block->Statements)
 	{
-		ObjectInstance* retReg = ExecuteStatement(callFrame, statement, variablesContext);
-		if (callFrame->IsInterrupted)
-			return retReg;
+		retReg = ExecuteStatement(callFrame, statement, currentVariablesContext);
+		if (callFrame->InterruptionReason != FrameInterruptionReason::None)
+			break;
 	}
 
+	delete currentVariablesContext;
 	return nullptr;
 }
 
@@ -132,14 +137,16 @@ ObjectInstance* AbstractInterpreter::ExecuteStatement(CallStackFrame* callFrame,
 		case SyntaxKind::IfStatement:
 		{
 			auto ifStatement = dynamic_cast<IfStatementSyntax*>(statement);
-			ObjectInstance* conditionReg = ExecuteStatement(callFrame, ifStatement->ConditionExpression, variablesContext);
-			if (conditionReg->Info != SymbolTable::Primitives::Boolean)
-				throw runtime_error("condition must return boolean");
+			InboundVariablesContext* clauseVariablesContext = new InboundVariablesContext(variablesContext);
 
+			ObjectInstance* conditionReg = ExecuteStatement(callFrame, ifStatement->ConditionExpression, clauseVariablesContext);
 			bool conditionMet = conditionReg->ReadPrimitive<bool>();
-			if (conditionMet)
-				return ExecuteBlock(callFrame, ifStatement->StatementsBlock, variablesContext);
+			GarbageCollector::DestroyInstance(conditionReg);
 
+			if (conditionMet)
+				return ExecuteBlock(callFrame, ifStatement->StatementsBlock, clauseVariablesContext);
+
+			delete clauseVariablesContext;
 			if (ifStatement->NextStatement == nullptr)
 				return nullptr;
 
@@ -149,14 +156,16 @@ ObjectInstance* AbstractInterpreter::ExecuteStatement(CallStackFrame* callFrame,
 		case SyntaxKind::UnlessStatement:
 		{
 			auto unlessStatement = dynamic_cast<UnlessStatementSyntax*>(statement);
-			ObjectInstance* conditionReg = ExecuteStatement(callFrame, unlessStatement->ConditionExpression, variablesContext);
-			if (conditionReg->Info != SymbolTable::Primitives::Boolean)
-				throw runtime_error("condition must return boolean");
+			InboundVariablesContext* clauseVariablesContext = new InboundVariablesContext(variablesContext);
 
+			ObjectInstance* conditionReg = ExecuteStatement(callFrame, unlessStatement->ConditionExpression, clauseVariablesContext);
 			bool conditionMet = conditionReg->ReadPrimitive<bool>();
-			if (!conditionMet)
-				return ExecuteBlock(callFrame, unlessStatement->StatementsBlock, variablesContext);
+			GarbageCollector::DestroyInstance(conditionReg);
 
+			if (!conditionMet)
+				return ExecuteBlock(callFrame, unlessStatement->StatementsBlock, clauseVariablesContext);
+
+			delete clauseVariablesContext;
 			if (unlessStatement->NextStatement == nullptr)
 				return nullptr;
 
@@ -172,35 +181,43 @@ ObjectInstance* AbstractInterpreter::ExecuteStatement(CallStackFrame* callFrame,
 		case SyntaxKind::WhileStatement:
 		{
 			auto whileStatement = dynamic_cast<WhileStatementSyntax*>(statement);
-			ObjectInstance* retReg = nullptr;
+			InboundVariablesContext* loopVariablesContext = new InboundVariablesContext(callFrame->VariablesContext);
 
-			while (!callFrame->IsInterrupted)
+			while (callFrame->InterruptionReason == FrameInterruptionReason::None)
 			{
-				ObjectInstance* loopAgainReg = EvaluateExpression(callFrame, whileStatement->ConditionExpression, variablesContext);
-				if (!loopAgainReg->ReadPrimitive<bool>())
+				ObjectInstance* conditionReg = EvaluateExpression(callFrame, whileStatement->ConditionExpression, variablesContext);
+				bool conditionMet = conditionReg->ReadPrimitive<bool>();
+				GarbageCollector::DestroyInstance(conditionReg);
+
+				if (!conditionMet)
 					break;
 
-				retReg = ExecuteBlock(callFrame, whileStatement->StatementsBlock, variablesContext);
+				ExecuteBlock(callFrame, whileStatement->StatementsBlock, variablesContext);
 			}
 
-			break;
+			delete loopVariablesContext;
+			return nullptr;
 		}
 
 		case SyntaxKind::UntilStatement:
 		{
 			auto untilStatement = dynamic_cast<UntilStatementSyntax*>(statement);
-			ObjectInstance* retReg = nullptr;
+			InboundVariablesContext* loopVariablesContext = new InboundVariablesContext(callFrame->VariablesContext);
 
-			while (!callFrame->IsInterrupted)
+			while (callFrame->InterruptionReason == FrameInterruptionReason::None)
 			{
-				ObjectInstance* loopAgainReg = EvaluateExpression(callFrame, untilStatement->ConditionExpression, variablesContext);
-				if (loopAgainReg->ReadPrimitive<bool>())
+				ObjectInstance* conditionReg = EvaluateExpression(callFrame, untilStatement->ConditionExpression, variablesContext);
+				bool conditionMet = conditionReg->ReadPrimitive<bool>();
+				GarbageCollector::DestroyInstance(conditionReg);
+
+				if (!conditionMet)
 					break;
 
-				retReg = ExecuteBlock(callFrame, untilStatement->StatementsBlock, variablesContext);
+				ExecuteBlock(callFrame, untilStatement->StatementsBlock, variablesContext);
 			}
 
-			break;
+			delete loopVariablesContext;
+			return nullptr;
 		}
 
 		case SyntaxKind::ForStatement:
@@ -208,21 +225,22 @@ ObjectInstance* AbstractInterpreter::ExecuteStatement(CallStackFrame* callFrame,
 			auto forStatement = dynamic_cast<ForStatementSyntax*>(statement);
 			InboundVariablesContext* loopVariablesContext = new InboundVariablesContext(callFrame->VariablesContext);
 			ObjectInstance* initReg = ExecuteStatement(callFrame, forStatement->InitializerStatement, loopVariablesContext);
-			ObjectInstance* retReg = nullptr;
 
-			while (!callFrame->IsInterrupted)
+			while (callFrame->InterruptionReason == FrameInterruptionReason::None)
 			{
-				ObjectInstance* loopAgainReg = EvaluateExpression(callFrame, forStatement->ConditionExpression, loopVariablesContext);
-				bool loopAgain = loopAgainReg->ReadPrimitive<bool>();
+				ObjectInstance* conditionReg = EvaluateExpression(callFrame, forStatement->ConditionExpression, loopVariablesContext);
+				bool conditionMet = conditionReg->ReadPrimitive<bool>();
+				GarbageCollector::DestroyInstance(conditionReg);
 
-				if (!loopAgain)
+				if (!conditionMet)
 					break;
 
-				retReg = ExecuteBlock(callFrame, forStatement->StatementsBlock, loopVariablesContext);
+				ExecuteBlock(callFrame, forStatement->StatementsBlock, loopVariablesContext);
 				ExecuteStatement(callFrame, forStatement->AfterRepeatStatement, loopVariablesContext);
 			}
 
-			return retReg;
+			delete loopVariablesContext;
+			return nullptr;
 		}
 
 		case SyntaxKind::VariableStatement:
@@ -236,12 +254,12 @@ ObjectInstance* AbstractInterpreter::ExecuteStatement(CallStackFrame* callFrame,
 		case SyntaxKind::ReturnStatement:
 		{
 			auto retStatement = dynamic_cast<ReturnStatementSyntax*>(statement);
-			callFrame->IsInterrupted = true;
+			callFrame->InterruptionReason = FrameInterruptionReason::ValueReturned;
 			
-			if (retStatement->Expression == nullptr)
-				return nullptr;
+			if (retStatement->Expression != nullptr)
+				callFrame->InterruptionRegister = EvaluateExpression(callFrame, retStatement->Expression, variablesContext);
 
-			return EvaluateExpression(callFrame, retStatement->Expression, variablesContext);
+			return nullptr;
 		}
 
 		default:

@@ -14,7 +14,9 @@ namespace shard::syntax::symbols
         shard::syntax::nodes::ExpressionSyntax* Declaration = nullptr;
         bool IsConst = false;
 
-		inline VariableSymbol(std::wstring name)
-			: SyntaxSymbol(name, SyntaxKind::VariableStatement) { }
+		inline VariableSymbol(std::wstring name) : SyntaxSymbol(name, SyntaxKind::VariableStatement)
+		{
+			Accesibility = SymbolAccesibility::Public;
+		}
 	};
 }

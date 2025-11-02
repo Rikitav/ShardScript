@@ -124,11 +124,29 @@ void ExpressionBinder::VisitStructDeclaration(StructDeclarationSyntax* node)
 void ExpressionBinder::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 {
 	MethodSymbol* symbol = static_cast<MethodSymbol*>(symbolTable->LookupSymbol(node));
+	TypeSymbol* ownerType = static_cast<TypeSymbol*>((SyntaxSymbol*)scopeStack.top()->Owner);
+
 	if (symbol != nullptr && node->Body != nullptr)
 	{
 		pushScope(symbol);
+
+		if (!symbol->IsStatic)
+		{
+			VariableSymbol* thisVarSymbol = new VariableSymbol(L"this");
+			thisVarSymbol->Type = ownerType;
+			scopeStack.top()->DeclareSymbol(thisVarSymbol);
+		}
+
+		for (ParameterSymbol* parameter : symbol->Parameters)
+		{
+			wstring paramName = parameter->Name;
+			VariableSymbol* paramVar = new VariableSymbol(paramName);
+			paramVar->Type = parameter->Type;
+			scopeStack.top()->DeclareSymbol(paramVar);
+		}
+
 		VisitStatementsBlock(node->Body);
-		
+
 		if (symbol->ReturnType->Name != L"Void")
 		{
 			bool hasReturn = false;
@@ -151,6 +169,7 @@ void ExpressionBinder::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 						{
 							string expectedName(symbol->ReturnType->Name.begin(), symbol->ReturnType->Name.end());
 							string actualName(returnExprType->Name.begin(), returnExprType->Name.end());
+
 							Diagnostics.ReportError(returnStmt->Expression->Kind == SyntaxKind::LiteralExpression
 								? static_cast<LiteralExpressionSyntax*>(returnStmt->Expression)->LiteralToken
 								: SyntaxToken(), "Return type mismatch: expected '" + expectedName + "' but got '" + actualName + "'");
@@ -188,6 +207,22 @@ void ExpressionBinder::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 		}
 		
 		scopeStack.pop();
+	}
+
+	if (symbol->Name == L"Main")
+	{
+		symbolTable->EntryPointCandidates.push_back(symbol);
+		if (symbol->Accesibility != SymbolAccesibility::Public)
+			Diagnostics.ReportError(node->IdentifierToken, "Main entry point should be public");
+
+		if (!symbol->IsStatic)
+			Diagnostics.ReportError(node->IdentifierToken, "Main entry point should be static");
+
+		if (symbol->Parameters.size() != 0)
+			Diagnostics.ReportError(node->IdentifierToken, "Main entry point should have empty parameters list");
+
+		if (symbol->ReturnType != SymbolTable::Primitives::Void)
+			Diagnostics.ReportError(node->IdentifierToken, "Main entry point should have 'void' return type");
 	}
 }
 
@@ -231,6 +266,8 @@ void ExpressionBinder::VisitVariableStatement(VariableStatementSyntax* node)
 	if (node->Type != nullptr && node->Expression != nullptr)
 	{
 		VariableSymbol* varSymbol = static_cast<VariableSymbol*>(symbolTable->LookupSymbol(node));
+		scopeStack.top()->DeclareSymbol(varSymbol);
+
 		TypeSymbol* expectedType = varSymbol != nullptr ? varSymbol->Type : nullptr;
 		TypeSymbol* actualType = GetExpressionType(node->Expression);
 		
