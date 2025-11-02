@@ -25,9 +25,6 @@ ObjectInstance* ObjectInstance::Copy()
 
 ObjectInstance* ObjectInstance::GetField(FieldSymbol* field)
 {
-	void* offset = OffsetMemory(field->MemoryBytesOffset, sizeof(void*));
-	return GarbageCollector::CopyInstance(field->ReturnType, offset);
-
 	if (field->ReturnType->IsReferenceType)
 	{
 		void* offset = OffsetMemory(field->MemoryBytesOffset, sizeof(void*));
