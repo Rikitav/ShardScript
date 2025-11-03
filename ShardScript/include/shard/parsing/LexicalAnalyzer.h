@@ -23,6 +23,9 @@
 
 #include <shard/syntax/nodes/Statements/ConditionalClauseSyntax.h>
 #include <shard/syntax/nodes/Statements/ReturnStatementSyntax.h>
+#include <shard/syntax/nodes/Statements/ThrowStatementSyntax.h>
+#include <shard/syntax/nodes/Statements/BreakStatementSyntax.h>
+#include <shard/syntax/nodes/Statements/ContinueStatementSyntax.h>
 
 #include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.h>
 
@@ -69,6 +72,9 @@ namespace shard::parsing
 
 		shard::syntax::nodes::KeywordStatementSyntax* ReadKeywordStatement(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
 		shard::syntax::nodes::ReturnStatementSyntax* ReadReturnStatement(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
+		shard::syntax::nodes::ThrowStatementSyntax* ReadThrowStatement(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
+		shard::syntax::nodes::BreakStatementSyntax* ReadBreakStatement(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
+		shard::syntax::nodes::ContinueStatementSyntax* ReadContinueStatement(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
 
 		shard::syntax::nodes::ConditionalClauseBaseSyntax* ReadConditionalClause(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
 		shard::syntax::nodes::WhileStatementSyntax* ReadWhileStatement(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);

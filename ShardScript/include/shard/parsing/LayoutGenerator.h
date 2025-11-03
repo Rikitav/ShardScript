@@ -1,6 +1,7 @@
 #pragma once
 #include <shard/parsing/semantic/SemanticModel.h>
 #include <shard/parsing/analysis/DiagnosticsContext.h>
+#include <shard/syntax/symbols/TypeSymbol.h>
 
 namespace shard::parsing
 {

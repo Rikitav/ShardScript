@@ -1,10 +1,7 @@
 #pragma once
-//#include <shard/syntax/symbols/FieldSymbol.h>
-//#include <shard/syntax/symbols/MethodSymbol.h>
 #include <shard/syntax/SyntaxSymbol.h>
 #include <shard/syntax/SyntaxKind.h>
 
-#include <unordered_map>
 #include <string>
 #include <vector>
 

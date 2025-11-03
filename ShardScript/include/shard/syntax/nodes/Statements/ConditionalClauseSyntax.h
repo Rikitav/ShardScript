@@ -68,11 +68,11 @@ namespace shard::syntax::nodes
 		inline virtual ~UnlessStatementSyntax() { }
 	};
 
-	class ElseSatetmentSyntax : public ConditionalClauseBaseSyntax
+	class ElseStatementSyntax : public ConditionalClauseBaseSyntax
 	{
 	public:
-		inline ElseSatetmentSyntax(const SyntaxNode* parent) : ConditionalClauseBaseSyntax(SyntaxKind::ElseStatement, parent) { }
-		inline ElseSatetmentSyntax(const ElseSatetmentSyntax& other) : ConditionalClauseBaseSyntax(other) { }
-		inline virtual ~ElseSatetmentSyntax() { }
+		inline ElseStatementSyntax(const SyntaxNode* parent) : ConditionalClauseBaseSyntax(SyntaxKind::ElseStatement, parent) { }
+		inline ElseStatementSyntax(const ElseStatementSyntax& other) : ConditionalClauseBaseSyntax(other) { }
+		inline virtual ~ElseStatementSyntax() { }
 	};
 }

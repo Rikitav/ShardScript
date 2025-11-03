@@ -21,32 +21,39 @@
 #include <shard/syntax/nodes/TypeSyntax.h>
 #include <shard/syntax/nodes/CompilationUnitSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarationSyntax.h>
-#include <shard/syntax/nodes/ParametersListSyntax.h>
+#include <shard/syntax/nodes/ArgumentsListSyntax.h>
+#include <shard/syntax/nodes/ExpressionSyntax.h>
+#include <shard/syntax/nodes/StatementSyntax.h>
 #include <shard/syntax/nodes/Directives/UsingDirectiveSyntax.h>
+
 #include <shard/syntax/nodes/Expressions/ObjectExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/LiteralExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/BinaryExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/UnaryExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/LinkedExpressionSyntax.h>
+
 #include <shard/syntax/nodes/Types/IdentifierNameTypeSyntax.h>
 #include <shard/syntax/nodes/Types/PredefinedTypeSyntax.h>
+
 #include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.h>
+
 #include <shard/syntax/nodes/Statements/VariableStatementSyntax.h>
 #include <shard/syntax/nodes/Statements/ReturnStatementSyntax.h>
 #include <shard/syntax/nodes/Statements/ConditionalClauseSyntax.h>
+#include <shard/syntax/nodes/Statements/ExpressionStatementSyntax.h>
+
 #include <shard/syntax/nodes/Loops/WhileStatementSyntax.h>
 #include <shard/syntax/nodes/Loops/UntilStatementSyntax.h>
 #include <shard/syntax/nodes/Loops/ForStatementSyntax.h>
-#include <shard/syntax/nodes/ArgumentsListSyntax.h>
 
-#include <stdexcept>
 #include <vector>
 #include <string>
 #include <algorithm>
+#include <iterator>
 
 using namespace std;
 using namespace shard::parsing;
@@ -78,11 +85,14 @@ TypeSymbol* ExpressionBinder::GetExpressionType(ExpressionSyntax* expression)
 
 void ExpressionBinder::VisitCompilationUnit(CompilationUnitSyntax* node)
 {
+	pushScope(nullptr);
 	for (UsingDirectiveSyntax* directive : node->Usings)
 		VisitUsingDirective(directive);
 
 	for (MemberDeclarationSyntax* member : node->Members)
 		VisitTypeDeclaration(member);
+	
+	scopeStack.pop();
 }
 
 void ExpressionBinder::VisitNamespaceDeclaration(NamespaceDeclarationSyntax* node)

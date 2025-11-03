@@ -35,6 +35,9 @@
 #include <shard/syntax/nodes/Statements/ExpressionStatementSyntax.h>
 #include <shard/syntax/nodes/Statements/ReturnStatementSyntax.h>
 #include <shard/syntax/nodes/Statements/VariableStatementSyntax.h>
+#include <shard/syntax/nodes/Statements/BreakStatementSyntax.h>
+#include <shard/syntax/nodes/Statements/ContinueStatementSyntax.h>
+#include <shard/syntax/nodes/Statements/ThrowStatementSyntax.h>
 
 #include <shard/syntax/nodes/Types/ArrayTypeSyntax.h>
 #include <shard/syntax/nodes/Types/GenericTypeSyntax.h>
@@ -200,15 +203,36 @@ void SyntaxVisitor::VisitStatement(StatementSyntax* node)
 
 		case SyntaxKind::ExpressionStatement:
 		{
-			ExpressionStatementSyntax* statement = dynamic_cast<ExpressionStatementSyntax*>(node);
+			ExpressionStatementSyntax* statement = static_cast<ExpressionStatementSyntax*>(node);
 			VisitExpressionStatement(statement);
 			return;
 		}
 
 		case SyntaxKind::ReturnStatement:
 		{
-			ReturnStatementSyntax* statement = dynamic_cast<ReturnStatementSyntax*>(node);
+			ReturnStatementSyntax* statement = static_cast<ReturnStatementSyntax*>(node);
 			VisitReturnStatement(statement);
+			return;
+		}
+
+		case SyntaxKind::ThrowStatement:
+		{
+			ThrowStatementSyntax* statement = static_cast<ThrowStatementSyntax*>(node);
+			VisitThrowStatement(statement);
+			return;
+		}
+
+		case SyntaxKind::BreakStatement:
+		{
+			BreakStatementSyntax* statement = static_cast<BreakStatementSyntax*>(node);
+			VisitBreakStatement(statement);
+			return;
+		}
+
+		case SyntaxKind::ContinueStatement:
+		{
+			ContinueStatementSyntax* statement = static_cast<ContinueStatementSyntax*>(node);
+			VisitContinueStatement(statement);
 			return;
 		}
 
@@ -293,6 +317,24 @@ void SyntaxVisitor::VisitReturnStatement(ReturnStatementSyntax* node)
 		VisitExpression(node->Expression);
 }
 
+void SyntaxVisitor::VisitThrowStatement(ThrowStatementSyntax* node)
+{
+	if (node->Expression != nullptr)
+		VisitExpression(node->Expression);
+}
+
+void SyntaxVisitor::VisitBreakStatement(BreakStatementSyntax* node)
+{
+	// ...
+	return;
+}
+
+void SyntaxVisitor::VisitContinueStatement(ContinueStatementSyntax* node)
+{
+	// ...
+	return;
+}
+
 void SyntaxVisitor::VisitConditionalClause(ConditionalClauseBaseSyntax* node)
 {
 	switch (node->Kind)
@@ -316,7 +358,7 @@ void SyntaxVisitor::VisitConditionalClause(ConditionalClauseBaseSyntax* node)
 
 		case SyntaxKind::ElseStatement:
 		{
-			ElseSatetmentSyntax* statement = dynamic_cast<ElseSatetmentSyntax*>(node);
+			ElseStatementSyntax* statement = dynamic_cast<ElseStatementSyntax*>(node);
 			VisitElseStatement(statement);
 			return;
 		}
@@ -341,7 +383,7 @@ void SyntaxVisitor::VisitUnlessStatement(UnlessStatementSyntax* node)
 		VisitConditionalClause(node->NextStatement);
 }
 
-void SyntaxVisitor::VisitElseStatement(ElseSatetmentSyntax* node)
+void SyntaxVisitor::VisitElseStatement(ElseStatementSyntax* node)
 {
 	VisitStatementsBlock(node->StatementsBlock);
 

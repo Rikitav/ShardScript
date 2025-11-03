@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <cmath>
 #include <string>
+#include <source_location>
 
 using namespace std;
 using namespace shard::syntax;
@@ -36,10 +37,10 @@ ObjectInstance* PrimitiveMathModule::CreateInstanceFromValue(wchar_t value)
 	return instance;
 }
 
-ObjectInstance* PrimitiveMathModule::CreateInstanceFromValue(wstring value)
+ObjectInstance* PrimitiveMathModule::CreateInstanceFromValue(wstring& value)
 {
 	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String);
-	instance->WritePrimitive(value);
+	instance->WritePrimitive<wstring>(value);
 	return instance;
 }
 
@@ -162,6 +163,12 @@ bool PrimitiveMathModule::IsPrimitiveValuesExpressionEvaluatable(int leftTypeCod
 
 ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(ObjectInstance* leftInstance, SyntaxToken opToken, ObjectInstance* rightInstance, bool& assign)
 {
+	if (opToken.Type == TokenType::AssignOperator)
+	{
+		assign = true;
+		return rightInstance;
+	}
+
 	if (leftInstance->Info == SymbolTable::Primitives::Boolean)
 	{
 		bool leftData = leftInstance->ReadPrimitive<bool>();
@@ -223,7 +230,7 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(bool leftData, Synta
 
 ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(int leftData, SyntaxToken opToken, ObjectInstance* rightInstance, bool& assign)
 {
-	if (rightInstance->Info == SymbolTable::Primitives::Boolean)
+	if (rightInstance->Info == SymbolTable::Primitives::Integer)
 	{
 		int rightData = rightInstance->ReadPrimitive<int>();
 		switch (opToken.Type)
@@ -313,7 +320,7 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(int leftData, Syntax
 	throw runtime_error("unknown primitive");
 }
 
-ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(wstring leftData, SyntaxToken opToken, ObjectInstance* rightInstance, bool& assign)
+ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(wstring& leftData, SyntaxToken opToken, ObjectInstance* rightInstance, bool& assign)
 {
 	if (rightInstance->Info == SymbolTable::Primitives::String)
 	{
@@ -324,7 +331,8 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(wstring leftData, Sy
 			case TokenType::AddAssignOperator:
 			{
 				assign = opToken.Type == TokenType::AddAssignOperator;
-				return CreateInstanceFromValue(leftData + rightData);
+				wstring concat = leftData + rightData;
+				return CreateInstanceFromValue(concat);
 			}
 
 			default:
@@ -424,7 +432,7 @@ ObjectInstance* PrimitiveMathModule::EvaluateUnaryOperator(ObjectInstance* sourc
 	}
 }
 
-ObjectInstance* PrimitiveMathModule::EvaluateUnaryOperator(ObjectInstance* sourceInstance, wstring data, SyntaxToken opToken, bool rightDetermined)
+ObjectInstance* PrimitiveMathModule::EvaluateUnaryOperator(ObjectInstance* sourceInstance, wstring& data, SyntaxToken opToken, bool rightDetermined)
 {
 	switch (opToken.Type)
 	{

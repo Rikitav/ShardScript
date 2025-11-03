@@ -37,8 +37,11 @@
 
 #include <shard/syntax/nodes/Statements/ConditionalClauseSyntax.h>
 #include <shard/syntax/nodes/Statements/ReturnStatementSyntax.h>
+#include <shard/syntax/nodes/Statements/ThrowStatementSyntax.h>
 #include <shard/syntax/nodes/Statements/VariableStatementSyntax.h>
 #include <shard/syntax/nodes/Statements/ExpressionStatementSyntax.h>
+#include <shard/syntax/nodes/Statements/BreakStatementSyntax.h>
+#include <shard/syntax/nodes/Statements/ContinueStatementSyntax.h>
 
 #include <shard/syntax/nodes/Expressions/LiteralExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/BinaryExpressionSyntax.h>
@@ -608,30 +611,39 @@ StatementSyntax* LexicalAnalyzer::ReadStatement(SourceReader& reader, SyntaxNode
 
 KeywordStatementSyntax* LexicalAnalyzer::ReadKeywordStatement(SourceReader& reader, SyntaxNode* parent)
 {
-	SyntaxToken current = reader.Current();
-	switch (current.Type)
+	while (reader.CanConsume())
 	{
-		case TokenType::ForKeyword:
-			return ReadForStatement(reader, parent);
-
-		case TokenType::WhileKeyword:
-			return ReadWhileStatement(reader, parent);
-
-		case TokenType::UntilKeyword:
-			return ReadUntilStatement(reader, parent);
-
-		case TokenType::ReturnKeyword:
-			return ReadReturnStatement(reader, parent);
-
-		case TokenType::IfKeyword:
-		case TokenType::UnlessKeyword:
-		case TokenType::ElseKeyword:
-			return ReadConditionalClause(reader, parent);
-		
-		default:
+		SyntaxToken current = reader.Current();
+		switch (current.Type)
 		{
-			Diagnostics.ReportError(current, "unknown/unsupported keyword");
-			return nullptr;
+			case TokenType::ForKeyword:
+				return ReadForStatement(reader, parent);
+
+			case TokenType::WhileKeyword:
+				return ReadWhileStatement(reader, parent);
+
+			case TokenType::UntilKeyword:
+				return ReadUntilStatement(reader, parent);
+
+			case TokenType::ReturnKeyword:
+				return ReadReturnStatement(reader, parent);
+
+			case TokenType::BreakKeyword:
+				return ReadBreakStatement(reader, parent);
+
+			case TokenType::ContinueKeyword:
+				return ReadContinueStatement(reader, parent);
+
+			case TokenType::IfKeyword:
+			case TokenType::UnlessKeyword:
+			case TokenType::ElseKeyword:
+				return ReadConditionalClause(reader, parent);
+
+			default:
+			{
+				Diagnostics.ReportError(current, "unknown/unsupported keyword");
+				continue;
+			}
 		}
 	}
 }
@@ -645,6 +657,35 @@ ReturnStatementSyntax* LexicalAnalyzer::ReadReturnStatement(SourceReader& reader
 	if (current.Type != TokenType::Semicolon)
 		syntax->Expression = ReadExpression(reader, parent, 0);
 
+	syntax->SemicolonToken = Expect(reader, TokenType::Semicolon, "Missing ';' token");
+	return syntax;
+}
+
+ThrowStatementSyntax* LexicalAnalyzer::ReadThrowStatement(SourceReader& reader, SyntaxNode* parent)
+{
+	ThrowStatementSyntax* syntax = new ThrowStatementSyntax(parent);
+	syntax->KeywordToken = Expect(reader, TokenType::ReturnKeyword, "Expected return keyword");
+
+	SyntaxToken current = reader.Current();
+	if (current.Type != TokenType::Semicolon)
+		syntax->Expression = ReadExpression(reader, parent, 0);
+
+	syntax->SemicolonToken = Expect(reader, TokenType::Semicolon, "Missing ';' token");
+	return syntax;
+}
+
+BreakStatementSyntax* LexicalAnalyzer::ReadBreakStatement(SourceReader& reader, SyntaxNode* parent)
+{
+	BreakStatementSyntax* syntax = new BreakStatementSyntax(parent);
+	syntax->KeywordToken = Expect(reader, TokenType::BreakKeyword, "Expected return keyword");
+	syntax->SemicolonToken = Expect(reader, TokenType::Semicolon, "Missing ';' token");
+	return syntax;
+}
+
+ContinueStatementSyntax* LexicalAnalyzer::ReadContinueStatement(SourceReader& reader, SyntaxNode* parent)
+{
+	ContinueStatementSyntax* syntax = new ContinueStatementSyntax(parent);
+	syntax->KeywordToken = Expect(reader, TokenType::ContinueKeyword, "Expected return keyword");
 	syntax->SemicolonToken = Expect(reader, TokenType::Semicolon, "Missing ';' token");
 	return syntax;
 }
@@ -704,7 +745,7 @@ ConditionalClauseBaseSyntax* LexicalAnalyzer::ReadConditionalClause(SourceReader
 
 					case TokenType::OpenBrace:
 					{
-						ElseSatetmentSyntax* syntax = new ElseSatetmentSyntax(parent);
+						ElseStatementSyntax* syntax = new ElseStatementSyntax(parent);
 						syntax->KeywordToken = elseKeyword;
 						syntax->StatementsBlock = ReadStatementsBlock(reader, syntax);
 						return syntax;

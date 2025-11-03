@@ -36,7 +36,7 @@ void SymbolTable::ResolvePrmitives()
 	Primitives::Boolean->MemoryBytesSize = sizeof(bool);
 	Primitives::Integer->MemoryBytesSize = sizeof(int);
 	Primitives::Char->MemoryBytesSize = sizeof(wchar_t);
-	Primitives::String->MemoryBytesSize = sizeof(wstring*);
+	Primitives::String->MemoryBytesSize = sizeof(wstring);
 
 	GlobalScope->DeclareSymbol(Primitives::Boolean);
 	GlobalScope->DeclareSymbol(Primitives::Integer);

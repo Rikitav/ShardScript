@@ -42,6 +42,8 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <shard/syntax/nodes/Statements/ThrowStatementSyntax.h>
+#include <iterator>
 
 using namespace shard::syntax::symbols;
 using namespace std;
@@ -51,215 +53,244 @@ using namespace shard::syntax::nodes;
 using namespace shard::parsing;
 using namespace shard::parsing::semantic;
 
-static ObjectInstance* CreateRegisterFromConstToken(SyntaxToken& constToken)
+
+CallStackFrame* AbstractInterpreter::CurrentFrame()
 {
-	switch (constToken.Type)
-	{
-		case TokenType::BooleanLiteral:
-		{
-			ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::Boolean);
-			instance->WritePrimitive(constToken.Word == L"true");
-			return instance;
-		}
+	if (callStack.empty())
+		return nullptr;
 
-		case TokenType::NumberLiteral:
-		{
-			ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::Integer);
-			instance->WritePrimitive(stoi(constToken.Word));
-			return instance;
-		}
+	return callStack.top();
+}
 
-		case TokenType::CharLiteral:
-		{
-			ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::Char);
-			instance->WritePrimitive(constToken.Word[0]);
-			return instance;
-		}
+void AbstractInterpreter::PushFrame(MethodSymbol* methodSymbol)
+{
+	callStack.push(new CallStackFrame(methodSymbol, CurrentFrame()));
+}
 
-		case TokenType::StringLiteral:
-		{
-			ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String);
-			instance->WritePrimitive(constToken.Word);
-			return instance;
-		}
+void AbstractInterpreter::PopFrame()
+{
+	if (callStack.empty())
+		return;
 
-		default:
-			throw runtime_error("Unknown constant literal type");
-	}
+	CallStackFrame* current = CurrentFrame();
+	callStack.pop();
+	delete current;
+}
+
+InboundVariablesContext* AbstractInterpreter::CurrentContext()
+{
+	CallStackFrame* frame = CurrentFrame();
+	if (frame == nullptr)
+		return nullptr;
+
+	if (frame->VariablesStack.empty())
+		return nullptr;
+
+	return CurrentFrame()->VariablesStack.top();
+}
+
+void AbstractInterpreter::PushContext(InboundVariablesContext* context)
+{
+	CurrentFrame()->VariablesStack.push(context);
+}
+
+void AbstractInterpreter::PopContext()
+{
+	InboundVariablesContext* current = CurrentContext();
+	CurrentFrame()->VariablesStack.pop();
+	delete current;
 }
 
 void AbstractInterpreter::Execute()
 {
 	MethodSymbol* entryPoint = semanticModel.Table->EntryPointCandidates.at(0);
-	ExecuteMethod(nullptr, entryPoint, nullptr);
+	ExecuteMethod(entryPoint, nullptr);
 }
 
-ObjectInstance* AbstractInterpreter::ExecuteMethod(CallStackFrame* prevCallFrame, MethodSymbol* method, InboundVariablesContext* argumentsContext)
+void AbstractInterpreter::RaiseException(ObjectInstance* exceptionReg)
 {
-	CallStackFrame* callFrame = new CallStackFrame(nullptr, method, prevCallFrame, argumentsContext);
-	callStack.push(callFrame);
-    ExecuteBlock(callFrame, method->Body, argumentsContext);
-	
-	ObjectInstance* retReg = callFrame->InterruptionRegister;
-	callStack.pop();
-	delete callFrame;
-	
+	CallStackFrame* frame = CurrentFrame();
+	if (frame->PreviousFrame != nullptr)
+	{
+		frame->PreviousFrame->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
+		frame->PreviousFrame->InterruptionRegister = exceptionReg;
+		return;
+	}
+
+	// null previous frame => frame is main entry point
+	TypeSymbol* exceptionType = const_cast<TypeSymbol*>(exceptionReg->Info);
+	if (exceptionType == SymbolTable::Primitives::String)
+	{
+		ConsoleHelper::WriteLine(L"Critical error, could not invoke to string method, to get exception description. Exception type - " + exceptionType->Name);
+		return;
+	}
+
+	wstring toStringMethodName = L"ToString";
+	MethodSymbol* toStringMethod = exceptionType->FindMethod(toStringMethodName, vector<TypeSymbol*>());
+
+	ObjectInstance* toStringMethodRet = ExecuteMethod(toStringMethod, nullptr);
+	if (toStringMethodRet->Info != SymbolTable::Primitives::String)
+	{
+		ConsoleHelper::WriteLine(L"Critical error, could not invoke to string method, to get exception description. Exception type - " + exceptionType->Name);
+		return;
+	}
+
+	wstring exceptionString = toStringMethodRet->ReadPrimitive<wstring>();
+	ConsoleHelper::WriteLine(exceptionString);
+}
+
+ObjectInstance* AbstractInterpreter::ExecuteMethod(MethodSymbol* method, InboundVariablesContext* argumentsContext)
+{
+	PushFrame(method);
+	PushContext(argumentsContext);
+	CallStackFrame* frame = CurrentFrame();
+
+	switch (method->HandleType)
+	{
+		case MethodHandleType::ObjectInstance:
+		{
+			ExecuteBlock(method->Body);
+			break;
+		}
+
+		case MethodHandleType::FunctionPointer:
+		{
+			try
+			{
+				frame->InterruptionReason = FrameInterruptionReason::ValueReturned;
+				frame->InterruptionRegister = method->FunctionPointer(argumentsContext);
+			}
+			catch (const runtime_error& err)
+			{
+				frame->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
+				frame->InterruptionRegister = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String);
+
+				string description = err.what();
+				wstring wdescription = wstring(description.begin(), description.end());
+				frame->InterruptionRegister->WritePrimitive<wstring>(wdescription);
+			}
+
+			break;
+		}
+
+		case MethodHandleType::ForeignInterface:
+		{
+			throw runtime_error("FFI not implemented");
+			break;
+		}
+	}
+
+	ObjectInstance* retReg = nullptr;
+	switch (frame->InterruptionReason)
+	{
+		case FrameInterruptionReason::ExceptionRaised:
+		{
+			RaiseException(frame->InterruptionRegister);
+			break;
+		}
+
+		case FrameInterruptionReason::ValueReturned:
+		{
+			retReg = frame->InterruptionRegister;
+			break;
+		}
+	}
+
+	PopContext();
+	PopFrame();
 	return retReg;
 }
 
-ObjectInstance* AbstractInterpreter::ExecuteBlock(CallStackFrame* callFrame, StatementsBlockSyntax* block, InboundVariablesContext* variablesContext)
+ObjectInstance* AbstractInterpreter::ExecuteBlock(const StatementsBlockSyntax* block)
 {
-	InboundVariablesContext* currentVariablesContext = new InboundVariablesContext(variablesContext);
-	ObjectInstance* retReg = nullptr;
+	PushContext(new InboundVariablesContext(CurrentContext()));
+	CallStackFrame* frame = CurrentFrame();
 
-	for (StatementSyntax* statement : block->Statements)
+	auto statement = block->Statements.begin();
+	while (statement != block->Statements.end() && !frame->interrupted())
 	{
-		retReg = ExecuteStatement(callFrame, statement, currentVariablesContext);
-		if (callFrame->InterruptionReason != FrameInterruptionReason::None)
-			break;
+		ExecuteStatement(*statement);
+		statement = next(statement, 1);
 	}
 
-	delete currentVariablesContext;
+	PopContext();
 	return nullptr;
 }
 
-ObjectInstance* AbstractInterpreter::ExecuteStatement(CallStackFrame* callFrame, StatementSyntax* statement, InboundVariablesContext* variablesContext)
+ObjectInstance* AbstractInterpreter::ExecuteStatement(const StatementSyntax* statement)
 {
 	switch (statement->Kind)
 	{
 		case SyntaxKind::ExpressionStatement:
 		{
-			auto exprStatement = dynamic_cast<ExpressionStatementSyntax*>(statement);
-			ObjectInstance* exprReg = EvaluateExpression(callFrame, exprStatement->Expression, variablesContext);
-			return exprReg;
-		}
-
-		case SyntaxKind::IfStatement:
-		{
-			auto ifStatement = dynamic_cast<IfStatementSyntax*>(statement);
-			InboundVariablesContext* clauseVariablesContext = new InboundVariablesContext(variablesContext);
-
-			ObjectInstance* conditionReg = ExecuteStatement(callFrame, ifStatement->ConditionExpression, clauseVariablesContext);
-			bool conditionMet = conditionReg->ReadPrimitive<bool>();
-			GarbageCollector::DestroyInstance(conditionReg);
-
-			if (conditionMet)
-				return ExecuteBlock(callFrame, ifStatement->StatementsBlock, clauseVariablesContext);
-
-			delete clauseVariablesContext;
-			if (ifStatement->NextStatement == nullptr)
-				return nullptr;
-
-			return ExecuteStatement(callFrame, ifStatement->NextStatement, variablesContext);
-		}
-
-		case SyntaxKind::UnlessStatement:
-		{
-			auto unlessStatement = dynamic_cast<UnlessStatementSyntax*>(statement);
-			InboundVariablesContext* clauseVariablesContext = new InboundVariablesContext(variablesContext);
-
-			ObjectInstance* conditionReg = ExecuteStatement(callFrame, unlessStatement->ConditionExpression, clauseVariablesContext);
-			bool conditionMet = conditionReg->ReadPrimitive<bool>();
-			GarbageCollector::DestroyInstance(conditionReg);
-
-			if (!conditionMet)
-				return ExecuteBlock(callFrame, unlessStatement->StatementsBlock, clauseVariablesContext);
-
-			delete clauseVariablesContext;
-			if (unlessStatement->NextStatement == nullptr)
-				return nullptr;
-
-			return ExecuteStatement(callFrame, unlessStatement->NextStatement, variablesContext);
-		}
-		
-		case SyntaxKind::ElseStatement:
-		{
-			auto elseStatement = dynamic_cast<ElseSatetmentSyntax*>(statement);
-			return ExecuteBlock(callFrame, elseStatement->StatementsBlock, variablesContext);
-		}
-
-		case SyntaxKind::WhileStatement:
-		{
-			auto whileStatement = dynamic_cast<WhileStatementSyntax*>(statement);
-			InboundVariablesContext* loopVariablesContext = new InboundVariablesContext(callFrame->VariablesContext);
-
-			while (callFrame->InterruptionReason == FrameInterruptionReason::None)
-			{
-				ObjectInstance* conditionReg = EvaluateExpression(callFrame, whileStatement->ConditionExpression, variablesContext);
-				bool conditionMet = conditionReg->ReadPrimitive<bool>();
-				GarbageCollector::DestroyInstance(conditionReg);
-
-				if (!conditionMet)
-					break;
-
-				ExecuteBlock(callFrame, whileStatement->StatementsBlock, variablesContext);
-			}
-
-			delete loopVariablesContext;
-			return nullptr;
-		}
-
-		case SyntaxKind::UntilStatement:
-		{
-			auto untilStatement = dynamic_cast<UntilStatementSyntax*>(statement);
-			InboundVariablesContext* loopVariablesContext = new InboundVariablesContext(callFrame->VariablesContext);
-
-			while (callFrame->InterruptionReason == FrameInterruptionReason::None)
-			{
-				ObjectInstance* conditionReg = EvaluateExpression(callFrame, untilStatement->ConditionExpression, variablesContext);
-				bool conditionMet = conditionReg->ReadPrimitive<bool>();
-				GarbageCollector::DestroyInstance(conditionReg);
-
-				if (!conditionMet)
-					break;
-
-				ExecuteBlock(callFrame, untilStatement->StatementsBlock, variablesContext);
-			}
-
-			delete loopVariablesContext;
-			return nullptr;
-		}
-
-		case SyntaxKind::ForStatement:
-		{
-			auto forStatement = dynamic_cast<ForStatementSyntax*>(statement);
-			InboundVariablesContext* loopVariablesContext = new InboundVariablesContext(callFrame->VariablesContext);
-			ObjectInstance* initReg = ExecuteStatement(callFrame, forStatement->InitializerStatement, loopVariablesContext);
-
-			while (callFrame->InterruptionReason == FrameInterruptionReason::None)
-			{
-				ObjectInstance* conditionReg = EvaluateExpression(callFrame, forStatement->ConditionExpression, loopVariablesContext);
-				bool conditionMet = conditionReg->ReadPrimitive<bool>();
-				GarbageCollector::DestroyInstance(conditionReg);
-
-				if (!conditionMet)
-					break;
-
-				ExecuteBlock(callFrame, forStatement->StatementsBlock, loopVariablesContext);
-				ExecuteStatement(callFrame, forStatement->AfterRepeatStatement, loopVariablesContext);
-			}
-
-			delete loopVariablesContext;
-			return nullptr;
+			const ExpressionStatementSyntax* expressionStatement = static_cast<const ExpressionStatementSyntax*>(statement);
+			return ExecuteExpressionStatement(expressionStatement);
 		}
 
 		case SyntaxKind::VariableStatement:
 		{
-			auto varStatement = dynamic_cast<VariableStatementSyntax*>(statement);
-			wstring varName = varStatement->IdentifierToken.Word;
-			ObjectInstance* assignInstance = EvaluateExpression(callFrame, varStatement->Expression, variablesContext);
-			return variablesContext->AddVariable(varName, assignInstance);
+			const VariableStatementSyntax* variableStatement = static_cast<const VariableStatementSyntax*>(statement);
+			return ExecuteVariableStatement(variableStatement);
+		}
+
+		case SyntaxKind::ThrowStatement:
+		{
+			const ThrowStatementSyntax* throwStatement = static_cast<const ThrowStatementSyntax*>(statement);
+			return ExecuteThrowStatement(throwStatement);
+		}
+
+		case SyntaxKind::BreakStatement:
+		{
+			const BreakStatementSyntax* throwStatement = static_cast<const BreakStatementSyntax*>(statement);
+			return ExecuteBreakStatement(throwStatement);
+		}
+
+		case SyntaxKind::ContinueStatement:
+		{
+			const ContinueStatementSyntax* throwStatement = static_cast<const ContinueStatementSyntax*>(statement);
+			return ExecuteContinueStatement(throwStatement);
 		}
 
 		case SyntaxKind::ReturnStatement:
 		{
-			auto retStatement = dynamic_cast<ReturnStatementSyntax*>(statement);
-			callFrame->InterruptionReason = FrameInterruptionReason::ValueReturned;
-			
-			if (retStatement->Expression != nullptr)
-				callFrame->InterruptionRegister = EvaluateExpression(callFrame, retStatement->Expression, variablesContext);
+			const ReturnStatementSyntax* returnStatement = static_cast<const ReturnStatementSyntax*>(statement);
+			return ExecuteReturnStatement(returnStatement);
+		}
 
-			return nullptr;
+		case SyntaxKind::IfStatement:
+		{
+			const IfStatementSyntax* ifStatement = static_cast<const IfStatementSyntax*>(statement);
+			return ExecuteIfStatement(ifStatement);
+		}
+
+		case SyntaxKind::UnlessStatement:
+		{
+			const UnlessStatementSyntax* unlessStatement = static_cast<const UnlessStatementSyntax*>(statement);
+			return ExecuteUnlessStatement(unlessStatement);
+		}
+		
+		case SyntaxKind::ElseStatement:
+		{
+			const ElseStatementSyntax* elseStatement = static_cast<const ElseStatementSyntax*>(statement);
+			return ExecuteElseStatement(elseStatement);
+		}
+
+		case SyntaxKind::WhileStatement:
+		{
+			const WhileStatementSyntax* whileStatement = static_cast<const WhileStatementSyntax*>(statement);
+			return ExecuteWhileLoopStatement(whileStatement);
+		}
+
+		case SyntaxKind::UntilStatement:
+		{
+			const UntilStatementSyntax* untilStatement = static_cast<const UntilStatementSyntax*>(statement);
+			return ExecuteUntilLoopStatement(untilStatement);
+		}
+
+		case SyntaxKind::ForStatement:
+		{
+			const ForStatementSyntax* forLoopStatement = static_cast<const ForStatementSyntax*>(statement);
+			return ExecuteForLoopStatement(forLoopStatement);
 		}
 
 		default:
@@ -269,99 +300,382 @@ ObjectInstance* AbstractInterpreter::ExecuteStatement(CallStackFrame* callFrame,
 	}
 }
 
-ObjectInstance* AbstractInterpreter::EvaluateExpression(CallStackFrame* callFrame, ExpressionSyntax* expression, InboundVariablesContext* variablesContext)
+ObjectInstance* AbstractInterpreter::ExecuteExpressionStatement(const ExpressionStatementSyntax* statement)
+{
+	ObjectInstance* exprReg = EvaluateExpression(statement->Expression);
+	return exprReg;
+}
+
+ObjectInstance* AbstractInterpreter::ExecuteVariableStatement(const VariableStatementSyntax* statement)
+{
+	wstring varName = statement->IdentifierToken.Word;
+	ObjectInstance* assignInstance = EvaluateExpression(statement->Expression);
+
+	InboundVariablesContext* variablesContext = callStack.top()->VariablesStack.top();
+	return variablesContext->AddVariable(varName, assignInstance);
+}
+
+ObjectInstance* AbstractInterpreter::ExecuteThrowStatement(const ThrowStatementSyntax* statement)
+{
+	CallStackFrame* callFrame = callStack.top();
+	callFrame->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
+
+	if (statement->Expression != nullptr)
+		callFrame->InterruptionRegister = EvaluateExpression(statement->Expression);
+
+	return nullptr;
+}
+
+ObjectInstance* AbstractInterpreter::ExecuteBreakStatement(const BreakStatementSyntax* statement)
+{
+	CallStackFrame* callFrame = callStack.top();
+	callFrame->InterruptionReason = FrameInterruptionReason::LoopBreak;
+	return nullptr;
+}
+
+ObjectInstance* AbstractInterpreter::ExecuteContinueStatement(const ContinueStatementSyntax* statement)
+{
+	CallStackFrame* callFrame = callStack.top();
+	callFrame->InterruptionReason = FrameInterruptionReason::LoopContinue;
+	return nullptr;
+}
+
+ObjectInstance* AbstractInterpreter::ExecuteReturnStatement(const ReturnStatementSyntax* statement)
+{
+	CallStackFrame* callFrame = callStack.top();
+	callFrame->InterruptionReason = FrameInterruptionReason::ValueReturned;
+
+	if (statement->Expression != nullptr)
+		callFrame->InterruptionRegister = EvaluateExpression(statement->Expression);
+
+	return nullptr;
+}
+
+ObjectInstance* AbstractInterpreter::ExecuteIfStatement(const IfStatementSyntax* statement)
+{
+	PushContext(new InboundVariablesContext(CurrentContext()));
+	
+	ObjectInstance* conditionReg = ExecuteStatement(statement->ConditionExpression);
+	bool conditionMet = conditionReg->ReadPrimitive<bool>();
+	GarbageCollector::DestroyInstance(conditionReg);
+
+	if (conditionMet)
+	{
+		ExecuteBlock(statement->StatementsBlock);
+		PopContext();
+	}
+	else if (statement->NextStatement != nullptr)
+	{
+		PopContext();
+		ExecuteStatement(statement->NextStatement);
+	}
+
+	return nullptr;
+}
+
+ObjectInstance* AbstractInterpreter::ExecuteUnlessStatement(const UnlessStatementSyntax* statement)
+{
+	PushContext(new InboundVariablesContext(CurrentContext()));
+
+	ObjectInstance* conditionReg = ExecuteStatement(statement->ConditionExpression);
+	bool conditionMet = conditionReg->ReadPrimitive<bool>();
+	GarbageCollector::DestroyInstance(conditionReg);
+
+	if (!conditionMet)
+	{
+		ExecuteBlock(statement->StatementsBlock);
+		PopContext();
+	}
+	else if (statement->NextStatement != nullptr)
+	{
+		PopContext();
+		ExecuteStatement(statement->NextStatement);
+	}
+
+	return nullptr;
+}
+
+ObjectInstance* AbstractInterpreter::ExecuteElseStatement(const ElseStatementSyntax* statement)
+{
+	return ExecuteBlock(statement->StatementsBlock);
+}
+
+ObjectInstance* AbstractInterpreter::ExecuteForLoopStatement(const ForStatementSyntax* statement)
+{
+	PushContext(new InboundVariablesContext(CurrentContext()));
+	CallStackFrame* frame = CurrentFrame();
+
+	bool looping = true;
+	ObjectInstance* initReg = ExecuteStatement(statement->InitializerStatement);
+
+	while (looping)
+	{
+		ObjectInstance* conditionReg = EvaluateExpression(statement->ConditionExpression);
+		bool conditionMet = conditionReg->ReadPrimitive<bool>();
+		GarbageCollector::DestroyInstance(conditionReg);
+
+		if (!conditionMet)
+		{
+			looping = false;
+			break;
+		}
+
+		ExecuteBlock(statement->StatementsBlock);
+		ExecuteStatement(statement->AfterRepeatStatement);
+
+		switch (frame->InterruptionReason)
+		{
+			case FrameInterruptionReason::None:
+				break;
+
+			case FrameInterruptionReason::LoopBreak:
+			{
+				frame->InterruptionReason = FrameInterruptionReason::None;
+				looping = false;
+				break;
+			}
+
+			case FrameInterruptionReason::LoopContinue:
+			{
+				frame->InterruptionReason = FrameInterruptionReason::None;
+				looping = true;
+				break;
+			}
+
+			default:
+			{
+				looping = false;
+				break;
+			}
+		}
+	}
+
+	PopContext();
+	return nullptr;
+}
+
+ObjectInstance* AbstractInterpreter::ExecuteWhileLoopStatement(const WhileStatementSyntax* statement)
+{
+	PushContext(new InboundVariablesContext(CurrentContext()));
+	CallStackFrame* frame = CurrentFrame();
+
+	bool looping = true;
+	while (looping)
+	{
+		ObjectInstance* conditionReg = EvaluateExpression(statement->ConditionExpression);
+		bool conditionMet = conditionReg->ReadPrimitive<bool>();
+		GarbageCollector::DestroyInstance(conditionReg);
+
+		if (!conditionMet)
+		{
+			looping = false;
+			break;
+		}
+
+		ExecuteBlock(statement->StatementsBlock);
+
+		switch (frame->InterruptionReason)
+		{
+			case FrameInterruptionReason::None:
+				break;
+
+			case FrameInterruptionReason::LoopBreak:
+			{
+				frame->InterruptionReason = FrameInterruptionReason::None;
+				looping = false;
+				break;
+			}
+
+			case FrameInterruptionReason::LoopContinue:
+			{
+				frame->InterruptionReason = FrameInterruptionReason::None;
+				looping = true;
+				break;
+			}
+
+			default:
+			{
+				looping = false;
+				break;
+			}
+		}
+	}
+
+	PopContext();
+	return nullptr;
+}
+
+ObjectInstance* AbstractInterpreter::ExecuteUntilLoopStatement(const UntilStatementSyntax* statement)
+{
+	PushContext(new InboundVariablesContext(CurrentContext()));
+	CallStackFrame* frame = CurrentFrame();
+
+	bool looping = true;
+	while (looping)
+	{
+		ObjectInstance* conditionReg = EvaluateExpression(statement->ConditionExpression);
+		bool conditionMet = conditionReg->ReadPrimitive<bool>();
+		GarbageCollector::DestroyInstance(conditionReg);
+
+		if (conditionMet)
+		{
+			looping = false;
+			break;
+		}
+
+		ExecuteBlock(statement->StatementsBlock);
+
+		switch (frame->InterruptionReason)
+		{
+			case FrameInterruptionReason::None:
+				break;
+
+			case FrameInterruptionReason::LoopBreak:
+			{
+				frame->InterruptionReason = FrameInterruptionReason::None;
+				looping = false;
+				break;
+			}
+
+			case FrameInterruptionReason::LoopContinue:
+			{
+				frame->InterruptionReason = FrameInterruptionReason::None;
+				looping = true;
+				break;
+			}
+
+			default:
+			{
+				looping = false;
+				break;
+			}
+		}
+	}
+
+	PopContext();
+	return nullptr;
+}
+
+ObjectInstance* AbstractInterpreter::EvaluateExpression(const ExpressionSyntax* expression)
 {
 	switch (expression->Kind)
 	{
 		case SyntaxKind::LiteralExpression:
 		{
-			auto constExpr = dynamic_cast<LiteralExpressionSyntax*>(expression);
-			SyntaxToken constToken = constExpr->LiteralToken;
-			return CreateRegisterFromConstToken(constToken);
+			const LiteralExpressionSyntax* literalExpression = static_cast<const LiteralExpressionSyntax*>(expression);
+			return EvaluateLiteralExpression(literalExpression);
 		}
 
 		case SyntaxKind::ObjectExpression:
 		{
-			auto objExpr = dynamic_cast<ObjectExpressionSyntax*>(expression);
-			ObjectInstance* newInstance = GarbageCollector::AllocateInstance(objExpr->Symbol);
-			return newInstance;
+			const ObjectExpressionSyntax* objectExpression = static_cast<const ObjectExpressionSyntax*>(expression);
+			return EvaluateObjectExpression(objectExpression);
 		}
 
 		case SyntaxKind::UnaryExpression:
 		{
-			auto unaryExpr = dynamic_cast<UnaryExpressionSyntax*>(expression);
-			ObjectInstance* exprReg = EvaluateExpression(callFrame, (ExpressionSyntax*)unaryExpr->Expression, variablesContext);
-			return PrimitiveMathModule::EvaluateUnaryOperator(exprReg, unaryExpr->OperatorToken, unaryExpr->IsRightDetermined);
+			const UnaryExpressionSyntax* unaryExpression = static_cast<const UnaryExpressionSyntax*>(expression);
+			return EvaluateUnaryExpression(unaryExpression);
 		}
 
 		case SyntaxKind::BinaryExpression:
 		{
-			auto binaryExpr = dynamic_cast<BinaryExpressionSyntax*>(expression);
-			ObjectInstance* leftReg = EvaluateExpression(callFrame, (ExpressionSyntax*)binaryExpr->Left, variablesContext);
-			ObjectInstance* rightReg = EvaluateExpression(callFrame, (ExpressionSyntax*)binaryExpr->Right, variablesContext);
-
-			switch (binaryExpr->OperatorToken.Type)
-			{
-				case TokenType::AssignOperator:
-				{
-					ObjectInstance* valueSrc = rightReg->Copy();
-					valueSrc->CopyTo(leftReg);
-					return leftReg;
-				}
-
-				default:
-				{
-					bool assign = false;
-					ObjectInstance* retReg = PrimitiveMathModule::EvaluateBinaryOperator(leftReg, binaryExpr->OperatorToken, rightReg, assign);
-
-					if (assign)
-					{
-						ObjectInstance* valueSrc = rightReg->Copy();
-						valueSrc->CopyTo(leftReg);
-					}
-
-					return retReg;
-				}
-			}
+			const BinaryExpressionSyntax* binaryExpr = static_cast<const BinaryExpressionSyntax*>(expression);
+			return EvaluateBinaryExpression(binaryExpr);
 		}
 
 		case SyntaxKind::LinkedExpression:
 		{
-			auto linkedExpr = dynamic_cast<LinkedExpressionSyntax*>(expression);
-			return EvaluateLinkedExpression(callFrame, linkedExpr, variablesContext);
+			const LinkedExpressionSyntax* linkedExpression = static_cast<const LinkedExpressionSyntax*>(expression);
+			return EvaluateLinkedExpression(linkedExpression);
 		}
 
 		default:
 		{
-			throw runtime_error("unknown expression type");
+			throw runtime_error("unknown expression kind");
 		}
 	}
 }
 
-ObjectInstance* AbstractInterpreter::EvaluateLinkedExpression(CallStackFrame* callFrame, LinkedExpressionSyntax* expression, InboundVariablesContext* variablesContext)
+ObjectInstance* AbstractInterpreter::EvaluateLiteralExpression(const LiteralExpressionSyntax* expression)
+{
+	switch (expression->LiteralToken.Type)
+	{
+		case TokenType::BooleanLiteral:
+		{
+			ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::Boolean);
+			instance->WritePrimitive(expression->LiteralToken.Word == L"true");
+			return instance;
+		}
+
+		case TokenType::NumberLiteral:
+		{
+			ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::Integer);
+			instance->WritePrimitive(stoi(expression->LiteralToken.Word));
+			return instance;
+		}
+
+		case TokenType::CharLiteral:
+		{
+			ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::Char);
+			instance->WritePrimitive(expression->LiteralToken.Word[0]);
+			return instance;
+		}
+
+		case TokenType::StringLiteral:
+		{
+			ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String);
+			instance->WritePrimitive(expression->LiteralToken.Word);
+			return instance;
+		}
+
+		default:
+			throw runtime_error("Unknown constant literal type");
+	}
+}
+
+ObjectInstance* AbstractInterpreter::EvaluateObjectExpression(const ObjectExpressionSyntax* expression)
+{
+	ObjectInstance* newInstance = GarbageCollector::AllocateInstance(expression->Symbol);
+	return newInstance;
+}
+
+ObjectInstance* AbstractInterpreter::EvaluateBinaryExpression(const BinaryExpressionSyntax* expression)
+{
+	ObjectInstance* leftReg = EvaluateExpression(expression->Left);
+	ObjectInstance* rightReg = EvaluateExpression(expression->Right);
+
+	bool assign = false;
+	ObjectInstance* retReg = PrimitiveMathModule::EvaluateBinaryOperator(leftReg, expression->OperatorToken, rightReg, assign);
+
+	if (assign)
+		retReg->CopyReference()->CopyTo(leftReg);
+
+	return retReg;
+}
+
+ObjectInstance* AbstractInterpreter::EvaluateUnaryExpression(const UnaryExpressionSyntax* expression)
+{
+	ObjectInstance* exprReg = EvaluateExpression(expression->Expression);
+	return PrimitiveMathModule::EvaluateUnaryOperator(exprReg, expression->OperatorToken, expression->IsRightDetermined);
+}
+
+ObjectInstance* AbstractInterpreter::EvaluateLinkedExpression(const LinkedExpressionSyntax* expression)
 {
 	LinkedExpressionNode* exprNode = expression->First;
+	ObjectInstance* objInstance = nullptr;
+
 	switch (exprNode->Kind)
 	{
 		case SyntaxKind::MemberAccessExpression:
 		{
-			auto varAccess = dynamic_cast<MemberAccessExpressionSyntax*>(exprNode);
-			ObjectInstance* objInstance = variablesContext->TryFind(varAccess->IdentifierToken.Word);
-
-			if (objInstance != nullptr)
-			{
-				for (size_t i = 1; i < expression->Nodes.size(); i++)
-				{
-					exprNode = expression->Nodes.at(i);
-					objInstance = EvaluateLinkedExpression(callFrame, exprNode, variablesContext, objInstance);
-				}
-
-				return objInstance;
-			}
-
+			MemberAccessExpressionSyntax* variableAccess = static_cast<MemberAccessExpressionSyntax*>(exprNode);
+			objInstance = CurrentContext()->TryFind(variableAccess->IdentifierToken.Word);
+			exprNode = variableAccess->NextNode;
 			break;
 		}
 
+		//*
 		case SyntaxKind::InvokationExpression:
 		{
 			auto invokeExpr = dynamic_cast<InvokationExpressionSyntax*>(exprNode);
@@ -384,80 +698,50 @@ ObjectInstance* AbstractInterpreter::EvaluateLinkedExpression(CallStackFrame* ca
 
 			if (methodName == L"print" && arguments.size() == 1)
 			{
-				ObjectInstance* instance = EvaluateExpression(callFrame, (ExpressionSyntax*)arguments[0]->Expression, variablesContext);
+				ObjectInstance* instance = EvaluateExpression(arguments[0]->Expression);
 				ConsoleHelper::Write(instance);
 				return nullptr;
 			}
 
 			if (methodName == L"println" && arguments.size() == 1)
 			{
-				ObjectInstance* instance = EvaluateExpression(callFrame, (ExpressionSyntax*)arguments[0]->Expression, variablesContext);
+				ObjectInstance* instance = EvaluateExpression(arguments[0]->Expression);
 				ConsoleHelper::WriteLine(instance);
 				return nullptr;
 			}
-
-			//throw runtime_error("unknown invokation member");
 		}
+		//*/
 	}
 
-	ObjectInstance* objInstance = nullptr;
 	while (exprNode != nullptr)
 	{
-		objInstance = EvaluateLinkedExpression(callFrame, exprNode, variablesContext, objInstance);
+		objInstance = EvaluateLinkedExpression(exprNode, objInstance);
 		exprNode = exprNode->NextNode;
 	}
 
 	return objInstance;
 }
 
-ObjectInstance* AbstractInterpreter::EvaluateArgument(CallStackFrame* callFrame, ArgumentSyntax* argument, InboundVariablesContext* variablesContext)
-{
-	ExpressionSyntax* argExpression = (ExpressionSyntax*)argument->Expression;
-	ObjectInstance* argInstance = EvaluateExpression(callFrame, argExpression, variablesContext);
-
-	bool isByReference = argument->IsByReference;
-	return isByReference ? argInstance : argInstance->Copy();
-}
-
-ObjectInstance* AbstractInterpreter::EvaluateLinkedExpression(CallStackFrame* callFrame, LinkedExpressionNode* expression, InboundVariablesContext* variablesContext, ObjectInstance* objInstance)
+ObjectInstance* AbstractInterpreter::EvaluateLinkedExpression(const LinkedExpressionNode* expression, ObjectInstance* objInstance)
 {
 	switch (expression->Kind)
 	{
 		case SyntaxKind::MemberAccessExpression:
 		{
-			auto accessExpr = dynamic_cast<MemberAccessExpressionSyntax*>(expression);
-			wstring memberName = accessExpr->IdentifierToken.Word;
-
-			TypeSymbol* type = (TypeSymbol*)objInstance->Info;
-			FieldSymbol* field = type->FindField(memberName);
-			return objInstance->GetField(field);
+			const MemberAccessExpressionSyntax* accessExpression = static_cast<const MemberAccessExpressionSyntax*>(expression);
+			return EvaluateMemberAccessExpression(accessExpression, objInstance);
 		}
 
 		case SyntaxKind::InvokationExpression:
 		{
-			auto invokeExpr = dynamic_cast<InvokationExpressionSyntax*>(expression);
-			wstring methodName = invokeExpr->IdentifierToken.Word;
-			MethodSymbol* method = objInstance->Info->Methods.at(invokeExpr->FoundIndex);
-
-			InboundVariablesContext* arguments = new InboundVariablesContext(variablesContext);
-			arguments->AddVariable(L"this", objInstance->Copy());
-
-			size_t size = method->Parameters.size();
-			for (size_t i = 0; i < size; i++)
-			{
-				ArgumentSyntax* argument = invokeExpr->ArgumentsList->Arguments.at(i);
-				ObjectInstance* argInstance = EvaluateArgument(callFrame, argument, variablesContext);
-				
-				wstring argName = method->Parameters.at(i)->Name;
-				arguments->AddVariable(argName, argInstance);
-			}
-			
-			return ExecuteMethod(callFrame, method, arguments);
+			const InvokationExpressionSyntax* invokeExpression = static_cast<const InvokationExpressionSyntax*>(expression);
+			return EvaluateInvokationExpression(invokeExpression, objInstance);
 		}
 
 		case SyntaxKind::IndexatorExpression:
 		{
-			throw runtime_error("Indexation expression are currently unupported!");
+			const IndexatorExpressionSyntax* indexExpression = static_cast<const IndexatorExpressionSyntax*>(expression);
+			return EvaluateIndexatorExpression(indexExpression, objInstance);
 		}
 
 		default:
@@ -465,4 +749,53 @@ ObjectInstance* AbstractInterpreter::EvaluateLinkedExpression(CallStackFrame* ca
 			throw runtime_error("Unknown member access");
 		}
 	}
+}
+
+ObjectInstance* AbstractInterpreter::EvaluateMemberAccessExpression(const MemberAccessExpressionSyntax* expression, ObjectInstance* prevInstance)
+{
+	wstring memberName = expression->IdentifierToken.Word;
+	TypeSymbol* type = const_cast<TypeSymbol*>(prevInstance->Info);
+	FieldSymbol* field = type->FindField(memberName);
+	return prevInstance->GetField(field);
+}
+
+ObjectInstance* AbstractInterpreter::EvaluateInvokationExpression(const InvokationExpressionSyntax* expression, ObjectInstance* prevInstance)
+{
+	wstring methodName = expression->IdentifierToken.Word;
+	MethodSymbol* method = prevInstance->Info->Methods.at(expression->FoundIndex);
+	InboundVariablesContext* arguments = CreateArgumentsContext(expression, method, prevInstance);
+
+	return ExecuteMethod(method, arguments);
+}
+
+ObjectInstance* AbstractInterpreter::EvaluateIndexatorExpression(const IndexatorExpressionSyntax* expression, ObjectInstance* prevInstance)
+{
+	throw runtime_error("Indexation expression are currently unupported!");
+}
+
+ObjectInstance* AbstractInterpreter::EvaluateArgument(const ArgumentSyntax* argument)
+{
+	ObjectInstance* argInstance = EvaluateExpression(argument->Expression);
+	bool isByReference = argument->IsByReference;
+	return isByReference ? argInstance : argInstance->CopyReference();
+}
+
+InboundVariablesContext* AbstractInterpreter::CreateArgumentsContext(const InvokationExpressionSyntax* expression, MethodSymbol* symbol, ObjectInstance* instance)
+{
+	InboundVariablesContext* arguments = new InboundVariablesContext(nullptr);
+
+	if (!symbol->IsStatic)
+		arguments->AddVariable(L"this", instance->CopyReference());
+
+	size_t size = symbol->Parameters.size();
+	for (size_t i = 0; i < size; i++)
+	{
+		ArgumentSyntax* argument = expression->ArgumentsList->Arguments.at(i);
+		ObjectInstance* argInstance = EvaluateArgument(argument);
+
+		wstring argName = symbol->Parameters.at(i)->Name;
+		arguments->AddVariable(argName, argInstance);
+	}
+
+	return arguments;
 }

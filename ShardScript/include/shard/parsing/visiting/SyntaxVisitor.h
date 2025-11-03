@@ -23,6 +23,9 @@
 #include <shard/syntax/nodes/Statements/ExpressionStatementSyntax.h>
 #include <shard/syntax/nodes/Statements/ConditionalClauseSyntax.h>
 #include <shard/syntax/nodes/Statements/ReturnStatementSyntax.h>
+#include <shard/syntax/nodes/Statements/ThrowStatementSyntax.h>
+#include <shard/syntax/nodes/Statements/BreakStatementSyntax.h>
+#include <shard/syntax/nodes/Statements/ContinueStatementSyntax.h>
 
 #include <shard/syntax/nodes/Loops/WhileStatementSyntax.h>
 #include <shard/syntax/nodes/Loops/ForStatementSyntax.h>
@@ -64,6 +67,9 @@ namespace shard::parsing
         virtual void VisitExpressionStatement(shard::syntax::nodes::ExpressionStatementSyntax* node);
         virtual void VisitVariableStatement(shard::syntax::nodes::VariableStatementSyntax* node);
         virtual void VisitReturnStatement(shard::syntax::nodes::ReturnStatementSyntax* node);
+        virtual void VisitThrowStatement(shard::syntax::nodes::ThrowStatementSyntax* node);
+        virtual void VisitBreakStatement(shard::syntax::nodes::BreakStatementSyntax* node);
+        virtual void VisitContinueStatement(shard::syntax::nodes::ContinueStatementSyntax* node);
 
         virtual void VisitWhileStatement(shard::syntax::nodes::WhileStatementSyntax* node);
         virtual void VisitForStatement(shard::syntax::nodes::ForStatementSyntax* node);
@@ -72,7 +78,7 @@ namespace shard::parsing
         virtual void VisitConditionalClause(shard::syntax::nodes::ConditionalClauseBaseSyntax* node);
         virtual void VisitIfStatement(shard::syntax::nodes::IfStatementSyntax* node);
         virtual void VisitUnlessStatement(shard::syntax::nodes::UnlessStatementSyntax* node);
-        virtual void VisitElseStatement(shard::syntax::nodes::ElseSatetmentSyntax* node);
+        virtual void VisitElseStatement(shard::syntax::nodes::ElseStatementSyntax* node);
 
         virtual void VisitExpression(shard::syntax::nodes::ExpressionSyntax* node);
         virtual void VisitLiteralExpression(shard::syntax::nodes::LiteralExpressionSyntax* node);

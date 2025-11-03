@@ -36,7 +36,6 @@
 #include <shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.h>
 #include <shard/syntax/nodes/Statements/VariableStatementSyntax.h>
 
-#include <stdexcept>
 #include <vector>
 #include <string>
 
@@ -55,11 +54,14 @@ void TypeBinder::pushScope(SyntaxSymbol* symbol)
 
 void TypeBinder::VisitCompilationUnit(CompilationUnitSyntax* node)
 {
+	pushScope(nullptr);
 	for (UsingDirectiveSyntax* directive : node->Usings)
 		VisitUsingDirective(directive);
 
 	for (MemberDeclarationSyntax* member : node->Members)
 		VisitTypeDeclaration(member);
+
+	scopeStack.pop();
 }
 
 void TypeBinder::VisitNamespaceDeclaration(NamespaceDeclarationSyntax* node)

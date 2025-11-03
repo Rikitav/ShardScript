@@ -1,7 +1,8 @@
 #pragma once
 #include <shard/runtime/InboundVariablesContext.h>
-#include <shard/syntax/symbols/TypeSymbol.h>
+#include <shard/runtime/ObjectInstance.h>
 #include <shard/syntax/symbols/MethodSymbol.h>
+#include <stack>
 
 namespace shard::runtime
 {
@@ -9,21 +10,33 @@ namespace shard::runtime
 	{
 		None,
 		ValueReturned,
-		ExcpetionRaised,
+		ExceptionRaised,
+		LoopBreak,
+		LoopContinue,
 	};
 
 	class CallStackFrame
 	{
 	public:
-		const shard::syntax::symbols::TypeSymbol* OwnerObject;
 		const shard::syntax::symbols::MethodSymbol* Method;
-		const CallStackFrame* PreviousFrame;
-		const InboundVariablesContext* VariablesContext;
+		CallStackFrame* PreviousFrame;
+		std::stack<shard::runtime::InboundVariablesContext*> VariablesStack;
 		
 		FrameInterruptionReason InterruptionReason = FrameInterruptionReason::None;
 		ObjectInstance* InterruptionRegister = nullptr;
 
-		CallStackFrame(const shard::syntax::symbols::TypeSymbol* ownerObject, const shard::syntax::symbols::MethodSymbol* method, const CallStackFrame* previousFrame, const InboundVariablesContext* prevVarCcontext)
-			: OwnerObject(ownerObject), Method(method), PreviousFrame(previousFrame), VariablesContext(new InboundVariablesContext(prevVarCcontext)) { }
+		inline CallStackFrame(const shard::syntax::symbols::MethodSymbol* method, CallStackFrame* previousFrame)
+			: Method(method), PreviousFrame(previousFrame) { }
+
+		inline bool interrupted()
+		{
+			return InterruptionReason != FrameInterruptionReason::None;
+		}
+
+		inline ~CallStackFrame()
+		{
+			Method = nullptr;
+			PreviousFrame = nullptr;
+		}
 	};
 }

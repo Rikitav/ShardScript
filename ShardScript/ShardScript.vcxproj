@@ -198,6 +198,9 @@
     <ClInclude Include="include\shard\parsing\analysis\DiagnosticSeverity.h" />
     <ClInclude Include="include\shard\parsing\lexical\MembersVisibilityContext.h" />
     <ClInclude Include="include\shard\parsing\analysis\TextLocation.h" />
+    <ClInclude Include="include\shard\syntax\nodes\Statements\BreakStatementSyntax.h" />
+    <ClInclude Include="include\shard\syntax\nodes\Statements\ContinueStatementSyntax.h" />
+    <ClInclude Include="include\shard\syntax\nodes\Statements\ThrowStatementSyntax.h" />
     <ClInclude Include="include\shard\syntax\SymbolAccesibility.h" />
     <ClInclude Include="include\shard\syntax\nodes\ArgumentsListSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\CompilationUnitSyntax.h" />

@@ -10,7 +10,7 @@ using namespace std;
 using namespace shard::runtime;
 using namespace shard::syntax::symbols;
 
-ObjectInstance* ObjectInstance::Copy()
+ObjectInstance* ObjectInstance::CopyReference()
 {
 	if (Info->IsReferenceType)
 	{
@@ -19,7 +19,7 @@ ObjectInstance* ObjectInstance::Copy()
 	}
 
 	ObjectInstance* newInstance = GarbageCollector::AllocateInstance(Info);
-	memcpy((void*)newInstance->Ptr, Ptr, Info->MemoryBytesSize);
+	memcpy(newInstance->Ptr, Ptr, Info->MemoryBytesSize);
 	return newInstance;
 }
 
@@ -27,9 +27,10 @@ ObjectInstance* ObjectInstance::GetField(FieldSymbol* field)
 {
 	if (field->ReturnType->IsReferenceType)
 	{
-		void* offset = OffsetMemory(field->MemoryBytesOffset, sizeof(void*));
-		void* memory = *static_cast<void**>(offset);
-		return GarbageCollector::CopyInstance(field->ReturnType, memory);
+		void* offset = OffsetMemory(field->MemoryBytesOffset, sizeof(ObjectInstance*));
+		ObjectInstance* instance = *static_cast<ObjectInstance**>(offset);
+		return instance;
+		//return GarbageCollector::CopyInstance(field->ReturnType, memory);
 	}
 	else
 	{
@@ -53,7 +54,7 @@ void ObjectInstance::SetField(FieldSymbol* field, ObjectInstance* instance)
 		oldValue->DecrementReference();
 		
 		instance->IncrementReference();
-		WriteMemory(field->MemoryBytesOffset, sizeof(void*), &instance->Ptr);
+		WriteMemory(field->MemoryBytesOffset, sizeof(ObjectInstance*), &instance);
 	}
 	else
 	{
@@ -77,7 +78,7 @@ unsigned long ObjectInstance::GetReferencesCount()
 	if (!Info->IsReferenceType)
 		return 0;
 
-	return *static_cast<long*>(OffsetMemory(0, sizeof(long)));
+	return *static_cast<long*>(OffsetMemory(0, sizeof(unsigned long)));
 }
 
 void ObjectInstance::IncrementReference()
@@ -106,10 +107,10 @@ void* ObjectInstance::OffsetMemory(const size_t offset, const size_t size)
 	if (offset + size > Info->MemoryBytesSize)
 		throw out_of_range("offset (" + to_string(offset) + ") + size (" + to_string(size) + ") is out of instance's memory range (" + to_string(Info->MemoryBytesSize) + ").");
 
-	return (void*)(static_cast<const char*>(Ptr) + offset);
+	return static_cast<char*>(Ptr) + offset;
 }
 
-void ObjectInstance::ReadMemory(const size_t offset, const size_t size, const void* dst)
+void ObjectInstance::ReadMemory(const size_t offset, const size_t size, void* dst)
 {
 	if (!dst)
 		throw std::invalid_argument("Destination is nullptr");
@@ -120,11 +121,11 @@ void ObjectInstance::ReadMemory(const size_t offset, const size_t size, const vo
 	if (offset + size > Info->MemoryBytesSize)
 		throw out_of_range("offset (" + to_string(offset) + ") + size (" + to_string(size) + ") is out of instance's memory range (" + to_string(Info->MemoryBytesSize) + ").");
 
-	const char* memOffset = static_cast<const char*>(Ptr) + offset;
-	memcpy((void*)dst, memOffset, size);
+	const char* memOffset = static_cast<char*>(Ptr) + offset;
+	memcpy(dst, memOffset, size);
 }
 
-void ObjectInstance::WriteMemory(const size_t offset, const size_t size, const void* src)
+void ObjectInstance::WriteMemory(const size_t offset, const size_t size, void* src)
 {
 	if (!src)
 		throw std::invalid_argument("Source is nullptr");
@@ -135,6 +136,6 @@ void ObjectInstance::WriteMemory(const size_t offset, const size_t size, const v
 	if (offset + size > Info->MemoryBytesSize)
 		throw out_of_range("offset (" + to_string(offset) + ") + size (" + to_string(size) + ") is out of instance's memory range (" + to_string(Info->MemoryBytesSize) + ").");
 
-	const char* memOffset = static_cast<const char*>(Ptr) + offset;
-	memcpy((void*)memOffset, src, size);
+	char* memOffset = static_cast<char*>(Ptr) + offset;
+	memcpy(memOffset, src, size);
 }

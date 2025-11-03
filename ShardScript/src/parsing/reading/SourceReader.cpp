@@ -946,6 +946,11 @@ bool SourceReader::IsType(wstring& word, TokenType& type)
 		type = TokenType::VoidKeyword;
 		return true;
 	}
+	else if (word == L"bool")
+	{
+		type = TokenType::BooleanKeyword;
+		return true;
+	}
 	else if (word == L"string")
 	{
 		type = TokenType::StringKeyword;
@@ -1053,6 +1058,11 @@ bool SourceReader::IsFunctionalKeyword(wstring& word, TokenType& type)
 	else if (word == L"break")
 	{
 		type = TokenType::BreakKeyword;
+		return true;
+	}
+	else if (word == L"throw")
+	{
+		type = TokenType::ThrowKeyword;
 		return true;
 	}
 	else

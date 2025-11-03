@@ -3,11 +3,11 @@
 
 #include <shard/syntax/SyntaxHelpers.h>
 #include <shard/syntax/SyntaxSymbol.h>
+#include <shard/syntax/symbols/TypeSymbol.h>
 
 #include <shard/syntax/nodes/ParametersListSyntax.h>
 #include <shard/syntax/nodes/CompilationUnitSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarationSyntax.h>
-
 #include <shard/syntax/nodes/Directives/ImportDirectiveSyntax.h>
 
 #include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.h>
@@ -45,6 +45,7 @@ void DeclarationCollector::pushScope(SyntaxSymbol* symbol)
 
 void DeclarationCollector::VisitCompilationUnit(CompilationUnitSyntax* node)
 {
+    pushScope(nullptr);
     if (node->Imports.size() > 0)
     {
         FFISymbol* symbol = new FFISymbol();
@@ -56,6 +57,8 @@ void DeclarationCollector::VisitCompilationUnit(CompilationUnitSyntax* node)
 
     for (MemberDeclarationSyntax* member : node->Members)
         VisitTypeDeclaration(member);
+
+    pushScope(nullptr);
 }
 
 void DeclarationCollector::VisitNamespaceDeclaration(NamespaceDeclarationSyntax* node)
@@ -160,20 +163,7 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax* node)
             {
                 if (ownerType->IsStatic)
                     Diagnostics.ReportError(node->IdentifierToken, "Cannot declare a non static method's in static type");
-
-                /*
-                VariableSymbol* thisVarSymbol = new VariableSymbol(L"this");
-                thisVarSymbol->Type = ownerType;
-                scopeStack.top()->DeclareSymbol(thisVarSymbol);
-                */
             }
-
-            /*
-            for (ParameterSymbol* parameter : symbol->Parameters)
-            {
-                scopeStack.top()->DeclareSymbol(parameter);
-            }
-            */
 
             VisitStatementsBlock(node->Body);
             scopeStack.pop();

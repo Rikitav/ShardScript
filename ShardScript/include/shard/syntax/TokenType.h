@@ -125,6 +125,7 @@ namespace shard::syntax
 
 		// Functional keywords
 		ReturnKeyword,		  // return
+		ThrowKeyword,		  // throw
 		BreakKeyword,		  // break
 		ContinueKeyword,	  // continue
 	};
