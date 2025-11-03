@@ -145,29 +145,35 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax* node)
         symbol->Parameters.push_back(paramSymbol);
     }
 
-    TypeSymbol* ownerType = static_cast<TypeSymbol*>((SyntaxSymbol*)scopeStack.top()->Owner);
+    SyntaxSymbol* ownerSymbol = const_cast<SyntaxSymbol*>(scopeStack.top()->Owner);
+    if (ownerSymbol->Kind != SyntaxKind::ClassDeclaration && ownerSymbol->Kind != SyntaxKind::StructDeclaration)
+    {
+        Diagnostics.ReportError(node->IdentifierToken, "Method cannot be declared within types");
+        return;
+    }
+
+    TypeSymbol* ownerType = static_cast<TypeSymbol*>(ownerSymbol);
     if (ownerType == nullptr)
     {
         Diagnostics.ReportError(node->IdentifierToken, "Cannot resolve method's owner type");
+        return;
     }
-    else
+
+    ownerType->Methods.push_back(symbol);
+    scopeStack.top()->DeclareSymbol(symbol);
+    symbolTable->BindSymbol(node, symbol);
+
+    if (node->Body != nullptr)
     {
-        ownerType->Methods.push_back(symbol);
-        scopeStack.top()->DeclareSymbol(symbol);
-        symbolTable->BindSymbol(node, symbol);
-
-        if (node->Body != nullptr)
+        pushScope(symbol);
+        if (!symbol->IsStatic)
         {
-            pushScope(symbol);
-            if (!symbol->IsStatic)
-            {
-                if (ownerType->IsStatic)
-                    Diagnostics.ReportError(node->IdentifierToken, "Cannot declare a non static method's in static type");
-            }
-
-            VisitStatementsBlock(node->Body);
-            scopeStack.pop();
+            if (ownerType->IsStatic)
+                Diagnostics.ReportError(node->IdentifierToken, "Cannot declare a non static method's in static type");
         }
+
+        VisitStatementsBlock(node->Body);
+        scopeStack.pop();
     }
 }
 

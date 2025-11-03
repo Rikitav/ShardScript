@@ -97,6 +97,7 @@ namespace shard::parsing
 		// Fourth layer - lexing helpers
 		shard::syntax::SyntaxToken Expect(shard::parsing::SourceReader& reader, shard::syntax::TokenType kind, const char* message);
 		bool Matches(shard::parsing::SourceReader& reader, std::initializer_list<shard::syntax::TokenType> types);
+		bool TryMatch(shard::parsing::SourceReader& reader, std::initializer_list<shard::syntax::TokenType> types, const char* errorMessage, int maxSkips = 5);
 		shard::syntax::nodes::TypeDeclarationSyntax* make_type(shard::parsing::lexical::MemberDeclarationInfo& info, shard::syntax::SyntaxNode* parent);
 	};
 }

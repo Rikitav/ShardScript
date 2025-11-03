@@ -113,7 +113,6 @@ CompilationUnitSyntax* LexicalAnalyzer::ReadCompilationUnit(SourceReader& reader
 				{
 					MemberDeclarationSyntax* pMember = ReadMemberDeclaration(reader, unit);
 					pMember->Parent = unit;
-					//Diagnostics.ReportError(token, "Compilation unit cannot have members other than namespaces");
 					unit->Members.push_back(pMember);
 					break;
 				}
@@ -135,21 +134,28 @@ UsingDirectiveSyntax* LexicalAnalyzer::ReadUsingDirective(SourceReader& reader, 
 
 	while (reader.CanConsume())
 	{
-		SyntaxToken current = reader.Current();
-		while (!Matches(reader, { TokenType::Identifier }))
+		if (!TryMatch(reader, { TokenType::Identifier }, "Expected identifier", 3))
 		{
-			Diagnostics.ReportError(current, "Expected identifier");
-			current = reader.Consume();
+			if (TryMatch(reader, { TokenType::Semicolon }, nullptr, 10))
+			{
+				syntax->SemicolonToken = reader.Current();
+				reader.Consume();
+			}
+
+			break;
 		}
 
-		syntax->TokensList.push_back(current);
-		SyntaxToken separatorToken = reader.Consume();
+		SyntaxToken identifier = reader.Current();
+		syntax->TokensList.push_back(identifier);
+		reader.Consume();
 
-		while (!Matches(reader, { TokenType::Delimeter, TokenType::Semicolon }))
+		if (!TryMatch(reader, { TokenType::Delimeter, TokenType::Semicolon }, "Expected separator token '.' or closing token ';'", 3))
 		{
-			Diagnostics.ReportError(separatorToken, "Expected separator token '.' or closing token ';'");
-			separatorToken = reader.Consume();
+			break;
 		}
+
+		SyntaxToken separatorToken = reader.Current();
+		reader.Consume();
 
 		if (separatorToken.Type == TokenType::Semicolon)
 		{
@@ -166,41 +172,50 @@ ImportDirectiveSyntax* LexicalAnalyzer::ReadImportDirective(SourceReader& reader
 	ImportDirectiveSyntax* syntax = new ImportDirectiveSyntax(parent);
 	syntax->FromToken = Expect(reader, TokenType::FromKeyword, "Expected 'from' keyword");
 
-	SyntaxToken current = reader.Current();
-	while (!Matches(reader, { TokenType::StringLiteral }))
+	if (!TryMatch(reader, { TokenType::StringLiteral }, "Expected library path", 5))
 	{
-		Diagnostics.ReportError(current, "Expected library path");
-		current = reader.Consume();
+		// Create missing token if we couldn't recover
+		syntax->LibPathToken = SyntaxToken(TokenType::StringLiteral, L"", TextLocation(), true);
+	}
+	else
+	{
+		syntax->LibPathToken = reader.Current();
+		reader.Consume();
 	}
 
-	syntax->LibPathToken = current;
-	current = reader.Consume();
-
-	while (!Matches(reader, { TokenType::ImportKeyword }))
+	if (!TryMatch(reader, { TokenType::ImportKeyword }, "Expected 'import' keyword", 5))
 	{
-		Diagnostics.ReportError(current, "Expected 'import' keyword");
-		current = reader.Consume();
+		syntax->ImportToken = SyntaxToken(TokenType::ImportKeyword, L"", TextLocation(), true);
 	}
-
-	syntax->ImportToken = current;
-	current = reader.Consume();
+	else
+	{
+		syntax->ImportToken = reader.Current();
+		reader.Consume();
+	}
 
 	while (reader.CanConsume())
 	{
-		while (!Matches(reader, { TokenType::Identifier }))
+		if (!TryMatch(reader, { TokenType::Identifier }, "Expected identifier", 3))
 		{
-			Diagnostics.ReportError(current, "Expected identifier");
-			current = reader.Consume();
+			if (TryMatch(reader, { TokenType::Semicolon }, nullptr, 10))
+			{
+				syntax->SemicolonToken = reader.Current();
+				reader.Consume();
+			}
+
+			break;
 		}
 
-		syntax->FunctionsList.push_back(current);
-		SyntaxToken separatorToken = reader.Consume();
+		syntax->FunctionsList.push_back(reader.Current());
+		reader.Consume();
 
-		while (!Matches(reader, { TokenType::Comma, TokenType::Semicolon }))
+		if (!TryMatch(reader, { TokenType::Comma, TokenType::Semicolon }, "Expected separator token ',' or closing token ';'", 3))
 		{
-			Diagnostics.ReportError(separatorToken, "Expected separator token ',' or closing token ';'");
-			separatorToken = reader.Consume();
+			break;
 		}
+
+		SyntaxToken separatorToken = reader.Current();
+		reader.Consume();
 
 		if (separatorToken.Type == TokenType::Semicolon)
 		{
@@ -209,7 +224,9 @@ ImportDirectiveSyntax* LexicalAnalyzer::ReadImportDirective(SourceReader& reader
 		}
 	}
 
-	syntax->SemicolonToken = Expect(reader, TokenType::Semicolon, "Expected ';' token");
+	if (syntax->SemicolonToken.Type == TokenType::Unknown)
+		syntax->SemicolonToken = Expect(reader, TokenType::Semicolon, "Expected ';' token");
+	
 	return syntax;
 }
 
@@ -218,21 +235,25 @@ NamespaceDeclarationSyntax* LexicalAnalyzer::ReadNamespaceDeclaration(SourceRead
 	NamespaceDeclarationSyntax* syntax = new NamespaceDeclarationSyntax(parent);
 	syntax->DeclareToken = Expect(reader, TokenType::NamespaceKeyword, "Expected 'namespace' keyword");
 
-	// reading identifier
-	while (!Matches(reader, { TokenType::Identifier }))
+	if (!TryMatch(reader, { TokenType::Identifier }, "Expected namespace identifier", 5))
 	{
-		Diagnostics.ReportError(reader.Current(), "Expected namespace identifier");
+		// Create missing identifier if we couldn't recover
+		syntax->IdentifierToken = SyntaxToken(TokenType::Identifier, L"", TextLocation(), true);
+	}
+	else
+	{
+		syntax->IdentifierToken = reader.Current();
 		reader.Consume();
 	}
 
-	syntax->IdentifierToken = reader.Current();
-	reader.Consume();
-
-	// reading separator
-	while (!Matches(reader, { TokenType::OpenBrace, TokenType::Semicolon }))
+	if (!TryMatch(reader, { TokenType::OpenBrace, TokenType::Semicolon }, "Expected '{' or ';'", 5))
 	{
-		Diagnostics.ReportError(reader.Current(), "Unknown token in member declaration");
-		reader.Consume();
+		if (reader.CanConsume() && reader.Current().Type == TokenType::OpenBrace)
+		{
+			ReadTypeBody(reader, syntax);
+		}
+
+		return syntax;
 	}
 
 	ReadTypeBody(reader, syntax);
@@ -260,7 +281,6 @@ MemberDeclarationSyntax* LexicalAnalyzer::ReadMemberDeclaration(SourceReader& re
 		if (IsType(token.Type, peek.Type))
 		{
 			info.ReturnType = ReadType(reader, parent);
-			//reader.Consume();
 			break;
 		}
 
@@ -269,24 +289,25 @@ MemberDeclarationSyntax* LexicalAnalyzer::ReadMemberDeclaration(SourceReader& re
 		continue;
 	}
 
-	// reading identifier
-	while (!Matches(reader, { TokenType::Identifier, TokenType::OpenCurl, TokenType::Semicolon, TokenType::AssignOperator }))
+	// reading identifier - try to match with error recovery
+	if (!TryMatch(reader, { TokenType::Identifier, TokenType::OpenCurl, TokenType::Semicolon, TokenType::AssignOperator }, "Expected member identifier, '(', ';' or '='", 5))
 	{
-		Diagnostics.ReportError(reader.Current(), "Expected member identifier");
+		// Create missing identifier if we couldn't recover
+		info.Identifier = SyntaxToken(TokenType::Identifier, L"", TextLocation(), true);
+	}
+	else
+	{
+		info.Identifier = reader.Current();
 		reader.Consume();
 	}
-
-	info.Identifier = reader.Current();
-	reader.Consume();
 
 	// Reading parameters list
 	if (info.ReturnType != nullptr)
 	{
-		// Checking if member is field
-		while (!Matches(reader, { TokenType::OpenCurl, TokenType::Semicolon, TokenType::AssignOperator }))
+		// Checking if member is field - try to match with error recovery
+		if (!TryMatch(reader, { TokenType::OpenCurl, TokenType::Semicolon, TokenType::AssignOperator }, "Expected parameters list '(', semicolon ';' or assignment '='", 5))
 		{
-			Diagnostics.ReportError(reader.Current(), "Expected parameters list or semicolon");
-			reader.Consume();
+			// If we couldn't recover, try to continue anyway
 		}
 
 		while (reader.CanConsume())
@@ -329,15 +350,13 @@ MemberDeclarationSyntax* LexicalAnalyzer::ReadMemberDeclaration(SourceReader& re
 			return nullptr;
 	}
 
-	// reading anchor token
-	while (reader.CanConsume() && !Matches(reader, { TokenType::OpenBrace, TokenType::Semicolon }))
+	// reading anchor token - try to match with error recovery
+	if (!TryMatch(reader, { TokenType::OpenBrace, TokenType::Semicolon }, "Expected '{' or ';'", 5))
 	{
-		Diagnostics.ReportError(reader.Current(), "Unknown token in member declaration");
-		reader.Consume();
+		// If we couldn't recover and hit EOF, return nullptr
+		if (!reader.CanConsume())
+			return nullptr;
 	}
-
-	if (!reader.CanConsume())
-		return nullptr;
 
 	if (info.ReturnType != nullptr)
 	{
@@ -452,29 +471,44 @@ ParametersListSyntax* LexicalAnalyzer::ReadParametersList(SourceReader& reader, 
 	while (reader.CanConsume())
 	{
 		TypeSyntax* type = ReadType(reader, syntax);
+		SyntaxToken identifierToken;
 
-		SyntaxToken identifierToken = reader.Current();
-		while (reader.CanConsume() && identifierToken.Type != TokenType::Identifier)
+		if (!TryMatch(reader, { TokenType::Identifier }, "Expected parameter name", 3))
 		{
-			Diagnostics.ReportError(identifierToken, "Expected name");
-			identifierToken = reader.Consume();
+			if (reader.CanConsume() && reader.Current().Type == TokenType::CloseCurl)
+			{
+				Diagnostics.ReportError(reader.Current(), "Unexpected ')' - expected parameter name");
+				syntax->CloseCurlToken = reader.Current();
+				reader.Consume();
+				break;
+			}
+			
+			identifierToken = SyntaxToken(TokenType::Identifier, L"", TextLocation(), true);
+		}
+		else
+		{
+			identifierToken = reader.Current();
+			reader.Consume();
 		}
 
 		if (identifierToken.Type == TokenType::CloseCurl)
 		{
-			Diagnostics.ReportError(identifierToken, "Enexpected closer token");
+			Diagnostics.ReportError(identifierToken, "Unexpected ')' - expected parameter name");
+			syntax->CloseCurlToken = identifierToken;
 			break;
 		}
 
 		ParameterSyntax* param = new ParameterSyntax(type, identifierToken, syntax);
 		syntax->Parameters.push_back(param);
 
-		SyntaxToken separatorToken = reader.Current();
-		while (reader.CanConsume() && identifierToken.Type != TokenType::CloseCurl && identifierToken.Type != TokenType::Comma)
+		// Try to match separator
+		if (!TryMatch(reader, { TokenType::Comma, TokenType::CloseCurl }, "Expected ',' or ')'", 3))
 		{
-			Diagnostics.ReportError(separatorToken, "Expected separator token ',' or closing token ')'");
-			separatorToken = reader.Consume();
+			break;
 		}
+
+		SyntaxToken separatorToken = reader.Current();
+		reader.Consume();
 
 		if (separatorToken.Type == TokenType::CloseCurl)
 		{
@@ -500,17 +534,40 @@ void LexicalAnalyzer::ReadTypeBody(SourceReader& reader, TypeDeclarationSyntax* 
 			break;
 		}
 
+		if (current.Type == TokenType::EndOfFile)
+		{
+			Diagnostics.ReportError(current, "Unexpected end of file in type body - expected '}'");
+			syntax->CloseBraceToken = SyntaxToken(TokenType::CloseBrace, L"", current.Location, true);
+			break;
+		}
+
 		SyntaxToken peek = reader.Peek();
 		if (IsMemberDeclaration(current.Type, peek.Type))
 		{
 			MemberDeclarationSyntax* pMember = ReadMemberDeclaration(reader, syntax);
-			pMember->Parent = syntax;
-			syntax->Members.push_back(pMember);
+			if (pMember != nullptr)
+			{
+				pMember->Parent = syntax;
+				syntax->Members.push_back(pMember);
+				continue; // Continue reading more members
+			}
+			else
+			{
+				// If ReadMemberDeclaration returned nullptr, try to synchronize
+				if (!TryMatch(reader, { TokenType::CloseBrace }, nullptr, 10))
+				{
+					// Couldn't find closing brace - break to avoid infinite loop
+					break;
+				}
+			}
 		}
 		else
 		{
 			Diagnostics.ReportError(reader.Current(), "Unexpected token in type declaration");
-			reader.Consume();
+			if (!TryMatch(reader, { TokenType::CloseBrace }, nullptr, 5))
+			{
+				reader.Consume();
+			}
 		}
 	}
 }
@@ -519,16 +576,23 @@ StatementsBlockSyntax* LexicalAnalyzer::ReadStatementsBlock(SourceReader& reader
 {
 	StatementsBlockSyntax* syntax = new StatementsBlockSyntax(parent);
 
+	if (!reader.CanConsume())
+	{
+		Diagnostics.ReportError(SyntaxToken(TokenType::EndOfFile, L"", TextLocation()), "Unexpected end of file - expected statement block");
+		return syntax;
+	}
+
 	SyntaxToken current = reader.Current();
 	if (current.Type == TokenType::Semicolon)
 	{
 		// Empty block
-		syntax->SemicolonToken;
+		syntax->SemicolonToken = current;
+		reader.Consume();
 	}
 	else if (current.Type == TokenType::OpenBrace)
 	{
 		syntax->OpenBraceToken = current;
-		current = reader.Consume();
+		reader.Consume();
 
 		while (reader.CanConsume())
 		{
@@ -536,21 +600,47 @@ StatementsBlockSyntax* LexicalAnalyzer::ReadStatementsBlock(SourceReader& reader
 			if (current.Type == TokenType::CloseBrace)
 			{
 				syntax->CloseBraceToken = current;
-				current = reader.Consume();
+				reader.Consume();
 				break;
 			}
-			else if (IsKeyword(current.Type))
+
+			if (current.Type == TokenType::EndOfFile)
+			{
+				Diagnostics.ReportError(current, "Unexpected end of file in statement block - expected '}'");
+				syntax->CloseBraceToken = SyntaxToken(TokenType::CloseBrace, L"", current.Location, true);
+				break;
+			}
+
+			if (IsKeyword(current.Type))
 			{
 				KeywordStatementSyntax* statement = ReadKeywordStatement(reader, syntax);
-				syntax->Statements.push_back(statement);
-				continue;
+				if (statement != nullptr)
+				{
+					syntax->Statements.push_back(statement);
+					continue; // Continue reading more statements
+				}
+				else
+				{
+					// Couldn't read statement - try to synchronize
+					if (!TryMatch(reader, { TokenType::CloseBrace }, nullptr, 5))
+						break;
+				}
 			}
 			else
 			{
 				StatementSyntax* statement = ReadStatement(reader, syntax);
-				statement->SemicolonToken = Expect(reader, TokenType::Semicolon, "Missing ';' token");
-				syntax->Statements.push_back(statement);
-				continue;
+				if (statement != nullptr)
+				{
+					statement->SemicolonToken = Expect(reader, TokenType::Semicolon, "Missing ';' token");
+					syntax->Statements.push_back(statement);
+					continue; // Continue reading more statements
+				}
+				else
+				{
+					// Try to synchronize
+					if (!TryMatch(reader, { TokenType::CloseBrace }, nullptr, 5))
+						break;
+				}
 			}
 		}
 	}
@@ -560,13 +650,17 @@ StatementsBlockSyntax* LexicalAnalyzer::ReadStatementsBlock(SourceReader& reader
 		if (IsKeyword(current.Type))
 		{
 			KeywordStatementSyntax* statement = ReadKeywordStatement(reader, syntax);
-			syntax->Statements.push_back(statement);
+			if (statement != nullptr)
+				syntax->Statements.push_back(statement);
 		}
 		else
 		{
 			StatementSyntax* statement = ReadStatement(reader, syntax);
-			statement->SemicolonToken = Expect(reader, TokenType::Semicolon, "Missing ';' token");
-			syntax->Statements.push_back(statement);
+			if (statement != nullptr)
+			{
+				statement->SemicolonToken = Expect(reader, TokenType::Semicolon, "Missing ';' token");
+				syntax->Statements.push_back(statement);
+			}
 		}
 	}
 
@@ -597,7 +691,6 @@ StatementSyntax* LexicalAnalyzer::ReadStatement(SourceReader& reader, SyntaxNode
 					reader.Consume(); // Id
 					reader.Consume(); // =
 
-					//SyntaxToken assignOp = Expect(reader, TokenType::AssignOperator, "Missing '=' token");
 					ExpressionSyntax* expr = ReadExpression(reader, parent, 0);
 					return new VariableStatementSyntax(type, current, peek, expr, parent);
 				}
@@ -611,39 +704,40 @@ StatementSyntax* LexicalAnalyzer::ReadStatement(SourceReader& reader, SyntaxNode
 
 KeywordStatementSyntax* LexicalAnalyzer::ReadKeywordStatement(SourceReader& reader, SyntaxNode* parent)
 {
-	while (reader.CanConsume())
+	if (!reader.CanConsume())
+		return nullptr;
+
+	SyntaxToken current = reader.Current();
+	switch (current.Type)
 	{
-		SyntaxToken current = reader.Current();
-		switch (current.Type)
+		case TokenType::ForKeyword:
+			return ReadForStatement(reader, parent);
+
+		case TokenType::WhileKeyword:
+			return ReadWhileStatement(reader, parent);
+
+		case TokenType::UntilKeyword:
+			return ReadUntilStatement(reader, parent);
+
+		case TokenType::ReturnKeyword:
+			return ReadReturnStatement(reader, parent);
+
+		case TokenType::BreakKeyword:
+			return ReadBreakStatement(reader, parent);
+
+		case TokenType::ContinueKeyword:
+			return ReadContinueStatement(reader, parent);
+
+		case TokenType::IfKeyword:
+		case TokenType::UnlessKeyword:
+		case TokenType::ElseKeyword:
+			return ReadConditionalClause(reader, parent);
+
+		default:
 		{
-			case TokenType::ForKeyword:
-				return ReadForStatement(reader, parent);
-
-			case TokenType::WhileKeyword:
-				return ReadWhileStatement(reader, parent);
-
-			case TokenType::UntilKeyword:
-				return ReadUntilStatement(reader, parent);
-
-			case TokenType::ReturnKeyword:
-				return ReadReturnStatement(reader, parent);
-
-			case TokenType::BreakKeyword:
-				return ReadBreakStatement(reader, parent);
-
-			case TokenType::ContinueKeyword:
-				return ReadContinueStatement(reader, parent);
-
-			case TokenType::IfKeyword:
-			case TokenType::UnlessKeyword:
-			case TokenType::ElseKeyword:
-				return ReadConditionalClause(reader, parent);
-
-			default:
-			{
-				Diagnostics.ReportError(current, "unknown/unsupported keyword");
-				continue;
-			}
+			// Don't consume - let caller handle it to avoid infinite loop
+			Diagnostics.ReportError(current, "unknown/unsupported keyword");
+			return nullptr;
 		}
 	}
 }
@@ -833,9 +927,11 @@ ExpressionSyntax* LexicalAnalyzer::ReadExpression(SourceReader& reader, SyntaxNo
 	SyntaxToken current = reader.Current();
 	int precendence = GetOperatorPrecendence(current.Type);
 	
-	while (precendence != 0 && bindingPower < precendence)
+	while (reader.CanConsume() && precendence != 0 && bindingPower < precendence)
 	{
 		leftExpr = ReadLeftDenotation(reader, parent, leftExpr);
+		if (!reader.CanConsume())
+			break;
 		current = reader.Current();
 		precendence = GetOperatorPrecendence(current.Type);
 	}
@@ -886,15 +982,20 @@ ExpressionSyntax* LexicalAnalyzer::ReadNullDenotation(SourceReader& reader, Synt
 
 		case TokenType::EndOfFile:
 		{
-			Diagnostics.ReportError(current, "Unexpected file end");
-			return nullptr;
+			Diagnostics.ReportError(current, "Unexpected file end in expression");
+
+			// Return a literal expression with null value as fallback
+			return new LiteralExpressionSyntax(SyntaxToken(TokenType::NullLiteral, L"null", current.Location, true), parent);
 		}
 
 		default:
 		{
-			reader.Consume();
+			// Try to consume and continue - maybe it's recoverable
 			Diagnostics.ReportError(current, "Unknown expression token");
-			break;
+			reader.Consume();
+
+			// Return null literal as fallback
+			return new LiteralExpressionSyntax(SyntaxToken(TokenType::NullLiteral, L"null", current.Location, true), parent);
 		}
 	}
 	
@@ -904,70 +1005,98 @@ ExpressionSyntax* LexicalAnalyzer::ReadNullDenotation(SourceReader& reader, Synt
 ExpressionSyntax* LexicalAnalyzer::ReadLeftDenotation(SourceReader& reader, SyntaxNode* parent, ExpressionSyntax* leftExpr)
 {
 	if (!reader.CanConsume())
-		return nullptr;
+		return leftExpr;
 
-	while (reader.CanConsume())
+	SyntaxToken current = reader.Current();
+	if (IsUnaryOperator(current.Type))
 	{
-		SyntaxToken current = reader.Current();
-		if (IsUnaryOperator(current.Type))
-		{
-			int precendce = GetOperatorPrecendence(current.Type);
-			if (precendce == 0)
-				return leftExpr;
+		int precendce = GetOperatorPrecendence(current.Type);
+		if (precendce == 0)
+			return leftExpr;
 
-			reader.Consume();
-			UnaryExpressionSyntax* syntax = new UnaryExpressionSyntax(current, true, parent);
-			syntax->Expression = leftExpr;
-			return syntax;
-		}
-
-		if (IsBinaryOperator(current.Type) || current.Type == TokenType::AssignOperator)
-		{
-			int precendce = GetOperatorPrecendence(current.Type);
-			if (precendce == 0)
-				return leftExpr;
-
-			reader.Consume();
-			BinaryExpressionSyntax* syntax = new BinaryExpressionSyntax(current, parent);
-			leftExpr->Parent = syntax;
-
-			syntax->Left = leftExpr;
-			syntax->Right = ReadExpression(reader, syntax, precendce);
-			return syntax;
-		}
-
-		Diagnostics.ReportError(current, "Unknown token in expression's left denotation");
 		reader.Consume();
+		UnaryExpressionSyntax* syntax = new UnaryExpressionSyntax(current, true, parent);
+		syntax->Expression = leftExpr;
+		return syntax;
 	}
 
-	return nullptr;
+	if (IsBinaryOperator(current.Type) || current.Type == TokenType::AssignOperator)
+	{
+		int precendce = GetOperatorPrecendence(current.Type);
+		if (precendce == 0)
+			return leftExpr;
+
+		reader.Consume();
+		BinaryExpressionSyntax* syntax = new BinaryExpressionSyntax(current, parent);
+		leftExpr->Parent = syntax;
+
+		syntax->Left = leftExpr;
+		syntax->Right = ReadExpression(reader, syntax, precendce);
+		return syntax;
+	}
+
+	// Unknown token - return left expression instead of null
+	Diagnostics.ReportError(current, "Unknown token in expression's left denotation");
+	return leftExpr;
 }
 
 LinkedExpressionSyntax* LexicalAnalyzer::ReadLinkedExpression(SourceReader& reader, SyntaxNode* parent)
 {
 	LinkedExpressionSyntax* syntax = new LinkedExpressionSyntax(parent);
+	
+	if (!reader.CanConsume())
+	{
+		Diagnostics.ReportError(SyntaxToken(TokenType::EndOfFile, L"", TextLocation()), "Unexpected end of file in linked expression");
+		return syntax;
+	}
+
 	while (reader.CanConsume())
 	{
 		LinkedExpressionNode* node = ReadLinkedExpressionNode(reader, syntax, syntax->Last);
+		if (node == nullptr)
+		{
+			// If we couldn't read a node, break
+			break;
+		}
+
 		if (syntax->Last != nullptr)
 			syntax->Last->NextNode = node;
 
 		syntax->Nodes.push_back(node);
 		syntax->Last = node;
 
-		if (node->NextDelimeterToken.IsMissing)
+		if (node->NextDelimeterToken.IsMissing || !reader.CanConsume())
 		{
-			syntax->First = syntax->Nodes.at(0);
+			if (syntax->Nodes.size() > 0)
+				syntax->First = syntax->Nodes.at(0);
 			return syntax;
 		}
 	}
 
-	return nullptr;
+	// If we have at least one node, set First and return
+	if (syntax->Nodes.size() > 0)
+	{
+		syntax->First = syntax->Nodes.at(0);
+		return syntax;
+	}
+
+	// No nodes were read - return syntax anyway (it will have diagnostics)
+	return syntax;
 }
 
 LinkedExpressionNode* LexicalAnalyzer::ReadLinkedExpressionNode(SourceReader& reader, LinkedExpressionSyntax* parent, LinkedExpressionNode* prevNode)
 {
+	if (!reader.CanConsume())
+		return nullptr;
+
 	SyntaxToken identifier = Expect(reader, TokenType::Identifier, "Expected identifier");
+	
+	if (!reader.CanConsume())
+	{
+		// If we got EOF, return a simple member access node
+		return new MemberAccessExpressionSyntax(identifier, prevNode, parent);
+	}
+
 	SyntaxToken current = reader.Current();
 	switch (current.Type)
 	{
@@ -984,6 +1113,9 @@ LinkedExpressionNode* LexicalAnalyzer::ReadLinkedExpressionNode(SourceReader& re
 			InvokationExpressionSyntax* node = new InvokationExpressionSyntax(identifier, prevNode, parent);
 			node->ArgumentsList = ReadArgumentsList(reader, node);
 
+			if (!reader.CanConsume())
+				return node;
+
 			current = reader.Current();
 			if (current.Type == TokenType::Delimeter)
 			{
@@ -998,6 +1130,9 @@ LinkedExpressionNode* LexicalAnalyzer::ReadLinkedExpressionNode(SourceReader& re
 		{
 			IndexatorExpressionSyntax* node = new IndexatorExpressionSyntax(identifier, prevNode, parent);
 			node->IndexatorList = ReadIndexatorList(reader, node);
+
+			if (!reader.CanConsume())
+				return node;
 
 			current = reader.Current();
 			if (current.Type == TokenType::Delimeter)
@@ -1052,17 +1187,18 @@ ArgumentsListSyntax* LexicalAnalyzer::ReadArgumentsList(SourceReader& reader, Sy
 		ArgumentSyntax* argument = new ArgumentSyntax(expr, arguments);
 		arguments->Arguments.push_back(argument);
 
-		SyntaxToken separatorToken = reader.Current();
-		while (!Matches(reader, { TokenType::Comma, TokenType::CloseCurl }))
+		// Try to match separator with error recovery
+		if (!TryMatch(reader, { TokenType::Comma, TokenType::CloseCurl }, "Expected ',' or ')'", 3))
 		{
-			Diagnostics.ReportError(separatorToken, "Expected separator token ',' or closing token ')'");
-			separatorToken = reader.Consume();
+			break;
 		}
+
+		SyntaxToken separatorToken = reader.Current();
+		reader.Consume();
 
 		if (separatorToken.Type == TokenType::CloseCurl)
 		{
 			arguments->CloseCurlToken = separatorToken;
-			reader.Consume();
 			break;
 		}
 	}
@@ -1076,7 +1212,7 @@ IndexatorListSyntax* LexicalAnalyzer::ReadIndexatorList(SourceReader& reader, Sy
 	arguments->OpenSquareToken = Expect(reader, TokenType::OpenSquare, "Exprected '[' token");
 
 	SyntaxToken checkCloser = reader.Current();
-	if (checkCloser.Type == TokenType::CloseCurl)
+	if (checkCloser.Type == TokenType::CloseSquare)
 	{
 		arguments->CloseSquareToken = checkCloser;
 		reader.Consume();
@@ -1089,17 +1225,18 @@ IndexatorListSyntax* LexicalAnalyzer::ReadIndexatorList(SourceReader& reader, Sy
 		ArgumentSyntax* argument = new ArgumentSyntax(expr, arguments);
 		arguments->Arguments.push_back(argument);
 
-		SyntaxToken separatorToken = reader.Current();
-		while (!Matches(reader, { TokenType::Comma, TokenType::CloseSquare }))
+		// Try to match separator with error recovery
+		if (!TryMatch(reader, { TokenType::Comma, TokenType::CloseSquare }, "Expected ',' or ']'", 3))
 		{
-			Diagnostics.ReportError(separatorToken, "Expected separator token ',' or closing token ']'");
-			separatorToken = reader.Consume();
+			break;
 		}
+
+		SyntaxToken separatorToken = reader.Current();
+		reader.Consume();
 
 		if (separatorToken.Type == TokenType::CloseSquare)
 		{
 			arguments->CloseSquareToken = separatorToken;
-			reader.Consume();
 			break;
 		}
 	}
@@ -1123,10 +1260,15 @@ TypeSyntax* LexicalAnalyzer::ReadType(SourceReader& reader, SyntaxNode* parent)
 		identifier->Identifiers.push_back(current);
 
 		current = reader.Consume();
-		while (current.Type == TokenType::Delimeter)
+		while (reader.CanConsume() && current.Type == TokenType::Delimeter)
 		{
 			current = reader.Consume();
+			if (!reader.CanConsume())
+				break;
 			identifier->Identifiers.push_back(Expect(reader, TokenType::Identifier, "Expected identifier"));
+			if (!reader.CanConsume())
+				break;
+			current = reader.Current();
 			continue;
 		}
 
@@ -1138,11 +1280,15 @@ TypeSyntax* LexicalAnalyzer::ReadType(SourceReader& reader, SyntaxNode* parent)
 		return nullptr;
 	}
 
+	if (!reader.CanConsume())
+		return syntax;
+
 	current = reader.Current();
 	switch (current.Type)
 	{
 		case TokenType::Question:
 		{
+			reader.Consume();
 			return new NullableTypeSyntax(syntax, parent);
 		}
 
@@ -1151,8 +1297,10 @@ TypeSyntax* LexicalAnalyzer::ReadType(SourceReader& reader, SyntaxNode* parent)
 			ArrayTypeSyntax* array = new ArrayTypeSyntax(parent);
 			array->Rank = 1;
 			array->OpenBraceToken = current;
+			reader.Consume();
 			array->CloseBraceToken = Expect(reader, TokenType::CloseBrace, "Expected ']'");
 			array->UnderlayingType = syntax;
+			return array;
 		}
 
 		default:
@@ -1161,8 +1309,67 @@ TypeSyntax* LexicalAnalyzer::ReadType(SourceReader& reader, SyntaxNode* parent)
 
 }
 
+// Smart error recovery with synchronization tokens
+static const vector<TokenType> SynchronizationTokens = {
+	TokenType::Semicolon,
+	TokenType::OpenBrace,
+	TokenType::CloseBrace,
+	TokenType::OpenCurl,
+	TokenType::CloseCurl,
+	TokenType::NamespaceKeyword,
+	TokenType::ClassKeyword,
+	TokenType::StructKeyword,
+	TokenType::EndOfFile
+};
+
+static bool IsSynchronizationToken(TokenType type)
+{
+	for (TokenType syncToken : SynchronizationTokens)
+	{
+		if (syncToken == type)
+			return true;
+	}
+	return false;
+}
+
+static bool TrySynchronize(SourceReader& reader, const vector<TokenType>& expectedTokens, int maxSkips = 10)
+{
+	// Skip tokens until we find a synchronization point or expected token
+	int skipped = 0;
+	while (reader.CanConsume() && skipped < maxSkips)
+	{
+		SyntaxToken current = reader.Current();
+		
+		// Check if current token is one of expected
+		for (TokenType expected : expectedTokens)
+		{
+			if (current.Type == expected)
+				return true;
+		}
+		
+		// Check if current token is a synchronization point
+		if (IsSynchronizationToken(current.Type))
+			return false;
+		
+		reader.Consume();
+		skipped++;
+	}
+	
+	return false;
+}
+
 SyntaxToken LexicalAnalyzer::Expect(SourceReader& reader, TokenType kind, const char* message)
 {
+	if (!reader.CanConsume())
+	{
+		if (message != nullptr)
+		{
+			SyntaxToken eofToken = SyntaxToken(TokenType::EndOfFile, L"", TextLocation());
+			Diagnostics.ReportError(eofToken, message);
+		}
+		return SyntaxToken(kind, L"", TextLocation(), true);
+	}
+
 	SyntaxToken current = reader.Current();
 	if (current.Type == kind)
 	{
@@ -1173,6 +1380,17 @@ SyntaxToken LexicalAnalyzer::Expect(SourceReader& reader, TokenType kind, const 
 	if (message != nullptr)
 		Diagnostics.ReportError(current, message);
 
+	// Try to synchronize - skip until we find the expected token or a sync point
+	vector<TokenType> expected = { kind };
+	if (TrySynchronize(reader, expected, 5))
+	{
+		// Found expected token after skipping
+		current = reader.Current();
+		reader.Consume();
+		return current;
+	}
+
+	// Return missing token
 	return SyntaxToken(kind, L"", current.Location, true);
 }
 
@@ -1187,6 +1405,29 @@ bool LexicalAnalyzer::Matches(SourceReader& reader, initializer_list<TokenType> 
 		if (current.Type == type)
 			return true;
 	}
+
+	return false;
+}
+
+// New method: Try to match one of expected tokens, with error recovery
+bool LexicalAnalyzer::TryMatch(SourceReader& reader, initializer_list<TokenType> types, const char* errorMessage, int maxSkips)
+{
+	if (!reader.CanConsume())
+		return false;
+
+	if (Matches(reader, types))
+		return true;
+
+	if (errorMessage != nullptr)
+	{
+		SyntaxToken current = reader.Current();
+		Diagnostics.ReportError(current, errorMessage);
+	}
+
+	// Try to synchronize to one of expected tokens
+	vector<TokenType> expectedTypes(types);
+	if (TrySynchronize(reader, expectedTypes, maxSkips))
+		return true;
 
 	return false;
 }
