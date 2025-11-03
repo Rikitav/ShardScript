@@ -779,8 +779,9 @@ TypeSymbol* ExpressionBinder::AnalyzeLinkedExpression(LinkedExpressionSyntax* no
 		return nullptr;
 	}
 	
-	LinkedExpressionNode* current = node->First;
-	TypeSymbol* currentType = nullptr;
+    LinkedExpressionNode* current = node->First;
+    TypeSymbol* currentType = nullptr;
+    bool isStaticContext = false;
 	
 	while (current != nullptr)
 	{
@@ -796,12 +797,27 @@ TypeSymbol* ExpressionBinder::AnalyzeLinkedExpression(LinkedExpressionSyntax* no
 					SemanticScope* currentScope = scopeStack.top();
 					SyntaxSymbol* symbol = currentScope->Lookup(name);
 					
-					if (symbol == nullptr)
-					{
-						string nameStr(name.begin(), name.end());
-						Diagnostics.ReportError(memberAccess->IdentifierToken, "Symbol '" + nameStr + "' not found in current scope");
-						return nullptr;
-					}
+                    if (symbol == nullptr)
+                    {
+                        vector<TypeSymbol*> allTypes = symbolTable->GetTypeSymbols();
+                        for (TypeSymbol* t : allTypes)
+                        {
+                            if (t->Name == name)
+                            {
+                                currentType = t;
+                                isStaticContext = true;
+                                symbol = t;
+                                break;
+                            }
+                        }
+
+                        if (symbol == nullptr)
+                        {
+                            string nameStr(name.begin(), name.end());
+                            Diagnostics.ReportError(memberAccess->IdentifierToken, "Symbol '" + nameStr + "' not found in current scope");
+                            return nullptr;
+                        }
+                    }
 					
 					if (!IsSymbolAccessible(symbol))
 					{
@@ -810,10 +826,16 @@ TypeSymbol* ExpressionBinder::AnalyzeLinkedExpression(LinkedExpressionSyntax* no
 						return nullptr;
 					}
 					
-					if (symbol->Kind == SyntaxKind::VariableStatement)
+                    if (symbol->Kind == SyntaxKind::ClassDeclaration || symbol->Kind == SyntaxKind::StructDeclaration)
+                    {
+                        currentType = static_cast<TypeSymbol*>(symbol);
+                        isStaticContext = true;
+                    }
+                    else if (symbol->Kind == SyntaxKind::VariableStatement)
 					{
 						VariableSymbol* varSymbol = static_cast<VariableSymbol*>(symbol);
 						currentType = varSymbol->Type;
+                        isStaticContext = false;
 						
 						if (currentType == nullptr)
 						{
@@ -822,10 +844,11 @@ TypeSymbol* ExpressionBinder::AnalyzeLinkedExpression(LinkedExpressionSyntax* no
 							return nullptr;
 						}
 					}
-					else if (symbol->Kind == SyntaxKind::Parameter)
+                    else if (symbol->Kind == SyntaxKind::Parameter)
 					{
 						ParameterSymbol* paramSymbol = static_cast<ParameterSymbol*>(symbol);
 						currentType = paramSymbol->Type;
+                        isStaticContext = false;
 						
 						if (currentType == nullptr)
 						{
@@ -834,7 +857,7 @@ TypeSymbol* ExpressionBinder::AnalyzeLinkedExpression(LinkedExpressionSyntax* no
 							return nullptr;
 						}
 					}
-					else if (symbol->Kind == SyntaxKind::FieldDeclaration)
+                    else if (symbol->Kind == SyntaxKind::FieldDeclaration)
 					{
 						FieldSymbol* fieldSymbol = static_cast<FieldSymbol*>(symbol);
 						
@@ -845,7 +868,8 @@ TypeSymbol* ExpressionBinder::AnalyzeLinkedExpression(LinkedExpressionSyntax* no
 							return nullptr;
 						}
 						
-						currentType = fieldSymbol->ReturnType;
+                        currentType = fieldSymbol->ReturnType;
+                        isStaticContext = false;
 						
 						if (currentType == nullptr)
 						{
@@ -877,7 +901,7 @@ TypeSymbol* ExpressionBinder::AnalyzeLinkedExpression(LinkedExpressionSyntax* no
 					}
 					
 					wstring memberName = memberAccess->IdentifierToken.Word;
-					FieldSymbol* field = memberAccess->Symbol = currentType->FindField(memberName);
+                    FieldSymbol* field = memberAccess->Symbol = currentType->FindField(memberName);
 					
 					if (field == nullptr)
 					{
@@ -896,14 +920,28 @@ TypeSymbol* ExpressionBinder::AnalyzeLinkedExpression(LinkedExpressionSyntax* no
 						return nullptr;
 					}
 					
-					if (!IsSymbolAccessible(field))
+                    if (!IsSymbolAccessible(field))
 					{
 						string memberStr(memberName.begin(), memberName.end());
 						Diagnostics.ReportError(memberAccess->IdentifierToken, "Field '" + memberStr + "' is not accessible");
 						return nullptr;
 					}
+
+                    if (isStaticContext && !field->IsStatic)
+                    {
+                        string memberStr(memberName.begin(), memberName.end());
+                        Diagnostics.ReportError(memberAccess->IdentifierToken, "Cannot access instance field '" + memberStr + "' from type context");
+                        return nullptr;
+                    }
+                    if (!isStaticContext && field->IsStatic)
+                    {
+                        string memberStr(memberName.begin(), memberName.end());
+                        Diagnostics.ReportError(memberAccess->IdentifierToken, "Cannot access static field '" + memberStr + "' from instance reference");
+                        return nullptr;
+                    }
 					
-					currentType = field->ReturnType;
+                    currentType = field->ReturnType;
+                    isStaticContext = false;
 					
 					if (currentType == nullptr)
 					{
@@ -951,6 +989,7 @@ TypeSymbol* ExpressionBinder::AnalyzeLinkedExpression(LinkedExpressionSyntax* no
 
 				if (currentType == nullptr)
 				{
+					isStaticContext = true;
 					method = symbolTable->GlobalType->FindMethod(methodName, argTypes);
 					if (method == nullptr)
 					{
@@ -978,7 +1017,7 @@ TypeSymbol* ExpressionBinder::AnalyzeLinkedExpression(LinkedExpressionSyntax* no
 					}
 				}
 
-				if (!IsSymbolAccessible(method))
+                if (!IsSymbolAccessible(method))
 				{
 					string methodStr(methodName.begin(), methodName.end());
 					Diagnostics.ReportError(invocation->IdentifierToken, "Method '" + methodStr + "' is not accessible");
@@ -992,8 +1031,23 @@ TypeSymbol* ExpressionBinder::AnalyzeLinkedExpression(LinkedExpressionSyntax* no
 					return nullptr;
 				}
 				
+                if (isStaticContext && !method->IsStatic)
+                {
+                    string methodStr(methodName.begin(), methodName.end());
+                    Diagnostics.ReportError(invocation->IdentifierToken, "Cannot call instance method '" + methodStr + "' from type context");
+                    return nullptr;
+                }
+
+                if (!isStaticContext && method->IsStatic)
+                {
+                    string methodStr(methodName.begin(), methodName.end());
+                    Diagnostics.ReportError(invocation->IdentifierToken, "Cannot call static method '" + methodStr + "' on instance reference");
+                    return nullptr;
+                }
+
 				invocation->Symbol = method;
-				currentType = method->ReturnType;
+                currentType = method->ReturnType;
+                isStaticContext = false;
 				
 				if (currentType == nullptr)
 				{
