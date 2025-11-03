@@ -587,7 +587,7 @@ ObjectInstance* AbstractInterpreter::EvaluateExpression(const ExpressionSyntax* 
 		case SyntaxKind::LinkedExpression:
 		{
 			const LinkedExpressionSyntax* linkedExpression = static_cast<const LinkedExpressionSyntax*>(expression);
-			return EvaluateLinkedExpression(linkedExpression);
+			return EvaluateLinkedExpression(linkedExpression, false);
 		}
 
 		default:
@@ -604,28 +604,32 @@ ObjectInstance* AbstractInterpreter::EvaluateLiteralExpression(const LiteralExpr
 		case TokenType::BooleanLiteral:
 		{
 			ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::Boolean);
-			instance->WritePrimitive(expression->LiteralToken.Word == L"true");
+			bool data = expression->LiteralToken.Word == L"true";
+			instance->WritePrimitive(data);
 			return instance;
 		}
 
 		case TokenType::NumberLiteral:
 		{
 			ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::Integer);
-			instance->WritePrimitive(stoi(expression->LiteralToken.Word));
+			int data = stoi(expression->LiteralToken.Word);
+			instance->WritePrimitive(data);
 			return instance;
 		}
 
 		case TokenType::CharLiteral:
 		{
 			ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::Char);
-			instance->WritePrimitive(expression->LiteralToken.Word[0]);
+			wchar_t data = expression->LiteralToken.Word[0];
+			instance->WritePrimitive(data);
 			return instance;
 		}
 
 		case TokenType::StringLiteral:
 		{
 			ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String);
-			instance->WritePrimitive(expression->LiteralToken.Word);
+			wstring* copy = new wstring(expression->LiteralToken.Word);
+			instance->WritePrimitive(*copy);
 			return instance;
 		}
 
@@ -640,27 +644,99 @@ ObjectInstance* AbstractInterpreter::EvaluateObjectExpression(const ObjectExpres
 	return newInstance;
 }
 
+static bool IsMemberAccess(const ExpressionSyntax* expression, const LinkedExpressionSyntax*& linkedExpression, const MemberAccessExpressionSyntax*& memberExpression)
+{
+	linkedExpression = static_cast<const LinkedExpressionSyntax*>(expression);
+	if (linkedExpression == nullptr)
+		return false;
+
+	memberExpression = static_cast<const MemberAccessExpressionSyntax*>(linkedExpression->Last);
+	if (memberExpression == nullptr)
+		return false;
+
+	return true;
+}
+
+static bool IsFieldAccess(const LinkedExpressionSyntax* linkedExpression, const MemberAccessExpressionSyntax* memberExpression)
+{
+	return linkedExpression->Nodes.size() > 1 && linkedExpression->Last == memberExpression;
+}
+
 ObjectInstance* AbstractInterpreter::EvaluateBinaryExpression(const BinaryExpressionSyntax* expression)
 {
-	ObjectInstance* leftReg = EvaluateExpression(expression->Left);
-	ObjectInstance* rightReg = EvaluateExpression(expression->Right);
-
+	const LinkedExpressionSyntax* linkedExpression = nullptr;
+	const MemberAccessExpressionSyntax* memberExpression = nullptr;
+	bool isMemberAccess = IsMemberAccess(expression->Left, linkedExpression, memberExpression);
+	bool isFieldAccess = IsFieldAccess(linkedExpression, memberExpression);
 	bool assign = false;
-	ObjectInstance* retReg = PrimitiveMathModule::EvaluateBinaryOperator(leftReg, expression->OperatorToken, rightReg, assign);
+
+	ObjectInstance* instanceReg = nullptr;
+	ObjectInstance* retReg = nullptr;
+
+	if (isFieldAccess)
+	{
+		instanceReg = EvaluateLinkedExpression(linkedExpression, true);
+		ObjectInstance* leftReg = EvaluateMemberAccessExpression(memberExpression, instanceReg);
+		ObjectInstance* rightReg = EvaluateExpression(expression->Right);
+		retReg = PrimitiveMathModule::EvaluateBinaryOperator(leftReg, expression->OperatorToken, rightReg, assign);
+	}
+	else
+	{
+		ObjectInstance* leftReg = instanceReg = EvaluateExpression(expression->Left);
+		ObjectInstance* rightReg = EvaluateExpression(expression->Right);
+		retReg = PrimitiveMathModule::EvaluateBinaryOperator(leftReg, expression->OperatorToken, rightReg, assign);
+	}
 
 	if (assign)
-		retReg->CopyReference()->CopyTo(leftReg);
+	{
+		if (isFieldAccess)
+		{
+			instanceReg->SetField(memberExpression->Symbol, retReg);
+			return retReg;
+		}
+		
+		if (isMemberAccess) // variable
+		{
+			retReg->CopyReference()->CopyTo(instanceReg);
+			return retReg;
+		}
+	}
 
 	return retReg;
 }
 
 ObjectInstance* AbstractInterpreter::EvaluateUnaryExpression(const UnaryExpressionSyntax* expression)
 {
-	ObjectInstance* exprReg = EvaluateExpression(expression->Expression);
-	return PrimitiveMathModule::EvaluateUnaryOperator(exprReg, expression->OperatorToken, expression->IsRightDetermined);
+	const LinkedExpressionSyntax* linkedExpression = nullptr;
+	const MemberAccessExpressionSyntax* memberExpression = nullptr;
+	bool isMemberAccess = IsMemberAccess(expression, linkedExpression, memberExpression);
+	bool isFieldAccess = IsFieldAccess(linkedExpression, memberExpression);
+
+	if (isFieldAccess)
+	{
+		ObjectInstance* instanceReg = EvaluateLinkedExpression(linkedExpression, true);
+		ObjectInstance* exprReg = EvaluateMemberAccessExpression(memberExpression, instanceReg);
+		ObjectInstance* retReg = PrimitiveMathModule::EvaluateUnaryOperator(exprReg, expression->OperatorToken, expression->IsRightDetermined);
+		
+		instanceReg->SetField(memberExpression->Symbol, exprReg);
+		return retReg;
+	}
+	else if (isMemberAccess) // variable
+	{
+		ObjectInstance* exprReg = EvaluateExpression(expression->Expression);
+		ObjectInstance* targetReg = exprReg->CopyReference();
+		ObjectInstance* retReg = PrimitiveMathModule::EvaluateUnaryOperator(targetReg, expression->OperatorToken, expression->IsRightDetermined);
+		
+		targetReg->CopyTo(exprReg);
+		return retReg;
+	}
+	else
+	{
+		throw runtime_error("unary expression tryed to assign value to inaccesible register");
+	}
 }
 
-ObjectInstance* AbstractInterpreter::EvaluateLinkedExpression(const LinkedExpressionSyntax* expression)
+ObjectInstance* AbstractInterpreter::EvaluateLinkedExpression(const LinkedExpressionSyntax* expression, bool trimLast)
 {
 	LinkedExpressionNode* exprNode = expression->First;
 	ObjectInstance* objInstance = nullptr;
@@ -674,47 +750,13 @@ ObjectInstance* AbstractInterpreter::EvaluateLinkedExpression(const LinkedExpres
 			exprNode = variableAccess->NextNode;
 			break;
 		}
-
-		//*
-		case SyntaxKind::InvokationExpression:
-		{
-			auto invokeExpr = dynamic_cast<InvokationExpressionSyntax*>(exprNode);
-			wstring methodName = invokeExpr->IdentifierToken.Word;
-			vector<ArgumentSyntax*> arguments = invokeExpr->ArgumentsList->Arguments;
-
-			if (methodName == L"gc_info" && arguments.size() == 0)
-			{
-				wcout << "Garbage collector info dump" << endl;
-				for (ObjectInstance* reg : GarbageCollector::Heap)
-				{
-					wcout
-						<< L" * " << reg->Ptr
-						<< L" : " << reg->Info->Name
-						<< L" : " << reg->GetReferencesCount() << endl;
-				}
-
-				return nullptr;
-			}
-
-			if (methodName == L"print" && arguments.size() == 1)
-			{
-				ObjectInstance* instance = EvaluateExpression(arguments[0]->Expression);
-				ConsoleHelper::Write(instance);
-				return nullptr;
-			}
-
-			if (methodName == L"println" && arguments.size() == 1)
-			{
-				ObjectInstance* instance = EvaluateExpression(arguments[0]->Expression);
-				ConsoleHelper::WriteLine(instance);
-				return nullptr;
-			}
-		}
-		//*/
 	}
 
 	while (exprNode != nullptr)
 	{
+		if (trimLast && exprNode == expression->Last)
+			break;
+
 		objInstance = EvaluateLinkedExpression(exprNode, objInstance);
 		exprNode = exprNode->NextNode;
 	}
@@ -754,17 +796,15 @@ ObjectInstance* AbstractInterpreter::EvaluateLinkedExpression(const LinkedExpres
 ObjectInstance* AbstractInterpreter::EvaluateMemberAccessExpression(const MemberAccessExpressionSyntax* expression, ObjectInstance* prevInstance)
 {
 	wstring memberName = expression->IdentifierToken.Word;
-	TypeSymbol* type = const_cast<TypeSymbol*>(prevInstance->Info);
-	FieldSymbol* field = type->FindField(memberName);
-	return prevInstance->GetField(field);
+	return prevInstance->GetField(expression->Symbol);
 }
 
 ObjectInstance* AbstractInterpreter::EvaluateInvokationExpression(const InvokationExpressionSyntax* expression, ObjectInstance* prevInstance)
 {
 	wstring methodName = expression->IdentifierToken.Word;
-	MethodSymbol* method = prevInstance->Info->Methods.at(expression->FoundIndex);
-	InboundVariablesContext* arguments = CreateArgumentsContext(expression, method, prevInstance);
+	MethodSymbol* method = expression->Symbol;
 
+	InboundVariablesContext* arguments = CreateArgumentsContext(expression, expression->Symbol, prevInstance);
 	return ExecuteMethod(method, arguments);
 }
 

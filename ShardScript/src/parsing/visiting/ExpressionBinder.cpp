@@ -877,7 +877,7 @@ TypeSymbol* ExpressionBinder::AnalyzeLinkedExpression(LinkedExpressionSyntax* no
 					}
 					
 					wstring memberName = memberAccess->IdentifierToken.Word;
-					FieldSymbol* field = currentType->FindField(memberName);
+					FieldSymbol* field = memberAccess->Symbol = currentType->FindField(memberName);
 					
 					if (field == nullptr)
 					{
@@ -919,30 +919,9 @@ TypeSymbol* ExpressionBinder::AnalyzeLinkedExpression(LinkedExpressionSyntax* no
 			case SyntaxKind::InvokationExpression:
 			{
 				InvokationExpressionSyntax* invocation = static_cast<InvokationExpressionSyntax*>(current);
-				
-				if (currentType == nullptr)
-				{
-					wstring methodName = invocation->IdentifierToken.Word;
-					
-					if (methodName == L"print" || methodName == L"println" || methodName == L"gc_info")
-					{
-						return nullptr;
-					}
-					
-					string methodStr(methodName.begin(), methodName.end());
-					Diagnostics.ReportError(invocation->IdentifierToken, "Cannot invoke method '" + methodStr + "': no target type");
-					return nullptr;
-				}
-				
-				if (currentType->Kind != SyntaxKind::ClassDeclaration && currentType->Kind != SyntaxKind::StructDeclaration)
-				{
-					string typeName(currentType->Name.begin(), currentType->Name.end());
-					Diagnostics.ReportError(invocation->IdentifierToken, "Cannot invoke method on non-type '" + typeName + "'");
-					return nullptr;
-				}
-				
 				wstring methodName = invocation->IdentifierToken.Word;
-				
+				MethodSymbol* method = nullptr;
+
 				vector<TypeSymbol*> argTypes;
 				if (invocation->ArgumentsList != nullptr)
 				{
@@ -954,7 +933,7 @@ TypeSymbol* ExpressionBinder::AnalyzeLinkedExpression(LinkedExpressionSyntax* no
 							VisitExpression(expr);
 							TypeSymbol* argType = GetExpressionType(expr);
 							argTypes.push_back(argType);
-							
+
 							if (argType == nullptr)
 							{
 								string methodStr(methodName.begin(), methodName.end());
@@ -969,17 +948,36 @@ TypeSymbol* ExpressionBinder::AnalyzeLinkedExpression(LinkedExpressionSyntax* no
 						}
 					}
 				}
-				
-				MethodSymbol* method = currentType->FindMethod(methodName, argTypes);
-				
-				if (method == nullptr)
+
+				if (currentType == nullptr)
 				{
-					string typeName(currentType->Name.begin(), currentType->Name.end());
-					string methodStr(methodName.begin(), methodName.end());
-					Diagnostics.ReportError(invocation->IdentifierToken, "Method '" + methodStr + "' not found in type '" + typeName + "' or argument types do not match");
-					return nullptr;
+					method = symbolTable->GlobalType->FindMethod(methodName, argTypes);
+					if (method == nullptr)
+					{
+						string methodStr(methodName.begin(), methodName.end());
+						Diagnostics.ReportError(invocation->IdentifierToken, "Global scope's member '" + methodStr + "' is not a method");
+						return nullptr;
+					}
 				}
-				
+				else
+				{
+					if (currentType->Kind != SyntaxKind::ClassDeclaration && currentType->Kind != SyntaxKind::StructDeclaration)
+					{
+						string typeName(currentType->Name.begin(), currentType->Name.end());
+						Diagnostics.ReportError(invocation->IdentifierToken, "Cannot invoke method on non-type '" + typeName + "'");
+						return nullptr;
+					}
+
+					method = currentType->FindMethod(methodName, argTypes);
+					if (method == nullptr)
+					{
+						string typeName(currentType->Name.begin(), currentType->Name.end());
+						string methodStr(methodName.begin(), methodName.end());
+						Diagnostics.ReportError(invocation->IdentifierToken, "Method '" + methodStr + "' not found in type '" + typeName + "' or argument types do not match");
+						return nullptr;
+					}
+				}
+
 				if (!IsSymbolAccessible(method))
 				{
 					string methodStr(methodName.begin(), methodName.end());
@@ -994,9 +992,7 @@ TypeSymbol* ExpressionBinder::AnalyzeLinkedExpression(LinkedExpressionSyntax* no
 					return nullptr;
 				}
 				
-				auto it = find(currentType->Methods.begin(), currentType->Methods.end(), method);
-				invocation->FoundIndex = it != currentType->Methods.end() ? distance(currentType->Methods.begin(), it) : static_cast<size_t>(-1);
-				
+				invocation->Symbol = method;
 				currentType = method->ReturnType;
 				
 				if (currentType == nullptr)

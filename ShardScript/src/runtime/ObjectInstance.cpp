@@ -23,14 +23,24 @@ ObjectInstance* ObjectInstance::CopyReference()
 	return newInstance;
 }
 
+const void* ObjectInstance::GetFieldMemory(FieldSymbol* field)
+{
+	if (field->ReturnType->IsReferenceType)
+	{
+		return OffsetMemory(field->MemoryBytesOffset, sizeof(ObjectInstance*));
+	}
+	else
+	{
+		return OffsetMemory(field->MemoryBytesOffset, field->ReturnType->MemoryBytesSize);
+	}
+}
+
 ObjectInstance* ObjectInstance::GetField(FieldSymbol* field)
 {
 	if (field->ReturnType->IsReferenceType)
 	{
 		void* offset = OffsetMemory(field->MemoryBytesOffset, sizeof(ObjectInstance*));
-		ObjectInstance* instance = *static_cast<ObjectInstance**>(offset);
-		return instance;
-		//return GarbageCollector::CopyInstance(field->ReturnType, memory);
+		return *static_cast<ObjectInstance**>(offset);
 	}
 	else
 	{
@@ -51,7 +61,7 @@ void ObjectInstance::SetField(FieldSymbol* field, ObjectInstance* instance)
 		}
 
 		ObjectInstance* oldValue = GetField(field);
-		oldValue->DecrementReference();
+		GarbageCollector::DestroyInstance(oldValue);
 		
 		instance->IncrementReference();
 		WriteMemory(field->MemoryBytesOffset, sizeof(ObjectInstance*), &instance);
@@ -73,6 +83,7 @@ void ObjectInstance::CopyTo(ObjectInstance* to)
 	to->WriteMemory(0, Info->MemoryBytesSize, Ptr);
 }
 
+/*
 unsigned long ObjectInstance::GetReferencesCount()
 {
 	if (!Info->IsReferenceType)
@@ -80,14 +91,19 @@ unsigned long ObjectInstance::GetReferencesCount()
 
 	return *static_cast<long*>(OffsetMemory(0, sizeof(unsigned long)));
 }
+*/
 
 void ObjectInstance::IncrementReference()
 {
 	if (!Info->IsReferenceType)
 		return;
 
+	/*
 	unsigned long* refCounter = static_cast<unsigned long*>(OffsetMemory(0, sizeof(unsigned long)));
 	refCounter[0] += 1;
+	*/
+
+	ReferencesCounter += 1;
 }
 
 void ObjectInstance::DecrementReference()
@@ -95,8 +111,12 @@ void ObjectInstance::DecrementReference()
 	if (!Info->IsReferenceType)
 		return;
 
+	/*
 	unsigned long* refCounter = static_cast<unsigned long*>(OffsetMemory(0, sizeof(unsigned long)));
 	refCounter[0] -= 1;
+	*/
+
+	ReferencesCounter -= 1;
 }
 
 void* ObjectInstance::OffsetMemory(const size_t offset, const size_t size)

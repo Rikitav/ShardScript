@@ -24,15 +24,18 @@ namespace shard::runtime
 		~ObjectInstance() = default;
 
 		ObjectInstance* CopyReference();
+		void CopyTo(ObjectInstance* to);
+
+		const void* GetFieldMemory(shard::syntax::symbols::FieldSymbol* field);
 		ObjectInstance* GetField(shard::syntax::symbols::FieldSymbol* field);
 		void SetField(shard::syntax::symbols::FieldSymbol* field, ObjectInstance* instance);
-		void CopyTo(ObjectInstance* to);
-		unsigned long GetReferencesCount();
+		
+		//unsigned long GetReferencesCount();
 		void IncrementReference();
 		void DecrementReference();
 
 		template<typename T>
-		inline void WritePrimitive(T value)
+		inline void WritePrimitive(T& value)
 		{
 			WriteMemory(0, Info->MemoryBytesSize, &value);
 

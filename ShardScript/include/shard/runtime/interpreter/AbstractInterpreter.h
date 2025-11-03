@@ -84,7 +84,7 @@ namespace shard::runtime
 		ObjectInstance* EvaluateBinaryExpression(const shard::syntax::nodes::BinaryExpressionSyntax* expression);
 		ObjectInstance* EvaluateUnaryExpression(const shard::syntax::nodes::UnaryExpressionSyntax* expression);
 
-		ObjectInstance* EvaluateLinkedExpression(const shard::syntax::nodes::LinkedExpressionSyntax* expression);
+		ObjectInstance* EvaluateLinkedExpression(const shard::syntax::nodes::LinkedExpressionSyntax* expression, bool trimLast);
 		ObjectInstance* EvaluateLinkedExpression(const shard::syntax::nodes::LinkedExpressionNode* expression, shard::runtime::ObjectInstance* prevInstance);
 		ObjectInstance* EvaluateMemberAccessExpression(const shard::syntax::nodes::MemberAccessExpressionSyntax* expression, shard::runtime::ObjectInstance* prevInstance);
 		ObjectInstance* EvaluateInvokationExpression(const shard::syntax::nodes::InvokationExpressionSyntax* expression, shard::runtime::ObjectInstance* prevInstance);

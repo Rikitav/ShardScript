@@ -13,6 +13,10 @@
 #include <shard/syntax/symbols/StructSymbol.h>
 #include <shard/syntax/symbols/TypeSymbol.h>
 
+#include <shard/runtime/GarbageCollector.h>
+#include <shard/runtime/ConsoleHelper.h>
+
+#include <iostream>
 #include <vector>
 #include <ranges>
 #include <string>
@@ -20,9 +24,38 @@
 using namespace std;
 using namespace std::ranges;
 using namespace std::views;
+using namespace shard::runtime;
 using namespace shard::syntax;
 using namespace shard::syntax::symbols;
 using namespace shard::parsing::semantic;
+
+ObjectInstance* Gc_Info(InboundVariablesContext* arguments)
+{
+	wcout << "Garbage collector info dump" << endl;
+	for (ObjectInstance* reg : GarbageCollector::Heap)
+	{
+		wcout
+			<< L" * " << reg->Ptr
+			<< L" : " << reg->Info->Name
+			<< L" : " << reg->ReferencesCounter << endl;
+	}
+
+	return nullptr;
+}
+
+ObjectInstance* Print(InboundVariablesContext* arguments)
+{
+	ObjectInstance* instance = arguments->Variables.at(L"message");
+	ConsoleHelper::Write(instance);
+	return nullptr;
+}
+
+ObjectInstance* Println(InboundVariablesContext* arguments)
+{
+	ObjectInstance* instance = arguments->Variables.at(L"message");
+	ConsoleHelper::WriteLine(instance);
+	return nullptr;
+}
 
 void SymbolTable::ResolvePrmitives()
 {
@@ -47,6 +80,38 @@ void SymbolTable::ResolvePrmitives()
 	IntegerPrimitive::Reflect(Primitives::Integer);
 	//CharPrimitive::Reflect(Primitives::Char);
 	StringPrimitive::Reflect(Primitives::String);
+
+	GlobalType = new TypeSymbol(GlobalTypeName, SyntaxKind::CompilationUnit);
+}
+
+void SymbolTable::ResolveGlobalMethods()
+{
+	MethodSymbol* gcInfoMethod = new MethodSymbol(L"gc_info", Gc_Info);
+	gcInfoMethod->ReturnType = SymbolTable::Primitives::Void;
+	gcInfoMethod->Accesibility = SymbolAccesibility::Public;
+	gcInfoMethod->IsStatic = true;
+
+	MethodSymbol* printMethod = new MethodSymbol(L"print", Print);
+	printMethod->ReturnType = SymbolTable::Primitives::Void;
+	printMethod->Accesibility = SymbolAccesibility::Public;
+	printMethod->IsStatic = true;
+
+	ParameterSymbol* printMessageParam = new ParameterSymbol(L"message");
+	printMessageParam->Type = SymbolTable::Primitives::String;
+	printMethod->Parameters.push_back(printMessageParam);
+
+	MethodSymbol* printlnMethod = new MethodSymbol(L"println", Println);
+	printlnMethod->ReturnType = SymbolTable::Primitives::Void;
+	printlnMethod->Accesibility = SymbolAccesibility::Public;
+	printlnMethod->IsStatic = true;
+
+	ParameterSymbol* printlnMessageParam = new ParameterSymbol(L"message");
+	printlnMessageParam->Type = SymbolTable::Primitives::String;
+	printlnMethod->Parameters.push_back(printlnMessageParam);
+
+	GlobalType->Methods.push_back(gcInfoMethod);
+	GlobalType->Methods.push_back(printMethod);
+	GlobalType->Methods.push_back(printlnMethod);
 }
 
 SyntaxSymbol* SymbolTable::LookupSymbol(SyntaxNode* node)

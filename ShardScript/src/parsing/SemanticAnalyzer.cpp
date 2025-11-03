@@ -18,6 +18,7 @@ SemanticModel SemanticAnalyzer::Analyze(SyntaxTree& syntaxTree)
 {
 	SemanticModel semanticModel = SemanticModel(syntaxTree);
 	semanticModel.Table->ResolvePrmitives();
+	semanticModel.Table->ResolveGlobalMethods();
 
 	DeclarationCollector collector(semanticModel.Table, Diagnostics);
 	collector.VisitSyntaxTree(syntaxTree);

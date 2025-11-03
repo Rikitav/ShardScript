@@ -372,44 +372,44 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(wstring& leftData, S
 	throw runtime_error("unknown primitive");
 }
 
-ObjectInstance* PrimitiveMathModule::EvaluateUnaryOperator(ObjectInstance* instance, SyntaxToken opToken, bool rightDetermined)
+ObjectInstance* PrimitiveMathModule::EvaluateUnaryOperator(ObjectInstance*& sourceInstance, SyntaxToken opToken, bool rightDetermined)
 {
-	if (instance->Info == SymbolTable::Primitives::Boolean)
+	if (sourceInstance->Info == SymbolTable::Primitives::Boolean)
 	{
-		bool data = instance->ReadPrimitive<bool>();
-		return EvaluateUnaryOperator(instance, data, opToken, rightDetermined);
+		bool data = sourceInstance->ReadPrimitive<bool>();
+		return EvaluateUnaryOperator(sourceInstance, data, opToken, rightDetermined);
 	}
-
-	if (instance->Info == SymbolTable::Primitives::Integer)
+	
+	if (sourceInstance->Info == SymbolTable::Primitives::Integer)
 	{
-		int data = instance->ReadPrimitive<int>();
-		return EvaluateUnaryOperator(instance, data, opToken, rightDetermined);
+		int data = sourceInstance->ReadPrimitive<int>();
+		return EvaluateUnaryOperator(sourceInstance, data, opToken, rightDetermined);
 	}
-
-	if (instance->Info == SymbolTable::Primitives::String)
+	
+	if (sourceInstance->Info == SymbolTable::Primitives::String)
 	{
-		wstring data = instance->ReadPrimitive<wstring>();
-		return EvaluateUnaryOperator(instance, data, opToken, rightDetermined);
+		wstring data = sourceInstance->ReadPrimitive<wstring>();
+		return EvaluateUnaryOperator(sourceInstance, data, opToken, rightDetermined);
 	}
 
 	throw runtime_error("unknown primitive");
 }
 
-ObjectInstance* PrimitiveMathModule::EvaluateUnaryOperator(ObjectInstance* sourceInstance, int data, SyntaxToken opToken, bool rightDetermined)
+ObjectInstance* PrimitiveMathModule::EvaluateUnaryOperator(ObjectInstance*& sourceInstance, int data, SyntaxToken opToken, bool rightDetermined)
 {
 	switch (opToken.Type)
 	{
 		case TokenType::IncrementOperator:
 		{
 			ObjectInstance* newInstance = CreateInstanceFromValue(data + 1);
-			newInstance->CopyTo(sourceInstance);
+			sourceInstance = newInstance;
 			return rightDetermined ? CreateInstanceFromValue(data) : newInstance;
 		}
 
 		case TokenType::DecrementOperator:
 		{
 			ObjectInstance* newInstance = CreateInstanceFromValue(data - 1);
-			newInstance->CopyTo(sourceInstance);
+			sourceInstance = newInstance;
 			return rightDetermined ? CreateInstanceFromValue(data) : newInstance;
 		}
 
@@ -418,7 +418,7 @@ ObjectInstance* PrimitiveMathModule::EvaluateUnaryOperator(ObjectInstance* sourc
 	}
 }
 
-ObjectInstance* PrimitiveMathModule::EvaluateUnaryOperator(ObjectInstance* sourceInstance, bool data, SyntaxToken opToken, bool rightDetermined)
+ObjectInstance* PrimitiveMathModule::EvaluateUnaryOperator(ObjectInstance*& sourceInstance, bool data, SyntaxToken opToken, bool rightDetermined)
 {
 	switch (opToken.Type)
 	{
@@ -432,14 +432,16 @@ ObjectInstance* PrimitiveMathModule::EvaluateUnaryOperator(ObjectInstance* sourc
 	}
 }
 
-ObjectInstance* PrimitiveMathModule::EvaluateUnaryOperator(ObjectInstance* sourceInstance, wstring& data, SyntaxToken opToken, bool rightDetermined)
+ObjectInstance* PrimitiveMathModule::EvaluateUnaryOperator(ObjectInstance*& sourceInstance, wstring& data, SyntaxToken opToken, bool rightDetermined)
 {
 	switch (opToken.Type)
 	{
+		/*
 		case TokenType::NotOperator:
 		{
 			return CreateInstanceFromValue(data.size() == 0);
 		}
+		*/
 
 		default:
 			throw runtime_error("unsupported operation");

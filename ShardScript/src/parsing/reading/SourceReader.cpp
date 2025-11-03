@@ -195,7 +195,8 @@ bool SourceReader::ReadNextWord(wstring& word, TokenType& type)
 	if (IsOperator(word, type))
 		return true;
 
-	bool wasClosed, dontEcran;
+	bool wasClosed = false;
+	bool dontEcran = false;
 	if (IsStringLiteral(type, dontEcran))
 		return ReadStringLiteral(word, dontEcran, wasClosed);
 
@@ -264,40 +265,55 @@ bool SourceReader::ReadStringLiteral(wstring& word, bool dontEcran, bool& wasClo
 	{
 		switch (Symbol)
 		{
-			case '\\':
+			case L'\\':
 			{
 				if (dontEcran)
-					break;
-
-				if (!ecran)
 				{
-					ecran = true;
-					continue;
+					word += Symbol;
+					break;
 				}
 
+				if (ecran)
+				{
+					Symbol = L'\\';
+					word += Symbol;
+					ecran = false;
+				}
+
+				ecran = true;
 				break;
 			}
 
-			case '"':
-			{
-				if (dontEcran || !ecran)
+			case L'"':
+			{	
+				if (dontEcran)
 				{
 					wasClosed = true;
 					PeekNext();
 					return true;
 				}
 
-				break;
-			}
-
-			case 'n':
-			{
 				if (ecran)
 				{
-					Symbol = '\n';
+					Symbol = L'"';
+					word += Symbol;
 					ecran = false;
 				}
 
+				wasClosed = true;
+				PeekNext();
+				return true;
+			}
+
+			case L'n':
+			{
+				if (ecran)
+				{
+					Symbol = L'\n';
+					ecran = false;
+				}
+
+				word += Symbol;
 				break;
 			}
 

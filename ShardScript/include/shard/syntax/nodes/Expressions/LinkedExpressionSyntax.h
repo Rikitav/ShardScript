@@ -3,6 +3,9 @@
 #include <shard/syntax/SyntaxToken.h>
 #include <shard/syntax/SyntaxNode.h>
 
+#include <shard/syntax/symbols/FieldSymbol.h>
+#include <shard/syntax/symbols/MethodSymbol.h>
+
 #include <shard/syntax/nodes/ExpressionSyntax.h>
 #include <shard/syntax/nodes/ArgumentsListSyntax.h>
 
@@ -44,7 +47,6 @@ namespace shard::syntax::nodes
 		std::vector<LinkedExpressionNode*> Nodes;
 		LinkedExpressionNode* First = nullptr;
 		LinkedExpressionNode* Last = nullptr;
-		size_t FoundIndex = -1;
 
 		inline LinkedExpressionSyntax(const SyntaxNode* parent) : ExpressionSyntax(SyntaxKind::LinkedExpression, parent) { }
 		inline LinkedExpressionSyntax(const LinkedExpressionSyntax& other) : ExpressionSyntax(SyntaxKind::LinkedExpression, other.Parent) { }
@@ -68,6 +70,7 @@ namespace shard::syntax::nodes
 	{
 	public:
 		const SyntaxToken IdentifierToken;
+		shard::syntax::symbols::FieldSymbol* Symbol = nullptr;
 		
 		inline MemberAccessExpressionSyntax(SyntaxToken identifier, LinkedExpressionNode* previous, LinkedExpressionSyntax* parent)
 			: LinkedExpressionNode(SyntaxKind::MemberAccessExpression, previous, parent), IdentifierToken(identifier) { }
@@ -86,7 +89,7 @@ namespace shard::syntax::nodes
 	public:
 		const SyntaxToken IdentifierToken;
 		ArgumentsListSyntax* ArgumentsList = nullptr;
-		size_t FoundIndex = -1;
+		shard::syntax::symbols::MethodSymbol* Symbol = nullptr;
 
 		inline InvokationExpressionSyntax(SyntaxToken identifier, LinkedExpressionNode* previous, LinkedExpressionSyntax* parent)
 			: LinkedExpressionNode(SyntaxKind::InvokationExpression, previous, parent), IdentifierToken(identifier) { }

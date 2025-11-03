@@ -18,9 +18,9 @@ namespace shard::runtime
 		static shard::runtime::ObjectInstance* EvaluateBinaryOperator(bool leftData, shard::syntax::SyntaxToken opToken, shard::runtime::ObjectInstance* rightInstance, bool& assign);
 		static shard::runtime::ObjectInstance* EvaluateBinaryOperator(std::wstring& leftData, shard::syntax::SyntaxToken opToken, shard::runtime::ObjectInstance* rightInstance, bool& assign);
 
-		static shard::runtime::ObjectInstance* EvaluateUnaryOperator(shard::runtime::ObjectInstance* instance, shard::syntax::SyntaxToken opToken, bool rightDetermined);
-		static shard::runtime::ObjectInstance* EvaluateUnaryOperator(shard::runtime::ObjectInstance* sourceInstance, int data, shard::syntax::SyntaxToken opToken, bool rightDetermined);
-		static shard::runtime::ObjectInstance* EvaluateUnaryOperator(shard::runtime::ObjectInstance* sourceInstance, bool data, shard::syntax::SyntaxToken opToken, bool rightDetermined);
-		static shard::runtime::ObjectInstance* EvaluateUnaryOperator(shard::runtime::ObjectInstance* sourceInstance, std::wstring& data, shard::syntax::SyntaxToken opToken, bool rightDetermined);
+		static shard::runtime::ObjectInstance* EvaluateUnaryOperator(shard::runtime::ObjectInstance*& sourceInstance, shard::syntax::SyntaxToken opToken, bool rightDetermined);
+		static shard::runtime::ObjectInstance* EvaluateUnaryOperator(shard::runtime::ObjectInstance*& sourceInstance, int data, shard::syntax::SyntaxToken opToken, bool rightDetermined);
+		static shard::runtime::ObjectInstance* EvaluateUnaryOperator(shard::runtime::ObjectInstance*& sourceInstance, bool data, shard::syntax::SyntaxToken opToken, bool rightDetermined);
+		static shard::runtime::ObjectInstance* EvaluateUnaryOperator(shard::runtime::ObjectInstance*& sourceInstance, std::wstring& data, shard::syntax::SyntaxToken opToken, bool rightDetermined);
 	};
 }

@@ -4,19 +4,24 @@
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/SyntaxSymbol.h>
 #include <shard/syntax/SyntaxNode.h>
+#include <shard/syntax/SyntaxKind.h>
+
 #include <unordered_map>
 #include <vector>
+#include <string>
 
 namespace shard::parsing::semantic
 {
     class SymbolTable
     {
+        inline static const std::wstring GlobalTypeName = L"__GLOBAL__";
         std::unordered_map<shard::syntax::SyntaxNode*, shard::syntax::SyntaxSymbol*> nodeToSymbolMap;
         std::unordered_map<shard::syntax::SyntaxSymbol*, shard::syntax::SyntaxNode*> symbolToNodeMap;
-    
+        
     public:
         std::vector<shard::syntax::symbols::MethodSymbol*> EntryPointCandidates;
         SemanticScope* GlobalScope = new SemanticScope(nullptr, nullptr);
+        shard::syntax::symbols::TypeSymbol* GlobalType;
 
         struct Primitives
         {
@@ -30,6 +35,7 @@ namespace shard::parsing::semantic
         inline SymbolTable() { }
 
         void ResolvePrmitives();
+        void ResolveGlobalMethods();
         void BindSymbol(shard::syntax::SyntaxNode* node, shard::syntax::SyntaxSymbol* symbol);
         shard::syntax::SyntaxSymbol* LookupSymbol(shard::syntax::SyntaxNode* node);
         shard::syntax::SyntaxNode* GetSyntaxNode(shard::syntax::SyntaxSymbol* symbol);

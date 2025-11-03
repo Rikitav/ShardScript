@@ -47,10 +47,13 @@ ObjectInstance* GarbageCollector::CopyInstance(const TypeSymbol* objectInfo, voi
 
 void GarbageCollector::DestroyInstance(ObjectInstance* instance)
 {
+	if (instance == nullptr)
+		return;
+
 	if (instance->Info->IsReferenceType)
 	{
 		instance->DecrementReference();
-		if (instance->GetReferencesCount() > 0)
+		if (instance->ReferencesCounter > 0)
 			return;
 	}
 
