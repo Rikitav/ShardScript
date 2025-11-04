@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <vector>
 #include <string>
+#include <ranges>
 
 namespace shard::parsing::semantic
 {
@@ -21,7 +22,7 @@ namespace shard::parsing::semantic
     public:
         std::vector<shard::syntax::symbols::MethodSymbol*> EntryPointCandidates;
         SemanticScope* GlobalScope = new SemanticScope(nullptr, nullptr);
-        shard::syntax::symbols::TypeSymbol* GlobalType;
+        shard::syntax::symbols::TypeSymbol* GlobalType = nullptr;
 
         struct Primitives
         {
@@ -34,8 +35,30 @@ namespace shard::parsing::semantic
 
         inline SymbolTable() { }
 
+        inline ~SymbolTable()
+        {
+            delete GlobalScope;
+            delete GlobalType;
+
+            for (shard::syntax::SyntaxSymbol* symbol : (symbolToNodeMap | std::views::keys))
+            {
+                switch (symbol->Kind)
+                {
+                    case shard::syntax::SyntaxKind::NamespaceDeclaration:
+                    case shard::syntax::SyntaxKind::ClassDeclaration:
+                    case shard::syntax::SyntaxKind::StructDeclaration:
+                    {
+                        delete symbol;
+                        break;
+                    }
+                }
+            }
+        }
+
         void ResolvePrmitives();
         void ResolveGlobalMethods();
+        void ClearSymbols();
+
         void BindSymbol(shard::syntax::SyntaxNode* node, shard::syntax::SyntaxSymbol* symbol);
         shard::syntax::SyntaxSymbol* LookupSymbol(shard::syntax::SyntaxNode* node);
         shard::syntax::SyntaxNode* GetSyntaxNode(shard::syntax::SyntaxSymbol* symbol);

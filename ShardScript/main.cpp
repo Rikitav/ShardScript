@@ -43,23 +43,27 @@ int wmain(int argc, wchar_t* argv[])
 			lexer.FromSourceReader(syntaxTree, reader);
 		}
 
+		SemanticModel semanticModel = SemanticModel(syntaxTree);
+		semanticModel.Table->ResolvePrmitives();
+		semanticModel.Table->ResolveGlobalMethods();
+
 		SemanticAnalyzer semanticAnalyzer(diagnostics);
-		SemanticModel semanticModel = semanticAnalyzer.Analyze(syntaxTree);
+		semanticAnalyzer.Analyze(syntaxTree, semanticModel);
 
 		LayoutGenerator layoutGenerator(diagnostics);
 		layoutGenerator.Generate(semanticModel);
-
-		if (args.UseInteractive)
-		{
-			InteractiveConsole::Run(syntaxTree, semanticModel, diagnostics);
-			return 0;
-		}
 
 		if (diagnostics.AnyError)
 		{
 			wcout << L"=== Diagnostics output ===" << endl;
 			diagnostics.WriteDiagnostics(wcout);
 			return 1;
+		}
+
+		if (args.UseInteractive)
+		{
+			InteractiveConsole::Run(syntaxTree, semanticModel, diagnostics);
+			return 0;
 		}
 
 		try

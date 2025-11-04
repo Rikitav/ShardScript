@@ -16,6 +16,12 @@ namespace shard::syntax::symbols
 
 		inline FFISymbol() : SyntaxSymbol(L"", SyntaxKind::DllImportDirective) {}
 
+		inline ~FFISymbol() override
+		{
+			for (MethodSymbol* method : Methods)
+				delete method;
+		}
+
 		MethodSymbol* FindMethod(std::wstring& name, std::vector<TypeSymbol*> parameterTypes);
 	};
 }

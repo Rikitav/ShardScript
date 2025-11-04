@@ -17,5 +17,11 @@ namespace shard::syntax::symbols
 			MemoryBytesSize += sizeof(unsigned long);
 			IsReferenceType = true;
 		}
+
+		inline ~ClassSymbol() override
+		{
+			for (MethodSymbol* ctor : Constructors)
+				delete ctor;
+		}
 	};
 }

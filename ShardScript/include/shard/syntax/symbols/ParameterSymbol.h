@@ -16,5 +16,14 @@ namespace shard::syntax::symbols
 
         inline ParameterSymbol(std::wstring name)
             : SyntaxSymbol(name, SyntaxKind::Parameter) { }
+
+        inline ~ParameterSymbol()
+        {
+            if (DefaultValueExpression != nullptr)
+            {
+                delete DefaultValueExpression;
+                DefaultValueExpression = nullptr;
+            }
+        }
 	};
 }

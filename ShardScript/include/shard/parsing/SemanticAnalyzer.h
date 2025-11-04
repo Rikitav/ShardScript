@@ -13,6 +13,6 @@ namespace shard::parsing
 		inline SemanticAnalyzer(shard::parsing::analysis::DiagnosticsContext& diagnostics)
 			: Diagnostics(diagnostics) { }
 
-		shard::parsing::semantic::SemanticModel Analyze(shard::parsing::lexical::SyntaxTree& syntaxTree);
+		void Analyze(shard::parsing::lexical::SyntaxTree& syntaxTree, shard::parsing::semantic::SemanticModel& semanticModel);
 	};
 }

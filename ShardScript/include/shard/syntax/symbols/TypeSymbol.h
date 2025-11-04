@@ -37,6 +37,18 @@ namespace shard::syntax::symbols
         inline TypeSymbol(const std::wstring& name, const SyntaxKind kind)
             : SyntaxSymbol(name, kind) { }
 
+        inline ~TypeSymbol() override
+        {
+            for (MethodSymbol* methodSymbol : Methods)
+                delete methodSymbol;
+
+            for (FieldSymbol* fieldSymbol : Fields)
+                delete fieldSymbol;
+
+            if (BaseType != nullptr)
+                BaseType = nullptr;
+        }
+
         MethodSymbol* FindMethod(std::wstring& name, std::vector<TypeSymbol*> parameterTypes);
         FieldSymbol* FindField(std::wstring& name);
 	};

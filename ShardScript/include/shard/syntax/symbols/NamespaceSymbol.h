@@ -14,5 +14,11 @@ namespace shard::syntax::symbols
 
 		inline NamespaceSymbol(std::wstring name)
 			: SyntaxSymbol(name, SyntaxKind::NamespaceDeclaration) { }
+
+		inline ~NamespaceSymbol()
+		{
+			for (SyntaxSymbol* member : Members)
+				delete member;
+		}
 	};
 }

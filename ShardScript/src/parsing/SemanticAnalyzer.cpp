@@ -14,12 +14,8 @@ using namespace shard::parsing::lexical;
 using namespace shard::parsing::semantic;
 using namespace shard::parsing::analysis;
 
-SemanticModel SemanticAnalyzer::Analyze(SyntaxTree& syntaxTree)
+void SemanticAnalyzer::Analyze(SyntaxTree& syntaxTree, SemanticModel& semanticModel)
 {
-	SemanticModel semanticModel = SemanticModel(syntaxTree);
-	semanticModel.Table->ResolvePrmitives();
-	semanticModel.Table->ResolveGlobalMethods();
-
 	DeclarationCollector collector(semanticModel.Table, Diagnostics);
 	collector.VisitSyntaxTree(syntaxTree);
 
@@ -38,6 +34,4 @@ SemanticModel SemanticAnalyzer::Analyze(SyntaxTree& syntaxTree)
 	{
 		Diagnostics.ReportError(SyntaxToken(), "model has multiple entry points");
 	}
-
-	return semanticModel;
 }

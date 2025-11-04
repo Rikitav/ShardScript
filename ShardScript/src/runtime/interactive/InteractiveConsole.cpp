@@ -1,13 +1,19 @@
 #include <shard/parsing/LexicalAnalyzer.h>
 #include <shard/parsing/reading/StringStreamReader.h>
 #include <shard/parsing/reading/SequenceSourceReader.h>
+#include <shard/parsing/SemanticAnalyzer.h>
 
 #include <shard/runtime/interactive/InteractiveConsole.h>
+#include <shard/runtime/interpreter/AbstractInterpreter.h>
+#include <shard/runtime/ConsoleHelper.h>
+#include <shard/runtime/CallStackFrame.h>
+#include <shard/runtime/ObjectInstance.h>
 
 #include <shard/syntax/SyntaxFacts.h>
 #include <shard/syntax/SyntaxToken.h>
 #include <shard/syntax/TokenType.h>
 #include <shard/syntax/SyntaxNode.h>
+#include <shard/syntax/symbols/MethodSymbol.h>
 
 #include <shard/parsing/analysis/TextLocation.h>
 #include <shard/parsing/analysis/DiagnosticsContext.h>
@@ -18,43 +24,263 @@
 #include <shard/syntax/nodes/ParametersListSyntax.h>
 #include <shard/syntax/nodes/CompilationUnitSyntax.h>
 #include <shard/syntax/nodes/StatementSyntax.h>
+#include <shard/syntax/nodes/ExpressionSyntax.h>
+#include <shard/syntax/nodes/StatementsBlockSyntax.h>
 
 #include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.h>
 
+#include <shard/syntax/nodes/Statements/ExpressionStatementSyntax.h>
+#include <shard/syntax/nodes/Expressions/LinkedExpressionSyntax.h>
+
+#include <shard/syntax/nodes/Types/PredefinedTypeSyntax.h>
+
 #include <cstdlib>
 #include <string>
 #include <iostream>
+#include <vector>
+#include <exception>
+#include <Windows.h>
 
 using namespace std;
 using namespace shard::runtime;
 using namespace shard::syntax;
 using namespace shard::syntax::nodes;
+using namespace shard::syntax::symbols;
 using namespace shard::parsing;
 using namespace shard::parsing::analysis;
 using namespace shard::parsing::semantic;
 using namespace shard::parsing::lexical;
 
+static bool IsStatementComplete(SequenceSourceReader& reader)
+{
+	reader.SetIndex(0);
+	int lastIndex = static_cast<int>(reader.Size()) - 1;
+	
+	if (lastIndex >= 0)
+	{
+		SyntaxToken lastToken = reader.At(lastIndex);
+		if (lastToken.Type == TokenType::Semicolon)
+			return true;
+	}
+	
+	int braceCount = 0;
+	int parenCount = 0;
+	int bracketCount = 0;
+	
+	bool hasStatementStart = false;
+	
+	while (reader.CanConsume())
+	{
+		SyntaxToken current = reader.Current();
+		
+		switch (current.Type)
+		{
+			case TokenType::OpenBrace:
+				braceCount++;
+				break;
+			
+			case TokenType::CloseBrace:
+				braceCount--;
+				break;
+			
+			case TokenType::OpenCurl:
+				parenCount++;
+				break;
+			
+			case TokenType::CloseCurl:
+				parenCount--;
+				break;
+			
+			case TokenType::OpenSquare:
+				bracketCount++;
+				break;
+			
+			case TokenType::CloseSquare:
+				bracketCount--;
+				break;
+				
+			case TokenType::ForKeyword:
+			case TokenType::WhileKeyword:
+			case TokenType::UntilKeyword:
+			case TokenType::IfKeyword:
+			case TokenType::UnlessKeyword:
+			case TokenType::ReturnKeyword:
+			case TokenType::BreakKeyword:
+			case TokenType::ContinueKeyword:
+				hasStatementStart = true;
+				break;
+		}
+		
+		reader.Consume();
+	}
+	
+	reader.SetIndex(0);
+	
+	// If all braces are balanced and we have a statement start, it might be complete
+	if (braceCount == 0 && parenCount == 0 && bracketCount == 0 && hasStatementStart)
+	{
+		// Check if last token suggests completion
+		if (lastIndex >= 0)
+		{
+			SyntaxToken lastToken = reader.At(lastIndex);
+			if (lastToken.Type == TokenType::CloseBrace || lastToken.Type == TokenType::Semicolon)
+				return true;
+		}
+	}
+	
+	return braceCount == 0 && parenCount == 0 && bracketCount == 0;
+}
+
+static bool IsExpressionComplete(SequenceSourceReader& reader)
+{
+	reader.SetIndex(0);
+	int parenCount = 0;
+	int bracketCount = 0;
+	
+	while (reader.CanConsume())
+	{
+		SyntaxToken current = reader.Current();
+		
+		switch (current.Type)
+		{
+			case TokenType::OpenCurl:
+				parenCount++;
+				break;
+
+			case TokenType::CloseCurl:
+				parenCount--;
+				break;
+			
+			case TokenType::OpenSquare:
+				bracketCount++;
+				break;
+			
+			case TokenType::CloseSquare:
+				bracketCount--;
+				break;
+		}
+		
+		reader.Consume();
+	}
+	
+	reader.SetIndex(0);
+	return parenCount == 0 && bracketCount == 0;
+}
+
+static wstring ReadLine(const wstring& prompt = L">>> ")
+{
+	wstring line;
+	wcout << prompt;
+	getline(wcin, line);
+
+	if (line == L"exit" || line == L"quit")
+		exit(0);
+
+	return line;
+}
+
+static void MoveToNewLineIfNeeded()
+{
+	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+	CONSOLE_SCREEN_BUFFER_INFO csbi;
+
+	if (GetConsoleScreenBufferInfo(hConsole, &csbi))
+	{
+		if (csbi.dwCursorPosition.X > 0)
+			ConsoleHelper::WriteLine();
+	}
+}
+static wstring ReadMultilineInput(LexicalAnalyzer& lexer, const wstring& firstLine, bool isExpression = false)
+{
+	wstring fullInput = firstLine;
+	
+	StringStreamReader stringStreamReader(firstLine);
+	SequenceSourceReader sequenceReader;
+	sequenceReader.PopulateFrom(stringStreamReader);
+	
+	// Check if already complete
+	bool isComplete = isExpression ? IsExpressionComplete(sequenceReader) : IsStatementComplete(sequenceReader);
+	
+	if (isComplete)
+		return fullInput;
+	
+	// Read continuation lines
+	wstring continuationPrompt = L"... ";
+	wstring line;
+	
+	int maxLines = 100; // Safety limit
+	int lineCount = 0;
+	
+	while (!isComplete && lineCount < maxLines)
+	{
+		line = ReadLine(continuationPrompt);
+		
+		if (line.empty() && lineCount == 0)
+		{
+			stringStreamReader = StringStreamReader(fullInput);
+			sequenceReader.PopulateFrom(stringStreamReader);
+			isComplete = isExpression ? IsExpressionComplete(sequenceReader) : IsStatementComplete(sequenceReader);
+			
+			if (isComplete)
+				break;
+		}
+		
+		fullInput += L"\n" + line;
+		stringStreamReader = StringStreamReader(fullInput);
+		sequenceReader.PopulateFrom(stringStreamReader);
+		isComplete = isExpression ? IsExpressionComplete(sequenceReader) : IsStatementComplete(sequenceReader);
+		lineCount++;
+	}
+	
+	return fullInput;
+}
+
+static StatementSyntax* ReadStatement(LexicalAnalyzer& lexer, SyntaxNode* parent, DiagnosticsContext& diagnostics, const wstring& firstLine)
+{
+	if (firstLine.empty())
+		return nullptr;
+	
+	wstring fullInput = ReadMultilineInput(lexer, firstLine, false);
+	
+	StringStreamReader stringStreamReader(fullInput);
+	SequenceSourceReader sequenceReader;
+	sequenceReader.PopulateFrom(stringStreamReader);
+	SyntaxToken current = sequenceReader.Current();
+	
+	if (IsLoopKeyword(current.Type) || IsConditionalKeyword(current.Type) || IsFunctionalKeyword(current.Type))
+	{
+		return lexer.ReadKeywordStatement(sequenceReader, parent);
+	}
+	else
+	{
+		return lexer.ReadStatement(sequenceReader, parent);
+	}
+}
+
 static MethodDeclarationSyntax* InitImplicitEntryPoint(SyntaxNode* parent)
 {
 	MemberDeclarationInfo info;
-	//info.ReturnType = SyntaxToken(TokenType::VoidKeyword, L"void", TextLocation());
-	info.Identifier = SyntaxToken(TokenType::Identifier, L"Main", TextLocation());
+	info.ReturnType = new PredefinedTypeSyntax(SyntaxToken(TokenType::VoidKeyword, L"void", TextLocation(), false), nullptr);
+	info.Identifier = SyntaxToken(TokenType::Identifier, L"__interactive_console__", TextLocation());
 	info.Params = new ParametersListSyntax(parent);
 
-	return new MethodDeclarationSyntax(info, parent);
+	MethodDeclarationSyntax* implMethod = new MethodDeclarationSyntax(info, parent);
+	implMethod->Body = new StatementsBlockSyntax(implMethod);
+	return implMethod;
 }
 
 static ClassDeclarationSyntax* InitImplicitClassDeclaration(MethodDeclarationSyntax*& entryPoint, SyntaxNode* parent)
 {
 	MemberDeclarationInfo info;
-	info.Identifier = SyntaxToken(TokenType::Identifier, L"__interacive_class__", TextLocation());
+	info.Identifier = SyntaxToken(TokenType::Identifier, L"__InteractiveClass__", TextLocation());
 
 	ClassDeclarationSyntax* implClass = new ClassDeclarationSyntax(info, parent);
 	implClass->DeclareToken = SyntaxToken(TokenType::ClassKeyword, L"class", TextLocation(), false);
 	
 	entryPoint = InitImplicitEntryPoint(implClass);
+	entryPoint->Parent = implClass;
 	implClass->Members.push_back(entryPoint);
 
 	return implClass;
@@ -64,7 +290,7 @@ static NamespaceDeclarationSyntax* InitImplicitNamespaceDeclaration(MethodDeclar
 {
 	NamespaceDeclarationSyntax* implNamespace = new NamespaceDeclarationSyntax(parent);
 	implNamespace->DeclareToken = SyntaxToken(TokenType::NamespaceKeyword, L"namespace", TextLocation(), false);
-	implNamespace->IdentifierToken = SyntaxToken(TokenType::Identifier, L"__interactive_namespace_", TextLocation(), false);
+	implNamespace->IdentifierToken = SyntaxToken(TokenType::Identifier, L"__InteractiveNamespace__", TextLocation(), false);
 	implNamespace->Members.push_back(InitImplicitClassDeclaration(entryPoint, implNamespace));
 
 	return implNamespace;
@@ -77,117 +303,169 @@ static CompilationUnitSyntax* InitImplicitCompilationUnit(MethodDeclarationSynta
 	return implUnit;
 }
 
-static wstring ReadLine()
-{
-	wstring line;
-	wcout << ">>> ";
-	getline(wcin, line);
-
-	if (line == L"exit")
-		exit(0);
-
-	return line;
-}
-
-static bool HasOpenedBodies(SequenceSourceReader& reader)
-{
-	reader.SetIndex(0);
-	int openedBodiesCount = 0;
-
-	while (reader.CanConsume())
-	{
-		SyntaxToken current = reader.Consume();
-		switch (current.Type)
-		{
-			case TokenType::OpenBrace:
-			{
-				openedBodiesCount += 1;
-				break;
-			}
-
-			case TokenType::CloseBrace:
-			{
-				openedBodiesCount -= 1;
-				break;
-			}
-		}
-	}
-
-	reader.SetIndex(0);
-	return openedBodiesCount > 0;
-}
-
-static StatementSyntax* ReadStatement(LexicalAnalyzer& lexer, SyntaxNode* parent)
-{
-	wstring line = ReadLine();
-	StringStreamReader stringStreamReader(line);
-
-	SequenceSourceReader sequenceReader = SequenceSourceReader();
-	sequenceReader.PopulateFrom(stringStreamReader);
-
-	SyntaxToken current = sequenceReader.Current();
-	if (IsLoopKeyword(current.Type) || IsConditionalKeyword(current.Type))
-	{
-		wstring nextLine = ReadLine();
-		stringStreamReader = StringStreamReader(nextLine);
-
-		sequenceReader.PopulateFrom(stringStreamReader);
-		while (HasOpenedBodies(sequenceReader))
-		{
-			nextLine = ReadLine();
-			stringStreamReader = StringStreamReader(nextLine);
-			sequenceReader.PopulateFrom(stringStreamReader);
-		}
-
-		return lexer.ReadKeywordStatement(sequenceReader, parent);
-	}
-	else if (IsFunctionalKeyword(current.Type))
-	{
-		return lexer.ReadKeywordStatement(sequenceReader, parent);
-	}
-	else
-	{
-		return lexer.ReadStatement(sequenceReader, parent);
-	}
-}
-
 void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticModel, DiagnosticsContext& diagnostics)
 {
-	/*
-	shared_ptr<MethodDeclarationSyntax> entryPoint = nullptr;
-	shared_ptr<CompilationUnitSyntax> implUnit = InitImplicitCompilationUnit(entryPoint);
-	tree.CompilationUnits.push_back(implUnit);
-	tree.EntryPoint = entryPoint;
+	// Initializing parsing
+	LexicalAnalyzer lexer(diagnostics);
+	SemanticAnalyzer semanticAnalyzer(diagnostics);
+	AbstractInterpreter interpreter(syntaxTree, semanticModel);
+	
+	// Creating interactive entry point
+	MethodDeclarationSyntax* implMethod = nullptr;
+	CompilationUnitSyntax* implUnit = InitImplicitCompilationUnit(implMethod);
+	syntaxTree.CompilationUnits.push_back(implUnit);
 
-	shared_ptr<CallStackFrame> frame = make_shared<CallStackFrame>(nullptr, entryPoint);
-	AbstarctInterpreter interpreter(tree);
+	StatementsBlockSyntax* interactiveBody = implMethod->Body;
+	MethodSymbol* entryPointSymbol = new MethodSymbol(implMethod->IdentifierToken.Word, interactiveBody);
+
+	interpreter.PushFrame(entryPointSymbol);
+	interpreter.PushContext(new InboundVariablesContext(nullptr));
+	
+	ConsoleHelper::WriteLine(L"ShardScript Interactive Console");
+	ConsoleHelper::WriteLine(L"Type 'exit' or 'quit' to exit");
+	ConsoleHelper::WriteLine();
 
 	while (true)
 	{
-		shared_ptr<StatementSyntax> statement = ReadStatement(lexer);
-		parser.EnsureSyntaxTree(tree);
-
-		if (diagnostics.AnyError)
-		{
-			diagnostics.WriteDiagnostics(cout);
-			diagnostics.Reset();
-			continue;
-		}
-
 		try
 		{
-			ObjectInstance* pRegister = interpreter.ExecuteStatement(statement, frame->Context, frame);
-			if (pRegister != nullptr)
+			wstring firstLine = ReadLine();
+			if (firstLine.empty())
 			{
-				interpreter.PrintRegister(pRegister);
-				cout << endl;
+				// Empty line - skip
+				continue;
+			}
+
+			// Check if it looks like an expression (no keywords, ends with semicolon or not)
+			StringStreamReader stringStreamReader(firstLine);
+			SequenceSourceReader sequenceReader;
+			sequenceReader.PopulateFrom(stringStreamReader);
+
+			bool isExpression = false;
+			if (sequenceReader.CanConsume())
+			{
+				SyntaxToken firstToken = sequenceReader.Current();
+
+				// If its not a keyword statement, might be an expression
+				if (!IsLoopKeyword(firstToken.Type) && !IsConditionalKeyword(firstToken.Type) && !IsFunctionalKeyword(firstToken.Type) && firstToken.Type != TokenType::Semicolon)
+				{
+					// Check if it ends with semicolon - if not, its likely an expression
+					int lastIndex = static_cast<int>(sequenceReader.Size()) - 1;
+					if (lastIndex >= 0)
+					{
+						SyntaxToken lastToken = sequenceReader.At(lastIndex);
+						if (lastToken.Type != TokenType::Semicolon)
+						{
+							isExpression = true;
+						}
+					}
+					else
+					{
+						isExpression = true;
+					}
+				}
+			}
+
+			if (isExpression)
+			{
+				// Read as expression
+				wstring fullInput = ReadMultilineInput(lexer, firstLine, true);
+
+				StringStreamReader exprReader(fullInput);
+				SequenceSourceReader exprSequence;
+				exprSequence.PopulateFrom(exprReader);
+
+				ExpressionSyntax* expression = lexer.ReadExpression(exprSequence, interactiveBody, 0);
+
+				if (expression == nullptr)
+				{
+					wcerr << L"### Failed to parse expression" << endl;
+					continue;
+				}
+
+				// Wrap expression in expression statement
+				ExpressionStatementSyntax* exprStatement = new ExpressionStatementSyntax(expression, interactiveBody);
+				exprStatement->SemicolonToken = SyntaxToken(TokenType::Semicolon, L";", TextLocation(), false);
+				expression->Parent = exprStatement;
+
+				// Add statement to interactive body
+				exprStatement->Parent = interactiveBody;
+				interactiveBody->Statements.push_back(exprStatement);
+
+				// Re-analyze syntax tree
+				semanticModel.Table->ClearSymbols();
+				semanticAnalyzer.Analyze(syntaxTree, semanticModel);
+
+				// Check for errors
+				if (diagnostics.AnyError)
+				{
+					diagnostics.WriteDiagnostics(wcerr);
+					diagnostics.Reset();
+
+					if (!interactiveBody->Statements.empty())
+					{
+						interactiveBody->Statements.pop_back();
+					}
+
+					continue;
+				}
+
+				// Execute expression
+				ObjectInstance* result = interpreter.EvaluateExpression(expression);
+				if (result != nullptr)
+					ConsoleHelper::Write(result);
+
+				MoveToNewLineIfNeeded();
+			}
+			else
+			{
+				// Read as statement
+				StatementSyntax* statement = ReadStatement(lexer, interactiveBody, diagnostics, firstLine);
+
+				if (statement == nullptr)
+				{
+					continue;
+				}
+
+				// Add statement to interactive body
+				statement->Parent = interactiveBody;
+				interactiveBody->Statements.push_back(statement);
+
+				// Re-analyze syntax tree with new statement
+				semanticModel.Table->ClearSymbols();
+				semanticAnalyzer.Analyze(syntaxTree, semanticModel);
+
+				// Check for errors
+				if (diagnostics.AnyError)
+				{
+					// Write diagnostics
+					diagnostics.WriteDiagnostics(wcerr);
+					diagnostics.Reset();
+
+					// Remove the statement that caused error
+					if (!interactiveBody->Statements.empty())
+					{
+						interactiveBody->Statements.pop_back();
+					}
+
+					continue;
+				}
+
+				// Execute statement
+				ObjectInstance* result = interpreter.ExecuteStatement(statement);
+				if (result != nullptr)
+					ConsoleHelper::Write(result);
+
+				MoveToNewLineIfNeeded();
 			}
 		}
-		catch (const runtime_error& err)
+		catch (const exception& err)
 		{
-			cout << "### " << err.what() << endl;
-			continue;
+			wcerr << L"### Runtime error: " << err.what() << endl;
+		}
+		catch (...)
+		{
+			wcerr << L"### Unknown error occurred" << endl;
 		}
 	}
-	*/
 }

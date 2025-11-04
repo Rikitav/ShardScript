@@ -19,5 +19,14 @@ namespace shard::syntax::symbols
 		{
 			Accesibility = SymbolAccesibility::Public;
 		}
+
+		inline ~VariableSymbol() override
+		{
+			if (Declaration == nullptr)
+			{
+				delete Declaration;
+				Declaration = nullptr;
+			}
+		}
 	};
 }

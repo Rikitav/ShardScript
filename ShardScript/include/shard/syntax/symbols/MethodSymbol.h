@@ -46,5 +46,14 @@ namespace shard::syntax::symbols
 
         inline MethodSymbol(std::wstring name, MethodSymbolDelegate delegate)
             : SyntaxSymbol(name, SyntaxKind::MethodDeclaration), FunctionPointer(delegate), HandleType(MethodHandleType::FunctionPointer) { }
+
+        inline ~MethodSymbol() override
+        {
+            for (ParameterSymbol* parameter : Parameters)
+                delete parameter;
+
+            if (FunctionPointer != nullptr)
+                FunctionPointer = nullptr;
+        }
     };
 }

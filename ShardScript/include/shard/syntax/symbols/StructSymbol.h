@@ -17,5 +17,11 @@ namespace shard::syntax::symbols
 			MemoryBytesSize += 0;
 			IsValueType = true;
 		}
+
+		inline ~StructSymbol() override
+		{
+			for (MethodSymbol* ctor : Constructors)
+				delete ctor;
+		}
 	};
 }

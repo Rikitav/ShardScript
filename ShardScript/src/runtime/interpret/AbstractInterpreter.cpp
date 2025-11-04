@@ -646,11 +646,11 @@ ObjectInstance* AbstractInterpreter::EvaluateObjectExpression(const ObjectExpres
 
 static bool IsMemberAccess(const ExpressionSyntax* expression, const LinkedExpressionSyntax*& linkedExpression, const MemberAccessExpressionSyntax*& memberExpression)
 {
-	linkedExpression = static_cast<const LinkedExpressionSyntax*>(expression);
+	linkedExpression = dynamic_cast<const LinkedExpressionSyntax*>(expression);
 	if (linkedExpression == nullptr)
 		return false;
 
-	memberExpression = static_cast<const MemberAccessExpressionSyntax*>(linkedExpression->Last);
+	memberExpression = dynamic_cast<const MemberAccessExpressionSyntax*>(linkedExpression->Last);
 	if (memberExpression == nullptr)
 		return false;
 
@@ -667,7 +667,7 @@ ObjectInstance* AbstractInterpreter::EvaluateBinaryExpression(const BinaryExpres
 	const LinkedExpressionSyntax* linkedExpression = nullptr;
 	const MemberAccessExpressionSyntax* memberExpression = nullptr;
 	bool isMemberAccess = IsMemberAccess(expression->Left, linkedExpression, memberExpression);
-	bool isFieldAccess = IsFieldAccess(linkedExpression, memberExpression);
+	bool isFieldAccess = isMemberAccess ? IsFieldAccess(linkedExpression, memberExpression) : false;
 	bool assign = false;
 
 	ObjectInstance* instanceReg = nullptr;

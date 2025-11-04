@@ -79,6 +79,12 @@ void ConsoleHelper::Write(wchar_t data)
 	WriteConsoleW(stdOut, &data, sizeof(wchar_t), &charsWritten, NULL);
 }
 
+void ConsoleHelper::Write(const wchar_t* data)
+{
+	DWORD charsWritten;
+	WriteConsoleW(stdOut, data, static_cast<DWORD>(wcslen(data)), &charsWritten, NULL);
+}
+
 void ConsoleHelper::Write(wstring data)
 {
 	DWORD charsWritten;
@@ -119,6 +125,11 @@ void ConsoleHelper::WriteLine(ObjectInstance* instance)
 	throw runtime_error("unknown type");
 }
 
+void ConsoleHelper::WriteLine()
+{
+	cout << endl;
+}
+
 void ConsoleHelper::WriteLine(bool data)
 {
 	Write(data);
@@ -132,6 +143,12 @@ void ConsoleHelper::WriteLine(int data)
 }
 
 void ConsoleHelper::WriteLine(wchar_t data)
+{
+	Write(data);
+	cout << endl;
+}
+
+void ConsoleHelper::WriteLine(const wchar_t* data)
 {
 	Write(data);
 	cout << endl;

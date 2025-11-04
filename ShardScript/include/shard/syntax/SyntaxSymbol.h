@@ -17,5 +17,10 @@ namespace shard::syntax
 
 		inline SyntaxSymbol(const std::wstring& name, const SyntaxKind kind)
 			: TypeCode(counter++), Name(name), Kind(kind) { }
+
+		inline virtual ~SyntaxSymbol()
+		{
+
+		}
 	};
 }

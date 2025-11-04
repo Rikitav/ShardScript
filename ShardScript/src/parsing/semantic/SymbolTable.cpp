@@ -114,6 +114,27 @@ void SymbolTable::ResolveGlobalMethods()
 	GlobalType->Methods.push_back(printlnMethod);
 }
 
+void SymbolTable::ClearSymbols()
+{
+	for (shard::syntax::SyntaxSymbol* symbol : (symbolToNodeMap | std::views::keys))
+	{
+		switch (symbol->Kind)
+		{
+			case shard::syntax::SyntaxKind::NamespaceDeclaration:
+			case shard::syntax::SyntaxKind::ClassDeclaration:
+			case shard::syntax::SyntaxKind::StructDeclaration:
+			{
+				delete symbol;
+				break;
+			}
+		}
+	}
+
+	symbolToNodeMap.clear();
+	nodeToSymbolMap.clear();
+	EntryPointCandidates.clear();
+}
+
 SyntaxSymbol* SymbolTable::LookupSymbol(SyntaxNode* node)
 {
 	auto choise = nodeToSymbolMap.find(node);
