@@ -39,11 +39,14 @@ namespace shard::syntax::symbols
 
         inline ~TypeSymbol() override
         {
+#pragma warning (push)
+#pragma warning (disable: 4150)
             for (MethodSymbol* methodSymbol : Methods)
                 delete methodSymbol;
 
             for (FieldSymbol* fieldSymbol : Fields)
                 delete fieldSymbol;
+#pragma warning (pop)
 
             if (BaseType != nullptr)
                 BaseType = nullptr;

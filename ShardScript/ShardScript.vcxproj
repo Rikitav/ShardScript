@@ -128,7 +128,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="ArgumentsParser.cpp" />
+    <ClCompile Include="src\utilities\ArgumentsParser.cpp" />
     <ClCompile Include="include\shard\parsing\reading\SequenceSourceReader.h" />
     <ClCompile Include="src\parsing\LayoutGenerator.cpp" />
     <ClCompile Include="src\parsing\semantic\primitives\IntegerPrimitive.cpp" />
@@ -144,6 +144,7 @@
     <ClCompile Include="include\shard\syntax\nodes\Directives\UsingDirectiveSyntax.h" />
     <ClCompile Include="src\parsing\visiting\SyntaxVisitor.cpp" />
     <ClCompile Include="src\parsing\semantic\primitives\BooleanPrimitive.cpp" />
+    <ClCompile Include="src\parsing\semantic\primitives\CharPrimitive.cpp" />
     <ClCompile Include="src\runtime\interactive\InteractiveConsole.cpp" />
     <ClCompile Include="src\parsing\SemanticAnalyzer.cpp" />
     <ClCompile Include="src\parsing\reading\FileReader.cpp" />
@@ -163,6 +164,7 @@
     <ClCompile Include="src\syntax\symbols\TypeSymbol.cpp" />
     <ClCompile Include="src\syntax\SyntaxFacts.cpp" />
     <ClCompile Include="src\syntax\SyntaxHelpers.cpp" />
+    <ClCompile Include="src\utilities\MemoryLeakDetector.cpp" />
     <ClInclude Include="include\ffi\ffi.h" />
     <ClInclude Include="include\ffi\ffitarget.h" />
     <ClInclude Include="include\shard\parsing\LayoutGenerator.h" />
@@ -253,7 +255,6 @@
     <ClInclude Include="include\shard\syntax\nodes\TypeDeclarationSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\MemberDeclarationSyntax.h" />
     <ClInclude Include="include\shard\syntax\TokenType.h" />
-    <ClInclude Include="src\parsing\semantic\primitives\CharPrimitive.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="framework.ss" />

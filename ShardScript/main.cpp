@@ -6,9 +6,12 @@
 #include <shard/parsing/SemanticAnalyzer.h>
 #include <shard/parsing/reading/FileReader.h>
 
+#include <shard/runtime/GarbageCollector.h>
 #include <shard/runtime/interpreter/AbstractInterpreter.h>
 #include <shard/runtime/interactive/InteractiveConsole.h>
-#include "ArgumentsParser.cpp"
+
+#include "src/utilities/ArgumentsParser.cpp"
+#include "src/utilities/MemoryLeakDetector.cpp"
 
 #include <iostream>
 #include <string>
@@ -26,11 +29,15 @@ using namespace shard::parsing::analysis;
 using namespace shard::parsing::lexical;
 using namespace shard::parsing::semantic;
 
+_CrtMemState MemoryLeakDetector::s_memState;
+MemoryLeakDetector g_detector;
+
 int wmain(int argc, wchar_t* argv[])
 {
 	try
 	{
 		setlocale(LC_ALL, "");
+		MemoryLeakDetector::Checkpoint();
 		ConsoleArguments args = ParseArguments(argc, argv);
 
 		DiagnosticsContext diagnostics;
@@ -63,24 +70,27 @@ int wmain(int argc, wchar_t* argv[])
 		if (args.UseInteractive)
 		{
 			InteractiveConsole::Run(syntaxTree, semanticModel, diagnostics);
-			return 0;
 		}
-
-		try
+		else
 		{
-			AbstractInterpreter interpreter(syntaxTree, semanticModel);
-			interpreter.Execute();
-			return 0;
-		}
-		catch (const runtime_error& err)
-		{
-			cout << err.what() << endl;
-			return 1;
+			try
+			{
+				AbstractInterpreter interpreter(syntaxTree, semanticModel);
+				interpreter.Execute();
+				return 0;
+			}
+			catch (const runtime_error& err)
+			{
+				cout << err.what() << endl;
+				return 1;
+			}
 		}
 	}
 	catch (const runtime_error& err)
 	{
 		cout << "CRITICAL ERROR : " << err.what() << endl;
-		return 1;
 	}
+
+	MemoryLeakDetector::DumpSinceCheckpoint();
+	GarbageCollector::Terminate();
 }

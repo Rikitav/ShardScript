@@ -37,10 +37,19 @@ ObjectInstance* PrimitiveMathModule::CreateInstanceFromValue(wchar_t value)
 	return instance;
 }
 
+ObjectInstance* PrimitiveMathModule::CreateInstanceFromValue(const wchar_t* value)
+{
+	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String);
+	wstring* copy = new wstring(value);
+	instance->WritePrimitive<wstring>(*copy);
+	return instance;
+}
+
 ObjectInstance* PrimitiveMathModule::CreateInstanceFromValue(wstring& value)
 {
 	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String);
-	instance->WritePrimitive<wstring>(value);
+	wstring* copy = new wstring(value);
+	instance->WritePrimitive<wstring>(*copy);
 	return instance;
 }
 
@@ -434,16 +443,5 @@ ObjectInstance* PrimitiveMathModule::EvaluateUnaryOperator(ObjectInstance*& sour
 
 ObjectInstance* PrimitiveMathModule::EvaluateUnaryOperator(ObjectInstance*& sourceInstance, wstring& data, SyntaxToken opToken, bool rightDetermined)
 {
-	switch (opToken.Type)
-	{
-		/*
-		case TokenType::NotOperator:
-		{
-			return CreateInstanceFromValue(data.size() == 0);
-		}
-		*/
-
-		default:
-			throw runtime_error("unsupported operation");
-	}
+	throw runtime_error("unsupported operation");
 }

@@ -47,7 +47,7 @@
     <ClCompile Include="src\parsing\reading\StringStreamReader.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="ArgumentsParser.cpp">
+    <ClCompile Include="src\utilities\ArgumentsParser.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="src\runtime\interactive\InteractiveConsole.cpp">
@@ -117,6 +117,9 @@
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="src\parsing\visiting\ExpressionBinder.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="src\utilities\MemoryLeakDetector.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
   </ItemGroup>

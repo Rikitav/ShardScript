@@ -78,7 +78,7 @@ void SymbolTable::ResolvePrmitives()
 
 	BooleanPrimitive::Reflect(Primitives::Boolean);
 	IntegerPrimitive::Reflect(Primitives::Integer);
-	//CharPrimitive::Reflect(Primitives::Char);
+	CharPrimitive::Reflect(Primitives::Char);
 	StringPrimitive::Reflect(Primitives::String);
 
 	GlobalType = new TypeSymbol(GlobalTypeName, SyntaxKind::CompilationUnit);

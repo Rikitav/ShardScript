@@ -174,10 +174,6 @@ static wstring ReadLine(const wstring& prompt = L">>> ")
 	wstring line;
 	wcout << prompt;
 	getline(wcin, line);
-
-	if (line == L"exit" || line == L"quit")
-		exit(0);
-
 	return line;
 }
 
@@ -331,10 +327,10 @@ void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticMode
 		{
 			wstring firstLine = ReadLine();
 			if (firstLine.empty())
-			{
-				// Empty line - skip
 				continue;
-			}
+
+			if (firstLine == L"exit" || firstLine == L"quit")
+				break;
 
 			// Check if it looks like an expression (no keywords, ends with semicolon or not)
 			StringStreamReader stringStreamReader(firstLine);
