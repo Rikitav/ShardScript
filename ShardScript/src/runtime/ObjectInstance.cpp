@@ -51,35 +51,10 @@ void ObjectInstance::SetField(FieldSymbol* field, ObjectInstance* instance)
 	}
 }
 
-/*
-void ObjectInstance::CopyTo(ObjectInstance* to)
-{
-	if (Info != to->Info)
-		throw runtime_error("cannot copy instance memory of different types");
-
-	to->WriteMemory(0, Info->MemoryBytesSize, Ptr);
-}
-*/
-
-/*
-unsigned long ObjectInstance::GetReferencesCount()
-{
-	if (!Info->IsReferenceType)
-		return 0;
-
-	return *static_cast<long*>(OffsetMemory(0, sizeof(unsigned long)));
-}
-*/
-
 void ObjectInstance::IncrementReference()
 {
 	if (!Info->IsReferenceType)
 		return;
-
-	/*
-	unsigned long* refCounter = static_cast<unsigned long*>(OffsetMemory(0, sizeof(unsigned long)));
-	refCounter[0] += 1;
-	*/
 
 	ReferencesCounter += 1;
 }
@@ -88,11 +63,6 @@ void ObjectInstance::DecrementReference()
 {
 	if (!Info->IsReferenceType)
 		return;
-
-	/*
-	unsigned long* refCounter = static_cast<unsigned long*>(OffsetMemory(0, sizeof(unsigned long)));
-	refCounter[0] -= 1;
-	*/
 
 	ReferencesCounter -= 1;
 }

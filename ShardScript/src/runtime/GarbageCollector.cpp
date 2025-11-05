@@ -134,7 +134,7 @@ void GarbageCollector::TerminateInstance(ObjectInstance* instance)
 	}
 
 	Heap.erase(instance);
-	free((void*)instance->Ptr);
+	free(instance->Ptr);
 	instance->~ObjectInstance();
 }
 

@@ -6,7 +6,7 @@
 #include <shard/runtime/interactive/InteractiveConsole.h>
 #include <shard/runtime/interpreter/AbstractInterpreter.h>
 #include <shard/runtime/ConsoleHelper.h>
-#include <shard/runtime/CallStackFrame.h>
+#include <shard/runtime/GarbageCollector.h>
 #include <shard/runtime/ObjectInstance.h>
 
 #include <shard/syntax/SyntaxFacts.h>
@@ -446,6 +446,7 @@ void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticMode
 				if (result != nullptr)
 					ConsoleHelper::Write(result);
 
+				GarbageCollector::DestroyInstance(result);
 				MoveToNewLineIfNeeded();
 			}
 			else
@@ -487,6 +488,7 @@ void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticMode
 				if (result != nullptr)
 					ConsoleHelper::Write(result);
 
+				GarbageCollector::DestroyInstance(result);
 				MoveToNewLineIfNeeded();
 			}
 		}

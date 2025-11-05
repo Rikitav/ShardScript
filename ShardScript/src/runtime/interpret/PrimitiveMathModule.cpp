@@ -50,6 +50,7 @@ ObjectInstance* PrimitiveMathModule::CreateInstanceFromValue(wstring& value)
 	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String);
 	wstring* copy = new wstring(value);
 	instance->WritePrimitive<wstring>(*copy);
+	instance->DecrementReference();
 	return instance;
 }
 
