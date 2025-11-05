@@ -48,6 +48,8 @@ namespace shard::runtime
 		AbstractInterpreter(shard::parsing::lexical::SyntaxTree& syntaxTree, shard::parsing::semantic::SemanticModel& semanticModel)
 			: syntaxTree(syntaxTree), semanticModel(semanticModel) { }
 
+		~AbstractInterpreter() = default;
+
 		void Execute();
 		void RaiseException(ObjectInstance* exceptionReg);
 

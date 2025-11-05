@@ -12,7 +12,7 @@
 #include <shard/runtime/interactive/InteractiveConsole.h>
 
 #include "src/utilities/ArgumentsParser.cpp"
-#include "src/utilities/ExecutableVersion.cpp"
+//#include "src/utilities/ExecutableVersion.cpp"
 
 #include <iostream>
 #include <string>
@@ -38,7 +38,7 @@ int wmain(int argc, wchar_t* argv[])
 
 		if (args.ShowHelp)
 		{
-			wstring version = GetFileVersion();
+			wstring version = L"0.1"; // GetFileVersion();
 			wcout << "ShardLang interpreter v" << version;
 			return 0;
 		}

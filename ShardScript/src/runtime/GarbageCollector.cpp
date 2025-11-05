@@ -11,6 +11,34 @@ using namespace std;
 using namespace shard::syntax::symbols;
 using namespace shard::runtime;
 
+ObjectInstance* GarbageCollector::GetStaticField(FieldSymbol* field)
+{
+	ObjectInstance* staticFieldInstance = nullptr;
+	auto find = staticFields.find(field);
+	if (find == staticFields.end())
+	{
+		staticFieldInstance = GarbageCollector::NullInstance(field->ReturnType);
+		staticFields[field] = staticFieldInstance;
+	}
+	else
+	{
+		staticFieldInstance = find->second;
+	}
+
+	return CopyInstance(staticFieldInstance);
+}
+
+void GarbageCollector::SetStaticField(FieldSymbol* field, ObjectInstance* instance)
+{
+	if (field->ReturnType->IsReferenceType)
+	{
+		ObjectInstance* oldValue = GetStaticField(field);
+		GarbageCollector::DestroyInstance(oldValue);
+	}
+
+	staticFields[field] = CopyInstance(instance);
+}
+
 ObjectInstance* GarbageCollector::NullInstance(const TypeSymbol* objectInfo)
 {
 	auto find = nullInstancesMap.find(const_cast<TypeSymbol*>(objectInfo));
@@ -34,16 +62,14 @@ ObjectInstance* GarbageCollector::AllocateInstance(const TypeSymbol* objectInfo)
 
 	for (FieldSymbol* field : objectInfo->Fields)
 	{
-		/*
 		if (field->ReturnType->IsReferenceType)
 		{
-			instance->SetField(field, nullptr);
+			instance->SetField(field, NullInstance(field->ReturnType));
 		}
 		else
 		{
 			//instance->SetField(field)
 		}
-		*/
 	}
 
 	Heap.add(instance);
@@ -114,6 +140,11 @@ void GarbageCollector::TerminateInstance(ObjectInstance* instance)
 
 void GarbageCollector::Terminate()
 {
+	// Destroy all static instances
+	for (const auto& choise : staticFields)
+		TerminateInstance(choise.second);
+
+	// Destroy all regular instances
 	for (ObjectInstance* instance : Heap)
 		TerminateInstance(instance);
 }

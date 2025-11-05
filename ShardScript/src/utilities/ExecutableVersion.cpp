@@ -1,11 +1,13 @@
 #include <Windows.h>
-#include<iostream>
+#include <iostream>
+#include <sstream>
+#include <string>
 
-using namespace std;
+//using namespace std;
 
 namespace shard::utilities
 {
-	static wstring GetFileVersion()
+	static std::wstring GetFileVersion()
 	{
 		TCHAR filename[MAX_PATH];
 		GetModuleFileNameW(NULL, filename, MAX_PATH);
@@ -13,7 +15,7 @@ namespace shard::utilities
 		DWORD dummy;
 		DWORD size = GetFileVersionInfoSizeW(filename, &dummy);
 
-		wstring result = L"0.0";
+		std::wstring result = L"0.0";
 		if (size != 0)
 		{
 			BYTE* versionInfo = new BYTE[size];
@@ -26,7 +28,7 @@ namespace shard::utilities
 				{
 					DWORD versionMS = fileInfo->dwFileVersionMS;
 					DWORD versionLS = fileInfo->dwFileVersionLS;
-					wstringstream res;
+					std::wstringstream res;
 
 					res << HIWORD(versionMS) << "." << LOWORD(versionMS); // << "." << HIWORD(versionLS) << "." << LOWORD(versionLS);
 					result = res.str();

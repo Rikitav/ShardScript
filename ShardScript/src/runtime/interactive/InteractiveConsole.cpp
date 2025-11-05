@@ -36,11 +36,11 @@
 
 #include <shard/syntax/nodes/Types/PredefinedTypeSyntax.h>
 
+#include <Windows.h>
 #include <string>
 #include <iostream>
 #include <vector>
 #include <exception>
-#include <Windows.h>
 
 #pragma comment(lib, "version.lib")
 

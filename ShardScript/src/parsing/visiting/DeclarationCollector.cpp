@@ -130,6 +130,12 @@ void DeclarationCollector::VisitFieldDeclaration(FieldDeclarationSyntax* node)
     }
     else
     {
+        // Validate: static class cannot have instance fields
+        if (!symbol->IsStatic && ownerType->IsStatic)
+        {
+            Diagnostics.ReportError(node->IdentifierToken, "Static class cannot have instance fields");
+        }
+        
         ownerType->Fields.push_back(symbol);
     }
 
@@ -209,6 +215,12 @@ void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax* n
     {
         Diagnostics.ReportError(node->IdentifierToken, "Cannot resolve property's owner type");
         return;
+    }
+
+    // Validate: static class cannot have instance properties
+    if (!symbol->IsStatic && ownerType->IsStatic)
+    {
+        Diagnostics.ReportError(node->IdentifierToken, "Static class cannot have instance properties");
     }
 
     // Check if this is an auto-property (has get/set but no body)

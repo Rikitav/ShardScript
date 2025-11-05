@@ -718,7 +718,16 @@ ObjectInstance* AbstractInterpreter::EvaluateBinaryExpression(const BinaryExpres
 		// Check if this is a property or field
 		if (!memberExpression->IsProperty)
 		{
-			instanceReg->SetField(memberExpression->Symbol, retReg);
+			// Check if this is a static field
+			FieldSymbol* field = memberExpression->Symbol;
+			if (!field->IsStatic)
+			{
+				// Instance field assignment
+				instanceReg->SetField(field, retReg);
+				return retReg;
+			}
+
+			GarbageCollector::SetStaticField(field, retReg);
 			return retReg;
 		}
 
@@ -793,7 +802,16 @@ ObjectInstance* AbstractInterpreter::EvaluateUnaryExpression(const UnaryExpressi
 	// Check if this is a property or field
 	if (!memberExpression->IsProperty)
 	{
-		instanceReg->SetField(memberExpression->Symbol, exprReg);
+		// Check if this is a static field
+		FieldSymbol* field = memberExpression->Symbol;
+		if (!field->IsStatic)
+		{
+			// Instance field assignment
+			instanceReg->SetField(field, retReg);
+			return retReg;
+		}
+
+		GarbageCollector::SetStaticField(field, retReg);
 		return retReg;
 	}
 
@@ -883,7 +901,16 @@ ObjectInstance* AbstractInterpreter::EvaluateMemberAccessExpression(const Member
 	else
 	{
 		// Regular field access
-		return prevInstance->GetField(expression->Symbol);
+		FieldSymbol* field = expression->Symbol;
+		
+		// Check if this is a static field
+		if (field->IsStatic)
+		{
+			return GarbageCollector::GetStaticField(field);
+		}
+
+		// Instance field access
+		return prevInstance->GetField(field);
 	}
 }
 

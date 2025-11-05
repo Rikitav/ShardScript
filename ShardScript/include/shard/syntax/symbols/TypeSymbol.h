@@ -35,7 +35,7 @@ namespace shard::syntax::symbols
         bool IsStatic = false;
         bool IsAbstract = false;
         bool IsSealed = false;
-
+        
         inline TypeSymbol(const std::wstring& name, const SyntaxKind kind)
             : SyntaxSymbol(name, kind) { }
 
