@@ -15,6 +15,7 @@
 
 #include <shard/runtime/GarbageCollector.h>
 #include <shard/runtime/ConsoleHelper.h>
+#include <shard/runtime/interpreter/AbstractInterpreter.h>
 
 #include <iostream>
 #include <vector>
@@ -29,7 +30,7 @@ using namespace shard::syntax;
 using namespace shard::syntax::symbols;
 using namespace shard::parsing::semantic;
 
-ObjectInstance* Gc_Info(InboundVariablesContext* arguments)
+ObjectInstance* Gc_Info(AbstractInterpreter* interpreter, InboundVariablesContext* arguments)
 {
 	wcout << "Garbage collector info dump" << endl;
 	for (ObjectInstance* reg : GarbageCollector::Heap)
@@ -44,14 +45,14 @@ ObjectInstance* Gc_Info(InboundVariablesContext* arguments)
 	return nullptr;
 }
 
-ObjectInstance* Print(InboundVariablesContext* arguments)
+ObjectInstance* Print(AbstractInterpreter* interpreter, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->Variables.at(L"message");
 	ConsoleHelper::Write(instance);
 	return nullptr;
 }
 
-ObjectInstance* Println(InboundVariablesContext* arguments)
+ObjectInstance* Println(AbstractInterpreter* interpreter, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->Variables.at(L"message");
 	ConsoleHelper::WriteLine(instance);

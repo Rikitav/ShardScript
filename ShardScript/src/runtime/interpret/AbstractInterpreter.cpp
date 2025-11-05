@@ -159,7 +159,7 @@ ObjectInstance* AbstractInterpreter::ExecuteMethod(MethodSymbol* method, Inbound
 			try
 			{
 				frame->InterruptionReason = FrameInterruptionReason::ValueReturned;
-				frame->InterruptionRegister = method->FunctionPointer(argumentsContext);
+				frame->InterruptionRegister = method->FunctionPointer(this, argumentsContext);
 			}
 			catch (const runtime_error& err)
 			{

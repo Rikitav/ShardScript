@@ -1,6 +1,7 @@
 #include <shard/runtime/interpreter/PrimitiveMathModule.h>
 #include <shard/runtime/InboundVariablesContext.h>
 #include <shard/runtime/ObjectInstance.h>
+#include <shard/runtime/interpreter/AbstractInterpreter.h>
 
 #include <shard/parsing/semantic/primitives/CharPrimitive.h>
 #include <shard/parsing/semantic/SymbolTable.h>
@@ -19,7 +20,7 @@ using namespace shard::syntax::symbols;
 using namespace shard::parsing::semantic;
 
 // Char methods
-static ObjectInstance* ToString(InboundVariablesContext* arguments)
+static ObjectInstance* ToString(AbstractInterpreter* interpreter, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	wchar_t value = instance->ReadPrimitive<wchar_t>();
@@ -27,7 +28,7 @@ static ObjectInstance* ToString(InboundVariablesContext* arguments)
 	return PrimitiveMathModule::CreateInstanceFromValue(str);
 }
 
-static ObjectInstance* ToUpper(InboundVariablesContext* arguments)
+static ObjectInstance* ToUpper(AbstractInterpreter* interpreter, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	wchar_t value = instance->ReadPrimitive<wchar_t>();
@@ -35,7 +36,7 @@ static ObjectInstance* ToUpper(InboundVariablesContext* arguments)
 	return PrimitiveMathModule::CreateInstanceFromValue(result);
 }
 
-static ObjectInstance* ToLower(InboundVariablesContext* arguments)
+static ObjectInstance* ToLower(AbstractInterpreter* interpreter, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	wchar_t value = instance->ReadPrimitive<wchar_t>();
@@ -43,7 +44,7 @@ static ObjectInstance* ToLower(InboundVariablesContext* arguments)
 	return PrimitiveMathModule::CreateInstanceFromValue(result);
 }
 
-static ObjectInstance* IsDigit(InboundVariablesContext* arguments)
+static ObjectInstance* IsDigit(AbstractInterpreter* interpreter, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	wchar_t value = instance->ReadPrimitive<wchar_t>();
@@ -51,7 +52,7 @@ static ObjectInstance* IsDigit(InboundVariablesContext* arguments)
 	return PrimitiveMathModule::CreateInstanceFromValue(result);
 }
 
-static ObjectInstance* IsLetter(InboundVariablesContext* arguments)
+static ObjectInstance* IsLetter(AbstractInterpreter* interpreter, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	wchar_t value = instance->ReadPrimitive<wchar_t>();
@@ -59,7 +60,7 @@ static ObjectInstance* IsLetter(InboundVariablesContext* arguments)
 	return PrimitiveMathModule::CreateInstanceFromValue(result);
 }
 
-static ObjectInstance* IsWhiteSpace(InboundVariablesContext* arguments)
+static ObjectInstance* IsWhiteSpace(AbstractInterpreter* interpreter, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	wchar_t value = instance->ReadPrimitive<wchar_t>();

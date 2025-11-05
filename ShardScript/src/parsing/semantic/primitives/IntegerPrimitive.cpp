@@ -1,6 +1,7 @@
 #include <shard/runtime/interpreter/PrimitiveMathModule.h>
 #include <shard/runtime/InboundVariablesContext.h>
 #include <shard/runtime/ObjectInstance.h>
+#include <shard/runtime/interpreter/AbstractInterpreter.h>
 
 #include <shard/parsing/semantic/primitives/IntegerPrimitive.h>
 #include <shard/parsing/semantic/SymbolTable.h>
@@ -20,7 +21,7 @@ using namespace shard::syntax::symbols;
 using namespace shard::parsing::semantic;
 
 // Integer methods
-static ObjectInstance* ToString(InboundVariablesContext* arguments)
+static ObjectInstance* ToString(AbstractInterpreter* interpreter, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	int value = instance->ReadPrimitive<int>();
@@ -28,7 +29,7 @@ static ObjectInstance* ToString(InboundVariablesContext* arguments)
 	return PrimitiveMathModule::CreateInstanceFromValue(str);
 }
 
-static ObjectInstance* Abs(InboundVariablesContext* arguments)
+static ObjectInstance* Abs(AbstractInterpreter* interpreter, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	int value = instance->ReadPrimitive<int>();
@@ -36,7 +37,7 @@ static ObjectInstance* Abs(InboundVariablesContext* arguments)
 	return PrimitiveMathModule::CreateInstanceFromValue(result);
 }
 
-static ObjectInstance* Min(InboundVariablesContext* arguments)
+static ObjectInstance* Min(AbstractInterpreter* interpreter, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	int value = instance->ReadPrimitive<int>();
@@ -50,7 +51,7 @@ static ObjectInstance* Min(InboundVariablesContext* arguments)
 	return PrimitiveMathModule::CreateInstanceFromValue(result);
 }
 
-static ObjectInstance* Max(InboundVariablesContext* arguments)
+static ObjectInstance* Max(AbstractInterpreter* interpreter, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	int value = instance->ReadPrimitive<int>();
@@ -64,7 +65,7 @@ static ObjectInstance* Max(InboundVariablesContext* arguments)
 	return PrimitiveMathModule::CreateInstanceFromValue(result);
 }
 
-static ObjectInstance* Pow(InboundVariablesContext* arguments)
+static ObjectInstance* Pow(AbstractInterpreter* interpreter, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	int value = instance->ReadPrimitive<int>();

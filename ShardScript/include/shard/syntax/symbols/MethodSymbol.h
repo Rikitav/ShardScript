@@ -11,9 +11,14 @@
 #include <string>
 #include <vector>
 
+namespace shard::runtime
+{
+	class AbstractInterpreter; // Forward declaration
+}
+
 namespace shard::syntax::symbols
 {
-    typedef shard::runtime::ObjectInstance* (*MethodSymbolDelegate)(shard::runtime::InboundVariablesContext* arguments);
+    typedef shard::runtime::ObjectInstance* (*MethodSymbolDelegate)(shard::runtime::AbstractInterpreter* interpreter, shard::runtime::InboundVariablesContext* arguments);
 
     enum class MethodHandleType
     {
