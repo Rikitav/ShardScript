@@ -51,8 +51,10 @@ SyntaxToken SourceReader::Consume()
 			break;
 
 		case 1: // no nned to read peeks
+		{
 			ReadBuffer.pop_front();
 			break;
+		}
 
 		default: // read peeks
 		{
@@ -68,11 +70,14 @@ SyntaxToken SourceReader::Consume()
 		if (++eofConsumeCounter == 10)
 			throw runtime_error("critical bug: eof consume overflow");
 
-		consumeBuffer = SyntaxToken(TokenType::EndOfFile, L"", TextLocation());
+		return SyntaxToken(TokenType::EndOfFile, L"", TextLocation());
 	}
-
-	ReadBuffer.push_back(consumeBuffer);
-	return SyntaxToken(consumeBuffer);
+	else
+	{
+		eofConsumeCounter = 0;
+		ReadBuffer.push_back(consumeBuffer);
+		return SyntaxToken(consumeBuffer);
+	}
 }
 
 SyntaxToken SourceReader::Peek(int index)
@@ -90,6 +95,7 @@ SyntaxToken SourceReader::Peek(int index)
 			SyntaxToken peekToken = SyntaxToken();
 			if (ReadNextToken(peekToken))
 			{
+				eofPeekCounter = 0;
 				ReadBuffer.push_back(peekToken);
 				continue;
 			}

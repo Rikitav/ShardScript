@@ -111,6 +111,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalOptions>/VERSION:"0.1" %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -164,7 +165,7 @@
     <ClCompile Include="src\syntax\symbols\TypeSymbol.cpp" />
     <ClCompile Include="src\syntax\SyntaxFacts.cpp" />
     <ClCompile Include="src\syntax\SyntaxHelpers.cpp" />
-    <ClCompile Include="src\utilities\MemoryLeakDetector.cpp" />
+    <ClCompile Include="src\utilities\ExecutableVersion.cpp" />
     <ClInclude Include="include\ffi\ffi.h" />
     <ClInclude Include="include\ffi\ffitarget.h" />
     <ClInclude Include="include\shard\parsing\LayoutGenerator.h" />
@@ -263,6 +264,9 @@
   </ItemGroup>
   <ItemGroup>
     <Library Include="libs\libffi-8.lib" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="ShardScript.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

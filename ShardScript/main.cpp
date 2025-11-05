@@ -4,6 +4,7 @@
 
 #include <shard/parsing/LexicalAnalyzer.h>
 #include <shard/parsing/SemanticAnalyzer.h>
+#include <shard/parsing/LayoutGenerator.h>
 #include <shard/parsing/reading/FileReader.h>
 
 #include <shard/runtime/GarbageCollector.h>
@@ -11,14 +12,13 @@
 #include <shard/runtime/interactive/InteractiveConsole.h>
 
 #include "src/utilities/ArgumentsParser.cpp"
-#include "src/utilities/MemoryLeakDetector.cpp"
+#include "src/utilities/ExecutableVersion.cpp"
 
 #include <iostream>
 #include <string>
 #include <stdexcept>
 #include <exception>
 #include <clocale>
-#include <shard/parsing/LayoutGenerator.h>
 
 using namespace std;
 using namespace shard::utilities;
@@ -29,16 +29,19 @@ using namespace shard::parsing::analysis;
 using namespace shard::parsing::lexical;
 using namespace shard::parsing::semantic;
 
-_CrtMemState MemoryLeakDetector::s_memState;
-MemoryLeakDetector g_detector;
-
 int wmain(int argc, wchar_t* argv[])
 {
 	try
 	{
 		setlocale(LC_ALL, "");
-		MemoryLeakDetector::Checkpoint();
 		ConsoleArguments args = ParseArguments(argc, argv);
+
+		if (args.ShowHelp)
+		{
+			wstring version = GetFileVersion();
+			wcout << "ShardLang interpreter v" << version;
+			return 0;
+		}
 
 		DiagnosticsContext diagnostics;
 		SyntaxTree syntaxTree;
@@ -91,6 +94,5 @@ int wmain(int argc, wchar_t* argv[])
 		cout << "CRITICAL ERROR : " << err.what() << endl;
 	}
 
-	MemoryLeakDetector::DumpSinceCheckpoint();
 	GarbageCollector::Terminate();
 }

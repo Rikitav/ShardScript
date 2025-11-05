@@ -36,12 +36,13 @@
 
 #include <shard/syntax/nodes/Types/PredefinedTypeSyntax.h>
 
-#include <cstdlib>
 #include <string>
 #include <iostream>
 #include <vector>
 #include <exception>
 #include <Windows.h>
+
+#pragma comment(lib, "version.lib")
 
 using namespace std;
 using namespace shard::runtime;
@@ -52,6 +53,40 @@ using namespace shard::parsing;
 using namespace shard::parsing::analysis;
 using namespace shard::parsing::semantic;
 using namespace shard::parsing::lexical;
+
+static wstring GetFileVersion()
+{
+	TCHAR filename[MAX_PATH];
+	GetModuleFileNameW(NULL, filename, MAX_PATH);
+
+	DWORD dummy;
+	DWORD size = GetFileVersionInfoSizeW(filename, &dummy);
+
+	wstring result = L"0.0";
+	if (size != 0)
+	{
+		BYTE* versionInfo = new BYTE[size];
+		if (GetFileVersionInfoW(filename, 0, size, versionInfo))
+		{
+			UINT len;
+			VS_FIXEDFILEINFO* fileInfo;
+
+			if (VerQueryValueW(versionInfo, TEXT("\\"), (LPVOID*)&fileInfo, &len))
+			{
+				DWORD versionMS = fileInfo->dwFileVersionMS;
+				DWORD versionLS = fileInfo->dwFileVersionLS;
+				wstringstream res;
+
+				res << HIWORD(versionMS) << "." << LOWORD(versionMS); // << "." << HIWORD(versionLS) << "." << LOWORD(versionLS);
+				result = res.str();
+			}
+		}
+
+		delete[] versionInfo;
+	}
+
+	return result;
+}
 
 static bool IsStatementComplete(SequenceSourceReader& reader)
 {
@@ -317,7 +352,7 @@ void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticMode
 	interpreter.PushFrame(entryPointSymbol);
 	interpreter.PushContext(new InboundVariablesContext(nullptr));
 	
-	ConsoleHelper::WriteLine(L"ShardScript Interactive Console");
+	ConsoleHelper::WriteLine(L"ShardScript Interactive Console v" + GetFileVersion());
 	ConsoleHelper::WriteLine(L"Type 'exit' or 'quit' to exit");
 	ConsoleHelper::WriteLine();
 

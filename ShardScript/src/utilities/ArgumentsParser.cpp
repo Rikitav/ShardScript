@@ -10,6 +10,7 @@ namespace shard::utilities
     struct ConsoleArguments
     {
         bool UseInteractive = false;
+        bool ShowHelp = false;
         vector<wstring> FilesToCompile;
     };
 
@@ -25,9 +26,13 @@ namespace shard::utilities
         for (int i = 1; i < argc; i++)
         {
             wstring arg = argv[i];
-            if (arg == L"--interactive")
+            if (arg == L"--interactive" || arg == L"-i")
             {
                 args.UseInteractive = true;
+            }
+            else if (arg == L"--help" || arg == L"-h")
+            {
+                args.ShowHelp = true;
             }
             else
             {
