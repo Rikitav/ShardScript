@@ -629,6 +629,7 @@ ObjectInstance* AbstractInterpreter::EvaluateLiteralExpression(const LiteralExpr
 			ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String);
 			wstring* copy = new wstring(expression->LiteralToken.Word);
 			instance->WritePrimitive(*copy);
+			instance->DecrementReference();
 			return instance;
 		}
 
@@ -679,6 +680,9 @@ ObjectInstance* AbstractInterpreter::EvaluateBinaryExpression(const BinaryExpres
 		ObjectInstance* leftReg = EvaluateExpression(expression->Left);
 		ObjectInstance* rightReg = EvaluateExpression(expression->Right);
 		retReg = PrimitiveMathModule::EvaluateBinaryOperator(leftReg, expression->OperatorToken, rightReg, assign);
+
+		GarbageCollector::DestroyInstance(leftReg);
+		GarbageCollector::DestroyInstance(rightReg);
 	}
 	else
 	{
@@ -698,6 +702,9 @@ ObjectInstance* AbstractInterpreter::EvaluateBinaryExpression(const BinaryExpres
 
 		ObjectInstance* rightReg = EvaluateExpression(expression->Right);
 		retReg = PrimitiveMathModule::EvaluateBinaryOperator(leftReg, expression->OperatorToken, rightReg, assign);
+
+		GarbageCollector::DestroyInstance(leftReg);
+		GarbageCollector::DestroyInstance(rightReg);
 	}
 
 	if (assign)
@@ -712,7 +719,8 @@ ObjectInstance* AbstractInterpreter::EvaluateBinaryExpression(const BinaryExpres
 		if (!isFieldAccess)
 		{
 			GarbageCollector::CopyInstance(retReg, instanceReg);
-			return retReg;
+			GarbageCollector::DestroyInstance(retReg);
+			return instanceReg;
 		}
 
 		// Check if this is a property or field
@@ -781,6 +789,8 @@ ObjectInstance* AbstractInterpreter::EvaluateUnaryExpression(const UnaryExpressi
 	if (targetReg == exprReg)
 	{
 		// Not need to assign
+		GarbageCollector::DestroyInstance(exprReg);
+		GarbageCollector::DestroyInstance(targetReg);
 		return retReg;
 	}
 
@@ -796,7 +806,7 @@ ObjectInstance* AbstractInterpreter::EvaluateUnaryExpression(const UnaryExpressi
 	if (!isFieldAccess)
 	{
 		GarbageCollector::CopyInstance(retReg, instanceReg);
-		return retReg;
+		return instanceReg;
 	}
 
 	// Check if this is a property or field
@@ -838,6 +848,9 @@ ObjectInstance* AbstractInterpreter::EvaluateLinkedExpression(const LinkedExpres
 			if (variableAccess->Symbol == nullptr)
 			{
 				objInstance = CurrentContext()->TryFind(variableAccess->IdentifierToken.Word);
+				if (objInstance != nullptr)
+					objInstance = GarbageCollector::CopyInstance(objInstance);
+
 				exprNode = variableAccess->NextNode;
 				break;
 			}
@@ -849,7 +862,9 @@ ObjectInstance* AbstractInterpreter::EvaluateLinkedExpression(const LinkedExpres
 		if (trimLast && exprNode == expression->Last)
 			break;
 
-		objInstance = EvaluateLinkedExpression(exprNode, objInstance);
+		ObjectInstance* prevInstance = objInstance;
+		objInstance = EvaluateLinkedExpression(exprNode, prevInstance);
+		GarbageCollector::DestroyInstance(prevInstance);
 		exprNode = exprNode->NextNode;
 	}
 
@@ -920,7 +935,8 @@ ObjectInstance* AbstractInterpreter::EvaluateInvokationExpression(const Invokati
 	MethodSymbol* method = expression->Symbol;
 
 	InboundVariablesContext* arguments = CreateArgumentsContext(expression, expression->Symbol, prevInstance);
-	return ExecuteMethod(method, arguments);
+	ObjectInstance* retReg = ExecuteMethod(method, arguments);
+	return retReg;
 }
 
 ObjectInstance* AbstractInterpreter::EvaluateIndexatorExpression(const IndexatorExpressionSyntax* expression, ObjectInstance* prevInstance)
@@ -931,8 +947,9 @@ ObjectInstance* AbstractInterpreter::EvaluateIndexatorExpression(const Indexator
 ObjectInstance* AbstractInterpreter::EvaluateArgument(const ArgumentSyntax* argument)
 {
 	ObjectInstance* argInstance = EvaluateExpression(argument->Expression);
-	bool isByReference = argument->IsByReference;
-	return isByReference ? argInstance : GarbageCollector::CopyInstance(argInstance);
+	//bool isByReference = argument->IsByReference;
+	//return isByReference ? argInstance : GarbageCollector::CopyInstance(argInstance);
+	return argInstance;
 }
 
 InboundVariablesContext* AbstractInterpreter::CreateArgumentsContext(const InvokationExpressionSyntax* expression, MethodSymbol* symbol, ObjectInstance* instance)

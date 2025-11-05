@@ -36,6 +36,7 @@ ObjectInstance* Gc_Info(InboundVariablesContext* arguments)
 	{
 		wcout
 			<< L" * " << reg->Ptr
+			<< L" : " << reg->Id
 			<< L" : " << reg->Info->Name
 			<< L" : " << reg->ReferencesCounter << endl;
 	}
