@@ -18,6 +18,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/PropertyDeclarationSyntax.h>
 
 #include <shard/syntax/nodes/Statements/VariableStatementSyntax.h>
 #include <shard/syntax/nodes/Statements/ExpressionStatementSyntax.h>
@@ -61,6 +62,7 @@ namespace shard::parsing
         virtual void VisitMemberDeclaration(shard::syntax::nodes::MemberDeclarationSyntax* node);
         virtual void VisitMethodDeclaration(shard::syntax::nodes::MethodDeclarationSyntax* node);
         virtual void VisitFieldDeclaration(shard::syntax::nodes::FieldDeclarationSyntax* node);
+        virtual void VisitPropertyDeclaration(shard::syntax::nodes::PropertyDeclarationSyntax* node);
 
         virtual void VisitStatementsBlock(shard::syntax::nodes::StatementsBlockSyntax* node);
         virtual void VisitStatement(shard::syntax::nodes::StatementSyntax* node);

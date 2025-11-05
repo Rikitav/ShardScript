@@ -48,8 +48,9 @@ namespace shard::parsing
 
 		void pushScope(shard::syntax::SyntaxSymbol* symbol);
 		bool IsSymbolAccessible(shard::syntax::SyntaxSymbol* symbol);
-		shard::syntax::symbols::TypeSymbol* GetExpressionType(shard::syntax::nodes::ExpressionSyntax* expression);
 		void SetExpressionType(shard::syntax::nodes::ExpressionSyntax* expression, shard::syntax::symbols::TypeSymbol* type);
+		shard::syntax::symbols::TypeSymbol* GetExpressionType(shard::syntax::nodes::ExpressionSyntax* expression);
+		shard::syntax::symbols::TypeSymbol* FindTargetReturnType(shard::parsing::semantic::SemanticScope*& scope);
 		
 		shard::syntax::symbols::TypeSymbol* ResolveType(shard::syntax::nodes::TypeSyntax* typeSyntax);
 		shard::syntax::symbols::TypeSymbol* AnalyzeLiteralExpression(shard::syntax::nodes::LiteralExpressionSyntax* node);
@@ -61,8 +62,7 @@ namespace shard::parsing
 		bool MatchMethodArguments(shard::syntax::symbols::MethodSymbol* method, shard::syntax::nodes::ArgumentsListSyntax* arguments);
 
 	public:
-		inline ExpressionBinder(shard::parsing::semantic::SymbolTable* symbolTable, shard::parsing::analysis::DiagnosticsContext& diagnostics) 
-			: symbolTable(symbolTable), Diagnostics(diagnostics)
+		inline ExpressionBinder(shard::parsing::semantic::SymbolTable* symbolTable, shard::parsing::analysis::DiagnosticsContext& diagnostics) : symbolTable(symbolTable), Diagnostics(diagnostics)
 		{
 			scopeStack.push(symbolTable->GlobalScope);
 		}
@@ -73,6 +73,7 @@ namespace shard::parsing
 		void VisitStructDeclaration(shard::syntax::nodes::StructDeclarationSyntax* node) override;
 		void VisitMethodDeclaration(shard::syntax::nodes::MethodDeclarationSyntax* node) override;
 		void VisitFieldDeclaration(shard::syntax::nodes::FieldDeclarationSyntax* node) override;
+		void VisitPropertyDeclaration(shard::syntax::nodes::PropertyDeclarationSyntax* node) override;
 		void VisitVariableStatement(shard::syntax::nodes::VariableStatementSyntax* node) override;
 		
 		void VisitLiteralExpression(shard::syntax::nodes::LiteralExpressionSyntax* node) override;

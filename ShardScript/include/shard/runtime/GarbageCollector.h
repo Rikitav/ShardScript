@@ -76,12 +76,17 @@ namespace shard::runtime
 	class GarbageCollector
 	{
 		inline static long objectsCounter = 0;
+        inline static std::unordered_map<shard::syntax::symbols::TypeSymbol*, ObjectInstance*> nullInstancesMap;
 	
     public:
 		inline static InstancesHeap Heap;
 
+        static ObjectInstance* NullInstance(const shard::syntax::symbols::TypeSymbol* objectInfo);
 		static ObjectInstance* AllocateInstance(const shard::syntax::symbols::TypeSymbol* objectInfo);
+        static ObjectInstance* CreateInstance(const shard::syntax::symbols::TypeSymbol* objectInfo, void* ptr);
         static ObjectInstance* CopyInstance(const shard::syntax::symbols::TypeSymbol* objectInfo, void* ptr);
+        static ObjectInstance* CopyInstance(ObjectInstance* from, ObjectInstance* to);
+        static ObjectInstance* CopyInstance(ObjectInstance* instance);
 		static void DestroyInstance(ObjectInstance* instance);
         static void TerminateInstance(ObjectInstance* instance);
 		static void Terminate();

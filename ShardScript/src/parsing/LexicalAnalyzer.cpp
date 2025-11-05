@@ -29,6 +29,7 @@
 
 #include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/PropertyDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.h>
 
@@ -290,7 +291,7 @@ MemberDeclarationSyntax* LexicalAnalyzer::ReadMemberDeclaration(SourceReader& re
 	}
 
 	// reading identifier - try to match with error recovery
-	if (!TryMatch(reader, { TokenType::Identifier, TokenType::OpenCurl, TokenType::Semicolon, TokenType::AssignOperator }, "Expected member identifier, '(', ';' or '='", 5))
+	if (!TryMatch(reader, { TokenType::Identifier, TokenType::OpenCurl, TokenType::OpenBrace, TokenType::Semicolon, TokenType::AssignOperator }, "Expected member identifier, '{', '(', ';' or '='", 5))
 	{
 		// Create missing identifier if we couldn't recover
 		info.Identifier = SyntaxToken(TokenType::Identifier, L"", TextLocation(), true);
@@ -305,67 +306,38 @@ MemberDeclarationSyntax* LexicalAnalyzer::ReadMemberDeclaration(SourceReader& re
 	if (info.ReturnType != nullptr)
 	{
 		// Checking if member is field - try to match with error recovery
-		if (!TryMatch(reader, { TokenType::OpenCurl, TokenType::Semicolon, TokenType::AssignOperator }, "Expected parameters list '(', semicolon ';' or assignment '='", 5))
+		if (!TryMatch(reader, { TokenType::OpenCurl, TokenType::OpenBrace, TokenType::Semicolon, TokenType::AssignOperator }, "Expected parameters list '(', accessors body '{', semicolon ';' or assignment '='", 5))
 		{
 			// If we couldn't recover, try to continue anyway
 		}
 
-		while (reader.CanConsume())
+		SyntaxToken current = reader.Current();
+		switch (current.Type)
 		{
-			SyntaxToken current = reader.Current();
-			switch (current.Type)
+			case TokenType::OpenBrace:
+				return ReadPropertyDeclaration(reader, info, parent);
+
+			case TokenType::Semicolon:
+			case TokenType::AssignOperator:
+				return ReadFieldDeclaration(reader, info, parent);
+
+			case TokenType::OpenCurl:
+				return ReadMethodDeclaration(reader, info, parent);
+
+			default:
 			{
-				case TokenType::Semicolon:
-				{
-					FieldDeclarationSyntax* syntax = new FieldDeclarationSyntax(info, parent);
-					syntax->SemicolonToken = Expect(reader, TokenType::Semicolon, "Expected ';' token");
-					return syntax;
-				}
-
-				case TokenType::AssignOperator:
-				{
-					FieldDeclarationSyntax* syntax = new FieldDeclarationSyntax(info, parent);
-
-					syntax->SemicolonToken = current;
-					reader.Consume();
-					return syntax;
-				}
-
-				case TokenType::OpenCurl:
-				{
-					info.Params = ReadParametersList(reader, parent);
-					goto breakloop;
-				}
-
-				default:
-				{
-					Diagnostics.ReportError(current, "Expected parameters list or semicolon");
-					reader.Consume();
-				}
+				Diagnostics.ReportError(current, "Expected parameters list or semicolon");
+				reader.Consume();
 			}
 		}
-
-		breakloop:
-		if (!reader.CanConsume())
-			return nullptr;
-	}
-
-	// reading anchor token - try to match with error recovery
-	if (!TryMatch(reader, { TokenType::OpenBrace, TokenType::Semicolon }, "Expected '{' or ';'", 5))
-	{
-		// If we couldn't recover and hit EOF, return nullptr
-		if (!reader.CanConsume())
-			return nullptr;
-	}
-
-	if (info.ReturnType != nullptr)
-	{
-		MethodDeclarationSyntax* method = new MethodDeclarationSyntax(info, parent);
-		method->Body = ReadStatementsBlock(reader, method);
-		return method;
 	}
 	else if (!info.DeclareType.IsMissing)
 	{
+		if (!TryMatch(reader, { TokenType::OpenBrace, TokenType::Semicolon }, "Expected type body '{' or semicolon ';'", 5))
+		{
+			// If we couldn't recover, try to continue anyway
+		}
+
 		TypeDeclarationSyntax* type = make_type(info, parent);
 		ReadTypeBody(reader, type);
 		return type;
@@ -374,6 +346,157 @@ MemberDeclarationSyntax* LexicalAnalyzer::ReadMemberDeclaration(SourceReader& re
 	{
 		return nullptr;
 	}
+}
+
+MethodDeclarationSyntax* LexicalAnalyzer::ReadMethodDeclaration(SourceReader& reader, MemberDeclarationInfo& info, SyntaxNode* parent)
+{
+	MethodDeclarationSyntax* syntax = new MethodDeclarationSyntax(info, parent);
+	syntax->Params = ReadParametersList(reader, syntax);
+	
+	SyntaxToken current = reader.Current();
+	if (current.Type == TokenType::Semicolon)
+		return syntax;
+
+	syntax->Body = ReadStatementsBlock(reader, syntax);
+	return syntax;
+}
+
+FieldDeclarationSyntax* LexicalAnalyzer::ReadFieldDeclaration(SourceReader& reader, MemberDeclarationInfo& info, SyntaxNode* parent)
+{
+	FieldDeclarationSyntax* syntax = new FieldDeclarationSyntax(info, parent);
+
+	SyntaxToken current = reader.Current();
+	switch (current.Type)
+	{
+		case TokenType::Semicolon:
+		{
+			syntax->SemicolonToken = current;
+			return syntax;
+		}
+
+		case TokenType::AssignOperator:
+		{
+			syntax->InitializerAssignToken = current;
+			reader.Consume();
+
+			syntax->InitializerExpression = ReadExpression(reader, syntax, 0);
+			syntax->SemicolonToken = Expect(reader, TokenType::Semicolon, "Expected ';' token");
+			return syntax;
+		}
+	}
+
+	return nullptr;
+}
+
+PropertyDeclarationSyntax* LexicalAnalyzer::ReadPropertyDeclaration(SourceReader& reader, MemberDeclarationInfo& info, SyntaxNode* parent)
+{
+	PropertyDeclarationSyntax* property = new PropertyDeclarationSyntax(info, parent);
+	
+	// Read opening brace
+	property->OpenBraceToken = Expect(reader, TokenType::OpenBrace, "Expected '{' for property accessors");
+	
+	// Read accessors
+	while (reader.CanConsume())
+	{
+		SyntaxToken current = reader.Current();
+		
+		if (current.Type == TokenType::CloseBrace)
+		{
+			property->CloseBraceToken = current;
+			reader.Consume();
+			break;
+		}
+		
+		if (current.Type == TokenType::EndOfFile)
+		{
+			Diagnostics.ReportError(current, "Unexpected end of file in property - expected '}'");
+			property->CloseBraceToken = SyntaxToken(TokenType::CloseBrace, L"", current.Location, true);
+			break;
+		}
+		
+		// Read get accessor
+		if (current.Type == TokenType::GetKeyword)
+		{
+			property->GetKeywordToken = current;
+			property->HasGet = true;
+			reader.Consume();
+			
+			// Check if it's auto-property (get;) or has body (get { ... })
+			if (!reader.CanConsume())
+			{
+				Diagnostics.ReportError(current, "Unexpected end of file after 'get'");
+				break;
+			}
+			
+			SyntaxToken next = reader.Current();
+			if (next.Type == TokenType::Semicolon)
+			{
+				// Auto-property getter
+				reader.Consume();
+			}
+			else if (next.Type == TokenType::OpenBrace)
+			{
+				// Getter with body
+				property->GetBody = ReadStatementsBlock(reader, property);
+			}
+			else
+			{
+				Diagnostics.ReportError(next, "Expected ';' or '{' after 'get'");
+				reader.Consume();
+			}
+			
+			continue;
+		}
+		
+		// Read set accessor
+		if (current.Type == TokenType::SetKeyword)
+		{
+			property->SetKeywordToken = current;
+			property->HasSet = true;
+			reader.Consume();
+			
+			// Check if it's auto-property (set;) or has body (set { ... })
+			if (!reader.CanConsume())
+			{
+				Diagnostics.ReportError(current, "Unexpected end of file after 'set'");
+				break;
+			}
+			
+			SyntaxToken next = reader.Current();
+			if (next.Type == TokenType::Semicolon)
+			{
+				// Auto-property setter
+				reader.Consume();
+			}
+			else if (next.Type == TokenType::OpenBrace)
+			{
+				// Setter with body
+				property->SetBody = ReadStatementsBlock(reader, property);
+			}
+			else
+			{
+				Diagnostics.ReportError(next, "Expected ';' or '{' after 'set'");
+				reader.Consume();
+			}
+			
+			continue;
+		}
+		
+		// Unknown token - try to synchronize
+		Diagnostics.ReportError(current, "Expected 'get', 'set', or '}' in property accessor list");
+		if (!TryMatch(reader, { TokenType::GetKeyword, TokenType::SetKeyword, TokenType::CloseBrace }, nullptr, 5))
+		{
+			reader.Consume();
+		}
+	}
+	
+	// Validate that at least one accessor is present
+	if (!property->HasGet && !property->HasSet)
+	{
+		Diagnostics.ReportError(property->IdentifierToken, "Property must have at least one accessor (get or set)");
+	}
+	
+	return property;
 }
 
 vector<SyntaxToken> LexicalAnalyzer::ReadMemberModifiers(SourceReader& reader)
@@ -1144,13 +1267,24 @@ LinkedExpressionNode* LexicalAnalyzer::ReadLinkedExpressionNode(SourceReader& re
 			return node;
 		}
 
+		// anchor tokens
+		case TokenType::Semicolon:
+		case TokenType::CloseBrace:
+		case TokenType::Comma:
+		{
+			return new MemberAccessExpressionSyntax(identifier, prevNode, parent);
+		}
+
 		default:
 		{
-			SyntaxToken peek = reader.Peek();
-			if (peek.Type == TokenType::Identifier)
+			if (!IsOperator(current.Type))
 			{
-				Diagnostics.ReportError(current, "Tokens must be separated with delimeter");
-				return ReadLinkedExpressionNode(reader, parent, prevNode);
+				SyntaxToken peek = reader.Peek();
+				if (peek.Type == TokenType::Identifier)
+				{
+					Diagnostics.ReportError(current, "Tokens must be separated with delimeter");
+					return ReadLinkedExpressionNode(reader, parent, prevNode);
+				}
 			}
 
 			return new MemberAccessExpressionSyntax(identifier, prevNode, parent);

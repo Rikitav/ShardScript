@@ -15,6 +15,7 @@
 #include <shard/syntax/symbols/MethodSymbol.h>
 #include <shard/syntax/symbols/StructSymbol.h>
 #include <shard/syntax/symbols/FieldSymbol.h>
+#include <shard/syntax/symbols/PropertySymbol.h>
 #include <shard/syntax/symbols/ParameterSymbol.h>
 #include <shard/syntax/symbols/VariableSymbol.h>
 
@@ -155,64 +156,15 @@ void ExpressionBinder::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 			scopeStack.top()->DeclareSymbol(paramVar);
 		}
 
+		scopeStack.top()->ReturnFound = false;
 		VisitStatementsBlock(node->Body);
 
 		if (symbol->ReturnType->Name != L"Void")
 		{
-			bool hasReturn = false;
-			for (StatementSyntax* statement : node->Body->Statements)
-			{
-				if (statement->Kind == SyntaxKind::ReturnStatement)
-				{
-					hasReturn = true;
-					ReturnStatementSyntax* returnStmt = static_cast<ReturnStatementSyntax*>(statement);
-					if (returnStmt->Expression != nullptr)
-					{
-						TypeSymbol* returnExprType = GetExpressionType(returnStmt->Expression);
-						if (returnExprType == nullptr)
-						{
-							Diagnostics.ReportError(returnStmt->Expression->Kind == SyntaxKind::LiteralExpression
-								? static_cast<LiteralExpressionSyntax*>(returnStmt->Expression)->LiteralToken
-								: SyntaxToken(), "Return expression type could not be determined");
-						}
-						else if (returnExprType != symbol->ReturnType)
-						{
-							string expectedName(symbol->ReturnType->Name.begin(), symbol->ReturnType->Name.end());
-							string actualName(returnExprType->Name.begin(), returnExprType->Name.end());
-
-							Diagnostics.ReportError(returnStmt->Expression->Kind == SyntaxKind::LiteralExpression
-								? static_cast<LiteralExpressionSyntax*>(returnStmt->Expression)->LiteralToken
-								: SyntaxToken(), "Return type mismatch: expected '" + expectedName + "' but got '" + actualName + "'");
-						}
-					}
-					else
-					{
-						string returnTypeName(symbol->ReturnType->Name.begin(), symbol->ReturnType->Name.end());
-						Diagnostics.ReportError(SyntaxToken(), "Return statement must return a value of type '" + returnTypeName + "'");
-					}
-				}
-			}
-			
-			if (!hasReturn)
+			if (!scopeStack.top()->ReturnFound)
 			{
 				string returnTypeName(symbol->ReturnType->Name.begin(), symbol->ReturnType->Name.end());
 				Diagnostics.ReportError(node->IdentifierToken, "Method must return a value of type '" + returnTypeName + "'");
-			}
-		}
-		else
-		{
-			for (StatementSyntax* statement : node->Body->Statements)
-			{
-				if (statement->Kind == SyntaxKind::ReturnStatement)
-				{
-					ReturnStatementSyntax* returnStmt = static_cast<ReturnStatementSyntax*>(statement);
-					if (returnStmt->Expression != nullptr)
-					{
-						Diagnostics.ReportError(returnStmt->Expression->Kind == SyntaxKind::LiteralExpression
-							? static_cast<LiteralExpressionSyntax*>(returnStmt->Expression)->LiteralToken
-							: SyntaxToken(), "Void method cannot return a value");
-					}
-				}
 			}
 		}
 		
@@ -233,6 +185,68 @@ void ExpressionBinder::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 
 		if (symbol->ReturnType != SymbolTable::Primitives::Void)
 			Diagnostics.ReportError(node->IdentifierToken, "Main entry point should have 'void' return type");
+	}
+}
+
+void ExpressionBinder::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
+{
+	PropertySymbol* symbol = static_cast<PropertySymbol*>(symbolTable->LookupSymbol(node));
+	TypeSymbol* ownerType = static_cast<TypeSymbol*>((SyntaxSymbol*)scopeStack.top()->Owner);
+
+	if (symbol->ReturnType->Name == L"Void")
+	{
+		string propName(node->IdentifierToken.Word.begin(), node->IdentifierToken.Word.end());
+		Diagnostics.ReportError(node->SetKeywordToken, "Property '" + propName + "' must have return value");
+	}
+
+	if (node->GetBody)
+	{
+		pushScope(symbol);
+
+		if (!symbol->IsStatic)
+		{
+			VariableSymbol* thisVarSymbol = new VariableSymbol(L"this");
+			thisVarSymbol->Type = ownerType;
+			scopeStack.top()->DeclareSymbol(thisVarSymbol);
+		}
+
+		scopeStack.top()->ReturnFound = false;
+		VisitStatementsBlock(node->GetBody);
+
+		if (!scopeStack.top()->ReturnFound)
+		{
+			string returnTypeName(symbol->ReturnType->Name.begin(), symbol->ReturnType->Name.end());
+			Diagnostics.ReportError(node->IdentifierToken, "Method must return a value of type '" + returnTypeName + "'");
+		}
+
+		scopeStack.pop();
+	}
+
+	if (node->SetBody != nullptr)
+	{
+		pushScope(symbol);
+
+		if (!symbol->IsStatic)
+		{
+			VariableSymbol* thisVarSymbol = new VariableSymbol(L"this");
+			thisVarSymbol->Type = ownerType;
+			scopeStack.top()->DeclareSymbol(thisVarSymbol);
+		}
+
+		VariableSymbol* valueVarSymbol = new VariableSymbol(L"value");
+		valueVarSymbol->Type = symbol->ReturnType;
+		scopeStack.top()->DeclareSymbol(valueVarSymbol);
+
+		scopeStack.top()->ReturnsAnything = false;
+		VisitStatementsBlock(node->SetBody);
+
+		if (scopeStack.top()->ReturnsAnything)
+		{
+			string propName(node->IdentifierToken.Word.begin(), node->IdentifierToken.Word.end());
+			Diagnostics.ReportError(node->SetKeywordToken, "Setter method of '" + propName + "' should not return any values");
+		}
+
+		scopeStack.pop();
 	}
 }
 
@@ -901,53 +915,109 @@ TypeSymbol* ExpressionBinder::AnalyzeLinkedExpression(LinkedExpressionSyntax* no
 					}
 					
 					wstring memberName = memberAccess->IdentifierToken.Word;
-                    FieldSymbol* field = memberAccess->Symbol = currentType->FindField(memberName);
 					
-					if (field == nullptr)
+					// First check for property (properties take precedence over fields)
+					PropertySymbol* property = currentType->FindProperty(memberName);
+					if (property != nullptr)
 					{
-						MethodSymbol* method = currentType->FindMethod(memberName, vector<TypeSymbol*>());
-						if (method == nullptr)
-						{
-							string typeName(currentType->Name.begin(), currentType->Name.end());
-							string memberStr(memberName.begin(), memberName.end());
-							Diagnostics.ReportError(memberAccess->IdentifierToken, "Member '" + memberStr + "' not found in type '" + typeName + "'");
-						}
-						else
+						if (!IsSymbolAccessible(property))
 						{
 							string memberStr(memberName.begin(), memberName.end());
-							Diagnostics.ReportError(memberAccess->IdentifierToken, "Cannot access method '" + memberStr + "' without invocation");
+							Diagnostics.ReportError(memberAccess->IdentifierToken, "Property '" + memberStr + "' is not accessible");
+							return nullptr;
 						}
-						return nullptr;
+						
+						if (isStaticContext && !property->IsStatic)
+						{
+							string memberStr(memberName.begin(), memberName.end());
+							Diagnostics.ReportError(memberAccess->IdentifierToken, "Cannot access instance property '" + memberStr + "' from type context");
+							return nullptr;
+						}
+						if (!isStaticContext && property->IsStatic)
+						{
+							string memberStr(memberName.begin(), memberName.end());
+							Diagnostics.ReportError(memberAccess->IdentifierToken, "Cannot access static property '" + memberStr + "' from instance reference");
+							return nullptr;
+						}
+						
+						// Check if property has getter
+						if (property->GetMethod == nullptr)
+						{
+							string memberStr(memberName.begin(), memberName.end());
+							Diagnostics.ReportError(memberAccess->IdentifierToken, "Property '" + memberStr + "' has no get accessor");
+							return nullptr;
+						}
+						
+						// Set property flag and symbol
+						memberAccess->IsProperty = true;
+						memberAccess->PropertySymbol = property;
+						memberAccess->Symbol = nullptr; // Clear field symbol
+						
+						currentType = property->ReturnType;
+						isStaticContext = false;
+						
+						if (currentType == nullptr)
+						{
+							string memberStr(memberName.begin(), memberName.end());
+							Diagnostics.ReportError(memberAccess->IdentifierToken, "Property '" + memberStr + "' type not resolved");
+							return nullptr;
+						}
 					}
-					
-                    if (!IsSymbolAccessible(field))
+					else
 					{
-						string memberStr(memberName.begin(), memberName.end());
-						Diagnostics.ReportError(memberAccess->IdentifierToken, "Field '" + memberStr + "' is not accessible");
-						return nullptr;
-					}
+						// Check for field
+						FieldSymbol* field = memberAccess->Symbol = currentType->FindField(memberName);
+						
+						if (field == nullptr)
+						{
+							MethodSymbol* method = currentType->FindMethod(memberName, vector<TypeSymbol*>());
+							if (method == nullptr)
+							{
+								string typeName(currentType->Name.begin(), currentType->Name.end());
+								string memberStr(memberName.begin(), memberName.end());
+								Diagnostics.ReportError(memberAccess->IdentifierToken, "Member '" + memberStr + "' not found in type '" + typeName + "'");
+							}
+							else
+							{
+								string memberStr(memberName.begin(), memberName.end());
+								Diagnostics.ReportError(memberAccess->IdentifierToken, "Cannot access method '" + memberStr + "' without invocation");
+							}
+							return nullptr;
+						}
+						
+						if (!IsSymbolAccessible(field))
+						{
+							string memberStr(memberName.begin(), memberName.end());
+							Diagnostics.ReportError(memberAccess->IdentifierToken, "Field '" + memberStr + "' is not accessible");
+							return nullptr;
+						}
 
-                    if (isStaticContext && !field->IsStatic)
-                    {
-                        string memberStr(memberName.begin(), memberName.end());
-                        Diagnostics.ReportError(memberAccess->IdentifierToken, "Cannot access instance field '" + memberStr + "' from type context");
-                        return nullptr;
-                    }
-                    if (!isStaticContext && field->IsStatic)
-                    {
-                        string memberStr(memberName.begin(), memberName.end());
-                        Diagnostics.ReportError(memberAccess->IdentifierToken, "Cannot access static field '" + memberStr + "' from instance reference");
-                        return nullptr;
-                    }
-					
-                    currentType = field->ReturnType;
-                    isStaticContext = false;
-					
-					if (currentType == nullptr)
-					{
-						string memberStr(memberName.begin(), memberName.end());
-						Diagnostics.ReportError(memberAccess->IdentifierToken, "Field '" + memberStr + "' type not resolved");
-						return nullptr;
+						if (isStaticContext && !field->IsStatic)
+						{
+							string memberStr(memberName.begin(), memberName.end());
+							Diagnostics.ReportError(memberAccess->IdentifierToken, "Cannot access instance field '" + memberStr + "' from type context");
+							return nullptr;
+						}
+						if (!isStaticContext && field->IsStatic)
+						{
+							string memberStr(memberName.begin(), memberName.end());
+							Diagnostics.ReportError(memberAccess->IdentifierToken, "Cannot access static field '" + memberStr + "' from instance reference");
+							return nullptr;
+						}
+						
+						// Set property flag to false
+						memberAccess->IsProperty = false;
+						memberAccess->PropertySymbol = nullptr;
+						
+						currentType = field->ReturnType;
+						isStaticContext = false;
+						
+						if (currentType == nullptr)
+						{
+							string memberStr(memberName.begin(), memberName.end());
+							Diagnostics.ReportError(memberAccess->IdentifierToken, "Field '" + memberStr + "' type not resolved");
+							return nullptr;
+						}
 					}
 				}
 				
@@ -1236,9 +1306,112 @@ void ExpressionBinder::VisitUnlessStatement(UnlessStatementSyntax* node)
 		VisitConditionalClause(node->NextStatement);
 }
 
+static bool SymbolHasReturnType(const SyntaxSymbol* symbol)
+{
+	switch (symbol->Kind)
+	{
+		case SyntaxKind::MethodDeclaration:
+		case SyntaxKind::FieldDeclaration:
+		case SyntaxKind::PropertyDeclaration:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
+TypeSymbol* ExpressionBinder::FindTargetReturnType(SemanticScope*& scope)
+{
+	scope = scopeStack.top();
+	SyntaxSymbol* symbol = const_cast<SyntaxSymbol*>(scope->Owner);
+	
+	while (!SymbolHasReturnType(symbol))
+	{
+		if (scope->Parent == nullptr)
+			return nullptr;
+
+		scope = const_cast<SemanticScope*>(scope->Parent);
+		symbol = const_cast<SyntaxSymbol*>(scope->Owner);
+	}
+
+	switch (symbol->Kind)
+	{
+		case SyntaxKind::MethodDeclaration:
+		{
+			MethodSymbol* methodSymbol = static_cast<MethodSymbol*>(symbol);
+			return methodSymbol->ReturnType;
+		}
+
+		case SyntaxKind::FieldDeclaration:
+		{
+			FieldSymbol* methodSymbol = static_cast<FieldSymbol*>(symbol);
+			return methodSymbol->ReturnType;
+		}
+
+		case SyntaxKind::PropertyDeclaration:
+		{
+			PropertySymbol* methodSymbol = static_cast<PropertySymbol*>(symbol);
+			return methodSymbol->ReturnType;
+		}
+
+		default:
+			return nullptr;
+	}
+}
+
 void ExpressionBinder::VisitReturnStatement(ReturnStatementSyntax* node)
 {
-	if (node->Expression != nullptr)
-		VisitExpression(node->Expression);
+	SemanticScope* searchingScope = nullptr;
+	TypeSymbol* returnType = FindTargetReturnType(searchingScope);
+
+	if (searchingScope == nullptr)
+	{
+		Diagnostics.ReportError(node->KeywordToken, "Couldnt find scope to return within");
+		return;
+	}
+
+	searchingScope->ReturnFound = true;
+	if (returnType != SymbolTable::Primitives::Void)
+	{
+		if (node->Expression == nullptr)
+		{
+			string returnTypeName(returnType->Name.begin(), returnType->Name.end());
+			Diagnostics.ReportError(SyntaxToken(), "Return statement must return a value of type '" + returnTypeName + "'");
+		}
+		else
+		{
+			searchingScope->ReturnsAnything = true;
+			VisitExpression(node->Expression);
+			TypeSymbol* returnExprType = GetExpressionType(node->Expression);
+
+			if (returnExprType == nullptr)
+			{
+				Diagnostics.ReportError(node->Expression->Kind == SyntaxKind::LiteralExpression
+					? static_cast<LiteralExpressionSyntax*>(node->Expression)->LiteralToken
+					: SyntaxToken(), "Return expression type could not be determined");
+			}
+			else if (returnExprType != returnType)
+			{
+				string expectedName(returnType->Name.begin(), returnType->Name.end());
+				string actualName(returnExprType->Name.begin(), returnExprType->Name.end());
+
+				Diagnostics.ReportError(node->Expression->Kind == SyntaxKind::LiteralExpression
+					? static_cast<LiteralExpressionSyntax*>(node->Expression)->LiteralToken
+					: SyntaxToken(), "Return type mismatch: expected '" + expectedName + "' but got '" + actualName + "'");
+			}
+		}
+	}
+	else
+	{
+		if (node->Expression != nullptr)
+		{
+			searchingScope->ReturnsAnything = true;
+			VisitExpression(node->Expression);
+
+			Diagnostics.ReportError(node->Expression->Kind == SyntaxKind::LiteralExpression
+				? static_cast<LiteralExpressionSyntax*>(node->Expression)->LiteralToken
+				: SyntaxToken(), "Void method cannot return a value");
+		}
+	}
 }
 

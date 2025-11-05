@@ -9,6 +9,7 @@ namespace shard::syntax::symbols
 {
     class MethodSymbol;
     class FieldSymbol;
+    class PropertySymbol;
 
     enum class TypeLayoutingState
     {
@@ -25,6 +26,7 @@ namespace shard::syntax::symbols
 
         std::vector<MethodSymbol*> Methods;
         std::vector<FieldSymbol*> Fields;
+        std::vector<PropertySymbol*> Properties;
 
         TypeLayoutingState State = TypeLayoutingState::Unvisited;
         size_t MemoryBytesSize = 0;
@@ -46,6 +48,9 @@ namespace shard::syntax::symbols
 
             for (FieldSymbol* fieldSymbol : Fields)
                 delete fieldSymbol;
+
+            for (PropertySymbol* propertySymbol : Properties)
+                delete propertySymbol;
 #pragma warning (pop)
 
             if (BaseType != nullptr)
@@ -54,5 +59,6 @@ namespace shard::syntax::symbols
 
         MethodSymbol* FindMethod(std::wstring& name, std::vector<TypeSymbol*> parameterTypes);
         FieldSymbol* FindField(std::wstring& name);
+        PropertySymbol* FindProperty(std::wstring& name);
 	};
 }

@@ -10,37 +10,13 @@ using namespace std;
 using namespace shard::runtime;
 using namespace shard::syntax::symbols;
 
-ObjectInstance* ObjectInstance::CopyReference()
-{
-	if (Info->IsReferenceType)
-	{
-		IncrementReference();
-		return this;
-	}
-
-	ObjectInstance* newInstance = GarbageCollector::AllocateInstance(Info);
-	memcpy(newInstance->Ptr, Ptr, Info->MemoryBytesSize);
-	return newInstance;
-}
-
-const void* ObjectInstance::GetFieldMemory(FieldSymbol* field)
-{
-	if (field->ReturnType->IsReferenceType)
-	{
-		return OffsetMemory(field->MemoryBytesOffset, sizeof(ObjectInstance*));
-	}
-	else
-	{
-		return OffsetMemory(field->MemoryBytesOffset, field->ReturnType->MemoryBytesSize);
-	}
-}
-
 ObjectInstance* ObjectInstance::GetField(FieldSymbol* field)
 {
 	if (field->ReturnType->IsReferenceType)
 	{
 		void* offset = OffsetMemory(field->MemoryBytesOffset, sizeof(ObjectInstance*));
-		return *static_cast<ObjectInstance**>(offset);
+		void* valuePtr = *static_cast<void**>(offset);
+		return valuePtr == nullptr ? GarbageCollector::NullInstance(field->ReturnType) : static_cast<ObjectInstance*>(valuePtr);
 	}
 	else
 	{
@@ -75,6 +51,7 @@ void ObjectInstance::SetField(FieldSymbol* field, ObjectInstance* instance)
 	}
 }
 
+/*
 void ObjectInstance::CopyTo(ObjectInstance* to)
 {
 	if (Info != to->Info)
@@ -82,6 +59,7 @@ void ObjectInstance::CopyTo(ObjectInstance* to)
 
 	to->WriteMemory(0, Info->MemoryBytesSize, Ptr);
 }
+*/
 
 /*
 unsigned long ObjectInstance::GetReferencesCount()

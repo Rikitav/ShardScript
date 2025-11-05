@@ -999,6 +999,16 @@ bool SourceReader::IsKeyword(wstring& word, TokenType& type)
 		type = TokenType::NewKeyword;
 		return true;
 	}
+	else if (word == L"get")
+	{
+		type = TokenType::GetKeyword;
+		return true;
+	}
+	else if (word == L"set")
+	{
+		type = TokenType::SetKeyword;
+		return true;
+	}
 
 	return false;
 }

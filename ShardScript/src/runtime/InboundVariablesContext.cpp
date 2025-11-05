@@ -12,7 +12,7 @@ ObjectInstance* InboundVariablesContext::AddVariable(const wstring name, ObjectI
 	if (TryFind(name))
 		throw runtime_error("variable already created");
 
-	return Variables[name] = instance;
+	return Variables[name] = GarbageCollector::CopyInstance(instance);
 }
 
 ObjectInstance* InboundVariablesContext::TryFind(const wstring& name)

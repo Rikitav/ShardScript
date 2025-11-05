@@ -71,6 +71,8 @@ namespace shard::syntax::nodes
 	public:
 		const SyntaxToken IdentifierToken;
 		shard::syntax::symbols::FieldSymbol* Symbol = nullptr;
+		shard::syntax::symbols::PropertySymbol* PropertySymbol = nullptr; // Property being accessed
+		bool IsProperty = false; // Flag indicating if this is a property access
 		
 		inline MemberAccessExpressionSyntax(SyntaxToken identifier, LinkedExpressionNode* previous, LinkedExpressionSyntax* parent)
 			: LinkedExpressionNode(SyntaxKind::MemberAccessExpression, previous, parent), IdentifierToken(identifier) { }

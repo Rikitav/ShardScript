@@ -15,6 +15,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/PropertyDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.h>
 
@@ -31,6 +32,8 @@ namespace shard::parsing
 		void pushScope(shard::syntax::SyntaxSymbol* symbol);
 		shard::syntax::symbols::TypeSymbol* ResolveType(shard::syntax::nodes::TypeSyntax* typeSyntax);
 		bool IsSymbolAccessible(shard::syntax::SyntaxSymbol* symbol);
+		shard::syntax::nodes::StatementsBlockSyntax* GenerateAutoPropertyGetterBody(shard::syntax::symbols::PropertySymbol* property, shard::syntax::nodes::PropertyDeclarationSyntax* node);
+		shard::syntax::nodes::StatementsBlockSyntax* GenerateAutoPropertySetterBody(shard::syntax::symbols::PropertySymbol* property, shard::syntax::nodes::PropertyDeclarationSyntax* node);
 
 	public:
 		inline TypeBinder(shard::parsing::semantic::SymbolTable* symbolTable, shard::parsing::analysis::DiagnosticsContext& diagnostics) : symbolTable(symbolTable), Diagnostics(diagnostics)
@@ -44,6 +47,7 @@ namespace shard::parsing
 		void VisitStructDeclaration(shard::syntax::nodes::StructDeclarationSyntax* node) override;
 		void VisitMethodDeclaration(shard::syntax::nodes::MethodDeclarationSyntax* node) override;
 		void VisitFieldDeclaration(shard::syntax::nodes::FieldDeclarationSyntax* node) override;
+		void VisitPropertyDeclaration(shard::syntax::nodes::PropertyDeclarationSyntax* node) override;
 		void VisitVariableStatement(shard::syntax::nodes::VariableStatementSyntax* node) override;
 		void VisitObjectCreationExpression(shard::syntax::nodes::ObjectExpressionSyntax* node) override;
 	};

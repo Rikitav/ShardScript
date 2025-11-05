@@ -16,6 +16,7 @@
 
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/FieldSymbol.h>
+#include <shard/syntax/symbols/PropertySymbol.h>
 #include <shard/syntax/symbols/MethodSymbol.h>
 
 #include <shard/syntax/nodes/ArgumentsListSyntax.h>
@@ -310,9 +311,7 @@ ObjectInstance* AbstractInterpreter::ExecuteVariableStatement(const VariableStat
 {
 	wstring varName = statement->IdentifierToken.Word;
 	ObjectInstance* assignInstance = EvaluateExpression(statement->Expression);
-
-	InboundVariablesContext* variablesContext = callStack.top()->VariablesStack.top();
-	return variablesContext->AddVariable(varName, assignInstance);
+	return CurrentContext()->AddVariable(varName, assignInstance);
 }
 
 ObjectInstance* AbstractInterpreter::ExecuteThrowStatement(const ThrowStatementSyntax* statement)
@@ -666,40 +665,69 @@ ObjectInstance* AbstractInterpreter::EvaluateBinaryExpression(const BinaryExpres
 {
 	const LinkedExpressionSyntax* linkedExpression = nullptr;
 	const MemberAccessExpressionSyntax* memberExpression = nullptr;
+
 	bool isMemberAccess = IsMemberAccess(expression->Left, linkedExpression, memberExpression);
 	bool isFieldAccess = isMemberAccess ? IsFieldAccess(linkedExpression, memberExpression) : false;
-	bool assign = false;
+	bool assign = expression->OperatorToken.Type == TokenType::AssignOperator;
 
 	ObjectInstance* instanceReg = nullptr;
 	ObjectInstance* retReg = nullptr;
 
-	if (isFieldAccess)
+	if (!isMemberAccess)
 	{
-		instanceReg = EvaluateLinkedExpression(linkedExpression, true);
-		ObjectInstance* leftReg = EvaluateMemberAccessExpression(memberExpression, instanceReg);
+		ObjectInstance* leftReg = EvaluateExpression(expression->Left);
 		ObjectInstance* rightReg = EvaluateExpression(expression->Right);
 		retReg = PrimitiveMathModule::EvaluateBinaryOperator(leftReg, expression->OperatorToken, rightReg, assign);
 	}
 	else
 	{
-		ObjectInstance* leftReg = instanceReg = EvaluateExpression(expression->Left);
+		ObjectInstance* leftReg = nullptr;
+		if (isFieldAccess)
+		{
+			instanceReg = EvaluateLinkedExpression(linkedExpression, true);
+			leftReg = EvaluateMemberAccessExpression(memberExpression, instanceReg);
+		}
+		else
+		{
+			instanceReg = CurrentContext()->Variables[memberExpression->IdentifierToken.Word];
+			leftReg = instanceReg;
+		}
+
 		ObjectInstance* rightReg = EvaluateExpression(expression->Right);
 		retReg = PrimitiveMathModule::EvaluateBinaryOperator(leftReg, expression->OperatorToken, rightReg, assign);
 	}
 
 	if (assign)
 	{
-		if (isFieldAccess)
+		if (!isMemberAccess)
+		{
+			// error, not a member access
+			throw runtime_error("binary expression tried to assign value to inaccesible register");
+		}
+
+		// Checking if is variable access
+		if (!isFieldAccess)
+		{
+			GarbageCollector::CopyInstance(retReg, instanceReg);
+			return retReg;
+		}
+
+		// Check if this is a property or field
+		if (!memberExpression->IsProperty)
 		{
 			instanceReg->SetField(memberExpression->Symbol, retReg);
 			return retReg;
 		}
-		
-		if (isMemberAccess) // variable
-		{
-			retReg->CopyReference()->CopyTo(instanceReg);
-			return retReg;
-		}
+
+		// Set property via setter
+		PropertySymbol* property = memberExpression->PropertySymbol;
+		InboundVariablesContext* setterArgs = new InboundVariablesContext(nullptr);
+
+		if (!property->IsStatic)
+			setterArgs->AddVariable(L"this", instanceReg);
+
+		setterArgs->AddVariable(L"value", retReg);
+		ExecuteMethod(property->SetMethod, setterArgs);
 	}
 
 	return retReg;
@@ -709,31 +737,73 @@ ObjectInstance* AbstractInterpreter::EvaluateUnaryExpression(const UnaryExpressi
 {
 	const LinkedExpressionSyntax* linkedExpression = nullptr;
 	const MemberAccessExpressionSyntax* memberExpression = nullptr;
+
 	bool isMemberAccess = IsMemberAccess(expression, linkedExpression, memberExpression);
 	bool isFieldAccess = IsFieldAccess(linkedExpression, memberExpression);
 
-	if (isFieldAccess)
+	ObjectInstance* instanceReg = nullptr;
+	ObjectInstance* exprReg = nullptr;
+
+	if (!isMemberAccess)
 	{
-		ObjectInstance* instanceReg = EvaluateLinkedExpression(linkedExpression, true);
-		ObjectInstance* exprReg = EvaluateMemberAccessExpression(memberExpression, instanceReg);
-		ObjectInstance* retReg = PrimitiveMathModule::EvaluateUnaryOperator(exprReg, expression->OperatorToken, expression->IsRightDetermined);
-		
-		instanceReg->SetField(memberExpression->Symbol, exprReg);
-		return retReg;
-	}
-	else if (isMemberAccess) // variable
-	{
-		ObjectInstance* exprReg = EvaluateExpression(expression->Expression);
-		ObjectInstance* targetReg = exprReg->CopyReference();
-		ObjectInstance* retReg = PrimitiveMathModule::EvaluateUnaryOperator(targetReg, expression->OperatorToken, expression->IsRightDetermined);
-		
-		targetReg->CopyTo(exprReg);
-		return retReg;
+		exprReg = EvaluateExpression(expression->Expression);
+		return PrimitiveMathModule::EvaluateUnaryOperator(exprReg, expression->OperatorToken, expression->IsRightDetermined);
 	}
 	else
 	{
-		throw runtime_error("unary expression tryed to assign value to inaccesible register");
+		if (isFieldAccess)
+		{
+			instanceReg = EvaluateLinkedExpression(linkedExpression, true);
+			exprReg = EvaluateMemberAccessExpression(memberExpression, instanceReg);
+		}
+		else
+		{
+			instanceReg = CurrentContext()->Variables[memberExpression->IdentifierToken.Word];
+			exprReg = instanceReg;
+		}
 	}
+
+	ObjectInstance* targetReg = GarbageCollector::CopyInstance(exprReg);
+	ObjectInstance* retReg = PrimitiveMathModule::EvaluateUnaryOperator(targetReg, expression->OperatorToken, expression->IsRightDetermined);
+
+	if (targetReg == exprReg)
+	{
+		// Not need to assign
+		return retReg;
+	}
+
+	/*
+	if (!isMemberAccess)
+	{
+		// error, not a member access
+		throw runtime_error("unary expression tried to assign value to inaccesible register");
+	}
+	*/
+
+	// Checking if is variable access
+	if (!isFieldAccess)
+	{
+		GarbageCollector::CopyInstance(retReg, instanceReg);
+		return retReg;
+	}
+
+	// Check if this is a property or field
+	if (!memberExpression->IsProperty)
+	{
+		instanceReg->SetField(memberExpression->Symbol, exprReg);
+		return retReg;
+	}
+
+	// Set property via setter
+	PropertySymbol* property = memberExpression->PropertySymbol;
+	InboundVariablesContext* setterArgs = new InboundVariablesContext(nullptr);
+
+	if (!property->IsStatic)
+		setterArgs->AddVariable(L"this", instanceReg);
+
+	setterArgs->AddVariable(L"value", exprReg);
+	ExecuteMethod(property->SetMethod, setterArgs);
+	return retReg;
 }
 
 ObjectInstance* AbstractInterpreter::EvaluateLinkedExpression(const LinkedExpressionSyntax* expression, bool trimLast)
@@ -795,8 +865,43 @@ ObjectInstance* AbstractInterpreter::EvaluateLinkedExpression(const LinkedExpres
 
 ObjectInstance* AbstractInterpreter::EvaluateMemberAccessExpression(const MemberAccessExpressionSyntax* expression, ObjectInstance* prevInstance)
 {
-	wstring memberName = expression->IdentifierToken.Word;
-	return prevInstance->GetField(expression->Symbol);
+	// Check if this is a property access
+	if (expression->IsProperty && expression->PropertySymbol != nullptr)
+	{
+		PropertySymbol* property = expression->PropertySymbol;
+		
+		// Call the getter method
+		if (property->GetMethod == nullptr)
+		{
+			wstring propName = property->Name;
+			string propStr(propName.begin(), propName.end());
+			throw runtime_error("Property '" + propStr + "' has no get accessor");
+		}
+		
+		// Create arguments context for getter (no arguments, just 'this' if instance)
+		InboundVariablesContext* getterArgs = new InboundVariablesContext(nullptr);
+		
+		if (!property->IsStatic)
+		{
+			// Instance property - pass 'this'
+			getterArgs->AddVariable(L"this", prevInstance);
+		}
+		
+		// Execute getter method
+		return ExecuteMethod(property->GetMethod, getterArgs);
+	}
+	else
+	{
+		// Regular field access
+		if (expression->Symbol == nullptr)
+		{
+			wstring memberName = expression->IdentifierToken.Word;
+			string memberStr(memberName.begin(), memberName.end());
+			throw runtime_error("Field symbol not resolved for member '" + memberStr + "'");
+		}
+		
+		return prevInstance->GetField(expression->Symbol);
+	}
 }
 
 ObjectInstance* AbstractInterpreter::EvaluateInvokationExpression(const InvokationExpressionSyntax* expression, ObjectInstance* prevInstance)
@@ -817,7 +922,7 @@ ObjectInstance* AbstractInterpreter::EvaluateArgument(const ArgumentSyntax* argu
 {
 	ObjectInstance* argInstance = EvaluateExpression(argument->Expression);
 	bool isByReference = argument->IsByReference;
-	return isByReference ? argInstance : argInstance->CopyReference();
+	return isByReference ? argInstance : GarbageCollector::CopyInstance(argInstance);
 }
 
 InboundVariablesContext* AbstractInterpreter::CreateArgumentsContext(const InvokationExpressionSyntax* expression, MethodSymbol* symbol, ObjectInstance* instance)
@@ -825,7 +930,7 @@ InboundVariablesContext* AbstractInterpreter::CreateArgumentsContext(const Invok
 	InboundVariablesContext* arguments = new InboundVariablesContext(nullptr);
 
 	if (!symbol->IsStatic)
-		arguments->AddVariable(L"this", instance->CopyReference());
+		arguments->AddVariable(L"this", instance);
 
 	size_t size = symbol->Parameters.size();
 	for (size_t i = 0; i < size; i++)

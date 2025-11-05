@@ -14,6 +14,9 @@ namespace shard::parsing::semantic
 		const SemanticScope* Parent;
 		const shard::syntax::SyntaxSymbol* Owner;
 
+		bool ReturnFound;
+		bool ReturnsAnything;
+
 		inline SemanticScope(shard::syntax::SyntaxSymbol* owner, SemanticScope* parent = nullptr)
 			: Owner(owner), Parent(parent) { }
 

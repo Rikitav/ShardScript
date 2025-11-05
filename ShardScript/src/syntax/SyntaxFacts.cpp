@@ -145,6 +145,9 @@ bool IsUnaryOperator(TokenType type)
 
 bool IsOperator(TokenType type)
 {
+	if (type == TokenType::AssignOperator)
+		return true;
+
 	if (IsBinaryArithmeticOperator(type))
 		return true;
 

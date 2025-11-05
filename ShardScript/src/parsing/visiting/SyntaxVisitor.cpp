@@ -18,6 +18,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/PropertyDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.h>
 
@@ -105,12 +106,14 @@ void SyntaxVisitor::VisitTypeDeclaration(MemberDeclarationSyntax* node)
 			return;
 		}
 
+		/*
 		case SyntaxKind::MethodDeclaration:
 		{
 			MethodDeclarationSyntax* declNode = static_cast<MethodDeclarationSyntax*>(node);
 			VisitMethodDeclaration(declNode);
 			return;
 		}
+		*/
 	}
 }
 
@@ -173,6 +176,13 @@ void SyntaxVisitor::VisitMemberDeclaration(MemberDeclarationSyntax* node)
 			VisitMethodDeclaration(declNode);
 			return;
 		}
+
+		case SyntaxKind::PropertyDeclaration:
+		{
+			PropertyDeclarationSyntax* declNode = static_cast<PropertyDeclarationSyntax*>(node);
+			VisitPropertyDeclaration(declNode);
+			return;
+		}
 	}
 }
 
@@ -186,6 +196,18 @@ void SyntaxVisitor::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 {
 	VisitParametersList(node->Params);
 	VisitStatementsBlock(node->Body);
+}
+
+void SyntaxVisitor::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
+{
+	if (node->GetBody != nullptr)
+		VisitStatementsBlock(node->GetBody);
+	
+	if (node->SetBody != nullptr)
+		VisitStatementsBlock(node->SetBody);
+	
+	if (node->InitializerExpression != nullptr)
+		VisitExpression(node->InitializerExpression);
 }
 
 void SyntaxVisitor::VisitStatementsBlock(StatementsBlockSyntax* node)

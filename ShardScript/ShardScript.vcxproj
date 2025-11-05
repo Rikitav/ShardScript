@@ -200,6 +200,7 @@
     <ClInclude Include="include\shard\parsing\analysis\DiagnosticSeverity.h" />
     <ClInclude Include="include\shard\parsing\lexical\MembersVisibilityContext.h" />
     <ClInclude Include="include\shard\parsing\analysis\TextLocation.h" />
+    <ClInclude Include="include\shard\syntax\nodes\MemberDeclarations\PropertyDeclarationSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\Statements\BreakStatementSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\Statements\ContinueStatementSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\Statements\ThrowStatementSyntax.h" />
@@ -242,6 +243,7 @@
     <ClInclude Include="include\shard\syntax\symbols\MethodSymbol.h" />
     <ClInclude Include="include\shard\syntax\symbols\NamespaceSymbol.h" />
     <ClInclude Include="include\shard\syntax\symbols\ParameterSymbol.h" />
+    <ClInclude Include="include\shard\syntax\symbols\PropertySymbol.h" />
     <ClInclude Include="include\shard\syntax\symbols\StructSymbol.h" />
     <ClInclude Include="include\shard\syntax\symbols\TypeSymbol.h" />
     <ClInclude Include="include\shard\syntax\symbols\VariableSymbol.h" />

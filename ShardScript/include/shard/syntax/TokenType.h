@@ -89,6 +89,10 @@ namespace shard::syntax
 		PartialKeyword,		  // partial
 		OverrideKeyword,	  // override
 		VirtualKeyword,		  // virtual
+		
+		// Property accessor keywords
+		GetKeyword,			  // get
+		SetKeyword,			  // set
 
 		// Built-in type keywords
 		VoidKeyword,		  // void

@@ -1,6 +1,7 @@
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/FieldSymbol.h>
 #include <shard/syntax/symbols/MethodSymbol.h>
+#include <shard/syntax/symbols/PropertySymbol.h>
 #include <shard/syntax/symbols/ParameterSymbol.h>
 
 #include <algorithm>
@@ -35,6 +36,19 @@ MethodSymbol* TypeSymbol::FindMethod(wstring& name, vector<TypeSymbol*> paramete
 FieldSymbol* TypeSymbol::FindField(wstring& name)
 {
 	for (FieldSymbol* symbol : Fields)
+	{
+		if (symbol->Name != name)
+			continue;
+		
+		return symbol;
+	}
+
+	return nullptr;
+}
+
+PropertySymbol* TypeSymbol::FindProperty(wstring& name)
+{
+	for (PropertySymbol* symbol : Properties)
 	{
 		if (symbol->Name != name)
 			continue;

@@ -15,8 +15,14 @@
 #include <shard/syntax/symbols/MethodSymbol.h>
 #include <shard/syntax/symbols/StructSymbol.h>
 #include <shard/syntax/symbols/FieldSymbol.h>
+#include <shard/syntax/symbols/PropertySymbol.h>
 #include <shard/syntax/symbols/ParameterSymbol.h>
 #include <shard/syntax/symbols/VariableSymbol.h>
+#include <shard/syntax/nodes/Statements/ReturnStatementSyntax.h>
+#include <shard/syntax/nodes/StatementsBlockSyntax.h>
+#include <shard/syntax/nodes/Expressions/LinkedExpressionSyntax.h>
+#include <shard/syntax/nodes/Expressions/BinaryExpressionSyntax.h>
+#include <shard/syntax/nodes/Statements/ExpressionStatementSyntax.h>
 
 #include <shard/syntax/nodes/TypeSyntax.h>
 #include <shard/syntax/nodes/CompilationUnitSyntax.h>
@@ -31,6 +37,7 @@
 
 #include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/PropertyDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.h>
@@ -41,6 +48,7 @@
 
 using namespace std;
 using namespace shard::parsing;
+using namespace shard::parsing::analysis;
 using namespace shard::parsing::semantic;
 using namespace shard::syntax::nodes;
 using namespace shard::syntax::symbols;
@@ -195,6 +203,144 @@ void TypeBinder::VisitFieldDeclaration(FieldDeclarationSyntax* node)
 	VisitType(node->ReturnType);
 	if (node->InitializerExpression != nullptr)
 		VisitExpression(node->InitializerExpression);
+}
+
+void TypeBinder::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
+{
+	PropertySymbol* symbol = static_cast<PropertySymbol*>(symbolTable->LookupSymbol(node));
+	if (symbol != nullptr && node->ReturnType != nullptr)
+	{
+		// Resolve property return type
+		TypeSymbol* propertyType = ResolveType(node->ReturnType);
+		symbol->ReturnType = propertyType;
+		
+		if (propertyType == nullptr)
+		{
+			string typeName = "unknown";
+			if (node->ReturnType->Kind == SyntaxKind::IdentifierNameType)
+			{
+				IdentifierNameTypeSyntax* idType = static_cast<IdentifierNameTypeSyntax*>(node->ReturnType);
+				if (!idType->Identifiers.empty())
+				{
+					wstring wname = idType->Identifiers[0].Word;
+					typeName = string(wname.begin(), wname.end());
+				}
+			}
+
+			Diagnostics.ReportError(node->IdentifierToken, "Property type not found: " + typeName);
+		}
+		
+		// Resolve backing field type if it exists
+		if (symbol->BackingField != nullptr)
+		{
+			symbol->BackingField->ReturnType = propertyType;
+		}
+		
+		// Resolve getter return type
+		if (symbol->GetMethod != nullptr)
+		{
+			symbol->GetMethod->ReturnType = propertyType;
+			
+			// For auto-properties, generate getter body if needed
+			if (node->GetBody == nullptr && symbol->BackingField != nullptr)
+			{
+				// Generate: return field;
+				symbol->GetMethod->Body = GenerateAutoPropertyGetterBody(symbol, node);
+			}
+		}
+		
+		// Resolve setter parameter type
+		if (symbol->SetMethod != nullptr && !symbol->SetMethod->Parameters.empty())
+		{
+			symbol->SetMethod->Parameters[0]->Type = propertyType;
+			
+			// For auto-properties, generate setter body if needed
+			if (node->SetBody == nullptr && symbol->BackingField != nullptr)
+			{
+				// Generate: field = value;
+				symbol->SetMethod->Body = GenerateAutoPropertySetterBody(symbol, node);
+			}
+		}
+	}
+
+	VisitType(node->ReturnType);
+	if (node->InitializerExpression != nullptr)
+		VisitExpression(node->InitializerExpression);
+}
+
+StatementsBlockSyntax* TypeBinder::GenerateAutoPropertyGetterBody(PropertySymbol* property, PropertyDeclarationSyntax* node)
+{
+	// Create: return backingField;
+	StatementsBlockSyntax* body = new StatementsBlockSyntax(node);
+	body->OpenBraceToken = SyntaxToken(TokenType::OpenBrace, L"{", TextLocation(), false);
+	body->CloseBraceToken = SyntaxToken(TokenType::CloseBrace, L"}", TextLocation(), false);
+	
+	// Create return statement
+	ReturnStatementSyntax* returnStmt = new ReturnStatementSyntax(body);
+	returnStmt->KeywordToken = SyntaxToken(TokenType::ReturnKeyword, L"return", TextLocation(), false);
+	returnStmt->SemicolonToken = SyntaxToken(TokenType::Semicolon, L";", TextLocation(), false);
+	
+	// Create member access expression: field
+	LinkedExpressionSyntax* linkedExpr = new LinkedExpressionSyntax(returnStmt);
+	MemberAccessExpressionSyntax* thisAccess = new MemberAccessExpressionSyntax(SyntaxToken(TokenType::Identifier, L"this", TextLocation(), false), nullptr, linkedExpr);
+	MemberAccessExpressionSyntax* fieldAccess = new MemberAccessExpressionSyntax(SyntaxToken(TokenType::Identifier, property->BackingField->Name, TextLocation(), false), nullptr, linkedExpr);
+
+	fieldAccess->Symbol = property->BackingField;
+	fieldAccess->PrevNode = fieldAccess;
+	thisAccess->NextNode = fieldAccess;
+
+	linkedExpr->First = thisAccess;
+	linkedExpr->Last = fieldAccess;
+	linkedExpr->Nodes.push_back(thisAccess);
+	linkedExpr->Nodes.push_back(fieldAccess);
+	
+	returnStmt->Expression = linkedExpr;
+	body->Statements.push_back(returnStmt);
+	
+	return body;
+}
+
+StatementsBlockSyntax* TypeBinder::GenerateAutoPropertySetterBody(PropertySymbol* property, PropertyDeclarationSyntax* node)
+{
+	// Create: backingField = value;
+	StatementsBlockSyntax* body = new StatementsBlockSyntax(node);
+	body->OpenBraceToken = SyntaxToken(TokenType::OpenBrace, L"{", TextLocation(), false);
+	body->CloseBraceToken = SyntaxToken(TokenType::CloseBrace, L"}", TextLocation(), false);
+	
+	// Create assignment expression: field = value;
+	LinkedExpressionSyntax* fieldExpr = new LinkedExpressionSyntax(body);
+	MemberAccessExpressionSyntax* thisAccess = new MemberAccessExpressionSyntax(SyntaxToken(TokenType::Identifier, L"this", TextLocation(), false), nullptr, fieldExpr);
+	MemberAccessExpressionSyntax* fieldAccess = new MemberAccessExpressionSyntax(SyntaxToken(TokenType::Identifier, property->BackingField->Name, TextLocation(), false), nullptr, fieldExpr);
+	
+	fieldAccess->Symbol = property->BackingField;
+	fieldAccess->PrevNode = fieldAccess;
+	thisAccess->NextNode = fieldAccess;
+
+	fieldExpr->First = thisAccess;
+	fieldExpr->Last = fieldAccess;
+	fieldExpr->Nodes.push_back(thisAccess);
+	fieldExpr->Nodes.push_back(fieldAccess);
+	
+	// Create variable access: value
+	LinkedExpressionSyntax* valueExpr = new LinkedExpressionSyntax(body);
+	MemberAccessExpressionSyntax* valueAccess = new MemberAccessExpressionSyntax(SyntaxToken(TokenType::Identifier, L"value", TextLocation(), false), nullptr, valueExpr);
+	valueExpr->Nodes.push_back(valueAccess);
+	valueExpr->First = valueAccess;
+	valueExpr->Last = valueAccess;
+	
+	// Create binary expression: field = value
+	BinaryExpressionSyntax* assignExpr = new BinaryExpressionSyntax(SyntaxToken(TokenType::AssignOperator, L"=", TextLocation(), false), body);
+	assignExpr->Left = fieldExpr;
+	assignExpr->Right = valueExpr;
+	
+	// Create expression statement
+	ExpressionStatementSyntax* exprStmt = new ExpressionStatementSyntax(assignExpr, body);
+	exprStmt->SemicolonToken = SyntaxToken(TokenType::Semicolon, L";", TextLocation(), false);
+	assignExpr->Parent = exprStmt;
+	
+	body->Statements.push_back(exprStmt);
+	
+	return body;
 }
 
 void TypeBinder::VisitVariableStatement(VariableStatementSyntax* node)

@@ -1,5 +1,6 @@
 #include <shard/runtime/interpreter/PrimitiveMathModule.h>
 #include <shard/runtime/InboundVariablesContext.h>
+#include <shard/runtime/GarbageCollector.h>
 #include <shard/runtime/ObjectInstance.h>
 
 #include <shard/parsing/semantic/primitives/StringPrimitive.h>
@@ -261,7 +262,7 @@ static ObjectInstance* Format(InboundVariablesContext* arguments)
 			{
 				// Call ToString method via FunctionPointer
 				InboundVariablesContext* toStringArgs = new InboundVariablesContext(nullptr);
-				toStringArgs->AddVariable(L"this", arg->CopyReference());
+				toStringArgs->AddVariable(L"this", arg);
 				
 				try
 				{
