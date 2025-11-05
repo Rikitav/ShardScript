@@ -808,6 +808,86 @@ TypeSymbol* ExpressionBinder::AnalyzeLinkedExpression(LinkedExpressionSyntax* no
 				if (current == node->First)
 				{
 					wstring name = memberAccess->IdentifierToken.Word;
+					
+					// Check if this is the 'field' keyword - resolve to backing field of current property
+					if (memberAccess->IdentifierToken.Type == TokenType::FieldKeyword)
+					{
+						// Find PropertySymbol in current scope chain
+						PropertySymbol* propertySymbol = nullptr;
+						for (SemanticScope* scope = scopeStack.top(); scope != nullptr; scope = const_cast<SemanticScope*>(scope->Parent))
+						{
+							if (scope->Owner != nullptr && scope->Owner->Kind == SyntaxKind::PropertyDeclaration)
+							{
+								propertySymbol = static_cast<PropertySymbol*>(const_cast<SyntaxSymbol*>(scope->Owner));
+								break;
+							}
+						}
+						
+						if (propertySymbol == nullptr)
+						{
+							Diagnostics.ReportError(memberAccess->IdentifierToken, "Keyword 'field' can only be used in property accessors");
+							return nullptr;
+						}
+						
+						// Create backing field if it doesn't exist yet (for explicit property bodies using 'field')
+						if (propertySymbol->BackingField == nullptr)
+						{
+							// Find owner type
+							TypeSymbol* ownerType = nullptr;
+							for (SemanticScope* scope = scopeStack.top(); scope != nullptr; scope = const_cast<SemanticScope*>(scope->Parent))
+							{
+								if (scope->Owner != nullptr && (scope->Owner->Kind == SyntaxKind::ClassDeclaration || scope->Owner->Kind == SyntaxKind::StructDeclaration))
+								{
+									ownerType = static_cast<TypeSymbol*>(const_cast<SyntaxSymbol*>(scope->Owner));
+									break;
+								}
+							}
+							
+							if (ownerType == nullptr)
+							{
+								string propName(propertySymbol->Name.begin(), propertySymbol->Name.end());
+								Diagnostics.ReportError(memberAccess->IdentifierToken, "Cannot determine owner type for property '" + propName + "'");
+								return nullptr;
+							}
+							
+							if (propertySymbol->ReturnType == nullptr)
+							{
+								string propName(propertySymbol->Name.begin(), propertySymbol->Name.end());
+								Diagnostics.ReportError(memberAccess->IdentifierToken, "Property '" + propName + "' type not resolved yet");
+								return nullptr;
+							}
+							
+							// Create backing field
+							wstring backingFieldName = L"<" + propertySymbol->Name + L">k__BackingField";
+							FieldSymbol* backingField = new FieldSymbol(backingFieldName);
+							backingField->Accesibility = SymbolAccesibility::Private;
+							backingField->IsStatic = propertySymbol->IsStatic;
+							backingField->ReturnType = propertySymbol->ReturnType;
+							propertySymbol->BackingField = backingField;
+							ownerType->Fields.push_back(backingField);
+							
+							// Add to current scope so it can be looked up
+							scopeStack.top()->DeclareSymbol(backingField);
+						}
+						
+						// Resolve 'field' as the backing field
+						memberAccess->Symbol = propertySymbol->BackingField;
+						memberAccess->IsProperty = false;
+						memberAccess->PropertySymbol = nullptr;
+						
+						currentType = propertySymbol->BackingField->ReturnType;
+						isStaticContext = propertySymbol->BackingField->IsStatic;
+						
+						if (currentType == nullptr)
+						{
+							string propName(propertySymbol->Name.begin(), propertySymbol->Name.end());
+							Diagnostics.ReportError(memberAccess->IdentifierToken, "Backing field type not resolved for property '" + propName + "'");
+							return nullptr;
+						}
+						
+						break; // Continue to next node
+					}
+					
 					SemanticScope* currentScope = scopeStack.top();
 					SyntaxSymbol* symbol = currentScope->Lookup(name);
 					

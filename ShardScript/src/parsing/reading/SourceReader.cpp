@@ -1009,6 +1009,11 @@ bool SourceReader::IsKeyword(wstring& word, TokenType& type)
 		type = TokenType::SetKeyword;
 		return true;
 	}
+	else if (word == L"field")
+	{
+		type = TokenType::FieldKeyword;
+		return true;
+	}
 
 	return false;
 }

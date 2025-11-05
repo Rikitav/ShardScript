@@ -586,7 +586,7 @@ ObjectInstance* AbstractInterpreter::EvaluateExpression(const ExpressionSyntax* 
 		case SyntaxKind::LinkedExpression:
 		{
 			const LinkedExpressionSyntax* linkedExpression = static_cast<const LinkedExpressionSyntax*>(expression);
-			return EvaluateLinkedExpression(linkedExpression, false);
+			return EvaluateLinkedExpression(linkedExpression, CurrentContext()->TryFind(L"this"), false);
 		}
 
 		default:
@@ -658,7 +658,8 @@ static bool IsMemberAccess(const ExpressionSyntax* expression, const LinkedExpre
 
 static bool IsFieldAccess(const LinkedExpressionSyntax* linkedExpression, const MemberAccessExpressionSyntax* memberExpression)
 {
-	return linkedExpression->Nodes.size() > 1 && linkedExpression->Last == memberExpression;
+	//return linkedExpression->Nodes.size() > 1 && linkedExpression->Last == memberExpression;
+	return memberExpression->Symbol != nullptr || memberExpression->PropertySymbol != nullptr;
 }
 
 ObjectInstance* AbstractInterpreter::EvaluateBinaryExpression(const BinaryExpressionSyntax* expression)
@@ -670,7 +671,7 @@ ObjectInstance* AbstractInterpreter::EvaluateBinaryExpression(const BinaryExpres
 	bool isFieldAccess = isMemberAccess ? IsFieldAccess(linkedExpression, memberExpression) : false;
 	bool assign = expression->OperatorToken.Type == TokenType::AssignOperator;
 
-	ObjectInstance* instanceReg = nullptr;
+	ObjectInstance* instanceReg = CurrentContext()->TryFind(L"this");
 	ObjectInstance* retReg = nullptr;
 
 	if (!isMemberAccess)
@@ -684,13 +685,15 @@ ObjectInstance* AbstractInterpreter::EvaluateBinaryExpression(const BinaryExpres
 		ObjectInstance* leftReg = nullptr;
 		if (isFieldAccess)
 		{
-			instanceReg = EvaluateLinkedExpression(linkedExpression, true);
-			leftReg = EvaluateMemberAccessExpression(memberExpression, instanceReg);
+			instanceReg = EvaluateLinkedExpression(linkedExpression, instanceReg, true);
+			if (!assign)
+				leftReg = EvaluateMemberAccessExpression(memberExpression, instanceReg);
 		}
 		else
 		{
 			instanceReg = CurrentContext()->Variables[memberExpression->IdentifierToken.Word];
-			leftReg = instanceReg;
+			if (!assign)
+				leftReg = instanceReg;
 		}
 
 		ObjectInstance* rightReg = EvaluateExpression(expression->Right);
@@ -741,7 +744,7 @@ ObjectInstance* AbstractInterpreter::EvaluateUnaryExpression(const UnaryExpressi
 	bool isMemberAccess = IsMemberAccess(expression, linkedExpression, memberExpression);
 	bool isFieldAccess = IsFieldAccess(linkedExpression, memberExpression);
 
-	ObjectInstance* instanceReg = nullptr;
+	ObjectInstance* instanceReg = CurrentContext()->TryFind(L"this");
 	ObjectInstance* exprReg = nullptr;
 
 	if (!isMemberAccess)
@@ -753,7 +756,7 @@ ObjectInstance* AbstractInterpreter::EvaluateUnaryExpression(const UnaryExpressi
 	{
 		if (isFieldAccess)
 		{
-			instanceReg = EvaluateLinkedExpression(linkedExpression, true);
+			instanceReg = EvaluateLinkedExpression(linkedExpression, instanceReg, true);
 			exprReg = EvaluateMemberAccessExpression(memberExpression, instanceReg);
 		}
 		else
@@ -806,19 +809,20 @@ ObjectInstance* AbstractInterpreter::EvaluateUnaryExpression(const UnaryExpressi
 	return retReg;
 }
 
-ObjectInstance* AbstractInterpreter::EvaluateLinkedExpression(const LinkedExpressionSyntax* expression, bool trimLast)
+ObjectInstance* AbstractInterpreter::EvaluateLinkedExpression(const LinkedExpressionSyntax* expression, ObjectInstance* objInstance, bool trimLast)
 {
 	LinkedExpressionNode* exprNode = expression->First;
-	ObjectInstance* objInstance = nullptr;
-
 	switch (exprNode->Kind)
 	{
 		case SyntaxKind::MemberAccessExpression:
 		{
 			MemberAccessExpressionSyntax* variableAccess = static_cast<MemberAccessExpressionSyntax*>(exprNode);
-			objInstance = CurrentContext()->TryFind(variableAccess->IdentifierToken.Word);
-			exprNode = variableAccess->NextNode;
-			break;
+			if (variableAccess->Symbol == nullptr)
+			{
+				objInstance = CurrentContext()->TryFind(variableAccess->IdentifierToken.Word);
+				exprNode = variableAccess->NextNode;
+				break;
+			}
 		}
 	}
 
@@ -866,40 +870,19 @@ ObjectInstance* AbstractInterpreter::EvaluateLinkedExpression(const LinkedExpres
 ObjectInstance* AbstractInterpreter::EvaluateMemberAccessExpression(const MemberAccessExpressionSyntax* expression, ObjectInstance* prevInstance)
 {
 	// Check if this is a property access
-	if (expression->IsProperty && expression->PropertySymbol != nullptr)
+	if (expression->IsProperty)
 	{
 		PropertySymbol* property = expression->PropertySymbol;
-		
-		// Call the getter method
-		if (property->GetMethod == nullptr)
-		{
-			wstring propName = property->Name;
-			string propStr(propName.begin(), propName.end());
-			throw runtime_error("Property '" + propStr + "' has no get accessor");
-		}
-		
-		// Create arguments context for getter (no arguments, just 'this' if instance)
 		InboundVariablesContext* getterArgs = new InboundVariablesContext(nullptr);
 		
 		if (!property->IsStatic)
-		{
-			// Instance property - pass 'this'
 			getterArgs->AddVariable(L"this", prevInstance);
-		}
 		
-		// Execute getter method
 		return ExecuteMethod(property->GetMethod, getterArgs);
 	}
 	else
 	{
 		// Regular field access
-		if (expression->Symbol == nullptr)
-		{
-			wstring memberName = expression->IdentifierToken.Word;
-			string memberStr(memberName.begin(), memberName.end());
-			throw runtime_error("Field symbol not resolved for member '" + memberStr + "'");
-		}
-		
 		return prevInstance->GetField(expression->Symbol);
 	}
 }

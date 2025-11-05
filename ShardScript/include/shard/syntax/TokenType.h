@@ -93,6 +93,7 @@ namespace shard::syntax
 		// Property accessor keywords
 		GetKeyword,			  // get
 		SetKeyword,			  // set
+		FieldKeyword,		  // field
 
 		// Built-in type keywords
 		VoidKeyword,		  // void

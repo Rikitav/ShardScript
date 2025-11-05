@@ -1094,6 +1094,7 @@ ExpressionSyntax* LexicalAnalyzer::ReadNullDenotation(SourceReader& reader, Synt
 		}
 
 		case TokenType::Identifier:
+		case TokenType::FieldKeyword:
 		{
 			return ReadLinkedExpression(reader, parent);
 		}
@@ -1212,7 +1213,17 @@ LinkedExpressionNode* LexicalAnalyzer::ReadLinkedExpressionNode(SourceReader& re
 	if (!reader.CanConsume())
 		return nullptr;
 
-	SyntaxToken identifier = Expect(reader, TokenType::Identifier, "Expected identifier");
+	// Accept identifier or field keyword (field keyword is allowed in property accessors)
+	SyntaxToken identifier;
+	if (reader.Current().Type == TokenType::FieldKeyword)
+	{
+		identifier = reader.Current();
+		reader.Consume();
+	}
+	else
+	{
+		identifier = Expect(reader, TokenType::Identifier, "Expected identifier");
+	}
 	
 	if (!reader.CanConsume())
 	{
