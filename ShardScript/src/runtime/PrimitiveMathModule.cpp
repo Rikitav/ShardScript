@@ -1,8 +1,8 @@
 #include <shard/syntax/SyntaxToken.h>
 #include <shard/syntax/TokenType.h>
 #include <shard/parsing/semantic/SymbolTable.h>
-#include <shard/runtime/interpreter/PrimitiveMathModule.h>
-#include <shard/runtime/GarbageCollector.h>
+#include <shard/runtime/PrimitiveMathModule.h>
+#include <shard/runtime/AbstractInterpreter.h>
 #include <shard/runtime/ObjectInstance.h>
 
 #include <stdexcept>
@@ -15,44 +15,6 @@ using namespace shard::syntax;
 using namespace shard::runtime;
 using namespace shard::parsing;
 using namespace shard::parsing::semantic;
-
-ObjectInstance* PrimitiveMathModule::CreateInstanceFromValue(bool value)
-{
-	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::Boolean);
-	instance->WritePrimitive(value);
-	return instance;
-}
-
-ObjectInstance* PrimitiveMathModule::CreateInstanceFromValue(int value)
-{
-	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::Integer);
-	instance->WritePrimitive(value);
-	return instance;
-}
-
-ObjectInstance* PrimitiveMathModule::CreateInstanceFromValue(wchar_t value)
-{
-	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::Char);
-	instance->WritePrimitive(value);
-	return instance;
-}
-
-ObjectInstance* PrimitiveMathModule::CreateInstanceFromValue(const wchar_t* value)
-{
-	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String);
-	wstring* copy = new wstring(value);
-	instance->WritePrimitive<wstring>(*copy);
-	return instance;
-}
-
-ObjectInstance* PrimitiveMathModule::CreateInstanceFromValue(wstring& value)
-{
-	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String);
-	wstring* copy = new wstring(value);
-	instance->WritePrimitive<wstring>(*copy);
-	instance->DecrementReference();
-	return instance;
-}
 
 /*
 bool PrimitiveMathModule::IsPrimitiveValuesExpressionEvaluatable(int leftTypeCode, TokenType type, int rightTypeCode)
@@ -214,24 +176,24 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(bool leftData, Synta
 		switch (opToken.Type)
 		{
 			case TokenType::EqualsOperator:
-				return CreateInstanceFromValue(leftData == rightData);
+				return AbstractInterpreter::CreateInstanceFromValue(leftData == rightData);
 
 			case TokenType::NotEqualsOperator:
-				return CreateInstanceFromValue(leftData != rightData);
+				return AbstractInterpreter::CreateInstanceFromValue(leftData != rightData);
 
 			case TokenType::OrOperator:
-				return CreateInstanceFromValue(leftData || rightData);
+				return AbstractInterpreter::CreateInstanceFromValue(leftData || rightData);
 
 			case TokenType::OrAssignOperator:
 				assign = true;
-				return CreateInstanceFromValue(leftData || rightData);
+				return AbstractInterpreter::CreateInstanceFromValue(leftData || rightData);
 
 			case TokenType::AndOperator:
-				return CreateInstanceFromValue(leftData & rightData);
+				return AbstractInterpreter::CreateInstanceFromValue(leftData & rightData);
 
 			case TokenType::AndAssignOperator:
 				assign = true;
-				return CreateInstanceFromValue(leftData & rightData);
+				return AbstractInterpreter::CreateInstanceFromValue(leftData & rightData);
 		}
 	}
 
@@ -249,81 +211,81 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(int leftData, Syntax
 			case TokenType::AddAssignOperator:
 			{
 				assign = opToken.Type == TokenType::AddAssignOperator;
-				return CreateInstanceFromValue(leftData + rightData);
+				return AbstractInterpreter::CreateInstanceFromValue(leftData + rightData);
 			}
 
 			case TokenType::SubOperator:
 			case TokenType::SubAssignOperator:
 			{
 				assign = opToken.Type == TokenType::SubAssignOperator;
-				return CreateInstanceFromValue(leftData - rightData);
+				return AbstractInterpreter::CreateInstanceFromValue(leftData - rightData);
 			}
 
 			case TokenType::MultOperator:
 			case TokenType::MultAssignOperator:
 			{
 				assign = opToken.Type == TokenType::MultAssignOperator;
-				return CreateInstanceFromValue(leftData * rightData);
+				return AbstractInterpreter::CreateInstanceFromValue(leftData * rightData);
 			}
 
 			case TokenType::DivOperator:
 			case TokenType::DivAssignOperator:
 			{
 				assign = opToken.Type == TokenType::DivAssignOperator;
-				return CreateInstanceFromValue(leftData / rightData);
+				return AbstractInterpreter::CreateInstanceFromValue(leftData / rightData);
 			}
 
 			case TokenType::ModOperator:
 			case TokenType::ModAssignOperator:
 			{
 				assign = opToken.Type == TokenType::ModAssignOperator;
-				return CreateInstanceFromValue(leftData % rightData);
+				return AbstractInterpreter::CreateInstanceFromValue(leftData % rightData);
 			}
 
 			case TokenType::PowOperator:
 			case TokenType::PowAssignOperator:
 			{
 				assign = opToken.Type == TokenType::PowAssignOperator;
-				return CreateInstanceFromValue(static_cast<int>(pow(leftData, rightData)));
+				return AbstractInterpreter::CreateInstanceFromValue(static_cast<int>(pow(leftData, rightData)));
 			}
 
 			case TokenType::OrOperator:
 			case TokenType::OrAssignOperator:
 			{
 				assign = opToken.Type == TokenType::OrAssignOperator;
-				return CreateInstanceFromValue(leftData | rightData);
+				return AbstractInterpreter::CreateInstanceFromValue(leftData | rightData);
 			}
 
 			case TokenType::AndOperator:
 			case TokenType::AndAssignOperator:
 			{
 				assign = opToken.Type == TokenType::AndAssignOperator;
-				return CreateInstanceFromValue(leftData & rightData);
+				return AbstractInterpreter::CreateInstanceFromValue(leftData & rightData);
 			}
 
 			case TokenType::LessOperator:
-				return CreateInstanceFromValue(leftData < rightData);
+				return AbstractInterpreter::CreateInstanceFromValue(leftData < rightData);
 
 			case TokenType::LessOrEqualsOperator:
-				return CreateInstanceFromValue(leftData <= rightData);
+				return AbstractInterpreter::CreateInstanceFromValue(leftData <= rightData);
 
 			case TokenType::GreaterOperator:
-				return CreateInstanceFromValue(leftData > rightData);
+				return AbstractInterpreter::CreateInstanceFromValue(leftData > rightData);
 
 			case TokenType::GreaterOrEqualsOperator:
-				return CreateInstanceFromValue(leftData >= rightData);
+				return AbstractInterpreter::CreateInstanceFromValue(leftData >= rightData);
 
 			case TokenType::EqualsOperator:
-				return CreateInstanceFromValue(leftData == rightData);
+				return AbstractInterpreter::CreateInstanceFromValue(leftData == rightData);
 
 			case TokenType::NotEqualsOperator:
-				return CreateInstanceFromValue(leftData != rightData);
+				return AbstractInterpreter::CreateInstanceFromValue(leftData != rightData);
 
 			case TokenType::LeftShiftOperator:
-				return CreateInstanceFromValue(leftData << rightData);
+				return AbstractInterpreter::CreateInstanceFromValue(leftData << rightData);
 
 			case TokenType::RightShiftOperator:
-				return CreateInstanceFromValue(leftData >> rightData);
+				return AbstractInterpreter::CreateInstanceFromValue(leftData >> rightData);
 		}
 	}
 
@@ -342,7 +304,7 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(wstring& leftData, S
 			{
 				assign = opToken.Type == TokenType::AddAssignOperator;
 				wstring concat = leftData + rightData;
-				return CreateInstanceFromValue(concat);
+				return AbstractInterpreter::CreateInstanceFromValue(concat);
 			}
 
 			default:
@@ -359,10 +321,10 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(wstring& leftData, S
 			case TokenType::MultAssignOperator:
 			{
 				if (rightData <= 0)
-					return CreateInstanceFromValue(L"");
+					return AbstractInterpreter::CreateInstanceFromValue(L"");
 
 				if (rightData == 1)
-					return CreateInstanceFromValue(leftData);
+					return AbstractInterpreter::CreateInstanceFromValue(leftData);
 
 				std::wstring result;
 				result.reserve(leftData.length() * rightData);
@@ -371,7 +333,7 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(wstring& leftData, S
 					result += leftData;
 
 				assign = opToken.Type == TokenType::MultAssignOperator;
-				return CreateInstanceFromValue(result);
+				return AbstractInterpreter::CreateInstanceFromValue(result);
 			}
 
 			default:
@@ -411,16 +373,16 @@ ObjectInstance* PrimitiveMathModule::EvaluateUnaryOperator(ObjectInstance*& sour
 	{
 		case TokenType::IncrementOperator:
 		{
-			ObjectInstance* newInstance = CreateInstanceFromValue(data + 1);
+			ObjectInstance* newInstance = AbstractInterpreter::CreateInstanceFromValue(data + 1);
 			sourceInstance = newInstance;
-			return rightDetermined ? CreateInstanceFromValue(data) : newInstance;
+			return rightDetermined ? AbstractInterpreter::CreateInstanceFromValue(data) : newInstance;
 		}
 
 		case TokenType::DecrementOperator:
 		{
-			ObjectInstance* newInstance = CreateInstanceFromValue(data - 1);
+			ObjectInstance* newInstance = AbstractInterpreter::CreateInstanceFromValue(data - 1);
 			sourceInstance = newInstance;
-			return rightDetermined ? CreateInstanceFromValue(data) : newInstance;
+			return rightDetermined ? AbstractInterpreter::CreateInstanceFromValue(data) : newInstance;
 		}
 
 		default:
@@ -434,7 +396,7 @@ ObjectInstance* PrimitiveMathModule::EvaluateUnaryOperator(ObjectInstance*& sour
 	{
 		case TokenType::NotOperator:
 		{
-			return CreateInstanceFromValue(!data);
+			return AbstractInterpreter::CreateInstanceFromValue(!data);
 		}
 
 		default:

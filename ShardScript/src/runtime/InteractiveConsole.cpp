@@ -3,8 +3,8 @@
 #include <shard/parsing/reading/SequenceSourceReader.h>
 #include <shard/parsing/SemanticAnalyzer.h>
 
-#include <shard/runtime/interactive/InteractiveConsole.h>
-#include <shard/runtime/interpreter/AbstractInterpreter.h>
+#include <shard/runtime/InteractiveConsole.h>
+#include <shard/runtime/AbstractInterpreter.h>
 #include <shard/runtime/ConsoleHelper.h>
 #include <shard/runtime/GarbageCollector.h>
 #include <shard/runtime/ObjectInstance.h>
@@ -339,7 +339,6 @@ void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticMode
 	// Initializing parsing
 	LexicalAnalyzer lexer(diagnostics);
 	SemanticAnalyzer semanticAnalyzer(diagnostics);
-	AbstractInterpreter interpreter(syntaxTree, semanticModel);
 	
 	// Creating interactive entry point
 	MethodDeclarationSyntax* implMethod = nullptr;
@@ -349,8 +348,8 @@ void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticMode
 	StatementsBlockSyntax* interactiveBody = implMethod->Body;
 	MethodSymbol* entryPointSymbol = new MethodSymbol(implMethod->IdentifierToken.Word, interactiveBody);
 
-	interpreter.PushFrame(entryPointSymbol);
-	interpreter.PushContext(new InboundVariablesContext(nullptr));
+	AbstractInterpreter::PushFrame(entryPointSymbol);
+	AbstractInterpreter::PushContext(new InboundVariablesContext(nullptr));
 	
 	ConsoleHelper::WriteLine(L"ShardScript Interactive Console v" + GetFileVersion());
 	ConsoleHelper::WriteLine(L"Type 'exit' or 'quit' to exit");
@@ -442,7 +441,7 @@ void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticMode
 				}
 
 				// Execute expression
-				ObjectInstance* result = interpreter.EvaluateExpression(expression);
+				ObjectInstance* result = AbstractInterpreter::EvaluateExpression(expression);
 				if (result != nullptr)
 					ConsoleHelper::Write(result);
 
@@ -484,7 +483,7 @@ void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticMode
 				}
 
 				// Execute statement
-				ObjectInstance* result = interpreter.ExecuteStatement(statement);
+				ObjectInstance* result = AbstractInterpreter::ExecuteStatement(statement);
 				if (result != nullptr)
 					ConsoleHelper::Write(result);
 

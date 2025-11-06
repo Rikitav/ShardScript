@@ -8,12 +8,6 @@ namespace shard::runtime
 	class PrimitiveMathModule
 	{
 	public:
-		static shard::runtime::ObjectInstance* CreateInstanceFromValue(int value);
-		static shard::runtime::ObjectInstance* CreateInstanceFromValue(bool value);
-		static shard::runtime::ObjectInstance* CreateInstanceFromValue(wchar_t value);
-		static shard::runtime::ObjectInstance* CreateInstanceFromValue(const wchar_t* value);
-		static shard::runtime::ObjectInstance* CreateInstanceFromValue(std::wstring& value);
-
 		static shard::runtime::ObjectInstance* EvaluateBinaryOperator(shard::runtime::ObjectInstance* leftInstance, shard::syntax::SyntaxToken opToken, shard::runtime::ObjectInstance* rightInstance, bool& assign);
 		static shard::runtime::ObjectInstance* EvaluateBinaryOperator(int leftData, shard::syntax::SyntaxToken opToken, shard::runtime::ObjectInstance* rightInstance, bool& assign);
 		static shard::runtime::ObjectInstance* EvaluateBinaryOperator(bool leftData, shard::syntax::SyntaxToken opToken, shard::runtime::ObjectInstance* rightInstance, bool& assign);

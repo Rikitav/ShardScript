@@ -129,11 +129,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\runtime\framework\primitives\ArrayPrimitive.cpp" />
     <ClCompile Include="src\utilities\ArgumentsParser.cpp" />
     <ClCompile Include="include\shard\parsing\reading\SequenceSourceReader.h" />
     <ClCompile Include="src\parsing\LayoutGenerator.cpp" />
-    <ClCompile Include="src\parsing\semantic\primitives\IntegerPrimitive.cpp" />
-    <ClCompile Include="src\parsing\semantic\primitives\StringPrimitive.cpp" />
+    <ClCompile Include="src\runtime\framework\primitives\IntegerPrimitive.cpp" />
+    <ClCompile Include="src\runtime\framework\primitives\StringPrimitive.cpp" />
     <ClCompile Include="src\parsing\semantic\SymbolTable.cpp" />
     <ClCompile Include="src\parsing\visiting\ExpressionBinder.cpp" />
     <ClCompile Include="src\parsing\visiting\TypeBinder.cpp" />
@@ -144,19 +145,19 @@
     <ClCompile Include="include\shard\syntax\nodes\ParametersListSyntax.h" />
     <ClCompile Include="include\shard\syntax\nodes\Directives\UsingDirectiveSyntax.h" />
     <ClCompile Include="src\parsing\visiting\SyntaxVisitor.cpp" />
-    <ClCompile Include="src\parsing\semantic\primitives\BooleanPrimitive.cpp" />
-    <ClCompile Include="src\parsing\semantic\primitives\CharPrimitive.cpp" />
-    <ClCompile Include="src\runtime\interactive\InteractiveConsole.cpp" />
+    <ClCompile Include="src\runtime\framework\primitives\BooleanPrimitive.cpp" />
+    <ClCompile Include="src\runtime\framework\primitives\CharPrimitive.cpp" />
+    <ClCompile Include="src\runtime\InteractiveConsole.cpp" />
     <ClCompile Include="src\parsing\SemanticAnalyzer.cpp" />
     <ClCompile Include="src\parsing\reading\FileReader.cpp" />
     <ClCompile Include="src\parsing\reading\SequenceSourceReader.cpp" />
     <ClCompile Include="src\parsing\reading\StringStreamReader.cpp" />
-    <ClCompile Include="src\runtime\interpret\AbstractInterpreter.cpp" />
+    <ClCompile Include="src\runtime\AbstractInterpreter.cpp" />
     <ClCompile Include="src\runtime\ConsoleHelper.cpp" />
     <ClCompile Include="src\runtime\GarbageCollector.cpp" />
     <ClCompile Include="src\runtime\InboundVariablesContext.cpp" />
     <ClCompile Include="src\runtime\ObjectInstance.cpp" />
-    <ClCompile Include="src\runtime\interpret\PrimitiveMathModule.cpp" />
+    <ClCompile Include="src\runtime\PrimitiveMathModule.cpp" />
     <ClCompile Include="src\parsing\analysis\Diagnostic.cpp" />
     <ClCompile Include="src\parsing\analysis\DiagnosticsContext.cpp" />
     <ClCompile Include="src\parsing\LexicalAnalyzer.cpp" />
@@ -169,9 +170,10 @@
     <ClInclude Include="include\ffi\ffi.h" />
     <ClInclude Include="include\ffi\ffitarget.h" />
     <ClInclude Include="include\shard\parsing\LayoutGenerator.h" />
-    <ClInclude Include="include\shard\parsing\semantic\primitives\CharPrimitive.h" />
-    <ClInclude Include="include\shard\parsing\semantic\primitives\IntegerPrimitive.h" />
-    <ClInclude Include="include\shard\parsing\semantic\primitives\StringPrimitive.h" />
+    <ClInclude Include="include\shard\runtime\framework\primitives\ArrayPrimitive.h" />
+    <ClInclude Include="include\shard\runtime\framework\primitives\CharPrimitive.h" />
+    <ClInclude Include="include\shard\runtime\framework\primitives\IntegerPrimitive.h" />
+    <ClInclude Include="include\shard\runtime\framework\primitives\StringPrimitive.h" />
     <ClInclude Include="include\shard\parsing\semantic\SymbolInfo.h" />
     <ClInclude Include="include\shard\parsing\semantic\TypeInfo.h" />
     <ClInclude Include="include\shard\parsing\visiting\DeclarationCollector.h" />
@@ -181,19 +183,19 @@
     <ClInclude Include="include\shard\parsing\visiting\ExpressionBinder.h" />
     <ClInclude Include="include\shard\parsing\visiting\SyntaxVisitor.h" />
     <ClInclude Include="include\shard\parsing\visiting\TypeBinder.h" />
-    <ClInclude Include="include\shard\runtime\interactive\InteractiveConsole.h" />
+    <ClInclude Include="include\shard\runtime\InteractiveConsole.h" />
     <ClInclude Include="include\shard\parsing\SemanticAnalyzer.h" />
     <ClInclude Include="include\shard\parsing\reading\FileReader.h" />
     <ClInclude Include="include\shard\parsing\reading\StringStreamReader.h" />
     <ClInclude Include="include\shard\parsing\lexical\MemberDeclarationInfo.h" />
-    <ClInclude Include="include\shard\runtime\interpreter\AbstractInterpreter.h" />
+    <ClInclude Include="include\shard\runtime\AbstractInterpreter.h" />
     <ClInclude Include="include\shard\runtime\ConsoleHelper.h" />
     <ClInclude Include="include\shard\runtime\GarbageCollector.h" />
     <ClInclude Include="include\shard\runtime\InboundVariablesContext.h" />
     <ClInclude Include="include\shard\runtime\ObjectInstance.h" />
     <ClInclude Include="include\shard\runtime\CallStackFrame.h" />
-    <ClInclude Include="include\shard\runtime\interpreter\PrimitiveMathModule.h" />
-    <ClInclude Include="include\shard\parsing\semantic\primitives\BooleanPrimitive.h" />
+    <ClInclude Include="include\shard\runtime\PrimitiveMathModule.h" />
+    <ClInclude Include="include\shard\runtime\framework\primitives\BooleanPrimitive.h" />
     <ClInclude Include="include\shard\ShardScript.h" />
     <ClInclude Include="include\shard\ShardTypes.h" />
     <ClInclude Include="include\shard\parsing\analysis\Diagnostic.h" />
@@ -201,6 +203,7 @@
     <ClInclude Include="include\shard\parsing\analysis\DiagnosticSeverity.h" />
     <ClInclude Include="include\shard\parsing\lexical\MembersVisibilityContext.h" />
     <ClInclude Include="include\shard\parsing\analysis\TextLocation.h" />
+    <ClInclude Include="include\shard\syntax\nodes\Expressions\CollectionExpressionSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\MemberDeclarations\PropertyDeclarationSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\Statements\BreakStatementSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\Statements\ContinueStatementSyntax.h" />

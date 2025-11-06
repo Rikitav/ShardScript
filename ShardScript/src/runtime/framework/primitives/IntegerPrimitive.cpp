@@ -1,9 +1,7 @@
-#include <shard/runtime/interpreter/PrimitiveMathModule.h>
+#include <shard/runtime/AbstractInterpreter.h>
 #include <shard/runtime/InboundVariablesContext.h>
 #include <shard/runtime/ObjectInstance.h>
-#include <shard/runtime/interpreter/AbstractInterpreter.h>
-
-#include <shard/parsing/semantic/primitives/IntegerPrimitive.h>
+#include <shard/runtime/framework/primitives/IntegerPrimitive.h>
 #include <shard/parsing/semantic/SymbolTable.h>
 
 #include <shard/syntax/SymbolAccesibility.h>
@@ -21,62 +19,62 @@ using namespace shard::syntax::symbols;
 using namespace shard::parsing::semantic;
 
 // Integer methods
-static ObjectInstance* ToString(AbstractInterpreter* interpreter, InboundVariablesContext* arguments)
+static ObjectInstance* ToString(InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	int value = instance->ReadPrimitive<int>();
 	wstring str = to_wstring(value);
-	return PrimitiveMathModule::CreateInstanceFromValue(str);
+	return AbstractInterpreter::CreateInstanceFromValue(str);
 }
 
-static ObjectInstance* Abs(AbstractInterpreter* interpreter, InboundVariablesContext* arguments)
+static ObjectInstance* Abs(InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	int value = instance->ReadPrimitive<int>();
 	int result = abs(value);
-	return PrimitiveMathModule::CreateInstanceFromValue(result);
+	return AbstractInterpreter::CreateInstanceFromValue(result);
 }
 
-static ObjectInstance* Min(AbstractInterpreter* interpreter, InboundVariablesContext* arguments)
+static ObjectInstance* Min(InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	int value = instance->ReadPrimitive<int>();
 	
 	ObjectInstance* otherArg = arguments->TryFind(L"other");
 	if (otherArg == nullptr)
-		return PrimitiveMathModule::CreateInstanceFromValue(value);
+		return AbstractInterpreter::CreateInstanceFromValue(value);
 	
 	int other = otherArg->ReadPrimitive<int>();
 	int result = min(value, other);
-	return PrimitiveMathModule::CreateInstanceFromValue(result);
+	return AbstractInterpreter::CreateInstanceFromValue(result);
 }
 
-static ObjectInstance* Max(AbstractInterpreter* interpreter, InboundVariablesContext* arguments)
+static ObjectInstance* Max(InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	int value = instance->ReadPrimitive<int>();
 	
 	ObjectInstance* otherArg = arguments->TryFind(L"other");
 	if (otherArg == nullptr)
-		return PrimitiveMathModule::CreateInstanceFromValue(value);
+		return AbstractInterpreter::CreateInstanceFromValue(value);
 	
 	int other = otherArg->ReadPrimitive<int>();
 	int result = max(value, other);
-	return PrimitiveMathModule::CreateInstanceFromValue(result);
+	return AbstractInterpreter::CreateInstanceFromValue(result);
 }
 
-static ObjectInstance* Pow(AbstractInterpreter* interpreter, InboundVariablesContext* arguments)
+static ObjectInstance* Pow(InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	int value = instance->ReadPrimitive<int>();
 	
 	ObjectInstance* powerArg = arguments->TryFind(L"power");
 	if (powerArg == nullptr)
-		return PrimitiveMathModule::CreateInstanceFromValue(1);
+		return AbstractInterpreter::CreateInstanceFromValue(1);
 	
 	int power = powerArg->ReadPrimitive<int>();
 	int result = static_cast<int>(pow(value, power));
-	return PrimitiveMathModule::CreateInstanceFromValue(result);
+	return AbstractInterpreter::CreateInstanceFromValue(result);
 }
 
 void IntegerPrimitive::Reflect(TypeSymbol* symbol)

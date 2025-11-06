@@ -167,24 +167,24 @@ void ExpressionBinder::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 				Diagnostics.ReportError(node->IdentifierToken, "Method must return a value of type '" + returnTypeName + "'");
 			}
 		}
+
+		if (symbol->Name == L"Main")
+		{
+			symbolTable->EntryPointCandidates.push_back(symbol);
+			if (symbol->Accesibility != SymbolAccesibility::Public)
+				Diagnostics.ReportError(node->IdentifierToken, "Main entry point should be public");
+
+			if (!symbol->IsStatic)
+				Diagnostics.ReportError(node->IdentifierToken, "Main entry point should be static");
+
+			if (symbol->Parameters.size() != 0)
+				Diagnostics.ReportError(node->IdentifierToken, "Main entry point should have empty parameters list");
+
+			if (symbol->ReturnType != SymbolTable::Primitives::Void)
+				Diagnostics.ReportError(node->IdentifierToken, "Main entry point should have 'void' return type");
+		}
 		
 		scopeStack.pop();
-	}
-
-	if (symbol->Name == L"Main")
-	{
-		symbolTable->EntryPointCandidates.push_back(symbol);
-		if (symbol->Accesibility != SymbolAccesibility::Public)
-			Diagnostics.ReportError(node->IdentifierToken, "Main entry point should be public");
-
-		if (!symbol->IsStatic)
-			Diagnostics.ReportError(node->IdentifierToken, "Main entry point should be static");
-
-		if (symbol->Parameters.size() != 0)
-			Diagnostics.ReportError(node->IdentifierToken, "Main entry point should have empty parameters list");
-
-		if (symbol->ReturnType != SymbolTable::Primitives::Void)
-			Diagnostics.ReportError(node->IdentifierToken, "Main entry point should have 'void' return type");
 	}
 }
 

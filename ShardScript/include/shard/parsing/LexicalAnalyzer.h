@@ -32,6 +32,7 @@
 
 #include <shard/syntax/nodes/Expressions/LinkedExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/ObjectExpressionSyntax.h>
+#include <shard/syntax/nodes/Expressions/CollectionExpressionSyntax.h>
 
 #include <shard/syntax/nodes/Loops/ForStatementSyntax.h>
 #include <shard/syntax/nodes/Loops/WhileStatementSyntax.h>
@@ -91,9 +92,12 @@ namespace shard::parsing
 		shard::syntax::nodes::ExpressionSyntax* ReadNullDenotation(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
 		shard::syntax::nodes::ExpressionSyntax* ReadLeftDenotation(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent, shard::syntax::nodes::ExpressionSyntax* leftExpr);
 
+		shard::syntax::nodes::CollectionExpressionSyntax* ReadCollectionExpression(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
+		shard::syntax::nodes::ObjectExpressionSyntax* ReadObjectExpression(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
+
 		shard::syntax::nodes::LinkedExpressionSyntax* ReadLinkedExpression(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
 		shard::syntax::nodes::LinkedExpressionNode* ReadLinkedExpressionNode(shard::parsing::SourceReader& reader, shard::syntax::nodes::LinkedExpressionSyntax* parent, shard::syntax::nodes::LinkedExpressionNode* lastNode);
-		shard::syntax::nodes::ObjectExpressionSyntax* ReadObjectExpression(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
+
 		shard::syntax::nodes::ArgumentsListSyntax* ReadArgumentsList(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
 		shard::syntax::nodes::IndexatorListSyntax* ReadIndexatorList(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
 

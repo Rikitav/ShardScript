@@ -8,8 +8,8 @@
 #include <shard/parsing/reading/FileReader.h>
 
 #include <shard/runtime/GarbageCollector.h>
-#include <shard/runtime/interpreter/AbstractInterpreter.h>
-#include <shard/runtime/interactive/InteractiveConsole.h>
+#include <shard/runtime/AbstractInterpreter.h>
+#include <shard/runtime/InteractiveConsole.h>
 
 #include "src/utilities/ArgumentsParser.cpp"
 //#include "src/utilities/ExecutableVersion.cpp"
@@ -78,8 +78,7 @@ int wmain(int argc, wchar_t* argv[])
 		{
 			try
 			{
-				AbstractInterpreter interpreter(syntaxTree, semanticModel);
-				interpreter.Execute();
+				AbstractInterpreter::Execute(syntaxTree, semanticModel);
 				return 0;
 			}
 			catch (const runtime_error& err)

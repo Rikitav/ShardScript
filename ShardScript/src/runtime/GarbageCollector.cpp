@@ -2,6 +2,7 @@
 #include <shard/runtime/ObjectInstance.h>
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/FieldSymbol.h>
+#include <shard/runtime/AbstractInterpreter.h>
 
 #include <malloc.h>
 #include <stdexcept>
@@ -11,13 +12,15 @@ using namespace std;
 using namespace shard::syntax::symbols;
 using namespace shard::runtime;
 
+ObjectInstance* GarbageCollector::NullInstance = new ObjectInstance(-1, nullptr, nullptr);
+
 ObjectInstance* GarbageCollector::GetStaticField(FieldSymbol* field)
 {
 	ObjectInstance* staticFieldInstance = nullptr;
 	auto find = staticFields.find(field);
 	if (find == staticFields.end())
 	{
-		staticFieldInstance = GarbageCollector::NullInstance(field->ReturnType);
+		staticFieldInstance = NullInstance;
 		staticFields[field] = staticFieldInstance;
 	}
 	else
@@ -39,17 +42,6 @@ void GarbageCollector::SetStaticField(FieldSymbol* field, ObjectInstance* instan
 	staticFields[field] = CopyInstance(instance);
 }
 
-ObjectInstance* GarbageCollector::NullInstance(const TypeSymbol* objectInfo)
-{
-	auto find = nullInstancesMap.find(const_cast<TypeSymbol*>(objectInfo));
-	ObjectInstance* instance = nullptr;
-	
-	if (find == nullInstancesMap.end())
-		instance = new ObjectInstance(-1, objectInfo, nullptr);
-
-	return nullptr;
-}
-
 ObjectInstance* GarbageCollector::AllocateInstance(const TypeSymbol* objectInfo)
 {
 	void* ptr = malloc(objectInfo->MemoryBytesSize);
@@ -59,18 +51,6 @@ ObjectInstance* GarbageCollector::AllocateInstance(const TypeSymbol* objectInfo)
 	memset(ptr, 0, objectInfo->MemoryBytesSize);
 	ObjectInstance* instance = new ObjectInstance(objectsCounter++, objectInfo, ptr);
 	instance->IncrementReference();
-
-	for (FieldSymbol* field : objectInfo->Fields)
-	{
-		if (field->ReturnType->IsReferenceType)
-		{
-			instance->SetField(field, NullInstance(field->ReturnType));
-		}
-		else
-		{
-			//instance->SetField(field)
-		}
-	}
 
 	Heap.add(instance);
 	return instance;
@@ -89,14 +69,6 @@ ObjectInstance* GarbageCollector::CopyInstance(const TypeSymbol* objectInfo, voi
 	return newInstance;
 }
 
-ObjectInstance* GarbageCollector::CopyInstance(ObjectInstance* from, ObjectInstance* to)
-{
-	if (from->Info != to->Info)
-		throw runtime_error("cannot copy instance memory of different types");
-
-	to->WriteMemory(0, to->Info->MemoryBytesSize, from->Ptr);
-}
-
 ObjectInstance* GarbageCollector::CopyInstance(ObjectInstance* instance)
 {
 	if (instance->Info->IsReferenceType)
@@ -108,6 +80,14 @@ ObjectInstance* GarbageCollector::CopyInstance(ObjectInstance* instance)
 	ObjectInstance* newInstance = GarbageCollector::AllocateInstance(instance->Info);
 	newInstance->WriteMemory(0, instance->Info->MemoryBytesSize, instance->Ptr);
 	return newInstance;
+}
+
+void GarbageCollector::CopyInstance(ObjectInstance* from, ObjectInstance* to)
+{
+	if (from->Info != to->Info)
+		throw runtime_error("cannot copy instance memory of different types");
+
+	to->WriteMemory(0, to->Info->MemoryBytesSize, from->Ptr);
 }
 
 void GarbageCollector::DestroyInstance(ObjectInstance* instance)

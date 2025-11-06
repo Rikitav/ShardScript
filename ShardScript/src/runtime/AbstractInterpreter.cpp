@@ -3,9 +3,8 @@
 #include <shard/runtime/InboundVariablesContext.h>
 #include <shard/runtime/GarbageCollector.h>
 #include <shard/runtime/ConsoleHelper.h>
-
-#include <shard/runtime/interpreter/PrimitiveMathModule.h>
-#include <shard/runtime/interpreter/AbstractInterpreter.h>
+#include <shard/runtime/PrimitiveMathModule.h>
+#include <shard/runtime/AbstractInterpreter.h>
 
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxToken.h>
@@ -13,6 +12,8 @@
 #include <shard/syntax/SyntaxSymbol.h>
 
 #include <shard/parsing/semantic/SymbolTable.h>
+#include <shard/parsing/semantic/SemanticModel.h>
+#include <shard/parsing/lexical/SyntaxTree.h>
 
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/FieldSymbol.h>
@@ -34,26 +35,68 @@
 #include <shard/syntax/nodes/Expressions/LinkedExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/ObjectExpressionSyntax.h>
 
+#include <shard/syntax/nodes/Statements/ThrowStatementSyntax.h>
 #include <shard/syntax/nodes/Statements/ReturnStatementSyntax.h>
 #include <shard/syntax/nodes/Statements/VariableStatementSyntax.h>
 #include <shard/syntax/nodes/Statements/ConditionalClauseSyntax.h>
 #include <shard/syntax/nodes/Statements/ExpressionStatementSyntax.h>
+#include <shard/syntax/nodes/Statements/BreakStatementSyntax.h>
+#include <shard/syntax/nodes/Statements/ContinueStatementSyntax.h>
 
 #include <stdexcept>
 #include <string>
 #include <vector>
 #include <iostream>
-#include <shard/syntax/nodes/Statements/ThrowStatementSyntax.h>
 #include <iterator>
 
-using namespace shard::syntax::symbols;
 using namespace std;
 using namespace shard::runtime;
 using namespace shard::syntax;
 using namespace shard::syntax::nodes;
+using namespace shard::syntax::symbols;
 using namespace shard::parsing;
+using namespace shard::parsing::lexical;
 using namespace shard::parsing::semantic;
 
+stack<CallStackFrame*> AbstractInterpreter::callStack;
+
+ObjectInstance* AbstractInterpreter::CreateInstanceFromValue(bool value)
+{
+	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::Boolean);
+	instance->WritePrimitive(value);
+	return instance;
+}
+
+ObjectInstance* AbstractInterpreter::CreateInstanceFromValue(int value)
+{
+	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::Integer);
+	instance->WritePrimitive(value);
+	return instance;
+}
+
+ObjectInstance* AbstractInterpreter::CreateInstanceFromValue(wchar_t value)
+{
+	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::Char);
+	instance->WritePrimitive(value);
+	return instance;
+}
+
+ObjectInstance* AbstractInterpreter::CreateInstanceFromValue(const wchar_t* value)
+{
+	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String);
+	wstring* copy = new wstring(value);
+	instance->WritePrimitive<wstring>(*copy);
+	return instance;
+}
+
+ObjectInstance* AbstractInterpreter::CreateInstanceFromValue(wstring& value)
+{
+	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String);
+	wstring* copy = new wstring(value);
+	instance->WritePrimitive<wstring>(*copy);
+	instance->DecrementReference();
+	return instance;
+}
 
 CallStackFrame* AbstractInterpreter::CurrentFrame()
 {
@@ -102,7 +145,7 @@ void AbstractInterpreter::PopContext()
 	delete current;
 }
 
-void AbstractInterpreter::Execute()
+void AbstractInterpreter::Execute(SyntaxTree& syntaxTree, SemanticModel& semanticModel)
 {
 	MethodSymbol* entryPoint = semanticModel.Table->EntryPointCandidates.at(0);
 	ExecuteMethod(entryPoint, nullptr);
@@ -159,7 +202,7 @@ ObjectInstance* AbstractInterpreter::ExecuteMethod(MethodSymbol* method, Inbound
 			try
 			{
 				frame->InterruptionReason = FrameInterruptionReason::ValueReturned;
-				frame->InterruptionRegister = method->FunctionPointer(this, argumentsContext);
+				frame->InterruptionRegister = method->FunctionPointer(argumentsContext);
 			}
 			catch (const runtime_error& err)
 			{
@@ -641,6 +684,22 @@ ObjectInstance* AbstractInterpreter::EvaluateLiteralExpression(const LiteralExpr
 ObjectInstance* AbstractInterpreter::EvaluateObjectExpression(const ObjectExpressionSyntax* expression)
 {
 	ObjectInstance* newInstance = GarbageCollector::AllocateInstance(expression->Symbol);
+	for (FieldSymbol* field : newInstance->Info->Fields)
+	{
+		if (field->ReturnType->IsReferenceType)
+		{
+			ObjectInstance* assignInstance = GarbageCollector::NullInstance;
+			if (field->DefaultValueExpression != nullptr)
+				AbstractInterpreter::EvaluateExpression(field->DefaultValueExpression);
+
+			newInstance->SetField(field, assignInstance);
+		}
+		else
+		{
+			//instance->SetField(field)
+		}
+	}
+
 	return newInstance;
 }
 

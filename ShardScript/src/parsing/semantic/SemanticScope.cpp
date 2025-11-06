@@ -27,3 +27,8 @@ void SemanticScope::DeclareSymbol(SyntaxSymbol* symbol)
 
     _symbols[symbol->Name] = symbol;
 }
+
+void SemanticScope::RemoveSymbol(SyntaxSymbol* symbol)
+{
+    _symbols.erase(symbol->Name);
+}

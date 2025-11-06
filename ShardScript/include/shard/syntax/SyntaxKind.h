@@ -52,6 +52,7 @@ namespace shard::syntax
 		LiteralExpression,
 		BinaryExpression,
 		UnaryExpression,
+		CollectionExpression,
 
 		// Linked expressions
 		LinkedExpression,

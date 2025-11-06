@@ -17,6 +17,16 @@ using namespace shard::syntax;
 using namespace shard::syntax::nodes;
 using namespace shard::parsing::semantic;
 
+SemanticModel::SemanticModel(shard::parsing::lexical::SyntaxTree& tree) : Tree(tree)
+{
+	Table = new SymbolTable();
+}
+
+SemanticModel::~SemanticModel()
+{
+	delete Table;
+}
+
 SymbolInfo SemanticModel::GetSymbolInfo(SyntaxNode* node)
 {
 	return SymbolInfo(Table->LookupSymbol(node));

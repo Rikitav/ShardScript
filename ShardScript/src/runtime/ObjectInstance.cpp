@@ -16,7 +16,7 @@ ObjectInstance* ObjectInstance::GetField(FieldSymbol* field)
 	{
 		void* offset = OffsetMemory(field->MemoryBytesOffset, sizeof(ObjectInstance*));
 		void* valuePtr = *static_cast<void**>(offset);
-		return valuePtr == nullptr ? GarbageCollector::NullInstance(field->ReturnType) : static_cast<ObjectInstance*>(valuePtr);
+		return valuePtr == nullptr ? GarbageCollector::NullInstance : static_cast<ObjectInstance*>(valuePtr);
 	}
 	else
 	{

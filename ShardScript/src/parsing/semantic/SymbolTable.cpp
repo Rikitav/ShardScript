@@ -1,9 +1,9 @@
 #include <shard/parsing/semantic/SymbolTable.h>
 
-#include <shard/parsing/semantic/primitives/BooleanPrimitive.h>
-#include <shard/parsing/semantic/primitives/IntegerPrimitive.h>
-#include <shard/parsing/semantic/primitives/CharPrimitive.h>
-#include <shard/parsing/semantic/primitives/StringPrimitive.h>
+#include <shard/runtime/framework/primitives/BooleanPrimitive.h>
+#include <shard/runtime/framework/primitives/IntegerPrimitive.h>
+#include <shard/runtime/framework/primitives/CharPrimitive.h>
+#include <shard/runtime/framework/primitives/StringPrimitive.h>
 
 #include <shard/syntax/SyntaxNode.h>
 #include <shard/syntax/SyntaxSymbol.h>
@@ -15,7 +15,6 @@
 
 #include <shard/runtime/GarbageCollector.h>
 #include <shard/runtime/ConsoleHelper.h>
-#include <shard/runtime/interpreter/AbstractInterpreter.h>
 
 #include <iostream>
 #include <vector>
@@ -30,7 +29,7 @@ using namespace shard::syntax;
 using namespace shard::syntax::symbols;
 using namespace shard::parsing::semantic;
 
-ObjectInstance* Gc_Info(AbstractInterpreter* interpreter, InboundVariablesContext* arguments)
+ObjectInstance* Gc_Info(InboundVariablesContext* arguments)
 {
 	wcout << "Garbage collector info dump" << endl;
 	for (ObjectInstance* reg : GarbageCollector::Heap)
@@ -45,14 +44,14 @@ ObjectInstance* Gc_Info(AbstractInterpreter* interpreter, InboundVariablesContex
 	return nullptr;
 }
 
-ObjectInstance* Print(AbstractInterpreter* interpreter, InboundVariablesContext* arguments)
+ObjectInstance* Print(InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->Variables.at(L"message");
 	ConsoleHelper::Write(instance);
 	return nullptr;
 }
 
-ObjectInstance* Println(AbstractInterpreter* interpreter, InboundVariablesContext* arguments)
+ObjectInstance* Println(InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->Variables.at(L"message");
 	ConsoleHelper::WriteLine(instance);

@@ -1077,6 +1077,7 @@ ExpressionSyntax* LexicalAnalyzer::ReadNullDenotation(SourceReader& reader, Synt
 			return syntax;
 		}
 
+		case TokenType::NullLiteral:
 		case TokenType::BooleanLiteral:
 		case TokenType::StringLiteral:
 		case TokenType::NumberLiteral:
@@ -1091,6 +1092,11 @@ ExpressionSyntax* LexicalAnalyzer::ReadNullDenotation(SourceReader& reader, Synt
 			ExpressionSyntax* expression = ReadExpression(reader, parent, 0);
 			Expect(reader, TokenType::CloseCurl, "Expected ')' token");
 			return expression;
+		}
+
+		case TokenType::OpenSquare:
+		{
+			return ReadCollectionExpression(reader, parent);
 		}
 
 		case TokenType::Identifier:
@@ -1162,6 +1168,52 @@ ExpressionSyntax* LexicalAnalyzer::ReadLeftDenotation(SourceReader& reader, Synt
 	// Unknown token - return left expression instead of null
 	Diagnostics.ReportError(current, "Unknown token in expression's left denotation");
 	return leftExpr;
+}
+
+ObjectExpressionSyntax* LexicalAnalyzer::ReadObjectExpression(SourceReader& reader, SyntaxNode* parent)
+{
+	ObjectExpressionSyntax* syntax = new ObjectExpressionSyntax(parent);
+	syntax->NewToken = Expect(reader, TokenType::NewKeyword, "Expected 'new' keyword");
+	syntax->Type = ReadType(reader, syntax);
+	syntax->Arguments = ReadArgumentsList(reader, syntax);
+	return syntax;
+}
+
+CollectionExpressionSyntax* LexicalAnalyzer::ReadCollectionExpression(SourceReader& reader, SyntaxNode* parent)
+{
+	CollectionExpressionSyntax* syntax = new CollectionExpressionSyntax(parent);
+	syntax->OpenSquareToken = Expect(reader, TokenType::OpenSquare, "Expected '[' token");
+
+	SyntaxToken checkCloser = reader.Current();
+	if (checkCloser.Type == TokenType::CloseSquare)
+	{
+		syntax->CloseSquareToken = checkCloser;
+		reader.Consume();
+		return syntax;
+	}
+
+	while (reader.CanConsume())
+	{
+		ExpressionSyntax* expr = ReadExpression(reader, syntax, 0);
+		syntax->ValuesExpressions.push_back(expr);
+
+		// Try to match separator with error recovery
+		if (!TryMatch(reader, { TokenType::Comma, TokenType::CloseSquare }, "Expected ',' or ']'", 3))
+		{
+			break;
+		}
+
+		SyntaxToken separatorToken = reader.Current();
+		reader.Consume();
+
+		if (separatorToken.Type == TokenType::CloseCurl)
+		{
+			syntax->CloseSquareToken = separatorToken;
+			break;
+		}
+	}
+
+	return syntax;
 }
 
 LinkedExpressionSyntax* LexicalAnalyzer::ReadLinkedExpression(SourceReader& reader, SyntaxNode* parent)
@@ -1301,16 +1353,6 @@ LinkedExpressionNode* LexicalAnalyzer::ReadLinkedExpressionNode(SourceReader& re
 			return new MemberAccessExpressionSyntax(identifier, prevNode, parent);
 		}
 	}
-}
-
-ObjectExpressionSyntax* LexicalAnalyzer::ReadObjectExpression(SourceReader& reader, SyntaxNode* parent)
-{
-	ObjectExpressionSyntax* syntax = new ObjectExpressionSyntax(parent);
-	syntax->NewToken = Expect(reader, TokenType::NewKeyword, "Expected 'new' keyword");
-	//syntax->IdentifierToken = Expect(reader, TokenType::Identifier, "Expected identifier");
-	syntax->Type = ReadType(reader, syntax);
-	syntax->Arguments = ReadArgumentsList(reader, syntax);
-	return syntax;
 }
 
 ArgumentsListSyntax* LexicalAnalyzer::ReadArgumentsList(SourceReader& reader, SyntaxNode* parent)

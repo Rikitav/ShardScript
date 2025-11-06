@@ -1,9 +1,9 @@
-#include <shard/runtime/interpreter/PrimitiveMathModule.h>
+#include <shard/runtime/PrimitiveMathModule.h>
 #include <shard/runtime/InboundVariablesContext.h>
 #include <shard/runtime/ObjectInstance.h>
-#include <shard/runtime/interpreter/AbstractInterpreter.h>
+#include <shard/runtime/AbstractInterpreter.h>
 
-#include <shard/parsing/semantic/primitives/CharPrimitive.h>
+#include <shard/runtime/framework/primitives/CharPrimitive.h>
 #include <shard/parsing/semantic/SymbolTable.h>
 
 #include <shard/syntax/SymbolAccesibility.h>
@@ -20,52 +20,52 @@ using namespace shard::syntax::symbols;
 using namespace shard::parsing::semantic;
 
 // Char methods
-static ObjectInstance* ToString(AbstractInterpreter* interpreter, InboundVariablesContext* arguments)
+static ObjectInstance* ToString(InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	wchar_t value = instance->ReadPrimitive<wchar_t>();
 	wstring str(1, value);
-	return PrimitiveMathModule::CreateInstanceFromValue(str);
+	return AbstractInterpreter::CreateInstanceFromValue(str);
 }
 
-static ObjectInstance* ToUpper(AbstractInterpreter* interpreter, InboundVariablesContext* arguments)
+static ObjectInstance* ToUpper(InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	wchar_t value = instance->ReadPrimitive<wchar_t>();
 	wchar_t result = static_cast<wchar_t>(towupper(value));
-	return PrimitiveMathModule::CreateInstanceFromValue(result);
+	return AbstractInterpreter::CreateInstanceFromValue(result);
 }
 
-static ObjectInstance* ToLower(AbstractInterpreter* interpreter, InboundVariablesContext* arguments)
+static ObjectInstance* ToLower(InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	wchar_t value = instance->ReadPrimitive<wchar_t>();
 	wchar_t result = static_cast<wchar_t>(towlower(value));
-	return PrimitiveMathModule::CreateInstanceFromValue(result);
+	return AbstractInterpreter::CreateInstanceFromValue(result);
 }
 
-static ObjectInstance* IsDigit(AbstractInterpreter* interpreter, InboundVariablesContext* arguments)
+static ObjectInstance* IsDigit(InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	wchar_t value = instance->ReadPrimitive<wchar_t>();
 	bool result = iswdigit(value) != 0;
-	return PrimitiveMathModule::CreateInstanceFromValue(result);
+	return AbstractInterpreter::CreateInstanceFromValue(result);
 }
 
-static ObjectInstance* IsLetter(AbstractInterpreter* interpreter, InboundVariablesContext* arguments)
+static ObjectInstance* IsLetter(InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	wchar_t value = instance->ReadPrimitive<wchar_t>();
 	bool result = iswalpha(value) != 0;
-	return PrimitiveMathModule::CreateInstanceFromValue(result);
+	return AbstractInterpreter::CreateInstanceFromValue(result);
 }
 
-static ObjectInstance* IsWhiteSpace(AbstractInterpreter* interpreter, InboundVariablesContext* arguments)
+static ObjectInstance* IsWhiteSpace(InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	wchar_t value = instance->ReadPrimitive<wchar_t>();
 	bool result = iswspace(value) != 0;
-	return PrimitiveMathModule::CreateInstanceFromValue(result);
+	return AbstractInterpreter::CreateInstanceFromValue(result);
 }
 
 void CharPrimitive::Reflect(TypeSymbol* symbol)

@@ -1,9 +1,8 @@
-#include <shard/runtime/interpreter/PrimitiveMathModule.h>
+#include <shard/runtime/AbstractInterpreter.h>
 #include <shard/runtime/InboundVariablesContext.h>
 #include <shard/runtime/ObjectInstance.h>
-#include <shard/runtime/interpreter/AbstractInterpreter.h>
 
-#include <shard/parsing/semantic/primitives/BooleanPrimitive.h>
+#include <shard/runtime/framework/primitives/BooleanPrimitive.h>
 #include <shard/parsing/semantic/SymbolTable.h>
 
 #include <shard/syntax/SymbolAccesibility.h>
@@ -19,12 +18,12 @@ using namespace shard::syntax::symbols;
 using namespace shard::parsing::semantic;
 
 // Boolean methods
-static ObjectInstance* ToString(AbstractInterpreter* interpreter, InboundVariablesContext* arguments)
+static ObjectInstance* ToString(InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	bool value = instance->ReadPrimitive<bool>();
 	wstring str = value ? L"true" : L"false";
-	return PrimitiveMathModule::CreateInstanceFromValue(str);
+	return AbstractInterpreter::CreateInstanceFromValue(str);
 }
 
 void BooleanPrimitive::Reflect(TypeSymbol* symbol)

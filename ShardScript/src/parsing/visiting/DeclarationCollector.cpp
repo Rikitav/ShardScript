@@ -122,6 +122,7 @@ void DeclarationCollector::VisitFieldDeclaration(FieldDeclarationSyntax* node)
     wstring fieldName = node->IdentifierToken.Word;
     FieldSymbol* symbol = new FieldSymbol(fieldName);
     SetAccesibility(symbol, node->Modifiers);
+    symbol->DefaultValueExpression = node->InitializerExpression;
 
     TypeSymbol* ownerType = static_cast<TypeSymbol*>((SyntaxSymbol*)scopeStack.top()->Owner);
     if (ownerType == nullptr)
