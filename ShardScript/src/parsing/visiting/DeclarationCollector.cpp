@@ -127,14 +127,14 @@ void DeclarationCollector::VisitFieldDeclaration(FieldDeclarationSyntax* node)
     TypeSymbol* ownerType = static_cast<TypeSymbol*>((SyntaxSymbol*)scopeStack.top()->Owner);
     if (ownerType == nullptr)
     {
-        Diagnostics.ReportError(node->IdentifierToken, "Cannot resolve method's owner type");
+        Diagnostics.ReportError(node->IdentifierToken, L"Cannot resolve method's owner type");
     }
     else
     {
         // Validate: static class cannot have instance fields
         if (!symbol->IsStatic && ownerType->IsStatic)
         {
-            Diagnostics.ReportError(node->IdentifierToken, "Static class cannot have instance fields");
+            Diagnostics.ReportError(node->IdentifierToken, L"Static class cannot have instance fields");
         }
         
         ownerType->Fields.push_back(symbol);
@@ -159,14 +159,14 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax* node)
     SyntaxSymbol* ownerSymbol = const_cast<SyntaxSymbol*>(scopeStack.top()->Owner);
     if (ownerSymbol->Kind != SyntaxKind::ClassDeclaration && ownerSymbol->Kind != SyntaxKind::StructDeclaration)
     {
-        Diagnostics.ReportError(node->IdentifierToken, "Method cannot be declared within types");
+        Diagnostics.ReportError(node->IdentifierToken, L"Method cannot be declared within types");
         return;
     }
 
     TypeSymbol* ownerType = static_cast<TypeSymbol*>(ownerSymbol);
     if (ownerType == nullptr)
     {
-        Diagnostics.ReportError(node->IdentifierToken, "Cannot resolve method's owner type");
+        Diagnostics.ReportError(node->IdentifierToken, L"Cannot resolve method's owner type");
         return;
     }
 
@@ -180,7 +180,7 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax* node)
         if (!symbol->IsStatic)
         {
             if (ownerType->IsStatic)
-                Diagnostics.ReportError(node->IdentifierToken, "Cannot declare a non static method's in static type");
+                Diagnostics.ReportError(node->IdentifierToken, L"Cannot declare a non static method's in static type");
         }
 
         VisitStatementsBlock(node->Body);
@@ -207,21 +207,21 @@ void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax* n
     SyntaxSymbol* ownerSymbol = const_cast<SyntaxSymbol*>(scopeStack.top()->Owner);
     if (ownerSymbol->Kind != SyntaxKind::ClassDeclaration && ownerSymbol->Kind != SyntaxKind::StructDeclaration)
     {
-        Diagnostics.ReportError(node->IdentifierToken, "Property cannot be declared outside of types");
+        Diagnostics.ReportError(node->IdentifierToken, L"Property cannot be declared outside of types");
         return;
     }
 
     TypeSymbol* ownerType = static_cast<TypeSymbol*>(ownerSymbol);
     if (ownerType == nullptr)
     {
-        Diagnostics.ReportError(node->IdentifierToken, "Cannot resolve property's owner type");
+        Diagnostics.ReportError(node->IdentifierToken, L"Cannot resolve property's owner type");
         return;
     }
 
     // Validate: static class cannot have instance properties
     if (!symbol->IsStatic && ownerType->IsStatic)
     {
-        Diagnostics.ReportError(node->IdentifierToken, "Static class cannot have instance properties");
+        Diagnostics.ReportError(node->IdentifierToken, L"Static class cannot have instance properties");
     }
 
     // Check if this is an auto-property (has get/set but no body)

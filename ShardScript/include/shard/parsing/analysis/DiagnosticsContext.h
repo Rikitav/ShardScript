@@ -15,9 +15,9 @@ namespace shard::parsing::analysis
 
 		DiagnosticsContext() : Diagnostics() {}
 
-		void ReportError(shard::syntax::SyntaxToken token, std::string message);
-		void ReportWarning(shard::syntax::SyntaxToken token, std::string message);
-		void ReportInfo(shard::syntax::SyntaxToken token, std::string message);
+		void ReportError(shard::syntax::SyntaxToken token, std::wstring message);
+		void ReportWarning(shard::syntax::SyntaxToken token, std::wstring message);
+		void ReportInfo(shard::syntax::SyntaxToken token, std::wstring message);
 		void WriteDiagnostics(std::wostream& out);
 		void Reset();
 	};

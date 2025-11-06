@@ -7,5 +7,5 @@ using namespace std;
 using namespace shard::syntax;
 using namespace shard::parsing::analysis;
 
-Diagnostic::Diagnostic(SyntaxToken token, DiagnosticSeverity severity, string description)
+Diagnostic::Diagnostic(SyntaxToken token, DiagnosticSeverity severity, wstring description)
 	: Token(token), Severity(severity), Description(description), Location(token.Location) { }

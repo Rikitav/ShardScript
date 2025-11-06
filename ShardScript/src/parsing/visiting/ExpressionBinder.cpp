@@ -163,8 +163,7 @@ void ExpressionBinder::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 		{
 			if (!scopeStack.top()->ReturnFound)
 			{
-				string returnTypeName(symbol->ReturnType->Name.begin(), symbol->ReturnType->Name.end());
-				Diagnostics.ReportError(node->IdentifierToken, "Method must return a value of type '" + returnTypeName + "'");
+				Diagnostics.ReportError(node->IdentifierToken, L"Method must return a value of type '" + symbol->ReturnType->Name + L"'");
 			}
 		}
 
@@ -172,16 +171,16 @@ void ExpressionBinder::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 		{
 			symbolTable->EntryPointCandidates.push_back(symbol);
 			if (symbol->Accesibility != SymbolAccesibility::Public)
-				Diagnostics.ReportError(node->IdentifierToken, "Main entry point should be public");
+				Diagnostics.ReportError(node->IdentifierToken, L"Main entry point should be public");
 
 			if (!symbol->IsStatic)
-				Diagnostics.ReportError(node->IdentifierToken, "Main entry point should be static");
+				Diagnostics.ReportError(node->IdentifierToken, L"Main entry point should be static");
 
 			if (symbol->Parameters.size() != 0)
-				Diagnostics.ReportError(node->IdentifierToken, "Main entry point should have empty parameters list");
+				Diagnostics.ReportError(node->IdentifierToken, L"Main entry point should have empty parameters list");
 
 			if (symbol->ReturnType != SymbolTable::Primitives::Void)
-				Diagnostics.ReportError(node->IdentifierToken, "Main entry point should have 'void' return type");
+				Diagnostics.ReportError(node->IdentifierToken, L"Main entry point should have 'void' return type");
 		}
 		
 		scopeStack.pop();
@@ -195,8 +194,7 @@ void ExpressionBinder::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
 
 	if (symbol->ReturnType->Name == L"Void")
 	{
-		string propName(node->IdentifierToken.Word.begin(), node->IdentifierToken.Word.end());
-		Diagnostics.ReportError(node->SetKeywordToken, "Property '" + propName + "' must have return value");
+		Diagnostics.ReportError(node->SetKeywordToken, L"Property '" + node->IdentifierToken.Word + L"' must have return value");
 	}
 
 	if (node->GetBody)
@@ -215,8 +213,7 @@ void ExpressionBinder::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
 
 		if (!scopeStack.top()->ReturnFound)
 		{
-			string returnTypeName(symbol->ReturnType->Name.begin(), symbol->ReturnType->Name.end());
-			Diagnostics.ReportError(node->IdentifierToken, "Method must return a value of type '" + returnTypeName + "'");
+			Diagnostics.ReportError(node->IdentifierToken, L"Method must return a value of type '" + symbol->ReturnType->Name + L"'");
 		}
 
 		scopeStack.pop();
@@ -242,8 +239,7 @@ void ExpressionBinder::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
 
 		if (scopeStack.top()->ReturnsAnything)
 		{
-			string propName(node->IdentifierToken.Word.begin(), node->IdentifierToken.Word.end());
-			Diagnostics.ReportError(node->SetKeywordToken, "Setter method of '" + propName + "' should not return any values");
+			Diagnostics.ReportError(node->SetKeywordToken, L"Setter method of '" + node->IdentifierToken.Word + L"' should not return any values");
 		}
 
 		scopeStack.pop();
@@ -262,22 +258,20 @@ void ExpressionBinder::VisitFieldDeclaration(FieldDeclarationSyntax* node)
 			TypeSymbol* initExprType = GetExpressionType(node->InitializerExpression);
 			if (initExprType == nullptr)
 			{
-				Diagnostics.ReportError(node->IdentifierToken, "Field initializer expression type could not be determined");
+				Diagnostics.ReportError(node->IdentifierToken, L"Field initializer expression type could not be determined");
 			}
 			else if (initExprType != fieldSymbol->ReturnType)
 			{
-				string expectedName(fieldSymbol->ReturnType->Name.begin(), fieldSymbol->ReturnType->Name.end());
-				string actualName(initExprType->Name.begin(), initExprType->Name.end());
-				Diagnostics.ReportError(node->IdentifierToken, "Field initializer type mismatch: expected '" + expectedName + "' but got '" + actualName + "'");
+				Diagnostics.ReportError(node->IdentifierToken, L"Field initializer type mismatch: expected '" + fieldSymbol->ReturnType->Name + L"' but got '" + initExprType->Name + L"'");
 			}
 		}
 		else if (fieldSymbol == nullptr)
 		{
-			Diagnostics.ReportError(node->IdentifierToken, "Field symbol not found");
+			Diagnostics.ReportError(node->IdentifierToken, L"Field symbol not found");
 		}
 		else if (fieldSymbol->ReturnType == nullptr)
 		{
-			Diagnostics.ReportError(node->IdentifierToken, "Field type not resolved");
+			Diagnostics.ReportError(node->IdentifierToken, L"Field type not resolved");
 		}
 	}
 }
@@ -297,17 +291,15 @@ void ExpressionBinder::VisitVariableStatement(VariableStatementSyntax* node)
 		
 		if (expectedType != nullptr && actualType != nullptr && expectedType != actualType)
 		{
-			string expectedName(expectedType->Name.begin(), expectedType->Name.end());
-			string actualName(actualType->Name.begin(), actualType->Name.end());
-			Diagnostics.ReportError(node->IdentifierToken, "Type mismatch: expected '" + expectedName + "' but got '" + actualName + "'");
+			Diagnostics.ReportError(node->IdentifierToken, L"Type mismatch: expected '" + expectedType->Name + L"' but got '" + actualType->Name + L"'");
 		}
 		else if (expectedType == nullptr)
 		{
-			Diagnostics.ReportError(node->IdentifierToken, "Variable type not resolved");
+			Diagnostics.ReportError(node->IdentifierToken, L"Variable type not resolved");
 		}
 		else if (actualType == nullptr)
 		{
-			Diagnostics.ReportError(node->IdentifierToken, "Expression type could not be determined");
+			Diagnostics.ReportError(node->IdentifierToken, L"Expression type could not be determined");
 		}
 	}
 }
@@ -566,8 +558,8 @@ void ExpressionBinder::VisitLiteralExpression(LiteralExpressionSyntax* node)
 	
 	if (type == nullptr && node->LiteralToken.Type != TokenType::NullLiteral)
 	{
-		string tokenType = "unknown";
-		Diagnostics.ReportError(node->LiteralToken, "Unsupported literal type: " + tokenType);
+		wstring tokenType = L"unknown";
+		Diagnostics.ReportError(node->LiteralToken, L"Unsupported literal type: " + tokenType);
 	}
 }
 
@@ -581,13 +573,13 @@ TypeSymbol* ExpressionBinder::AnalyzeBinaryExpression(BinaryExpressionSyntax* no
 	
 	if (leftType == nullptr)
 	{
-		Diagnostics.ReportError(node->OperatorToken, "Left operand type could not be determined");
+		Diagnostics.ReportError(node->OperatorToken, L"Left operand type could not be determined");
 		return nullptr;
 	}
 	
 	if (rightType == nullptr)
 	{
-		Diagnostics.ReportError(node->OperatorToken, "Right operand type could not be determined");
+		Diagnostics.ReportError(node->OperatorToken, L"Right operand type could not be determined");
 		return nullptr;
 	}
 	
@@ -605,9 +597,7 @@ TypeSymbol* ExpressionBinder::AnalyzeBinaryExpression(BinaryExpressionSyntax* no
 		{
 			if (leftType != rightType)
 			{
-				string leftName(leftType->Name.begin(), leftType->Name.end());
-				string rightName(rightType->Name.begin(), rightType->Name.end());
-				Diagnostics.ReportError(node->OperatorToken, "Type mismatch in comparison: '" + leftName + "' and '" + rightName + "'");
+				Diagnostics.ReportError(node->OperatorToken, L"Type mismatch in comparison: '" + leftType->Name + L"' and '" + rightType->Name + L"'");
 			}
 			
 			return SymbolTable::Primitives::Boolean;
@@ -622,9 +612,7 @@ TypeSymbol* ExpressionBinder::AnalyzeBinaryExpression(BinaryExpressionSyntax* no
 		{
 			if (leftType != rightType)
 			{
-				string leftName(leftType->Name.begin(), leftType->Name.end());
-				string rightName(rightType->Name.begin(), rightType->Name.end());
-				Diagnostics.ReportError(node->OperatorToken, "Type mismatch in arithmetic operation: '" + leftName + "' and '" + rightName + "'");
+				Diagnostics.ReportError(node->OperatorToken, L"Type mismatch in comparison: '" + leftType->Name + L"' and '" + rightType->Name + L"'");
 				return nullptr;
 			}
 
@@ -640,9 +628,7 @@ TypeSymbol* ExpressionBinder::AnalyzeBinaryExpression(BinaryExpressionSyntax* no
 		{
 			if (leftType != rightType)
 			{
-				string leftName(leftType->Name.begin(), leftType->Name.end());
-				string rightName(rightType->Name.begin(), rightType->Name.end());
-				Diagnostics.ReportError(node->OperatorToken, "Type mismatch in assignment operation: '" + leftName + "' and '" + rightName + "'");
+				Diagnostics.ReportError(node->OperatorToken, L"Type mismatch in comparison: '" + leftType->Name + L"' and '" + rightType->Name + L"'");
 				return nullptr;
 			}
 
@@ -668,7 +654,7 @@ TypeSymbol* ExpressionBinder::AnalyzeUnaryExpression(UnaryExpressionSyntax* node
 	
 	if (exprType == nullptr)
 	{
-		Diagnostics.ReportError(node->OperatorToken, "Operand type could not be determined");
+		Diagnostics.ReportError(node->OperatorToken, L"Operand type could not be determined");
 		return nullptr;
 	}
 	
@@ -678,8 +664,7 @@ TypeSymbol* ExpressionBinder::AnalyzeUnaryExpression(UnaryExpressionSyntax* node
 		{
 			if (exprType != SymbolTable::Primitives::Boolean)
 			{
-				string typeName(exprType->Name.begin(), exprType->Name.end());
-				Diagnostics.ReportError(node->OperatorToken, "Logical NOT operator requires boolean type, got '" + typeName + "'");
+				Diagnostics.ReportError(node->OperatorToken, L"Logical NOT operator requires boolean type, got '" + exprType->Name + L"'");
 				return nullptr;
 			}
 
@@ -691,8 +676,7 @@ TypeSymbol* ExpressionBinder::AnalyzeUnaryExpression(UnaryExpressionSyntax* node
 		{
 			if (exprType != SymbolTable::Primitives::Integer)
 			{
-				string typeName(exprType->Name.begin(), exprType->Name.end());
-				Diagnostics.ReportError(node->OperatorToken, "Increment/Decrement operator requires integer type, got '" + typeName + "'");
+				Diagnostics.ReportError(node->OperatorToken, L"Increment/Decrement operator requires integer type, got '" + exprType->Name + L"'");
 				return nullptr;
 			}
 			
@@ -714,7 +698,7 @@ TypeSymbol* ExpressionBinder::AnalyzeObjectExpression(ObjectExpressionSyntax* no
 {
 	if (node->Symbol == nullptr)
 	{
-		Diagnostics.ReportError(node->NewToken, "Object creation type not resolved");
+		Diagnostics.ReportError(node->NewToken, L"Object creation type not resolved");
 		return nullptr;
 	}
 	
@@ -739,7 +723,7 @@ bool ExpressionBinder::MatchMethodArguments(MethodSymbol* method, ArgumentsListS
 	
 	if (method->Parameters.size() != arguments->Arguments.size())
 	{
-		Diagnostics.ReportError(SyntaxToken(), "Method expects " + to_string(method->Parameters.size()) + " arguments but got " + to_string(arguments->Arguments.size()));
+		Diagnostics.ReportError(SyntaxToken(), L"Method expects " + to_wstring(method->Parameters.size()) + L" arguments but got " + to_wstring(arguments->Arguments.size()));
 		return false;
 	}
 	
@@ -750,7 +734,7 @@ bool ExpressionBinder::MatchMethodArguments(MethodSymbol* method, ArgumentsListS
 		
 		if (param == nullptr || arg == nullptr || arg->Expression == nullptr)
 		{
-			Diagnostics.ReportError(SyntaxToken(), "Invalid argument at position " + to_string(i));
+			Diagnostics.ReportError(SyntaxToken(), L"Invalid argument at position " + to_wstring(i));
 			return false;
 		}
 		
@@ -760,24 +744,19 @@ bool ExpressionBinder::MatchMethodArguments(MethodSymbol* method, ArgumentsListS
 		
 		if (param->Type == nullptr)
 		{
-			string paramName(param->Name.begin(), param->Name.end());
-			Diagnostics.ReportError(SyntaxToken(), "Parameter '" + paramName + "' type not resolved");
+			Diagnostics.ReportError(SyntaxToken(), L"Parameter '" + param->Name + L"' type not resolved");
 			return false;
 		}
 		
 		if (argType == nullptr)
 		{
-			string paramName(param->Name.begin(), param->Name.end());
-			Diagnostics.ReportError(SyntaxToken(), "Argument type could not be determined for parameter '" + paramName + "'");
+			Diagnostics.ReportError(SyntaxToken(), L"Argument type could not be determined for parameter '" + param->Name + L"'");
 			return false;
 		}
 		
 		if (param->Type != argType)
 		{
-			string paramName(param->Type->Name.begin(), param->Type->Name.end());
-			string argName(argType->Name.begin(), argType->Name.end());
-			string paramVarName(param->Name.begin(), param->Name.end());
-			Diagnostics.ReportError(SyntaxToken(), "Argument type mismatch for parameter '" + paramVarName + "': expected '" + paramName + "' but got '" + argName + "'");
+			Diagnostics.ReportError(SyntaxToken(), L"Argument type mismatch for parameter '" + param->Name + L"': expected '" + param->Type->Name + L"' but got '" + argType->Name + L"'");
 			return false;
 		}
 	}
@@ -789,7 +768,7 @@ TypeSymbol* ExpressionBinder::AnalyzeLinkedExpression(LinkedExpressionSyntax* no
 {
 	if (node->Nodes.empty() || node->First == nullptr)
 	{
-		Diagnostics.ReportError(SyntaxToken(), "Empty linked expression");
+		Diagnostics.ReportError(SyntaxToken(), L"Empty linked expression");
 		return nullptr;
 	}
 	
@@ -825,7 +804,7 @@ TypeSymbol* ExpressionBinder::AnalyzeLinkedExpression(LinkedExpressionSyntax* no
 						
 						if (propertySymbol == nullptr)
 						{
-							Diagnostics.ReportError(memberAccess->IdentifierToken, "Keyword 'field' can only be used in property accessors");
+							Diagnostics.ReportError(memberAccess->IdentifierToken, L"Keyword 'field' can only be used in property accessors");
 							return nullptr;
 						}
 						
@@ -845,15 +824,13 @@ TypeSymbol* ExpressionBinder::AnalyzeLinkedExpression(LinkedExpressionSyntax* no
 							
 							if (ownerType == nullptr)
 							{
-								string propName(propertySymbol->Name.begin(), propertySymbol->Name.end());
-								Diagnostics.ReportError(memberAccess->IdentifierToken, "Cannot determine owner type for property '" + propName + "'");
+								Diagnostics.ReportError(memberAccess->IdentifierToken, L"Cannot determine owner type for property '" + propertySymbol->Name + L"'");
 								return nullptr;
 							}
 							
 							if (propertySymbol->ReturnType == nullptr)
 							{
-								string propName(propertySymbol->Name.begin(), propertySymbol->Name.end());
-								Diagnostics.ReportError(memberAccess->IdentifierToken, "Property '" + propName + "' type not resolved yet");
+								Diagnostics.ReportError(memberAccess->IdentifierToken, L"Property '" + propertySymbol->Name + L"' type not resolved yet");
 								return nullptr;
 							}
 							
@@ -880,8 +857,7 @@ TypeSymbol* ExpressionBinder::AnalyzeLinkedExpression(LinkedExpressionSyntax* no
 						
 						if (currentType == nullptr)
 						{
-							string propName(propertySymbol->Name.begin(), propertySymbol->Name.end());
-							Diagnostics.ReportError(memberAccess->IdentifierToken, "Backing field type not resolved for property '" + propName + "'");
+							Diagnostics.ReportError(memberAccess->IdentifierToken, L"Backing field type not resolved for property '" + propertySymbol->Name + L"'");
 							return nullptr;
 						}
 						
@@ -907,16 +883,14 @@ TypeSymbol* ExpressionBinder::AnalyzeLinkedExpression(LinkedExpressionSyntax* no
 
                         if (symbol == nullptr)
                         {
-                            string nameStr(name.begin(), name.end());
-                            Diagnostics.ReportError(memberAccess->IdentifierToken, "Symbol '" + nameStr + "' not found in current scope");
+                            Diagnostics.ReportError(memberAccess->IdentifierToken, L"Symbol '" + name + L"' not found in current scope");
                             return nullptr;
                         }
                     }
 					
 					if (!IsSymbolAccessible(symbol))
 					{
-						string nameStr(name.begin(), name.end());
-						Diagnostics.ReportError(memberAccess->IdentifierToken, "Symbol '" + nameStr + "' is not accessible");
+						Diagnostics.ReportError(memberAccess->IdentifierToken, L"Symbol '" + name + L"' is not accessible");
 						return nullptr;
 					}
 					
@@ -933,8 +907,7 @@ TypeSymbol* ExpressionBinder::AnalyzeLinkedExpression(LinkedExpressionSyntax* no
 						
 						if (currentType == nullptr)
 						{
-							string nameStr(name.begin(), name.end());
-							Diagnostics.ReportError(memberAccess->IdentifierToken, "Variable '" + nameStr + "' type not resolved");
+							Diagnostics.ReportError(memberAccess->IdentifierToken, L"Variable '" + name + L"' type not resolved");
 							return nullptr;
 						}
 					}
@@ -946,8 +919,7 @@ TypeSymbol* ExpressionBinder::AnalyzeLinkedExpression(LinkedExpressionSyntax* no
 						
 						if (currentType == nullptr)
 						{
-							string nameStr(name.begin(), name.end());
-							Diagnostics.ReportError(memberAccess->IdentifierToken, "Parameter '" + nameStr + "' type not resolved");
+							Diagnostics.ReportError(memberAccess->IdentifierToken, L"Parameter '" + name + L"' type not resolved");
 							return nullptr;
 						}
 					}
@@ -957,8 +929,7 @@ TypeSymbol* ExpressionBinder::AnalyzeLinkedExpression(LinkedExpressionSyntax* no
 						
 						if (!IsSymbolAccessible(fieldSymbol))
 						{
-							string nameStr(name.begin(), name.end());
-							Diagnostics.ReportError(memberAccess->IdentifierToken, "Field '" + nameStr + "' is not accessible");
+							Diagnostics.ReportError(memberAccess->IdentifierToken, L"Field '" + name + L"' is not accessible");
 							return nullptr;
 						}
 						
@@ -967,15 +938,13 @@ TypeSymbol* ExpressionBinder::AnalyzeLinkedExpression(LinkedExpressionSyntax* no
 						
 						if (currentType == nullptr)
 						{
-							string nameStr(name.begin(), name.end());
-							Diagnostics.ReportError(memberAccess->IdentifierToken, "Field '" + nameStr + "' type not resolved");
+							Diagnostics.ReportError(memberAccess->IdentifierToken, L"Field '" + name + L"' type not resolved");
 							return nullptr;
 						}
 					}
 					else
 					{
-						string nameStr(name.begin(), name.end());
-						Diagnostics.ReportError(memberAccess->IdentifierToken, "Symbol '" + nameStr + "' is not a variable, parameter or field (found " + to_string(static_cast<int>(symbol->Kind)) + ")");
+						Diagnostics.ReportError(memberAccess->IdentifierToken, L"Symbol '" + name + L"' is not a variable, parameter or field (found " + to_wstring(static_cast<int>(symbol->Kind)) + L")");
 						return nullptr;
 					}
 				}
@@ -983,14 +952,13 @@ TypeSymbol* ExpressionBinder::AnalyzeLinkedExpression(LinkedExpressionSyntax* no
 				{
 					if (currentType == nullptr)
 					{
-						Diagnostics.ReportError(memberAccess->IdentifierToken, "Cannot access member: previous expression has no type");
+						Diagnostics.ReportError(memberAccess->IdentifierToken, L"Cannot access member: previous expression has no type");
 						return nullptr;
 					}
 					
 					if (currentType->Kind != SyntaxKind::ClassDeclaration && currentType->Kind != SyntaxKind::StructDeclaration)
 					{
-						string typeName(currentType->Name.begin(), currentType->Name.end());
-						Diagnostics.ReportError(memberAccess->IdentifierToken, "Cannot access member on non-type '" + typeName + "'");
+						Diagnostics.ReportError(memberAccess->IdentifierToken, L"Cannot access member on non-type '" + currentType->Name + L"'");
 						return nullptr;
 					}
 					
@@ -1002,29 +970,25 @@ TypeSymbol* ExpressionBinder::AnalyzeLinkedExpression(LinkedExpressionSyntax* no
 					{
 						if (!IsSymbolAccessible(property))
 						{
-							string memberStr(memberName.begin(), memberName.end());
-							Diagnostics.ReportError(memberAccess->IdentifierToken, "Property '" + memberStr + "' is not accessible");
+							Diagnostics.ReportError(memberAccess->IdentifierToken, L"Property '" + memberName + L"' is not accessible");
 							return nullptr;
 						}
 						
 						if (isStaticContext && !property->IsStatic)
 						{
-							string memberStr(memberName.begin(), memberName.end());
-							Diagnostics.ReportError(memberAccess->IdentifierToken, "Cannot access instance property '" + memberStr + "' from type context");
+							Diagnostics.ReportError(memberAccess->IdentifierToken, L"Cannot access instance property '" + memberName + L"' from type context");
 							return nullptr;
 						}
 						if (!isStaticContext && property->IsStatic)
 						{
-							string memberStr(memberName.begin(), memberName.end());
-							Diagnostics.ReportError(memberAccess->IdentifierToken, "Cannot access static property '" + memberStr + "' from instance reference");
+							Diagnostics.ReportError(memberAccess->IdentifierToken, L"Cannot access static property '" + memberName + L"' from instance reference");
 							return nullptr;
 						}
 						
 						// Check if property has getter
 						if (property->GetMethod == nullptr)
 						{
-							string memberStr(memberName.begin(), memberName.end());
-							Diagnostics.ReportError(memberAccess->IdentifierToken, "Property '" + memberStr + "' has no get accessor");
+							Diagnostics.ReportError(memberAccess->IdentifierToken, L"Property '" + memberName + L"' has no get accessor");
 							return nullptr;
 						}
 						
@@ -1038,8 +1002,7 @@ TypeSymbol* ExpressionBinder::AnalyzeLinkedExpression(LinkedExpressionSyntax* no
 						
 						if (currentType == nullptr)
 						{
-							string memberStr(memberName.begin(), memberName.end());
-							Diagnostics.ReportError(memberAccess->IdentifierToken, "Property '" + memberStr + "' type not resolved");
+							Diagnostics.ReportError(memberAccess->IdentifierToken, L"Property '" + memberName + L"' type not resolved");
 							return nullptr;
 						}
 					}
@@ -1053,35 +1016,30 @@ TypeSymbol* ExpressionBinder::AnalyzeLinkedExpression(LinkedExpressionSyntax* no
 							MethodSymbol* method = currentType->FindMethod(memberName, vector<TypeSymbol*>());
 							if (method == nullptr)
 							{
-								string typeName(currentType->Name.begin(), currentType->Name.end());
-								string memberStr(memberName.begin(), memberName.end());
-								Diagnostics.ReportError(memberAccess->IdentifierToken, "Member '" + memberStr + "' not found in type '" + typeName + "'");
+								Diagnostics.ReportError(memberAccess->IdentifierToken, L"Member '" + memberName + L"' not found in type '" + currentType->Name + L"'");
 							}
 							else
 							{
-								string memberStr(memberName.begin(), memberName.end());
-								Diagnostics.ReportError(memberAccess->IdentifierToken, "Cannot access method '" + memberStr + "' without invocation");
+								Diagnostics.ReportError(memberAccess->IdentifierToken, L"Cannot access method '" + memberName + L"' without invocation");
 							}
+
 							return nullptr;
 						}
 						
 						if (!IsSymbolAccessible(field))
 						{
-							string memberStr(memberName.begin(), memberName.end());
-							Diagnostics.ReportError(memberAccess->IdentifierToken, "Field '" + memberStr + "' is not accessible");
+							Diagnostics.ReportError(memberAccess->IdentifierToken, L"Field '" + memberName + L"' is not accessible");
 							return nullptr;
 						}
 
 						if (isStaticContext && !field->IsStatic)
 						{
-							string memberStr(memberName.begin(), memberName.end());
-							Diagnostics.ReportError(memberAccess->IdentifierToken, "Cannot access instance field '" + memberStr + "' from type context");
+							Diagnostics.ReportError(memberAccess->IdentifierToken, L"Cannot access instance field '" + memberName + L"' from type context");
 							return nullptr;
 						}
 						if (!isStaticContext && field->IsStatic)
 						{
-							string memberStr(memberName.begin(), memberName.end());
-							Diagnostics.ReportError(memberAccess->IdentifierToken, "Cannot access static field '" + memberStr + "' from instance reference");
+							Diagnostics.ReportError(memberAccess->IdentifierToken, L"Cannot access static field '" + memberName + L"' from instance reference");
 							return nullptr;
 						}
 						
@@ -1094,8 +1052,7 @@ TypeSymbol* ExpressionBinder::AnalyzeLinkedExpression(LinkedExpressionSyntax* no
 						
 						if (currentType == nullptr)
 						{
-							string memberStr(memberName.begin(), memberName.end());
-							Diagnostics.ReportError(memberAccess->IdentifierToken, "Field '" + memberStr + "' type not resolved");
+							Diagnostics.ReportError(memberAccess->IdentifierToken, L"Field '" + memberName + L"' type not resolved");
 							return nullptr;
 						}
 					}
@@ -1124,15 +1081,13 @@ TypeSymbol* ExpressionBinder::AnalyzeLinkedExpression(LinkedExpressionSyntax* no
 
 							if (argType == nullptr)
 							{
-								string methodStr(methodName.begin(), methodName.end());
-								Diagnostics.ReportError(invocation->IdentifierToken, "Argument type could not be determined for method '" + methodStr + "'");
+								Diagnostics.ReportError(invocation->IdentifierToken, L"Argument type could not be determined for method '" + methodName + L"'");
 							}
 						}
 						else
 						{
 							argTypes.push_back(nullptr);
-							string methodStr(methodName.begin(), methodName.end());
-							Diagnostics.ReportError(invocation->IdentifierToken, "Null argument provided to method '" + methodStr + "'");
+							Diagnostics.ReportError(invocation->IdentifierToken, L"Null argument provided to method '" + methodName + L"'");
 						}
 					}
 				}
@@ -1143,8 +1098,7 @@ TypeSymbol* ExpressionBinder::AnalyzeLinkedExpression(LinkedExpressionSyntax* no
 					method = symbolTable->GlobalType->FindMethod(methodName, argTypes);
 					if (method == nullptr)
 					{
-						string methodStr(methodName.begin(), methodName.end());
-						Diagnostics.ReportError(invocation->IdentifierToken, "Global scope's member '" + methodStr + "' is not a method");
+						Diagnostics.ReportError(invocation->IdentifierToken, L"Global scope's member '" + methodName + L"' is not a method");
 						return nullptr;
 					}
 				}
@@ -1152,46 +1106,39 @@ TypeSymbol* ExpressionBinder::AnalyzeLinkedExpression(LinkedExpressionSyntax* no
 				{
 					if (currentType->Kind != SyntaxKind::ClassDeclaration && currentType->Kind != SyntaxKind::StructDeclaration)
 					{
-						string typeName(currentType->Name.begin(), currentType->Name.end());
-						Diagnostics.ReportError(invocation->IdentifierToken, "Cannot invoke method on non-type '" + typeName + "'");
+						Diagnostics.ReportError(invocation->IdentifierToken, L"Cannot invoke method on non-type '" + currentType->Name + L"'");
 						return nullptr;
 					}
 
 					method = currentType->FindMethod(methodName, argTypes);
 					if (method == nullptr)
 					{
-						string typeName(currentType->Name.begin(), currentType->Name.end());
-						string methodStr(methodName.begin(), methodName.end());
-						Diagnostics.ReportError(invocation->IdentifierToken, "Method '" + methodStr + "' not found in type '" + typeName + "' or argument types do not match");
+						Diagnostics.ReportError(invocation->IdentifierToken, L"Method '" + methodName + L"' not found in type '" + currentType->Name + L"' or argument types do not match");
 						return nullptr;
 					}
 				}
 
                 if (!IsSymbolAccessible(method))
 				{
-					string methodStr(methodName.begin(), methodName.end());
-					Diagnostics.ReportError(invocation->IdentifierToken, "Method '" + methodStr + "' is not accessible");
+					Diagnostics.ReportError(invocation->IdentifierToken, L"Method '" + methodName + L"' is not accessible");
 					return nullptr;
 				}
 				
 				if (!MatchMethodArguments(method, invocation->ArgumentsList))
 				{
-					string methodStr(methodName.begin(), methodName.end());
-					Diagnostics.ReportError(invocation->IdentifierToken, "Method '" + methodStr + "' argument types do not match");
+					Diagnostics.ReportError(invocation->IdentifierToken, L"Method '" + methodName + L"' argument types do not match");
 					return nullptr;
 				}
 				
                 if (isStaticContext && !method->IsStatic)
                 {
-                    string methodStr(methodName.begin(), methodName.end());
-                    Diagnostics.ReportError(invocation->IdentifierToken, "Cannot call instance method '" + methodStr + "' from type context");
+                    Diagnostics.ReportError(invocation->IdentifierToken, L"Cannot call instance method '" + methodName + L"' from type context");
                     return nullptr;
                 }
 
                 if (!isStaticContext && method->IsStatic)
                 {
-                    string methodStr(methodName.begin(), methodName.end());
-                    Diagnostics.ReportError(invocation->IdentifierToken, "Cannot call static method '" + methodStr + "' on instance reference");
+                    Diagnostics.ReportError(invocation->IdentifierToken, L"Cannot call static method '" + methodName + L"' on instance reference");
                     return nullptr;
                 }
 
@@ -1201,8 +1148,7 @@ TypeSymbol* ExpressionBinder::AnalyzeLinkedExpression(LinkedExpressionSyntax* no
 				
 				if (currentType == nullptr)
 				{
-					string methodStr(methodName.begin(), methodName.end());
-					Diagnostics.ReportError(invocation->IdentifierToken, "Method '" + methodStr + "' return type not resolved");
+					Diagnostics.ReportError(invocation->IdentifierToken, L"Method '" + methodName + L"' return type not resolved");
 					return nullptr;
 				}
 				
@@ -1211,13 +1157,13 @@ TypeSymbol* ExpressionBinder::AnalyzeLinkedExpression(LinkedExpressionSyntax* no
 			
 			case SyntaxKind::IndexatorExpression:
 			{
-				Diagnostics.ReportError(SyntaxToken(), "Indexer expressions are not yet supported");
+				Diagnostics.ReportError(SyntaxToken(), L"Indexer expressions are not yet supported");
 				return nullptr;
 			}
 			
 			default:
 			{
-				Diagnostics.ReportError(SyntaxToken(), "Unknown linked expression node type");
+				Diagnostics.ReportError(SyntaxToken(), L"Unknown linked expression node type");
 				return nullptr;
 			}
 		}
@@ -1257,12 +1203,11 @@ void ExpressionBinder::VisitWhileStatement(WhileStatementSyntax* node)
 		
 		if (conditionType == nullptr)
 		{
-			Diagnostics.ReportError(node->KeywordToken, "While loop condition type could not be determined");
+			Diagnostics.ReportError(node->KeywordToken, L"While loop condition type could not be determined");
 		}
 		else if (conditionType != SymbolTable::Primitives::Boolean)
 		{
-			string typeName(conditionType->Name.begin(), conditionType->Name.end());
-			Diagnostics.ReportError(node->KeywordToken, "While loop condition must be boolean, got '" + typeName + "'");
+			Diagnostics.ReportError(node->KeywordToken, L"While loop condition must be boolean, got '" + conditionType->Name + L"'");
 		}
 	}
 	
@@ -1279,12 +1224,11 @@ void ExpressionBinder::VisitUntilStatement(UntilStatementSyntax* node)
 		
 		if (conditionType == nullptr)
 		{
-			Diagnostics.ReportError(node->KeywordToken, "Until loop condition type could not be determined");
+			Diagnostics.ReportError(node->KeywordToken, L"Until loop condition type could not be determined");
 		}
 		else if (conditionType != SymbolTable::Primitives::Boolean)
 		{
-			string typeName(conditionType->Name.begin(), conditionType->Name.end());
-			Diagnostics.ReportError(node->KeywordToken, "Until loop condition must be boolean, got '" + typeName + "'");
+			Diagnostics.ReportError(node->KeywordToken, L"Until loop condition must be boolean, got '" + conditionType->Name + L"'");
 		}
 	}
 	
@@ -1304,12 +1248,11 @@ void ExpressionBinder::VisitForStatement(ForStatementSyntax* node)
 		
 		if (conditionType == nullptr)
 		{
-			Diagnostics.ReportError(node->FirstSemicolon, "For loop condition type could not be determined");
+			Diagnostics.ReportError(node->FirstSemicolon, L"For loop condition type could not be determined");
 		}
 		else if (conditionType != SymbolTable::Primitives::Boolean)
 		{
-			string typeName(conditionType->Name.begin(), conditionType->Name.end());
-			Diagnostics.ReportError(node->FirstSemicolon, "For loop condition must be boolean, got '" + typeName + "'");
+			Diagnostics.ReportError(node->FirstSemicolon, L"For loop condition must be boolean, got '" + conditionType->Name + L"'");
 		}
 	}
 	
@@ -1332,17 +1275,17 @@ void ExpressionBinder::VisitIfStatement(IfStatementSyntax* node)
 			
 			if (conditionType == nullptr)
 			{
-				Diagnostics.ReportError(node->KeywordToken, "If condition type could not be determined");
+				Diagnostics.ReportError(node->KeywordToken, L"If condition type could not be determined");
 			}
 			else if (conditionType != SymbolTable::Primitives::Boolean)
 			{
 				string typeName(conditionType->Name.begin(), conditionType->Name.end());
-				Diagnostics.ReportError(node->KeywordToken, "If condition must be boolean, got '" + typeName + "'");
+				Diagnostics.ReportError(node->KeywordToken, L"If condition must be boolean, got '" + conditionType->Name + L"'");
 			}
 		}
 		else
 		{
-			Diagnostics.ReportError(node->KeywordToken, "If condition must be an expression");
+			Diagnostics.ReportError(node->KeywordToken, L"If condition must be an expression");
 		}
 	}
 	
@@ -1365,17 +1308,16 @@ void ExpressionBinder::VisitUnlessStatement(UnlessStatementSyntax* node)
 			
 			if (conditionType == nullptr)
 			{
-				Diagnostics.ReportError(node->KeywordToken, "Unless condition type could not be determined");
+				Diagnostics.ReportError(node->KeywordToken, L"Unless condition type could not be determined");
 			}
 			else if (conditionType != SymbolTable::Primitives::Boolean)
 			{
-				string typeName(conditionType->Name.begin(), conditionType->Name.end());
-				Diagnostics.ReportError(node->KeywordToken, "Unless condition must be boolean, got '" + typeName + "'");
+				Diagnostics.ReportError(node->KeywordToken, L"Unless condition must be boolean, got '" + conditionType->Name + L"'");
 			}
 		}
 		else
 		{
-			Diagnostics.ReportError(node->KeywordToken, "Unless condition must be an expression");
+			Diagnostics.ReportError(node->KeywordToken, L"Unless condition must be an expression");
 		}
 	}
 	
@@ -1446,7 +1388,7 @@ void ExpressionBinder::VisitReturnStatement(ReturnStatementSyntax* node)
 
 	if (searchingScope == nullptr)
 	{
-		Diagnostics.ReportError(node->KeywordToken, "Couldnt find scope to return within");
+		Diagnostics.ReportError(node->KeywordToken, L"Couldnt find scope to return within");
 		return;
 	}
 
@@ -1455,8 +1397,7 @@ void ExpressionBinder::VisitReturnStatement(ReturnStatementSyntax* node)
 	{
 		if (node->Expression == nullptr)
 		{
-			string returnTypeName(returnType->Name.begin(), returnType->Name.end());
-			Diagnostics.ReportError(SyntaxToken(), "Return statement must return a value of type '" + returnTypeName + "'");
+			Diagnostics.ReportError(SyntaxToken(), L"Return statement must return a value of type '" + returnType->Name + L"'");
 		}
 		else
 		{
@@ -1468,16 +1409,13 @@ void ExpressionBinder::VisitReturnStatement(ReturnStatementSyntax* node)
 			{
 				Diagnostics.ReportError(node->Expression->Kind == SyntaxKind::LiteralExpression
 					? static_cast<LiteralExpressionSyntax*>(node->Expression)->LiteralToken
-					: SyntaxToken(), "Return expression type could not be determined");
+					: SyntaxToken(), L"Return expression type could not be determined");
 			}
 			else if (returnExprType != returnType)
 			{
-				string expectedName(returnType->Name.begin(), returnType->Name.end());
-				string actualName(returnExprType->Name.begin(), returnExprType->Name.end());
-
 				Diagnostics.ReportError(node->Expression->Kind == SyntaxKind::LiteralExpression
 					? static_cast<LiteralExpressionSyntax*>(node->Expression)->LiteralToken
-					: SyntaxToken(), "Return type mismatch: expected '" + expectedName + "' but got '" + actualName + "'");
+					: SyntaxToken(), L"Return type mismatch: expected '" + returnType->Name + L"' but got '" + returnExprType->Name + L"'");
 			}
 		}
 	}
@@ -1490,7 +1428,7 @@ void ExpressionBinder::VisitReturnStatement(ReturnStatementSyntax* node)
 
 			Diagnostics.ReportError(node->Expression->Kind == SyntaxKind::LiteralExpression
 				? static_cast<LiteralExpressionSyntax*>(node->Expression)->LiteralToken
-				: SyntaxToken(), "Void method cannot return a value");
+				: SyntaxToken(), L"Void method cannot return a value");
 		}
 	}
 }

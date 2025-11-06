@@ -10,18 +10,18 @@ using namespace std;
 using namespace shard::syntax;
 using namespace shard::parsing::analysis;
 
-void DiagnosticsContext::ReportError(SyntaxToken token, string message)
+void DiagnosticsContext::ReportError(SyntaxToken token, wstring message)
 {
 	AnyError = true;
 	Diagnostics.push_back(Diagnostic(token, DiagnosticSeverity::Error, message));
 }
 
-void DiagnosticsContext::ReportWarning(SyntaxToken token, string message)
+void DiagnosticsContext::ReportWarning(SyntaxToken token, wstring message)
 {
 	Diagnostics.push_back(Diagnostic(token, DiagnosticSeverity::Warning, message));
 }
 
-void DiagnosticsContext::ReportInfo(SyntaxToken token, string message)
+void DiagnosticsContext::ReportInfo(SyntaxToken token, wstring message)
 {
 	Diagnostic dgnstc = Diagnostic(token, DiagnosticSeverity::Info, message);
 	Diagnostics.push_back(dgnstc);

@@ -27,11 +27,11 @@ void SemanticAnalyzer::Analyze(SyntaxTree& syntaxTree, SemanticModel& semanticMo
 
 	if (semanticModel.Table->EntryPointCandidates.empty())
 	{
-		Diagnostics.ReportError(SyntaxToken(), "Entry point for script not found");
+		Diagnostics.ReportError(SyntaxToken(), L"Entry point for script not found");
 	}
 	
 	if (semanticModel.Table->EntryPointCandidates.size() > 1)
 	{
-		Diagnostics.ReportError(SyntaxToken(), "model has multiple entry points");
+		Diagnostics.ReportError(SyntaxToken(), L"model has multiple entry points");
 	}
 }

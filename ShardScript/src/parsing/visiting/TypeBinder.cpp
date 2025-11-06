@@ -124,18 +124,17 @@ void TypeBinder::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 			symbol->ReturnType = ResolveType(node->ReturnType);
 			if (symbol->ReturnType == nullptr)
 			{
-				string typeName = "unknown";
+				wstring typeName = L"unknown";
 				if (node->ReturnType->Kind == SyntaxKind::IdentifierNameType)
 				{
 					IdentifierNameTypeSyntax* idType = static_cast<IdentifierNameTypeSyntax*>(node->ReturnType);
 					if (!idType->Identifiers.empty())
 					{
-						wstring wname = idType->Identifiers[0].Word;
-						typeName = string(wname.begin(), wname.end());
+						typeName = idType->Identifiers[0].Word;
 					}
 				}
 
-				Diagnostics.ReportError(node->IdentifierToken, "Return type not found: " + typeName);
+				Diagnostics.ReportError(node->IdentifierToken, L"Return type not found: " + typeName);
 			}
 		}
 
@@ -151,18 +150,17 @@ void TypeBinder::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 					paramSymbol->Type = ResolveType(const_cast<TypeSyntax*>(paramSyntax->Type));
 					if (paramSymbol->Type == nullptr)
 					{
-						string typeName = "unknown";
+						wstring typeName = L"unknown";
 						if (paramSyntax->Type->Kind == SyntaxKind::IdentifierNameType)
 						{
 							IdentifierNameTypeSyntax* idType = static_cast<IdentifierNameTypeSyntax*>(const_cast<TypeSyntax*>(paramSyntax->Type));
 							if (!idType->Identifiers.empty())
 							{
-								wstring wname = idType->Identifiers[0].Word;
-								typeName = string(wname.begin(), wname.end());
+								typeName = idType->Identifiers[0].Word;
 							}
 						}
 
-						Diagnostics.ReportError(paramSyntax->Identifier, "Parameter type not found: " + typeName);
+						Diagnostics.ReportError(paramSyntax->Identifier, L"Parameter type not found: " + typeName);
 					}
 				}
 			}
@@ -185,18 +183,17 @@ void TypeBinder::VisitFieldDeclaration(FieldDeclarationSyntax* node)
 		symbol->ReturnType = ResolveType(node->ReturnType);
 		if (symbol->ReturnType == nullptr)
 		{
-			string typeName = "unknown";
+			wstring typeName = L"unknown";
 			if (node->ReturnType->Kind == SyntaxKind::IdentifierNameType)
 			{
 				IdentifierNameTypeSyntax* idType = static_cast<IdentifierNameTypeSyntax*>(node->ReturnType);
 				if (!idType->Identifiers.empty())
 				{
-					wstring wname = idType->Identifiers[0].Word;
-					typeName = string(wname.begin(), wname.end());
+					typeName = idType->Identifiers[0].Word;
 				}
 			}
 
-			Diagnostics.ReportError(node->IdentifierToken, "Field type not found: " + typeName);
+			Diagnostics.ReportError(node->IdentifierToken, L"Field type not found: " + typeName);
 		}
 	}
 
@@ -216,18 +213,17 @@ void TypeBinder::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
 		
 		if (propertyType == nullptr)
 		{
-			string typeName = "unknown";
+			wstring typeName = L"unknown";
 			if (node->ReturnType->Kind == SyntaxKind::IdentifierNameType)
 			{
 				IdentifierNameTypeSyntax* idType = static_cast<IdentifierNameTypeSyntax*>(node->ReturnType);
 				if (!idType->Identifiers.empty())
 				{
-					wstring wname = idType->Identifiers[0].Word;
-					typeName = string(wname.begin(), wname.end());
+					typeName = idType->Identifiers[0].Word;
 				}
 			}
 
-			Diagnostics.ReportError(node->IdentifierToken, "Property type not found: " + typeName);
+			Diagnostics.ReportError(node->IdentifierToken, L"Property type not found: " + typeName);
 		}
 		
 		// Resolve backing field type if it exists
@@ -351,17 +347,16 @@ void TypeBinder::VisitVariableStatement(VariableStatementSyntax* node)
 		symbol->Type = ResolveType(node->Type);
 		if (symbol->Type == nullptr)
 		{
-			string typeName = "unknown";
+			wstring typeName = L"unknown";
 			if (node->Type->Kind == SyntaxKind::IdentifierNameType)
 			{
 				IdentifierNameTypeSyntax* idType = static_cast<IdentifierNameTypeSyntax*>(node->Type);
 				if (!idType->Identifiers.empty())
 				{
-					wstring wname = idType->Identifiers[0].Word;
-					typeName = string(wname.begin(), wname.end());
+					typeName = idType->Identifiers[0].Word;
 				}
 			}
-			Diagnostics.ReportError(node->IdentifierToken, "Variable type not found: " + typeName);
+			Diagnostics.ReportError(node->IdentifierToken, L"Variable type not found: " + typeName);
 		}
 	}
 
@@ -377,18 +372,17 @@ void TypeBinder::VisitObjectCreationExpression(ObjectExpressionSyntax* node)
 		node->Symbol = ResolveType(node->Type);
 		if (node->Symbol == nullptr)
 		{
-			string typeName = "unknown";
+			wstring typeName = L"unknown";
 			if (node->Type->Kind == SyntaxKind::IdentifierNameType)
 			{
 				IdentifierNameTypeSyntax* idType = static_cast<IdentifierNameTypeSyntax*>(node->Type);
 				if (!idType->Identifiers.empty())
 				{
-					wstring wname = idType->Identifiers[0].Word;
-					typeName = std::string(wname.begin(), wname.end());
+					typeName = idType->Identifiers[0].Word;
 				}
 			}
 
-			Diagnostics.ReportError(node->NewToken, "Type not found: " + typeName);
+			Diagnostics.ReportError(node->NewToken, L"Type not found: " + typeName);
 		}
 	}
 
@@ -619,7 +613,7 @@ TypeSymbol* TypeBinder::ResolveType(TypeSyntax* typeSyntax)
 			TypeSymbol* typeSymbol = static_cast<TypeSymbol*>(symbol);
 			if (!IsSymbolAccessible(symbol))
 			{
-				Diagnostics.ReportError(identifierType->Identifiers[0], "Symbol inaccessible");
+				Diagnostics.ReportError(identifierType->Identifiers[0], L"Symbol inaccessible");
 				return nullptr;
 			}
 
