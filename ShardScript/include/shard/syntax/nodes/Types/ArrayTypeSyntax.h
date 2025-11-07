@@ -10,11 +10,13 @@ namespace shard::syntax::nodes
 	{
 	public:
 		TypeSyntax* UnderlayingType = nullptr;
-		SyntaxToken OpenBraceToken;
-		SyntaxToken CloseBraceToken;
+		SyntaxToken OpenSquareToken;
+		SyntaxToken CloseSquareToken;
 		int Rank = 1;
 
 		inline ArrayTypeSyntax(const SyntaxNode* parent)
 			: TypeSyntax(SyntaxKind::ArrayType, parent) { }
+		
+		std::wstring ToString() override;
 	};
 }

@@ -109,14 +109,15 @@ namespace shard::syntax::nodes
 	class IndexatorExpressionSyntax : public LinkedExpressionNode
 	{
 	public:
-		const SyntaxToken IdentifierToken;
+		MemberAccessExpressionSyntax* MemberAccess;
 		IndexatorListSyntax* IndexatorList = nullptr;
+		shard::syntax::symbols::MethodSymbol* Symbol = nullptr;
 
-		inline IndexatorExpressionSyntax(SyntaxToken identifier, LinkedExpressionNode* previous, LinkedExpressionSyntax* parent)
-			: LinkedExpressionNode(SyntaxKind::IndexatorExpression, previous, parent), IdentifierToken(identifier) { }
+		inline IndexatorExpressionSyntax(MemberAccessExpressionSyntax* memberAccess, LinkedExpressionSyntax* parent)
+			: LinkedExpressionNode(SyntaxKind::IndexatorExpression, memberAccess, parent), MemberAccess(memberAccess) { }
 
 		inline IndexatorExpressionSyntax(const IndexatorExpressionSyntax& other)
-			: LinkedExpressionNode(SyntaxKind::InvokationExpression, other.PrevNode, other.Parent), IdentifierToken(other.IdentifierToken), IndexatorList(other.IndexatorList) { }
+			: LinkedExpressionNode(SyntaxKind::InvokationExpression, other.PrevNode, other.Parent), MemberAccess(other.MemberAccess), IndexatorList(other.IndexatorList) { }
 
 		inline virtual ~IndexatorExpressionSyntax()
 		{

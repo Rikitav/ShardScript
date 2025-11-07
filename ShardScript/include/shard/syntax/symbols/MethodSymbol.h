@@ -11,11 +11,6 @@
 #include <string>
 #include <vector>
 
-namespace shard::runtime
-{
-	class AbstractInterpreter; // Forward declaration
-}
-
 namespace shard::syntax::symbols
 {
     typedef shard::runtime::ObjectInstance* (*MethodSymbolDelegate)(shard::runtime::InboundVariablesContext* arguments);

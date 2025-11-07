@@ -11,6 +11,7 @@ namespace shard::utilities
     {
         bool UseInteractive = false;
         bool ShowHelp = false;
+        bool ExcludeStd = false;
         vector<wstring> FilesToCompile;
     };
 
@@ -33,6 +34,10 @@ namespace shard::utilities
             else if (arg == L"--help" || arg == L"-h")
             {
                 args.ShowHelp = true;
+            }
+            else if (arg == L"--no-std")
+            {
+                args.ExcludeStd = true;
             }
             else
             {

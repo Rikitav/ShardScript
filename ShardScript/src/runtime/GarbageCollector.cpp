@@ -2,13 +2,14 @@
 #include <shard/runtime/ObjectInstance.h>
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/FieldSymbol.h>
-#include <shard/runtime/AbstractInterpreter.h>
+#include <shard/syntax/SyntaxKind.h>
 
 #include <malloc.h>
 #include <stdexcept>
 #include <cstring>
 
 using namespace std;
+using namespace shard::syntax;
 using namespace shard::syntax::symbols;
 using namespace shard::runtime;
 
@@ -44,29 +45,38 @@ void GarbageCollector::SetStaticField(FieldSymbol* field, ObjectInstance* instan
 
 ObjectInstance* GarbageCollector::AllocateInstance(const TypeSymbol* objectInfo)
 {
-	void* ptr = malloc(objectInfo->MemoryBytesSize);
-	if (ptr == nullptr)
+	void* memory = malloc(objectInfo->MemoryBytesSize);
+	if (memory == nullptr)
 		throw runtime_error("cannot allocate memory for new instance");
 
-	memset(ptr, 0, objectInfo->MemoryBytesSize);
-	ObjectInstance* instance = new ObjectInstance(objectsCounter++, objectInfo, ptr);
+	memset(memory, 0, objectInfo->MemoryBytesSize);
+	ObjectInstance* instance = new ObjectInstance(objectsCounter++, objectInfo, memory);
 	instance->IncrementReference();
 
 	Heap.add(instance);
 	return instance;
 }
 
+/*
 ObjectInstance* GarbageCollector::CreateInstance(const TypeSymbol* objectInfo, void* ptr)
 {
-	ObjectInstance* newInstance = new ObjectInstance(objectsCounter++, objectInfo, ptr);
+	ObjectInstance* newInstance = new ObjectInstance(objectsCounter++, objectInfo, , ptr);
 	return newInstance;
 }
+*/
 
 ObjectInstance* GarbageCollector::CopyInstance(const TypeSymbol* objectInfo, void* ptr)
 {
-	ObjectInstance* newInstance = GarbageCollector::AllocateInstance(objectInfo);
-	memcpy(newInstance->Ptr, ptr, objectInfo->MemoryBytesSize);
-	return newInstance;
+	void* memory = malloc(objectInfo->MemoryBytesSize);
+	if (ptr == nullptr)
+		throw runtime_error("cannot allocate memory for new instance");
+
+	memcpy(memory, ptr, objectInfo->MemoryBytesSize);
+	ObjectInstance* instance = new ObjectInstance(objectsCounter++, objectInfo, ptr);
+	instance->IncrementReference();
+
+	Heap.add(instance);
+	return instance;
 }
 
 ObjectInstance* GarbageCollector::CopyInstance(ObjectInstance* instance)
@@ -93,7 +103,7 @@ void GarbageCollector::CopyInstance(ObjectInstance* from, ObjectInstance* to)
 void GarbageCollector::DestroyInstance(ObjectInstance* instance)
 {
 	if (instance == nullptr)
-		return;
+		throw runtime_error("requested destroying nullptr");
 
 	if (instance->Info->IsReferenceType)
 	{

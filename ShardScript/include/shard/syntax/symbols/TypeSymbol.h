@@ -24,7 +24,9 @@ namespace shard::syntax::symbols
         TypeSymbol* BaseType = nullptr;
         std::vector<TypeSymbol*> Interfaces;
 
+        std::vector<MethodSymbol*> Constructors;
         std::vector<MethodSymbol*> Methods;
+        std::vector<MethodSymbol*> Indexators;
         std::vector<FieldSymbol*> Fields;
         std::vector<PropertySymbol*> Properties;
 
@@ -32,6 +34,7 @@ namespace shard::syntax::symbols
         size_t MemoryBytesSize = 0;
         bool IsReferenceType = false;
         bool IsValueType = false;
+        
         bool IsStatic = false;
         bool IsAbstract = false;
         bool IsSealed = false;
@@ -57,8 +60,14 @@ namespace shard::syntax::symbols
                 BaseType = nullptr;
         }
 
-        MethodSymbol* FindMethod(std::wstring& name, std::vector<TypeSymbol*> parameterTypes);
-        FieldSymbol* FindField(std::wstring& name);
-        PropertySymbol* FindProperty(std::wstring& name);
+        inline size_t GetInlineSize()
+        {
+            return IsReferenceType ? sizeof(void*) : MemoryBytesSize;
+        }
+
+        virtual MethodSymbol* FindMethod(std::wstring& name, std::vector<TypeSymbol*> parameterTypes);
+        virtual MethodSymbol* FindIndexator(std::vector<TypeSymbol*> parameterTypes);
+        virtual FieldSymbol* FindField(std::wstring& name);
+        virtual PropertySymbol* FindProperty(std::wstring& name);
 	};
 }

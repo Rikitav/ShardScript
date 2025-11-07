@@ -27,6 +27,7 @@
 #include <shard/syntax/nodes/Expressions/LiteralExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/ObjectExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/UnaryExpressionSyntax.h>
+#include <shard/syntax/nodes/Expressions/CollectionExpressionSyntax.h>
 
 #include <shard/syntax/nodes/Loops/ForStatementSyntax.h>
 #include <shard/syntax/nodes/Loops/UntilStatementSyntax.h>
@@ -51,6 +52,7 @@
 using namespace std;
 using namespace shard::parsing;
 using namespace shard::parsing::lexical;
+using namespace shard::parsing::semantic;
 using namespace shard::syntax;
 using namespace shard::syntax::nodes;
 
@@ -105,15 +107,6 @@ void SyntaxVisitor::VisitTypeDeclaration(MemberDeclarationSyntax* node)
 			VisitStructDeclaration(declNode);
 			return;
 		}
-
-		/*
-		case SyntaxKind::MethodDeclaration:
-		{
-			MethodDeclarationSyntax* declNode = static_cast<MethodDeclarationSyntax*>(node);
-			VisitMethodDeclaration(declNode);
-			return;
-		}
-		*/
 	}
 }
 
@@ -454,6 +447,13 @@ void SyntaxVisitor::VisitExpression(ExpressionSyntax* node)
 			VisitObjectCreationExpression(expression);
 			return;
 		}
+
+		case SyntaxKind::CollectionExpression:
+		{
+			CollectionExpressionSyntax* expression = dynamic_cast<CollectionExpressionSyntax*>(node);
+			VisitCollectionExpression(expression);
+			return;
+		}
 	}
 }
 
@@ -472,6 +472,12 @@ void SyntaxVisitor::VisitBinaryExpression(BinaryExpressionSyntax* node)
 void SyntaxVisitor::VisitUnaryExpression(UnaryExpressionSyntax* node)
 {
 	VisitExpression(node->Expression);
+}
+
+void SyntaxVisitor::VisitCollectionExpression(CollectionExpressionSyntax* node)
+{
+	for (ExpressionSyntax* expression : node->ValuesExpressions)
+		VisitExpression(expression);
 }
 
 void SyntaxVisitor::VisitObjectCreationExpression(ObjectExpressionSyntax* node)

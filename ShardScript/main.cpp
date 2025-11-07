@@ -11,9 +11,13 @@
 #include <shard/runtime/AbstractInterpreter.h>
 #include <shard/runtime/InteractiveConsole.h>
 
+#include <shard/framework/FrameworkLoader.h>
+
 #include "src/utilities/ArgumentsParser.cpp"
 //#include "src/utilities/ExecutableVersion.cpp"
 
+//#include <Windows.h>
+//#include <Shlwapi.h>
 #include <iostream>
 #include <string>
 #include <stdexcept>
@@ -22,6 +26,7 @@
 
 using namespace std;
 using namespace shard::utilities;
+using namespace shard::framework;
 using namespace shard::runtime;
 using namespace shard::syntax;
 using namespace shard::parsing;
@@ -42,11 +47,26 @@ int wmain(int argc, wchar_t* argv[])
 			wcout << "ShardLang interpreter v" << version;
 			return 0;
 		}
+		
+		bool anyUnrealFiles = false;
+		for (const wstring& file : args.FilesToCompile)
+		{
+			/*
+			if (!PathFileExistsW(file.c_str()))
+			{
+				anyUnrealFiles = true;
+				wcout << L"'" << file << L"doesnt exists";
+			}
+			*/
+		}
+
+		if (anyUnrealFiles)
+			return 1;
 
 		DiagnosticsContext diagnostics;
 		SyntaxTree syntaxTree;
 		LexicalAnalyzer lexer(diagnostics);
-		
+
 		for (const wstring& file : args.FilesToCompile)
 		{
 			FileReader reader = FileReader(file);
@@ -54,8 +74,10 @@ int wmain(int argc, wchar_t* argv[])
 		}
 
 		SemanticModel semanticModel = SemanticModel(syntaxTree);
-		semanticModel.Table->ResolvePrmitives();
-		semanticModel.Table->ResolveGlobalMethods();
+		if (!args.ExcludeStd)
+		{
+			FrameworkLoader::Load(semanticModel);
+		}
 
 		SemanticAnalyzer semanticAnalyzer(diagnostics);
 		semanticAnalyzer.Analyze(syntaxTree, semanticModel);

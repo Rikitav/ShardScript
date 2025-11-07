@@ -1,5 +1,8 @@
 #pragma once
 #include <shard/parsing/lexical/SyntaxTree.h>
+#include <shard/parsing/analysis/DiagnosticsContext.h>
+#include <shard/parsing/semantic/SemanticScope.h>
+#include <shard/parsing/semantic/SymbolTable.h>
 
 #include <shard/syntax/nodes/ExpressionSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarationSyntax.h>
@@ -37,6 +40,7 @@
 #include <shard/syntax/nodes/Expressions/LiteralExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/LinkedExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/ObjectExpressionSyntax.h>
+#include <shard/syntax/nodes/Expressions/CollectionExpressionSyntax.h>
 
 #include <shard/syntax/nodes/Types/PredefinedTypeSyntax.h>
 #include <shard/syntax/nodes/Types/GenericTypeSyntax.h>
@@ -44,10 +48,19 @@
 #include <shard/syntax/nodes/Types/ArrayTypeSyntax.h>
 #include <shard/syntax/nodes/Types/NullableTypeSyntax.h>
 
+#include <stack>
+
 namespace shard::parsing
 {
 	class SyntaxVisitor
 	{
+    protected:
+        shard::parsing::semantic::SymbolTable* Table;
+        shard::parsing::analysis::DiagnosticsContext& Diagnostics;
+
+        inline SyntaxVisitor(shard::parsing::semantic::SymbolTable* symbolTable, shard::parsing::analysis::DiagnosticsContext& diagnostics)
+            : Table(symbolTable), Diagnostics(diagnostics) { }
+
 	public:
         virtual void VisitSyntaxTree(shard::parsing::lexical::SyntaxTree& tree);
         virtual void VisitCompilationUnit(shard::syntax::nodes::CompilationUnitSyntax* node);
@@ -87,6 +100,7 @@ namespace shard::parsing
         virtual void VisitBinaryExpression(shard::syntax::nodes::BinaryExpressionSyntax* node);
         virtual void VisitUnaryExpression(shard::syntax::nodes::UnaryExpressionSyntax* node);
         virtual void VisitObjectCreationExpression(shard::syntax::nodes::ObjectExpressionSyntax* node);
+        virtual void VisitCollectionExpression(shard::syntax::nodes::CollectionExpressionSyntax* node);
 
         virtual void VisitLinkedExpression(shard::syntax::nodes::LinkedExpressionSyntax* node);
         virtual void VisitLinkedExpressionNode(shard::syntax::nodes::LinkedExpressionNode* node);

@@ -41,80 +41,84 @@ using namespace shard::syntax;
 using namespace shard::syntax::nodes;
 using namespace shard::syntax::symbols;
 
-void DeclarationCollector::pushScope(SyntaxSymbol* symbol)
-{
-    SemanticScope* newScope = new SemanticScope(symbol, scopeStack.top());
-    scopeStack.push(newScope);
-}
-
 void DeclarationCollector::VisitCompilationUnit(CompilationUnitSyntax* node)
 {
-    pushScope(nullptr);
+    PushScope(nullptr);
     if (node->Imports.size() > 0)
     {
         FFISymbol* symbol = new FFISymbol();
-        pushScope(symbol);
+        PushScope(symbol);
 
         for (ImportDirectiveSyntax* directive : node->Imports)
             VisitImportDirective(directive);
+
+        PopScope();
     }
 
     for (MemberDeclarationSyntax* member : node->Members)
         VisitTypeDeclaration(member);
 
-    pushScope(nullptr);
+    PopScope();
 }
 
 void DeclarationCollector::VisitNamespaceDeclaration(NamespaceDeclarationSyntax* node)
 {
     wstring namespaceName = node->IdentifierToken.Word;
     NamespaceSymbol* symbol = new NamespaceSymbol(namespaceName);
+    symbol->Parent = OwnerType();
 
-    symbolTable->BindSymbol(node, symbol);
+    Table->BindSymbol(node, symbol);
 
-    NamespaceSymbol* parent = static_cast<NamespaceSymbol*>((SyntaxSymbol*)scopeStack.top()->Owner);
-    if (parent != nullptr)
-        symbol->Parent = parent;
-   
-    scopeStack.top()->DeclareSymbol(symbol);
-    pushScope(symbol);
+    if (symbol->Parent != nullptr)
+    {
+        if (symbol->Parent->Kind == SyntaxKind::NamespaceDeclaration)
+        {
+            NamespaceSymbol* parent = static_cast<NamespaceSymbol*>(symbol->Parent);
+            parent->Members.push_back(symbol);
+        }
+    }
+
+    Declare(symbol);
+    PushScope(symbol);
     
     for (MemberDeclarationSyntax* member : node->Members)
         VisitMemberDeclaration(member);
 
-    scopeStack.pop();
+    PopScope();
 }
 
 void DeclarationCollector::VisitClassDeclaration(ClassDeclarationSyntax* node)
 {
     wstring className = node->IdentifierToken.Word;
     ClassSymbol* symbol = new ClassSymbol(className);
+    symbol->Parent = OwnerType();
     SetAccesibility(symbol, node->Modifiers);
 
-    symbolTable->BindSymbol(node, symbol);
-    scopeStack.top()->DeclareSymbol(symbol);
-    pushScope(symbol);
+    Table->BindSymbol(node, symbol);
+    Declare(symbol);
+    PushScope(symbol);
 
     for (MemberDeclarationSyntax* member : node->Members)
         VisitMemberDeclaration(member);
 
-    scopeStack.pop();
+    PopScope();
 }
 
 void DeclarationCollector::VisitStructDeclaration(StructDeclarationSyntax* node)
 {
     wstring structName = node->IdentifierToken.Word;
     StructSymbol* symbol = new StructSymbol(structName);
+    symbol->Parent = OwnerType();
     SetAccesibility(symbol, node->Modifiers);
 
-    symbolTable->BindSymbol(node, symbol);
-    scopeStack.top()->DeclareSymbol(symbol);
-    pushScope(symbol);
+    Table->BindSymbol(node, symbol);
+    Declare(symbol);
+    PushScope(symbol);
 
     for (MemberDeclarationSyntax* member : node->Members)
         VisitMemberDeclaration(member);
 
-    scopeStack.pop();
+    PopScope();
 }
 
 void DeclarationCollector::VisitFieldDeclaration(FieldDeclarationSyntax* node)
@@ -124,8 +128,10 @@ void DeclarationCollector::VisitFieldDeclaration(FieldDeclarationSyntax* node)
     SetAccesibility(symbol, node->Modifiers);
     symbol->DefaultValueExpression = node->InitializerExpression;
 
-    TypeSymbol* ownerType = static_cast<TypeSymbol*>((SyntaxSymbol*)scopeStack.top()->Owner);
-    if (ownerType == nullptr)
+    TypeSymbol* ownerType = OwnerType();
+    symbol->Parent = ownerType;
+
+    if (symbol->Parent == nullptr)
     {
         Diagnostics.ReportError(node->IdentifierToken, L"Cannot resolve method's owner type");
     }
@@ -140,14 +146,15 @@ void DeclarationCollector::VisitFieldDeclaration(FieldDeclarationSyntax* node)
         ownerType->Fields.push_back(symbol);
     }
 
-    scopeStack.top()->DeclareSymbol(symbol);
-    symbolTable->BindSymbol(node, symbol);
+    Declare(symbol);
+    Table->BindSymbol(node, symbol);
 }
 
 void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 {
     wstring methodName = node->IdentifierToken.Word;
     MethodSymbol* symbol = new MethodSymbol(methodName, node->Body);
+    symbol->Parent = OwnerType();
     SetAccesibility(symbol, node->Modifiers);
 
     for (ParameterSyntax* parameter : node->Params->Parameters)
@@ -156,7 +163,7 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax* node)
         symbol->Parameters.push_back(paramSymbol);
     }
 
-    SyntaxSymbol* ownerSymbol = const_cast<SyntaxSymbol*>(scopeStack.top()->Owner);
+    SyntaxSymbol* ownerSymbol = OwnerType();
     if (ownerSymbol->Kind != SyntaxKind::ClassDeclaration && ownerSymbol->Kind != SyntaxKind::StructDeclaration)
     {
         Diagnostics.ReportError(node->IdentifierToken, L"Method cannot be declared within types");
@@ -171,12 +178,12 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax* node)
     }
 
     ownerType->Methods.push_back(symbol);
-    scopeStack.top()->DeclareSymbol(symbol);
-    symbolTable->BindSymbol(node, symbol);
+    Declare(symbol);
+    Table->BindSymbol(node, symbol);
 
     if (node->Body != nullptr)
     {
-        pushScope(symbol);
+        PushScope(symbol);
         if (!symbol->IsStatic)
         {
             if (ownerType->IsStatic)
@@ -184,7 +191,7 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax* node)
         }
 
         VisitStatementsBlock(node->Body);
-        scopeStack.pop();
+        PopScope();
     }
 }
 
@@ -192,6 +199,7 @@ void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax* n
 {
     wstring propertyName = node->IdentifierToken.Word;
     PropertySymbol* symbol = new PropertySymbol(propertyName);
+    symbol->Parent = OwnerType();
     SetAccesibility(symbol, node->Modifiers);
     
     // Check if property is static
@@ -204,7 +212,7 @@ void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax* n
         }
     }
 
-    SyntaxSymbol* ownerSymbol = const_cast<SyntaxSymbol*>(scopeStack.top()->Owner);
+    SyntaxSymbol* ownerSymbol = OwnerType();
     if (ownerSymbol->Kind != SyntaxKind::ClassDeclaration && ownerSymbol->Kind != SyntaxKind::StructDeclaration)
     {
         Diagnostics.ReportError(node->IdentifierToken, L"Property cannot be declared outside of types");
@@ -225,22 +233,17 @@ void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax* n
     }
 
     // Check if this is an auto-property (has get/set but no body)
-    bool isAutoProperty = (node->HasGet && node->GetBody == nullptr) || 
-                          (node->HasSet && node->SetBody == nullptr);
+    bool isAutoProperty = (node->HasGet && node->GetBody == nullptr) || (node->HasSet && node->SetBody == nullptr);
     
     // Create backing field for auto-properties
     if (isAutoProperty)
     {
-        wstring backingFieldName = L"<" + propertyName + L">k__BackingField"; // C#-like naming
-        FieldSymbol* backingField = new FieldSymbol(backingFieldName);
-        backingField->Accesibility = SymbolAccesibility::Private;
-        backingField->IsStatic = symbol->IsStatic;
-        backingField->ReturnType = nullptr; // Will be set in TypeBinder
-        symbol->BackingField = backingField;
-        ownerType->Fields.push_back(backingField);
-        scopeStack.top()->DeclareSymbol(backingField);
+        symbol->GenerateBackingField();
+        ownerType->Fields.push_back(symbol->BackingField);
+        Declare(symbol->BackingField);
     }
 
+    /*
     // Create get and set methods if they exist
     if (node->HasGet)
     {
@@ -248,7 +251,7 @@ void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax* n
         MethodSymbol* getMethod = new MethodSymbol(getMethodName, node->GetBody);
         getMethod->Accesibility = symbol->Accesibility;
         getMethod->IsStatic = symbol->IsStatic;
-        getMethod->ReturnType = nullptr; // Will be set in TypeBinder
+        getMethod->ReturnType = nullptr;
         symbol->GetMethod = getMethod;
         ownerType->Methods.push_back(getMethod);
     }
@@ -259,7 +262,7 @@ void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax* n
         MethodSymbol* setMethod = new MethodSymbol(setMethodName, node->SetBody);
         setMethod->Accesibility = symbol->Accesibility;
         setMethod->IsStatic = symbol->IsStatic;
-        setMethod->ReturnType = SymbolTable::Primitives::Void;
+        setMethod->ReturnType = Table::Primitives::Void;
         
         // Add 'value' parameter for setter
         ParameterSymbol* valueParam = new ParameterSymbol(L"value");
@@ -268,24 +271,25 @@ void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax* n
         symbol->SetMethod = setMethod;
         ownerType->Methods.push_back(setMethod);
     }
+    */
 
     ownerType->Properties.push_back(symbol);
-    scopeStack.top()->DeclareSymbol(symbol);
-    symbolTable->BindSymbol(node, symbol);
+    Declare(symbol);
+    Table->BindSymbol(node, symbol);
 
     // Visit accessor bodies
     if (node->GetBody != nullptr)
     {
-        pushScope(symbol->GetMethod);
+        PushScope(symbol->GetMethod);
         VisitStatementsBlock(node->GetBody);
-        scopeStack.pop();
+        PopScope();
     }
 
     if (node->SetBody != nullptr)
     {
-        pushScope(symbol->SetMethod);
+        PushScope(symbol->SetMethod);
         VisitStatementsBlock(node->SetBody);
-        scopeStack.pop();
+        PopScope();
     }
 
     if (node->InitializerExpression != nullptr)
@@ -295,10 +299,10 @@ void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax* n
 void DeclarationCollector::VisitVariableStatement(VariableStatementSyntax* node)
 {
     wstring varName = node->IdentifierToken.Word;
-    VariableSymbol* symbol = new VariableSymbol(varName);
+    VariableSymbol* symbol = new VariableSymbol(varName, nullptr);
 
-    scopeStack.top()->DeclareSymbol(symbol);
-    symbolTable->BindSymbol(node, symbol);
+    Declare(symbol);
+    Table->BindSymbol(node, symbol);
 
     if (node->Expression != nullptr)
         VisitExpression(node->Expression);

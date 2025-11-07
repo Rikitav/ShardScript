@@ -2,7 +2,7 @@
 #include <shard/runtime/InboundVariablesContext.h>
 #include <shard/runtime/ObjectInstance.h>
 
-#include <shard/runtime/framework/primitives/BooleanPrimitive.h>
+#include <shard/framework/primitives/BooleanPrimitive.h>
 #include <shard/parsing/semantic/SymbolTable.h>
 
 #include <shard/syntax/SymbolAccesibility.h>
@@ -12,6 +12,7 @@
 #include <string>
 
 using namespace std;
+using namespace shard::framework;
 using namespace shard::runtime;
 using namespace shard::syntax;
 using namespace shard::syntax::symbols;
@@ -23,7 +24,7 @@ static ObjectInstance* ToString(InboundVariablesContext* arguments)
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	bool value = instance->ReadPrimitive<bool>();
 	wstring str = value ? L"true" : L"false";
-	return AbstractInterpreter::CreateInstanceFromValue(str);
+	return ObjectInstance::FromValue(str);
 }
 
 void BooleanPrimitive::Reflect(TypeSymbol* symbol)

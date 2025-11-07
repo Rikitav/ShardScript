@@ -17,7 +17,7 @@ namespace shard::parsing::semantic
 		bool ReturnFound = false;
 		bool ReturnsAnything = false;
 
-		inline SemanticScope(shard::syntax::SyntaxSymbol* owner, SemanticScope* parent = nullptr)
+		inline SemanticScope(const shard::syntax::SyntaxSymbol* owner, SemanticScope* parent = nullptr)
 			: Owner(owner), Parent(parent) { }
 
         shard::syntax::SyntaxSymbol* Lookup(std::wstring& name);

@@ -14,5 +14,7 @@ namespace shard::syntax::nodes
 
 		inline IdentifierNameTypeSyntax(const SyntaxNode* parent)
 			: TypeSyntax(SyntaxKind::IdentifierNameType, parent) { }
+
+		std::wstring ToString() override;
 	};
 }

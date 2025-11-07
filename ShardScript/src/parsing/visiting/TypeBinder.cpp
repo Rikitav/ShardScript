@@ -46,6 +46,8 @@
 #include <vector>
 #include <string>
 
+#define DONT_CARE_RESOLVE_ALL
+
 using namespace std;
 using namespace shard::parsing;
 using namespace shard::parsing::analysis;
@@ -54,69 +56,63 @@ using namespace shard::syntax::nodes;
 using namespace shard::syntax::symbols;
 using namespace shard::syntax;
 
-void TypeBinder::pushScope(SyntaxSymbol* symbol)
-{
-	SemanticScope* newScope = new SemanticScope(symbol, scopeStack.top());
-	scopeStack.push(newScope);
-}
-
 void TypeBinder::VisitCompilationUnit(CompilationUnitSyntax* node)
 {
-	pushScope(nullptr);
+	PushScope(nullptr);
 	for (UsingDirectiveSyntax* directive : node->Usings)
 		VisitUsingDirective(directive);
 
 	for (MemberDeclarationSyntax* member : node->Members)
 		VisitTypeDeclaration(member);
 
-	scopeStack.pop();
+	PopScope();
 }
 
 void TypeBinder::VisitNamespaceDeclaration(NamespaceDeclarationSyntax* node)
 {
-	NamespaceSymbol* symbol = static_cast<NamespaceSymbol*>(symbolTable->LookupSymbol(node));
+	NamespaceSymbol* symbol = static_cast<NamespaceSymbol*>(Table->LookupSymbol(node));
 	if (symbol != nullptr)
 	{
-		scopeStack.top()->DeclareSymbol(symbol);
-		pushScope(symbol);
+		Declare(symbol);
+		PushScope(symbol);
 		for (MemberDeclarationSyntax* member : node->Members)
 			VisitMemberDeclaration(member);
 
-		scopeStack.pop();
+		PopScope();
 	}
 }
 
 void TypeBinder::VisitClassDeclaration(ClassDeclarationSyntax* node)
 {
-	ClassSymbol* symbol = static_cast<ClassSymbol*>(symbolTable->LookupSymbol(node));
+	ClassSymbol* symbol = static_cast<ClassSymbol*>(Table->LookupSymbol(node));
 	if (symbol != nullptr)
 	{
-		scopeStack.top()->DeclareSymbol(symbol);
-		pushScope(symbol);
+		Declare(symbol);
+		PushScope(symbol);
 		for (MemberDeclarationSyntax* member : node->Members)
 			VisitMemberDeclaration(member);
 
-		scopeStack.pop();
+		PopScope();
 	}
 }
 
 void TypeBinder::VisitStructDeclaration(StructDeclarationSyntax* node)
 {
-	StructSymbol* symbol = static_cast<StructSymbol*>(symbolTable->LookupSymbol(node));
+	StructSymbol* symbol = static_cast<StructSymbol*>(Table->LookupSymbol(node));
 	if (symbol != nullptr)
 	{
-		scopeStack.top()->DeclareSymbol(symbol);
-		pushScope(symbol);
+		Declare(symbol);
+		PushScope(symbol);
 		for (MemberDeclarationSyntax* member : node->Members)
 			VisitMemberDeclaration(member);
 
-		scopeStack.pop();
+		PopScope();
 	}
 }
 
 void TypeBinder::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 {
-	MethodSymbol* symbol = static_cast<MethodSymbol*>(symbolTable->LookupSymbol(node));
+	MethodSymbol* symbol = static_cast<MethodSymbol*>(Table->LookupSymbol(node));
 	if (symbol != nullptr)
 	{
 		if (node->ReturnType != nullptr)
@@ -124,17 +120,7 @@ void TypeBinder::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 			symbol->ReturnType = ResolveType(node->ReturnType);
 			if (symbol->ReturnType == nullptr)
 			{
-				wstring typeName = L"unknown";
-				if (node->ReturnType->Kind == SyntaxKind::IdentifierNameType)
-				{
-					IdentifierNameTypeSyntax* idType = static_cast<IdentifierNameTypeSyntax*>(node->ReturnType);
-					if (!idType->Identifiers.empty())
-					{
-						typeName = idType->Identifiers[0].Word;
-					}
-				}
-
-				Diagnostics.ReportError(node->IdentifierToken, L"Return type not found: " + typeName);
+				Diagnostics.ReportError(node->IdentifierToken, L"Return type not found: " + node->ReturnType->ToString());
 			}
 		}
 
@@ -150,17 +136,7 @@ void TypeBinder::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 					paramSymbol->Type = ResolveType(const_cast<TypeSyntax*>(paramSyntax->Type));
 					if (paramSymbol->Type == nullptr)
 					{
-						wstring typeName = L"unknown";
-						if (paramSyntax->Type->Kind == SyntaxKind::IdentifierNameType)
-						{
-							IdentifierNameTypeSyntax* idType = static_cast<IdentifierNameTypeSyntax*>(const_cast<TypeSyntax*>(paramSyntax->Type));
-							if (!idType->Identifiers.empty())
-							{
-								typeName = idType->Identifiers[0].Word;
-							}
-						}
-
-						Diagnostics.ReportError(paramSyntax->Identifier, L"Parameter type not found: " + typeName);
+						Diagnostics.ReportError(paramSyntax->Identifier, L"Parameter type not found: " + node->ReturnType->ToString());
 					}
 				}
 			}
@@ -168,32 +144,22 @@ void TypeBinder::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 
 		if (node->Body != nullptr)
 		{
-			pushScope(symbol);
+			PushScope(symbol);
 			VisitStatementsBlock(node->Body);
-			scopeStack.pop();
+			PopScope();
 		}
 	}
 }
 
 void TypeBinder::VisitFieldDeclaration(FieldDeclarationSyntax* node)
 {
-	FieldSymbol* symbol = static_cast<FieldSymbol*>(symbolTable->LookupSymbol(node));
+	FieldSymbol* symbol = static_cast<FieldSymbol*>(Table->LookupSymbol(node));
 	if (symbol != nullptr && node->ReturnType != nullptr)
 	{
 		symbol->ReturnType = ResolveType(node->ReturnType);
 		if (symbol->ReturnType == nullptr)
 		{
-			wstring typeName = L"unknown";
-			if (node->ReturnType->Kind == SyntaxKind::IdentifierNameType)
-			{
-				IdentifierNameTypeSyntax* idType = static_cast<IdentifierNameTypeSyntax*>(node->ReturnType);
-				if (!idType->Identifiers.empty())
-				{
-					typeName = idType->Identifiers[0].Word;
-				}
-			}
-
-			Diagnostics.ReportError(node->IdentifierToken, L"Field type not found: " + typeName);
+			Diagnostics.ReportError(node->IdentifierToken, L"Field type not found: " + node->ReturnType->ToString());
 		}
 	}
 
@@ -204,7 +170,7 @@ void TypeBinder::VisitFieldDeclaration(FieldDeclarationSyntax* node)
 
 void TypeBinder::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
 {
-	PropertySymbol* symbol = static_cast<PropertySymbol*>(symbolTable->LookupSymbol(node));
+	PropertySymbol* symbol = static_cast<PropertySymbol*>(Table->LookupSymbol(node));
 	if (symbol != nullptr && node->ReturnType != nullptr)
 	{
 		// Resolve property return type
@@ -213,17 +179,7 @@ void TypeBinder::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
 		
 		if (propertyType == nullptr)
 		{
-			wstring typeName = L"unknown";
-			if (node->ReturnType->Kind == SyntaxKind::IdentifierNameType)
-			{
-				IdentifierNameTypeSyntax* idType = static_cast<IdentifierNameTypeSyntax*>(node->ReturnType);
-				if (!idType->Identifiers.empty())
-				{
-					typeName = idType->Identifiers[0].Word;
-				}
-			}
-
-			Diagnostics.ReportError(node->IdentifierToken, L"Property type not found: " + typeName);
+			Diagnostics.ReportError(node->IdentifierToken, L"Property type not found: " + node->ReturnType->ToString());
 		}
 		
 		// Resolve backing field type if it exists
@@ -236,26 +192,12 @@ void TypeBinder::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
 		if (symbol->GetMethod != nullptr)
 		{
 			symbol->GetMethod->ReturnType = propertyType;
-			
-			// For auto-properties, generate getter body if needed
-			if (node->GetBody == nullptr && symbol->BackingField != nullptr)
-			{
-				// Generate: return field;
-				symbol->GetMethod->Body = GenerateAutoPropertyGetterBody(symbol, node);
-			}
 		}
 		
 		// Resolve setter parameter type
 		if (symbol->SetMethod != nullptr && !symbol->SetMethod->Parameters.empty())
 		{
 			symbol->SetMethod->Parameters[0]->Type = propertyType;
-			
-			// For auto-properties, generate setter body if needed
-			if (node->SetBody == nullptr && symbol->BackingField != nullptr)
-			{
-				// Generate: field = value;
-				symbol->SetMethod->Body = GenerateAutoPropertySetterBody(symbol, node);
-			}
 		}
 	}
 
@@ -264,99 +206,15 @@ void TypeBinder::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
 		VisitExpression(node->InitializerExpression);
 }
 
-StatementsBlockSyntax* TypeBinder::GenerateAutoPropertyGetterBody(PropertySymbol* property, PropertyDeclarationSyntax* node)
-{
-	// Create: return backingField;
-	StatementsBlockSyntax* body = new StatementsBlockSyntax(node);
-	body->OpenBraceToken = SyntaxToken(TokenType::OpenBrace, L"{", TextLocation(), false);
-	body->CloseBraceToken = SyntaxToken(TokenType::CloseBrace, L"}", TextLocation(), false);
-	
-	// Create return statement
-	ReturnStatementSyntax* returnStmt = new ReturnStatementSyntax(body);
-	returnStmt->KeywordToken = SyntaxToken(TokenType::ReturnKeyword, L"return", TextLocation(), false);
-	returnStmt->SemicolonToken = SyntaxToken(TokenType::Semicolon, L";", TextLocation(), false);
-	
-	// Create member access expression: field
-	LinkedExpressionSyntax* linkedExpr = new LinkedExpressionSyntax(returnStmt);
-	MemberAccessExpressionSyntax* thisAccess = new MemberAccessExpressionSyntax(SyntaxToken(TokenType::Identifier, L"this", TextLocation(), false), nullptr, linkedExpr);
-	MemberAccessExpressionSyntax* fieldAccess = new MemberAccessExpressionSyntax(SyntaxToken(TokenType::Identifier, property->BackingField->Name, TextLocation(), false), nullptr, linkedExpr);
-
-	fieldAccess->Symbol = property->BackingField;
-	fieldAccess->PrevNode = fieldAccess;
-	thisAccess->NextNode = fieldAccess;
-
-	linkedExpr->First = thisAccess;
-	linkedExpr->Last = fieldAccess;
-	linkedExpr->Nodes.push_back(thisAccess);
-	linkedExpr->Nodes.push_back(fieldAccess);
-	
-	returnStmt->Expression = linkedExpr;
-	body->Statements.push_back(returnStmt);
-	
-	return body;
-}
-
-StatementsBlockSyntax* TypeBinder::GenerateAutoPropertySetterBody(PropertySymbol* property, PropertyDeclarationSyntax* node)
-{
-	// Create: backingField = value;
-	StatementsBlockSyntax* body = new StatementsBlockSyntax(node);
-	body->OpenBraceToken = SyntaxToken(TokenType::OpenBrace, L"{", TextLocation(), false);
-	body->CloseBraceToken = SyntaxToken(TokenType::CloseBrace, L"}", TextLocation(), false);
-	
-	// Create assignment expression: field = value;
-	LinkedExpressionSyntax* fieldExpr = new LinkedExpressionSyntax(body);
-	MemberAccessExpressionSyntax* thisAccess = new MemberAccessExpressionSyntax(SyntaxToken(TokenType::Identifier, L"this", TextLocation(), false), nullptr, fieldExpr);
-	MemberAccessExpressionSyntax* fieldAccess = new MemberAccessExpressionSyntax(SyntaxToken(TokenType::Identifier, property->BackingField->Name, TextLocation(), false), nullptr, fieldExpr);
-	
-	fieldAccess->Symbol = property->BackingField;
-	fieldAccess->PrevNode = fieldAccess;
-	thisAccess->NextNode = fieldAccess;
-
-	fieldExpr->First = thisAccess;
-	fieldExpr->Last = fieldAccess;
-	fieldExpr->Nodes.push_back(thisAccess);
-	fieldExpr->Nodes.push_back(fieldAccess);
-	
-	// Create variable access: value
-	LinkedExpressionSyntax* valueExpr = new LinkedExpressionSyntax(body);
-	MemberAccessExpressionSyntax* valueAccess = new MemberAccessExpressionSyntax(SyntaxToken(TokenType::Identifier, L"value", TextLocation(), false), nullptr, valueExpr);
-	valueExpr->Nodes.push_back(valueAccess);
-	valueExpr->First = valueAccess;
-	valueExpr->Last = valueAccess;
-	
-	// Create binary expression: field = value
-	BinaryExpressionSyntax* assignExpr = new BinaryExpressionSyntax(SyntaxToken(TokenType::AssignOperator, L"=", TextLocation(), false), body);
-	assignExpr->Left = fieldExpr;
-	assignExpr->Right = valueExpr;
-	
-	// Create expression statement
-	ExpressionStatementSyntax* exprStmt = new ExpressionStatementSyntax(assignExpr, body);
-	exprStmt->SemicolonToken = SyntaxToken(TokenType::Semicolon, L";", TextLocation(), false);
-	assignExpr->Parent = exprStmt;
-	
-	body->Statements.push_back(exprStmt);
-	
-	return body;
-}
-
 void TypeBinder::VisitVariableStatement(VariableStatementSyntax* node)
 {
-	VariableSymbol* symbol = static_cast<VariableSymbol*>(symbolTable->LookupSymbol(node));
+	VariableSymbol* symbol = static_cast<VariableSymbol*>(Table->LookupSymbol(node));
 	if (symbol != nullptr && node->Type != nullptr)
 	{
 		symbol->Type = ResolveType(node->Type);
 		if (symbol->Type == nullptr)
 		{
-			wstring typeName = L"unknown";
-			if (node->Type->Kind == SyntaxKind::IdentifierNameType)
-			{
-				IdentifierNameTypeSyntax* idType = static_cast<IdentifierNameTypeSyntax*>(node->Type);
-				if (!idType->Identifiers.empty())
-				{
-					typeName = idType->Identifiers[0].Word;
-				}
-			}
-			Diagnostics.ReportError(node->IdentifierToken, L"Variable type not found: " + typeName);
+			Diagnostics.ReportError(node->IdentifierToken, L"Type not found: " + node->Type->ToString());
 		}
 	}
 
@@ -367,125 +225,65 @@ void TypeBinder::VisitVariableStatement(VariableStatementSyntax* node)
 
 void TypeBinder::VisitObjectCreationExpression(ObjectExpressionSyntax* node)
 {
-	if (node->Type != nullptr)
-	{
-		node->Symbol = ResolveType(node->Type);
-		if (node->Symbol == nullptr)
-		{
-			wstring typeName = L"unknown";
-			if (node->Type->Kind == SyntaxKind::IdentifierNameType)
-			{
-				IdentifierNameTypeSyntax* idType = static_cast<IdentifierNameTypeSyntax*>(node->Type);
-				if (!idType->Identifiers.empty())
-				{
-					typeName = idType->Identifiers[0].Word;
-				}
-			}
-
-			Diagnostics.ReportError(node->NewToken, L"Type not found: " + typeName);
-		}
-	}
-
 	VisitType(node->Type);
 	VisitArgumentsList(node->Arguments);
+
+	node->Symbol = ResolveType(node->Type);
+	if (node->Symbol == nullptr)
+	{
+		Diagnostics.ReportError(node->NewToken, L"Type not found: " + node->Type->ToString());
+	}
+}
+
+void TypeBinder::VisitCollectionExpression(CollectionExpressionSyntax* node)
+{
+	for (ExpressionSyntax* expression : node->ValuesExpressions)
+		VisitExpression(expression);
+}
+
+static bool IsScopePublicallyAccessible(const SemanticScope* scope)
+{
+	if (scope == nullptr)
+		return false;
+
+	if (scope->Owner->Accesibility != SymbolAccesibility::Public)
+		return false;
+
+	return IsScopePublicallyAccessible(scope->Parent);
+}
+
+static bool IsScopeNestedAccessible(const SemanticScope* scope, SyntaxSymbol* symbol)
+{
+	if (scope == nullptr)
+		return false;
+
+	if (scope->Owner->Kind == SyntaxKind::NamespaceDeclaration)
+		return true;
+
+	if (scope->Owner == symbol->Parent)
+		return true;
+
+	return IsScopeNestedAccessible(scope->Parent, symbol);
 }
 
 bool TypeBinder::IsSymbolAccessible(SyntaxSymbol* symbol)
 {
 	if (symbol == nullptr)
-		return false;
+		throw runtime_error("Cannot resolve nullptr symbol accessibility");
 
-	if (symbol->Accesibility == SymbolAccesibility::Public)
+	if (symbol->Kind == SyntaxKind::NamespaceDeclaration)
 		return true;
 
-	if (symbol->Kind == SyntaxKind::ClassDeclaration || symbol->Kind == SyntaxKind::StructDeclaration)
-	{
-		TypeSymbol* typeSymbol = static_cast<TypeSymbol*>(symbol);
-		if (typeSymbol->Accesibility == SymbolAccesibility::Private)
-		{
-			SyntaxNode* typeNode = symbolTable->GetSyntaxNode(typeSymbol);
-			if (typeNode != nullptr)
-			{
-				const SyntaxNode* parent = typeNode->Parent;
-				if (parent != nullptr && (parent->Kind == SyntaxKind::ClassDeclaration || parent->Kind == SyntaxKind::StructDeclaration))
-				{
-					SyntaxSymbol* parentSymbol = symbolTable->LookupSymbol(const_cast<SyntaxNode*>(parent));
-					if (parentSymbol != nullptr)
-					{
-						for (const SemanticScope* scope = scopeStack.top(); scope != nullptr; scope = scope->Parent)
-						{
-							if (scope->Owner == parentSymbol)
-								return true;
-						}
-					}
-				}
-			}
+	if (symbol->Parent == nullptr)
+		throw runtime_error("Cannot resolve symbol accessibility without parent");
 
-			return false;
-		}
-		
+	if (IsScopePublicallyAccessible(CurrentScope()))
+		return symbol->Accesibility == SymbolAccesibility::Public;
+
+	if (IsScopeNestedAccessible(CurrentScope(), symbol))
 		return true;
-	}
 
-	TypeSymbol* declaringType = nullptr;
-	for (const SemanticScope* scope = scopeStack.top(); scope != nullptr; scope = scope->Parent)
-	{
-		if (scope->Owner != nullptr && 
-			(scope->Owner->Kind == SyntaxKind::ClassDeclaration || scope->Owner->Kind == SyntaxKind::StructDeclaration))
-		{
-			declaringType = static_cast<TypeSymbol*>(const_cast<SyntaxSymbol*>(scope->Owner));
-			break;
-		}
-	}
-
-	if (symbol->Accesibility == SymbolAccesibility::Private)
-	{
-		SyntaxNode* symbolNode = symbolTable->GetSyntaxNode(symbol);
-		if (symbolNode != nullptr)
-		{
-			const SyntaxNode* parent = symbolNode->Parent;
-			while (parent != nullptr)
-			{
-				if (parent->Kind == SyntaxKind::ClassDeclaration || parent->Kind == SyntaxKind::StructDeclaration)
-				{
-					SyntaxSymbol* parentSymbol = symbolTable->LookupSymbol(const_cast<SyntaxNode*>(parent));
-					if (parentSymbol == declaringType)
-						return true;
-					
-					break;
-				}
-
-				parent = parent->Parent;
-			}
-		}
-
-		return false;
-	}
-	else if (symbol->Accesibility == SymbolAccesibility::Protected)
-	{
-		SyntaxNode* symbolNode = symbolTable->GetSyntaxNode(symbol);
-		if (symbolNode != nullptr)
-		{
-			const SyntaxNode* parent = symbolNode->Parent;
-			while (parent != nullptr)
-			{
-				if (parent->Kind == SyntaxKind::ClassDeclaration || parent->Kind == SyntaxKind::StructDeclaration)
-				{
-					SyntaxSymbol* parentSymbol = symbolTable->LookupSymbol(const_cast<SyntaxNode*>(parent));
-					if (parentSymbol == declaringType)
-						return true;
-					
-					break;
-				}
-
-				parent = parent->Parent;
-			}
-		}
-
-		return false;
-	}
-
-	return true;
+	return false;
 }
 
 TypeSymbol* TypeBinder::ResolveType(TypeSyntax* typeSyntax)
@@ -520,103 +318,105 @@ TypeSymbol* TypeBinder::ResolveType(TypeSyntax* typeSyntax)
 			}
 		}
 
+		case SyntaxKind::ArrayType:
+		{
+			ArrayTypeSyntax* array = static_cast<ArrayTypeSyntax*>(typeSyntax);
+			TypeSymbol* underlayingType = ResolveType(array->UnderlayingType);
+
+			if (underlayingType == nullptr)
+			{
+				Diagnostics.ReportError(array->OpenSquareToken, L"Cannot resolve array's underlaying type");
+				return nullptr;
+			}
+
+			ArrayTypeSymbol* symbol = new ArrayTypeSymbol(underlayingType, 0);
+			symbol->MemoryBytesSize = SymbolTable::Primitives::Array->MemoryBytesSize;
+			return symbol;
+		}
+
 		case SyntaxKind::IdentifierNameType:
 		{
 			IdentifierNameTypeSyntax* identifierType = static_cast<IdentifierNameTypeSyntax*>(typeSyntax);
-			
 			if (identifierType->Identifiers.empty())
 				return nullptr;
 
 			SyntaxSymbol* symbol = nullptr;
-
 			if (identifierType->Identifiers.size() == 1)
 			{
 				wstring name = identifierType->Identifiers[0].Word;
+
+#ifdef DONT_CARE_RESOLVE_ALL
+				for (TypeSymbol* type : Table->GetTypeSymbols())
+				{
+					if (type->Name == name)
+					{
+						symbol = type;
+						break;
+					}
+				}
+#else
 				SemanticScope* currentScope = scopeStack.top();
 				symbol = currentScope->Lookup(name);
-				
+#endif
 				if (symbol == nullptr)
 				{
-					vector<TypeSymbol*> allTypes = symbolTable->GetTypeSymbols();
-					for (TypeSymbol* type : allTypes)
-					{
-						if (type->Name == name && (type->Kind == SyntaxKind::ClassDeclaration || type->Kind == SyntaxKind::StructDeclaration))
-						{
-							symbol = type;
-							break;
-						}
-					}
+					Diagnostics.ReportError(identifierType->Identifiers[0], L"Symbol wasnt found in current scope");
+					return nullptr;
+				}
+
+				if (symbol->Kind != SyntaxKind::ClassDeclaration && symbol->Kind != SyntaxKind::StructDeclaration)
+				{
+					Diagnostics.ReportError(identifierType->Identifiers[0], L"Symbol is not a type");
+					return nullptr;
 				}
 			}
 			else
 			{
 				wstring firstName = identifierType->Identifiers[0].Word;
-				SemanticScope* currentScope = scopeStack.top();
+				SemanticScope* currentScope = CurrentScope();
 				symbol = currentScope->Lookup(firstName);
 				
-				for (size_t i = 1; i < identifierType->Identifiers.size() && symbol != nullptr; i++)
+				for (size_t i = 1; i < identifierType->Identifiers.size() - 1; i++)
 				{
-					if (symbol->Kind != SyntaxKind::NamespaceDeclaration)
-						return nullptr;
-
-					NamespaceSymbol* namespaceSymbol = static_cast<NamespaceSymbol*>(symbol);
 					std::wstring nextName = identifierType->Identifiers[i].Word;
-					
-					SyntaxNode* namespaceNode = symbolTable->GetSyntaxNode(namespaceSymbol);
-					if (namespaceNode == nullptr)
-						return nullptr;
+					NamespaceSymbol* namespaceSymbol = static_cast<NamespaceSymbol*>(symbol);
 
-					NamespaceDeclarationSyntax* namespaceDecl = static_cast<NamespaceDeclarationSyntax*>(namespaceNode);
-					
-					symbol = nullptr;
-					for (MemberDeclarationSyntax* member : namespaceDecl->Members)
+					for (SyntaxSymbol* member : namespaceSymbol->Members)
 					{
-						if (member->Kind == SyntaxKind::ClassDeclaration || member->Kind == SyntaxKind::StructDeclaration)
+						if (member->Name != nextName)
+							continue;
+					
+						if (member->Kind != SyntaxKind::NamespaceDeclaration)
 						{
-							SyntaxToken identifierToken;
-							if (member->Kind == SyntaxKind::ClassDeclaration)
-							{
-								ClassDeclarationSyntax* classDecl = static_cast<ClassDeclarationSyntax*>(member);
-								identifierToken = classDecl->IdentifierToken;
-							}
-							else if (member->Kind == SyntaxKind::StructDeclaration)
-							{
-								StructDeclarationSyntax* structDecl = static_cast<StructDeclarationSyntax*>(member);
-								identifierToken = structDecl->IdentifierToken;
-							}
+							Diagnostics.ReportError(identifierType->Identifiers[i], L"Symbol must be a namespace");
+							return nullptr;
+						}
 
-							if (identifierToken.Word == nextName)
-							{
-								symbol = symbolTable->LookupSymbol(member);
-								break;
-							}
-						}
-						else if (member->Kind == SyntaxKind::NamespaceDeclaration)
-						{
-							NamespaceDeclarationSyntax* nestedNamespace = static_cast<NamespaceDeclarationSyntax*>(member);
-							if (nestedNamespace->IdentifierToken.Word == nextName)
-							{
-								symbol = symbolTable->LookupSymbol(nestedNamespace);
-								break;
-							}
-						}
+						symbol = member;
+						break;
 					}
+
+					if (symbol == nullptr)
+					{
+						Diagnostics.ReportError(identifierType->Identifiers[identifierType->Identifiers.size() - 1], L"Symbol is not a '" + namespaceSymbol->Name + L"'s member");
+						return nullptr;
+					}
+				}
+
+				if (symbol->Kind != SyntaxKind::ClassDeclaration && symbol->Kind != SyntaxKind::StructDeclaration)
+				{
+					Diagnostics.ReportError(identifierType->Identifiers[identifierType->Identifiers.size() - 1], L"Symbol is not a type");
+					return nullptr;
 				}
 			}
 
-			if (symbol == nullptr)
-				return nullptr;
-
-			if (symbol->Kind != SyntaxKind::ClassDeclaration && symbol->Kind != SyntaxKind::StructDeclaration)
-				return nullptr;
-
-			TypeSymbol* typeSymbol = static_cast<TypeSymbol*>(symbol);
 			if (!IsSymbolAccessible(symbol))
 			{
-				Diagnostics.ReportError(identifierType->Identifiers[0], L"Symbol inaccessible");
+				Diagnostics.ReportError(identifierType->Identifiers[identifierType->Identifiers.size() - 1], L"Symbol inaccessible");
 				return nullptr;
 			}
 
+			TypeSymbol* typeSymbol = static_cast<TypeSymbol*>(symbol);
 			return typeSymbol;
 		}
 

@@ -35,9 +35,6 @@
     <ClCompile Include="include\shard\syntax\nodes\ParametersListSyntax.h">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="src\runtime\interpret\AbstractInterpreter.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
     <ClCompile Include="src\parsing\reading\FileReader.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
@@ -48,9 +45,6 @@
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="src\utilities\ArgumentsParser.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
-    <ClCompile Include="src\runtime\interactive\InteractiveConsole.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="src\syntax\SyntaxFacts.cpp">
@@ -69,9 +63,6 @@
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="src\runtime\ObjectInstance.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
-    <ClCompile Include="src\runtime\interpret\PrimitiveMathModule.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="src\runtime\ConsoleHelper.cpp">
@@ -98,9 +89,6 @@
     <ClCompile Include="src\parsing\LayoutGenerator.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="src\parsing\semantic\primitives\BooleanPrimitive.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
     <ClCompile Include="src\syntax\symbols\TypeSymbol.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
@@ -110,16 +98,64 @@
     <ClCompile Include="src\parsing\semantic\SymbolTable.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="src\parsing\semantic\primitives\StringPrimitive.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
-    <ClCompile Include="src\parsing\semantic\primitives\IntegerPrimitive.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
     <ClCompile Include="src\parsing\visiting\ExpressionBinder.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="src\utilities\MemoryLeakDetector.cpp">
+    <ClCompile Include="src\framework\FrameworkLoader.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="src\framework\primitives\ArrayPrimitive.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="src\syntax\nodes\Types\ArrayTypeSyntax.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="src\syntax\nodes\Types\GenericTypeSyntax.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="src\syntax\nodes\Types\IdentifierNameTypeSyntax.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="src\syntax\nodes\Types\NullableTypeSyntax.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="src\syntax\nodes\Types\PredefinedTypeSyntax.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="src\syntax\symbols\PropertySymbol.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="src\syntax\SyntaxSymbol.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="src\framework\primitives\IntegerPrimitive.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="src\framework\primitives\StringPrimitive.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="src\framework\primitives\BooleanPrimitive.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="src\framework\primitives\CharPrimitive.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="src\runtime\InteractiveConsole.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="src\runtime\AbstractInterpreter.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="src\runtime\PrimitiveMathModule.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="src\utilities\ExecutableVersion.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsing\visiting\ScopeVisitor.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="src\syntax\symbols\ArrayTypeSymbol.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
   </ItemGroup>
@@ -190,9 +226,6 @@
     <ClInclude Include="include\shard\syntax\SyntaxFacts.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="include\shard\runtime\interpreter\AbstractInterpreter.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
     <ClInclude Include="include\shard\syntax\nodes\Statements\ReturnStatementSyntax.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
@@ -206,9 +239,6 @@
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="include\shard\runtime\InboundVariablesContext.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
-    <ClInclude Include="include\shard\runtime\interactive\InteractiveConsole.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="include\shard\ShardScript.h">
@@ -286,9 +316,6 @@
     <ClInclude Include="include\shard\syntax\nodes\MemberDeclarations\StructDeclarationSyntax.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="include\shard\runtime\interpreter\PrimitiveMathModule.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
     <ClInclude Include="include\shard\runtime\ConsoleHelper.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
@@ -361,28 +388,13 @@
     <ClInclude Include="include\shard\parsing\LayoutGenerator.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="include\shard\parsing\semantic\primitives\BooleanPrimitive.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
     <ClInclude Include="include\shard\parsing\semantic\TypeInfo.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="include\shard\parsing\semantic\SymbolInfo.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="include\shard\parsing\semantic\primitives\IntegerPrimitive.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
-    <ClInclude Include="include\shard\parsing\semantic\primitives\CharPrimitive.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
-    <ClInclude Include="include\shard\parsing\semantic\primitives\StringPrimitive.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
     <ClInclude Include="include\shard\syntax\symbols\FFISymbol.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
-    <ClInclude Include="src\parsing\semantic\primitives\CharPrimitive.cpp">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="include\shard\parsing\visiting\ExpressionBinder.h">
@@ -397,11 +409,56 @@
     <ClInclude Include="include\shard\syntax\nodes\Statements\ContinueStatementSyntax.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
+    <ClInclude Include="include\shard\framework\FrameworkLoader.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\framework\primitives\ArrayPrimitive.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\framework\primitives\CharPrimitive.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\framework\primitives\IntegerPrimitive.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\framework\primitives\StringPrimitive.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\runtime\InteractiveConsole.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\runtime\AbstractInterpreter.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\runtime\PrimitiveMathModule.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\framework\primitives\BooleanPrimitive.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\syntax\nodes\Expressions\CollectionExpressionSyntax.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\syntax\nodes\MemberDeclarations\PropertyDeclarationSyntax.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\syntax\symbols\ArrayTypeSymbol.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\syntax\symbols\PropertySymbol.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\parsing\visiting\ScopeVisitor.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="framework.ss" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="libs\libffi-8.lib" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="ShardScript.rc" />
   </ItemGroup>
 </Project>

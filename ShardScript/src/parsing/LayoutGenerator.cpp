@@ -4,6 +4,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.h>
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/FieldSymbol.h>
+#include <shard/syntax/symbols/ArrayTypeSymbol.h>
 
 using namespace shard::parsing;
 using namespace shard::parsing::semantic;
@@ -52,6 +53,15 @@ void LayoutGenerator::FixObjectLayout(SemanticModel& semanticModel, TypeSymbol* 
 			field->MemoryBytesOffset = objectInfo->MemoryBytesSize;
 			objectInfo->MemoryBytesSize += returnType->MemoryBytesSize;
 		}
+	}
+
+	if (objectInfo->Kind == SyntaxKind::CollectionExpression)
+	{
+		ArrayTypeSymbol* arrayInfo = static_cast<ArrayTypeSymbol*>(objectInfo);
+		if (arrayInfo->UnderlayingType->State == TypeLayoutingState::Unvisited)
+			FixObjectLayout(semanticModel, arrayInfo->UnderlayingType);
+
+		objectInfo->MemoryBytesSize = SymbolTable::Primitives::Array->MemoryBytesSize + arrayInfo->UnderlayingType->MemoryBytesSize * arrayInfo->Size;
 	}
 
 	objectInfo->State = TypeLayoutingState::Visited;

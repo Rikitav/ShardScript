@@ -33,6 +33,20 @@ MethodSymbol* TypeSymbol::FindMethod(wstring& name, vector<TypeSymbol*> paramete
 	return nullptr;
 }
 
+MethodSymbol* TypeSymbol::FindIndexator(vector<TypeSymbol*> parameterTypes)
+{
+	for (MethodSymbol* symbol : Indexators)
+	{
+		if (symbol->Parameters.size() != parameterTypes.size())
+			continue;
+
+		if (std::equal(parameterTypes.begin(), parameterTypes.end(), symbol->Parameters.begin(), paramPredicate))
+			return symbol;
+	}
+
+	return nullptr;
+}
+
 FieldSymbol* TypeSymbol::FindField(wstring& name)
 {
 	for (FieldSymbol* symbol : Fields)

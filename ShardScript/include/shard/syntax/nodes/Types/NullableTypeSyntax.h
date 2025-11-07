@@ -14,5 +14,7 @@ namespace shard::syntax::nodes
 
 		inline NullableTypeSyntax(TypeSyntax* underlaying, const SyntaxNode* parent)
 			: TypeSyntax(SyntaxKind::NullableType, parent), UnderlayingType(underlaying) { }
+
+		std::wstring ToString() override;
 	};
 }

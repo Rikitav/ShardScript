@@ -17,5 +17,7 @@ namespace shard::syntax::nodes
 
 		inline GenericTypeSyntax(const SyntaxNode* parent, TypeSyntax* underlaying)
 			: TypeSyntax(SyntaxKind::GenericType, parent), UnderlayingType(underlaying) { }
+
+		std::wstring ToString() override;
 	};
 }

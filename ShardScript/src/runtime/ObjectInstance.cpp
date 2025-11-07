@@ -1,14 +1,55 @@
 #include <shard/runtime/ObjectInstance.h>
 #include <shard/runtime/GarbageCollector.h>
 #include <shard/syntax/symbols/FieldSymbol.h>
+#include <shard/parsing/semantic/SymbolTable.h>
 
 #include <cstring>
 #include <stdexcept>
 #include <string>
+#include <shard/syntax/symbols/ArrayTypeSymbol.h>
 
 using namespace std;
 using namespace shard::runtime;
 using namespace shard::syntax::symbols;
+using namespace shard::parsing::semantic;
+
+ObjectInstance* ObjectInstance::FromValue(bool value)
+{
+	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::Boolean);
+	instance->WritePrimitive(value);
+	return instance;
+}
+
+ObjectInstance* ObjectInstance::FromValue(int value)
+{
+	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::Integer);
+	instance->WritePrimitive(value);
+	return instance;
+}
+
+ObjectInstance* ObjectInstance::FromValue(wchar_t value)
+{
+	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::Char);
+	instance->WritePrimitive(value);
+	return instance;
+}
+
+ObjectInstance* ObjectInstance::FromValue(const wchar_t* value)
+{
+	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String);
+	wstring* copy = new wstring(value);
+	instance->WritePrimitive<wstring>(*copy);
+	return instance;
+}
+
+ObjectInstance* ObjectInstance::FromValue(const wstring& value)
+{
+	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String);
+	wstring* copy = new wstring(value);
+	instance->WritePrimitive<wstring>(*copy);
+	instance->DecrementReference();
+	return instance;
+}
 
 ObjectInstance* ObjectInstance::GetField(FieldSymbol* field)
 {
@@ -27,9 +68,12 @@ ObjectInstance* ObjectInstance::GetField(FieldSymbol* field)
 
 void ObjectInstance::SetField(FieldSymbol* field, ObjectInstance* instance)
 {
+	if (instance == nullptr)
+		throw runtime_error("got nullptr instance");
+
 	if (field->ReturnType->IsReferenceType)
 	{
-		if (instance == nullptr)
+		if (instance == GarbageCollector::NullInstance)
 		{
 			void* offset = OffsetMemory(field->MemoryBytesOffset, sizeof(void*));
 			memset(offset, 0, sizeof(void*));
@@ -44,10 +88,62 @@ void ObjectInstance::SetField(FieldSymbol* field, ObjectInstance* instance)
 	}
 	else
 	{
-		if (instance == nullptr)
+		if (instance == GarbageCollector::NullInstance)
 			throw runtime_error("cannot write null value to ValueType field");
 
 		WriteMemory(field->MemoryBytesOffset, field->ReturnType->MemoryBytesSize, instance->Ptr);
+	}
+}
+
+ObjectInstance* ObjectInstance::GetElement(size_t index)
+{
+	const ArrayTypeSymbol* info = static_cast<const ArrayTypeSymbol*>(Info);
+	TypeSymbol* type = info->UnderlayingType;
+	size_t memoryOffset = SymbolTable::Primitives::Array->MemoryBytesSize + type->GetInlineSize() * index;
+
+	if (type->IsReferenceType)
+	{
+		void* offset = OffsetMemory(memoryOffset, sizeof(ObjectInstance*));
+		void* valuePtr = *static_cast<void**>(offset);
+		return valuePtr == nullptr ? GarbageCollector::NullInstance : static_cast<ObjectInstance*>(valuePtr);
+	}
+	else
+	{
+		void* offset = OffsetMemory(memoryOffset, type->MemoryBytesSize);
+		return GarbageCollector::CopyInstance(type, offset);
+	}
+}
+
+void ObjectInstance::SetElement(size_t index, ObjectInstance* instance)
+{
+	if (instance == nullptr)
+		throw runtime_error("got nullptr instance");
+
+	const ArrayTypeSymbol* info = static_cast<const ArrayTypeSymbol*>(Info);
+	TypeSymbol* type = info->UnderlayingType;
+	size_t memoryOffset = SymbolTable::Primitives::Array->MemoryBytesSize + type->GetInlineSize() * index;
+
+	if (type->IsReferenceType)
+	{
+		if (instance == GarbageCollector::NullInstance)
+		{
+			void* offset = OffsetMemory(memoryOffset, sizeof(void*));
+			memset(offset, 0, sizeof(void*));
+			return;
+		}
+
+		ObjectInstance* oldValue = GetElement(index);
+		GarbageCollector::DestroyInstance(oldValue);
+
+		instance->IncrementReference();
+		WriteMemory(memoryOffset, sizeof(ObjectInstance*), &instance);
+	}
+	else
+	{
+		if (instance == nullptr)
+			throw runtime_error("cannot write null value to ValueType field");
+
+		WriteMemory(memoryOffset, type->MemoryBytesSize, instance->Ptr);
 	}
 }
 

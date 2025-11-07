@@ -4,7 +4,7 @@
 #include <shard/runtime/ObjectInstance.h>
 #include <shard/runtime/AbstractInterpreter.h>
 
-#include <shard/runtime/framework/primitives/StringPrimitive.h>
+#include <shard/framework/primitives/StringPrimitive.h>
 #include <shard/parsing/semantic/SymbolTable.h>
 
 #include <shard/syntax/SymbolAccesibility.h>
@@ -19,6 +19,7 @@
 #include <iomanip>
 
 using namespace std;
+using namespace shard::framework;
 using namespace shard::runtime;
 using namespace shard::syntax;
 using namespace shard::syntax::symbols;
@@ -29,14 +30,14 @@ static ObjectInstance* IsEmpty(InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	wstring value = instance->ReadPrimitive<wstring>();
-	return AbstractInterpreter::CreateInstanceFromValue(value.size() == 0);
+	return ObjectInstance::FromValue(value.size() == 0);
 }
 
 static ObjectInstance* GetLength(InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	wstring value = instance->ReadPrimitive<wstring>();
-	return AbstractInterpreter::CreateInstanceFromValue(static_cast<int>(value.size()));
+	return ObjectInstance::FromValue(static_cast<int>(value.size()));
 }
 
 static ObjectInstance* Substring(InboundVariablesContext* arguments)
@@ -46,14 +47,14 @@ static ObjectInstance* Substring(InboundVariablesContext* arguments)
 	
 	ObjectInstance* startArg = arguments->TryFind(L"start");
 	if (startArg == nullptr)
-		return AbstractInterpreter::CreateInstanceFromValue(L"");
+		return ObjectInstance::FromValue(L"");
 	
 	int start = startArg->ReadPrimitive<int>();
 	if (start < 0)
 		start = 0;
 
 	if (start >= static_cast<int>(value.size()))
-		return AbstractInterpreter::CreateInstanceFromValue(L"");
+		return ObjectInstance::FromValue(L"");
 	
 	ObjectInstance* lengthArg = arguments->TryFind(L"length");
 	if (lengthArg != nullptr)
@@ -66,12 +67,12 @@ static ObjectInstance* Substring(InboundVariablesContext* arguments)
 			length = static_cast<int>(value.size()) - start;
 		
 		wstring result = value.substr(start, length);
-		return AbstractInterpreter::CreateInstanceFromValue(result);
+		return ObjectInstance::FromValue(result);
 	}
 	else
 	{
 		wstring result = value.substr(start);
-		return AbstractInterpreter::CreateInstanceFromValue(result);
+		return ObjectInstance::FromValue(result);
 	}
 }
 
@@ -82,10 +83,10 @@ static ObjectInstance* Contains(InboundVariablesContext* arguments)
 	
 	ObjectInstance* searchArg = arguments->TryFind(L"value");
 	if (searchArg == nullptr)
-		return AbstractInterpreter::CreateInstanceFromValue(false);
+		return ObjectInstance::FromValue(false);
 	
 	wstring search = searchArg->ReadPrimitive<wstring>();
-	return AbstractInterpreter::CreateInstanceFromValue(value.find(search) != wstring::npos);
+	return ObjectInstance::FromValue(value.find(search) != wstring::npos);
 }
 
 static ObjectInstance* StartsWith(InboundVariablesContext* arguments)
@@ -95,13 +96,13 @@ static ObjectInstance* StartsWith(InboundVariablesContext* arguments)
 	
 	ObjectInstance* prefixArg = arguments->TryFind(L"value");
 	if (prefixArg == nullptr)
-		return AbstractInterpreter::CreateInstanceFromValue(false);
+		return ObjectInstance::FromValue(false);
 	
 	wstring prefix = prefixArg->ReadPrimitive<wstring>();
 	if (prefix.size() > value.size())
-		return AbstractInterpreter::CreateInstanceFromValue(false);
+		return ObjectInstance::FromValue(false);
 	
-	return AbstractInterpreter::CreateInstanceFromValue(value.substr(0, prefix.size()) == prefix);
+	return ObjectInstance::FromValue(value.substr(0, prefix.size()) == prefix);
 }
 
 static ObjectInstance* EndsWith(InboundVariablesContext* arguments)
@@ -111,13 +112,13 @@ static ObjectInstance* EndsWith(InboundVariablesContext* arguments)
 	
 	ObjectInstance* suffixArg = arguments->TryFind(L"value");
 	if (suffixArg == nullptr)
-		return AbstractInterpreter::CreateInstanceFromValue(false);
+		return ObjectInstance::FromValue(false);
 	
 	wstring suffix = suffixArg->ReadPrimitive<wstring>();
 	if (suffix.size() > value.size())
-		return AbstractInterpreter::CreateInstanceFromValue(false);
+		return ObjectInstance::FromValue(false);
 	
-	return AbstractInterpreter::CreateInstanceFromValue(value.substr(value.size() - suffix.size()) == suffix);
+	return ObjectInstance::FromValue(value.substr(value.size() - suffix.size()) == suffix);
 }
 
 static ObjectInstance* IndexOf(InboundVariablesContext* arguments)
@@ -127,11 +128,11 @@ static ObjectInstance* IndexOf(InboundVariablesContext* arguments)
 	
 	ObjectInstance* searchArg = arguments->TryFind(L"value");
 	if (searchArg == nullptr)
-		return AbstractInterpreter::CreateInstanceFromValue(-1);
+		return ObjectInstance::FromValue(-1);
 	
 	wstring search = searchArg->ReadPrimitive<wstring>();
 	size_t pos = value.find(search);
-	return AbstractInterpreter::CreateInstanceFromValue(pos == wstring::npos ? -1 : static_cast<int>(pos));
+	return ObjectInstance::FromValue(pos == wstring::npos ? -1 : static_cast<int>(pos));
 }
 
 static ObjectInstance* LastIndexOf(InboundVariablesContext* arguments)
@@ -141,11 +142,11 @@ static ObjectInstance* LastIndexOf(InboundVariablesContext* arguments)
 	
 	ObjectInstance* searchArg = arguments->TryFind(L"value");
 	if (searchArg == nullptr)
-		return AbstractInterpreter::CreateInstanceFromValue(-1);
+		return ObjectInstance::FromValue(-1);
 	
 	wstring search = searchArg->ReadPrimitive<wstring>();
 	size_t pos = value.rfind(search);
-	return AbstractInterpreter::CreateInstanceFromValue(pos == wstring::npos ? -1 : static_cast<int>(pos));
+	return ObjectInstance::FromValue(pos == wstring::npos ? -1 : static_cast<int>(pos));
 }
 
 static ObjectInstance* Replace(InboundVariablesContext* arguments)
@@ -157,7 +158,7 @@ static ObjectInstance* Replace(InboundVariablesContext* arguments)
 	ObjectInstance* newStrArg = arguments->TryFind(L"newValue");
 	
 	if (oldStrArg == nullptr || newStrArg == nullptr)
-		return AbstractInterpreter::CreateInstanceFromValue(value);
+		return ObjectInstance::FromValue(value);
 	
 	wstring oldStr = oldStrArg->ReadPrimitive<wstring>();
 	wstring newStr = newStrArg->ReadPrimitive<wstring>();
@@ -171,7 +172,7 @@ static ObjectInstance* Replace(InboundVariablesContext* arguments)
 		pos += newStr.length();
 	}
 	
-	return AbstractInterpreter::CreateInstanceFromValue(result);
+	return ObjectInstance::FromValue(result);
 }
 
 static ObjectInstance* ToUpper(InboundVariablesContext* arguments)
@@ -181,7 +182,7 @@ static ObjectInstance* ToUpper(InboundVariablesContext* arguments)
 	
 	wstring result = value;
 	transform(result.begin(), result.end(), result.begin(), ::towupper);
-	return AbstractInterpreter::CreateInstanceFromValue(result);
+	return ObjectInstance::FromValue(result);
 }
 
 static ObjectInstance* ToLower(InboundVariablesContext* arguments)
@@ -191,7 +192,7 @@ static ObjectInstance* ToLower(InboundVariablesContext* arguments)
 	
 	wstring result = value;
 	transform(result.begin(), result.end(), result.begin(), ::towlower);
-	return AbstractInterpreter::CreateInstanceFromValue(result);
+	return ObjectInstance::FromValue(result);
 }
 
 static ObjectInstance* Trim(InboundVariablesContext* arguments)
@@ -202,13 +203,13 @@ static ObjectInstance* Trim(InboundVariablesContext* arguments)
 	// Trim from start
 	size_t start = value.find_first_not_of(L" \t\n\r");
 	if (start == wstring::npos)
-		return AbstractInterpreter::CreateInstanceFromValue(L"");
+		return ObjectInstance::FromValue(L"");
 	
 	// Trim from end
 	size_t end = value.find_last_not_of(L" \t\n\r");
 	
 	wstring result = value.substr(start, end - start + 1);
-	return AbstractInterpreter::CreateInstanceFromValue(result);
+	return ObjectInstance::FromValue(result);
 }
 
 static ObjectInstance* Format(InboundVariablesContext* arguments)
@@ -320,7 +321,7 @@ static ObjectInstance* Format(InboundVariablesContext* arguments)
 		}
 	}
 	
-	return AbstractInterpreter::CreateInstanceFromValue(result);
+	return ObjectInstance::FromValue(result);
 }
 
 static ObjectInstance* PadLeft(InboundVariablesContext* arguments)
@@ -330,11 +331,11 @@ static ObjectInstance* PadLeft(InboundVariablesContext* arguments)
 	
 	ObjectInstance* widthArg = arguments->TryFind(L"width");
 	if (widthArg == nullptr)
-		return AbstractInterpreter::CreateInstanceFromValue(value);
+		return ObjectInstance::FromValue(value);
 	
 	int width = widthArg->ReadPrimitive<int>();
 	if (width <= static_cast<int>(value.size()))
-		return AbstractInterpreter::CreateInstanceFromValue(value);
+		return ObjectInstance::FromValue(value);
 	
 	wchar_t padChar = L' ';
 	ObjectInstance* padCharArg = arguments->TryFind(L"padChar");
@@ -344,7 +345,7 @@ static ObjectInstance* PadLeft(InboundVariablesContext* arguments)
 	}
 	
 	wstring result = wstring(width - value.size(), padChar) + value;
-	return AbstractInterpreter::CreateInstanceFromValue(result);
+	return ObjectInstance::FromValue(result);
 }
 
 static ObjectInstance* PadRight(InboundVariablesContext* arguments)
@@ -354,11 +355,11 @@ static ObjectInstance* PadRight(InboundVariablesContext* arguments)
 	
 	ObjectInstance* widthArg = arguments->TryFind(L"width");
 	if (widthArg == nullptr)
-		return AbstractInterpreter::CreateInstanceFromValue(value);
+		return ObjectInstance::FromValue(value);
 	
 	int width = widthArg->ReadPrimitive<int>();
 	if (width <= static_cast<int>(value.size()))
-		return AbstractInterpreter::CreateInstanceFromValue(value);
+		return ObjectInstance::FromValue(value);
 	
 	wchar_t padChar = L' ';
 	ObjectInstance* padCharArg = arguments->TryFind(L"padChar");
@@ -368,7 +369,7 @@ static ObjectInstance* PadRight(InboundVariablesContext* arguments)
 	}
 	
 	wstring result = value + wstring(width - value.size(), padChar);
-	return AbstractInterpreter::CreateInstanceFromValue(result);
+	return ObjectInstance::FromValue(result);
 }
 
 static ObjectInstance* Remove(InboundVariablesContext* arguments)
@@ -378,13 +379,13 @@ static ObjectInstance* Remove(InboundVariablesContext* arguments)
 	
 	ObjectInstance* startArg = arguments->TryFind(L"start");
 	if (startArg == nullptr)
-		return AbstractInterpreter::CreateInstanceFromValue(value);
+		return ObjectInstance::FromValue(value);
 	
 	int start = startArg->ReadPrimitive<int>();
 	if (start < 0)
 		start = 0;
 	if (start >= static_cast<int>(value.size()))
-		return AbstractInterpreter::CreateInstanceFromValue(value);
+		return ObjectInstance::FromValue(value);
 	
 	ObjectInstance* countArg = arguments->TryFind(L"count");
 	if (countArg != nullptr)
@@ -397,12 +398,12 @@ static ObjectInstance* Remove(InboundVariablesContext* arguments)
 		
 		wstring result = value;
 		result.erase(start, count);
-		return AbstractInterpreter::CreateInstanceFromValue(result);
+		return ObjectInstance::FromValue(result);
 	}
 	else
 	{
 		wstring result = value.substr(0, start);
-		return AbstractInterpreter::CreateInstanceFromValue(result);
+		return ObjectInstance::FromValue(result);
 	}
 }
 
@@ -415,7 +416,7 @@ static ObjectInstance* Insert(InboundVariablesContext* arguments)
 	ObjectInstance* strArg = arguments->TryFind(L"value");
 	
 	if (startArg == nullptr || strArg == nullptr)
-		return AbstractInterpreter::CreateInstanceFromValue(value);
+		return ObjectInstance::FromValue(value);
 	
 	int start = startArg->ReadPrimitive<int>();
 	wstring str = strArg->ReadPrimitive<wstring>();
@@ -428,7 +429,7 @@ static ObjectInstance* Insert(InboundVariablesContext* arguments)
 	
 	wstring result = value;
 	result.insert(start, str);
-	return AbstractInterpreter::CreateInstanceFromValue(result);
+	return ObjectInstance::FromValue(result);
 }
 
 void StringPrimitive::Reflect(TypeSymbol* symbol)

@@ -1,5 +1,6 @@
 #pragma once
 #include <shard/syntax/nodes/ExpressionSyntax.h>
+#include <shard/syntax/symbols/ArrayTypeSymbol.h>
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxToken.h>
 #include <shard/syntax/SyntaxNode.h>
@@ -13,12 +14,10 @@ namespace shard::syntax::nodes
 		SyntaxToken OpenSquareToken;
 		SyntaxToken CloseSquareToken;
 		std::vector<ExpressionSyntax*> ValuesExpressions;
+		shard::syntax::symbols::ArrayTypeSymbol* Symbol = nullptr;
 
 		inline CollectionExpressionSyntax(const SyntaxNode* parent)
 			: ExpressionSyntax(SyntaxKind::CollectionExpression, parent) { }
-
-		inline CollectionExpressionSyntax(const CollectionExpressionSyntax& other)
-			: ExpressionSyntax(other), OpenSquareToken(other.OpenSquareToken), CloseSquareToken(other.CloseSquareToken), ValuesExpressions(other.ValuesExpressions) { }
 
 		inline virtual ~CollectionExpressionSyntax()
 		{

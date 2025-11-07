@@ -13,5 +13,7 @@ namespace shard::syntax::nodes
 
 		inline PredefinedTypeSyntax(const SyntaxToken typeToken, const SyntaxNode* parent)
 			: TypeSyntax(SyntaxKind::PredefinedType, parent), TypeToken(typeToken) { }
+
+		std::wstring ToString() override;
 	};
 }

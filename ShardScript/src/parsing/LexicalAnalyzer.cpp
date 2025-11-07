@@ -1206,7 +1206,7 @@ CollectionExpressionSyntax* LexicalAnalyzer::ReadCollectionExpression(SourceRead
 		SyntaxToken separatorToken = reader.Current();
 		reader.Consume();
 
-		if (separatorToken.Type == TokenType::CloseCurl)
+		if (separatorToken.Type == TokenType::CloseSquare)
 		{
 			syntax->CloseSquareToken = separatorToken;
 			break;
@@ -1314,7 +1314,12 @@ LinkedExpressionNode* LexicalAnalyzer::ReadLinkedExpressionNode(SourceReader& re
 
 		case TokenType::OpenSquare:
 		{
-			IndexatorExpressionSyntax* node = new IndexatorExpressionSyntax(identifier, prevNode, parent);
+			MemberAccessExpressionSyntax* member = new MemberAccessExpressionSyntax(identifier, prevNode, parent);
+			IndexatorExpressionSyntax* node = new IndexatorExpressionSyntax(member, parent);
+
+			member->NextNode = node;
+			parent->Nodes.push_back(member);
+
 			node->IndexatorList = ReadIndexatorList(reader, node);
 
 			if (!reader.CanConsume())
@@ -1323,7 +1328,7 @@ LinkedExpressionNode* LexicalAnalyzer::ReadLinkedExpressionNode(SourceReader& re
 			current = reader.Current();
 			if (current.Type == TokenType::Delimeter)
 			{
-				node->NextDelimeterToken = current;
+				member->NextDelimeterToken = current;
 				reader.Consume();
 			}
 
@@ -1479,13 +1484,14 @@ TypeSyntax* LexicalAnalyzer::ReadType(SourceReader& reader, SyntaxNode* parent)
 			return new NullableTypeSyntax(syntax, parent);
 		}
 
-		case TokenType::OpenBrace:
+		case TokenType::OpenSquare:
 		{
 			ArrayTypeSyntax* array = new ArrayTypeSyntax(parent);
-			array->Rank = 1;
-			array->OpenBraceToken = current;
+			array->CloseSquareToken = current;
 			reader.Consume();
-			array->CloseBraceToken = Expect(reader, TokenType::CloseBrace, L"Expected ']'");
+			
+			array->Rank = 1;
+			array->CloseSquareToken = Expect(reader, TokenType::CloseSquare, L"Expected ']'");
 			array->UnderlayingType = syntax;
 			return array;
 		}
@@ -1493,7 +1499,6 @@ TypeSyntax* LexicalAnalyzer::ReadType(SourceReader& reader, SyntaxNode* parent)
 		default:
 			return syntax;
 	}
-
 }
 
 // Smart error recovery with synchronization tokens

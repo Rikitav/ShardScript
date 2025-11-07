@@ -11,11 +11,11 @@ namespace shard::syntax::symbols
 	class VariableSymbol : public SyntaxSymbol
 	{
 	public:
-		TypeSymbol* Type = nullptr;
+		const TypeSymbol* Type = nullptr;
         shard::syntax::nodes::ExpressionSyntax* Declaration = nullptr;
         bool IsConst = false;
 
-		inline VariableSymbol(std::wstring name) : SyntaxSymbol(name, SyntaxKind::VariableStatement)
+		inline VariableSymbol(std::wstring name, TypeSymbol* type) : SyntaxSymbol(name, SyntaxKind::VariableStatement), Type(type)
 		{
 			Accesibility = SymbolAccesibility::Public;
 		}

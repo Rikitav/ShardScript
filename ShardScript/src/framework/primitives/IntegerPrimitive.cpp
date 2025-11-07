@@ -1,8 +1,8 @@
 #include <shard/runtime/AbstractInterpreter.h>
 #include <shard/runtime/InboundVariablesContext.h>
 #include <shard/runtime/ObjectInstance.h>
-#include <shard/runtime/framework/primitives/IntegerPrimitive.h>
 #include <shard/parsing/semantic/SymbolTable.h>
+#include <shard/framework/primitives/IntegerPrimitive.h>
 
 #include <shard/syntax/SymbolAccesibility.h>
 #include <shard/syntax/symbols/TypeSymbol.h>
@@ -13,6 +13,7 @@
 #include <cmath>
 
 using namespace std;
+using namespace shard::framework;
 using namespace shard::runtime;
 using namespace shard::syntax;
 using namespace shard::syntax::symbols;
@@ -24,7 +25,7 @@ static ObjectInstance* ToString(InboundVariablesContext* arguments)
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	int value = instance->ReadPrimitive<int>();
 	wstring str = to_wstring(value);
-	return AbstractInterpreter::CreateInstanceFromValue(str);
+	return ObjectInstance::FromValue(str);
 }
 
 static ObjectInstance* Abs(InboundVariablesContext* arguments)
@@ -32,7 +33,7 @@ static ObjectInstance* Abs(InboundVariablesContext* arguments)
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	int value = instance->ReadPrimitive<int>();
 	int result = abs(value);
-	return AbstractInterpreter::CreateInstanceFromValue(result);
+	return ObjectInstance::FromValue(result);
 }
 
 static ObjectInstance* Min(InboundVariablesContext* arguments)
@@ -42,11 +43,11 @@ static ObjectInstance* Min(InboundVariablesContext* arguments)
 	
 	ObjectInstance* otherArg = arguments->TryFind(L"other");
 	if (otherArg == nullptr)
-		return AbstractInterpreter::CreateInstanceFromValue(value);
+		return ObjectInstance::FromValue(value);
 	
 	int other = otherArg->ReadPrimitive<int>();
 	int result = min(value, other);
-	return AbstractInterpreter::CreateInstanceFromValue(result);
+	return ObjectInstance::FromValue(result);
 }
 
 static ObjectInstance* Max(InboundVariablesContext* arguments)
@@ -56,11 +57,11 @@ static ObjectInstance* Max(InboundVariablesContext* arguments)
 	
 	ObjectInstance* otherArg = arguments->TryFind(L"other");
 	if (otherArg == nullptr)
-		return AbstractInterpreter::CreateInstanceFromValue(value);
+		return ObjectInstance::FromValue(value);
 	
 	int other = otherArg->ReadPrimitive<int>();
 	int result = max(value, other);
-	return AbstractInterpreter::CreateInstanceFromValue(result);
+	return ObjectInstance::FromValue(result);
 }
 
 static ObjectInstance* Pow(InboundVariablesContext* arguments)
@@ -70,11 +71,11 @@ static ObjectInstance* Pow(InboundVariablesContext* arguments)
 	
 	ObjectInstance* powerArg = arguments->TryFind(L"power");
 	if (powerArg == nullptr)
-		return AbstractInterpreter::CreateInstanceFromValue(1);
+		return ObjectInstance::FromValue(1);
 	
 	int power = powerArg->ReadPrimitive<int>();
 	int result = static_cast<int>(pow(value, power));
-	return AbstractInterpreter::CreateInstanceFromValue(result);
+	return ObjectInstance::FromValue(result);
 }
 
 void IntegerPrimitive::Reflect(TypeSymbol* symbol)

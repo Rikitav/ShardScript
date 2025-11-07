@@ -13,7 +13,7 @@ namespace shard::syntax::symbols
         TypeSymbol* ReturnType = nullptr;
         MethodSymbol* GetMethod = nullptr;
         MethodSymbol* SetMethod = nullptr;
-        FieldSymbol* BackingField = nullptr; // Implicit backing field for auto-properties
+        FieldSymbol* BackingField = nullptr;
         bool IsStatic = false;
 
         inline PropertySymbol(std::wstring name)
@@ -21,9 +21,17 @@ namespace shard::syntax::symbols
 
         inline ~PropertySymbol() override
         {
-            // GetMethod and SetMethod are managed by TypeSymbol's Methods vector
-            // Don't delete them here
+            if (GetMethod != nullptr)
+                delete GetMethod;
+
+            if (SetMethod != nullptr)
+                delete SetMethod;
+
+            if (BackingField != nullptr)
+                delete BackingField;
         }
+
+        PropertySymbol* GenerateBackingField();
     };
 }
 

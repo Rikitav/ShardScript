@@ -60,44 +60,6 @@ using namespace shard::parsing::semantic;
 
 stack<CallStackFrame*> AbstractInterpreter::callStack;
 
-ObjectInstance* AbstractInterpreter::CreateInstanceFromValue(bool value)
-{
-	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::Boolean);
-	instance->WritePrimitive(value);
-	return instance;
-}
-
-ObjectInstance* AbstractInterpreter::CreateInstanceFromValue(int value)
-{
-	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::Integer);
-	instance->WritePrimitive(value);
-	return instance;
-}
-
-ObjectInstance* AbstractInterpreter::CreateInstanceFromValue(wchar_t value)
-{
-	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::Char);
-	instance->WritePrimitive(value);
-	return instance;
-}
-
-ObjectInstance* AbstractInterpreter::CreateInstanceFromValue(const wchar_t* value)
-{
-	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String);
-	wstring* copy = new wstring(value);
-	instance->WritePrimitive<wstring>(*copy);
-	return instance;
-}
-
-ObjectInstance* AbstractInterpreter::CreateInstanceFromValue(wstring& value)
-{
-	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String);
-	wstring* copy = new wstring(value);
-	instance->WritePrimitive<wstring>(*copy);
-	instance->DecrementReference();
-	return instance;
-}
-
 CallStackFrame* AbstractInterpreter::CurrentFrame()
 {
 	if (callStack.empty())
@@ -632,6 +594,12 @@ ObjectInstance* AbstractInterpreter::EvaluateExpression(const ExpressionSyntax* 
 			return EvaluateLinkedExpression(linkedExpression, CurrentContext()->TryFind(L"this"), false);
 		}
 
+		case SyntaxKind::CollectionExpression:
+		{
+			const CollectionExpressionSyntax* collectionExpression = static_cast<const CollectionExpressionSyntax*>(expression);
+			return EvaluateCollectionExpression(collectionExpression);
+		}
+
 		default:
 		{
 			throw runtime_error("unknown expression kind");
@@ -644,37 +612,16 @@ ObjectInstance* AbstractInterpreter::EvaluateLiteralExpression(const LiteralExpr
 	switch (expression->LiteralToken.Type)
 	{
 		case TokenType::BooleanLiteral:
-		{
-			ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::Boolean);
-			bool data = expression->LiteralToken.Word == L"true";
-			instance->WritePrimitive(data);
-			return instance;
-		}
+			return ObjectInstance::FromValue(expression->LiteralToken.Word == L"true");
 
 		case TokenType::NumberLiteral:
-		{
-			ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::Integer);
-			int data = stoi(expression->LiteralToken.Word);
-			instance->WritePrimitive(data);
-			return instance;
-		}
+			return ObjectInstance::FromValue(stoi(expression->LiteralToken.Word));
 
 		case TokenType::CharLiteral:
-		{
-			ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::Char);
-			wchar_t data = expression->LiteralToken.Word[0];
-			instance->WritePrimitive(data);
-			return instance;
-		}
+			return ObjectInstance::FromValue(expression->LiteralToken.Word[0]);
 
 		case TokenType::StringLiteral:
-		{
-			ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String);
-			wstring* copy = new wstring(expression->LiteralToken.Word);
-			instance->WritePrimitive(*copy);
-			instance->DecrementReference();
-			return instance;
-		}
+			return ObjectInstance::FromValue(expression->LiteralToken.Word);
 
 		default:
 			throw runtime_error("Unknown constant literal type");
@@ -686,18 +633,11 @@ ObjectInstance* AbstractInterpreter::EvaluateObjectExpression(const ObjectExpres
 	ObjectInstance* newInstance = GarbageCollector::AllocateInstance(expression->Symbol);
 	for (FieldSymbol* field : newInstance->Info->Fields)
 	{
-		if (field->ReturnType->IsReferenceType)
-		{
-			ObjectInstance* assignInstance = GarbageCollector::NullInstance;
-			if (field->DefaultValueExpression != nullptr)
-				AbstractInterpreter::EvaluateExpression(field->DefaultValueExpression);
+		ObjectInstance* assignInstance = GarbageCollector::NullInstance;
+		if (field->DefaultValueExpression != nullptr)
+			AbstractInterpreter::EvaluateExpression(field->DefaultValueExpression);
 
-			newInstance->SetField(field, assignInstance);
-		}
-		else
-		{
-			//instance->SetField(field)
-		}
+		newInstance->SetField(field, assignInstance);
 	}
 
 	return newInstance;
@@ -718,7 +658,6 @@ static bool IsMemberAccess(const ExpressionSyntax* expression, const LinkedExpre
 
 static bool IsFieldAccess(const LinkedExpressionSyntax* linkedExpression, const MemberAccessExpressionSyntax* memberExpression)
 {
-	//return linkedExpression->Nodes.size() > 1 && linkedExpression->Last == memberExpression;
 	return memberExpression->Symbol != nullptr || memberExpression->PropertySymbol != nullptr;
 }
 
@@ -782,31 +721,7 @@ ObjectInstance* AbstractInterpreter::EvaluateBinaryExpression(const BinaryExpres
 			return instanceReg;
 		}
 
-		// Check if this is a property or field
-		if (!memberExpression->IsProperty)
-		{
-			// Check if this is a static field
-			FieldSymbol* field = memberExpression->Symbol;
-			if (!field->IsStatic)
-			{
-				// Instance field assignment
-				instanceReg->SetField(field, retReg);
-				return retReg;
-			}
-
-			GarbageCollector::SetStaticField(field, retReg);
-			return retReg;
-		}
-
-		// Set property via setter
-		PropertySymbol* property = memberExpression->PropertySymbol;
-		InboundVariablesContext* setterArgs = new InboundVariablesContext(nullptr);
-
-		if (!property->IsStatic)
-			setterArgs->AddVariable(L"this", instanceReg);
-
-		setterArgs->AddVariable(L"value", retReg);
-		ExecuteMethod(property->SetMethod, setterArgs);
+		ExecuteInstanceSetter(instanceReg, memberExpression, retReg);
 	}
 
 	return retReg;
@@ -853,13 +768,12 @@ ObjectInstance* AbstractInterpreter::EvaluateUnaryExpression(const UnaryExpressi
 		return retReg;
 	}
 
-	/*
 	if (!isMemberAccess)
 	{
 		// error, not a member access
-		throw runtime_error("unary expression tried to assign value to inaccesible register");
+		//throw runtime_error("unary expression tried to assign value to inaccesible register");
+		return retReg;
 	}
-	*/
 
 	// Checking if is variable access
 	if (!isFieldAccess)
@@ -868,32 +782,24 @@ ObjectInstance* AbstractInterpreter::EvaluateUnaryExpression(const UnaryExpressi
 		return instanceReg;
 	}
 
-	// Check if this is a property or field
-	if (!memberExpression->IsProperty)
-	{
-		// Check if this is a static field
-		FieldSymbol* field = memberExpression->Symbol;
-		if (!field->IsStatic)
-		{
-			// Instance field assignment
-			instanceReg->SetField(field, retReg);
-			return retReg;
-		}
+	ExecuteInstanceSetter(instanceReg, memberExpression, exprReg);
+	return retReg;
+}
 
-		GarbageCollector::SetStaticField(field, retReg);
-		return retReg;
+ObjectInstance* AbstractInterpreter::EvaluateCollectionExpression(const CollectionExpressionSyntax* expression)
+{
+	ObjectInstance* instance = GarbageCollector::AllocateInstance(expression->Symbol);
+	int size = static_cast<int>(expression->ValuesExpressions.size());
+	instance->WriteMemory(0, sizeof(int), &size);
+
+	for (size_t i = 0; i < expression->ValuesExpressions.size(); i++)
+	{
+		ExpressionSyntax* valueExpression = expression->ValuesExpressions[i];
+		ObjectInstance* valueInstance = EvaluateExpression(valueExpression);
+		instance->SetElement(i, valueInstance);
 	}
 
-	// Set property via setter
-	PropertySymbol* property = memberExpression->PropertySymbol;
-	InboundVariablesContext* setterArgs = new InboundVariablesContext(nullptr);
-
-	if (!property->IsStatic)
-		setterArgs->AddVariable(L"this", instanceReg);
-
-	setterArgs->AddVariable(L"value", exprReg);
-	ExecuteMethod(property->SetMethod, setterArgs);
-	return retReg;
+	return instance;
 }
 
 ObjectInstance* AbstractInterpreter::EvaluateLinkedExpression(const LinkedExpressionSyntax* expression, ObjectInstance* objInstance, bool trimLast)
@@ -907,9 +813,6 @@ ObjectInstance* AbstractInterpreter::EvaluateLinkedExpression(const LinkedExpres
 			if (variableAccess->Symbol == nullptr)
 			{
 				objInstance = CurrentContext()->TryFind(variableAccess->IdentifierToken.Word);
-				if (objInstance != nullptr)
-					objInstance = GarbageCollector::CopyInstance(objInstance);
-
 				exprNode = variableAccess->NextNode;
 				break;
 			}
@@ -921,9 +824,7 @@ ObjectInstance* AbstractInterpreter::EvaluateLinkedExpression(const LinkedExpres
 		if (trimLast && exprNode == expression->Last)
 			break;
 
-		ObjectInstance* prevInstance = objInstance;
-		objInstance = EvaluateLinkedExpression(exprNode, prevInstance);
-		GarbageCollector::DestroyInstance(prevInstance);
+		objInstance = EvaluateLinkedExpression(exprNode, objInstance);
 		exprNode = exprNode->NextNode;
 	}
 
@@ -961,46 +862,47 @@ ObjectInstance* AbstractInterpreter::EvaluateLinkedExpression(const LinkedExpres
 
 ObjectInstance* AbstractInterpreter::EvaluateMemberAccessExpression(const MemberAccessExpressionSyntax* expression, ObjectInstance* prevInstance)
 {
-	// Check if this is a property access
+	// Check if this is a property or field
+	FieldSymbol* field = expression->Symbol;
 	if (expression->IsProperty)
 	{
 		PropertySymbol* property = expression->PropertySymbol;
-		InboundVariablesContext* getterArgs = new InboundVariablesContext(nullptr);
-		
-		if (!property->IsStatic)
-			getterArgs->AddVariable(L"this", prevInstance);
-		
-		return ExecuteMethod(property->GetMethod, getterArgs);
-	}
-	else
-	{
-		// Regular field access
-		FieldSymbol* field = expression->Symbol;
-		
-		// Check if this is a static field
-		if (field->IsStatic)
-		{
-			return GarbageCollector::GetStaticField(field);
-		}
+		field = property->BackingField;
 
-		// Instance field access
-		return prevInstance->GetField(field);
+		if (property->GetMethod != nullptr)
+		{
+			InboundVariablesContext* getterArgs = new InboundVariablesContext(nullptr);
+			if (!property->IsStatic)
+				getterArgs->AddVariable(L"this", prevInstance);
+
+			return ExecuteMethod(property->GetMethod, getterArgs);
+		}
 	}
+
+	// Check if this is a static field
+	if (field->IsStatic)
+	{
+		return GarbageCollector::GetStaticField(field);
+	}
+
+	// Instance field access
+	return prevInstance->GetField(field);
 }
 
 ObjectInstance* AbstractInterpreter::EvaluateInvokationExpression(const InvokationExpressionSyntax* expression, ObjectInstance* prevInstance)
 {
-	wstring methodName = expression->IdentifierToken.Word;
 	MethodSymbol* method = expression->Symbol;
-
-	InboundVariablesContext* arguments = CreateArgumentsContext(expression, expression->Symbol, prevInstance);
+	InboundVariablesContext* arguments = CreateArgumentsContext(expression->ArgumentsList->Arguments, method, prevInstance);
 	ObjectInstance* retReg = ExecuteMethod(method, arguments);
 	return retReg;
 }
 
 ObjectInstance* AbstractInterpreter::EvaluateIndexatorExpression(const IndexatorExpressionSyntax* expression, ObjectInstance* prevInstance)
 {
-	throw runtime_error("Indexation expression are currently unupported!");
+	MethodSymbol* method = expression->Symbol;
+	InboundVariablesContext* arguments = CreateArgumentsContext(expression->IndexatorList->Arguments, method, prevInstance);
+	ObjectInstance* retReg = ExecuteMethod(method, arguments);
+	return retReg;
 }
 
 ObjectInstance* AbstractInterpreter::EvaluateArgument(const ArgumentSyntax* argument)
@@ -1011,22 +913,54 @@ ObjectInstance* AbstractInterpreter::EvaluateArgument(const ArgumentSyntax* argu
 	return argInstance;
 }
 
-InboundVariablesContext* AbstractInterpreter::CreateArgumentsContext(const InvokationExpressionSyntax* expression, MethodSymbol* symbol, ObjectInstance* instance)
+InboundVariablesContext* AbstractInterpreter::CreateArgumentsContext(vector<ArgumentSyntax*> arguments, MethodSymbol* symbol, ObjectInstance* instance)
 {
-	InboundVariablesContext* arguments = new InboundVariablesContext(nullptr);
+	InboundVariablesContext* argumentsContext = new InboundVariablesContext(nullptr);
 
 	if (!symbol->IsStatic)
-		arguments->AddVariable(L"this", instance);
+		argumentsContext->AddVariable(L"this", instance);
 
 	size_t size = symbol->Parameters.size();
 	for (size_t i = 0; i < size; i++)
 	{
-		ArgumentSyntax* argument = expression->ArgumentsList->Arguments.at(i);
+		ArgumentSyntax* argument = arguments.at(i);
 		ObjectInstance* argInstance = EvaluateArgument(argument);
 
 		wstring argName = symbol->Parameters.at(i)->Name;
-		arguments->AddVariable(argName, argInstance);
+		argumentsContext->AddVariable(argName, argInstance);
 	}
 
-	return arguments;
+	return argumentsContext;
+}
+
+void AbstractInterpreter::ExecuteInstanceSetter(ObjectInstance* instance, const MemberAccessExpressionSyntax* access, ObjectInstance* value)
+{
+	// Check if this is a property or field
+	FieldSymbol* field = access->Symbol;
+	if (access->IsProperty)
+	{
+		PropertySymbol* property = access->PropertySymbol;
+		field = property->BackingField;
+
+		if (property->GetMethod != nullptr)
+		{
+			InboundVariablesContext* setterArgs = new InboundVariablesContext(nullptr);
+			if (!property->IsStatic)
+				setterArgs->AddVariable(L"this", instance);
+
+			setterArgs->AddVariable(L"value", value);
+			ExecuteMethod(property->SetMethod, setterArgs);
+			return;
+		}
+	}
+
+	// Check if this is a static field
+	if (field->IsStatic)
+	{
+		GarbageCollector::SetStaticField(field, value);
+		return;
+	}
+
+	// Instance field assignment
+	instance->SetField(field, value);
 }

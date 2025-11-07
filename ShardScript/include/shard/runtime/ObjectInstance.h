@@ -2,6 +2,7 @@
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/FieldSymbol.h>
 #include <stdexcept>
+#include <string>
 
 namespace shard::runtime
 {
@@ -11,21 +12,24 @@ namespace shard::runtime
 		const long Id;
 		const shard::syntax::symbols::TypeSymbol* Info;
 		const bool IsNullable = false;
-		void* Ptr;
 		size_t ReferencesCounter;
+		void* Ptr;
 
-		ObjectInstance(const long id, const shard::syntax::symbols::TypeSymbol* info, void* ptr)
+		inline ObjectInstance(const long id, const shard::syntax::symbols::TypeSymbol* info, void* ptr)
 			: Id(id), Info(info), Ptr(ptr), ReferencesCounter(0) { }
+		
+		inline ~ObjectInstance() = default;
 
-		/*
-		ObjectInstance(const ObjectInstance& other)
-			: Id(other.Id), Info(other.Info), Ptr(other.Ptr) { }
-		*/
-
-		~ObjectInstance() = default;
+		static ObjectInstance* FromValue(int value);
+		static ObjectInstance* FromValue(bool value);
+		static ObjectInstance* FromValue(wchar_t value);
+		static ObjectInstance* FromValue(const wchar_t* value);
+		static ObjectInstance* FromValue(const std::wstring& value);
 
 		ObjectInstance* GetField(shard::syntax::symbols::FieldSymbol* field);
 		void SetField(shard::syntax::symbols::FieldSymbol* field, ObjectInstance* instance);
+		ObjectInstance* GetElement(size_t index);
+		void SetElement(size_t index, ObjectInstance* instance);
 		
 		void IncrementReference();
 		void DecrementReference();
@@ -33,7 +37,8 @@ namespace shard::runtime
 		template<typename T>
 		inline void WritePrimitive(T& value)
 		{
-			WriteMemory(0, Info->MemoryBytesSize, &value);
+			void* ptr = &value;
+			WriteMemory(0, Info->MemoryBytesSize, ptr);
 		}
 
 		template<typename T>

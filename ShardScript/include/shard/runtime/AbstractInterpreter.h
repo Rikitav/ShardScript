@@ -18,6 +18,7 @@
 #include <shard/syntax/nodes/Expressions/BinaryExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/UnaryExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/LiteralExpressionSyntax.h>
+#include <shard/syntax/nodes/Expressions/CollectionExpressionSyntax.h>
 
 #include <shard/syntax/nodes/Statements/ReturnStatementSyntax.h>
 #include <shard/syntax/nodes/Statements/ThrowStatementSyntax.h>
@@ -33,6 +34,7 @@
 #include <shard/syntax/nodes/Statements/ContinueStatementSyntax.h>
 
 #include <stack>
+#include <vector>
 
 namespace shard::runtime
 {
@@ -42,12 +44,6 @@ namespace shard::runtime
 		static std::stack<CallStackFrame*> callStack;
 	
 	public:
-		static shard::runtime::ObjectInstance* CreateInstanceFromValue(int value);
-		static shard::runtime::ObjectInstance* CreateInstanceFromValue(bool value);
-		static shard::runtime::ObjectInstance* CreateInstanceFromValue(wchar_t value);
-		static shard::runtime::ObjectInstance* CreateInstanceFromValue(const wchar_t* value);
-		static shard::runtime::ObjectInstance* CreateInstanceFromValue(std::wstring& value);
-
 		static CallStackFrame* CurrentFrame();
 		static void PushFrame(shard::syntax::symbols::MethodSymbol* methodSymbol);
 		static void PopFrame();
@@ -83,6 +79,7 @@ namespace shard::runtime
 		static ObjectInstance* EvaluateObjectExpression(const shard::syntax::nodes::ObjectExpressionSyntax* expression);
 		static ObjectInstance* EvaluateBinaryExpression(const shard::syntax::nodes::BinaryExpressionSyntax* expression);
 		static ObjectInstance* EvaluateUnaryExpression(const shard::syntax::nodes::UnaryExpressionSyntax* expression);
+		static ObjectInstance* EvaluateCollectionExpression(const shard::syntax::nodes::CollectionExpressionSyntax* expression);
 		//static ObjectInstance* EvaluateAssignExpression(const shard::syntax::nodes::BinaryExpressionSyntax* expression);
 
 		static ObjectInstance* EvaluateLinkedExpression(const shard::syntax::nodes::LinkedExpressionSyntax* expression, shard::runtime::ObjectInstance* prevInstance, bool trimLast);
@@ -93,6 +90,7 @@ namespace shard::runtime
 		
 	private:
 		static ObjectInstance* EvaluateArgument(const shard::syntax::nodes::ArgumentSyntax* argument);
-		static InboundVariablesContext* CreateArgumentsContext(const shard::syntax::nodes::InvokationExpressionSyntax* expression, shard::syntax::symbols::MethodSymbol* symbol, shard::runtime::ObjectInstance* instance);
+		static InboundVariablesContext* CreateArgumentsContext(std::vector<shard::syntax::nodes::ArgumentSyntax*> expression, shard::syntax::symbols::MethodSymbol* symbol, shard::runtime::ObjectInstance* instance);
+		static void ExecuteInstanceSetter(ObjectInstance* instance, const shard::syntax::nodes::MemberAccessExpressionSyntax* access, ObjectInstance* value);
 	};
 }

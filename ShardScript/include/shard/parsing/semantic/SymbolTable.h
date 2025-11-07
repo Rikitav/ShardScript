@@ -27,13 +27,17 @@ namespace shard::parsing::semantic
         struct Primitives
         {
             inline static shard::syntax::symbols::TypeSymbol* Void;
+            inline static shard::syntax::symbols::TypeSymbol* Array;
             inline static shard::syntax::symbols::TypeSymbol* Boolean;
             inline static shard::syntax::symbols::TypeSymbol* Integer;
             inline static shard::syntax::symbols::TypeSymbol* Char;
             inline static shard::syntax::symbols::TypeSymbol* String;
         };
 
-        inline SymbolTable() { }
+        inline SymbolTable()
+        {
+            GlobalType = new shard::syntax::symbols::TypeSymbol(GlobalTypeName, shard::syntax::SyntaxKind::CompilationUnit);
+        }
 
         inline ~SymbolTable()
         {
@@ -55,10 +59,7 @@ namespace shard::parsing::semantic
             }
         }
 
-        void ResolvePrmitives();
-        void ResolveGlobalMethods();
         void ClearSymbols();
-
         void BindSymbol(shard::syntax::SyntaxNode* node, shard::syntax::SyntaxSymbol* symbol);
         shard::syntax::SyntaxSymbol* LookupSymbol(shard::syntax::SyntaxNode* node);
         shard::syntax::SyntaxNode* GetSyntaxNode(shard::syntax::SyntaxSymbol* symbol);

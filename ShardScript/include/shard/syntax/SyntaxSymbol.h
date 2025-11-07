@@ -13,6 +13,7 @@ namespace shard::syntax
 		const int TypeCode;
 		const std::wstring Name;
 		const SyntaxKind Kind;
+		SyntaxSymbol* Parent = nullptr;
 		SymbolAccesibility Accesibility = SymbolAccesibility::Private;
 
 		inline SyntaxSymbol(const std::wstring& name, const SyntaxKind kind)
@@ -22,5 +23,7 @@ namespace shard::syntax
 		{
 
 		}
+
+		bool IsType();
 	};
 }

@@ -129,12 +129,22 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\runtime\framework\primitives\ArrayPrimitive.cpp" />
+    <ClCompile Include="src\parsing\visiting\ScopeVisitor.cpp" />
+    <ClCompile Include="src\framework\FrameworkLoader.cpp" />
+    <ClCompile Include="src\framework\primitives\ArrayPrimitive.cpp" />
+    <ClCompile Include="src\syntax\nodes\Types\ArrayTypeSyntax.cpp" />
+    <ClCompile Include="src\syntax\nodes\Types\GenericTypeSyntax.cpp" />
+    <ClCompile Include="src\syntax\nodes\Types\IdentifierNameTypeSyntax.cpp" />
+    <ClCompile Include="src\syntax\nodes\Types\NullableTypeSyntax.cpp" />
+    <ClCompile Include="src\syntax\nodes\Types\PredefinedTypeSyntax.cpp" />
+    <ClCompile Include="src\syntax\symbols\ArrayTypeSymbol.cpp" />
+    <ClCompile Include="src\syntax\symbols\PropertySymbol.cpp" />
+    <ClCompile Include="src\syntax\SyntaxSymbol.cpp" />
     <ClCompile Include="src\utilities\ArgumentsParser.cpp" />
     <ClCompile Include="include\shard\parsing\reading\SequenceSourceReader.h" />
     <ClCompile Include="src\parsing\LayoutGenerator.cpp" />
-    <ClCompile Include="src\runtime\framework\primitives\IntegerPrimitive.cpp" />
-    <ClCompile Include="src\runtime\framework\primitives\StringPrimitive.cpp" />
+    <ClCompile Include="src\framework\primitives\IntegerPrimitive.cpp" />
+    <ClCompile Include="src\framework\primitives\StringPrimitive.cpp" />
     <ClCompile Include="src\parsing\semantic\SymbolTable.cpp" />
     <ClCompile Include="src\parsing\visiting\ExpressionBinder.cpp" />
     <ClCompile Include="src\parsing\visiting\TypeBinder.cpp" />
@@ -145,8 +155,8 @@
     <ClCompile Include="include\shard\syntax\nodes\ParametersListSyntax.h" />
     <ClCompile Include="include\shard\syntax\nodes\Directives\UsingDirectiveSyntax.h" />
     <ClCompile Include="src\parsing\visiting\SyntaxVisitor.cpp" />
-    <ClCompile Include="src\runtime\framework\primitives\BooleanPrimitive.cpp" />
-    <ClCompile Include="src\runtime\framework\primitives\CharPrimitive.cpp" />
+    <ClCompile Include="src\framework\primitives\BooleanPrimitive.cpp" />
+    <ClCompile Include="src\framework\primitives\CharPrimitive.cpp" />
     <ClCompile Include="src\runtime\InteractiveConsole.cpp" />
     <ClCompile Include="src\parsing\SemanticAnalyzer.cpp" />
     <ClCompile Include="src\parsing\reading\FileReader.cpp" />
@@ -170,10 +180,11 @@
     <ClInclude Include="include\ffi\ffi.h" />
     <ClInclude Include="include\ffi\ffitarget.h" />
     <ClInclude Include="include\shard\parsing\LayoutGenerator.h" />
-    <ClInclude Include="include\shard\runtime\framework\primitives\ArrayPrimitive.h" />
-    <ClInclude Include="include\shard\runtime\framework\primitives\CharPrimitive.h" />
-    <ClInclude Include="include\shard\runtime\framework\primitives\IntegerPrimitive.h" />
-    <ClInclude Include="include\shard\runtime\framework\primitives\StringPrimitive.h" />
+    <ClInclude Include="include\shard\framework\FrameworkLoader.h" />
+    <ClInclude Include="include\shard\framework\primitives\ArrayPrimitive.h" />
+    <ClInclude Include="include\shard\framework\primitives\CharPrimitive.h" />
+    <ClInclude Include="include\shard\framework\primitives\IntegerPrimitive.h" />
+    <ClInclude Include="include\shard\framework\primitives\StringPrimitive.h" />
     <ClInclude Include="include\shard\parsing\semantic\SymbolInfo.h" />
     <ClInclude Include="include\shard\parsing\semantic\TypeInfo.h" />
     <ClInclude Include="include\shard\parsing\visiting\DeclarationCollector.h" />
@@ -181,6 +192,7 @@
     <ClInclude Include="include\shard\parsing\semantic\SemanticScope.h" />
     <ClInclude Include="include\shard\parsing\semantic\SymbolTable.h" />
     <ClInclude Include="include\shard\parsing\visiting\ExpressionBinder.h" />
+    <ClInclude Include="include\shard\parsing\visiting\ScopeVisitor.h" />
     <ClInclude Include="include\shard\parsing\visiting\SyntaxVisitor.h" />
     <ClInclude Include="include\shard\parsing\visiting\TypeBinder.h" />
     <ClInclude Include="include\shard\runtime\InteractiveConsole.h" />
@@ -195,7 +207,7 @@
     <ClInclude Include="include\shard\runtime\ObjectInstance.h" />
     <ClInclude Include="include\shard\runtime\CallStackFrame.h" />
     <ClInclude Include="include\shard\runtime\PrimitiveMathModule.h" />
-    <ClInclude Include="include\shard\runtime\framework\primitives\BooleanPrimitive.h" />
+    <ClInclude Include="include\shard\framework\primitives\BooleanPrimitive.h" />
     <ClInclude Include="include\shard\ShardScript.h" />
     <ClInclude Include="include\shard\ShardTypes.h" />
     <ClInclude Include="include\shard\parsing\analysis\Diagnostic.h" />
@@ -241,6 +253,7 @@
     <ClInclude Include="include\shard\syntax\nodes\Types\IdentifierNameTypeSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\Types\NullableTypeSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\Types\PredefinedTypeSyntax.h" />
+    <ClInclude Include="include\shard\syntax\symbols\ArrayTypeSymbol.h" />
     <ClInclude Include="include\shard\syntax\symbols\ClassSymbol.h" />
     <ClInclude Include="include\shard\syntax\symbols\FFISymbol.h" />
     <ClInclude Include="include\shard\syntax\symbols\FieldSymbol.h" />
