@@ -658,7 +658,7 @@ static bool IsMemberAccess(const ExpressionSyntax* expression, const LinkedExpre
 
 static bool IsFieldAccess(const LinkedExpressionSyntax* linkedExpression, const MemberAccessExpressionSyntax* memberExpression)
 {
-	return memberExpression->Symbol != nullptr || memberExpression->PropertySymbol != nullptr;
+	return memberExpression->FieldSymbol != nullptr || memberExpression->PropertySymbol != nullptr;
 }
 
 ObjectInstance* AbstractInterpreter::EvaluateBinaryExpression(const BinaryExpressionSyntax* expression)
@@ -810,7 +810,7 @@ ObjectInstance* AbstractInterpreter::EvaluateLinkedExpression(const LinkedExpres
 		case SyntaxKind::MemberAccessExpression:
 		{
 			MemberAccessExpressionSyntax* variableAccess = static_cast<MemberAccessExpressionSyntax*>(exprNode);
-			if (variableAccess->Symbol == nullptr)
+			if (variableAccess->FieldSymbol == nullptr)
 			{
 				objInstance = CurrentContext()->TryFind(variableAccess->IdentifierToken.Word);
 				exprNode = variableAccess->NextNode;
@@ -863,7 +863,7 @@ ObjectInstance* AbstractInterpreter::EvaluateLinkedExpression(const LinkedExpres
 ObjectInstance* AbstractInterpreter::EvaluateMemberAccessExpression(const MemberAccessExpressionSyntax* expression, ObjectInstance* prevInstance)
 {
 	// Check if this is a property or field
-	FieldSymbol* field = expression->Symbol;
+	FieldSymbol* field = expression->FieldSymbol;
 	if (expression->IsProperty)
 	{
 		PropertySymbol* property = expression->PropertySymbol;
@@ -936,7 +936,7 @@ InboundVariablesContext* AbstractInterpreter::CreateArgumentsContext(vector<Argu
 void AbstractInterpreter::ExecuteInstanceSetter(ObjectInstance* instance, const MemberAccessExpressionSyntax* access, ObjectInstance* value)
 {
 	// Check if this is a property or field
-	FieldSymbol* field = access->Symbol;
+	FieldSymbol* field = access->FieldSymbol;
 	if (access->IsProperty)
 	{
 		PropertySymbol* property = access->PropertySymbol;

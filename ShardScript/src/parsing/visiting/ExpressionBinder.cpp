@@ -53,6 +53,7 @@
 
 #include <vector>
 #include <string>
+#include <sstream>
 
 using namespace std;
 using namespace shard::parsing;
@@ -60,54 +61,6 @@ using namespace shard::parsing::semantic;
 using namespace shard::syntax::nodes;
 using namespace shard::syntax::symbols;
 using namespace shard::syntax;
-
-static bool IsScopePublicallyAccessible(const SemanticScope* scope)
-{
-	if (scope == nullptr)
-		return false;
-
-	if (scope->Owner->Kind == SyntaxKind::NamespaceDeclaration)
-		return true;
-
-	if (scope->Owner->Accesibility == SymbolAccesibility::Public)
-		return true;
-
-	return IsScopePublicallyAccessible(scope->Parent);
-}
-
-static bool IsSymbolNestedAccessible(const SemanticScope* scope, SyntaxSymbol* symbol)
-{
-	if (scope == nullptr)
-		return false;
-
-	if (scope->Owner->Kind == SyntaxKind::NamespaceDeclaration)
-		return false;
-
-	if (scope->Owner == symbol->Parent)
-		return true;
-
-	return IsSymbolNestedAccessible(scope->Parent, symbol);
-}
-
-bool ExpressionBinder::IsSymbolAccessible(SyntaxSymbol* symbol)
-{
-	if (symbol == nullptr)
-		throw runtime_error("Resolving access for nullptr symbol");
-
-	if (symbol->Kind == SyntaxKind::NamespaceDeclaration)
-		return true;
-
-	if (IsScopePublicallyAccessible(CurrentScope()))
-		return symbol->Accesibility == SymbolAccesibility::Public;
-
-	if (symbol->Parent == nullptr)
-		throw runtime_error("Cannot resolve symbol without parent");
-
-	if (IsSymbolNestedAccessible(CurrentScope(), symbol->Parent))
-		return true;
-
-	return false;
-}
 
 void ExpressionBinder::SetExpressionType(ExpressionSyntax* expression, TypeSymbol* type)
 {
@@ -142,6 +95,12 @@ void ExpressionBinder::VisitNamespaceDeclaration(NamespaceDeclarationSyntax* nod
 	if (symbol != nullptr)
 	{
 		PushScope(symbol);
+		for (TypeSymbol* type : Table->GetTypeSymbols())
+		{
+			if (type->Parent == symbol)
+				Declare(type);
+		}
+
 		for (MemberDeclarationSyntax* member : node->Members)
 			VisitMemberDeclaration(member);
 
@@ -597,6 +556,12 @@ TypeSymbol* ExpressionBinder::AnalyzeLinkedExpression(LinkedExpressionSyntax* sy
 
 	for (LinkedExpressionNode* node : syntax->Nodes)
 	{
+		if (currentType == nullptr)
+		{
+			//Diagnostics.ReportError(node->IdentifierToken, L"Cannot access member: previous expression has no type");
+			return nullptr;
+		}
+
 		switch (node->Kind)
 		{
 			case SyntaxKind::MemberAccessExpression:
@@ -642,12 +607,6 @@ void ExpressionBinder::VisitLinkedExpression(LinkedExpressionSyntax* node)
 
 TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressionSyntax* node, bool& isStaticContext, TypeSymbol* currentType)
 {
-	if (currentType == nullptr)
-	{
-		Diagnostics.ReportError(node->IdentifierToken, L"Cannot access member: previous expression has no type");
-		return nullptr;
-	}
-
 	if (node->PrevNode == nullptr)
 	{
 		// Check if this is the 'field' keyword - resolve to backing field of current property
@@ -701,10 +660,10 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 
 			default:
 			{
-				if (currentType->IsType())
+				if (symbol->IsType())
 				{
 					isStaticContext = true;
-					return currentType;
+					return static_cast<TypeSymbol*>(symbol);
 				}
 
 				Diagnostics.ReportError(node->IdentifierToken, L"Symbol '" + name + L"' is not a variable, parameter or field (found " + to_wstring(static_cast<int>(symbol->Kind)) + L")");
@@ -719,7 +678,6 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 			Diagnostics.ReportError(node->IdentifierToken, L"Cannot access member on non-type '" + currentType->Name + L"'");
 			return nullptr;
 		}
-
 
 		// First check for property (properties take precedence over fields)
 		wstring memberName = node->IdentifierToken.Word;
@@ -754,6 +712,7 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 			// Set property flag and symbol
 			node->PropertySymbol = property;
 			node->IsProperty = true;
+			isStaticContext = false;
 			return property->ReturnType;
 		}
 		else
@@ -801,7 +760,8 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 			}
 
 			// Set field symbol
-			node->Symbol = field;
+			node->FieldSymbol = field;
+			isStaticContext = false;
 			return field->ReturnType;
 		}
 	}
@@ -835,7 +795,7 @@ TypeSymbol* ExpressionBinder::AnalyzeFieldKeywordExpression(MemberAccessExpressi
 		propertySymbol->GenerateBackingField();
 
 	// Resolve 'field' as the backing field
-	node->Symbol = propertySymbol->BackingField;
+	node->FieldSymbol = propertySymbol->BackingField;
 	node->IsProperty = false;
 	node->PropertySymbol = nullptr;
 
@@ -852,14 +812,11 @@ TypeSymbol* ExpressionBinder::AnalyzeFieldKeywordExpression(MemberAccessExpressi
 
 TypeSymbol* ExpressionBinder::AnalyzeInvokationExpression(InvokationExpressionSyntax* node, bool& isStaticContext, TypeSymbol* currentType)
 {
-	if (currentType == nullptr)
-	{
-		Diagnostics.ReportError(node->IdentifierToken, L"Cannot access member: previous expression has no type");
-		return nullptr;
-	}
-
 	wstring methodName = node->IdentifierToken.Word;
 	MethodSymbol* method = ResolveMethod(node, isStaticContext, currentType);
+
+	if (method == nullptr)
+		return nullptr;
 
 	if (!IsSymbolAccessible(method))
 	{
@@ -897,20 +854,45 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node, 
 
 		TypeSymbol* argType = GetExpressionType(expr);
 		argTypes.push_back(argType);
-
-		if (argType == nullptr)
-			Diagnostics.ReportError(node->IdentifierToken, L"Argument type could not be determined for method '" + methodName + L"'");
 	}
 
 	MethodSymbol* method = currentType->FindMethod(methodName, argTypes);
 	if (method == nullptr)
-	{
 		method = Table->GlobalType->FindMethod(methodName, argTypes);
-		if (method == nullptr)
+
+	if (method == nullptr)
+	{
+		wstringstream diag;
+		diag << "No method \"" << methodName << "\" found that accepts ";
+
+		if (argTypes.size() == 0)
 		{
-			Diagnostics.ReportError(node->IdentifierToken, L"Method '" + methodName + L"' wasnt found in current scope");
-			return nullptr;
+			diag << "no arguments";
 		}
+		else if (argTypes.size() == 1)
+		{
+			TypeSymbol* type = argTypes.at(0);
+			wstring typeName = type == nullptr ? L"<error>" : type->Name;
+			diag << "argument (" << typeName << ")";
+		}
+		else
+		{
+			TypeSymbol* type = argTypes.at(0);
+			wstring typeName = type == nullptr ? L"<error>" : type->Name;
+			diag << L"arguments (" << typeName;
+
+			for (int i = 1; i < argTypes.size(); i++)
+			{
+				type = argTypes.at(i);
+				typeName = type == nullptr ? L"<error>" : type->Name;
+				diag << ", " << typeName;
+			}
+
+			diag << ")";
+		}
+
+		Diagnostics.ReportError(node->IdentifierToken, diag.str());
+		return nullptr;
 	}
 
 	if (isStaticContext && !method->IsStatic)
@@ -930,24 +912,18 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node, 
 
 TypeSymbol* ExpressionBinder::AnalyzeIndexatorExpression(IndexatorExpressionSyntax* node, bool& isStaticContext, TypeSymbol* currentType)
 {
-	if (currentType == nullptr)
-	{
-		Diagnostics.ReportError(node->MemberAccess->IdentifierToken, L"Cannot access member: previous expression has no type");
-		return nullptr;
-	}
-
 	wstring methodName = node->MemberAccess->IdentifierToken.Word;
 	MethodSymbol* method = ResolveIndexator(node, isStaticContext, currentType);
 
 	if (!IsSymbolAccessible(method))
 	{
-		Diagnostics.ReportError(node->MemberAccess->IdentifierToken, L"Method '" + methodName + L"' is not accessible");
+		Diagnostics.ReportError(node->MemberAccess->IdentifierToken, L"Indexator '" + methodName + L"' is not accessible");
 		return nullptr;
 	}
 
 	if (!MatchMethodArguments(method, node->IndexatorList->Arguments))
 	{
-		Diagnostics.ReportError(node->MemberAccess->IdentifierToken, L"Method '" + methodName + L"' argument types do not match");
+		Diagnostics.ReportError(node->MemberAccess->IdentifierToken, L"Indexator '" + methodName + L"' argument types do not match");
 		return nullptr;
 	}
 
@@ -962,7 +938,7 @@ TypeSymbol* ExpressionBinder::AnalyzeIndexatorExpression(IndexatorExpressionSynt
 
 	if (method->ReturnType == nullptr)
 	{
-		Diagnostics.ReportError(node->MemberAccess->IdentifierToken, L"Method '" + methodName + L"' return type not resolved");
+		Diagnostics.ReportError(node->MemberAccess->IdentifierToken, L"Indexator '" + methodName + L"' return type not resolved");
 		return nullptr;
 	}
 
@@ -981,9 +957,6 @@ MethodSymbol* ExpressionBinder::ResolveIndexator(IndexatorExpressionSyntax* node
 
 		TypeSymbol* argType = GetExpressionType(expr);
 		argTypes.push_back(argType);
-
-		if (argType == nullptr)
-			Diagnostics.ReportError(node->MemberAccess->IdentifierToken, L"Argument type could not be determined for method '" + methodName + L"'");
 	}
 
 	if (currentType->Kind == SyntaxKind::CollectionExpression)
@@ -993,13 +966,41 @@ MethodSymbol* ExpressionBinder::ResolveIndexator(IndexatorExpressionSyntax* node
 
 	MethodSymbol* method = currentType->FindIndexator(argTypes);
 	if (method == nullptr)
-	{
 		method = Table->GlobalType->FindIndexator(argTypes);
-		if (method == nullptr)
+
+	if (method == nullptr)
+	{
+		wstringstream diag;
+		diag << "No indeaxtors for type \"" << currentType->Name << "\" found that accepts ";
+
+		if (argTypes.size() == 0)
 		{
-			Diagnostics.ReportError(node->MemberAccess->IdentifierToken, L"Method '" + methodName + L"' wasnt found in current scope");
-			return nullptr;
+			diag << "no arguments";
 		}
+		else if (argTypes.size() == 1)
+		{
+			TypeSymbol* type = argTypes.at(0);
+			wstring typeName = type == nullptr ? L"<error>" : type->Name;
+			diag << "argument (" << typeName << ")";
+		}
+		else
+		{
+			TypeSymbol* type = argTypes.at(0);
+			wstring typeName = type == nullptr ? L"<error>" : type->Name;
+			diag << L"arguments (" << typeName;
+
+			for (int i = 1; i < argTypes.size(); i++)
+			{
+				type = argTypes.at(i);
+				typeName = type == nullptr ? L"<error>" : type->Name;
+				diag << ", " << typeName;
+			}
+
+			diag << ")";
+		}
+
+		Diagnostics.ReportError(node->MemberAccess->IdentifierToken, diag.str());
+		return nullptr;
 	}
 
 	if (isStaticContext && !method->IsStatic)

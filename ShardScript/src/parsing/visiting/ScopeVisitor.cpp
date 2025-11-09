@@ -1,7 +1,9 @@
 #include <shard/parsing/visiting/ScopeVisitor.h>
 #include <shard/parsing/semantic/SemanticScope.h>
 #include <shard/syntax/SyntaxSymbol.h>
+#include <shard/syntax/symbols/NamespaceSymbol.h>
 
+using namespace std;
 using namespace shard::parsing;
 using namespace shard::parsing::semantic;
 using namespace shard::syntax;
@@ -28,6 +30,36 @@ void ScopeVisitor::Declare(SyntaxSymbol* symbol)
 	CurrentScope()->DeclareSymbol(symbol);
 }
 
+SyntaxSymbol* ScopeVisitor::OwnerSymbol()
+{
+	for (const SemanticScope* scope = CurrentScope(); scope != nullptr; scope = scope->Parent)
+	{
+		if (scope->Owner == nullptr)
+			continue;
+
+		SyntaxSymbol* symbol = const_cast<SyntaxSymbol*>(scope->Owner);
+		if (symbol->IsType() || symbol->Kind == SyntaxKind::NamespaceDeclaration)
+			return symbol;
+	}
+
+	return nullptr;
+}
+
+NamespaceSymbol* ScopeVisitor::OwnerNamespace()
+{
+	for (const SemanticScope* scope = CurrentScope(); scope != nullptr; scope = scope->Parent)
+	{
+		if (scope->Owner == nullptr)
+			continue;
+
+		SyntaxSymbol* symbol = const_cast<SyntaxSymbol*>(scope->Owner);
+		if (symbol->Kind == SyntaxKind::NamespaceDeclaration)
+			return static_cast<NamespaceSymbol*>(symbol);
+	}
+
+	return nullptr;
+}
+
 TypeSymbol* ScopeVisitor::OwnerType()
 {
 	for (const SemanticScope* scope = CurrentScope(); scope != nullptr; scope = scope->Parent)
@@ -42,3 +74,52 @@ TypeSymbol* ScopeVisitor::OwnerType()
 
 	return nullptr;
 }
+
+static bool IsScopePublicallyAccessible(const SemanticScope* scope)
+{
+	if (scope == nullptr)
+		return false;
+
+	if (scope->Owner->Kind == SyntaxKind::NamespaceDeclaration)
+		return true;
+
+	if (scope->Owner->Accesibility == SymbolAccesibility::Public)
+		return true;
+
+	return IsScopePublicallyAccessible(scope->Parent);
+}
+
+static bool IsSymbolNestedAccessible(const SemanticScope* scope, SyntaxSymbol* symbol)
+{
+	if (scope == nullptr)
+		return true;
+
+	if (scope->Owner->Kind == SyntaxKind::NamespaceDeclaration)
+		return false;
+
+	if (scope->Owner == symbol->Parent)
+		return true;
+
+	return IsSymbolNestedAccessible(scope->Parent, symbol);
+}
+
+bool ScopeVisitor::IsSymbolAccessible(SyntaxSymbol* symbol)
+{
+	if (symbol == nullptr)
+		return true;
+
+	if (symbol->Kind == SyntaxKind::NamespaceDeclaration)
+		return true;
+
+	if (IsScopePublicallyAccessible(CurrentScope()))
+		return symbol->Accesibility == SymbolAccesibility::Public;
+
+	if (symbol->Parent == nullptr)
+		throw runtime_error("Cannot resolve symbol without parent");
+
+	if (IsSymbolNestedAccessible(CurrentScope(), symbol->Parent))
+		return true;
+
+	return false;
+}
+

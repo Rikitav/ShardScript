@@ -12,6 +12,7 @@
 
 #include <shard/syntax/nodes/Expressions/ObjectExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/CollectionExpressionSyntax.h>
+#include <shard/syntax/nodes/Expressions/LinkedExpressionSyntax.h>
 
 #include <shard/syntax/nodes/Statements/VariableStatementSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.h>
@@ -25,7 +26,6 @@ namespace shard::parsing
 {
 	class TypeBinder : public SyntaxVisitor, ScopeVisitor
 	{
-		bool IsSymbolAccessible(shard::syntax::SyntaxSymbol* symbol);
 		shard::syntax::symbols::TypeSymbol* ResolveType(shard::syntax::nodes::TypeSyntax* typeSyntax);
 
 	public:
@@ -42,5 +42,6 @@ namespace shard::parsing
 		void VisitVariableStatement(shard::syntax::nodes::VariableStatementSyntax* node) override;
 		void VisitObjectCreationExpression(shard::syntax::nodes::ObjectExpressionSyntax* node) override;
 		void VisitCollectionExpression(shard::syntax::nodes::CollectionExpressionSyntax* node) override;
+		void VisitMemberAccessExpression(shard::syntax::nodes::MemberAccessExpressionSyntax* node) override;
 	};
 }

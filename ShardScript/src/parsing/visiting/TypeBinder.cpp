@@ -209,7 +209,7 @@ void TypeBinder::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
 void TypeBinder::VisitVariableStatement(VariableStatementSyntax* node)
 {
 	VariableSymbol* symbol = static_cast<VariableSymbol*>(Table->LookupSymbol(node));
-	if (symbol != nullptr && node->Type != nullptr)
+	if (symbol != nullptr)
 	{
 		symbol->Type = ResolveType(node->Type);
 		if (symbol->Type == nullptr)
@@ -241,49 +241,9 @@ void TypeBinder::VisitCollectionExpression(CollectionExpressionSyntax* node)
 		VisitExpression(expression);
 }
 
-static bool IsScopePublicallyAccessible(const SemanticScope* scope)
+void TypeBinder::VisitMemberAccessExpression(MemberAccessExpressionSyntax* node)
 {
-	if (scope == nullptr)
-		return false;
 
-	if (scope->Owner->Accesibility != SymbolAccesibility::Public)
-		return false;
-
-	return IsScopePublicallyAccessible(scope->Parent);
-}
-
-static bool IsScopeNestedAccessible(const SemanticScope* scope, SyntaxSymbol* symbol)
-{
-	if (scope == nullptr)
-		return false;
-
-	if (scope->Owner->Kind == SyntaxKind::NamespaceDeclaration)
-		return true;
-
-	if (scope->Owner == symbol->Parent)
-		return true;
-
-	return IsScopeNestedAccessible(scope->Parent, symbol);
-}
-
-bool TypeBinder::IsSymbolAccessible(SyntaxSymbol* symbol)
-{
-	if (symbol == nullptr)
-		throw runtime_error("Cannot resolve nullptr symbol accessibility");
-
-	if (symbol->Kind == SyntaxKind::NamespaceDeclaration)
-		return true;
-
-	if (symbol->Parent == nullptr)
-		throw runtime_error("Cannot resolve symbol accessibility without parent");
-
-	if (IsScopePublicallyAccessible(CurrentScope()))
-		return symbol->Accesibility == SymbolAccesibility::Public;
-
-	if (IsScopeNestedAccessible(CurrentScope(), symbol))
-		return true;
-
-	return false;
 }
 
 TypeSymbol* TypeBinder::ResolveType(TypeSyntax* typeSyntax)

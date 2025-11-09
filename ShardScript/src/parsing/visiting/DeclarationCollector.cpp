@@ -51,12 +51,13 @@ void DeclarationCollector::VisitCompilationUnit(CompilationUnitSyntax* node)
 
         for (ImportDirectiveSyntax* directive : node->Imports)
             VisitImportDirective(directive);
-
-        PopScope();
     }
 
     for (MemberDeclarationSyntax* member : node->Members)
         VisitTypeDeclaration(member);
+
+    if (node->Imports.size() > 0)
+        PopScope();
 
     PopScope();
 }
@@ -65,18 +66,8 @@ void DeclarationCollector::VisitNamespaceDeclaration(NamespaceDeclarationSyntax*
 {
     wstring namespaceName = node->IdentifierToken.Word;
     NamespaceSymbol* symbol = new NamespaceSymbol(namespaceName);
-    symbol->Parent = OwnerType();
-
+    symbol->Parent = OwnerNamespace();
     Table->BindSymbol(node, symbol);
-
-    if (symbol->Parent != nullptr)
-    {
-        if (symbol->Parent->Kind == SyntaxKind::NamespaceDeclaration)
-        {
-            NamespaceSymbol* parent = static_cast<NamespaceSymbol*>(symbol->Parent);
-            parent->Members.push_back(symbol);
-        }
-    }
 
     Declare(symbol);
     PushScope(symbol);
@@ -91,7 +82,7 @@ void DeclarationCollector::VisitClassDeclaration(ClassDeclarationSyntax* node)
 {
     wstring className = node->IdentifierToken.Word;
     ClassSymbol* symbol = new ClassSymbol(className);
-    symbol->Parent = OwnerType();
+    symbol->Parent = OwnerSymbol();
     SetAccesibility(symbol, node->Modifiers);
 
     Table->BindSymbol(node, symbol);
@@ -108,7 +99,7 @@ void DeclarationCollector::VisitStructDeclaration(StructDeclarationSyntax* node)
 {
     wstring structName = node->IdentifierToken.Word;
     StructSymbol* symbol = new StructSymbol(structName);
-    symbol->Parent = OwnerType();
+    symbol->Parent = OwnerSymbol();
     SetAccesibility(symbol, node->Modifiers);
 
     Table->BindSymbol(node, symbol);

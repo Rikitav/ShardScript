@@ -38,7 +38,7 @@ void ArrayPrimitive::Reflect(TypeSymbol* symbol)
 
 	symbol->Properties.push_back(lengthProperty);
 
-	MethodSymbol* indexatorMethod = new MethodSymbol(L"indexator", indexator);
+	MethodSymbol* indexatorMethod = new MethodSymbol(L"", indexator);
 	indexatorMethod->Accesibility = SymbolAccesibility::Public;
 	
 	ParameterSymbol* indexatorParam = new ParameterSymbol(L"index");

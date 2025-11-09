@@ -5,18 +5,12 @@
 #include <shard/syntax/symbols/ParameterSymbol.h>
 #include <shard/parsing/semantic/SymbolTable.h>
 
-#include <algorithm>
 #include <vector>
 #include <string>
 
 using namespace std;
 using namespace shard::parsing::semantic;
 using namespace shard::syntax::symbols;
-
-static bool paramPredicate(TypeSymbol* left, ParameterSymbol* right)
-{
-	return left == right->Type;
-}
 
 MethodSymbol* ArrayTypeSymbol::FindMethod(wstring& name, vector<TypeSymbol*> parameterTypes)
 {

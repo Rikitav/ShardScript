@@ -10,6 +10,8 @@
 #include <shard/syntax/nodes/ArgumentsListSyntax.h>
 
 #include <vector>
+#include <shard/syntax/symbols/PropertySymbol.h>
+#include <shard/syntax/symbols/TypeSymbol.h>
 
 namespace shard::syntax::nodes
 {
@@ -70,9 +72,13 @@ namespace shard::syntax::nodes
 	{
 	public:
 		const SyntaxToken IdentifierToken;
-		shard::syntax::symbols::FieldSymbol* Symbol = nullptr;
-		shard::syntax::symbols::PropertySymbol* PropertySymbol = nullptr; // Property being accessed
-		bool IsProperty = false; // Flag indicating if this is a property access
+		shard::syntax::symbols::TypeSymbol* Type = nullptr;
+		shard::syntax::symbols::FieldSymbol* FieldSymbol = nullptr;
+		shard::syntax::symbols::PropertySymbol* PropertySymbol = nullptr;
+
+		//bool IsType = false;
+		//bool IsVariable = false;
+		bool IsProperty = false;
 		
 		inline MemberAccessExpressionSyntax(SyntaxToken identifier, LinkedExpressionNode* previous, LinkedExpressionSyntax* parent)
 			: LinkedExpressionNode(SyntaxKind::MemberAccessExpression, previous, parent), IdentifierToken(identifier) { }

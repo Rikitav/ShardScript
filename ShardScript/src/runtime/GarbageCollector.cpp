@@ -21,7 +21,10 @@ ObjectInstance* GarbageCollector::GetStaticField(FieldSymbol* field)
 	auto find = staticFields.find(field);
 	if (find == staticFields.end())
 	{
-		staticFieldInstance = NullInstance;
+		staticFieldInstance = field->ReturnType->IsReferenceType
+			? NullInstance
+			: GarbageCollector::AllocateInstance(field->ReturnType);
+
 		staticFields[field] = staticFieldInstance;
 	}
 	else
@@ -81,6 +84,9 @@ ObjectInstance* GarbageCollector::CopyInstance(const TypeSymbol* objectInfo, voi
 
 ObjectInstance* GarbageCollector::CopyInstance(ObjectInstance* instance)
 {
+	if (instance == NullInstance)
+		return instance;
+
 	if (instance->Info->IsReferenceType)
 	{
 		instance->IncrementReference();

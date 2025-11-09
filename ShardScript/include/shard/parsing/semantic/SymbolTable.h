@@ -18,7 +18,7 @@ namespace shard::parsing::semantic
         inline static const std::wstring GlobalTypeName = L"__GLOBAL__";
         std::unordered_map<shard::syntax::SyntaxNode*, shard::syntax::SyntaxSymbol*> nodeToSymbolMap;
         std::unordered_map<shard::syntax::SyntaxSymbol*, shard::syntax::SyntaxNode*> symbolToNodeMap;
-        
+
     public:
         std::vector<shard::syntax::symbols::MethodSymbol*> EntryPointCandidates;
         SemanticScope* GlobalScope = new SemanticScope(nullptr, nullptr);
