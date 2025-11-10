@@ -23,6 +23,8 @@
 #include <stdexcept>
 #include <exception>
 #include <clocale>
+using namespace shard::syntax::nodes;
+using namespace shard::syntax::symbols;
 
 using namespace std;
 using namespace shard::utilities;
@@ -82,8 +84,22 @@ int wmain(int argc, wchar_t* argv[])
 		SemanticAnalyzer semanticAnalyzer(diagnostics);
 		semanticAnalyzer.Analyze(syntaxTree, semanticModel);
 
-		LayoutGenerator layoutGenerator(diagnostics);
-		layoutGenerator.Generate(semanticModel);
+		if (!args.UseInteractive)
+		{
+			if (semanticModel.Table->EntryPointCandidates.empty())
+			{
+				diagnostics.ReportError(SyntaxToken(), L"Entry point for script not found");
+			}
+
+			if (semanticModel.Table->EntryPointCandidates.size() > 1)
+			{
+				for (MethodSymbol* entry : semanticModel.Table->EntryPointCandidates)
+				{
+					MethodDeclarationSyntax* decl = static_cast<MethodDeclarationSyntax*>(semanticModel.Table->GetSyntaxNode(entry));
+					diagnostics.ReportError(decl->IdentifierToken, L"Script has multiple entry points");
+				}
+			}
+		}
 
 		if (diagnostics.AnyError)
 		{
@@ -91,6 +107,9 @@ int wmain(int argc, wchar_t* argv[])
 			diagnostics.WriteDiagnostics(wcout);
 			return 1;
 		}
+
+		LayoutGenerator layoutGenerator(diagnostics);
+		layoutGenerator.Generate(semanticModel);
 
 		if (args.UseInteractive)
 		{

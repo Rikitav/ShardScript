@@ -24,14 +24,4 @@ void SemanticAnalyzer::Analyze(SyntaxTree& syntaxTree, SemanticModel& semanticMo
 
 	ExpressionBinder expressionBinder(semanticModel.Table, Diagnostics);
 	expressionBinder.VisitSyntaxTree(syntaxTree);
-
-	if (semanticModel.Table->EntryPointCandidates.empty())
-	{
-		Diagnostics.ReportError(SyntaxToken(), L"Entry point for script not found");
-	}
-	
-	if (semanticModel.Table->EntryPointCandidates.size() > 1)
-	{
-		Diagnostics.ReportError(SyntaxToken(), L"model has multiple entry points");
-	}
 }
