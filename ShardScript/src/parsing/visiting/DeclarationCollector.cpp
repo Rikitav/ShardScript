@@ -1,16 +1,18 @@
 #include <shard/parsing/visiting/DeclarationCollector.h>
-#include <shard/parsing/semantic/SemanticScope.h>
+#include <shard/parsing/semantic/SymbolTable.h>
 
 #include <shard/syntax/SyntaxHelpers.h>
 #include <shard/syntax/SyntaxSymbol.h>
-#include <shard/syntax/symbols/TypeSymbol.h>
-#include <shard/parsing/semantic/SymbolTable.h>
 #include <shard/syntax/TokenType.h>
+#include <shard/syntax/SyntaxKind.h>
+#include <shard/syntax/SyntaxToken.h>
 
 #include <shard/syntax/nodes/ParametersListSyntax.h>
 #include <shard/syntax/nodes/CompilationUnitSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarationSyntax.h>
+
 #include <shard/syntax/nodes/Directives/ImportDirectiveSyntax.h>
+#include <shard/syntax/nodes/Statements/VariableStatementSyntax.h>
 
 #include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.h>
@@ -19,8 +21,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.h>
 
-#include <shard/syntax/nodes/Statements/VariableStatementSyntax.h>
-
+#include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/StructSymbol.h>
 #include <shard/syntax/symbols/NamespaceSymbol.h>
 #include <shard/syntax/symbols/ClassSymbol.h>

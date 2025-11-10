@@ -8,7 +8,8 @@
 
 #include <vector>
 #include <ranges>
-#include <string>
+#include <new>
+#include <utility>
 
 using namespace std;
 using namespace std::ranges;

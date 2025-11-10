@@ -3,6 +3,7 @@
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxNode.h>
 #include <shard/syntax/nodes/TypeSyntax.h>
+#include <string>
 
 namespace shard::syntax::nodes
 {

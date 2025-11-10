@@ -7,7 +7,6 @@
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/TokenType.h>
 #include <shard/syntax/SyntaxToken.h>
-#include <shard/syntax/SymbolAccesibility.h>
 
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/NamespaceSymbol.h>
@@ -18,21 +17,18 @@
 #include <shard/syntax/symbols/PropertySymbol.h>
 #include <shard/syntax/symbols/ParameterSymbol.h>
 #include <shard/syntax/symbols/VariableSymbol.h>
-#include <shard/syntax/nodes/Statements/ReturnStatementSyntax.h>
-#include <shard/syntax/nodes/StatementsBlockSyntax.h>
-#include <shard/syntax/nodes/Expressions/LinkedExpressionSyntax.h>
-#include <shard/syntax/nodes/Expressions/BinaryExpressionSyntax.h>
-#include <shard/syntax/nodes/Statements/ExpressionStatementSyntax.h>
+#include <shard/syntax/symbols/ArrayTypeSymbol.h>
 
 #include <shard/syntax/nodes/TypeSyntax.h>
 #include <shard/syntax/nodes/CompilationUnitSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarationSyntax.h>
-
 #include <shard/syntax/nodes/ParametersListSyntax.h>
+#include <shard/syntax/nodes/ExpressionSyntax.h>
+
 #include <shard/syntax/nodes/Directives/UsingDirectiveSyntax.h>
-#include <shard/syntax/nodes/Expressions/ObjectExpressionSyntax.h>
 
 #include <shard/syntax/nodes/Types/IdentifierNameTypeSyntax.h>
+#include <shard/syntax/nodes/Types/ArrayTypeSyntax.h>
 #include <shard/syntax/nodes/Types/PredefinedTypeSyntax.h>
 
 #include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.h>
@@ -41,7 +37,12 @@
 #include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.h>
+
 #include <shard/syntax/nodes/Statements/VariableStatementSyntax.h>
+
+#include <shard/syntax/nodes/Expressions/ObjectExpressionSyntax.h>
+#include <shard/syntax/nodes/Expressions/LinkedExpressionSyntax.h>
+#include <shard/syntax/nodes/Expressions/CollectionExpressionSyntax.h>
 
 #include <vector>
 #include <string>
@@ -338,7 +339,7 @@ TypeSymbol* TypeBinder::ResolveType(TypeSyntax* typeSyntax)
 				
 				for (size_t i = 1; i < identifierType->Identifiers.size() - 1; i++)
 				{
-					std::wstring nextName = identifierType->Identifiers[i].Word;
+					wstring nextName = identifierType->Identifiers[i].Word;
 					NamespaceSymbol* namespaceSymbol = static_cast<NamespaceSymbol*>(symbol);
 
 					for (SyntaxSymbol* member : namespaceSymbol->Members)
@@ -358,7 +359,8 @@ TypeSymbol* TypeBinder::ResolveType(TypeSyntax* typeSyntax)
 
 					if (symbol == nullptr)
 					{
-						Diagnostics.ReportError(identifierType->Identifiers[identifierType->Identifiers.size() - 1], L"Symbol is not a '" + namespaceSymbol->Name + L"'s member");
+						SyntaxToken token = identifierType->Identifiers[identifierType->Identifiers.size() - 1];
+						Diagnostics.ReportError(token, L"Symbol is not a '" + namespaceSymbol->Name + L"'s member");
 						return nullptr;
 					}
 				}

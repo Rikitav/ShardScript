@@ -2,7 +2,6 @@
 #include <shard/runtime/ObjectInstance.h>
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/FieldSymbol.h>
-#include <shard/syntax/SyntaxKind.h>
 
 #include <malloc.h>
 #include <stdexcept>

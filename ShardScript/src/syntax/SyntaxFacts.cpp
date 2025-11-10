@@ -210,6 +210,8 @@ bool IsType(TokenType type, TokenType peekType)
 				return false;
 		}
 	}
+
+	return false;
 }
 
 bool IsModifier(TokenType type)

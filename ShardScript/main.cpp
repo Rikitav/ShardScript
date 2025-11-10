@@ -7,6 +7,10 @@
 #include <shard/parsing/LayoutGenerator.h>
 #include <shard/parsing/reading/FileReader.h>
 
+#include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.h>
+#include <shard/syntax/symbols/MethodSymbol.h>
+#include <shard/syntax/SyntaxToken.h>
+
 #include <shard/runtime/GarbageCollector.h>
 #include <shard/runtime/AbstractInterpreter.h>
 #include <shard/runtime/InteractiveConsole.h>
@@ -23,14 +27,14 @@
 #include <stdexcept>
 #include <exception>
 #include <clocale>
-using namespace shard::syntax::nodes;
-using namespace shard::syntax::symbols;
 
 using namespace std;
 using namespace shard::utilities;
 using namespace shard::framework;
 using namespace shard::runtime;
 using namespace shard::syntax;
+using namespace shard::syntax::nodes;
+using namespace shard::syntax::symbols;
 using namespace shard::parsing;
 using namespace shard::parsing::analysis;
 using namespace shard::parsing::lexical;

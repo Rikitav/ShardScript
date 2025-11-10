@@ -1,7 +1,14 @@
 #include <shard/parsing/visiting/ScopeVisitor.h>
 #include <shard/parsing/semantic/SemanticScope.h>
+
 #include <shard/syntax/SyntaxSymbol.h>
+#include <shard/syntax/SymbolAccesibility.h>
+#include <shard/syntax/SyntaxKind.h>
+
 #include <shard/syntax/symbols/NamespaceSymbol.h>
+#include <shard/syntax/symbols/TypeSymbol.h>
+
+#include <stdexcept>
 
 using namespace std;
 using namespace shard::parsing;

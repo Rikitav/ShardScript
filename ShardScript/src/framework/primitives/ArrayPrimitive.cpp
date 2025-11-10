@@ -1,8 +1,18 @@
 #include <shard/framework/primitives/ArrayPrimitive.h>
-#include <shard/syntax/symbols/PropertySymbol.h>
+
 #include <shard/syntax/SymbolAccesibility.h>
-#include <shard/runtime/GarbageCollector.h>
 #include <shard/parsing/semantic/SymbolTable.h>
+
+#include <shard/runtime/GarbageCollector.h>
+#include <shard/runtime/InboundVariablesContext.h>
+#include <shard/runtime/ObjectInstance.h>
+
+#include <shard/syntax/symbols/MethodSymbol.h>
+#include <shard/syntax/symbols/ParameterSymbol.h>
+#include <shard/syntax/symbols/TypeSymbol.h>
+#include <shard/syntax/symbols/PropertySymbol.h>
+
+#include <malloc.h>
 
 using namespace shard::framework;
 using namespace shard::syntax;
@@ -10,7 +20,7 @@ using namespace shard::runtime;
 using namespace shard::syntax::symbols;
 using namespace shard::parsing::semantic;
 
-ObjectInstance* get_Length(InboundVariablesContext* arguments)
+static ObjectInstance* get_Length(InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	void* value = malloc(sizeof(int));
@@ -21,7 +31,7 @@ ObjectInstance* get_Length(InboundVariablesContext* arguments)
 	return length;
 }
 
-ObjectInstance* indexator(InboundVariablesContext* arguments)
+static ObjectInstance* indexator(InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	ObjectInstance* index = arguments->TryFind(L"index");

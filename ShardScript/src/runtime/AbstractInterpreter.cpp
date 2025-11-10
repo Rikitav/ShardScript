@@ -34,6 +34,7 @@
 #include <shard/syntax/nodes/Expressions/BinaryExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/LinkedExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/ObjectExpressionSyntax.h>
+#include <shard/syntax/nodes/Expressions/CollectionExpressionSyntax.h>
 
 #include <shard/syntax/nodes/Statements/ThrowStatementSyntax.h>
 #include <shard/syntax/nodes/Statements/ReturnStatementSyntax.h>
@@ -46,8 +47,8 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include <iostream>
 #include <iterator>
+#include <stack>
 
 using namespace std;
 using namespace shard::runtime;

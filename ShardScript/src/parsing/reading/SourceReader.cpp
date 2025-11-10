@@ -85,9 +85,9 @@ SyntaxToken SourceReader::Peek(int index)
 	static int eofPeekCounter = 0;
 
 	index += 1;
-	int bufferSize = ReadBuffer.size();
+	int bufferSize = static_cast<int>(ReadBuffer.size());
 
-	if (index + 1 > bufferSize)
+	if ((index + 1) > bufferSize)
 	{
 		int extendFor = index - bufferSize + 1;
 		for (int i = 0; i < extendFor; i++)
@@ -261,6 +261,8 @@ bool SourceReader::ReadCharLiteral(wstring& word, bool notEcran, bool& wasClosed
 			}
 		}
 	}
+
+	return false;
 }
 
 bool SourceReader::ReadStringLiteral(wstring& word, bool dontEcran, bool& wasClosed)

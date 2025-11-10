@@ -1,16 +1,20 @@
-#include <shard/runtime/AbstractInterpreter.h>
+#include <shard/framework/primitives/IntegerPrimitive.h>
+
 #include <shard/runtime/InboundVariablesContext.h>
 #include <shard/runtime/ObjectInstance.h>
 #include <shard/parsing/semantic/SymbolTable.h>
-#include <shard/framework/primitives/IntegerPrimitive.h>
 
+#include <shard/syntax/SyntaxSymbol.h>
 #include <shard/syntax/SymbolAccesibility.h>
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/MethodSymbol.h>
 #include <shard/syntax/symbols/ParameterSymbol.h>
 
+#include <new>
+#include <vector>
 #include <string>
 #include <cmath>
+#include <algorithm>
 
 using namespace std;
 using namespace shard::framework;

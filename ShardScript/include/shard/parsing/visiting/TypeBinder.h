@@ -5,7 +5,6 @@
 #include <shard/parsing/semantic/SymbolTable.h>
 
 #include <shard/syntax/symbols/TypeSymbol.h>
-#include <shard/syntax/SyntaxSymbol.h>
 
 #include <shard/syntax/nodes/CompilationUnitSyntax.h>
 #include <shard/syntax/nodes/TypeSyntax.h>
