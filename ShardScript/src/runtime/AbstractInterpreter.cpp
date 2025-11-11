@@ -108,6 +108,12 @@ void AbstractInterpreter::PopContext()
 	delete current;
 }
 
+void AbstractInterpreter::TerminateCallStack()
+{
+	while (!callStack.empty())
+		PopFrame();
+}
+
 void AbstractInterpreter::Execute(SyntaxTree& syntaxTree, SemanticModel& semanticModel)
 {
 	MethodSymbol* entryPoint = semanticModel.Table->EntryPointCandidates.at(0);

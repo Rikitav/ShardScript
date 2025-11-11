@@ -27,6 +27,7 @@
 #include <stdexcept>
 #include <exception>
 #include <clocale>
+#include <csignal>
 
 using namespace std;
 using namespace shard::utilities;
@@ -40,11 +41,19 @@ using namespace shard::parsing::analysis;
 using namespace shard::parsing::lexical;
 using namespace shard::parsing::semantic;
 
+static void SigIntHandler(int signal)
+{
+	AbstractInterpreter::TerminateCallStack();
+	GarbageCollector::Terminate();
+	exit(SIGINT);
+}
+
 int wmain(int argc, wchar_t* argv[])
 {
 	try
 	{
 		setlocale(LC_ALL, "");
+		signal(SIGINT, SigIntHandler);
 		ConsoleArguments args = ParseArguments(argc, argv);
 
 		if (args.ShowHelp)

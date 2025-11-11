@@ -1,12 +1,14 @@
 #include <shard/runtime/ObjectInstance.h>
 #include <shard/runtime/GarbageCollector.h>
-#include <shard/syntax/symbols/FieldSymbol.h>
 #include <shard/parsing/semantic/SymbolTable.h>
+
+#include <shard/syntax/symbols/FieldSymbol.h>
+#include <shard/syntax/symbols/ArrayTypeSymbol.h>
+#include <shard/syntax/symbols/TypeSymbol.h>
 
 #include <cstring>
 #include <stdexcept>
 #include <string>
-#include <shard/syntax/symbols/ArrayTypeSymbol.h>
 
 using namespace std;
 using namespace shard::runtime;

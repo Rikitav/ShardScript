@@ -8,6 +8,7 @@
 #include <shard/runtime/ConsoleHelper.h>
 #include <shard/runtime/GarbageCollector.h>
 #include <shard/runtime/ObjectInstance.h>
+#include <shard/runtime/InboundVariablesContext.h>
 
 #include <shard/syntax/SyntaxFacts.h>
 #include <shard/syntax/SyntaxToken.h>
@@ -32,19 +33,24 @@
 #include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.h>
 
 #include <shard/syntax/nodes/Statements/ExpressionStatementSyntax.h>
-#include <shard/syntax/nodes/Expressions/LinkedExpressionSyntax.h>
 
 #include <shard/syntax/nodes/Types/PredefinedTypeSyntax.h>
 
 #include <Windows.h>
+#include <consoleapi2.h>
+#include <libloaderapi.h>
+#include <processenv.h>
+#include <winver.h>
+#include <shard/parsing/LayoutGenerator.h>
+
 #include <string>
 #include <iostream>
 #include <vector>
 #include <exception>
+#include <sstream>
 
 #pragma comment(lib, "version.lib")
 
-using namespace std;
 using namespace shard::runtime;
 using namespace shard::syntax;
 using namespace shard::syntax::nodes;
@@ -54,7 +60,7 @@ using namespace shard::parsing::analysis;
 using namespace shard::parsing::semantic;
 using namespace shard::parsing::lexical;
 
-static wstring GetFileVersion()
+static std::wstring GetFileVersion()
 {
 	TCHAR filename[MAX_PATH];
 	GetModuleFileNameW(NULL, filename, MAX_PATH);
@@ -62,7 +68,7 @@ static wstring GetFileVersion()
 	DWORD dummy;
 	DWORD size = GetFileVersionInfoSizeW(filename, &dummy);
 
-	wstring result = L"0.0";
+	std::wstring result = L"0.0";
 	if (size != 0)
 	{
 		BYTE* versionInfo = new BYTE[size];
@@ -75,7 +81,7 @@ static wstring GetFileVersion()
 			{
 				DWORD versionMS = fileInfo->dwFileVersionMS;
 				DWORD versionLS = fileInfo->dwFileVersionLS;
-				wstringstream res;
+				std::wstringstream res;
 
 				res << HIWORD(versionMS) << "." << LOWORD(versionMS); // << "." << HIWORD(versionLS) << "." << LOWORD(versionLS);
 				result = res.str();
@@ -204,11 +210,11 @@ static bool IsExpressionComplete(SequenceSourceReader& reader)
 	return parenCount == 0 && bracketCount == 0;
 }
 
-static wstring ReadLine(const wstring& prompt = L">>> ")
+static std::wstring ReadLine(const std::wstring& prompt = L">>> ")
 {
-	wstring line;
-	wcout << prompt;
-	getline(wcin, line);
+	std::wstring line;
+	std::wcout << prompt;
+	std::getline(std::wcin, line);
 	return line;
 }
 
@@ -223,9 +229,10 @@ static void MoveToNewLineIfNeeded()
 			ConsoleHelper::WriteLine();
 	}
 }
-static wstring ReadMultilineInput(LexicalAnalyzer& lexer, const wstring& firstLine, bool isExpression = false)
+
+static std::wstring ReadMultilineInput(LexicalAnalyzer& lexer, const std::wstring& firstLine, bool isExpression = false)
 {
-	wstring fullInput = firstLine;
+	std::wstring fullInput = firstLine;
 	
 	StringStreamReader stringStreamReader(firstLine);
 	SequenceSourceReader sequenceReader;
@@ -238,8 +245,8 @@ static wstring ReadMultilineInput(LexicalAnalyzer& lexer, const wstring& firstLi
 		return fullInput;
 	
 	// Read continuation lines
-	wstring continuationPrompt = L"... ";
-	wstring line;
+	std::wstring continuationPrompt = L"... ";
+	std::wstring line;
 	
 	int maxLines = 100; // Safety limit
 	int lineCount = 0;
@@ -268,12 +275,12 @@ static wstring ReadMultilineInput(LexicalAnalyzer& lexer, const wstring& firstLi
 	return fullInput;
 }
 
-static StatementSyntax* ReadStatement(LexicalAnalyzer& lexer, SyntaxNode* parent, DiagnosticsContext& diagnostics, const wstring& firstLine)
+static StatementSyntax* ReadStatement(LexicalAnalyzer& lexer, SyntaxNode* parent, DiagnosticsContext& diagnostics, const std::wstring& firstLine)
 {
 	if (firstLine.empty())
 		return nullptr;
 	
-	wstring fullInput = ReadMultilineInput(lexer, firstLine, false);
+	std::wstring fullInput = ReadMultilineInput(lexer, firstLine, false);
 	
 	StringStreamReader stringStreamReader(fullInput);
 	SequenceSourceReader sequenceReader;
@@ -339,6 +346,7 @@ void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticMode
 	// Initializing parsing
 	LexicalAnalyzer lexer(diagnostics);
 	SemanticAnalyzer semanticAnalyzer(diagnostics);
+	LayoutGenerator layoutGenerator(diagnostics);
 	
 	// Creating interactive entry point
 	MethodDeclarationSyntax* implMethod = nullptr;
@@ -359,47 +367,48 @@ void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticMode
 	{
 		try
 		{
-			wstring firstLine = ReadLine();
+			std::wstring firstLine = ReadLine();
 			if (firstLine.empty())
 				continue;
 
 			if (firstLine == L"exit" || firstLine == L"quit")
 				break;
 
-			// Check if it looks like an expression (no keywords, ends with semicolon or not)
 			StringStreamReader stringStreamReader(firstLine);
 			SequenceSourceReader sequenceReader;
 			sequenceReader.PopulateFrom(stringStreamReader);
 
-			bool isExpression = false;
-			if (sequenceReader.CanConsume())
-			{
-				SyntaxToken firstToken = sequenceReader.Current();
+			if (!sequenceReader.CanConsume())
+				continue;
 
-				// If its not a keyword statement, might be an expression
-				if (!IsLoopKeyword(firstToken.Type) && !IsConditionalKeyword(firstToken.Type) && !IsFunctionalKeyword(firstToken.Type) && firstToken.Type != TokenType::Semicolon)
+			SyntaxToken firstToken = sequenceReader.Current();
+			if (firstToken.Type == TokenType::Semicolon)
+				continue;
+
+			// Check if it looks like an expression (no keywords, ends with semicolon or not)
+			bool isExpression = false;
+			if (!IsLoopKeyword(firstToken.Type) && !IsConditionalKeyword(firstToken.Type) && !IsFunctionalKeyword(firstToken.Type))
+			{
+				// Check if it ends with semicolon - if not, its likely an expression
+				size_t lastIndex = sequenceReader.Size() - 1;
+				if (lastIndex >= 0)
 				{
-					// Check if it ends with semicolon - if not, its likely an expression
-					int lastIndex = static_cast<int>(sequenceReader.Size()) - 1;
-					if (lastIndex >= 0)
-					{
-						SyntaxToken lastToken = sequenceReader.At(lastIndex);
-						if (lastToken.Type != TokenType::Semicolon)
-						{
-							isExpression = true;
-						}
-					}
-					else
+					SyntaxToken lastToken = sequenceReader.At(lastIndex);
+					if (lastToken.Type != TokenType::Semicolon)
 					{
 						isExpression = true;
 					}
+				}
+				else
+				{
+					isExpression = true;
 				}
 			}
 
 			if (isExpression)
 			{
 				// Read as expression
-				wstring fullInput = ReadMultilineInput(lexer, firstLine, true);
+				std::wstring fullInput = ReadMultilineInput(lexer, firstLine, true);
 
 				StringStreamReader exprReader(fullInput);
 				SequenceSourceReader exprSequence;
@@ -409,7 +418,7 @@ void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticMode
 
 				if (expression == nullptr)
 				{
-					wcerr << L"### Failed to parse expression" << endl;
+					std::wcerr << L"### Failed to parse expression" << std::endl;
 					continue;
 				}
 
@@ -425,11 +434,12 @@ void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticMode
 				// Re-analyze syntax tree
 				semanticModel.Table->ClearSymbols();
 				semanticAnalyzer.Analyze(syntaxTree, semanticModel);
+				layoutGenerator.Generate(semanticModel);
 
 				// Check for errors
 				if (diagnostics.AnyError)
 				{
-					diagnostics.WriteDiagnostics(wcerr);
+					diagnostics.WriteDiagnostics(std::wcerr);
 					diagnostics.Reset();
 
 					if (!interactiveBody->Statements.empty())
@@ -443,9 +453,11 @@ void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticMode
 				// Execute expression
 				ObjectInstance* result = AbstractInterpreter::EvaluateExpression(expression);
 				if (result != nullptr)
+				{
 					ConsoleHelper::Write(result);
+					GarbageCollector::DestroyInstance(result);
+				}
 
-				GarbageCollector::DestroyInstance(result);
 				MoveToNewLineIfNeeded();
 			}
 			else
@@ -465,12 +477,13 @@ void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticMode
 				// Re-analyze syntax tree with new statement
 				semanticModel.Table->ClearSymbols();
 				semanticAnalyzer.Analyze(syntaxTree, semanticModel);
+				layoutGenerator.Generate(semanticModel);
 
 				// Check for errors
 				if (diagnostics.AnyError)
 				{
 					// Write diagnostics
-					diagnostics.WriteDiagnostics(wcerr);
+					diagnostics.WriteDiagnostics(std::wcerr);
 					diagnostics.Reset();
 
 					// Remove the statement that caused error
@@ -485,19 +498,21 @@ void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticMode
 				// Execute statement
 				ObjectInstance* result = AbstractInterpreter::ExecuteStatement(statement);
 				if (result != nullptr)
+				{
 					ConsoleHelper::Write(result);
+					GarbageCollector::DestroyInstance(result);
+				}
 
-				GarbageCollector::DestroyInstance(result);
 				MoveToNewLineIfNeeded();
 			}
 		}
-		catch (const exception& err)
+		catch (const std::exception& err)
 		{
-			wcerr << L"### Runtime error: " << err.what() << endl;
+			std::wcerr << L"### Runtime error: " << err.what() << std::endl;
 		}
 		catch (...)
 		{
-			wcerr << L"### Unknown error occurred" << endl;
+			std::wcerr << L"### Unknown error occurred" << std::endl;
 		}
 	}
 }

@@ -52,6 +52,7 @@ namespace shard::runtime
 		static void PushContext(InboundVariablesContext* context);
 		static void PopContext();
 
+		static void TerminateCallStack();
 		static void Execute(shard::parsing::lexical::SyntaxTree& syntaxTree, shard::parsing::semantic::SemanticModel& semanticModel);
 		static void RaiseException(ObjectInstance* exceptionReg);
 
