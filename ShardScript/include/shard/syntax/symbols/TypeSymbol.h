@@ -65,6 +65,9 @@ namespace shard::syntax::symbols
             return IsReferenceType ? sizeof(void*) : MemoryBytesSize;
         }
 
+        bool operator ==(const TypeSymbol& other);
+        bool operator !=(const TypeSymbol& other);
+
         virtual MethodSymbol* FindMethod(std::wstring& name, std::vector<TypeSymbol*> parameterTypes);
         virtual MethodSymbol* FindIndexator(std::vector<TypeSymbol*> parameterTypes);
         virtual FieldSymbol* FindField(std::wstring& name);

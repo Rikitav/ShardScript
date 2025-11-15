@@ -1,5 +1,6 @@
 #include <shard/runtime/GarbageCollector.h>
 #include <shard/runtime/ObjectInstance.h>
+#include <shard/runtime/AbstractInterpreter.h>
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/FieldSymbol.h>
 
@@ -16,21 +17,21 @@ ObjectInstance* GarbageCollector::NullInstance = new ObjectInstance(-1, nullptr,
 
 ObjectInstance* GarbageCollector::GetStaticField(FieldSymbol* field)
 {
-	ObjectInstance* staticFieldInstance = nullptr;
-	auto find = staticFields.find(field);
-	if (find == staticFields.end())
-	{
-		staticFieldInstance = field->ReturnType->IsReferenceType
-			? NullInstance
-			: GarbageCollector::AllocateInstance(field->ReturnType);
+	if (auto find = staticFields.find(field); find != staticFields.end())
+		return CopyInstance(find->second);
 
+	if (field->DefaultValueExpression != nullptr)
+	{
+		ObjectInstance* staticFieldInstance = AbstractInterpreter::EvaluateExpression(field->DefaultValueExpression);
 		staticFields[field] = staticFieldInstance;
-	}
-	else
-	{
-		staticFieldInstance = find->second;
+		return staticFieldInstance;
 	}
 
+	ObjectInstance* staticFieldInstance = !field->ReturnType->IsReferenceType
+		? GarbageCollector::AllocateInstance(field->ReturnType)
+		: NullInstance;
+
+	staticFields[field] = staticFieldInstance;
 	return CopyInstance(staticFieldInstance);
 }
 

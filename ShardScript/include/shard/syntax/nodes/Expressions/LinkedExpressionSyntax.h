@@ -88,7 +88,9 @@ namespace shard::syntax::nodes
 
 		inline virtual ~MemberAccessExpressionSyntax()
 		{
-
+			Type = nullptr;
+			FieldSymbol = nullptr;
+			PropertySymbol = nullptr;
 		}
 	};
 

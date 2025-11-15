@@ -1318,6 +1318,8 @@ LinkedExpressionNode* LexicalAnalyzer::ReadLinkedExpressionNode(SourceReader& re
 
 			member->NextNode = node;
 			parent->Nodes.push_back(member);
+			parent->Last->NextNode = member;
+			parent->Last = member;
 
 			node->IndexatorList = ReadIndexatorList(reader, node);
 

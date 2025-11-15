@@ -93,7 +93,7 @@ InboundVariablesContext* AbstractInterpreter::CurrentContext()
 	if (frame->VariablesStack.empty())
 		return nullptr;
 
-	return CurrentFrame()->VariablesStack.top();
+	return frame->VariablesStack.top();
 }
 
 void AbstractInterpreter::PushContext(InboundVariablesContext* context)

@@ -10,10 +10,21 @@
 
 #include <string>
 #include <vector>
+#include <utility>
 
 namespace shard::syntax::symbols
 {
     typedef shard::runtime::ObjectInstance* (*MethodSymbolDelegate)(shard::runtime::InboundVariablesContext* arguments);
+    
+    template<typename... Args>
+    bool invoke(MethodSymbolDelegate delegate, Args&&... args)
+    {
+        shard::runtime::InboundVariablesContext* ctx = new shard::runtime::InboundVariablesContext(nullptr);
+        for (std::pair<std::wstring, shard::runtime::ObjectInstance*> pair : args)
+            ctx->AddVariable(pair.first, pair.second);
+
+        return delegate(ctx);
+    }
 
     enum class MethodHandleType
     {

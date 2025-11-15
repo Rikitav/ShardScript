@@ -3,6 +3,7 @@
 #include <shard/syntax/symbols/MethodSymbol.h>
 #include <shard/syntax/symbols/PropertySymbol.h>
 #include <shard/syntax/symbols/ParameterSymbol.h>
+#include <shard/syntax/symbols/ArrayTypeSymbol.h>
 
 #include <algorithm>
 #include <vector>
@@ -14,6 +15,26 @@ using namespace shard::syntax::symbols;
 static bool paramPredicate(TypeSymbol* left, ParameterSymbol* right)
 {
 	return left == right->Type;
+}
+
+bool TypeSymbol::operator ==(const TypeSymbol& other)
+{
+	if (this->Kind == SyntaxKind::CollectionExpression)
+	{
+		if (other.Kind != SyntaxKind::CollectionExpression)
+			return false;
+
+		const ArrayTypeSymbol* thisArrayInfo = static_cast<const ArrayTypeSymbol*>(this);
+		const ArrayTypeSymbol* otherArrayInfo = static_cast<const ArrayTypeSymbol*>(&other);
+		return thisArrayInfo->UnderlayingType->TypeCode == otherArrayInfo->UnderlayingType->TypeCode;
+	}
+
+	return this->TypeCode == other.TypeCode;
+}
+
+bool TypeSymbol::operator !=(const TypeSymbol& other)
+{
+	return !(*this == other);
 }
 
 MethodSymbol* TypeSymbol::FindMethod(wstring& name, vector<TypeSymbol*> parameterTypes)

@@ -451,6 +451,9 @@
     <ClInclude Include="include\shard\parsing\visiting\ScopeVisitor.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
+    <ClInclude Include="include\shard\syntax\nodes\Expressions\TypeExpressionSyntax.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="framework.ss" />

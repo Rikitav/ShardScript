@@ -241,7 +241,7 @@ void ExpressionBinder::VisitFieldDeclaration(FieldDeclarationSyntax* node)
 			return;
 		}
 
-		if (initExprType != fieldSymbol->ReturnType)
+		if (*initExprType != *fieldSymbol->ReturnType)
 		{
 			Diagnostics.ReportError(node->IdentifierToken, L"Field initializer type mismatch: expected '" + fieldSymbol->ReturnType->Name + L"' but got '" + initExprType->Name + L"'");
 			return;
@@ -269,9 +269,6 @@ void ExpressionBinder::VisitVariableStatement(VariableStatementSyntax* node)
 		//Diagnostics.ReportError(node->IdentifierToken, L"Expression type could not be determined");
 		return;
 	}
-
-	if (varSymbol->Type->Kind == SyntaxKind::CollectionExpression && expressionType->Kind == SyntaxKind::CollectionExpression)
-		return;
 
 	if (varSymbol->Type != expressionType)
 		Diagnostics.ReportError(node->IdentifierToken, L"Type mismatch: expected '" + varSymbol->Type->Name + L"' but got '" + expressionType->Name + L"'");

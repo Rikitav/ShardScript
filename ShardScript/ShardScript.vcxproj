@@ -217,6 +217,7 @@
     <ClInclude Include="include\shard\parsing\lexical\MembersVisibilityContext.h" />
     <ClInclude Include="include\shard\parsing\analysis\TextLocation.h" />
     <ClInclude Include="include\shard\syntax\nodes\Expressions\CollectionExpressionSyntax.h" />
+    <ClInclude Include="include\shard\syntax\nodes\Expressions\TypeExpressionSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\MemberDeclarations\PropertyDeclarationSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\Statements\BreakStatementSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\Statements\ContinueStatementSyntax.h" />
