@@ -4,6 +4,7 @@
 #include <shard/syntax/symbols/PropertySymbol.h>
 #include <shard/syntax/symbols/ParameterSymbol.h>
 #include <shard/syntax/symbols/ArrayTypeSymbol.h>
+#include <shard/syntax/SyntaxKind.h>
 
 #include <algorithm>
 #include <vector>
@@ -17,24 +18,19 @@ static bool paramPredicate(TypeSymbol* left, ParameterSymbol* right)
 	return left == right->Type;
 }
 
-bool TypeSymbol::operator ==(const TypeSymbol& other)
+bool TypeSymbol::Equals(const TypeSymbol* left, const TypeSymbol* right)
 {
-	if (this->Kind == SyntaxKind::CollectionExpression)
+	if (left->Kind == SyntaxKind::CollectionExpression)
 	{
-		if (other.Kind != SyntaxKind::CollectionExpression)
+		if (right->Kind != SyntaxKind::CollectionExpression)
 			return false;
 
-		const ArrayTypeSymbol* thisArrayInfo = static_cast<const ArrayTypeSymbol*>(this);
-		const ArrayTypeSymbol* otherArrayInfo = static_cast<const ArrayTypeSymbol*>(&other);
+		const ArrayTypeSymbol* thisArrayInfo = static_cast<const ArrayTypeSymbol*>(left);
+		const ArrayTypeSymbol* otherArrayInfo = static_cast<const ArrayTypeSymbol*>(right);
 		return thisArrayInfo->UnderlayingType->TypeCode == otherArrayInfo->UnderlayingType->TypeCode;
 	}
 
-	return this->TypeCode == other.TypeCode;
-}
-
-bool TypeSymbol::operator !=(const TypeSymbol& other)
-{
-	return !(*this == other);
+	return left->TypeCode == right->TypeCode;
 }
 
 MethodSymbol* TypeSymbol::FindMethod(wstring& name, vector<TypeSymbol*> parameterTypes)

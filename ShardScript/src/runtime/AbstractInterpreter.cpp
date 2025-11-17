@@ -595,10 +595,22 @@ ObjectInstance* AbstractInterpreter::EvaluateExpression(const ExpressionSyntax* 
 			return EvaluateBinaryExpression(binaryExpr);
 		}
 
-		case SyntaxKind::LinkedExpression:
+		case SyntaxKind::MemberAccessExpression:
 		{
-			const LinkedExpressionSyntax* linkedExpression = static_cast<const LinkedExpressionSyntax*>(expression);
-			return EvaluateLinkedExpression(linkedExpression, CurrentContext()->TryFind(L"this"), false);
+			const MemberAccessExpressionSyntax* accessExpression = static_cast<const MemberAccessExpressionSyntax*>(expression);
+			return EvaluateMemberAccessExpression(accessExpression, nullptr);
+		}
+
+		case SyntaxKind::InvokationExpression:
+		{
+			const InvokationExpressionSyntax* invokeExpression = static_cast<const InvokationExpressionSyntax*>(expression);
+			return EvaluateInvokationExpression(invokeExpression, nullptr);
+		}
+
+		case SyntaxKind::IndexatorExpression:
+		{
+			const IndexatorExpressionSyntax* indexExpression = static_cast<const IndexatorExpressionSyntax*>(expression);
+			return EvaluateIndexatorExpression(indexExpression, nullptr);
 		}
 
 		case SyntaxKind::CollectionExpression:
@@ -650,31 +662,28 @@ ObjectInstance* AbstractInterpreter::EvaluateObjectExpression(const ObjectExpres
 	return newInstance;
 }
 
-static bool IsMemberAccess(const ExpressionSyntax* expression, const LinkedExpressionSyntax*& linkedExpression, const MemberAccessExpressionSyntax*& memberExpression)
+static bool IsMemberAccess(const ExpressionSyntax* expression, const MemberAccessExpressionSyntax*& memberExpression)
 {
-	linkedExpression = dynamic_cast<const LinkedExpressionSyntax*>(expression);
-	if (linkedExpression == nullptr)
+	if (expression->Kind != SyntaxKind::MemberAccessExpression)
 		return false;
 
-	memberExpression = dynamic_cast<const MemberAccessExpressionSyntax*>(linkedExpression->Last);
-	if (memberExpression == nullptr)
-		return false;
-
+	memberExpression = dynamic_cast<const MemberAccessExpressionSyntax*>(expression);
 	return true;
 }
 
-static bool IsFieldAccess(const LinkedExpressionSyntax* linkedExpression, const MemberAccessExpressionSyntax* memberExpression)
+static bool IsFieldAccess(const MemberAccessExpressionSyntax* memberExpression, const ExpressionSyntax*& instanceExpression)
 {
+	instanceExpression = memberExpression->PreviousExpression;
 	return memberExpression->FieldSymbol != nullptr || memberExpression->PropertySymbol != nullptr;
 }
 
 ObjectInstance* AbstractInterpreter::EvaluateBinaryExpression(const BinaryExpressionSyntax* expression)
 {
-	const LinkedExpressionSyntax* linkedExpression = nullptr;
+	const ExpressionSyntax* instanceExpression = nullptr;
 	const MemberAccessExpressionSyntax* memberExpression = nullptr;
 
-	bool isMemberAccess = IsMemberAccess(expression->Left, linkedExpression, memberExpression);
-	bool isFieldAccess = isMemberAccess ? IsFieldAccess(linkedExpression, memberExpression) : false;
+	bool isMemberAccess = IsMemberAccess(expression->Left, memberExpression);
+	bool isFieldAccess = isMemberAccess ? IsFieldAccess(memberExpression, instanceExpression) : false;
 	bool assign = expression->OperatorToken.Type == TokenType::AssignOperator;
 
 	ObjectInstance* instanceReg = CurrentContext()->TryFind(L"this");
@@ -694,7 +703,7 @@ ObjectInstance* AbstractInterpreter::EvaluateBinaryExpression(const BinaryExpres
 		ObjectInstance* leftReg = nullptr;
 		if (isFieldAccess)
 		{
-			instanceReg = EvaluateLinkedExpression(linkedExpression, instanceReg, true);
+			instanceReg = EvaluateExpression(instanceExpression);
 			if (!assign)
 				leftReg = EvaluateMemberAccessExpression(memberExpression, instanceReg);
 		}
@@ -736,11 +745,11 @@ ObjectInstance* AbstractInterpreter::EvaluateBinaryExpression(const BinaryExpres
 
 ObjectInstance* AbstractInterpreter::EvaluateUnaryExpression(const UnaryExpressionSyntax* expression)
 {
-	const LinkedExpressionSyntax* linkedExpression = nullptr;
+	const ExpressionSyntax* instanceExpression = nullptr;
 	const MemberAccessExpressionSyntax* memberExpression = nullptr;
 
-	bool isMemberAccess = IsMemberAccess(expression, linkedExpression, memberExpression);
-	bool isFieldAccess = IsFieldAccess(linkedExpression, memberExpression);
+	bool isMemberAccess = IsMemberAccess(expression->Expression, memberExpression);
+	bool isFieldAccess = isMemberAccess ? IsFieldAccess(memberExpression, instanceExpression) : false;
 
 	ObjectInstance* instanceReg = CurrentContext()->TryFind(L"this");
 	ObjectInstance* exprReg = nullptr;
@@ -754,7 +763,7 @@ ObjectInstance* AbstractInterpreter::EvaluateUnaryExpression(const UnaryExpressi
 	{
 		if (isFieldAccess)
 		{
-			instanceReg = EvaluateLinkedExpression(linkedExpression, instanceReg, true);
+			instanceReg = EvaluateExpression(instanceExpression);
 			exprReg = EvaluateMemberAccessExpression(memberExpression, instanceReg);
 		}
 		else
@@ -809,69 +818,14 @@ ObjectInstance* AbstractInterpreter::EvaluateCollectionExpression(const Collecti
 	return instance;
 }
 
-ObjectInstance* AbstractInterpreter::EvaluateLinkedExpression(const LinkedExpressionSyntax* expression, ObjectInstance* objInstance, bool trimLast)
-{
-	LinkedExpressionNode* exprNode = expression->First;
-	switch (exprNode->Kind)
-	{
-		case SyntaxKind::MemberAccessExpression:
-		{
-			MemberAccessExpressionSyntax* variableAccess = static_cast<MemberAccessExpressionSyntax*>(exprNode);
-			if (variableAccess->FieldSymbol == nullptr)
-			{
-				objInstance = CurrentContext()->TryFind(variableAccess->IdentifierToken.Word);
-				exprNode = variableAccess->NextNode;
-				break;
-			}
-		}
-	}
-
-	while (exprNode != nullptr)
-	{
-		if (trimLast && exprNode == expression->Last)
-			break;
-
-		objInstance = EvaluateLinkedExpression(exprNode, objInstance);
-		exprNode = exprNode->NextNode;
-	}
-
-	return objInstance;
-}
-
-ObjectInstance* AbstractInterpreter::EvaluateLinkedExpression(const LinkedExpressionNode* expression, ObjectInstance* objInstance)
-{
-	switch (expression->Kind)
-	{
-		case SyntaxKind::MemberAccessExpression:
-		{
-			const MemberAccessExpressionSyntax* accessExpression = static_cast<const MemberAccessExpressionSyntax*>(expression);
-			return EvaluateMemberAccessExpression(accessExpression, objInstance);
-		}
-
-		case SyntaxKind::InvokationExpression:
-		{
-			const InvokationExpressionSyntax* invokeExpression = static_cast<const InvokationExpressionSyntax*>(expression);
-			return EvaluateInvokationExpression(invokeExpression, objInstance);
-		}
-
-		case SyntaxKind::IndexatorExpression:
-		{
-			const IndexatorExpressionSyntax* indexExpression = static_cast<const IndexatorExpressionSyntax*>(expression);
-			return EvaluateIndexatorExpression(indexExpression, objInstance);
-		}
-
-		default:
-		{
-			throw runtime_error("Unknown member access");
-		}
-	}
-}
-
 ObjectInstance* AbstractInterpreter::EvaluateMemberAccessExpression(const MemberAccessExpressionSyntax* expression, ObjectInstance* prevInstance)
 {
+	if (prevInstance == nullptr)
+		prevInstance = expression->PreviousExpression == nullptr ? CurrentContext()->TryFind(L"this") : EvaluateExpression(expression->PreviousExpression);
+
 	// Check if this is a property or field
 	FieldSymbol* field = expression->FieldSymbol;
-	if (expression->IsProperty)
+	if (expression->PropertySymbol != nullptr)
 	{
 		PropertySymbol* property = expression->PropertySymbol;
 		field = property->BackingField;
@@ -886,18 +840,26 @@ ObjectInstance* AbstractInterpreter::EvaluateMemberAccessExpression(const Member
 		}
 	}
 
-	// Check if this is a static field
-	if (field->IsStatic)
+	if (field != nullptr)
 	{
-		return GarbageCollector::GetStaticField(field);
+		// Check if this is a static field
+		if (field->IsStatic)
+		{
+			return GarbageCollector::GetStaticField(field);
+		}
+
+		// Instance field access
+		return prevInstance->GetField(field);
 	}
 
-	// Instance field access
-	return prevInstance->GetField(field);
+	return CurrentContext()->TryFind(expression->IdentifierToken.Word);
 }
 
 ObjectInstance* AbstractInterpreter::EvaluateInvokationExpression(const InvokationExpressionSyntax* expression, ObjectInstance* prevInstance)
 {
+	if (prevInstance == nullptr)
+		prevInstance = expression->PreviousExpression == nullptr ? CurrentContext()->TryFind(L"this") : EvaluateExpression(expression->PreviousExpression);
+
 	MethodSymbol* method = expression->Symbol;
 	InboundVariablesContext* arguments = CreateArgumentsContext(expression->ArgumentsList->Arguments, method, prevInstance);
 	ObjectInstance* retReg = ExecuteMethod(method, arguments);
@@ -906,6 +868,9 @@ ObjectInstance* AbstractInterpreter::EvaluateInvokationExpression(const Invokati
 
 ObjectInstance* AbstractInterpreter::EvaluateIndexatorExpression(const IndexatorExpressionSyntax* expression, ObjectInstance* prevInstance)
 {
+	if (prevInstance == nullptr)
+		prevInstance = expression->PreviousExpression == nullptr ? CurrentContext()->TryFind(L"this") : EvaluateExpression(expression->PreviousExpression);
+
 	MethodSymbol* method = expression->Symbol;
 	InboundVariablesContext* arguments = CreateArgumentsContext(expression->IndexatorList->Arguments, method, prevInstance);
 	ObjectInstance* retReg = ExecuteMethod(method, arguments);
@@ -944,7 +909,7 @@ void AbstractInterpreter::ExecuteInstanceSetter(ObjectInstance* instance, const 
 {
 	// Check if this is a property or field
 	FieldSymbol* field = access->FieldSymbol;
-	if (access->IsProperty)
+	if (access->PropertySymbol != nullptr)
 	{
 		PropertySymbol* property = access->PropertySymbol;
 		field = property->BackingField;

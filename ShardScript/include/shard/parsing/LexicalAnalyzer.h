@@ -95,8 +95,8 @@ namespace shard::parsing
 		shard::syntax::nodes::CollectionExpressionSyntax* ReadCollectionExpression(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
 		shard::syntax::nodes::ObjectExpressionSyntax* ReadObjectExpression(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
 
-		shard::syntax::nodes::LinkedExpressionSyntax* ReadLinkedExpression(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
-		shard::syntax::nodes::LinkedExpressionNode* ReadLinkedExpressionNode(shard::parsing::SourceReader& reader, shard::syntax::nodes::LinkedExpressionSyntax* parent, shard::syntax::nodes::LinkedExpressionNode* lastNode);
+		//shard::syntax::nodes::ExpressionSyntax* ReadLinkedExpression(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
+		shard::syntax::nodes::LinkedExpressionNode* ReadLinkedExpressionNode(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent, shard::syntax::nodes::ExpressionSyntax* lastNode, bool isFirst);
 
 		shard::syntax::nodes::ArgumentsListSyntax* ReadArgumentsList(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
 		shard::syntax::nodes::IndexatorListSyntax* ReadIndexatorList(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);

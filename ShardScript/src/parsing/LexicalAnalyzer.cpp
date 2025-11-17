@@ -1054,6 +1054,7 @@ ExpressionSyntax* LexicalAnalyzer::ReadExpression(SourceReader& reader, SyntaxNo
 		leftExpr = ReadLeftDenotation(reader, parent, leftExpr);
 		if (!reader.CanConsume())
 			break;
+
 		current = reader.Current();
 		precendence = GetOperatorPrecendence(current.Type);
 	}
@@ -1090,6 +1091,10 @@ ExpressionSyntax* LexicalAnalyzer::ReadNullDenotation(SourceReader& reader, Synt
 			reader.Consume();
 			ExpressionSyntax* expression = ReadExpression(reader, parent, 0);
 			Expect(reader, TokenType::CloseCurl, L"Expected ')' token");
+
+			if (reader.Current().Type == TokenType::Delimeter)
+				return ReadLinkedExpressionNode(reader, parent, expression, false);
+
 			return expression;
 		}
 
@@ -1101,7 +1106,7 @@ ExpressionSyntax* LexicalAnalyzer::ReadNullDenotation(SourceReader& reader, Synt
 		case TokenType::Identifier:
 		case TokenType::FieldKeyword:
 		{
-			return ReadLinkedExpression(reader, parent);
+			return ReadLinkedExpressionNode(reader, parent, nullptr, true);
 		}
 
 		case TokenType::NewKeyword:
@@ -1137,6 +1142,11 @@ ExpressionSyntax* LexicalAnalyzer::ReadLeftDenotation(SourceReader& reader, Synt
 		return leftExpr;
 
 	SyntaxToken current = reader.Current();
+	if (current.Type == TokenType::Delimeter)
+	{
+		return ReadLinkedExpressionNode(reader, parent, leftExpr, false);
+	}
+
 	if (IsUnaryOperator(current.Type))
 	{
 		int precendce = GetOperatorPrecendence(current.Type);
@@ -1215,6 +1225,7 @@ CollectionExpressionSyntax* LexicalAnalyzer::ReadCollectionExpression(SourceRead
 	return syntax;
 }
 
+/*
 LinkedExpressionSyntax* LexicalAnalyzer::ReadLinkedExpression(SourceReader& reader, SyntaxNode* parent)
 {
 	LinkedExpressionSyntax* syntax = new LinkedExpressionSyntax(parent);
@@ -1258,28 +1269,35 @@ LinkedExpressionSyntax* LexicalAnalyzer::ReadLinkedExpression(SourceReader& read
 	// No nodes were read - return syntax anyway (it will have diagnostics)
 	return syntax;
 }
+*/
 
-LinkedExpressionNode* LexicalAnalyzer::ReadLinkedExpressionNode(SourceReader& reader, LinkedExpressionSyntax* parent, LinkedExpressionNode* prevNode)
+LinkedExpressionNode* LexicalAnalyzer::ReadLinkedExpressionNode(SourceReader& reader, SyntaxNode* parent, ExpressionSyntax* previous, bool isFirst)
 {
 	if (!reader.CanConsume())
 		return nullptr;
 
-	// Accept identifier or field keyword (field keyword is allowed in property accessors)
+	SyntaxToken delimeter;
 	SyntaxToken identifier;
-	if (reader.Current().Type == TokenType::FieldKeyword)
+
+	if (isFirst)
 	{
+		delimeter = SyntaxToken(TokenType::Delimeter, L"", TextLocation(), false);
 		identifier = reader.Current();
+		if (!Matches(reader, { TokenType::FieldKeyword, TokenType::Identifier }))
+			Diagnostics.ReportError(identifier, L"Expected identifier or 'field' keyword");
+
 		reader.Consume();
 	}
 	else
 	{
+		delimeter = Expect(reader, TokenType::Delimeter, L"Expected '.' token");
 		identifier = Expect(reader, TokenType::Identifier, L"Expected identifier");
 	}
-	
+
 	if (!reader.CanConsume())
 	{
 		// If we got EOF, return a simple member access node
-		return new MemberAccessExpressionSyntax(identifier, prevNode, parent);
+		return new MemberAccessExpressionSyntax(identifier, previous, parent);
 	}
 
 	SyntaxToken current = reader.Current();
@@ -1287,78 +1305,72 @@ LinkedExpressionNode* LexicalAnalyzer::ReadLinkedExpressionNode(SourceReader& re
 	{
 		case TokenType::Delimeter:
 		{
-			MemberAccessExpressionSyntax* node = new MemberAccessExpressionSyntax(identifier, prevNode, parent);
-			node->NextDelimeterToken = current;
-			reader.Consume();
-			return node;
+			MemberAccessExpressionSyntax* currentNode = new MemberAccessExpressionSyntax(identifier, previous, parent);
+			currentNode->DelimeterToken = delimeter;
+
+			LinkedExpressionNode* nextNode = ReadLinkedExpressionNode(reader, parent, currentNode, false);
+			return nextNode;
 		}
 
 		case TokenType::OpenCurl:
 		{
-			InvokationExpressionSyntax* node = new InvokationExpressionSyntax(identifier, prevNode, parent);
-			node->ArgumentsList = ReadArgumentsList(reader, node);
+			InvokationExpressionSyntax* currentNode = new InvokationExpressionSyntax(identifier, previous, parent);
+			currentNode->DelimeterToken = delimeter;
+			currentNode->ArgumentsList = ReadArgumentsList(reader, currentNode);
 
 			if (!reader.CanConsume())
-				return node;
+				return currentNode;
 
 			current = reader.Current();
 			if (current.Type == TokenType::Delimeter)
 			{
-				node->NextDelimeterToken = current;
-				reader.Consume();
+				LinkedExpressionNode* nextNode = ReadLinkedExpressionNode(reader, parent, currentNode, false);
+				return nextNode;
 			}
 
-			return node;
+			return currentNode;
 		}
 
 		case TokenType::OpenSquare:
 		{
-			MemberAccessExpressionSyntax* member = new MemberAccessExpressionSyntax(identifier, prevNode, parent);
-			IndexatorExpressionSyntax* node = new IndexatorExpressionSyntax(member, parent);
+			MemberAccessExpressionSyntax* member = new MemberAccessExpressionSyntax(identifier, previous, parent);
+			member->DelimeterToken = delimeter;
 
-			member->NextNode = node;
-			parent->Nodes.push_back(member);
-			parent->Last->NextNode = member;
-			parent->Last = member;
-
-			node->IndexatorList = ReadIndexatorList(reader, node);
+			IndexatorExpressionSyntax* currentNode = new IndexatorExpressionSyntax(member, parent);
+			currentNode->IndexatorList = ReadIndexatorList(reader, currentNode);
 
 			if (!reader.CanConsume())
-				return node;
+				return currentNode;
 
 			current = reader.Current();
 			if (current.Type == TokenType::Delimeter)
 			{
-				member->NextDelimeterToken = current;
-				reader.Consume();
+				LinkedExpressionNode* nextNode = ReadLinkedExpressionNode(reader, parent, currentNode, false);
+				return nextNode;
 			}
 
-			return node;
-		}
-
-		// anchor tokens
-		case TokenType::Semicolon:
-		case TokenType::CloseBrace:
-		case TokenType::Comma:
-		{
-			return new MemberAccessExpressionSyntax(identifier, prevNode, parent);
+			return currentNode;
 		}
 
 		default:
 		{
-			if (!IsOperator(current.Type))
+			if (IsOperator(current.Type) || IsPunctuation(current.Type))
 			{
-				SyntaxToken peek = reader.Peek();
-				if (peek.Type == TokenType::Identifier)
-				{
-					Diagnostics.ReportError(current, L"Tokens must be separated with delimeter");
-					return ReadLinkedExpressionNode(reader, parent, prevNode);
-				}
+				MemberAccessExpressionSyntax* currentNode = new MemberAccessExpressionSyntax(identifier, previous, parent);
+				currentNode->DelimeterToken = delimeter;
+				return currentNode;
 			}
 
-			return new MemberAccessExpressionSyntax(identifier, prevNode, parent);
+			SyntaxToken peek = reader.Peek();
+			if (peek.Type == TokenType::Identifier)
+			{
+				Diagnostics.ReportError(current, L"Tokens must be separated with delimeter");
+				return ReadLinkedExpressionNode(reader, parent, previous, false);
+			}
 		}
 	}
+
+	return nullptr;
 }
 
 ArgumentsListSyntax* LexicalAnalyzer::ReadArgumentsList(SourceReader& reader, SyntaxNode* parent)

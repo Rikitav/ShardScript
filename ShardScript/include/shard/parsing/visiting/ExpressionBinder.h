@@ -53,14 +53,14 @@ namespace shard::parsing
 		shard::syntax::symbols::TypeSymbol* AnalyzeObjectExpression(shard::syntax::nodes::ObjectExpressionSyntax* node);
 		shard::syntax::symbols::TypeSymbol* AnalyzeCollectionExpression(shard::syntax::nodes::CollectionExpressionSyntax* node);
 
-		shard::syntax::symbols::TypeSymbol* AnalyzeLinkedExpression(shard::syntax::nodes::LinkedExpressionSyntax* node);
-		shard::syntax::symbols::TypeSymbol* AnalyzeMemberAccessExpression(shard::syntax::nodes::MemberAccessExpressionSyntax* node, bool& isStaticContext, shard::syntax::symbols::TypeSymbol* currentType);
-		shard::syntax::symbols::TypeSymbol* AnalyzeFieldKeywordExpression(shard::syntax::nodes::MemberAccessExpressionSyntax* node, bool& isStaticContext, shard::syntax::symbols::TypeSymbol* currentType);
-		shard::syntax::symbols::TypeSymbol* AnalyzeInvokationExpression(shard::syntax::nodes::InvokationExpressionSyntax* node, bool& isStaticContext, shard::syntax::symbols::TypeSymbol* currentType);
-		shard::syntax::symbols::TypeSymbol* AnalyzeIndexatorExpression(shard::syntax::nodes::IndexatorExpressionSyntax* node, bool& isStaticContext, shard::syntax::symbols::TypeSymbol* currentType);
+		//shard::syntax::symbols::TypeSymbol* AnalyzeLinkedExpression(shard::syntax::nodes::LinkedExpressionSyntax* node);
+		shard::syntax::symbols::TypeSymbol* AnalyzeMemberAccessExpression(shard::syntax::nodes::MemberAccessExpressionSyntax* node, shard::syntax::symbols::TypeSymbol* currentType);
+		shard::syntax::symbols::TypeSymbol* AnalyzeFieldKeywordExpression(shard::syntax::nodes::MemberAccessExpressionSyntax* node, shard::syntax::symbols::TypeSymbol* currentType);
+		shard::syntax::symbols::TypeSymbol* AnalyzeInvokationExpression(shard::syntax::nodes::InvokationExpressionSyntax* node, shard::syntax::symbols::TypeSymbol* currentType);
+		shard::syntax::symbols::TypeSymbol* AnalyzeIndexatorExpression(shard::syntax::nodes::IndexatorExpressionSyntax* node, shard::syntax::symbols::TypeSymbol* currentType);
 
-		shard::syntax::symbols::MethodSymbol* ResolveMethod(shard::syntax::nodes::InvokationExpressionSyntax* node, bool& isStaticContext, shard::syntax::symbols::TypeSymbol* currentType);
-		shard::syntax::symbols::MethodSymbol* ResolveIndexator(shard::syntax::nodes::IndexatorExpressionSyntax* node, bool& isStaticContext, shard::syntax::symbols::TypeSymbol* currentType);
+		shard::syntax::symbols::MethodSymbol* ResolveMethod(shard::syntax::nodes::InvokationExpressionSyntax* node, shard::syntax::symbols::TypeSymbol* currentType);
+		shard::syntax::symbols::MethodSymbol* ResolveIndexator(shard::syntax::nodes::IndexatorExpressionSyntax* node, shard::syntax::symbols::TypeSymbol* currentType);
 		
 		bool MatchMethodArguments(shard::syntax::symbols::MethodSymbol* method, std::vector<shard::syntax::nodes::ArgumentSyntax*> arguments);
 
@@ -90,7 +90,7 @@ namespace shard::parsing
 		void VisitObjectCreationExpression(shard::syntax::nodes::ObjectExpressionSyntax* node) override;
 		void VisitCollectionExpression(shard::syntax::nodes::CollectionExpressionSyntax* node) override;
 
-		void VisitLinkedExpression(shard::syntax::nodes::LinkedExpressionSyntax* node) override;
+		//void VisitLinkedExpression(shard::syntax::nodes::LinkedExpressionSyntax* node) override;
 		void VisitMemberAccessExpression(shard::syntax::nodes::MemberAccessExpressionSyntax* node) override;
 		void VisitInvocationExpression(shard::syntax::nodes::InvokationExpressionSyntax* node) override;
 		void VisitIndexatorExpression(shard::syntax::nodes::IndexatorExpressionSyntax* node) override;

@@ -3,46 +3,39 @@
 #include <shard/syntax/SyntaxToken.h>
 #include <shard/syntax/SyntaxNode.h>
 
-#include <shard/syntax/symbols/FieldSymbol.h>
-#include <shard/syntax/symbols/MethodSymbol.h>
-
 #include <shard/syntax/nodes/ExpressionSyntax.h>
 #include <shard/syntax/nodes/ArgumentsListSyntax.h>
 
-#include <vector>
+#include <shard/syntax/symbols/FieldSymbol.h>
+#include <shard/syntax/symbols/MethodSymbol.h>
 #include <shard/syntax/symbols/PropertySymbol.h>
 #include <shard/syntax/symbols/TypeSymbol.h>
 
+#include <vector>
+
 namespace shard::syntax::nodes
 {
-	class LinkedExpressionNode : public SyntaxNode
+	class LinkedExpressionNode : public ExpressionSyntax
 	{
 	public:
-		SyntaxToken PrevDelimeterToken;
-		SyntaxToken NextDelimeterToken;
+		SyntaxToken DelimeterToken;
+		const ExpressionSyntax* PreviousExpression = nullptr;
+		bool IsStaticContext = true;
 
-		const LinkedExpressionNode* PrevNode = nullptr;
-		LinkedExpressionNode* NextNode = nullptr;
-
-		inline LinkedExpressionNode(const SyntaxKind kind, const LinkedExpressionNode* previous, const SyntaxNode* parent) : SyntaxNode(kind, parent)
-		{
-			if (previous != nullptr)
-			{
-				PrevNode = previous;
-				PrevDelimeterToken = previous->NextDelimeterToken;
-			}
-		}
+		inline LinkedExpressionNode(const SyntaxKind kind, const ExpressionSyntax* previous, const SyntaxNode* parent)
+			: ExpressionSyntax(kind, parent), PreviousExpression(previous) { }
 
 		inline LinkedExpressionNode(const LinkedExpressionNode& other)
-			: SyntaxNode(other), PrevDelimeterToken(other.PrevDelimeterToken), NextDelimeterToken(other.NextDelimeterToken), PrevNode(other.PrevNode), NextNode(other.NextNode) { }
+			: ExpressionSyntax(other), DelimeterToken(other.DelimeterToken), PreviousExpression(other.PreviousExpression) { }
 
 		inline virtual ~LinkedExpressionNode()
 		{
-			PrevNode = nullptr;
-			NextNode = nullptr;
+			if (PreviousExpression != nullptr)
+				delete PreviousExpression;
 		}
 	};
 
+	/*
 	class LinkedExpressionSyntax : public ExpressionSyntax
 	{
 	public:
@@ -67,6 +60,7 @@ namespace shard::syntax::nodes
 			Nodes.~vector();
 		}
 	};
+	*/
 	
 	class MemberAccessExpressionSyntax : public LinkedExpressionNode
 	{
@@ -78,13 +72,13 @@ namespace shard::syntax::nodes
 
 		//bool IsType = false;
 		//bool IsVariable = false;
-		bool IsProperty = false;
+		//bool IsProperty = false;
 		
-		inline MemberAccessExpressionSyntax(SyntaxToken identifier, LinkedExpressionNode* previous, LinkedExpressionSyntax* parent)
+		inline MemberAccessExpressionSyntax(SyntaxToken identifier, ExpressionSyntax* previous, SyntaxNode* parent)
 			: LinkedExpressionNode(SyntaxKind::MemberAccessExpression, previous, parent), IdentifierToken(identifier) { }
 		
 		inline MemberAccessExpressionSyntax(const MemberAccessExpressionSyntax& other)
-			: LinkedExpressionNode(SyntaxKind::MemberAccessExpression, other.PrevNode, other.Parent), IdentifierToken(other.IdentifierToken) {}
+			: LinkedExpressionNode(SyntaxKind::MemberAccessExpression, other.PreviousExpression, other.Parent), IdentifierToken(other.IdentifierToken) {}
 
 		inline virtual ~MemberAccessExpressionSyntax()
 		{
@@ -101,11 +95,11 @@ namespace shard::syntax::nodes
 		ArgumentsListSyntax* ArgumentsList = nullptr;
 		shard::syntax::symbols::MethodSymbol* Symbol = nullptr;
 
-		inline InvokationExpressionSyntax(SyntaxToken identifier, LinkedExpressionNode* previous, LinkedExpressionSyntax* parent)
+		inline InvokationExpressionSyntax(SyntaxToken identifier, ExpressionSyntax* previous, SyntaxNode* parent)
 			: LinkedExpressionNode(SyntaxKind::InvokationExpression, previous, parent), IdentifierToken(identifier) { }
 
 		inline InvokationExpressionSyntax(const InvokationExpressionSyntax& other)
-			: LinkedExpressionNode(SyntaxKind::InvokationExpression, other.PrevNode, other.Parent), IdentifierToken(other.IdentifierToken), ArgumentsList(other.ArgumentsList) { }
+			: LinkedExpressionNode(SyntaxKind::InvokationExpression, other.PreviousExpression, other.Parent), IdentifierToken(other.IdentifierToken), ArgumentsList(other.ArgumentsList) { }
 
 		inline virtual ~InvokationExpressionSyntax()
 		{
@@ -121,11 +115,11 @@ namespace shard::syntax::nodes
 		IndexatorListSyntax* IndexatorList = nullptr;
 		shard::syntax::symbols::MethodSymbol* Symbol = nullptr;
 
-		inline IndexatorExpressionSyntax(MemberAccessExpressionSyntax* memberAccess, LinkedExpressionSyntax* parent)
+		inline IndexatorExpressionSyntax(MemberAccessExpressionSyntax* memberAccess, SyntaxNode* parent)
 			: LinkedExpressionNode(SyntaxKind::IndexatorExpression, memberAccess, parent), MemberAccess(memberAccess) { }
 
 		inline IndexatorExpressionSyntax(const IndexatorExpressionSyntax& other)
-			: LinkedExpressionNode(SyntaxKind::InvokationExpression, other.PrevNode, other.Parent), MemberAccess(other.MemberAccess), IndexatorList(other.IndexatorList) { }
+			: LinkedExpressionNode(SyntaxKind::InvokationExpression, other.PreviousExpression, other.Parent), MemberAccess(other.MemberAccess), IndexatorList(other.IndexatorList) { }
 
 		inline virtual ~IndexatorExpressionSyntax()
 		{

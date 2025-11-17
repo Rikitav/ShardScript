@@ -20,3 +20,4 @@ bool IsFunctionalKeyword(shard::syntax::TokenType type);
 bool IsKeyword(shard::syntax::TokenType type);
 bool IsKeywordHasExpression(shard::syntax::TokenType type);
 bool IsMethodInvokationExpression(shard::syntax::TokenType current, shard::syntax::TokenType peek);
+bool IsPunctuation(shard::syntax::TokenType type);

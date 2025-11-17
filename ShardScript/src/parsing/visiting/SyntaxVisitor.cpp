@@ -434,10 +434,24 @@ void SyntaxVisitor::VisitExpression(ExpressionSyntax* node)
 			return;
 		}
 
-		case SyntaxKind::LinkedExpression:
+		case SyntaxKind::MemberAccessExpression:
 		{
-			LinkedExpressionSyntax* expression = dynamic_cast<LinkedExpressionSyntax*>(node);
-			VisitLinkedExpression(expression);
+			MemberAccessExpressionSyntax* expression = dynamic_cast<MemberAccessExpressionSyntax*>(node);
+			VisitMemberAccessExpression(expression);
+			return;
+		}
+
+		case SyntaxKind::InvokationExpression:
+		{
+			InvokationExpressionSyntax* expression = dynamic_cast<InvokationExpressionSyntax*>(node);
+			VisitInvocationExpression(expression);
+			return;
+		}
+
+		case SyntaxKind::IndexatorExpression:
+		{
+			IndexatorExpressionSyntax* expression = dynamic_cast<IndexatorExpressionSyntax*>(node);
+			VisitIndexatorExpression(expression);
 			return;
 		}
 
@@ -484,42 +498,6 @@ void SyntaxVisitor::VisitObjectCreationExpression(ObjectExpressionSyntax* node)
 {
 	VisitType(node->Type);
 	VisitArgumentsList(node->Arguments);
-}
-
-void SyntaxVisitor::VisitLinkedExpression(LinkedExpressionSyntax* node)
-{
-	for (LinkedExpressionNode* expression : node->Nodes)
-		VisitLinkedExpressionNode(expression);
-}
-
-void SyntaxVisitor::VisitLinkedExpressionNode(LinkedExpressionNode* node)
-{
-	switch (node->Kind)
-	{
-		default:
-			throw runtime_error("unknown linked expression node kind");
-
-		case SyntaxKind::MemberAccessExpression:
-		{
-			MemberAccessExpressionSyntax* expression = dynamic_cast<MemberAccessExpressionSyntax*>(node);
-			VisitMemberAccessExpression(expression);
-			return;
-		}
-
-		case SyntaxKind::InvokationExpression:
-		{
-			InvokationExpressionSyntax* expression = dynamic_cast<InvokationExpressionSyntax*>(node);
-			VisitInvocationExpression(expression);
-			return;
-		}
-
-		case SyntaxKind::IndexatorExpression:
-		{
-			IndexatorExpressionSyntax* expression = dynamic_cast<IndexatorExpressionSyntax*>(node);
-			VisitIndexatorExpression(expression);
-			return;
-		}
-	}
 }
 
 void SyntaxVisitor::VisitMemberAccessExpression(MemberAccessExpressionSyntax* node)

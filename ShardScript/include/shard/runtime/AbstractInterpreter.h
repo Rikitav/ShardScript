@@ -83,8 +83,6 @@ namespace shard::runtime
 		static ObjectInstance* EvaluateCollectionExpression(const shard::syntax::nodes::CollectionExpressionSyntax* expression);
 		//static ObjectInstance* EvaluateAssignExpression(const shard::syntax::nodes::BinaryExpressionSyntax* expression);
 
-		static ObjectInstance* EvaluateLinkedExpression(const shard::syntax::nodes::LinkedExpressionSyntax* expression, shard::runtime::ObjectInstance* prevInstance, bool trimLast);
-		static ObjectInstance* EvaluateLinkedExpression(const shard::syntax::nodes::LinkedExpressionNode* expression, shard::runtime::ObjectInstance* prevInstance);
 		static ObjectInstance* EvaluateMemberAccessExpression(const shard::syntax::nodes::MemberAccessExpressionSyntax* expression, shard::runtime::ObjectInstance* prevInstance);
 		static ObjectInstance* EvaluateInvokationExpression(const shard::syntax::nodes::InvokationExpressionSyntax* expression, shard::runtime::ObjectInstance* prevInstance);
 		static ObjectInstance* EvaluateIndexatorExpression(const shard::syntax::nodes::IndexatorExpressionSyntax* expression, shard::runtime::ObjectInstance* prevInstance);

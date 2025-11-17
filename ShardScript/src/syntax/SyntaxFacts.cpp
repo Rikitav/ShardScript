@@ -338,3 +338,24 @@ bool IsMethodInvokationExpression(TokenType current, TokenType peek)
 
 	return false;
 }
+
+bool IsPunctuation(TokenType type)
+{
+	switch (type)
+	{
+		case TokenType::OpenBrace:
+		case TokenType::CloseBrace:
+		case TokenType::OpenCurl:
+		case TokenType::CloseCurl:
+		case TokenType::OpenSquare:
+		case TokenType::CloseSquare:
+		case TokenType::Question:
+		case TokenType::Delimeter:
+		case TokenType::Comma:
+		case TokenType::Semicolon:
+			return true;
+
+		default:
+			return false;
+	}
+}

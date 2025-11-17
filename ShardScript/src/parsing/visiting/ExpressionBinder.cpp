@@ -61,6 +61,25 @@ using namespace shard::syntax::nodes;
 using namespace shard::syntax::symbols;
 using namespace shard::syntax;
 
+static bool GetIsStaticContext(const ExpressionSyntax* expression)
+{
+	if (expression == nullptr)
+		return true;
+
+	bool isLinked =
+		expression->Kind == SyntaxKind::MemberAccessExpression ||
+		expression->Kind == SyntaxKind::InvokationExpression ||
+		expression->Kind == SyntaxKind::IndexatorExpression;
+
+	if (isLinked)
+	{
+		const LinkedExpressionNode* asNode = static_cast<const LinkedExpressionNode*>(expression);
+		return asNode->IsStaticContext;
+	}
+
+	return false;
+}
+
 void ExpressionBinder::SetExpressionType(ExpressionSyntax* expression, TypeSymbol* type)
 {
 	if (expression != nullptr)
@@ -241,7 +260,7 @@ void ExpressionBinder::VisitFieldDeclaration(FieldDeclarationSyntax* node)
 			return;
 		}
 
-		if (*initExprType != *fieldSymbol->ReturnType)
+		if (!TypeSymbol::Equals(initExprType, fieldSymbol->ReturnType))
 		{
 			Diagnostics.ReportError(node->IdentifierToken, L"Field initializer type mismatch: expected '" + fieldSymbol->ReturnType->Name + L"' but got '" + initExprType->Name + L"'");
 			return;
@@ -270,7 +289,7 @@ void ExpressionBinder::VisitVariableStatement(VariableStatementSyntax* node)
 		return;
 	}
 
-	if (varSymbol->Type != expressionType)
+	if (!TypeSymbol::Equals(varSymbol->Type, expressionType))
 		Diagnostics.ReportError(node->IdentifierToken, L"Type mismatch: expected '" + varSymbol->Type->Name + L"' but got '" + expressionType->Name + L"'");
 }
 
@@ -542,75 +561,13 @@ bool ExpressionBinder::MatchMethodArguments(MethodSymbol* method, vector<Argumen
 	return true;
 }
 
-TypeSymbol* ExpressionBinder::AnalyzeLinkedExpression(LinkedExpressionSyntax* syntax)
+TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressionSyntax* node, TypeSymbol* currentType)
 {
-	if (syntax->Nodes.empty())
-	{
-		Diagnostics.ReportError(SyntaxToken(), L"Empty linked expression");
-		return nullptr;
-	}
-	
-	TypeSymbol* currentType = OwnerType();
-    bool isStaticContext = true;
-
-	for (LinkedExpressionNode* node : syntax->Nodes)
-	{
-		if (currentType == nullptr)
-		{
-			//Diagnostics.ReportError(node->IdentifierToken, L"Cannot access member: previous expression has no type");
-			return nullptr;
-		}
-
-		switch (node->Kind)
-		{
-			case SyntaxKind::MemberAccessExpression:
-			{
-				MemberAccessExpressionSyntax* memberAccess = static_cast<MemberAccessExpressionSyntax*>(node);
-				currentType = AnalyzeMemberAccessExpression(memberAccess, isStaticContext, currentType);
-				break;
-			}
-
-			case SyntaxKind::InvokationExpression:
-			{
-				InvokationExpressionSyntax* invocation = static_cast<InvokationExpressionSyntax*>(node);
-				currentType = AnalyzeInvokationExpression(invocation, isStaticContext, currentType);
-				break;
-			}
-
-			case SyntaxKind::IndexatorExpression:
-			{
-				IndexatorExpressionSyntax* indexing = static_cast<IndexatorExpressionSyntax*>(node);
-				currentType = AnalyzeIndexatorExpression(indexing, isStaticContext, currentType);
-				break;
-			}
-
-			default:
-			{
-				Diagnostics.ReportError(SyntaxToken(), L"Unknown linked expression node type");
-				return nullptr;
-			}
-		}
-	}
-
-	return currentType;
-}
-
-void ExpressionBinder::VisitLinkedExpression(LinkedExpressionSyntax* node)
-{
-	for (LinkedExpressionNode* exprNode : node->Nodes)
-		VisitLinkedExpressionNode(exprNode);
-
-	TypeSymbol* type = AnalyzeLinkedExpression(node);
-	SetExpressionType(node, type);
-}
-
-TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressionSyntax* node, bool& isStaticContext, TypeSymbol* currentType)
-{
-	if (node->PrevNode == nullptr)
+	if (node->PreviousExpression == nullptr)
 	{
 		// Check if this is the 'field' keyword - resolve to backing field of current property
 		if (node->IdentifierToken.Type == TokenType::FieldKeyword)
-			return AnalyzeFieldKeywordExpression(node, isStaticContext, nullptr);
+			return AnalyzeFieldKeywordExpression(node, nullptr);
 
 		wstring name = node->IdentifierToken.Word;
 		SyntaxSymbol* symbol = CurrentScope()->Lookup(name);
@@ -632,7 +589,7 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 			case SyntaxKind::VariableStatement:
 			{
 				VariableSymbol* varSymbol = static_cast<VariableSymbol*>(symbol);
-				isStaticContext = false;
+				node->IsStaticContext = false;
 				return const_cast<TypeSymbol*>(varSymbol->Type);
 			}
 
@@ -646,14 +603,14 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 					return nullptr;
 				}
 
-				isStaticContext = false;
+				node->IsStaticContext = false;
 				return fieldSymbol->ReturnType;
 			}
 
 			case SyntaxKind::Parameter:
 			{
 				ParameterSymbol* paramSymbol = static_cast<ParameterSymbol*>(symbol);
-				isStaticContext = false;
+				node->IsStaticContext = false;
 				return paramSymbol->Type;
 			}
 
@@ -661,7 +618,7 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 			{
 				if (symbol->IsType())
 				{
-					isStaticContext = true;
+					node->IsStaticContext = true;
 					return static_cast<TypeSymbol*>(symbol);
 				}
 
@@ -690,6 +647,7 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 				return nullptr;
 			}
 
+			bool isStaticContext = GetIsStaticContext(node->PreviousExpression);
 			if (isStaticContext && !property->IsStatic)
 			{
 				Diagnostics.ReportError(node->IdentifierToken, L"Cannot access instance property '" + memberName + L"' from type context");
@@ -710,7 +668,6 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 
 			// Set property flag and symbol
 			node->PropertySymbol = property;
-			node->IsProperty = true;
 			isStaticContext = false;
 			return property->ReturnType;
 		}
@@ -740,6 +697,7 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 				return nullptr;
 			}
 
+			bool isStaticContext = GetIsStaticContext(node->PreviousExpression);
 			if (isStaticContext && !field->IsStatic)
 			{
 				Diagnostics.ReportError(node->IdentifierToken, L"Cannot access instance field '" + memberName + L"' from type context");
@@ -766,7 +724,7 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 	}
 }
 
-TypeSymbol* ExpressionBinder::AnalyzeFieldKeywordExpression(MemberAccessExpressionSyntax* node, bool& isStaticContext, TypeSymbol* currentType)
+TypeSymbol* ExpressionBinder::AnalyzeFieldKeywordExpression(MemberAccessExpressionSyntax* node, TypeSymbol* currentType)
 {
 	// Find PropertySymbol in current scope chain
 	PropertySymbol* propertySymbol = nullptr;
@@ -795,10 +753,9 @@ TypeSymbol* ExpressionBinder::AnalyzeFieldKeywordExpression(MemberAccessExpressi
 
 	// Resolve 'field' as the backing field
 	node->FieldSymbol = propertySymbol->BackingField;
-	node->IsProperty = false;
 	node->PropertySymbol = nullptr;
 
-	isStaticContext = propertySymbol->BackingField->IsStatic;
+	node->IsStaticContext = propertySymbol->BackingField->IsStatic;
 
 	if (propertySymbol->BackingField->ReturnType == nullptr)
 	{
@@ -809,10 +766,10 @@ TypeSymbol* ExpressionBinder::AnalyzeFieldKeywordExpression(MemberAccessExpressi
 	return propertySymbol->BackingField->ReturnType;
 }
 
-TypeSymbol* ExpressionBinder::AnalyzeInvokationExpression(InvokationExpressionSyntax* node, bool& isStaticContext, TypeSymbol* currentType)
+TypeSymbol* ExpressionBinder::AnalyzeInvokationExpression(InvokationExpressionSyntax* node, TypeSymbol* currentType)
 {
 	wstring methodName = node->IdentifierToken.Word;
-	MethodSymbol* method = ResolveMethod(node, isStaticContext, currentType);
+	MethodSymbol* method = ResolveMethod(node, currentType);
 
 	if (method == nullptr)
 		return nullptr;
@@ -830,7 +787,7 @@ TypeSymbol* ExpressionBinder::AnalyzeInvokationExpression(InvokationExpressionSy
 	}
 
 	node->Symbol = method;
-	isStaticContext = false;
+	node->IsStaticContext = false;
 
 	if (method->ReturnType == nullptr)
 	{
@@ -841,7 +798,7 @@ TypeSymbol* ExpressionBinder::AnalyzeInvokationExpression(InvokationExpressionSy
 	return method->ReturnType;
 }
 
-MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node, bool& isStaticContext, TypeSymbol* currentType)
+MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node, TypeSymbol* currentType)
 {
 	wstring methodName = node->IdentifierToken.Word;
 	vector<TypeSymbol*> argTypes;
@@ -893,7 +850,8 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node, 
 		Diagnostics.ReportError(node->IdentifierToken, diag.str());
 		return nullptr;
 	}
-
+	
+	bool isStaticContext = GetIsStaticContext(node->PreviousExpression);
 	if (isStaticContext && !method->IsStatic)
 	{
 		Diagnostics.ReportError(node->IdentifierToken, L"Cannot call instance method '" + methodName + L"' from type context");
@@ -909,10 +867,10 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node, 
 	return method;
 }
 
-TypeSymbol* ExpressionBinder::AnalyzeIndexatorExpression(IndexatorExpressionSyntax* node, bool& isStaticContext, TypeSymbol* currentType)
+TypeSymbol* ExpressionBinder::AnalyzeIndexatorExpression(IndexatorExpressionSyntax* node, TypeSymbol* currentType)
 {
 	wstring methodName = node->MemberAccess->IdentifierToken.Word;
-	MethodSymbol* method = ResolveIndexator(node, isStaticContext, currentType);
+	MethodSymbol* method = ResolveIndexator(node, currentType);
 
 	if (!IsSymbolAccessible(method))
 	{
@@ -927,7 +885,7 @@ TypeSymbol* ExpressionBinder::AnalyzeIndexatorExpression(IndexatorExpressionSynt
 	}
 
 	node->Symbol = method;
-	isStaticContext = false;
+	node->IsStaticContext = false;
 
 	if (currentType->Kind == SyntaxKind::CollectionExpression)
 	{
@@ -944,7 +902,7 @@ TypeSymbol* ExpressionBinder::AnalyzeIndexatorExpression(IndexatorExpressionSynt
 	return method->ReturnType;
 }
 
-MethodSymbol* ExpressionBinder::ResolveIndexator(IndexatorExpressionSyntax* node, bool& isStaticContext, TypeSymbol* currentType)
+MethodSymbol* ExpressionBinder::ResolveIndexator(IndexatorExpressionSyntax* node, TypeSymbol* currentType)
 {
 	wstring methodName = node->MemberAccess->IdentifierToken.Word;
 	vector<TypeSymbol*> argTypes;
@@ -1002,6 +960,7 @@ MethodSymbol* ExpressionBinder::ResolveIndexator(IndexatorExpressionSyntax* node
 		return nullptr;
 	}
 
+	bool isStaticContext = GetIsStaticContext(node->PreviousExpression);
 	if (isStaticContext && !method->IsStatic)
 	{
 		Diagnostics.ReportError(node->MemberAccess->IdentifierToken, L"Cannot call instance method '" + methodName + L"' from type context");
@@ -1019,19 +978,41 @@ MethodSymbol* ExpressionBinder::ResolveIndexator(IndexatorExpressionSyntax* node
 
 void ExpressionBinder::VisitMemberAccessExpression(MemberAccessExpressionSyntax* node)
 {
-	// Already handled in VisitLinkedExpression
+	ExpressionSyntax* previous = const_cast<ExpressionSyntax*>(node->PreviousExpression);
+	if (previous != nullptr)
+		VisitExpression(previous);
+
+	TypeSymbol* type = previous == nullptr ? OwnerType() : GetExpressionType(previous);
+	type = AnalyzeMemberAccessExpression(node, type);
+	SetExpressionType(node, type);
 }
 
 void ExpressionBinder::VisitInvocationExpression(InvokationExpressionSyntax* node)
 {
 	if (node->ArgumentsList != nullptr)
 		VisitArgumentsList(node->ArgumentsList);
+
+	ExpressionSyntax* previous = const_cast<ExpressionSyntax*>(node->PreviousExpression);
+	if (previous != nullptr)
+		VisitExpression(previous);
+
+	TypeSymbol* type = previous == nullptr ? OwnerType() : GetExpressionType(previous);
+	type = AnalyzeInvokationExpression(node, type);
+	SetExpressionType(node, type);
 }
 
 void ExpressionBinder::VisitIndexatorExpression(IndexatorExpressionSyntax* node)
 {
 	if (node->IndexatorList != nullptr)
 		VisitIndexatorList(node->IndexatorList);
+
+	ExpressionSyntax* previous = const_cast<ExpressionSyntax*>(node->PreviousExpression);
+	if (previous != nullptr)
+		VisitExpression(previous);
+
+	TypeSymbol* type = previous == nullptr ? OwnerType() : GetExpressionType(previous);
+	type = AnalyzeIndexatorExpression(node, type);
+	SetExpressionType(node, type);
 }
 
 void ExpressionBinder::VisitWhileStatement(WhileStatementSyntax* node)

@@ -60,17 +60,16 @@ namespace shard::syntax::symbols
                 BaseType = nullptr;
         }
 
-        inline size_t GetInlineSize()
+        inline size_t GetInlineSize() const
         {
             return IsReferenceType ? sizeof(void*) : MemoryBytesSize;
         }
-
-        bool operator ==(const TypeSymbol& other);
-        bool operator !=(const TypeSymbol& other);
 
         virtual MethodSymbol* FindMethod(std::wstring& name, std::vector<TypeSymbol*> parameterTypes);
         virtual MethodSymbol* FindIndexator(std::vector<TypeSymbol*> parameterTypes);
         virtual FieldSymbol* FindField(std::wstring& name);
         virtual PropertySymbol* FindProperty(std::wstring& name);
+
+        static bool Equals(const TypeSymbol* left, const TypeSymbol* right);
 	};
 }

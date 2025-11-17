@@ -102,8 +102,6 @@ namespace shard::parsing
         virtual void VisitObjectCreationExpression(shard::syntax::nodes::ObjectExpressionSyntax* node);
         virtual void VisitCollectionExpression(shard::syntax::nodes::CollectionExpressionSyntax* node);
 
-        virtual void VisitLinkedExpression(shard::syntax::nodes::LinkedExpressionSyntax* node);
-        virtual void VisitLinkedExpressionNode(shard::syntax::nodes::LinkedExpressionNode* node);
         virtual void VisitInvocationExpression(shard::syntax::nodes::InvokationExpressionSyntax* node);
         virtual void VisitMemberAccessExpression(shard::syntax::nodes::MemberAccessExpressionSyntax* node);
         virtual void VisitIndexatorExpression(shard::syntax::nodes::IndexatorExpressionSyntax* node);
