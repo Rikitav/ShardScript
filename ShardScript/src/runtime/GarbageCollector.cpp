@@ -111,6 +111,9 @@ void GarbageCollector::DestroyInstance(ObjectInstance* instance)
 	if (instance == nullptr)
 		throw runtime_error("requested destroying nullptr");
 
+	if (instance == NullInstance)
+		return;
+
 	if (instance->Info->IsReferenceType)
 	{
 		instance->DecrementReference();
@@ -123,6 +126,9 @@ void GarbageCollector::DestroyInstance(ObjectInstance* instance)
 
 void GarbageCollector::TerminateInstance(ObjectInstance* instance)
 {
+	if (instance == NullInstance)
+		return;
+
 	for (FieldSymbol* field : instance->Info->Fields)
 	{
 		if (field->ReturnType->IsReferenceType)

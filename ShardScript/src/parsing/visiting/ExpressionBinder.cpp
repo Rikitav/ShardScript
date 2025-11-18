@@ -668,7 +668,7 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 
 			// Set property flag and symbol
 			node->PropertySymbol = property;
-			isStaticContext = false;
+			node->IsStaticContext = false;
 			return property->ReturnType;
 		}
 		else
@@ -718,7 +718,7 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 
 			// Set field symbol
 			node->FieldSymbol = field;
-			isStaticContext = false;
+			node->IsStaticContext = false;
 			return field->ReturnType;
 		}
 	}

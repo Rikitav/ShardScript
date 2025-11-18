@@ -83,7 +83,8 @@ void ObjectInstance::SetField(FieldSymbol* field, ObjectInstance* instance)
 		}
 
 		ObjectInstance* oldValue = GetField(field);
-		GarbageCollector::DestroyInstance(oldValue);
+		if (oldValue != nullptr)
+			GarbageCollector::DestroyInstance(oldValue);
 		
 		instance->IncrementReference();
 		WriteMemory(field->MemoryBytesOffset, sizeof(ObjectInstance*), &instance);
@@ -135,14 +136,15 @@ void ObjectInstance::SetElement(size_t index, ObjectInstance* instance)
 		}
 
 		ObjectInstance* oldValue = GetElement(index);
-		GarbageCollector::DestroyInstance(oldValue);
+		if (oldValue != nullptr)
+			GarbageCollector::DestroyInstance(oldValue);
 
 		instance->IncrementReference();
 		WriteMemory(memoryOffset, sizeof(ObjectInstance*), &instance);
 	}
 	else
 	{
-		if (instance == nullptr)
+		if (instance == GarbageCollector::NullInstance)
 			throw runtime_error("cannot write null value to ValueType field");
 
 		WriteMemory(memoryOffset, type->MemoryBytesSize, instance->Ptr);

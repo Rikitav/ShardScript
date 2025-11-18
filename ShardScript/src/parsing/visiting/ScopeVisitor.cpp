@@ -118,13 +118,13 @@ bool ScopeVisitor::IsSymbolAccessible(SyntaxSymbol* symbol)
 	if (symbol->Kind == SyntaxKind::NamespaceDeclaration)
 		return true;
 
-	if (IsScopePublicallyAccessible(CurrentScope()))
-		return symbol->Accesibility == SymbolAccesibility::Public;
+	if (IsScopePublicallyAccessible(CurrentScope()) && symbol->Accesibility == SymbolAccesibility::Public)
+		return true;
 
 	if (symbol->Parent == nullptr)
 		throw runtime_error("Cannot resolve symbol without parent");
 
-	if (IsSymbolNestedAccessible(CurrentScope(), symbol->Parent))
+	if (IsSymbolNestedAccessible(CurrentScope(), symbol))
 		return true;
 
 	return false;

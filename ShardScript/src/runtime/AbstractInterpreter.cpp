@@ -652,9 +652,17 @@ ObjectInstance* AbstractInterpreter::EvaluateObjectExpression(const ObjectExpres
 	ObjectInstance* newInstance = GarbageCollector::AllocateInstance(expression->Symbol);
 	for (FieldSymbol* field : newInstance->Info->Fields)
 	{
-		ObjectInstance* assignInstance = GarbageCollector::NullInstance;
+		ObjectInstance* assignInstance = nullptr;
 		if (field->DefaultValueExpression != nullptr)
-			AbstractInterpreter::EvaluateExpression(field->DefaultValueExpression);
+		{
+			assignInstance = AbstractInterpreter::EvaluateExpression(field->DefaultValueExpression);
+		}
+		else
+		{
+			assignInstance = field->ReturnType->IsReferenceType
+				? GarbageCollector::NullInstance
+				: GarbageCollector::AllocateInstance(field->ReturnType);
+		}
 
 		newInstance->SetField(field, assignInstance);
 	}

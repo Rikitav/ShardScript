@@ -191,6 +191,7 @@ void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax* n
 {
     wstring propertyName = node->IdentifierToken.Word;
     PropertySymbol* symbol = new PropertySymbol(propertyName);
+
     symbol->Parent = OwnerType();
     SetAccesibility(symbol, node->Modifiers);
     
@@ -204,21 +205,15 @@ void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax* n
         }
     }
 
-    SyntaxSymbol* ownerSymbol = OwnerType();
-    if (ownerSymbol->Kind != SyntaxKind::ClassDeclaration && ownerSymbol->Kind != SyntaxKind::StructDeclaration)
+    SyntaxSymbol* ownerSymbol = OwnerSymbol();
+    if (!ownerSymbol->IsType())
     {
         Diagnostics.ReportError(node->IdentifierToken, L"Property cannot be declared outside of types");
         return;
     }
 
-    TypeSymbol* ownerType = static_cast<TypeSymbol*>(ownerSymbol);
-    if (ownerType == nullptr)
-    {
-        Diagnostics.ReportError(node->IdentifierToken, L"Cannot resolve property's owner type");
-        return;
-    }
-
     // Validate: static class cannot have instance properties
+    TypeSymbol* ownerType = static_cast<TypeSymbol*>(ownerSymbol);
     if (!symbol->IsStatic && ownerType->IsStatic)
     {
         Diagnostics.ReportError(node->IdentifierToken, L"Static class cannot have instance properties");
@@ -235,7 +230,6 @@ void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax* n
         Declare(symbol->BackingField);
     }
 
-    /*
     // Create get and set methods if they exist
     if (node->HasGet)
     {
@@ -254,7 +248,7 @@ void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax* n
         MethodSymbol* setMethod = new MethodSymbol(setMethodName, node->SetBody);
         setMethod->Accesibility = symbol->Accesibility;
         setMethod->IsStatic = symbol->IsStatic;
-        setMethod->ReturnType = Table::Primitives::Void;
+        setMethod->ReturnType = SymbolTable::Primitives::Void;
         
         // Add 'value' parameter for setter
         ParameterSymbol* valueParam = new ParameterSymbol(L"value");
@@ -263,7 +257,6 @@ void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax* n
         symbol->SetMethod = setMethod;
         ownerType->Methods.push_back(setMethod);
     }
-    */
 
     ownerType->Properties.push_back(symbol);
     Declare(symbol);
