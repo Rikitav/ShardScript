@@ -1,14 +1,13 @@
 #include <shard/ShardScript.h>
 
 #include <Windows.h>
-#include <winver.h>
 #include <libloaderapi.h>
-
-#pragma comment(lib, "version.lib")
 
 #include <iostream>
 #include <sstream>
 #include <string>
+
+#pragma comment(lib, "version.lib")
 
 std::wstring shard::utilities::ShardUtilities::GetFileVersion()
 {
@@ -25,20 +24,16 @@ std::wstring shard::utilities::ShardUtilities::GetFileVersion()
 		if (GetFileVersionInfoW(filename, 0, size, versionInfo))
 		{
 			UINT len;
-			LPVOID fileInfo = nullptr;
-			// cant use VS_FIXEDFILEINFO here just because compiler said so
+			VS_FIXEDFILEINFO* fileInfo = nullptr;
 			
-			if (VerQueryValueW(versionInfo, TEXT("\\"), &fileInfo, &len))
+			if (VerQueryValueW(versionInfo, TEXT("\\"), reinterpret_cast<LPVOID*>(&fileInfo), &len))
 			{
-				// So im using raw memory access to read that fucking dword
-				DWORD versionMS = *(reinterpret_cast<DWORD*>(fileInfo) + 2); // this would normally look like 'fileInfo->dwFileVersionMS;'. but fuck me of course!
+				DWORD versionMS = fileInfo->dwFileVersionMS;
 				std::wstringstream res;
 
 				res << HIWORD(versionMS) << "." << LOWORD(versionMS); // << "." << HIWORD(versionLS) << "." << LOWORD(versionLS);
 				result = res.str();
 			}
-
-			delete fileInfo;
 		}
 
 		delete[] versionInfo;
