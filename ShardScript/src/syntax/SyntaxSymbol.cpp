@@ -8,3 +8,10 @@ bool SyntaxSymbol::IsType()
 		|| Kind == SyntaxKind::StructDeclaration
 		|| Kind == SyntaxKind::CollectionExpression;
 }
+
+bool SyntaxSymbol::IsMember()
+{
+	return Kind == SyntaxKind::MethodDeclaration
+		|| Kind == SyntaxKind::PropertyDeclaration
+		|| Kind == SyntaxKind::FieldDeclaration;
+}

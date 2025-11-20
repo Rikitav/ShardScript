@@ -4,18 +4,17 @@
 #include <string>
 #include <stdexcept>
 
-using namespace std;
 using namespace shard::runtime;
 
-ObjectInstance* InboundVariablesContext::AddVariable(const wstring name, ObjectInstance* instance)
+ObjectInstance* InboundVariablesContext::AddVariable(const std::wstring name, ObjectInstance* instance)
 {
 	if (TryFind(name))
-		throw runtime_error("variable already created");
+		throw std::runtime_error("variable already created");
 
 	return Variables[name] = GarbageCollector::CopyInstance(instance);
 }
 
-ObjectInstance* InboundVariablesContext::TryFind(const wstring& name)
+ObjectInstance* InboundVariablesContext::TryFind(const std::wstring& name)
 {
 	if (auto search = Variables.find(name); search != Variables.end())
 		return search->second;

@@ -50,7 +50,6 @@
 #include <iterator>
 #include <stack>
 
-using namespace std;
 using namespace shard::runtime;
 using namespace shard::syntax;
 using namespace shard::syntax::nodes;
@@ -59,7 +58,7 @@ using namespace shard::parsing;
 using namespace shard::parsing::lexical;
 using namespace shard::parsing::semantic;
 
-stack<CallStackFrame*> AbstractInterpreter::callStack;
+std::stack<CallStackFrame*> AbstractInterpreter::callStack;
 
 CallStackFrame* AbstractInterpreter::CurrentFrame()
 {
@@ -138,8 +137,8 @@ void AbstractInterpreter::RaiseException(ObjectInstance* exceptionReg)
 		return;
 	}
 
-	wstring toStringMethodName = L"ToString";
-	MethodSymbol* toStringMethod = exceptionType->FindMethod(toStringMethodName, vector<TypeSymbol*>());
+	std::wstring toStringMethodName = L"ToString";
+	MethodSymbol* toStringMethod = exceptionType->FindMethod(toStringMethodName, std::vector<TypeSymbol*>());
 
 	ObjectInstance* toStringMethodRet = ExecuteMethod(toStringMethod, nullptr);
 	if (toStringMethodRet->Info != SymbolTable::Primitives::String)
@@ -148,7 +147,7 @@ void AbstractInterpreter::RaiseException(ObjectInstance* exceptionReg)
 		return;
 	}
 
-	wstring exceptionString = toStringMethodRet->ReadPrimitive<wstring>();
+	std::wstring exceptionString = toStringMethodRet->ReadPrimitive<std::wstring>();
 	ConsoleHelper::WriteLine(exceptionString);
 }
 
@@ -173,14 +172,14 @@ ObjectInstance* AbstractInterpreter::ExecuteMethod(MethodSymbol* method, Inbound
 				frame->InterruptionReason = FrameInterruptionReason::ValueReturned;
 				frame->InterruptionRegister = method->FunctionPointer(argumentsContext);
 			}
-			catch (const runtime_error& err)
+			catch (const std::runtime_error& err)
 			{
 				frame->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
 				frame->InterruptionRegister = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String);
 
-				string description = err.what();
-				wstring wdescription = wstring(description.begin(), description.end());
-				frame->InterruptionRegister->WritePrimitive<wstring>(wdescription);
+				std::string description = err.what();
+				std::wstring wdescription = std::wstring(description.begin(), description.end());
+				frame->InterruptionRegister->WritePrimitive<std::wstring>(wdescription);
 			}
 
 			break;
@@ -188,7 +187,7 @@ ObjectInstance* AbstractInterpreter::ExecuteMethod(MethodSymbol* method, Inbound
 
 		case MethodHandleType::ForeignInterface:
 		{
-			throw runtime_error("FFI not implemented");
+			throw std::runtime_error("FFI not implemented");
 			break;
 		}
 	}
@@ -308,7 +307,7 @@ ObjectInstance* AbstractInterpreter::ExecuteStatement(const StatementSyntax* sta
 
 		default:
 		{
-			throw runtime_error("unknown statement type");
+			throw std::runtime_error("unknown statement type");
 		}
 	}
 }
@@ -321,7 +320,7 @@ ObjectInstance* AbstractInterpreter::ExecuteExpressionStatement(const Expression
 
 ObjectInstance* AbstractInterpreter::ExecuteVariableStatement(const VariableStatementSyntax* statement)
 {
-	wstring varName = statement->IdentifierToken.Word;
+	std::wstring varName = statement->IdentifierToken.Word;
 	ObjectInstance* assignInstance = EvaluateExpression(statement->Expression);
 	return CurrentContext()->AddVariable(varName, assignInstance);
 }
@@ -621,7 +620,7 @@ ObjectInstance* AbstractInterpreter::EvaluateExpression(const ExpressionSyntax* 
 
 		default:
 		{
-			throw runtime_error("unknown expression kind");
+			throw std::runtime_error("unknown expression kind");
 		}
 	}
 }
@@ -643,7 +642,7 @@ ObjectInstance* AbstractInterpreter::EvaluateLiteralExpression(const LiteralExpr
 			return ObjectInstance::FromValue(expression->LiteralToken.Word);
 
 		default:
-			throw runtime_error("Unknown constant literal type");
+			throw std::runtime_error("Unknown constant literal type");
 	}
 }
 
@@ -734,7 +733,7 @@ ObjectInstance* AbstractInterpreter::EvaluateBinaryExpression(const BinaryExpres
 		if (!isMemberAccess)
 		{
 			// error, not a member access
-			throw runtime_error("binary expression tried to assign value to inaccesible register");
+			throw std::runtime_error("binary expression tried to assign value to inaccesible register");
 		}
 
 		// Checking if is variable access
@@ -795,7 +794,7 @@ ObjectInstance* AbstractInterpreter::EvaluateUnaryExpression(const UnaryExpressi
 	if (!isMemberAccess)
 	{
 		// error, not a member access
-		//throw runtime_error("unary expression tried to assign value to inaccesible register");
+		//throw std::runtime_error("unary expression tried to assign value to inaccesible register");
 		return retReg;
 	}
 
@@ -838,13 +837,13 @@ ObjectInstance* AbstractInterpreter::EvaluateMemberAccessExpression(const Member
 		PropertySymbol* property = expression->PropertySymbol;
 		field = property->BackingField;
 
-		if (property->GetMethod != nullptr)
+		if (property->Getter->Method != nullptr)
 		{
 			InboundVariablesContext* getterArgs = new InboundVariablesContext(nullptr);
 			if (!property->IsStatic)
 				getterArgs->AddVariable(L"this", prevInstance);
 
-			return ExecuteMethod(property->GetMethod, getterArgs);
+			return ExecuteMethod(property->Getter->Method, getterArgs);
 		}
 	}
 
@@ -893,7 +892,7 @@ ObjectInstance* AbstractInterpreter::EvaluateArgument(const ArgumentSyntax* argu
 	return argInstance;
 }
 
-InboundVariablesContext* AbstractInterpreter::CreateArgumentsContext(vector<ArgumentSyntax*> arguments, MethodSymbol* symbol, ObjectInstance* instance)
+InboundVariablesContext* AbstractInterpreter::CreateArgumentsContext(std::vector<ArgumentSyntax*> arguments, MethodSymbol* symbol, ObjectInstance* instance)
 {
 	InboundVariablesContext* argumentsContext = new InboundVariablesContext(nullptr);
 
@@ -906,7 +905,7 @@ InboundVariablesContext* AbstractInterpreter::CreateArgumentsContext(vector<Argu
 		ArgumentSyntax* argument = arguments.at(i);
 		ObjectInstance* argInstance = EvaluateArgument(argument);
 
-		wstring argName = symbol->Parameters.at(i)->Name;
+		std::wstring argName = symbol->Parameters.at(i)->Name;
 		argumentsContext->AddVariable(argName, argInstance);
 	}
 
@@ -922,14 +921,14 @@ void AbstractInterpreter::ExecuteInstanceSetter(ObjectInstance* instance, const 
 		PropertySymbol* property = access->PropertySymbol;
 		field = property->BackingField;
 
-		if (property->GetMethod != nullptr)
+		if (property->Getter->Method != nullptr)
 		{
 			InboundVariablesContext* setterArgs = new InboundVariablesContext(nullptr);
 			if (!property->IsStatic)
 				setterArgs->AddVariable(L"this", instance);
 
 			setterArgs->AddVariable(L"value", value);
-			ExecuteMethod(property->SetMethod, setterArgs);
+			ExecuteMethod(property->Setter->Method, setterArgs);
 			return;
 		}
 	}

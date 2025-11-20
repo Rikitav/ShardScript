@@ -12,7 +12,6 @@
 
 #include <stdexcept>
 
-using namespace std;
 using namespace shard::syntax;
 using namespace shard::syntax::nodes;
 using namespace shard::parsing::semantic;
@@ -37,7 +36,7 @@ TypeInfo SemanticModel::GetTypeInfo(ExpressionSyntax* expression)
 	switch (expression->Kind)
 	{
 		default:
-			throw runtime_error("unsupported expression type");
+			throw std::runtime_error("unsupported expression type");
 
 		case SyntaxKind::LiteralExpression:
 		{
@@ -57,7 +56,7 @@ TypeInfo SemanticModel::GetTypeInfo(ExpressionSyntax* expression)
 					return SymbolTable::Primitives::String;
 
 				default:
-					throw runtime_error("unsupported literal type");
+					throw std::runtime_error("unsupported literal type");
 			}
 		}
 	}

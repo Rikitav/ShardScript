@@ -23,7 +23,6 @@
 
 #include <iostream>
 
-using namespace std;
 using namespace shard::framework;
 using namespace shard::runtime;
 using namespace shard::syntax;
@@ -32,14 +31,14 @@ using namespace shard::parsing::semantic;
 
 ObjectInstance* Gc_Info(InboundVariablesContext* arguments)
 {
-	wcout << "Garbage collector info dump" << endl;
+	std::wcout << "Garbage collector info dump" << std::endl;
 	for (ObjectInstance* reg : GarbageCollector::Heap)
 	{
-		wcout
+		std::wcout
 			<< L" * " << reg->Ptr
 			<< L" : " << reg->Id
 			<< L" : " << reg->Info->Name
-			<< L" : " << reg->ReferencesCounter << endl;
+			<< L" : " << reg->ReferencesCounter << std::endl;
 	}
 
 	return nullptr;
@@ -61,8 +60,8 @@ ObjectInstance* Println(InboundVariablesContext* arguments)
 
 ObjectInstance* Input(InboundVariablesContext* arguments)
 {
-	wstring input;
-	getline(wcin, input);
+	std::wstring input;
+	getline(std::wcin, input);
 	return ObjectInstance::FromValue(input);
 }
 
@@ -85,7 +84,7 @@ void FrameworkLoader::ResolvePrmitives(SemanticModel& semanticModel)
 	SymbolTable::Primitives::Boolean->MemoryBytesSize = sizeof(bool);
 	SymbolTable::Primitives::Integer->MemoryBytesSize = sizeof(int);
 	SymbolTable::Primitives::Char->MemoryBytesSize = sizeof(wchar_t);
-	SymbolTable::Primitives::String->MemoryBytesSize = sizeof(wstring);
+	SymbolTable::Primitives::String->MemoryBytesSize = sizeof(std::wstring);
 	SymbolTable::Primitives::Array->MemoryBytesSize = sizeof(int);
 
 	semanticModel.Table->GlobalScope->DeclareSymbol(SymbolTable::Primitives::Boolean);

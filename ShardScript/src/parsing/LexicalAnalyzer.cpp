@@ -32,6 +32,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/PropertyDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.h>
 
 #include <shard/syntax/nodes/Directives/UsingDirectiveSyntax.h>
 #include <shard/syntax/nodes/Directives/ImportDirectiveSyntax.h>
@@ -62,7 +63,6 @@
 #include <stdexcept>
 #include <new>
 
-using namespace std;
 using namespace shard::syntax;
 using namespace shard::syntax::nodes;
 using namespace shard::parsing;
@@ -354,7 +354,11 @@ MethodDeclarationSyntax* LexicalAnalyzer::ReadMethodDeclaration(SourceReader& re
 	
 	SyntaxToken current = reader.Current();
 	if (current.Type == TokenType::Semicolon)
+	{
+		syntax->Semicolon = current;
+		reader.Consume();
 		return syntax;
+	}
 
 	syntax->Body = ReadStatementsBlock(reader, syntax);
 	return syntax;
@@ -390,121 +394,114 @@ FieldDeclarationSyntax* LexicalAnalyzer::ReadFieldDeclaration(SourceReader& read
 PropertyDeclarationSyntax* LexicalAnalyzer::ReadPropertyDeclaration(SourceReader& reader, MemberDeclarationInfo& info, SyntaxNode* parent)
 {
 	PropertyDeclarationSyntax* property = new PropertyDeclarationSyntax(info, parent);
-	
-	// Read opening brace
 	property->OpenBraceToken = Expect(reader, TokenType::OpenBrace, L"Expected '{' for property accessors");
-	
-	// Read accessors
+
 	while (reader.CanConsume())
 	{
 		SyntaxToken current = reader.Current();
-		
+
 		if (current.Type == TokenType::CloseBrace)
 		{
 			property->CloseBraceToken = current;
 			reader.Consume();
 			break;
 		}
-		
+
 		if (current.Type == TokenType::EndOfFile)
 		{
 			Diagnostics.ReportError(current, L"Unexpected end of file in property - expected '}'");
 			property->CloseBraceToken = SyntaxToken(TokenType::CloseBrace, L"", current.Location, true);
 			break;
 		}
-		
-		// Read get accessor
-		if (current.Type == TokenType::GetKeyword)
+
+		if (IsModifier(current.Type) || current.Type == TokenType::GetKeyword || current.Type == TokenType::SetKeyword)
 		{
-			property->GetKeywordToken = current;
-			property->HasGet = true;
-			reader.Consume();
-			
-			// Check if it's auto-property (get;) or has body (get { ... })
-			if (!reader.CanConsume())
+			AccessorDeclarationSyntax* accessor = ReadAccessorDeclaration(reader, property);
+
+			if (accessor->KeywordToken.Type == TokenType::GetKeyword)
 			{
-				Diagnostics.ReportError(current, L"Unexpected end of file after 'get'");
-				break;
+				if (property->Getter != nullptr)
+					Diagnostics.ReportError(current, L"Duplicate get accessor");
+				else
+					property->Getter = accessor;
 			}
-			
-			SyntaxToken next = reader.Current();
-			if (next.Type == TokenType::Semicolon)
+			else if (accessor->KeywordToken.Type == TokenType::SetKeyword)
 			{
-				// Auto-property getter
-				reader.Consume();
+				if (property->Setter != nullptr)
+					Diagnostics.ReportError(current, L"Duplicate set accessor");
+				else
+					property->Setter = accessor;
 			}
-			else if (next.Type == TokenType::OpenBrace)
-			{
-				// Getter with body
-				property->GetBody = ReadStatementsBlock(reader, property);
-			}
-			else
-			{
-				Diagnostics.ReportError(next, L"Expected ';' or '{' after 'get'");
-				reader.Consume();
-			}
-			
+
 			continue;
 		}
-		
-		// Read set accessor
-		if (current.Type == TokenType::SetKeyword)
-		{
-			property->SetKeywordToken = current;
-			property->HasSet = true;
-			reader.Consume();
-			
-			// Check if it's auto-property (set;) or has body (set { ... })
-			if (!reader.CanConsume())
-			{
-				Diagnostics.ReportError(current, L"Unexpected end of file after 'set'");
-				break;
-			}
-			
-			SyntaxToken next = reader.Current();
-			if (next.Type == TokenType::Semicolon)
-			{
-				// Auto-property setter
-				reader.Consume();
-			}
-			else if (next.Type == TokenType::OpenBrace)
-			{
-				// Setter with body
-				property->SetBody = ReadStatementsBlock(reader, property);
-			}
-			else
-			{
-				Diagnostics.ReportError(next, L"Expected ';' or '{' after 'set'");
-				reader.Consume();
-			}
-			
-			continue;
-		}
-		
-		// Unknown token - try to synchronize
-		Diagnostics.ReportError(current, L"Expected 'get', 'set', or '}' in property accessor list");
+
+		Diagnostics.ReportError(current, L"Expected accessor declaration or '}'");
 		if (!TryMatch(reader, { TokenType::GetKeyword, TokenType::SetKeyword, TokenType::CloseBrace }, nullptr, 5))
-		{
 			reader.Consume();
-		}
 	}
-	
-	// Validate that at least one accessor is present
-	if (!property->HasGet && !property->HasSet)
-	{
+
+	if (property->Getter == nullptr && property->Setter == nullptr)
 		Diagnostics.ReportError(property->IdentifierToken, L"Property must have at least one accessor (get or set)");
-	}
-	
+
 	return property;
 }
 
-vector<SyntaxToken> LexicalAnalyzer::ReadMemberModifiers(SourceReader& reader)
+AccessorDeclarationSyntax* LexicalAnalyzer::ReadAccessorDeclaration(SourceReader& reader, SyntaxNode* parent)
 {
-	vector<SyntaxToken> modifiers;
-	set<TokenType> seenModifiers;
+	AccessorDeclarationSyntax* accessor = new AccessorDeclarationSyntax(parent);
+
+	if (!reader.CanConsume())
+	{
+		Diagnostics.ReportError(accessor->KeywordToken, L"Unexpected end of file after accessor keyword");
+		return accessor;
+	}
+
+	SyntaxToken current = reader.Current();
+	if (IsModifier(current.Type))
+		accessor->Modifiers = ReadMemberModifiers(reader);
+
+	if (!TryMatch(reader, { TokenType::SetKeyword, TokenType::GetKeyword }, L"Expected 'get' or 'set' keywprd"))
+		return accessor;
+
+	accessor->KeywordToken = reader.Current();
+	current = reader.Consume();
+
+	if (!TryMatch(reader, { TokenType::Semicolon, TokenType::OpenBrace }, L"Expected ';' or '{' after accessor keyword"))
+		return accessor;
+
+	switch (current.Type)
+	{
+		case TokenType::Semicolon:
+		{
+			accessor->SemicolonToken = current;
+			reader.Consume();
+			break;
+		}
+
+		case TokenType::OpenBrace:
+		{
+			accessor->Body = ReadStatementsBlock(reader, accessor);
+			break;
+		}
+
+		default:
+		{
+			Diagnostics.ReportError(current, L"Expected ';' or '{' after accessor keyword");
+			reader.Consume();
+		}
+	}
+
+	return accessor;
+}
+
+std::vector<SyntaxToken> LexicalAnalyzer::ReadMemberModifiers(SourceReader& reader)
+{
+	std::vector<SyntaxToken> modifiers;
+	std::set<TokenType> seenModifiers;
 
 	// Expected order: access -> static -> abstract -> sealed -> partial
-	static const vector<TokenType> expectedOrder =
+	static const std::vector<TokenType> expectedOrder =
 	{
 		TokenType::PublicKeyword,
 		TokenType::PrivateKeyword,
@@ -1515,7 +1512,7 @@ TypeSyntax* LexicalAnalyzer::ReadType(SourceReader& reader, SyntaxNode* parent)
 }
 
 // Smart error recovery with synchronization tokens
-static const vector<TokenType> SynchronizationTokens = {
+static const std::vector<TokenType> SynchronizationTokens = {
 	TokenType::Semicolon,
 	TokenType::OpenBrace,
 	TokenType::CloseBrace,
@@ -1537,7 +1534,7 @@ static bool IsSynchronizationToken(TokenType type)
 	return false;
 }
 
-static bool TrySynchronize(SourceReader& reader, const vector<TokenType>& expectedTokens, int maxSkips = 10)
+static bool TrySynchronize(SourceReader& reader, const std::vector<TokenType>& expectedTokens, int maxSkips = 10)
 {
 	// Skip tokens until we find a synchronization point or expected token
 	int skipped = 0;
@@ -1586,7 +1583,7 @@ SyntaxToken LexicalAnalyzer::Expect(SourceReader& reader, TokenType kind, const 
 		Diagnostics.ReportError(current, message);
 
 	// Try to synchronize - skip until we find the expected token or a sync point
-	vector<TokenType> expected = { kind };
+	std::vector<TokenType> expected = { kind };
 	if (TrySynchronize(reader, expected, 5))
 	{
 		// Found expected token after skipping
@@ -1599,7 +1596,7 @@ SyntaxToken LexicalAnalyzer::Expect(SourceReader& reader, TokenType kind, const 
 	return SyntaxToken(kind, L"", current.Location, true);
 }
 
-bool LexicalAnalyzer::Matches(SourceReader& reader, initializer_list<TokenType> types)
+bool LexicalAnalyzer::Matches(SourceReader& reader, std::initializer_list<TokenType> types)
 {
 	if (!reader.CanConsume())
 		return false;
@@ -1615,7 +1612,7 @@ bool LexicalAnalyzer::Matches(SourceReader& reader, initializer_list<TokenType> 
 }
 
 // New method: Try to match one of expected tokens, with error recovery
-bool LexicalAnalyzer::TryMatch(SourceReader& reader, initializer_list<TokenType> types, const wchar_t* errorMessage, int maxSkips)
+bool LexicalAnalyzer::TryMatch(SourceReader& reader, std::initializer_list<TokenType> types, const wchar_t* errorMessage, int maxSkips)
 {
 	if (!reader.CanConsume())
 		return false;
@@ -1630,7 +1627,7 @@ bool LexicalAnalyzer::TryMatch(SourceReader& reader, initializer_list<TokenType>
 	}
 
 	// Try to synchronize to one of expected tokens
-	vector<TokenType> expectedTypes(types);
+	std::vector<TokenType> expectedTypes(types);
 	if (TrySynchronize(reader, expectedTypes, maxSkips))
 		return true;
 
@@ -1640,7 +1637,7 @@ bool LexicalAnalyzer::TryMatch(SourceReader& reader, initializer_list<TokenType>
 TypeDeclarationSyntax* LexicalAnalyzer::make_type(MemberDeclarationInfo& info, SyntaxNode* parent)
 {
 	if (info.DeclareType.IsMissing)
-		throw runtime_error("declare type is missing");
+		throw std::runtime_error("declare type is missing");
 
 	switch (info.DeclareType.Type)
 	{
@@ -1648,6 +1645,6 @@ TypeDeclarationSyntax* LexicalAnalyzer::make_type(MemberDeclarationInfo& info, S
 			return new ClassDeclarationSyntax(info, parent);
 
 		default:
-			throw runtime_error("unknown type delcaration");
+			throw std::runtime_error("unknown type delcaration");
 	}
 }

@@ -3,15 +3,14 @@
 #include <shard/parsing/structures/ObjectInfo.h>
 #include <string>
 
-using namespace std;
 using namespace shard::parsing;
 
-void MembersVisibilityContext::AddObject(wstring name, const ObjectInfo* info)
+void MembersVisibilityContext::AddObject(std::wstring name, const ObjectInfo* info)
 {
 	Objects[name] = (ObjectInfo*)info;
 }
 
-ObjectInfo* MembersVisibilityContext::TryFind(wstring name)
+ObjectInfo* MembersVisibilityContext::TryFind(std::wstring name)
 {
 	auto find = Objects.find(name);
 	if (find != Objects.end())

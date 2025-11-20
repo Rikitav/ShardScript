@@ -49,7 +49,6 @@
 
 #define DONT_CARE_RESOLVE_ALL
 
-using namespace std;
 using namespace shard::parsing;
 using namespace shard::parsing::analysis;
 using namespace shard::parsing::semantic;
@@ -185,24 +184,24 @@ void TypeBinder::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
 		
 		// Resolve backing field type if it exists
 		if (symbol->BackingField != nullptr)
-		{
 			symbol->BackingField->ReturnType = propertyType;
-		}
 		
 		// Resolve getter return type
-		if (symbol->GetMethod != nullptr)
-		{
-			symbol->GetMethod->ReturnType = propertyType;
-		}
+		if (symbol->Getter != nullptr && symbol->Getter->Method != nullptr)
+			symbol->Getter->Method->ReturnType = propertyType;
 		
 		// Resolve setter parameter type
-		if (symbol->SetMethod != nullptr && !symbol->SetMethod->Parameters.empty())
-		{
-			symbol->SetMethod->Parameters[0]->Type = propertyType;
-		}
+		if (symbol->Setter != nullptr && symbol->Setter->Method != nullptr && !symbol->Setter->Method->Parameters.empty())
+			symbol->Setter->Method->Parameters[0]->Type = propertyType;
 	}
 
 	VisitType(node->ReturnType);
+	if (node->InitializerExpression != nullptr)
+		VisitExpression(node->InitializerExpression);
+
+	if (node->Setter != nullptr)
+		VisitAccessorDeclaration(node->Getter);
+
 	if (node->InitializerExpression != nullptr)
 		VisitExpression(node->InitializerExpression);
 }
@@ -304,7 +303,7 @@ TypeSymbol* TypeBinder::ResolveType(TypeSyntax* typeSyntax)
 			SyntaxSymbol* symbol = nullptr;
 			if (identifierType->Identifiers.size() == 1)
 			{
-				wstring name = identifierType->Identifiers[0].Word;
+				std::wstring name = identifierType->Identifiers[0].Word;
 
 #ifdef DONT_CARE_RESOLVE_ALL
 				for (TypeSymbol* type : Table->GetTypeSymbols())
@@ -333,13 +332,13 @@ TypeSymbol* TypeBinder::ResolveType(TypeSyntax* typeSyntax)
 			}
 			else
 			{
-				wstring firstName = identifierType->Identifiers[0].Word;
+				std::wstring firstName = identifierType->Identifiers[0].Word;
 				SemanticScope* currentScope = CurrentScope();
 				symbol = currentScope->Lookup(firstName);
 				
 				for (size_t i = 1; i < identifierType->Identifiers.size() - 1; i++)
 				{
-					wstring nextName = identifierType->Identifiers[i].Word;
+					std::wstring nextName = identifierType->Identifiers[i].Word;
 					NamespaceSymbol* namespaceSymbol = static_cast<NamespaceSymbol*>(symbol);
 
 					for (SyntaxSymbol* member : namespaceSymbol->Members)

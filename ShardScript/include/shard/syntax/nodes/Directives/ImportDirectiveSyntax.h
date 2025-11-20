@@ -23,7 +23,7 @@ namespace shard::syntax::nodes
 
 		inline virtual ~ImportDirectiveSyntax()
 		{
-			FunctionsList.~vector();
+
 		}
 	};
 }

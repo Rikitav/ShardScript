@@ -10,7 +10,6 @@
 #include <stdexcept>
 #include <string>
 
-using namespace std;
 using namespace shard::runtime;
 using namespace shard::syntax::symbols;
 using namespace shard::parsing::semantic;
@@ -39,16 +38,16 @@ ObjectInstance* ObjectInstance::FromValue(wchar_t value)
 ObjectInstance* ObjectInstance::FromValue(const wchar_t* value)
 {
 	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String);
-	wstring* copy = new wstring(value);
-	instance->WritePrimitive<wstring>(*copy);
+	std::wstring* copy = new std::wstring(value);
+	instance->WritePrimitive<std::wstring>(*copy);
 	return instance;
 }
 
-ObjectInstance* ObjectInstance::FromValue(const wstring& value)
+ObjectInstance* ObjectInstance::FromValue(const std::wstring& value)
 {
 	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String);
-	wstring* copy = new wstring(value);
-	instance->WritePrimitive<wstring>(*copy);
+	std::wstring* copy = new std::wstring(value);
+	instance->WritePrimitive<std::wstring>(*copy);
 	instance->DecrementReference();
 	return instance;
 }
@@ -71,7 +70,7 @@ ObjectInstance* ObjectInstance::GetField(FieldSymbol* field)
 void ObjectInstance::SetField(FieldSymbol* field, ObjectInstance* instance)
 {
 	if (instance == nullptr)
-		throw runtime_error("got nullptr instance");
+		throw std::runtime_error("got nullptr instance");
 
 	if (field->ReturnType->IsReferenceType)
 	{
@@ -92,7 +91,7 @@ void ObjectInstance::SetField(FieldSymbol* field, ObjectInstance* instance)
 	else
 	{
 		if (instance == GarbageCollector::NullInstance)
-			throw runtime_error("cannot write null value to ValueType field");
+			throw std::runtime_error("cannot write null value to ValueType field");
 
 		WriteMemory(field->MemoryBytesOffset, field->ReturnType->MemoryBytesSize, instance->Ptr);
 	}
@@ -120,7 +119,7 @@ ObjectInstance* ObjectInstance::GetElement(size_t index)
 void ObjectInstance::SetElement(size_t index, ObjectInstance* instance)
 {
 	if (instance == nullptr)
-		throw runtime_error("got nullptr instance");
+		throw std::runtime_error("got nullptr instance");
 
 	const ArrayTypeSymbol* info = static_cast<const ArrayTypeSymbol*>(Info);
 	TypeSymbol* type = info->UnderlayingType;
@@ -145,7 +144,7 @@ void ObjectInstance::SetElement(size_t index, ObjectInstance* instance)
 	else
 	{
 		if (instance == GarbageCollector::NullInstance)
-			throw runtime_error("cannot write null value to ValueType field");
+			throw std::runtime_error("cannot write null value to ValueType field");
 
 		WriteMemory(memoryOffset, type->MemoryBytesSize, instance->Ptr);
 	}
@@ -167,18 +166,18 @@ void ObjectInstance::DecrementReference()
 	ReferencesCounter -= 1;
 }
 
-void* ObjectInstance::OffsetMemory(const size_t offset, const size_t size)
+void* ObjectInstance::OffsetMemory(const size_t offset, const size_t size) const
 {
 	if (size == 0)
 		throw std::out_of_range("Cannot read 0 bytes");
 
 	if (offset + size > Info->MemoryBytesSize)
-		throw out_of_range("offset (" + to_string(offset) + ") + size (" + to_string(size) + ") is out of instance's memory range (" + to_string(Info->MemoryBytesSize) + ").");
+		throw std::out_of_range("offset (" + std::to_string(offset) + ") + size (" + std::to_string(size) + ") is out of instance's memory range (" + std::to_string(Info->MemoryBytesSize) + ").");
 
 	return static_cast<char*>(Ptr) + offset;
 }
 
-void ObjectInstance::ReadMemory(const size_t offset, const size_t size, void* dst)
+void ObjectInstance::ReadMemory(const size_t offset, const size_t size, void* dst) const
 {
 	if (!dst)
 		throw std::invalid_argument("Destination is nullptr");
@@ -187,13 +186,13 @@ void ObjectInstance::ReadMemory(const size_t offset, const size_t size, void* ds
 		throw std::out_of_range("Cannot read 0 bytes");
 
 	if (offset + size > Info->MemoryBytesSize)
-		throw out_of_range("offset (" + to_string(offset) + ") + size (" + to_string(size) + ") is out of instance's memory range (" + to_string(Info->MemoryBytesSize) + ").");
+		throw std::out_of_range("offset (" + std::to_string(offset) + ") + size (" + std::to_string(size) + ") is out of instance's memory range (" + std::to_string(Info->MemoryBytesSize) + ").");
 
 	const char* memOffset = static_cast<char*>(Ptr) + offset;
 	memcpy(dst, memOffset, size);
 }
 
-void ObjectInstance::WriteMemory(const size_t offset, const size_t size, void* src)
+void ObjectInstance::WriteMemory(const size_t offset, const size_t size, void* src) const
 {
 	if (!src)
 		throw std::invalid_argument("Source is nullptr");
@@ -202,7 +201,7 @@ void ObjectInstance::WriteMemory(const size_t offset, const size_t size, void* s
 		throw std::out_of_range("Cannot read 0 bytes");
 
 	if (offset + size > Info->MemoryBytesSize)
-		throw out_of_range("offset (" + to_string(offset) + ") + size (" + to_string(size) + ") is out of instance's memory range (" + to_string(Info->MemoryBytesSize) + ").");
+		throw std::out_of_range("offset (" + std::to_string(offset) + ") + size (" + std::to_string(size) + ") is out of instance's memory range (" + std::to_string(Info->MemoryBytesSize) + ").");
 
 	char* memOffset = static_cast<char*>(Ptr) + offset;
 	memcpy(memOffset, src, size);

@@ -33,8 +33,10 @@
 #include <shard/syntax/symbols/FFISymbol.h>
 
 #include <string>
+#include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.h>
+#include <shard/syntax/SymbolAccesibility.h>
+#include <shard/syntax/symbols/AccessorSymbol.h>
 
-using namespace std;
 using namespace shard::parsing;
 using namespace shard::parsing::semantic;
 using namespace shard::parsing::analysis;
@@ -65,7 +67,7 @@ void DeclarationCollector::VisitCompilationUnit(CompilationUnitSyntax* node)
 
 void DeclarationCollector::VisitNamespaceDeclaration(NamespaceDeclarationSyntax* node)
 {
-    wstring namespaceName = node->IdentifierToken.Word;
+    std::wstring namespaceName = node->IdentifierToken.Word;
     NamespaceSymbol* symbol = new NamespaceSymbol(namespaceName);
     symbol->Parent = OwnerNamespace();
     Table->BindSymbol(node, symbol);
@@ -81,7 +83,7 @@ void DeclarationCollector::VisitNamespaceDeclaration(NamespaceDeclarationSyntax*
 
 void DeclarationCollector::VisitClassDeclaration(ClassDeclarationSyntax* node)
 {
-    wstring className = node->IdentifierToken.Word;
+    std::wstring className = node->IdentifierToken.Word;
     ClassSymbol* symbol = new ClassSymbol(className);
     symbol->Parent = OwnerSymbol();
     SetAccesibility(symbol, node->Modifiers);
@@ -98,7 +100,7 @@ void DeclarationCollector::VisitClassDeclaration(ClassDeclarationSyntax* node)
 
 void DeclarationCollector::VisitStructDeclaration(StructDeclarationSyntax* node)
 {
-    wstring structName = node->IdentifierToken.Word;
+    std::wstring structName = node->IdentifierToken.Word;
     StructSymbol* symbol = new StructSymbol(structName);
     symbol->Parent = OwnerSymbol();
     SetAccesibility(symbol, node->Modifiers);
@@ -115,7 +117,7 @@ void DeclarationCollector::VisitStructDeclaration(StructDeclarationSyntax* node)
 
 void DeclarationCollector::VisitFieldDeclaration(FieldDeclarationSyntax* node)
 {
-    wstring fieldName = node->IdentifierToken.Word;
+    std::wstring fieldName = node->IdentifierToken.Word;
     FieldSymbol* symbol = new FieldSymbol(fieldName);
     SetAccesibility(symbol, node->Modifiers);
     symbol->DefaultValueExpression = node->InitializerExpression;
@@ -144,7 +146,7 @@ void DeclarationCollector::VisitFieldDeclaration(FieldDeclarationSyntax* node)
 
 void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 {
-    wstring methodName = node->IdentifierToken.Word;
+    std::wstring methodName = node->IdentifierToken.Word;
     MethodSymbol* symbol = new MethodSymbol(methodName, node->Body);
     symbol->Parent = OwnerType();
     SetAccesibility(symbol, node->Modifiers);
@@ -189,22 +191,12 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 
 void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
 {
-    wstring propertyName = node->IdentifierToken.Word;
+    std::wstring propertyName = node->IdentifierToken.Word;
     PropertySymbol* symbol = new PropertySymbol(propertyName);
 
     symbol->Parent = OwnerType();
     SetAccesibility(symbol, node->Modifiers);
     
-    // Check if property is static
-    for (const SyntaxToken& modifier : node->Modifiers)
-    {
-        if (modifier.Type == TokenType::StaticKeyword)
-        {
-            symbol->IsStatic = true;
-            break;
-        }
-    }
-
     SyntaxSymbol* ownerSymbol = OwnerSymbol();
     if (!ownerSymbol->IsType())
     {
@@ -219,8 +211,9 @@ void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax* n
         Diagnostics.ReportError(node->IdentifierToken, L"Static class cannot have instance properties");
     }
 
-    // Check if this is an auto-property (has get/set but no body)
-    bool isAutoProperty = (node->HasGet && node->GetBody == nullptr) || (node->HasSet && node->SetBody == nullptr);
+    bool isAutoProperty =
+        (node->Getter != nullptr && node->Getter->Body == nullptr) ||
+        (node->Setter != nullptr && node->Setter->Body == nullptr);
     
     // Create backing field for auto-properties
     if (isAutoProperty)
@@ -230,60 +223,83 @@ void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax* n
         Declare(symbol->BackingField);
     }
 
-    // Create get and set methods if they exist
-    if (node->HasGet)
-    {
-        wstring getMethodName = propertyName + L"_get";
-        MethodSymbol* getMethod = new MethodSymbol(getMethodName, node->GetBody);
-        getMethod->Accesibility = symbol->Accesibility;
-        getMethod->IsStatic = symbol->IsStatic;
-        getMethod->ReturnType = nullptr;
-        symbol->GetMethod = getMethod;
-        ownerType->Methods.push_back(getMethod);
-    }
-
-    if (node->HasSet)
-    {
-        wstring setMethodName = propertyName + L"_set";
-        MethodSymbol* setMethod = new MethodSymbol(setMethodName, node->SetBody);
-        setMethod->Accesibility = symbol->Accesibility;
-        setMethod->IsStatic = symbol->IsStatic;
-        setMethod->ReturnType = SymbolTable::Primitives::Void;
-        
-        // Add 'value' parameter for setter
-        ParameterSymbol* valueParam = new ParameterSymbol(L"value");
-        setMethod->Parameters.push_back(valueParam);
-        
-        symbol->SetMethod = setMethod;
-        ownerType->Methods.push_back(setMethod);
-    }
-
     ownerType->Properties.push_back(symbol);
-    Declare(symbol);
     Table->BindSymbol(node, symbol);
+    Declare(symbol);
+    PushScope(symbol);
 
     // Visit accessor bodies
-    if (node->GetBody != nullptr)
-    {
-        PushScope(symbol->GetMethod);
-        VisitStatementsBlock(node->GetBody);
-        PopScope();
-    }
+    if (node->Getter != nullptr)
+        VisitAccessorDeclaration(node->Getter);
 
-    if (node->SetBody != nullptr)
-    {
-        PushScope(symbol->SetMethod);
-        VisitStatementsBlock(node->SetBody);
-        PopScope();
-    }
+    if (node->Setter != nullptr)
+        VisitAccessorDeclaration(node->Getter);
 
     if (node->InitializerExpression != nullptr)
         VisitExpression(node->InitializerExpression);
+    
+    PopScope();
+}
+
+void DeclarationCollector::VisitAccessorDeclaration(AccessorDeclarationSyntax* node)
+{
+    SyntaxSymbol* owner = OwnerSymbol();
+    if (owner->Kind != SyntaxKind::PropertyDeclaration)
+        Diagnostics.ReportError(node->KeywordToken, L"Accessors cannot be declared outside of properties");
+
+    TypeSymbol* ownerType = OwnerType();
+    if (ownerType == nullptr)
+        return; // diagnostic already generated in property
+    
+    PropertySymbol* ownerProp = static_cast<PropertySymbol*>(owner);
+    AccessorSymbol* symbol = new AccessorSymbol(ownerProp->Name + L"_" + node->KeywordToken.Word);
+    symbol->Accesibility = SymbolAccesibility::Public;
+    SetAccesibility(symbol, node->Modifiers);
+
+    if (node->Body != nullptr)
+    {
+        MethodSymbol* method = symbol->Method = new MethodSymbol(symbol->Name, node->Body);
+        SetAccesibility(method, node->Modifiers);
+        method->IsStatic = ownerProp->IsStatic;
+        ownerType->Methods.push_back(method);
+
+        switch (node->KeywordToken.Type)
+        {
+            case TokenType::GetKeyword:
+            {
+                method->ReturnType = ownerProp->ReturnType;
+                break;
+            }
+
+            case TokenType::SetKeyword:
+            {
+                method->ReturnType = SymbolTable::Primitives::Void;
+                ParameterSymbol* valueParam = new ParameterSymbol(L"value");
+                method->Parameters.push_back(valueParam);
+                break;
+            }
+        }
+    }
+
+    switch (node->KeywordToken.Type)
+    {
+        case TokenType::GetKeyword:
+        {
+            ownerProp->Getter = symbol;
+            break;
+        }
+
+        case TokenType::SetKeyword:
+        {
+            ownerProp->Setter = symbol;
+            break;
+        }
+    }
 }
 
 void DeclarationCollector::VisitVariableStatement(VariableStatementSyntax* node)
 {
-    wstring varName = node->IdentifierToken.Word;
+    std::wstring varName = node->IdentifierToken.Word;
     VariableSymbol* symbol = new VariableSymbol(varName, nullptr);
 
     Declare(symbol);

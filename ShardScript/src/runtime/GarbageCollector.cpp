@@ -8,7 +8,6 @@
 #include <stdexcept>
 #include <cstring>
 
-using namespace std;
 using namespace shard::syntax;
 using namespace shard::syntax::symbols;
 using namespace shard::runtime;
@@ -50,7 +49,7 @@ ObjectInstance* GarbageCollector::AllocateInstance(const TypeSymbol* objectInfo)
 {
 	void* memory = malloc(objectInfo->MemoryBytesSize);
 	if (memory == nullptr)
-		throw runtime_error("cannot allocate memory for new instance");
+		throw std::runtime_error("cannot allocate memory for new instance");
 
 	memset(memory, 0, objectInfo->MemoryBytesSize);
 	ObjectInstance* instance = new ObjectInstance(objectsCounter++, objectInfo, memory);
@@ -72,7 +71,7 @@ ObjectInstance* GarbageCollector::CopyInstance(const TypeSymbol* objectInfo, voi
 {
 	void* memory = malloc(objectInfo->MemoryBytesSize);
 	if (ptr == nullptr)
-		throw runtime_error("cannot allocate memory for new instance");
+		throw std::runtime_error("cannot allocate memory for new instance");
 
 	memcpy(memory, ptr, objectInfo->MemoryBytesSize);
 	ObjectInstance* instance = new ObjectInstance(objectsCounter++, objectInfo, ptr);
@@ -101,7 +100,7 @@ ObjectInstance* GarbageCollector::CopyInstance(ObjectInstance* instance)
 void GarbageCollector::CopyInstance(ObjectInstance* from, ObjectInstance* to)
 {
 	if (from->Info != to->Info)
-		throw runtime_error("cannot copy instance memory of different types");
+		throw std::runtime_error("cannot copy instance memory of different types");
 
 	to->WriteMemory(0, to->Info->MemoryBytesSize, from->Ptr);
 }
@@ -109,7 +108,7 @@ void GarbageCollector::CopyInstance(ObjectInstance* from, ObjectInstance* to)
 void GarbageCollector::DestroyInstance(ObjectInstance* instance)
 {
 	if (instance == nullptr)
-		throw runtime_error("requested destroying nullptr");
+		throw std::runtime_error("requested destroying nullptr");
 
 	if (instance == NullInstance)
 		return;

@@ -1,8 +1,10 @@
 #pragma once
-#include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxSymbol.h>
-#include <shard/syntax/symbols/MethodSymbol.h>
+
+#include <shard/syntax/symbols/TypeSymbol.h>
+#include <shard/syntax/symbols/AccessorSymbol.h>
+#include <shard/syntax/symbols/FieldSymbol.h>
 #include <string>
 
 namespace shard::syntax::symbols
@@ -11,8 +13,8 @@ namespace shard::syntax::symbols
     {
     public:
         TypeSymbol* ReturnType = nullptr;
-        MethodSymbol* GetMethod = nullptr;
-        MethodSymbol* SetMethod = nullptr;
+        AccessorSymbol* Getter = nullptr;
+        AccessorSymbol* Setter = nullptr;
         FieldSymbol* BackingField = nullptr;
         bool IsStatic = false;
 
@@ -21,11 +23,11 @@ namespace shard::syntax::symbols
 
         inline ~PropertySymbol() override
         {
-            if (GetMethod != nullptr)
-                delete GetMethod;
+            if (Getter != nullptr)
+                delete Getter;
 
-            if (SetMethod != nullptr)
-                delete SetMethod;
+            if (Setter != nullptr)
+                delete Setter;
 
             if (BackingField != nullptr)
                 delete BackingField;

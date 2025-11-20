@@ -10,7 +10,6 @@
 
 #include <stdexcept>
 
-using namespace std;
 using namespace shard::parsing;
 using namespace shard::parsing::semantic;
 using namespace shard::syntax;
@@ -45,7 +44,7 @@ SyntaxSymbol* ScopeVisitor::OwnerSymbol()
 			continue;
 
 		SyntaxSymbol* symbol = const_cast<SyntaxSymbol*>(scope->Owner);
-		if (symbol->IsType() || symbol->Kind == SyntaxKind::NamespaceDeclaration)
+		if (symbol->IsMember() || symbol->IsType() || symbol->Kind == SyntaxKind::NamespaceDeclaration)
 			return symbol;
 	}
 
@@ -122,7 +121,7 @@ bool ScopeVisitor::IsSymbolAccessible(SyntaxSymbol* symbol)
 		return true;
 
 	if (symbol->Parent == nullptr)
-		throw runtime_error("Cannot resolve symbol without parent");
+		throw std::runtime_error("Cannot resolve symbol without parent");
 
 	if (IsSymbolNestedAccessible(CurrentScope(), symbol))
 		return true;

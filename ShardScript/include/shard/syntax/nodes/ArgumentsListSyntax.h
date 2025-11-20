@@ -46,8 +46,6 @@ namespace shard::syntax::nodes
 				argument->~ArgumentSyntax();
 				delete argument;
 			}
-
-			Arguments.~vector();
 		}
 	};
 
@@ -71,8 +69,6 @@ namespace shard::syntax::nodes
 				argument->~ArgumentSyntax();
 				delete argument;
 			}
-
-			Arguments.~vector();
 		}
 	};
 }

@@ -46,7 +46,7 @@ namespace shard::parsing
 		bool ReadCharLiteral(std::wstring& word, bool notEcran, bool& wasClosed);
 		bool ReadStringLiteral(std::wstring& word, bool notEcran, bool& wasClosed);
 
-		bool IsNumberLiteral(shard::syntax::TokenType& type);
+		bool IsNumberLiteral(shard::syntax::TokenType& type) const;
 		bool IsNativeLiteral(shard::syntax::TokenType& type);
 		bool IsCharLiteral(shard::syntax::TokenType& type, bool& dontEcran);
 		bool IsStringLiteral(shard::syntax::TokenType& type, bool& dontEcran);

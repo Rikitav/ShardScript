@@ -20,7 +20,7 @@ namespace shard::syntax
 			Parent = nullptr;
 		}
 
-		//virtual vector<SyntaxNode> GetChildNodes();
+		//virtual std::vector<SyntaxNode> GetChildNodes();
 		//virtual void Accept();
 	};
 }

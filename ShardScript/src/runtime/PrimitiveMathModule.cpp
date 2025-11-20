@@ -10,7 +10,6 @@
 #include <string>
 #include <source_location>
 
-using namespace std;
 using namespace shard::syntax;
 using namespace shard::runtime;
 using namespace shard::parsing;
@@ -161,11 +160,11 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(ObjectInstance* left
 
 	if (leftInstance->Info == SymbolTable::Primitives::String)
 	{
-		wstring leftData = leftInstance->ReadPrimitive<wstring>();
+		std::wstring leftData = leftInstance->ReadPrimitive<std::wstring>();
 		return EvaluateBinaryOperator(leftData, opToken, rightInstance, assign);
 	}
 
-	throw runtime_error("unknown primitive");
+	throw std::runtime_error("unknown primitive");
 }
 
 ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(bool leftData, SyntaxToken opToken, ObjectInstance* rightInstance, bool& assign)
@@ -197,7 +196,7 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(bool leftData, Synta
 		}
 	}
 
-	throw runtime_error("unknown primitive");
+	throw std::runtime_error("unknown primitive");
 }
 
 ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(int leftData, SyntaxToken opToken, ObjectInstance* rightInstance, bool& assign)
@@ -289,26 +288,26 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(int leftData, Syntax
 		}
 	}
 
-	throw runtime_error("unknown primitive");
+	throw std::runtime_error("unknown primitive");
 }
 
-ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(wstring& leftData, SyntaxToken opToken, ObjectInstance* rightInstance, bool& assign)
+ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(std::wstring& leftData, SyntaxToken opToken, ObjectInstance* rightInstance, bool& assign)
 {
 	if (rightInstance->Info == SymbolTable::Primitives::String)
 	{
-		wstring rightData = rightInstance->ReadPrimitive<wstring>();
+		std::wstring rightData = rightInstance->ReadPrimitive<std::wstring>();
 		switch (opToken.Type)
 		{
 			case TokenType::AddOperator:
 			case TokenType::AddAssignOperator:
 			{
 				assign = opToken.Type == TokenType::AddAssignOperator;
-				wstring concat = leftData + rightData;
+				std::wstring concat = leftData + rightData;
 				return ObjectInstance::FromValue(concat);
 			}
 
 			default:
-				throw runtime_error("unsupported operation");
+				throw std::runtime_error("unsupported operation");
 		}
 	}
 
@@ -337,11 +336,11 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(wstring& leftData, S
 			}
 
 			default:
-				throw runtime_error("unsupported operation");
+				throw std::runtime_error("unsupported operation");
 		}
 	}
 
-	throw runtime_error("unknown primitive");
+	throw std::runtime_error("unknown primitive");
 }
 
 ObjectInstance* PrimitiveMathModule::EvaluateUnaryOperator(ObjectInstance*& sourceInstance, SyntaxToken opToken, bool rightDetermined)
@@ -360,11 +359,11 @@ ObjectInstance* PrimitiveMathModule::EvaluateUnaryOperator(ObjectInstance*& sour
 	
 	if (sourceInstance->Info == SymbolTable::Primitives::String)
 	{
-		wstring data = sourceInstance->ReadPrimitive<wstring>();
+		std::wstring data = sourceInstance->ReadPrimitive<std::wstring>();
 		return EvaluateUnaryOperator(sourceInstance, data, opToken, rightDetermined);
 	}
 
-	throw runtime_error("unknown primitive");
+	throw std::runtime_error("unknown primitive");
 }
 
 ObjectInstance* PrimitiveMathModule::EvaluateUnaryOperator(ObjectInstance*& sourceInstance, int data, SyntaxToken opToken, bool rightDetermined)
@@ -386,7 +385,7 @@ ObjectInstance* PrimitiveMathModule::EvaluateUnaryOperator(ObjectInstance*& sour
 		}
 
 		default:
-			throw runtime_error("unsupported operation");
+			throw std::runtime_error("unsupported operation");
 	}
 }
 
@@ -400,11 +399,11 @@ ObjectInstance* PrimitiveMathModule::EvaluateUnaryOperator(ObjectInstance*& sour
 		}
 
 		default:
-			throw runtime_error("unsupported operation");
+			throw std::runtime_error("unsupported operation");
 	}
 }
 
-ObjectInstance* PrimitiveMathModule::EvaluateUnaryOperator(ObjectInstance*& sourceInstance, wstring& data, SyntaxToken opToken, bool rightDetermined)
+ObjectInstance* PrimitiveMathModule::EvaluateUnaryOperator(ObjectInstance*& sourceInstance, std::wstring& data, SyntaxToken opToken, bool rightDetermined)
 {
-	throw runtime_error("unsupported operation");
+	throw std::runtime_error("unsupported operation");
 }

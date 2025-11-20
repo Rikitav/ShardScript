@@ -7,15 +7,15 @@
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/FieldSymbol.h>
 #include <shard/syntax/symbols/MethodSymbol.h>
+#include <shard/syntax/symbols/PropertySymbol.h>
 
 #include <vector>
 
-using namespace std;
 using namespace shard::syntax;
 using namespace shard::syntax::nodes;
 using namespace shard::syntax::symbols;
 
-void SetAccesibility(SyntaxSymbol* symbol, vector<SyntaxToken> modifiers)
+void SetAccesibility(SyntaxSymbol* symbol, std::vector<SyntaxToken> modifiers)
 {
 	for (SyntaxToken modifier : modifiers)
 	{
@@ -42,7 +42,7 @@ void SetAccesibility(SyntaxSymbol* symbol, vector<SyntaxToken> modifiers)
 	}
 }
 
-void SetAccesibility(TypeSymbol* symbol, vector<SyntaxToken> modifiers)
+void SetAccesibility(TypeSymbol* symbol, std::vector<SyntaxToken> modifiers)
 {
 	for (SyntaxToken modifier : modifiers)
 	{
@@ -87,7 +87,7 @@ void SetAccesibility(TypeSymbol* symbol, vector<SyntaxToken> modifiers)
 	}
 }
 
-void SetAccesibility(MethodSymbol* symbol, vector<SyntaxToken> modifiers)
+void SetAccesibility(MethodSymbol* symbol, std::vector<SyntaxToken> modifiers)
 {
 	for (SyntaxToken modifier : modifiers)
 	{
@@ -132,7 +132,54 @@ void SetAccesibility(MethodSymbol* symbol, vector<SyntaxToken> modifiers)
 	}
 }
 
-void SetAccesibility(FieldSymbol* symbol, vector<SyntaxToken> modifiers)
+void SetAccesibility(PropertySymbol* symbol, std::vector<SyntaxToken> modifiers)
+{
+	for (SyntaxToken modifier : modifiers)
+	{
+		switch (modifier.Type)
+		{
+			case TokenType::PublicKeyword:
+			{
+				symbol->Accesibility = SymbolAccesibility::Public;
+				break;
+			}
+
+			case TokenType::PrivateKeyword:
+			{
+				symbol->Accesibility = SymbolAccesibility::Private;
+				break;
+			}
+
+			case TokenType::ProtectedKeyword:
+			{
+				symbol->Accesibility = SymbolAccesibility::Protected;
+				break;
+			}
+
+			case TokenType::StaticKeyword:
+			{
+				symbol->IsStatic = true;
+				break;
+			}
+
+			/*
+			case TokenType::OverrideKeyword:
+			{
+				symbol->IsOverride = true;
+				break;
+			}
+
+			case TokenType::VirtualKeyword:
+			{
+				symbol->IsVirtual = true;
+				break;
+			}
+			*/
+		}
+	}
+}
+
+void SetAccesibility(FieldSymbol* symbol, std::vector<SyntaxToken> modifiers)
 {
 	for (SyntaxToken modifier : modifiers)
 	{

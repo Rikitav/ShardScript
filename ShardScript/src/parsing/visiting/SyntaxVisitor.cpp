@@ -49,7 +49,6 @@
 
 #include <stdexcept>
 
-using namespace std;
 using namespace shard::parsing;
 using namespace shard::parsing::lexical;
 using namespace shard::parsing::semantic;
@@ -85,7 +84,7 @@ void SyntaxVisitor::VisitTypeDeclaration(MemberDeclarationSyntax* node)
 	switch (node->Kind)
 	{
 		default:
-			throw runtime_error("unknown member kind");
+			throw std::runtime_error("unknown member kind");
 
 		case SyntaxKind::NamespaceDeclaration:
 		{
@@ -133,7 +132,7 @@ void SyntaxVisitor::VisitMemberDeclaration(MemberDeclarationSyntax* node)
 	switch (node->Kind)
 	{
 		default:
-			throw runtime_error("unknown member kind");
+			throw std::runtime_error("unknown member kind");
 
 		case SyntaxKind::NamespaceDeclaration:
 		{
@@ -176,6 +175,13 @@ void SyntaxVisitor::VisitMemberDeclaration(MemberDeclarationSyntax* node)
 			VisitPropertyDeclaration(declNode);
 			return;
 		}
+
+		case SyntaxKind::AccessorDeclaration:
+		{
+			AccessorDeclarationSyntax* declNode = static_cast<AccessorDeclarationSyntax*>(node);
+			VisitAccessorDeclaration(declNode);
+			return;
+		}
 	}
 }
 
@@ -193,14 +199,20 @@ void SyntaxVisitor::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 
 void SyntaxVisitor::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
 {
-	if (node->GetBody != nullptr)
-		VisitStatementsBlock(node->GetBody);
+	if (node->Getter != nullptr)
+		VisitAccessorDeclaration(node->Getter);
 	
-	if (node->SetBody != nullptr)
-		VisitStatementsBlock(node->SetBody);
+	if (node->Setter != nullptr)
+		VisitAccessorDeclaration(node->Setter);
 	
 	if (node->InitializerExpression != nullptr)
 		VisitExpression(node->InitializerExpression);
+}
+
+void SyntaxVisitor::VisitAccessorDeclaration(AccessorDeclarationSyntax* node)
+{
+	if (node->Body != nullptr)
+		VisitStatementsBlock(node->Body);
 }
 
 void SyntaxVisitor::VisitStatementsBlock(StatementsBlockSyntax* node)
@@ -214,7 +226,7 @@ void SyntaxVisitor::VisitStatement(StatementSyntax* node)
 	switch (node->Kind)
 	{
 		default:
-			throw runtime_error("unknown statement kind");
+			throw std::runtime_error("unknown statement kind");
 
 		case SyntaxKind::ExpressionStatement:
 		{
@@ -355,7 +367,7 @@ void SyntaxVisitor::VisitConditionalClause(ConditionalClauseBaseSyntax* node)
 	switch (node->Kind)
 	{
 		default:
-			throw runtime_error("unknown conditional clause kind");
+			throw std::runtime_error("unknown conditional clause kind");
 
 		case SyntaxKind::IfStatement:
 		{
@@ -411,7 +423,7 @@ void SyntaxVisitor::VisitExpression(ExpressionSyntax* node)
 	switch (node->Kind)
 	{
 		default:
-			throw runtime_error("unknown expression kind");
+			throw std::runtime_error("unknown expression kind");
 
 		case SyntaxKind::LiteralExpression:
 		{

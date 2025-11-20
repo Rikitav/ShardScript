@@ -177,6 +177,7 @@
     <ClCompile Include="src\syntax\symbols\TypeSymbol.cpp" />
     <ClCompile Include="src\syntax\SyntaxFacts.cpp" />
     <ClCompile Include="src\syntax\SyntaxHelpers.cpp" />
+    <ClCompile Include="src\utilities\AssociateRegistry.cpp" />
     <ClCompile Include="src\utilities\ExecutableVersion.cpp" />
     <ClInclude Include="include\ffi\ffi.h" />
     <ClInclude Include="include\ffi\ffitarget.h" />
@@ -218,6 +219,7 @@
     <ClInclude Include="include\shard\parsing\analysis\TextLocation.h" />
     <ClInclude Include="include\shard\syntax\nodes\Expressions\CollectionExpressionSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\Expressions\TypeExpressionSyntax.h" />
+    <ClInclude Include="include\shard\syntax\nodes\MemberDeclarations\AccessorDeclarationSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\MemberDeclarations\PropertyDeclarationSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\Statements\BreakStatementSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\Statements\ContinueStatementSyntax.h" />
@@ -255,6 +257,7 @@
     <ClInclude Include="include\shard\syntax\nodes\Types\IdentifierNameTypeSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\Types\NullableTypeSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\Types\PredefinedTypeSyntax.h" />
+    <ClInclude Include="include\shard\syntax\symbols\AccessorSymbol.h" />
     <ClInclude Include="include\shard\syntax\symbols\ArrayTypeSymbol.h" />
     <ClInclude Include="include\shard\syntax\symbols\ClassSymbol.h" />
     <ClInclude Include="include\shard\syntax\symbols\FFISymbol.h" />

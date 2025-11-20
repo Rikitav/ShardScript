@@ -8,7 +8,7 @@
 #include <shard/syntax/nodes/MemberDeclarationSyntax.h>
 #include <shard/syntax/nodes/ExpressionSyntax.h>
 #include <shard/syntax/nodes/TypeSyntax.h>
-#include <shard/syntax/nodes/StatementsBlockSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.h>
 
 #include <vector>
 
@@ -18,23 +18,15 @@ namespace shard::syntax::nodes
 	{
 	public:
 		SyntaxToken ReturnTypeToken;
-		SyntaxToken GetKeywordToken;
-		SyntaxToken SetKeywordToken;
 		SyntaxToken OpenBraceToken;
 		SyntaxToken CloseBraceToken;
 		SyntaxToken SemicolonToken;
 
 		TypeSyntax* ReturnType = nullptr;
 		
-		// Get accessor
-		StatementsBlockSyntax* GetBody = nullptr;
-		bool HasGet = false;
+		AccessorDeclarationSyntax* Getter = nullptr;
+		AccessorDeclarationSyntax* Setter = nullptr;
 		
-		// Set accessor
-		StatementsBlockSyntax* SetBody = nullptr;
-		bool HasSet = false;
-		
-		// Auto-implemented property initializer (optional)
 		ExpressionSyntax* InitializerExpression = nullptr;
 
 		inline PropertyDeclarationSyntax(const SyntaxNode* parent)
@@ -50,16 +42,16 @@ namespace shard::syntax::nodes
 
 		inline virtual ~PropertyDeclarationSyntax()
 		{
-			if (GetBody != nullptr)
+			if (Getter != nullptr)
 			{
-				delete GetBody;
-				GetBody = nullptr;
+				delete Getter;
+				Getter = nullptr;
 			}
 
-			if (SetBody != nullptr)
+			if (Setter != nullptr)
 			{
-				delete SetBody;
-				SetBody = nullptr;
+				delete Setter;
+				Setter = nullptr;
 			}
 
 			if (InitializerExpression != nullptr)

@@ -42,10 +42,6 @@ namespace shard::syntax::nodes
 				member->~MemberDeclarationSyntax();
 				delete member;
 			}
-
-			Imports.~vector();
-			Usings.~vector();
-			Members.~vector();
 		}
 	};
 }

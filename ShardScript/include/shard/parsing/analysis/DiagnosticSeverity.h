@@ -10,7 +10,7 @@ namespace shard::parsing::analysis
 		Error
 	};
 
-	static std::wstring to_wstring(const DiagnosticSeverity& severity)
+	static inline std::wstring severity_to_wstring(const DiagnosticSeverity& severity)
 	{
 		switch (severity)
 		{

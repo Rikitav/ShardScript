@@ -13,7 +13,6 @@
 #include <string>
 #include <cctype>
 
-using namespace std;
 using namespace shard::framework;
 using namespace shard::runtime;
 using namespace shard::syntax;
@@ -25,7 +24,7 @@ static ObjectInstance* ToString(InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	wchar_t value = instance->ReadPrimitive<wchar_t>();
-	wstring str(1, value);
+	std::wstring str(1, value);
 	return ObjectInstance::FromValue(str);
 }
 

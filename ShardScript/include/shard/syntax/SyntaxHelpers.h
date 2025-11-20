@@ -9,4 +9,5 @@
 void SetAccesibility(shard::syntax::SyntaxSymbol* node, std::vector<shard::syntax::SyntaxToken> modifiers);
 void SetAccesibility(shard::syntax::symbols::TypeSymbol* node, std::vector<shard::syntax::SyntaxToken> modifiers);
 void SetAccesibility(shard::syntax::symbols::FieldSymbol* node, std::vector<shard::syntax::SyntaxToken> modifiers);
+void SetAccesibility(shard::syntax::symbols::PropertySymbol* node, std::vector<shard::syntax::SyntaxToken> modifiers);
 void SetAccesibility(shard::syntax::symbols::MethodSymbol* node, std::vector<shard::syntax::SyntaxToken> modifiers);

@@ -11,7 +11,6 @@
 #include <new>
 #include <utility>
 
-using namespace std;
 using namespace std::ranges;
 using namespace std::views;
 using namespace shard::syntax;
@@ -57,10 +56,10 @@ void SymbolTable::BindSymbol(SyntaxNode* node, SyntaxSymbol* symbol)
 	symbolToNodeMap[symbol] = node;
 }
 
-vector<TypeSymbol*> SymbolTable::GetTypeSymbols()
+std::vector<TypeSymbol*> SymbolTable::GetTypeSymbols()
 {
 	auto cond = [](const SyntaxSymbol* symbol) { return symbol->Kind == SyntaxKind::ClassDeclaration || symbol->Kind == SyntaxKind::StructDeclaration || symbol->Kind == SyntaxKind::CollectionExpression; };
 	auto trans = [](const SyntaxSymbol* symbol) { return static_cast<TypeSymbol*>((SyntaxSymbol*)symbol); };
 	auto types = symbolToNodeMap | keys | filter(cond) | transform(trans);
-	return vector<TypeSymbol*>(types.begin(), types.end());
+	return std::vector<TypeSymbol*>(types.begin(), types.end());
 }

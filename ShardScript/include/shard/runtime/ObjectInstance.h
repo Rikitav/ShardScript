@@ -1,7 +1,6 @@
 #pragma once
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/FieldSymbol.h>
-#include <stdexcept>
 #include <string>
 
 namespace shard::runtime
@@ -47,8 +46,8 @@ namespace shard::runtime
 			return *reinterpret_cast<T*>(Ptr);
 		}
 
-		void* OffsetMemory(const size_t offset, const size_t size);
-		void ReadMemory(const size_t offset, const size_t size, void* dst);
-		void WriteMemory(const size_t offset, const size_t size, void* src);
+		void* OffsetMemory(const size_t offset, const size_t size) const;
+		void ReadMemory(const size_t offset, const size_t size, void* dst) const;
+		void WriteMemory(const size_t offset, const size_t size, void* src) const;
 	};
 }

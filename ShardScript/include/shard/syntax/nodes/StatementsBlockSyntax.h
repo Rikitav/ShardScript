@@ -25,8 +25,6 @@ namespace shard::syntax::nodes
 				statement->~StatementSyntax();
 				delete statement;
 			}
-
-			Statements.~vector();
 		}
 	};
 }

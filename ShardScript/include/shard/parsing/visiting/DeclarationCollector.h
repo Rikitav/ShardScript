@@ -16,6 +16,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/PropertyDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.h>
 
 namespace shard::parsing
 {
@@ -32,9 +33,7 @@ namespace shard::parsing
 		void VisitMethodDeclaration(shard::syntax::nodes::MethodDeclarationSyntax* node) override;
 		void VisitFieldDeclaration(shard::syntax::nodes::FieldDeclarationSyntax* node) override;
 		void VisitPropertyDeclaration(shard::syntax::nodes::PropertyDeclarationSyntax* node) override;
+		void VisitAccessorDeclaration(shard::syntax::nodes::AccessorDeclarationSyntax* node) override;
 		void VisitVariableStatement(shard::syntax::nodes::VariableStatementSyntax* node) override;
-
-	private:
-		void pushScope(shard::syntax::SyntaxSymbol* symbol);
 	};
 }

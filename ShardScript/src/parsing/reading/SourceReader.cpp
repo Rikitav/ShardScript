@@ -9,14 +9,13 @@
 #include <locale>
 #include <stdexcept>
 
-using namespace std;
 using namespace shard::syntax;
 using namespace shard::parsing;
 using namespace shard::parsing::analysis;
 
 SourceReader::SourceReader() : Line(1), Offset(0), Symbol(0), PeekSymbol(0)
 {
-	loc = locale("en_US.UTF8");
+	loc = std::locale("en_US.UTF8");
 }
 
 SourceReader::~SourceReader()
@@ -68,7 +67,7 @@ SyntaxToken SourceReader::Consume()
 	if (!ReadNextToken(consumeBuffer))
 	{
 		if (++eofConsumeCounter == 10)
-			throw runtime_error("critical bug: eof consume overflow");
+			throw std::runtime_error("critical bug: eof consume overflow");
 
 		return SyntaxToken(TokenType::EndOfFile, L"", TextLocation());
 	}
@@ -101,7 +100,7 @@ SyntaxToken SourceReader::Peek(int index)
 			}
 
 			if (++eofPeekCounter == 10)
-				throw runtime_error("critical bug: eof peek overflow");
+				throw std::runtime_error("critical bug: eof peek overflow");
 
 			peekToken = SyntaxToken(TokenType::EndOfFile, L"", TextLocation());
 			ReadBuffer.push_back(peekToken);
@@ -124,7 +123,7 @@ bool SourceReader::CanPeek()
 
 bool SourceReader::ReadNextToken(SyntaxToken& token)
 {
-	wstring word = L"";
+	std::wstring word = L"";
 	TokenType type = TokenType::Unknown;
 
 	if (!ReadNextWord(word, type))
@@ -168,7 +167,7 @@ bool SourceReader::ReadNextReal()
 	return false;
 }
 
-bool SourceReader::ReadNextWhileAlpha(wstring& word)
+bool SourceReader::ReadNextWhileAlpha(std::wstring& word)
 {
 	word += Symbol;
 	while (PeekNext())
@@ -183,7 +182,7 @@ bool SourceReader::ReadNextWhileAlpha(wstring& word)
 	return true;
 }
 
-bool SourceReader::ReadNextWord(wstring& word, TokenType& type)
+bool SourceReader::ReadNextWord(std::wstring& word, TokenType& type)
 {
 	type = TokenType::Unknown;
 	word = L"";
@@ -241,7 +240,7 @@ bool SourceReader::ReadNextWord(wstring& word, TokenType& type)
 	return true;
 }
 
-bool SourceReader::ReadCharLiteral(wstring& word, bool notEcran, bool& wasClosed)
+bool SourceReader::ReadCharLiteral(std::wstring& word, bool notEcran, bool& wasClosed)
 {
 	while (ReadNext())
 	{
@@ -265,7 +264,7 @@ bool SourceReader::ReadCharLiteral(wstring& word, bool notEcran, bool& wasClosed
 	return false;
 }
 
-bool SourceReader::ReadStringLiteral(wstring& word, bool dontEcran, bool& wasClosed)
+bool SourceReader::ReadStringLiteral(std::wstring& word, bool dontEcran, bool& wasClosed)
 {
 	bool ecran = false;
 
@@ -336,7 +335,7 @@ bool SourceReader::ReadStringLiteral(wstring& word, bool dontEcran, bool& wasClo
 	return false;
 }
 
-bool SourceReader::ReadNumberLiteral(wstring& word)
+bool SourceReader::ReadNumberLiteral(std::wstring& word)
 {
 	short mode = 0;
 	if (Symbol == '0')
@@ -387,7 +386,7 @@ bool SourceReader::ReadNumberLiteral(wstring& word)
 	return false;
 }
 
-bool SourceReader::ReadNativeLiteral(wstring& word)
+bool SourceReader::ReadNativeLiteral(std::wstring& word)
 {
 	while (PeekNext())
 	{
@@ -405,7 +404,7 @@ bool SourceReader::ReadNativeLiteral(wstring& word)
 	return false;
 }
 
-bool SourceReader::IsPunctuation(wstring& word, TokenType& type)
+bool SourceReader::IsPunctuation(std::wstring& word, TokenType& type)
 {
 	switch (Symbol)
 	{
@@ -486,7 +485,7 @@ bool SourceReader::IsPunctuation(wstring& word, TokenType& type)
 	}
 }
 
-bool SourceReader::IsOperator(wstring& word, TokenType& type)
+bool SourceReader::IsOperator(std::wstring& word, TokenType& type)
 {
 	switch (Symbol)
 	{
@@ -741,7 +740,7 @@ bool SourceReader::IsOperator(wstring& word, TokenType& type)
 	}
 }
 
-bool SourceReader::IsNullLiteral(wstring& word, TokenType& type)
+bool SourceReader::IsNullLiteral(std::wstring& word, TokenType& type)
 {
 	if (word == L"null")
 	{
@@ -759,7 +758,7 @@ bool SourceReader::IsNullLiteral(wstring& word, TokenType& type)
 	}
 }
 
-bool SourceReader::IsBooleanLiteral(wstring& word, TokenType& type)
+bool SourceReader::IsBooleanLiteral(std::wstring& word, TokenType& type)
 {
 	if (word == L"true")
 	{
@@ -777,7 +776,7 @@ bool SourceReader::IsBooleanLiteral(wstring& word, TokenType& type)
 	}
 }
 
-bool SourceReader::IsNumberLiteral(TokenType& type)
+bool SourceReader::IsNumberLiteral(TokenType& type) const
 {
 	if (isdigit(Symbol, loc))
 	{
@@ -849,7 +848,7 @@ bool SourceReader::IsStringLiteral(TokenType& type, bool& dontEcran)
 	}
 }
 
-bool SourceReader::IsModifier(wstring& word, TokenType& type)
+bool SourceReader::IsModifier(std::wstring& word, TokenType& type)
 {
 	if (word == L"public")
 	{
@@ -907,7 +906,7 @@ bool SourceReader::IsModifier(wstring& word, TokenType& type)
 	}
 }
 
-bool SourceReader::IsDirectiveDecl(wstring& word, TokenType& type)
+bool SourceReader::IsDirectiveDecl(std::wstring& word, TokenType& type)
 {
 	if (word == L"from")
 	{
@@ -930,7 +929,7 @@ bool SourceReader::IsDirectiveDecl(wstring& word, TokenType& type)
 	}
 }
 
-bool SourceReader::IsTypeDecl(wstring& word, TokenType& type)
+bool SourceReader::IsTypeDecl(std::wstring& word, TokenType& type)
 {
 	if (word == L"method")
 	{
@@ -963,7 +962,7 @@ bool SourceReader::IsTypeDecl(wstring& word, TokenType& type)
 	}
 }
 
-bool SourceReader::IsType(wstring& word, TokenType& type)
+bool SourceReader::IsType(std::wstring& word, TokenType& type)
 {
 	if (word == L"void")
 	{
@@ -991,7 +990,7 @@ bool SourceReader::IsType(wstring& word, TokenType& type)
 	}
 }
 
-bool SourceReader::IsKeyword(wstring& word, TokenType& type)
+bool SourceReader::IsKeyword(std::wstring& word, TokenType& type)
 {
 	if (IsConditionalKeyword(word, type))
 		return true;
@@ -1026,7 +1025,7 @@ bool SourceReader::IsKeyword(wstring& word, TokenType& type)
 	return false;
 }
 
-bool SourceReader::IsConditionalKeyword(wstring& word, TokenType& type)
+bool SourceReader::IsConditionalKeyword(std::wstring& word, TokenType& type)
 {
 	if (word == L"if")
 	{
@@ -1049,7 +1048,7 @@ bool SourceReader::IsConditionalKeyword(wstring& word, TokenType& type)
 	}
 }
 
-bool SourceReader::IsLoopKeyword(wstring& word, TokenType& type)
+bool SourceReader::IsLoopKeyword(std::wstring& word, TokenType& type)
 {
 	if (word == L"for")
 	{
@@ -1082,7 +1081,7 @@ bool SourceReader::IsLoopKeyword(wstring& word, TokenType& type)
 	}
 }
 
-bool SourceReader::IsFunctionalKeyword(wstring& word, TokenType& type)
+bool SourceReader::IsFunctionalKeyword(std::wstring& word, TokenType& type)
 {
 	if (word == L"return")
 	{

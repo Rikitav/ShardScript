@@ -44,7 +44,10 @@ void ArrayPrimitive::Reflect(TypeSymbol* symbol)
 	PropertySymbol* lengthProperty = new PropertySymbol(L"Length");
 	lengthProperty->Accesibility = SymbolAccesibility::Public;
 	lengthProperty->ReturnType = SymbolTable::Primitives::Integer;
-	lengthProperty->GetMethod = new MethodSymbol(L"get_Length", get_Length);
+
+	lengthProperty->Getter = new AccessorSymbol(L"get_Length");
+	lengthProperty->Getter->Accesibility = SymbolAccesibility::Public;
+	lengthProperty->Getter->Method = new MethodSymbol(L"get_Length", get_Length);
 
 	symbol->Properties.push_back(lengthProperty);
 

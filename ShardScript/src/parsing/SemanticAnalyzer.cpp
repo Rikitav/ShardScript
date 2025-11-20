@@ -7,7 +7,6 @@
 #include <shard/parsing/visiting/TypeBinder.h>
 #include <shard/parsing/visiting/ExpressionBinder.h>
 
-using namespace std;
 using namespace shard::syntax;
 using namespace shard::parsing;
 using namespace shard::parsing::lexical;

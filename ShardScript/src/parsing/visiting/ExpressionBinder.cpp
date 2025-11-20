@@ -19,6 +19,7 @@
 #include <shard/syntax/symbols/ParameterSymbol.h>
 #include <shard/syntax/symbols/VariableSymbol.h>
 #include <shard/syntax/symbols/ArrayTypeSymbol.h>
+#include <shard/syntax/symbols/AccessorSymbol.h>
 
 #include <shard/syntax/nodes/CompilationUnitSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarationSyntax.h>
@@ -54,12 +55,43 @@
 #include <string>
 #include <sstream>
 
-using namespace std;
 using namespace shard::parsing;
 using namespace shard::parsing::semantic;
 using namespace shard::syntax::nodes;
 using namespace shard::syntax::symbols;
 using namespace shard::syntax;
+
+static bool IsAssignmentOperator(TokenType type)
+{
+	switch (type)
+	{
+		case TokenType::AssignOperator:
+		case TokenType::AddAssignOperator:
+		case TokenType::SubAssignOperator:
+		case TokenType::MultAssignOperator:
+		case TokenType::DivAssignOperator:
+		case TokenType::ModAssignOperator:
+		case TokenType::PowAssignOperator:
+			return true;
+		default:
+			return false;
+	}
+}
+
+static bool IsAssignmentContext(const MemberAccessExpressionSyntax* expression)
+{
+	if (expression->Parent == nullptr)
+		return false;
+
+	if (expression->Parent->Kind != SyntaxKind::BinaryExpression)
+		return false;
+
+	const BinaryExpressionSyntax* binaryExpr = static_cast<const BinaryExpressionSyntax*>(expression->Parent);
+	if (binaryExpr->OperatorToken.Type != TokenType::AssignOperator)
+		return false;
+
+	return true;
+}
 
 static bool GetIsStaticContext(const ExpressionSyntax* expression)
 {
@@ -205,22 +237,22 @@ void ExpressionBinder::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
 		Diagnostics.ReportError(node->IdentifierToken, L"Property '" + node->IdentifierToken.Word + L"' must have return value");
 	}
 
-	if (node->GetBody != nullptr)
+	if (node->Getter != nullptr && node->Getter->Body != nullptr)
 	{
 		PushScope(symbol);
 		if (!symbol->IsStatic)
 			Declare(new VariableSymbol(L"this", ownerType));
 
 		CurrentScope()->ReturnFound = false;
-		VisitStatementsBlock(node->GetBody);
+		VisitStatementsBlock(node->Getter->Body);
 
 		if (!CurrentScope()->ReturnFound)
-			Diagnostics.ReportError(node->IdentifierToken, L"Method must return a value of type '" + symbol->ReturnType->Name + L"'");
+			Diagnostics.ReportError(node->Getter->KeywordToken, L"Accessor must return a value of type '" + symbol->ReturnType->Name + L"'");
 
 		PopScope();
 	}
 
-	if (node->SetBody != nullptr)
+	if (node->Setter != nullptr && node->Setter->Body != nullptr)
 	{
 		PushScope(symbol);
 		if (!symbol->IsStatic)
@@ -228,10 +260,10 @@ void ExpressionBinder::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
 
 		CurrentScope()->ReturnsAnything = false;
 		Declare(new VariableSymbol(L"value", symbol->ReturnType));
-		VisitStatementsBlock(node->SetBody);
+		VisitStatementsBlock(node->Setter->Body);
 
 		if (CurrentScope()->ReturnsAnything)
-			Diagnostics.ReportError(node->SetKeywordToken, L"Setter method of '" + node->IdentifierToken.Word + L"' should not return any values");
+			Diagnostics.ReportError(node->Setter->KeywordToken, L"Setter method of '" + node->IdentifierToken.Word + L"' should not return any values");
 
 		PopScope();
 	}
@@ -324,7 +356,7 @@ void ExpressionBinder::VisitLiteralExpression(LiteralExpressionSyntax* node)
 	
 	if (type == nullptr && node->LiteralToken.Type != TokenType::NullLiteral)
 	{
-		wstring tokenType = L"unknown";
+		std::wstring tokenType = L"unknown";
 		Diagnostics.ReportError(node->LiteralToken, L"Unsupported literal type: " + tokenType);
 	}
 }
@@ -513,14 +545,14 @@ void ExpressionBinder::VisitCollectionExpression(CollectionExpressionSyntax* nod
 	SetExpressionType(node, arrayType);
 }
 
-bool ExpressionBinder::MatchMethodArguments(MethodSymbol* method, vector<ArgumentSyntax*> arguments)
+bool ExpressionBinder::MatchMethodArguments(MethodSymbol* method, std::vector<ArgumentSyntax*> arguments)
 {
 	if (method == nullptr)
 		return false;
 		
 	if (method->Parameters.size() != arguments.size())
 	{
-		Diagnostics.ReportError(SyntaxToken(), L"Method expects " + to_wstring(method->Parameters.size()) + L" arguments but got " + to_wstring(arguments.size()));
+		Diagnostics.ReportError(SyntaxToken(), L"Method expects " + std::to_wstring(method->Parameters.size()) + L" arguments but got " + std::to_wstring(arguments.size()));
 		return false;
 	}
 	
@@ -531,7 +563,7 @@ bool ExpressionBinder::MatchMethodArguments(MethodSymbol* method, vector<Argumen
 		
 		if (param == nullptr || arg == nullptr || arg->Expression == nullptr)
 		{
-			Diagnostics.ReportError(SyntaxToken(), L"Invalid argument at position " + to_wstring(i));
+			Diagnostics.ReportError(SyntaxToken(), L"Invalid argument at position " + std::to_wstring(i));
 			return false;
 		}
 		
@@ -560,7 +592,6 @@ bool ExpressionBinder::MatchMethodArguments(MethodSymbol* method, vector<Argumen
 	
 	return true;
 }
-
 TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressionSyntax* node, TypeSymbol* currentType)
 {
 	if (node->PreviousExpression == nullptr)
@@ -569,7 +600,7 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 		if (node->IdentifierToken.Type == TokenType::FieldKeyword)
 			return AnalyzeFieldKeywordExpression(node, nullptr);
 
-		wstring name = node->IdentifierToken.Word;
+		std::wstring name = node->IdentifierToken.Word;
 		SyntaxSymbol* symbol = CurrentScope()->Lookup(name);
 
 		if (symbol == nullptr)
@@ -622,7 +653,7 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 					return static_cast<TypeSymbol*>(symbol);
 				}
 
-				Diagnostics.ReportError(node->IdentifierToken, L"Symbol '" + name + L"' is not a variable, parameter or field (found " + to_wstring(static_cast<int>(symbol->Kind)) + L")");
+				Diagnostics.ReportError(node->IdentifierToken, L"Symbol '" + name + L"' is not a variable, parameter or field (found " + std::to_wstring(static_cast<int>(symbol->Kind)) + L")");
 				return nullptr;
 			}
 		}
@@ -636,7 +667,7 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 		}
 
 		// First check for property (properties take precedence over fields)
-		wstring memberName = node->IdentifierToken.Word;
+		std::wstring memberName = node->IdentifierToken.Word;
 		PropertySymbol* property = currentType->FindProperty(memberName);
 
 		if (property != nullptr)
@@ -666,6 +697,21 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 				return nullptr;
 			}
 
+			bool requiresSetter = IsAssignmentContext(node);
+			AccessorSymbol* accessor = requiresSetter ? property->Setter : property->Getter;
+
+			if (accessor == nullptr)
+			{
+				Diagnostics.ReportError(node->IdentifierToken, L"Property '" + memberName + L"' does not have a " + (requiresSetter ? L"set" : L"get") + L" accessor");
+				return nullptr;
+			}
+
+			if (!IsSymbolAccessible(accessor))
+			{
+				Diagnostics.ReportError(node->IdentifierToken, (requiresSetter ? L"Setter" : L"Getter") + (L" of property '" + memberName + L"' is not accessible"));
+				return nullptr;
+			}
+
 			// Set property flag and symbol
 			node->PropertySymbol = property;
 			node->IsStaticContext = false;
@@ -678,7 +724,7 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 
 			if (field == nullptr)
 			{
-				MethodSymbol* method = currentType->FindMethod(memberName, vector<TypeSymbol*>());
+				MethodSymbol* method = currentType->FindMethod(memberName, std::vector<TypeSymbol*>());
 				if (method == nullptr)
 				{
 					Diagnostics.ReportError(node->IdentifierToken, L"Member '" + memberName + L"' not found in type '" + currentType->Name + L"'");
@@ -768,7 +814,7 @@ TypeSymbol* ExpressionBinder::AnalyzeFieldKeywordExpression(MemberAccessExpressi
 
 TypeSymbol* ExpressionBinder::AnalyzeInvokationExpression(InvokationExpressionSyntax* node, TypeSymbol* currentType)
 {
-	wstring methodName = node->IdentifierToken.Word;
+	std::wstring methodName = node->IdentifierToken.Word;
 	MethodSymbol* method = ResolveMethod(node, currentType);
 
 	if (method == nullptr)
@@ -800,8 +846,8 @@ TypeSymbol* ExpressionBinder::AnalyzeInvokationExpression(InvokationExpressionSy
 
 MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node, TypeSymbol* currentType)
 {
-	wstring methodName = node->IdentifierToken.Word;
-	vector<TypeSymbol*> argTypes;
+	std::wstring methodName = node->IdentifierToken.Word;
+	std::vector<TypeSymbol*> argTypes;
 
 	for (ArgumentSyntax* arg : node->ArgumentsList->Arguments)
 	{
@@ -818,7 +864,7 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node, 
 
 	if (method == nullptr)
 	{
-		wstringstream diag;
+		std::wstringstream diag;
 		diag << "No method \"" << methodName << "\" found that accepts ";
 
 		if (argTypes.size() == 0)
@@ -828,13 +874,13 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node, 
 		else if (argTypes.size() == 1)
 		{
 			TypeSymbol* type = argTypes.at(0);
-			wstring typeName = type == nullptr ? L"<error>" : type->Name;
+			std::wstring typeName = type == nullptr ? L"<error>" : type->Name;
 			diag << "argument (" << typeName << ")";
 		}
 		else
 		{
 			TypeSymbol* type = argTypes.at(0);
-			wstring typeName = type == nullptr ? L"<error>" : type->Name;
+			std::wstring typeName = type == nullptr ? L"<error>" : type->Name;
 			diag << L"arguments (" << typeName;
 
 			for (int i = 1; i < argTypes.size(); i++)
@@ -869,7 +915,7 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node, 
 
 TypeSymbol* ExpressionBinder::AnalyzeIndexatorExpression(IndexatorExpressionSyntax* node, TypeSymbol* currentType)
 {
-	wstring methodName = node->MemberAccess->IdentifierToken.Word;
+	std::wstring methodName = node->MemberAccess->IdentifierToken.Word;
 	MethodSymbol* method = ResolveIndexator(node, currentType);
 
 	if (!IsSymbolAccessible(method))
@@ -904,8 +950,8 @@ TypeSymbol* ExpressionBinder::AnalyzeIndexatorExpression(IndexatorExpressionSynt
 
 MethodSymbol* ExpressionBinder::ResolveIndexator(IndexatorExpressionSyntax* node, TypeSymbol* currentType)
 {
-	wstring methodName = node->MemberAccess->IdentifierToken.Word;
-	vector<TypeSymbol*> argTypes;
+	std::wstring methodName = node->MemberAccess->IdentifierToken.Word;
+	std::vector<TypeSymbol*> argTypes;
 
 	for (ArgumentSyntax* arg : node->IndexatorList->Arguments)
 	{
@@ -927,7 +973,7 @@ MethodSymbol* ExpressionBinder::ResolveIndexator(IndexatorExpressionSyntax* node
 
 	if (method == nullptr)
 	{
-		wstringstream diag;
+		std::wstringstream diag;
 		diag << "No indeaxtors for type \"" << currentType->Name << "\" found that accepts ";
 
 		if (argTypes.size() == 0)
@@ -937,13 +983,13 @@ MethodSymbol* ExpressionBinder::ResolveIndexator(IndexatorExpressionSyntax* node
 		else if (argTypes.size() == 1)
 		{
 			TypeSymbol* type = argTypes.at(0);
-			wstring typeName = type == nullptr ? L"<error>" : type->Name;
+			std::wstring typeName = type == nullptr ? L"<error>" : type->Name;
 			diag << "argument (" << typeName << ")";
 		}
 		else
 		{
 			TypeSymbol* type = argTypes.at(0);
-			wstring typeName = type == nullptr ? L"<error>" : type->Name;
+			std::wstring typeName = type == nullptr ? L"<error>" : type->Name;
 			diag << L"arguments (" << typeName;
 
 			for (int i = 1; i < argTypes.size(); i++)

@@ -16,6 +16,7 @@ namespace shard::syntax::nodes
 	class MethodDeclarationSyntax : public MemberDeclarationSyntax
 	{
 	public:
+		SyntaxToken Semicolon;
 		StatementsBlockSyntax* Body = nullptr;
 		ParametersListSyntax* Params = nullptr;
 		TypeSyntax* ReturnType = nullptr;

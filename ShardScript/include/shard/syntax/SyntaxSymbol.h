@@ -25,5 +25,6 @@ namespace shard::syntax
 		}
 
 		bool IsType();
+		bool IsMember();
 	};
 }

@@ -17,19 +17,19 @@
 
 #include <shard/framework/FrameworkLoader.h>
 
-#include "src/utilities/ArgumentsParser.cpp"
-//#include "src/utilities/ExecutableVersion.cpp"
+#include <shard/ShardScript.h>
+#include <Shlwapi.h>
 
-//#include <Windows.h>
-//#include <Shlwapi.h>
+#pragma comment(lib, "shlwapi.lib")
+
 #include <iostream>
 #include <string>
 #include <stdexcept>
 #include <exception>
 #include <clocale>
 #include <csignal>
+#include <cstdlib>
 
-using namespace std;
 using namespace shard::utilities;
 using namespace shard::framework;
 using namespace shard::runtime;
@@ -52,27 +52,32 @@ int wmain(int argc, wchar_t* argv[])
 {
 	try
 	{
-		setlocale(LC_ALL, "");
+		setlocale(LC_ALL, "C");
 		signal(SIGINT, SigIntHandler);
-		ConsoleArguments args = ParseArguments(argc, argv);
+		ConsoleArguments args = ShardUtilities::ParseArguments(argc, argv);
 
 		if (args.ShowHelp)
 		{
-			wstring version = L"0.1"; // GetFileVersion();
-			wcout << "ShardLang interpreter v" << version;
+			std::wstring version = ShardUtilities::GetFileVersion();
+			std::wcout << "ShardLang interpreter v" << version;
 			return 0;
 		}
-		
-		bool anyUnrealFiles = false;
-		for (const wstring& file : args.FilesToCompile)
+
+		if (args.AssociateScriptFile)
 		{
-			/*
+			ShardUtilities::AssociateRegistry();
+			std::wcout << "File association successsfuly installed" << std::endl;
+			return 0;
+		}
+
+		bool anyUnrealFiles = false;
+		for (const std::wstring& file : args.FilesToCompile)
+		{
 			if (!PathFileExistsW(file.c_str()))
 			{
 				anyUnrealFiles = true;
-				wcout << L"'" << file << L"doesnt exists";
+				std::wcout << L"'" << file << L"' doesn't exists";
 			}
-			*/
 		}
 
 		if (anyUnrealFiles)
@@ -82,7 +87,7 @@ int wmain(int argc, wchar_t* argv[])
 		SyntaxTree syntaxTree;
 		LexicalAnalyzer lexer(diagnostics);
 
-		for (const wstring& file : args.FilesToCompile)
+		for (const std::wstring& file : args.FilesToCompile)
 		{
 			FileReader reader = FileReader(file);
 			lexer.FromSourceReader(syntaxTree, reader);
@@ -116,8 +121,8 @@ int wmain(int argc, wchar_t* argv[])
 
 		if (diagnostics.AnyError)
 		{
-			wcout << L"=== Diagnostics output ===" << endl;
-			diagnostics.WriteDiagnostics(wcout);
+			std::wcout << L"=== Diagnostics output ===" << std::endl;
+			diagnostics.WriteDiagnostics(std::wcout);
 			return 1;
 		}
 
@@ -135,16 +140,16 @@ int wmain(int argc, wchar_t* argv[])
 				AbstractInterpreter::Execute(syntaxTree, semanticModel);
 				return 0;
 			}
-			catch (const runtime_error& err)
+			catch (const std::runtime_error& err)
 			{
-				cout << err.what() << endl;
+				std::cout << err.what() << std::endl;
 				return 1;
 			}
 		}
 	}
-	catch (const runtime_error& err)
+	catch (const std::runtime_error& err)
 	{
-		cout << "CRITICAL ERROR : " << err.what() << endl;
+		std::cout << "CRITICAL ERROR : " << err.what() << std::endl;
 	}
 
 	GarbageCollector::Terminate();

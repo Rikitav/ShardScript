@@ -57,7 +57,7 @@ namespace shard::syntax::nodes
 				delete node;
 			}
 
-			Nodes.~vector();
+			Nodes.~std::vector();
 		}
 	};
 	*/

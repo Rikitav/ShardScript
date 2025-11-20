@@ -46,8 +46,6 @@ namespace shard::syntax::nodes
 				parameter->~ParameterSyntax();
 				delete parameter;
 			}
-
-			Parameters.~vector();
 		}
 	};
 }

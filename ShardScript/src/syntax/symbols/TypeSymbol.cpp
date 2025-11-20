@@ -10,7 +10,6 @@
 #include <vector>
 #include <string>
 
-using namespace std;
 using namespace shard::syntax::symbols;
 
 static bool paramPredicate(TypeSymbol* left, ParameterSymbol* right)
@@ -33,7 +32,7 @@ bool TypeSymbol::Equals(const TypeSymbol* left, const TypeSymbol* right)
 	return left->TypeCode == right->TypeCode;
 }
 
-MethodSymbol* TypeSymbol::FindMethod(wstring& name, vector<TypeSymbol*> parameterTypes)
+MethodSymbol* TypeSymbol::FindMethod(std::wstring& name, std::vector<TypeSymbol*> parameterTypes)
 {
 	for (MethodSymbol* symbol : Methods)
 	{
@@ -50,7 +49,7 @@ MethodSymbol* TypeSymbol::FindMethod(wstring& name, vector<TypeSymbol*> paramete
 	return nullptr;
 }
 
-MethodSymbol* TypeSymbol::FindIndexator(vector<TypeSymbol*> parameterTypes)
+MethodSymbol* TypeSymbol::FindIndexator(std::vector<TypeSymbol*> parameterTypes)
 {
 	for (MethodSymbol* symbol : Indexators)
 	{
@@ -64,7 +63,7 @@ MethodSymbol* TypeSymbol::FindIndexator(vector<TypeSymbol*> parameterTypes)
 	return nullptr;
 }
 
-FieldSymbol* TypeSymbol::FindField(wstring& name)
+FieldSymbol* TypeSymbol::FindField(std::wstring& name)
 {
 	for (FieldSymbol* symbol : Fields)
 	{
@@ -77,7 +76,7 @@ FieldSymbol* TypeSymbol::FindField(wstring& name)
 	return nullptr;
 }
 
-PropertySymbol* TypeSymbol::FindProperty(wstring& name)
+PropertySymbol* TypeSymbol::FindProperty(std::wstring& name)
 {
 	for (PropertySymbol* symbol : Properties)
 	{

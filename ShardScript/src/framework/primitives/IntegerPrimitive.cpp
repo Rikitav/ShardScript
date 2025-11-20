@@ -16,7 +16,6 @@
 #include <cmath>
 #include <algorithm>
 
-using namespace std;
 using namespace shard::framework;
 using namespace shard::runtime;
 using namespace shard::syntax;
@@ -28,7 +27,7 @@ static ObjectInstance* ToString(InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	int value = instance->ReadPrimitive<int>();
-	wstring str = to_wstring(value);
+	std::wstring str = std::to_wstring(value);
 	return ObjectInstance::FromValue(str);
 }
 
@@ -50,7 +49,7 @@ static ObjectInstance* Min(InboundVariablesContext* arguments)
 		return ObjectInstance::FromValue(value);
 	
 	int other = otherArg->ReadPrimitive<int>();
-	int result = min(value, other);
+	int result = std::min(value, other);
 	return ObjectInstance::FromValue(result);
 }
 
@@ -64,7 +63,7 @@ static ObjectInstance* Max(InboundVariablesContext* arguments)
 		return ObjectInstance::FromValue(value);
 	
 	int other = otherArg->ReadPrimitive<int>();
-	int result = max(value, other);
+	int result = std::max(value, other);
 	return ObjectInstance::FromValue(result);
 }
 

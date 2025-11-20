@@ -29,6 +29,7 @@
 
 #include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/PropertyDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.h>
 
 #include <shard/syntax/nodes/Expressions/LinkedExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/ObjectExpressionSyntax.h>
@@ -38,9 +39,10 @@
 #include <shard/syntax/nodes/Loops/WhileStatementSyntax.h>
 #include <shard/syntax/nodes/Loops/UntilStatementSyntax.h>
 
-#include <initializer_list>
 #include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.h>
+
+#include <initializer_list>
 #include <vector>
 
 namespace shard::parsing
@@ -66,8 +68,9 @@ namespace shard::parsing
 		shard::syntax::nodes::NamespaceDeclarationSyntax* ReadNamespaceDeclaration(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
 		shard::syntax::nodes::MemberDeclarationSyntax* ReadMemberDeclaration(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
 		shard::syntax::nodes::MethodDeclarationSyntax* ReadMethodDeclaration(shard::parsing::SourceReader& reader, shard::parsing::lexical::MemberDeclarationInfo& info, shard::syntax::SyntaxNode* parent);
-		shard::syntax::nodes::PropertyDeclarationSyntax* ReadPropertyDeclaration(shard::parsing::SourceReader& reader, shard::parsing::lexical::MemberDeclarationInfo& info, shard::syntax::SyntaxNode* parent);
 		shard::syntax::nodes::FieldDeclarationSyntax* ReadFieldDeclaration(shard::parsing::SourceReader& reader, shard::parsing::lexical::MemberDeclarationInfo& info, shard::syntax::SyntaxNode* parent);
+		shard::syntax::nodes::PropertyDeclarationSyntax* ReadPropertyDeclaration(shard::parsing::SourceReader& reader, shard::parsing::lexical::MemberDeclarationInfo& info, shard::syntax::SyntaxNode* parent);
+		shard::syntax::nodes::AccessorDeclarationSyntax* ReadAccessorDeclaration(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
 
 		std::vector<shard::syntax::SyntaxToken> ReadMemberModifiers(shard::parsing::SourceReader& reader);
 		shard::syntax::nodes::ParametersListSyntax* ReadParametersList(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);

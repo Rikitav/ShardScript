@@ -11,7 +11,6 @@
 
 #include <string>
 
-using namespace std;
 using namespace shard::framework;
 using namespace shard::runtime;
 using namespace shard::syntax;
@@ -23,7 +22,7 @@ static ObjectInstance* ToString(InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	bool value = instance->ReadPrimitive<bool>();
-	wstring str = value ? L"true" : L"false";
+	std::wstring str = value ? L"true" : L"false";
 	return ObjectInstance::FromValue(str);
 }
 

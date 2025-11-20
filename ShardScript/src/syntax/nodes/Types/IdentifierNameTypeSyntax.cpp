@@ -1,12 +1,12 @@
 #include <shard/syntax/nodes/Types/IdentifierNameTypeSyntax.h>
 #include <sstream>
+#include <string>
 
-using namespace std;
 using namespace shard::syntax::nodes;
 
-wstring IdentifierNameTypeSyntax::ToString()
+std::wstring IdentifierNameTypeSyntax::ToString()
 {
-	wostringstream result;
+	std::wostringstream result;
 	if (!Identifiers.empty())
 	{
 		result << Identifiers[0].Word;

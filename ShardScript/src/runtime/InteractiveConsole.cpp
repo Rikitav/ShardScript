@@ -2,6 +2,15 @@
 #include <shard/parsing/reading/StringStreamReader.h>
 #include <shard/parsing/reading/SequenceSourceReader.h>
 #include <shard/parsing/SemanticAnalyzer.h>
+#include <shard/parsing/LayoutGenerator.h>
+
+#include <shard/parsing/analysis/TextLocation.h>
+#include <shard/parsing/analysis/DiagnosticsContext.h>
+
+#include <shard/parsing/lexical/SyntaxTree.h>
+#include <shard/parsing/lexical/MemberDeclarationInfo.h>
+
+#include <shard/parsing/semantic/SemanticModel.h>
 
 #include <shard/runtime/InteractiveConsole.h>
 #include <shard/runtime/AbstractInterpreter.h>
@@ -15,12 +24,6 @@
 #include <shard/syntax/TokenType.h>
 #include <shard/syntax/SyntaxNode.h>
 #include <shard/syntax/symbols/MethodSymbol.h>
-
-#include <shard/parsing/analysis/TextLocation.h>
-#include <shard/parsing/analysis/DiagnosticsContext.h>
-#include <shard/parsing/lexical/SyntaxTree.h>
-#include <shard/parsing/lexical/MemberDeclarationInfo.h>
-#include <shard/parsing/semantic/SemanticModel.h>
 
 #include <shard/syntax/nodes/ParametersListSyntax.h>
 #include <shard/syntax/nodes/CompilationUnitSyntax.h>
@@ -36,20 +39,15 @@
 
 #include <shard/syntax/nodes/Types/PredefinedTypeSyntax.h>
 
+#include <shard/ShardScript.h>
 #include <Windows.h>
 #include <consoleapi2.h>
-#include <libloaderapi.h>
 #include <processenv.h>
-#include <winver.h>
-#include <shard/parsing/LayoutGenerator.h>
 
 #include <string>
 #include <iostream>
 #include <vector>
 #include <exception>
-#include <sstream>
-
-#pragma comment(lib, "version.lib")
 
 using namespace shard::runtime;
 using namespace shard::syntax;
@@ -59,40 +57,6 @@ using namespace shard::parsing;
 using namespace shard::parsing::analysis;
 using namespace shard::parsing::semantic;
 using namespace shard::parsing::lexical;
-
-static std::wstring GetFileVersion()
-{
-	TCHAR filename[MAX_PATH];
-	GetModuleFileNameW(NULL, filename, MAX_PATH);
-
-	DWORD dummy;
-	DWORD size = GetFileVersionInfoSizeW(filename, &dummy);
-
-	std::wstring result = L"0.0";
-	if (size != 0)
-	{
-		BYTE* versionInfo = new BYTE[size];
-		if (GetFileVersionInfoW(filename, 0, size, versionInfo))
-		{
-			UINT len;
-			VS_FIXEDFILEINFO* fileInfo;
-
-			if (VerQueryValueW(versionInfo, TEXT("\\"), (LPVOID*)&fileInfo, &len))
-			{
-				DWORD versionMS = fileInfo->dwFileVersionMS;
-				DWORD versionLS = fileInfo->dwFileVersionLS;
-				std::wstringstream res;
-
-				res << HIWORD(versionMS) << "." << LOWORD(versionMS); // << "." << HIWORD(versionLS) << "." << LOWORD(versionLS);
-				result = res.str();
-			}
-		}
-
-		delete[] versionInfo;
-	}
-
-	return result;
-}
 
 static bool IsStatementComplete(SequenceSourceReader& reader)
 {
@@ -359,7 +323,7 @@ void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticMode
 	AbstractInterpreter::PushFrame(entryPointSymbol);
 	AbstractInterpreter::PushContext(new InboundVariablesContext(nullptr));
 	
-	ConsoleHelper::WriteLine(L"ShardScript Interactive Console v" + GetFileVersion());
+	ConsoleHelper::WriteLine(L"ShardScript Interactive Console v" + shard::utilities::ShardUtilities::GetFileVersion());
 	ConsoleHelper::WriteLine(L"Type 'exit' or 'quit' to exit");
 	ConsoleHelper::WriteLine();
 

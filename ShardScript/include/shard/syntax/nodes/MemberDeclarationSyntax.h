@@ -21,7 +21,7 @@ namespace shard::syntax::nodes
 
 		inline virtual ~MemberDeclarationSyntax()
 		{
-			Modifiers.~vector();
+
 		}
 	};
 }

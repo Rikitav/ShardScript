@@ -11,7 +11,6 @@
 #include <stdexcept>
 #include <string>
 
-using namespace std;
 using namespace shard::runtime;
 using namespace shard::parsing::semantic;
 
@@ -42,12 +41,12 @@ void ConsoleHelper::Write(ObjectInstance* instance)
 
 	if (instance->Info == SymbolTable::Primitives::String)
 	{
-		wstring data = instance->ReadPrimitive<wstring>();
+		std::wstring data = instance->ReadPrimitive<std::wstring>();
 		Write(data);
 		return;
 	}
 
-	throw runtime_error("unknown type");
+	throw std::runtime_error("unknown type");
 }
 
 void ConsoleHelper::Write(bool data)
@@ -85,7 +84,7 @@ void ConsoleHelper::Write(const wchar_t* data)
 	WriteConsoleW(stdOut, data, static_cast<DWORD>(wcslen(data)), &charsWritten, NULL);
 }
 
-void ConsoleHelper::Write(wstring data)
+void ConsoleHelper::Write(std::wstring data)
 {
 	DWORD charsWritten;
 	const wchar_t* text = data.c_str();
@@ -117,45 +116,45 @@ void ConsoleHelper::WriteLine(ObjectInstance* instance)
 
 	if (instance->Info == SymbolTable::Primitives::String)
 	{
-		wstring data = instance->ReadPrimitive<wstring>();
+		std::wstring data = instance->ReadPrimitive<std::wstring>();
 		WriteLine(data);
 		return;
 	}
 
-	throw runtime_error("unknown type");
+	throw std::runtime_error("unknown type");
 }
 
 void ConsoleHelper::WriteLine()
 {
-	cout << endl;
+	std::cout << std::endl;
 }
 
 void ConsoleHelper::WriteLine(bool data)
 {
 	Write(data);
-	cout << endl;
+	std::cout << std::endl;
 }
 
 void ConsoleHelper::WriteLine(int data)
 {
 	Write(data);
-	cout << endl;
+	std::cout << std::endl;
 }
 
 void ConsoleHelper::WriteLine(wchar_t data)
 {
 	Write(data);
-	cout << endl;
+	std::cout << std::endl;
 }
 
 void ConsoleHelper::WriteLine(const wchar_t* data)
 {
 	Write(data);
-	cout << endl;
+	std::cout << std::endl;
 }
 
-void ConsoleHelper::WriteLine(wstring data)
+void ConsoleHelper::WriteLine(std::wstring data)
 {
 	Write(data);
-	cout << endl;
+	std::cout << std::endl;
 }

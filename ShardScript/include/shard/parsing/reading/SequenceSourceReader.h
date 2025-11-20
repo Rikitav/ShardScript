@@ -18,8 +18,8 @@ namespace shard::parsing
 		static SequenceSourceReader BufferFrom(SourceReader& reader);
 		void PopulateFrom(SourceReader& reader);
 		void Push(shard::syntax::SyntaxToken token);
-		void Populate(std::vector<shard::syntax::SyntaxToken> fromVector);
-		void SetSequence(std::vector<shard::syntax::SyntaxToken> setVector);
+		void Populate(std::vector<shard::syntax::SyntaxToken> fromvector);
+		void SetSequence(std::vector<shard::syntax::SyntaxToken> setvector);
 		void SetIndex(size_t newIndex);
 		shard::syntax::SyntaxToken At(size_t index);
 		shard::syntax::SyntaxToken Front();

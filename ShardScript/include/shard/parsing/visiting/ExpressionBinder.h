@@ -34,6 +34,8 @@
 #include <shard/syntax/nodes/Statements/ReturnStatementSyntax.h>
 #include <shard/syntax/nodes/Statements/VariableStatementSyntax.h>
 
+#include <shard/syntax/TokenType.h>
+
 #include <unordered_map>
 #include <vector>
 

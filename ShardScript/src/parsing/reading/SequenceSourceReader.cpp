@@ -8,7 +8,6 @@
 #include <string>
 #include <vector>
 
-using namespace std;
 using namespace shard::syntax;
 using namespace shard::parsing;
 using namespace shard::parsing::analysis;
@@ -42,16 +41,16 @@ void SequenceSourceReader::Push(SyntaxToken token)
 	Sequence.push_back(token);
 }
 
-void SequenceSourceReader::Populate(vector<SyntaxToken> fromVector)
+void SequenceSourceReader::Populate(std::vector<SyntaxToken> fromvector)
 {
-	for (const SyntaxToken& fromToken : fromVector)
+	for (const SyntaxToken& fromToken : fromvector)
 		Push(fromToken);
 }
 
-void SequenceSourceReader::SetSequence(vector<SyntaxToken> setVector)
+void SequenceSourceReader::SetSequence(std::vector<SyntaxToken> setvector)
 {
 	Clear();
-	Sequence = setVector;
+	Sequence = setvector;
 }
 
 void SequenceSourceReader::SetIndex(size_t newIndex)
@@ -114,7 +113,7 @@ bool SequenceSourceReader::CanPeek()
 	return CurrentIndex < Sequence.size() - 1;
 }
 
-TextLocation SequenceSourceReader::GetLocation(wstring& word)
+TextLocation SequenceSourceReader::GetLocation(std::wstring& word)
 {
 	return TextLocation();
 }

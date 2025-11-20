@@ -6,17 +6,16 @@
 #include <stdexcept>
 #include <string>
 
-using namespace std;
 using namespace shard::parsing;
 using namespace shard::parsing::analysis;
 
-FileReader::FileReader(const wstring& fileName) : SourceReader()
+FileReader::FileReader(const std::wstring& fileName) : SourceReader()
 {
 	Filename = fileName;
 
-	InputStream = wfstream(fileName, ios::in);
+	InputStream = std::wfstream(fileName, std::ios::in);
 	if (!InputStream)
-		throw new runtime_error("Cannot open file");
+		throw new std::runtime_error("Cannot open file");
 }
 
 FileReader::~FileReader()
@@ -24,7 +23,7 @@ FileReader::~FileReader()
 	InputStream.close();
 }
 
-TextLocation FileReader::GetLocation(wstring& word)
+TextLocation FileReader::GetLocation(std::wstring& word)
 {
 	return TextLocation(Filename, Line, Offset, static_cast<int>(word.length()));
 }

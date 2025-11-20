@@ -1,12 +1,12 @@
 #include <shard/syntax/nodes/Types/GenericTypeSyntax.h>
 #include <sstream>
+#include <string>
 
-using namespace std;
 using namespace shard::syntax::nodes;
 
-wstring GenericTypeSyntax::ToString()
+std::wstring GenericTypeSyntax::ToString()
 {
-	wostringstream result;
+	std::wostringstream result;
 	result << UnderlayingType->ToString() << L"<";
 
 	if (!TypeArguments.empty())

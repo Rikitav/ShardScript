@@ -21,6 +21,7 @@ namespace shard::syntax
 		FieldDeclaration,
 		MethodDeclaration,
 		PropertyDeclaration,
+		AccessorDeclaration,
 
 		// Method parts
 		Parameter,

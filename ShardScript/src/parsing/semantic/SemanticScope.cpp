@@ -3,11 +3,10 @@
 #include <stdexcept>
 #include <string>
 
-using namespace std;
 using namespace shard::syntax;
 using namespace shard::parsing::semantic;
 
-SyntaxSymbol* SemanticScope::Lookup(wstring& name)
+SyntaxSymbol* SemanticScope::Lookup(std::wstring& name)
 {
     auto lookup = _symbols.find(name);
     if (lookup != _symbols.end())
@@ -23,7 +22,7 @@ SyntaxSymbol* SemanticScope::Lookup(wstring& name)
 void SemanticScope::DeclareSymbol(SyntaxSymbol* symbol)
 {
     if (_symbols.find(symbol->Name) != _symbols.end())
-        throw runtime_error("Symbol already defined");
+        throw std::runtime_error("Symbol already defined");
 
     _symbols[symbol->Name] = symbol;
 }

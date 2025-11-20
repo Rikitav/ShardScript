@@ -6,16 +6,15 @@
 #include <istream>
 #include <string>
 
-using namespace std;
 using namespace shard::parsing;
 using namespace shard::parsing::analysis;
 
-StringStreamReader::StringStreamReader(const wstring& source) : SourceReader()
+StringStreamReader::StringStreamReader(const std::wstring& source) : SourceReader()
 {
-	stringStream = wistringstream(source);
+	stringStream = std::wistringstream(source);
 }
 
-TextLocation StringStreamReader::GetLocation(wstring& word)
+TextLocation StringStreamReader::GetLocation(std::wstring& word)
 {
 	return TextLocation(L"<STRING>", Line, Offset, static_cast<int>(word.length()));
 }

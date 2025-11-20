@@ -21,7 +21,7 @@ namespace shard::syntax::nodes
 
 		inline virtual ~UsingDirectiveSyntax()
 		{
-			TokensList.~vector();
+
 		}
 	};
 }
