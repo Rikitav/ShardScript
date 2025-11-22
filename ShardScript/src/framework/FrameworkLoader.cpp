@@ -71,7 +71,7 @@ static ObjectInstance* Input(InboundVariablesContext* arguments)
 	return ObjectInstance::FromValue(input);
 }
 
-static ObjectInstance* typeof(InboundVariablesContext* arguments)
+static ObjectInstance* Impl_typeof(InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->Variables.at(L"object");
 	if (instance == GarbageCollector::NullInstance)
@@ -80,7 +80,7 @@ static ObjectInstance* typeof(InboundVariablesContext* arguments)
 	return ObjectInstance::FromValue(instance->Info->Name);
 }
 
-static ObjectInstance* typeofImpl(InboundVariablesContext* arguments)
+static ObjectInstance* Impl_sizeof(InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->Variables.at(L"object");
 	if (instance == GarbageCollector::NullInstance)
@@ -171,7 +171,7 @@ void FrameworkLoader::ResolveGlobalMethods(SemanticModel& semanticModel)
 
 	// typeof
 	{
-		MethodSymbol* typeofMethod = new MethodSymbol(L"typeof", typeof);
+		MethodSymbol* typeofMethod = new MethodSymbol(L"typeof", Impl_typeof);
 		typeofMethod->ReturnType = SymbolTable::Primitives::String;
 		typeofMethod->Accesibility = SymbolAccesibility::Public;
 		typeofMethod->IsStatic = true;
@@ -185,7 +185,7 @@ void FrameworkLoader::ResolveGlobalMethods(SemanticModel& semanticModel)
 
 	// sizeof
 	{
-		MethodSymbol* sizeofMethod = new MethodSymbol(L"sizeof", typeofImpl);
+		MethodSymbol* sizeofMethod = new MethodSymbol(L"sizeof", Impl_sizeof);
 		sizeofMethod->ReturnType = SymbolTable::Primitives::Integer;
 		sizeofMethod->Accesibility = SymbolAccesibility::Public;
 		sizeofMethod->IsStatic = true;
