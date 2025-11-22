@@ -94,7 +94,7 @@ void FrameworkLoader::Load(LexicalAnalyzer& lexer, SemanticModel& semanticModel,
 	ResolvePrmitives(semanticModel);
 	ResolveGlobalMethods(semanticModel);
 
-	LoadModule_Class_File(lexer, semanticModel, diagnostics);
+	LoadModule_File(lexer, semanticModel, diagnostics);
 }
 
 void FrameworkLoader::ResolvePrmitives(SemanticModel& semanticModel)

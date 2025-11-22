@@ -2,6 +2,7 @@
 #include <shard/parsing/semantic/SemanticModel.h>
 #include <shard/parsing/lexical/SyntaxTree.h>
 #include <shard/parsing/reading/FileReader.h>
+#include <shard/parsing/reading/StringStreamReader.h>
 #include <shard/parsing/visiting/DeclarationCollector.h>
 #include <shard/parsing/visiting/TypeBinder.h>
 #include <shard/parsing/analysis/DiagnosticsContext.h>
@@ -37,9 +38,19 @@ using namespace shard::syntax;
 using namespace shard::syntax::nodes;
 using namespace shard::syntax::symbols;
 
-static const std::wstring Framework_Class_File = L"C:\\Users\\gutii\\source\\repos\\ShardScript\\x64\\Debug\\File.ss";
+static const std::wstring Framework_Class_File =
+L"                                                                                \
+namespace System																  \
+{																				  \
+	public static class File													  \
+	{																			  \
+		public static string ReadAllText(string fileName);						  \
+		public static string WriteAllText(string fileName, string content);		  \
+   }																			  \
+}																				  \
+";
 
-static ObjectInstance* ReadAllText(InboundVariablesContext* arguments)
+static ObjectInstance* Impl_ReadAllText(InboundVariablesContext* arguments)
 {
 	std::wstring fileName = arguments->Variables.at(L"fileName")->ReadPrimitive<std::wstring>();
 	std::wifstream fileStream(fileName);
@@ -51,7 +62,7 @@ static ObjectInstance* ReadAllText(InboundVariablesContext* arguments)
  	return ObjectInstance::FromValue(content);
 }
 
-static ObjectInstance* WriteAllText(InboundVariablesContext* arguments)
+static ObjectInstance* Impl_WriteAllText(InboundVariablesContext* arguments)
 {
 	std::wstring fileName = arguments->Variables.at(L"fileName")->ReadPrimitive<std::wstring>();
 	std::wstring content = arguments->Variables.at(L"content")->ReadPrimitive<std::wstring>();
@@ -68,13 +79,10 @@ static ObjectInstance* WriteAllText(InboundVariablesContext* arguments)
 	return nullptr;
 }
 
-static void LoadModule_Class_File(LexicalAnalyzer& lexer, SemanticModel& model, DiagnosticsContext& diagnostics)
+static void LoadModule_File(LexicalAnalyzer& lexer, SemanticModel& model, DiagnosticsContext& diagnostics)
 {
-	if (!PathFileExistsW(Framework_Class_File.c_str()))
-		return;
-
 	SyntaxTree tree;
-	FileReader reader = FileReader(Framework_Class_File);
+	StringStreamReader reader = StringStreamReader(Framework_Class_File);
 	lexer.FromSourceReader(tree, reader);
 
 	DeclarationCollector collector(model.Table, diagnostics);
@@ -97,13 +105,13 @@ static void LoadModule_Class_File(LexicalAnalyzer& lexer, SemanticModel& model, 
 				{
 					MethodSymbol* symbol = static_cast<MethodSymbol*>(model.Table->LookupSymbol(method));
 					symbol->HandleType = MethodHandleType::FunctionPointer;
-					symbol->FunctionPointer = ReadAllText;
+					symbol->FunctionPointer = Impl_ReadAllText;
 				}
 				else if (method->IdentifierToken.Word == L"WriteAllText")
 				{
 					MethodSymbol* symbol = static_cast<MethodSymbol*>(model.Table->LookupSymbol(method));
 					symbol->HandleType = MethodHandleType::FunctionPointer;
-					symbol->FunctionPointer = WriteAllText;
+					symbol->FunctionPointer = Impl_WriteAllText;
 				}
 				else
 				{
