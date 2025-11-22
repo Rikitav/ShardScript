@@ -130,6 +130,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\framework\filesystem\File.cpp" />
     <ClCompile Include="src\parsing\visiting\ScopeVisitor.cpp" />
     <ClCompile Include="src\framework\FrameworkLoader.cpp" />
     <ClCompile Include="src\framework\primitives\ArrayPrimitive.cpp" />

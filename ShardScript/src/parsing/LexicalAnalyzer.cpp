@@ -32,6 +32,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/PropertyDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.h>
 
 #include <shard/syntax/nodes/Directives/UsingDirectiveSyntax.h>
@@ -1643,6 +1644,9 @@ TypeDeclarationSyntax* LexicalAnalyzer::make_type(MemberDeclarationInfo& info, S
 	{
 		case TokenType::ClassKeyword:
 			return new ClassDeclarationSyntax(info, parent);
+
+		case TokenType::StructKeyword:
+			return new StructDeclarationSyntax(info, parent);
 
 		default:
 			throw std::runtime_error("unknown type delcaration");

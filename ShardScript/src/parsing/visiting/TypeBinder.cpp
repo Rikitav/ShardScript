@@ -273,6 +273,9 @@ TypeSymbol* TypeBinder::ResolveType(TypeSyntax* typeSyntax)
 				case TokenType::VoidKeyword:
 					return SymbolTable::Primitives::Void;
 
+				case TokenType::VarKeyword:
+					return SymbolTable::Primitives::Any;
+
 				default:
 					return nullptr;
 			}

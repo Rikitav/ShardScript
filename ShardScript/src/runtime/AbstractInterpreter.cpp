@@ -124,8 +124,11 @@ void AbstractInterpreter::RaiseException(ObjectInstance* exceptionReg)
 	CallStackFrame* frame = CurrentFrame();
 	if (frame->PreviousFrame != nullptr)
 	{
-		frame->PreviousFrame->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
-		frame->PreviousFrame->InterruptionRegister = exceptionReg;
+		PopFrame();
+		frame = CurrentFrame();
+		frame->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
+		frame->InterruptionRegister = exceptionReg;
+		RaiseException(exceptionReg);
 		return;
 	}
 
@@ -133,7 +136,8 @@ void AbstractInterpreter::RaiseException(ObjectInstance* exceptionReg)
 	TypeSymbol* exceptionType = const_cast<TypeSymbol*>(exceptionReg->Info);
 	if (exceptionType == SymbolTable::Primitives::String)
 	{
-		ConsoleHelper::WriteLine(L"Critical error, could not invoke to string method, to get exception description. Exception type - " + exceptionType->Name);
+		std::wstring exceptionString = exceptionReg->ReadPrimitive<std::wstring>();
+		ConsoleHelper::WriteLine(exceptionString);
 		return;
 	}
 

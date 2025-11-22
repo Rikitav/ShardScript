@@ -1,10 +1,12 @@
 #pragma once
 #include <shard/parsing/semantic/SemanticScope.h>
-#include <shard/syntax/symbols/MethodSymbol.h>
-#include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/SyntaxSymbol.h>
 #include <shard/syntax/SyntaxNode.h>
 #include <shard/syntax/SyntaxKind.h>
+
+#include <shard/syntax/symbols/MethodSymbol.h>
+#include <shard/syntax/symbols/TypeSymbol.h>
+#include <shard/syntax/symbols/NamespaceSymbol.h>
 
 #include <unordered_map>
 #include <vector>
@@ -18,6 +20,8 @@ namespace shard::parsing::semantic
         inline static const std::wstring GlobalTypeName = L"__GLOBAL__";
         std::unordered_map<shard::syntax::SyntaxNode*, shard::syntax::SyntaxSymbol*> nodeToSymbolMap;
         std::unordered_map<shard::syntax::SyntaxSymbol*, shard::syntax::SyntaxNode*> symbolToNodeMap;
+        std::vector<shard::syntax::symbols::NamespaceSymbol*> namespacesList;
+        std::vector<shard::syntax::symbols::TypeSymbol*> typesList;
 
     public:
         std::vector<shard::syntax::symbols::MethodSymbol*> EntryPointCandidates;
@@ -27,6 +31,7 @@ namespace shard::parsing::semantic
         struct Primitives
         {
             inline static shard::syntax::symbols::TypeSymbol* Void;
+            inline static shard::syntax::symbols::TypeSymbol* Any;
             inline static shard::syntax::symbols::TypeSymbol* Array;
             inline static shard::syntax::symbols::TypeSymbol* Boolean;
             inline static shard::syntax::symbols::TypeSymbol* Integer;
@@ -63,6 +68,7 @@ namespace shard::parsing::semantic
         void BindSymbol(shard::syntax::SyntaxNode* node, shard::syntax::SyntaxSymbol* symbol);
         shard::syntax::SyntaxSymbol* LookupSymbol(shard::syntax::SyntaxNode* node);
         shard::syntax::SyntaxNode* GetSyntaxNode(shard::syntax::SyntaxSymbol* symbol);
+        std::vector<shard::syntax::symbols::NamespaceSymbol*> GetNamespaceSymbols();
         std::vector<shard::syntax::symbols::TypeSymbol*> GetTypeSymbols();
     };
 }

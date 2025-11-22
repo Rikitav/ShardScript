@@ -55,7 +55,6 @@ namespace shard::parsing
 		shard::syntax::symbols::TypeSymbol* AnalyzeObjectExpression(shard::syntax::nodes::ObjectExpressionSyntax* node);
 		shard::syntax::symbols::TypeSymbol* AnalyzeCollectionExpression(shard::syntax::nodes::CollectionExpressionSyntax* node);
 
-		//shard::syntax::symbols::TypeSymbol* AnalyzeLinkedExpression(shard::syntax::nodes::LinkedExpressionSyntax* node);
 		shard::syntax::symbols::TypeSymbol* AnalyzeMemberAccessExpression(shard::syntax::nodes::MemberAccessExpressionSyntax* node, shard::syntax::symbols::TypeSymbol* currentType);
 		shard::syntax::symbols::TypeSymbol* AnalyzeFieldKeywordExpression(shard::syntax::nodes::MemberAccessExpressionSyntax* node, shard::syntax::symbols::TypeSymbol* currentType);
 		shard::syntax::symbols::TypeSymbol* AnalyzeInvokationExpression(shard::syntax::nodes::InvokationExpressionSyntax* node, shard::syntax::symbols::TypeSymbol* currentType);
@@ -71,6 +70,8 @@ namespace shard::parsing
 			: SyntaxVisitor(symbolTable, diagnostics), ScopeVisitor(symbolTable) { }
 
 		void VisitCompilationUnit(shard::syntax::nodes::CompilationUnitSyntax* node) override;
+		void VisitUsingDirective(shard::syntax::nodes::UsingDirectiveSyntax* node) override;
+
 		void VisitNamespaceDeclaration(shard::syntax::nodes::NamespaceDeclarationSyntax* node) override;
 		void VisitClassDeclaration(shard::syntax::nodes::ClassDeclarationSyntax* node) override;
 		void VisitStructDeclaration(shard::syntax::nodes::StructDeclarationSyntax* node) override;
@@ -92,7 +93,6 @@ namespace shard::parsing
 		void VisitObjectCreationExpression(shard::syntax::nodes::ObjectExpressionSyntax* node) override;
 		void VisitCollectionExpression(shard::syntax::nodes::CollectionExpressionSyntax* node) override;
 
-		//void VisitLinkedExpression(shard::syntax::nodes::LinkedExpressionSyntax* node) override;
 		void VisitMemberAccessExpression(shard::syntax::nodes::MemberAccessExpressionSyntax* node) override;
 		void VisitInvocationExpression(shard::syntax::nodes::InvokationExpressionSyntax* node) override;
 		void VisitIndexatorExpression(shard::syntax::nodes::IndexatorExpressionSyntax* node) override;

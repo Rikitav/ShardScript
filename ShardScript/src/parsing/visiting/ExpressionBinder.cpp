@@ -55,6 +55,8 @@
 #include <string>
 #include <sstream>
 
+#define DONT_CARE_RESOLVE_ALL
+
 using namespace shard::parsing;
 using namespace shard::parsing::semantic;
 using namespace shard::syntax::nodes;
@@ -130,6 +132,11 @@ TypeSymbol* ExpressionBinder::GetExpressionType(ExpressionSyntax* expression)
 void ExpressionBinder::VisitCompilationUnit(CompilationUnitSyntax* node)
 {
 	PushScope(nullptr);
+
+#ifdef DONT_CARE_RESOLVE_ALL
+	for (TypeSymbol* type : Table->GetTypeSymbols())
+		Declare(type);
+#endif
 	for (UsingDirectiveSyntax* directive : node->Usings)
 		VisitUsingDirective(directive);
 
@@ -137,6 +144,11 @@ void ExpressionBinder::VisitCompilationUnit(CompilationUnitSyntax* node)
 		VisitTypeDeclaration(member);
 	
 	PopScope();
+}
+
+void ExpressionBinder::VisitUsingDirective(UsingDirectiveSyntax* node)
+{
+	
 }
 
 void ExpressionBinder::VisitNamespaceDeclaration(NamespaceDeclarationSyntax* node)
@@ -321,8 +333,17 @@ void ExpressionBinder::VisitVariableStatement(VariableStatementSyntax* node)
 		return;
 	}
 
+	if (varSymbol->Type == SymbolTable::Primitives::Any)
+	{
+		varSymbol->Type = expressionType;
+		return;
+	}
+
 	if (!TypeSymbol::Equals(varSymbol->Type, expressionType))
+	{
 		Diagnostics.ReportError(node->IdentifierToken, L"Type mismatch: expected '" + varSymbol->Type->Name + L"' but got '" + expressionType->Name + L"'");
+		return;
+	}
 }
 
 TypeSymbol* ExpressionBinder::AnalyzeLiteralExpression(LiteralExpressionSyntax* node)
@@ -573,17 +594,22 @@ bool ExpressionBinder::MatchMethodArguments(MethodSymbol* method, std::vector<Ar
 		
 		if (param->Type == nullptr)
 		{
-			Diagnostics.ReportError(SyntaxToken(), L"Parameter '" + param->Name + L"' type not resolved");
+			//Diagnostics.ReportError(SyntaxToken(), L"Parameter '" + param->Name + L"' type not resolved");
 			return false;
 		}
 		
 		if (argType == nullptr)
 		{
-			Diagnostics.ReportError(SyntaxToken(), L"Argument type could not be determined for parameter '" + param->Name + L"'");
+			//Diagnostics.ReportError(SyntaxToken(), L"Argument type could not be determined for parameter '" + param->Name + L"'");
 			return false;
 		}
-		
-		if (param->Type != argType)
+
+		if (param->Type == SymbolTable::Primitives::Any)
+		{
+			return true;
+		}
+
+		if (!TypeSymbol::Equals(param->Type, argType))
 		{
 			Diagnostics.ReportError(SyntaxToken(), L"Argument type mismatch for parameter '" + param->Name + L"': expected '" + param->Type->Name + L"' but got '" + argType->Name + L"'");
 			return false;
@@ -592,6 +618,7 @@ bool ExpressionBinder::MatchMethodArguments(MethodSymbol* method, std::vector<Ar
 	
 	return true;
 }
+
 TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressionSyntax* node, TypeSymbol* currentType)
 {
 	if (node->PreviousExpression == nullptr)
@@ -828,7 +855,7 @@ TypeSymbol* ExpressionBinder::AnalyzeInvokationExpression(InvokationExpressionSy
 
 	if (!MatchMethodArguments(method, node->ArgumentsList->Arguments))
 	{
-		Diagnostics.ReportError(node->IdentifierToken, L"Method '" + methodName + L"' argument types do not match");
+		//Diagnostics.ReportError(node->IdentifierToken, L"Method '" + methodName + L"' argument types do not match");
 		return nullptr;
 	}
 
@@ -855,6 +882,9 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node, 
 		VisitExpression(expr);
 
 		TypeSymbol* argType = GetExpressionType(expr);
+		if (argType == nullptr)
+			return nullptr;
+
 		argTypes.push_back(argType);
 	}
 
@@ -867,30 +897,34 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node, 
 		std::wstringstream diag;
 		diag << "No method \"" << methodName << "\" found that accepts ";
 
-		if (argTypes.size() == 0)
+		switch (argTypes.size())
 		{
-			diag << "no arguments";
-		}
-		else if (argTypes.size() == 1)
-		{
-			TypeSymbol* type = argTypes.at(0);
-			std::wstring typeName = type == nullptr ? L"<error>" : type->Name;
-			diag << "argument (" << typeName << ")";
-		}
-		else
-		{
-			TypeSymbol* type = argTypes.at(0);
-			std::wstring typeName = type == nullptr ? L"<error>" : type->Name;
-			diag << L"arguments (" << typeName;
-
-			for (int i = 1; i < argTypes.size(); i++)
+			case 0:
 			{
-				type = argTypes.at(i);
-				typeName = type == nullptr ? L"<error>" : type->Name;
-				diag << ", " << typeName;
+				diag << "no arguments";
+				break;
 			}
 
-			diag << ")";
+			case 1:
+			{
+				TypeSymbol* type = argTypes.at(0);
+				std::wstring typeName = type == nullptr ? L"<error>" : type->Name;
+				diag << "argument (" << typeName << ")";
+			}
+
+			default:
+			{
+				TypeSymbol* type = argTypes.at(0);
+				diag << L"arguments (" << type->Name;
+
+				for (int i = 1; i < argTypes.size(); i++)
+				{
+					type = argTypes.at(i);
+					diag << ", " << type->Name;
+				}
+
+				diag << ")";
+			}
 		}
 
 		Diagnostics.ReportError(node->IdentifierToken, diag.str());
@@ -926,7 +960,7 @@ TypeSymbol* ExpressionBinder::AnalyzeIndexatorExpression(IndexatorExpressionSynt
 
 	if (!MatchMethodArguments(method, node->IndexatorList->Arguments))
 	{
-		Diagnostics.ReportError(node->MemberAccess->IdentifierToken, L"Indexator '" + methodName + L"' argument types do not match");
+		//Diagnostics.ReportError(node->MemberAccess->IdentifierToken, L"Indexator '" + methodName + L"' argument types do not match");
 		return nullptr;
 	}
 
@@ -959,6 +993,9 @@ MethodSymbol* ExpressionBinder::ResolveIndexator(IndexatorExpressionSyntax* node
 		VisitExpression(expr);
 
 		TypeSymbol* argType = GetExpressionType(expr);
+		if (argType == nullptr)
+			return nullptr;
+
 		argTypes.push_back(argType);
 	}
 
@@ -976,30 +1013,34 @@ MethodSymbol* ExpressionBinder::ResolveIndexator(IndexatorExpressionSyntax* node
 		std::wstringstream diag;
 		diag << "No indeaxtors for type \"" << currentType->Name << "\" found that accepts ";
 
-		if (argTypes.size() == 0)
+		switch (argTypes.size())
 		{
-			diag << "no arguments";
-		}
-		else if (argTypes.size() == 1)
-		{
-			TypeSymbol* type = argTypes.at(0);
-			std::wstring typeName = type == nullptr ? L"<error>" : type->Name;
-			diag << "argument (" << typeName << ")";
-		}
-		else
-		{
-			TypeSymbol* type = argTypes.at(0);
-			std::wstring typeName = type == nullptr ? L"<error>" : type->Name;
-			diag << L"arguments (" << typeName;
-
-			for (int i = 1; i < argTypes.size(); i++)
+			case 0:
 			{
-				type = argTypes.at(i);
-				typeName = type == nullptr ? L"<error>" : type->Name;
-				diag << ", " << typeName;
+				diag << "no arguments";
+				break;
 			}
 
-			diag << ")";
+			case 1:
+			{
+				TypeSymbol* type = argTypes.at(0);
+				std::wstring typeName = type == nullptr ? L"<error>" : type->Name;
+				diag << "argument (" << typeName << ")";
+			}
+
+			default:
+			{
+				TypeSymbol* type = argTypes.at(0);
+				diag << L"arguments (" << type->Name;
+
+				for (int i = 1; i < argTypes.size(); i++)
+				{
+					type = argTypes.at(i);
+					diag << ", " << type->Name;
+				}
+
+				diag << ")";
+			}
 		}
 
 		Diagnostics.ReportError(node->MemberAccess->IdentifierToken, diag.str());

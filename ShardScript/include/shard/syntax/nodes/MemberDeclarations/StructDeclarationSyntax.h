@@ -10,12 +10,12 @@ namespace shard::syntax::nodes
 	{
 	public:
 		inline StructDeclarationSyntax(const SyntaxNode* parent)
-			: TypeDeclarationSyntax(SyntaxKind::ClassDeclaration, parent) { }
+			: TypeDeclarationSyntax(SyntaxKind::StructDeclaration, parent) { }
 
 		inline StructDeclarationSyntax(const StructDeclarationSyntax& other)
 			: TypeDeclarationSyntax(other) { }
 
-		inline StructDeclarationSyntax(shard::parsing::lexical::MemberDeclarationInfo& info, const SyntaxNode* parent) : TypeDeclarationSyntax(SyntaxKind::ClassDeclaration, parent)
+		inline StructDeclarationSyntax(shard::parsing::lexical::MemberDeclarationInfo& info, const SyntaxNode* parent) : TypeDeclarationSyntax(SyntaxKind::StructDeclaration, parent)
 		{
 			Modifiers = info.Modifiers;
 			IdentifierToken = info.Identifier;

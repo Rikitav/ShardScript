@@ -97,6 +97,7 @@ namespace shard::syntax
 
 		// Built-in type keywords
 		VoidKeyword,		  // void
+		VarKeyword,			  // var
 		IntegerKeyword,		  // int
 		ShortKeyword,		  // short
 		LongKeyword,		  // long

@@ -96,7 +96,7 @@ int wmain(int argc, wchar_t* argv[])
 		SemanticModel semanticModel = SemanticModel(syntaxTree);
 		if (!args.ExcludeStd)
 		{
-			FrameworkLoader::Load(semanticModel);
+			FrameworkLoader::Load(lexer, semanticModel, diagnostics);
 		}
 
 		SemanticAnalyzer semanticAnalyzer(diagnostics);

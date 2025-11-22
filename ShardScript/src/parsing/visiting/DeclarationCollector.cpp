@@ -6,6 +6,7 @@
 #include <shard/syntax/TokenType.h>
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxToken.h>
+#include <shard/syntax/SymbolAccesibility.h>
 
 #include <shard/syntax/nodes/ParametersListSyntax.h>
 #include <shard/syntax/nodes/CompilationUnitSyntax.h>
@@ -20,6 +21,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/PropertyDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.h>
 
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/StructSymbol.h>
@@ -31,11 +33,9 @@
 #include <shard/syntax/symbols/ParameterSymbol.h>
 #include <shard/syntax/symbols/VariableSymbol.h>
 #include <shard/syntax/symbols/FFISymbol.h>
+#include <shard/syntax/symbols/AccessorSymbol.h>
 
 #include <string>
-#include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.h>
-#include <shard/syntax/SymbolAccesibility.h>
-#include <shard/syntax/symbols/AccessorSymbol.h>
 
 using namespace shard::parsing;
 using namespace shard::parsing::semantic;
@@ -69,9 +69,12 @@ void DeclarationCollector::VisitNamespaceDeclaration(NamespaceDeclarationSyntax*
 {
     std::wstring namespaceName = node->IdentifierToken.Word;
     NamespaceSymbol* symbol = new NamespaceSymbol(namespaceName);
-    symbol->Parent = OwnerNamespace();
     Table->BindSymbol(node, symbol);
 
+    NamespaceSymbol* parentNamespace = OwnerNamespace();
+    symbol->Parent = parentNamespace;
+    symbol->FullName = parentNamespace == nullptr ? symbol->Name : parentNamespace->FullName + L"." + symbol->Name;
+    
     Declare(symbol);
     PushScope(symbol);
     

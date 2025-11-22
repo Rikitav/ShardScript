@@ -285,6 +285,7 @@ bool SourceReader::ReadStringLiteral(std::wstring& word, bool dontEcran, bool& w
 					Symbol = L'\\';
 					word += Symbol;
 					ecran = false;
+					break;
 				}
 
 				ecran = true;
@@ -967,6 +968,11 @@ bool SourceReader::IsType(std::wstring& word, TokenType& type)
 	if (word == L"void")
 	{
 		type = TokenType::VoidKeyword;
+		return true;
+	}
+	else if (word == L"var")
+	{
+		type = TokenType::VarKeyword;
 		return true;
 	}
 	else if (word == L"bool")

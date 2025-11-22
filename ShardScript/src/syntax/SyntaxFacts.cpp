@@ -182,6 +182,7 @@ bool IsPredefinedType(TokenType type)
 	switch (type)
 	{
 		case TokenType::VoidKeyword:
+		case TokenType::VarKeyword:
 		case TokenType::IntegerKeyword:
 		case TokenType::CharKeyword:
 		case TokenType::StringKeyword:

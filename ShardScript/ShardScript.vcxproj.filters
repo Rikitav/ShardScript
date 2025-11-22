@@ -161,6 +161,9 @@
     <ClCompile Include="src\utilities\AssociateRegistry.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
+    <ClCompile Include="src\framework\filesystem\File.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\shard\parsing\lexical\SyntaxTree.h">

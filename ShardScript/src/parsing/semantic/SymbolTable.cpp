@@ -5,6 +5,7 @@
 #include <shard/syntax/SyntaxKind.h>
 
 #include <shard/syntax/symbols/TypeSymbol.h>
+#include <shard/syntax/symbols/NamespaceSymbol.h>
 
 #include <vector>
 #include <ranges>
@@ -54,12 +55,27 @@ void SymbolTable::BindSymbol(SyntaxNode* node, SyntaxSymbol* symbol)
 {
 	nodeToSymbolMap[node] = symbol;
 	symbolToNodeMap[symbol] = node;
+
+	if (symbol->IsType())
+		typesList.push_back(static_cast<TypeSymbol*>(symbol));
+
+	if (symbol->Kind == SyntaxKind::NamespaceDeclaration)
+		namespacesList.push_back(static_cast<NamespaceSymbol*>(symbol));
+}
+
+std::vector<NamespaceSymbol*> SymbolTable::GetNamespaceSymbols()
+{
+	return namespacesList;
 }
 
 std::vector<TypeSymbol*> SymbolTable::GetTypeSymbols()
 {
+	/*
 	auto cond = [](const SyntaxSymbol* symbol) { return symbol->Kind == SyntaxKind::ClassDeclaration || symbol->Kind == SyntaxKind::StructDeclaration || symbol->Kind == SyntaxKind::CollectionExpression; };
 	auto trans = [](const SyntaxSymbol* symbol) { return static_cast<TypeSymbol*>((SyntaxSymbol*)symbol); };
 	auto types = symbolToNodeMap | keys | filter(cond) | transform(trans);
 	return std::vector<TypeSymbol*>(types.begin(), types.end());
+	*/
+
+	return typesList;
 }

@@ -4,17 +4,24 @@
 #include <shard/syntax/symbols/PropertySymbol.h>
 #include <shard/syntax/symbols/ParameterSymbol.h>
 #include <shard/syntax/symbols/ArrayTypeSymbol.h>
+
 #include <shard/syntax/SyntaxKind.h>
+
+#include <shard/parsing/semantic/SymbolTable.h>
 
 #include <algorithm>
 #include <vector>
 #include <string>
 
+using namespace shard::parsing::semantic;
 using namespace shard::syntax::symbols;
 
-static bool paramPredicate(TypeSymbol* left, ParameterSymbol* right)
+static bool paramPredicate(ParameterSymbol* left, TypeSymbol* right)
 {
-	return left == right->Type;
+	if (left->Type == SymbolTable::Primitives::Any)
+		return true;
+
+	return TypeSymbol::Equals(left->Type, right);
 }
 
 bool TypeSymbol::Equals(const TypeSymbol* left, const TypeSymbol* right)
@@ -42,7 +49,7 @@ MethodSymbol* TypeSymbol::FindMethod(std::wstring& name, std::vector<TypeSymbol*
 		if (symbol->Parameters.size() != parameterTypes.size())
 			continue;
 
-		if (std::equal(parameterTypes.begin(), parameterTypes.end(), symbol->Parameters.begin(), paramPredicate))
+		if (std::equal(symbol->Parameters.begin(), symbol->Parameters.end(), parameterTypes.begin(), paramPredicate))
 			return symbol;
 	}
 
@@ -56,7 +63,7 @@ MethodSymbol* TypeSymbol::FindIndexator(std::vector<TypeSymbol*> parameterTypes)
 		if (symbol->Parameters.size() != parameterTypes.size())
 			continue;
 
-		if (std::equal(parameterTypes.begin(), parameterTypes.end(), symbol->Parameters.begin(), paramPredicate))
+		if (std::equal(symbol->Parameters.begin(), symbol->Parameters.end(), parameterTypes.begin(), paramPredicate))
 			return symbol;
 	}
 

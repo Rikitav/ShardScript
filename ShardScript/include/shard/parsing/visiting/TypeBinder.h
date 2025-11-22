@@ -39,6 +39,7 @@ namespace shard::parsing
 		void VisitFieldDeclaration(shard::syntax::nodes::FieldDeclarationSyntax* node) override;
 		void VisitPropertyDeclaration(shard::syntax::nodes::PropertyDeclarationSyntax* node) override;
 		void VisitVariableStatement(shard::syntax::nodes::VariableStatementSyntax* node) override;
+
 		void VisitObjectCreationExpression(shard::syntax::nodes::ObjectExpressionSyntax* node) override;
 		void VisitCollectionExpression(shard::syntax::nodes::CollectionExpressionSyntax* node) override;
 		void VisitMemberAccessExpression(shard::syntax::nodes::MemberAccessExpressionSyntax* node) override;
