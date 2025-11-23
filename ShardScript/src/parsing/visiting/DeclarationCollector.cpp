@@ -71,9 +71,9 @@ void DeclarationCollector::VisitNamespaceDeclaration(NamespaceDeclarationSyntax*
     NamespaceSymbol* symbol = new NamespaceSymbol(namespaceName);
     Table->BindSymbol(node, symbol);
 
-    NamespaceSymbol* parentNamespace = OwnerNamespace();
-    symbol->Parent = parentNamespace;
-    symbol->FullName = parentNamespace == nullptr ? symbol->Name : parentNamespace->FullName + L"." + symbol->Name;
+    SyntaxSymbol* parent = OwnerSymbol();
+    symbol->Parent = parent;
+    symbol->FullName = parent == nullptr ? symbol->Name : parent->FullName + L"." + symbol->Name;
     
     Declare(symbol);
     PushScope(symbol);
@@ -88,8 +88,11 @@ void DeclarationCollector::VisitClassDeclaration(ClassDeclarationSyntax* node)
 {
     std::wstring className = node->IdentifierToken.Word;
     ClassSymbol* symbol = new ClassSymbol(className);
-    symbol->Parent = OwnerSymbol();
     SetAccesibility(symbol, node->Modifiers);
+
+    SyntaxSymbol* parent = OwnerSymbol();
+    symbol->Parent = parent;
+    symbol->FullName = parent == nullptr ? symbol->Name : parent->FullName + L"." + symbol->Name;
 
     Table->BindSymbol(node, symbol);
     Declare(symbol);
@@ -107,6 +110,10 @@ void DeclarationCollector::VisitStructDeclaration(StructDeclarationSyntax* node)
     StructSymbol* symbol = new StructSymbol(structName);
     symbol->Parent = OwnerSymbol();
     SetAccesibility(symbol, node->Modifiers);
+
+    SyntaxSymbol* parent = OwnerSymbol();
+    symbol->Parent = parent;
+    symbol->FullName = parent == nullptr ? symbol->Name : parent->FullName + L"." + symbol->Name;
 
     Table->BindSymbol(node, symbol);
     Declare(symbol);
@@ -127,6 +134,7 @@ void DeclarationCollector::VisitFieldDeclaration(FieldDeclarationSyntax* node)
 
     TypeSymbol* ownerType = OwnerType();
     symbol->Parent = ownerType;
+    symbol->FullName = ownerType == nullptr ? symbol->Name : ownerType->FullName + L"." + symbol->Name;
 
     if (symbol->Parent == nullptr)
     {
@@ -151,7 +159,6 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 {
     std::wstring methodName = node->IdentifierToken.Word;
     MethodSymbol* symbol = new MethodSymbol(methodName, node->Body);
-    symbol->Parent = OwnerType();
     SetAccesibility(symbol, node->Modifiers);
 
     for (ParameterSyntax* parameter : node->Params->Parameters)
@@ -173,6 +180,9 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax* node)
         Diagnostics.ReportError(node->IdentifierToken, L"Cannot resolve method's owner type");
         return;
     }
+
+    symbol->Parent = ownerType;
+    symbol->FullName = ownerType == nullptr ? symbol->Name : ownerType->FullName + L"." + symbol->Name;
 
     ownerType->Methods.push_back(symbol);
     Declare(symbol);
@@ -196,10 +206,9 @@ void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax* n
 {
     std::wstring propertyName = node->IdentifierToken.Word;
     PropertySymbol* symbol = new PropertySymbol(propertyName);
-
-    symbol->Parent = OwnerType();
     SetAccesibility(symbol, node->Modifiers);
-    
+    symbol->DefaultValueExpression = node->InitializerExpression;
+
     SyntaxSymbol* ownerSymbol = OwnerSymbol();
     if (!ownerSymbol->IsType())
     {
@@ -209,6 +218,15 @@ void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax* n
 
     // Validate: static class cannot have instance properties
     TypeSymbol* ownerType = static_cast<TypeSymbol*>(ownerSymbol);
+    if (ownerType == nullptr)
+    {
+        Diagnostics.ReportError(node->IdentifierToken, L"Cannot resolve method's owner type");
+        return;
+    }
+
+    symbol->Parent = ownerType;
+    symbol->FullName = ownerType == nullptr ? symbol->Name : ownerType->FullName + L"." + symbol->Name;
+
     if (!symbol->IsStatic && ownerType->IsStatic)
     {
         Diagnostics.ReportError(node->IdentifierToken, L"Static class cannot have instance properties");

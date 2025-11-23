@@ -466,6 +466,9 @@
     <ClInclude Include="include\shard\syntax\symbols\AccessorSymbol.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
+    <ClInclude Include="include\shard\framework\FrameworkModule.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="framework.ss" />
