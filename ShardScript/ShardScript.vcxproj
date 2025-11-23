@@ -182,6 +182,7 @@
     <ClCompile Include="src\utilities\ExecutableVersion.cpp" />
     <ClInclude Include="include\ffi\ffi.h" />
     <ClInclude Include="include\ffi\ffitarget.h" />
+    <ClInclude Include="include\shard\framework\FrameworkModule.h" />
     <ClInclude Include="include\shard\parsing\LayoutGenerator.h" />
     <ClInclude Include="include\shard\framework\FrameworkLoader.h" />
     <ClInclude Include="include\shard\framework\primitives\ArrayPrimitive.h" />

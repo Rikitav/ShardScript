@@ -10,7 +10,6 @@ namespace shard::syntax::symbols
 	{
 	public:
 		std::vector<SyntaxSymbol*> Members;
-		std::wstring FullName;
 
 		inline NamespaceSymbol(std::wstring name)
 			: SyntaxSymbol(name, SyntaxKind::NamespaceDeclaration) { }

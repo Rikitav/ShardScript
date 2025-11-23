@@ -1,9 +1,14 @@
 #include <shard/framework/FrameworkLoader.h>
+#include <shard/framework/FrameworkModule.h>
 
-#include <shard/parsing/analysis/DiagnosticsContext.h>
+#include <shard/parsing/LexicalAnalyzer.h>
+#include <shard/parsing/SemanticAnalyzer.h>
+
 #include <shard/parsing/semantic/SemanticModel.h>
 #include <shard/parsing/semantic/SymbolTable.h>
-#include <shard/parsing/LexicalAnalyzer.h>
+#include <shard/parsing/analysis/DiagnosticsContext.h>
+#include <shard/parsing/lexical/SyntaxTree.h>
+#include <shard/parsing/reading/StringStreamReader.h>
 
 #include <shard/runtime/GarbageCollector.h>
 #include <shard/runtime/ConsoleHelper.h>
@@ -16,17 +21,29 @@
 #include <shard/framework/primitives/StringPrimitive.h>
 #include <shard/framework/primitives/ArrayPrimitive.h>
 
+#include <shard/syntax/SyntaxKind.h>
+#include <shard/syntax/SymbolAccesibility.h>
+
 #include <shard/syntax/symbols/ClassSymbol.h>
 #include <shard/syntax/symbols/StructSymbol.h>
 #include <shard/syntax/symbols/MethodSymbol.h>
 #include <shard/syntax/symbols/ParameterSymbol.h>
-#include <shard/syntax/SymbolAccesibility.h>
+
+#include <shard/syntax/nodes/MemberDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.h>
 
 #include <iostream>
 #include <string>
 #include <stdexcept>
+#include <vector>
 
 #include "filesystem/File.cpp"
+
+using namespace shard::syntax::nodes;
+using namespace shard::parsing::analysis;
+using namespace shard::parsing::lexical;
 
 using namespace shard::framework;
 using namespace shard::runtime;
@@ -89,12 +106,54 @@ static ObjectInstance* Impl_sizeof(InboundVariablesContext* arguments)
 	return ObjectInstance::FromValue(static_cast<int>(instance->Info->MemoryBytesSize));
 }
 
-void FrameworkLoader::Load(LexicalAnalyzer& lexer, SemanticModel& semanticModel, DiagnosticsContext& diagnostics)
+std::vector<FrameworkModule*> FrameworkLoader::Modules = {
+	new FileSystem_File()
+};
+
+void FrameworkLoader::Load(SemanticModel& semanticModel, DiagnosticsContext& diagnostics)
 {
 	ResolvePrmitives(semanticModel);
 	ResolveGlobalMethods(semanticModel);
 
-	LoadModule_File(lexer, semanticModel, diagnostics);
+	for (FrameworkModule* module : Modules)
+	{
+		LoadSingleModule(module, semanticModel, diagnostics);
+		delete module;
+	}
+
+	Modules.clear();
+}
+
+void FrameworkLoader::LoadSingleModule(FrameworkModule* module, SemanticModel& semanticModel, DiagnosticsContext& diagnostics)
+{
+	SyntaxTree tree;
+	StringStreamReader reader = StringStreamReader(module->GetSourceCode());
+	LexicalAnalyzer lexer = LexicalAnalyzer(diagnostics);
+	SemanticAnalyzer semanter = SemanticAnalyzer(diagnostics);
+
+	lexer.FromSourceReader(tree, reader);
+	semanter.Analyze(tree, semanticModel);
+
+	NamespaceDeclarationSyntax* fileNamespace = static_cast<NamespaceDeclarationSyntax*>(tree.CompilationUnits.at(0)->Members.at(0));
+	ClassDeclarationSyntax* fileClass = static_cast<ClassDeclarationSyntax*>(fileNamespace->Members.at(0));
+
+	for (MemberDeclarationSyntax* member : fileClass->Members)
+	{
+		switch (member->Kind)
+		{
+			case SyntaxKind::MethodDeclaration:
+			{
+				MethodDeclarationSyntax* method = static_cast<MethodDeclarationSyntax*>(member);
+				MethodSymbol* symbol = static_cast<MethodSymbol*>(semanticModel.Table->LookupSymbol(method));
+				if (!module->BindMethod(symbol))
+				{
+					diagnostics.ReportError(method->IdentifierToken, L"Unexpected method in System.File class loader");
+				}
+
+				break;
+			}
+		}
+	}
 }
 
 void FrameworkLoader::ResolvePrmitives(SemanticModel& semanticModel)

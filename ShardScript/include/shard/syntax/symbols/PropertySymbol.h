@@ -6,12 +6,14 @@
 #include <shard/syntax/symbols/AccessorSymbol.h>
 #include <shard/syntax/symbols/FieldSymbol.h>
 #include <string>
+#include <shard/syntax/nodes/ExpressionSyntax.h>
 
 namespace shard::syntax::symbols
 {
     class PropertySymbol : public SyntaxSymbol
     {
     public:
+        shard::syntax::nodes::ExpressionSyntax* DefaultValueExpression = nullptr;
         TypeSymbol* ReturnType = nullptr;
         AccessorSymbol* Getter = nullptr;
         AccessorSymbol* Setter = nullptr;
