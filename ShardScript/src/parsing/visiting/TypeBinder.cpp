@@ -1,6 +1,7 @@
 #include <shard/parsing/visiting/TypeBinder.h>
 #include <shard/parsing/semantic/SymbolTable.h>
 #include <shard/parsing/semantic/SemanticScope.h>
+#include <shard/parsing/semantic/NamespaceTree.h>
 
 #include <shard/syntax/SyntaxSymbol.h>
 #include <shard/syntax/SyntaxNode.h>
@@ -47,8 +48,6 @@
 #include <vector>
 #include <string>
 
-#define DONT_CARE_RESOLVE_ALL
-
 using namespace shard::parsing;
 using namespace shard::parsing::analysis;
 using namespace shard::parsing::semantic;
@@ -68,6 +67,28 @@ void TypeBinder::VisitCompilationUnit(CompilationUnitSyntax* node)
 	PopScope();
 }
 
+void TypeBinder::VisitUsingDirective(UsingDirectiveSyntax* node)
+{
+	NamespaceNode* nsNode = Namespaces->Root;
+	for (SyntaxToken token : node->TokensList)
+	{
+		NamespaceNode* nextNsNode = nsNode->Lookup(token.Word);
+		if (nextNsNode == nullptr)
+		{
+			Diagnostics.ReportError(token, L"Identifier \'" + token.Word + L"\' doesnt exists in namespace \'" + nsNode->Owners.at(0)->FullName + L"\'");
+			return;
+		}
+
+		nsNode = nextNsNode;
+		continue;
+	}
+
+	node->Namespace = nsNode;
+	SemanticScope* current = CurrentScope();
+	for (const auto& symbol : nsNode->Types)
+		current->DeclareSymbol(symbol);
+}
+
 void TypeBinder::VisitNamespaceDeclaration(NamespaceDeclarationSyntax* node)
 {
 	NamespaceSymbol* symbol = static_cast<NamespaceSymbol*>(Table->LookupSymbol(node));
@@ -75,6 +96,13 @@ void TypeBinder::VisitNamespaceDeclaration(NamespaceDeclarationSyntax* node)
 	{
 		Declare(symbol);
 		PushScope(symbol);
+
+		for (MemberDeclarationSyntax* member : node->Members)
+		{
+			SyntaxSymbol* symbol = Table->LookupSymbol(member);
+			Declare(symbol);
+		}
+
 		for (MemberDeclarationSyntax* member : node->Members)
 			VisitMemberDeclaration(member);
 
@@ -87,8 +115,9 @@ void TypeBinder::VisitClassDeclaration(ClassDeclarationSyntax* node)
 	ClassSymbol* symbol = static_cast<ClassSymbol*>(Table->LookupSymbol(node));
 	if (symbol != nullptr)
 	{
-		Declare(symbol);
+		//Declare(symbol);
 		PushScope(symbol);
+
 		for (MemberDeclarationSyntax* member : node->Members)
 			VisitMemberDeclaration(member);
 
@@ -101,8 +130,9 @@ void TypeBinder::VisitStructDeclaration(StructDeclarationSyntax* node)
 	StructSymbol* symbol = static_cast<StructSymbol*>(Table->LookupSymbol(node));
 	if (symbol != nullptr)
 	{
-		Declare(symbol);
+		//Declare(symbol);
 		PushScope(symbol);
+
 		for (MemberDeclarationSyntax* member : node->Members)
 			VisitMemberDeclaration(member);
 
@@ -284,13 +314,12 @@ TypeSymbol* TypeBinder::ResolveType(TypeSyntax* typeSyntax)
 		case SyntaxKind::ArrayType:
 		{
 			ArrayTypeSyntax* array = static_cast<ArrayTypeSyntax*>(typeSyntax);
-			TypeSymbol* underlayingType = ResolveType(array->UnderlayingType);
-
-			if (underlayingType == nullptr)
-			{
-				Diagnostics.ReportError(array->OpenSquareToken, L"Cannot resolve array's underlaying type");
+			if (array->UnderlayingType == nullptr)
 				return nullptr;
-			}
+
+			TypeSymbol* underlayingType = ResolveType(array->UnderlayingType);
+			if (underlayingType == nullptr)
+				return nullptr;
 
 			ArrayTypeSymbol* symbol = new ArrayTypeSymbol(underlayingType, 0);
 			symbol->MemoryBytesSize = SymbolTable::Primitives::Array->MemoryBytesSize;
@@ -300,83 +329,26 @@ TypeSymbol* TypeBinder::ResolveType(TypeSyntax* typeSyntax)
 		case SyntaxKind::IdentifierNameType:
 		{
 			IdentifierNameTypeSyntax* identifierType = static_cast<IdentifierNameTypeSyntax*>(typeSyntax);
-			if (identifierType->Identifiers.empty())
+			std::wstring name = identifierType->Identifier.Word;
+
+			SemanticScope* currentScope = CurrentScope();
+			SyntaxSymbol* symbol = currentScope->Lookup(name);
+
+			if (symbol == nullptr)
+			{
+				Diagnostics.ReportError(identifierType->Identifier, L"Symbol wasnt found in current scope");
 				return nullptr;
-
-			SyntaxSymbol* symbol = nullptr;
-			if (identifierType->Identifiers.size() == 1)
-			{
-				std::wstring name = identifierType->Identifiers[0].Word;
-
-#ifdef DONT_CARE_RESOLVE_ALL
-				for (TypeSymbol* type : Table->GetTypeSymbols())
-				{
-					if (type->Name == name)
-					{
-						symbol = type;
-						break;
-					}
-				}
-#else
-				SemanticScope* currentScope = scopeStack.top();
-				symbol = currentScope->Lookup(name);
-#endif
-				if (symbol == nullptr)
-				{
-					Diagnostics.ReportError(identifierType->Identifiers[0], L"Symbol wasnt found in current scope");
-					return nullptr;
-				}
-
-				if (symbol->Kind != SyntaxKind::ClassDeclaration && symbol->Kind != SyntaxKind::StructDeclaration)
-				{
-					Diagnostics.ReportError(identifierType->Identifiers[0], L"Symbol is not a type");
-					return nullptr;
-				}
 			}
-			else
+
+			if (!symbol->IsType())
 			{
-				std::wstring firstName = identifierType->Identifiers[0].Word;
-				SemanticScope* currentScope = CurrentScope();
-				symbol = currentScope->Lookup(firstName);
-				
-				for (size_t i = 1; i < identifierType->Identifiers.size() - 1; i++)
-				{
-					std::wstring nextName = identifierType->Identifiers[i].Word;
-					NamespaceSymbol* namespaceSymbol = static_cast<NamespaceSymbol*>(symbol);
-
-					for (SyntaxSymbol* member : namespaceSymbol->Members)
-					{
-						if (member->Name != nextName)
-							continue;
-					
-						if (member->Kind != SyntaxKind::NamespaceDeclaration)
-						{
-							Diagnostics.ReportError(identifierType->Identifiers[i], L"Symbol must be a namespace");
-							return nullptr;
-						}
-
-						symbol = member;
-						break;
-					}
-
-					if (symbol == nullptr)
-					{
-						SyntaxToken token = identifierType->Identifiers[identifierType->Identifiers.size() - 1];
-						Diagnostics.ReportError(token, L"Symbol is not a '" + namespaceSymbol->Name + L"'s member");
-						return nullptr;
-					}
-				}
-
-				if (symbol->Kind != SyntaxKind::ClassDeclaration && symbol->Kind != SyntaxKind::StructDeclaration)
-				{
-					Diagnostics.ReportError(identifierType->Identifiers[identifierType->Identifiers.size() - 1], L"Symbol is not a type");
-					return nullptr;
-				}
+				Diagnostics.ReportError(identifierType->Identifier, L"Symbol is not a type");
+				return nullptr;
 			}
 
 			if (!IsSymbolAccessible(symbol))
 			{
-				Diagnostics.ReportError(identifierType->Identifiers[identifierType->Identifiers.size() - 1], L"Symbol inaccessible");
+				Diagnostics.ReportError(identifierType->Identifier, L"Symbol inaccessible");
 				return nullptr;
 			}
 

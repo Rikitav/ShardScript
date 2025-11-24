@@ -15,8 +15,8 @@ namespace shard::syntax::nodes
 		SyntaxToken CloseSquareToken;
 		int Rank = 1;
 
-		inline ArrayTypeSyntax(const SyntaxNode* parent)
-			: TypeSyntax(SyntaxKind::ArrayType, parent) { }
+		inline ArrayTypeSyntax(TypeSyntax* underlaying, const SyntaxNode* parent)
+			: TypeSyntax(SyntaxKind::ArrayType, parent), UnderlayingType(underlaying) { }
 		
 		std::wstring ToString() override;
 	};

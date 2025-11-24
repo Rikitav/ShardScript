@@ -55,7 +55,7 @@
 
 #include <shard/syntax/nodes/Types/ArrayTypeSyntax.h>
 #include <shard/syntax/nodes/Types/IdentifierNameTypeSyntax.h>
-#include <shard/syntax/nodes/Types/NullableTypeSyntax.h>
+//#include <shard/syntax/nodes/Types/NullableTypeSyntax.h>
 #include <shard/syntax/nodes/Types/PredefinedTypeSyntax.h>
 
 #include <vector>
@@ -63,6 +63,7 @@
 #include <initializer_list>
 #include <stdexcept>
 #include <new>
+#include <shard/syntax/nodes/Types/GenericTypeSyntax.h>
 
 using namespace shard::syntax;
 using namespace shard::syntax::nodes;
@@ -242,14 +243,24 @@ NamespaceDeclarationSyntax* LexicalAnalyzer::ReadNamespaceDeclaration(SourceRead
 	{
 		// Create missing identifier if we couldn't recover
 		syntax->IdentifierToken = SyntaxToken(TokenType::Identifier, L"", TextLocation(), true);
+		syntax->IdentifierTokens.push_back(syntax->IdentifierToken);
 	}
 	else
 	{
 		syntax->IdentifierToken = reader.Current();
+		syntax->IdentifierTokens.push_back(syntax->IdentifierToken);
 		reader.Consume();
 	}
 
-	if (!TryMatch(reader, { TokenType::OpenBrace, TokenType::Semicolon }, L"Expected '{' or ';'", 5))
+	SyntaxToken current = reader.Current();
+	while (current.Type == TokenType::Delimeter)
+	{
+		SyntaxToken identifier = reader.Consume();
+		syntax->IdentifierTokens.push_back(identifier);
+		current = reader.Consume();
+	}
+
+	if (!TryMatch(reader, { TokenType::OpenBrace }, L"Expected '{' or ';'", 5))
 	{
 		if (reader.CanConsume() && reader.Current().Type == TokenType::OpenBrace)
 		{
@@ -1449,67 +1460,115 @@ IndexatorListSyntax* LexicalAnalyzer::ReadIndexatorList(SourceReader& reader, Sy
 
 TypeSyntax* LexicalAnalyzer::ReadType(SourceReader& reader, SyntaxNode* parent)
 {
-	TypeSyntax* syntax = nullptr;
 	SyntaxToken current = reader.Current();
 	
 	if (IsPredefinedType(current.Type))
 	{
-		syntax = new PredefinedTypeSyntax(current, parent);
-		current = reader.Consume();
-	}
-	else if (current.Type == TokenType::Identifier)
-	{
-		IdentifierNameTypeSyntax* identifier = new IdentifierNameTypeSyntax(parent);
-		identifier->Identifiers.push_back(current);
-
-		current = reader.Consume();
-		while (reader.CanConsume() && current.Type == TokenType::Delimeter)
-		{
-			current = reader.Consume();
-			if (!reader.CanConsume())
-				break;
-			identifier->Identifiers.push_back(Expect(reader, TokenType::Identifier, L"Expected identifier"));
-			if (!reader.CanConsume())
-				break;
-			current = reader.Current();
-			continue;
-		}
-
-		syntax = identifier;
-	}
-	else
-	{
-		Diagnostics.ReportError(current, L"Unexpected token in type syntax");
-		return nullptr;
-	}
-
-	if (!reader.CanConsume())
+		reader.Consume();
+		PredefinedTypeSyntax* predefinedType = new PredefinedTypeSyntax(current, parent);
+		TypeSyntax* syntax = ReadModifiedType(reader, predefinedType, parent);
 		return syntax;
+	}
 
-	current = reader.Current();
+	if (current.Type == TokenType::Identifier)
+	{
+		TypeSyntax* identifierType = ReadIdentifierNameType(reader, parent);
+		return identifierType;
+	}
+
+	Diagnostics.ReportError(current, L"Unexpected token in type syntax");
+	return nullptr;
+}
+
+TypeSyntax* LexicalAnalyzer::ReadModifiedType(SourceReader& reader, TypeSyntax* type, SyntaxNode* parent)
+{
+	if (!reader.CanConsume())
+		return type;
+
+	SyntaxToken current = reader.Current();
 	switch (current.Type)
 	{
+		/*
 		case TokenType::Question:
 		{
 			reader.Consume();
-			return new NullableTypeSyntax(syntax, parent);
+			NullableTypeSyntax* nullable = new NullableTypeSyntax(type, parent);
+			nullable->QuestionToken = current;
+			return nullable;
 		}
+		*/
 
 		case TokenType::OpenSquare:
 		{
-			ArrayTypeSyntax* array = new ArrayTypeSyntax(parent);
-			array->CloseSquareToken = current;
-			reader.Consume();
-			
-			array->Rank = 1;
-			array->CloseSquareToken = Expect(reader, TokenType::CloseSquare, L"Expected ']'");
-			array->UnderlayingType = syntax;
-			return array;
+			return ReadArrayType(reader, type, parent);
+		}
+
+		case TokenType::LessOperator:
+		{
+			return ReadGenericType(reader, type, parent);
 		}
 
 		default:
-			return syntax;
+			return type;
 	}
+}
+
+TypeSyntax* LexicalAnalyzer::ReadIdentifierNameType(SourceReader& reader, SyntaxNode* parent)
+{
+	IdentifierNameTypeSyntax* identifier = new IdentifierNameTypeSyntax(parent);
+	identifier->Identifier = Expect(reader, TokenType::Identifier, L"Expected identifier");
+
+	TypeSyntax* modifiedSyntax = ReadModifiedType(reader, identifier, parent);
+	return modifiedSyntax;
+}
+
+TypeSyntax* LexicalAnalyzer::ReadArrayType(SourceReader& reader, TypeSyntax* previous, SyntaxNode* parent)
+{
+	ArrayTypeSyntax* array = new ArrayTypeSyntax(previous, parent);
+	array->OpenSquareToken = Expect(reader, TokenType::OpenSquare, L"Expected '['");
+	array->CloseSquareToken = Expect(reader, TokenType::CloseSquare, L"Expected ']'");
+	array->Rank = 1;
+
+	TypeSyntax* modifiedSyntax = ReadModifiedType(reader, array, parent);
+	return modifiedSyntax;
+}
+
+TypeSyntax* LexicalAnalyzer::ReadGenericType(SourceReader& reader, TypeSyntax* previous, SyntaxNode* parent)
+{
+	GenericTypeSyntax* generic = new GenericTypeSyntax(previous, parent);
+	generic->OpenListToken = Expect(reader, TokenType::LessOperator, L"Expected '<' token");
+
+	SyntaxToken checkCloser = reader.Current();
+	if (checkCloser.Type == TokenType::GreaterOperator)
+	{
+		generic->CloseListToken = checkCloser;
+		reader.Consume();
+		return generic;
+	}
+
+	while (reader.CanConsume())
+	{
+		TypeSyntax* type = ReadType(reader, generic);
+		generic->TypeArguments.push_back(type);
+
+		// Try to match separator with error recovery
+		if (!TryMatch(reader, { TokenType::Comma, TokenType::GreaterOperator }, L"Expected ',' or '>'", 3))
+		{
+			break;
+		}
+
+		SyntaxToken separatorToken = reader.Current();
+		reader.Consume();
+
+		if (separatorToken.Type == TokenType::CloseCurl)
+		{
+			generic->CloseListToken = separatorToken;
+			break;
+		}
+	}
+
+	TypeSyntax* modifiedSyntax = ReadModifiedType(reader, generic, parent);
+	return modifiedSyntax;
 }
 
 // Smart error recovery with synchronization tokens

@@ -138,6 +138,7 @@ void AbstractInterpreter::RaiseException(ObjectInstance* exceptionReg)
 	{
 		std::wstring exceptionString = exceptionReg->ReadPrimitive<std::wstring>();
 		ConsoleHelper::WriteLine(exceptionString);
+		GarbageCollector::DestroyInstance(exceptionReg);
 		return;
 	}
 
@@ -148,11 +149,15 @@ void AbstractInterpreter::RaiseException(ObjectInstance* exceptionReg)
 	if (toStringMethodRet->Info != SymbolTable::Primitives::String)
 	{
 		ConsoleHelper::WriteLine(L"Critical error, could not invoke to string method, to get exception description. Exception type - " + exceptionType->Name);
+		GarbageCollector::DestroyInstance(exceptionReg);
 		return;
 	}
 
 	std::wstring exceptionString = toStringMethodRet->ReadPrimitive<std::wstring>();
 	ConsoleHelper::WriteLine(exceptionString);
+	GarbageCollector::DestroyInstance(toStringMethodRet);
+	GarbageCollector::DestroyInstance(exceptionReg);
+	return;
 }
 
 ObjectInstance* AbstractInterpreter::ExecuteMethod(MethodSymbol* method, InboundVariablesContext* argumentsContext)
@@ -174,16 +179,15 @@ ObjectInstance* AbstractInterpreter::ExecuteMethod(MethodSymbol* method, Inbound
 			try
 			{
 				frame->InterruptionReason = FrameInterruptionReason::ValueReturned;
-				frame->InterruptionRegister = method->FunctionPointer(argumentsContext);
+				frame->InterruptionRegister = method->FunctionPointer(method, argumentsContext);
 			}
 			catch (const std::runtime_error& err)
 			{
-				frame->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
-				frame->InterruptionRegister = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String);
-
 				std::string description = err.what();
 				std::wstring wdescription = std::wstring(description.begin(), description.end());
-				frame->InterruptionRegister->WritePrimitive<std::wstring>(wdescription);
+
+				frame->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
+				frame->InterruptionRegister = ObjectInstance::FromValue(wdescription);
 			}
 
 			break;
@@ -360,7 +364,10 @@ ObjectInstance* AbstractInterpreter::ExecuteReturnStatement(const ReturnStatemen
 	callFrame->InterruptionReason = FrameInterruptionReason::ValueReturned;
 
 	if (statement->Expression != nullptr)
+	{
 		callFrame->InterruptionRegister = EvaluateExpression(statement->Expression);
+		callFrame->InterruptionRegister->IncrementReference();
+	}
 
 	return nullptr;
 }

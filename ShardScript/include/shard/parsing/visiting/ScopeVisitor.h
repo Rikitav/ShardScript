@@ -1,10 +1,14 @@
 #pragma once
 #include <shard/parsing/semantic/SymbolTable.h>
 #include <shard/parsing/semantic/SemanticScope.h>
+#include <shard/parsing/semantic/NamespaceTree.h>
+
 #include <shard/syntax/SyntaxSymbol.h>
+
 #include <shard/syntax/symbols/TypeSymbol.h>
-#include <stack>
 #include <shard/syntax/symbols/NamespaceSymbol.h>
+
+#include <stack>
 
 namespace shard::parsing
 {
@@ -24,8 +28,9 @@ namespace shard::parsing
 
 		void Declare(shard::syntax::SyntaxSymbol* symbol);
 		shard::syntax::SyntaxSymbol* OwnerSymbol();
-		shard::syntax::symbols::NamespaceSymbol* OwnerNamespace();
 		shard::syntax::symbols::TypeSymbol* OwnerType();
+		shard::syntax::symbols::NamespaceSymbol* OwnerNamespace();
+		shard::parsing::semantic::NamespaceNode* OwnerNamespaceNode();
 		bool IsSymbolAccessible(shard::syntax::SyntaxSymbol* symbol);
 	};
 }

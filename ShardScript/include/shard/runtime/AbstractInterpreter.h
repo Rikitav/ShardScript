@@ -48,6 +48,7 @@ namespace shard::runtime
 		static void PushFrame(shard::syntax::symbols::MethodSymbol* methodSymbol);
 		static void PopFrame();
 
+		static InboundVariablesContext* CreateArgumentsContext(std::vector<shard::syntax::nodes::ArgumentSyntax*> expression, shard::syntax::symbols::MethodSymbol* symbol, shard::runtime::ObjectInstance* instance);
 		static InboundVariablesContext* CurrentContext();
 		static void PushContext(InboundVariablesContext* context);
 		static void PopContext();
@@ -89,7 +90,6 @@ namespace shard::runtime
 		
 	private:
 		static ObjectInstance* EvaluateArgument(const shard::syntax::nodes::ArgumentSyntax* argument);
-		static InboundVariablesContext* CreateArgumentsContext(std::vector<shard::syntax::nodes::ArgumentSyntax*> expression, shard::syntax::symbols::MethodSymbol* symbol, shard::runtime::ObjectInstance* instance);
 		static void ExecuteInstanceSetter(ObjectInstance* instance, const shard::syntax::nodes::MemberAccessExpressionSyntax* access, ObjectInstance* value);
 	};
 }

@@ -23,7 +23,7 @@ using namespace shard::syntax::symbols;
 using namespace shard::parsing::semantic;
 
 // Integer methods
-static ObjectInstance* ToString(InboundVariablesContext* arguments)
+static ObjectInstance* ToString(MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	int value = instance->ReadPrimitive<int>();
@@ -31,7 +31,7 @@ static ObjectInstance* ToString(InboundVariablesContext* arguments)
 	return ObjectInstance::FromValue(str);
 }
 
-static ObjectInstance* Abs(InboundVariablesContext* arguments)
+static ObjectInstance* Abs(MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	int value = instance->ReadPrimitive<int>();
@@ -39,7 +39,7 @@ static ObjectInstance* Abs(InboundVariablesContext* arguments)
 	return ObjectInstance::FromValue(result);
 }
 
-static ObjectInstance* Min(InboundVariablesContext* arguments)
+static ObjectInstance* Min(MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	int value = instance->ReadPrimitive<int>();
@@ -53,7 +53,7 @@ static ObjectInstance* Min(InboundVariablesContext* arguments)
 	return ObjectInstance::FromValue(result);
 }
 
-static ObjectInstance* Max(InboundVariablesContext* arguments)
+static ObjectInstance* Max(MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	int value = instance->ReadPrimitive<int>();
@@ -67,7 +67,7 @@ static ObjectInstance* Max(InboundVariablesContext* arguments)
 	return ObjectInstance::FromValue(result);
 }
 
-static ObjectInstance* Pow(InboundVariablesContext* arguments)
+static ObjectInstance* Pow(MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	int value = instance->ReadPrimitive<int>();

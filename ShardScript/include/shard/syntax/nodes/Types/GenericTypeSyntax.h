@@ -10,12 +10,12 @@ namespace shard::syntax::nodes
 	class GenericTypeSyntax : public TypeSyntax
 	{
 	public:
-		TypeSyntax* UnderlayingType = nullptr;
 		SyntaxToken OpenListToken;
 		SyntaxToken CloseListToken;
+		TypeSyntax* UnderlayingType = nullptr;
 		std::vector<TypeSyntax*> TypeArguments;
 
-		inline GenericTypeSyntax(const SyntaxNode* parent, TypeSyntax* underlaying)
+		inline GenericTypeSyntax(TypeSyntax* underlaying, const SyntaxNode* parent)
 			: TypeSyntax(SyntaxKind::GenericType, parent), UnderlayingType(underlaying) { }
 
 		std::wstring ToString() override;

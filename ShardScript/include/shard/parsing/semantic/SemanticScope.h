@@ -1,5 +1,6 @@
 #pragma once
 #include <shard/syntax/SyntaxSymbol.h>
+#include <shard/parsing/semantic/NamespaceTree.h>
 
 #include <string>
 #include <unordered_map>
@@ -13,6 +14,7 @@ namespace shard::parsing::semantic
 	public:
 		const SemanticScope* Parent;
 		const shard::syntax::SyntaxSymbol* Owner;
+		NamespaceNode* Namespace = nullptr;
 
 		bool ReturnFound = false;
 		bool ReturnsAnything = false;

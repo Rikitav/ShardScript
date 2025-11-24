@@ -53,6 +53,7 @@ namespace shard::parsing
 
 		bool IsPunctuation(std::wstring& word, shard::syntax::TokenType& type);
 		bool IsOperator(std::wstring& word, shard::syntax::TokenType& type);
+		bool IsWordOperator(std::wstring& word, shard::syntax::TokenType& type);
 		bool IsNullLiteral(std::wstring& word, shard::syntax::TokenType& type);
 		bool IsBooleanLiteral(std::wstring& word, shard::syntax::TokenType& type);
 		bool IsModifier(std::wstring& word, shard::syntax::TokenType& type);

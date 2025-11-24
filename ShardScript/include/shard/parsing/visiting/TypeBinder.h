@@ -1,13 +1,14 @@
 #pragma once
 #include <shard/parsing/visiting/SyntaxVisitor.h>
-#include <shard/parsing/analysis/DiagnosticsContext.h>
 #include <shard/parsing/visiting/ScopeVisitor.h>
-#include <shard/parsing/semantic/SymbolTable.h>
+#include <shard/parsing/analysis/DiagnosticsContext.h>
+#include <shard/parsing/semantic/SemanticModel.h>
 
 #include <shard/syntax/symbols/TypeSymbol.h>
 
 #include <shard/syntax/nodes/CompilationUnitSyntax.h>
 #include <shard/syntax/nodes/TypeSyntax.h>
+#include <shard/syntax/nodes/Directives/UsingDirectiveSyntax.h>
 
 #include <shard/syntax/nodes/Expressions/ObjectExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/CollectionExpressionSyntax.h>
@@ -28,10 +29,12 @@ namespace shard::parsing
 		shard::syntax::symbols::TypeSymbol* ResolveType(shard::syntax::nodes::TypeSyntax* typeSyntax);
 
 	public:
-		inline TypeBinder(shard::parsing::semantic::SymbolTable* symbolTable, shard::parsing::analysis::DiagnosticsContext& diagnostics)
-			: SyntaxVisitor(symbolTable, diagnostics), ScopeVisitor(symbolTable) { }
+		inline TypeBinder(shard::parsing::semantic::SemanticModel& model, shard::parsing::analysis::DiagnosticsContext& diagnostics)
+			: SyntaxVisitor(model, diagnostics), ScopeVisitor(model.Table) { }
 
 		void VisitCompilationUnit(shard::syntax::nodes::CompilationUnitSyntax* node) override;
+		void VisitUsingDirective(shard::syntax::nodes::UsingDirectiveSyntax* node) override;
+
 		void VisitNamespaceDeclaration(shard::syntax::nodes::NamespaceDeclarationSyntax* node) override;
 		void VisitClassDeclaration(shard::syntax::nodes::ClassDeclarationSyntax* node) override;
 		void VisitStructDeclaration(shard::syntax::nodes::StructDeclarationSyntax* node) override;

@@ -21,6 +21,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/PropertyDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.h>
 
 #include <shard/syntax/nodes/Expressions/BinaryExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/LinkedExpressionSyntax.h>

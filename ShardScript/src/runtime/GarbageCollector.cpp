@@ -70,7 +70,7 @@ ObjectInstance* GarbageCollector::CreateInstance(const TypeSymbol* objectInfo, v
 ObjectInstance* GarbageCollector::CopyInstance(const TypeSymbol* objectInfo, void* ptr)
 {
 	void* memory = malloc(objectInfo->MemoryBytesSize);
-	if (ptr == nullptr)
+	if (memory == nullptr)
 		throw std::runtime_error("cannot allocate memory for new instance");
 
 	memcpy(memory, ptr, objectInfo->MemoryBytesSize);
@@ -136,7 +136,7 @@ void GarbageCollector::TerminateInstance(ObjectInstance* instance)
 
 	Heap.erase(instance);
 	free(instance->Ptr);
-	instance->~ObjectInstance();
+	delete instance;
 }
 
 void GarbageCollector::Terminate()

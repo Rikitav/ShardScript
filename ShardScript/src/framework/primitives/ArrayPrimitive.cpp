@@ -20,7 +20,7 @@ using namespace shard::runtime;
 using namespace shard::syntax::symbols;
 using namespace shard::parsing::semantic;
 
-static ObjectInstance* get_Length(InboundVariablesContext* arguments)
+static ObjectInstance* get_Length(MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	void* value = malloc(sizeof(int));
@@ -31,7 +31,7 @@ static ObjectInstance* get_Length(InboundVariablesContext* arguments)
 	return length;
 }
 
-static ObjectInstance* indexator(InboundVariablesContext* arguments)
+static ObjectInstance* indexator(MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	ObjectInstance* index = arguments->TryFind(L"index");

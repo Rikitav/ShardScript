@@ -1,9 +1,9 @@
 #pragma once
 #include <shard/parsing/visiting/SyntaxVisitor.h>
+#include <shard/parsing/visiting/ScopeVisitor.h>
 #include <shard/parsing/analysis/DiagnosticsContext.h>
 #include <shard/parsing/semantic/SemanticScope.h>
-#include <shard/parsing/visiting/ScopeVisitor.h>
-#include <shard/parsing/semantic/SymbolTable.h>
+#include <shard/parsing/semantic/SemanticModel.h>
 
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/MethodSymbol.h>
@@ -11,6 +11,7 @@
 #include <shard/syntax/nodes/ExpressionSyntax.h>
 #include <shard/syntax/nodes/ArgumentsListSyntax.h>
 #include <shard/syntax/nodes/CompilationUnitSyntax.h>
+#include <shard/syntax/nodes/Directives/UsingDirectiveSyntax.h>
 
 #include <shard/syntax/nodes/Expressions/BinaryExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/LinkedExpressionSyntax.h>
@@ -33,8 +34,6 @@
 #include <shard/syntax/nodes/Statements/ConditionalClauseSyntax.h>
 #include <shard/syntax/nodes/Statements/ReturnStatementSyntax.h>
 #include <shard/syntax/nodes/Statements/VariableStatementSyntax.h>
-
-#include <shard/syntax/TokenType.h>
 
 #include <unordered_map>
 #include <vector>
@@ -66,8 +65,8 @@ namespace shard::parsing
 		bool MatchMethodArguments(shard::syntax::symbols::MethodSymbol* method, std::vector<shard::syntax::nodes::ArgumentSyntax*> arguments);
 
 	public:
-		inline ExpressionBinder(shard::parsing::semantic::SymbolTable* symbolTable, shard::parsing::analysis::DiagnosticsContext& diagnostics)
-			: SyntaxVisitor(symbolTable, diagnostics), ScopeVisitor(symbolTable) { }
+		inline ExpressionBinder(shard::parsing::semantic::SemanticModel& model, shard::parsing::analysis::DiagnosticsContext& diagnostics)
+			: SyntaxVisitor(model, diagnostics), ScopeVisitor(model.Table) { }
 
 		void VisitCompilationUnit(shard::syntax::nodes::CompilationUnitSyntax* node) override;
 		void VisitUsingDirective(shard::syntax::nodes::UsingDirectiveSyntax* node) override;

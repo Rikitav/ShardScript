@@ -89,6 +89,8 @@ bool IsBinaryBooleanOperator(TokenType type)
 		case TokenType::GreaterOrEqualsOperator:
 		case TokenType::EqualsOperator:
 		case TokenType::NotEqualsOperator:
+		case TokenType::AndOperator:
+		case TokenType::OrOperator:
 			return true;
 
 		default:
@@ -186,6 +188,7 @@ bool IsPredefinedType(TokenType type)
 		case TokenType::IntegerKeyword:
 		case TokenType::CharKeyword:
 		case TokenType::StringKeyword:
+		case TokenType::BooleanKeyword:
 			return true;
 
 		default:

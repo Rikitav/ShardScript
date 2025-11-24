@@ -1,5 +1,6 @@
 #include <shard/parsing/visiting/ScopeVisitor.h>
 #include <shard/parsing/semantic/SemanticScope.h>
+#include <shard/parsing/semantic/NamespaceTree.h>
 
 #include <shard/syntax/SyntaxSymbol.h>
 #include <shard/syntax/SymbolAccesibility.h>
@@ -61,6 +62,17 @@ NamespaceSymbol* ScopeVisitor::OwnerNamespace()
 		SyntaxSymbol* symbol = const_cast<SyntaxSymbol*>(scope->Owner);
 		if (symbol->Kind == SyntaxKind::NamespaceDeclaration)
 			return static_cast<NamespaceSymbol*>(symbol);
+	}
+
+	return nullptr;
+}
+
+NamespaceNode* ScopeVisitor::OwnerNamespaceNode()
+{
+	for (const SemanticScope* scope = CurrentScope(); scope != nullptr; scope = scope->Parent)
+	{
+		if (scope->Namespace != nullptr)
+			return scope->Namespace;
 	}
 
 	return nullptr;

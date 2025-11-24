@@ -67,6 +67,7 @@ namespace shard::syntax
 		NativeLiteral,		  // native pointer
 
 		// Punctuation
+		Colon,				  // :
 		Semicolon,			  // ;
 		OpenBrace,			  // {
 		CloseBrace,  		  // }

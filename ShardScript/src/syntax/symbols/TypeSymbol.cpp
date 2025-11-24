@@ -39,6 +39,14 @@ bool TypeSymbol::Equals(const TypeSymbol* left, const TypeSymbol* right)
 	return left->TypeCode == right->TypeCode;
 }
 
+bool TypeSymbol::IsPrimitive()
+{
+	return this == SymbolTable::Primitives::Boolean
+		|| this == SymbolTable::Primitives::Integer
+		|| this == SymbolTable::Primitives::Char
+		|| this == SymbolTable::Primitives::String;
+}
+
 MethodSymbol* TypeSymbol::FindMethod(std::wstring& name, std::vector<TypeSymbol*> parameterTypes)
 {
 	for (MethodSymbol* symbol : Methods)

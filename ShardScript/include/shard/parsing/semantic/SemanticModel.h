@@ -2,9 +2,11 @@
 #include <shard/syntax/SyntaxNode.h>
 #include <shard/syntax/nodes/ExpressionSyntax.h>
 #include <shard/parsing/lexical/SyntaxTree.h>
+
 #include <shard/parsing/semantic/SymbolTable.h>
 #include <shard/parsing/semantic/TypeInfo.h>
 #include <shard/parsing/semantic/SymbolInfo.h>
+#include <shard/parsing/semantic/NamespaceTree.h>
 
 namespace shard::parsing::semantic
 {
@@ -13,6 +15,7 @@ namespace shard::parsing::semantic
 	public:
 		shard::parsing::lexical::SyntaxTree& Tree;
 		shard::parsing::semantic::SymbolTable* Table;
+		shard::parsing::semantic::NamespaceTree* Namespaces;
 
 		SemanticModel(shard::parsing::lexical::SyntaxTree& tree);
 		~SemanticModel();

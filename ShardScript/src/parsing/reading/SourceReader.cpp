@@ -230,6 +230,9 @@ bool SourceReader::ReadNextWord(std::wstring& word, TokenType& type)
 	if (IsModifier(word, type))
 		return true;
 
+	if (IsWordOperator(word, type))
+		return true;
+
 	if (IsType(word, type))
 		return true;
 
@@ -465,6 +468,13 @@ bool SourceReader::IsPunctuation(std::wstring& word, TokenType& type)
 			return true;
 		}
 
+		case ':':
+		{
+			type = TokenType::Colon;
+			word = L":";
+			return true;
+		}
+
 		case ';':
 		{
 			type = TokenType::Semicolon;
@@ -483,6 +493,30 @@ bool SourceReader::IsPunctuation(std::wstring& word, TokenType& type)
 		{
 			return false;
 		}
+	}
+}
+
+bool SourceReader::IsWordOperator(std::wstring& word, TokenType& type)
+{
+	// Just because my friend asked this
+	if (word == L"and")
+	{
+		type = TokenType::AndOperator;
+		return true;
+	}
+	else if (word == L"or")
+	{
+		type = TokenType::OrOperator;
+		return true;
+	}
+	else if (word == L"not")
+	{
+		type = TokenType::NotOperator;
+		return true;
+	}
+	else
+	{
+		return false;
 	}
 }
 

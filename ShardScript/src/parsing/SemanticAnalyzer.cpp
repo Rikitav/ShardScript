@@ -15,12 +15,12 @@ using namespace shard::parsing::analysis;
 
 void SemanticAnalyzer::Analyze(SyntaxTree& syntaxTree, SemanticModel& semanticModel)
 {
-	DeclarationCollector collector(semanticModel.Table, Diagnostics);
+	DeclarationCollector collector(semanticModel, Diagnostics);
 	collector.VisitSyntaxTree(syntaxTree);
 
-	TypeBinder typeBinder(semanticModel.Table, Diagnostics);
+	TypeBinder typeBinder(semanticModel, Diagnostics);
 	typeBinder.VisitSyntaxTree(syntaxTree);
 
-	ExpressionBinder expressionBinder(semanticModel.Table, Diagnostics);
+	ExpressionBinder expressionBinder(semanticModel, Diagnostics);
 	expressionBinder.VisitSyntaxTree(syntaxTree);
 }

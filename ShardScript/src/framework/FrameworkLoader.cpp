@@ -10,6 +10,7 @@
 #include <shard/parsing/lexical/SyntaxTree.h>
 #include <shard/parsing/reading/StringStreamReader.h>
 
+#include <shard/runtime/AbstractInterpreter.h>
 #include <shard/runtime/GarbageCollector.h>
 #include <shard/runtime/ConsoleHelper.h>
 #include <shard/runtime/InboundVariablesContext.h>
@@ -41,6 +42,10 @@
 #include <vector>
 
 #include "filesystem/File.cpp"
+#include "filesystem/Directory.cpp"
+#include <shard/syntax/nodes/ArgumentsListSyntax.h>
+#include <shard/syntax/nodes/CompilationUnitSyntax.h>
+#include <shard/syntax/symbols/TypeSymbol.h>
 
 using namespace shard::syntax::nodes;
 using namespace shard::parsing::analysis;
@@ -53,7 +58,7 @@ using namespace shard::syntax::symbols;
 using namespace shard::parsing;
 using namespace shard::parsing::semantic;
 
-static ObjectInstance* Gc_Info(InboundVariablesContext* arguments)
+static ObjectInstance* Gc_Info(MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	std::wcout << "Garbage collector info dump" << std::endl;
 	for (ObjectInstance* reg : GarbageCollector::Heap)
@@ -68,28 +73,76 @@ static ObjectInstance* Gc_Info(InboundVariablesContext* arguments)
 	return nullptr; // void
 }
 
-static ObjectInstance* Print(InboundVariablesContext* arguments)
+static ObjectInstance* Print(MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->Variables.at(L"message");
-	ConsoleHelper::Write(instance);
+	TypeSymbol* type = const_cast<TypeSymbol*>(instance->Info);
+
+	if (type->IsPrimitive())
+	{
+		ConsoleHelper::Write(instance);
+		return nullptr; // void
+	}
+
+	std::wstring methodWName = L"ToString";
+	MethodSymbol* toString = type->FindMethod(methodWName, std::vector<TypeSymbol*>());
+	if (toString != nullptr)
+	{
+		InboundVariablesContext* toStringArgs = AbstractInterpreter::CreateArgumentsContext(std::vector<ArgumentSyntax*>(), toString, instance);
+		ObjectInstance* result = AbstractInterpreter::ExecuteMethod(symbol, toStringArgs);
+		if (type != SymbolTable::Primitives::String)
+		{
+			std::string methodName = std::string(toString->FullName.begin(), toString->FullName.end());
+			throw std::runtime_error("Failed to evaluate ToString method of \'" + methodName + "\'. Reason: returned not a string!");
+		}
+
+		ConsoleHelper::Write(instance);
+		return nullptr; // void
+	}
+
+	ConsoleHelper::Write(type->FullName);
 	return nullptr; // void
 }
 
-static ObjectInstance* Println(InboundVariablesContext* arguments)
+static ObjectInstance* Println(MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->Variables.at(L"message");
-	ConsoleHelper::WriteLine(instance);
+	TypeSymbol* type = const_cast<TypeSymbol*>(instance->Info);
+
+	if (type->IsPrimitive())
+	{
+		ConsoleHelper::WriteLine(instance);
+		return nullptr; // void
+	}
+
+	std::wstring methodWName = L"ToString";
+	MethodSymbol* toString = type->FindMethod(methodWName, std::vector<TypeSymbol*>());
+	if (toString != nullptr)
+	{
+		InboundVariablesContext* toStringArgs = AbstractInterpreter::CreateArgumentsContext(std::vector<ArgumentSyntax*>(), toString, instance);
+		ObjectInstance* result = AbstractInterpreter::ExecuteMethod(toString, toStringArgs);
+		if (result->Info != SymbolTable::Primitives::String)
+		{
+			std::string methodName = std::string(toString->FullName.begin(), toString->FullName.end());
+			throw std::runtime_error("Failed to evaluate ToString method of \'" + methodName + "\'. Reason: returned not a string!");
+		}
+
+		ConsoleHelper::WriteLine(result);
+		return nullptr; // void
+	}
+
+	ConsoleHelper::WriteLine(type->FullName);
 	return nullptr; // void
 }
 
-static ObjectInstance* Input(InboundVariablesContext* arguments)
+static ObjectInstance* Input(MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	std::wstring input;
 	getline(std::wcin, input);
 	return ObjectInstance::FromValue(input);
 }
 
-static ObjectInstance* Impl_typeof(InboundVariablesContext* arguments)
+static ObjectInstance* Impl_typeof(MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->Variables.at(L"object");
 	if (instance == GarbageCollector::NullInstance)
@@ -98,7 +151,7 @@ static ObjectInstance* Impl_typeof(InboundVariablesContext* arguments)
 	return ObjectInstance::FromValue(instance->Info->Name);
 }
 
-static ObjectInstance* Impl_sizeof(InboundVariablesContext* arguments)
+static ObjectInstance* Impl_sizeof(MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->Variables.at(L"object");
 	if (instance == GarbageCollector::NullInstance)
@@ -108,7 +161,8 @@ static ObjectInstance* Impl_sizeof(InboundVariablesContext* arguments)
 }
 
 std::vector<FrameworkModule*> FrameworkLoader::Modules = {
-	new FileSystem_File()
+	new FileSystem_File(),
+	new FileSystem_Directory()
 };
 
 void FrameworkLoader::Load(SemanticModel& semanticModel, DiagnosticsContext& diagnostics)
@@ -238,7 +292,7 @@ void FrameworkLoader::ResolveGlobalMethods(SemanticModel& semanticModel)
 		printMethod->IsStatic = true;
 
 		ParameterSymbol* printMessageParam = new ParameterSymbol(L"message");
-		printMessageParam->Type = SymbolTable::Primitives::String;
+		printMessageParam->Type = SymbolTable::Primitives::Any;
 		printMethod->Parameters.push_back(printMessageParam);
 		
 		semanticModel.Table->GlobalType->Methods.push_back(printMethod);
@@ -252,7 +306,7 @@ void FrameworkLoader::ResolveGlobalMethods(SemanticModel& semanticModel)
 		printlnMethod->IsStatic = true;
 
 		ParameterSymbol* printlnMessageParam = new ParameterSymbol(L"message");
-		printlnMessageParam->Type = SymbolTable::Primitives::String;
+		printlnMessageParam->Type = SymbolTable::Primitives::Any;
 		printlnMethod->Parameters.push_back(printlnMessageParam);
 		
 		semanticModel.Table->GlobalType->Methods.push_back(printlnMethod);

@@ -4,5 +4,5 @@ using namespace shard::syntax::nodes;
 
 std::wstring NullableTypeSyntax::ToString()
 {
-	return UnderlayingType->ToString() + L"?";
+	return UnderlayingType->ToString() + QuestionToken.Word;
 }

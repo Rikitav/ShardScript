@@ -17,19 +17,7 @@ namespace shard::framework
 {
 	class FileSystem_File : public FrameworkModule
 	{
-		std::wstring SourceCode =
-		L"																				  \
-		namespace System																  \
-		{																				  \
-			public static class File													  \
-			{																			  \
-				public static string ReadAllText(string fileName);						  \
-				public static string WriteAllText(string fileName, string content);		  \
-		   }																			  \
-		}																				  \
-		";
-
-		static ObjectInstance* Impl_ReadAllText(InboundVariablesContext* arguments)
+		static ObjectInstance* Impl_ReadAllText(MethodSymbol* symbol, InboundVariablesContext* arguments)
 		{
 			std::wstring fileName = arguments->Variables.at(L"fileName")->ReadPrimitive<std::wstring>();
 			std::wifstream fileStream(fileName);
@@ -41,7 +29,7 @@ namespace shard::framework
 			return ObjectInstance::FromValue(content);
 		}
 
-		static ObjectInstance* Impl_WriteAllText(InboundVariablesContext* arguments)
+		static ObjectInstance* Impl_WriteAllText(MethodSymbol* symbol, InboundVariablesContext* arguments)
 		{
 			std::wstring fileName = arguments->Variables.at(L"fileName")->ReadPrimitive<std::wstring>();
 			std::wstring content = arguments->Variables.at(L"content")->ReadPrimitive<std::wstring>();
@@ -61,6 +49,18 @@ namespace shard::framework
 	public:
 		std::wstring& FrameworkModule::GetSourceCode()
 		{
+			static std::wstring SourceCode =
+			L"																				  \
+			namespace System.IO																  \
+			{																				  \
+				public static class File													  \
+				{																			  \
+					public static string ReadAllText(string fileName);						  \
+					public static string WriteAllText(string fileName, string content);		  \
+				}																			  \
+			}																				  \
+			";
+
 			return SourceCode;
 		}
 

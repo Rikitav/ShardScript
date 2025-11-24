@@ -1,7 +1,9 @@
 #pragma once
 #include <shard/runtime/InboundVariablesContext.h>
 #include <shard/runtime/ObjectInstance.h>
+#include <shard/runtime/GarbageCollector.h>
 #include <shard/syntax/symbols/MethodSymbol.h>
+
 #include <stack>
 
 namespace shard::runtime

@@ -1,8 +1,9 @@
 #pragma once
 #include <shard/parsing/lexical/SyntaxTree.h>
 #include <shard/parsing/analysis/DiagnosticsContext.h>
-#include <shard/parsing/semantic/SemanticScope.h>
 #include <shard/parsing/semantic/SymbolTable.h>
+#include <shard/parsing/semantic/SemanticModel.h>
+#include <shard/parsing/semantic/NamespaceTree.h>
 
 #include <shard/syntax/nodes/ExpressionSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarationSyntax.h>
@@ -49,18 +50,17 @@
 #include <shard/syntax/nodes/Types/ArrayTypeSyntax.h>
 #include <shard/syntax/nodes/Types/NullableTypeSyntax.h>
 
-#include <stack>
-
 namespace shard::parsing
 {
 	class SyntaxVisitor
 	{
     protected:
         shard::parsing::semantic::SymbolTable* Table;
+        shard::parsing::semantic::NamespaceTree* Namespaces;
         shard::parsing::analysis::DiagnosticsContext& Diagnostics;
 
-        inline SyntaxVisitor(shard::parsing::semantic::SymbolTable* symbolTable, shard::parsing::analysis::DiagnosticsContext& diagnostics)
-            : Table(symbolTable), Diagnostics(diagnostics) { }
+        inline SyntaxVisitor(shard::parsing::semantic::SemanticModel& model, shard::parsing::analysis::DiagnosticsContext& diagnostics)
+            : Table(model.Table), Namespaces(model.Namespaces), Diagnostics(diagnostics) { }
 
 	public:
         virtual void VisitSyntaxTree(shard::parsing::lexical::SyntaxTree& tree);

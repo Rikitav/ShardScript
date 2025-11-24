@@ -42,6 +42,9 @@
 #include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.h>
 
+#include <shard/syntax/nodes/Types/GenericTypeSyntax.h>
+#include <shard/syntax/nodes/Types/IdentifierNameTypeSyntax.h>
+
 #include <initializer_list>
 #include <vector>
 
@@ -105,6 +108,10 @@ namespace shard::parsing
 		shard::syntax::nodes::IndexatorListSyntax* ReadIndexatorList(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
 
 		shard::syntax::nodes::TypeSyntax* ReadType(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
+		shard::syntax::nodes::TypeSyntax* ReadIdentifierNameType(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
+		shard::syntax::nodes::TypeSyntax* ReadModifiedType(shard::parsing::SourceReader& reader, shard::syntax::nodes::TypeSyntax* type, shard::syntax::SyntaxNode* parent);
+		shard::syntax::nodes::TypeSyntax* ReadArrayType(shard::parsing::SourceReader& reader, shard::syntax::nodes::TypeSyntax* type, shard::syntax::SyntaxNode* parent);
+		shard::syntax::nodes::TypeSyntax* ReadGenericType(shard::parsing::SourceReader& reader, shard::syntax::nodes::TypeSyntax* previous, shard::syntax::SyntaxNode* parent);
 
 	private:
 		// Fourth layer - lexing helpers

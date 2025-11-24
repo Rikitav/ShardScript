@@ -71,5 +71,6 @@ namespace shard::syntax::symbols
         virtual PropertySymbol* FindProperty(std::wstring& name);
 
         static bool Equals(const TypeSymbol* left, const TypeSymbol* right);
+        bool IsPrimitive();
 	};
 }

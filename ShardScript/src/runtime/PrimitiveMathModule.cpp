@@ -8,7 +8,6 @@
 #include <stdexcept>
 #include <cmath>
 #include <string>
-#include <source_location>
 
 using namespace shard::syntax;
 using namespace shard::runtime;
@@ -188,7 +187,7 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(bool leftData, Synta
 				return ObjectInstance::FromValue(leftData || rightData);
 
 			case TokenType::AndOperator:
-				return ObjectInstance::FromValue(leftData & rightData);
+				return ObjectInstance::FromValue(leftData && rightData);
 
 			case TokenType::AndAssignOperator:
 				assign = true;

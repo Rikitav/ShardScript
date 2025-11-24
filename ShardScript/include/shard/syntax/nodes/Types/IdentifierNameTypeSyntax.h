@@ -10,7 +10,7 @@ namespace shard::syntax::nodes
 	class IdentifierNameTypeSyntax : public TypeSyntax
 	{
 	public:
-		std::vector<SyntaxToken> Identifiers;
+		SyntaxToken Identifier;
 
 		inline IdentifierNameTypeSyntax(const SyntaxNode* parent)
 			: TypeSyntax(SyntaxKind::IdentifierNameType, parent) { }

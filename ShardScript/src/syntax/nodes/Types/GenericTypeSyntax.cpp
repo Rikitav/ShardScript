@@ -7,7 +7,7 @@ using namespace shard::syntax::nodes;
 std::wstring GenericTypeSyntax::ToString()
 {
 	std::wostringstream result;
-	result << UnderlayingType->ToString() << L"<";
+	result << UnderlayingType->ToString() << OpenListToken.Word;
 
 	if (!TypeArguments.empty())
 	{
@@ -16,5 +16,6 @@ std::wstring GenericTypeSyntax::ToString()
 			result << L", " << TypeArguments[i]->ToString();
 	}
 
+	result << CloseListToken.Word;
 	return result.str();
 }

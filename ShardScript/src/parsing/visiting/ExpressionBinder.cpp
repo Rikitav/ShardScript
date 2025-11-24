@@ -55,8 +55,6 @@
 #include <string>
 #include <sstream>
 
-#define DONT_CARE_RESOLVE_ALL
-
 using namespace shard::parsing;
 using namespace shard::parsing::semantic;
 using namespace shard::syntax::nodes;
@@ -133,10 +131,6 @@ void ExpressionBinder::VisitCompilationUnit(CompilationUnitSyntax* node)
 {
 	PushScope(nullptr);
 
-#ifdef DONT_CARE_RESOLVE_ALL
-	for (TypeSymbol* type : Table->GetTypeSymbols())
-		Declare(type);
-#endif
 	for (UsingDirectiveSyntax* directive : node->Usings)
 		VisitUsingDirective(directive);
 
@@ -148,7 +142,9 @@ void ExpressionBinder::VisitCompilationUnit(CompilationUnitSyntax* node)
 
 void ExpressionBinder::VisitUsingDirective(UsingDirectiveSyntax* node)
 {
-	
+	SemanticScope* current = CurrentScope();
+	for (const auto& symbol : node->Namespace->Types)
+		current->DeclareSymbol(symbol);
 }
 
 void ExpressionBinder::VisitNamespaceDeclaration(NamespaceDeclarationSyntax* node)
@@ -621,6 +617,9 @@ bool ExpressionBinder::MatchMethodArguments(MethodSymbol* method, std::vector<Ar
 
 TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressionSyntax* node, TypeSymbol* currentType)
 {
+	if (currentType == nullptr)
+		return nullptr;
+
 	if (node->PreviousExpression == nullptr)
 	{
 		// Check if this is the 'field' keyword - resolve to backing field of current property
@@ -841,6 +840,9 @@ TypeSymbol* ExpressionBinder::AnalyzeFieldKeywordExpression(MemberAccessExpressi
 
 TypeSymbol* ExpressionBinder::AnalyzeInvokationExpression(InvokationExpressionSyntax* node, TypeSymbol* currentType)
 {
+	if (currentType == nullptr)
+		return nullptr;
+
 	std::wstring methodName = node->IdentifierToken.Word;
 	MethodSymbol* method = ResolveMethod(node, currentType);
 
@@ -910,6 +912,7 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node, 
 				TypeSymbol* type = argTypes.at(0);
 				std::wstring typeName = type == nullptr ? L"<error>" : type->Name;
 				diag << "argument (" << typeName << ")";
+				break;
 			}
 
 			default:
@@ -924,6 +927,7 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node, 
 				}
 
 				diag << ")";
+				break;
 			}
 		}
 
@@ -949,6 +953,9 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node, 
 
 TypeSymbol* ExpressionBinder::AnalyzeIndexatorExpression(IndexatorExpressionSyntax* node, TypeSymbol* currentType)
 {
+	if (currentType == nullptr)
+		return nullptr;
+
 	std::wstring methodName = node->MemberAccess->IdentifierToken.Word;
 	MethodSymbol* method = ResolveIndexator(node, currentType);
 
@@ -1026,6 +1033,7 @@ MethodSymbol* ExpressionBinder::ResolveIndexator(IndexatorExpressionSyntax* node
 				TypeSymbol* type = argTypes.at(0);
 				std::wstring typeName = type == nullptr ? L"<error>" : type->Name;
 				diag << "argument (" << typeName << ")";
+				break;
 			}
 
 			default:
@@ -1040,6 +1048,7 @@ MethodSymbol* ExpressionBinder::ResolveIndexator(IndexatorExpressionSyntax* node
 				}
 
 				diag << ")";
+				break;
 			}
 		}
 

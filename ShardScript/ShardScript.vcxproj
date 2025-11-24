@@ -130,10 +130,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\framework\collections\List.cpp" />
+    <ClCompile Include="src\framework\filesystem\Directory.cpp" />
     <ClCompile Include="src\framework\filesystem\File.cpp" />
+    <ClCompile Include="src\parsing\semantic\NamespaceTree.cpp" />
     <ClCompile Include="src\parsing\visiting\ScopeVisitor.cpp" />
     <ClCompile Include="src\framework\FrameworkLoader.cpp" />
     <ClCompile Include="src\framework\primitives\ArrayPrimitive.cpp" />
+    <ClCompile Include="src\syntax\nodes\Directives\UsingDirectiveSyntax.cpp" />
     <ClCompile Include="src\syntax\nodes\Types\ArrayTypeSyntax.cpp" />
     <ClCompile Include="src\syntax\nodes\Types\GenericTypeSyntax.cpp" />
     <ClCompile Include="src\syntax\nodes\Types\IdentifierNameTypeSyntax.cpp" />
@@ -191,6 +195,7 @@
     <ClInclude Include="include\shard\framework\primitives\StringPrimitive.h" />
     <ClInclude Include="include\shard\parsing\semantic\SymbolInfo.h" />
     <ClInclude Include="include\shard\parsing\semantic\TypeInfo.h" />
+    <ClInclude Include="include\shard\parsing\semantic\NamespaceTree.h" />
     <ClInclude Include="include\shard\parsing\visiting\DeclarationCollector.h" />
     <ClInclude Include="include\shard\parsing\semantic\SemanticModel.h" />
     <ClInclude Include="include\shard\parsing\semantic\SemanticScope.h" />

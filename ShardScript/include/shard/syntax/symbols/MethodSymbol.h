@@ -14,17 +14,7 @@
 
 namespace shard::syntax::symbols
 {
-    typedef shard::runtime::ObjectInstance* (*MethodSymbolDelegate)(shard::runtime::InboundVariablesContext* arguments);
-    
-    template<typename... Args>
-    bool invoke(MethodSymbolDelegate delegate, Args&&... args)
-    {
-        shard::runtime::InboundVariablesContext* ctx = new shard::runtime::InboundVariablesContext(nullptr);
-        for (std::pair<std::wstring, shard::runtime::ObjectInstance*> pair : args)
-            ctx->AddVariable(pair.first, pair.second);
-
-        return delegate(ctx);
-    }
+    typedef shard::runtime::ObjectInstance* (*MethodSymbolDelegate)(MethodSymbol* symbol, shard::runtime::InboundVariablesContext* arguments);
 
     enum class MethodHandleType
     {
@@ -65,6 +55,16 @@ namespace shard::syntax::symbols
 
             if (FunctionPointer != nullptr)
                 FunctionPointer = nullptr;
+        }
+
+        template<typename... Args>
+        shard::runtime::ObjectInstance* invoke(MethodSymbol* symbol, Args&&... args)
+        {
+            shard::runtime::InboundVariablesContext* ctx = new shard::runtime::InboundVariablesContext(nullptr);
+            for (std::pair<std::wstring, shard::runtime::ObjectInstance*> pair : args)
+                ctx->AddVariable(pair.first, pair.second);
+
+            return symbol->FunctionPointer(symbol, ctx);
         }
     };
 }

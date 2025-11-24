@@ -1,5 +1,6 @@
 #include <shard/parsing/visiting/DeclarationCollector.h>
 #include <shard/parsing/semantic/SymbolTable.h>
+#include <shard/parsing/semantic/NamespaceTree.h>
 
 #include <shard/syntax/SyntaxHelpers.h>
 #include <shard/syntax/SyntaxSymbol.h>
@@ -65,6 +66,11 @@ void DeclarationCollector::VisitCompilationUnit(CompilationUnitSyntax* node)
     PopScope();
 }
 
+void DeclarationCollector::VisitImportDirective(ImportDirectiveSyntax* node)
+{
+
+}
+
 void DeclarationCollector::VisitNamespaceDeclaration(NamespaceDeclarationSyntax* node)
 {
     std::wstring namespaceName = node->IdentifierToken.Word;
@@ -75,6 +81,19 @@ void DeclarationCollector::VisitNamespaceDeclaration(NamespaceDeclarationSyntax*
     symbol->Parent = parent;
     symbol->FullName = parent == nullptr ? symbol->Name : parent->FullName + L"." + symbol->Name;
     
+    if (!node->IdentifierTokens.empty())
+    {
+        NamespaceNode* nsNode = Namespaces->Root;
+        for (SyntaxToken token : node->IdentifierTokens)
+        {
+            nsNode = nsNode->LookupOrCreate(token.Word, symbol);
+            continue;
+        }
+
+        CurrentScope()->Namespace = nsNode;
+        symbol->Node = nsNode;
+    }
+
     Declare(symbol);
     PushScope(symbol);
     
@@ -89,6 +108,7 @@ void DeclarationCollector::VisitClassDeclaration(ClassDeclarationSyntax* node)
     std::wstring className = node->IdentifierToken.Word;
     ClassSymbol* symbol = new ClassSymbol(className);
     SetAccesibility(symbol, node->Modifiers);
+    OwnerNamespaceNode()->Types.push_back(symbol);
 
     SyntaxSymbol* parent = OwnerSymbol();
     symbol->Parent = parent;
@@ -110,6 +130,7 @@ void DeclarationCollector::VisitStructDeclaration(StructDeclarationSyntax* node)
     StructSymbol* symbol = new StructSymbol(structName);
     symbol->Parent = OwnerSymbol();
     SetAccesibility(symbol, node->Modifiers);
+    OwnerNamespaceNode()->Types.push_back(symbol);
 
     SyntaxSymbol* parent = OwnerSymbol();
     symbol->Parent = parent;
