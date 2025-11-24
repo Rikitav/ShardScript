@@ -11,7 +11,6 @@ namespace shard::parsing
 	class SourceReader
 	{
 	protected:
-		std::locale loc;
 		std::deque<shard::syntax::SyntaxToken> ReadBuffer;
 
 		int Line;

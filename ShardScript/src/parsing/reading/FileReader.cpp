@@ -12,8 +12,9 @@ using namespace shard::parsing::analysis;
 FileReader::FileReader(const std::wstring& fileName) : SourceReader()
 {
 	Filename = fileName;
-
 	InputStream = std::wfstream(fileName, std::ios::in);
+	InputStream.imbue(std::locale("en_US.UTF8"));
+
 	if (!InputStream)
 		throw new std::runtime_error("Cannot open file");
 }

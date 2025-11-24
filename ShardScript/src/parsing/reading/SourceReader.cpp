@@ -6,7 +6,6 @@
 
 #include <cctype>
 #include <string>
-#include <locale>
 #include <stdexcept>
 
 using namespace shard::syntax;
@@ -15,7 +14,7 @@ using namespace shard::parsing::analysis;
 
 SourceReader::SourceReader() : Line(1), Offset(0), Symbol(0), PeekSymbol(0)
 {
-	loc = std::locale("en_US.UTF8");
+
 }
 
 SourceReader::~SourceReader()
@@ -155,7 +154,7 @@ bool SourceReader::ReadNextReal()
 				if (!ReadNext())
 					return false;
 
-				if (!isspace(PeekSymbol, loc))
+				if (!isspace(PeekSymbol))
 					return true;
 
 				continue;
@@ -172,7 +171,7 @@ bool SourceReader::ReadNextWhileAlpha(std::wstring& word)
 	word += Symbol;
 	while (PeekNext())
 	{
-		if (!isalpha(PeekSymbol, loc) && PeekSymbol != '_')
+		if (!isalpha(PeekSymbol) && PeekSymbol != '_')
 			break;
 
 		ReadNext();
@@ -397,7 +396,7 @@ bool SourceReader::ReadNativeLiteral(std::wstring& word)
 		if (PeekSymbol == '_' || PeekSymbol == '`')
 			continue;
 
-		if (!isalnum(PeekSymbol, loc))
+		if (!isalnum(PeekSymbol))
 			return true;
 
 		word += PeekSymbol;
@@ -813,7 +812,7 @@ bool SourceReader::IsBooleanLiteral(std::wstring& word, TokenType& type)
 
 bool SourceReader::IsNumberLiteral(TokenType& type) const
 {
-	if (isdigit(Symbol, loc))
+	if (isdigit(Symbol))
 	{
 		type = TokenType::NumberLiteral;
 		return true;
@@ -831,7 +830,7 @@ bool SourceReader::IsNativeLiteral(TokenType& type)
 		if (!PeekNext())
 			return false;
 
-		if (isdigit(PeekSymbol, loc))
+		if (isdigit(PeekSymbol))
 		{
 			type = TokenType::NativeLiteral;
 			return true;

@@ -5,6 +5,8 @@
 #include <sstream>
 #include <istream>
 #include <string>
+#include <codecvt>
+#include <locale>
 
 using namespace shard::parsing;
 using namespace shard::parsing::analysis;
@@ -12,6 +14,7 @@ using namespace shard::parsing::analysis;
 StringStreamReader::StringStreamReader(const std::wstring& source) : SourceReader()
 {
 	stringStream = std::wistringstream(source);
+	stringStream.imbue(std::locale("en_US.UTF8"));
 }
 
 TextLocation StringStreamReader::GetLocation(std::wstring& word)

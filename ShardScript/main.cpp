@@ -52,7 +52,7 @@ int wmain(int argc, wchar_t* argv[])
 {
 	try
 	{
-		setlocale(LC_ALL, "C");
+		setlocale(LC_ALL, "");
 		signal(SIGINT, SigIntHandler);
 		ConsoleArguments args = ShardUtilities::ParseArguments(argc, argv);
 
