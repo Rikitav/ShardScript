@@ -139,6 +139,7 @@
     <ClCompile Include="src\framework\primitives\ArrayPrimitive.cpp" />
     <ClCompile Include="src\syntax\nodes\Directives\UsingDirectiveSyntax.cpp" />
     <ClCompile Include="src\syntax\nodes\Types\ArrayTypeSyntax.cpp" />
+    <ClCompile Include="src\syntax\symbols\GenericTypeSymbol.cpp" />
     <ClCompile Include="src\syntax\nodes\Types\GenericTypeSyntax.cpp" />
     <ClCompile Include="src\syntax\nodes\Types\IdentifierNameTypeSyntax.cpp" />
     <ClCompile Include="src\syntax\nodes\Types\NullableTypeSyntax.cpp" />
@@ -227,6 +228,7 @@
     <ClInclude Include="include\shard\syntax\nodes\Expressions\CollectionExpressionSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\Expressions\TypeExpressionSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\MemberDeclarations\AccessorDeclarationSyntax.h" />
+    <ClInclude Include="include\shard\syntax\nodes\MemberDeclarations\ConstructorDeclarationSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\MemberDeclarations\PropertyDeclarationSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\Statements\BreakStatementSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\Statements\ContinueStatementSyntax.h" />
@@ -269,11 +271,13 @@
     <ClInclude Include="include\shard\syntax\symbols\ClassSymbol.h" />
     <ClInclude Include="include\shard\syntax\symbols\FFISymbol.h" />
     <ClInclude Include="include\shard\syntax\symbols\FieldSymbol.h" />
+    <ClInclude Include="include\shard\syntax\symbols\GenericTypeSymbol.h" />
     <ClInclude Include="include\shard\syntax\symbols\MethodSymbol.h" />
     <ClInclude Include="include\shard\syntax\symbols\NamespaceSymbol.h" />
     <ClInclude Include="include\shard\syntax\symbols\ParameterSymbol.h" />
     <ClInclude Include="include\shard\syntax\symbols\PropertySymbol.h" />
     <ClInclude Include="include\shard\syntax\symbols\StructSymbol.h" />
+    <ClInclude Include="include\shard\syntax\symbols\TypeParameterSymbol.h" />
     <ClInclude Include="include\shard\syntax\symbols\TypeSymbol.h" />
     <ClInclude Include="include\shard\syntax\symbols\VariableSymbol.h" />
     <ClInclude Include="include\shard\syntax\SyntaxFacts.h" />

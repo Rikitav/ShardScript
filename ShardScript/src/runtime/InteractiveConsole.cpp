@@ -266,9 +266,9 @@ static MethodDeclarationSyntax* InitImplicitEntryPoint(SyntaxNode* parent)
 	MemberDeclarationInfo info;
 	info.ReturnType = new PredefinedTypeSyntax(SyntaxToken(TokenType::VoidKeyword, L"void", TextLocation(), false), nullptr);
 	info.Identifier = SyntaxToken(TokenType::Identifier, L"__interactive_console__", TextLocation());
-	info.Params = new ParametersListSyntax(parent);
 
 	MethodDeclarationSyntax* implMethod = new MethodDeclarationSyntax(info, parent);
+	implMethod->Params = new ParametersListSyntax(parent);
 	implMethod->Body = new StatementsBlockSyntax(implMethod);
 	return implMethod;
 }

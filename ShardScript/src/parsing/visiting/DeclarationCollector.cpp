@@ -189,7 +189,7 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax* node)
     }
 
     SyntaxSymbol* ownerSymbol = OwnerType();
-    if (ownerSymbol->Kind != SyntaxKind::ClassDeclaration && ownerSymbol->Kind != SyntaxKind::StructDeclaration)
+    if (!ownerSymbol->IsType())
     {
         Diagnostics.ReportError(node->IdentifierToken, L"Method cannot be declared within types");
         return;
@@ -206,6 +206,63 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax* node)
     symbol->FullName = ownerType == nullptr ? symbol->Name : ownerType->FullName + L"." + symbol->Name;
 
     ownerType->Methods.push_back(symbol);
+    Declare(symbol);
+    Table->BindSymbol(node, symbol);
+
+    if (node->Body != nullptr)
+    {
+        PushScope(symbol);
+        if (!symbol->IsStatic)
+        {
+            if (ownerType->IsStatic)
+                Diagnostics.ReportError(node->IdentifierToken, L"Cannot declare a non static method's in static type");
+        }
+
+        VisitStatementsBlock(node->Body);
+        PopScope();
+    }
+}
+
+void DeclarationCollector::VisitConstructorDeclaration(ConstructorDeclarationSyntax* node)
+{
+    std::wstring methodName = node->IdentifierToken.Word;
+    MethodSymbol* symbol = new MethodSymbol(methodName, node->Body);
+    symbol->ReturnType = SymbolTable::Primitives::Void;
+    SetAccesibility(symbol, node->Modifiers);
+
+    if (symbol->IsStatic)
+        Diagnostics.ReportError(node->IdentifierToken, L"Type constructor cannot be static");
+
+    for (ParameterSyntax* parameter : node->Params->Parameters)
+    {
+        ParameterSymbol* paramSymbol = new ParameterSymbol(parameter->Identifier.Word);
+        symbol->Parameters.push_back(paramSymbol);
+    }
+
+    SyntaxSymbol* ownerSymbol = OwnerType();
+    if (!ownerSymbol->IsType())
+    {
+        Diagnostics.ReportError(node->IdentifierToken, L"Method cannot be declared within types");
+        //return;
+    }
+
+    TypeSymbol* ownerType = static_cast<TypeSymbol*>(ownerSymbol);
+    if (ownerType == nullptr)
+    {
+        Diagnostics.ReportError(node->IdentifierToken, L"Cannot resolve method's owner type");
+        return;
+    }
+
+    if (ownerType->Name != methodName)
+    {
+        Diagnostics.ReportError(node->IdentifierToken, L"Name of constructor should match class's name");
+        //return;
+    }
+
+    symbol->Parent = ownerType;
+    symbol->FullName = ownerType == nullptr ? symbol->Name : ownerType->FullName + L"." + symbol->Name;
+
+    ownerType->Constructors.push_back(symbol);
     Declare(symbol);
     Table->BindSymbol(node, symbol);
 

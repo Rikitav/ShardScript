@@ -22,6 +22,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.h>
 
 #include <shard/syntax/nodes/Expressions/BinaryExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/LinkedExpressionSyntax.h>
@@ -183,16 +184,33 @@ void SyntaxVisitor::VisitMemberDeclaration(MemberDeclarationSyntax* node)
 			VisitAccessorDeclaration(declNode);
 			return;
 		}
+
+		case SyntaxKind::ConstructorDeclaration:
+		{
+			ConstructorDeclarationSyntax* declNode = static_cast<ConstructorDeclarationSyntax*>(node);
+			VisitConstructorDeclaration(declNode);
+			return;
+		}
 	}
 }
 
 void SyntaxVisitor::VisitFieldDeclaration(FieldDeclarationSyntax* node)
 {
+	if (node->ReturnType != nullptr)
+		VisitType(node->ReturnType);
+
 	if (node->InitializerExpression != nullptr)
 		VisitExpression(node->InitializerExpression);
 }
 
 void SyntaxVisitor::VisitMethodDeclaration(MethodDeclarationSyntax* node)
+{
+	VisitType(node->ReturnType);
+	VisitParametersList(node->Params);
+	VisitStatementsBlock(node->Body);
+}
+
+void SyntaxVisitor::VisitConstructorDeclaration(ConstructorDeclarationSyntax* node)
 {
 	VisitParametersList(node->Params);
 	VisitStatementsBlock(node->Body);
@@ -200,6 +218,9 @@ void SyntaxVisitor::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 
 void SyntaxVisitor::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
 {
+	if (node->ReturnType != nullptr)
+		VisitType(node->ReturnType);
+
 	if (node->Getter != nullptr)
 		VisitAccessorDeclaration(node->Getter);
 	
@@ -510,7 +531,7 @@ void SyntaxVisitor::VisitCollectionExpression(CollectionExpressionSyntax* node)
 void SyntaxVisitor::VisitObjectCreationExpression(ObjectExpressionSyntax* node)
 {
 	VisitType(node->Type);
-	VisitArgumentsList(node->Arguments);
+	VisitArgumentsList(node->ArgumentsList);
 }
 
 void SyntaxVisitor::VisitMemberAccessExpression(MemberAccessExpressionSyntax* node)

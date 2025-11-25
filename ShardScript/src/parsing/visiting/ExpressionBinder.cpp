@@ -153,10 +153,11 @@ void ExpressionBinder::VisitNamespaceDeclaration(NamespaceDeclarationSyntax* nod
 	if (symbol != nullptr)
 	{
 		PushScope(symbol);
-		for (TypeSymbol* type : Table->GetTypeSymbols())
+
+		for (MemberDeclarationSyntax* member : node->Members)
 		{
-			if (type->Parent == symbol)
-				Declare(type);
+			SyntaxSymbol* symbol = Table->LookupSymbol(member);
+			Declare(symbol);
 		}
 
 		for (MemberDeclarationSyntax* member : node->Members)
@@ -188,6 +189,26 @@ void ExpressionBinder::VisitStructDeclaration(StructDeclarationSyntax* node)
 		for (MemberDeclarationSyntax* member : node->Members)
 			VisitMemberDeclaration(member);
 
+		PopScope();
+	}
+}
+
+void ExpressionBinder::VisitConstructorDeclaration(ConstructorDeclarationSyntax* node)
+{
+	MethodSymbol* symbol = static_cast<MethodSymbol*>(Table->LookupSymbol(node));
+	TypeSymbol* ownerType = OwnerType();
+
+	if (symbol != nullptr && node->Body != nullptr)
+	{
+		PushScope(symbol);
+		Declare(new VariableSymbol(L"this", ownerType));
+
+		for (ParameterSymbol* parameter : symbol->Parameters)
+			Declare(new VariableSymbol(parameter->Name, parameter->Type));
+
+		CurrentScope()->ReturnFound = false;
+		VisitStatementsBlock(node->Body);
+		
 		PopScope();
 	}
 }
@@ -293,17 +314,20 @@ void ExpressionBinder::VisitFieldDeclaration(FieldDeclarationSyntax* node)
 
 	if (fieldSymbol != nullptr && fieldSymbol->ReturnType != nullptr)
 	{
-		TypeSymbol* initExprType = GetExpressionType(node->InitializerExpression);
-		if (initExprType == nullptr)
+		if (node->InitializerExpression != nullptr)
 		{
-			Diagnostics.ReportError(node->IdentifierToken, L"Field initializer expression type could not be determined");
-			return;
-		}
+			TypeSymbol* initExprType = GetExpressionType(node->InitializerExpression);
+			if (initExprType == nullptr)
+			{
+				Diagnostics.ReportError(node->IdentifierToken, L"Field initializer expression type could not be determined");
+				return;
+			}
 
-		if (!TypeSymbol::Equals(initExprType, fieldSymbol->ReturnType))
-		{
-			Diagnostics.ReportError(node->IdentifierToken, L"Field initializer type mismatch: expected '" + fieldSymbol->ReturnType->Name + L"' but got '" + initExprType->Name + L"'");
-			return;
+			if (!TypeSymbol::Equals(initExprType, fieldSymbol->ReturnType))
+			{
+				Diagnostics.ReportError(node->IdentifierToken, L"Field initializer type mismatch: expected '" + fieldSymbol->ReturnType->Name + L"' but got '" + initExprType->Name + L"'");
+				return;
+			}
 		}
 	}
 }
@@ -514,22 +538,37 @@ void ExpressionBinder::VisitUnaryExpression(UnaryExpressionSyntax* node)
 
 TypeSymbol* ExpressionBinder::AnalyzeObjectExpression(ObjectExpressionSyntax* node)
 {
-	if (node->Symbol == nullptr)
+	if (node->TypeSymbol == nullptr)
+		return nullptr;
+
+	std::wstring methodName = node->IdentifierToken.Word;
+	MethodSymbol* method = ResolveConstructor(node);
+	if (method == nullptr)
+		return nullptr;
+
+	if (!IsSymbolAccessible(method))
 	{
-		Diagnostics.ReportError(node->NewToken, L"Object creation type not resolved");
+		Diagnostics.ReportError(node->IdentifierToken, L"Method '" + methodName + L"' is not accessible");
 		return nullptr;
 	}
 
-	return node->Symbol;
+	if (!MatchMethodArguments(method, node->ArgumentsList->Arguments))
+	{
+		//Diagnostics.ReportError(node->IdentifierToken, L"Method '" + methodName + L"' argument types do not match");
+		return nullptr;
+	}
+
+	node->CtorSymbol = method;
+	return node->TypeSymbol;
 }
 
 void ExpressionBinder::VisitObjectCreationExpression(ObjectExpressionSyntax* node)
 {
-	VisitArgumentsList(node->Arguments);
+	VisitType(node->Type);
+	VisitArgumentsList(node->ArgumentsList);
 
 	TypeSymbol* type = AnalyzeObjectExpression(node);
 	SetExpressionType(node, type);
-	VisitType(node->Type);
 }
 
 TypeSymbol* ExpressionBinder::AnalyzeCollectionExpression(CollectionExpressionSyntax* node)
@@ -871,6 +910,79 @@ TypeSymbol* ExpressionBinder::AnalyzeInvokationExpression(InvokationExpressionSy
 	}
 
 	return method->ReturnType;
+}
+
+MethodSymbol* ExpressionBinder::ResolveConstructor(ObjectExpressionSyntax* node)
+{
+	if (node->TypeSymbol == nullptr)
+		return nullptr;
+
+	if (node->TypeSymbol->Constructors.empty())
+	{
+		if (!node->ArgumentsList->Arguments.empty())
+			Diagnostics.ReportError(node->IdentifierToken, L"Type \'" + node->TypeSymbol->FullName + L"\' doesnt have constructors, just use empty arguments list");
+
+		return nullptr;
+	}
+	else
+	{
+		std::vector<TypeSymbol*> argTypes;
+		for (ArgumentSyntax* arg : node->ArgumentsList->Arguments)
+		{
+			ExpressionSyntax* expr = const_cast<ExpressionSyntax*>(arg->Expression);
+			VisitExpression(expr);
+
+			TypeSymbol* argType = GetExpressionType(expr);
+			if (argType == nullptr)
+				return nullptr;
+
+			argTypes.push_back(argType);
+		}
+
+		MethodSymbol* method = node->TypeSymbol->FindConstructor(argTypes);
+		if (method == nullptr)
+		{
+			std::wstringstream diag;
+			diag << "No constructor of \"" << node->TypeSymbol->FullName << "\" found that accepts ";
+
+			switch (argTypes.size())
+			{
+				case 0:
+				{
+					diag << "no arguments";
+					break;
+				}
+
+				case 1:
+				{
+					TypeSymbol* type = argTypes.at(0);
+					std::wstring typeName = type == nullptr ? L"<error>" : type->Name;
+					diag << "argument (" << typeName << ")";
+					break;
+				}
+
+				default:
+				{
+					TypeSymbol* type = argTypes.at(0);
+					diag << L"arguments (" << type->Name;
+
+					for (int i = 1; i < argTypes.size(); i++)
+					{
+						type = argTypes.at(i);
+						diag << ", " << type->Name;
+					}
+
+					diag << ")";
+					break;
+				}
+			}
+
+			Diagnostics.ReportError(node->IdentifierToken, diag.str());
+			return nullptr;
+		}
+
+		return method;
+	}
 }
 
 MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node, TypeSymbol* currentType)

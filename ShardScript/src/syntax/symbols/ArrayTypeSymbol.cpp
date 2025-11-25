@@ -12,6 +12,11 @@
 using namespace shard::parsing::semantic;
 using namespace shard::syntax::symbols;
 
+MethodSymbol* shard::syntax::symbols::ArrayTypeSymbol::FindConstructor(std::vector<TypeSymbol*> parameterTypes)
+{
+	return SymbolTable::Primitives::Array->FindConstructor(parameterTypes);
+}
+
 MethodSymbol* ArrayTypeSymbol::FindMethod(std::wstring& name, std::vector<TypeSymbol*> parameterTypes)
 {
 	return SymbolTable::Primitives::Array->FindMethod(name, parameterTypes);

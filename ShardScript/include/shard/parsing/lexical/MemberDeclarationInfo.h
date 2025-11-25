@@ -9,9 +9,9 @@ namespace shard::parsing::lexical
 	struct MemberDeclarationInfo
 	{
 		std::vector<shard::syntax::SyntaxToken> Modifiers;
+		bool IsCtor = false;
 		shard::syntax::SyntaxToken DeclareType;
 		shard::syntax::SyntaxToken Identifier;
 		shard::syntax::nodes::TypeSyntax* ReturnType = nullptr;
-		shard::syntax::nodes::ParametersListSyntax* Params = nullptr;
 	};
 }

@@ -176,6 +176,9 @@
     <ClCompile Include="src\parsing\semantic\NamespaceTree.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
+    <ClCompile Include="src\syntax\symbols\GenericTypeSymbol.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\shard\parsing\lexical\SyntaxTree.h">
@@ -482,6 +485,15 @@
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="include\shard\parsing\semantic\NamespaceTree.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\syntax\symbols\GenericTypeSymbol.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\syntax\nodes\MemberDeclarations\ConstructorDeclarationSyntax.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\syntax\symbols\TypeParameterSymbol.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>

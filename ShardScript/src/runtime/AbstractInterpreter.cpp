@@ -659,7 +659,7 @@ ObjectInstance* AbstractInterpreter::EvaluateLiteralExpression(const LiteralExpr
 
 ObjectInstance* AbstractInterpreter::EvaluateObjectExpression(const ObjectExpressionSyntax* expression)
 {
-	ObjectInstance* newInstance = GarbageCollector::AllocateInstance(expression->Symbol);
+	ObjectInstance* newInstance = GarbageCollector::AllocateInstance(expression->TypeSymbol);
 	for (FieldSymbol* field : newInstance->Info->Fields)
 	{
 		ObjectInstance* assignInstance = nullptr;
@@ -675,6 +675,12 @@ ObjectInstance* AbstractInterpreter::EvaluateObjectExpression(const ObjectExpres
 		}
 
 		newInstance->SetField(field, assignInstance);
+	}
+
+	if (expression->CtorSymbol != nullptr)
+	{
+		InboundVariablesContext* arguments = CreateArgumentsContext(expression->ArgumentsList->Arguments, expression->CtorSymbol, newInstance);
+		ExecuteMethod(expression->CtorSymbol, arguments);
 	}
 
 	return newInstance;
@@ -735,8 +741,11 @@ ObjectInstance* AbstractInterpreter::EvaluateBinaryExpression(const BinaryExpres
 		ObjectInstance* rightReg = EvaluateExpression(expression->Right);
 		retReg = PrimitiveMathModule::EvaluateBinaryOperator(leftReg, expression->OperatorToken, rightReg, assign);
 
-		GarbageCollector::DestroyInstance(leftReg);
-		GarbageCollector::DestroyInstance(rightReg);
+		if (leftReg != nullptr)
+			GarbageCollector::DestroyInstance(leftReg);
+
+		if (rightReg != nullptr && !assign && rightReg->Info->IsReferenceType) // if (assign == true) => this reg was moved to retReg to perform assign operation
+			GarbageCollector::DestroyInstance(rightReg);
 	}
 
 	if (assign)

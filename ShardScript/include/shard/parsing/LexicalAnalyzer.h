@@ -41,9 +41,7 @@
 
 #include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.h>
-
-#include <shard/syntax/nodes/Types/GenericTypeSyntax.h>
-#include <shard/syntax/nodes/Types/IdentifierNameTypeSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.h>
 
 #include <initializer_list>
 #include <vector>
@@ -70,6 +68,8 @@ namespace shard::parsing
 		// Second layer - objects and members
 		shard::syntax::nodes::NamespaceDeclarationSyntax* ReadNamespaceDeclaration(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
 		shard::syntax::nodes::MemberDeclarationSyntax* ReadMemberDeclaration(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
+
+		shard::syntax::nodes::ConstructorDeclarationSyntax* ReadConstructorDeclaration(shard::parsing::SourceReader& reader, shard::parsing::lexical::MemberDeclarationInfo& info, shard::syntax::SyntaxNode* parent);
 		shard::syntax::nodes::MethodDeclarationSyntax* ReadMethodDeclaration(shard::parsing::SourceReader& reader, shard::parsing::lexical::MemberDeclarationInfo& info, shard::syntax::SyntaxNode* parent);
 		shard::syntax::nodes::FieldDeclarationSyntax* ReadFieldDeclaration(shard::parsing::SourceReader& reader, shard::parsing::lexical::MemberDeclarationInfo& info, shard::syntax::SyntaxNode* parent);
 		shard::syntax::nodes::PropertyDeclarationSyntax* ReadPropertyDeclaration(shard::parsing::SourceReader& reader, shard::parsing::lexical::MemberDeclarationInfo& info, shard::syntax::SyntaxNode* parent);

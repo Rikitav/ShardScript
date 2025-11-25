@@ -34,6 +34,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.h>
 
 #include <shard/syntax/nodes/Directives/UsingDirectiveSyntax.h>
 #include <shard/syntax/nodes/Directives/ImportDirectiveSyntax.h>
@@ -57,13 +58,13 @@
 #include <shard/syntax/nodes/Types/IdentifierNameTypeSyntax.h>
 //#include <shard/syntax/nodes/Types/NullableTypeSyntax.h>
 #include <shard/syntax/nodes/Types/PredefinedTypeSyntax.h>
+#include <shard/syntax/nodes/Types/GenericTypeSyntax.h>
 
 #include <vector>
 #include <set>
 #include <initializer_list>
 #include <stdexcept>
 #include <new>
-#include <shard/syntax/nodes/Types/GenericTypeSyntax.h>
 
 using namespace shard::syntax;
 using namespace shard::syntax::nodes;
@@ -298,6 +299,13 @@ MemberDeclarationSyntax* LexicalAnalyzer::ReadMemberDeclaration(SourceReader& re
 			break;
 		}
 
+		if (token.Type == TokenType::Identifier && peek.Type == TokenType::OpenCurl)
+		{
+			// Constructor
+			info.IsCtor = true;
+			break;
+		}
+
 		Diagnostics.ReportError(token, L"Expected member declaration keyword");
 		reader.Consume();
 		continue;
@@ -316,7 +324,11 @@ MemberDeclarationSyntax* LexicalAnalyzer::ReadMemberDeclaration(SourceReader& re
 	}
 
 	// Reading parameters list
-	if (info.ReturnType != nullptr)
+	if (info.IsCtor)
+	{
+		return ReadConstructorDeclaration(reader, info, parent);
+	}
+	else if (info.ReturnType != nullptr)
 	{
 		// Checking if member is field - try to match with error recovery
 		if (!TryMatch(reader, { TokenType::OpenCurl, TokenType::OpenBrace, TokenType::Semicolon, TokenType::AssignOperator }, L"Expected parameters list '(', accessors body '{', semicolon ';' or assignment '='", 5))
@@ -359,6 +371,23 @@ MemberDeclarationSyntax* LexicalAnalyzer::ReadMemberDeclaration(SourceReader& re
 	return nullptr;
 }
 
+ConstructorDeclarationSyntax* LexicalAnalyzer::ReadConstructorDeclaration(SourceReader& reader, MemberDeclarationInfo& info, SyntaxNode* parent)
+{
+	ConstructorDeclarationSyntax* syntax = new ConstructorDeclarationSyntax(info, parent);
+	syntax->Params = ReadParametersList(reader, syntax);
+
+	SyntaxToken current = reader.Current();
+	if (current.Type == TokenType::Semicolon)
+	{
+		syntax->Semicolon = current;
+		reader.Consume();
+		return syntax;
+	}
+
+	syntax->Body = ReadStatementsBlock(reader, syntax);
+	return syntax;
+}
+
 MethodDeclarationSyntax* LexicalAnalyzer::ReadMethodDeclaration(SourceReader& reader, MemberDeclarationInfo& info, SyntaxNode* parent)
 {
 	MethodDeclarationSyntax* syntax = new MethodDeclarationSyntax(info, parent);
@@ -383,18 +412,18 @@ FieldDeclarationSyntax* LexicalAnalyzer::ReadFieldDeclaration(SourceReader& read
 	SyntaxToken current = reader.Current();
 	switch (current.Type)
 	{
-		case TokenType::Semicolon:
-		{
-			syntax->SemicolonToken = current;
-			return syntax;
-		}
-
 		case TokenType::AssignOperator:
 		{
 			syntax->InitializerAssignToken = current;
 			reader.Consume();
 
 			syntax->InitializerExpression = ReadExpression(reader, syntax, 0);
+			syntax->SemicolonToken = Expect(reader, TokenType::Semicolon, L"Expected ';' token");
+			return syntax;
+		}
+
+		default:
+		{
 			syntax->SemicolonToken = Expect(reader, TokenType::Semicolon, L"Expected ';' token");
 			return syntax;
 		}
@@ -1193,7 +1222,7 @@ ObjectExpressionSyntax* LexicalAnalyzer::ReadObjectExpression(SourceReader& read
 	ObjectExpressionSyntax* syntax = new ObjectExpressionSyntax(parent);
 	syntax->NewToken = Expect(reader, TokenType::NewKeyword, L"Expected 'new' keyword");
 	syntax->Type = ReadType(reader, syntax);
-	syntax->Arguments = ReadArgumentsList(reader, syntax);
+	syntax->ArgumentsList = ReadArgumentsList(reader, syntax);
 	return syntax;
 }
 

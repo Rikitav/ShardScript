@@ -47,6 +47,7 @@
 
 #include <vector>
 #include <string>
+#include <shard/syntax/symbols/GenericTypeSymbol.h>
 
 using namespace shard::parsing;
 using namespace shard::parsing::analysis;
@@ -140,6 +141,38 @@ void TypeBinder::VisitStructDeclaration(StructDeclarationSyntax* node)
 	}
 }
 
+void TypeBinder::VisitConstructorDeclaration(ConstructorDeclarationSyntax* node)
+{
+	MethodSymbol* symbol = static_cast<MethodSymbol*>(Table->LookupSymbol(node));
+	if (symbol != nullptr)
+	{
+		if (node->Params != nullptr && node->Params->Parameters.size() == symbol->Parameters.size())
+		{
+			for (size_t i = 0; i < node->Params->Parameters.size(); i++)
+			{
+				ParameterSyntax* paramSyntax = node->Params->Parameters[i];
+				ParameterSymbol* paramSymbol = symbol->Parameters[i];
+
+				if (paramSyntax->Type != nullptr)
+				{
+					paramSymbol->Type = ResolveType(const_cast<TypeSyntax*>(paramSyntax->Type));
+					if (paramSymbol->Type == nullptr)
+					{
+						Diagnostics.ReportError(paramSyntax->Identifier, L"Parameter type not found: " + const_cast<TypeSyntax*>(paramSyntax->Type)->ToString());
+					}
+				}
+			}
+		}
+
+		if (node->Body != nullptr)
+		{
+			PushScope(symbol);
+			VisitStatementsBlock(node->Body);
+			PopScope();
+		}
+	}
+}
+
 void TypeBinder::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 {
 	MethodSymbol* symbol = static_cast<MethodSymbol*>(Table->LookupSymbol(node));
@@ -166,7 +199,7 @@ void TypeBinder::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 					paramSymbol->Type = ResolveType(const_cast<TypeSyntax*>(paramSyntax->Type));
 					if (paramSymbol->Type == nullptr)
 					{
-						Diagnostics.ReportError(paramSyntax->Identifier, L"Parameter type not found: " + node->ReturnType->ToString());
+						Diagnostics.ReportError(paramSyntax->Identifier, L"Parameter type not found: " + const_cast<TypeSyntax*>(paramSyntax->Type)->ToString());
 					}
 				}
 			}
@@ -256,15 +289,16 @@ void TypeBinder::VisitVariableStatement(VariableStatementSyntax* node)
 void TypeBinder::VisitObjectCreationExpression(ObjectExpressionSyntax* node)
 {
 	VisitType(node->Type);
-	VisitArgumentsList(node->Arguments);
+	VisitArgumentsList(node->ArgumentsList);
 
-	node->Symbol = ResolveType(node->Type);
-	if (node->Symbol == nullptr)
+	node->TypeSymbol = ResolveType(node->Type);
+	if (node->TypeSymbol == nullptr)
 	{
 		Diagnostics.ReportError(node->NewToken, L"Type not found: " + node->Type->ToString());
 	}
 }
 
+/*
 void TypeBinder::VisitCollectionExpression(CollectionExpressionSyntax* node)
 {
 	for (ExpressionSyntax* expression : node->ValuesExpressions)
@@ -275,6 +309,7 @@ void TypeBinder::VisitMemberAccessExpression(MemberAccessExpressionSyntax* node)
 {
 
 }
+*/
 
 TypeSymbol* TypeBinder::ResolveType(TypeSyntax* typeSyntax)
 {
@@ -323,6 +358,7 @@ TypeSymbol* TypeBinder::ResolveType(TypeSyntax* typeSyntax)
 
 			ArrayTypeSymbol* symbol = new ArrayTypeSymbol(underlayingType, 0);
 			symbol->MemoryBytesSize = SymbolTable::Primitives::Array->MemoryBytesSize;
+			Table->BindSymbol(typeSyntax, symbol);
 			return symbol;
 		}
 
@@ -353,7 +389,37 @@ TypeSymbol* TypeBinder::ResolveType(TypeSyntax* typeSyntax)
 			}
 
 			TypeSymbol* typeSymbol = static_cast<TypeSymbol*>(symbol);
+			//Table->BindSymbol(typeSyntax, typeSymbol);
 			return typeSymbol;
+		}
+
+		case SyntaxKind::GenericType:
+		{
+			/*
+			GenericTypeSyntax* genericType = static_cast<GenericTypeSyntax*>(typeSyntax);
+			TypeSymbol* underlayingType = ResolveType(genericType->UnderlayingType);
+
+			GenericTypeSymbol* symbol = new GenericTypeSymbol(genericType);
+			Table->BindSymbol(typeSyntax, symbol);
+
+			size_t argsCount = genericType->TypeArguments.size();
+			size_t paramsCount = underlayingType->TypeParameters.size();
+
+			if (argsCount != paramsCount)
+			{
+				Diagnostics.ReportError(genericType->OpenListToken, L"\'" + underlayingType->FullName + L" requires " + paramsCount + " type arguments");
+				return nullptr;
+			}
+
+			for (TypeSyntax* typeArg : genericType->TypeArguments)
+			{
+				TypeSymbol* typeArgSymbol = ResolveType(typeArg);
+			}
+
+			return symbol;
+			//*/
+
+			return nullptr;
 		}
 
 		default:

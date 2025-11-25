@@ -8,6 +8,7 @@
 #include <shard/syntax/nodes/ExpressionSyntax.h>
 
 #include <shard/syntax/symbols/TypeSymbol.h>
+#include <shard/syntax/symbols/MethodSymbol.h>
 
 namespace shard::syntax::nodes
 {
@@ -18,14 +19,15 @@ namespace shard::syntax::nodes
 		SyntaxToken IdentifierToken;
 
 		TypeSyntax* Type = nullptr;
-		ArgumentsListSyntax* Arguments = nullptr;
-		shard::syntax::symbols::TypeSymbol* Symbol = nullptr;
+		ArgumentsListSyntax* ArgumentsList = nullptr;
+		shard::syntax::symbols::TypeSymbol* TypeSymbol = nullptr;
+		shard::syntax::symbols::MethodSymbol* CtorSymbol = nullptr;
 
 		inline ObjectExpressionSyntax(const SyntaxNode* parent)
 			: ExpressionSyntax(SyntaxKind::ObjectExpression, parent) { }
 
 		inline ObjectExpressionSyntax(const ObjectExpressionSyntax& other)
-			: ExpressionSyntax(other), NewToken(other.NewToken), IdentifierToken(other.IdentifierToken), Type(other.Type), Arguments(other.Arguments), Symbol(other.Symbol) { }
+			: ExpressionSyntax(other), NewToken(other.NewToken), IdentifierToken(other.IdentifierToken), Type(other.Type), ArgumentsList(other.ArgumentsList), TypeSymbol(other.TypeSymbol), CtorSymbol(other.CtorSymbol) { }
 
 		inline virtual ~ObjectExpressionSyntax()
 		{
@@ -35,10 +37,10 @@ namespace shard::syntax::nodes
 				delete Type;
 			}
 
-			if (Arguments != nullptr)
+			if (ArgumentsList != nullptr)
 			{
-				Arguments->~ArgumentsListSyntax();
-				delete Arguments;
+				ArgumentsList->~ArgumentsListSyntax();
+				delete ArgumentsList;
 			}
 		}
 	};

@@ -47,6 +47,20 @@ bool TypeSymbol::IsPrimitive()
 		|| this == SymbolTable::Primitives::String;
 }
 
+MethodSymbol* TypeSymbol::FindConstructor(std::vector<TypeSymbol*> parameterTypes)
+{
+	for (MethodSymbol* symbol : Constructors)
+	{
+		if (symbol->Parameters.size() != parameterTypes.size())
+			continue;
+
+		if (std::equal(symbol->Parameters.begin(), symbol->Parameters.end(), parameterTypes.begin(), paramPredicate))
+			return symbol;
+	}
+
+	return nullptr;
+}
+
 MethodSymbol* TypeSymbol::FindMethod(std::wstring& name, std::vector<TypeSymbol*> parameterTypes)
 {
 	for (MethodSymbol* symbol : Methods)

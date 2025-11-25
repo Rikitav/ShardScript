@@ -20,6 +20,7 @@ namespace shard::syntax
 		// Members
 		FieldDeclaration,
 		MethodDeclaration,
+		ConstructorDeclaration,
 		PropertyDeclaration,
 		AccessorDeclaration,
 

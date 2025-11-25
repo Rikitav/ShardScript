@@ -23,6 +23,7 @@ namespace shard::syntax::symbols
 	public:
         TypeSymbol* BaseType = nullptr;
         std::vector<TypeSymbol*> Interfaces;
+        std::vector<TypeSymbol*> TypeParameters;
 
         std::vector<MethodSymbol*> Constructors;
         std::vector<MethodSymbol*> Methods;
@@ -65,6 +66,7 @@ namespace shard::syntax::symbols
             return IsReferenceType ? sizeof(void*) : MemoryBytesSize;
         }
 
+        virtual MethodSymbol* FindConstructor(std::vector<TypeSymbol*> parameterTypes);
         virtual MethodSymbol* FindMethod(std::wstring& name, std::vector<TypeSymbol*> parameterTypes);
         virtual MethodSymbol* FindIndexator(std::vector<TypeSymbol*> parameterTypes);
         virtual FieldSymbol* FindField(std::wstring& name);

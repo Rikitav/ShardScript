@@ -30,6 +30,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/PropertyDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.h>
 
 #include <shard/syntax/nodes/Statements/ConditionalClauseSyntax.h>
 #include <shard/syntax/nodes/Statements/ReturnStatementSyntax.h>
@@ -59,6 +60,7 @@ namespace shard::parsing
 		shard::syntax::symbols::TypeSymbol* AnalyzeInvokationExpression(shard::syntax::nodes::InvokationExpressionSyntax* node, shard::syntax::symbols::TypeSymbol* currentType);
 		shard::syntax::symbols::TypeSymbol* AnalyzeIndexatorExpression(shard::syntax::nodes::IndexatorExpressionSyntax* node, shard::syntax::symbols::TypeSymbol* currentType);
 
+		shard::syntax::symbols::MethodSymbol* ResolveConstructor(shard::syntax::nodes::ObjectExpressionSyntax* node);
 		shard::syntax::symbols::MethodSymbol* ResolveMethod(shard::syntax::nodes::InvokationExpressionSyntax* node, shard::syntax::symbols::TypeSymbol* currentType);
 		shard::syntax::symbols::MethodSymbol* ResolveIndexator(shard::syntax::nodes::IndexatorExpressionSyntax* node, shard::syntax::symbols::TypeSymbol* currentType);
 		
@@ -74,6 +76,8 @@ namespace shard::parsing
 		void VisitNamespaceDeclaration(shard::syntax::nodes::NamespaceDeclarationSyntax* node) override;
 		void VisitClassDeclaration(shard::syntax::nodes::ClassDeclarationSyntax* node) override;
 		void VisitStructDeclaration(shard::syntax::nodes::StructDeclarationSyntax* node) override;
+
+		void VisitConstructorDeclaration(shard::syntax::nodes::ConstructorDeclarationSyntax* node) override;
 		void VisitMethodDeclaration(shard::syntax::nodes::MethodDeclarationSyntax* node) override;
 		void VisitFieldDeclaration(shard::syntax::nodes::FieldDeclarationSyntax* node) override;
 		void VisitPropertyDeclaration(shard::syntax::nodes::PropertyDeclarationSyntax* node) override;

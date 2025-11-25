@@ -3,28 +3,26 @@
 #include <shard/syntax/symbols/FieldSymbol.h>
 #include <shard/syntax/symbols/MethodSymbol.h>
 #include <shard/syntax/symbols/PropertySymbol.h>
-#include <shard/syntax/SyntaxKind.h>
 
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 namespace shard::syntax::symbols
 {
-	class ArrayTypeSymbol : public TypeSymbol
+	class GenericTypeSymbol : public TypeSymbol
 	{
 	public:
 		TypeSymbol* UnderlayingType = nullptr;
-		size_t Size = 0;
-		int Rank = 0;
+		std::unordered_map<std::wstring, TypeSymbol*> GenericTypes;
 
-		inline ArrayTypeSymbol(TypeSymbol* underlayingType, size_t size) : TypeSymbol(L"Array", SyntaxKind::CollectionExpression), UnderlayingType(underlayingType), Size(size)
+		inline GenericTypeSymbol(TypeSymbol* underlayingType) : TypeSymbol(underlayingType->Name, underlayingType->Kind), UnderlayingType(underlayingType)
 		{
-			IsReferenceType = true;
+			IsReferenceType = underlayingType->IsReferenceType;
 		}
 
-		inline ~ArrayTypeSymbol() = default;
+		inline ~GenericTypeSymbol() = default;
 
-		MethodSymbol* FindConstructor(std::vector<TypeSymbol*> parameterTypes) override;
 		MethodSymbol* FindMethod(std::wstring& name, std::vector<TypeSymbol*> parameterTypes) override;
 		MethodSymbol* FindIndexator(std::vector<TypeSymbol*> parameterTypes) override;
 		FieldSymbol* FindField(std::wstring& name) override;
