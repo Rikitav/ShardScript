@@ -16,6 +16,7 @@ namespace shard::syntax
 		ClassDeclaration,
 		StructDeclaration,
 		InterfaceDeclaration,
+		DelegateDeclaration,
 
 		// Members
 		FieldDeclaration,
@@ -54,6 +55,7 @@ namespace shard::syntax
 		LiteralExpression,
 		BinaryExpression,
 		UnaryExpression,
+		TernaryExpression,
 		CollectionExpression,
 
 		// Linked expressions
@@ -61,6 +63,7 @@ namespace shard::syntax
 		MemberAccessExpression,
 		InvokationExpression,
 		IndexatorExpression,
+		LambdaExpression,
 		
 		// Type identifiers
 		PredefinedType,
@@ -68,5 +71,6 @@ namespace shard::syntax
 		ArrayType,
 		NullableType,
 		GenericType,
+		DelegateType,
 	};
 }

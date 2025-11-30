@@ -5,6 +5,7 @@
 #include <shard/parsing/semantic/SemanticModel.h>
 
 #include <shard/syntax/nodes/CompilationUnitSyntax.h>
+#include <shard/syntax/nodes/StatementsBlockSyntax.h>
 #include <shard/syntax/nodes/Statements/VariableStatementSyntax.h>
 #include <shard/syntax/nodes/Directives/ImportDirectiveSyntax.h>
 
@@ -15,6 +16,8 @@
 #include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/PropertyDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/DelegateDeclarationSyntax.h>
 
 namespace shard::parsing
 {
@@ -30,6 +33,7 @@ namespace shard::parsing
 		void VisitNamespaceDeclaration(shard::syntax::nodes::NamespaceDeclarationSyntax* node) override;
 		void VisitClassDeclaration(shard::syntax::nodes::ClassDeclarationSyntax* node) override;
 		void VisitStructDeclaration(shard::syntax::nodes::StructDeclarationSyntax* node) override;
+		void VisitDelegateDeclaration(shard::syntax::nodes::DelegateDeclarationSyntax* node) override;
 
 		void VisitMethodDeclaration(shard::syntax::nodes::MethodDeclarationSyntax* node) override;
 		void VisitConstructorDeclaration(shard::syntax::nodes::ConstructorDeclarationSyntax* node) override;
@@ -37,5 +41,7 @@ namespace shard::parsing
 		void VisitPropertyDeclaration(shard::syntax::nodes::PropertyDeclarationSyntax* node) override;
 		void VisitAccessorDeclaration(shard::syntax::nodes::AccessorDeclarationSyntax* node) override;
 		void VisitVariableStatement(shard::syntax::nodes::VariableStatementSyntax* node) override;
+
+		void VisitStatementsBlock(shard::syntax::nodes::StatementsBlockSyntax* node) override;
 	};
 }

@@ -55,7 +55,7 @@ void LayoutGenerator::FixObjectLayout(SemanticModel& semanticModel, TypeSymbol* 
 		}
 	}
 
-	if (objectInfo->Kind == SyntaxKind::CollectionExpression)
+	if (objectInfo->Kind == SyntaxKind::ArrayType)
 	{
 		ArrayTypeSymbol* arrayInfo = static_cast<ArrayTypeSymbol*>(objectInfo);
 		if (arrayInfo->UnderlayingType->State == TypeLayoutingState::Unvisited)

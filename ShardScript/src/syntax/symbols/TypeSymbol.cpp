@@ -4,6 +4,7 @@
 #include <shard/syntax/symbols/PropertySymbol.h>
 #include <shard/syntax/symbols/ParameterSymbol.h>
 #include <shard/syntax/symbols/ArrayTypeSymbol.h>
+#include <shard/syntax/symbols/DelegateTypeSymbol.h>
 
 #include <shard/syntax/SyntaxKind.h>
 
@@ -26,17 +27,55 @@ static bool paramPredicate(ParameterSymbol* left, TypeSymbol* right)
 
 bool TypeSymbol::Equals(const TypeSymbol* left, const TypeSymbol* right)
 {
-	if (left->Kind == SyntaxKind::CollectionExpression)
+	switch (left->Kind)
 	{
-		if (right->Kind != SyntaxKind::CollectionExpression)
-			return false;
+		default:
+			return left->TypeCode == right->TypeCode;
 
-		const ArrayTypeSymbol* thisArrayInfo = static_cast<const ArrayTypeSymbol*>(left);
-		const ArrayTypeSymbol* otherArrayInfo = static_cast<const ArrayTypeSymbol*>(right);
-		return thisArrayInfo->UnderlayingType->TypeCode == otherArrayInfo->UnderlayingType->TypeCode;
+		case SyntaxKind::DelegateType:
+		{
+			if (right->Kind != SyntaxKind::DelegateType)
+				return false;
+
+			const DelegateTypeSymbol* thisLambdaInfo = static_cast<const DelegateTypeSymbol*>(left);
+			const DelegateTypeSymbol* otherLambdaInfo = static_cast<const DelegateTypeSymbol*>(right);
+			
+			if (thisLambdaInfo->ReturnType == nullptr || otherLambdaInfo->ReturnType == nullptr)
+				return false;
+
+			if (!TypeSymbol::Equals(thisLambdaInfo->ReturnType, otherLambdaInfo->ReturnType))
+				return false;
+
+			size_t size = thisLambdaInfo->Parameters.size();
+			if (otherLambdaInfo->Parameters.size() != size)
+				return false;
+
+			for (size_t i = 0; i < size; i++)
+			{
+				ParameterSymbol* thisParam = thisLambdaInfo->Parameters.at(i);
+				ParameterSymbol* otherParam = otherLambdaInfo->Parameters.at(i);
+
+				if (!TypeSymbol::Equals(thisParam->Type, otherParam->Type))
+					return true;
+			}
+
+			return true;
+		}
+
+		case SyntaxKind::ArrayType:
+		{
+			if (right->Kind != SyntaxKind::ArrayType)
+				return false;
+
+			const ArrayTypeSymbol* thisArrayInfo = static_cast<const ArrayTypeSymbol*>(left);
+			const ArrayTypeSymbol* otherArrayInfo = static_cast<const ArrayTypeSymbol*>(right);
+
+			if (thisArrayInfo->UnderlayingType == nullptr || otherArrayInfo->UnderlayingType == nullptr)
+				return false;
+
+			return Equals(thisArrayInfo->UnderlayingType, otherArrayInfo->UnderlayingType);
+		}
 	}
-
-	return left->TypeCode == right->TypeCode;
 }
 
 bool TypeSymbol::IsPrimitive()

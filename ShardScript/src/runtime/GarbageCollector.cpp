@@ -36,6 +36,9 @@ ObjectInstance* GarbageCollector::GetStaticField(FieldSymbol* field)
 
 void GarbageCollector::SetStaticField(FieldSymbol* field, ObjectInstance* instance)
 {
+	if (instance == nullptr)
+		throw std::runtime_error("requested setting static field to nullptr");
+
 	if (field->ReturnType->IsReferenceType)
 	{
 		ObjectInstance* oldValue = GetStaticField(field);
@@ -69,6 +72,9 @@ ObjectInstance* GarbageCollector::CreateInstance(const TypeSymbol* objectInfo, v
 
 ObjectInstance* GarbageCollector::CopyInstance(const TypeSymbol* objectInfo, void* ptr)
 {
+	if (ptr == nullptr)
+		throw std::runtime_error("requested copying from nullptr");
+
 	void* memory = malloc(objectInfo->MemoryBytesSize);
 	if (memory == nullptr)
 		throw std::runtime_error("cannot allocate memory for new instance");
@@ -83,6 +89,9 @@ ObjectInstance* GarbageCollector::CopyInstance(const TypeSymbol* objectInfo, voi
 
 ObjectInstance* GarbageCollector::CopyInstance(ObjectInstance* instance)
 {
+	if (instance == nullptr)
+		throw std::runtime_error("requested copying nullptr");
+
 	if (instance == NullInstance)
 		return instance;
 
@@ -99,6 +108,12 @@ ObjectInstance* GarbageCollector::CopyInstance(ObjectInstance* instance)
 
 void GarbageCollector::CopyInstance(ObjectInstance* from, ObjectInstance* to)
 {
+	if (from == nullptr)
+		throw std::runtime_error("requested copying from nullptr");
+
+	if (to == nullptr)
+		throw std::runtime_error("requested copying to nullptr");
+
 	if (from->Info != to->Info)
 		throw std::runtime_error("cannot copy instance memory of different types");
 
@@ -125,6 +140,9 @@ void GarbageCollector::DestroyInstance(ObjectInstance* instance)
 
 void GarbageCollector::TerminateInstance(ObjectInstance* instance)
 {
+	if (instance == nullptr)
+		throw std::runtime_error("requested terminating nullptr");
+
 	if (instance == NullInstance)
 		return;
 

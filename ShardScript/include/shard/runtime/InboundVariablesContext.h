@@ -17,6 +17,8 @@ namespace shard::runtime
 		~InboundVariablesContext();
 
 		ObjectInstance* AddVariable(const std::wstring name, ObjectInstance* instance);
+		ObjectInstance* SetVariable(const std::wstring name, ObjectInstance* instance);
 		ObjectInstance* TryFind(const std::wstring& name);
+		ObjectInstance* Find(const std::wstring& name);
 	};
 }

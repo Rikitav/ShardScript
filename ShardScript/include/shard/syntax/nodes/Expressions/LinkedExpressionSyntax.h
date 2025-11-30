@@ -10,8 +10,7 @@
 #include <shard/syntax/symbols/MethodSymbol.h>
 #include <shard/syntax/symbols/PropertySymbol.h>
 #include <shard/syntax/symbols/TypeSymbol.h>
-
-#include <vector>
+#include <shard/syntax/symbols/DelegateTypeSymbol.h>
 
 namespace shard::syntax::nodes
 {
@@ -25,8 +24,7 @@ namespace shard::syntax::nodes
 		inline LinkedExpressionNode(const SyntaxKind kind, const ExpressionSyntax* previous, const SyntaxNode* parent)
 			: ExpressionSyntax(kind, parent), PreviousExpression(previous) { }
 
-		inline LinkedExpressionNode(const LinkedExpressionNode& other)
-			: ExpressionSyntax(other), DelimeterToken(other.DelimeterToken), PreviousExpression(other.PreviousExpression) { }
+		LinkedExpressionNode(const LinkedExpressionNode&) = delete;
 
 		inline virtual ~LinkedExpressionNode()
 		{
@@ -34,33 +32,6 @@ namespace shard::syntax::nodes
 				delete PreviousExpression;
 		}
 	};
-
-	/*
-	class LinkedExpressionSyntax : public ExpressionSyntax
-	{
-	public:
-		std::vector<LinkedExpressionNode*> Nodes;
-		LinkedExpressionNode* First = nullptr;
-		LinkedExpressionNode* Last = nullptr;
-
-		inline LinkedExpressionSyntax(const SyntaxNode* parent) : ExpressionSyntax(SyntaxKind::LinkedExpression, parent) { }
-		inline LinkedExpressionSyntax(const LinkedExpressionSyntax& other) : ExpressionSyntax(SyntaxKind::LinkedExpression, other.Parent) { }
-
-		inline virtual ~LinkedExpressionSyntax()
-		{
-			First = nullptr;
-			Last = nullptr;
-
-			for (const LinkedExpressionNode* node : Nodes)
-			{
-				node->~LinkedExpressionNode();
-				delete node;
-			}
-
-			Nodes.~std::vector();
-		}
-	};
-	*/
 	
 	class MemberAccessExpressionSyntax : public LinkedExpressionNode
 	{
@@ -69,6 +40,7 @@ namespace shard::syntax::nodes
 		shard::syntax::symbols::TypeSymbol* Type = nullptr;
 		shard::syntax::symbols::FieldSymbol* FieldSymbol = nullptr;
 		shard::syntax::symbols::PropertySymbol* PropertySymbol = nullptr;
+		shard::syntax::symbols::DelegateTypeSymbol* DelegateSymbol = nullptr;
 
 		//bool IsType = false;
 		//bool IsVariable = false;

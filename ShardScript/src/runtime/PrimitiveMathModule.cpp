@@ -14,123 +14,6 @@ using namespace shard::runtime;
 using namespace shard::parsing;
 using namespace shard::parsing::semantic;
 
-/*
-bool PrimitiveMathModule::IsPrimitiveValuesExpressionEvaluatable(int leftTypeCode, TokenType type, int rightTypeCode)
-{
-	switch (leftTypeCode)
-	{
-		case TYPE_CODE_BOOLEAN:
-		{
-			switch (rightTypeCode)
-			{
-				case TYPE_CODE_BOOLEAN:
-				{
-					switch (type)
-					{
-						case TokenType::OrOperator:
-						case TokenType::OrAssignOperator:
-						case TokenType::AndOperator:
-						case TokenType::AndAssignOperator:
-							return true;
-
-						default:
-							return false;
-					}
-				}
-
-				default:
-					return false;
-			}
-		}
-
-		case TYPE_CODE_INTEGER:
-		{
-			switch (rightTypeCode)
-			{
-				case TYPE_CODE_INTEGER:
-				{
-					switch (type)
-					{
-						case TokenType::EqualsOperator:
-						case TokenType::NotEqualsOperator:
-						case TokenType::LessOperator:
-						case TokenType::LessOrEqualsOperator:
-						case TokenType::GreaterOperator:
-						case TokenType::GreaterOrEqualsOperator:
-
-						case TokenType::OrOperator:
-						case TokenType::AndOperator:
-						case TokenType::LeftShiftOperator:
-						case TokenType::RightShiftOperator:
-
-						case TokenType::OrAssignOperator:
-						case TokenType::AndAssignOperator:
-
-						case TokenType::AddOperator:
-						case TokenType::SubOperator:
-						case TokenType::MultOperator:
-						case TokenType::DivOperator:
-						case TokenType::ModOperator:
-						case TokenType::PowOperator:
-
-						case TokenType::AddAssignOperator:
-						case TokenType::SubAssignOperator:
-						case TokenType::MultAssignOperator:
-						case TokenType::DivAssignOperator:
-						case TokenType::ModAssignOperator:
-						case TokenType::PowAssignOperator:
-							return true;
-
-						default:
-							return false;
-					}
-				}
-
-				default:
-					return false;
-			}
-		}
-
-		case TYPE_CODE_STRING:
-		{
-			switch (rightTypeCode)
-			{
-				case TYPE_CODE_STRING:
-				{
-					switch (type)
-					{
-						case TokenType::AddOperator:
-						case TokenType::AddAssignOperator:
-							return true;
-					
-						default:
-							return false;
-					}
-				}
-
-				case TYPE_CODE_INTEGER:
-				{
-					switch (type)
-					{
-						case TokenType::MultOperator:
-						case TokenType::MultAssignOperator:
-							return true;
-
-						default:
-							return false;
-					}
-				}
-
-				default:
-					return false;
-			}
-		}
-	}
-
-	return false;
-}
-*/
-
 ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(ObjectInstance* leftInstance, SyntaxToken opToken, ObjectInstance* rightInstance, bool& assign)
 {
 	if (opToken.Type == TokenType::AssignOperator)
@@ -301,9 +184,15 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(std::wstring& leftDa
 			case TokenType::AddAssignOperator:
 			{
 				assign = opToken.Type == TokenType::AddAssignOperator;
-				std::wstring concat = leftData + rightData;
-				return ObjectInstance::FromValue(concat);
+				std::wstring* concat = new std::wstring(leftData + rightData);
+				return ObjectInstance::FromValue(*concat);
 			}
+
+			case TokenType::EqualsOperator:
+				return ObjectInstance::FromValue(leftData == rightData);
+
+			case TokenType::NotEqualsOperator:
+				return ObjectInstance::FromValue(leftData != rightData);
 
 			default:
 				throw std::runtime_error("unsupported operation");
@@ -324,14 +213,58 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(std::wstring& leftDa
 				if (rightData == 1)
 					return ObjectInstance::FromValue(leftData);
 
-				std::wstring result;
-				result.reserve(leftData.length() * rightData);
+				std::wstring* result = new std::wstring();
+				result->reserve(leftData.length() * rightData);
 
 				for (int i = 0; i < rightData; ++i)
-					result += leftData;
+					*result += leftData;
 
 				assign = opToken.Type == TokenType::MultAssignOperator;
 				return ObjectInstance::FromValue(result);
+			}
+
+			case TokenType::AddOperator:
+			case TokenType::AddAssignOperator:
+			{
+				assign = opToken.Type == TokenType::AddAssignOperator;
+				std::wstring* concat = new std::wstring(leftData + std::to_wstring(rightData));
+				return ObjectInstance::FromValue(*concat);
+			}
+
+			default:
+				throw std::runtime_error("unsupported operation");
+		}
+	}
+
+	if (rightInstance->Info == SymbolTable::Primitives::Boolean)
+	{
+		bool rightData = rightInstance->ReadPrimitive<bool>();
+		switch (opToken.Type)
+		{
+			case TokenType::AddOperator:
+			case TokenType::AddAssignOperator:
+			{
+				assign = opToken.Type == TokenType::AddAssignOperator;
+				std::wstring* concat = new std::wstring(leftData + (rightData ? L"true" : L"false"));
+				return ObjectInstance::FromValue(*concat);
+			}
+
+			default:
+				throw std::runtime_error("unsupported operation");
+		}
+	}
+
+	if (rightInstance->Info == SymbolTable::Primitives::Boolean)
+	{
+		wchar_t rightData = rightInstance->ReadPrimitive<wchar_t>();
+		switch (opToken.Type)
+		{
+			case TokenType::AddOperator:
+			case TokenType::AddAssignOperator:
+			{
+				assign = opToken.Type == TokenType::AddAssignOperator;
+				std::wstring* concat = new std::wstring(leftData + rightData);
+				return ObjectInstance::FromValue(*concat);
 			}
 
 			default:
@@ -381,6 +314,16 @@ ObjectInstance* PrimitiveMathModule::EvaluateUnaryOperator(ObjectInstance*& sour
 			ObjectInstance* newInstance = ObjectInstance::FromValue(data - 1);
 			sourceInstance = newInstance;
 			return rightDetermined ? ObjectInstance::FromValue(data) : newInstance;
+		}
+
+		case TokenType::SubOperator:
+		{
+			return ObjectInstance::FromValue(data < 0 ? data : data * -1);
+		}
+
+		case TokenType::AddOperator:
+		{
+			return ObjectInstance::FromValue(data > 0 ? data : data * -1);
 		}
 
 		default:

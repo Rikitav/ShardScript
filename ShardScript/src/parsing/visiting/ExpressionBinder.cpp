@@ -8,6 +8,7 @@
 #include <shard/syntax/TokenType.h>
 #include <shard/syntax/SyntaxToken.h>
 #include <shard/syntax/SymbolAccesibility.h>
+#include <shard/syntax/SyntaxFacts.h>
 
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/NamespaceSymbol.h>
@@ -20,6 +21,7 @@
 #include <shard/syntax/symbols/VariableSymbol.h>
 #include <shard/syntax/symbols/ArrayTypeSymbol.h>
 #include <shard/syntax/symbols/AccessorSymbol.h>
+#include <shard/syntax/symbols/LeftDenotationSymbol.h>
 
 #include <shard/syntax/nodes/CompilationUnitSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarationSyntax.h>
@@ -54,6 +56,10 @@
 #include <vector>
 #include <string>
 #include <sstream>
+#include <shard/syntax/symbols/DelegateTypeSymbol.h>
+#include <shard/syntax/nodes/Expressions/LambdaExpressionSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.h>
+#include <shard/syntax/nodes/ParametersListSyntax.h>
 
 using namespace shard::parsing;
 using namespace shard::parsing::semantic;
@@ -98,12 +104,7 @@ static bool GetIsStaticContext(const ExpressionSyntax* expression)
 	if (expression == nullptr)
 		return true;
 
-	bool isLinked =
-		expression->Kind == SyntaxKind::MemberAccessExpression ||
-		expression->Kind == SyntaxKind::InvokationExpression ||
-		expression->Kind == SyntaxKind::IndexatorExpression;
-
-	if (isLinked)
+	if (IsLinkedExpressionNode(expression->Kind))
 	{
 		const LinkedExpressionNode* asNode = static_cast<const LinkedExpressionNode*>(expression);
 		return asNode->IsStaticContext;
@@ -149,7 +150,7 @@ void ExpressionBinder::VisitUsingDirective(UsingDirectiveSyntax* node)
 
 void ExpressionBinder::VisitNamespaceDeclaration(NamespaceDeclarationSyntax* node)
 {
-	NamespaceSymbol* symbol = static_cast<NamespaceSymbol*>(Table->LookupSymbol(node));
+	NamespaceSymbol* symbol = LookupSymbol<NamespaceSymbol>(node);
 	if (symbol != nullptr)
 	{
 		PushScope(symbol);
@@ -169,10 +170,17 @@ void ExpressionBinder::VisitNamespaceDeclaration(NamespaceDeclarationSyntax* nod
 
 void ExpressionBinder::VisitClassDeclaration(ClassDeclarationSyntax* node)
 {
-	ClassSymbol* symbol = static_cast<ClassSymbol*>(Table->LookupSymbol(node));
+	ClassSymbol* symbol = LookupSymbol<ClassSymbol>(node);
 	if (symbol != nullptr)
 	{
 		PushScope(symbol);
+
+		for (MemberDeclarationSyntax* member : node->Members)
+		{
+			SyntaxSymbol* symbol = Table->LookupSymbol(member);
+			Declare(symbol);
+		}
+
 		for (MemberDeclarationSyntax* member : node->Members)
 			VisitMemberDeclaration(member);
 
@@ -182,10 +190,17 @@ void ExpressionBinder::VisitClassDeclaration(ClassDeclarationSyntax* node)
 
 void ExpressionBinder::VisitStructDeclaration(StructDeclarationSyntax* node)
 {
-	StructSymbol* symbol = static_cast<StructSymbol*>(Table->LookupSymbol(node));
+	StructSymbol* symbol = LookupSymbol<StructSymbol>(node);
 	if (symbol != nullptr)
 	{
 		PushScope(symbol);
+
+		for (MemberDeclarationSyntax* member : node->Members)
+		{
+			SyntaxSymbol* symbol = Table->LookupSymbol(member);
+			Declare(symbol);
+		}
+
 		for (MemberDeclarationSyntax* member : node->Members)
 			VisitMemberDeclaration(member);
 
@@ -195,7 +210,7 @@ void ExpressionBinder::VisitStructDeclaration(StructDeclarationSyntax* node)
 
 void ExpressionBinder::VisitConstructorDeclaration(ConstructorDeclarationSyntax* node)
 {
-	MethodSymbol* symbol = static_cast<MethodSymbol*>(Table->LookupSymbol(node));
+	MethodSymbol* symbol = LookupSymbol<MethodSymbol>(node);
 	TypeSymbol* ownerType = OwnerType();
 
 	if (symbol != nullptr && node->Body != nullptr)
@@ -215,7 +230,7 @@ void ExpressionBinder::VisitConstructorDeclaration(ConstructorDeclarationSyntax*
 
 void ExpressionBinder::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 {
-	MethodSymbol* symbol = static_cast<MethodSymbol*>(Table->LookupSymbol(node));
+	MethodSymbol* symbol = LookupSymbol<MethodSymbol>(node);
 	TypeSymbol* ownerType = OwnerType();
 
 	if (symbol != nullptr && node->Body != nullptr)
@@ -258,7 +273,7 @@ void ExpressionBinder::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 
 void ExpressionBinder::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
 {
-	PropertySymbol* symbol = static_cast<PropertySymbol*>(Table->LookupSymbol(node));
+	PropertySymbol* symbol = LookupSymbol<PropertySymbol>(node);
 	TypeSymbol* ownerType = OwnerType();
 
 	if (symbol->ReturnType->Name == L"Void")
@@ -305,7 +320,7 @@ void ExpressionBinder::VisitFieldDeclaration(FieldDeclarationSyntax* node)
 		VisitExpression(node->InitializerExpression);
 	}
 
-	FieldSymbol* fieldSymbol = static_cast<FieldSymbol*>(Table->LookupSymbol(node));
+	FieldSymbol* fieldSymbol = LookupSymbol<FieldSymbol>(node);
 	if (fieldSymbol->ReturnType == nullptr)
 	{
 		Diagnostics.ReportError(node->IdentifierToken, L"Field type not resolved");
@@ -334,16 +349,20 @@ void ExpressionBinder::VisitFieldDeclaration(FieldDeclarationSyntax* node)
 
 void ExpressionBinder::VisitVariableStatement(VariableStatementSyntax* node)
 {
-	if (node->Expression != nullptr)
-		VisitExpression(node->Expression);
-
-	VariableSymbol* varSymbol = static_cast<VariableSymbol*>(Table->LookupSymbol(node));
+	VariableSymbol* varSymbol = LookupSymbol<VariableSymbol>(node);
 	Declare(varSymbol);
 
 	if (varSymbol->Type == nullptr)
 	{
 		Diagnostics.ReportError(node->IdentifierToken, L"Variable type not resolved");
 		return;
+	}
+
+	if (node->Expression != nullptr)
+	{
+		PushScope(new LeftDenotationSymbol(varSymbol->Type));
+		VisitExpression(node->Expression);
+		PopScope();
 	}
 
 	TypeSymbol* expressionType = GetExpressionType(node->Expression);
@@ -404,34 +423,58 @@ void ExpressionBinder::VisitLiteralExpression(LiteralExpressionSyntax* node)
 
 TypeSymbol* ExpressionBinder::AnalyzeBinaryExpression(BinaryExpressionSyntax* node)
 {
+	VisitExpression(node->Left);
 	TypeSymbol* leftType = GetExpressionType(node->Left);
-	TypeSymbol* rightType = GetExpressionType(node->Right);
 	
 	if (leftType == nullptr)
 	{
 		Diagnostics.ReportError(node->OperatorToken, L"Left operand type could not be determined");
 		return nullptr;
 	}
-	
+
+	if (node->OperatorToken.Type == TokenType::AssignOperator)
+	{
+		PushScope(new LeftDenotationSymbol(leftType));
+		VisitExpression(node->Right);
+		PopScope();
+
+		TypeSymbol* rightType = GetExpressionType(node->Right);
+		if (rightType == nullptr)
+		{
+			Diagnostics.ReportError(node->OperatorToken, L"Right operand type could not be determined");
+			return leftType;
+		}
+
+		if (!TypeSymbol::Equals(leftType, rightType))
+		{
+			Diagnostics.ReportError(node->OperatorToken, L"Right operand type could not be determined");
+			return leftType;
+		}
+
+		return leftType;
+	}
+
+	VisitExpression(node->Right);
+	TypeSymbol* rightType = GetExpressionType(node->Right);
+
 	if (rightType == nullptr)
 	{
 		Diagnostics.ReportError(node->OperatorToken, L"Right operand type could not be determined");
-		return nullptr;
+		return leftType;
 	}
-	
+
 	switch (node->OperatorToken.Type)
 	{
-		case TokenType::AssignOperator:
-			return leftType;
-			
 		case TokenType::EqualsOperator:
 		case TokenType::NotEqualsOperator:
+		case TokenType::OrOperator:
+		case TokenType::AndOperator:
 		case TokenType::GreaterOperator:
 		case TokenType::GreaterOrEqualsOperator:
 		case TokenType::LessOperator:
 		case TokenType::LessOrEqualsOperator:
 		{
-			if (leftType != rightType)
+			if (!TypeSymbol::Equals(leftType, rightType))
 			{
 				Diagnostics.ReportError(node->OperatorToken, L"Type mismatch in comparison: '" + leftType->Name + L"' and '" + rightType->Name + L"'");
 			}
@@ -440,13 +483,26 @@ TypeSymbol* ExpressionBinder::AnalyzeBinaryExpression(BinaryExpressionSyntax* no
 		}
 			
 		case TokenType::AddOperator:
+		{
+			if (leftType == SymbolTable::Primitives::String)
+				return leftType;
+
+			if (!TypeSymbol::Equals(leftType, rightType))
+			{
+				Diagnostics.ReportError(node->OperatorToken, L"Type mismatch in comparison: '" + leftType->Name + L"' and '" + rightType->Name + L"'");
+				return nullptr;
+			}
+
+			return leftType;
+		}
+
 		case TokenType::SubOperator:
 		case TokenType::MultOperator:
 		case TokenType::DivOperator:
 		case TokenType::ModOperator:
 		case TokenType::PowOperator:
 		{
-			if (leftType != rightType)
+			if (!TypeSymbol::Equals(leftType, rightType))
 			{
 				Diagnostics.ReportError(node->OperatorToken, L"Type mismatch in comparison: '" + leftType->Name + L"' and '" + rightType->Name + L"'");
 				return nullptr;
@@ -456,13 +512,26 @@ TypeSymbol* ExpressionBinder::AnalyzeBinaryExpression(BinaryExpressionSyntax* no
 		}
 			
 		case TokenType::AddAssignOperator:
+		{
+			if (leftType == SymbolTable::Primitives::String)
+				return leftType;
+
+			if (!TypeSymbol::Equals(leftType, rightType))
+			{
+				Diagnostics.ReportError(node->OperatorToken, L"Type mismatch in comparison: '" + leftType->Name + L"' and '" + rightType->Name + L"'");
+				return nullptr;
+			}
+
+			return leftType;
+		}
+
 		case TokenType::SubAssignOperator:
 		case TokenType::MultAssignOperator:
 		case TokenType::DivAssignOperator:
 		case TokenType::ModAssignOperator:
 		case TokenType::PowAssignOperator:
 		{
-			if (leftType != rightType)
+			if (!TypeSymbol::Equals(leftType, rightType))
 			{
 				Diagnostics.ReportError(node->OperatorToken, L"Type mismatch in comparison: '" + leftType->Name + L"' and '" + rightType->Name + L"'");
 				return nullptr;
@@ -478,9 +547,6 @@ TypeSymbol* ExpressionBinder::AnalyzeBinaryExpression(BinaryExpressionSyntax* no
 
 void ExpressionBinder::VisitBinaryExpression(BinaryExpressionSyntax* node)
 {
-	VisitExpression(node->Left);
-	VisitExpression(node->Right);
-
 	TypeSymbol* type = AnalyzeBinaryExpression(node);
 	SetExpressionType(node, type);
 }
@@ -508,6 +574,7 @@ TypeSymbol* ExpressionBinder::AnalyzeUnaryExpression(UnaryExpressionSyntax* node
 			return SymbolTable::Primitives::Boolean;
 		}
 
+		case TokenType::SubOperator:
 		case TokenType::IncrementOperator:
 		case TokenType::DecrementOperator:
 		{
@@ -582,7 +649,7 @@ TypeSymbol* ExpressionBinder::AnalyzeCollectionExpression(CollectionExpressionSy
 		TypeSymbol* exprType = GetExpressionType(expression);
 		if (exprType != collectionType)
 		{
-			Diagnostics.ReportError(node->OpenSquareToken, L"Element have type different from collection's");
+			Diagnostics.ReportError(node->OpenSquareToken, L"Element have type different from collection's target type");
 		}
 	}
 
@@ -595,10 +662,92 @@ void ExpressionBinder::VisitCollectionExpression(CollectionExpressionSyntax* nod
 		VisitExpression(expression);
 
 	TypeSymbol* type = AnalyzeCollectionExpression(node);
-	ArrayTypeSymbol* arrayType = new ArrayTypeSymbol(type, node->ValuesExpressions.size());
+	ArrayTypeSymbol* arrayType = new ArrayTypeSymbol(type);
+	arrayType->Size = node->ValuesExpressions.size();
 	node->Symbol = arrayType;
 	Table->BindSymbol(node, arrayType);
 	SetExpressionType(node, arrayType);
+}
+
+void ExpressionBinder::VisitLambdaExpression(LambdaExpressionSyntax* node)
+{
+	MethodSymbol* anonymousMethod = new MethodSymbol(L"", node->Body);
+	anonymousMethod->HandleType = MethodHandleType::AnonymousMethod;
+	anonymousMethod->Accesibility = SymbolAccesibility::Public;
+	anonymousMethod->ReturnType = SymbolTable::Primitives::Any;
+	anonymousMethod->IsStatic = true;
+
+	DelegateTypeSymbol* delegate = new DelegateTypeSymbol();
+	delegate->Accesibility = SymbolAccesibility::Public;
+	delegate->AnonymousSymbol = anonymousMethod;
+	node->Symbol = delegate;
+
+	/*
+	TypeSymbol* targetReturnType = ResolveLeftDenotation();
+	if (targetReturnType == nullptr)
+	{
+		Diagnostics.ReportError(node->LambdaToken, L"Cannot resolve left denotation");
+		return;
+	}
+	*/
+
+	VisitParametersList(node->Params);
+	for (ParameterSyntax* parameter : node->Params->Parameters)
+	{
+		ParameterSymbol* paramSymbol = new ParameterSymbol(parameter->Identifier.Word);
+		paramSymbol->Type = parameter->Type->Symbol;
+
+		delegate->Parameters.push_back(paramSymbol);
+		anonymousMethod->Parameters.push_back(paramSymbol);
+	}
+
+	PushScope(anonymousMethod);
+	for (ParameterSymbol* parameter : anonymousMethod->Parameters)
+		Declare(parameter);
+
+	CurrentScope()->ReturnFound = false;
+	VisitStatementsBlock(node->Body);
+	PopScope();
+
+	delegate->ReturnType = anonymousMethod->ReturnType;
+	SetExpressionType(node, delegate);
+}
+
+void ExpressionBinder::VisitTernaryExpression(TernaryExpressionSyntax* node)
+{
+	VisitExpression(node->Condition);
+	VisitExpression(node->Left);
+	VisitExpression(node->Right);
+
+	TypeSymbol* conditionType = GetExpressionType(node->Condition);
+	if (conditionType == nullptr)
+	{
+		Diagnostics.ReportError(node->QuestionToken, L"Ternary expression's condition return type could not be determined");
+	}
+	else if (conditionType != SymbolTable::Primitives::Boolean)
+	{
+		Diagnostics.ReportError(node->QuestionToken, L"Ternary expression's condition expected to return 'bool', but got '" + conditionType->Name + L"'");
+	}
+
+	TypeSymbol* leftType = GetExpressionType(node->Left);
+	TypeSymbol* rightType = GetExpressionType(node->Right);
+	SetExpressionType(node, leftType == nullptr ? rightType : leftType);
+
+	if (leftType == nullptr)
+	{
+		Diagnostics.ReportError(node->QuestionToken, L"Ternary expression's, left expression's return type could not be determined");
+	}
+	else
+	{
+		if (rightType == nullptr)
+		{
+			Diagnostics.ReportError(node->QuestionToken, L"Ternary expression's, right expression's return type could not be determined");
+		}
+		else if (rightType != leftType)
+		{
+			Diagnostics.ReportError(node->QuestionToken, L"Ternary expression's condition expected to return '" + leftType->Name + L"', but got '" + rightType->Name + L"'");
+		}
+	}
 }
 
 bool ExpressionBinder::MatchMethodArguments(MethodSymbol* method, std::vector<ArgumentSyntax*> arguments)
@@ -616,7 +765,7 @@ bool ExpressionBinder::MatchMethodArguments(MethodSymbol* method, std::vector<Ar
 	{
 		ParameterSymbol* param = method->Parameters[i];
 		ArgumentSyntax* arg = arguments[i];
-		
+
 		if (param == nullptr || arg == nullptr || arg->Expression == nullptr)
 		{
 			Diagnostics.ReportError(SyntaxToken(), L"Invalid argument at position " + std::to_wstring(i));
@@ -624,15 +773,13 @@ bool ExpressionBinder::MatchMethodArguments(MethodSymbol* method, std::vector<Ar
 		}
 		
 		ExpressionSyntax* expr = const_cast<ExpressionSyntax*>(arg->Expression);
+		/*
+		PushScope(new LeftDenotationSymbol(param->Type));
 		VisitExpression(expr);
+		PopScope();
+		*/
+		
 		TypeSymbol* argType = GetExpressionType(expr);
-		
-		if (param->Type == nullptr)
-		{
-			//Diagnostics.ReportError(SyntaxToken(), L"Parameter '" + param->Name + L"' type not resolved");
-			return false;
-		}
-		
 		if (argType == nullptr)
 		{
 			//Diagnostics.ReportError(SyntaxToken(), L"Argument type could not be determined for parameter '" + param->Name + L"'");
@@ -701,6 +848,27 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 
 				node->IsStaticContext = false;
 				return fieldSymbol->ReturnType;
+			}
+
+			case SyntaxKind::MethodDeclaration:
+			{
+				MethodSymbol* methodSymbol = static_cast<MethodSymbol*>(symbol);
+
+				if (!IsSymbolAccessible(methodSymbol))
+				{
+					Diagnostics.ReportError(node->IdentifierToken, L"Method '" + name + L"' is not accessible");
+					return nullptr;
+				}
+
+				DelegateTypeSymbol* delegate = new DelegateTypeSymbol(methodSymbol->Name);
+				delegate->Accesibility = SymbolAccesibility::Public;
+				delegate->AnonymousSymbol = methodSymbol;
+				delegate->Parameters = methodSymbol->Parameters;
+				delegate->ReturnType = methodSymbol->ReturnType;
+
+				node->DelegateSymbol = delegate;
+				node->IsStaticContext = false;
+				return delegate;
 			}
 
 			case SyntaxKind::Parameter:
@@ -993,7 +1161,9 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node, 
 	for (ArgumentSyntax* arg : node->ArgumentsList->Arguments)
 	{
 		ExpressionSyntax* expr = const_cast<ExpressionSyntax*>(arg->Expression);
+		//PushScope(new LeftDenotationSymbol(param->Type));
 		VisitExpression(expr);
+		//PopScope();
 
 		TypeSymbol* argType = GetExpressionType(expr);
 		if (argType == nullptr)
@@ -1005,6 +1175,26 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node, 
 	MethodSymbol* method = currentType->FindMethod(methodName, argTypes);
 	if (method == nullptr)
 		method = Table->GlobalType->FindMethod(methodName, argTypes);
+
+	if (method == nullptr)
+	{
+		SyntaxSymbol* delegateFindVar = CurrentScope()->Lookup(methodName);
+		if (delegateFindVar != nullptr)
+		{
+			if (delegateFindVar->Kind == SyntaxKind::VariableStatement)
+			{
+				VariableSymbol* delegateVar = static_cast<VariableSymbol*>(delegateFindVar);
+				if (delegateVar->Type != nullptr)
+				{
+					if (delegateVar->Type->Kind == SyntaxKind::DelegateType)
+					{
+						const DelegateTypeSymbol* delegate = static_cast<const DelegateTypeSymbol*>(delegateVar->Type);
+						method = delegate->AnonymousSymbol;
+					}
+				}
+			}
+		}
+	}
 
 	if (method == nullptr)
 	{
@@ -1086,7 +1276,7 @@ TypeSymbol* ExpressionBinder::AnalyzeIndexatorExpression(IndexatorExpressionSynt
 	node->Symbol = method;
 	node->IsStaticContext = false;
 
-	if (currentType->Kind == SyntaxKind::CollectionExpression)
+	if (currentType->Kind == SyntaxKind::ArrayType)
 	{
 		ArrayTypeSymbol* array = static_cast<ArrayTypeSymbol*>(currentType);
 		return array->UnderlayingType;
@@ -1118,7 +1308,7 @@ MethodSymbol* ExpressionBinder::ResolveIndexator(IndexatorExpressionSyntax* node
 		argTypes.push_back(argType);
 	}
 
-	if (currentType->Kind == SyntaxKind::CollectionExpression)
+	if (currentType->Kind == SyntaxKind::ArrayType)
 	{
 		return SymbolTable::Primitives::Array->Indexators[0];
 	}
@@ -1197,9 +1387,6 @@ void ExpressionBinder::VisitMemberAccessExpression(MemberAccessExpressionSyntax*
 
 void ExpressionBinder::VisitInvocationExpression(InvokationExpressionSyntax* node)
 {
-	if (node->ArgumentsList != nullptr)
-		VisitArgumentsList(node->ArgumentsList);
-
 	ExpressionSyntax* previous = const_cast<ExpressionSyntax*>(node->PreviousExpression);
 	if (previous != nullptr)
 		VisitExpression(previous);
@@ -1409,6 +1596,24 @@ TypeSymbol* ExpressionBinder::FindTargetReturnType(SemanticScope*& scope)
 	}
 }
 
+TypeSymbol* ExpressionBinder::ResolveLeftDenotation()
+{
+	for (const SemanticScope* scope = CurrentScope(); scope != nullptr; scope = scope->Parent)
+	{
+		const SyntaxSymbol* owner = scope->Owner;
+		if (owner == nullptr)
+			break;
+
+		if (owner->Kind == SyntaxKind::Argument)
+		{
+			const LeftDenotationSymbol* param = static_cast<const LeftDenotationSymbol*>(owner);
+			return const_cast<TypeSymbol*>(param->ExpectedType);
+		}
+	}
+
+	return nullptr;
+}
+
 void ExpressionBinder::VisitReturnStatement(ReturnStatementSyntax* node)
 {
 	SemanticScope* searchingScope = nullptr;
@@ -1421,33 +1626,23 @@ void ExpressionBinder::VisitReturnStatement(ReturnStatementSyntax* node)
 	}
 
 	searchingScope->ReturnFound = true;
-	if (returnType != SymbolTable::Primitives::Void)
+	if (returnType == SymbolTable::Primitives::Any)
 	{
+		MethodSymbol* delegate = const_cast<MethodSymbol*>(static_cast<const MethodSymbol*>(searchingScope->Owner));
 		if (node->Expression == nullptr)
 		{
-			Diagnostics.ReportError(SyntaxToken(), L"Return statement must return a value of type '" + returnType->Name + L"'");
+			delegate->ReturnType = SymbolTable::Primitives::Void;
+			return;
 		}
 		else
 		{
-			searchingScope->ReturnsAnything = true;
 			VisitExpression(node->Expression);
-			TypeSymbol* returnExprType = GetExpressionType(node->Expression);
-
-			if (returnExprType == nullptr)
-			{
-				Diagnostics.ReportError(node->Expression->Kind == SyntaxKind::LiteralExpression
-					? static_cast<LiteralExpressionSyntax*>(node->Expression)->LiteralToken
-					: SyntaxToken(), L"Return expression type could not be determined");
-			}
-			else if (returnExprType != returnType)
-			{
-				Diagnostics.ReportError(node->Expression->Kind == SyntaxKind::LiteralExpression
-					? static_cast<LiteralExpressionSyntax*>(node->Expression)->LiteralToken
-					: SyntaxToken(), L"Return type mismatch: expected '" + returnType->Name + L"' but got '" + returnExprType->Name + L"'");
-			}
+			delegate->ReturnType = GetExpressionType(node->Expression);
+			return;
 		}
 	}
-	else
+
+	if (returnType == SymbolTable::Primitives::Void)
 	{
 		if (node->Expression != nullptr)
 		{
@@ -1458,5 +1653,30 @@ void ExpressionBinder::VisitReturnStatement(ReturnStatementSyntax* node)
 				? static_cast<LiteralExpressionSyntax*>(node->Expression)->LiteralToken
 				: SyntaxToken(), L"Void method cannot return a value");
 		}
+
+		return;
+	}
+
+	if (node->Expression == nullptr)
+	{
+		Diagnostics.ReportError(SyntaxToken(), L"Return statement must return a value of type '" + returnType->Name + L"'");
+		return;
+	}
+
+	searchingScope->ReturnsAnything = true;
+	VisitExpression(node->Expression);
+	TypeSymbol* returnExprType = GetExpressionType(node->Expression);
+
+	if (returnExprType == nullptr)
+	{
+		Diagnostics.ReportError(node->Expression->Kind == SyntaxKind::LiteralExpression
+			? static_cast<LiteralExpressionSyntax*>(node->Expression)->LiteralToken
+			: SyntaxToken(), L"Return expression type could not be determined");
+	}
+	else if (!TypeSymbol::Equals(returnExprType, returnType))
+	{
+		Diagnostics.ReportError(node->Expression->Kind == SyntaxKind::LiteralExpression
+			? static_cast<LiteralExpressionSyntax*>(node->Expression)->LiteralToken
+			: SyntaxToken(), L"Return type mismatch: expected '" + returnType->Name + L"' but got '" + returnExprType->Name + L"'");
 	}
 }

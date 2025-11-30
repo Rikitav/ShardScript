@@ -19,6 +19,8 @@ namespace shard::syntax::nodes
 		inline CollectionExpressionSyntax(const SyntaxNode* parent)
 			: ExpressionSyntax(SyntaxKind::CollectionExpression, parent) { }
 
+		CollectionExpressionSyntax(const CollectionExpressionSyntax&) = delete;
+
 		inline virtual ~CollectionExpressionSyntax()
 		{
 			for (ExpressionSyntax* expression : ValuesExpressions)

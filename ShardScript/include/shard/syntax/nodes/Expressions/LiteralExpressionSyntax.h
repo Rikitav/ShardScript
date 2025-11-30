@@ -12,7 +12,7 @@ namespace shard::syntax::nodes
 		const SyntaxToken LiteralToken;
 
 		inline LiteralExpressionSyntax(const SyntaxToken literal, const SyntaxNode* parent) : ExpressionSyntax(SyntaxKind::LiteralExpression, parent), LiteralToken(literal) { }
-		inline LiteralExpressionSyntax(const LiteralExpressionSyntax& other) : ExpressionSyntax(other), LiteralToken(other.LiteralToken) { }
+		LiteralExpressionSyntax(const LiteralExpressionSyntax&) = delete;
 		inline virtual ~LiteralExpressionSyntax() { }
 	};
 }

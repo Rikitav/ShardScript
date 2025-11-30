@@ -14,8 +14,10 @@ namespace shard::syntax::symbols
         bool IsOptional = false;
         shard::syntax::nodes::ExpressionSyntax* DefaultValueExpression = nullptr;
 
-        inline ParameterSymbol(std::wstring name)
-            : SyntaxSymbol(name, SyntaxKind::Parameter) { }
+        inline ParameterSymbol(std::wstring name) : SyntaxSymbol(name, SyntaxKind::Parameter)
+        {
+            Accesibility = SymbolAccesibility::Public;
+        }
 
         inline ~ParameterSymbol()
         {

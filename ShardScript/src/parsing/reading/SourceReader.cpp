@@ -171,7 +171,7 @@ bool SourceReader::ReadNextWhileAlpha(std::wstring& word)
 	word += Symbol;
 	while (PeekNext())
 	{
-		if (!isalpha(PeekSymbol) && PeekSymbol != '_')
+		if (!isalnum(PeekSymbol) && PeekSymbol != '_')
 			break;
 
 		ReadNext();
@@ -295,7 +295,7 @@ bool SourceReader::ReadStringLiteral(std::wstring& word, bool dontEcran, bool& w
 			}
 
 			case L'"':
-			{	
+			{
 				if (dontEcran)
 				{
 					wasClosed = true;
@@ -308,6 +308,7 @@ bool SourceReader::ReadStringLiteral(std::wstring& word, bool dontEcran, bool& w
 					Symbol = L'"';
 					word += Symbol;
 					ecran = false;
+					continue;
 				}
 
 				wasClosed = true;
@@ -534,6 +535,13 @@ bool SourceReader::IsOperator(std::wstring& word, TokenType& type)
 					word = L"==";
 					return true;
 				}
+				else if (PeekSymbol == '>')
+				{
+					ReadNext();
+					type = TokenType::LambdaOperator;
+					word = L"=>";
+					return true;
+				}
 			}
 
 			type = TokenType::AssignOperator;
@@ -595,7 +603,7 @@ bool SourceReader::IsOperator(std::wstring& word, TokenType& type)
 					word = L"<=";
 					return true;
 				}
-				else if (PeekSymbol == '>')
+				else if (PeekSymbol == '<')
 				{
 					ReadNext();
 					type = TokenType::LeftShiftOperator;
@@ -742,6 +750,13 @@ bool SourceReader::IsOperator(std::wstring& word, TokenType& type)
 					word = L"&=";
 					return true;
 				}
+				else if (PeekSymbol == '&')
+				{
+					ReadNext();
+					type = TokenType::AndOperator;
+					word = L"&&";
+					return true;
+				}
 			}
 
 			word = L"&";
@@ -758,6 +773,13 @@ bool SourceReader::IsOperator(std::wstring& word, TokenType& type)
 					ReadNext();
 					type = TokenType::OrAssignOperator;
 					word = L"|=";
+					return true;
+				}
+				else if (PeekSymbol == '|')
+				{
+					ReadNext();
+					type = TokenType::OrOperator;
+					word = L"||";
 					return true;
 				}
 			}
@@ -1021,6 +1043,16 @@ bool SourceReader::IsType(std::wstring& word, TokenType& type)
 	else if (word == L"int")
 	{
 		type = TokenType::IntegerKeyword;
+		return true;
+	}
+	else if (word == L"lambda")
+	{
+		type = TokenType::LambdaKeyword;
+		return true;
+	}
+	else if (word == L"delegate")
+	{
+		type = TokenType::DelegateKeyword;
 		return true;
 	}
 	else

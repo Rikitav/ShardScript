@@ -16,14 +16,10 @@ namespace shard::syntax::nodes
 		inline BinaryExpressionSyntax(const SyntaxToken operatorToken, const SyntaxNode* parent)
 			: ExpressionSyntax(SyntaxKind::BinaryExpression, parent), OperatorToken(operatorToken) {}
 		
-		inline BinaryExpressionSyntax(const BinaryExpressionSyntax& other)
-			: ExpressionSyntax(other), Left(other.Left), OperatorToken(other.OperatorToken), Right(other.Right) { }
+		BinaryExpressionSyntax(const BinaryExpressionSyntax&) = delete;
 
 		inline virtual ~BinaryExpressionSyntax()
 		{
-			Left->~ExpressionSyntax();
-			Right->~ExpressionSyntax();
-
 			delete Left;
 			delete Right;
 		}

@@ -2,7 +2,9 @@
 #include <shard/syntax/SyntaxNode.h>
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxToken.h>
-#include <vector>
+
+#include <shard/syntax/nodes/ParametersListSyntax.h>
+#include <shard/syntax/nodes/TypeSyntax.h>
 
 namespace shard::syntax::nodes
 {
@@ -12,18 +14,20 @@ namespace shard::syntax::nodes
 		SyntaxToken FromToken;
 		SyntaxToken LibPathToken;
 		SyntaxToken ImportToken;
-		std::vector<SyntaxToken> FunctionsList;
+		SyntaxToken IdentifierToken;
 		SyntaxToken SemicolonToken;
+		ParametersListSyntax* Params = nullptr;
+		TypeSyntax* ReturnType = nullptr;
 
 		inline ImportDirectiveSyntax(const SyntaxNode* parent)
 			: SyntaxNode(SyntaxKind::DllImportDirective, parent) { }
 
-		inline ImportDirectiveSyntax(const ImportDirectiveSyntax& other)
-			: SyntaxNode(other), FromToken(other.FromToken), LibPathToken(other.LibPathToken), ImportToken(other.ImportToken), SemicolonToken(other.SemicolonToken) { }
+		inline ImportDirectiveSyntax(const ImportDirectiveSyntax&) = delete;
 
 		inline virtual ~ImportDirectiveSyntax()
 		{
-
+			if (Params != nullptr)
+				delete Params;
 		}
 	};
 }

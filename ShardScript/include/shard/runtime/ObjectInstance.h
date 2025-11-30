@@ -11,6 +11,9 @@ namespace shard::runtime
 		const long Id;
 		const shard::syntax::symbols::TypeSymbol* Info;
 		const bool IsNullable = false;
+
+		//bool IsTemporaryInstance = false;
+		const shard::syntax::nodes::ExpressionSyntax* Source = nullptr;
 		size_t ReferencesCounter;
 		void* Ptr;
 
@@ -27,9 +30,11 @@ namespace shard::runtime
 
 		ObjectInstance* GetField(shard::syntax::symbols::FieldSymbol* field);
 		void SetField(shard::syntax::symbols::FieldSymbol* field, ObjectInstance* instance);
+
 		ObjectInstance* GetElement(size_t index);
 		void SetElement(size_t index, ObjectInstance* instance);
-		
+		bool IsInBounds(size_t index);
+
 		void IncrementReference();
 		void DecrementReference();
 

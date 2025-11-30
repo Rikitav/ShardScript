@@ -19,6 +19,7 @@
 #include <shard/syntax/nodes/Expressions/ObjectExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/UnaryExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/CollectionExpressionSyntax.h>
+#include <shard/syntax/nodes/Expressions/LambdaExpressionSyntax.h>
 
 #include <shard/syntax/nodes/Loops/ForStatementSyntax.h>
 #include <shard/syntax/nodes/Loops/UntilStatementSyntax.h>
@@ -48,6 +49,7 @@ namespace shard::parsing
 		void SetExpressionType(shard::syntax::nodes::ExpressionSyntax* expression, shard::syntax::symbols::TypeSymbol* type);
 		shard::syntax::symbols::TypeSymbol* GetExpressionType(shard::syntax::nodes::ExpressionSyntax* expression);
 		shard::syntax::symbols::TypeSymbol* FindTargetReturnType(shard::parsing::semantic::SemanticScope*& scope);
+		shard::syntax::symbols::TypeSymbol* ResolveLeftDenotation();
 		
 		shard::syntax::symbols::TypeSymbol* AnalyzeLiteralExpression(shard::syntax::nodes::LiteralExpressionSyntax* node);
 		shard::syntax::symbols::TypeSymbol* AnalyzeBinaryExpression(shard::syntax::nodes::BinaryExpressionSyntax* node);
@@ -95,6 +97,8 @@ namespace shard::parsing
 		void VisitUnaryExpression(shard::syntax::nodes::UnaryExpressionSyntax* node) override;
 		void VisitObjectCreationExpression(shard::syntax::nodes::ObjectExpressionSyntax* node) override;
 		void VisitCollectionExpression(shard::syntax::nodes::CollectionExpressionSyntax* node) override;
+		void VisitLambdaExpression(shard::syntax::nodes::LambdaExpressionSyntax* node) override;
+		void VisitTernaryExpression(shard::syntax::nodes::TernaryExpressionSyntax* node) override;
 
 		void VisitMemberAccessExpression(shard::syntax::nodes::MemberAccessExpressionSyntax* node) override;
 		void VisitInvocationExpression(shard::syntax::nodes::InvokationExpressionSyntax* node) override;

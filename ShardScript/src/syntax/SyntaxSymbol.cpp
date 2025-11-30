@@ -6,7 +6,8 @@ bool SyntaxSymbol::IsType()
 {
 	return Kind == SyntaxKind::ClassDeclaration
 		|| Kind == SyntaxKind::StructDeclaration
-		|| Kind == SyntaxKind::CollectionExpression;
+		|| Kind == SyntaxKind::ArrayType
+		|| Kind == SyntaxKind::DelegateType;
 }
 
 bool SyntaxSymbol::IsMember()

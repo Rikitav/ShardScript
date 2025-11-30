@@ -14,6 +14,7 @@ namespace shard::syntax
 
 		// Generic operators
 		AssignOperator,     // =
+		LambdaOperator,		// =>
 
 		// Binary arithmetic operators
 		AddOperator,		  // +
@@ -105,6 +106,8 @@ namespace shard::syntax
 		CharKeyword,		  // char
 		StringKeyword,		  // string
 		BooleanKeyword,		  // bool
+		DelegateKeyword,	  // delegate
+		LambdaKeyword,		  // lambda
 
 		// Directive declaration keywords
 		UsingKeyword,		  // using

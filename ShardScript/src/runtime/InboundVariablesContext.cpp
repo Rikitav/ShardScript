@@ -8,10 +8,30 @@ using namespace shard::runtime;
 
 ObjectInstance* InboundVariablesContext::AddVariable(const std::wstring name, ObjectInstance* instance)
 {
-	if (TryFind(name))
-		throw std::runtime_error("variable already created");
+	auto search = Variables.find(name);
+	if (search != Variables.end())
+		throw std::runtime_error("variable already exists");
 
-	return Variables[name] = GarbageCollector::CopyInstance(instance);
+	Variables[name] = GarbageCollector::CopyInstance(instance);
+	return instance;
+}
+
+ObjectInstance* InboundVariablesContext::SetVariable(const std::wstring name, ObjectInstance* instance)
+{
+	auto search = Variables.find(name);
+	if (search != Variables.end())
+	{
+		GarbageCollector::DestroyInstance(search->second);
+		Variables[name] = GarbageCollector::CopyInstance(instance);
+		return instance;
+	}
+	else
+	{
+		if (Previous == nullptr)
+			throw std::runtime_error("variable not found");
+
+		return const_cast<InboundVariablesContext*>(Previous)->SetVariable(name, instance);
+	}
 }
 
 ObjectInstance* InboundVariablesContext::TryFind(const std::wstring& name)
@@ -22,7 +42,18 @@ ObjectInstance* InboundVariablesContext::TryFind(const std::wstring& name)
 	if (Previous == nullptr)
 		return nullptr;
 
-	return ((InboundVariablesContext*)Previous)->TryFind(name);
+	return const_cast<InboundVariablesContext*>(Previous)->TryFind(name);
+}
+
+ObjectInstance* InboundVariablesContext::Find(const std::wstring& name)
+{
+	if (auto search = Variables.find(name); search != Variables.end())
+		return search->second;
+
+	if (Previous == nullptr)
+		throw std::runtime_error("variable not found");
+
+	return const_cast<InboundVariablesContext*>(Previous)->Find(name);
 }
 
 InboundVariablesContext::~InboundVariablesContext()

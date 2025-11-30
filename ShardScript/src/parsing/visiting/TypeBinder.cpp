@@ -48,6 +48,7 @@
 #include <vector>
 #include <string>
 #include <shard/syntax/symbols/GenericTypeSymbol.h>
+#include <shard/syntax/symbols/DelegateTypeSymbol.h>
 
 using namespace shard::parsing;
 using namespace shard::parsing::analysis;
@@ -90,9 +91,39 @@ void TypeBinder::VisitUsingDirective(UsingDirectiveSyntax* node)
 		current->DeclareSymbol(symbol);
 }
 
+void TypeBinder::VisitImportDirective(ImportDirectiveSyntax* node)
+{
+	VisitType(node->ReturnType);
+	VisitParametersList(node->Params);
+
+	MethodSymbol* symbol = LookupSymbol<MethodSymbol>(node);
+	if (symbol != nullptr)
+	{
+		if (node->ReturnType != nullptr)
+			symbol->ReturnType = node->ReturnType->Symbol;
+
+		if (node->Params != nullptr)
+		{
+			if (node->Params->Parameters.size() == symbol->Parameters.size())
+			{
+				for (size_t i = 0; i < node->Params->Parameters.size(); i++)
+				{
+					ParameterSyntax* paramSyntax = node->Params->Parameters[i];
+					ParameterSymbol* paramSymbol = symbol->Parameters[i];
+
+					if (paramSyntax->Type->Symbol != nullptr)
+					{
+						paramSymbol->Type = paramSyntax->Type->Symbol;
+					}
+				}
+			}
+		}
+	}
+}
+
 void TypeBinder::VisitNamespaceDeclaration(NamespaceDeclarationSyntax* node)
 {
-	NamespaceSymbol* symbol = static_cast<NamespaceSymbol*>(Table->LookupSymbol(node));
+	NamespaceSymbol* symbol = LookupSymbol<NamespaceSymbol>(node);
 	if (symbol != nullptr)
 	{
 		Declare(symbol);
@@ -113,11 +144,17 @@ void TypeBinder::VisitNamespaceDeclaration(NamespaceDeclarationSyntax* node)
 
 void TypeBinder::VisitClassDeclaration(ClassDeclarationSyntax* node)
 {
-	ClassSymbol* symbol = static_cast<ClassSymbol*>(Table->LookupSymbol(node));
+	ClassSymbol* symbol = LookupSymbol<ClassSymbol>(node);
 	if (symbol != nullptr)
 	{
 		//Declare(symbol);
 		PushScope(symbol);
+
+		for (MemberDeclarationSyntax* member : node->Members)
+		{
+			SyntaxSymbol* symbol = Table->LookupSymbol(member);
+			Declare(symbol);
+		}
 
 		for (MemberDeclarationSyntax* member : node->Members)
 			VisitMemberDeclaration(member);
@@ -128,11 +165,17 @@ void TypeBinder::VisitClassDeclaration(ClassDeclarationSyntax* node)
 
 void TypeBinder::VisitStructDeclaration(StructDeclarationSyntax* node)
 {
-	StructSymbol* symbol = static_cast<StructSymbol*>(Table->LookupSymbol(node));
+	StructSymbol* symbol = LookupSymbol<StructSymbol>(node);
 	if (symbol != nullptr)
 	{
 		//Declare(symbol);
 		PushScope(symbol);
+
+		for (MemberDeclarationSyntax* member : node->Members)
+		{
+			SyntaxSymbol* symbol = Table->LookupSymbol(member);
+			Declare(symbol);
+		}
 
 		for (MemberDeclarationSyntax* member : node->Members)
 			VisitMemberDeclaration(member);
@@ -141,24 +184,53 @@ void TypeBinder::VisitStructDeclaration(StructDeclarationSyntax* node)
 	}
 }
 
-void TypeBinder::VisitConstructorDeclaration(ConstructorDeclarationSyntax* node)
+void TypeBinder::VisitDelegateDeclaration(DelegateDeclarationSyntax* node)
 {
-	MethodSymbol* symbol = static_cast<MethodSymbol*>(Table->LookupSymbol(node));
+	DelegateTypeSymbol* symbol = LookupSymbol<DelegateTypeSymbol>(node);
 	if (symbol != nullptr)
 	{
-		if (node->Params != nullptr && node->Params->Parameters.size() == symbol->Parameters.size())
-		{
-			for (size_t i = 0; i < node->Params->Parameters.size(); i++)
-			{
-				ParameterSyntax* paramSyntax = node->Params->Parameters[i];
-				ParameterSymbol* paramSymbol = symbol->Parameters[i];
+		PushScope(symbol);
 
-				if (paramSyntax->Type != nullptr)
+		VisitType(node->ReturnType);
+		symbol->ReturnType = node->ReturnType->Symbol;
+		symbol->AnonymousSymbol->ReturnType = node->ReturnType->Symbol;
+
+		for (ParameterSyntax* param : node->Params->Parameters)
+		{
+			VisitParameter(param);
+			ParameterSymbol* paramSymbol = LookupSymbol<ParameterSymbol>(param);
+			paramSymbol->Type = param->Type->Symbol;
+
+			symbol->Parameters.push_back(paramSymbol);
+			symbol->AnonymousSymbol->Parameters.push_back(paramSymbol);
+		}
+
+		PopScope();
+	}
+
+}
+
+void TypeBinder::VisitConstructorDeclaration(ConstructorDeclarationSyntax* node)
+{
+	MethodSymbol* symbol = LookupSymbol<MethodSymbol>(node);
+	if (symbol != nullptr)
+	{
+		if (node->Params != nullptr)
+		{
+			if (node->Params->Parameters.size() != symbol->Parameters.size())
+			{
+				for (size_t i = 0; i < node->Params->Parameters.size(); i++)
 				{
-					paramSymbol->Type = ResolveType(const_cast<TypeSyntax*>(paramSyntax->Type));
-					if (paramSymbol->Type == nullptr)
+					ParameterSyntax* paramSyntax = node->Params->Parameters[i];
+					ParameterSymbol* paramSymbol = symbol->Parameters[i];
+
+					if (paramSyntax->Type != nullptr)
 					{
-						Diagnostics.ReportError(paramSyntax->Identifier, L"Parameter type not found: " + const_cast<TypeSyntax*>(paramSyntax->Type)->ToString());
+						paramSymbol->Type = paramSyntax->Type->Symbol;
+						if (paramSymbol->Type == nullptr)
+						{
+							//Diagnostics.ReportError(paramSyntax->Identifier, L"Parameter type not found: " + const_cast<TypeSyntax*>(paramSyntax->Type)->ToString());
+						}
 					}
 				}
 			}
@@ -175,31 +247,31 @@ void TypeBinder::VisitConstructorDeclaration(ConstructorDeclarationSyntax* node)
 
 void TypeBinder::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 {
-	MethodSymbol* symbol = static_cast<MethodSymbol*>(Table->LookupSymbol(node));
+	VisitType(node->ReturnType);
+	VisitParametersList(node->Params);
+
+	MethodSymbol* symbol = LookupSymbol<MethodSymbol>(node);
 	if (symbol != nullptr)
 	{
 		if (node->ReturnType != nullptr)
-		{
-			symbol->ReturnType = ResolveType(node->ReturnType);
-			if (symbol->ReturnType == nullptr)
-			{
-				Diagnostics.ReportError(node->IdentifierToken, L"Return type not found: " + node->ReturnType->ToString());
-			}
-		}
+			symbol->ReturnType = node->ReturnType->Symbol;
 
-		if (node->Params != nullptr && node->Params->Parameters.size() == symbol->Parameters.size())
+		if (node->Params != nullptr)
 		{
-			for (size_t i = 0; i < node->Params->Parameters.size(); i++)
+			if (node->Params->Parameters.size() == symbol->Parameters.size())
 			{
-				ParameterSyntax* paramSyntax = node->Params->Parameters[i];
-				ParameterSymbol* paramSymbol = symbol->Parameters[i];
-				
-				if (paramSyntax->Type != nullptr)
+				for (size_t i = 0; i < node->Params->Parameters.size(); i++)
 				{
-					paramSymbol->Type = ResolveType(const_cast<TypeSyntax*>(paramSyntax->Type));
-					if (paramSymbol->Type == nullptr)
+					ParameterSyntax* paramSyntax = node->Params->Parameters[i];
+					ParameterSymbol* paramSymbol = symbol->Parameters[i];
+
+					if (paramSyntax->Type != nullptr)
 					{
-						Diagnostics.ReportError(paramSyntax->Identifier, L"Parameter type not found: " + const_cast<TypeSyntax*>(paramSyntax->Type)->ToString());
+						paramSymbol->Type = paramSyntax->Type->Symbol;
+						if (paramSymbol->Type == nullptr)
+						{
+							//Diagnostics.ReportError(paramSyntax->Identifier, L"Parameter type not found: " + const_cast<TypeSyntax*>(paramSyntax->Type)->ToString());
+						}
 					}
 				}
 			}
@@ -216,34 +288,26 @@ void TypeBinder::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 
 void TypeBinder::VisitFieldDeclaration(FieldDeclarationSyntax* node)
 {
-	FieldSymbol* symbol = static_cast<FieldSymbol*>(Table->LookupSymbol(node));
+	VisitType(node->ReturnType);
+	FieldSymbol* symbol = LookupSymbol<FieldSymbol>(node);
 	if (symbol != nullptr && node->ReturnType != nullptr)
 	{
-		symbol->ReturnType = ResolveType(node->ReturnType);
-		if (symbol->ReturnType == nullptr)
-		{
-			Diagnostics.ReportError(node->IdentifierToken, L"Field type not found: " + node->ReturnType->ToString());
-		}
+		symbol->ReturnType = node->ReturnType->Symbol;
 	}
 
-	VisitType(node->ReturnType);
 	if (node->InitializerExpression != nullptr)
 		VisitExpression(node->InitializerExpression);
 }
 
 void TypeBinder::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
 {
-	PropertySymbol* symbol = static_cast<PropertySymbol*>(Table->LookupSymbol(node));
+	VisitType(node->ReturnType);
+	PropertySymbol* symbol = LookupSymbol<PropertySymbol>(node);
 	if (symbol != nullptr && node->ReturnType != nullptr)
 	{
 		// Resolve property return type
-		TypeSymbol* propertyType = ResolveType(node->ReturnType);
+		TypeSymbol* propertyType = node->ReturnType->Symbol;
 		symbol->ReturnType = propertyType;
-		
-		if (propertyType == nullptr)
-		{
-			Diagnostics.ReportError(node->IdentifierToken, L"Property type not found: " + node->ReturnType->ToString());
-		}
 		
 		// Resolve backing field type if it exists
 		if (symbol->BackingField != nullptr)
@@ -258,7 +322,6 @@ void TypeBinder::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
 			symbol->Setter->Method->Parameters[0]->Type = propertyType;
 	}
 
-	VisitType(node->ReturnType);
 	if (node->InitializerExpression != nullptr)
 		VisitExpression(node->InitializerExpression);
 
@@ -271,17 +334,11 @@ void TypeBinder::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
 
 void TypeBinder::VisitVariableStatement(VariableStatementSyntax* node)
 {
-	VariableSymbol* symbol = static_cast<VariableSymbol*>(Table->LookupSymbol(node));
-	if (symbol != nullptr)
-	{
-		symbol->Type = ResolveType(node->Type);
-		if (symbol->Type == nullptr)
-		{
-			Diagnostics.ReportError(node->IdentifierToken, L"Type not found: " + node->Type->ToString());
-		}
-	}
-
 	VisitType(node->Type);
+
+	VariableSymbol* symbol = LookupSymbol<VariableSymbol>(node);
+	symbol->Type = node->Type->Symbol;
+
 	if (node->Expression != nullptr)
 		VisitExpression(node->Expression);
 }
@@ -289,13 +346,8 @@ void TypeBinder::VisitVariableStatement(VariableStatementSyntax* node)
 void TypeBinder::VisitObjectCreationExpression(ObjectExpressionSyntax* node)
 {
 	VisitType(node->Type);
+	node->TypeSymbol = node->Type->Symbol;
 	VisitArgumentsList(node->ArgumentsList);
-
-	node->TypeSymbol = ResolveType(node->Type);
-	if (node->TypeSymbol == nullptr)
-	{
-		Diagnostics.ReportError(node->NewToken, L"Type not found: " + node->Type->ToString());
-	}
 }
 
 /*
@@ -311,118 +363,196 @@ void TypeBinder::VisitMemberAccessExpression(MemberAccessExpressionSyntax* node)
 }
 */
 
-TypeSymbol* TypeBinder::ResolveType(TypeSyntax* typeSyntax)
+void TypeBinder::VisitParameter(ParameterSyntax* node)
 {
-	if (typeSyntax == nullptr)
-		return nullptr;
+	TypeSyntax* type = const_cast<TypeSyntax*>(node->Type);
+	VisitType(type);
 
-	switch (typeSyntax->Kind)
+	ParameterSymbol* paramSymbol = new ParameterSymbol(node->Identifier.Word);
+	Table->BindSymbol(node, paramSymbol);
+
+	node->Symbol = paramSymbol->Type = type->Symbol;
+	if (node->Symbol == nullptr)
+		Diagnostics.ReportError(node->Identifier, L"Parameter type not found: " + type->ToString());
+}
+
+void TypeBinder::VisitPredefinedType(PredefinedTypeSyntax* node)
+{
+	switch (node->TypeToken.Type)
 	{
-		case SyntaxKind::PredefinedType:
+		case TokenType::BooleanKeyword:
 		{
-			PredefinedTypeSyntax* predefined = static_cast<PredefinedTypeSyntax*>(typeSyntax);
-			switch (predefined->TypeToken.Type)
-			{
-				case TokenType::BooleanKeyword:
-					return SymbolTable::Primitives::Boolean;
-
-				case TokenType::IntegerKeyword:
-					return SymbolTable::Primitives::Integer;
-				
-				case TokenType::CharKeyword:
-					return SymbolTable::Primitives::Char;
-				
-				case TokenType::StringKeyword:
-					return SymbolTable::Primitives::String;
-				
-				case TokenType::VoidKeyword:
-					return SymbolTable::Primitives::Void;
-
-				case TokenType::VarKeyword:
-					return SymbolTable::Primitives::Any;
-
-				default:
-					return nullptr;
-			}
+			node->Symbol = SymbolTable::Primitives::Boolean;
+			break;
 		}
 
-		case SyntaxKind::ArrayType:
+		case TokenType::IntegerKeyword:
 		{
-			ArrayTypeSyntax* array = static_cast<ArrayTypeSyntax*>(typeSyntax);
-			if (array->UnderlayingType == nullptr)
-				return nullptr;
-
-			TypeSymbol* underlayingType = ResolveType(array->UnderlayingType);
-			if (underlayingType == nullptr)
-				return nullptr;
-
-			ArrayTypeSymbol* symbol = new ArrayTypeSymbol(underlayingType, 0);
-			symbol->MemoryBytesSize = SymbolTable::Primitives::Array->MemoryBytesSize;
-			Table->BindSymbol(typeSyntax, symbol);
-			return symbol;
+			node->Symbol = SymbolTable::Primitives::Integer;
+			break;
 		}
 
-		case SyntaxKind::IdentifierNameType:
+		case TokenType::CharKeyword:
 		{
-			IdentifierNameTypeSyntax* identifierType = static_cast<IdentifierNameTypeSyntax*>(typeSyntax);
-			std::wstring name = identifierType->Identifier.Word;
-
-			SemanticScope* currentScope = CurrentScope();
-			SyntaxSymbol* symbol = currentScope->Lookup(name);
-
-			if (symbol == nullptr)
-			{
-				Diagnostics.ReportError(identifierType->Identifier, L"Symbol wasnt found in current scope");
-				return nullptr;
-			}
-
-			if (!symbol->IsType())
-			{
-				Diagnostics.ReportError(identifierType->Identifier, L"Symbol is not a type");
-				return nullptr;
-			}
-
-			if (!IsSymbolAccessible(symbol))
-			{
-				Diagnostics.ReportError(identifierType->Identifier, L"Symbol inaccessible");
-				return nullptr;
-			}
-
-			TypeSymbol* typeSymbol = static_cast<TypeSymbol*>(symbol);
-			//Table->BindSymbol(typeSyntax, typeSymbol);
-			return typeSymbol;
+			node->Symbol = SymbolTable::Primitives::Char;
+			break;
 		}
 
-		case SyntaxKind::GenericType:
+		case TokenType::StringKeyword:
 		{
-			/*
-			GenericTypeSyntax* genericType = static_cast<GenericTypeSyntax*>(typeSyntax);
-			TypeSymbol* underlayingType = ResolveType(genericType->UnderlayingType);
+			node->Symbol = SymbolTable::Primitives::String;
+			break;
+		}
 
-			GenericTypeSymbol* symbol = new GenericTypeSymbol(genericType);
-			Table->BindSymbol(typeSyntax, symbol);
+		case TokenType::VoidKeyword:
+		{
+			node->Symbol = SymbolTable::Primitives::Void;
+			break;
+		}
 
-			size_t argsCount = genericType->TypeArguments.size();
-			size_t paramsCount = underlayingType->TypeParameters.size();
-
-			if (argsCount != paramsCount)
-			{
-				Diagnostics.ReportError(genericType->OpenListToken, L"\'" + underlayingType->FullName + L" requires " + paramsCount + " type arguments");
-				return nullptr;
-			}
-
-			for (TypeSyntax* typeArg : genericType->TypeArguments)
-			{
-				TypeSymbol* typeArgSymbol = ResolveType(typeArg);
-			}
-
-			return symbol;
-			//*/
-
-			return nullptr;
+		case TokenType::VarKeyword:
+		{
+			node->Symbol = SymbolTable::Primitives::Any;
+			break;
 		}
 
 		default:
-			return nullptr;
+		{
+			Diagnostics.ReportError(node->TypeToken, L"Unknown primitive : " + node->TypeToken.Word);
+			break;
+		}
 	}
+}
+
+void TypeBinder::VisitIdentifierNameType(IdentifierNameTypeSyntax* node)
+{
+	std::wstring name = node->Identifier.Word;
+	SemanticScope* currentScope = CurrentScope();
+	SyntaxSymbol* symbol = currentScope->Lookup(name);
+
+	if (symbol == nullptr)
+	{
+		Diagnostics.ReportError(node->Identifier, L"Symbol wasnt found in current scope");
+		return;
+	}
+
+	if (!symbol->IsType())
+	{
+		Diagnostics.ReportError(node->Identifier, L"Symbol is not a type");
+		return;
+	}
+
+	if (!IsSymbolAccessible(symbol))
+	{
+		Diagnostics.ReportError(node->Identifier, L"Symbol inaccessible");
+		return;
+	}
+
+	TypeSymbol* typeSymbol = static_cast<TypeSymbol*>(symbol);
+	//Table->BindSymbol(typeSyntax, typeSymbol);
+	node->Symbol = typeSymbol;
+}
+
+void TypeBinder::VisitArrayType(ArrayTypeSyntax* node)
+{
+	if (node->UnderlayingType == nullptr)
+		return;
+
+	VisitType(node->UnderlayingType);
+	TypeSymbol* underlayingType = node->UnderlayingType->Symbol;
+
+	if (underlayingType == nullptr)
+		return;
+
+	ArrayTypeSymbol* symbol = new ArrayTypeSymbol(underlayingType);
+	symbol->MemoryBytesSize = SymbolTable::Primitives::Array->MemoryBytesSize;
+	
+	Table->BindSymbol(node, symbol);
+	node->Symbol = symbol;
+}
+
+void TypeBinder::VisitNullableType(NullableTypeSyntax* node)
+{
+	if (node->UnderlayingType == nullptr)
+		return;
+
+	VisitType(node->UnderlayingType);
+	TypeSymbol* underlayingType = node->UnderlayingType->Symbol;
+	
+	if (underlayingType == nullptr)
+		return;
+
+	//NullableTypeSymbol* symbol = new NullableTypeSymbol(node->UnderlayingType->Symbol);
+	//Table->BindSymbol(node, symbol);
+	//node->Symbol = symbol;
+}
+
+void TypeBinder::VisitGenericType(GenericTypeSyntax* node)
+{
+	return; // unsupported
+
+	/*
+	VisitType(node->UnderlayingType);
+	for (TypeSyntax* type : node->TypeArguments)
+		VisitType(type);
+	*/
+
+	if (node->UnderlayingType == nullptr)
+		return;
+	
+	VisitType(node->UnderlayingType);
+	TypeSymbol* underlayingType = node->UnderlayingType->Symbol;
+
+	if (underlayingType == nullptr)
+		return;
+
+	GenericTypeSymbol* symbol = new GenericTypeSymbol(underlayingType);
+	Table->BindSymbol(node, symbol);
+	node->Symbol = symbol;
+
+	size_t argsCount = node->TypeArguments.size();
+	size_t paramsCount = underlayingType->TypeParameters.size();
+
+	if (argsCount != paramsCount)
+	{
+		Diagnostics.ReportError(node->OpenListToken, L"\'" + underlayingType->FullName + L" requires " + std::to_wstring(paramsCount) + L" type arguments");
+		return;
+	}
+
+	for (TypeSyntax* typeArg : node->TypeArguments)
+	{
+		VisitType(typeArg);
+		TypeSymbol* typeArgSymbol = typeArg->Symbol;
+	}
+
+	// under construction
+}
+
+void TypeBinder::VisitDelegateType(DelegateTypeSyntax* node)
+{
+	VisitType(node->ReturnType);
+	VisitParametersList(node->Params);
+
+	MethodSymbol* anonymousMethod = new MethodSymbol(L"");
+	anonymousMethod->HandleType = MethodHandleType::AnonymousMethod;
+	anonymousMethod->Accesibility = SymbolAccesibility::Public;
+	anonymousMethod->ReturnType = node->ReturnType->Symbol;
+	anonymousMethod->IsStatic = true;
+
+	DelegateTypeSymbol* symbol = new DelegateTypeSymbol();
+	symbol->ReturnType = node->ReturnType->Symbol;
+	symbol->AnonymousSymbol = anonymousMethod;
+
+	for (ParameterSyntax* param : node->Params->Parameters)
+	{
+		VisitParameter(param);
+		ParameterSymbol* paramSymbol = LookupSymbol<ParameterSymbol>(param);
+		paramSymbol->Type = param->Type->Symbol;
+
+		symbol->Parameters.push_back(paramSymbol);
+		anonymousMethod->Parameters.push_back(paramSymbol);
+	}
+
+	node->Symbol = symbol;
+	Table->BindSymbol(node, symbol);
 }

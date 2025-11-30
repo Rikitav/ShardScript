@@ -130,6 +130,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\syntax\nodes\Types\DelegateTypeSyntax.cpp" />
     <ClCompile Include="src\framework\collections\List.cpp" />
     <ClCompile Include="src\framework\filesystem\Directory.cpp" />
     <ClCompile Include="src\framework\filesystem\File.cpp" />
@@ -139,6 +140,7 @@
     <ClCompile Include="src\framework\primitives\ArrayPrimitive.cpp" />
     <ClCompile Include="src\syntax\nodes\Directives\UsingDirectiveSyntax.cpp" />
     <ClCompile Include="src\syntax\nodes\Types\ArrayTypeSyntax.cpp" />
+    <ClCompile Include="src\syntax\SymbolFactory.cpp" />
     <ClCompile Include="src\syntax\symbols\GenericTypeSymbol.cpp" />
     <ClCompile Include="src\syntax\nodes\Types\GenericTypeSyntax.cpp" />
     <ClCompile Include="src\syntax\nodes\Types\IdentifierNameTypeSyntax.cpp" />
@@ -226,13 +228,16 @@
     <ClInclude Include="include\shard\parsing\lexical\MembersVisibilityContext.h" />
     <ClInclude Include="include\shard\parsing\analysis\TextLocation.h" />
     <ClInclude Include="include\shard\syntax\nodes\Expressions\CollectionExpressionSyntax.h" />
-    <ClInclude Include="include\shard\syntax\nodes\Expressions\TypeExpressionSyntax.h" />
+    <ClInclude Include="include\shard\syntax\nodes\Expressions\LambdaExpressionSyntax.h" />
+    <ClInclude Include="include\shard\syntax\nodes\Expressions\TernaryExpressionSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\MemberDeclarations\AccessorDeclarationSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\MemberDeclarations\ConstructorDeclarationSyntax.h" />
+    <ClInclude Include="include\shard\syntax\nodes\MemberDeclarations\DelegateDeclarationSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\MemberDeclarations\PropertyDeclarationSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\Statements\BreakStatementSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\Statements\ContinueStatementSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\Statements\ThrowStatementSyntax.h" />
+    <ClInclude Include="include\shard\syntax\nodes\Types\DelegateTypeSyntax.h" />
     <ClInclude Include="include\shard\syntax\SymbolAccesibility.h" />
     <ClInclude Include="include\shard\syntax\nodes\ArgumentsListSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\CompilationUnitSyntax.h" />
@@ -266,12 +271,15 @@
     <ClInclude Include="include\shard\syntax\nodes\Types\IdentifierNameTypeSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\Types\NullableTypeSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\Types\PredefinedTypeSyntax.h" />
+    <ClInclude Include="include\shard\syntax\SymbolFactory.h" />
     <ClInclude Include="include\shard\syntax\symbols\AccessorSymbol.h" />
     <ClInclude Include="include\shard\syntax\symbols\ArrayTypeSymbol.h" />
     <ClInclude Include="include\shard\syntax\symbols\ClassSymbol.h" />
+    <ClInclude Include="include\shard\syntax\symbols\DelegateTypeSymbol.h" />
     <ClInclude Include="include\shard\syntax\symbols\FFISymbol.h" />
     <ClInclude Include="include\shard\syntax\symbols\FieldSymbol.h" />
     <ClInclude Include="include\shard\syntax\symbols\GenericTypeSymbol.h" />
+    <ClInclude Include="include\shard\syntax\symbols\LeftDenotationSymbol.h" />
     <ClInclude Include="include\shard\syntax\symbols\MethodSymbol.h" />
     <ClInclude Include="include\shard\syntax\symbols\NamespaceSymbol.h" />
     <ClInclude Include="include\shard\syntax\symbols\ParameterSymbol.h" />

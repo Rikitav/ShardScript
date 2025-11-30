@@ -72,6 +72,11 @@ namespace shard::runtime
             IdMap.clear();
             PtrMap.clear();
         }
+
+        inline size_t size()
+        {
+            return IdMap.size();
+        }
 	};
 
 	class GarbageCollector

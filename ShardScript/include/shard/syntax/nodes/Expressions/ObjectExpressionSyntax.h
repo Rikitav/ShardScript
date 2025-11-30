@@ -26,20 +26,17 @@ namespace shard::syntax::nodes
 		inline ObjectExpressionSyntax(const SyntaxNode* parent)
 			: ExpressionSyntax(SyntaxKind::ObjectExpression, parent) { }
 
-		inline ObjectExpressionSyntax(const ObjectExpressionSyntax& other)
-			: ExpressionSyntax(other), NewToken(other.NewToken), IdentifierToken(other.IdentifierToken), Type(other.Type), ArgumentsList(other.ArgumentsList), TypeSymbol(other.TypeSymbol), CtorSymbol(other.CtorSymbol) { }
+		ObjectExpressionSyntax(const ObjectExpressionSyntax&) = delete;
 
 		inline virtual ~ObjectExpressionSyntax()
 		{
 			if (Type != nullptr)
 			{
-				Type->~TypeSyntax();
 				delete Type;
 			}
 
 			if (ArgumentsList != nullptr)
 			{
-				ArgumentsList->~ArgumentsListSyntax();
 				delete ArgumentsList;
 			}
 		}

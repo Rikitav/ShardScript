@@ -213,9 +213,10 @@ static ObjectInstance* Trim(MethodSymbol* symbol, InboundVariablesContext* argum
 
 static ObjectInstance* Format(MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
-	ObjectInstance* instance = arguments->TryFind(L"this");
+	ObjectInstance* instance = arguments->TryFind(L"this"); // string
+	ObjectInstance* formatArgs = arguments->TryFind(L"args"); // string[]
+
 	std::wstring format = instance->ReadPrimitive<std::wstring>();
-	
 	std::wstring result = format;
 	size_t pos = 0;
 	
@@ -240,16 +241,16 @@ static ObjectInstance* Format(MethodSymbol* symbol, InboundVariablesContext* arg
 			continue;
 		}
 		
-		if (index < 0 || index > 9)
-		{
-			pos = endPos + 1;
-			continue;
-		}
-		
+		/*
 		// Find argument by index (arg0, arg1, etc.)
-		std::wstring argName = L"arg" + std::to_wstring(index);
+		std::wstring argName = L"arg" + ;
 		ObjectInstance* arg = arguments->TryFind(argName);
+		*/
 		
+		if (!formatArgs->IsInBounds(index))
+			throw std::runtime_error("index is out of bounds");
+
+		ObjectInstance* arg = formatArgs->GetElement(index);
 		if (arg != nullptr)
 		{
 			// Try to convert argument to string by calling ToString method
@@ -265,7 +266,7 @@ static ObjectInstance* Format(MethodSymbol* symbol, InboundVariablesContext* arg
 				try
 				{
 					InboundVariablesContext* toStringArgs = new InboundVariablesContext(nullptr);
-					toStringArgs->AddVariable(L"this", arg);
+					toStringArgs->SetVariable(L"this", arg);
 					ObjectInstance* toStringResult = AbstractInterpreter::ExecuteMethod(toStringMethod, toStringArgs);
 					
 					if (toStringResult != nullptr && toStringResult->Info == SymbolTable::Primitives::String)
@@ -561,11 +562,11 @@ void StringPrimitive::Reflect(TypeSymbol* symbol)
 	}
 	*/
 
-	std::wstring paramName = L"arg0";
+	std::wstring paramName = L"args";
 	ParameterSymbol* formatParam = new ParameterSymbol(paramName);
-	formatParam->Type = SymbolTable::Primitives::String;
+	ArrayTypeSymbol* formatParamType = new ArrayTypeSymbol(SymbolTable::Primitives::String);
+	formatParam->Type = formatParamType;
 	format->Parameters.push_back(formatParam);
-
 	symbol->Methods.push_back(format);
 	
 	// PadLeft(width, padChar?)

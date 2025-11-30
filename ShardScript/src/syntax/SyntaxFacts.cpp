@@ -50,6 +50,7 @@ int GetOperatorPrecendence(TokenType type)
 			return 2;
 
 		case TokenType::AssignOperator:
+		case TokenType::Question: // ternary
 			return 1;
 
 		default:
@@ -65,6 +66,7 @@ bool IsBinaryArithmeticOperator(TokenType type)
 		case TokenType::SubOperator:
 		case TokenType::MultOperator:
 		case TokenType::DivOperator:
+		case TokenType::ModOperator:
 		case TokenType::PowOperator:
 		case TokenType::AddAssignOperator:
 		case TokenType::SubAssignOperator:
@@ -98,6 +100,19 @@ bool IsBinaryBooleanOperator(TokenType type)
 	}
 }
 
+bool IsBinaryBitOperator(shard::syntax::TokenType type)
+{
+	switch (type)
+	{
+		case TokenType::LeftShiftOperator:
+		case TokenType::RightShiftOperator:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
 bool IsBinaryOperator(TokenType type)
 {
 	if (IsBinaryArithmeticOperator(type))
@@ -106,10 +121,13 @@ bool IsBinaryOperator(TokenType type)
 	if (IsBinaryBooleanOperator(type))
 		return true;
 
+	if (IsBinaryBitOperator(type))
+		return true;
+
 	return false;
 }
 
-bool IsUnaryArithmeticOperator(TokenType type)
+bool IsRightUnaryArithmeticOperator(TokenType type)
 {
 	switch (type)
 	{
@@ -122,7 +140,7 @@ bool IsUnaryArithmeticOperator(TokenType type)
 	}
 }
 
-bool IsUnaryBooleanOperator(TokenType type)
+bool IsRightUnaryBooleanOperator(TokenType type)
 {
 	switch (type)
 	{
@@ -134,12 +152,54 @@ bool IsUnaryBooleanOperator(TokenType type)
 	}
 }
 
-bool IsUnaryOperator(TokenType type)
+bool IsLeftUnaryOperator(shard::syntax::TokenType type)
 {
-	if (IsUnaryArithmeticOperator(type))
+	if (IsLeftUnaryArithmeticOperator(type))
 		return true;
 
-	if (IsUnaryBooleanOperator(type))
+	if (IsLeftUnaryBooleanOperator(type))
+		return true;
+
+	return false;
+}
+
+bool IsLeftUnaryArithmeticOperator(shard::syntax::TokenType type)
+{
+	switch (type)
+	{
+		case TokenType::SubOperator:
+		case TokenType::AddOperator:
+		case TokenType::IncrementOperator:
+		case TokenType::DecrementOperator:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
+bool IsLeftUnaryBooleanOperator(shard::syntax::TokenType type)
+{
+	return false;
+}
+
+bool IsUnaryOperator(shard::syntax::TokenType type)
+{
+	if (IsLeftUnaryOperator(type))
+		return true;
+
+	if (IsRightUnaryOperator(type))
+		return true;
+
+	return false;
+}
+
+bool IsRightUnaryOperator(TokenType type)
+{
+	if (IsRightUnaryArithmeticOperator(type))
+		return true;
+
+	if (IsRightUnaryBooleanOperator(type))
 		return true;
 
 	return false;
@@ -150,16 +210,10 @@ bool IsOperator(TokenType type)
 	if (type == TokenType::AssignOperator)
 		return true;
 
-	if (IsBinaryArithmeticOperator(type))
+	if (IsUnaryOperator(type))
 		return true;
 
-	if (IsBinaryBooleanOperator(type))
-		return true;
-
-	if (IsBinaryArithmeticOperator(type))
-		return true;
-
-	if (IsBinaryArithmeticOperator(type))
+	if (IsBinaryOperator(type))
 		return true;
 
 	return false;
@@ -172,6 +226,7 @@ bool IsMemberKeyword(TokenType type)
 		case TokenType::ClassKeyword:
 		case TokenType::StructKeyword:
 		case TokenType::InterfaceKeyword:
+		case TokenType::DelegateKeyword:
 			return true;
 
 		default:
@@ -201,18 +256,24 @@ bool IsType(TokenType type, TokenType peekType)
 	if (IsPredefinedType(type))
 		return true;
 
-	if (type == TokenType::Identifier)
+	switch (type)
 	{
-		switch (peekType)
+		case TokenType::Identifier:
 		{
-			case TokenType::LessOperator:
-			case TokenType::Identifier:
-			case TokenType::Question:
-				return true;
+			switch (peekType)
+			{
+				case TokenType::LessOperator:
+				case TokenType::Identifier:
+				case TokenType::Question:
+					return true;
 
-			default:
-				return false;
+				default:
+					return false;
+			}
 		}
+
+		case TokenType::DelegateKeyword:
+			return true;
 	}
 
 	return false;
@@ -306,6 +367,20 @@ bool IsFunctionalKeyword(TokenType type)
 	}
 }
 
+bool IsLinkedExpressionNode(shard::syntax::SyntaxKind kind)
+{
+	switch (kind)
+	{
+		case SyntaxKind::MemberAccessExpression:
+		case SyntaxKind::InvokationExpression:
+		case SyntaxKind::IndexatorExpression:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
 bool IsKeyword(TokenType type)
 {
 	if (IsFunctionalKeyword(type))
@@ -356,6 +431,7 @@ bool IsPunctuation(TokenType type)
 		case TokenType::Question:
 		case TokenType::Delimeter:
 		case TokenType::Comma:
+		case TokenType::Colon:
 		case TokenType::Semicolon:
 			return true;
 

@@ -19,6 +19,7 @@
 #include <shard/syntax/nodes/Expressions/UnaryExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/LiteralExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/CollectionExpressionSyntax.h>
+#include <shard/syntax/nodes/Expressions/LambdaExpressionSyntax.h>
 
 #include <shard/syntax/nodes/Statements/ReturnStatementSyntax.h>
 #include <shard/syntax/nodes/Statements/ThrowStatementSyntax.h>
@@ -35,6 +36,7 @@
 
 #include <stack>
 #include <vector>
+#include <shard/syntax/nodes/Expressions/TernaryExpressionSyntax.h>
 
 namespace shard::runtime
 {
@@ -80,9 +82,12 @@ namespace shard::runtime
 		static ObjectInstance* EvaluateLiteralExpression(const shard::syntax::nodes::LiteralExpressionSyntax* expression);
 		static ObjectInstance* EvaluateObjectExpression(const shard::syntax::nodes::ObjectExpressionSyntax* expression);
 		static ObjectInstance* EvaluateBinaryExpression(const shard::syntax::nodes::BinaryExpressionSyntax* expression);
+		static ObjectInstance* EvaluateAssignExpression(const shard::syntax::nodes::BinaryExpressionSyntax* expression);
 		static ObjectInstance* EvaluateUnaryExpression(const shard::syntax::nodes::UnaryExpressionSyntax* expression);
 		static ObjectInstance* EvaluateCollectionExpression(const shard::syntax::nodes::CollectionExpressionSyntax* expression);
-		//static ObjectInstance* EvaluateAssignExpression(const shard::syntax::nodes::BinaryExpressionSyntax* expression);
+		static ObjectInstance* EvaluateLambdaExpression(const shard::syntax::nodes::LambdaExpressionSyntax* expression);
+		static ObjectInstance* EvaluateTernaryExpression(const shard::syntax::nodes::TernaryExpressionSyntax* expression);
+		//static ExpressionSyntax* ChooseTernaryExpression(const shard::syntax::nodes::TernaryExpressionSyntax* expression);
 
 		static ObjectInstance* EvaluateMemberAccessExpression(const shard::syntax::nodes::MemberAccessExpressionSyntax* expression, shard::runtime::ObjectInstance* prevInstance);
 		static ObjectInstance* EvaluateInvokationExpression(const shard::syntax::nodes::InvokationExpressionSyntax* expression, shard::runtime::ObjectInstance* prevInstance);

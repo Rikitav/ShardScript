@@ -23,6 +23,8 @@
 #include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/DelegateDeclarationSyntax.h>
 
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/StructSymbol.h>
@@ -35,6 +37,7 @@
 #include <shard/syntax/symbols/VariableSymbol.h>
 #include <shard/syntax/symbols/FFISymbol.h>
 #include <shard/syntax/symbols/AccessorSymbol.h>
+#include <shard/syntax/symbols/DelegateTypeSymbol.h>
 
 #include <string>
 
@@ -68,7 +71,23 @@ void DeclarationCollector::VisitCompilationUnit(CompilationUnitSyntax* node)
 
 void DeclarationCollector::VisitImportDirective(ImportDirectiveSyntax* node)
 {
+    std::wstring methodName = node->IdentifierToken.Word;
+    MethodSymbol* symbol = new MethodSymbol(methodName);
+    symbol->Accesibility = SymbolAccesibility::Public;
+    symbol->HandleType = MethodHandleType::ForeignInterface;
+    symbol->ForeighInterfacePath = node->LibPathToken.Word;
 
+    if (node->Params == nullptr)
+        return;
+
+    for (ParameterSyntax* parameter : node->Params->Parameters)
+    {
+        ParameterSymbol* paramSymbol = new ParameterSymbol(parameter->Identifier.Word);
+        symbol->Parameters.push_back(paramSymbol);
+    }
+
+    Table->BindSymbol(node, symbol);
+    Declare(symbol);
 }
 
 void DeclarationCollector::VisitNamespaceDeclaration(NamespaceDeclarationSyntax* node)
@@ -128,7 +147,6 @@ void DeclarationCollector::VisitStructDeclaration(StructDeclarationSyntax* node)
 {
     std::wstring structName = node->IdentifierToken.Word;
     StructSymbol* symbol = new StructSymbol(structName);
-    symbol->Parent = OwnerSymbol();
     SetAccesibility(symbol, node->Modifiers);
     OwnerNamespaceNode()->Types.push_back(symbol);
 
@@ -143,6 +161,38 @@ void DeclarationCollector::VisitStructDeclaration(StructDeclarationSyntax* node)
     for (MemberDeclarationSyntax* member : node->Members)
         VisitMemberDeclaration(member);
 
+    PopScope();
+}
+
+void DeclarationCollector::VisitDelegateDeclaration(DelegateDeclarationSyntax* node)
+{
+    MethodSymbol* anonymousMethod = new MethodSymbol(L"");
+    anonymousMethod->HandleType = MethodHandleType::AnonymousMethod;
+    anonymousMethod->Accesibility = SymbolAccesibility::Public;
+    anonymousMethod->ReturnType = node->ReturnType->Symbol;
+    anonymousMethod->IsStatic = true;
+
+    std::wstring delegateName = node->IdentifierToken.Word;
+    DelegateTypeSymbol* symbol = new DelegateTypeSymbol(delegateName);
+    symbol->ReturnType = node->ReturnType->Symbol;
+    symbol->AnonymousSymbol = anonymousMethod;
+    SetAccesibility(symbol, node->Modifiers);
+    
+    SyntaxSymbol* parent = OwnerSymbol();
+    symbol->Parent = parent;
+    symbol->FullName = parent == nullptr ? symbol->Name : parent->FullName + L"." + symbol->Name;
+
+    if (parent != nullptr)
+    {
+        if (parent->Kind == SyntaxKind::NamespaceDeclaration)
+            OwnerNamespaceNode()->Types.push_back(symbol);
+    }
+
+    Table->BindSymbol(node, symbol);
+    Declare(symbol);
+    PushScope(symbol);
+    VisitType(node->ReturnType);
+    VisitParametersList(node->Params);
     PopScope();
 }
 
@@ -266,6 +316,7 @@ void DeclarationCollector::VisitConstructorDeclaration(ConstructorDeclarationSyn
     Declare(symbol);
     Table->BindSymbol(node, symbol);
 
+    VisitParametersList(node->Params);
     if (node->Body != nullptr)
     {
         PushScope(symbol);
@@ -401,9 +452,22 @@ void DeclarationCollector::VisitVariableStatement(VariableStatementSyntax* node)
     std::wstring varName = node->IdentifierToken.Word;
     VariableSymbol* symbol = new VariableSymbol(varName, nullptr);
 
-    Declare(symbol);
     Table->BindSymbol(node, symbol);
+    Declare(symbol);
+    PushScope(symbol);
 
     if (node->Expression != nullptr)
         VisitExpression(node->Expression);
+
+    PopScope();
+}
+
+void DeclarationCollector::VisitStatementsBlock(StatementsBlockSyntax* node)
+{
+    //PushScope(symbol);
+
+    for (StatementSyntax* statement : node->Statements)
+        VisitStatement(statement);
+
+    //PopScope();
 }

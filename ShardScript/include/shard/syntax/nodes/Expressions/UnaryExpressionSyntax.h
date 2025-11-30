@@ -16,8 +16,7 @@ namespace shard::syntax::nodes
 		inline UnaryExpressionSyntax(const SyntaxToken operatorToken, const bool isRightDetermined, const SyntaxNode* parent)
 			: ExpressionSyntax(SyntaxKind::UnaryExpression, parent), OperatorToken(operatorToken), IsRightDetermined(isRightDetermined) { }
 
-		inline UnaryExpressionSyntax(const UnaryExpressionSyntax& other)
-			: ExpressionSyntax(SyntaxKind::UnaryExpression, other.Parent), OperatorToken(other.OperatorToken), Expression(other.Expression), IsRightDetermined(other.IsRightDetermined) { }
+		UnaryExpressionSyntax(const UnaryExpressionSyntax&) = delete;
 
 		inline virtual ~UnaryExpressionSyntax()
 		{

@@ -23,6 +23,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/DelegateDeclarationSyntax.h>
 
 #include <shard/syntax/nodes/Expressions/BinaryExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/LinkedExpressionSyntax.h>
@@ -30,6 +31,7 @@
 #include <shard/syntax/nodes/Expressions/ObjectExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/UnaryExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/CollectionExpressionSyntax.h>
+#include <shard/syntax/nodes/Expressions/LambdaExpressionSyntax.h>
 
 #include <shard/syntax/nodes/Loops/ForStatementSyntax.h>
 #include <shard/syntax/nodes/Loops/UntilStatementSyntax.h>
@@ -50,6 +52,8 @@
 #include <shard/syntax/nodes/Types/PredefinedTypeSyntax.h>
 
 #include <stdexcept>
+#include <shard/syntax/nodes/Expressions/TernaryExpressionSyntax.h>
+#include <shard/syntax/nodes/Types/DelegateTypeSyntax.h>
 
 using namespace shard::parsing;
 using namespace shard::parsing::lexical;
@@ -77,7 +81,7 @@ void SyntaxVisitor::VisitUsingDirective(UsingDirectiveSyntax* node)
 
 void SyntaxVisitor::VisitImportDirective(ImportDirectiveSyntax* node)
 {
-	// ...
+	VisitParametersList(node->Params);
 	return;
 }
 
@@ -86,7 +90,7 @@ void SyntaxVisitor::VisitTypeDeclaration(MemberDeclarationSyntax* node)
 	switch (node->Kind)
 	{
 		default:
-			throw std::runtime_error("unknown member kind");
+			throw std::runtime_error("unknown type kind");
 
 		case SyntaxKind::NamespaceDeclaration:
 		{
@@ -108,6 +112,13 @@ void SyntaxVisitor::VisitTypeDeclaration(MemberDeclarationSyntax* node)
 			VisitStructDeclaration(declNode);
 			return;
 		}
+
+		case SyntaxKind::DelegateDeclaration:
+		{
+			DelegateDeclarationSyntax* declNode = static_cast<DelegateDeclarationSyntax*>(node);
+			VisitDelegateDeclaration(declNode);
+			return;
+		}
 	}
 }
 
@@ -127,6 +138,12 @@ void SyntaxVisitor::VisitStructDeclaration(StructDeclarationSyntax* node)
 {
 	for (MemberDeclarationSyntax* member : node->Members)
 		VisitMemberDeclaration(member);
+}
+
+void SyntaxVisitor::VisitDelegateDeclaration(DelegateDeclarationSyntax* node)
+{
+	VisitType(node->ReturnType);
+	VisitParametersList(node->Params);
 }
 
 void SyntaxVisitor::VisitMemberDeclaration(MemberDeclarationSyntax* node)
@@ -154,6 +171,13 @@ void SyntaxVisitor::VisitMemberDeclaration(MemberDeclarationSyntax* node)
 		{
 			StructDeclarationSyntax* declNode = static_cast<StructDeclarationSyntax*>(node);
 			VisitStructDeclaration(declNode);
+			return;
+		}
+
+		case SyntaxKind::DelegateDeclaration:
+		{
+			DelegateDeclarationSyntax* declNode = static_cast<DelegateDeclarationSyntax*>(node);
+			VisitDelegateDeclaration(declNode);
 			return;
 		}
 
@@ -449,57 +473,71 @@ void SyntaxVisitor::VisitExpression(ExpressionSyntax* node)
 
 		case SyntaxKind::LiteralExpression:
 		{
-			LiteralExpressionSyntax* expression = dynamic_cast<LiteralExpressionSyntax*>(node);
+			LiteralExpressionSyntax* expression = static_cast<LiteralExpressionSyntax*>(node);
 			VisitLiteralExpression(expression);
 			return;
 		}
 
 		case SyntaxKind::BinaryExpression:
 		{
-			BinaryExpressionSyntax* expression = dynamic_cast<BinaryExpressionSyntax*>(node);
+			BinaryExpressionSyntax* expression = static_cast<BinaryExpressionSyntax*>(node);
 			VisitBinaryExpression(expression);
 			return;
 		}
 
 		case SyntaxKind::UnaryExpression:
 		{
-			UnaryExpressionSyntax* expression = dynamic_cast<UnaryExpressionSyntax*>(node);
+			UnaryExpressionSyntax* expression = static_cast<UnaryExpressionSyntax*>(node);
 			VisitUnaryExpression(expression);
 			return;
 		}
 
 		case SyntaxKind::MemberAccessExpression:
 		{
-			MemberAccessExpressionSyntax* expression = dynamic_cast<MemberAccessExpressionSyntax*>(node);
+			MemberAccessExpressionSyntax* expression = static_cast<MemberAccessExpressionSyntax*>(node);
 			VisitMemberAccessExpression(expression);
 			return;
 		}
 
 		case SyntaxKind::InvokationExpression:
 		{
-			InvokationExpressionSyntax* expression = dynamic_cast<InvokationExpressionSyntax*>(node);
+			InvokationExpressionSyntax* expression = static_cast<InvokationExpressionSyntax*>(node);
 			VisitInvocationExpression(expression);
 			return;
 		}
 
 		case SyntaxKind::IndexatorExpression:
 		{
-			IndexatorExpressionSyntax* expression = dynamic_cast<IndexatorExpressionSyntax*>(node);
+			IndexatorExpressionSyntax* expression = static_cast<IndexatorExpressionSyntax*>(node);
 			VisitIndexatorExpression(expression);
 			return;
 		}
 
 		case SyntaxKind::ObjectExpression:
 		{
-			ObjectExpressionSyntax* expression = dynamic_cast<ObjectExpressionSyntax*>(node);
+			ObjectExpressionSyntax* expression = static_cast<ObjectExpressionSyntax*>(node);
 			VisitObjectCreationExpression(expression);
 			return;
 		}
 
 		case SyntaxKind::CollectionExpression:
 		{
-			CollectionExpressionSyntax* expression = dynamic_cast<CollectionExpressionSyntax*>(node);
+			CollectionExpressionSyntax* expression = static_cast<CollectionExpressionSyntax*>(node);
 			VisitCollectionExpression(expression);
+			return;
+		}
+
+		case SyntaxKind::LambdaExpression:
+		{
+			LambdaExpressionSyntax* expression = static_cast<LambdaExpressionSyntax*>(node);
+			VisitLambdaExpression(expression);
+			return;
+		}
+
+		case SyntaxKind::TernaryExpression:
+		{
+			TernaryExpressionSyntax* expression = static_cast<TernaryExpressionSyntax*>(node);
+			VisitTernaryExpression(expression);
 			return;
 		}
 	}
@@ -526,6 +564,19 @@ void SyntaxVisitor::VisitCollectionExpression(CollectionExpressionSyntax* node)
 {
 	for (ExpressionSyntax* expression : node->ValuesExpressions)
 		VisitExpression(expression);
+}
+
+void SyntaxVisitor::VisitLambdaExpression(LambdaExpressionSyntax* node)
+{
+	VisitParametersList(node->Params);
+	VisitStatementsBlock(node->Body);
+}
+
+void SyntaxVisitor::VisitTernaryExpression(TernaryExpressionSyntax* node)
+{
+	VisitExpression(node->Condition);
+	VisitExpression(node->Left);
+	VisitExpression(node->Right);
 }
 
 void SyntaxVisitor::VisitObjectCreationExpression(ObjectExpressionSyntax* node)
@@ -575,45 +626,55 @@ void SyntaxVisitor::VisitParametersList(ParametersListSyntax* node)
 
 void SyntaxVisitor::VisitParameter(ParameterSyntax* node)
 {
-	VisitType((TypeSyntax*)node->Type);
+	VisitType(const_cast<TypeSyntax*>(node->Type));
 }
 
 void SyntaxVisitor::VisitType(TypeSyntax* node)
 {
 	switch (node->Kind)
 	{
+		default:
+			throw std::runtime_error("unknown type syntax kind");
+
 		case SyntaxKind::PredefinedType:
 		{
-			PredefinedTypeSyntax* expression = dynamic_cast<PredefinedTypeSyntax*>(node);
+			PredefinedTypeSyntax* expression = static_cast<PredefinedTypeSyntax*>(node);
 			VisitPredefinedType(expression);
 			return;
 		}
 
 		case SyntaxKind::IdentifierNameType:
 		{
-			IdentifierNameTypeSyntax* expression = dynamic_cast<IdentifierNameTypeSyntax*>(node);
+			IdentifierNameTypeSyntax* expression = static_cast<IdentifierNameTypeSyntax*>(node);
 			VisitIdentifierNameType(expression);
 			return;
 		}
 
 		case SyntaxKind::ArrayType:
 		{
-			ArrayTypeSyntax* expression = dynamic_cast<ArrayTypeSyntax*>(node);
+			ArrayTypeSyntax* expression = static_cast<ArrayTypeSyntax*>(node);
 			VisitArrayType(expression);
 			return;
 		}
 
 		case SyntaxKind::NullableType:
 		{
-			NullableTypeSyntax* expression = dynamic_cast<NullableTypeSyntax*>(node);
+			NullableTypeSyntax* expression = static_cast<NullableTypeSyntax*>(node);
 			VisitNullableType(expression);
 			return;
 		}
 
 		case SyntaxKind::GenericType:
 		{
-			GenericTypeSyntax* expression = dynamic_cast<GenericTypeSyntax*>(node);
+			GenericTypeSyntax* expression = static_cast<GenericTypeSyntax*>(node);
 			VisitGenericType(expression);
+			return;
+		}
+
+		case SyntaxKind::DelegateType:
+		{
+			DelegateTypeSyntax* expression = static_cast<DelegateTypeSyntax*>(node);
+			VisitDelegateType(expression);
 			return;
 		}
 	}
@@ -646,4 +707,10 @@ void SyntaxVisitor::VisitGenericType(GenericTypeSyntax* node)
 	VisitType(node->UnderlayingType);
 	for (TypeSyntax* type : node->TypeArguments)
 		VisitType(type);
+}
+
+void SyntaxVisitor::VisitDelegateType(DelegateTypeSyntax* node)
+{
+	VisitType(node->ReturnType);
+	VisitParametersList(node->Params);
 }

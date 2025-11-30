@@ -22,6 +22,7 @@ namespace shard::syntax::symbols
         ObjectInstance,
         ForeignInterface,
         FunctionPointer,
+        AnonymousMethod,
     };
 
     class MethodSymbol : public SyntaxSymbol
@@ -34,6 +35,7 @@ namespace shard::syntax::symbols
         MethodHandleType HandleType = MethodHandleType::ObjectInstance;
         shard::syntax::nodes::StatementsBlockSyntax* Body = nullptr;
         MethodSymbolDelegate FunctionPointer = nullptr;
+        std::wstring ForeighInterfacePath;
 
         bool IsVirtual = false;
         bool IsOverride = false;
@@ -62,7 +64,7 @@ namespace shard::syntax::symbols
         {
             shard::runtime::InboundVariablesContext* ctx = new shard::runtime::InboundVariablesContext(nullptr);
             for (std::pair<std::wstring, shard::runtime::ObjectInstance*> pair : args)
-                ctx->AddVariable(pair.first, pair.second);
+                ctx->SetVariable(pair.first, pair.second);
 
             return symbol->FunctionPointer(symbol, ctx);
         }

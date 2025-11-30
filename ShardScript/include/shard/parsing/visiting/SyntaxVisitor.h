@@ -5,6 +5,8 @@
 #include <shard/parsing/semantic/SemanticModel.h>
 #include <shard/parsing/semantic/NamespaceTree.h>
 
+#include <shard/syntax/SyntaxNode.h>
+
 #include <shard/syntax/nodes/ExpressionSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarationSyntax.h>
 #include <shard/syntax/nodes/ParametersListSyntax.h>
@@ -25,6 +27,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/PropertyDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/DelegateDeclarationSyntax.h>
 
 #include <shard/syntax/nodes/Statements/VariableStatementSyntax.h>
 #include <shard/syntax/nodes/Statements/ExpressionStatementSyntax.h>
@@ -44,12 +47,15 @@
 #include <shard/syntax/nodes/Expressions/LinkedExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/ObjectExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/CollectionExpressionSyntax.h>
+#include <shard/syntax/nodes/Expressions/LambdaExpressionSyntax.h>
 
 #include <shard/syntax/nodes/Types/PredefinedTypeSyntax.h>
 #include <shard/syntax/nodes/Types/GenericTypeSyntax.h>
 #include <shard/syntax/nodes/Types/IdentifierNameTypeSyntax.h>
 #include <shard/syntax/nodes/Types/ArrayTypeSyntax.h>
 #include <shard/syntax/nodes/Types/NullableTypeSyntax.h>
+#include <shard/syntax/nodes/Types/DelegateTypeSyntax.h>
+#include <shard/syntax/nodes/Expressions/TernaryExpressionSyntax.h>
 
 namespace shard::parsing
 {
@@ -63,6 +69,12 @@ namespace shard::parsing
         inline SyntaxVisitor(shard::parsing::semantic::SemanticModel& model, shard::parsing::analysis::DiagnosticsContext& diagnostics)
             : Table(model.Table), Namespaces(model.Namespaces), Diagnostics(diagnostics) { }
 
+        template<typename T>
+        inline T* LookupSymbol(shard::syntax::SyntaxNode* node)
+        {
+            return static_cast<T*>(Table->LookupSymbol(node));
+        }
+
 	public:
         virtual void VisitSyntaxTree(shard::parsing::lexical::SyntaxTree& tree);
         virtual void VisitCompilationUnit(shard::syntax::nodes::CompilationUnitSyntax* node);
@@ -73,6 +85,7 @@ namespace shard::parsing
         virtual void VisitNamespaceDeclaration(shard::syntax::nodes::NamespaceDeclarationSyntax* node);
         virtual void VisitClassDeclaration(shard::syntax::nodes::ClassDeclarationSyntax* node);
         virtual void VisitStructDeclaration(shard::syntax::nodes::StructDeclarationSyntax* node);
+        virtual void VisitDelegateDeclaration(shard::syntax::nodes::DelegateDeclarationSyntax* node);
 
         virtual void VisitMemberDeclaration(shard::syntax::nodes::MemberDeclarationSyntax* node);
         virtual void VisitMethodDeclaration(shard::syntax::nodes::MethodDeclarationSyntax* node);
@@ -105,6 +118,8 @@ namespace shard::parsing
         virtual void VisitUnaryExpression(shard::syntax::nodes::UnaryExpressionSyntax* node);
         virtual void VisitObjectCreationExpression(shard::syntax::nodes::ObjectExpressionSyntax* node);
         virtual void VisitCollectionExpression(shard::syntax::nodes::CollectionExpressionSyntax* node);
+        virtual void VisitLambdaExpression(shard::syntax::nodes::LambdaExpressionSyntax* node);
+        virtual void VisitTernaryExpression(shard::syntax::nodes::TernaryExpressionSyntax* node);
 
         virtual void VisitInvocationExpression(shard::syntax::nodes::InvokationExpressionSyntax* node);
         virtual void VisitMemberAccessExpression(shard::syntax::nodes::MemberAccessExpressionSyntax* node);
@@ -122,5 +137,6 @@ namespace shard::parsing
         virtual void VisitArrayType(shard::syntax::nodes::ArrayTypeSyntax* node);
         virtual void VisitNullableType(shard::syntax::nodes::NullableTypeSyntax* node);
         virtual void VisitGenericType(shard::syntax::nodes::GenericTypeSyntax* node);
+        virtual void VisitDelegateType(shard::syntax::nodes::DelegateTypeSyntax* node);
 	};
 }

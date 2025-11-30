@@ -3,6 +3,7 @@
 #include <shard/syntax/SyntaxNode.h>
 #include <shard/syntax/SyntaxToken.h>
 #include <shard/syntax/nodes/TypeSyntax.h>
+#include <shard/syntax/symbols/TypeSymbol.h>
 
 #include <vector>
 
@@ -13,6 +14,7 @@ namespace shard::syntax::nodes
 	public:
 		const TypeSyntax* Type;
 		const SyntaxToken Identifier;
+		shard::syntax::symbols::TypeSymbol* Symbol = nullptr;
 
 		inline ParameterSyntax(const TypeSyntax* type, const SyntaxToken identifier, const SyntaxNode* parent)
 			: SyntaxNode(SyntaxKind::Parameter, parent), Type(type), Identifier(identifier) { }

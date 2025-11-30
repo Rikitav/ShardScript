@@ -30,18 +30,20 @@
 #include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/PropertyDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/DelegateDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.h>
 
 #include <shard/syntax/nodes/Expressions/LinkedExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/ObjectExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/CollectionExpressionSyntax.h>
+#include <shard/syntax/nodes/Expressions/LambdaExpressionSyntax.h>
+#include <shard/syntax/nodes/Expressions/TernaryExpressionSyntax.h>
 
 #include <shard/syntax/nodes/Loops/ForStatementSyntax.h>
 #include <shard/syntax/nodes/Loops/WhileStatementSyntax.h>
 #include <shard/syntax/nodes/Loops/UntilStatementSyntax.h>
-
-#include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.h>
-#include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.h>
-#include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.h>
 
 #include <initializer_list>
 #include <vector>
@@ -72,6 +74,7 @@ namespace shard::parsing
 		shard::syntax::nodes::ConstructorDeclarationSyntax* ReadConstructorDeclaration(shard::parsing::SourceReader& reader, shard::parsing::lexical::MemberDeclarationInfo& info, shard::syntax::SyntaxNode* parent);
 		shard::syntax::nodes::MethodDeclarationSyntax* ReadMethodDeclaration(shard::parsing::SourceReader& reader, shard::parsing::lexical::MemberDeclarationInfo& info, shard::syntax::SyntaxNode* parent);
 		shard::syntax::nodes::FieldDeclarationSyntax* ReadFieldDeclaration(shard::parsing::SourceReader& reader, shard::parsing::lexical::MemberDeclarationInfo& info, shard::syntax::SyntaxNode* parent);
+		shard::syntax::nodes::DelegateDeclarationSyntax* ReadDelegateDeclaration(shard::parsing::SourceReader& reader, shard::parsing::lexical::MemberDeclarationInfo& info, shard::syntax::SyntaxNode* parent);
 		shard::syntax::nodes::PropertyDeclarationSyntax* ReadPropertyDeclaration(shard::parsing::SourceReader& reader, shard::parsing::lexical::MemberDeclarationInfo& info, shard::syntax::SyntaxNode* parent);
 		shard::syntax::nodes::AccessorDeclarationSyntax* ReadAccessorDeclaration(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
 
@@ -100,8 +103,9 @@ namespace shard::parsing
 
 		shard::syntax::nodes::CollectionExpressionSyntax* ReadCollectionExpression(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
 		shard::syntax::nodes::ObjectExpressionSyntax* ReadObjectExpression(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
+		shard::syntax::nodes::TernaryExpressionSyntax* ReadTernaryExpression(shard::parsing::SourceReader& reader, shard::syntax::nodes::ExpressionSyntax* condition, shard::syntax::SyntaxNode* parent);
 
-		//shard::syntax::nodes::ExpressionSyntax* ReadLinkedExpression(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
+		shard::syntax::nodes::LambdaExpressionSyntax* ReadLambdaExpression(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
 		shard::syntax::nodes::LinkedExpressionNode* ReadLinkedExpressionNode(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent, shard::syntax::nodes::ExpressionSyntax* lastNode, bool isFirst);
 
 		shard::syntax::nodes::ArgumentsListSyntax* ReadArgumentsList(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
@@ -109,6 +113,7 @@ namespace shard::parsing
 
 		shard::syntax::nodes::TypeSyntax* ReadType(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
 		shard::syntax::nodes::TypeSyntax* ReadIdentifierNameType(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
+		shard::syntax::nodes::TypeSyntax* ReadDelegateType(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
 		shard::syntax::nodes::TypeSyntax* ReadModifiedType(shard::parsing::SourceReader& reader, shard::syntax::nodes::TypeSyntax* type, shard::syntax::SyntaxNode* parent);
 		shard::syntax::nodes::TypeSyntax* ReadArrayType(shard::parsing::SourceReader& reader, shard::syntax::nodes::TypeSyntax* type, shard::syntax::SyntaxNode* parent);
 		shard::syntax::nodes::TypeSyntax* ReadGenericType(shard::parsing::SourceReader& reader, shard::syntax::nodes::TypeSyntax* previous, shard::syntax::SyntaxNode* parent);

@@ -48,7 +48,6 @@ ObjectInstance* ObjectInstance::FromValue(const std::wstring& value)
 	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String);
 	std::wstring* copy = new std::wstring(value);
 	instance->WritePrimitive<std::wstring>(*copy);
-	instance->DecrementReference();
 	return instance;
 }
 
@@ -150,9 +149,18 @@ void ObjectInstance::SetElement(size_t index, ObjectInstance* instance)
 	}
 }
 
+bool ObjectInstance::IsInBounds(size_t index)
+{
+	const ArrayTypeSymbol* array = static_cast<const ArrayTypeSymbol*>(Info);
+	return index >= 0 && index < array->Size;
+}
+
 void ObjectInstance::IncrementReference()
 {
 	if (!Info->IsReferenceType)
+		return;
+
+	if (ReferencesCounter == (size_t)(-1))
 		return;
 
 	ReferencesCounter += 1;
@@ -161,6 +169,9 @@ void ObjectInstance::IncrementReference()
 void ObjectInstance::DecrementReference()
 {
 	if (!Info->IsReferenceType)
+		return;
+
+	if (ReferencesCounter == 0)
 		return;
 
 	ReferencesCounter -= 1;

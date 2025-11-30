@@ -60,14 +60,33 @@ using namespace shard::parsing::semantic;
 
 static ObjectInstance* Gc_Info(MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
-	std::wcout << "Garbage collector info dump" << std::endl;
+	std::wcout << "\nGarbage collector info dump (Count : " << GarbageCollector::Heap.size() << ")" << std::endl;
 	for (ObjectInstance* reg : GarbageCollector::Heap)
 	{
 		std::wcout
-			<< L" * " << reg->Ptr
-			<< L" : " << reg->Id
-			<< L" : " << reg->Info->Name
-			<< L" : " << reg->ReferencesCounter << std::endl;
+			<< L" * | ID : " << reg->Id
+			<< L" | TYPE : '" << reg->Info->Name << "'"
+			<< L" | REFS : " << reg->ReferencesCounter
+			<< L" | PTR : " << reg->Ptr << std::endl;
+	}
+
+	return nullptr; // void
+}
+
+static ObjectInstance* Var_Info(MethodSymbol* symbol, InboundVariablesContext* arguments)
+{
+	std::wcout << "\nCall stack frame variables dump" << std::endl;
+	for (const InboundVariablesContext* context = AbstractInterpreter::CurrentFrame()->PreviousFrame->VariablesStack.top(); context != nullptr; context = context->Previous)
+	{
+		for (const auto& varReg : context->Variables)
+		{
+			ObjectInstance* reg = varReg.second;
+			std::wcout
+				<< L" * | ID : " << reg->Id
+				<< L" | TYPE : '" << reg->Info->Name << "'"
+				<< L" | REFS : " << reg->ReferencesCounter
+				<< L" | PTR : " << reg->Ptr << std::endl;
+		}
 	}
 
 	return nullptr; // void
@@ -92,8 +111,11 @@ static ObjectInstance* Print(MethodSymbol* symbol, InboundVariablesContext* argu
 		ObjectInstance* result = AbstractInterpreter::ExecuteMethod(symbol, toStringArgs);
 		if (type != SymbolTable::Primitives::String)
 		{
+#pragma warning (push)
+#pragma warning (disable: 4244)
 			std::string methodName = std::string(toString->FullName.begin(), toString->FullName.end());
 			throw std::runtime_error("Failed to evaluate ToString method of \'" + methodName + "\'. Reason: returned not a string!");
+#pragma warning (pop)
 		}
 
 		ConsoleHelper::Write(instance);
@@ -281,6 +303,16 @@ void FrameworkLoader::ResolveGlobalMethods(SemanticModel& semanticModel)
 		gcInfoMethod->Accesibility = SymbolAccesibility::Public;
 		gcInfoMethod->IsStatic = true;
 		
+		semanticModel.Table->GlobalType->Methods.push_back(gcInfoMethod);
+	}
+
+	// Var_Info
+	{
+		MethodSymbol* gcInfoMethod = new MethodSymbol(L"var_info", Var_Info);
+		gcInfoMethod->ReturnType = SymbolTable::Primitives::Void;
+		gcInfoMethod->Accesibility = SymbolAccesibility::Public;
+		gcInfoMethod->IsStatic = true;
+
 		semanticModel.Table->GlobalType->Methods.push_back(gcInfoMethod);
 	}
 

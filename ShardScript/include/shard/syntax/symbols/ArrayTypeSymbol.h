@@ -17,7 +17,7 @@ namespace shard::syntax::symbols
 		size_t Size = 0;
 		int Rank = 0;
 
-		inline ArrayTypeSymbol(TypeSymbol* underlayingType, size_t size) : TypeSymbol(L"Array", SyntaxKind::CollectionExpression), UnderlayingType(underlayingType), Size(size)
+		inline ArrayTypeSymbol(TypeSymbol* underlayingType) : TypeSymbol(L"Array", SyntaxKind::ArrayType), UnderlayingType(underlayingType)
 		{
 			IsReferenceType = true;
 		}
