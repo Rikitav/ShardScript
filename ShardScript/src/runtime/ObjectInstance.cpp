@@ -82,7 +82,7 @@ void ObjectInstance::SetField(FieldSymbol* field, ObjectInstance* instance)
 
 		ObjectInstance* oldValue = GetField(field);
 		if (oldValue != nullptr)
-			GarbageCollector::DestroyInstance(oldValue);
+			GarbageCollector::CollectInstance(oldValue);
 		
 		instance->IncrementReference();
 		WriteMemory(field->MemoryBytesOffset, sizeof(ObjectInstance*), &instance);
@@ -135,7 +135,7 @@ void ObjectInstance::SetElement(size_t index, ObjectInstance* instance)
 
 		ObjectInstance* oldValue = GetElement(index);
 		if (oldValue != nullptr)
-			GarbageCollector::DestroyInstance(oldValue);
+			GarbageCollector::CollectInstance(oldValue);
 
 		instance->IncrementReference();
 		WriteMemory(memoryOffset, sizeof(ObjectInstance*), &instance);
@@ -157,9 +157,6 @@ bool ObjectInstance::IsInBounds(size_t index)
 
 void ObjectInstance::IncrementReference()
 {
-	if (!Info->IsReferenceType)
-		return;
-
 	if (ReferencesCounter == (size_t)(-1))
 		return;
 
@@ -168,9 +165,6 @@ void ObjectInstance::IncrementReference()
 
 void ObjectInstance::DecrementReference()
 {
-	if (!Info->IsReferenceType)
-		return;
-
 	if (ReferencesCounter == 0)
 		return;
 

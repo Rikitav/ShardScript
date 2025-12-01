@@ -17,7 +17,7 @@ ObjectInstance* GarbageCollector::NullInstance = new ObjectInstance(-1, nullptr,
 ObjectInstance* GarbageCollector::GetStaticField(FieldSymbol* field)
 {
 	if (auto find = staticFields.find(field); find != staticFields.end())
-		return CopyInstance(find->second);
+		return find->second;
 
 	if (field->DefaultValueExpression != nullptr)
 	{
@@ -31,7 +31,7 @@ ObjectInstance* GarbageCollector::GetStaticField(FieldSymbol* field)
 		: NullInstance;
 
 	staticFields[field] = staticFieldInstance;
-	return CopyInstance(staticFieldInstance);
+	return staticFieldInstance;
 }
 
 void GarbageCollector::SetStaticField(FieldSymbol* field, ObjectInstance* instance)
@@ -39,10 +39,10 @@ void GarbageCollector::SetStaticField(FieldSymbol* field, ObjectInstance* instan
 	if (instance == nullptr)
 		throw std::runtime_error("requested setting static field to nullptr");
 
-	if (field->ReturnType->IsReferenceType)
+	if (auto find = staticFields.find(field); find != staticFields.end())
 	{
 		ObjectInstance* oldValue = GetStaticField(field);
-		GarbageCollector::DestroyInstance(oldValue);
+		GarbageCollector::CollectInstance(oldValue);
 	}
 
 	staticFields[field] = CopyInstance(instance);
@@ -56,19 +56,10 @@ ObjectInstance* GarbageCollector::AllocateInstance(const TypeSymbol* objectInfo)
 
 	memset(memory, 0, objectInfo->MemoryBytesSize);
 	ObjectInstance* instance = new ObjectInstance(objectsCounter++, objectInfo, memory);
-	instance->IncrementReference();
 
 	Heap.add(instance);
 	return instance;
 }
-
-/*
-ObjectInstance* GarbageCollector::CreateInstance(const TypeSymbol* objectInfo, void* ptr)
-{
-	ObjectInstance* newInstance = new ObjectInstance(objectsCounter++, objectInfo, , ptr);
-	return newInstance;
-}
-*/
 
 ObjectInstance* GarbageCollector::CopyInstance(const TypeSymbol* objectInfo, void* ptr)
 {
@@ -103,21 +94,22 @@ ObjectInstance* GarbageCollector::CopyInstance(ObjectInstance* instance)
 
 	ObjectInstance* newInstance = GarbageCollector::AllocateInstance(instance->Info);
 	newInstance->WriteMemory(0, instance->Info->MemoryBytesSize, instance->Ptr);
+	newInstance->IncrementReference();
 	return newInstance;
 }
 
-void GarbageCollector::CopyInstance(ObjectInstance* from, ObjectInstance* to)
+void GarbageCollector::CollectInstance(ObjectInstance* instance)
 {
-	if (from == nullptr)
-		throw std::runtime_error("requested copying from nullptr");
+	if (instance == nullptr)
+		throw std::runtime_error("requested destroying nullptr");
 
-	if (to == nullptr)
-		throw std::runtime_error("requested copying to nullptr");
+	if (instance == NullInstance)
+		return;
 
-	if (from->Info != to->Info)
-		throw std::runtime_error("cannot copy instance memory of different types");
+	if (instance->ReferencesCounter > 0)
+		return;
 
-	to->WriteMemory(0, to->Info->MemoryBytesSize, from->Ptr);
+	TerminateInstance(instance);
 }
 
 void GarbageCollector::DestroyInstance(ObjectInstance* instance)
@@ -128,12 +120,9 @@ void GarbageCollector::DestroyInstance(ObjectInstance* instance)
 	if (instance == NullInstance)
 		return;
 
-	if (instance->Info->IsReferenceType)
-	{
-		instance->DecrementReference();
-		if (instance->ReferencesCounter > 0)
-			return;
-	}
+	instance->DecrementReference();
+	if (instance->ReferencesCounter > 0)
+		return;
 
 	TerminateInstance(instance);
 }
@@ -150,6 +139,13 @@ void GarbageCollector::TerminateInstance(ObjectInstance* instance)
 	{
 		if (field->ReturnType->IsReferenceType)
 			DestroyInstance(instance->GetField(field));
+	}
+
+	if (instance->Info->Kind == SyntaxKind::ArrayType)
+	{
+		const ArrayTypeSymbol* array = static_cast<const ArrayTypeSymbol*>(instance->Info);
+		for (size_t i = 0; i < array->Size; i++)
+			DestroyInstance(instance->GetElement(i));
 	}
 
 	Heap.erase(instance);

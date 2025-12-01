@@ -61,40 +61,6 @@ using namespace shard::parsing::analysis;
 using namespace shard::parsing::lexical;
 using namespace shard::parsing::semantic;
 
-static const MemberAccessExpressionSyntax* ThisVariableAccessExpression = new MemberAccessExpressionSyntax(SyntaxToken(TokenType::Identifier, L"this", TextLocation(), false), nullptr, nullptr);
-
-static bool ShouldDestroyInstance(ObjectInstance* instance)
-{
-	const ExpressionSyntax* expression = instance->Source;
-	if (expression == nullptr)
-		throw std::runtime_error("instance source expression is nullptr");
-
-	if (expression == ThisVariableAccessExpression)
-		return false;
-
-	/*
-	if (expression->Kind == SyntaxKind::TernaryExpression) // e.g. `a > b ? a : b`
-		return false; // Should not, as ternary (or choosing) expression doesn't copy its operands
-	*/
-
-	if (!IsLinkedExpressionNode(expression->Kind)) // e.g. `(1 + 1)`
-		return true; // Should, because its not a store
-
-	const LinkedExpressionNode* node = static_cast<const LinkedExpressionNode*>(expression);
-	if (node->PreviousExpression == nullptr) // e.g. `VarName`
-		return node->Kind != SyntaxKind::MemberAccessExpression; // Should not, if its a store
-
-	if (!IsLinkedExpressionNode(node->PreviousExpression->Kind)) // e.g. '(1 + 1).ToString()'
-		return true; // Should, because its not a store
-
-	const LinkedExpressionNode* previous = static_cast<const LinkedExpressionNode*>(node->PreviousExpression);
-	if (previous->PreviousExpression == nullptr) // e.g. `VarName.FieldName`, `VarName.MethodName()`, `VarName[]`
-		return false; // Should not, because its a local variable
-
-	// e.g. `VarName.FieldName.MethodName()`
-	return true; // Should, becuase its a middle expression, therefore, an field/method/index
-}
-
 std::stack<CallStackFrame*> AbstractInterpreter::callStack;
 
 CallStackFrame* AbstractInterpreter::CurrentFrame()
@@ -175,7 +141,7 @@ void AbstractInterpreter::RaiseException(ObjectInstance* exceptionReg)
 	{
 		std::wstring exceptionString = exceptionReg->ReadPrimitive<std::wstring>();
 		ConsoleHelper::WriteLine(exceptionString);
-		GarbageCollector::DestroyInstance(exceptionReg);
+		GarbageCollector::CollectInstance(exceptionReg);
 		return;
 	}
 
@@ -186,14 +152,14 @@ void AbstractInterpreter::RaiseException(ObjectInstance* exceptionReg)
 	if (toStringMethodRet->Info != SymbolTable::Primitives::String)
 	{
 		ConsoleHelper::WriteLine(L"Critical error, could not invoke to string method, to get exception description. Exception type - " + exceptionType->Name);
-		GarbageCollector::DestroyInstance(exceptionReg);
+		GarbageCollector::CollectInstance(exceptionReg);
 		return;
 	}
 
 	std::wstring exceptionString = toStringMethodRet->ReadPrimitive<std::wstring>();
 	ConsoleHelper::WriteLine(exceptionString);
-	GarbageCollector::DestroyInstance(toStringMethodRet);
-	GarbageCollector::DestroyInstance(exceptionReg);
+	GarbageCollector::CollectInstance(toStringMethodRet);
+	GarbageCollector::CollectInstance(exceptionReg);
 	return;
 }
 
@@ -212,20 +178,17 @@ ObjectInstance* AbstractInterpreter::ExecuteMethod(MethodSymbol* method, Inbound
 			break;
 		}
 
-		/*
-		case MethodHandleType::AnonymousMethod:
-		{
-
-			break;
-		}
-		*/
-
 		case MethodHandleType::FunctionPointer:
 		{
 			try
 			{
-				frame->InterruptionReason = FrameInterruptionReason::ValueReturned;
-				frame->InterruptionRegister = method->FunctionPointer(method, argumentsContext);
+				ObjectInstance* retReg = method->FunctionPointer(method, argumentsContext);
+				if (retReg != nullptr)
+				{
+					frame->InterruptionReason = FrameInterruptionReason::ValueReturned;
+					frame->InterruptionRegister = retReg;
+					frame->InterruptionRegister->IncrementReference();
+				}
 			}
 			catch (const std::runtime_error& err)
 			{
@@ -246,7 +209,9 @@ ObjectInstance* AbstractInterpreter::ExecuteMethod(MethodSymbol* method, Inbound
 		}
 	}
 
+	PopContext();
 	ObjectInstance* retReg = nullptr;
+	
 	switch (frame->InterruptionReason)
 	{
 		case FrameInterruptionReason::ExceptionRaised:
@@ -258,11 +223,11 @@ ObjectInstance* AbstractInterpreter::ExecuteMethod(MethodSymbol* method, Inbound
 		case FrameInterruptionReason::ValueReturned:
 		{
 			retReg = frame->InterruptionRegister;
+			retReg->DecrementReference();
 			break;
 		}
 	}
 
-	PopContext();
 	PopFrame();
 	return retReg;
 }
@@ -369,6 +334,10 @@ ObjectInstance* AbstractInterpreter::ExecuteStatement(const StatementSyntax* sta
 ObjectInstance* AbstractInterpreter::ExecuteExpressionStatement(const ExpressionStatementSyntax* statement)
 {
 	ObjectInstance* exprReg = EvaluateExpression(statement->Expression);
+
+	if (exprReg != nullptr)
+		GarbageCollector::CollectInstance(exprReg);
+	
 	return exprReg;
 }
 
@@ -378,9 +347,7 @@ ObjectInstance* AbstractInterpreter::ExecuteVariableStatement(const VariableStat
 	ObjectInstance* assignInstance = EvaluateExpression(statement->Expression);
 	CurrentContext()->AddVariable(varName, assignInstance);
 
-	if (ShouldDestroyInstance(assignInstance))
-		GarbageCollector::DestroyInstance(assignInstance);
-
+	GarbageCollector::CollectInstance(assignInstance);
 	return assignInstance;
 }
 
@@ -416,7 +383,7 @@ ObjectInstance* AbstractInterpreter::ExecuteReturnStatement(const ReturnStatemen
 
 	if (statement->Expression != nullptr)
 	{
-		callFrame->InterruptionRegister = GarbageCollector::CopyInstance(EvaluateExpression(statement->Expression));
+		callFrame->InterruptionRegister = EvaluateExpression(statement->Expression);
 		callFrame->InterruptionRegister->IncrementReference();
 	}
 
@@ -429,7 +396,7 @@ ObjectInstance* AbstractInterpreter::ExecuteIfStatement(const IfStatementSyntax*
 	
 	ObjectInstance* conditionReg = ExecuteStatement(statement->ConditionExpression);
 	bool conditionMet = conditionReg->ReadPrimitive<bool>();
-	GarbageCollector::DestroyInstance(conditionReg);
+	GarbageCollector::CollectInstance(conditionReg);
 
 	if (conditionMet)
 	{
@@ -451,7 +418,7 @@ ObjectInstance* AbstractInterpreter::ExecuteUnlessStatement(const UnlessStatemen
 
 	ObjectInstance* conditionReg = ExecuteStatement(statement->ConditionExpression);
 	bool conditionMet = conditionReg->ReadPrimitive<bool>();
-	GarbageCollector::DestroyInstance(conditionReg);
+	GarbageCollector::CollectInstance(conditionReg);
 
 	if (!conditionMet)
 	{
@@ -477,20 +444,17 @@ ObjectInstance* AbstractInterpreter::ExecuteForLoopStatement(const ForStatementS
 	PushContext(new InboundVariablesContext(CurrentContext()));
 	CallStackFrame* frame = CurrentFrame();
 
-	bool looping = true;
 	ObjectInstance* initReg = ExecuteStatement(statement->InitializerStatement);
 
+	bool looping = true;
 	while (looping)
 	{
 		ObjectInstance* conditionReg = EvaluateExpression(statement->ConditionExpression);
-		bool conditionMet = conditionReg->ReadPrimitive<bool>();
-		GarbageCollector::DestroyInstance(conditionReg);
+		looping = conditionReg->ReadPrimitive<bool>();
+		GarbageCollector::CollectInstance(conditionReg);
 
-		if (!conditionMet)
-		{
-			looping = false;
+		if (!looping)
 			break;
-		}
 
 		ExecuteBlock(statement->StatementsBlock);
 		ExecuteStatement(statement->AfterRepeatStatement);
@@ -535,14 +499,11 @@ ObjectInstance* AbstractInterpreter::ExecuteWhileLoopStatement(const WhileStatem
 	while (looping)
 	{
 		ObjectInstance* conditionReg = EvaluateExpression(statement->ConditionExpression);
-		bool conditionMet = conditionReg->ReadPrimitive<bool>();
-		GarbageCollector::DestroyInstance(conditionReg);
+		looping = conditionReg->ReadPrimitive<bool>();
+		GarbageCollector::CollectInstance(conditionReg);
 
-		if (!conditionMet)
-		{
-			looping = false;
+		if (!looping)
 			break;
-		}
 
 		ExecuteBlock(statement->StatementsBlock);
 
@@ -586,14 +547,11 @@ ObjectInstance* AbstractInterpreter::ExecuteUntilLoopStatement(const UntilStatem
 	while (looping)
 	{
 		ObjectInstance* conditionReg = EvaluateExpression(statement->ConditionExpression);
-		bool conditionMet = conditionReg->ReadPrimitive<bool>();
-		GarbageCollector::DestroyInstance(conditionReg);
+		looping = conditionReg->ReadPrimitive<bool>();
+		GarbageCollector::CollectInstance(conditionReg);
 
-		if (conditionMet)
-		{
-			looping = false;
+		if (looping)
 			break;
-		}
 
 		ExecuteBlock(statement->StatementsBlock);
 
@@ -704,32 +662,16 @@ ObjectInstance* AbstractInterpreter::EvaluateLiteralExpression(const LiteralExpr
 	switch (expression->LiteralToken.Type)
 	{
 		case TokenType::BooleanLiteral:
-		{
-			ObjectInstance* instance = ObjectInstance::FromValue(expression->LiteralToken.Word == L"true");
-			instance->Source = expression;
-			return instance;
-		}
+			return ObjectInstance::FromValue(expression->LiteralToken.Word == L"true");
 
 		case TokenType::NumberLiteral:
-		{
-			ObjectInstance* instance = ObjectInstance::FromValue(stoi(expression->LiteralToken.Word));
-			instance->Source = expression;
-			return instance;
-		}
+			return ObjectInstance::FromValue(stoi(expression->LiteralToken.Word));
 
 		case TokenType::CharLiteral:
-		{
-			ObjectInstance* instance = ObjectInstance::FromValue(expression->LiteralToken.Word[0]);
-			instance->Source = expression;
-			return instance;
-		}
+			return ObjectInstance::FromValue(expression->LiteralToken.Word[0]);
 
 		case TokenType::StringLiteral:
-		{
-			ObjectInstance* instance = ObjectInstance::FromValue(expression->LiteralToken.Word);
-			instance->Source = expression;
-			return instance;
-		}
+			return ObjectInstance::FromValue(expression->LiteralToken.Word);
 
 		default:
 			throw std::runtime_error("Unknown constant literal type");
@@ -762,7 +704,6 @@ ObjectInstance* AbstractInterpreter::EvaluateObjectExpression(const ObjectExpres
 		ExecuteMethod(expression->CtorSymbol, arguments);
 	}
 
-	newInstance->Source = expression;
 	return newInstance;
 }
 
@@ -793,44 +734,17 @@ ObjectInstance* AbstractInterpreter::EvaluateBinaryExpression(const BinaryExpres
 	bool isFieldAccess = isMemberAccess ? IsFieldAccess(memberExpression, instanceExpression) : false;
 	bool assign = false;
 
-	ObjectInstance* instanceReg = nullptr;
-	ObjectInstance* retReg = nullptr;
+	ObjectInstance* instanceReg = isFieldAccess ? EvaluateExpression(instanceExpression) : nullptr;
+	ObjectInstance* leftReg =
+		isFieldAccess ? EvaluateMemberAccessExpression(memberExpression, instanceReg)
+		: isMemberAccess ? CurrentContext()->Find(memberExpression->IdentifierToken.Word)
+		: EvaluateExpression(expression->Left);
 
-	if (!isMemberAccess)
-	{
-		ObjectInstance* leftReg = EvaluateExpression(expression->Left);
-		ObjectInstance* rightReg = EvaluateExpression(expression->Right);
-		retReg = PrimitiveMathModule::EvaluateBinaryOperator(leftReg, expression->OperatorToken, rightReg, assign);
+	ObjectInstance* rightReg = EvaluateExpression(expression->Right);
+	ObjectInstance* retReg = PrimitiveMathModule::EvaluateBinaryOperator(leftReg, expression->OperatorToken, rightReg, assign);
 
-		if (ShouldDestroyInstance(leftReg))
-			GarbageCollector::DestroyInstance(leftReg);
-
-		if (ShouldDestroyInstance(rightReg))
-			GarbageCollector::DestroyInstance(rightReg);
-	}
-	else
-	{
-		ObjectInstance* leftReg = nullptr;
-		if (isFieldAccess)
-		{
-			instanceReg = EvaluateExpression(instanceExpression);
-			leftReg = EvaluateMemberAccessExpression(memberExpression, instanceReg);
-		}
-		else
-		{
-			leftReg = CurrentContext()->Find(memberExpression->IdentifierToken.Word);
-			leftReg->Source = memberExpression;
-		}
-
-		ObjectInstance* rightReg = EvaluateExpression(expression->Right);
-		retReg = PrimitiveMathModule::EvaluateBinaryOperator(leftReg, expression->OperatorToken, rightReg, assign);
-
-		if (ShouldDestroyInstance(leftReg))
-			GarbageCollector::DestroyInstance(leftReg);
-
-		if (ShouldDestroyInstance(rightReg))
-			GarbageCollector::DestroyInstance(rightReg);
-	}
+	GarbageCollector::CollectInstance(leftReg);
+	GarbageCollector::CollectInstance(rightReg);
 
 	if (assign)
 	{
@@ -838,10 +752,7 @@ ObjectInstance* AbstractInterpreter::EvaluateBinaryExpression(const BinaryExpres
 		if (isFieldAccess)
 		{
 			ExecuteInstanceSetter(instanceReg, memberExpression, retReg);
-			if (ShouldDestroyInstance(instanceReg))
-				GarbageCollector::DestroyInstance(instanceReg);
-
-			retReg->Source = expression;
+			GarbageCollector::CollectInstance(instanceReg);
 			return retReg;
 		}
 
@@ -849,17 +760,13 @@ ObjectInstance* AbstractInterpreter::EvaluateBinaryExpression(const BinaryExpres
 		if (isMemberAccess)
 		{
 			std::wstring varName = memberExpression->IdentifierToken.Word;
-			retReg = CurrentContext()->SetVariable(varName, retReg);
-
-			retReg->Source = expression;
-			return retReg;
+			return CurrentContext()->SetVariable(varName, retReg);
 		}
 
 		// error, not a member access
 		throw std::runtime_error("binary expression tried to assign value to inaccesible register");
 	}
 
-	retReg->Source = expression;
 	return retReg;
 }
 
@@ -875,10 +782,7 @@ ObjectInstance* AbstractInterpreter::EvaluateAssignExpression(const BinaryExpres
 		ObjectInstance* rightReg = EvaluateExpression(expression->Right);
 		ExecuteInstanceSetter(instanceReg, memberExpression, rightReg);
 
-		if (ShouldDestroyInstance(instanceReg))
-			GarbageCollector::DestroyInstance(instanceReg);
-
-		rightReg->Source = expression;
+		GarbageCollector::CollectInstance(instanceReg);
 		return rightReg;
 	}
 	else
@@ -890,7 +794,6 @@ ObjectInstance* AbstractInterpreter::EvaluateAssignExpression(const BinaryExpres
 		ObjectInstance* rightReg = EvaluateExpression(expression->Right);
 
 		current->SetVariable(varName, rightReg);
-		rightReg->Source = expression;
 		return rightReg;
 	}
 }
@@ -903,72 +806,14 @@ ObjectInstance* AbstractInterpreter::EvaluateUnaryExpression(const UnaryExpressi
 	bool isMemberAccess = IsMemberAccess(expression->Expression, memberExpression);
 	bool isFieldAccess = isMemberAccess ? IsFieldAccess(memberExpression, instanceExpression) : false;
 
-	ObjectInstance* instanceReg = nullptr;
-	ObjectInstance* exprReg = nullptr;
+	ObjectInstance* instanceReg = isFieldAccess ? EvaluateExpression(instanceExpression) : nullptr;
+	ObjectInstance* exprReg =
+		isFieldAccess ? EvaluateMemberAccessExpression(memberExpression, instanceReg)
+		: isMemberAccess ? CurrentContext()->Find(memberExpression->IdentifierToken.Word)
+		: EvaluateExpression(expression->Expression);
 
-	if (isFieldAccess)
-	{
-		instanceReg = EvaluateExpression(instanceExpression);
-		exprReg = EvaluateMemberAccessExpression(memberExpression, instanceReg);
-	}
-	else
-	{
-		if (isMemberAccess)
-		{
-			exprReg = CurrentContext()->Find(memberExpression->IdentifierToken.Word);
-			exprReg->Source = memberExpression;
-		}
-		else
-		{
-			exprReg = EvaluateExpression(expression->Expression);
-			exprReg->Source = expression->Expression;
-		}
-	}
-
-	ObjectInstance* assignReg = exprReg; // Operator will change this instance if it need to assign different from returned one instance
-	ObjectInstance* retReg = PrimitiveMathModule::EvaluateUnaryOperator(assignReg, expression->OperatorToken, expression->IsRightDetermined);
-
-	if (assignReg == exprReg)
-	{
-		// No need to assign
-		if (isFieldAccess)
-		{
-			if (ShouldDestroyInstance(instanceReg))
-				GarbageCollector::DestroyInstance(instanceReg);
-		}
-
-		if (!isMemberAccess)
-		{
-			if (ShouldDestroyInstance(exprReg))
-				GarbageCollector::DestroyInstance(exprReg);
-		}
-
-		retReg->Source = expression;
-		return retReg;
-	}
-
-	// Checking if is field access
-	if (isFieldAccess)
-	{
-		ExecuteInstanceSetter(instanceReg, memberExpression, assignReg);
-		if (ShouldDestroyInstance(instanceReg))
-			GarbageCollector::DestroyInstance(instanceReg);
-
-		return retReg;
-	}
-
-	// Checking if is variable access
-	if (isMemberAccess)
-	{
-		std::wstring varName = memberExpression->IdentifierToken.Word;
-		CurrentContext()->SetVariable(varName, assignReg);
-		return retReg;
-	}
-
-	// error, not a member access
-	//throw std::runtime_error("unary expression tried to assign value to inaccesible register");
-
-	retReg->Source = expression;
+	ObjectInstance* retReg = PrimitiveMathModule::EvaluateUnaryOperator(exprReg, expression->OperatorToken, expression->IsRightDetermined);
+	GarbageCollector::CollectInstance(exprReg);
 	return retReg;
 }
 
@@ -985,31 +830,25 @@ ObjectInstance* AbstractInterpreter::EvaluateCollectionExpression(const Collecti
 		instance->SetElement(i, valueInstance);
 	}
 
-	instance->Source = expression;
 	return instance;
 }
 
 ObjectInstance* AbstractInterpreter::EvaluateLambdaExpression(const LambdaExpressionSyntax* expression)
 {
 	ObjectInstance* retReg = GarbageCollector::AllocateInstance(expression->Symbol);
-	retReg->Source = expression;
 	return retReg;
 }
 
-ObjectInstance* AbstractInterpreter::EvaluateTernaryExpression(const shard::syntax::nodes::TernaryExpressionSyntax* expression)
+ObjectInstance* AbstractInterpreter::EvaluateTernaryExpression(const TernaryExpressionSyntax* expression)
 {
 	PushContext(new InboundVariablesContext(CurrentContext()));
 
 	ObjectInstance* conditionReg = EvaluateExpression(expression->Condition);
 	bool conditionMet = conditionReg->ReadPrimitive<bool>();
-
-	if (ShouldDestroyInstance(conditionReg))
-		GarbageCollector::DestroyInstance(conditionReg);
+	GarbageCollector::CollectInstance(conditionReg);
 
 	ExpressionSyntax* retExpr = conditionMet ? expression->Left : expression->Right;
 	ObjectInstance* retReg = EvaluateExpression(retExpr);
-
-	//retReg->Source = expression;
 	return retReg;
 }
 
@@ -1019,7 +858,6 @@ ObjectInstance* AbstractInterpreter::EvaluateMemberAccessExpression(const Member
 	if (expression->DelegateSymbol != nullptr)
 	{
 		ObjectInstance* instance = GarbageCollector::AllocateInstance(expression->DelegateSymbol);
-		instance->Source = expression;
 		return instance;
 	}
 
@@ -1028,7 +866,6 @@ ObjectInstance* AbstractInterpreter::EvaluateMemberAccessExpression(const Member
 		if (expression->PreviousExpression == nullptr)
 		{
 			ObjectInstance* varReg = CurrentContext()->Find(expression->IdentifierToken.Word);
-			varReg->Source = expression;
 			return varReg;
 		}
 
@@ -1049,7 +886,6 @@ ObjectInstance* AbstractInterpreter::EvaluateMemberAccessExpression(const Member
 				getterArgs->AddVariable(L"this", prevInstance);
 
 			ObjectInstance* retReg = ExecuteMethod(property->Getter->Method, getterArgs);
-			retReg->Source = expression;
 			return retReg;
 		}
 	}
@@ -1060,13 +896,11 @@ ObjectInstance* AbstractInterpreter::EvaluateMemberAccessExpression(const Member
 		if (field->IsStatic)
 		{
 			ObjectInstance* retReg = GarbageCollector::GetStaticField(field);
-			retReg->Source = expression;
 			return retReg;
 		}
 
 		// Instance field access
 		ObjectInstance* retReg = prevInstance->GetField(field);
-		retReg->Source = expression;
 		return retReg;
 	}
 
@@ -1089,21 +923,15 @@ ObjectInstance* AbstractInterpreter::EvaluateInvokationExpression(const Invokati
 		if (expression->PreviousExpression == nullptr)
 		{
 			prevInstance = CurrentContext()->Find(L"this");
-			prevInstance->Source = ThisVariableAccessExpression;
 		}
 		else
 		{
 			prevInstance = EvaluateExpression(expression->PreviousExpression);
-			prevInstance->Source = expression->PreviousExpression;
 		}
 	}
 
 	InboundVariablesContext* arguments = CreateArgumentsContext(expression->ArgumentsList->Arguments, method, prevInstance);
 	ObjectInstance* retReg = ExecuteMethod(method, arguments);
-
-	if (retReg != nullptr)
-		retReg->Source = expression;
-	
 	return retReg;
 }
 
@@ -1115,8 +943,6 @@ ObjectInstance* AbstractInterpreter::EvaluateIndexatorExpression(const Indexator
 	MethodSymbol* method = expression->Symbol;
 	InboundVariablesContext* arguments = CreateArgumentsContext(expression->IndexatorList->Arguments, method, prevInstance);
 	ObjectInstance* retReg = ExecuteMethod(method, arguments);
-
-	retReg->Source = expression;
 	return retReg;
 }
 
@@ -1143,9 +969,7 @@ InboundVariablesContext* AbstractInterpreter::CreateArgumentsContext(std::vector
 
 		std::wstring argName = symbol->Parameters.at(i)->Name;
 		argumentsContext->AddVariable(argName, argInstance);
-
-		if (ShouldDestroyInstance(argInstance))
-			GarbageCollector::DestroyInstance(argInstance);
+		GarbageCollector::CollectInstance(argInstance);
 	}
 
 	return argumentsContext;

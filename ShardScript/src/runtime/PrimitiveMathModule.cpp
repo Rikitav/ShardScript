@@ -304,16 +304,16 @@ ObjectInstance* PrimitiveMathModule::EvaluateUnaryOperator(ObjectInstance*& sour
 	{
 		case TokenType::IncrementOperator:
 		{
-			ObjectInstance* newInstance = ObjectInstance::FromValue(data + 1);
-			sourceInstance = newInstance;
-			return rightDetermined ? ObjectInstance::FromValue(data) : newInstance;
+			int newValue = data + 1;
+			sourceInstance->WritePrimitive<int>(newValue);
+			return rightDetermined ? ObjectInstance::FromValue(data) : sourceInstance;
 		}
 
 		case TokenType::DecrementOperator:
 		{
-			ObjectInstance* newInstance = ObjectInstance::FromValue(data - 1);
-			sourceInstance = newInstance;
-			return rightDetermined ? ObjectInstance::FromValue(data) : newInstance;
+			int newValue = data + 1;
+			sourceInstance->WritePrimitive<int>(newValue);
+			return rightDetermined ? ObjectInstance::FromValue(data) : sourceInstance;
 		}
 
 		case TokenType::SubOperator:

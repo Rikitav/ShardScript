@@ -22,6 +22,7 @@ ObjectInstance* InboundVariablesContext::SetVariable(const std::wstring name, Ob
 	if (search != Variables.end())
 	{
 		GarbageCollector::DestroyInstance(search->second);
+
 		Variables[name] = GarbageCollector::CopyInstance(instance);
 		return instance;
 	}
@@ -58,9 +59,6 @@ ObjectInstance* InboundVariablesContext::Find(const std::wstring& name)
 
 InboundVariablesContext::~InboundVariablesContext()
 {
-	if (Variables.empty())
-		return;
-
 	for (auto const& instance : Variables)
 		GarbageCollector::DestroyInstance(instance.second);
 

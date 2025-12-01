@@ -93,11 +93,10 @@ namespace shard::runtime
         static void SetStaticField(shard::syntax::symbols::FieldSymbol* field, ObjectInstance* instance);
 
 		static ObjectInstance* AllocateInstance(const shard::syntax::symbols::TypeSymbol* objectInfo);
-        //static ObjectInstance* CreateInstance(const shard::syntax::symbols::TypeSymbol* objectInfo, void* ptr);
         static ObjectInstance* CopyInstance(const shard::syntax::symbols::TypeSymbol* objectInfo, void* ptr);
         static ObjectInstance* CopyInstance(ObjectInstance* instance);
-        static void CopyInstance(ObjectInstance* from, ObjectInstance* to);
 		
+        static void CollectInstance(ObjectInstance* instance);
         static void DestroyInstance(ObjectInstance* instance);
         static void TerminateInstance(ObjectInstance* instance);
 		static void Terminate();

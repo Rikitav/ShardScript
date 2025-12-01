@@ -419,7 +419,7 @@ void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticMode
 				if (result != nullptr)
 				{
 					ConsoleHelper::Write(result);
-					GarbageCollector::DestroyInstance(result);
+					GarbageCollector::CollectInstance(result);
 				}
 
 				MoveToNewLineIfNeeded();
@@ -464,7 +464,7 @@ void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticMode
 				if (result != nullptr)
 				{
 					ConsoleHelper::Write(result);
-					GarbageCollector::DestroyInstance(result);
+					GarbageCollector::CollectInstance(result);
 				}
 
 				MoveToNewLineIfNeeded();

@@ -1,6 +1,8 @@
 #pragma once
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/FieldSymbol.h>
+
+#include <stack>
 #include <string>
 
 namespace shard::runtime
@@ -12,8 +14,6 @@ namespace shard::runtime
 		const shard::syntax::symbols::TypeSymbol* Info;
 		const bool IsNullable = false;
 
-		//bool IsTemporaryInstance = false;
-		const shard::syntax::nodes::ExpressionSyntax* Source = nullptr;
 		size_t ReferencesCounter;
 		void* Ptr;
 
