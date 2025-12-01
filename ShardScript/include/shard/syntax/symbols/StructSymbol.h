@@ -1,13 +1,17 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/MethodSymbol.h>
+
 #include <shard/syntax/SyntaxKind.h>
+
 #include <string>
 #include <vector>
 
 namespace shard::syntax::symbols
 {
-	class StructSymbol : public TypeSymbol
+	class SHARD_API StructSymbol : public TypeSymbol
 	{
 	public:
 		std::vector<MethodSymbol*> Constructors;
@@ -18,7 +22,9 @@ namespace shard::syntax::symbols
 			IsValueType = true;
 		}
 
-		inline ~StructSymbol() override
+		inline StructSymbol(const StructSymbol& other) = delete;
+
+		inline virtual ~StructSymbol() override
 		{
 			for (MethodSymbol* ctor : Constructors)
 				delete ctor;

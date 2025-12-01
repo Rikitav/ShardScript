@@ -1,4 +1,5 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
 
 namespace shard::syntax
 {

@@ -1,4 +1,6 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/parsing/lexical/MemberDeclarationInfo.h>
 
 #include <shard/syntax/nodes/MemberDeclarationSyntax.h>
@@ -10,7 +12,7 @@
 
 namespace shard::syntax::nodes
 {
-	class DelegateDeclarationSyntax : public MemberDeclarationSyntax
+	class SHARD_API DelegateDeclarationSyntax : public MemberDeclarationSyntax
 	{
 	public:
 		SyntaxToken DelegateToken;
@@ -21,8 +23,7 @@ namespace shard::syntax::nodes
 		inline DelegateDeclarationSyntax(const SyntaxNode* parent)
 			: MemberDeclarationSyntax(SyntaxKind::DelegateDeclaration, parent) { }
 
-		inline DelegateDeclarationSyntax(const DelegateDeclarationSyntax& other)
-			: MemberDeclarationSyntax(other), DelegateToken(other.DelegateToken), Semicolon(other.Semicolon), Params(other.Params) { }
+		inline DelegateDeclarationSyntax(const DelegateDeclarationSyntax& other) = delete;
 
 		inline DelegateDeclarationSyntax(shard::parsing::lexical::MemberDeclarationInfo& info, const SyntaxNode* parent) : MemberDeclarationSyntax(SyntaxKind::DelegateDeclaration, parent)
 		{
@@ -34,6 +35,9 @@ namespace shard::syntax::nodes
 
 		inline virtual ~DelegateDeclarationSyntax()
 		{
+			if (ReturnType != nullptr)
+				delete ReturnType;
+
 			if (Params != nullptr)
 				delete Params;
 		}

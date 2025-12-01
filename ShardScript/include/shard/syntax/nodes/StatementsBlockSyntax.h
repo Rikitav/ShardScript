@@ -1,13 +1,17 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/syntax/SyntaxNode.h>
 #include <shard/syntax/SyntaxKind.h>
+
 #include <shard/syntax/nodes/BodyDeclarationSyntax.h>
 #include <shard/syntax/nodes/StatementSyntax.h>
+
 #include <vector>
 
 namespace shard::syntax::nodes
 {
-	class StatementsBlockSyntax : public BodyDeclarationSyntax
+	class SHARD_API StatementsBlockSyntax : public BodyDeclarationSyntax
 	{
 	public:
 		std::vector<StatementSyntax*> Statements;
@@ -15,16 +19,12 @@ namespace shard::syntax::nodes
 		inline StatementsBlockSyntax(const SyntaxNode* parent)
 			: BodyDeclarationSyntax(SyntaxKind::StatementsBlock, parent) { }
 
-		inline StatementsBlockSyntax(const StatementsBlockSyntax& other)
-			: BodyDeclarationSyntax(other), Statements(other.Statements) { }
+		inline StatementsBlockSyntax(const StatementsBlockSyntax& other) = delete;
 
 		inline virtual ~StatementsBlockSyntax()
 		{
 			for (const StatementSyntax* statement : Statements)
-			{
-				statement->~StatementSyntax();
 				delete statement;
-			}
 		}
 	};
 }

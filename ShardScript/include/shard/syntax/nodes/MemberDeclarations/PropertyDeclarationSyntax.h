@@ -1,4 +1,6 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxToken.h>
 #include <shard/syntax/SyntaxNode.h>
@@ -14,7 +16,7 @@
 
 namespace shard::syntax::nodes
 {
-	class PropertyDeclarationSyntax : public MemberDeclarationSyntax
+	class SHARD_API PropertyDeclarationSyntax : public MemberDeclarationSyntax
 	{
 	public:
 		SyntaxToken ReturnTypeToken;
@@ -39,6 +41,8 @@ namespace shard::syntax::nodes
 			IdentifierToken = info.Identifier;
 			ReturnType = info.ReturnType;
 		}
+
+		inline PropertyDeclarationSyntax(const PropertyDeclarationSyntax& other) = delete;
 
 		inline virtual ~PropertyDeclarationSyntax()
 		{

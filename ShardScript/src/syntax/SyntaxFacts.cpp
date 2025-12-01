@@ -3,7 +3,7 @@
 
 using namespace shard::syntax;
 
-int GetOperatorPrecendence(TokenType type)
+static int GetOperatorPrecendence(TokenType type)
 {
 	switch (type)
 	{
@@ -183,7 +183,7 @@ bool IsLeftUnaryBooleanOperator(shard::syntax::TokenType type)
 	return false;
 }
 
-bool IsUnaryOperator(shard::syntax::TokenType type)
+static bool IsUnaryOperator(shard::syntax::TokenType type)
 {
 	if (IsLeftUnaryOperator(type))
 		return true;
@@ -194,7 +194,7 @@ bool IsUnaryOperator(shard::syntax::TokenType type)
 	return false;
 }
 
-bool IsRightUnaryOperator(TokenType type)
+static bool IsRightUnaryOperator(TokenType type)
 {
 	if (IsRightUnaryArithmeticOperator(type))
 		return true;
@@ -205,7 +205,7 @@ bool IsRightUnaryOperator(TokenType type)
 	return false;
 }
 
-bool IsOperator(TokenType type)
+static bool IsOperator(TokenType type)
 {
 	if (type == TokenType::AssignOperator)
 		return true;
@@ -395,6 +395,7 @@ bool IsKeyword(TokenType type)
 	return false;
 }
 
+/*
 bool IsKeywordHasExpression(TokenType type)
 {
 	switch (type)
@@ -417,6 +418,7 @@ bool IsMethodInvokationExpression(TokenType current, TokenType peek)
 
 	return false;
 }
+*/
 
 bool IsPunctuation(TokenType type)
 {

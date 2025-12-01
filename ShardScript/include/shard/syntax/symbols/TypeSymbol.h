@@ -1,4 +1,6 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/syntax/SyntaxSymbol.h>
 #include <shard/syntax/SyntaxKind.h>
 
@@ -11,14 +13,14 @@ namespace shard::syntax::symbols
     class FieldSymbol;
     class PropertySymbol;
 
-    enum class TypeLayoutingState
+    enum class SHARD_API TypeLayoutingState
     {
         Unvisited,
         Visiting,
         Visited
     };
 
-	class TypeSymbol : public SyntaxSymbol
+	class SHARD_API TypeSymbol : public SyntaxSymbol
 	{
 	public:
         TypeSymbol* BaseType = nullptr;
@@ -43,6 +45,8 @@ namespace shard::syntax::symbols
         inline TypeSymbol(const std::wstring& name, const SyntaxKind kind)
             : SyntaxSymbol(name, kind) { }
 
+        inline TypeSymbol(const TypeSymbol& other) = delete;
+
         inline ~TypeSymbol() override
         {
 #pragma warning (push)
@@ -55,6 +59,12 @@ namespace shard::syntax::symbols
 
             for (PropertySymbol* propertySymbol : Properties)
                 delete propertySymbol;
+
+            for (MethodSymbol* indexatorSymbol : Indexators)
+                delete indexatorSymbol;
+
+            for (MethodSymbol* ctorSymbol : Constructors)
+                delete ctorSymbol;
 #pragma warning (pop)
 
             if (BaseType != nullptr)

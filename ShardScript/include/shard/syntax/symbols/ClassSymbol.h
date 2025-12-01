@@ -1,13 +1,17 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/MethodSymbol.h>
+
 #include <shard/syntax/SyntaxKind.h>
+
 #include <string>
 #include <vector>
 
 namespace shard::syntax::symbols
 {
-	class ClassSymbol : public TypeSymbol
+	class SHARD_API ClassSymbol : public TypeSymbol
 	{
 	public:
 		std::vector<MethodSymbol*> Constructors;
@@ -18,7 +22,9 @@ namespace shard::syntax::symbols
 			IsReferenceType = true;
 		}
 
-		inline ~ClassSymbol() override
+		inline ClassSymbol(const ClassSymbol& other) = delete;
+
+		inline virtual ~ClassSymbol() override
 		{
 			for (MethodSymbol* ctor : Constructors)
 				delete ctor;

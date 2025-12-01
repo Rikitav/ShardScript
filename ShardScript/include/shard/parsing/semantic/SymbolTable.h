@@ -1,4 +1,6 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/parsing/semantic/SemanticScope.h>
 #include <shard/syntax/SyntaxSymbol.h>
 #include <shard/syntax/SyntaxNode.h>
@@ -15,7 +17,7 @@
 
 namespace shard::parsing::semantic
 {
-    class SymbolTable
+    class SHARD_API SymbolTable
     {
         inline static const std::wstring GlobalTypeName = L"__GLOBAL__";
         std::unordered_map<shard::syntax::SyntaxNode*, shard::syntax::SyntaxSymbol*> nodeToSymbolMap;

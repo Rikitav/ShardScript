@@ -1,4 +1,6 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/syntax/SyntaxNode.h>
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxToken.h>
@@ -6,7 +8,7 @@
 
 namespace shard::syntax::nodes
 {
-	class UnaryExpressionSyntax : public ExpressionSyntax
+	class SHARD_API UnaryExpressionSyntax : public ExpressionSyntax
 	{
 	public:
 		const SyntaxToken OperatorToken;
@@ -16,11 +18,10 @@ namespace shard::syntax::nodes
 		inline UnaryExpressionSyntax(const SyntaxToken operatorToken, const bool isRightDetermined, const SyntaxNode* parent)
 			: ExpressionSyntax(SyntaxKind::UnaryExpression, parent), OperatorToken(operatorToken), IsRightDetermined(isRightDetermined) { }
 
-		UnaryExpressionSyntax(const UnaryExpressionSyntax&) = delete;
+		inline UnaryExpressionSyntax(const UnaryExpressionSyntax&) = delete;
 
 		inline virtual ~UnaryExpressionSyntax()
 		{
-			Expression->~ExpressionSyntax();
 			delete Expression;
 		}
 	};

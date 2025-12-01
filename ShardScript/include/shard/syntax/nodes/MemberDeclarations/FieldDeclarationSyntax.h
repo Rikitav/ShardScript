@@ -1,4 +1,6 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxToken.h>
 #include <shard/syntax/SyntaxNode.h>
@@ -13,7 +15,7 @@
 
 namespace shard::syntax::nodes
 {
-	class FieldDeclarationSyntax : public MemberDeclarationSyntax
+	class SHARD_API FieldDeclarationSyntax : public MemberDeclarationSyntax
 	{
 	public:
 		SyntaxToken ReturnTypeToken;
@@ -33,23 +35,15 @@ namespace shard::syntax::nodes
 			ReturnType = info.ReturnType;
 		}
 
-		inline FieldDeclarationSyntax(const FieldDeclarationSyntax& other) : MemberDeclarationSyntax(other),
-			ReturnTypeToken(other.ReturnTypeToken), SemicolonToken(other.SemicolonToken), InitializerAssignToken(other.InitializerAssignToken),
-			InitializerExpression(other.InitializerExpression), ReturnType(other.ReturnType) { }
+		inline FieldDeclarationSyntax(const FieldDeclarationSyntax& other) = delete;
 
 		inline virtual ~FieldDeclarationSyntax()
 		{
 			if (InitializerExpression != nullptr)
-			{
-				InitializerExpression->~ExpressionSyntax();
 				delete InitializerExpression;
-			}
 
 			if (ReturnType != nullptr)
-			{
-				ReturnType->~TypeSyntax();
 				delete ReturnType;
-			}
 		}
 	};
 }

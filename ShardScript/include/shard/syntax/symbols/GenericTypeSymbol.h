@@ -1,4 +1,6 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/FieldSymbol.h>
 #include <shard/syntax/symbols/MethodSymbol.h>
@@ -10,7 +12,7 @@
 
 namespace shard::syntax::symbols
 {
-	class GenericTypeSymbol : public TypeSymbol
+	class SHARD_API GenericTypeSymbol : public TypeSymbol
 	{
 	public:
 		TypeSymbol* UnderlayingType = nullptr;
@@ -21,7 +23,12 @@ namespace shard::syntax::symbols
 			IsReferenceType = underlayingType->IsReferenceType;
 		}
 
-		inline ~GenericTypeSymbol() = default;
+		inline GenericTypeSymbol(const GenericTypeSymbol& other) = delete;
+
+		inline virtual ~GenericTypeSymbol()
+		{
+
+		}
 
 		MethodSymbol* FindMethod(std::wstring& name, std::vector<TypeSymbol*> parameterTypes) override;
 		MethodSymbol* FindIndexator(std::vector<TypeSymbol*> parameterTypes) override;

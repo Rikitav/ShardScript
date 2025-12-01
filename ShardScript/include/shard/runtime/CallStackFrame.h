@@ -1,4 +1,6 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/runtime/InboundVariablesContext.h>
 #include <shard/runtime/ObjectInstance.h>
 #include <shard/runtime/GarbageCollector.h>
@@ -8,7 +10,7 @@
 
 namespace shard::runtime
 {
-	enum class FrameInterruptionReason
+	enum class SHARD_API FrameInterruptionReason
 	{
 		None,
 		ValueReturned,
@@ -17,7 +19,7 @@ namespace shard::runtime
 		LoopContinue,
 	};
 
-	class CallStackFrame
+	class SHARD_API CallStackFrame
 	{
 	public:
 		const shard::syntax::symbols::MethodSymbol* Method;
@@ -30,7 +32,7 @@ namespace shard::runtime
 		inline CallStackFrame(const shard::syntax::symbols::MethodSymbol* method, CallStackFrame* previousFrame)
 			: Method(method), PreviousFrame(previousFrame) { }
 
-		inline bool interrupted()
+		inline bool interrupted() const
 		{
 			return InterruptionReason != FrameInterruptionReason::None;
 		}

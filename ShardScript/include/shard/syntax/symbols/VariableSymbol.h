@@ -1,14 +1,18 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxSymbol.h>
 #include <shard/syntax/SymbolAccesibility.h>
+
 #include <shard/syntax/nodes/ExpressionSyntax.h>
 #include <shard/syntax/symbols/TypeSymbol.h>
+
 #include <string>
 
 namespace shard::syntax::symbols
 {
-	class VariableSymbol : public SyntaxSymbol
+	class SHARD_API VariableSymbol : public SyntaxSymbol
 	{
 	public:
 		const TypeSymbol* Type = nullptr;
@@ -20,7 +24,9 @@ namespace shard::syntax::symbols
 			Accesibility = SymbolAccesibility::Public;
 		}
 
-		inline ~VariableSymbol() override
+		inline VariableSymbol(const VariableSymbol& other) = delete;
+
+		inline virtual ~VariableSymbol() override
 		{
 			if (Declaration == nullptr)
 			{

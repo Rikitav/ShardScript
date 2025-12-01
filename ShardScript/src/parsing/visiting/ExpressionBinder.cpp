@@ -671,13 +671,13 @@ void ExpressionBinder::VisitCollectionExpression(CollectionExpressionSyntax* nod
 
 void ExpressionBinder::VisitLambdaExpression(LambdaExpressionSyntax* node)
 {
-	MethodSymbol* anonymousMethod = new MethodSymbol(L"", node->Body);
+	MethodSymbol* anonymousMethod = new MethodSymbol(L"Lambda", node->Body);
 	anonymousMethod->HandleType = MethodHandleType::AnonymousMethod;
 	anonymousMethod->Accesibility = SymbolAccesibility::Public;
 	anonymousMethod->ReturnType = SymbolTable::Primitives::Any;
 	anonymousMethod->IsStatic = true;
 
-	DelegateTypeSymbol* delegate = new DelegateTypeSymbol();
+	DelegateTypeSymbol* delegate = new DelegateTypeSymbol(L"Lambda");
 	delegate->Accesibility = SymbolAccesibility::Public;
 	delegate->AnonymousSymbol = anonymousMethod;
 	node->Symbol = delegate;

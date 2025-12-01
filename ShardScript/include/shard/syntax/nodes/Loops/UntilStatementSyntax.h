@@ -1,14 +1,17 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/syntax/nodes/StatementSyntax.h>
 #include <shard/syntax/nodes/ExpressionSyntax.h>
 #include <shard/syntax/nodes/StatementsBlockSyntax.h>
+
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxToken.h>
 #include <shard/syntax/SyntaxNode.h>
 
 namespace shard::syntax::nodes
 {
-	class UntilStatementSyntax : public KeywordStatementSyntax
+	class SHARD_API UntilStatementSyntax : public KeywordStatementSyntax
 	{
 	public:
 		SyntaxToken OpenCurlToken;
@@ -20,19 +23,15 @@ namespace shard::syntax::nodes
 		inline UntilStatementSyntax(const SyntaxNode* parent)
 			: KeywordStatementSyntax(SyntaxKind::UntilStatement, parent) { }
 
+		inline UntilStatementSyntax(const UntilStatementSyntax&) = delete;
+
 		inline virtual ~UntilStatementSyntax()
 		{
 			if (ConditionExpression != nullptr)
-			{
-				ConditionExpression->~ExpressionSyntax();
 				delete ConditionExpression;
-			}
 
 			if (StatementsBlock != nullptr)
-			{
-				StatementsBlock->~StatementsBlockSyntax();
 				delete StatementsBlock;
-			}
 		}
 	};
 }

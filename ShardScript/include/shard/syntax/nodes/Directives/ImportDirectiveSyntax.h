@@ -1,4 +1,6 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/syntax/SyntaxNode.h>
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxToken.h>
@@ -8,7 +10,7 @@
 
 namespace shard::syntax::nodes
 {
-	class ImportDirectiveSyntax : public SyntaxNode
+	class SHARD_API ImportDirectiveSyntax : public SyntaxNode
 	{
 	public:
 		SyntaxToken FromToken;

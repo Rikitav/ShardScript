@@ -1,11 +1,14 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SymbolAccesibility.h>
+
 #include <string>
 
 namespace shard::syntax
 {
-	class SyntaxSymbol
+	class SHARD_API SyntaxSymbol
 	{
 		inline static int counter = 0;
 
@@ -19,6 +22,8 @@ namespace shard::syntax
 
 		inline SyntaxSymbol(const std::wstring& name, const SyntaxKind kind)
 			: TypeCode(counter++), Name(name), Kind(kind) { }
+
+		inline SyntaxSymbol(const SyntaxSymbol& other) = delete;
 
 		inline virtual ~SyntaxSymbol()
 		{

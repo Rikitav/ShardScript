@@ -1,10 +1,12 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/runtime/ObjectInstance.h>
 #include <string>
 
 namespace shard::runtime
 {
-	class ConsoleHelper
+	class SHARD_API ConsoleHelper
 	{
 	public:
 		static void Write(ObjectInstance* instance);

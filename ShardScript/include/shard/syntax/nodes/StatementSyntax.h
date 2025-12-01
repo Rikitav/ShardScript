@@ -1,11 +1,13 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/syntax/SyntaxNode.h>
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxToken.h>
 
 namespace shard::syntax::nodes
 {
-	class StatementSyntax : public SyntaxNode
+	class SHARD_API StatementSyntax : public SyntaxNode
 	{
 	public:
 		SyntaxToken SemicolonToken;
@@ -18,8 +20,7 @@ namespace shard::syntax::nodes
 			*/
 		}
 
-		inline StatementSyntax(const StatementSyntax& other)
-			: SyntaxNode(other), SemicolonToken(other.SemicolonToken) { }
+		inline StatementSyntax(const StatementSyntax& other) = delete;
 
 		inline virtual ~StatementSyntax()
 		{
@@ -27,7 +28,7 @@ namespace shard::syntax::nodes
 		}
 	};
 
-	class KeywordStatementSyntax : public StatementSyntax
+	class SHARD_API KeywordStatementSyntax : public StatementSyntax
 	{
 	public:
 		SyntaxToken KeywordToken;
@@ -40,8 +41,7 @@ namespace shard::syntax::nodes
 			*/
 		}
 
-		inline KeywordStatementSyntax(const KeywordStatementSyntax& other)
-			: StatementSyntax(other), KeywordToken(other.KeywordToken) { }
+		inline KeywordStatementSyntax(const KeywordStatementSyntax& other) = delete;
 
 		inline virtual ~KeywordStatementSyntax()
 		{

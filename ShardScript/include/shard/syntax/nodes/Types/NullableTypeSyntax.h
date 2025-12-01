@@ -1,12 +1,15 @@
 #pragma once
-#include <shard/syntax/nodes/TypeSyntax.h>
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/syntax/SyntaxToken.h>
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxNode.h>
 
+#include <shard/syntax/nodes/TypeSyntax.h>
+
 namespace shard::syntax::nodes
 {
-	class NullableTypeSyntax : public TypeSyntax
+	class SHARD_API NullableTypeSyntax : public TypeSyntax
 	{
 	public:
 		TypeSyntax* UnderlayingType = nullptr;
@@ -14,6 +17,14 @@ namespace shard::syntax::nodes
 
 		inline NullableTypeSyntax(TypeSyntax* underlaying, const SyntaxNode* parent)
 			: TypeSyntax(SyntaxKind::NullableType, parent), UnderlayingType(underlaying) { }
+
+		inline NullableTypeSyntax(const NullableTypeSyntax& other) = delete;
+
+		inline virtual ~NullableTypeSyntax()
+		{
+			if (UnderlayingType != nullptr)
+				delete UnderlayingType;
+		}
 
 		std::wstring ToString() override;
 	};

@@ -1,11 +1,14 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/syntax/SyntaxToken.h>
 #include <shard/runtime/ObjectInstance.h>
+
 #include <string>
 
 namespace shard::runtime
 {
-	class PrimitiveMathModule
+	class SHARD_API PrimitiveMathModule
 	{
 	public:
 		static shard::runtime::ObjectInstance* EvaluateBinaryOperator(shard::runtime::ObjectInstance* leftInstance, shard::syntax::SyntaxToken opToken, shard::runtime::ObjectInstance* rightInstance, bool& assign);

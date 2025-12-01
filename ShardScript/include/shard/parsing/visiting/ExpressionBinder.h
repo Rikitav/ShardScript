@@ -1,4 +1,6 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/parsing/visiting/SyntaxVisitor.h>
 #include <shard/parsing/visiting/ScopeVisitor.h>
 #include <shard/parsing/analysis/DiagnosticsContext.h>
@@ -42,7 +44,7 @@
 
 namespace shard::parsing
 {
-	class ExpressionBinder : public SyntaxVisitor, ScopeVisitor
+	class SHARD_API ExpressionBinder : public SyntaxVisitor, ScopeVisitor
 	{
 		std::unordered_map<shard::syntax::nodes::ExpressionSyntax*, shard::syntax::symbols::TypeSymbol*> expressionTypes;
 

@@ -1,8 +1,8 @@
-#include <shard/ShardScript.h>
 #include <Windows.h>
-
 #include <string>
 #include <stdexcept>
+
+#include "InterpreterUtilities.h"
 
 const std::wstring FileTypeExtension = L".ss";
 const std::wstring FileTypeId = L"ShardLang";
@@ -103,7 +103,7 @@ static bool CreateOpenCommand()
 	return true;
 }
 
-void shard::utilities::ShardUtilities::AssociateRegistry()
+void shard::interpreter::utilities::ShardUtilities::AssociateRegistry()
 {
 	if (!CreateExtensionAssociation())
 		return;

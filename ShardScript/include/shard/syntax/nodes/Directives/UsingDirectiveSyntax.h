@@ -1,4 +1,6 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/syntax/SyntaxNode.h>
 #include <shard/syntax/SyntaxToken.h>
 #include <shard/syntax/SyntaxKind.h>
@@ -10,7 +12,7 @@
 
 namespace shard::syntax::nodes
 {
-	class UsingDirectiveSyntax : public SyntaxNode
+	class SHARD_API UsingDirectiveSyntax : public SyntaxNode
 	{
 	public:
 		SyntaxToken UsingKeywordToken;
@@ -21,8 +23,7 @@ namespace shard::syntax::nodes
 		inline UsingDirectiveSyntax(const SyntaxNode* parent)
 			: SyntaxNode(SyntaxKind::UsingDirective, parent) { }
 
-		inline UsingDirectiveSyntax(const UsingDirectiveSyntax& other)
-			: SyntaxNode(other), UsingKeywordToken(other.UsingKeywordToken), SemicolonToken(other.SemicolonToken) { }
+		inline UsingDirectiveSyntax(const UsingDirectiveSyntax&) = delete;
 
 		inline virtual ~UsingDirectiveSyntax()
 		{

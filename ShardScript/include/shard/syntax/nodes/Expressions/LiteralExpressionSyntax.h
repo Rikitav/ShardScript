@@ -1,4 +1,6 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxToken.h>
 #include <shard/syntax/nodes/ExpressionSyntax.h>
@@ -6,13 +8,13 @@
 
 namespace shard::syntax::nodes
 {
-	class LiteralExpressionSyntax : public ExpressionSyntax
+	class SHARD_API LiteralExpressionSyntax : public ExpressionSyntax
 	{
 	public:
 		const SyntaxToken LiteralToken;
 
 		inline LiteralExpressionSyntax(const SyntaxToken literal, const SyntaxNode* parent) : ExpressionSyntax(SyntaxKind::LiteralExpression, parent), LiteralToken(literal) { }
-		LiteralExpressionSyntax(const LiteralExpressionSyntax&) = delete;
+		inline LiteralExpressionSyntax(const LiteralExpressionSyntax&) = delete;
 		inline virtual ~LiteralExpressionSyntax() { }
 	};
 }

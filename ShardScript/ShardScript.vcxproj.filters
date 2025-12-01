@@ -14,9 +14,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
     <ClCompile Include="src\parsing\reading\SourceReader.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
@@ -42,9 +39,6 @@
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="src\parsing\reading\StringStreamReader.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
-    <ClCompile Include="src\utilities\ArgumentsParser.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="src\syntax\SyntaxFacts.cpp">
@@ -140,25 +134,16 @@
     <ClCompile Include="src\framework\primitives\CharPrimitive.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="src\runtime\InteractiveConsole.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
     <ClCompile Include="src\runtime\AbstractInterpreter.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="src\runtime\PrimitiveMathModule.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="src\utilities\ExecutableVersion.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
     <ClCompile Include="src\parsing\visiting\ScopeVisitor.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="src\syntax\symbols\ArrayTypeSymbol.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
-    <ClCompile Include="src\utilities\AssociateRegistry.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="src\framework\filesystem\File.cpp">
@@ -183,6 +168,9 @@
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="src\syntax\SymbolFactory.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsing\analysis\DiagnosticSeverity.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
   </ItemGroup>
@@ -268,7 +256,7 @@
     <ClInclude Include="include\shard\runtime\InboundVariablesContext.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="include\shard\ShardScript.h">
+    <ClInclude Include="include\shard\ShardScriptAPI.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="include\shard\ShardTypes.h">
@@ -335,9 +323,6 @@
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="include\shard\parsing\SemanticAnalyzer.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
-    <ClInclude Include="include\shard\parsing\lexical\MembersVisibilityContext.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="include\shard\syntax\nodes\MemberDeclarations\StructDeclarationSyntax.h">
@@ -451,9 +436,6 @@
     <ClInclude Include="include\shard\framework\primitives\StringPrimitive.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="include\shard\runtime\InteractiveConsole.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
     <ClInclude Include="include\shard\runtime\AbstractInterpreter.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
@@ -522,12 +504,9 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="framework.ss" />
-  </ItemGroup>
-  <ItemGroup>
     <Library Include="libs\libffi-8.lib" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="ShardScript.rc" />
+    <None Include="cpp.hint" />
   </ItemGroup>
 </Project>

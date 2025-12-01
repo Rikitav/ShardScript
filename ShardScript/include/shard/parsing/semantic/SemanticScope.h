@@ -1,4 +1,5 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
 #include <shard/syntax/SyntaxSymbol.h>
 #include <shard/parsing/semantic/NamespaceTree.h>
 
@@ -7,7 +8,7 @@
 
 namespace shard::parsing::semantic
 {
-	class SemanticScope
+	class SHARD_API SemanticScope
 	{
 		std::unordered_map<std::wstring, shard::syntax::SyntaxSymbol*> _symbols;
 	

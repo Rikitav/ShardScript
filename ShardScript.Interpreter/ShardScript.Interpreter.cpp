@@ -13,15 +13,10 @@
 
 #include <shard/runtime/GarbageCollector.h>
 #include <shard/runtime/AbstractInterpreter.h>
-#include <shard/runtime/InteractiveConsole.h>
 
 #include <shard/framework/FrameworkLoader.h>
 
-#include <shard/ShardScript.h>
 #include <Shlwapi.h>
-
-#pragma comment(lib, "shlwapi.lib")
-
 #include <iostream>
 #include <string>
 #include <stdexcept>
@@ -30,7 +25,12 @@
 #include <csignal>
 #include <cstdlib>
 
-using namespace shard::utilities;
+#pragma comment(lib, "shlwapi.lib")
+
+#include "InteractiveConsole.h"
+#include "utilities/InterpreterUtilities.h"
+
+using namespace shard::interpreter::utilities;
 using namespace shard::framework;
 using namespace shard::runtime;
 using namespace shard::syntax;

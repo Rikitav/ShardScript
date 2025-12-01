@@ -12,7 +12,6 @@
 
 #include <shard/parsing/semantic/SemanticModel.h>
 
-#include <shard/runtime/InteractiveConsole.h>
 #include <shard/runtime/AbstractInterpreter.h>
 #include <shard/runtime/ConsoleHelper.h>
 #include <shard/runtime/GarbageCollector.h>
@@ -39,15 +38,16 @@
 
 #include <shard/syntax/nodes/Types/PredefinedTypeSyntax.h>
 
-#include <shard/ShardScript.h>
 #include <Windows.h>
 #include <consoleapi2.h>
 #include <processenv.h>
-
 #include <string>
 #include <iostream>
 #include <vector>
 #include <exception>
+
+#include "InteractiveConsole.h"
+#include "utilities/InterpreterUtilities.h"
 
 using namespace shard::runtime;
 using namespace shard::syntax;
@@ -323,7 +323,7 @@ void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticMode
 	AbstractInterpreter::PushFrame(entryPointSymbol);
 	AbstractInterpreter::PushContext(new InboundVariablesContext(nullptr));
 	
-	ConsoleHelper::WriteLine(L"ShardScript Interactive Console v" + shard::utilities::ShardUtilities::GetFileVersion());
+	ConsoleHelper::WriteLine(L"ShardScript Interactive Console v" + shard::interpreter::utilities::ShardUtilities::GetFileVersion());
 	ConsoleHelper::WriteLine(L"Type 'exit' or 'quit' to exit");
 	ConsoleHelper::WriteLine();
 

@@ -1,4 +1,6 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxToken.h>
 #include <shard/syntax/SyntaxNode.h>
@@ -12,7 +14,7 @@
 
 namespace shard::syntax::nodes
 {
-	class ObjectExpressionSyntax : public ExpressionSyntax
+	class SHARD_API ObjectExpressionSyntax : public ExpressionSyntax
 	{
 	public:
 		SyntaxToken NewToken;
@@ -26,19 +28,15 @@ namespace shard::syntax::nodes
 		inline ObjectExpressionSyntax(const SyntaxNode* parent)
 			: ExpressionSyntax(SyntaxKind::ObjectExpression, parent) { }
 
-		ObjectExpressionSyntax(const ObjectExpressionSyntax&) = delete;
+		inline ObjectExpressionSyntax(const ObjectExpressionSyntax&) = delete;
 
 		inline virtual ~ObjectExpressionSyntax()
 		{
 			if (Type != nullptr)
-			{
 				delete Type;
-			}
 
 			if (ArgumentsList != nullptr)
-			{
 				delete ArgumentsList;
-			}
 		}
 	};
 }

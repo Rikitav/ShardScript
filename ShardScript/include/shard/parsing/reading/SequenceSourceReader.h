@@ -1,13 +1,16 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/parsing/reading/SourceReader.h>
 #include <shard/parsing/analysis/TextLocation.h>
 #include <shard/syntax/SyntaxToken.h>
+
 #include <string>
 #include <vector>
 
 namespace shard::parsing
 {
-	class SequenceSourceReader : public SourceReader
+	class SHARD_API SequenceSourceReader : public SourceReader
 	{
 		std::vector<shard::syntax::SyntaxToken> Sequence;
 		size_t CurrentIndex;

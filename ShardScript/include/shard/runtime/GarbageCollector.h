@@ -1,14 +1,17 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/runtime/ObjectInstance.h>
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/FieldSymbol.h>
+
 #include <unordered_map>
 #include <iterator>
 
 namespace shard::runtime
 {
     template<typename MapType>
-    class ValueIterator
+    class SHARD_API ValueIterator
     {
     private:
         using MapIterator = typename MapType::iterator;
@@ -36,7 +39,7 @@ namespace shard::runtime
         bool operator!=(const ValueIterator& other) const { return it != other.it; }
     };
 
-	class InstancesHeap
+	class SHARD_API InstancesHeap
 	{
     private:
         std::unordered_map<long, shard::runtime::ObjectInstance*> IdMap;
@@ -79,7 +82,7 @@ namespace shard::runtime
         }
 	};
 
-	class GarbageCollector
+	class SHARD_API GarbageCollector
 	{
 		inline static long objectsCounter = 0;
         inline static std::unordered_map<shard::syntax::symbols::TypeSymbol*, ObjectInstance*> nullInstancesMap;

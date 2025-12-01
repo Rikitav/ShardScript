@@ -1,8 +1,11 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/FieldSymbol.h>
 #include <shard/syntax/symbols/MethodSymbol.h>
 #include <shard/syntax/symbols/PropertySymbol.h>
+
 #include <shard/syntax/SyntaxKind.h>
 
 #include <string>
@@ -10,7 +13,7 @@
 
 namespace shard::syntax::symbols
 {
-	class ArrayTypeSymbol : public TypeSymbol
+	class SHARD_API ArrayTypeSymbol : public TypeSymbol
 	{
 	public:
 		TypeSymbol* UnderlayingType = nullptr;
@@ -22,7 +25,13 @@ namespace shard::syntax::symbols
 			IsReferenceType = true;
 		}
 
-		inline ~ArrayTypeSymbol() = default;
+		inline ArrayTypeSymbol(const ArrayTypeSymbol& other) = delete;
+
+		inline virtual ~ArrayTypeSymbol()
+		{
+			if (UnderlayingType != nullptr)
+				delete UnderlayingType;
+		}
 
 		MethodSymbol* FindConstructor(std::vector<TypeSymbol*> parameterTypes) override;
 		MethodSymbol* FindMethod(std::wstring& name, std::vector<TypeSymbol*> parameterTypes) override;

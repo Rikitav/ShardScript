@@ -1,11 +1,13 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/parsing/semantic/SemanticModel.h>
 #include <shard/parsing/analysis/DiagnosticsContext.h>
 #include <shard/parsing/lexical/SyntaxTree.h>
 
 namespace shard::parsing
 {
-	class SemanticAnalyzer
+	class SHARD_API SemanticAnalyzer
 	{
 		shard::parsing::analysis::DiagnosticsContext& Diagnostics;
 

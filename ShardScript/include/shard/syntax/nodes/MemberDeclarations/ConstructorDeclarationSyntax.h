@@ -1,4 +1,6 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxToken.h>
 #include <shard/syntax/SyntaxNode.h>
@@ -12,7 +14,7 @@
 
 namespace shard::syntax::nodes
 {
-	class ConstructorDeclarationSyntax : public MemberDeclarationSyntax
+	class SHARD_API ConstructorDeclarationSyntax : public MemberDeclarationSyntax
 	{
 	public:
 		SyntaxToken Semicolon;
@@ -23,6 +25,17 @@ namespace shard::syntax::nodes
 		{
 			Modifiers = info.Modifiers;
 			IdentifierToken = info.Identifier;
+		}
+
+		inline ConstructorDeclarationSyntax(const ConstructorDeclarationSyntax&) = delete;
+
+		inline ~ConstructorDeclarationSyntax() override
+		{
+			if (Body != nullptr)
+				delete Body;
+
+			if (Params != nullptr)
+				delete Params;
 		}
 	};
 }

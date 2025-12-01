@@ -1,4 +1,6 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxNode.h>
 #include <shard/syntax/SyntaxToken.h>
@@ -9,7 +11,7 @@
 
 namespace shard::syntax::nodes
 {
-	class AccessorDeclarationSyntax : public MemberDeclarationSyntax
+	class SHARD_API AccessorDeclarationSyntax : public MemberDeclarationSyntax
 	{
 	public:
 		SyntaxToken KeywordToken;
@@ -20,13 +22,12 @@ namespace shard::syntax::nodes
 		inline AccessorDeclarationSyntax(const SyntaxNode* parent)
 			: MemberDeclarationSyntax(SyntaxKind::AccessorDeclaration, parent) { }
 
+		inline AccessorDeclarationSyntax(const AccessorDeclarationSyntax&) = delete;
+
 		inline ~AccessorDeclarationSyntax() override
 		{
 			if (Body != nullptr)
-			{
 				delete Body;
-				Body = nullptr;
-			}
 		}
 	};
 }

@@ -1,4 +1,6 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxNode.h>
 #include <shard/syntax/SyntaxToken.h>
@@ -10,7 +12,7 @@
 
 namespace shard::syntax::nodes
 {
-	class NamespaceDeclarationSyntax : public TypeDeclarationSyntax
+	class SHARD_API NamespaceDeclarationSyntax : public TypeDeclarationSyntax
 	{
 	public:
 		std::vector<SyntaxToken> IdentifierTokens;
@@ -18,14 +20,13 @@ namespace shard::syntax::nodes
 		inline NamespaceDeclarationSyntax(const SyntaxNode* parent)
 			: TypeDeclarationSyntax(SyntaxKind::NamespaceDeclaration, parent) { }
 
-		inline NamespaceDeclarationSyntax(const NamespaceDeclarationSyntax& other)
-			: TypeDeclarationSyntax(other) { }
-
 		inline NamespaceDeclarationSyntax(shard::parsing::lexical::MemberDeclarationInfo& info, const SyntaxNode* parent) : TypeDeclarationSyntax(SyntaxKind::NamespaceDeclaration, parent)
 		{
 			Modifiers = info.Modifiers;
 			IdentifierToken = info.Identifier;
 		}
+
+		inline NamespaceDeclarationSyntax(const NamespaceDeclarationSyntax& other) = delete;
 
 		inline virtual ~NamespaceDeclarationSyntax()
 		{

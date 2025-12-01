@@ -1,18 +1,28 @@
 #pragma once
-#include <shard/syntax/nodes/TypeSyntax.h>
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/syntax/SyntaxToken.h>
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxNode.h>
 
+#include <shard/syntax/nodes/TypeSyntax.h>
+
 namespace shard::syntax::nodes
 {
-	class PredefinedTypeSyntax : public TypeSyntax
+	class SHARD_API PredefinedTypeSyntax : public TypeSyntax
 	{
 	public:
 		const SyntaxToken TypeToken;
 
 		inline PredefinedTypeSyntax(const SyntaxToken typeToken, const SyntaxNode* parent)
 			: TypeSyntax(SyntaxKind::PredefinedType, parent), TypeToken(typeToken) { }
+
+		inline PredefinedTypeSyntax(const PredefinedTypeSyntax& other) = delete;
+
+		inline virtual ~PredefinedTypeSyntax()
+		{
+
+		}
 
 		std::wstring ToString() override;
 	};

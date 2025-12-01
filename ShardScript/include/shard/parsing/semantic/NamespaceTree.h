@@ -1,4 +1,6 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/syntax/symbols/NamespaceSymbol.h>
 #include <shard/syntax/symbols/TypeSymbol.h>
 
@@ -8,7 +10,7 @@
 
 namespace shard::parsing::semantic
 {
-	class NamespaceNode
+	class SHARD_API NamespaceNode
 	{
 	public:
 		std::vector<shard::syntax::symbols::NamespaceSymbol*> Owners;
@@ -30,7 +32,7 @@ namespace shard::parsing::semantic
 		NamespaceNode* LookupOrCreate(std::wstring name, shard::syntax::symbols::NamespaceSymbol* current);
 	};
 
-	class NamespaceTree
+	class SHARD_API NamespaceTree
 	{
 	public:
 		NamespaceNode* Root;

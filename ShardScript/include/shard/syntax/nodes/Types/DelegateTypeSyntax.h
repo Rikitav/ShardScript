@@ -1,4 +1,6 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/syntax/SyntaxToken.h>
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxNode.h>
@@ -10,7 +12,7 @@
 
 namespace shard::syntax::nodes
 {
-	class DelegateTypeSyntax : public TypeSyntax
+	class SHARD_API DelegateTypeSyntax : public TypeSyntax
 	{
 	public:
 		SyntaxToken DelegateToken;
@@ -19,6 +21,14 @@ namespace shard::syntax::nodes
 
 		inline DelegateTypeSyntax(const SyntaxNode* parent)
 			: TypeSyntax(SyntaxKind::DelegateType, parent) { }
+
+		inline DelegateTypeSyntax(const DelegateTypeSyntax& other) = delete;
+
+		inline virtual ~DelegateTypeSyntax()
+		{
+			if (Params != nullptr)
+				delete Params;
+		}
 
 		std::wstring ToString() override;
 	};

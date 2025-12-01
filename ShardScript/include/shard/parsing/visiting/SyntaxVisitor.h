@@ -1,4 +1,6 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/parsing/lexical/SyntaxTree.h>
 #include <shard/parsing/analysis/DiagnosticsContext.h>
 #include <shard/parsing/semantic/SymbolTable.h>
@@ -59,7 +61,7 @@
 
 namespace shard::parsing
 {
-	class SyntaxVisitor
+	class SHARD_API SyntaxVisitor
 	{
     protected:
         shard::parsing::semantic::SymbolTable* Table;

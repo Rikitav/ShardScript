@@ -1,4 +1,6 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/syntax/SyntaxNode.h>
 #include <shard/syntax/nodes/ExpressionSyntax.h>
 #include <shard/parsing/lexical/SyntaxTree.h>
@@ -10,7 +12,7 @@
 
 namespace shard::parsing::semantic
 {
-	class SemanticModel
+	class SHARD_API SemanticModel
 	{
 	public:
 		shard::parsing::lexical::SyntaxTree& Tree;

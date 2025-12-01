@@ -1,4 +1,6 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/parsing/reading/SourceReader.h>
 #include <shard/parsing/analysis/DiagnosticsContext.h>
 #include <shard/parsing/lexical/MemberDeclarationInfo.h>
@@ -50,7 +52,7 @@
 
 namespace shard::parsing
 {
-	class LexicalAnalyzer
+	class SHARD_API LexicalAnalyzer
 	{
 	private:
 		shard::parsing::analysis::DiagnosticsContext& Diagnostics;

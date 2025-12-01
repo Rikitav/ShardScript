@@ -1,11 +1,14 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/runtime/ObjectInstance.h>
+
 #include <unordered_map>
 #include <string>
 
 namespace shard::runtime
 {
-	class InboundVariablesContext
+	class SHARD_API InboundVariablesContext
 	{
 	public:
 		const InboundVariablesContext* Previous;

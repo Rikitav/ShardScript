@@ -2,7 +2,7 @@
 #include <string>
 #include <vector>
 
-namespace shard::utilities
+namespace shard::interpreter::utilities
 {
     struct ConsoleArguments
     {

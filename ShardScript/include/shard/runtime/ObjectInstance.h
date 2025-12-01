@@ -1,4 +1,6 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/FieldSymbol.h>
 
@@ -7,7 +9,7 @@
 
 namespace shard::runtime
 {
-	class ObjectInstance
+	class SHARD_API ObjectInstance
 	{
 	public:
 		const long Id;

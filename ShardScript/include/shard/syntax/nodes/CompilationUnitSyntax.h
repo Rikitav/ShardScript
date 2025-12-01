@@ -1,14 +1,18 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/syntax/SyntaxNode.h>
 #include <shard/syntax/SyntaxKind.h>
+
 #include <shard/syntax/nodes/MemberDeclarationSyntax.h>
 #include <shard/syntax/nodes/Directives/UsingDirectiveSyntax.h>
 #include <shard/syntax/nodes/Directives/ImportDirectiveSyntax.h>
+
 #include <vector>
 
 namespace shard::syntax::nodes
 {
-	class CompilationUnitSyntax : public SyntaxNode
+	class SHARD_API CompilationUnitSyntax : public SyntaxNode
 	{
 	public:
 		std::vector<ImportDirectiveSyntax*> Imports;
@@ -20,28 +24,18 @@ namespace shard::syntax::nodes
 
 		}
 
-		inline CompilationUnitSyntax(const CompilationUnitSyntax& other)
-			: SyntaxNode(other), Imports(other.Imports), Usings(other.Usings), Members(other.Members) { }
+		inline CompilationUnitSyntax(const CompilationUnitSyntax& other) = delete;
 
 		inline virtual ~CompilationUnitSyntax()
 		{
 			for (const ImportDirectiveSyntax* import : Imports)
-			{
-				import->~ImportDirectiveSyntax();
 				delete import;
-			}
 
 			for (const UsingDirectiveSyntax* usingDirective : Usings)
-			{
-				usingDirective->~UsingDirectiveSyntax();
 				delete usingDirective;
-			}
 
 			for (const MemberDeclarationSyntax* member : Members)
-			{
-				member->~MemberDeclarationSyntax();
 				delete member;
-			}
 		}
 	};
 }

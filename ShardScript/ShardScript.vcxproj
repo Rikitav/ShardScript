@@ -40,7 +40,7 @@
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
@@ -104,10 +104,11 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;SHARD_API_EXPORT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PreprocessToFile>false</PreprocessToFile>
+      <DisableSpecificWarnings>%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -130,6 +131,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\parsing\analysis\DiagnosticSeverity.cpp" />
     <ClCompile Include="src\syntax\nodes\Types\DelegateTypeSyntax.cpp" />
     <ClCompile Include="src\framework\collections\List.cpp" />
     <ClCompile Include="src\framework\filesystem\Directory.cpp" />
@@ -149,7 +151,6 @@
     <ClCompile Include="src\syntax\symbols\ArrayTypeSymbol.cpp" />
     <ClCompile Include="src\syntax\symbols\PropertySymbol.cpp" />
     <ClCompile Include="src\syntax\SyntaxSymbol.cpp" />
-    <ClCompile Include="src\utilities\ArgumentsParser.cpp" />
     <ClCompile Include="include\shard\parsing\reading\SequenceSourceReader.h" />
     <ClCompile Include="src\parsing\LayoutGenerator.cpp" />
     <ClCompile Include="src\framework\primitives\IntegerPrimitive.cpp" />
@@ -166,7 +167,6 @@
     <ClCompile Include="src\parsing\visiting\SyntaxVisitor.cpp" />
     <ClCompile Include="src\framework\primitives\BooleanPrimitive.cpp" />
     <ClCompile Include="src\framework\primitives\CharPrimitive.cpp" />
-    <ClCompile Include="src\runtime\InteractiveConsole.cpp" />
     <ClCompile Include="src\parsing\SemanticAnalyzer.cpp" />
     <ClCompile Include="src\parsing\reading\FileReader.cpp" />
     <ClCompile Include="src\parsing\reading\SequenceSourceReader.cpp" />
@@ -180,13 +180,10 @@
     <ClCompile Include="src\parsing\analysis\Diagnostic.cpp" />
     <ClCompile Include="src\parsing\analysis\DiagnosticsContext.cpp" />
     <ClCompile Include="src\parsing\LexicalAnalyzer.cpp" />
-    <ClCompile Include="main.cpp" />
     <ClCompile Include="src\parsing\reading\SourceReader.cpp" />
     <ClCompile Include="src\syntax\symbols\TypeSymbol.cpp" />
     <ClCompile Include="src\syntax\SyntaxFacts.cpp" />
     <ClCompile Include="src\syntax\SyntaxHelpers.cpp" />
-    <ClCompile Include="src\utilities\AssociateRegistry.cpp" />
-    <ClCompile Include="src\utilities\ExecutableVersion.cpp" />
     <ClInclude Include="include\ffi\ffi.h" />
     <ClInclude Include="include\ffi\ffitarget.h" />
     <ClInclude Include="include\shard\framework\FrameworkModule.h" />
@@ -207,7 +204,6 @@
     <ClInclude Include="include\shard\parsing\visiting\ScopeVisitor.h" />
     <ClInclude Include="include\shard\parsing\visiting\SyntaxVisitor.h" />
     <ClInclude Include="include\shard\parsing\visiting\TypeBinder.h" />
-    <ClInclude Include="include\shard\runtime\InteractiveConsole.h" />
     <ClInclude Include="include\shard\parsing\SemanticAnalyzer.h" />
     <ClInclude Include="include\shard\parsing\reading\FileReader.h" />
     <ClInclude Include="include\shard\parsing\reading\StringStreamReader.h" />
@@ -220,12 +216,11 @@
     <ClInclude Include="include\shard\runtime\CallStackFrame.h" />
     <ClInclude Include="include\shard\runtime\PrimitiveMathModule.h" />
     <ClInclude Include="include\shard\framework\primitives\BooleanPrimitive.h" />
-    <ClInclude Include="include\shard\ShardScript.h" />
+    <ClInclude Include="include\shard\ShardScriptAPI.h" />
     <ClInclude Include="include\shard\ShardTypes.h" />
     <ClInclude Include="include\shard\parsing\analysis\Diagnostic.h" />
     <ClInclude Include="include\shard\parsing\analysis\DiagnosticsContext.h" />
     <ClInclude Include="include\shard\parsing\analysis\DiagnosticSeverity.h" />
-    <ClInclude Include="include\shard\parsing\lexical\MembersVisibilityContext.h" />
     <ClInclude Include="include\shard\parsing\analysis\TextLocation.h" />
     <ClInclude Include="include\shard\syntax\nodes\Expressions\CollectionExpressionSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\Expressions\LambdaExpressionSyntax.h" />
@@ -300,13 +295,10 @@
     <ClInclude Include="include\shard\syntax\TokenType.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="framework.ss" />
-  </ItemGroup>
-  <ItemGroup>
     <Library Include="libs\libffi-8.lib" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="ShardScript.rc" />
+    <None Include="cpp.hint" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

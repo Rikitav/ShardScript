@@ -1,10 +1,11 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/parsing/semantic/SymbolTable.h>
 #include <shard/parsing/semantic/SemanticScope.h>
 #include <shard/parsing/semantic/NamespaceTree.h>
 
 #include <shard/syntax/SyntaxSymbol.h>
-
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/NamespaceSymbol.h>
 
@@ -12,7 +13,7 @@
 
 namespace shard::parsing
 {
-	class ScopeVisitor
+	class SHARD_API ScopeVisitor
 	{
 		std::stack<shard::parsing::semantic::SemanticScope*> scopeStack;
 

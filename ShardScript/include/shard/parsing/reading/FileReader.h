@@ -1,4 +1,6 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/parsing/reading/SourceReader.h>
 #include <shard/parsing/analysis/TextLocation.h>
 
@@ -7,7 +9,7 @@
 
 namespace shard::parsing
 {
-	class FileReader : public SourceReader
+	class SHARD_API FileReader : public SourceReader
 	{
 		std::wstring Filename;
 		std::wfstream InputStream;

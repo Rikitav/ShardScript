@@ -533,13 +533,13 @@ void TypeBinder::VisitDelegateType(DelegateTypeSyntax* node)
 	VisitType(node->ReturnType);
 	VisitParametersList(node->Params);
 
-	MethodSymbol* anonymousMethod = new MethodSymbol(L"");
+	MethodSymbol* anonymousMethod = new MethodSymbol(L"Delegate");
 	anonymousMethod->HandleType = MethodHandleType::AnonymousMethod;
 	anonymousMethod->Accesibility = SymbolAccesibility::Public;
 	anonymousMethod->ReturnType = node->ReturnType->Symbol;
 	anonymousMethod->IsStatic = true;
 
-	DelegateTypeSymbol* symbol = new DelegateTypeSymbol();
+	DelegateTypeSymbol* symbol = new DelegateTypeSymbol(L"Delegate");
 	symbol->ReturnType = node->ReturnType->Symbol;
 	symbol->AnonymousSymbol = anonymousMethod;
 

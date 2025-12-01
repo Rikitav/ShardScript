@@ -1,14 +1,17 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/syntax/SyntaxToken.h>
 #include <shard/syntax/TokenType.h>
 #include <shard/parsing/analysis/TextLocation.h>
+
 #include <locale>
 #include <string>
 #include <deque>
 
 namespace shard::parsing
 {
-	class SourceReader
+	class SHARD_API SourceReader
 	{
 	protected:
 		std::deque<shard::syntax::SyntaxToken> ReadBuffer;

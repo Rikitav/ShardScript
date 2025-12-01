@@ -1,12 +1,15 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/parsing/reading/SourceReader.h>
 #include <shard/parsing/analysis/TextLocation.h>
+
 #include <sstream>
 #include <string>
 
 namespace shard::parsing
 {
-	class StringStreamReader : public SourceReader
+	class SHARD_API StringStreamReader : public SourceReader
 	{
 		std::wistringstream stringStream;
 

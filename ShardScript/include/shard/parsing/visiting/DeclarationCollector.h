@@ -1,4 +1,6 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/parsing/visiting/SyntaxVisitor.h>
 #include <shard/parsing/visiting/ScopeVisitor.h>
 #include <shard/parsing/analysis/DiagnosticsContext.h>
@@ -21,7 +23,7 @@
 
 namespace shard::parsing
 {
-	class DeclarationCollector : public SyntaxVisitor, ScopeVisitor
+	class SHARD_API DeclarationCollector : public SyntaxVisitor, ScopeVisitor
 	{
 	public:
 		inline DeclarationCollector(shard::parsing::semantic::SemanticModel& model, shard::parsing::analysis::DiagnosticsContext& diagnostics)

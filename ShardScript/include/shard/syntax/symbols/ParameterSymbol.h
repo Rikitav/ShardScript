@@ -1,13 +1,17 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/nodes/ExpressionSyntax.h>
+
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxSymbol.h>
+
 #include <string>
 
 namespace shard::syntax::symbols
 {
-	class ParameterSymbol : public SyntaxSymbol
+	class SHARD_API ParameterSymbol : public SyntaxSymbol
 	{
     public:
         TypeSymbol* Type = nullptr;
@@ -19,13 +23,12 @@ namespace shard::syntax::symbols
             Accesibility = SymbolAccesibility::Public;
         }
 
-        inline ~ParameterSymbol()
+        inline ParameterSymbol(const ParameterSymbol& other) = delete;
+
+        inline virtual ~ParameterSymbol()
         {
             if (DefaultValueExpression != nullptr)
-            {
                 delete DefaultValueExpression;
-                DefaultValueExpression = nullptr;
-            }
         }
 	};
 }

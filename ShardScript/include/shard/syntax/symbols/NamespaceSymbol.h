@@ -1,7 +1,8 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxSymbol.h>
-//#include <shard/parsing/semantic/NamespaceTree.h>
 
 #include <string>
 #include <vector>
@@ -13,7 +14,7 @@ namespace shard::parsing::semantic
 
 namespace shard::syntax::symbols
 {
-	class NamespaceSymbol : public SyntaxSymbol
+	class SHARD_API NamespaceSymbol : public SyntaxSymbol
 	{
 	public:
 		std::vector<SyntaxSymbol*> Members;
@@ -22,7 +23,9 @@ namespace shard::syntax::symbols
 		inline NamespaceSymbol(std::wstring name)
 			: SyntaxSymbol(name, SyntaxKind::NamespaceDeclaration) { }
 
-		inline ~NamespaceSymbol()
+		inline NamespaceSymbol(const NamespaceSymbol& other) = delete;
+
+		inline virtual ~NamespaceSymbol()
 		{
 			for (SyntaxSymbol* member : Members)
 				delete member;

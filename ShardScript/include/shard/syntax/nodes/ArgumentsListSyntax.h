@@ -1,13 +1,17 @@
 #pragma once
-#include <vector>
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/syntax/SyntaxNode.h>
-#include <shard/syntax/nodes/ExpressionSyntax.h>
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxToken.h>
 
+#include <shard/syntax/nodes/ExpressionSyntax.h>
+
+#include <vector>
+
 namespace shard::syntax::nodes
 {
-	class ArgumentSyntax : public SyntaxNode
+	class SHARD_API ArgumentSyntax : public SyntaxNode
 	{
 	public:
 		const ExpressionSyntax* Expression;
@@ -16,8 +20,7 @@ namespace shard::syntax::nodes
 		inline ArgumentSyntax(const ExpressionSyntax* expression, const SyntaxNode* parent)
 			: SyntaxNode(SyntaxKind::Argument, parent), Expression(expression), IsByReference(false) { }
 
-		inline ArgumentSyntax(const ArgumentSyntax& other)
-			: SyntaxNode(other), Expression(other.Expression), IsByReference(false) { }
+		inline ArgumentSyntax(const ArgumentSyntax& other) = delete;
 
 		inline virtual ~ArgumentSyntax()
 		{
@@ -26,7 +29,7 @@ namespace shard::syntax::nodes
 		}
 	};
 
-	class ArgumentsListSyntax : public SyntaxNode
+	class SHARD_API ArgumentsListSyntax : public SyntaxNode
 	{
 	public:
 		SyntaxToken OpenCurlToken;
@@ -36,8 +39,7 @@ namespace shard::syntax::nodes
 		inline ArgumentsListSyntax(const SyntaxNode* parent)
 			: SyntaxNode(SyntaxKind::ArgumentsList, parent) { }
 
-		inline ArgumentsListSyntax(const ArgumentsListSyntax& other)
-			: SyntaxNode(other), OpenCurlToken(other.OpenCurlToken), CloseCurlToken(other.CloseCurlToken) { }
+		inline ArgumentsListSyntax(const ArgumentsListSyntax& other) = delete;
 
 		inline virtual ~ArgumentsListSyntax()
 		{
@@ -49,7 +51,7 @@ namespace shard::syntax::nodes
 		}
 	};
 
-	class IndexatorListSyntax : public SyntaxNode
+	class SHARD_API IndexatorListSyntax : public SyntaxNode
 	{
 	public:
 		SyntaxToken OpenSquareToken;
@@ -59,8 +61,7 @@ namespace shard::syntax::nodes
 		inline IndexatorListSyntax(const SyntaxNode* parent)
 			: SyntaxNode(SyntaxKind::IndexatorList, parent) { }
 
-		inline IndexatorListSyntax(const IndexatorListSyntax& other)
-			: SyntaxNode(other), OpenSquareToken(other.OpenSquareToken), CloseSquareToken(other.CloseSquareToken) { }
+		inline IndexatorListSyntax(const IndexatorListSyntax& other) = delete;
 
 		inline virtual ~IndexatorListSyntax()
 		{

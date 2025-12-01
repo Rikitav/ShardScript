@@ -1,12 +1,15 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
+#include <shard/syntax/nodes/MemberDeclarationSyntax.h>
+
 #include <shard/syntax/SyntaxNode.h>
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxToken.h>
-#include <shard/syntax/nodes/MemberDeclarationSyntax.h>
 
 namespace shard::syntax::nodes
 {
-	class BodyDeclarationSyntax : public MemberDeclarationSyntax
+	class SHARD_API BodyDeclarationSyntax : public MemberDeclarationSyntax
 	{
 	public:
 		SyntaxToken OpenBraceToken;
@@ -16,8 +19,7 @@ namespace shard::syntax::nodes
 		inline BodyDeclarationSyntax(const SyntaxKind kind, const SyntaxNode* parent)
 			: MemberDeclarationSyntax(kind, parent) { }
 
-		inline BodyDeclarationSyntax(const BodyDeclarationSyntax& other)
-			: MemberDeclarationSyntax(other), OpenBraceToken(other.OpenBraceToken), CloseBraceToken(other.CloseBraceToken), SemicolonToken(other.SemicolonToken) { }
+		inline BodyDeclarationSyntax(const BodyDeclarationSyntax& other) = delete;
 
 		inline virtual ~BodyDeclarationSyntax()
 		{

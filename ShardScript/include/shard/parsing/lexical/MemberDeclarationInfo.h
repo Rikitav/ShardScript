@@ -1,12 +1,15 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/syntax/SyntaxToken.h>
 #include <shard/syntax/nodes/ParametersListSyntax.h>
 #include <shard/syntax/nodes/TypeSyntax.h>
+
 #include <vector>
 
 namespace shard::parsing::lexical
 {
-	struct MemberDeclarationInfo
+	struct SHARD_API MemberDeclarationInfo
 	{
 		std::vector<shard::syntax::SyntaxToken> Modifiers;
 		bool IsCtor = false;

@@ -1,4 +1,5 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
 
 namespace shard::syntax
 {
@@ -8,7 +9,6 @@ namespace shard::syntax
 		Unknown,
 		EndOfFile,   // End of file
 		//Trivia,    // any non visible
-		//VarName,	 // variable name
 		NewKeyword,  // new keyword
 		Identifier,	 // member name
 

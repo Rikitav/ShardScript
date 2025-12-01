@@ -1,11 +1,14 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/syntax/TokenType.h>
 #include <shard/parsing/analysis/TextLocation.h>
+
 #include <string>
 
 namespace shard::syntax
 {
-	struct SyntaxToken
+	struct SHARD_API SyntaxToken
 	{
 	private:
 		inline static int counter = 0;

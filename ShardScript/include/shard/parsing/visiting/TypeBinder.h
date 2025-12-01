@@ -1,4 +1,6 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/parsing/visiting/SyntaxVisitor.h>
 #include <shard/parsing/visiting/ScopeVisitor.h>
 #include <shard/parsing/analysis/DiagnosticsContext.h>
@@ -33,7 +35,7 @@
 
 namespace shard::parsing
 {
-	class TypeBinder : public SyntaxVisitor, ScopeVisitor
+	class SHARD_API TypeBinder : public SyntaxVisitor, ScopeVisitor
 	{
 		//shard::syntax::symbols::TypeSymbol* ResolveType(shard::syntax::nodes::TypeSyntax* typeSyntax);
 

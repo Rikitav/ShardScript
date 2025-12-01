@@ -1,4 +1,6 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxToken.h>
 #include <shard/syntax/SyntaxNode.h>
@@ -10,7 +12,7 @@
 
 namespace shard::syntax::nodes
 {
-	class LambdaExpressionSyntax : public ExpressionSyntax
+	class SHARD_API LambdaExpressionSyntax : public ExpressionSyntax
 	{
 	public:
 		SyntaxToken LambdaToken;
@@ -22,7 +24,7 @@ namespace shard::syntax::nodes
 		inline LambdaExpressionSyntax(const SyntaxNode* parent)
 			: ExpressionSyntax(SyntaxKind::LambdaExpression, parent) { }
 
-		LambdaExpressionSyntax(const LambdaExpressionSyntax&) = delete;
+		inline LambdaExpressionSyntax(const LambdaExpressionSyntax&) = delete;
 
 		inline virtual ~LambdaExpressionSyntax()
 		{

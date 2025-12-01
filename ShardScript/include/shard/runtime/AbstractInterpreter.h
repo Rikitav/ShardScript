@@ -1,4 +1,6 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/runtime/CallStackFrame.h>
 #include <shard/runtime/InboundVariablesContext.h>
 #include <shard/runtime/ObjectInstance.h>
@@ -40,7 +42,7 @@
 
 namespace shard::runtime
 {
-	class AbstractInterpreter
+	class SHARD_API AbstractInterpreter
 	{
 	private:
 		static std::stack<CallStackFrame*> callStack;

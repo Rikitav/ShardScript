@@ -1,8 +1,12 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxSymbol.h>
+
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/ParameterSymbol.h>
+
 #include <shard/syntax/nodes/StatementsBlockSyntax.h>
 
 #include <shard/runtime/ObjectInstance.h>
@@ -14,9 +18,9 @@
 
 namespace shard::syntax::symbols
 {
-    typedef shard::runtime::ObjectInstance* (*MethodSymbolDelegate)(MethodSymbol* symbol, shard::runtime::InboundVariablesContext* arguments);
+    typedef SHARD_API shard::runtime::ObjectInstance* (*MethodSymbolDelegate)(MethodSymbol* symbol, shard::runtime::InboundVariablesContext* arguments);
 
-    enum class MethodHandleType
+    enum class SHARD_API MethodHandleType
     {
         None,
         ObjectInstance,
@@ -25,7 +29,7 @@ namespace shard::syntax::symbols
         AnonymousMethod,
     };
 
-    class MethodSymbol : public SyntaxSymbol
+    class SHARD_API MethodSymbol : public SyntaxSymbol
     {
     public:
         TypeSymbol* ReturnType = nullptr;
@@ -50,13 +54,21 @@ namespace shard::syntax::symbols
         inline MethodSymbol(std::wstring name, MethodSymbolDelegate delegate)
             : SyntaxSymbol(name, SyntaxKind::MethodDeclaration), FunctionPointer(delegate), HandleType(MethodHandleType::FunctionPointer) { }
 
-        inline ~MethodSymbol() override
+        inline MethodSymbol(const MethodSymbol& other) = delete;
+
+        inline virtual ~MethodSymbol() override
         {
             for (ParameterSymbol* parameter : Parameters)
                 delete parameter;
 
             if (FunctionPointer != nullptr)
                 FunctionPointer = nullptr;
+
+            if (Body != nullptr)
+                delete Body;
+
+            for (ParameterSymbol* param : Parameters)
+                delete param;
         }
 
         template<typename... Args>

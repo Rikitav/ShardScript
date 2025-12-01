@@ -1,4 +1,6 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <string>
 
 namespace shard::parsing::analysis
@@ -9,22 +11,6 @@ namespace shard::parsing::analysis
 		Warning,
 		Error
 	};
-
-	static inline std::wstring severity_to_wstring(const DiagnosticSeverity& severity)
-	{
-		switch (severity)
-		{
-			case DiagnosticSeverity::Info:
-				return L"Info";
-
-			case DiagnosticSeverity::Warning:
-				return L"Warn";
-
-			case DiagnosticSeverity::Error:
-				return L"Error";
-
-			default:
-				return L"";
-		}
-	}
 }
+
+SHARD_API std::wstring severity_to_wstring(const shard::parsing::analysis::DiagnosticSeverity& severity);

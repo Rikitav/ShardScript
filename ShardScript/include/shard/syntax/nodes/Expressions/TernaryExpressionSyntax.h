@@ -1,4 +1,6 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/syntax/nodes/ExpressionSyntax.h>
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxToken.h>
@@ -6,7 +8,7 @@
 
 namespace shard::syntax::nodes
 {
-	class TernaryExpressionSyntax : public ExpressionSyntax
+	class SHARD_API TernaryExpressionSyntax : public ExpressionSyntax
 	{
 	public:
 		SyntaxToken QuestionToken;
@@ -22,9 +24,14 @@ namespace shard::syntax::nodes
 
 		inline virtual ~TernaryExpressionSyntax()
 		{
-			delete Condition;
-			delete Left;
-			delete Right;
+			if (Condition != nullptr)
+				delete Condition;
+			
+			if (Left != nullptr)
+				delete Left;
+
+			if (Right != nullptr)
+				delete Right;
 		}
 	};
 }

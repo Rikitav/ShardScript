@@ -1,15 +1,14 @@
-#include <shard/ShardScript.h>
-
 #include <Windows.h>
 #include <libloaderapi.h>
-
 #include <iostream>
 #include <sstream>
 #include <string>
 
 #pragma comment(lib, "version.lib")
 
-std::wstring shard::utilities::ShardUtilities::GetFileVersion()
+#include "InterpreterUtilities.h"
+
+std::wstring shard::interpreter::utilities::ShardUtilities::GetFileVersion()
 {
 	TCHAR filename[MAX_PATH];
 	GetModuleFileNameW(NULL, filename, MAX_PATH);

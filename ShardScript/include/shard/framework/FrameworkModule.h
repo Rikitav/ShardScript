@@ -1,11 +1,12 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
 #include <shard/syntax/symbols/MethodSymbol.h>
 
 #include <string>
 
 namespace shard::framework
 {
-	class FrameworkModule
+	class SHARD_API FrameworkModule
 	{
 	public:
 		virtual std::wstring& GetSourceCode() = 0;
