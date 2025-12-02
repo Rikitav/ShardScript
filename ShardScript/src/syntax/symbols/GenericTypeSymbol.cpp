@@ -17,7 +17,7 @@ MethodSymbol* GenericTypeSymbol::FindMethod(std::wstring& name, std::vector<Type
 	return UnderlayingType->FindMethod(name, parameterTypes);
 }
 
-MethodSymbol* GenericTypeSymbol::FindIndexator(std::vector<TypeSymbol*> parameterTypes)
+IndexatorSymbol* GenericTypeSymbol::FindIndexator(std::vector<TypeSymbol*> parameterTypes)
 {
 	return UnderlayingType->FindIndexator(parameterTypes);
 }

@@ -34,12 +34,24 @@ static ObjectInstance* get_Length(MethodSymbol* symbol, InboundVariablesContext*
 	return length;
 }
 
-static ObjectInstance* indexator(MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* get_Item(MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	ObjectInstance* index = arguments->TryFind(L"index");
+
 	int value = index->ReadPrimitive<int>();
 	return instance->GetElement(value);
+}
+
+static ObjectInstance* set_Item(MethodSymbol* symbol, InboundVariablesContext* arguments)
+{
+	ObjectInstance* instance = arguments->TryFind(L"this");
+	ObjectInstance* index = arguments->TryFind(L"index");
+	ObjectInstance* value = arguments->TryFind(L"value");
+
+	int indexValue = index->ReadPrimitive<int>();
+	instance->SetElement(indexValue, value);
+	return nullptr;
 }
 
 static std::wstring ObjectInstanceToString(ObjectInstance* instance)
@@ -92,6 +104,7 @@ static ObjectInstance* to_string(MethodSymbol* symbol, InboundVariablesContext* 
 
 void ArrayPrimitive::Reflect(TypeSymbol* symbol)
 {
+	// Length
 	{
 		PropertySymbol* lengthProperty = new PropertySymbol(L"Length");
 		lengthProperty->Accesibility = SymbolAccesibility::Public;
@@ -104,17 +117,47 @@ void ArrayPrimitive::Reflect(TypeSymbol* symbol)
 		symbol->Properties.push_back(lengthProperty);
 	}
 
+	// indexator
 	{
-		MethodSymbol* indexatorMethod = new MethodSymbol(L"", indexator);
-		indexatorMethod->Accesibility = SymbolAccesibility::Public;
+		IndexatorSymbol* indexatorSymbol = new IndexatorSymbol(L"Item");
+		indexatorSymbol->Accesibility = SymbolAccesibility::Public;
+		indexatorSymbol->IsStatic = false;
 
-		ParameterSymbol* indexatorParam = new ParameterSymbol(L"index");
-		indexatorParam->Type = SymbolTable::Primitives::Integer;
-		indexatorMethod->Parameters.push_back(indexatorParam);
+		ParameterSymbol* indexParam = new ParameterSymbol(L"index");
+		indexParam->Type = SymbolTable::Primitives::Integer;
+		indexatorSymbol->Parameters.push_back(indexParam);
 
-		symbol->Indexators.push_back(indexatorMethod);
+		{
+			AccessorSymbol* getter = new AccessorSymbol(L"get_Item");
+
+			MethodSymbol* getterMethod = new MethodSymbol(L"get_Item", get_Item);
+			getterMethod->Accesibility = SymbolAccesibility::Public;
+			getter->Method = getterMethod;
+
+			ParameterSymbol* getterIndexParam = new ParameterSymbol(L"index");
+			getterIndexParam->Type = SymbolTable::Primitives::Integer;
+			getterMethod->Parameters.push_back(getterIndexParam);
+
+			indexatorSymbol->Getter = getter;
+		}
+
+		{
+			AccessorSymbol* setter = new AccessorSymbol(L"set_Item");
+			MethodSymbol* setterMethod = new MethodSymbol(L"set_Item", set_Item);
+			setterMethod->Accesibility = SymbolAccesibility::Public;
+			setter->Method = setterMethod;
+
+			ParameterSymbol* getterIndexParam = new ParameterSymbol(L"index");
+			getterIndexParam->Type = SymbolTable::Primitives::Integer;
+			setterMethod->Parameters.push_back(getterIndexParam);
+
+			indexatorSymbol->Setter = setter;
+		}
+
+		symbol->Indexators.push_back(indexatorSymbol);
 	}
 
+	// ToString
 	{
 		MethodSymbol* toStringMethod = new MethodSymbol(L"ToString", to_string);
 		toStringMethod->Accesibility = SymbolAccesibility::Public;

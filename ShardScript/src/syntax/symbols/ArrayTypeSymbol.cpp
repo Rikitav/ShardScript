@@ -22,7 +22,7 @@ MethodSymbol* ArrayTypeSymbol::FindMethod(std::wstring& name, std::vector<TypeSy
 	return SymbolTable::Primitives::Array->FindMethod(name, parameterTypes);
 }
 
-MethodSymbol* ArrayTypeSymbol::FindIndexator(std::vector<TypeSymbol*> parameterTypes)
+IndexatorSymbol* ArrayTypeSymbol::FindIndexator(std::vector<TypeSymbol*> parameterTypes)
 {
 	return SymbolTable::Primitives::Array->FindIndexator(parameterTypes);
 }

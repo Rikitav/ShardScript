@@ -1366,8 +1366,9 @@ LinkedExpressionNode* LexicalAnalyzer::ReadLinkedExpressionNode(SourceReader& re
 			MemberAccessExpressionSyntax* member = new MemberAccessExpressionSyntax(identifier, previous, parent);
 			member->DelimeterToken = delimeter;
 
-			IndexatorExpressionSyntax* currentNode = new IndexatorExpressionSyntax(member, parent);
+			IndexatorExpressionSyntax* currentNode = new IndexatorExpressionSyntax(identifier, member, parent);
 			currentNode->IndexatorList = ReadIndexatorList(reader, currentNode);
+			currentNode->MemberAccess = member;
 
 			if (!reader.CanConsume())
 				return currentNode;

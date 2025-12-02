@@ -20,8 +20,10 @@ namespace shard::framework
 		static ObjectInstance* Impl_GetDirectory(MethodSymbol* symbol, InboundVariablesContext* arguments)
 		{
 			static FieldSymbol* field = static_cast<ClassSymbol*>(symbol->Parent)->Fields.at(0);
+
 			ObjectInstance* fullName = arguments->Variables.at(L"fullName");
 			ObjectInstance* instance = GarbageCollector::AllocateInstance(symbol->ReturnType);
+
 			instance->SetField(field, fullName);
 			return instance;
 		}

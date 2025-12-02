@@ -5,6 +5,7 @@
 #include <shard/syntax/symbols/FieldSymbol.h>
 #include <shard/syntax/symbols/MethodSymbol.h>
 #include <shard/syntax/symbols/PropertySymbol.h>
+#include <shard/syntax/symbols/IndexatorSymbol.h>
 
 #include <shard/syntax/SyntaxKind.h>
 
@@ -35,7 +36,7 @@ namespace shard::syntax::symbols
 
 		MethodSymbol* FindConstructor(std::vector<TypeSymbol*> parameterTypes) override;
 		MethodSymbol* FindMethod(std::wstring& name, std::vector<TypeSymbol*> parameterTypes) override;
-		MethodSymbol* FindIndexator(std::vector<TypeSymbol*> parameterTypes) override;
+		IndexatorSymbol* FindIndexator(std::vector<TypeSymbol*> parameterTypes) override;
 		FieldSymbol* FindField(std::wstring& name) override;
 		PropertySymbol* FindProperty(std::wstring& name) override;
 	};

@@ -21,6 +21,7 @@
 #include <shard/syntax/symbols/VariableSymbol.h>
 #include <shard/syntax/symbols/ArrayTypeSymbol.h>
 #include <shard/syntax/symbols/AccessorSymbol.h>
+#include <shard/syntax/symbols/IndexatorSymbol.h>
 #include <shard/syntax/symbols/LeftDenotationSymbol.h>
 
 #include <shard/syntax/nodes/CompilationUnitSyntax.h>
@@ -94,6 +95,24 @@ static bool IsAssignmentContext(const MemberAccessExpressionSyntax* expression)
 
 	const BinaryExpressionSyntax* binaryExpr = static_cast<const BinaryExpressionSyntax*>(expression->Parent);
 	if (binaryExpr->OperatorToken.Type != TokenType::AssignOperator)
+		return false;
+
+	return true;
+}
+
+static bool IsAssignmentContext(const IndexatorExpressionSyntax* expression)
+{
+	if (expression->Parent == nullptr)
+		return false;
+
+	if (expression->Parent->Kind != SyntaxKind::BinaryExpression)
+		return false;
+
+	const BinaryExpressionSyntax* binaryExpr = static_cast<const BinaryExpressionSyntax*>(expression->Parent);
+	if (!IsAssignmentOperator(binaryExpr->OperatorToken.Type))
+		return false;
+
+	if (binaryExpr->Left != expression)
 		return false;
 
 	return true;
@@ -893,6 +912,10 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 	}
 	else
 	{
+		ExpressionSyntax* previousExpression = const_cast<ExpressionSyntax*>(node->PreviousExpression);
+		VisitExpression(previousExpression);
+		currentType = GetExpressionType(previousExpression);
+
 		if (!currentType->IsType())
 		{
 			Diagnostics.ReportError(node->IdentifierToken, L"Cannot access member on non-type '" + currentType->Name + L"'");
@@ -901,54 +924,11 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 
 		// First check for property (properties take precedence over fields)
 		std::wstring memberName = node->IdentifierToken.Word;
-		PropertySymbol* property = currentType->FindProperty(memberName);
+		node->PropertySymbol = currentType->FindProperty(memberName);
 
-		if (property != nullptr)
+		if (node->PropertySymbol != nullptr)
 		{
-			if (!IsSymbolAccessible(property))
-			{
-				Diagnostics.ReportError(node->IdentifierToken, L"Property '" + memberName + L"' is not accessible");
-				return nullptr;
-			}
-
-			bool isStaticContext = GetIsStaticContext(node->PreviousExpression);
-			if (isStaticContext && !property->IsStatic)
-			{
-				Diagnostics.ReportError(node->IdentifierToken, L"Cannot access instance property '" + memberName + L"' from type context");
-				return nullptr;
-			}
-
-			if (!isStaticContext && property->IsStatic)
-			{
-				Diagnostics.ReportError(node->IdentifierToken, L"Cannot access static property '" + memberName + L"' from instance reference");
-				return nullptr;
-			}
-
-			if (property->ReturnType == nullptr)
-			{
-				Diagnostics.ReportError(node->IdentifierToken, L"Property '" + memberName + L"' type not resolved");
-				return nullptr;
-			}
-
-			bool requiresSetter = IsAssignmentContext(node);
-			AccessorSymbol* accessor = requiresSetter ? property->Setter : property->Getter;
-
-			if (accessor == nullptr)
-			{
-				Diagnostics.ReportError(node->IdentifierToken, L"Property '" + memberName + L"' does not have a " + (requiresSetter ? L"set" : L"get") + L" accessor");
-				return nullptr;
-			}
-
-			if (!IsSymbolAccessible(accessor))
-			{
-				Diagnostics.ReportError(node->IdentifierToken, (requiresSetter ? L"Setter" : L"Getter") + (L" of property '" + memberName + L"' is not accessible"));
-				return nullptr;
-			}
-
-			// Set property flag and symbol
-			node->PropertySymbol = property;
-			node->IsStaticContext = false;
-			return property->ReturnType;
+			return AnalyzePropertyAccessExpression(node, currentType);
 		}
 		else
 		{
@@ -1001,6 +981,92 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 			return field->ReturnType;
 		}
 	}
+}
+
+TypeSymbol* ExpressionBinder::AnalyzePropertyAccessExpression(MemberAccessExpressionSyntax* node, TypeSymbol* currentType)
+{
+	PropertySymbol* property = node->PropertySymbol;
+	if (property == nullptr)
+		return nullptr;
+
+	std::wstring memberName = node->IdentifierToken.Word;
+	if (!IsSymbolAccessible(property))
+	{
+		Diagnostics.ReportError(node->IdentifierToken, L"Property '" + memberName + L"' is not accessible");
+		return nullptr;
+	}
+
+	bool isStaticContext = GetIsStaticContext(node->PreviousExpression);
+	if (isStaticContext && !property->IsStatic)
+	{
+		Diagnostics.ReportError(node->IdentifierToken, L"Cannot access instance property '" + memberName + L"' from type context");
+		return nullptr;
+	}
+
+	if (!isStaticContext && property->IsStatic)
+	{
+		Diagnostics.ReportError(node->IdentifierToken, L"Cannot access static property '" + memberName + L"' from instance reference");
+		return nullptr;
+	}
+
+	if (property->ReturnType == nullptr)
+	{
+		if (currentType->Kind == SyntaxKind::ArrayType)
+		{
+			ArrayTypeSymbol* array = static_cast<ArrayTypeSymbol*>(currentType);
+			if (array->UnderlayingType == nullptr)
+			{
+				Diagnostics.ReportError(node->IdentifierToken, L"Property '" + memberName + L"' type not resolved");
+				return nullptr;
+			}
+		}
+		else
+		{
+			Diagnostics.ReportError(node->IdentifierToken, L"Property '" + memberName + L"' type not resolved");
+			return nullptr;
+		}
+	}
+
+	bool requiresSetter = IsAssignmentContext(node);
+	AccessorSymbol* accessor = node->AccessorSymbol = requiresSetter ? property->Setter : property->Getter;
+
+	if (accessor == nullptr)
+	{
+		Diagnostics.ReportError(node->IdentifierToken, L"Property '" + memberName + L"' does not have a " + (requiresSetter ? L"set" : L"get") + L" accessor");
+		return nullptr;
+	}
+
+	if (accessor->Method != nullptr)
+	{
+		MethodSymbol* method = accessor->Method;
+		if (!IsSymbolAccessible(method))
+		{
+			Diagnostics.ReportError(node->IdentifierToken, (requiresSetter ? L"Setter" : L"Getter") + (L" of property '" + memberName + L"' is not accessible"));
+			return nullptr;
+		}
+
+		bool isStaticCtx = GetIsStaticContext(node->PreviousExpression);
+		if (isStaticCtx && !method->IsStatic)
+		{
+			Diagnostics.ReportError(node->IdentifierToken, L"Cannot access instance property '" + memberName + L"' from type context");
+			return nullptr;
+		}
+
+		if (!isStaticCtx && method->IsStatic)
+		{
+			Diagnostics.ReportError(node->IdentifierToken, L"Cannot access static property '" + memberName + L"' from instance reference");
+			return nullptr;
+		}
+	}
+
+	node->IsStaticContext = false;
+	if (currentType->Kind == SyntaxKind::ArrayType)
+	{
+		ArrayTypeSymbol* array = static_cast<ArrayTypeSymbol*>(currentType);
+		return array->UnderlayingType;
+	}
+
+	return property->ReturnType;
 }
 
 TypeSymbol* ExpressionBinder::AnalyzeFieldKeywordExpression(MemberAccessExpressionSyntax* node, TypeSymbol* currentType)
@@ -1258,40 +1324,41 @@ TypeSymbol* ExpressionBinder::AnalyzeIndexatorExpression(IndexatorExpressionSynt
 	if (currentType == nullptr)
 		return nullptr;
 
-	std::wstring methodName = node->MemberAccess->IdentifierToken.Word;
-	MethodSymbol* method = ResolveIndexator(node, currentType);
-
-	if (!IsSymbolAccessible(method))
+	if (node->PreviousExpression == nullptr)
 	{
-		Diagnostics.ReportError(node->MemberAccess->IdentifierToken, L"Indexator '" + methodName + L"' is not accessible");
 		return nullptr;
 	}
 
-	if (!MatchMethodArguments(method, node->IndexatorList->Arguments))
-	{
-		//Diagnostics.ReportError(node->MemberAccess->IdentifierToken, L"Indexator '" + methodName + L"' argument types do not match");
+	VisitMemberAccessExpression(node->MemberAccess);
+	currentType = GetExpressionType(node->MemberAccess);
+
+	IndexatorSymbol* indexator = ResolveIndexator(node, currentType);
+	node->PropertySymbol = indexator;
+	
+	TypeSymbol* resultType = AnalyzePropertyAccessExpression(node, currentType);
+	if (resultType == nullptr)
 		return nullptr;
-	}
 
-	node->Symbol = method;
-	node->IsStaticContext = false;
-
-	if (currentType->Kind == SyntaxKind::ArrayType)
-	{
-		ArrayTypeSymbol* array = static_cast<ArrayTypeSymbol*>(currentType);
-		return array->UnderlayingType;
-	}
-
-	if (method->ReturnType == nullptr)
-	{
-		Diagnostics.ReportError(node->MemberAccess->IdentifierToken, L"Indexator '" + methodName + L"' return type not resolved");
+	if (indexator == nullptr)
 		return nullptr;
+
+	AccessorSymbol* accessor = node->AccessorSymbol;
+	if (accessor->Method != nullptr)
+	{
+		MethodSymbol* method = accessor->Method;
+		if (!MatchMethodArguments(method, node->IndexatorList->Arguments))
+		{
+			//Diagnostics.ReportError(node->MemberAccess->IdentifierToken, L"Indexator arguments types do not match");
+			return nullptr;
+		}
 	}
 
-	return method->ReturnType;
+	node->IndexatorSymbol = indexator;
+	node->IsStaticContext = node->IsStaticContext;
+	return resultType;
 }
 
-MethodSymbol* ExpressionBinder::ResolveIndexator(IndexatorExpressionSyntax* node, TypeSymbol* currentType)
+IndexatorSymbol* ExpressionBinder::ResolveIndexator(IndexatorExpressionSyntax* node, TypeSymbol* currentType)
 {
 	std::wstring methodName = node->MemberAccess->IdentifierToken.Word;
 	std::vector<TypeSymbol*> argTypes;
@@ -1310,14 +1377,17 @@ MethodSymbol* ExpressionBinder::ResolveIndexator(IndexatorExpressionSyntax* node
 
 	if (currentType->Kind == SyntaxKind::ArrayType)
 	{
+		if (SymbolTable::Primitives::Array->Indexators.empty())
+			return nullptr;
+
 		return SymbolTable::Primitives::Array->Indexators[0];
 	}
 
-	MethodSymbol* method = currentType->FindIndexator(argTypes);
-	if (method == nullptr)
-		method = Table->GlobalType->FindIndexator(argTypes);
+	IndexatorSymbol* indexator = currentType->FindIndexator(argTypes);
+	if (indexator == nullptr)
+		indexator = Table->GlobalType->FindIndexator(argTypes);
 
-	if (method == nullptr)
+	if (indexator == nullptr)
 	{
 		std::wstringstream diag;
 		diag << "No indeaxtors for type \"" << currentType->Name << "\" found that accepts ";
@@ -1359,19 +1429,19 @@ MethodSymbol* ExpressionBinder::ResolveIndexator(IndexatorExpressionSyntax* node
 	}
 
 	bool isStaticContext = GetIsStaticContext(node->PreviousExpression);
-	if (isStaticContext && !method->IsStatic)
+	if (isStaticContext && !indexator->IsStatic)
 	{
-		Diagnostics.ReportError(node->MemberAccess->IdentifierToken, L"Cannot call instance method '" + methodName + L"' from type context");
+		Diagnostics.ReportError(node->MemberAccess->IdentifierToken, L"Cannot call instance indexator '" + methodName + L"' from type context");
 		return nullptr;
 	}
 
-	if (!isStaticContext && method->IsStatic)
+	if (!isStaticContext && indexator->IsStatic)
 	{
-		Diagnostics.ReportError(node->MemberAccess->IdentifierToken, L"Cannot call static method '" + methodName + L"' on instance reference");
+		Diagnostics.ReportError(node->MemberAccess->IdentifierToken, L"Cannot call static indexator '" + methodName + L"' on instance reference");
 		return nullptr;
 	}
 
-	return method;
+	return indexator;
 }
 
 void ExpressionBinder::VisitMemberAccessExpression(MemberAccessExpressionSyntax* node)

@@ -701,7 +701,7 @@ ObjectInstance* AbstractInterpreter::EvaluateObjectExpression(const ObjectExpres
 
 	if (expression->CtorSymbol != nullptr)
 	{
-		InboundVariablesContext* arguments = CreateArgumentsContext(expression->ArgumentsList->Arguments, expression->CtorSymbol, newInstance);
+		InboundVariablesContext* arguments = CreateArgumentsContext(expression->ArgumentsList->Arguments, expression->CtorSymbol->Parameters, expression->CtorSymbol->IsStatic, newInstance);
 		ExecuteMethod(expression->CtorSymbol, arguments);
 	}
 
@@ -935,7 +935,7 @@ ObjectInstance* AbstractInterpreter::EvaluateInvokationExpression(const Invokati
 		}
 	}
 
-	InboundVariablesContext* arguments = CreateArgumentsContext(expression->ArgumentsList->Arguments, method, prevInstance);
+	InboundVariablesContext* arguments = CreateArgumentsContext(expression->ArgumentsList->Arguments, method->Parameters, method->IsStatic, prevInstance);
 	ObjectInstance* retReg = ExecuteMethod(method, arguments);
 	return retReg;
 }
@@ -945,8 +945,12 @@ ObjectInstance* AbstractInterpreter::EvaluateIndexatorExpression(const Indexator
 	if (prevInstance == nullptr)
 		prevInstance = EvaluateExpression(expression->PreviousExpression);
 
-	MethodSymbol* method = expression->Symbol;
-	InboundVariablesContext* arguments = CreateArgumentsContext(expression->IndexatorList->Arguments, method, prevInstance);
+	IndexatorSymbol* indexator = expression->IndexatorSymbol;
+	if (indexator == nullptr || indexator->Getter == nullptr || indexator->Getter->Method == nullptr)
+		throw std::runtime_error("indexator getter is not resolved");
+
+	MethodSymbol* method = indexator->Getter->Method;
+	InboundVariablesContext* arguments = CreateArgumentsContext(expression->IndexatorList->Arguments, method->Parameters, method->IsStatic, prevInstance);
 	ObjectInstance* retReg = ExecuteMethod(method, arguments);
 	return retReg;
 }
@@ -959,21 +963,22 @@ ObjectInstance* AbstractInterpreter::EvaluateArgument(const ArgumentSyntax* argu
 	return argInstance;
 }
 
-InboundVariablesContext* AbstractInterpreter::CreateArgumentsContext(std::vector<ArgumentSyntax*> arguments, MethodSymbol* symbol, ObjectInstance* instance)
+InboundVariablesContext* AbstractInterpreter::CreateArgumentsContext(std::vector<ArgumentSyntax*> arguments, std::vector<ParameterSymbol*> parameters, bool isStatic, ObjectInstance* instance)
 {
 	InboundVariablesContext* argumentsContext = new InboundVariablesContext(nullptr);
 
-	if (!symbol->IsStatic)
+	if (!isStatic)
 		argumentsContext->AddVariable(L"this", instance);
 
-	size_t size = symbol->Parameters.size();
+	size_t size = parameters.size();
 	for (size_t i = 0; i < size; i++)
 	{
 		ArgumentSyntax* argument = arguments.at(i);
 		ObjectInstance* argInstance = EvaluateExpression(argument->Expression);
 
-		std::wstring argName = symbol->Parameters.at(i)->Name;
+		std::wstring argName = parameters.at(i)->Name;
 		argumentsContext->AddVariable(argName, argInstance);
+		GarbageCollector::CollectInstance(argInstance);
 	}
 
 	return argumentsContext;
@@ -981,6 +986,15 @@ InboundVariablesContext* AbstractInterpreter::CreateArgumentsContext(std::vector
 
 void AbstractInterpreter::ExecuteInstanceSetter(ObjectInstance* instance, const MemberAccessExpressionSyntax* access, ObjectInstance* value)
 {
+	if (access->Kind == SyntaxKind::IndexatorExpression)
+	{
+		const IndexatorExpressionSyntax* indexator = static_cast<const IndexatorExpressionSyntax*>(access);
+		InboundVariablesContext* arguments = CreateArgumentsContext(indexator->IndexatorList->Arguments, indexator->IndexatorSymbol->Parameters, indexator->IndexatorSymbol->IsStatic, instance);
+		arguments->AddVariable(L"value", value);
+		ExecuteMethod(indexator->IndexatorSymbol->Setter->Method, arguments);
+		return;
+	}
+
 	// Check if this is a property or field
 	FieldSymbol* field = access->FieldSymbol;
 	if (access->PropertySymbol != nullptr)
@@ -988,13 +1002,18 @@ void AbstractInterpreter::ExecuteInstanceSetter(ObjectInstance* instance, const 
 		PropertySymbol* property = access->PropertySymbol;
 		field = property->BackingField;
 
-		if (property->Getter->Method != nullptr)
+		if (property->Setter->Method != nullptr)
 		{
 			InboundVariablesContext* setterArgs = new InboundVariablesContext(nullptr);
 			if (!property->IsStatic)
-				setterArgs->SetVariable(L"this", instance);
+				setterArgs->AddVariable(L"this", instance);
 
-			setterArgs->SetVariable(L"value", value);
+			if (access->Kind == SyntaxKind::IndexatorExpression)
+			{
+
+			}
+
+			setterArgs->AddVariable(L"value", value);
 			ExecuteMethod(property->Setter->Method, setterArgs);
 			return;
 		}

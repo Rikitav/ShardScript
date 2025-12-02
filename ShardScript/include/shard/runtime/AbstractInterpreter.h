@@ -52,7 +52,7 @@ namespace shard::runtime
 		static void PushFrame(shard::syntax::symbols::MethodSymbol* methodSymbol);
 		static void PopFrame();
 
-		static InboundVariablesContext* CreateArgumentsContext(std::vector<shard::syntax::nodes::ArgumentSyntax*> expression, shard::syntax::symbols::MethodSymbol* symbol, shard::runtime::ObjectInstance* instance);
+		static InboundVariablesContext* CreateArgumentsContext(std::vector<shard::syntax::nodes::ArgumentSyntax*> arguments, std::vector<shard::syntax::symbols::ParameterSymbol*> parameters, bool isStatic, shard::runtime::ObjectInstance* instance);
 		static InboundVariablesContext* CurrentContext();
 		static void PushContext(InboundVariablesContext* context);
 		static void PopContext();

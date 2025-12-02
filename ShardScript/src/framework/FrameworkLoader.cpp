@@ -107,7 +107,7 @@ static ObjectInstance* Print(MethodSymbol* symbol, InboundVariablesContext* argu
 	MethodSymbol* toString = type->FindMethod(methodWName, std::vector<TypeSymbol*>());
 	if (toString != nullptr)
 	{
-		InboundVariablesContext* toStringArgs = AbstractInterpreter::CreateArgumentsContext(std::vector<ArgumentSyntax*>(), toString, instance);
+		InboundVariablesContext* toStringArgs = AbstractInterpreter::CreateArgumentsContext(std::vector<ArgumentSyntax*>(), std::vector<ParameterSymbol*>(), toString->IsStatic, instance);
 		ObjectInstance* result = AbstractInterpreter::ExecuteMethod(symbol, toStringArgs);
 		if (type != SymbolTable::Primitives::String)
 		{
@@ -141,7 +141,7 @@ static ObjectInstance* Println(MethodSymbol* symbol, InboundVariablesContext* ar
 	MethodSymbol* toString = type->FindMethod(methodWName, std::vector<TypeSymbol*>());
 	if (toString != nullptr)
 	{
-		InboundVariablesContext* toStringArgs = AbstractInterpreter::CreateArgumentsContext(std::vector<ArgumentSyntax*>(), toString, instance);
+		InboundVariablesContext* toStringArgs = AbstractInterpreter::CreateArgumentsContext(std::vector<ArgumentSyntax*>(), std::vector<ParameterSymbol*>(), toString->IsStatic, instance);
 		ObjectInstance* result = AbstractInterpreter::ExecuteMethod(toString, toStringArgs);
 		if (result->Info != SymbolTable::Primitives::String)
 		{

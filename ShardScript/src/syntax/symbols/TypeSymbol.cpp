@@ -2,6 +2,7 @@
 #include <shard/syntax/symbols/FieldSymbol.h>
 #include <shard/syntax/symbols/MethodSymbol.h>
 #include <shard/syntax/symbols/PropertySymbol.h>
+#include <shard/syntax/symbols/IndexatorSymbol.h>
 #include <shard/syntax/symbols/ParameterSymbol.h>
 #include <shard/syntax/symbols/ArrayTypeSymbol.h>
 #include <shard/syntax/symbols/DelegateTypeSymbol.h>
@@ -117,9 +118,9 @@ MethodSymbol* TypeSymbol::FindMethod(std::wstring& name, std::vector<TypeSymbol*
 	return nullptr;
 }
 
-MethodSymbol* TypeSymbol::FindIndexator(std::vector<TypeSymbol*> parameterTypes)
+IndexatorSymbol* TypeSymbol::FindIndexator(std::vector<TypeSymbol*> parameterTypes)
 {
-	for (MethodSymbol* symbol : Indexators)
+	for (IndexatorSymbol* symbol : Indexators)
 	{
 		if (symbol->Parameters.size() != parameterTypes.size())
 			continue;

@@ -12,6 +12,7 @@ namespace shard::syntax::symbols
     class MethodSymbol;
     class FieldSymbol;
     class PropertySymbol;
+    class IndexatorSymbol;
 
     enum class SHARD_API TypeLayoutingState
     {
@@ -29,7 +30,7 @@ namespace shard::syntax::symbols
 
         std::vector<MethodSymbol*> Constructors;
         std::vector<MethodSymbol*> Methods;
-        std::vector<MethodSymbol*> Indexators;
+        std::vector<IndexatorSymbol*> Indexators;
         std::vector<FieldSymbol*> Fields;
         std::vector<PropertySymbol*> Properties;
 
@@ -60,7 +61,7 @@ namespace shard::syntax::symbols
             for (PropertySymbol* propertySymbol : Properties)
                 delete propertySymbol;
 
-            for (MethodSymbol* indexatorSymbol : Indexators)
+            for (IndexatorSymbol* indexatorSymbol : Indexators)
                 delete indexatorSymbol;
 
             for (MethodSymbol* ctorSymbol : Constructors)
@@ -78,7 +79,7 @@ namespace shard::syntax::symbols
 
         virtual MethodSymbol* FindConstructor(std::vector<TypeSymbol*> parameterTypes);
         virtual MethodSymbol* FindMethod(std::wstring& name, std::vector<TypeSymbol*> parameterTypes);
-        virtual MethodSymbol* FindIndexator(std::vector<TypeSymbol*> parameterTypes);
+        virtual IndexatorSymbol* FindIndexator(std::vector<TypeSymbol*> parameterTypes);
         virtual FieldSymbol* FindField(std::wstring& name);
         virtual PropertySymbol* FindProperty(std::wstring& name);
 
