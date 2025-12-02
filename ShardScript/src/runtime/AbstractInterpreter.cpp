@@ -197,6 +197,7 @@ ObjectInstance* AbstractInterpreter::ExecuteMethod(MethodSymbol* method, Inbound
 
 				frame->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
 				frame->InterruptionRegister = ObjectInstance::FromValue(wdescription);
+				frame->InterruptionRegister->IncrementReference();
 			}
 
 			break;
@@ -820,14 +821,18 @@ ObjectInstance* AbstractInterpreter::EvaluateUnaryExpression(const UnaryExpressi
 ObjectInstance* AbstractInterpreter::EvaluateCollectionExpression(const CollectionExpressionSyntax* expression)
 {
 	ObjectInstance* instance = GarbageCollector::AllocateInstance(expression->Symbol);
-	int size = static_cast<int>(expression->ValuesExpressions.size());
-	instance->WriteMemory(0, sizeof(int), &size);
+	size_t size = expression->ValuesExpressions.size();
 
-	for (size_t i = 0; i < expression->ValuesExpressions.size(); i++)
+	// setting 'Lenght' property value
+	int length = static_cast<int>(size);
+	instance->WriteMemory(0, sizeof(int), &length);
+
+	for (size_t i = 0; i < size; i++)
 	{
 		ExpressionSyntax* valueExpression = expression->ValuesExpressions[i];
 		ObjectInstance* valueInstance = EvaluateExpression(valueExpression);
 		instance->SetElement(i, valueInstance);
+		GarbageCollector::CollectInstance(valueInstance);
 	}
 
 	return instance;
@@ -969,7 +974,6 @@ InboundVariablesContext* AbstractInterpreter::CreateArgumentsContext(std::vector
 
 		std::wstring argName = symbol->Parameters.at(i)->Name;
 		argumentsContext->AddVariable(argName, argInstance);
-		GarbageCollector::CollectInstance(argInstance);
 	}
 
 	return argumentsContext;

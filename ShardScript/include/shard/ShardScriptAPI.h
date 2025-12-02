@@ -1,6 +1,6 @@
-#if _DEBUG
+//#if _DEBUG
 #pragma warning(disable: 4251)
-#endif
+//#endif
 
 #ifdef SHARD_API_EXPORT
 	#define SHARD_API __declspec(dllexport)

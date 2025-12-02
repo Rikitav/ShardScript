@@ -72,7 +72,6 @@ ObjectInstance* GarbageCollector::CopyInstance(const TypeSymbol* objectInfo, voi
 
 	memcpy(memory, ptr, objectInfo->MemoryBytesSize);
 	ObjectInstance* instance = new ObjectInstance(objectsCounter++, objectInfo, ptr);
-	instance->IncrementReference();
 
 	Heap.add(instance);
 	return instance;
@@ -145,11 +144,16 @@ void GarbageCollector::TerminateInstance(ObjectInstance* instance)
 	{
 		const ArrayTypeSymbol* array = static_cast<const ArrayTypeSymbol*>(instance->Info);
 		for (size_t i = 0; i < array->Size; i++)
-			DestroyInstance(instance->GetElement(i));
+		{
+			ObjectInstance* element = instance->GetElement(i);
+			DestroyInstance(element);
+		}
 	}
 
+	if (!instance->IsFieldInstance)
+		free(instance->Ptr);
+
 	Heap.erase(instance);
-	free(instance->Ptr);
 	delete instance;
 }
 

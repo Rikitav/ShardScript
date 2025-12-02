@@ -3,7 +3,7 @@
 
 using namespace shard::syntax;
 
-static int GetOperatorPrecendence(TokenType type)
+int GetOperatorPrecendence(TokenType type)
 {
 	switch (type)
 	{
@@ -183,7 +183,7 @@ bool IsLeftUnaryBooleanOperator(shard::syntax::TokenType type)
 	return false;
 }
 
-static bool IsUnaryOperator(shard::syntax::TokenType type)
+bool IsUnaryOperator(shard::syntax::TokenType type)
 {
 	if (IsLeftUnaryOperator(type))
 		return true;
@@ -194,7 +194,7 @@ static bool IsUnaryOperator(shard::syntax::TokenType type)
 	return false;
 }
 
-static bool IsRightUnaryOperator(TokenType type)
+bool IsRightUnaryOperator(TokenType type)
 {
 	if (IsRightUnaryArithmeticOperator(type))
 		return true;
@@ -205,7 +205,7 @@ static bool IsRightUnaryOperator(TokenType type)
 	return false;
 }
 
-static bool IsOperator(TokenType type)
+bool IsOperator(TokenType type)
 {
 	if (type == TokenType::AssignOperator)
 		return true;

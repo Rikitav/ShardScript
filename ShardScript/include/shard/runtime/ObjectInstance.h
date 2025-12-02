@@ -16,6 +16,7 @@ namespace shard::runtime
 		const shard::syntax::symbols::TypeSymbol* Info;
 		const bool IsNullable = false;
 
+		bool IsFieldInstance = false;
 		size_t ReferencesCounter;
 		void* Ptr;
 

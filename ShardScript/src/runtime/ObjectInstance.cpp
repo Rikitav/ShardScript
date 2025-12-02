@@ -62,7 +62,9 @@ ObjectInstance* ObjectInstance::GetField(FieldSymbol* field)
 	else
 	{
 		void* offset = OffsetMemory(field->MemoryBytesOffset, field->ReturnType->MemoryBytesSize);
-		return GarbageCollector::CopyInstance(field->ReturnType, offset);
+		ObjectInstance* instance = GarbageCollector::CopyInstance(field->ReturnType, offset);
+		instance->IsFieldInstance = true;
+		return instance;
 	}
 }
 
@@ -98,6 +100,9 @@ void ObjectInstance::SetField(FieldSymbol* field, ObjectInstance* instance)
 
 ObjectInstance* ObjectInstance::GetElement(size_t index)
 {
+	if (Info->Kind != shard::syntax::SyntaxKind::ArrayType)
+		throw std::runtime_error("Tried to get element from non array instance");
+
 	const ArrayTypeSymbol* info = static_cast<const ArrayTypeSymbol*>(Info);
 	TypeSymbol* type = info->UnderlayingType;
 	size_t memoryOffset = SymbolTable::Primitives::Array->MemoryBytesSize + type->GetInlineSize() * index;
@@ -106,19 +111,28 @@ ObjectInstance* ObjectInstance::GetElement(size_t index)
 	{
 		void* offset = OffsetMemory(memoryOffset, sizeof(ObjectInstance*));
 		void* valuePtr = *static_cast<void**>(offset);
-		return valuePtr == nullptr ? GarbageCollector::NullInstance : static_cast<ObjectInstance*>(valuePtr);
+
+		if (valuePtr == nullptr)
+			std::runtime_error("got nullptr in GetElement");
+
+		return static_cast<ObjectInstance*>(valuePtr);
 	}
 	else
 	{
 		void* offset = OffsetMemory(memoryOffset, type->MemoryBytesSize);
-		return GarbageCollector::CopyInstance(type, offset);
+		ObjectInstance* instance = GarbageCollector::CopyInstance(type, offset);
+		instance->IsFieldInstance = true;
+		return instance;
 	}
 }
 
 void ObjectInstance::SetElement(size_t index, ObjectInstance* instance)
 {
+	if (Info->Kind != shard::syntax::SyntaxKind::ArrayType)
+		throw std::runtime_error("Tried to set element in non array instance");
+
 	if (instance == nullptr)
-		throw std::runtime_error("got nullptr instance");
+		throw std::runtime_error("got nullptr instance in SetElement");
 
 	const ArrayTypeSymbol* info = static_cast<const ArrayTypeSymbol*>(Info);
 	TypeSymbol* type = info->UnderlayingType;
@@ -126,16 +140,8 @@ void ObjectInstance::SetElement(size_t index, ObjectInstance* instance)
 
 	if (type->IsReferenceType)
 	{
-		if (instance == GarbageCollector::NullInstance)
-		{
-			void* offset = OffsetMemory(memoryOffset, sizeof(void*));
-			memset(offset, 0, sizeof(void*));
-			return;
-		}
-
 		ObjectInstance* oldValue = GetElement(index);
-		if (oldValue != nullptr)
-			GarbageCollector::CollectInstance(oldValue);
+		GarbageCollector::CollectInstance(oldValue);
 
 		instance->IncrementReference();
 		WriteMemory(memoryOffset, sizeof(ObjectInstance*), &instance);
@@ -151,6 +157,9 @@ void ObjectInstance::SetElement(size_t index, ObjectInstance* instance)
 
 bool ObjectInstance::IsInBounds(size_t index)
 {
+	if (Info->Kind != shard::syntax::SyntaxKind::ArrayType)
+		throw std::runtime_error("Tried to get size of non array instance");
+
 	const ArrayTypeSymbol* array = static_cast<const ArrayTypeSymbol*>(Info);
 	return index >= 0 && index < array->Size;
 }

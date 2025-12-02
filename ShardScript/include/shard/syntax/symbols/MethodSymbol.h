@@ -72,13 +72,13 @@ namespace shard::syntax::symbols
         }
 
         template<typename... Args>
-        shard::runtime::ObjectInstance* invoke(MethodSymbol* symbol, Args&&... args)
+        shard::runtime::ObjectInstance* invoke(Args&&... args)
         {
             shard::runtime::InboundVariablesContext* ctx = new shard::runtime::InboundVariablesContext(nullptr);
             for (std::pair<std::wstring, shard::runtime::ObjectInstance*> pair : args)
                 ctx->SetVariable(pair.first, pair.second);
 
-            return symbol->FunctionPointer(symbol, ctx);
+            return this->FunctionPointer(this, ctx);
         }
     };
 }
