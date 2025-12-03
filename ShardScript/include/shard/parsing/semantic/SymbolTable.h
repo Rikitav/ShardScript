@@ -1,7 +1,6 @@
 #pragma once
 #include <shard/ShardScriptAPI.h>
 
-#include <shard/parsing/semantic/SemanticScope.h>
 #include <shard/syntax/SyntaxSymbol.h>
 #include <shard/syntax/SyntaxNode.h>
 #include <shard/syntax/SyntaxKind.h>
@@ -9,6 +8,8 @@
 #include <shard/syntax/symbols/MethodSymbol.h>
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/NamespaceSymbol.h>
+
+#include <shard/parsing/semantic/SemanticScope.h>
 
 #include <unordered_map>
 #include <vector>
@@ -27,8 +28,9 @@ namespace shard::parsing::semantic
 
     public:
         std::vector<shard::syntax::symbols::MethodSymbol*> EntryPointCandidates;
-        SemanticScope* GlobalScope = new SemanticScope(nullptr, nullptr);
+        shard::parsing::semantic::SemanticScope* GlobalScope = new SemanticScope(nullptr, nullptr);
         shard::syntax::symbols::TypeSymbol* GlobalType = nullptr;
+
 
         struct Primitives
         {
@@ -46,25 +48,7 @@ namespace shard::parsing::semantic
             GlobalType = new shard::syntax::symbols::TypeSymbol(GlobalTypeName, shard::syntax::SyntaxKind::CompilationUnit);
         }
 
-        inline ~SymbolTable()
-        {
-            delete GlobalScope;
-            delete GlobalType;
-
-            for (shard::syntax::SyntaxSymbol* symbol : (symbolToNodeMap | std::views::keys))
-            {
-                switch (symbol->Kind)
-                {
-                    case shard::syntax::SyntaxKind::NamespaceDeclaration:
-                    case shard::syntax::SyntaxKind::ClassDeclaration:
-                    case shard::syntax::SyntaxKind::StructDeclaration:
-                    {
-                        delete symbol;
-                        break;
-                    }
-                }
-            }
-        }
+        ~SymbolTable();
 
         void ClearSymbols();
         void BindSymbol(shard::syntax::SyntaxNode* node, shard::syntax::SyntaxSymbol* symbol);

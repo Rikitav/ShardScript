@@ -50,15 +50,15 @@ namespace shard::framework
 		std::wstring& FrameworkModule::GetSourceCode()
 		{
 			static std::wstring SourceCode =
-			L"																				  \
-			namespace System.IO																  \
-			{																				  \
-				public static class File													  \
-				{																			  \
-					public static string ReadAllText(string fileName);						  \
-					public static string WriteAllText(string fileName, string content);		  \
-				}																			  \
-			}																				  \
+			L"																				     \
+			namespace System.IO																     \
+			{																				     \
+				public static class File													     \
+				{																			     \
+					public static extern string ReadAllText(string fileName);				     \
+					public static extern string WriteAllText(string fileName, string content);	 \
+				}																			     \
+			}																				     \
 			";
 
 			return SourceCode;
@@ -68,14 +68,14 @@ namespace shard::framework
 		{
 			if (symbol->Name == L"ReadAllText")
 			{
-				symbol->HandleType = MethodHandleType::FunctionPointer;
+				symbol->HandleType = MethodHandleType::External;
 				symbol->FunctionPointer = Impl_ReadAllText;
 				return true;
 			}
 
 			if (symbol->Name == L"WriteAllText")
 			{
-				symbol->HandleType = MethodHandleType::FunctionPointer;
+				symbol->HandleType = MethodHandleType::External;
 				symbol->FunctionPointer = Impl_WriteAllText;
 				return true;
 			}

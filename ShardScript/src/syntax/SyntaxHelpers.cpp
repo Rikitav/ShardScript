@@ -38,6 +38,12 @@ void SetAccesibility(SyntaxSymbol* symbol, std::vector<SyntaxToken> modifiers)
 				symbol->Accesibility = SymbolAccesibility::Protected;
 				break;
 			}
+
+			case TokenType::ExternKeyword:
+			{
+				symbol->IsExtern = true;
+				break;
+			}
 		}
 	}
 }
@@ -83,6 +89,12 @@ void SetAccesibility(TypeSymbol* symbol, std::vector<SyntaxToken> modifiers)
 				symbol->IsSealed = true;
 				break;
 			}
+
+			case TokenType::ExternKeyword:
+			{
+				symbol->IsExtern = true;
+				break;
+			}
 		}
 	}
 }
@@ -117,6 +129,12 @@ void SetAccesibility(MethodSymbol* symbol, std::vector<SyntaxToken> modifiers)
 				break;
 			}
 
+			case TokenType::AbstractKeyword:
+			{
+				symbol->IsAbstract = true;
+				break;
+			}
+
 			case TokenType::OverrideKeyword:
 			{
 				symbol->IsOverride = true;
@@ -126,6 +144,12 @@ void SetAccesibility(MethodSymbol* symbol, std::vector<SyntaxToken> modifiers)
 			case TokenType::VirtualKeyword:
 			{
 				symbol->IsVirtual = true;
+				break;
+			}
+
+			case TokenType::ExternKeyword:
+			{
+				symbol->IsExtern = true;
 				break;
 			}
 		}
@@ -159,6 +183,12 @@ void SetAccesibility(PropertySymbol* symbol, std::vector<SyntaxToken> modifiers)
 			case TokenType::StaticKeyword:
 			{
 				symbol->IsStatic = true;
+				break;
+			}
+
+			case TokenType::ExternKeyword:
+			{
+				symbol->IsExtern = true;
 				break;
 			}
 
@@ -206,6 +236,12 @@ void SetAccesibility(FieldSymbol* symbol, std::vector<SyntaxToken> modifiers)
 			case TokenType::StaticKeyword:
 			{
 				symbol->IsStatic = true;
+				break;
+			}
+
+			case TokenType::ExternKeyword:
+			{
+				symbol->IsExtern = true;
 				break;
 			}
 		}

@@ -37,6 +37,24 @@ void ScopeVisitor::Declare(SyntaxSymbol* symbol)
 	CurrentScope()->DeclareSymbol(symbol);
 }
 
+bool ScopeVisitor::CheckSymbolNameDeclared(SyntaxSymbol* symbol)
+{
+	for (const SemanticScope* scope = CurrentScope(); scope != nullptr; scope = scope->Parent)
+	{
+		auto lookup = scope->_symbols.find(symbol->Name);
+		if (lookup == scope->_symbols.end())
+			continue;
+
+		SyntaxSymbol* found = lookup->second;
+		if (found == symbol)
+			continue;
+
+		return true;
+	}
+
+	return false;
+}
+
 SyntaxSymbol* ScopeVisitor::OwnerSymbol()
 {
 	for (const SemanticScope* scope = CurrentScope(); scope != nullptr; scope = scope->Parent)
@@ -52,6 +70,7 @@ SyntaxSymbol* ScopeVisitor::OwnerSymbol()
 	return nullptr;
 }
 
+/*
 NamespaceSymbol* ScopeVisitor::OwnerNamespace()
 {
 	for (const SemanticScope* scope = CurrentScope(); scope != nullptr; scope = scope->Parent)
@@ -77,6 +96,7 @@ NamespaceNode* ScopeVisitor::OwnerNamespaceNode()
 
 	return nullptr;
 }
+*/
 
 TypeSymbol* ScopeVisitor::OwnerType()
 {

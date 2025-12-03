@@ -956,6 +956,11 @@ bool SourceReader::IsModifier(std::wstring& word, TokenType& type)
 		type = TokenType::VirtualKeyword;
 		return true;
 	}
+	else if (word == L"extern")
+	{
+		type = TokenType::ExternKeyword;
+		return true;
+	}
 	else
 	{
 		return false;

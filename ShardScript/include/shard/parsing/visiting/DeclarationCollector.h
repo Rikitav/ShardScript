@@ -1,6 +1,8 @@
 #pragma once
 #include <shard/ShardScriptAPI.h>
 
+#include <shard/syntax/SyntaxSymbol.h>
+
 #include <shard/parsing/visiting/SyntaxVisitor.h>
 #include <shard/parsing/visiting/ScopeVisitor.h>
 #include <shard/parsing/analysis/DiagnosticsContext.h>
@@ -25,6 +27,9 @@ namespace shard::parsing
 {
 	class SHARD_API DeclarationCollector : public SyntaxVisitor, ScopeVisitor
 	{
+	protected:
+		void Declare(shard::syntax::SyntaxSymbol* symbol) override;
+
 	public:
 		inline DeclarationCollector(shard::parsing::semantic::SemanticModel& model, shard::parsing::analysis::DiagnosticsContext& diagnostics)
 			: SyntaxVisitor(model, diagnostics), ScopeVisitor(model.Table) { }
@@ -43,7 +48,5 @@ namespace shard::parsing
 		void VisitPropertyDeclaration(shard::syntax::nodes::PropertyDeclarationSyntax* node) override;
 		void VisitAccessorDeclaration(shard::syntax::nodes::AccessorDeclarationSyntax* node) override;
 		void VisitVariableStatement(shard::syntax::nodes::VariableStatementSyntax* node) override;
-
-		void VisitStatementsBlock(shard::syntax::nodes::StatementsBlockSyntax* node) override;
 	};
 }

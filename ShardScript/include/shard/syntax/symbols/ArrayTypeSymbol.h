@@ -30,8 +30,7 @@ namespace shard::syntax::symbols
 
 		inline virtual ~ArrayTypeSymbol()
 		{
-			if (UnderlayingType != nullptr)
-				delete UnderlayingType;
+
 		}
 
 		MethodSymbol* FindConstructor(std::vector<TypeSymbol*> parameterTypes) override;

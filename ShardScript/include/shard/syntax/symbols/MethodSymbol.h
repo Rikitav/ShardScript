@@ -23,10 +23,10 @@ namespace shard::syntax::symbols
     enum class SHARD_API MethodHandleType
     {
         None,
-        ObjectInstance,
-        ForeignInterface,
-        FunctionPointer,
-        AnonymousMethod,
+        Body,
+        External,
+        Lambda,
+        //ForeignInterface,
     };
 
     class SHARD_API MethodSymbol : public SyntaxSymbol
@@ -36,11 +36,12 @@ namespace shard::syntax::symbols
         MethodSymbol* OverriddenMethod = nullptr;
         std::vector<ParameterSymbol*> Parameters;
 
-        MethodHandleType HandleType = MethodHandleType::ObjectInstance;
+        MethodHandleType HandleType = MethodHandleType::Body;
         shard::syntax::nodes::StatementsBlockSyntax* Body = nullptr;
         MethodSymbolDelegate FunctionPointer = nullptr;
         std::wstring ForeighInterfacePath;
 
+        bool IsAbstract = false;
         bool IsVirtual = false;
         bool IsOverride = false;
         bool IsStatic = false;
@@ -49,10 +50,10 @@ namespace shard::syntax::symbols
             : SyntaxSymbol(name, SyntaxKind::MethodDeclaration), HandleType(MethodHandleType::None) { }
 
         inline MethodSymbol(std::wstring name, shard::syntax::nodes::StatementsBlockSyntax* body)
-            : SyntaxSymbol(name, SyntaxKind::MethodDeclaration), Body(body), HandleType(MethodHandleType::ObjectInstance) { }
+            : SyntaxSymbol(name, SyntaxKind::MethodDeclaration), Body(body), HandleType(MethodHandleType::Body) { }
 
         inline MethodSymbol(std::wstring name, MethodSymbolDelegate delegate)
-            : SyntaxSymbol(name, SyntaxKind::MethodDeclaration), FunctionPointer(delegate), HandleType(MethodHandleType::FunctionPointer) { }
+            : SyntaxSymbol(name, SyntaxKind::MethodDeclaration), FunctionPointer(delegate), HandleType(MethodHandleType::External) { }
 
         inline MethodSymbol(const MethodSymbol& other) = delete;
 

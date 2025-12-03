@@ -6,21 +6,23 @@
 using namespace shard::syntax;
 using namespace shard::parsing::semantic;
 
-SyntaxSymbol* SemanticScope::Lookup(std::wstring& name)
+SyntaxSymbol* SemanticScope::Lookup(const std::wstring& name)
 {
     auto lookup = _symbols.find(name);
     if (lookup != _symbols.end())
         return lookup->second;
 
-    SemanticScope* parent = (SemanticScope*)Parent;
-    if (parent != nullptr)
-        return parent->Lookup(name);
+    if (Parent != nullptr)
+        return const_cast<SemanticScope*>(Parent)->Lookup(name);
 
     return nullptr;
 }
 
 void SemanticScope::DeclareSymbol(SyntaxSymbol* symbol)
 {
+    if (symbol == nullptr)
+        throw std::runtime_error("tried to declare nullptr symbol");
+
     if (_symbols.find(symbol->Name) != _symbols.end())
         throw std::runtime_error("Symbol already defined");
 

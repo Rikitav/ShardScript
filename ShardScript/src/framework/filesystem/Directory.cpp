@@ -39,7 +39,7 @@ namespace shard::framework
 				{																			  \
 					public string FullName { get; private set; }							  \
 																							  \
-					public static DirectoryInfo GetDirectory(string fullName);			      \
+					public static extern DirectoryInfo GetDirectory(string fullName);	      \
 				}																			  \
 			}																				  \
 			";
@@ -51,7 +51,7 @@ namespace shard::framework
 		{
 			if (symbol->Name == L"GetDirectory")
 			{
-				symbol->HandleType = MethodHandleType::FunctionPointer;
+				symbol->HandleType = MethodHandleType::External;
 				symbol->FunctionPointer = Impl_GetDirectory;
 				return true;
 			}

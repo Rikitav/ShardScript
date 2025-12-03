@@ -18,20 +18,19 @@ using namespace shard::syntax;
 using namespace shard::syntax::symbols;
 using namespace shard::parsing::semantic;
 
+SymbolTable::~SymbolTable()
+{
+	ClearSymbols();
+	delete GlobalScope;
+	delete GlobalType;
+}
+
 void SymbolTable::ClearSymbols()
 {
 	for (shard::syntax::SyntaxSymbol* symbol : (symbolToNodeMap | std::views::keys))
 	{
-		switch (symbol->Kind)
-		{
-			case shard::syntax::SyntaxKind::NamespaceDeclaration:
-			case shard::syntax::SyntaxKind::ClassDeclaration:
-			case shard::syntax::SyntaxKind::StructDeclaration:
-			{
-				delete symbol;
-				break;
-			}
-		}
+		if (symbol->IsType())
+			delete symbol;
 	}
 
 	symbolToNodeMap.clear();

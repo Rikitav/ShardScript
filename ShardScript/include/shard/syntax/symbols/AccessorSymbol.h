@@ -10,20 +10,41 @@
 
 namespace shard::syntax::symbols
 {
-    class SHARD_API AccessorSymbol : public SyntaxSymbol
+    class SHARD_API AccessorSymbol : public MethodSymbol
     {
     public:
-        MethodSymbol* Method = nullptr;
+        inline AccessorSymbol(std::wstring name) : MethodSymbol(name)
+        {
+            // hehe
+            SyntaxKind* pKind = const_cast<SyntaxKind*>(&Kind);
+            *pKind = SyntaxKind::AccessorDeclaration;
 
-        inline AccessorSymbol(std::wstring name)
-            : SyntaxSymbol(name, SyntaxKind::AccessorDeclaration) { }
+            Accesibility = SymbolAccesibility::Public;
+        }
+
+        inline AccessorSymbol(std::wstring name, shard::syntax::nodes::StatementsBlockSyntax* body) : MethodSymbol(name, body)
+        {
+            // hehe
+            SyntaxKind* pKind = const_cast<SyntaxKind*>(&Kind);
+            *pKind = SyntaxKind::AccessorDeclaration;
+
+            Accesibility = SymbolAccesibility::Public;
+        }
+
+        inline AccessorSymbol(std::wstring name, MethodSymbolDelegate delegate) : MethodSymbol(name, delegate)
+        {
+            // hehe
+            SyntaxKind* pKind = const_cast<SyntaxKind*>(&Kind);
+            *pKind = SyntaxKind::AccessorDeclaration;
+
+            Accesibility = SymbolAccesibility::Public;
+        }
 
         inline AccessorSymbol(const AccessorSymbol& other) = delete;
 
         inline virtual ~AccessorSymbol()
         {
-            if (Method != nullptr)
-                delete Method;
+
         }
     };
 }

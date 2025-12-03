@@ -27,11 +27,12 @@ namespace shard::parsing
 		void PushScope(const shard::syntax::SyntaxSymbol* symbol);
 		void PopScope();
 
-		void Declare(shard::syntax::SyntaxSymbol* symbol);
+		virtual bool CheckSymbolNameDeclared(shard::syntax::SyntaxSymbol* symbol);
+		virtual void Declare(shard::syntax::SyntaxSymbol* symbol);
 		shard::syntax::SyntaxSymbol* OwnerSymbol();
 		shard::syntax::symbols::TypeSymbol* OwnerType();
-		shard::syntax::symbols::NamespaceSymbol* OwnerNamespace();
-		shard::parsing::semantic::NamespaceNode* OwnerNamespaceNode();
+		//shard::syntax::symbols::NamespaceSymbol* OwnerNamespace();
+		//shard::parsing::semantic::NamespaceNode* OwnerNamespaceNode();
 		bool IsSymbolAccessible(shard::syntax::SyntaxSymbol* symbol);
 	};
 }

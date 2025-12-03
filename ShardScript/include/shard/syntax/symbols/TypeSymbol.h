@@ -38,6 +38,7 @@ namespace shard::syntax::symbols
         size_t MemoryBytesSize = 0;
         bool IsReferenceType = false;
         bool IsValueType = false;
+        bool IsNullable = false;
         
         bool IsStatic = false;
         bool IsAbstract = false;
@@ -76,6 +77,8 @@ namespace shard::syntax::symbols
         {
             return IsReferenceType ? sizeof(void*) : MemoryBytesSize;
         }
+
+        void OnSymbolDeclared(SyntaxSymbol* symbol) override;
 
         virtual MethodSymbol* FindConstructor(std::vector<TypeSymbol*> parameterTypes);
         virtual MethodSymbol* FindMethod(std::wstring& name, std::vector<TypeSymbol*> parameterTypes);

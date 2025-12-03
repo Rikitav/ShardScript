@@ -10,9 +10,9 @@ namespace shard::parsing::semantic
 {
 	class SHARD_API SemanticScope
 	{
+	public:
 		std::unordered_map<std::wstring, shard::syntax::SyntaxSymbol*> _symbols;
 	
-	public:
 		const SemanticScope* Parent;
 		const shard::syntax::SyntaxSymbol* Owner;
 		NamespaceNode* Namespace = nullptr;
@@ -23,8 +23,8 @@ namespace shard::parsing::semantic
 		inline SemanticScope(const shard::syntax::SyntaxSymbol* owner, SemanticScope* parent = nullptr)
 			: Owner(owner), Parent(parent) { }
 
-        shard::syntax::SyntaxSymbol* Lookup(std::wstring& name);
-        void DeclareSymbol(shard::syntax::SyntaxSymbol* symbol);
+		shard::syntax::SyntaxSymbol* Lookup(const std::wstring& name);
+		void DeclareSymbol(shard::syntax::SyntaxSymbol* symbol);
 		void RemoveSymbol(shard::syntax::SyntaxSymbol* symbol);
 	};
 }

@@ -8,6 +8,7 @@
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxToken.h>
 #include <shard/syntax/SymbolAccesibility.h>
+#include <shard/syntax/SymbolFactory.h>
 
 #include <shard/syntax/nodes/ParametersListSyntax.h>
 #include <shard/syntax/nodes/CompilationUnitSyntax.h>
@@ -48,9 +49,33 @@ using namespace shard::syntax;
 using namespace shard::syntax::nodes;
 using namespace shard::syntax::symbols;
 
+static std::wstring FormatFullNameOf(SyntaxSymbol* symbol)
+{
+    if (symbol->Parent == nullptr)
+        return symbol->Name;
+
+    return symbol->Parent->FullName + L"." + symbol->Name;
+}
+
+void DeclarationCollector::Declare(SyntaxSymbol* symbol)
+{
+    SemanticScope* current = CurrentScope();
+    current->DeclareSymbol(symbol);
+
+    SyntaxSymbol* owner = const_cast<SyntaxSymbol*>(current->Owner);
+    if (owner != nullptr)
+        owner->OnSymbolDeclared(symbol);
+}
+
 void DeclarationCollector::VisitCompilationUnit(CompilationUnitSyntax* node)
 {
+    // The beginning of each script file in compilation
+    // First scope is declared as nullptr symbol
     PushScope(nullptr);
+
+    // FFI imports declarations collecting
+    // Soon...
+    /* 
     if (node->Imports.size() > 0)
     {
         FFISymbol* symbol = new FFISymbol();
@@ -59,18 +84,18 @@ void DeclarationCollector::VisitCompilationUnit(CompilationUnitSyntax* node)
         for (ImportDirectiveSyntax* directive : node->Imports)
             VisitImportDirective(directive);
     }
+    */
 
+    // Visiting members of unit
     for (MemberDeclarationSyntax* member : node->Members)
-        VisitTypeDeclaration(member);
-
-    if (node->Imports.size() > 0)
-        PopScope();
+        VisitMemberDeclaration(member);
 
     PopScope();
 }
 
 void DeclarationCollector::VisitImportDirective(ImportDirectiveSyntax* node)
 {
+    /* Soon...
     std::wstring methodName = node->IdentifierToken.Word;
     MethodSymbol* symbol = new MethodSymbol(methodName);
     symbol->Accesibility = SymbolAccesibility::Public;
@@ -88,6 +113,7 @@ void DeclarationCollector::VisitImportDirective(ImportDirectiveSyntax* node)
 
     Table->BindSymbol(node, symbol);
     Declare(symbol);
+    */
 }
 
 void DeclarationCollector::VisitNamespaceDeclaration(NamespaceDeclarationSyntax* node)
@@ -124,19 +150,29 @@ void DeclarationCollector::VisitNamespaceDeclaration(NamespaceDeclarationSyntax*
 
 void DeclarationCollector::VisitClassDeclaration(ClassDeclarationSyntax* node)
 {
-    std::wstring className = node->IdentifierToken.Word;
-    ClassSymbol* symbol = new ClassSymbol(className);
-    SetAccesibility(symbol, node->Modifiers);
-    OwnerNamespaceNode()->Types.push_back(symbol);
-
-    SyntaxSymbol* parent = OwnerSymbol();
-    symbol->Parent = parent;
-    symbol->FullName = parent == nullptr ? symbol->Name : parent->FullName + L"." + symbol->Name;
-
+    ClassSymbol* symbol = SymbolFactory::Class(node);
     Table->BindSymbol(node, symbol);
     Declare(symbol);
-    PushScope(symbol);
 
+    // Resolving owner symbol
+    symbol->Parent = OwnerSymbol();
+    if (symbol->Parent == nullptr)
+    {
+        Diagnostics.ReportError(node->IdentifierToken, L"Cannot resolve Delegates' owner type");
+    }
+    else
+    {
+        // Resolving Methods' full name
+        symbol->FullName = FormatFullNameOf(symbol);
+
+        // Checking if owner is type
+        if (symbol->Parent->Kind != SyntaxKind::NamespaceDeclaration)
+        {
+            Diagnostics.ReportError(node->IdentifierToken, L"Classes can only be declared inside Namespace");
+        }
+    }
+
+    PushScope(symbol);
     for (MemberDeclarationSyntax* member : node->Members)
         VisitMemberDeclaration(member);
 
@@ -145,19 +181,29 @@ void DeclarationCollector::VisitClassDeclaration(ClassDeclarationSyntax* node)
 
 void DeclarationCollector::VisitStructDeclaration(StructDeclarationSyntax* node)
 {
-    std::wstring structName = node->IdentifierToken.Word;
-    StructSymbol* symbol = new StructSymbol(structName);
-    SetAccesibility(symbol, node->Modifiers);
-    OwnerNamespaceNode()->Types.push_back(symbol);
-
-    SyntaxSymbol* parent = OwnerSymbol();
-    symbol->Parent = parent;
-    symbol->FullName = parent == nullptr ? symbol->Name : parent->FullName + L"." + symbol->Name;
-
+    StructSymbol* symbol = SymbolFactory::Struct(node);
     Table->BindSymbol(node, symbol);
     Declare(symbol);
-    PushScope(symbol);
 
+    // Resolving owner symbol
+    symbol->Parent = OwnerSymbol();
+    if (symbol->Parent == nullptr)
+    {
+        Diagnostics.ReportError(node->IdentifierToken, L"Cannot resolve Delegates' owner type");
+    }
+    else
+    {
+        // Resolving Methods' full name
+        symbol->FullName = FormatFullNameOf(symbol);
+
+        // Checking if owner is type
+        if (symbol->Parent->Kind != SyntaxKind::NamespaceDeclaration)
+        {
+            Diagnostics.ReportError(node->IdentifierToken, L"Structs can only be declared inside Namespace");
+        }
+    }
+
+    PushScope(symbol);
     for (MemberDeclarationSyntax* member : node->Members)
         VisitMemberDeclaration(member);
 
@@ -166,30 +212,30 @@ void DeclarationCollector::VisitStructDeclaration(StructDeclarationSyntax* node)
 
 void DeclarationCollector::VisitDelegateDeclaration(DelegateDeclarationSyntax* node)
 {
-    MethodSymbol* anonymousMethod = new MethodSymbol(L"");
-    anonymousMethod->HandleType = MethodHandleType::AnonymousMethod;
-    anonymousMethod->Accesibility = SymbolAccesibility::Public;
-    anonymousMethod->ReturnType = node->ReturnType->Symbol;
-    anonymousMethod->IsStatic = true;
-
-    std::wstring delegateName = node->IdentifierToken.Word;
-    DelegateTypeSymbol* symbol = new DelegateTypeSymbol(delegateName);
-    symbol->ReturnType = node->ReturnType->Symbol;
-    symbol->AnonymousSymbol = anonymousMethod;
-    SetAccesibility(symbol, node->Modifiers);
-    
-    SyntaxSymbol* parent = OwnerSymbol();
-    symbol->Parent = parent;
-    symbol->FullName = parent == nullptr ? symbol->Name : parent->FullName + L"." + symbol->Name;
-
-    if (parent != nullptr)
-    {
-        if (parent->Kind == SyntaxKind::NamespaceDeclaration)
-            OwnerNamespaceNode()->Types.push_back(symbol);
-    }
-
+    // Creating symbol
+    DelegateTypeSymbol* symbol = SymbolFactory::Delegate(node);
     Table->BindSymbol(node, symbol);
     Declare(symbol);
+
+    // Resolving owner symbol
+    symbol->Parent = OwnerSymbol();
+    if (symbol->Parent == nullptr)
+    {
+        Diagnostics.ReportError(node->IdentifierToken, L"Cannot resolve Delegates' owner type");
+    }
+    else
+    {
+        // Resolving Methods' full name
+        symbol->FullName = FormatFullNameOf(symbol);
+
+        // Checking if owner is type
+        if (symbol->Parent->Kind != SyntaxKind::NamespaceDeclaration)
+        {
+            Diagnostics.ReportError(node->IdentifierToken, L"Delegates cannot be declared outside of Namespaces");
+        }
+    }
+
+    // Resolving Methods' full name
     PushScope(symbol);
     VisitType(node->ReturnType);
     VisitParametersList(node->Params);
@@ -198,251 +244,236 @@ void DeclarationCollector::VisitDelegateDeclaration(DelegateDeclarationSyntax* n
 
 void DeclarationCollector::VisitFieldDeclaration(FieldDeclarationSyntax* node)
 {
-    std::wstring fieldName = node->IdentifierToken.Word;
-    FieldSymbol* symbol = new FieldSymbol(fieldName);
-    SetAccesibility(symbol, node->Modifiers);
-    symbol->DefaultValueExpression = node->InitializerExpression;
+    // Creating symbol
+    FieldSymbol* symbol = SymbolFactory::Field(node);
+    Table->BindSymbol(node, symbol);
+    Declare(symbol);
 
-    TypeSymbol* ownerType = OwnerType();
-    symbol->Parent = ownerType;
-    symbol->FullName = ownerType == nullptr ? symbol->Name : ownerType->FullName + L"." + symbol->Name;
-
+    // Resolving owner symbol
+    symbol->Parent = OwnerSymbol();
     if (symbol->Parent == nullptr)
     {
-        Diagnostics.ReportError(node->IdentifierToken, L"Cannot resolve method's owner type");
+        Diagnostics.ReportError(node->IdentifierToken, L"Cannot resolve Fields' owner type");
     }
     else
     {
-        // Validate: static class cannot have instance fields
-        if (!symbol->IsStatic && ownerType->IsStatic)
+        // Resolving Methods' full name
+        symbol->FullName = FormatFullNameOf(symbol);
+
+        // Checking if owner is type
+        if (!symbol->Parent->IsType())
         {
-            Diagnostics.ReportError(node->IdentifierToken, L"Static class cannot have instance fields");
+            Diagnostics.ReportError(node->IdentifierToken, L"Methods cannot be declared outside of Classes or Structures");
         }
-        
-        ownerType->Fields.push_back(symbol);
+        else
+        {
+            TypeSymbol* ownerType = static_cast<TypeSymbol*>(symbol->Parent);
+
+            // Assert: static Class cannot have instance Fields
+            if (!symbol->IsStatic && ownerType->IsStatic)
+                Diagnostics.ReportError(node->IdentifierToken, L"Cannot declare a non static Field in static Type");
+        }
     }
 
-    Declare(symbol);
-    Table->BindSymbol(node, symbol);
+    PushScope(symbol);
+    VisitType(node->ReturnType);
+    VisitExpression(node->InitializerExpression);
+    PopScope();
 }
 
 void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 {
-    std::wstring methodName = node->IdentifierToken.Word;
-    MethodSymbol* symbol = new MethodSymbol(methodName, node->Body);
-    SetAccesibility(symbol, node->Modifiers);
-
-    for (ParameterSyntax* parameter : node->Params->Parameters)
-    {
-        ParameterSymbol* paramSymbol = new ParameterSymbol(parameter->Identifier.Word);
-        symbol->Parameters.push_back(paramSymbol);
-    }
-
-    SyntaxSymbol* ownerSymbol = OwnerType();
-    if (!ownerSymbol->IsType())
-    {
-        Diagnostics.ReportError(node->IdentifierToken, L"Method cannot be declared within types");
-        return;
-    }
-
-    TypeSymbol* ownerType = static_cast<TypeSymbol*>(ownerSymbol);
-    if (ownerType == nullptr)
-    {
-        Diagnostics.ReportError(node->IdentifierToken, L"Cannot resolve method's owner type");
-        return;
-    }
-
-    symbol->Parent = ownerType;
-    symbol->FullName = ownerType == nullptr ? symbol->Name : ownerType->FullName + L"." + symbol->Name;
-
-    ownerType->Methods.push_back(symbol);
-    Declare(symbol);
+    // Creating symbol
+    MethodSymbol* symbol = SymbolFactory::Method(node);
     Table->BindSymbol(node, symbol);
+    Declare(symbol);
 
-    if (node->Body != nullptr)
+    // Resolving owner symbol
+    symbol->Parent = OwnerSymbol();
+    if (symbol->Parent == nullptr)
     {
-        PushScope(symbol);
-        if (!symbol->IsStatic)
-        {
-            if (ownerType->IsStatic)
-                Diagnostics.ReportError(node->IdentifierToken, L"Cannot declare a non static method's in static type");
-        }
-
-        VisitStatementsBlock(node->Body);
-        PopScope();
+        // Failed
+        Diagnostics.ReportError(node->IdentifierToken, L"Cannot resolve Methods' owner Type");
     }
+    else
+    {
+        // Resolving Methods' full name
+        symbol->FullName = FormatFullNameOf(symbol);
+
+        // Checking if owner is type
+        if (!symbol->Parent->IsType())
+        {
+            Diagnostics.ReportError(node->IdentifierToken, L"Methods cannot be declared outside of Classes or Structures");
+        }
+        else
+        {
+            TypeSymbol* ownerType = static_cast<TypeSymbol*>(symbol->Parent);
+
+            // Assert: static Class cannot have instance Methods
+            if (!symbol->IsStatic && ownerType->IsStatic)
+                Diagnostics.ReportError(node->IdentifierToken, L"Cannot declare a non static Method in static Type");
+
+            // Assert: extern Method cannot have body
+            if (symbol->IsExtern && node->Body != nullptr)
+                Diagnostics.ReportError(node->IdentifierToken, L"Methods marked as 'extern' cannot have Body");
+
+            // Assert: Method should have body
+            if (!symbol->IsExtern && node->Body == nullptr)
+                Diagnostics.ReportError(node->IdentifierToken, L"Method should have a Body, as it's not marked as 'extern' or 'abstract'");
+        }
+    }
+
+    PushScope(symbol);
+    VisitType(node->ReturnType);
+    VisitParametersList(node->Params);
+    VisitStatementsBlock(node->Body);
+    PopScope();
 }
 
 void DeclarationCollector::VisitConstructorDeclaration(ConstructorDeclarationSyntax* node)
 {
-    std::wstring methodName = node->IdentifierToken.Word;
-    MethodSymbol* symbol = new MethodSymbol(methodName, node->Body);
-    symbol->ReturnType = SymbolTable::Primitives::Void;
-    SetAccesibility(symbol, node->Modifiers);
-
-    if (symbol->IsStatic)
-        Diagnostics.ReportError(node->IdentifierToken, L"Type constructor cannot be static");
-
-    for (ParameterSyntax* parameter : node->Params->Parameters)
-    {
-        ParameterSymbol* paramSymbol = new ParameterSymbol(parameter->Identifier.Word);
-        symbol->Parameters.push_back(paramSymbol);
-    }
-
-    SyntaxSymbol* ownerSymbol = OwnerType();
-    if (!ownerSymbol->IsType())
-    {
-        Diagnostics.ReportError(node->IdentifierToken, L"Method cannot be declared within types");
-        //return;
-    }
-
-    TypeSymbol* ownerType = static_cast<TypeSymbol*>(ownerSymbol);
-    if (ownerType == nullptr)
-    {
-        Diagnostics.ReportError(node->IdentifierToken, L"Cannot resolve method's owner type");
-        return;
-    }
-
-    if (ownerType->Name != methodName)
-    {
-        Diagnostics.ReportError(node->IdentifierToken, L"Name of constructor should match class's name");
-        //return;
-    }
-
-    symbol->Parent = ownerType;
-    symbol->FullName = ownerType == nullptr ? symbol->Name : ownerType->FullName + L"." + symbol->Name;
-
-    ownerType->Constructors.push_back(symbol);
-    Declare(symbol);
+    // Creating symbol
+    MethodSymbol* symbol = SymbolFactory::Constructor(node);
     Table->BindSymbol(node, symbol);
+    Declare(symbol);
 
-    VisitParametersList(node->Params);
-    if (node->Body != nullptr)
+    // Resolving owner symbol
+    symbol->Parent = OwnerSymbol();
+    if (symbol->Parent == nullptr)
     {
-        PushScope(symbol);
-        if (!symbol->IsStatic)
-        {
-            if (ownerType->IsStatic)
-                Diagnostics.ReportError(node->IdentifierToken, L"Cannot declare a non static method's in static type");
-        }
-
-        VisitStatementsBlock(node->Body);
-        PopScope();
+        // Failed
+        Diagnostics.ReportError(node->IdentifierToken, L"Cannot resolve Methods' owner Type");
     }
+    else
+    {
+        // Resolving Methods' full name
+        symbol->FullName = FormatFullNameOf(symbol);
+
+        // Checking if owner is type
+        if (!symbol->Parent->IsType())
+        {
+            Diagnostics.ReportError(node->IdentifierToken, L"Methods cannot be declared outside of Classes or Structures");
+        }
+        else
+        {
+            TypeSymbol* ownerType = static_cast<TypeSymbol*>(symbol->Parent);
+
+            // Assert: Constructors' name should match owners' Type name
+            if (symbol->Name != ownerType->Name)
+                Diagnostics.ReportError(node->IdentifierToken, L"Constructor should have same name as containing Type");
+
+            // Assert: Type cannot have static Constructors'
+            if (symbol->IsStatic)
+                Diagnostics.ReportError(node->IdentifierToken, L"Type Constructors' cannot be static");
+
+            // Assert: extern Method cannot have body
+            if (symbol->IsExtern && node->Body != nullptr)
+                Diagnostics.ReportError(node->IdentifierToken, L"Constructors' marked as 'extern' cannot have Body");
+
+            // Assert: Method should have body
+            if (!symbol->IsExtern && node->Body == nullptr)
+                Diagnostics.ReportError(node->IdentifierToken, L"Constructor should have a Body, as it's not marked as 'extern' or 'abstract'");
+        }
+    }
+
+    PushScope(symbol);
+    VisitParametersList(node->Params);
+    VisitStatementsBlock(node->Body);
+    PopScope();
 }
 
 void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
 {
-    std::wstring propertyName = node->IdentifierToken.Word;
-    PropertySymbol* symbol = new PropertySymbol(propertyName);
-    SetAccesibility(symbol, node->Modifiers);
-    symbol->DefaultValueExpression = node->InitializerExpression;
-
-    SyntaxSymbol* ownerSymbol = OwnerSymbol();
-    if (!ownerSymbol->IsType())
-    {
-        Diagnostics.ReportError(node->IdentifierToken, L"Property cannot be declared outside of types");
-        return;
-    }
-
-    // Validate: static class cannot have instance properties
-    TypeSymbol* ownerType = static_cast<TypeSymbol*>(ownerSymbol);
-    if (ownerType == nullptr)
-    {
-        Diagnostics.ReportError(node->IdentifierToken, L"Cannot resolve method's owner type");
-        return;
-    }
-
-    symbol->Parent = ownerType;
-    symbol->FullName = ownerType == nullptr ? symbol->Name : ownerType->FullName + L"." + symbol->Name;
-
-    if (!symbol->IsStatic && ownerType->IsStatic)
-    {
-        Diagnostics.ReportError(node->IdentifierToken, L"Static class cannot have instance properties");
-    }
-
-    bool isAutoProperty =
-        (node->Getter != nullptr && node->Getter->Body == nullptr) ||
-        (node->Setter != nullptr && node->Setter->Body == nullptr);
-    
-    // Create backing field for auto-properties
-    if (isAutoProperty)
-    {
-        symbol->GenerateBackingField();
-        ownerType->Fields.push_back(symbol->BackingField);
-        Declare(symbol->BackingField);
-    }
-
-    ownerType->Properties.push_back(symbol);
+    // Creating symbol
+    PropertySymbol* symbol = SymbolFactory::Property(node);
     Table->BindSymbol(node, symbol);
     Declare(symbol);
+
+    if (symbol->BackingField != nullptr)
+        Declare(symbol->BackingField);
+
+    // Resolving owner symbol
+    symbol->Parent = OwnerSymbol();
+    if (symbol->Parent == nullptr)
+    {
+        // Failed
+        Diagnostics.ReportError(node->IdentifierToken, L"Cannot resolve Methods' owner Type");
+    }
+    else
+    {
+        // Resolving Methods' full name
+        symbol->FullName = FormatFullNameOf(symbol);
+
+        // Checking if owner is type
+        if (!symbol->Parent->IsType())
+        {
+            Diagnostics.ReportError(node->IdentifierToken, L"Methods cannot be declared outside of Classes or Structures");
+        }
+        else
+        {
+            TypeSymbol* ownerType = static_cast<TypeSymbol*>(symbol->Parent);
+
+            // Assert: static Class cannot have instance Methods
+            if (!symbol->IsStatic && ownerType->IsStatic)
+                Diagnostics.ReportError(node->IdentifierToken, L"Cannot declare a non static Method in static Type");
+        }
+    }
+
     PushScope(symbol);
-
-    // Visit accessor bodies
-    if (node->Getter != nullptr)
-        VisitAccessorDeclaration(node->Getter);
-
-    if (node->Setter != nullptr)
-        VisitAccessorDeclaration(node->Getter);
-
-    if (node->InitializerExpression != nullptr)
-        VisitExpression(node->InitializerExpression);
-    
+    VisitAccessorDeclaration(node->Getter);
+    VisitAccessorDeclaration(node->Setter);
+    VisitExpression(node->InitializerExpression);
     PopScope();
+
+    if (symbol->Getter != nullptr)
+    {
+        // Assert: extern Method cannot have body
+        if (symbol->Getter->IsExtern && symbol->Getter->Body != nullptr)
+            Diagnostics.ReportError(node->IdentifierToken, L"Get Accessors' marked as 'extern' cannot have Body");
+    }
+
+    if (symbol->Setter != nullptr)
+    {
+        // Assert: extern Method cannot have body
+        if (symbol->Setter->IsExtern && symbol->Setter->Body != nullptr)
+            Diagnostics.ReportError(node->IdentifierToken, L"Set Accessors' marked as 'extern' cannot have Body");
+    }
 }
 
 void DeclarationCollector::VisitAccessorDeclaration(AccessorDeclarationSyntax* node)
 {
-    SyntaxSymbol* owner = OwnerSymbol();
-    if (owner->Kind != SyntaxKind::PropertyDeclaration)
-        Diagnostics.ReportError(node->KeywordToken, L"Accessors cannot be declared outside of properties");
+    // Expecting parent node to be property
+    if (node->Parent->Kind != SyntaxKind::PropertyDeclaration)
+    {
+        Diagnostics.ReportError(node->KeywordToken, L"Accessors cannot be declared outside of Properties");
+        return;
+    }
 
-    TypeSymbol* ownerType = OwnerType();
-    if (ownerType == nullptr)
-        return; // diagnostic already generated in property
-    
-    PropertySymbol* ownerProp = static_cast<PropertySymbol*>(owner);
-    AccessorSymbol* symbol = new AccessorSymbol(ownerProp->Name + L"_" + node->KeywordToken.Word);
-    symbol->Accesibility = SymbolAccesibility::Public;
-    SetAccesibility(symbol, node->Modifiers);
+    PropertyDeclarationSyntax* propertyNode = static_cast<PropertyDeclarationSyntax*>(node->Parent);
+    PropertySymbol* propertySymbol = LookupSymbol<PropertySymbol>(propertyNode);
+
+    // Creating symbol
+    AccessorSymbol* symbol = SymbolFactory::Accessor(node, propertySymbol);
+    Table->BindSymbol(node, symbol);
+    Declare(symbol);
 
     if (node->Body != nullptr)
     {
-        MethodSymbol* method = symbol->Method = new MethodSymbol(symbol->Name, node->Body);
-        SetAccesibility(method, node->Modifiers);
-        method->IsStatic = ownerProp->IsStatic;
-        ownerType->Methods.push_back(method);
-
         switch (node->KeywordToken.Type)
         {
             case TokenType::GetKeyword:
             {
-                method->ReturnType = ownerProp->ReturnType;
+                symbol->ReturnType = propertySymbol->ReturnType;
                 break;
             }
 
             case TokenType::SetKeyword:
             {
-                method->ReturnType = SymbolTable::Primitives::Void;
                 ParameterSymbol* valueParam = new ParameterSymbol(L"value");
-                method->Parameters.push_back(valueParam);
+                symbol->Parameters.push_back(valueParam);
+                symbol->ReturnType = SymbolTable::Primitives::Void;
                 break;
             }
-        }
-    }
-
-    switch (node->KeywordToken.Type)
-    {
-        case TokenType::GetKeyword:
-        {
-            ownerProp->Getter = symbol;
-            break;
-        }
-
-        case TokenType::SetKeyword:
-        {
-            ownerProp->Setter = symbol;
-            break;
         }
     }
 }
@@ -460,14 +491,4 @@ void DeclarationCollector::VisitVariableStatement(VariableStatementSyntax* node)
         VisitExpression(node->Expression);
 
     PopScope();
-}
-
-void DeclarationCollector::VisitStatementsBlock(StatementsBlockSyntax* node)
-{
-    //PushScope(symbol);
-
-    for (StatementSyntax* statement : node->Statements)
-        VisitStatement(statement);
-
-    //PopScope();
 }

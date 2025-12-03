@@ -555,9 +555,10 @@ std::vector<SyntaxToken> LexicalAnalyzer::ReadMemberModifiers(SourceReader& read
 		TokenType::ProtectedKeyword,
 		TokenType::InternalKeyword,
 		TokenType::StaticKeyword,
+		TokenType::ExternKeyword,
 		TokenType::AbstractKeyword,
 		TokenType::SealedKeyword,
-		TokenType::PartialKeyword
+		TokenType::PartialKeyword,
 	};
 
 	int currentOrderIndex = 0;

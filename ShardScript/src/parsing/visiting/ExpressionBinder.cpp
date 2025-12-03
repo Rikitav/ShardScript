@@ -5,10 +5,11 @@
 #include <shard/syntax/SyntaxSymbol.h>
 #include <shard/syntax/SyntaxNode.h>
 #include <shard/syntax/SyntaxKind.h>
-#include <shard/syntax/TokenType.h>
-#include <shard/syntax/SyntaxToken.h>
-#include <shard/syntax/SymbolAccesibility.h>
 #include <shard/syntax/SyntaxFacts.h>
+#include <shard/syntax/SyntaxToken.h>
+#include <shard/syntax/TokenType.h>
+#include <shard/syntax/SymbolAccesibility.h>
+#include <shard/syntax/SymbolFactory.h>
 
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/NamespaceSymbol.h>
@@ -23,12 +24,15 @@
 #include <shard/syntax/symbols/AccessorSymbol.h>
 #include <shard/syntax/symbols/IndexatorSymbol.h>
 #include <shard/syntax/symbols/LeftDenotationSymbol.h>
+#include <shard/syntax/symbols/DelegateTypeSymbol.h>
 
 #include <shard/syntax/nodes/CompilationUnitSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarationSyntax.h>
 #include <shard/syntax/nodes/ArgumentsListSyntax.h>
 #include <shard/syntax/nodes/ExpressionSyntax.h>
 #include <shard/syntax/nodes/StatementSyntax.h>
+#include <shard/syntax/nodes/ParametersListSyntax.h>
+
 #include <shard/syntax/nodes/Directives/UsingDirectiveSyntax.h>
 
 #include <shard/syntax/nodes/Expressions/ObjectExpressionSyntax.h>
@@ -37,6 +41,7 @@
 #include <shard/syntax/nodes/Expressions/UnaryExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/LinkedExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/CollectionExpressionSyntax.h>
+#include <shard/syntax/nodes/Expressions/LambdaExpressionSyntax.h>
 
 #include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.h>
@@ -44,6 +49,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/PropertyDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.h>
 
 #include <shard/syntax/nodes/Statements/VariableStatementSyntax.h>
 #include <shard/syntax/nodes/Statements/ReturnStatementSyntax.h>
@@ -57,10 +63,7 @@
 #include <vector>
 #include <string>
 #include <sstream>
-#include <shard/syntax/symbols/DelegateTypeSymbol.h>
-#include <shard/syntax/nodes/Expressions/LambdaExpressionSyntax.h>
-#include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.h>
-#include <shard/syntax/nodes/ParametersListSyntax.h>
+#include <algorithm>
 
 using namespace shard::parsing;
 using namespace shard::parsing::semantic;
@@ -230,13 +233,15 @@ void ExpressionBinder::VisitStructDeclaration(StructDeclarationSyntax* node)
 void ExpressionBinder::VisitConstructorDeclaration(ConstructorDeclarationSyntax* node)
 {
 	MethodSymbol* symbol = LookupSymbol<MethodSymbol>(node);
-	TypeSymbol* ownerType = OwnerType();
+	if (!symbol->Parent->IsType())
+		return;
 
+	TypeSymbol* ownerType = static_cast<TypeSymbol*>(symbol->Parent);
 	if (symbol != nullptr && node->Body != nullptr)
 	{
 		PushScope(symbol);
-		Declare(new VariableSymbol(L"this", ownerType));
 
+		Declare(new VariableSymbol(L"this", ownerType));
 		for (ParameterSymbol* parameter : symbol->Parameters)
 			Declare(new VariableSymbol(parameter->Name, parameter->Type));
 
@@ -250,17 +255,23 @@ void ExpressionBinder::VisitConstructorDeclaration(ConstructorDeclarationSyntax*
 void ExpressionBinder::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 {
 	MethodSymbol* symbol = LookupSymbol<MethodSymbol>(node);
-	TypeSymbol* ownerType = OwnerType();
+	if (symbol == nullptr)
+		throw std::runtime_error("symbol not found");
 
-	if (symbol != nullptr && node->Body != nullptr)
+	if (!symbol->Parent->IsType())
+		return;
+
+	TypeSymbol* ownerType = static_cast<TypeSymbol*>(symbol->Parent);
+	PushScope(symbol);
+
+	if (!symbol->IsStatic)
+		Declare(new VariableSymbol(L"this", ownerType));
+
+	for (ParameterSymbol* parameter : symbol->Parameters)
+		Declare(new VariableSymbol(parameter->Name, parameter->Type));
+
+	if (node->Body != nullptr)
 	{
-		PushScope(symbol);
-		if (!symbol->IsStatic)
-			Declare(new VariableSymbol(L"this", ownerType));
-
-		for (ParameterSymbol* parameter : symbol->Parameters)
-			Declare(new VariableSymbol(parameter->Name, parameter->Type));
-
 		CurrentScope()->ReturnFound = false;
 		VisitStatementsBlock(node->Body);
 
@@ -269,33 +280,47 @@ void ExpressionBinder::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 			if (!CurrentScope()->ReturnFound)
 				Diagnostics.ReportError(node->IdentifierToken, L"Method must return a value of type '" + symbol->ReturnType->Name + L"'");
 		}
-
-		if (symbol->Name == L"Main")
-		{
-			Table->EntryPointCandidates.push_back(symbol);
-			if (symbol->Accesibility != SymbolAccesibility::Public)
-				Diagnostics.ReportError(node->IdentifierToken, L"Main entry point should be public");
-
-			if (!symbol->IsStatic)
-				Diagnostics.ReportError(node->IdentifierToken, L"Main entry point should be static");
-
-			if (symbol->Parameters.size() != 0)
-				Diagnostics.ReportError(node->IdentifierToken, L"Main entry point should have empty parameters list");
-
-			if (symbol->ReturnType != SymbolTable::Primitives::Void)
-				Diagnostics.ReportError(node->IdentifierToken, L"Main entry point should have 'void' return type");
-		}
-		
-		PopScope();
 	}
+
+	if (symbol->Name == L"Main")
+	{
+		Table->EntryPointCandidates.push_back(symbol);
+		if (symbol->Accesibility != SymbolAccesibility::Public)
+			Diagnostics.ReportError(node->IdentifierToken, L"Main entry point should be public");
+
+		if (!symbol->IsStatic)
+			Diagnostics.ReportError(node->IdentifierToken, L"Main entry point should be static");
+
+		if (symbol->IsAbstract)
+			Diagnostics.ReportError(node->IdentifierToken, L"Main entry point cannot be abstract");
+
+		if (symbol->IsExtern)
+			Diagnostics.ReportError(node->IdentifierToken, L"Main entry point cannot be external");
+
+		if (symbol->IsVirtual)
+			Diagnostics.ReportError(node->IdentifierToken, L"Main entry point cannot be virtual");
+
+		if (symbol->Parameters.size() != 0)
+			Diagnostics.ReportError(node->IdentifierToken, L"Main entry point should have empty parameters list");
+
+		if (symbol->ReturnType != SymbolTable::Primitives::Void)
+			Diagnostics.ReportError(node->IdentifierToken, L"Main entry point should have 'void' return type");
+	}
+
+	PopScope();
 }
 
 void ExpressionBinder::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
 {
 	PropertySymbol* symbol = LookupSymbol<PropertySymbol>(node);
-	TypeSymbol* ownerType = OwnerType();
+	if (symbol == nullptr)
+		throw std::runtime_error("symbol not found");
 
-	if (symbol->ReturnType->Name == L"Void")
+	if (!symbol->Parent->IsType())
+		return;
+
+	TypeSymbol* ownerType = static_cast<TypeSymbol*>(symbol->Parent);
+	if (symbol->ReturnType == SymbolTable::Primitives::Void)
 	{
 		Diagnostics.ReportError(node->IdentifierToken, L"Property '" + node->IdentifierToken.Word + L"' must have return value");
 	}
@@ -339,39 +364,35 @@ void ExpressionBinder::VisitFieldDeclaration(FieldDeclarationSyntax* node)
 		VisitExpression(node->InitializerExpression);
 	}
 
-	FieldSymbol* fieldSymbol = LookupSymbol<FieldSymbol>(node);
-	if (fieldSymbol->ReturnType == nullptr)
-	{
-		Diagnostics.ReportError(node->IdentifierToken, L"Field type not resolved");
-		return;
-	}
+	FieldSymbol* symbol = LookupSymbol<FieldSymbol>(node);
+	if (symbol == nullptr)
+		throw std::runtime_error("symbol not found");
 
-	if (fieldSymbol != nullptr && fieldSymbol->ReturnType != nullptr)
+	if (node->InitializerExpression != nullptr)
 	{
-		if (node->InitializerExpression != nullptr)
+		TypeSymbol* initExprType = GetExpressionType(node->InitializerExpression);
+		if (initExprType == nullptr)
 		{
-			TypeSymbol* initExprType = GetExpressionType(node->InitializerExpression);
-			if (initExprType == nullptr)
-			{
-				Diagnostics.ReportError(node->IdentifierToken, L"Field initializer expression type could not be determined");
-				return;
-			}
+			Diagnostics.ReportError(node->IdentifierToken, L"Field initializer expression type could not be determined");
+			return;
+		}
 
-			if (!TypeSymbol::Equals(initExprType, fieldSymbol->ReturnType))
-			{
-				Diagnostics.ReportError(node->IdentifierToken, L"Field initializer type mismatch: expected '" + fieldSymbol->ReturnType->Name + L"' but got '" + initExprType->Name + L"'");
-				return;
-			}
+		if (!TypeSymbol::Equals(initExprType, symbol->ReturnType))
+		{
+			Diagnostics.ReportError(node->IdentifierToken, L"Field initializer type mismatch: expected '" + symbol->ReturnType->Name + L"' but got '" + initExprType->Name + L"'");
+			return;
 		}
 	}
 }
 
 void ExpressionBinder::VisitVariableStatement(VariableStatementSyntax* node)
 {
-	VariableSymbol* varSymbol = LookupSymbol<VariableSymbol>(node);
-	Declare(varSymbol);
+	VariableSymbol* symbol = LookupSymbol<VariableSymbol>(node);
+	if (symbol == nullptr)
+		throw std::runtime_error("symbol not found");
 
-	if (varSymbol->Type == nullptr)
+	Declare(symbol);
+	if (symbol->Type == nullptr)
 	{
 		Diagnostics.ReportError(node->IdentifierToken, L"Variable type not resolved");
 		return;
@@ -379,27 +400,21 @@ void ExpressionBinder::VisitVariableStatement(VariableStatementSyntax* node)
 
 	if (node->Expression != nullptr)
 	{
-		PushScope(new LeftDenotationSymbol(varSymbol->Type));
+		PushScope(new LeftDenotationSymbol(symbol->Type));
 		VisitExpression(node->Expression);
 		PopScope();
 	}
 
 	TypeSymbol* expressionType = GetExpressionType(node->Expression);
-	if (expressionType == nullptr)
+	if (symbol->Type == SymbolTable::Primitives::Any)
 	{
-		//Diagnostics.ReportError(node->IdentifierToken, L"Expression type could not be determined");
+		symbol->Type = expressionType;
 		return;
 	}
 
-	if (varSymbol->Type == SymbolTable::Primitives::Any)
+	if (!TypeSymbol::Equals(symbol->Type, expressionType))
 	{
-		varSymbol->Type = expressionType;
-		return;
-	}
-
-	if (!TypeSymbol::Equals(varSymbol->Type, expressionType))
-	{
-		Diagnostics.ReportError(node->IdentifierToken, L"Type mismatch: expected '" + varSymbol->Type->Name + L"' but got '" + expressionType->Name + L"'");
+		Diagnostics.ReportError(node->IdentifierToken, L"Type mismatch: expected '" + symbol->Type->Name + L"' but got '" + expressionType->Name + L"'");
 		return;
 	}
 }
@@ -691,7 +706,7 @@ void ExpressionBinder::VisitCollectionExpression(CollectionExpressionSyntax* nod
 void ExpressionBinder::VisitLambdaExpression(LambdaExpressionSyntax* node)
 {
 	MethodSymbol* anonymousMethod = new MethodSymbol(L"Lambda", node->Body);
-	anonymousMethod->HandleType = MethodHandleType::AnonymousMethod;
+	anonymousMethod->HandleType = MethodHandleType::Lambda;
 	anonymousMethod->Accesibility = SymbolAccesibility::Public;
 	anonymousMethod->ReturnType = SymbolTable::Primitives::Any;
 	anonymousMethod->IsStatic = true;
@@ -825,6 +840,9 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 	if (currentType == nullptr)
 		return nullptr;
 
+	std::wstring memberName = node->IdentifierToken.Word;
+	SyntaxSymbol* symbol = nullptr;
+
 	if (node->PreviousExpression == nullptr)
 	{
 		// Check if this is the 'field' keyword - resolve to backing field of current property
@@ -832,7 +850,7 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 			return AnalyzeFieldKeywordExpression(node, nullptr);
 
 		std::wstring name = node->IdentifierToken.Word;
-		SyntaxSymbol* symbol = CurrentScope()->Lookup(name);
+		symbol = CurrentScope()->Lookup(name);
 
 		if (symbol == nullptr)
 		{
@@ -846,68 +864,10 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 			return nullptr;
 		}
 
-		switch (symbol->Kind)
+		if (symbol->IsType())
 		{
-			case SyntaxKind::VariableStatement:
-			{
-				VariableSymbol* varSymbol = static_cast<VariableSymbol*>(symbol);
-				node->IsStaticContext = false;
-				return const_cast<TypeSymbol*>(varSymbol->Type);
-			}
-
-			case SyntaxKind::FieldDeclaration:
-			{
-				FieldSymbol* fieldSymbol = static_cast<FieldSymbol*>(symbol);
-
-				if (!IsSymbolAccessible(fieldSymbol))
-				{
-					Diagnostics.ReportError(node->IdentifierToken, L"Field '" + name + L"' is not accessible");
-					return nullptr;
-				}
-
-				node->IsStaticContext = false;
-				return fieldSymbol->ReturnType;
-			}
-
-			case SyntaxKind::MethodDeclaration:
-			{
-				MethodSymbol* methodSymbol = static_cast<MethodSymbol*>(symbol);
-
-				if (!IsSymbolAccessible(methodSymbol))
-				{
-					Diagnostics.ReportError(node->IdentifierToken, L"Method '" + name + L"' is not accessible");
-					return nullptr;
-				}
-
-				DelegateTypeSymbol* delegate = new DelegateTypeSymbol(methodSymbol->Name);
-				delegate->Accesibility = SymbolAccesibility::Public;
-				delegate->AnonymousSymbol = methodSymbol;
-				delegate->Parameters = methodSymbol->Parameters;
-				delegate->ReturnType = methodSymbol->ReturnType;
-
-				node->DelegateSymbol = delegate;
-				node->IsStaticContext = false;
-				return delegate;
-			}
-
-			case SyntaxKind::Parameter:
-			{
-				ParameterSymbol* paramSymbol = static_cast<ParameterSymbol*>(symbol);
-				node->IsStaticContext = false;
-				return paramSymbol->Type;
-			}
-
-			default:
-			{
-				if (symbol->IsType())
-				{
-					node->IsStaticContext = true;
-					return static_cast<TypeSymbol*>(symbol);
-				}
-
-				Diagnostics.ReportError(node->IdentifierToken, L"Symbol '" + name + L"' is not a variable, parameter or field (found " + std::to_wstring(static_cast<int>(symbol->Kind)) + L")");
-				return nullptr;
-			}
+			node->IsStaticContext = true;
+			return static_cast<TypeSymbol*>(symbol);
 		}
 	}
 	else
@@ -916,6 +876,9 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 		VisitExpression(previousExpression);
 		currentType = GetExpressionType(previousExpression);
 
+		if (currentType == nullptr)
+			return nullptr;
+
 		if (!currentType->IsType())
 		{
 			Diagnostics.ReportError(node->IdentifierToken, L"Cannot access member on non-type '" + currentType->Name + L"'");
@@ -923,62 +886,87 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 		}
 
 		// First check for property (properties take precedence over fields)
-		std::wstring memberName = node->IdentifierToken.Word;
-		node->PropertySymbol = currentType->FindProperty(memberName);
+		symbol = currentType->FindProperty(memberName);
+		if (symbol == nullptr)
+		{
+			// Check for field
+			symbol = currentType->FindField(memberName);
+			if (symbol == nullptr)
+			{
+				symbol = *std::find_if(currentType->Methods.begin(), currentType->Methods.end(), [memberName](const MethodSymbol* method) { return method->Name == memberName; });
+				if (symbol == nullptr)
+				{
+					Diagnostics.ReportError(node->IdentifierToken, L"Member '" + memberName + L"' not found in type '" + currentType->Name + L"'");
+					return nullptr;
+				}
+			}
+		}
+	}
 
-		if (node->PropertySymbol != nullptr)
+	if (!IsSymbolAccessible(node->FieldSymbol))
+	{
+		std::wstring declName;
+		Diagnostics.ReportError(node->IdentifierToken, declName + L" '" + memberName + L"' is not accessible");
+		return nullptr;
+	}
+
+	switch (symbol->Kind)
+	{
+		case SyntaxKind::VariableStatement:
+		{
+			VariableSymbol* varSymbol = static_cast<VariableSymbol*>(symbol);
+			node->IsStaticContext = false;
+			return const_cast<TypeSymbol*>(varSymbol->Type);
+		}
+
+		case SyntaxKind::PropertyDeclaration:
 		{
 			return AnalyzePropertyAccessExpression(node, currentType);
 		}
-		else
+
+		case SyntaxKind::FieldDeclaration:
 		{
-			// Check for field
-			FieldSymbol* field = currentType->FindField(memberName);
-
-			if (field == nullptr)
-			{
-				MethodSymbol* method = currentType->FindMethod(memberName, std::vector<TypeSymbol*>());
-				if (method == nullptr)
-				{
-					Diagnostics.ReportError(node->IdentifierToken, L"Member '" + memberName + L"' not found in type '" + currentType->Name + L"'");
-				}
-				else
-				{
-					Diagnostics.ReportError(node->IdentifierToken, L"Cannot access method '" + memberName + L"' without invocation");
-				}
-
-				return nullptr;
-			}
-
-			if (!IsSymbolAccessible(field))
-			{
-				Diagnostics.ReportError(node->IdentifierToken, L"Field '" + memberName + L"' is not accessible");
-				return nullptr;
-			}
-
+			FieldSymbol* fieldSymbol = static_cast<FieldSymbol*>(symbol);
 			bool isStaticContext = GetIsStaticContext(node->PreviousExpression);
-			if (isStaticContext && !field->IsStatic)
+
+			if (isStaticContext && !fieldSymbol->IsStatic)
 			{
-				Diagnostics.ReportError(node->IdentifierToken, L"Cannot access instance field '" + memberName + L"' from type context");
+				std::wstring declName;
+				Diagnostics.ReportError(node->IdentifierToken, L"Cannot access instance " + declName + L" '" + memberName + L"' from type context");
 				return nullptr;
 			}
 
-			if (!isStaticContext && field->IsStatic)
+			if (!isStaticContext && fieldSymbol->IsStatic)
 			{
-				Diagnostics.ReportError(node->IdentifierToken, L"Cannot access static field '" + memberName + L"' from instance reference");
+				std::wstring declName;
+				Diagnostics.ReportError(node->IdentifierToken, L"Cannot access static " + declName + L" '" + memberName + L"' from instance reference");
 				return nullptr;
 			}
 
-			if (field->ReturnType == nullptr)
-			{
-				Diagnostics.ReportError(node->IdentifierToken, L"Field '" + memberName + L"' type not resolved");
-				return nullptr;
-			}
-
-			// Set field symbol
-			node->FieldSymbol = field;
 			node->IsStaticContext = false;
-			return field->ReturnType;
+			return fieldSymbol->ReturnType;
+		}
+
+		case SyntaxKind::MethodDeclaration:
+		{
+			MethodSymbol* methodSymbol = static_cast<MethodSymbol*>(symbol);
+			DelegateTypeSymbol* delegate = SymbolFactory::Delegate(methodSymbol);
+			node->DelegateSymbol = delegate;
+			node->IsStaticContext = false;
+			return delegate;
+		}
+
+		case SyntaxKind::Parameter:
+		{
+			ParameterSymbol* paramSymbol = static_cast<ParameterSymbol*>(symbol);
+			node->IsStaticContext = false;
+			return paramSymbol->Type;
+		}
+
+		default:
+		{
+			Diagnostics.ReportError(node->IdentifierToken, L"Symbol '" + memberName + L"' is not a variable, parameter or field (found " + std::to_wstring(static_cast<int>(symbol->Kind)) + L")");
+			return nullptr;
 		}
 	}
 }
@@ -990,25 +978,6 @@ TypeSymbol* ExpressionBinder::AnalyzePropertyAccessExpression(MemberAccessExpres
 		return nullptr;
 
 	std::wstring memberName = node->IdentifierToken.Word;
-	if (!IsSymbolAccessible(property))
-	{
-		Diagnostics.ReportError(node->IdentifierToken, L"Property '" + memberName + L"' is not accessible");
-		return nullptr;
-	}
-
-	bool isStaticContext = GetIsStaticContext(node->PreviousExpression);
-	if (isStaticContext && !property->IsStatic)
-	{
-		Diagnostics.ReportError(node->IdentifierToken, L"Cannot access instance property '" + memberName + L"' from type context");
-		return nullptr;
-	}
-
-	if (!isStaticContext && property->IsStatic)
-	{
-		Diagnostics.ReportError(node->IdentifierToken, L"Cannot access static property '" + memberName + L"' from instance reference");
-		return nullptr;
-	}
-
 	if (property->ReturnType == nullptr)
 	{
 		if (currentType->Kind == SyntaxKind::ArrayType)
@@ -1036,27 +1005,23 @@ TypeSymbol* ExpressionBinder::AnalyzePropertyAccessExpression(MemberAccessExpres
 		return nullptr;
 	}
 
-	if (accessor->Method != nullptr)
+	if (!IsSymbolAccessible(accessor))
 	{
-		MethodSymbol* method = accessor->Method;
-		if (!IsSymbolAccessible(method))
-		{
-			Diagnostics.ReportError(node->IdentifierToken, (requiresSetter ? L"Setter" : L"Getter") + (L" of property '" + memberName + L"' is not accessible"));
-			return nullptr;
-		}
+		Diagnostics.ReportError(node->IdentifierToken, (requiresSetter ? L"Setter" : L"Getter") + (L" of property '" + memberName + L"' is not accessible"));
+		return nullptr;
+	}
 
-		bool isStaticCtx = GetIsStaticContext(node->PreviousExpression);
-		if (isStaticCtx && !method->IsStatic)
-		{
-			Diagnostics.ReportError(node->IdentifierToken, L"Cannot access instance property '" + memberName + L"' from type context");
-			return nullptr;
-		}
+	bool isStaticCtx = GetIsStaticContext(node->PreviousExpression);
+	if (isStaticCtx && !accessor->IsStatic)
+	{
+		Diagnostics.ReportError(node->IdentifierToken, L"Cannot access instance property '" + memberName + L"' from type context");
+		return nullptr;
+	}
 
-		if (!isStaticCtx && method->IsStatic)
-		{
-			Diagnostics.ReportError(node->IdentifierToken, L"Cannot access static property '" + memberName + L"' from instance reference");
-			return nullptr;
-		}
+	if (!isStaticCtx && accessor->IsStatic)
+	{
+		Diagnostics.ReportError(node->IdentifierToken, L"Cannot access static property '" + memberName + L"' from instance reference");
+		return nullptr;
 	}
 
 	node->IsStaticContext = false;
@@ -1343,10 +1308,9 @@ TypeSymbol* ExpressionBinder::AnalyzeIndexatorExpression(IndexatorExpressionSynt
 		return nullptr;
 
 	AccessorSymbol* accessor = node->AccessorSymbol;
-	if (accessor->Method != nullptr)
+	if (accessor != nullptr)
 	{
-		MethodSymbol* method = accessor->Method;
-		if (!MatchMethodArguments(method, node->IndexatorList->Arguments))
+		if (!MatchMethodArguments(accessor, node->IndexatorList->Arguments))
 		{
 			//Diagnostics.ReportError(node->MemberAccess->IdentifierToken, L"Indexator arguments types do not match");
 			return nullptr;

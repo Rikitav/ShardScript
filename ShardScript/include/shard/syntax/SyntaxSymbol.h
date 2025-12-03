@@ -14,21 +14,22 @@ namespace shard::syntax
 
 	public:
 		const int TypeCode;
-		const std::wstring Name;
 		const SyntaxKind Kind;
+		const std::wstring Name;
 		std::wstring FullName;
 		SyntaxSymbol* Parent = nullptr;
+
 		SymbolAccesibility Accesibility = SymbolAccesibility::Private;
+		bool IsExtern = false;
 
 		inline SyntaxSymbol(const std::wstring& name, const SyntaxKind kind)
 			: TypeCode(counter++), Name(name), Kind(kind) { }
 
 		inline SyntaxSymbol(const SyntaxSymbol& other) = delete;
 
-		inline virtual ~SyntaxSymbol()
-		{
+		inline virtual ~SyntaxSymbol() = default;
 
-		}
+		virtual void OnSymbolDeclared(SyntaxSymbol* symbol);
 
 		bool IsType();
 		bool IsMember();

@@ -3,7 +3,7 @@
 
 namespace shard::syntax
 {
-	enum class SHARD_API SymbolAccesibility
+	enum class SymbolAccesibility
 	{
 		Private,
 		Public,

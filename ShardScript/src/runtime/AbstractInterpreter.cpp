@@ -171,14 +171,14 @@ ObjectInstance* AbstractInterpreter::ExecuteMethod(MethodSymbol* method, Inbound
 
 	switch (method->HandleType)
 	{
-		case MethodHandleType::AnonymousMethod:
-		case MethodHandleType::ObjectInstance:
+		case MethodHandleType::Lambda:
+		case MethodHandleType::Body:
 		{
 			ExecuteBlock(method->Body);
 			break;
 		}
 
-		case MethodHandleType::FunctionPointer:
+		case MethodHandleType::External:
 		{
 			try
 			{
@@ -203,11 +203,13 @@ ObjectInstance* AbstractInterpreter::ExecuteMethod(MethodSymbol* method, Inbound
 			break;
 		}
 
+		/*
 		case MethodHandleType::ForeignInterface:
 		{
 			throw std::runtime_error("FFI not implemented");
 			break;
 		}
+		*/
 	}
 
 	PopContext();
@@ -884,13 +886,13 @@ ObjectInstance* AbstractInterpreter::EvaluateMemberAccessExpression(const Member
 		PropertySymbol* property = expression->PropertySymbol;
 		field = property->BackingField;
 
-		if (property->Getter->Method != nullptr)
+		if (property->Getter != nullptr)
 		{
 			InboundVariablesContext* getterArgs = new InboundVariablesContext(nullptr);
 			if (!property->IsStatic)
 				getterArgs->AddVariable(L"this", prevInstance);
 
-			ObjectInstance* retReg = ExecuteMethod(property->Getter->Method, getterArgs);
+			ObjectInstance* retReg = ExecuteMethod(property->Getter, getterArgs);
 			return retReg;
 		}
 	}
@@ -916,7 +918,7 @@ ObjectInstance* AbstractInterpreter::EvaluateMemberAccessExpression(const Member
 ObjectInstance* AbstractInterpreter::EvaluateInvokationExpression(const InvokationExpressionSyntax* expression, ObjectInstance* prevInstance)
 {
 	MethodSymbol* method = expression->Symbol;
-	if (method->HandleType == MethodHandleType::AnonymousMethod)
+	if (method->HandleType == MethodHandleType::Lambda)
 	{
 		ObjectInstance* delegateInstance = CurrentContext()->Find(expression->IdentifierToken.Word);
 		const DelegateTypeSymbol* delegateType = static_cast<const DelegateTypeSymbol*>(delegateInstance->Info);
@@ -946,10 +948,10 @@ ObjectInstance* AbstractInterpreter::EvaluateIndexatorExpression(const Indexator
 		prevInstance = EvaluateExpression(expression->PreviousExpression);
 
 	IndexatorSymbol* indexator = expression->IndexatorSymbol;
-	if (indexator == nullptr || indexator->Getter == nullptr || indexator->Getter->Method == nullptr)
+	if (indexator == nullptr || indexator->Getter == nullptr)
 		throw std::runtime_error("indexator getter is not resolved");
 
-	MethodSymbol* method = indexator->Getter->Method;
+	MethodSymbol* method = indexator->Getter;
 	InboundVariablesContext* arguments = CreateArgumentsContext(expression->IndexatorList->Arguments, method->Parameters, method->IsStatic, prevInstance);
 	ObjectInstance* retReg = ExecuteMethod(method, arguments);
 	return retReg;
@@ -991,7 +993,7 @@ void AbstractInterpreter::ExecuteInstanceSetter(ObjectInstance* instance, const 
 		const IndexatorExpressionSyntax* indexator = static_cast<const IndexatorExpressionSyntax*>(access);
 		InboundVariablesContext* arguments = CreateArgumentsContext(indexator->IndexatorList->Arguments, indexator->IndexatorSymbol->Parameters, indexator->IndexatorSymbol->IsStatic, instance);
 		arguments->AddVariable(L"value", value);
-		ExecuteMethod(indexator->IndexatorSymbol->Setter->Method, arguments);
+		ExecuteMethod(indexator->IndexatorSymbol->Setter, arguments);
 		return;
 	}
 
@@ -1002,7 +1004,7 @@ void AbstractInterpreter::ExecuteInstanceSetter(ObjectInstance* instance, const 
 		PropertySymbol* property = access->PropertySymbol;
 		field = property->BackingField;
 
-		if (property->Setter->Method != nullptr)
+		if (property->Setter != nullptr)
 		{
 			InboundVariablesContext* setterArgs = new InboundVariablesContext(nullptr);
 			if (!property->IsStatic)
@@ -1014,7 +1016,7 @@ void AbstractInterpreter::ExecuteInstanceSetter(ObjectInstance* instance, const 
 			}
 
 			setterArgs->AddVariable(L"value", value);
-			ExecuteMethod(property->Setter->Method, setterArgs);
+			ExecuteMethod(property->Setter, setterArgs);
 			return;
 		}
 	}

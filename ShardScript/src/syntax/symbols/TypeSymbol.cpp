@@ -87,6 +87,60 @@ bool TypeSymbol::IsPrimitive()
 		|| this == SymbolTable::Primitives::String;
 }
 
+void TypeSymbol::OnSymbolDeclared(SyntaxSymbol* symbol)
+{
+	switch (symbol->Kind)
+	{
+		case SyntaxKind::ConstructorDeclaration:
+		{
+			MethodSymbol* ctor = static_cast<MethodSymbol*>(symbol);
+			Constructors.push_back(ctor);
+			break;
+		}
+
+		case SyntaxKind::MethodDeclaration:
+		{
+			MethodSymbol* method = static_cast<MethodSymbol*>(symbol);
+			Methods.push_back(method);
+			break;
+		}
+
+		case SyntaxKind::FieldDeclaration:
+		{
+			FieldSymbol* field = static_cast<FieldSymbol*>(symbol);
+			Fields.push_back(field);
+			break;
+		}
+
+		case SyntaxKind::PropertyDeclaration:
+		{
+			PropertySymbol* prop = static_cast<PropertySymbol*>(symbol);
+			Properties.push_back(prop);
+			break;
+		}
+
+		case SyntaxKind::IndexatorDeclaration:
+		{
+			IndexatorSymbol* index = static_cast<IndexatorSymbol*>(symbol);
+			Indexators.push_back(index);
+			break;
+		}
+
+		default:
+		{
+			/*
+			if (symbol->IsType())
+			{
+				TypeSymbol* type = static_cast<TypeSymbol*>(symbol);
+				Members.push_back(type);
+			}
+			*/
+
+			break;
+		}
+	}
+}
+
 MethodSymbol* TypeSymbol::FindConstructor(std::vector<TypeSymbol*> parameterTypes)
 {
 	for (MethodSymbol* symbol : Constructors)

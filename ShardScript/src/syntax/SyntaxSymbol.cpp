@@ -2,6 +2,11 @@
 
 using namespace shard::syntax;
 
+void SyntaxSymbol::OnSymbolDeclared(SyntaxSymbol* symbol)
+{
+	// ...
+}
+
 bool SyntaxSymbol::IsType()
 {
 	return Kind == SyntaxKind::ClassDeclaration

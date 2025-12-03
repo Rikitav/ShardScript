@@ -167,10 +167,13 @@
     <ClCompile Include="src\syntax\nodes\Types\DelegateTypeSyntax.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
+    <ClCompile Include="src\parsing\analysis\DiagnosticSeverity.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
     <ClCompile Include="src\syntax\SymbolFactory.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="src\parsing\analysis\DiagnosticSeverity.cpp">
+    <ClCompile Include="src\syntax\symbols\NamespaceSymbol.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
   </ItemGroup>
@@ -499,10 +502,13 @@
     <ClInclude Include="include\shard\syntax\nodes\Expressions\TernaryExpressionSyntax.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
+    <ClInclude Include="include\shard\Vector.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
     <ClInclude Include="include\shard\syntax\SymbolFactory.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="include\shard\Vector.h">
+    <ClInclude Include="include\shard\syntax\symbols\IndexatorSymbol.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>

@@ -110,10 +110,7 @@ void ArrayPrimitive::Reflect(TypeSymbol* symbol)
 		lengthProperty->Accesibility = SymbolAccesibility::Public;
 		lengthProperty->ReturnType = SymbolTable::Primitives::Integer;
 
-		lengthProperty->Getter = new AccessorSymbol(L"get_Length");
-		lengthProperty->Getter->Accesibility = SymbolAccesibility::Public;
-		lengthProperty->Getter->Method = new MethodSymbol(L"get_Length", get_Length);
-
+		lengthProperty->Getter = new AccessorSymbol(L"get_Length", get_Length);
 		symbol->Properties.push_back(lengthProperty);
 	}
 
@@ -128,29 +125,14 @@ void ArrayPrimitive::Reflect(TypeSymbol* symbol)
 		indexatorSymbol->Parameters.push_back(indexParam);
 
 		{
-			AccessorSymbol* getter = new AccessorSymbol(L"get_Item");
-
-			MethodSymbol* getterMethod = new MethodSymbol(L"get_Item", get_Item);
-			getterMethod->Accesibility = SymbolAccesibility::Public;
-			getter->Method = getterMethod;
-
-			ParameterSymbol* getterIndexParam = new ParameterSymbol(L"index");
-			getterIndexParam->Type = SymbolTable::Primitives::Integer;
-			getterMethod->Parameters.push_back(getterIndexParam);
-
+			AccessorSymbol* getter = new AccessorSymbol(L"get_Item", get_Item);
+			getter->Parameters.push_back(new ParameterSymbol(L"index", SymbolTable::Primitives::Integer));
 			indexatorSymbol->Getter = getter;
 		}
 
 		{
-			AccessorSymbol* setter = new AccessorSymbol(L"set_Item");
-			MethodSymbol* setterMethod = new MethodSymbol(L"set_Item", set_Item);
-			setterMethod->Accesibility = SymbolAccesibility::Public;
-			setter->Method = setterMethod;
-
-			ParameterSymbol* getterIndexParam = new ParameterSymbol(L"index");
-			getterIndexParam->Type = SymbolTable::Primitives::Integer;
-			setterMethod->Parameters.push_back(getterIndexParam);
-
+			AccessorSymbol* setter = new AccessorSymbol(L"set_Item", set_Item);
+			setter->Parameters.push_back(new ParameterSymbol(L"index", SymbolTable::Primitives::Integer));
 			indexatorSymbol->Setter = setter;
 		}
 

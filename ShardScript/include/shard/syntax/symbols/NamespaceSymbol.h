@@ -3,6 +3,7 @@
 
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxSymbol.h>
+#include <shard/parsing/semantic/NamespaceTree.h>
 
 #include <string>
 #include <vector>
@@ -24,6 +25,8 @@ namespace shard::syntax::symbols
 			: SyntaxSymbol(name, SyntaxKind::NamespaceDeclaration) { }
 
 		inline NamespaceSymbol(const NamespaceSymbol& other) = delete;
+
+		void OnSymbolDeclared(SyntaxSymbol* symbol) override;
 
 		inline virtual ~NamespaceSymbol()
 		{

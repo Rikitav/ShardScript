@@ -8,6 +8,11 @@
 #include <vector>
 #include <string>
 
+namespace shard::syntax::symbols
+{
+	class NamespaceSymbol;
+}
+
 namespace shard::parsing::semantic
 {
 	class SHARD_API NamespaceNode

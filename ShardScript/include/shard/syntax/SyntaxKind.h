@@ -25,6 +25,7 @@ namespace shard::syntax
 		ConstructorDeclaration,
 		PropertyDeclaration,
 		AccessorDeclaration,
+		IndexatorDeclaration,
 
 		// Method parts
 		Parameter,

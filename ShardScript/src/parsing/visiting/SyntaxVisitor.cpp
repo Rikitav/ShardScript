@@ -69,24 +69,37 @@ void SyntaxVisitor::VisitSyntaxTree(SyntaxTree& tree)
 
 void SyntaxVisitor::VisitCompilationUnit(CompilationUnitSyntax* node)
 {
+	if (node == nullptr)
+		return;
+
 	for (MemberDeclarationSyntax* member : node->Members)
 		VisitTypeDeclaration(member);
 }
 
 void SyntaxVisitor::VisitUsingDirective(UsingDirectiveSyntax* node)
 {
+	if (node == nullptr)
+		return;
+
 	// ...
 	return;
 }
 
 void SyntaxVisitor::VisitImportDirective(ImportDirectiveSyntax* node)
 {
-	VisitParametersList(node->Params);
+	if (node == nullptr)
+		return;
+
+	if (node->Params != nullptr)
+		VisitParametersList(node->Params);
 	return;
 }
 
 void SyntaxVisitor::VisitTypeDeclaration(MemberDeclarationSyntax* node)
 {
+	if (node == nullptr)
+		return;
+
 	switch (node->Kind)
 	{
 		default:
@@ -124,30 +137,48 @@ void SyntaxVisitor::VisitTypeDeclaration(MemberDeclarationSyntax* node)
 
 void SyntaxVisitor::VisitNamespaceDeclaration(NamespaceDeclarationSyntax* node)
 {
+	if (node == nullptr)
+		return;
+
 	for (MemberDeclarationSyntax* member : node->Members)
 		VisitTypeDeclaration(member);
 }
 
 void SyntaxVisitor::VisitClassDeclaration(ClassDeclarationSyntax* node)
 {
+	if (node == nullptr)
+		return;
+
 	for (MemberDeclarationSyntax* member : node->Members)
 		VisitMemberDeclaration(member);
 }
 
 void SyntaxVisitor::VisitStructDeclaration(StructDeclarationSyntax* node)
 {
+	if (node == nullptr)
+		return;
+
 	for (MemberDeclarationSyntax* member : node->Members)
 		VisitMemberDeclaration(member);
 }
 
 void SyntaxVisitor::VisitDelegateDeclaration(DelegateDeclarationSyntax* node)
 {
-	VisitType(node->ReturnType);
-	VisitParametersList(node->Params);
+	if (node == nullptr)
+		return;
+
+	if (node->ReturnType != nullptr)
+		VisitType(node->ReturnType);
+
+	if (node->Params != nullptr)
+		VisitParametersList(node->Params);
 }
 
 void SyntaxVisitor::VisitMemberDeclaration(MemberDeclarationSyntax* node)
 {
+	if (node == nullptr)
+		return;
+
 	switch (node->Kind)
 	{
 		default:
@@ -220,6 +251,9 @@ void SyntaxVisitor::VisitMemberDeclaration(MemberDeclarationSyntax* node)
 
 void SyntaxVisitor::VisitFieldDeclaration(FieldDeclarationSyntax* node)
 {
+	if (node == nullptr)
+		return;
+
 	if (node->ReturnType != nullptr)
 		VisitType(node->ReturnType);
 
@@ -229,19 +263,36 @@ void SyntaxVisitor::VisitFieldDeclaration(FieldDeclarationSyntax* node)
 
 void SyntaxVisitor::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 {
-	VisitType(node->ReturnType);
-	VisitParametersList(node->Params);
-	VisitStatementsBlock(node->Body);
+	if (node == nullptr)
+		return;
+
+	if (node->ReturnType != nullptr)
+		VisitType(node->ReturnType);
+
+	if (node->Params != nullptr)
+		VisitParametersList(node->Params);
+
+	if (node->Body != nullptr)
+		VisitStatementsBlock(node->Body);
 }
 
 void SyntaxVisitor::VisitConstructorDeclaration(ConstructorDeclarationSyntax* node)
 {
-	VisitParametersList(node->Params);
-	VisitStatementsBlock(node->Body);
+	if (node == nullptr)
+		return;
+
+	if (node->Params != nullptr)
+		VisitParametersList(node->Params);
+
+	if (node->Body != nullptr)
+		VisitStatementsBlock(node->Body);
 }
 
 void SyntaxVisitor::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
 {
+	if (node == nullptr)
+		return;
+
 	if (node->ReturnType != nullptr)
 		VisitType(node->ReturnType);
 
@@ -257,18 +308,27 @@ void SyntaxVisitor::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
 
 void SyntaxVisitor::VisitAccessorDeclaration(AccessorDeclarationSyntax* node)
 {
+	if (node == nullptr)
+		return;
+
 	if (node->Body != nullptr)
 		VisitStatementsBlock(node->Body);
 }
 
 void SyntaxVisitor::VisitStatementsBlock(StatementsBlockSyntax* node)
 {
+	if (node == nullptr)
+		return;
+
 	for (StatementSyntax* statement : node->Statements)
 		VisitStatement(statement);
 }
 
 void SyntaxVisitor::VisitStatement(StatementSyntax* node)
 {
+	if (node == nullptr)
+		return;
+
 	switch (node->Kind)
 	{
 		default:
@@ -355,61 +415,108 @@ void SyntaxVisitor::VisitStatement(StatementSyntax* node)
 
 void SyntaxVisitor::VisitExpressionStatement(ExpressionStatementSyntax* node)
 {
-	VisitExpression(node->Expression);
+	if (node == nullptr)
+		return;
+
+	if (node->Expression != nullptr)
+		VisitExpression(node->Expression);
 }
 
 void SyntaxVisitor::VisitVariableStatement(VariableStatementSyntax* node)
 {
-	VisitType(node->Type);
-	VisitExpression(node->Expression);
+	if (node == nullptr)
+		return;
+
+	if (node->Type != nullptr)
+		VisitType(node->Type);
+
+	if (node->Expression != nullptr)
+		VisitExpression(node->Expression);
 }
 
 void SyntaxVisitor::VisitWhileStatement(WhileStatementSyntax* node)
 {
-	VisitExpression(node->ConditionExpression);
-	VisitStatementsBlock(node->StatementsBlock);
+	if (node == nullptr)
+		return;
+
+	if (node->ConditionExpression != nullptr)
+		VisitExpression(node->ConditionExpression);
+
+	if (node->StatementsBlock != nullptr)
+		VisitStatementsBlock(node->StatementsBlock);
 }
 
 void SyntaxVisitor::VisitUntilStatement(UntilStatementSyntax* node)
 {
-	VisitExpression(node->ConditionExpression);
-	VisitStatementsBlock(node->StatementsBlock);
+	if (node == nullptr)
+		return;
+
+	if (node->ConditionExpression != nullptr)
+		VisitExpression(node->ConditionExpression);
+
+	if (node->StatementsBlock != nullptr)
+		VisitStatementsBlock(node->StatementsBlock);
 }
 
 void SyntaxVisitor::VisitForStatement(ForStatementSyntax* node)
 {
-	VisitStatement(node->InitializerStatement);
-	VisitExpression(node->ConditionExpression);
-	VisitStatement(node->AfterRepeatStatement);
-	VisitStatementsBlock(node->StatementsBlock);
+	if (node == nullptr)
+		return;
+
+	if (node->InitializerStatement != nullptr)
+		VisitStatement(node->InitializerStatement);
+
+	if (node->ConditionExpression != nullptr)
+		VisitExpression(node->ConditionExpression);
+
+	if (node->AfterRepeatStatement != nullptr)
+		VisitStatement(node->AfterRepeatStatement);
+
+	if (node->StatementsBlock != nullptr)
+		VisitStatementsBlock(node->StatementsBlock);
 }
 
 void SyntaxVisitor::VisitReturnStatement(ReturnStatementSyntax* node)
 {
+	if (node == nullptr)
+		return;
+
 	if (node->Expression != nullptr)
 		VisitExpression(node->Expression);
 }
 
 void SyntaxVisitor::VisitThrowStatement(ThrowStatementSyntax* node)
 {
+	if (node == nullptr)
+		return;
+
 	if (node->Expression != nullptr)
 		VisitExpression(node->Expression);
 }
 
 void SyntaxVisitor::VisitBreakStatement(BreakStatementSyntax* node)
 {
+	if (node == nullptr)
+		return;
+
 	// ...
 	return;
 }
 
 void SyntaxVisitor::VisitContinueStatement(ContinueStatementSyntax* node)
 {
+	if (node == nullptr)
+		return;
+
 	// ...
 	return;
 }
 
 void SyntaxVisitor::VisitConditionalClause(ConditionalClauseBaseSyntax* node)
 {
+	if (node == nullptr)
+		return;
+
 	switch (node->Kind)
 	{
 		default:
@@ -440,8 +547,14 @@ void SyntaxVisitor::VisitConditionalClause(ConditionalClauseBaseSyntax* node)
 
 void SyntaxVisitor::VisitIfStatement(IfStatementSyntax* node)
 {
-	VisitStatement(node->ConditionExpression);
-	VisitStatementsBlock(node->StatementsBlock);
+	if (node == nullptr)
+		return;
+
+	if (node->ConditionExpression != nullptr)
+		VisitStatement(node->ConditionExpression);
+
+	if (node->StatementsBlock != nullptr)
+		VisitStatementsBlock(node->StatementsBlock);
 	
 	if (node->NextStatement != nullptr)
 		VisitConditionalClause(node->NextStatement);
@@ -449,8 +562,14 @@ void SyntaxVisitor::VisitIfStatement(IfStatementSyntax* node)
 
 void SyntaxVisitor::VisitUnlessStatement(UnlessStatementSyntax* node)
 {
-	VisitStatement(node->ConditionExpression);
-	VisitStatementsBlock(node->StatementsBlock);
+	if (node == nullptr)
+		return;
+
+	if (node->ConditionExpression != nullptr)
+		VisitStatement(node->ConditionExpression);
+
+	if (node->StatementsBlock != nullptr)
+		VisitStatementsBlock(node->StatementsBlock);
 
 	if (node->NextStatement != nullptr)
 		VisitConditionalClause(node->NextStatement);
@@ -458,7 +577,11 @@ void SyntaxVisitor::VisitUnlessStatement(UnlessStatementSyntax* node)
 
 void SyntaxVisitor::VisitElseStatement(ElseStatementSyntax* node)
 {
-	VisitStatementsBlock(node->StatementsBlock);
+	if (node == nullptr)
+		return;
+
+	if (node->StatementsBlock != nullptr)
+		VisitStatementsBlock(node->StatementsBlock);
 
 	if (node->NextStatement != nullptr)
 		VisitConditionalClause(node->NextStatement);
@@ -466,6 +589,9 @@ void SyntaxVisitor::VisitElseStatement(ElseStatementSyntax* node)
 
 void SyntaxVisitor::VisitExpression(ExpressionSyntax* node)
 {
+	if (node == nullptr)
+		return;
+
 	switch (node->Kind)
 	{
 		default:
@@ -545,77 +671,134 @@ void SyntaxVisitor::VisitExpression(ExpressionSyntax* node)
 
 void SyntaxVisitor::VisitLiteralExpression(LiteralExpressionSyntax* node)
 {
+	if (node == nullptr)
+		return;
+
 	// ..
 	return;
 }
 
 void SyntaxVisitor::VisitBinaryExpression(BinaryExpressionSyntax* node)
 {
-	VisitExpression(node->Left);
-	VisitExpression(node->Right);
+	if (node == nullptr)
+		return;
+
+	if (node->Left != nullptr)
+		VisitExpression(node->Left);
+
+	if (node->Right != nullptr)
+		VisitExpression(node->Right);
 }
 
 void SyntaxVisitor::VisitUnaryExpression(UnaryExpressionSyntax* node)
 {
-	VisitExpression(node->Expression);
+	if (node == nullptr)
+		return;
+
+	if (node->Expression != nullptr)
+		VisitExpression(node->Expression);
 }
 
 void SyntaxVisitor::VisitCollectionExpression(CollectionExpressionSyntax* node)
 {
+	if (node == nullptr)
+		return;
+
 	for (ExpressionSyntax* expression : node->ValuesExpressions)
 		VisitExpression(expression);
 }
 
 void SyntaxVisitor::VisitLambdaExpression(LambdaExpressionSyntax* node)
 {
-	VisitParametersList(node->Params);
-	VisitStatementsBlock(node->Body);
+	if (node == nullptr)
+		return;
+
+	if (node->Params != nullptr)
+		VisitParametersList(node->Params);
+
+	if (node->Body != nullptr)
+		VisitStatementsBlock(node->Body);
 }
 
 void SyntaxVisitor::VisitTernaryExpression(TernaryExpressionSyntax* node)
 {
-	VisitExpression(node->Condition);
-	VisitExpression(node->Left);
-	VisitExpression(node->Right);
+	if (node == nullptr)
+		return;
+
+	if (node->Condition != nullptr)
+		VisitExpression(node->Condition);
+
+	if (node->Left != nullptr)
+		VisitExpression(node->Left);
+
+	if (node->Right != nullptr)
+		VisitExpression(node->Right);
 }
 
 void SyntaxVisitor::VisitObjectCreationExpression(ObjectExpressionSyntax* node)
 {
-	VisitType(node->Type);
-	VisitArgumentsList(node->ArgumentsList);
+	if (node == nullptr)
+		return;
+
+	if (node->Type != nullptr)
+		VisitType(node->Type);
+
+	if (node->ArgumentsList != nullptr)
+		VisitArgumentsList(node->ArgumentsList);
 }
 
 void SyntaxVisitor::VisitMemberAccessExpression(MemberAccessExpressionSyntax* node)
 {
+	if (node == nullptr)
+		return;
+
 	// ...
 	return;
 }
 
 void SyntaxVisitor::VisitInvocationExpression(InvokationExpressionSyntax* node)
 {
-	VisitArgumentsList(node->ArgumentsList);
+	if (node == nullptr)
+		return;
+
+	if (node->ArgumentsList != nullptr)
+		VisitArgumentsList(node->ArgumentsList);
 }
 
 void SyntaxVisitor::VisitIndexatorExpression(IndexatorExpressionSyntax* node)
 {
-	VisitIndexatorList(node->IndexatorList);
+	if (node == nullptr)
+		return;
+
+	if (node->IndexatorList != nullptr)
+		VisitIndexatorList(node->IndexatorList);
 }
 
 void SyntaxVisitor::VisitArgumentsList(ArgumentsListSyntax* node)
 {
+	if (node == nullptr)
+		return;
+
 	for (ArgumentSyntax* argument : node->Arguments)
 		VisitArgument(argument);
 }
 
 void SyntaxVisitor::VisitIndexatorList(IndexatorListSyntax* node)
 {
+	if (node == nullptr)
+		return;
+
 	for (ArgumentSyntax* argument : node->Arguments)
 		VisitArgument(argument);
 }
 
 void SyntaxVisitor::VisitArgument(ArgumentSyntax* node)
 {
-	VisitExpression((ExpressionSyntax*)node->Expression);
+	if (node == nullptr)
+		return;
+
+	if (node->Expression != nullptr)
+		VisitExpression(const_cast<ExpressionSyntax*>(node->Expression));
 }
 
 void SyntaxVisitor::VisitParametersList(ParametersListSyntax* node)
@@ -626,11 +809,18 @@ void SyntaxVisitor::VisitParametersList(ParametersListSyntax* node)
 
 void SyntaxVisitor::VisitParameter(ParameterSyntax* node)
 {
-	VisitType(const_cast<TypeSyntax*>(node->Type));
+	if (node == nullptr)
+		return;
+
+	if (node->Type != nullptr)
+		VisitType(const_cast<TypeSyntax*>(node->Type));
 }
 
 void SyntaxVisitor::VisitType(TypeSyntax* node)
 {
+	if (node == nullptr)
+		return;
+
 	switch (node->Kind)
 	{
 		default:
@@ -682,35 +872,57 @@ void SyntaxVisitor::VisitType(TypeSyntax* node)
 
 void SyntaxVisitor::VisitPredefinedType(PredefinedTypeSyntax* node)
 {
+	if (node == nullptr)
+		return;
+
 	// ...
 	return;
 }
 
 void SyntaxVisitor::VisitIdentifierNameType(IdentifierNameTypeSyntax* node)
 {
+	if (node == nullptr)
+		return;
+
 	// ...
 	return;
 }
 
 void SyntaxVisitor::VisitArrayType(ArrayTypeSyntax* node)
 {
-	VisitType(node->UnderlayingType);
+	if (node == nullptr)
+		return;
+
+	if (node->UnderlayingType != nullptr)
+		VisitType(node->UnderlayingType);
 }
 
 void SyntaxVisitor::VisitNullableType(NullableTypeSyntax* node)
 {
-	VisitType(node->UnderlayingType);
+	if (node == nullptr)
+		return;
+
+	if (node->UnderlayingType != nullptr)
+		VisitType(node->UnderlayingType);
 }
 
 void SyntaxVisitor::VisitGenericType(GenericTypeSyntax* node)
 {
-	VisitType(node->UnderlayingType);
+	if (node == nullptr)
+		return;
+
+	if (node->UnderlayingType != nullptr)
+		VisitType(node->UnderlayingType);
+
 	for (TypeSyntax* type : node->TypeArguments)
 		VisitType(type);
 }
 
 void SyntaxVisitor::VisitDelegateType(DelegateTypeSyntax* node)
 {
-	VisitType(node->ReturnType);
-	VisitParametersList(node->Params);
+	if (node->ReturnType != nullptr)
+		VisitType(node->ReturnType);
+
+	if (node->Params != nullptr)
+		VisitParametersList(node->Params);
 }

@@ -23,6 +23,11 @@ namespace shard::syntax::symbols
             Accesibility = SymbolAccesibility::Public;
         }
 
+        inline ParameterSymbol(std::wstring name, TypeSymbol* type) : SyntaxSymbol(name, SyntaxKind::Parameter), Type(type)
+        {
+            Accesibility = SymbolAccesibility::Public;
+        }
+
         inline ParameterSymbol(const ParameterSymbol& other) = delete;
 
         inline virtual ~ParameterSymbol()
