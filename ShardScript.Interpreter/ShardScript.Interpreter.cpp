@@ -50,6 +50,8 @@ static void SigIntHandler(int signal)
 
 int wmain(int argc, wchar_t* argv[])
 {
+	std::vector<HMODULE> loadedLibs;
+
 	try
 	{
 		setlocale(LC_ALL, "");
@@ -96,6 +98,10 @@ int wmain(int argc, wchar_t* argv[])
 		SemanticModel semanticModel = SemanticModel(syntaxTree);
 		if (!args.ExcludeStd)
 		{
+			HMODULE hModule = LoadLibraryW(L"ShardScript.Framework.dll");
+			if (hModule)
+				loadedLibs.push_back(hModule);
+
 			FrameworkLoader::Load(semanticModel, diagnostics);
 		}
 
@@ -153,4 +159,6 @@ int wmain(int argc, wchar_t* argv[])
 	}
 
 	GarbageCollector::Terminate();
+	for (HMODULE lib : loadedLibs)
+		FreeLibrary(lib);
 }

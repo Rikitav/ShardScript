@@ -20,6 +20,7 @@
 #include <shard/syntax/symbols/FieldSymbol.h>
 #include <shard/syntax/symbols/PropertySymbol.h>
 #include <shard/syntax/symbols/MethodSymbol.h>
+#include <shard/syntax/symbols/IndexatorSymbol.h>
 
 #include <shard/syntax/nodes/ArgumentsListSyntax.h>
 #include <shard/syntax/nodes/ExpressionSyntax.h>

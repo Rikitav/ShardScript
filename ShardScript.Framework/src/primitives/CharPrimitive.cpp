@@ -1,9 +1,10 @@
+#include <framework/PrimitivesLoading.h>
+
 #include <shard/runtime/PrimitiveMathModule.h>
 #include <shard/runtime/InboundVariablesContext.h>
 #include <shard/runtime/ObjectInstance.h>
 #include <shard/runtime/AbstractInterpreter.h>
 
-#include <shard/framework/primitives/CharPrimitive.h>
 #include <shard/parsing/semantic/SymbolTable.h>
 
 #include <shard/syntax/SymbolAccesibility.h>

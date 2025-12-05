@@ -21,6 +21,7 @@ namespace shard::parsing::semantic
     class SHARD_API SymbolTable
     {
         inline static const std::wstring GlobalTypeName = L"__GLOBAL__";
+
         std::unordered_map<shard::syntax::SyntaxNode*, shard::syntax::SyntaxSymbol*> nodeToSymbolMap;
         std::unordered_map<shard::syntax::SyntaxSymbol*, shard::syntax::SyntaxNode*> symbolToNodeMap;
         std::vector<shard::syntax::symbols::NamespaceSymbol*> namespacesList;
@@ -28,24 +29,27 @@ namespace shard::parsing::semantic
 
     public:
         std::vector<shard::syntax::symbols::MethodSymbol*> EntryPointCandidates;
-        shard::parsing::semantic::SemanticScope* GlobalScope = new SemanticScope(nullptr, nullptr);
-        shard::syntax::symbols::TypeSymbol* GlobalType = nullptr;
-
+        
+        struct Global
+        {
+            inline static SHARD_API shard::parsing::semantic::SemanticScope* Scope = new SemanticScope(nullptr, nullptr);
+            inline static SHARD_API shard::syntax::symbols::TypeSymbol* Type = new shard::syntax::symbols::TypeSymbol(GlobalTypeName, shard::syntax::SyntaxKind::CompilationUnit);
+        };
 
         struct Primitives
         {
-            inline static shard::syntax::symbols::TypeSymbol* Void;
-            inline static shard::syntax::symbols::TypeSymbol* Any;
-            inline static shard::syntax::symbols::TypeSymbol* Array;
-            inline static shard::syntax::symbols::TypeSymbol* Boolean;
-            inline static shard::syntax::symbols::TypeSymbol* Integer;
-            inline static shard::syntax::symbols::TypeSymbol* Char;
-            inline static shard::syntax::symbols::TypeSymbol* String;
+            inline static SHARD_API shard::syntax::symbols::TypeSymbol* Void;
+            inline static SHARD_API shard::syntax::symbols::TypeSymbol* Any;
+            inline static SHARD_API shard::syntax::symbols::TypeSymbol* Array;
+            inline static SHARD_API shard::syntax::symbols::TypeSymbol* Boolean;
+            inline static SHARD_API shard::syntax::symbols::TypeSymbol* Integer;
+            inline static SHARD_API shard::syntax::symbols::TypeSymbol* Char;
+            inline static SHARD_API shard::syntax::symbols::TypeSymbol* String;
         };
 
         inline SymbolTable()
         {
-            GlobalType = new shard::syntax::symbols::TypeSymbol(GlobalTypeName, shard::syntax::SyntaxKind::CompilationUnit);
+
         }
 
         ~SymbolTable();

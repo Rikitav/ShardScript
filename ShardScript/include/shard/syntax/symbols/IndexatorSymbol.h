@@ -1,5 +1,4 @@
 #pragma once
-#pragma once
 #include <shard/ShardScriptAPI.h>
 
 #include <shard/syntax/symbols/PropertySymbol.h>
@@ -9,8 +8,6 @@
 
 namespace shard::syntax::symbols
 {
-    // IndexatorSymbol наследует всю семантику PropertySymbol
-    // и добавляет только список параметров индексатора.
     class SHARD_API IndexatorSymbol : public PropertySymbol
     {
     public:
@@ -25,7 +22,6 @@ namespace shard::syntax::symbols
         {
             for (ParameterSymbol* param : Parameters)
                 delete param;
-            // Остальное удалит деструктор PropertySymbol
         }
     };
 }

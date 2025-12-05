@@ -1,4 +1,4 @@
-#include <shard/framework/primitives/IntegerPrimitive.h>
+#include <framework/PrimitivesLoading.h>
 
 #include <shard/runtime/InboundVariablesContext.h>
 #include <shard/runtime/ObjectInstance.h>

@@ -20,7 +20,7 @@ namespace shard::parsing
 	protected:
 		inline ScopeVisitor(shard::parsing::semantic::SymbolTable* symbolTable)
 		{
-			scopeStack.push(symbolTable->GlobalScope);
+			scopeStack.push(shard::parsing::semantic::SymbolTable::Global::Scope);
 		}
 
 		shard::parsing::semantic::SemanticScope* CurrentScope();

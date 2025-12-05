@@ -1,4 +1,4 @@
-#include <shard/framework/primitives/ArrayPrimitive.h>
+#include <framework/PrimitivesLoading.h>
 
 #include <shard/syntax/SymbolAccesibility.h>
 #include <shard/parsing/semantic/SymbolTable.h>

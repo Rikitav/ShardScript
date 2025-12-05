@@ -21,8 +21,6 @@ using namespace shard::parsing::semantic;
 SymbolTable::~SymbolTable()
 {
 	ClearSymbols();
-	delete GlobalScope;
-	delete GlobalType;
 }
 
 void SymbolTable::ClearSymbols()

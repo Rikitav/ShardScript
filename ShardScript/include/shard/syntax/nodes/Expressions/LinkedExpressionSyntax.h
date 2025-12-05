@@ -78,7 +78,7 @@ namespace shard::syntax::nodes
 	class SHARD_API IndexatorExpressionSyntax : public MemberAccessExpressionSyntax
 	{
 	public:
-		MemberAccessExpressionSyntax* MemberAccess;
+		MemberAccessExpressionSyntax* MemberAccess = nullptr;
 		IndexatorListSyntax* IndexatorList = nullptr;
 		shard::syntax::symbols::IndexatorSymbol* IndexatorSymbol = nullptr;
 

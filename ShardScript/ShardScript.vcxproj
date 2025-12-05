@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <VCProjectVersion>17.0</VCProjectVersion>
+    <VCProjectVersion>18.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{5d6283ec-f65a-4c8c-b290-48e697deb544}</ProjectGuid>
     <RootNamespace>ShardScript</RootNamespace>
@@ -76,6 +76,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(ProjectDir)\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(ProjectDir)\libs;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -125,7 +126,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;SHARD_API_EXPORT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;WIN32_LEAN_AND_MEAN;SHARD_API_EXPORT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
@@ -137,13 +138,9 @@
   <ItemGroup>
     <ClCompile Include="src\parsing\analysis\DiagnosticSeverity.cpp" />
     <ClCompile Include="src\syntax\nodes\Types\DelegateTypeSyntax.cpp" />
-    <ClCompile Include="src\framework\collections\List.cpp" />
-    <ClCompile Include="src\framework\filesystem\Directory.cpp" />
-    <ClCompile Include="src\framework\filesystem\File.cpp" />
     <ClCompile Include="src\parsing\semantic\NamespaceTree.cpp" />
     <ClCompile Include="src\parsing\visiting\ScopeVisitor.cpp" />
     <ClCompile Include="src\framework\FrameworkLoader.cpp" />
-    <ClCompile Include="src\framework\primitives\ArrayPrimitive.cpp" />
     <ClCompile Include="src\syntax\nodes\Directives\UsingDirectiveSyntax.cpp" />
     <ClCompile Include="src\syntax\nodes\Types\ArrayTypeSyntax.cpp" />
     <ClCompile Include="src\syntax\SymbolFactory.cpp" />
@@ -158,8 +155,6 @@
     <ClCompile Include="src\syntax\SyntaxSymbol.cpp" />
     <ClCompile Include="include\shard\parsing\reading\SequenceSourceReader.h" />
     <ClCompile Include="src\parsing\LayoutGenerator.cpp" />
-    <ClCompile Include="src\framework\primitives\IntegerPrimitive.cpp" />
-    <ClCompile Include="src\framework\primitives\StringPrimitive.cpp" />
     <ClCompile Include="src\parsing\semantic\SymbolTable.cpp" />
     <ClCompile Include="src\parsing\visiting\ExpressionBinder.cpp" />
     <ClCompile Include="src\parsing\visiting\TypeBinder.cpp" />
@@ -170,8 +165,6 @@
     <ClCompile Include="include\shard\syntax\nodes\ParametersListSyntax.h" />
     <ClCompile Include="include\shard\syntax\nodes\Directives\UsingDirectiveSyntax.h" />
     <ClCompile Include="src\parsing\visiting\SyntaxVisitor.cpp" />
-    <ClCompile Include="src\framework\primitives\BooleanPrimitive.cpp" />
-    <ClCompile Include="src\framework\primitives\CharPrimitive.cpp" />
     <ClCompile Include="src\parsing\SemanticAnalyzer.cpp" />
     <ClCompile Include="src\parsing\reading\FileReader.cpp" />
     <ClCompile Include="src\parsing\reading\SequenceSourceReader.cpp" />
@@ -194,10 +187,6 @@
     <ClInclude Include="include\shard\framework\FrameworkModule.h" />
     <ClInclude Include="include\shard\parsing\LayoutGenerator.h" />
     <ClInclude Include="include\shard\framework\FrameworkLoader.h" />
-    <ClInclude Include="include\shard\framework\primitives\ArrayPrimitive.h" />
-    <ClInclude Include="include\shard\framework\primitives\CharPrimitive.h" />
-    <ClInclude Include="include\shard\framework\primitives\IntegerPrimitive.h" />
-    <ClInclude Include="include\shard\framework\primitives\StringPrimitive.h" />
     <ClInclude Include="include\shard\syntax\SymbolFactory.h" />
     <ClInclude Include="include\shard\parsing\semantic\SymbolInfo.h" />
     <ClInclude Include="include\shard\parsing\semantic\TypeInfo.h" />
@@ -221,7 +210,6 @@
     <ClInclude Include="include\shard\runtime\ObjectInstance.h" />
     <ClInclude Include="include\shard\runtime\CallStackFrame.h" />
     <ClInclude Include="include\shard\runtime\PrimitiveMathModule.h" />
-    <ClInclude Include="include\shard\framework\primitives\BooleanPrimitive.h" />
     <ClInclude Include="include\shard\ShardScriptAPI.h" />
     <ClInclude Include="include\shard\ShardTypes.h" />
     <ClInclude Include="include\shard\parsing\analysis\Diagnostic.h" />

@@ -1205,7 +1205,7 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node, 
 
 	MethodSymbol* method = currentType->FindMethod(methodName, argTypes);
 	if (method == nullptr)
-		method = Table->GlobalType->FindMethod(methodName, argTypes);
+		method = SymbolTable::Global::Type->FindMethod(methodName, argTypes);
 
 	if (method == nullptr)
 	{
@@ -1349,7 +1349,7 @@ IndexatorSymbol* ExpressionBinder::ResolveIndexator(IndexatorExpressionSyntax* n
 
 	IndexatorSymbol* indexator = currentType->FindIndexator(argTypes);
 	if (indexator == nullptr)
-		indexator = Table->GlobalType->FindIndexator(argTypes);
+		indexator = SymbolTable::Global::Type->FindIndexator(argTypes);
 
 	if (indexator == nullptr)
 	{
