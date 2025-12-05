@@ -318,36 +318,54 @@ void TypeBinder::VisitPredefinedType(PredefinedTypeSyntax* node)
 	{
 		case TokenType::BooleanKeyword:
 		{
+			if (SymbolTable::Primitives::Boolean == nullptr)
+				Diagnostics.ReportError(node->TypeToken, L"Primitive 'bool' wasn't resolved");
+
 			node->Symbol = SymbolTable::Primitives::Boolean;
 			break;
 		}
 
 		case TokenType::IntegerKeyword:
 		{
+			if (SymbolTable::Primitives::Integer == nullptr)
+				Diagnostics.ReportError(node->TypeToken, L"Primitive 'int' wasn't resolved");
+
 			node->Symbol = SymbolTable::Primitives::Integer;
 			break;
 		}
 
 		case TokenType::CharKeyword:
 		{
+			if (SymbolTable::Primitives::Char == nullptr)
+				Diagnostics.ReportError(node->TypeToken, L"Primitive 'char' wasn't resolved");
+
 			node->Symbol = SymbolTable::Primitives::Char;
 			break;
 		}
 
 		case TokenType::StringKeyword:
 		{
+			if (SymbolTable::Primitives::String == nullptr)
+				Diagnostics.ReportError(node->TypeToken, L"Primitive 'string' wasn't resolved");
+
 			node->Symbol = SymbolTable::Primitives::String;
 			break;
 		}
 
 		case TokenType::VoidKeyword:
 		{
+			if (SymbolTable::Primitives::Void == nullptr)
+				Diagnostics.ReportError(node->TypeToken, L"Primitive 'void' wasn't resolved");
+
 			node->Symbol = SymbolTable::Primitives::Void;
 			break;
 		}
 
 		case TokenType::VarKeyword:
 		{
+			if (SymbolTable::Primitives::Any == nullptr)
+				Diagnostics.ReportError(node->TypeToken, L"Primitive 'any' wasn't resolved");
+
 			node->Symbol = SymbolTable::Primitives::Any;
 			break;
 		}
