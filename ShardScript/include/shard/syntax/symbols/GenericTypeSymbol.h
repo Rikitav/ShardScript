@@ -15,11 +15,12 @@ namespace shard::syntax::symbols
 {
 	class SHARD_API GenericTypeSymbol : public TypeSymbol
 	{
+		std::unordered_map<TypeSymbol*, TypeSymbol*> _typeParametersMap;
+
 	public:
 		TypeSymbol* UnderlayingType = nullptr;
-		std::unordered_map<std::wstring, TypeSymbol*> GenericTypes;
 
-		inline GenericTypeSymbol(TypeSymbol* underlayingType) : TypeSymbol(underlayingType->Name, underlayingType->Kind), UnderlayingType(underlayingType)
+		inline GenericTypeSymbol(TypeSymbol* underlayingType) : TypeSymbol(underlayingType->Name, SyntaxKind::GenericType), UnderlayingType(underlayingType)
 		{
 			IsReferenceType = underlayingType->IsReferenceType;
 		}
@@ -30,6 +31,9 @@ namespace shard::syntax::symbols
 		{
 
 		}
+
+		void AddTypeParameter(TypeSymbol* typeParam, TypeSymbol* constraintType);
+		TypeSymbol* SubstituteTypeParameters(TypeSymbol* typeParam);
 
 		MethodSymbol* FindMethod(std::wstring& name, std::vector<TypeSymbol*> parameterTypes) override;
 		IndexatorSymbol* FindIndexator(std::vector<TypeSymbol*> parameterTypes) override;

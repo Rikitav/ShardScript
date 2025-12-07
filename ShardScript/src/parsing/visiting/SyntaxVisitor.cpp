@@ -149,6 +149,9 @@ void SyntaxVisitor::VisitClassDeclaration(ClassDeclarationSyntax* node)
 	if (node == nullptr)
 		return;
 
+	if (node->TypeParameters != nullptr)
+		VisitTypeParametersList(node->TypeParameters);
+
 	for (MemberDeclarationSyntax* member : node->Members)
 		VisitMemberDeclaration(member);
 }
@@ -157,6 +160,9 @@ void SyntaxVisitor::VisitStructDeclaration(StructDeclarationSyntax* node)
 {
 	if (node == nullptr)
 		return;
+
+	if (node->TypeParameters != nullptr)
+		VisitTypeParametersList(node->TypeParameters);
 
 	for (MemberDeclarationSyntax* member : node->Members)
 		VisitMemberDeclaration(member);
@@ -169,6 +175,9 @@ void SyntaxVisitor::VisitDelegateDeclaration(DelegateDeclarationSyntax* node)
 
 	if (node->ReturnType != nullptr)
 		VisitType(node->ReturnType);
+
+	if (node->TypeParameters != nullptr)
+		VisitTypeParametersList(node->TypeParameters);
 
 	if (node->Params != nullptr)
 		VisitParametersList(node->Params);
@@ -792,6 +801,23 @@ void SyntaxVisitor::VisitIndexatorList(IndexatorListSyntax* node)
 		VisitArgument(argument);
 }
 
+void SyntaxVisitor::VisitTypeParametersList(TypeParametersListSyntax* node)
+{
+	if (node == nullptr)
+		return;
+	
+	// ...
+}
+
+void SyntaxVisitor::VisitTypeArgumentsList(TypeArgumentsListSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	for (TypeSyntax* type : node->Types)
+		VisitType(type);
+}
+
 void SyntaxVisitor::VisitArgument(ArgumentSyntax* node)
 {
 	if (node == nullptr)
@@ -914,8 +940,8 @@ void SyntaxVisitor::VisitGenericType(GenericTypeSyntax* node)
 	if (node->UnderlayingType != nullptr)
 		VisitType(node->UnderlayingType);
 
-	for (TypeSyntax* type : node->TypeArguments)
-		VisitType(type);
+	if (node->Arguments != nullptr)
+		VisitTypeArgumentsList(node->Arguments);
 }
 
 void SyntaxVisitor::VisitDelegateType(DelegateTypeSyntax* node)

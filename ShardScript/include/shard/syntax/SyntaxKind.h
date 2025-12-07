@@ -30,6 +30,7 @@ namespace shard::syntax
 		// Method parts
 		Parameter,
 		ParametersList,
+		TypeParameter,
 		Argument,
 		ArgumentsList,
 		IndexatorList,

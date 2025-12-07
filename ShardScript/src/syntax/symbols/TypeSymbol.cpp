@@ -6,6 +6,8 @@
 #include <shard/syntax/symbols/ParameterSymbol.h>
 #include <shard/syntax/symbols/ArrayTypeSymbol.h>
 #include <shard/syntax/symbols/DelegateTypeSymbol.h>
+#include <shard/syntax/symbols/GenericTypeSymbol.h>
+#include <shard/syntax/symbols/TypeParameterSymbol.h>
 
 #include <shard/syntax/SyntaxKind.h>
 
@@ -33,6 +35,33 @@ bool TypeSymbol::Equals(const TypeSymbol* left, const TypeSymbol* right)
 		default:
 			return left->TypeCode == right->TypeCode;
 
+		case SyntaxKind::GenericType:
+		{
+			if (right->Kind != SyntaxKind::GenericType)
+				return false;
+
+			GenericTypeSymbol* thisGenericInfo = const_cast<GenericTypeSymbol*>(static_cast<const GenericTypeSymbol*>(left));
+			GenericTypeSymbol* otherGenericInfo = const_cast<GenericTypeSymbol*>(static_cast<const GenericTypeSymbol*>(right));
+			
+			if (!TypeSymbol::Equals(thisGenericInfo->UnderlayingType, otherGenericInfo->UnderlayingType))
+				return false;
+
+			size_t size = thisGenericInfo->TypeParameters.size();
+			if (otherGenericInfo->TypeParameters.size() != size)
+				return false;
+
+			for (size_t i = 0; i < size; i++)
+			{
+				TypeSymbol* thisParam = thisGenericInfo->SubstituteTypeParameters(thisGenericInfo->TypeParameters.at(i));
+				TypeSymbol* otherParam = otherGenericInfo->SubstituteTypeParameters(otherGenericInfo->TypeParameters.at(i));
+
+				if (!TypeSymbol::Equals(thisParam, otherParam))
+					return false;
+			}
+
+			return true;
+		}
+
 		case SyntaxKind::DelegateType:
 		{
 			if (right->Kind != SyntaxKind::DelegateType)
@@ -57,7 +86,7 @@ bool TypeSymbol::Equals(const TypeSymbol* left, const TypeSymbol* right)
 				ParameterSymbol* otherParam = otherLambdaInfo->Parameters.at(i);
 
 				if (!TypeSymbol::Equals(thisParam->Type, otherParam->Type))
-					return true;
+					return false;
 			}
 
 			return true;

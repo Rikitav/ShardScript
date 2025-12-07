@@ -39,6 +39,8 @@
 #include <shard/syntax/symbols/FFISymbol.h>
 #include <shard/syntax/symbols/AccessorSymbol.h>
 #include <shard/syntax/symbols/DelegateTypeSymbol.h>
+#include <shard/syntax/symbols/TypeParameterSymbol.h>
+#include <shard/syntax/nodes/TypeParametersListSyntax.h>
 
 #include <string>
 
@@ -173,8 +175,29 @@ void DeclarationCollector::VisitClassDeclaration(ClassDeclarationSyntax* node)
     }
 
     PushScope(symbol);
+    if (node->TypeParameters != nullptr)
+    {
+        for (const SyntaxToken& typeParamToken : node->TypeParameters->Types)
+        {
+            TypeParameterSymbol* typeParamSymbol = new TypeParameterSymbol(typeParamToken.Word);
+            typeParamSymbol->Parent = symbol;
+            symbol->TypeParameters.push_back(typeParamSymbol);
+            Declare(typeParamSymbol);
+        }
+    }
+
     for (MemberDeclarationSyntax* member : node->Members)
         VisitMemberDeclaration(member);
+
+    if (symbol->Constructors.empty())
+    {
+        MethodSymbol* ctor = new MethodSymbol(L"default");
+        ctor->HandleType = MethodHandleType::None;
+        ctor->Accesibility = SymbolAccesibility::Public;
+        ctor->Parent = symbol;
+        ctor->FullName = FormatFullNameOf(ctor);
+        symbol->Constructors.push_back(ctor);
+    }
 
     PopScope();
 }
@@ -204,6 +227,17 @@ void DeclarationCollector::VisitStructDeclaration(StructDeclarationSyntax* node)
     }
 
     PushScope(symbol);
+    if (node->TypeParameters != nullptr)
+    {
+        for (const SyntaxToken& typeParamToken : node->TypeParameters->Types)
+        {
+            TypeParameterSymbol* typeParamSymbol = new TypeParameterSymbol(typeParamToken.Word);
+            typeParamSymbol->Parent = symbol;
+            symbol->TypeParameters.push_back(typeParamSymbol);
+            Declare(typeParamSymbol);
+        }
+    }
+
     for (MemberDeclarationSyntax* member : node->Members)
         VisitMemberDeclaration(member);
 

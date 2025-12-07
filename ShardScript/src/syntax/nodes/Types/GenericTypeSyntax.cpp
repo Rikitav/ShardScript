@@ -7,15 +7,15 @@ using namespace shard::syntax::nodes;
 std::wstring GenericTypeSyntax::ToString()
 {
 	std::wostringstream result;
-	result << UnderlayingType->ToString() << OpenListToken.Word;
+	result << UnderlayingType->ToString() << Arguments->OpenToken.Word;
 
-	if (!TypeArguments.empty())
+	if (!Arguments->Types.empty())
 	{
-		result << TypeArguments[0]->ToString();
-		for (size_t i = 1; i < TypeArguments.size(); i++)
-			result << L", " << TypeArguments[i]->ToString();
+		result << Arguments->Types[0]->ToString();
+		for (size_t i = 1; i < Arguments->Types.size(); i++)
+			result << L", " << Arguments->Types[i]->ToString();
 	}
 
-	result << CloseListToken.Word;
+	result << Arguments->CloseToken.Word;
 	return result.str();
 }

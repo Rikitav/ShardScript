@@ -4,6 +4,8 @@
 #include <shard/runtime/InboundVariablesContext.h>
 #include <shard/runtime/ObjectInstance.h>
 #include <shard/runtime/GarbageCollector.h>
+
+#include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/MethodSymbol.h>
 
 #include <stack>
@@ -22,15 +24,16 @@ namespace shard::runtime
 	class SHARD_API CallStackFrame
 	{
 	public:
+		const shard::syntax::symbols::TypeSymbol* WithinType;
 		const shard::syntax::symbols::MethodSymbol* Method;
-		CallStackFrame* PreviousFrame;
+		const CallStackFrame* PreviousFrame;
+
 		std::stack<shard::runtime::InboundVariablesContext*> VariablesStack;
-		
 		FrameInterruptionReason InterruptionReason = FrameInterruptionReason::None;
 		ObjectInstance* InterruptionRegister = nullptr;
 
-		inline CallStackFrame(const shard::syntax::symbols::MethodSymbol* method, CallStackFrame* previousFrame)
-			: Method(method), PreviousFrame(previousFrame) { }
+		inline CallStackFrame(const shard::syntax::symbols::MethodSymbol* method, shard::syntax::symbols::TypeSymbol* withinType, CallStackFrame* previousFrame)
+			: WithinType(withinType), Method(method), PreviousFrame(previousFrame) { }
 
 		inline bool interrupted() const
 		{

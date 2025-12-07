@@ -33,6 +33,7 @@ namespace shard::syntax::nodes
 			Modifiers = info.Modifiers;
 			IdentifierToken = info.Identifier;
 			ReturnType = info.ReturnType;
+			TypeParameters = info.Generics;
 		}
 
 		inline FieldDeclarationSyntax(const FieldDeclarationSyntax& other) = delete;

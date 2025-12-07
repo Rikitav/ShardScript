@@ -29,6 +29,7 @@ namespace shard::syntax::nodes
 			Modifiers = info.Modifiers;
 			IdentifierToken = info.Identifier;
 			ReturnType = info.ReturnType;
+			TypeParameters = info.Generics;
 		}
 
 		inline MethodDeclarationSyntax(const MethodDeclarationSyntax&) = delete;

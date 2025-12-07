@@ -15,6 +15,8 @@
 #include <shard/syntax/nodes/ExpressionSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarationSyntax.h>
 #include <shard/syntax/nodes/ParametersListSyntax.h>
+#include <shard/syntax/nodes/TypeParametersListSyntax.h>
+#include <shard/syntax/nodes/TypeArgumentsListSyntax.h>
 #include <shard/syntax/nodes/CompilationUnitSyntax.h>
 #include <shard/syntax/nodes/StatementSyntax.h>
 #include <shard/syntax/nodes/StatementsBlockSyntax.h>
@@ -81,7 +83,6 @@ namespace shard::parsing
 		shard::syntax::nodes::AccessorDeclarationSyntax* ReadAccessorDeclaration(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
 
 		std::vector<shard::syntax::SyntaxToken> ReadMemberModifiers(shard::parsing::SourceReader& reader);
-		shard::syntax::nodes::ParametersListSyntax* ReadParametersList(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
 		void ReadTypeBody(shard::parsing::SourceReader& reader, shard::syntax::nodes::TypeDeclarationSyntax* syntax);
 
 		// Third layer - code
@@ -112,6 +113,9 @@ namespace shard::parsing
 
 		shard::syntax::nodes::ArgumentsListSyntax* ReadArgumentsList(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
 		shard::syntax::nodes::IndexatorListSyntax* ReadIndexatorList(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
+		shard::syntax::nodes::ParametersListSyntax* ReadParametersList(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
+		shard::syntax::nodes::TypeParametersListSyntax* ReadTypeParametersList(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
+		shard::syntax::nodes::TypeArgumentsListSyntax* ReadTypeArgumentsList(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
 
 		shard::syntax::nodes::TypeSyntax* ReadType(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);
 		shard::syntax::nodes::TypeSyntax* ReadIdentifierNameType(shard::parsing::SourceReader& reader, shard::syntax::SyntaxNode* parent);

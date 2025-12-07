@@ -25,6 +25,7 @@ namespace shard::syntax::nodes
 		{
 			Modifiers = info.Modifiers;
 			IdentifierToken = info.Identifier;
+			TypeParameters = info.Generics;
 		}
 
 		inline ConstructorDeclarationSyntax(const ConstructorDeclarationSyntax&) = delete;

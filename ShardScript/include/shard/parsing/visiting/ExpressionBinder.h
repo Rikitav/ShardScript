@@ -9,6 +9,7 @@
 
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/MethodSymbol.h>
+#include <shard/syntax/symbols/GenericTypeSymbol.h>
 
 #include <shard/syntax/nodes/ExpressionSyntax.h>
 #include <shard/syntax/nodes/ArgumentsListSyntax.h>
@@ -69,7 +70,10 @@ namespace shard::parsing
 		shard::syntax::symbols::MethodSymbol* ResolveMethod(shard::syntax::nodes::InvokationExpressionSyntax* node, shard::syntax::symbols::TypeSymbol* currentType);
 		shard::syntax::symbols::IndexatorSymbol* ResolveIndexator(shard::syntax::nodes::IndexatorExpressionSyntax* node, shard::syntax::symbols::TypeSymbol* currentType);
 		
-		bool MatchMethodArguments(shard::syntax::symbols::MethodSymbol* method, std::vector<shard::syntax::nodes::ArgumentSyntax*> arguments);
+		bool MatchMethodArguments(shard::syntax::symbols::MethodSymbol* method, std::vector<shard::syntax::nodes::ArgumentSyntax*> arguments, shard::syntax::symbols::GenericTypeSymbol* genericType = nullptr);
+		
+		// Заменяет type parameters на type arguments в типе для generic типов
+		shard::syntax::symbols::TypeSymbol* SubstituteTypeParameters(shard::syntax::symbols::TypeSymbol* type, shard::syntax::symbols::GenericTypeSymbol* genericType);
 
 	public:
 		inline ExpressionBinder(shard::parsing::semantic::SemanticModel& model, shard::parsing::analysis::DiagnosticsContext& diagnostics)

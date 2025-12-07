@@ -25,6 +25,8 @@
 #include <shard/syntax/symbols/IndexatorSymbol.h>
 #include <shard/syntax/symbols/LeftDenotationSymbol.h>
 #include <shard/syntax/symbols/DelegateTypeSymbol.h>
+#include <shard/syntax/symbols/GenericTypeSymbol.h>
+#include <shard/syntax/symbols/TypeParameterSymbol.h>
 
 #include <shard/syntax/nodes/CompilationUnitSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarationSyntax.h>
@@ -406,6 +408,11 @@ void ExpressionBinder::VisitVariableStatement(VariableStatementSyntax* node)
 	}
 
 	TypeSymbol* expressionType = GetExpressionType(node->Expression);
+	if (expressionType == nullptr)
+	{
+		return;
+	}
+
 	if (symbol->Type == SymbolTable::Primitives::Any)
 	{
 		symbol->Type = expressionType;
@@ -653,7 +660,12 @@ TypeSymbol* ExpressionBinder::AnalyzeObjectExpression(ObjectExpressionSyntax* no
 		return nullptr;
 	}
 
-	if (!MatchMethodArguments(method, node->ArgumentsList->Arguments))
+	// Передаем genericType для замены type parameters в параметрах конструктора
+	GenericTypeSymbol* genericType = nullptr;
+	if (node->TypeSymbol->Kind == SyntaxKind::GenericType)
+		genericType = static_cast<GenericTypeSymbol*>(node->TypeSymbol);
+
+	if (!MatchMethodArguments(method, node->ArgumentsList->Arguments, genericType))
 	{
 		//Diagnostics.ReportError(node->IdentifierToken, L"Method '" + methodName + L"' argument types do not match");
 		return nullptr;
@@ -784,7 +796,7 @@ void ExpressionBinder::VisitTernaryExpression(TernaryExpressionSyntax* node)
 	}
 }
 
-bool ExpressionBinder::MatchMethodArguments(MethodSymbol* method, std::vector<ArgumentSyntax*> arguments)
+bool ExpressionBinder::MatchMethodArguments(MethodSymbol* method, std::vector<ArgumentSyntax*> arguments, GenericTypeSymbol* genericType)
 {
 	if (method == nullptr)
 		return false;
@@ -820,14 +832,20 @@ bool ExpressionBinder::MatchMethodArguments(MethodSymbol* method, std::vector<Ar
 			return false;
 		}
 
-		if (param->Type == SymbolTable::Primitives::Any)
+		TypeSymbol* paramType = param->Type;
+		if (paramType->Kind == SyntaxKind::TypeParameter)
+		{
+			paramType = SubstituteTypeParameters(paramType, genericType);
+		}
+
+		if (paramType == SymbolTable::Primitives::Any)
 		{
 			return true;
 		}
 
-		if (!TypeSymbol::Equals(param->Type, argType))
+		if (!TypeSymbol::Equals(paramType, argType))
 		{
-			Diagnostics.ReportError(SyntaxToken(), L"Argument type mismatch for parameter '" + param->Name + L"': expected '" + param->Type->Name + L"' but got '" + argType->Name + L"'");
+			Diagnostics.ReportError(SyntaxToken(), L"Argument type mismatch for parameter '" + param->Name + L"': expected '" + paramType->Name + L"' but got '" + argType->Name + L"'");
 			return false;
 		}
 	}
@@ -944,7 +962,16 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 			}
 
 			node->IsStaticContext = false;
-			return fieldSymbol->ReturnType;
+			TypeSymbol* fieldType = fieldSymbol->ReturnType;
+			
+			// Если currentType является GenericTypeSymbol, заменяем type parameters на type arguments
+			if (fieldType->Kind == SyntaxKind::TypeParameter)
+			{
+				GenericTypeSymbol* genericType = static_cast<GenericTypeSymbol*>(currentType);
+				fieldType = SubstituteTypeParameters(fieldType, genericType);
+			}
+			
+			return fieldType;
 		}
 
 		case SyntaxKind::MethodDeclaration:
@@ -1031,7 +1058,15 @@ TypeSymbol* ExpressionBinder::AnalyzePropertyAccessExpression(MemberAccessExpres
 		return array->UnderlayingType;
 	}
 
-	return property->ReturnType;
+	TypeSymbol* propertyType = property->ReturnType;
+	
+	if (propertyType->Kind == SyntaxKind::TypeParameter)
+	{
+		GenericTypeSymbol* genericType = static_cast<GenericTypeSymbol*>(currentType);
+		propertyType = SubstituteTypeParameters(propertyType, genericType);
+	}
+	
+	return propertyType;
 }
 
 TypeSymbol* ExpressionBinder::AnalyzeFieldKeywordExpression(MemberAccessExpressionSyntax* node, TypeSymbol* currentType)
@@ -1093,7 +1128,12 @@ TypeSymbol* ExpressionBinder::AnalyzeInvokationExpression(InvokationExpressionSy
 		return nullptr;
 	}
 
-	if (!MatchMethodArguments(method, node->ArgumentsList->Arguments))
+	// Передаем genericType для замены type parameters в параметрах метода
+	GenericTypeSymbol* genericType = nullptr;
+	if (currentType->Kind == SyntaxKind::GenericType)
+		genericType = static_cast<GenericTypeSymbol*>(currentType);
+
+	if (!MatchMethodArguments(method, node->ArgumentsList->Arguments, genericType))
 	{
 		//Diagnostics.ReportError(node->IdentifierToken, L"Method '" + methodName + L"' argument types do not match");
 		return nullptr;
@@ -1108,80 +1148,82 @@ TypeSymbol* ExpressionBinder::AnalyzeInvokationExpression(InvokationExpressionSy
 		return nullptr;
 	}
 
-	return method->ReturnType;
+	TypeSymbol* returnType = method->ReturnType;
+	
+	// Если currentType является GenericTypeSymbol, заменяем type parameters на type arguments
+	if (returnType->Kind == SyntaxKind::TypeParameter)
+	{
+		returnType = SubstituteTypeParameters(returnType, genericType);
+	}
+	
+	return returnType;
 }
 
 MethodSymbol* ExpressionBinder::ResolveConstructor(ObjectExpressionSyntax* node)
 {
-	if (node->TypeSymbol == nullptr)
+	TypeSymbol* symbol = node->TypeSymbol;
+	if (symbol == nullptr)
 		return nullptr;
 
-	if (node->TypeSymbol->Constructors.empty())
+	if (symbol->Kind == SyntaxKind::GenericType)
+		symbol = static_cast<GenericTypeSymbol*>(symbol)->UnderlayingType;
+
+	std::vector<TypeSymbol*> argTypes;
+	for (ArgumentSyntax* arg : node->ArgumentsList->Arguments)
 	{
-		if (!node->ArgumentsList->Arguments.empty())
-			Diagnostics.ReportError(node->IdentifierToken, L"Type \'" + node->TypeSymbol->FullName + L"\' doesnt have constructors, just use empty arguments list");
+		ExpressionSyntax* expr = const_cast<ExpressionSyntax*>(arg->Expression);
+		VisitExpression(expr);
 
-		return nullptr;
+		TypeSymbol* argType = GetExpressionType(expr);
+		if (argType == nullptr)
+			return nullptr;
+
+		argTypes.push_back(argType);
 	}
-	else
+
+	MethodSymbol* method = symbol->FindConstructor(argTypes);
+	if (method == nullptr)
 	{
-		std::vector<TypeSymbol*> argTypes;
-		for (ArgumentSyntax* arg : node->ArgumentsList->Arguments)
+		std::wstringstream diag;
+		diag << "No constructor of \"" << symbol->FullName << "\" found that accepts ";
+
+		switch (argTypes.size())
 		{
-			ExpressionSyntax* expr = const_cast<ExpressionSyntax*>(arg->Expression);
-			VisitExpression(expr);
-
-			TypeSymbol* argType = GetExpressionType(expr);
-			if (argType == nullptr)
-				return nullptr;
-
-			argTypes.push_back(argType);
-		}
-
-		MethodSymbol* method = node->TypeSymbol->FindConstructor(argTypes);
-		if (method == nullptr)
-		{
-			std::wstringstream diag;
-			diag << "No constructor of \"" << node->TypeSymbol->FullName << "\" found that accepts ";
-
-			switch (argTypes.size())
+			case 0:
 			{
-				case 0:
-				{
-					diag << "no arguments";
-					break;
-				}
-
-				case 1:
-				{
-					TypeSymbol* type = argTypes.at(0);
-					std::wstring typeName = type == nullptr ? L"<error>" : type->Name;
-					diag << "argument (" << typeName << ")";
-					break;
-				}
-
-				default:
-				{
-					TypeSymbol* type = argTypes.at(0);
-					diag << L"arguments (" << type->Name;
-
-					for (int i = 1; i < argTypes.size(); i++)
-					{
-						type = argTypes.at(i);
-						diag << ", " << type->Name;
-					}
-
-					diag << ")";
-					break;
-				}
+				diag << "no arguments";
+				break;
 			}
 
-			Diagnostics.ReportError(node->IdentifierToken, diag.str());
-			return nullptr;
+			case 1:
+			{
+				TypeSymbol* type = argTypes.at(0);
+				std::wstring typeName = type == nullptr ? L"<error>" : type->Name;
+				diag << "argument (" << typeName << ")";
+				break;
+			}
+
+			default:
+			{
+				TypeSymbol* type = argTypes.at(0);
+				diag << L"arguments (" << type->Name;
+
+				for (int i = 1; i < argTypes.size(); i++)
+				{
+					type = argTypes.at(i);
+					diag << ", " << type->Name;
+				}
+
+				diag << ")";
+				break;
+			}
 		}
 
-		return method;
+		Diagnostics.ReportError(node->IdentifierToken, diag.str());
+		return nullptr;
 	}
+
+	return method;
 }
 
 MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node, TypeSymbol* currentType)
@@ -1310,7 +1352,11 @@ TypeSymbol* ExpressionBinder::AnalyzeIndexatorExpression(IndexatorExpressionSynt
 	AccessorSymbol* accessor = node->AccessorSymbol;
 	if (accessor != nullptr)
 	{
-		if (!MatchMethodArguments(accessor, node->IndexatorList->Arguments))
+		GenericTypeSymbol* genericType = nullptr;
+		if (currentType->Kind == SyntaxKind::GenericType)
+			genericType = static_cast<GenericTypeSymbol*>(currentType);
+
+		if (!MatchMethodArguments(accessor, node->IndexatorList->Arguments, genericType))
 		{
 			//Diagnostics.ReportError(node->MemberAccess->IdentifierToken, L"Indexator arguments types do not match");
 			return nullptr;
@@ -1320,6 +1366,18 @@ TypeSymbol* ExpressionBinder::AnalyzeIndexatorExpression(IndexatorExpressionSynt
 	node->IndexatorSymbol = indexator;
 	node->IsStaticContext = node->IsStaticContext;
 	return resultType;
+}
+
+TypeSymbol* ExpressionBinder::SubstituteTypeParameters(TypeSymbol* type, GenericTypeSymbol* genericType)
+{
+	if (type == nullptr || genericType == nullptr)
+		return type;
+
+	type = genericType->SubstituteTypeParameters(type);
+	if (type == nullptr)
+		Diagnostics.ReportError(SyntaxToken(), L"Failed to substitute type");
+
+	return type;
 }
 
 IndexatorSymbol* ExpressionBinder::ResolveIndexator(IndexatorExpressionSyntax* node, TypeSymbol* currentType)

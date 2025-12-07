@@ -17,6 +17,8 @@
 #include <shard/syntax/nodes/StatementsBlockSyntax.h>
 #include <shard/syntax/nodes/ArgumentsListSyntax.h>
 #include <shard/syntax/nodes/TypeSyntax.h>
+#include <shard/syntax/nodes/TypeArgumentsListSyntax.h>
+#include <shard/syntax/nodes/TypeParametersListSyntax.h>
 
 #include <shard/syntax/nodes/Directives/ImportDirectiveSyntax.h>
 #include <shard/syntax/nodes/Directives/UsingDirectiveSyntax.h>
@@ -50,6 +52,7 @@
 #include <shard/syntax/nodes/Expressions/ObjectExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/CollectionExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/LambdaExpressionSyntax.h>
+#include <shard/syntax/nodes/Expressions/TernaryExpressionSyntax.h>
 
 #include <shard/syntax/nodes/Types/PredefinedTypeSyntax.h>
 #include <shard/syntax/nodes/Types/GenericTypeSyntax.h>
@@ -57,7 +60,6 @@
 #include <shard/syntax/nodes/Types/ArrayTypeSyntax.h>
 #include <shard/syntax/nodes/Types/NullableTypeSyntax.h>
 #include <shard/syntax/nodes/Types/DelegateTypeSyntax.h>
-#include <shard/syntax/nodes/Expressions/TernaryExpressionSyntax.h>
 
 namespace shard::parsing
 {
@@ -128,10 +130,12 @@ namespace shard::parsing
         virtual void VisitIndexatorExpression(shard::syntax::nodes::IndexatorExpressionSyntax* node);
 
         virtual void VisitArgumentsList(shard::syntax::nodes::ArgumentsListSyntax* node);
-        virtual void VisitIndexatorList(shard::syntax::nodes::IndexatorListSyntax* node);
         virtual void VisitArgument(shard::syntax::nodes::ArgumentSyntax* node);
         virtual void VisitParametersList(shard::syntax::nodes::ParametersListSyntax* node);
         virtual void VisitParameter(shard::syntax::nodes::ParameterSyntax* node);
+        virtual void VisitIndexatorList(shard::syntax::nodes::IndexatorListSyntax* node);
+        virtual void VisitTypeParametersList(shard::syntax::nodes::TypeParametersListSyntax* node);
+        virtual void VisitTypeArgumentsList(shard::syntax::nodes::TypeArgumentsListSyntax* node);
 
         virtual void VisitType(shard::syntax::nodes::TypeSyntax* node);
         virtual void VisitPredefinedType(shard::syntax::nodes::PredefinedTypeSyntax* node);

@@ -21,6 +21,7 @@
 #include <shard/syntax/symbols/PropertySymbol.h>
 #include <shard/syntax/symbols/MethodSymbol.h>
 #include <shard/syntax/symbols/IndexatorSymbol.h>
+#include <shard/syntax/symbols/GenericTypeSymbol.h>
 
 #include <shard/syntax/nodes/ArgumentsListSyntax.h>
 #include <shard/syntax/nodes/ExpressionSyntax.h>
@@ -685,18 +686,34 @@ ObjectInstance* AbstractInterpreter::EvaluateLiteralExpression(const LiteralExpr
 ObjectInstance* AbstractInterpreter::EvaluateObjectExpression(const ObjectExpressionSyntax* expression)
 {
 	ObjectInstance* newInstance = GarbageCollector::AllocateInstance(expression->TypeSymbol);
-	for (FieldSymbol* field : newInstance->Info->Fields)
+
+	TypeSymbol* info = expression->TypeSymbol;
+	GenericTypeSymbol* genericInfo = nullptr;
+
+	if (info->Kind == SyntaxKind::GenericType)
+	{
+		genericInfo = static_cast<GenericTypeSymbol*>(info);
+		info = genericInfo->UnderlayingType;
+	}
+
+	AbstractInterpreter::PushFrame(expression->CtorSymbol);
+	for (FieldSymbol* field : info->Fields)
 	{
 		ObjectInstance* assignInstance = nullptr;
+		TypeSymbol* fieldType = field->ReturnType;
+
+		if (fieldType->Kind == SyntaxKind::TypeParameter)
+			fieldType = genericInfo->SubstituteTypeParameters(fieldType);
+
 		if (field->DefaultValueExpression != nullptr)
 		{
 			assignInstance = AbstractInterpreter::EvaluateExpression(field->DefaultValueExpression);
 		}
 		else
 		{
-			assignInstance = field->ReturnType->IsReferenceType
+			assignInstance = fieldType->IsReferenceType
 				? GarbageCollector::NullInstance
-				: GarbageCollector::AllocateInstance(field->ReturnType);
+				: GarbageCollector::AllocateInstance(fieldType);
 		}
 
 		newInstance->SetField(field, assignInstance);
@@ -708,6 +725,7 @@ ObjectInstance* AbstractInterpreter::EvaluateObjectExpression(const ObjectExpres
 		ExecuteMethod(expression->CtorSymbol, arguments);
 	}
 
+	AbstractInterpreter::PopFrame();
 	return newInstance;
 }
 

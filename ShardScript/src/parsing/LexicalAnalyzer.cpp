@@ -306,7 +306,7 @@ MemberDeclarationSyntax* LexicalAnalyzer::ReadMemberDeclaration(SourceReader& re
 	}
 
 	// reading identifier - try to match with error recovery
-	if (!TryMatch(reader, { TokenType::Identifier, TokenType::OpenCurl, TokenType::OpenBrace, TokenType::Semicolon, TokenType::AssignOperator }, L"Expected member identifier, '{', '(', ';' or '='", 5))
+	if (!TryMatch(reader, { TokenType::Identifier }, L"Expected member identifier", 5))
 	{
 		// Create missing identifier if we couldn't recover
 		info.Identifier = SyntaxToken(TokenType::Identifier, L"", TextLocation(), true);
@@ -315,6 +315,11 @@ MemberDeclarationSyntax* LexicalAnalyzer::ReadMemberDeclaration(SourceReader& re
 	{
 		info.Identifier = reader.Current();
 		reader.Consume();
+	}
+
+	if (reader.Current().Type == TokenType::LessOperator)
+	{
+		info.Generics = ReadTypeParametersList(reader, parent);
 	}
 
 	// Reading parameters list
@@ -346,6 +351,9 @@ MemberDeclarationSyntax* LexicalAnalyzer::ReadMemberDeclaration(SourceReader& re
 
 			case TokenType::OpenCurl:
 				return ReadMethodDeclaration(reader, info, parent);
+
+			case TokenType::LessOperator:
+				
 
 			default:
 			{
@@ -680,6 +688,80 @@ ParametersListSyntax* LexicalAnalyzer::ReadParametersList(SourceReader& reader, 
 		if (separatorToken.Type == TokenType::CloseCurl)
 		{
 			syntax->CloseCurlToken = separatorToken;
+			break;
+		}
+	}
+
+	return syntax;
+}
+
+TypeParametersListSyntax* LexicalAnalyzer::ReadTypeParametersList(SourceReader& reader, SyntaxNode* parent)
+{
+	TypeParametersListSyntax* syntax = new TypeParametersListSyntax(parent);
+	syntax->OpenToken = Expect(reader, TokenType::LessOperator, L"Expected '<' token");
+
+	SyntaxToken checkCloser = reader.Current();
+	if (checkCloser.Type == TokenType::GreaterOperator)
+	{
+		syntax->CloseToken = checkCloser;
+		reader.Consume();
+		return syntax;
+	}
+
+	while (reader.CanConsume())
+	{
+		SyntaxToken param = Expect(reader, TokenType::Identifier, L"Expected type parameter identifier");
+		syntax->Types.push_back(param);
+
+		// Try to match separator with error recovery
+		if (!TryMatch(reader, { TokenType::Comma, TokenType::GreaterOperator }, L"Expected ',' or '>'", 3))
+		{
+			break;
+		}
+
+		SyntaxToken separatorToken = reader.Current();
+		reader.Consume();
+
+		if (separatorToken.Type == TokenType::GreaterOperator)
+		{
+			syntax->CloseToken = separatorToken;
+			break;
+		}
+	}
+
+	return syntax;
+}
+
+TypeArgumentsListSyntax* LexicalAnalyzer::ReadTypeArgumentsList(SourceReader& reader, SyntaxNode* parent)
+{
+	TypeArgumentsListSyntax* syntax = new TypeArgumentsListSyntax(parent);
+	syntax->OpenToken = Expect(reader, TokenType::LessOperator, L"Expected '<' token");
+
+	SyntaxToken checkCloser = reader.Current();
+	if (checkCloser.Type == TokenType::GreaterOperator)
+	{
+		syntax->CloseToken = checkCloser;
+		reader.Consume();
+		return syntax;
+	}
+
+	while (reader.CanConsume())
+	{
+		TypeSyntax* type = ReadType(reader, syntax);
+		syntax->Types.push_back(type);
+
+		// Try to match separator with error recovery
+		if (!TryMatch(reader, { TokenType::Comma, TokenType::GreaterOperator }, L"Expected ',' or '>'", 3))
+		{
+			break;
+		}
+
+		SyntaxToken separatorToken = reader.Current();
+		reader.Consume();
+
+		if (separatorToken.Type == TokenType::GreaterOperator)
+		{
+			syntax->CloseToken = separatorToken;
 			break;
 		}
 	}
@@ -1578,37 +1660,7 @@ TypeSyntax* LexicalAnalyzer::ReadArrayType(SourceReader& reader, TypeSyntax* pre
 TypeSyntax* LexicalAnalyzer::ReadGenericType(SourceReader& reader, TypeSyntax* previous, SyntaxNode* parent)
 {
 	GenericTypeSyntax* generic = new GenericTypeSyntax(previous, parent);
-	generic->OpenListToken = Expect(reader, TokenType::LessOperator, L"Expected '<' token");
-
-	SyntaxToken checkCloser = reader.Current();
-	if (checkCloser.Type == TokenType::GreaterOperator)
-	{
-		generic->CloseListToken = checkCloser;
-		reader.Consume();
-		return generic;
-	}
-
-	while (reader.CanConsume())
-	{
-		TypeSyntax* type = ReadType(reader, generic);
-		generic->TypeArguments.push_back(type);
-
-		// Try to match separator with error recovery
-		if (!TryMatch(reader, { TokenType::Comma, TokenType::GreaterOperator }, L"Expected ',' or '>'", 3))
-		{
-			break;
-		}
-
-		SyntaxToken separatorToken = reader.Current();
-		reader.Consume();
-
-		if (separatorToken.Type == TokenType::CloseCurl)
-		{
-			generic->CloseListToken = separatorToken;
-			break;
-		}
-	}
-
+	generic->Arguments = ReadTypeArgumentsList(reader, generic);
 	TypeSyntax* modifiedSyntax = ReadModifiedType(reader, generic, parent);
 	return modifiedSyntax;
 }
@@ -1633,6 +1685,7 @@ static bool IsSynchronizationToken(TokenType type)
 		if (syncToken == type)
 			return true;
 	}
+
 	return false;
 }
 

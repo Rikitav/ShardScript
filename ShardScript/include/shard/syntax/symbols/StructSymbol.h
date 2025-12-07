@@ -14,7 +14,7 @@ namespace shard::syntax::symbols
 	class SHARD_API StructSymbol : public TypeSymbol
 	{
 	public:
-		std::vector<MethodSymbol*> Constructors;
+		//std::vector<MethodSymbol*> Constructors;
 
 		inline StructSymbol(const std::wstring& name) : TypeSymbol(name, SyntaxKind::StructDeclaration)
 		{
@@ -26,8 +26,10 @@ namespace shard::syntax::symbols
 
 		inline virtual ~StructSymbol() override
 		{
+			/*
 			for (MethodSymbol* ctor : Constructors)
 				delete ctor;
+			*/
 		}
 	};
 }

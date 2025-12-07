@@ -7,12 +7,19 @@
 #include <string>
 #include <vector>
 
+// Forward declaration
+namespace shard::syntax::symbols
+{
+    class TypeParameterSymbol;
+}
+
 namespace shard::syntax::symbols
 {
     class MethodSymbol;
     class FieldSymbol;
     class PropertySymbol;
     class IndexatorSymbol;
+    class TypeParameterSymbol;
 
     enum class SHARD_API TypeLayoutingState
     {
@@ -26,7 +33,7 @@ namespace shard::syntax::symbols
 	public:
         TypeSymbol* BaseType = nullptr;
         std::vector<TypeSymbol*> Interfaces;
-        std::vector<TypeSymbol*> TypeParameters;
+        std::vector<TypeParameterSymbol*> TypeParameters;
 
         std::vector<MethodSymbol*> Constructors;
         std::vector<MethodSymbol*> Methods;
@@ -67,6 +74,9 @@ namespace shard::syntax::symbols
 
             for (MethodSymbol* ctorSymbol : Constructors)
                 delete ctorSymbol;
+
+            for (TypeParameterSymbol* typeParamSymbol : TypeParameters)
+                delete typeParamSymbol;
 #pragma warning (pop)
 
             if (BaseType != nullptr)

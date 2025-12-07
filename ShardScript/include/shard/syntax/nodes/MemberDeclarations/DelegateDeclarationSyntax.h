@@ -31,6 +31,7 @@ namespace shard::syntax::nodes
 			DelegateToken = info.DeclareType;
 			ReturnType = info.ReturnType;
 			IdentifierToken = info.Identifier;
+			TypeParameters = info.Generics;
 		}
 
 		inline virtual ~DelegateDeclarationSyntax()

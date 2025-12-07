@@ -6,6 +6,7 @@
 #include <shard/syntax/SyntaxNode.h>
 
 #include <shard/syntax/nodes/TypeSyntax.h>
+#include <shard/syntax/nodes/TypeArgumentsListSyntax.h>
 
 #include <vector>
 
@@ -14,10 +15,8 @@ namespace shard::syntax::nodes
 	class SHARD_API GenericTypeSyntax : public TypeSyntax
 	{
 	public:
-		SyntaxToken OpenListToken;
-		SyntaxToken CloseListToken;
 		TypeSyntax* UnderlayingType = nullptr;
-		std::vector<TypeSyntax*> TypeArguments;
+		TypeArgumentsListSyntax* Arguments = nullptr;
 
 		inline GenericTypeSyntax(TypeSyntax* underlaying, const SyntaxNode* parent)
 			: TypeSyntax(SyntaxKind::GenericType, parent), UnderlayingType(underlaying) { }
@@ -29,8 +28,8 @@ namespace shard::syntax::nodes
 			if (UnderlayingType != nullptr)
 				delete UnderlayingType;
 
-			for (TypeSyntax* arg : TypeArguments)
-				delete arg;
+			if (Arguments != nullptr)
+				delete Arguments;
 		}
 
 		std::wstring ToString() override;

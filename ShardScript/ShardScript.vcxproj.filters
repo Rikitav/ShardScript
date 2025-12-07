@@ -472,6 +472,12 @@
     <ClInclude Include="include\shard\syntax\symbols\IndexatorSymbol.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
+    <ClInclude Include="include\shard\syntax\nodes\TypeParametersListSyntax.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\syntax\nodes\TypeArgumentsListSyntax.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Library Include="libs\libffi-8.lib" />

@@ -5,6 +5,8 @@
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/FieldSymbol.h>
 #include <shard/syntax/symbols/ArrayTypeSymbol.h>
+#include <shard/syntax/symbols/GenericTypeSymbol.h>
+#include <shard/syntax/symbols/TypeParameterSymbol.h>
 
 using namespace shard::parsing;
 using namespace shard::parsing::semantic;
@@ -33,12 +35,7 @@ void LayoutGenerator::FixObjectLayout(SemanticModel& semanticModel, TypeSymbol* 
 		if (returnType == nullptr)
 			continue;
 
-		if (returnType->IsReferenceType)
-		{
-			field->MemoryBytesOffset = objectInfo->MemoryBytesSize;
-			objectInfo->MemoryBytesSize += sizeof(void*);
-		}
-		else
+		if (!returnType->IsReferenceType)
 		{
 			if (returnType->State == TypeLayoutingState::Visiting)
 			{
@@ -46,13 +43,13 @@ void LayoutGenerator::FixObjectLayout(SemanticModel& semanticModel, TypeSymbol* 
 				Diagnostics.ReportError(token, L"Recursive struct inlining");
 				continue;
 			}
-
-			if (returnType->State == TypeLayoutingState::Unvisited)
-				FixObjectLayout(semanticModel, returnType);
-
-			field->MemoryBytesOffset = objectInfo->MemoryBytesSize;
-			objectInfo->MemoryBytesSize += returnType->MemoryBytesSize;
 		}
+
+		if (returnType->State == TypeLayoutingState::Unvisited)
+			FixObjectLayout(semanticModel, returnType);
+
+		field->MemoryBytesOffset = objectInfo->MemoryBytesSize;
+		objectInfo->MemoryBytesSize += returnType->GetInlineSize();
 	}
 
 	if (objectInfo->Kind == SyntaxKind::ArrayType)
@@ -62,6 +59,27 @@ void LayoutGenerator::FixObjectLayout(SemanticModel& semanticModel, TypeSymbol* 
 			FixObjectLayout(semanticModel, arrayInfo->UnderlayingType);
 
 		objectInfo->MemoryBytesSize = SymbolTable::Primitives::Array->MemoryBytesSize + arrayInfo->UnderlayingType->MemoryBytesSize * arrayInfo->Size;
+	}
+
+	if (objectInfo->Kind == SyntaxKind::GenericType)
+	{
+		GenericTypeSymbol* genericInfo = static_cast<GenericTypeSymbol*>(objectInfo);
+		if (genericInfo->UnderlayingType->State == TypeLayoutingState::Unvisited)
+			FixObjectLayout(semanticModel, genericInfo->UnderlayingType);
+
+		genericInfo->MemoryBytesSize = genericInfo->UnderlayingType->MemoryBytesSize;
+		for (FieldSymbol* field : genericInfo->UnderlayingType->Fields)
+		{
+			TypeSymbol* returnType = field->ReturnType;
+			if (returnType == nullptr)
+				continue;
+
+			if (returnType->Kind != SyntaxKind::TypeParameter)
+				continue;
+
+			returnType = genericInfo->SubstituteTypeParameters(returnType);
+			objectInfo->MemoryBytesSize += returnType->GetInlineSize();
+		}
 	}
 
 	objectInfo->State = TypeLayoutingState::Visited;

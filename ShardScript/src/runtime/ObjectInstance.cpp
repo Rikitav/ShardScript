@@ -1,9 +1,14 @@
 #include <shard/runtime/ObjectInstance.h>
 #include <shard/runtime/GarbageCollector.h>
+#include <shard/runtime/AbstractInterpreter.h>
+
 #include <shard/parsing/semantic/SymbolTable.h>
+
+#include <shard/syntax/SyntaxKind.h>
 
 #include <shard/syntax/symbols/FieldSymbol.h>
 #include <shard/syntax/symbols/ArrayTypeSymbol.h>
+#include <shard/syntax/symbols/GenericTypeSymbol.h>
 #include <shard/syntax/symbols/TypeSymbol.h>
 
 #include <cstring>
@@ -11,6 +16,7 @@
 #include <string>
 
 using namespace shard::runtime;
+using namespace shard::syntax;
 using namespace shard::syntax::symbols;
 using namespace shard::parsing::semantic;
 
@@ -53,7 +59,15 @@ ObjectInstance* ObjectInstance::FromValue(const std::wstring& value)
 
 ObjectInstance* ObjectInstance::GetField(FieldSymbol* field)
 {
-	if (field->ReturnType->IsReferenceType)
+	TypeSymbol* fieldType = field->ReturnType;
+	if (fieldType->Kind == SyntaxKind::TypeParameter)
+	{
+		CallStackFrame* currentFrame = AbstractInterpreter::CurrentFrame();
+		GenericTypeSymbol* genericInfo = const_cast<GenericTypeSymbol*>(static_cast<const GenericTypeSymbol*>(currentFrame->WithinType));
+		fieldType = genericInfo->SubstituteTypeParameters(fieldType);
+	}
+
+	if (fieldType->IsReferenceType)
 	{
 		void* offset = OffsetMemory(field->MemoryBytesOffset, sizeof(ObjectInstance*));
 		void* valuePtr = *static_cast<void**>(offset);
@@ -61,8 +75,8 @@ ObjectInstance* ObjectInstance::GetField(FieldSymbol* field)
 	}
 	else
 	{
-		void* offset = OffsetMemory(field->MemoryBytesOffset, field->ReturnType->MemoryBytesSize);
-		ObjectInstance* instance = GarbageCollector::CopyInstance(field->ReturnType, offset);
+		void* offset = OffsetMemory(field->MemoryBytesOffset, fieldType->MemoryBytesSize);
+		ObjectInstance* instance = GarbageCollector::CopyInstance(fieldType, offset);
 		instance->IsFieldInstance = true;
 		return instance;
 	}
@@ -73,7 +87,15 @@ void ObjectInstance::SetField(FieldSymbol* field, ObjectInstance* instance)
 	if (instance == nullptr)
 		throw std::runtime_error("got nullptr instance");
 
-	if (field->ReturnType->IsReferenceType)
+	TypeSymbol* fieldType = field->ReturnType;
+	if (fieldType->Kind == SyntaxKind::TypeParameter)
+	{
+		CallStackFrame* currentFrame = AbstractInterpreter::CurrentFrame();
+		GenericTypeSymbol* genericInfo = const_cast<GenericTypeSymbol*>(static_cast<const GenericTypeSymbol*>(currentFrame->WithinType));
+		fieldType = genericInfo->SubstituteTypeParameters(fieldType);
+	}
+
+	if (fieldType->IsReferenceType)
 	{
 		if (instance == GarbageCollector::NullInstance)
 		{
@@ -94,7 +116,7 @@ void ObjectInstance::SetField(FieldSymbol* field, ObjectInstance* instance)
 		if (instance == GarbageCollector::NullInstance)
 			throw std::runtime_error("cannot write null value to ValueType field");
 
-		WriteMemory(field->MemoryBytesOffset, field->ReturnType->MemoryBytesSize, instance->Ptr);
+		WriteMemory(field->MemoryBytesOffset, fieldType->MemoryBytesSize, instance->Ptr);
 	}
 }
 
@@ -105,15 +127,22 @@ ObjectInstance* ObjectInstance::GetElement(size_t index)
 
 	const ArrayTypeSymbol* info = static_cast<const ArrayTypeSymbol*>(Info);
 	TypeSymbol* type = info->UnderlayingType;
-	size_t memoryOffset = SymbolTable::Primitives::Array->MemoryBytesSize + type->GetInlineSize() * index;
 
+	if (type->Kind == SyntaxKind::GenericType)
+	{
+		CallStackFrame* currentFrame = AbstractInterpreter::CurrentFrame();
+		GenericTypeSymbol* genericInfo = const_cast<GenericTypeSymbol*>(static_cast<const GenericTypeSymbol*>(currentFrame->WithinType));
+		type = genericInfo->SubstituteTypeParameters(type);
+	}
+
+	size_t memoryOffset = SymbolTable::Primitives::Array->MemoryBytesSize + type->GetInlineSize() * index;
 	if (type->IsReferenceType)
 	{
 		void* offset = OffsetMemory(memoryOffset, sizeof(ObjectInstance*));
 		void* valuePtr = *static_cast<void**>(offset);
 
 		if (valuePtr == nullptr)
-			std::runtime_error("got nullptr in GetElement");
+			throw std::runtime_error("got nullptr in GetElement");
 
 		return static_cast<ObjectInstance*>(valuePtr);
 	}
@@ -136,8 +165,15 @@ void ObjectInstance::SetElement(size_t index, ObjectInstance* instance)
 
 	const ArrayTypeSymbol* info = static_cast<const ArrayTypeSymbol*>(Info);
 	TypeSymbol* type = info->UnderlayingType;
-	size_t memoryOffset = SymbolTable::Primitives::Array->MemoryBytesSize + type->GetInlineSize() * index;
 
+	if (type->Kind == SyntaxKind::GenericType)
+	{
+		CallStackFrame* currentFrame = AbstractInterpreter::CurrentFrame();
+		GenericTypeSymbol* genericInfo = const_cast<GenericTypeSymbol*>(static_cast<const GenericTypeSymbol*>(currentFrame->WithinType));
+		type = genericInfo->SubstituteTypeParameters(type);
+	}
+
+	size_t memoryOffset = SymbolTable::Primitives::Array->MemoryBytesSize + type->GetInlineSize() * index;
 	if (type->IsReferenceType)
 	{
 		ObjectInstance* oldValue = GetElement(index);

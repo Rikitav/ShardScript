@@ -187,6 +187,8 @@
     <ClInclude Include="include\shard\framework\FrameworkModule.h" />
     <ClInclude Include="include\shard\parsing\LayoutGenerator.h" />
     <ClInclude Include="include\shard\framework\FrameworkLoader.h" />
+    <ClInclude Include="include\shard\syntax\nodes\TypeArgumentsListSyntax.h" />
+    <ClInclude Include="include\shard\syntax\nodes\TypeParametersListSyntax.h" />
     <ClInclude Include="include\shard\syntax\SymbolFactory.h" />
     <ClInclude Include="include\shard\parsing\semantic\SymbolInfo.h" />
     <ClInclude Include="include\shard\parsing\semantic\TypeInfo.h" />

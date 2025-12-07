@@ -20,6 +20,11 @@
 #include <shard/syntax/symbols/ParameterSymbol.h>
 #include <shard/syntax/symbols/VariableSymbol.h>
 #include <shard/syntax/symbols/ArrayTypeSymbol.h>
+#include <shard/syntax/symbols/TypeParameterSymbol.h>
+#include <shard/syntax/symbols/GenericTypeSymbol.h>
+#include <shard/syntax/nodes/TypeParametersListSyntax.h>
+#include <shard/syntax/nodes/Types/GenericTypeSyntax.h>
+#include <shard/syntax/nodes/TypeArgumentsListSyntax.h>
 
 #include <shard/syntax/nodes/TypeSyntax.h>
 #include <shard/syntax/nodes/CompilationUnitSyntax.h>
@@ -153,6 +158,10 @@ void TypeBinder::VisitClassDeclaration(ClassDeclarationSyntax* node)
 
 	PushScope(symbol);
 
+	// Объявляем type parameters в scope
+	for (TypeParameterSymbol* typeParam : symbol->TypeParameters)
+		Declare(typeParam);
+
 	for (MemberDeclarationSyntax* member : node->Members)
 		Declare(Table->LookupSymbol(member));
 
@@ -169,6 +178,10 @@ void TypeBinder::VisitStructDeclaration(StructDeclarationSyntax* node)
 		throw std::runtime_error("symbol not found");
 
 	PushScope(symbol);
+
+	// Объявляем type parameters в scope
+	for (TypeParameterSymbol* typeParam : symbol->TypeParameters)
+		Declare(typeParam);
 
 	for (MemberDeclarationSyntax* member : node->Members)
 		Declare(Table->LookupSymbol(member));
@@ -390,6 +403,16 @@ void TypeBinder::VisitIdentifierNameType(IdentifierNameTypeSyntax* node)
 		return;
 	}
 
+	// Если это type parameter, возвращаем Any (пока нет ограничений)
+	if (symbol->Kind == SyntaxKind::TypeParameter)
+	{
+		TypeParameterSymbol* typeParamSymbol = static_cast<TypeParameterSymbol*>(symbol);
+		// Пока нет ограничений, возвращаем Any
+		// В будущем можно будет использовать typeParamSymbol->ConstraintType
+		node->Symbol = typeParamSymbol;
+		return;
+	}
+
 	if (!symbol->IsType())
 	{
 		Diagnostics.ReportError(node->Identifier, L"Symbol is not a type");
@@ -447,14 +470,6 @@ void TypeBinder::VisitNullableType(NullableTypeSyntax* node)
 
 void TypeBinder::VisitGenericType(GenericTypeSyntax* node)
 {
-	return; // unsupported
-
-	/*
-	VisitType(node->UnderlayingType);
-	for (TypeSyntax* type : node->TypeArguments)
-		VisitType(type);
-	*/
-
 	if (node->UnderlayingType == nullptr)
 		return;
 	
@@ -464,26 +479,44 @@ void TypeBinder::VisitGenericType(GenericTypeSyntax* node)
 	if (underlayingType == nullptr)
 		return;
 
+	if (node->Arguments == nullptr || node->Arguments->Types.empty())
+	{
+		if (node->Arguments != nullptr)
+			Diagnostics.ReportError(node->Arguments->OpenToken, L"Generic type requires type arguments");
+
+		return;
+	}
+
 	GenericTypeSymbol* symbol = new GenericTypeSymbol(underlayingType);
 	Table->BindSymbol(node, symbol);
 	node->Symbol = symbol;
 
-	size_t argsCount = node->TypeArguments.size();
+	size_t argsCount = node->Arguments->Types.size();
 	size_t paramsCount = underlayingType->TypeParameters.size();
 
 	if (argsCount != paramsCount)
 	{
-		Diagnostics.ReportError(node->OpenListToken, L"\'" + underlayingType->FullName + L" requires " + std::to_wstring(paramsCount) + L" type arguments");
+		Diagnostics.ReportError(node->Arguments->OpenToken, L"\'" + underlayingType->FullName + L"\' requires " + std::to_wstring(paramsCount) + L" type arguments, but got " + std::to_wstring(argsCount));
 		return;
 	}
 
-	for (TypeSyntax* typeArg : node->TypeArguments)
+	for (size_t i = 0; i < argsCount; i++)
 	{
+		TypeSyntax* typeArg = node->Arguments->Types[i];
 		VisitType(typeArg);
-		TypeSymbol* typeArgSymbol = typeArg->Symbol;
-	}
 
-	// under construction
+		TypeSymbol* typeArgSymbol = typeArg->Symbol;
+		TypeParameterSymbol* typeParam = symbol->UnderlayingType->TypeParameters.at(i);
+
+		symbol->TypeParameters.push_back(typeParam);
+		symbol->AddTypeParameter(typeParam, typeArgSymbol);
+
+		if (typeArgSymbol == nullptr)
+		{
+			Diagnostics.ReportError(node->Arguments->OpenToken, L"Type argument " + std::to_wstring(i + 1) + L" could not be resolved");
+			continue;
+		}
+	}
 }
 
 void TypeBinder::VisitDelegateType(DelegateTypeSyntax* node)
