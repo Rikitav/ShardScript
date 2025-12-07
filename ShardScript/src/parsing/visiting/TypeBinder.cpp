@@ -508,7 +508,7 @@ void TypeBinder::VisitGenericType(GenericTypeSyntax* node)
 		TypeSymbol* typeArgSymbol = typeArg->Symbol;
 		TypeParameterSymbol* typeParam = symbol->UnderlayingType->TypeParameters.at(i);
 
-		symbol->TypeParameters.push_back(typeParam);
+		//symbol->TypeParameters.push_back(typeParam);
 		symbol->AddTypeParameter(typeParam, typeArgSymbol);
 
 		if (typeArgSymbol == nullptr)

@@ -23,7 +23,7 @@ using namespace shard::runtime;
 using namespace shard::syntax::symbols;
 using namespace shard::parsing::semantic;
 
-static ObjectInstance* get_Length(MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* get_Length(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	void* value = malloc(sizeof(int));
@@ -34,7 +34,7 @@ static ObjectInstance* get_Length(MethodSymbol* symbol, InboundVariablesContext*
 	return length;
 }
 
-static ObjectInstance* get_Item(MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* get_Item(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	ObjectInstance* index = arguments->TryFind(L"index");
@@ -43,7 +43,7 @@ static ObjectInstance* get_Item(MethodSymbol* symbol, InboundVariablesContext* a
 	return instance->GetElement(value);
 }
 
-static ObjectInstance* set_Item(MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* set_Item(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	ObjectInstance* index = arguments->TryFind(L"index");
@@ -68,14 +68,14 @@ static std::wstring ObjectInstanceToString(ObjectInstance* instance)
 	InboundVariablesContext* argsCtx = new InboundVariablesContext(nullptr);
 	argsCtx->AddVariable(L"this", instance);
 
-	ObjectInstance* resultInstance = AbstractInterpreter::ExecuteMethod(toString, argsCtx);
+	ObjectInstance* resultInstance = AbstractInterpreter::ExecuteMethod(toString, instance->Info, argsCtx);
 	std::wstring resultStr = resultInstance->ReadPrimitive<std::wstring>();
 
 	GarbageCollector::CollectInstance(resultInstance);
 	return resultStr;
 }
 
-static ObjectInstance* to_string(MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* to_string(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	const ArrayTypeSymbol* array = static_cast<const ArrayTypeSymbol*>(instance->Info);

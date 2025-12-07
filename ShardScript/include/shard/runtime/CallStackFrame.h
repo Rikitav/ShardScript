@@ -32,7 +32,7 @@ namespace shard::runtime
 		FrameInterruptionReason InterruptionReason = FrameInterruptionReason::None;
 		ObjectInstance* InterruptionRegister = nullptr;
 
-		inline CallStackFrame(const shard::syntax::symbols::MethodSymbol* method, shard::syntax::symbols::TypeSymbol* withinType, CallStackFrame* previousFrame)
+		inline CallStackFrame(const shard::syntax::symbols::MethodSymbol* method, const shard::syntax::symbols::TypeSymbol* withinType, const CallStackFrame* previousFrame)
 			: WithinType(withinType), Method(method), PreviousFrame(previousFrame) { }
 
 		inline bool interrupted() const

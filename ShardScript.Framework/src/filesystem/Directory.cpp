@@ -17,7 +17,7 @@ namespace shard::framework
 {
 	class FileSystem_Directory : public FrameworkModule
 	{
-		static ObjectInstance* Impl_GetDirectory(MethodSymbol* symbol, InboundVariablesContext* arguments)
+		static ObjectInstance* Impl_GetDirectory(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 		{
 			static FieldSymbol* field = static_cast<ClassSymbol*>(symbol->Parent)->Fields.at(0);
 

@@ -23,7 +23,7 @@ using namespace shard::syntax::symbols;
 using namespace shard::parsing::semantic;
 
 // Integer methods
-static ObjectInstance* ToString(MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* ToString(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	int value = instance->ReadPrimitive<int>();
@@ -31,7 +31,7 @@ static ObjectInstance* ToString(MethodSymbol* symbol, InboundVariablesContext* a
 	return ObjectInstance::FromValue(str);
 }
 
-static ObjectInstance* Abs(MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* Abs(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	int value = instance->ReadPrimitive<int>();
@@ -39,7 +39,7 @@ static ObjectInstance* Abs(MethodSymbol* symbol, InboundVariablesContext* argume
 	return ObjectInstance::FromValue(result);
 }
 
-static ObjectInstance* Min(MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* Min(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	int value = instance->ReadPrimitive<int>();
@@ -53,7 +53,7 @@ static ObjectInstance* Min(MethodSymbol* symbol, InboundVariablesContext* argume
 	return ObjectInstance::FromValue(result);
 }
 
-static ObjectInstance* Max(MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* Max(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	int value = instance->ReadPrimitive<int>();
@@ -67,7 +67,7 @@ static ObjectInstance* Max(MethodSymbol* symbol, InboundVariablesContext* argume
 	return ObjectInstance::FromValue(result);
 }
 
-static ObjectInstance* Pow(MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* Pow(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	int value = instance->ReadPrimitive<int>();

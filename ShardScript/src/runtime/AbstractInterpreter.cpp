@@ -73,9 +73,9 @@ CallStackFrame* AbstractInterpreter::CurrentFrame()
 	return callStack.top();
 }
 
-void AbstractInterpreter::PushFrame(MethodSymbol* methodSymbol)
+void AbstractInterpreter::PushFrame(const MethodSymbol* methodSymbol, const TypeSymbol* withinType)
 {
-	callStack.push(new CallStackFrame(methodSymbol, CurrentFrame()));
+	callStack.push(new CallStackFrame(methodSymbol, withinType, CurrentFrame()));
 }
 
 void AbstractInterpreter::PopFrame()
@@ -121,7 +121,7 @@ void AbstractInterpreter::TerminateCallStack()
 void AbstractInterpreter::Execute(SyntaxTree& syntaxTree, SemanticModel& semanticModel)
 {
 	MethodSymbol* entryPoint = semanticModel.Table->EntryPointCandidates.at(0);
-	ExecuteMethod(entryPoint, nullptr);
+	ExecuteMethod(entryPoint, static_cast<TypeSymbol*>(entryPoint->Parent), nullptr);
 }
 
 void AbstractInterpreter::RaiseException(ObjectInstance* exceptionReg)
@@ -150,7 +150,7 @@ void AbstractInterpreter::RaiseException(ObjectInstance* exceptionReg)
 	std::wstring toStringMethodName = L"ToString";
 	MethodSymbol* toStringMethod = exceptionType->FindMethod(toStringMethodName, std::vector<TypeSymbol*>());
 
-	ObjectInstance* toStringMethodRet = ExecuteMethod(toStringMethod, nullptr);
+	ObjectInstance* toStringMethodRet = ExecuteMethod(toStringMethod, exceptionType, nullptr);
 	if (toStringMethodRet->Info != SymbolTable::Primitives::String)
 	{
 		ConsoleHelper::WriteLine(L"Critical error, could not invoke to string method, to get exception description. Exception type - " + exceptionType->Name);
@@ -165,9 +165,9 @@ void AbstractInterpreter::RaiseException(ObjectInstance* exceptionReg)
 	return;
 }
 
-ObjectInstance* AbstractInterpreter::ExecuteMethod(MethodSymbol* method, InboundVariablesContext* argumentsContext)
+ObjectInstance* AbstractInterpreter::ExecuteMethod(const MethodSymbol* method, const TypeSymbol* withinType, InboundVariablesContext* argumentsContext)
 {
-	PushFrame(method);
+	PushFrame(method, withinType);
 	PushContext(argumentsContext);
 	CallStackFrame* frame = CurrentFrame();
 
@@ -688,15 +688,16 @@ ObjectInstance* AbstractInterpreter::EvaluateObjectExpression(const ObjectExpres
 	ObjectInstance* newInstance = GarbageCollector::AllocateInstance(expression->TypeSymbol);
 
 	TypeSymbol* info = expression->TypeSymbol;
+	TypeSymbol* withinType = info;
 	GenericTypeSymbol* genericInfo = nullptr;
 
 	if (info->Kind == SyntaxKind::GenericType)
 	{
-		genericInfo = static_cast<GenericTypeSymbol*>(info);
+		withinType = genericInfo = static_cast<GenericTypeSymbol*>(info);
 		info = genericInfo->UnderlayingType;
 	}
 
-	AbstractInterpreter::PushFrame(expression->CtorSymbol);
+	AbstractInterpreter::PushFrame(expression->CtorSymbol, withinType);
 	for (FieldSymbol* field : info->Fields)
 	{
 		ObjectInstance* assignInstance = nullptr;
@@ -719,11 +720,10 @@ ObjectInstance* AbstractInterpreter::EvaluateObjectExpression(const ObjectExpres
 		newInstance->SetField(field, assignInstance);
 	}
 
-	if (expression->CtorSymbol != nullptr)
-	{
-		InboundVariablesContext* arguments = CreateArgumentsContext(expression->ArgumentsList->Arguments, expression->CtorSymbol->Parameters, expression->CtorSymbol->IsStatic, newInstance);
-		ExecuteMethod(expression->CtorSymbol, arguments);
-	}
+	newInstance->IncrementReference();
+	InboundVariablesContext* arguments = CreateArgumentsContext(expression->ArgumentsList->Arguments, expression->CtorSymbol->Parameters, expression->CtorSymbol->IsStatic, newInstance);
+	ExecuteMethod(expression->CtorSymbol, withinType, arguments);
+	newInstance->DecrementReference();
 
 	AbstractInterpreter::PopFrame();
 	return newInstance;
@@ -805,6 +805,7 @@ ObjectInstance* AbstractInterpreter::EvaluateAssignExpression(const BinaryExpres
 		ExecuteInstanceSetter(instanceReg, memberExpression, rightReg);
 
 		GarbageCollector::CollectInstance(instanceReg);
+		GarbageCollector::CollectInstance(rightReg);
 		return rightReg;
 	}
 	else
@@ -814,8 +815,10 @@ ObjectInstance* AbstractInterpreter::EvaluateAssignExpression(const BinaryExpres
 
 		ObjectInstance* instanceReg = current->TryFind(varName);
 		ObjectInstance* rightReg = EvaluateExpression(expression->Right);
-
 		current->SetVariable(varName, rightReg);
+
+		GarbageCollector::CollectInstance(instanceReg);
+		GarbageCollector::CollectInstance(rightReg);
 		return rightReg;
 	}
 }
@@ -911,7 +914,7 @@ ObjectInstance* AbstractInterpreter::EvaluateMemberAccessExpression(const Member
 			if (!property->IsStatic)
 				getterArgs->AddVariable(L"this", prevInstance);
 
-			ObjectInstance* retReg = ExecuteMethod(property->Getter, getterArgs);
+			ObjectInstance* retReg = ExecuteMethod(property->Getter, prevInstance->Info, getterArgs);
 			return retReg;
 		}
 	}
@@ -957,7 +960,7 @@ ObjectInstance* AbstractInterpreter::EvaluateInvokationExpression(const Invokati
 	}
 
 	InboundVariablesContext* arguments = CreateArgumentsContext(expression->ArgumentsList->Arguments, method->Parameters, method->IsStatic, prevInstance);
-	ObjectInstance* retReg = ExecuteMethod(method, arguments);
+	ObjectInstance* retReg = ExecuteMethod(method, prevInstance == nullptr ? nullptr:  prevInstance->Info, arguments);
 	return retReg;
 }
 
@@ -972,7 +975,7 @@ ObjectInstance* AbstractInterpreter::EvaluateIndexatorExpression(const Indexator
 
 	MethodSymbol* method = indexator->Getter;
 	InboundVariablesContext* arguments = CreateArgumentsContext(expression->IndexatorList->Arguments, method->Parameters, method->IsStatic, prevInstance);
-	ObjectInstance* retReg = ExecuteMethod(method, arguments);
+	ObjectInstance* retReg = ExecuteMethod(method, prevInstance->Info, arguments);
 	return retReg;
 }
 
@@ -1012,7 +1015,7 @@ void AbstractInterpreter::ExecuteInstanceSetter(ObjectInstance* instance, const 
 		const IndexatorExpressionSyntax* indexator = static_cast<const IndexatorExpressionSyntax*>(access);
 		InboundVariablesContext* arguments = CreateArgumentsContext(indexator->IndexatorList->Arguments, indexator->IndexatorSymbol->Parameters, indexator->IndexatorSymbol->IsStatic, instance);
 		arguments->AddVariable(L"value", value);
-		ExecuteMethod(indexator->IndexatorSymbol->Setter, arguments);
+		ExecuteMethod(indexator->IndexatorSymbol->Setter, instance->Info, arguments);
 		return;
 	}
 
@@ -1029,13 +1032,8 @@ void AbstractInterpreter::ExecuteInstanceSetter(ObjectInstance* instance, const 
 			if (!property->IsStatic)
 				setterArgs->AddVariable(L"this", instance);
 
-			if (access->Kind == SyntaxKind::IndexatorExpression)
-			{
-
-			}
-
 			setterArgs->AddVariable(L"value", value);
-			ExecuteMethod(property->Setter, setterArgs);
+			ExecuteMethod(property->Setter, instance->Info, setterArgs);
 			return;
 		}
 	}

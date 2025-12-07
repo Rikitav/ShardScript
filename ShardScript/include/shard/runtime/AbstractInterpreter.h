@@ -49,7 +49,7 @@ namespace shard::runtime
 	
 	public:
 		static CallStackFrame* CurrentFrame();
-		static void PushFrame(shard::syntax::symbols::MethodSymbol* methodSymbol);
+		static void PushFrame(const shard::syntax::symbols::MethodSymbol* methodSymbol, const shard::syntax::symbols::TypeSymbol* withinType);
 		static void PopFrame();
 
 		static InboundVariablesContext* CreateArgumentsContext(std::vector<shard::syntax::nodes::ArgumentSyntax*> arguments, std::vector<shard::syntax::symbols::ParameterSymbol*> parameters, bool isStatic, shard::runtime::ObjectInstance* instance);
@@ -61,7 +61,7 @@ namespace shard::runtime
 		static void Execute(shard::parsing::lexical::SyntaxTree& syntaxTree, shard::parsing::semantic::SemanticModel& semanticModel);
 		static void RaiseException(ObjectInstance* exceptionReg);
 
-		static ObjectInstance* ExecuteMethod(shard::syntax::symbols::MethodSymbol* method, InboundVariablesContext* argumentsContext);
+		static ObjectInstance* ExecuteMethod(const shard::syntax::symbols::MethodSymbol* method, const shard::syntax::symbols::TypeSymbol* withinType, InboundVariablesContext* argumentsContext);
 		static ObjectInstance* ExecuteBlock(const shard::syntax::nodes::StatementsBlockSyntax* block);
 
 		static ObjectInstance* ExecuteStatement(const shard::syntax::nodes::StatementSyntax* statement);

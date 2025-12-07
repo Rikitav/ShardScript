@@ -62,8 +62,12 @@ ObjectInstance* ObjectInstance::GetField(FieldSymbol* field)
 	TypeSymbol* fieldType = field->ReturnType;
 	if (fieldType->Kind == SyntaxKind::TypeParameter)
 	{
+		/*
 		CallStackFrame* currentFrame = AbstractInterpreter::CurrentFrame();
 		GenericTypeSymbol* genericInfo = const_cast<GenericTypeSymbol*>(static_cast<const GenericTypeSymbol*>(currentFrame->WithinType));
+		*/
+
+		GenericTypeSymbol* genericInfo = const_cast<GenericTypeSymbol*>(static_cast<const GenericTypeSymbol*>(Info));
 		fieldType = genericInfo->SubstituteTypeParameters(fieldType);
 	}
 
@@ -90,8 +94,12 @@ void ObjectInstance::SetField(FieldSymbol* field, ObjectInstance* instance)
 	TypeSymbol* fieldType = field->ReturnType;
 	if (fieldType->Kind == SyntaxKind::TypeParameter)
 	{
+		/*
 		CallStackFrame* currentFrame = AbstractInterpreter::CurrentFrame();
 		GenericTypeSymbol* genericInfo = const_cast<GenericTypeSymbol*>(static_cast<const GenericTypeSymbol*>(currentFrame->WithinType));
+		*/
+		
+		GenericTypeSymbol* genericInfo = const_cast<GenericTypeSymbol*>(static_cast<const GenericTypeSymbol*>(Info));
 		fieldType = genericInfo->SubstituteTypeParameters(fieldType);
 	}
 

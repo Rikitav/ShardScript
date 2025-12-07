@@ -53,7 +53,7 @@ using namespace shard::parsing::analysis;
 using namespace shard::parsing::lexical;
 using namespace shard::parsing::semantic;
 
-static ObjectInstance* Gc_Info(MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* Gc_Info(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	std::wcout << "\nGarbage collector info dump" << std::endl;
 	for (ObjectInstance* reg : GarbageCollector::Heap)
@@ -69,7 +69,7 @@ static ObjectInstance* Gc_Info(MethodSymbol* symbol, InboundVariablesContext* ar
 	return nullptr; // void
 }
 
-static ObjectInstance* Var_Info(MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* Var_Info(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	int count = 0;
 	std::wcout << "\nCall stack frame variables dump" << std::endl;
@@ -91,7 +91,7 @@ static ObjectInstance* Var_Info(MethodSymbol* symbol, InboundVariablesContext* a
 	return nullptr; // void
 }
 
-static ObjectInstance* Print(MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* Print(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->Variables.at(L"message"); // var
 	TypeSymbol* type = const_cast<TypeSymbol*>(instance->Info);
@@ -107,7 +107,7 @@ static ObjectInstance* Print(MethodSymbol* symbol, InboundVariablesContext* argu
 	if (toString != nullptr)
 	{
 		InboundVariablesContext* toStringArgs = AbstractInterpreter::CreateArgumentsContext(std::vector<ArgumentSyntax*>(), std::vector<ParameterSymbol*>(), toString->IsStatic, instance);
-		ObjectInstance* result = AbstractInterpreter::ExecuteMethod(symbol, toStringArgs);
+		ObjectInstance* result = AbstractInterpreter::ExecuteMethod(symbol, instance->Info, toStringArgs);
 		if (type != SymbolTable::Primitives::String)
 		{
 #pragma warning (push)
@@ -125,7 +125,7 @@ static ObjectInstance* Print(MethodSymbol* symbol, InboundVariablesContext* argu
 	return nullptr; // void
 }
 
-static ObjectInstance* Println(MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* Println(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->Variables.at(L"message");
 	TypeSymbol* type = const_cast<TypeSymbol*>(instance->Info);
@@ -141,7 +141,7 @@ static ObjectInstance* Println(MethodSymbol* symbol, InboundVariablesContext* ar
 	if (toString != nullptr)
 	{
 		InboundVariablesContext* toStringArgs = AbstractInterpreter::CreateArgumentsContext(std::vector<ArgumentSyntax*>(), std::vector<ParameterSymbol*>(), toString->IsStatic, instance);
-		ObjectInstance* result = AbstractInterpreter::ExecuteMethod(toString, toStringArgs);
+		ObjectInstance* result = AbstractInterpreter::ExecuteMethod(toString, instance->Info, toStringArgs);
 		if (result->Info != SymbolTable::Primitives::String)
 		{
 			std::string methodName = std::string(toString->FullName.begin(), toString->FullName.end());
@@ -156,14 +156,14 @@ static ObjectInstance* Println(MethodSymbol* symbol, InboundVariablesContext* ar
 	return nullptr; // void
 }
 
-static ObjectInstance* Input(MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* Input(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	std::wstring input;
 	getline(std::wcin, input);
 	return ObjectInstance::FromValue(input);
 }
 
-static ObjectInstance* Impl_typeof(MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* Impl_typeof(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->Variables.at(L"object");
 	if (instance == GarbageCollector::NullInstance)
@@ -172,7 +172,7 @@ static ObjectInstance* Impl_typeof(MethodSymbol* symbol, InboundVariablesContext
 	return ObjectInstance::FromValue(instance->Info->Name);
 }
 
-static ObjectInstance* Impl_sizeof(MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* Impl_sizeof(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->Variables.at(L"object");
 	if (instance == GarbageCollector::NullInstance)

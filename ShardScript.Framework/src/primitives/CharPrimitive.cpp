@@ -21,7 +21,7 @@ using namespace shard::syntax::symbols;
 using namespace shard::parsing::semantic;
 
 // Char methods
-static ObjectInstance* ToString(MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* ToString(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	wchar_t value = instance->ReadPrimitive<wchar_t>();
@@ -29,7 +29,7 @@ static ObjectInstance* ToString(MethodSymbol* symbol, InboundVariablesContext* a
 	return ObjectInstance::FromValue(str);
 }
 
-static ObjectInstance* ToUpper(MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* ToUpper(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	wchar_t value = instance->ReadPrimitive<wchar_t>();
@@ -37,7 +37,7 @@ static ObjectInstance* ToUpper(MethodSymbol* symbol, InboundVariablesContext* ar
 	return ObjectInstance::FromValue(result);
 }
 
-static ObjectInstance* ToLower(MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* ToLower(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	wchar_t value = instance->ReadPrimitive<wchar_t>();
@@ -45,7 +45,7 @@ static ObjectInstance* ToLower(MethodSymbol* symbol, InboundVariablesContext* ar
 	return ObjectInstance::FromValue(result);
 }
 
-static ObjectInstance* IsDigit(MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* IsDigit(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	wchar_t value = instance->ReadPrimitive<wchar_t>();
@@ -53,7 +53,7 @@ static ObjectInstance* IsDigit(MethodSymbol* symbol, InboundVariablesContext* ar
 	return ObjectInstance::FromValue(result);
 }
 
-static ObjectInstance* IsLetter(MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* IsLetter(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	wchar_t value = instance->ReadPrimitive<wchar_t>();
@@ -61,7 +61,7 @@ static ObjectInstance* IsLetter(MethodSymbol* symbol, InboundVariablesContext* a
 	return ObjectInstance::FromValue(result);
 }
 
-static ObjectInstance* IsWhiteSpace(MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* IsWhiteSpace(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	wchar_t value = instance->ReadPrimitive<wchar_t>();

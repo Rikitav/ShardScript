@@ -18,7 +18,7 @@
 
 namespace shard::syntax::symbols
 {
-    typedef SHARD_API shard::runtime::ObjectInstance* (*MethodSymbolDelegate)(MethodSymbol* symbol, shard::runtime::InboundVariablesContext* arguments);
+    typedef SHARD_API shard::runtime::ObjectInstance* (*MethodSymbolDelegate)(const MethodSymbol* symbol, shard::runtime::InboundVariablesContext* arguments);
 
     enum class SHARD_API MethodHandleType
     {

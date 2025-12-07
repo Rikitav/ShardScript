@@ -320,7 +320,7 @@ void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticMode
 	StatementsBlockSyntax* interactiveBody = implMethod->Body;
 	MethodSymbol* entryPointSymbol = new MethodSymbol(implMethod->IdentifierToken.Word, interactiveBody);
 
-	AbstractInterpreter::PushFrame(entryPointSymbol);
+	AbstractInterpreter::PushFrame(entryPointSymbol, nullptr);
 	AbstractInterpreter::PushContext(new InboundVariablesContext(nullptr));
 	
 	ConsoleHelper::WriteLine(L"ShardScript Interactive Console v" + shard::interpreter::utilities::ShardUtilities::GetFileVersion());

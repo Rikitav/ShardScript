@@ -17,7 +17,7 @@ namespace shard::framework
 {
 	class FileSystem_File : public FrameworkModule
 	{
-		static ObjectInstance* Impl_ReadAllText(MethodSymbol* symbol, InboundVariablesContext* arguments)
+		static ObjectInstance* Impl_ReadAllText(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 		{
 			std::wstring fileName = arguments->Variables.at(L"fileName")->ReadPrimitive<std::wstring>();
 			std::wifstream fileStream(fileName);
@@ -29,7 +29,7 @@ namespace shard::framework
 			return ObjectInstance::FromValue(content);
 		}
 
-		static ObjectInstance* Impl_WriteAllText(MethodSymbol* symbol, InboundVariablesContext* arguments)
+		static ObjectInstance* Impl_WriteAllText(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 		{
 			std::wstring fileName = arguments->Variables.at(L"fileName")->ReadPrimitive<std::wstring>();
 			std::wstring content = arguments->Variables.at(L"content")->ReadPrimitive<std::wstring>();

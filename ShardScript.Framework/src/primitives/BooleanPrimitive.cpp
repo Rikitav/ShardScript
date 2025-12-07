@@ -19,7 +19,7 @@ using namespace shard::syntax::symbols;
 using namespace shard::parsing::semantic;
 
 // Boolean methods
-static ObjectInstance* ToString(MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* ToString(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	bool value = instance->ReadPrimitive<bool>();

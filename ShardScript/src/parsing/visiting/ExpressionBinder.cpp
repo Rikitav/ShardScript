@@ -939,12 +939,14 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 
 		case SyntaxKind::PropertyDeclaration:
 		{
+			node->IsStaticContext = false;
+			node->PropertySymbol = static_cast<PropertySymbol*>(symbol);
 			return AnalyzePropertyAccessExpression(node, currentType);
 		}
 
 		case SyntaxKind::FieldDeclaration:
 		{
-			FieldSymbol* fieldSymbol = static_cast<FieldSymbol*>(symbol);
+			FieldSymbol* fieldSymbol = node->FieldSymbol = static_cast<FieldSymbol*>(symbol);
 			bool isStaticContext = GetIsStaticContext(node->PreviousExpression);
 
 			if (isStaticContext && !fieldSymbol->IsStatic)
@@ -964,11 +966,13 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 			node->IsStaticContext = false;
 			TypeSymbol* fieldType = fieldSymbol->ReturnType;
 			
-			// Если currentType является GenericTypeSymbol, заменяем type parameters на type arguments
 			if (fieldType->Kind == SyntaxKind::TypeParameter)
 			{
-				GenericTypeSymbol* genericType = static_cast<GenericTypeSymbol*>(currentType);
-				fieldType = SubstituteTypeParameters(fieldType, genericType);
+				if (currentType->Kind == SyntaxKind::GenericType)
+				{
+					GenericTypeSymbol* genericType = static_cast<GenericTypeSymbol*>(currentType);
+					fieldType = SubstituteTypeParameters(fieldType, genericType);
+				}
 			}
 			
 			return fieldType;
