@@ -184,6 +184,9 @@ ObjectInstance* AbstractInterpreter::ExecuteMethod(const MethodSymbol* method, c
 		{
 			try
 			{
+				if (method->FunctionPointer == nullptr)
+					throw std::runtime_error("extern method body not resolved");
+
 				ObjectInstance* retReg = method->FunctionPointer(method, argumentsContext);
 				if (retReg != nullptr)
 				{
