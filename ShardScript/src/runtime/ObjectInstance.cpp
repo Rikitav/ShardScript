@@ -23,37 +23,36 @@ using namespace shard::parsing::semantic;
 ObjectInstance* ObjectInstance::FromValue(bool value)
 {
 	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::Boolean);
-	instance->WritePrimitive(value);
+	instance->WriteBoolean(value);
 	return instance;
 }
 
 ObjectInstance* ObjectInstance::FromValue(int value)
 {
 	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::Integer);
-	instance->WritePrimitive(value);
+	instance->WriteInteger(value);
 	return instance;
 }
 
 ObjectInstance* ObjectInstance::FromValue(wchar_t value)
 {
 	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::Char);
-	instance->WritePrimitive(value);
+	instance->WriteCharacter(value);
 	return instance;
 }
 
 ObjectInstance* ObjectInstance::FromValue(const wchar_t* value)
 {
 	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String);
-	std::wstring* copy = new std::wstring(value);
-	instance->WritePrimitive<std::wstring>(*copy);
+	std::wstring copy = std::wstring(value);
+	instance->WriteString(copy);
 	return instance;
 }
 
 ObjectInstance* ObjectInstance::FromValue(const std::wstring& value)
 {
 	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String);
-	std::wstring* copy = new std::wstring(value);
-	instance->WritePrimitive<std::wstring>(*copy);
+	instance->WriteString(value);
 	return instance;
 }
 
@@ -250,7 +249,7 @@ void ObjectInstance::ReadMemory(const size_t offset, const size_t size, void* ds
 	memcpy(dst, memOffset, size);
 }
 
-void ObjectInstance::WriteMemory(const size_t offset, const size_t size, void* src) const
+void ObjectInstance::WriteMemory(const size_t offset, const size_t size, const void* src) const
 {
 	if (!src)
 		throw std::invalid_argument("Source is nullptr");
@@ -263,4 +262,48 @@ void ObjectInstance::WriteMemory(const size_t offset, const size_t size, void* s
 
 	char* memOffset = static_cast<char*>(Ptr) + offset;
 	memcpy(memOffset, src, size);
+}
+
+void ObjectInstance::WriteBoolean(const bool& value)
+{
+	const void* ptr = &value;
+	WriteMemory(0, Info->MemoryBytesSize, ptr);
+}
+
+void ObjectInstance::WriteInteger(const int& value)
+{
+	const void* ptr = &value;
+	WriteMemory(0, Info->MemoryBytesSize, ptr);
+}
+
+void ObjectInstance::WriteCharacter(const wchar_t& value)
+{
+	const void* ptr = &value;
+	WriteMemory(0, Info->MemoryBytesSize, ptr);
+}
+
+void ObjectInstance::WriteString(const std::wstring& value)
+{
+	const void* ptr = new std::wstring(value);
+	WriteMemory(0, Info->MemoryBytesSize, ptr);
+}
+
+bool ObjectInstance::AsBoolean()
+{
+	return *reinterpret_cast<bool*>(Ptr);
+}
+
+int ObjectInstance::AsInteger()
+{
+	return *reinterpret_cast<int*>(Ptr);
+}
+
+wchar_t ObjectInstance::AsCharacter()
+{
+	return *reinterpret_cast<wchar_t*>(Ptr);
+}
+
+std::wstring& ObjectInstance::AsString()
+{
+	return *reinterpret_cast<std::wstring*>(Ptr);
 }

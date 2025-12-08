@@ -19,7 +19,7 @@ void LayoutGenerator::Generate(SemanticModel& semanticModel)
 	for (TypeSymbol* objectInfo : semanticModel.Table->GetTypeSymbols())
 	{
 		if (objectInfo->State == TypeLayoutingState::Visited)
-			return;
+			continue;
 
 		FixObjectLayout(semanticModel, objectInfo);
 	}

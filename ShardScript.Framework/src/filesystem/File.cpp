@@ -19,7 +19,7 @@ namespace shard::framework
 	{
 		static ObjectInstance* Impl_ReadAllText(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 		{
-			std::wstring fileName = arguments->Variables.at(L"fileName")->ReadPrimitive<std::wstring>();
+			std::wstring fileName = arguments->Variables.at(L"fileName")->AsString();
 			std::wifstream fileStream(fileName);
 
 			if (!fileStream.is_open())
@@ -31,8 +31,8 @@ namespace shard::framework
 
 		static ObjectInstance* Impl_WriteAllText(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 		{
-			std::wstring fileName = arguments->Variables.at(L"fileName")->ReadPrimitive<std::wstring>();
-			std::wstring content = arguments->Variables.at(L"content")->ReadPrimitive<std::wstring>();
+			std::wstring fileName = arguments->Variables.at(L"fileName")->AsString();
+			std::wstring content = arguments->Variables.at(L"content")->AsString();
 			std::wofstream fileStream(fileName);
 
 			if (!fileStream.is_open())
@@ -64,6 +64,11 @@ namespace shard::framework
 			return SourceCode;
 		}
 
+		bool FrameworkModule::BindConstructor(MethodSymbol* symbol)
+		{
+			return false;
+		}
+
 		bool FrameworkModule::BindMethod(MethodSymbol* symbol)
 		{
 			if (symbol->Name == L"ReadAllText")
@@ -80,6 +85,11 @@ namespace shard::framework
 				return true;
 			}
 
+			return false;
+		}
+
+		bool FrameworkModule::BindAccessor(AccessorSymbol* symbol)
+		{
 			return false;
 		}
 	};

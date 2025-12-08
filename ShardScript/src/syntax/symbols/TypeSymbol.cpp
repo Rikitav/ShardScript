@@ -7,6 +7,7 @@
 #include <shard/syntax/symbols/ArrayTypeSymbol.h>
 #include <shard/syntax/symbols/DelegateTypeSymbol.h>
 #include <shard/syntax/symbols/GenericTypeSymbol.h>
+#include <shard/syntax/symbols/ConstructorSymbol.h>
 #include <shard/syntax/symbols/TypeParameterSymbol.h>
 
 #include <shard/syntax/SyntaxKind.h>
@@ -122,7 +123,7 @@ void TypeSymbol::OnSymbolDeclared(SyntaxSymbol* symbol)
 	{
 		case SyntaxKind::ConstructorDeclaration:
 		{
-			MethodSymbol* ctor = static_cast<MethodSymbol*>(symbol);
+			ConstructorSymbol* ctor = static_cast<ConstructorSymbol*>(symbol);
 			Constructors.push_back(ctor);
 			break;
 		}
@@ -170,9 +171,9 @@ void TypeSymbol::OnSymbolDeclared(SyntaxSymbol* symbol)
 	}
 }
 
-MethodSymbol* TypeSymbol::FindConstructor(std::vector<TypeSymbol*> parameterTypes)
+ConstructorSymbol* TypeSymbol::FindConstructor(std::vector<TypeSymbol*> parameterTypes)
 {
-	for (MethodSymbol* symbol : Constructors)
+	for (ConstructorSymbol* symbol : Constructors)
 	{
 		if (symbol->Parameters.size() != parameterTypes.size())
 			continue;

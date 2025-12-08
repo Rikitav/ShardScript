@@ -47,15 +47,24 @@ namespace shard::framework
 			return SourceCode;
 		}
 
+		bool FrameworkModule::BindConstructor(MethodSymbol* symbol)
+		{
+			return false;
+		}
+
 		bool FrameworkModule::BindMethod(MethodSymbol* symbol)
 		{
 			if (symbol->Name == L"GetDirectory")
 			{
-				symbol->HandleType = MethodHandleType::External;
 				symbol->FunctionPointer = Impl_GetDirectory;
 				return true;
 			}
 
+			return false;
+		}
+
+		bool FrameworkModule::BindAccessor(AccessorSymbol* symbol)
+		{
 			return false;
 		}
 	};

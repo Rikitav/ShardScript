@@ -650,7 +650,7 @@ TypeSymbol* ExpressionBinder::AnalyzeObjectExpression(ObjectExpressionSyntax* no
 		return nullptr;
 
 	std::wstring methodName = node->IdentifierToken.Word;
-	MethodSymbol* method = ResolveConstructor(node);
+	ConstructorSymbol* method = ResolveConstructor(node);
 	if (method == nullptr)
 		return nullptr;
 
@@ -1163,7 +1163,7 @@ TypeSymbol* ExpressionBinder::AnalyzeInvokationExpression(InvokationExpressionSy
 	return returnType;
 }
 
-MethodSymbol* ExpressionBinder::ResolveConstructor(ObjectExpressionSyntax* node)
+ConstructorSymbol* ExpressionBinder::ResolveConstructor(ObjectExpressionSyntax* node)
 {
 	TypeSymbol* symbol = node->TypeSymbol;
 	if (symbol == nullptr)
@@ -1185,7 +1185,7 @@ MethodSymbol* ExpressionBinder::ResolveConstructor(ObjectExpressionSyntax* node)
 		argTypes.push_back(argType);
 	}
 
-	MethodSymbol* method = symbol->FindConstructor(argTypes);
+	ConstructorSymbol* method = symbol->FindConstructor(argTypes);
 	if (method == nullptr)
 	{
 		std::wstringstream diag;

@@ -13,9 +13,15 @@
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/PropertySymbol.h>
 #include <shard/syntax/symbols/ArrayTypeSymbol.h>
+#include <shard/syntax/symbols/AccessorSymbol.h>
+#include <shard/syntax/symbols/FieldSymbol.h>
+#include <shard/syntax/symbols/IndexatorSymbol.h>
 
 #include <malloc.h>
 #include <sstream>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 using namespace shard::framework;
 using namespace shard::syntax;
@@ -25,13 +31,11 @@ using namespace shard::parsing::semantic;
 
 static ObjectInstance* get_Length(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
-	ObjectInstance* instance = arguments->TryFind(L"this");
-	void* value = malloc(sizeof(int));
-	instance->ReadMemory(0, sizeof(int), value);
+	static FieldSymbol* lengthField = SymbolTable::Primitives::Array->Fields.at(0); // <Length>k__BackingField
 
-	ObjectInstance* length = GarbageCollector::AllocateInstance(SymbolTable::Primitives::Integer);
-	length->WriteMemory(0, sizeof(int), value);
-	return length;
+	ObjectInstance* instance = arguments->TryFind(L"this");
+	ObjectInstance* lengthInstance = instance->GetField(lengthField);
+	return lengthInstance;
 }
 
 static ObjectInstance* get_Item(const MethodSymbol* symbol, InboundVariablesContext* arguments)
@@ -39,8 +43,11 @@ static ObjectInstance* get_Item(const MethodSymbol* symbol, InboundVariablesCont
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	ObjectInstance* index = arguments->TryFind(L"index");
 
-	int value = index->ReadPrimitive<int>();
-	return instance->GetElement(value);
+	int indexValue = index->AsInteger();
+	if (!instance->IsInBounds(indexValue))
+		throw std::runtime_error("index is out of bounds");
+
+	return instance->GetElement(indexValue);
 }
 
 static ObjectInstance* set_Item(const MethodSymbol* symbol, InboundVariablesContext* arguments)
@@ -49,7 +56,10 @@ static ObjectInstance* set_Item(const MethodSymbol* symbol, InboundVariablesCont
 	ObjectInstance* index = arguments->TryFind(L"index");
 	ObjectInstance* value = arguments->TryFind(L"value");
 
-	int indexValue = index->ReadPrimitive<int>();
+	int indexValue = index->AsInteger();
+	if (!instance->IsInBounds(indexValue))
+		throw std::runtime_error("index is out of bounds");
+
 	instance->SetElement(indexValue, value);
 	return nullptr;
 }
@@ -69,7 +79,7 @@ static std::wstring ObjectInstanceToString(ObjectInstance* instance)
 	argsCtx->AddVariable(L"this", instance);
 
 	ObjectInstance* resultInstance = AbstractInterpreter::ExecuteMethod(toString, instance->Info, argsCtx);
-	std::wstring resultStr = resultInstance->ReadPrimitive<std::wstring>();
+	std::wstring resultStr = resultInstance->AsString();
 
 	GarbageCollector::CollectInstance(resultInstance);
 	return resultStr;
@@ -109,6 +119,10 @@ void ArrayPrimitive::Reflect(TypeSymbol* symbol)
 		PropertySymbol* lengthProperty = new PropertySymbol(L"Length");
 		lengthProperty->Accesibility = SymbolAccesibility::Public;
 		lengthProperty->ReturnType = SymbolTable::Primitives::Integer;
+
+		lengthProperty->GenerateBackingField();
+		FieldSymbol* lenthField = lengthProperty->BackingField;
+		symbol->Fields.push_back(lenthField);
 
 		lengthProperty->Getter = new AccessorSymbol(L"get_Length", get_Length);
 		symbol->Properties.push_back(lengthProperty);

@@ -22,7 +22,7 @@ using namespace shard::parsing::semantic;
 static ObjectInstance* ToString(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
-	bool value = instance->ReadPrimitive<bool>();
+	bool value = instance->AsBoolean();
 	std::wstring str = value ? L"true" : L"false";
 	return ObjectInstance::FromValue(str);
 }

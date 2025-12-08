@@ -22,6 +22,7 @@
 #include <shard/syntax/symbols/ClassSymbol.h>
 #include <shard/syntax/symbols/StructSymbol.h>
 #include <shard/syntax/symbols/MethodSymbol.h>
+#include <shard/syntax/symbols/ConstructorSymbol.h>
 
 #include <shard/syntax/symbols/DelegateTypeSymbol.h>
 #include <shard/syntax/symbols/ArrayTypeSymbol.h>
@@ -43,7 +44,7 @@ namespace shard::syntax
 
 		static shard::syntax::symbols::MethodSymbol* Method(shard::syntax::nodes::MethodDeclarationSyntax* node);
 
-		static shard::syntax::symbols::MethodSymbol* Constructor(shard::syntax::nodes::ConstructorDeclarationSyntax* node);
+		static shard::syntax::symbols::ConstructorSymbol* Constructor(shard::syntax::nodes::ConstructorDeclarationSyntax* node);
 
 		static shard::syntax::symbols::DelegateTypeSymbol* Delegate(shard::syntax::nodes::DelegateDeclarationSyntax* node);
 		static shard::syntax::symbols::DelegateTypeSymbol* Delegate(shard::syntax::nodes::DelegateTypeSyntax* node);

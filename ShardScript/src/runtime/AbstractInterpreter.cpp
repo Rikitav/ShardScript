@@ -141,7 +141,7 @@ void AbstractInterpreter::RaiseException(ObjectInstance* exceptionReg)
 	TypeSymbol* exceptionType = const_cast<TypeSymbol*>(exceptionReg->Info);
 	if (exceptionType == SymbolTable::Primitives::String)
 	{
-		std::wstring exceptionString = exceptionReg->ReadPrimitive<std::wstring>();
+		std::wstring exceptionString = exceptionReg->AsString();
 		ConsoleHelper::WriteLine(exceptionString);
 		GarbageCollector::CollectInstance(exceptionReg);
 		return;
@@ -158,7 +158,7 @@ void AbstractInterpreter::RaiseException(ObjectInstance* exceptionReg)
 		return;
 	}
 
-	std::wstring exceptionString = toStringMethodRet->ReadPrimitive<std::wstring>();
+	std::wstring exceptionString = toStringMethodRet->AsString();
 	ConsoleHelper::WriteLine(exceptionString);
 	GarbageCollector::CollectInstance(toStringMethodRet);
 	GarbageCollector::CollectInstance(exceptionReg);
@@ -173,6 +173,11 @@ ObjectInstance* AbstractInterpreter::ExecuteMethod(const MethodSymbol* method, c
 
 	switch (method->HandleType)
 	{
+		case MethodHandleType::None:
+		{
+			throw std::runtime_error("Method handle type was not resolved");
+		}
+
 		case MethodHandleType::Lambda:
 		case MethodHandleType::Body:
 		{
@@ -403,7 +408,7 @@ ObjectInstance* AbstractInterpreter::ExecuteIfStatement(const IfStatementSyntax*
 	PushContext(new InboundVariablesContext(CurrentContext()));
 	
 	ObjectInstance* conditionReg = ExecuteStatement(statement->ConditionExpression);
-	bool conditionMet = conditionReg->ReadPrimitive<bool>();
+	bool conditionMet = conditionReg->AsBoolean();
 	GarbageCollector::CollectInstance(conditionReg);
 
 	if (conditionMet)
@@ -425,7 +430,7 @@ ObjectInstance* AbstractInterpreter::ExecuteUnlessStatement(const UnlessStatemen
 	PushContext(new InboundVariablesContext(CurrentContext()));
 
 	ObjectInstance* conditionReg = ExecuteStatement(statement->ConditionExpression);
-	bool conditionMet = conditionReg->ReadPrimitive<bool>();
+	bool conditionMet = conditionReg->AsBoolean();
 	GarbageCollector::CollectInstance(conditionReg);
 
 	if (!conditionMet)
@@ -458,7 +463,7 @@ ObjectInstance* AbstractInterpreter::ExecuteForLoopStatement(const ForStatementS
 	while (looping)
 	{
 		ObjectInstance* conditionReg = EvaluateExpression(statement->ConditionExpression);
-		looping = conditionReg->ReadPrimitive<bool>();
+		looping = conditionReg->AsBoolean();
 		GarbageCollector::CollectInstance(conditionReg);
 
 		if (!looping)
@@ -507,7 +512,7 @@ ObjectInstance* AbstractInterpreter::ExecuteWhileLoopStatement(const WhileStatem
 	while (looping)
 	{
 		ObjectInstance* conditionReg = EvaluateExpression(statement->ConditionExpression);
-		looping = conditionReg->ReadPrimitive<bool>();
+		looping = conditionReg->AsBoolean();
 		GarbageCollector::CollectInstance(conditionReg);
 
 		if (!looping)
@@ -555,7 +560,7 @@ ObjectInstance* AbstractInterpreter::ExecuteUntilLoopStatement(const UntilStatem
 	while (looping)
 	{
 		ObjectInstance* conditionReg = EvaluateExpression(statement->ConditionExpression);
-		looping = conditionReg->ReadPrimitive<bool>();
+		looping = conditionReg->AsBoolean();
 		GarbageCollector::CollectInstance(conditionReg);
 
 		if (looping)
@@ -876,7 +881,7 @@ ObjectInstance* AbstractInterpreter::EvaluateTernaryExpression(const TernaryExpr
 	PushContext(new InboundVariablesContext(CurrentContext()));
 
 	ObjectInstance* conditionReg = EvaluateExpression(expression->Condition);
-	bool conditionMet = conditionReg->ReadPrimitive<bool>();
+	bool conditionMet = conditionReg->AsBoolean();
 	GarbageCollector::CollectInstance(conditionReg);
 
 	ExpressionSyntax* retExpr = conditionMet ? expression->Left : expression->Right;

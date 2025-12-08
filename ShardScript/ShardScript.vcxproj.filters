@@ -152,6 +152,9 @@
     <ClCompile Include="src\syntax\symbols\NamespaceSymbol.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
+    <ClCompile Include="src\ShardScriptVersion.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\shard\parsing\lexical\SyntaxTree.h">
@@ -476,6 +479,12 @@
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="include\shard\syntax\nodes\TypeArgumentsListSyntax.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\ShardScriptVersion.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\syntax\symbols\ConstructorSymbol.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>

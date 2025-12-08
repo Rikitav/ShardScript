@@ -20,28 +20,28 @@ void ConsoleHelper::Write(ObjectInstance* instance)
 {
 	if (instance->Info == SymbolTable::Primitives::Boolean)
 	{
-		bool data = instance->ReadPrimitive<bool>();
+		bool data = instance->AsBoolean();
 		Write(data);
 		return;
 	}
 
 	if (instance->Info == SymbolTable::Primitives::Integer)
 	{
-		int data = instance->ReadPrimitive<int>();
+		int data = instance->AsInteger();
 		Write(data);
 		return;
 	}
 
 	if (instance->Info == SymbolTable::Primitives::Char)
 	{
-		wchar_t data = instance->ReadPrimitive<wchar_t>();
+		wchar_t data = instance->AsCharacter();
 		Write(data);
 		return;
 	}
 
 	if (instance->Info == SymbolTable::Primitives::String)
 	{
-		std::wstring data = instance->ReadPrimitive<std::wstring>();
+		std::wstring data = instance->AsString();
 		Write(data);
 		return;
 	}
@@ -95,28 +95,28 @@ void ConsoleHelper::WriteLine(ObjectInstance* instance)
 {
 	if (instance->Info == SymbolTable::Primitives::Boolean)
 	{
-		bool data = instance->ReadPrimitive<bool>();
+		bool data = instance->AsBoolean();
 		WriteLine(data);
 		return;
 	}
 
 	if (instance->Info == SymbolTable::Primitives::Integer)
 	{
-		int data = instance->ReadPrimitive<int>();
+		int data = instance->AsInteger();
 		WriteLine(data);
 		return;
 	}
 
 	if (instance->Info == SymbolTable::Primitives::Char)
 	{
-		wchar_t data = instance->ReadPrimitive<wchar_t>();
+		wchar_t data = instance->AsCharacter();
 		WriteLine(data);
 		return;
 	}
 
 	if (instance->Info == SymbolTable::Primitives::String)
 	{
-		std::wstring data = instance->ReadPrimitive<std::wstring>();
+		std::wstring data = instance->AsString();
 		WriteLine(data);
 		return;
 	}

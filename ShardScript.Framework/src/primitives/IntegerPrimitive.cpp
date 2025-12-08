@@ -15,6 +15,7 @@
 #include <string>
 #include <cmath>
 #include <algorithm>
+#include <Windows.h>
 
 using namespace shard::framework;
 using namespace shard::runtime;
@@ -26,7 +27,7 @@ using namespace shard::parsing::semantic;
 static ObjectInstance* ToString(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
-	int value = instance->ReadPrimitive<int>();
+	int value = instance->AsInteger();
 	std::wstring str = std::to_wstring(value);
 	return ObjectInstance::FromValue(str);
 }
@@ -34,7 +35,7 @@ static ObjectInstance* ToString(const MethodSymbol* symbol, InboundVariablesCont
 static ObjectInstance* Abs(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
-	int value = instance->ReadPrimitive<int>();
+	int value = instance->AsInteger();
 	int result = abs(value);
 	return ObjectInstance::FromValue(result);
 }
@@ -42,41 +43,41 @@ static ObjectInstance* Abs(const MethodSymbol* symbol, InboundVariablesContext* 
 static ObjectInstance* Min(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
-	int value = instance->ReadPrimitive<int>();
+	int value = instance->AsInteger();
 	
 	ObjectInstance* otherArg = arguments->TryFind(L"other");
 	if (otherArg == nullptr)
 		return ObjectInstance::FromValue(value);
 	
-	int other = otherArg->ReadPrimitive<int>();
-	int result = std::min(value, other);
+	int other = otherArg->AsInteger();
+	int result = min(value, other);
 	return ObjectInstance::FromValue(result);
 }
 
 static ObjectInstance* Max(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
-	int value = instance->ReadPrimitive<int>();
+	int value = instance->AsInteger();
 	
 	ObjectInstance* otherArg = arguments->TryFind(L"other");
 	if (otherArg == nullptr)
 		return ObjectInstance::FromValue(value);
 	
-	int other = otherArg->ReadPrimitive<int>();
-	int result = std::max(value, other);
+	int other = otherArg->AsInteger();
+	int result = max(value, other);
 	return ObjectInstance::FromValue(result);
 }
 
 static ObjectInstance* Pow(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
-	int value = instance->ReadPrimitive<int>();
+	int value = instance->AsInteger();
 	
 	ObjectInstance* powerArg = arguments->TryFind(L"power");
 	if (powerArg == nullptr)
 		return ObjectInstance::FromValue(1);
 	
-	int power = powerArg->ReadPrimitive<int>();
+	int power = powerArg->AsInteger();
 	int result = static_cast<int>(pow(value, power));
 	return ObjectInstance::FromValue(result);
 }

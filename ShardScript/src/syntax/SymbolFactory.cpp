@@ -107,12 +107,21 @@ MethodSymbol* SymbolFactory::Method(MethodDeclarationSyntax* node)
     return symbol;
 }
 
-MethodSymbol* SymbolFactory::Constructor(ConstructorDeclarationSyntax* node)
+ConstructorSymbol* SymbolFactory::Constructor(ConstructorDeclarationSyntax* node)
 {
 	std::wstring methodName = node->IdentifierToken.Word;
-	MethodSymbol* symbol = new MethodSymbol(methodName, node->Body);
+	ConstructorSymbol* symbol = new ConstructorSymbol(methodName, node->Body);
 	symbol->ReturnType = shard::parsing::semantic::SymbolTable::Primitives::Void;
 	SetAccesibility(symbol, node->Modifiers);
+
+	if (symbol->IsExtern)
+		symbol->HandleType = MethodHandleType::External;
+
+	for (ParameterSyntax* parameter : node->Params->Parameters)
+	{
+		ParameterSymbol* paramSymbol = new ParameterSymbol(parameter->Identifier.Word);
+		symbol->Parameters.push_back(paramSymbol);
+	}
 
 	return symbol;
 }

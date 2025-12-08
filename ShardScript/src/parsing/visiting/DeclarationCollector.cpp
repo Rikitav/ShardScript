@@ -189,10 +189,11 @@ void DeclarationCollector::VisitClassDeclaration(ClassDeclarationSyntax* node)
     for (MemberDeclarationSyntax* member : node->Members)
         VisitMemberDeclaration(member);
 
-    if (symbol->Constructors.empty())
+    if (!symbol->IsStatic && symbol->Constructors.empty())
     {
-        MethodSymbol* ctor = new MethodSymbol(L"default");
-        ctor->HandleType = MethodHandleType::None;
+        ConstructorSymbol* ctor = new ConstructorSymbol(L"default");
+        ctor->HandleType = MethodHandleType::Body;
+        ctor->Body = new StatementsBlockSyntax(node);
         ctor->Accesibility = SymbolAccesibility::Public;
         ctor->Parent = symbol;
         ctor->FullName = FormatFullNameOf(ctor);
@@ -367,7 +368,7 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 void DeclarationCollector::VisitConstructorDeclaration(ConstructorDeclarationSyntax* node)
 {
     // Creating symbol
-    MethodSymbol* symbol = SymbolFactory::Constructor(node);
+    ConstructorSymbol* symbol = SymbolFactory::Constructor(node);
     Table->BindSymbol(node, symbol);
     Declare(symbol);
 
@@ -454,8 +455,12 @@ void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax* n
     }
 
     PushScope(symbol);
-    VisitAccessorDeclaration(node->Getter);
-    VisitAccessorDeclaration(node->Setter);
+    if (node->Getter != nullptr)
+        VisitAccessorDeclaration(node->Getter);
+
+    if (node->Setter != nullptr)
+        VisitAccessorDeclaration(node->Setter);
+
     VisitExpression(node->InitializerExpression);
     PopScope();
 
@@ -490,6 +495,35 @@ void DeclarationCollector::VisitAccessorDeclaration(AccessorDeclarationSyntax* n
     AccessorSymbol* symbol = SymbolFactory::Accessor(node, propertySymbol);
     Table->BindSymbol(node, symbol);
     Declare(symbol);
+
+    // Resolving owner symbol
+    symbol->Parent = OwnerSymbol();
+    if (symbol->Parent == nullptr)
+    {
+        // Failed
+        Diagnostics.ReportError(node->IdentifierToken, L"Cannot resolve Accessors' owner Type");
+    }
+    else
+    {
+        // Resolving Methods' full name
+        symbol->FullName = FormatFullNameOf(symbol);
+
+        /*
+        // Checking if owner is type
+        if (!symbol->Parent->IsType())
+        {
+            Diagnostics.ReportError(node->IdentifierToken, L"Accessors cannot be declared outside of Classes or Structures");
+        }
+        else
+        {
+            TypeSymbol* ownerType = static_cast<TypeSymbol*>(symbol->Parent);
+
+            // Assert: static Class cannot have instance Methods
+            if (!symbol->IsStatic && ownerType->IsStatic)
+                Diagnostics.ReportError(node->IdentifierToken, L"Cannot declare a non static Method in static Type");
+        }
+        */
+    }
 
     if (node->Body != nullptr)
     {

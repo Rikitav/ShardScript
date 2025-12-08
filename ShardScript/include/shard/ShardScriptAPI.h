@@ -1,3 +1,5 @@
+#pragma once
+
 //#if _DEBUG
 #pragma warning(disable: 4251)
 //#endif

@@ -41,6 +41,7 @@ namespace shard::runtime
 		void IncrementReference();
 		void DecrementReference();
 
+		/*
 		template<typename T>
 		inline void WritePrimitive(T& value)
 		{
@@ -53,9 +54,20 @@ namespace shard::runtime
 		{
 			return *reinterpret_cast<T*>(Ptr);
 		}
+		*/
+
+		void WriteBoolean(const bool& value);
+		void WriteInteger(const int& value);
+		void WriteCharacter(const wchar_t& value);
+		void WriteString(const std::wstring& value);
+
+		bool AsBoolean();
+		int AsInteger();
+		wchar_t AsCharacter();
+		std::wstring& AsString();
 
 		void* OffsetMemory(const size_t offset, const size_t size) const;
 		void ReadMemory(const size_t offset, const size_t size, void* dst) const;
-		void WriteMemory(const size_t offset, const size_t size, void* src) const;
+		void WriteMemory(const size_t offset, const size_t size, const void* src) const;
 	};
 }

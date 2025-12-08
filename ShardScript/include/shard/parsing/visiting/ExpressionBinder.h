@@ -10,6 +10,8 @@
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/MethodSymbol.h>
 #include <shard/syntax/symbols/GenericTypeSymbol.h>
+#include <shard/syntax/symbols/ConstructorSymbol.h>
+#include <shard/syntax/symbols/IndexatorSymbol.h>
 
 #include <shard/syntax/nodes/ExpressionSyntax.h>
 #include <shard/syntax/nodes/ArgumentsListSyntax.h>
@@ -23,6 +25,7 @@
 #include <shard/syntax/nodes/Expressions/UnaryExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/CollectionExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/LambdaExpressionSyntax.h>
+#include <shard/syntax/nodes/Expressions/TernaryExpressionSyntax.h>
 
 #include <shard/syntax/nodes/Loops/ForStatementSyntax.h>
 #include <shard/syntax/nodes/Loops/UntilStatementSyntax.h>
@@ -66,7 +69,7 @@ namespace shard::parsing
 		shard::syntax::symbols::TypeSymbol* AnalyzeInvokationExpression(shard::syntax::nodes::InvokationExpressionSyntax* node, shard::syntax::symbols::TypeSymbol* currentType);
 		shard::syntax::symbols::TypeSymbol* AnalyzeIndexatorExpression(shard::syntax::nodes::IndexatorExpressionSyntax* node, shard::syntax::symbols::TypeSymbol* currentType);
 
-		shard::syntax::symbols::MethodSymbol* ResolveConstructor(shard::syntax::nodes::ObjectExpressionSyntax* node);
+		shard::syntax::symbols::ConstructorSymbol* ResolveConstructor(shard::syntax::nodes::ObjectExpressionSyntax* node);
 		shard::syntax::symbols::MethodSymbol* ResolveMethod(shard::syntax::nodes::InvokationExpressionSyntax* node, shard::syntax::symbols::TypeSymbol* currentType);
 		shard::syntax::symbols::IndexatorSymbol* ResolveIndexator(shard::syntax::nodes::IndexatorExpressionSyntax* node, shard::syntax::symbols::TypeSymbol* currentType);
 		

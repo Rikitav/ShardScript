@@ -28,27 +28,27 @@ using namespace shard::parsing::semantic;
 static ObjectInstance* IsEmpty(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
-	std::wstring value = instance->ReadPrimitive<std::wstring>();
+	std::wstring value = instance->AsString();
 	return ObjectInstance::FromValue(value.size() == 0);
 }
 
 static ObjectInstance* GetLength(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
-	std::wstring value = instance->ReadPrimitive<std::wstring>();
+	std::wstring value = instance->AsString();
 	return ObjectInstance::FromValue(static_cast<int>(value.size()));
 }
 
 static ObjectInstance* Substring(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
-	std::wstring value = instance->ReadPrimitive<std::wstring>();
+	std::wstring value = instance->AsString();
 	
 	ObjectInstance* startArg = arguments->TryFind(L"start");
 	if (startArg == nullptr)
 		return ObjectInstance::FromValue(L"");
 	
-	int start = startArg->ReadPrimitive<int>();
+	int start = startArg->AsInteger();
 	if (start < 0)
 		start = 0;
 
@@ -58,7 +58,7 @@ static ObjectInstance* Substring(const MethodSymbol* symbol, InboundVariablesCon
 	ObjectInstance* lengthArg = arguments->TryFind(L"length");
 	if (lengthArg != nullptr)
 	{
-		int length = lengthArg->ReadPrimitive<int>();
+		int length = lengthArg->AsInteger();
 		if (length < 0)
 			length = 0;
 
@@ -78,26 +78,26 @@ static ObjectInstance* Substring(const MethodSymbol* symbol, InboundVariablesCon
 static ObjectInstance* Contains(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
-	std::wstring value = instance->ReadPrimitive<std::wstring>();
+	std::wstring value = instance->AsString();
 	
 	ObjectInstance* searchArg = arguments->TryFind(L"value");
 	if (searchArg == nullptr)
 		return ObjectInstance::FromValue(false);
 	
-	std::wstring search = searchArg->ReadPrimitive<std::wstring>();
+	std::wstring search = searchArg->AsString();
 	return ObjectInstance::FromValue(value.find(search) != std::wstring::npos);
 }
 
 static ObjectInstance* StartsWith(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
-	std::wstring value = instance->ReadPrimitive<std::wstring>();
+	std::wstring value = instance->AsString();
 	
 	ObjectInstance* prefixArg = arguments->TryFind(L"value");
 	if (prefixArg == nullptr)
 		return ObjectInstance::FromValue(false);
 	
-	std::wstring prefix = prefixArg->ReadPrimitive<std::wstring>();
+	std::wstring prefix = prefixArg->AsString();
 	if (prefix.size() > value.size())
 		return ObjectInstance::FromValue(false);
 	
@@ -107,13 +107,13 @@ static ObjectInstance* StartsWith(const MethodSymbol* symbol, InboundVariablesCo
 static ObjectInstance* EndsWith(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
-	std::wstring value = instance->ReadPrimitive<std::wstring>();
+	std::wstring value = instance->AsString();
 	
 	ObjectInstance* suffixArg = arguments->TryFind(L"value");
 	if (suffixArg == nullptr)
 		return ObjectInstance::FromValue(false);
 	
-	std::wstring suffix = suffixArg->ReadPrimitive<std::wstring>();
+	std::wstring suffix = suffixArg->AsString();
 	if (suffix.size() > value.size())
 		return ObjectInstance::FromValue(false);
 	
@@ -123,13 +123,13 @@ static ObjectInstance* EndsWith(const MethodSymbol* symbol, InboundVariablesCont
 static ObjectInstance* IndexOf(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
-	std::wstring value = instance->ReadPrimitive<std::wstring>();
+	std::wstring value = instance->AsString();
 	
 	ObjectInstance* searchArg = arguments->TryFind(L"value");
 	if (searchArg == nullptr)
 		return ObjectInstance::FromValue(-1);
 	
-	std::wstring search = searchArg->ReadPrimitive<std::wstring>();
+	std::wstring search = searchArg->AsString();
 	size_t pos = value.find(search);
 	return ObjectInstance::FromValue(pos == std::wstring::npos ? -1 : static_cast<int>(pos));
 }
@@ -137,13 +137,13 @@ static ObjectInstance* IndexOf(const MethodSymbol* symbol, InboundVariablesConte
 static ObjectInstance* LastIndexOf(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
-	std::wstring value = instance->ReadPrimitive<std::wstring>();
+	std::wstring value = instance->AsString();
 	
 	ObjectInstance* searchArg = arguments->TryFind(L"value");
 	if (searchArg == nullptr)
 		return ObjectInstance::FromValue(-1);
 	
-	std::wstring search = searchArg->ReadPrimitive<std::wstring>();
+	std::wstring search = searchArg->AsString();
 	size_t pos = value.rfind(search);
 	return ObjectInstance::FromValue(pos == std::wstring::npos ? -1 : static_cast<int>(pos));
 }
@@ -151,7 +151,7 @@ static ObjectInstance* LastIndexOf(const MethodSymbol* symbol, InboundVariablesC
 static ObjectInstance* Replace(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
-	std::wstring value = instance->ReadPrimitive<std::wstring>();
+	std::wstring value = instance->AsString();
 	
 	ObjectInstance* oldStrArg = arguments->TryFind(L"oldValue");
 	ObjectInstance* newStrArg = arguments->TryFind(L"newValue");
@@ -159,8 +159,8 @@ static ObjectInstance* Replace(const MethodSymbol* symbol, InboundVariablesConte
 	if (oldStrArg == nullptr || newStrArg == nullptr)
 		return ObjectInstance::FromValue(value);
 	
-	std::wstring oldStr = oldStrArg->ReadPrimitive<std::wstring>();
-	std::wstring newStr = newStrArg->ReadPrimitive<std::wstring>();
+	std::wstring oldStr = oldStrArg->AsString();
+	std::wstring newStr = newStrArg->AsString();
 	
 	std::wstring result = value;
 	size_t pos = 0;
@@ -177,7 +177,7 @@ static ObjectInstance* Replace(const MethodSymbol* symbol, InboundVariablesConte
 static ObjectInstance* ToUpper(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
-	std::wstring value = instance->ReadPrimitive<std::wstring>();
+	std::wstring value = instance->AsString();
 	
 	std::wstring result = value;
 	transform(result.begin(), result.end(), result.begin(), ::towupper);
@@ -187,7 +187,7 @@ static ObjectInstance* ToUpper(const MethodSymbol* symbol, InboundVariablesConte
 static ObjectInstance* ToLower(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
-	std::wstring value = instance->ReadPrimitive<std::wstring>();
+	std::wstring value = instance->AsString();
 	
 	std::wstring result = value;
 	transform(result.begin(), result.end(), result.begin(), ::towlower);
@@ -197,7 +197,7 @@ static ObjectInstance* ToLower(const MethodSymbol* symbol, InboundVariablesConte
 static ObjectInstance* Trim(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
-	std::wstring value = instance->ReadPrimitive<std::wstring>();
+	std::wstring value = instance->AsString();
 	
 	// Trim from start
 	size_t start = value.find_first_not_of(L" \t\n\r");
@@ -216,7 +216,7 @@ static ObjectInstance* Format(const MethodSymbol* symbol, InboundVariablesContex
 	ObjectInstance* instance = arguments->TryFind(L"this"); // string
 	ObjectInstance* formatArgs = arguments->TryFind(L"args"); // string[]
 
-	std::wstring format = instance->ReadPrimitive<std::wstring>();
+	std::wstring format = instance->AsString();
 	std::wstring result = format;
 	size_t pos = 0;
 	
@@ -271,7 +271,7 @@ static ObjectInstance* Format(const MethodSymbol* symbol, InboundVariablesContex
 					
 					if (toStringResult != nullptr && toStringResult->Info == SymbolTable::Primitives::String)
 					{
-						argStr = toStringResult->ReadPrimitive<std::wstring>();
+						argStr = toStringResult->AsString();
 					}
 					else
 					{
@@ -291,19 +291,19 @@ static ObjectInstance* Format(const MethodSymbol* symbol, InboundVariablesContex
 				// Fallback to primitive type conversion if ToString is not available
 				if (arg->Info == SymbolTable::Primitives::String)
 				{
-					argStr = arg->ReadPrimitive<std::wstring>();
+					argStr = arg->AsString();
 				}
 				else if (arg->Info == SymbolTable::Primitives::Integer)
 				{
-					argStr = std::to_wstring(arg->ReadPrimitive<int>());
+					argStr = std::to_wstring(arg->AsInteger());
 				}
 				else if (arg->Info == SymbolTable::Primitives::Boolean)
 				{
-					argStr = arg->ReadPrimitive<bool>() ? L"true" : L"false";
+					argStr = arg->AsBoolean() ? L"true" : L"false";
 				}
 				else if (arg->Info == SymbolTable::Primitives::Char)
 				{
-					argStr = std::wstring(1, arg->ReadPrimitive<wchar_t>());
+					argStr = std::wstring(1, arg->AsCharacter());
 				}
 				else
 				{
@@ -327,13 +327,13 @@ static ObjectInstance* Format(const MethodSymbol* symbol, InboundVariablesContex
 static ObjectInstance* PadLeft(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
-	std::wstring value = instance->ReadPrimitive<std::wstring>();
+	std::wstring value = instance->AsString();
 	
 	ObjectInstance* widthArg = arguments->TryFind(L"width");
 	if (widthArg == nullptr)
 		return ObjectInstance::FromValue(value);
 	
-	int width = widthArg->ReadPrimitive<int>();
+	int width = widthArg->AsInteger();
 	if (width <= static_cast<int>(value.size()))
 		return ObjectInstance::FromValue(value);
 	
@@ -341,7 +341,7 @@ static ObjectInstance* PadLeft(const MethodSymbol* symbol, InboundVariablesConte
 	ObjectInstance* padCharArg = arguments->TryFind(L"padChar");
 	if (padCharArg != nullptr)
 	{
-		padChar = padCharArg->ReadPrimitive<wchar_t>();
+		padChar = padCharArg->AsCharacter();
 	}
 	
 	std::wstring result = std::wstring(width - value.size(), padChar) + value;
@@ -351,13 +351,13 @@ static ObjectInstance* PadLeft(const MethodSymbol* symbol, InboundVariablesConte
 static ObjectInstance* PadRight(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
-	std::wstring value = instance->ReadPrimitive<std::wstring>();
+	std::wstring value = instance->AsString();
 	
 	ObjectInstance* widthArg = arguments->TryFind(L"width");
 	if (widthArg == nullptr)
 		return ObjectInstance::FromValue(value);
 	
-	int width = widthArg->ReadPrimitive<int>();
+	int width = widthArg->AsInteger();
 	if (width <= static_cast<int>(value.size()))
 		return ObjectInstance::FromValue(value);
 	
@@ -365,7 +365,7 @@ static ObjectInstance* PadRight(const MethodSymbol* symbol, InboundVariablesCont
 	ObjectInstance* padCharArg = arguments->TryFind(L"padChar");
 	if (padCharArg != nullptr)
 	{
-		padChar = padCharArg->ReadPrimitive<wchar_t>();
+		padChar = padCharArg->AsCharacter();
 	}
 	
 	std::wstring result = value + std::wstring(width - value.size(), padChar);
@@ -375,13 +375,13 @@ static ObjectInstance* PadRight(const MethodSymbol* symbol, InboundVariablesCont
 static ObjectInstance* Remove(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
-	std::wstring value = instance->ReadPrimitive<std::wstring>();
+	std::wstring value = instance->AsString();
 	
 	ObjectInstance* startArg = arguments->TryFind(L"start");
 	if (startArg == nullptr)
 		return ObjectInstance::FromValue(value);
 	
-	int start = startArg->ReadPrimitive<int>();
+	int start = startArg->AsInteger();
 	if (start < 0)
 		start = 0;
 	if (start >= static_cast<int>(value.size()))
@@ -390,7 +390,7 @@ static ObjectInstance* Remove(const MethodSymbol* symbol, InboundVariablesContex
 	ObjectInstance* countArg = arguments->TryFind(L"count");
 	if (countArg != nullptr)
 	{
-		int count = countArg->ReadPrimitive<int>();
+		int count = countArg->AsInteger();
 		if (count < 0)
 			count = 0;
 		if (start + count > static_cast<int>(value.size()))
@@ -410,7 +410,7 @@ static ObjectInstance* Remove(const MethodSymbol* symbol, InboundVariablesContex
 static ObjectInstance* Insert(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
-	std::wstring value = instance->ReadPrimitive<std::wstring>();
+	std::wstring value = instance->AsString();
 	
 	ObjectInstance* startArg = arguments->TryFind(L"start");
 	ObjectInstance* strArg = arguments->TryFind(L"value");
@@ -418,8 +418,8 @@ static ObjectInstance* Insert(const MethodSymbol* symbol, InboundVariablesContex
 	if (startArg == nullptr || strArg == nullptr)
 		return ObjectInstance::FromValue(value);
 	
-	int start = startArg->ReadPrimitive<int>();
-	std::wstring str = strArg->ReadPrimitive<std::wstring>();
+	int start = startArg->AsInteger();
+	std::wstring str = strArg->AsString();
 	
 	if (start < 0)
 		start = 0;

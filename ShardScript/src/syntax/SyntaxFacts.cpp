@@ -263,6 +263,7 @@ bool IsType(TokenType type, TokenType peekType)
 			switch (peekType)
 			{
 				case TokenType::LessOperator:
+				case TokenType::OpenSquare:
 				case TokenType::Identifier:
 				case TokenType::Question:
 					return true;

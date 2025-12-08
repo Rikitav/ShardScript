@@ -40,6 +40,7 @@
 
 #include "src/filesystem/File.cpp"
 #include "src/filesystem/Directory.cpp"
+#include "src/collections/List.cpp"
 
 using namespace shard::framework;
 using namespace shard::runtime;
@@ -199,7 +200,7 @@ static void ResolvePrimitives()
 	SymbolTable::Primitives::Integer->MemoryBytesSize = sizeof(int);
 	SymbolTable::Primitives::Char->MemoryBytesSize = sizeof(wchar_t);
 	SymbolTable::Primitives::String->MemoryBytesSize = sizeof(std::wstring);
-	SymbolTable::Primitives::Array->MemoryBytesSize = sizeof(int);
+	SymbolTable::Primitives::Array->MemoryBytesSize = sizeof(int); // _length field
 
 	BooleanPrimitive::Reflect(SymbolTable::Primitives::Boolean);
 	IntegerPrimitive::Reflect(SymbolTable::Primitives::Integer);
@@ -298,6 +299,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
 			shard::framework::FrameworkLoader::AddModule(new FileSystem_Directory());
 			shard::framework::FrameworkLoader::AddModule(new FileSystem_File());
+			shard::framework::FrameworkLoader::AddModule(new Collections_List());
 			break;
         }
 

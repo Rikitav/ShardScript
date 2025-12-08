@@ -16,6 +16,7 @@ namespace shard::syntax::symbols
 namespace shard::syntax::symbols
 {
     class MethodSymbol;
+    class ConstructorSymbol;
     class FieldSymbol;
     class PropertySymbol;
     class IndexatorSymbol;
@@ -35,7 +36,7 @@ namespace shard::syntax::symbols
         std::vector<TypeSymbol*> Interfaces;
         std::vector<TypeParameterSymbol*> TypeParameters;
 
-        std::vector<MethodSymbol*> Constructors;
+        std::vector<ConstructorSymbol*> Constructors;
         std::vector<MethodSymbol*> Methods;
         std::vector<IndexatorSymbol*> Indexators;
         std::vector<FieldSymbol*> Fields;
@@ -72,7 +73,7 @@ namespace shard::syntax::symbols
             for (IndexatorSymbol* indexatorSymbol : Indexators)
                 delete indexatorSymbol;
 
-            for (MethodSymbol* ctorSymbol : Constructors)
+            for (ConstructorSymbol* ctorSymbol : Constructors)
                 delete ctorSymbol;
 
             for (TypeParameterSymbol* typeParamSymbol : TypeParameters)
@@ -90,7 +91,7 @@ namespace shard::syntax::symbols
 
         void OnSymbolDeclared(SyntaxSymbol* symbol) override;
 
-        virtual MethodSymbol* FindConstructor(std::vector<TypeSymbol*> parameterTypes);
+        virtual ConstructorSymbol* FindConstructor(std::vector<TypeSymbol*> parameterTypes);
         virtual MethodSymbol* FindMethod(std::wstring& name, std::vector<TypeSymbol*> parameterTypes);
         virtual IndexatorSymbol* FindIndexator(std::vector<TypeSymbol*> parameterTypes);
         virtual FieldSymbol* FindField(std::wstring& name);

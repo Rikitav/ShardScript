@@ -24,25 +24,25 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(ObjectInstance* left
 
 	if (leftInstance->Info == SymbolTable::Primitives::Boolean)
 	{
-		bool leftData = leftInstance->ReadPrimitive<bool>();
+		bool leftData = leftInstance->AsBoolean();
 		return EvaluateBinaryOperator(leftData, opToken, rightInstance, assign);
 	}
 
 	if (leftInstance->Info == SymbolTable::Primitives::Integer)
 	{
-		int leftData = leftInstance->ReadPrimitive<int>();
+		int leftData = leftInstance->AsInteger();
 		return EvaluateBinaryOperator(leftData, opToken, rightInstance, assign);
 	}
 
 	if (leftInstance->Info == SymbolTable::Primitives::Char)
 	{
-		wchar_t leftData = leftInstance->ReadPrimitive<wchar_t>();
+		wchar_t leftData = leftInstance->AsCharacter();
 		return EvaluateBinaryOperator(leftData, opToken, rightInstance, assign);
 	}
 
 	if (leftInstance->Info == SymbolTable::Primitives::String)
 	{
-		std::wstring leftData = leftInstance->ReadPrimitive<std::wstring>();
+		std::wstring leftData = leftInstance->AsString();
 		return EvaluateBinaryOperator(leftData, opToken, rightInstance, assign);
 	}
 
@@ -53,7 +53,7 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(bool leftData, Synta
 {
 	if (rightInstance->Info == SymbolTable::Primitives::Boolean)
 	{
-		bool rightData = rightInstance->ReadPrimitive<bool>();
+		bool rightData = rightInstance->AsBoolean();
 		switch (opToken.Type)
 		{
 			case TokenType::EqualsOperator:
@@ -85,7 +85,7 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(int leftData, Syntax
 {
 	if (rightInstance->Info == SymbolTable::Primitives::Integer)
 	{
-		int rightData = rightInstance->ReadPrimitive<int>();
+		int rightData = rightInstance->AsInteger();
 		switch (opToken.Type)
 		{
 			case TokenType::AddOperator:
@@ -177,7 +177,7 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(std::wstring& leftDa
 {
 	if (rightInstance->Info == SymbolTable::Primitives::String)
 	{
-		std::wstring rightData = rightInstance->ReadPrimitive<std::wstring>();
+		std::wstring rightData = rightInstance->AsString();
 		switch (opToken.Type)
 		{
 			case TokenType::AddOperator:
@@ -201,7 +201,7 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(std::wstring& leftDa
 
 	if (rightInstance->Info == SymbolTable::Primitives::Integer)
 	{
-		int rightData = rightInstance->ReadPrimitive<int>();
+		int rightData = rightInstance->AsInteger();
 		switch (opToken.Type)
 		{
 			case TokenType::MultOperator:
@@ -238,7 +238,7 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(std::wstring& leftDa
 
 	if (rightInstance->Info == SymbolTable::Primitives::Boolean)
 	{
-		bool rightData = rightInstance->ReadPrimitive<bool>();
+		bool rightData = rightInstance->AsBoolean();
 		switch (opToken.Type)
 		{
 			case TokenType::AddOperator:
@@ -256,7 +256,7 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(std::wstring& leftDa
 
 	if (rightInstance->Info == SymbolTable::Primitives::Boolean)
 	{
-		wchar_t rightData = rightInstance->ReadPrimitive<wchar_t>();
+		wchar_t rightData = rightInstance->AsCharacter();
 		switch (opToken.Type)
 		{
 			case TokenType::AddOperator:
@@ -279,19 +279,19 @@ ObjectInstance* PrimitiveMathModule::EvaluateUnaryOperator(ObjectInstance*& sour
 {
 	if (sourceInstance->Info == SymbolTable::Primitives::Boolean)
 	{
-		bool data = sourceInstance->ReadPrimitive<bool>();
+		bool data = sourceInstance->AsBoolean();
 		return EvaluateUnaryOperator(sourceInstance, data, opToken, rightDetermined);
 	}
 	
 	if (sourceInstance->Info == SymbolTable::Primitives::Integer)
 	{
-		int data = sourceInstance->ReadPrimitive<int>();
+		int data = sourceInstance->AsInteger();
 		return EvaluateUnaryOperator(sourceInstance, data, opToken, rightDetermined);
 	}
 	
 	if (sourceInstance->Info == SymbolTable::Primitives::String)
 	{
-		std::wstring data = sourceInstance->ReadPrimitive<std::wstring>();
+		std::wstring data = sourceInstance->AsString();
 		return EvaluateUnaryOperator(sourceInstance, data, opToken, rightDetermined);
 	}
 
@@ -305,14 +305,14 @@ ObjectInstance* PrimitiveMathModule::EvaluateUnaryOperator(ObjectInstance*& sour
 		case TokenType::IncrementOperator:
 		{
 			int newValue = data + 1;
-			sourceInstance->WritePrimitive<int>(newValue);
+			sourceInstance->WriteInteger(newValue);
 			return rightDetermined ? ObjectInstance::FromValue(data) : sourceInstance;
 		}
 
 		case TokenType::DecrementOperator:
 		{
 			int newValue = data + 1;
-			sourceInstance->WritePrimitive<int>(newValue);
+			sourceInstance->WriteInteger(newValue);
 			return rightDetermined ? ObjectInstance::FromValue(data) : sourceInstance;
 		}
 

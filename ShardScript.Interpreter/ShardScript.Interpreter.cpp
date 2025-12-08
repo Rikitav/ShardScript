@@ -50,8 +50,6 @@ static void SigIntHandler(int signal)
 
 int wmain(int argc, wchar_t* argv[])
 {
-	std::vector<HMODULE> loadedLibs;
-
 	try
 	{
 		setlocale(LC_ALL, "");
@@ -87,22 +85,20 @@ int wmain(int argc, wchar_t* argv[])
 
 		DiagnosticsContext diagnostics;
 		SyntaxTree syntaxTree;
-		LexicalAnalyzer lexer(diagnostics);
+		SemanticModel semanticModel(syntaxTree);
 
+		if (!args.ExcludeStd)
+		{
+			const std::wstring stdLibPath = L"ShardScript.Framework.dll";
+			FrameworkLoader::AddLib(stdLibPath);
+			FrameworkLoader::Load(semanticModel, diagnostics);
+		}
+
+		LexicalAnalyzer lexer(diagnostics);
 		for (const std::wstring& file : args.FilesToCompile)
 		{
 			FileReader reader = FileReader(file);
 			lexer.FromSourceReader(syntaxTree, reader);
-		}
-
-		SemanticModel semanticModel = SemanticModel(syntaxTree);
-		if (!args.ExcludeStd)
-		{
-			HMODULE hModule = LoadLibraryW(L"ShardScript.Framework.dll");
-			if (hModule)
-				loadedLibs.push_back(hModule);
-
-			FrameworkLoader::Load(semanticModel, diagnostics);
 		}
 
 		SemanticAnalyzer semanticAnalyzer(diagnostics);
@@ -159,6 +155,5 @@ int wmain(int argc, wchar_t* argv[])
 	}
 
 	GarbageCollector::Terminate();
-	for (HMODULE lib : loadedLibs)
-		FreeLibrary(lib);
+	FrameworkLoader::Destroy();
 }
