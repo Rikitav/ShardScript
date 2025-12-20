@@ -6,8 +6,9 @@ namespace shard
 	class SHARD_API ShardScriptVersion
 	{
 	public:
-		static const wchar_t Version[10];
+		static const int Major;
+		static const int Minor;
 
-		bool IsCompatibleWith(const wchar_t* version);
+		bool IsCompatibleWith(const int major, const int minor);
 	};
 }

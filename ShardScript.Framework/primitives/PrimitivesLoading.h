@@ -27,6 +27,12 @@ namespace shard::framework
 		static void Reflect(shard::syntax::symbols::TypeSymbol*);
 	};
 
+	class DoublePrimitive
+	{
+	public:
+		static void Reflect(shard::syntax::symbols::TypeSymbol*);
+	};
+
 	class StringPrimitive
 	{
 	public:

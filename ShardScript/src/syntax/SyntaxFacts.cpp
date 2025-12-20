@@ -241,6 +241,7 @@ bool IsPredefinedType(TokenType type)
 		case TokenType::VoidKeyword:
 		case TokenType::VarKeyword:
 		case TokenType::IntegerKeyword:
+		case TokenType::DoubleKeyword:
 		case TokenType::CharKeyword:
 		case TokenType::StringKeyword:
 		case TokenType::BooleanKeyword:

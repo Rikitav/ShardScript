@@ -109,7 +109,7 @@ static void BindMemberDeclaration(MemberDeclarationSyntax* member, FrameworkModu
 		case SyntaxKind::ConstructorDeclaration:
 		{
 			ConstructorDeclarationSyntax* ctor = static_cast<ConstructorDeclarationSyntax*>(member);
-			MethodSymbol* symbol = static_cast<MethodSymbol*>(semanticModel.Table->LookupSymbol(ctor));
+			ConstructorSymbol* symbol = static_cast<ConstructorSymbol*>(semanticModel.Table->LookupSymbol(ctor));
 
 			if (!symbol->IsExtern)
 				break;
@@ -184,9 +184,11 @@ void FrameworkLoader::Load(SemanticModel& semanticModel, DiagnosticsContext& dia
 	for (FrameworkModule* module : Modules)
 	{
 		SyntaxTree innerTree;
-		StringStreamReader reader = StringStreamReader(module->GetSourceCode());
-		lexer.FromSourceReader(innerTree, reader);
+		SourceReader* reader = module->GetSource();
+
+		lexer.FromSourceReader(innerTree, *reader);
 		semanter.Analyze(innerTree, semanticModel);
+		delete reader;
 
 		CompilationUnitSyntax* unit = innerTree.CompilationUnits.back();
 		for (MemberDeclarationSyntax* member : unit->Members)

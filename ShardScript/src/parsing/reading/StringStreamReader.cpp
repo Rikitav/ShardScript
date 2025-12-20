@@ -11,20 +11,38 @@
 using namespace shard::parsing;
 using namespace shard::parsing::analysis;
 
-StringStreamReader::StringStreamReader(const std::wstring& source) : SourceReader()
+StringStreamReader::StringStreamReader(const std::wstring& name, std::wstringstream& source) : SourceReader(), name(name)
 {
-	stringStream = std::wistringstream(source);
+	stringStream = std::wstringstream(source.str());
+	stringStream.imbue(source.getloc());
+}
+
+StringStreamReader::StringStreamReader(const std::wstring& name, const std::wstring& source) : SourceReader(), name(name)
+{
+	stringStream = std::wstringstream(source);
+	stringStream.imbue(std::locale("en_US.UTF8"));
+}
+
+StringStreamReader::StringStreamReader(const std::wstring& name, const wchar_t* source, size_t count) : SourceReader(), name(name)
+{
+	std::wstring srcStr = std::wstring(source, count);
+	stringStream = std::wstringstream(srcStr);
 	stringStream.imbue(std::locale("en_US.UTF8"));
 }
 
 TextLocation StringStreamReader::GetLocation(std::wstring& word)
 {
-	return TextLocation(L"<STRING>", Line, Offset, static_cast<int>(word.length()));
+	return TextLocation(name, Line, Offset, static_cast<int>(word.length()));
 }
 
 bool StringStreamReader::ReadNext()
 {
-	if (!stringStream.get(Symbol))
+	PeekSymbol = stringStream.peek();
+	if (PeekSymbol == WEOF)
+		return false;
+
+	stringStream.get(Symbol);
+	if (Symbol == WEOF)
 		return false;
 
 	Offset++;
@@ -34,5 +52,5 @@ bool StringStreamReader::ReadNext()
 bool StringStreamReader::PeekNext()
 {
 	PeekSymbol = stringStream.peek();
-	return PeekSymbol != -1;
+	return PeekSymbol != WEOF;
 }

@@ -16,7 +16,7 @@ FileReader::FileReader(const std::wstring& fileName) : SourceReader()
 	InputStream.imbue(std::locale("en_US.UTF8"));
 
 	if (!InputStream)
-		throw new std::runtime_error("Cannot open file");
+		throw std::runtime_error("Cannot open file");
 }
 
 FileReader::~FileReader()
@@ -31,7 +31,12 @@ TextLocation FileReader::GetLocation(std::wstring& word)
 
 bool FileReader::ReadNext()
 {
-	if (!InputStream.get(Symbol))
+	PeekSymbol = InputStream.peek();
+	if (PeekSymbol == WEOF)
+		return false;
+
+	InputStream.get(Symbol);
+	if (Symbol == WEOF)
 		return false;
 
 	Offset++;
@@ -41,5 +46,5 @@ bool FileReader::ReadNext()
 bool FileReader::PeekNext()
 {
 	PeekSymbol = InputStream.peek();
-	return PeekSymbol != -1;
+	return PeekSymbol != WEOF;
 }

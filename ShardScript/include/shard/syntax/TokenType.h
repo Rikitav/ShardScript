@@ -8,7 +8,7 @@ namespace shard::syntax
 		// Generic
 		Unknown,
 		EndOfFile,   // End of file
-		//Trivia,    // any non visible
+		//Trivia,    // any non-visible
 		NewKeyword,  // new keyword
 		Identifier,	 // member name
 
@@ -64,8 +64,9 @@ namespace shard::syntax
 		CharLiteral,		  // single character in ''
 		StringLiteral,		  // string in ""
 		BooleanLiteral,		  // 'true' or 'false'
-		NumberLiteral,	      // Number value
-		NativeLiteral,		  // native pointer
+		NumberLiteral,	      // number value
+		DoubleLiteral,		  // floating point number value
+		NativeLiteral,		  // architectures' native number
 
 		// Punctuation
 		Colon,				  // :
@@ -102,6 +103,7 @@ namespace shard::syntax
 		VoidKeyword,		  // void
 		VarKeyword,			  // var
 		IntegerKeyword,		  // int
+		DoubleKeyword,		  // double
 		ShortKeyword,		  // short
 		LongKeyword,		  // long
 		CharKeyword,		  // char
@@ -139,12 +141,5 @@ namespace shard::syntax
 		ThrowKeyword,		  // throw
 		BreakKeyword,		  // break
 		ContinueKeyword,	  // continue
-	};
-
-	struct TokenTypeHash
-	{
-		size_t operator ()(const TokenType& type) const {
-			return static_cast<size_t>(type);
-		}
 	};
 }

@@ -31,7 +31,7 @@ namespace shard::syntax
 
 		virtual void OnSymbolDeclared(SyntaxSymbol* symbol);
 
-		bool IsType();
-		bool IsMember();
+		bool IsType() const;
+		bool IsMember() const;
 	};
 }

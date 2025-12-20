@@ -145,23 +145,40 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="include\framework\PrimitivesLoading.h" />
+    <ClInclude Include="primitives\PrimitivesLoading.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="resources.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />
-    <ClCompile Include="src\collections\List.cpp" />
-    <ClCompile Include="src\filesystem\Directory.cpp" />
-    <ClCompile Include="src\filesystem\File.cpp" />
-    <ClCompile Include="src\primitives\ArrayPrimitive.cpp" />
-    <ClCompile Include="src\primitives\BooleanPrimitive.cpp" />
-    <ClCompile Include="src\primitives\CharPrimitive.cpp" />
-    <ClCompile Include="src\primitives\IntegerPrimitive.cpp" />
-    <ClCompile Include="src\primitives\StringPrimitive.cpp" />
+    <ClCompile Include="primitives\DoublePrimitive.cpp" />
+    <ClCompile Include="resources.cpp" />
+    <ClCompile Include="primitives\ArrayPrimitive.cpp" />
+    <ClCompile Include="primitives\BooleanPrimitive.cpp" />
+    <ClCompile Include="primitives\CharPrimitive.cpp" />
+    <ClCompile Include="primitives\IntegerPrimitive.cpp" />
+    <ClCompile Include="primitives\StringPrimitive.cpp" />
+    <ClCompile Include="system\collections\List.cpp" />
+    <ClCompile Include="system\filesystem\Directory.cpp" />
+    <ClCompile Include="system\filesystem\File.cpp" />
+    <ClCompile Include="system\Random.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ShardScript\ShardScript.vcxproj">
       <Project>{5d6283ec-f65a-4c8c-b290-48e697deb544}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="collections\List.ss" />
+    <None Include="filesystem\Directory.ss" />
+    <None Include="filesystem\File.ss" />
+    <None Include="system\collections\List.ss" />
+    <None Include="system\filesystem\Directory.ss" />
+    <None Include="system\filesystem\File.ss" />
+    <None Include="system\Random.ss" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Resource.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

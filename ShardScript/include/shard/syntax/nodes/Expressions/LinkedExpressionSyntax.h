@@ -13,6 +13,7 @@
 #include <shard/syntax/symbols/PropertySymbol.h>
 #include <shard/syntax/symbols/IndexatorSymbol.h>
 #include <shard/syntax/symbols/TypeSymbol.h>
+#include <shard/syntax/symbols/VariableSymbol.h>
 #include <shard/syntax/symbols/DelegateTypeSymbol.h>
 
 namespace shard::syntax::nodes
@@ -35,15 +36,16 @@ namespace shard::syntax::nodes
 				delete PreviousExpression;
 		}
 	};
-	
+
 	class SHARD_API MemberAccessExpressionSyntax : public LinkedExpressionNode
 	{
 	public:
-		const SyntaxToken IdentifierToken;
+		shard::syntax::symbols::VariableSymbol* VariableSymbol = nullptr;
 		shard::syntax::symbols::FieldSymbol* FieldSymbol = nullptr;
 		shard::syntax::symbols::DelegateTypeSymbol* DelegateSymbol = nullptr;
 		shard::syntax::symbols::PropertySymbol* PropertySymbol = nullptr;
-		shard::syntax::symbols::AccessorSymbol* AccessorSymbol = nullptr;
+
+		const SyntaxToken IdentifierToken;
 
 		inline MemberAccessExpressionSyntax(SyntaxToken identifier, ExpressionSyntax* previous, SyntaxNode* parent)
 			: LinkedExpressionNode(SyntaxKind::MemberAccessExpression, previous, parent), IdentifierToken(identifier) { }
@@ -52,7 +54,9 @@ namespace shard::syntax::nodes
 
 		inline virtual ~MemberAccessExpressionSyntax()
 		{
+			VariableSymbol = nullptr;
 			FieldSymbol = nullptr;
+			DelegateSymbol = nullptr;
 			PropertySymbol = nullptr;
 		}
 	};
@@ -78,7 +82,6 @@ namespace shard::syntax::nodes
 	class SHARD_API IndexatorExpressionSyntax : public MemberAccessExpressionSyntax
 	{
 	public:
-		MemberAccessExpressionSyntax* MemberAccess = nullptr;
 		IndexatorListSyntax* IndexatorList = nullptr;
 		shard::syntax::symbols::IndexatorSymbol* IndexatorSymbol = nullptr;
 

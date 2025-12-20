@@ -12,21 +12,13 @@ using namespace shard::syntax;
 using namespace shard::parsing;
 using namespace shard::parsing::analysis;
 
-SourceReader::SourceReader() : Line(1), Offset(0), Symbol(0), PeekSymbol(0)
+SourceReader::SourceReader() : Line(1), Offset(0), Symbol(-1), PeekSymbol(-1)
 {
 
 }
 
 SourceReader::~SourceReader()
 {
-	/*
-	while (!ReadBuffer.empty())
-	{
-		delete ReadBuffer.front();
-		ReadBuffer.pop_front();
-	}
-	*/
-
 	ReadBuffer.clear();
 }
 
@@ -68,13 +60,15 @@ SyntaxToken SourceReader::Consume()
 		if (++eofConsumeCounter == 10)
 			throw std::runtime_error("critical bug: eof consume overflow");
 
-		return SyntaxToken(TokenType::EndOfFile, L"", TextLocation());
+		consumeBuffer = SyntaxToken(TokenType::EndOfFile, L"", TextLocation());
+		ReadBuffer.push_back(consumeBuffer);
+		return consumeBuffer;
 	}
 	else
 	{
 		eofConsumeCounter = 0;
 		ReadBuffer.push_back(consumeBuffer);
-		return SyntaxToken(consumeBuffer);
+		return consumeBuffer;
 	}
 }
 
@@ -134,27 +128,40 @@ bool SourceReader::ReadNextToken(SyntaxToken& token)
 
 bool SourceReader::ReadNextReal()
 {
-	while (PeekNext())
+	while (ReadNext())
 	{
-		switch (PeekSymbol)
+		switch (Symbol)
 		{
-			case '\n':
+			// encoding BOM marks
+			case 0xEFBB:
+			case 0xFEFF:
+			case 0xFFFE:
+			{
+				continue;
+			}
+
+			case L'\n':
 			{
 				Line += 1;
 				Offset = 0;
 				
-				if (!ReadNext())
+				continue;
+			}
+
+			case L'\0':
+			{
+				if (!PeekNext())
 					return false;
-				
+
+				if (PeekSymbol == L'\0')
+					return false; // EOF
+
 				continue;
 			}
 
 			default:
 			{
-				if (!ReadNext())
-					return false;
-
-				if (!isspace(PeekSymbol))
+				if (!isspace(Symbol))
 					return true;
 
 				continue;
@@ -205,10 +212,7 @@ bool SourceReader::ReadNextWord(std::wstring& word, TokenType& type)
 		return ReadStringLiteral(word, dontEcran, wasClosed);
 
 	if (IsNumberLiteral(type))
-		return ReadNumberLiteral(word);
-
-	if (IsNativeLiteral(type))
-		return ReadNativeLiteral(word);
+		return ReadNumberLiteral(word, type);
 
 	// Reading next non whitespace word
 	if (!ReadNextWhileAlpha(word))
@@ -339,73 +343,108 @@ bool SourceReader::ReadStringLiteral(std::wstring& word, bool dontEcran, bool& w
 	return false;
 }
 
-bool SourceReader::ReadNumberLiteral(std::wstring& word)
+static bool IsNumberSymbol(wchar_t symbol)
 {
-	short mode = 0;
-	if (Symbol == '0')
-	{
-		if (!PeekNext())
-		{
-			word = L"0";
-			return true;
-		}
+	/*
+	if (symbol >= L'0' && symbol <= L'9')
+		return true;
 
-		switch (PeekSymbol)
-		{
-			case 'd':
-				mode = 0;
-				break;
+	if (symbol >= L'A' && symbol <= L'F')
+		return true;
 
-			case 'x':
-				mode = 1;
-				break;
-
-			case 'b':
-				mode = 2;
-				break;
-
-			default:
-				word += Symbol;
-				break;
-		}
-	}
-	else
-	{
-		word += Symbol;
-	}
-
-	while (PeekNext())
-	{
-		if (PeekSymbol == '_' || PeekSymbol == '`')
-			continue;
-
-		if (!isalnum(PeekSymbol))
-			return true;
-
-		word += PeekSymbol;
-		ReadNext();
-		continue;
-	}
+	if (symbol >= L'a' && symbol <= L'f')
+		return true;
 
 	return false;
+	*/
+
+	if (std::isalnum(symbol))
+		return true;
+
+	switch (symbol)
+	{
+		default:
+			return false;
+
+		case 'e':
+		case 'E':
+		case '+':
+		case '-':
+			return true;
+	}
 }
 
-bool SourceReader::ReadNativeLiteral(std::wstring& word)
+static bool IsVolumeRatio(wchar_t symbol)
 {
+	switch (symbol)
+	{
+		default:
+			return false;
+
+		case 'K':
+		case 'G':
+		case 'M':
+		case 'T':
+		case 'P':
+			return false;
+	}
+}
+
+bool SourceReader::ReadNumberLiteral(std::wstring& word, TokenType& type)
+{
+	if (IsNumberSymbol(Symbol))
+		word += Symbol;
+
+	bool foundDelimeter = false;
 	while (PeekNext())
 	{
-		if (PeekSymbol == '_' || PeekSymbol == '`')
+		if (PeekSymbol == '`')
+		{
+			if (!ReadNext())
+				break;
+
+			if (!PeekNext())
+				break;
+
+			if (IsNumberSymbol(PeekSymbol))
+				continue;
+		}
+
+		if (PeekSymbol == '.')
+		{
+			if (foundDelimeter)
+				break;
+
+			if (!ReadNext())
+				break;
+
+			if (!PeekNext())
+				break;
+
+			if (!IsNumberSymbol(PeekSymbol))
+				break;
+
+			foundDelimeter = true;
+			type = TokenType::DoubleLiteral;
+
+			word += '.';
+			word += PeekSymbol;
+			ReadNext();
 			continue;
+		}
 
-		if (!isalnum(PeekSymbol))
-			return true;
+		if (IsNumberSymbol(PeekSymbol))
+		{
+			word += PeekSymbol;
+			ReadNext();
+			continue;
+		}
 
-		word += PeekSymbol;
-		ReadNext();
-		continue;
+		// not literals' char ahead
+		break;
 	}
 
-	return false;
+	return word.size() > 0;
 }
 
 bool SourceReader::IsPunctuation(std::wstring& word, TokenType& type)
@@ -845,23 +884,6 @@ bool SourceReader::IsNumberLiteral(TokenType& type) const
 	}
 }
 
-bool SourceReader::IsNativeLiteral(TokenType& type)
-{
-	if (Symbol == 'n')
-	{
-		if (!PeekNext())
-			return false;
-
-		if (isdigit(PeekSymbol))
-		{
-			type = TokenType::NativeLiteral;
-			return true;
-		}
-	}
-
-	return false;
-}
-
 bool SourceReader::IsCharLiteral(TokenType& type, bool& dontEcran)
 {
 	switch (Symbol)
@@ -1043,6 +1065,11 @@ bool SourceReader::IsType(std::wstring& word, TokenType& type)
 	else if (word == L"string")
 	{
 		type = TokenType::StringKeyword;
+		return true;
+	}
+	else if (word == L"double")
+	{
+		type = TokenType::DoubleKeyword;
 		return true;
 	}
 	else if (word == L"int")

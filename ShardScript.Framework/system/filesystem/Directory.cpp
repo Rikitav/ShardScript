@@ -8,9 +8,17 @@
 #include <shard/syntax/symbols/FieldSymbol.h>
 #include <shard/syntax/symbols/ClassSymbol.h>
 
+#include <shard/parsing/reading/SourceReader.h>
+#include <shard/parsing/reading/StringStreamReader.h>
+#include <shard/parsing/semantic/SymbolTable.h>
+
+#include <Windows.h>
 #include <string>
 
+#include "../resources.h"
+
 using namespace shard::runtime;
+using namespace shard::parsing;
 using namespace shard::syntax::symbols;
 
 namespace shard::framework
@@ -29,25 +37,14 @@ namespace shard::framework
 		}
 
 	public:
-		std::wstring& FrameworkModule::GetSourceCode()
+		SourceReader* FrameworkModule::GetSource()
 		{
-			static std::wstring SourceCode =
-			L"																				  \
-			namespace System.IO																  \
-			{																				  \
-				public class DirectoryInfo											          \
-				{																			  \
-					public string FullName { get; private set; }							  \
-																							  \
-					public static extern DirectoryInfo GetDirectory(string fullName);	      \
-				}																			  \
-			}																				  \
-			";
-
-			return SourceCode;
+			const wchar_t* resourceData; size_t resourceSize;
+			resources::GetResource(L"FILESYSTEM_DIRECTORY", resourceData, resourceSize);
+			return new StringStreamReader(L"Directory.ss", resourceData, resourceSize / sizeof(wchar_t));
 		}
 
-		bool FrameworkModule::BindConstructor(MethodSymbol* symbol)
+		bool FrameworkModule::BindConstructor(ConstructorSymbol* symbol)
 		{
 			return false;
 		}

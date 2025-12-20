@@ -13,13 +13,18 @@
 #include <shard/syntax/SyntaxKind.h>
 
 #include <shard/parsing/semantic/SymbolTable.h>
+#include <shard/runtime/AbstractInterpreter.h>
+#include <shard/runtime/CallStackFrame.h>
 
 #include <algorithm>
 #include <vector>
 #include <string>
+#include <stdexcept>
 
-using namespace shard::parsing::semantic;
+using namespace shard::runtime;
+using namespace shard::syntax;
 using namespace shard::syntax::symbols;
+using namespace shard::parsing::semantic;
 
 static bool paramPredicate(ParameterSymbol* left, TypeSymbol* right)
 {
@@ -113,6 +118,7 @@ bool TypeSymbol::IsPrimitive()
 {
 	return this == SymbolTable::Primitives::Boolean
 		|| this == SymbolTable::Primitives::Integer
+		|| this == SymbolTable::Primitives::Double
 		|| this == SymbolTable::Primitives::Char
 		|| this == SymbolTable::Primitives::String;
 }
@@ -240,4 +246,105 @@ PropertySymbol* TypeSymbol::FindProperty(std::wstring& name)
 	}
 
 	return nullptr;
+}
+
+TypeSymbol* TypeSymbol::SubstituteType(TypeSymbol* type)
+{
+	if (type == nullptr)
+		return nullptr;
+
+	switch (type->Kind)
+	{
+		default:
+			throw std::runtime_error("unknown syntax kind to substitute");
+
+		case SyntaxKind::StructDeclaration:
+		case SyntaxKind::ClassDeclaration:
+			return type;
+
+		case SyntaxKind::ArrayType:
+		{
+			ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(type);
+			TypeSymbol* underlayingType = arrayType->UnderlayingType;
+
+			if (underlayingType == nullptr)
+				throw std::runtime_error("Cannot resolve underlaying type of array");
+
+			if (underlayingType->Kind == SyntaxKind::TypeParameter)
+			{
+				underlayingType = SubstituteType(arrayType->UnderlayingType);
+				if (underlayingType == nullptr)
+					throw std::runtime_error("Cannot resolve underlaying type of array");
+
+				ArrayTypeSymbol* newArrayType = new ArrayTypeSymbol(underlayingType);
+				newArrayType->Size = arrayType->Size;
+				newArrayType->Rank = arrayType->Rank;
+				return newArrayType;
+			}
+
+			return arrayType;
+		}
+
+		case SyntaxKind::TypeParameter:
+		{
+			CallStackFrame* frame = AbstractInterpreter::CurrentFrame();
+			if (frame == nullptr)
+				throw std::runtime_error("Cannot get current call stack frame");
+
+			if (frame->WithinType == nullptr)
+				throw std::runtime_error("Cannot resolve within null type");
+
+			if (frame->WithinType->Kind != SyntaxKind::GenericType)
+				throw std::runtime_error("Cannot resolve generic type parameter within non generic type symbol");
+
+			GenericTypeSymbol* genericType = const_cast<GenericTypeSymbol*>(static_cast<const GenericTypeSymbol*>(frame->WithinType));
+			TypeSymbol* resolvedType = genericType->SubstituteTypeParameters(type);
+			return resolvedType;
+		}
+	}
+}
+
+TypeSymbol* TypeSymbol::ReturnOf(FieldSymbol* field)
+{
+	if (field == nullptr || field->ReturnType == nullptr)
+		return nullptr;
+
+	TypeSymbol* resolvedType = SubstituteType(field->ReturnType);
+	return resolvedType;
+}
+
+TypeSymbol* TypeSymbol::ReturnOf(MethodSymbol* method)
+{
+	if (method == nullptr || method->ReturnType == nullptr)
+		return nullptr;
+
+	TypeSymbol* resolvedType = SubstituteType(method->ReturnType);
+	return resolvedType;
+}
+
+TypeSymbol* TypeSymbol::ReturnOf(PropertySymbol* property)
+{
+	if (property == nullptr || property->ReturnType == nullptr)
+		return nullptr;
+
+	TypeSymbol* resolvedType = SubstituteType(property->ReturnType);
+	return resolvedType;
+}
+
+TypeSymbol* TypeSymbol::ReturnOf(IndexatorSymbol* indexator)
+{
+	if (indexator == nullptr || indexator->ReturnType == nullptr)
+		return nullptr;
+
+	TypeSymbol* resolvedType = SubstituteType(indexator->ReturnType);
+	return resolvedType;
+}
+
+TypeSymbol* TypeSymbol::ReturnOf(ConstructorSymbol* constructor)
+{
+	if (constructor == nullptr || constructor->ReturnType == nullptr)
+		return nullptr;
+
+	TypeSymbol* resolvedType = SubstituteType(constructor->ReturnType);
+	return resolvedType;
 }

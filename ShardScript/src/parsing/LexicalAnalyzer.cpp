@@ -1208,8 +1208,10 @@ ExpressionSyntax* LexicalAnalyzer::ReadNullDenotation(SourceReader& reader, Synt
 
 		case TokenType::NullLiteral:
 		case TokenType::BooleanLiteral:
-		case TokenType::StringLiteral:
 		case TokenType::NumberLiteral:
+		case TokenType::DoubleLiteral:
+		case TokenType::StringLiteral:
+		case TokenType::CharLiteral:
 		{
 			reader.Consume();
 			return new LiteralExpressionSyntax(current, parent);
@@ -1451,7 +1453,6 @@ LinkedExpressionNode* LexicalAnalyzer::ReadLinkedExpressionNode(SourceReader& re
 
 			IndexatorExpressionSyntax* currentNode = new IndexatorExpressionSyntax(identifier, member, parent);
 			currentNode->IndexatorList = ReadIndexatorList(reader, currentNode);
-			currentNode->MemberAccess = member;
 
 			if (!reader.CanConsume())
 				return currentNode;

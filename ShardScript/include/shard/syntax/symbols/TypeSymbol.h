@@ -11,16 +11,15 @@
 namespace shard::syntax::symbols
 {
     class TypeParameterSymbol;
-}
-
-namespace shard::syntax::symbols
-{
     class MethodSymbol;
     class ConstructorSymbol;
     class FieldSymbol;
     class PropertySymbol;
     class IndexatorSymbol;
-    class TypeParameterSymbol;
+}
+
+namespace shard::syntax::symbols
+{
 
     enum class SHARD_API TypeLayoutingState
     {
@@ -99,5 +98,12 @@ namespace shard::syntax::symbols
 
         static bool Equals(const TypeSymbol* left, const TypeSymbol* right);
         bool IsPrimitive();
+
+        static TypeSymbol* SubstituteType(TypeSymbol* type);
+		static TypeSymbol* ReturnOf(FieldSymbol* field);
+		static TypeSymbol* ReturnOf(MethodSymbol* method);
+		static TypeSymbol* ReturnOf(PropertySymbol* property);
+		static TypeSymbol* ReturnOf(IndexatorSymbol* indexator);
+		static TypeSymbol* ReturnOf(ConstructorSymbol* constructor);
 	};
 }

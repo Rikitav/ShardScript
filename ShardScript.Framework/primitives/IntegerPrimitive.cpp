@@ -1,5 +1,3 @@
-#include <framework/PrimitivesLoading.h>
-
 #include <shard/runtime/InboundVariablesContext.h>
 #include <shard/runtime/ObjectInstance.h>
 #include <shard/parsing/semantic/SymbolTable.h>
@@ -17,6 +15,8 @@
 #include <algorithm>
 #include <Windows.h>
 
+#include "PrimitivesLoading.h"
+
 using namespace shard::framework;
 using namespace shard::runtime;
 using namespace shard::syntax;
@@ -27,7 +27,7 @@ using namespace shard::parsing::semantic;
 static ObjectInstance* ToString(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
-	int value = instance->AsInteger();
+	long value = instance->AsInteger();
 	std::wstring str = std::to_wstring(value);
 	return ObjectInstance::FromValue(str);
 }
@@ -35,50 +35,50 @@ static ObjectInstance* ToString(const MethodSymbol* symbol, InboundVariablesCont
 static ObjectInstance* Abs(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
-	int value = instance->AsInteger();
-	int result = abs(value);
+	long value = instance->AsInteger();
+	long result = abs(value);
 	return ObjectInstance::FromValue(result);
 }
 
 static ObjectInstance* Min(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
-	int value = instance->AsInteger();
+	long value = instance->AsInteger();
 	
 	ObjectInstance* otherArg = arguments->TryFind(L"other");
 	if (otherArg == nullptr)
 		return ObjectInstance::FromValue(value);
 	
-	int other = otherArg->AsInteger();
-	int result = min(value, other);
+	long other = otherArg->AsInteger();
+	long result = min(value, other);
 	return ObjectInstance::FromValue(result);
 }
 
 static ObjectInstance* Max(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
-	int value = instance->AsInteger();
+	long value = instance->AsInteger();
 	
 	ObjectInstance* otherArg = arguments->TryFind(L"other");
 	if (otherArg == nullptr)
 		return ObjectInstance::FromValue(value);
 	
-	int other = otherArg->AsInteger();
-	int result = max(value, other);
+	long other = otherArg->AsInteger();
+	long result = max(value, other);
 	return ObjectInstance::FromValue(result);
 }
 
 static ObjectInstance* Pow(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
-	int value = instance->AsInteger();
+	long value = instance->AsInteger();
 	
 	ObjectInstance* powerArg = arguments->TryFind(L"power");
 	if (powerArg == nullptr)
-		return ObjectInstance::FromValue(1);
+		return ObjectInstance::FromValue(1.0);
 	
-	int power = powerArg->AsInteger();
-	int result = static_cast<int>(pow(value, power));
+	long power = powerArg->AsInteger();
+	long result = static_cast<int>(pow(value, power));
 	return ObjectInstance::FromValue(result);
 }
 

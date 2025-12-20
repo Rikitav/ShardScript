@@ -4,6 +4,7 @@
 #include <shard/runtime/GarbageCollector.h>
 #include <shard/runtime/ObjectInstance.h>
 
+#include <shard/syntax/SymbolFactory.h>
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/MethodSymbol.h>
 #include <shard/syntax/symbols/FieldSymbol.h>
@@ -11,14 +12,21 @@
 #include <shard/syntax/symbols/ArrayTypeSymbol.h>
 #include <shard/syntax/symbols/GenericTypeSymbol.h>
 
+#include <shard/parsing/reading/SourceReader.h>
+#include <shard/parsing/reading/StringStreamReader.h>
 #include <shard/parsing/semantic/SymbolTable.h>
 
+#include <Windows.h>
 #include <string>
 #include <stdexcept>
 #include <malloc.h>
 
+#include "../resources.h"
+
 using namespace shard::runtime;
+using namespace shard::syntax;
 using namespace shard::syntax::symbols;
+using namespace shard::parsing;
 using namespace shard::parsing::semantic;
 
 namespace shard::framework
@@ -33,13 +41,7 @@ namespace shard::framework
 			ObjectInstance* instance = arguments->Variables.at(L"this"); // List<T> this
 
 			// Initializing fields
-			ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(arrayField->ReturnType);
-			const GenericTypeSymbol* listType = static_cast<const GenericTypeSymbol*>(instance->Info);
-			TypeSymbol* typeArgument = const_cast<GenericTypeSymbol*>(listType)->SubstituteTypeParameters(arrayType->UnderlayingType);
-
-			arrayType = new ArrayTypeSymbol(typeArgument);
-			arrayType->MemoryBytesSize = SymbolTable::Primitives::Array->MemoryBytesSize;
-
+			TypeSymbol* arrayType = TypeSymbol::ReturnOf(arrayField);
 			ObjectInstance* arrayInstance = GarbageCollector::AllocateInstance(arrayType);
 			instance->SetField(arrayField, arrayInstance);
 
@@ -113,7 +115,7 @@ namespace shard::framework
 			throw std::runtime_error("not implemented");
 		}
 
-		static ObjectInstance* Impl_Length_Get(const MethodSymbol* symbol, InboundVariablesContext* arguments)
+		static ObjectInstance* Impl_Length_Get(const MethodSymbol* symbol, InboundVariablesContext* arguments) // public int Length { extern get; }
 		{
 			static FieldSymbol* arrayField = static_cast<ClassSymbol*>(symbol->Parent->Parent)->Fields.at(0); // T[] _array
 			static FieldSymbol* arrayLengthField = SymbolTable::Primitives::Array->Fields.at(0); // <Length>k__BackingField
@@ -129,32 +131,14 @@ namespace shard::framework
 		}
 
 	public:
-		std::wstring& FrameworkModule::GetSourceCode()
+		SourceReader* FrameworkModule::GetSource()
 		{
-			static std::wstring SourceCode =
-			L"																				  \
-			namespace System.Collections													  \
-			{																				  \
-				public class List<T>						     					          \
-				{																			  \
-					private T[] _array;														  \
-																							  \
-					public int Length { extern get;	}										  \
-																							  \
-					public extern List();												      \
-																							  \
-					public extern void Add(T value);								          \
-					public extern T ElementAt(int index);								      \
-					public extern void RemoveAt(int index);							          \
-					public extern void Clear();												  \
-				}																			  \
-			}																				  \
-			";
-
-			return SourceCode;
+			const wchar_t* resourceData; size_t resourceSize;
+			resources::GetResource(L"COLLECTIONS_LIST", resourceData, resourceSize);
+			return new StringStreamReader(L"List.ss", resourceData, resourceSize / sizeof(wchar_t));
 		}
 
-		bool FrameworkModule::BindConstructor(MethodSymbol* symbol)
+		bool FrameworkModule::BindConstructor(ConstructorSymbol* symbol)
 		{
 			if (symbol->Parameters.size() == 0)
 			{

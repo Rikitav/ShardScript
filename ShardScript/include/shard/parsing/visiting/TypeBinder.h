@@ -37,8 +37,6 @@ namespace shard::parsing
 {
 	class SHARD_API TypeBinder : public SyntaxVisitor, ScopeVisitor
 	{
-		//shard::syntax::symbols::TypeSymbol* ResolveType(shard::syntax::nodes::TypeSyntax* typeSyntax);
-
 	public:
 		inline TypeBinder(shard::parsing::semantic::SemanticModel& model, shard::parsing::analysis::DiagnosticsContext& diagnostics)
 			: SyntaxVisitor(model, diagnostics), ScopeVisitor(model.Table) { }
@@ -59,8 +57,6 @@ namespace shard::parsing
 		void VisitVariableStatement(shard::syntax::nodes::VariableStatementSyntax* node) override;
 
 		void VisitObjectCreationExpression(shard::syntax::nodes::ObjectExpressionSyntax* node) override;
-		//void VisitCollectionExpression(shard::syntax::nodes::CollectionExpressionSyntax* node) override;
-		//void VisitMemberAccessExpression(shard::syntax::nodes::MemberAccessExpressionSyntax* node) override;
 
 		void VisitParameter(shard::syntax::nodes::ParameterSyntax* node) override;
 

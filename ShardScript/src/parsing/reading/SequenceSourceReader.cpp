@@ -15,6 +15,11 @@ using namespace shard::parsing::analysis;
 SequenceSourceReader::SequenceSourceReader()
 	: Sequence(), CurrentIndex(0) { }
 
+SequenceSourceReader::~SequenceSourceReader()
+{
+	Sequence.clear();
+}
+
 SequenceSourceReader SequenceSourceReader::BufferFrom(SourceReader& reader)
 {
 	SequenceSourceReader sequenceReader;

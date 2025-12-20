@@ -5,6 +5,7 @@
 #include <shard/parsing/analysis/TextLocation.h>
 
 #include <string>
+#include <utility>
 
 namespace shard::syntax
 {
@@ -21,13 +22,13 @@ namespace shard::syntax
 		const shard::parsing::analysis::TextLocation Location;
 
 		inline SyntaxToken()
-			: Index(-1), Word(), Type(TokenType::Unknown), IsMissing(true) { }
+			: Index(-1), IsMissing(true), Type(TokenType::Unknown), Word() { }
 
-		inline SyntaxToken(TokenType type, std::wstring word, shard::parsing::analysis::TextLocation location, bool isMissing = false)
-			: Index(counter++), IsMissing(isMissing), Type(type), Word(word), Location(location) { }
+		inline SyntaxToken(const TokenType type, std::wstring word, const shard::parsing::analysis::TextLocation& location, const bool isMissing = false)
+			: Index(counter++), IsMissing(isMissing), Type(type), Word(std::move(word)), Location(location) { }
 
 		inline SyntaxToken(const SyntaxToken& other)
-			: Index(other.counter), IsMissing(other.IsMissing), Type(other.Type), Word(other.Word), Location(other.Location) { }
+			: Index(other.Index), IsMissing(other.IsMissing), Type(other.Type), Word(other.Word), Location(other.Location) { }
 
 		inline SyntaxToken& operator=(const SyntaxToken& other)
 		{

@@ -23,7 +23,7 @@ namespace shard::parsing
 
 	public:
 		SourceReader();
-		virtual ~SourceReader() = 0;
+		virtual ~SourceReader();
 
 		virtual shard::syntax::SyntaxToken Current();
 		virtual shard::syntax::SyntaxToken Consume();
@@ -43,13 +43,11 @@ namespace shard::parsing
 		virtual bool ReadNextWord(std::wstring& word, shard::syntax::TokenType& type);
 		virtual bool ReadNextWhileAlpha(std::wstring& word);
 
-		bool ReadNumberLiteral(std::wstring& word);
-		bool ReadNativeLiteral(std::wstring& word);
+		bool ReadNumberLiteral(std::wstring& word, shard::syntax::TokenType& type);
 		bool ReadCharLiteral(std::wstring& word, bool notEcran, bool& wasClosed);
 		bool ReadStringLiteral(std::wstring& word, bool notEcran, bool& wasClosed);
 
 		bool IsNumberLiteral(shard::syntax::TokenType& type) const;
-		bool IsNativeLiteral(shard::syntax::TokenType& type);
 		bool IsCharLiteral(shard::syntax::TokenType& type, bool& dontEcran);
 		bool IsStringLiteral(shard::syntax::TokenType& type, bool& dontEcran);
 

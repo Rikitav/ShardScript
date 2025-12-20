@@ -17,6 +17,7 @@ namespace shard::parsing
 
 	public:
 		SequenceSourceReader();
+		virtual ~SequenceSourceReader();
 
 		static SequenceSourceReader BufferFrom(SourceReader& reader);
 		void PopulateFrom(SourceReader& reader);

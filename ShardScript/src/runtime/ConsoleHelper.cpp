@@ -32,6 +32,13 @@ void ConsoleHelper::Write(ObjectInstance* instance)
 		return;
 	}
 
+	if (instance->Info == SymbolTable::Primitives::Double)
+	{
+		double data = instance->AsDouble();
+		Write(data);
+		return;
+	}
+
 	if (instance->Info == SymbolTable::Primitives::Char)
 	{
 		wchar_t data = instance->AsCharacter();
@@ -72,6 +79,22 @@ void ConsoleHelper::Write(int data)
 	free(buffer);
 }
 
+void ConsoleHelper::Write(double data)
+{
+	int needed_size = _scwprintf(L"%.*g", DBL_DECIMAL_DIG, data) + 1;
+	if (needed_size <= 0)
+		return;
+
+	wchar_t* buffer = (wchar_t*)malloc(needed_size * sizeof(wchar_t));
+	if (!buffer)
+		return;
+
+	DWORD charsWritten;
+	swprintf_s(buffer, needed_size, L"%.*g", DBL_DECIMAL_DIG, data);
+	WriteConsoleW(stdOut, buffer, static_cast<DWORD>(wcslen(buffer)), &charsWritten, NULL);
+	free(buffer);
+}
+
 void ConsoleHelper::Write(wchar_t data)
 {
 	DWORD charsWritten;
@@ -107,6 +130,13 @@ void ConsoleHelper::WriteLine(ObjectInstance* instance)
 		return;
 	}
 
+	if (instance->Info == SymbolTable::Primitives::Double)
+	{
+		double data = instance->AsDouble();
+		WriteLine(data);
+		return;
+	}
+
 	if (instance->Info == SymbolTable::Primitives::Char)
 	{
 		wchar_t data = instance->AsCharacter();
@@ -136,6 +166,12 @@ void ConsoleHelper::WriteLine(bool data)
 }
 
 void ConsoleHelper::WriteLine(int data)
+{
+	Write(data);
+	std::cout << std::endl;
+}
+
+void ConsoleHelper::WriteLine(double data)
 {
 	Write(data);
 	std::cout << std::endl;

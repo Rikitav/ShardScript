@@ -1,8 +1,10 @@
 #include <shard/ShardScriptVersion.h>
 #include <Windows.h>
 
-const wchar_t shard::ShardScriptVersion::Version[10] = L"0.1";
+const int shard::ShardScriptVersion::Major = 0;
+const int shard::ShardScriptVersion::Minor = 1;
 
+/*
 enum StringCompareResult
 {
     Greater = CSTR_GREATER_THAN,
@@ -23,4 +25,16 @@ bool shard::ShardScriptVersion::IsCompatibleWith(const wchar_t* version)
 {
     StringCompareResult result = compareVersionStrings(Version, version);
     return result == Greater || result == Equals;
+}
+*/
+
+bool shard::ShardScriptVersion::IsCompatibleWith(const int major, const int minor)
+{
+    if (major > Major)
+        return false;
+
+    if (minor > Minor)
+        return false;
+
+    return true;
 }

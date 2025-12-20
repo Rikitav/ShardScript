@@ -37,6 +37,18 @@ void ScopeVisitor::Declare(SyntaxSymbol* symbol)
 	CurrentScope()->DeclareSymbol(symbol);
 }
 
+bool ScopeVisitor::CheckNameDeclared(std::wstring& name)
+{
+	for (const SemanticScope* scope = CurrentScope(); scope != nullptr; scope = scope->Parent)
+	{
+		auto lookup = scope->_symbols.find(name);
+		if (lookup == scope->_symbols.end())
+			continue;
+
+		return true;
+	}
+}
+
 bool ScopeVisitor::CheckSymbolNameDeclared(SyntaxSymbol* symbol)
 {
 	for (const SemanticScope* scope = CurrentScope(); scope != nullptr; scope = scope->Parent)

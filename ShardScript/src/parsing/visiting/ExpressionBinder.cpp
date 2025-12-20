@@ -123,10 +123,12 @@ static bool IsAssignmentContext(const IndexatorExpressionSyntax* expression)
 	return true;
 }
 
-static bool GetIsStaticContext(const ExpressionSyntax* expression)
+bool ExpressionBinder::GetIsStaticContext(const ExpressionSyntax* expression)
 {
 	if (expression == nullptr)
+	{
 		return true;
+	}
 
 	if (IsLinkedExpressionNode(expression->Kind))
 	{
@@ -430,20 +432,41 @@ TypeSymbol* ExpressionBinder::AnalyzeLiteralExpression(LiteralExpressionSyntax* 
 {
 	switch (node->LiteralToken.Type)
 	{
+		case TokenType::NullLiteral:
+		{
+			node->Type = LiteralExpressionSyntax::AsNull;
+			return SymbolTable::Primitives::Null;
+		}
+
 		case TokenType::BooleanLiteral:
+		{
+			node->Type = LiteralExpressionSyntax::AsBoolean;
+			node->AsBooleanValue = node->LiteralToken.Word == L"true";
 			return SymbolTable::Primitives::Boolean;
-
-		case TokenType::NumberLiteral:
-			return SymbolTable::Primitives::Integer;
-
-		case TokenType::CharLiteral:
-			return SymbolTable::Primitives::Char;
+		}
 
 		case TokenType::StringLiteral:
+		{
+			// TODO: add interpolation
+			node->Type = LiteralExpressionSyntax::AsString;
+			node->AsStringValue = node->LiteralToken.Word;
 			return SymbolTable::Primitives::String;
+		}
 
-		case TokenType::NullLiteral:
-			return nullptr;
+		case TokenType::DoubleLiteral:
+		case TokenType::NumberLiteral:
+		{
+			return AnalyzeNumberLiteral(node);
+		}
+
+		case TokenType::CharLiteral:
+		{
+			if (node->LiteralToken.Word.size() > 1)
+				Diagnostics.ReportError(node->LiteralToken, L"invalid Char literal length");
+
+			node->AsCharValue = node->LiteralToken.Word[0];
+			return SymbolTable::Primitives::Char;
+		}
 
 		default:
 			return nullptr;
@@ -934,14 +957,16 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 		{
 			VariableSymbol* varSymbol = static_cast<VariableSymbol*>(symbol);
 			node->IsStaticContext = false;
+			node->VariableSymbol = varSymbol;
 			return const_cast<TypeSymbol*>(varSymbol->Type);
 		}
 
 		case SyntaxKind::PropertyDeclaration:
 		{
+			PropertySymbol* propertySymbol = static_cast<PropertySymbol*>(symbol);
 			node->IsStaticContext = false;
-			node->PropertySymbol = static_cast<PropertySymbol*>(symbol);
-			return AnalyzePropertyAccessExpression(node, currentType);
+			node->PropertySymbol = propertySymbol;
+			return AnalyzePropertyAccessExpression(node, propertySymbol, currentType);
 		}
 
 		case SyntaxKind::FieldDeclaration:
@@ -951,15 +976,13 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 
 			if (isStaticContext && !fieldSymbol->IsStatic)
 			{
-				std::wstring declName;
-				Diagnostics.ReportError(node->IdentifierToken, L"Cannot access instance " + declName + L" '" + memberName + L"' from type context");
+				Diagnostics.ReportError(node->IdentifierToken, L"Cannot access instance field '" + fieldSymbol->FullName + L"' from type context");
 				return nullptr;
 			}
 
 			if (!isStaticContext && fieldSymbol->IsStatic)
 			{
-				std::wstring declName;
-				Diagnostics.ReportError(node->IdentifierToken, L"Cannot access static " + declName + L" '" + memberName + L"' from instance reference");
+				Diagnostics.ReportError(node->IdentifierToken, L"Cannot access static field '" + fieldSymbol->FullName + L"' from instance reference");
 				return nullptr;
 			}
 
@@ -1002,9 +1025,8 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 	}
 }
 
-TypeSymbol* ExpressionBinder::AnalyzePropertyAccessExpression(MemberAccessExpressionSyntax* node, TypeSymbol* currentType)
+TypeSymbol* ExpressionBinder::AnalyzePropertyAccessExpression(MemberAccessExpressionSyntax* node, PropertySymbol* property, TypeSymbol* currentType)
 {
-	PropertySymbol* property = node->PropertySymbol;
 	if (property == nullptr)
 		return nullptr;
 
@@ -1028,7 +1050,7 @@ TypeSymbol* ExpressionBinder::AnalyzePropertyAccessExpression(MemberAccessExpres
 	}
 
 	bool requiresSetter = IsAssignmentContext(node);
-	AccessorSymbol* accessor = node->AccessorSymbol = requiresSetter ? property->Setter : property->Getter;
+	AccessorSymbol* accessor = requiresSetter ? property->Setter : property->Getter;
 
 	if (accessor == nullptr)
 	{
@@ -1064,7 +1086,8 @@ TypeSymbol* ExpressionBinder::AnalyzePropertyAccessExpression(MemberAccessExpres
 
 	TypeSymbol* propertyType = property->ReturnType;
 	
-	if (propertyType->Kind == SyntaxKind::TypeParameter)
+	// Если currentType является GenericTypeSymbol, заменяем type parameters на type arguments
+	if (currentType->Kind == SyntaxKind::GenericType && propertyType != nullptr && propertyType->Kind == SyntaxKind::TypeParameter)
 	{
 		GenericTypeSymbol* genericType = static_cast<GenericTypeSymbol*>(currentType);
 		propertyType = SubstituteTypeParameters(propertyType, genericType);
@@ -1102,9 +1125,7 @@ TypeSymbol* ExpressionBinder::AnalyzeFieldKeywordExpression(MemberAccessExpressi
 
 	// Resolve 'field' as the backing field
 	node->FieldSymbol = propertySymbol->BackingField;
-	node->PropertySymbol = nullptr;
-
-	node->IsStaticContext = propertySymbol->BackingField->IsStatic;
+	node->IsStaticContext = propertySymbol->IsStatic;
 
 	if (propertySymbol->BackingField->ReturnType == nullptr)
 	{
@@ -1336,24 +1357,24 @@ TypeSymbol* ExpressionBinder::AnalyzeIndexatorExpression(IndexatorExpressionSynt
 		return nullptr;
 
 	if (node->PreviousExpression == nullptr)
-	{
 		return nullptr;
-	}
 
-	VisitMemberAccessExpression(node->MemberAccess);
-	currentType = GetExpressionType(node->MemberAccess);
+	MemberAccessExpressionSyntax* access = static_cast<MemberAccessExpressionSyntax*>(const_cast<ExpressionSyntax*>(node->PreviousExpression));
+	VisitExpression(access);
+	currentType = GetExpressionType(access);
 
 	IndexatorSymbol* indexator = ResolveIndexator(node, currentType);
-	node->PropertySymbol = indexator;
-	
-	TypeSymbol* resultType = AnalyzePropertyAccessExpression(node, currentType);
+	TypeSymbol* resultType = AnalyzePropertyAccessExpression(node, indexator, currentType);
+
 	if (resultType == nullptr)
 		return nullptr;
 
 	if (indexator == nullptr)
 		return nullptr;
 
-	AccessorSymbol* accessor = node->AccessorSymbol;
+	bool requiresSetter = IsAssignmentContext(node);
+	AccessorSymbol* accessor = requiresSetter ? indexator->Setter : indexator->Getter;
+
 	if (accessor != nullptr)
 	{
 		GenericTypeSymbol* genericType = nullptr;
@@ -1384,9 +1405,196 @@ TypeSymbol* ExpressionBinder::SubstituteTypeParameters(TypeSymbol* type, Generic
 	return type;
 }
 
+static bool IsNumBasePrefix(std::wstring& prefix, int& base)
+{
+	if (prefix[0] != L'0')
+		return false;
+
+	switch (prefix[1])
+	{
+		default:
+			return false;
+
+		case L'x': case L'X': base = 16; return true;
+		case L'd': case L'D': base = 10; return true;
+		case L'b': case L'B': base = 2; return true;
+	}
+}
+
+static bool IsVolumeRatioPostfix(std::wstring& postfix, long& multiplier)
+{
+	if (postfix[1] != L'B' && postfix[1] != L'b')
+		return false;
+
+	switch (postfix[0])
+	{
+		default:
+			return false;
+
+		case L'k': case L'K': multiplier = (1LL << 10); return true;
+		case L'm': case L'M': multiplier = (1LL << 20); return true;
+		case L'g': case L'G': multiplier = (1LL << 30); return true;
+		case L't': case L'T': multiplier = (1LL << 40); return true;
+		case L'p': case L'P': multiplier = (1LL << 50); return true;
+	}
+}
+
+static bool IsValidIntegerPunctuation(wchar_t symbol)
+{
+	switch (symbol)
+	{
+		default:
+			return false;
+
+		case '.':
+		case 'e':
+		case 'E':
+		case '+':
+		case '-':
+			return true;
+	}
+}
+
+static bool IsValidIntegerSymbol(wchar_t symbol, int base)
+{
+	if (symbol >= L'0' && symbol <= L'1')
+		return base >= 2;
+
+	if (symbol >= L'2' && symbol <= L'9')
+		return base >= 10;
+
+	if (symbol >= L'a' && symbol <= L'f')
+		return base >= 16;
+
+	if (symbol >= L'A' && symbol <= L'F')
+		return base >= 16;
+
+	return false;
+}
+
+TypeSymbol* ExpressionBinder::AnalyzeNumberLiteral(LiteralExpressionSyntax* node)
+{
+	node->Type = LiteralExpressionSyntax::AsInteger;
+	SyntaxToken token = node->LiteralToken;
+	std::wstring word = token.Word;
+	size_t size = word.size();
+
+	size_t delimeterIndex = word.find('.');
+	if (delimeterIndex != std::string::npos)
+	{
+		node->Type = LiteralExpressionSyntax::AsDouble;
+		//word.pop_back(); // deleting symbol 'f'
+
+		if (word.size() >= 2)
+		{
+			std::wstring prefix = word.substr(0, 2);
+			int dummy = 0;
+
+			if (IsNumBasePrefix(prefix, dummy))
+			{
+				Diagnostics.ReportError(token, L"Floating point number cannot have base prefix");
+				return SymbolTable::Primitives::Double;
+			}
+
+			std::wstring postfix = word.substr(size - 2);
+			long dummy2 = 0;
+
+			if (IsVolumeRatioPostfix(postfix, dummy2))
+			{
+				Diagnostics.ReportError(token, L"Floating point number cannot have suffix");
+				return SymbolTable::Primitives::Double;
+			}
+		}
+
+		try
+		{
+			size_t pos = 0;
+			word[delimeterIndex] = L',';
+			node->AsDoubleValue = std::stod(word, &pos);
+
+			if (pos != size)
+			{
+				for (size_t i = pos; i < size; i++)
+				{
+					if (!std::isdigit(word[i]) && !IsValidIntegerPunctuation(word[i]))
+					{
+						Diagnostics.ReportError(token, L"Invalid characters in floating point number");
+						return SymbolTable::Primitives::Double;
+					}
+				}
+			}
+
+			return SymbolTable::Primitives::Double;
+		}
+		catch (const std::exception&)
+		{
+			Diagnostics.ReportError(token, L"Invalid floating point number format");
+			return SymbolTable::Primitives::Double;
+		}
+	}
+
+	size_t numStart = 0;
+	long multiplier = 1;
+	int base = 10;
+
+	if (size >= 2)
+	{
+		std::wstring prefix = word.substr(0, 2);
+		if (IsNumBasePrefix(prefix, base))
+			numStart += 2;
+
+		std::wstring postfix = word.substr(size - 2);
+		if (IsVolumeRatioPostfix(postfix, multiplier))
+			size -= 2;
+	}
+
+	try
+	{
+		size_t pos = 0;
+		std::wstring numPart = word.substr(numStart, size);
+		node->AsIntegerValue = std::stol(numPart, &pos) * multiplier;
+
+		if (pos != size)
+		{
+			for (size_t i = pos; i < size; i++)
+			{
+				if (!IsValidIntegerSymbol(word[i], base))
+				{
+					Diagnostics.ReportError(token, L"Invalid characters in number");
+					return SymbolTable::Primitives::Integer;
+				}
+			}
+		}
+
+		// overflow check
+		if (node->AsIntegerValue < 0 && multiplier > 1)
+		{
+			long check = std::stol(numPart, nullptr, base);
+			if (check > LONG_MAX / multiplier)
+			{
+				Diagnostics.ReportError(token, L"Multiplication overflow");
+				return SymbolTable::Primitives::Integer;
+			}
+		}
+
+		return SymbolTable::Primitives::Integer;
+	}
+	catch (const std::out_of_range&)
+	{
+		Diagnostics.ReportError(token, L"Number out of range");
+		return SymbolTable::Primitives::Integer;
+	}
+	catch (const std::exception&)
+	{
+		Diagnostics.ReportError(token, L"Invalid number format");
+		return SymbolTable::Primitives::Integer;
+	}
+}
+
 IndexatorSymbol* ExpressionBinder::ResolveIndexator(IndexatorExpressionSyntax* node, TypeSymbol* currentType)
 {
-	std::wstring methodName = node->MemberAccess->IdentifierToken.Word;
+	MemberAccessExpressionSyntax* access = static_cast<MemberAccessExpressionSyntax*>(const_cast<ExpressionSyntax*>(node->PreviousExpression));
+	std::wstring methodName = access->IdentifierToken.Word;
 	std::vector<TypeSymbol*> argTypes;
 
 	for (ArgumentSyntax* arg : node->IndexatorList->Arguments)
@@ -1450,20 +1658,20 @@ IndexatorSymbol* ExpressionBinder::ResolveIndexator(IndexatorExpressionSyntax* n
 			}
 		}
 
-		Diagnostics.ReportError(node->MemberAccess->IdentifierToken, diag.str());
+		Diagnostics.ReportError(access->IdentifierToken, diag.str());
 		return nullptr;
 	}
 
 	bool isStaticContext = GetIsStaticContext(node->PreviousExpression);
 	if (isStaticContext && !indexator->IsStatic)
 	{
-		Diagnostics.ReportError(node->MemberAccess->IdentifierToken, L"Cannot call instance indexator '" + methodName + L"' from type context");
+		Diagnostics.ReportError(access->IdentifierToken, L"Cannot call instance indexator '" + methodName + L"' from type context");
 		return nullptr;
 	}
 
 	if (!isStaticContext && indexator->IsStatic)
 	{
-		Diagnostics.ReportError(node->MemberAccess->IdentifierToken, L"Cannot call static indexator '" + methodName + L"' on instance reference");
+		Diagnostics.ReportError(access->IdentifierToken, L"Cannot call static indexator '" + methodName + L"' on instance reference");
 		return nullptr;
 	}
 

@@ -25,7 +25,8 @@ namespace shard::runtime
 		
 		inline ~ObjectInstance() = default;
 
-		static ObjectInstance* FromValue(int value);
+		static ObjectInstance* FromValue(long value);
+		static ObjectInstance* FromValue(double value);
 		static ObjectInstance* FromValue(bool value);
 		static ObjectInstance* FromValue(wchar_t value);
 		static ObjectInstance* FromValue(const wchar_t* value);
@@ -57,12 +58,14 @@ namespace shard::runtime
 		*/
 
 		void WriteBoolean(const bool& value);
-		void WriteInteger(const int& value);
+		void WriteInteger(const long& value);
+		void WriteDouble(const double& value);
 		void WriteCharacter(const wchar_t& value);
 		void WriteString(const std::wstring& value);
 
 		bool AsBoolean();
-		int AsInteger();
+		long AsInteger();
+		double AsDouble();
 		wchar_t AsCharacter();
 		std::wstring& AsString();
 

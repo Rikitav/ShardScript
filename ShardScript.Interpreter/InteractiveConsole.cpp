@@ -198,7 +198,7 @@ static std::wstring ReadMultilineInput(LexicalAnalyzer& lexer, const std::wstrin
 {
 	std::wstring fullInput = firstLine;
 	
-	StringStreamReader stringStreamReader(firstLine);
+	StringStreamReader stringStreamReader(L"Interactive console", firstLine);
 	SequenceSourceReader sequenceReader;
 	sequenceReader.PopulateFrom(stringStreamReader);
 	
@@ -221,7 +221,7 @@ static std::wstring ReadMultilineInput(LexicalAnalyzer& lexer, const std::wstrin
 		
 		if (line.empty() && lineCount == 0)
 		{
-			stringStreamReader = StringStreamReader(fullInput);
+			stringStreamReader = StringStreamReader(L"Interactive console", fullInput);
 			sequenceReader.PopulateFrom(stringStreamReader);
 			isComplete = isExpression ? IsExpressionComplete(sequenceReader) : IsStatementComplete(sequenceReader);
 			
@@ -230,7 +230,7 @@ static std::wstring ReadMultilineInput(LexicalAnalyzer& lexer, const std::wstrin
 		}
 		
 		fullInput += L"\n" + line;
-		stringStreamReader = StringStreamReader(fullInput);
+		stringStreamReader = StringStreamReader(L"Interactive console", fullInput);
 		sequenceReader.PopulateFrom(stringStreamReader);
 		isComplete = isExpression ? IsExpressionComplete(sequenceReader) : IsStatementComplete(sequenceReader);
 		lineCount++;
@@ -246,7 +246,7 @@ static StatementSyntax* ReadStatement(LexicalAnalyzer& lexer, SyntaxNode* parent
 	
 	std::wstring fullInput = ReadMultilineInput(lexer, firstLine, false);
 	
-	StringStreamReader stringStreamReader(fullInput);
+	StringStreamReader stringStreamReader(L"Interactive console", fullInput);
 	SequenceSourceReader sequenceReader;
 	sequenceReader.PopulateFrom(stringStreamReader);
 	SyntaxToken current = sequenceReader.Current();
@@ -338,7 +338,7 @@ void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticMode
 			if (firstLine == L"exit" || firstLine == L"quit")
 				break;
 
-			StringStreamReader stringStreamReader(firstLine);
+			StringStreamReader stringStreamReader(L"Interactive console", firstLine);
 			SequenceSourceReader sequenceReader;
 			sequenceReader.PopulateFrom(stringStreamReader);
 
@@ -374,7 +374,7 @@ void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticMode
 				// Read as expression
 				std::wstring fullInput = ReadMultilineInput(lexer, firstLine, true);
 
-				StringStreamReader exprReader(fullInput);
+				StringStreamReader exprReader(L"Interactive console", fullInput);
 				SequenceSourceReader exprSequence;
 				exprSequence.PopulateFrom(exprReader);
 

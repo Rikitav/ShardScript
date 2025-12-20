@@ -1,5 +1,3 @@
-#include <framework/PrimitivesLoading.h>
-
 #include <shard/syntax/SymbolAccesibility.h>
 #include <shard/parsing/semantic/SymbolTable.h>
 
@@ -22,6 +20,8 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+
+#include "PrimitivesLoading.h"
 
 using namespace shard::framework;
 using namespace shard::syntax;

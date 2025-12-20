@@ -27,6 +27,7 @@ namespace shard::parsing
 		void PushScope(const shard::syntax::SyntaxSymbol* symbol);
 		void PopScope();
 
+		virtual bool CheckNameDeclared(std::wstring& name);
 		virtual bool CheckSymbolNameDeclared(shard::syntax::SyntaxSymbol* symbol);
 		virtual void Declare(shard::syntax::SyntaxSymbol* symbol);
 		shard::syntax::SyntaxSymbol* OwnerSymbol();

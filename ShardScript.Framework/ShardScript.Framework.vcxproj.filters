@@ -15,7 +15,13 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\framework\PrimitivesLoading.h">
+    <ClInclude Include="primitives\PrimitivesLoading.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="resources.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>
@@ -23,29 +29,61 @@
     <ClCompile Include="dllmain.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="src\primitives\ArrayPrimitive.cpp">
+    <ClCompile Include="primitives\ArrayPrimitive.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="src\primitives\BooleanPrimitive.cpp">
+    <ClCompile Include="primitives\BooleanPrimitive.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="src\primitives\CharPrimitive.cpp">
+    <ClCompile Include="primitives\CharPrimitive.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="src\primitives\IntegerPrimitive.cpp">
+    <ClCompile Include="primitives\IntegerPrimitive.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="src\primitives\StringPrimitive.cpp">
+    <ClCompile Include="primitives\StringPrimitive.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="src\filesystem\Directory.cpp">
+    <ClCompile Include="filesystem\Directory.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="src\filesystem\File.cpp">
+    <ClCompile Include="filesystem\File.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="src\collections\List.cpp">
+    <ClCompile Include="collections\List.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
+    <ClCompile Include="resources.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="system\Random.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="system\collections\List.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="system\filesystem\Directory.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="system\filesystem\File.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="primitives\DoublePrimitive.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="collections\List.ss" />
+    <None Include="filesystem\Directory.ss" />
+    <None Include="filesystem\File.ss" />
+    <None Include="system\Random.ss" />
+    <None Include="system\collections\List.ss" />
+    <None Include="system\filesystem\Directory.ss" />
+    <None Include="system\filesystem\File.ss" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Resource.rc">
+      <Filter>Файлы ресурсов</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

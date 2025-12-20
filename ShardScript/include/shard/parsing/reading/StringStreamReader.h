@@ -11,10 +11,13 @@ namespace shard::parsing
 {
 	class SHARD_API StringStreamReader : public SourceReader
 	{
-		std::wistringstream stringStream;
+		std::wstring name;
+		std::wstringstream stringStream;
 
 	public:
-		StringStreamReader(const std::wstring& source);
+		StringStreamReader(const std::wstring& name, std::wstringstream& source);
+		StringStreamReader(const std::wstring& name, const std::wstring& source);
+		StringStreamReader(const std::wstring& name, const wchar_t* source, size_t size);
 
 	protected:
 		shard::parsing::analysis::TextLocation GetLocation(std::wstring& word) override;

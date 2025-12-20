@@ -12,6 +12,7 @@ namespace shard::runtime
 		static void Write(ObjectInstance* instance);
 		static void Write(bool data);
 		static void Write(int data);
+		static void Write(double data);
 		static void Write(wchar_t data);
 		static void Write(const wchar_t* data);
 		static void Write(std::wstring data);
@@ -20,6 +21,7 @@ namespace shard::runtime
 		static void WriteLine();
 		static void WriteLine(bool data);
 		static void WriteLine(int data);
+		static void WriteLine(double data);
 		static void WriteLine(wchar_t data);
 		static void WriteLine(const wchar_t* data);
 		static void WriteLine(std::wstring data);

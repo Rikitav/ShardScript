@@ -27,10 +27,17 @@ ObjectInstance* ObjectInstance::FromValue(bool value)
 	return instance;
 }
 
-ObjectInstance* ObjectInstance::FromValue(int value)
+ObjectInstance* ObjectInstance::FromValue(long value)
 {
 	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::Integer);
 	instance->WriteInteger(value);
+	return instance;
+}
+
+ObjectInstance* shard::runtime::ObjectInstance::FromValue(double value)
+{
+	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::Double);
+	instance->WriteDouble(value);
 	return instance;
 }
 
@@ -270,7 +277,13 @@ void ObjectInstance::WriteBoolean(const bool& value)
 	WriteMemory(0, Info->MemoryBytesSize, ptr);
 }
 
-void ObjectInstance::WriteInteger(const int& value)
+void ObjectInstance::WriteInteger(const long& value)
+{
+	const void* ptr = &value;
+	WriteMemory(0, Info->MemoryBytesSize, ptr);
+}
+
+void ObjectInstance::WriteDouble(const double& value)
 {
 	const void* ptr = &value;
 	WriteMemory(0, Info->MemoryBytesSize, ptr);
@@ -293,9 +306,14 @@ bool ObjectInstance::AsBoolean()
 	return *reinterpret_cast<bool*>(Ptr);
 }
 
-int ObjectInstance::AsInteger()
+long ObjectInstance::AsInteger()
 {
-	return *reinterpret_cast<int*>(Ptr);
+	return *reinterpret_cast<long*>(Ptr);
+}
+
+double shard::runtime::ObjectInstance::AsDouble()
+{
+	return *reinterpret_cast<double*>(Ptr);
 }
 
 wchar_t ObjectInstance::AsCharacter()

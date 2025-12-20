@@ -7,7 +7,7 @@ void SyntaxSymbol::OnSymbolDeclared(SyntaxSymbol* symbol)
 	// ...
 }
 
-bool SyntaxSymbol::IsType()
+bool SyntaxSymbol::IsType() const
 {
 	return Kind == SyntaxKind::ClassDeclaration
 		|| Kind == SyntaxKind::StructDeclaration
@@ -16,7 +16,7 @@ bool SyntaxSymbol::IsType()
 		|| Kind == SyntaxKind::GenericType;
 }
 
-bool SyntaxSymbol::IsMember()
+bool SyntaxSymbol::IsMember() const
 {
 	return Kind == SyntaxKind::MethodDeclaration
 		|| Kind == SyntaxKind::PropertyDeclaration

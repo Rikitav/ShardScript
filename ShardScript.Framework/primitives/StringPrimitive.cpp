@@ -1,5 +1,3 @@
-#include <framework/PrimitivesLoading.h>
-
 #include <shard/runtime/AbstractInterpreter.h>
 #include <shard/runtime/InboundVariablesContext.h>
 #include <shard/runtime/GarbageCollector.h>
@@ -17,6 +15,8 @@
 #include <algorithm>
 #include <sstream>
 #include <iomanip>
+
+#include "PrimitivesLoading.h"
 
 using namespace shard::framework;
 using namespace shard::runtime;
@@ -36,7 +36,7 @@ static ObjectInstance* GetLength(const MethodSymbol* symbol, InboundVariablesCon
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	std::wstring value = instance->AsString();
-	return ObjectInstance::FromValue(static_cast<int>(value.size()));
+	return ObjectInstance::FromValue(static_cast<long>(value.size()));
 }
 
 static ObjectInstance* Substring(const MethodSymbol* symbol, InboundVariablesContext* arguments)
@@ -127,11 +127,11 @@ static ObjectInstance* IndexOf(const MethodSymbol* symbol, InboundVariablesConte
 	
 	ObjectInstance* searchArg = arguments->TryFind(L"value");
 	if (searchArg == nullptr)
-		return ObjectInstance::FromValue(-1);
+		return ObjectInstance::FromValue(-1.0);
 	
 	std::wstring search = searchArg->AsString();
 	size_t pos = value.find(search);
-	return ObjectInstance::FromValue(pos == std::wstring::npos ? -1 : static_cast<int>(pos));
+	return ObjectInstance::FromValue(pos == std::wstring::npos ? -1 : static_cast<long>(pos));
 }
 
 static ObjectInstance* LastIndexOf(const MethodSymbol* symbol, InboundVariablesContext* arguments)
@@ -141,11 +141,11 @@ static ObjectInstance* LastIndexOf(const MethodSymbol* symbol, InboundVariablesC
 	
 	ObjectInstance* searchArg = arguments->TryFind(L"value");
 	if (searchArg == nullptr)
-		return ObjectInstance::FromValue(-1);
+		return ObjectInstance::FromValue(-1.0);
 	
 	std::wstring search = searchArg->AsString();
 	size_t pos = value.rfind(search);
-	return ObjectInstance::FromValue(pos == std::wstring::npos ? -1 : static_cast<int>(pos));
+	return ObjectInstance::FromValue(pos == std::wstring::npos ? -1 : static_cast<long>(pos));
 }
 
 static ObjectInstance* Replace(const MethodSymbol* symbol, InboundVariablesContext* arguments)

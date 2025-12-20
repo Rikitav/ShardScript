@@ -52,6 +52,7 @@ namespace shard::parsing
 	{
 		std::unordered_map<shard::syntax::nodes::ExpressionSyntax*, shard::syntax::symbols::TypeSymbol*> expressionTypes;
 
+		bool GetIsStaticContext(const shard::syntax::nodes::ExpressionSyntax* expression);
 		void SetExpressionType(shard::syntax::nodes::ExpressionSyntax* expression, shard::syntax::symbols::TypeSymbol* type);
 		shard::syntax::symbols::TypeSymbol* GetExpressionType(shard::syntax::nodes::ExpressionSyntax* expression);
 		shard::syntax::symbols::TypeSymbol* FindTargetReturnType(shard::parsing::semantic::SemanticScope*& scope);
@@ -64,7 +65,7 @@ namespace shard::parsing
 		shard::syntax::symbols::TypeSymbol* AnalyzeCollectionExpression(shard::syntax::nodes::CollectionExpressionSyntax* node);
 
 		shard::syntax::symbols::TypeSymbol* AnalyzeMemberAccessExpression(shard::syntax::nodes::MemberAccessExpressionSyntax* node, shard::syntax::symbols::TypeSymbol* currentType);
-		shard::syntax::symbols::TypeSymbol* AnalyzePropertyAccessExpression(shard::syntax::nodes::MemberAccessExpressionSyntax* node, shard::syntax::symbols::TypeSymbol* currentType);
+		shard::syntax::symbols::TypeSymbol* AnalyzePropertyAccessExpression(shard::syntax::nodes::MemberAccessExpressionSyntax* node, shard::syntax::symbols::PropertySymbol* property, shard::syntax::symbols::TypeSymbol* currentType);
 		shard::syntax::symbols::TypeSymbol* AnalyzeFieldKeywordExpression(shard::syntax::nodes::MemberAccessExpressionSyntax* node, shard::syntax::symbols::TypeSymbol* currentType);
 		shard::syntax::symbols::TypeSymbol* AnalyzeInvokationExpression(shard::syntax::nodes::InvokationExpressionSyntax* node, shard::syntax::symbols::TypeSymbol* currentType);
 		shard::syntax::symbols::TypeSymbol* AnalyzeIndexatorExpression(shard::syntax::nodes::IndexatorExpressionSyntax* node, shard::syntax::symbols::TypeSymbol* currentType);
@@ -74,9 +75,9 @@ namespace shard::parsing
 		shard::syntax::symbols::IndexatorSymbol* ResolveIndexator(shard::syntax::nodes::IndexatorExpressionSyntax* node, shard::syntax::symbols::TypeSymbol* currentType);
 		
 		bool MatchMethodArguments(shard::syntax::symbols::MethodSymbol* method, std::vector<shard::syntax::nodes::ArgumentSyntax*> arguments, shard::syntax::symbols::GenericTypeSymbol* genericType = nullptr);
-		
-		// Заменяет type parameters на type arguments в типе для generic типов
 		shard::syntax::symbols::TypeSymbol* SubstituteTypeParameters(shard::syntax::symbols::TypeSymbol* type, shard::syntax::symbols::GenericTypeSymbol* genericType);
+
+		shard::syntax::symbols::TypeSymbol* AnalyzeNumberLiteral(shard::syntax::nodes::LiteralExpressionSyntax* node);
 
 	public:
 		inline ExpressionBinder(shard::parsing::semantic::SemanticModel& model, shard::parsing::analysis::DiagnosticsContext& diagnostics)

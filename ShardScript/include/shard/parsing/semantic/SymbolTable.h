@@ -39,12 +39,15 @@ namespace shard::parsing::semantic
         struct Primitives
         {
             inline static SHARD_API shard::syntax::symbols::TypeSymbol* Void;
+            inline static SHARD_API shard::syntax::symbols::TypeSymbol* Null;
             inline static SHARD_API shard::syntax::symbols::TypeSymbol* Any;
-            inline static SHARD_API shard::syntax::symbols::TypeSymbol* Array;
+
             inline static SHARD_API shard::syntax::symbols::TypeSymbol* Boolean;
             inline static SHARD_API shard::syntax::symbols::TypeSymbol* Integer;
+            inline static SHARD_API shard::syntax::symbols::TypeSymbol* Double;
             inline static SHARD_API shard::syntax::symbols::TypeSymbol* Char;
             inline static SHARD_API shard::syntax::symbols::TypeSymbol* String;
+            inline static SHARD_API shard::syntax::symbols::TypeSymbol* Array;
         };
 
         inline SymbolTable()

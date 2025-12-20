@@ -1,6 +1,4 @@
-﻿#include <framework/PrimitivesLoading.h>
-
-#include <shard/framework/FrameworkLoader.h>
+﻿#include <shard/framework/FrameworkLoader.h>
 
 #include <shard/parsing/semantic/SemanticModel.h>
 #include <shard/parsing/semantic/SymbolTable.h>
@@ -38,9 +36,11 @@
 #include <stdexcept>
 #include <vector>
 
-#include "src/filesystem/File.cpp"
-#include "src/filesystem/Directory.cpp"
-#include "src/collections/List.cpp"
+#include "primitives/PrimitivesLoading.h"
+#include "system/filesystem/File.cpp"
+#include "system/filesystem/Directory.cpp"
+#include "system/collections/List.cpp"
+#include "system/Random.cpp"
 
 using namespace shard::framework;
 using namespace shard::runtime;
@@ -179,7 +179,7 @@ static ObjectInstance* Impl_sizeof(const MethodSymbol* symbol, InboundVariablesC
 	if (instance == GarbageCollector::NullInstance)
 		throw std::runtime_error("cannot get size of null instance");
 
-	return ObjectInstance::FromValue(static_cast<int>(instance->Info->MemoryBytesSize));
+	return ObjectInstance::FromValue(static_cast<long>(instance->Info->MemoryBytesSize));
 }
 
 static void ResolvePrimitives()
@@ -189,6 +189,7 @@ static void ResolvePrimitives()
 
 	SymbolTable::Primitives::Boolean = new StructSymbol(L"Boolean");
 	SymbolTable::Primitives::Integer = new StructSymbol(L"Integer");
+	SymbolTable::Primitives::Double = new StructSymbol(L"Double");
 	SymbolTable::Primitives::Char = new StructSymbol(L"Char");
 	SymbolTable::Primitives::String = new ClassSymbol(L"String");
 	SymbolTable::Primitives::Array = new ClassSymbol(L"Array");
@@ -197,13 +198,15 @@ static void ResolvePrimitives()
 	SymbolTable::Primitives::Any->MemoryBytesSize = 0;
 
 	SymbolTable::Primitives::Boolean->MemoryBytesSize = sizeof(bool);
-	SymbolTable::Primitives::Integer->MemoryBytesSize = sizeof(int);
+	SymbolTable::Primitives::Integer->MemoryBytesSize = sizeof(long);
+	SymbolTable::Primitives::Double->MemoryBytesSize = sizeof(double);
 	SymbolTable::Primitives::Char->MemoryBytesSize = sizeof(wchar_t);
 	SymbolTable::Primitives::String->MemoryBytesSize = sizeof(std::wstring);
 	SymbolTable::Primitives::Array->MemoryBytesSize = sizeof(int); // _length field
 
 	BooleanPrimitive::Reflect(SymbolTable::Primitives::Boolean);
 	IntegerPrimitive::Reflect(SymbolTable::Primitives::Integer);
+	DoublePrimitive::Reflect(SymbolTable::Primitives::Double);
 	CharPrimitive::Reflect(SymbolTable::Primitives::Char);
 	StringPrimitive::Reflect(SymbolTable::Primitives::String);
 	ArrayPrimitive::Reflect(SymbolTable::Primitives::Array);
@@ -300,6 +303,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 			shard::framework::FrameworkLoader::AddModule(new FileSystem_Directory());
 			shard::framework::FrameworkLoader::AddModule(new FileSystem_File());
 			shard::framework::FrameworkLoader::AddModule(new Collections_List());
+			shard::framework::FrameworkLoader::AddModule(new Random());
 			break;
         }
 

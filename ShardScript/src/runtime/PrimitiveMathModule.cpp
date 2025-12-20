@@ -30,15 +30,17 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(ObjectInstance* left
 
 	if (leftInstance->Info == SymbolTable::Primitives::Integer)
 	{
-		int leftData = leftInstance->AsInteger();
+		long leftData = leftInstance->AsInteger();
 		return EvaluateBinaryOperator(leftData, opToken, rightInstance, assign);
 	}
 
+	/*
 	if (leftInstance->Info == SymbolTable::Primitives::Char)
 	{
 		wchar_t leftData = leftInstance->AsCharacter();
 		return EvaluateBinaryOperator(leftData, opToken, rightInstance, assign);
 	}
+	*/
 
 	if (leftInstance->Info == SymbolTable::Primitives::String)
 	{
@@ -74,18 +76,18 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(bool leftData, Synta
 
 			case TokenType::AndAssignOperator:
 				assign = true;
-				return ObjectInstance::FromValue(leftData & rightData);
+				return ObjectInstance::FromValue(leftData && rightData);
 		}
 	}
 
 	throw std::runtime_error("unknown primitive");
 }
 
-ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(int leftData, SyntaxToken opToken, ObjectInstance* rightInstance, bool& assign)
+ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(long leftData, SyntaxToken opToken, ObjectInstance* rightInstance, bool& assign)
 {
 	if (rightInstance->Info == SymbolTable::Primitives::Integer)
 	{
-		int rightData = rightInstance->AsInteger();
+		long rightData = rightInstance->AsInteger();
 		switch (opToken.Type)
 		{
 			case TokenType::AddOperator:
@@ -127,7 +129,7 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(int leftData, Syntax
 			case TokenType::PowAssignOperator:
 			{
 				assign = opToken.Type == TokenType::PowAssignOperator;
-				return ObjectInstance::FromValue(static_cast<int>(pow(leftData, rightData)));
+				return ObjectInstance::FromValue(static_cast<long>(pow(leftData, rightData)));
 			}
 
 			case TokenType::OrOperator:
@@ -285,7 +287,7 @@ ObjectInstance* PrimitiveMathModule::EvaluateUnaryOperator(ObjectInstance*& sour
 	
 	if (sourceInstance->Info == SymbolTable::Primitives::Integer)
 	{
-		int data = sourceInstance->AsInteger();
+		long data = sourceInstance->AsInteger();
 		return EvaluateUnaryOperator(sourceInstance, data, opToken, rightDetermined);
 	}
 	
@@ -298,20 +300,20 @@ ObjectInstance* PrimitiveMathModule::EvaluateUnaryOperator(ObjectInstance*& sour
 	throw std::runtime_error("unknown primitive");
 }
 
-ObjectInstance* PrimitiveMathModule::EvaluateUnaryOperator(ObjectInstance*& sourceInstance, int data, SyntaxToken opToken, bool rightDetermined)
+ObjectInstance* PrimitiveMathModule::EvaluateUnaryOperator(ObjectInstance*& sourceInstance, long data, SyntaxToken opToken, bool rightDetermined)
 {
 	switch (opToken.Type)
 	{
 		case TokenType::IncrementOperator:
 		{
-			int newValue = data + 1;
+			long newValue = data + 1;
 			sourceInstance->WriteInteger(newValue);
 			return rightDetermined ? ObjectInstance::FromValue(data) : sourceInstance;
 		}
 
 		case TokenType::DecrementOperator:
 		{
-			int newValue = data + 1;
+			long newValue = data + 1;
 			sourceInstance->WriteInteger(newValue);
 			return rightDetermined ? ObjectInstance::FromValue(data) : sourceInstance;
 		}

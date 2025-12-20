@@ -199,6 +199,11 @@ ObjectInstance* AbstractInterpreter::ExecuteMethod(const MethodSymbol* method, c
 					frame->InterruptionRegister = retReg;
 					frame->InterruptionRegister->IncrementReference();
 				}
+				else
+				{
+					if (method->ReturnType != SymbolTable::Primitives::Void)
+						throw std::runtime_error("method returned nullptr (void), when expected instance");
+				}
 			}
 			catch (const std::runtime_error& err)
 			{
@@ -672,19 +677,25 @@ ObjectInstance* AbstractInterpreter::EvaluateExpression(const ExpressionSyntax* 
 
 ObjectInstance* AbstractInterpreter::EvaluateLiteralExpression(const LiteralExpressionSyntax* expression)
 {
-	switch (expression->LiteralToken.Type)
+	switch (expression->Type)
 	{
-		case TokenType::BooleanLiteral:
-			return ObjectInstance::FromValue(expression->LiteralToken.Word == L"true");
+		case LiteralExpressionSyntax::AsNull:
+			return GarbageCollector::NullInstance;
 
-		case TokenType::NumberLiteral:
-			return ObjectInstance::FromValue(stoi(expression->LiteralToken.Word));
+		case LiteralExpressionSyntax::AsBoolean:
+			return ObjectInstance::FromValue(expression->AsBooleanValue);
 
-		case TokenType::CharLiteral:
-			return ObjectInstance::FromValue(expression->LiteralToken.Word[0]);
+		case LiteralExpressionSyntax::AsInteger:
+			return ObjectInstance::FromValue(expression->AsIntegerValue);
 
-		case TokenType::StringLiteral:
-			return ObjectInstance::FromValue(expression->LiteralToken.Word);
+		case LiteralExpressionSyntax::AsDouble:
+			return ObjectInstance::FromValue(expression->AsDoubleValue);
+
+		case LiteralExpressionSyntax::AsChar:
+			return ObjectInstance::FromValue(expression->AsCharValue);
+
+		case LiteralExpressionSyntax::AsString:
+			return ObjectInstance::FromValue(expression->AsStringValue);
 
 		default:
 			throw std::runtime_error("Unknown constant literal type");

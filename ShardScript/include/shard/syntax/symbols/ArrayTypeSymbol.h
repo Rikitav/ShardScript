@@ -9,6 +9,8 @@
 
 #include <shard/syntax/SyntaxKind.h>
 
+#include <shard/parsing/semantic/SymbolTable.h>
+
 #include <string>
 #include <vector>
 
@@ -23,6 +25,7 @@ namespace shard::syntax::symbols
 
 		inline ArrayTypeSymbol(TypeSymbol* underlayingType) : TypeSymbol(L"Array", SyntaxKind::ArrayType), UnderlayingType(underlayingType)
 		{
+			MemoryBytesSize = shard::parsing::semantic::SymbolTable::Primitives::Array->MemoryBytesSize;
 			IsReferenceType = true;
 		}
 

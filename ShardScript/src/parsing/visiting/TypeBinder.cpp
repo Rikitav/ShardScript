@@ -154,11 +154,9 @@ void TypeBinder::VisitClassDeclaration(ClassDeclarationSyntax* node)
 		throw std::runtime_error("symbol not found");
 
 	if (CheckSymbolNameDeclared(symbol))
-		Diagnostics.ReportError(node->IdentifierToken, L"Symbol with the same name is laready declared in current, or including context");
+		Diagnostics.ReportError(node->IdentifierToken, L"Symbol with the same name is already declared in current, or including context");
 
 	PushScope(symbol);
-
-	// Объявляем type parameters в scope
 	for (TypeParameterSymbol* typeParam : symbol->TypeParameters)
 		Declare(typeParam);
 
@@ -178,8 +176,6 @@ void TypeBinder::VisitStructDeclaration(StructDeclarationSyntax* node)
 		throw std::runtime_error("symbol not found");
 
 	PushScope(symbol);
-
-	// Объявляем type parameters в scope
 	for (TypeParameterSymbol* typeParam : symbol->TypeParameters)
 		Declare(typeParam);
 
@@ -302,19 +298,6 @@ void TypeBinder::VisitObjectCreationExpression(ObjectExpressionSyntax* node)
 	node->TypeSymbol = node->Type->Symbol;
 }
 
-/*
-void TypeBinder::VisitCollectionExpression(CollectionExpressionSyntax* node)
-{
-	for (ExpressionSyntax* expression : node->ValuesExpressions)
-		VisitExpression(expression);
-}
-
-void TypeBinder::VisitMemberAccessExpression(MemberAccessExpressionSyntax* node)
-{
-
-}
-*/
-
 void TypeBinder::VisitParameter(ParameterSyntax* node)
 {
 	ParameterSymbol* paramSymbol = new ParameterSymbol(node->Identifier.Word);
@@ -344,6 +327,15 @@ void TypeBinder::VisitPredefinedType(PredefinedTypeSyntax* node)
 				Diagnostics.ReportError(node->TypeToken, L"Primitive 'int' wasn't resolved");
 
 			node->Symbol = SymbolTable::Primitives::Integer;
+			break;
+		}
+
+		case TokenType::DoubleKeyword:
+		{
+			if (SymbolTable::Primitives::Double == nullptr)
+				Diagnostics.ReportError(node->TypeToken, L"Primitive 'double' wasn't resolved");
+
+			node->Symbol = SymbolTable::Primitives::Double;
 			break;
 		}
 

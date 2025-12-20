@@ -23,7 +23,8 @@ void SemanticScope::DeclareSymbol(SyntaxSymbol* symbol)
     if (symbol == nullptr)
         throw std::runtime_error("tried to declare nullptr symbol");
 
-    if (_symbols.find(symbol->Name) != _symbols.end())
+    auto find = _symbols.find(symbol->Name);
+    if (find != _symbols.end() && find->second == symbol)
         throw std::runtime_error("Symbol already defined");
 
     _symbols[symbol->Name] = symbol;

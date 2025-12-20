@@ -1,5 +1,3 @@
-#include <framework/PrimitivesLoading.h>
-
 #include <shard/runtime/PrimitiveMathModule.h>
 #include <shard/runtime/InboundVariablesContext.h>
 #include <shard/runtime/ObjectInstance.h>
@@ -13,6 +11,8 @@
 
 #include <string>
 #include <cctype>
+
+#include "PrimitivesLoading.h"
 
 using namespace shard::framework;
 using namespace shard::runtime;
