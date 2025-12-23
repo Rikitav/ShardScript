@@ -69,8 +69,8 @@ To enable the module, register its instance during the DLL linking :
 ```
 case DLL_PROCESS_ATTACH:
 {
-			FrameworkLoader::AddModule(new MyModule());
-			break;
+    FrameworkLoader::AddModule(new MyModule());
+    break;
 }
 ```
 
