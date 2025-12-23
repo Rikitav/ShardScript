@@ -48,7 +48,7 @@ namespace MyApp
 {
     class Program
     {
-        static void Main()
+        public static void Main()
         {
             // Using generics (basic usage)
             List<int> numbers = new List<int>();
@@ -96,7 +96,7 @@ namespace Functional
 
     class Program
     {
-        static void Main()
+        public static void Main()
         {
             // Lambda expression assignment
             Operation sum = lambda (int x, int y) => return x + y;
