@@ -28,7 +28,7 @@
   * Static fields and methods.
 * **Generics:** Basic support for simple structures, fields, and variables (primarily used for `extern` backing; constraints and generalization not yet available).
 * **External modules:** write libs in C++ and add them to run-time
-  * see `modules.ms` for more info
+  * see `modules.md` for more info
 
 ### Runtime & Framework
 * **Interpreter:** Tree-walking interpreter with custom call stack handling.
