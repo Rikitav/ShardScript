@@ -109,12 +109,12 @@ namespace Functional
 ```
 
 ## 🚀 Roadmap
-​[ ] OOP Complete: Inheritance and Polymorphism (virtual, override, abstract).
-​[ ] Meta-Programming: Attributes, Decorators, and AOP (Aspect-Oriented Programming).
-​[ ] FFI: Foreign Function Interface (currently in early concept stage).
-​[ ] Error Handling: Full try-catch blocks.
-​[ ] Generics: Advanced constraints and full generalization support.
-​[ ] Diagnostics: Improved compile-time and runtime error reporting.
+​[ ] OOP Complete: Inheritance and Polymorphism (virtual, override, abstract).  
+​[ ] Meta-Programming: Attributes, Decorators, and AOP (Aspect-Oriented Programming).  
+​[ ] FFI: Foreign Function Interface (currently in early concept stage).  
+​[ ] Error Handling: Full try-catch blocks.  
+​[ ] Generics: Advanced constraints and full generalization support.  
+​[ ] Diagnostics: Improved compile-time and runtime error reporting.  
 
 ## ​🤝 Contributing
 ​The project is under active development. If you find a bug, have ideas for syntax improvements, or want to suggest a new feature — please create an Issue! All feedback is welcome. In case of a sudden crash of the interpreter, please attach your code to issue so I can debug it.
