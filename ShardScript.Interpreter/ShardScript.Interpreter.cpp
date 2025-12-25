@@ -24,6 +24,7 @@
 #include <clocale>
 #include <csignal>
 #include <cstdlib>
+#include <filesystem>
 
 #pragma comment(lib, "shlwapi.lib")
 
@@ -89,8 +90,25 @@ int wmain(int argc, wchar_t* argv[])
 
 		if (!args.ExcludeStd)
 		{
-			const std::wstring stdLibPath = L"ShardScript.Framework.dll";
-			FrameworkLoader::AddLib(stdLibPath);
+			WCHAR buffer[MAX_PATH];
+			GetModuleFileNameW(NULL, buffer, sizeof(buffer) / sizeof(buffer[0]));
+			std::filesystem::path current = std::filesystem::path(buffer);
+			current = current.parent_path();
+
+			for (const auto entry : std::filesystem::directory_iterator(current))
+			{
+				if (!entry.is_regular_file())
+					continue;
+
+				const auto filename = entry.path().filename();
+				if (!filename.string().ends_with(".dll"))
+					continue;
+
+				FrameworkLoader::AddLib(entry.path().wstring());
+			}
+
+			//const std::wstring stdLibPath = L"ShardScript.Framework.dll";
+			//FrameworkLoader::AddLib(stdLibPath);
 			FrameworkLoader::Load(semanticModel, diagnostics);
 		}
 

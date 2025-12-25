@@ -33,6 +33,7 @@ namespace shard::framework
 {
 	class Collections_List : public FrameworkModule
 	{
+		// public extern List();
 		static ObjectInstance* Impl_Default_Ctor(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 		{
 			static FieldSymbol* arrayField = static_cast<ClassSymbol*>(symbol->Parent)->Fields.at(0); // T[] _array
@@ -48,6 +49,7 @@ namespace shard::framework
 			return nullptr; // void
 		}
 
+		// public static extern void List.Add(T value);
 		static ObjectInstance* Impl_Add(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 		{
 			static FieldSymbol* arrayField = static_cast<ClassSymbol*>(symbol->Parent)->Fields.at(0); // T[] _array
@@ -86,6 +88,7 @@ namespace shard::framework
 			return nullptr; // void
 		}
 
+		// public static extern T ElementAt(int index);
 		static ObjectInstance* Impl_ElementAt(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 		{
 			static FieldSymbol* arrayField = static_cast<ClassSymbol*>(symbol->Parent)->Fields.at(0); // T[] _array
@@ -105,16 +108,19 @@ namespace shard::framework
 			return arrayInstance->GetElement(indexValue);
 		}
 
+		// public extern void RemoveAt(int index);
 		static ObjectInstance* Impl_RemoveAt(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 		{
 			throw std::runtime_error("not implemented");
 		}
 
+		// public extern void Clear();
 		static ObjectInstance* Impl_Clear(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 		{
 			throw std::runtime_error("not implemented");
 		}
 
+		// public int Length { extern get; }
 		static ObjectInstance* Impl_Length_Get(const MethodSymbol* symbol, InboundVariablesContext* arguments) // public int Length { extern get; }
 		{
 			static FieldSymbol* arrayField = static_cast<ClassSymbol*>(symbol->Parent->Parent)->Fields.at(0); // T[] _array

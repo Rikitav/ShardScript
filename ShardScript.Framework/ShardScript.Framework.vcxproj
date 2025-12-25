@@ -152,7 +152,6 @@
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="primitives\DoublePrimitive.cpp" />
-    <ClCompile Include="resources.cpp" />
     <ClCompile Include="primitives\ArrayPrimitive.cpp" />
     <ClCompile Include="primitives\BooleanPrimitive.cpp" />
     <ClCompile Include="primitives\CharPrimitive.cpp" />
