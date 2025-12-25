@@ -449,7 +449,7 @@ TypeSymbol* ExpressionBinder::AnalyzeLiteralExpression(LiteralExpressionSyntax* 
 		{
 			// TODO: add interpolation
 			node->Type = LiteralExpressionSyntax::AsString;
-			node->AsStringValue = node->LiteralToken.Word;
+			node->AsStringValue = new std::wstring(node->LiteralToken.Word);
 			return SymbolTable::Primitives::String;
 		}
 
@@ -511,7 +511,7 @@ TypeSymbol* ExpressionBinder::AnalyzeBinaryExpression(BinaryExpressionSyntax* no
 
 		if (!TypeSymbol::Equals(leftType, rightType))
 		{
-			Diagnostics.ReportError(node->OperatorToken, L"Right operand type could not be determined");
+			Diagnostics.ReportError(node->OperatorToken, L"Type mismatch in comparison: '" + leftType->Name + L"' and '" + rightType->Name + L"'");
 			return leftType;
 		}
 

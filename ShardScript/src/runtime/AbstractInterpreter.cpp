@@ -695,7 +695,7 @@ ObjectInstance* AbstractInterpreter::EvaluateLiteralExpression(const LiteralExpr
 			return ObjectInstance::FromValue(expression->AsCharValue);
 
 		case LiteralExpressionSyntax::AsString:
-			return ObjectInstance::FromValue(expression->AsStringValue);
+			return ObjectInstance::FromValue(*expression->AsStringValue);
 
 		default:
 			throw std::runtime_error("Unknown constant literal type");
