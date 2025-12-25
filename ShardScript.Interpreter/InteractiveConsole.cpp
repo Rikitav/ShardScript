@@ -292,7 +292,7 @@ static NamespaceDeclarationSyntax* InitImplicitNamespaceDeclaration(MethodDeclar
 {
 	NamespaceDeclarationSyntax* implNamespace = new NamespaceDeclarationSyntax(parent);
 	implNamespace->DeclareToken = SyntaxToken(TokenType::NamespaceKeyword, L"namespace", TextLocation(), false);
-	implNamespace->IdentifierToken = SyntaxToken(TokenType::Identifier, L"__InteractiveNamespace__", TextLocation(), false);
+	implNamespace->IdentifierTokens.push_back(SyntaxToken(TokenType::Identifier, L"__InteractiveNamespace__", TextLocation(), false));
 	implNamespace->Members.push_back(InitImplicitClassDeclaration(entryPoint, implNamespace));
 
 	return implNamespace;

@@ -368,8 +368,6 @@ static bool IsNumberSymbol(wchar_t symbol)
 
 		case 'e':
 		case 'E':
-		case '+':
-		case '-':
 			return true;
 	}
 }

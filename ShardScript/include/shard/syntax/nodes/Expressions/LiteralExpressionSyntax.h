@@ -27,7 +27,7 @@ namespace shard::syntax::nodes
 			long AsIntegerValue;
 			double AsDoubleValue;
 			wchar_t AsCharValue;
-			std::wstring AsStringValue;
+			std::wstring* AsStringValue;
 		};
 
 		const SyntaxToken LiteralToken;

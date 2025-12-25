@@ -33,6 +33,8 @@ void SymbolTable::ClearSymbols()
 
 	symbolToNodeMap.clear();
 	nodeToSymbolMap.clear();
+	namespacesList.clear();
+	typesList.clear();
 	EntryPointCandidates.clear();
 }
 
