@@ -50,6 +50,14 @@ void GarbageCollector::SetStaticField(FieldSymbol* field, ObjectInstance* instan
 
 ObjectInstance* GarbageCollector::AllocateInstance(const TypeSymbol* objectInfo)
 {
+	if (objectInfo == nullptr)
+		throw std::runtime_error("objectInfo is nullptr");
+
+	/*
+	if (objectInfo->MemoryBytesSize == 0)
+		throw std::runtime_error("tried to allocate object instance of size 0");
+	*/
+
 	void* memory = malloc(objectInfo->MemoryBytesSize);
 	if (memory == nullptr)
 		throw std::runtime_error("cannot allocate memory for new instance");

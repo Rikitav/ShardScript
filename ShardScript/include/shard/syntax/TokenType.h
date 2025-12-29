@@ -8,7 +8,7 @@ namespace shard::syntax
 		// Generic
 		Unknown,
 		EndOfFile,   // End of file
-		//Trivia,    // any non-visible
+		Trivia,      // any non-visible
 		NewKeyword,  // new keyword
 		Identifier,	 // member name
 
