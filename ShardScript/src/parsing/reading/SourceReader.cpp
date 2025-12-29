@@ -204,7 +204,40 @@ bool SourceReader::ReadNextWord(std::wstring& word, TokenType& type)
 		return true;
 
 	if (IsOperator(word, type))
+	{
+		// Handling comment
+		if (type == TokenType::Trivia)
+		{
+			while (ReadNext())
+			{
+				switch (Symbol)
+				{
+					case L'\n':
+					{
+						Line += 1;
+						Offset = 0;
+
+						return ReadNextWord(word, type);
+					}
+
+					case L'\0':
+					{
+						if (!PeekNext())
+							return false;
+
+						if (PeekSymbol == L'\0')
+							return false; // EOF
+
+						continue;
+					}
+				}
+			}
+
+			return false; // EOF
+		}
+
 		return true;
+	}
 
 	bool wasClosed = false;
 	bool dontEcran = false;
@@ -731,6 +764,13 @@ bool SourceReader::IsOperator(std::wstring& word, TokenType& type)
 					ReadNext();
 					type = TokenType::DivAssignOperator;
 					word = L"/=";
+					return true;
+				}
+				else if (PeekSymbol == '/')
+				{
+					ReadNext();
+					type = TokenType::Trivia;
+					word = L"//";
 					return true;
 				}
 			}
