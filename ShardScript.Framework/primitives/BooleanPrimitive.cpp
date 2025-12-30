@@ -12,11 +12,7 @@
 
 #include "PrimitivesLoading.h"
 
-using namespace shard::framework;
-using namespace shard::runtime;
-using namespace shard::syntax;
-using namespace shard::syntax::symbols;
-using namespace shard::parsing::semantic;
+using namespace shard;
 
 // Boolean methods
 static ObjectInstance* ToString(const MethodSymbol* symbol, InboundVariablesContext* arguments)

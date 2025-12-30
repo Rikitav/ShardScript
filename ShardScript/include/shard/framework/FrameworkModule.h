@@ -7,14 +7,14 @@
 
 #include <string>
 
-namespace shard::framework
+namespace shard
 {
 	class SHARD_API FrameworkModule
 	{
 	public:
-		virtual shard::parsing::SourceReader* GetSource() = 0;
-		virtual bool BindConstructor(shard::syntax::symbols::ConstructorSymbol* symbol) = 0;
-		virtual bool BindMethod(shard::syntax::symbols::MethodSymbol* symbol) = 0;
-		virtual bool BindAccessor(shard::syntax::symbols::AccessorSymbol* symbol) = 0;
+		virtual shard::SourceReader* GetSource() = 0;
+		virtual bool BindConstructor(shard::ConstructorSymbol* symbol) = 0;
+		virtual bool BindMethod(shard::MethodSymbol* symbol) = 0;
+		virtual bool BindAccessor(shard::AccessorSymbol* symbol) = 0;
 	};
 }

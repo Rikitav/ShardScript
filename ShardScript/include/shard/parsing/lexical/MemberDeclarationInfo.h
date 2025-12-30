@@ -7,15 +7,15 @@
 
 #include <vector>
 
-namespace shard::parsing::lexical
+namespace shard
 {
 	struct SHARD_API MemberDeclarationInfo
 	{
-		std::vector<shard::syntax::SyntaxToken> Modifiers;
+		std::vector<shard::SyntaxToken> Modifiers;
 		bool IsCtor = false;
-		shard::syntax::SyntaxToken DeclareType;
-		shard::syntax::SyntaxToken Identifier;
-		shard::syntax::nodes::TypeSyntax* ReturnType = nullptr;
-		shard::syntax::nodes::TypeParametersListSyntax* Generics = nullptr;
+		shard::SyntaxToken DeclareType;
+		shard::SyntaxToken Identifier;
+		shard::TypeSyntax* ReturnType = nullptr;
+		shard::TypeParametersListSyntax* Generics = nullptr;
 	};
 }

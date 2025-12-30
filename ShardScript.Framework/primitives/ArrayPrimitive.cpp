@@ -23,11 +23,7 @@
 
 #include "PrimitivesLoading.h"
 
-using namespace shard::framework;
-using namespace shard::syntax;
-using namespace shard::runtime;
-using namespace shard::syntax::symbols;
-using namespace shard::parsing::semantic;
+using namespace shard;
 
 static ObjectInstance* get_Length(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {

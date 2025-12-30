@@ -6,7 +6,7 @@
 #include <shard/syntax/SyntaxToken.h>
 #include <shard/syntax/nodes/ExpressionSyntax.h>
 
-namespace shard::syntax::nodes
+namespace shard
 {
 	class SHARD_API UnaryExpressionSyntax : public ExpressionSyntax
 	{

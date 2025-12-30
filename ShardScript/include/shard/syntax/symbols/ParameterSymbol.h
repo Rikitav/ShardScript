@@ -9,14 +9,14 @@
 
 #include <string>
 
-namespace shard::syntax::symbols
+namespace shard
 {
 	class SHARD_API ParameterSymbol : public SyntaxSymbol
 	{
     public:
         TypeSymbol* Type = nullptr;
         bool IsOptional = false;
-        shard::syntax::nodes::ExpressionSyntax* DefaultValueExpression = nullptr;
+        shard::ExpressionSyntax* DefaultValueExpression = nullptr;
 
         inline ParameterSymbol(std::wstring name) : SyntaxSymbol(name, SyntaxKind::Parameter)
         {

@@ -49,14 +49,7 @@
 #include "InteractiveConsole.h"
 #include "utilities/InterpreterUtilities.h"
 
-using namespace shard::runtime;
-using namespace shard::syntax;
-using namespace shard::syntax::nodes;
-using namespace shard::syntax::symbols;
-using namespace shard::parsing;
-using namespace shard::parsing::analysis;
-using namespace shard::parsing::semantic;
-using namespace shard::parsing::lexical;
+using namespace shard;
 
 static bool IsStatementComplete(SequenceSourceReader& reader)
 {
@@ -323,7 +316,7 @@ void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticMode
 	AbstractInterpreter::PushFrame(entryPointSymbol, nullptr);
 	AbstractInterpreter::PushContext(new InboundVariablesContext(nullptr));
 	
-	ConsoleHelper::WriteLine(L"ShardScript Interactive Console v" + shard::interpreter::utilities::ShardUtilities::GetFileVersion());
+	ConsoleHelper::WriteLine(L"ShardScript Interactive Console v" + shard::ShardUtilities::GetFileVersion());
 	ConsoleHelper::WriteLine(L"Type 'exit' or 'quit' to exit");
 	ConsoleHelper::WriteLine();
 

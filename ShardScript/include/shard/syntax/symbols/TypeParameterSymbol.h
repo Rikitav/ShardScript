@@ -7,7 +7,7 @@
 
 #include <string>
 
-namespace shard::syntax::symbols
+namespace shard
 {
 	class SHARD_API TypeParameterSymbol : public TypeSymbol
 	{

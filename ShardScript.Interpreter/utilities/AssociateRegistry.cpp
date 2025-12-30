@@ -103,7 +103,7 @@ static bool CreateOpenCommand()
 	return true;
 }
 
-void shard::interpreter::utilities::ShardUtilities::AssociateRegistry()
+void shard::ShardUtilities::AssociateRegistry()
 {
 	if (!CreateExtensionAssociation())
 		return;

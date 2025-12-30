@@ -5,7 +5,7 @@
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxToken.h>
 
-namespace shard::syntax::nodes
+namespace shard
 {
 	class SHARD_API StatementSyntax : public SyntaxNode
 	{

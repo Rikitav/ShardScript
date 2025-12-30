@@ -8,18 +8,18 @@
 #include <vector>
 #include <string>
 
-namespace shard::syntax::symbols
+namespace shard
 {
 	class NamespaceSymbol;
 }
 
-namespace shard::parsing::semantic
+namespace shard
 {
 	class SHARD_API NamespaceNode
 	{
 	public:
-		std::vector<shard::syntax::symbols::NamespaceSymbol*> Owners;
-		std::vector<shard::syntax::symbols::TypeSymbol*> Types;
+		std::vector<shard::NamespaceSymbol*> Owners;
+		std::vector<shard::TypeSymbol*> Types;
 		std::unordered_map<std::wstring, NamespaceNode*> Nodes;
 
 		inline NamespaceNode()
@@ -34,7 +34,7 @@ namespace shard::parsing::semantic
 		}
 
 		NamespaceNode* Lookup(std::wstring name);
-		NamespaceNode* LookupOrCreate(std::wstring name, shard::syntax::symbols::NamespaceSymbol* current);
+		NamespaceNode* LookupOrCreate(std::wstring name, shard::NamespaceSymbol* current);
 	};
 
 	class SHARD_API NamespaceTree

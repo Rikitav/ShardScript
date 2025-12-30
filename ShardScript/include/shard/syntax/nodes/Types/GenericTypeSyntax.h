@@ -10,7 +10,7 @@
 
 #include <vector>
 
-namespace shard::syntax::nodes
+namespace shard
 {
 	class SHARD_API GenericTypeSyntax : public TypeSyntax
 	{

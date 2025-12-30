@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <string>
 
-namespace shard::runtime
+namespace shard
 {
 	class SHARD_API InboundVariablesContext
 	{

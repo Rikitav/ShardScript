@@ -9,7 +9,7 @@
 
 #include <vector>
 
-namespace shard::syntax::nodes
+namespace shard
 {
 	class SHARD_API CollectionExpressionSyntax : public ExpressionSyntax
 	{
@@ -17,7 +17,7 @@ namespace shard::syntax::nodes
 		SyntaxToken OpenSquareToken;
 		SyntaxToken CloseSquareToken;
 		std::vector<ExpressionSyntax*> ValuesExpressions;
-		shard::syntax::symbols::ArrayTypeSymbol* Symbol = nullptr;
+		shard::ArrayTypeSymbol* Symbol = nullptr;
 
 		inline CollectionExpressionSyntax(const SyntaxNode* parent)
 			: ExpressionSyntax(SyntaxKind::CollectionExpression, parent) { }

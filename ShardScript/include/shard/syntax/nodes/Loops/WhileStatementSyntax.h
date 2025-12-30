@@ -9,7 +9,7 @@
 #include <shard/syntax/SyntaxToken.h>
 #include <shard/syntax/SyntaxNode.h>
 
-namespace shard::syntax::nodes
+namespace shard
 {
 	class SHARD_API WhileStatementSyntax : public KeywordStatementSyntax
 	{

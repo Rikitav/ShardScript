@@ -8,7 +8,7 @@
 
 #include <string>
 
-namespace shard::syntax::symbols
+namespace shard
 {
     class SHARD_API ConstructorSymbol : public MethodSymbol
     {
@@ -20,7 +20,7 @@ namespace shard::syntax::symbols
             *pKind = SyntaxKind::ConstructorDeclaration;
         }
 
-        inline ConstructorSymbol(std::wstring name, shard::syntax::nodes::StatementsBlockSyntax* body) : MethodSymbol(name, body)
+        inline ConstructorSymbol(std::wstring name, shard::StatementsBlockSyntax* body) : MethodSymbol(name, body)
         {
             // hehe
             SyntaxKind* pKind = const_cast<SyntaxKind*>(&Kind);

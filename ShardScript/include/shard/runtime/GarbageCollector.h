@@ -8,7 +8,7 @@
 #include <unordered_map>
 #include <iterator>
 
-namespace shard::runtime
+namespace shard
 {
     template<typename MapType>
     class SHARD_API ValueIterator
@@ -42,8 +42,8 @@ namespace shard::runtime
 	class SHARD_API InstancesHeap
 	{
     private:
-        std::unordered_map<long, shard::runtime::ObjectInstance*> IdMap;
-        std::unordered_map<void*, shard::runtime::ObjectInstance*> PtrMap;
+        std::unordered_map<long, shard::ObjectInstance*> IdMap;
+        std::unordered_map<void*, shard::ObjectInstance*> PtrMap;
 
     public:
         using iterator = ValueIterator<decltype(IdMap)>;
@@ -61,10 +61,10 @@ namespace shard::runtime
         inline auto pairs_begin() { return IdMap.begin(); }
         inline auto pairs_end() { return IdMap.end(); }
 
-        inline shard::runtime::ObjectInstance* at(long id) { return IdMap.at(id); }
-        inline shard::runtime::ObjectInstance* at(void* ptr) { return PtrMap.at(ptr); }
+        inline shard::ObjectInstance* at(long id) { return IdMap.at(id); }
+        inline shard::ObjectInstance* at(void* ptr) { return PtrMap.at(ptr); }
 
-        inline void erase(shard::runtime::ObjectInstance* instance)
+        inline void erase(shard::ObjectInstance* instance)
         {
             IdMap.erase(instance->Id);
             PtrMap.erase((void*)instance->Ptr);
@@ -85,18 +85,18 @@ namespace shard::runtime
 	class SHARD_API GarbageCollector
 	{
 		inline static long objectsCounter = 0;
-        inline static std::unordered_map<shard::syntax::symbols::TypeSymbol*, ObjectInstance*> nullInstancesMap;
-        inline static std::unordered_map<shard::syntax::symbols::FieldSymbol*, ObjectInstance*> staticFields;
+        inline static std::unordered_map<shard::TypeSymbol*, ObjectInstance*> nullInstancesMap;
+        inline static std::unordered_map<shard::FieldSymbol*, ObjectInstance*> staticFields;
         
     public:
 		inline static InstancesHeap Heap;
         static ObjectInstance* NullInstance;
 
-        static ObjectInstance* GetStaticField(shard::syntax::symbols::FieldSymbol* field);
-        static void SetStaticField(shard::syntax::symbols::FieldSymbol* field, ObjectInstance* instance);
+        static ObjectInstance* GetStaticField(shard::FieldSymbol* field);
+        static void SetStaticField(shard::FieldSymbol* field, ObjectInstance* instance);
 
-		static ObjectInstance* AllocateInstance(const shard::syntax::symbols::TypeSymbol* objectInfo);
-        static ObjectInstance* CopyInstance(const shard::syntax::symbols::TypeSymbol* objectInfo, void* ptr);
+		static ObjectInstance* AllocateInstance(const shard::TypeSymbol* objectInfo);
+        static ObjectInstance* CopyInstance(const shard::TypeSymbol* objectInfo, void* ptr);
         static ObjectInstance* CopyInstance(ObjectInstance* instance);
 		
         static void CollectInstance(ObjectInstance* instance);

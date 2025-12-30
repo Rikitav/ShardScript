@@ -14,11 +14,9 @@
 
 #include <stdexcept>
 
-using namespace shard::syntax;
-using namespace shard::syntax::nodes;
-using namespace shard::parsing::semantic;
+using namespace shard;
 
-SemanticModel::SemanticModel(shard::parsing::lexical::SyntaxTree& tree) : Tree(tree)
+SemanticModel::SemanticModel(shard::SyntaxTree& tree) : Tree(tree)
 {
 	Table = new SymbolTable();
 	Namespaces = new NamespaceTree();

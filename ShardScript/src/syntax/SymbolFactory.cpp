@@ -28,9 +28,7 @@
 #include <sstream>
 #include <algorithm>
 
-using namespace shard::syntax;
-using namespace shard::syntax::nodes;
-using namespace shard::syntax::symbols;
+using namespace shard;
 
 void SymbolFactory::SetAccesibility(SyntaxSymbol* symbol, std::vector<SyntaxToken> modifiers)
 {
@@ -365,7 +363,7 @@ ConstructorSymbol* SymbolFactory::Constructor(ConstructorDeclarationSyntax* node
 {
 	std::wstring methodName = node->IdentifierToken.Word;
 	ConstructorSymbol* symbol = new ConstructorSymbol(methodName, node->Body);
-	symbol->ReturnType = shard::parsing::semantic::SymbolTable::Primitives::Void;
+	symbol->ReturnType = shard::SymbolTable::Primitives::Void;
 	SetAccesibility(symbol, node->Modifiers);
 
 	if (symbol->IsExtern)
@@ -469,7 +467,7 @@ MethodSymbol* SymbolFactory::Method(const std::wstring& name, TypeSymbol* return
 ConstructorSymbol* SymbolFactory::Constructor(const std::wstring& name)
 {
 	ConstructorSymbol* symbol = new ConstructorSymbol(name);
-	symbol->ReturnType = shard::parsing::semantic::SymbolTable::Primitives::Void;
+	symbol->ReturnType = shard::SymbolTable::Primitives::Void;
 	symbol->Accesibility = SymbolAccesibility::Public;
 	return symbol;
 }
@@ -479,7 +477,7 @@ AccessorSymbol* SymbolFactory::Accessor(const std::wstring& name, PropertySymbol
 	AccessorSymbol* symbol = new AccessorSymbol(name);
 	symbol->Accesibility = SymbolAccesibility::Public;
 	symbol->IsStatic = property->IsStatic;
-	symbol->ReturnType = isGetter ? property->ReturnType : shard::parsing::semantic::SymbolTable::Primitives::Void;
+	symbol->ReturnType = isGetter ? property->ReturnType : shard::SymbolTable::Primitives::Void;
 	
 	if (isGetter)
 		property->Getter = symbol;
@@ -946,7 +944,7 @@ MethodSymbol* SymbolFactory::CreateAnonymousMethod(const std::wstring& name, Typ
 MethodSymbol* SymbolFactory::CreateLambdaMethod(StatementsBlockSyntax* body)
 {
 	MethodSymbol* symbol = new MethodSymbol(L"Lambda", body);
-	symbol->ReturnType = shard::parsing::semantic::SymbolTable::Primitives::Any;
+	symbol->ReturnType = shard::SymbolTable::Primitives::Any;
 	symbol->Accesibility = SymbolAccesibility::Public;
 	symbol->IsStatic = true;
 	symbol->HandleType = MethodHandleType::Lambda;

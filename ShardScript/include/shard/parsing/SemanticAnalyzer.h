@@ -5,16 +5,16 @@
 #include <shard/parsing/analysis/DiagnosticsContext.h>
 #include <shard/parsing/lexical/SyntaxTree.h>
 
-namespace shard::parsing
+namespace shard
 {
 	class SHARD_API SemanticAnalyzer
 	{
-		shard::parsing::analysis::DiagnosticsContext& Diagnostics;
+		shard::DiagnosticsContext& Diagnostics;
 
 	public:
-		inline SemanticAnalyzer(shard::parsing::analysis::DiagnosticsContext& diagnostics)
+		inline SemanticAnalyzer(shard::DiagnosticsContext& diagnostics)
 			: Diagnostics(diagnostics) { }
 
-		void Analyze(shard::parsing::lexical::SyntaxTree& syntaxTree, shard::parsing::semantic::SemanticModel& semanticModel);
+		void Analyze(shard::SyntaxTree& syntaxTree, shard::SemanticModel& semanticModel);
 	};
 }

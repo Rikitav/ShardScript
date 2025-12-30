@@ -14,7 +14,7 @@
 #include <string>
 #include <vector>
 
-namespace shard::syntax::symbols
+namespace shard
 {
 	class SHARD_API ArrayTypeSymbol : public TypeSymbol
 	{
@@ -25,7 +25,7 @@ namespace shard::syntax::symbols
 
 		inline ArrayTypeSymbol(TypeSymbol* underlayingType) : TypeSymbol(L"Array", SyntaxKind::ArrayType), UnderlayingType(underlayingType)
 		{
-			MemoryBytesSize = shard::parsing::semantic::SymbolTable::Primitives::Array->MemoryBytesSize;
+			MemoryBytesSize = shard::SymbolTable::Primitives::Array->MemoryBytesSize;
 			IsReferenceType = true;
 		}
 

@@ -31,16 +31,7 @@
 #include "InteractiveConsole.h"
 #include "utilities/InterpreterUtilities.h"
 
-using namespace shard::interpreter::utilities;
-using namespace shard::framework;
-using namespace shard::runtime;
-using namespace shard::syntax;
-using namespace shard::syntax::nodes;
-using namespace shard::syntax::symbols;
-using namespace shard::parsing;
-using namespace shard::parsing::analysis;
-using namespace shard::parsing::lexical;
-using namespace shard::parsing::semantic;
+using namespace shard;
 
 static void SigIntHandler(int signal)
 {
@@ -95,7 +86,7 @@ int wmain(int argc, wchar_t* argv[])
 			std::filesystem::path current = std::filesystem::path(buffer);
 			current = current.parent_path();
 
-			for (const auto entry : std::filesystem::directory_iterator(current))
+			for (const auto& entry : std::filesystem::directory_iterator(current))
 			{
 				if (!entry.is_regular_file())
 					continue;
@@ -107,8 +98,6 @@ int wmain(int argc, wchar_t* argv[])
 				FrameworkLoader::AddLib(entry.path().wstring());
 			}
 
-			//const std::wstring stdLibPath = L"ShardScript.Framework.dll";
-			//FrameworkLoader::AddLib(stdLibPath);
 			FrameworkLoader::Load(semanticModel, diagnostics);
 		}
 
@@ -152,19 +141,18 @@ int wmain(int argc, wchar_t* argv[])
 		if (args.UseInteractive)
 		{
 			InteractiveConsole::Run(syntaxTree, semanticModel, diagnostics);
+			return 0;
 		}
-		else
+
+		try
 		{
-			try
-			{
-				AbstractInterpreter::Execute(syntaxTree, semanticModel);
-				return 0;
-			}
-			catch (const std::runtime_error& err)
-			{
-				std::cout << err.what() << std::endl;
-				return 1;
-			}
+			AbstractInterpreter::Execute(syntaxTree, semanticModel);
+			return 0;
+		}
+		catch (const std::runtime_error& err)
+		{
+			std::cout << err.what() << std::endl;
+			return 1;
 		}
 	}
 	catch (const std::runtime_error& err)

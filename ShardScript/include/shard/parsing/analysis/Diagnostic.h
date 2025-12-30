@@ -7,17 +7,17 @@
 
 #include <string>
 
-namespace shard::parsing::analysis
+namespace shard
 {
 	class SHARD_API Diagnostic
 	{
 	public:
 		const DiagnosticSeverity Severity;
 		const std::wstring Description;
-		const shard::syntax::SyntaxToken Token;
+		const shard::SyntaxToken Token;
 		const TextLocation Location;
 
-		Diagnostic(shard::syntax::SyntaxToken token, DiagnosticSeverity severity, std::wstring description);
+		Diagnostic(shard::SyntaxToken token, DiagnosticSeverity severity, std::wstring description);
 		Diagnostic(const Diagnostic& other);
 
 		inline Diagnostic& operator=(const Diagnostic& other)

@@ -15,20 +15,20 @@
 
 #include <vector>
 
-typedef std::vector<shard::syntax::SyntaxToken> SyntaxTokenList;
+typedef std::vector<shard::SyntaxToken> SyntaxTokenList;
 
-typedef shard::syntax::SyntaxNode* pSyntaxNode;
+typedef shard::SyntaxNode* pSyntaxNode;
 
-typedef shard::syntax::nodes::ClassDeclarationSyntax* pClassDeclaration;
-typedef shard::syntax::nodes::StructDeclarationSyntax* pStructDeclaration;
-typedef shard::syntax::nodes::MethodDeclarationSyntax* pMethodDeclaration;
+typedef shard::ClassDeclarationSyntax* pClassDeclaration;
+typedef shard::StructDeclarationSyntax* pStructDeclaration;
+typedef shard::MethodDeclarationSyntax* pMethodDeclaration;
 
-typedef shard::syntax::nodes::ExpressionSyntax* pExpression;
-typedef shard::syntax::nodes::* pLinkedExpression;
-typedef shard::syntax::nodes::LinkedExpressionSyntax* pLinkedExpression;
-typedef shard::syntax::nodes::LinkedExpressionNode* pLinkedExpressionNode;
+typedef shard::ExpressionSyntax* pExpression;
+typedef shard::* pLinkedExpression;
+typedef shard::LinkedExpressionSyntax* pLinkedExpression;
+typedef shard::LinkedExpressionNode* pLinkedExpressionNode;
 
-typedef shard::syntax::nodes::IndexatorListSyntax* pIndexatorList;
+typedef shard::IndexatorListSyntax* pIndexatorList;
 
-typedef shard::parsing::Object* POBJECT;
+typedef shard::Object* POBJECT;
 */

@@ -5,7 +5,7 @@
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxSymbol.h>
 
-namespace shard::syntax::symbols
+namespace shard
 {
     class SHARD_API LeftDenotationSymbol : public SyntaxSymbol
     {

@@ -10,7 +10,7 @@
 
 #include <stack>
 
-namespace shard::runtime
+namespace shard
 {
 	enum class SHARD_API FrameInterruptionReason
 	{
@@ -24,15 +24,15 @@ namespace shard::runtime
 	class SHARD_API CallStackFrame
 	{
 	public:
-		const shard::syntax::symbols::TypeSymbol* WithinType;
-		const shard::syntax::symbols::MethodSymbol* Method;
+		const shard::TypeSymbol* WithinType;
+		const shard::MethodSymbol* Method;
 		const CallStackFrame* PreviousFrame;
 
-		std::stack<shard::runtime::InboundVariablesContext*> VariablesStack;
+		std::stack<shard::InboundVariablesContext*> VariablesStack;
 		FrameInterruptionReason InterruptionReason = FrameInterruptionReason::None;
 		ObjectInstance* InterruptionRegister = nullptr;
 
-		inline CallStackFrame(const shard::syntax::symbols::MethodSymbol* method, const shard::syntax::symbols::TypeSymbol* withinType, const CallStackFrame* previousFrame)
+		inline CallStackFrame(const shard::MethodSymbol* method, const shard::TypeSymbol* withinType, const CallStackFrame* previousFrame)
 			: WithinType(withinType), Method(method), PreviousFrame(previousFrame) { }
 
 		inline bool interrupted() const

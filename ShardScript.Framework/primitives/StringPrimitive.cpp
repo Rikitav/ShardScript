@@ -18,11 +18,7 @@
 
 #include "PrimitivesLoading.h"
 
-using namespace shard::framework;
-using namespace shard::runtime;
-using namespace shard::syntax;
-using namespace shard::syntax::symbols;
-using namespace shard::parsing::semantic;
+using namespace shard;
 
 // String methods
 static ObjectInstance* IsEmpty(const MethodSymbol* symbol, InboundVariablesContext* arguments)

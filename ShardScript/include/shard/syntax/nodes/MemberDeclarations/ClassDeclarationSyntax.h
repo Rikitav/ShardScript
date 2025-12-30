@@ -6,7 +6,7 @@
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxNode.h>
 
-namespace shard::syntax::nodes
+namespace shard
 {
 	class SHARD_API ClassDeclarationSyntax : public TypeDeclarationSyntax
 	{
@@ -14,7 +14,7 @@ namespace shard::syntax::nodes
 		inline ClassDeclarationSyntax(const SyntaxNode* parent)
 			: TypeDeclarationSyntax(SyntaxKind::ClassDeclaration, parent) { }
 
-		inline ClassDeclarationSyntax(shard::parsing::lexical::MemberDeclarationInfo& info, const SyntaxNode* parent) : TypeDeclarationSyntax(SyntaxKind::ClassDeclaration, parent)
+		inline ClassDeclarationSyntax(shard::MemberDeclarationInfo& info, const SyntaxNode* parent) : TypeDeclarationSyntax(SyntaxKind::ClassDeclaration, parent)
 		{
 			Modifiers = info.Modifiers;
 			IdentifierToken = info.Identifier;

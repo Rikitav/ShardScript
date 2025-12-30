@@ -9,7 +9,7 @@
 
 #include <vector>
 
-namespace shard::syntax::nodes
+namespace shard
 {
 	class SHARD_API AccessorDeclarationSyntax : public MemberDeclarationSyntax
 	{

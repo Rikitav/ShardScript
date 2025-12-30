@@ -8,9 +8,7 @@
 #include <string>
 #include <vector>
 
-using namespace shard::syntax;
-using namespace shard::parsing;
-using namespace shard::parsing::analysis;
+using namespace shard;
 
 SequenceSourceReader::SequenceSourceReader()
 	: Sequence(), CurrentIndex(0) { }

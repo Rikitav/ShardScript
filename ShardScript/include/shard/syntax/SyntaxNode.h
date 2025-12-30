@@ -2,7 +2,7 @@
 #include <shard/ShardScriptAPI.h>
 #include <shard/syntax/SyntaxKind.h>
 
-namespace shard::syntax
+namespace shard
 {
 	class SHARD_API SyntaxNode
 	{

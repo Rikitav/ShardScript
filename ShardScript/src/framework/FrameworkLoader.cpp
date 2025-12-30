@@ -32,16 +32,7 @@
 #include <Windows.h>
 #include <stdexcept>
 
-using namespace shard::syntax::nodes;
-using namespace shard::parsing::analysis;
-using namespace shard::parsing::lexical;
-
-using namespace shard::framework;
-using namespace shard::runtime;
-using namespace shard::syntax;
-using namespace shard::syntax::symbols;
-using namespace shard::parsing;
-using namespace shard::parsing::semantic;
+using namespace shard;
 
 std::vector<HMODULE> FrameworkLoader::LoadedLibraries;
 std::vector<FrameworkModule*> FrameworkLoader::Modules;

@@ -11,29 +11,29 @@
 
 #include <stack>
 
-namespace shard::parsing
+namespace shard
 {
 	class SHARD_API ScopeVisitor
 	{
-		std::stack<shard::parsing::semantic::SemanticScope*> scopeStack;
+		std::stack<shard::SemanticScope*> scopeStack;
 
 	protected:
-		inline ScopeVisitor(shard::parsing::semantic::SymbolTable* symbolTable)
+		inline ScopeVisitor(shard::SymbolTable* symbolTable)
 		{
-			scopeStack.push(shard::parsing::semantic::SymbolTable::Global::Scope);
+			scopeStack.push(shard::SymbolTable::Global::Scope);
 		}
 
-		shard::parsing::semantic::SemanticScope* CurrentScope();
-		void PushScope(const shard::syntax::SyntaxSymbol* symbol);
+		shard::SemanticScope* CurrentScope();
+		void PushScope(const shard::SyntaxSymbol* symbol);
 		void PopScope();
 
 		virtual bool CheckNameDeclared(std::wstring& name);
-		virtual bool CheckSymbolNameDeclared(shard::syntax::SyntaxSymbol* symbol);
-		virtual void Declare(shard::syntax::SyntaxSymbol* symbol);
-		shard::syntax::SyntaxSymbol* OwnerSymbol();
-		shard::syntax::symbols::TypeSymbol* OwnerType();
-		//shard::syntax::symbols::NamespaceSymbol* OwnerNamespace();
-		//shard::parsing::semantic::NamespaceNode* OwnerNamespaceNode();
-		bool IsSymbolAccessible(shard::syntax::SyntaxSymbol* symbol);
+		virtual bool CheckSymbolNameDeclared(shard::SyntaxSymbol* symbol);
+		virtual void Declare(shard::SyntaxSymbol* symbol);
+		shard::SyntaxSymbol* OwnerSymbol();
+		shard::TypeSymbol* OwnerType();
+		//shard::NamespaceSymbol* OwnerNamespace();
+		//shard::NamespaceNode* OwnerNamespaceNode();
+		bool IsSymbolAccessible(shard::SyntaxSymbol* symbol);
 	};
 }

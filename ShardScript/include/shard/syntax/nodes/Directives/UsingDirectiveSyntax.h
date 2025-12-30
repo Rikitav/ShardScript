@@ -10,7 +10,7 @@
 #include <vector>
 #include <string>
 
-namespace shard::syntax::nodes
+namespace shard
 {
 	class SHARD_API UsingDirectiveSyntax : public SyntaxNode
 	{
@@ -18,7 +18,7 @@ namespace shard::syntax::nodes
 		SyntaxToken UsingKeywordToken;
 		SyntaxToken SemicolonToken;
 		std::vector<SyntaxToken> TokensList;
-		shard::parsing::semantic::NamespaceNode* Namespace = nullptr;
+		shard::NamespaceNode* Namespace = nullptr;
 
 		inline UsingDirectiveSyntax(const SyntaxNode* parent)
 			: SyntaxNode(SyntaxKind::UsingDirective, parent) { }

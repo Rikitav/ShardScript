@@ -8,7 +8,7 @@
 #include <vector>
 
 // Forward declaration
-namespace shard::syntax::symbols
+namespace shard
 {
     class TypeParameterSymbol;
     class MethodSymbol;
@@ -18,9 +18,8 @@ namespace shard::syntax::symbols
     class IndexatorSymbol;
 }
 
-namespace shard::syntax::symbols
+namespace shard
 {
-
     enum class SHARD_API TypeLayoutingState
     {
         Unvisited,

@@ -8,7 +8,7 @@
 #include <shard/syntax/nodes/StatementsBlockSyntax.h>
 #include <shard/syntax/nodes/StatementSyntax.h>
 
-namespace shard::syntax::nodes
+namespace shard
 {
 	class SHARD_API ConditionalClauseBaseSyntax : public KeywordStatementSyntax
 	{

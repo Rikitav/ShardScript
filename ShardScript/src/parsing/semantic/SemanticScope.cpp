@@ -3,8 +3,7 @@
 #include <stdexcept>
 #include <string>
 
-using namespace shard::syntax;
-using namespace shard::parsing::semantic;
+using namespace shard;
 
 SyntaxSymbol* SemanticScope::Lookup(const std::wstring& name)
 {

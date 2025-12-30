@@ -21,10 +21,7 @@
 #include <string>
 #include <stdexcept>
 
-using namespace shard::runtime;
-using namespace shard::syntax;
-using namespace shard::syntax::symbols;
-using namespace shard::parsing::semantic;
+using namespace shard;
 
 static bool paramPredicate(ParameterSymbol* left, TypeSymbol* right)
 {

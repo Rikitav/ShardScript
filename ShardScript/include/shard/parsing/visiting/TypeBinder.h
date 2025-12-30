@@ -33,38 +33,38 @@
 #include <shard/syntax/nodes/Types/NullableTypeSyntax.h>
 #include <shard/syntax/nodes/Types/PredefinedTypeSyntax.h>
 
-namespace shard::parsing
+namespace shard
 {
 	class SHARD_API TypeBinder : public SyntaxVisitor, ScopeVisitor
 	{
 	public:
-		inline TypeBinder(shard::parsing::semantic::SemanticModel& model, shard::parsing::analysis::DiagnosticsContext& diagnostics)
+		inline TypeBinder(shard::SemanticModel& model, shard::DiagnosticsContext& diagnostics)
 			: SyntaxVisitor(model, diagnostics), ScopeVisitor(model.Table) { }
 
-		void VisitCompilationUnit(shard::syntax::nodes::CompilationUnitSyntax* node) override;
-		void VisitUsingDirective(shard::syntax::nodes::UsingDirectiveSyntax* node) override;
-		void VisitImportDirective(shard::syntax::nodes::ImportDirectiveSyntax* node) override;
+		void VisitCompilationUnit(shard::CompilationUnitSyntax* node) override;
+		void VisitUsingDirective(shard::UsingDirectiveSyntax* node) override;
+		void VisitImportDirective(shard::ImportDirectiveSyntax* node) override;
 
-		void VisitNamespaceDeclaration(shard::syntax::nodes::NamespaceDeclarationSyntax* node) override;
-		void VisitClassDeclaration(shard::syntax::nodes::ClassDeclarationSyntax* node) override;
-		void VisitStructDeclaration(shard::syntax::nodes::StructDeclarationSyntax* node) override;
-		void VisitDelegateDeclaration(shard::syntax::nodes::DelegateDeclarationSyntax* node) override;
+		void VisitNamespaceDeclaration(shard::NamespaceDeclarationSyntax* node) override;
+		void VisitClassDeclaration(shard::ClassDeclarationSyntax* node) override;
+		void VisitStructDeclaration(shard::StructDeclarationSyntax* node) override;
+		void VisitDelegateDeclaration(shard::DelegateDeclarationSyntax* node) override;
 
-		void VisitConstructorDeclaration(shard::syntax::nodes::ConstructorDeclarationSyntax* node) override;
-		void VisitMethodDeclaration(shard::syntax::nodes::MethodDeclarationSyntax* node) override;
-		void VisitFieldDeclaration(shard::syntax::nodes::FieldDeclarationSyntax* node) override;
-		void VisitPropertyDeclaration(shard::syntax::nodes::PropertyDeclarationSyntax* node) override;
-		void VisitVariableStatement(shard::syntax::nodes::VariableStatementSyntax* node) override;
+		void VisitConstructorDeclaration(shard::ConstructorDeclarationSyntax* node) override;
+		void VisitMethodDeclaration(shard::MethodDeclarationSyntax* node) override;
+		void VisitFieldDeclaration(shard::FieldDeclarationSyntax* node) override;
+		void VisitPropertyDeclaration(shard::PropertyDeclarationSyntax* node) override;
+		void VisitVariableStatement(shard::VariableStatementSyntax* node) override;
 
-		void VisitObjectCreationExpression(shard::syntax::nodes::ObjectExpressionSyntax* node) override;
+		void VisitObjectCreationExpression(shard::ObjectExpressionSyntax* node) override;
 
-		void VisitParameter(shard::syntax::nodes::ParameterSyntax* node) override;
+		void VisitParameter(shard::ParameterSyntax* node) override;
 
-		void VisitPredefinedType(shard::syntax::nodes::PredefinedTypeSyntax* node) override;
-		void VisitIdentifierNameType(shard::syntax::nodes::IdentifierNameTypeSyntax* node) override;
-		void VisitArrayType(shard::syntax::nodes::ArrayTypeSyntax* node) override;
-		void VisitNullableType(shard::syntax::nodes::NullableTypeSyntax* node) override;
-		void VisitGenericType(shard::syntax::nodes::GenericTypeSyntax* node) override;
-		void VisitDelegateType(shard::syntax::nodes::DelegateTypeSyntax* node) override;
+		void VisitPredefinedType(shard::PredefinedTypeSyntax* node) override;
+		void VisitIdentifierNameType(shard::IdentifierNameTypeSyntax* node) override;
+		void VisitArrayType(shard::ArrayTypeSyntax* node) override;
+		void VisitNullableType(shard::NullableTypeSyntax* node) override;
+		void VisitGenericType(shard::GenericTypeSyntax* node) override;
+		void VisitDelegateType(shard::DelegateTypeSyntax* node) override;
 	};
 }

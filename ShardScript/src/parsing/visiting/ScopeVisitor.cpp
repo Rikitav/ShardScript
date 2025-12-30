@@ -11,10 +11,7 @@
 
 #include <stdexcept>
 
-using namespace shard::parsing;
-using namespace shard::parsing::semantic;
-using namespace shard::syntax;
-using namespace shard::syntax::symbols;
+using namespace shard;
 
 SemanticScope* ScopeVisitor::CurrentScope()
 {

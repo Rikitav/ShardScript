@@ -2,14 +2,14 @@
 #include <shard/ShardScriptAPI.h>
 #include <shard/syntax/SyntaxSymbol.h>
 
-namespace shard::parsing::semantic
+namespace shard
 {
     struct SHARD_API SymbolInfo
     {
     public:
-        shard::syntax::SyntaxSymbol* Symbol;
+        shard::SyntaxSymbol* Symbol;
 
-        inline SymbolInfo(shard::syntax::SyntaxSymbol* symbol)
+        inline SymbolInfo(shard::SyntaxSymbol* symbol)
             : Symbol(symbol) { }
     };
 }

@@ -1,6 +1,6 @@
 #include <shard/syntax/symbols/NamespaceSymbol.h>
 
-using namespace shard::syntax::symbols;
+using namespace shard;
 
 void NamespaceSymbol::OnSymbolDeclared(SyntaxSymbol* symbol)
 {

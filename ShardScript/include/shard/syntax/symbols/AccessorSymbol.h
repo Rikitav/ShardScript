@@ -8,7 +8,7 @@
 
 #include <string>
 
-namespace shard::syntax::symbols
+namespace shard
 {
     class SHARD_API AccessorSymbol : public MethodSymbol
     {
@@ -22,7 +22,7 @@ namespace shard::syntax::symbols
             Accesibility = SymbolAccesibility::Public;
         }
 
-        inline AccessorSymbol(std::wstring name, shard::syntax::nodes::StatementsBlockSyntax* body) : MethodSymbol(name, body)
+        inline AccessorSymbol(std::wstring name, shard::StatementsBlockSyntax* body) : MethodSymbol(name, body)
         {
             // hehe
             SyntaxKind* pKind = const_cast<SyntaxKind*>(&Kind);

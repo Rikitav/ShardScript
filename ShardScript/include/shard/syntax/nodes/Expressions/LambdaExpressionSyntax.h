@@ -10,7 +10,7 @@
 #include <shard/syntax/nodes/ParametersListSyntax.h>
 #include <shard/syntax/symbols/DelegateTypeSymbol.h>
 
-namespace shard::syntax::nodes
+namespace shard
 {
 	class SHARD_API LambdaExpressionSyntax : public ExpressionSyntax
 	{
@@ -19,7 +19,7 @@ namespace shard::syntax::nodes
 		SyntaxToken LambdaOperatorToken;
 		ParametersListSyntax* Params = nullptr;
 		StatementsBlockSyntax* Body = nullptr;
-		shard::syntax::symbols::DelegateTypeSymbol* Symbol = nullptr;
+		shard::DelegateTypeSymbol* Symbol = nullptr;
 
 		inline LambdaExpressionSyntax(const SyntaxNode* parent)
 			: ExpressionSyntax(SyntaxKind::LambdaExpression, parent) { }

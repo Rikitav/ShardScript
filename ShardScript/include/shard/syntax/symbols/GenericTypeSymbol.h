@@ -11,7 +11,7 @@
 #include <vector>
 #include <unordered_map>
 
-namespace shard::syntax::symbols
+namespace shard
 {
 	class SHARD_API GenericTypeSymbol : public TypeSymbol
 	{

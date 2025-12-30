@@ -8,7 +8,7 @@
 
 #include <vector>
 
-namespace shard::syntax::nodes
+namespace shard
 {
 	class SHARD_API MemberDeclarationSyntax : public SyntaxNode
 	{

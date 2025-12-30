@@ -3,11 +3,11 @@
 #include <shard/parsing/semantic/SemanticModel.h>
 #include <shard/parsing/lexical/SyntaxTree.h>
 
-namespace shard::runtime
+namespace shard
 {
 	class InteractiveConsole
 	{
 	public:
-		static void Run(shard::parsing::lexical::SyntaxTree& syntaxTree, shard::parsing::semantic::SemanticModel& semanticModel, shard::parsing::analysis::DiagnosticsContext& diagnostics);
+		static void Run(shard::SyntaxTree& syntaxTree, shard::SemanticModel& semanticModel, shard::DiagnosticsContext& diagnostics);
 	};
 }

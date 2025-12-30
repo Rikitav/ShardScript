@@ -10,7 +10,7 @@
 
 #include <string>
 
-namespace shard::syntax::nodes
+namespace shard
 {
 	class SHARD_API DelegateTypeSyntax : public TypeSyntax
 	{

@@ -1,6 +1,6 @@
 #include <shard/syntax/nodes/Types/PredefinedTypeSyntax.h>
 
-using namespace shard::syntax::nodes;
+using namespace shard;
 
 std::wstring PredefinedTypeSyntax::ToString()
 {

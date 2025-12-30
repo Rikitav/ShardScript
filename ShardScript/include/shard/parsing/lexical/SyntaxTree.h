@@ -3,12 +3,12 @@
 #include <shard/syntax/nodes/CompilationUnitSyntax.h>
 #include <vector>
 
-namespace shard::parsing::lexical
+namespace shard
 {
 	class SHARD_API SyntaxTree
 	{
 	public:
-		std::vector<shard::syntax::nodes::CompilationUnitSyntax*> CompilationUnits;
+		std::vector<shard::CompilationUnitSyntax*> CompilationUnits;
 
 		inline SyntaxTree() { }
 

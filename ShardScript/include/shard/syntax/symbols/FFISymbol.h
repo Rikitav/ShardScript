@@ -10,7 +10,7 @@
 #include <string>
 #include <vector>
 
-namespace shard::syntax::symbols
+namespace shard
 {
 	class SHARD_API FFISymbol : public SyntaxSymbol
 	{

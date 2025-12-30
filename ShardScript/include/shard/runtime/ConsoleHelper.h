@@ -4,7 +4,7 @@
 #include <shard/runtime/ObjectInstance.h>
 #include <string>
 
-namespace shard::runtime
+namespace shard
 {
 	class SHARD_API ConsoleHelper
 	{
