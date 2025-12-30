@@ -12,7 +12,8 @@ ObjectInstance* InboundVariablesContext::AddVariable(const std::wstring name, Ob
 	if (search != Variables.end())
 		throw std::runtime_error("variable already exists");
 
-	Variables[name] = GarbageCollector::CopyInstance(instance);
+	instance = GarbageCollector::CopyInstance(instance);
+	Variables[name] = instance;
 	return instance;
 }
 

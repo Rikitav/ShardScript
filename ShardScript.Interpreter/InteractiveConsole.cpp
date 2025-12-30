@@ -42,6 +42,7 @@
 #include <consoleapi2.h>
 #include <processenv.h>
 #include <string>
+#include <sstream>
 #include <iostream>
 #include <vector>
 #include <exception>
@@ -331,6 +332,48 @@ void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticMode
 			if (firstLine == L"exit" || firstLine == L"quit")
 				break;
 
+			if (firstLine.starts_with(L"using "))
+			{
+				static const std::wstring del = L".";
+
+				std::wstring use = firstLine.substr(6);
+				auto pos = use.find(del);
+
+				NamespaceNode* node = semanticModel.Namespaces->Root;
+				while (pos != std::wstring::npos)
+				{
+					std::wstring token = use.substr(0, pos);
+					use.erase(0, pos + del.length());
+					pos = use.find(del);
+
+					node = node->Lookup(token);
+					if (node == nullptr)
+						break;
+				}
+
+				if (node == nullptr)
+				{
+					std::wcerr << L"### Namespace not found" << std::endl;
+					continue;
+				}
+				else
+				{
+					node = node->Lookup(use);
+				}
+
+				int counter = 0;
+				std::wcout << L"Loaded : ";
+				for (const auto& symbol : node->Types)
+				{
+					SymbolTable::Global::Scope->DeclareSymbol(symbol);
+					std::wcout << symbol->Name << L", ";
+					counter += 1;
+				}
+
+				std::wcout << "(" << counter << " symbols)" << std::endl;
+				continue;
+			}
+
 			StringStreamReader stringStreamReader(L"Interactive console", firstLine);
 			SequenceSourceReader sequenceReader;
 			sequenceReader.PopulateFrom(stringStreamReader);
@@ -389,9 +432,9 @@ void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticMode
 				interactiveBody->Statements.push_back(exprStatement);
 
 				// Re-analyze syntax tree
-				semanticModel.Table->ClearSymbols();
-				semanticAnalyzer.Analyze(syntaxTree, semanticModel);
-				layoutGenerator.Generate(semanticModel);
+				SemanticModel newModel(syntaxTree);
+				semanticAnalyzer.Analyze(syntaxTree, newModel);
+				layoutGenerator.Generate(newModel);
 
 				// Check for errors
 				if (diagnostics.AnyError)
@@ -432,9 +475,9 @@ void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticMode
 				interactiveBody->Statements.push_back(statement);
 
 				// Re-analyze syntax tree with new statement
-				semanticModel.Table->ClearSymbols();
-				semanticAnalyzer.Analyze(syntaxTree, semanticModel);
-				layoutGenerator.Generate(semanticModel);
+				SemanticModel newModel(syntaxTree);
+				semanticAnalyzer.Analyze(syntaxTree, newModel);
+				layoutGenerator.Generate(newModel);
 
 				// Check for errors
 				if (diagnostics.AnyError)

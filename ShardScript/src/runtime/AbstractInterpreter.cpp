@@ -356,10 +356,10 @@ ObjectInstance* AbstractInterpreter::ExecuteVariableStatement(const VariableStat
 {
 	std::wstring varName = statement->IdentifierToken.Word;
 	ObjectInstance* assignInstance = EvaluateExpression(statement->Expression);
-	CurrentContext()->AddVariable(varName, assignInstance);
+	ObjectInstance* retInstance = CurrentContext()->AddVariable(varName, assignInstance);
 
 	GarbageCollector::CollectInstance(assignInstance);
-	return assignInstance;
+	return retInstance;
 }
 
 ObjectInstance* AbstractInterpreter::ExecuteThrowStatement(const ThrowStatementSyntax* statement)

@@ -947,6 +947,7 @@ bool SourceReader::IsStringLiteral(TokenType& type, bool& dontEcran)
 			if (PeekSymbol != '"')
 				return false;
 
+			ReadNext();
 			dontEcran = true;
 			return IsStringLiteral(type, dontEcran);
 		}
