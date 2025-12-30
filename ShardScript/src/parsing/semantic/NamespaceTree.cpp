@@ -2,8 +2,7 @@
 #include <string>
 #include <shard/syntax/symbols/NamespaceSymbol.h>
 
-using namespace shard::parsing::semantic;
-using namespace shard::syntax::symbols;
+using namespace shard;
 
 NamespaceNode* NamespaceNode::Lookup(std::wstring name)
 {

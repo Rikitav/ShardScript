@@ -1,8 +1,10 @@
 #include <shard/ShardScriptVersion.h>
 #include <Windows.h>
 
-const int shard::ShardScriptVersion::Major = 0;
-const int shard::ShardScriptVersion::Minor = 1;
+using namespace shard;
+
+const int ShardScriptVersion::Major = 0;
+const int ShardScriptVersion::Minor = 1;
 
 /*
 enum StringCompareResult
@@ -21,14 +23,14 @@ static StringCompareResult compareVersionStrings(const wchar_t* v1, const wchar_
     return static_cast<StringCompareResult>(result);
 }
 
-bool shard::ShardScriptVersion::IsCompatibleWith(const wchar_t* version)
+bool shard::IsCompatibleWith(const wchar_t* version)
 {
     StringCompareResult result = compareVersionStrings(Version, version);
     return result == Greater || result == Equals;
 }
 */
 
-bool shard::ShardScriptVersion::IsCompatibleWith(const int major, const int minor)
+bool ShardScriptVersion::IsCompatibleWith(const int major, const int minor)
 {
     if (major > Major)
         return false;

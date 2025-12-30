@@ -7,7 +7,7 @@
 
 #include <shard/syntax/nodes/TypeSyntax.h>
 
-namespace shard::syntax::nodes
+namespace shard
 {
 	class SHARD_API NullableTypeSyntax : public TypeSyntax
 	{

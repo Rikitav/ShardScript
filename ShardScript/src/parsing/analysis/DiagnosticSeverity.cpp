@@ -1,6 +1,6 @@
 #include <shard/parsing/analysis/DiagnosticSeverity.h>
 
-using namespace shard::parsing::analysis;
+using namespace shard;
 
 std::wstring severity_to_wstring(const DiagnosticSeverity& severity)
 {

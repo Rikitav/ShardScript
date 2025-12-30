@@ -9,10 +9,9 @@
 #include <vector>
 #include <string>
 
-using namespace shard::parsing::semantic;
-using namespace shard::syntax::symbols;
+using namespace shard;
 
-ConstructorSymbol* shard::syntax::symbols::ArrayTypeSymbol::FindConstructor(std::vector<TypeSymbol*> parameterTypes)
+ConstructorSymbol* ArrayTypeSymbol::FindConstructor(std::vector<TypeSymbol*> parameterTypes)
 {
 	return SymbolTable::Primitives::Array->FindConstructor(parameterTypes);
 }

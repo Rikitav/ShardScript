@@ -2,7 +2,7 @@
 
 #include <string>
 
-using namespace shard::syntax::nodes;
+using namespace shard;
 
 std::wstring DelegateTypeSyntax::ToString()
 {

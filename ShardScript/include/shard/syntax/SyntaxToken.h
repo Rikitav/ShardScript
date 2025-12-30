@@ -7,7 +7,7 @@
 #include <string>
 #include <utility>
 
-namespace shard::syntax
+namespace shard
 {
 	struct SHARD_API SyntaxToken
 	{
@@ -19,12 +19,12 @@ namespace shard::syntax
 		const bool IsMissing;
 		const TokenType Type;
 		const std::wstring Word;
-		const shard::parsing::analysis::TextLocation Location;
+		const shard::TextLocation Location;
 
 		inline SyntaxToken()
 			: Index(-1), IsMissing(true), Type(TokenType::Unknown), Word() { }
 
-		inline SyntaxToken(const TokenType type, std::wstring word, const shard::parsing::analysis::TextLocation& location, const bool isMissing = false)
+		inline SyntaxToken(const TokenType type, std::wstring word, const shard::TextLocation& location, const bool isMissing = false)
 			: Index(counter++), IsMissing(isMissing), Type(type), Word(std::move(word)), Location(location) { }
 
 		inline SyntaxToken(const SyntaxToken& other)

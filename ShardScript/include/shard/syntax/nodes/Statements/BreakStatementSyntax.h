@@ -6,7 +6,7 @@
 
 #include <shard/syntax/nodes/StatementSyntax.h>
 
-namespace shard::syntax::nodes
+namespace shard
 {
 	class SHARD_API BreakStatementSyntax : public KeywordStatementSyntax
 	{

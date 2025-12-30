@@ -1,6 +1,6 @@
 #include <shard/syntax/symbols/PropertySymbol.h>
 
-using namespace shard::syntax::symbols;
+using namespace shard;
 
 PropertySymbol* PropertySymbol::GenerateBackingField()
 {

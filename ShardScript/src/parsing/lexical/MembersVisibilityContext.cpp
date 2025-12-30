@@ -3,7 +3,7 @@
 #include <shard/parsing/structures/ObjectInfo.h>
 #include <string>
 
-using namespace shard::parsing;
+using namespace shard;
 
 void MembersVisibilityContext::AddObject(std::wstring name, const ObjectInfo* info)
 {

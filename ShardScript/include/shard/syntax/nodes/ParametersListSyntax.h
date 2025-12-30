@@ -10,14 +10,14 @@
 
 #include <vector>
 
-namespace shard::syntax::nodes
+namespace shard
 {
 	class SHARD_API ParameterSyntax : public SyntaxNode
 	{
 	public:
 		const TypeSyntax* Type;
 		const SyntaxToken Identifier;
-		shard::syntax::symbols::TypeSymbol* Symbol = nullptr;
+		shard::TypeSymbol* Symbol = nullptr;
 
 		inline ParameterSyntax(const TypeSyntax* type, const SyntaxToken identifier, const SyntaxNode* parent)
 			: SyntaxNode(SyntaxKind::Parameter, parent), Type(type), Identifier(identifier) { }

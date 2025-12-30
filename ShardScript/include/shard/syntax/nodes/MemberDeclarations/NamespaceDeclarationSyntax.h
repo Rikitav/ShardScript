@@ -10,7 +10,7 @@
 
 #include <vector>
 
-namespace shard::syntax::nodes
+namespace shard
 {
 	class SHARD_API NamespaceDeclarationSyntax : public TypeDeclarationSyntax
 	{
@@ -20,7 +20,7 @@ namespace shard::syntax::nodes
 		inline NamespaceDeclarationSyntax(const SyntaxNode* parent)
 			: TypeDeclarationSyntax(SyntaxKind::NamespaceDeclaration, parent) { }
 
-		inline NamespaceDeclarationSyntax(shard::parsing::lexical::MemberDeclarationInfo& info, const SyntaxNode* parent) : TypeDeclarationSyntax(SyntaxKind::NamespaceDeclaration, parent)
+		inline NamespaceDeclarationSyntax(shard::MemberDeclarationInfo& info, const SyntaxNode* parent) : TypeDeclarationSyntax(SyntaxKind::NamespaceDeclaration, parent)
 		{
 			Modifiers = info.Modifiers;
 			IdentifierToken = info.Identifier;

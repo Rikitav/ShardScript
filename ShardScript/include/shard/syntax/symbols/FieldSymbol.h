@@ -9,14 +9,14 @@
 
 #include <string>
 
-namespace shard::syntax::symbols
+namespace shard
 {
     class SHARD_API FieldSymbol : public SyntaxSymbol
     {
     public:
         size_t MemoryBytesOffset = 0;
         TypeSymbol* ReturnType = nullptr;
-        shard::syntax::nodes::ExpressionSyntax* DefaultValueExpression = nullptr;
+        shard::ExpressionSyntax* DefaultValueExpression = nullptr;
         bool IsStatic = false;
 
         inline FieldSymbol(std::wstring name)

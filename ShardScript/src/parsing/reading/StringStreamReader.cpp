@@ -8,8 +8,7 @@
 #include <codecvt>
 #include <locale>
 
-using namespace shard::parsing;
-using namespace shard::parsing::analysis;
+using namespace shard;
 
 StringStreamReader::StringStreamReader(const std::wstring& name, std::wstringstream& source) : SourceReader(), name(name)
 {

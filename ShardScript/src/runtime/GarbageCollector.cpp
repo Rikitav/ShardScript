@@ -8,9 +8,7 @@
 #include <stdexcept>
 #include <cstring>
 
-using namespace shard::syntax;
-using namespace shard::syntax::symbols;
-using namespace shard::runtime;
+using namespace shard;
 
 ObjectInstance* GarbageCollector::NullInstance = new ObjectInstance(-1, nullptr, nullptr);
 

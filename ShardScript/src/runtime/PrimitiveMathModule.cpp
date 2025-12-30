@@ -9,10 +9,7 @@
 #include <cmath>
 #include <string>
 
-using namespace shard::syntax;
-using namespace shard::runtime;
-using namespace shard::parsing;
-using namespace shard::parsing::semantic;
+using namespace shard;
 
 ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(ObjectInstance* leftInstance, SyntaxToken opToken, ObjectInstance* rightInstance, bool& assign)
 {

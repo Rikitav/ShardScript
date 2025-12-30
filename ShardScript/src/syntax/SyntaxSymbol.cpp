@@ -1,6 +1,6 @@
 #include <shard/syntax/SyntaxSymbol.h>
 
-using namespace shard::syntax;
+using namespace shard;
 
 void SyntaxSymbol::OnSymbolDeclared(SyntaxSymbol* symbol)
 {

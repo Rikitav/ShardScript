@@ -15,10 +15,7 @@
 #include <stdexcept>
 #include <string>
 
-using namespace shard::runtime;
-using namespace shard::syntax;
-using namespace shard::syntax::symbols;
-using namespace shard::parsing::semantic;
+using namespace shard;
 
 ObjectInstance* ObjectInstance::FromValue(bool value)
 {
@@ -34,7 +31,7 @@ ObjectInstance* ObjectInstance::FromValue(long value)
 	return instance;
 }
 
-ObjectInstance* shard::runtime::ObjectInstance::FromValue(double value)
+ObjectInstance* ObjectInstance::FromValue(double value)
 {
 	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::Double);
 	instance->WriteDouble(value);
@@ -136,7 +133,7 @@ void ObjectInstance::SetField(FieldSymbol* field, ObjectInstance* instance)
 
 ObjectInstance* ObjectInstance::GetElement(size_t index)
 {
-	if (Info->Kind != shard::syntax::SyntaxKind::ArrayType)
+	if (Info->Kind != shard::SyntaxKind::ArrayType)
 		throw std::runtime_error("Tried to get element from non array instance");
 
 	const ArrayTypeSymbol* info = static_cast<const ArrayTypeSymbol*>(Info);
@@ -171,7 +168,7 @@ ObjectInstance* ObjectInstance::GetElement(size_t index)
 
 void ObjectInstance::SetElement(size_t index, ObjectInstance* instance)
 {
-	if (Info->Kind != shard::syntax::SyntaxKind::ArrayType)
+	if (Info->Kind != shard::SyntaxKind::ArrayType)
 		throw std::runtime_error("Tried to set element in non array instance");
 
 	if (instance == nullptr)
@@ -207,7 +204,7 @@ void ObjectInstance::SetElement(size_t index, ObjectInstance* instance)
 
 bool ObjectInstance::IsInBounds(size_t index)
 {
-	if (Info->Kind != shard::syntax::SyntaxKind::ArrayType)
+	if (Info->Kind != shard::SyntaxKind::ArrayType)
 		throw std::runtime_error("Tried to get size of non array instance");
 
 	const ArrayTypeSymbol* array = static_cast<const ArrayTypeSymbol*>(Info);
@@ -311,7 +308,7 @@ long ObjectInstance::AsInteger()
 	return *reinterpret_cast<long*>(Ptr);
 }
 
-double shard::runtime::ObjectInstance::AsDouble()
+double shard::ObjectInstance::AsDouble()
 {
 	return *reinterpret_cast<double*>(Ptr);
 }

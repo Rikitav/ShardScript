@@ -8,7 +8,7 @@
 
 #include "InterpreterUtilities.h"
 
-std::wstring shard::interpreter::utilities::ShardUtilities::GetFileVersion()
+std::wstring shard::ShardUtilities::GetFileVersion()
 {
 	TCHAR filename[MAX_PATH];
 	GetModuleFileNameW(NULL, filename, MAX_PATH);

@@ -7,7 +7,7 @@
 #include <shard/syntax/SyntaxNode.h>
 #include <shard/syntax/SyntaxKind.h>
 
-namespace shard::syntax::nodes
+namespace shard
 {
 	class SHARD_API ExpressionStatementSyntax : public StatementSyntax
 	{

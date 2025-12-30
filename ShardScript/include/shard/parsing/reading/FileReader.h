@@ -7,7 +7,7 @@
 #include <fstream>
 #include <string>
 
-namespace shard::parsing
+namespace shard
 {
 	class SHARD_API FileReader : public SourceReader
 	{
@@ -18,7 +18,7 @@ namespace shard::parsing
 		FileReader(const std::wstring& fileName);
 		~FileReader() override;
 
-		shard::parsing::analysis::TextLocation GetLocation(std::wstring& word) override;
+		shard::TextLocation GetLocation(std::wstring& word) override;
 
 	protected:
 		bool ReadNext() override;

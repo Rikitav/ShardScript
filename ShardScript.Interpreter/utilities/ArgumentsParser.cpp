@@ -4,9 +4,9 @@
 
 #include "InterpreterUtilities.h"
 
-shard::interpreter::utilities::ConsoleArguments shard::interpreter::utilities::ShardUtilities::ParseArguments(int argc, wchar_t* argv[])
+shard::ConsoleArguments shard::ShardUtilities::ParseArguments(int argc, wchar_t* argv[])
 {
-    shard::interpreter::utilities::ConsoleArguments args;
+    shard::ConsoleArguments args;
     if (argc <= 1)
     {
         args.UseInteractive = true;
@@ -41,7 +41,7 @@ shard::interpreter::utilities::ConsoleArguments shard::interpreter::utilities::S
     return args;
 }
 
-std::wstring shard::interpreter::utilities::ShardUtilities::NoralizePath(const std::wstring& messyPath)
+std::wstring shard::ShardUtilities::NoralizePath(const std::wstring& messyPath)
 {
     using namespace std::filesystem;
     path input(messyPath);

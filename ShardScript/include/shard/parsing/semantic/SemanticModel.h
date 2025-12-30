@@ -10,21 +10,21 @@
 #include <shard/parsing/semantic/SymbolInfo.h>
 #include <shard/parsing/semantic/NamespaceTree.h>
 
-namespace shard::parsing::semantic
+namespace shard
 {
 	class SHARD_API SemanticModel
 	{
 	public:
-		shard::parsing::lexical::SyntaxTree& Tree;
-		shard::parsing::semantic::SymbolTable* Table;
-		shard::parsing::semantic::NamespaceTree* Namespaces;
+		shard::SyntaxTree& Tree;
+		shard::SymbolTable* Table;
+		shard::NamespaceTree* Namespaces;
 
-		SemanticModel(shard::parsing::lexical::SyntaxTree& tree);
+		SemanticModel(shard::SyntaxTree& tree);
 		~SemanticModel();
 
-		shard::parsing::semantic::SymbolInfo GetSymbolInfo(shard::syntax::SyntaxNode* node);
-		shard::parsing::semantic::TypeInfo GetTypeInfo(shard::syntax::nodes::ExpressionSyntax* expression);
-		//Conversion ClassifyConversion(shard::syntax::nodes::ExpressionSyntax* expression, shard::syntax::symbols::TypeSymbol destination);
-		//DataFlowAnalysis AnalyzeDataFlow(shard::syntax::SyntaxNode* firstNode, shard::syntax::SyntaxNode* lastNode);
+		shard::SymbolInfo GetSymbolInfo(shard::SyntaxNode* node);
+		shard::TypeInfo GetTypeInfo(shard::ExpressionSyntax* expression);
+		//Conversion ClassifyConversion(shard::ExpressionSyntax* expression, shard::TypeSymbol destination);
+		//DataFlowAnalysis AnalyzeDataFlow(shard::SyntaxNode* firstNode, shard::SyntaxNode* lastNode);
 	};
 }

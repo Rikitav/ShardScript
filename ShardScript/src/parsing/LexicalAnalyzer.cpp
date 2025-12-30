@@ -67,11 +67,7 @@
 #include <new>
 #include <shard/syntax/nodes/Types/DelegateTypeSyntax.h>
 
-using namespace shard::syntax;
-using namespace shard::syntax::nodes;
-using namespace shard::parsing;
-using namespace shard::parsing::analysis;
-using namespace shard::parsing::lexical;
+using namespace shard;
 
 void LexicalAnalyzer::FromSourceReader(SyntaxTree& syntaxTree, SourceReader& reader)
 {

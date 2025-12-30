@@ -3,8 +3,7 @@
 #include <shard/syntax/SyntaxToken.h>
 #include <string>
 
-using namespace shard::syntax;
-using namespace shard::parsing::analysis;
+using namespace shard;
 
 Diagnostic::Diagnostic(SyntaxToken token, DiagnosticSeverity severity, std::wstring description)
 	: Token(token), Severity(severity), Description(description), Location(token.Location) { }

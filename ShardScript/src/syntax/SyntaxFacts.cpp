@@ -1,7 +1,7 @@
 #include <shard/syntax/SyntaxFacts.h>
 #include <shard/syntax/TokenType.h>
 
-using namespace shard::syntax;
+using namespace shard;
 
 int GetOperatorPrecendence(TokenType type)
 {
@@ -100,7 +100,7 @@ bool IsBinaryBooleanOperator(TokenType type)
 	}
 }
 
-bool IsBinaryBitOperator(shard::syntax::TokenType type)
+bool IsBinaryBitOperator(shard::TokenType type)
 {
 	switch (type)
 	{
@@ -152,7 +152,7 @@ bool IsRightUnaryBooleanOperator(TokenType type)
 	}
 }
 
-bool IsLeftUnaryOperator(shard::syntax::TokenType type)
+bool IsLeftUnaryOperator(shard::TokenType type)
 {
 	if (IsLeftUnaryArithmeticOperator(type))
 		return true;
@@ -163,7 +163,7 @@ bool IsLeftUnaryOperator(shard::syntax::TokenType type)
 	return false;
 }
 
-bool IsLeftUnaryArithmeticOperator(shard::syntax::TokenType type)
+bool IsLeftUnaryArithmeticOperator(shard::TokenType type)
 {
 	switch (type)
 	{
@@ -178,12 +178,12 @@ bool IsLeftUnaryArithmeticOperator(shard::syntax::TokenType type)
 	}
 }
 
-bool IsLeftUnaryBooleanOperator(shard::syntax::TokenType type)
+bool IsLeftUnaryBooleanOperator(shard::TokenType type)
 {
 	return false;
 }
 
-bool IsUnaryOperator(shard::syntax::TokenType type)
+bool IsUnaryOperator(shard::TokenType type)
 {
 	if (IsLeftUnaryOperator(type))
 		return true;
@@ -373,7 +373,7 @@ bool IsFunctionalKeyword(TokenType type)
 	}
 }
 
-bool IsLinkedExpressionNode(shard::syntax::SyntaxKind kind)
+bool IsLinkedExpressionNode(shard::SyntaxKind kind)
 {
 	switch (kind)
 	{

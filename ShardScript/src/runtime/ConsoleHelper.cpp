@@ -11,8 +11,7 @@
 #include <stdexcept>
 #include <string>
 
-using namespace shard::runtime;
-using namespace shard::parsing::semantic;
+using namespace shard;
 
 static const HANDLE stdOut = GetStdHandle(STD_OUTPUT_HANDLE);
 

@@ -12,7 +12,7 @@
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/ConstructorSymbol.h>
 
-namespace shard::syntax::nodes
+namespace shard
 {
 	class SHARD_API ObjectExpressionSyntax : public ExpressionSyntax
 	{
@@ -22,8 +22,8 @@ namespace shard::syntax::nodes
 
 		TypeSyntax* Type = nullptr;
 		ArgumentsListSyntax* ArgumentsList = nullptr;
-		shard::syntax::symbols::TypeSymbol* TypeSymbol = nullptr;
-		shard::syntax::symbols::ConstructorSymbol* CtorSymbol = nullptr;
+		shard::TypeSymbol* TypeSymbol = nullptr;
+		shard::ConstructorSymbol* CtorSymbol = nullptr;
 
 		inline ObjectExpressionSyntax(const SyntaxNode* parent)
 			: ExpressionSyntax(SyntaxKind::ObjectExpression, parent) { }

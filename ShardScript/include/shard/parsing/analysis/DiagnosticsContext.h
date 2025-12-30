@@ -8,7 +8,7 @@
 #include <vector>
 #include <ostream>
 
-namespace shard::parsing::analysis
+namespace shard
 {
 	class SHARD_API DiagnosticsContext
 	{
@@ -18,9 +18,9 @@ namespace shard::parsing::analysis
 
 		inline DiagnosticsContext() : Diagnostics() {}
 
-		void ReportError(shard::syntax::SyntaxToken token, std::wstring message);
-		void ReportWarning(shard::syntax::SyntaxToken token, std::wstring message);
-		void ReportInfo(shard::syntax::SyntaxToken token, std::wstring message);
+		void ReportError(shard::SyntaxToken token, std::wstring message);
+		void ReportWarning(shard::SyntaxToken token, std::wstring message);
+		void ReportInfo(shard::SyntaxToken token, std::wstring message);
 		void WriteDiagnostics(std::wostream& out);
 		void Reset();
 	};

@@ -6,7 +6,7 @@
 
 #include <vector>
 
-namespace shard::syntax::symbols
+namespace shard
 {
     class SHARD_API IndexatorSymbol : public PropertySymbol
     {

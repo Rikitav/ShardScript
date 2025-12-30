@@ -8,11 +8,11 @@
 #include <string>
 #include <vector>
 
-namespace shard::parsing
+namespace shard
 {
 	class SHARD_API SequenceSourceReader : public SourceReader
 	{
-		std::vector<shard::syntax::SyntaxToken> Sequence;
+		std::vector<shard::SyntaxToken> Sequence;
 		size_t CurrentIndex;
 
 	public:
@@ -21,24 +21,24 @@ namespace shard::parsing
 
 		static SequenceSourceReader BufferFrom(SourceReader& reader);
 		void PopulateFrom(SourceReader& reader);
-		void Push(shard::syntax::SyntaxToken token);
-		void Populate(std::vector<shard::syntax::SyntaxToken> fromvector);
-		void SetSequence(std::vector<shard::syntax::SyntaxToken> setvector);
+		void Push(shard::SyntaxToken token);
+		void Populate(std::vector<shard::SyntaxToken> fromvector);
+		void SetSequence(std::vector<shard::SyntaxToken> setvector);
 		void SetIndex(size_t newIndex);
-		shard::syntax::SyntaxToken At(size_t index);
-		shard::syntax::SyntaxToken Front();
-		shard::syntax::SyntaxToken Back();
+		shard::SyntaxToken At(size_t index);
+		shard::SyntaxToken Front();
+		shard::SyntaxToken Back();
 		size_t Size();
 		void Clear();
 
-		shard::syntax::SyntaxToken Current() override;
-		shard::syntax::SyntaxToken Consume() override;
-		shard::syntax::SyntaxToken Peek(int index) override;
+		shard::SyntaxToken Current() override;
+		shard::SyntaxToken Consume() override;
+		shard::SyntaxToken Peek(int index) override;
 		bool CanConsume() override;
 		bool CanPeek() override;
 
 	protected:
-		shard::parsing::analysis::TextLocation GetLocation(std::wstring& word) override;
+		shard::TextLocation GetLocation(std::wstring& word) override;
 		bool ReadNext() override;
 		bool PeekNext() override;
 	};

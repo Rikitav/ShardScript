@@ -10,13 +10,13 @@
 
 #include <string>
 
-namespace shard::syntax::symbols
+namespace shard
 {
 	class SHARD_API VariableSymbol : public SyntaxSymbol
 	{
 	public:
 		const TypeSymbol* Type = nullptr;
-        shard::syntax::nodes::ExpressionSyntax* Declaration = nullptr;
+        shard::ExpressionSyntax* Declaration = nullptr;
         bool IsConst = false;
 
 		inline VariableSymbol(std::wstring name, TypeSymbol* type) : SyntaxSymbol(name, SyntaxKind::VariableStatement), Type(type)

@@ -7,11 +7,7 @@
 #include <shard/parsing/visiting/TypeBinder.h>
 #include <shard/parsing/visiting/ExpressionBinder.h>
 
-using namespace shard::syntax;
-using namespace shard::parsing;
-using namespace shard::parsing::lexical;
-using namespace shard::parsing::semantic;
-using namespace shard::parsing::analysis;
+using namespace shard;
 
 void SemanticAnalyzer::Analyze(SyntaxTree& syntaxTree, SemanticModel& semanticModel)
 {

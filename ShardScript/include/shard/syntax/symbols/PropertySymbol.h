@@ -12,12 +12,12 @@
 
 #include <string>
 
-namespace shard::syntax::symbols
+namespace shard
 {
     class SHARD_API PropertySymbol : public SyntaxSymbol
     {
     public:
-        shard::syntax::nodes::ExpressionSyntax* DefaultValueExpression = nullptr;
+        shard::ExpressionSyntax* DefaultValueExpression = nullptr;
         TypeSymbol* ReturnType = nullptr;
         AccessorSymbol* Getter = nullptr;
         AccessorSymbol* Setter = nullptr;

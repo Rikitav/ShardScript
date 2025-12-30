@@ -16,9 +16,9 @@
 #include <vector>
 #include <utility>
 
-namespace shard::syntax::symbols
+namespace shard
 {
-    typedef SHARD_API shard::runtime::ObjectInstance* (*MethodSymbolDelegate)(const MethodSymbol* symbol, shard::runtime::InboundVariablesContext* arguments);
+    typedef SHARD_API shard::ObjectInstance* (*MethodSymbolDelegate)(const MethodSymbol* symbol, shard::InboundVariablesContext* arguments);
 
     enum class SHARD_API MethodHandleType
     {
@@ -37,7 +37,7 @@ namespace shard::syntax::symbols
         std::vector<ParameterSymbol*> Parameters;
 
         MethodHandleType HandleType = MethodHandleType::Body;
-        shard::syntax::nodes::StatementsBlockSyntax* Body = nullptr;
+        shard::StatementsBlockSyntax* Body = nullptr;
         MethodSymbolDelegate FunctionPointer = nullptr;
         std::wstring ForeighInterfacePath;
 
@@ -49,7 +49,7 @@ namespace shard::syntax::symbols
         inline MethodSymbol(std::wstring name)
             : SyntaxSymbol(name, SyntaxKind::MethodDeclaration), HandleType(MethodHandleType::None) { }
 
-        inline MethodSymbol(std::wstring name, shard::syntax::nodes::StatementsBlockSyntax* body)
+        inline MethodSymbol(std::wstring name, shard::StatementsBlockSyntax* body)
             : SyntaxSymbol(name, SyntaxKind::MethodDeclaration), Body(body), HandleType(MethodHandleType::Body) { }
 
         inline MethodSymbol(std::wstring name, MethodSymbolDelegate delegate)
@@ -73,10 +73,10 @@ namespace shard::syntax::symbols
         }
 
         template<typename... Args>
-        shard::runtime::ObjectInstance* invoke(Args&&... args)
+        shard::ObjectInstance* invoke(Args&&... args)
         {
-            shard::runtime::InboundVariablesContext* ctx = new shard::runtime::InboundVariablesContext(nullptr);
-            for (std::pair<std::wstring, shard::runtime::ObjectInstance*> pair : args)
+            shard::InboundVariablesContext* ctx = new shard::InboundVariablesContext(nullptr);
+            for (std::pair<std::wstring, shard::ObjectInstance*> pair : args)
                 ctx->SetVariable(pair.first, pair.second);
 
             return this->FunctionPointer(this, ctx);

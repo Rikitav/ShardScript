@@ -40,7 +40,7 @@
 #include <vector>
 #include <shard/syntax/nodes/Expressions/TernaryExpressionSyntax.h>
 
-namespace shard::runtime
+namespace shard
 {
 	class SHARD_API AbstractInterpreter
 	{
@@ -49,54 +49,54 @@ namespace shard::runtime
 	
 	public:
 		static CallStackFrame* CurrentFrame();
-		static void PushFrame(const shard::syntax::symbols::MethodSymbol* methodSymbol, const shard::syntax::symbols::TypeSymbol* withinType);
+		static void PushFrame(const shard::MethodSymbol* methodSymbol, const shard::TypeSymbol* withinType);
 		static void PopFrame();
 
-		static InboundVariablesContext* CreateArgumentsContext(std::vector<shard::syntax::nodes::ArgumentSyntax*> arguments, std::vector<shard::syntax::symbols::ParameterSymbol*> parameters, bool isStatic, shard::runtime::ObjectInstance* instance);
+		static InboundVariablesContext* CreateArgumentsContext(std::vector<shard::ArgumentSyntax*> arguments, std::vector<shard::ParameterSymbol*> parameters, bool isStatic, shard::ObjectInstance* instance);
 		static InboundVariablesContext* CurrentContext();
 		static void PushContext(InboundVariablesContext* context);
 		static void PopContext();
 
 		static void TerminateCallStack();
-		static void Execute(shard::parsing::lexical::SyntaxTree& syntaxTree, shard::parsing::semantic::SemanticModel& semanticModel);
+		static void Execute(shard::SyntaxTree& syntaxTree, shard::SemanticModel& semanticModel);
 		static void RaiseException(ObjectInstance* exceptionReg);
 
-		static ObjectInstance* ExecuteMethod(const shard::syntax::symbols::MethodSymbol* method, const shard::syntax::symbols::TypeSymbol* withinType, InboundVariablesContext* argumentsContext);
-		static ObjectInstance* ExecuteBlock(const shard::syntax::nodes::StatementsBlockSyntax* block);
+		static ObjectInstance* ExecuteMethod(const shard::MethodSymbol* method, const shard::TypeSymbol* withinType, InboundVariablesContext* argumentsContext);
+		static ObjectInstance* ExecuteBlock(const shard::StatementsBlockSyntax* block);
 
-		static ObjectInstance* ExecuteStatement(const shard::syntax::nodes::StatementSyntax* statement);
-		static ObjectInstance* ExecuteExpressionStatement(const shard::syntax::nodes::ExpressionStatementSyntax* statement);
-		static ObjectInstance* ExecuteVariableStatement(const shard::syntax::nodes::VariableStatementSyntax* statement);
-		static ObjectInstance* ExecuteReturnStatement(const shard::syntax::nodes::ReturnStatementSyntax* statement);
-		static ObjectInstance* ExecuteThrowStatement(const shard::syntax::nodes::ThrowStatementSyntax* statement);
-		static ObjectInstance* ExecuteBreakStatement(const shard::syntax::nodes::BreakStatementSyntax* statement);
-		static ObjectInstance* ExecuteContinueStatement(const shard::syntax::nodes::ContinueStatementSyntax* statement);
+		static ObjectInstance* ExecuteStatement(const shard::StatementSyntax* statement);
+		static ObjectInstance* ExecuteExpressionStatement(const shard::ExpressionStatementSyntax* statement);
+		static ObjectInstance* ExecuteVariableStatement(const shard::VariableStatementSyntax* statement);
+		static ObjectInstance* ExecuteReturnStatement(const shard::ReturnStatementSyntax* statement);
+		static ObjectInstance* ExecuteThrowStatement(const shard::ThrowStatementSyntax* statement);
+		static ObjectInstance* ExecuteBreakStatement(const shard::BreakStatementSyntax* statement);
+		static ObjectInstance* ExecuteContinueStatement(const shard::ContinueStatementSyntax* statement);
 
-		static ObjectInstance* ExecuteIfStatement(const shard::syntax::nodes::IfStatementSyntax* statement);
-		static ObjectInstance* ExecuteUnlessStatement(const shard::syntax::nodes::UnlessStatementSyntax* statement);
-		static ObjectInstance* ExecuteElseStatement(const shard::syntax::nodes::ElseStatementSyntax* statement);
+		static ObjectInstance* ExecuteIfStatement(const shard::IfStatementSyntax* statement);
+		static ObjectInstance* ExecuteUnlessStatement(const shard::UnlessStatementSyntax* statement);
+		static ObjectInstance* ExecuteElseStatement(const shard::ElseStatementSyntax* statement);
 
-		static ObjectInstance* ExecuteForLoopStatement(const shard::syntax::nodes::ForStatementSyntax* statement);
-		static ObjectInstance* ExecuteWhileLoopStatement(const shard::syntax::nodes::WhileStatementSyntax* statement);
-		static ObjectInstance* ExecuteUntilLoopStatement(const shard::syntax::nodes::UntilStatementSyntax* statement);
+		static ObjectInstance* ExecuteForLoopStatement(const shard::ForStatementSyntax* statement);
+		static ObjectInstance* ExecuteWhileLoopStatement(const shard::WhileStatementSyntax* statement);
+		static ObjectInstance* ExecuteUntilLoopStatement(const shard::UntilStatementSyntax* statement);
 
-		static ObjectInstance* EvaluateExpression(const shard::syntax::nodes::ExpressionSyntax* expression);
-		static ObjectInstance* EvaluateLiteralExpression(const shard::syntax::nodes::LiteralExpressionSyntax* expression);
-		static ObjectInstance* EvaluateObjectExpression(const shard::syntax::nodes::ObjectExpressionSyntax* expression);
-		static ObjectInstance* EvaluateBinaryExpression(const shard::syntax::nodes::BinaryExpressionSyntax* expression);
-		static ObjectInstance* EvaluateAssignExpression(const shard::syntax::nodes::BinaryExpressionSyntax* expression);
-		static ObjectInstance* EvaluateUnaryExpression(const shard::syntax::nodes::UnaryExpressionSyntax* expression);
-		static ObjectInstance* EvaluateCollectionExpression(const shard::syntax::nodes::CollectionExpressionSyntax* expression);
-		static ObjectInstance* EvaluateLambdaExpression(const shard::syntax::nodes::LambdaExpressionSyntax* expression);
-		static ObjectInstance* EvaluateTernaryExpression(const shard::syntax::nodes::TernaryExpressionSyntax* expression);
-		//static ExpressionSyntax* ChooseTernaryExpression(const shard::syntax::nodes::TernaryExpressionSyntax* expression);
+		static ObjectInstance* EvaluateExpression(const shard::ExpressionSyntax* expression);
+		static ObjectInstance* EvaluateLiteralExpression(const shard::LiteralExpressionSyntax* expression);
+		static ObjectInstance* EvaluateObjectExpression(const shard::ObjectExpressionSyntax* expression);
+		static ObjectInstance* EvaluateBinaryExpression(const shard::BinaryExpressionSyntax* expression);
+		static ObjectInstance* EvaluateAssignExpression(const shard::BinaryExpressionSyntax* expression);
+		static ObjectInstance* EvaluateUnaryExpression(const shard::UnaryExpressionSyntax* expression);
+		static ObjectInstance* EvaluateCollectionExpression(const shard::CollectionExpressionSyntax* expression);
+		static ObjectInstance* EvaluateLambdaExpression(const shard::LambdaExpressionSyntax* expression);
+		static ObjectInstance* EvaluateTernaryExpression(const shard::TernaryExpressionSyntax* expression);
+		//static ExpressionSyntax* ChooseTernaryExpression(const shard::TernaryExpressionSyntax* expression);
 
-		static ObjectInstance* EvaluateMemberAccessExpression(const shard::syntax::nodes::MemberAccessExpressionSyntax* expression, shard::runtime::ObjectInstance* prevInstance);
-		static ObjectInstance* EvaluateInvokationExpression(const shard::syntax::nodes::InvokationExpressionSyntax* expression, shard::runtime::ObjectInstance* prevInstance);
-		static ObjectInstance* EvaluateIndexatorExpression(const shard::syntax::nodes::IndexatorExpressionSyntax* expression, shard::runtime::ObjectInstance* prevInstance);
+		static ObjectInstance* EvaluateMemberAccessExpression(const shard::MemberAccessExpressionSyntax* expression, shard::ObjectInstance* prevInstance);
+		static ObjectInstance* EvaluateInvokationExpression(const shard::InvokationExpressionSyntax* expression, shard::ObjectInstance* prevInstance);
+		static ObjectInstance* EvaluateIndexatorExpression(const shard::IndexatorExpressionSyntax* expression, shard::ObjectInstance* prevInstance);
 		
 	private:
-		static ObjectInstance* EvaluateArgument(const shard::syntax::nodes::ArgumentSyntax* argument);
-		static void ExecuteInstanceSetter(ObjectInstance* instance, const shard::syntax::nodes::MemberAccessExpressionSyntax* access, ObjectInstance* value);
+		static ObjectInstance* EvaluateArgument(const shard::ArgumentSyntax* argument);
+		static void ExecuteInstanceSetter(ObjectInstance* instance, const shard::MemberAccessExpressionSyntax* access, ObjectInstance* value);
 	};
 }

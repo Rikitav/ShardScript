@@ -6,7 +6,7 @@
 #include <shard/syntax/nodes/ExpressionSyntax.h>
 #include <shard/syntax/SyntaxNode.h>
 
-namespace shard::syntax::nodes
+namespace shard
 {
 	class SHARD_API LiteralExpressionSyntax : public ExpressionSyntax
 	{

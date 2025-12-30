@@ -14,9 +14,7 @@
 
 using namespace std::ranges;
 using namespace std::views;
-using namespace shard::syntax;
-using namespace shard::syntax::symbols;
-using namespace shard::parsing::semantic;
+using namespace shard;
 
 SymbolTable::~SymbolTable()
 {
@@ -25,7 +23,7 @@ SymbolTable::~SymbolTable()
 
 void SymbolTable::ClearSymbols()
 {
-	for (shard::syntax::SyntaxSymbol* symbol : (symbolToNodeMap | std::views::keys))
+	for (shard::SyntaxSymbol* symbol : (symbolToNodeMap | std::views::keys))
 	{
 		if (symbol->IsType())
 			delete symbol;

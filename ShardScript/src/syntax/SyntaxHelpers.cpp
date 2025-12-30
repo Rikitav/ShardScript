@@ -11,6 +11,4 @@
 
 #include <vector>
 
-using namespace shard::syntax;
-using namespace shard::syntax::nodes;
-using namespace shard::syntax::symbols;
+using namespace shard;

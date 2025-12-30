@@ -4,7 +4,7 @@
 #include <string>
 #include <stdexcept>
 
-using namespace shard::runtime;
+using namespace shard;
 
 ObjectInstance* InboundVariablesContext::AddVariable(const std::wstring name, ObjectInstance* instance)
 {

@@ -8,7 +8,7 @@
 #include <shard/syntax/nodes/ParametersListSyntax.h>
 #include <shard/syntax/nodes/TypeSyntax.h>
 
-namespace shard::syntax::nodes
+namespace shard
 {
 	class SHARD_API ImportDirectiveSyntax : public SyntaxNode
 	{

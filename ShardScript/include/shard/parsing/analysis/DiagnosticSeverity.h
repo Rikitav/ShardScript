@@ -3,7 +3,7 @@
 
 #include <string>
 
-namespace shard::parsing::analysis
+namespace shard
 {
 	enum class DiagnosticSeverity
 	{
@@ -13,4 +13,4 @@ namespace shard::parsing::analysis
 	};
 }
 
-SHARD_API std::wstring severity_to_wstring(const shard::parsing::analysis::DiagnosticSeverity& severity);
+SHARD_API std::wstring severity_to_wstring(const shard::DiagnosticSeverity& severity);

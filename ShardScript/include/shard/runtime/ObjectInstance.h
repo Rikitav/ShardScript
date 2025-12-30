@@ -7,20 +7,20 @@
 #include <stack>
 #include <string>
 
-namespace shard::runtime
+namespace shard
 {
 	class SHARD_API ObjectInstance
 	{
 	public:
 		const long Id;
-		const shard::syntax::symbols::TypeSymbol* Info;
+		const shard::TypeSymbol* Info;
 		const bool IsNullable = false;
 
 		bool IsFieldInstance = false;
 		size_t ReferencesCounter;
 		void* Ptr;
 
-		inline ObjectInstance(const long id, const shard::syntax::symbols::TypeSymbol* info, void* ptr)
+		inline ObjectInstance(const long id, const shard::TypeSymbol* info, void* ptr)
 			: Id(id), Info(info), Ptr(ptr), ReferencesCounter(0) { }
 		
 		inline ~ObjectInstance() = default;
@@ -32,8 +32,8 @@ namespace shard::runtime
 		static ObjectInstance* FromValue(const wchar_t* value);
 		static ObjectInstance* FromValue(const std::wstring& value);
 
-		ObjectInstance* GetField(shard::syntax::symbols::FieldSymbol* field);
-		void SetField(shard::syntax::symbols::FieldSymbol* field, ObjectInstance* instance);
+		ObjectInstance* GetField(shard::FieldSymbol* field);
+		void SetField(shard::FieldSymbol* field, ObjectInstance* instance);
 
 		ObjectInstance* GetElement(size_t index);
 		void SetElement(size_t index, ObjectInstance* instance);

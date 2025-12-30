@@ -10,7 +10,7 @@
 #include <new>
 #include <vector>
 
-namespace shard::syntax::symbols
+namespace shard
 {
 	class SHARD_API DelegateTypeSymbol : public TypeSymbol
 	{

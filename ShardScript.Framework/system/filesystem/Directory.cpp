@@ -17,11 +17,9 @@
 
 #include "../resources.h"
 
-using namespace shard::runtime;
-using namespace shard::parsing;
-using namespace shard::syntax::symbols;
+using namespace shard;
 
-namespace shard::framework
+namespace shard
 {
 	class FileSystem_Directory : public FrameworkModule
 	{

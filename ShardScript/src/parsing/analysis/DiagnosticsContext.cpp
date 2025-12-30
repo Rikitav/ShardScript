@@ -6,8 +6,7 @@
 #include <string>
 #include <ostream>
 
-using namespace shard::syntax;
-using namespace shard::parsing::analysis;
+using namespace shard;
 
 void DiagnosticsContext::ReportError(SyntaxToken token, std::wstring message)
 {

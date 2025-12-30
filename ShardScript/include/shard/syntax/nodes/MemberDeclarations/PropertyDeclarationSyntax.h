@@ -14,7 +14,7 @@
 
 #include <vector>
 
-namespace shard::syntax::nodes
+namespace shard
 {
 	class SHARD_API PropertyDeclarationSyntax : public MemberDeclarationSyntax
 	{
@@ -34,7 +34,7 @@ namespace shard::syntax::nodes
 		inline PropertyDeclarationSyntax(const SyntaxNode* parent)
 			: MemberDeclarationSyntax(SyntaxKind::PropertyDeclaration, parent) { }
 
-		inline PropertyDeclarationSyntax(shard::parsing::lexical::MemberDeclarationInfo& info, const SyntaxNode* parent) 
+		inline PropertyDeclarationSyntax(shard::MemberDeclarationInfo& info, const SyntaxNode* parent) 
 			: MemberDeclarationSyntax(SyntaxKind::PropertyDeclaration, parent)
 		{
 			Modifiers = info.Modifiers;

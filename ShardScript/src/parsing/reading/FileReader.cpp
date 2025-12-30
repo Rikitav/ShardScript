@@ -6,8 +6,7 @@
 #include <stdexcept>
 #include <string>
 
-using namespace shard::parsing;
-using namespace shard::parsing::analysis;
+using namespace shard;
 
 FileReader::FileReader(const std::wstring& fileName) : SourceReader()
 {

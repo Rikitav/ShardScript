@@ -67,11 +67,7 @@
 #include <sstream>
 #include <algorithm>
 
-using namespace shard::parsing;
-using namespace shard::parsing::semantic;
-using namespace shard::syntax::nodes;
-using namespace shard::syntax::symbols;
-using namespace shard::syntax;
+using namespace shard;
 
 static bool IsAssignmentOperator(TokenType type)
 {

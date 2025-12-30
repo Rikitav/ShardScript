@@ -8,18 +8,18 @@
 #include <string>
 #include <vector>
 
-namespace shard::parsing::semantic
+namespace shard
 {
 	class NamespaceNode;
 }
 
-namespace shard::syntax::symbols
+namespace shard
 {
 	class SHARD_API NamespaceSymbol : public SyntaxSymbol
 	{
 	public:
 		std::vector<SyntaxSymbol*> Members;
-		shard::parsing::semantic::NamespaceNode* Node = nullptr;
+		shard::NamespaceNode* Node = nullptr;
 
 		inline NamespaceSymbol(std::wstring name)
 			: SyntaxSymbol(name, SyntaxKind::NamespaceDeclaration) { }

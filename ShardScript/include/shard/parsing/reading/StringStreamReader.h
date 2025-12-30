@@ -7,7 +7,7 @@
 #include <sstream>
 #include <string>
 
-namespace shard::parsing
+namespace shard
 {
 	class SHARD_API StringStreamReader : public SourceReader
 	{
@@ -20,7 +20,7 @@ namespace shard::parsing
 		StringStreamReader(const std::wstring& name, const wchar_t* source, size_t size);
 
 	protected:
-		shard::parsing::analysis::TextLocation GetLocation(std::wstring& word) override;
+		shard::TextLocation GetLocation(std::wstring& word) override;
 		bool ReadNext() override;
 		bool PeekNext() override;
 	};

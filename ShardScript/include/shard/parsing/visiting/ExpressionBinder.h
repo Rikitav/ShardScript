@@ -46,74 +46,74 @@
 #include <unordered_map>
 #include <vector>
 
-namespace shard::parsing
+namespace shard
 {
 	class SHARD_API ExpressionBinder : public SyntaxVisitor, ScopeVisitor
 	{
-		std::unordered_map<shard::syntax::nodes::ExpressionSyntax*, shard::syntax::symbols::TypeSymbol*> expressionTypes;
+		std::unordered_map<shard::ExpressionSyntax*, shard::TypeSymbol*> expressionTypes;
 
-		bool GetIsStaticContext(const shard::syntax::nodes::ExpressionSyntax* expression);
-		void SetExpressionType(shard::syntax::nodes::ExpressionSyntax* expression, shard::syntax::symbols::TypeSymbol* type);
-		shard::syntax::symbols::TypeSymbol* GetExpressionType(shard::syntax::nodes::ExpressionSyntax* expression);
-		shard::syntax::symbols::TypeSymbol* FindTargetReturnType(shard::parsing::semantic::SemanticScope*& scope);
-		shard::syntax::symbols::TypeSymbol* ResolveLeftDenotation();
+		bool GetIsStaticContext(const shard::ExpressionSyntax* expression);
+		void SetExpressionType(shard::ExpressionSyntax* expression, shard::TypeSymbol* type);
+		shard::TypeSymbol* GetExpressionType(shard::ExpressionSyntax* expression);
+		shard::TypeSymbol* FindTargetReturnType(shard::SemanticScope*& scope);
+		shard::TypeSymbol* ResolveLeftDenotation();
 		
-		shard::syntax::symbols::TypeSymbol* AnalyzeLiteralExpression(shard::syntax::nodes::LiteralExpressionSyntax* node);
-		shard::syntax::symbols::TypeSymbol* AnalyzeBinaryExpression(shard::syntax::nodes::BinaryExpressionSyntax* node);
-		shard::syntax::symbols::TypeSymbol* AnalyzeUnaryExpression(shard::syntax::nodes::UnaryExpressionSyntax* node);
-		shard::syntax::symbols::TypeSymbol* AnalyzeObjectExpression(shard::syntax::nodes::ObjectExpressionSyntax* node);
-		shard::syntax::symbols::TypeSymbol* AnalyzeCollectionExpression(shard::syntax::nodes::CollectionExpressionSyntax* node);
+		shard::TypeSymbol* AnalyzeLiteralExpression(shard::LiteralExpressionSyntax* node);
+		shard::TypeSymbol* AnalyzeBinaryExpression(shard::BinaryExpressionSyntax* node);
+		shard::TypeSymbol* AnalyzeUnaryExpression(shard::UnaryExpressionSyntax* node);
+		shard::TypeSymbol* AnalyzeObjectExpression(shard::ObjectExpressionSyntax* node);
+		shard::TypeSymbol* AnalyzeCollectionExpression(shard::CollectionExpressionSyntax* node);
 
-		shard::syntax::symbols::TypeSymbol* AnalyzeMemberAccessExpression(shard::syntax::nodes::MemberAccessExpressionSyntax* node, shard::syntax::symbols::TypeSymbol* currentType);
-		shard::syntax::symbols::TypeSymbol* AnalyzePropertyAccessExpression(shard::syntax::nodes::MemberAccessExpressionSyntax* node, shard::syntax::symbols::PropertySymbol* property, shard::syntax::symbols::TypeSymbol* currentType);
-		shard::syntax::symbols::TypeSymbol* AnalyzeFieldKeywordExpression(shard::syntax::nodes::MemberAccessExpressionSyntax* node, shard::syntax::symbols::TypeSymbol* currentType);
-		shard::syntax::symbols::TypeSymbol* AnalyzeInvokationExpression(shard::syntax::nodes::InvokationExpressionSyntax* node, shard::syntax::symbols::TypeSymbol* currentType);
-		shard::syntax::symbols::TypeSymbol* AnalyzeIndexatorExpression(shard::syntax::nodes::IndexatorExpressionSyntax* node, shard::syntax::symbols::TypeSymbol* currentType);
+		shard::TypeSymbol* AnalyzeMemberAccessExpression(shard::MemberAccessExpressionSyntax* node, shard::TypeSymbol* currentType);
+		shard::TypeSymbol* AnalyzePropertyAccessExpression(shard::MemberAccessExpressionSyntax* node, shard::PropertySymbol* property, shard::TypeSymbol* currentType);
+		shard::TypeSymbol* AnalyzeFieldKeywordExpression(shard::MemberAccessExpressionSyntax* node, shard::TypeSymbol* currentType);
+		shard::TypeSymbol* AnalyzeInvokationExpression(shard::InvokationExpressionSyntax* node, shard::TypeSymbol* currentType);
+		shard::TypeSymbol* AnalyzeIndexatorExpression(shard::IndexatorExpressionSyntax* node, shard::TypeSymbol* currentType);
 
-		shard::syntax::symbols::ConstructorSymbol* ResolveConstructor(shard::syntax::nodes::ObjectExpressionSyntax* node);
-		shard::syntax::symbols::MethodSymbol* ResolveMethod(shard::syntax::nodes::InvokationExpressionSyntax* node, shard::syntax::symbols::TypeSymbol* currentType);
-		shard::syntax::symbols::IndexatorSymbol* ResolveIndexator(shard::syntax::nodes::IndexatorExpressionSyntax* node, shard::syntax::symbols::TypeSymbol* currentType);
+		shard::ConstructorSymbol* ResolveConstructor(shard::ObjectExpressionSyntax* node);
+		shard::MethodSymbol* ResolveMethod(shard::InvokationExpressionSyntax* node, shard::TypeSymbol* currentType);
+		shard::IndexatorSymbol* ResolveIndexator(shard::IndexatorExpressionSyntax* node, shard::TypeSymbol* currentType);
 		
-		bool MatchMethodArguments(shard::syntax::symbols::MethodSymbol* method, std::vector<shard::syntax::nodes::ArgumentSyntax*> arguments, shard::syntax::symbols::GenericTypeSymbol* genericType = nullptr);
-		shard::syntax::symbols::TypeSymbol* SubstituteTypeParameters(shard::syntax::symbols::TypeSymbol* type, shard::syntax::symbols::GenericTypeSymbol* genericType);
+		bool MatchMethodArguments(shard::MethodSymbol* method, std::vector<shard::ArgumentSyntax*> arguments, shard::GenericTypeSymbol* genericType = nullptr);
+		shard::TypeSymbol* SubstituteTypeParameters(shard::TypeSymbol* type, shard::GenericTypeSymbol* genericType);
 
-		shard::syntax::symbols::TypeSymbol* AnalyzeNumberLiteral(shard::syntax::nodes::LiteralExpressionSyntax* node);
+		shard::TypeSymbol* AnalyzeNumberLiteral(shard::LiteralExpressionSyntax* node);
 
 	public:
-		inline ExpressionBinder(shard::parsing::semantic::SemanticModel& model, shard::parsing::analysis::DiagnosticsContext& diagnostics)
+		inline ExpressionBinder(shard::SemanticModel& model, shard::DiagnosticsContext& diagnostics)
 			: SyntaxVisitor(model, diagnostics), ScopeVisitor(model.Table) { }
 
-		void VisitCompilationUnit(shard::syntax::nodes::CompilationUnitSyntax* node) override;
-		void VisitUsingDirective(shard::syntax::nodes::UsingDirectiveSyntax* node) override;
+		void VisitCompilationUnit(shard::CompilationUnitSyntax* node) override;
+		void VisitUsingDirective(shard::UsingDirectiveSyntax* node) override;
 
-		void VisitNamespaceDeclaration(shard::syntax::nodes::NamespaceDeclarationSyntax* node) override;
-		void VisitClassDeclaration(shard::syntax::nodes::ClassDeclarationSyntax* node) override;
-		void VisitStructDeclaration(shard::syntax::nodes::StructDeclarationSyntax* node) override;
+		void VisitNamespaceDeclaration(shard::NamespaceDeclarationSyntax* node) override;
+		void VisitClassDeclaration(shard::ClassDeclarationSyntax* node) override;
+		void VisitStructDeclaration(shard::StructDeclarationSyntax* node) override;
 
-		void VisitConstructorDeclaration(shard::syntax::nodes::ConstructorDeclarationSyntax* node) override;
-		void VisitMethodDeclaration(shard::syntax::nodes::MethodDeclarationSyntax* node) override;
-		void VisitFieldDeclaration(shard::syntax::nodes::FieldDeclarationSyntax* node) override;
-		void VisitPropertyDeclaration(shard::syntax::nodes::PropertyDeclarationSyntax* node) override;
-		void VisitVariableStatement(shard::syntax::nodes::VariableStatementSyntax* node) override;
+		void VisitConstructorDeclaration(shard::ConstructorDeclarationSyntax* node) override;
+		void VisitMethodDeclaration(shard::MethodDeclarationSyntax* node) override;
+		void VisitFieldDeclaration(shard::FieldDeclarationSyntax* node) override;
+		void VisitPropertyDeclaration(shard::PropertyDeclarationSyntax* node) override;
+		void VisitVariableStatement(shard::VariableStatementSyntax* node) override;
 
-		void VisitWhileStatement(shard::syntax::nodes::WhileStatementSyntax* node) override;
-		void VisitUntilStatement(shard::syntax::nodes::UntilStatementSyntax* node) override;
-		void VisitForStatement(shard::syntax::nodes::ForStatementSyntax* node) override;
-		void VisitIfStatement(shard::syntax::nodes::IfStatementSyntax* node) override;
-		void VisitUnlessStatement(shard::syntax::nodes::UnlessStatementSyntax* node) override;
-		void VisitReturnStatement(shard::syntax::nodes::ReturnStatementSyntax* node) override;
+		void VisitWhileStatement(shard::WhileStatementSyntax* node) override;
+		void VisitUntilStatement(shard::UntilStatementSyntax* node) override;
+		void VisitForStatement(shard::ForStatementSyntax* node) override;
+		void VisitIfStatement(shard::IfStatementSyntax* node) override;
+		void VisitUnlessStatement(shard::UnlessStatementSyntax* node) override;
+		void VisitReturnStatement(shard::ReturnStatementSyntax* node) override;
 		
-		void VisitLiteralExpression(shard::syntax::nodes::LiteralExpressionSyntax* node) override;
-		void VisitBinaryExpression(shard::syntax::nodes::BinaryExpressionSyntax* node) override;
-		void VisitUnaryExpression(shard::syntax::nodes::UnaryExpressionSyntax* node) override;
-		void VisitObjectCreationExpression(shard::syntax::nodes::ObjectExpressionSyntax* node) override;
-		void VisitCollectionExpression(shard::syntax::nodes::CollectionExpressionSyntax* node) override;
-		void VisitLambdaExpression(shard::syntax::nodes::LambdaExpressionSyntax* node) override;
-		void VisitTernaryExpression(shard::syntax::nodes::TernaryExpressionSyntax* node) override;
+		void VisitLiteralExpression(shard::LiteralExpressionSyntax* node) override;
+		void VisitBinaryExpression(shard::BinaryExpressionSyntax* node) override;
+		void VisitUnaryExpression(shard::UnaryExpressionSyntax* node) override;
+		void VisitObjectCreationExpression(shard::ObjectExpressionSyntax* node) override;
+		void VisitCollectionExpression(shard::CollectionExpressionSyntax* node) override;
+		void VisitLambdaExpression(shard::LambdaExpressionSyntax* node) override;
+		void VisitTernaryExpression(shard::TernaryExpressionSyntax* node) override;
 
-		void VisitMemberAccessExpression(shard::syntax::nodes::MemberAccessExpressionSyntax* node) override;
-		void VisitInvocationExpression(shard::syntax::nodes::InvokationExpressionSyntax* node) override;
-		void VisitIndexatorExpression(shard::syntax::nodes::IndexatorExpressionSyntax* node) override;
+		void VisitMemberAccessExpression(shard::MemberAccessExpressionSyntax* node) override;
+		void VisitInvocationExpression(shard::InvokationExpressionSyntax* node) override;
+		void VisitIndexatorExpression(shard::IndexatorExpressionSyntax* node) override;
 	};
 }
 

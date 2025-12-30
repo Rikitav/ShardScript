@@ -3,7 +3,7 @@
 
 #include <string>
 
-namespace shard::parsing::analysis
+namespace shard
 {
 	struct SHARD_API TextLocation
 	{

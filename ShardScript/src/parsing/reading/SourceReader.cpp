@@ -8,9 +8,7 @@
 #include <string>
 #include <stdexcept>
 
-using namespace shard::syntax;
-using namespace shard::parsing;
-using namespace shard::parsing::analysis;
+using namespace shard;
 
 SourceReader::SourceReader() : Line(1), Offset(0), Symbol(-1), PeekSymbol(-1)
 {

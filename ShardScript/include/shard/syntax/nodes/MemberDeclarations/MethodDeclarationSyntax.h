@@ -14,7 +14,7 @@
 
 #include <vector>
 
-namespace shard::syntax::nodes
+namespace shard
 {
 	class SHARD_API MethodDeclarationSyntax : public MemberDeclarationSyntax
 	{
@@ -24,7 +24,7 @@ namespace shard::syntax::nodes
 		ParametersListSyntax* Params = nullptr;
 		StatementsBlockSyntax* Body = nullptr;
 
-		inline MethodDeclarationSyntax(shard::parsing::lexical::MemberDeclarationInfo& info, const SyntaxNode* parent) : MemberDeclarationSyntax(SyntaxKind::MethodDeclaration, parent)
+		inline MethodDeclarationSyntax(shard::MemberDeclarationInfo& info, const SyntaxNode* parent) : MemberDeclarationSyntax(SyntaxKind::MethodDeclaration, parent)
 		{
 			Modifiers = info.Modifiers;
 			IdentifierToken = info.Identifier;

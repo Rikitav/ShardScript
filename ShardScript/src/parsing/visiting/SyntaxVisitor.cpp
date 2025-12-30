@@ -55,11 +55,7 @@
 #include <shard/syntax/nodes/Expressions/TernaryExpressionSyntax.h>
 #include <shard/syntax/nodes/Types/DelegateTypeSyntax.h>
 
-using namespace shard::parsing;
-using namespace shard::parsing::lexical;
-using namespace shard::parsing::semantic;
-using namespace shard::syntax;
-using namespace shard::syntax::nodes;
+using namespace shard;
 
 void SyntaxVisitor::VisitSyntaxTree(SyntaxTree& tree)
 {

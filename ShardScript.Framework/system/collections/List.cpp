@@ -23,13 +23,9 @@
 
 #include "../resources.h"
 
-using namespace shard::runtime;
-using namespace shard::syntax;
-using namespace shard::syntax::symbols;
-using namespace shard::parsing;
-using namespace shard::parsing::semantic;
+using namespace shard;
 
-namespace shard::framework
+namespace shard
 {
 	class Collections_List : public FrameworkModule
 	{

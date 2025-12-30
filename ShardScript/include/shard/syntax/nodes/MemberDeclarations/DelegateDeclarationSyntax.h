@@ -10,7 +10,7 @@
 #include <shard/syntax/SyntaxNode.h>
 #include <shard/syntax/SyntaxToken.h>
 
-namespace shard::syntax::nodes
+namespace shard
 {
 	class SHARD_API DelegateDeclarationSyntax : public MemberDeclarationSyntax
 	{
@@ -25,7 +25,7 @@ namespace shard::syntax::nodes
 
 		inline DelegateDeclarationSyntax(const DelegateDeclarationSyntax& other) = delete;
 
-		inline DelegateDeclarationSyntax(shard::parsing::lexical::MemberDeclarationInfo& info, const SyntaxNode* parent) : MemberDeclarationSyntax(SyntaxKind::DelegateDeclaration, parent)
+		inline DelegateDeclarationSyntax(shard::MemberDeclarationInfo& info, const SyntaxNode* parent) : MemberDeclarationSyntax(SyntaxKind::DelegateDeclaration, parent)
 		{
 			Modifiers = info.Modifiers;
 			DelegateToken = info.DeclareType;

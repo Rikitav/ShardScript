@@ -6,7 +6,7 @@
 
 #include <string>
 
-namespace shard::syntax
+namespace shard
 {
 	class SHARD_API SyntaxSymbol
 	{

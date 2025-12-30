@@ -42,17 +42,11 @@
 #include "system/collections/List.cpp"
 #include "system/Random.cpp"
 
-using namespace shard::framework;
-using namespace shard::runtime;
+using namespace shard;
 
-using namespace shard::syntax;
-using namespace shard::syntax::symbols;
-using namespace shard::syntax::nodes;
+using namespace shard;
 
-using namespace shard::parsing;
-using namespace shard::parsing::analysis;
-using namespace shard::parsing::lexical;
-using namespace shard::parsing::semantic;
+using namespace shard;
 
 static ObjectInstance* Gc_Info(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
@@ -300,10 +294,10 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 			ResolvePrimitives();
 			ResolveGlobalMethods();
 
-			shard::framework::FrameworkLoader::AddModule(new FileSystem_Directory());
-			shard::framework::FrameworkLoader::AddModule(new FileSystem_File());
-			shard::framework::FrameworkLoader::AddModule(new Collections_List());
-			shard::framework::FrameworkLoader::AddModule(new Random());
+			shard::FrameworkLoader::AddModule(new FileSystem_Directory());
+			shard::FrameworkLoader::AddModule(new FileSystem_File());
+			shard::FrameworkLoader::AddModule(new Collections_List());
+			shard::FrameworkLoader::AddModule(new Random());
 			break;
         }
 

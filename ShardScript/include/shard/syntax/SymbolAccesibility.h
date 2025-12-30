@@ -1,7 +1,7 @@
 #pragma once
 #include <shard/ShardScriptAPI.h>
 
-namespace shard::syntax
+namespace shard
 {
 	enum class SymbolAccesibility
 	{

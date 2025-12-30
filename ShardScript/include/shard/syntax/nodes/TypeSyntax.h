@@ -8,12 +8,12 @@
 
 #include <string>
 
-namespace shard::syntax::nodes
+namespace shard
 {
 	class SHARD_API TypeSyntax : public SyntaxNode
 	{
 	public:
-		shard::syntax::symbols::TypeSymbol* Symbol = nullptr;
+		shard::TypeSymbol* Symbol = nullptr;
 
 		inline TypeSyntax(const SyntaxKind kind, const SyntaxNode* parent)
 			: SyntaxNode(kind, parent) { }

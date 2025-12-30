@@ -14,8 +14,7 @@
 #include <string>
 #include <algorithm>
 
-using namespace shard::parsing::semantic;
-using namespace shard::syntax::symbols;
+using namespace shard;
 
 void GenericTypeSymbol::AddTypeParameter(TypeSymbol* typeParam, TypeSymbol* constraintType)
 {
