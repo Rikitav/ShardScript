@@ -27,6 +27,7 @@
 #include <shard/syntax/symbols/DelegateTypeSymbol.h>
 #include <shard/syntax/symbols/GenericTypeSymbol.h>
 #include <shard/syntax/symbols/TypeParameterSymbol.h>
+#include <shard/syntax/symbols/GotoMarkSymbol.h>
 
 #include <shard/syntax/nodes/CompilationUnitSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarationSyntax.h>
@@ -1979,4 +1980,33 @@ void ExpressionBinder::VisitReturnStatement(ReturnStatementSyntax* node)
 			? static_cast<LiteralExpressionSyntax*>(node->Expression)->LiteralToken
 			: SyntaxToken(), L"Return type mismatch: expected '" + returnType->Name + L"' but got '" + returnExprType->Name + L"'");
 	}
+}
+
+void ExpressionBinder::VisitGotoMarkStatement(GotoMarkSyntax* node)
+{
+	GotoMarkSymbol* symbol = LookupSymbol<GotoMarkSymbol>(node);
+	if (symbol == nullptr)
+		throw std::runtime_error("symbol not found");
+
+	Declare(symbol);
+}
+
+void ExpressionBinder::VisitGotoStatement(GotoStatementSyntax* node)
+{
+	std::wstring name = node->MarkIdentifierToken.Word;
+	SyntaxSymbol* searchSymbol = CurrentScope()->Lookup(name);
+
+	if (searchSymbol == nullptr)
+	{
+		Diagnostics.ReportError(node->KeywordToken, L"Mark not found in current scope");
+		return;
+	}
+
+	if (searchSymbol->Kind != SyntaxKind::GotoMarkStatement)
+	{
+		Diagnostics.ReportError(node->KeywordToken, L"Found symbol is not goto mark");
+		return;
+	}
+
+	node->MarkSymbol = static_cast<GotoMarkSymbol*>(searchSymbol);
 }

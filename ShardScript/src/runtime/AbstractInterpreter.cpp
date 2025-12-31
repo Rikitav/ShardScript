@@ -47,6 +47,8 @@
 #include <shard/syntax/nodes/Statements/ExpressionStatementSyntax.h>
 #include <shard/syntax/nodes/Statements/BreakStatementSyntax.h>
 #include <shard/syntax/nodes/Statements/ContinueStatementSyntax.h>
+#include <shard/syntax/nodes/Statements/GotoMarkSyntax.h>
+#include <shard/syntax/nodes/Statements/GotoStatementSyntax.h>
 
 #include <stdexcept>
 #include <string>
@@ -248,11 +250,25 @@ ObjectInstance* AbstractInterpreter::ExecuteBlock(const StatementsBlockSyntax* b
 	PushContext(new InboundVariablesContext(CurrentContext()));
 	CallStackFrame* frame = CurrentFrame();
 
+	size_t counter = 0;
 	auto statement = block->Statements.begin();
 	while (statement != block->Statements.end() && !frame->interrupted())
 	{
 		ExecuteStatement(*statement);
+		if (frame->InterruptionReason == FrameInterruptionReason::GotoJump)
+		{
+			while (counter != frame->GotoIndex)
+			{
+				statement = next(statement, -1);
+				counter -= 1;
+			}
+
+			frame->InterruptionReason = FrameInterruptionReason::None;
+			frame->GotoIndex = -1;
+		}
+
 		statement = next(statement, 1);
+		counter += 1;
 	}
 
 	PopContext();
@@ -335,6 +351,18 @@ ObjectInstance* AbstractInterpreter::ExecuteStatement(const StatementSyntax* sta
 			return ExecuteForLoopStatement(forLoopStatement);
 		}
 
+		case SyntaxKind::GotoMarkStatement:
+		{
+			// ..
+			return nullptr;
+		}
+
+		case SyntaxKind::GotoStatement:
+		{
+			const GotoStatementSyntax* gotoStatement = static_cast<const GotoStatementSyntax*>(statement);
+			return ExecuteGotoStatement(gotoStatement);
+		}
+
 		default:
 		{
 			throw std::runtime_error("unknown statement type");
@@ -384,6 +412,14 @@ ObjectInstance* AbstractInterpreter::ExecuteContinueStatement(const ContinueStat
 {
 	CallStackFrame* callFrame = callStack.top();
 	callFrame->InterruptionReason = FrameInterruptionReason::LoopContinue;
+	return nullptr;
+}
+
+ObjectInstance* AbstractInterpreter::ExecuteGotoStatement(const shard::GotoStatementSyntax* statement)
+{
+	CallStackFrame* callFrame = callStack.top();
+	callFrame->InterruptionReason = FrameInterruptionReason::GotoJump;
+	callFrame->GotoIndex = statement->MarkSymbol->BlockIndex;
 	return nullptr;
 }
 

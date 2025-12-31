@@ -29,6 +29,7 @@ SHARD_API bool IsMemberDeclaration(shard::TokenType currentType, shard::TokenTyp
 
 SHARD_API bool IsPredefinedType(shard::TokenType type);
 SHARD_API bool IsType(shard::TokenType type, shard::TokenType peekType);
+SHARD_API bool IsGotoMark(shard::TokenType type, shard::TokenType peekType);
 
 SHARD_API bool IsKeyword(shard::TokenType type);
 SHARD_API bool IsLoopKeyword(shard::TokenType type);

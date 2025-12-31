@@ -487,6 +487,15 @@
     <ClInclude Include="include\shard\syntax\symbols\ConstructorSymbol.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
+    <ClInclude Include="include\shard\syntax\symbols\GotoMarkSymbol.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\syntax\nodes\Statements\GotoStatementSyntax.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\syntax\nodes\Statements\GotoMarkSyntax.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Library Include="libs\libffi-8.lib" />

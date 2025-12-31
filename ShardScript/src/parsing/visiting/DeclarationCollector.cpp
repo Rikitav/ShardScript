@@ -13,6 +13,7 @@
 #include <shard/syntax/nodes/ParametersListSyntax.h>
 #include <shard/syntax/nodes/CompilationUnitSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarationSyntax.h>
+#include <shard/syntax/nodes/TypeParametersListSyntax.h>
 
 #include <shard/syntax/nodes/Directives/ImportDirectiveSyntax.h>
 #include <shard/syntax/nodes/Statements/VariableStatementSyntax.h>
@@ -40,7 +41,7 @@
 #include <shard/syntax/symbols/AccessorSymbol.h>
 #include <shard/syntax/symbols/DelegateTypeSymbol.h>
 #include <shard/syntax/symbols/TypeParameterSymbol.h>
-#include <shard/syntax/nodes/TypeParametersListSyntax.h>
+#include <shard/syntax/symbols/GotoMarkSymbol.h>
 
 #include <string>
 
@@ -554,4 +555,26 @@ void DeclarationCollector::VisitVariableStatement(VariableStatementSyntax* node)
         VisitExpression(node->Expression);
 
     PopScope();
+}
+
+void DeclarationCollector::VisitGotoMarkStatement(GotoMarkSyntax* node)
+{
+    std::wstring varName = node->IdentifierToken.Word;
+    GotoMarkSymbol* symbol = new GotoMarkSymbol(varName);
+
+    Table->BindSymbol(node, symbol);
+    Declare(symbol);
+
+    StatementsBlockSyntax* block = static_cast<StatementsBlockSyntax*>(node->Parent);
+    for (size_t i = 0; i < block->Statements.size(); i++)
+    {
+        if (block->Statements.at(i) == node)
+        {
+            symbol->BlockIndex = i;
+            break;
+        }
+    }
+
+    if (symbol->BlockIndex == -1)
+        Diagnostics.ReportError(node->IdentifierToken, L"Failed to gain goto mark index");
 }

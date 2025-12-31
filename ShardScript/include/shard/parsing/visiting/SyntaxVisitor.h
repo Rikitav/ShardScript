@@ -40,6 +40,8 @@
 #include <shard/syntax/nodes/Statements/ThrowStatementSyntax.h>
 #include <shard/syntax/nodes/Statements/BreakStatementSyntax.h>
 #include <shard/syntax/nodes/Statements/ContinueStatementSyntax.h>
+#include <shard/syntax/nodes/Statements/GotoMarkSyntax.h>
+#include <shard/syntax/nodes/Statements/GotoStatementSyntax.h>
 
 #include <shard/syntax/nodes/Loops/WhileStatementSyntax.h>
 #include <shard/syntax/nodes/Loops/ForStatementSyntax.h>
@@ -106,6 +108,8 @@ namespace shard
         virtual void VisitThrowStatement(shard::ThrowStatementSyntax* node);
         virtual void VisitBreakStatement(shard::BreakStatementSyntax* node);
         virtual void VisitContinueStatement(shard::ContinueStatementSyntax* node);
+        virtual void VisitGotoMarkStatement(shard::GotoMarkSyntax* node);
+        virtual void VisitGotoStatement(shard::GotoStatementSyntax* node);
 
         virtual void VisitWhileStatement(shard::WhileStatementSyntax* node);
         virtual void VisitForStatement(shard::ForStatementSyntax* node);

@@ -141,5 +141,6 @@ namespace shard
 		ThrowKeyword,		  // throw
 		BreakKeyword,		  // break
 		ContinueKeyword,	  // continue
+		GotoKeyword,		  // goto
 	};
 }

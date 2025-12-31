@@ -44,6 +44,8 @@
 #include <shard/syntax/nodes/Statements/BreakStatementSyntax.h>
 #include <shard/syntax/nodes/Statements/ContinueStatementSyntax.h>
 #include <shard/syntax/nodes/Statements/ThrowStatementSyntax.h>
+#include <shard/syntax/nodes/Statements/GotoMarkSyntax.h>
+#include <shard/syntax/nodes/Statements/GotoStatementSyntax.h>
 
 #include <shard/syntax/nodes/Types/ArrayTypeSyntax.h>
 #include <shard/syntax/nodes/Types/GenericTypeSyntax.h>
@@ -376,43 +378,57 @@ void SyntaxVisitor::VisitStatement(StatementSyntax* node)
 
 		case SyntaxKind::VariableStatement:
 		{
-			VariableStatementSyntax* statement = dynamic_cast<VariableStatementSyntax*>(node);
+			VariableStatementSyntax* statement = static_cast<VariableStatementSyntax*>(node);
 			VisitVariableStatement(statement);
 			return;
 		}
 
 		case SyntaxKind::WhileStatement:
 		{
-			WhileStatementSyntax* statement = dynamic_cast<WhileStatementSyntax*>(node);
+			WhileStatementSyntax* statement = static_cast<WhileStatementSyntax*>(node);
 			VisitWhileStatement(statement);
 			return;
 		}
 
 		case SyntaxKind::UntilStatement:
 		{
-			UntilStatementSyntax* statement = dynamic_cast<UntilStatementSyntax*>(node);
+			UntilStatementSyntax* statement = static_cast<UntilStatementSyntax*>(node);
 			VisitUntilStatement(statement);
 			return;
 		}
 
 		case SyntaxKind::ForStatement:
 		{
-			ForStatementSyntax* statement = dynamic_cast<ForStatementSyntax*>(node);
+			ForStatementSyntax* statement = static_cast<ForStatementSyntax*>(node);
 			VisitForStatement(statement);
 			return;
 		}
 
 		case SyntaxKind::IfStatement:
 		{
-			IfStatementSyntax* statement = dynamic_cast<IfStatementSyntax*>(node);
+			IfStatementSyntax* statement = static_cast<IfStatementSyntax*>(node);
 			VisitIfStatement(statement);
 			return;
 		}
 
 		case SyntaxKind::UnlessStatement:
 		{
-			UnlessStatementSyntax* statement = dynamic_cast<UnlessStatementSyntax*>(node);
+			UnlessStatementSyntax* statement = static_cast<UnlessStatementSyntax*>(node);
 			VisitUnlessStatement(statement);
+			return;
+		}
+
+		case SyntaxKind::GotoMarkStatement:
+		{
+			GotoMarkSyntax* statement = static_cast<GotoMarkSyntax*>(node);
+			VisitGotoMarkStatement(statement);
+			return;
+		}
+
+		case SyntaxKind::GotoStatement:
+		{
+			GotoStatementSyntax* statement = static_cast<GotoStatementSyntax*>(node);
+			VisitGotoStatement(statement);
 			return;
 		}
 	}
@@ -514,6 +530,18 @@ void SyntaxVisitor::VisitContinueStatement(ContinueStatementSyntax* node)
 		return;
 
 	// ...
+	return;
+}
+
+void SyntaxVisitor::VisitGotoMarkStatement(GotoMarkSyntax* node)
+{
+	// ..
+	return;
+}
+
+void SyntaxVisitor::VisitGotoStatement(GotoStatementSyntax* node)
+{
+	// ..
 	return;
 }
 

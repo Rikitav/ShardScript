@@ -102,6 +102,8 @@ namespace shard
 		void VisitIfStatement(shard::IfStatementSyntax* node) override;
 		void VisitUnlessStatement(shard::UnlessStatementSyntax* node) override;
 		void VisitReturnStatement(shard::ReturnStatementSyntax* node) override;
+		void VisitGotoMarkStatement(shard::GotoMarkSyntax* node) override;
+		void VisitGotoStatement(shard::GotoStatementSyntax* node) override;
 		
 		void VisitLiteralExpression(shard::LiteralExpressionSyntax* node) override;
 		void VisitBinaryExpression(shard::BinaryExpressionSyntax* node) override;

@@ -46,6 +46,8 @@
 #include <shard/syntax/nodes/Statements/ExpressionStatementSyntax.h>
 #include <shard/syntax/nodes/Statements/BreakStatementSyntax.h>
 #include <shard/syntax/nodes/Statements/ContinueStatementSyntax.h>
+#include <shard/syntax/nodes/Statements/GotoMarkSyntax.h>
+#include <shard/syntax/nodes/Statements/GotoStatementSyntax.h>
 
 #include <shard/syntax/nodes/Expressions/LiteralExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/BinaryExpressionSyntax.h>
@@ -941,6 +943,13 @@ StatementSyntax* LexicalAnalyzer::ReadStatement(SourceReader& reader, SyntaxNode
 				}
 			}
 		}
+		else if (IsGotoMark(current.Type, peek.Type))
+		{
+			reader.Consume(); // Id
+			reader.Consume(); // :
+
+			return new GotoMarkSyntax(current, peek, parent);
+		}
 	}
 
 	ExpressionSyntax* expression = ReadExpression(reader, parent, 0);
@@ -978,6 +987,9 @@ KeywordStatementSyntax* LexicalAnalyzer::ReadKeywordStatement(SourceReader& read
 		case TokenType::ElseKeyword:
 			return ReadConditionalClause(reader, parent);
 
+		case TokenType::GotoKeyword:
+			return ReadGotoStatement(reader, parent);
+
 		default:
 		{
 			// Don't consume - let caller handle it to avoid infinite loop
@@ -1003,7 +1015,7 @@ ReturnStatementSyntax* LexicalAnalyzer::ReadReturnStatement(SourceReader& reader
 ThrowStatementSyntax* LexicalAnalyzer::ReadThrowStatement(SourceReader& reader, SyntaxNode* parent)
 {
 	ThrowStatementSyntax* syntax = new ThrowStatementSyntax(parent);
-	syntax->KeywordToken = Expect(reader, TokenType::ReturnKeyword, L"Expected return keyword");
+	syntax->KeywordToken = Expect(reader, TokenType::ReturnKeyword, L"Expected throw keyword");
 
 	SyntaxToken current = reader.Current();
 	if (current.Type != TokenType::Semicolon)
@@ -1016,7 +1028,7 @@ ThrowStatementSyntax* LexicalAnalyzer::ReadThrowStatement(SourceReader& reader, 
 BreakStatementSyntax* LexicalAnalyzer::ReadBreakStatement(SourceReader& reader, SyntaxNode* parent)
 {
 	BreakStatementSyntax* syntax = new BreakStatementSyntax(parent);
-	syntax->KeywordToken = Expect(reader, TokenType::BreakKeyword, L"Expected return keyword");
+	syntax->KeywordToken = Expect(reader, TokenType::BreakKeyword, L"Expected break keyword");
 	syntax->SemicolonToken = Expect(reader, TokenType::Semicolon, L"Missing ';' token");
 	return syntax;
 }
@@ -1024,7 +1036,16 @@ BreakStatementSyntax* LexicalAnalyzer::ReadBreakStatement(SourceReader& reader, 
 ContinueStatementSyntax* LexicalAnalyzer::ReadContinueStatement(SourceReader& reader, SyntaxNode* parent)
 {
 	ContinueStatementSyntax* syntax = new ContinueStatementSyntax(parent);
-	syntax->KeywordToken = Expect(reader, TokenType::ContinueKeyword, L"Expected return keyword");
+	syntax->KeywordToken = Expect(reader, TokenType::ContinueKeyword, L"Expected continue keyword");
+	syntax->SemicolonToken = Expect(reader, TokenType::Semicolon, L"Missing ';' token");
+	return syntax;
+}
+
+GotoStatementSyntax* LexicalAnalyzer::ReadGotoStatement(shard::SourceReader& reader, shard::SyntaxNode* parent)
+{
+	GotoStatementSyntax* syntax = new GotoStatementSyntax(parent);
+	syntax->KeywordToken = Expect(reader, TokenType::GotoKeyword, L"Expected goto keyword");
+	syntax->MarkIdentifierToken = Expect(reader, TokenType::Identifier, L"Expected mark identifier");
 	syntax->SemicolonToken = Expect(reader, TokenType::Semicolon, L"Missing ';' token");
 	return syntax;
 }

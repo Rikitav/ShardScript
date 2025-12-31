@@ -19,6 +19,7 @@ namespace shard
 		ExceptionRaised,
 		LoopBreak,
 		LoopContinue,
+		GotoJump,
 	};
 
 	class SHARD_API CallStackFrame
@@ -31,6 +32,7 @@ namespace shard
 		std::stack<shard::InboundVariablesContext*> VariablesStack;
 		FrameInterruptionReason InterruptionReason = FrameInterruptionReason::None;
 		ObjectInstance* InterruptionRegister = nullptr;
+		size_t GotoIndex = -1;
 
 		inline CallStackFrame(const shard::MethodSymbol* method, const shard::TypeSymbol* withinType, const CallStackFrame* previousFrame)
 			: WithinType(withinType), Method(method), PreviousFrame(previousFrame) { }

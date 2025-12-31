@@ -1243,6 +1243,11 @@ bool SourceReader::IsFunctionalKeyword(std::wstring& word, TokenType& type)
 		type = TokenType::ThrowKeyword;
 		return true;
 	}
+	else if (word == L"goto")
+	{
+		type = TokenType::GotoKeyword;
+		return true;
+	}
 	else
 	{
 		return false;

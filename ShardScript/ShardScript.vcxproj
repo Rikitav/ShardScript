@@ -189,6 +189,8 @@
     <ClInclude Include="include\shard\parsing\LayoutGenerator.h" />
     <ClInclude Include="include\shard\framework\FrameworkLoader.h" />
     <ClInclude Include="include\shard\ShardScriptVersion.h" />
+    <ClInclude Include="include\shard\syntax\nodes\Statements\GotoMarkSyntax.h" />
+    <ClInclude Include="include\shard\syntax\nodes\Statements\GotoStatementSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\TypeArgumentsListSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\TypeParametersListSyntax.h" />
     <ClInclude Include="include\shard\syntax\SymbolFactory.h" />
@@ -272,6 +274,7 @@
     <ClInclude Include="include\shard\syntax\symbols\FFISymbol.h" />
     <ClInclude Include="include\shard\syntax\symbols\FieldSymbol.h" />
     <ClInclude Include="include\shard\syntax\symbols\GenericTypeSymbol.h" />
+    <ClInclude Include="include\shard\syntax\symbols\GotoMarkSymbol.h" />
     <ClInclude Include="include\shard\syntax\symbols\IndexatorSymbol.h" />
     <ClInclude Include="include\shard\syntax\symbols\LeftDenotationSymbol.h" />
     <ClInclude Include="include\shard\syntax\symbols\MethodSymbol.h" />

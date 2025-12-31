@@ -48,5 +48,6 @@ namespace shard
 		void VisitPropertyDeclaration(shard::PropertyDeclarationSyntax* node) override;
 		void VisitAccessorDeclaration(shard::AccessorDeclarationSyntax* node) override;
 		void VisitVariableStatement(shard::VariableStatementSyntax* node) override;
+		void VisitGotoMarkStatement(shard::GotoMarkSyntax* node) override;
 	};
 }

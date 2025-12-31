@@ -281,6 +281,11 @@ bool IsType(TokenType type, TokenType peekType)
 	return false;
 }
 
+bool IsGotoMark(TokenType type, TokenType peekType)
+{
+	return type == TokenType::Identifier && peekType == TokenType::Colon;
+}
+
 bool IsModifier(TokenType type)
 {
 	switch (type)
@@ -366,6 +371,7 @@ bool IsFunctionalKeyword(TokenType type)
 		case TokenType::BreakKeyword:
 		case TokenType::ContinueKeyword:
 		case TokenType::ReturnKeyword:
+		case TokenType::GotoKeyword:
 			return true;
 
 		default:

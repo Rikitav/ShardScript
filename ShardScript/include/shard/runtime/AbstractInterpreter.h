@@ -35,6 +35,7 @@
 #include <shard/syntax/nodes/Statements/ExpressionStatementSyntax.h>
 #include <shard/syntax/nodes/Statements/BreakStatementSyntax.h>
 #include <shard/syntax/nodes/Statements/ContinueStatementSyntax.h>
+#include <shard/syntax/nodes/Statements/GotoStatementSyntax.h>
 
 #include <stack>
 #include <vector>
@@ -71,6 +72,7 @@ namespace shard
 		static ObjectInstance* ExecuteThrowStatement(const shard::ThrowStatementSyntax* statement);
 		static ObjectInstance* ExecuteBreakStatement(const shard::BreakStatementSyntax* statement);
 		static ObjectInstance* ExecuteContinueStatement(const shard::ContinueStatementSyntax* statement);
+		static ObjectInstance* ExecuteGotoStatement(const shard::GotoStatementSyntax* statement);
 
 		static ObjectInstance* ExecuteIfStatement(const shard::IfStatementSyntax* statement);
 		static ObjectInstance* ExecuteUnlessStatement(const shard::UnlessStatementSyntax* statement);

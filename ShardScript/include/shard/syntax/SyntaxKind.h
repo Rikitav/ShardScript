@@ -52,6 +52,8 @@ namespace shard
 		IfStatement,
 		UnlessStatement,
 		ElseStatement,
+		GotoMarkStatement,
+		GotoStatement,
 
 		// Expressions
 		ObjectExpression,

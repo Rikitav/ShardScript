@@ -30,6 +30,8 @@
 #include <shard/syntax/nodes/Statements/ThrowStatementSyntax.h>
 #include <shard/syntax/nodes/Statements/BreakStatementSyntax.h>
 #include <shard/syntax/nodes/Statements/ContinueStatementSyntax.h>
+#include <shard/syntax/nodes/Statements/GotoMarkSyntax.h>
+#include <shard/syntax/nodes/Statements/GotoStatementSyntax.h>
 
 #include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/PropertyDeclarationSyntax.h>
@@ -94,6 +96,7 @@ namespace shard
 		shard::ThrowStatementSyntax* ReadThrowStatement(shard::SourceReader& reader, shard::SyntaxNode* parent);
 		shard::BreakStatementSyntax* ReadBreakStatement(shard::SourceReader& reader, shard::SyntaxNode* parent);
 		shard::ContinueStatementSyntax* ReadContinueStatement(shard::SourceReader& reader, shard::SyntaxNode* parent);
+		shard::GotoStatementSyntax* ReadGotoStatement(shard::SourceReader& reader, shard::SyntaxNode* parent);
 
 		shard::ConditionalClauseBaseSyntax* ReadConditionalClause(shard::SourceReader& reader, shard::SyntaxNode* parent);
 		shard::WhileStatementSyntax* ReadWhileStatement(shard::SourceReader& reader, shard::SyntaxNode* parent);
