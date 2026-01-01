@@ -118,3 +118,6 @@ namespace Functional
 
 ## ​🤝 Contributing
 ​The project is under active development. If you find a bug, have ideas for syntax improvements, or want to suggest a new feature — please create an Issue! All feedback is welcome. In case of a sudden crash of the interpreter, please attach your code to issue so I can debug it.
+
+## Check out my Website!
+ShardScript.ru
