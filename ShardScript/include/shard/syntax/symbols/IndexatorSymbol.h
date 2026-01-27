@@ -13,8 +13,12 @@ namespace shard
     public:
         std::vector<ParameterSymbol*> Parameters;
 
-        inline IndexatorSymbol(std::wstring name)
-            : PropertySymbol(std::move(name)) { }
+        inline IndexatorSymbol(std::wstring name) : PropertySymbol(std::move(name))
+        {
+            // hehe
+            SyntaxKind* pKind = const_cast<SyntaxKind*>(&Kind);
+            *pKind = SyntaxKind::IndexatorDeclaration;
+        }
 
         inline IndexatorSymbol(const IndexatorSymbol& other) = delete;
 

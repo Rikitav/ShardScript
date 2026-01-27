@@ -43,7 +43,6 @@ namespace shard
 
 		void VisitCompilationUnit(shard::CompilationUnitSyntax* node) override;
 		void VisitUsingDirective(shard::UsingDirectiveSyntax* node) override;
-		void VisitImportDirective(shard::ImportDirectiveSyntax* node) override;
 
 		void VisitNamespaceDeclaration(shard::NamespaceDeclarationSyntax* node) override;
 		void VisitClassDeclaration(shard::ClassDeclarationSyntax* node) override;
@@ -54,6 +53,8 @@ namespace shard
 		void VisitMethodDeclaration(shard::MethodDeclarationSyntax* node) override;
 		void VisitFieldDeclaration(shard::FieldDeclarationSyntax* node) override;
 		void VisitPropertyDeclaration(shard::PropertyDeclarationSyntax* node) override;
+		void VisitIndexatorDeclaration(shard::IndexatorDeclarationSyntax* node) override;
+		void VisitAccessorDeclaration(shard::AccessorDeclarationSyntax* node) override;
 		void VisitVariableStatement(shard::VariableStatementSyntax* node) override;
 
 		void VisitObjectCreationExpression(shard::ObjectExpressionSyntax* node) override;

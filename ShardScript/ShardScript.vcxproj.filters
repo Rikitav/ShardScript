@@ -226,9 +226,6 @@
     <ClInclude Include="include\shard\syntax\nodes\Statements\ReturnStatementSyntax.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="include\shard\syntax\nodes\Directives\ImportDirectiveSyntax.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
     <ClInclude Include="include\shard\syntax\nodes\StatementsBlockSyntax.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
@@ -388,9 +385,6 @@
     <ClInclude Include="include\shard\parsing\semantic\SymbolInfo.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="include\shard\syntax\symbols\FFISymbol.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
     <ClInclude Include="include\shard\parsing\visiting\ExpressionBinder.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
@@ -485,6 +479,9 @@
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="include\shard\syntax\symbols\ConstructorSymbol.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\ShardScript.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>

@@ -11,7 +11,6 @@
 #include <shard/syntax/nodes/CompilationUnitSyntax.h>
 #include <shard/syntax/nodes/StatementsBlockSyntax.h>
 #include <shard/syntax/nodes/Statements/VariableStatementSyntax.h>
-#include <shard/syntax/nodes/Directives/ImportDirectiveSyntax.h>
 
 #include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.h>
@@ -35,7 +34,6 @@ namespace shard
 			: SyntaxVisitor(model, diagnostics), ScopeVisitor(model.Table) { }
 
 		void VisitCompilationUnit(shard::CompilationUnitSyntax* node) override;
-		void VisitImportDirective(shard::ImportDirectiveSyntax* node) override;
 
 		void VisitNamespaceDeclaration(shard::NamespaceDeclarationSyntax* node) override;
 		void VisitClassDeclaration(shard::ClassDeclarationSyntax* node) override;
@@ -46,6 +44,7 @@ namespace shard
 		void VisitConstructorDeclaration(shard::ConstructorDeclarationSyntax* node) override;
 		void VisitFieldDeclaration(shard::FieldDeclarationSyntax* node) override;
 		void VisitPropertyDeclaration(shard::PropertyDeclarationSyntax* node) override;
+		void VisitIndexatorDeclaration(shard::IndexatorDeclarationSyntax* node) override;
 		void VisitAccessorDeclaration(shard::AccessorDeclarationSyntax* node) override;
 		void VisitVariableStatement(shard::VariableStatementSyntax* node) override;
 	};

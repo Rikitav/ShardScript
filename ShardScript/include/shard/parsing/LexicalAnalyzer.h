@@ -23,7 +23,6 @@
 #include <shard/syntax/nodes/TypeSyntax.h>
 
 #include <shard/syntax/nodes/Directives/UsingDirectiveSyntax.h>
-#include <shard/syntax/nodes/Directives/ImportDirectiveSyntax.h>
 
 #include <shard/syntax/nodes/Statements/ConditionalClauseSyntax.h>
 #include <shard/syntax/nodes/Statements/ReturnStatementSyntax.h>
@@ -32,12 +31,16 @@
 #include <shard/syntax/nodes/Statements/ContinueStatementSyntax.h>
 
 #include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/DelegateDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.h>
+
 #include <shard/syntax/nodes/MemberDeclarations/PropertyDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.h>
-#include <shard/syntax/nodes/MemberDeclarations/DelegateDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/IndexatorDeclarationSyntax.h>
 
 #include <shard/syntax/nodes/Expressions/LinkedExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/ObjectExpressionSyntax.h>
@@ -65,41 +68,48 @@ namespace shard
 
 		void FromSourceReader(shard::SyntaxTree & syntaxTree, shard::SourceReader& reader);
 
-		// First layer - top tier compilation
+		// 1. top tier components
 		shard::CompilationUnitSyntax* ReadCompilationUnit(shard::SourceReader& reader);
-
 		shard::UsingDirectiveSyntax* ReadUsingDirective(shard::SourceReader& reader, shard::SyntaxNode* parent);
-		shard::ImportDirectiveSyntax* ReadImportDirective(shard::SourceReader& reader, shard::SyntaxNode* parent);
-		
-		// Second layer - objects and members
 		shard::NamespaceDeclarationSyntax* ReadNamespaceDeclaration(shard::SourceReader& reader, shard::SyntaxNode* parent);
-		shard::MemberDeclarationSyntax* ReadMemberDeclaration(shard::SourceReader& reader, shard::SyntaxNode* parent);
 
-		shard::ConstructorDeclarationSyntax* ReadConstructorDeclaration(shard::SourceReader& reader, shard::MemberDeclarationInfo& info, shard::SyntaxNode* parent);
-		shard::MethodDeclarationSyntax* ReadMethodDeclaration(shard::SourceReader& reader, shard::MemberDeclarationInfo& info, shard::SyntaxNode* parent);
-		shard::FieldDeclarationSyntax* ReadFieldDeclaration(shard::SourceReader& reader, shard::MemberDeclarationInfo& info, shard::SyntaxNode* parent);
+		// 2. Type declarations
+		shard::MemberDeclarationSyntax* ReadMemberDeclaration(shard::SourceReader& reader, shard::SyntaxNode* parent);
+		shard::ClassDeclarationSyntax* ReadClassDeclaration(shard::SourceReader& reader, shard::MemberDeclarationInfo& info, shard::SyntaxNode* parent);
+		shard::StructDeclarationSyntax* ReadStructDeclaration(shard::SourceReader& reader, shard::MemberDeclarationInfo& info, shard::SyntaxNode* parent);
+		//shard::InterfaceDelcarationSyntax* ReadInterfaceDeclaration(shard::SourceReader& reader, shard::MemberDeclarationInfo& info, shard::SyntaxNode* parent);
 		shard::DelegateDeclarationSyntax* ReadDelegateDeclaration(shard::SourceReader& reader, shard::MemberDeclarationInfo& info, shard::SyntaxNode* parent);
-		shard::PropertyDeclarationSyntax* ReadPropertyDeclaration(shard::SourceReader& reader, shard::MemberDeclarationInfo& info, shard::SyntaxNode* parent);
-		shard::AccessorDeclarationSyntax* ReadAccessorDeclaration(shard::SourceReader& reader, shard::SyntaxNode* parent);
 
 		std::vector<shard::SyntaxToken> ReadMemberModifiers(shard::SourceReader& reader);
 		void ReadTypeBody(shard::SourceReader& reader, shard::TypeDeclarationSyntax* syntax);
+		//shard::TypeDeclarationSyntax* make_type(shard::MemberDeclarationInfo& info, shard::SyntaxNode* parent);
 
-		// Third layer - code
+		// 3. Type members
+		shard::ConstructorDeclarationSyntax* ReadConstructorDeclaration(shard::SourceReader& reader, shard::MemberDeclarationInfo& info, shard::SyntaxNode* parent);
+		shard::MethodDeclarationSyntax* ReadMethodDeclaration(shard::SourceReader& reader, shard::MemberDeclarationInfo& info, shard::SyntaxNode* parent);
+		shard::FieldDeclarationSyntax* ReadFieldDeclaration(shard::SourceReader& reader, shard::MemberDeclarationInfo& info, shard::SyntaxNode* parent);
+		shard::PropertyDeclarationSyntax* ReadPropertyDeclaration(shard::SourceReader& reader, shard::MemberDeclarationInfo& info, shard::SyntaxNode* parent);
+		shard::IndexatorDeclarationSyntax* ReadIndexatorDeclaration(shard::SourceReader& reader, shard::MemberDeclarationInfo& info, shard::SyntaxNode* parent);
+		shard::AccessorDeclarationSyntax* ReadAccessorDeclaration(shard::SourceReader& reader, shard::SyntaxNode* parent);
+
+		// 4. Code blocks
 		shard::StatementsBlockSyntax* ReadStatementsBlock(shard::SourceReader& reader, shard::SyntaxNode* parent);
 		shard::StatementSyntax* ReadStatement(shard::SourceReader& reader, shard::SyntaxNode* parent);
 
+		// 5. Keywords and statements
 		shard::KeywordStatementSyntax* ReadKeywordStatement(shard::SourceReader& reader, shard::SyntaxNode* parent);
 		shard::ReturnStatementSyntax* ReadReturnStatement(shard::SourceReader& reader, shard::SyntaxNode* parent);
 		shard::ThrowStatementSyntax* ReadThrowStatement(shard::SourceReader& reader, shard::SyntaxNode* parent);
 		shard::BreakStatementSyntax* ReadBreakStatement(shard::SourceReader& reader, shard::SyntaxNode* parent);
 		shard::ContinueStatementSyntax* ReadContinueStatement(shard::SourceReader& reader, shard::SyntaxNode* parent);
 
+		// 6. Lexical structures
 		shard::ConditionalClauseBaseSyntax* ReadConditionalClause(shard::SourceReader& reader, shard::SyntaxNode* parent);
 		shard::WhileStatementSyntax* ReadWhileStatement(shard::SourceReader& reader, shard::SyntaxNode* parent);
 		shard::UntilStatementSyntax* ReadUntilStatement(shard::SourceReader& reader, shard::SyntaxNode* parent);
 		shard::ForStatementSyntax* ReadForStatement(shard::SourceReader& reader, shard::SyntaxNode* parent);
 
+		// 7. Expression
 		shard::ExpressionSyntax* ReadExpression(shard::SourceReader& reader, shard::SyntaxNode* parent, int bindingPower);
 		shard::ExpressionSyntax* ReadNullDenotation(shard::SourceReader& reader, shard::SyntaxNode* parent);
 		shard::ExpressionSyntax* ReadLeftDenotation(shard::SourceReader& reader, shard::SyntaxNode* parent, shard::ExpressionSyntax* leftExpr);
@@ -113,10 +123,12 @@ namespace shard
 
 		shard::ArgumentsListSyntax* ReadArgumentsList(shard::SourceReader& reader, shard::SyntaxNode* parent);
 		shard::IndexatorListSyntax* ReadIndexatorList(shard::SourceReader& reader, shard::SyntaxNode* parent);
+		shard::ParametersListSyntax* ReadIndexerParametersList(shard::SourceReader& reader, shard::SyntaxNode* parent);
 		shard::ParametersListSyntax* ReadParametersList(shard::SourceReader& reader, shard::SyntaxNode* parent);
 		shard::TypeParametersListSyntax* ReadTypeParametersList(shard::SourceReader& reader, shard::SyntaxNode* parent);
 		shard::TypeArgumentsListSyntax* ReadTypeArgumentsList(shard::SourceReader& reader, shard::SyntaxNode* parent);
 
+		// 8. Other
 		shard::TypeSyntax* ReadType(shard::SourceReader& reader, shard::SyntaxNode* parent);
 		shard::TypeSyntax* ReadIdentifierNameType(shard::SourceReader& reader, shard::SyntaxNode* parent);
 		shard::TypeSyntax* ReadDelegateType(shard::SourceReader& reader, shard::SyntaxNode* parent);
@@ -129,6 +141,5 @@ namespace shard
 		shard::SyntaxToken Expect(shard::SourceReader& reader, shard::TokenType kind, const wchar_t* message);
 		bool Matches(shard::SourceReader& reader, std::initializer_list<shard::TokenType> types);
 		bool TryMatch(shard::SourceReader& reader, std::initializer_list<shard::TokenType> types, const wchar_t* errorMessage, int maxSkips = 5);
-		shard::TypeDeclarationSyntax* make_type(shard::MemberDeclarationInfo& info, shard::SyntaxNode* parent);
 	};
 }

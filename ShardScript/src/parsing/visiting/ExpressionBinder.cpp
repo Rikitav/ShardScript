@@ -325,36 +325,102 @@ void ExpressionBinder::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
 		Diagnostics.ReportError(node->IdentifierToken, L"Property '" + node->IdentifierToken.Word + L"' must have return value");
 	}
 
-	if (node->Getter != nullptr && node->Getter->Body != nullptr)
+	PushScope(symbol);
+	if (node->Getter != nullptr)
+		VisitAccessorDeclaration(node->Getter);
+
+	if (node->Setter != nullptr)
+		VisitAccessorDeclaration(node->Getter);
+
+	PopScope();
+}
+
+void ExpressionBinder::VisitIndexatorDeclaration(IndexatorDeclarationSyntax* node)
+{
+	IndexatorSymbol* symbol = LookupSymbol<IndexatorSymbol>(node);
+	if (symbol == nullptr)
+		throw std::runtime_error("symbol not found");
+
+	if (!symbol->Parent->IsType())
+		return;
+
+	TypeSymbol* ownerType = static_cast<TypeSymbol*>(symbol->Parent);
+	if (symbol->ReturnType == SymbolTable::Primitives::Void)
 	{
-		PushScope(symbol);
+		Diagnostics.ReportError(node->IdentifierToken, L"Indexator '" + node->IdentifierToken.Word + L"' must have return value");
+	}
+
+	PushScope(symbol);
+	if (node->Getter != nullptr)
+		VisitAccessorDeclaration(node->Getter);
+
+	if (node->Setter != nullptr)
+		VisitAccessorDeclaration(node->Getter);
+
+	PopScope();
+}
+
+void ExpressionBinder::VisitAccessorDeclaration(AccessorDeclarationSyntax* node)
+{
+	AccessorSymbol* symbol = LookupSymbol<AccessorSymbol>(node);
+	if (symbol == nullptr)
+		throw std::runtime_error("symbol not found");
+
+	PushScope(symbol);
+	
+	if (node->KeywordToken.Type == TokenType::GetKeyword)
+	{
+		// Getter
+		for (ParameterSymbol* param : symbol->Parameters)
+			Declare(param);
+
+		PropertySymbol* propSymbol = static_cast<PropertySymbol*>(symbol->Parent);
 		if (!symbol->IsStatic)
-			Declare(new VariableSymbol(L"this", ownerType));
+			Declare(new ParameterSymbol(L"this", static_cast<TypeSymbol*>(propSymbol->Parent)));
 
-		CurrentScope()->ReturnFound = false;
-		VisitStatementsBlock(node->Getter->Body);
+		if (node->Body != nullptr)
+		{
+			SemanticScope* scope = CurrentScope();
+			scope->ReturnFound = false;
 
-		if (!CurrentScope()->ReturnFound)
-			Diagnostics.ReportError(node->Getter->KeywordToken, L"Accessor must return a value of type '" + symbol->ReturnType->Name + L"'");
+			VisitStatementsBlock(node->Body);
+
+			if (!scope->ReturnFound)
+				Diagnostics.ReportError(node->KeywordToken, L"Accessor must return a value of type '" + symbol->ReturnType->Name + L"'");
+		}
 
 		PopScope();
 	}
-
-	if (node->Setter != nullptr && node->Setter->Body != nullptr)
+	else if (node->KeywordToken.Type == TokenType::SetKeyword)
 	{
-		PushScope(symbol);
+		// Setter
+		for (ParameterSymbol* param : symbol->Parameters)
+			Declare(param);
+
+		PropertySymbol* propSymbol = static_cast<PropertySymbol*>(symbol->Parent);
+		Declare(new ParameterSymbol(L"value", propSymbol->ReturnType));
+
 		if (!symbol->IsStatic)
-			Declare(new VariableSymbol(L"this", ownerType));
+			Declare(new ParameterSymbol(L"this", static_cast<TypeSymbol*>(propSymbol->Parent)));
 
-		CurrentScope()->ReturnsAnything = false;
-		Declare(new VariableSymbol(L"value", symbol->ReturnType));
-		VisitStatementsBlock(node->Setter->Body);
+		if (node->Body != nullptr)
+		{
+			SemanticScope* scope = CurrentScope();
+			scope->ReturnsAnything = false;
+			VisitStatementsBlock(node->Body);
 
-		if (CurrentScope()->ReturnsAnything)
-			Diagnostics.ReportError(node->Setter->KeywordToken, L"Setter method of '" + node->IdentifierToken.Word + L"' should not return any values");
+			if (scope->ReturnsAnything)
+				Diagnostics.ReportError(node->KeywordToken, L"Setter method of '" + node->IdentifierToken.Word + L"' should not return any values");
+		}
 
 		PopScope();
 	}
+	else
+	{
+		throw std::runtime_error("nknown accessor type");
+		PopScope();
+	}
+
 }
 
 void ExpressionBinder::VisitFieldDeclaration(FieldDeclarationSyntax* node)
@@ -684,7 +750,7 @@ TypeSymbol* ExpressionBinder::AnalyzeObjectExpression(ObjectExpressionSyntax* no
 	if (node->TypeSymbol->Kind == SyntaxKind::GenericType)
 		genericType = static_cast<GenericTypeSymbol*>(node->TypeSymbol);
 
-	if (!MatchMethodArguments(method, node->ArgumentsList->Arguments, genericType))
+	if (!MatchMethodArguments(method->Parameters, node->ArgumentsList->Arguments, genericType))
 	{
 		//Diagnostics.ReportError(node->IdentifierToken, L"Method '" + methodName + L"' argument types do not match");
 		return nullptr;
@@ -815,20 +881,17 @@ void ExpressionBinder::VisitTernaryExpression(TernaryExpressionSyntax* node)
 	}
 }
 
-bool ExpressionBinder::MatchMethodArguments(MethodSymbol* method, std::vector<ArgumentSyntax*> arguments, GenericTypeSymbol* genericType)
+bool ExpressionBinder::MatchMethodArguments(std::vector<ParameterSymbol*> parameters, std::vector<ArgumentSyntax*> arguments, GenericTypeSymbol* genericType)
 {
-	if (method == nullptr)
-		return false;
-		
-	if (method->Parameters.size() != arguments.size())
+	if (parameters.size() != arguments.size())
 	{
-		Diagnostics.ReportError(SyntaxToken(), L"Method expects " + std::to_wstring(method->Parameters.size()) + L" arguments but got " + std::to_wstring(arguments.size()));
+		Diagnostics.ReportError(SyntaxToken(), L"Method expects " + std::to_wstring(parameters.size()) + L" arguments but got " + std::to_wstring(arguments.size()));
 		return false;
 	}
 	
-	for (size_t i = 0; i < method->Parameters.size(); i++)
+	for (size_t i = 0; i < parameters.size(); i++)
 	{
-		ParameterSymbol* param = method->Parameters[i];
+		ParameterSymbol* param = parameters[i];
 		ArgumentSyntax* arg = arguments[i];
 
 		if (param == nullptr || arg == nullptr || arg->Expression == nullptr)
@@ -1154,7 +1217,7 @@ TypeSymbol* ExpressionBinder::AnalyzeInvokationExpression(InvokationExpressionSy
 	if (currentType->Kind == SyntaxKind::GenericType)
 		genericType = static_cast<GenericTypeSymbol*>(currentType);
 
-	if (!MatchMethodArguments(method, node->ArgumentsList->Arguments, genericType))
+	if (!MatchMethodArguments(method->Parameters, node->ArgumentsList->Arguments, genericType))
 	{
 		//Diagnostics.ReportError(node->IdentifierToken, L"Method '" + methodName + L"' argument types do not match");
 		return nullptr;
@@ -1377,7 +1440,7 @@ TypeSymbol* ExpressionBinder::AnalyzeIndexatorExpression(IndexatorExpressionSynt
 		if (currentType->Kind == SyntaxKind::GenericType)
 			genericType = static_cast<GenericTypeSymbol*>(currentType);
 
-		if (!MatchMethodArguments(accessor, node->IndexatorList->Arguments, genericType))
+		if (!MatchMethodArguments(indexator->Parameters, node->IndexatorList->Arguments, genericType))
 		{
 			//Diagnostics.ReportError(node->MemberAccess->IdentifierToken, L"Indexator arguments types do not match");
 			return nullptr;
@@ -1443,10 +1506,6 @@ static bool IsValidIntegerPunctuation(wchar_t symbol)
 			return false;
 
 		case '.':
-		case 'e':
-		case 'E':
-		case '+':
-		case '-':
 			return true;
 	}
 }
@@ -1845,11 +1904,16 @@ void ExpressionBinder::VisitUnlessStatement(UnlessStatementSyntax* node)
 
 static bool SymbolHasReturnType(const SyntaxSymbol* symbol)
 {
+	if (symbol == nullptr)
+		return false;
+
 	switch (symbol->Kind)
 	{
 		case SyntaxKind::MethodDeclaration:
 		case SyntaxKind::FieldDeclaration:
 		case SyntaxKind::PropertyDeclaration:
+		case SyntaxKind::IndexatorDeclaration:
+		case SyntaxKind::AccessorDeclaration:
 			return true;
 
 		default:
@@ -1885,6 +1949,13 @@ TypeSymbol* ExpressionBinder::FindTargetReturnType(SemanticScope*& scope)
 			return methodSymbol->ReturnType;
 		}
 
+		case SyntaxKind::AccessorDeclaration:
+		{
+			AccessorSymbol* methodSymbol = static_cast<AccessorSymbol*>(symbol);
+			return methodSymbol->ReturnType;
+		}
+
+		case SyntaxKind::IndexatorDeclaration:
 		case SyntaxKind::PropertyDeclaration:
 		{
 			PropertySymbol* methodSymbol = static_cast<PropertySymbol*>(symbol);
@@ -1949,9 +2020,7 @@ void ExpressionBinder::VisitReturnStatement(ReturnStatementSyntax* node)
 			searchingScope->ReturnsAnything = true;
 			VisitExpression(node->Expression);
 
-			Diagnostics.ReportError(node->Expression->Kind == SyntaxKind::LiteralExpression
-				? static_cast<LiteralExpressionSyntax*>(node->Expression)->LiteralToken
-				: SyntaxToken(), L"Void method cannot return a value");
+			Diagnostics.ReportError(node->KeywordToken, L"Void method cannot return a value");
 		}
 
 		return;
@@ -1969,14 +2038,10 @@ void ExpressionBinder::VisitReturnStatement(ReturnStatementSyntax* node)
 
 	if (returnExprType == nullptr)
 	{
-		Diagnostics.ReportError(node->Expression->Kind == SyntaxKind::LiteralExpression
-			? static_cast<LiteralExpressionSyntax*>(node->Expression)->LiteralToken
-			: SyntaxToken(), L"Return expression type could not be determined");
+		Diagnostics.ReportError(node->KeywordToken, L"Return expression type could not be determined");
 	}
 	else if (!TypeSymbol::Equals(returnExprType, returnType))
 	{
-		Diagnostics.ReportError(node->Expression->Kind == SyntaxKind::LiteralExpression
-			? static_cast<LiteralExpressionSyntax*>(node->Expression)->LiteralToken
-			: SyntaxToken(), L"Return type mismatch: expected '" + returnType->Name + L"' but got '" + returnExprType->Name + L"'");
+		Diagnostics.ReportError(node->KeywordToken, L"Return type mismatch: expected '" + returnType->Name + L"' but got '" + returnExprType->Name + L"'");
 	}
 }

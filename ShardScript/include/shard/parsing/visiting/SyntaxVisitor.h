@@ -20,7 +20,6 @@
 #include <shard/syntax/nodes/TypeArgumentsListSyntax.h>
 #include <shard/syntax/nodes/TypeParametersListSyntax.h>
 
-#include <shard/syntax/nodes/Directives/ImportDirectiveSyntax.h>
 #include <shard/syntax/nodes/Directives/UsingDirectiveSyntax.h>
 
 #include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.h>
@@ -32,6 +31,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/DelegateDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/IndexatorDeclarationSyntax.h>
 
 #include <shard/syntax/nodes/Statements/VariableStatementSyntax.h>
 #include <shard/syntax/nodes/Statements/ExpressionStatementSyntax.h>
@@ -82,7 +82,6 @@ namespace shard
 	public:
         virtual void VisitSyntaxTree(shard::SyntaxTree& tree);
         virtual void VisitCompilationUnit(shard::CompilationUnitSyntax* node);
-        virtual void VisitImportDirective(shard::ImportDirectiveSyntax* node);
         virtual void VisitUsingDirective(shard::UsingDirectiveSyntax* node);
 
         virtual void VisitTypeDeclaration(shard::MemberDeclarationSyntax* node);
@@ -96,6 +95,7 @@ namespace shard
         virtual void VisitConstructorDeclaration(shard::ConstructorDeclarationSyntax* node);
         virtual void VisitFieldDeclaration(shard::FieldDeclarationSyntax* node);
         virtual void VisitPropertyDeclaration(shard::PropertyDeclarationSyntax* node);
+        virtual void VisitIndexatorDeclaration(shard::IndexatorDeclarationSyntax* node);
 		virtual void VisitAccessorDeclaration(shard::AccessorDeclarationSyntax* node);
 
         virtual void VisitStatementsBlock(shard::StatementsBlockSyntax* node);

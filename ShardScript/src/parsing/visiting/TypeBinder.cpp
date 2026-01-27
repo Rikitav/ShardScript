@@ -58,7 +58,7 @@
 
 using namespace shard;
 
-static void BindParametersList(ParametersListSyntax* node, std::vector<ParameterSymbol*> symbols)
+static void BindParametersList(ParametersListSyntax* node, std::vector<ParameterSymbol*>& symbols)
 {
 	if (node == nullptr)
 		return;
@@ -108,20 +108,6 @@ void TypeBinder::VisitUsingDirective(UsingDirectiveSyntax* node)
 	SemanticScope* current = CurrentScope();
 	for (const auto& symbol : nsNode->Types)
 		current->DeclareSymbol(symbol);
-}
-
-void TypeBinder::VisitImportDirective(ImportDirectiveSyntax* node)
-{
-	MethodSymbol* symbol = LookupSymbol<MethodSymbol>(node);
-	if (symbol == nullptr)
-		throw std::runtime_error("symbol not found");
-
-	VisitType(node->ReturnType);
-	VisitParametersList(node->Params);
-	BindParametersList(node->Params, symbol->Parameters);
-
-	if (node->ReturnType != nullptr)
-		symbol->ReturnType = node->ReturnType->Symbol;
 }
 
 void TypeBinder::VisitNamespaceDeclaration(NamespaceDeclarationSyntax* node)
@@ -190,12 +176,17 @@ void TypeBinder::VisitDelegateDeclaration(DelegateDeclarationSyntax* node)
 		throw std::runtime_error("symbol not found");
 
 	PushScope(symbol);
-	VisitType(node->ReturnType);
-	VisitParametersList(node->Params);
-	BindParametersList(node->Params, symbol->Parameters);
-	PopScope();
+	if (node->ReturnType != nullptr)
+		VisitType(node->ReturnType);
+
+	if (node->Params != nullptr)
+	{
+		VisitParametersList(node->Params);
+		BindParametersList(node->Params, symbol->Parameters);
+	}
 
 	symbol->ReturnType = node->ReturnType->Symbol;
+	PopScope();
 }
 
 void TypeBinder::VisitConstructorDeclaration(ConstructorDeclarationSyntax* node)
@@ -205,9 +196,15 @@ void TypeBinder::VisitConstructorDeclaration(ConstructorDeclarationSyntax* node)
 		throw std::runtime_error("symbol not found");
 
 	PushScope(symbol);
-	VisitParametersList(node->Params);
-	BindParametersList(node->Params, symbol->Parameters);
-	VisitStatementsBlock(node->Body);
+	if (node->Params != nullptr)
+	{
+		VisitParametersList(node->Params);
+		BindParametersList(node->Params, symbol->Parameters);
+	}
+
+	if (node->Body != nullptr)
+		VisitStatementsBlock(node->Body);
+
 	PopScope();
 }
 
@@ -218,13 +215,20 @@ void TypeBinder::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 		throw std::runtime_error("symbol not found");
 
 	PushScope(symbol);
-	VisitType(node->ReturnType);
-	VisitParametersList(node->Params);
-	BindParametersList(node->Params, symbol->Parameters);
-	VisitStatementsBlock(node->Body);
-	PopScope();
+	if (node->ReturnType != nullptr)
+		VisitType(node->ReturnType);
+
+	if (node->Params != nullptr)
+	{
+		VisitParametersList(node->Params);
+		BindParametersList(node->Params, symbol->Parameters);
+	}
+
+	if (node->Body != nullptr)
+		VisitStatementsBlock(node->Body);
 
 	symbol->ReturnType = node->ReturnType->Symbol;
+	PopScope();
 }
 
 void TypeBinder::VisitFieldDeclaration(FieldDeclarationSyntax* node)
@@ -233,8 +237,11 @@ void TypeBinder::VisitFieldDeclaration(FieldDeclarationSyntax* node)
 	if (symbol == nullptr)
 		throw std::runtime_error("symbol not found");
 
-	VisitType(node->ReturnType);
-	symbol->ReturnType = node->ReturnType->Symbol;
+	if (node->ReturnType != nullptr)
+	{
+		VisitType(node->ReturnType);
+		symbol->ReturnType = node->ReturnType->Symbol;
+	}
 
 	if (node->InitializerExpression != nullptr)
 		VisitExpression(node->InitializerExpression);
@@ -242,10 +249,12 @@ void TypeBinder::VisitFieldDeclaration(FieldDeclarationSyntax* node)
 
 void TypeBinder::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
 {
-	VisitType(node->ReturnType);
 	PropertySymbol* symbol = LookupSymbol<PropertySymbol>(node);
 	if (symbol == nullptr)
 		throw std::runtime_error("symbol not found");
+
+	PushScope(symbol);
+	VisitType(node->ReturnType);
 
 	// Resolve property return type
 	TypeSymbol* propertyType = node->ReturnType->Symbol;
@@ -267,10 +276,86 @@ void TypeBinder::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
 		VisitExpression(node->InitializerExpression);
 
 	if (node->Setter != nullptr)
+		VisitAccessorDeclaration(node->Setter);
+
+	if (node->Getter != nullptr)
 		VisitAccessorDeclaration(node->Getter);
 
-	if (node->InitializerExpression != nullptr)
-		VisitExpression(node->InitializerExpression);
+	PopScope();
+}
+
+void TypeBinder::VisitIndexatorDeclaration(IndexatorDeclarationSyntax* node)
+{
+	IndexatorSymbol* symbol = LookupSymbol<IndexatorSymbol>(node);
+	if (symbol == nullptr)
+		throw std::runtime_error("symbol not found");
+
+	PushScope(symbol);
+	if (node->ReturnType != nullptr)
+		VisitType(node->ReturnType);
+	
+	if (node->Parameters != nullptr)
+	{
+		VisitParametersList(node->Parameters);
+		BindParametersList(node->Parameters, symbol->Parameters);
+	}
+	
+	// Resolve property return type
+	TypeSymbol* propertyType = node->ReturnType->Symbol;
+	symbol->ReturnType = propertyType;
+
+	// Resolve getter return type
+	if (symbol->Getter != nullptr && symbol->Getter->Body != nullptr)
+		symbol->Getter->ReturnType = propertyType;
+
+	// Resolve setter parameter type
+	if (symbol->Setter != nullptr && symbol->Setter->Body != nullptr && !symbol->Setter->Parameters.empty())
+		symbol->Setter->Parameters[0]->Type = propertyType;
+
+	if (node->Setter != nullptr)
+		VisitAccessorDeclaration(node->Setter);
+
+	if (node->Getter != nullptr)
+		VisitAccessorDeclaration(node->Getter);
+
+	PopScope();
+}
+
+void TypeBinder::VisitAccessorDeclaration(AccessorDeclarationSyntax* node)
+{
+	AccessorSymbol* symbol = LookupSymbol<AccessorSymbol>(node);
+	if (symbol == nullptr)
+		throw std::runtime_error("symbol not found");
+
+	PropertySymbol* propSymbol = static_cast<PropertySymbol*>(symbol->Parent);
+	if (propSymbol->Kind == SyntaxKind::IndexatorDeclaration)
+	{
+		IndexatorSymbol* indexSymbol = static_cast<IndexatorSymbol*>(propSymbol);
+		symbol->Parameters = indexSymbol->Parameters;
+	}
+
+	/*
+	if (!propSymbol->IsStatic)
+	{
+		ParameterSymbol* thisParam = new ParameterSymbol(L"this");
+		thisParam->Type = static_cast<TypeSymbol*>(propSymbol->Parent);
+		symbol->Parameters.push_back(thisParam);
+	}
+	*/
+
+	/*
+	if (node->KeywordToken.Type == TokenType::SetKeyword)
+	{
+		ParameterSymbol* valueParam = new ParameterSymbol(L"value");
+		valueParam->Type = propSymbol->ReturnType;
+		symbol->Parameters.push_back(valueParam);
+	}
+	*/
+
+	if (node->KeywordToken.Type == TokenType::GetKeyword)
+	{
+		symbol->ReturnType = propSymbol->ReturnType;
+	}
 }
 
 void TypeBinder::VisitVariableStatement(VariableStatementSyntax* node)

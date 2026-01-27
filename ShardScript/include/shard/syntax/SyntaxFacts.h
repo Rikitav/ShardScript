@@ -24,6 +24,7 @@ SHARD_API bool IsLeftUnaryArithmeticOperator(shard::TokenType type);
 SHARD_API bool IsLeftUnaryBooleanOperator(shard::TokenType type);
 
 SHARD_API bool IsModifier(shard::TokenType type);
+SHARD_API bool IsTypeKeyword(shard::TokenType type);
 SHARD_API bool IsMemberKeyword(shard::TokenType type);
 SHARD_API bool IsMemberDeclaration(shard::TokenType currentType, shard::TokenType peekType);
 
