@@ -12,7 +12,6 @@
 #include <shard/syntax/nodes/StatementSyntax.h>
 #include <shard/syntax/nodes/TypeSyntax.h>
 
-#include <shard/syntax/nodes/Directives/ImportDirectiveSyntax.h>
 #include <shard/syntax/nodes/Directives/UsingDirectiveSyntax.h>
 
 #include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.h>
@@ -78,16 +77,6 @@ void SyntaxVisitor::VisitUsingDirective(UsingDirectiveSyntax* node)
 		return;
 
 	// ...
-	return;
-}
-
-void SyntaxVisitor::VisitImportDirective(ImportDirectiveSyntax* node)
-{
-	if (node == nullptr)
-		return;
-
-	if (node->Params != nullptr)
-		VisitParametersList(node->Params);
 	return;
 }
 
@@ -238,6 +227,13 @@ void SyntaxVisitor::VisitMemberDeclaration(MemberDeclarationSyntax* node)
 			return;
 		}
 
+		case SyntaxKind::IndexatorDeclaration:
+		{
+			IndexatorDeclarationSyntax* declNode = static_cast<IndexatorDeclarationSyntax*>(node);
+			VisitIndexatorDeclaration(declNode);
+			return;
+		}
+
 		case SyntaxKind::AccessorDeclaration:
 		{
 			AccessorDeclarationSyntax* declNode = static_cast<AccessorDeclarationSyntax*>(node);
@@ -309,6 +305,24 @@ void SyntaxVisitor::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
 	
 	if (node->InitializerExpression != nullptr)
 		VisitExpression(node->InitializerExpression);
+}
+
+void SyntaxVisitor::VisitIndexatorDeclaration(IndexatorDeclarationSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (node->ReturnType != nullptr)
+		VisitType(node->ReturnType);
+
+	if (node->Parameters != nullptr)
+		VisitParametersList(node->Parameters);
+
+	if (node->Getter != nullptr)
+		VisitAccessorDeclaration(node->Getter);
+
+	if (node->Setter != nullptr)
+		VisitAccessorDeclaration(node->Setter);
 }
 
 void SyntaxVisitor::VisitAccessorDeclaration(AccessorDeclarationSyntax* node)

@@ -32,6 +32,9 @@
 #include "utilities/InterpreterUtilities.h"
 
 using namespace shard;
+namespace fs = std::filesystem;
+
+const fs::path stdlibFilename = "ShardScript.Framework.dll";
 
 static void SigIntHandler(int signal)
 {
@@ -40,12 +43,68 @@ static void SigIntHandler(int signal)
 	exit(SIGINT);
 }
 
+LONG WINAPI UnhandledExceptionFilterFunction(PEXCEPTION_POINTERS exception)
+{
+	return 0;
+}
+
+bool CheckFilesExisting(ConsoleArguments& args)
+{
+	bool anyUnrealFiles = false;
+	for (const std::wstring& file : args.FilesToCompile)
+	{
+		if (!fs::exists(file))
+		{
+			anyUnrealFiles = true;
+			std::wcout << L"'" << file << L"' doesn't exists";
+		}
+	}
+
+	return !anyUnrealFiles;
+}
+
+void LoadLibrariesFromDirectoryPath(fs::path path)
+{
+	for (const fs::directory_entry& entry : std::filesystem::directory_iterator(path))
+	{
+		if (!entry.is_regular_file())
+			continue;
+
+		const auto filename = entry.path().filename();
+		if (!filename.string().ends_with(".dll"))
+			continue;
+
+		FrameworkLoader::AddLib(entry.path().wstring());
+	}
+}
+
+void Execute()
+{
+
+}
+
+fs::path GetCurrentDirectoryPath()
+{
+	WCHAR pathBuffer[MAX_PATH];
+	GetModuleFileNameW(NULL, pathBuffer, MAX_PATH);
+	return fs::path(pathBuffer).parent_path();
+}
+
+fs::path GetWorkingDirectoryPath()
+{
+	WCHAR pathBuffer[MAX_PATH];
+	GetCurrentDirectoryW(MAX_PATH, pathBuffer);
+	return fs::path(pathBuffer);
+}
+
 int wmain(int argc, wchar_t* argv[])
 {
 	try
 	{
 		setlocale(LC_ALL, "");
 		signal(SIGINT, SigIntHandler);
+		SetUnhandledExceptionFilter(UnhandledExceptionFilterFunction);
+
 		ConsoleArguments args = ShardUtilities::ParseArguments(argc, argv);
 
 		if (args.ShowHelp)
@@ -62,44 +121,39 @@ int wmain(int argc, wchar_t* argv[])
 			return 0;
 		}
 
-		bool anyUnrealFiles = false;
-		for (const std::wstring& file : args.FilesToCompile)
-		{
-			if (!PathFileExistsW(file.c_str()))
-			{
-				anyUnrealFiles = true;
-				std::wcout << L"'" << file << L"' doesn't exists";
-			}
-		}
-
-		if (anyUnrealFiles)
+		if (!CheckFilesExisting(args))
 			return 1;
 
 		DiagnosticsContext diagnostics;
 		SyntaxTree syntaxTree;
 		SemanticModel semanticModel(syntaxTree);
 
+		fs::path currentDirectory = GetCurrentDirectoryPath();
 		if (!args.ExcludeStd)
 		{
-			WCHAR buffer[MAX_PATH];
-			GetModuleFileNameW(NULL, buffer, sizeof(buffer) / sizeof(buffer[0]));
-			std::filesystem::path current = std::filesystem::path(buffer);
-			current = current.parent_path();
-
-			for (const auto& entry : std::filesystem::directory_iterator(current))
+			fs::path stdlibFilepath = currentDirectory / stdlibFilename;
+			if (!fs::exists(stdlibFilepath))
 			{
-				if (!entry.is_regular_file())
-					continue;
-
-				const auto filename = entry.path().filename();
-				if (!filename.string().ends_with(".dll"))
-					continue;
-
-				FrameworkLoader::AddLib(entry.path().wstring());
+				std::wcout << "'" << stdlibFilename << "' not found! use '--no-std' flag to disable standart library loading requirement" << std::endl;
+				return 1;
 			}
 
-			FrameworkLoader::Load(semanticModel, diagnostics);
+			FrameworkLoader::AddLib(stdlibFilepath.wstring());
 		}
+
+		FrameworkLoader::Load(semanticModel, diagnostics);
+
+		fs::path workingDirectory = GetWorkingDirectoryPath();
+		if (!fs::exists(workingDirectory))
+		{
+			std::wcout << "Could not resolve current working directory!" << std::endl;
+			return 1;
+		}
+		else
+		{
+
+		}
+
 
 		LexicalAnalyzer lexer(diagnostics);
 		for (const std::wstring& file : args.FilesToCompile)
@@ -143,16 +197,18 @@ int wmain(int argc, wchar_t* argv[])
 			InteractiveConsole::Run(syntaxTree, semanticModel, diagnostics);
 			return 0;
 		}
-
-		try
+		else
 		{
-			AbstractInterpreter::Execute(syntaxTree, semanticModel);
-			return 0;
-		}
-		catch (const std::runtime_error& err)
-		{
-			std::cout << err.what() << std::endl;
-			return 1;
+			try
+			{
+				AbstractInterpreter::Execute(syntaxTree, semanticModel);
+				return 0;
+			}
+			catch (const std::runtime_error& err)
+			{
+				std::cout << err.what() << std::endl;
+				return 1;
+			}
 		}
 	}
 	catch (const std::runtime_error& err)

@@ -6,7 +6,6 @@
 
 #include <shard/syntax/nodes/MemberDeclarationSyntax.h>
 #include <shard/syntax/nodes/Directives/UsingDirectiveSyntax.h>
-#include <shard/syntax/nodes/Directives/ImportDirectiveSyntax.h>
 
 #include <vector>
 
@@ -15,7 +14,6 @@ namespace shard
 	class SHARD_API CompilationUnitSyntax : public SyntaxNode
 	{
 	public:
-		std::vector<ImportDirectiveSyntax*> Imports;
 		std::vector<UsingDirectiveSyntax*> Usings;
 		std::vector<MemberDeclarationSyntax*> Members;
 
@@ -28,9 +26,6 @@ namespace shard
 
 		inline virtual ~CompilationUnitSyntax()
 		{
-			for (const ImportDirectiveSyntax* import : Imports)
-				delete import;
-
 			for (const UsingDirectiveSyntax* usingDirective : Usings)
 				delete usingDirective;
 

@@ -188,6 +188,7 @@
     <ClInclude Include="include\shard\framework\FrameworkModule.h" />
     <ClInclude Include="include\shard\parsing\LayoutGenerator.h" />
     <ClInclude Include="include\shard\framework\FrameworkLoader.h" />
+    <ClInclude Include="include\shard\ShardScript.h" />
     <ClInclude Include="include\shard\ShardScriptVersion.h" />
     <ClInclude Include="include\shard\syntax\nodes\TypeArgumentsListSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\TypeParametersListSyntax.h" />
@@ -243,7 +244,6 @@
     <ClInclude Include="include\shard\syntax\nodes\Expressions\UnaryExpressionSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\MemberDeclarations\ClassDeclarationSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\MemberDeclarations\FieldDeclarationSyntax.h" />
-    <ClInclude Include="include\shard\syntax\nodes\Directives\ImportDirectiveSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\Loops\ForStatementSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\Loops\UntilStatementSyntax.h" />
     <ClInclude Include="include\shard\syntax\nodes\Loops\WhileStatementSyntax.h" />
@@ -269,7 +269,6 @@
     <ClInclude Include="include\shard\syntax\symbols\ClassSymbol.h" />
     <ClInclude Include="include\shard\syntax\symbols\ConstructorSymbol.h" />
     <ClInclude Include="include\shard\syntax\symbols\DelegateTypeSymbol.h" />
-    <ClInclude Include="include\shard\syntax\symbols\FFISymbol.h" />
     <ClInclude Include="include\shard\syntax\symbols\FieldSymbol.h" />
     <ClInclude Include="include\shard\syntax\symbols\GenericTypeSymbol.h" />
     <ClInclude Include="include\shard\syntax\symbols\IndexatorSymbol.h" />

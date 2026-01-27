@@ -313,6 +313,8 @@ AccessorSymbol* SymbolFactory::Accessor(AccessorDeclarationSyntax* node, Propert
 {
 	std::wstring accessorName = propertySymbol->Name + L"_" + node->KeywordToken.Word;
 	AccessorSymbol* symbol = new AccessorSymbol(accessorName);
+	symbol->HandleType = MethodHandleType::Body;
+	symbol->Body = node->Body;
 	symbol->Accesibility = SymbolAccesibility::Public;
 	symbol->IsStatic = propertySymbol->IsStatic;
 	SetAccesibility(symbol, node->Modifiers);
@@ -475,6 +477,7 @@ ConstructorSymbol* SymbolFactory::Constructor(const std::wstring& name)
 AccessorSymbol* SymbolFactory::Accessor(const std::wstring& name, PropertySymbol* property, bool isGetter)
 {
 	AccessorSymbol* symbol = new AccessorSymbol(name);
+	symbol->HandleType = MethodHandleType::Body;
 	symbol->Accesibility = SymbolAccesibility::Public;
 	symbol->IsStatic = property->IsStatic;
 	symbol->ReturnType = isGetter ? property->ReturnType : shard::SymbolTable::Primitives::Void;
@@ -497,6 +500,20 @@ AccessorSymbol* SymbolFactory::Setter(const std::wstring& propertyName, Property
 {
 	std::wstring setterName = L"set_" + propertyName;
 	return Accessor(setterName, property, false);
+}
+
+IndexatorSymbol* SymbolFactory::Indexator(IndexatorDeclarationSyntax* node)
+{
+	IndexatorSymbol* symbol = new IndexatorSymbol(L"index"); // Name is always "index"
+	SetAccesibility(symbol, node->Modifiers);
+
+	for (ParameterSyntax* parameter : node->Parameters->Parameters)
+	{
+		ParameterSymbol* paramSymbol = new ParameterSymbol(parameter->Identifier.Word);
+		symbol->Parameters.push_back(paramSymbol);
+	}
+
+	return symbol;
 }
 
 IndexatorSymbol* SymbolFactory::Indexator(const std::wstring& name, TypeSymbol* returnType)

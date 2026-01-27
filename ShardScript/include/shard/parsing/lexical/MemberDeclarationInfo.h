@@ -12,7 +12,6 @@ namespace shard
 	struct SHARD_API MemberDeclarationInfo
 	{
 		std::vector<shard::SyntaxToken> Modifiers;
-		bool IsCtor = false;
 		shard::SyntaxToken DeclareType;
 		shard::SyntaxToken Identifier;
 		shard::TypeSyntax* ReturnType = nullptr;

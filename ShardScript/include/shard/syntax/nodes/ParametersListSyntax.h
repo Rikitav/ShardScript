@@ -33,8 +33,8 @@ namespace shard
 	class SHARD_API ParametersListSyntax : public SyntaxNode
 	{
 	public:
-		SyntaxToken OpenCurlToken;
-		SyntaxToken CloseCurlToken;
+		SyntaxToken OpenToken;
+		SyntaxToken CloseToken;
 		std::vector<ParameterSyntax*> Parameters;
 
 		inline ParametersListSyntax(const SyntaxNode* parent)

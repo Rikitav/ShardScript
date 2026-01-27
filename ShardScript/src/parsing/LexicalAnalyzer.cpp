@@ -35,9 +35,9 @@
 #include <shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/IndexatorDeclarationSyntax.h>
 
 #include <shard/syntax/nodes/Directives/UsingDirectiveSyntax.h>
-#include <shard/syntax/nodes/Directives/ImportDirectiveSyntax.h>
 
 #include <shard/syntax/nodes/Statements/ConditionalClauseSyntax.h>
 #include <shard/syntax/nodes/Statements/ReturnStatementSyntax.h>
@@ -84,14 +84,6 @@ CompilationUnitSyntax* LexicalAnalyzer::ReadCompilationUnit(SourceReader& reader
 		SyntaxToken token = reader.Current();
 		switch (token.Type)
 		{
-			case TokenType::FromKeyword:
-			{
-				ImportDirectiveSyntax* pImport = ReadImportDirective(reader, unit);
-				pImport->Parent = unit;
-				unit->Imports.push_back(pImport);
-				break;
-			}
-
 			case TokenType::UsingKeyword:
 			{
 				UsingDirectiveSyntax* pDirective = ReadUsingDirective(reader, unit);
@@ -169,57 +161,6 @@ UsingDirectiveSyntax* LexicalAnalyzer::ReadUsingDirective(SourceReader& reader, 
 	return syntax;
 }
 
-ImportDirectiveSyntax* LexicalAnalyzer::ReadImportDirective(SourceReader& reader, SyntaxNode* parent)
-{
-	ImportDirectiveSyntax* syntax = new ImportDirectiveSyntax(parent);
-	syntax->FromToken = Expect(reader, TokenType::FromKeyword, L"Expected 'from' keyword");
-
-	if (!TryMatch(reader, { TokenType::StringLiteral }, L"Expected library path", 5))
-	{
-		// Create missing token if we couldn't recover
-		syntax->LibPathToken = SyntaxToken(TokenType::StringLiteral, L"", TextLocation(), true);
-	}
-	else
-	{
-		syntax->LibPathToken = reader.Current();
-		reader.Consume();
-	}
-
-	if (!TryMatch(reader, { TokenType::ImportKeyword }, L"Expected 'import' keyword", 5))
-	{
-		syntax->ImportToken = SyntaxToken(TokenType::ImportKeyword, L"", TextLocation(), true);
-	}
-	else
-	{
-		syntax->ImportToken = reader.Current();
-		reader.Consume();
-	}
-
-	syntax->ReturnType = ReadType(reader, syntax);
-	if (!reader.CanConsume())
-	{
-		Diagnostics.ReportError(syntax->ImportToken, L"Unexpected end of file");
-		return syntax;
-	}
-
-	if (!TryMatch(reader, { TokenType::Identifier }, L"Expected identifier", 3))
-	{
-		if (TryMatch(reader, { TokenType::Semicolon }, nullptr, 10))
-		{
-			syntax->SemicolonToken = reader.Current();
-			reader.Consume();
-			return syntax;
-		}
-	}
-
-	syntax->IdentifierToken = reader.Current();
-	reader.Consume();
-
-	syntax->Params = ReadParametersList(reader, syntax);
-	syntax->SemicolonToken = Expect(reader, TokenType::Semicolon, L"Expected ';' token");
-	return syntax;
-}
-
 NamespaceDeclarationSyntax* LexicalAnalyzer::ReadNamespaceDeclaration(SourceReader& reader, SyntaxNode* parent)
 {
 	NamespaceDeclarationSyntax* syntax = new NamespaceDeclarationSyntax(parent);
@@ -269,42 +210,112 @@ MemberDeclarationSyntax* LexicalAnalyzer::ReadMemberDeclaration(SourceReader& re
 	// Reading member keyword or return type
 	while (reader.CanConsume())
 	{
-		SyntaxToken token = reader.Current();
-		if (IsMemberKeyword(token.Type))
+		SyntaxToken current = reader.Current();
+		if (IsTypeKeyword(current.Type))
 		{
-			info.DeclareType = token;
+			info.DeclareType = current;
 			reader.Consume();
+
+			switch (current.Type)
+			{
+				// Declaration prediction : Class   `{modifiers} class`
+				case TokenType::ClassKeyword:
+					return ReadClassDeclaration(reader, info, parent);
+					
+				// Declaration prediction : Struct   `{modifiers} struct`
+				case TokenType::StructKeyword:
+					return ReadStructDeclaration(reader, info, parent);
+
+				/*
+				// Declaration prediction : Interface   `{modifiers} interface`
+				case TokenType::InterfaceKeyword:
+					return ReadInterfaceDeclaration(reader, info, parent);
+				*/
+
+				// Declaration prediction : Delegate   `{modifiers} delegate`
+				case TokenType::DelegateKeyword:
+					return ReadDelegateDeclaration(reader, info, parent);
+
+				default:
+				{
+					Diagnostics.ReportError(info.DeclareType, L"Unsupported member keyword");
+					return nullptr;
+				}
+			}
+
 			break;
 		}
 
 		SyntaxToken peek = reader.Peek();
-		if (IsType(token.Type, peek.Type))
+
+		// Declaration prediction : Constructor   `{modifiers} Identifier(`
+		if (current.Type == TokenType::Identifier && peek.Type == TokenType::OpenCurl)
+		{
+			info.Identifier = current;
+			reader.Consume();
+
+			return ReadConstructorDeclaration(reader, info, parent);
+		}
+
+		// Declaration prediction : `{modifiers} string`
+		if (IsType(current.Type, peek.Type))
 		{
 			info.ReturnType = ReadType(reader, parent);
-			break;
-		}
 
-		if (token.Type == TokenType::Identifier && peek.Type == TokenType::OpenCurl)
-		{
-			// Constructor
-			info.IsCtor = true;
-			break;
-		}
+			// Declaration prediction : `{modifiers} string Identifier`
+			if (!TryMatch(reader, { TokenType::Identifier, TokenType::IndexerKeyword }, L"Expected member identifier", 5))
+			{
+				info.Identifier = SyntaxToken(TokenType::Identifier, L"", TextLocation(), true);
+			}
+			else
+			{
+				info.Identifier = reader.Current();
+				reader.Consume();
+			}
 
-		Diagnostics.ReportError(token, L"Expected member declaration keyword");
+			// Declaration prediction : Indexator   `{modifiers} index`
+			if (info.Identifier.Type == TokenType::IndexerKeyword)
+			{
+				return ReadIndexatorDeclaration(reader, info, parent);
+			}
+
+			if (!TryMatch(reader,
+				{ TokenType::OpenCurl, TokenType::OpenBrace, TokenType::Semicolon, TokenType::AssignOperator },
+				L"Expected parameters list '(', accessors body '{', semicolon ';' or assignment '='", 5))
+			{
+				continue;
+			}
+
+			SyntaxToken current = reader.Current();
+			switch (current.Type)
+			{
+				// Declaration prediction : Property   `{modifiers} string Identifier {`
+				case TokenType::OpenBrace:
+					return ReadPropertyDeclaration(reader, info, parent);
+
+				// Declaration prediction : Field   `{modifiers} string Identifier;`, `{modifiers} string Identifier =`
+				case TokenType::Semicolon:
+				case TokenType::AssignOperator:
+					return ReadFieldDeclaration(reader, info, parent);
+
+				// Declaration prediction : Method   `{modifiers} string Identifier(`
+				case TokenType::OpenCurl:
+					return ReadMethodDeclaration(reader, info, parent);
+			}
+		}
+		
+		Diagnostics.ReportError(current, L"Expected member declaration keyword");
 		reader.Consume();
 		continue;
 	}
-
-	if (info.DeclareType.Type == TokenType::DelegateKeyword)
+	
+	/*
+	if (info.ReturnType != nullptr)
 	{
-		info.ReturnType = ReadType(reader, parent);
 	}
 
-	// reading identifier - try to match with error recovery
 	if (!TryMatch(reader, { TokenType::Identifier }, L"Expected member identifier", 5))
 	{
-		// Create missing identifier if we couldn't recover
 		info.Identifier = SyntaxToken(TokenType::Identifier, L"", TextLocation(), true);
 	}
 	else
@@ -313,50 +324,13 @@ MemberDeclarationSyntax* LexicalAnalyzer::ReadMemberDeclaration(SourceReader& re
 		reader.Consume();
 	}
 
-	if (reader.Current().Type == TokenType::LessOperator)
-	{
-		info.Generics = ReadTypeParametersList(reader, parent);
-	}
-
 	// Reading parameters list
-	if (info.IsCtor)
-	{
-		return ReadConstructorDeclaration(reader, info, parent);
-	}
-	else if (info.DeclareType.Type == TokenType::DelegateKeyword)
+	if (info.DeclareType.Type == TokenType::DelegateKeyword)
 	{
 		return ReadDelegateDeclaration(reader, info, parent);
 	}
 	else if (info.ReturnType != nullptr)
 	{
-		// Checking if member is field - try to match with error recovery
-		if (!TryMatch(reader, { TokenType::OpenCurl, TokenType::OpenBrace, TokenType::Semicolon, TokenType::AssignOperator }, L"Expected parameters list '(', accessors body '{', semicolon ';' or assignment '='", 5))
-		{
-			// If we couldn't recover, try to continue anyway
-		}
-
-		SyntaxToken current = reader.Current();
-		switch (current.Type)
-		{
-			case TokenType::OpenBrace:
-				return ReadPropertyDeclaration(reader, info, parent);
-
-			case TokenType::Semicolon:
-			case TokenType::AssignOperator:
-				return ReadFieldDeclaration(reader, info, parent);
-
-			case TokenType::OpenCurl:
-				return ReadMethodDeclaration(reader, info, parent);
-
-			case TokenType::LessOperator:
-				
-
-			default:
-			{
-				Diagnostics.ReportError(current, L"Expected parameters list or semicolon");
-				reader.Consume();
-			}
-		}
 	}
 	else if (!info.DeclareType.IsMissing)
 	{
@@ -369,8 +343,87 @@ MemberDeclarationSyntax* LexicalAnalyzer::ReadMemberDeclaration(SourceReader& re
 		ReadTypeBody(reader, type);
 		return type;
 	}
+	*/
 
 	return nullptr;
+}
+
+ClassDeclarationSyntax* LexicalAnalyzer::ReadClassDeclaration(SourceReader& reader, MemberDeclarationInfo& info, SyntaxNode* parent)
+{
+	ClassDeclarationSyntax* syntax = new ClassDeclarationSyntax(info, parent);
+
+	if (TryMatch(reader, { TokenType::Identifier }, L"Expected class identifier", 5))
+	{
+		syntax->IdentifierToken = reader.Current();
+		reader.Consume();
+	}
+	else
+	{
+		syntax->IdentifierToken = SyntaxToken(TokenType::Identifier, L"", TextLocation(), true);
+	}
+
+	SyntaxToken current = reader.Current();
+	if (current.Type == TokenType::LessOperator)
+	{
+		syntax->TypeParameters = ReadTypeParametersList(reader, parent);
+	}
+
+	current = reader.Current();
+	if (current.Type == TokenType::Colon)
+	{
+		reader.Consume();
+		Diagnostics.ReportError(current, L"Inheritance is not implemented yet");
+	}
+
+	if (TryMatch(reader, { TokenType::OpenBrace, TokenType::Semicolon }, L"Expected class body '{' or semicolon ';'", 5))
+	{
+		current = reader.Current();
+		if (current.Type == TokenType::OpenBrace)
+		{
+			ReadTypeBody(reader, syntax);
+		}
+	}
+
+	return syntax;
+}
+
+StructDeclarationSyntax* LexicalAnalyzer::ReadStructDeclaration(SourceReader& reader, MemberDeclarationInfo& info, SyntaxNode* parent)
+{
+	StructDeclarationSyntax* syntax = new StructDeclarationSyntax(info, parent);
+
+	if (TryMatch(reader, { TokenType::Identifier }, L"Expected struct identifier", 5))
+	{
+		syntax->IdentifierToken = reader.Current();
+		reader.Consume();
+	}
+	else
+	{
+		syntax->IdentifierToken = SyntaxToken(TokenType::Identifier, L"", TextLocation(), true);
+	}
+
+	SyntaxToken current = reader.Current();
+	if (current.Type == TokenType::LessOperator)
+	{
+		syntax->TypeParameters = ReadTypeParametersList(reader, parent);
+	}
+
+	current = reader.Current();
+	if (current.Type == TokenType::Colon)
+	{
+		reader.Consume();
+		Diagnostics.ReportError(current, L"Inheritance is not implemented yet");
+	}
+
+	if (TryMatch(reader, { TokenType::OpenBrace, TokenType::Semicolon }, L"Expected struct body '{' or semicolon ';'", 5))
+	{
+		current = reader.Current();
+		if (current.Type == TokenType::OpenBrace)
+		{
+			ReadTypeBody(reader, syntax);
+		}
+	}
+
+	return syntax;
 }
 
 ConstructorDeclarationSyntax* LexicalAnalyzer::ReadConstructorDeclaration(SourceReader& reader, MemberDeclarationInfo& info, SyntaxNode* parent)
@@ -496,6 +549,65 @@ PropertyDeclarationSyntax* LexicalAnalyzer::ReadPropertyDeclaration(SourceReader
 		Diagnostics.ReportError(property->IdentifierToken, L"Property must have at least one accessor (get or set)");
 
 	return property;
+}
+
+IndexatorDeclarationSyntax* LexicalAnalyzer::ReadIndexatorDeclaration(SourceReader& reader, MemberDeclarationInfo& info, SyntaxNode* parent)
+{
+	IndexatorDeclarationSyntax* syntax = new IndexatorDeclarationSyntax(info, parent);
+	//syntax->IndexKeyword = Expect(reader, TokenType::IndexerKeyword, L"Expected 'index' keyword");
+	syntax->IndexKeyword = info.Identifier;
+	syntax->Parameters = ReadIndexerParametersList(reader, syntax);
+	syntax->OpenBraceToken = Expect(reader, TokenType::OpenBrace, L"Expected '{' for indexer accessors");
+
+	while (reader.CanConsume())
+	{
+		SyntaxToken current = reader.Current();
+
+		if (current.Type == TokenType::CloseBrace)
+		{
+			syntax->CloseBraceToken = current;
+			reader.Consume();
+			break;
+		}
+
+		if (current.Type == TokenType::EndOfFile)
+		{
+			Diagnostics.ReportError(current, L"Unexpected end of file in indexer - expected '}'");
+			syntax->CloseBraceToken = SyntaxToken(TokenType::CloseBrace, L"", current.Location, true);
+			break;
+		}
+
+		if (IsModifier(current.Type) || current.Type == TokenType::GetKeyword || current.Type == TokenType::SetKeyword)
+		{
+			AccessorDeclarationSyntax* accessor = ReadAccessorDeclaration(reader, syntax);
+
+			if (accessor->KeywordToken.Type == TokenType::GetKeyword)
+			{
+				if (syntax->Getter != nullptr)
+					Diagnostics.ReportError(current, L"Duplicate get accessor");
+				else
+					syntax->Getter = accessor;
+			}
+			else if (accessor->KeywordToken.Type == TokenType::SetKeyword)
+			{
+				if (syntax->Setter != nullptr)
+					Diagnostics.ReportError(current, L"Duplicate set accessor");
+				else
+					syntax->Setter = accessor;
+			}
+
+			continue;
+		}
+
+		Diagnostics.ReportError(current, L"Expected accessor declaration or '}'");
+		if (!TryMatch(reader, { TokenType::GetKeyword, TokenType::SetKeyword, TokenType::CloseBrace }, nullptr, 5))
+			reader.Consume();
+	}
+
+	if (syntax->Getter == nullptr && syntax->Setter == nullptr)
+		Diagnostics.ReportError(syntax->IdentifierToken, L"Indexer must have at least one accessor (get or set)");
+
+	return syntax;
 }
 
 AccessorDeclarationSyntax* LexicalAnalyzer::ReadAccessorDeclaration(SourceReader& reader, SyntaxNode* parent)
@@ -626,15 +738,80 @@ std::vector<SyntaxToken> LexicalAnalyzer::ReadMemberModifiers(SourceReader& read
 	return modifiers;
 }
 
+ParametersListSyntax* LexicalAnalyzer::ReadIndexerParametersList(SourceReader& reader, SyntaxNode* parent)
+{
+	ParametersListSyntax* syntax = new ParametersListSyntax(parent);
+	syntax->OpenToken = Expect(reader, TokenType::OpenSquare, L"Expected '[' token");
+
+	SyntaxToken checkCloser = reader.Current();
+	if (checkCloser.Type == TokenType::CloseSquare)
+	{
+		syntax->CloseToken = checkCloser;
+		reader.Consume();
+		return syntax;
+	}
+
+	while (reader.CanConsume())
+	{
+		TypeSyntax* type = ReadType(reader, syntax);
+		SyntaxToken identifierToken;
+
+		if (!TryMatch(reader, { TokenType::Identifier }, L"Expected parameter name", 3))
+		{
+			if (reader.CanConsume() && reader.Current().Type == TokenType::CloseSquare)
+			{
+				Diagnostics.ReportError(reader.Current(), L"Unexpected ']' - expected parameter name");
+				syntax->CloseToken = reader.Current();
+				reader.Consume();
+				break;
+			}
+			
+			identifierToken = SyntaxToken(TokenType::Identifier, L"", TextLocation(), true);
+		}
+		else
+		{
+			identifierToken = reader.Current();
+			reader.Consume();
+		}
+
+		if (identifierToken.Type == TokenType::CloseSquare)
+		{
+			Diagnostics.ReportError(identifierToken, L"Unexpected ']' - expected parameter name");
+			syntax->CloseToken = identifierToken;
+			break;
+		}
+
+		ParameterSyntax* param = new ParameterSyntax(type, identifierToken, syntax);
+		syntax->Parameters.push_back(param);
+
+		// Try to match separator
+		if (!TryMatch(reader, { TokenType::Comma, TokenType::CloseSquare }, L"Expected ',' or ']'", 3))
+		{
+			break;
+		}
+
+		SyntaxToken separatorToken = reader.Current();
+		reader.Consume();
+
+		if (separatorToken.Type == TokenType::CloseSquare)
+		{
+			syntax->CloseToken = separatorToken;
+			break;
+		}
+	}
+
+	return syntax;
+}
+
 ParametersListSyntax* LexicalAnalyzer::ReadParametersList(SourceReader& reader, SyntaxNode* parent)
 {
 	ParametersListSyntax* syntax = new ParametersListSyntax(parent);
-	syntax->OpenCurlToken = Expect(reader, TokenType::OpenCurl, L"Expected '(' token");
+	syntax->OpenToken = Expect(reader, TokenType::OpenCurl, L"Expected '(' token");
 
 	SyntaxToken checkCloser = reader.Current();
 	if (checkCloser.Type == TokenType::CloseCurl)
 	{
-		syntax->CloseCurlToken = checkCloser;
+		syntax->CloseToken = checkCloser;
 		reader.Consume();
 		return syntax;
 	}
@@ -649,7 +826,7 @@ ParametersListSyntax* LexicalAnalyzer::ReadParametersList(SourceReader& reader, 
 			if (reader.CanConsume() && reader.Current().Type == TokenType::CloseCurl)
 			{
 				Diagnostics.ReportError(reader.Current(), L"Unexpected ')' - expected parameter name");
-				syntax->CloseCurlToken = reader.Current();
+				syntax->CloseToken = reader.Current();
 				reader.Consume();
 				break;
 			}
@@ -665,7 +842,7 @@ ParametersListSyntax* LexicalAnalyzer::ReadParametersList(SourceReader& reader, 
 		if (identifierToken.Type == TokenType::CloseCurl)
 		{
 			Diagnostics.ReportError(identifierToken, L"Unexpected ')' - expected parameter name");
-			syntax->CloseCurlToken = identifierToken;
+			syntax->CloseToken = identifierToken;
 			break;
 		}
 
@@ -683,7 +860,7 @@ ParametersListSyntax* LexicalAnalyzer::ReadParametersList(SourceReader& reader, 
 
 		if (separatorToken.Type == TokenType::CloseCurl)
 		{
-			syntax->CloseCurlToken = separatorToken;
+			syntax->CloseToken = separatorToken;
 			break;
 		}
 	}
@@ -1784,22 +1961,4 @@ bool LexicalAnalyzer::TryMatch(SourceReader& reader, std::initializer_list<Token
 		return true;
 
 	return false;
-}
-
-TypeDeclarationSyntax* LexicalAnalyzer::make_type(MemberDeclarationInfo& info, SyntaxNode* parent)
-{
-	if (info.DeclareType.IsMissing)
-		throw std::runtime_error("declare type is missing");
-
-	switch (info.DeclareType.Type)
-	{
-		case TokenType::ClassKeyword:
-			return new ClassDeclarationSyntax(info, parent);
-
-		case TokenType::StructKeyword:
-			return new StructDeclarationSyntax(info, parent);
-
-		default:
-			throw std::runtime_error("unknown type delcaration");
-	}
 }

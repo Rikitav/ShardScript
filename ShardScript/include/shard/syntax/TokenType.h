@@ -87,17 +87,20 @@ namespace shard
 		ProtectedKeyword,	  // protected
 		InternalKeyword,	  // internal
 		StaticKeyword,		  // static
+		ExternKeyword,		  // extern
+
+		// OOP specific
 		AbstractKeyword,	  // abstract
 		SealedKeyword,		  // sealed
 		PartialKeyword,		  // partial
 		OverrideKeyword,	  // override
 		VirtualKeyword,		  // virtual
-		ExternKeyword,		  // extern
 		
 		// Property accessor keywords
 		GetKeyword,			  // get
 		SetKeyword,			  // set
 		FieldKeyword,		  // field
+		IndexerKeyword,		  // indexer
 
 		// Built-in type keywords
 		VoidKeyword,		  // void

@@ -14,7 +14,6 @@
 #include <shard/syntax/nodes/CompilationUnitSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarationSyntax.h>
 
-#include <shard/syntax/nodes/Directives/ImportDirectiveSyntax.h>
 #include <shard/syntax/nodes/Statements/VariableStatementSyntax.h>
 
 #include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.h>
@@ -26,6 +25,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/DelegateDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/IndexatorDeclarationSyntax.h>
 
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/StructSymbol.h>
@@ -36,7 +36,6 @@
 #include <shard/syntax/symbols/PropertySymbol.h>
 #include <shard/syntax/symbols/ParameterSymbol.h>
 #include <shard/syntax/symbols/VariableSymbol.h>
-#include <shard/syntax/symbols/FFISymbol.h>
 #include <shard/syntax/symbols/AccessorSymbol.h>
 #include <shard/syntax/symbols/DelegateTypeSymbol.h>
 #include <shard/syntax/symbols/TypeParameterSymbol.h>
@@ -70,47 +69,11 @@ void DeclarationCollector::VisitCompilationUnit(CompilationUnitSyntax* node)
     // First scope is declared as nullptr symbol
     PushScope(nullptr);
 
-    // FFI imports declarations collecting
-    // Soon...
-    /* 
-    if (node->Imports.size() > 0)
-    {
-        FFISymbol* symbol = new FFISymbol();
-        PushScope(symbol);
-
-        for (ImportDirectiveSyntax* directive : node->Imports)
-            VisitImportDirective(directive);
-    }
-    */
-
     // Visiting members of unit
     for (MemberDeclarationSyntax* member : node->Members)
         VisitMemberDeclaration(member);
 
     PopScope();
-}
-
-void DeclarationCollector::VisitImportDirective(ImportDirectiveSyntax* node)
-{
-    /* Soon...
-    std::wstring methodName = node->IdentifierToken.Word;
-    MethodSymbol* symbol = new MethodSymbol(methodName);
-    symbol->Accesibility = SymbolAccesibility::Public;
-    symbol->HandleType = MethodHandleType::ForeignInterface;
-    symbol->ForeighInterfacePath = node->LibPathToken.Word;
-
-    if (node->Params == nullptr)
-        return;
-
-    for (ParameterSyntax* parameter : node->Params->Parameters)
-    {
-        ParameterSymbol* paramSymbol = new ParameterSymbol(parameter->Identifier.Word);
-        symbol->Parameters.push_back(paramSymbol);
-    }
-
-    Table->BindSymbol(node, symbol);
-    Declare(symbol);
-    */
 }
 
 void DeclarationCollector::VisitNamespaceDeclaration(NamespaceDeclarationSyntax* node)
@@ -474,17 +437,95 @@ void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax* n
     }
 }
 
+void DeclarationCollector::VisitIndexatorDeclaration(IndexatorDeclarationSyntax* node)
+{
+    // Creating symbol
+    IndexatorSymbol* symbol = SymbolFactory::Indexator(node);
+    Table->BindSymbol(node, symbol);
+    Declare(symbol);
+
+    if (symbol->BackingField != nullptr)
+        Declare(symbol->BackingField);
+
+    // Resolving owner symbol
+    symbol->Parent = OwnerSymbol();
+    if (symbol->Parent == nullptr)
+    {
+        // Failed
+        Diagnostics.ReportError(node->IdentifierToken, L"Cannot resolve Indexators' owner Type");
+    }
+    else
+    {
+        // Resolving Indexators' full name
+        symbol->FullName = FormatFullNameOf(symbol);
+
+        // Checking if owner is type
+        if (!symbol->Parent->IsType())
+        {
+            Diagnostics.ReportError(node->IdentifierToken, L"Indexators cannot be declared outside of Classes or Structures");
+        }
+        else
+        {
+            TypeSymbol* ownerType = static_cast<TypeSymbol*>(symbol->Parent);
+
+            // Assert: static Class cannot have instance Indexators
+            if (!symbol->IsStatic && ownerType->IsStatic)
+                Diagnostics.ReportError(node->IdentifierToken, L"Cannot declare a non static Indexator in static Type");
+        }
+    }
+
+    PushScope(symbol);
+    if (node->Parameters != nullptr)
+        VisitParametersList(node->Parameters);
+
+    if (node->Getter != nullptr)
+        VisitAccessorDeclaration(node->Getter);
+
+    if (node->Setter != nullptr)
+        VisitAccessorDeclaration(node->Setter);
+
+    PopScope();
+
+    if (symbol->Getter != nullptr)
+    {
+        // Assert: extern Method cannot have body
+        if (symbol->Getter->IsExtern && symbol->Getter->Body != nullptr)
+            Diagnostics.ReportError(node->IdentifierToken, L"Get Accessors' marked as 'extern' cannot have Body");
+    }
+
+    if (symbol->Setter != nullptr)
+    {
+        // Assert: extern Method cannot have body
+        if (symbol->Setter->IsExtern && symbol->Setter->Body != nullptr)
+            Diagnostics.ReportError(node->IdentifierToken, L"Set Accessors' marked as 'extern' cannot have Body");
+    }
+
+    if (node->Getter == nullptr && node->Setter == nullptr)
+    {
+        Diagnostics.ReportError(node->IdentifierToken, L"Indexator should have at least one accessor");
+    }
+}
+
 void DeclarationCollector::VisitAccessorDeclaration(AccessorDeclarationSyntax* node)
 {
     // Expecting parent node to be property
-    if (node->Parent->Kind != SyntaxKind::PropertyDeclaration)
+    if (node->Parent->Kind != SyntaxKind::PropertyDeclaration && node->Parent->Kind != SyntaxKind::IndexatorDeclaration)
     {
-        Diagnostics.ReportError(node->KeywordToken, L"Accessors cannot be declared outside of Properties");
+        Diagnostics.ReportError(node->KeywordToken, L"Accessors cannot be declared outside of Properties or Indexers");
         return;
     }
 
-    PropertyDeclarationSyntax* propertyNode = static_cast<PropertyDeclarationSyntax*>(node->Parent);
-    PropertySymbol* propertySymbol = LookupSymbol<PropertySymbol>(propertyNode);
+    PropertySymbol* propertySymbol = nullptr;
+    if(node->Parent->Kind == SyntaxKind::PropertyDeclaration)
+	{
+		PropertyDeclarationSyntax* propertyNode = static_cast<PropertyDeclarationSyntax*>(node->Parent);
+		propertySymbol = LookupSymbol<PropertySymbol>(propertyNode);
+	}
+    else if(node->Parent->Kind == SyntaxKind::IndexatorDeclaration)
+    {
+        IndexatorDeclarationSyntax* indexerNode = static_cast<IndexatorDeclarationSyntax*>(node->Parent);
+        propertySymbol = LookupSymbol<IndexatorSymbol>(indexerNode);
+    }
 
     // Creating symbol
     AccessorSymbol* symbol = SymbolFactory::Accessor(node, propertySymbol);
@@ -497,28 +538,34 @@ void DeclarationCollector::VisitAccessorDeclaration(AccessorDeclarationSyntax* n
     {
         // Failed
         Diagnostics.ReportError(node->IdentifierToken, L"Cannot resolve Accessors' owner Type");
+        return;
+    }
+
+    if (symbol->Parent->Kind != SyntaxKind::PropertyDeclaration && symbol->Parent->Kind != SyntaxKind::IndexatorDeclaration)
+    {
+        Diagnostics.ReportError(node->IdentifierToken, L"Accessors cannot be declared outside of Properties or Indexators");
+        return;
+    }
+
+    // Resolving Methods' full name
+    symbol->FullName = FormatFullNameOf(symbol);
+    symbol->IsStatic = propertySymbol->IsStatic;
+    
+    /*
+    // Checking if owner is type
+    if (!symbol->Parent->IsType())
+    {
+        Diagnostics.ReportError(node->IdentifierToken, L"Accessors cannot be declared outside of Classes or Structures");
     }
     else
     {
-        // Resolving Methods' full name
-        symbol->FullName = FormatFullNameOf(symbol);
+        TypeSymbol* ownerType = static_cast<TypeSymbol*>(symbol->Parent);
 
-        /*
-        // Checking if owner is type
-        if (!symbol->Parent->IsType())
-        {
-            Diagnostics.ReportError(node->IdentifierToken, L"Accessors cannot be declared outside of Classes or Structures");
-        }
-        else
-        {
-            TypeSymbol* ownerType = static_cast<TypeSymbol*>(symbol->Parent);
-
-            // Assert: static Class cannot have instance Methods
-            if (!symbol->IsStatic && ownerType->IsStatic)
-                Diagnostics.ReportError(node->IdentifierToken, L"Cannot declare a non static Method in static Type");
-        }
-        */
+        // Assert: static Class cannot have instance Methods
+        if (!symbol->IsStatic && ownerType->IsStatic)
+            Diagnostics.ReportError(node->IdentifierToken, L"Cannot declare a non static Method in static Type");
     }
+    */
 
     if (node->Body != nullptr)
     {
@@ -532,8 +579,6 @@ void DeclarationCollector::VisitAccessorDeclaration(AccessorDeclarationSyntax* n
 
             case TokenType::SetKeyword:
             {
-                ParameterSymbol* valueParam = new ParameterSymbol(L"value");
-                symbol->Parameters.push_back(valueParam);
                 symbol->ReturnType = SymbolTable::Primitives::Void;
                 break;
             }

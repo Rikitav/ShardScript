@@ -1004,7 +1004,9 @@ InboundVariablesContext* AbstractInterpreter::CreateArgumentsContext(std::vector
 	InboundVariablesContext* argumentsContext = new InboundVariablesContext(nullptr);
 
 	if (!isStatic)
+	{
 		argumentsContext->AddVariable(L"this", instance);
+	}
 
 	size_t size = parameters.size();
 	for (size_t i = 0; i < size; i++)

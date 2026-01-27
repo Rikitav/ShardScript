@@ -20,5 +20,6 @@ bool SyntaxSymbol::IsMember() const
 {
 	return Kind == SyntaxKind::MethodDeclaration
 		|| Kind == SyntaxKind::PropertyDeclaration
+		|| Kind == SyntaxKind::IndexatorDeclaration
 		|| Kind == SyntaxKind::FieldDeclaration;
 }

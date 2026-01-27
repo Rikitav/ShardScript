@@ -223,10 +223,7 @@ bool IsMemberKeyword(TokenType type)
 {
 	switch (type)
 	{
-		case TokenType::ClassKeyword:
-		case TokenType::StructKeyword:
-		case TokenType::InterfaceKeyword:
-		case TokenType::DelegateKeyword:
+		case TokenType::IndexerKeyword:
 			return true;
 
 		default:
@@ -267,6 +264,7 @@ bool IsType(TokenType type, TokenType peekType)
 				case TokenType::OpenSquare:
 				case TokenType::Identifier:
 				case TokenType::Question:
+				case TokenType::IndexerKeyword:
 					return true;
 
 				default:
@@ -301,6 +299,21 @@ bool IsModifier(TokenType type)
 	}
 }
 
+bool IsTypeKeyword(shard::TokenType type)
+{
+	switch (type)
+	{
+		case TokenType::ClassKeyword:
+		case TokenType::StructKeyword:
+		case TokenType::InterfaceKeyword:
+		case TokenType::DelegateKeyword:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
 bool IsMemberDeclaration(TokenType currentType, TokenType peekType)
 {
 	if (IsModifier(currentType))
@@ -316,8 +329,12 @@ bool IsMemberDeclaration(TokenType currentType, TokenType peekType)
 
 	if (IsMemberKeyword(currentType))
 	{
-		if (peekType == TokenType::Identifier)
-			return true;
+		return true;
+	}
+
+	if (IsTypeKeyword(currentType))
+	{
+		return true;
 	}
 
 	if (currentType == TokenType::Identifier)

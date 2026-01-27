@@ -13,6 +13,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/IndexatorDeclarationSyntax.h>
 
 #include <shard/syntax/nodes/Types/ArrayTypeSyntax.h>
 #include <shard/syntax/nodes/Types/GenericTypeSyntax.h>
@@ -72,6 +73,7 @@ namespace shard
 		static shard::AccessorSymbol* Getter(const std::wstring& propertyName, shard::PropertySymbol* property);
 		static shard::AccessorSymbol* Setter(const std::wstring& propertyName, shard::PropertySymbol* property);
 
+		static shard::IndexatorSymbol* Indexator(shard::IndexatorDeclarationSyntax* node);
 		static shard::IndexatorSymbol* Indexator(const std::wstring& name, shard::TypeSymbol* returnType);
 		static shard::IndexatorSymbol* Indexator(const std::wstring& name, shard::TypeSymbol* returnType, std::vector<shard::ParameterSymbol*> parameters);
 

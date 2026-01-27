@@ -376,7 +376,6 @@ bool SourceReader::ReadStringLiteral(std::wstring& word, bool dontEcran, bool& w
 
 static bool IsNumberSymbol(wchar_t symbol)
 {
-	/*
 	if (symbol >= L'0' && symbol <= L'9')
 		return true;
 
@@ -387,20 +386,6 @@ static bool IsNumberSymbol(wchar_t symbol)
 		return true;
 
 	return false;
-	*/
-
-	if (std::isalnum(symbol))
-		return true;
-
-	switch (symbol)
-	{
-		default:
-			return false;
-
-		case 'e':
-		case 'E':
-			return true;
-	}
 }
 
 static bool IsVolumeRatio(wchar_t symbol)
@@ -1159,6 +1144,11 @@ bool SourceReader::IsKeyword(std::wstring& word, TokenType& type)
 	else if (word == L"field")
 	{
 		type = TokenType::FieldKeyword;
+		return true;
+	}
+	else if (word == L"indexer")
+	{
+		type = TokenType::IndexerKeyword;
 		return true;
 	}
 

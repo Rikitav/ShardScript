@@ -74,7 +74,7 @@ namespace shard
 		shard::MethodSymbol* ResolveMethod(shard::InvokationExpressionSyntax* node, shard::TypeSymbol* currentType);
 		shard::IndexatorSymbol* ResolveIndexator(shard::IndexatorExpressionSyntax* node, shard::TypeSymbol* currentType);
 		
-		bool MatchMethodArguments(shard::MethodSymbol* method, std::vector<shard::ArgumentSyntax*> arguments, shard::GenericTypeSymbol* genericType = nullptr);
+		bool MatchMethodArguments(std::vector<ParameterSymbol*> parameters, std::vector<shard::ArgumentSyntax*> arguments, shard::GenericTypeSymbol* genericType = nullptr);
 		shard::TypeSymbol* SubstituteTypeParameters(shard::TypeSymbol* type, shard::GenericTypeSymbol* genericType);
 
 		shard::TypeSymbol* AnalyzeNumberLiteral(shard::LiteralExpressionSyntax* node);
@@ -94,6 +94,8 @@ namespace shard
 		void VisitMethodDeclaration(shard::MethodDeclarationSyntax* node) override;
 		void VisitFieldDeclaration(shard::FieldDeclarationSyntax* node) override;
 		void VisitPropertyDeclaration(shard::PropertyDeclarationSyntax* node) override;
+		void VisitIndexatorDeclaration(shard::IndexatorDeclarationSyntax* node) override;
+		void VisitAccessorDeclaration(shard::AccessorDeclarationSyntax* node) override;
 		void VisitVariableStatement(shard::VariableStatementSyntax* node) override;
 
 		void VisitWhileStatement(shard::WhileStatementSyntax* node) override;
