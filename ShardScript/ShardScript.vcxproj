@@ -183,8 +183,6 @@
     <ClCompile Include="src\syntax\symbols\TypeSymbol.cpp" />
     <ClCompile Include="src\syntax\SyntaxFacts.cpp" />
     <ClCompile Include="src\syntax\SyntaxHelpers.cpp" />
-    <ClInclude Include="include\ffi\ffi.h" />
-    <ClInclude Include="include\ffi\ffitarget.h" />
     <ClInclude Include="include\shard\framework\FrameworkModule.h" />
     <ClInclude Include="include\shard\parsing\LayoutGenerator.h" />
     <ClInclude Include="include\shard\framework\FrameworkLoader.h" />
@@ -292,9 +290,6 @@
     <ClInclude Include="include\shard\syntax\nodes\MemberDeclarationSyntax.h" />
     <ClInclude Include="include\shard\syntax\TokenType.h" />
     <ClInclude Include="include\shard\Vector.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <Library Include="libs\libffi-8.lib" />
   </ItemGroup>
   <ItemGroup>
     <None Include="cpp.hint" />

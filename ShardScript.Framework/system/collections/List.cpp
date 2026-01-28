@@ -132,6 +132,30 @@ namespace shard
 			return lengthInstance;
 		}
 
+		static ObjectInstance* Impl_index_Get(const MethodSymbol* symbol, InboundVariablesContext* arguments)
+		{
+			static FieldSymbol* arrayField = static_cast<ClassSymbol*>(symbol->Parent->Parent)->Fields.at(0); // T[] _array
+
+			// Getting arguments
+			ObjectInstance* instance = arguments->Variables.at(L"this"); // List<T> this
+			ObjectInstance* index = arguments->Variables.at(L"index"); // int index
+
+			ObjectInstance* arrayInstance = instance->GetField(arrayField); // T[] _array
+			ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->Info));
+
+			// Getting value
+			int indexValue = index->AsInteger();
+			if (!arrayInstance->IsInBounds(indexValue))
+				throw std::runtime_error("index is out of bounds");
+
+			return arrayInstance->GetElement(indexValue);
+		}
+
+		static ObjectInstance* Impl_index_Set(const MethodSymbol* symbol, InboundVariablesContext* arguments)
+		{
+			return nullptr;
+		}
+
 	public:
 		SourceReader* FrameworkModule::GetSource()
 		{
@@ -185,6 +209,18 @@ namespace shard
 			if (symbol->Name == L"Length_get")
 			{
 				symbol->FunctionPointer = Impl_Length_Get;
+				return true;
+			}
+
+			if (symbol->Name == L"index_get")
+			{
+				symbol->FunctionPointer = Impl_index_Get;
+				return true;
+			}
+
+			if (symbol->Name == L"index_set")
+			{
+				symbol->FunctionPointer = Impl_index_Set;
 				return true;
 			}
 
