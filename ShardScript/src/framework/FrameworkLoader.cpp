@@ -138,6 +138,34 @@ static void BindMemberDeclaration(MemberDeclarationSyntax* member, FrameworkModu
 
 			break;
 		}
+
+		case SyntaxKind::IndexatorDeclaration:
+		{
+			IndexatorDeclarationSyntax* prop = static_cast<IndexatorDeclarationSyntax*>(member);
+			IndexatorSymbol* symbol = static_cast<IndexatorSymbol*>(semanticModel.Table->LookupSymbol(prop));
+
+			if (symbol->Getter != nullptr)
+			{
+				AccessorSymbol* getter = symbol->Getter;
+				if (!getter->IsExtern)
+					break;
+
+				if (!module->BindAccessor(getter))
+					diagnostics.ReportError(prop->IdentifierToken, L"Unexpected getter accessor \'" + symbol->FullName + L"\'");
+			}
+
+			if (symbol->Setter != nullptr)
+			{
+				AccessorSymbol* setter = symbol->Setter;
+				if (!setter->IsExtern)
+					break;
+
+				if (!module->BindAccessor(setter))
+					diagnostics.ReportError(prop->IdentifierToken, L"Unexpected setter accessor \'" + symbol->FullName + L"\'");
+			}
+
+			break;
+		}
 	}
 }
 

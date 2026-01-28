@@ -295,12 +295,6 @@
     <ClInclude Include="include\shard\syntax\nodes\Expressions\ObjectExpressionSyntax.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="include\ffi\ffi.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ffi\ffitarget.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
     <ClInclude Include="include\shard\parsing\SemanticAnalyzer.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
@@ -484,9 +478,6 @@
     <ClInclude Include="include\shard\ShardScript.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <Library Include="libs\libffi-8.lib" />
   </ItemGroup>
   <ItemGroup>
     <None Include="cpp.hint" />
