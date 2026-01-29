@@ -1480,7 +1480,7 @@ static bool IsNumBasePrefix(std::wstring& prefix, int& base)
 	}
 }
 
-static bool IsVolumeRatioPostfix(std::wstring& postfix, long& multiplier)
+static bool IsVolumeRatioPostfix(std::wstring& postfix, size_t& multiplier)
 {
 	if (postfix[1] != L'B' && postfix[1] != L'b')
 		return false;
@@ -1490,11 +1490,11 @@ static bool IsVolumeRatioPostfix(std::wstring& postfix, long& multiplier)
 		default:
 			return false;
 
-		case L'k': case L'K': multiplier = (1LL << 10); return true;
-		case L'm': case L'M': multiplier = (1LL << 20); return true;
-		case L'g': case L'G': multiplier = (1LL << 30); return true;
-		case L't': case L'T': multiplier = (1LL << 40); return true;
-		case L'p': case L'P': multiplier = (1LL << 50); return true;
+		case L'k': case L'K': multiplier = ((size_t)1 << 10); return true;
+		case L'm': case L'M': multiplier = ((size_t)1 << 20); return true;
+		case L'g': case L'G': multiplier = ((size_t)1 << 30); return true;
+		case L't': case L'T': multiplier = ((size_t)1 << 40); return true;
+		case L'p': case L'P': multiplier = ((size_t)1 << 50); return true;
 	}
 }
 
@@ -1552,7 +1552,7 @@ TypeSymbol* ExpressionBinder::AnalyzeNumberLiteral(LiteralExpressionSyntax* node
 			}
 
 			std::wstring postfix = word.substr(size - 2);
-			long dummy2 = 0;
+			size_t dummy2 = 0;
 
 			if (IsVolumeRatioPostfix(postfix, dummy2))
 			{
@@ -1589,7 +1589,7 @@ TypeSymbol* ExpressionBinder::AnalyzeNumberLiteral(LiteralExpressionSyntax* node
 	}
 
 	size_t numStart = 0;
-	long multiplier = 1;
+	size_t multiplier = 1;
 	int base = 10;
 
 	if (size >= 2)

@@ -12,12 +12,12 @@ namespace shard
 	{
 	public:
 		static shard::ObjectInstance* EvaluateBinaryOperator(shard::ObjectInstance* leftInstance, shard::SyntaxToken opToken, shard::ObjectInstance* rightInstance, bool& assign);
-		static shard::ObjectInstance* EvaluateBinaryOperator(long leftData, shard::SyntaxToken opToken, shard::ObjectInstance* rightInstance, bool& assign);
+		static shard::ObjectInstance* EvaluateBinaryOperator(int64_t leftData, shard::SyntaxToken opToken, shard::ObjectInstance* rightInstance, bool& assign);
 		static shard::ObjectInstance* EvaluateBinaryOperator(bool leftData, shard::SyntaxToken opToken, shard::ObjectInstance* rightInstance, bool& assign);
 		static shard::ObjectInstance* EvaluateBinaryOperator(std::wstring& leftData, shard::SyntaxToken opToken, shard::ObjectInstance* rightInstance, bool& assign);
 
 		static shard::ObjectInstance* EvaluateUnaryOperator(shard::ObjectInstance*& sourceInstance, shard::SyntaxToken opToken, bool rightDetermined);
-		static shard::ObjectInstance* EvaluateUnaryOperator(shard::ObjectInstance*& sourceInstance, long data, shard::SyntaxToken opToken, bool rightDetermined);
+		static shard::ObjectInstance* EvaluateUnaryOperator(shard::ObjectInstance*& sourceInstance, int64_t data, shard::SyntaxToken opToken, bool rightDetermined);
 		static shard::ObjectInstance* EvaluateUnaryOperator(shard::ObjectInstance*& sourceInstance, bool data, shard::SyntaxToken opToken, bool rightDetermined);
 		static shard::ObjectInstance* EvaluateUnaryOperator(shard::ObjectInstance*& sourceInstance, std::wstring& data, shard::SyntaxToken opToken, bool rightDetermined);
 	};

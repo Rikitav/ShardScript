@@ -24,7 +24,7 @@ ObjectInstance* ObjectInstance::FromValue(bool value)
 	return instance;
 }
 
-ObjectInstance* ObjectInstance::FromValue(long value)
+ObjectInstance* ObjectInstance::FromValue(int64_t value)
 {
 	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::Integer);
 	instance->WriteInteger(value);
@@ -268,57 +268,57 @@ void ObjectInstance::WriteMemory(const size_t offset, const size_t size, const v
 	memcpy(memOffset, src, size);
 }
 
-void ObjectInstance::WriteBoolean(const bool& value)
+void ObjectInstance::WriteBoolean(const bool& value) const
 {
 	const void* ptr = &value;
 	WriteMemory(0, Info->MemoryBytesSize, ptr);
 }
 
-void ObjectInstance::WriteInteger(const long& value)
+void ObjectInstance::WriteInteger(const int64_t& value) const
 {
 	const void* ptr = &value;
 	WriteMemory(0, Info->MemoryBytesSize, ptr);
 }
 
-void ObjectInstance::WriteDouble(const double& value)
+void ObjectInstance::WriteDouble(const double& value) const
 {
 	const void* ptr = &value;
 	WriteMemory(0, Info->MemoryBytesSize, ptr);
 }
 
-void ObjectInstance::WriteCharacter(const wchar_t& value)
+void ObjectInstance::WriteCharacter(const wchar_t& value) const
 {
 	const void* ptr = &value;
 	WriteMemory(0, Info->MemoryBytesSize, ptr);
 }
 
-void ObjectInstance::WriteString(const std::wstring& value)
+void ObjectInstance::WriteString(const std::wstring& value) const
 {
 	const void* ptr = new std::wstring(value);
 	WriteMemory(0, Info->MemoryBytesSize, ptr);
 }
 
-bool ObjectInstance::AsBoolean()
+bool ObjectInstance::AsBoolean() const
 {
 	return *reinterpret_cast<bool*>(Ptr);
 }
 
-long ObjectInstance::AsInteger()
+int64_t ObjectInstance::AsInteger() const
 {
-	return *reinterpret_cast<long*>(Ptr);
+	return *reinterpret_cast<int64_t*>(Ptr);
 }
 
-double shard::ObjectInstance::AsDouble()
+double shard::ObjectInstance::AsDouble() const
 {
 	return *reinterpret_cast<double*>(Ptr);
 }
 
-wchar_t ObjectInstance::AsCharacter()
+wchar_t ObjectInstance::AsCharacter() const
 {
 	return *reinterpret_cast<wchar_t*>(Ptr);
 }
 
-std::wstring& ObjectInstance::AsString()
+std::wstring& ObjectInstance::AsString() const
 {
 	return *reinterpret_cast<std::wstring*>(Ptr);
 }

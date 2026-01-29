@@ -42,7 +42,7 @@ namespace shard
 	class SHARD_API InstancesHeap
 	{
     private:
-        std::unordered_map<long, shard::ObjectInstance*> IdMap;
+        std::unordered_map<uint64_t, shard::ObjectInstance*> IdMap;
         std::unordered_map<void*, shard::ObjectInstance*> PtrMap;
 
     public:
@@ -61,7 +61,7 @@ namespace shard
         inline auto pairs_begin() { return IdMap.begin(); }
         inline auto pairs_end() { return IdMap.end(); }
 
-        inline shard::ObjectInstance* at(long id) { return IdMap.at(id); }
+        inline shard::ObjectInstance* at(uint64_t id) { return IdMap.at(id); }
         inline shard::ObjectInstance* at(void* ptr) { return PtrMap.at(ptr); }
 
         inline void erase(shard::ObjectInstance* instance)
@@ -84,7 +84,7 @@ namespace shard
 
 	class SHARD_API GarbageCollector
 	{
-		inline static long objectsCounter = 0;
+		inline static uint64_t objectsCounter = 0;
         inline static std::unordered_map<shard::TypeSymbol*, ObjectInstance*> nullInstancesMap;
         inline static std::unordered_map<shard::FieldSymbol*, ObjectInstance*> staticFields;
         

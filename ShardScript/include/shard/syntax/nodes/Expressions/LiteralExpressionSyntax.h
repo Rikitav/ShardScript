@@ -24,7 +24,7 @@ namespace shard
 		union
 		{
 			bool AsBooleanValue = false;
-			long AsIntegerValue;
+			int64_t AsIntegerValue;
 			double AsDoubleValue;
 			wchar_t AsCharValue;
 			std::wstring* AsStringValue;

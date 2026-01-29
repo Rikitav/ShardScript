@@ -23,7 +23,7 @@ using namespace shard;
 static ObjectInstance* ToString(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
-	long value = instance->AsInteger();
+	int64_t value = instance->AsInteger();
 	std::wstring str = std::to_wstring(value);
 	return ObjectInstance::FromValue(str);
 }
@@ -31,50 +31,50 @@ static ObjectInstance* ToString(const MethodSymbol* symbol, InboundVariablesCont
 static ObjectInstance* Abs(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
-	long value = instance->AsInteger();
-	long result = abs(value);
+	int64_t value = instance->AsInteger();
+	int64_t result = abs(value);
 	return ObjectInstance::FromValue(result);
 }
 
 static ObjectInstance* Min(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
-	long value = instance->AsInteger();
+	int64_t value = instance->AsInteger();
 	
 	ObjectInstance* otherArg = arguments->TryFind(L"other");
 	if (otherArg == nullptr)
 		return ObjectInstance::FromValue(value);
 	
-	long other = otherArg->AsInteger();
-	long result = min(value, other);
+	int64_t other = otherArg->AsInteger();
+	int64_t result = min(value, other);
 	return ObjectInstance::FromValue(result);
 }
 
 static ObjectInstance* Max(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
-	long value = instance->AsInteger();
+	int64_t value = instance->AsInteger();
 	
 	ObjectInstance* otherArg = arguments->TryFind(L"other");
 	if (otherArg == nullptr)
 		return ObjectInstance::FromValue(value);
 	
-	long other = otherArg->AsInteger();
-	long result = max(value, other);
+	int64_t other = otherArg->AsInteger();
+	int64_t result = max(value, other);
 	return ObjectInstance::FromValue(result);
 }
 
 static ObjectInstance* Pow(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
-	long value = instance->AsInteger();
+	int64_t value = instance->AsInteger();
 	
 	ObjectInstance* powerArg = arguments->TryFind(L"power");
 	if (powerArg == nullptr)
 		return ObjectInstance::FromValue(1.0);
 	
-	long power = powerArg->AsInteger();
-	long result = static_cast<int>(pow(value, power));
+	int64_t power = powerArg->AsInteger();
+	int64_t result = static_cast<int64_t>(pow(value, power));
 	return ObjectInstance::FromValue(result);
 }
 

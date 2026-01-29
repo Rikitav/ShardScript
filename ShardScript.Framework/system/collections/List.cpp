@@ -78,8 +78,8 @@ namespace shard
 			arrayInstance->SetElement(indexLast, valueCopy);
 
 			// setting new array length
-			int arraySize = static_cast<int>(arrayType->Size);
-			arrayInstance->WriteMemory(0, sizeof(int), &arraySize);
+			int64_t arraySize = static_cast<int64_t>(arrayType->Size);
+			arrayInstance->WriteMemory(0, sizeof(int64_t), &arraySize);
 
 			return nullptr; // void
 		}
@@ -97,7 +97,7 @@ namespace shard
 			ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->Info));
 
 			// Getting value
-			int indexValue = index->AsInteger();
+			int64_t indexValue = index->AsInteger();
 			if (!arrayInstance->IsInBounds(indexValue))
 				throw std::runtime_error("index is out of bounds");
 
@@ -144,7 +144,7 @@ namespace shard
 			ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->Info));
 
 			// Getting value
-			int indexValue = index->AsInteger();
+			int64_t indexValue = index->AsInteger();
 			if (!arrayInstance->IsInBounds(indexValue))
 				throw std::runtime_error("index is out of bounds");
 
@@ -153,6 +153,22 @@ namespace shard
 
 		static ObjectInstance* Impl_index_Set(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 		{
+			static FieldSymbol* arrayField = static_cast<ClassSymbol*>(symbol->Parent->Parent)->Fields.at(0); // T[] _array
+
+			// getting arguments
+			ObjectInstance* instance = arguments->Variables.at(L"this"); // List<T> this
+			ObjectInstance* index = arguments->Variables.at(L"index"); // int index
+			ObjectInstance* value = arguments->Variables.at(L"value"); // T value
+
+			ObjectInstance* arrayInstance = instance->GetField(arrayField); // T[] _array
+			ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->Info));
+
+			// Getting value
+			int64_t indexValue = index->AsInteger();
+			if (!arrayInstance->IsInBounds(indexValue))
+				throw std::runtime_error("index is out of bounds");
+
+			arrayInstance->SetElement(indexValue, value);
 			return nullptr;
 		}
 

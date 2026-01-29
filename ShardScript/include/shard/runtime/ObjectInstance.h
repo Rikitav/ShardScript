@@ -12,7 +12,7 @@ namespace shard
 	class SHARD_API ObjectInstance
 	{
 	public:
-		const long Id;
+		const uint64_t Id;
 		const shard::TypeSymbol* Info;
 		const bool IsNullable = false;
 
@@ -20,12 +20,12 @@ namespace shard
 		size_t ReferencesCounter;
 		void* Ptr;
 
-		inline ObjectInstance(const long id, const shard::TypeSymbol* info, void* ptr)
+		inline ObjectInstance(const uint64_t id, const shard::TypeSymbol* info, void* ptr)
 			: Id(id), Info(info), Ptr(ptr), ReferencesCounter(0) { }
 		
 		inline ~ObjectInstance() = default;
 
-		static ObjectInstance* FromValue(long value);
+		static ObjectInstance* FromValue(int64_t value);
 		static ObjectInstance* FromValue(double value);
 		static ObjectInstance* FromValue(bool value);
 		static ObjectInstance* FromValue(wchar_t value);
@@ -57,17 +57,17 @@ namespace shard
 		}
 		*/
 
-		void WriteBoolean(const bool& value);
-		void WriteInteger(const long& value);
-		void WriteDouble(const double& value);
-		void WriteCharacter(const wchar_t& value);
-		void WriteString(const std::wstring& value);
+		void WriteBoolean(const bool& value) const;
+		void WriteInteger(const int64_t& value) const;
+		void WriteDouble(const double& value) const;
+		void WriteCharacter(const wchar_t& value) const;
+		void WriteString(const std::wstring& value) const;
 
-		bool AsBoolean();
-		long AsInteger();
-		double AsDouble();
-		wchar_t AsCharacter();
-		std::wstring& AsString();
+		bool AsBoolean() const;
+		int64_t AsInteger() const;
+		double AsDouble() const;
+		wchar_t AsCharacter() const;
+		std::wstring& AsString() const;
 
 		void* OffsetMemory(const size_t offset, const size_t size) const;
 		void ReadMemory(const size_t offset, const size_t size, void* dst) const;

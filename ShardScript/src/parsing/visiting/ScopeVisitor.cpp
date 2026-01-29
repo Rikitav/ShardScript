@@ -44,6 +44,8 @@ bool ScopeVisitor::CheckNameDeclared(std::wstring& name)
 
 		return true;
 	}
+
+	return false;
 }
 
 bool ScopeVisitor::CheckSymbolNameDeclared(SyntaxSymbol* symbol)
