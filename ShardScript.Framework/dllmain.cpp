@@ -173,7 +173,7 @@ static ObjectInstance* Impl_sizeof(const MethodSymbol* symbol, InboundVariablesC
 	if (instance == GarbageCollector::NullInstance)
 		throw std::runtime_error("cannot get size of null instance");
 
-	return ObjectInstance::FromValue(static_cast<long>(instance->Info->MemoryBytesSize));
+	return ObjectInstance::FromValue(static_cast<int64_t>(instance->Info->MemoryBytesSize));
 }
 
 static void ResolvePrimitives()
@@ -192,7 +192,7 @@ static void ResolvePrimitives()
 	SymbolTable::Primitives::Any->MemoryBytesSize = 0;
 
 	SymbolTable::Primitives::Boolean->MemoryBytesSize = sizeof(bool);
-	SymbolTable::Primitives::Integer->MemoryBytesSize = sizeof(long);
+	SymbolTable::Primitives::Integer->MemoryBytesSize = sizeof(int64_t);
 	SymbolTable::Primitives::Double->MemoryBytesSize = sizeof(double);
 	SymbolTable::Primitives::Char->MemoryBytesSize = sizeof(wchar_t);
 	SymbolTable::Primitives::String->MemoryBytesSize = sizeof(std::wstring);

@@ -30,14 +30,14 @@ namespace shard
 			std::mt19937 gen(rd()); // (std::chrono::steady_clock::now().time_since_epoch().count());
 			std::uniform_int_distribution<> distrib(LONG_MIN, LONG_MAX);
 
-			long value = distrib(gen);
+			int64_t value = distrib(gen);
 			return ObjectInstance::FromValue(value);
         }
 
 		static ObjectInstance* Impl_Integer_Top(const MethodSymbol* method, InboundVariablesContext* arguments)
 		{
 			ObjectInstance* arg_top = arguments->Variables.at(L"top");
-			int top = arg_top->AsInteger();
+			int64_t top = arg_top->AsInteger();
 
 			if (top == 0)
 				return ObjectInstance::FromValue(0.0);
@@ -49,7 +49,7 @@ namespace shard
 			std::mt19937 gen(rd());
 			std::uniform_int_distribution<> distrib(0, INT_MAX);
 
-			long value = distrib(gen);
+			int64_t value = distrib(gen);
 			return ObjectInstance::FromValue(value);
 		}
 
@@ -58,8 +58,8 @@ namespace shard
 			ObjectInstance* arg_bottom = arguments->Variables.at(L"bottom");
 			ObjectInstance* arg_top = arguments->Variables.at(L"top");
 
-			long bottom = arg_bottom->AsInteger();
-			long top = arg_top->AsInteger();
+			int64_t bottom = arg_bottom->AsInteger();
+			int64_t top = arg_top->AsInteger();
 
 			if (bottom == top)
 				return ObjectInstance::FromValue(bottom);
@@ -69,9 +69,9 @@ namespace shard
 
 			std::random_device rd;
 			std::mt19937 gen(rd());
-			std::uniform_int_distribution<> distrib(bottom, top);
+			std::uniform_int_distribution<> distrib(static_cast<int>(bottom), static_cast<int>(top));
 
-			long value = distrib(gen);
+			int64_t value = distrib(gen);
 			return ObjectInstance::FromValue(value);
 		}
 
@@ -129,7 +129,7 @@ namespace shard
 		static ObjectInstance* Impl_Propably(const MethodSymbol* method, InboundVariablesContext* arguments)
 		{
 			ObjectInstance* arg_chance = arguments->Variables.at(L"chance");
-			double chance = arg_chance->AsInteger();
+			double chance = arg_chance->AsDouble();
 
 			if (chance == 0)
 				return ObjectInstance::FromValue(false);

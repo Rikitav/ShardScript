@@ -26,7 +26,7 @@ void ConsoleHelper::Write(ObjectInstance* instance)
 
 	if (instance->Info == SymbolTable::Primitives::Integer)
 	{
-		int data = instance->AsInteger();
+		int64_t data = instance->AsInteger();
 		Write(data);
 		return;
 	}
@@ -62,9 +62,9 @@ void ConsoleHelper::Write(bool data)
 	WriteConsoleW(stdOut, text, static_cast<DWORD>(wcslen(text)), &charsWritten, NULL);
 }
 
-void ConsoleHelper::Write(int data)
+void ConsoleHelper::Write(int64_t data)
 {
-	int needed_size = _scwprintf(L"%d", data) + 1;
+	int needed_size = _scwprintf(L"%lld", data) + 1;
 	if (needed_size <= 0)
 		return;
 
@@ -73,7 +73,7 @@ void ConsoleHelper::Write(int data)
 		return;
 
 	DWORD charsWritten;
-	swprintf_s(buffer, needed_size, L"%d", data);
+	swprintf_s(buffer, needed_size, L"%lld", data);
 	WriteConsoleW(stdOut, buffer, static_cast<DWORD>(wcslen(buffer)), &charsWritten, NULL);
 	free(buffer);
 }
@@ -124,7 +124,7 @@ void ConsoleHelper::WriteLine(ObjectInstance* instance)
 
 	if (instance->Info == SymbolTable::Primitives::Integer)
 	{
-		int data = instance->AsInteger();
+		int64_t data = instance->AsInteger();
 		WriteLine(data);
 		return;
 	}
@@ -164,7 +164,7 @@ void ConsoleHelper::WriteLine(bool data)
 	std::cout << std::endl;
 }
 
-void ConsoleHelper::WriteLine(int data)
+void ConsoleHelper::WriteLine(int64_t data)
 {
 	Write(data);
 	std::cout << std::endl;

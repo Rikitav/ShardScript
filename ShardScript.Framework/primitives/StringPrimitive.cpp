@@ -32,7 +32,7 @@ static ObjectInstance* GetLength(const MethodSymbol* symbol, InboundVariablesCon
 {
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	std::wstring value = instance->AsString();
-	return ObjectInstance::FromValue(static_cast<long>(value.size()));
+	return ObjectInstance::FromValue(static_cast<int64_t>(value.size()));
 }
 
 static ObjectInstance* Substring(const MethodSymbol* symbol, InboundVariablesContext* arguments)
@@ -44,7 +44,7 @@ static ObjectInstance* Substring(const MethodSymbol* symbol, InboundVariablesCon
 	if (startArg == nullptr)
 		return ObjectInstance::FromValue(L"");
 	
-	int start = startArg->AsInteger();
+	int64_t start = startArg->AsInteger();
 	if (start < 0)
 		start = 0;
 
@@ -54,12 +54,12 @@ static ObjectInstance* Substring(const MethodSymbol* symbol, InboundVariablesCon
 	ObjectInstance* lengthArg = arguments->TryFind(L"length");
 	if (lengthArg != nullptr)
 	{
-		int length = lengthArg->AsInteger();
+		int64_t length = lengthArg->AsInteger();
 		if (length < 0)
 			length = 0;
 
-		if (start + length > static_cast<int>(value.size()))
-			length = static_cast<int>(value.size()) - start;
+		if (start + length > static_cast<int64_t>(value.size()))
+			length = static_cast<int64_t>(value.size()) - start;
 		
 		std::wstring result = value.substr(start, length);
 		return ObjectInstance::FromValue(result);
@@ -127,7 +127,7 @@ static ObjectInstance* IndexOf(const MethodSymbol* symbol, InboundVariablesConte
 	
 	std::wstring search = searchArg->AsString();
 	size_t pos = value.find(search);
-	return ObjectInstance::FromValue(pos == std::wstring::npos ? -1 : static_cast<long>(pos));
+	return ObjectInstance::FromValue(pos == std::wstring::npos ? -1 : static_cast<int64_t>(pos));
 }
 
 static ObjectInstance* LastIndexOf(const MethodSymbol* symbol, InboundVariablesContext* arguments)
@@ -141,7 +141,7 @@ static ObjectInstance* LastIndexOf(const MethodSymbol* symbol, InboundVariablesC
 	
 	std::wstring search = searchArg->AsString();
 	size_t pos = value.rfind(search);
-	return ObjectInstance::FromValue(pos == std::wstring::npos ? -1 : static_cast<long>(pos));
+	return ObjectInstance::FromValue(pos == std::wstring::npos ? -1 : static_cast<int64_t>(pos));
 }
 
 static ObjectInstance* Replace(const MethodSymbol* symbol, InboundVariablesContext* arguments)
