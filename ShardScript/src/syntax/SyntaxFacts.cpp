@@ -289,9 +289,11 @@ bool IsModifier(TokenType type)
 		case TokenType::InternalKeyword:
 		case TokenType::StaticKeyword:
 		case TokenType::ExternKeyword:
+			/*
 		case TokenType::AbstractKeyword:
 		case TokenType::SealedKeyword:
 		case TokenType::PartialKeyword:
+			*/
 			return true;
 
 		default:

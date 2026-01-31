@@ -15,28 +15,13 @@ namespace shard
     public:
         inline AccessorSymbol(std::wstring name) : MethodSymbol(name)
         {
-            // hehe
-            SyntaxKind* pKind = const_cast<SyntaxKind*>(&Kind);
-            *pKind = SyntaxKind::AccessorDeclaration;
-
             Accesibility = SymbolAccesibility::Public;
         }
 
-        inline AccessorSymbol(std::wstring name, shard::StatementsBlockSyntax* body) : MethodSymbol(name, body)
+        inline AccessorSymbol(std::wstring name, MethodSymbolDelegate delegate) : MethodSymbol(name, SyntaxKind::AccessorDeclaration)
         {
-            // hehe
-            SyntaxKind* pKind = const_cast<SyntaxKind*>(&Kind);
-            *pKind = SyntaxKind::AccessorDeclaration;
-
-            Accesibility = SymbolAccesibility::Public;
-        }
-
-        inline AccessorSymbol(std::wstring name, MethodSymbolDelegate delegate) : MethodSymbol(name, delegate)
-        {
-            // hehe
-            SyntaxKind* pKind = const_cast<SyntaxKind*>(&Kind);
-            *pKind = SyntaxKind::AccessorDeclaration;
-
+            FunctionPointer = delegate;
+            HandleType = MethodHandleType::External;
             Accesibility = SymbolAccesibility::Public;
         }
 

@@ -1,7 +1,7 @@
 #pragma once
 #include <shard/ShardScriptAPI.h>
 
-#include <shard/parsing/lexical/MemberDeclarationInfo.h>
+#include <shard/parsing/MemberDeclarationInfo.h>
 #include <shard/syntax/nodes/TypeDeclarationSyntax.h>
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxNode.h>

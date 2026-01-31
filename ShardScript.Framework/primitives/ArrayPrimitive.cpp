@@ -39,7 +39,7 @@ static ObjectInstance* get_Item(const MethodSymbol* symbol, InboundVariablesCont
 	ObjectInstance* instance = arguments->TryFind(L"this");
 	ObjectInstance* index = arguments->TryFind(L"index");
 
-	int indexValue = index->AsInteger();
+	int64_t indexValue = index->AsInteger();
 	if (!instance->IsInBounds(indexValue))
 		throw std::runtime_error("index is out of bounds");
 
@@ -52,7 +52,7 @@ static ObjectInstance* set_Item(const MethodSymbol* symbol, InboundVariablesCont
 	ObjectInstance* index = arguments->TryFind(L"index");
 	ObjectInstance* value = arguments->TryFind(L"value");
 
-	int indexValue = index->AsInteger();
+	int64_t indexValue = index->AsInteger();
 	if (!instance->IsInBounds(indexValue))
 		throw std::runtime_error("index is out of bounds");
 
@@ -112,7 +112,7 @@ void ArrayPrimitive::Reflect(TypeSymbol* symbol)
 {
 	// Length
 	{
-		PropertySymbol* lengthProperty = new PropertySymbol(L"Length");
+		PropertySymbol* lengthProperty = new PropertySymbol(std::wstring(L"Length"));
 		lengthProperty->Accesibility = SymbolAccesibility::Public;
 		lengthProperty->ReturnType = SymbolTable::Primitives::Integer;
 
@@ -126,7 +126,7 @@ void ArrayPrimitive::Reflect(TypeSymbol* symbol)
 
 	// indexator
 	{
-		IndexatorSymbol* indexatorSymbol = new IndexatorSymbol(L"Item");
+		IndexatorSymbol* indexatorSymbol = new IndexatorSymbol(std::wstring(L"Item"));
 		indexatorSymbol->Accesibility = SymbolAccesibility::Public;
 		indexatorSymbol->IsStatic = false;
 

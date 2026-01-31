@@ -1,7 +1,7 @@
 #pragma once
 #include <shard/ShardScriptAPI.h>
 
-#include <shard/parsing/lexical/MemberDeclarationInfo.h>
+#include <shard/parsing/MemberDeclarationInfo.h>
 
 #include <shard/syntax/nodes/MemberDeclarationSyntax.h>
 #include <shard/syntax/nodes/ParametersListSyntax.h>

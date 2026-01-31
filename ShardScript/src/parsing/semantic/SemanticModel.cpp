@@ -5,7 +5,7 @@
 #include <shard/syntax/nodes/ExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/LiteralExpressionSyntax.h>
 
-#include <shard/parsing/lexical/SyntaxTree.h>
+#include <shard/parsing/SyntaxTree.h>
 #include <shard/parsing/semantic/SemanticModel.h>
 #include <shard/parsing/semantic/NamespaceTree.h>
 #include <shard/parsing/semantic/SymbolInfo.h>

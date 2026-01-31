@@ -5,7 +5,7 @@
 #include <shard/syntax/SyntaxToken.h>
 #include <shard/syntax/SyntaxNode.h>
 
-#include <shard/parsing/lexical/MemberDeclarationInfo.h>
+#include <shard/parsing/MemberDeclarationInfo.h>
 
 #include <shard/syntax/nodes/MemberDeclarationSyntax.h>
 #include <shard/syntax/nodes/ExpressionSyntax.h>

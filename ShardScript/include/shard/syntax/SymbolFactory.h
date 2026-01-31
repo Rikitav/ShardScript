@@ -104,14 +104,6 @@ namespace shard
 		static std::wstring FormatMethodSignature(shard::MethodSymbol* method);
 		static std::wstring FormatTypeName(shard::TypeSymbol* type);
 
-		static bool IsAccessible(shard::SyntaxSymbol* symbol, shard::SymbolAccesibility requiredAccessibility);
-		static bool CanOverride(shard::MethodSymbol* method, shard::MethodSymbol* baseMethod);
-		static bool IsCompatible(shard::MethodSymbol* method1, shard::MethodSymbol* method2);
-
-		static bool ValidateModifiers(std::vector<shard::SyntaxToken> modifiers, shard::SyntaxKind symbolKind);
-		static shard::SymbolAccesibility GetDefaultAccessibility(shard::SyntaxKind symbolKind);
-		static bool IsValidModifierCombination(std::vector<shard::SyntaxToken> modifiers);
-
 		static shard::MethodSymbol* CreateAnonymousMethod(const std::wstring& name, shard::TypeSymbol* returnType);
 		static shard::MethodSymbol* CreateLambdaMethod(shard::StatementsBlockSyntax* body);
 	};

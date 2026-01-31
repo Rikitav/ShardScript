@@ -329,8 +329,8 @@ static ObjectInstance* PadLeft(const MethodSymbol* symbol, InboundVariablesConte
 	if (widthArg == nullptr)
 		return ObjectInstance::FromValue(value);
 	
-	int width = widthArg->AsInteger();
-	if (width <= static_cast<int>(value.size()))
+	int64_t width = widthArg->AsInteger();
+	if (width <= static_cast<int64_t>(value.size()))
 		return ObjectInstance::FromValue(value);
 	
 	wchar_t padChar = L' ';
@@ -377,7 +377,7 @@ static ObjectInstance* Remove(const MethodSymbol* symbol, InboundVariablesContex
 	if (startArg == nullptr)
 		return ObjectInstance::FromValue(value);
 	
-	int start = startArg->AsInteger();
+	int64_t start = startArg->AsInteger();
 	if (start < 0)
 		start = 0;
 	if (start >= static_cast<int>(value.size()))
@@ -386,7 +386,7 @@ static ObjectInstance* Remove(const MethodSymbol* symbol, InboundVariablesContex
 	ObjectInstance* countArg = arguments->TryFind(L"count");
 	if (countArg != nullptr)
 	{
-		int count = countArg->AsInteger();
+		int64_t count = countArg->AsInteger();
 		if (count < 0)
 			count = 0;
 		if (start + count > static_cast<int>(value.size()))
@@ -414,14 +414,14 @@ static ObjectInstance* Insert(const MethodSymbol* symbol, InboundVariablesContex
 	if (startArg == nullptr || strArg == nullptr)
 		return ObjectInstance::FromValue(value);
 	
-	int start = startArg->AsInteger();
+	int64_t start = startArg->AsInteger();
 	std::wstring str = strArg->AsString();
 	
 	if (start < 0)
 		start = 0;
 
-	if (start > static_cast<int>(value.size()))
-		start = static_cast<int>(value.size());
+	if (start > static_cast<int64_t>(value.size()))
+		start = static_cast<int64_t>(value.size());
 	
 	std::wstring result = value;
 	result.insert(start, str);

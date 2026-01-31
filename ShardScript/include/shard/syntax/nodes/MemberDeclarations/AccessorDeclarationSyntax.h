@@ -22,12 +22,14 @@ namespace shard
 		inline AccessorDeclarationSyntax(const SyntaxNode* parent)
 			: MemberDeclarationSyntax(SyntaxKind::AccessorDeclaration, parent) { }
 
+		inline AccessorDeclarationSyntax(const SyntaxNode* parent, StatementsBlockSyntax* body)
+			: MemberDeclarationSyntax(SyntaxKind::AccessorDeclaration, parent), Body(body) { }
+
 		inline AccessorDeclarationSyntax(const AccessorDeclarationSyntax&) = delete;
 
 		inline ~AccessorDeclarationSyntax() override
 		{
-			if (Body != nullptr)
-				delete Body;
+
 		}
 	};
 }

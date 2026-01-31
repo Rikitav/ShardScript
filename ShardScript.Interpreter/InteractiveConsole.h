@@ -1,7 +1,7 @@
 #pragma once
 #include <shard/parsing/analysis/DiagnosticsContext.h>
 #include <shard/parsing/semantic/SemanticModel.h>
-#include <shard/parsing/lexical/SyntaxTree.h>
+#include <shard/parsing/SyntaxTree.h>
 
 namespace shard
 {

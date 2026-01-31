@@ -18,12 +18,12 @@ namespace shard
         bool IsOptional = false;
         shard::ExpressionSyntax* DefaultValueExpression = nullptr;
 
-        inline ParameterSymbol(std::wstring name) : SyntaxSymbol(name, SyntaxKind::Parameter)
+        inline ParameterSymbol(const std::wstring name) : SyntaxSymbol(name, SyntaxKind::Parameter)
         {
             Accesibility = SymbolAccesibility::Public;
         }
 
-        inline ParameterSymbol(std::wstring name, TypeSymbol* type) : SyntaxSymbol(name, SyntaxKind::Parameter), Type(type)
+        inline ParameterSymbol(const std::wstring name, TypeSymbol* type) : SyntaxSymbol(name, SyntaxKind::Parameter), Type(type)
         {
             Accesibility = SymbolAccesibility::Public;
         }

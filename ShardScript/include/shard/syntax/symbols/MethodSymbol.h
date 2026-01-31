@@ -26,33 +26,28 @@ namespace shard
         Body,
         External,
         Lambda,
-        //ForeignInterface,
     };
 
     class SHARD_API MethodSymbol : public SyntaxSymbol
     {
     public:
         TypeSymbol* ReturnType = nullptr;
-        MethodSymbol* OverriddenMethod = nullptr;
         std::vector<ParameterSymbol*> Parameters;
 
         MethodHandleType HandleType = MethodHandleType::Body;
-        shard::StatementsBlockSyntax* Body = nullptr;
+        //shard::StatementsBlockSyntax* Body = nullptr;
+        std::vector<std::byte> ExecutableByteCode;
         MethodSymbolDelegate FunctionPointer = nullptr;
-        std::wstring ForeighInterfacePath;
 
-        bool IsAbstract = false;
-        bool IsVirtual = false;
-        bool IsOverride = false;
         bool IsStatic = false;
 
-        inline MethodSymbol(std::wstring name)
+        inline MethodSymbol(const std::wstring& name)
             : SyntaxSymbol(name, SyntaxKind::MethodDeclaration), HandleType(MethodHandleType::None) { }
 
-        inline MethodSymbol(std::wstring name, shard::StatementsBlockSyntax* body)
-            : SyntaxSymbol(name, SyntaxKind::MethodDeclaration), Body(body), HandleType(MethodHandleType::Body) { }
+        inline MethodSymbol(const std::wstring& name, const SyntaxKind kind)
+            : SyntaxSymbol(name, kind), HandleType(MethodHandleType::None) { }
 
-        inline MethodSymbol(std::wstring name, MethodSymbolDelegate delegate)
+        inline MethodSymbol(const std::wstring& name, MethodSymbolDelegate delegate)
             : SyntaxSymbol(name, SyntaxKind::MethodDeclaration), FunctionPointer(delegate), HandleType(MethodHandleType::External) { }
 
         inline MethodSymbol(const MethodSymbol& other) = delete;
@@ -64,9 +59,6 @@ namespace shard
 
             if (FunctionPointer != nullptr)
                 FunctionPointer = nullptr;
-
-            if (Body != nullptr)
-                delete Body;
 
             for (ParameterSymbol* param : Parameters)
                 delete param;
