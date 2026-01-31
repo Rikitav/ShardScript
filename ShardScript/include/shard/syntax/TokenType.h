@@ -89,12 +89,14 @@ namespace shard
 		StaticKeyword,		  // static
 		ExternKeyword,		  // extern
 
+		/*
 		// OOP specific
 		AbstractKeyword,	  // abstract
 		SealedKeyword,		  // sealed
 		PartialKeyword,		  // partial
 		OverrideKeyword,	  // override
 		VirtualKeyword,		  // virtual
+		*/
 		
 		// Property accessor keywords
 		GetKeyword,			  // get

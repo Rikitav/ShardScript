@@ -1,10 +1,10 @@
-﻿#include <shard/framework/FrameworkLoader.h>
+﻿#include <shard/runtime/framework/FrameworkLoader.h>
 
 #include <shard/parsing/semantic/SemanticModel.h>
 #include <shard/parsing/semantic/SymbolTable.h>
 #include <shard/parsing/analysis/DiagnosticsContext.h>
-#include <shard/parsing/lexical/SyntaxTree.h>
-#include <shard/parsing/reading/StringStreamReader.h>
+#include <shard/parsing/SyntaxTree.h>
+#include <shard/parsing/lexical/reading/StringStreamReader.h>
 
 #include <shard/runtime/AbstractInterpreter.h>
 #include <shard/runtime/GarbageCollector.h>

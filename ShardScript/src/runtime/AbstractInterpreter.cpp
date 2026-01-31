@@ -14,7 +14,7 @@
 
 #include <shard/parsing/semantic/SymbolTable.h>
 #include <shard/parsing/semantic/SemanticModel.h>
-#include <shard/parsing/lexical/SyntaxTree.h>
+#include <shard/parsing/SyntaxTree.h>
 
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/FieldSymbol.h>
@@ -113,8 +113,9 @@ void AbstractInterpreter::TerminateCallStack()
 
 void AbstractInterpreter::Execute(SyntaxTree& syntaxTree, SemanticModel& semanticModel)
 {
-	MethodSymbol* entryPoint = semanticModel.Table->EntryPointCandidates.at(0);
-	ExecuteMethod(entryPoint, static_cast<TypeSymbol*>(entryPoint->Parent), nullptr);
+	// TODO: make alternate route to execute AST walking
+	//MethodSymbol* entryPoint = semanticModel.Table->EntryPointCandidates.at(0);
+	//ExecuteMethod(entryPoint, static_cast<TypeSymbol*>(entryPoint->Parent), nullptr);
 }
 
 void AbstractInterpreter::RaiseException(ObjectInstance* exceptionReg)
@@ -174,7 +175,7 @@ ObjectInstance* AbstractInterpreter::ExecuteMethod(const MethodSymbol* method, c
 		case MethodHandleType::Lambda:
 		case MethodHandleType::Body:
 		{
-			ExecuteBlock(method->Body);
+			//ExecuteBlock(method->Body);
 			break;
 		}
 

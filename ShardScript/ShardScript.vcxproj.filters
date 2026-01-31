@@ -14,10 +14,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\parsing\reading\SourceReader.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
-    <ClCompile Include="src\parsing\LexicalAnalyzer.cpp">
+    <ClCompile Include="src\parsing\lexical\LexicalAnalyzer.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="src\parsing\analysis\Diagnostic.cpp">
@@ -32,13 +29,13 @@
     <ClCompile Include="include\shard\syntax\nodes\ParametersListSyntax.h">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="src\parsing\reading\FileReader.cpp">
+    <ClCompile Include="src\parsing\lexical\reading\FileReader.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="src\parsing\reading\SequenceSourceReader.cpp">
+    <ClCompile Include="src\parsing\lexical\LexicalBuffer.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="src\parsing\reading\StringStreamReader.cpp">
+    <ClCompile Include="src\parsing\lexical\reading\StringStreamReader.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="src\syntax\SyntaxFacts.cpp">
@@ -47,7 +44,7 @@
     <ClCompile Include="src\runtime\InboundVariablesContext.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="include\shard\parsing\reading\SequenceSourceReader.h">
+    <ClCompile Include="include\shard\parsing\lexical\LexicalBuffer.h">
       <Filter>Файлы заголовков</Filter>
     </ClCompile>
     <ClCompile Include="src\runtime\GarbageCollector.cpp">
@@ -62,19 +59,16 @@
     <ClCompile Include="src\runtime\ConsoleHelper.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="src\parsing\lexical\MembersVisibilityContext.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
     <ClCompile Include="src\parsing\semantic\SemanticScope.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="src\parsing\semantic\SemanticModel.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="src\parsing\visiting\DeclarationCollector.cpp">
+    <ClCompile Include="src\parsing\semantic\visiting\DeclarationCollector.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="src\parsing\visiting\SyntaxVisitor.cpp">
+    <ClCompile Include="src\parsing\semantic\visiting\SyntaxVisitor.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="src\syntax\SyntaxHelpers.cpp">
@@ -86,13 +80,13 @@
     <ClCompile Include="src\syntax\symbols\TypeSymbol.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="src\parsing\visiting\TypeBinder.cpp">
+    <ClCompile Include="src\parsing\semantic\visiting\TypeBinder.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="src\parsing\semantic\SymbolTable.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="src\parsing\visiting\ExpressionBinder.cpp">
+    <ClCompile Include="src\parsing\semantic\visiting\ExpressionBinder.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="src\framework\FrameworkLoader.cpp">
@@ -125,7 +119,7 @@
     <ClCompile Include="src\runtime\PrimitiveMathModule.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="src\parsing\visiting\ScopeVisitor.cpp">
+    <ClCompile Include="src\parsing\semantic\visiting\ScopeVisitor.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="src\syntax\symbols\ArrayTypeSymbol.cpp">
@@ -155,9 +149,15 @@
     <ClCompile Include="src\ShardScriptVersion.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
+    <ClCompile Include="src\runtime\VirtualMachine.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsing\SourceParser.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\shard\parsing\lexical\SyntaxTree.h">
+    <ClInclude Include="include\shard\parsing\SyntaxTree.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="include\shard\syntax\nodes\TypeSyntax.h">
@@ -199,7 +199,7 @@
     <ClInclude Include="include\shard\syntax\SyntaxKind.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="include\shard\parsing\LexicalAnalyzer.h">
+    <ClInclude Include="include\shard\parsing\lexical\LexicalAnalyzer.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="include\shard\parsing\analysis\DiagnosticSeverity.h">
@@ -214,7 +214,7 @@
     <ClInclude Include="include\shard\parsing\analysis\DiagnosticsContext.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="include\shard\parsing\lexical\MemberDeclarationInfo.h">
+    <ClInclude Include="include\shard\parsing\MemberDeclarationInfo.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="include\shard\syntax\nodes\ArgumentsListSyntax.h">
@@ -241,13 +241,13 @@
     <ClInclude Include="include\shard\ShardTypes.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="include\shard\parsing\reading\FileReader.h">
+    <ClInclude Include="include\shard\parsing\lexical\reading\FileReader.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="include\shard\parsing\reading\StringStreamReader.h">
+    <ClInclude Include="include\shard\parsing\lexical\reading\StringStreamReader.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="include\shard\parsing\reading\SourceReader.h">
+    <ClInclude Include="include\shard\parsing\lexical\SourceProvider.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="include\shard\runtime\ObjectInstance.h">
@@ -319,10 +319,10 @@
     <ClInclude Include="include\shard\parsing\semantic\SymbolTable.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="include\shard\parsing\visiting\SyntaxVisitor.h">
+    <ClInclude Include="include\shard\SyntaxVisitor.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="include\shard\parsing\visiting\DeclarationCollector.h">
+    <ClInclude Include="include\shard\parsing\semantic\visiting\DeclarationCollector.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="include\shard\syntax\nodes\Types\PredefinedTypeSyntax.h">
@@ -367,7 +367,7 @@
     <ClInclude Include="include\shard\syntax\symbols\StructSymbol.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="include\shard\parsing\visiting\TypeBinder.h">
+    <ClInclude Include="include\shard\parsing\semantic\visiting\TypeBinder.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="include\shard\parsing\LayoutGenerator.h">
@@ -379,7 +379,7 @@
     <ClInclude Include="include\shard\parsing\semantic\SymbolInfo.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="include\shard\parsing\visiting\ExpressionBinder.h">
+    <ClInclude Include="include\shard\parsing\semantic\visiting\ExpressionBinder.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="include\shard\syntax\nodes\Statements\ThrowStatementSyntax.h">
@@ -391,7 +391,7 @@
     <ClInclude Include="include\shard\syntax\nodes\Statements\ContinueStatementSyntax.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="include\shard\framework\FrameworkLoader.h">
+    <ClInclude Include="include\shard\runtime\framework\FrameworkLoader.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="include\shard\runtime\AbstractInterpreter.h">
@@ -412,7 +412,7 @@
     <ClInclude Include="include\shard\syntax\symbols\PropertySymbol.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="include\shard\parsing\visiting\ScopeVisitor.h">
+    <ClInclude Include="include\shard\parsing\semantic\visiting\ScopeVisitor.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="include\shard\syntax\nodes\MemberDeclarations\AccessorDeclarationSyntax.h">
@@ -421,7 +421,7 @@
     <ClInclude Include="include\shard\syntax\symbols\AccessorSymbol.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="include\shard\framework\FrameworkModule.h">
+    <ClInclude Include="include\shard\runtime\framework\FrameworkModule.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="include\shard\parsing\semantic\NamespaceTree.h">
@@ -475,7 +475,31 @@
     <ClInclude Include="include\shard\syntax\symbols\ConstructorSymbol.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="include\shard\ShardScript.h">
+    <ClInclude Include="include\shard\compilation\AbstractEmiter.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\compilation\OperationCode.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\compilation\ProgramVirtualImage.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\runtime\VirtualMachine.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\syntax\symbols\LiteralSymbol.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\runtime\CallFrameStack.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\compilation\ByteCodeGenerator.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\parsing\SourceParser.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\parsing\lexical\reading\SourceTextProvider.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>

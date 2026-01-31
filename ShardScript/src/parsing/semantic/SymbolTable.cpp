@@ -33,7 +33,6 @@ void SymbolTable::ClearSymbols()
 	nodeToSymbolMap.clear();
 	namespacesList.clear();
 	typesList.clear();
-	EntryPointCandidates.clear();
 }
 
 SyntaxSymbol* SymbolTable::LookupSymbol(SyntaxNode* node)

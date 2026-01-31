@@ -1,11 +1,12 @@
 ﻿#include <shard/parsing/analysis/DiagnosticsContext.h>
-#include <shard/parsing/lexical/SyntaxTree.h>
+#include <shard/parsing/SyntaxTree.h>
 #include <shard/parsing/semantic/SemanticModel.h>
 
-#include <shard/parsing/LexicalAnalyzer.h>
+#include <shard/parsing/lexical/LexicalAnalyzer.h>
+#include <shard/parsing/lexical/reading/FileReader.h>
 #include <shard/parsing/SemanticAnalyzer.h>
+#include <shard/parsing/SourceParser.h>
 #include <shard/parsing/LayoutGenerator.h>
-#include <shard/parsing/reading/FileReader.h>
 
 #include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.h>
 #include <shard/syntax/symbols/MethodSymbol.h>
@@ -14,7 +15,7 @@
 #include <shard/runtime/GarbageCollector.h>
 #include <shard/runtime/AbstractInterpreter.h>
 
-#include <shard/framework/FrameworkLoader.h>
+#include <shard/runtime/framework/FrameworkLoader.h>
 
 #include <Shlwapi.h>
 #include <iostream>
@@ -155,16 +156,19 @@ int wmain(int argc, wchar_t* argv[])
 		}
 
 
-		LexicalAnalyzer lexer(diagnostics);
+		SourceParser parser(diagnostics);
 		for (const std::wstring& file : args.FilesToCompile)
 		{
-			FileReader reader = FileReader(file);
-			lexer.FromSourceReader(syntaxTree, reader);
+			FileReader reader(file);
+			LexicalAnalyzer lexer(reader);
+			parser.FromSourceProvider(syntaxTree, lexer);
 		}
 
 		SemanticAnalyzer semanticAnalyzer(diagnostics);
 		semanticAnalyzer.Analyze(syntaxTree, semanticModel);
 
+		// TODO: fix
+		/*
 		if (!args.UseInteractive)
 		{
 			if (semanticModel.Table->EntryPointCandidates.empty())
@@ -181,6 +185,7 @@ int wmain(int argc, wchar_t* argv[])
 				}
 			}
 		}
+		*/
 
 		if (diagnostics.AnyError)
 		{

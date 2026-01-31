@@ -24,8 +24,11 @@ namespace shard
         FieldSymbol* BackingField = nullptr;
         bool IsStatic = false;
 
-        inline PropertySymbol(std::wstring name)
+        inline PropertySymbol(const std::wstring& name)
             : SyntaxSymbol(name, SyntaxKind::PropertyDeclaration) { }
+
+        inline PropertySymbol(const std::wstring& name, const SyntaxKind kind)
+            : SyntaxSymbol(name, kind) { }
 
         inline PropertySymbol(const PropertySymbol& other) = delete;
 

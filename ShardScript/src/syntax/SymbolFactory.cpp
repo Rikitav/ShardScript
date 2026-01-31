@@ -92,7 +92,8 @@ void SymbolFactory::SetAccesibility(TypeSymbol* symbol, std::vector<SyntaxToken>
 				symbol->IsStatic = true;
 				break;
 			}
-
+			
+			/*
 			case TokenType::AbstractKeyword:
 			{
 				symbol->IsAbstract = true;
@@ -104,6 +105,7 @@ void SymbolFactory::SetAccesibility(TypeSymbol* symbol, std::vector<SyntaxToken>
 				symbol->IsSealed = true;
 				break;
 			}
+			*/
 
 			case TokenType::ExternKeyword:
 			{
@@ -144,6 +146,7 @@ void SymbolFactory::SetAccesibility(MethodSymbol* symbol, std::vector<SyntaxToke
 				break;
 			}
 
+			/*
 			case TokenType::AbstractKeyword:
 			{
 				symbol->IsAbstract = true;
@@ -161,6 +164,7 @@ void SymbolFactory::SetAccesibility(MethodSymbol* symbol, std::vector<SyntaxToke
 				symbol->IsVirtual = true;
 				break;
 			}
+			*/
 
 			case TokenType::ExternKeyword:
 			{
@@ -242,11 +246,13 @@ void SymbolFactory::SetAccesibility(FieldSymbol* symbol, std::vector<SyntaxToken
 				break;
 			}
 
+			/*
 			case TokenType::ProtectedKeyword:
 			{
 				symbol->Accesibility = SymbolAccesibility::Protected;
 				break;
 			}
+			*/
 
 			case TokenType::StaticKeyword:
 			{
@@ -314,7 +320,7 @@ AccessorSymbol* SymbolFactory::Accessor(AccessorDeclarationSyntax* node, Propert
 	std::wstring accessorName = propertySymbol->Name + L"_" + node->KeywordToken.Word;
 	AccessorSymbol* symbol = new AccessorSymbol(accessorName);
 	symbol->HandleType = MethodHandleType::Body;
-	symbol->Body = node->Body;
+	//symbol->Body = node->Body;
 	symbol->Accesibility = SymbolAccesibility::Public;
 	symbol->IsStatic = propertySymbol->IsStatic;
 	SetAccesibility(symbol, node->Modifiers);
@@ -346,7 +352,7 @@ AccessorSymbol* SymbolFactory::Accessor(AccessorDeclarationSyntax* node, Propert
 MethodSymbol* SymbolFactory::Method(MethodDeclarationSyntax* node)
 {
     std::wstring methodName = node->IdentifierToken.Word;
-    MethodSymbol* symbol = new MethodSymbol(methodName, node->Body);
+    MethodSymbol* symbol = new MethodSymbol(methodName);
     SetAccesibility(symbol, node->Modifiers);
 
 	if (symbol->IsExtern)
@@ -364,7 +370,7 @@ MethodSymbol* SymbolFactory::Method(MethodDeclarationSyntax* node)
 ConstructorSymbol* SymbolFactory::Constructor(ConstructorDeclarationSyntax* node)
 {
 	std::wstring methodName = node->IdentifierToken.Word;
-	ConstructorSymbol* symbol = new ConstructorSymbol(methodName, node->Body);
+	ConstructorSymbol* symbol = new ConstructorSymbol(methodName);
 	symbol->ReturnType = shard::SymbolTable::Primitives::Void;
 	SetAccesibility(symbol, node->Modifiers);
 
@@ -726,228 +732,6 @@ std::wstring SymbolFactory::FormatTypeName(TypeSymbol* type)
 	return type->Name;
 }
 
-bool SymbolFactory::IsAccessible(SyntaxSymbol* symbol, SymbolAccesibility requiredAccessibility)
-{
-	if (symbol == nullptr)
-		return false;
-
-	// Public всегда доступен
-	if (symbol->Accesibility == SymbolAccesibility::Public)
-		return true;
-
-	// Проверяем требуемый уровень доступа
-	switch (requiredAccessibility)
-	{
-		case SymbolAccesibility::Public:
-			return symbol->Accesibility == SymbolAccesibility::Public;
-
-		case SymbolAccesibility::Protected:
-			return symbol->Accesibility == SymbolAccesibility::Public ||
-				   symbol->Accesibility == SymbolAccesibility::Protected;
-
-		case SymbolAccesibility::Private:
-			return true; // Private доступен в том же контексте
-
-		default:
-			return false;
-	}
-}
-
-bool SymbolFactory::CanOverride(MethodSymbol* method, MethodSymbol* baseMethod)
-{
-	if (method == nullptr || baseMethod == nullptr)
-		return false;
-
-	// Метод должен быть виртуальным или абстрактным в базовом классе
-	if (!baseMethod->IsVirtual && !baseMethod->IsAbstract)
-		return false;
-
-	// Сигнатуры должны совпадать
-	if (method->Name != baseMethod->Name)
-		return false;
-
-	if (method->Parameters.size() != baseMethod->Parameters.size())
-		return false;
-
-	for (size_t i = 0; i < method->Parameters.size(); i++)
-	{
-		if (method->Parameters[i]->Type != baseMethod->Parameters[i]->Type)
-			return false;
-	}
-
-	// Возвращаемый тип должен совпадать
-	if (method->ReturnType != baseMethod->ReturnType)
-		return false;
-
-	return true;
-}
-
-bool SymbolFactory::IsCompatible(MethodSymbol* method1, MethodSymbol* method2)
-{
-	if (method1 == nullptr || method2 == nullptr)
-		return false;
-
-	if (method1->Name != method2->Name)
-		return false;
-
-	if (method1->Parameters.size() != method2->Parameters.size())
-		return false;
-
-	for (size_t i = 0; i < method1->Parameters.size(); i++)
-	{
-		if (method1->Parameters[i]->Type != method2->Parameters[i]->Type)
-			return false;
-	}
-
-	return true;
-}
-
-bool SymbolFactory::ValidateModifiers(std::vector<SyntaxToken> modifiers, SyntaxKind symbolKind)
-{
-	// Базовая валидация - проверяем конфликтующие модификаторы
-	bool hasPublic = false, hasPrivate = false, hasProtected = false;
-
-	for (const SyntaxToken& modifier : modifiers)
-	{
-		switch (modifier.Type)
-		{
-			case TokenType::PublicKeyword:
-				hasPublic = true;
-				break;
-			case TokenType::PrivateKeyword:
-				hasPrivate = true;
-				break;
-			case TokenType::ProtectedKeyword:
-				hasProtected = true;
-				break;
-		}
-	}
-
-	// Нельзя иметь несколько модификаторов доступа одновременно
-	int accessModifiers = (hasPublic ? 1 : 0) + (hasPrivate ? 1 : 0) + (hasProtected ? 1 : 0);
-	if (accessModifiers > 1)
-		return false;
-
-	// Дополнительные проверки в зависимости от типа символа
-	switch (symbolKind)
-	{
-		case SyntaxKind::MethodDeclaration:
-		{
-			bool hasStatic = false, hasAbstract = false, hasVirtual = false, hasOverride = false;
-			for (const SyntaxToken& modifier : modifiers)
-			{
-				if (modifier.Type == TokenType::StaticKeyword) hasStatic = true;
-				if (modifier.Type == TokenType::AbstractKeyword) hasAbstract = true;
-				if (modifier.Type == TokenType::VirtualKeyword) hasVirtual = true;
-				if (modifier.Type == TokenType::OverrideKeyword) hasOverride = true;
-			}
-
-			// Static и abstract/virtual/override несовместимы
-			if (hasStatic && (hasAbstract || hasVirtual || hasOverride))
-				return false;
-
-			// Abstract и virtual/override несовместимы
-			if (hasAbstract && (hasVirtual || hasOverride))
-				return false;
-
-			// Virtual и override несовместимы
-			if (hasVirtual && hasOverride)
-				return false;
-
-			break;
-		}
-
-		case SyntaxKind::ClassDeclaration:
-		case SyntaxKind::StructDeclaration:
-		{
-			bool hasStatic = false, hasAbstract = false, hasSealed = false;
-			for (const SyntaxToken& modifier : modifiers)
-			{
-				if (modifier.Type == TokenType::StaticKeyword) hasStatic = true;
-				if (modifier.Type == TokenType::AbstractKeyword) hasAbstract = true;
-				if (modifier.Type == TokenType::SealedKeyword) hasSealed = true;
-			}
-
-			// Static и abstract/sealed несовместимы
-			if (hasStatic && (hasAbstract || hasSealed))
-				return false;
-
-			// Abstract и sealed несовместимы
-			if (hasAbstract && hasSealed)
-				return false;
-
-			break;
-		}
-	}
-
-	return true;
-}
-
-SymbolAccesibility SymbolFactory::GetDefaultAccessibility(SyntaxKind symbolKind)
-{
-	switch (symbolKind)
-	{
-		case SyntaxKind::ClassDeclaration:
-		case SyntaxKind::StructDeclaration:
-		case SyntaxKind::NamespaceDeclaration:
-		case SyntaxKind::MethodDeclaration:
-		case SyntaxKind::FieldDeclaration:
-		case SyntaxKind::PropertyDeclaration:
-		case SyntaxKind::ConstructorDeclaration:
-			return SymbolAccesibility::Private;
-
-		case SyntaxKind::Parameter:
-		case SyntaxKind::VariableStatement:
-		case SyntaxKind::TypeParameter:
-			return SymbolAccesibility::Public;
-
-		default:
-			return SymbolAccesibility::Private;
-	}
-}
-
-bool SymbolFactory::IsValidModifierCombination(std::vector<SyntaxToken> modifiers)
-{
-	// Проверяем базовые конфликты
-	bool hasStatic = false, hasAbstract = false, hasVirtual = false, hasOverride = false, hasSealed = false;
-
-	for (const SyntaxToken& modifier : modifiers)
-	{
-		switch (modifier.Type)
-		{
-			case TokenType::StaticKeyword:
-				hasStatic = true;
-				break;
-			case TokenType::AbstractKeyword:
-				hasAbstract = true;
-				break;
-			case TokenType::VirtualKeyword:
-				hasVirtual = true;
-				break;
-			case TokenType::OverrideKeyword:
-				hasOverride = true;
-				break;
-			case TokenType::SealedKeyword:
-				hasSealed = true;
-				break;
-		}
-	}
-
-	// Static несовместим с abstract, virtual, override
-	if (hasStatic && (hasAbstract || hasVirtual || hasOverride))
-		return false;
-
-	// Abstract несовместим с virtual, override
-	if (hasAbstract && (hasVirtual || hasOverride))
-		return false;
-
-	// Virtual несовместим с override
-	if (hasVirtual && hasOverride)
-		return false;
-
-	return true;
-}
-
 MethodSymbol* SymbolFactory::CreateAnonymousMethod(const std::wstring& name, TypeSymbol* returnType)
 {
 	MethodSymbol* symbol = new MethodSymbol(name);
@@ -960,7 +744,7 @@ MethodSymbol* SymbolFactory::CreateAnonymousMethod(const std::wstring& name, Typ
 
 MethodSymbol* SymbolFactory::CreateLambdaMethod(StatementsBlockSyntax* body)
 {
-	MethodSymbol* symbol = new MethodSymbol(L"Lambda", body);
+	MethodSymbol* symbol = new MethodSymbol(std::wstring(L"Lambda"));
 	symbol->ReturnType = shard::SymbolTable::Primitives::Any;
 	symbol->Accesibility = SymbolAccesibility::Public;
 	symbol->IsStatic = true;

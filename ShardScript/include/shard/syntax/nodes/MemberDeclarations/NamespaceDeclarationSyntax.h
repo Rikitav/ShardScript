@@ -6,7 +6,7 @@
 #include <shard/syntax/SyntaxToken.h>
 
 #include <shard/syntax/nodes/TypeDeclarationSyntax.h>
-#include <shard/parsing/lexical/MemberDeclarationInfo.h>
+#include <shard/parsing/MemberDeclarationInfo.h>
 
 #include <vector>
 

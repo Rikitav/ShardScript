@@ -1,11 +1,12 @@
-#include <shard/framework/FrameworkModule.h>
+#include <shard/runtime/framework/FrameworkModule.h>
 
 #include <shard/runtime/InboundVariablesContext.h>
 #include <shard/runtime/ObjectInstance.h>
 #include <shard/syntax/symbols/MethodSymbol.h>
 
-#include <shard/parsing/reading/SourceReader.h>
-#include <shard/parsing/reading/StringStreamReader.h>
+#include <shard/parsing/lexical/SourceProvider.h>
+#include <shard/parsing/lexical/LexicalAnalyzer.h>
+#include <shard/parsing/lexical/reading/StringStreamReader.h>
 #include <shard/parsing/semantic/SymbolTable.h>
 
 #include <Windows.h>
@@ -149,12 +150,12 @@ namespace shard
 		}
 
 	public:
-
-		SourceReader* FrameworkModule::GetSource()
+		SourceProvider* FrameworkModule::GetSource()
 		{
 			const wchar_t* resourceData; size_t resourceSize;
 			resources::GetResource(L"SYSTEM_RANDOM", resourceData, resourceSize);
-			return new StringStreamReader(L"Random.ss", resourceData, resourceSize / sizeof(wchar_t));
+			StringStreamReader* reader = new StringStreamReader(L"Random.ss", resourceData, resourceSize / sizeof(wchar_t));
+			return new LexicalAnalyzer(reader, true);
 		}
 
 		bool FrameworkModule::BindConstructor(ConstructorSymbol * symbol)

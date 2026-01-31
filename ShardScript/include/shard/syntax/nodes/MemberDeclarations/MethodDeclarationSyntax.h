@@ -10,7 +10,7 @@
 #include <shard/syntax/nodes/StatementsBlockSyntax.h>
 #include <shard/syntax/nodes/TypeSyntax.h>
 
-#include <shard/parsing/lexical/MemberDeclarationInfo.h>
+#include <shard/parsing/MemberDeclarationInfo.h>
 
 #include <vector>
 

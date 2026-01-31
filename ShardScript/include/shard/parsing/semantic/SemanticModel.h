@@ -3,7 +3,7 @@
 
 #include <shard/syntax/SyntaxNode.h>
 #include <shard/syntax/nodes/ExpressionSyntax.h>
-#include <shard/parsing/lexical/SyntaxTree.h>
+#include <shard/parsing/SyntaxTree.h>
 
 #include <shard/parsing/semantic/SymbolTable.h>
 #include <shard/parsing/semantic/TypeInfo.h>

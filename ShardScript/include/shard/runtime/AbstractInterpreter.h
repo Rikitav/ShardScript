@@ -5,7 +5,7 @@
 #include <shard/runtime/InboundVariablesContext.h>
 #include <shard/runtime/ObjectInstance.h>
 
-#include <shard/parsing/lexical/SyntaxTree.h>
+#include <shard/parsing/SyntaxTree.h>
 #include <shard/parsing/semantic/SemanticModel.h>
 
 #include <shard/syntax/symbols/MethodSymbol.h>

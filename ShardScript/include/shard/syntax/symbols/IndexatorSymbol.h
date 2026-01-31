@@ -8,17 +8,15 @@
 
 namespace shard
 {
+    class PropertySymbol;
+
     class SHARD_API IndexatorSymbol : public PropertySymbol
     {
     public:
         std::vector<ParameterSymbol*> Parameters;
 
-        inline IndexatorSymbol(std::wstring name) : PropertySymbol(std::move(name))
-        {
-            // hehe
-            SyntaxKind* pKind = const_cast<SyntaxKind*>(&Kind);
-            *pKind = SyntaxKind::IndexatorDeclaration;
-        }
+        inline IndexatorSymbol(const std::wstring& name)
+            : PropertySymbol(name, SyntaxKind::IndexatorDeclaration) { }
 
         inline IndexatorSymbol(const IndexatorSymbol& other) = delete;
 

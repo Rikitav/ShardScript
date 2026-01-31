@@ -1,14 +1,14 @@
-#include <shard/framework/FrameworkLoader.h>
-#include <shard/framework/FrameworkModule.h>
+#include <shard/runtime/framework/FrameworkLoader.h>
+#include <shard/runtime/framework/FrameworkModule.h>
 
-#include <shard/parsing/LexicalAnalyzer.h>
+#include <shard/parsing/lexical/LexicalAnalyzer.h>
 #include <shard/parsing/SemanticAnalyzer.h>
 
 #include <shard/parsing/semantic/SemanticModel.h>
 #include <shard/parsing/semantic/SymbolTable.h>
 #include <shard/parsing/analysis/DiagnosticsContext.h>
-#include <shard/parsing/lexical/SyntaxTree.h>
-#include <shard/parsing/reading/StringStreamReader.h>
+#include <shard/parsing/SyntaxTree.h>
+#include <shard/parsing/SourceParser.h>
 
 #include <shard/syntax/SyntaxKind.h>
 
@@ -26,6 +26,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/PropertyDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/IndexatorDeclarationSyntax.h>
 
 #include <string>
 #include <vector>
@@ -197,17 +198,17 @@ void FrameworkLoader::Destroy()
 
 void FrameworkLoader::Load(SemanticModel& semanticModel, DiagnosticsContext& diagnostics)
 {
-	LexicalAnalyzer lexer = LexicalAnalyzer(diagnostics);
 	SemanticAnalyzer semanter = SemanticAnalyzer(diagnostics);
+	SourceParser parser = SourceParser(diagnostics);
 
 	for (FrameworkModule* module : Modules)
 	{
 		SyntaxTree innerTree;
-		SourceReader* reader = module->GetSource();
-
-		lexer.FromSourceReader(innerTree, *reader);
+		SourceProvider* source = module->GetSource();
+		
+		parser.FromSourceProvider(innerTree, *source);
 		semanter.Analyze(innerTree, semanticModel);
-		delete reader;
+		delete source;
 
 		CompilationUnitSyntax* unit = innerTree.CompilationUnits.back();
 		for (MemberDeclarationSyntax* member : unit->Members)

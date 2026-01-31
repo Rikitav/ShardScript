@@ -9,7 +9,7 @@
 #include <shard/syntax/nodes/ParametersListSyntax.h>
 #include <shard/syntax/nodes/StatementsBlockSyntax.h>
 
-#include <shard/parsing/lexical/MemberDeclarationInfo.h>
+#include <shard/parsing/MemberDeclarationInfo.h>
 #include <vector>
 
 namespace shard

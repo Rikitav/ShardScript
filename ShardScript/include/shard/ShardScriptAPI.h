@@ -9,3 +9,5 @@
 #else
 	#define SHARD_API __declspec(dllimport)
 #endif
+
+//#define EXPORT_EXTERN(name) ObjectInstance* &name(MethodSymbol* method, InboundVariableContext* arguments)

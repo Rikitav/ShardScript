@@ -28,8 +28,6 @@ namespace shard
         std::vector<shard::TypeSymbol*> typesList;
 
     public:
-        std::vector<shard::MethodSymbol*> EntryPointCandidates;
-        
         struct Global
         {
             inline static SHARD_API shard::SemanticScope* Scope = new SemanticScope(nullptr, nullptr);

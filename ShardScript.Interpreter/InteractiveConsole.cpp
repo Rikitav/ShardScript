@@ -1,14 +1,15 @@
-#include <shard/parsing/LexicalAnalyzer.h>
-#include <shard/parsing/reading/StringStreamReader.h>
-#include <shard/parsing/reading/SequenceSourceReader.h>
+#include <shard/parsing/lexical/LexicalAnalyzer.h>
+#include <shard/parsing/lexical/reading/StringStreamReader.h>
+#include <shard/parsing/lexical/LexicalBuffer.h>
 #include <shard/parsing/SemanticAnalyzer.h>
 #include <shard/parsing/LayoutGenerator.h>
 
 #include <shard/parsing/analysis/TextLocation.h>
 #include <shard/parsing/analysis/DiagnosticsContext.h>
 
-#include <shard/parsing/lexical/SyntaxTree.h>
-#include <shard/parsing/lexical/MemberDeclarationInfo.h>
+#include <shard/parsing/SourceParser.h>
+#include <shard/parsing/SyntaxTree.h>
+#include <shard/parsing/MemberDeclarationInfo.h>
 
 #include <shard/parsing/semantic/SemanticModel.h>
 
@@ -52,7 +53,7 @@
 
 using namespace shard;
 
-static bool IsStatementComplete(SequenceSourceReader& reader)
+static bool IsStatementComplete(LexicalBuffer& reader)
 {
 	reader.SetIndex(0);
 	int lastIndex = static_cast<int>(reader.Size()) - 1;
@@ -132,7 +133,7 @@ static bool IsStatementComplete(SequenceSourceReader& reader)
 	return braceCount == 0 && parenCount == 0 && bracketCount == 0;
 }
 
-static bool IsExpressionComplete(SequenceSourceReader& reader)
+static bool IsExpressionComplete(LexicalBuffer& reader)
 {
 	reader.SetIndex(0);
 	int parenCount = 0;
@@ -192,9 +193,12 @@ static std::wstring ReadMultilineInput(LexicalAnalyzer& lexer, const std::wstrin
 {
 	std::wstring fullInput = firstLine;
 	
-	StringStreamReader stringStreamReader(L"Interactive console", firstLine);
-	SequenceSourceReader sequenceReader;
-	sequenceReader.PopulateFrom(stringStreamReader);
+	LexicalBuffer sequenceReader;
+	{
+		StringStreamReader stringStreamReader(L"Interactive console", firstLine);
+		LexicalAnalyzer lexicalAnalyzer(stringStreamReader);
+		sequenceReader.PopulateFrom(lexicalAnalyzer);
+	}
 	
 	// Check if already complete
 	bool isComplete = isExpression ? IsExpressionComplete(sequenceReader) : IsStatementComplete(sequenceReader);
@@ -215,8 +219,9 @@ static std::wstring ReadMultilineInput(LexicalAnalyzer& lexer, const std::wstrin
 		
 		if (line.empty() && lineCount == 0)
 		{
-			stringStreamReader = StringStreamReader(L"Interactive console", fullInput);
-			sequenceReader.PopulateFrom(stringStreamReader);
+			StringStreamReader stringStreamReader(L"Interactive console", firstLine);
+			LexicalAnalyzer lexicalAnalyzer(stringStreamReader);
+			sequenceReader.PopulateFrom(lexicalAnalyzer);
 			isComplete = isExpression ? IsExpressionComplete(sequenceReader) : IsStatementComplete(sequenceReader);
 			
 			if (isComplete)
@@ -224,8 +229,9 @@ static std::wstring ReadMultilineInput(LexicalAnalyzer& lexer, const std::wstrin
 		}
 		
 		fullInput += L"\n" + line;
-		stringStreamReader = StringStreamReader(L"Interactive console", fullInput);
-		sequenceReader.PopulateFrom(stringStreamReader);
+		StringStreamReader stringStreamReader(L"Interactive console", firstLine);
+		LexicalAnalyzer lexicalAnalyzer(stringStreamReader);
+		sequenceReader.PopulateFrom(lexicalAnalyzer);
 		isComplete = isExpression ? IsExpressionComplete(sequenceReader) : IsStatementComplete(sequenceReader);
 		lineCount++;
 	}
@@ -241,17 +247,17 @@ static StatementSyntax* ReadStatement(LexicalAnalyzer& lexer, SyntaxNode* parent
 	std::wstring fullInput = ReadMultilineInput(lexer, firstLine, false);
 	
 	StringStreamReader stringStreamReader(L"Interactive console", fullInput);
-	SequenceSourceReader sequenceReader;
-	sequenceReader.PopulateFrom(stringStreamReader);
-	SyntaxToken current = sequenceReader.Current();
-	
+	LexicalAnalyzer lexicalAnalyzer(stringStreamReader);
+	SourceParser parser(diagnostics);
+
+	SyntaxToken current = lexicalAnalyzer.Current();
 	if (IsLoopKeyword(current.Type) || IsConditionalKeyword(current.Type) || IsFunctionalKeyword(current.Type))
 	{
-		return lexer.ReadKeywordStatement(sequenceReader, parent);
+		return parser.ReadKeywordStatement(lexicalAnalyzer, parent);
 	}
 	else
 	{
-		return lexer.ReadStatement(sequenceReader, parent);
+		return parser.ReadStatement(lexicalAnalyzer, parent);
 	}
 }
 
@@ -301,8 +307,9 @@ static CompilationUnitSyntax* InitImplicitCompilationUnit(MethodDeclarationSynta
 
 void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticModel, DiagnosticsContext& diagnostics)
 {
+	// TODO: REWRITE LOGIC TO BYTECODE
 	// Initializing parsing
-	LexicalAnalyzer lexer(diagnostics);
+	SourceParser parser(diagnostics);
 	SemanticAnalyzer semanticAnalyzer(diagnostics);
 	LayoutGenerator layoutGenerator(diagnostics);
 	
@@ -312,7 +319,7 @@ void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticMode
 	syntaxTree.CompilationUnits.push_back(implUnit);
 
 	StatementsBlockSyntax* interactiveBody = implMethod->Body;
-	MethodSymbol* entryPointSymbol = new MethodSymbol(implMethod->IdentifierToken.Word, interactiveBody);
+	MethodSymbol* entryPointSymbol = new MethodSymbol(implMethod->IdentifierToken.Word);
 
 	AbstractInterpreter::PushFrame(entryPointSymbol, nullptr);
 	AbstractInterpreter::PushContext(new InboundVariablesContext(nullptr));
@@ -375,8 +382,8 @@ void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticMode
 			}
 
 			StringStreamReader stringStreamReader(L"Interactive console", firstLine);
-			SequenceSourceReader sequenceReader;
-			sequenceReader.PopulateFrom(stringStreamReader);
+			LexicalAnalyzer lexer(stringStreamReader);
+			LexicalBuffer sequenceReader = LexicalBuffer::From(lexer);
 
 			if (!sequenceReader.CanConsume())
 				continue;
@@ -411,10 +418,10 @@ void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticMode
 				std::wstring fullInput = ReadMultilineInput(lexer, firstLine, true);
 
 				StringStreamReader exprReader(L"Interactive console", fullInput);
-				SequenceSourceReader exprSequence;
-				exprSequence.PopulateFrom(exprReader);
+				LexicalBuffer exprSequence = LexicalBuffer::From(exprReader);
+				SourceParser parser(diagnostics);
 
-				ExpressionSyntax* expression = lexer.ReadExpression(exprSequence, interactiveBody, 0);
+				ExpressionSyntax* expression = parser.ReadExpression(exprSequence, interactiveBody, 0);
 
 				if (expression == nullptr)
 				{

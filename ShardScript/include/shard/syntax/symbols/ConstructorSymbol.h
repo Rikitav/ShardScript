@@ -13,25 +13,13 @@ namespace shard
     class SHARD_API ConstructorSymbol : public MethodSymbol
     {
     public:
-        inline ConstructorSymbol(std::wstring name) : MethodSymbol(name)
-        {
-            // hehe
-            SyntaxKind* pKind = const_cast<SyntaxKind*>(&Kind);
-            *pKind = SyntaxKind::ConstructorDeclaration;
-        }
+        inline ConstructorSymbol(std::wstring name)
+            : MethodSymbol(name, SyntaxKind::ConstructorDeclaration) { }
 
-        inline ConstructorSymbol(std::wstring name, shard::StatementsBlockSyntax* body) : MethodSymbol(name, body)
+        inline ConstructorSymbol(std::wstring name, MethodSymbolDelegate delegate) : MethodSymbol(name, SyntaxKind::ConstructorDeclaration)
         {
-            // hehe
-            SyntaxKind* pKind = const_cast<SyntaxKind*>(&Kind);
-            *pKind = SyntaxKind::ConstructorDeclaration;
-        }
-
-        inline ConstructorSymbol(std::wstring name, MethodSymbolDelegate delegate) : MethodSymbol(name, delegate)
-        {
-            // hehe
-            SyntaxKind* pKind = const_cast<SyntaxKind*>(&Kind);
-            *pKind = SyntaxKind::ConstructorDeclaration;
+            FunctionPointer = delegate;
+            HandleType = MethodHandleType::External;
         }
 
         inline ConstructorSymbol(const ConstructorSymbol& other) = delete;

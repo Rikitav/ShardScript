@@ -14,11 +14,8 @@ namespace shard
 	class SHARD_API ClassSymbol : public TypeSymbol
 	{
 	public:
-		//std::vector<MethodSymbol*> Constructors;
-
 		inline ClassSymbol(const std::wstring& name) : TypeSymbol(name, SyntaxKind::ClassDeclaration)
 		{
-			//MemoryBytesSize += sizeof(unsigned long);
 			IsReferenceType = true;
 		}
 
@@ -26,10 +23,7 @@ namespace shard
 
 		inline virtual ~ClassSymbol() override
 		{
-			/*
-			for (MethodSymbol* ctor : Constructors)
-				delete ctor;
-			*/
+
 		}
 	};
 }
