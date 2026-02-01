@@ -44,10 +44,6 @@
 
 using namespace shard;
 
-using namespace shard;
-
-using namespace shard;
-
 static ObjectInstance* Gc_Info(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	std::wcout << "\nGarbage collector info dump" << std::endl;

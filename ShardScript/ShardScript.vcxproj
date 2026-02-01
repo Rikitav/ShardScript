@@ -143,7 +143,7 @@
     <ClCompile Include="src\syntax\nodes\Types\DelegateTypeSyntax.cpp" />
     <ClCompile Include="src\parsing\semantic\NamespaceTree.cpp" />
     <ClCompile Include="src\parsing\semantic\visiting\ScopeVisitor.cpp" />
-    <ClCompile Include="src\framework\FrameworkLoader.cpp" />
+    <ClCompile Include="src\runtime\framework\FrameworkLoader.cpp" />
     <ClCompile Include="src\syntax\nodes\Directives\UsingDirectiveSyntax.cpp" />
     <ClCompile Include="src\syntax\nodes\Types\ArrayTypeSyntax.cpp" />
     <ClCompile Include="src\syntax\SymbolFactory.cpp" />
@@ -166,7 +166,7 @@
     <ClCompile Include="src\parsing\semantic\SemanticScope.cpp" />
     <ClCompile Include="include\shard\syntax\nodes\ParametersListSyntax.h" />
     <ClCompile Include="include\shard\syntax\nodes\Directives\UsingDirectiveSyntax.h" />
-    <ClCompile Include="src\parsing\semantic\visiting\SyntaxVisitor.cpp" />
+    <ClCompile Include="src\SyntaxVisitor.cpp" />
     <ClCompile Include="src\parsing\SemanticAnalyzer.cpp" />
     <ClCompile Include="src\parsing\lexical\reading\FileReader.cpp" />
     <ClCompile Include="src\parsing\lexical\LexicalBuffer.cpp" />
@@ -183,16 +183,19 @@
     <ClCompile Include="src\syntax\symbols\TypeSymbol.cpp" />
     <ClCompile Include="src\syntax\SyntaxFacts.cpp" />
     <ClCompile Include="src\syntax\SyntaxHelpers.cpp" />
+    <ClCompile Include="src\Vector.cpp" />
     <ClInclude Include="include\shard\compilation\AbstractEmiter.h" />
     <ClInclude Include="include\shard\compilation\ByteCodeGenerator.h" />
     <ClInclude Include="include\shard\compilation\OperationCode.h" />
+    <ClInclude Include="include\shard\compilation\ProgramDisassembler.h" />
     <ClInclude Include="include\shard\compilation\ProgramVirtualImage.h" />
+    <ClInclude Include="include\shard\runtime\EvalStack.h" />
     <ClInclude Include="include\shard\runtime\framework\FrameworkModule.h" />
     <ClInclude Include="include\shard\parsing\LayoutGenerator.h" />
     <ClInclude Include="include\shard\runtime\framework\FrameworkLoader.h" />
     <ClInclude Include="include\shard\parsing\lexical\reading\SourceTextProvider.h" />
     <ClInclude Include="include\shard\parsing\SourceParser.h" />
-    <ClInclude Include="include\shard\runtime\CallFrameStack.h" />
+    <ClInclude Include="include\shard\runtime\CallStack.h" />
     <ClInclude Include="include\shard\runtime\VirtualMachine.h" />
     <ClInclude Include="include\shard\ShardScriptVersion.h" />
     <ClInclude Include="include\shard\syntax\nodes\TypeArgumentsListSyntax.h" />
@@ -221,7 +224,6 @@
     <ClInclude Include="include\shard\runtime\CallStackFrame.h" />
     <ClInclude Include="include\shard\runtime\PrimitiveMathModule.h" />
     <ClInclude Include="include\shard\ShardScriptAPI.h" />
-    <ClInclude Include="include\shard\ShardTypes.h" />
     <ClInclude Include="include\shard\parsing\analysis\Diagnostic.h" />
     <ClInclude Include="include\shard\parsing\analysis\DiagnosticsContext.h" />
     <ClInclude Include="include\shard\parsing\analysis\DiagnosticSeverity.h" />
