@@ -5,10 +5,11 @@
 
 namespace shard
 {
+	/*
 	template<typename T>
 	class SHARD_API Vector
 	{
-		std::vector<T> data;
+		std::vector<T> myVector;
 
 	public:
 		Vector() = default;
@@ -49,4 +50,5 @@ namespace shard
 		T* RawData();
 		const T* RawData() const;
 	};
+	*/
 }

@@ -6,8 +6,9 @@
 namespace shard
 {
 	// basically, a compiler
-	class AbstractEmmiter : SyntaxVisitor, ByteCodeGenerator
+	class AbstractEmmiter : SyntaxVisitor
 	{
+        ByteCodeGenerator& Generator;
 		MethodSymbol* GeneratingFor = nullptr;
 
 	public:

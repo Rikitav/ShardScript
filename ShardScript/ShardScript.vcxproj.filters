@@ -68,7 +68,7 @@
     <ClCompile Include="src\parsing\semantic\visiting\DeclarationCollector.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="src\parsing\semantic\visiting\SyntaxVisitor.cpp">
+    <ClCompile Include="src\SyntaxVisitor.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="src\syntax\SyntaxHelpers.cpp">
@@ -89,7 +89,7 @@
     <ClCompile Include="src\parsing\semantic\visiting\ExpressionBinder.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="src\framework\FrameworkLoader.cpp">
+    <ClCompile Include="src\runtime\framework\FrameworkLoader.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="src\syntax\nodes\Types\ArrayTypeSyntax.cpp">
@@ -153,6 +153,9 @@
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="src\parsing\SourceParser.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Vector.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
   </ItemGroup>
@@ -236,9 +239,6 @@
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="include\shard\ShardScriptAPI.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
-    <ClInclude Include="include\shard\ShardTypes.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="include\shard\parsing\lexical\reading\FileReader.h">
@@ -490,7 +490,7 @@
     <ClInclude Include="include\shard\syntax\symbols\LiteralSymbol.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="include\shard\runtime\CallFrameStack.h">
+    <ClInclude Include="include\shard\runtime\CallStack.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="include\shard\compilation\ByteCodeGenerator.h">
@@ -500,6 +500,12 @@
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="include\shard\parsing\lexical\reading\SourceTextProvider.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\runtime\EvalStack.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\compilation\ProgramDisassembler.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>
