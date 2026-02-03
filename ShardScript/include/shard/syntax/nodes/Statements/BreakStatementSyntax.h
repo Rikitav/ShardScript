@@ -11,7 +11,7 @@ namespace shard
 	class SHARD_API BreakStatementSyntax : public KeywordStatementSyntax
 	{
 	public:
-		inline BreakStatementSyntax(const SyntaxNode* parent) : KeywordStatementSyntax(SyntaxKind::BreakStatement, parent) {}
+		inline BreakStatementSyntax(SyntaxNode *const parent) : KeywordStatementSyntax(SyntaxKind::BreakStatement, parent) {}
 		inline BreakStatementSyntax(const BreakStatementSyntax& other) = delete;
 		inline virtual ~BreakStatementSyntax() {}
 	};

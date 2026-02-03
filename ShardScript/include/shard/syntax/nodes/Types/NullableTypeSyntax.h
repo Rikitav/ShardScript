@@ -15,7 +15,7 @@ namespace shard
 		TypeSyntax* UnderlayingType = nullptr;
 		SyntaxToken QuestionToken;
 
-		inline NullableTypeSyntax(TypeSyntax* underlaying, const SyntaxNode* parent)
+		inline NullableTypeSyntax(TypeSyntax* underlaying, SyntaxNode *const parent)
 			: TypeSyntax(SyntaxKind::NullableType, parent), UnderlayingType(underlaying) { }
 
 		inline NullableTypeSyntax(const NullableTypeSyntax& other) = delete;

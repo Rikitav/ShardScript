@@ -8,16 +8,16 @@ namespace shard
 	{
 	public:
 		const SyntaxKind Kind;
-		SyntaxNode* Parent;
+		SyntaxNode *const Parent;
 		
-		inline SyntaxNode(const SyntaxKind kind, const SyntaxNode* parent)
-			: Kind(kind), Parent((SyntaxNode*)parent) { }
+		inline SyntaxNode(const SyntaxKind kind, SyntaxNode *const parent)
+			: Kind(kind), Parent(parent) { }
 
 		inline SyntaxNode(const SyntaxNode& other) = delete;
 
 		inline virtual ~SyntaxNode()
 		{
-			Parent = nullptr;
+			*const_cast<SyntaxNode**>(&Parent) = nullptr;
 		}
 	};
 }

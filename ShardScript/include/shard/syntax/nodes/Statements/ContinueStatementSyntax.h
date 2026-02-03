@@ -11,7 +11,7 @@ namespace shard
 	class SHARD_API ContinueStatementSyntax : public KeywordStatementSyntax
 	{
 	public:
-		inline ContinueStatementSyntax(const SyntaxNode* parent) : KeywordStatementSyntax(SyntaxKind::ContinueStatement, parent) {}
+		inline ContinueStatementSyntax(SyntaxNode *const parent) : KeywordStatementSyntax(SyntaxKind::ContinueStatement, parent) {}
 		inline ContinueStatementSyntax(const ContinueStatementSyntax& other) = delete;
 
 		inline virtual ~ContinueStatementSyntax() {}

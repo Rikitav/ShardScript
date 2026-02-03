@@ -19,7 +19,7 @@ namespace shard
 		SyntaxToken CloseSquareToken;
 		int Rank = 1;
 
-		inline ArrayTypeSyntax(TypeSyntax* underlaying, const SyntaxNode* parent)
+		inline ArrayTypeSyntax(TypeSyntax* underlaying, SyntaxNode *const parent)
 			: TypeSyntax(SyntaxKind::ArrayType, parent), UnderlayingType(underlaying) { }
 
 		inline ArrayTypeSyntax(const ArrayTypeSyntax& other) = delete;

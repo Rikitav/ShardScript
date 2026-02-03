@@ -30,10 +30,10 @@ namespace shard
         AccessorDeclarationSyntax* Getter = nullptr;
         AccessorDeclarationSyntax* Setter = nullptr;
 
-        inline IndexatorDeclarationSyntax(const SyntaxNode* parent)
+        inline IndexatorDeclarationSyntax(SyntaxNode *const parent)
             : MemberDeclarationSyntax(SyntaxKind::IndexatorDeclaration, parent) { }
 
-        inline IndexatorDeclarationSyntax(shard::MemberDeclarationInfo& info, const SyntaxNode* parent) 
+        inline IndexatorDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) 
             : MemberDeclarationSyntax(SyntaxKind::IndexatorDeclaration, parent)
         {
             Modifiers = info.Modifiers;

@@ -11,10 +11,10 @@ namespace shard
 	class SHARD_API ClassDeclarationSyntax : public TypeDeclarationSyntax
 	{
 	public:
-		inline ClassDeclarationSyntax(const SyntaxNode* parent)
+		inline ClassDeclarationSyntax(SyntaxNode *const parent)
 			: TypeDeclarationSyntax(SyntaxKind::ClassDeclaration, parent) { }
 
-		inline ClassDeclarationSyntax(shard::MemberDeclarationInfo& info, const SyntaxNode* parent) : TypeDeclarationSyntax(SyntaxKind::ClassDeclaration, parent)
+		inline ClassDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) : TypeDeclarationSyntax(SyntaxKind::ClassDeclaration, parent)
 		{
 			Modifiers = info.Modifiers;
 			IdentifierToken = info.Identifier;

@@ -5,7 +5,7 @@
 
 using namespace shard;
 
-SyntaxSymbol* SemanticScope::Lookup(const std::wstring& name)
+SyntaxSymbol *const SemanticScope::Lookup(const std::wstring& name)
 {
     auto lookup = _symbols.find(name);
     if (lookup != _symbols.end())
@@ -17,7 +17,7 @@ SyntaxSymbol* SemanticScope::Lookup(const std::wstring& name)
     return nullptr;
 }
 
-void SemanticScope::DeclareSymbol(SyntaxSymbol* symbol)
+void SemanticScope::DeclareSymbol(SyntaxSymbol *const symbol)
 {
     if (symbol == nullptr)
         throw std::runtime_error("tried to declare nullptr symbol");
@@ -29,7 +29,7 @@ void SemanticScope::DeclareSymbol(SyntaxSymbol* symbol)
     _symbols[symbol->Name] = symbol;
 }
 
-void SemanticScope::RemoveSymbol(SyntaxSymbol* symbol)
+void SemanticScope::RemoveSymbol(SyntaxSymbol *const symbol)
 {
     _symbols.erase(symbol->Name);
 }

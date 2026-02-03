@@ -74,75 +74,75 @@ namespace shard
             : Table(model.Table), Namespaces(model.Namespaces), Diagnostics(diagnostics) { }
 
         template<typename T>
-        inline T* LookupSymbol(shard::SyntaxNode* node)
+        inline T *const LookupSymbol(shard::SyntaxNode *const node)
         {
-            return static_cast<T*>(Table->LookupSymbol(node));
+            return static_cast<T *const>(Table->LookupSymbol(node));
         }
 
 	public:
         virtual void VisitSyntaxTree(shard::SyntaxTree& tree);
-        virtual void VisitCompilationUnit(shard::CompilationUnitSyntax* node);
-        virtual void VisitUsingDirective(shard::UsingDirectiveSyntax* node);
+        virtual void VisitCompilationUnit(shard::CompilationUnitSyntax *const node);
+        virtual void VisitUsingDirective(shard::UsingDirectiveSyntax *const node);
 
-        virtual void VisitTypeDeclaration(shard::MemberDeclarationSyntax* node);
-        virtual void VisitNamespaceDeclaration(shard::NamespaceDeclarationSyntax* node);
-        virtual void VisitClassDeclaration(shard::ClassDeclarationSyntax* node);
-        virtual void VisitStructDeclaration(shard::StructDeclarationSyntax* node);
-        virtual void VisitDelegateDeclaration(shard::DelegateDeclarationSyntax* node);
+        virtual void VisitTypeDeclaration(shard::MemberDeclarationSyntax *const node);
+        virtual void VisitNamespaceDeclaration(shard::NamespaceDeclarationSyntax *const node);
+        virtual void VisitClassDeclaration(shard::ClassDeclarationSyntax *const node);
+        virtual void VisitStructDeclaration(shard::StructDeclarationSyntax *const node);
+        virtual void VisitDelegateDeclaration(shard::DelegateDeclarationSyntax *const node);
 
-        virtual void VisitMemberDeclaration(shard::MemberDeclarationSyntax* node);
-        virtual void VisitMethodDeclaration(shard::MethodDeclarationSyntax* node);
-        virtual void VisitConstructorDeclaration(shard::ConstructorDeclarationSyntax* node);
-        virtual void VisitFieldDeclaration(shard::FieldDeclarationSyntax* node);
-        virtual void VisitPropertyDeclaration(shard::PropertyDeclarationSyntax* node);
-        virtual void VisitIndexatorDeclaration(shard::IndexatorDeclarationSyntax* node);
-		virtual void VisitAccessorDeclaration(shard::AccessorDeclarationSyntax* node);
+        virtual void VisitMemberDeclaration(shard::MemberDeclarationSyntax *const node);
+        virtual void VisitMethodDeclaration(shard::MethodDeclarationSyntax *const node);
+        virtual void VisitConstructorDeclaration(shard::ConstructorDeclarationSyntax *const node);
+        virtual void VisitFieldDeclaration(shard::FieldDeclarationSyntax *const node);
+        virtual void VisitPropertyDeclaration(shard::PropertyDeclarationSyntax *const node);
+        virtual void VisitIndexatorDeclaration(shard::IndexatorDeclarationSyntax *const node);
+		virtual void VisitAccessorDeclaration(shard::AccessorDeclarationSyntax *const node);
 
-        virtual void VisitStatementsBlock(shard::StatementsBlockSyntax* node);
-        virtual void VisitStatement(shard::StatementSyntax* node);
-        virtual void VisitExpressionStatement(shard::ExpressionStatementSyntax* node);
-        virtual void VisitVariableStatement(shard::VariableStatementSyntax* node);
-        virtual void VisitReturnStatement(shard::ReturnStatementSyntax* node);
-        virtual void VisitThrowStatement(shard::ThrowStatementSyntax* node);
-        virtual void VisitBreakStatement(shard::BreakStatementSyntax* node);
-        virtual void VisitContinueStatement(shard::ContinueStatementSyntax* node);
+        virtual void VisitStatementsBlock(shard::StatementsBlockSyntax *const node);
+        virtual void VisitStatement(shard::StatementSyntax *const node);
+        virtual void VisitExpressionStatement(shard::ExpressionStatementSyntax *const node);
+        virtual void VisitVariableStatement(shard::VariableStatementSyntax *const node);
+        virtual void VisitReturnStatement(shard::ReturnStatementSyntax *const node);
+        virtual void VisitThrowStatement(shard::ThrowStatementSyntax *const node);
+        virtual void VisitBreakStatement(shard::BreakStatementSyntax *const node);
+        virtual void VisitContinueStatement(shard::ContinueStatementSyntax *const node);
 
-        virtual void VisitWhileStatement(shard::WhileStatementSyntax* node);
-        virtual void VisitForStatement(shard::ForStatementSyntax* node);
-        virtual void VisitUntilStatement(shard::UntilStatementSyntax* node);
+        virtual void VisitWhileStatement(shard::WhileStatementSyntax *const node);
+        virtual void VisitForStatement(shard::ForStatementSyntax *const node);
+        virtual void VisitUntilStatement(shard::UntilStatementSyntax *const node);
 
-        virtual void VisitConditionalClause(shard::ConditionalClauseBaseSyntax* node);
-        virtual void VisitIfStatement(shard::IfStatementSyntax* node);
-        virtual void VisitUnlessStatement(shard::UnlessStatementSyntax* node);
-        virtual void VisitElseStatement(shard::ElseStatementSyntax* node);
+        virtual void VisitConditionalClause(shard::ConditionalClauseBaseSyntax *const node);
+        virtual void VisitIfStatement(shard::IfStatementSyntax *const node);
+        virtual void VisitUnlessStatement(shard::UnlessStatementSyntax *const node);
+        virtual void VisitElseStatement(shard::ElseStatementSyntax *const node);
 
-        virtual void VisitExpression(shard::ExpressionSyntax* node);
-        virtual void VisitLiteralExpression(shard::LiteralExpressionSyntax* node);
-        virtual void VisitBinaryExpression(shard::BinaryExpressionSyntax* node);
-        virtual void VisitUnaryExpression(shard::UnaryExpressionSyntax* node);
-        virtual void VisitObjectCreationExpression(shard::ObjectExpressionSyntax* node);
-        virtual void VisitCollectionExpression(shard::CollectionExpressionSyntax* node);
-        virtual void VisitLambdaExpression(shard::LambdaExpressionSyntax* node);
-        virtual void VisitTernaryExpression(shard::TernaryExpressionSyntax* node);
+        virtual void VisitExpression(shard::ExpressionSyntax *const node);
+        virtual void VisitLiteralExpression(shard::LiteralExpressionSyntax *const node);
+        virtual void VisitBinaryExpression(shard::BinaryExpressionSyntax *const node);
+        virtual void VisitUnaryExpression(shard::UnaryExpressionSyntax *const node);
+        virtual void VisitObjectCreationExpression(shard::ObjectExpressionSyntax *const node);
+        virtual void VisitCollectionExpression(shard::CollectionExpressionSyntax *const node);
+        virtual void VisitLambdaExpression(shard::LambdaExpressionSyntax *const node);
+        virtual void VisitTernaryExpression(shard::TernaryExpressionSyntax *const node);
 
-        virtual void VisitInvocationExpression(shard::InvokationExpressionSyntax* node);
-        virtual void VisitMemberAccessExpression(shard::MemberAccessExpressionSyntax* node);
-        virtual void VisitIndexatorExpression(shard::IndexatorExpressionSyntax* node);
+        virtual void VisitInvocationExpression(shard::InvokationExpressionSyntax *const node);
+        virtual void VisitMemberAccessExpression(shard::MemberAccessExpressionSyntax *const node);
+        virtual void VisitIndexatorExpression(shard::IndexatorExpressionSyntax *const node);
 
-        virtual void VisitArgumentsList(shard::ArgumentsListSyntax* node);
-        virtual void VisitArgument(shard::ArgumentSyntax* node);
-        virtual void VisitParametersList(shard::ParametersListSyntax* node);
-        virtual void VisitParameter(shard::ParameterSyntax* node);
-        virtual void VisitIndexatorList(shard::IndexatorListSyntax* node);
-        virtual void VisitTypeParametersList(shard::TypeParametersListSyntax* node);
-        virtual void VisitTypeArgumentsList(shard::TypeArgumentsListSyntax* node);
+        virtual void VisitArgumentsList(shard::ArgumentsListSyntax *const node);
+        virtual void VisitArgument(shard::ArgumentSyntax *const node);
+        virtual void VisitParametersList(shard::ParametersListSyntax *const node);
+        virtual void VisitParameter(shard::ParameterSyntax *const node);
+        virtual void VisitIndexatorList(shard::IndexatorListSyntax *const node);
+        virtual void VisitTypeParametersList(shard::TypeParametersListSyntax *const node);
+        virtual void VisitTypeArgumentsList(shard::TypeArgumentsListSyntax *const node);
 
-        virtual void VisitType(shard::TypeSyntax* node);
-        virtual void VisitPredefinedType(shard::PredefinedTypeSyntax* node);
-        virtual void VisitIdentifierNameType(shard::IdentifierNameTypeSyntax* node);
-        virtual void VisitArrayType(shard::ArrayTypeSyntax* node);
-        virtual void VisitNullableType(shard::NullableTypeSyntax* node);
-        virtual void VisitGenericType(shard::GenericTypeSyntax* node);
-        virtual void VisitDelegateType(shard::DelegateTypeSyntax* node);
+        virtual void VisitType(shard::TypeSyntax *const node);
+        virtual void VisitPredefinedType(shard::PredefinedTypeSyntax *const node);
+        virtual void VisitIdentifierNameType(shard::IdentifierNameTypeSyntax *const node);
+        virtual void VisitArrayType(shard::ArrayTypeSyntax *const node);
+        virtual void VisitNullableType(shard::NullableTypeSyntax *const node);
+        virtual void VisitGenericType(shard::GenericTypeSyntax *const node);
+        virtual void VisitDelegateType(shard::DelegateTypeSyntax *const node);
 	};
 }

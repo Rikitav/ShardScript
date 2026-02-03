@@ -13,18 +13,18 @@ namespace shard
 	public:
 		std::unordered_map<std::wstring, shard::SyntaxSymbol*> _symbols;
 	
-		const SemanticScope* Parent;
-		const shard::SyntaxSymbol* Owner;
+		SemanticScope *const Parent;
+		shard::SyntaxSymbol *const Owner;
 		NamespaceNode* Namespace = nullptr;
 
 		bool ReturnFound = false;
 		bool ReturnsAnything = false;
 
-		inline SemanticScope(const shard::SyntaxSymbol* owner, SemanticScope* parent = nullptr)
+		inline SemanticScope(shard::SyntaxSymbol *const owner, SemanticScope *const parent)
 			: Owner(owner), Parent(parent) { }
 
-		shard::SyntaxSymbol* Lookup(const std::wstring& name);
-		void DeclareSymbol(shard::SyntaxSymbol* symbol);
-		void RemoveSymbol(shard::SyntaxSymbol* symbol);
+		shard::SyntaxSymbol *const Lookup(const std::wstring& name);
+		void DeclareSymbol(shard::SyntaxSymbol *const symbol);
+		void RemoveSymbol(shard::SyntaxSymbol *const symbol);
 	};
 }

@@ -22,10 +22,10 @@ namespace shard
 	{
 	public:
 		SyntaxToken DelimeterToken;
-		const ExpressionSyntax* PreviousExpression = nullptr;
+		ExpressionSyntax *const PreviousExpression = nullptr;
 		bool IsStaticContext = true;
 
-		inline LinkedExpressionNode(const SyntaxKind kind, const ExpressionSyntax* previous, const SyntaxNode* parent)
+		inline LinkedExpressionNode(const SyntaxKind kind, ExpressionSyntax *const previous, SyntaxNode *const parent)
 			: ExpressionSyntax(kind, parent), PreviousExpression(previous) { }
 
 		inline LinkedExpressionNode(const LinkedExpressionNode&) = delete;
@@ -40,24 +40,26 @@ namespace shard
 	class SHARD_API MemberAccessExpressionSyntax : public LinkedExpressionNode
 	{
 	public:
-		shard::VariableSymbol* VariableSymbol = nullptr;
-		shard::FieldSymbol* FieldSymbol = nullptr;
-		shard::DelegateTypeSymbol* DelegateSymbol = nullptr;
-		shard::PropertySymbol* PropertySymbol = nullptr;
+		shard::ParameterSymbol* ToParameter = nullptr;
+		shard::VariableSymbol* ToVariable = nullptr;
+		shard::FieldSymbol* ToField = nullptr;
+		shard::PropertySymbol* ToProperty = nullptr;
+		shard::DelegateTypeSymbol* ToDelegate = nullptr;
 
 		const SyntaxToken IdentifierToken;
 
-		inline MemberAccessExpressionSyntax(SyntaxToken identifier, ExpressionSyntax* previous, SyntaxNode* parent)
+		inline MemberAccessExpressionSyntax(SyntaxToken identifier, ExpressionSyntax* previous, SyntaxNode *const parent)
 			: LinkedExpressionNode(SyntaxKind::MemberAccessExpression, previous, parent), IdentifierToken(identifier) { }
 
 		inline MemberAccessExpressionSyntax(const MemberAccessExpressionSyntax&) = delete;
 
 		inline virtual ~MemberAccessExpressionSyntax()
 		{
-			VariableSymbol = nullptr;
-			FieldSymbol = nullptr;
-			DelegateSymbol = nullptr;
-			PropertySymbol = nullptr;
+			ToParameter = nullptr;
+			ToVariable = nullptr;
+			ToField = nullptr;
+			ToProperty = nullptr;
+			ToDelegate = nullptr;
 		}
 	};
 
@@ -68,7 +70,7 @@ namespace shard
 		ArgumentsListSyntax* ArgumentsList = nullptr;
 		shard::MethodSymbol* Symbol = nullptr;
 
-		inline InvokationExpressionSyntax(SyntaxToken identifier, ExpressionSyntax* previous, SyntaxNode* parent)
+		inline InvokationExpressionSyntax(SyntaxToken identifier, ExpressionSyntax* previous, SyntaxNode *const parent)
 			: LinkedExpressionNode(SyntaxKind::InvokationExpression, previous, parent), IdentifierToken(identifier) { }
 
 		inline InvokationExpressionSyntax(const InvokationExpressionSyntax&) = delete;
@@ -85,7 +87,7 @@ namespace shard
 		IndexatorListSyntax* IndexatorList = nullptr;
 		shard::IndexatorSymbol* IndexatorSymbol = nullptr;
 
-		inline IndexatorExpressionSyntax(SyntaxToken identifier, ExpressionSyntax* previous, SyntaxNode* parent)
+		inline IndexatorExpressionSyntax(SyntaxToken identifier, ExpressionSyntax* previous, SyntaxNode *const parent)
 			: MemberAccessExpressionSyntax(identifier, previous, parent)
 		{
 			// hehe

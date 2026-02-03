@@ -17,10 +17,10 @@ namespace shard
 	public:
 		std::vector<SyntaxToken> IdentifierTokens;
 
-		inline NamespaceDeclarationSyntax(const SyntaxNode* parent)
+		inline NamespaceDeclarationSyntax(SyntaxNode *const parent)
 			: TypeDeclarationSyntax(SyntaxKind::NamespaceDeclaration, parent) { }
 
-		inline NamespaceDeclarationSyntax(shard::MemberDeclarationInfo& info, const SyntaxNode* parent) : TypeDeclarationSyntax(SyntaxKind::NamespaceDeclaration, parent)
+		inline NamespaceDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) : TypeDeclarationSyntax(SyntaxKind::NamespaceDeclaration, parent)
 		{
 			Modifiers = info.Modifiers;
 			IdentifierToken = info.Identifier;

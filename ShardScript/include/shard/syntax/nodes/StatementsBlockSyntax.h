@@ -16,7 +16,7 @@ namespace shard
 	public:
 		std::vector<StatementSyntax*> Statements;
 
-		inline StatementsBlockSyntax(const SyntaxNode* parent)
+		inline StatementsBlockSyntax(SyntaxNode *const parent)
 			: BodyDeclarationSyntax(SyntaxKind::StatementsBlock, parent) { }
 
 		inline StatementsBlockSyntax(const StatementsBlockSyntax& other) = delete;

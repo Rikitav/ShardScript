@@ -19,7 +19,7 @@ namespace shard
 		SyntaxToken AssignToken;
 		ExpressionSyntax* Expression = nullptr;
 
-		inline VariableStatementSyntax(TypeSyntax* type, SyntaxToken name, SyntaxToken assignOp, ExpressionSyntax* expression, const SyntaxNode* parent)
+		inline VariableStatementSyntax(TypeSyntax* type, SyntaxToken name, SyntaxToken assignOp, ExpressionSyntax* expression, SyntaxNode *const parent)
 			: StatementSyntax(SyntaxKind::VariableStatement, parent), Type(type), IdentifierToken(name), AssignToken(assignOp), Expression(expression) { }
 
 		inline VariableStatementSyntax(const VariableStatementSyntax& other) = delete;

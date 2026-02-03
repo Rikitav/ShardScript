@@ -27,25 +27,25 @@ namespace shard
 	class SHARD_API DeclarationCollector : public SyntaxVisitor, ScopeVisitor
 	{
 	protected:
-		void Declare(shard::SyntaxSymbol* symbol) override;
+		void Declare(shard::SyntaxSymbol *const symbol) override;
 
 	public:
 		inline DeclarationCollector(shard::SemanticModel& model, shard::DiagnosticsContext& diagnostics)
 			: SyntaxVisitor(model, diagnostics), ScopeVisitor(model.Table) { }
 
-		void VisitCompilationUnit(shard::CompilationUnitSyntax* node) override;
+		void VisitCompilationUnit(shard::CompilationUnitSyntax *const node) override;
 
-		void VisitNamespaceDeclaration(shard::NamespaceDeclarationSyntax* node) override;
-		void VisitClassDeclaration(shard::ClassDeclarationSyntax* node) override;
-		void VisitStructDeclaration(shard::StructDeclarationSyntax* node) override;
-		void VisitDelegateDeclaration(shard::DelegateDeclarationSyntax* node) override;
+		void VisitNamespaceDeclaration(shard::NamespaceDeclarationSyntax *const node) override;
+		void VisitClassDeclaration(shard::ClassDeclarationSyntax *const node) override;
+		void VisitStructDeclaration(shard::StructDeclarationSyntax *const node) override;
+		void VisitDelegateDeclaration(shard::DelegateDeclarationSyntax *const node) override;
 
-		void VisitMethodDeclaration(shard::MethodDeclarationSyntax* node) override;
-		void VisitConstructorDeclaration(shard::ConstructorDeclarationSyntax* node) override;
-		void VisitFieldDeclaration(shard::FieldDeclarationSyntax* node) override;
-		void VisitPropertyDeclaration(shard::PropertyDeclarationSyntax* node) override;
-		void VisitIndexatorDeclaration(shard::IndexatorDeclarationSyntax* node) override;
-		void VisitAccessorDeclaration(shard::AccessorDeclarationSyntax* node) override;
-		void VisitVariableStatement(shard::VariableStatementSyntax* node) override;
+		void VisitMethodDeclaration(shard::MethodDeclarationSyntax *const node) override;
+		void VisitConstructorDeclaration(shard::ConstructorDeclarationSyntax *const node) override;
+		void VisitFieldDeclaration(shard::FieldDeclarationSyntax *const node) override;
+		void VisitPropertyDeclaration(shard::PropertyDeclarationSyntax *const node) override;
+		void VisitIndexatorDeclaration(shard::IndexatorDeclarationSyntax *const node) override;
+		void VisitAccessorDeclaration(shard::AccessorDeclarationSyntax *const node) override;
+		void VisitVariableStatement(shard::VariableStatementSyntax *const node) override;
 	};
 }

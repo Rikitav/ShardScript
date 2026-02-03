@@ -59,25 +59,25 @@
 //#include <shard/syntax/nodes/Types/NullableTypeSyntax.h>
 #include <shard/syntax/nodes/Types/PredefinedTypeSyntax.h>
 #include <shard/syntax/nodes/Types/GenericTypeSyntax.h>
+#include <shard/syntax/nodes/Types/DelegateTypeSyntax.h>
 
 #include <vector>
-#include <set>
-#include <initializer_list>
 #include <stdexcept>
+#include <initializer_list>
+#include <set>
 #include <new>
-#include <shard/syntax/nodes/Types/DelegateTypeSyntax.h>
 
 using namespace shard;
 
 void SourceParser::FromSourceProvider(SyntaxTree& syntaxTree, SourceProvider& reader)
 {
-	CompilationUnitSyntax* unit = ReadCompilationUnit(reader);
+	shard::CompilationUnitSyntax *const unit = ReadCompilationUnit(reader);
 	syntaxTree.CompilationUnits.push_back(unit);
 }
 
-CompilationUnitSyntax* SourceParser::ReadCompilationUnit(SourceProvider& reader)
+shard::CompilationUnitSyntax *const SourceParser::ReadCompilationUnit(SourceProvider& reader)
 {
-	CompilationUnitSyntax* unit = new CompilationUnitSyntax();
+	shard::CompilationUnitSyntax *const unit = new CompilationUnitSyntax();
 
 	while (reader.CanConsume())
 	{
@@ -86,16 +86,16 @@ CompilationUnitSyntax* SourceParser::ReadCompilationUnit(SourceProvider& reader)
 		{
 			case TokenType::UsingKeyword:
 			{
-				UsingDirectiveSyntax* pDirective = ReadUsingDirective(reader, unit);
-				pDirective->Parent = unit;
+				shard::UsingDirectiveSyntax *const pDirective = ReadUsingDirective(reader, unit);
+				*const_cast<shard::SyntaxNode**>(&pDirective->Parent) = unit;
 				unit->Usings.push_back(pDirective);
 				break;
 			}
 
 			case TokenType::NamespaceKeyword:
 			{
-				NamespaceDeclarationSyntax* pNamespace = ReadNamespaceDeclaration(reader, unit);
-				pNamespace->Parent = unit;
+				shard::NamespaceDeclarationSyntax *const pNamespace = ReadNamespaceDeclaration(reader, unit);
+				*const_cast<shard::SyntaxNode**>(&pNamespace->Parent) = unit;
 				unit->Members.push_back(pNamespace);
 				break;
 			}
@@ -105,8 +105,8 @@ CompilationUnitSyntax* SourceParser::ReadCompilationUnit(SourceProvider& reader)
 				SyntaxToken peek = reader.Peek();
 				if (IsMemberDeclaration(token.Type, peek.Type))
 				{
-					MemberDeclarationSyntax* pMember = ReadMemberDeclaration(reader, unit);
-					pMember->Parent = unit;
+					shard::MemberDeclarationSyntax *const pMember = ReadMemberDeclaration(reader, unit);
+					*const_cast<shard::SyntaxNode**>(&pMember->Parent) = unit;
 					unit->Members.push_back(pMember);
 					break;
 				}
@@ -121,9 +121,9 @@ CompilationUnitSyntax* SourceParser::ReadCompilationUnit(SourceProvider& reader)
 	return unit;
 }
 
-UsingDirectiveSyntax* SourceParser::ReadUsingDirective(SourceProvider& reader, SyntaxNode* parent)
+shard::UsingDirectiveSyntax *const SourceParser::ReadUsingDirective(SourceProvider& reader, shard::SyntaxNode *const parent)
 {
-	UsingDirectiveSyntax* syntax = new UsingDirectiveSyntax(parent);
+	shard::UsingDirectiveSyntax *const syntax = new UsingDirectiveSyntax(parent);
 	syntax->UsingKeywordToken = Expect(reader, TokenType::UsingKeyword, L"Exprected 'using' keyword");
 
 	while (reader.CanConsume())
@@ -161,9 +161,9 @@ UsingDirectiveSyntax* SourceParser::ReadUsingDirective(SourceProvider& reader, S
 	return syntax;
 }
 
-NamespaceDeclarationSyntax* SourceParser::ReadNamespaceDeclaration(SourceProvider& reader, SyntaxNode* parent)
+shard::NamespaceDeclarationSyntax *const SourceParser::ReadNamespaceDeclaration(SourceProvider& reader, shard::SyntaxNode *const parent)
 {
-	NamespaceDeclarationSyntax* syntax = new NamespaceDeclarationSyntax(parent);
+	shard::NamespaceDeclarationSyntax *const syntax = new NamespaceDeclarationSyntax(parent);
 	syntax->DeclareToken = Expect(reader, TokenType::NamespaceKeyword, L"Expected 'namespace' keyword");
 
 	if (!TryMatch(reader, { TokenType::Identifier }, L"Expected namespace identifier", 5))
@@ -201,7 +201,7 @@ NamespaceDeclarationSyntax* SourceParser::ReadNamespaceDeclaration(SourceProvide
 	return syntax;
 }
 
-MemberDeclarationSyntax* SourceParser::ReadMemberDeclaration(SourceProvider& reader, SyntaxNode* parent)
+shard::MemberDeclarationSyntax *const SourceParser::ReadMemberDeclaration(SourceProvider& reader, shard::SyntaxNode *const parent)
 {
 	// Reading identifiers
 	MemberDeclarationInfo info;
@@ -339,7 +339,7 @@ MemberDeclarationSyntax* SourceParser::ReadMemberDeclaration(SourceProvider& rea
 			// If we couldn't recover, try to continue anyway
 		}
 
-		TypeDeclarationSyntax* type = make_type(info, parent);
+		shard::TypeDeclarationSyntax *const type = make_type(info, parent);
 		ReadTypeBody(reader, type);
 		return type;
 	}
@@ -348,9 +348,9 @@ MemberDeclarationSyntax* SourceParser::ReadMemberDeclaration(SourceProvider& rea
 	return nullptr;
 }
 
-ClassDeclarationSyntax* SourceParser::ReadClassDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode* parent)
+shard::ClassDeclarationSyntax *const SourceParser::ReadClassDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, shard::SyntaxNode *const parent)
 {
-	ClassDeclarationSyntax* syntax = new ClassDeclarationSyntax(info, parent);
+	shard::ClassDeclarationSyntax *const syntax = new ClassDeclarationSyntax(info, parent);
 
 	if (TryMatch(reader, { TokenType::Identifier }, L"Expected class identifier", 5))
 	{
@@ -387,9 +387,9 @@ ClassDeclarationSyntax* SourceParser::ReadClassDeclaration(SourceProvider& reade
 	return syntax;
 }
 
-StructDeclarationSyntax* SourceParser::ReadStructDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode* parent)
+shard::StructDeclarationSyntax *const SourceParser::ReadStructDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, shard::SyntaxNode *const parent)
 {
-	StructDeclarationSyntax* syntax = new StructDeclarationSyntax(info, parent);
+	shard::StructDeclarationSyntax *const syntax = new StructDeclarationSyntax(info, parent);
 
 	if (TryMatch(reader, { TokenType::Identifier }, L"Expected struct identifier", 5))
 	{
@@ -426,9 +426,9 @@ StructDeclarationSyntax* SourceParser::ReadStructDeclaration(SourceProvider& rea
 	return syntax;
 }
 
-ConstructorDeclarationSyntax* SourceParser::ReadConstructorDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode* parent)
+shard::ConstructorDeclarationSyntax *const SourceParser::ReadConstructorDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, shard::SyntaxNode *const parent)
 {
-	ConstructorDeclarationSyntax* syntax = new ConstructorDeclarationSyntax(info, parent);
+	shard::ConstructorDeclarationSyntax *const syntax = new ConstructorDeclarationSyntax(info, parent);
 	syntax->Params = ReadParametersList(reader, syntax);
 
 	SyntaxToken current = reader.Current();
@@ -443,9 +443,9 @@ ConstructorDeclarationSyntax* SourceParser::ReadConstructorDeclaration(SourcePro
 	return syntax;
 }
 
-MethodDeclarationSyntax* SourceParser::ReadMethodDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode* parent)
+shard::MethodDeclarationSyntax *const SourceParser::ReadMethodDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, shard::SyntaxNode *const parent)
 {
-	MethodDeclarationSyntax* syntax = new MethodDeclarationSyntax(info, parent);
+	shard::MethodDeclarationSyntax *const syntax = new MethodDeclarationSyntax(info, parent);
 	syntax->Params = ReadParametersList(reader, syntax);
 
 	SyntaxToken current = reader.Current();
@@ -460,9 +460,9 @@ MethodDeclarationSyntax* SourceParser::ReadMethodDeclaration(SourceProvider& rea
 	return syntax;
 }
 
-FieldDeclarationSyntax* SourceParser::ReadFieldDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode* parent)
+shard::FieldDeclarationSyntax *const SourceParser::ReadFieldDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, shard::SyntaxNode *const parent)
 {
-	FieldDeclarationSyntax* syntax = new FieldDeclarationSyntax(info, parent);
+	shard::FieldDeclarationSyntax *const syntax = new FieldDeclarationSyntax(info, parent);
 
 	SyntaxToken current = reader.Current();
 	switch (current.Type)
@@ -487,17 +487,17 @@ FieldDeclarationSyntax* SourceParser::ReadFieldDeclaration(SourceProvider& reade
 	return nullptr;
 }
 
-DelegateDeclarationSyntax* SourceParser::ReadDelegateDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode* parent)
+shard::DelegateDeclarationSyntax *const SourceParser::ReadDelegateDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, shard::SyntaxNode *const parent)
 {
-	DelegateDeclarationSyntax* syntax = new DelegateDeclarationSyntax(info, parent);
+	shard::DelegateDeclarationSyntax *const syntax = new DelegateDeclarationSyntax(info, parent);
 	syntax->Params = ReadParametersList(reader, syntax);
 	syntax->Semicolon = Expect(reader, TokenType::Semicolon, L"Expected ';' token");
 	return syntax;
 }
 
-PropertyDeclarationSyntax* SourceParser::ReadPropertyDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode* parent)
+shard::PropertyDeclarationSyntax *const SourceParser::ReadPropertyDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, shard::SyntaxNode *const parent)
 {
-	PropertyDeclarationSyntax* property = new PropertyDeclarationSyntax(info, parent);
+	shard::PropertyDeclarationSyntax *const property = new PropertyDeclarationSyntax(info, parent);
 	property->OpenBraceToken = Expect(reader, TokenType::OpenBrace, L"Expected '{' for property accessors");
 
 	while (reader.CanConsume())
@@ -520,7 +520,7 @@ PropertyDeclarationSyntax* SourceParser::ReadPropertyDeclaration(SourceProvider&
 
 		if (IsModifier(current.Type) || current.Type == TokenType::GetKeyword || current.Type == TokenType::SetKeyword)
 		{
-			AccessorDeclarationSyntax* accessor = ReadAccessorDeclaration(reader, property);
+			shard::AccessorDeclarationSyntax *const accessor = ReadAccessorDeclaration(reader, property);
 
 			if (accessor->KeywordToken.Type == TokenType::GetKeyword)
 			{
@@ -551,9 +551,9 @@ PropertyDeclarationSyntax* SourceParser::ReadPropertyDeclaration(SourceProvider&
 	return property;
 }
 
-IndexatorDeclarationSyntax* SourceParser::ReadIndexatorDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode* parent)
+shard::IndexatorDeclarationSyntax *const SourceParser::ReadIndexatorDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, shard::SyntaxNode *const parent)
 {
-	IndexatorDeclarationSyntax* syntax = new IndexatorDeclarationSyntax(info, parent);
+	shard::IndexatorDeclarationSyntax *const syntax = new IndexatorDeclarationSyntax(info, parent);
 	//syntax->IndexKeyword = Expect(reader, TokenType::IndexerKeyword, L"Expected 'index' keyword");
 	syntax->IndexKeyword = info.Identifier;
 	syntax->Parameters = ReadIndexerParametersList(reader, syntax);
@@ -579,7 +579,7 @@ IndexatorDeclarationSyntax* SourceParser::ReadIndexatorDeclaration(SourceProvide
 
 		if (IsModifier(current.Type) || current.Type == TokenType::GetKeyword || current.Type == TokenType::SetKeyword)
 		{
-			AccessorDeclarationSyntax* accessor = ReadAccessorDeclaration(reader, syntax);
+			shard::AccessorDeclarationSyntax *const accessor = ReadAccessorDeclaration(reader, syntax);
 
 			if (accessor->KeywordToken.Type == TokenType::GetKeyword)
 			{
@@ -610,9 +610,9 @@ IndexatorDeclarationSyntax* SourceParser::ReadIndexatorDeclaration(SourceProvide
 	return syntax;
 }
 
-AccessorDeclarationSyntax* SourceParser::ReadAccessorDeclaration(SourceProvider& reader, SyntaxNode* parent)
+shard::AccessorDeclarationSyntax *const SourceParser::ReadAccessorDeclaration(SourceProvider& reader, shard::SyntaxNode *const parent)
 {
-	AccessorDeclarationSyntax* accessor = new AccessorDeclarationSyntax(parent);
+	shard::AccessorDeclarationSyntax *const accessor = new AccessorDeclarationSyntax(parent);
 
 	if (!reader.CanConsume())
 	{
@@ -740,9 +740,9 @@ std::vector<SyntaxToken> SourceParser::ReadMemberModifiers(SourceProvider& reade
 	return modifiers;
 }
 
-ParametersListSyntax* SourceParser::ReadIndexerParametersList(SourceProvider& reader, SyntaxNode* parent)
+shard::ParametersListSyntax *const SourceParser::ReadIndexerParametersList(SourceProvider& reader, shard::SyntaxNode *const parent)
 {
-	ParametersListSyntax* syntax = new ParametersListSyntax(parent);
+	shard::ParametersListSyntax *const syntax = new ParametersListSyntax(parent);
 	syntax->OpenToken = Expect(reader, TokenType::OpenSquare, L"Expected '[' token");
 
 	SyntaxToken checkCloser = reader.Current();
@@ -755,7 +755,7 @@ ParametersListSyntax* SourceParser::ReadIndexerParametersList(SourceProvider& re
 
 	while (reader.CanConsume())
 	{
-		TypeSyntax* type = ReadType(reader, syntax);
+		shard::TypeSyntax *const type = ReadType(reader, syntax);
 		SyntaxToken identifierToken;
 
 		if (!TryMatch(reader, { TokenType::Identifier }, L"Expected parameter name", 3))
@@ -783,7 +783,7 @@ ParametersListSyntax* SourceParser::ReadIndexerParametersList(SourceProvider& re
 			break;
 		}
 
-		ParameterSyntax* param = new ParameterSyntax(type, identifierToken, syntax);
+		shard::ParameterSyntax *const param = new ParameterSyntax(type, identifierToken, syntax);
 		syntax->Parameters.push_back(param);
 
 		// Try to match separator
@@ -805,9 +805,9 @@ ParametersListSyntax* SourceParser::ReadIndexerParametersList(SourceProvider& re
 	return syntax;
 }
 
-ParametersListSyntax* SourceParser::ReadParametersList(SourceProvider& reader, SyntaxNode* parent)
+shard::ParametersListSyntax *const SourceParser::ReadParametersList(SourceProvider& reader, shard::SyntaxNode *const parent)
 {
-	ParametersListSyntax* syntax = new ParametersListSyntax(parent);
+	shard::ParametersListSyntax *const syntax = new ParametersListSyntax(parent);
 	syntax->OpenToken = Expect(reader, TokenType::OpenCurl, L"Expected '(' token");
 
 	SyntaxToken checkCloser = reader.Current();
@@ -820,7 +820,7 @@ ParametersListSyntax* SourceParser::ReadParametersList(SourceProvider& reader, S
 
 	while (reader.CanConsume())
 	{
-		TypeSyntax* type = ReadType(reader, syntax);
+		shard::TypeSyntax *const type = ReadType(reader, syntax);
 		SyntaxToken identifierToken;
 
 		if (!TryMatch(reader, { TokenType::Identifier }, L"Expected parameter name", 3))
@@ -848,7 +848,7 @@ ParametersListSyntax* SourceParser::ReadParametersList(SourceProvider& reader, S
 			break;
 		}
 
-		ParameterSyntax* param = new ParameterSyntax(type, identifierToken, syntax);
+		shard::ParameterSyntax *const param = new ParameterSyntax(type, identifierToken, syntax);
 		syntax->Parameters.push_back(param);
 
 		// Try to match separator
@@ -870,9 +870,9 @@ ParametersListSyntax* SourceParser::ReadParametersList(SourceProvider& reader, S
 	return syntax;
 }
 
-TypeParametersListSyntax* SourceParser::ReadTypeParametersList(SourceProvider& reader, SyntaxNode* parent)
+shard::TypeParametersListSyntax *const SourceParser::ReadTypeParametersList(SourceProvider& reader, shard::SyntaxNode *const parent)
 {
-	TypeParametersListSyntax* syntax = new TypeParametersListSyntax(parent);
+	shard::TypeParametersListSyntax *const syntax = new TypeParametersListSyntax(parent);
 	syntax->OpenToken = Expect(reader, TokenType::LessOperator, L"Expected '<' token");
 
 	SyntaxToken checkCloser = reader.Current();
@@ -907,9 +907,9 @@ TypeParametersListSyntax* SourceParser::ReadTypeParametersList(SourceProvider& r
 	return syntax;
 }
 
-TypeArgumentsListSyntax* SourceParser::ReadTypeArgumentsList(SourceProvider& reader, SyntaxNode* parent)
+shard::TypeArgumentsListSyntax *const SourceParser::ReadTypeArgumentsList(SourceProvider& reader, shard::SyntaxNode *const parent)
 {
-	TypeArgumentsListSyntax* syntax = new TypeArgumentsListSyntax(parent);
+	shard::TypeArgumentsListSyntax *const syntax = new TypeArgumentsListSyntax(parent);
 	syntax->OpenToken = Expect(reader, TokenType::LessOperator, L"Expected '<' token");
 
 	SyntaxToken checkCloser = reader.Current();
@@ -922,7 +922,7 @@ TypeArgumentsListSyntax* SourceParser::ReadTypeArgumentsList(SourceProvider& rea
 
 	while (reader.CanConsume())
 	{
-		TypeSyntax* type = ReadType(reader, syntax);
+		shard::TypeSyntax *const type = ReadType(reader, syntax);
 		syntax->Types.push_back(type);
 
 		// Try to match separator with error recovery
@@ -944,7 +944,7 @@ TypeArgumentsListSyntax* SourceParser::ReadTypeArgumentsList(SourceProvider& rea
 	return syntax;
 }
 
-void SourceParser::ReadTypeBody(SourceProvider& reader, TypeDeclarationSyntax* syntax)
+void SourceParser::ReadTypeBody(SourceProvider& reader, shard::TypeDeclarationSyntax *const syntax)
 {
 	syntax->OpenBraceToken = Expect(reader, TokenType::OpenBrace, L"Expected '{'");
 
@@ -968,10 +968,10 @@ void SourceParser::ReadTypeBody(SourceProvider& reader, TypeDeclarationSyntax* s
 		SyntaxToken peek = reader.Peek();
 		if (IsMemberDeclaration(current.Type, peek.Type))
 		{
-			MemberDeclarationSyntax* pMember = ReadMemberDeclaration(reader, syntax);
+			shard::MemberDeclarationSyntax *const pMember = ReadMemberDeclaration(reader, syntax);
 			if (pMember != nullptr)
 			{
-				pMember->Parent = syntax;
+				*const_cast<shard::SyntaxNode**>(&pMember->Parent) = syntax;
 				syntax->Members.push_back(pMember);
 				continue; // Continue reading more members
 			}
@@ -996,9 +996,9 @@ void SourceParser::ReadTypeBody(SourceProvider& reader, TypeDeclarationSyntax* s
 	}
 }
 
-StatementsBlockSyntax* SourceParser::ReadStatementsBlock(SourceProvider& reader, SyntaxNode* parent)
+shard::StatementsBlockSyntax *const SourceParser::ReadStatementsBlock(SourceProvider& reader, shard::SyntaxNode *const parent)
 {
-	StatementsBlockSyntax* syntax = new StatementsBlockSyntax(parent);
+	shard::StatementsBlockSyntax *const syntax = new StatementsBlockSyntax(parent);
 
 	if (!reader.CanConsume())
 	{
@@ -1037,7 +1037,7 @@ StatementsBlockSyntax* SourceParser::ReadStatementsBlock(SourceProvider& reader,
 
 			if (IsKeyword(current.Type))
 			{
-				KeywordStatementSyntax* statement = ReadKeywordStatement(reader, syntax);
+				shard::KeywordStatementSyntax *const statement = ReadKeywordStatement(reader, syntax);
 				if (statement != nullptr)
 				{
 					syntax->Statements.push_back(statement);
@@ -1052,7 +1052,7 @@ StatementsBlockSyntax* SourceParser::ReadStatementsBlock(SourceProvider& reader,
 			}
 			else
 			{
-				StatementSyntax* statement = ReadStatement(reader, syntax);
+				shard::StatementSyntax *const statement = ReadStatement(reader, syntax);
 				if (statement != nullptr)
 				{
 					statement->SemicolonToken = Expect(reader, TokenType::Semicolon, L"Missing ';' token");
@@ -1073,13 +1073,13 @@ StatementsBlockSyntax* SourceParser::ReadStatementsBlock(SourceProvider& reader,
 		// Single statement block
 		if (IsKeyword(current.Type))
 		{
-			KeywordStatementSyntax* statement = ReadKeywordStatement(reader, syntax);
+			shard::KeywordStatementSyntax *const statement = ReadKeywordStatement(reader, syntax);
 			if (statement != nullptr)
 				syntax->Statements.push_back(statement);
 		}
 		else
 		{
-			StatementSyntax* statement = ReadStatement(reader, syntax);
+			shard::StatementSyntax *const statement = ReadStatement(reader, syntax);
 			if (statement != nullptr)
 			{
 				statement->SemicolonToken = Expect(reader, TokenType::Semicolon, L"Missing ';' token");
@@ -1091,7 +1091,7 @@ StatementsBlockSyntax* SourceParser::ReadStatementsBlock(SourceProvider& reader,
 	return syntax;
 }
 
-StatementSyntax* SourceParser::ReadStatement(SourceProvider& reader, SyntaxNode* parent)
+shard::StatementSyntax *const SourceParser::ReadStatement(SourceProvider& reader, shard::SyntaxNode *const parent)
 {
 	SyntaxToken current = reader.Current();
 	if (current.Type == TokenType::Semicolon)
@@ -1104,7 +1104,9 @@ StatementSyntax* SourceParser::ReadStatement(SourceProvider& reader, SyntaxNode*
 		SyntaxToken peek = reader.Peek();
 		if (IsType(current.Type, peek.Type))
 		{
-			TypeSyntax* type = ReadType(reader, parent);
+			// TODO: Add indexator access checking
+
+			shard::TypeSyntax *const type = ReadType(reader, parent);
 			if (reader.CanPeek())
 			{
 				current = reader.Current();
@@ -1115,18 +1117,18 @@ StatementSyntax* SourceParser::ReadStatement(SourceProvider& reader, SyntaxNode*
 					reader.Consume(); // Id
 					reader.Consume(); // =
 
-					ExpressionSyntax* expr = ReadExpression(reader, parent, 0);
+					shard::ExpressionSyntax *const expr = ReadExpression(reader, parent, 0);
 					return new VariableStatementSyntax(type, current, peek, expr, parent);
 				}
 			}
 		}
 	}
 
-	ExpressionSyntax* expression = ReadExpression(reader, parent, 0);
+	shard::ExpressionSyntax *const expression = ReadExpression(reader, parent, 0);
 	return new ExpressionStatementSyntax(expression, parent);
 }
 
-KeywordStatementSyntax* SourceParser::ReadKeywordStatement(SourceProvider& reader, SyntaxNode* parent)
+shard::KeywordStatementSyntax *const SourceParser::ReadKeywordStatement(SourceProvider& reader, shard::SyntaxNode *const parent)
 {
 	if (!reader.CanConsume())
 		return nullptr;
@@ -1166,9 +1168,9 @@ KeywordStatementSyntax* SourceParser::ReadKeywordStatement(SourceProvider& reade
 	}
 }
 
-ReturnStatementSyntax* SourceParser::ReadReturnStatement(SourceProvider& reader, SyntaxNode* parent)
+shard::ReturnStatementSyntax *const SourceParser::ReadReturnStatement(SourceProvider& reader, shard::SyntaxNode *const parent)
 {
-	ReturnStatementSyntax* syntax = new ReturnStatementSyntax(parent);
+	shard::ReturnStatementSyntax *const syntax = new ReturnStatementSyntax(parent);
 	syntax->KeywordToken = Expect(reader, TokenType::ReturnKeyword, L"Expected return keyword");
 
 	SyntaxToken current = reader.Current();
@@ -1179,9 +1181,9 @@ ReturnStatementSyntax* SourceParser::ReadReturnStatement(SourceProvider& reader,
 	return syntax;
 }
 
-ThrowStatementSyntax* SourceParser::ReadThrowStatement(SourceProvider& reader, SyntaxNode* parent)
+shard::ThrowStatementSyntax *const SourceParser::ReadThrowStatement(SourceProvider& reader, shard::SyntaxNode *const parent)
 {
-	ThrowStatementSyntax* syntax = new ThrowStatementSyntax(parent);
+	shard::ThrowStatementSyntax *const syntax = new ThrowStatementSyntax(parent);
 	syntax->KeywordToken = Expect(reader, TokenType::ReturnKeyword, L"Expected return keyword");
 
 	SyntaxToken current = reader.Current();
@@ -1192,23 +1194,23 @@ ThrowStatementSyntax* SourceParser::ReadThrowStatement(SourceProvider& reader, S
 	return syntax;
 }
 
-BreakStatementSyntax* SourceParser::ReadBreakStatement(SourceProvider& reader, SyntaxNode* parent)
+shard::BreakStatementSyntax *const SourceParser::ReadBreakStatement(SourceProvider& reader, shard::SyntaxNode *const parent)
 {
-	BreakStatementSyntax* syntax = new BreakStatementSyntax(parent);
+	shard::BreakStatementSyntax *const syntax = new BreakStatementSyntax(parent);
 	syntax->KeywordToken = Expect(reader, TokenType::BreakKeyword, L"Expected return keyword");
 	syntax->SemicolonToken = Expect(reader, TokenType::Semicolon, L"Missing ';' token");
 	return syntax;
 }
 
-ContinueStatementSyntax* SourceParser::ReadContinueStatement(SourceProvider& reader, SyntaxNode* parent)
+shard::ContinueStatementSyntax *const SourceParser::ReadContinueStatement(SourceProvider& reader, shard::SyntaxNode *const parent)
 {
-	ContinueStatementSyntax* syntax = new ContinueStatementSyntax(parent);
+	shard::ContinueStatementSyntax *const syntax = new ContinueStatementSyntax(parent);
 	syntax->KeywordToken = Expect(reader, TokenType::ContinueKeyword, L"Expected return keyword");
 	syntax->SemicolonToken = Expect(reader, TokenType::Semicolon, L"Missing ';' token");
 	return syntax;
 }
 
-ConditionalClauseBaseSyntax* SourceParser::ReadConditionalClause(SourceProvider& reader, SyntaxNode* parent)
+shard::ConditionalClauseBaseSyntax *const SourceParser::ReadConditionalClause(SourceProvider& reader, shard::SyntaxNode *const parent)
 {
 	while (reader.CanConsume())
 	{
@@ -1217,7 +1219,7 @@ ConditionalClauseBaseSyntax* SourceParser::ReadConditionalClause(SourceProvider&
 		{
 			case TokenType::IfKeyword:
 			{
-				IfStatementSyntax* syntax = new IfStatementSyntax(parent);
+				shard::IfStatementSyntax *const syntax = new IfStatementSyntax(parent);
 				syntax->KeywordToken = current;
 				reader.Consume();
 
@@ -1235,7 +1237,7 @@ ConditionalClauseBaseSyntax* SourceParser::ReadConditionalClause(SourceProvider&
 
 			case TokenType::UnlessKeyword:
 			{
-				UnlessStatementSyntax* syntax = new UnlessStatementSyntax(parent);
+				shard::UnlessStatementSyntax *const syntax = new UnlessStatementSyntax(parent);
 				syntax->KeywordToken = current;
 				reader.Consume();
 
@@ -1263,7 +1265,7 @@ ConditionalClauseBaseSyntax* SourceParser::ReadConditionalClause(SourceProvider&
 
 					case TokenType::OpenBrace:
 					{
-						ElseStatementSyntax* syntax = new ElseStatementSyntax(parent);
+						shard::ElseStatementSyntax *const syntax = new ElseStatementSyntax(parent);
 						syntax->KeywordToken = elseKeyword;
 						syntax->StatementsBlock = ReadStatementsBlock(reader, syntax);
 						return syntax;
@@ -1282,9 +1284,9 @@ ConditionalClauseBaseSyntax* SourceParser::ReadConditionalClause(SourceProvider&
 	return nullptr;
 }
 
-WhileStatementSyntax* SourceParser::ReadWhileStatement(SourceProvider& reader, SyntaxNode* parent)
+shard::WhileStatementSyntax *const SourceParser::ReadWhileStatement(SourceProvider& reader, shard::SyntaxNode *const parent)
 {
-	WhileStatementSyntax* syntax = new WhileStatementSyntax(parent);
+	shard::WhileStatementSyntax *const syntax = new WhileStatementSyntax(parent);
 	syntax->SemicolonToken = SyntaxToken(TokenType::Semicolon, L"", TextLocation(), false);
 	syntax->KeywordToken = Expect(reader, TokenType::WhileKeyword, L"Expected 'while' keyword");
 	syntax->OpenCurlToken = Expect(reader, TokenType::OpenCurl, L"expected '(' token");
@@ -1295,9 +1297,9 @@ WhileStatementSyntax* SourceParser::ReadWhileStatement(SourceProvider& reader, S
 	return syntax;
 }
 
-UntilStatementSyntax* SourceParser::ReadUntilStatement(SourceProvider& reader, SyntaxNode* parent)
+shard::UntilStatementSyntax *const SourceParser::ReadUntilStatement(SourceProvider& reader, shard::SyntaxNode *const parent)
 {
-	UntilStatementSyntax* syntax = new UntilStatementSyntax(parent);
+	shard::UntilStatementSyntax *const syntax = new UntilStatementSyntax(parent);
 	syntax->SemicolonToken = SyntaxToken(TokenType::Semicolon, L"", TextLocation(), false);
 	syntax->KeywordToken = Expect(reader, TokenType::UntilKeyword, L"Expected 'until' keyword");
 	syntax->OpenCurlToken = Expect(reader, TokenType::OpenCurl, L"expected '(' token");
@@ -1308,16 +1310,16 @@ UntilStatementSyntax* SourceParser::ReadUntilStatement(SourceProvider& reader, S
 	return syntax;
 }
 
-ForStatementSyntax* SourceParser::ReadForStatement(SourceProvider& reader, SyntaxNode* parent)
+shard::ForStatementSyntax *const SourceParser::ReadForStatement(SourceProvider& reader, shard::SyntaxNode *const parent)
 {
-	ForStatementSyntax* syntax = new ForStatementSyntax(parent);
+	shard::ForStatementSyntax *const syntax = new ForStatementSyntax(parent);
 	syntax->SemicolonToken = SyntaxToken(TokenType::Semicolon, L"", TextLocation(), false);
 	syntax->KeywordToken = Expect(reader, TokenType::ForKeyword, L"Expected 'for' keyword");
 	syntax->OpenCurlToken = Expect(reader, TokenType::OpenCurl, L"expected '(' token");
 
 	// Reading init statement
 	syntax->InitializerStatement = ReadStatement(reader, syntax);
-	if (auto keywordStatement = dynamic_cast<KeywordStatementSyntax*>(syntax->InitializerStatement))
+	if (auto keywordStatement = dynamic_cast<shard::KeywordStatementSyntax *const>(syntax->InitializerStatement))
 		Diagnostics.ReportError(keywordStatement->KeywordToken, L"Cannot use keyword statements inside for loop initializer");
 
 	// Reading first semicolon
@@ -1331,7 +1333,7 @@ ForStatementSyntax* SourceParser::ReadForStatement(SourceProvider& reader, Synta
 
 	// Reading after loop statement
 	syntax->AfterRepeatStatement = ReadStatement(reader, syntax);
-	if (auto keywordStatement = dynamic_cast<KeywordStatementSyntax*>(syntax->AfterRepeatStatement))
+	if (auto keywordStatement = dynamic_cast<shard::KeywordStatementSyntax *const>(syntax->AfterRepeatStatement))
 		Diagnostics.ReportError(keywordStatement->KeywordToken, L"Cannot use keyword statements inside for loop repeater");
 
 	// Reading close curl token
@@ -1342,9 +1344,9 @@ ForStatementSyntax* SourceParser::ReadForStatement(SourceProvider& reader, Synta
 	return syntax;
 }
 
-ExpressionSyntax* SourceParser::ReadExpression(SourceProvider& reader, SyntaxNode* parent, int bindingPower)
+shard::ExpressionSyntax *const SourceParser::ReadExpression(SourceProvider& reader, shard::SyntaxNode *const parent, int bindingPower)
 {
-	ExpressionSyntax* leftExpr = ReadNullDenotation(reader, parent);
+	shard::ExpressionSyntax* leftExpr = ReadNullDenotation(reader, parent);
 	if (!reader.CanConsume())
 		return leftExpr;
 
@@ -1364,7 +1366,7 @@ ExpressionSyntax* SourceParser::ReadExpression(SourceProvider& reader, SyntaxNod
 	return leftExpr;
 }
 
-ExpressionSyntax* SourceParser::ReadNullDenotation(SourceProvider& reader, SyntaxNode* parent)
+shard::ExpressionSyntax *const SourceParser::ReadNullDenotation(SourceProvider& reader, shard::SyntaxNode *const parent)
 {
 	SyntaxToken current = reader.Current();
 	switch (current.Type)
@@ -1376,7 +1378,7 @@ ExpressionSyntax* SourceParser::ReadNullDenotation(SourceProvider& reader, Synta
 		case TokenType::DecrementOperator:
 		{
 			reader.Consume();
-			UnaryExpressionSyntax* syntax = new UnaryExpressionSyntax(current, false, parent);
+			shard::UnaryExpressionSyntax *const syntax = new UnaryExpressionSyntax(current, false, parent);
 			syntax->Expression = ReadNullDenotation(reader, syntax);
 			return syntax;
 		}
@@ -1395,7 +1397,7 @@ ExpressionSyntax* SourceParser::ReadNullDenotation(SourceProvider& reader, Synta
 		case TokenType::OpenCurl:
 		{
 			reader.Consume();
-			ExpressionSyntax* expression = ReadExpression(reader, parent, 0);
+			shard::ExpressionSyntax *const expression = ReadExpression(reader, parent, 0);
 			Expect(reader, TokenType::CloseCurl, L"Expected ')' token");
 
 			if (reader.Current().Type == TokenType::Delimeter)
@@ -1439,7 +1441,7 @@ ExpressionSyntax* SourceParser::ReadNullDenotation(SourceProvider& reader, Synta
 	return nullptr;
 }
 
-ExpressionSyntax* SourceParser::ReadLeftDenotation(SourceProvider& reader, SyntaxNode* parent, ExpressionSyntax* leftExpr)
+shard::ExpressionSyntax *const SourceParser::ReadLeftDenotation(SourceProvider& reader, shard::SyntaxNode *const parent, shard::ExpressionSyntax *const leftExpr)
 {
 	if (!reader.CanConsume())
 		return leftExpr;
@@ -1465,7 +1467,7 @@ ExpressionSyntax* SourceParser::ReadLeftDenotation(SourceProvider& reader, Synta
 			return leftExpr;
 
 		reader.Consume();
-		UnaryExpressionSyntax* syntax = new UnaryExpressionSyntax(current, true, parent);
+		shard::UnaryExpressionSyntax *const syntax = new UnaryExpressionSyntax(current, true, parent);
 		syntax->Expression = leftExpr;
 		return syntax;
 	}
@@ -1477,8 +1479,8 @@ ExpressionSyntax* SourceParser::ReadLeftDenotation(SourceProvider& reader, Synta
 			return leftExpr;
 
 		reader.Consume();
-		BinaryExpressionSyntax* syntax = new BinaryExpressionSyntax(current, parent);
-		leftExpr->Parent = syntax;
+		shard::BinaryExpressionSyntax *const syntax = new BinaryExpressionSyntax(current, parent);
+		*const_cast<shard::SyntaxNode**>(&leftExpr->Parent) = syntax;
 
 		syntax->Left = leftExpr;
 		syntax->Right = ReadExpression(reader, syntax, precendce);
@@ -1491,18 +1493,18 @@ ExpressionSyntax* SourceParser::ReadLeftDenotation(SourceProvider& reader, Synta
 	return leftExpr;
 }
 
-ObjectExpressionSyntax* SourceParser::ReadObjectExpression(SourceProvider& reader, SyntaxNode* parent)
+shard::ObjectExpressionSyntax *const SourceParser::ReadObjectExpression(SourceProvider& reader, shard::SyntaxNode *const parent)
 {
-	ObjectExpressionSyntax* syntax = new ObjectExpressionSyntax(parent);
+	shard::ObjectExpressionSyntax *const syntax = new ObjectExpressionSyntax(parent);
 	syntax->NewToken = Expect(reader, TokenType::NewKeyword, L"Expected 'new' keyword");
 	syntax->Type = ReadType(reader, syntax);
 	syntax->ArgumentsList = ReadArgumentsList(reader, syntax);
 	return syntax;
 }
 
-TernaryExpressionSyntax* SourceParser::ReadTernaryExpression(SourceProvider& reader, ExpressionSyntax* condition, SyntaxNode* parent)
+shard::TernaryExpressionSyntax *const SourceParser::ReadTernaryExpression(SourceProvider& reader, shard::ExpressionSyntax *const condition, shard::SyntaxNode *const parent)
 {
-	TernaryExpressionSyntax* syntax = new TernaryExpressionSyntax(parent);
+	shard::TernaryExpressionSyntax *const syntax = new TernaryExpressionSyntax(parent);
 	syntax->Condition = condition;
 
 	syntax->QuestionToken = Expect(reader, TokenType::Question, L"Expected '?' token");
@@ -1514,9 +1516,9 @@ TernaryExpressionSyntax* SourceParser::ReadTernaryExpression(SourceProvider& rea
 	return syntax;
 }
 
-CollectionExpressionSyntax* SourceParser::ReadCollectionExpression(SourceProvider& reader, SyntaxNode* parent)
+shard::CollectionExpressionSyntax *const SourceParser::ReadCollectionExpression(SourceProvider& reader, shard::SyntaxNode *const parent)
 {
-	CollectionExpressionSyntax* syntax = new CollectionExpressionSyntax(parent);
+	shard::CollectionExpressionSyntax *const syntax = new CollectionExpressionSyntax(parent);
 	syntax->OpenSquareToken = Expect(reader, TokenType::OpenSquare, L"Expected '[' token");
 
 	SyntaxToken checkCloser = reader.Current();
@@ -1529,7 +1531,7 @@ CollectionExpressionSyntax* SourceParser::ReadCollectionExpression(SourceProvide
 
 	while (reader.CanConsume())
 	{
-		ExpressionSyntax* expr = ReadExpression(reader, syntax, 0);
+		shard::ExpressionSyntax *const expr = ReadExpression(reader, syntax, 0);
 		syntax->ValuesExpressions.push_back(expr);
 
 		// Try to match separator with error recovery
@@ -1551,9 +1553,9 @@ CollectionExpressionSyntax* SourceParser::ReadCollectionExpression(SourceProvide
 	return syntax;
 }
 
-LambdaExpressionSyntax* SourceParser::ReadLambdaExpression(SourceProvider& reader, SyntaxNode* parent)
+shard::LambdaExpressionSyntax *const SourceParser::ReadLambdaExpression(SourceProvider& reader, shard::SyntaxNode *const parent)
 {
-	LambdaExpressionSyntax* syntax = new LambdaExpressionSyntax(parent);
+	shard::LambdaExpressionSyntax *const syntax = new LambdaExpressionSyntax(parent);
 	syntax->LambdaToken = Expect(reader, TokenType::LambdaKeyword, L"Expected 'lambda' keyword");
 	syntax->Params = ReadParametersList(reader, syntax);
 	syntax->LambdaOperatorToken = Expect(reader, TokenType::LambdaOperator, L"Expected '=>' operator");
@@ -1561,7 +1563,7 @@ LambdaExpressionSyntax* SourceParser::ReadLambdaExpression(SourceProvider& reade
 	return syntax;
 }
 
-LinkedExpressionNode* SourceParser::ReadLinkedExpressionNode(SourceProvider& reader, SyntaxNode* parent, ExpressionSyntax* previous, bool isFirst)
+shard::LinkedExpressionNode *const SourceParser::ReadLinkedExpressionNode(SourceProvider& reader, shard::SyntaxNode *const parent, shard::ExpressionSyntax *const previous, bool isFirst)
 {
 	if (!reader.CanConsume())
 		return nullptr;
@@ -1595,16 +1597,16 @@ LinkedExpressionNode* SourceParser::ReadLinkedExpressionNode(SourceProvider& rea
 	{
 		case TokenType::Delimeter:
 		{
-			MemberAccessExpressionSyntax* currentNode = new MemberAccessExpressionSyntax(identifier, previous, parent);
+			shard::MemberAccessExpressionSyntax *const currentNode = new MemberAccessExpressionSyntax(identifier, previous, parent);
 			currentNode->DelimeterToken = delimeter;
 
-			LinkedExpressionNode* nextNode = ReadLinkedExpressionNode(reader, parent, currentNode, false);
+			shard::LinkedExpressionNode *const nextNode = ReadLinkedExpressionNode(reader, parent, currentNode, false);
 			return nextNode;
 		}
 
 		case TokenType::OpenCurl:
 		{
-			InvokationExpressionSyntax* currentNode = new InvokationExpressionSyntax(identifier, previous, parent);
+			shard::InvokationExpressionSyntax *const currentNode = new InvokationExpressionSyntax(identifier, previous, parent);
 			currentNode->DelimeterToken = delimeter;
 			currentNode->ArgumentsList = ReadArgumentsList(reader, currentNode);
 
@@ -1614,7 +1616,7 @@ LinkedExpressionNode* SourceParser::ReadLinkedExpressionNode(SourceProvider& rea
 			current = reader.Current();
 			if (current.Type == TokenType::Delimeter)
 			{
-				LinkedExpressionNode* nextNode = ReadLinkedExpressionNode(reader, parent, currentNode, false);
+				shard::LinkedExpressionNode *const nextNode = ReadLinkedExpressionNode(reader, parent, currentNode, false);
 				return nextNode;
 			}
 
@@ -1623,10 +1625,10 @@ LinkedExpressionNode* SourceParser::ReadLinkedExpressionNode(SourceProvider& rea
 
 		case TokenType::OpenSquare:
 		{
-			MemberAccessExpressionSyntax* member = new MemberAccessExpressionSyntax(identifier, previous, parent);
+			shard::MemberAccessExpressionSyntax *const member = new MemberAccessExpressionSyntax(identifier, previous, parent);
 			member->DelimeterToken = delimeter;
 
-			IndexatorExpressionSyntax* currentNode = new IndexatorExpressionSyntax(identifier, member, parent);
+			shard::IndexatorExpressionSyntax *const currentNode = new IndexatorExpressionSyntax(identifier, member, parent);
 			currentNode->IndexatorList = ReadIndexatorList(reader, currentNode);
 
 			if (!reader.CanConsume())
@@ -1635,7 +1637,7 @@ LinkedExpressionNode* SourceParser::ReadLinkedExpressionNode(SourceProvider& rea
 			current = reader.Current();
 			if (current.Type == TokenType::Delimeter)
 			{
-				LinkedExpressionNode* nextNode = ReadLinkedExpressionNode(reader, parent, currentNode, false);
+				shard::LinkedExpressionNode *const nextNode = ReadLinkedExpressionNode(reader, parent, currentNode, false);
 				return nextNode;
 			}
 
@@ -1646,7 +1648,7 @@ LinkedExpressionNode* SourceParser::ReadLinkedExpressionNode(SourceProvider& rea
 		{
 			if (IsOperator(current.Type) || IsPunctuation(current.Type))
 			{
-				MemberAccessExpressionSyntax* currentNode = new MemberAccessExpressionSyntax(identifier, previous, parent);
+				shard::MemberAccessExpressionSyntax *const currentNode = new MemberAccessExpressionSyntax(identifier, previous, parent);
 				currentNode->DelimeterToken = delimeter;
 				return currentNode;
 			}
@@ -1665,9 +1667,9 @@ LinkedExpressionNode* SourceParser::ReadLinkedExpressionNode(SourceProvider& rea
 	return nullptr;
 }
 
-ArgumentsListSyntax* SourceParser::ReadArgumentsList(SourceProvider& reader, SyntaxNode* parent)
+shard::ArgumentsListSyntax *const SourceParser::ReadArgumentsList(SourceProvider& reader, shard::SyntaxNode *const parent)
 {
-	ArgumentsListSyntax* arguments = new ArgumentsListSyntax(parent);
+	shard::ArgumentsListSyntax *const arguments = new ArgumentsListSyntax(parent);
 	arguments->OpenCurlToken = Expect(reader, TokenType::OpenCurl, L"Expected '(' token");
 
 	SyntaxToken checkCloser = reader.Current();
@@ -1680,8 +1682,8 @@ ArgumentsListSyntax* SourceParser::ReadArgumentsList(SourceProvider& reader, Syn
 
 	while (reader.CanConsume())
 	{
-		ExpressionSyntax* expr = ReadExpression(reader, arguments, 0);
-		ArgumentSyntax* argument = new ArgumentSyntax(expr, arguments);
+		shard::ExpressionSyntax *const expr = ReadExpression(reader, arguments, 0);
+		shard::ArgumentSyntax *const argument = new ArgumentSyntax(expr, arguments);
 		arguments->Arguments.push_back(argument);
 
 		// Try to match separator with error recovery
@@ -1703,9 +1705,9 @@ ArgumentsListSyntax* SourceParser::ReadArgumentsList(SourceProvider& reader, Syn
 	return arguments;
 }
 
-IndexatorListSyntax* SourceParser::ReadIndexatorList(SourceProvider& reader, SyntaxNode* parent)
+shard::IndexatorListSyntax *const SourceParser::ReadIndexatorList(SourceProvider& reader, shard::SyntaxNode *const parent)
 {
-	IndexatorListSyntax* arguments = new IndexatorListSyntax(parent);
+	shard::IndexatorListSyntax *const arguments = new IndexatorListSyntax(parent);
 	arguments->OpenSquareToken = Expect(reader, TokenType::OpenSquare, L"Exprected '[' token");
 
 	SyntaxToken checkCloser = reader.Current();
@@ -1718,8 +1720,8 @@ IndexatorListSyntax* SourceParser::ReadIndexatorList(SourceProvider& reader, Syn
 
 	while (reader.CanConsume())
 	{
-		ExpressionSyntax* expr = ReadExpression(reader, arguments, 0);
-		ArgumentSyntax* argument = new ArgumentSyntax(expr, arguments);
+		shard::ExpressionSyntax *const expr = ReadExpression(reader, arguments, 0);
+		shard::ArgumentSyntax *const argument = new ArgumentSyntax(expr, arguments);
 		arguments->Arguments.push_back(argument);
 
 		// Try to match separator with error recovery
@@ -1741,27 +1743,27 @@ IndexatorListSyntax* SourceParser::ReadIndexatorList(SourceProvider& reader, Syn
 	return arguments;
 }
 
-TypeSyntax* SourceParser::ReadType(SourceProvider& reader, SyntaxNode* parent)
+shard::TypeSyntax *const SourceParser::ReadType(SourceProvider& reader, shard::SyntaxNode *const parent)
 {
 	SyntaxToken current = reader.Current();
 
 	if (IsPredefinedType(current.Type))
 	{
 		reader.Consume();
-		PredefinedTypeSyntax* predefinedType = new PredefinedTypeSyntax(current, parent);
-		TypeSyntax* syntax = ReadModifiedType(reader, predefinedType, parent);
+		shard::PredefinedTypeSyntax *const predefinedType = new PredefinedTypeSyntax(current, parent);
+		shard::TypeSyntax *const syntax = ReadModifiedType(reader, predefinedType, parent);
 		return syntax;
 	}
 
 	if (current.Type == TokenType::DelegateKeyword)
 	{
-		TypeSyntax* identifierType = ReadDelegateType(reader, parent);
+		shard::TypeSyntax *const identifierType = ReadDelegateType(reader, parent);
 		return identifierType;
 	}
 
 	if (current.Type == TokenType::Identifier)
 	{
-		TypeSyntax* identifierType = ReadIdentifierNameType(reader, parent);
+		shard::TypeSyntax *const identifierType = ReadIdentifierNameType(reader, parent);
 		return identifierType;
 	}
 
@@ -1769,7 +1771,7 @@ TypeSyntax* SourceParser::ReadType(SourceProvider& reader, SyntaxNode* parent)
 	return nullptr;
 }
 
-TypeSyntax* SourceParser::ReadModifiedType(SourceProvider& reader, TypeSyntax* type, SyntaxNode* parent)
+shard::TypeSyntax *const SourceParser::ReadModifiedType(SourceProvider& reader, shard::TypeSyntax *const type, shard::SyntaxNode *const parent)
 {
 	if (!reader.CanConsume())
 		return type;
@@ -1781,7 +1783,7 @@ TypeSyntax* SourceParser::ReadModifiedType(SourceProvider& reader, TypeSyntax* t
 		case TokenType::Question:
 		{
 			reader.Consume();
-			NullableTypeSyntax* nullable = new NullableTypeSyntax(type, parent);
+			shard::NullableTypeSyntax *const nullable = new NullableTypeSyntax(type, parent);
 			nullable->QuestionToken = current;
 			return nullable;
 		}
@@ -1802,42 +1804,42 @@ TypeSyntax* SourceParser::ReadModifiedType(SourceProvider& reader, TypeSyntax* t
 	}
 }
 
-TypeSyntax* SourceParser::ReadIdentifierNameType(SourceProvider& reader, SyntaxNode* parent)
+shard::TypeSyntax *const SourceParser::ReadIdentifierNameType(SourceProvider& reader, shard::SyntaxNode *const parent)
 {
-	IdentifierNameTypeSyntax* identifier = new IdentifierNameTypeSyntax(parent);
+	shard::IdentifierNameTypeSyntax *const identifier = new IdentifierNameTypeSyntax(parent);
 	identifier->Identifier = Expect(reader, TokenType::Identifier, L"Expected identifier");
 
-	TypeSyntax* modifiedSyntax = ReadModifiedType(reader, identifier, parent);
+	shard::TypeSyntax *const modifiedSyntax = ReadModifiedType(reader, identifier, parent);
 	return modifiedSyntax;
 }
 
-TypeSyntax* SourceParser::ReadDelegateType(SourceProvider& reader, SyntaxNode* parent)
+shard::TypeSyntax *const SourceParser::ReadDelegateType(SourceProvider& reader, shard::SyntaxNode *const parent)
 {
-	DelegateTypeSyntax* delegate = new DelegateTypeSyntax(parent);
+	shard::DelegateTypeSyntax *const delegate = new DelegateTypeSyntax(parent);
 	delegate->DelegateToken = Expect(reader, TokenType::DelegateKeyword, L"Excpected 'lambda' keyword");
 	delegate->ReturnType = ReadType(reader, delegate);
 	delegate->Params = ReadParametersList(reader, delegate);
 
-	TypeSyntax* modifiedSyntax = ReadModifiedType(reader, delegate, parent);
+	shard::TypeSyntax *const modifiedSyntax = ReadModifiedType(reader, delegate, parent);
 	return modifiedSyntax;
 }
 
-TypeSyntax* SourceParser::ReadArrayType(SourceProvider& reader, TypeSyntax* previous, SyntaxNode* parent)
+shard::TypeSyntax *const SourceParser::ReadArrayType(SourceProvider& reader, shard::TypeSyntax *const previous, shard::SyntaxNode *const parent)
 {
-	ArrayTypeSyntax* array = new ArrayTypeSyntax(previous, parent);
+	shard::ArrayTypeSyntax *const array = new ArrayTypeSyntax(previous, parent);
 	array->OpenSquareToken = Expect(reader, TokenType::OpenSquare, L"Expected '['");
 	array->CloseSquareToken = Expect(reader, TokenType::CloseSquare, L"Expected ']'");
 	array->Rank = 1;
 
-	TypeSyntax* modifiedSyntax = ReadModifiedType(reader, array, parent);
+	shard::TypeSyntax *const modifiedSyntax = ReadModifiedType(reader, array, parent);
 	return modifiedSyntax;
 }
 
-TypeSyntax* SourceParser::ReadGenericType(SourceProvider& reader, TypeSyntax* previous, SyntaxNode* parent)
+shard::TypeSyntax *const SourceParser::ReadGenericType(SourceProvider& reader, shard::TypeSyntax *const previous, shard::SyntaxNode *const parent)
 {
-	GenericTypeSyntax* generic = new GenericTypeSyntax(previous, parent);
+	shard::GenericTypeSyntax *const generic = new GenericTypeSyntax(previous, parent);
 	generic->Arguments = ReadTypeArgumentsList(reader, generic);
-	TypeSyntax* modifiedSyntax = ReadModifiedType(reader, generic, parent);
+	shard::TypeSyntax *const modifiedSyntax = ReadModifiedType(reader, generic, parent);
 	return modifiedSyntax;
 }
 

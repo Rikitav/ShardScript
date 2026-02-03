@@ -18,7 +18,7 @@ namespace shard
 		SyntaxToken IdentifierToken;
 		TypeParametersListSyntax* TypeParameters = nullptr;
 
-		inline MemberDeclarationSyntax(const SyntaxKind kind, const SyntaxNode* parent)
+		inline MemberDeclarationSyntax(const SyntaxKind kind, SyntaxNode *const parent)
 			: SyntaxNode(kind, parent) { }
 
 		inline MemberDeclarationSyntax(const MemberDeclarationSyntax& other) = delete;

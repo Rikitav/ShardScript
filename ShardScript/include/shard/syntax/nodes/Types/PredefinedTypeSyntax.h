@@ -14,7 +14,7 @@ namespace shard
 	public:
 		const SyntaxToken TypeToken;
 
-		inline PredefinedTypeSyntax(const SyntaxToken typeToken, const SyntaxNode* parent)
+		inline PredefinedTypeSyntax(const SyntaxToken typeToken, SyntaxNode *const parent)
 			: TypeSyntax(SyntaxKind::PredefinedType, parent), TypeToken(typeToken) { }
 
 		inline PredefinedTypeSyntax(const PredefinedTypeSyntax& other) = delete;

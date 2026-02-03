@@ -24,7 +24,7 @@ namespace shard
 		StatementSyntax* AfterRepeatStatement = nullptr;
 		StatementsBlockSyntax* StatementsBlock = nullptr;
 
-		inline ForStatementSyntax(const SyntaxNode* parent)
+		inline ForStatementSyntax(SyntaxNode *const parent)
 			: KeywordStatementSyntax(SyntaxKind::ForStatement, parent) { }
 
 		inline ForStatementSyntax(const ForStatementSyntax&) = delete;

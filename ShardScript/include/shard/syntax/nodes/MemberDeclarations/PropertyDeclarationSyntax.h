@@ -31,10 +31,10 @@ namespace shard
 		
 		ExpressionSyntax* InitializerExpression = nullptr;
 
-		inline PropertyDeclarationSyntax(const SyntaxNode* parent)
+		inline PropertyDeclarationSyntax(SyntaxNode *const parent)
 			: MemberDeclarationSyntax(SyntaxKind::PropertyDeclaration, parent) { }
 
-		inline PropertyDeclarationSyntax(shard::MemberDeclarationInfo& info, const SyntaxNode* parent) 
+		inline PropertyDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) 
 			: MemberDeclarationSyntax(SyntaxKind::PropertyDeclaration, parent)
 		{
 			Modifiers = info.Modifiers;

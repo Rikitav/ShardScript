@@ -18,22 +18,22 @@ namespace shard
 		std::stack<shard::SemanticScope*> scopeStack;
 
 	protected:
-		inline ScopeVisitor(shard::SymbolTable* symbolTable)
+		inline ScopeVisitor(shard::SymbolTable *const symbolTable)
 		{
 			scopeStack.push(shard::SymbolTable::Global::Scope);
 		}
 
-		shard::SemanticScope* CurrentScope();
-		void PushScope(const shard::SyntaxSymbol* symbol);
+		shard::SemanticScope *const CurrentScope();
+		void PushScope(shard::SyntaxSymbol *const symbol);
 		void PopScope();
 
-		virtual bool CheckNameDeclared(std::wstring& name);
-		virtual bool CheckSymbolNameDeclared(shard::SyntaxSymbol* symbol);
-		virtual void Declare(shard::SyntaxSymbol* symbol);
-		shard::SyntaxSymbol* OwnerSymbol();
-		shard::TypeSymbol* OwnerType();
+		virtual bool CheckNameDeclared(const std::wstring& name);
+		virtual bool CheckSymbolNameDeclared(shard::SyntaxSymbol *const symbol);
+		virtual void Declare(shard::SyntaxSymbol *const symbol);
+		shard::SyntaxSymbol *const OwnerSymbol();
+		shard::TypeSymbol *const OwnerType();
 		//shard::NamespaceSymbol* OwnerNamespace();
 		//shard::NamespaceNode* OwnerNamespaceNode();
-		bool IsSymbolAccessible(shard::SyntaxSymbol* symbol);
+		bool IsSymbolAccessible(shard::SyntaxSymbol *const symbol);
 	};
 }

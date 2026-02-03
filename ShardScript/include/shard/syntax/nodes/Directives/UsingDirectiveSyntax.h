@@ -20,7 +20,7 @@ namespace shard
 		std::vector<SyntaxToken> TokensList;
 		shard::NamespaceNode* Namespace = nullptr;
 
-		inline UsingDirectiveSyntax(const SyntaxNode* parent)
+		inline UsingDirectiveSyntax(SyntaxNode *const parent)
 			: SyntaxNode(SyntaxKind::UsingDirective, parent) { }
 
 		inline UsingDirectiveSyntax(const UsingDirectiveSyntax&) = delete;

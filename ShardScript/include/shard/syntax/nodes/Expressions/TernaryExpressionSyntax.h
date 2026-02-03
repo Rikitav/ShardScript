@@ -17,7 +17,7 @@ namespace shard
 		ExpressionSyntax* Left = nullptr;
 		ExpressionSyntax* Right = nullptr;
 
-		inline TernaryExpressionSyntax(const SyntaxNode* parent)
+		inline TernaryExpressionSyntax(SyntaxNode *const parent)
 			: ExpressionSyntax(SyntaxKind::TernaryExpression, parent) { }
 
 		inline TernaryExpressionSyntax(const TernaryExpressionSyntax&) = delete;

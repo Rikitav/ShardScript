@@ -754,7 +754,7 @@ static bool IsMemberAccess(const ExpressionSyntax* expression, const MemberAcces
 static bool IsFieldAccess(const MemberAccessExpressionSyntax* memberExpression, const ExpressionSyntax*& instanceExpression)
 {
 	instanceExpression = memberExpression->PreviousExpression;
-	return memberExpression->FieldSymbol != nullptr || memberExpression->PropertySymbol != nullptr;
+	return memberExpression->ToField != nullptr || memberExpression->ToProperty != nullptr;
 }
 
 ObjectInstance* AbstractInterpreter::EvaluateBinaryExpression(const BinaryExpressionSyntax* expression)
@@ -897,9 +897,9 @@ ObjectInstance* AbstractInterpreter::EvaluateTernaryExpression(const TernaryExpr
 ObjectInstance* AbstractInterpreter::EvaluateMemberAccessExpression(const MemberAccessExpressionSyntax* expression, ObjectInstance* prevInstance)
 {
 	// Check if this is a delegate
-	if (expression->DelegateSymbol != nullptr)
+	if (expression->ToDelegate != nullptr)
 	{
-		ObjectInstance* instance = GarbageCollector::AllocateInstance(expression->DelegateSymbol);
+		ObjectInstance* instance = GarbageCollector::AllocateInstance(expression->ToDelegate);
 		return instance;
 	}
 
@@ -915,10 +915,10 @@ ObjectInstance* AbstractInterpreter::EvaluateMemberAccessExpression(const Member
 	}
 
 	// Check if this is a property or field
-	FieldSymbol* field = expression->FieldSymbol;
-	if (expression->PropertySymbol != nullptr)
+	FieldSymbol* field = expression->ToField;
+	if (expression->ToProperty != nullptr)
 	{
-		PropertySymbol* property = expression->PropertySymbol;
+		PropertySymbol* property = expression->ToProperty;
 		field = property->BackingField;
 
 		if (property->Getter != nullptr)
@@ -1035,10 +1035,10 @@ void AbstractInterpreter::ExecuteInstanceSetter(ObjectInstance* instance, const 
 	}
 
 	// Check if this is a property or field
-	FieldSymbol* field = access->FieldSymbol;
-	if (access->PropertySymbol != nullptr)
+	FieldSymbol* field = access->ToField;
+	if (access->ToProperty != nullptr)
 	{
-		PropertySymbol* property = access->PropertySymbol;
+		PropertySymbol* property = access->ToProperty;
 		field = property->BackingField;
 
 		if (property->Setter != nullptr)

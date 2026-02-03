@@ -20,7 +20,7 @@ namespace shard
 		ExpressionSyntax* ConditionExpression = nullptr;
 		StatementsBlockSyntax* StatementsBlock = nullptr;
 
-		inline WhileStatementSyntax(const SyntaxNode* parent)
+		inline WhileStatementSyntax(SyntaxNode *const parent)
 			: KeywordStatementSyntax(SyntaxKind::WhileStatement, parent) { }
 
 		inline WhileStatementSyntax(const WhileStatementSyntax&) = delete;
