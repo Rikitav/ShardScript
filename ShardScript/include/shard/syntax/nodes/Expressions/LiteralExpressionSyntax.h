@@ -33,7 +33,7 @@ namespace shard
 		const SyntaxToken LiteralToken;
 		ValueType Type = AsNull;
 
-		inline LiteralExpressionSyntax(const SyntaxToken literal, const SyntaxNode* parent) : ExpressionSyntax(SyntaxKind::LiteralExpression, parent), LiteralToken(literal) { }
+		inline LiteralExpressionSyntax(const SyntaxToken literal, SyntaxNode *const parent) : ExpressionSyntax(SyntaxKind::LiteralExpression, parent), LiteralToken(literal) { }
 		inline LiteralExpressionSyntax(const LiteralExpressionSyntax&) = delete;
 		inline virtual ~LiteralExpressionSyntax() { }
 	};

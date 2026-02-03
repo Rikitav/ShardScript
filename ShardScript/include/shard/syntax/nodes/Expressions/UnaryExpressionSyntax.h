@@ -15,7 +15,7 @@ namespace shard
 		ExpressionSyntax* Expression = nullptr;
 		const bool IsRightDetermined;
 
-		inline UnaryExpressionSyntax(const SyntaxToken operatorToken, const bool isRightDetermined, const SyntaxNode* parent)
+		inline UnaryExpressionSyntax(const SyntaxToken operatorToken, const bool isRightDetermined, SyntaxNode *const parent)
 			: ExpressionSyntax(SyntaxKind::UnaryExpression, parent), OperatorToken(operatorToken), IsRightDetermined(isRightDetermined) { }
 
 		inline UnaryExpressionSyntax(const UnaryExpressionSyntax&) = delete;

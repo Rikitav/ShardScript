@@ -14,7 +14,7 @@ namespace shard
 	public:
 		ExpressionSyntax* Expression = nullptr;
 
-		inline ReturnStatementSyntax(const SyntaxNode* parent) : KeywordStatementSyntax(SyntaxKind::ReturnStatement, parent) { }
+		inline ReturnStatementSyntax(SyntaxNode *const parent) : KeywordStatementSyntax(SyntaxKind::ReturnStatement, parent) { }
 		inline ReturnStatementSyntax(const ReturnStatementSyntax& other) = delete;
 
 		inline virtual ~ReturnStatementSyntax()

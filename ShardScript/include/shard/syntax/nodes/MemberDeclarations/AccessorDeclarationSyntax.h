@@ -19,10 +19,10 @@ namespace shard
 		SyntaxToken SemicolonToken;
 		StatementsBlockSyntax* Body = nullptr;
 
-		inline AccessorDeclarationSyntax(const SyntaxNode* parent)
+		inline AccessorDeclarationSyntax(SyntaxNode *const parent)
 			: MemberDeclarationSyntax(SyntaxKind::AccessorDeclaration, parent) { }
 
-		inline AccessorDeclarationSyntax(const SyntaxNode* parent, StatementsBlockSyntax* body)
+		inline AccessorDeclarationSyntax(SyntaxNode *const parent, StatementsBlockSyntax* body)
 			: MemberDeclarationSyntax(SyntaxKind::AccessorDeclaration, parent), Body(body) { }
 
 		inline AccessorDeclarationSyntax(const AccessorDeclarationSyntax&) = delete;

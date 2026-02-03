@@ -15,7 +15,7 @@ namespace shard
 		ExpressionSyntax* Left = nullptr;
 		ExpressionSyntax* Right = nullptr;
 
-		inline BinaryExpressionSyntax(const SyntaxToken operatorToken, const SyntaxNode* parent)
+		inline BinaryExpressionSyntax(const SyntaxToken operatorToken, SyntaxNode *const parent)
 			: ExpressionSyntax(SyntaxKind::BinaryExpression, parent), OperatorToken(operatorToken) {}
 		
 		inline BinaryExpressionSyntax(const BinaryExpressionSyntax&) = delete;

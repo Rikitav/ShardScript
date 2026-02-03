@@ -58,7 +58,7 @@
 
 using namespace shard;
 
-static void BindParametersList(ParametersListSyntax* node, std::vector<ParameterSymbol*>& symbols)
+static void BindParametersList(ParametersListSyntax *const node, std::vector<ParameterSymbol*>& symbols)
 {
 	if (node == nullptr)
 		return;
@@ -76,7 +76,7 @@ static void BindParametersList(ParametersListSyntax* node, std::vector<Parameter
 	}
 }
 
-void TypeBinder::VisitCompilationUnit(CompilationUnitSyntax* node)
+void TypeBinder::VisitCompilationUnit(CompilationUnitSyntax *const node)
 {
 	PushScope(nullptr);
 	for (UsingDirectiveSyntax* directive : node->Usings)
@@ -88,7 +88,7 @@ void TypeBinder::VisitCompilationUnit(CompilationUnitSyntax* node)
 	PopScope();
 }
 
-void TypeBinder::VisitUsingDirective(UsingDirectiveSyntax* node)
+void TypeBinder::VisitUsingDirective(UsingDirectiveSyntax *const node)
 {
 	NamespaceNode* nsNode = Namespaces->Root;
 	for (SyntaxToken token : node->TokensList)
@@ -110,7 +110,7 @@ void TypeBinder::VisitUsingDirective(UsingDirectiveSyntax* node)
 		current->DeclareSymbol(symbol);
 }
 
-void TypeBinder::VisitNamespaceDeclaration(NamespaceDeclarationSyntax* node)
+void TypeBinder::VisitNamespaceDeclaration(NamespaceDeclarationSyntax *const node)
 {
 	NamespaceSymbol* symbol = LookupSymbol<NamespaceSymbol>(node);
 	if (symbol == nullptr)
@@ -128,7 +128,7 @@ void TypeBinder::VisitNamespaceDeclaration(NamespaceDeclarationSyntax* node)
 	PopScope();
 }
 
-void TypeBinder::VisitClassDeclaration(ClassDeclarationSyntax* node)
+void TypeBinder::VisitClassDeclaration(ClassDeclarationSyntax *const node)
 {
 	ClassSymbol* symbol = LookupSymbol<ClassSymbol>(node);
 	if (symbol == nullptr)
@@ -150,7 +150,7 @@ void TypeBinder::VisitClassDeclaration(ClassDeclarationSyntax* node)
 	PopScope();
 }
 
-void TypeBinder::VisitStructDeclaration(StructDeclarationSyntax* node)
+void TypeBinder::VisitStructDeclaration(StructDeclarationSyntax *const node)
 {
 	StructSymbol* symbol = LookupSymbol<StructSymbol>(node);
 	if (symbol == nullptr)
@@ -169,7 +169,7 @@ void TypeBinder::VisitStructDeclaration(StructDeclarationSyntax* node)
 	PopScope();
 }
 
-void TypeBinder::VisitDelegateDeclaration(DelegateDeclarationSyntax* node)
+void TypeBinder::VisitDelegateDeclaration(DelegateDeclarationSyntax *const node)
 {
 	DelegateTypeSymbol* symbol = LookupSymbol<DelegateTypeSymbol>(node);
 	if (symbol == nullptr)
@@ -189,7 +189,7 @@ void TypeBinder::VisitDelegateDeclaration(DelegateDeclarationSyntax* node)
 	PopScope();
 }
 
-void TypeBinder::VisitConstructorDeclaration(ConstructorDeclarationSyntax* node)
+void TypeBinder::VisitConstructorDeclaration(ConstructorDeclarationSyntax *const node)
 {
 	MethodSymbol* symbol = LookupSymbol<MethodSymbol>(node);
 	if (symbol == nullptr)
@@ -208,7 +208,7 @@ void TypeBinder::VisitConstructorDeclaration(ConstructorDeclarationSyntax* node)
 	PopScope();
 }
 
-void TypeBinder::VisitMethodDeclaration(MethodDeclarationSyntax* node)
+void TypeBinder::VisitMethodDeclaration(MethodDeclarationSyntax *const node)
 {
 	MethodSymbol* symbol = LookupSymbol<MethodSymbol>(node);
 	if (symbol == nullptr)
@@ -231,7 +231,7 @@ void TypeBinder::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 	PopScope();
 }
 
-void TypeBinder::VisitFieldDeclaration(FieldDeclarationSyntax* node)
+void TypeBinder::VisitFieldDeclaration(FieldDeclarationSyntax *const node)
 {
 	FieldSymbol* symbol = LookupSymbol<FieldSymbol>(node);
 	if (symbol == nullptr)
@@ -247,7 +247,7 @@ void TypeBinder::VisitFieldDeclaration(FieldDeclarationSyntax* node)
 		VisitExpression(node->InitializerExpression);
 }
 
-void TypeBinder::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
+void TypeBinder::VisitPropertyDeclaration(PropertyDeclarationSyntax *const node)
 {
 	PropertySymbol* symbol = LookupSymbol<PropertySymbol>(node);
 	if (symbol == nullptr)
@@ -284,7 +284,7 @@ void TypeBinder::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
 	PopScope();
 }
 
-void TypeBinder::VisitIndexatorDeclaration(IndexatorDeclarationSyntax* node)
+void TypeBinder::VisitIndexatorDeclaration(IndexatorDeclarationSyntax *const node)
 {
 	IndexatorSymbol* symbol = LookupSymbol<IndexatorSymbol>(node);
 	if (symbol == nullptr)
@@ -321,7 +321,7 @@ void TypeBinder::VisitIndexatorDeclaration(IndexatorDeclarationSyntax* node)
 	PopScope();
 }
 
-void TypeBinder::VisitAccessorDeclaration(AccessorDeclarationSyntax* node)
+void TypeBinder::VisitAccessorDeclaration(AccessorDeclarationSyntax *const node)
 {
 	AccessorSymbol* symbol = LookupSymbol<AccessorSymbol>(node);
 	if (symbol == nullptr)
@@ -358,7 +358,7 @@ void TypeBinder::VisitAccessorDeclaration(AccessorDeclarationSyntax* node)
 	}
 }
 
-void TypeBinder::VisitVariableStatement(VariableStatementSyntax* node)
+void TypeBinder::VisitVariableStatement(VariableStatementSyntax *const node)
 {
 	VariableSymbol* symbol = LookupSymbol<VariableSymbol>(node);
 	if (symbol == nullptr)
@@ -371,14 +371,14 @@ void TypeBinder::VisitVariableStatement(VariableStatementSyntax* node)
 		VisitExpression(node->Expression);
 }
 
-void TypeBinder::VisitObjectCreationExpression(ObjectExpressionSyntax* node)
+void TypeBinder::VisitObjectCreationExpression(ObjectExpressionSyntax *const node)
 {
 	VisitType(node->Type);
 	VisitArgumentsList(node->ArgumentsList);
 	node->TypeSymbol = node->Type->Symbol;
 }
 
-void TypeBinder::VisitParameter(ParameterSyntax* node)
+void TypeBinder::VisitParameter(ParameterSyntax *const node)
 {
 	ParameterSymbol* paramSymbol = new ParameterSymbol(node->Identifier.Word);
 	Table->BindSymbol(node, paramSymbol);
@@ -388,7 +388,7 @@ void TypeBinder::VisitParameter(ParameterSyntax* node)
 	node->Symbol = paramSymbol->Type = type->Symbol;
 }
 
-void TypeBinder::VisitPredefinedType(PredefinedTypeSyntax* node)
+void TypeBinder::VisitPredefinedType(PredefinedTypeSyntax *const node)
 {
 	switch (node->TypeToken.Type)
 	{
@@ -463,7 +463,7 @@ void TypeBinder::VisitPredefinedType(PredefinedTypeSyntax* node)
 	}
 }
 
-void TypeBinder::VisitIdentifierNameType(IdentifierNameTypeSyntax* node)
+void TypeBinder::VisitIdentifierNameType(IdentifierNameTypeSyntax *const node)
 {
 	std::wstring name = node->Identifier.Word;
 	SemanticScope* currentScope = CurrentScope();
@@ -502,7 +502,7 @@ void TypeBinder::VisitIdentifierNameType(IdentifierNameTypeSyntax* node)
 	node->Symbol = typeSymbol;
 }
 
-void TypeBinder::VisitArrayType(ArrayTypeSyntax* node)
+void TypeBinder::VisitArrayType(ArrayTypeSyntax *const node)
 {
 	if (node->UnderlayingType == nullptr)
 		return;
@@ -520,7 +520,7 @@ void TypeBinder::VisitArrayType(ArrayTypeSyntax* node)
 	node->Symbol = symbol;
 }
 
-void TypeBinder::VisitNullableType(NullableTypeSyntax* node)
+void TypeBinder::VisitNullableType(NullableTypeSyntax *const node)
 {
 	if (node->UnderlayingType == nullptr)
 		return;
@@ -540,7 +540,7 @@ void TypeBinder::VisitNullableType(NullableTypeSyntax* node)
 	//Table->BindSymbol(node, underlayingType);
 }
 
-void TypeBinder::VisitGenericType(GenericTypeSyntax* node)
+void TypeBinder::VisitGenericType(GenericTypeSyntax *const node)
 {
 	if (node->UnderlayingType == nullptr)
 		return;
@@ -591,7 +591,7 @@ void TypeBinder::VisitGenericType(GenericTypeSyntax* node)
 	}
 }
 
-void TypeBinder::VisitDelegateType(DelegateTypeSyntax* node)
+void TypeBinder::VisitDelegateType(DelegateTypeSyntax *const node)
 {
 	VisitType(node->ReturnType);
 	VisitParametersList(node->Params);

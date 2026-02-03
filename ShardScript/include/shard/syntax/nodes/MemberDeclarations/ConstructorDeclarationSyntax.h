@@ -21,7 +21,7 @@ namespace shard
 		StatementsBlockSyntax* Body = nullptr;
 		ParametersListSyntax* Params = nullptr;
 
-		inline ConstructorDeclarationSyntax(shard::MemberDeclarationInfo& info, const SyntaxNode* parent) : MemberDeclarationSyntax(SyntaxKind::ConstructorDeclaration, parent)
+		inline ConstructorDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) : MemberDeclarationSyntax(SyntaxKind::ConstructorDeclaration, parent)
 		{
 			Modifiers = info.Modifiers;
 			IdentifierToken = info.Identifier;

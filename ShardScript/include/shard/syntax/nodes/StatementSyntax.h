@@ -12,7 +12,7 @@ namespace shard
 	public:
 		SyntaxToken SemicolonToken;
 
-		inline StatementSyntax(const SyntaxKind kind, const SyntaxNode* parent) : SyntaxNode(kind, parent)
+		inline StatementSyntax(const SyntaxKind kind, SyntaxNode *const parent) : SyntaxNode(kind, parent)
 		{
 			/*
 			if (kind < SyntaxKind::Statement || kind > SyntaxKind::ElseStatement)
@@ -33,7 +33,7 @@ namespace shard
 	public:
 		SyntaxToken KeywordToken;
 
-		inline KeywordStatementSyntax(const SyntaxKind kind, const SyntaxNode* parent) : StatementSyntax(kind, parent)
+		inline KeywordStatementSyntax(const SyntaxKind kind, SyntaxNode *const parent) : StatementSyntax(kind, parent)
 		{
 			/*
 			if (kind < SyntaxKind::KeywordStatement || kind > SyntaxKind::ElseStatement)

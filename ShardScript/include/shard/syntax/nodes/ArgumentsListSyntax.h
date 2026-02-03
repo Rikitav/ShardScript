@@ -17,7 +17,7 @@ namespace shard
 		const ExpressionSyntax* Expression;
 		const bool IsByReference;
 
-		inline ArgumentSyntax(const ExpressionSyntax* expression, const SyntaxNode* parent)
+		inline ArgumentSyntax(const ExpressionSyntax* expression, SyntaxNode *const parent)
 			: SyntaxNode(SyntaxKind::Argument, parent), Expression(expression), IsByReference(false) { }
 
 		inline ArgumentSyntax(const ArgumentSyntax& other) = delete;
@@ -36,7 +36,7 @@ namespace shard
 		SyntaxToken CloseCurlToken;
 		std::vector<ArgumentSyntax*> Arguments;
 
-		inline ArgumentsListSyntax(const SyntaxNode* parent)
+		inline ArgumentsListSyntax(SyntaxNode *const parent)
 			: SyntaxNode(SyntaxKind::ArgumentsList, parent) { }
 
 		inline ArgumentsListSyntax(const ArgumentsListSyntax& other) = delete;
@@ -58,7 +58,7 @@ namespace shard
 		SyntaxToken CloseSquareToken;
 		std::vector<ArgumentSyntax*> Arguments;
 
-		inline IndexatorListSyntax(const SyntaxNode* parent)
+		inline IndexatorListSyntax(SyntaxNode *const parent)
 			: SyntaxNode(SyntaxKind::IndexatorList, parent) { }
 
 		inline IndexatorListSyntax(const IndexatorListSyntax& other) = delete;

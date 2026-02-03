@@ -19,7 +19,7 @@ namespace shard
 		std::vector<ExpressionSyntax*> ValuesExpressions;
 		shard::ArrayTypeSymbol* Symbol = nullptr;
 
-		inline CollectionExpressionSyntax(const SyntaxNode* parent)
+		inline CollectionExpressionSyntax(SyntaxNode *const parent)
 			: ExpressionSyntax(SyntaxKind::CollectionExpression, parent) { }
 
 		inline CollectionExpressionSyntax(const CollectionExpressionSyntax&) = delete;

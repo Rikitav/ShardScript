@@ -19,7 +19,7 @@ namespace shard
 		TypeSyntax* ReturnType = nullptr;
 		ParametersListSyntax* Params = nullptr;
 
-		inline DelegateTypeSyntax(const SyntaxNode* parent)
+		inline DelegateTypeSyntax(SyntaxNode *const parent)
 			: TypeSyntax(SyntaxKind::DelegateType, parent) { }
 
 		inline DelegateTypeSyntax(const DelegateTypeSyntax& other) = delete;

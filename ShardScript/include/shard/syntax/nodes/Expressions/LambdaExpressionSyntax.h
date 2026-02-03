@@ -21,7 +21,7 @@ namespace shard
 		StatementsBlockSyntax* Body = nullptr;
 		shard::DelegateTypeSymbol* Symbol = nullptr;
 
-		inline LambdaExpressionSyntax(const SyntaxNode* parent)
+		inline LambdaExpressionSyntax(SyntaxNode *const parent)
 			: ExpressionSyntax(SyntaxKind::LambdaExpression, parent) { }
 
 		inline LambdaExpressionSyntax(const LambdaExpressionSyntax&) = delete;

@@ -20,7 +20,7 @@ namespace shard
 		ExpressionSyntax* ConditionExpression = nullptr;
 		StatementsBlockSyntax* StatementsBlock = nullptr;
 
-		inline UntilStatementSyntax(const SyntaxNode* parent)
+		inline UntilStatementSyntax(SyntaxNode *const parent)
 			: KeywordStatementSyntax(SyntaxKind::UntilStatement, parent) { }
 
 		inline UntilStatementSyntax(const UntilStatementSyntax&) = delete;

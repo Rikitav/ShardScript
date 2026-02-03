@@ -20,12 +20,12 @@ namespace shard
 		TypeSyntax* ReturnType = nullptr;
 		ParametersListSyntax* Params = nullptr;
 
-		inline DelegateDeclarationSyntax(const SyntaxNode* parent)
+		inline DelegateDeclarationSyntax(SyntaxNode *const parent)
 			: MemberDeclarationSyntax(SyntaxKind::DelegateDeclaration, parent) { }
 
 		inline DelegateDeclarationSyntax(const DelegateDeclarationSyntax& other) = delete;
 
-		inline DelegateDeclarationSyntax(shard::MemberDeclarationInfo& info, const SyntaxNode* parent) : MemberDeclarationSyntax(SyntaxKind::DelegateDeclaration, parent)
+		inline DelegateDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) : MemberDeclarationSyntax(SyntaxKind::DelegateDeclaration, parent)
 		{
 			Modifiers = info.Modifiers;
 			DelegateToken = info.DeclareType;

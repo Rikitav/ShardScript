@@ -16,7 +16,7 @@ namespace shard
 	public:
 		SyntaxToken Identifier;
 
-		inline IdentifierNameTypeSyntax(const SyntaxNode* parent)
+		inline IdentifierNameTypeSyntax(SyntaxNode *const parent)
 			: TypeSyntax(SyntaxKind::IdentifierNameType, parent) { }
 
 		inline IdentifierNameTypeSyntax(const IdentifierNameTypeSyntax& other) = delete;

@@ -30,14 +30,21 @@ namespace shard
 		void PopulateFrom(std::vector<shard::SyntaxToken> fromvector);
 		
 		void SetSequence(std::vector<shard::SyntaxToken> setvector);
-		size_t Size();
-		void Push(shard::SyntaxToken token);
 		void SetIndex(size_t newIndex);
+
+		size_t Size();
 		shard::SyntaxToken At(size_t index);
+		void Push(shard::SyntaxToken token);
 		void Clear();
 
 		shard::SyntaxToken Front();
 		shard::SyntaxToken Back();
+
+		std::vector<shard::SyntaxToken>::iterator begin();
+		std::vector<shard::SyntaxToken>::iterator end();
+
+		std::vector<shard::SyntaxToken>::const_iterator begin() const;
+		std::vector<shard::SyntaxToken>::const_iterator end() const;
 
 		shard::SyntaxToken Current() override;
 		shard::SyntaxToken Consume() override;

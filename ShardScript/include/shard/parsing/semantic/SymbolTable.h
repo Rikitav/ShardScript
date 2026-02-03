@@ -30,8 +30,8 @@ namespace shard
     public:
         struct Global
         {
-            inline static SHARD_API shard::SemanticScope* Scope = new SemanticScope(nullptr, nullptr);
-            inline static SHARD_API shard::TypeSymbol* Type = new shard::TypeSymbol(GlobalTypeName, shard::SyntaxKind::CompilationUnit);
+            inline static SHARD_API shard::TypeSymbol *const Type = new shard::TypeSymbol(GlobalTypeName, shard::SyntaxKind::CompilationUnit);
+            inline static SHARD_API shard::SemanticScope *const Scope = new SemanticScope(Type, nullptr);
         };
 
         struct Primitives
@@ -56,10 +56,10 @@ namespace shard
         ~SymbolTable();
 
         void ClearSymbols();
-        void BindSymbol(shard::SyntaxNode* node, shard::SyntaxSymbol* symbol);
-        shard::SyntaxSymbol* LookupSymbol(shard::SyntaxNode* node);
-        shard::SyntaxNode* GetSyntaxNode(shard::SyntaxSymbol* symbol);
-        std::vector<shard::NamespaceSymbol*> GetNamespaceSymbols();
-        std::vector<shard::TypeSymbol*> GetTypeSymbols();
+        void BindSymbol(shard::SyntaxNode *const node, shard::SyntaxSymbol *const symbol);
+        shard::SyntaxSymbol *const LookupSymbol(shard::SyntaxNode *const node);
+        shard::SyntaxNode *const GetSyntaxNode(shard::SyntaxSymbol *const symbol);
+        const std::vector<shard::NamespaceSymbol*> GetNamespaceSymbols();
+        const std::vector<shard::TypeSymbol*> GetTypeSymbols();
     };
 }

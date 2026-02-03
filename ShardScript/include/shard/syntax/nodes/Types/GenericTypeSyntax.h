@@ -18,7 +18,7 @@ namespace shard
 		TypeSyntax* UnderlayingType = nullptr;
 		TypeArgumentsListSyntax* Arguments = nullptr;
 
-		inline GenericTypeSyntax(TypeSyntax* underlaying, const SyntaxNode* parent)
+		inline GenericTypeSyntax(TypeSyntax* underlaying, SyntaxNode *const parent)
 			: TypeSyntax(SyntaxKind::GenericType, parent), UnderlayingType(underlaying) { }
 
 		inline GenericTypeSyntax(const GenericTypeSyntax& other) = delete;

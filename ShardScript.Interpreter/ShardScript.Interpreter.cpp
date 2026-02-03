@@ -14,8 +14,11 @@
 
 #include <shard/runtime/GarbageCollector.h>
 #include <shard/runtime/AbstractInterpreter.h>
+#include <shard/runtime/VirtualMachine.h>
 
 #include <shard/runtime/framework/FrameworkLoader.h>
+
+#include <shard/compilation/AbstractEmiter.h>
 
 #include <Shlwapi.h>
 #include <iostream>
@@ -150,11 +153,6 @@ int wmain(int argc, wchar_t* argv[])
 			std::wcout << "Could not resolve current working directory!" << std::endl;
 			return 1;
 		}
-		else
-		{
-
-		}
-
 
 		SourceParser parser(diagnostics);
 		for (const std::wstring& file : args.FilesToCompile)
@@ -197,6 +195,15 @@ int wmain(int argc, wchar_t* argv[])
 		LayoutGenerator layoutGenerator(diagnostics);
 		layoutGenerator.Generate(semanticModel);
 
+		ProgramVirtualImage program(semanticModel);
+		AbstractEmiter emiter(program, semanticModel, diagnostics);
+
+		emiter.VisitSyntaxTree(syntaxTree);
+
+		VirtualMachine virtualMachine(program);
+		virtualMachine.Run();
+
+		/*
 		if (args.UseInteractive)
 		{
 			InteractiveConsole::Run(syntaxTree, semanticModel, diagnostics);
@@ -215,6 +222,7 @@ int wmain(int argc, wchar_t* argv[])
 				return 1;
 			}
 		}
+		*/
 	}
 	catch (const std::runtime_error& err)
 	{

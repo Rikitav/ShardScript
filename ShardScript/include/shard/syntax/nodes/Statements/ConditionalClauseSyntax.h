@@ -16,7 +16,7 @@ namespace shard
 		StatementsBlockSyntax* StatementsBlock = nullptr;
 		ConditionalClauseBaseSyntax* NextStatement = nullptr;
 
-		inline ConditionalClauseBaseSyntax(const SyntaxKind kind, const SyntaxNode* parent) : KeywordStatementSyntax(kind, parent) { }
+		inline ConditionalClauseBaseSyntax(const SyntaxKind kind, SyntaxNode *const parent) : KeywordStatementSyntax(kind, parent) { }
 		inline ConditionalClauseBaseSyntax(const ConditionalClauseBaseSyntax& other) = delete;
 
 		inline virtual ~ConditionalClauseBaseSyntax()
@@ -36,7 +36,7 @@ namespace shard
 		SyntaxToken CloseCurlToken;
 		StatementSyntax* ConditionExpression = nullptr;
 
-		inline ConditionalClauseSyntax(const SyntaxKind kind, const SyntaxNode* parent)
+		inline ConditionalClauseSyntax(const SyntaxKind kind, SyntaxNode *const parent)
 			: ConditionalClauseBaseSyntax(kind, parent) { }
 		
 		inline ConditionalClauseSyntax(const ConditionalClauseSyntax& other) = delete;
@@ -51,7 +51,7 @@ namespace shard
 	class SHARD_API IfStatementSyntax : public ConditionalClauseSyntax
 	{
 	public:
-		inline IfStatementSyntax(const SyntaxNode* parent) : ConditionalClauseSyntax(SyntaxKind::IfStatement, parent) { }
+		inline IfStatementSyntax(SyntaxNode *const parent) : ConditionalClauseSyntax(SyntaxKind::IfStatement, parent) { }
 		inline IfStatementSyntax(const IfStatementSyntax& other) = delete;
 		inline virtual ~IfStatementSyntax() { }
 	};
@@ -59,7 +59,7 @@ namespace shard
 	class SHARD_API UnlessStatementSyntax : public ConditionalClauseSyntax
 	{
 	public:
-		inline UnlessStatementSyntax(const SyntaxNode* parent) : ConditionalClauseSyntax(SyntaxKind::UnlessStatement, parent) { }
+		inline UnlessStatementSyntax(SyntaxNode *const parent) : ConditionalClauseSyntax(SyntaxKind::UnlessStatement, parent) { }
 		inline UnlessStatementSyntax(const UnlessStatementSyntax& other) = delete;
 		inline virtual ~UnlessStatementSyntax() { }
 	};
@@ -67,7 +67,7 @@ namespace shard
 	class SHARD_API ElseStatementSyntax : public ConditionalClauseBaseSyntax
 	{
 	public:
-		inline ElseStatementSyntax(const SyntaxNode* parent) : ConditionalClauseBaseSyntax(SyntaxKind::ElseStatement, parent) { }
+		inline ElseStatementSyntax(SyntaxNode *const parent) : ConditionalClauseBaseSyntax(SyntaxKind::ElseStatement, parent) { }
 		inline ElseStatementSyntax(const ElseStatementSyntax& other) = delete;
 		inline virtual ~ElseStatementSyntax() { }
 	};

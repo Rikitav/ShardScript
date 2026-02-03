@@ -16,7 +16,7 @@ namespace shard
 	public:
 		std::vector<MemberDeclarationSyntax*> Members;
 
-		inline TypeDeclarationSyntax(const SyntaxKind kind, const SyntaxNode* parent)
+		inline TypeDeclarationSyntax(const SyntaxKind kind, SyntaxNode *const parent)
 			: BodyDeclarationSyntax(kind, parent) { }
 
 		inline TypeDeclarationSyntax(const TypeDeclarationSyntax& other) = delete;

@@ -9,7 +9,7 @@ namespace shard
 		/// Upon receiving this byte, VM does nothing.
 		/// <para>Includes no additional parameters.</para>
 		/// </summary>
-		Nop,
+		Nop = 1,
 		
 		/// <summary>
 		/// VM immidietly stops execution upon receiving this byte.
@@ -32,9 +32,16 @@ namespace shard
 		PopStack_N,
 
 		/// <summary>
+		/// Loads `boolean` and pushes its ObjectInstance to stack.
+		/// <para>Includes 1 parameter :</para>
+		/// <para>> bool Value - bool stored to load.</para>
+		/// </summary>
+		LoadConst_Boolean,
+
+		/// <summary>
 		/// Loads `signed 64-bit integer number` and pushes its ObjectInstance to stack.
 		/// <para>Includes 1 parameter :</para>
-		/// <para>> long Value - long stored to load. Recommended to reference value from Data section.</para>
+		/// <para>> long Value - long stored to load.</para>
 		/// </summary>
 		LoadConst_Integer64,
 
@@ -46,16 +53,16 @@ namespace shard
 		LoadConst_Rational64,
 		
 		/// <summary>
-		/// Loads `UTF16 wide character`, and pushes its ObjectInstance to stack.
+		/// Loads `UTF16 character`, and pushes its ObjectInstance to stack.
 		/// <para>Includes 1 parameter :</para>
-		/// <para>> wchar_t Value - UTF16 wide character stored to load.</para>
+		/// <para>> wchar_t Value - UTF16 character stored to load.</para>
 		/// </summary>
 		LoadConst_Char,
 		
 		/// <summary>
-		/// Loads NULL-terminated UTF16 wide character string from data section, and pushes its ObjectInstance to stack.
+		/// Loads NULL-terminated UTF16 string from data section, and pushes its ObjectInstance to stack.
 		/// <para>Includes 1 parameter :</para>
-		/// <para>> const wchar_t* Value - pointer to first symbol of NULL-Terminated UTF16 wide character string stored in Data section to load.</para>
+		/// <para>> const wchar_t* Value - pointer to first symbol of NULL-Terminated UTF16 string stored in Data section to load.</para>
 		/// </summary>
 		LoadConst_String,
 
@@ -74,37 +81,25 @@ namespace shard
 		LoadVariable,
 
 		/// <summary>
-		/// Pushes copy of ObjectInstance* from arguments slot on given index to stack top.
-		/// <para>Includes 1 parameter :</para>
-		/// <para>> short Value - Zero-based index of argument, where instance will be readed from.</para>
-		/// </summary>
-		LoadArgument,
-
-		/// <summary>
-		/// Invokes MethodSymbol with creation of new CallStackFrame.
-		/// <para>Includes 1 parameter :</para>
-		/// <para>> MethodSymbol* pValue - pointer to MethodSymbol to invoke.</para>
-		/// </summary>
-		CallSymbol,
-
-		/// <summary>
-		/// Invokes C-Function from pointer. Function signature should match 'MethodSymbolDelegate' typedef
-		/// <para>Includes 1 parameter :</para>
-		/// <para>> MethodSymbolDelegate* pValue - pointer to C-Function to invoke.</para>
-		/// </summary>
-		CallFunction,
-
-		JumpBackward_True,
-		JumpBackward_False,
-		JumpForward_True,
-		JumpForward_False,
-
-		/// <summary>
 		/// Unconditional jump to a relative offset.
 		/// <para>Includes 1 parameter :</para>
-		/// <para>> int Offset - Relative offset in bytes from current instruction pointer.</para>
+		/// <para>> size_t Offset - Relative offset in bytes from current instruction pointer.</para>
 		/// </summary>
 		Jump,
+
+		/// <summary>
+		/// Conditional jump to a relative offset if stack top contains True.
+		/// <para>Includes 1 parameter :</para>
+		/// <para>> size_t Offset - Relative offset in bytes from current instruction pointer.</para>
+		/// </summary>
+		Jump_True,
+
+		/// <summary>
+		/// Conditional jump to a relative offset if stack top contains False.
+		/// <para>Includes 1 parameter :</para>
+		/// <para>> size_t Offset - Relative offset in bytes from current instruction pointer.</para>
+		/// </summary>
+		Jump_False,
 
 		/// <summary>
 		/// Returns from the current method call, destroying the current CallStackFrame.
@@ -137,18 +132,18 @@ namespace shard
 		/// <para>Includes no additional parameters.</para>
 		/// </summary>
 		Compare_Greater,
+			
+		/// <summary>
+		/// Pops two values, checks if value B is greater or equal to value A (B >= A), pushes boolean result.
+		/// <para>Includes no additional parameters.</para>
+		/// </summary>
+		Compare_GreaterOrEqual,
 
 		/// <summary>
 		/// Pops two values, checks if value B is less than value A (B < A), pushes boolean result.
 		/// <para>Includes no additional parameters.</para>
 		/// </summary>
 		Compare_Less,
-
-		/// <summary>
-		/// Pops two values, checks if value B is greater or equal to value A (B >= A), pushes boolean result.
-		/// <para>Includes no additional parameters.</para>
-		/// </summary>
-		Compare_GreaterOrEqual,
 
 		/// <summary>
 		/// Pops two values, checks if value B is less or equal to value A (B <= A), pushes boolean result.
@@ -183,20 +178,6 @@ namespace shard
         /// </summary>
         StoreField,
 
-        /// <summary>
-        /// Loads a static field value.
-        /// <para>Includes 1 parameter :</para>
-        /// <para>> FieldSymbol* pField - The field description to resolve offset/name.</para>
-        /// </summary>
-        LoadStaticField,
-
-        /// <summary>
-        /// Pops a value, then stores the value into the static field.
-        /// <para>Includes 1 parameter :</para>
-        /// <para>> FieldSymbol* pField - The field description.</para>
-        /// </summary>
-        StoreStaticField,
-
 		/// <summary>
         /// Creates a new array of specified type and size. 
         /// Pops size (int) from stack.
@@ -216,5 +197,33 @@ namespace shard
         /// <para>Includes no additional parameters.</para>
         /// </summary>
         StoreArrayElement,
+	
+        /// <summary>
+        /// Loads a static field value.
+        /// <para>Includes 1 parameter :</para>
+        /// <para>> FieldSymbol* pField - The field description to resolve offset/name.</para>
+        /// </summary>
+        LoadStaticField,
+
+        /// <summary>
+        /// Pops a value, then stores the value into the static field.
+        /// <para>Includes 1 parameter :</para>
+        /// <para>> FieldSymbol* pField - The field description.</para>
+        /// </summary>
+        StoreStaticField,
+
+		/// <summary>
+		/// Invokes MethodSymbol with creation of new CallStackFrame.
+		/// <para>Includes 1 parameter :</para>
+		/// <para>> MethodSymbol* pValue - pointer to MethodSymbol to invoke.</para>
+		/// </summary>
+		CallMethodSymbol,
+
+		/// <summary>
+		/// Invokes C-Function from pointer. Function signature should match 'MethodSymbolDelegate' typedef
+		/// <para>Includes 1 parameter :</para>
+		/// <para>> MethodSymbolDelegate* pValue - pointer to C-Function to invoke.</para>
+		/// </summary>
+		CallFunction,
 	};
 }

@@ -102,6 +102,26 @@ SyntaxToken LexicalBuffer::Back()
 	return Sequence.back();
 }
 
+std::vector<SyntaxToken>::iterator LexicalBuffer::begin()
+{
+	return Sequence.begin();
+}
+
+std::vector<SyntaxToken>::iterator LexicalBuffer::end()
+{
+	return Sequence.end();
+}
+
+std::vector<SyntaxToken>::const_iterator LexicalBuffer::begin() const
+{
+	return Sequence.begin();
+}
+
+std::vector<SyntaxToken>::const_iterator LexicalBuffer::end() const
+{
+	return Sequence.end();
+}
+
 size_t LexicalBuffer::Size()
 {
 	return Sequence.size();

@@ -282,7 +282,7 @@ static ClassDeclarationSyntax* InitImplicitClassDeclaration(MethodDeclarationSyn
 	implClass->DeclareToken = SyntaxToken(TokenType::ClassKeyword, L"class", TextLocation(), false);
 	
 	entryPoint = InitImplicitEntryPoint(implClass);
-	entryPoint->Parent = implClass;
+	*const_cast<SyntaxNode**>(&entryPoint->Parent) = implClass;
 	implClass->Members.push_back(entryPoint);
 
 	return implClass;
@@ -432,10 +432,10 @@ void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticMode
 				// Wrap expression in expression statement
 				ExpressionStatementSyntax* exprStatement = new ExpressionStatementSyntax(expression, interactiveBody);
 				exprStatement->SemicolonToken = SyntaxToken(TokenType::Semicolon, L";", TextLocation(), false);
-				expression->Parent = exprStatement;
+				*const_cast<SyntaxNode**>(&expression->Parent) = exprStatement;
 
 				// Add statement to interactive body
-				exprStatement->Parent = interactiveBody;
+				*const_cast<SyntaxNode**>(&exprStatement->Parent) = interactiveBody;
 				interactiveBody->Statements.push_back(exprStatement);
 
 				// Re-analyze syntax tree
@@ -478,7 +478,7 @@ void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticMode
 				}
 
 				// Add statement to interactive body
-				statement->Parent = interactiveBody;
+				*const_cast<SyntaxNode**>(&statement->Parent) = interactiveBody;
 				interactiveBody->Statements.push_back(statement);
 
 				// Re-analyze syntax tree with new statement

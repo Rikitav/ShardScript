@@ -35,13 +35,13 @@ void SymbolTable::ClearSymbols()
 	typesList.clear();
 }
 
-SyntaxSymbol* SymbolTable::LookupSymbol(SyntaxNode* node)
+SyntaxSymbol *const SymbolTable::LookupSymbol(SyntaxNode *const node)
 {
 	auto choise = nodeToSymbolMap.find(node);
 	return choise == nodeToSymbolMap.end() ? nullptr : choise->second;
 }
 
-SyntaxNode* SymbolTable::GetSyntaxNode(SyntaxSymbol* symbol)
+SyntaxNode *const SymbolTable::GetSyntaxNode(SyntaxSymbol * const symbol)
 {
 	auto choise = symbolToNodeMap.find(symbol);
 	return choise == symbolToNodeMap.end() ? nullptr : choise->second;
@@ -59,12 +59,12 @@ void SymbolTable::BindSymbol(SyntaxNode* node, SyntaxSymbol* symbol)
 		namespacesList.push_back(static_cast<NamespaceSymbol*>(symbol));
 }
 
-std::vector<NamespaceSymbol*> SymbolTable::GetNamespaceSymbols()
+const std::vector<NamespaceSymbol*> SymbolTable::GetNamespaceSymbols()
 {
 	return namespacesList;
 }
 
-std::vector<TypeSymbol*> SymbolTable::GetTypeSymbols()
+const std::vector<TypeSymbol*> SymbolTable::GetTypeSymbols()
 {
 	/*
 	auto cond = [](const SyntaxSymbol* symbol) { return symbol->Kind == SyntaxKind::ClassDeclaration || symbol->Kind == SyntaxKind::StructDeclaration || symbol->Kind == SyntaxKind::CollectionExpression; };

@@ -14,8 +14,8 @@ namespace shard
 	public:
 		ExpressionSyntax* Expression = nullptr;
 
-		inline ExpressionStatementSyntax(const SyntaxNode* parent) : StatementSyntax(SyntaxKind::ExpressionStatement, parent) { }
-		inline ExpressionStatementSyntax(ExpressionSyntax* expression, const SyntaxNode* parent) : StatementSyntax(SyntaxKind::ExpressionStatement, parent), Expression(expression) { }
+		inline ExpressionStatementSyntax(SyntaxNode *const parent) : StatementSyntax(SyntaxKind::ExpressionStatement, parent) { }
+		inline ExpressionStatementSyntax(ExpressionSyntax* expression, SyntaxNode *const parent) : StatementSyntax(SyntaxKind::ExpressionStatement, parent), Expression(expression) { }
 		inline ExpressionStatementSyntax(const ExpressionStatementSyntax& other) = delete;
 
 		inline virtual ~ExpressionStatementSyntax()

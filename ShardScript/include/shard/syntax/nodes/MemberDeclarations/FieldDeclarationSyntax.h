@@ -25,10 +25,10 @@ namespace shard
 		ExpressionSyntax* InitializerExpression = nullptr;
 		TypeSyntax* ReturnType = nullptr;
 
-		inline FieldDeclarationSyntax(const SyntaxNode* parent)
+		inline FieldDeclarationSyntax(SyntaxNode *const parent)
 			: MemberDeclarationSyntax(SyntaxKind::FieldDeclaration, parent) { }
 
-		inline FieldDeclarationSyntax(shard::MemberDeclarationInfo& info, const SyntaxNode* parent) : MemberDeclarationSyntax(SyntaxKind::FieldDeclaration, parent)
+		inline FieldDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) : MemberDeclarationSyntax(SyntaxKind::FieldDeclaration, parent)
 		{
 			Modifiers = info.Modifiers;
 			IdentifierToken = info.Identifier;

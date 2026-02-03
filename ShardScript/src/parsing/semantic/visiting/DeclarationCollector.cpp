@@ -53,7 +53,7 @@ static std::wstring FormatFullNameOf(SyntaxSymbol* symbol)
     return symbol->Parent->FullName + L"." + symbol->Name;
 }
 
-void DeclarationCollector::Declare(SyntaxSymbol* symbol)
+void DeclarationCollector::Declare(SyntaxSymbol *const symbol)
 {
     SemanticScope* current = CurrentScope();
     current->DeclareSymbol(symbol);
@@ -63,7 +63,7 @@ void DeclarationCollector::Declare(SyntaxSymbol* symbol)
         owner->OnSymbolDeclared(symbol);
 }
 
-void DeclarationCollector::VisitCompilationUnit(CompilationUnitSyntax* node)
+void DeclarationCollector::VisitCompilationUnit(CompilationUnitSyntax *const node)
 {
     // The beginning of each script file in compilation
     // First scope is declared as nullptr symbol
@@ -76,7 +76,7 @@ void DeclarationCollector::VisitCompilationUnit(CompilationUnitSyntax* node)
     PopScope();
 }
 
-void DeclarationCollector::VisitNamespaceDeclaration(NamespaceDeclarationSyntax* node)
+void DeclarationCollector::VisitNamespaceDeclaration(NamespaceDeclarationSyntax *const node)
 {
     std::wstring namespaceName = node->IdentifierToken.Word;
     NamespaceSymbol* symbol = new NamespaceSymbol(namespaceName);
@@ -108,7 +108,7 @@ void DeclarationCollector::VisitNamespaceDeclaration(NamespaceDeclarationSyntax*
     PopScope();
 }
 
-void DeclarationCollector::VisitClassDeclaration(ClassDeclarationSyntax* node)
+void DeclarationCollector::VisitClassDeclaration(ClassDeclarationSyntax *const node)
 {
     ClassSymbol* symbol = SymbolFactory::Class(node);
     Table->BindSymbol(node, symbol);
@@ -160,7 +160,7 @@ void DeclarationCollector::VisitClassDeclaration(ClassDeclarationSyntax* node)
     PopScope();
 }
 
-void DeclarationCollector::VisitStructDeclaration(StructDeclarationSyntax* node)
+void DeclarationCollector::VisitStructDeclaration(StructDeclarationSyntax *const node)
 {
     StructSymbol* symbol = SymbolFactory::Struct(node);
     Table->BindSymbol(node, symbol);
@@ -202,7 +202,7 @@ void DeclarationCollector::VisitStructDeclaration(StructDeclarationSyntax* node)
     PopScope();
 }
 
-void DeclarationCollector::VisitDelegateDeclaration(DelegateDeclarationSyntax* node)
+void DeclarationCollector::VisitDelegateDeclaration(DelegateDeclarationSyntax *const node)
 {
     // Creating symbol
     DelegateTypeSymbol* symbol = SymbolFactory::Delegate(node);
@@ -234,7 +234,7 @@ void DeclarationCollector::VisitDelegateDeclaration(DelegateDeclarationSyntax* n
     PopScope();
 }
 
-void DeclarationCollector::VisitFieldDeclaration(FieldDeclarationSyntax* node)
+void DeclarationCollector::VisitFieldDeclaration(FieldDeclarationSyntax *const node)
 {
     // Creating symbol
     FieldSymbol* symbol = SymbolFactory::Field(node);
@@ -273,7 +273,7 @@ void DeclarationCollector::VisitFieldDeclaration(FieldDeclarationSyntax* node)
     PopScope();
 }
 
-void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax* node)
+void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax *const node)
 {
     // Creating symbol
     MethodSymbol* symbol = SymbolFactory::Method(node);
@@ -322,7 +322,7 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax* node)
     PopScope();
 }
 
-void DeclarationCollector::VisitConstructorDeclaration(ConstructorDeclarationSyntax* node)
+void DeclarationCollector::VisitConstructorDeclaration(ConstructorDeclarationSyntax *const node)
 {
     // Creating symbol
     ConstructorSymbol* symbol = SymbolFactory::Constructor(node);
@@ -374,7 +374,7 @@ void DeclarationCollector::VisitConstructorDeclaration(ConstructorDeclarationSyn
     PopScope();
 }
 
-void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
+void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax *const node)
 {
     // Creating symbol
     PropertySymbol* symbol = SymbolFactory::Property(node);
@@ -436,7 +436,7 @@ void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax* n
     }
 }
 
-void DeclarationCollector::VisitIndexatorDeclaration(IndexatorDeclarationSyntax* node)
+void DeclarationCollector::VisitIndexatorDeclaration(IndexatorDeclarationSyntax *const node)
 {
     // Creating symbol
     IndexatorSymbol* symbol = SymbolFactory::Indexator(node);
@@ -505,7 +505,7 @@ void DeclarationCollector::VisitIndexatorDeclaration(IndexatorDeclarationSyntax*
     }
 }
 
-void DeclarationCollector::VisitAccessorDeclaration(AccessorDeclarationSyntax* node)
+void DeclarationCollector::VisitAccessorDeclaration(AccessorDeclarationSyntax *const node)
 {
     // Expecting parent node to be property
     if (node->Parent->Kind != SyntaxKind::PropertyDeclaration && node->Parent->Kind != SyntaxKind::IndexatorDeclaration)
@@ -585,7 +585,7 @@ void DeclarationCollector::VisitAccessorDeclaration(AccessorDeclarationSyntax* n
     }
 }
 
-void DeclarationCollector::VisitVariableStatement(VariableStatementSyntax* node)
+void DeclarationCollector::VisitVariableStatement(VariableStatementSyntax *const node)
 {
     std::wstring varName = node->IdentifierToken.Word;
     VariableSymbol* symbol = new VariableSymbol(varName, nullptr);
