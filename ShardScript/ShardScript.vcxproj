@@ -136,6 +136,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\compilation\AbstractEmiter.cpp" />
     <ClCompile Include="src\parsing\analysis\DiagnosticSeverity.cpp" />
     <ClCompile Include="src\parsing\SourceParser.cpp" />
     <ClCompile Include="src\runtime\VirtualMachine.cpp" />
