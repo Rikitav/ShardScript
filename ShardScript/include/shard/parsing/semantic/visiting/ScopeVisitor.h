@@ -7,6 +7,7 @@
 
 #include <shard/syntax/SyntaxSymbol.h>
 #include <shard/syntax/symbols/TypeSymbol.h>
+#include <shard/syntax/symbols/MethodSymbol.h>
 #include <shard/syntax/symbols/NamespaceSymbol.h>
 
 #include <stack>
@@ -27,13 +28,17 @@ namespace shard
 		void PushScope(shard::SyntaxSymbol *const symbol);
 		void PopScope();
 
+		virtual void Declare(shard::SyntaxSymbol *const symbol);
+		
 		virtual bool CheckNameDeclared(const std::wstring& name);
 		virtual bool CheckSymbolNameDeclared(shard::SyntaxSymbol *const symbol);
-		virtual void Declare(shard::SyntaxSymbol *const symbol);
+		
 		shard::SyntaxSymbol *const OwnerSymbol();
 		shard::TypeSymbol *const OwnerType();
 		//shard::NamespaceSymbol* OwnerNamespace();
 		//shard::NamespaceNode* OwnerNamespaceNode();
+		MethodSymbol *const FindHostMethodSymbol();
+		
 		bool IsSymbolAccessible(shard::SyntaxSymbol *const symbol);
 	};
 }

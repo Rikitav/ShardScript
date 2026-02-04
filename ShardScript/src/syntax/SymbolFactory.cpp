@@ -358,6 +358,12 @@ MethodSymbol* SymbolFactory::Method(MethodDeclarationSyntax* node)
 	if (symbol->IsExtern)
 		symbol->HandleType = MethodHandleType::External;
 
+	if (!symbol->IsStatic)
+	{
+		// implicit 'this' parameter
+		symbol->EvalStackLocalsCount += 1;
+	}
+
     for (ParameterSyntax* parameter : node->Params->Parameters)
     {
         ParameterSymbol* paramSymbol = new ParameterSymbol(parameter->Identifier.Word);
@@ -376,6 +382,12 @@ ConstructorSymbol* SymbolFactory::Constructor(ConstructorDeclarationSyntax* node
 
 	if (symbol->IsExtern)
 		symbol->HandleType = MethodHandleType::External;
+
+	if (!symbol->IsStatic)
+	{
+		// implicit 'this' parameter
+		symbol->EvalStackLocalsCount += 1;
+	}
 
 	for (ParameterSyntax* parameter : node->Params->Parameters)
 	{
@@ -487,7 +499,13 @@ AccessorSymbol* SymbolFactory::Accessor(const std::wstring& name, PropertySymbol
 	symbol->Accesibility = SymbolAccesibility::Public;
 	symbol->IsStatic = property->IsStatic;
 	symbol->ReturnType = isGetter ? property->ReturnType : shard::SymbolTable::Primitives::Void;
-	
+
+	if (!symbol->IsStatic)
+	{
+		// implicit 'this' parameter
+		symbol->EvalStackLocalsCount += 1;
+	}
+
 	if (isGetter)
 		property->Getter = symbol;
 	else

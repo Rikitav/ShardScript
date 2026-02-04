@@ -33,6 +33,7 @@ namespace shard
     public:
         TypeSymbol* ReturnType = nullptr;
         std::vector<ParameterSymbol*> Parameters;
+        uint16_t EvalStackLocalsCount = 0;
 
         MethodHandleType HandleType = MethodHandleType::Body;
         //shard::StatementsBlockSyntax* Body = nullptr;

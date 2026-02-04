@@ -1,9 +1,11 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/compilation/ProgramVirtualImage.h>
 
 namespace shard
 {
-	class VirtualMachine
+	class SHARD_API VirtualMachine
 	{
 		ProgramVirtualImage& Program;
 

@@ -1,4 +1,6 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/SyntaxVisitor.h>
 #include <shard/compilation/ProgramVirtualImage.h>
 #include <shard/compilation/ByteCodeGenerator.h>
@@ -6,7 +8,7 @@
 namespace shard
 {
 	// basically, a compiler
-	class AbstractEmiter : SyntaxVisitor
+	class SHARD_API AbstractEmiter : SyntaxVisitor
 	{
         shard::ByteCodeGenerator Generator;
         shard::MethodSymbol* GeneratingFor = nullptr;

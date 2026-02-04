@@ -15,8 +15,10 @@ namespace shard
 	{
     public:
         TypeSymbol* Type = nullptr;
-        bool IsOptional = false;
         shard::ExpressionSyntax* DefaultValueExpression = nullptr;
+
+        uint16_t SlotIndex = 0;
+        bool IsOptional = false;
 
         inline ParameterSymbol(const std::wstring name) : SyntaxSymbol(name, SyntaxKind::Parameter)
         {

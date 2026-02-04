@@ -6,18 +6,20 @@ namespace shard
 {
     struct ConsoleArguments
     {
-        bool AssociateScriptFile = false;
-        bool UseInteractive = false;
-        bool ShowHelp = false;
-        bool ExcludeStd = false;
-        std::vector<std::wstring> FilesToCompile;
+        static inline bool AssociateScriptFile = false;
+        static inline bool UseInteractive = false;
+        static inline bool ShowHelp = false;
+        static inline bool ExcludeStd = false;
+        static inline bool ShowDecompile = false;
+        static inline bool RunProgram = false;
+        static inline std::vector<std::wstring> FilesToCompile;
     };
 
     class ShardUtilities
     {
     public:
         static std::wstring NoralizePath(const std::wstring& messyPath);
-        static ConsoleArguments ParseArguments(int argc, wchar_t* argv[]);
+        static void ParseArguments(int argc, wchar_t* argv[]);
         static std::wstring GetFileVersion();
         static void AssociateRegistry();
     };

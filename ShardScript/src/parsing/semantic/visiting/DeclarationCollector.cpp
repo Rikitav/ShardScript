@@ -315,6 +315,12 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax *const
         }
     }
 
+    for (ParameterSymbol* const param : symbol->Parameters)
+    {
+        param->SlotIndex = symbol->EvalStackLocalsCount;
+        symbol->EvalStackLocalsCount += 1;
+    }
+
     PushScope(symbol);
     VisitType(node->ReturnType);
     VisitParametersList(node->Params);
@@ -366,6 +372,12 @@ void DeclarationCollector::VisitConstructorDeclaration(ConstructorDeclarationSyn
             if (!symbol->IsExtern && node->Body == nullptr)
                 Diagnostics.ReportError(node->IdentifierToken, L"Constructor should have a Body, as it's not marked as 'extern' or 'abstract'");
         }
+    }
+
+    for (ParameterSymbol* const param : symbol->Parameters)
+    {
+        param->SlotIndex = symbol->EvalStackLocalsCount;
+        symbol->EvalStackLocalsCount += 1;
     }
 
     PushScope(symbol);
@@ -485,6 +497,16 @@ void DeclarationCollector::VisitIndexatorDeclaration(IndexatorDeclarationSyntax 
 
     PopScope();
 
+    for (ParameterSymbol* const param : symbol->Parameters)
+    {
+        param->SlotIndex = symbol->Getter->EvalStackLocalsCount;
+        if (symbol->Getter != nullptr)
+            symbol->Getter->EvalStackLocalsCount += 1;
+
+        if (symbol->Setter != nullptr)
+            symbol->Setter->EvalStackLocalsCount += 1;
+    }
+
     if (symbol->Getter != nullptr)
     {
         // Assert: extern Method cannot have body
@@ -495,6 +517,7 @@ void DeclarationCollector::VisitIndexatorDeclaration(IndexatorDeclarationSyntax 
     if (symbol->Setter != nullptr)
     {
         // Assert: extern Method cannot have body
+        symbol->Setter->EvalStackLocalsCount += 1;
         if (symbol->Setter->IsExtern && node->Setter->Body != nullptr)
             Diagnostics.ReportError(node->IdentifierToken, L"Set Accessors' marked as 'extern' cannot have Body");
     }
@@ -525,6 +548,11 @@ void DeclarationCollector::VisitAccessorDeclaration(AccessorDeclarationSyntax *c
         IndexatorDeclarationSyntax* indexerNode = static_cast<IndexatorDeclarationSyntax*>(node->Parent);
         propertySymbol = LookupSymbol<IndexatorSymbol>(indexerNode);
     }
+    else
+    {
+        Diagnostics.ReportError(node->IdentifierToken, L"Accessors cannot be declared outside of Properties or Indexators");
+        return;
+    }
 
     // Creating symbol
     AccessorSymbol* symbol = SymbolFactory::Accessor(node, propertySymbol);
@@ -537,12 +565,6 @@ void DeclarationCollector::VisitAccessorDeclaration(AccessorDeclarationSyntax *c
     {
         // Failed
         Diagnostics.ReportError(node->IdentifierToken, L"Cannot resolve Accessors' owner Type");
-        return;
-    }
-
-    if (symbol->Parent->Kind != SyntaxKind::PropertyDeclaration && symbol->Parent->Kind != SyntaxKind::IndexatorDeclaration)
-    {
-        Diagnostics.ReportError(node->IdentifierToken, L"Accessors cannot be declared outside of Properties or Indexators");
         return;
     }
 
@@ -578,6 +600,7 @@ void DeclarationCollector::VisitAccessorDeclaration(AccessorDeclarationSyntax *c
 
             case TokenType::SetKeyword:
             {
+                symbol->EvalStackLocalsCount += 1;
                 symbol->ReturnType = SymbolTable::Primitives::Void;
                 break;
             }
@@ -589,6 +612,10 @@ void DeclarationCollector::VisitVariableStatement(VariableStatementSyntax *const
 {
     std::wstring varName = node->IdentifierToken.Word;
     VariableSymbol* symbol = new VariableSymbol(varName, nullptr);
+
+    MethodSymbol *const hostMethod = FindHostMethodSymbol();
+    symbol->SlotIndex = hostMethod->EvalStackLocalsCount;
+    hostMethod->EvalStackLocalsCount += 1;
 
     Table->BindSymbol(node, symbol);
     Declare(symbol);

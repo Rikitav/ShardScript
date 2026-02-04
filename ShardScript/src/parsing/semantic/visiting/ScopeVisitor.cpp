@@ -152,6 +152,31 @@ static bool IsSymbolNestedAccessible(const SemanticScope* scope, SyntaxSymbol *c
 	return IsSymbolNestedAccessible(scope->Parent, symbol);
 }
 
+static bool IsMethodSymbol(SyntaxSymbol *const symbol)
+{
+	switch (symbol->Kind)
+	{
+		default:
+			return false;
+
+		case SyntaxKind::MethodDeclaration:
+		case SyntaxKind::ConstructorDeclaration:
+		case SyntaxKind::AccessorDeclaration:
+			return true;
+	}
+}
+
+MethodSymbol *const shard::ScopeVisitor::FindHostMethodSymbol()
+{
+	for (SemanticScope* scope = CurrentScope(); scope != nullptr; scope = scope->Parent)
+	{
+		if (IsMethodSymbol(scope->Owner))
+			return static_cast<MethodSymbol *const>(scope->Owner);
+	}
+
+	return nullptr;
+}
+
 bool ScopeVisitor::IsSymbolAccessible(SyntaxSymbol *const symbol)
 {
 	if (symbol == nullptr)
