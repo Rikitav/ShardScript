@@ -32,6 +32,12 @@ namespace shard
 		PopStack_N,
 
 		/// <summary>
+		/// Loads `null` and pushes its ObjectInstance to stack.
+		/// <para>Includes no additional parameters.</para>
+		/// </summary>
+		LoadConst_Null,
+
+		/// <summary>
 		/// Loads `boolean` and pushes its ObjectInstance to stack.
 		/// <para>Includes 1 parameter :</para>
 		/// <para>> bool Value - bool stored to load.</para>
@@ -62,7 +68,7 @@ namespace shard
 		/// <summary>
 		/// Loads NULL-terminated UTF16 string from data section, and pushes its ObjectInstance to stack.
 		/// <para>Includes 1 parameter :</para>
-		/// <para>> const wchar_t* Value - pointer to first symbol of NULL-Terminated UTF16 string stored in Data section to load.</para>
+		/// <para>> size_t Value - offset inside Data section of program, to first symbol of NULL-Terminated UTF16 string to load.</para>
 		/// </summary>
 		LoadConst_String,
 

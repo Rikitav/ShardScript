@@ -1,4 +1,5 @@
 #include <shard/compilation/AbstractEmiter.h>
+#include <shard/syntax/symbols/LiteralSymbol.h>
 
 using namespace shard;
 
@@ -134,10 +135,60 @@ void AbstractEmiter::VisitElseStatement(ElseStatementSyntax *const node)
 
 void AbstractEmiter::VisitLiteralExpression(LiteralExpressionSyntax *const node)
 {
+	LiteralSymbol* const symbol = static_cast<LiteralSymbol*>(Table->LookupSymbol(node));
+	switch (symbol->LiteralType)
+	{
+		case TokenType::NullLiteral:
+		{
+			Generator.EmitLoadConstNull(GeneratingFor->ExecutableByteCode);
+			break;
+		}
+
+		case TokenType::CharLiteral:
+		{
+			Generator.EmitLoadConstChar16(GeneratingFor->ExecutableByteCode, node->LiteralToken.Word[0]);
+			break;
+		}
+
+		case TokenType::StringLiteral:
+		{
+			Generator.EmitLoadConstString(GeneratingFor->ExecutableByteCode, Program.DataSection, node->LiteralToken.Word.data());
+			break;
+		}
+
+		case TokenType::NumberLiteral:
+		{
+			Generator.EmitLoadConstInt64(GeneratingFor->ExecutableByteCode, symbol->AsIntegerValue);
+			break;
+		}
+
+		case TokenType::DoubleLiteral:
+		{
+			Generator.EmitLoadConstDouble64(GeneratingFor->ExecutableByteCode, symbol->AsDoubleValue);
+			break;
+		}
+
+		case TokenType::BooleanLiteral:
+		{
+			Generator.EmitLoadConstBool(GeneratingFor->ExecutableByteCode, symbol->AsBooleanValue);
+			break;
+		}
+	}
 }
 
 void AbstractEmiter::VisitBinaryExpression(BinaryExpressionSyntax *const node)
 {
+	VisitExpression(node->Left);
+	VisitExpression(node->Right);
+
+	switch (node->OperatorToken.Type)
+	{
+		case TokenType::AddOperator:
+		{
+			Generator.EmitMathAdd(GeneratingFor->ExecutableByteCode);
+			break;
+		}
+	}
 }
 
 void AbstractEmiter::VisitUnaryExpression(UnaryExpressionSyntax *const node)

@@ -11,27 +11,7 @@ namespace shard
 	class SHARD_API LiteralExpressionSyntax : public ExpressionSyntax
 	{
 	public:
-		enum ValueType
-		{
-			AsNull,
-			AsBoolean,
-			AsInteger,
-			AsDouble,
-			AsChar,
-			AsString,
-		};
-
-		union
-		{
-			bool AsBooleanValue = false;
-			int64_t AsIntegerValue;
-			double AsDoubleValue;
-			wchar_t AsCharValue;
-			std::wstring* AsStringValue;
-		};
-
 		const SyntaxToken LiteralToken;
-		ValueType Type = AsNull;
 
 		inline LiteralExpressionSyntax(const SyntaxToken literal, SyntaxNode *const parent) : ExpressionSyntax(SyntaxKind::LiteralExpression, parent), LiteralToken(literal) { }
 		inline LiteralExpressionSyntax(const LiteralExpressionSyntax&) = delete;

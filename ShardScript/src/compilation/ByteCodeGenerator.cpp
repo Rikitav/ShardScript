@@ -47,6 +47,11 @@ void ByteCodeGenerator::EmitHalt(std::vector<std::byte>& code)
     AppendData(code, OpCode::Halt);
 }
 
+void ByteCodeGenerator::EmitLoadConstNull(std::vector<std::byte>& code)
+{
+    AppendData(code, OpCode::LoadConst_Null);
+}
+
 void ByteCodeGenerator::EmitLoadConstBool(std::vector<std::byte>& code, bool value)
 {
     AppendData(code, OpCode::LoadConst_Boolean);
@@ -71,10 +76,13 @@ void ByteCodeGenerator::EmitLoadConstChar16(std::vector<std::byte>& code, wchar_
     AppendData(code, value);
 }
 
-void ByteCodeGenerator::EmitLoadConstString(std::vector<std::byte>& code, const wchar_t* value)
+void ByteCodeGenerator::EmitLoadConstString(std::vector<std::byte>& code, std::vector<std::byte>& data, const wchar_t* value)
 {
+    auto dataOrigin = data.size();
+    AppendData(data, value);
+
     AppendData(code, OpCode::LoadConst_String);
-    AppendData(code, value);
+    AppendData(code, dataOrigin);
 }
 
 void ByteCodeGenerator::EmitLoadVarible(std::vector<std::byte>& code, uint16_t index)
