@@ -57,6 +57,7 @@
 
 namespace shard
 {
+	// Note that this parser is only capable of contextual parsing, and only should be used to parse full compulation units. DO NOT try to parse individual members or expression with this parser out of stream
 	class SHARD_API SourceParser
 	{
 	private:

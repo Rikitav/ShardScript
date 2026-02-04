@@ -11,6 +11,7 @@
 #include <shard/syntax/SymbolAccesibility.h>
 #include <shard/syntax/SymbolFactory.h>
 
+#include <shard/syntax/symbols/LiteralSymbol.h>
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/NamespaceSymbol.h>
 #include <shard/syntax/symbols/ClassSymbol.h>
@@ -494,30 +495,33 @@ void ExpressionBinder::VisitVariableStatement(VariableStatementSyntax *const nod
 
 TypeSymbol* ExpressionBinder::AnalyzeLiteralExpression(LiteralExpressionSyntax *const node)
 {
+	LiteralSymbol* symbol = new LiteralSymbol(node->LiteralToken.Type);
+	Table->BindSymbol(node, symbol);
+
 	switch (node->LiteralToken.Type)
 	{
 		case TokenType::NullLiteral:
 		{
-			node->Type = LiteralExpressionSyntax::AsNull;
 			return SymbolTable::Primitives::Null;
 		}
 
 		case TokenType::BooleanLiteral:
 		{
-			node->Type = LiteralExpressionSyntax::AsBoolean;
-			node->AsBooleanValue = node->LiteralToken.Word == L"true";
+			symbol->AsBooleanValue = node->LiteralToken.Word == L"true";
 			return SymbolTable::Primitives::Boolean;
 		}
 
 		case TokenType::StringLiteral:
 		{
 			// TODO: add interpolation
-			node->Type = LiteralExpressionSyntax::AsString;
-			node->AsStringValue = new std::wstring(node->LiteralToken.Word);
 			return SymbolTable::Primitives::String;
 		}
 
 		case TokenType::DoubleLiteral:
+		{
+			return AnalyzeDoubleLiteral(node);
+		}
+
 		case TokenType::NumberLiteral:
 		{
 			return AnalyzeNumberLiteral(node);
@@ -525,10 +529,11 @@ TypeSymbol* ExpressionBinder::AnalyzeLiteralExpression(LiteralExpressionSyntax *
 
 		case TokenType::CharLiteral:
 		{
+			// TODO: add \u support
 			if (node->LiteralToken.Word.size() > 1)
 				Diagnostics.ReportError(node->LiteralToken, L"invalid Char literal length");
 
-			node->AsCharValue = node->LiteralToken.Word[0];
+			//symbol->AsCharValue = node->LiteralToken.Word[0];
 			return SymbolTable::Primitives::Char;
 		}
 
@@ -1531,64 +1536,11 @@ static bool IsValidIntegerSymbol(wchar_t symbol, int base)
 
 TypeSymbol* ExpressionBinder::AnalyzeNumberLiteral(LiteralExpressionSyntax *const node)
 {
-	node->Type = LiteralExpressionSyntax::AsInteger;
+	LiteralSymbol* const symbol = LookupSymbol<LiteralSymbol>(node);
+
 	SyntaxToken token = node->LiteralToken;
 	std::wstring word = token.Word;
 	size_t size = word.size();
-
-	size_t delimeterIndex = word.find('.');
-	if (delimeterIndex != std::string::npos)
-	{
-		node->Type = LiteralExpressionSyntax::AsDouble;
-		//word.pop_back(); // deleting symbol 'f'
-
-		if (word.size() >= 2)
-		{
-			std::wstring prefix = word.substr(0, 2);
-			int dummy = 0;
-
-			if (IsNumBasePrefix(prefix, dummy))
-			{
-				Diagnostics.ReportError(token, L"Floating point number cannot have base prefix");
-				return SymbolTable::Primitives::Double;
-			}
-
-			std::wstring postfix = word.substr(size - 2);
-			size_t dummy2 = 0;
-
-			if (IsVolumeRatioPostfix(postfix, dummy2))
-			{
-				Diagnostics.ReportError(token, L"Floating point number cannot have suffix");
-				return SymbolTable::Primitives::Double;
-			}
-		}
-
-		try
-		{
-			size_t pos = 0;
-			word[delimeterIndex] = L',';
-			node->AsDoubleValue = std::stod(word, &pos);
-
-			if (pos != size)
-			{
-				for (size_t i = pos; i < size; i++)
-				{
-					if (!std::isdigit(word[i]) && !IsValidIntegerPunctuation(word[i]))
-					{
-						Diagnostics.ReportError(token, L"Invalid characters in floating point number");
-						return SymbolTable::Primitives::Double;
-					}
-				}
-			}
-
-			return SymbolTable::Primitives::Double;
-		}
-		catch (const std::exception&)
-		{
-			Diagnostics.ReportError(token, L"Invalid floating point number format");
-			return SymbolTable::Primitives::Double;
-		}
-	}
 
 	size_t numStart = 0;
 	size_t multiplier = 1;
@@ -1609,7 +1561,7 @@ TypeSymbol* ExpressionBinder::AnalyzeNumberLiteral(LiteralExpressionSyntax *cons
 	{
 		size_t pos = 0;
 		std::wstring numPart = word.substr(numStart, size);
-		node->AsIntegerValue = std::stol(numPart, &pos) * multiplier;
+		symbol->AsIntegerValue = std::stol(numPart, &pos) * multiplier;
 
 		if (pos != size)
 		{
@@ -1624,7 +1576,7 @@ TypeSymbol* ExpressionBinder::AnalyzeNumberLiteral(LiteralExpressionSyntax *cons
 		}
 
 		// overflow check
-		if (node->AsIntegerValue < 0 && multiplier > 1)
+		if (symbol->AsIntegerValue < 0 && multiplier > 1)
 		{
 			long check = std::stol(numPart, nullptr, base);
 			if (check > LONG_MAX / multiplier)
@@ -1646,6 +1598,69 @@ TypeSymbol* ExpressionBinder::AnalyzeNumberLiteral(LiteralExpressionSyntax *cons
 		Diagnostics.ReportError(token, L"Invalid number format");
 		return SymbolTable::Primitives::Integer;
 	}
+}
+
+TypeSymbol* ExpressionBinder::AnalyzeDoubleLiteral(LiteralExpressionSyntax* const node)
+{
+	LiteralSymbol* const symbol = LookupSymbol<LiteralSymbol>(node);
+
+	SyntaxToken token = node->LiteralToken;
+	std::wstring word = token.Word;
+	size_t size = word.size();
+
+	size_t delimeterIndex = word.find('.');
+	//word.pop_back(); // deleting symbol 'f'
+
+	if (word.size() >= 2)
+	{
+		std::wstring prefix = word.substr(0, 2);
+		int dummy = 0;
+
+		if (IsNumBasePrefix(prefix, dummy))
+		{
+			Diagnostics.ReportError(token, L"Floating point number cannot have base prefix");
+			return SymbolTable::Primitives::Double;
+		}
+
+		std::wstring postfix = word.substr(size - 2);
+		size_t dummy2 = 0;
+
+		if (IsVolumeRatioPostfix(postfix, dummy2))
+		{
+			Diagnostics.ReportError(token, L"Floating point number cannot have suffix");
+			return SymbolTable::Primitives::Double;
+		}
+	}
+
+	try
+	{
+		return SymbolTable::Primitives::Double;
+		size_t pos = 0;
+		word[delimeterIndex] = L',';
+		symbol->AsDoubleValue = std::stod(word, &pos);
+
+		if (pos != size)
+		{
+			for (size_t i = pos; i < size; i++)
+			{
+				if (!std::isdigit(word[i]) && !IsValidIntegerPunctuation(word[i]))
+				{
+					Diagnostics.ReportError(token, L"Invalid characters in floating point number");
+					return SymbolTable::Primitives::Double;
+				}
+			}
+		}
+	}
+	catch (const std::out_of_range&)
+	{
+		Diagnostics.ReportError(node->LiteralToken, L"Number out of range");
+	}
+	catch (const std::exception&)
+	{
+		Diagnostics.ReportError(node->LiteralToken, L"Invalid floating point number format");
+	}
+
+	return SymbolTable::Primitives::Double;
 }
 
 IndexatorSymbol* ExpressionBinder::ResolveIndexator(IndexatorExpressionSyntax *const node, TypeSymbol* currentType)

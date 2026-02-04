@@ -78,6 +78,7 @@ namespace shard
 		shard::TypeSymbol* SubstituteTypeParameters(shard::TypeSymbol* type, shard::GenericTypeSymbol* genericType);
 
 		shard::TypeSymbol* AnalyzeNumberLiteral(shard::LiteralExpressionSyntax *const node);
+		shard::TypeSymbol* AnalyzeDoubleLiteral(shard::LiteralExpressionSyntax *const node);
 
 	public:
 		inline ExpressionBinder(shard::SemanticModel& model, shard::DiagnosticsContext& diagnostics)

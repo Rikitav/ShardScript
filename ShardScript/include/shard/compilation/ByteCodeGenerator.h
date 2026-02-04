@@ -18,11 +18,12 @@ namespace shard
 		void EmitNop(std::vector<std::byte>& code);
 		void EmitHalt(std::vector<std::byte>& code);
 
+		void EmitLoadConstNull(std::vector<std::byte>& code);
 		void EmitLoadConstBool(std::vector<std::byte>& code, bool value);
 		void EmitLoadConstInt64(std::vector<std::byte>& code, int64_t value);
 		void EmitLoadConstDouble64(std::vector<std::byte>& code, double value);
 		void EmitLoadConstChar16(std::vector<std::byte>& code, wchar_t value);
-		void EmitLoadConstString(std::vector<std::byte>& code, const wchar_t* value);
+		void EmitLoadConstString(std::vector<std::byte>& code, std::vector<std::byte>& data, const wchar_t* value);
 
 		void EmitLoadVarible(std::vector<std::byte>& code, uint16_t index);
 		void EmitStoreVarible(std::vector<std::byte>& code, uint16_t index);

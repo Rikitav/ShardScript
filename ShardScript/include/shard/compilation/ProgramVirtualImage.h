@@ -11,7 +11,7 @@ namespace shard
 	class SHARD_API ProgramVirtualImage
 	{
 	public:
-		SemanticModel const& SemModel;
+		SemanticModel &const SemModel;
 		MethodSymbol* EntryPoint = nullptr;
 		std::vector<std::byte> DataSection;
 
