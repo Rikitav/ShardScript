@@ -42,21 +42,6 @@ namespace shard
 		void IncrementReference();
 		void DecrementReference();
 
-		/*
-		template<typename T>
-		inline void WritePrimitive(T& value)
-		{
-			void* ptr = &value;
-			WriteMemory(0, Info->MemoryBytesSize, ptr);
-		}
-
-		template<typename T>
-		inline T ReadPrimitive()
-		{
-			return *reinterpret_cast<T*>(Ptr);
-		}
-		*/
-
 		void WriteBoolean(const bool& value) const;
 		void WriteInteger(const int64_t& value) const;
 		void WriteDouble(const double& value) const;

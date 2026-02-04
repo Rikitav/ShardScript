@@ -52,10 +52,10 @@ LONG WINAPI UnhandledExceptionFilterFunction(PEXCEPTION_POINTERS exception)
 	return 0;
 }
 
-bool CheckFilesExisting(ConsoleArguments& args)
+bool CheckFilesExisting()
 {
 	bool anyUnrealFiles = false;
-	for (const std::wstring& file : args.FilesToCompile)
+	for (const std::wstring& file : shard::ConsoleArguments::FilesToCompile)
 	{
 		if (!fs::exists(file))
 		{
@@ -108,24 +108,23 @@ int wmain(int argc, wchar_t* argv[])
 		setlocale(LC_ALL, "");
 		signal(SIGINT, SigIntHandler);
 		SetUnhandledExceptionFilter(UnhandledExceptionFilterFunction);
+		ShardUtilities::ParseArguments(argc, argv);
 
-		ConsoleArguments args = ShardUtilities::ParseArguments(argc, argv);
-
-		if (args.ShowHelp)
+		if (shard::ConsoleArguments::ShowHelp)
 		{
 			std::wstring version = ShardUtilities::GetFileVersion();
 			std::wcout << "ShardLang interpreter v" << version;
 			return 0;
 		}
 
-		if (args.AssociateScriptFile)
+		if (shard::ConsoleArguments::AssociateScriptFile)
 		{
 			ShardUtilities::AssociateRegistry();
 			std::wcout << "File association successsfuly installed" << std::endl;
 			return 0;
 		}
 
-		if (!CheckFilesExisting(args))
+		if (!CheckFilesExisting())
 			return 1;
 
 		DiagnosticsContext diagnostics;
@@ -133,7 +132,7 @@ int wmain(int argc, wchar_t* argv[])
 		SemanticModel semanticModel(syntaxTree);
 
 		fs::path currentDirectory = GetCurrentDirectoryPath();
-		if (!args.ExcludeStd)
+		if (!shard::ConsoleArguments::ExcludeStd)
 		{
 			fs::path stdlibFilepath = currentDirectory / stdlibFilename;
 			if (!fs::exists(stdlibFilepath))
@@ -155,7 +154,7 @@ int wmain(int argc, wchar_t* argv[])
 		}
 
 		SourceParser parser(diagnostics);
-		for (const std::wstring& file : args.FilesToCompile)
+		for (const std::wstring& file : shard::ConsoleArguments::FilesToCompile)
 		{
 			FileReader reader(file);
 			LexicalAnalyzer lexer(reader);

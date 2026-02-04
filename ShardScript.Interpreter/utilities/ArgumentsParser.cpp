@@ -4,13 +4,12 @@
 
 #include "InterpreterUtilities.h"
 
-shard::ConsoleArguments shard::ShardUtilities::ParseArguments(int argc, wchar_t* argv[])
+void shard::ShardUtilities::ParseArguments(int argc, wchar_t* argv[])
 {
-    shard::ConsoleArguments args;
     if (argc <= 1)
     {
-        args.UseInteractive = true;
-        return args;
+        shard::ConsoleArguments::UseInteractive = true;
+        return;
     }
 
     for (int i = 1; i < argc; i++)
@@ -18,27 +17,35 @@ shard::ConsoleArguments shard::ShardUtilities::ParseArguments(int argc, wchar_t*
         std::wstring arg = argv[i];
         if (arg == L"--interactive" || arg == L"-i")
         {
-            args.UseInteractive = true;
+            shard::ConsoleArguments::UseInteractive = true;
         }
         else if (arg == L"--associate")
         {
-            args.AssociateScriptFile = true;
+            shard::ConsoleArguments::AssociateScriptFile = true;
         }
         else if (arg == L"--help" || arg == L"-h")
         {
-            args.ShowHelp = true;
+            shard::ConsoleArguments::ShowHelp = true;
         }
         else if (arg == L"--no-std")
         {
-            args.ExcludeStd = true;
+            shard::ConsoleArguments::ExcludeStd = true;
+        }
+        else if (arg == L"--show-decompile")
+        {
+            shard::ConsoleArguments::ShowDecompile = true;
+            shard::ConsoleArguments::RunProgram = false;
+        }
+        else if (arg == L"--decompile-defore-run")
+        {
+            shard::ConsoleArguments::ShowDecompile = true;
+            shard::ConsoleArguments::RunProgram = true;
         }
         else
         {
-            args.FilesToCompile.push_back(arg);
+            shard::ConsoleArguments::FilesToCompile.push_back(arg);
         }
     }
-
-    return args;
 }
 
 std::wstring shard::ShardUtilities::NoralizePath(const std::wstring& messyPath)

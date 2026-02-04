@@ -1,4 +1,6 @@
 #pragma once
+#include <shard/ShardScriptAPI.h>
+
 #include <shard/parsing/semantic/SemanticModel.h>
 #include <shard/syntax/symbols/MethodSymbol.h>
 
@@ -6,7 +8,7 @@
 
 namespace shard
 {
-	class ProgramVirtualImage
+	class SHARD_API ProgramVirtualImage
 	{
 	public:
 		SemanticModel const& SemModel;
