@@ -24,8 +24,8 @@ namespace shard
 		void EmitLoadConstChar16(std::vector<std::byte>& code, wchar_t value);
 		void EmitLoadConstString(std::vector<std::byte>& code, const wchar_t* value);
 
-		void EmitLoadVarible(std::vector<std::byte>& code, size_t index);
-		void EmitStoreVarible(std::vector<std::byte>& code, size_t index);
+		void EmitLoadVarible(std::vector<std::byte>& code, uint16_t index);
+		void EmitStoreVarible(std::vector<std::byte>& code, uint16_t index);
 
 		void EmitJump(std::vector<std::byte>& code, size_t jump);
 		void EmitJumpTrue(std::vector<std::byte>& code, size_t jump);

@@ -69,14 +69,14 @@ namespace shard
 		/// <summary>
 		/// Pops ObjectInstance* from stack and stores it to variable slot at given index.
 		/// <para>Includes 1 parameter :</para>
-		/// <para>> short Value - Zero-based index of variable, where instance will be written to.</para>
+		/// <para>> uint16_t Value - Zero-based index of variable, where instance will be written to.</para>
 		/// </summary>
 		StoreVariable,
 		
 		/// <summary>
 		/// Pushes copy of ObjectInstance* from variable slot on given index to stack top.
 		/// <para>Includes 1 parameter :</para>
-		/// <para>> short Value - Zero-based index of variable, where instance will be readed from.</para>
+		/// <para>> uint16_t Value - Zero-based index of variable, where instance will be readed from.</para>
 		/// </summary>
 		LoadVariable,
 
@@ -112,7 +112,7 @@ namespace shard
 		Math_Substraction,
 		Math_Multiplication,
 		Math_Division,
-		Math_Modification,
+		Math_Module,
 		Math_Power,
 
 		/// <summary>
