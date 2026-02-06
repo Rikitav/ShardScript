@@ -19,6 +19,7 @@ namespace shard
 		inline ByteCodeDecoder(const std::vector<std::byte>& code) : _code(code) { }
 
 		bool IsEOF();
+		size_t Index();
 		void Seek(fpos_t amount);
 		OpCode AbsorbOpCode();
 

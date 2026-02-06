@@ -167,6 +167,9 @@
     <ClCompile Include="src\compilation\ByteCodeDecoder.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
+    <ClCompile Include="src\runtime\ProgramDisassembler.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\shard\parsing\SyntaxTree.h">
@@ -487,9 +490,6 @@
     <ClInclude Include="include\shard\compilation\AbstractEmiter.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="include\shard\compilation\OperationCode.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
     <ClInclude Include="include\shard\compilation\ProgramVirtualImage.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
@@ -518,6 +518,9 @@
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="include\shard\compilation\ByteCodeDecoder.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\compilation\OperationCode.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>

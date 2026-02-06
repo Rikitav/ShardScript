@@ -58,6 +58,6 @@ namespace shard
 		void EmitStoreStaticField(std::vector<std::byte>& code, FieldSymbol* type);
 
 		void EmitCallMethodSymbol(std::vector<std::byte>& code, MethodSymbol* method);
-		void EmitCallFunction(std::vector<std::byte>& code, MethodSymbolDelegate* func);
+		//void EmitCallFunction(std::vector<std::byte>& code, MethodSymbolDelegate* func);
 	};
 }

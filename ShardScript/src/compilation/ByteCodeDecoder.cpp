@@ -31,6 +31,11 @@ bool ByteCodeDecoder::IsEOF()
     return _ip >= _code.size();
 }
 
+size_t ByteCodeDecoder::Index()
+{
+    return _ip;
+}
+
 void ByteCodeDecoder::Seek(fpos_t amount)
 {
     // lower bound check

@@ -14,7 +14,7 @@ namespace shard
 		/// <summary>
 		/// VM immidietly stops execution upon receiving this byte.
 		/// <para>Includes 1 parameter :</para>
-		/// <para>> int exit_code - exit code of virtual program image
+		/// <para>> int32_t exit_code - exit code of virtual program image
 		/// </summary>
 		Halt,
 
@@ -223,13 +223,6 @@ namespace shard
 		/// <para>Includes 1 parameter :</para>
 		/// <para>> MethodSymbol* pValue - pointer to MethodSymbol to invoke.</para>
 		/// </summary>
-		CallMethodSymbol,
-
-		/// <summary>
-		/// Invokes C-Function from pointer. Function signature should match 'MethodSymbolDelegate' typedef
-		/// <para>Includes 1 parameter :</para>
-		/// <para>> MethodSymbolDelegate* pValue - pointer to C-Function to invoke.</para>
-		/// </summary>
-		CallFunction,
+		CallMethodSymbol
 	};
 }
