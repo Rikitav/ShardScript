@@ -283,33 +283,6 @@ void ExpressionBinder::VisitMethodDeclaration(MethodDeclarationSyntax *const nod
 		}
 	}
 
-	/*
-	if (symbol->Name == L"Main")
-	{
-		Table->EntryPointCandidates.push_back(symbol);
-		if (symbol->Accesibility != SymbolAccesibility::Public)
-			Diagnostics.ReportError(node->IdentifierToken, L"Main entry point should be public");
-
-		if (!symbol->IsStatic)
-			Diagnostics.ReportError(node->IdentifierToken, L"Main entry point should be static");
-
-		if (symbol->IsAbstract)
-			Diagnostics.ReportError(node->IdentifierToken, L"Main entry point cannot be abstract");
-
-		if (symbol->IsExtern)
-			Diagnostics.ReportError(node->IdentifierToken, L"Main entry point cannot be external");
-
-		if (symbol->IsVirtual)
-			Diagnostics.ReportError(node->IdentifierToken, L"Main entry point cannot be virtual");
-
-		if (symbol->Parameters.size() != 0)
-			Diagnostics.ReportError(node->IdentifierToken, L"Main entry point should have empty parameters list");
-
-		if (symbol->ReturnType != SymbolTable::Primitives::Void)
-			Diagnostics.ReportError(node->IdentifierToken, L"Main entry point should have 'void' return type");
-	}
-	*/
-
 	PopScope();
 }
 
@@ -1000,7 +973,10 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 			symbol = currentType->FindField(memberName);
 			if (symbol == nullptr)
 			{
-				symbol = *std::find_if(currentType->Methods.begin(), currentType->Methods.end(), [memberName](const MethodSymbol* method) { return method->Name == memberName; });
+				symbol = *std::find_if(
+					currentType->Methods.begin(), currentType->Methods.end(),
+					[memberName](const MethodSymbol* method) { return method->Name == memberName; });
+
 				if (symbol == nullptr)
 				{
 					Diagnostics.ReportError(node->IdentifierToken, L"Member '" + memberName + L"' not found in type '" + currentType->Name + L"'");
@@ -1037,7 +1013,7 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 
 		case SyntaxKind::FieldDeclaration:
 		{
-			FieldSymbol* fieldSymbol = node->ToField = static_cast<FieldSymbol*>(symbol);
+			FieldSymbol* fieldSymbol = static_cast<FieldSymbol*>(symbol);
 			bool isStaticContext = GetIsStaticContext(node->PreviousExpression);
 
 			if (isStaticContext && !fieldSymbol->IsStatic)
@@ -1053,8 +1029,9 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 			}
 
 			node->IsStaticContext = false;
+			node->ToField = fieldSymbol;
+
 			TypeSymbol* fieldType = fieldSymbol->ReturnType;
-			
 			if (fieldType->Kind == SyntaxKind::TypeParameter)
 			{
 				if (currentType->Kind == SyntaxKind::GenericType)
@@ -1079,6 +1056,7 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 		case SyntaxKind::Parameter:
 		{
 			ParameterSymbol* paramSymbol = static_cast<ParameterSymbol*>(symbol);
+			node->ToParameter = paramSymbol;
 			node->IsStaticContext = false;
 			return paramSymbol->Type;
 		}

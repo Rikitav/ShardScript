@@ -17,10 +17,8 @@ namespace shard
 		std::vector<UsingDirectiveSyntax*> Usings;
 		std::vector<MemberDeclarationSyntax*> Members;
 
-		inline CompilationUnitSyntax() : SyntaxNode(SyntaxKind::CompilationUnit, nullptr)
-		{
-
-		}
+		inline CompilationUnitSyntax()
+			: SyntaxNode(SyntaxKind::CompilationUnit, nullptr) { }
 
 		inline CompilationUnitSyntax(const CompilationUnitSyntax& other) = delete;
 

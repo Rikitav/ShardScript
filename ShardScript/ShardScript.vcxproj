@@ -137,7 +137,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\compilation\AbstractEmiter.cpp" />
-    <ClCompile Include="src\compilation\ByteCodeGenerator.cpp" />
+    <ClCompile Include="src\compilation\ByteCodeDecoder.cpp" />
+    <ClCompile Include="src\compilation\ByteCodeEncoder.cpp" />
     <ClCompile Include="src\parsing\analysis\DiagnosticSeverity.cpp" />
     <ClCompile Include="src\parsing\SourceParser.cpp" />
     <ClCompile Include="src\runtime\VirtualMachine.cpp" />
@@ -187,9 +188,10 @@
     <ClCompile Include="src\syntax\SyntaxHelpers.cpp" />
     <ClCompile Include="src\Vector.cpp" />
     <ClInclude Include="include\shard\compilation\AbstractEmiter.h" />
-    <ClInclude Include="include\shard\compilation\ByteCodeGenerator.h" />
+    <ClInclude Include="include\shard\compilation\ByteCodeDecoder.h" />
+    <ClInclude Include="include\shard\compilation\ByteCodeEncoder.h" />
     <ClInclude Include="include\shard\compilation\OperationCode.h" />
-    <ClInclude Include="include\shard\compilation\ProgramDisassembler.h" />
+    <ClInclude Include="include\shard\runtime\ProgramDisassembler.h" />
     <ClInclude Include="include\shard\compilation\ProgramVirtualImage.h" />
     <ClInclude Include="include\shard\runtime\EvalStack.h" />
     <ClInclude Include="include\shard\runtime\framework\FrameworkModule.h" />

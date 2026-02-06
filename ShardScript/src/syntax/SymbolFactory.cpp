@@ -319,14 +319,14 @@ AccessorSymbol* SymbolFactory::Accessor(AccessorDeclarationSyntax* node, Propert
 {
 	std::wstring accessorName = propertySymbol->Name + L"_" + node->KeywordToken.Word;
 	AccessorSymbol* symbol = new AccessorSymbol(accessorName);
-	symbol->HandleType = MethodHandleType::Body;
-	//symbol->Body = node->Body;
 	symbol->Accesibility = SymbolAccesibility::Public;
 	symbol->IsStatic = propertySymbol->IsStatic;
 	SetAccesibility(symbol, node->Modifiers);
 
 	if (symbol->IsExtern)
 		symbol->HandleType = MethodHandleType::External;
+	else
+		symbol->HandleType = MethodHandleType::Body;
 
 	if (setProperty)
 	{
@@ -357,6 +357,8 @@ MethodSymbol* SymbolFactory::Method(MethodDeclarationSyntax* node)
 
 	if (symbol->IsExtern)
 		symbol->HandleType = MethodHandleType::External;
+	else
+		symbol->HandleType = MethodHandleType::Body;
 
 	if (!symbol->IsStatic)
 	{
@@ -382,6 +384,8 @@ ConstructorSymbol* SymbolFactory::Constructor(ConstructorDeclarationSyntax* node
 
 	if (symbol->IsExtern)
 		symbol->HandleType = MethodHandleType::External;
+	else
+		symbol->HandleType = MethodHandleType::Body;
 
 	if (!symbol->IsStatic)
 	{

@@ -9,6 +9,7 @@
 #include <shard/syntax/symbols/MethodSymbol.h>
 
 #include <stack>
+#include <vector>
 
 namespace shard
 {
@@ -24,15 +25,17 @@ namespace shard
 	class SHARD_API CallStackFrame
 	{
 	public:
-		const shard::TypeSymbol* WithinType;
-		const shard::MethodSymbol* Method;
-		const CallStackFrame* PreviousFrame;
+		CallStackFrame* PreviousFrame;
+		TypeSymbol* WithinType;
+		MethodSymbol* Method;
 
-		std::stack<shard::InboundVariablesContext*> VariablesStack;
+		std::vector<ObjectInstance*> EvalStack;
+		std::vector<TypeSymbol*> TypeArguments;
+
 		FrameInterruptionReason InterruptionReason = FrameInterruptionReason::None;
 		ObjectInstance* InterruptionRegister = nullptr;
 
-		inline CallStackFrame(const shard::MethodSymbol* method, const shard::TypeSymbol* withinType, const CallStackFrame* previousFrame)
+		inline CallStackFrame(CallStackFrame* previousFrame, TypeSymbol* withinType, MethodSymbol* method)
 			: WithinType(withinType), Method(method), PreviousFrame(previousFrame) { }
 
 		inline bool interrupted() const

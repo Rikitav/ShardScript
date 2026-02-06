@@ -3,23 +3,25 @@
 
 #include <shard/SyntaxVisitor.h>
 #include <shard/compilation/ProgramVirtualImage.h>
-#include <shard/compilation/ByteCodeGenerator.h>
+#include <shard/compilation/ByteCodeEncoder.h>
 
 namespace shard
 {
 	// basically, a compiler
 	class SHARD_API AbstractEmiter : SyntaxVisitor
 	{
-        shard::ByteCodeGenerator Generator;
+        shard::ByteCodeEncoder Encoder;
         shard::MethodSymbol* GeneratingFor = nullptr;
 		shard::ProgramVirtualImage& Program;
 		std::vector<shard::MethodSymbol*> EntryPointCandidates;
 
 	public:
 		inline AbstractEmiter(shard::ProgramVirtualImage& program, shard::SemanticModel& model, shard::DiagnosticsContext& diagnostics)
-            : SyntaxVisitor(model, diagnostics), Program(program), Generator() { }
+            : SyntaxVisitor(model, diagnostics), Program(program), Encoder() { }
 
         void VisitSyntaxTree(shard::SyntaxTree& tree) override;
+
+        void VisitArgumentsList(ArgumentsListSyntax* node) override;
 
 		void VisitMethodDeclaration(shard::MethodDeclarationSyntax *const node) override;
 		void VisitConstructorDeclaration(shard::ConstructorDeclarationSyntax *const node) override;

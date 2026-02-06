@@ -34,13 +34,51 @@ void AbstractEmiter::VisitSyntaxTree(SyntaxTree& tree)
 	SetEntryPoint(Diagnostics, EntryPointCandidates, Table, Program);
 }
 
+void AbstractEmiter::VisitArgumentsList(ArgumentsListSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	// reverse itteration for method stack loading
+	for (auto riter = node->Arguments.rbegin(); riter != node->Arguments.rend(); riter++)
+		VisitArgument(*riter);
+}
+
 void AbstractEmiter::VisitMethodDeclaration(MethodDeclarationSyntax *const node)
 {
 	GeneratingFor = LookupSymbol<MethodSymbol>(node);
+	if (GeneratingFor == nullptr)
+	{
+		Diagnostics.ReportError(node->IdentifierToken, L"Emiting target not found");
+		return;
+	}
 
 	size_t reserve = node->Body->Statements.size() * 20;
 	GeneratingFor->ExecutableByteCode.reserve(reserve);
 	VisitStatementsBlock(node->Body);
+
+	if (GeneratingFor->Name == L"Main")
+	{
+		EntryPointCandidates.push_back(GeneratingFor);
+		if (GeneratingFor->Accesibility != SymbolAccesibility::Public)
+			Diagnostics.ReportError(node->IdentifierToken, L"Main entry point should be public");
+
+		if (!GeneratingFor->IsStatic)
+			Diagnostics.ReportError(node->IdentifierToken, L"Main entry point should be static");
+
+		if (GeneratingFor->IsExtern)
+			Diagnostics.ReportError(node->IdentifierToken, L"Main entry point cannot be external");
+
+		if (GeneratingFor->Parameters.size() != 0)
+			Diagnostics.ReportError(node->IdentifierToken, L"Main entry point should have empty parameters list");
+
+		if (GeneratingFor->ReturnType != SymbolTable::Primitives::Void)
+			Diagnostics.ReportError(node->IdentifierToken, L"Main entry point should have 'void' return type");
+
+		TypeSymbol* withinType = static_cast<TypeSymbol*>(GeneratingFor->Parent);
+		if (withinType->TypeParameters.size() > 0)
+			Diagnostics.ReportError(node->IdentifierToken, L"Type containing entry point should not have any type parameters");
+	}
 
 	GeneratingFor->ExecutableByteCode.shrink_to_fit();
 	GeneratingFor = nullptr;
@@ -49,6 +87,11 @@ void AbstractEmiter::VisitMethodDeclaration(MethodDeclarationSyntax *const node)
 void AbstractEmiter::VisitConstructorDeclaration(ConstructorDeclarationSyntax *const node)
 {
 	GeneratingFor = LookupSymbol<ConstructorSymbol>(node);
+	if (GeneratingFor == nullptr)
+	{
+		Diagnostics.ReportError(node->IdentifierToken, L"Emiting target not found");
+		return;
+	}
 
 	size_t reserve = node->Body->Statements.size() * 20;
 	GeneratingFor->ExecutableByteCode.reserve(reserve);
@@ -61,6 +104,11 @@ void AbstractEmiter::VisitConstructorDeclaration(ConstructorDeclarationSyntax *c
 void AbstractEmiter::VisitAccessorDeclaration(AccessorDeclarationSyntax *const node)
 {
 	GeneratingFor = LookupSymbol<AccessorSymbol>(node);
+	if (GeneratingFor == nullptr)
+	{
+		Diagnostics.ReportError(node->IdentifierToken, L"Emiting target not found");
+		return;
+	}
 
 	size_t reserve = node->Body->Statements.size() * 20;
 	GeneratingFor->ExecutableByteCode.reserve(reserve);
@@ -77,16 +125,9 @@ void AbstractEmiter::VisitExpressionStatement(ExpressionStatementSyntax *const n
 
 void AbstractEmiter::VisitVariableStatement(VariableStatementSyntax *const node)
 {
-	if (GeneratingFor == nullptr)
-	{
-		Diagnostics.ReportError(node->AssignToken, L"Emiting target not found");
-		return;
-	}
-
 	VariableSymbol* var = LookupSymbol<VariableSymbol>(node);
-	
 	VisitExpression(node->Expression);
-	Generator.EmitStoreVarible(GeneratingFor->ExecutableByteCode, var->SlotIndex);
+	Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, var->SlotIndex);
 }
 
 void AbstractEmiter::VisitReturnStatement(ReturnStatementSyntax *const node)
@@ -140,39 +181,42 @@ void AbstractEmiter::VisitLiteralExpression(LiteralExpressionSyntax *const node)
 	{
 		case TokenType::NullLiteral:
 		{
-			Generator.EmitLoadConstNull(GeneratingFor->ExecutableByteCode);
+			Encoder.EmitLoadConstNull(GeneratingFor->ExecutableByteCode);
 			break;
 		}
 
 		case TokenType::CharLiteral:
 		{
-			Generator.EmitLoadConstChar16(GeneratingFor->ExecutableByteCode, node->LiteralToken.Word[0]);
+			Encoder.EmitLoadConstChar16(GeneratingFor->ExecutableByteCode, node->LiteralToken.Word[0]);
 			break;
 		}
 
 		case TokenType::StringLiteral:
 		{
-			Generator.EmitLoadConstString(GeneratingFor->ExecutableByteCode, Program.DataSection, node->LiteralToken.Word.data());
+			Encoder.EmitLoadConstString(GeneratingFor->ExecutableByteCode, Program.DataSection, node->LiteralToken.Word.data());
 			break;
 		}
 
 		case TokenType::NumberLiteral:
 		{
-			Generator.EmitLoadConstInt64(GeneratingFor->ExecutableByteCode, symbol->AsIntegerValue);
+			Encoder.EmitLoadConstInt64(GeneratingFor->ExecutableByteCode, symbol->AsIntegerValue);
 			break;
 		}
 
 		case TokenType::DoubleLiteral:
 		{
-			Generator.EmitLoadConstDouble64(GeneratingFor->ExecutableByteCode, symbol->AsDoubleValue);
+			Encoder.EmitLoadConstDouble64(GeneratingFor->ExecutableByteCode, symbol->AsDoubleValue);
 			break;
 		}
 
 		case TokenType::BooleanLiteral:
 		{
-			Generator.EmitLoadConstBool(GeneratingFor->ExecutableByteCode, symbol->AsBooleanValue);
+			Encoder.EmitLoadConstBool(GeneratingFor->ExecutableByteCode, symbol->AsBooleanValue);
 			break;
 		}
+
+		default:
+			throw std::runtime_error("unsupported literal type");
 	}
 }
 
@@ -183,11 +227,19 @@ void AbstractEmiter::VisitBinaryExpression(BinaryExpressionSyntax *const node)
 
 	switch (node->OperatorToken.Type)
 	{
-		case TokenType::AddOperator:
+		case TokenType::AssignOperator:
 		{
-			Generator.EmitMathAdd(GeneratingFor->ExecutableByteCode);
 			break;
 		}
+
+		case TokenType::AddOperator:
+		{
+			Encoder.EmitMathAdd(GeneratingFor->ExecutableByteCode);
+			break;
+		}
+
+		default:
+			throw std::runtime_error("unsupported operator type");
 	}
 }
 
@@ -197,6 +249,8 @@ void AbstractEmiter::VisitUnaryExpression(UnaryExpressionSyntax *const node)
 
 void AbstractEmiter::VisitObjectCreationExpression(ObjectExpressionSyntax *const node)
 {
+	VisitArgumentsList(node->ArgumentsList);
+	Encoder.EmitNewObject(GeneratingFor->ExecutableByteCode, node->TypeSymbol);
 }
 
 void AbstractEmiter::VisitCollectionExpression(CollectionExpressionSyntax *const node)
@@ -213,14 +267,44 @@ void AbstractEmiter::VisitTernaryExpression(TernaryExpressionSyntax *const node)
 
 void AbstractEmiter::VisitInvocationExpression(InvokationExpressionSyntax *const node)
 {
-	VisitExpression(node->PreviousExpression);
-	Generator.EmitCallMethodSymbol(GeneratingFor->ExecutableByteCode, node->Symbol);
+	VisitArgumentsList(node->ArgumentsList);
+	if (!node->Symbol->IsStatic)
+		VisitExpression(node->PreviousExpression);
+
+	Encoder.EmitCallMethodSymbol(GeneratingFor->ExecutableByteCode, node->Symbol);
 }
 
 void AbstractEmiter::VisitMemberAccessExpression(MemberAccessExpressionSyntax *const node)
 {
 	VisitExpression(node->PreviousExpression);
 
+	// TODO: Expand
+	if (node->ToParameter != nullptr)
+	{
+		ParameterSymbol* param = node->ToParameter;
+		Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, param->SlotIndex);
+		return;
+	}
+
+	if (node->ToVariable != nullptr)
+	{
+		VariableSymbol* var = node->ToVariable;
+		Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, var->SlotIndex);
+		return;
+	}
+
+	if (node->ToField != nullptr)
+	{
+		FieldSymbol* field = node->ToField;
+		if (field->IsStatic)
+		{
+			Encoder.EmitLoadStaticField(GeneratingFor->ExecutableByteCode, field);
+			return;
+		}
+
+		Encoder.EmitLoadField(GeneratingFor->ExecutableByteCode, field);
+		return;
+	}
 }
 
 void AbstractEmiter::VisitIndexatorExpression(IndexatorExpressionSyntax *const node)

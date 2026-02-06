@@ -63,7 +63,8 @@ static ObjectInstance* Gc_Info(const MethodSymbol* symbol, InboundVariablesConte
 static ObjectInstance* Var_Info(const MethodSymbol* symbol, InboundVariablesContext* arguments)
 {
 	int count = 0;
-	std::wcout << "\nCall stack frame variables dump" << std::endl;
+	std::wcout << "\nCall stack frame variables dump :" << std::endl;
+	/*
 	for (const InboundVariablesContext* context = AbstractInterpreter::CurrentFrame()->PreviousFrame->VariablesStack.top(); context != nullptr; context = context->Previous)
 	{
 		for (const auto& varReg : context->Variables)
@@ -77,6 +78,7 @@ static ObjectInstance* Var_Info(const MethodSymbol* symbol, InboundVariablesCont
 				<< L" | PTR : " << reg->Ptr << std::endl;
 		}
 	}
+	*/
 
 	std::wcout << "Total count : " << count << std::endl;
 	return nullptr; // void
