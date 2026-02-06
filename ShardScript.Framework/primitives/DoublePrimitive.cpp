@@ -1,4 +1,4 @@
-#include <shard/runtime/InboundVariablesContext.h>
+#include <shard/runtime/ArgumentsSpan.h>
 #include <shard/runtime/ObjectInstance.h>
 #include <shard/parsing/semantic/SymbolTable.h>
 
@@ -20,9 +20,9 @@
 using namespace shard;
 
 // Integer methods
-static ObjectInstance* ToString(const MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* ToString(const MethodSymbol* symbol, ArgumentsSpan& arguments)
 {
-	ObjectInstance* instance = arguments->TryFind(L"this");
+	const ObjectInstance* instance = arguments[0];
 	double value = instance->AsDouble();
 	std::wstring str = std::to_wstring(value);
 	return ObjectInstance::FromValue(str);

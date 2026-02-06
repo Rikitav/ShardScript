@@ -178,7 +178,7 @@
     <ClCompile Include="src\runtime\AbstractInterpreter.cpp" />
     <ClCompile Include="src\runtime\ConsoleHelper.cpp" />
     <ClCompile Include="src\runtime\GarbageCollector.cpp" />
-    <ClCompile Include="src\runtime\InboundVariablesContext.cpp" />
+    <ClCompile Include="src\runtime\ArgumentsSpan.cpp" />
     <ClCompile Include="src\runtime\ObjectInstance.cpp" />
     <ClCompile Include="src\runtime\PrimitiveMathModule.cpp" />
     <ClCompile Include="src\parsing\analysis\Diagnostic.cpp" />
@@ -224,7 +224,7 @@
     <ClInclude Include="include\shard\runtime\AbstractInterpreter.h" />
     <ClInclude Include="include\shard\runtime\ConsoleHelper.h" />
     <ClInclude Include="include\shard\runtime\GarbageCollector.h" />
-    <ClInclude Include="include\shard\runtime\InboundVariablesContext.h" />
+    <ClInclude Include="include\shard\runtime\ArgumentsSpan.h" />
     <ClInclude Include="include\shard\runtime\ObjectInstance.h" />
     <ClInclude Include="include\shard\runtime\CallStackFrame.h" />
     <ClInclude Include="include\shard\runtime\PrimitiveMathModule.h" />

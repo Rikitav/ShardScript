@@ -41,7 +41,7 @@
     <ClCompile Include="src\syntax\SyntaxFacts.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="src\runtime\InboundVariablesContext.cpp">
+    <ClCompile Include="src\runtime\ArgumentsSpan.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="include\shard\parsing\lexical\LexicalBuffer.h">
@@ -247,7 +247,7 @@
     <ClInclude Include="include\shard\runtime\GarbageCollector.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="include\shard\runtime\InboundVariablesContext.h">
+    <ClInclude Include="include\shard\runtime\ArgumentsSpan.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="include\shard\ShardScriptAPI.h">

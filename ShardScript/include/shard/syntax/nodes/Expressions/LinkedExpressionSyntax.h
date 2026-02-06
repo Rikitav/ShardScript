@@ -51,6 +51,10 @@ namespace shard
 		inline MemberAccessExpressionSyntax(SyntaxToken identifier, ExpressionSyntax* previous, SyntaxNode *const parent)
 			: LinkedExpressionNode(SyntaxKind::MemberAccessExpression, previous, parent), IdentifierToken(identifier) { }
 
+		inline MemberAccessExpressionSyntax(SyntaxToken identifier, ExpressionSyntax* previous, SyntaxNode* const parent, const SyntaxKind kind)
+			: LinkedExpressionNode(kind, previous, parent), IdentifierToken(identifier) {
+		}
+
 		inline MemberAccessExpressionSyntax(const MemberAccessExpressionSyntax&) = delete;
 
 		inline virtual ~MemberAccessExpressionSyntax()
@@ -88,12 +92,7 @@ namespace shard
 		shard::IndexatorSymbol* IndexatorSymbol = nullptr;
 
 		inline IndexatorExpressionSyntax(SyntaxToken identifier, ExpressionSyntax* previous, SyntaxNode *const parent)
-			: MemberAccessExpressionSyntax(identifier, previous, parent)
-		{
-			// hehe
-			SyntaxKind* pKind = const_cast<SyntaxKind*>(&Kind);
-			*pKind = SyntaxKind::IndexatorExpression;
-		}
+			: MemberAccessExpressionSyntax(identifier, previous, parent, SyntaxKind::IndexatorExpression) { }
 
 		inline IndexatorExpressionSyntax(const IndexatorExpressionSyntax&) = delete;
 

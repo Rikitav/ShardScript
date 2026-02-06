@@ -158,7 +158,7 @@ void ProgramDisassembler::Disassemble(std::wostream& out, ProgramVirtualImage& p
 
             default:
             {
-                out << L"unknown (0x" << std::hex << (uint16_t)op << L")";
+                out << L"unknown (0x" << std::hex << static_cast<uint16_t>(op) << L")";
                 break;
             }
         }
