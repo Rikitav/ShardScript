@@ -21,22 +21,23 @@
 #include <shard/syntax/symbols/VariableSymbol.h>
 #include <shard/syntax/symbols/ArrayTypeSymbol.h>
 #include <shard/syntax/symbols/TypeParameterSymbol.h>
+#include <shard/syntax/symbols/DelegateTypeSymbol.h>
 #include <shard/syntax/symbols/GenericTypeSymbol.h>
-#include <shard/syntax/nodes/TypeParametersListSyntax.h>
-#include <shard/syntax/nodes/Types/GenericTypeSyntax.h>
-#include <shard/syntax/nodes/TypeArgumentsListSyntax.h>
 
 #include <shard/syntax/nodes/TypeSyntax.h>
 #include <shard/syntax/nodes/CompilationUnitSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarationSyntax.h>
 #include <shard/syntax/nodes/ParametersListSyntax.h>
 #include <shard/syntax/nodes/ExpressionSyntax.h>
+#include <shard/syntax/nodes/TypeArgumentsListSyntax.h>
+#include <shard/syntax/nodes/TypeParametersListSyntax.h>
 
 #include <shard/syntax/nodes/Directives/UsingDirectiveSyntax.h>
 
 #include <shard/syntax/nodes/Types/IdentifierNameTypeSyntax.h>
 #include <shard/syntax/nodes/Types/ArrayTypeSyntax.h>
 #include <shard/syntax/nodes/Types/PredefinedTypeSyntax.h>
+#include <shard/syntax/nodes/Types/GenericTypeSyntax.h>
 
 #include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.h>
@@ -53,8 +54,6 @@
 
 #include <vector>
 #include <string>
-#include <shard/syntax/symbols/GenericTypeSymbol.h>
-#include <shard/syntax/symbols/DelegateTypeSymbol.h>
 
 using namespace shard;
 

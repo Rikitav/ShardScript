@@ -161,7 +161,10 @@
     <ClCompile Include="src\compilation\AbstractEmiter.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="src\compilation\ByteCodeGenerator.cpp">
+    <ClCompile Include="src\compilation\ByteCodeEncoder.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="src\compilation\ByteCodeDecoder.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
   </ItemGroup>
@@ -499,7 +502,7 @@
     <ClInclude Include="include\shard\runtime\CallStack.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="include\shard\compilation\ByteCodeGenerator.h">
+    <ClInclude Include="include\shard\compilation\ByteCodeEncoder.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="include\shard\parsing\SourceParser.h">
@@ -511,7 +514,10 @@
     <ClInclude Include="include\shard\runtime\EvalStack.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="include\shard\compilation\ProgramDisassembler.h">
+    <ClInclude Include="include\shard\runtime\ProgramDisassembler.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shard\compilation\ByteCodeDecoder.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>

@@ -353,7 +353,7 @@ static ObjectInstance* PadRight(const MethodSymbol* symbol, InboundVariablesCont
 	if (widthArg == nullptr)
 		return ObjectInstance::FromValue(value);
 	
-	int width = widthArg->AsInteger();
+	size_t width = widthArg->AsInteger();
 	if (width <= static_cast<int>(value.size()))
 		return ObjectInstance::FromValue(value);
 	
@@ -380,6 +380,7 @@ static ObjectInstance* Remove(const MethodSymbol* symbol, InboundVariablesContex
 	int64_t start = startArg->AsInteger();
 	if (start < 0)
 		start = 0;
+
 	if (start >= static_cast<int>(value.size()))
 		return ObjectInstance::FromValue(value);
 	
@@ -389,6 +390,7 @@ static ObjectInstance* Remove(const MethodSymbol* symbol, InboundVariablesContex
 		int64_t count = countArg->AsInteger();
 		if (count < 0)
 			count = 0;
+
 		if (start + count > static_cast<int>(value.size()))
 			count = static_cast<int>(value.size()) - start;
 		

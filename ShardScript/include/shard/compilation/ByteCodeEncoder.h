@@ -1,8 +1,6 @@
 #pragma once
 #include <shard/ShardScriptAPI.h>
 
-#include <shard/compilation/ProgramVirtualImage.h>
-
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/FieldSymbol.h>
 #include <shard/syntax/symbols/MethodSymbol.h>
@@ -10,10 +8,10 @@
 
 namespace shard
 {
-	class SHARD_API ByteCodeGenerator
+	class SHARD_API ByteCodeEncoder
 	{
 	public:
-		inline ByteCodeGenerator() { }
+		inline ByteCodeEncoder() { }
 
 		void EmitNop(std::vector<std::byte>& code);
 		void EmitHalt(std::vector<std::byte>& code);

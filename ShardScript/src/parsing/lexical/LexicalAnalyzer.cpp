@@ -187,7 +187,7 @@ bool LexicalAnalyzer::ReadNextWhileAlpha(std::wstring& word)
 		if (!isalnum(PeekSymbol) && PeekSymbol != '_')
 			break;
 
-		SourceText->ReadNext(PeekSymbol);
+		SourceText->ReadNext(Symbol);
 		word += Symbol;
 	}
 

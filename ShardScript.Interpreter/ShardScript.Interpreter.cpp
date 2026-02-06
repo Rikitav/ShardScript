@@ -47,12 +47,12 @@ static void SigIntHandler(int signal)
 	exit(SIGINT);
 }
 
-LONG WINAPI UnhandledExceptionFilterFunction(PEXCEPTION_POINTERS exception)
+static LONG WINAPI UnhandledExceptionFilterFunction(PEXCEPTION_POINTERS exception)
 {
 	return 0;
 }
 
-bool CheckFilesExisting()
+static bool CheckFilesExisting()
 {
 	bool anyUnrealFiles = false;
 	for (const std::wstring& file : shard::ConsoleArguments::FilesToCompile)
@@ -67,7 +67,7 @@ bool CheckFilesExisting()
 	return !anyUnrealFiles;
 }
 
-void LoadLibrariesFromDirectoryPath(fs::path path)
+static void LoadLibrariesFromDirectoryPath(fs::path path)
 {
 	for (const fs::directory_entry& entry : std::filesystem::directory_iterator(path))
 	{
@@ -82,19 +82,19 @@ void LoadLibrariesFromDirectoryPath(fs::path path)
 	}
 }
 
-void Execute()
+static void Execute()
 {
 
 }
 
-fs::path GetCurrentDirectoryPath()
+static fs::path GetCurrentDirectoryPath()
 {
 	WCHAR pathBuffer[MAX_PATH];
 	GetModuleFileNameW(NULL, pathBuffer, MAX_PATH);
 	return fs::path(pathBuffer).parent_path();
 }
 
-fs::path GetWorkingDirectoryPath()
+static fs::path GetWorkingDirectoryPath()
 {
 	WCHAR pathBuffer[MAX_PATH];
 	GetCurrentDirectoryW(MAX_PATH, pathBuffer);

@@ -54,6 +54,10 @@
 #include <iterator>
 #include <stack>
 
+// Rest in piss for now, you'll become preprocessing engine, but later
+// I dont need you now, as you failing compilation without during code base rewriting
+// TODO: Rewrite, later
+
 using namespace shard;
 
 std::stack<CallStackFrame*> AbstractInterpreter::callStack;
@@ -68,7 +72,9 @@ CallStackFrame* AbstractInterpreter::CurrentFrame()
 
 void AbstractInterpreter::PushFrame(const MethodSymbol* methodSymbol, const TypeSymbol* withinType)
 {
+	/*
 	callStack.push(new CallStackFrame(methodSymbol, withinType, CurrentFrame()));
+	*/
 }
 
 void AbstractInterpreter::PopFrame()
@@ -83,6 +89,9 @@ void AbstractInterpreter::PopFrame()
 
 InboundVariablesContext* AbstractInterpreter::CurrentContext()
 {
+	return nullptr;
+
+	/*
 	CallStackFrame* frame = CurrentFrame();
 	if (frame == nullptr)
 		return nullptr;
@@ -91,18 +100,23 @@ InboundVariablesContext* AbstractInterpreter::CurrentContext()
 		return nullptr;
 
 	return frame->VariablesStack.top();
+	*/
 }
 
 void AbstractInterpreter::PushContext(InboundVariablesContext* context)
 {
+	/*
 	CurrentFrame()->VariablesStack.push(context);
+	*/
 }
 
 void AbstractInterpreter::PopContext()
 {
+	/*
 	InboundVariablesContext* current = CurrentContext();
 	CurrentFrame()->VariablesStack.pop();
 	delete current;
+	*/
 }
 
 void AbstractInterpreter::TerminateCallStack()
@@ -246,6 +260,9 @@ ObjectInstance* AbstractInterpreter::ExecuteMethod(const MethodSymbol* method, c
 
 ObjectInstance* AbstractInterpreter::ExecuteBlock(const StatementsBlockSyntax* block)
 {
+	return nullptr;
+
+	/*
 	PushContext(new InboundVariablesContext(CurrentContext()));
 	CallStackFrame* frame = CurrentFrame();
 
@@ -258,6 +275,7 @@ ObjectInstance* AbstractInterpreter::ExecuteBlock(const StatementsBlockSyntax* b
 
 	PopContext();
 	return nullptr;
+	*/
 }
 
 ObjectInstance* AbstractInterpreter::ExecuteStatement(const StatementSyntax* statement)
@@ -671,6 +689,8 @@ ObjectInstance* AbstractInterpreter::EvaluateExpression(const ExpressionSyntax* 
 
 ObjectInstance* AbstractInterpreter::EvaluateLiteralExpression(const LiteralExpressionSyntax* expression)
 {
+	return nullptr;
+	/*
 	switch (expression->Type)
 	{
 		case LiteralExpressionSyntax::AsNull:
@@ -694,6 +714,7 @@ ObjectInstance* AbstractInterpreter::EvaluateLiteralExpression(const LiteralExpr
 		default:
 			throw std::runtime_error("Unknown constant literal type");
 	}
+	*/
 }
 
 ObjectInstance* AbstractInterpreter::EvaluateObjectExpression(const ObjectExpressionSyntax* expression)
@@ -759,6 +780,9 @@ static bool IsFieldAccess(const MemberAccessExpressionSyntax* memberExpression, 
 
 ObjectInstance* AbstractInterpreter::EvaluateBinaryExpression(const BinaryExpressionSyntax* expression)
 {
+	return nullptr;
+
+	/*
 	if (expression->OperatorToken.Type == TokenType::AssignOperator)
 		return EvaluateAssignExpression(expression);
 	
@@ -803,6 +827,7 @@ ObjectInstance* AbstractInterpreter::EvaluateBinaryExpression(const BinaryExpres
 	}
 
 	return retReg;
+	*/
 }
 
 ObjectInstance* AbstractInterpreter::EvaluateAssignExpression(const BinaryExpressionSyntax* expression)
@@ -838,6 +863,9 @@ ObjectInstance* AbstractInterpreter::EvaluateAssignExpression(const BinaryExpres
 
 ObjectInstance* AbstractInterpreter::EvaluateUnaryExpression(const UnaryExpressionSyntax* expression)
 {
+	return nullptr;
+
+	/*
 	const ExpressionSyntax* instanceExpression = nullptr;
 	const MemberAccessExpressionSyntax* memberExpression = nullptr;
 
@@ -853,6 +881,7 @@ ObjectInstance* AbstractInterpreter::EvaluateUnaryExpression(const UnaryExpressi
 	ObjectInstance* retReg = PrimitiveMathModule::EvaluateUnaryOperator(exprReg, expression->OperatorToken, expression->IsRightDetermined);
 	GarbageCollector::CollectInstance(exprReg);
 	return retReg;
+	*/
 }
 
 ObjectInstance* AbstractInterpreter::EvaluateCollectionExpression(const CollectionExpressionSyntax* expression)
