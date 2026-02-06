@@ -10,7 +10,7 @@
 #include <shard/syntax/nodes/StatementsBlockSyntax.h>
 
 #include <shard/runtime/ObjectInstance.h>
-#include <shard/runtime/InboundVariablesContext.h>
+#include <shard/runtime/ArgumentsSpan.h>
 
 #include <string>
 #include <vector>
@@ -18,7 +18,7 @@
 
 namespace shard
 {
-    typedef SHARD_API shard::ObjectInstance* (*MethodSymbolDelegate)(const MethodSymbol* symbol, shard::InboundVariablesContext* arguments);
+    typedef SHARD_API shard::ObjectInstance* (*MethodSymbolDelegate)(const MethodSymbol* symbol, ArgumentsSpan& arguments);
 
     enum class SHARD_API MethodHandleType
     {
@@ -36,7 +36,6 @@ namespace shard
         uint16_t EvalStackLocalsCount = 0;
 
         MethodHandleType HandleType = MethodHandleType::Body;
-        //shard::StatementsBlockSyntax* Body = nullptr;
         std::vector<std::byte> ExecutableByteCode;
         MethodSymbolDelegate FunctionPointer = nullptr;
 
@@ -63,16 +62,6 @@ namespace shard
 
             for (ParameterSymbol* param : Parameters)
                 delete param;
-        }
-
-        template<typename... Args>
-        shard::ObjectInstance* invoke(Args&&... args)
-        {
-            shard::InboundVariablesContext* ctx = new shard::InboundVariablesContext(nullptr);
-            for (std::pair<std::wstring, shard::ObjectInstance*> pair : args)
-                ctx->SetVariable(pair.first, pair.second);
-
-            return this->FunctionPointer(this, ctx);
         }
     };
 }

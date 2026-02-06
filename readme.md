@@ -1,6 +1,6 @@
 # ShardScript
 
-**ShardScript** is an interpreted, object-oriented programming language with strict static typing, developed in C++. The project features a custom lexer/parser, semantic analyzer, a tree-walking virtual machine, and a standard library framework.
+**ShardScript** is an compiled, object-oriented programming language with strict static typing, developed in C++. The project features a custom lexer/parser, semantic analyzer, a stack virtual machine, and a standard library framework.
 
 ## 📋 Specifications
 

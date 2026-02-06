@@ -9,7 +9,7 @@
 #include <shard/runtime/AbstractInterpreter.h>
 #include <shard/runtime/GarbageCollector.h>
 #include <shard/runtime/ConsoleHelper.h>
-#include <shard/runtime/InboundVariablesContext.h>
+#include <shard/runtime/ArgumentsSpan.h>
 #include <shard/runtime/ObjectInstance.h>
 
 #include <shard/syntax/SyntaxKind.h>
@@ -44,7 +44,7 @@
 
 using namespace shard;
 
-static ObjectInstance* Gc_Info(const MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* Gc_Info(const MethodSymbol* symbol, ArgumentsSpan& arguments)
 {
 	std::wcout << "\nGarbage collector info dump" << std::endl;
 	for (ObjectInstance* reg : GarbageCollector::Heap)
@@ -60,12 +60,14 @@ static ObjectInstance* Gc_Info(const MethodSymbol* symbol, InboundVariablesConte
 	return nullptr; // void
 }
 
-static ObjectInstance* Var_Info(const MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* Var_Info(const MethodSymbol* symbol, ArgumentsSpan& arguments)
 {
 	int count = 0;
 	std::wcout << "\nCall stack frame variables dump :" << std::endl;
+	
+	// TODO: fix
 	/*
-	for (const InboundVariablesContext* context = AbstractInterpreter::CurrentFrame()->PreviousFrame->VariablesStack.top(); context != nullptr; context = context->Previous)
+	for (const ArgumentsSpan& context = AbstractInterpreter::CurrentFrame()->PreviousFrame->VariablesStack.top(); context != nullptr; context = context->Previous)
 	{
 		for (const auto& varReg : context->Variables)
 		{
@@ -84,9 +86,9 @@ static ObjectInstance* Var_Info(const MethodSymbol* symbol, InboundVariablesCont
 	return nullptr; // void
 }
 
-static ObjectInstance* Print(const MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* Print(const MethodSymbol* symbol, ArgumentsSpan& arguments)
 {
-	ObjectInstance* instance = arguments->Variables.at(L"message"); // var
+	const ObjectInstance* instance = arguments[0]; // var
 	TypeSymbol* type = const_cast<TypeSymbol*>(instance->Info);
 
 	if (type->IsPrimitive())
@@ -99,7 +101,8 @@ static ObjectInstance* Print(const MethodSymbol* symbol, InboundVariablesContext
 	MethodSymbol* toString = type->FindMethod(methodWName, std::vector<TypeSymbol*>());
 	if (toString != nullptr)
 	{
-		InboundVariablesContext* toStringArgs = AbstractInterpreter::CreateArgumentsContext(std::vector<ArgumentSyntax*>(), std::vector<ParameterSymbol*>(), toString->IsStatic, instance);
+		ArgumentsSpan toStringArgs(toString, { instance }, 1);
+
 		ObjectInstance* result = AbstractInterpreter::ExecuteMethod(symbol, instance->Info, toStringArgs);
 		if (type != SymbolTable::Primitives::String)
 		{
@@ -118,9 +121,9 @@ static ObjectInstance* Print(const MethodSymbol* symbol, InboundVariablesContext
 	return nullptr; // void
 }
 
-static ObjectInstance* Println(const MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* Println(const MethodSymbol* symbol, ArgumentsSpan& arguments)
 {
-	ObjectInstance* instance = arguments->Variables.at(L"message");
+	const ObjectInstance* instance = arguments[0];
 	TypeSymbol* type = const_cast<TypeSymbol*>(instance->Info);
 
 	if (type->IsPrimitive())
@@ -133,7 +136,7 @@ static ObjectInstance* Println(const MethodSymbol* symbol, InboundVariablesConte
 	MethodSymbol* toString = type->FindMethod(methodWName, std::vector<TypeSymbol*>());
 	if (toString != nullptr)
 	{
-		InboundVariablesContext* toStringArgs = AbstractInterpreter::CreateArgumentsContext(std::vector<ArgumentSyntax*>(), std::vector<ParameterSymbol*>(), toString->IsStatic, instance);
+		ArgumentsSpan& toStringArgs = AbstractInterpreter::CreateArgumentsContext(std::vector<ArgumentSyntax*>(), std::vector<ParameterSymbol*>(), toString->IsStatic, instance);
 		ObjectInstance* result = AbstractInterpreter::ExecuteMethod(toString, instance->Info, toStringArgs);
 		if (result->Info != SymbolTable::Primitives::String)
 		{
@@ -149,25 +152,25 @@ static ObjectInstance* Println(const MethodSymbol* symbol, InboundVariablesConte
 	return nullptr; // void
 }
 
-static ObjectInstance* Input(const MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* Input(const MethodSymbol* symbol, ArgumentsSpan& arguments)
 {
 	std::wstring input;
 	getline(std::wcin, input);
 	return ObjectInstance::FromValue(input);
 }
 
-static ObjectInstance* Impl_typeof(const MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* Impl_typeof(const MethodSymbol* symbol, ArgumentsSpan& arguments)
 {
-	ObjectInstance* instance = arguments->Variables.at(L"object");
+	const ObjectInstance* instance = arguments[0];
 	if (instance == GarbageCollector::NullInstance)
 		throw std::runtime_error("cannot get type of null instance");
 
 	return ObjectInstance::FromValue(instance->Info->Name);
 }
 
-static ObjectInstance* Impl_sizeof(const MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* Impl_sizeof(const MethodSymbol* symbol, ArgumentsSpan& arguments)
 {
-	ObjectInstance* instance = arguments->Variables.at(L"object");
+	const ObjectInstance* instance = arguments[0];
 	if (instance == GarbageCollector::NullInstance)
 		throw std::runtime_error("cannot get size of null instance");
 

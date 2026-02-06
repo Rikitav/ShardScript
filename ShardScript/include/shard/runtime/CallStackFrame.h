@@ -1,7 +1,6 @@
 #pragma once
 #include <shard/ShardScriptAPI.h>
 
-#include <shard/runtime/InboundVariablesContext.h>
 #include <shard/runtime/ObjectInstance.h>
 #include <shard/runtime/GarbageCollector.h>
 
