@@ -8,13 +8,11 @@
 #include <shard/syntax/symbols/DelegateTypeSymbol.h>
 #include <shard/syntax/symbols/GenericTypeSymbol.h>
 #include <shard/syntax/symbols/ConstructorSymbol.h>
-#include <shard/syntax/symbols/TypeParameterSymbol.h>
 
+#include <shard/syntax/SyntaxSymbol.h>
 #include <shard/syntax/SyntaxKind.h>
 
 #include <shard/parsing/semantic/SymbolTable.h>
-#include <shard/runtime/AbstractInterpreter.h>
-#include <shard/runtime/CallStackFrame.h>
 
 #include <algorithm>
 #include <vector>
@@ -284,6 +282,10 @@ TypeSymbol* TypeSymbol::SubstituteType(TypeSymbol* type)
 
 		case SyntaxKind::TypeParameter:
 		{
+			return nullptr;
+
+			//TODO: FIX
+			/*
 			CallStackFrame* frame = AbstractInterpreter::CurrentFrame();
 			if (frame == nullptr)
 				throw std::runtime_error("Cannot get current call stack frame");
@@ -297,6 +299,7 @@ TypeSymbol* TypeSymbol::SubstituteType(TypeSymbol* type)
 			GenericTypeSymbol* genericType = const_cast<GenericTypeSymbol*>(static_cast<const GenericTypeSymbol*>(frame->WithinType));
 			TypeSymbol* resolvedType = genericType->SubstituteTypeParameters(type);
 			return resolvedType;
+			*/
 		}
 	}
 }

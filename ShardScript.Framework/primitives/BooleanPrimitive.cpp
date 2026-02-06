@@ -1,5 +1,4 @@
-#include <shard/runtime/AbstractInterpreter.h>
-#include <shard/runtime/InboundVariablesContext.h>
+#include <shard/runtime/ArgumentsSpan.h>
 #include <shard/runtime/ObjectInstance.h>
 
 #include <shard/parsing/semantic/SymbolTable.h>
@@ -15,9 +14,9 @@
 using namespace shard;
 
 // Boolean methods
-static ObjectInstance* ToString(const MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* ToString(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
 {
-	ObjectInstance* instance = arguments->TryFind(L"this");
+	ObjectInstance* instance = arguments[0]; // this
 	bool value = instance->AsBoolean();
 	std::wstring str = value ? L"true" : L"false";
 	return ObjectInstance::FromValue(str);

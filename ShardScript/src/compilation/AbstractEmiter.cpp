@@ -1,5 +1,53 @@
 #include <shard/compilation/AbstractEmiter.h>
+#include <shard/compilation/ProgramVirtualImage.h>
+
+#include <shard/parsing/analysis/DiagnosticsContext.h>
+#include <shard/parsing/semantic/SymbolTable.h>
+#include <shard/parsing/SyntaxTree.h>
+
+#include <shard/syntax/nodes/ArgumentsListSyntax.h>
+#include <shard/syntax/nodes/CompilationUnitSyntax.h>
+
+#include <shard/syntax/nodes/Expressions/BinaryExpressionSyntax.h>
+#include <shard/syntax/nodes/Expressions/CollectionExpressionSyntax.h>
+#include <shard/syntax/nodes/Expressions/LambdaExpressionSyntax.h>
+#include <shard/syntax/nodes/Expressions/LinkedExpressionSyntax.h>
+#include <shard/syntax/nodes/Expressions/LiteralExpressionSyntax.h>
+#include <shard/syntax/nodes/Expressions/ObjectExpressionSyntax.h>
+#include <shard/syntax/nodes/Expressions/TernaryExpressionSyntax.h>
+#include <shard/syntax/nodes/Expressions/UnaryExpressionSyntax.h>
+
+#include <shard/syntax/nodes/Loops/ForStatementSyntax.h>
+#include <shard/syntax/nodes/Loops/UntilStatementSyntax.h>
+#include <shard/syntax/nodes/Loops/WhileStatementSyntax.h>
+
+#include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.h>
+
+#include <shard/syntax/nodes/Statements/BreakStatementSyntax.h>
+#include <shard/syntax/nodes/Statements/ConditionalClauseSyntax.h>
+#include <shard/syntax/nodes/Statements/ContinueStatementSyntax.h>
+#include <shard/syntax/nodes/Statements/ExpressionStatementSyntax.h>
+#include <shard/syntax/nodes/Statements/ReturnStatementSyntax.h>
+#include <shard/syntax/nodes/Statements/ThrowStatementSyntax.h>
+#include <shard/syntax/nodes/Statements/VariableStatementSyntax.h>
+
+#include <shard/syntax/SymbolAccesibility.h>
+#include <shard/syntax/SyntaxToken.h>
+#include <shard/syntax/TokenType.h>
+
 #include <shard/syntax/symbols/LiteralSymbol.h>
+#include <shard/syntax/symbols/AccessorSymbol.h>
+#include <shard/syntax/symbols/ConstructorSymbol.h>
+#include <shard/syntax/symbols/FieldSymbol.h>
+#include <shard/syntax/symbols/MethodSymbol.h>
+#include <shard/syntax/symbols/ParameterSymbol.h>
+#include <shard/syntax/symbols/TypeSymbol.h>
+#include <shard/syntax/symbols/VariableSymbol.h>
+
+#include <stdexcept>
+#include <vector>
 
 using namespace shard;
 
@@ -92,6 +140,8 @@ void AbstractEmiter::VisitConstructorDeclaration(ConstructorDeclarationSyntax *c
 		Diagnostics.ReportError(node->IdentifierToken, L"Emiting target not found");
 		return;
 	}
+
+	// TODO: add field initialization
 
 	size_t reserve = node->Body->Statements.size() * 20;
 	GeneratingFor->ExecutableByteCode.reserve(reserve);

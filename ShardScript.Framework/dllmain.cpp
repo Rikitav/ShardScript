@@ -1,18 +1,14 @@
 ﻿#include <shard/runtime/framework/FrameworkLoader.h>
 
-#include <shard/parsing/semantic/SemanticModel.h>
 #include <shard/parsing/semantic/SymbolTable.h>
-#include <shard/parsing/analysis/DiagnosticsContext.h>
-#include <shard/parsing/SyntaxTree.h>
-#include <shard/parsing/lexical/reading/StringStreamReader.h>
 
-#include <shard/runtime/AbstractInterpreter.h>
+#include <shard/runtime/VirtualMachine.h>
 #include <shard/runtime/GarbageCollector.h>
 #include <shard/runtime/ConsoleHelper.h>
 #include <shard/runtime/ArgumentsSpan.h>
 #include <shard/runtime/ObjectInstance.h>
+#include <shard/runtime/CallStackFrame.h>
 
-#include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SymbolAccesibility.h>
 
 #include <shard/syntax/symbols/ClassSymbol.h>
@@ -21,20 +17,12 @@
 #include <shard/syntax/symbols/ParameterSymbol.h>
 #include <shard/syntax/symbols/TypeSymbol.h>
 
-#include <shard/syntax/nodes/MemberDeclarationSyntax.h>
-#include <shard/syntax/nodes/ArgumentsListSyntax.h>
-#include <shard/syntax/nodes/CompilationUnitSyntax.h>
-
-#include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.h>
-#include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.h>
-#include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.h>
-#include <shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.h>
-
 #include <windows.h>
 #include <iostream>
 #include <string>
 #include <stdexcept>
 #include <vector>
+#include <cstdint>
 
 #include "primitives/PrimitivesLoading.h"
 #include "system/filesystem/File.cpp"
@@ -44,7 +32,7 @@
 
 using namespace shard;
 
-static ObjectInstance* Gc_Info(const MethodSymbol* symbol, ArgumentsSpan& arguments)
+static ObjectInstance* Gc_Info(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
 {
 	std::wcout << "\nGarbage collector info dump" << std::endl;
 	for (ObjectInstance* reg : GarbageCollector::Heap)
@@ -60,35 +48,28 @@ static ObjectInstance* Gc_Info(const MethodSymbol* symbol, ArgumentsSpan& argume
 	return nullptr; // void
 }
 
-static ObjectInstance* Var_Info(const MethodSymbol* symbol, ArgumentsSpan& arguments)
+static ObjectInstance* Var_Info(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
 {
-	int count = 0;
 	std::wcout << "\nCall stack frame variables dump :" << std::endl;
 	
-	// TODO: fix
-	/*
-	for (const ArgumentsSpan& context = AbstractInterpreter::CurrentFrame()->PreviousFrame->VariablesStack.top(); context != nullptr; context = context->Previous)
+	CallStackFrame* frame = host->CurrentFrame()->PreviousFrame;
+	for (int i = 0; i < method->EvalStackLocalsCount; i++)
 	{
-		for (const auto& varReg : context->Variables)
-		{
-			count += 1;
-			ObjectInstance* reg = varReg.second;
-			std::wcout
-				<< L" * | ID : " << reg->Id
-				<< L" | TYPE : '" << reg->Info->Name << "'"
-				<< L" | REFS : " << reg->ReferencesCounter
-				<< L" | PTR : " << reg->Ptr << std::endl;
-		}
+		ObjectInstance* reg = frame->EvalStack[i];
+		std::wcout
+			<< L" * | ID : " << reg->Id
+			<< L" | TYPE : '" << reg->Info->Name << "'"
+			<< L" | REFS : " << reg->ReferencesCounter
+			<< L" | PTR : " << reg->Ptr << std::endl;
 	}
-	*/
 
-	std::wcout << "Total count : " << count << std::endl;
+	std::wcout << "Total count : " << method->EvalStackLocalsCount << std::endl;
 	return nullptr; // void
 }
 
-static ObjectInstance* Print(const MethodSymbol* symbol, ArgumentsSpan& arguments)
+static ObjectInstance* Print(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
 {
-	const ObjectInstance* instance = arguments[0]; // var
+	ObjectInstance* instance = arguments[0]; // var
 	TypeSymbol* type = const_cast<TypeSymbol*>(instance->Info);
 
 	if (type->IsPrimitive())
@@ -97,13 +78,14 @@ static ObjectInstance* Print(const MethodSymbol* symbol, ArgumentsSpan& argument
 		return nullptr; // void
 	}
 
-	std::wstring methodWName = L"ToString";
+	static std::wstring methodWName = L"ToString";
 	MethodSymbol* toString = type->FindMethod(methodWName, std::vector<TypeSymbol*>());
+
 	if (toString != nullptr)
 	{
-		ArgumentsSpan toStringArgs(toString, { instance }, 1);
+		host->InvokeMethod(toString, { instance });
+		ObjectInstance* result = host->CurrentFrame()->PopStack();
 
-		ObjectInstance* result = AbstractInterpreter::ExecuteMethod(symbol, instance->Info, toStringArgs);
 		if (type != SymbolTable::Primitives::String)
 		{
 #pragma warning (push)
@@ -121,9 +103,9 @@ static ObjectInstance* Print(const MethodSymbol* symbol, ArgumentsSpan& argument
 	return nullptr; // void
 }
 
-static ObjectInstance* Println(const MethodSymbol* symbol, ArgumentsSpan& arguments)
+static ObjectInstance* Println(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
 {
-	const ObjectInstance* instance = arguments[0];
+	ObjectInstance* instance = arguments[0]; // var
 	TypeSymbol* type = const_cast<TypeSymbol*>(instance->Info);
 
 	if (type->IsPrimitive())
@@ -132,12 +114,14 @@ static ObjectInstance* Println(const MethodSymbol* symbol, ArgumentsSpan& argume
 		return nullptr; // void
 	}
 
-	std::wstring methodWName = L"ToString";
+	static std::wstring methodWName = L"ToString";
 	MethodSymbol* toString = type->FindMethod(methodWName, std::vector<TypeSymbol*>());
+
 	if (toString != nullptr)
 	{
-		ArgumentsSpan& toStringArgs = AbstractInterpreter::CreateArgumentsContext(std::vector<ArgumentSyntax*>(), std::vector<ParameterSymbol*>(), toString->IsStatic, instance);
-		ObjectInstance* result = AbstractInterpreter::ExecuteMethod(toString, instance->Info, toStringArgs);
+		host->InvokeMethod(toString, { instance });
+		ObjectInstance* result = host->CurrentFrame()->PopStack();
+
 		if (result->Info != SymbolTable::Primitives::String)
 		{
 			std::string methodName = std::string(toString->FullName.begin(), toString->FullName.end());
@@ -152,14 +136,14 @@ static ObjectInstance* Println(const MethodSymbol* symbol, ArgumentsSpan& argume
 	return nullptr; // void
 }
 
-static ObjectInstance* Input(const MethodSymbol* symbol, ArgumentsSpan& arguments)
+static ObjectInstance* Input(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
 {
 	std::wstring input;
 	getline(std::wcin, input);
 	return ObjectInstance::FromValue(input);
 }
 
-static ObjectInstance* Impl_typeof(const MethodSymbol* symbol, ArgumentsSpan& arguments)
+static ObjectInstance* Impl_typeof(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
 {
 	const ObjectInstance* instance = arguments[0];
 	if (instance == GarbageCollector::NullInstance)
@@ -168,7 +152,7 @@ static ObjectInstance* Impl_typeof(const MethodSymbol* symbol, ArgumentsSpan& ar
 	return ObjectInstance::FromValue(instance->Info->Name);
 }
 
-static ObjectInstance* Impl_sizeof(const MethodSymbol* symbol, ArgumentsSpan& arguments)
+static ObjectInstance* Impl_sizeof(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
 {
 	const ObjectInstance* instance = arguments[0];
 	if (instance == GarbageCollector::NullInstance)

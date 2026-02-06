@@ -2,14 +2,18 @@
 #include <shard/ShardScriptAPI.h>
 
 #include <shard/runtime/ObjectInstance.h>
+
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/FieldSymbol.h>
 
 #include <unordered_map>
 #include <iterator>
+#include <cstdint>
 
 namespace shard
 {
+    class VirtualMachine;
+
     template<typename MapType>
     class SHARD_API ValueIterator
     {
@@ -85,18 +89,18 @@ namespace shard
 	class SHARD_API GarbageCollector
 	{
 		inline static uint64_t objectsCounter = 0;
-        inline static std::unordered_map<shard::TypeSymbol*, ObjectInstance*> nullInstancesMap;
-        inline static std::unordered_map<shard::FieldSymbol*, ObjectInstance*> staticFields;
+        inline static std::unordered_map<TypeSymbol*, ObjectInstance*> nullInstancesMap;
+        inline static std::unordered_map<FieldSymbol*, ObjectInstance*> staticFields;
         
     public:
 		inline static InstancesHeap Heap;
         static ObjectInstance* NullInstance;
 
-        static ObjectInstance* GetStaticField(shard::FieldSymbol* field);
-        static void SetStaticField(shard::FieldSymbol* field, ObjectInstance* instance);
+        static ObjectInstance* GetStaticField(const VirtualMachine* host, FieldSymbol* field);
+        static void SetStaticField(const VirtualMachine* host, FieldSymbol* field, ObjectInstance* instance);
 
-		static ObjectInstance* AllocateInstance(const shard::TypeSymbol* objectInfo);
-        static ObjectInstance* CopyInstance(const shard::TypeSymbol* objectInfo, void* ptr);
+		static ObjectInstance* AllocateInstance(const TypeSymbol* objectInfo);
+        static ObjectInstance* CopyInstance(const TypeSymbol* objectInfo, void* ptr);
         static ObjectInstance* CopyInstance(ObjectInstance* instance);
 		
         static void CollectInstance(ObjectInstance* instance);

@@ -3,6 +3,8 @@
 
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxSymbol.h>
+#include <shard/syntax/SymbolAccesibility.h>
+
 #include <shard/syntax/symbols/TypeSymbol.h>
 
 #include <string>

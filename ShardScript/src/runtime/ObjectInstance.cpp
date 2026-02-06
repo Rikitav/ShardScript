@@ -1,6 +1,5 @@
 #include <shard/runtime/ObjectInstance.h>
 #include <shard/runtime/GarbageCollector.h>
-#include <shard/runtime/AbstractInterpreter.h>
 
 #include <shard/parsing/semantic/SymbolTable.h>
 
@@ -10,10 +9,12 @@
 #include <shard/syntax/symbols/ArrayTypeSymbol.h>
 #include <shard/syntax/symbols/GenericTypeSymbol.h>
 #include <shard/syntax/symbols/TypeSymbol.h>
+#include <shard/syntax/symbols/TypeParameterSymbol.h>
 
 #include <cstring>
 #include <stdexcept>
 #include <string>
+#include <cstdint>
 
 using namespace shard;
 
@@ -71,7 +72,7 @@ ObjectInstance* ObjectInstance::GetField(FieldSymbol* field)
 		*/
 
 		GenericTypeSymbol* genericInfo = const_cast<GenericTypeSymbol*>(static_cast<const GenericTypeSymbol*>(Info));
-		fieldType = genericInfo->SubstituteTypeParameters(fieldType);
+		fieldType = genericInfo->SubstituteTypeParameters(static_cast<TypeParameterSymbol*>(fieldType));
 	}
 
 	if (fieldType->IsReferenceType)
@@ -103,7 +104,7 @@ void ObjectInstance::SetField(FieldSymbol* field, ObjectInstance* instance)
 		*/
 		
 		GenericTypeSymbol* genericInfo = const_cast<GenericTypeSymbol*>(static_cast<const GenericTypeSymbol*>(Info));
-		fieldType = genericInfo->SubstituteTypeParameters(fieldType);
+		fieldType = genericInfo->SubstituteTypeParameters(static_cast<TypeParameterSymbol*>(fieldType));
 	}
 
 	if (fieldType->IsReferenceType)
@@ -141,9 +142,12 @@ ObjectInstance* ObjectInstance::GetElement(size_t index)
 
 	if (type->Kind == SyntaxKind::GenericType)
 	{
-		CallStackFrame* currentFrame = AbstractInterpreter::CurrentFrame();
+		// TODO: fix
+		/*
+		CallStackFrame* currentFrame = host->CurrentFrame();
 		GenericTypeSymbol* genericInfo = const_cast<GenericTypeSymbol*>(static_cast<const GenericTypeSymbol*>(currentFrame->WithinType));
 		type = genericInfo->SubstituteTypeParameters(type);
+		*/
 	}
 
 	size_t memoryOffset = SymbolTable::Primitives::Array->MemoryBytesSize + type->GetInlineSize() * index;
@@ -179,9 +183,12 @@ void ObjectInstance::SetElement(size_t index, ObjectInstance* instance)
 
 	if (type->Kind == SyntaxKind::GenericType)
 	{
-		CallStackFrame* currentFrame = AbstractInterpreter::CurrentFrame();
+		// TODO: fix
+		/*
+		CallStackFrame* currentFrame = host->CurrentFrame();
 		GenericTypeSymbol* genericInfo = const_cast<GenericTypeSymbol*>(static_cast<const GenericTypeSymbol*>(currentFrame->WithinType));
 		type = genericInfo->SubstituteTypeParameters(type);
+		*/
 	}
 
 	size_t memoryOffset = SymbolTable::Primitives::Array->MemoryBytesSize + type->GetInlineSize() * index;

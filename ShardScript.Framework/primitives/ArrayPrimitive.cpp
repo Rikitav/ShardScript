@@ -2,9 +2,10 @@
 #include <shard/parsing/semantic/SymbolTable.h>
 
 #include <shard/runtime/GarbageCollector.h>
-#include <shard/runtime/InboundVariablesContext.h>
+#include <shard/runtime/ArgumentsSpan.h>
 #include <shard/runtime/ObjectInstance.h>
-#include <shard/runtime/AbstractInterpreter.h>
+#include <shard/runtime/VirtualMachine.h>
+#include <shard/runtime/CallStackFrame.h>
 
 #include <shard/syntax/symbols/MethodSymbol.h>
 #include <shard/syntax/symbols/ParameterSymbol.h>
@@ -15,29 +16,29 @@
 #include <shard/syntax/symbols/FieldSymbol.h>
 #include <shard/syntax/symbols/IndexatorSymbol.h>
 
-#include <malloc.h>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <cstdint>
 
 #include "PrimitivesLoading.h"
 
 using namespace shard;
 
-static ObjectInstance* get_Length(const MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* get_Length(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
 {
 	static FieldSymbol* lengthField = SymbolTable::Primitives::Array->Fields.at(0); // <Length>k__BackingField
 
-	ObjectInstance* instance = arguments->TryFind(L"this");
+	ObjectInstance* instance = arguments[0];
 	ObjectInstance* lengthInstance = instance->GetField(lengthField);
 	return lengthInstance;
 }
 
-static ObjectInstance* get_Item(const MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* get_Item(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
 {
-	ObjectInstance* instance = arguments->TryFind(L"this");
-	ObjectInstance* index = arguments->TryFind(L"index");
+	ObjectInstance* instance = arguments[0]; // this
+	ObjectInstance* index = arguments[1]; // index
 
 	int64_t indexValue = index->AsInteger();
 	if (!instance->IsInBounds(indexValue))
@@ -46,11 +47,11 @@ static ObjectInstance* get_Item(const MethodSymbol* symbol, InboundVariablesCont
 	return instance->GetElement(indexValue);
 }
 
-static ObjectInstance* set_Item(const MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* set_Item(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
 {
-	ObjectInstance* instance = arguments->TryFind(L"this");
-	ObjectInstance* index = arguments->TryFind(L"index");
-	ObjectInstance* value = arguments->TryFind(L"value");
+	ObjectInstance* instance = arguments[0]; // this
+	ObjectInstance* index = arguments[1]; // index
+	ObjectInstance* value = arguments[2]; // value
 
 	int64_t indexValue = index->AsInteger();
 	if (!instance->IsInBounds(indexValue))
@@ -60,7 +61,7 @@ static ObjectInstance* set_Item(const MethodSymbol* symbol, InboundVariablesCont
 	return nullptr;
 }
 
-static std::wstring ObjectInstanceToString(ObjectInstance* instance)
+static std::wstring ObjectInstanceToString(const VirtualMachine* host, ObjectInstance* instance)
 {
 	static std::wstring findName = L"ToString";
 	static std::vector<TypeSymbol*> findArgs;
@@ -71,19 +72,19 @@ static std::wstring ObjectInstanceToString(ObjectInstance* instance)
 	if (toString == nullptr)
 		return info->FullName;
 
-	InboundVariablesContext* argsCtx = new InboundVariablesContext(nullptr);
-	argsCtx->AddVariable(L"this", instance);
+	host->InvokeMethod(toString, { instance });
+	CallStackFrame* currentFrame = host->CurrentFrame();
 
-	ObjectInstance* resultInstance = AbstractInterpreter::ExecuteMethod(toString, instance->Info, argsCtx);
+	ObjectInstance* resultInstance = currentFrame->PopStack();
 	std::wstring resultStr = resultInstance->AsString();
 
 	GarbageCollector::CollectInstance(resultInstance);
 	return resultStr;
 }
 
-static ObjectInstance* to_string(const MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* to_string(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
 {
-	ObjectInstance* instance = arguments->TryFind(L"this");
+	ObjectInstance* instance = arguments[0]; // this
 	const ArrayTypeSymbol* array = static_cast<const ArrayTypeSymbol*>(instance->Info);
 	size_t size = array->Size;
 
@@ -94,13 +95,13 @@ static ObjectInstance* to_string(const MethodSymbol* symbol, InboundVariablesCon
 	result << L"[";
 
 	ObjectInstance* element = instance->GetElement(0);
-	result << ObjectInstanceToString(element);
+	result << ObjectInstanceToString(host, element);
 	GarbageCollector::CollectInstance(element);
 
 	for (size_t i = 1; i < size; i++)
 	{
 		element = instance->GetElement(i);
-		result << L", " << ObjectInstanceToString(element);
+		result << L", " << ObjectInstanceToString(host, element);
 		GarbageCollector::CollectInstance(element);
 	}
 

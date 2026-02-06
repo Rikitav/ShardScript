@@ -4,10 +4,12 @@
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/nodes/ExpressionSyntax.h>
 
+#include <shard/syntax/SymbolAccesibility.h>
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/SyntaxSymbol.h>
 
 #include <string>
+#include <cstdint>
 
 namespace shard
 {

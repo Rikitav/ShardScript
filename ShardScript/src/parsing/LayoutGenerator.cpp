@@ -1,7 +1,12 @@
 #include <shard/parsing/LayoutGenerator.h>
 #include <shard/parsing/semantic/SemanticModel.h>
+#include <shard/parsing/semantic/SymbolTable.h>
+
 #include <shard/syntax/SyntaxToken.h>
+#include <shard/syntax/SyntaxKind.h>
+
 #include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.h>
+
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/FieldSymbol.h>
 #include <shard/syntax/symbols/ArrayTypeSymbol.h>
@@ -73,7 +78,7 @@ void LayoutGenerator::FixObjectLayout(SemanticModel& semanticModel, TypeSymbol* 
 			if (returnType->Kind != SyntaxKind::TypeParameter)
 				continue;
 
-			returnType = genericInfo->SubstituteTypeParameters(returnType);
+			returnType = genericInfo->SubstituteTypeParameters(static_cast<TypeParameterSymbol*>(returnType));
 			objectInfo->MemoryBytesSize += returnType->GetInlineSize();
 		}
 	}

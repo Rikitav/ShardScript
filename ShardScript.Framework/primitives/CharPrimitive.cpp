@@ -1,7 +1,7 @@
-#include <shard/runtime/PrimitiveMathModule.h>
-#include <shard/runtime/InboundVariablesContext.h>
+#include <shard/syntax/SyntaxSymbol.h>
+#include <shard/runtime/ArgumentsSpan.h>
 #include <shard/runtime/ObjectInstance.h>
-#include <shard/runtime/AbstractInterpreter.h>
+#include <shard/runtime/VirtualMachine.h>
 
 #include <shard/parsing/semantic/SymbolTable.h>
 
@@ -11,55 +11,57 @@
 
 #include <string>
 #include <cctype>
+#include <new>
+#include <vector>
 
 #include "PrimitivesLoading.h"
 
 using namespace shard;
 
 // Char methods
-static ObjectInstance* ToString(const MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* ToString(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
 {
-	ObjectInstance* instance = arguments->TryFind(L"this");
+	ObjectInstance* instance = arguments[0]; // this
 	wchar_t value = instance->AsCharacter();
 	std::wstring str(1, value);
 	return ObjectInstance::FromValue(str);
 }
 
-static ObjectInstance* ToUpper(const MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* ToUpper(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
 {
-	ObjectInstance* instance = arguments->TryFind(L"this");
+	ObjectInstance* instance = arguments[0]; // this
 	wchar_t value = instance->AsCharacter();
 	wchar_t result = static_cast<wchar_t>(towupper(value));
 	return ObjectInstance::FromValue(result);
 }
 
-static ObjectInstance* ToLower(const MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* ToLower(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
 {
-	ObjectInstance* instance = arguments->TryFind(L"this");
+	ObjectInstance* instance = arguments[0]; // this
 	wchar_t value = instance->AsCharacter();
 	wchar_t result = static_cast<wchar_t>(towlower(value));
 	return ObjectInstance::FromValue(result);
 }
 
-static ObjectInstance* IsDigit(const MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* IsDigit(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
 {
-	ObjectInstance* instance = arguments->TryFind(L"this");
+	ObjectInstance* instance = arguments[0]; // this
 	wchar_t value = instance->AsCharacter();
 	bool result = iswdigit(value) != 0;
 	return ObjectInstance::FromValue(result);
 }
 
-static ObjectInstance* IsLetter(const MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* IsLetter(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
 {
-	ObjectInstance* instance = arguments->TryFind(L"this");
+	ObjectInstance* instance = arguments[0]; // this
 	wchar_t value = instance->AsCharacter();
 	bool result = iswalpha(value) != 0;
 	return ObjectInstance::FromValue(result);
 }
 
-static ObjectInstance* IsWhiteSpace(const MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* IsWhiteSpace(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
 {
-	ObjectInstance* instance = arguments->TryFind(L"this");
+	ObjectInstance* instance = arguments[0]; // this
 	wchar_t value = instance->AsCharacter();
 	bool result = iswspace(value) != 0;
 	return ObjectInstance::FromValue(result);

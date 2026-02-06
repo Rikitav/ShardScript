@@ -4,7 +4,6 @@
 #include <shard/parsing/semantic/NamespaceTree.h>
 
 #include <shard/syntax/SyntaxSymbol.h>
-#include <shard/syntax/SyntaxNode.h>
 #include <shard/syntax/SyntaxKind.h>
 #include <shard/syntax/TokenType.h>
 #include <shard/syntax/SyntaxToken.h>
@@ -23,14 +22,17 @@
 #include <shard/syntax/symbols/TypeParameterSymbol.h>
 #include <shard/syntax/symbols/DelegateTypeSymbol.h>
 #include <shard/syntax/symbols/GenericTypeSymbol.h>
+#include <shard/syntax/symbols/AccessorSymbol.h>
+#include <shard/syntax/symbols/IndexatorSymbol.h>
 
 #include <shard/syntax/nodes/TypeSyntax.h>
 #include <shard/syntax/nodes/CompilationUnitSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarationSyntax.h>
 #include <shard/syntax/nodes/ParametersListSyntax.h>
-#include <shard/syntax/nodes/ExpressionSyntax.h>
 #include <shard/syntax/nodes/TypeArgumentsListSyntax.h>
-#include <shard/syntax/nodes/TypeParametersListSyntax.h>
+
+#include <shard/syntax/nodes/Types/DelegateTypeSyntax.h>
+#include <shard/syntax/nodes/Types/NullableTypeSyntax.h>
 
 #include <shard/syntax/nodes/Directives/UsingDirectiveSyntax.h>
 
@@ -45,15 +47,18 @@
 #include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/DelegateDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/IndexatorDeclarationSyntax.h>
 
 #include <shard/syntax/nodes/Statements/VariableStatementSyntax.h>
 
 #include <shard/syntax/nodes/Expressions/ObjectExpressionSyntax.h>
-#include <shard/syntax/nodes/Expressions/LinkedExpressionSyntax.h>
-#include <shard/syntax/nodes/Expressions/CollectionExpressionSyntax.h>
 
 #include <vector>
 #include <string>
+#include <stdexcept>
 
 using namespace shard;
 

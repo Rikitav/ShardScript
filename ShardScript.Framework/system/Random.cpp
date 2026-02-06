@@ -1,21 +1,21 @@
 #include <shard/runtime/framework/FrameworkModule.h>
 
-#include <shard/runtime/InboundVariablesContext.h>
+#include <shard/runtime/ArgumentsSpan.h>
 #include <shard/runtime/ObjectInstance.h>
+
 #include <shard/syntax/symbols/MethodSymbol.h>
+#include <shard/syntax/symbols/AccessorSymbol.h>
+#include <shard/syntax/symbols/ConstructorSymbol.h>
 
 #include <shard/parsing/lexical/SourceProvider.h>
 #include <shard/parsing/lexical/LexicalAnalyzer.h>
 #include <shard/parsing/lexical/reading/StringStreamReader.h>
-#include <shard/parsing/semantic/SymbolTable.h>
 
-#include <Windows.h>
-#include <iostream>
-#include <fstream>
-#include <iterator>
 #include <stdexcept>
 #include <string>
 #include <random>
+#include <climits>
+#include <cstdint>
 
 #include "../resources.h"
 
@@ -25,7 +25,7 @@ namespace shard
 {
 	class Random : public FrameworkModule
 	{
-		static ObjectInstance* Impl_Integer(const MethodSymbol* method, InboundVariablesContext* arguments)
+		static ObjectInstance* Impl_Integer(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
 		{
 			std::random_device rd;
 			std::mt19937 gen(rd()); // (std::chrono::steady_clock::now().time_since_epoch().count());
@@ -35,10 +35,9 @@ namespace shard
 			return ObjectInstance::FromValue(value);
         }
 
-		static ObjectInstance* Impl_Integer_Top(const MethodSymbol* method, InboundVariablesContext* arguments)
+		static ObjectInstance* Impl_Integer_Top(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
 		{
-			ObjectInstance* arg_top = arguments->Variables.at(L"top");
-			int64_t top = arg_top->AsInteger();
+			int64_t top = arguments[0]->AsInteger(); // top
 
 			if (top == 0)
 				return ObjectInstance::FromValue(0.0);
@@ -54,13 +53,10 @@ namespace shard
 			return ObjectInstance::FromValue(value);
 		}
 
-		static ObjectInstance* Impl_Integer_Bottom_Top(const MethodSymbol* method, InboundVariablesContext* arguments)
+		static ObjectInstance* Impl_Integer_Bottom_Top(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
 		{
-			ObjectInstance* arg_bottom = arguments->Variables.at(L"bottom");
-			ObjectInstance* arg_top = arguments->Variables.at(L"top");
-
-			int64_t bottom = arg_bottom->AsInteger();
-			int64_t top = arg_top->AsInteger();
+			int64_t bottom = arguments[0]->AsInteger(); // bottom
+			int64_t top = arguments[1]->AsInteger(); // top
 
 			if (bottom == top)
 				return ObjectInstance::FromValue(bottom);
@@ -76,7 +72,7 @@ namespace shard
 			return ObjectInstance::FromValue(value);
 		}
 
-		static ObjectInstance* Impl_Double(const MethodSymbol* method, InboundVariablesContext* arguments)
+		static ObjectInstance* Impl_Double(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
 		{
 			std::random_device rd;
 			std::mt19937 gen(rd());
@@ -86,10 +82,9 @@ namespace shard
 			return ObjectInstance::FromValue(value);
 		}
 
-		static ObjectInstance* Impl_Double_Top(const MethodSymbol* method, InboundVariablesContext* arguments)
+		static ObjectInstance* Impl_Double_Top(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
 		{
-			ObjectInstance* arg_top = arguments->Variables.at(L"top");
-			double top = arg_top->AsDouble();
+			double top = arguments[0]->AsDouble(); // top
 
 			if (top == 0)
 				return ObjectInstance::FromValue(0.0);
@@ -105,13 +100,10 @@ namespace shard
 			return ObjectInstance::FromValue(value);
 		}
 
-		static ObjectInstance* Impl_Double_Bottom_Top(const MethodSymbol* method, InboundVariablesContext* arguments)
+		static ObjectInstance* Impl_Double_Bottom_Top(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
 		{
-			ObjectInstance* arg_bottom = arguments->Variables.at(L"bottom");
-			ObjectInstance* arg_top = arguments->Variables.at(L"top");
-
-			double bottom = arg_bottom->AsDouble();
-			double top = arg_top->AsDouble();
+			double bottom = arguments[0]->AsDouble(); // bottom
+			double top = arguments[1]->AsDouble(); // top
 
 			if (bottom == top)
 				return ObjectInstance::FromValue(bottom);
@@ -127,10 +119,9 @@ namespace shard
 			return ObjectInstance::FromValue(value);
 		}
 
-		static ObjectInstance* Impl_Propably(const MethodSymbol* method, InboundVariablesContext* arguments)
+		static ObjectInstance* Impl_Propably(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
 		{
-			ObjectInstance* arg_chance = arguments->Variables.at(L"chance");
-			double chance = arg_chance->AsDouble();
+			double chance = arguments[0]->AsDouble(); // chance
 
 			if (chance == 0)
 				return ObjectInstance::FromValue(false);

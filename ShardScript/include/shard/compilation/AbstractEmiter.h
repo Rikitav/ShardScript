@@ -1,9 +1,45 @@
 #pragma once
 #include <shard/ShardScriptAPI.h>
 
-#include <shard/SyntaxVisitor.h>
 #include <shard/compilation/ProgramVirtualImage.h>
 #include <shard/compilation/ByteCodeEncoder.h>
+
+#include <shard/parsing/analysis/DiagnosticsContext.h>
+#include <shard/parsing/semantic/SemanticModel.h>
+#include <shard/parsing/SyntaxTree.h>
+
+#include <shard/SyntaxVisitor.h>
+
+#include <shard/syntax/nodes/ArgumentsListSyntax.h>
+
+#include <shard/syntax/nodes/Expressions/BinaryExpressionSyntax.h>
+#include <shard/syntax/nodes/Expressions/CollectionExpressionSyntax.h>
+#include <shard/syntax/nodes/Expressions/LambdaExpressionSyntax.h>
+#include <shard/syntax/nodes/Expressions/LinkedExpressionSyntax.h>
+#include <shard/syntax/nodes/Expressions/LiteralExpressionSyntax.h>
+#include <shard/syntax/nodes/Expressions/ObjectExpressionSyntax.h>
+#include <shard/syntax/nodes/Expressions/TernaryExpressionSyntax.h>
+#include <shard/syntax/nodes/Expressions/UnaryExpressionSyntax.h>
+
+#include <shard/syntax/nodes/Loops/ForStatementSyntax.h>
+#include <shard/syntax/nodes/Loops/UntilStatementSyntax.h>
+#include <shard/syntax/nodes/Loops/WhileStatementSyntax.h>
+
+#include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.h>
+
+#include <shard/syntax/nodes/Statements/BreakStatementSyntax.h>
+#include <shard/syntax/nodes/Statements/ConditionalClauseSyntax.h>
+#include <shard/syntax/nodes/Statements/ContinueStatementSyntax.h>
+#include <shard/syntax/nodes/Statements/ExpressionStatementSyntax.h>
+#include <shard/syntax/nodes/Statements/ReturnStatementSyntax.h>
+#include <shard/syntax/nodes/Statements/ThrowStatementSyntax.h>
+#include <shard/syntax/nodes/Statements/VariableStatementSyntax.h>
+
+#include <shard/syntax/symbols/MethodSymbol.h>
+
+#include <vector>
 
 namespace shard
 {
