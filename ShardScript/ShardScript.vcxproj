@@ -136,6 +136,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\runtime\ProgramDisassembler.cpp" />
     <ClCompile Include="src\compilation\AbstractEmiter.cpp" />
     <ClCompile Include="src\compilation\ByteCodeDecoder.cpp" />
     <ClCompile Include="src\compilation\ByteCodeEncoder.cpp" />

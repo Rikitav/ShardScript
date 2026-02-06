@@ -15,6 +15,7 @@
 #include <shard/runtime/GarbageCollector.h>
 #include <shard/runtime/AbstractInterpreter.h>
 #include <shard/runtime/VirtualMachine.h>
+#include <shard/runtime/ProgramDisassembler.h>
 
 #include <shard/runtime/framework/FrameworkLoader.h>
 
@@ -199,8 +200,17 @@ int wmain(int argc, wchar_t* argv[])
 
 		emiter.VisitSyntaxTree(syntaxTree);
 
-		VirtualMachine virtualMachine(program);
-		virtualMachine.Run();
+		if (ConsoleArguments::ShowDecompile)
+		{
+			ProgramDisassembler disassembler;
+			disassembler.Disassemble(std::wcout, program);
+		}
+
+		if (ConsoleArguments::RunProgram)
+		{
+			VirtualMachine virtualMachine(program);
+			virtualMachine.Run();
+		}
 
 		/*
 		if (args.UseInteractive)

@@ -9,6 +9,7 @@ namespace shard
 {
 	class SHARD_API ProgramDisassembler
 	{
-		void DisassembleAndWriteTo(std::wostream& out, ProgramVirtualImage& program);
+	public:
+		void Disassemble(std::wostream& out, ProgramVirtualImage& program);
 	};
 }
