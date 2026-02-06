@@ -28,6 +28,7 @@
 #include <shard/syntax/symbols/DelegateTypeSymbol.h>
 #include <shard/syntax/symbols/GenericTypeSymbol.h>
 #include <shard/syntax/symbols/TypeParameterSymbol.h>
+#include <shard/syntax/symbols/ConstructorSymbol.h>
 
 #include <shard/syntax/nodes/CompilationUnitSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarationSyntax.h>
@@ -45,6 +46,7 @@
 #include <shard/syntax/nodes/Expressions/LinkedExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/CollectionExpressionSyntax.h>
 #include <shard/syntax/nodes/Expressions/LambdaExpressionSyntax.h>
+#include <shard/syntax/nodes/Expressions/TernaryExpressionSyntax.h>
 
 #include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.h>
@@ -53,6 +55,8 @@
 #include <shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/PropertyDeclarationSyntax.h>
 #include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/IndexatorDeclarationSyntax.h>
 
 #include <shard/syntax/nodes/Statements/VariableStatementSyntax.h>
 #include <shard/syntax/nodes/Statements/ReturnStatementSyntax.h>
@@ -67,6 +71,10 @@
 #include <string>
 #include <sstream>
 #include <algorithm>
+#include <cctype>
+#include <climits>
+#include <exception>
+#include <stdexcept>
 
 using namespace shard;
 
@@ -1442,7 +1450,7 @@ TypeSymbol* ExpressionBinder::SubstituteTypeParameters(TypeSymbol* type, Generic
 	if (type == nullptr || genericType == nullptr)
 		return type;
 
-	type = genericType->SubstituteTypeParameters(type);
+	type = genericType->SubstituteTypeParameters(static_cast<TypeParameterSymbol*>(type));
 	if (type == nullptr)
 		Diagnostics.ReportError(SyntaxToken(), L"Failed to substitute type");
 

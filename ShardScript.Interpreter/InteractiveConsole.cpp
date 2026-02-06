@@ -17,7 +17,6 @@
 #include <shard/runtime/ConsoleHelper.h>
 #include <shard/runtime/GarbageCollector.h>
 #include <shard/runtime/ObjectInstance.h>
-#include <shard/runtime/InboundVariablesContext.h>
 
 #include <shard/syntax/SyntaxFacts.h>
 #include <shard/syntax/SyntaxToken.h>
@@ -40,10 +39,8 @@
 #include <shard/syntax/nodes/Types/PredefinedTypeSyntax.h>
 
 #include <Windows.h>
-#include <consoleapi2.h>
 #include <processenv.h>
 #include <string>
-#include <sstream>
 #include <iostream>
 #include <vector>
 #include <exception>
@@ -308,6 +305,8 @@ static CompilationUnitSyntax* InitImplicitCompilationUnit(MethodDeclarationSynta
 void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticModel, DiagnosticsContext& diagnostics)
 {
 	// TODO: REWRITE LOGIC TO BYTECODE
+
+	/*
 	// Initializing parsing
 	SourceParser parser(diagnostics);
 	SemanticAnalyzer semanticAnalyzer(diagnostics);
@@ -522,4 +521,5 @@ void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticMode
 			std::wcerr << L"### Unknown error occurred" << std::endl;
 		}
 	}
+	*/
 }

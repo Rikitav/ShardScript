@@ -1,8 +1,12 @@
 #include <shard/runtime/GarbageCollector.h>
 #include <shard/runtime/ObjectInstance.h>
-#include <shard/runtime/AbstractInterpreter.h>
+#include <shard/runtime/VirtualMachine.h>
+
+#include <shard/syntax/SyntaxKind.h>
+
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/FieldSymbol.h>
+#include <shard/syntax/symbols/ArrayTypeSymbol.h>
 
 #include <malloc.h>
 #include <stdexcept>
@@ -12,16 +16,20 @@ using namespace shard;
 
 ObjectInstance* GarbageCollector::NullInstance = new ObjectInstance(-1, nullptr, nullptr);
 
-ObjectInstance* GarbageCollector::GetStaticField(FieldSymbol* field)
+ObjectInstance* GarbageCollector::GetStaticField(const VirtualMachine* host, FieldSymbol* field)
 {
 	if (auto find = staticFields.find(field); find != staticFields.end())
 		return find->second;
 
 	if (field->DefaultValueExpression != nullptr)
 	{
+		// TODO: FIX!!!
+		/*
 		ObjectInstance* staticFieldInstance = AbstractInterpreter::EvaluateExpression(field->DefaultValueExpression);
 		staticFields[field] = staticFieldInstance;
 		return staticFieldInstance;
+		*/
+		return nullptr;
 	}
 
 	ObjectInstance* staticFieldInstance = !field->ReturnType->IsReferenceType
@@ -32,14 +40,14 @@ ObjectInstance* GarbageCollector::GetStaticField(FieldSymbol* field)
 	return staticFieldInstance;
 }
 
-void GarbageCollector::SetStaticField(FieldSymbol* field, ObjectInstance* instance)
+void GarbageCollector::SetStaticField(const VirtualMachine* host, FieldSymbol* field, ObjectInstance* instance)
 {
 	if (instance == nullptr)
 		throw std::runtime_error("requested setting static field to nullptr");
 
 	if (auto find = staticFields.find(field); find != staticFields.end())
 	{
-		ObjectInstance* oldValue = GetStaticField(field);
+		ObjectInstance* oldValue = GetStaticField(host, field);
 		GarbageCollector::CollectInstance(oldValue);
 	}
 

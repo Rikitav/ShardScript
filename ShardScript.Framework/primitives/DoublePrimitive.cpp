@@ -6,21 +6,17 @@
 #include <shard/syntax/SymbolAccesibility.h>
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/MethodSymbol.h>
-#include <shard/syntax/symbols/ParameterSymbol.h>
 
 #include <new>
 #include <vector>
 #include <string>
-#include <cmath>
-#include <algorithm>
-#include <Windows.h>
 
 #include "PrimitivesLoading.h"
 
 using namespace shard;
 
 // Integer methods
-static ObjectInstance* ToString(const MethodSymbol* symbol, ArgumentsSpan& arguments)
+static ObjectInstance* ToString(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
 {
 	const ObjectInstance* instance = arguments[0];
 	double value = instance->AsDouble();

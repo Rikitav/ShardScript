@@ -1,19 +1,20 @@
 #include <shard/runtime/framework/FrameworkModule.h>
 
-#include <shard/runtime/InboundVariablesContext.h>
+#include <shard/runtime/ArgumentsSpan.h>
 #include <shard/runtime/GarbageCollector.h>
 #include <shard/runtime/ObjectInstance.h>
+#include <shard/runtime/VirtualMachine.h>
 
 #include <shard/syntax/symbols/MethodSymbol.h>
 #include <shard/syntax/symbols/FieldSymbol.h>
 #include <shard/syntax/symbols/ClassSymbol.h>
+#include <shard/syntax/symbols/AccessorSymbol.h>
+#include <shard/syntax/symbols/ConstructorSymbol.h>
 
 #include <shard/parsing/lexical/SourceProvider.h>
 #include <shard/parsing/lexical/LexicalAnalyzer.h>
 #include <shard/parsing/lexical/reading/StringStreamReader.h>
-#include <shard/parsing/semantic/SymbolTable.h>
 
-#include <Windows.h>
 #include <string>
 
 #include "../resources.h"
@@ -24,12 +25,12 @@ namespace shard
 {
 	class FileSystem_Directory : public FrameworkModule
 	{
-		static ObjectInstance* Impl_GetDirectory(const MethodSymbol* symbol, InboundVariablesContext* arguments)
+		static ObjectInstance* Impl_GetDirectory(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
 		{
-			static FieldSymbol* field = static_cast<ClassSymbol*>(symbol->Parent)->Fields.at(0);
+			static FieldSymbol* field = static_cast<ClassSymbol*>(method->Parent)->Fields.at(0);
 
-			ObjectInstance* fullName = arguments->Variables.at(L"fullName");
-			ObjectInstance* instance = GarbageCollector::AllocateInstance(symbol->ReturnType);
+			ObjectInstance* fullName = arguments[0]; // fullName
+			ObjectInstance* instance = GarbageCollector::AllocateInstance(method->ReturnType);
 
 			instance->SetField(field, fullName);
 			return instance;

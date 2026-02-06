@@ -1,5 +1,5 @@
-﻿#include <shard/parsing/analysis/DiagnosticsContext.h>
-#include <shard/parsing/SyntaxTree.h>
+﻿#include <shard/parsing/SyntaxTree.h>
+#include <shard/parsing/analysis/DiagnosticsContext.h>
 #include <shard/parsing/semantic/SemanticModel.h>
 
 #include <shard/parsing/lexical/LexicalAnalyzer.h>
@@ -8,20 +8,15 @@
 #include <shard/parsing/SourceParser.h>
 #include <shard/parsing/LayoutGenerator.h>
 
-#include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.h>
-#include <shard/syntax/symbols/MethodSymbol.h>
-#include <shard/syntax/SyntaxToken.h>
-
 #include <shard/runtime/GarbageCollector.h>
-#include <shard/runtime/AbstractInterpreter.h>
 #include <shard/runtime/VirtualMachine.h>
 #include <shard/runtime/ProgramDisassembler.h>
 
 #include <shard/runtime/framework/FrameworkLoader.h>
 
 #include <shard/compilation/AbstractEmiter.h>
+#include <shard/compilation/ProgramVirtualImage.h>
 
-#include <Shlwapi.h>
 #include <iostream>
 #include <string>
 #include <stdexcept>
@@ -30,6 +25,7 @@
 #include <csignal>
 #include <cstdlib>
 #include <filesystem>
+#include <Windows.h>
 
 #pragma comment(lib, "shlwapi.lib")
 
@@ -43,7 +39,7 @@ const fs::path stdlibFilename = "ShardScript.Framework.dll";
 
 static void SigIntHandler(int signal)
 {
-	AbstractInterpreter::TerminateCallStack();
+	//AbstractInterpreter::TerminateCallStack();
 	GarbageCollector::Terminate();
 	exit(SIGINT);
 }

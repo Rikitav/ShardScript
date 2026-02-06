@@ -136,6 +136,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\runtime\CallStackFrame.cpp" />
     <ClCompile Include="src\runtime\ProgramDisassembler.cpp" />
     <ClCompile Include="src\compilation\AbstractEmiter.cpp" />
     <ClCompile Include="src\compilation\ByteCodeDecoder.cpp" />
@@ -194,13 +195,11 @@
     <ClInclude Include="include\shard\compilation\OperationCode.h" />
     <ClInclude Include="include\shard\runtime\ProgramDisassembler.h" />
     <ClInclude Include="include\shard\compilation\ProgramVirtualImage.h" />
-    <ClInclude Include="include\shard\runtime\EvalStack.h" />
     <ClInclude Include="include\shard\runtime\framework\FrameworkModule.h" />
     <ClInclude Include="include\shard\parsing\LayoutGenerator.h" />
     <ClInclude Include="include\shard\runtime\framework\FrameworkLoader.h" />
     <ClInclude Include="include\shard\parsing\lexical\reading\SourceTextProvider.h" />
     <ClInclude Include="include\shard\parsing\SourceParser.h" />
-    <ClInclude Include="include\shard\runtime\CallStack.h" />
     <ClInclude Include="include\shard\runtime\VirtualMachine.h" />
     <ClInclude Include="include\shard\ShardScriptVersion.h" />
     <ClInclude Include="include\shard\syntax\nodes\TypeArgumentsListSyntax.h" />

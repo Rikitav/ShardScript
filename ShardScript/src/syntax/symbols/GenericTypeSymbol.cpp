@@ -5,6 +5,7 @@
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/IndexatorSymbol.h>
 #include <shard/syntax/symbols/ParameterSymbol.h>
+#include <shard/syntax/symbols/TypeParameterSymbol.h>
 
 #include <shard/syntax/SyntaxKind.h>
 
@@ -16,12 +17,12 @@
 
 using namespace shard;
 
-void GenericTypeSymbol::AddTypeParameter(TypeSymbol* typeParam, TypeSymbol* constraintType)
+void GenericTypeSymbol::AddTypeParameter(TypeParameterSymbol* typeParam, TypeSymbol* constraintType)
 {
 	_typeParametersMap[typeParam] = constraintType;
 }
 
-TypeSymbol* GenericTypeSymbol::SubstituteTypeParameters(TypeSymbol* typeParam)
+TypeSymbol* GenericTypeSymbol::SubstituteTypeParameters(TypeParameterSymbol* typeParam)
 {
 	auto find = _typeParametersMap.find(typeParam);
 	return find == _typeParametersMap.end() ? nullptr : find->second;
@@ -36,7 +37,7 @@ MethodSymbol* GenericTypeSymbol::FindMethod(std::wstring& name, std::vector<Type
 			return true;
 
 		if (leftType->Kind == SyntaxKind::TypeParameter)
-			leftType = this->SubstituteTypeParameters(leftType);
+			leftType = this->SubstituteTypeParameters(static_cast<TypeParameterSymbol*>(leftType));
 
 		return TypeSymbol::Equals(leftType, right);
 	};
@@ -65,7 +66,7 @@ IndexatorSymbol* GenericTypeSymbol::FindIndexator(std::vector<TypeSymbol*> param
 			return true;
 
 		if (leftType->Kind == SyntaxKind::TypeParameter)
-			leftType = this->SubstituteTypeParameters(leftType);
+			leftType = this->SubstituteTypeParameters(static_cast<TypeParameterSymbol*>(leftType));
 
 		return TypeSymbol::Equals(leftType, right);
 	};

@@ -7,18 +7,18 @@
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/ParameterSymbol.h>
 
-#include <shard/syntax/nodes/StatementsBlockSyntax.h>
-
-#include <shard/runtime/ObjectInstance.h>
-#include <shard/runtime/ArgumentsSpan.h>
-
 #include <string>
 #include <vector>
-#include <utility>
+#include <cstddef>
+#include <cstdint>
 
 namespace shard
 {
-    typedef SHARD_API shard::ObjectInstance* (*MethodSymbolDelegate)(const MethodSymbol* symbol, ArgumentsSpan& arguments);
+    class ObjectInstance;
+    class VirtualMachine;
+    class ArgumentsSpan;
+
+    typedef SHARD_API shard::ObjectInstance* (*MethodSymbolDelegate)(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments);
 
     enum class SHARD_API MethodHandleType
     {

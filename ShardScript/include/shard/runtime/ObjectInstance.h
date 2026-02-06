@@ -4,11 +4,13 @@
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/FieldSymbol.h>
 
-#include <stack>
 #include <string>
+#include <cstdint>
 
 namespace shard
 {
+	class VirtualMachine;
+
 	class SHARD_API ObjectInstance
 	{
 	public:

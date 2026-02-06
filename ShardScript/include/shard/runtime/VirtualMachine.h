@@ -3,7 +3,18 @@
 
 #include <shard/compilation/ProgramVirtualImage.h>
 #include <shard/compilation/ByteCodeDecoder.h>
+#include <shard/compilation/OperationCode.h>
+
 #include <shard/runtime/CallStackFrame.h>
+#include <shard/runtime/ObjectInstance.h>
+
+#include <shard/syntax/symbols/MethodSymbol.h>
+#include <shard/syntax/symbols/ConstructorSymbol.h>
+#include <shard/syntax/symbols/TypeSymbol.h>
+
+#include <stack>
+#include <atomic>
+#include <initializer_list>
 
 namespace shard
 {
@@ -11,21 +22,24 @@ namespace shard
 	{
 		ProgramVirtualImage& Program;
 		std::stack<CallStackFrame*> CallStack;
+		std::atomic<bool> AbortFlag;
 
-		CallStackFrame* CurrentFrame();
+		void ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder, const OpCode opCode);
+		void InvokeMethodInternal(MethodSymbol* method, CallStackFrame* currentFrame);
+		ObjectInstance* InstantiateObject(TypeSymbol* type, ConstructorSymbol* ctor);
+
+	public:
+		VirtualMachine(ProgramVirtualImage& program);
+		
+		CallStackFrame* CurrentFrame() const;
 		CallStackFrame* PushFrame(MethodSymbol* methodSymbol);
 		void PopFrame();
 
-		void InvokeMethod(CallStackFrame* frame);
-		void ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder, const OpCode opCode);
+		void InvokeMethod(MethodSymbol* method);
+		void InvokeMethod(MethodSymbol* method, std::initializer_list<ObjectInstance*> args) const;
 		void RaiseException(ObjectInstance* exceptionReg);
 
-	public:
-		inline VirtualMachine(ProgramVirtualImage& program)
-			: Program(program) { }
-
-		inline ~VirtualMachine() { }
-
 		void Run();
+		void TerminateCallStack();
 	};
 }

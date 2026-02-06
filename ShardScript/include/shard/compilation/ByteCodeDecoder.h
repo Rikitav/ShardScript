@@ -6,7 +6,13 @@
 #include <shard/syntax/symbols/TypeSymbol.h>
 #include <shard/syntax/symbols/FieldSymbol.h>
 #include <shard/syntax/symbols/MethodSymbol.h>
+#include <shard/syntax/symbols/ConstructorSymbol.h>
 #include <shard/syntax/symbols/ArrayTypeSymbol.h>
+
+#include <cstdint>
+#include <cstddef>
+#include <cstdio>
+#include <vector>
 
 namespace shard
 {
@@ -19,7 +25,7 @@ namespace shard
 		inline ByteCodeDecoder(const std::vector<std::byte>& code) : _code(code) { }
 
 		bool IsEOF();
-		size_t Index();
+		size_t Index() const;
 		void Seek(fpos_t amount);
 		OpCode AbsorbOpCode();
 
@@ -36,6 +42,7 @@ namespace shard
 		FieldSymbol* AbsorbFieldSymbol();
 		ArrayTypeSymbol* AbsorbArraySymbol();
 		MethodSymbol* AbsorbMethodSymbol();
+		ConstructorSymbol* AbsorbConstructorSymbol();
 		MethodSymbolDelegate AbsorbFunctionPtr();
 	};
 }

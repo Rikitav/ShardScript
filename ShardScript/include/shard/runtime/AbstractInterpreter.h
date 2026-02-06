@@ -1,8 +1,10 @@
+// TODO: rewrite
+/*
 #pragma once
 #include <shard/ShardScriptAPI.h>
 
 #include <shard/runtime/CallStackFrame.h>
-#include <shard/runtime/InboundVariablesContext.h>
+#include <shard/runtime/ArgumentsSpan.h>
 #include <shard/runtime/ObjectInstance.h>
 
 #include <shard/parsing/SyntaxTree.h>
@@ -52,16 +54,16 @@ namespace shard
 		static void PushFrame(const shard::MethodSymbol* methodSymbol, const shard::TypeSymbol* withinType);
 		static void PopFrame();
 
-		static InboundVariablesContext* CreateArgumentsContext(std::vector<shard::ArgumentSyntax*> arguments, std::vector<shard::ParameterSymbol*> parameters, bool isStatic, shard::ObjectInstance* instance);
-		static InboundVariablesContext* CurrentContext();
-		static void PushContext(InboundVariablesContext* context);
+		static ArgumentsSpan& CreateArgumentsSpan(std::vector<shard::ArgumentSyntax*> arguments, std::vector<shard::ParameterSymbol*> parameters, bool isStatic, shard::ObjectInstance* instance);
+		static ArgumentsSpan& CurrentContext();
+		static void PushContext(ArgumentsSpan& context);
 		static void PopContext();
 
 		static void TerminateCallStack();
 		static void Execute(shard::SyntaxTree& syntaxTree, shard::SemanticModel& semanticModel);
 		static void RaiseException(ObjectInstance* exceptionReg);
 
-		static ObjectInstance* ExecuteMethod(const shard::MethodSymbol* method, const shard::TypeSymbol* withinType, InboundVariablesContext* argumentsContext);
+		static ObjectInstance* ExecuteMethod(const shard::MethodSymbol* method, const shard::TypeSymbol* withinType, ArgumentsSpan& argumentsContext);
 		static ObjectInstance* ExecuteBlock(const shard::StatementsBlockSyntax* block);
 
 		static ObjectInstance* ExecuteStatement(const shard::StatementSyntax* statement);
@@ -100,3 +102,4 @@ namespace shard
 		static void ExecuteInstanceSetter(ObjectInstance* instance, const shard::MemberAccessExpressionSyntax* access, ObjectInstance* value);
 	};
 }
+*/

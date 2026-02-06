@@ -1,5 +1,5 @@
 #pragma once
-#include <stdint.h>
+#include <cstdint>
 
 namespace shard
 {
@@ -165,8 +165,9 @@ namespace shard
 
 		/// <summary>
         /// Creates a new instance of a class/struct defined by TypeSymbol.
-        /// <para>Includes 1 parameter :</para>
+        /// <para>Includes 2 parameters :</para>
         /// <para>> TypeSymbol* pType - The type to instantiate.</para>
+        /// <para>> ConstructorSymbol* pCtor - The Constructor to invoke.</para>
         /// </summary>
         NewObject,
 

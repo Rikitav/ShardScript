@@ -1,4 +1,4 @@
-#include <shard/runtime/InboundVariablesContext.h>
+#include <shard/runtime/ArgumentsSpan.h>
 #include <shard/runtime/ObjectInstance.h>
 #include <shard/parsing/semantic/SymbolTable.h>
 
@@ -12,69 +12,53 @@
 #include <vector>
 #include <string>
 #include <cmath>
+#include <cstdint>
+#include <cstdlib>
 #include <algorithm>
-#include <Windows.h>
 
 #include "PrimitivesLoading.h"
 
 using namespace shard;
 
 // Integer methods
-static ObjectInstance* ToString(const MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* ToString(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
 {
-	ObjectInstance* instance = arguments->TryFind(L"this");
-	int64_t value = instance->AsInteger();
+	int64_t value = arguments[0]->AsInteger(); // this
 	std::wstring str = std::to_wstring(value);
 	return ObjectInstance::FromValue(str);
 }
 
-static ObjectInstance* Abs(const MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* Abs(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
 {
-	ObjectInstance* instance = arguments->TryFind(L"this");
-	int64_t value = instance->AsInteger();
+	int64_t value = arguments[0]->AsInteger(); // this
 	int64_t result = abs(value);
 	return ObjectInstance::FromValue(result);
 }
 
-static ObjectInstance* Min(const MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* Min(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
 {
-	ObjectInstance* instance = arguments->TryFind(L"this");
-	int64_t value = instance->AsInteger();
-	
-	ObjectInstance* otherArg = arguments->TryFind(L"other");
-	if (otherArg == nullptr)
-		return ObjectInstance::FromValue(value);
-	
-	int64_t other = otherArg->AsInteger();
-	int64_t result = min(value, other);
+	int64_t value = arguments[0]->AsInteger(); // this
+	int64_t other = arguments[1]->AsInteger(); // other
+
+	int64_t result = std::min(value, other);
 	return ObjectInstance::FromValue(result);
 }
 
-static ObjectInstance* Max(const MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* Max(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
 {
-	ObjectInstance* instance = arguments->TryFind(L"this");
-	int64_t value = instance->AsInteger();
-	
-	ObjectInstance* otherArg = arguments->TryFind(L"other");
-	if (otherArg == nullptr)
-		return ObjectInstance::FromValue(value);
-	
-	int64_t other = otherArg->AsInteger();
-	int64_t result = max(value, other);
+	int64_t value = arguments[0]->AsInteger(); // this
+	int64_t other = arguments[1]->AsInteger(); // other
+
+	int64_t result = std::max(value, other);
 	return ObjectInstance::FromValue(result);
 }
 
-static ObjectInstance* Pow(const MethodSymbol* symbol, InboundVariablesContext* arguments)
+static ObjectInstance* Pow(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
 {
-	ObjectInstance* instance = arguments->TryFind(L"this");
-	int64_t value = instance->AsInteger();
-	
-	ObjectInstance* powerArg = arguments->TryFind(L"power");
-	if (powerArg == nullptr)
-		return ObjectInstance::FromValue(1.0);
-	
-	int64_t power = powerArg->AsInteger();
-	int64_t result = static_cast<int64_t>(pow(value, power));
+	int64_t value = arguments[0]->AsInteger(); // this
+	int64_t power = arguments[1]->AsInteger(); // power
+
+	int64_t result = static_cast<int64_t>(std::pow(value, power));
 	return ObjectInstance::FromValue(result);
 }
 

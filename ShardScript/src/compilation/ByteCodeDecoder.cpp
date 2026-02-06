@@ -1,19 +1,19 @@
 #include <shard/compilation/ByteCodeDecoder.h>
+#include <shard/compilation/OperationCode.h>
+
+#include <shard/syntax/symbols/ArrayTypeSymbol.h>
+#include <shard/syntax/symbols/ConstructorSymbol.h>
+#include <shard/syntax/symbols/FieldSymbol.h>
+#include <shard/syntax/symbols/MethodSymbol.h>
+#include <shard/syntax/symbols/TypeSymbol.h>
 
 #include <stdexcept>
+#include <cstddef>
+#include <cstdint>
+#include <cstdio>
+#include <vector>
 
 using namespace shard;
-
-/*
-template <typename T>
-static T& ReadUnaligned(const std::vector<std::byte>& code, size_t& ip)
-{
-    T value{};
-    std::memcpy(&value, &code[ip], sizeof(T));
-    ip += sizeof(T);
-    return value;
-}
-*/
 
 template <typename T>
 static bool ReadUnaligned(const std::vector<std::byte>& code, size_t& ip, T& value)
@@ -21,7 +21,7 @@ static bool ReadUnaligned(const std::vector<std::byte>& code, size_t& ip, T& val
     if (ip + sizeof(T) > code.size())
         return false;
 
-    std::memcpy(&value, &code[ip], sizeof(T));
+    memcpy(&value, &code[ip], sizeof(T));
     ip += sizeof(T);
     return true;
 }
@@ -31,7 +31,7 @@ bool ByteCodeDecoder::IsEOF()
     return _ip >= _code.size();
 }
 
-size_t ByteCodeDecoder::Index()
+size_t ByteCodeDecoder::Index() const
 {
     return _ip;
 }
@@ -130,6 +130,13 @@ ArrayTypeSymbol* ByteCodeDecoder::AbsorbArraySymbol()
 MethodSymbol* ByteCodeDecoder::AbsorbMethodSymbol()
 {
     MethodSymbol* value{};
+    ReadUnaligned(_code, _ip, value);
+    return value;
+}
+
+ConstructorSymbol* ByteCodeDecoder::AbsorbConstructorSymbol()
+{
+    ConstructorSymbol* value{};
     ReadUnaligned(_code, _ip, value);
     return value;
 }
