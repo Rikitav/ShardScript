@@ -13,6 +13,9 @@ namespace shard
 	public:
 		inline ByteCodeEncoder() { }
 
+		static void AppendData(std::vector<std::byte>& code, const void* data, size_t size);
+		static void PasteData(std::vector<std::byte>& code, size_t at, const void* data, size_t size);
+
 		void EmitNop(std::vector<std::byte>& code);
 		void EmitHalt(std::vector<std::byte>& code);
 
