@@ -40,16 +40,26 @@
 #include <shard/syntax/symbols/MethodSymbol.h>
 
 #include <vector>
+#include <stack>
 
 namespace shard
 {
 	// basically, a compiler
 	class SHARD_API AbstractEmiter : SyntaxVisitor
 	{
+        struct LoopScope
+        {
+            size_t LoopStart;
+            size_t BlockEnd;
+            size_t LoopEnd;
+            std::vector<size_t> EndingBacktracks;
+        };
+
         shard::ByteCodeEncoder Encoder;
         shard::MethodSymbol* GeneratingFor = nullptr;
 		shard::ProgramVirtualImage& Program;
 		std::vector<shard::MethodSymbol*> EntryPointCandidates;
+        std::stack<LoopScope&> Loops;
 
 	public:
 		inline AbstractEmiter(shard::ProgramVirtualImage& program, shard::SemanticModel& model, shard::DiagnosticsContext& diagnostics)

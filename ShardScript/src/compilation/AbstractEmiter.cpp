@@ -182,6 +182,8 @@ void AbstractEmiter::VisitVariableStatement(VariableStatementSyntax *const node)
 
 void AbstractEmiter::VisitReturnStatement(ReturnStatementSyntax *const node)
 {
+	VisitExpression(node->Expression);
+	Encoder.EmitReturn(GeneratingFor->ExecutableByteCode);
 }
 
 void AbstractEmiter::VisitThrowStatement(ThrowStatementSyntax *const node)
@@ -198,6 +200,23 @@ void AbstractEmiter::VisitContinueStatement(ContinueStatementSyntax *const node)
 
 void AbstractEmiter::VisitWhileStatement(WhileStatementSyntax *const node)
 {
+	Loops.emplace();
+	LoopScope& scope = Loops.top();
+
+	scope.LoopStart = GeneratingFor->ExecutableByteCode.size(); // current cursor pos
+	scope.EndingBacktracks.push_back(scope.LoopStart + sizeof(uint16_t));
+
+	VisitExpression(node->ConditionExpression);
+	Encoder.EmitJumpFalse(GeneratingFor->ExecutableByteCode, 0);
+	VisitStatementsBlock(node->StatementsBlock);
+
+	scope.BlockEnd = GeneratingFor->ExecutableByteCode.size();
+	scope.LoopEnd = scope.BlockEnd;
+
+	for (size_t backtrack : scope.EndingBacktracks)
+		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack, &scope.LoopEnd, sizeof(size_t));
+
+	Loops.pop();
 }
 
 void AbstractEmiter::VisitForStatement(ForStatementSyntax *const node)
