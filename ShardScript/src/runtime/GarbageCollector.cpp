@@ -59,6 +59,9 @@ ObjectInstance* GarbageCollector::AllocateInstance(const TypeSymbol* objectInfo)
 	if (objectInfo == nullptr)
 		throw std::runtime_error("objectInfo is nullptr");
 
+	if (objectInfo->State != TypeLayoutingState::Visited)
+		throw std::runtime_error("objectInfo is uninitialized");
+
 	/*
 	if (objectInfo->MemoryBytesSize == 0)
 		throw std::runtime_error("tried to allocate object instance of size 0");

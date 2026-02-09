@@ -113,6 +113,12 @@ namespace shard
 		/// <para>Includes no additional parameters.</para>
 		/// </summary>
 		Return,
+			
+		/// <summary>
+		/// Interrupts current method flow with an exception.
+		/// <para>Includes no additional parameters.</para>
+		/// </summary>
+		Throw,
 
 		Math_Addition,
 		Math_Substraction,

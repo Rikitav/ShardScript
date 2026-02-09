@@ -36,18 +36,18 @@ size_t ByteCodeDecoder::Index() const
     return _ip;
 }
 
-void ByteCodeDecoder::Seek(fpos_t amount)
+void ByteCodeDecoder::SetCursor(fpos_t amount)
 {
     // lower bound check
-    if (amount < 0 && static_cast<fpos_t>(_ip) < amount)
+    if (amount < 0)
         throw new std::out_of_range("Tried to below code boundaries");
 
     // upper bound check
-    if (_ip + amount >= _code.size())
+    if (amount > _code.size())
         throw new std::out_of_range("Tried to read out of code boundaries");
 
     // seeking
-    _ip += amount;
+    _ip = amount;
 }
 
 OpCode ByteCodeDecoder::AbsorbOpCode()

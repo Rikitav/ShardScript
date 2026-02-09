@@ -38,11 +38,30 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
+		case OpCode::Halt:
+		{
+			AbortFlag = true;
+			break;
+		}
+
 		case OpCode::CallMethodSymbol:
 		{
 			MethodSymbol* methodSymbol = decoder.AbsorbMethodSymbol();
-
 			InvokeMethod(methodSymbol);
+			break;
+		}
+
+		case OpCode::LoadConst_Null:
+		{
+			frame->PushStack(GarbageCollector::NullInstance);
+			break;
+		}
+
+		case OpCode::LoadConst_Boolean:
+		{
+			bool value = decoder.AbsorbBoolean();
+			ObjectInstance* instance = ObjectInstance::FromValue(value);
+			frame->PushStack(instance);
 			break;
 		}
 
@@ -50,6 +69,32 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		{
 			int64_t value = decoder.AbsorbInt64();
 			ObjectInstance* instance = ObjectInstance::FromValue(value);
+			frame->PushStack(instance);
+			break;
+		}
+
+		case OpCode::LoadConst_Rational64:
+		{
+			double value = decoder.AbsorbDouble64();
+			ObjectInstance* instance = ObjectInstance::FromValue(value);
+			frame->PushStack(instance);
+			break;
+		}
+
+		case OpCode::LoadConst_Char:
+		{
+			wchar_t value = decoder.AbsorbChar16();
+			ObjectInstance* instance = ObjectInstance::FromValue(value);
+			frame->PushStack(instance);
+			break;
+		}
+
+		case OpCode::LoadConst_String:
+		{
+			size_t data = decoder.AbsorbString();
+			const wchar_t* str = reinterpret_cast<wchar_t*>(Program.DataSection.data() + data);
+
+			ObjectInstance* instance = ObjectInstance::FromValue(str);
 			frame->PushStack(instance);
 			break;
 		}
@@ -299,26 +344,22 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		/*
 		case OpCode::Compare_Not:
 		{
 			ObjectInstance* right = frame->PopStack();
-			ObjectInstance* left = frame->PopStack();
 
-			bool assign = false;
-			ObjectInstance* result = PrimitiveMathModule::EvaluateBinaryOperator(left, TokenType::NotOperator, right, assign);
+			bool rightDetermined = false;
+			ObjectInstance* result = PrimitiveMathModule::EvaluateUnaryOperator(right, TokenType::NotOperator, rightDetermined);
 			frame->PushStack(result);
 
 			GarbageCollector::CollectInstance(right);
-			GarbageCollector::CollectInstance(left);
 			break;
 		}
-		*/
 
 		case OpCode::Jump:
 		{
 			size_t jump = decoder.AbsorbJump();
-			decoder.Seek(jump);
+			decoder.SetCursor(jump);
 			break;
 		}
 
@@ -330,7 +371,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			if (value->AsBoolean())
 				break;
 
-			decoder.Seek(jump);
+			decoder.SetCursor(jump);
 			break;
 		}
 
@@ -342,7 +383,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			if (!value->AsBoolean())
 				break;
 
-			decoder.Seek(jump);
+			decoder.SetCursor(jump);
 			break;
 		}
 
@@ -397,6 +438,11 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 				ProcessCode(currentFrame, decoder, opCode);
 			}
 
+			if (method->ReturnType != SymbolTable::Primitives::Void)
+			{
+				callingFrame->PushStack(currentFrame->PopStack());
+			}
+
 			break;
 		}
 
@@ -418,16 +464,12 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 				ArgumentsSpan arguments(method, argValues);
 				ObjectInstance* retReg = method->FunctionPointer(this, method, arguments);
 
-				if (retReg != nullptr)
+				if (method->ReturnType != SymbolTable::Primitives::Void)
 				{
-					currentFrame->InterruptionReason = FrameInterruptionReason::ValueReturned;
-					currentFrame->InterruptionRegister = retReg;
-					currentFrame->InterruptionRegister->IncrementReference();
-				}
-				else
-				{
-					if (method->ReturnType != SymbolTable::Primitives::Void)
+					if (retReg == nullptr)
 						throw std::runtime_error("method returned nullptr (void), when expected instance");
+
+					callingFrame->PushStack(retReg);
 				}
 			}
 			catch (const std::runtime_error& err)
@@ -444,6 +486,7 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 		}
 	}
 
+	/*
 	switch (currentFrame->InterruptionReason)
 	{
 		case FrameInterruptionReason::ExceptionRaised:
@@ -460,6 +503,7 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 			break;
 		}
 	}
+	*/
 }
 
 ObjectInstance* VirtualMachine::InstantiateObject(TypeSymbol* type, ConstructorSymbol* ctor)

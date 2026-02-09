@@ -52,13 +52,6 @@
 
 using namespace shard;
 
-/*
-static void EmitJumpWithBacktrack(ByteCodeEncoder& encoder, OpCode opCode, AbstractEmiter::LoopScope& scope)
-{
-
-}
-*/
-
 static void SetEntryPoint(DiagnosticsContext& diagnostics, std::vector<MethodSymbol*>& entryPointCandidates, SymbolTable* table, ProgramVirtualImage& program)
 {
 	if (entryPointCandidates.empty())
@@ -196,14 +189,22 @@ void AbstractEmiter::VisitReturnStatement(ReturnStatementSyntax *const node)
 
 void AbstractEmiter::VisitThrowStatement(ThrowStatementSyntax *const node)
 {
+	VisitExpression(node->Expression);
+	Encoder.EmitThrow(GeneratingFor->ExecutableByteCode);
 }
 
 void AbstractEmiter::VisitBreakStatement(BreakStatementSyntax *const node)
 {
+	LoopScope& scope = Loops.top();
+	scope.LoopEndBacktracks.push_back(GeneratingFor->ExecutableByteCode.size());
+	Encoder.EmitJump(GeneratingFor->ExecutableByteCode, 0);
 }
 
 void AbstractEmiter::VisitContinueStatement(ContinueStatementSyntax *const node)
 {
+	LoopScope& scope = Loops.top();
+	scope.BlockEndBacktracks.push_back(GeneratingFor->ExecutableByteCode.size());
+	Encoder.EmitJump(GeneratingFor->ExecutableByteCode, 0);
 }
 
 void AbstractEmiter::VisitWhileStatement(WhileStatementSyntax *const node)
@@ -219,52 +220,154 @@ void AbstractEmiter::VisitWhileStatement(WhileStatementSyntax *const node)
 	VisitExpression(node->ConditionExpression);
 
 	// Emiting jump to loop end if condition is false
+	scope.LoopEndBacktracks.push_back(GeneratingFor->ExecutableByteCode.size());
 	Encoder.EmitJumpFalse(GeneratingFor->ExecutableByteCode, 0);
-	scope.LoopEndBacktracks.push_back(GeneratingFor->ExecutableByteCode.size() + sizeof(OpCode));
 
 	// Emiting loop body
 	VisitStatementsBlock(node->StatementsBlock);
 
-	// Getting loop ending
+	// Getting loop block ending and miting looping jump
 	scope.BlockEnd = GeneratingFor->ExecutableByteCode.size();
-	scope.LoopEnd = scope.BlockEnd;
-
-	// Emiting looping jump
 	Encoder.EmitJump(GeneratingFor->ExecutableByteCode, scope.LoopStart);
+
+	// Getting loop ending
+	scope.LoopEnd = GeneratingFor->ExecutableByteCode.size();
 
 	// Backtracking uninitialized jumps
 	for (size_t backtrack : scope.BlockEndBacktracks)
-		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack, &scope.BlockEnd, sizeof(size_t));
+		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack + sizeof(OpCode), &scope.BlockEnd, sizeof(size_t));
 
 	for (size_t backtrack : scope.LoopEndBacktracks)
-		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack, &scope.LoopEnd, sizeof(size_t));
+		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack + sizeof(OpCode), &scope.LoopEnd, sizeof(size_t));
 
 	// Exiting loop scope
 	Loops.pop();
 }
 
-void AbstractEmiter::VisitForStatement(ForStatementSyntax *const node)
-{
-}
-
 void AbstractEmiter::VisitUntilStatement(UntilStatementSyntax *const node)
 {
+	// Entering loop scope
+	Loops.emplace();
+	LoopScope& scope = Loops.top();
+
+	// Getting loop starting position, current cursor pos
+	scope.LoopStart = GeneratingFor->ExecutableByteCode.size();
+
+	// Emiting looping condition expression
+	VisitExpression(node->ConditionExpression);
+
+	// Emiting jump to loop end if condition is false
+	scope.LoopEndBacktracks.push_back(GeneratingFor->ExecutableByteCode.size());
+	Encoder.EmitJumpTrue(GeneratingFor->ExecutableByteCode, 0);
+
+	// Emiting loop body
+	VisitStatementsBlock(node->StatementsBlock);
+
+	// Getting loop block ending and miting looping jump
+	scope.BlockEnd = GeneratingFor->ExecutableByteCode.size();
+	Encoder.EmitJump(GeneratingFor->ExecutableByteCode, scope.LoopStart);
+
+	// Getting loop ending
+	scope.LoopEnd = GeneratingFor->ExecutableByteCode.size();
+
+	// Backtracking uninitialized jumps
+	for (size_t backtrack : scope.BlockEndBacktracks)
+		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack + sizeof(OpCode), &scope.BlockEnd, sizeof(size_t));
+
+	for (size_t backtrack : scope.LoopEndBacktracks)
+		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack + sizeof(OpCode), &scope.LoopEnd, sizeof(size_t));
+
+	// Exiting loop scope
+	Loops.pop();
 }
 
-void AbstractEmiter::VisitConditionalClause(ConditionalClauseBaseSyntax *const node)
+void AbstractEmiter::VisitForStatement(ForStatementSyntax* const node)
 {
+	// Entering loop scope
+	Loops.emplace();
+	LoopScope& scope = Loops.top();
+
+	// Emiting initializer expression
+	VisitStatement(node->InitializerStatement);
+
+	// Getting loop starting position, current cursor pos
+	scope.LoopStart = GeneratingFor->ExecutableByteCode.size();
+
+	// Emiting looping condition expression
+	VisitExpression(node->ConditionExpression);
+
+	// Emiting jump to loop end if condition is false
+	scope.LoopEndBacktracks.push_back(GeneratingFor->ExecutableByteCode.size());
+	Encoder.EmitJumpFalse(GeneratingFor->ExecutableByteCode, 0);
+
+	// Emiting loop body
+	VisitStatementsBlock(node->StatementsBlock);
+	VisitStatement(node->AfterRepeatStatement);
+
+	// Getting loop block ending and miting looping jump
+	scope.BlockEnd = GeneratingFor->ExecutableByteCode.size();
+	Encoder.EmitJump(GeneratingFor->ExecutableByteCode, scope.LoopStart);
+
+	// Getting loop ending
+	scope.LoopEnd = GeneratingFor->ExecutableByteCode.size();
+
+	// Backtracking uninitialized jumps
+	for (size_t backtrack : scope.BlockEndBacktracks)
+		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack + sizeof(OpCode), &scope.BlockEnd, sizeof(size_t));
+
+	for (size_t backtrack : scope.LoopEndBacktracks)
+		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack + sizeof(OpCode), &scope.LoopEnd, sizeof(size_t));
+
+	// Exiting loop scope
+	Loops.pop();
+}
+
+void AbstractEmiter::VisitConditionalClause(shard::ConditionalClauseBaseSyntax* const node)
+{
+}
+
+static bool IsConditionalClause(SyntaxKind kind)
+{
+	return kind == SyntaxKind::IfStatement
+		|| kind == SyntaxKind::UnlessStatement
+		|| kind == SyntaxKind::ElseStatement;
 }
 
 void AbstractEmiter::VisitIfStatement(IfStatementSyntax *const node)
 {
+	VisitStatement(node->ConditionExpression);
+	size_t jumpAddress = GeneratingFor->ExecutableByteCode.size();
+	Encoder.EmitJumpFalse(GeneratingFor->ExecutableByteCode, 0);
+
+	VisitStatementsBlock(node->StatementsBlock);
+	size_t bodyEnd = GeneratingFor->ExecutableByteCode.size();
+
+	if (IsConditionalClause(node->Parent->Kind) && false)
+	{
+		// TODO: handle else-if jumps
+	}
+
+	ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, jumpAddress + sizeof(OpCode), &bodyEnd, sizeof(size_t));
 }
 
 void AbstractEmiter::VisitUnlessStatement(UnlessStatementSyntax *const node)
 {
+	size_t clauseStart = GeneratingFor->ExecutableByteCode.size();
+	VisitStatement(node->ConditionExpression);
+
+	size_t jumpAddress = GeneratingFor->ExecutableByteCode.size();
+	Encoder.EmitJumpTrue(GeneratingFor->ExecutableByteCode, 0);
+
+	VisitStatementsBlock(node->StatementsBlock);
+	Encoder.EmitJump(GeneratingFor->ExecutableByteCode, clauseStart);
+
+	size_t bodyEnd = GeneratingFor->ExecutableByteCode.size();
+	ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, jumpAddress + sizeof(OpCode), &clauseStart, sizeof(size_t));
 }
 
 void AbstractEmiter::VisitElseStatement(ElseStatementSyntax *const node)
 {
+	VisitStatementsBlock(node->StatementsBlock);
 }
 
 void AbstractEmiter::VisitLiteralExpression(LiteralExpressionSyntax *const node)
@@ -322,6 +425,12 @@ void AbstractEmiter::VisitBinaryExpression(BinaryExpressionSyntax *const node)
 	{
 		case TokenType::AssignOperator:
 		{
+			break;
+		}
+
+		case TokenType::EqualsOperator:
+		{
+			Encoder.EmitCompareEqual(GeneratingFor->ExecutableByteCode);
 			break;
 		}
 
