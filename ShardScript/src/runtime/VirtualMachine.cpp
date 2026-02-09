@@ -318,7 +318,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		case OpCode::Jump:
 		{
 			size_t jump = decoder.AbsorbJump();
-			decoder.Seek(jump);
+			decoder.SetCursor(jump);
 			break;
 		}
 
@@ -330,7 +330,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			if (value->AsBoolean())
 				break;
 
-			decoder.Seek(jump);
+			decoder.SetCursor(jump);
 			break;
 		}
 
@@ -342,7 +342,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			if (!value->AsBoolean())
 				break;
 
-			decoder.Seek(jump);
+			decoder.SetCursor(jump);
 			break;
 		}
 

@@ -200,10 +200,16 @@ void AbstractEmiter::VisitThrowStatement(ThrowStatementSyntax *const node)
 
 void AbstractEmiter::VisitBreakStatement(BreakStatementSyntax *const node)
 {
+	LoopScope& scope = Loops.top();
+	scope.LoopEndBacktracks.push_back(GeneratingFor->ExecutableByteCode.size());
+	Encoder.EmitJump(GeneratingFor->ExecutableByteCode, 0);
 }
 
 void AbstractEmiter::VisitContinueStatement(ContinueStatementSyntax *const node)
 {
+	LoopScope& scope = Loops.top();
+	scope.BlockEndBacktracks.push_back(GeneratingFor->ExecutableByteCode.size());
+	Encoder.EmitJump(GeneratingFor->ExecutableByteCode, 0);
 }
 
 void AbstractEmiter::VisitWhileStatement(WhileStatementSyntax *const node)
@@ -219,25 +225,25 @@ void AbstractEmiter::VisitWhileStatement(WhileStatementSyntax *const node)
 	VisitExpression(node->ConditionExpression);
 
 	// Emiting jump to loop end if condition is false
+	scope.LoopEndBacktracks.push_back(GeneratingFor->ExecutableByteCode.size());
 	Encoder.EmitJumpFalse(GeneratingFor->ExecutableByteCode, 0);
-	scope.LoopEndBacktracks.push_back(GeneratingFor->ExecutableByteCode.size() + sizeof(OpCode));
 
 	// Emiting loop body
 	VisitStatementsBlock(node->StatementsBlock);
 
-	// Getting loop ending
+	// Getting loop block ending and miting looping jump
 	scope.BlockEnd = GeneratingFor->ExecutableByteCode.size();
-	scope.LoopEnd = scope.BlockEnd;
-
-	// Emiting looping jump
 	Encoder.EmitJump(GeneratingFor->ExecutableByteCode, scope.LoopStart);
+
+	// Getting loop ending
+	scope.LoopEnd = GeneratingFor->ExecutableByteCode.size();
 
 	// Backtracking uninitialized jumps
 	for (size_t backtrack : scope.BlockEndBacktracks)
-		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack, &scope.BlockEnd, sizeof(size_t));
+		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack + sizeof(OpCode), &scope.BlockEnd, sizeof(size_t));
 
 	for (size_t backtrack : scope.LoopEndBacktracks)
-		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack, &scope.LoopEnd, sizeof(size_t));
+		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack + sizeof(OpCode), &scope.LoopEnd, sizeof(size_t));
 
 	// Exiting loop scope
 	Loops.pop();
@@ -322,6 +328,12 @@ void AbstractEmiter::VisitBinaryExpression(BinaryExpressionSyntax *const node)
 	{
 		case TokenType::AssignOperator:
 		{
+			break;
+		}
+
+		case TokenType::EqualsOperator:
+		{
+			Encoder.EmitCompareEqual(GeneratingFor->ExecutableByteCode);
 			break;
 		}
 
