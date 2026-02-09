@@ -33,6 +33,7 @@ namespace shard
 		void EmitJumpTrue(std::vector<std::byte>& code, size_t jump);
 		void EmitJumpFalse(std::vector<std::byte>& code, size_t jump);
 		void EmitReturn(std::vector<std::byte>& code);
+		void EmitThrow(std::vector<std::byte>& code);
 
 		void EmitMathAdd(std::vector<std::byte>& code);
 		void EmitMathSub(std::vector<std::byte>& code);
