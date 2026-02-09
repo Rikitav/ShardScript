@@ -61,7 +61,7 @@ namespace shard
         shard::MethodSymbol* GeneratingFor = nullptr;
 		shard::ProgramVirtualImage& Program;
 		std::vector<shard::MethodSymbol*> EntryPointCandidates;
-        std::stack<LoopScope&> Loops;
+        std::stack<LoopScope> Loops;
 
 	public:
 		inline AbstractEmiter(shard::ProgramVirtualImage& program, shard::SemanticModel& model, shard::DiagnosticsContext& diagnostics)

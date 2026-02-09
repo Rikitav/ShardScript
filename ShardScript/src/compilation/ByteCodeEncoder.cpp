@@ -2,11 +2,15 @@
 #include <shard/compilation/OperationCode.h>
 
 #include <string>
+#include <stdexcept>
 
 using namespace shard;
 
 void ByteCodeEncoder::PasteData(std::vector<std::byte>& code, size_t at, const void* data, size_t size)
 {
+    if (at + size > code.size())
+        throw std::runtime_error("ByteCodeEncoder::PasteData: Out of bounds write!");
+
     std::memcpy(code.data() + at, data, size);
 }
 

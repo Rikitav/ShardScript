@@ -196,6 +196,13 @@ int wmain(int argc, wchar_t* argv[])
 
 		emiter.VisitSyntaxTree(syntaxTree);
 
+		if (diagnostics.AnyError)
+		{
+			std::wcout << L"=== Diagnostics output ===" << std::endl;
+			diagnostics.WriteDiagnostics(std::wcout);
+			return 1;
+		}
+
 		if (ConsoleArguments::ShowDecompile)
 		{
 			ProgramDisassembler disassembler;
