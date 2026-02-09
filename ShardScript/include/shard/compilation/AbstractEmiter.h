@@ -49,10 +49,12 @@ namespace shard
 	{
         struct LoopScope
         {
-            size_t LoopStart;
-            size_t BlockEnd;
-            size_t LoopEnd;
-            std::vector<size_t> EndingBacktracks;
+            size_t LoopStart; // Address of first OpCode of loop, used for 'looping jump'
+            size_t BlockEnd; // Addredd of OpCode right after last OpCode of looping block, used for 'continue' statement
+            size_t LoopEnd; // Address of OpCode right after last OpCode of entire loop, used for 'looping exit', or 'break' statement
+            
+            std::vector<size_t> BlockEndBacktracks;
+            std::vector<size_t> LoopEndBacktracks;
         };
 
         shard::ByteCodeEncoder Encoder;

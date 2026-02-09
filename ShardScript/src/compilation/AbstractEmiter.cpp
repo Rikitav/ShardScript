@@ -1,5 +1,6 @@
 #include <shard/compilation/AbstractEmiter.h>
 #include <shard/compilation/ProgramVirtualImage.h>
+#include <shard/compilation/OperationCode.h>
 
 #include <shard/parsing/analysis/DiagnosticsContext.h>
 #include <shard/parsing/semantic/SymbolTable.h>
@@ -50,6 +51,13 @@
 #include <vector>
 
 using namespace shard;
+
+/*
+static void EmitJumpWithBacktrack(ByteCodeEncoder& encoder, OpCode opCode, AbstractEmiter::LoopScope& scope)
+{
+
+}
+*/
 
 static void SetEntryPoint(DiagnosticsContext& diagnostics, std::vector<MethodSymbol*>& entryPointCandidates, SymbolTable* table, ProgramVirtualImage& program)
 {
@@ -200,22 +208,38 @@ void AbstractEmiter::VisitContinueStatement(ContinueStatementSyntax *const node)
 
 void AbstractEmiter::VisitWhileStatement(WhileStatementSyntax *const node)
 {
+	// Entering loop scope
 	Loops.emplace();
 	LoopScope& scope = Loops.top();
 
-	scope.LoopStart = GeneratingFor->ExecutableByteCode.size(); // current cursor pos
-	scope.EndingBacktracks.push_back(scope.LoopStart + sizeof(uint16_t));
-
+	// Getting loop starting position, current cursor pos
+	scope.LoopStart = GeneratingFor->ExecutableByteCode.size();
+	
+	// Emiting looping condition expression
 	VisitExpression(node->ConditionExpression);
+
+	// Emiting jump to loop end if condition is false
 	Encoder.EmitJumpFalse(GeneratingFor->ExecutableByteCode, 0);
+	scope.LoopEndBacktracks.push_back(GeneratingFor->ExecutableByteCode.size() + sizeof(OpCode));
+
+	// Emiting loop body
 	VisitStatementsBlock(node->StatementsBlock);
 
+	// Getting loop ending
 	scope.BlockEnd = GeneratingFor->ExecutableByteCode.size();
 	scope.LoopEnd = scope.BlockEnd;
 
-	for (size_t backtrack : scope.EndingBacktracks)
+	// Emiting looping jump
+	Encoder.EmitJump(GeneratingFor->ExecutableByteCode, scope.LoopStart);
+
+	// Backtracking uninitialized jumps
+	for (size_t backtrack : scope.BlockEndBacktracks)
+		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack, &scope.BlockEnd, sizeof(size_t));
+
+	for (size_t backtrack : scope.LoopEndBacktracks)
 		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack, &scope.LoopEnd, sizeof(size_t));
 
+	// Exiting loop scope
 	Loops.pop();
 }
 
