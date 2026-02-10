@@ -23,7 +23,7 @@
 #include <malloc.h>
 #include <cstdint>
 
-#include "../resources.h"
+#include "../../resources.h"
 
 using namespace shard;
 

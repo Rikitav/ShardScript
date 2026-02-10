@@ -13,7 +13,7 @@ namespace resources
 
 		GetModuleHandleExW(
 			GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
-			reinterpret_cast<LPCTSTR>(query),
+			reinterpret_cast<LPCWSTR>(query),
 			&hModule);
 
 		return hModule;

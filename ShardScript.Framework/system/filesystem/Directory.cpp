@@ -17,7 +17,7 @@
 
 #include <string>
 
-#include "../resources.h"
+#include "../../resources.h"
 
 using namespace shard;
 

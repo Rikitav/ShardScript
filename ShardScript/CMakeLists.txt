@@ -1,0 +1,21 @@
+project(ShardScript)
+
+file(GLOB_RECURSE SHARDSCRIPT_SOURCES "src/*.cpp")
+file(GLOB_RECURSE SHARDSCRIPT_HEADERS "include/*.h")
+file(GLOB_RECURSE SHARDSCRIPT_OTHER "cpp.hint" "*.md")
+
+add_library(${PROJECT_NAME} SHARED 
+    ${SHARDSCRIPT_SOURCES} 
+    ${SHARDSCRIPT_HEADERS}
+    ${SHARDSCRIPT_OTHER}
+)
+
+target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_compile_definitions(${PROJECT_NAME} PRIVATE "SHARD_API_EXPORT;UNICODE;_UNICODE")
+
+set_target_properties(${PROJECT_NAME} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+set_target_properties(${PROJECT_NAME} PROPERTIES VS_GLOBAL_KEYWORD "Win32Proj")
+
+use_props(${PROJECT_NAME} "${CMAKE_CONFIGURATION_TYPES}" "${DEFAULT_CXX_PROPS}")
+
+set(ROOT_NAMESPACE ShardScript)

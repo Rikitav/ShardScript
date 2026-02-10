@@ -10,7 +10,7 @@
 
 std::wstring shard::ShardUtilities::GetFileVersion()
 {
-	TCHAR filename[MAX_PATH];
+	WCHAR filename[MAX_PATH];
 	GetModuleFileNameW(NULL, filename, MAX_PATH);
 
 	DWORD dummy;
@@ -25,7 +25,7 @@ std::wstring shard::ShardUtilities::GetFileVersion()
 			UINT len;
 			VS_FIXEDFILEINFO* fileInfo = nullptr;
 			
-			if (VerQueryValueW(versionInfo, TEXT("\\"), reinterpret_cast<LPVOID*>(&fileInfo), &len))
+			if (VerQueryValueW(versionInfo, L"\\", reinterpret_cast<LPVOID*>(&fileInfo), &len))
 			{
 				DWORD versionMS = fileInfo->dwFileVersionMS;
 				std::wstringstream res;
