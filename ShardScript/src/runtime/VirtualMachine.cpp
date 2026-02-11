@@ -111,7 +111,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		{
 			uint16_t slot = decoder.AbsorbVariableSlot();
 			ObjectInstance* instance = frame->PopStack();
-			
+
 			ObjectInstance* oldVar = frame->EvalStack[slot];
 			if (oldVar != nullptr)
 			{
