@@ -57,11 +57,20 @@ namespace shard
             std::vector<size_t> LoopEndBacktracks;
         };
 
+        struct ClauseScope
+        {
+            size_t ClauseEnd; // Address of OpCode right after last OpCode of entire clause
+
+            std::vector<size_t> ClauseEndBacktracks;
+        };
+
         shard::ByteCodeEncoder Encoder;
         shard::MethodSymbol* GeneratingFor = nullptr;
 		shard::ProgramVirtualImage& Program;
 		std::vector<shard::MethodSymbol*> EntryPointCandidates;
+
         std::stack<LoopScope> Loops;
+        std::stack<ClauseScope> Clauses;
 
 	public:
 		inline AbstractEmiter(shard::ProgramVirtualImage& program, shard::SemanticModel& model, shard::DiagnosticsContext& diagnostics)
@@ -86,18 +95,24 @@ namespace shard
         void VisitForStatement(shard::ForStatementSyntax *const node) override;
         void VisitUntilStatement(shard::UntilStatementSyntax *const node) override;
 
-        void VisitConditionalClause(shard::ConditionalClauseBaseSyntax *const node) override;
         void VisitIfStatement(shard::IfStatementSyntax *const node) override;
         void VisitUnlessStatement(shard::UnlessStatementSyntax *const node) override;
         void VisitElseStatement(shard::ElseStatementSyntax *const node) override;
 
         void VisitLiteralExpression(shard::LiteralExpressionSyntax *const node) override;
-        void VisitBinaryExpression(shard::BinaryExpressionSyntax *const node) override;
         void VisitUnaryExpression(shard::UnaryExpressionSyntax *const node) override;
         void VisitObjectCreationExpression(shard::ObjectExpressionSyntax *const node) override;
         void VisitCollectionExpression(shard::CollectionExpressionSyntax *const node) override;
         void VisitLambdaExpression(shard::LambdaExpressionSyntax *const node) override;
         void VisitTernaryExpression(shard::TernaryExpressionSyntax *const node) override;
+
+        void VisitBinaryExpression(shard::BinaryExpressionSyntax *const node) override;
+        void VisitAssignExpression(shard::BinaryExpressionSyntax* const node);
+        void VisitParameterAssignExpression(shard::BinaryExpressionSyntax* const node, ParameterSymbol* param);
+        void VisitVariableAssignExpression(shard::BinaryExpressionSyntax* const node, VariableSymbol* var);
+        void VisitPropertyAssignExpression(shard::BinaryExpressionSyntax* const node, PropertySymbol* prop);
+        void VisitFieldAssignExpression(shard::BinaryExpressionSyntax* const node, FieldSymbol* field);
+        void VisitStaticFieldAssignExpression(shard::BinaryExpressionSyntax* const node, FieldSymbol* field);
 
         void VisitInvocationExpression(shard::InvokationExpressionSyntax *const node) override;
         void VisitMemberAccessExpression(shard::MemberAccessExpressionSyntax *const node) override;
