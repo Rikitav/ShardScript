@@ -317,8 +317,7 @@ bool LexicalAnalyzer::ReadCharLiteral(std::wstring& word, bool notEcran, bool& w
 bool LexicalAnalyzer::ReadStringLiteral(std::wstring& word, bool dontEcran, bool& wasClosed)
 {
 	bool ecran = false;
-
-	while (SourceText->ReadNext(PeekSymbol))
+	while (SourceText->ReadNext(Symbol))
 	{
 		switch (Symbol)
 		{
@@ -922,7 +921,7 @@ bool LexicalAnalyzer::IsCharLiteral(TokenType& type, bool& dontEcran)
 {
 	switch (Symbol)
 	{
-		case '\'':
+		case L'\'':
 		{
 			type = TokenType::CharLiteral;
 			return true;
@@ -937,7 +936,7 @@ bool LexicalAnalyzer::IsStringLiteral(TokenType& type, bool& dontEcran)
 {
 	switch (Symbol)
 	{
-		case '@':
+		case L'@':
 		{
 			if (!SourceText->PeekNext(PeekSymbol))
 				return false;
@@ -950,7 +949,7 @@ bool LexicalAnalyzer::IsStringLiteral(TokenType& type, bool& dontEcran)
 			return IsStringLiteral(type, dontEcran);
 		}
 
-		case '"':
+		case L'"':
 		{
 			type = TokenType::StringLiteral;
 			return true;

@@ -31,12 +31,12 @@ void ByteCodeEncoder::AppendData(std::vector<std::byte>& code, const void* data,
 
 static void AppendDataS(std::vector<std::byte>& code, const wchar_t* string)
 {
-    ByteCodeEncoder::AppendData(code, string, wcslen(string) * sizeof(wchar_t));
+    ByteCodeEncoder::AppendData(code, string, wcslen(string) * sizeof(wchar_t) + sizeof(wchar_t));
 }
 
 static void AppendDataS(std::vector<std::byte>& code, std::wstring& string)
 {
-    ByteCodeEncoder::AppendData(code, string.data(), string.size() * sizeof(wchar_t));
+    ByteCodeEncoder::AppendData(code, string.data(), string.size() * sizeof(wchar_t) + sizeof(wchar_t));
 }
 
 template <typename T>

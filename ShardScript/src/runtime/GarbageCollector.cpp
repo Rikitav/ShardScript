@@ -151,7 +151,15 @@ void GarbageCollector::TerminateInstance(ObjectInstance* instance)
 	}
 
 	if (!instance->IsTransient)
+	{
+		if (instance->Info == SymbolTable::Primitives::String)
+		{
+			void* stringData = instance->OffsetMemory(sizeof(int64_t), sizeof(wchar_t*));
+			free(stringData);
+		}
+
 		free(instance->Memory);
+	}
 
 	delete instance;
 }

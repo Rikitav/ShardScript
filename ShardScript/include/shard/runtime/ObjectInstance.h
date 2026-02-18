@@ -18,7 +18,7 @@ namespace shard
 		const bool IsTransient;
 
 		inline ObjectInstance(const TypeSymbol* info, void* memory, bool isTransient)
-			: Info(info), Memory(memory), IsTransient(isTransient) { }
+			: Info(info), Memory(memory), IsTransient(isTransient), ReferencesCounter(0) { }
 		
 		inline ~ObjectInstance() = default;
 
@@ -26,7 +26,7 @@ namespace shard
 		static ObjectInstance* FromValue(double value);
 		static ObjectInstance* FromValue(bool value);
 		static ObjectInstance* FromValue(wchar_t value);
-		static ObjectInstance* FromValue(const wchar_t* value);
+		static ObjectInstance* FromValue(const wchar_t* value, bool isTransient);
 		static ObjectInstance* FromValue(const std::wstring& value);
 
 		ObjectInstance* GetField(FieldSymbol* field);

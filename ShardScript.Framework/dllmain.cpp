@@ -188,8 +188,8 @@ static void ResolvePrimitives()
 	SymbolTable::Primitives::Integer->MemoryBytesSize = sizeof(int64_t);
 	SymbolTable::Primitives::Double->MemoryBytesSize = sizeof(double);
 	SymbolTable::Primitives::Char->MemoryBytesSize = sizeof(wchar_t);
-	SymbolTable::Primitives::String->MemoryBytesSize = sizeof(std::wstring);
-	SymbolTable::Primitives::Array->MemoryBytesSize = sizeof(int64_t); // _length field
+	SymbolTable::Primitives::String->MemoryBytesSize = sizeof(int64_t) + sizeof(wchar_t*); // long _length + char[] _data
+	SymbolTable::Primitives::Array->MemoryBytesSize = sizeof(int64_t); // long _length
 
 	BooleanPrimitive::Reflect(SymbolTable::Primitives::Boolean);
 	IntegerPrimitive::Reflect(SymbolTable::Primitives::Integer);
@@ -278,6 +278,8 @@ static void ResolveGlobalMethods()
 	}
 }
 
+#pragma message (push)
+#pragma message (disable: 003)
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
     switch (ul_reason_for_call)
@@ -302,3 +304,4 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
     return TRUE;
 }
+#pragma message (pop)

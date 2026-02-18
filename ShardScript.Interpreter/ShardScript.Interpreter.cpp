@@ -131,7 +131,7 @@ static LONG WINAPI UnhandledExceptionFilterFunction(PEXCEPTION_POINTERS exceptio
         CloseHandle(logFile);
     }
 
-    MINIDUMP_EXCEPTION_INFORMATION minidumpInfo;
+	MINIDUMP_EXCEPTION_INFORMATION minidumpInfo{};
     minidumpInfo.ThreadId = GetCurrentThreadId();
     minidumpInfo.ExceptionPointers = exception;
     minidumpInfo.ClientPointers = FALSE;
