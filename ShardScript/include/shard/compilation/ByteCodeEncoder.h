@@ -25,6 +25,7 @@ namespace shard
 		void EmitLoadConstDouble64(std::vector<std::byte>& code, double value);
 		void EmitLoadConstChar16(std::vector<std::byte>& code, wchar_t value);
 		void EmitLoadConstString(std::vector<std::byte>& code, std::vector<std::byte>& data, const wchar_t* value);
+		void EmitDuplicate(std::vector<std::byte>& code);
 
 		void EmitLoadVarible(std::vector<std::byte>& code, uint16_t index);
 		void EmitStoreVarible(std::vector<std::byte>& code, uint16_t index);
@@ -41,6 +42,8 @@ namespace shard
 		void EmitMathDiv(std::vector<std::byte>& code);
 		void EmitMathMod(std::vector<std::byte>& code);
 		void EmitMathPow(std::vector<std::byte>& code);
+		void EmitMathNegative(std::vector<std::byte>& code);
+		void EmitMathPositive(std::vector<std::byte>& code);
 
 		void EmitCompareEqual(std::vector<std::byte>& code);
 		void EmitCompareNotEqual(std::vector<std::byte>& code);
@@ -48,7 +51,10 @@ namespace shard
 		void EmitCompareGreaterOrEqual(std::vector<std::byte>& code);
 		void EmitCompareLess(std::vector<std::byte>& code);
 		void EmitCompareLessOrEqual(std::vector<std::byte>& code);
-		void EmitCompareNot(std::vector<std::byte>& code);
+
+		void EmitLogicalNot(std::vector<std::byte>& code);
+		void EmitLogicalOr(std::vector<std::byte>& code);
+		void EmitLogicalAnd(std::vector<std::byte>& code);
 
 		void EmitNewObject(std::vector<std::byte>& code, TypeSymbol* type);
 		void EmitLoadField(std::vector<std::byte>& code, FieldSymbol* type);

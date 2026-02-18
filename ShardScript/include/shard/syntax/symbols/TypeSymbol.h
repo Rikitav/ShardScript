@@ -20,7 +20,7 @@ namespace shard
 
 namespace shard
 {
-    enum class SHARD_API TypeLayoutingState
+    enum class TypeLayoutingState
     {
         Unvisited,
         Visiting,

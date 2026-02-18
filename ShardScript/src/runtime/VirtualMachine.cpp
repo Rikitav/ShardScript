@@ -176,6 +176,15 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
+		case OpCode::CreateDuplicate:
+		{
+			ObjectInstance* instance = frame->PeekStack();
+			ObjectInstance* duplicate = GarbageCollector::CopyInstance(instance);
+
+			frame->PushStack(duplicate);
+			break;
+		}
+
 		case OpCode::Math_Addition:
 		{
 			ObjectInstance* right = frame->PopStack();
@@ -344,7 +353,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::Compare_Not:
+		case OpCode::Logical_Not:
 		{
 			ObjectInstance* right = frame->PopStack();
 
@@ -384,6 +393,12 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 				break;
 
 			decoder.SetCursor(jump);
+			break;
+		}
+
+		case OpCode::Return:
+		{
+			decoder.Return();
 			break;
 		}
 

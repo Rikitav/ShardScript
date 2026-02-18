@@ -46,50 +46,44 @@ namespace shard
 	class SHARD_API InstancesHeap
 	{
     private:
-        std::unordered_map<uint64_t, shard::ObjectInstance*> IdMap;
         std::unordered_map<void*, shard::ObjectInstance*> PtrMap;
 
     public:
-        using iterator = ValueIterator<decltype(IdMap)>;
-        using const_iterator = ValueIterator<const decltype(IdMap)>;
+        using iterator = ValueIterator<decltype(PtrMap)>;
+        using const_iterator = ValueIterator<const decltype(PtrMap)>;
+
+        inline iterator begin() { return iterator(PtrMap.begin()); }
+        inline iterator end() { return iterator(PtrMap.end()); }
+
+        inline auto pairs_begin() { return PtrMap.begin(); }
+        inline auto pairs_end() { return PtrMap.end(); }
+
+        inline shard::ObjectInstance* at(void* ptr) { return PtrMap.at(ptr); }
 
         inline void add(ObjectInstance* instance)
         {
-            IdMap[instance->Id] = instance;
-            PtrMap[(void*)instance->Ptr] = instance;
+            PtrMap[instance->Memory] = instance;
         }
-
-        inline iterator begin() { return iterator(IdMap.begin()); }
-        inline iterator end() { return iterator(IdMap.end()); }
-
-        inline auto pairs_begin() { return IdMap.begin(); }
-        inline auto pairs_end() { return IdMap.end(); }
-
-        inline shard::ObjectInstance* at(uint64_t id) { return IdMap.at(id); }
-        inline shard::ObjectInstance* at(void* ptr) { return PtrMap.at(ptr); }
 
         inline void erase(shard::ObjectInstance* instance)
         {
-            IdMap.erase(instance->Id);
-            PtrMap.erase((void*)instance->Ptr);
+            PtrMap.erase(instance->Memory);
         }
 
         inline void clear()
         {
-            IdMap.clear();
             PtrMap.clear();
         }
 
         inline size_t size()
         {
-            return IdMap.size();
+            return PtrMap.size();
         }
 	};
 
 	class SHARD_API GarbageCollector
 	{
 		inline static uint64_t objectsCounter = 0;
-        inline static std::unordered_map<TypeSymbol*, ObjectInstance*> nullInstancesMap;
         inline static std::unordered_map<FieldSymbol*, ObjectInstance*> staticFields;
         
     public:
@@ -100,7 +94,6 @@ namespace shard
         static void SetStaticField(const VirtualMachine* host, FieldSymbol* field, ObjectInstance* instance);
 
 		static ObjectInstance* AllocateInstance(const TypeSymbol* objectInfo);
-        static ObjectInstance* CopyInstance(const TypeSymbol* objectInfo, void* ptr);
         static ObjectInstance* CopyInstance(ObjectInstance* instance);
 		
         static void CollectInstance(ObjectInstance* instance);

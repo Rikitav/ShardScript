@@ -101,6 +101,11 @@ void ByteCodeEncoder::EmitLoadConstString(std::vector<std::byte>& code, std::vec
     AppendDataT(code, dataOrigin);
 }
 
+void ByteCodeEncoder::EmitDuplicate(std::vector<std::byte>& code)
+{
+    AppendDataT(code, OpCode::CreateDuplicate);
+}
+
 void ByteCodeEncoder::EmitLoadVarible(std::vector<std::byte>& code, uint16_t index)
 {
     AppendDataT(code, OpCode::LoadVariable);
@@ -171,6 +176,16 @@ void ByteCodeEncoder::EmitMathPow(std::vector<std::byte>& code)
     AppendDataT(code, OpCode::Math_Power);
 }
 
+void ByteCodeEncoder::EmitMathNegative(std::vector<std::byte>& code)
+{
+    AppendDataT(code, OpCode::Math_Negative);
+}
+
+void ByteCodeEncoder::EmitMathPositive(std::vector<std::byte>& code)
+{
+    AppendDataT(code, OpCode::Math_Positive);
+}
+
 void ByteCodeEncoder::EmitCompareEqual(std::vector<std::byte>& code)
 {
     AppendDataT(code, OpCode::Compare_Equal);
@@ -201,9 +216,19 @@ void ByteCodeEncoder::EmitCompareLessOrEqual(std::vector<std::byte>& code)
     AppendDataT(code, OpCode::Compare_LessOrEqual);
 }
 
-void ByteCodeEncoder::EmitCompareNot(std::vector<std::byte>& code)
+void ByteCodeEncoder::EmitLogicalNot(std::vector<std::byte>& code)
 {
-    AppendDataT(code, OpCode::Compare_Not);
+    AppendDataT(code, OpCode::Logical_Not);
+}
+
+void ByteCodeEncoder::EmitLogicalOr(std::vector<std::byte>& code)
+{
+    AppendDataT(code, OpCode::Logical_Or);
+}
+
+void ByteCodeEncoder::EmitLogicalAnd(std::vector<std::byte>& code)
+{
+    AppendDataT(code, OpCode::Logical_And);
 }
 
 void ByteCodeEncoder::EmitNewObject(std::vector<std::byte>& code, TypeSymbol* type)

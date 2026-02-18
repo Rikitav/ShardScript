@@ -52,6 +52,199 @@
 
 using namespace shard;
 
+const int ReserveMultiplier = 25;
+
+static bool IsAssignExpression(TokenType type)
+{
+	switch (type)
+	{
+		default:
+			return false;
+
+		case TokenType::AddAssignOperator:
+		case TokenType::SubAssignOperator:
+		case TokenType::MultAssignOperator:
+		case TokenType::DivAssignOperator:
+		case TokenType::ModAssignOperator:
+		case TokenType::PowAssignOperator:
+		case TokenType::AndAssignOperator:
+		case TokenType::OrAssignOperator:
+		case TokenType::AssignOperator:
+		case TokenType::IncrementOperator:
+		case TokenType::DecrementOperator:
+			return true;
+	}
+}
+
+static void EmitUnaryOperation(TokenType type, ByteCodeEncoder& encoder, std::vector<std::byte>& code, bool isRightDetermined)
+{
+	switch (type)
+	{
+		case TokenType::SubOperator:
+		{
+			encoder.EmitMathNegative(code);
+			break;
+		}
+
+		case TokenType::AddOperator:
+		{
+			encoder.EmitMathPositive(code);
+			break;
+		}
+
+		case TokenType::IncrementOperator:
+		{
+			if (isRightDetermined)
+			{
+				encoder.EmitLoadConstInt64(code, 1);
+				encoder.EmitMathAdd(code);
+				encoder.EmitDuplicate(code);
+				break;
+			}
+			else
+			{
+				encoder.EmitDuplicate(code);
+				encoder.EmitLoadConstInt64(code, 1);
+				encoder.EmitMathAdd(code);
+				break;
+			}
+
+			break;
+		}
+
+		case TokenType::DecrementOperator:
+		{
+			if (isRightDetermined)
+			{
+				encoder.EmitLoadConstInt64(code, 1);
+				encoder.EmitMathSub(code);
+				encoder.EmitDuplicate(code);
+				break;
+			}
+			else
+			{
+				encoder.EmitDuplicate(code);
+				encoder.EmitLoadConstInt64(code, 1);
+				encoder.EmitMathSub(code);
+				break;
+			}
+		}
+
+		default:
+			throw std::runtime_error("unknown operator");
+	}
+}
+
+static void EmitBinaryOperation(TokenType type, ByteCodeEncoder& encoder, std::vector<std::byte>& code)
+{
+	switch (type)
+	{
+		case TokenType::AssignOperator:
+			break;
+
+		case TokenType::AddOperator:
+		case TokenType::AddAssignOperator:
+		{
+			encoder.EmitMathAdd(code);
+			break;
+		}
+
+		case TokenType::SubOperator:
+		case TokenType::SubAssignOperator:
+		{
+			encoder.EmitMathSub(code);
+			break;
+		}
+
+		case TokenType::MultOperator:
+		case TokenType::MultAssignOperator:
+		{
+			encoder.EmitMathMult(code);
+			break;
+		}
+
+		case TokenType::DivOperator:
+		case TokenType::DivAssignOperator:
+		{
+			encoder.EmitMathDiv(code);
+			break;
+		}
+
+		case TokenType::ModOperator:
+		case TokenType::ModAssignOperator:
+		{
+			encoder.EmitMathMod(code);
+			break;
+		}
+
+		case TokenType::PowOperator:
+		case TokenType::PowAssignOperator:
+		{
+			encoder.EmitMathPow(code);
+			break;
+		}
+
+		case TokenType::EqualsOperator:
+		{
+			encoder.EmitCompareEqual(code);
+			break;
+		}
+
+		case TokenType::NotEqualsOperator:
+		{
+			encoder.EmitCompareNotEqual(code);
+			break;
+		}
+
+		case TokenType::GreaterOperator:
+		{
+			encoder.EmitCompareGreater(code);
+			break;
+		}
+
+		case TokenType::GreaterOrEqualsOperator:
+		{
+			encoder.EmitCompareGreaterOrEqual(code);
+			break;
+		}
+
+		case TokenType::LessOperator:
+		{
+			encoder.EmitCompareLess(code);
+			break;
+		}
+
+		case TokenType::LessOrEqualsOperator:
+		{
+			encoder.EmitCompareLessOrEqual(code);
+			break;
+		}
+
+		case TokenType::OrOperator:
+		case TokenType::OrAssignOperator:
+		{
+			encoder.EmitLogicalOr(code);
+			break;
+		}
+
+		case TokenType::AndOperator:
+		case TokenType::AndAssignOperator:
+		{
+			encoder.EmitLogicalAnd(code);
+			break;
+		}
+
+		case TokenType::NotOperator:
+		{
+			encoder.EmitLogicalNot(code);
+			break;
+		}
+
+		default:
+			throw std::runtime_error("unknown operator");
+	}
+}
+
 static void SetEntryPoint(DiagnosticsContext& diagnostics, std::vector<MethodSymbol*>& entryPointCandidates, SymbolTable* table, ProgramVirtualImage& program)
 {
 	if (entryPointCandidates.empty())
@@ -102,7 +295,7 @@ void AbstractEmiter::VisitMethodDeclaration(MethodDeclarationSyntax* const node)
 		return;
 	}
 
-	size_t reserve = node->Body->Statements.size() * 20;
+	size_t reserve = node->Body->Statements.size() * ReserveMultiplier;
 	GeneratingFor->ExecutableByteCode.reserve(reserve);
 	VisitStatementsBlock(node->Body);
 
@@ -144,7 +337,7 @@ void AbstractEmiter::VisitConstructorDeclaration(ConstructorDeclarationSyntax* c
 
 	// TODO: add field initialization
 
-	size_t reserve = node->Body->Statements.size() * 20;
+	size_t reserve = node->Body->Statements.size() * ReserveMultiplier;
 	GeneratingFor->ExecutableByteCode.reserve(reserve);
 	VisitStatementsBlock(node->Body);
 
@@ -161,7 +354,7 @@ void AbstractEmiter::VisitAccessorDeclaration(AccessorDeclarationSyntax* const n
 		return;
 	}
 
-	size_t reserve = node->Body->Statements.size() * 20;
+	size_t reserve = node->Body->Statements.size() * ReserveMultiplier;
 	GeneratingFor->ExecutableByteCode.reserve(reserve);
 	VisitStatementsBlock(node->Body);
 
@@ -331,9 +524,13 @@ static bool IsConditionalClause(SyntaxKind kind)
 
 void AbstractEmiter::VisitIfStatement(IfStatementSyntax* const node)
 {
-	Clauses.emplace();
-	ClauseScope& scope = Clauses.top();
+	bool isFirst = !IsConditionalClause(node->Parent->Kind);
+	if (isFirst)
+	{
+		Clauses.emplace();
+	}
 
+	ClauseScope& scope = Clauses.top();
 	VisitStatement(node->ConditionExpression);
 
 	size_t jumpAddress = GeneratingFor->ExecutableByteCode.size();
@@ -341,7 +538,6 @@ void AbstractEmiter::VisitIfStatement(IfStatementSyntax* const node)
 	scope.ClauseEndBacktracks.push_back(jumpAddress);
 
 	VisitStatementsBlock(node->StatementsBlock);
-	size_t bodyEnd = GeneratingFor->ExecutableByteCode.size();
 
 	if (node->NextStatement != nullptr)
 	{
@@ -352,18 +548,25 @@ void AbstractEmiter::VisitIfStatement(IfStatementSyntax* const node)
 		VisitConditionalClause(node->NextStatement);
 	}
 
-	scope.ClauseEnd = GeneratingFor->ExecutableByteCode.size();
-	for (size_t backtrack : scope.ClauseEndBacktracks)
-		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack + sizeof(OpCode), &scope.ClauseEnd, sizeof(size_t));
+	if (isFirst)
+	{
+		scope.ClauseEnd = GeneratingFor->ExecutableByteCode.size();
+		for (size_t backtrack : scope.ClauseEndBacktracks)
+			ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack + sizeof(OpCode), &scope.ClauseEnd, sizeof(size_t));
 
-	Clauses.pop();
+		Clauses.pop();
+	}
 }
 
 void AbstractEmiter::VisitUnlessStatement(UnlessStatementSyntax* const node)
 {
-	Clauses.emplace();
-	ClauseScope& scope = Clauses.top();
+	bool isFirst = !IsConditionalClause(node->Parent->Kind);
+	if (isFirst)
+	{
+		Clauses.emplace();
+	}
 
+	ClauseScope& scope = Clauses.top();
 	VisitStatement(node->ConditionExpression);
 
 	size_t jumpAddress = GeneratingFor->ExecutableByteCode.size();
@@ -371,7 +574,6 @@ void AbstractEmiter::VisitUnlessStatement(UnlessStatementSyntax* const node)
 	scope.ClauseEndBacktracks.push_back(jumpAddress);
 
 	VisitStatementsBlock(node->StatementsBlock);
-	size_t bodyEnd = GeneratingFor->ExecutableByteCode.size();
 
 	if (node->NextStatement != nullptr)
 	{
@@ -382,11 +584,14 @@ void AbstractEmiter::VisitUnlessStatement(UnlessStatementSyntax* const node)
 		VisitConditionalClause(node->NextStatement);
 	}
 
-	scope.ClauseEnd = GeneratingFor->ExecutableByteCode.size();
-	for (size_t backtrack : scope.ClauseEndBacktracks)
-		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack + sizeof(OpCode), &scope.ClauseEnd, sizeof(size_t));
+	if (isFirst)
+	{
+		scope.ClauseEnd = GeneratingFor->ExecutableByteCode.size();
+		for (size_t backtrack : scope.ClauseEndBacktracks)
+			ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack + sizeof(OpCode), &scope.ClauseEnd, sizeof(size_t));
 
-	Clauses.pop();
+		Clauses.pop();
+	}
 }
 
 void AbstractEmiter::VisitElseStatement(ElseStatementSyntax* const node)
@@ -440,10 +645,6 @@ void AbstractEmiter::VisitLiteralExpression(LiteralExpressionSyntax* const node)
 	}
 }
 
-void AbstractEmiter::VisitUnaryExpression(UnaryExpressionSyntax* const node)
-{
-}
-
 void AbstractEmiter::VisitObjectCreationExpression(ObjectExpressionSyntax* const node)
 {
 	VisitArgumentsList(node->ArgumentsList);
@@ -452,162 +653,77 @@ void AbstractEmiter::VisitObjectCreationExpression(ObjectExpressionSyntax* const
 
 void AbstractEmiter::VisitCollectionExpression(CollectionExpressionSyntax* const node)
 {
+	for (auto riter = node->ValuesExpressions.rbegin(); riter != node->ValuesExpressions.rend(); riter++)
+		VisitExpression(*riter);
+
+	Encoder.EmitNewArray(GeneratingFor->ExecutableByteCode, node->Symbol);
 }
 
 void AbstractEmiter::VisitLambdaExpression(LambdaExpressionSyntax* const node)
 {
+	MethodSymbol* previous = GeneratingFor;
+	GeneratingFor = node->Symbol->AnonymousSymbol;
+	
+	size_t reserve = node->Body->Statements.size() * 20;
+	GeneratingFor->ExecutableByteCode.reserve(reserve);
+	VisitStatementsBlock(node->Body);
+
+	GeneratingFor->ExecutableByteCode.shrink_to_fit();
+	GeneratingFor = previous;
 }
 
 void AbstractEmiter::VisitTernaryExpression(TernaryExpressionSyntax* const node)
 {
+	VisitExpression(node->Condition);
+
+	size_t jumpFalseAddress = GeneratingFor->ExecutableByteCode.size();
+	Encoder.EmitJumpFalse(GeneratingFor->ExecutableByteCode, 0);
+
+	VisitExpression(node->Left);
+	size_t jumpEndAddress = GeneratingFor->ExecutableByteCode.size();
+	Encoder.EmitJump(GeneratingFor->ExecutableByteCode, 0);
+
+	size_t rightAddress = GeneratingFor->ExecutableByteCode.size();
+	VisitExpression(node->Right);
+	size_t ternaryEndAddress = GeneratingFor->ExecutableByteCode.size();
+
+	ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, jumpFalseAddress + sizeof(OpCode), &rightAddress, sizeof(size_t));
+	ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, jumpEndAddress + sizeof(OpCode), &ternaryEndAddress, sizeof(size_t));
 }
 
-static bool IsAssignExpression(TokenType type)
-{
-	switch (type)
-	{
-		default:
-			return false;
-
-		case TokenType::AddAssignOperator:
-		case TokenType::SubAssignOperator:
-		case TokenType::MultAssignOperator:
-		case TokenType::DivAssignOperator:
-		case TokenType::ModAssignOperator:
-		case TokenType::PowAssignOperator:
-		case TokenType::AndAssignOperator:
-		case TokenType::OrAssignOperator:
-		case TokenType::AssignOperator:
-			return true;
-	}
-}
-
-void AbstractEmiter::VisitBinaryExpression(BinaryExpressionSyntax* const node)
+void AbstractEmiter::VisitUnaryExpression(UnaryExpressionSyntax* const node)
 {
 	if (IsAssignExpression(node->OperatorToken.Type))
 	{
-		VisitAssignExpression(node);
+		VisitUnaryAssignExpression(node);
 		return;
 	}
 
-	VisitExpression(node->Left);
-	VisitExpression(node->Right);
+	VisitExpression(node->Expression);
+	EmitUnaryOperation(node->OperatorToken.Type, Encoder, GeneratingFor->ExecutableByteCode, node->IsRightDetermined);
+}
 
-	switch (node->OperatorToken.Type)
+void AbstractEmiter::VisitUnaryAssignExpression(UnaryExpressionSyntax* const node)
+{
+	MemberAccessExpressionSyntax* memberExpression = static_cast<MemberAccessExpressionSyntax*>(node->Expression);
+	VisitExpression(memberExpression);
+	EmitUnaryOperation(node->OperatorToken.Type, Encoder, GeneratingFor->ExecutableByteCode, node->IsRightDetermined);
+
+	if (memberExpression->ToParameter)
 	{
-		case TokenType::AssignOperator:
-		{
-			// TODO: fix
-			Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, 0);
-			break;
-		}
-
-		case TokenType::EqualsOperator:
-		{
-			Encoder.EmitCompareEqual(GeneratingFor->ExecutableByteCode);
-			break;
-		}
-
-		case TokenType::NotEqualsOperator:
-		{
-			Encoder.EmitCompareNotEqual(GeneratingFor->ExecutableByteCode);
-			break;
-		}
-
-		case TokenType::LessOperator:
-		{
-			Encoder.EmitCompareLess(GeneratingFor->ExecutableByteCode);
-			break;
-		}
-
-		case TokenType::LessOrEqualsOperator:
-		{
-			Encoder.EmitCompareLessOrEqual(GeneratingFor->ExecutableByteCode);
-			break;
-		}
-
-		case TokenType::GreaterOperator:
-		{
-			Encoder.EmitCompareGreater(GeneratingFor->ExecutableByteCode);
-			break;
-		}
-
-		case TokenType::GreaterOrEqualsOperator:
-		{
-			Encoder.EmitCompareGreaterOrEqual(GeneratingFor->ExecutableByteCode);
-			break;
-		}
-
-		case TokenType::AddOperator:
-		{
-			Encoder.EmitMathAdd(GeneratingFor->ExecutableByteCode);
-			break;
-		}
-
-		case TokenType::SubOperator:
-		{
-			Encoder.EmitMathSub(GeneratingFor->ExecutableByteCode);
-			break;
-		}
-
-		case TokenType::MultOperator:
-		{
-			Encoder.EmitMathMult(GeneratingFor->ExecutableByteCode);
-			break;
-		}
-
-		case TokenType::DivOperator:
-		{
-			Encoder.EmitMathDiv(GeneratingFor->ExecutableByteCode);
-			break;
-		}
-
-		case TokenType::ModOperator:
-		{
-			Encoder.EmitMathMod(GeneratingFor->ExecutableByteCode);
-			break;
-		}
-
-		case TokenType::PowOperator:
-		{
-			Encoder.EmitMathPow(GeneratingFor->ExecutableByteCode);
-			break;
-		}
-
-		default:
-			throw std::runtime_error("unsupported operator type");
+		Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, memberExpression->ToParameter->SlotIndex);
+		return;
 	}
-}
-
-static bool IsMemberAccess(const ExpressionSyntax* expression, const MemberAccessExpressionSyntax*& memberExpression)
-{
-	if (expression->Kind != SyntaxKind::MemberAccessExpression)
-		return false;
-
-	memberExpression = static_cast<const MemberAccessExpressionSyntax*>(expression);
-	return true;
-}
-
-static bool IsFieldAccess(const MemberAccessExpressionSyntax* memberExpression, const ExpressionSyntax*& instanceExpression)
-{
-	instanceExpression = memberExpression->PreviousExpression;
-	return memberExpression->ToField != nullptr || memberExpression->ToProperty != nullptr;
-}
-
-void AbstractEmiter::VisitAssignExpression(BinaryExpressionSyntax* const node)
-{
-	const MemberAccessExpressionSyntax* memberExpression = static_cast<const MemberAccessExpressionSyntax*>(node->Left);
-	const ExpressionSyntax* instanceExpression = memberExpression->PreviousExpression;
 
 	if (memberExpression->ToVariable != nullptr)
 	{
-		VisitVariableAssignExpression(node);
+		Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, memberExpression->ToVariable->SlotIndex);
 		return;
 	}
 
 	if (memberExpression->ToProperty != nullptr)
 	{
-		VisitVariableAssignExpression(node);
+		Encoder.EmitCallMethodSymbol(GeneratingFor->ExecutableByteCode, memberExpression->ToProperty->Setter);
 		return;
 	}
 
@@ -615,148 +731,62 @@ void AbstractEmiter::VisitAssignExpression(BinaryExpressionSyntax* const node)
 	{
 		if (memberExpression->ToField->IsStatic)
 		{
-			VisitVariableAssignExpression(node);
+			Encoder.EmitStoreStaticField(GeneratingFor->ExecutableByteCode, memberExpression->ToField);
 			return;
 		}
 
-		VisitVariableAssignExpression(node);
+		Encoder.EmitStoreField(GeneratingFor->ExecutableByteCode, memberExpression->ToField);
+		return;
+	}
+}
+
+void AbstractEmiter::VisitBinaryExpression(BinaryExpressionSyntax* const node)
+{
+	if (IsAssignExpression(node->OperatorToken.Type))
+	{
+		VisitBinaryAssignExpression(node);
 		return;
 	}
 
-	/*
-	if (isFieldAccess)
+	VisitExpression(node->Left);
+	VisitExpression(node->Right);
+	EmitBinaryOperation(node->OperatorToken.Type, Encoder, GeneratingFor->ExecutableByteCode);
+}
+
+void AbstractEmiter::VisitBinaryAssignExpression(BinaryExpressionSyntax* const node)
+{
+	MemberAccessExpressionSyntax* memberExpression = static_cast<MemberAccessExpressionSyntax*>(node->Left);
+	VisitExpression(memberExpression);
+	EmitBinaryOperation(node->OperatorToken.Type, Encoder, GeneratingFor->ExecutableByteCode);
+
+	if (memberExpression->ToParameter)
 	{
-		if (access->Kind == SyntaxKind::IndexatorExpression)
+		Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, memberExpression->ToParameter->SlotIndex);
+		return;
+	}
+
+	if (memberExpression->ToVariable != nullptr)
+	{
+		Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, memberExpression->ToVariable->SlotIndex);
+		return;
+	}
+
+	if (memberExpression->ToProperty != nullptr)
+	{
+		Encoder.EmitCallMethodSymbol(GeneratingFor->ExecutableByteCode, memberExpression->ToProperty->Setter);
+		return;
+	}
+
+	if (memberExpression->ToField != nullptr)
+	{
+		if (memberExpression->ToField->IsStatic)
 		{
-			const IndexatorExpressionSyntax* indexator = static_cast<const IndexatorExpressionSyntax*>(access);
-			InboundVariablesContext* arguments = CreateArgumentsContext(indexator->IndexatorList->Arguments, indexator->IndexatorSymbol->Parameters, indexator->IndexatorSymbol->IsStatic, instance);
-			arguments->AddVariable(L"value", value);
-			ExecuteMethod(indexator->IndexatorSymbol->Setter, instance->Info, arguments);
+			Encoder.EmitStoreStaticField(GeneratingFor->ExecutableByteCode, memberExpression->ToField);
 			return;
 		}
 
-		// Check if this is a property or field
-		FieldSymbol* field = access->ToField;
-		if (access->ToProperty != nullptr)
-		{
-			PropertySymbol* property = access->ToProperty;
-			field = property->BackingField;
-
-			if (property->Setter != nullptr)
-			{
-				InboundVariablesContext* setterArgs = new InboundVariablesContext(nullptr);
-				if (!property->IsStatic)
-					setterArgs->AddVariable(L"this", instance);
-
-				setterArgs->AddVariable(L"value", value);
-				ExecuteMethod(property->Setter, instance->Info, setterArgs);
-				return;
-			}
-		}
-
-		// Check if this is a static field
-		if (field->IsStatic)
-		{
-			GarbageCollector::SetStaticField(field, value);
-			return;
-		}
-
-		// Instance field assignment
-		instance->SetField(field, value);
-	}
-	else
-	{
-		InboundVariablesContext* current = CurrentContext();
-		std::wstring varName = memberExpression->IdentifierToken.Word;
-
-		ObjectInstance* instanceReg = current->TryFind(varName);
-		ObjectInstance* rightReg = EvaluateExpression(expression->Right);
-		current->SetVariable(varName, rightReg);
-
-		GarbageCollector::CollectInstance(instanceReg);
-		GarbageCollector::CollectInstance(rightReg);
-		return rightReg;
-	}
-	*/
-}
-
-void AbstractEmiter::VisitParameterAssignExpression(BinaryExpressionSyntax* const node, ParameterSymbol* param)
-{
-	switch (node->OperatorToken.Type)
-	{
-		case TokenType::AssignOperator:
-		{
-			Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, param->SlotIndex);
-			break;
-		}
-
-		case TokenType::AddAssignOperator:
-		{
-			Encoder.EmitMathAdd(GeneratingFor->ExecutableByteCode);
-			Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, param->SlotIndex);
-			break;
-		}
-	}
-}
-
-void AbstractEmiter::VisitVariableAssignExpression(BinaryExpressionSyntax* const node, VariableSymbol* var)
-{
-	switch (node->OperatorToken.Type)
-	{
-		case TokenType::AssignOperator:
-		{
-			Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, var->SlotIndex);
-			break;
-		}
-
-		case TokenType::AddAssignOperator:
-		{
-			Encoder.EmitMathAdd(GeneratingFor->ExecutableByteCode);
-			Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, var->SlotIndex);
-			break;
-		}
-	}
-}
-
-void AbstractEmiter::VisitPropertyAssignExpression(BinaryExpressionSyntax* const node, PropertySymbol* prop)
-{
-}
-
-void AbstractEmiter::VisitFieldAssignExpression(BinaryExpressionSyntax* const node, FieldSymbol* field)
-{
-	switch (node->OperatorToken.Type)
-	{
-		case TokenType::AssignOperator:
-		{
-			Encoder.EmitStoreField(GeneratingFor->ExecutableByteCode, field);
-			break;
-		}
-
-		case TokenType::AddAssignOperator:
-		{
-			Encoder.EmitMathAdd(GeneratingFor->ExecutableByteCode);
-			Encoder.EmitStoreField(GeneratingFor->ExecutableByteCode, field);
-			break;
-		}
-	}
-}
-
-void AbstractEmiter::VisitStaticFieldAssignExpression(BinaryExpressionSyntax* const node, FieldSymbol* field)
-{
-	switch (node->OperatorToken.Type)
-	{
-		case TokenType::AssignOperator:
-		{
-			Encoder.EmitStoreStaticField(GeneratingFor->ExecutableByteCode, field);
-			break;
-		}
-
-		case TokenType::AddAssignOperator:
-		{
-			Encoder.EmitMathAdd(GeneratingFor->ExecutableByteCode);
-			Encoder.EmitStoreStaticField(GeneratingFor->ExecutableByteCode, field);
-			break;
-		}
+		Encoder.EmitStoreField(GeneratingFor->ExecutableByteCode, memberExpression->ToField);
+		return;
 	}
 }
 
@@ -769,44 +799,53 @@ void AbstractEmiter::VisitInvocationExpression(InvokationExpressionSyntax* const
 	Encoder.EmitCallMethodSymbol(GeneratingFor->ExecutableByteCode, node->Symbol);
 }
 
+void AbstractEmiter::VisitIndexatorExpression(IndexatorExpressionSyntax* const node)
+{
+	VisitExpression(node->PreviousExpression);
+	if (!node->ToProperty->IsStatic)
+		VisitExpression(node->PreviousExpression);
+
+	Encoder.EmitCallMethodSymbol(GeneratingFor->ExecutableByteCode, node->ToProperty->Getter);
+	return;
+}
+
 void AbstractEmiter::VisitMemberAccessExpression(MemberAccessExpressionSyntax* const node)
 {
 	VisitExpression(node->PreviousExpression);
 
-	if (node->ToProperty != nullptr)
-	{
-
-	}
-
-	// TODO: Expand
 	if (node->ToParameter != nullptr)
 	{
-		ParameterSymbol* param = node->ToParameter;
-		Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, param->SlotIndex);
+		Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, node->ToParameter->SlotIndex);
 		return;
 	}
 
 	if (node->ToVariable != nullptr)
 	{
-		VariableSymbol* var = node->ToVariable;
-		Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, var->SlotIndex);
+		Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, node->ToVariable->SlotIndex);
 		return;
 	}
 
 	if (node->ToField != nullptr)
 	{
-		FieldSymbol* field = node->ToField;
-		if (field->IsStatic)
+		if (node->ToField->IsStatic)
 		{
-			Encoder.EmitLoadStaticField(GeneratingFor->ExecutableByteCode, field);
+			Encoder.EmitLoadStaticField(GeneratingFor->ExecutableByteCode, node->ToField);
 			return;
 		}
 
-		Encoder.EmitLoadField(GeneratingFor->ExecutableByteCode, field);
+		Encoder.EmitLoadField(GeneratingFor->ExecutableByteCode, node->ToField);
 		return;
 	}
-}
 
-void AbstractEmiter::VisitIndexatorExpression(IndexatorExpressionSyntax* const node)
-{
+	if (node->ToProperty != nullptr)
+	{
+		Encoder.EmitCallMethodSymbol(GeneratingFor->ExecutableByteCode, node->ToProperty->Getter);
+		return;
+	}
+
+	if (node->ToDelegate != nullptr)
+	{
+		Encoder.EmitCallMethodSymbol(GeneratingFor->ExecutableByteCode, node->ToDelegate->AnonymousSymbol);
+		return;
+	}
 }

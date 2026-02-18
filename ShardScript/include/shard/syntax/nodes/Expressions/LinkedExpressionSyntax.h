@@ -52,8 +52,7 @@ namespace shard
 			: LinkedExpressionNode(SyntaxKind::MemberAccessExpression, previous, parent), IdentifierToken(identifier) { }
 
 		inline MemberAccessExpressionSyntax(SyntaxToken identifier, ExpressionSyntax* previous, SyntaxNode* const parent, const SyntaxKind kind)
-			: LinkedExpressionNode(kind, previous, parent), IdentifierToken(identifier) {
-		}
+			: LinkedExpressionNode(kind, previous, parent), IdentifierToken(identifier) { }
 
 		inline MemberAccessExpressionSyntax(const MemberAccessExpressionSyntax&) = delete;
 
@@ -67,6 +66,23 @@ namespace shard
 		}
 	};
 
+	class SHARD_API IndexatorExpressionSyntax : public MemberAccessExpressionSyntax
+	{
+	public:
+		IndexatorListSyntax* IndexatorList = nullptr;
+		//shard::IndexatorSymbol* IndexatorSymbol = nullptr;
+
+		inline IndexatorExpressionSyntax(SyntaxToken& indexerToken, ExpressionSyntax* previous, SyntaxNode *const parent)
+			: MemberAccessExpressionSyntax(indexerToken, previous, parent, SyntaxKind::IndexatorExpression) { }
+
+		inline IndexatorExpressionSyntax(const IndexatorExpressionSyntax&) = delete;
+
+		inline virtual ~IndexatorExpressionSyntax()
+		{
+			delete IndexatorList;
+		}
+	};
+
 	class SHARD_API InvokationExpressionSyntax : public LinkedExpressionNode
 	{
 	public:
@@ -74,31 +90,15 @@ namespace shard
 		ArgumentsListSyntax* ArgumentsList = nullptr;
 		shard::MethodSymbol* Symbol = nullptr;
 
-		inline InvokationExpressionSyntax(SyntaxToken identifier, ExpressionSyntax* previous, SyntaxNode *const parent)
-			: LinkedExpressionNode(SyntaxKind::InvokationExpression, previous, parent), IdentifierToken(identifier) { }
+		inline InvokationExpressionSyntax(SyntaxToken identifier, ExpressionSyntax* previous, SyntaxNode* const parent)
+			: LinkedExpressionNode(SyntaxKind::InvokationExpression, previous, parent), IdentifierToken(identifier) {
+		}
 
 		inline InvokationExpressionSyntax(const InvokationExpressionSyntax&) = delete;
 
 		inline virtual ~InvokationExpressionSyntax()
 		{
 			delete ArgumentsList;
-		}
-	};
-
-	class SHARD_API IndexatorExpressionSyntax : public MemberAccessExpressionSyntax
-	{
-	public:
-		IndexatorListSyntax* IndexatorList = nullptr;
-		shard::IndexatorSymbol* IndexatorSymbol = nullptr;
-
-		inline IndexatorExpressionSyntax(SyntaxToken identifier, ExpressionSyntax* previous, SyntaxNode *const parent)
-			: MemberAccessExpressionSyntax(identifier, previous, parent, SyntaxKind::IndexatorExpression) { }
-
-		inline IndexatorExpressionSyntax(const IndexatorExpressionSyntax&) = delete;
-
-		inline virtual ~IndexatorExpressionSyntax()
-		{
-			delete IndexatorList;
 		}
 	};
 }

@@ -50,6 +50,11 @@ void ByteCodeDecoder::SetCursor(fpos_t amount)
     _ip = amount;
 }
 
+void ByteCodeDecoder::Return()
+{
+    _ip = _code.size();
+}
+
 OpCode ByteCodeDecoder::AbsorbOpCode()
 {
     OpCode value{};

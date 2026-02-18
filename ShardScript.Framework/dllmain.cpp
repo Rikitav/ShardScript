@@ -38,10 +38,9 @@ static ObjectInstance* Gc_Info(const VirtualMachine* host, const MethodSymbol* m
 	for (ObjectInstance* reg : GarbageCollector::Heap)
 	{
 		std::wcout
-			<< L" * | ID : " << reg->Id
+			<< L" * PTR : " << reg->Memory
 			<< L" | TYPE : '" << reg->Info->Name << "'"
-			<< L" | REFS : " << reg->ReferencesCounter
-			<< L" | PTR : " << reg->Ptr << std::endl;
+			<< L" | REFS : " << reg->ReferencesCounter << std::endl;
 	}
 
 	std::wcout << "Total count : " << GarbageCollector::Heap.size() << std::endl;
@@ -57,10 +56,9 @@ static ObjectInstance* Var_Info(const VirtualMachine* host, const MethodSymbol* 
 	{
 		ObjectInstance* reg = frame->EvalStack[i];
 		std::wcout
-			<< L" * | ID : " << reg->Id
+			<< L" * PTR : " << reg->Memory
 			<< L" | TYPE : '" << reg->Info->Name << "'"
-			<< L" | REFS : " << reg->ReferencesCounter
-			<< L" | PTR : " << reg->Ptr << std::endl;
+			<< L" | REFS : " << reg->ReferencesCounter << std::endl;
 	}
 
 	std::wcout << "Total count : " << method->EvalStackLocalsCount << std::endl;
@@ -166,6 +164,12 @@ static void ResolvePrimitives()
 	SymbolTable::Primitives::Void = new StructSymbol(L"Void");
 	SymbolTable::Primitives::Any = new StructSymbol(L"Any");
 
+	SymbolTable::Primitives::Void->State = TypeLayoutingState::Visited;
+	SymbolTable::Primitives::Any->State = TypeLayoutingState::Visited;
+
+	SymbolTable::Primitives::Void->MemoryBytesSize = 0;
+	SymbolTable::Primitives::Any->MemoryBytesSize = 0;
+
 	SymbolTable::Primitives::Boolean = new StructSymbol(L"Boolean");
 	SymbolTable::Primitives::Integer = new StructSymbol(L"Integer");
 	SymbolTable::Primitives::Double = new StructSymbol(L"Double");
@@ -173,15 +177,19 @@ static void ResolvePrimitives()
 	SymbolTable::Primitives::String = new ClassSymbol(L"String");
 	SymbolTable::Primitives::Array = new ClassSymbol(L"Array");
 
-	SymbolTable::Primitives::Void->MemoryBytesSize = 0;
-	SymbolTable::Primitives::Any->MemoryBytesSize = 0;
+	SymbolTable::Primitives::Boolean->State = TypeLayoutingState::Visited;
+	SymbolTable::Primitives::Integer->State = TypeLayoutingState::Visited;
+	SymbolTable::Primitives::Double->State = TypeLayoutingState::Visited;
+	SymbolTable::Primitives::Char->State = TypeLayoutingState::Visited;
+	SymbolTable::Primitives::String->State = TypeLayoutingState::Visited;
+	SymbolTable::Primitives::Array->State = TypeLayoutingState::Visited;
 
 	SymbolTable::Primitives::Boolean->MemoryBytesSize = sizeof(bool);
 	SymbolTable::Primitives::Integer->MemoryBytesSize = sizeof(int64_t);
 	SymbolTable::Primitives::Double->MemoryBytesSize = sizeof(double);
 	SymbolTable::Primitives::Char->MemoryBytesSize = sizeof(wchar_t);
 	SymbolTable::Primitives::String->MemoryBytesSize = sizeof(std::wstring);
-	SymbolTable::Primitives::Array->MemoryBytesSize = sizeof(int); // _length field
+	SymbolTable::Primitives::Array->MemoryBytesSize = sizeof(int64_t); // _length field
 
 	BooleanPrimitive::Reflect(SymbolTable::Primitives::Boolean);
 	IntegerPrimitive::Reflect(SymbolTable::Primitives::Integer);

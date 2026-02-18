@@ -49,15 +49,36 @@ ObjectInstance* ObjectInstance::FromValue(wchar_t value)
 ObjectInstance* ObjectInstance::FromValue(const wchar_t* value)
 {
 	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String);
-	std::wstring copy = std::wstring(value);
-	instance->WriteString(copy);
+
+	size_t length = wcslen(value);
+	size_t size = sizeof(int64_t) + sizeof(wchar_t) * length;
+
+	void* newInstance = realloc(instance, size);
+	if (newInstance == nullptr)
+		throw std::runtime_error("failed to allocate string instance");
+
+	instance = static_cast<ObjectInstance*>(newInstance);
+	memset(instance->GetObjectMemory(), 0, size);
+
+	instance->WriteString(value, length);
 	return instance;
 }
 
 ObjectInstance* ObjectInstance::FromValue(const std::wstring& value)
 {
 	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String);
-	instance->WriteString(value);
+
+	size_t length = value.size();
+	size_t size = sizeof(int64_t) + sizeof(wchar_t) * length;
+
+	void* newInstance = realloc(instance, size);
+	if (newInstance == nullptr)
+		throw std::runtime_error("failed to allocate string instance");
+
+	instance = static_cast<ObjectInstance*>(newInstance);
+	memset(instance->GetObjectMemory(), 0, size);
+
+	instance->WriteString(value.data(), length);
 	return instance;
 }
 
@@ -78,14 +99,13 @@ ObjectInstance* ObjectInstance::GetField(FieldSymbol* field)
 	if (fieldType->IsReferenceType)
 	{
 		void* offset = OffsetMemory(field->MemoryBytesOffset, sizeof(ObjectInstance*));
-		void* valuePtr = *static_cast<void**>(offset);
-		return valuePtr == nullptr ? GarbageCollector::NullInstance : static_cast<ObjectInstance*>(valuePtr);
+		ObjectInstance* valuePtr = *static_cast<ObjectInstance**>(offset);
+		return valuePtr == nullptr ? GarbageCollector::NullInstance : valuePtr;
 	}
 	else
 	{
-		void* offset = OffsetMemory(field->MemoryBytesOffset, fieldType->MemoryBytesSize);
-		ObjectInstance* instance = GarbageCollector::CopyInstance(fieldType, offset);
-		instance->IsFieldInstance = true;
+		void* offset = OffsetMemory(field->MemoryBytesOffset, fieldType->GetInlineSize());
+		ObjectInstance* instance = new ObjectInstance(field->ReturnType, offset, true);
 		return instance;
 	}
 }
@@ -109,12 +129,14 @@ void ObjectInstance::SetField(FieldSymbol* field, ObjectInstance* instance)
 
 	if (fieldType->IsReferenceType)
 	{
+		/*
 		if (instance == GarbageCollector::NullInstance)
 		{
-			void* offset = OffsetMemory(field->MemoryBytesOffset, sizeof(void*));
-			memset(offset, 0, sizeof(void*));
+			void* offset = OffsetMemory(field->MemoryBytesOffset, sizeof(ObjectInstance*));
+			memset(offset, 0, sizeof(ObjectInstance*));
 			return;
 		}
+		*/
 
 		ObjectInstance* oldValue = GetField(field);
 		if (oldValue != nullptr)
@@ -127,14 +149,14 @@ void ObjectInstance::SetField(FieldSymbol* field, ObjectInstance* instance)
 	{
 		if (instance == GarbageCollector::NullInstance)
 			throw std::runtime_error("cannot write null value to ValueType field");
-
-		WriteMemory(field->MemoryBytesOffset, fieldType->MemoryBytesSize, instance->Ptr);
+		
+		WriteMemory(field->MemoryBytesOffset, fieldType->GetInlineSize(), instance->GetObjectMemory());
 	}
 }
 
 ObjectInstance* ObjectInstance::GetElement(size_t index)
 {
-	if (Info->Kind != shard::SyntaxKind::ArrayType)
+	if (Info->Kind != SyntaxKind::ArrayType)
 		throw std::runtime_error("Tried to get element from non array instance");
 
 	const ArrayTypeSymbol* info = static_cast<const ArrayTypeSymbol*>(Info);
@@ -154,25 +176,20 @@ ObjectInstance* ObjectInstance::GetElement(size_t index)
 	if (type->IsReferenceType)
 	{
 		void* offset = OffsetMemory(memoryOffset, sizeof(ObjectInstance*));
-		void* valuePtr = *static_cast<void**>(offset);
-
-		if (valuePtr == nullptr)
-			throw std::runtime_error("got nullptr in GetElement");
-
-		return static_cast<ObjectInstance*>(valuePtr);
+		ObjectInstance* valuePtr = *static_cast<ObjectInstance**>(offset);
+		return valuePtr == nullptr ? GarbageCollector::NullInstance : valuePtr;
 	}
 	else
 	{
 		void* offset = OffsetMemory(memoryOffset, type->MemoryBytesSize);
-		ObjectInstance* instance = GarbageCollector::CopyInstance(type, offset);
-		instance->IsFieldInstance = true;
+		ObjectInstance* instance = new ObjectInstance(type, offset, true);
 		return instance;
 	}
 }
 
 void ObjectInstance::SetElement(size_t index, ObjectInstance* instance)
 {
-	if (Info->Kind != shard::SyntaxKind::ArrayType)
+	if (Info->Kind != SyntaxKind::ArrayType)
 		throw std::runtime_error("Tried to set element in non array instance");
 
 	if (instance == nullptr)
@@ -205,13 +222,13 @@ void ObjectInstance::SetElement(size_t index, ObjectInstance* instance)
 		if (instance == GarbageCollector::NullInstance)
 			throw std::runtime_error("cannot write null value to ValueType field");
 
-		WriteMemory(memoryOffset, type->MemoryBytesSize, instance->Ptr);
+		WriteMemory(memoryOffset, type->MemoryBytesSize, instance->GetObjectMemory());
 	}
 }
 
 bool ObjectInstance::IsInBounds(size_t index)
 {
-	if (Info->Kind != shard::SyntaxKind::ArrayType)
+	if (Info->Kind != SyntaxKind::ArrayType)
 		throw std::runtime_error("Tried to get size of non array instance");
 
 	const ArrayTypeSymbol* array = static_cast<const ArrayTypeSymbol*>(Info);
@@ -234,6 +251,11 @@ void ObjectInstance::DecrementReference()
 	ReferencesCounter -= 1;
 }
 
+void* ObjectInstance::GetObjectMemory() const
+{
+	return Memory;
+}
+
 void* ObjectInstance::OffsetMemory(const size_t offset, const size_t size) const
 {
 	if (size == 0)
@@ -242,7 +264,7 @@ void* ObjectInstance::OffsetMemory(const size_t offset, const size_t size) const
 	if (offset + size > Info->MemoryBytesSize)
 		throw std::out_of_range("offset (" + std::to_string(offset) + ") + size (" + std::to_string(size) + ") is out of instance's memory range (" + std::to_string(Info->MemoryBytesSize) + ").");
 
-	return static_cast<char*>(Ptr) + offset;
+	return static_cast<char*>(GetObjectMemory()) + offset;
 }
 
 void ObjectInstance::ReadMemory(const size_t offset, const size_t size, void* dst) const
@@ -256,7 +278,7 @@ void ObjectInstance::ReadMemory(const size_t offset, const size_t size, void* ds
 	if (offset + size > Info->MemoryBytesSize)
 		throw std::out_of_range("offset (" + std::to_string(offset) + ") + size (" + std::to_string(size) + ") is out of instance's memory range (" + std::to_string(Info->MemoryBytesSize) + ").");
 
-	const char* memOffset = static_cast<char*>(Ptr) + offset;
+	const char* memOffset = static_cast<char*>(GetObjectMemory()) + offset;
 	memcpy(dst, memOffset, size);
 }
 
@@ -271,7 +293,7 @@ void ObjectInstance::WriteMemory(const size_t offset, const size_t size, const v
 	if (offset + size > Info->MemoryBytesSize)
 		throw std::out_of_range("offset (" + std::to_string(offset) + ") + size (" + std::to_string(size) + ") is out of instance's memory range (" + std::to_string(Info->MemoryBytesSize) + ").");
 
-	char* memOffset = static_cast<char*>(Ptr) + offset;
+	char* memOffset = static_cast<char*>(GetObjectMemory()) + offset;
 	memcpy(memOffset, src, size);
 }
 
@@ -299,33 +321,44 @@ void ObjectInstance::WriteCharacter(const wchar_t& value) const
 	WriteMemory(0, Info->MemoryBytesSize, ptr);
 }
 
+void ObjectInstance::WriteString(const wchar_t* value) const
+{
+	size_t size = wcslen(value);
+	WriteString(value, size);
+}
+
+void ObjectInstance::WriteString(const wchar_t* value, size_t size) const
+{
+	WriteMemory(0, sizeof(int64_t), &size);
+	WriteMemory(sizeof(int64_t), sizeof(wchar_t) * size, value);
+}
+
 void ObjectInstance::WriteString(const std::wstring& value) const
 {
-	const void* ptr = new std::wstring(value);
-	WriteMemory(0, Info->MemoryBytesSize, ptr);
+	WriteString(value.data(), value.size());
 }
 
-bool ObjectInstance::AsBoolean() const
+bool& ObjectInstance::AsBoolean() const
 {
-	return *reinterpret_cast<bool*>(Ptr);
+	return *reinterpret_cast<bool*>(GetObjectMemory());
 }
 
-int64_t ObjectInstance::AsInteger() const
+int64_t& ObjectInstance::AsInteger() const
 {
-	return *reinterpret_cast<int64_t*>(Ptr);
+	return *reinterpret_cast<int64_t*>(GetObjectMemory());
 }
 
-double shard::ObjectInstance::AsDouble() const
+double& ObjectInstance::AsDouble() const
 {
-	return *reinterpret_cast<double*>(Ptr);
+	return *reinterpret_cast<double*>(GetObjectMemory());
 }
 
-wchar_t ObjectInstance::AsCharacter() const
+wchar_t& ObjectInstance::AsCharacter() const
 {
-	return *reinterpret_cast<wchar_t*>(Ptr);
+	return *reinterpret_cast<wchar_t*>(GetObjectMemory());
 }
 
-std::wstring& ObjectInstance::AsString() const
+const wchar_t* ObjectInstance::AsString() const
 {
-	return *reinterpret_cast<std::wstring*>(Ptr);
+	return *reinterpret_cast<const wchar_t**>(GetObjectMemory());
 }

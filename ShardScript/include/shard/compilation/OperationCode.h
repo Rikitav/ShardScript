@@ -73,6 +73,12 @@ namespace shard
 		LoadConst_String,
 
 		/// <summary>
+		/// Pops 1 instance from stack and creates duplicate of it.
+		/// <para>Includes no additional parameters.</para>
+		/// </summary>
+		CreateDuplicate,
+
+		/// <summary>
 		/// Pops ObjectInstance* from stack and stores it to variable slot at given index.
 		/// <para>Includes 1 parameter :</para>
 		/// <para>> uint16_t Value - Zero-based index of variable, where instance will be written to.</para>
@@ -126,6 +132,8 @@ namespace shard
 		Math_Division,
 		Math_Module,
 		Math_Power,
+		Math_Negative,
+		Math_Positive,
 
 		/// <summary>
 		/// Pops two values, compares them for equality, pushes boolean result.
@@ -167,7 +175,19 @@ namespace shard
 		/// Logical NOT operation. Pops boolean/integer, pushes inverted value.
 		/// <para>Includes no additional parameters.</para>
 		/// </summary>
-		Compare_Not,
+		Logical_Not,
+			
+		/// <summary>
+		/// Logical OR operation. Pops boolean/integer, pushes inverted value.
+		/// <para>Includes no additional parameters.</para>
+		/// </summary>
+		Logical_Or,
+
+		/// <summary>
+		/// Logical AND operation. Pops boolean/integer, pushes inverted value.
+		/// <para>Includes no additional parameters.</para>
+		/// </summary>
+		Logical_And,
 
 		/// <summary>
         /// Creates a new instance of a class/struct defined by TypeSymbol.

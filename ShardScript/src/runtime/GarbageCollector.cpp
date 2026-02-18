@@ -14,7 +14,7 @@
 
 using namespace shard;
 
-ObjectInstance* GarbageCollector::NullInstance = new ObjectInstance(-1, nullptr, nullptr);
+ObjectInstance* GarbageCollector::NullInstance = new ObjectInstance(nullptr, nullptr, true);
 
 ObjectInstance* GarbageCollector::GetStaticField(const VirtualMachine* host, FieldSymbol* field)
 {
@@ -62,34 +62,17 @@ ObjectInstance* GarbageCollector::AllocateInstance(const TypeSymbol* objectInfo)
 	if (objectInfo->State != TypeLayoutingState::Visited)
 		throw std::runtime_error("objectInfo is uninitialized");
 
-	/*
-	if (objectInfo->MemoryBytesSize == 0)
-		throw std::runtime_error("tried to allocate object instance of size 0");
-	*/
+	void* rawMemory = nullptr;
+	if (objectInfo->MemoryBytesSize > 0)
+	{
+		rawMemory = malloc(objectInfo->MemoryBytesSize);
+		if (rawMemory == nullptr)
+			throw std::runtime_error("cannot allocate memory for new instance");
 
-	void* memory = malloc(objectInfo->MemoryBytesSize);
-	if (memory == nullptr)
-		throw std::runtime_error("cannot allocate memory for new instance");
+		memset(rawMemory, 0, objectInfo->MemoryBytesSize);
+	}
 
-	memset(memory, 0, objectInfo->MemoryBytesSize);
-	ObjectInstance* instance = new ObjectInstance(objectsCounter++, objectInfo, memory);
-
-	Heap.add(instance);
-	return instance;
-}
-
-ObjectInstance* GarbageCollector::CopyInstance(const TypeSymbol* objectInfo, void* ptr)
-{
-	if (ptr == nullptr)
-		throw std::runtime_error("requested copying from nullptr");
-
-	void* memory = malloc(objectInfo->MemoryBytesSize);
-	if (memory == nullptr)
-		throw std::runtime_error("cannot allocate memory for new instance");
-
-	memcpy(memory, ptr, objectInfo->MemoryBytesSize);
-	ObjectInstance* instance = new ObjectInstance(objectsCounter++, objectInfo, ptr);
-
+	ObjectInstance* instance = new ObjectInstance(objectInfo, rawMemory, false);
 	Heap.add(instance);
 	return instance;
 }
@@ -109,8 +92,7 @@ ObjectInstance* GarbageCollector::CopyInstance(ObjectInstance* instance)
 	}
 
 	ObjectInstance* newInstance = GarbageCollector::AllocateInstance(instance->Info);
-	newInstance->WriteMemory(0, instance->Info->MemoryBytesSize, instance->Ptr);
-	newInstance->IncrementReference();
+	newInstance->WriteMemory(0, instance->Info->MemoryBytesSize, instance->GetObjectMemory());
 	return newInstance;
 }
 
@@ -141,6 +123,7 @@ void GarbageCollector::DestroyInstance(ObjectInstance* instance)
 		return;
 
 	TerminateInstance(instance);
+	Heap.erase(instance);
 }
 
 void GarbageCollector::TerminateInstance(ObjectInstance* instance)
@@ -167,10 +150,9 @@ void GarbageCollector::TerminateInstance(ObjectInstance* instance)
 		}
 	}
 
-	if (!instance->IsFieldInstance)
-		free(instance->Ptr);
+	if (!instance->IsTransient)
+		free(instance->Memory);
 
-	Heap.erase(instance);
 	delete instance;
 }
 

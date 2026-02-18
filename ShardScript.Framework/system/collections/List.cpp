@@ -63,7 +63,7 @@ namespace shard
 
 			// Modifing array
 			size_t newSize = arrayType->MemoryBytesSize + value->Info->GetInlineSize();
-			void* newPtr = realloc(arrayInstance->Ptr, newSize);
+			void* newPtr = realloc(arrayInstance->Memory, newSize);
 
 			if (newPtr == nullptr)
 			{
@@ -72,7 +72,7 @@ namespace shard
 
 			arrayType->Size += 1;
 			arrayType->MemoryBytesSize = newSize;
-			arrayInstance->Ptr = newPtr;
+			*const_cast<void**>(&arrayInstance->Memory) = newPtr;
 			
 			// Adding element
 			size_t indexLast = arrayType->Size - 1;

@@ -100,22 +100,19 @@ namespace shard
         void VisitElseStatement(shard::ElseStatementSyntax *const node) override;
 
         void VisitLiteralExpression(shard::LiteralExpressionSyntax *const node) override;
-        void VisitUnaryExpression(shard::UnaryExpressionSyntax *const node) override;
         void VisitObjectCreationExpression(shard::ObjectExpressionSyntax *const node) override;
         void VisitCollectionExpression(shard::CollectionExpressionSyntax *const node) override;
         void VisitLambdaExpression(shard::LambdaExpressionSyntax *const node) override;
         void VisitTernaryExpression(shard::TernaryExpressionSyntax *const node) override;
 
+        void VisitUnaryExpression(shard::UnaryExpressionSyntax* const node) override;
+        void VisitUnaryAssignExpression(shard::UnaryExpressionSyntax* const node);
+
         void VisitBinaryExpression(shard::BinaryExpressionSyntax *const node) override;
-        void VisitAssignExpression(shard::BinaryExpressionSyntax* const node);
-        void VisitParameterAssignExpression(shard::BinaryExpressionSyntax* const node, ParameterSymbol* param);
-        void VisitVariableAssignExpression(shard::BinaryExpressionSyntax* const node, VariableSymbol* var);
-        void VisitPropertyAssignExpression(shard::BinaryExpressionSyntax* const node, PropertySymbol* prop);
-        void VisitFieldAssignExpression(shard::BinaryExpressionSyntax* const node, FieldSymbol* field);
-        void VisitStaticFieldAssignExpression(shard::BinaryExpressionSyntax* const node, FieldSymbol* field);
+        void VisitBinaryAssignExpression(shard::BinaryExpressionSyntax* const node);
 
         void VisitInvocationExpression(shard::InvokationExpressionSyntax *const node) override;
-        void VisitMemberAccessExpression(shard::MemberAccessExpressionSyntax *const node) override;
         void VisitIndexatorExpression(shard::IndexatorExpressionSyntax *const node) override;
+        void VisitMemberAccessExpression(shard::MemberAccessExpressionSyntax *const node) override;
 	};
 }
