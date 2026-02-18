@@ -34,29 +34,34 @@ void ProgramDisassembler::Disassemble(std::wostream& out, ProgramVirtualImage& p
         OpCode op = decoder.AbsorbOpCode();
         switch (op)
         {
-            case OpCode::Nop:               out << L"nop"; break;
-            case OpCode::Halt:              out << L"halt"; break;
-            case OpCode::PopStack:          out << L"pop"; break;
-            case OpCode::LoadConst_Null:    out << L"ldnull"; break;
-            case OpCode::Return:            out << L"ret"; break;
+            case OpCode::Nop:                       out << L"nop"; break;
+            case OpCode::Halt:                      out << L"halt"; break;
+            case OpCode::PopStack:                  out << L"pop"; break;
+            case OpCode::LoadConst_Null:            out << L"ldnull"; break;
+            case OpCode::Return:                    out << L"ret"; break;
 
-            case OpCode::Math_Addition:        out << L"add"; break;
-            case OpCode::Math_Substraction:    out << L"sub"; break;
-            case OpCode::Math_Multiplication:  out << L"mul"; break;
-            case OpCode::Math_Division:        out << L"div"; break;
-            case OpCode::Math_Module:          out << L"mod"; break;
-            case OpCode::Math_Power:           out << L"pow"; break;
+            case OpCode::Math_Addition:             out << L"add"; break;
+            case OpCode::Math_Substraction:         out << L"sub"; break;
+            case OpCode::Math_Multiplication:       out << L"mul"; break;
+            case OpCode::Math_Division:             out << L"div"; break;
+            case OpCode::Math_Module:               out << L"mod"; break;
+            case OpCode::Math_Power:                out << L"pow"; break;
 
-            case OpCode::Compare_Equal:          out << L"ceq"; break;
-            case OpCode::Compare_NotEqual:       out << L"cne"; break;
-            case OpCode::Compare_Less:           out << L"clt"; break;
-            case OpCode::Compare_LessOrEqual:    out << L"cle"; break;
-            case OpCode::Compare_Greater:        out << L"cgt"; break;
-            case OpCode::Compare_GreaterOrEqual: out << L"cge"; break;
-            case OpCode::Compare_Not:            out << L"not"; break;
+            case OpCode::Compare_Equal:             out << L"cmp_eq"; break;
+            case OpCode::Compare_NotEqual:          out << L"cmp_neq"; break;
+            case OpCode::Compare_Less:              out << L"cmp_l"; break;
+            case OpCode::Compare_LessOrEqual:       out << L"cmp_le"; break;
+            case OpCode::Compare_Greater:           out << L"cmp_gt"; break;
+            case OpCode::Compare_GreaterOrEqual:    out << L"cmp_ge"; break;
 
-            case OpCode::LoadArrayElement:  out << L"ldelem"; break;
-            case OpCode::StoreArrayElement: out << L"stelem"; break;
+            case OpCode::Logical_Not:               out << L"not"; break;
+            case OpCode::Logical_And:               out << L"and"; break;
+            case OpCode::Logical_Or:                out << L"or"; break;
+
+            case OpCode::LoadArrayElement:          out << L"ldelem"; break;
+            case OpCode::StoreArrayElement:         out << L"stelem"; break;
+
+            case OpCode::CreateDuplicate:           out << "dup"; break;
 
             case OpCode::LoadConst_Boolean:
                 out << L"ldc.bool " << (decoder.AbsorbBoolean() ? L"true" : L"false");
@@ -105,42 +110,42 @@ void ProgramDisassembler::Disassemble(std::wostream& out, ProgramVirtualImage& p
             case OpCode::CallMethodSymbol:
             {
                 auto* sym = decoder.AbsorbMethodSymbol();
-                out << L"call " << (sym ? (sym->Name) : L"null");
+                out << L"call " << (sym ? (sym->FullName) : L"null");
                 break;
             }
 
             case OpCode::NewObject:
             {
                 auto* sym = decoder.AbsorbTypeSymbol();
-                out << L"newobj " << (sym ? sym->Name : L"null");
+                out << L"newobj " << (sym ? sym->FullName : L"null");
                 break;
             }
 
             case OpCode::LoadField:
             {
                 auto* sym = decoder.AbsorbFieldSymbol();
-                out << L"ldfld " << (sym ? sym->Name : L"null");
+                out << L"ldfld " << (sym ? sym->FullName : L"null");
                 break;
             }
 
             case OpCode::StoreField:
             {
                 auto* sym = decoder.AbsorbFieldSymbol();
-                out << L"stfld " << (sym ? sym->Name : L"null");
+                out << L"stfld " << (sym ? sym->FullName : L"null");
                 break;
             }
 
             case OpCode::LoadStaticField:
             {
                 auto* sym = decoder.AbsorbFieldSymbol();
-                out << L"ldsfld " << (sym ? sym->Name : L"null");
+                out << L"ldsfld " << (sym ? sym->FullName : L"null");
                 break;
             }
 
             case OpCode::StoreStaticField:
             {
                 auto* sym = decoder.AbsorbFieldSymbol();
-                out << L"stsfld " << (sym ? sym->Name : L"null");
+                out << L"stsfld " << (sym ? sym->FullName : L"null");
                 break;
             }
 
@@ -149,7 +154,7 @@ void ProgramDisassembler::Disassemble(std::wostream& out, ProgramVirtualImage& p
                 auto* sym = decoder.AbsorbArraySymbol();
                 out << L"newarr ";
                 if (sym && sym->UnderlayingType)
-                    out << sym->UnderlayingType->Name << L"[]";
+                    out << sym->UnderlayingType->FullName << L"[]";
                 else
                     out << L"null";
                 

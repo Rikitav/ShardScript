@@ -401,8 +401,8 @@ void ExpressionBinder::VisitAccessorDeclaration(AccessorDeclarationSyntax *const
 	}
 	else
 	{
-		throw std::runtime_error("nknown accessor type");
 		PopScope();
+		throw std::runtime_error("Unknown accessor type");
 	}
 
 }
@@ -1411,9 +1411,8 @@ TypeSymbol* ExpressionBinder::AnalyzeIndexatorExpression(IndexatorExpressionSynt
 	if (node->PreviousExpression == nullptr)
 		return nullptr;
 
-	MemberAccessExpressionSyntax* access = static_cast<MemberAccessExpressionSyntax*>(const_cast<ExpressionSyntax*>(node->PreviousExpression));
-	VisitExpression(access);
-	currentType = GetExpressionType(access);
+	VisitExpression(node->PreviousExpression);
+	currentType = GetExpressionType(node->PreviousExpression);
 
 	IndexatorSymbol* indexator = ResolveIndexator(node, currentType);
 	TypeSymbol* resultType = AnalyzePropertyAccessExpression(node, indexator, currentType);
@@ -1440,7 +1439,7 @@ TypeSymbol* ExpressionBinder::AnalyzeIndexatorExpression(IndexatorExpressionSynt
 		}
 	}
 
-	node->IndexatorSymbol = indexator;
+	node->ToProperty = indexator;
 	node->IsStaticContext = node->IsStaticContext;
 	return resultType;
 }

@@ -174,6 +174,8 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(int64_t leftData, To
 
 ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(std::wstring& leftData, TokenType opToken, ObjectInstance* rightInstance, bool& assign)
 {
+	// TODO: fix
+	/*
 	if (rightInstance->Info == SymbolTable::Primitives::String)
 	{
 		std::wstring rightData = rightInstance->AsString();
@@ -270,6 +272,7 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(std::wstring& leftDa
 				throw std::runtime_error("unsupported operation");
 		}
 	}
+	*/
 
 	throw std::runtime_error("unknown primitive");
 }

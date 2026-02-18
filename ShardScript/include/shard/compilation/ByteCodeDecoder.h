@@ -27,6 +27,8 @@ namespace shard
 		bool IsEOF();
 		size_t Index() const;
 		void SetCursor(fpos_t amount);
+		void Return();
+
 		OpCode AbsorbOpCode();
 
 		bool AbsorbBoolean();

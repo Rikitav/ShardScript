@@ -31,7 +31,7 @@ void shard::ShardUtilities::ParseArguments(int argc, wchar_t* argv[])
         {
             shard::ConsoleArguments::ExcludeStd = true;
         }
-        else if (arg == L"--show-decompile")
+        else if (arg == L"--show-decompiled")
         {
             shard::ConsoleArguments::ShowDecompile = true;
             shard::ConsoleArguments::RunProgram = false;

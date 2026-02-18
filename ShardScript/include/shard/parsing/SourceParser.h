@@ -121,6 +121,7 @@ namespace shard
 
 		shard::LambdaExpressionSyntax *const ReadLambdaExpression(shard::SourceProvider& reader, shard::SyntaxNode *const parent);
 		shard::LinkedExpressionNode *const ReadLinkedExpressionNode(shard::SourceProvider& reader, shard::SyntaxNode *const parent, shard::ExpressionSyntax *const lastNode, bool isFirst);
+		shard::IndexatorExpressionSyntax* const ReadIndexatorExpressionNode(shard::SourceProvider& reader, shard::SyntaxNode* const parent, shard::ExpressionSyntax* const lastNode, bool isFirst);
 
 		shard::ArgumentsListSyntax *const ReadArgumentsList(shard::SourceProvider& reader, shard::SyntaxNode *const parent);
 		shard::IndexatorListSyntax *const ReadIndexatorList(shard::SourceProvider& reader, shard::SyntaxNode *const parent);

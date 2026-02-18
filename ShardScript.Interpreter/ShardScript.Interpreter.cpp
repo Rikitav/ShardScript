@@ -26,8 +26,10 @@
 #include <cstdlib>
 #include <filesystem>
 #include <Windows.h>
+#include <dbghelp.h>
 
 #pragma comment(lib, "shlwapi.lib")
+#pragma comment(lib, "dbghelp.lib")
 
 #include "InteractiveConsole.h"
 #include "utilities/InterpreterUtilities.h"
@@ -46,7 +48,107 @@ static void SigIntHandler(int signal)
 
 static LONG WINAPI UnhandledExceptionFilterFunction(PEXCEPTION_POINTERS exception)
 {
-	return 0;
+    PEXCEPTION_RECORD exceptionRecord = exception->ExceptionRecord;
+    PCONTEXT contextRecord = exception->ContextRecord;
+
+    std::cout << "\n========== UNHANDLED EXCEPTION ==========\n" << std::endl;
+    std::cout << "Exception Code: 0x" << std::hex << exceptionRecord->ExceptionCode;
+
+    // Расшифровываем код исключения
+    switch (exceptionRecord->ExceptionCode)
+    {
+        case EXCEPTION_ACCESS_VIOLATION:            std::cout << " (ACCESS VIOLATION)" << std::endl; break;
+        case EXCEPTION_ARRAY_BOUNDS_EXCEEDED:       std::cout << " (ARRAY BOUNDS EXCEEDED)" << std::endl; break;
+        case EXCEPTION_BREAKPOINT:                  std::cout << " (BREAKPOINT)" << std::endl; break;
+        case EXCEPTION_DATATYPE_MISALIGNMENT:       std::cout << " (DATATYPE MISALIGNMENT)" << std::endl; break;
+        case EXCEPTION_FLT_DENORMAL_OPERAND:        std::cout << " (FLOAT DENORMAL OPERAND)" << std::endl; break;
+        case EXCEPTION_FLT_DIVIDE_BY_ZERO:          std::cout << " (FLOAT DIVIDE BY ZERO)" << std::endl; break;
+        case EXCEPTION_FLT_INEXACT_RESULT:          std::cout << " (FLOAT INEXACT RESULT)" << std::endl; break;
+        case EXCEPTION_FLT_INVALID_OPERATION:       std::cout << " (FLOAT INVALID OPERATION)" << std::endl; break;
+        case EXCEPTION_FLT_OVERFLOW:                std::cout << " (FLOAT OVERFLOW)" << std::endl; break;
+        case EXCEPTION_FLT_STACK_CHECK:             std::cout << " (FLOAT STACK CHECK)" << std::endl; break;
+        case EXCEPTION_FLT_UNDERFLOW:               std::cout << " (FLOAT UNDERFLOW)" << std::endl; break;
+        case EXCEPTION_ILLEGAL_INSTRUCTION:         std::cout << " (ILLEGAL INSTRUCTION)" << std::endl; break;
+        case EXCEPTION_IN_PAGE_ERROR:               std::cout << " (IN PAGE ERROR)" << std::endl; break;
+        case EXCEPTION_INT_DIVIDE_BY_ZERO:          std::cout << " (INTEGER DIVIDE BY ZERO)" << std::endl; break;
+        case EXCEPTION_INT_OVERFLOW:                std::cout << " (INTEGER OVERFLOW)" << std::endl; break;
+        case EXCEPTION_INVALID_DISPOSITION:         std::cout << " (INVALID DISPOSITION)" << std::endl; break;
+        case EXCEPTION_NONCONTINUABLE_EXCEPTION:    std::cout << " (NONCONTINUABLE EXCEPTION)" << std::endl; break;
+        case EXCEPTION_PRIV_INSTRUCTION:            std::cout << " (PRIVILEGED INSTRUCTION)" << std::endl; break;
+        case EXCEPTION_SINGLE_STEP:                 std::cout << " (SINGLE STEP)" << std::endl; break;
+        case EXCEPTION_STACK_OVERFLOW:              std::cout << " (STACK OVERFLOW)" << std::endl; break;
+        default:                                    std::cout << " (UNKNOWN EXCEPTION)" << std::endl; break;
+    }
+
+    if (exceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION && exceptionRecord->NumberParameters >= 2)
+    {
+        std::cout << "Access Violation Type: ";
+        switch (exceptionRecord->ExceptionInformation[0])
+        {
+            case 0:  std::cout << "Read" << std::endl; break;
+            case 1:  std::cout << "Write" << std::endl; break;
+            case 8:  std::cout << "DEP violation" << std::endl; break;
+            default: std::cout << "Unknown (0x" << exceptionRecord->ExceptionInformation[0] << ")" << std::endl; break;
+        }
+        
+        std::cout << "Access Address: 0x" << exceptionRecord->ExceptionInformation[1] << std::endl;
+    }
+
+    std::cout << "Exception Address: 0x" << exceptionRecord->ExceptionAddress << std::endl;
+    std::cout << "Exception Flags: 0x" << exceptionRecord->ExceptionFlags << std::endl;
+
+    if (exceptionRecord->NumberParameters > 0)
+    {
+        std::cout << "Number of Parameters: " << exceptionRecord->NumberParameters << std::endl;
+        std::cout << "Parameters: ";
+
+        for (ULONG i = 0; i < min(exceptionRecord->NumberParameters, 15); i++)
+            std::cout << "0x" << exceptionRecord->ExceptionInformation[i] << ", ";
+
+        std::cout << std::endl;
+    }
+    
+    HMODULE hModule;
+    if (GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+        GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+        (LPCTSTR)exceptionRecord->ExceptionAddress,
+        &hModule))
+    {
+        char modulePath[MAX_PATH];
+        if (GetModuleFileNameA(hModule, modulePath, MAX_PATH))
+        {
+            std::cout << "\nModule: " << modulePath << std::endl;
+        }
+    }
+
+    std::cout << "\n========== END OF EXCEPTION REPORT ==========" << std::endl;
+
+    HANDLE logFile = CreateFileA("exception.log",
+        FILE_APPEND_DATA, FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+
+    if (logFile != INVALID_HANDLE_VALUE)
+    {
+        CloseHandle(logFile);
+    }
+
+    MINIDUMP_EXCEPTION_INFORMATION minidumpInfo;
+    minidumpInfo.ThreadId = GetCurrentThreadId();
+    minidumpInfo.ExceptionPointers = exception;
+    minidumpInfo.ClientPointers = FALSE;
+
+    HANDLE dumpFile = CreateFileA("crash.dmp",
+        GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+
+    if (dumpFile != INVALID_HANDLE_VALUE)
+    {
+        MiniDumpWriteDump(GetCurrentProcess(),
+            GetCurrentProcessId(), dumpFile, static_cast<MINIDUMP_TYPE>(MiniDumpWithDataSegs | MiniDumpWithHandleData), &minidumpInfo, NULL, NULL);
+
+        CloseHandle(dumpFile);
+        std::cout << std::endl << "Mini-dump saved to crash.dmp" << std::endl;
+    }
+
+    return EXCEPTION_CONTINUE_SEARCH;
 }
 
 static bool CheckFilesExisting()
