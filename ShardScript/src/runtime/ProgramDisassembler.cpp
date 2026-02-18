@@ -110,54 +110,104 @@ void ProgramDisassembler::Disassemble(std::wostream& out, ProgramVirtualImage& p
             case OpCode::CallMethodSymbol:
             {
                 auto* sym = decoder.AbsorbMethodSymbol();
-                out << L"call " << (sym ? (sym->FullName) : L"null");
+                if (sym == nullptr)
+                {
+                    out << L"call null";
+                    break;
+                }
+
+                std::wstring name = sym->FullName.size() > 0 ? sym->FullName : sym->Name;
+                out << L"call " << name;
                 break;
             }
 
             case OpCode::NewObject:
             {
                 auto* sym = decoder.AbsorbTypeSymbol();
-                out << L"newobj " << (sym ? sym->FullName : L"null");
+                if (sym == nullptr)
+                {
+                    out << L"newobj null";
+                    break;
+                }
+
+                std::wstring name = sym->FullName.size() > 0 ? sym->FullName : sym->Name;
+                out << L"newobj " << name;
                 break;
             }
 
             case OpCode::LoadField:
             {
                 auto* sym = decoder.AbsorbFieldSymbol();
-                out << L"ldfld " << (sym ? sym->FullName : L"null");
+                if (sym == nullptr)
+                {
+                    out << L"ldfld null";
+                    break;
+                }
+
+                std::wstring name = sym->FullName.size() > 0 ? sym->FullName : sym->Name;
+                out << L"ldfld " << name;
                 break;
             }
 
             case OpCode::StoreField:
             {
                 auto* sym = decoder.AbsorbFieldSymbol();
-                out << L"stfld " << (sym ? sym->FullName : L"null");
+                if (sym == nullptr)
+                {
+                    out << L"stfld null";
+                    break;
+                }
+
+                std::wstring name = sym->FullName.size() > 0 ? sym->FullName : sym->Name;
+                out << L"stfld " << name;
                 break;
             }
 
             case OpCode::LoadStaticField:
             {
                 auto* sym = decoder.AbsorbFieldSymbol();
-                out << L"ldsfld " << (sym ? sym->FullName : L"null");
+                if (sym == nullptr)
+                {
+                    out << L"ldsfld null";
+                    break;
+                }
+
+                std::wstring name = sym->FullName.size() > 0 ? sym->FullName : sym->Name;
+                out << L"ldsfld " << name;
                 break;
             }
 
             case OpCode::StoreStaticField:
             {
                 auto* sym = decoder.AbsorbFieldSymbol();
-                out << L"stsfld " << (sym ? sym->FullName : L"null");
+                if (sym == nullptr)
+                {
+                    out << L"stsfld null";
+                    break;
+                }
+
+                std::wstring name = sym->FullName.size() > 0 ? sym->FullName : sym->Name;
+                out << L"stsfld " << name;
                 break;
             }
 
             case OpCode::NewArray:
             {
                 auto* sym = decoder.AbsorbArraySymbol();
-                out << L"newarr ";
-                if (sym && sym->UnderlayingType)
-                    out << sym->UnderlayingType->FullName << L"[]";
-                else
-                    out << L"null";
-                
+                if (sym == nullptr)
+                {
+                    out << L"newarr null";
+                    break;
+                }
+
+                if (sym->UnderlayingType == nullptr)
+                {
+                    out << L"newarr null[]";
+                    break;
+                }
+
+                std::wstring name = sym->UnderlayingType->FullName.size() > 0 ? sym->UnderlayingType->FullName : sym->Name;
+                out << L"newarr " << name << "[]";
                 break;
             }
 

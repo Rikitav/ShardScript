@@ -94,7 +94,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			size_t data = decoder.AbsorbString();
 			const wchar_t* str = reinterpret_cast<wchar_t*>(Program.DataSection.data() + data);
 
-			ObjectInstance* instance = ObjectInstance::FromValue(str);
+			ObjectInstance* instance = ObjectInstance::FromValue(str, true);
 			frame->PushStack(instance);
 			break;
 		}
@@ -190,8 +190,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance* right = frame->PopStack();
 			ObjectInstance* left = frame->PopStack();
 
-			bool assign = false;
-			ObjectInstance* result = PrimitiveMathModule::EvaluateBinaryOperator(left, TokenType::AddOperator, right, assign);
+			ObjectInstance* result = PrimitiveMathModule::EvaluateBinaryOperator(left, TokenType::AddOperator, right);
 			frame->PushStack(result);
 
 			GarbageCollector::CollectInstance(right);
@@ -204,8 +203,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance* right = frame->PopStack();
 			ObjectInstance* left = frame->PopStack();
 
-			bool assign = false;
-			ObjectInstance* result = PrimitiveMathModule::EvaluateBinaryOperator(left, TokenType::SubOperator, right, assign);
+			ObjectInstance* result = PrimitiveMathModule::EvaluateBinaryOperator(left, TokenType::SubOperator, right);
 			frame->PushStack(result);
 
 			GarbageCollector::CollectInstance(right);
@@ -218,8 +216,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance* right = frame->PopStack();
 			ObjectInstance* left = frame->PopStack();
 
-			bool assign = false;
-			ObjectInstance* result = PrimitiveMathModule::EvaluateBinaryOperator(left, TokenType::MultOperator, right, assign);
+			ObjectInstance* result = PrimitiveMathModule::EvaluateBinaryOperator(left, TokenType::MultOperator, right);
 			frame->PushStack(result);
 
 			GarbageCollector::CollectInstance(right);
@@ -232,8 +229,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance* right = frame->PopStack();
 			ObjectInstance* left = frame->PopStack();
 
-			bool assign = false;
-			ObjectInstance* result = PrimitiveMathModule::EvaluateBinaryOperator(left, TokenType::DivOperator, right, assign);
+			ObjectInstance* result = PrimitiveMathModule::EvaluateBinaryOperator(left, TokenType::DivOperator, right);
 			frame->PushStack(result);
 
 			GarbageCollector::CollectInstance(right);
@@ -246,8 +242,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance* right = frame->PopStack();
 			ObjectInstance* left = frame->PopStack();
 
-			bool assign = false;
-			ObjectInstance* result = PrimitiveMathModule::EvaluateBinaryOperator(left, TokenType::ModOperator, right, assign);
+			ObjectInstance* result = PrimitiveMathModule::EvaluateBinaryOperator(left, TokenType::ModOperator, right);
 			frame->PushStack(result);
 
 			GarbageCollector::CollectInstance(right);
@@ -260,8 +255,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance* right = frame->PopStack();
 			ObjectInstance* left = frame->PopStack();
 
-			bool assign = false;
-			ObjectInstance* result = PrimitiveMathModule::EvaluateBinaryOperator(left, TokenType::PowOperator, right, assign);
+			ObjectInstance* result = PrimitiveMathModule::EvaluateBinaryOperator(left, TokenType::PowOperator, right);
 			frame->PushStack(result);
 
 			GarbageCollector::CollectInstance(right);
@@ -274,8 +268,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance* right = frame->PopStack();
 			ObjectInstance* left = frame->PopStack();
 
-			bool assign = false;
-			ObjectInstance* result = PrimitiveMathModule::EvaluateBinaryOperator(left, TokenType::EqualsOperator, right, assign);
+			ObjectInstance* result = PrimitiveMathModule::EvaluateBinaryOperator(left, TokenType::EqualsOperator, right);
 			frame->PushStack(result);
 
 			GarbageCollector::CollectInstance(right);
@@ -288,8 +281,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance* right = frame->PopStack();
 			ObjectInstance* left = frame->PopStack();
 
-			bool assign = false;
-			ObjectInstance* result = PrimitiveMathModule::EvaluateBinaryOperator(left, TokenType::NotEqualsOperator, right, assign);
+			ObjectInstance* result = PrimitiveMathModule::EvaluateBinaryOperator(left, TokenType::NotEqualsOperator, right);
 			frame->PushStack(result);
 
 			GarbageCollector::CollectInstance(right);
@@ -302,8 +294,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance* right = frame->PopStack();
 			ObjectInstance* left = frame->PopStack();
 
-			bool assign = false;
-			ObjectInstance* result = PrimitiveMathModule::EvaluateBinaryOperator(left, TokenType::LessOperator, right, assign);
+			ObjectInstance* result = PrimitiveMathModule::EvaluateBinaryOperator(left, TokenType::LessOperator, right);
 			frame->PushStack(result);
 
 			GarbageCollector::CollectInstance(right);
@@ -316,8 +307,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance* right = frame->PopStack();
 			ObjectInstance* left = frame->PopStack();
 
-			bool assign = false;
-			ObjectInstance* result = PrimitiveMathModule::EvaluateBinaryOperator(left, TokenType::LessOrEqualsOperator, right, assign);
+			ObjectInstance* result = PrimitiveMathModule::EvaluateBinaryOperator(left, TokenType::LessOrEqualsOperator, right);
 			frame->PushStack(result);
 
 			GarbageCollector::CollectInstance(right);
@@ -331,7 +321,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance* left = frame->PopStack();
 
 			bool assign = false;
-			ObjectInstance* result = PrimitiveMathModule::EvaluateBinaryOperator(left, TokenType::GreaterOperator, right, assign);
+			ObjectInstance* result = PrimitiveMathModule::EvaluateBinaryOperator(left, TokenType::GreaterOperator, right);
 			frame->PushStack(result);
 
 			GarbageCollector::CollectInstance(right);
@@ -344,8 +334,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance* right = frame->PopStack();
 			ObjectInstance* left = frame->PopStack();
 
-			bool assign = false;
-			ObjectInstance* result = PrimitiveMathModule::EvaluateBinaryOperator(left, TokenType::GreaterOrEqualsOperator, right, assign);
+			ObjectInstance* result = PrimitiveMathModule::EvaluateBinaryOperator(left, TokenType::GreaterOrEqualsOperator, right);
 			frame->PushStack(result);
 
 			GarbageCollector::CollectInstance(right);
@@ -562,7 +551,7 @@ ObjectInstance* VirtualMachine::InstantiateObject(TypeSymbol* type, ConstructorS
 				: GarbageCollector::AllocateInstance(fieldType);
 		}
 
-		newInstance->SetField(field, assignInstance);
+		newInstance->SetField(fieldInstance);
 	}
 	*/
 

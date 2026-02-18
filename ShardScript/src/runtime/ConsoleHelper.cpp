@@ -145,7 +145,7 @@ void ConsoleHelper::WriteLine(ObjectInstance* instance)
 
 	if (instance->Info == SymbolTable::Primitives::String)
 	{
-		std::wstring data = instance->AsString();
+		const wchar_t* data = instance->AsString();
 		WriteLine(data);
 		return;
 	}

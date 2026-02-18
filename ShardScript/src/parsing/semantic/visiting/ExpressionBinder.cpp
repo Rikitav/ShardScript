@@ -598,7 +598,7 @@ TypeSymbol* ExpressionBinder::AnalyzeBinaryExpression(BinaryExpressionSyntax *co
 			
 		case TokenType::AddOperator:
 		{
-			if (leftType == SymbolTable::Primitives::String)
+			if (leftType == SymbolTable::Primitives::String || rightType == SymbolTable::Primitives::String)
 				return leftType;
 
 			if (!TypeSymbol::Equals(leftType, rightType))

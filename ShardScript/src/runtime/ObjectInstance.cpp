@@ -46,39 +46,23 @@ ObjectInstance* ObjectInstance::FromValue(wchar_t value)
 	return instance;
 }
 
-ObjectInstance* ObjectInstance::FromValue(const wchar_t* value)
+ObjectInstance* ObjectInstance::FromValue(const wchar_t* value, bool isTransient)
 {
 	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String);
+	*(const_cast<bool*>(&instance->IsTransient)) = isTransient;
 
-	size_t length = wcslen(value);
-	size_t size = sizeof(int64_t) + sizeof(wchar_t) * length;
-
-	void* newInstance = realloc(instance, size);
-	if (newInstance == nullptr)
-		throw std::runtime_error("failed to allocate string instance");
-
-	instance = static_cast<ObjectInstance*>(newInstance);
-	memset(instance->GetObjectMemory(), 0, size);
-
-	instance->WriteString(value, length);
+	instance->WriteInteger(wcslen(value));
+	instance->WriteMemory(sizeof(int64_t), sizeof(wchar_t*), &value);
 	return instance;
 }
 
 ObjectInstance* ObjectInstance::FromValue(const std::wstring& value)
 {
 	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String);
+	*(const_cast<bool*>(&instance->IsTransient)) = true;
 
-	size_t length = value.size();
-	size_t size = sizeof(int64_t) + sizeof(wchar_t) * length;
-
-	void* newInstance = realloc(instance, size);
-	if (newInstance == nullptr)
-		throw std::runtime_error("failed to allocate string instance");
-
-	instance = static_cast<ObjectInstance*>(newInstance);
-	memset(instance->GetObjectMemory(), 0, size);
-
-	instance->WriteString(value.data(), length);
+	instance->WriteInteger(value.size());
+	instance->WriteMemory(sizeof(int64_t), sizeof(wchar_t*), value.data());
 	return instance;
 }
 
@@ -360,5 +344,5 @@ wchar_t& ObjectInstance::AsCharacter() const
 
 const wchar_t* ObjectInstance::AsString() const
 {
-	return *reinterpret_cast<const wchar_t**>(GetObjectMemory());
+	return *reinterpret_cast<const wchar_t**>(OffsetMemory(sizeof(int64_t), sizeof(wchar_t*)));
 }
