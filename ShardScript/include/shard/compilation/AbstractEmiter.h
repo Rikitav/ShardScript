@@ -75,7 +75,8 @@ namespace shard
 	public:
 		inline AbstractEmiter(shard::ProgramVirtualImage& program, shard::SemanticModel& model, shard::DiagnosticsContext& diagnostics)
             : SyntaxVisitor(model, diagnostics), Program(program), Encoder() { }
-
+        
+        void SetEntryPoint();
         void VisitSyntaxTree(shard::SyntaxTree& tree) override;
 
         void VisitArgumentsList(ArgumentsListSyntax* node) override;
