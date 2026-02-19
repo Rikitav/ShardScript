@@ -269,6 +269,11 @@ void AbstractEmiter::SetEntryPoint()
 	return;
 }
 
+void AbstractEmiter::SetGeneratingTarget(MethodSymbol* method)
+{
+	GeneratingFor = method;
+}
+
 void AbstractEmiter::VisitSyntaxTree(SyntaxTree& tree)
 {
 	for (CompilationUnitSyntax* unit : tree.CompilationUnits)

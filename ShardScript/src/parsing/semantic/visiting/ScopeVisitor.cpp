@@ -134,6 +134,9 @@ static bool IsScopePublicallyAccessible(SemanticScope *const scope)
 	if (scope == nullptr)
 		return false;
 
+	if (scope->Owner == nullptr)
+		return true;
+
 	if (scope->Owner->Kind == SyntaxKind::NamespaceDeclaration)
 		return true;
 

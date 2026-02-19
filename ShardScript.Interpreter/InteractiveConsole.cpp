@@ -340,10 +340,11 @@ static void CompileMember()
 
 }
 
-static void InterpretStatement(VirtualMachine& virtualMachine, ProgramVirtualImage& program, AbstractEmiter& abstractEmiter, StatementSyntax* statement, size_t& pointer)
+static void InterpretStatement(VirtualMachine& virtualMachine, AbstractEmiter& abstractEmiter, MethodSymbol* entryPointSymbol, StatementSyntax* statement, size_t& pointer)
 {
 	abstractEmiter.VisitStatement(statement);
-	ObjectInstance* result = virtualMachine.RunInteractive(pointer);;
+	ObjectInstance* result = virtualMachine.RunInteractive(pointer);
+
 	if (result != nullptr)
 	{
 		ConsoleHelper::Write(result);
@@ -356,14 +357,13 @@ static void InterpretStatement(VirtualMachine& virtualMachine, ProgramVirtualIma
 void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticModel, DiagnosticsContext& diagnostics)
 {
 	// TODO: REWRITE LOGIC TO BYTECODE
-	ProgramVirtualImage program(semanticModel);
-	VirtualMachine virtualMachine(program);
+	ProgramVirtualImage program;
 	size_t pointer = 0;
 
 	// Initializing parsing
 	SemanticAnalyzer semanticAnalyzer(diagnostics);
 	LayoutGenerator layoutGenerator(diagnostics);
-	AbstractEmiter abstractEmiter(program, semanticModel, diagnostics);
+	VirtualMachine virtualMachine(program);
 	
 	// Creating interactive entry point
 	MethodDeclarationSyntax* implMethod = nullptr;
@@ -410,10 +410,12 @@ void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticMode
 			if (statement == nullptr)
 				continue;
 
+			interactiveBody->Statements.push_back(statement);
+
 			// Re-analyze syntax tree
-			SemanticModel newModel(syntaxTree);
-			semanticAnalyzer.Analyze(syntaxTree, newModel);
-			layoutGenerator.Generate(newModel);
+			SemanticModel newSemanticModel(syntaxTree);
+			semanticAnalyzer.Analyze(syntaxTree, newSemanticModel);
+			layoutGenerator.Generate(newSemanticModel);
 
 			// Check for errors
 			if (diagnostics.AnyError)
@@ -423,9 +425,11 @@ void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticMode
 				continue;
 			}
 
-			interactiveBody->Statements.push_back(statement);
-			InterpretStatement(virtualMachine, program, abstractEmiter, statement, pointer);
+			AbstractEmiter abstractEmiter(program, newSemanticModel, diagnostics);
+			abstractEmiter.SetGeneratingTarget(entryPointSymbol);
+			program.EntryPoint = entryPointSymbol;
 
+			InterpretStatement(virtualMachine, abstractEmiter, entryPointSymbol, statement, pointer);
 		}
 		catch (const std::exception& err)
 		{

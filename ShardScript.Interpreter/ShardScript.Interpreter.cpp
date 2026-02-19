@@ -181,11 +181,6 @@ static void LoadLibrariesFromDirectoryPath(fs::path path)
 	}
 }
 
-static void Execute()
-{
-
-}
-
 static fs::path GetCurrentDirectoryPath()
 {
 	WCHAR pathBuffer[MAX_PATH];
@@ -273,7 +268,7 @@ int wmain(int argc, wchar_t* argv[])
 		LayoutGenerator layoutGenerator(diagnostics);
 		layoutGenerator.Generate(semanticModel);
 
-		ProgramVirtualImage program(semanticModel);
+		ProgramVirtualImage program;
 		AbstractEmiter emiter(program, semanticModel, diagnostics);
 
 		emiter.VisitSyntaxTree(syntaxTree);

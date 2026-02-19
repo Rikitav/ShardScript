@@ -2,6 +2,9 @@
 
 **ShardScript** is an compiled, object-oriented programming language with strict static typing, developed in C++. The project features a custom lexer/parser, semantic analyzer, a stack virtual machine, and a standard library framework.
 
+## Check out my Website!
+[ShardScript.ru](https://ShardScript.ru)
+
 ## 📋 Specifications
 
 * **Implementation:** C++ (MS Visual C++).
@@ -68,14 +71,16 @@ namespace MyApp
 ```
 
 ### 2. Recursion (Fibonacci)
-```
+```csharp
 namespace Math
 {
     class Algorithms
     {
         public static int Fibonacci(int n)
         {
-            if (n <= 1) return n;
+            if (n <= 1)
+                return n;
+            
             return Fibonacci(n - 1) + Fibonacci(n - 2);
         }
 
@@ -89,7 +94,7 @@ namespace Math
 ```
 
 ### 3. Delegates & Lambdas
-```
+```csharp
 namespace Functional
 {
     private delegate int Operation(int a, int b);
@@ -110,14 +115,10 @@ namespace Functional
 
 ## 🚀 Roadmap
 ​[ ] OOP Complete: Interfaces, extension methods and pipe operator.  
-​[ ] Meta-Programming: Attributes, Decorators, and AOP (Aspect-Oriented Programming). 
+​[ ] Meta-Programming: Attributes, Decorators, and AOP (Aspect-Oriented Programming).  
 ​[ ] Error Handling: Full try-catch blocks.  
 ​[ ] Generics: Advanced constraints and full generalization support.  
 ​[ ] Diagnostics: Improved compile-time and runtime error reporting.  
-[ ] 
 
 ## ​🤝 Contributing
 ​The project is under active development. If you find a bug, have ideas for syntax improvements, or want to suggest a new feature — please create an Issue! All feedback is welcome. In case of a sudden crash of the interpreter, please attach your code to issue so I can debug it.
-
-## Check out my Website!
-ShardScript.ru

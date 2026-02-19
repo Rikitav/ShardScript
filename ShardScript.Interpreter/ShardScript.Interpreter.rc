@@ -20,7 +20,7 @@ BEGIN
 		BLOCK "040904b0"
 		BEGIN
 			VALUE "FileDescription", "ShardLang interpreter"
-			VALUE "FileVersion", "0.0.5.0"
+			VALUE "FileVersion", "0.0.4.0"
 			VALUE "InternalName", "ShardScript.exe"
 			VALUE "ProductName", "ShardScript"
 			VALUE "OriginalFilename", "ShardScript.exe"
