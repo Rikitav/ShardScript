@@ -20,3 +20,5 @@ extern "C" __declspec(dllexport) void SafeInit();
 */
 
 //#define EXPORT_EXTERN(name) ObjectInstance* &name(MethodSymbol* method, InboundVariableContext* arguments)
+
+extern "C" SHARD_API
