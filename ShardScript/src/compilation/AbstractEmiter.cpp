@@ -245,26 +245,27 @@ static void EmitBinaryOperation(TokenType type, ByteCodeEncoder& encoder, std::v
 	}
 }
 
-static void SetEntryPoint(DiagnosticsContext& diagnostics, std::vector<MethodSymbol*>& entryPointCandidates, SymbolTable* table, ProgramVirtualImage& program)
+void AbstractEmiter::SetEntryPoint()
 {
-	if (entryPointCandidates.empty())
+	if (EntryPointCandidates.empty())
 	{
-		diagnostics.ReportError(SyntaxToken(), L"Entry point for script not found");
+		Diagnostics.ReportError(SyntaxToken(), L"Entry point for script not found");
 		return;
 	}
 
-	if (entryPointCandidates.size() > 1)
+	if (EntryPointCandidates.size() > 1)
 	{
-		for (MethodSymbol* entry : entryPointCandidates)
+		for (MethodSymbol* entry : EntryPointCandidates)
 		{
-			MethodDeclarationSyntax* decl = static_cast<MethodDeclarationSyntax*>(table->GetSyntaxNode(entry));
-			diagnostics.ReportError(decl->IdentifierToken, L"Script cannot have multiple entry points");
+			MethodDeclarationSyntax* decl = static_cast<MethodDeclarationSyntax*>(Table->GetSyntaxNode(entry));
+			Diagnostics.ReportError(decl->IdentifierToken, L"Script cannot have multiple entry points");
 		}
 
 		return;
 	}
 
-	program.EntryPoint = entryPointCandidates.front();
+	Program.EntryPoint = EntryPointCandidates.front();
+	EntryPointCandidates.clear();
 	return;
 }
 
@@ -272,8 +273,6 @@ void AbstractEmiter::VisitSyntaxTree(SyntaxTree& tree)
 {
 	for (CompilationUnitSyntax* unit : tree.CompilationUnits)
 		VisitCompilationUnit(unit);
-
-	SetEntryPoint(Diagnostics, EntryPointCandidates, Table, Program);
 }
 
 void AbstractEmiter::VisitArgumentsList(ArgumentsListSyntax* node)

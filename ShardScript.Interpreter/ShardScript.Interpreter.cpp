@@ -263,26 +263,6 @@ int wmain(int argc, wchar_t* argv[])
 		SemanticAnalyzer semanticAnalyzer(diagnostics);
 		semanticAnalyzer.Analyze(syntaxTree, semanticModel);
 
-		// TODO: fix
-		/*
-		if (!args.UseInteractive)
-		{
-			if (semanticModel.Table->EntryPointCandidates.empty())
-			{
-				diagnostics.ReportError(SyntaxToken(), L"Entry point for script not found");
-			}
-
-			if (semanticModel.Table->EntryPointCandidates.size() > 1)
-			{
-				for (MethodSymbol* entry : semanticModel.Table->EntryPointCandidates)
-				{
-					MethodDeclarationSyntax* decl = static_cast<MethodDeclarationSyntax*>(semanticModel.Table->GetSyntaxNode(entry));
-					diagnostics.ReportError(decl->IdentifierToken, L"Script has multiple entry points");
-				}
-			}
-		}
-		*/
-
 		if (diagnostics.AnyError)
 		{
 			std::wcout << L"=== Diagnostics output ===" << std::endl;
@@ -297,12 +277,20 @@ int wmain(int argc, wchar_t* argv[])
 		AbstractEmiter emiter(program, semanticModel, diagnostics);
 
 		emiter.VisitSyntaxTree(syntaxTree);
+		if (ConsoleArguments::RunProgram)
+			emiter.SetEntryPoint();
 
 		if (diagnostics.AnyError)
 		{
 			std::wcout << L"=== Diagnostics output ===" << std::endl;
 			diagnostics.WriteDiagnostics(std::wcout);
 			return 1;
+		}
+
+		if (ConsoleArguments::UseInteractive)
+		{
+			InteractiveConsole::Run(syntaxTree, semanticModel, diagnostics);
+			return 0;
 		}
 
 		if (ConsoleArguments::ShowDecompile)
@@ -316,27 +304,6 @@ int wmain(int argc, wchar_t* argv[])
 			VirtualMachine virtualMachine(program);
 			virtualMachine.Run();
 		}
-
-		/*
-		if (args.UseInteractive)
-		{
-			InteractiveConsole::Run(syntaxTree, semanticModel, diagnostics);
-			return 0;
-		}
-		else
-		{
-			try
-			{
-				AbstractInterpreter::Execute(syntaxTree, semanticModel);
-				return 0;
-			}
-			catch (const std::runtime_error& err)
-			{
-				std::cout << err.what() << std::endl;
-				return 1;
-			}
-		}
-		*/
 	}
 	catch (const std::runtime_error& err)
 	{
