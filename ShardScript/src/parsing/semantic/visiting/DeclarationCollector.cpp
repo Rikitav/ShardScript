@@ -118,7 +118,7 @@ void DeclarationCollector::VisitClassDeclaration(ClassDeclarationSyntax *const n
     symbol->Parent = OwnerSymbol();
     if (symbol->Parent == nullptr)
     {
-        Diagnostics.ReportError(node->IdentifierToken, L"Cannot resolve Delegates' owner type");
+        Diagnostics.ReportError(node->IdentifierToken, L"Cannot resolve Classes' owner type");
     }
     else
     {
@@ -170,7 +170,7 @@ void DeclarationCollector::VisitStructDeclaration(StructDeclarationSyntax *const
     symbol->Parent = OwnerSymbol();
     if (symbol->Parent == nullptr)
     {
-        Diagnostics.ReportError(node->IdentifierToken, L"Cannot resolve Delegates' owner type");
+        Diagnostics.ReportError(node->IdentifierToken, L"Cannot resolve Structs' owner type");
     }
     else
     {

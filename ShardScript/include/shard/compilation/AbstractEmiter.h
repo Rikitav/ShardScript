@@ -64,56 +64,57 @@ namespace shard
             std::vector<size_t> ClauseEndBacktracks;
         };
 
-        shard::ByteCodeEncoder Encoder;
-        shard::MethodSymbol* GeneratingFor = nullptr;
-		shard::ProgramVirtualImage& Program;
-		std::vector<shard::MethodSymbol*> EntryPointCandidates;
+        ByteCodeEncoder Encoder;
+        MethodSymbol* GeneratingFor = nullptr;
+		ProgramVirtualImage& Program;
+		std::vector<MethodSymbol*> EntryPointCandidates;
 
         std::stack<LoopScope> Loops;
         std::stack<ClauseScope> Clauses;
 
 	public:
-		inline AbstractEmiter(shard::ProgramVirtualImage& program, shard::SemanticModel& model, shard::DiagnosticsContext& diagnostics)
+		inline AbstractEmiter(ProgramVirtualImage& program, SemanticModel& model, DiagnosticsContext& diagnostics)
             : SyntaxVisitor(model, diagnostics), Program(program), Encoder() { }
         
         void SetEntryPoint();
-        void VisitSyntaxTree(shard::SyntaxTree& tree) override;
+        void SetGeneratingTarget(MethodSymbol* method);
+        void VisitSyntaxTree(SyntaxTree& tree) override;
 
         void VisitArgumentsList(ArgumentsListSyntax* node) override;
 
-		void VisitMethodDeclaration(shard::MethodDeclarationSyntax *const node) override;
-		void VisitConstructorDeclaration(shard::ConstructorDeclarationSyntax *const node) override;
-		void VisitAccessorDeclaration(shard::AccessorDeclarationSyntax *const node) override;
+		void VisitMethodDeclaration(MethodDeclarationSyntax *const node) override;
+		void VisitConstructorDeclaration(ConstructorDeclarationSyntax *const node) override;
+		void VisitAccessorDeclaration(AccessorDeclarationSyntax *const node) override;
 
-        void VisitExpressionStatement(shard::ExpressionStatementSyntax *const node) override;
-        void VisitVariableStatement(shard::VariableStatementSyntax *const node) override;
-        void VisitReturnStatement(shard::ReturnStatementSyntax *const node) override;
-        void VisitThrowStatement(shard::ThrowStatementSyntax *const node) override;
-        void VisitBreakStatement(shard::BreakStatementSyntax *const node) override;
-        void VisitContinueStatement(shard::ContinueStatementSyntax *const node) override;
+        void VisitExpressionStatement(ExpressionStatementSyntax *const node) override;
+        void VisitVariableStatement(VariableStatementSyntax *const node) override;
+        void VisitReturnStatement(ReturnStatementSyntax *const node) override;
+        void VisitThrowStatement(ThrowStatementSyntax *const node) override;
+        void VisitBreakStatement(BreakStatementSyntax *const node) override;
+        void VisitContinueStatement(ContinueStatementSyntax *const node) override;
 
-        void VisitWhileStatement(shard::WhileStatementSyntax *const node) override;
-        void VisitForStatement(shard::ForStatementSyntax *const node) override;
-        void VisitUntilStatement(shard::UntilStatementSyntax *const node) override;
+        void VisitWhileStatement(WhileStatementSyntax *const node) override;
+        void VisitForStatement(ForStatementSyntax *const node) override;
+        void VisitUntilStatement(UntilStatementSyntax *const node) override;
 
-        void VisitIfStatement(shard::IfStatementSyntax *const node) override;
-        void VisitUnlessStatement(shard::UnlessStatementSyntax *const node) override;
-        void VisitElseStatement(shard::ElseStatementSyntax *const node) override;
+        void VisitIfStatement(IfStatementSyntax *const node) override;
+        void VisitUnlessStatement(UnlessStatementSyntax *const node) override;
+        void VisitElseStatement(ElseStatementSyntax *const node) override;
 
-        void VisitLiteralExpression(shard::LiteralExpressionSyntax *const node) override;
-        void VisitObjectCreationExpression(shard::ObjectExpressionSyntax *const node) override;
-        void VisitCollectionExpression(shard::CollectionExpressionSyntax *const node) override;
-        void VisitLambdaExpression(shard::LambdaExpressionSyntax *const node) override;
-        void VisitTernaryExpression(shard::TernaryExpressionSyntax *const node) override;
+        void VisitLiteralExpression(LiteralExpressionSyntax *const node) override;
+        void VisitObjectCreationExpression(ObjectExpressionSyntax *const node) override;
+        void VisitCollectionExpression(CollectionExpressionSyntax *const node) override;
+        void VisitLambdaExpression(LambdaExpressionSyntax *const node) override;
+        void VisitTernaryExpression(TernaryExpressionSyntax *const node) override;
 
-        void VisitUnaryExpression(shard::UnaryExpressionSyntax* const node) override;
-        void VisitUnaryAssignExpression(shard::UnaryExpressionSyntax* const node);
+        void VisitUnaryExpression(UnaryExpressionSyntax* const node) override;
+        void VisitUnaryAssignExpression(UnaryExpressionSyntax* const node);
 
-        void VisitBinaryExpression(shard::BinaryExpressionSyntax *const node) override;
-        void VisitBinaryAssignExpression(shard::BinaryExpressionSyntax* const node);
+        void VisitBinaryExpression(BinaryExpressionSyntax *const node) override;
+        void VisitBinaryAssignExpression(BinaryExpressionSyntax* const node);
 
-        void VisitInvocationExpression(shard::InvokationExpressionSyntax *const node) override;
-        void VisitIndexatorExpression(shard::IndexatorExpressionSyntax *const node) override;
-        void VisitMemberAccessExpression(shard::MemberAccessExpressionSyntax *const node) override;
+        void VisitInvocationExpression(InvokationExpressionSyntax *const node) override;
+        void VisitIndexatorExpression(IndexatorExpressionSyntax *const node) override;
+        void VisitMemberAccessExpression(MemberAccessExpressionSyntax *const node) override;
 	};
 }

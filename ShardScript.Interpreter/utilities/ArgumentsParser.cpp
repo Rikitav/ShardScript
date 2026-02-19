@@ -8,7 +8,8 @@ void shard::ShardUtilities::ParseArguments(int argc, wchar_t* argv[])
 {
     if (argc <= 1)
     {
-        shard::ConsoleArguments::UseInteractive = true;
+        ConsoleArguments::RunProgram = false;
+        ConsoleArguments::UseInteractive = true;
         return;
     }
 
@@ -17,33 +18,34 @@ void shard::ShardUtilities::ParseArguments(int argc, wchar_t* argv[])
         std::wstring arg = argv[i];
         if (arg == L"--interactive" || arg == L"-i")
         {
-            shard::ConsoleArguments::UseInteractive = true;
+            ConsoleArguments::RunProgram = false;
+            ConsoleArguments::UseInteractive = true;
         }
         else if (arg == L"--associate")
         {
-            shard::ConsoleArguments::AssociateScriptFile = true;
+            ConsoleArguments::AssociateScriptFile = true;
         }
         else if (arg == L"--help" || arg == L"-h")
         {
-            shard::ConsoleArguments::ShowHelp = true;
+            ConsoleArguments::ShowHelp = true;
         }
         else if (arg == L"--no-std")
         {
-            shard::ConsoleArguments::ExcludeStd = true;
+            ConsoleArguments::ExcludeStd = true;
         }
         else if (arg == L"--show-decompiled")
         {
-            shard::ConsoleArguments::ShowDecompile = true;
-            shard::ConsoleArguments::RunProgram = false;
+            ConsoleArguments::ShowDecompile = true;
+            ConsoleArguments::RunProgram = false;
         }
         else if (arg == L"--decompile-defore-run")
         {
-            shard::ConsoleArguments::ShowDecompile = true;
-            shard::ConsoleArguments::RunProgram = true;
+            ConsoleArguments::ShowDecompile = true;
+            ConsoleArguments::RunProgram = true;
         }
         else
         {
-            shard::ConsoleArguments::FilesToCompile.push_back(arg);
+            ConsoleArguments::FilesToCompile.push_back(arg);
         }
     }
 }

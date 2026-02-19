@@ -509,6 +509,10 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 
 					callingFrame->PushStack(retReg);
 				}
+				else
+				{
+					callingFrame->PushStack(GarbageCollector::NullInstance);
+				}
 
 				for (ObjectInstance* arg : argValues)
 				{
@@ -609,9 +613,6 @@ ObjectInstance* VirtualMachine::InstantiateObject(TypeSymbol* type, ConstructorS
 VirtualMachine::VirtualMachine(ProgramVirtualImage& program) : Program(program)
 {
 	AbortFlag = false;
-
-	if (Program.EntryPoint == nullptr)
-		throw std::runtime_error("entry point was null");
 }
 
 CallStackFrame* VirtualMachine::CurrentFrame() const
@@ -672,6 +673,9 @@ void VirtualMachine::RaiseException(ObjectInstance* exceptionReg) const
 
 void VirtualMachine::Run() const
 {
+	if (Program.EntryPoint == nullptr)
+		throw std::runtime_error("entry point was null");
+
 	// hehe
 	VirtualMachine* vm = const_cast<VirtualMachine*>(this);
 
@@ -701,6 +705,9 @@ ObjectInstance* VirtualMachine::RunInteractive(size_t& pointer)
 			throw std::runtime_error("Execution aborted by host.");
 
 		OpCode opCode = decoder.AbsorbOpCode();
+		if (opCode == OpCode::PopStack && decoder.IsEOF())
+			continue;
+
 		ProcessCode(currentFrame, decoder, opCode);
 	}
 
