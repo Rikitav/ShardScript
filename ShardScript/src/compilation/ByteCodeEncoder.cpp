@@ -63,6 +63,11 @@ void ByteCodeEncoder::EmitHalt(std::vector<std::byte>& code)
     AppendDataT(code, OpCode::Halt);
 }
 
+void ByteCodeEncoder::EmitPop(std::vector<std::byte>& code)
+{
+    AppendDataT(code, OpCode::PopStack);
+}
+
 void ByteCodeEncoder::EmitLoadConstNull(std::vector<std::byte>& code)
 {
     AppendDataT(code, OpCode::LoadConst_Null);

@@ -45,7 +45,7 @@
 namespace shard
 {
 	// basically, a compiler
-	class SHARD_API AbstractEmiter : SyntaxVisitor
+	class SHARD_API AbstractEmiter : public SyntaxVisitor
 	{
         struct LoopScope
         {

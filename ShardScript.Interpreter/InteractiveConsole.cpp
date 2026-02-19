@@ -13,7 +13,12 @@
 
 #include <shard/parsing/semantic/SemanticModel.h>
 
+#include <shard/compilation/AbstractEmiter.h>
+#include <shard/compilation/ProgramVirtualImage.h>
+#include <shard/compilation/ByteCodeDecoder.h>
+
 #include <shard/runtime/AbstractInterpreter.h>
+#include <shard/runtime/VirtualMachine.h>
 #include <shard/runtime/ConsoleHelper.h>
 #include <shard/runtime/GarbageCollector.h>
 #include <shard/runtime/ObjectInstance.h>
@@ -49,6 +54,50 @@
 #include "utilities/InterpreterUtilities.h"
 
 using namespace shard;
+
+static MethodDeclarationSyntax* InitImplicitEntryPoint(SyntaxNode* parent)
+{
+	MemberDeclarationInfo info;
+	info.ReturnType = new PredefinedTypeSyntax(SyntaxToken(TokenType::VoidKeyword, L"void", TextLocation(), false), nullptr);
+	info.Identifier = SyntaxToken(TokenType::Identifier, L"__interactive_console__", TextLocation());
+
+	MethodDeclarationSyntax* implMethod = new MethodDeclarationSyntax(info, parent);
+	implMethod->Params = new ParametersListSyntax(parent);
+	implMethod->Body = new StatementsBlockSyntax(implMethod);
+	return implMethod;
+}
+
+static ClassDeclarationSyntax* InitImplicitClassDeclaration(MethodDeclarationSyntax*& entryPoint, SyntaxNode* parent)
+{
+	MemberDeclarationInfo info;
+	info.Identifier = SyntaxToken(TokenType::Identifier, L"__InteractiveClass__", TextLocation());
+
+	ClassDeclarationSyntax* implClass = new ClassDeclarationSyntax(info, parent);
+	implClass->DeclareToken = SyntaxToken(TokenType::ClassKeyword, L"class", TextLocation(), false);
+
+	entryPoint = InitImplicitEntryPoint(implClass);
+	*const_cast<SyntaxNode**>(&entryPoint->Parent) = implClass;
+	implClass->Members.push_back(entryPoint);
+
+	return implClass;
+}
+
+static NamespaceDeclarationSyntax* InitImplicitNamespaceDeclaration(MethodDeclarationSyntax*& entryPoint, SyntaxNode* parent)
+{
+	NamespaceDeclarationSyntax* implNamespace = new NamespaceDeclarationSyntax(parent);
+	implNamespace->DeclareToken = SyntaxToken(TokenType::NamespaceKeyword, L"namespace", TextLocation(), false);
+	implNamespace->IdentifierTokens.push_back(SyntaxToken(TokenType::Identifier, L"__InteractiveNamespace__", TextLocation(), false));
+	implNamespace->Members.push_back(InitImplicitClassDeclaration(entryPoint, implNamespace));
+
+	return implNamespace;
+}
+
+static CompilationUnitSyntax* InitImplicitCompilationUnit(MethodDeclarationSyntax*& entryPoint)
+{
+	CompilationUnitSyntax* implUnit = new CompilationUnitSyntax();
+	implUnit->Members.push_back(InitImplicitNamespaceDeclaration(entryPoint, implUnit));
+	return implUnit;
+}
 
 static bool IsStatementComplete(LexicalBuffer& reader)
 {
@@ -186,22 +235,13 @@ static void MoveToNewLineIfNeeded()
 	}
 }
 
-static std::wstring ReadMultilineInput(LexicalAnalyzer& lexer, const std::wstring& firstLine, bool isExpression = false)
+static void ReadMultilineInput(LexicalBuffer& sequenceReader, bool isExpression = false)
 {
-	std::wstring fullInput = firstLine;
-	
-	LexicalBuffer sequenceReader;
-	{
-		StringStreamReader stringStreamReader(L"Interactive console", firstLine);
-		LexicalAnalyzer lexicalAnalyzer(stringStreamReader);
-		sequenceReader.PopulateFrom(lexicalAnalyzer);
-	}
-	
 	// Check if already complete
 	bool isComplete = isExpression ? IsExpressionComplete(sequenceReader) : IsStatementComplete(sequenceReader);
 	
 	if (isComplete)
-		return fullInput;
+		return;
 	
 	// Read continuation lines
 	std::wstring continuationPrompt = L"... ";
@@ -209,108 +249,121 @@ static std::wstring ReadMultilineInput(LexicalAnalyzer& lexer, const std::wstrin
 	
 	int maxLines = 100; // Safety limit
 	int lineCount = 0;
-	
+
 	while (!isComplete && lineCount < maxLines)
 	{
-		line = ReadLine(continuationPrompt);
+		std::wstring line = ReadLine(continuationPrompt);
 		
 		if (line.empty() && lineCount == 0)
 		{
-			StringStreamReader stringStreamReader(L"Interactive console", firstLine);
-			LexicalAnalyzer lexicalAnalyzer(stringStreamReader);
-			sequenceReader.PopulateFrom(lexicalAnalyzer);
 			isComplete = isExpression ? IsExpressionComplete(sequenceReader) : IsStatementComplete(sequenceReader);
-			
 			if (isComplete)
-				break;
+				return;
 		}
 		
-		fullInput += L"\n" + line;
-		StringStreamReader stringStreamReader(L"Interactive console", firstLine);
+		StringStreamReader stringStreamReader(L"Interactive console", line);
 		LexicalAnalyzer lexicalAnalyzer(stringStreamReader);
 		sequenceReader.PopulateFrom(lexicalAnalyzer);
-		isComplete = isExpression ? IsExpressionComplete(sequenceReader) : IsStatementComplete(sequenceReader);
 		lineCount++;
+		isComplete = isExpression ? IsExpressionComplete(sequenceReader) : IsStatementComplete(sequenceReader);
 	}
-	
-	return fullInput;
 }
 
-static StatementSyntax* ReadStatement(LexicalAnalyzer& lexer, SyntaxNode* parent, DiagnosticsContext& diagnostics, const std::wstring& firstLine)
+static StatementSyntax* ReadStatement(StatementsBlockSyntax* interactiveBody, LexicalBuffer& sequenceReader, SyntaxNode* parent, DiagnosticsContext& diagnostics)
 {
-	if (firstLine.empty())
+	if (sequenceReader.Size() == 0)
 		return nullptr;
-	
-	std::wstring fullInput = ReadMultilineInput(lexer, firstLine, false);
-	
-	StringStreamReader stringStreamReader(L"Interactive console", fullInput);
-	LexicalAnalyzer lexicalAnalyzer(stringStreamReader);
+
+	SyntaxToken firstToken = sequenceReader.Front();
 	SourceParser parser(diagnostics);
-
-	SyntaxToken current = lexicalAnalyzer.Current();
-	if (IsLoopKeyword(current.Type) || IsConditionalKeyword(current.Type) || IsFunctionalKeyword(current.Type))
-	{
-		return parser.ReadKeywordStatement(lexicalAnalyzer, parent);
-	}
-	else
-	{
-		return parser.ReadStatement(lexicalAnalyzer, parent);
-	}
-}
-
-static MethodDeclarationSyntax* InitImplicitEntryPoint(SyntaxNode* parent)
-{
-	MemberDeclarationInfo info;
-	info.ReturnType = new PredefinedTypeSyntax(SyntaxToken(TokenType::VoidKeyword, L"void", TextLocation(), false), nullptr);
-	info.Identifier = SyntaxToken(TokenType::Identifier, L"__interactive_console__", TextLocation());
-
-	MethodDeclarationSyntax* implMethod = new MethodDeclarationSyntax(info, parent);
-	implMethod->Params = new ParametersListSyntax(parent);
-	implMethod->Body = new StatementsBlockSyntax(implMethod);
-	return implMethod;
-}
-
-static ClassDeclarationSyntax* InitImplicitClassDeclaration(MethodDeclarationSyntax*& entryPoint, SyntaxNode* parent)
-{
-	MemberDeclarationInfo info;
-	info.Identifier = SyntaxToken(TokenType::Identifier, L"__InteractiveClass__", TextLocation());
-
-	ClassDeclarationSyntax* implClass = new ClassDeclarationSyntax(info, parent);
-	implClass->DeclareToken = SyntaxToken(TokenType::ClassKeyword, L"class", TextLocation(), false);
 	
-	entryPoint = InitImplicitEntryPoint(implClass);
-	*const_cast<SyntaxNode**>(&entryPoint->Parent) = implClass;
-	implClass->Members.push_back(entryPoint);
+	SyntaxToken lastToken = sequenceReader.Back();
+	if (lastToken.Type != TokenType::Semicolon)
+	{
+		// Read as expression
+		ReadMultilineInput(sequenceReader, true);
+		ExpressionStatementSyntax* exprStatement = new ExpressionStatementSyntax(nullptr, interactiveBody);
+		exprStatement->Expression = parser.ReadExpression(sequenceReader, exprStatement, 0);
 
-	return implClass;
+		if (exprStatement->Expression == nullptr)
+		{
+			std::wcerr << L"### Failed to parse expression" << std::endl;
+			delete exprStatement;
+			return nullptr;
+		}
+
+		// Wrap expression in expression statement
+		exprStatement->SemicolonToken = SyntaxToken(TokenType::Semicolon, L";", TextLocation(), false);
+		return exprStatement;
+	}
+
+	if (IsLoopKeyword(firstToken.Type) || IsConditionalKeyword(firstToken.Type) || IsFunctionalKeyword(firstToken.Type))
+	{
+		ReadMultilineInput(sequenceReader, false);
+		return parser.ReadKeywordStatement(sequenceReader, parent);
+	}
+
+	// Read as statement
+	return parser.ReadStatement(sequenceReader, parent);
 }
 
-static NamespaceDeclarationSyntax* InitImplicitNamespaceDeclaration(MethodDeclarationSyntax*& entryPoint, SyntaxNode* parent)
+static void EvaluateUsing(LexicalBuffer& buffer, SemanticModel& semanticModel, SemanticAnalyzer& semanticAnalyzer, DiagnosticsContext& diagnostics)
 {
-	NamespaceDeclarationSyntax* implNamespace = new NamespaceDeclarationSyntax(parent);
-	implNamespace->DeclareToken = SyntaxToken(TokenType::NamespaceKeyword, L"namespace", TextLocation(), false);
-	implNamespace->IdentifierTokens.push_back(SyntaxToken(TokenType::Identifier, L"__InteractiveNamespace__", TextLocation(), false));
-	implNamespace->Members.push_back(InitImplicitClassDeclaration(entryPoint, implNamespace));
+	SourceParser sourceParser(diagnostics);
+ 	UsingDirectiveSyntax* directive = sourceParser.ReadUsingDirective(buffer, nullptr);
+	NamespaceNode* node = semanticModel.Namespaces->Root;
 
-	return implNamespace;
+	for (SyntaxToken token : directive->TokensList)
+	{
+		node = node->Lookup(token.Word);
+		if (node == nullptr)
+		{
+			std::wcerr << L"### Namespace '" << token.Word << "' not found on namespace." << std::endl;
+			return;
+		}
+	}
+
+	int counter = 0;
+	std::wcout << L"Loaded : ";
+	for (const auto& symbol : node->Types)
+	{
+		semanticAnalyzer.AddSymbol(symbol);
+		std::wcout << symbol->Name << L", ";
+		counter += 1;
+	}
+
+	std::wcout << "(" << counter << " symbols)" << std::endl;
 }
 
-static CompilationUnitSyntax* InitImplicitCompilationUnit(MethodDeclarationSyntax*& entryPoint)
+static void CompileMember()
 {
-	CompilationUnitSyntax* implUnit = new CompilationUnitSyntax();
-	implUnit->Members.push_back(InitImplicitNamespaceDeclaration(entryPoint, implUnit));
-	return implUnit;
+
+}
+
+static void InterpretStatement(VirtualMachine& virtualMachine, ProgramVirtualImage& program, AbstractEmiter& abstractEmiter, StatementSyntax* statement, size_t& pointer)
+{
+	abstractEmiter.VisitStatement(statement);
+	ObjectInstance* result = virtualMachine.RunInteractive(pointer);;
+	if (result != nullptr)
+	{
+		ConsoleHelper::Write(result);
+		GarbageCollector::CollectInstance(result);
+	}
+
+	MoveToNewLineIfNeeded();
 }
 
 void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticModel, DiagnosticsContext& diagnostics)
 {
 	// TODO: REWRITE LOGIC TO BYTECODE
+	ProgramVirtualImage program(semanticModel);
+	VirtualMachine virtualMachine(program);
+	size_t pointer = 0;
 
-	/*
 	// Initializing parsing
-	SourceParser parser(diagnostics);
 	SemanticAnalyzer semanticAnalyzer(diagnostics);
 	LayoutGenerator layoutGenerator(diagnostics);
+	AbstractEmiter abstractEmiter(program, semanticModel, diagnostics);
 	
 	// Creating interactive entry point
 	MethodDeclarationSyntax* implMethod = nullptr;
@@ -319,10 +372,8 @@ void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticMode
 
 	StatementsBlockSyntax* interactiveBody = implMethod->Body;
 	MethodSymbol* entryPointSymbol = new MethodSymbol(implMethod->IdentifierToken.Word);
+	virtualMachine.PushFrame(entryPointSymbol);
 
-	AbstractInterpreter::PushFrame(entryPointSymbol, nullptr);
-	AbstractInterpreter::PushContext(new InboundVariablesContext(nullptr));
-	
 	ConsoleHelper::WriteLine(L"ShardScript Interactive Console v" + shard::ShardUtilities::GetFileVersion());
 	ConsoleHelper::WriteLine(L"Type 'exit' or 'quit' to exit");
 	ConsoleHelper::WriteLine();
@@ -338,48 +389,6 @@ void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticMode
 			if (firstLine == L"exit" || firstLine == L"quit")
 				break;
 
-			if (firstLine.starts_with(L"using "))
-			{
-				static const std::wstring del = L".";
-
-				std::wstring use = firstLine.substr(6);
-				auto pos = use.find(del);
-
-				NamespaceNode* node = semanticModel.Namespaces->Root;
-				while (pos != std::wstring::npos)
-				{
-					std::wstring token = use.substr(0, pos);
-					use.erase(0, pos + del.length());
-					pos = use.find(del);
-
-					node = node->Lookup(token);
-					if (node == nullptr)
-						break;
-				}
-
-				if (node == nullptr)
-				{
-					std::wcerr << L"### Namespace not found" << std::endl;
-					continue;
-				}
-				else
-				{
-					node = node->Lookup(use);
-				}
-
-				int counter = 0;
-				std::wcout << L"Loaded : ";
-				for (const auto& symbol : node->Types)
-				{
-					SymbolTable::Global::Scope->DeclareSymbol(symbol);
-					std::wcout << symbol->Name << L", ";
-					counter += 1;
-				}
-
-				std::wcout << "(" << counter << " symbols)" << std::endl;
-				continue;
-			}
-
 			StringStreamReader stringStreamReader(L"Interactive console", firstLine);
 			LexicalAnalyzer lexer(stringStreamReader);
 			LexicalBuffer sequenceReader = LexicalBuffer::From(lexer);
@@ -391,126 +400,32 @@ void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticMode
 			if (firstToken.Type == TokenType::Semicolon)
 				continue;
 
-			// Check if it looks like an expression (no keywords, ends with semicolon or not)
-			bool isExpression = false;
-			if (!IsLoopKeyword(firstToken.Type) && !IsConditionalKeyword(firstToken.Type) && !IsFunctionalKeyword(firstToken.Type))
+			if (firstToken.Type == TokenType::UsingKeyword)
 			{
-				// Check if it ends with semicolon - if not, its likely an expression
-				size_t lastIndex = sequenceReader.Size() - 1;
-				if (lastIndex >= 0)
-				{
-					SyntaxToken lastToken = sequenceReader.At(lastIndex);
-					if (lastToken.Type != TokenType::Semicolon)
-					{
-						isExpression = true;
-					}
-				}
-				else
-				{
-					isExpression = true;
-				}
+				EvaluateUsing(sequenceReader, semanticModel, semanticAnalyzer, diagnostics);
+				continue;
 			}
 
-			if (isExpression)
+			StatementSyntax* statement = ReadStatement(interactiveBody, sequenceReader, interactiveBody, diagnostics);
+			if (statement == nullptr)
+				continue;
+
+			// Re-analyze syntax tree
+			SemanticModel newModel(syntaxTree);
+			semanticAnalyzer.Analyze(syntaxTree, newModel);
+			layoutGenerator.Generate(newModel);
+
+			// Check for errors
+			if (diagnostics.AnyError)
 			{
-				// Read as expression
-				std::wstring fullInput = ReadMultilineInput(lexer, firstLine, true);
-
-				StringStreamReader exprReader(L"Interactive console", fullInput);
-				LexicalBuffer exprSequence = LexicalBuffer::From(exprReader);
-				SourceParser parser(diagnostics);
-
-				ExpressionSyntax* expression = parser.ReadExpression(exprSequence, interactiveBody, 0);
-
-				if (expression == nullptr)
-				{
-					std::wcerr << L"### Failed to parse expression" << std::endl;
-					continue;
-				}
-
-				// Wrap expression in expression statement
-				ExpressionStatementSyntax* exprStatement = new ExpressionStatementSyntax(expression, interactiveBody);
-				exprStatement->SemicolonToken = SyntaxToken(TokenType::Semicolon, L";", TextLocation(), false);
-				*const_cast<SyntaxNode**>(&expression->Parent) = exprStatement;
-
-				// Add statement to interactive body
-				*const_cast<SyntaxNode**>(&exprStatement->Parent) = interactiveBody;
-				interactiveBody->Statements.push_back(exprStatement);
-
-				// Re-analyze syntax tree
-				SemanticModel newModel(syntaxTree);
-				semanticAnalyzer.Analyze(syntaxTree, newModel);
-				layoutGenerator.Generate(newModel);
-
-				// Check for errors
-				if (diagnostics.AnyError)
-				{
-					diagnostics.WriteDiagnostics(std::wcerr);
-					diagnostics.Reset();
-
-					if (!interactiveBody->Statements.empty())
-					{
-						interactiveBody->Statements.pop_back();
-					}
-
-					continue;
-				}
-
-				// Execute expression
-				ObjectInstance* result = AbstractInterpreter::EvaluateExpression(expression);
-				if (result != nullptr)
-				{
-					ConsoleHelper::Write(result);
-					GarbageCollector::CollectInstance(result);
-				}
-
-				MoveToNewLineIfNeeded();
+				diagnostics.WriteDiagnostics(std::wcerr);
+				diagnostics.Reset();
+				continue;
 			}
-			else
-			{
-				// Read as statement
-				StatementSyntax* statement = ReadStatement(lexer, interactiveBody, diagnostics, firstLine);
 
-				if (statement == nullptr)
-				{
-					continue;
-				}
+			interactiveBody->Statements.push_back(statement);
+			InterpretStatement(virtualMachine, program, abstractEmiter, statement, pointer);
 
-				// Add statement to interactive body
-				*const_cast<SyntaxNode**>(&statement->Parent) = interactiveBody;
-				interactiveBody->Statements.push_back(statement);
-
-				// Re-analyze syntax tree with new statement
-				SemanticModel newModel(syntaxTree);
-				semanticAnalyzer.Analyze(syntaxTree, newModel);
-				layoutGenerator.Generate(newModel);
-
-				// Check for errors
-				if (diagnostics.AnyError)
-				{
-					// Write diagnostics
-					diagnostics.WriteDiagnostics(std::wcerr);
-					diagnostics.Reset();
-
-					// Remove the statement that caused error
-					if (!interactiveBody->Statements.empty())
-					{
-						interactiveBody->Statements.pop_back();
-					}
-
-					continue;
-				}
-
-				// Execute statement
-				ObjectInstance* result = AbstractInterpreter::ExecuteStatement(statement);
-				if (result != nullptr)
-				{
-					ConsoleHelper::Write(result);
-					GarbageCollector::CollectInstance(result);
-				}
-
-				MoveToNewLineIfNeeded();
-			}
 		}
 		catch (const std::exception& err)
 		{
@@ -521,5 +436,4 @@ void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticMode
 			std::wcerr << L"### Unknown error occurred" << std::endl;
 		}
 	}
-	*/
 }

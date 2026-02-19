@@ -35,7 +35,7 @@
 
 namespace shard
 {
-	class SHARD_API TypeBinder : public SyntaxVisitor, ScopeVisitor
+	class SHARD_API TypeBinder : public SyntaxVisitor, public ScopeVisitor
 	{
 	public:
 		inline TypeBinder(shard::SemanticModel& model, shard::DiagnosticsContext& diagnostics)

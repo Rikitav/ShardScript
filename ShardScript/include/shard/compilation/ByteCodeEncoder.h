@@ -19,6 +19,8 @@ namespace shard
 		void EmitNop(std::vector<std::byte>& code);
 		void EmitHalt(std::vector<std::byte>& code);
 
+		void EmitPop(std::vector<std::byte>& code);
+		
 		void EmitLoadConstNull(std::vector<std::byte>& code);
 		void EmitLoadConstBool(std::vector<std::byte>& code, bool value);
 		void EmitLoadConstInt64(std::vector<std::byte>& code, int64_t value);

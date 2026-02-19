@@ -18,9 +18,14 @@ SemanticScope *const ScopeVisitor::CurrentScope()
 	return scopeStack.top();
 }
 
+void ScopeVisitor::PushScopeStack(SemanticScope* const scope)
+{
+	scopeStack.push(scope);
+}
+
 void ScopeVisitor::PushScope(SyntaxSymbol *const symbol)
 {
-	SemanticScope* newScope = new SemanticScope(symbol, scopeStack.top());
+	SemanticScope* newScope = new SemanticScope(symbol, CurrentScope());
 	scopeStack.push(newScope);
 }
 

@@ -48,7 +48,7 @@
 
 namespace shard
 {
-	class SHARD_API ExpressionBinder : public SyntaxVisitor, ScopeVisitor
+	class SHARD_API ExpressionBinder : public SyntaxVisitor, public ScopeVisitor
 	{
 		std::unordered_map<shard::ExpressionSyntax*, shard::TypeSymbol*> expressionTypes;
 

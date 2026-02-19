@@ -9,12 +9,14 @@ namespace shard
 {
 	class SHARD_API SemanticAnalyzer
 	{
-		shard::DiagnosticsContext& Diagnostics;
+		DiagnosticsContext& Diagnostics;
+		SemanticScope* TopScope;
 
 	public:
-		inline SemanticAnalyzer(shard::DiagnosticsContext& diagnostics)
-			: Diagnostics(diagnostics) { }
+		SemanticAnalyzer(DiagnosticsContext& diagnostics);
+		~SemanticAnalyzer();
 
-		void Analyze(shard::SyntaxTree& syntaxTree, shard::SemanticModel& semanticModel);
+		void AddSymbol(SyntaxSymbol* symbol);
+		void Analyze(SyntaxTree& syntaxTree, SemanticModel& semanticModel);
 	};
 }
