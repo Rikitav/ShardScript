@@ -193,7 +193,7 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(wchar_t leftData, To
 			case TokenType::AddOperator:
 			case TokenType::AddAssignOperator:
 			{
-				wchar_t temp[] = { rightData, L'\0' };
+				wchar_t temp[] = { leftData, L'\0' };
 				std::wstring asStr = std::to_wstring(rightData);
 
 				const wchar_t* result = concatStrings(temp, asStr.data());
