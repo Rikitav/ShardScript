@@ -24,7 +24,7 @@
 
 namespace shard
 {
-	class SHARD_API DeclarationCollector : public SyntaxVisitor, ScopeVisitor
+	class SHARD_API DeclarationCollector : public SyntaxVisitor, public ScopeVisitor
 	{
 	protected:
 		void Declare(shard::SyntaxSymbol *const symbol) override;

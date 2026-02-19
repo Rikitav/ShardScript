@@ -34,13 +34,20 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 	{
 		case OpCode::Nop:
 		{
-			0xBAD + 0xC0DE;
+			// 0xBAD + 0xC0DE;
 			break;
 		}
 
 		case OpCode::Halt:
 		{
 			AbortFlag = true;
+			break;
+		}
+
+		case OpCode::PopStack:
+		{
+			ObjectInstance* pop = frame->PopStack();
+			GarbageCollector::CollectInstance(pop);
 			break;
 		}
 
@@ -415,12 +422,14 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 			if (!method->IsStatic)
 			{
 				ObjectInstance* prevInstance = callingFrame->PopStack();
+				prevInstance->IncrementReference();
 				currentFrame->PushStack(prevInstance);
 			}
 
 			for (int i = 0; i < method->Parameters.size(); i++)
 			{
 				ObjectInstance* argument = callingFrame->PopStack();
+				argument->IncrementReference();
 				currentFrame->PushStack(argument);
 			}
 
@@ -447,6 +456,20 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 				callingFrame->PushStack(currentFrame->PopStack());
 			}
 
+			for (int i = 0; i < method->EvalStackLocalsCount; i++)
+			{
+				ObjectInstance* local = currentFrame->PopStack();
+				local->DecrementReference();
+				GarbageCollector::CollectInstance(local);
+			}
+
+			if (!method->IsStatic)
+			{
+				ObjectInstance* prevInstance = currentFrame->PopStack();
+				prevInstance->DecrementReference();
+				GarbageCollector::CollectInstance(prevInstance);
+			}
+
 			break;
 		}
 
@@ -457,13 +480,24 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 				if (method->FunctionPointer == nullptr)
 					throw std::runtime_error("extern method body not resolved");
 
+				if (!method->IsStatic)
+				{
+					ObjectInstance* prevInstance = callingFrame->PopStack();
+					prevInstance->IncrementReference();
+					currentFrame->PushStack(prevInstance);
+				}
+
 				size_t argsCount = method->Parameters.size();
 				if (!method->IsStatic)
 					argsCount += 1;
 
 				std::vector<ObjectInstance*> argValues;
 				for (int i = 0; i < argsCount; i++)
-					argValues.push_back(callingFrame->PopStack());
+				{
+					ObjectInstance* arg = callingFrame->PopStack();
+					arg->IncrementReference();
+					argValues.push_back(arg);
+				}
 
 				ArgumentsSpan arguments(method, argValues);
 				ObjectInstance* retReg = method->FunctionPointer(this, method, arguments);
@@ -474,6 +508,12 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 						throw std::runtime_error("method returned nullptr (void), when expected instance");
 
 					callingFrame->PushStack(retReg);
+				}
+
+				for (ObjectInstance* arg : argValues)
+				{
+					arg->DecrementReference();
+					GarbageCollector::CollectInstance(arg);
 				}
 			}
 			catch (const std::runtime_error& err)
@@ -599,11 +639,15 @@ void VirtualMachine::PopFrame()
 	delete current;
 }
 
-void VirtualMachine::InvokeMethod(MethodSymbol* method)
+void VirtualMachine::InvokeMethod(MethodSymbol* method) const
 {
-	CallStackFrame* currentFrame = PushFrame(method);
-	InvokeMethodInternal(method, currentFrame);
-	PopFrame();
+	// hehe
+	VirtualMachine* vm = const_cast<VirtualMachine*>(this);
+
+	CallStackFrame* currentFrame = vm->PushFrame(method);
+
+	vm->InvokeMethodInternal(method, currentFrame);
+	vm->PopFrame();
 }
 
 void VirtualMachine::InvokeMethod(MethodSymbol* method, std::initializer_list<ObjectInstance*> args) const
@@ -621,14 +665,53 @@ void VirtualMachine::InvokeMethod(MethodSymbol* method, std::initializer_list<Ob
 	vm->PopFrame();
 }
 
-void VirtualMachine::RaiseException(ObjectInstance* exceptionReg)
+void VirtualMachine::RaiseException(ObjectInstance* exceptionReg) const
 {
-
+	// TODO: implement method
 }
 
-void VirtualMachine::Run()
+void VirtualMachine::Run() const
 {
+	// hehe
+	VirtualMachine* vm = const_cast<VirtualMachine*>(this);
+
+	vm->AbortFlag = false;
 	InvokeMethod(Program.EntryPoint);
+}
+
+void VirtualMachine::Abort() const
+{
+	// hehe
+	VirtualMachine* vm = const_cast<VirtualMachine*>(this);
+
+	vm->AbortFlag = true;
+}
+
+ObjectInstance* VirtualMachine::RunInteractive(size_t& pointer)
+{
+	CallStackFrame* currentFrame = CurrentFrame();
+	MethodSymbol* method = currentFrame->Method;
+
+	ByteCodeDecoder decoder = ByteCodeDecoder(method->ExecutableByteCode);
+	decoder.SetCursor(pointer);
+
+	while (!decoder.IsEOF())
+	{
+		if (AbortFlag)
+			throw std::runtime_error("Execution aborted by host.");
+
+		OpCode opCode = decoder.AbsorbOpCode();
+		ProcessCode(currentFrame, decoder, opCode);
+	}
+
+	pointer = decoder.Index();
+	if (currentFrame->EvalStack.size() > method->EvalStackLocalsCount)
+	{
+		ObjectInstance* retReg = currentFrame->PopStack();
+		return retReg;
+	}
+
+	return nullptr;
 }
 
 void VirtualMachine::TerminateCallStack()

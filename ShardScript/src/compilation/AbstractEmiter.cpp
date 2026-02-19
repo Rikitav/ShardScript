@@ -365,6 +365,7 @@ void AbstractEmiter::VisitAccessorDeclaration(AccessorDeclarationSyntax* const n
 void AbstractEmiter::VisitExpressionStatement(ExpressionStatementSyntax* const node)
 {
 	VisitExpression(node->Expression);
+	Encoder.EmitPop(GeneratingFor->ExecutableByteCode);
 }
 
 void AbstractEmiter::VisitVariableStatement(VariableStatementSyntax* const node)
