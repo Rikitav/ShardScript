@@ -18,8 +18,8 @@ namespace shard
 	class SHARD_API NamespaceNode
 	{
 	public:
-		std::vector<shard::NamespaceSymbol*> Owners;
-		std::vector<shard::TypeSymbol*> Types;
+		std::vector<NamespaceSymbol*> Owners;
+		std::vector<TypeSymbol*> Types;
 		std::unordered_map<std::wstring, NamespaceNode*> Nodes;
 
 		inline NamespaceNode()
@@ -34,7 +34,7 @@ namespace shard
 		}
 
 		NamespaceNode* Lookup(std::wstring name);
-		NamespaceNode* LookupOrCreate(std::wstring name, shard::NamespaceSymbol* current);
+		NamespaceNode* LookupOrCreate(std::wstring name, NamespaceSymbol* current);
 	};
 
 	class SHARD_API NamespaceTree

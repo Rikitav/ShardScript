@@ -45,66 +45,66 @@ namespace shard
 	class SHARD_API SymbolFactory
 	{
 	public:
-		static void SetAccesibility(shard::SyntaxSymbol* node, std::vector<shard::SyntaxToken> modifiers);
-		static void SetAccesibility(shard::TypeSymbol* node, std::vector<shard::SyntaxToken> modifiers);
-		static void SetAccesibility(shard::FieldSymbol* node, std::vector<shard::SyntaxToken> modifiers);
-		static void SetAccesibility(shard::PropertySymbol* node, std::vector<shard::SyntaxToken> modifiers);
-		static void SetAccesibility(shard::MethodSymbol* node, std::vector<shard::SyntaxToken> modifiers);
+		static void SetAccesibility(SyntaxSymbol* node, std::vector<SyntaxToken> modifiers);
+		static void SetAccesibility(TypeSymbol* node, std::vector<SyntaxToken> modifiers);
+		static void SetAccesibility(FieldSymbol* node, std::vector<SyntaxToken> modifiers);
+		static void SetAccesibility(PropertySymbol* node, std::vector<SyntaxToken> modifiers);
+		static void SetAccesibility(MethodSymbol* node, std::vector<SyntaxToken> modifiers);
 
-		static shard::StructSymbol* Struct(shard::StructDeclarationSyntax* node);
-		static shard::ClassSymbol* Class(shard::ClassDeclarationSyntax* node);
-		static shard::NamespaceSymbol* Namespace(shard::NamespaceDeclarationSyntax* node);
-		static shard::NamespaceSymbol* Namespace(const std::wstring& name);
+		static NamespaceSymbol* Namespace(NamespaceDeclarationSyntax* node);
+		static NamespaceSymbol* Namespace(const std::wstring& name);
+		static StructSymbol* Struct(StructDeclarationSyntax* node);
+		static ClassSymbol* Class(ClassDeclarationSyntax* node);
 
-		static shard::FieldSymbol* Field(shard::FieldDeclarationSyntax* node);
-		static shard::FieldSymbol* Field(const std::wstring& name, shard::TypeSymbol* type, bool isStatic = false);
+		static FieldSymbol* Field(FieldDeclarationSyntax* node);
+		static FieldSymbol* Field(const std::wstring& name, TypeSymbol* type, bool isStatic = false);
 
-		static shard::PropertySymbol* Property(shard::PropertyDeclarationSyntax* node);
-		static shard::PropertySymbol* Property(const std::wstring& name, shard::TypeSymbol* returnType, bool isStatic = false);
+		static PropertySymbol* Property(PropertyDeclarationSyntax* node);
+		static PropertySymbol* Property(const std::wstring& name, TypeSymbol* returnType, bool isStatic = false);
 
-		static shard::MethodSymbol* Method(shard::MethodDeclarationSyntax* node);
-		static shard::MethodSymbol* Method(const std::wstring& name, shard::TypeSymbol* returnType, bool isStatic = false);
+		static MethodSymbol* Method(MethodDeclarationSyntax* node);
+		static MethodSymbol* Method(const std::wstring& name, TypeSymbol* returnType, bool isStatic = false);
 
-		static shard::ConstructorSymbol* Constructor(shard::ConstructorDeclarationSyntax* node);
-		static shard::ConstructorSymbol* Constructor(const std::wstring& name);
+		static ConstructorSymbol* Constructor(ConstructorDeclarationSyntax* node);
+		static ConstructorSymbol* Constructor(const std::wstring& name);
 
-		static shard::AccessorSymbol* Accessor(shard::AccessorDeclarationSyntax* node, shard::PropertySymbol* propertySymbol, bool setProperty = true);
-		static shard::AccessorSymbol* Accessor(const std::wstring& name, shard::PropertySymbol* property, bool isGetter);
-		static shard::AccessorSymbol* Getter(const std::wstring& propertyName, shard::PropertySymbol* property);
-		static shard::AccessorSymbol* Setter(const std::wstring& propertyName, shard::PropertySymbol* property);
+		static AccessorSymbol* Accessor(AccessorDeclarationSyntax* node, PropertySymbol* propertySymbol, bool setProperty = true);
+		static AccessorSymbol* Accessor(const std::wstring& name, PropertySymbol* property, bool isGetter);
+		static AccessorSymbol* Getter(const std::wstring& propertyName, PropertySymbol* property);
+		static AccessorSymbol* Setter(const std::wstring& propertyName, PropertySymbol* property);
 
-		static shard::IndexatorSymbol* Indexator(shard::IndexatorDeclarationSyntax* node);
-		static shard::IndexatorSymbol* Indexator(const std::wstring& name, shard::TypeSymbol* returnType);
-		static shard::IndexatorSymbol* Indexator(const std::wstring& name, shard::TypeSymbol* returnType, std::vector<shard::ParameterSymbol*> parameters);
+		static IndexatorSymbol* Indexator(IndexatorDeclarationSyntax* node);
+		static IndexatorSymbol* Indexator(const std::wstring& name, TypeSymbol* returnType);
+		static IndexatorSymbol* Indexator(const std::wstring& name, TypeSymbol* returnType, std::vector<ParameterSymbol*> parameters);
 
-		static shard::ParameterSymbol* Parameter(const std::wstring& name);
-		static shard::ParameterSymbol* Parameter(const std::wstring& name, shard::TypeSymbol* type);
-		static shard::ParameterSymbol* Parameter(const std::wstring& name, shard::TypeSymbol* type, bool isOptional);
+		static ParameterSymbol* Parameter(const std::wstring& name);
+		static ParameterSymbol* Parameter(const std::wstring& name, TypeSymbol* type);
+		static ParameterSymbol* Parameter(const std::wstring& name, TypeSymbol* type, bool isOptional);
 
-		static shard::VariableSymbol* Variable(const std::wstring& name, shard::TypeSymbol* type);
-		static shard::VariableSymbol* Variable(const std::wstring& name, shard::TypeSymbol* type, bool isConst);
+		static VariableSymbol* Variable(const std::wstring& name, TypeSymbol* type);
+		static VariableSymbol* Variable(const std::wstring& name, TypeSymbol* type, bool isConst);
 
-		static shard::TypeParameterSymbol* TypeParameter(const std::wstring& name);
+		static TypeParameterSymbol* TypeParameter(const std::wstring& name);
 
-		static shard::DelegateTypeSymbol* Delegate(shard::DelegateDeclarationSyntax* node);
-		static shard::DelegateTypeSymbol* Delegate(shard::DelegateTypeSyntax* node);
-		static shard::DelegateTypeSymbol* Delegate(shard::MethodSymbol* method);
-		static shard::DelegateTypeSymbol* Delegate(const std::wstring& name, shard::TypeSymbol* returnType, std::vector<shard::ParameterSymbol*> parameters);
+		static DelegateTypeSymbol* Delegate(DelegateDeclarationSyntax* node);
+		static DelegateTypeSymbol* Delegate(DelegateTypeSyntax* node);
+		static DelegateTypeSymbol* Delegate(MethodSymbol* method);
+		static DelegateTypeSymbol* Delegate(const std::wstring& name, TypeSymbol* returnType, std::vector<ParameterSymbol*> parameters);
 
-		static shard::ArrayTypeSymbol* Array(shard::ArrayTypeSyntax* node);
-		static shard::ArrayTypeSymbol* Array(shard::TypeSymbol* underlayingType);
-		static shard::ArrayTypeSymbol* Array(shard::TypeSymbol* underlayingType, size_t size);
-		static shard::ArrayTypeSymbol* Array(shard::TypeSymbol* underlayingType, size_t size, int rank);
+		static ArrayTypeSymbol* Array(ArrayTypeSyntax* node);
+		static ArrayTypeSymbol* Array(TypeSymbol* underlayingType);
+		static ArrayTypeSymbol* Array(TypeSymbol* underlayingType, size_t size);
+		static ArrayTypeSymbol* Array(TypeSymbol* underlayingType, size_t size, int rank);
 
-		static shard::GenericTypeSymbol* GenericType(shard::TypeSymbol* underlayingType);
-		static shard::GenericTypeSymbol* GenericType(shard::TypeSymbol* underlayingType, std::unordered_map<std::wstring, shard::TypeSymbol*> typeArguments);
+		static GenericTypeSymbol* GenericType(TypeSymbol* underlayingType);
+		static GenericTypeSymbol* GenericType(TypeSymbol* underlayingType, std::unordered_map<std::wstring, TypeSymbol*> typeArguments);
 
-		static std::wstring FormatFullName(shard::SyntaxSymbol* symbol);
-		static std::wstring FormatFullName(shard::SyntaxSymbol* symbol, shard::SyntaxSymbol* parent);
-		static std::wstring FormatMethodSignature(shard::MethodSymbol* method);
-		static std::wstring FormatTypeName(shard::TypeSymbol* type);
+		static std::wstring FormatFullName(SyntaxSymbol* symbol);
+		static std::wstring FormatFullName(SyntaxSymbol* symbol, SyntaxSymbol* parent);
+		static std::wstring FormatMethodSignature(MethodSymbol* method);
+		static std::wstring FormatTypeName(TypeSymbol* type);
 
-		static shard::MethodSymbol* CreateAnonymousMethod(const std::wstring& name, shard::TypeSymbol* returnType);
-		static shard::MethodSymbol* CreateLambdaMethod(shard::StatementsBlockSyntax* body);
+		static MethodSymbol* CreateAnonymousMethod(const std::wstring& name, TypeSymbol* returnType);
+		static MethodSymbol* CreateLambdaMethod(StatementsBlockSyntax* body);
 	};
 }

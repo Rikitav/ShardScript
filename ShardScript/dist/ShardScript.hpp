@@ -14,15 +14,6 @@
 #if _DEBUG
 #pragma warning(disable: 4251)
 #endif
-
-#define TOKENPASTE(x, y) x ## y
-#define TOKENPASTE2(x, y) TOKENPASTE(x, y)
-
-#define SafeInit TOKENPASTE2(InitLibrary_, _MSC_VER)
-
-extern "C" __declspec(dllexport) void SafeInit();
-
-//#define EXPORT_EXTERN(name) ObjectInstance* &name(MethodSymbol* method, InboundVariableContext* arguments)
 // --- End: shard/ShardScriptAPI.h ---
 
 // --- Begin: shard/ShardScriptVersion.h ---
@@ -40,6 +31,139 @@ namespace shard
 	};
 }
 // --- End: shard/ShardScriptVersion.h ---
+
+// --- Begin: shard/syntax/SyntaxKind.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+namespace shard
+{
+	enum class SyntaxKind
+	{
+		Unknown,
+
+		// Top-tier Units
+		CompilationUnit,
+		UsingDirective,
+		DllImportDirective,
+
+		// Types
+		NamespaceDeclaration,
+		ClassDeclaration,
+		StructDeclaration,
+		InterfaceDeclaration,
+		DelegateDeclaration,
+
+		// Members
+		FieldDeclaration,
+		MethodDeclaration,
+		ConstructorDeclaration,
+		PropertyDeclaration,
+		AccessorDeclaration,
+		IndexatorDeclaration,
+
+		// Method parts
+		Parameter,
+		ParametersList,
+		TypeParameter,
+		Argument,
+		ArgumentsList,
+		IndexatorList,
+		StatementsBlock,
+		MethodBody,
+
+		// Statements
+		ExpressionStatement,
+		VariableStatement,
+
+		// Keyword statements
+		ForStatement,
+		WhileStatement,
+		UntilStatement,
+		ThrowStatement,
+		BreakStatement,
+		ContinueStatement,
+		ReturnStatement,
+		IfStatement,
+		UnlessStatement,
+		ElseStatement,
+
+		// Expressions
+		ObjectExpression,
+		LiteralExpression,
+		BinaryExpression,
+		UnaryExpression,
+		TernaryExpression,
+		CollectionExpression,
+
+		// Linked expressions
+		LinkedExpression,
+		MemberAccessExpression,
+		InvokationExpression,
+		IndexatorExpression,
+		LambdaExpression,
+
+		// Type identifiers
+		PredefinedType,
+		IdentifierNameType,
+		ArrayType,
+		NullableType,
+		GenericType,
+		DelegateType,
+	};
+}
+// --- End: shard/syntax/SyntaxKind.h ---
+
+// --- Begin: shard/syntax/SyntaxNode.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+// #include "shard/syntax/SyntaxKind.h" (Merged)
+
+namespace shard
+{
+	class SHARD_API SyntaxNode
+	{
+	public:
+		const SyntaxKind Kind;
+		SyntaxNode *const Parent;
+
+		inline SyntaxNode(const SyntaxKind kind, SyntaxNode *const parent)
+			: Kind(kind), Parent(parent) { }
+
+		inline SyntaxNode(const SyntaxNode& other) = delete;
+
+		inline virtual ~SyntaxNode()
+		{
+			*const_cast<SyntaxNode**>(&Parent) = nullptr;
+		}
+	};
+}
+// --- End: shard/syntax/SyntaxNode.h ---
+
+// --- Begin: shard/parsing/analysis/TextLocation.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+#include <string>
+
+namespace shard
+{
+	struct SHARD_API TextLocation
+	{
+	public:
+		const std::wstring FileName;
+		const int Line;
+		const int Offset;
+		const int Length;
+
+		inline TextLocation()
+			: FileName(L""), Line(0), Offset(0), Length(0) { }
+
+		inline TextLocation(std::wstring filename, int line, int offset, int length)
+			: FileName(filename), Line(line), Offset(offset), Length(length) {}
+
+		inline TextLocation(const TextLocation& other)
+			: FileName(other.FileName), Line(other.Line), Offset(other.Offset), Length(other.Length) { }
+	};
+}
+// --- End: shard/parsing/analysis/TextLocation.h ---
 
 // --- Begin: shard/syntax/TokenType.h ---
 // #include "shard/ShardScriptAPI.h" (Merged)
@@ -193,33 +317,6 @@ namespace shard
 }
 // --- End: shard/syntax/TokenType.h ---
 
-// --- Begin: shard/parsing/analysis/TextLocation.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-#include <string>
-
-namespace shard
-{
-	struct SHARD_API TextLocation
-	{
-	public:
-		const std::wstring FileName;
-		const int Line;
-		const int Offset;
-		const int Length;
-
-		inline TextLocation()
-			: FileName(L""), Line(0), Offset(0), Length(0) { }
-
-		inline TextLocation(std::wstring filename, int line, int offset, int length)
-			: FileName(filename), Line(line), Offset(offset), Length(length) {}
-
-		inline TextLocation(const TextLocation& other)
-			: FileName(other.FileName), Line(other.Line), Offset(other.Offset), Length(other.Length) { }
-	};
-}
-// --- End: shard/parsing/analysis/TextLocation.h ---
-
 // --- Begin: shard/syntax/SyntaxToken.h ---
 // #include "shard/ShardScriptAPI.h" (Merged)
 
@@ -265,189 +362,6 @@ namespace shard
 	};
 }
 // --- End: shard/syntax/SyntaxToken.h ---
-
-// --- Begin: shard/syntax/SyntaxKind.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-namespace shard
-{
-	enum class SyntaxKind
-	{
-		Unknown,
-
-		// Top-tier Units
-		CompilationUnit,
-		UsingDirective,
-		DllImportDirective,
-
-		// Types
-		NamespaceDeclaration,
-		ClassDeclaration,
-		StructDeclaration,
-		InterfaceDeclaration,
-		DelegateDeclaration,
-
-		// Members
-		FieldDeclaration,
-		MethodDeclaration,
-		ConstructorDeclaration,
-		PropertyDeclaration,
-		AccessorDeclaration,
-		IndexatorDeclaration,
-
-		// Method parts
-		Parameter,
-		ParametersList,
-		TypeParameter,
-		Argument,
-		ArgumentsList,
-		IndexatorList,
-		StatementsBlock,
-		MethodBody,
-
-		// Statements
-		ExpressionStatement,
-		VariableStatement,
-
-		// Keyword statements
-		ForStatement,
-		WhileStatement,
-		UntilStatement,
-		ThrowStatement,
-		BreakStatement,
-		ContinueStatement,
-		ReturnStatement,
-		IfStatement,
-		UnlessStatement,
-		ElseStatement,
-
-		// Expressions
-		ObjectExpression,
-		LiteralExpression,
-		BinaryExpression,
-		UnaryExpression,
-		TernaryExpression,
-		CollectionExpression,
-
-		// Linked expressions
-		LinkedExpression,
-		MemberAccessExpression,
-		InvokationExpression,
-		IndexatorExpression,
-		LambdaExpression,
-
-		// Type identifiers
-		PredefinedType,
-		IdentifierNameType,
-		ArrayType,
-		NullableType,
-		GenericType,
-		DelegateType,
-	};
-}
-// --- End: shard/syntax/SyntaxKind.h ---
-
-// --- Begin: shard/syntax/SyntaxNode.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-// #include "shard/syntax/SyntaxKind.h" (Merged)
-
-namespace shard
-{
-	class SHARD_API SyntaxNode
-	{
-	public:
-		const SyntaxKind Kind;
-		SyntaxNode *const Parent;
-
-		inline SyntaxNode(const SyntaxKind kind, SyntaxNode *const parent)
-			: Kind(kind), Parent(parent) { }
-
-		inline SyntaxNode(const SyntaxNode& other) = delete;
-
-		inline virtual ~SyntaxNode()
-		{
-			*const_cast<SyntaxNode**>(&Parent) = nullptr;
-		}
-	};
-}
-// --- End: shard/syntax/SyntaxNode.h ---
-
-// --- Begin: shard/syntax/nodes/StatementSyntax.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/syntax/SyntaxNode.h" (Merged)
-// #include "shard/syntax/SyntaxKind.h" (Merged)
-// #include "shard/syntax/SyntaxToken.h" (Merged)
-
-namespace shard
-{
-	class SHARD_API StatementSyntax : public SyntaxNode
-	{
-	public:
-		SyntaxToken SemicolonToken;
-
-		inline StatementSyntax(const SyntaxKind kind, SyntaxNode *const parent) : SyntaxNode(kind, parent)
-		{
-			/*
-			if (kind < SyntaxKind::Statement || kind > SyntaxKind::ElseStatement)
-				throw std::std::runtime_error("StatementSyntax kind out of range (" + std::to_string(static_cast<int>(kind)) + ")");
-			*/
-		}
-
-		inline StatementSyntax(const StatementSyntax& other) = delete;
-
-		inline virtual ~StatementSyntax()
-		{
-
-		}
-	};
-
-	class SHARD_API KeywordStatementSyntax : public StatementSyntax
-	{
-	public:
-		SyntaxToken KeywordToken;
-
-		inline KeywordStatementSyntax(const SyntaxKind kind, SyntaxNode *const parent) : StatementSyntax(kind, parent)
-		{
-			/*
-			if (kind < SyntaxKind::KeywordStatement || kind > SyntaxKind::ElseStatement)
-				throw std::std::runtime_error("KeywordStatementSyntax kind out of range (" + std::to_string(static_cast<int>(kind)) + ")");
-			*/
-		}
-
-		inline KeywordStatementSyntax(const KeywordStatementSyntax& other) = delete;
-
-		inline virtual ~KeywordStatementSyntax()
-		{
-
-		}
-	};
-}
-// --- End: shard/syntax/nodes/StatementSyntax.h ---
-
-// --- Begin: shard/syntax/nodes/ExpressionSyntax.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/syntax/SyntaxNode.h" (Merged)
-// #include "shard/syntax/SyntaxKind.h" (Merged)
-
-namespace shard
-{
-	class SHARD_API ExpressionSyntax : public SyntaxNode
-	{
-	public:
-		inline ExpressionSyntax(const SyntaxKind kind, SyntaxNode *const parent)
-			: SyntaxNode(kind, parent) { }
-
-		inline ExpressionSyntax(const ExpressionSyntax& other) = delete;
-
-		inline virtual ~ExpressionSyntax()
-		{
-
-		}
-	};
-}
-// --- End: shard/syntax/nodes/ExpressionSyntax.h ---
 
 // --- Begin: shard/syntax/SymbolAccesibility.h ---
 // #include "shard/ShardScriptAPI.h" (Merged)
@@ -524,7 +438,7 @@ namespace shard
 
 namespace shard
 {
-    enum class SHARD_API TypeLayoutingState
+    enum class TypeLayoutingState
     {
         Unvisited,
         Visiting,
@@ -644,84 +558,357 @@ namespace shard
 }
 // --- End: shard/syntax/nodes/TypeSyntax.h ---
 
-// --- Begin: shard/syntax/nodes/Statements/VariableStatementSyntax.h ---
+// --- Begin: shard/syntax/nodes/TypeParametersListSyntax.h ---
 // #include "shard/ShardScriptAPI.h" (Merged)
 
-// #include "shard/syntax/nodes/StatementSyntax.h" (Merged)
-// #include "shard/syntax/nodes/ExpressionSyntax.h" (Merged)
+// #include "shard/syntax/SyntaxKind.h" (Merged)
+// #include "shard/syntax/SyntaxNode.h" (Merged)
+// #include "shard/syntax/SyntaxToken.h" (Merged)
+
 // #include "shard/syntax/nodes/TypeSyntax.h" (Merged)
+
+#include <vector>
+
+namespace shard
+{
+	class SHARD_API TypeParametersListSyntax : public SyntaxNode
+	{
+	public:
+		SyntaxToken OpenToken;
+		SyntaxToken CloseToken;
+		std::vector<SyntaxToken> Types;
+
+		inline TypeParametersListSyntax(SyntaxNode *const parent)
+			: SyntaxNode(SyntaxKind::ParametersList, parent) { }
+
+		inline TypeParametersListSyntax(const TypeParametersListSyntax& other) = delete;
+
+		inline virtual ~TypeParametersListSyntax()
+		{
+
+		}
+	};
+}
+// --- End: shard/syntax/nodes/TypeParametersListSyntax.h ---
+
+// --- Begin: shard/syntax/nodes/MemberDeclarationSyntax.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+// #include "shard/syntax/SyntaxNode.h" (Merged)
+// #include "shard/syntax/SyntaxToken.h" (Merged)
+// #include "shard/syntax/SyntaxKind.h" (Merged)
+// #include "shard/syntax/nodes/TypeParametersListSyntax.h" (Merged)
+
+#include <vector>
+
+namespace shard
+{
+	class SHARD_API MemberDeclarationSyntax : public SyntaxNode
+	{
+	public:
+		std::vector<SyntaxToken> Modifiers;
+		SyntaxToken DeclareToken;
+		SyntaxToken IdentifierToken;
+		TypeParametersListSyntax* TypeParameters = nullptr;
+
+		inline MemberDeclarationSyntax(const SyntaxKind kind, SyntaxNode *const parent)
+			: SyntaxNode(kind, parent) { }
+
+		inline MemberDeclarationSyntax(const MemberDeclarationSyntax& other) = delete;
+
+		inline virtual ~MemberDeclarationSyntax()
+		{
+
+		}
+	};
+}
+// --- End: shard/syntax/nodes/MemberDeclarationSyntax.h ---
+
+// --- Begin: shard/syntax/nodes/BodyDeclarationSyntax.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+// #include "shard/syntax/nodes/MemberDeclarationSyntax.h" (Merged)
+
+// #include "shard/syntax/SyntaxNode.h" (Merged)
+// #include "shard/syntax/SyntaxKind.h" (Merged)
+// #include "shard/syntax/SyntaxToken.h" (Merged)
+
+namespace shard
+{
+	class SHARD_API BodyDeclarationSyntax : public MemberDeclarationSyntax
+	{
+	public:
+		SyntaxToken OpenBraceToken;
+		SyntaxToken CloseBraceToken;
+		SyntaxToken SemicolonToken;
+
+		inline BodyDeclarationSyntax(const SyntaxKind kind, SyntaxNode *const parent)
+			: MemberDeclarationSyntax(kind, parent) { }
+
+		inline BodyDeclarationSyntax(const BodyDeclarationSyntax& other) = delete;
+
+		inline virtual ~BodyDeclarationSyntax()
+		{
+
+		}
+	};
+}
+// --- End: shard/syntax/nodes/BodyDeclarationSyntax.h ---
+
+// --- Begin: shard/syntax/nodes/StatementSyntax.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+// #include "shard/syntax/SyntaxNode.h" (Merged)
+// #include "shard/syntax/SyntaxKind.h" (Merged)
+// #include "shard/syntax/SyntaxToken.h" (Merged)
+
+namespace shard
+{
+	class SHARD_API StatementSyntax : public SyntaxNode
+	{
+	public:
+		SyntaxToken SemicolonToken;
+
+		inline StatementSyntax(const SyntaxKind kind, SyntaxNode *const parent) : SyntaxNode(kind, parent)
+		{
+			/*
+			if (kind < SyntaxKind::Statement || kind > SyntaxKind::ElseStatement)
+				throw std::std::runtime_error("StatementSyntax kind out of range (" + std::to_string(static_cast<int>(kind)) + ")");
+			*/
+		}
+
+		inline StatementSyntax(const StatementSyntax& other) = delete;
+
+		inline virtual ~StatementSyntax()
+		{
+
+		}
+	};
+
+	class SHARD_API KeywordStatementSyntax : public StatementSyntax
+	{
+	public:
+		SyntaxToken KeywordToken;
+
+		inline KeywordStatementSyntax(const SyntaxKind kind, SyntaxNode *const parent) : StatementSyntax(kind, parent)
+		{
+			/*
+			if (kind < SyntaxKind::KeywordStatement || kind > SyntaxKind::ElseStatement)
+				throw std::std::runtime_error("KeywordStatementSyntax kind out of range (" + std::to_string(static_cast<int>(kind)) + ")");
+			*/
+		}
+
+		inline KeywordStatementSyntax(const KeywordStatementSyntax& other) = delete;
+
+		inline virtual ~KeywordStatementSyntax()
+		{
+
+		}
+	};
+}
+// --- End: shard/syntax/nodes/StatementSyntax.h ---
+
+// --- Begin: shard/syntax/nodes/StatementsBlockSyntax.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+// #include "shard/syntax/SyntaxNode.h" (Merged)
+// #include "shard/syntax/SyntaxKind.h" (Merged)
+
+// #include "shard/syntax/nodes/BodyDeclarationSyntax.h" (Merged)
+// #include "shard/syntax/nodes/StatementSyntax.h" (Merged)
+
+#include <vector>
+
+namespace shard
+{
+	class SHARD_API StatementsBlockSyntax : public BodyDeclarationSyntax
+	{
+	public:
+		std::vector<StatementSyntax*> Statements;
+
+		inline StatementsBlockSyntax(SyntaxNode *const parent)
+			: BodyDeclarationSyntax(SyntaxKind::StatementsBlock, parent) { }
+
+		inline StatementsBlockSyntax(const StatementsBlockSyntax& other) = delete;
+
+		inline virtual ~StatementsBlockSyntax()
+		{
+			for (const StatementSyntax* statement : Statements)
+				delete statement;
+		}
+	};
+}
+// --- End: shard/syntax/nodes/StatementsBlockSyntax.h ---
+
+// --- Begin: shard/syntax/nodes/ParametersListSyntax.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+// #include "shard/syntax/SyntaxKind.h" (Merged)
+// #include "shard/syntax/SyntaxNode.h" (Merged)
+// #include "shard/syntax/SyntaxToken.h" (Merged)
+
+// #include "shard/syntax/nodes/TypeSyntax.h" (Merged)
+// #include "shard/syntax/symbols/TypeSymbol.h" (Merged)
+
+#include <vector>
+
+namespace shard
+{
+	class SHARD_API ParameterSyntax : public SyntaxNode
+	{
+	public:
+		const TypeSyntax* Type;
+		const SyntaxToken Identifier;
+		shard::TypeSymbol* Symbol = nullptr;
+
+		inline ParameterSyntax(const TypeSyntax* type, const SyntaxToken identifier, SyntaxNode *const parent)
+			: SyntaxNode(SyntaxKind::Parameter, parent), Type(type), Identifier(identifier) { }
+
+		inline ParameterSyntax(const ParameterSyntax& other) = delete;
+
+		inline virtual ~ParameterSyntax()
+		{
+
+		}
+	};
+
+	class SHARD_API ParametersListSyntax : public SyntaxNode
+	{
+	public:
+		SyntaxToken OpenToken;
+		SyntaxToken CloseToken;
+		std::vector<ParameterSyntax*> Parameters;
+
+		inline ParametersListSyntax(SyntaxNode *const parent)
+			: SyntaxNode(SyntaxKind::ParametersList, parent) {}
+
+		inline ParametersListSyntax(const ParametersListSyntax& other) = delete;
+
+		inline virtual ~ParametersListSyntax()
+		{
+			for (const ParameterSyntax* parameter : Parameters)
+				delete parameter;
+		}
+	};
+}
+// --- End: shard/syntax/nodes/ParametersListSyntax.h ---
+
+// --- Begin: shard/parsing/MemberDeclarationInfo.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+// #include "shard/syntax/SyntaxToken.h" (Merged)
+// #include "shard/syntax/nodes/TypeParametersListSyntax.h" (Merged)
+// #include "shard/syntax/nodes/TypeSyntax.h" (Merged)
+
+#include <vector>
+
+namespace shard
+{
+	struct SHARD_API MemberDeclarationInfo
+	{
+		std::vector<shard::SyntaxToken> Modifiers;
+		shard::SyntaxToken DeclareType;
+		shard::SyntaxToken Identifier;
+		shard::TypeSyntax* ReturnType = nullptr;
+		shard::TypeParametersListSyntax* Generics = nullptr;
+	};
+}
+// --- End: shard/parsing/MemberDeclarationInfo.h ---
+
+// --- Begin: shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
 
 // #include "shard/syntax/SyntaxKind.h" (Merged)
 // #include "shard/syntax/SyntaxToken.h" (Merged)
 // #include "shard/syntax/SyntaxNode.h" (Merged)
 
+// #include "shard/syntax/nodes/MemberDeclarationSyntax.h" (Merged)
+// #include "shard/syntax/nodes/ParametersListSyntax.h" (Merged)
+// #include "shard/syntax/nodes/StatementsBlockSyntax.h" (Merged)
+// #include "shard/syntax/nodes/TypeSyntax.h" (Merged)
+
+// #include "shard/parsing/MemberDeclarationInfo.h" (Merged)
+
+#include <vector>
+
 namespace shard
 {
-	class SHARD_API VariableStatementSyntax : public StatementSyntax
+	class SHARD_API MethodDeclarationSyntax : public MemberDeclarationSyntax
 	{
 	public:
-		TypeSyntax* Type = nullptr;
-		SyntaxToken IdentifierToken;
-		SyntaxToken AssignToken;
-		ExpressionSyntax* Expression = nullptr;
+		SyntaxToken Semicolon;
+		TypeSyntax* ReturnType = nullptr;
+		ParametersListSyntax* Params = nullptr;
+		StatementsBlockSyntax* Body = nullptr;
 
-		inline VariableStatementSyntax(TypeSyntax* type, SyntaxToken name, SyntaxToken assignOp, ExpressionSyntax* expression, SyntaxNode *const parent)
-			: StatementSyntax(SyntaxKind::VariableStatement, parent), Type(type), IdentifierToken(name), AssignToken(assignOp), Expression(expression) { }
-
-		inline VariableStatementSyntax(const VariableStatementSyntax& other) = delete;
-
-		inline virtual ~VariableStatementSyntax()
+		inline MethodDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) : MemberDeclarationSyntax(SyntaxKind::MethodDeclaration, parent)
 		{
-			if (Type != nullptr)
-			{
-				Type->~TypeSyntax();
-				delete Type;
-			}
+			Modifiers = info.Modifiers;
+			IdentifierToken = info.Identifier;
+			ReturnType = info.ReturnType;
+			TypeParameters = info.Generics;
+		}
 
-			if (Expression != nullptr)
-			{
-				Expression->~ExpressionSyntax();
-				delete Expression;
-			}
+		inline MethodDeclarationSyntax(const MethodDeclarationSyntax&) = delete;
+
+		inline ~MethodDeclarationSyntax() override
+		{
+			if (ReturnType != nullptr)
+				delete ReturnType;
+
+			if (Params != nullptr)
+				delete Params;
+
+			if (Body != nullptr)
+				delete Body;
 		}
 	};
 }
-// --- End: shard/syntax/nodes/Statements/VariableStatementSyntax.h ---
+// --- End: shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.h ---
 
-// --- Begin: shard/syntax/symbols/FieldSymbol.h ---
+// --- Begin: shard/syntax/nodes/Statements/BreakStatementSyntax.h ---
 // #include "shard/ShardScriptAPI.h" (Merged)
 
-// #include "shard/syntax/nodes/ExpressionSyntax.h" (Merged)
-// #include "shard/syntax/symbols/TypeSymbol.h" (Merged)
-
+// #include "shard/syntax/SyntaxNode.h" (Merged)
 // #include "shard/syntax/SyntaxKind.h" (Merged)
-// #include "shard/syntax/SyntaxSymbol.h" (Merged)
 
-#include <string>
+// #include "shard/syntax/nodes/StatementSyntax.h" (Merged)
 
 namespace shard
 {
-    class SHARD_API FieldSymbol : public SyntaxSymbol
-    {
-    public:
-        size_t MemoryBytesOffset = 0;
-        TypeSymbol* ReturnType = nullptr;
-        shard::ExpressionSyntax* DefaultValueExpression = nullptr;
-        bool IsStatic = false;
-
-        inline FieldSymbol(std::wstring name)
-            : SyntaxSymbol(name, SyntaxKind::FieldDeclaration) { }
-
-        inline FieldSymbol(const FieldSymbol& other) = delete;
-
-        inline virtual ~FieldSymbol()
-        {
-            if (DefaultValueExpression != nullptr)
-                delete DefaultValueExpression;
-        }
-    };
+	class SHARD_API BreakStatementSyntax : public KeywordStatementSyntax
+	{
+	public:
+		inline BreakStatementSyntax(SyntaxNode *const parent) : KeywordStatementSyntax(SyntaxKind::BreakStatement, parent) {}
+		inline BreakStatementSyntax(const BreakStatementSyntax& other) = delete;
+		inline virtual ~BreakStatementSyntax() {}
+	};
 }
-// --- End: shard/syntax/symbols/FieldSymbol.h ---
+// --- End: shard/syntax/nodes/Statements/BreakStatementSyntax.h ---
+
+// --- Begin: shard/syntax/nodes/ExpressionSyntax.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+// #include "shard/syntax/SyntaxNode.h" (Merged)
+// #include "shard/syntax/SyntaxKind.h" (Merged)
+
+namespace shard
+{
+	class SHARD_API ExpressionSyntax : public SyntaxNode
+	{
+	public:
+		inline ExpressionSyntax(const SyntaxKind kind, SyntaxNode *const parent)
+			: SyntaxNode(kind, parent) { }
+
+		inline ExpressionSyntax(const ExpressionSyntax& other) = delete;
+
+		inline virtual ~ExpressionSyntax()
+		{
+
+		}
+	};
+}
+// --- End: shard/syntax/nodes/ExpressionSyntax.h ---
 
 // --- Begin: shard/syntax/symbols/ParameterSymbol.h ---
 // #include "shard/ShardScriptAPI.h" (Merged)
@@ -836,6 +1023,1153 @@ namespace shard
     };
 }
 // --- End: shard/syntax/symbols/MethodSymbol.h ---
+
+// --- Begin: shard/syntax/symbols/ConstructorSymbol.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+// #include "shard/syntax/SyntaxKind.h" (Merged)
+// #include "shard/syntax/SyntaxSymbol.h" (Merged)
+
+// #include "shard/syntax/symbols/MethodSymbol.h" (Merged)
+
+#include <string>
+
+namespace shard
+{
+    class SHARD_API ConstructorSymbol : public MethodSymbol
+    {
+    public:
+        inline ConstructorSymbol(std::wstring name)
+            : MethodSymbol(name, SyntaxKind::ConstructorDeclaration) { }
+
+        inline ConstructorSymbol(std::wstring name, MethodSymbolDelegate delegate) : MethodSymbol(name, SyntaxKind::ConstructorDeclaration)
+        {
+            FunctionPointer = delegate;
+            HandleType = MethodHandleType::External;
+        }
+
+        inline ConstructorSymbol(const ConstructorSymbol& other) = delete;
+
+        inline virtual ~ConstructorSymbol()
+        {
+
+        }
+    };
+}
+// --- End: shard/syntax/symbols/ConstructorSymbol.h ---
+
+// --- Begin: shard/syntax/nodes/ArgumentsListSyntax.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+// #include "shard/syntax/SyntaxNode.h" (Merged)
+// #include "shard/syntax/SyntaxKind.h" (Merged)
+// #include "shard/syntax/SyntaxToken.h" (Merged)
+
+// #include "shard/syntax/nodes/ExpressionSyntax.h" (Merged)
+
+#include <vector>
+
+namespace shard
+{
+	class SHARD_API ArgumentSyntax : public SyntaxNode
+	{
+	public:
+		const ExpressionSyntax* Expression;
+		const bool IsByReference;
+
+		inline ArgumentSyntax(const ExpressionSyntax* expression, SyntaxNode *const parent)
+			: SyntaxNode(SyntaxKind::Argument, parent), Expression(expression), IsByReference(false) { }
+
+		inline ArgumentSyntax(const ArgumentSyntax& other) = delete;
+
+		inline virtual ~ArgumentSyntax()
+		{
+			Expression->~ExpressionSyntax();
+			delete Expression;
+		}
+	};
+
+	class SHARD_API ArgumentsListSyntax : public SyntaxNode
+	{
+	public:
+		SyntaxToken OpenCurlToken;
+		SyntaxToken CloseCurlToken;
+		std::vector<ArgumentSyntax*> Arguments;
+
+		inline ArgumentsListSyntax(SyntaxNode *const parent)
+			: SyntaxNode(SyntaxKind::ArgumentsList, parent) { }
+
+		inline ArgumentsListSyntax(const ArgumentsListSyntax& other) = delete;
+
+		inline virtual ~ArgumentsListSyntax()
+		{
+			for (const ArgumentSyntax* argument : Arguments)
+			{
+				argument->~ArgumentSyntax();
+				delete argument;
+			}
+		}
+	};
+
+	class SHARD_API IndexatorListSyntax : public SyntaxNode
+	{
+	public:
+		SyntaxToken OpenSquareToken;
+		SyntaxToken CloseSquareToken;
+		std::vector<ArgumentSyntax*> Arguments;
+
+		inline IndexatorListSyntax(SyntaxNode *const parent)
+			: SyntaxNode(SyntaxKind::IndexatorList, parent) { }
+
+		inline IndexatorListSyntax(const IndexatorListSyntax& other) = delete;
+
+		inline virtual ~IndexatorListSyntax()
+		{
+			for (const ArgumentSyntax* argument : Arguments)
+			{
+				argument->~ArgumentSyntax();
+				delete argument;
+			}
+		}
+	};
+}
+// --- End: shard/syntax/nodes/ArgumentsListSyntax.h ---
+
+// --- Begin: shard/syntax/nodes/Expressions/ObjectExpressionSyntax.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+// #include "shard/syntax/SyntaxKind.h" (Merged)
+// #include "shard/syntax/SyntaxToken.h" (Merged)
+// #include "shard/syntax/SyntaxNode.h" (Merged)
+
+// #include "shard/syntax/nodes/TypeSyntax.h" (Merged)
+// #include "shard/syntax/nodes/ArgumentsListSyntax.h" (Merged)
+// #include "shard/syntax/nodes/ExpressionSyntax.h" (Merged)
+
+// #include "shard/syntax/symbols/TypeSymbol.h" (Merged)
+// #include "shard/syntax/symbols/ConstructorSymbol.h" (Merged)
+
+namespace shard
+{
+	class SHARD_API ObjectExpressionSyntax : public ExpressionSyntax
+	{
+	public:
+		SyntaxToken NewToken;
+		SyntaxToken IdentifierToken;
+
+		TypeSyntax* Type = nullptr;
+		ArgumentsListSyntax* ArgumentsList = nullptr;
+		shard::TypeSymbol* TypeSymbol = nullptr;
+		shard::ConstructorSymbol* CtorSymbol = nullptr;
+
+		inline ObjectExpressionSyntax(SyntaxNode *const parent)
+			: ExpressionSyntax(SyntaxKind::ObjectExpression, parent) { }
+
+		inline ObjectExpressionSyntax(const ObjectExpressionSyntax&) = delete;
+
+		inline virtual ~ObjectExpressionSyntax()
+		{
+			if (Type != nullptr)
+				delete Type;
+
+			if (ArgumentsList != nullptr)
+				delete ArgumentsList;
+		}
+	};
+}
+// --- End: shard/syntax/nodes/Expressions/ObjectExpressionSyntax.h ---
+
+// --- Begin: shard/syntax/symbols/NamespaceSymbol.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+// #include "shard/syntax/SyntaxKind.h" (Merged)
+// #include "shard/syntax/SyntaxSymbol.h" (Merged)
+// #include "shard/parsing/semantic/NamespaceTree.h" (Merged)
+
+#include <string>
+#include <vector>
+
+namespace shard
+{
+	class NamespaceNode;
+}
+
+namespace shard
+{
+	class SHARD_API NamespaceSymbol : public SyntaxSymbol
+	{
+	public:
+		std::vector<SyntaxSymbol*> Members;
+		shard::NamespaceNode* Node = nullptr;
+
+		inline NamespaceSymbol(std::wstring name)
+			: SyntaxSymbol(name, SyntaxKind::NamespaceDeclaration) { }
+
+		inline NamespaceSymbol(const NamespaceSymbol& other) = delete;
+
+		void OnSymbolDeclared(SyntaxSymbol* symbol) override;
+
+		inline virtual ~NamespaceSymbol()
+		{
+			for (SyntaxSymbol* member : Members)
+				delete member;
+		}
+	};
+}
+// --- End: shard/syntax/symbols/NamespaceSymbol.h ---
+
+// --- Begin: shard/parsing/semantic/NamespaceTree.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+// #include "shard/syntax/symbols/NamespaceSymbol.h" (Merged)
+// #include "shard/syntax/symbols/TypeSymbol.h" (Merged)
+
+#include <unordered_map>
+#include <vector>
+#include <string>
+
+namespace shard
+{
+	class NamespaceSymbol;
+}
+
+namespace shard
+{
+	class SHARD_API NamespaceNode
+	{
+	public:
+		std::vector<shard::NamespaceSymbol*> Owners;
+		std::vector<shard::TypeSymbol*> Types;
+		std::unordered_map<std::wstring, NamespaceNode*> Nodes;
+
+		inline NamespaceNode()
+		{
+
+		}
+
+		inline ~NamespaceNode()
+		{
+			for (const auto& node : Nodes)
+				delete node.second;
+		}
+
+		NamespaceNode* Lookup(std::wstring name);
+		NamespaceNode* LookupOrCreate(std::wstring name, shard::NamespaceSymbol* current);
+	};
+
+	class SHARD_API NamespaceTree
+	{
+	public:
+		NamespaceNode* Root;
+
+		inline NamespaceTree()
+			: Root(new NamespaceNode()) { }
+
+		inline ~NamespaceTree()
+		{
+			delete Root;
+		}
+	};
+}
+// --- End: shard/parsing/semantic/NamespaceTree.h ---
+
+// --- Begin: shard/parsing/semantic/SemanticScope.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+// #include "shard/syntax/SyntaxSymbol.h" (Merged)
+// #include "shard/parsing/semantic/NamespaceTree.h" (Merged)
+
+#include <string>
+#include <unordered_map>
+
+namespace shard
+{
+	class SHARD_API SemanticScope
+	{
+	public:
+		std::unordered_map<std::wstring, shard::SyntaxSymbol*> _symbols;
+
+		SemanticScope *const Parent;
+		shard::SyntaxSymbol *const Owner;
+		NamespaceNode* Namespace = nullptr;
+
+		bool ReturnFound = false;
+		bool ReturnsAnything = false;
+
+		inline SemanticScope(shard::SyntaxSymbol *const owner, SemanticScope *const parent)
+			: Owner(owner), Parent(parent) { }
+
+		shard::SyntaxSymbol *const Lookup(const std::wstring& name);
+		void DeclareSymbol(shard::SyntaxSymbol *const symbol);
+		void RemoveSymbol(shard::SyntaxSymbol *const symbol);
+	};
+}
+// --- End: shard/parsing/semantic/SemanticScope.h ---
+
+// --- Begin: shard/parsing/semantic/SymbolTable.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+// #include "shard/syntax/SyntaxSymbol.h" (Merged)
+// #include "shard/syntax/SyntaxNode.h" (Merged)
+// #include "shard/syntax/SyntaxKind.h" (Merged)
+
+// #include "shard/syntax/symbols/MethodSymbol.h" (Merged)
+// #include "shard/syntax/symbols/TypeSymbol.h" (Merged)
+// #include "shard/syntax/symbols/NamespaceSymbol.h" (Merged)
+
+// #include "shard/parsing/semantic/SemanticScope.h" (Merged)
+
+#include <unordered_map>
+#include <vector>
+#include <string>
+#include <ranges>
+
+namespace shard
+{
+    class SHARD_API SymbolTable
+    {
+        inline static const std::wstring GlobalTypeName = L"__GLOBAL__";
+
+        std::unordered_map<shard::SyntaxNode*, shard::SyntaxSymbol*> nodeToSymbolMap;
+        std::unordered_map<shard::SyntaxSymbol*, shard::SyntaxNode*> symbolToNodeMap;
+        std::vector<shard::NamespaceSymbol*> namespacesList;
+        std::vector<shard::TypeSymbol*> typesList;
+
+    public:
+        struct Global
+        {
+            inline static SHARD_API shard::TypeSymbol *const Type = new shard::TypeSymbol(GlobalTypeName, shard::SyntaxKind::CompilationUnit);
+            inline static SHARD_API shard::SemanticScope *const Scope = new SemanticScope(Type, nullptr);
+        };
+
+        struct Primitives
+        {
+            inline static SHARD_API shard::TypeSymbol* Void;
+            inline static SHARD_API shard::TypeSymbol* Null;
+            inline static SHARD_API shard::TypeSymbol* Any;
+
+            inline static SHARD_API shard::TypeSymbol* Boolean;
+            inline static SHARD_API shard::TypeSymbol* Integer;
+            inline static SHARD_API shard::TypeSymbol* Double;
+            inline static SHARD_API shard::TypeSymbol* Char;
+            inline static SHARD_API shard::TypeSymbol* String;
+            inline static SHARD_API shard::TypeSymbol* Array;
+        };
+
+        inline SymbolTable()
+        {
+
+        }
+
+        ~SymbolTable();
+
+        void ClearSymbols();
+        void BindSymbol(shard::SyntaxNode *const node, shard::SyntaxSymbol *const symbol);
+        shard::SyntaxSymbol *const LookupSymbol(shard::SyntaxNode *const node);
+        shard::SyntaxNode *const GetSyntaxNode(shard::SyntaxSymbol *const symbol);
+        const std::vector<shard::NamespaceSymbol*> GetNamespaceSymbols();
+        const std::vector<shard::TypeSymbol*> GetTypeSymbols();
+    };
+}
+// --- End: shard/parsing/semantic/SymbolTable.h ---
+
+// --- Begin: shard/syntax/nodes/Directives/UsingDirectiveSyntax.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+// #include "shard/syntax/SyntaxNode.h" (Merged)
+// #include "shard/syntax/SyntaxToken.h" (Merged)
+// #include "shard/syntax/SyntaxKind.h" (Merged)
+
+// #include "shard/parsing/semantic/NamespaceTree.h" (Merged)
+
+#include <vector>
+#include <string>
+
+namespace shard
+{
+	class SHARD_API UsingDirectiveSyntax : public SyntaxNode
+	{
+	public:
+		SyntaxToken UsingKeywordToken;
+		SyntaxToken SemicolonToken;
+		std::vector<SyntaxToken> TokensList;
+		shard::NamespaceNode* Namespace = nullptr;
+
+		inline UsingDirectiveSyntax(SyntaxNode *const parent)
+			: SyntaxNode(SyntaxKind::UsingDirective, parent) { }
+
+		inline UsingDirectiveSyntax(const UsingDirectiveSyntax&) = delete;
+
+		inline virtual ~UsingDirectiveSyntax()
+		{
+
+		}
+
+		std::wstring ToString();
+	};
+}
+// --- End: shard/syntax/nodes/Directives/UsingDirectiveSyntax.h ---
+
+// --- Begin: shard/syntax/nodes/CompilationUnitSyntax.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+// #include "shard/syntax/SyntaxNode.h" (Merged)
+// #include "shard/syntax/SyntaxKind.h" (Merged)
+
+// #include "shard/syntax/nodes/MemberDeclarationSyntax.h" (Merged)
+// #include "shard/syntax/nodes/Directives/UsingDirectiveSyntax.h" (Merged)
+
+#include <vector>
+
+namespace shard
+{
+	class SHARD_API CompilationUnitSyntax : public SyntaxNode
+	{
+	public:
+		std::vector<UsingDirectiveSyntax*> Usings;
+		std::vector<MemberDeclarationSyntax*> Members;
+
+		inline CompilationUnitSyntax()
+			: SyntaxNode(SyntaxKind::CompilationUnit, nullptr) { }
+
+		inline CompilationUnitSyntax(const CompilationUnitSyntax& other) = delete;
+
+		inline virtual ~CompilationUnitSyntax()
+		{
+			for (const UsingDirectiveSyntax* usingDirective : Usings)
+				delete usingDirective;
+
+			for (const MemberDeclarationSyntax* member : Members)
+				delete member;
+		}
+	};
+}
+// --- End: shard/syntax/nodes/CompilationUnitSyntax.h ---
+
+// --- Begin: shard/parsing/SyntaxTree.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+// #include "shard/syntax/nodes/CompilationUnitSyntax.h" (Merged)
+#include <vector>
+
+namespace shard
+{
+	class SHARD_API SyntaxTree
+	{
+	public:
+		std::vector<shard::CompilationUnitSyntax*> CompilationUnits;
+
+		inline SyntaxTree() { }
+
+		inline virtual ~SyntaxTree()
+		{
+			for (const auto unit : CompilationUnits)
+				delete unit;
+		}
+	};
+}
+// --- End: shard/parsing/SyntaxTree.h ---
+
+// --- Begin: shard/parsing/semantic/TypeInfo.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+// #include "shard/syntax/symbols/TypeSymbol.h" (Merged)
+
+namespace shard
+{
+    struct SHARD_API TypeInfo
+    {
+    public:
+        shard::TypeSymbol* Type;
+
+        inline TypeInfo(shard::TypeSymbol* type)
+            : Type(type) { }
+    };
+}
+// --- End: shard/parsing/semantic/TypeInfo.h ---
+
+// --- Begin: shard/parsing/semantic/SymbolInfo.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+// #include "shard/syntax/SyntaxSymbol.h" (Merged)
+
+namespace shard
+{
+    struct SHARD_API SymbolInfo
+    {
+    public:
+        shard::SyntaxSymbol* Symbol;
+
+        inline SymbolInfo(shard::SyntaxSymbol* symbol)
+            : Symbol(symbol) { }
+    };
+}
+// --- End: shard/parsing/semantic/SymbolInfo.h ---
+
+// --- Begin: shard/parsing/semantic/SemanticModel.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+// #include "shard/syntax/SyntaxNode.h" (Merged)
+// #include "shard/syntax/nodes/ExpressionSyntax.h" (Merged)
+// #include "shard/parsing/SyntaxTree.h" (Merged)
+
+// #include "shard/parsing/semantic/SymbolTable.h" (Merged)
+// #include "shard/parsing/semantic/TypeInfo.h" (Merged)
+// #include "shard/parsing/semantic/SymbolInfo.h" (Merged)
+// #include "shard/parsing/semantic/NamespaceTree.h" (Merged)
+
+namespace shard
+{
+	class SHARD_API SemanticModel
+	{
+	public:
+		shard::SyntaxTree& Tree;
+		shard::SymbolTable* Table;
+		shard::NamespaceTree* Namespaces;
+
+		SemanticModel(shard::SyntaxTree& tree);
+		~SemanticModel();
+
+		shard::SymbolInfo GetSymbolInfo(shard::SyntaxNode* node);
+		shard::TypeInfo GetTypeInfo(shard::ExpressionSyntax* expression);
+		//Conversion ClassifyConversion(shard::ExpressionSyntax* expression, shard::TypeSymbol destination);
+		//DataFlowAnalysis AnalyzeDataFlow(shard::SyntaxNode* firstNode, shard::SyntaxNode* lastNode);
+	};
+}
+// --- End: shard/parsing/semantic/SemanticModel.h ---
+
+// --- Begin: shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+// #include "shard/syntax/SyntaxKind.h" (Merged)
+// #include "shard/syntax/SyntaxNode.h" (Merged)
+// #include "shard/syntax/SyntaxToken.h" (Merged)
+
+// #include "shard/syntax/nodes/StatementsBlockSyntax.h" (Merged)
+
+#include <vector>
+
+namespace shard
+{
+	class SHARD_API AccessorDeclarationSyntax : public MemberDeclarationSyntax
+	{
+	public:
+		SyntaxToken KeywordToken;
+		std::vector<SyntaxToken> Modifiers;
+		SyntaxToken SemicolonToken;
+		StatementsBlockSyntax* Body = nullptr;
+
+		inline AccessorDeclarationSyntax(SyntaxNode *const parent)
+			: MemberDeclarationSyntax(SyntaxKind::AccessorDeclaration, parent) { }
+
+		inline AccessorDeclarationSyntax(SyntaxNode *const parent, StatementsBlockSyntax* body)
+			: MemberDeclarationSyntax(SyntaxKind::AccessorDeclaration, parent), Body(body) { }
+
+		inline AccessorDeclarationSyntax(const AccessorDeclarationSyntax&) = delete;
+
+		inline ~AccessorDeclarationSyntax() override
+		{
+
+		}
+	};
+}
+
+
+// --- End: shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.h ---
+
+// --- Begin: shard/syntax/nodes/MemberDeclarations/IndexatorDeclarationSyntax.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+// #include "shard/syntax/SyntaxKind.h" (Merged)
+// #include "shard/syntax/SyntaxToken.h" (Merged)
+// #include "shard/syntax/SyntaxNode.h" (Merged)
+
+// #include "shard/parsing/MemberDeclarationInfo.h" (Merged)
+
+// #include "shard/syntax/nodes/MemberDeclarationSyntax.h" (Merged)
+// #include "shard/syntax/nodes/ExpressionSyntax.h" (Merged)
+// #include "shard/syntax/nodes/TypeSyntax.h" (Merged)
+// #include "shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.h" (Merged)
+// #include "shard/syntax/nodes/ParametersListSyntax.h" (Merged)
+
+#include <vector>
+
+namespace shard
+{
+    class SHARD_API IndexatorDeclarationSyntax : public MemberDeclarationSyntax
+    {
+    public:
+        SyntaxToken IndexKeyword;
+        SyntaxToken OpenBraceToken;
+        SyntaxToken CloseBraceToken;
+
+        TypeSyntax* ReturnType = nullptr;
+        ParametersListSyntax* Parameters = nullptr;
+
+        AccessorDeclarationSyntax* Getter = nullptr;
+        AccessorDeclarationSyntax* Setter = nullptr;
+
+        inline IndexatorDeclarationSyntax(SyntaxNode *const parent)
+            : MemberDeclarationSyntax(SyntaxKind::IndexatorDeclaration, parent) { }
+
+        inline IndexatorDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent)
+            : MemberDeclarationSyntax(SyntaxKind::IndexatorDeclaration, parent)
+        {
+            Modifiers = info.Modifiers;
+            IdentifierToken = info.Identifier;
+            ReturnType = info.ReturnType;
+            TypeParameters = info.Generics;
+        }
+
+        inline virtual ~IndexatorDeclarationSyntax()
+        {
+            if (Getter != nullptr)
+            {
+                delete Getter;
+                Getter = nullptr;
+            }
+
+            if (Setter != nullptr)
+            {
+                delete Setter;
+                Setter = nullptr;
+            }
+
+            if (ReturnType != nullptr)
+            {
+                delete ReturnType;
+                ReturnType = nullptr;
+            }
+
+            if (Parameters != nullptr)
+            {
+                delete Parameters;
+                Parameters = nullptr;
+            }
+        }
+    };
+}
+// --- End: shard/syntax/nodes/MemberDeclarations/IndexatorDeclarationSyntax.h ---
+
+// --- Begin: shard/syntax/nodes/Expressions/LiteralExpressionSyntax.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+// #include "shard/syntax/SyntaxKind.h" (Merged)
+// #include "shard/syntax/SyntaxToken.h" (Merged)
+// #include "shard/syntax/nodes/ExpressionSyntax.h" (Merged)
+// #include "shard/syntax/SyntaxNode.h" (Merged)
+
+namespace shard
+{
+	class SHARD_API LiteralExpressionSyntax : public ExpressionSyntax
+	{
+	public:
+		const SyntaxToken LiteralToken;
+
+		inline LiteralExpressionSyntax(const SyntaxToken literal, SyntaxNode *const parent) : ExpressionSyntax(SyntaxKind::LiteralExpression, parent), LiteralToken(literal) { }
+		inline LiteralExpressionSyntax(const LiteralExpressionSyntax&) = delete;
+		inline virtual ~LiteralExpressionSyntax() { }
+	};
+}
+// --- End: shard/syntax/nodes/Expressions/LiteralExpressionSyntax.h ---
+
+// --- Begin: shard/syntax/nodes/TypeDeclarationSyntax.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+// #include "shard/syntax/SyntaxKind.h" (Merged)
+// #include "shard/syntax/SyntaxNode.h" (Merged)
+
+// #include "shard/syntax/nodes/MemberDeclarationSyntax.h" (Merged)
+// #include "shard/syntax/nodes/BodyDeclarationSyntax.h" (Merged)
+
+#include <vector>
+
+namespace shard
+{
+	class SHARD_API TypeDeclarationSyntax : public BodyDeclarationSyntax
+	{
+	public:
+		std::vector<MemberDeclarationSyntax*> Members;
+
+		inline TypeDeclarationSyntax(const SyntaxKind kind, SyntaxNode *const parent)
+			: BodyDeclarationSyntax(kind, parent) { }
+
+		inline TypeDeclarationSyntax(const TypeDeclarationSyntax& other) = delete;
+
+		inline virtual ~TypeDeclarationSyntax()
+		{
+			for (const MemberDeclarationSyntax* member : Members)
+				delete member;
+		}
+	};
+}
+// --- End: shard/syntax/nodes/TypeDeclarationSyntax.h ---
+
+// --- Begin: shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+// #include "shard/syntax/SyntaxKind.h" (Merged)
+// #include "shard/syntax/SyntaxNode.h" (Merged)
+// #include "shard/syntax/SyntaxToken.h" (Merged)
+
+// #include "shard/syntax/nodes/TypeDeclarationSyntax.h" (Merged)
+// #include "shard/parsing/MemberDeclarationInfo.h" (Merged)
+
+#include <vector>
+
+namespace shard
+{
+	class SHARD_API NamespaceDeclarationSyntax : public TypeDeclarationSyntax
+	{
+	public:
+		std::vector<SyntaxToken> IdentifierTokens;
+
+		inline NamespaceDeclarationSyntax(SyntaxNode *const parent)
+			: TypeDeclarationSyntax(SyntaxKind::NamespaceDeclaration, parent) { }
+
+		inline NamespaceDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) : TypeDeclarationSyntax(SyntaxKind::NamespaceDeclaration, parent)
+		{
+			Modifiers = info.Modifiers;
+			IdentifierToken = info.Identifier;
+		}
+
+		inline NamespaceDeclarationSyntax(const NamespaceDeclarationSyntax& other) = delete;
+
+		inline virtual ~NamespaceDeclarationSyntax()
+		{
+
+		}
+	};
+}
+// --- End: shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.h ---
+
+// --- Begin: shard/syntax/nodes/Statements/ContinueStatementSyntax.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+// #include "shard/syntax/SyntaxNode.h" (Merged)
+// #include "shard/syntax/SyntaxKind.h" (Merged)
+
+// #include "shard/syntax/nodes/StatementSyntax.h" (Merged)
+
+namespace shard
+{
+	class SHARD_API ContinueStatementSyntax : public KeywordStatementSyntax
+	{
+	public:
+		inline ContinueStatementSyntax(SyntaxNode *const parent) : KeywordStatementSyntax(SyntaxKind::ContinueStatement, parent) {}
+		inline ContinueStatementSyntax(const ContinueStatementSyntax& other) = delete;
+
+		inline virtual ~ContinueStatementSyntax() {}
+	};
+}
+// --- End: shard/syntax/nodes/Statements/ContinueStatementSyntax.h ---
+
+// --- Begin: shard/syntax/symbols/DelegateTypeSymbol.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+// #include "shard/syntax/symbols/TypeSymbol.h" (Merged)
+// #include "shard/syntax/symbols/ParameterSymbol.h" (Merged)
+// #include "shard/syntax/symbols/MethodSymbol.h" (Merged)
+
+// #include "shard/syntax/SyntaxKind.h" (Merged)
+
+#include <new>
+#include <vector>
+
+namespace shard
+{
+	class SHARD_API DelegateTypeSymbol : public TypeSymbol
+	{
+	public:
+		TypeSymbol* ReturnType = nullptr;
+		std::vector<ParameterSymbol*> Parameters;
+		MethodSymbol* AnonymousSymbol = nullptr;
+
+		inline DelegateTypeSymbol(std::wstring name) : TypeSymbol(name, SyntaxKind::DelegateType)
+		{
+			IsReferenceType = true;
+		}
+
+		inline DelegateTypeSymbol(const DelegateTypeSymbol& other) = delete;
+
+		inline virtual ~DelegateTypeSymbol()
+		{
+			if (AnonymousSymbol != nullptr)
+				delete AnonymousSymbol;
+
+			for (ParameterSymbol* parameter : Parameters)
+				delete parameter;
+		}
+	};
+}
+// --- End: shard/syntax/symbols/DelegateTypeSymbol.h ---
+
+// --- Begin: shard/syntax/nodes/Expressions/LambdaExpressionSyntax.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+// #include "shard/syntax/SyntaxKind.h" (Merged)
+// #include "shard/syntax/SyntaxToken.h" (Merged)
+// #include "shard/syntax/SyntaxNode.h" (Merged)
+
+// #include "shard/syntax/nodes/ExpressionSyntax.h" (Merged)
+// #include "shard/syntax/nodes/StatementsBlockSyntax.h" (Merged)
+// #include "shard/syntax/nodes/ParametersListSyntax.h" (Merged)
+// #include "shard/syntax/symbols/DelegateTypeSymbol.h" (Merged)
+
+namespace shard
+{
+	class SHARD_API LambdaExpressionSyntax : public ExpressionSyntax
+	{
+	public:
+		SyntaxToken LambdaToken;
+		SyntaxToken LambdaOperatorToken;
+		ParametersListSyntax* Params = nullptr;
+		StatementsBlockSyntax* Body = nullptr;
+		shard::DelegateTypeSymbol* Symbol = nullptr;
+
+		inline LambdaExpressionSyntax(SyntaxNode *const parent)
+			: ExpressionSyntax(SyntaxKind::LambdaExpression, parent) { }
+
+		inline LambdaExpressionSyntax(const LambdaExpressionSyntax&) = delete;
+
+		inline virtual ~LambdaExpressionSyntax()
+		{
+			if (Params != nullptr)
+				delete Params;
+
+			if (Body != nullptr)
+				delete Body;
+		}
+	};
+}
+// --- End: shard/syntax/nodes/Expressions/LambdaExpressionSyntax.h ---
+
+// --- Begin: shard/syntax/nodes/MemberDeclarations/DelegateDeclarationSyntax.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+// #include "shard/parsing/MemberDeclarationInfo.h" (Merged)
+
+// #include "shard/syntax/nodes/MemberDeclarationSyntax.h" (Merged)
+// #include "shard/syntax/nodes/ParametersListSyntax.h" (Merged)
+
+// #include "shard/syntax/SyntaxKind.h" (Merged)
+// #include "shard/syntax/SyntaxNode.h" (Merged)
+// #include "shard/syntax/SyntaxToken.h" (Merged)
+
+namespace shard
+{
+	class SHARD_API DelegateDeclarationSyntax : public MemberDeclarationSyntax
+	{
+	public:
+		SyntaxToken DelegateToken;
+		SyntaxToken Semicolon;
+		TypeSyntax* ReturnType = nullptr;
+		ParametersListSyntax* Params = nullptr;
+
+		inline DelegateDeclarationSyntax(SyntaxNode *const parent)
+			: MemberDeclarationSyntax(SyntaxKind::DelegateDeclaration, parent) { }
+
+		inline DelegateDeclarationSyntax(const DelegateDeclarationSyntax& other) = delete;
+
+		inline DelegateDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) : MemberDeclarationSyntax(SyntaxKind::DelegateDeclaration, parent)
+		{
+			Modifiers = info.Modifiers;
+			DelegateToken = info.DeclareType;
+			ReturnType = info.ReturnType;
+			IdentifierToken = info.Identifier;
+			TypeParameters = info.Generics;
+		}
+
+		inline virtual ~DelegateDeclarationSyntax()
+		{
+			if (ReturnType != nullptr)
+				delete ReturnType;
+
+			if (Params != nullptr)
+				delete Params;
+		}
+	};
+}
+// --- End: shard/syntax/nodes/MemberDeclarations/DelegateDeclarationSyntax.h ---
+
+// --- Begin: shard/syntax/nodes/Statements/ThrowStatementSyntax.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+// #include "shard/syntax/SyntaxNode.h" (Merged)
+// #include "shard/syntax/SyntaxKind.h" (Merged)
+
+// #include "shard/syntax/nodes/ExpressionSyntax.h" (Merged)
+// #include "shard/syntax/nodes/StatementSyntax.h" (Merged)
+
+namespace shard
+{
+	class SHARD_API ThrowStatementSyntax : public KeywordStatementSyntax
+	{
+	public:
+		ExpressionSyntax* Expression = nullptr;
+
+		inline ThrowStatementSyntax(SyntaxNode *const parent) : KeywordStatementSyntax(SyntaxKind::ThrowStatement, parent) {}
+		inline ThrowStatementSyntax(const ThrowStatementSyntax& other) = delete;
+
+		inline virtual ~ThrowStatementSyntax()
+		{
+			if (Expression != nullptr)
+				delete Expression;
+		}
+	};
+}
+// --- End: shard/syntax/nodes/Statements/ThrowStatementSyntax.h ---
+
+// --- Begin: shard/parsing/analysis/DiagnosticSeverity.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+#include <string>
+
+namespace shard
+{
+	enum class DiagnosticSeverity
+	{
+		Info,
+		Warning,
+		Error
+	};
+}
+
+SHARD_API std::wstring severity_to_wstring(const shard::DiagnosticSeverity& severity);
+// --- End: shard/parsing/analysis/DiagnosticSeverity.h ---
+
+// --- Begin: shard/parsing/analysis/Diagnostic.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+// #include "shard/parsing/analysis/TextLocation.h" (Merged)
+// #include "shard/parsing/analysis/DiagnosticSeverity.h" (Merged)
+// #include "shard/syntax/SyntaxToken.h" (Merged)
+
+#include <string>
+
+namespace shard
+{
+	class SHARD_API Diagnostic
+	{
+	public:
+		const DiagnosticSeverity Severity;
+		const std::wstring Description;
+		const shard::SyntaxToken Token;
+		const TextLocation Location;
+
+		Diagnostic(shard::SyntaxToken token, DiagnosticSeverity severity, std::wstring description);
+		Diagnostic(const Diagnostic& other);
+
+		inline Diagnostic& operator=(const Diagnostic& other)
+		{
+			if (this != &other)
+			{
+				this->~Diagnostic();
+				new (this) Diagnostic(other);
+			}
+
+			return *this;
+		}
+	};
+}
+// --- End: shard/parsing/analysis/Diagnostic.h ---
+
+// --- Begin: shard/parsing/analysis/DiagnosticsContext.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+// #include "shard/syntax/SyntaxToken.h" (Merged)
+// #include "shard/parsing/analysis/Diagnostic.h" (Merged)
+
+#include <string>
+#include <vector>
+#include <ostream>
+
+namespace shard
+{
+	class SHARD_API DiagnosticsContext
+	{
+	public:
+		bool AnyError = false;
+		std::vector<Diagnostic> Diagnostics;
+
+		inline DiagnosticsContext() : Diagnostics() {}
+
+		void ReportError(shard::SyntaxToken token, std::wstring message);
+		void ReportWarning(shard::SyntaxToken token, std::wstring message);
+		void ReportInfo(shard::SyntaxToken token, std::wstring message);
+		void WriteDiagnostics(std::wostream& out);
+		void Reset();
+	};
+}
+// --- End: shard/parsing/analysis/DiagnosticsContext.h ---
+
+// --- Begin: shard/syntax/nodes/Expressions/TernaryExpressionSyntax.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+// #include "shard/syntax/nodes/ExpressionSyntax.h" (Merged)
+// #include "shard/syntax/SyntaxKind.h" (Merged)
+// #include "shard/syntax/SyntaxToken.h" (Merged)
+// #include "shard/syntax/SyntaxNode.h" (Merged)
+
+namespace shard
+{
+	class SHARD_API TernaryExpressionSyntax : public ExpressionSyntax
+	{
+	public:
+		SyntaxToken QuestionToken;
+		SyntaxToken ColonToken;
+		ExpressionSyntax* Condition = nullptr;
+		ExpressionSyntax* Left = nullptr;
+		ExpressionSyntax* Right = nullptr;
+
+		inline TernaryExpressionSyntax(SyntaxNode *const parent)
+			: ExpressionSyntax(SyntaxKind::TernaryExpression, parent) { }
+
+		inline TernaryExpressionSyntax(const TernaryExpressionSyntax&) = delete;
+
+		inline virtual ~TernaryExpressionSyntax()
+		{
+			if (Condition != nullptr)
+				delete Condition;
+
+			if (Left != nullptr)
+				delete Left;
+
+			if (Right != nullptr)
+				delete Right;
+		}
+	};
+}
+// --- End: shard/syntax/nodes/Expressions/TernaryExpressionSyntax.h ---
+
+// --- Begin: shard/syntax/nodes/TypeArgumentsListSyntax.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+// #include "shard/syntax/SyntaxKind.h" (Merged)
+// #include "shard/syntax/SyntaxNode.h" (Merged)
+// #include "shard/syntax/SyntaxToken.h" (Merged)
+
+// #include "shard/syntax/nodes/TypeSyntax.h" (Merged)
+
+#include <vector>
+
+namespace shard
+{
+	class SHARD_API TypeArgumentsListSyntax : public SyntaxNode
+	{
+	public:
+		SyntaxToken OpenToken;
+		SyntaxToken CloseToken;
+		std::vector<TypeSyntax*> Types;
+
+		inline TypeArgumentsListSyntax(SyntaxNode *const parent)
+			: SyntaxNode(SyntaxKind::ParametersList, parent) {
+		}
+
+		inline TypeArgumentsListSyntax(const TypeArgumentsListSyntax& other) = delete;
+
+		inline virtual ~TypeArgumentsListSyntax()
+		{
+			for (const TypeSyntax* parameter : Types)
+				delete parameter;
+		}
+	};
+}
+// --- End: shard/syntax/nodes/TypeArgumentsListSyntax.h ---
+
+// --- Begin: shard/syntax/nodes/Types/NullableTypeSyntax.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+// #include "shard/syntax/SyntaxToken.h" (Merged)
+// #include "shard/syntax/SyntaxKind.h" (Merged)
+// #include "shard/syntax/SyntaxNode.h" (Merged)
+
+// #include "shard/syntax/nodes/TypeSyntax.h" (Merged)
+
+namespace shard
+{
+	class SHARD_API NullableTypeSyntax : public TypeSyntax
+	{
+	public:
+		TypeSyntax* UnderlayingType = nullptr;
+		SyntaxToken QuestionToken;
+
+		inline NullableTypeSyntax(TypeSyntax* underlaying, SyntaxNode *const parent)
+			: TypeSyntax(SyntaxKind::NullableType, parent), UnderlayingType(underlaying) { }
+
+		inline NullableTypeSyntax(const NullableTypeSyntax& other) = delete;
+
+		inline virtual ~NullableTypeSyntax()
+		{
+			if (UnderlayingType != nullptr)
+				delete UnderlayingType;
+		}
+
+		std::wstring ToString() override;
+	};
+}
+// --- End: shard/syntax/nodes/Types/NullableTypeSyntax.h ---
+
+// --- Begin: shard/syntax/nodes/Expressions/UnaryExpressionSyntax.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+// #include "shard/syntax/SyntaxNode.h" (Merged)
+// #include "shard/syntax/SyntaxKind.h" (Merged)
+// #include "shard/syntax/SyntaxToken.h" (Merged)
+// #include "shard/syntax/nodes/ExpressionSyntax.h" (Merged)
+
+namespace shard
+{
+	class SHARD_API UnaryExpressionSyntax : public ExpressionSyntax
+	{
+	public:
+		const SyntaxToken OperatorToken;
+		ExpressionSyntax* Expression = nullptr;
+		const bool IsRightDetermined;
+
+		inline UnaryExpressionSyntax(const SyntaxToken operatorToken, const bool isRightDetermined, SyntaxNode *const parent)
+			: ExpressionSyntax(SyntaxKind::UnaryExpression, parent), OperatorToken(operatorToken), IsRightDetermined(isRightDetermined) { }
+
+		inline UnaryExpressionSyntax(const UnaryExpressionSyntax&) = delete;
+
+		inline virtual ~UnaryExpressionSyntax()
+		{
+			delete Expression;
+		}
+	};
+}
+// --- End: shard/syntax/nodes/Expressions/UnaryExpressionSyntax.h ---
+
+// --- Begin: shard/syntax/symbols/FieldSymbol.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+// #include "shard/syntax/nodes/ExpressionSyntax.h" (Merged)
+// #include "shard/syntax/symbols/TypeSymbol.h" (Merged)
+
+// #include "shard/syntax/SyntaxKind.h" (Merged)
+// #include "shard/syntax/SyntaxSymbol.h" (Merged)
+
+#include <string>
+
+namespace shard
+{
+    class SHARD_API FieldSymbol : public SyntaxSymbol
+    {
+    public:
+        size_t MemoryBytesOffset = 0;
+        TypeSymbol* ReturnType = nullptr;
+        shard::ExpressionSyntax* DefaultValueExpression = nullptr;
+        bool IsStatic = false;
+
+        inline FieldSymbol(std::wstring name)
+            : SyntaxSymbol(name, SyntaxKind::FieldDeclaration) { }
+
+        inline FieldSymbol(const FieldSymbol& other) = delete;
+
+        inline virtual ~FieldSymbol()
+        {
+            if (DefaultValueExpression != nullptr)
+                delete DefaultValueExpression;
+        }
+    };
+}
+// --- End: shard/syntax/symbols/FieldSymbol.h ---
 
 // --- Begin: shard/syntax/symbols/AccessorSymbol.h ---
 // #include "shard/ShardScriptAPI.h" (Merged)
@@ -961,122 +2295,389 @@ namespace shard
 
 // --- End: shard/syntax/symbols/IndexatorSymbol.h ---
 
-// --- Begin: shard/syntax/nodes/ArgumentsListSyntax.h ---
+// --- Begin: shard/syntax/symbols/ArrayTypeSymbol.h ---
 // #include "shard/ShardScriptAPI.h" (Merged)
 
-// #include "shard/syntax/SyntaxNode.h" (Merged)
+// #include "shard/syntax/symbols/TypeSymbol.h" (Merged)
+// #include "shard/syntax/symbols/FieldSymbol.h" (Merged)
+// #include "shard/syntax/symbols/MethodSymbol.h" (Merged)
+// #include "shard/syntax/symbols/PropertySymbol.h" (Merged)
+// #include "shard/syntax/symbols/IndexatorSymbol.h" (Merged)
+
 // #include "shard/syntax/SyntaxKind.h" (Merged)
-// #include "shard/syntax/SyntaxToken.h" (Merged)
+
+// #include "shard/parsing/semantic/SymbolTable.h" (Merged)
+
+#include <string>
+#include <vector>
+
+namespace shard
+{
+	class SHARD_API ArrayTypeSymbol : public TypeSymbol
+	{
+	public:
+		TypeSymbol* UnderlayingType = nullptr;
+		size_t Size = 0;
+		int Rank = 0;
+
+		inline ArrayTypeSymbol(TypeSymbol* underlayingType) : TypeSymbol(L"Array", SyntaxKind::ArrayType), UnderlayingType(underlayingType)
+		{
+			MemoryBytesSize = shard::SymbolTable::Primitives::Array->MemoryBytesSize;
+			IsReferenceType = true;
+		}
+
+		inline ArrayTypeSymbol(const ArrayTypeSymbol& other) = delete;
+
+		inline virtual ~ArrayTypeSymbol()
+		{
+
+		}
+
+		ConstructorSymbol* FindConstructor(std::vector<TypeSymbol*> parameterTypes) override;
+		MethodSymbol* FindMethod(std::wstring& name, std::vector<TypeSymbol*> parameterTypes) override;
+		IndexatorSymbol* FindIndexator(std::vector<TypeSymbol*> parameterTypes) override;
+		FieldSymbol* FindField(std::wstring& name) override;
+		PropertySymbol* FindProperty(std::wstring& name) override;
+	};
+}
+// --- End: shard/syntax/symbols/ArrayTypeSymbol.h ---
+
+// --- Begin: shard/syntax/nodes/Expressions/CollectionExpressionSyntax.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
 
 // #include "shard/syntax/nodes/ExpressionSyntax.h" (Merged)
+// #include "shard/syntax/symbols/ArrayTypeSymbol.h" (Merged)
+// #include "shard/syntax/SyntaxKind.h" (Merged)
+// #include "shard/syntax/SyntaxToken.h" (Merged)
+// #include "shard/syntax/SyntaxNode.h" (Merged)
 
 #include <vector>
 
 namespace shard
 {
-	class SHARD_API ArgumentSyntax : public SyntaxNode
-	{
-	public:
-		const ExpressionSyntax* Expression;
-		const bool IsByReference;
-
-		inline ArgumentSyntax(const ExpressionSyntax* expression, SyntaxNode *const parent)
-			: SyntaxNode(SyntaxKind::Argument, parent), Expression(expression), IsByReference(false) { }
-
-		inline ArgumentSyntax(const ArgumentSyntax& other) = delete;
-
-		inline virtual ~ArgumentSyntax()
-		{
-			Expression->~ExpressionSyntax();
-			delete Expression;
-		}
-	};
-
-	class SHARD_API ArgumentsListSyntax : public SyntaxNode
-	{
-	public:
-		SyntaxToken OpenCurlToken;
-		SyntaxToken CloseCurlToken;
-		std::vector<ArgumentSyntax*> Arguments;
-
-		inline ArgumentsListSyntax(SyntaxNode *const parent)
-			: SyntaxNode(SyntaxKind::ArgumentsList, parent) { }
-
-		inline ArgumentsListSyntax(const ArgumentsListSyntax& other) = delete;
-
-		inline virtual ~ArgumentsListSyntax()
-		{
-			for (const ArgumentSyntax* argument : Arguments)
-			{
-				argument->~ArgumentSyntax();
-				delete argument;
-			}
-		}
-	};
-
-	class SHARD_API IndexatorListSyntax : public SyntaxNode
+	class SHARD_API CollectionExpressionSyntax : public ExpressionSyntax
 	{
 	public:
 		SyntaxToken OpenSquareToken;
 		SyntaxToken CloseSquareToken;
-		std::vector<ArgumentSyntax*> Arguments;
+		std::vector<ExpressionSyntax*> ValuesExpressions;
+		shard::ArrayTypeSymbol* Symbol = nullptr;
 
-		inline IndexatorListSyntax(SyntaxNode *const parent)
-			: SyntaxNode(SyntaxKind::IndexatorList, parent) { }
+		inline CollectionExpressionSyntax(SyntaxNode *const parent)
+			: ExpressionSyntax(SyntaxKind::CollectionExpression, parent) { }
 
-		inline IndexatorListSyntax(const IndexatorListSyntax& other) = delete;
+		inline CollectionExpressionSyntax(const CollectionExpressionSyntax&) = delete;
 
-		inline virtual ~IndexatorListSyntax()
+		inline virtual ~CollectionExpressionSyntax()
 		{
-			for (const ArgumentSyntax* argument : Arguments)
-			{
-				argument->~ArgumentSyntax();
-				delete argument;
-			}
+			for (ExpressionSyntax* expression : ValuesExpressions)
+				delete expression;
 		}
 	};
 }
-// --- End: shard/syntax/nodes/ArgumentsListSyntax.h ---
+// --- End: shard/syntax/nodes/Expressions/CollectionExpressionSyntax.h ---
 
-// --- Begin: shard/syntax/symbols/DelegateTypeSymbol.h ---
+// --- Begin: shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.h ---
 // #include "shard/ShardScriptAPI.h" (Merged)
 
-// #include "shard/syntax/symbols/TypeSymbol.h" (Merged)
-// #include "shard/syntax/symbols/ParameterSymbol.h" (Merged)
-// #include "shard/syntax/symbols/MethodSymbol.h" (Merged)
+// #include "shard/syntax/nodes/TypeDeclarationSyntax.h" (Merged)
+// #include "shard/parsing/MemberDeclarationInfo.h" (Merged)
 
 // #include "shard/syntax/SyntaxKind.h" (Merged)
+// #include "shard/syntax/SyntaxNode.h" (Merged)
 
-#include <new>
+namespace shard
+{
+	class SHARD_API StructDeclarationSyntax : public TypeDeclarationSyntax
+	{
+	public:
+		inline StructDeclarationSyntax(SyntaxNode *const parent)
+			: TypeDeclarationSyntax(SyntaxKind::StructDeclaration, parent) { }
+
+		inline StructDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) : TypeDeclarationSyntax(SyntaxKind::StructDeclaration, parent)
+		{
+			Modifiers = info.Modifiers;
+			IdentifierToken = info.Identifier;
+			TypeParameters = info.Generics;
+		}
+
+		inline StructDeclarationSyntax(const StructDeclarationSyntax& other) = delete;
+
+		inline virtual ~StructDeclarationSyntax()
+		{
+
+		}
+	};
+}
+// --- End: shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.h ---
+
+// --- Begin: shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+// #include "shard/syntax/SyntaxKind.h" (Merged)
+// #include "shard/syntax/SyntaxToken.h" (Merged)
+// #include "shard/syntax/SyntaxNode.h" (Merged)
+
+// #include "shard/syntax/nodes/MemberDeclarationSyntax.h" (Merged)
+// #include "shard/syntax/nodes/ParametersListSyntax.h" (Merged)
+// #include "shard/syntax/nodes/StatementsBlockSyntax.h" (Merged)
+
+// #include "shard/parsing/MemberDeclarationInfo.h" (Merged)
 #include <vector>
 
 namespace shard
 {
-	class SHARD_API DelegateTypeSymbol : public TypeSymbol
+	class SHARD_API ConstructorDeclarationSyntax : public MemberDeclarationSyntax
 	{
 	public:
-		TypeSymbol* ReturnType = nullptr;
-		std::vector<ParameterSymbol*> Parameters;
-		MethodSymbol* AnonymousSymbol = nullptr;
+		SyntaxToken Semicolon;
+		StatementsBlockSyntax* Body = nullptr;
+		ParametersListSyntax* Params = nullptr;
 
-		inline DelegateTypeSymbol(std::wstring name) : TypeSymbol(name, SyntaxKind::DelegateType)
+		inline ConstructorDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) : MemberDeclarationSyntax(SyntaxKind::ConstructorDeclaration, parent)
 		{
-			IsReferenceType = true;
+			Modifiers = info.Modifiers;
+			IdentifierToken = info.Identifier;
+			TypeParameters = info.Generics;
 		}
 
-		inline DelegateTypeSymbol(const DelegateTypeSymbol& other) = delete;
+		inline ConstructorDeclarationSyntax(const ConstructorDeclarationSyntax&) = delete;
 
-		inline virtual ~DelegateTypeSymbol()
+		inline ~ConstructorDeclarationSyntax() override
 		{
-			if (AnonymousSymbol != nullptr)
-				delete AnonymousSymbol;
+			if (Body != nullptr)
+				delete Body;
 
-			for (ParameterSymbol* parameter : Parameters)
-				delete parameter;
+			if (Params != nullptr)
+				delete Params;
 		}
 	};
 }
-// --- End: shard/syntax/symbols/DelegateTypeSymbol.h ---
+// --- End: shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.h ---
+
+// --- Begin: shard/syntax/nodes/Statements/ConditionalClauseSyntax.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+// #include "shard/syntax/SyntaxKind.h" (Merged)
+// #include "shard/syntax/SyntaxToken.h" (Merged)
+// #include "shard/syntax/SyntaxNode.h" (Merged)
+
+// #include "shard/syntax/nodes/StatementsBlockSyntax.h" (Merged)
+// #include "shard/syntax/nodes/StatementSyntax.h" (Merged)
+
+namespace shard
+{
+	class SHARD_API ConditionalClauseBaseSyntax : public KeywordStatementSyntax
+	{
+	public:
+		StatementsBlockSyntax* StatementsBlock = nullptr;
+		ConditionalClauseBaseSyntax* NextStatement = nullptr;
+
+		inline ConditionalClauseBaseSyntax(const SyntaxKind kind, SyntaxNode *const parent) : KeywordStatementSyntax(kind, parent) { }
+		inline ConditionalClauseBaseSyntax(const ConditionalClauseBaseSyntax& other) = delete;
+
+		inline virtual ~ConditionalClauseBaseSyntax()
+		{
+			if (StatementsBlock != nullptr)
+				delete StatementsBlock;
+
+			if (NextStatement != nullptr)
+				delete NextStatement;
+		}
+	};
+
+	class SHARD_API ConditionalClauseSyntax : public ConditionalClauseBaseSyntax
+	{
+	public:
+		SyntaxToken OpenCurlToken;
+		SyntaxToken CloseCurlToken;
+		StatementSyntax* ConditionExpression = nullptr;
+
+		inline ConditionalClauseSyntax(const SyntaxKind kind, SyntaxNode *const parent)
+			: ConditionalClauseBaseSyntax(kind, parent) { }
+
+		inline ConditionalClauseSyntax(const ConditionalClauseSyntax& other) = delete;
+
+		inline virtual ~ConditionalClauseSyntax()
+		{
+			if (ConditionExpression != nullptr)
+				delete ConditionExpression;
+		}
+	};
+
+	class SHARD_API IfStatementSyntax : public ConditionalClauseSyntax
+	{
+	public:
+		inline IfStatementSyntax(SyntaxNode *const parent) : ConditionalClauseSyntax(SyntaxKind::IfStatement, parent) { }
+		inline IfStatementSyntax(const IfStatementSyntax& other) = delete;
+		inline virtual ~IfStatementSyntax() { }
+	};
+
+	class SHARD_API UnlessStatementSyntax : public ConditionalClauseSyntax
+	{
+	public:
+		inline UnlessStatementSyntax(SyntaxNode *const parent) : ConditionalClauseSyntax(SyntaxKind::UnlessStatement, parent) { }
+		inline UnlessStatementSyntax(const UnlessStatementSyntax& other) = delete;
+		inline virtual ~UnlessStatementSyntax() { }
+	};
+
+	class SHARD_API ElseStatementSyntax : public ConditionalClauseBaseSyntax
+	{
+	public:
+		inline ElseStatementSyntax(SyntaxNode *const parent) : ConditionalClauseBaseSyntax(SyntaxKind::ElseStatement, parent) { }
+		inline ElseStatementSyntax(const ElseStatementSyntax& other) = delete;
+		inline virtual ~ElseStatementSyntax() { }
+	};
+}
+// --- End: shard/syntax/nodes/Statements/ConditionalClauseSyntax.h ---
+
+// --- Begin: shard/syntax/nodes/Loops/ForStatementSyntax.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+// #include "shard/syntax/nodes/StatementSyntax.h" (Merged)
+// #include "shard/syntax/nodes/ExpressionSyntax.h" (Merged)
+// #include "shard/syntax/nodes/StatementsBlockSyntax.h" (Merged)
+
+// #include "shard/syntax/SyntaxKind.h" (Merged)
+// #include "shard/syntax/SyntaxToken.h" (Merged)
+// #include "shard/syntax/SyntaxNode.h" (Merged)
+
+namespace shard
+{
+	class SHARD_API ForStatementSyntax : public KeywordStatementSyntax
+	{
+	public:
+		SyntaxToken OpenCurlToken;
+		SyntaxToken FirstSemicolon;
+		SyntaxToken SecondSemicolon;
+		SyntaxToken CloseCurlToken;
+
+		StatementSyntax* InitializerStatement = nullptr;
+		ExpressionSyntax* ConditionExpression = nullptr;
+		StatementSyntax* AfterRepeatStatement = nullptr;
+		StatementsBlockSyntax* StatementsBlock = nullptr;
+
+		inline ForStatementSyntax(SyntaxNode *const parent)
+			: KeywordStatementSyntax(SyntaxKind::ForStatement, parent) { }
+
+		inline ForStatementSyntax(const ForStatementSyntax&) = delete;
+
+		inline virtual ~ForStatementSyntax()
+		{
+			if (InitializerStatement != nullptr)
+				delete InitializerStatement;
+
+			if (ConditionExpression != nullptr)
+				delete ConditionExpression;
+
+			if (AfterRepeatStatement != nullptr)
+				delete AfterRepeatStatement;
+
+			if (StatementsBlock != nullptr)
+				delete StatementsBlock;
+		}
+	};
+}
+// --- End: shard/syntax/nodes/Loops/ForStatementSyntax.h ---
+
+// --- Begin: shard/syntax/nodes/Expressions/BinaryExpressionSyntax.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+// #include "shard/syntax/nodes/ExpressionSyntax.h" (Merged)
+// #include "shard/syntax/SyntaxKind.h" (Merged)
+// #include "shard/syntax/SyntaxToken.h" (Merged)
+// #include "shard/syntax/SyntaxNode.h" (Merged)
+
+namespace shard
+{
+	class SHARD_API BinaryExpressionSyntax : public ExpressionSyntax
+	{
+	public:
+		const SyntaxToken OperatorToken;
+		ExpressionSyntax* Left = nullptr;
+		ExpressionSyntax* Right = nullptr;
+
+		inline BinaryExpressionSyntax(const SyntaxToken operatorToken, SyntaxNode *const parent)
+			: ExpressionSyntax(SyntaxKind::BinaryExpression, parent), OperatorToken(operatorToken) {}
+
+		inline BinaryExpressionSyntax(const BinaryExpressionSyntax&) = delete;
+
+		inline virtual ~BinaryExpressionSyntax()
+		{
+			delete Left;
+			delete Right;
+		}
+	};
+}
+// --- End: shard/syntax/nodes/Expressions/BinaryExpressionSyntax.h ---
+
+// --- Begin: shard/syntax/nodes/Types/GenericTypeSyntax.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+// #include "shard/syntax/SyntaxToken.h" (Merged)
+// #include "shard/syntax/SyntaxKind.h" (Merged)
+// #include "shard/syntax/SyntaxNode.h" (Merged)
+
+// #include "shard/syntax/nodes/TypeSyntax.h" (Merged)
+// #include "shard/syntax/nodes/TypeArgumentsListSyntax.h" (Merged)
+
+#include <vector>
+
+namespace shard
+{
+	class SHARD_API GenericTypeSyntax : public TypeSyntax
+	{
+	public:
+		TypeSyntax* UnderlayingType = nullptr;
+		TypeArgumentsListSyntax* Arguments = nullptr;
+
+		inline GenericTypeSyntax(TypeSyntax* underlaying, SyntaxNode *const parent)
+			: TypeSyntax(SyntaxKind::GenericType, parent), UnderlayingType(underlaying) { }
+
+		inline GenericTypeSyntax(const GenericTypeSyntax& other) = delete;
+
+		inline virtual ~GenericTypeSyntax()
+		{
+			if (UnderlayingType != nullptr)
+				delete UnderlayingType;
+
+			if (Arguments != nullptr)
+				delete Arguments;
+		}
+
+		std::wstring ToString() override;
+	};
+}
+// --- End: shard/syntax/nodes/Types/GenericTypeSyntax.h ---
+
+// --- Begin: shard/syntax/nodes/Statements/ExpressionStatementSyntax.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+// #include "shard/syntax/nodes/StatementSyntax.h" (Merged)
+// #include "shard/syntax/nodes/ExpressionSyntax.h" (Merged)
+
+// #include "shard/syntax/SyntaxNode.h" (Merged)
+// #include "shard/syntax/SyntaxKind.h" (Merged)
+
+namespace shard
+{
+	class SHARD_API ExpressionStatementSyntax : public StatementSyntax
+	{
+	public:
+		ExpressionSyntax* Expression = nullptr;
+
+		inline ExpressionStatementSyntax(SyntaxNode *const parent) : StatementSyntax(SyntaxKind::ExpressionStatement, parent) { }
+		inline ExpressionStatementSyntax(ExpressionSyntax* expression, SyntaxNode *const parent) : StatementSyntax(SyntaxKind::ExpressionStatement, parent), Expression(expression) { }
+		inline ExpressionStatementSyntax(const ExpressionStatementSyntax& other) = delete;
+
+		inline virtual ~ExpressionStatementSyntax()
+		{
+			if (Expression != nullptr)
+				delete Expression;
+		}
+	};
+}
+// --- End: shard/syntax/nodes/Statements/ExpressionStatementSyntax.h ---
 
 // --- Begin: shard/syntax/symbols/VariableSymbol.h ---
 // #include "shard/ShardScriptAPI.h" (Merged)
@@ -1174,8 +2775,7 @@ namespace shard
 			: LinkedExpressionNode(SyntaxKind::MemberAccessExpression, previous, parent), IdentifierToken(identifier) { }
 
 		inline MemberAccessExpressionSyntax(SyntaxToken identifier, ExpressionSyntax* previous, SyntaxNode* const parent, const SyntaxKind kind)
-			: LinkedExpressionNode(kind, previous, parent), IdentifierToken(identifier) {
-		}
+			: LinkedExpressionNode(kind, previous, parent), IdentifierToken(identifier) { }
 
 		inline MemberAccessExpressionSyntax(const MemberAccessExpressionSyntax&) = delete;
 
@@ -1189,32 +2789,14 @@ namespace shard
 		}
 	};
 
-	class SHARD_API InvokationExpressionSyntax : public LinkedExpressionNode
-	{
-	public:
-		const SyntaxToken IdentifierToken;
-		ArgumentsListSyntax* ArgumentsList = nullptr;
-		shard::MethodSymbol* Symbol = nullptr;
-
-		inline InvokationExpressionSyntax(SyntaxToken identifier, ExpressionSyntax* previous, SyntaxNode *const parent)
-			: LinkedExpressionNode(SyntaxKind::InvokationExpression, previous, parent), IdentifierToken(identifier) { }
-
-		inline InvokationExpressionSyntax(const InvokationExpressionSyntax&) = delete;
-
-		inline virtual ~InvokationExpressionSyntax()
-		{
-			delete ArgumentsList;
-		}
-	};
-
 	class SHARD_API IndexatorExpressionSyntax : public MemberAccessExpressionSyntax
 	{
 	public:
 		IndexatorListSyntax* IndexatorList = nullptr;
-		shard::IndexatorSymbol* IndexatorSymbol = nullptr;
+		//shard::IndexatorSymbol* IndexatorSymbol = nullptr;
 
-		inline IndexatorExpressionSyntax(SyntaxToken identifier, ExpressionSyntax* previous, SyntaxNode *const parent)
-			: MemberAccessExpressionSyntax(identifier, previous, parent, SyntaxKind::IndexatorExpression) { }
+		inline IndexatorExpressionSyntax(SyntaxToken& indexerToken, ExpressionSyntax* previous, SyntaxNode *const parent)
+			: MemberAccessExpressionSyntax(indexerToken, previous, parent, SyntaxKind::IndexatorExpression) { }
 
 		inline IndexatorExpressionSyntax(const IndexatorExpressionSyntax&) = delete;
 
@@ -1223,1081 +2805,55 @@ namespace shard
 			delete IndexatorList;
 		}
 	};
+
+	class SHARD_API InvokationExpressionSyntax : public LinkedExpressionNode
+	{
+	public:
+		const SyntaxToken IdentifierToken;
+		ArgumentsListSyntax* ArgumentsList = nullptr;
+		shard::MethodSymbol* Symbol = nullptr;
+
+		inline InvokationExpressionSyntax(SyntaxToken identifier, ExpressionSyntax* previous, SyntaxNode* const parent)
+			: LinkedExpressionNode(SyntaxKind::InvokationExpression, previous, parent), IdentifierToken(identifier) {
+		}
+
+		inline InvokationExpressionSyntax(const InvokationExpressionSyntax&) = delete;
+
+		inline virtual ~InvokationExpressionSyntax()
+		{
+			delete ArgumentsList;
+		}
+	};
 }
 // --- End: shard/syntax/nodes/Expressions/LinkedExpressionSyntax.h ---
 
-// --- Begin: shard/syntax/nodes/Statements/BreakStatementSyntax.h ---
+// --- Begin: shard/syntax/nodes/Statements/ReturnStatementSyntax.h ---
 // #include "shard/ShardScriptAPI.h" (Merged)
 
 // #include "shard/syntax/SyntaxNode.h" (Merged)
 // #include "shard/syntax/SyntaxKind.h" (Merged)
 
+// #include "shard/syntax/nodes/ExpressionSyntax.h" (Merged)
 // #include "shard/syntax/nodes/StatementSyntax.h" (Merged)
 
 namespace shard
 {
-	class SHARD_API BreakStatementSyntax : public KeywordStatementSyntax
+	class SHARD_API ReturnStatementSyntax : public KeywordStatementSyntax
 	{
 	public:
-		inline BreakStatementSyntax(SyntaxNode *const parent) : KeywordStatementSyntax(SyntaxKind::BreakStatement, parent) {}
-		inline BreakStatementSyntax(const BreakStatementSyntax& other) = delete;
-		inline virtual ~BreakStatementSyntax() {}
-	};
-}
-// --- End: shard/syntax/nodes/Statements/BreakStatementSyntax.h ---
+		ExpressionSyntax* Expression = nullptr;
 
-// --- Begin: shard/syntax/nodes/Types/IdentifierNameTypeSyntax.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
+		inline ReturnStatementSyntax(SyntaxNode *const parent) : KeywordStatementSyntax(SyntaxKind::ReturnStatement, parent) { }
+		inline ReturnStatementSyntax(const ReturnStatementSyntax& other) = delete;
 
-// #include "shard/syntax/SyntaxToken.h" (Merged)
-// #include "shard/syntax/SyntaxKind.h" (Merged)
-// #include "shard/syntax/SyntaxNode.h" (Merged)
-
-// #include "shard/syntax/nodes/TypeSyntax.h" (Merged)
-
-#include <vector>
-
-namespace shard
-{
-	class SHARD_API IdentifierNameTypeSyntax : public TypeSyntax
-	{
-	public:
-		SyntaxToken Identifier;
-
-		inline IdentifierNameTypeSyntax(SyntaxNode *const parent)
-			: TypeSyntax(SyntaxKind::IdentifierNameType, parent) { }
-
-		inline IdentifierNameTypeSyntax(const IdentifierNameTypeSyntax& other) = delete;
-
-		inline virtual ~IdentifierNameTypeSyntax()
+		inline virtual ~ReturnStatementSyntax()
 		{
-
-		}
-
-		std::wstring ToString() override;
-	};
-}
-// --- End: shard/syntax/nodes/Types/IdentifierNameTypeSyntax.h ---
-
-// --- Begin: shard/syntax/symbols/NamespaceSymbol.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/syntax/SyntaxKind.h" (Merged)
-// #include "shard/syntax/SyntaxSymbol.h" (Merged)
-// #include "shard/parsing/semantic/NamespaceTree.h" (Merged)
-
-#include <string>
-#include <vector>
-
-namespace shard
-{
-	class NamespaceNode;
-}
-
-namespace shard
-{
-	class SHARD_API NamespaceSymbol : public SyntaxSymbol
-	{
-	public:
-		std::vector<SyntaxSymbol*> Members;
-		shard::NamespaceNode* Node = nullptr;
-
-		inline NamespaceSymbol(std::wstring name)
-			: SyntaxSymbol(name, SyntaxKind::NamespaceDeclaration) { }
-
-		inline NamespaceSymbol(const NamespaceSymbol& other) = delete;
-
-		void OnSymbolDeclared(SyntaxSymbol* symbol) override;
-
-		inline virtual ~NamespaceSymbol()
-		{
-			for (SyntaxSymbol* member : Members)
-				delete member;
+			if (Expression != nullptr)
+				delete Expression;
 		}
 	};
 }
-// --- End: shard/syntax/symbols/NamespaceSymbol.h ---
-
-// --- Begin: shard/parsing/semantic/NamespaceTree.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/syntax/symbols/NamespaceSymbol.h" (Merged)
-// #include "shard/syntax/symbols/TypeSymbol.h" (Merged)
-
-#include <unordered_map>
-#include <vector>
-#include <string>
-
-namespace shard
-{
-	class NamespaceSymbol;
-}
-
-namespace shard
-{
-	class SHARD_API NamespaceNode
-	{
-	public:
-		std::vector<shard::NamespaceSymbol*> Owners;
-		std::vector<shard::TypeSymbol*> Types;
-		std::unordered_map<std::wstring, NamespaceNode*> Nodes;
-
-		inline NamespaceNode()
-		{
-
-		}
-
-		inline ~NamespaceNode()
-		{
-			for (const auto& node : Nodes)
-				delete node.second;
-		}
-
-		NamespaceNode* Lookup(std::wstring name);
-		NamespaceNode* LookupOrCreate(std::wstring name, shard::NamespaceSymbol* current);
-	};
-
-	class SHARD_API NamespaceTree
-	{
-	public:
-		NamespaceNode* Root;
-
-		inline NamespaceTree()
-			: Root(new NamespaceNode()) { }
-
-		inline ~NamespaceTree()
-		{
-			delete Root;
-		}
-	};
-}
-// --- End: shard/parsing/semantic/NamespaceTree.h ---
-
-// --- Begin: shard/syntax/nodes/Directives/UsingDirectiveSyntax.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/syntax/SyntaxNode.h" (Merged)
-// #include "shard/syntax/SyntaxToken.h" (Merged)
-// #include "shard/syntax/SyntaxKind.h" (Merged)
-
-// #include "shard/parsing/semantic/NamespaceTree.h" (Merged)
-
-#include <vector>
-#include <string>
-
-namespace shard
-{
-	class SHARD_API UsingDirectiveSyntax : public SyntaxNode
-	{
-	public:
-		SyntaxToken UsingKeywordToken;
-		SyntaxToken SemicolonToken;
-		std::vector<SyntaxToken> TokensList;
-		shard::NamespaceNode* Namespace = nullptr;
-
-		inline UsingDirectiveSyntax(SyntaxNode *const parent)
-			: SyntaxNode(SyntaxKind::UsingDirective, parent) { }
-
-		inline UsingDirectiveSyntax(const UsingDirectiveSyntax&) = delete;
-
-		inline virtual ~UsingDirectiveSyntax()
-		{
-
-		}
-
-		std::wstring ToString();
-	};
-}
-// --- End: shard/syntax/nodes/Directives/UsingDirectiveSyntax.h ---
-
-// --- Begin: shard/syntax/nodes/TypeParametersListSyntax.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/syntax/SyntaxKind.h" (Merged)
-// #include "shard/syntax/SyntaxNode.h" (Merged)
-// #include "shard/syntax/SyntaxToken.h" (Merged)
-
-// #include "shard/syntax/nodes/TypeSyntax.h" (Merged)
-
-#include <vector>
-
-namespace shard
-{
-	class SHARD_API TypeParametersListSyntax : public SyntaxNode
-	{
-	public:
-		SyntaxToken OpenToken;
-		SyntaxToken CloseToken;
-		std::vector<SyntaxToken> Types;
-
-		inline TypeParametersListSyntax(SyntaxNode *const parent)
-			: SyntaxNode(SyntaxKind::ParametersList, parent) { }
-
-		inline TypeParametersListSyntax(const TypeParametersListSyntax& other) = delete;
-
-		inline virtual ~TypeParametersListSyntax()
-		{
-
-		}
-	};
-}
-// --- End: shard/syntax/nodes/TypeParametersListSyntax.h ---
-
-// --- Begin: shard/syntax/nodes/MemberDeclarationSyntax.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/syntax/SyntaxNode.h" (Merged)
-// #include "shard/syntax/SyntaxToken.h" (Merged)
-// #include "shard/syntax/SyntaxKind.h" (Merged)
-// #include "shard/syntax/nodes/TypeParametersListSyntax.h" (Merged)
-
-#include <vector>
-
-namespace shard
-{
-	class SHARD_API MemberDeclarationSyntax : public SyntaxNode
-	{
-	public:
-		std::vector<SyntaxToken> Modifiers;
-		SyntaxToken DeclareToken;
-		SyntaxToken IdentifierToken;
-		TypeParametersListSyntax* TypeParameters = nullptr;
-
-		inline MemberDeclarationSyntax(const SyntaxKind kind, SyntaxNode *const parent)
-			: SyntaxNode(kind, parent) { }
-
-		inline MemberDeclarationSyntax(const MemberDeclarationSyntax& other) = delete;
-
-		inline virtual ~MemberDeclarationSyntax()
-		{
-
-		}
-	};
-}
-// --- End: shard/syntax/nodes/MemberDeclarationSyntax.h ---
-
-// --- Begin: shard/syntax/nodes/CompilationUnitSyntax.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/syntax/SyntaxNode.h" (Merged)
-// #include "shard/syntax/SyntaxKind.h" (Merged)
-
-// #include "shard/syntax/nodes/MemberDeclarationSyntax.h" (Merged)
-// #include "shard/syntax/nodes/Directives/UsingDirectiveSyntax.h" (Merged)
-
-#include <vector>
-
-namespace shard
-{
-	class SHARD_API CompilationUnitSyntax : public SyntaxNode
-	{
-	public:
-		std::vector<UsingDirectiveSyntax*> Usings;
-		std::vector<MemberDeclarationSyntax*> Members;
-
-		inline CompilationUnitSyntax()
-			: SyntaxNode(SyntaxKind::CompilationUnit, nullptr) { }
-
-		inline CompilationUnitSyntax(const CompilationUnitSyntax& other) = delete;
-
-		inline virtual ~CompilationUnitSyntax()
-		{
-			for (const UsingDirectiveSyntax* usingDirective : Usings)
-				delete usingDirective;
-
-			for (const MemberDeclarationSyntax* member : Members)
-				delete member;
-		}
-	};
-}
-// --- End: shard/syntax/nodes/CompilationUnitSyntax.h ---
-
-// --- Begin: shard/parsing/SyntaxTree.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-// #include "shard/syntax/nodes/CompilationUnitSyntax.h" (Merged)
-#include <vector>
-
-namespace shard
-{
-	class SHARD_API SyntaxTree
-	{
-	public:
-		std::vector<shard::CompilationUnitSyntax*> CompilationUnits;
-
-		inline SyntaxTree() { }
-
-		inline virtual ~SyntaxTree()
-		{
-			for (const auto unit : CompilationUnits)
-				delete unit;
-		}
-	};
-}
-// --- End: shard/parsing/SyntaxTree.h ---
-
-// --- Begin: shard/parsing/semantic/SemanticScope.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-// #include "shard/syntax/SyntaxSymbol.h" (Merged)
-// #include "shard/parsing/semantic/NamespaceTree.h" (Merged)
-
-#include <string>
-#include <unordered_map>
-
-namespace shard
-{
-	class SHARD_API SemanticScope
-	{
-	public:
-		std::unordered_map<std::wstring, shard::SyntaxSymbol*> _symbols;
-
-		SemanticScope *const Parent;
-		shard::SyntaxSymbol *const Owner;
-		NamespaceNode* Namespace = nullptr;
-
-		bool ReturnFound = false;
-		bool ReturnsAnything = false;
-
-		inline SemanticScope(shard::SyntaxSymbol *const owner, SemanticScope *const parent)
-			: Owner(owner), Parent(parent) { }
-
-		shard::SyntaxSymbol *const Lookup(const std::wstring& name);
-		void DeclareSymbol(shard::SyntaxSymbol *const symbol);
-		void RemoveSymbol(shard::SyntaxSymbol *const symbol);
-	};
-}
-// --- End: shard/parsing/semantic/SemanticScope.h ---
-
-// --- Begin: shard/parsing/semantic/SymbolTable.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/syntax/SyntaxSymbol.h" (Merged)
-// #include "shard/syntax/SyntaxNode.h" (Merged)
-// #include "shard/syntax/SyntaxKind.h" (Merged)
-
-// #include "shard/syntax/symbols/MethodSymbol.h" (Merged)
-// #include "shard/syntax/symbols/TypeSymbol.h" (Merged)
-// #include "shard/syntax/symbols/NamespaceSymbol.h" (Merged)
-
-// #include "shard/parsing/semantic/SemanticScope.h" (Merged)
-
-#include <unordered_map>
-#include <vector>
-#include <string>
-#include <ranges>
-
-namespace shard
-{
-    class SHARD_API SymbolTable
-    {
-        inline static const std::wstring GlobalTypeName = L"__GLOBAL__";
-
-        std::unordered_map<shard::SyntaxNode*, shard::SyntaxSymbol*> nodeToSymbolMap;
-        std::unordered_map<shard::SyntaxSymbol*, shard::SyntaxNode*> symbolToNodeMap;
-        std::vector<shard::NamespaceSymbol*> namespacesList;
-        std::vector<shard::TypeSymbol*> typesList;
-
-    public:
-        struct Global
-        {
-            inline static SHARD_API shard::TypeSymbol *const Type = new shard::TypeSymbol(GlobalTypeName, shard::SyntaxKind::CompilationUnit);
-            inline static SHARD_API shard::SemanticScope *const Scope = new SemanticScope(Type, nullptr);
-        };
-
-        struct Primitives
-        {
-            inline static SHARD_API shard::TypeSymbol* Void;
-            inline static SHARD_API shard::TypeSymbol* Null;
-            inline static SHARD_API shard::TypeSymbol* Any;
-
-            inline static SHARD_API shard::TypeSymbol* Boolean;
-            inline static SHARD_API shard::TypeSymbol* Integer;
-            inline static SHARD_API shard::TypeSymbol* Double;
-            inline static SHARD_API shard::TypeSymbol* Char;
-            inline static SHARD_API shard::TypeSymbol* String;
-            inline static SHARD_API shard::TypeSymbol* Array;
-        };
-
-        inline SymbolTable()
-        {
-
-        }
-
-        ~SymbolTable();
-
-        void ClearSymbols();
-        void BindSymbol(shard::SyntaxNode *const node, shard::SyntaxSymbol *const symbol);
-        shard::SyntaxSymbol *const LookupSymbol(shard::SyntaxNode *const node);
-        shard::SyntaxNode *const GetSyntaxNode(shard::SyntaxSymbol *const symbol);
-        const std::vector<shard::NamespaceSymbol*> GetNamespaceSymbols();
-        const std::vector<shard::TypeSymbol*> GetTypeSymbols();
-    };
-}
-// --- End: shard/parsing/semantic/SymbolTable.h ---
-
-// --- Begin: shard/parsing/semantic/SymbolInfo.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-// #include "shard/syntax/SyntaxSymbol.h" (Merged)
-
-namespace shard
-{
-    struct SHARD_API SymbolInfo
-    {
-    public:
-        shard::SyntaxSymbol* Symbol;
-
-        inline SymbolInfo(shard::SyntaxSymbol* symbol)
-            : Symbol(symbol) { }
-    };
-}
-// --- End: shard/parsing/semantic/SymbolInfo.h ---
-
-// --- Begin: shard/parsing/semantic/TypeInfo.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-// #include "shard/syntax/symbols/TypeSymbol.h" (Merged)
-
-namespace shard
-{
-    struct SHARD_API TypeInfo
-    {
-    public:
-        shard::TypeSymbol* Type;
-
-        inline TypeInfo(shard::TypeSymbol* type)
-            : Type(type) { }
-    };
-}
-// --- End: shard/parsing/semantic/TypeInfo.h ---
-
-// --- Begin: shard/parsing/semantic/SemanticModel.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/syntax/SyntaxNode.h" (Merged)
-// #include "shard/syntax/nodes/ExpressionSyntax.h" (Merged)
-// #include "shard/parsing/SyntaxTree.h" (Merged)
-
-// #include "shard/parsing/semantic/SymbolTable.h" (Merged)
-// #include "shard/parsing/semantic/TypeInfo.h" (Merged)
-// #include "shard/parsing/semantic/SymbolInfo.h" (Merged)
-// #include "shard/parsing/semantic/NamespaceTree.h" (Merged)
-
-namespace shard
-{
-	class SHARD_API SemanticModel
-	{
-	public:
-		shard::SyntaxTree& Tree;
-		shard::SymbolTable* Table;
-		shard::NamespaceTree* Namespaces;
-
-		SemanticModel(shard::SyntaxTree& tree);
-		~SemanticModel();
-
-		shard::SymbolInfo GetSymbolInfo(shard::SyntaxNode* node);
-		shard::TypeInfo GetTypeInfo(shard::ExpressionSyntax* expression);
-		//Conversion ClassifyConversion(shard::ExpressionSyntax* expression, shard::TypeSymbol destination);
-		//DataFlowAnalysis AnalyzeDataFlow(shard::SyntaxNode* firstNode, shard::SyntaxNode* lastNode);
-	};
-}
-// --- End: shard/parsing/semantic/SemanticModel.h ---
-
-// --- Begin: shard/syntax/nodes/BodyDeclarationSyntax.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/syntax/nodes/MemberDeclarationSyntax.h" (Merged)
-
-// #include "shard/syntax/SyntaxNode.h" (Merged)
-// #include "shard/syntax/SyntaxKind.h" (Merged)
-// #include "shard/syntax/SyntaxToken.h" (Merged)
-
-namespace shard
-{
-	class SHARD_API BodyDeclarationSyntax : public MemberDeclarationSyntax
-	{
-	public:
-		SyntaxToken OpenBraceToken;
-		SyntaxToken CloseBraceToken;
-		SyntaxToken SemicolonToken;
-
-		inline BodyDeclarationSyntax(const SyntaxKind kind, SyntaxNode *const parent)
-			: MemberDeclarationSyntax(kind, parent) { }
-
-		inline BodyDeclarationSyntax(const BodyDeclarationSyntax& other) = delete;
-
-		inline virtual ~BodyDeclarationSyntax()
-		{
-
-		}
-	};
-}
-// --- End: shard/syntax/nodes/BodyDeclarationSyntax.h ---
-
-// --- Begin: shard/syntax/nodes/StatementsBlockSyntax.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/syntax/SyntaxNode.h" (Merged)
-// #include "shard/syntax/SyntaxKind.h" (Merged)
-
-// #include "shard/syntax/nodes/BodyDeclarationSyntax.h" (Merged)
-// #include "shard/syntax/nodes/StatementSyntax.h" (Merged)
-
-#include <vector>
-
-namespace shard
-{
-	class SHARD_API StatementsBlockSyntax : public BodyDeclarationSyntax
-	{
-	public:
-		std::vector<StatementSyntax*> Statements;
-
-		inline StatementsBlockSyntax(SyntaxNode *const parent)
-			: BodyDeclarationSyntax(SyntaxKind::StatementsBlock, parent) { }
-
-		inline StatementsBlockSyntax(const StatementsBlockSyntax& other) = delete;
-
-		inline virtual ~StatementsBlockSyntax()
-		{
-			for (const StatementSyntax* statement : Statements)
-				delete statement;
-		}
-	};
-}
-// --- End: shard/syntax/nodes/StatementsBlockSyntax.h ---
-
-// --- Begin: shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/syntax/SyntaxKind.h" (Merged)
-// #include "shard/syntax/SyntaxNode.h" (Merged)
-// #include "shard/syntax/SyntaxToken.h" (Merged)
-
-// #include "shard/syntax/nodes/StatementsBlockSyntax.h" (Merged)
-
-#include <vector>
-
-namespace shard
-{
-	class SHARD_API AccessorDeclarationSyntax : public MemberDeclarationSyntax
-	{
-	public:
-		SyntaxToken KeywordToken;
-		std::vector<SyntaxToken> Modifiers;
-		SyntaxToken SemicolonToken;
-		StatementsBlockSyntax* Body = nullptr;
-
-		inline AccessorDeclarationSyntax(SyntaxNode *const parent)
-			: MemberDeclarationSyntax(SyntaxKind::AccessorDeclaration, parent) { }
-
-		inline AccessorDeclarationSyntax(SyntaxNode *const parent, StatementsBlockSyntax* body)
-			: MemberDeclarationSyntax(SyntaxKind::AccessorDeclaration, parent), Body(body) { }
-
-		inline AccessorDeclarationSyntax(const AccessorDeclarationSyntax&) = delete;
-
-		inline ~AccessorDeclarationSyntax() override
-		{
-
-		}
-	};
-}
-
-
-// --- End: shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.h ---
-
-// --- Begin: shard/syntax/nodes/ParametersListSyntax.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/syntax/SyntaxKind.h" (Merged)
-// #include "shard/syntax/SyntaxNode.h" (Merged)
-// #include "shard/syntax/SyntaxToken.h" (Merged)
-
-// #include "shard/syntax/nodes/TypeSyntax.h" (Merged)
-// #include "shard/syntax/symbols/TypeSymbol.h" (Merged)
-
-#include <vector>
-
-namespace shard
-{
-	class SHARD_API ParameterSyntax : public SyntaxNode
-	{
-	public:
-		const TypeSyntax* Type;
-		const SyntaxToken Identifier;
-		shard::TypeSymbol* Symbol = nullptr;
-
-		inline ParameterSyntax(const TypeSyntax* type, const SyntaxToken identifier, SyntaxNode *const parent)
-			: SyntaxNode(SyntaxKind::Parameter, parent), Type(type), Identifier(identifier) { }
-
-		inline ParameterSyntax(const ParameterSyntax& other) = delete;
-
-		inline virtual ~ParameterSyntax()
-		{
-
-		}
-	};
-
-	class SHARD_API ParametersListSyntax : public SyntaxNode
-	{
-	public:
-		SyntaxToken OpenToken;
-		SyntaxToken CloseToken;
-		std::vector<ParameterSyntax*> Parameters;
-
-		inline ParametersListSyntax(SyntaxNode *const parent)
-			: SyntaxNode(SyntaxKind::ParametersList, parent) {}
-
-		inline ParametersListSyntax(const ParametersListSyntax& other) = delete;
-
-		inline virtual ~ParametersListSyntax()
-		{
-			for (const ParameterSyntax* parameter : Parameters)
-				delete parameter;
-		}
-	};
-}
-// --- End: shard/syntax/nodes/ParametersListSyntax.h ---
-
-// --- Begin: shard/syntax/nodes/Types/DelegateTypeSyntax.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/syntax/SyntaxToken.h" (Merged)
-// #include "shard/syntax/SyntaxKind.h" (Merged)
-// #include "shard/syntax/SyntaxNode.h" (Merged)
-
-// #include "shard/syntax/nodes/TypeSyntax.h" (Merged)
-// #include "shard/syntax/nodes/ParametersListSyntax.h" (Merged)
-
-#include <string>
-
-namespace shard
-{
-	class SHARD_API DelegateTypeSyntax : public TypeSyntax
-	{
-	public:
-		SyntaxToken DelegateToken;
-		TypeSyntax* ReturnType = nullptr;
-		ParametersListSyntax* Params = nullptr;
-
-		inline DelegateTypeSyntax(SyntaxNode *const parent)
-			: TypeSyntax(SyntaxKind::DelegateType, parent) { }
-
-		inline DelegateTypeSyntax(const DelegateTypeSyntax& other) = delete;
-
-		inline virtual ~DelegateTypeSyntax()
-		{
-			if (Params != nullptr)
-				delete Params;
-		}
-
-		std::wstring ToString() override;
-	};
-}
-// --- End: shard/syntax/nodes/Types/DelegateTypeSyntax.h ---
-
-// --- Begin: shard/syntax/nodes/TypeArgumentsListSyntax.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/syntax/SyntaxKind.h" (Merged)
-// #include "shard/syntax/SyntaxNode.h" (Merged)
-// #include "shard/syntax/SyntaxToken.h" (Merged)
-
-// #include "shard/syntax/nodes/TypeSyntax.h" (Merged)
-
-#include <vector>
-
-namespace shard
-{
-	class SHARD_API TypeArgumentsListSyntax : public SyntaxNode
-	{
-	public:
-		SyntaxToken OpenToken;
-		SyntaxToken CloseToken;
-		std::vector<TypeSyntax*> Types;
-
-		inline TypeArgumentsListSyntax(SyntaxNode *const parent)
-			: SyntaxNode(SyntaxKind::ParametersList, parent) {
-		}
-
-		inline TypeArgumentsListSyntax(const TypeArgumentsListSyntax& other) = delete;
-
-		inline virtual ~TypeArgumentsListSyntax()
-		{
-			for (const TypeSyntax* parameter : Types)
-				delete parameter;
-		}
-	};
-}
-// --- End: shard/syntax/nodes/TypeArgumentsListSyntax.h ---
-
-// --- Begin: shard/syntax/nodes/Types/GenericTypeSyntax.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/syntax/SyntaxToken.h" (Merged)
-// #include "shard/syntax/SyntaxKind.h" (Merged)
-// #include "shard/syntax/SyntaxNode.h" (Merged)
-
-// #include "shard/syntax/nodes/TypeSyntax.h" (Merged)
-// #include "shard/syntax/nodes/TypeArgumentsListSyntax.h" (Merged)
-
-#include <vector>
-
-namespace shard
-{
-	class SHARD_API GenericTypeSyntax : public TypeSyntax
-	{
-	public:
-		TypeSyntax* UnderlayingType = nullptr;
-		TypeArgumentsListSyntax* Arguments = nullptr;
-
-		inline GenericTypeSyntax(TypeSyntax* underlaying, SyntaxNode *const parent)
-			: TypeSyntax(SyntaxKind::GenericType, parent), UnderlayingType(underlaying) { }
-
-		inline GenericTypeSyntax(const GenericTypeSyntax& other) = delete;
-
-		inline virtual ~GenericTypeSyntax()
-		{
-			if (UnderlayingType != nullptr)
-				delete UnderlayingType;
-
-			if (Arguments != nullptr)
-				delete Arguments;
-		}
-
-		std::wstring ToString() override;
-	};
-}
-// --- End: shard/syntax/nodes/Types/GenericTypeSyntax.h ---
-
-// --- Begin: shard/parsing/analysis/DiagnosticSeverity.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-#include <string>
-
-namespace shard
-{
-	enum class DiagnosticSeverity
-	{
-		Info,
-		Warning,
-		Error
-	};
-}
-
-SHARD_API std::wstring severity_to_wstring(const shard::DiagnosticSeverity& severity);
-// --- End: shard/parsing/analysis/DiagnosticSeverity.h ---
-
-// --- Begin: shard/parsing/analysis/Diagnostic.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/parsing/analysis/TextLocation.h" (Merged)
-// #include "shard/parsing/analysis/DiagnosticSeverity.h" (Merged)
-// #include "shard/syntax/SyntaxToken.h" (Merged)
-
-#include <string>
-
-namespace shard
-{
-	class SHARD_API Diagnostic
-	{
-	public:
-		const DiagnosticSeverity Severity;
-		const std::wstring Description;
-		const shard::SyntaxToken Token;
-		const TextLocation Location;
-
-		Diagnostic(shard::SyntaxToken token, DiagnosticSeverity severity, std::wstring description);
-		Diagnostic(const Diagnostic& other);
-
-		inline Diagnostic& operator=(const Diagnostic& other)
-		{
-			if (this != &other)
-			{
-				this->~Diagnostic();
-				new (this) Diagnostic(other);
-			}
-
-			return *this;
-		}
-	};
-}
-// --- End: shard/parsing/analysis/Diagnostic.h ---
-
-// --- Begin: shard/parsing/analysis/DiagnosticsContext.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/syntax/SyntaxToken.h" (Merged)
-// #include "shard/parsing/analysis/Diagnostic.h" (Merged)
-
-#include <string>
-#include <vector>
-#include <ostream>
-
-namespace shard
-{
-	class SHARD_API DiagnosticsContext
-	{
-	public:
-		bool AnyError = false;
-		std::vector<Diagnostic> Diagnostics;
-
-		inline DiagnosticsContext() : Diagnostics() {}
-
-		void ReportError(shard::SyntaxToken token, std::wstring message);
-		void ReportWarning(shard::SyntaxToken token, std::wstring message);
-		void ReportInfo(shard::SyntaxToken token, std::wstring message);
-		void WriteDiagnostics(std::wostream& out);
-		void Reset();
-	};
-}
-// --- End: shard/parsing/analysis/DiagnosticsContext.h ---
-
-// --- Begin: shard/syntax/nodes/Expressions/LiteralExpressionSyntax.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/syntax/SyntaxKind.h" (Merged)
-// #include "shard/syntax/SyntaxToken.h" (Merged)
-// #include "shard/syntax/nodes/ExpressionSyntax.h" (Merged)
-// #include "shard/syntax/SyntaxNode.h" (Merged)
-
-namespace shard
-{
-	class SHARD_API LiteralExpressionSyntax : public ExpressionSyntax
-	{
-	public:
-		const SyntaxToken LiteralToken;
-
-		inline LiteralExpressionSyntax(const SyntaxToken literal, SyntaxNode *const parent) : ExpressionSyntax(SyntaxKind::LiteralExpression, parent), LiteralToken(literal) { }
-		inline LiteralExpressionSyntax(const LiteralExpressionSyntax&) = delete;
-		inline virtual ~LiteralExpressionSyntax() { }
-	};
-}
-// --- End: shard/syntax/nodes/Expressions/LiteralExpressionSyntax.h ---
-
-// --- Begin: shard/syntax/nodes/Expressions/LambdaExpressionSyntax.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/syntax/SyntaxKind.h" (Merged)
-// #include "shard/syntax/SyntaxToken.h" (Merged)
-// #include "shard/syntax/SyntaxNode.h" (Merged)
-
-// #include "shard/syntax/nodes/ExpressionSyntax.h" (Merged)
-// #include "shard/syntax/nodes/StatementsBlockSyntax.h" (Merged)
-// #include "shard/syntax/nodes/ParametersListSyntax.h" (Merged)
-// #include "shard/syntax/symbols/DelegateTypeSymbol.h" (Merged)
-
-namespace shard
-{
-	class SHARD_API LambdaExpressionSyntax : public ExpressionSyntax
-	{
-	public:
-		SyntaxToken LambdaToken;
-		SyntaxToken LambdaOperatorToken;
-		ParametersListSyntax* Params = nullptr;
-		StatementsBlockSyntax* Body = nullptr;
-		shard::DelegateTypeSymbol* Symbol = nullptr;
-
-		inline LambdaExpressionSyntax(SyntaxNode *const parent)
-			: ExpressionSyntax(SyntaxKind::LambdaExpression, parent) { }
-
-		inline LambdaExpressionSyntax(const LambdaExpressionSyntax&) = delete;
-
-		inline virtual ~LambdaExpressionSyntax()
-		{
-			if (Params != nullptr)
-				delete Params;
-
-			if (Body != nullptr)
-				delete Body;
-		}
-	};
-}
-// --- End: shard/syntax/nodes/Expressions/LambdaExpressionSyntax.h ---
-
-// --- Begin: shard/syntax/nodes/Loops/WhileStatementSyntax.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/syntax/nodes/StatementSyntax.h" (Merged)
-// #include "shard/syntax/nodes/ExpressionSyntax.h" (Merged)
-// #include "shard/syntax/nodes/StatementsBlockSyntax.h" (Merged)
-
-// #include "shard/syntax/SyntaxKind.h" (Merged)
-// #include "shard/syntax/SyntaxToken.h" (Merged)
-// #include "shard/syntax/SyntaxNode.h" (Merged)
-
-namespace shard
-{
-	class SHARD_API WhileStatementSyntax : public KeywordStatementSyntax
-	{
-	public:
-		SyntaxToken OpenCurlToken;
-		SyntaxToken CloseCurlToken;
-
-		ExpressionSyntax* ConditionExpression = nullptr;
-		StatementsBlockSyntax* StatementsBlock = nullptr;
-
-		inline WhileStatementSyntax(SyntaxNode *const parent)
-			: KeywordStatementSyntax(SyntaxKind::WhileStatement, parent) { }
-
-		inline WhileStatementSyntax(const WhileStatementSyntax&) = delete;
-
-		inline virtual ~WhileStatementSyntax()
-		{
-			if (ConditionExpression != nullptr)
-				delete ConditionExpression;
-
-			if (StatementsBlock != nullptr)
-				delete StatementsBlock;
-		}
-	};
-}
-// --- End: shard/syntax/nodes/Loops/WhileStatementSyntax.h ---
-
-// --- Begin: shard/parsing/MemberDeclarationInfo.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/syntax/SyntaxToken.h" (Merged)
-// #include "shard/syntax/nodes/TypeParametersListSyntax.h" (Merged)
-// #include "shard/syntax/nodes/TypeSyntax.h" (Merged)
-
-#include <vector>
-
-namespace shard
-{
-	struct SHARD_API MemberDeclarationInfo
-	{
-		std::vector<shard::SyntaxToken> Modifiers;
-		shard::SyntaxToken DeclareType;
-		shard::SyntaxToken Identifier;
-		shard::TypeSyntax* ReturnType = nullptr;
-		shard::TypeParametersListSyntax* Generics = nullptr;
-	};
-}
-// --- End: shard/parsing/MemberDeclarationInfo.h ---
-
-// --- Begin: shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/syntax/SyntaxKind.h" (Merged)
-// #include "shard/syntax/SyntaxToken.h" (Merged)
-// #include "shard/syntax/SyntaxNode.h" (Merged)
-
-// #include "shard/syntax/nodes/MemberDeclarationSyntax.h" (Merged)
-// #include "shard/syntax/nodes/ParametersListSyntax.h" (Merged)
-// #include "shard/syntax/nodes/StatementsBlockSyntax.h" (Merged)
-// #include "shard/syntax/nodes/TypeSyntax.h" (Merged)
-
-// #include "shard/parsing/MemberDeclarationInfo.h" (Merged)
-
-#include <vector>
-
-namespace shard
-{
-	class SHARD_API MethodDeclarationSyntax : public MemberDeclarationSyntax
-	{
-	public:
-		SyntaxToken Semicolon;
-		TypeSyntax* ReturnType = nullptr;
-		ParametersListSyntax* Params = nullptr;
-		StatementsBlockSyntax* Body = nullptr;
-
-		inline MethodDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) : MemberDeclarationSyntax(SyntaxKind::MethodDeclaration, parent)
-		{
-			Modifiers = info.Modifiers;
-			IdentifierToken = info.Identifier;
-			ReturnType = info.ReturnType;
-			TypeParameters = info.Generics;
-		}
-
-		inline MethodDeclarationSyntax(const MethodDeclarationSyntax&) = delete;
-
-		inline ~MethodDeclarationSyntax() override
-		{
-			if (ReturnType != nullptr)
-				delete ReturnType;
-
-			if (Params != nullptr)
-				delete Params;
-
-			if (Body != nullptr)
-				delete Body;
-		}
-	};
-}
-// --- End: shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.h ---
-
-// --- Begin: shard/syntax/nodes/Statements/ConditionalClauseSyntax.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/syntax/SyntaxKind.h" (Merged)
-// #include "shard/syntax/SyntaxToken.h" (Merged)
-// #include "shard/syntax/SyntaxNode.h" (Merged)
-
-// #include "shard/syntax/nodes/StatementsBlockSyntax.h" (Merged)
-// #include "shard/syntax/nodes/StatementSyntax.h" (Merged)
-
-namespace shard
-{
-	class SHARD_API ConditionalClauseBaseSyntax : public KeywordStatementSyntax
-	{
-	public:
-		StatementsBlockSyntax* StatementsBlock = nullptr;
-		ConditionalClauseBaseSyntax* NextStatement = nullptr;
-
-		inline ConditionalClauseBaseSyntax(const SyntaxKind kind, SyntaxNode *const parent) : KeywordStatementSyntax(kind, parent) { }
-		inline ConditionalClauseBaseSyntax(const ConditionalClauseBaseSyntax& other) = delete;
-
-		inline virtual ~ConditionalClauseBaseSyntax()
-		{
-			if (StatementsBlock != nullptr)
-				delete StatementsBlock;
-
-			if (NextStatement != nullptr)
-				delete NextStatement;
-		}
-	};
-
-	class SHARD_API ConditionalClauseSyntax : public ConditionalClauseBaseSyntax
-	{
-	public:
-		SyntaxToken OpenCurlToken;
-		SyntaxToken CloseCurlToken;
-		StatementSyntax* ConditionExpression = nullptr;
-
-		inline ConditionalClauseSyntax(const SyntaxKind kind, SyntaxNode *const parent)
-			: ConditionalClauseBaseSyntax(kind, parent) { }
-
-		inline ConditionalClauseSyntax(const ConditionalClauseSyntax& other) = delete;
-
-		inline virtual ~ConditionalClauseSyntax()
-		{
-			if (ConditionExpression != nullptr)
-				delete ConditionExpression;
-		}
-	};
-
-	class SHARD_API IfStatementSyntax : public ConditionalClauseSyntax
-	{
-	public:
-		inline IfStatementSyntax(SyntaxNode *const parent) : ConditionalClauseSyntax(SyntaxKind::IfStatement, parent) { }
-		inline IfStatementSyntax(const IfStatementSyntax& other) = delete;
-		inline virtual ~IfStatementSyntax() { }
-	};
-
-	class SHARD_API UnlessStatementSyntax : public ConditionalClauseSyntax
-	{
-	public:
-		inline UnlessStatementSyntax(SyntaxNode *const parent) : ConditionalClauseSyntax(SyntaxKind::UnlessStatement, parent) { }
-		inline UnlessStatementSyntax(const UnlessStatementSyntax& other) = delete;
-		inline virtual ~UnlessStatementSyntax() { }
-	};
-
-	class SHARD_API ElseStatementSyntax : public ConditionalClauseBaseSyntax
-	{
-	public:
-		inline ElseStatementSyntax(SyntaxNode *const parent) : ConditionalClauseBaseSyntax(SyntaxKind::ElseStatement, parent) { }
-		inline ElseStatementSyntax(const ElseStatementSyntax& other) = delete;
-		inline virtual ~ElseStatementSyntax() { }
-	};
-}
-// --- End: shard/syntax/nodes/Statements/ConditionalClauseSyntax.h ---
+// --- End: shard/syntax/nodes/Statements/ReturnStatementSyntax.h ---
 
 // --- Begin: shard/syntax/nodes/Loops/UntilStatementSyntax.h ---
 // #include "shard/ShardScriptAPI.h" (Merged)
@@ -2338,7 +2894,7 @@ namespace shard
 }
 // --- End: shard/syntax/nodes/Loops/UntilStatementSyntax.h ---
 
-// --- Begin: shard/syntax/nodes/MemberDeclarations/IndexatorDeclarationSyntax.h ---
+// --- Begin: shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.h ---
 // #include "shard/ShardScriptAPI.h" (Merged)
 
 // #include "shard/syntax/SyntaxKind.h" (Merged)
@@ -2350,360 +2906,47 @@ namespace shard
 // #include "shard/syntax/nodes/MemberDeclarationSyntax.h" (Merged)
 // #include "shard/syntax/nodes/ExpressionSyntax.h" (Merged)
 // #include "shard/syntax/nodes/TypeSyntax.h" (Merged)
-// #include "shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.h" (Merged)
-// #include "shard/syntax/nodes/ParametersListSyntax.h" (Merged)
 
 #include <vector>
 
 namespace shard
 {
-    class SHARD_API IndexatorDeclarationSyntax : public MemberDeclarationSyntax
-    {
-    public:
-        SyntaxToken IndexKeyword;
-        SyntaxToken OpenBraceToken;
-        SyntaxToken CloseBraceToken;
-
-        TypeSyntax* ReturnType = nullptr;
-        ParametersListSyntax* Parameters = nullptr;
-
-        AccessorDeclarationSyntax* Getter = nullptr;
-        AccessorDeclarationSyntax* Setter = nullptr;
-
-        inline IndexatorDeclarationSyntax(SyntaxNode *const parent)
-            : MemberDeclarationSyntax(SyntaxKind::IndexatorDeclaration, parent) { }
-
-        inline IndexatorDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent)
-            : MemberDeclarationSyntax(SyntaxKind::IndexatorDeclaration, parent)
-        {
-            Modifiers = info.Modifiers;
-            IdentifierToken = info.Identifier;
-            ReturnType = info.ReturnType;
-            TypeParameters = info.Generics;
-        }
-
-        inline virtual ~IndexatorDeclarationSyntax()
-        {
-            if (Getter != nullptr)
-            {
-                delete Getter;
-                Getter = nullptr;
-            }
-
-            if (Setter != nullptr)
-            {
-                delete Setter;
-                Setter = nullptr;
-            }
-
-            if (ReturnType != nullptr)
-            {
-                delete ReturnType;
-                ReturnType = nullptr;
-            }
-
-            if (Parameters != nullptr)
-            {
-                delete Parameters;
-                Parameters = nullptr;
-            }
-        }
-    };
-}
-// --- End: shard/syntax/nodes/MemberDeclarations/IndexatorDeclarationSyntax.h ---
-
-// --- Begin: shard/syntax/nodes/TypeDeclarationSyntax.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/syntax/SyntaxKind.h" (Merged)
-// #include "shard/syntax/SyntaxNode.h" (Merged)
-
-// #include "shard/syntax/nodes/MemberDeclarationSyntax.h" (Merged)
-// #include "shard/syntax/nodes/BodyDeclarationSyntax.h" (Merged)
-
-#include <vector>
-
-namespace shard
-{
-	class SHARD_API TypeDeclarationSyntax : public BodyDeclarationSyntax
+	class SHARD_API FieldDeclarationSyntax : public MemberDeclarationSyntax
 	{
 	public:
-		std::vector<MemberDeclarationSyntax*> Members;
+		SyntaxToken ReturnTypeToken;
+		SyntaxToken SemicolonToken;
+		SyntaxToken InitializerAssignToken;
 
-		inline TypeDeclarationSyntax(const SyntaxKind kind, SyntaxNode *const parent)
-			: BodyDeclarationSyntax(kind, parent) { }
+		ExpressionSyntax* InitializerExpression = nullptr;
+		TypeSyntax* ReturnType = nullptr;
 
-		inline TypeDeclarationSyntax(const TypeDeclarationSyntax& other) = delete;
+		inline FieldDeclarationSyntax(SyntaxNode *const parent)
+			: MemberDeclarationSyntax(SyntaxKind::FieldDeclaration, parent) { }
 
-		inline virtual ~TypeDeclarationSyntax()
-		{
-			for (const MemberDeclarationSyntax* member : Members)
-				delete member;
-		}
-	};
-}
-// --- End: shard/syntax/nodes/TypeDeclarationSyntax.h ---
-
-// --- Begin: shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/syntax/nodes/TypeDeclarationSyntax.h" (Merged)
-// #include "shard/parsing/MemberDeclarationInfo.h" (Merged)
-
-// #include "shard/syntax/SyntaxKind.h" (Merged)
-// #include "shard/syntax/SyntaxNode.h" (Merged)
-
-namespace shard
-{
-	class SHARD_API StructDeclarationSyntax : public TypeDeclarationSyntax
-	{
-	public:
-		inline StructDeclarationSyntax(SyntaxNode *const parent)
-			: TypeDeclarationSyntax(SyntaxKind::StructDeclaration, parent) { }
-
-		inline StructDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) : TypeDeclarationSyntax(SyntaxKind::StructDeclaration, parent)
+		inline FieldDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) : MemberDeclarationSyntax(SyntaxKind::FieldDeclaration, parent)
 		{
 			Modifiers = info.Modifiers;
 			IdentifierToken = info.Identifier;
+			ReturnType = info.ReturnType;
 			TypeParameters = info.Generics;
 		}
 
-		inline StructDeclarationSyntax(const StructDeclarationSyntax& other) = delete;
+		inline FieldDeclarationSyntax(const FieldDeclarationSyntax& other) = delete;
 
-		inline virtual ~StructDeclarationSyntax()
+		inline virtual ~FieldDeclarationSyntax()
 		{
+			if (InitializerExpression != nullptr)
+				delete InitializerExpression;
 
+			if (ReturnType != nullptr)
+				delete ReturnType;
 		}
 	};
 }
-// --- End: shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.h ---
+// --- End: shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.h ---
 
-// --- Begin: shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/syntax/SyntaxKind.h" (Merged)
-// #include "shard/syntax/SyntaxToken.h" (Merged)
-// #include "shard/syntax/SyntaxNode.h" (Merged)
-
-// #include "shard/syntax/nodes/MemberDeclarationSyntax.h" (Merged)
-// #include "shard/syntax/nodes/ParametersListSyntax.h" (Merged)
-// #include "shard/syntax/nodes/StatementsBlockSyntax.h" (Merged)
-
-// #include "shard/parsing/MemberDeclarationInfo.h" (Merged)
-#include <vector>
-
-namespace shard
-{
-	class SHARD_API ConstructorDeclarationSyntax : public MemberDeclarationSyntax
-	{
-	public:
-		SyntaxToken Semicolon;
-		StatementsBlockSyntax* Body = nullptr;
-		ParametersListSyntax* Params = nullptr;
-
-		inline ConstructorDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) : MemberDeclarationSyntax(SyntaxKind::ConstructorDeclaration, parent)
-		{
-			Modifiers = info.Modifiers;
-			IdentifierToken = info.Identifier;
-			TypeParameters = info.Generics;
-		}
-
-		inline ConstructorDeclarationSyntax(const ConstructorDeclarationSyntax&) = delete;
-
-		inline ~ConstructorDeclarationSyntax() override
-		{
-			if (Body != nullptr)
-				delete Body;
-
-			if (Params != nullptr)
-				delete Params;
-		}
-	};
-}
-// --- End: shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.h ---
-
-// --- Begin: shard/syntax/symbols/ConstructorSymbol.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/syntax/SyntaxKind.h" (Merged)
-// #include "shard/syntax/SyntaxSymbol.h" (Merged)
-
-// #include "shard/syntax/symbols/MethodSymbol.h" (Merged)
-
-#include <string>
-
-namespace shard
-{
-    class SHARD_API ConstructorSymbol : public MethodSymbol
-    {
-    public:
-        inline ConstructorSymbol(std::wstring name)
-            : MethodSymbol(name, SyntaxKind::ConstructorDeclaration) { }
-
-        inline ConstructorSymbol(std::wstring name, MethodSymbolDelegate delegate) : MethodSymbol(name, SyntaxKind::ConstructorDeclaration)
-        {
-            FunctionPointer = delegate;
-            HandleType = MethodHandleType::External;
-        }
-
-        inline ConstructorSymbol(const ConstructorSymbol& other) = delete;
-
-        inline virtual ~ConstructorSymbol()
-        {
-
-        }
-    };
-}
-// --- End: shard/syntax/symbols/ConstructorSymbol.h ---
-
-// --- Begin: shard/syntax/nodes/Expressions/ObjectExpressionSyntax.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/syntax/SyntaxKind.h" (Merged)
-// #include "shard/syntax/SyntaxToken.h" (Merged)
-// #include "shard/syntax/SyntaxNode.h" (Merged)
-
-// #include "shard/syntax/nodes/TypeSyntax.h" (Merged)
-// #include "shard/syntax/nodes/ArgumentsListSyntax.h" (Merged)
-// #include "shard/syntax/nodes/ExpressionSyntax.h" (Merged)
-
-// #include "shard/syntax/symbols/TypeSymbol.h" (Merged)
-// #include "shard/syntax/symbols/ConstructorSymbol.h" (Merged)
-
-namespace shard
-{
-	class SHARD_API ObjectExpressionSyntax : public ExpressionSyntax
-	{
-	public:
-		SyntaxToken NewToken;
-		SyntaxToken IdentifierToken;
-
-		TypeSyntax* Type = nullptr;
-		ArgumentsListSyntax* ArgumentsList = nullptr;
-		shard::TypeSymbol* TypeSymbol = nullptr;
-		shard::ConstructorSymbol* CtorSymbol = nullptr;
-
-		inline ObjectExpressionSyntax(SyntaxNode *const parent)
-			: ExpressionSyntax(SyntaxKind::ObjectExpression, parent) { }
-
-		inline ObjectExpressionSyntax(const ObjectExpressionSyntax&) = delete;
-
-		inline virtual ~ObjectExpressionSyntax()
-		{
-			if (Type != nullptr)
-				delete Type;
-
-			if (ArgumentsList != nullptr)
-				delete ArgumentsList;
-		}
-	};
-}
-// --- End: shard/syntax/nodes/Expressions/ObjectExpressionSyntax.h ---
-
-// --- Begin: shard/syntax/symbols/ArrayTypeSymbol.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/syntax/symbols/TypeSymbol.h" (Merged)
-// #include "shard/syntax/symbols/FieldSymbol.h" (Merged)
-// #include "shard/syntax/symbols/MethodSymbol.h" (Merged)
-// #include "shard/syntax/symbols/PropertySymbol.h" (Merged)
-// #include "shard/syntax/symbols/IndexatorSymbol.h" (Merged)
-
-// #include "shard/syntax/SyntaxKind.h" (Merged)
-
-// #include "shard/parsing/semantic/SymbolTable.h" (Merged)
-
-#include <string>
-#include <vector>
-
-namespace shard
-{
-	class SHARD_API ArrayTypeSymbol : public TypeSymbol
-	{
-	public:
-		TypeSymbol* UnderlayingType = nullptr;
-		size_t Size = 0;
-		int Rank = 0;
-
-		inline ArrayTypeSymbol(TypeSymbol* underlayingType) : TypeSymbol(L"Array", SyntaxKind::ArrayType), UnderlayingType(underlayingType)
-		{
-			MemoryBytesSize = shard::SymbolTable::Primitives::Array->MemoryBytesSize;
-			IsReferenceType = true;
-		}
-
-		inline ArrayTypeSymbol(const ArrayTypeSymbol& other) = delete;
-
-		inline virtual ~ArrayTypeSymbol()
-		{
-
-		}
-
-		ConstructorSymbol* FindConstructor(std::vector<TypeSymbol*> parameterTypes) override;
-		MethodSymbol* FindMethod(std::wstring& name, std::vector<TypeSymbol*> parameterTypes) override;
-		IndexatorSymbol* FindIndexator(std::vector<TypeSymbol*> parameterTypes) override;
-		FieldSymbol* FindField(std::wstring& name) override;
-		PropertySymbol* FindProperty(std::wstring& name) override;
-	};
-}
-// --- End: shard/syntax/symbols/ArrayTypeSymbol.h ---
-
-// --- Begin: shard/syntax/nodes/Expressions/CollectionExpressionSyntax.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/syntax/nodes/ExpressionSyntax.h" (Merged)
-// #include "shard/syntax/symbols/ArrayTypeSymbol.h" (Merged)
-// #include "shard/syntax/SyntaxKind.h" (Merged)
-// #include "shard/syntax/SyntaxToken.h" (Merged)
-// #include "shard/syntax/SyntaxNode.h" (Merged)
-
-#include <vector>
-
-namespace shard
-{
-	class SHARD_API CollectionExpressionSyntax : public ExpressionSyntax
-	{
-	public:
-		SyntaxToken OpenSquareToken;
-		SyntaxToken CloseSquareToken;
-		std::vector<ExpressionSyntax*> ValuesExpressions;
-		shard::ArrayTypeSymbol* Symbol = nullptr;
-
-		inline CollectionExpressionSyntax(SyntaxNode *const parent)
-			: ExpressionSyntax(SyntaxKind::CollectionExpression, parent) { }
-
-		inline CollectionExpressionSyntax(const CollectionExpressionSyntax&) = delete;
-
-		inline virtual ~CollectionExpressionSyntax()
-		{
-			for (ExpressionSyntax* expression : ValuesExpressions)
-				delete expression;
-		}
-	};
-}
-// --- End: shard/syntax/nodes/Expressions/CollectionExpressionSyntax.h ---
-
-// --- Begin: shard/syntax/nodes/Statements/ContinueStatementSyntax.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/syntax/SyntaxNode.h" (Merged)
-// #include "shard/syntax/SyntaxKind.h" (Merged)
-
-// #include "shard/syntax/nodes/StatementSyntax.h" (Merged)
-
-namespace shard
-{
-	class SHARD_API ContinueStatementSyntax : public KeywordStatementSyntax
-	{
-	public:
-		inline ContinueStatementSyntax(SyntaxNode *const parent) : KeywordStatementSyntax(SyntaxKind::ContinueStatement, parent) {}
-		inline ContinueStatementSyntax(const ContinueStatementSyntax& other) = delete;
-
-		inline virtual ~ContinueStatementSyntax() {}
-	};
-}
-// --- End: shard/syntax/nodes/Statements/ContinueStatementSyntax.h ---
-
-// --- Begin: shard/syntax/nodes/Types/ArrayTypeSyntax.h ---
+// --- Begin: shard/syntax/nodes/Types/IdentifierNameTypeSyntax.h ---
 // #include "shard/ShardScriptAPI.h" (Merged)
 
 // #include "shard/syntax/SyntaxToken.h" (Merged)
@@ -2712,158 +2955,73 @@ namespace shard
 
 // #include "shard/syntax/nodes/TypeSyntax.h" (Merged)
 
-#include <string>
+#include <vector>
 
 namespace shard
 {
-	class SHARD_API ArrayTypeSyntax : public TypeSyntax
+	class SHARD_API IdentifierNameTypeSyntax : public TypeSyntax
 	{
 	public:
-		TypeSyntax* UnderlayingType = nullptr;
-		SyntaxToken OpenSquareToken;
-		SyntaxToken CloseSquareToken;
-		int Rank = 1;
+		SyntaxToken Identifier;
 
-		inline ArrayTypeSyntax(TypeSyntax* underlaying, SyntaxNode *const parent)
-			: TypeSyntax(SyntaxKind::ArrayType, parent), UnderlayingType(underlaying) { }
+		inline IdentifierNameTypeSyntax(SyntaxNode *const parent)
+			: TypeSyntax(SyntaxKind::IdentifierNameType, parent) { }
 
-		inline ArrayTypeSyntax(const ArrayTypeSyntax& other) = delete;
+		inline IdentifierNameTypeSyntax(const IdentifierNameTypeSyntax& other) = delete;
 
-		inline virtual ~ArrayTypeSyntax()
+		inline virtual ~IdentifierNameTypeSyntax()
 		{
-			if (UnderlayingType != nullptr)
-				delete UnderlayingType;
+
 		}
 
 		std::wstring ToString() override;
 	};
 }
-// --- End: shard/syntax/nodes/Types/ArrayTypeSyntax.h ---
+// --- End: shard/syntax/nodes/Types/IdentifierNameTypeSyntax.h ---
 
-// --- Begin: shard/syntax/nodes/Expressions/UnaryExpressionSyntax.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/syntax/SyntaxNode.h" (Merged)
-// #include "shard/syntax/SyntaxKind.h" (Merged)
-// #include "shard/syntax/SyntaxToken.h" (Merged)
-// #include "shard/syntax/nodes/ExpressionSyntax.h" (Merged)
-
-namespace shard
-{
-	class SHARD_API UnaryExpressionSyntax : public ExpressionSyntax
-	{
-	public:
-		const SyntaxToken OperatorToken;
-		ExpressionSyntax* Expression = nullptr;
-		const bool IsRightDetermined;
-
-		inline UnaryExpressionSyntax(const SyntaxToken operatorToken, const bool isRightDetermined, SyntaxNode *const parent)
-			: ExpressionSyntax(SyntaxKind::UnaryExpression, parent), OperatorToken(operatorToken), IsRightDetermined(isRightDetermined) { }
-
-		inline UnaryExpressionSyntax(const UnaryExpressionSyntax&) = delete;
-
-		inline virtual ~UnaryExpressionSyntax()
-		{
-			delete Expression;
-		}
-	};
-}
-// --- End: shard/syntax/nodes/Expressions/UnaryExpressionSyntax.h ---
-
-// --- Begin: shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/syntax/SyntaxKind.h" (Merged)
-// #include "shard/syntax/SyntaxNode.h" (Merged)
-// #include "shard/syntax/SyntaxToken.h" (Merged)
-
-// #include "shard/syntax/nodes/TypeDeclarationSyntax.h" (Merged)
-// #include "shard/parsing/MemberDeclarationInfo.h" (Merged)
-
-#include <vector>
-
-namespace shard
-{
-	class SHARD_API NamespaceDeclarationSyntax : public TypeDeclarationSyntax
-	{
-	public:
-		std::vector<SyntaxToken> IdentifierTokens;
-
-		inline NamespaceDeclarationSyntax(SyntaxNode *const parent)
-			: TypeDeclarationSyntax(SyntaxKind::NamespaceDeclaration, parent) { }
-
-		inline NamespaceDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) : TypeDeclarationSyntax(SyntaxKind::NamespaceDeclaration, parent)
-		{
-			Modifiers = info.Modifiers;
-			IdentifierToken = info.Identifier;
-		}
-
-		inline NamespaceDeclarationSyntax(const NamespaceDeclarationSyntax& other) = delete;
-
-		inline virtual ~NamespaceDeclarationSyntax()
-		{
-
-		}
-	};
-}
-// --- End: shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.h ---
-
-// --- Begin: shard/syntax/nodes/Statements/ExpressionStatementSyntax.h ---
+// --- Begin: shard/syntax/nodes/Statements/VariableStatementSyntax.h ---
 // #include "shard/ShardScriptAPI.h" (Merged)
 
 // #include "shard/syntax/nodes/StatementSyntax.h" (Merged)
 // #include "shard/syntax/nodes/ExpressionSyntax.h" (Merged)
+// #include "shard/syntax/nodes/TypeSyntax.h" (Merged)
 
-// #include "shard/syntax/SyntaxNode.h" (Merged)
 // #include "shard/syntax/SyntaxKind.h" (Merged)
+// #include "shard/syntax/SyntaxToken.h" (Merged)
+// #include "shard/syntax/SyntaxNode.h" (Merged)
 
 namespace shard
 {
-	class SHARD_API ExpressionStatementSyntax : public StatementSyntax
+	class SHARD_API VariableStatementSyntax : public StatementSyntax
 	{
 	public:
+		TypeSyntax* Type = nullptr;
+		SyntaxToken IdentifierToken;
+		SyntaxToken AssignToken;
 		ExpressionSyntax* Expression = nullptr;
 
-		inline ExpressionStatementSyntax(SyntaxNode *const parent) : StatementSyntax(SyntaxKind::ExpressionStatement, parent) { }
-		inline ExpressionStatementSyntax(ExpressionSyntax* expression, SyntaxNode *const parent) : StatementSyntax(SyntaxKind::ExpressionStatement, parent), Expression(expression) { }
-		inline ExpressionStatementSyntax(const ExpressionStatementSyntax& other) = delete;
+		inline VariableStatementSyntax(TypeSyntax* type, SyntaxToken name, SyntaxToken assignOp, ExpressionSyntax* expression, SyntaxNode *const parent)
+			: StatementSyntax(SyntaxKind::VariableStatement, parent), Type(type), IdentifierToken(name), AssignToken(assignOp), Expression(expression) { }
 
-		inline virtual ~ExpressionStatementSyntax()
+		inline VariableStatementSyntax(const VariableStatementSyntax& other) = delete;
+
+		inline virtual ~VariableStatementSyntax()
 		{
+			if (Type != nullptr)
+			{
+				Type->~TypeSyntax();
+				delete Type;
+			}
+
 			if (Expression != nullptr)
+			{
+				Expression->~ExpressionSyntax();
 				delete Expression;
+			}
 		}
 	};
 }
-// --- End: shard/syntax/nodes/Statements/ExpressionStatementSyntax.h ---
-
-// --- Begin: shard/syntax/nodes/Statements/ReturnStatementSyntax.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/syntax/SyntaxNode.h" (Merged)
-// #include "shard/syntax/SyntaxKind.h" (Merged)
-
-// #include "shard/syntax/nodes/ExpressionSyntax.h" (Merged)
-// #include "shard/syntax/nodes/StatementSyntax.h" (Merged)
-
-namespace shard
-{
-	class SHARD_API ReturnStatementSyntax : public KeywordStatementSyntax
-	{
-	public:
-		ExpressionSyntax* Expression = nullptr;
-
-		inline ReturnStatementSyntax(SyntaxNode *const parent) : KeywordStatementSyntax(SyntaxKind::ReturnStatement, parent) { }
-		inline ReturnStatementSyntax(const ReturnStatementSyntax& other) = delete;
-
-		inline virtual ~ReturnStatementSyntax()
-		{
-			if (Expression != nullptr)
-				delete Expression;
-		}
-	};
-}
-// --- End: shard/syntax/nodes/Statements/ReturnStatementSyntax.h ---
+// --- End: shard/syntax/nodes/Statements/VariableStatementSyntax.h ---
 
 // --- Begin: shard/syntax/nodes/MemberDeclarations/PropertyDeclarationSyntax.h ---
 // #include "shard/ShardScriptAPI.h" (Merged)
@@ -2943,87 +3101,7 @@ namespace shard
 
 // --- End: shard/syntax/nodes/MemberDeclarations/PropertyDeclarationSyntax.h ---
 
-// --- Begin: shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/syntax/SyntaxKind.h" (Merged)
-// #include "shard/syntax/SyntaxToken.h" (Merged)
-// #include "shard/syntax/SyntaxNode.h" (Merged)
-
-// #include "shard/parsing/MemberDeclarationInfo.h" (Merged)
-
-// #include "shard/syntax/nodes/MemberDeclarationSyntax.h" (Merged)
-// #include "shard/syntax/nodes/ExpressionSyntax.h" (Merged)
-// #include "shard/syntax/nodes/TypeSyntax.h" (Merged)
-
-#include <vector>
-
-namespace shard
-{
-	class SHARD_API FieldDeclarationSyntax : public MemberDeclarationSyntax
-	{
-	public:
-		SyntaxToken ReturnTypeToken;
-		SyntaxToken SemicolonToken;
-		SyntaxToken InitializerAssignToken;
-
-		ExpressionSyntax* InitializerExpression = nullptr;
-		TypeSyntax* ReturnType = nullptr;
-
-		inline FieldDeclarationSyntax(SyntaxNode *const parent)
-			: MemberDeclarationSyntax(SyntaxKind::FieldDeclaration, parent) { }
-
-		inline FieldDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) : MemberDeclarationSyntax(SyntaxKind::FieldDeclaration, parent)
-		{
-			Modifiers = info.Modifiers;
-			IdentifierToken = info.Identifier;
-			ReturnType = info.ReturnType;
-			TypeParameters = info.Generics;
-		}
-
-		inline FieldDeclarationSyntax(const FieldDeclarationSyntax& other) = delete;
-
-		inline virtual ~FieldDeclarationSyntax()
-		{
-			if (InitializerExpression != nullptr)
-				delete InitializerExpression;
-
-			if (ReturnType != nullptr)
-				delete ReturnType;
-		}
-	};
-}
-// --- End: shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.h ---
-
-// --- Begin: shard/syntax/nodes/Statements/ThrowStatementSyntax.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/syntax/SyntaxNode.h" (Merged)
-// #include "shard/syntax/SyntaxKind.h" (Merged)
-
-// #include "shard/syntax/nodes/ExpressionSyntax.h" (Merged)
-// #include "shard/syntax/nodes/StatementSyntax.h" (Merged)
-
-namespace shard
-{
-	class SHARD_API ThrowStatementSyntax : public KeywordStatementSyntax
-	{
-	public:
-		ExpressionSyntax* Expression = nullptr;
-
-		inline ThrowStatementSyntax(SyntaxNode *const parent) : KeywordStatementSyntax(SyntaxKind::ThrowStatement, parent) {}
-		inline ThrowStatementSyntax(const ThrowStatementSyntax& other) = delete;
-
-		inline virtual ~ThrowStatementSyntax()
-		{
-			if (Expression != nullptr)
-				delete Expression;
-		}
-	};
-}
-// --- End: shard/syntax/nodes/Statements/ThrowStatementSyntax.h ---
-
-// --- Begin: shard/syntax/nodes/Types/NullableTypeSyntax.h ---
+// --- Begin: shard/syntax/nodes/Types/PredefinedTypeSyntax.h ---
 // #include "shard/ShardScriptAPI.h" (Merged)
 
 // #include "shard/syntax/SyntaxToken.h" (Merged)
@@ -3034,27 +3112,25 @@ namespace shard
 
 namespace shard
 {
-	class SHARD_API NullableTypeSyntax : public TypeSyntax
+	class SHARD_API PredefinedTypeSyntax : public TypeSyntax
 	{
 	public:
-		TypeSyntax* UnderlayingType = nullptr;
-		SyntaxToken QuestionToken;
+		const SyntaxToken TypeToken;
 
-		inline NullableTypeSyntax(TypeSyntax* underlaying, SyntaxNode *const parent)
-			: TypeSyntax(SyntaxKind::NullableType, parent), UnderlayingType(underlaying) { }
+		inline PredefinedTypeSyntax(const SyntaxToken typeToken, SyntaxNode *const parent)
+			: TypeSyntax(SyntaxKind::PredefinedType, parent), TypeToken(typeToken) { }
 
-		inline NullableTypeSyntax(const NullableTypeSyntax& other) = delete;
+		inline PredefinedTypeSyntax(const PredefinedTypeSyntax& other) = delete;
 
-		inline virtual ~NullableTypeSyntax()
+		inline virtual ~PredefinedTypeSyntax()
 		{
-			if (UnderlayingType != nullptr)
-				delete UnderlayingType;
+
 		}
 
 		std::wstring ToString() override;
 	};
 }
-// --- End: shard/syntax/nodes/Types/NullableTypeSyntax.h ---
+// --- End: shard/syntax/nodes/Types/PredefinedTypeSyntax.h ---
 
 // --- Begin: shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.h ---
 // #include "shard/ShardScriptAPI.h" (Merged)
@@ -3089,38 +3165,81 @@ namespace shard
 }
 // --- End: shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.h ---
 
-// --- Begin: shard/syntax/nodes/Expressions/BinaryExpressionSyntax.h ---
+// --- Begin: shard/syntax/nodes/Types/DelegateTypeSyntax.h ---
 // #include "shard/ShardScriptAPI.h" (Merged)
 
-// #include "shard/syntax/nodes/ExpressionSyntax.h" (Merged)
-// #include "shard/syntax/SyntaxKind.h" (Merged)
 // #include "shard/syntax/SyntaxToken.h" (Merged)
+// #include "shard/syntax/SyntaxKind.h" (Merged)
 // #include "shard/syntax/SyntaxNode.h" (Merged)
+
+// #include "shard/syntax/nodes/TypeSyntax.h" (Merged)
+// #include "shard/syntax/nodes/ParametersListSyntax.h" (Merged)
+
+#include <string>
 
 namespace shard
 {
-	class SHARD_API BinaryExpressionSyntax : public ExpressionSyntax
+	class SHARD_API DelegateTypeSyntax : public TypeSyntax
 	{
 	public:
-		const SyntaxToken OperatorToken;
-		ExpressionSyntax* Left = nullptr;
-		ExpressionSyntax* Right = nullptr;
+		SyntaxToken DelegateToken;
+		TypeSyntax* ReturnType = nullptr;
+		ParametersListSyntax* Params = nullptr;
 
-		inline BinaryExpressionSyntax(const SyntaxToken operatorToken, SyntaxNode *const parent)
-			: ExpressionSyntax(SyntaxKind::BinaryExpression, parent), OperatorToken(operatorToken) {}
+		inline DelegateTypeSyntax(SyntaxNode *const parent)
+			: TypeSyntax(SyntaxKind::DelegateType, parent) { }
 
-		inline BinaryExpressionSyntax(const BinaryExpressionSyntax&) = delete;
+		inline DelegateTypeSyntax(const DelegateTypeSyntax& other) = delete;
 
-		inline virtual ~BinaryExpressionSyntax()
+		inline virtual ~DelegateTypeSyntax()
 		{
-			delete Left;
-			delete Right;
+			if (Params != nullptr)
+				delete Params;
 		}
+
+		std::wstring ToString() override;
 	};
 }
-// --- End: shard/syntax/nodes/Expressions/BinaryExpressionSyntax.h ---
+// --- End: shard/syntax/nodes/Types/DelegateTypeSyntax.h ---
 
-// --- Begin: shard/syntax/nodes/Loops/ForStatementSyntax.h ---
+// --- Begin: shard/syntax/nodes/Types/ArrayTypeSyntax.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+// #include "shard/syntax/SyntaxToken.h" (Merged)
+// #include "shard/syntax/SyntaxKind.h" (Merged)
+// #include "shard/syntax/SyntaxNode.h" (Merged)
+
+// #include "shard/syntax/nodes/TypeSyntax.h" (Merged)
+
+#include <string>
+
+namespace shard
+{
+	class SHARD_API ArrayTypeSyntax : public TypeSyntax
+	{
+	public:
+		TypeSyntax* UnderlayingType = nullptr;
+		SyntaxToken OpenSquareToken;
+		SyntaxToken CloseSquareToken;
+		int Rank = 1;
+
+		inline ArrayTypeSyntax(TypeSyntax* underlaying, SyntaxNode *const parent)
+			: TypeSyntax(SyntaxKind::ArrayType, parent), UnderlayingType(underlaying) { }
+
+		inline ArrayTypeSyntax(const ArrayTypeSyntax& other) = delete;
+
+		inline virtual ~ArrayTypeSyntax()
+		{
+			if (UnderlayingType != nullptr)
+				delete UnderlayingType;
+		}
+
+		std::wstring ToString() override;
+	};
+}
+// --- End: shard/syntax/nodes/Types/ArrayTypeSyntax.h ---
+
+// --- Begin: shard/syntax/nodes/Loops/WhileStatementSyntax.h ---
 // #include "shard/ShardScriptAPI.h" (Merged)
 
 // #include "shard/syntax/nodes/StatementSyntax.h" (Merged)
@@ -3133,159 +3252,31 @@ namespace shard
 
 namespace shard
 {
-	class SHARD_API ForStatementSyntax : public KeywordStatementSyntax
+	class SHARD_API WhileStatementSyntax : public KeywordStatementSyntax
 	{
 	public:
 		SyntaxToken OpenCurlToken;
-		SyntaxToken FirstSemicolon;
-		SyntaxToken SecondSemicolon;
 		SyntaxToken CloseCurlToken;
 
-		StatementSyntax* InitializerStatement = nullptr;
 		ExpressionSyntax* ConditionExpression = nullptr;
-		StatementSyntax* AfterRepeatStatement = nullptr;
 		StatementsBlockSyntax* StatementsBlock = nullptr;
 
-		inline ForStatementSyntax(SyntaxNode *const parent)
-			: KeywordStatementSyntax(SyntaxKind::ForStatement, parent) { }
+		inline WhileStatementSyntax(SyntaxNode *const parent)
+			: KeywordStatementSyntax(SyntaxKind::WhileStatement, parent) { }
 
-		inline ForStatementSyntax(const ForStatementSyntax&) = delete;
+		inline WhileStatementSyntax(const WhileStatementSyntax&) = delete;
 
-		inline virtual ~ForStatementSyntax()
+		inline virtual ~WhileStatementSyntax()
 		{
-			if (InitializerStatement != nullptr)
-				delete InitializerStatement;
-
 			if (ConditionExpression != nullptr)
 				delete ConditionExpression;
-
-			if (AfterRepeatStatement != nullptr)
-				delete AfterRepeatStatement;
 
 			if (StatementsBlock != nullptr)
 				delete StatementsBlock;
 		}
 	};
 }
-// --- End: shard/syntax/nodes/Loops/ForStatementSyntax.h ---
-
-// --- Begin: shard/syntax/nodes/Types/PredefinedTypeSyntax.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/syntax/SyntaxToken.h" (Merged)
-// #include "shard/syntax/SyntaxKind.h" (Merged)
-// #include "shard/syntax/SyntaxNode.h" (Merged)
-
-// #include "shard/syntax/nodes/TypeSyntax.h" (Merged)
-
-namespace shard
-{
-	class SHARD_API PredefinedTypeSyntax : public TypeSyntax
-	{
-	public:
-		const SyntaxToken TypeToken;
-
-		inline PredefinedTypeSyntax(const SyntaxToken typeToken, SyntaxNode *const parent)
-			: TypeSyntax(SyntaxKind::PredefinedType, parent), TypeToken(typeToken) { }
-
-		inline PredefinedTypeSyntax(const PredefinedTypeSyntax& other) = delete;
-
-		inline virtual ~PredefinedTypeSyntax()
-		{
-
-		}
-
-		std::wstring ToString() override;
-	};
-}
-// --- End: shard/syntax/nodes/Types/PredefinedTypeSyntax.h ---
-
-// --- Begin: shard/syntax/nodes/Expressions/TernaryExpressionSyntax.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/syntax/nodes/ExpressionSyntax.h" (Merged)
-// #include "shard/syntax/SyntaxKind.h" (Merged)
-// #include "shard/syntax/SyntaxToken.h" (Merged)
-// #include "shard/syntax/SyntaxNode.h" (Merged)
-
-namespace shard
-{
-	class SHARD_API TernaryExpressionSyntax : public ExpressionSyntax
-	{
-	public:
-		SyntaxToken QuestionToken;
-		SyntaxToken ColonToken;
-		ExpressionSyntax* Condition = nullptr;
-		ExpressionSyntax* Left = nullptr;
-		ExpressionSyntax* Right = nullptr;
-
-		inline TernaryExpressionSyntax(SyntaxNode *const parent)
-			: ExpressionSyntax(SyntaxKind::TernaryExpression, parent) { }
-
-		inline TernaryExpressionSyntax(const TernaryExpressionSyntax&) = delete;
-
-		inline virtual ~TernaryExpressionSyntax()
-		{
-			if (Condition != nullptr)
-				delete Condition;
-
-			if (Left != nullptr)
-				delete Left;
-
-			if (Right != nullptr)
-				delete Right;
-		}
-	};
-}
-// --- End: shard/syntax/nodes/Expressions/TernaryExpressionSyntax.h ---
-
-// --- Begin: shard/syntax/nodes/MemberDeclarations/DelegateDeclarationSyntax.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/parsing/MemberDeclarationInfo.h" (Merged)
-
-// #include "shard/syntax/nodes/MemberDeclarationSyntax.h" (Merged)
-// #include "shard/syntax/nodes/ParametersListSyntax.h" (Merged)
-
-// #include "shard/syntax/SyntaxKind.h" (Merged)
-// #include "shard/syntax/SyntaxNode.h" (Merged)
-// #include "shard/syntax/SyntaxToken.h" (Merged)
-
-namespace shard
-{
-	class SHARD_API DelegateDeclarationSyntax : public MemberDeclarationSyntax
-	{
-	public:
-		SyntaxToken DelegateToken;
-		SyntaxToken Semicolon;
-		TypeSyntax* ReturnType = nullptr;
-		ParametersListSyntax* Params = nullptr;
-
-		inline DelegateDeclarationSyntax(SyntaxNode *const parent)
-			: MemberDeclarationSyntax(SyntaxKind::DelegateDeclaration, parent) { }
-
-		inline DelegateDeclarationSyntax(const DelegateDeclarationSyntax& other) = delete;
-
-		inline DelegateDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) : MemberDeclarationSyntax(SyntaxKind::DelegateDeclaration, parent)
-		{
-			Modifiers = info.Modifiers;
-			DelegateToken = info.DeclareType;
-			ReturnType = info.ReturnType;
-			IdentifierToken = info.Identifier;
-			TypeParameters = info.Generics;
-		}
-
-		inline virtual ~DelegateDeclarationSyntax()
-		{
-			if (ReturnType != nullptr)
-				delete ReturnType;
-
-			if (Params != nullptr)
-				delete Params;
-		}
-	};
-}
-// --- End: shard/syntax/nodes/MemberDeclarations/DelegateDeclarationSyntax.h ---
+// --- End: shard/syntax/nodes/Loops/WhileStatementSyntax.h ---
 
 // --- Begin: shard/SyntaxVisitor.h ---
 // #include "shard/ShardScriptAPI.h" (Merged)
@@ -3355,84 +3346,84 @@ namespace shard
 	class SHARD_API SyntaxVisitor
 	{
     protected:
-        shard::SymbolTable* Table;
-        shard::NamespaceTree* Namespaces;
-        shard::DiagnosticsContext& Diagnostics;
+        SymbolTable* Table;
+        NamespaceTree* Namespaces;
+        DiagnosticsContext& Diagnostics;
 
-        inline SyntaxVisitor(shard::SemanticModel& model, shard::DiagnosticsContext& diagnostics)
+        inline SyntaxVisitor(SemanticModel& model, DiagnosticsContext& diagnostics)
             : Table(model.Table), Namespaces(model.Namespaces), Diagnostics(diagnostics) { }
 
         template<typename T>
-        inline T *const LookupSymbol(shard::SyntaxNode *const node)
+        inline T *const LookupSymbol(SyntaxNode *const node)
         {
             return static_cast<T *const>(Table->LookupSymbol(node));
         }
 
 	public:
-        virtual void VisitSyntaxTree(shard::SyntaxTree& tree);
-        virtual void VisitCompilationUnit(shard::CompilationUnitSyntax *const node);
-        virtual void VisitUsingDirective(shard::UsingDirectiveSyntax *const node);
+        virtual void VisitSyntaxTree(SyntaxTree& tree);
+        virtual void VisitCompilationUnit(CompilationUnitSyntax *const node);
+        virtual void VisitUsingDirective(UsingDirectiveSyntax *const node);
 
-        virtual void VisitTypeDeclaration(shard::MemberDeclarationSyntax *const node);
-        virtual void VisitNamespaceDeclaration(shard::NamespaceDeclarationSyntax *const node);
-        virtual void VisitClassDeclaration(shard::ClassDeclarationSyntax *const node);
-        virtual void VisitStructDeclaration(shard::StructDeclarationSyntax *const node);
-        virtual void VisitDelegateDeclaration(shard::DelegateDeclarationSyntax *const node);
+        virtual void VisitTypeDeclaration(MemberDeclarationSyntax *const node);
+        virtual void VisitNamespaceDeclaration(NamespaceDeclarationSyntax *const node);
+        virtual void VisitClassDeclaration(ClassDeclarationSyntax *const node);
+        virtual void VisitStructDeclaration(StructDeclarationSyntax *const node);
+        virtual void VisitDelegateDeclaration(DelegateDeclarationSyntax *const node);
 
-        virtual void VisitMemberDeclaration(shard::MemberDeclarationSyntax *const node);
-        virtual void VisitMethodDeclaration(shard::MethodDeclarationSyntax *const node);
-        virtual void VisitConstructorDeclaration(shard::ConstructorDeclarationSyntax *const node);
-        virtual void VisitFieldDeclaration(shard::FieldDeclarationSyntax *const node);
-        virtual void VisitPropertyDeclaration(shard::PropertyDeclarationSyntax *const node);
-        virtual void VisitIndexatorDeclaration(shard::IndexatorDeclarationSyntax *const node);
-		virtual void VisitAccessorDeclaration(shard::AccessorDeclarationSyntax *const node);
+        virtual void VisitMemberDeclaration(MemberDeclarationSyntax *const node);
+        virtual void VisitMethodDeclaration(MethodDeclarationSyntax *const node);
+        virtual void VisitConstructorDeclaration(ConstructorDeclarationSyntax *const node);
+        virtual void VisitFieldDeclaration(FieldDeclarationSyntax *const node);
+        virtual void VisitPropertyDeclaration(PropertyDeclarationSyntax *const node);
+        virtual void VisitIndexatorDeclaration(IndexatorDeclarationSyntax *const node);
+		virtual void VisitAccessorDeclaration(AccessorDeclarationSyntax *const node);
 
-        virtual void VisitStatementsBlock(shard::StatementsBlockSyntax *const node);
-        virtual void VisitStatement(shard::StatementSyntax *const node);
-        virtual void VisitExpressionStatement(shard::ExpressionStatementSyntax *const node);
-        virtual void VisitVariableStatement(shard::VariableStatementSyntax *const node);
-        virtual void VisitReturnStatement(shard::ReturnStatementSyntax *const node);
-        virtual void VisitThrowStatement(shard::ThrowStatementSyntax *const node);
-        virtual void VisitBreakStatement(shard::BreakStatementSyntax *const node);
-        virtual void VisitContinueStatement(shard::ContinueStatementSyntax *const node);
+        virtual void VisitStatementsBlock(StatementsBlockSyntax *const node);
+        virtual void VisitStatement(StatementSyntax *const node);
+        virtual void VisitExpressionStatement(ExpressionStatementSyntax *const node);
+        virtual void VisitVariableStatement(VariableStatementSyntax *const node);
+        virtual void VisitReturnStatement(ReturnStatementSyntax *const node);
+        virtual void VisitThrowStatement(ThrowStatementSyntax *const node);
+        virtual void VisitBreakStatement(BreakStatementSyntax *const node);
+        virtual void VisitContinueStatement(ContinueStatementSyntax *const node);
 
-        virtual void VisitWhileStatement(shard::WhileStatementSyntax *const node);
-        virtual void VisitForStatement(shard::ForStatementSyntax *const node);
-        virtual void VisitUntilStatement(shard::UntilStatementSyntax *const node);
+        virtual void VisitWhileStatement(WhileStatementSyntax *const node);
+        virtual void VisitForStatement(ForStatementSyntax *const node);
+        virtual void VisitUntilStatement(UntilStatementSyntax *const node);
 
-        virtual void VisitConditionalClause(shard::ConditionalClauseBaseSyntax *const node);
-        virtual void VisitIfStatement(shard::IfStatementSyntax *const node);
-        virtual void VisitUnlessStatement(shard::UnlessStatementSyntax *const node);
-        virtual void VisitElseStatement(shard::ElseStatementSyntax *const node);
+        virtual void VisitConditionalClause(ConditionalClauseBaseSyntax *const node);
+        virtual void VisitIfStatement(IfStatementSyntax *const node);
+        virtual void VisitUnlessStatement(UnlessStatementSyntax *const node);
+        virtual void VisitElseStatement(ElseStatementSyntax *const node);
 
-        virtual void VisitExpression(shard::ExpressionSyntax *const node);
-        virtual void VisitLiteralExpression(shard::LiteralExpressionSyntax *const node);
-        virtual void VisitBinaryExpression(shard::BinaryExpressionSyntax *const node);
-        virtual void VisitUnaryExpression(shard::UnaryExpressionSyntax *const node);
-        virtual void VisitObjectCreationExpression(shard::ObjectExpressionSyntax *const node);
-        virtual void VisitCollectionExpression(shard::CollectionExpressionSyntax *const node);
-        virtual void VisitLambdaExpression(shard::LambdaExpressionSyntax *const node);
-        virtual void VisitTernaryExpression(shard::TernaryExpressionSyntax *const node);
+        virtual void VisitExpression(ExpressionSyntax *const node);
+        virtual void VisitLiteralExpression(LiteralExpressionSyntax *const node);
+        virtual void VisitBinaryExpression(BinaryExpressionSyntax *const node);
+        virtual void VisitUnaryExpression(UnaryExpressionSyntax *const node);
+        virtual void VisitObjectCreationExpression(ObjectExpressionSyntax *const node);
+        virtual void VisitCollectionExpression(CollectionExpressionSyntax *const node);
+        virtual void VisitLambdaExpression(LambdaExpressionSyntax *const node);
+        virtual void VisitTernaryExpression(TernaryExpressionSyntax *const node);
 
-        virtual void VisitInvocationExpression(shard::InvokationExpressionSyntax *const node);
-        virtual void VisitMemberAccessExpression(shard::MemberAccessExpressionSyntax *const node);
-        virtual void VisitIndexatorExpression(shard::IndexatorExpressionSyntax *const node);
+        virtual void VisitInvocationExpression(InvokationExpressionSyntax *const node);
+        virtual void VisitMemberAccessExpression(MemberAccessExpressionSyntax *const node);
+        virtual void VisitIndexatorExpression(IndexatorExpressionSyntax *const node);
 
-        virtual void VisitArgumentsList(shard::ArgumentsListSyntax *const node);
-        virtual void VisitArgument(shard::ArgumentSyntax *const node);
-        virtual void VisitParametersList(shard::ParametersListSyntax *const node);
-        virtual void VisitParameter(shard::ParameterSyntax *const node);
-        virtual void VisitIndexatorList(shard::IndexatorListSyntax *const node);
-        virtual void VisitTypeParametersList(shard::TypeParametersListSyntax *const node);
-        virtual void VisitTypeArgumentsList(shard::TypeArgumentsListSyntax *const node);
+        virtual void VisitArgumentsList(ArgumentsListSyntax *const node);
+        virtual void VisitArgument(ArgumentSyntax *const node);
+        virtual void VisitParametersList(ParametersListSyntax *const node);
+        virtual void VisitParameter(ParameterSyntax *const node);
+        virtual void VisitIndexatorList(IndexatorListSyntax *const node);
+        virtual void VisitTypeParametersList(TypeParametersListSyntax *const node);
+        virtual void VisitTypeArgumentsList(TypeArgumentsListSyntax *const node);
 
-        virtual void VisitType(shard::TypeSyntax *const node);
-        virtual void VisitPredefinedType(shard::PredefinedTypeSyntax *const node);
-        virtual void VisitIdentifierNameType(shard::IdentifierNameTypeSyntax *const node);
-        virtual void VisitArrayType(shard::ArrayTypeSyntax *const node);
-        virtual void VisitNullableType(shard::NullableTypeSyntax *const node);
-        virtual void VisitGenericType(shard::GenericTypeSyntax *const node);
-        virtual void VisitDelegateType(shard::DelegateTypeSyntax *const node);
+        virtual void VisitType(TypeSyntax *const node);
+        virtual void VisitPredefinedType(PredefinedTypeSyntax *const node);
+        virtual void VisitIdentifierNameType(IdentifierNameTypeSyntax *const node);
+        virtual void VisitArrayType(ArrayTypeSyntax *const node);
+        virtual void VisitNullableType(NullableTypeSyntax *const node);
+        virtual void VisitGenericType(GenericTypeSyntax *const node);
+        virtual void VisitDelegateType(DelegateTypeSyntax *const node);
 	};
 }
 // --- End: shard/SyntaxVisitor.h ---
@@ -3493,6 +3484,28 @@ namespace shard
 }
 // --- End: shard/Vector.h ---
 
+// --- Begin: shard/compilation/ProgramVirtualImage.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+// #include "shard/parsing/semantic/SemanticModel.h" (Merged)
+// #include "shard/syntax/symbols/MethodSymbol.h" (Merged)
+
+#include <vector>
+
+namespace shard
+{
+	class SHARD_API ProgramVirtualImage
+	{
+	public:
+		MethodSymbol* EntryPoint = nullptr;
+		std::vector<std::byte> DataSection;
+
+		inline ProgramVirtualImage() { }
+		inline ProgramVirtualImage(const ProgramVirtualImage& other) = delete;
+	};
+}
+// --- End: shard/compilation/ProgramVirtualImage.h ---
+
 // --- Begin: shard/compilation/ByteCodeEncoder.h ---
 // #include "shard/ShardScriptAPI.h" (Merged)
 
@@ -3514,12 +3527,15 @@ namespace shard
 		void EmitNop(std::vector<std::byte>& code);
 		void EmitHalt(std::vector<std::byte>& code);
 
+		void EmitPop(std::vector<std::byte>& code);
+
 		void EmitLoadConstNull(std::vector<std::byte>& code);
 		void EmitLoadConstBool(std::vector<std::byte>& code, bool value);
 		void EmitLoadConstInt64(std::vector<std::byte>& code, int64_t value);
 		void EmitLoadConstDouble64(std::vector<std::byte>& code, double value);
 		void EmitLoadConstChar16(std::vector<std::byte>& code, wchar_t value);
 		void EmitLoadConstString(std::vector<std::byte>& code, std::vector<std::byte>& data, const wchar_t* value);
+		void EmitDuplicate(std::vector<std::byte>& code);
 
 		void EmitLoadVarible(std::vector<std::byte>& code, uint16_t index);
 		void EmitStoreVarible(std::vector<std::byte>& code, uint16_t index);
@@ -3536,6 +3552,8 @@ namespace shard
 		void EmitMathDiv(std::vector<std::byte>& code);
 		void EmitMathMod(std::vector<std::byte>& code);
 		void EmitMathPow(std::vector<std::byte>& code);
+		void EmitMathNegative(std::vector<std::byte>& code);
+		void EmitMathPositive(std::vector<std::byte>& code);
 
 		void EmitCompareEqual(std::vector<std::byte>& code);
 		void EmitCompareNotEqual(std::vector<std::byte>& code);
@@ -3543,7 +3561,10 @@ namespace shard
 		void EmitCompareGreaterOrEqual(std::vector<std::byte>& code);
 		void EmitCompareLess(std::vector<std::byte>& code);
 		void EmitCompareLessOrEqual(std::vector<std::byte>& code);
-		void EmitCompareNot(std::vector<std::byte>& code);
+
+		void EmitLogicalNot(std::vector<std::byte>& code);
+		void EmitLogicalOr(std::vector<std::byte>& code);
+		void EmitLogicalAnd(std::vector<std::byte>& code);
 
 		void EmitNewObject(std::vector<std::byte>& code, TypeSymbol* type);
 		void EmitLoadField(std::vector<std::byte>& code, FieldSymbol* type);
@@ -3561,31 +3582,6 @@ namespace shard
 	};
 }
 // --- End: shard/compilation/ByteCodeEncoder.h ---
-
-// --- Begin: shard/compilation/ProgramVirtualImage.h ---
-// #include "shard/ShardScriptAPI.h" (Merged)
-
-// #include "shard/parsing/semantic/SemanticModel.h" (Merged)
-// #include "shard/syntax/symbols/MethodSymbol.h" (Merged)
-
-#include <vector>
-
-namespace shard
-{
-	class SHARD_API ProgramVirtualImage
-	{
-	public:
-		const SemanticModel& SemModel;
-		MethodSymbol* EntryPoint = nullptr;
-		std::vector<std::byte> DataSection;
-
-		inline ProgramVirtualImage(SemanticModel& semanticModel)
-			: SemModel(semanticModel) { }
-
-		inline ProgramVirtualImage(const ProgramVirtualImage& other) = delete;
-	};
-}
-// --- End: shard/compilation/ProgramVirtualImage.h ---
 
 // --- Begin: shard/compilation/AbstractEmiter.h ---
 // #include "shard/ShardScriptAPI.h" (Merged)
@@ -3634,7 +3630,7 @@ namespace shard
 namespace shard
 {
 	// basically, a compiler
-	class SHARD_API AbstractEmiter : SyntaxVisitor
+	class SHARD_API AbstractEmiter : public SyntaxVisitor
 	{
         struct LoopScope
         {
@@ -3646,51 +3642,65 @@ namespace shard
             std::vector<size_t> LoopEndBacktracks;
         };
 
-        shard::ByteCodeEncoder Encoder;
-        shard::MethodSymbol* GeneratingFor = nullptr;
-		shard::ProgramVirtualImage& Program;
-		std::vector<shard::MethodSymbol*> EntryPointCandidates;
+        struct ClauseScope
+        {
+            size_t ClauseEnd; // Address of OpCode right after last OpCode of entire clause
+
+            std::vector<size_t> ClauseEndBacktracks;
+        };
+
+        ByteCodeEncoder Encoder;
+        MethodSymbol* GeneratingFor = nullptr;
+		ProgramVirtualImage& Program;
+		std::vector<MethodSymbol*> EntryPointCandidates;
+
         std::stack<LoopScope> Loops;
+        std::stack<ClauseScope> Clauses;
 
 	public:
-		inline AbstractEmiter(shard::ProgramVirtualImage& program, shard::SemanticModel& model, shard::DiagnosticsContext& diagnostics)
+		inline AbstractEmiter(ProgramVirtualImage& program, SemanticModel& model, DiagnosticsContext& diagnostics)
             : SyntaxVisitor(model, diagnostics), Program(program), Encoder() { }
 
-        void VisitSyntaxTree(shard::SyntaxTree& tree) override;
+        void SetEntryPoint();
+        void SetGeneratingTarget(MethodSymbol* method);
+        void VisitSyntaxTree(SyntaxTree& tree) override;
 
         void VisitArgumentsList(ArgumentsListSyntax* node) override;
 
-		void VisitMethodDeclaration(shard::MethodDeclarationSyntax *const node) override;
-		void VisitConstructorDeclaration(shard::ConstructorDeclarationSyntax *const node) override;
-		void VisitAccessorDeclaration(shard::AccessorDeclarationSyntax *const node) override;
+		void VisitMethodDeclaration(MethodDeclarationSyntax *const node) override;
+		void VisitConstructorDeclaration(ConstructorDeclarationSyntax *const node) override;
+		void VisitAccessorDeclaration(AccessorDeclarationSyntax *const node) override;
 
-        void VisitExpressionStatement(shard::ExpressionStatementSyntax *const node) override;
-        void VisitVariableStatement(shard::VariableStatementSyntax *const node) override;
-        void VisitReturnStatement(shard::ReturnStatementSyntax *const node) override;
-        void VisitThrowStatement(shard::ThrowStatementSyntax *const node) override;
-        void VisitBreakStatement(shard::BreakStatementSyntax *const node) override;
-        void VisitContinueStatement(shard::ContinueStatementSyntax *const node) override;
+        void VisitExpressionStatement(ExpressionStatementSyntax *const node) override;
+        void VisitVariableStatement(VariableStatementSyntax *const node) override;
+        void VisitReturnStatement(ReturnStatementSyntax *const node) override;
+        void VisitThrowStatement(ThrowStatementSyntax *const node) override;
+        void VisitBreakStatement(BreakStatementSyntax *const node) override;
+        void VisitContinueStatement(ContinueStatementSyntax *const node) override;
 
-        void VisitWhileStatement(shard::WhileStatementSyntax *const node) override;
-        void VisitForStatement(shard::ForStatementSyntax *const node) override;
-        void VisitUntilStatement(shard::UntilStatementSyntax *const node) override;
+        void VisitWhileStatement(WhileStatementSyntax *const node) override;
+        void VisitForStatement(ForStatementSyntax *const node) override;
+        void VisitUntilStatement(UntilStatementSyntax *const node) override;
 
-        void VisitConditionalClause(shard::ConditionalClauseBaseSyntax *const node) override;
-        void VisitIfStatement(shard::IfStatementSyntax *const node) override;
-        void VisitUnlessStatement(shard::UnlessStatementSyntax *const node) override;
-        void VisitElseStatement(shard::ElseStatementSyntax *const node) override;
+        void VisitIfStatement(IfStatementSyntax *const node) override;
+        void VisitUnlessStatement(UnlessStatementSyntax *const node) override;
+        void VisitElseStatement(ElseStatementSyntax *const node) override;
 
-        void VisitLiteralExpression(shard::LiteralExpressionSyntax *const node) override;
-        void VisitBinaryExpression(shard::BinaryExpressionSyntax *const node) override;
-        void VisitUnaryExpression(shard::UnaryExpressionSyntax *const node) override;
-        void VisitObjectCreationExpression(shard::ObjectExpressionSyntax *const node) override;
-        void VisitCollectionExpression(shard::CollectionExpressionSyntax *const node) override;
-        void VisitLambdaExpression(shard::LambdaExpressionSyntax *const node) override;
-        void VisitTernaryExpression(shard::TernaryExpressionSyntax *const node) override;
+        void VisitLiteralExpression(LiteralExpressionSyntax *const node) override;
+        void VisitObjectCreationExpression(ObjectExpressionSyntax *const node) override;
+        void VisitCollectionExpression(CollectionExpressionSyntax *const node) override;
+        void VisitLambdaExpression(LambdaExpressionSyntax *const node) override;
+        void VisitTernaryExpression(TernaryExpressionSyntax *const node) override;
 
-        void VisitInvocationExpression(shard::InvokationExpressionSyntax *const node) override;
-        void VisitMemberAccessExpression(shard::MemberAccessExpressionSyntax *const node) override;
-        void VisitIndexatorExpression(shard::IndexatorExpressionSyntax *const node) override;
+        void VisitUnaryExpression(UnaryExpressionSyntax* const node) override;
+        void VisitUnaryAssignExpression(UnaryExpressionSyntax* const node);
+
+        void VisitBinaryExpression(BinaryExpressionSyntax *const node) override;
+        void VisitBinaryAssignExpression(BinaryExpressionSyntax* const node);
+
+        void VisitInvocationExpression(InvokationExpressionSyntax *const node) override;
+        void VisitIndexatorExpression(IndexatorExpressionSyntax *const node) override;
+        void VisitMemberAccessExpression(MemberAccessExpressionSyntax *const node) override;
 	};
 }
 // --- End: shard/compilation/AbstractEmiter.h ---
@@ -3770,6 +3780,12 @@ namespace shard
 		LoadConst_String,
 
 		/// <summary>
+		/// Pops 1 instance from stack and creates duplicate of it.
+		/// <para>Includes no additional parameters.</para>
+		/// </summary>
+		CreateDuplicate,
+
+		/// <summary>
 		/// Pops ObjectInstance* from stack and stores it to variable slot at given index.
 		/// <para>Includes 1 parameter :</para>
 		/// <para>> uint16_t Value - Zero-based index of variable, where instance will be written to.</para>
@@ -3823,6 +3839,8 @@ namespace shard
 		Math_Division,
 		Math_Module,
 		Math_Power,
+		Math_Negative,
+		Math_Positive,
 
 		/// <summary>
 		/// Pops two values, compares them for equality, pushes boolean result.
@@ -3864,7 +3882,19 @@ namespace shard
 		/// Logical NOT operation. Pops boolean/integer, pushes inverted value.
 		/// <para>Includes no additional parameters.</para>
 		/// </summary>
-		Compare_Not,
+		Logical_Not,
+
+		/// <summary>
+		/// Logical OR operation. Pops boolean/integer, pushes inverted value.
+		/// <para>Includes no additional parameters.</para>
+		/// </summary>
+		Logical_Or,
+
+		/// <summary>
+		/// Logical AND operation. Pops boolean/integer, pushes inverted value.
+		/// <para>Includes no additional parameters.</para>
+		/// </summary>
+		Logical_And,
 
 		/// <summary>
         /// Creates a new instance of a class/struct defined by TypeSymbol.
@@ -3961,6 +3991,8 @@ namespace shard
 		bool IsEOF();
 		size_t Index() const;
 		void SetCursor(fpos_t amount);
+		void Return();
+
 		OpCode AbsorbOpCode();
 
 		bool AbsorbBoolean();
@@ -4019,13 +4051,15 @@ namespace shard
 {
 	class SHARD_API SemanticAnalyzer
 	{
-		shard::DiagnosticsContext& Diagnostics;
+		DiagnosticsContext& Diagnostics;
+		SemanticScope* TopScope;
 
 	public:
-		inline SemanticAnalyzer(shard::DiagnosticsContext& diagnostics)
-			: Diagnostics(diagnostics) { }
+		SemanticAnalyzer(DiagnosticsContext& diagnostics);
+		~SemanticAnalyzer();
 
-		void Analyze(shard::SyntaxTree& syntaxTree, shard::SemanticModel& semanticModel);
+		void AddSymbol(SyntaxSymbol* symbol);
+		void Analyze(SyntaxTree& syntaxTree, SemanticModel& semanticModel);
 	};
 }
 // --- End: shard/parsing/SemanticAnalyzer.h ---
@@ -4179,6 +4213,7 @@ namespace shard
 
 		shard::LambdaExpressionSyntax *const ReadLambdaExpression(shard::SourceProvider& reader, shard::SyntaxNode *const parent);
 		shard::LinkedExpressionNode *const ReadLinkedExpressionNode(shard::SourceProvider& reader, shard::SyntaxNode *const parent, shard::ExpressionSyntax *const lastNode, bool isFirst);
+		shard::IndexatorExpressionSyntax* const ReadIndexatorExpressionNode(shard::SourceProvider& reader, shard::SyntaxNode* const parent, shard::ExpressionSyntax* const lastNode, bool isFirst);
 
 		shard::ArgumentsListSyntax *const ReadArgumentsList(shard::SourceProvider& reader, shard::SyntaxNode *const parent);
 		shard::IndexatorListSyntax *const ReadIndexatorList(shard::SourceProvider& reader, shard::SyntaxNode *const parent);
@@ -4425,30 +4460,33 @@ namespace shard
 {
 	class SHARD_API ScopeVisitor
 	{
-		std::stack<shard::SemanticScope*> scopeStack;
+		std::stack<SemanticScope*> scopeStack;
 
 	protected:
-		inline ScopeVisitor(shard::SymbolTable *const symbolTable)
+		inline ScopeVisitor(SymbolTable *const symbolTable)
 		{
-			scopeStack.push(shard::SymbolTable::Global::Scope);
+			scopeStack.push(SymbolTable::Global::Scope);
 		}
 
-		shard::SemanticScope *const CurrentScope();
-		void PushScope(shard::SyntaxSymbol *const symbol);
+	public:
+		SemanticScope *const CurrentScope();
+		void PushScopeStack(SemanticScope* scope);
+		void PushScope(SyntaxSymbol *const symbol);
 		void PopScope();
 
-		virtual void Declare(shard::SyntaxSymbol *const symbol);
+	protected:
+		virtual void Declare(SyntaxSymbol *const symbol);
 
 		virtual bool CheckNameDeclared(const std::wstring& name);
-		virtual bool CheckSymbolNameDeclared(shard::SyntaxSymbol *const symbol);
+		virtual bool CheckSymbolNameDeclared(SyntaxSymbol *const symbol);
 
-		shard::SyntaxSymbol *const OwnerSymbol();
-		shard::TypeSymbol *const OwnerType();
-		//shard::NamespaceSymbol* OwnerNamespace();
-		//shard::NamespaceNode* OwnerNamespaceNode();
+		SyntaxSymbol *const OwnerSymbol();
+		TypeSymbol *const OwnerType();
+		//NamespaceSymbol* OwnerNamespace();
+		//NamespaceNode* OwnerNamespaceNode();
 		MethodSymbol *const FindHostMethodSymbol();
 
-		bool IsSymbolAccessible(shard::SyntaxSymbol *const symbol);
+		bool IsSymbolAccessible(SyntaxSymbol *const symbol);
 	};
 }
 // --- End: shard/parsing/semantic/visiting/ScopeVisitor.h ---
@@ -4479,7 +4517,7 @@ namespace shard
 
 namespace shard
 {
-	class SHARD_API DeclarationCollector : public SyntaxVisitor, ScopeVisitor
+	class SHARD_API DeclarationCollector : public SyntaxVisitor, public ScopeVisitor
 	{
 	protected:
 		void Declare(shard::SyntaxSymbol *const symbol) override;
@@ -4636,7 +4674,7 @@ namespace shard
 
 namespace shard
 {
-	class SHARD_API ExpressionBinder : public SyntaxVisitor, ScopeVisitor
+	class SHARD_API ExpressionBinder : public SyntaxVisitor, public ScopeVisitor
 	{
 		std::unordered_map<shard::ExpressionSyntax*, shard::TypeSymbol*> expressionTypes;
 
@@ -4747,7 +4785,7 @@ namespace shard
 
 namespace shard
 {
-	class SHARD_API TypeBinder : public SyntaxVisitor, ScopeVisitor
+	class SHARD_API TypeBinder : public SyntaxVisitor, public ScopeVisitor
 	{
 	public:
 		inline TypeBinder(shard::SemanticModel& model, shard::DiagnosticsContext& diagnostics)
@@ -4794,21 +4832,16 @@ namespace shard
 
 namespace shard
 {
-	class VirtualMachine;
-
 	class SHARD_API ObjectInstance
 	{
 	public:
-		const uint64_t Id;
-		const shard::TypeSymbol* Info;
-		const bool IsNullable = false;
-
-		bool IsFieldInstance = false;
+		const TypeSymbol* Info;
+		void* const Memory;
 		size_t ReferencesCounter;
-		void* Ptr;
+		const bool IsTransient;
 
-		inline ObjectInstance(const uint64_t id, const shard::TypeSymbol* info, void* ptr)
-			: Id(id), Info(info), Ptr(ptr), ReferencesCounter(0) { }
+		inline ObjectInstance(const TypeSymbol* info, void* memory, bool isTransient)
+			: Info(info), Memory(memory), IsTransient(isTransient), ReferencesCounter(0) { }
 
 		inline ~ObjectInstance() = default;
 
@@ -4816,11 +4849,11 @@ namespace shard
 		static ObjectInstance* FromValue(double value);
 		static ObjectInstance* FromValue(bool value);
 		static ObjectInstance* FromValue(wchar_t value);
-		static ObjectInstance* FromValue(const wchar_t* value);
+		static ObjectInstance* FromValue(const wchar_t* value, bool isTransient);
 		static ObjectInstance* FromValue(const std::wstring& value);
 
-		ObjectInstance* GetField(shard::FieldSymbol* field);
-		void SetField(shard::FieldSymbol* field, ObjectInstance* instance);
+		ObjectInstance* GetField(FieldSymbol* field);
+		void SetField(FieldSymbol* field, ObjectInstance* instance);
 
 		ObjectInstance* GetElement(size_t index);
 		void SetElement(size_t index, ObjectInstance* instance);
@@ -4833,14 +4866,17 @@ namespace shard
 		void WriteInteger(const int64_t& value) const;
 		void WriteDouble(const double& value) const;
 		void WriteCharacter(const wchar_t& value) const;
+		void WriteString(const wchar_t* value) const;
+		void WriteString(const wchar_t* value, size_t size) const;
 		void WriteString(const std::wstring& value) const;
 
-		bool AsBoolean() const;
-		int64_t AsInteger() const;
-		double AsDouble() const;
-		wchar_t AsCharacter() const;
-		std::wstring& AsString() const;
+		bool& AsBoolean() const;
+		int64_t& AsInteger() const;
+		double& AsDouble() const;
+		wchar_t& AsCharacter() const;
+		const wchar_t* AsString() const;
 
+		void* GetObjectMemory() const;
 		void* OffsetMemory(const size_t offset, const size_t size) const;
 		void ReadMemory(const size_t offset, const size_t size, void* dst) const;
 		void WriteMemory(const size_t offset, const size_t size, const void* src) const;
@@ -5074,6 +5110,28 @@ namespace shard
 }
 // --- End: shard/runtime/ConsoleHelper.h ---
 
+// --- Begin: shard/runtime/EvalStack.h ---
+// #include "shard/ShardScriptAPI.h" (Merged)
+
+/*
+namespace shard
+{
+	class SHARD_API EvalStack
+	{
+		void* StackBase = nullptr;
+		size_t BytesSize = 0;
+		size_t BytesCursor = 0;
+
+		EvalStack(void* stackBase, size_t bytesSize);
+
+		void* Peek(size_t size);
+		void* Pop(size_t size);
+		void Push(void* data, size_t size);
+	};
+}
+*/
+// --- End: shard/runtime/EvalStack.h ---
+
 // --- Begin: shard/runtime/GarbageCollector.h ---
 // #include "shard/ShardScriptAPI.h" (Merged)
 
@@ -5122,50 +5180,44 @@ namespace shard
 	class SHARD_API InstancesHeap
 	{
     private:
-        std::unordered_map<uint64_t, shard::ObjectInstance*> IdMap;
         std::unordered_map<void*, shard::ObjectInstance*> PtrMap;
 
     public:
-        using iterator = ValueIterator<decltype(IdMap)>;
-        using const_iterator = ValueIterator<const decltype(IdMap)>;
+        using iterator = ValueIterator<decltype(PtrMap)>;
+        using const_iterator = ValueIterator<const decltype(PtrMap)>;
+
+        inline iterator begin() { return iterator(PtrMap.begin()); }
+        inline iterator end() { return iterator(PtrMap.end()); }
+
+        inline auto pairs_begin() { return PtrMap.begin(); }
+        inline auto pairs_end() { return PtrMap.end(); }
+
+        inline shard::ObjectInstance* at(void* ptr) { return PtrMap.at(ptr); }
 
         inline void add(ObjectInstance* instance)
         {
-            IdMap[instance->Id] = instance;
-            PtrMap[(void*)instance->Ptr] = instance;
+            PtrMap[instance->Memory] = instance;
         }
-
-        inline iterator begin() { return iterator(IdMap.begin()); }
-        inline iterator end() { return iterator(IdMap.end()); }
-
-        inline auto pairs_begin() { return IdMap.begin(); }
-        inline auto pairs_end() { return IdMap.end(); }
-
-        inline shard::ObjectInstance* at(uint64_t id) { return IdMap.at(id); }
-        inline shard::ObjectInstance* at(void* ptr) { return PtrMap.at(ptr); }
 
         inline void erase(shard::ObjectInstance* instance)
         {
-            IdMap.erase(instance->Id);
-            PtrMap.erase((void*)instance->Ptr);
+            PtrMap.erase(instance->Memory);
         }
 
         inline void clear()
         {
-            IdMap.clear();
             PtrMap.clear();
         }
 
         inline size_t size()
         {
-            return IdMap.size();
+            return PtrMap.size();
         }
 	};
 
 	class SHARD_API GarbageCollector
 	{
 		inline static uint64_t objectsCounter = 0;
-        inline static std::unordered_map<TypeSymbol*, ObjectInstance*> nullInstancesMap;
         inline static std::unordered_map<FieldSymbol*, ObjectInstance*> staticFields;
 
     public:
@@ -5176,7 +5228,6 @@ namespace shard
         static void SetStaticField(const VirtualMachine* host, FieldSymbol* field, ObjectInstance* instance);
 
 		static ObjectInstance* AllocateInstance(const TypeSymbol* objectInfo);
-        static ObjectInstance* CopyInstance(const TypeSymbol* objectInfo, void* ptr);
         static ObjectInstance* CopyInstance(ObjectInstance* instance);
 
         static void CollectInstance(ObjectInstance* instance);
@@ -5200,15 +5251,16 @@ namespace shard
 	class SHARD_API PrimitiveMathModule
 	{
 	public:
-		static shard::ObjectInstance* EvaluateBinaryOperator(shard::ObjectInstance* leftInstance, TokenType opToken, shard::ObjectInstance* rightInstance, bool& assign);
-		static shard::ObjectInstance* EvaluateBinaryOperator(int64_t leftData, TokenType opToken, shard::ObjectInstance* rightInstance, bool& assign);
-		static shard::ObjectInstance* EvaluateBinaryOperator(bool leftData, TokenType opToken, shard::ObjectInstance* rightInstance, bool& assign);
-		static shard::ObjectInstance* EvaluateBinaryOperator(std::wstring& leftData, TokenType opToken, shard::ObjectInstance* rightInstance, bool& assign);
+		static ObjectInstance* EvaluateBinaryOperator(ObjectInstance* leftInstance, TokenType opToken, ObjectInstance* rightInstance);
+		static ObjectInstance* EvaluateBinaryOperator(int64_t leftData, TokenType opToken, ObjectInstance* rightInstance);
+		static ObjectInstance* EvaluateBinaryOperator(bool leftData, TokenType opToken, ObjectInstance* rightInstance);
+		static ObjectInstance* EvaluateBinaryOperator(wchar_t leftData, TokenType opToken, ObjectInstance* rightInstance);
+		static ObjectInstance* EvaluateBinaryOperator(const wchar_t* leftData, TokenType opToken, ObjectInstance* rightInstance);
 
-		static shard::ObjectInstance* EvaluateUnaryOperator(shard::ObjectInstance*& sourceInstance, TokenType opToken, bool rightDetermined);
-		static shard::ObjectInstance* EvaluateUnaryOperator(shard::ObjectInstance*& sourceInstance, int64_t data, TokenType opToken, bool rightDetermined);
-		static shard::ObjectInstance* EvaluateUnaryOperator(shard::ObjectInstance*& sourceInstance, bool data, TokenType opToken, bool rightDetermined);
-		static shard::ObjectInstance* EvaluateUnaryOperator(shard::ObjectInstance*& sourceInstance, std::wstring& data, TokenType opToken, bool rightDetermined);
+		static ObjectInstance* EvaluateUnaryOperator(ObjectInstance* sourceInstance, TokenType opToken, bool rightDetermined);
+		static ObjectInstance* EvaluateUnaryOperator(ObjectInstance* sourceInstance, int64_t data, TokenType opToken, bool rightDetermined);
+		static ObjectInstance* EvaluateUnaryOperator(ObjectInstance* sourceInstance, bool data, TokenType opToken, bool rightDetermined);
+		static ObjectInstance* EvaluateUnaryOperator(ObjectInstance* sourceInstance, const wchar_t* data, TokenType opToken, bool rightDetermined);
 	};
 }
 // --- End: shard/runtime/PrimitiveMathModule.h ---
@@ -5256,9 +5308,9 @@ namespace shard
 		std::stack<CallStackFrame*> CallStack;
 		std::atomic<bool> AbortFlag;
 
-		void ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder, const OpCode opCode);
 		void InvokeMethodInternal(MethodSymbol* method, CallStackFrame* currentFrame);
 		ObjectInstance* InstantiateObject(TypeSymbol* type, ConstructorSymbol* ctor);
+		void ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder, const OpCode opCode);
 
 	public:
 		VirtualMachine(ProgramVirtualImage& program);
@@ -5267,12 +5319,15 @@ namespace shard
 		CallStackFrame* PushFrame(MethodSymbol* methodSymbol);
 		void PopFrame();
 
-		void InvokeMethod(MethodSymbol* method);
+		void InvokeMethod(MethodSymbol* method) const;
 		void InvokeMethod(MethodSymbol* method, std::initializer_list<ObjectInstance*> args) const;
-		void RaiseException(ObjectInstance* exceptionReg);
+		void RaiseException(ObjectInstance* exceptionReg) const;
 
-		void Run();
+		void Run() const;
+		void Abort() const;
 		void TerminateCallStack();
+
+		ObjectInstance* RunInteractive(size_t& pointer);
 	};
 }
 // --- End: shard/runtime/VirtualMachine.h ---

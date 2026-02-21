@@ -299,9 +299,12 @@ void AbstractEmiter::VisitMethodDeclaration(MethodDeclarationSyntax* const node)
 		return;
 	}
 
-	size_t reserve = node->Body->Statements.size() * ReserveMultiplier;
-	GeneratingFor->ExecutableByteCode.reserve(reserve);
-	VisitStatementsBlock(node->Body);
+	if (!GeneratingFor->IsExtern)
+	{
+		size_t reserve = node->Body->Statements.size() * ReserveMultiplier;
+		GeneratingFor->ExecutableByteCode.reserve(reserve);
+		VisitStatementsBlock(node->Body);
+	}
 
 	if (GeneratingFor->Name == L"Main")
 	{
@@ -341,9 +344,12 @@ void AbstractEmiter::VisitConstructorDeclaration(ConstructorDeclarationSyntax* c
 
 	// TODO: add field initialization
 
-	size_t reserve = node->Body->Statements.size() * ReserveMultiplier;
-	GeneratingFor->ExecutableByteCode.reserve(reserve);
-	VisitStatementsBlock(node->Body);
+	if (!GeneratingFor->IsExtern)
+	{
+		size_t reserve = node->Body->Statements.size() * ReserveMultiplier;
+		GeneratingFor->ExecutableByteCode.reserve(reserve);
+		VisitStatementsBlock(node->Body);
+	}
 
 	GeneratingFor->ExecutableByteCode.shrink_to_fit();
 	GeneratingFor = nullptr;
@@ -358,9 +364,15 @@ void AbstractEmiter::VisitAccessorDeclaration(AccessorDeclarationSyntax* const n
 		return;
 	}
 
-	size_t reserve = node->Body->Statements.size() * ReserveMultiplier;
-	GeneratingFor->ExecutableByteCode.reserve(reserve);
-	VisitStatementsBlock(node->Body);
+	if (!GeneratingFor->IsExtern)
+	{
+		if (node->Body != nullptr)
+		{
+			size_t reserve = node->Body->Statements.size() * ReserveMultiplier;
+			GeneratingFor->ExecutableByteCode.reserve(reserve);
+			VisitStatementsBlock(node->Body);
+		}
+	}
 
 	GeneratingFor->ExecutableByteCode.shrink_to_fit();
 	GeneratingFor = nullptr;

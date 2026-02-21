@@ -154,7 +154,8 @@ void GarbageCollector::TerminateInstance(ObjectInstance* instance)
 	{
 		if (instance->Info == SymbolTable::Primitives::String)
 		{
-			void* stringData = instance->OffsetMemory(sizeof(int64_t), sizeof(wchar_t*));
+			void* stringPtr = instance->OffsetMemory(sizeof(int64_t), sizeof(wchar_t*));
+			wchar_t* stringData = *static_cast<wchar_t**>(stringPtr);
 			free(stringData);
 		}
 

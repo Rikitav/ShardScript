@@ -104,12 +104,14 @@ static bool IsStatementComplete(LexicalBuffer& reader)
 	reader.SetIndex(0);
 	int lastIndex = static_cast<int>(reader.Size()) - 1;
 	
+	/*
 	if (lastIndex >= 0)
 	{
 		SyntaxToken lastToken = reader.At(lastIndex);
 		if (lastToken.Type == TokenType::Semicolon)
 			return true;
 	}
+	*/
 	
 	int braceCount = 0;
 	int parenCount = 0;
@@ -269,21 +271,20 @@ static void ReadMultilineInput(LexicalBuffer& sequenceReader, bool isExpression 
 	}
 }
 
-static StatementSyntax* ReadStatement(StatementsBlockSyntax* interactiveBody, LexicalBuffer& sequenceReader, SyntaxNode* parent, DiagnosticsContext& diagnostics)
+StatementSyntax* InteractiveConsole::ReadStatement(LexicalBuffer& sequenceReader)
 {
 	if (sequenceReader.Size() == 0)
 		return nullptr;
 
 	SyntaxToken firstToken = sequenceReader.Front();
-	SourceParser parser(diagnostics);
-	
 	SyntaxToken lastToken = sequenceReader.Back();
+
 	if (lastToken.Type != TokenType::Semicolon)
 	{
 		// Read as expression
 		ReadMultilineInput(sequenceReader, true);
-		ExpressionStatementSyntax* exprStatement = new ExpressionStatementSyntax(nullptr, interactiveBody);
-		exprStatement->Expression = parser.ReadExpression(sequenceReader, exprStatement, 0);
+		ExpressionStatementSyntax* exprStatement = new ExpressionStatementSyntax(nullptr, InteractiveMethod->Body);
+		exprStatement->Expression = Parser.ReadExpression(sequenceReader, exprStatement, 0);
 
 		if (exprStatement->Expression == nullptr)
 		{
@@ -300,18 +301,31 @@ static StatementSyntax* ReadStatement(StatementsBlockSyntax* interactiveBody, Le
 	if (IsLoopKeyword(firstToken.Type) || IsConditionalKeyword(firstToken.Type) || IsFunctionalKeyword(firstToken.Type))
 	{
 		ReadMultilineInput(sequenceReader, false);
-		return parser.ReadKeywordStatement(sequenceReader, parent);
+		return Parser.ReadKeywordStatement(sequenceReader, InteractiveMethod->Body);
 	}
 
 	// Read as statement
-	return parser.ReadStatement(sequenceReader, parent);
+	return Parser.ReadStatement(sequenceReader, InteractiveMethod->Body);
 }
 
-static void EvaluateUsing(LexicalBuffer& buffer, SemanticModel& semanticModel, SemanticAnalyzer& semanticAnalyzer, DiagnosticsContext& diagnostics)
+MemberDeclarationSyntax* InteractiveConsole::ReadMember(LexicalBuffer& sequenceReader)
 {
-	SourceParser sourceParser(diagnostics);
- 	UsingDirectiveSyntax* directive = sourceParser.ReadUsingDirective(buffer, nullptr);
-	NamespaceNode* node = semanticModel.Namespaces->Root;
+	if (sequenceReader.Size() == 0)
+		return nullptr;
+
+	ReadMultilineInput(sequenceReader, false);
+	MemberDeclarationSyntax* member = Parser.ReadMemberDeclaration(sequenceReader, InteractiveClass);
+
+	if (member->Kind != SyntaxKind::MethodDeclaration)
+		Diagnostics.ReportError(member->DeclareToken, L"Only methods compilation supported");
+
+	return member;
+}
+
+void InteractiveConsole::EvaluateUsing(LexicalBuffer& buffer)
+{
+ 	UsingDirectiveSyntax* directive = Parser.ReadUsingDirective(buffer, nullptr);
+	NamespaceNode* node = ParentSemanticModel.Namespaces->Root;
 
 	for (SyntaxToken token : directive->TokensList)
 	{
@@ -327,7 +341,7 @@ static void EvaluateUsing(LexicalBuffer& buffer, SemanticModel& semanticModel, S
 	std::wcout << L"Loaded : ";
 	for (const auto& symbol : node->Types)
 	{
-		semanticAnalyzer.AddSymbol(symbol);
+		Semanter.AddSymbol(symbol);
 		std::wcout << symbol->Name << L", ";
 		counter += 1;
 	}
@@ -335,45 +349,22 @@ static void EvaluateUsing(LexicalBuffer& buffer, SemanticModel& semanticModel, S
 	std::wcout << "(" << counter << " symbols)" << std::endl;
 }
 
-static void CompileMember()
+InteractiveConsole::InteractiveConsole(SyntaxTree& ParentSyntaxTree, SemanticModel& semanticModel, DiagnosticsContext& diagnostics)
+	: ParentSyntaxTree(ParentSyntaxTree), ParentSemanticModel(semanticModel), Diagnostics(diagnostics),
+	  Parser(diagnostics), Semanter(diagnostics), Layouter(diagnostics),
+	  Program(), Runtimer(Program)
 {
+	InteractiveUnit = InitImplicitCompilationUnit(InteractiveMethod);
+	InteractiveClass = static_cast<ClassDeclarationSyntax*>(static_cast<NamespaceDeclarationSyntax*>(InteractiveUnit->Members.at(0))->Members.at(0));
+	ParentSyntaxTree.CompilationUnits.push_back(InteractiveUnit);
 
+	InteractiveEntryPoint = new MethodSymbol(InteractiveMethod->IdentifierToken.Word);
+	Program.EntryPoint = InteractiveEntryPoint;
+	Runtimer.PushFrame(InteractiveEntryPoint);
 }
 
-static void InterpretStatement(VirtualMachine& virtualMachine, AbstractEmiter& abstractEmiter, MethodSymbol* entryPointSymbol, StatementSyntax* statement, size_t& pointer)
+void InteractiveConsole::Run()
 {
-	abstractEmiter.VisitStatement(statement);
-	ObjectInstance* result = virtualMachine.RunInteractive(pointer);
-
-	if (result != nullptr)
-	{
-		ConsoleHelper::Write(result);
-		GarbageCollector::CollectInstance(result);
-	}
-
-	MoveToNewLineIfNeeded();
-}
-
-void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticModel, DiagnosticsContext& diagnostics)
-{
-	// TODO: REWRITE LOGIC TO BYTECODE
-	ProgramVirtualImage program;
-	size_t pointer = 0;
-
-	// Initializing parsing
-	SemanticAnalyzer semanticAnalyzer(diagnostics);
-	LayoutGenerator layoutGenerator(diagnostics);
-	VirtualMachine virtualMachine(program);
-	
-	// Creating interactive entry point
-	MethodDeclarationSyntax* implMethod = nullptr;
-	CompilationUnitSyntax* implUnit = InitImplicitCompilationUnit(implMethod);
-	syntaxTree.CompilationUnits.push_back(implUnit);
-
-	StatementsBlockSyntax* interactiveBody = implMethod->Body;
-	MethodSymbol* entryPointSymbol = new MethodSymbol(implMethod->IdentifierToken.Word);
-	virtualMachine.PushFrame(entryPointSymbol);
-
 	ConsoleHelper::WriteLine(L"ShardScript Interactive Console v" + shard::ShardUtilities::GetFileVersion());
 	ConsoleHelper::WriteLine(L"Type 'exit' or 'quit' to exit");
 	ConsoleHelper::WriteLine();
@@ -402,34 +393,77 @@ void InteractiveConsole::Run(SyntaxTree& syntaxTree, SemanticModel& semanticMode
 
 			if (firstToken.Type == TokenType::UsingKeyword)
 			{
-				EvaluateUsing(sequenceReader, semanticModel, semanticAnalyzer, diagnostics);
+				EvaluateUsing(sequenceReader);
 				continue;
 			}
 
-			StatementSyntax* statement = ReadStatement(interactiveBody, sequenceReader, interactiveBody, diagnostics);
+			if (sequenceReader.Size() > 1)
+			{
+				SyntaxToken secondToken = sequenceReader.At(1);
+				if (IsMemberDeclaration(firstToken.Type, secondToken.Type))
+				{
+					MemberDeclarationSyntax* member = ReadMember(sequenceReader);
+					if (member == nullptr)
+						continue;
+
+					MethodDeclarationSyntax* method = static_cast<MethodDeclarationSyntax*>(member);
+					InteractiveClass->Members.push_back(method);
+
+					// Re-analyze syntax tree
+					Semanter.Analyze(ParentSyntaxTree, ParentSemanticModel);
+					Layouter.Generate(ParentSemanticModel);
+
+					// Check for errors
+					if (Diagnostics.AnyError)
+					{
+						Diagnostics.WriteDiagnostics(std::wcerr);
+						Diagnostics.Reset();
+
+						InteractiveClass->Members.pop_back();
+						delete method;
+						continue;
+					}
+
+					AbstractEmiter abstractEmiter(Program, ParentSemanticModel, Diagnostics);
+					abstractEmiter.VisitMethodDeclaration(method);
+					continue;
+				}
+			}
+
+			StatementSyntax* statement = ReadStatement(sequenceReader);
 			if (statement == nullptr)
 				continue;
 
-			interactiveBody->Statements.push_back(statement);
+			InteractiveMethod->Body->Statements.push_back(statement);
 
 			// Re-analyze syntax tree
-			SemanticModel newSemanticModel(syntaxTree);
-			semanticAnalyzer.Analyze(syntaxTree, newSemanticModel);
-			layoutGenerator.Generate(newSemanticModel);
+			Semanter.Analyze(ParentSyntaxTree, ParentSemanticModel);
+			Layouter.Generate(ParentSemanticModel);
 
 			// Check for errors
-			if (diagnostics.AnyError)
+			if (Diagnostics.AnyError)
 			{
-				diagnostics.WriteDiagnostics(std::wcerr);
-				diagnostics.Reset();
+				Diagnostics.WriteDiagnostics(std::wcerr);
+				Diagnostics.Reset();
+
+				InteractiveMethod->Body->Statements.pop_back();
+				delete statement;
 				continue;
 			}
 
-			AbstractEmiter abstractEmiter(program, newSemanticModel, diagnostics);
-			abstractEmiter.SetGeneratingTarget(entryPointSymbol);
-			program.EntryPoint = entryPointSymbol;
+			AbstractEmiter abstractEmiter(Program, ParentSemanticModel, Diagnostics);
+			abstractEmiter.SetGeneratingTarget(InteractiveEntryPoint);
 
-			InterpretStatement(virtualMachine, abstractEmiter, entryPointSymbol, statement, pointer);
+			abstractEmiter.VisitStatement(statement);
+			ObjectInstance* result = Runtimer.RunInteractive(Breakpoint);
+
+			if (result != nullptr)
+			{
+				ConsoleHelper::Write(result);
+				GarbageCollector::CollectInstance(result);
+			}
+
+			MoveToNewLineIfNeeded();
 		}
 		catch (const std::exception& err)
 		{
