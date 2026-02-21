@@ -1,9 +1,9 @@
-#include <shard/syntax/SyntaxToken.h>
-#include <shard/syntax/TokenType.h>
-#include <shard/parsing/semantic/SymbolTable.h>
-#include <shard/runtime/PrimitiveMathModule.h>
-#include <shard/runtime/GarbageCollector.h>
-#include <shard/runtime/ObjectInstance.h>
+#include <shard/syntax/SyntaxToken.hpp>
+#include <shard/syntax/TokenType.hpp>
+#include <shard/parsing/semantic/SymbolTable.hpp>
+#include <shard/runtime/PrimitiveMathModule.hpp>
+#include <shard/runtime/GarbageCollector.hpp>
+#include <shard/runtime/ObjectInstance.hpp>
 
 #include <stdexcept>
 #include <cmath>

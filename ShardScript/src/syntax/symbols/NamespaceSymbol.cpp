@@ -1,4 +1,4 @@
-#include <shard/syntax/symbols/NamespaceSymbol.h>
+#include <shard/syntax/symbols/NamespaceSymbol.hpp>
 
 using namespace shard;
 

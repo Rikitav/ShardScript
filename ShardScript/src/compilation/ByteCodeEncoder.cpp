@@ -1,5 +1,5 @@
-#include <shard/compilation/ByteCodeEncoder.h>
-#include <shard/compilation/OperationCode.h>
+#include <shard/compilation/ByteCodeEncoder.hpp>
+#include <shard/compilation/OperationCode.hpp>
 
 #include <string>
 #include <stdexcept>

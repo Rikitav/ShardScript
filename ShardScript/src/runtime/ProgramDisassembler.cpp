@@ -1,6 +1,6 @@
-#include <shard/runtime/ProgramDisassembler.h>
-#include <shard/compilation/ByteCodeDecoder.h>
-#include <shard/compilation/OperationCode.h>
+#include <shard/runtime/ProgramDisassembler.hpp>
+#include <shard/compilation/ByteCodeDecoder.hpp>
+#include <shard/compilation/OperationCode.hpp>
 
 #include <iomanip>
 #include <iostream>

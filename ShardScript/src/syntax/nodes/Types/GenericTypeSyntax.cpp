@@ -1,4 +1,4 @@
-#include <shard/syntax/nodes/Types/GenericTypeSyntax.h>
+#include <shard/syntax/nodes/Types/GenericTypeSyntax.hpp>
 #include <sstream>
 #include <string>
 

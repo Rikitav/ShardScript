@@ -1,6 +1,6 @@
-#include <shard/parsing/lexical/SourceProvider.h>
-#include <shard/parsing/lexical/reading/FileReader.h>
-#include <shard/parsing/analysis/TextLocation.h>
+#include <shard/parsing/lexical/SourceProvider.hpp>
+#include <shard/parsing/lexical/reading/FileReader.hpp>
+#include <shard/parsing/analysis/TextLocation.hpp>
 
 #include <fstream>
 #include <stdexcept>

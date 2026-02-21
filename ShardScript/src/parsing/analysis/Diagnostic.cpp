@@ -1,6 +1,6 @@
-#include <shard/parsing/analysis/Diagnostic.h>
-#include <shard/parsing/analysis/DiagnosticSeverity.h>
-#include <shard/syntax/SyntaxToken.h>
+#include <shard/parsing/analysis/Diagnostic.hpp>
+#include <shard/parsing/analysis/DiagnosticSeverity.hpp>
+#include <shard/syntax/SyntaxToken.hpp>
 #include <string>
 
 using namespace shard;

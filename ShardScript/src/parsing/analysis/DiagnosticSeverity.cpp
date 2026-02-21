@@ -1,4 +1,4 @@
-#include <shard/parsing/analysis/DiagnosticSeverity.h>
+#include <shard/parsing/analysis/DiagnosticSeverity.hpp>
 
 using namespace shard;
 

@@ -1,16 +1,16 @@
-#include <shard/syntax/SyntaxKind.h>
-#include <shard/syntax/SyntaxNode.h>
-#include <shard/syntax/TokenType.h>
+#include <shard/syntax/SyntaxKind.hpp>
+#include <shard/syntax/SyntaxNode.hpp>
+#include <shard/syntax/TokenType.hpp>
 
-#include <shard/syntax/nodes/ExpressionSyntax.h>
-#include <shard/syntax/nodes/Expressions/LiteralExpressionSyntax.h>
+#include <shard/syntax/nodes/ExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/LiteralExpressionSyntax.hpp>
 
-#include <shard/parsing/SyntaxTree.h>
-#include <shard/parsing/semantic/SemanticModel.h>
-#include <shard/parsing/semantic/NamespaceTree.h>
-#include <shard/parsing/semantic/SymbolInfo.h>
-#include <shard/parsing/semantic/SymbolTable.h>
-#include <shard/parsing/semantic/TypeInfo.h>
+#include <shard/parsing/SyntaxTree.hpp>
+#include <shard/parsing/semantic/SemanticModel.hpp>
+#include <shard/parsing/semantic/NamespaceTree.hpp>
+#include <shard/parsing/semantic/SymbolInfo.hpp>
+#include <shard/parsing/semantic/SymbolTable.hpp>
+#include <shard/parsing/semantic/TypeInfo.hpp>
 
 #include <stdexcept>
 

@@ -1,10 +1,10 @@
-#include <shard/parsing/lexical/LexicalBuffer.h>
-#include <shard/parsing/lexical/LexicalAnalyzer.h>
-#include <shard/parsing/lexical/SourceProvider.h>
-#include <shard/parsing/analysis/TextLocation.h>
+#include <shard/parsing/lexical/LexicalBuffer.hpp>
+#include <shard/parsing/lexical/LexicalAnalyzer.hpp>
+#include <shard/parsing/lexical/SourceProvider.hpp>
+#include <shard/parsing/analysis/TextLocation.hpp>
 
-#include <shard/syntax/SyntaxToken.h>
-#include <shard/syntax/TokenType.h>
+#include <shard/syntax/SyntaxToken.hpp>
+#include <shard/syntax/TokenType.hpp>
 
 #include <string>
 #include <vector>

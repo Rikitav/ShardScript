@@ -1,29 +1,29 @@
-#include <shard/syntax/SymbolFactory.h>
-#include <shard/syntax/SyntaxHelpers.h>
-#include <shard/syntax/SyntaxKind.h>
-#include <shard/syntax/SyntaxToken.h>
-#include <shard/syntax/TokenType.h>
-#include <shard/syntax/SymbolAccesibility.h>
+#include <shard/syntax/SymbolFactory.hpp>
+#include <shard/syntax/SyntaxHelpers.hpp>
+#include <shard/syntax/SyntaxKind.hpp>
+#include <shard/syntax/SyntaxToken.hpp>
+#include <shard/syntax/TokenType.hpp>
+#include <shard/syntax/SymbolAccesibility.hpp>
 
-#include <shard/parsing/semantic/SymbolTable.h>
+#include <shard/parsing/semantic/SymbolTable.hpp>
 
-#include <shard/syntax/nodes/Types/DelegateTypeSyntax.h>
-#include <shard/syntax/nodes/Types/ArrayTypeSyntax.h>
-#include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.h>
-#include <shard/syntax/nodes/StatementsBlockSyntax.h>
+#include <shard/syntax/nodes/Types/DelegateTypeSyntax.hpp>
+#include <shard/syntax/nodes/Types/ArrayTypeSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/StatementsBlockSyntax.hpp>
 
-#include <shard/syntax/symbols/DelegateTypeSymbol.h>
-#include <shard/syntax/symbols/NamespaceSymbol.h>
-#include <shard/syntax/symbols/TypeParameterSymbol.h>
-#include <shard/syntax/symbols/VariableSymbol.h>
-#include <shard/syntax/symbols/ParameterSymbol.h>
-#include <shard/syntax/symbols/IndexatorSymbol.h>
-#include <shard/syntax/symbols/AccessorSymbol.h>
-#include <shard/syntax/symbols/GenericTypeSymbol.h>
-#include <shard/syntax/symbols/ArrayTypeSymbol.h>
-#include <shard/syntax/symbols/FieldSymbol.h>
-#include <shard/syntax/symbols/PropertySymbol.h>
-#include <shard/syntax/symbols/MethodSymbol.h>
+#include <shard/syntax/symbols/DelegateTypeSymbol.hpp>
+#include <shard/syntax/symbols/NamespaceSymbol.hpp>
+#include <shard/syntax/symbols/TypeParameterSymbol.hpp>
+#include <shard/syntax/symbols/VariableSymbol.hpp>
+#include <shard/syntax/symbols/ParameterSymbol.hpp>
+#include <shard/syntax/symbols/IndexatorSymbol.hpp>
+#include <shard/syntax/symbols/AccessorSymbol.hpp>
+#include <shard/syntax/symbols/GenericTypeSymbol.hpp>
+#include <shard/syntax/symbols/ArrayTypeSymbol.hpp>
+#include <shard/syntax/symbols/FieldSymbol.hpp>
+#include <shard/syntax/symbols/PropertySymbol.hpp>
+#include <shard/syntax/symbols/MethodSymbol.hpp>
 
 #include <sstream>
 #include <algorithm>

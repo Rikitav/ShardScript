@@ -1,7 +1,7 @@
 project(ShardScript)
 
 file(GLOB_RECURSE SHARDSCRIPT_SOURCES "src/*.cpp")
-file(GLOB_RECURSE SHARDSCRIPT_HEADERS "include/*.h")
+file(GLOB_RECURSE SHARDSCRIPT_HEADERS "include/*.hpp")
 file(GLOB_RECURSE SHARDSCRIPT_OTHER "cpp.hint" "*.md")
 
 add_library(${PROJECT_NAME} SHARED 

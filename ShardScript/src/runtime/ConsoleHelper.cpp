@@ -1,6 +1,6 @@
-#include <shard/runtime/ConsoleHelper.h>
-#include <shard/runtime/ObjectInstance.h>
-#include <shard/parsing/semantic/SymbolTable.h>
+#include <shard/runtime/ConsoleHelper.hpp>
+#include <shard/runtime/ObjectInstance.hpp>
+#include <shard/parsing/semantic/SymbolTable.hpp>
 
 #include <windows.h>
 #include <iostream>

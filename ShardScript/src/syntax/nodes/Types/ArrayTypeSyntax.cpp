@@ -1,4 +1,4 @@
-#include  <shard/syntax/nodes/Types/ArrayTypeSyntax.h>
+#include  <shard/syntax/nodes/Types/ArrayTypeSyntax.hpp>
 
 using namespace shard;
 

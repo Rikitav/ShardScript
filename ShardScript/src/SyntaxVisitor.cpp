@@ -1,58 +1,58 @@
-#include <shard/SyntaxVisitor.h>
-#include <shard/parsing/SyntaxTree.h>
+#include <shard/SyntaxVisitor.hpp>
+#include <shard/parsing/SyntaxTree.hpp>
 
-#include <shard/syntax/SyntaxKind.h>
+#include <shard/syntax/SyntaxKind.hpp>
 
-#include <shard/syntax/nodes/CompilationUnitSyntax.h>
-#include <shard/syntax/nodes/MemberDeclarationSyntax.h>
-#include <shard/syntax/nodes/ArgumentsListSyntax.h>
-#include <shard/syntax/nodes/ParametersListSyntax.h>
-#include <shard/syntax/nodes/ExpressionSyntax.h>
-#include <shard/syntax/nodes/StatementsBlockSyntax.h>
-#include <shard/syntax/nodes/StatementSyntax.h>
-#include <shard/syntax/nodes/TypeSyntax.h>
+#include <shard/syntax/nodes/CompilationUnitSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/ArgumentsListSyntax.hpp>
+#include <shard/syntax/nodes/ParametersListSyntax.hpp>
+#include <shard/syntax/nodes/ExpressionSyntax.hpp>
+#include <shard/syntax/nodes/StatementsBlockSyntax.hpp>
+#include <shard/syntax/nodes/StatementSyntax.hpp>
+#include <shard/syntax/nodes/TypeSyntax.hpp>
 
-#include <shard/syntax/nodes/Directives/UsingDirectiveSyntax.h>
+#include <shard/syntax/nodes/Directives/UsingDirectiveSyntax.hpp>
 
-#include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.h>
-#include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.h>
-#include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.h>
-#include <shard/syntax/nodes/MemberDeclarations/PropertyDeclarationSyntax.h>
-#include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.h>
-#include <shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.h>
-#include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.h>
-#include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.h>
-#include <shard/syntax/nodes/MemberDeclarations/DelegateDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/PropertyDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/DelegateDeclarationSyntax.hpp>
 
-#include <shard/syntax/nodes/Expressions/BinaryExpressionSyntax.h>
-#include <shard/syntax/nodes/Expressions/LinkedExpressionSyntax.h>
-#include <shard/syntax/nodes/Expressions/LiteralExpressionSyntax.h>
-#include <shard/syntax/nodes/Expressions/ObjectExpressionSyntax.h>
-#include <shard/syntax/nodes/Expressions/UnaryExpressionSyntax.h>
-#include <shard/syntax/nodes/Expressions/CollectionExpressionSyntax.h>
-#include <shard/syntax/nodes/Expressions/LambdaExpressionSyntax.h>
+#include <shard/syntax/nodes/Expressions/BinaryExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/LinkedExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/LiteralExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/ObjectExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/UnaryExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/CollectionExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/LambdaExpressionSyntax.hpp>
 
-#include <shard/syntax/nodes/Loops/ForStatementSyntax.h>
-#include <shard/syntax/nodes/Loops/UntilStatementSyntax.h>
-#include <shard/syntax/nodes/Loops/WhileStatementSyntax.h>
+#include <shard/syntax/nodes/Loops/ForStatementSyntax.hpp>
+#include <shard/syntax/nodes/Loops/UntilStatementSyntax.hpp>
+#include <shard/syntax/nodes/Loops/WhileStatementSyntax.hpp>
 
-#include <shard/syntax/nodes/Statements/ConditionalClauseSyntax.h>
-#include <shard/syntax/nodes/Statements/ExpressionStatementSyntax.h>
-#include <shard/syntax/nodes/Statements/ReturnStatementSyntax.h>
-#include <shard/syntax/nodes/Statements/VariableStatementSyntax.h>
-#include <shard/syntax/nodes/Statements/BreakStatementSyntax.h>
-#include <shard/syntax/nodes/Statements/ContinueStatementSyntax.h>
-#include <shard/syntax/nodes/Statements/ThrowStatementSyntax.h>
+#include <shard/syntax/nodes/Statements/ConditionalClauseSyntax.hpp>
+#include <shard/syntax/nodes/Statements/ExpressionStatementSyntax.hpp>
+#include <shard/syntax/nodes/Statements/ReturnStatementSyntax.hpp>
+#include <shard/syntax/nodes/Statements/VariableStatementSyntax.hpp>
+#include <shard/syntax/nodes/Statements/BreakStatementSyntax.hpp>
+#include <shard/syntax/nodes/Statements/ContinueStatementSyntax.hpp>
+#include <shard/syntax/nodes/Statements/ThrowStatementSyntax.hpp>
 
-#include <shard/syntax/nodes/Types/ArrayTypeSyntax.h>
-#include <shard/syntax/nodes/Types/GenericTypeSyntax.h>
-#include <shard/syntax/nodes/Types/IdentifierNameTypeSyntax.h>
-#include <shard/syntax/nodes/Types/NullableTypeSyntax.h>
-#include <shard/syntax/nodes/Types/PredefinedTypeSyntax.h>
+#include <shard/syntax/nodes/Types/ArrayTypeSyntax.hpp>
+#include <shard/syntax/nodes/Types/GenericTypeSyntax.hpp>
+#include <shard/syntax/nodes/Types/IdentifierNameTypeSyntax.hpp>
+#include <shard/syntax/nodes/Types/NullableTypeSyntax.hpp>
+#include <shard/syntax/nodes/Types/PredefinedTypeSyntax.hpp>
 
 #include <stdexcept>
-#include <shard/syntax/nodes/Expressions/TernaryExpressionSyntax.h>
-#include <shard/syntax/nodes/Types/DelegateTypeSyntax.h>
+#include <shard/syntax/nodes/Expressions/TernaryExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Types/DelegateTypeSyntax.hpp>
 
 using namespace shard;
 
