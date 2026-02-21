@@ -26,7 +26,9 @@
 #include <cstdlib>
 #include <filesystem>
 #include <Windows.h>
-#include <dbghelp.h>
+#include <minidumpapiset.h>
+#include <excpt.h>
+#include <ios>
 
 #pragma comment(lib, "shlwapi.lib")
 #pragma comment(lib, "dbghelp.lib")
@@ -207,14 +209,20 @@ int wmain(int argc, wchar_t* argv[])
 		if (shard::ConsoleArguments::ShowHelp)
 		{
 			std::wstring version = ShardUtilities::GetFileVersion();
-			std::wcout << "ShardLang interpreter v" << version;
+			std::wcout << std::endl << L"ShardLang interpreter v" << version << std::endl << std::endl;
+
+			std::wcout << L"\t> '-h', '--help'        \t Show this help screen." << std::endl;
+			std::wcout << L"\t> '-i', '--interactive' \t Run REPL console" << std::endl;
+			std::wcout << L"\t> '-d', '--decompiled'  \t Instead of running program, decompile it entry point and print its bytecode" << std::endl;
+			std::wcout << L"\t> '--associate'         \t Registers '.ss' files and associates them as executable with this interpreter in registry" << std::endl;
+			std::wcout << L"\t> '--no-std'	          \t Preserve loading standart library from " << stdlibFilename << std::endl;
 			return 0;
 		}
 
 		if (shard::ConsoleArguments::AssociateScriptFile)
 		{
 			ShardUtilities::AssociateRegistry();
-			std::wcout << "File association successsfuly installed" << std::endl;
+			std::wcout << L"File association successsfuly installed" << std::endl;
 			return 0;
 		}
 
@@ -231,7 +239,7 @@ int wmain(int argc, wchar_t* argv[])
 			fs::path stdlibFilepath = currentDirectory / stdlibFilename;
 			if (!fs::exists(stdlibFilepath))
 			{
-				std::wcout << "'" << stdlibFilename << "' not found! use '--no-std' flag to disable standart library loading requirement" << std::endl;
+				std::wcout << L"'" << stdlibFilename << L"' not found! use '--no-std' flag to disable standart library loading requirement" << std::endl;
 				return 1;
 			}
 
@@ -243,7 +251,7 @@ int wmain(int argc, wchar_t* argv[])
 		fs::path workingDirectory = GetWorkingDirectoryPath();
 		if (!fs::exists(workingDirectory))
 		{
-			std::wcout << "Could not resolve current working directory!" << std::endl;
+			std::wcout << L"Could not resolve current working directory!" << std::endl;
 			return 1;
 		}
 
