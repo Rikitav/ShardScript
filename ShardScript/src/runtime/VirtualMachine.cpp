@@ -509,10 +509,6 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 
 					callingFrame->PushStack(retReg);
 				}
-				else
-				{
-					callingFrame->PushStack(GarbageCollector::NullInstance);
-				}
 
 				for (ObjectInstance* arg : argValues)
 				{

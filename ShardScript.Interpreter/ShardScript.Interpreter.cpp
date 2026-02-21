@@ -284,7 +284,8 @@ int wmain(int argc, wchar_t* argv[])
 
 		if (ConsoleArguments::UseInteractive)
 		{
-			InteractiveConsole::Run(syntaxTree, semanticModel, diagnostics);
+			InteractiveConsole repl(syntaxTree, semanticModel, diagnostics);
+			repl.Run();
 			return 0;
 		}
 

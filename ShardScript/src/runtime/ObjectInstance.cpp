@@ -59,10 +59,19 @@ ObjectInstance* ObjectInstance::FromValue(const wchar_t* value, bool isTransient
 ObjectInstance* ObjectInstance::FromValue(const std::wstring& value)
 {
 	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String);
-	*(const_cast<bool*>(&instance->IsTransient)) = true;
+	*(const_cast<bool*>(&instance->IsTransient)) = false;
 
-	instance->WriteInteger(value.size());
-	instance->WriteMemory(sizeof(int64_t), sizeof(wchar_t*), value.data());
+	size_t length = value.size();
+	size_t size = length * sizeof(wchar_t) + sizeof(wchar_t);
+
+	wchar_t* copy = static_cast<wchar_t*>(malloc(size));
+	if (copy == nullptr)
+		throw std::runtime_error("Failed to allocate string");
+
+	wcscpy(copy, value.data());
+
+	instance->WriteInteger(length);
+	instance->WriteMemory(sizeof(int64_t), sizeof(wchar_t*), &copy);
 	return instance;
 }
 

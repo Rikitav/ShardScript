@@ -203,14 +203,13 @@ void FrameworkLoader::Load(SemanticModel& semanticModel, DiagnosticsContext& dia
 
 	for (FrameworkModule* module : Modules)
 	{
-		SyntaxTree innerTree;
 		SourceProvider* source = module->GetSource();
 		
-		parser.FromSourceProvider(innerTree, *source);
-		semanter.Analyze(innerTree, semanticModel);
+		parser.FromSourceProvider(semanticModel.Tree, *source);
+		semanter.Analyze(semanticModel.Tree, semanticModel);
 		delete source;
 
-		CompilationUnitSyntax* unit = innerTree.CompilationUnits.back();
+		CompilationUnitSyntax* unit = semanticModel.Tree.CompilationUnits.back();
 		for (MemberDeclarationSyntax* member : unit->Members)
 			BindMemberDeclaration(member, module, semanticModel, diagnostics);
 	}

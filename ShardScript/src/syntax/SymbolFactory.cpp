@@ -450,7 +450,10 @@ DelegateTypeSymbol* SymbolFactory::Delegate(MethodSymbol* method)
 
 NamespaceSymbol* SymbolFactory::Namespace(NamespaceDeclarationSyntax* node)
 {
-	std::wstring namespaceName = node->IdentifierToken.Word;
+	std::wstring namespaceName = node->IdentifierTokens.at(0).Word;
+	for (int i = 1; i < node->IdentifierTokens.size(); i++)
+		namespaceName += L"." + node->IdentifierTokens.at(i).Word;
+
 	NamespaceSymbol* symbol = new NamespaceSymbol(namespaceName);
 	SetAccesibility(symbol, node->Modifiers);
 	return symbol;

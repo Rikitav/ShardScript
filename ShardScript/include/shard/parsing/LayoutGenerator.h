@@ -10,15 +10,15 @@ namespace shard
 	class SHARD_API LayoutGenerator
 	{
 	private:
-		shard::DiagnosticsContext& Diagnostics;
+		DiagnosticsContext& Diagnostics;
 
 	public:
-		LayoutGenerator(shard::DiagnosticsContext& diagnostics)
+		LayoutGenerator(DiagnosticsContext& diagnostics)
 			: Diagnostics(diagnostics) { }
 
-		void Generate(shard::SemanticModel& semanticModel);
+		void Generate(SemanticModel& semanticModel);
 
 	private:
-		void FixObjectLayout(shard::SemanticModel& semanticModel, shard::TypeSymbol* objectInfo);
+		void FixObjectLayout(SemanticModel& semanticModel, TypeSymbol* objectInfo);
 	};
 }
