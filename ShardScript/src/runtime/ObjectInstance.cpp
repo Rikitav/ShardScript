@@ -1,15 +1,15 @@
-#include <shard/runtime/ObjectInstance.h>
-#include <shard/runtime/GarbageCollector.h>
+#include <shard/runtime/ObjectInstance.hpp>
+#include <shard/runtime/GarbageCollector.hpp>
 
-#include <shard/parsing/semantic/SymbolTable.h>
+#include <shard/parsing/semantic/SymbolTable.hpp>
 
-#include <shard/syntax/SyntaxKind.h>
+#include <shard/syntax/SyntaxKind.hpp>
 
-#include <shard/syntax/symbols/FieldSymbol.h>
-#include <shard/syntax/symbols/ArrayTypeSymbol.h>
-#include <shard/syntax/symbols/GenericTypeSymbol.h>
-#include <shard/syntax/symbols/TypeSymbol.h>
-#include <shard/syntax/symbols/TypeParameterSymbol.h>
+#include <shard/syntax/symbols/FieldSymbol.hpp>
+#include <shard/syntax/symbols/ArrayTypeSymbol.hpp>
+#include <shard/syntax/symbols/GenericTypeSymbol.hpp>
+#include <shard/syntax/symbols/TypeSymbol.hpp>
+#include <shard/syntax/symbols/TypeParameterSymbol.hpp>
 
 #include <cstring>
 #include <stdexcept>

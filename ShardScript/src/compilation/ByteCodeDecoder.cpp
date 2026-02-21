@@ -1,11 +1,11 @@
-#include <shard/compilation/ByteCodeDecoder.h>
-#include <shard/compilation/OperationCode.h>
+#include <shard/compilation/ByteCodeDecoder.hpp>
+#include <shard/compilation/OperationCode.hpp>
 
-#include <shard/syntax/symbols/ArrayTypeSymbol.h>
-#include <shard/syntax/symbols/ConstructorSymbol.h>
-#include <shard/syntax/symbols/FieldSymbol.h>
-#include <shard/syntax/symbols/MethodSymbol.h>
-#include <shard/syntax/symbols/TypeSymbol.h>
+#include <shard/syntax/symbols/ArrayTypeSymbol.hpp>
+#include <shard/syntax/symbols/ConstructorSymbol.hpp>
+#include <shard/syntax/symbols/FieldSymbol.hpp>
+#include <shard/syntax/symbols/MethodSymbol.hpp>
+#include <shard/syntax/symbols/TypeSymbol.hpp>
 
 #include <stdexcept>
 #include <cstddef>

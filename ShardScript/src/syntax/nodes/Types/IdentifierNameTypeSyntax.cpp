@@ -1,4 +1,4 @@
-#include <shard/syntax/nodes/Types/IdentifierNameTypeSyntax.h>
+#include <shard/syntax/nodes/Types/IdentifierNameTypeSyntax.hpp>
 #include <string>
 
 using namespace shard;

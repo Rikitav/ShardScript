@@ -1,5 +1,5 @@
-#include <shard/runtime/CallStackFrame.h>
-#include <shard/runtime/ObjectInstance.h>
+#include <shard/runtime/CallStackFrame.hpp>
+#include <shard/runtime/ObjectInstance.hpp>
 
 using namespace shard;
 

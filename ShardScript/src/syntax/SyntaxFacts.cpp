@@ -1,5 +1,5 @@
-#include <shard/syntax/SyntaxFacts.h>
-#include <shard/syntax/TokenType.h>
+#include <shard/syntax/SyntaxFacts.hpp>
+#include <shard/syntax/TokenType.hpp>
 
 using namespace shard;
 

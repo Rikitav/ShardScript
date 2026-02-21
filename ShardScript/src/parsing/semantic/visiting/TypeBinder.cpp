@@ -1,60 +1,60 @@
-#include <shard/parsing/semantic/visiting/TypeBinder.h>
-#include <shard/parsing/semantic/SymbolTable.h>
-#include <shard/parsing/semantic/SemanticScope.h>
-#include <shard/parsing/semantic/NamespaceTree.h>
+#include <shard/parsing/semantic/visiting/TypeBinder.hpp>
+#include <shard/parsing/semantic/SymbolTable.hpp>
+#include <shard/parsing/semantic/SemanticScope.hpp>
+#include <shard/parsing/semantic/NamespaceTree.hpp>
 
-#include <shard/syntax/SyntaxSymbol.h>
-#include <shard/syntax/SyntaxKind.h>
-#include <shard/syntax/TokenType.h>
-#include <shard/syntax/SyntaxToken.h>
-#include <shard/syntax/SymbolFactory.h>
+#include <shard/syntax/SyntaxSymbol.hpp>
+#include <shard/syntax/SyntaxKind.hpp>
+#include <shard/syntax/TokenType.hpp>
+#include <shard/syntax/SyntaxToken.hpp>
+#include <shard/syntax/SymbolFactory.hpp>
 
-#include <shard/syntax/symbols/TypeSymbol.h>
-#include <shard/syntax/symbols/NamespaceSymbol.h>
-#include <shard/syntax/symbols/ClassSymbol.h>
-#include <shard/syntax/symbols/MethodSymbol.h>
-#include <shard/syntax/symbols/StructSymbol.h>
-#include <shard/syntax/symbols/FieldSymbol.h>
-#include <shard/syntax/symbols/PropertySymbol.h>
-#include <shard/syntax/symbols/ParameterSymbol.h>
-#include <shard/syntax/symbols/VariableSymbol.h>
-#include <shard/syntax/symbols/ArrayTypeSymbol.h>
-#include <shard/syntax/symbols/TypeParameterSymbol.h>
-#include <shard/syntax/symbols/DelegateTypeSymbol.h>
-#include <shard/syntax/symbols/GenericTypeSymbol.h>
-#include <shard/syntax/symbols/AccessorSymbol.h>
-#include <shard/syntax/symbols/IndexatorSymbol.h>
+#include <shard/syntax/symbols/TypeSymbol.hpp>
+#include <shard/syntax/symbols/NamespaceSymbol.hpp>
+#include <shard/syntax/symbols/ClassSymbol.hpp>
+#include <shard/syntax/symbols/MethodSymbol.hpp>
+#include <shard/syntax/symbols/StructSymbol.hpp>
+#include <shard/syntax/symbols/FieldSymbol.hpp>
+#include <shard/syntax/symbols/PropertySymbol.hpp>
+#include <shard/syntax/symbols/ParameterSymbol.hpp>
+#include <shard/syntax/symbols/VariableSymbol.hpp>
+#include <shard/syntax/symbols/ArrayTypeSymbol.hpp>
+#include <shard/syntax/symbols/TypeParameterSymbol.hpp>
+#include <shard/syntax/symbols/DelegateTypeSymbol.hpp>
+#include <shard/syntax/symbols/GenericTypeSymbol.hpp>
+#include <shard/syntax/symbols/AccessorSymbol.hpp>
+#include <shard/syntax/symbols/IndexatorSymbol.hpp>
 
-#include <shard/syntax/nodes/TypeSyntax.h>
-#include <shard/syntax/nodes/CompilationUnitSyntax.h>
-#include <shard/syntax/nodes/MemberDeclarationSyntax.h>
-#include <shard/syntax/nodes/ParametersListSyntax.h>
-#include <shard/syntax/nodes/TypeArgumentsListSyntax.h>
+#include <shard/syntax/nodes/TypeSyntax.hpp>
+#include <shard/syntax/nodes/CompilationUnitSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/ParametersListSyntax.hpp>
+#include <shard/syntax/nodes/TypeArgumentsListSyntax.hpp>
 
-#include <shard/syntax/nodes/Types/DelegateTypeSyntax.h>
-#include <shard/syntax/nodes/Types/NullableTypeSyntax.h>
+#include <shard/syntax/nodes/Types/DelegateTypeSyntax.hpp>
+#include <shard/syntax/nodes/Types/NullableTypeSyntax.hpp>
 
-#include <shard/syntax/nodes/Directives/UsingDirectiveSyntax.h>
+#include <shard/syntax/nodes/Directives/UsingDirectiveSyntax.hpp>
 
-#include <shard/syntax/nodes/Types/IdentifierNameTypeSyntax.h>
-#include <shard/syntax/nodes/Types/ArrayTypeSyntax.h>
-#include <shard/syntax/nodes/Types/PredefinedTypeSyntax.h>
-#include <shard/syntax/nodes/Types/GenericTypeSyntax.h>
+#include <shard/syntax/nodes/Types/IdentifierNameTypeSyntax.hpp>
+#include <shard/syntax/nodes/Types/ArrayTypeSyntax.hpp>
+#include <shard/syntax/nodes/Types/PredefinedTypeSyntax.hpp>
+#include <shard/syntax/nodes/Types/GenericTypeSyntax.hpp>
 
-#include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.h>
-#include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.h>
-#include <shard/syntax/nodes/MemberDeclarations/PropertyDeclarationSyntax.h>
-#include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.h>
-#include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.h>
-#include <shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.h>
-#include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.h>
-#include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.h>
-#include <shard/syntax/nodes/MemberDeclarations/DelegateDeclarationSyntax.h>
-#include <shard/syntax/nodes/MemberDeclarations/IndexatorDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/PropertyDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/DelegateDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/IndexatorDeclarationSyntax.hpp>
 
-#include <shard/syntax/nodes/Statements/VariableStatementSyntax.h>
+#include <shard/syntax/nodes/Statements/VariableStatementSyntax.hpp>
 
-#include <shard/syntax/nodes/Expressions/ObjectExpressionSyntax.h>
+#include <shard/syntax/nodes/Expressions/ObjectExpressionSyntax.hpp>
 
 #include <vector>
 #include <string>

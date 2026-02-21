@@ -6,7 +6,7 @@
 
 #pragma comment(lib, "version.lib")
 
-#include "InterpreterUtilities.h"
+#include "InterpreterUtilities.hpp"
 
 std::wstring shard::ShardUtilities::GetFileVersion()
 {

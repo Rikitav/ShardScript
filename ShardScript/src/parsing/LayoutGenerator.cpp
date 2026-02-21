@@ -1,17 +1,17 @@
-#include <shard/parsing/LayoutGenerator.h>
-#include <shard/parsing/semantic/SemanticModel.h>
-#include <shard/parsing/semantic/SymbolTable.h>
+#include <shard/parsing/LayoutGenerator.hpp>
+#include <shard/parsing/semantic/SemanticModel.hpp>
+#include <shard/parsing/semantic/SymbolTable.hpp>
 
-#include <shard/syntax/SyntaxToken.h>
-#include <shard/syntax/SyntaxKind.h>
+#include <shard/syntax/SyntaxToken.hpp>
+#include <shard/syntax/SyntaxKind.hpp>
 
-#include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.hpp>
 
-#include <shard/syntax/symbols/TypeSymbol.h>
-#include <shard/syntax/symbols/FieldSymbol.h>
-#include <shard/syntax/symbols/ArrayTypeSymbol.h>
-#include <shard/syntax/symbols/GenericTypeSymbol.h>
-#include <shard/syntax/symbols/TypeParameterSymbol.h>
+#include <shard/syntax/symbols/TypeSymbol.hpp>
+#include <shard/syntax/symbols/FieldSymbol.hpp>
+#include <shard/syntax/symbols/ArrayTypeSymbol.hpp>
+#include <shard/syntax/symbols/GenericTypeSymbol.hpp>
+#include <shard/syntax/symbols/TypeParameterSymbol.hpp>
 
 using namespace shard;
 
