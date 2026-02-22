@@ -1,21 +1,21 @@
-﻿#include <shard/parsing/SyntaxTree.h>
-#include <shard/parsing/analysis/DiagnosticsContext.h>
-#include <shard/parsing/semantic/SemanticModel.h>
+﻿#include <shard/parsing/SyntaxTree.hpp>
+#include <shard/parsing/analysis/DiagnosticsContext.hpp>
+#include <shard/parsing/semantic/SemanticModel.hpp>
 
-#include <shard/parsing/lexical/LexicalAnalyzer.h>
-#include <shard/parsing/lexical/reading/FileReader.h>
-#include <shard/parsing/SemanticAnalyzer.h>
-#include <shard/parsing/SourceParser.h>
-#include <shard/parsing/LayoutGenerator.h>
+#include <shard/parsing/lexical/LexicalAnalyzer.hpp>
+#include <shard/parsing/lexical/reading/FileReader.hpp>
+#include <shard/parsing/SemanticAnalyzer.hpp>
+#include <shard/parsing/SourceParser.hpp>
+#include <shard/parsing/LayoutGenerator.hpp>
 
-#include <shard/runtime/GarbageCollector.h>
-#include <shard/runtime/VirtualMachine.h>
-#include <shard/runtime/ProgramDisassembler.h>
+#include <shard/runtime/GarbageCollector.hpp>
+#include <shard/runtime/VirtualMachine.hpp>
+#include <shard/runtime/ProgramDisassembler.hpp>
 
-#include <shard/runtime/framework/FrameworkLoader.h>
+#include <shard/runtime/framework/FrameworkLoader.hpp>
 
-#include <shard/compilation/AbstractEmiter.h>
-#include <shard/compilation/ProgramVirtualImage.h>
+#include <shard/compilation/AbstractEmiter.hpp>
+#include <shard/compilation/ProgramVirtualImage.hpp>
 
 #include <iostream>
 #include <string>
@@ -26,13 +26,15 @@
 #include <cstdlib>
 #include <filesystem>
 #include <Windows.h>
-#include <dbghelp.h>
+#include <minidumpapiset.h>
+#include <excpt.h>
+#include <ios>
 
 #pragma comment(lib, "shlwapi.lib")
 #pragma comment(lib, "dbghelp.lib")
 
-#include "InteractiveConsole.h"
-#include "utilities/InterpreterUtilities.h"
+#include "InteractiveConsole.hpp"
+#include "utilities/InterpreterUtilities.hpp"
 
 using namespace shard;
 namespace fs = std::filesystem;
@@ -207,14 +209,20 @@ int wmain(int argc, wchar_t* argv[])
 		if (shard::ConsoleArguments::ShowHelp)
 		{
 			std::wstring version = ShardUtilities::GetFileVersion();
-			std::wcout << "ShardLang interpreter v" << version;
+			std::wcout << std::endl << L"ShardLang interpreter v" << version << std::endl << std::endl;
+
+			std::wcout << L"\t> '-h', '--help'        \t Show this help screen." << std::endl;
+			std::wcout << L"\t> '-i', '--interactive' \t Run REPL console" << std::endl;
+			std::wcout << L"\t> '-d', '--decompiled'  \t Instead of running program, decompile it entry point and print its bytecode" << std::endl;
+			std::wcout << L"\t> '--associate'         \t Registers '.ss' files and associates them as executable with this interpreter in registry" << std::endl;
+			std::wcout << L"\t> '--no-std'	          \t Preserve loading standart library from " << stdlibFilename << std::endl;
 			return 0;
 		}
 
 		if (shard::ConsoleArguments::AssociateScriptFile)
 		{
 			ShardUtilities::AssociateRegistry();
-			std::wcout << "File association successsfuly installed" << std::endl;
+			std::wcout << L"File association successsfuly installed" << std::endl;
 			return 0;
 		}
 
@@ -231,7 +239,7 @@ int wmain(int argc, wchar_t* argv[])
 			fs::path stdlibFilepath = currentDirectory / stdlibFilename;
 			if (!fs::exists(stdlibFilepath))
 			{
-				std::wcout << "'" << stdlibFilename << "' not found! use '--no-std' flag to disable standart library loading requirement" << std::endl;
+				std::wcout << L"'" << stdlibFilename << L"' not found! use '--no-std' flag to disable standart library loading requirement" << std::endl;
 				return 1;
 			}
 
@@ -243,7 +251,7 @@ int wmain(int argc, wchar_t* argv[])
 		fs::path workingDirectory = GetWorkingDirectoryPath();
 		if (!fs::exists(workingDirectory))
 		{
-			std::wcout << "Could not resolve current working directory!" << std::endl;
+			std::wcout << L"Could not resolve current working directory!" << std::endl;
 			return 1;
 		}
 

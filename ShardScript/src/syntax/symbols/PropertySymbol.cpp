@@ -1,4 +1,4 @@
-#include <shard/syntax/symbols/PropertySymbol.h>
+#include <shard/syntax/symbols/PropertySymbol.hpp>
 
 using namespace shard;
 

@@ -1,15 +1,15 @@
-#include <shard/runtime/VirtualMachine.h>
-#include <shard/compilation/ProgramVirtualImage.h>
-#include <shard/parsing/SyntaxTree.h>
-#include <shard/parsing/analysis/DiagnosticsContext.h>
-#include <shard/parsing/semantic/SemanticModel.h>
-#include <shard/parsing/lexical/LexicalAnalyzer.h>
-#include <shard/parsing/lexical/reading/StringStreamReader.h>
-#include <shard/parsing/SemanticAnalyzer.h>
-#include <shard/parsing/SourceParser.h>
-#include <shard/parsing/LayoutGenerator.h>
-#include <shard/runtime/framework/FrameworkLoader.h>
-#include <shard/compilation/AbstractEmiter.h>
+#include <shard/runtime/VirtualMachine.hpp>
+#include <shard/compilation/ProgramVirtualImage.hpp>
+#include <shard/parsing/SyntaxTree.hpp>
+#include <shard/parsing/analysis/DiagnosticsContext.hpp>
+#include <shard/parsing/semantic/SemanticModel.hpp>
+#include <shard/parsing/lexical/LexicalAnalyzer.hpp>
+#include <shard/parsing/lexical/reading/StringStreamReader.hpp>
+#include <shard/parsing/SemanticAnalyzer.hpp>
+#include <shard/parsing/SourceParser.hpp>
+#include <shard/parsing/LayoutGenerator.hpp>
+#include <shard/runtime/framework/FrameworkLoader.hpp>
+#include <shard/compilation/AbstractEmiter.hpp>
 #include <sstream>
 #include <algorithm>
 

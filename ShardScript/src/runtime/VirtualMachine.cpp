@@ -1,24 +1,24 @@
-#include <shard/runtime/VirtualMachine.h>
-#include <shard/runtime/PrimitiveMathModule.h>
-#include <shard/runtime/CallStackFrame.h>
-#include <shard/runtime/ObjectInstance.h>
-#include <shard/runtime/ArgumentsSpan.h>
-#include <shard/runtime/GarbageCollector.h>
+#include <shard/runtime/VirtualMachine.hpp>
+#include <shard/runtime/PrimitiveMathModule.hpp>
+#include <shard/runtime/CallStackFrame.hpp>
+#include <shard/runtime/ObjectInstance.hpp>
+#include <shard/runtime/ArgumentsSpan.hpp>
+#include <shard/runtime/GarbageCollector.hpp>
 
-#include <shard/compilation/ByteCodeDecoder.h>
-#include <shard/compilation/OperationCode.h>
-#include <shard/compilation/ProgramVirtualImage.h>
+#include <shard/compilation/ByteCodeDecoder.hpp>
+#include <shard/compilation/OperationCode.hpp>
+#include <shard/compilation/ProgramVirtualImage.hpp>
 
-#include <shard/parsing/semantic/SymbolTable.h>
+#include <shard/parsing/semantic/SymbolTable.hpp>
 
-#include <shard/syntax/TokenType.h>
-#include <shard/syntax/SyntaxKind.h>
+#include <shard/syntax/TokenType.hpp>
+#include <shard/syntax/SyntaxKind.hpp>
 
-#include <shard/syntax/symbols/MethodSymbol.h>
-#include <shard/syntax/symbols/ConstructorSymbol.h>
-#include <shard/syntax/symbols/FieldSymbol.h>
-#include <shard/syntax/symbols/TypeSymbol.h>
-#include <shard/syntax/symbols/GenericTypeSymbol.h>
+#include <shard/syntax/symbols/MethodSymbol.hpp>
+#include <shard/syntax/symbols/ConstructorSymbol.hpp>
+#include <shard/syntax/symbols/FieldSymbol.hpp>
+#include <shard/syntax/symbols/TypeSymbol.hpp>
+#include <shard/syntax/symbols/GenericTypeSymbol.hpp>
 
 #include <vector>
 #include <stdexcept>

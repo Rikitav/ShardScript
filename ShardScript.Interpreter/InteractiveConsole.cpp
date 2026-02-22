@@ -1,47 +1,47 @@
-#include <shard/parsing/lexical/LexicalAnalyzer.h>
-#include <shard/parsing/lexical/reading/StringStreamReader.h>
-#include <shard/parsing/lexical/LexicalBuffer.h>
-#include <shard/parsing/SemanticAnalyzer.h>
-#include <shard/parsing/LayoutGenerator.h>
+#include <shard/parsing/lexical/LexicalAnalyzer.hpp>
+#include <shard/parsing/lexical/reading/StringStreamReader.hpp>
+#include <shard/parsing/lexical/LexicalBuffer.hpp>
+#include <shard/parsing/SemanticAnalyzer.hpp>
+#include <shard/parsing/LayoutGenerator.hpp>
 
-#include <shard/parsing/analysis/TextLocation.h>
-#include <shard/parsing/analysis/DiagnosticsContext.h>
+#include <shard/parsing/analysis/TextLocation.hpp>
+#include <shard/parsing/analysis/DiagnosticsContext.hpp>
 
-#include <shard/parsing/SourceParser.h>
-#include <shard/parsing/SyntaxTree.h>
-#include <shard/parsing/MemberDeclarationInfo.h>
+#include <shard/parsing/SourceParser.hpp>
+#include <shard/parsing/SyntaxTree.hpp>
+#include <shard/parsing/MemberDeclarationInfo.hpp>
 
-#include <shard/parsing/semantic/SemanticModel.h>
+#include <shard/parsing/semantic/SemanticModel.hpp>
 
-#include <shard/compilation/AbstractEmiter.h>
-#include <shard/compilation/ProgramVirtualImage.h>
-#include <shard/compilation/ByteCodeDecoder.h>
+#include <shard/compilation/AbstractEmiter.hpp>
+#include <shard/compilation/ProgramVirtualImage.hpp>
+#include <shard/compilation/ByteCodeDecoder.hpp>
 
-#include <shard/runtime/AbstractInterpreter.h>
-#include <shard/runtime/VirtualMachine.h>
-#include <shard/runtime/ConsoleHelper.h>
-#include <shard/runtime/GarbageCollector.h>
-#include <shard/runtime/ObjectInstance.h>
+#include <shard/runtime/AbstractInterpreter.hpp>
+#include <shard/runtime/VirtualMachine.hpp>
+#include <shard/runtime/ConsoleHelper.hpp>
+#include <shard/runtime/GarbageCollector.hpp>
+#include <shard/runtime/ObjectInstance.hpp>
 
-#include <shard/syntax/SyntaxFacts.h>
-#include <shard/syntax/SyntaxToken.h>
-#include <shard/syntax/TokenType.h>
-#include <shard/syntax/SyntaxNode.h>
-#include <shard/syntax/symbols/MethodSymbol.h>
+#include <shard/syntax/SyntaxFacts.hpp>
+#include <shard/syntax/SyntaxToken.hpp>
+#include <shard/syntax/TokenType.hpp>
+#include <shard/syntax/SyntaxNode.hpp>
+#include <shard/syntax/symbols/MethodSymbol.hpp>
 
-#include <shard/syntax/nodes/ParametersListSyntax.h>
-#include <shard/syntax/nodes/CompilationUnitSyntax.h>
-#include <shard/syntax/nodes/StatementSyntax.h>
-#include <shard/syntax/nodes/ExpressionSyntax.h>
-#include <shard/syntax/nodes/StatementsBlockSyntax.h>
+#include <shard/syntax/nodes/ParametersListSyntax.hpp>
+#include <shard/syntax/nodes/CompilationUnitSyntax.hpp>
+#include <shard/syntax/nodes/StatementSyntax.hpp>
+#include <shard/syntax/nodes/ExpressionSyntax.hpp>
+#include <shard/syntax/nodes/StatementsBlockSyntax.hpp>
 
-#include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.h>
-#include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.h>
-#include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.hpp>
 
-#include <shard/syntax/nodes/Statements/ExpressionStatementSyntax.h>
+#include <shard/syntax/nodes/Statements/ExpressionStatementSyntax.hpp>
 
-#include <shard/syntax/nodes/Types/PredefinedTypeSyntax.h>
+#include <shard/syntax/nodes/Types/PredefinedTypeSyntax.hpp>
 
 #include <Windows.h>
 #include <processenv.h>
@@ -50,8 +50,8 @@
 #include <vector>
 #include <exception>
 
-#include "InteractiveConsole.h"
-#include "utilities/InterpreterUtilities.h"
+#include "InteractiveConsole.hpp"
+#include "utilities/InterpreterUtilities.hpp"
 
 using namespace shard;
 

@@ -3,7 +3,7 @@ import re
 import sys
 
 INCLUDE_DIR = os.path.join(os.getcwd(), "include")
-OUTPUT_FILE = os.path.join(os.getcwd(), "dist", "ShardScript.hpp")
+OUTPUT_FILE = os.path.join(os.getcwd(), "..", "out", "ShardScript.hpp")
 ROOT_NAMESPACE = "ShardScript"
 
 include_regex = re.compile(r'^\s*#include\s*[<"]([^>"]+)[>"]')

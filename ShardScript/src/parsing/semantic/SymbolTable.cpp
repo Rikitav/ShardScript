@@ -1,11 +1,11 @@
-#include <shard/parsing/semantic/SymbolTable.h>
+#include <shard/parsing/semantic/SymbolTable.hpp>
 
-#include <shard/syntax/SyntaxNode.h>
-#include <shard/syntax/SyntaxSymbol.h>
-#include <shard/syntax/SyntaxKind.h>
+#include <shard/syntax/SyntaxNode.hpp>
+#include <shard/syntax/SyntaxSymbol.hpp>
+#include <shard/syntax/SyntaxKind.hpp>
 
-#include <shard/syntax/symbols/TypeSymbol.h>
-#include <shard/syntax/symbols/NamespaceSymbol.h>
+#include <shard/syntax/symbols/TypeSymbol.hpp>
+#include <shard/syntax/symbols/NamespaceSymbol.hpp>
 
 #include <vector>
 #include <ranges>
@@ -15,6 +15,14 @@
 using namespace std::ranges;
 using namespace std::views;
 using namespace shard;
+
+TypeSymbol* const SymbolTable::Global::Type = new TypeSymbol(GlobalTypeName, SyntaxKind::CompilationUnit);
+SemanticScope* const SymbolTable::Global::Scope = new SemanticScope(Type, nullptr);
+
+SymbolTable::SymbolTable()
+{
+
+}
 
 SymbolTable::~SymbolTable()
 {

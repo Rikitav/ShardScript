@@ -1,4 +1,4 @@
-#include <shard/ShardScriptVersion.h>
+#include <shard/ShardScriptVersion.hpp>
 #include <Windows.h>
 
 using namespace shard;

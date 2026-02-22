@@ -1,4 +1,4 @@
-#include <shard/syntax/nodes/Directives/UsingDirectiveSyntax.h>
+#include <shard/syntax/nodes/Directives/UsingDirectiveSyntax.hpp>
 #include <sstream>
 #include <string>
 

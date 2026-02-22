@@ -1,6 +1,6 @@
-#include <shard/parsing/semantic/NamespaceTree.h>
+#include <shard/parsing/semantic/NamespaceTree.hpp>
 #include <string>
-#include <shard/syntax/symbols/NamespaceSymbol.h>
+#include <shard/syntax/symbols/NamespaceSymbol.hpp>
 
 using namespace shard;
 

@@ -1,4 +1,4 @@
-#include <shard/syntax/nodes/Types/PredefinedTypeSyntax.h>
+#include <shard/syntax/nodes/Types/PredefinedTypeSyntax.hpp>
 
 using namespace shard;
 

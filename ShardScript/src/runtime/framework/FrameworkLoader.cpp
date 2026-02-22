@@ -1,32 +1,32 @@
-#include <shard/runtime/framework/FrameworkLoader.h>
-#include <shard/runtime/framework/FrameworkModule.h>
+#include <shard/runtime/framework/FrameworkLoader.hpp>
+#include <shard/runtime/framework/FrameworkModule.hpp>
 
-#include <shard/parsing/lexical/LexicalAnalyzer.h>
-#include <shard/parsing/SemanticAnalyzer.h>
+#include <shard/parsing/lexical/LexicalAnalyzer.hpp>
+#include <shard/parsing/SemanticAnalyzer.hpp>
 
-#include <shard/parsing/semantic/SemanticModel.h>
-#include <shard/parsing/semantic/SymbolTable.h>
-#include <shard/parsing/analysis/DiagnosticsContext.h>
-#include <shard/parsing/SyntaxTree.h>
-#include <shard/parsing/SourceParser.h>
+#include <shard/parsing/semantic/SemanticModel.hpp>
+#include <shard/parsing/semantic/SymbolTable.hpp>
+#include <shard/parsing/analysis/DiagnosticsContext.hpp>
+#include <shard/parsing/SyntaxTree.hpp>
+#include <shard/parsing/SourceParser.hpp>
 
-#include <shard/syntax/SyntaxKind.h>
+#include <shard/syntax/SyntaxKind.hpp>
 
-#include <shard/syntax/symbols/MethodSymbol.h>
-#include <shard/syntax/symbols/ParameterSymbol.h>
-#include <shard/syntax/symbols/AccessorSymbol.h>
-#include <shard/syntax/symbols/PropertySymbol.h>
+#include <shard/syntax/symbols/MethodSymbol.hpp>
+#include <shard/syntax/symbols/ParameterSymbol.hpp>
+#include <shard/syntax/symbols/AccessorSymbol.hpp>
+#include <shard/syntax/symbols/PropertySymbol.hpp>
 
-#include <shard/syntax/nodes/MemberDeclarationSyntax.h>
-#include <shard/syntax/nodes/CompilationUnitSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/CompilationUnitSyntax.hpp>
 
-#include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.h>
-#include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.h>
-#include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.h>
-#include <shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.h>
-#include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.h>
-#include <shard/syntax/nodes/MemberDeclarations/PropertyDeclarationSyntax.h>
-#include <shard/syntax/nodes/MemberDeclarations/IndexatorDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/PropertyDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/IndexatorDeclarationSyntax.hpp>
 
 #include <string>
 #include <vector>

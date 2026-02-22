@@ -3,7 +3,7 @@ project(ShardScript.Framework)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMake")
 
 file(GLOB_RECURSE FRAMEWORK_SOURCES "*.cpp")
-file(GLOB_RECURSE FRAMEWORK_HEADERS "*.h")
+file(GLOB_RECURSE FRAMEWORK_HEADERS "*.hpp")
 file(GLOB_RECURSE FRAMEWORK_RESOURCES "*.rc" "*.ss")
 
 add_library(ShardScript.Framework SHARED 

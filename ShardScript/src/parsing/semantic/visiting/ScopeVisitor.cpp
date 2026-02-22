@@ -1,13 +1,13 @@
-#include <shard/parsing/semantic/visiting/ScopeVisitor.h>
-#include <shard/parsing/semantic/SemanticScope.h>
-#include <shard/parsing/semantic/NamespaceTree.h>
+#include <shard/parsing/semantic/visiting/ScopeVisitor.hpp>
+#include <shard/parsing/semantic/SemanticScope.hpp>
+#include <shard/parsing/semantic/NamespaceTree.hpp>
 
-#include <shard/syntax/SyntaxSymbol.h>
-#include <shard/syntax/SymbolAccesibility.h>
-#include <shard/syntax/SyntaxKind.h>
+#include <shard/syntax/SyntaxSymbol.hpp>
+#include <shard/syntax/SymbolAccesibility.hpp>
+#include <shard/syntax/SyntaxKind.hpp>
 
-#include <shard/syntax/symbols/NamespaceSymbol.h>
-#include <shard/syntax/symbols/TypeSymbol.h>
+#include <shard/syntax/symbols/NamespaceSymbol.hpp>
+#include <shard/syntax/symbols/TypeSymbol.hpp>
 
 #include <stdexcept>
 

@@ -1,4 +1,4 @@
-#include <shard/syntax/nodes/Types/DelegateTypeSyntax.h>
+#include <shard/syntax/nodes/Types/DelegateTypeSyntax.hpp>
 
 #include <string>
 

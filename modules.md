@@ -17,9 +17,9 @@ namespace Rikitav.Example
 ### 2. Implementation (C++)
 ​Create a class inheriting from shard::FrameworkModule. You need to implement methods to bind symbols (Bind...) and return the source code.
 ```
-#include <shard/runtime/framework/FrameworkModule.h>
-#include <shard/runtime/ObjectInstance.h>
-#include <shard/runtime/ConsoleHelper.h>
+#include <shard/runtime/framework/FrameworkModule.hpp>
+#include <shard/runtime/ObjectInstance.hpp>
+#include <shard/runtime/ConsoleHelper.hpp>
 
 using namespace shard;
 

@@ -1,6 +1,6 @@
-#include <shard/parsing/lexical/reading/StringStreamReader.h>
-#include <shard/parsing/lexical/SourceProvider.h>
-#include <shard/parsing/analysis/TextLocation.h>
+#include <shard/parsing/lexical/reading/StringStreamReader.hpp>
+#include <shard/parsing/lexical/SourceProvider.hpp>
+#include <shard/parsing/analysis/TextLocation.hpp>
 
 #include <sstream>
 #include <istream>

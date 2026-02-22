@@ -1,12 +1,12 @@
-#include <shard/runtime/GarbageCollector.h>
-#include <shard/runtime/ObjectInstance.h>
-#include <shard/runtime/VirtualMachine.h>
+#include <shard/runtime/GarbageCollector.hpp>
+#include <shard/runtime/ObjectInstance.hpp>
+#include <shard/runtime/VirtualMachine.hpp>
 
-#include <shard/syntax/SyntaxKind.h>
+#include <shard/syntax/SyntaxKind.hpp>
 
-#include <shard/syntax/symbols/TypeSymbol.h>
-#include <shard/syntax/symbols/FieldSymbol.h>
-#include <shard/syntax/symbols/ArrayTypeSymbol.h>
+#include <shard/syntax/symbols/TypeSymbol.hpp>
+#include <shard/syntax/symbols/FieldSymbol.hpp>
+#include <shard/syntax/symbols/ArrayTypeSymbol.hpp>
 
 #include <malloc.h>
 #include <stdexcept>

@@ -1,20 +1,20 @@
-#include <shard/syntax/SymbolAccesibility.h>
-#include <shard/parsing/semantic/SymbolTable.h>
+#include <shard/syntax/SymbolAccesibility.hpp>
+#include <shard/parsing/semantic/SymbolTable.hpp>
 
-#include <shard/runtime/GarbageCollector.h>
-#include <shard/runtime/ArgumentsSpan.h>
-#include <shard/runtime/ObjectInstance.h>
-#include <shard/runtime/VirtualMachine.h>
-#include <shard/runtime/CallStackFrame.h>
+#include <shard/runtime/GarbageCollector.hpp>
+#include <shard/runtime/ArgumentsSpan.hpp>
+#include <shard/runtime/ObjectInstance.hpp>
+#include <shard/runtime/VirtualMachine.hpp>
+#include <shard/runtime/CallStackFrame.hpp>
 
-#include <shard/syntax/symbols/MethodSymbol.h>
-#include <shard/syntax/symbols/ParameterSymbol.h>
-#include <shard/syntax/symbols/TypeSymbol.h>
-#include <shard/syntax/symbols/PropertySymbol.h>
-#include <shard/syntax/symbols/ArrayTypeSymbol.h>
-#include <shard/syntax/symbols/AccessorSymbol.h>
-#include <shard/syntax/symbols/FieldSymbol.h>
-#include <shard/syntax/symbols/IndexatorSymbol.h>
+#include <shard/syntax/symbols/MethodSymbol.hpp>
+#include <shard/syntax/symbols/ParameterSymbol.hpp>
+#include <shard/syntax/symbols/TypeSymbol.hpp>
+#include <shard/syntax/symbols/PropertySymbol.hpp>
+#include <shard/syntax/symbols/ArrayTypeSymbol.hpp>
+#include <shard/syntax/symbols/AccessorSymbol.hpp>
+#include <shard/syntax/symbols/FieldSymbol.hpp>
+#include <shard/syntax/symbols/IndexatorSymbol.hpp>
 
 #include <sstream>
 #include <stdexcept>
@@ -22,7 +22,7 @@
 #include <vector>
 #include <cstdint>
 
-#include "PrimitivesLoading.h"
+#include "PrimitivesLoading.hpp"
 
 using namespace shard;
 
