@@ -1,15 +1,15 @@
-#include <shard/syntax/symbols/GenericTypeSymbol.h>
-#include <shard/syntax/symbols/FieldSymbol.h>
-#include <shard/syntax/symbols/MethodSymbol.h>
-#include <shard/syntax/symbols/PropertySymbol.h>
-#include <shard/syntax/symbols/TypeSymbol.h>
-#include <shard/syntax/symbols/IndexatorSymbol.h>
-#include <shard/syntax/symbols/ParameterSymbol.h>
-#include <shard/syntax/symbols/TypeParameterSymbol.h>
+#include <shard/syntax/symbols/GenericTypeSymbol.hpp>
+#include <shard/syntax/symbols/FieldSymbol.hpp>
+#include <shard/syntax/symbols/MethodSymbol.hpp>
+#include <shard/syntax/symbols/PropertySymbol.hpp>
+#include <shard/syntax/symbols/TypeSymbol.hpp>
+#include <shard/syntax/symbols/IndexatorSymbol.hpp>
+#include <shard/syntax/symbols/ParameterSymbol.hpp>
+#include <shard/syntax/symbols/TypeParameterSymbol.hpp>
 
-#include <shard/syntax/SyntaxKind.h>
+#include <shard/syntax/SyntaxKind.hpp>
 
-#include <shard/parsing/semantic/SymbolTable.h>
+#include <shard/parsing/semantic/SymbolTable.hpp>
 
 #include <vector>
 #include <string>

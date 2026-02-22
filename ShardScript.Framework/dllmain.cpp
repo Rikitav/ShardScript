@@ -1,21 +1,21 @@
-﻿#include <shard/runtime/framework/FrameworkLoader.h>
+﻿#include <shard/runtime/framework/FrameworkLoader.hpp>
 
-#include <shard/parsing/semantic/SymbolTable.h>
+#include <shard/parsing/semantic/SymbolTable.hpp>
 
-#include <shard/runtime/VirtualMachine.h>
-#include <shard/runtime/GarbageCollector.h>
-#include <shard/runtime/ConsoleHelper.h>
-#include <shard/runtime/ArgumentsSpan.h>
-#include <shard/runtime/ObjectInstance.h>
-#include <shard/runtime/CallStackFrame.h>
+#include <shard/runtime/VirtualMachine.hpp>
+#include <shard/runtime/GarbageCollector.hpp>
+#include <shard/runtime/ConsoleHelper.hpp>
+#include <shard/runtime/ArgumentsSpan.hpp>
+#include <shard/runtime/ObjectInstance.hpp>
+#include <shard/runtime/CallStackFrame.hpp>
 
-#include <shard/syntax/SymbolAccesibility.h>
+#include <shard/syntax/SymbolAccesibility.hpp>
 
-#include <shard/syntax/symbols/ClassSymbol.h>
-#include <shard/syntax/symbols/StructSymbol.h>
-#include <shard/syntax/symbols/MethodSymbol.h>
-#include <shard/syntax/symbols/ParameterSymbol.h>
-#include <shard/syntax/symbols/TypeSymbol.h>
+#include <shard/syntax/symbols/ClassSymbol.hpp>
+#include <shard/syntax/symbols/StructSymbol.hpp>
+#include <shard/syntax/symbols/MethodSymbol.hpp>
+#include <shard/syntax/symbols/ParameterSymbol.hpp>
+#include <shard/syntax/symbols/TypeSymbol.hpp>
 
 #include <windows.h>
 #include <iostream>
@@ -24,7 +24,7 @@
 #include <vector>
 #include <cstdint>
 
-#include "primitives/PrimitivesLoading.h"
+#include "primitives/PrimitivesLoading.hpp"
 #include "system/filesystem/File.cpp"
 #include "system/filesystem/Directory.cpp"
 #include "system/collections/List.cpp"

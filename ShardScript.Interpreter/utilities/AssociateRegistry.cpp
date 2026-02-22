@@ -2,7 +2,7 @@
 #include <string>
 #include <stdexcept>
 
-#include "InterpreterUtilities.h"
+#include "InterpreterUtilities.hpp"
 
 const std::wstring FileTypeExtension = L".ss";
 const std::wstring FileTypeId = L"ShardLang";

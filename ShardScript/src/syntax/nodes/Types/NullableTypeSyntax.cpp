@@ -1,4 +1,4 @@
-#include  <shard/syntax/nodes/Types/NullableTypeSyntax.h>
+#include  <shard/syntax/nodes/Types/NullableTypeSyntax.hpp>
 
 using namespace shard;
 

@@ -1,51 +1,51 @@
-#include <shard/compilation/AbstractEmiter.h>
-#include <shard/compilation/ProgramVirtualImage.h>
-#include <shard/compilation/OperationCode.h>
+#include <shard/compilation/AbstractEmiter.hpp>
+#include <shard/compilation/ProgramVirtualImage.hpp>
+#include <shard/compilation/OperationCode.hpp>
 
-#include <shard/parsing/analysis/DiagnosticsContext.h>
-#include <shard/parsing/semantic/SymbolTable.h>
-#include <shard/parsing/SyntaxTree.h>
+#include <shard/parsing/analysis/DiagnosticsContext.hpp>
+#include <shard/parsing/semantic/SymbolTable.hpp>
+#include <shard/parsing/SyntaxTree.hpp>
 
-#include <shard/syntax/nodes/ArgumentsListSyntax.h>
-#include <shard/syntax/nodes/CompilationUnitSyntax.h>
+#include <shard/syntax/nodes/ArgumentsListSyntax.hpp>
+#include <shard/syntax/nodes/CompilationUnitSyntax.hpp>
 
-#include <shard/syntax/nodes/Expressions/BinaryExpressionSyntax.h>
-#include <shard/syntax/nodes/Expressions/CollectionExpressionSyntax.h>
-#include <shard/syntax/nodes/Expressions/LambdaExpressionSyntax.h>
-#include <shard/syntax/nodes/Expressions/LinkedExpressionSyntax.h>
-#include <shard/syntax/nodes/Expressions/LiteralExpressionSyntax.h>
-#include <shard/syntax/nodes/Expressions/ObjectExpressionSyntax.h>
-#include <shard/syntax/nodes/Expressions/TernaryExpressionSyntax.h>
-#include <shard/syntax/nodes/Expressions/UnaryExpressionSyntax.h>
+#include <shard/syntax/nodes/Expressions/BinaryExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/CollectionExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/LambdaExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/LinkedExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/LiteralExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/ObjectExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/TernaryExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/UnaryExpressionSyntax.hpp>
 
-#include <shard/syntax/nodes/Loops/ForStatementSyntax.h>
-#include <shard/syntax/nodes/Loops/UntilStatementSyntax.h>
-#include <shard/syntax/nodes/Loops/WhileStatementSyntax.h>
+#include <shard/syntax/nodes/Loops/ForStatementSyntax.hpp>
+#include <shard/syntax/nodes/Loops/UntilStatementSyntax.hpp>
+#include <shard/syntax/nodes/Loops/WhileStatementSyntax.hpp>
 
-#include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.h>
-#include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.h>
-#include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.h>
+#include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.hpp>
 
-#include <shard/syntax/nodes/Statements/BreakStatementSyntax.h>
-#include <shard/syntax/nodes/Statements/ConditionalClauseSyntax.h>
-#include <shard/syntax/nodes/Statements/ContinueStatementSyntax.h>
-#include <shard/syntax/nodes/Statements/ExpressionStatementSyntax.h>
-#include <shard/syntax/nodes/Statements/ReturnStatementSyntax.h>
-#include <shard/syntax/nodes/Statements/ThrowStatementSyntax.h>
-#include <shard/syntax/nodes/Statements/VariableStatementSyntax.h>
+#include <shard/syntax/nodes/Statements/BreakStatementSyntax.hpp>
+#include <shard/syntax/nodes/Statements/ConditionalClauseSyntax.hpp>
+#include <shard/syntax/nodes/Statements/ContinueStatementSyntax.hpp>
+#include <shard/syntax/nodes/Statements/ExpressionStatementSyntax.hpp>
+#include <shard/syntax/nodes/Statements/ReturnStatementSyntax.hpp>
+#include <shard/syntax/nodes/Statements/ThrowStatementSyntax.hpp>
+#include <shard/syntax/nodes/Statements/VariableStatementSyntax.hpp>
 
-#include <shard/syntax/SymbolAccesibility.h>
-#include <shard/syntax/SyntaxToken.h>
-#include <shard/syntax/TokenType.h>
+#include <shard/syntax/SymbolAccesibility.hpp>
+#include <shard/syntax/SyntaxToken.hpp>
+#include <shard/syntax/TokenType.hpp>
 
-#include <shard/syntax/symbols/LiteralSymbol.h>
-#include <shard/syntax/symbols/AccessorSymbol.h>
-#include <shard/syntax/symbols/ConstructorSymbol.h>
-#include <shard/syntax/symbols/FieldSymbol.h>
-#include <shard/syntax/symbols/MethodSymbol.h>
-#include <shard/syntax/symbols/ParameterSymbol.h>
-#include <shard/syntax/symbols/TypeSymbol.h>
-#include <shard/syntax/symbols/VariableSymbol.h>
+#include <shard/syntax/symbols/LiteralSymbol.hpp>
+#include <shard/syntax/symbols/AccessorSymbol.hpp>
+#include <shard/syntax/symbols/ConstructorSymbol.hpp>
+#include <shard/syntax/symbols/FieldSymbol.hpp>
+#include <shard/syntax/symbols/MethodSymbol.hpp>
+#include <shard/syntax/symbols/ParameterSymbol.hpp>
+#include <shard/syntax/symbols/TypeSymbol.hpp>
+#include <shard/syntax/symbols/VariableSymbol.hpp>
 
 #include <stdexcept>
 #include <vector>

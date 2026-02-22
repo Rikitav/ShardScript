@@ -1,15 +1,15 @@
-#include <shard/runtime/framework/FrameworkModule.h>
+#include <shard/runtime/framework/FrameworkModule.hpp>
 
-#include <shard/runtime/ArgumentsSpan.h>
-#include <shard/runtime/ObjectInstance.h>
+#include <shard/runtime/ArgumentsSpan.hpp>
+#include <shard/runtime/ObjectInstance.hpp>
 
-#include <shard/syntax/symbols/MethodSymbol.h>
-#include <shard/syntax/symbols/AccessorSymbol.h>
-#include <shard/syntax/symbols/ConstructorSymbol.h>
+#include <shard/syntax/symbols/MethodSymbol.hpp>
+#include <shard/syntax/symbols/AccessorSymbol.hpp>
+#include <shard/syntax/symbols/ConstructorSymbol.hpp>
 
-#include <shard/parsing/lexical/SourceProvider.h>
-#include <shard/parsing/lexical/LexicalAnalyzer.h>
-#include <shard/parsing/lexical/reading/StringStreamReader.h>
+#include <shard/parsing/lexical/SourceProvider.hpp>
+#include <shard/parsing/lexical/LexicalAnalyzer.hpp>
+#include <shard/parsing/lexical/reading/StringStreamReader.hpp>
 
 #include <stdexcept>
 #include <string>
@@ -17,7 +17,7 @@
 #include <climits>
 #include <cstdint>
 
-#include "../resources.h"
+#include "../resources.hpp"
 
 using namespace shard;
 

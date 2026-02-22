@@ -1,15 +1,15 @@
-#include <shard/runtime/ArgumentsSpan.h>
-#include <shard/runtime/ObjectInstance.h>
+#include <shard/runtime/ArgumentsSpan.hpp>
+#include <shard/runtime/ObjectInstance.hpp>
 
-#include <shard/parsing/semantic/SymbolTable.h>
+#include <shard/parsing/semantic/SymbolTable.hpp>
 
-#include <shard/syntax/SymbolAccesibility.h>
-#include <shard/syntax/symbols/TypeSymbol.h>
-#include <shard/syntax/symbols/MethodSymbol.h>
+#include <shard/syntax/SymbolAccesibility.hpp>
+#include <shard/syntax/symbols/TypeSymbol.hpp>
+#include <shard/syntax/symbols/MethodSymbol.hpp>
 
 #include <string>
 
-#include "PrimitivesLoading.h"
+#include "PrimitivesLoading.hpp"
 
 using namespace shard;
 

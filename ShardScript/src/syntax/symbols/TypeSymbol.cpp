@@ -1,18 +1,18 @@
-#include <shard/syntax/symbols/TypeSymbol.h>
-#include <shard/syntax/symbols/FieldSymbol.h>
-#include <shard/syntax/symbols/MethodSymbol.h>
-#include <shard/syntax/symbols/PropertySymbol.h>
-#include <shard/syntax/symbols/IndexatorSymbol.h>
-#include <shard/syntax/symbols/ParameterSymbol.h>
-#include <shard/syntax/symbols/ArrayTypeSymbol.h>
-#include <shard/syntax/symbols/DelegateTypeSymbol.h>
-#include <shard/syntax/symbols/GenericTypeSymbol.h>
-#include <shard/syntax/symbols/ConstructorSymbol.h>
+#include <shard/syntax/symbols/TypeSymbol.hpp>
+#include <shard/syntax/symbols/FieldSymbol.hpp>
+#include <shard/syntax/symbols/MethodSymbol.hpp>
+#include <shard/syntax/symbols/PropertySymbol.hpp>
+#include <shard/syntax/symbols/IndexatorSymbol.hpp>
+#include <shard/syntax/symbols/ParameterSymbol.hpp>
+#include <shard/syntax/symbols/ArrayTypeSymbol.hpp>
+#include <shard/syntax/symbols/DelegateTypeSymbol.hpp>
+#include <shard/syntax/symbols/GenericTypeSymbol.hpp>
+#include <shard/syntax/symbols/ConstructorSymbol.hpp>
 
-#include <shard/syntax/SyntaxSymbol.h>
-#include <shard/syntax/SyntaxKind.h>
+#include <shard/syntax/SyntaxSymbol.hpp>
+#include <shard/syntax/SyntaxKind.hpp>
 
-#include <shard/parsing/semantic/SymbolTable.h>
+#include <shard/parsing/semantic/SymbolTable.hpp>
 
 #include <algorithm>
 #include <vector>
@@ -20,6 +20,43 @@
 #include <stdexcept>
 
 using namespace shard;
+
+TypeSymbol::TypeSymbol(const std::wstring& name, const SyntaxKind kind) : SyntaxSymbol(name, kind)
+{
+
+}
+
+TypeSymbol::~TypeSymbol()
+{
+#pragma warning (push)
+#pragma warning (disable: 4150)
+	for (MethodSymbol* methodSymbol : Methods)
+		delete methodSymbol;
+
+	for (FieldSymbol* fieldSymbol : Fields)
+		delete fieldSymbol;
+
+	for (PropertySymbol* propertySymbol : Properties)
+		delete propertySymbol;
+
+	for (IndexatorSymbol* indexatorSymbol : Indexators)
+		delete indexatorSymbol;
+
+	for (ConstructorSymbol* ctorSymbol : Constructors)
+		delete ctorSymbol;
+
+	for (TypeParameterSymbol* typeParamSymbol : TypeParameters)
+		delete typeParamSymbol;
+#pragma warning (pop)
+
+	if (BaseType != nullptr)
+		BaseType = nullptr;
+}
+
+size_t TypeSymbol::GetInlineSize() const
+{
+	return IsReferenceType ? sizeof(void*) : MemoryBytesSize;
+}
 
 static bool paramPredicate(ParameterSymbol* left, TypeSymbol* right)
 {

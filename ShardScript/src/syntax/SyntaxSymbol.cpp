@@ -1,4 +1,4 @@
-#include <shard/syntax/SyntaxSymbol.h>
+#include <shard/syntax/SyntaxSymbol.hpp>
 
 using namespace shard;
 

@@ -1,5 +1,5 @@
-#include <shard/syntax/SyntaxSymbol.h>
-#include <shard/parsing/semantic/SemanticScope.h>
+#include <shard/syntax/SyntaxSymbol.hpp>
+#include <shard/parsing/semantic/SemanticScope.hpp>
 #include <stdexcept>
 #include <string>
 

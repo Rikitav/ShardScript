@@ -1,8 +1,8 @@
-#include <shard/syntax/SyntaxToken.h>
-#include <shard/syntax/TokenType.h>
+#include <shard/syntax/SyntaxToken.hpp>
+#include <shard/syntax/TokenType.hpp>
 
-#include <shard/parsing/analysis/TextLocation.h>
-#include <shard/parsing/lexical/LexicalAnalyzer.h>
+#include <shard/parsing/analysis/TextLocation.hpp>
+#include <shard/parsing/lexical/LexicalAnalyzer.hpp>
 
 #include <cctype>
 #include <string>
