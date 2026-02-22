@@ -49,9 +49,9 @@ namespace shard
 	{
         struct LoopScope
         {
-            size_t LoopStart; // Address of first OpCode of loop, used for 'looping jump'
-            size_t BlockEnd; // Addredd of OpCode right after last OpCode of looping block, used for 'continue' statement
-            size_t LoopEnd; // Address of OpCode right after last OpCode of entire loop, used for 'looping exit', or 'break' statement
+            size_t LoopStart = 0;   // Address of first OpCode of loop, used for 'looping jump'
+            size_t BlockEnd = 0;    // Addredd of OpCode right after last OpCode of looping block, used for 'continue' statement
+            size_t LoopEnd = 0;     // Address of OpCode right after last OpCode of entire loop, used for 'looping exit', or 'break' statement
             
             std::vector<size_t> BlockEndBacktracks;
             std::vector<size_t> LoopEndBacktracks;
@@ -59,7 +59,7 @@ namespace shard
 
         struct ClauseScope
         {
-            size_t ClauseEnd; // Address of OpCode right after last OpCode of entire clause
+            size_t ClauseEnd = 0; // Address of OpCode right after last OpCode of entire clause
 
             std::vector<size_t> ClauseEndBacktracks;
         };
