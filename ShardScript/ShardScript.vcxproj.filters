@@ -1,0 +1,537 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="18.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\ShardScriptExtern.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\ShardScriptVersion.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\SyntaxVisitor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\Vector.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\compilation\AbstractEmiter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\compilation\ByteCodeDecoder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\compilation\ByteCodeEncoder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\parsing\LayoutGenerator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\parsing\SemanticAnalyzer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\parsing\SourceParser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\parsing\analysis\Diagnostic.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\parsing\analysis\DiagnosticSeverity.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\parsing\analysis\DiagnosticsContext.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\parsing\lexical\LexicalAnalyzer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\parsing\lexical\LexicalBuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\parsing\lexical\reading\FileReader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\parsing\lexical\reading\StringStreamReader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\parsing\semantic\NamespaceTree.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\parsing\semantic\SemanticModel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\parsing\semantic\SemanticScope.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\parsing\semantic\SymbolTable.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\parsing\semantic\visiting\DeclarationCollector.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\parsing\semantic\visiting\ExpressionBinder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\parsing\semantic\visiting\ScopeVisitor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\parsing\semantic\visiting\TypeBinder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\runtime\AbstractInterpreter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\runtime\ArgumentsSpan.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\runtime\CallStackFrame.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\runtime\ConsoleHelper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\runtime\EvalStack.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\runtime\GarbageCollector.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\runtime\ObjectInstance.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\runtime\PrimitiveMathModule.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\runtime\ProgramDisassembler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\runtime\VirtualMachine.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\runtime\framework\FrameworkLoader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\syntax\SymbolFactory.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\syntax\SyntaxFacts.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\syntax\SyntaxHelpers.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\syntax\SyntaxSymbol.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\syntax\nodes\Directives\UsingDirectiveSyntax.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\syntax\nodes\Types\ArrayTypeSyntax.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\syntax\nodes\Types\DelegateTypeSyntax.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\syntax\nodes\Types\GenericTypeSyntax.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\syntax\nodes\Types\IdentifierNameTypeSyntax.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\syntax\nodes\Types\NullableTypeSyntax.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\syntax\nodes\Types\PredefinedTypeSyntax.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\syntax\symbols\ArrayTypeSymbol.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\syntax\symbols\GenericTypeSymbol.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\syntax\symbols\NamespaceSymbol.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\syntax\symbols\PropertySymbol.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\src\syntax\symbols\TypeSymbol.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\ShardScriptAPI.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\ShardScriptVersion.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\SyntaxVisitor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\Vector.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\compilation\AbstractEmiter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\compilation\ByteCodeDecoder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\compilation\ByteCodeEncoder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\compilation\OperationCode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\compilation\ProgramVirtualImage.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\parsing\LayoutGenerator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\parsing\MemberDeclarationInfo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\parsing\SemanticAnalyzer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\parsing\SourceParser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\parsing\SyntaxTree.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\parsing\analysis\Diagnostic.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\parsing\analysis\DiagnosticSeverity.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\parsing\analysis\DiagnosticsContext.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\parsing\analysis\TextLocation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\parsing\lexical\LexicalAnalyzer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\parsing\lexical\LexicalBuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\parsing\lexical\SourceProvider.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\parsing\lexical\reading\FileReader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\parsing\lexical\reading\SourceTextProvider.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\parsing\lexical\reading\StringStreamReader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\parsing\semantic\NamespaceTree.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\parsing\semantic\SemanticModel.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\parsing\semantic\SemanticScope.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\parsing\semantic\SymbolInfo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\parsing\semantic\SymbolTable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\parsing\semantic\TypeInfo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\parsing\semantic\visiting\DeclarationCollector.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\parsing\semantic\visiting\ExpressionBinder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\parsing\semantic\visiting\ScopeVisitor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\parsing\semantic\visiting\TypeBinder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\runtime\AbstractInterpreter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\runtime\ArgumentsSpan.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\runtime\CallStackFrame.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\runtime\ConsoleHelper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\runtime\EvalStack.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\runtime\GarbageCollector.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\runtime\ObjectInstance.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\runtime\PrimitiveMathModule.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\runtime\ProgramDisassembler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\runtime\VirtualMachine.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\runtime\framework\FrameworkLoader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\runtime\framework\FrameworkModule.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\SymbolAccesibility.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\SymbolFactory.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\SyntaxFacts.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\SyntaxHelpers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\SyntaxKind.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\SyntaxNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\SyntaxSymbol.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\SyntaxToken.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\TokenType.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\ArgumentsListSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\BodyDeclarationSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\CompilationUnitSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\Directives\UsingDirectiveSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\ExpressionSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\Expressions\BinaryExpressionSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\Expressions\CollectionExpressionSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\Expressions\LambdaExpressionSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\Expressions\LinkedExpressionSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\Expressions\LiteralExpressionSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\Expressions\ObjectExpressionSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\Expressions\TernaryExpressionSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\Expressions\UnaryExpressionSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\Loops\ForStatementSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\Loops\UntilStatementSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\Loops\WhileStatementSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\MemberDeclarationSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\MemberDeclarations\AccessorDeclarationSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\MemberDeclarations\ClassDeclarationSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\MemberDeclarations\ConstructorDeclarationSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\MemberDeclarations\DelegateDeclarationSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\MemberDeclarations\FieldDeclarationSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\MemberDeclarations\IndexatorDeclarationSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\MemberDeclarations\MethodDeclarationSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\MemberDeclarations\NamespaceDeclarationSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\MemberDeclarations\PropertyDeclarationSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\MemberDeclarations\StructDeclarationSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\ParametersListSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\StatementSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\Statements\BreakStatementSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\Statements\ConditionalClauseSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\Statements\ContinueStatementSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\Statements\ExpressionStatementSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\Statements\ReturnStatementSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\Statements\ThrowStatementSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\Statements\VariableStatementSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\StatementsBlockSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\TypeArgumentsListSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\TypeDeclarationSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\TypeParametersListSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\TypeSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\Types\ArrayTypeSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\Types\DelegateTypeSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\Types\GenericTypeSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\Types\IdentifierNameTypeSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\Types\NullableTypeSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\nodes\Types\PredefinedTypeSyntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\symbols\AccessorSymbol.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\symbols\ArrayTypeSymbol.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\symbols\ClassSymbol.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\symbols\ConstructorSymbol.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\symbols\DelegateTypeSymbol.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\symbols\FieldSymbol.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\symbols\GenericTypeSymbol.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\symbols\IndexatorSymbol.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\symbols\LeftDenotationSymbol.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\symbols\LiteralSymbol.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\symbols\MethodSymbol.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\symbols\NamespaceSymbol.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\symbols\ParameterSymbol.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\symbols\PropertySymbol.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\symbols\StructSymbol.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\symbols\TypeParameterSymbol.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\symbols\TypeSymbol.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\include\shard\syntax\symbols\VariableSymbol.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="C:\Users\gutii\source\repos\ShardScript\ShardScript\cpp.hint" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{592AA850-E437-3E13-8E02-39FED34B673C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{F095CE54-2C78-3831-B86A-327E54014F2E}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

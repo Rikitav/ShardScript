@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="18.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript.Interpreter\InteractiveConsole.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript.Interpreter\ShardScript.Interpreter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript.Interpreter\utilities\ArgumentsParser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript.Interpreter\utilities\AssociateRegistry.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript.Interpreter\utilities\ExecutableVersion.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript.Interpreter\InteractiveConsole.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\gutii\source\repos\ShardScript\ShardScript.Interpreter\utilities\InterpreterUtilities.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\gutii\source\repos\ShardScript\ShardScript.Interpreter\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="C:\Users\gutii\source\repos\ShardScript\ShardScript.Interpreter\ShardScript.Interpreter.rc">
+      <Filter>Source Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{592AA850-E437-3E13-8E02-39FED34B673C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{F095CE54-2C78-3831-B86A-327E54014F2E}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
