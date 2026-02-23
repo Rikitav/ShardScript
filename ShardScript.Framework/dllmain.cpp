@@ -159,46 +159,6 @@ static ObjectInstance* Impl_sizeof(const VirtualMachine* host, const MethodSymbo
 	return ObjectInstance::FromValue(static_cast<int64_t>(instance->Info->MemoryBytesSize));
 }
 
-static void ResolvePrimitives()
-{
-	SymbolTable::Primitives::Void = new StructSymbol(L"Void");
-	SymbolTable::Primitives::Any = new StructSymbol(L"Any");
-
-	SymbolTable::Primitives::Void->State = TypeLayoutingState::Visited;
-	SymbolTable::Primitives::Any->State = TypeLayoutingState::Visited;
-
-	SymbolTable::Primitives::Void->MemoryBytesSize = 0;
-	SymbolTable::Primitives::Any->MemoryBytesSize = 0;
-
-	SymbolTable::Primitives::Boolean = new StructSymbol(L"Boolean");
-	SymbolTable::Primitives::Integer = new StructSymbol(L"Integer");
-	SymbolTable::Primitives::Double = new StructSymbol(L"Double");
-	SymbolTable::Primitives::Char = new StructSymbol(L"Char");
-	SymbolTable::Primitives::String = new ClassSymbol(L"String");
-	SymbolTable::Primitives::Array = new ClassSymbol(L"Array");
-
-	SymbolTable::Primitives::Boolean->State = TypeLayoutingState::Visited;
-	SymbolTable::Primitives::Integer->State = TypeLayoutingState::Visited;
-	SymbolTable::Primitives::Double->State = TypeLayoutingState::Visited;
-	SymbolTable::Primitives::Char->State = TypeLayoutingState::Visited;
-	SymbolTable::Primitives::String->State = TypeLayoutingState::Visited;
-	SymbolTable::Primitives::Array->State = TypeLayoutingState::Visited;
-
-	SymbolTable::Primitives::Boolean->MemoryBytesSize = sizeof(bool);
-	SymbolTable::Primitives::Integer->MemoryBytesSize = sizeof(int64_t);
-	SymbolTable::Primitives::Double->MemoryBytesSize = sizeof(double);
-	SymbolTable::Primitives::Char->MemoryBytesSize = sizeof(wchar_t);
-	SymbolTable::Primitives::String->MemoryBytesSize = sizeof(int64_t) + sizeof(wchar_t*); // long _length + char[] _data
-	SymbolTable::Primitives::Array->MemoryBytesSize = sizeof(int64_t); // long _length
-
-	BooleanPrimitive::Reflect(SymbolTable::Primitives::Boolean);
-	IntegerPrimitive::Reflect(SymbolTable::Primitives::Integer);
-	DoublePrimitive::Reflect(SymbolTable::Primitives::Double);
-	CharPrimitive::Reflect(SymbolTable::Primitives::Char);
-	StringPrimitive::Reflect(SymbolTable::Primitives::String);
-	ArrayPrimitive::Reflect(SymbolTable::Primitives::Array);
-}
-
 static void ResolveGlobalMethods()
 {
 	// gc_info
@@ -278,6 +238,16 @@ static void ResolveGlobalMethods()
 	}
 }
 
+static void ReflectPrimitives()
+{
+	BooleanPrimitive::Reflect(SymbolTable::Primitives::Boolean);
+	IntegerPrimitive::Reflect(SymbolTable::Primitives::Integer);
+	DoublePrimitive::Reflect(SymbolTable::Primitives::Double);
+	CharPrimitive::Reflect(SymbolTable::Primitives::Char);
+	StringPrimitive::Reflect(SymbolTable::Primitives::String);
+	ArrayPrimitive::Reflect(SymbolTable::Primitives::Array);
+}
+
 #pragma message (push)
 #pragma message (disable: 003)
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
@@ -286,7 +256,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
     {
         case DLL_PROCESS_ATTACH:
         {
-			ResolvePrimitives();
+			ReflectPrimitives();
 			ResolveGlobalMethods();
 
 			shard::FrameworkLoader::AddModule(new FileSystem_Directory());
