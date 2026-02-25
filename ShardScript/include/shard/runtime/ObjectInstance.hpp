@@ -22,13 +22,6 @@ namespace shard
 		
 		inline ~ObjectInstance() = default;
 
-		static ObjectInstance* FromValue(int64_t value);
-		static ObjectInstance* FromValue(double value);
-		static ObjectInstance* FromValue(bool value);
-		static ObjectInstance* FromValue(wchar_t value);
-		static ObjectInstance* FromValue(const wchar_t* value, bool isTransient);
-		static ObjectInstance* FromValue(const std::wstring& value);
-
 		ObjectInstance* GetField(FieldSymbol* field);
 		void SetField(FieldSymbol* field, ObjectInstance* instance);
 

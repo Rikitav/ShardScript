@@ -7,6 +7,7 @@
 #include <shard/syntax/symbols/TypeSymbol.hpp>
 #include <shard/syntax/symbols/ParameterSymbol.hpp>
 
+#include <span>
 #include <string>
 #include <vector>
 #include <cstddef>
@@ -14,11 +15,20 @@
 
 namespace shard
 {
+    class ApplicationDomain;
     class ObjectInstance;
     class VirtualMachine;
-    class ArgumentsSpan;
 
-    typedef SHARD_API shard::ObjectInstance* (*MethodSymbolDelegate)(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments);
+    using ArgumentsSpan = std::span<ObjectInstance*, UINT8_MAX>;
+    struct InvokeContext
+    {
+        ApplicationDomain& Domain;
+        VirtualMachine& Host;
+        MethodSymbol* Method;
+        ArgumentsSpan& Args;
+    };
+
+    typedef SHARD_API shard::ObjectInstance* (*MethodSymbolDelegate)(const InvokeContext& context);
 
     enum class SHARD_API MethodHandleType
     {

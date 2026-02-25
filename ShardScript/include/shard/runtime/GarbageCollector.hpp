@@ -12,7 +12,7 @@
 
 namespace shard
 {
-    class VirtualMachine;
+    class ApplicationDomain;
 
     template<typename MapType>
     class SHARD_API ValueIterator
@@ -46,7 +46,7 @@ namespace shard
 	class SHARD_API InstancesHeap
 	{
     private:
-        std::unordered_map<void*, shard::ObjectInstance*> PtrMap;
+        std::unordered_map<void*, ObjectInstance*> PtrMap;
 
     public:
         using iterator = ValueIterator<decltype(PtrMap)>;
@@ -58,14 +58,14 @@ namespace shard
         inline auto pairs_begin() { return PtrMap.begin(); }
         inline auto pairs_end() { return PtrMap.end(); }
 
-        inline shard::ObjectInstance* at(void* ptr) { return PtrMap.at(ptr); }
+        inline ObjectInstance* at(void* ptr) { return PtrMap.at(ptr); }
 
         inline void add(ObjectInstance* instance)
         {
             PtrMap[instance->Memory] = instance;
         }
 
-        inline void erase(shard::ObjectInstance* instance)
+        inline void erase(ObjectInstance* instance)
         {
             PtrMap.erase(instance->Memory);
         }
@@ -83,22 +83,32 @@ namespace shard
 
 	class SHARD_API GarbageCollector
 	{
-		inline static uint64_t objectsCounter = 0;
-        inline static std::unordered_map<FieldSymbol*, ObjectInstance*> staticFields;
+		ApplicationDomain* const applicationDomain;
+		uint64_t objectsCounter = 0;
+        std::unordered_map<FieldSymbol*, ObjectInstance*> staticFields;
         
     public:
-		inline static InstancesHeap Heap;
         static ObjectInstance* NullInstance;
-
-        static ObjectInstance* GetStaticField(const VirtualMachine* host, FieldSymbol* field);
-        static void SetStaticField(const VirtualMachine* host, FieldSymbol* field, ObjectInstance* instance);
-
-		static ObjectInstance* AllocateInstance(const TypeSymbol* objectInfo);
-        static ObjectInstance* CopyInstance(ObjectInstance* instance);
+        InstancesHeap Heap;
 		
-        static void CollectInstance(ObjectInstance* instance);
-        static void DestroyInstance(ObjectInstance* instance);
-        static void TerminateInstance(ObjectInstance* instance);
-		static void Terminate();
+        GarbageCollector(ApplicationDomain* domain);
+
+        ObjectInstance* FromValue(int64_t value);
+        ObjectInstance* FromValue(double value);
+        ObjectInstance* FromValue(bool value);
+        ObjectInstance* FromValue(wchar_t value);
+        ObjectInstance* FromValue(const wchar_t* value, bool isTransient);
+        ObjectInstance* FromValue(const std::wstring& value);
+
+        ObjectInstance* GetStaticField(FieldSymbol* field);
+        void SetStaticField(FieldSymbol* field, ObjectInstance* instance);
+
+		ObjectInstance* AllocateInstance(const TypeSymbol* objectInfo);
+        ObjectInstance* CopyInstance(ObjectInstance* instance);
+		
+        void CollectInstance(ObjectInstance* instance);
+        void DestroyInstance(ObjectInstance* instance);
+        void TerminateInstance(ObjectInstance* instance);
+		void Terminate();
 	};
 }

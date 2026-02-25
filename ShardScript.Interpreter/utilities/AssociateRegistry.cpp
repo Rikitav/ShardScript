@@ -1,8 +1,8 @@
-#include <Windows.h>
+#include <windows.h> // TODO: remove
 #include <string>
 #include <stdexcept>
 
-#include "InterpreterUtilities.hpp"
+#include <utilities/InterpreterUtilities.hpp>
 
 const std::wstring FileTypeExtension = L".ss";
 const std::wstring FileTypeId = L"ShardLang";

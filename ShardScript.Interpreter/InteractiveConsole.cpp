@@ -1,57 +1,13 @@
-#include <shard/parsing/lexical/LexicalAnalyzer.hpp>
-#include <shard/parsing/lexical/reading/StringStreamReader.hpp>
-#include <shard/parsing/lexical/LexicalBuffer.hpp>
-#include <shard/parsing/SemanticAnalyzer.hpp>
-#include <shard/parsing/LayoutGenerator.hpp>
-
-#include <shard/parsing/analysis/TextLocation.hpp>
-#include <shard/parsing/analysis/DiagnosticsContext.hpp>
-
-#include <shard/parsing/SourceParser.hpp>
-#include <shard/parsing/SyntaxTree.hpp>
-#include <shard/parsing/MemberDeclarationInfo.hpp>
-
-#include <shard/parsing/semantic/SemanticModel.hpp>
-
-#include <shard/compilation/AbstractEmiter.hpp>
-#include <shard/compilation/ProgramVirtualImage.hpp>
-#include <shard/compilation/ByteCodeDecoder.hpp>
-
-#include <shard/runtime/AbstractInterpreter.hpp>
-#include <shard/runtime/VirtualMachine.hpp>
-#include <shard/runtime/ConsoleHelper.hpp>
-#include <shard/runtime/GarbageCollector.hpp>
-#include <shard/runtime/ObjectInstance.hpp>
-
-#include <shard/syntax/SyntaxFacts.hpp>
-#include <shard/syntax/SyntaxToken.hpp>
-#include <shard/syntax/TokenType.hpp>
-#include <shard/syntax/SyntaxNode.hpp>
-#include <shard/syntax/symbols/MethodSymbol.hpp>
-
-#include <shard/syntax/nodes/ParametersListSyntax.hpp>
-#include <shard/syntax/nodes/CompilationUnitSyntax.hpp>
-#include <shard/syntax/nodes/StatementSyntax.hpp>
-#include <shard/syntax/nodes/ExpressionSyntax.hpp>
-#include <shard/syntax/nodes/StatementsBlockSyntax.hpp>
-
-#include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.hpp>
-#include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.hpp>
-#include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.hpp>
-
-#include <shard/syntax/nodes/Statements/ExpressionStatementSyntax.hpp>
-
-#include <shard/syntax/nodes/Types/PredefinedTypeSyntax.hpp>
-
 #include <Windows.h>
+#include <ShardScript.hpp>
+#include <InteractiveConsole.hpp>
+#include <utilities/InterpreterUtilities.hpp>
+
 #include <processenv.h>
 #include <string>
 #include <iostream>
 #include <vector>
 #include <exception>
-
-#include "InteractiveConsole.hpp"
-#include "utilities/InterpreterUtilities.hpp"
 
 using namespace shard;
 
@@ -341,7 +297,7 @@ void InteractiveConsole::EvaluateUsing(LexicalBuffer& buffer)
 	std::wcout << L"Loaded : ";
 	for (const auto& symbol : node->Types)
 	{
-		Semanter.AddSymbol(symbol);
+		compilationContext->GetSemanticAnalyzer().AddSymbol(symbol);
 		std::wcout << symbol->Name << L", ";
 		counter += 1;
 	}
@@ -349,14 +305,19 @@ void InteractiveConsole::EvaluateUsing(LexicalBuffer& buffer)
 	std::wcout << "(" << counter << " symbols)" << std::endl;
 }
 
-InteractiveConsole::InteractiveConsole(SyntaxTree& ParentSyntaxTree, SemanticModel& semanticModel, DiagnosticsContext& diagnostics)
-	: ParentSyntaxTree(ParentSyntaxTree), ParentSemanticModel(semanticModel), Diagnostics(diagnostics),
-	  Parser(diagnostics), Semanter(diagnostics), Layouter(diagnostics),
-	  Program(), Runtimer(Program)
+InteractiveConsole::InteractiveConsole(shard::CompilationContext* context, shard::ApplicationDomain* domain) : compilationContext(context), applicationDomain(domain),
+	ParentSyntaxTree(context->GetSyntaxTree()),
+	ParentSemanticModel(context->GetSemanticModel()),
+	Diagnostics(context->GetDiagnosticsContext()),
+	Parser(context->GetParser()),
+	Semanter(context->GetSemanticAnalyzer()),
+	Layouter(context->GetLayoutGenerator()),
+	Runtimer(domain->GetVirtualMachine()),
+	Program(domain->GetProgram())
 {
 	InteractiveUnit = InitImplicitCompilationUnit(InteractiveMethod);
 	InteractiveClass = static_cast<ClassDeclarationSyntax*>(static_cast<NamespaceDeclarationSyntax*>(InteractiveUnit->Members.at(0))->Members.at(0));
-	ParentSyntaxTree.CompilationUnits.push_back(InteractiveUnit);
+	context->GetSyntaxTree().CompilationUnits.push_back(InteractiveUnit);
 
 	InteractiveEntryPoint = new MethodSymbol(InteractiveMethod->IdentifierToken.Word);
 	Program.EntryPoint = InteractiveEntryPoint;
@@ -460,7 +421,7 @@ void InteractiveConsole::Run()
 			if (result != nullptr)
 			{
 				ConsoleHelper::Write(result);
-				GarbageCollector::CollectInstance(result);
+				applicationDomain->GetGarbageCollector().CollectInstance(result);
 			}
 
 			MoveToNewLineIfNeeded();

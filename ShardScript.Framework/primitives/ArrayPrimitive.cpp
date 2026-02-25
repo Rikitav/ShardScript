@@ -1,21 +1,4 @@
-#include <shard/syntax/SymbolAccesibility.hpp>
-#include <shard/parsing/semantic/SymbolTable.hpp>
-
-#include <shard/runtime/GarbageCollector.hpp>
-#include <shard/runtime/ArgumentsSpan.hpp>
-#include <shard/runtime/ObjectInstance.hpp>
-#include <shard/runtime/VirtualMachine.hpp>
-#include <shard/runtime/CallStackFrame.hpp>
-
-#include <shard/syntax/symbols/MethodSymbol.hpp>
-#include <shard/syntax/symbols/ParameterSymbol.hpp>
-#include <shard/syntax/symbols/TypeSymbol.hpp>
-#include <shard/syntax/symbols/PropertySymbol.hpp>
-#include <shard/syntax/symbols/ArrayTypeSymbol.hpp>
-#include <shard/syntax/symbols/AccessorSymbol.hpp>
-#include <shard/syntax/symbols/FieldSymbol.hpp>
-#include <shard/syntax/symbols/IndexatorSymbol.hpp>
-
+#include <ShardScript.hpp>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -26,6 +9,8 @@
 
 using namespace shard;
 
+// TODO: fix 
+/*
 static ObjectInstance* get_Length(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
 {
 	static FieldSymbol* lengthField = SymbolTable::Primitives::Array->Fields.at(0); // <Length>k__BackingField
@@ -108,9 +93,11 @@ static ObjectInstance* to_string(const VirtualMachine* host, const MethodSymbol*
 	result << L"]";
 	return ObjectInstance::FromValue(result.str());
 }
+*/
 
 void ArrayPrimitive::Reflect(TypeSymbol* symbol)
 {
+	/*
 	// Length
 	{
 		PropertySymbol* lengthProperty = new PropertySymbol(std::wstring(L"Length"));
@@ -158,4 +145,5 @@ void ArrayPrimitive::Reflect(TypeSymbol* symbol)
 
 		symbol->Methods.push_back(toStringMethod);
 	}
+	*/
 }

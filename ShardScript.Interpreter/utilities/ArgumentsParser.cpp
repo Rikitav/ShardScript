@@ -2,7 +2,7 @@
 #include <filesystem>
 #include <vector>
 
-#include "InterpreterUtilities.hpp"
+#include <utilities/InterpreterUtilities.hpp>
 
 void shard::ShardUtilities::ParseArguments(int argc, wchar_t* argv[])
 {

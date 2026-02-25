@@ -5,8 +5,12 @@
 
 #include <string>
 #include <ostream>
+#include <stdexcept>
 
 using namespace shard;
+
+diagnostics_exception::diagnostics_exception(const char* message) : std::runtime_error(message) { }
+diagnostics_exception::diagnostics_exception(std::string& message) : std::runtime_error(message) { }
 
 void DiagnosticsContext::ReportError(SyntaxToken token, std::wstring message)
 {

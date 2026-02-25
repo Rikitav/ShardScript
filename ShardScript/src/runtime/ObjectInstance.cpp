@@ -18,63 +18,6 @@
 
 using namespace shard;
 
-ObjectInstance* ObjectInstance::FromValue(bool value)
-{
-	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::Boolean);
-	instance->WriteBoolean(value);
-	return instance;
-}
-
-ObjectInstance* ObjectInstance::FromValue(int64_t value)
-{
-	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::Integer);
-	instance->WriteInteger(value);
-	return instance;
-}
-
-ObjectInstance* ObjectInstance::FromValue(double value)
-{
-	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::Double);
-	instance->WriteDouble(value);
-	return instance;
-}
-
-ObjectInstance* ObjectInstance::FromValue(wchar_t value)
-{
-	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::Char);
-	instance->WriteCharacter(value);
-	return instance;
-}
-
-ObjectInstance* ObjectInstance::FromValue(const wchar_t* value, bool isTransient)
-{
-	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String);
-	*(const_cast<bool*>(&instance->IsTransient)) = isTransient;
-
-	instance->WriteInteger(wcslen(value));
-	instance->WriteMemory(sizeof(int64_t), sizeof(wchar_t*), &value);
-	return instance;
-}
-
-ObjectInstance* ObjectInstance::FromValue(const std::wstring& value)
-{
-	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String);
-	*(const_cast<bool*>(&instance->IsTransient)) = false;
-
-	size_t length = value.size();
-	size_t size = length * sizeof(wchar_t) + sizeof(wchar_t);
-
-	wchar_t* copy = static_cast<wchar_t*>(malloc(size));
-	if (copy == nullptr)
-		throw std::runtime_error("Failed to allocate string");
-
-	wcscpy(copy, value.data());
-
-	instance->WriteInteger(length);
-	instance->WriteMemory(sizeof(int64_t), sizeof(wchar_t*), &copy);
-	return instance;
-}
-
 ObjectInstance* ObjectInstance::GetField(FieldSymbol* field)
 {
 	TypeSymbol* fieldType = field->ReturnType;
@@ -133,7 +76,11 @@ void ObjectInstance::SetField(FieldSymbol* field, ObjectInstance* instance)
 
 		ObjectInstance* oldValue = GetField(field);
 		if (oldValue != nullptr)
-			GarbageCollector::CollectInstance(oldValue);
+		{
+			// TODO: fix
+			//GarbageCollector::CollectInstance(oldValue);
+			oldValue->DecrementReference();
+		}
 		
 		instance->IncrementReference();
 		WriteMemory(field->MemoryBytesOffset, sizeof(ObjectInstance*), &instance);
@@ -205,7 +152,10 @@ void ObjectInstance::SetElement(size_t index, ObjectInstance* instance)
 	if (type->IsReferenceType)
 	{
 		ObjectInstance* oldValue = GetElement(index);
-		GarbageCollector::CollectInstance(oldValue);
+
+		// TODO: fix
+		//GarbageCollector::CollectInstance(oldValue);
+		oldValue->DecrementReference();
 
 		instance->IncrementReference();
 		WriteMemory(memoryOffset, sizeof(ObjectInstance*), &instance);

@@ -1,23 +1,7 @@
-#include <shard/runtime/framework/FrameworkModule.hpp>
-
-#include <shard/runtime/ArgumentsSpan.hpp>
-#include <shard/runtime/GarbageCollector.hpp>
-#include <shard/runtime/ObjectInstance.hpp>
-#include <shard/runtime/VirtualMachine.hpp>
-
-#include <shard/syntax/symbols/MethodSymbol.hpp>
-#include <shard/syntax/symbols/FieldSymbol.hpp>
-#include <shard/syntax/symbols/ClassSymbol.hpp>
-#include <shard/syntax/symbols/AccessorSymbol.hpp>
-#include <shard/syntax/symbols/ConstructorSymbol.hpp>
-
-#include <shard/parsing/lexical/SourceProvider.hpp>
-#include <shard/parsing/lexical/LexicalAnalyzer.hpp>
-#include <shard/parsing/lexical/reading/StringStreamReader.hpp>
-
 #include <string>
 
-#include "../../resources.hpp"
+#include <ShardScript.hpp>
+#include <resources.hpp>
 
 using namespace shard;
 
@@ -25,6 +9,8 @@ namespace shard
 {
 	class FileSystem_Directory : public FrameworkModule
 	{
+		// TODO: fix
+		/*
 		static ObjectInstance* Impl_GetDirectory(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
 		{
 			static FieldSymbol* field = static_cast<ClassSymbol*>(method->Parent)->Fields.at(0);
@@ -35,6 +21,7 @@ namespace shard
 			instance->SetField(field, fullName);
 			return instance;
 		}
+		*/
 
 	public:
 		SourceProvider* FrameworkModule::GetSource()
@@ -54,8 +41,10 @@ namespace shard
 		{
 			if (symbol->Name == L"GetDirectory")
 			{
+				/*
 				symbol->FunctionPointer = Impl_GetDirectory;
 				return true;
+				*/
 			}
 
 			return false;

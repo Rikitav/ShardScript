@@ -1,21 +1,5 @@
-﻿#include <shard/parsing/SyntaxTree.hpp>
-#include <shard/parsing/analysis/DiagnosticsContext.hpp>
-#include <shard/parsing/semantic/SemanticModel.hpp>
-
-#include <shard/parsing/lexical/LexicalAnalyzer.hpp>
-#include <shard/parsing/lexical/reading/FileReader.hpp>
-#include <shard/parsing/SemanticAnalyzer.hpp>
-#include <shard/parsing/SourceParser.hpp>
-#include <shard/parsing/LayoutGenerator.hpp>
-
-#include <shard/runtime/GarbageCollector.hpp>
-#include <shard/runtime/VirtualMachine.hpp>
-#include <shard/runtime/ProgramDisassembler.hpp>
-
-#include <shard/runtime/framework/FrameworkLoader.hpp>
-
-#include <shard/compilation/AbstractEmiter.hpp>
-#include <shard/compilation/ProgramVirtualImage.hpp>
+﻿#include <ShardScript.hpp>
+#include <windows.h>
 
 #include <iostream>
 #include <string>
@@ -25,7 +9,6 @@
 #include <csignal>
 #include <cstdlib>
 #include <filesystem>
-#include <Windows.h>
 #include <minidumpapiset.h>
 #include <excpt.h>
 #include <ios>
@@ -33,18 +16,20 @@
 #pragma comment(lib, "shlwapi.lib")
 #pragma comment(lib, "dbghelp.lib")
 
-#include "InteractiveConsole.hpp"
-#include "utilities/InterpreterUtilities.hpp"
+#include <InteractiveConsole.hpp>
+#include <utilities/InterpreterUtilities.hpp>
 
 using namespace shard;
 namespace fs = std::filesystem;
 
 const fs::path stdlibFilename = "ShardScript.Framework.dll";
 
+CompilationContext* compiler = nullptr;
+
 static void SigIntHandler(int signal)
 {
 	//AbstractInterpreter::TerminateCallStack();
-	GarbageCollector::Terminate();
+	//GarbageCollector::Terminate();
 	exit(SIGINT);
 }
 
@@ -56,7 +41,6 @@ static LONG WINAPI UnhandledExceptionFilterFunction(PEXCEPTION_POINTERS exceptio
     std::cout << "\n========== UNHANDLED EXCEPTION ==========\n" << std::endl;
     std::cout << "Exception Code: 0x" << std::hex << exceptionRecord->ExceptionCode;
 
-    // Расшифровываем код исключения
     switch (exceptionRecord->ExceptionCode)
     {
         case EXCEPTION_ACCESS_VIOLATION:            std::cout << " (ACCESS VIOLATION)" << std::endl; break;
@@ -156,7 +140,7 @@ static LONG WINAPI UnhandledExceptionFilterFunction(PEXCEPTION_POINTERS exceptio
 static bool CheckFilesExisting()
 {
 	bool anyUnrealFiles = false;
-	for (const std::wstring& file : shard::ConsoleArguments::FilesToCompile)
+	for (const std::wstring& file : ConsoleArguments::FilesToCompile)
 	{
 		if (!fs::exists(file))
 		{
@@ -170,7 +154,7 @@ static bool CheckFilesExisting()
 
 static void LoadLibrariesFromDirectoryPath(fs::path path)
 {
-	for (const fs::directory_entry& entry : std::filesystem::directory_iterator(path))
+	for (const fs::directory_entry& entry : fs::directory_iterator(path))
 	{
 		if (!entry.is_regular_file())
 			continue;
@@ -179,7 +163,7 @@ static void LoadLibrariesFromDirectoryPath(fs::path path)
 		if (!filename.string().ends_with(".dll"))
 			continue;
 
-		FrameworkLoader::AddLib(entry.path().wstring());
+		compiler->AddLib(entry.path().wstring());
 	}
 }
 
@@ -206,7 +190,7 @@ int wmain(int argc, wchar_t* argv[])
 		SetUnhandledExceptionFilter(UnhandledExceptionFilterFunction);
 		ShardUtilities::ParseArguments(argc, argv);
 
-		if (shard::ConsoleArguments::ShowHelp)
+		if (ConsoleArguments::ShowHelp)
 		{
 			std::wstring version = ShardUtilities::GetFileVersion();
 			std::wcout << std::endl << L"ShardLang interpreter v" << version << std::endl << std::endl;
@@ -219,7 +203,7 @@ int wmain(int argc, wchar_t* argv[])
 			return 0;
 		}
 
-		if (shard::ConsoleArguments::AssociateScriptFile)
+		if (ConsoleArguments::AssociateScriptFile)
 		{
 			ShardUtilities::AssociateRegistry();
 			std::wcout << L"File association successsfuly installed" << std::endl;
@@ -229,24 +213,23 @@ int wmain(int argc, wchar_t* argv[])
 		if (!CheckFilesExisting())
 			return 1;
 
-		DiagnosticsContext diagnostics;
-		SyntaxTree syntaxTree;
-		SemanticModel semanticModel(syntaxTree);
+		compiler = new CompilationContext();
+		compiler->SetEntryPoint = ConsoleArguments::RunProgram;
+		DiagnosticsContext& diagnostics = compiler->GetDiagnosticsContext();
 
-		fs::path currentDirectory = GetCurrentDirectoryPath();
-		if (!shard::ConsoleArguments::ExcludeStd)
+		if (!ConsoleArguments::ExcludeStd)
 		{
+			fs::path currentDirectory = GetCurrentDirectoryPath();
 			fs::path stdlibFilepath = currentDirectory / stdlibFilename;
+
 			if (!fs::exists(stdlibFilepath))
 			{
 				std::wcout << L"'" << stdlibFilename << L"' not found! use '--no-std' flag to disable standart library loading requirement" << std::endl;
 				return 1;
 			}
 
-			FrameworkLoader::AddLib(stdlibFilepath.wstring());
+			compiler->AddLib(stdlibFilepath.wstring());
 		}
-
-		FrameworkLoader::Load(semanticModel, diagnostics);
 
 		fs::path workingDirectory = GetWorkingDirectoryPath();
 		if (!fs::exists(workingDirectory))
@@ -255,58 +238,45 @@ int wmain(int argc, wchar_t* argv[])
 			return 1;
 		}
 
-		SourceParser parser(diagnostics);
-		for (const std::wstring& file : shard::ConsoleArguments::FilesToCompile)
+		for (const std::wstring& file : ConsoleArguments::FilesToCompile)
 		{
 			FileReader reader(file);
 			LexicalAnalyzer lexer(reader);
-			parser.FromSourceProvider(syntaxTree, lexer);
+			compiler->EnrichTree(lexer);
 		}
 
-		SemanticAnalyzer semanticAnalyzer(diagnostics);
-		semanticAnalyzer.Analyze(syntaxTree, semanticModel);
-
+		ApplicationDomain* domain = compiler->Compile();
 		if (diagnostics.AnyError)
-		{
-			std::wcout << L"=== Diagnostics output ===" << std::endl;
-			diagnostics.WriteDiagnostics(std::wcout);
-			return 1;
-		}
-
-		LayoutGenerator layoutGenerator(diagnostics);
-		layoutGenerator.Generate(semanticModel);
-
-		ProgramVirtualImage program;
-		AbstractEmiter emiter(program, semanticModel, diagnostics);
-
-		emiter.VisitSyntaxTree(syntaxTree);
-		if (ConsoleArguments::RunProgram)
-			emiter.SetEntryPoint();
-
-		if (diagnostics.AnyError)
-		{
-			std::wcout << L"=== Diagnostics output ===" << std::endl;
-			diagnostics.WriteDiagnostics(std::wcout);
-			return 1;
-		}
+			throw diagnostics_exception("Compilation ended with errors.");
 
 		if (ConsoleArguments::UseInteractive)
 		{
-			InteractiveConsole repl(syntaxTree, semanticModel, diagnostics);
+			InteractiveConsole repl(compiler, domain);
 			repl.Run();
 			return 0;
 		}
 
 		if (ConsoleArguments::ShowDecompile)
 		{
+			ProgramVirtualImage& program = domain->GetProgram();
 			ProgramDisassembler disassembler;
 			disassembler.Disassemble(std::wcout, program);
 		}
 
 		if (ConsoleArguments::RunProgram)
 		{
-			VirtualMachine virtualMachine(program);
+			VirtualMachine& virtualMachine = domain->GetVirtualMachine();
 			virtualMachine.Run();
+		}
+	}
+	catch (const diagnostics_exception& err)
+	{
+		DiagnosticsContext& diagnostics = compiler->GetDiagnosticsContext();
+		if (diagnostics.AnyError)
+		{
+			std::wcout << L"=== Diagnostics output ===" << std::endl;
+			diagnostics.WriteDiagnostics(std::wcout);
+			return 1;
 		}
 	}
 	catch (const std::runtime_error& err)
@@ -314,6 +284,6 @@ int wmain(int argc, wchar_t* argv[])
 		std::cout << "CRITICAL ERROR : " << err.what() << std::endl;
 	}
 
-	GarbageCollector::Terminate();
-	FrameworkLoader::Destroy();
+	//GarbageCollector::Terminate();
+	//FrameworkLoader::Destroy();
 }

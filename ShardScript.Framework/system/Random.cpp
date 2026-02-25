@@ -1,16 +1,4 @@
-#include <shard/runtime/framework/FrameworkModule.hpp>
-
-#include <shard/runtime/ArgumentsSpan.hpp>
-#include <shard/runtime/ObjectInstance.hpp>
-
-#include <shard/syntax/symbols/MethodSymbol.hpp>
-#include <shard/syntax/symbols/AccessorSymbol.hpp>
-#include <shard/syntax/symbols/ConstructorSymbol.hpp>
-
-#include <shard/parsing/lexical/SourceProvider.hpp>
-#include <shard/parsing/lexical/LexicalAnalyzer.hpp>
-#include <shard/parsing/lexical/reading/StringStreamReader.hpp>
-
+#include <ShardScript.hpp>
 #include <stdexcept>
 #include <string>
 #include <random>
@@ -25,6 +13,8 @@ namespace shard
 {
 	class Random : public FrameworkModule
 	{
+		// TODO: fix
+		/*
 		static ObjectInstance* Impl_Integer(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
 		{
 			std::random_device rd;
@@ -139,6 +129,7 @@ namespace shard
 			bool value = bernoulli_dist(gen);
 			return ObjectInstance::FromValue(value);
 		}
+		*/
 
 	public:
 		SourceProvider* FrameworkModule::GetSource()
@@ -163,6 +154,7 @@ namespace shard
 		{
 			if (symbol->Name == L"Integer")
 			{
+				/*
 				switch (symbol->Parameters.size())
 				{
 					case 0:
@@ -186,10 +178,12 @@ namespace shard
 					default:
 						return false;
 				}
+				*/
 			}
 
 			if (symbol->Name == L"Double")
 			{
+				/*
 				switch (symbol->Parameters.size())
 				{
 					case 0:
@@ -213,12 +207,15 @@ namespace shard
 					default:
 						return false;
 				}
+				*/
 			}
 
 			if (symbol->Name == L"Propably")
 			{
+				/*
 				symbol->FunctionPointer = Impl_Propably;
 				return true;
+				*/
 			}
 
 			return false;

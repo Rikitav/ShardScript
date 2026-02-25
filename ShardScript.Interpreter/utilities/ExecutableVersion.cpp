@@ -1,4 +1,4 @@
-#include <Windows.h>
+#include <windows.h> // TODO: remove
 #include <libloaderapi.h>
 #include <iostream>
 #include <sstream>
@@ -6,7 +6,7 @@
 
 #pragma comment(lib, "version.lib")
 
-#include "InterpreterUtilities.hpp"
+#include <utilities/InterpreterUtilities.hpp>
 
 std::wstring shard::ShardUtilities::GetFileVersion()
 {

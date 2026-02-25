@@ -2,7 +2,7 @@
 #include <shard/runtime/ObjectInstance.hpp>
 #include <shard/parsing/semantic/SymbolTable.hpp>
 
-#include <windows.h>
+#include <windows.h> // TODO: remove
 #include <iostream>
 #include <malloc.h>
 #include <consoleapi.h>

@@ -1,7 +1,6 @@
 #pragma once
 #include <shard/ShardScriptAPI.hpp>
 
-#include <shard/syntax/symbols/NamespaceSymbol.hpp>
 #include <shard/syntax/symbols/TypeSymbol.hpp>
 
 #include <unordered_map>

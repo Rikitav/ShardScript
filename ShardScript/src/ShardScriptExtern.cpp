@@ -1,15 +1,24 @@
 #include <shard/runtime/VirtualMachine.hpp>
-#include <shard/compilation/ProgramVirtualImage.hpp>
+
 #include <shard/parsing/SyntaxTree.hpp>
 #include <shard/parsing/analysis/DiagnosticsContext.hpp>
 #include <shard/parsing/semantic/SemanticModel.hpp>
+
 #include <shard/parsing/lexical/LexicalAnalyzer.hpp>
 #include <shard/parsing/lexical/reading/StringStreamReader.hpp>
+
 #include <shard/parsing/SemanticAnalyzer.hpp>
 #include <shard/parsing/SourceParser.hpp>
 #include <shard/parsing/LayoutGenerator.hpp>
-#include <shard/runtime/framework/FrameworkLoader.hpp>
+
+//#include <shard/FrameworkLoader.hpp>
+
+#include <shard/compilation/ProgramVirtualImage.hpp>
 #include <shard/compilation/AbstractEmiter.hpp>
+
+#include <shard/CompilationContext.hpp>
+#include <shard/ApplicationDomain.hpp>
+
 #include <sstream>
 #include <algorithm>
 
@@ -17,6 +26,7 @@
 
 using namespace shard;
 
+/*
 SHARD_EXPORT ProgramVirtualImage* Program_Create()
 {
     ProgramVirtualImage* program = new ProgramVirtualImage();
@@ -130,3 +140,4 @@ SHARD_EXPORT int CompileCode(ProgramVirtualImage* programPtr, CompilationContext
 
     return 0;
 }
+*/
