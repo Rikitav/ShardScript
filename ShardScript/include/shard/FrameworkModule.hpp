@@ -12,9 +12,9 @@ namespace shard
 	class SHARD_API FrameworkModule
 	{
 	public:
-		virtual shard::SourceProvider* GetSource() = 0;
-		virtual bool BindConstructor(shard::ConstructorSymbol* symbol) = 0;
-		virtual bool BindMethod(shard::MethodSymbol* symbol) = 0;
-		virtual bool BindAccessor(shard::AccessorSymbol* symbol) = 0;
+		virtual SourceProvider* GetSource() = 0;
+		virtual bool BindConstructor(ConstructorSymbol* symbol) = 0;
+		virtual bool BindMethod(MethodSymbol* symbol) = 0;
+		virtual bool BindAccessor(AccessorSymbol* symbol) = 0;
 	};
 }

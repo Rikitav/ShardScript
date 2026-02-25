@@ -1,5 +1,5 @@
 #pragma once
-#include <shard/syntax/symbols/TypeSymbol.hpp>
+#include <ShardScript.hpp>
 
 namespace shard
 {

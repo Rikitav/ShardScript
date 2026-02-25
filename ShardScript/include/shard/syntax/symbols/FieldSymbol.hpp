@@ -16,7 +16,7 @@ namespace shard
     public:
         size_t MemoryBytesOffset = 0;
         TypeSymbol* ReturnType = nullptr;
-        shard::ExpressionSyntax* DefaultValueExpression = nullptr;
+        ExpressionSyntax* DefaultValueExpression = nullptr;
         bool IsStatic = false;
 
         inline FieldSymbol(std::wstring name)

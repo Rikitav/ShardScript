@@ -6,9 +6,11 @@
 
 #include <vector>
 #include <string>
+#include <span>
 
 namespace shard
 {
+	/*
 	class SHARD_API ArgumentsSpan
 	{
 		const MethodSymbol* Method;
@@ -25,4 +27,5 @@ namespace shard
 		ObjectInstance* operator[](int index) const;
 		ObjectInstance* Find(const std::wstring& name) const;
 	};
+	*/
 }

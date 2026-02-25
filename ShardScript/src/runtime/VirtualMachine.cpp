@@ -20,6 +20,8 @@
 #include <shard/syntax/symbols/TypeSymbol.hpp>
 #include <shard/syntax/symbols/GenericTypeSymbol.hpp>
 
+#include <shard/ApplicationDomain.hpp>
+
 #include <vector>
 #include <stdexcept>
 #include <cstdint>
@@ -47,7 +49,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		case OpCode::PopStack:
 		{
 			ObjectInstance* pop = frame->PopStack();
-			GarbageCollector::CollectInstance(pop);
+			gc.CollectInstance(pop);
 			break;
 		}
 
@@ -60,14 +62,14 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 
 		case OpCode::LoadConst_Null:
 		{
-			frame->PushStack(GarbageCollector::NullInstance);
+			frame->PushStack(gc.NullInstance);
 			break;
 		}
 
 		case OpCode::LoadConst_Boolean:
 		{
 			bool value = decoder.AbsorbBoolean();
-			ObjectInstance* instance = ObjectInstance::FromValue(value);
+			ObjectInstance* instance = gc.FromValue(value);
 			frame->PushStack(instance);
 			break;
 		}
@@ -75,7 +77,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		case OpCode::LoadConst_Integer64:
 		{
 			int64_t value = decoder.AbsorbInt64();
-			ObjectInstance* instance = ObjectInstance::FromValue(value);
+			ObjectInstance* instance = gc.FromValue(value);
 			frame->PushStack(instance);
 			break;
 		}
@@ -83,7 +85,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		case OpCode::LoadConst_Rational64:
 		{
 			double value = decoder.AbsorbDouble64();
-			ObjectInstance* instance = ObjectInstance::FromValue(value);
+			ObjectInstance* instance = gc.FromValue(value);
 			frame->PushStack(instance);
 			break;
 		}
@@ -91,7 +93,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		case OpCode::LoadConst_Char:
 		{
 			wchar_t value = decoder.AbsorbChar16();
-			ObjectInstance* instance = ObjectInstance::FromValue(value);
+			ObjectInstance* instance = gc.FromValue(value);
 			frame->PushStack(instance);
 			break;
 		}
@@ -99,9 +101,9 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		case OpCode::LoadConst_String:
 		{
 			size_t data = decoder.AbsorbString();
-			const wchar_t* str = reinterpret_cast<wchar_t*>(Program.DataSection.data() + data);
+			const wchar_t* str = reinterpret_cast<wchar_t*>(program.DataSection.data() + data);
 
-			ObjectInstance* instance = ObjectInstance::FromValue(str, true);
+			ObjectInstance* instance = gc.FromValue(str, true);
 			frame->PushStack(instance);
 			break;
 		}
@@ -123,7 +125,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			if (oldVar != nullptr)
 			{
 				oldVar->DecrementReference();
-				GarbageCollector::CollectInstance(oldVar);
+				gc.CollectInstance(oldVar);
 			}
 
 			instance->IncrementReference();
@@ -148,7 +150,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance* fieldValue = instance->GetField(field);
 
 			frame->PushStack(fieldValue);
-			GarbageCollector::CollectInstance(instance);
+			gc.CollectInstance(instance);
 			break;
 		}
 
@@ -159,15 +161,15 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance* instance = frame->PopStack();
 
 			instance->SetField(field, fieldValue);
-			GarbageCollector::CollectInstance(fieldValue);
-			GarbageCollector::CollectInstance(instance);
+			gc.CollectInstance(fieldValue);
+			gc.CollectInstance(instance);
 			break;
 		}
 
 		case OpCode::LoadStaticField:
 		{
 			FieldSymbol* field = decoder.AbsorbFieldSymbol();
-			ObjectInstance* fieldValue = GarbageCollector::GetStaticField(this, field);
+			ObjectInstance* fieldValue = gc.GetStaticField(field);
 
 			frame->PushStack(fieldValue);
 			break;
@@ -178,15 +180,15 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			FieldSymbol* field = decoder.AbsorbFieldSymbol();
 			ObjectInstance* fieldValue = frame->PopStack();
 
-			GarbageCollector::SetStaticField(this, field, fieldValue);
-			GarbageCollector::CollectInstance(fieldValue);
+			gc.SetStaticField(field, fieldValue);
+			gc.CollectInstance(fieldValue);
 			break;
 		}
 
 		case OpCode::CreateDuplicate:
 		{
 			ObjectInstance* instance = frame->PeekStack();
-			ObjectInstance* duplicate = GarbageCollector::CopyInstance(instance);
+			ObjectInstance* duplicate = gc.CopyInstance(instance);
 
 			frame->PushStack(duplicate);
 			break;
@@ -197,11 +199,11 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance* right = frame->PopStack();
 			ObjectInstance* left = frame->PopStack();
 
-			ObjectInstance* result = PrimitiveMathModule::EvaluateBinaryOperator(left, TokenType::AddOperator, right);
+			ObjectInstance* result = math.EvaluateBinaryOperator(left, TokenType::AddOperator, right);
 			frame->PushStack(result);
 
-			GarbageCollector::CollectInstance(right);
-			GarbageCollector::CollectInstance(left);
+			gc.CollectInstance(right);
+			gc.CollectInstance(left);
 			break;
 		}
 
@@ -210,11 +212,11 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance* right = frame->PopStack();
 			ObjectInstance* left = frame->PopStack();
 
-			ObjectInstance* result = PrimitiveMathModule::EvaluateBinaryOperator(left, TokenType::SubOperator, right);
+			ObjectInstance* result = math.EvaluateBinaryOperator(left, TokenType::SubOperator, right);
 			frame->PushStack(result);
 
-			GarbageCollector::CollectInstance(right);
-			GarbageCollector::CollectInstance(left);
+			gc.CollectInstance(right);
+			gc.CollectInstance(left);
 			break;
 		}
 
@@ -223,11 +225,11 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance* right = frame->PopStack();
 			ObjectInstance* left = frame->PopStack();
 
-			ObjectInstance* result = PrimitiveMathModule::EvaluateBinaryOperator(left, TokenType::MultOperator, right);
+			ObjectInstance* result = math.EvaluateBinaryOperator(left, TokenType::MultOperator, right);
 			frame->PushStack(result);
 
-			GarbageCollector::CollectInstance(right);
-			GarbageCollector::CollectInstance(left);
+			gc.CollectInstance(right);
+			gc.CollectInstance(left);
 			break;
 		}
 
@@ -236,11 +238,11 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance* right = frame->PopStack();
 			ObjectInstance* left = frame->PopStack();
 
-			ObjectInstance* result = PrimitiveMathModule::EvaluateBinaryOperator(left, TokenType::DivOperator, right);
+			ObjectInstance* result = math.EvaluateBinaryOperator(left, TokenType::DivOperator, right);
 			frame->PushStack(result);
 
-			GarbageCollector::CollectInstance(right);
-			GarbageCollector::CollectInstance(left);
+			gc.CollectInstance(right);
+			gc.CollectInstance(left);
 			break;
 		}
 
@@ -249,11 +251,11 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance* right = frame->PopStack();
 			ObjectInstance* left = frame->PopStack();
 
-			ObjectInstance* result = PrimitiveMathModule::EvaluateBinaryOperator(left, TokenType::ModOperator, right);
+			ObjectInstance* result = math.EvaluateBinaryOperator(left, TokenType::ModOperator, right);
 			frame->PushStack(result);
 
-			GarbageCollector::CollectInstance(right);
-			GarbageCollector::CollectInstance(left);
+			gc.CollectInstance(right);
+			gc.CollectInstance(left);
 			break;
 		}
 
@@ -262,11 +264,11 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance* right = frame->PopStack();
 			ObjectInstance* left = frame->PopStack();
 
-			ObjectInstance* result = PrimitiveMathModule::EvaluateBinaryOperator(left, TokenType::PowOperator, right);
+			ObjectInstance* result = math.EvaluateBinaryOperator(left, TokenType::PowOperator, right);
 			frame->PushStack(result);
 
-			GarbageCollector::CollectInstance(right);
-			GarbageCollector::CollectInstance(left);
+			gc.CollectInstance(right);
+			gc.CollectInstance(left);
 			break;
 		}
 
@@ -275,11 +277,11 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance* right = frame->PopStack();
 			ObjectInstance* left = frame->PopStack();
 
-			ObjectInstance* result = PrimitiveMathModule::EvaluateBinaryOperator(left, TokenType::EqualsOperator, right);
+			ObjectInstance* result = math.EvaluateBinaryOperator(left, TokenType::EqualsOperator, right);
 			frame->PushStack(result);
 
-			GarbageCollector::CollectInstance(right);
-			GarbageCollector::CollectInstance(left);
+			gc.CollectInstance(right);
+			gc.CollectInstance(left);
 			break;
 		}
 
@@ -288,11 +290,11 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance* right = frame->PopStack();
 			ObjectInstance* left = frame->PopStack();
 
-			ObjectInstance* result = PrimitiveMathModule::EvaluateBinaryOperator(left, TokenType::NotEqualsOperator, right);
+			ObjectInstance* result = math.EvaluateBinaryOperator(left, TokenType::NotEqualsOperator, right);
 			frame->PushStack(result);
 
-			GarbageCollector::CollectInstance(right);
-			GarbageCollector::CollectInstance(left);
+			gc.CollectInstance(right);
+			gc.CollectInstance(left);
 			break;
 		}
 
@@ -301,11 +303,11 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance* right = frame->PopStack();
 			ObjectInstance* left = frame->PopStack();
 
-			ObjectInstance* result = PrimitiveMathModule::EvaluateBinaryOperator(left, TokenType::LessOperator, right);
+			ObjectInstance* result = math.EvaluateBinaryOperator(left, TokenType::LessOperator, right);
 			frame->PushStack(result);
 
-			GarbageCollector::CollectInstance(right);
-			GarbageCollector::CollectInstance(left);
+			gc.CollectInstance(right);
+			gc.CollectInstance(left);
 			break;
 		}
 
@@ -314,11 +316,11 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance* right = frame->PopStack();
 			ObjectInstance* left = frame->PopStack();
 
-			ObjectInstance* result = PrimitiveMathModule::EvaluateBinaryOperator(left, TokenType::LessOrEqualsOperator, right);
+			ObjectInstance* result = math.EvaluateBinaryOperator(left, TokenType::LessOrEqualsOperator, right);
 			frame->PushStack(result);
 
-			GarbageCollector::CollectInstance(right);
-			GarbageCollector::CollectInstance(left);
+			gc.CollectInstance(right);
+			gc.CollectInstance(left);
 			break;
 		}
 
@@ -328,11 +330,11 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance* left = frame->PopStack();
 
 			bool assign = false;
-			ObjectInstance* result = PrimitiveMathModule::EvaluateBinaryOperator(left, TokenType::GreaterOperator, right);
+			ObjectInstance* result = math.EvaluateBinaryOperator(left, TokenType::GreaterOperator, right);
 			frame->PushStack(result);
 
-			GarbageCollector::CollectInstance(right);
-			GarbageCollector::CollectInstance(left);
+			gc.CollectInstance(right);
+			gc.CollectInstance(left);
 			break;
 		}
 
@@ -341,11 +343,11 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance* right = frame->PopStack();
 			ObjectInstance* left = frame->PopStack();
 
-			ObjectInstance* result = PrimitiveMathModule::EvaluateBinaryOperator(left, TokenType::GreaterOrEqualsOperator, right);
+			ObjectInstance* result = math.EvaluateBinaryOperator(left, TokenType::GreaterOrEqualsOperator, right);
 			frame->PushStack(result);
 
-			GarbageCollector::CollectInstance(right);
-			GarbageCollector::CollectInstance(left);
+			gc.CollectInstance(right);
+			gc.CollectInstance(left);
 			break;
 		}
 
@@ -354,10 +356,10 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance* right = frame->PopStack();
 
 			bool rightDetermined = false;
-			ObjectInstance* result = PrimitiveMathModule::EvaluateUnaryOperator(right, TokenType::NotOperator, rightDetermined);
+			ObjectInstance* result = math.EvaluateUnaryOperator(right, TokenType::NotOperator, rightDetermined);
 			frame->PushStack(result);
 
-			GarbageCollector::CollectInstance(right);
+			gc.CollectInstance(right);
 			break;
 		}
 
@@ -460,14 +462,14 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 			{
 				ObjectInstance* local = currentFrame->PopStack();
 				local->DecrementReference();
-				GarbageCollector::CollectInstance(local);
+				gc.CollectInstance(local);
 			}
 
 			if (!method->IsStatic)
 			{
 				ObjectInstance* prevInstance = currentFrame->PopStack();
 				prevInstance->DecrementReference();
-				GarbageCollector::CollectInstance(prevInstance);
+				gc.CollectInstance(prevInstance);
 			}
 
 			break;
@@ -499,8 +501,9 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 					argValues.push_back(arg);
 				}
 
-				ArgumentsSpan arguments(method, argValues);
-				ObjectInstance* retReg = method->FunctionPointer(this, method, arguments);
+				ArgumentsSpan args(argValues.data(), argValues.size());
+				InvokeContext context { *domain, *this, method, args };
+				ObjectInstance* retReg = method->FunctionPointer(context);
 
 				if (method->ReturnType != SymbolTable::Primitives::Void)
 				{
@@ -513,7 +516,7 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 				for (ObjectInstance* arg : argValues)
 				{
 					arg->DecrementReference();
-					GarbageCollector::CollectInstance(arg);
+					gc.CollectInstance(arg);
 				}
 			}
 			catch (const std::runtime_error& err)
@@ -522,7 +525,7 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 				std::wstring wdescription = std::wstring(description.begin(), description.end());
 
 				currentFrame->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
-				currentFrame->InterruptionRegister = ObjectInstance::FromValue(wdescription);
+				currentFrame->InterruptionRegister = gc.FromValue(wdescription);
 				currentFrame->InterruptionRegister->IncrementReference();
 			}
 
@@ -556,7 +559,7 @@ ObjectInstance* VirtualMachine::InstantiateObject(TypeSymbol* type, ConstructorS
 	TypeSymbol* withinType = type;
 
 	CallStackFrame* callingFrame = CurrentFrame();
-	ObjectInstance* newInstance = GarbageCollector::AllocateInstance(type);
+	ObjectInstance* newInstance = gc.AllocateInstance(type);
 
 	if (type->Kind == SyntaxKind::GenericType)
 	{
@@ -587,8 +590,8 @@ ObjectInstance* VirtualMachine::InstantiateObject(TypeSymbol* type, ConstructorS
 		else
 		{
 			assignInstance = fieldType->IsReferenceType
-				? GarbageCollector::NullInstance
-				: GarbageCollector::AllocateInstance(fieldType);
+				? gc.NullInstance
+				: gc.AllocateInstance(fieldType);
 		}
 
 		newInstance->SetField(fieldInstance);
@@ -606,7 +609,8 @@ ObjectInstance* VirtualMachine::InstantiateObject(TypeSymbol* type, ConstructorS
 	*/
 }
 
-VirtualMachine::VirtualMachine(ProgramVirtualImage& program) : Program(program)
+VirtualMachine::VirtualMachine(ApplicationDomain* appDomain) : domain(appDomain),
+	program(domain->GetProgram()), gc(domain->GetGarbageCollector()), math(gc)
 {
 	AbortFlag = false;
 }
@@ -642,7 +646,6 @@ void VirtualMachine::InvokeMethod(MethodSymbol* method) const
 	VirtualMachine* vm = const_cast<VirtualMachine*>(this);
 
 	CallStackFrame* currentFrame = vm->PushFrame(method);
-
 	vm->InvokeMethodInternal(method, currentFrame);
 	vm->PopFrame();
 }
@@ -669,14 +672,14 @@ void VirtualMachine::RaiseException(ObjectInstance* exceptionReg) const
 
 void VirtualMachine::Run() const
 {
-	if (Program.EntryPoint == nullptr)
+	if (program.EntryPoint == nullptr)
 		throw std::runtime_error("entry point was null");
 
 	// hehe
 	VirtualMachine* vm = const_cast<VirtualMachine*>(this);
 
 	vm->AbortFlag = false;
-	InvokeMethod(Program.EntryPoint);
+	InvokeMethod(program.EntryPoint);
 }
 
 void VirtualMachine::Abort() const

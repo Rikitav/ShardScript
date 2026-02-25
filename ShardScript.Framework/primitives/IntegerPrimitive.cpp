@@ -1,13 +1,3 @@
-#include <shard/runtime/ArgumentsSpan.hpp>
-#include <shard/runtime/ObjectInstance.hpp>
-#include <shard/parsing/semantic/SymbolTable.hpp>
-
-#include <shard/syntax/SyntaxSymbol.hpp>
-#include <shard/syntax/SymbolAccesibility.hpp>
-#include <shard/syntax/symbols/TypeSymbol.hpp>
-#include <shard/syntax/symbols/MethodSymbol.hpp>
-#include <shard/syntax/symbols/ParameterSymbol.hpp>
-
 #include <new>
 #include <vector>
 #include <string>
@@ -16,10 +6,13 @@
 #include <cstdlib>
 #include <algorithm>
 
-#include "PrimitivesLoading.hpp"
+#include <ShardScript.hpp>
+#include <primitives/PrimitivesLoading.hpp>
 
 using namespace shard;
 
+// TODO: fix
+/*
 // Integer methods
 static ObjectInstance* ToString(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
 {
@@ -61,9 +54,11 @@ static ObjectInstance* Pow(const VirtualMachine* host, const MethodSymbol* metho
 	int64_t result = static_cast<int64_t>(std::pow(value, power));
 	return ObjectInstance::FromValue(result);
 }
+*/
 
 void IntegerPrimitive::Reflect(TypeSymbol* symbol)
 {
+	/*
 	// ToString()
 	MethodSymbol* toString = new MethodSymbol(L"ToString", ToString);
 	toString->Accesibility = SymbolAccesibility::Public;
@@ -107,4 +102,5 @@ void IntegerPrimitive::Reflect(TypeSymbol* symbol)
 	powParam->Type = SymbolTable::Primitives::Integer;
 	pow->Parameters.push_back(powParam);
 	symbol->Methods.push_back(pow);
+	*/
 }

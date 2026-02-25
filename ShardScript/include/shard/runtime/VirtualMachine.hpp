@@ -7,6 +7,7 @@
 
 #include <shard/runtime/CallStackFrame.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
+#include <shard/runtime/PrimitiveMathModule.hpp>
 
 #include <shard/syntax/symbols/MethodSymbol.hpp>
 #include <shard/syntax/symbols/ConstructorSymbol.hpp>
@@ -18,9 +19,16 @@
 
 namespace shard
 {
+	class ApplicationDomain;
+	class GarbageCollector;
+
 	class SHARD_API VirtualMachine
 	{
-		ProgramVirtualImage& Program;
+		ApplicationDomain* const domain;
+		ProgramVirtualImage& program;
+		GarbageCollector& gc;
+		PrimitiveMathModule math;
+
 		std::stack<CallStackFrame*> CallStack;
 		std::atomic<bool> AbortFlag;
 
@@ -29,7 +37,7 @@ namespace shard
 		void ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder, const OpCode opCode);
 
 	public:
-		VirtualMachine(ProgramVirtualImage& program);
+		VirtualMachine(ApplicationDomain* appDomain);
 
 		CallStackFrame* CurrentFrame() const;
 		CallStackFrame* PushFrame(MethodSymbol* methodSymbol);

@@ -1,15 +1,3 @@
-#include <shard/runtime/VirtualMachine.hpp>
-#include <shard/runtime/ArgumentsSpan.hpp>
-#include <shard/runtime/ObjectInstance.hpp>
-
-#include <shard/parsing/semantic/SymbolTable.hpp>
-
-#include <shard/syntax/SymbolAccesibility.hpp>
-#include <shard/syntax/symbols/TypeSymbol.hpp>
-#include <shard/syntax/symbols/MethodSymbol.hpp>
-#include <shard/syntax/symbols/ParameterSymbol.hpp>
-#include <shard/syntax/symbols/ArrayTypeSymbol.hpp>
-
 #include <string>
 #include <vector>
 #include <algorithm>
@@ -17,10 +5,13 @@
 #include <cctype>
 #include <cstdint>
 
-#include "PrimitivesLoading.hpp"
+#include <ShardScript.hpp>
+#include <primitives/PrimitivesLoading.hpp>
 
 using namespace shard;
 
+// TODO: rewrite
+/*
 // String methods
 static ObjectInstance* IsEmpty(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
 {
@@ -238,11 +229,11 @@ static ObjectInstance* Format(const VirtualMachine* host, const MethodSymbol* me
 			continue;
 		}
 		
-		/*
+		
 		// Find argument by index (arg0, arg1, etc.)
-		std::wstring argName = L"arg" + ;
-		ObjectInstance* arg = arguments->TryFind(argName);
-		*/
+		//std::wstring argName = L"arg" + ;
+		//ObjectInstance* arg = arguments->TryFind(argName);
+		
 		
 		if (!formatArgs->IsInBounds(index))
 			throw std::runtime_error("index is out of bounds");
@@ -402,9 +393,11 @@ static ObjectInstance* Insert(const VirtualMachine* host, const MethodSymbol* me
 	result.insert(start, str);
 	return ObjectInstance::FromValue(result);
 }
+*/
 
 void StringPrimitive::Reflect(TypeSymbol* symbol)
 {
+	/*
 	// IsEmpty
 	MethodSymbol* isEmpty = new MethodSymbol(L"IsEmpty", IsEmpty);
 	isEmpty->Accesibility = SymbolAccesibility::Public;
@@ -522,16 +515,14 @@ void StringPrimitive::Reflect(TypeSymbol* symbol)
 	format->ReturnType = SymbolTable::Primitives::String;
 	format->IsStatic = false;
 
-	/*
 	// Add optional parameters for Format: arg0, arg1, ..., arg9
-	for (int i = 0; i < 10; i++)
-	{
-		std::wstring paramName = L"arg" + std::to_wstring(i);
-		ParameterSymbol* formatParam = new ParameterSymbol(paramName);
-		formatParam->Type = SymbolTable::Primitives::String; // Can be any type, but default to String
-		format->Parameters.push_back(formatParam);
-	}
-	*/
+	//for (int i = 0; i < 10; i++)
+	//{
+	//	std::wstring paramName = L"arg" + std::to_wstring(i);
+	//	ParameterSymbol* formatParam = new ParameterSymbol(paramName);
+	//	formatParam->Type = SymbolTable::Primitives::String; // Can be any type, but default to String
+	//	format->Parameters.push_back(formatParam);
+	//}
 
 	std::wstring paramName = L"args";
 	ParameterSymbol* formatParam = new ParameterSymbol(paramName);
@@ -591,4 +582,5 @@ void StringPrimitive::Reflect(TypeSymbol* symbol)
 	insertValue->Type = SymbolTable::Primitives::String;
 	insert->Parameters.push_back(insertValue);
 	symbol->Methods.push_back(insert);
+	*/
 }

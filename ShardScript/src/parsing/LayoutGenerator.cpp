@@ -32,6 +32,9 @@ void LayoutGenerator::FixObjectLayout(SemanticModel& semanticModel, TypeSymbol* 
 
 	for (FieldSymbol* field : objectInfo->Fields)
 	{
+		if (field->IsStatic)
+			continue;
+
 		TypeSymbol* returnType = field->ReturnType;
 		if (returnType == nullptr)
 			continue;
@@ -49,8 +52,11 @@ void LayoutGenerator::FixObjectLayout(SemanticModel& semanticModel, TypeSymbol* 
 		if (returnType->State == TypeLayoutingState::Unvisited)
 			FixObjectLayout(semanticModel, returnType);
 
-		field->MemoryBytesOffset = objectInfo->MemoryBytesSize;
-		objectInfo->MemoryBytesSize += returnType->GetInlineSize();
+		if (!field->IsStatic)
+		{
+			field->MemoryBytesOffset = objectInfo->MemoryBytesSize;
+			objectInfo->MemoryBytesSize += returnType->GetInlineSize();
+		}
 	}
 
 	if (objectInfo->Kind == SyntaxKind::ArrayType)

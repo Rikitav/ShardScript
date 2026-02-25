@@ -7,9 +7,17 @@
 #include <string>
 #include <vector>
 #include <ostream>
+#include <stdexcept>
 
 namespace shard
 {
+	class SHARD_API diagnostics_exception : public std::runtime_error
+	{
+	public:
+		diagnostics_exception(const char* message);
+		diagnostics_exception(std::string& message);
+	};
+
 	class SHARD_API DiagnosticsContext
 	{
 	public:

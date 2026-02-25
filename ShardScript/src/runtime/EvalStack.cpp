@@ -1,6 +1,6 @@
+/*
 #include <shard/runtime/EvalStack.hpp>
 
-/*
 using namespace shard;
 
 EvalStack::EvalStack(void* stackBase, size_t bytesSize) : StackBase(stackBase), BytesSize(bytesSize)

@@ -1,5 +1,5 @@
 #include <shard/ShardScriptVersion.hpp>
-#include <Windows.h>
+#include <Windows.h> // TODO: remove
 
 using namespace shard;
 

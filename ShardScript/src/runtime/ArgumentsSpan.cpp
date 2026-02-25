@@ -8,6 +8,7 @@
 
 using namespace shard;
 
+/*
 ObjectInstance* ArgumentsSpan::operator[](int index) const
 {
 	return Span[index];
@@ -31,3 +32,4 @@ ArgumentsSpan::~ArgumentsSpan()
 {
 
 }
+*/

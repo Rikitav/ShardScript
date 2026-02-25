@@ -1,29 +1,10 @@
-#include <shard/runtime/framework/FrameworkModule.hpp>
-
-#include <shard/runtime/ArgumentsSpan.hpp>
-#include <shard/runtime/GarbageCollector.hpp>
-#include <shard/runtime/ObjectInstance.hpp>
-#include <shard/runtime/VirtualMachine.hpp>
-
-#include <shard/syntax/symbols/TypeSymbol.hpp>
-#include <shard/syntax/symbols/MethodSymbol.hpp>
-#include <shard/syntax/symbols/FieldSymbol.hpp>
-#include <shard/syntax/symbols/ClassSymbol.hpp>
-#include <shard/syntax/symbols/ArrayTypeSymbol.hpp>
-#include <shard/syntax/symbols/AccessorSymbol.hpp>
-#include <shard/syntax/symbols/ConstructorSymbol.hpp>
-
-#include <shard/parsing/lexical/SourceProvider.hpp>
-#include <shard/parsing/lexical/LexicalAnalyzer.hpp>
-#include <shard/parsing/lexical/reading/StringStreamReader.hpp>
-#include <shard/parsing/semantic/SymbolTable.hpp>
-
+#include <ShardScript.hpp>
 #include <string>
 #include <stdexcept>
 #include <malloc.h>
 #include <cstdint>
 
-#include "../../resources.hpp"
+#include <resources.hpp>
 
 using namespace shard;
 
@@ -36,6 +17,8 @@ namespace shard
 		{
 			static FieldSymbol* arrayField = static_cast<ClassSymbol*>(method->Parent)->Fields.at(0); // T[] _array
 
+			// TODO: fix
+			/*
 			// Getting arguments
 			ObjectInstance* instance = arguments[0]; // List<T> this
 
@@ -43,6 +26,7 @@ namespace shard
 			TypeSymbol* arrayType = TypeSymbol::ReturnOf(arrayField);
 			ObjectInstance* arrayInstance = GarbageCollector::AllocateInstance(arrayType);
 			instance->SetField(arrayField, arrayInstance);
+			*/
 
 			return nullptr; // void
 		}
@@ -74,10 +58,13 @@ namespace shard
 			arrayType->MemoryBytesSize = newSize;
 			*const_cast<void**>(&arrayInstance->Memory) = newPtr;
 			
+			// TODO: fix
+			/*
 			// Adding element
 			size_t indexLast = arrayType->Size - 1;
 			ObjectInstance* valueCopy = GarbageCollector::CopyInstance(value);
 			arrayInstance->SetElement(indexLast, valueCopy);
+			*/
 
 			// setting new array length
 			int64_t arraySize = static_cast<int64_t>(arrayType->Size);

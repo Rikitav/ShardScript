@@ -1,37 +1,21 @@
-﻿#include <shard/runtime/framework/FrameworkLoader.hpp>
-
-#include <shard/parsing/semantic/SymbolTable.hpp>
-
-#include <shard/runtime/VirtualMachine.hpp>
-#include <shard/runtime/GarbageCollector.hpp>
-#include <shard/runtime/ConsoleHelper.hpp>
-#include <shard/runtime/ArgumentsSpan.hpp>
-#include <shard/runtime/ObjectInstance.hpp>
-#include <shard/runtime/CallStackFrame.hpp>
-
-#include <shard/syntax/SymbolAccesibility.hpp>
-
-#include <shard/syntax/symbols/ClassSymbol.hpp>
-#include <shard/syntax/symbols/StructSymbol.hpp>
-#include <shard/syntax/symbols/MethodSymbol.hpp>
-#include <shard/syntax/symbols/ParameterSymbol.hpp>
-#include <shard/syntax/symbols/TypeSymbol.hpp>
-
-#include <windows.h>
+﻿#include <windows.h> // TODO: remove
 #include <iostream>
 #include <string>
 #include <stdexcept>
 #include <vector>
 #include <cstdint>
 
-#include "primitives/PrimitivesLoading.hpp"
-#include "system/filesystem/File.cpp"
-#include "system/filesystem/Directory.cpp"
-#include "system/collections/List.cpp"
-#include "system/Random.cpp"
+#include <ShardScript.hpp>
+#include <primitives/PrimitivesLoading.hpp>
+#include <system/filesystem/File.cpp>
+#include <system/filesystem/Directory.cpp>
+#include <system/collections/List.cpp>
+#include <system/Random.cpp>
 
 using namespace shard;
 
+// TODO: fix
+/*
 static ObjectInstance* Gc_Info(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
 {
 	std::wcout << "\nGarbage collector info dump" << std::endl;
@@ -158,9 +142,11 @@ static ObjectInstance* Impl_sizeof(const VirtualMachine* host, const MethodSymbo
 
 	return ObjectInstance::FromValue(static_cast<int64_t>(instance->Info->MemoryBytesSize));
 }
+	*/
 
-static void ResolveGlobalMethods()
+static void ReflectGlobalMethods()
 {
+	/*
 	// gc_info
 	{
 		MethodSymbol* gcInfoMethod = new MethodSymbol(L"gc_info", Gc_Info);
@@ -236,6 +222,7 @@ static void ResolveGlobalMethods()
 
 		SymbolTable::Global::Type->Methods.push_back(sizeofMethod);
 	}
+	*/
 }
 
 static void ReflectPrimitives()
@@ -248,8 +235,6 @@ static void ReflectPrimitives()
 	ArrayPrimitive::Reflect(SymbolTable::Primitives::Array);
 }
 
-#pragma message (push)
-#pragma message (disable: 003)
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
     switch (ul_reason_for_call)
@@ -257,12 +242,15 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         case DLL_PROCESS_ATTACH:
         {
 			ReflectPrimitives();
-			ResolveGlobalMethods();
+			ReflectGlobalMethods();
 
+			// TODO: fix
+			/*
 			shard::FrameworkLoader::AddModule(new FileSystem_Directory());
 			shard::FrameworkLoader::AddModule(new FileSystem_File());
 			shard::FrameworkLoader::AddModule(new Collections_List());
 			shard::FrameworkLoader::AddModule(new Random());
+			*/
 			break;
         }
 
@@ -274,4 +262,3 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
     return TRUE;
 }
-#pragma message (pop)

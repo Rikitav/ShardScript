@@ -1,14 +1,17 @@
-#include <shard/runtime/framework/FrameworkLoader.hpp>
-#include <shard/runtime/framework/FrameworkModule.hpp>
+#include <shard/CompilationContext.hpp>
+#include <shard/FrameworkModule.hpp>
+#include <shard/ShardScriptAPI.hpp>
 
-#include <shard/parsing/lexical/LexicalAnalyzer.hpp>
+#include <shard/parsing/SourceParser.hpp>
+#include <shard/parsing/SyntaxTree.hpp>
 #include <shard/parsing/SemanticAnalyzer.hpp>
+#include <shard/parsing/LayoutGenerator.hpp>
 
 #include <shard/parsing/semantic/SemanticModel.hpp>
 #include <shard/parsing/semantic/SymbolTable.hpp>
+
+#include <shard/parsing/lexical/LexicalAnalyzer.hpp>
 #include <shard/parsing/analysis/DiagnosticsContext.hpp>
-#include <shard/parsing/SyntaxTree.hpp>
-#include <shard/parsing/SourceParser.hpp>
 
 #include <shard/syntax/SyntaxKind.hpp>
 
@@ -28,27 +31,49 @@
 #include <shard/syntax/nodes/MemberDeclarations/PropertyDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/IndexatorDeclarationSyntax.hpp>
 
+#include <shard/compilation/AbstractEmiter.hpp>
+
 #include <string>
 #include <vector>
-#include <Windows.h>
 #include <stdexcept>
+
+#ifdef _WIN32
+#include <windows.h> // TODO: remove
+#endif
 
 using namespace shard;
 
-std::vector<HMODULE> FrameworkLoader::LoadedLibraries;
-std::vector<FrameworkModule*> FrameworkLoader::Modules;
+static LibraryHandle LoadLibraryHandle(const std::filesystem::path& path)
+{
+#ifdef _WIN32
+	HMODULE hModule = LoadLibraryW(path.c_str());
+	return hModule;
+#else
+	throw std::runtime_error("Loading libraries is not supported on this platform");
+#endif
+}
 
-static std::string GetLastErrorAsString()
+static void FreeLibraryHandle(LibraryHandle handle)
+{
+#ifdef _WIN32
+	FreeLibrary(handle);
+#else
+	throw std::runtime_error("Loading libraries is not supported on this platform");
+#endif
+}
+
+static std::wstring GetLastErrorAsString()
 {
 	DWORD errorMessageID = ::GetLastError();
 	if (errorMessageID == 0)
-		return std::string();
+		return std::wstring();
 
-	LPSTR messageBuffer = nullptr;
-	size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-		NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
+	LPWSTR messageBuffer = nullptr;
+	size_t size = FormatMessageW(
+		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+		NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR)&messageBuffer, 0, NULL);
 
-	std::string message(messageBuffer, size);
+	std::wstring message(messageBuffer, size);
 	LocalFree(messageBuffer);
 	return message;
 }
@@ -170,47 +195,119 @@ static void BindMemberDeclaration(MemberDeclarationSyntax* member, FrameworkModu
 	}
 }
 
-void FrameworkLoader::AddLib(const std::wstring& path)
+CompilationContext::CompilationContext()
+	: Tree(), Model(Tree), Diagnostics(), Parser(Diagnostics), Semanter(Diagnostics), Layouter(Diagnostics)
 {
-	HMODULE hModule = LoadLibraryW(path.c_str());
-	if (hModule == nullptr)
-	{
-		std::string errorMessage = GetLastErrorAsString();
-		throw std::runtime_error(errorMessage);
-	}
 
-	LoadedLibraries.push_back(hModule);
 }
 
-void FrameworkLoader::AddModule(FrameworkModule* pModule)
+CompilationContext::~CompilationContext()
 {
-	Modules.push_back(pModule);
-}
-
-void FrameworkLoader::Destroy()
-{
-	for (FrameworkModule* module : Modules)
+	for (FrameworkModule* module : LibModules)
 		delete module;
 
-	for (HMODULE lib : LoadedLibraries)
-		FreeLibrary(lib);
+	for (LibraryHandle hLib : LibHandles)
+		FreeLibraryHandle(hLib);
 }
 
-void FrameworkLoader::Load(SemanticModel& semanticModel, DiagnosticsContext& diagnostics)
+SyntaxTree& CompilationContext::GetSyntaxTree()
 {
-	SemanticAnalyzer semanter = SemanticAnalyzer(diagnostics);
-	SourceParser parser = SourceParser(diagnostics);
+	return Tree;
+}
 
-	for (FrameworkModule* module : Modules)
+SemanticModel& CompilationContext::GetSemanticModel()
+{
+	return Model;
+}
+
+DiagnosticsContext& CompilationContext::GetDiagnosticsContext()
+{
+	return Diagnostics;
+}
+
+SourceParser& CompilationContext::GetParser()
+{
+	return Parser;
+}
+
+SemanticAnalyzer& CompilationContext::GetSemanticAnalyzer()
+{
+	return Semanter;
+}
+
+LayoutGenerator& CompilationContext::GetLayoutGenerator()
+{
+	return Layouter;
+}
+
+void CompilationContext::AddLib(const std::filesystem::path& path)
+{
+	LibraryHandle hLib = LoadLibraryHandle(path);
+	AddLib(hLib);
+}
+
+void CompilationContext::AddLib(const LibraryHandle& handle)
+{
+	if (handle == nullptr)
 	{
-		SourceProvider* source = module->GetSource();
-		
-		parser.FromSourceProvider(semanticModel.Tree, *source);
-		semanter.Analyze(semanticModel.Tree, semanticModel);
-		delete source;
-
-		CompilationUnitSyntax* unit = semanticModel.Tree.CompilationUnits.back();
-		for (MemberDeclarationSyntax* member : unit->Members)
-			BindMemberDeclaration(member, module, semanticModel, diagnostics);
+		/*
+		std::wstring errorMessage = GetLastErrorAsString();
+		throw std::runtime_error(errorMessage);
+		*/
+		return;
 	}
+
+	LibHandles.push_back(handle);
+
+	// TODO: add modules reading and handling
+	
+	/*
+	SourceProvider* source = module->GetSource();
+	EnrichTree(source);
+	delete source;
+
+	CompilationUnitSyntax* unit = semanticModel.Tree.CompilationUnits.back();
+	for (MemberDeclarationSyntax* member : unit->Members)
+		BindMemberDeclaration(member, module, semanticModel, diagnostics);
+	*/
+
+	ReAnalyze = true;
+}
+
+void CompilationContext::EnrichTree(SourceProvider& sourceProvider)
+{
+	Parser.FromSourceProvider(Tree, sourceProvider);
+	ReAnalyze = true;
+}
+
+void CompilationContext::AnalyzeTree()
+{
+	if (!ReAnalyze)
+		return;
+
+	Semanter.Analyze(Tree, Model);
+	ReAnalyze = false;
+}
+
+ApplicationDomain* CompilationContext::Compile()
+{
+	if (ReAnalyze)
+		AnalyzeTree();
+
+	Layouter.Generate(Model);
+	if (Diagnostics.AnyError)
+		throw diagnostics_exception("Model layout generation ended with errors.");
+
+	ProgramVirtualImage* program = new ProgramVirtualImage();
+	AbstractEmiter emiter(*program, Model, Diagnostics);
+	emiter.VisitSyntaxTree(Tree);
+
+	if (SetEntryPoint)
+		emiter.SetEntryPoint();
+
+	if (Diagnostics.AnyError)
+		throw diagnostics_exception("Code Compilation ended with errors.");
+
+	ApplicationDomain* domain = new ApplicationDomain(program);
+	return domain;
 }

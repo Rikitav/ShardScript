@@ -1,6 +1,7 @@
 import os
 import re
 import sys
+import stat
 
 INCLUDE_DIR = os.path.join(os.getcwd(), "include")
 OUTPUT_FILE = os.path.join(os.getcwd(), "..", "out", "ShardScript.hpp")
@@ -99,6 +100,9 @@ def merge_files(sorted_files, headers_map, output_path):
         processed_content.append(f"// --- End: {rel_path} ---\n")
 
     processed_content.append("#endif // SHARDSCRIPT_SINGLE_HEADER_H")
+
+    if os.path.exists(output_path):
+        os.chmod(output_path, stat.S_IWRITE)
 
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write('\n'.join(processed_content))

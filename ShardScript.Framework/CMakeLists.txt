@@ -12,7 +12,8 @@ add_library(ShardScript.Framework SHARED
     ${FRAMEWORK_RESOURCES}
 )
 
-target_include_directories(ShardScript.Framework PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../out")
 
 target_link_libraries(ShardScript.Framework PUBLIC
     ShardScript

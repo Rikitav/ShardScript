@@ -33,6 +33,11 @@ static const wchar_t* concatStrings(const wchar_t* left, const wchar_t* right)
 	return result;
 }
 
+PrimitiveMathModule::PrimitiveMathModule(GarbageCollector& gc) : garbageCollector(gc)
+{
+
+}
+
 ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(ObjectInstance* leftInstance, TokenType opToken, ObjectInstance* rightInstance)
 {
 	if (leftInstance->Info == SymbolTable::Primitives::Boolean)
@@ -70,22 +75,22 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(bool leftData, Token
 		switch (opToken)
 		{
 			case TokenType::EqualsOperator:
-				return ObjectInstance::FromValue(leftData == rightData);
+				return garbageCollector.FromValue(leftData == rightData);
 
 			case TokenType::NotEqualsOperator:
-				return ObjectInstance::FromValue(leftData != rightData);
+				return garbageCollector.FromValue(leftData != rightData);
 
 			case TokenType::OrOperator:
-				return ObjectInstance::FromValue(leftData || rightData);
+				return garbageCollector.FromValue(leftData || rightData);
 
 			case TokenType::OrAssignOperator:
-				return ObjectInstance::FromValue(leftData || rightData);
+				return garbageCollector.FromValue(leftData || rightData);
 
 			case TokenType::AndOperator:
-				return ObjectInstance::FromValue(leftData && rightData);
+				return garbageCollector.FromValue(leftData && rightData);
 
 			case TokenType::AndAssignOperator:
-				return ObjectInstance::FromValue(leftData && rightData);
+				return garbageCollector.FromValue(leftData && rightData);
 		}
 	}
 
@@ -101,59 +106,59 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(int64_t leftData, To
 		{
 			case TokenType::AddOperator:
 			case TokenType::AddAssignOperator:
-				return ObjectInstance::FromValue(leftData + rightData);
+				return garbageCollector.FromValue(leftData + rightData);
 
 			case TokenType::SubOperator:
 			case TokenType::SubAssignOperator:
-				return ObjectInstance::FromValue(leftData - rightData);
+				return garbageCollector.FromValue(leftData - rightData);
 
 			case TokenType::MultOperator:
 			case TokenType::MultAssignOperator:
-				return ObjectInstance::FromValue(leftData * rightData);
+				return garbageCollector.FromValue(leftData * rightData);
 
 			case TokenType::DivOperator:
 			case TokenType::DivAssignOperator:
-				return ObjectInstance::FromValue(leftData / rightData);
+				return garbageCollector.FromValue(leftData / rightData);
 
 			case TokenType::ModOperator:
 			case TokenType::ModAssignOperator:
-				return ObjectInstance::FromValue(leftData % rightData);
+				return garbageCollector.FromValue(leftData % rightData);
 
 			case TokenType::PowOperator:
 			case TokenType::PowAssignOperator:
-				return ObjectInstance::FromValue(static_cast<int64_t>(pow(leftData, rightData)));
+				return garbageCollector.FromValue(static_cast<int64_t>(pow(leftData, rightData)));
 
 			case TokenType::OrOperator:
 			case TokenType::OrAssignOperator:
-				return ObjectInstance::FromValue(leftData | rightData);
+				return garbageCollector.FromValue(leftData | rightData);
 
 			case TokenType::AndOperator:
 			case TokenType::AndAssignOperator:
-				return ObjectInstance::FromValue(leftData & rightData);
+				return garbageCollector.FromValue(leftData & rightData);
 
 			case TokenType::LessOperator:
-				return ObjectInstance::FromValue(leftData < rightData);
+				return garbageCollector.FromValue(leftData < rightData);
 
 			case TokenType::LessOrEqualsOperator:
-				return ObjectInstance::FromValue(leftData <= rightData);
+				return garbageCollector.FromValue(leftData <= rightData);
 
 			case TokenType::GreaterOperator:
-				return ObjectInstance::FromValue(leftData > rightData);
+				return garbageCollector.FromValue(leftData > rightData);
 
 			case TokenType::GreaterOrEqualsOperator:
-				return ObjectInstance::FromValue(leftData >= rightData);
+				return garbageCollector.FromValue(leftData >= rightData);
 
 			case TokenType::EqualsOperator:
-				return ObjectInstance::FromValue(leftData == rightData);
+				return garbageCollector.FromValue(leftData == rightData);
 
 			case TokenType::NotEqualsOperator:
-				return ObjectInstance::FromValue(leftData != rightData);
+				return garbageCollector.FromValue(leftData != rightData);
 
 			case TokenType::LeftShiftOperator:
-				return ObjectInstance::FromValue(leftData << rightData);
+				return garbageCollector.FromValue(leftData << rightData);
 
 			case TokenType::RightShiftOperator:
-				return ObjectInstance::FromValue(leftData >> rightData);
+				return garbageCollector.FromValue(leftData >> rightData);
 		}
 	}
 
@@ -171,10 +176,10 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(wchar_t leftData, To
 			case TokenType::MultAssignOperator:
 			{
 				if (rightData <= 0)
-					return ObjectInstance::FromValue(L"");
+					return garbageCollector.FromValue(L"");
 
 				if (rightData == 1)
-					return ObjectInstance::FromValue(leftData);
+					return garbageCollector.FromValue(leftData);
 
 				size_t stringSize = rightData * sizeof(wchar_t);
 				size_t totalSize = stringSize * rightData + sizeof(wchar_t);
@@ -187,7 +192,7 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(wchar_t leftData, To
 					memcpy(result + i, &leftData, sizeof(wchar_t));
 
 				result[leftData * rightData] = L'\0';
-				return ObjectInstance::FromValue(result, false);
+				return garbageCollector.FromValue(result, false);
 			}
 
 			case TokenType::AddOperator:
@@ -197,7 +202,7 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(wchar_t leftData, To
 				std::wstring asStr = std::to_wstring(rightData);
 
 				const wchar_t* result = concatStrings(temp, asStr.data());
-				return ObjectInstance::FromValue(result, false);
+				return garbageCollector.FromValue(result, false);
 			}
 
 			default:
@@ -214,14 +219,14 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(wchar_t leftData, To
 			case TokenType::AddAssignOperator:
 			{
 				wchar_t* result = new wchar_t[] { leftData, rightData, L'\0' };
-				return ObjectInstance::FromValue(result, false);
+				return garbageCollector.FromValue(result, false);
 			}
 
 			case TokenType::EqualsOperator:
-				return ObjectInstance::FromValue(leftData == rightData);
+				return garbageCollector.FromValue(leftData == rightData);
 
 			case TokenType::NotEqualsOperator:
-				return ObjectInstance::FromValue(leftData != rightData);
+				return garbageCollector.FromValue(leftData != rightData);
 
 			default:
 				throw std::runtime_error("unsupported operation");
@@ -238,7 +243,7 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(wchar_t leftData, To
 			{
 				wchar_t temp[] = { leftData, L'\0' };
 				const wchar_t* str = concatStrings(temp, rightData);
-				return ObjectInstance::FromValue(str, false);
+				return garbageCollector.FromValue(str, false);
 			}
 
 			default:
@@ -260,14 +265,14 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(const wchar_t* leftD
 			case TokenType::AddAssignOperator:
 			{
 				const wchar_t* str = concatStrings(leftData, rightData);
-				return ObjectInstance::FromValue(str, false);
+				return garbageCollector.FromValue(str, false);
 			}
 
 			case TokenType::EqualsOperator:
-				return ObjectInstance::FromValue(leftData == rightData);
+				return garbageCollector.FromValue(leftData == rightData);
 
 			case TokenType::NotEqualsOperator:
-				return ObjectInstance::FromValue(leftData != rightData);
+				return garbageCollector.FromValue(leftData != rightData);
 
 			default:
 				throw std::runtime_error("unsupported operation");
@@ -283,10 +288,10 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(const wchar_t* leftD
 			case TokenType::MultAssignOperator:
 			{
 				if (rightData <= 0)
-					return ObjectInstance::FromValue(L"");
+					return garbageCollector.FromValue(L"");
 
 				if (rightData == 1)
-					return ObjectInstance::FromValue(leftData);
+					return garbageCollector.FromValue(leftData);
 
 				size_t length = wcslen(leftData);
 				size_t stringSize = length * sizeof(wchar_t);
@@ -300,14 +305,14 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(const wchar_t* leftD
 					memcpy(result + i * length, leftData, stringSize);
 
 				result[length * rightData] = L'\0';
-				return ObjectInstance::FromValue(result, false);
+				return garbageCollector.FromValue(result, false);
 			}
 
 			case TokenType::AddOperator:
 			case TokenType::AddAssignOperator:
 			{
 				const wchar_t* result = concatStrings(leftData, std::to_wstring(rightData).data());
-				return ObjectInstance::FromValue(result, false);
+				return garbageCollector.FromValue(result, false);
 			}
 
 			default:
@@ -325,7 +330,7 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(const wchar_t* leftD
 			{
 				const wchar_t* dataStr = rightData ? L"true" : L"false";
 				const wchar_t* concat = concatStrings(leftData, dataStr);
-				return ObjectInstance::FromValue(concat, false);
+				return garbageCollector.FromValue(concat, false);
 			}
 
 			default:
@@ -343,7 +348,7 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(const wchar_t* leftD
 			{
 				wchar_t temp[] = { rightData, L'\0' };
 				const wchar_t* concat = concatStrings(leftData, temp);
-				return ObjectInstance::FromValue(concat, false);
+				return garbageCollector.FromValue(concat, false);
 			}
 
 			default:
@@ -385,24 +390,24 @@ ObjectInstance* PrimitiveMathModule::EvaluateUnaryOperator(ObjectInstance* sourc
 		{
 			int64_t newValue = data + 1;
 			sourceInstance->WriteInteger(newValue);
-			return rightDetermined ? ObjectInstance::FromValue(data) : sourceInstance;
+			return rightDetermined ? garbageCollector.FromValue(data) : sourceInstance;
 		}
 
 		case TokenType::DecrementOperator:
 		{
 			int64_t newValue = data + 1;
 			sourceInstance->WriteInteger(newValue);
-			return rightDetermined ? ObjectInstance::FromValue(data) : sourceInstance;
+			return rightDetermined ? garbageCollector.FromValue(data) : sourceInstance;
 		}
 
 		case TokenType::SubOperator:
 		{
-			return ObjectInstance::FromValue(data < 0 ? data : data * -1);
+			return garbageCollector.FromValue(data < 0 ? data : data * -1);
 		}
 
 		case TokenType::AddOperator:
 		{
-			return ObjectInstance::FromValue(data > 0 ? data : data * -1);
+			return garbageCollector.FromValue(data > 0 ? data : data * -1);
 		}
 
 		default:
@@ -416,7 +421,7 @@ ObjectInstance* PrimitiveMathModule::EvaluateUnaryOperator(ObjectInstance* sourc
 	{
 		case TokenType::NotOperator:
 		{
-			return ObjectInstance::FromValue(!data);
+			return garbageCollector.FromValue(!data);
 		}
 
 		default:

@@ -1,23 +1,15 @@
-#include <shard/syntax/SyntaxSymbol.hpp>
-#include <shard/runtime/ArgumentsSpan.hpp>
-#include <shard/runtime/ObjectInstance.hpp>
-#include <shard/runtime/VirtualMachine.hpp>
-
-#include <shard/parsing/semantic/SymbolTable.hpp>
-
-#include <shard/syntax/SymbolAccesibility.hpp>
-#include <shard/syntax/symbols/TypeSymbol.hpp>
-#include <shard/syntax/symbols/MethodSymbol.hpp>
-
 #include <string>
 #include <cctype>
 #include <new>
 #include <vector>
 
-#include "PrimitivesLoading.hpp"
+#include <ShardScript.hpp>
+#include <primitives/PrimitivesLoading.hpp>
 
 using namespace shard;
 
+// TODO: fix
+/*
 // Char methods
 static ObjectInstance* ToString(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
 {
@@ -66,9 +58,11 @@ static ObjectInstance* IsWhiteSpace(const VirtualMachine* host, const MethodSymb
 	bool result = iswspace(value) != 0;
 	return ObjectInstance::FromValue(result);
 }
+*/
 
 void CharPrimitive::Reflect(TypeSymbol* symbol)
 {
+	/*
 	// ToString()
 	MethodSymbol* toString = new MethodSymbol(L"ToString", ToString);
 	toString->Accesibility = SymbolAccesibility::Public;
@@ -110,4 +104,5 @@ void CharPrimitive::Reflect(TypeSymbol* symbol)
 	isWhiteSpace->ReturnType = SymbolTable::Primitives::Boolean;
 	isWhiteSpace->IsStatic = false;
 	symbol->Methods.push_back(isWhiteSpace);
+	*/
 }
