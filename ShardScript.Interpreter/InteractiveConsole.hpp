@@ -18,8 +18,8 @@ namespace shard
 		MethodDeclarationSyntax* InteractiveMethod;
 		MethodSymbol* InteractiveEntryPoint;
 
-		shard::CompilationContext* compilationContext;
-		shard::ApplicationDomain* applicationDomain;
+		CompilationContext* compilationContext;
+		ApplicationDomain* applicationDomain;
 		
 		ProgramVirtualImage& Program;
 		VirtualMachine& Runtimer;
@@ -30,7 +30,7 @@ namespace shard
 		StatementSyntax* ReadStatement(LexicalBuffer& sequenceReader);
 
 	public:
-		InteractiveConsole(shard::CompilationContext* context, shard::ApplicationDomain* domain);
+		InteractiveConsole(CompilationContext* context, ApplicationDomain* domain);
 
 		void Run();
 	};

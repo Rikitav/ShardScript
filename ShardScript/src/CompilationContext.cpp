@@ -1,6 +1,7 @@
 #include <shard/CompilationContext.hpp>
 #include <shard/FrameworkModule.hpp>
 #include <shard/ShardScriptAPI.hpp>
+#include <shard/ApplicationDomain.hpp>
 
 #include <shard/parsing/SourceParser.hpp>
 #include <shard/parsing/SyntaxTree.hpp>
@@ -10,8 +11,9 @@
 #include <shard/parsing/semantic/SemanticModel.hpp>
 #include <shard/parsing/semantic/SymbolTable.hpp>
 
-#include <shard/parsing/lexical/LexicalAnalyzer.hpp>
 #include <shard/parsing/analysis/DiagnosticsContext.hpp>
+#include <shard/parsing/lexical/LexicalAnalyzer.hpp>
+#include <shard/parsing/lexical/SourceProvider.hpp>
 
 #include <shard/syntax/SyntaxKind.hpp>
 
@@ -19,6 +21,8 @@
 #include <shard/syntax/symbols/ParameterSymbol.hpp>
 #include <shard/syntax/symbols/AccessorSymbol.hpp>
 #include <shard/syntax/symbols/PropertySymbol.hpp>
+#include <shard/syntax/symbols/ConstructorSymbol.hpp>
+#include <shard/syntax/symbols/IndexatorSymbol.hpp>
 
 #include <shard/syntax/nodes/MemberDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/CompilationUnitSyntax.hpp>
@@ -32,10 +36,12 @@
 #include <shard/syntax/nodes/MemberDeclarations/IndexatorDeclarationSyntax.hpp>
 
 #include <shard/compilation/AbstractEmiter.hpp>
+#include <shard/compilation/ProgramVirtualImage.hpp>
 
 #include <string>
 #include <vector>
 #include <stdexcept>
+#include <filesystem>
 
 #ifdef _WIN32
 #include <windows.h> // TODO: remove
@@ -64,7 +70,7 @@ static void FreeLibraryHandle(LibraryHandle handle)
 
 static std::wstring GetLastErrorAsString()
 {
-	DWORD errorMessageID = ::GetLastError();
+	DWORD errorMessageID = GetLastError();
 	if (errorMessageID == 0)
 		return std::wstring();
 
