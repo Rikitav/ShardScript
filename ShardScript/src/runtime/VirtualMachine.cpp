@@ -411,6 +411,24 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 		throw std::runtime_error("Execution aborted by host.");
 
 	CallStackFrame* callingFrame = currentFrame->PreviousFrame;
+	callingFrame->EvalStack.reserve(method->EvalStackLocalsCount * 2);
+
+	size_t argsCount = method->Parameters.size();
+	if (!method->IsStatic)
+	{
+		ObjectInstance* prevInstance = callingFrame->PopStack();
+		prevInstance->IncrementReference();
+		currentFrame->PushStack(prevInstance);
+		argsCount += 1;
+	}
+
+	for (size_t i = 0; i < argsCount; i++)
+	{
+		ObjectInstance* argument = callingFrame->PopStack();
+		argument->IncrementReference();
+		currentFrame->PushStack(argument);
+	}
+
 	switch (method->HandleType)
 	{
 		case MethodHandleType::None:
@@ -421,28 +439,6 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 		case MethodHandleType::Lambda:
 		case MethodHandleType::Body:
 		{
-			if (!method->IsStatic)
-			{
-				ObjectInstance* prevInstance = callingFrame->PopStack();
-				prevInstance->IncrementReference();
-				currentFrame->PushStack(prevInstance);
-			}
-
-			for (int i = 0; i < method->Parameters.size(); i++)
-			{
-				ObjectInstance* argument = callingFrame->PopStack();
-				argument->IncrementReference();
-				currentFrame->PushStack(argument);
-			}
-
-			// pushing variables slots
-			size_t variablesCount = method->EvalStackLocalsCount - method->Parameters.size();
-			if (!method->IsStatic)
-				variablesCount -= 1;
-
-			for (int i = 0; i < variablesCount; i++)
-				currentFrame->PushStack(nullptr);
-
 			ByteCodeDecoder decoder = ByteCodeDecoder(method->ExecutableByteCode);
 			while (!decoder.IsEOF())
 			{
@@ -458,20 +454,6 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 				callingFrame->PushStack(currentFrame->PopStack());
 			}
 
-			for (int i = 0; i < method->EvalStackLocalsCount; i++)
-			{
-				ObjectInstance* local = currentFrame->PopStack();
-				local->DecrementReference();
-				gc.CollectInstance(local);
-			}
-
-			if (!method->IsStatic)
-			{
-				ObjectInstance* prevInstance = currentFrame->PopStack();
-				prevInstance->DecrementReference();
-				gc.CollectInstance(prevInstance);
-			}
-
 			break;
 		}
 
@@ -482,41 +464,22 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 				if (method->FunctionPointer == nullptr)
 					throw std::runtime_error("extern method body not resolved");
 
-				if (!method->IsStatic)
+				ArgumentsSpan args(currentFrame->EvalStack.data(), argsCount);
+				InvokeContext context
 				{
-					ObjectInstance* prevInstance = callingFrame->PopStack();
-					prevInstance->IncrementReference();
-					currentFrame->PushStack(prevInstance);
-				}
+					.Domain = *domain,
+					.Host = *this,
+					.Method = method,
+					.Args = args
+				};
 
-				size_t argsCount = method->Parameters.size();
-				if (!method->IsStatic)
-					argsCount += 1;
-
-				std::vector<ObjectInstance*> argValues;
-				for (int i = 0; i < argsCount; i++)
-				{
-					ObjectInstance* arg = callingFrame->PopStack();
-					arg->IncrementReference();
-					argValues.push_back(arg);
-				}
-
-				ArgumentsSpan args(argValues.data(), argValues.size());
-				InvokeContext context { *domain, *this, method, args };
 				ObjectInstance* retReg = method->FunctionPointer(context);
-
 				if (method->ReturnType != SymbolTable::Primitives::Void)
 				{
 					if (retReg == nullptr)
 						throw std::runtime_error("method returned nullptr (void), when expected instance");
 
 					callingFrame->PushStack(retReg);
-				}
-
-				for (ObjectInstance* arg : argValues)
-				{
-					arg->DecrementReference();
-					gc.CollectInstance(arg);
 				}
 			}
 			catch (const std::runtime_error& err)
@@ -533,24 +496,19 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 		}
 	}
 
-	/*
-	switch (currentFrame->InterruptionReason)
+	for (size_t i = 0; i < method->EvalStackLocalsCount; i++)
 	{
-		case FrameInterruptionReason::ExceptionRaised:
-		{
-			RaiseException(currentFrame->InterruptionRegister);
-			break;
-		}
-
-		case FrameInterruptionReason::ValueReturned:
-		{
-			ObjectInstance* retReg = currentFrame->InterruptionRegister;
-			callingFrame->PushStack(retReg);
-			retReg->DecrementReference();
-			break;
-		}
+		ObjectInstance* local = currentFrame->PopStack();
+		local->DecrementReference();
+		gc.CollectInstance(local);
 	}
-	*/
+
+	if (!method->IsStatic)
+	{
+		ObjectInstance* prevInstance = currentFrame->PopStack();
+		prevInstance->DecrementReference();
+		gc.CollectInstance(prevInstance);
+	}
 }
 
 ObjectInstance* VirtualMachine::InstantiateObject(TypeSymbol* type, ConstructorSymbol* ctor)
@@ -625,7 +583,7 @@ CallStackFrame* VirtualMachine::CurrentFrame() const
 
 CallStackFrame* VirtualMachine::PushFrame(MethodSymbol* methodSymbol)
 {
-	CallStackFrame* frame = new CallStackFrame(this, CurrentFrame(), nullptr, methodSymbol);
+	CallStackFrame* frame = new CallStackFrame(this, CurrentFrame(), nullptr, methodSymbol);	
 	CallStack.push(frame);
 	return frame;
 }

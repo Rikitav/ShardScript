@@ -12,13 +12,13 @@ namespace shard
 {
 	class Collections_List : public FrameworkModule
 	{
+		// TODO: fix
+		/*
 		// public extern List();
 		static ObjectInstance* Impl_Default_Ctor(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
 		{
 			static FieldSymbol* arrayField = static_cast<ClassSymbol*>(method->Parent)->Fields.at(0); // T[] _array
 
-			// TODO: fix
-			/*
 			// Getting arguments
 			ObjectInstance* instance = arguments[0]; // List<T> this
 
@@ -26,7 +26,6 @@ namespace shard
 			TypeSymbol* arrayType = TypeSymbol::ReturnOf(arrayField);
 			ObjectInstance* arrayInstance = GarbageCollector::AllocateInstance(arrayType);
 			instance->SetField(arrayField, arrayInstance);
-			*/
 
 			return nullptr; // void
 		}
@@ -58,13 +57,10 @@ namespace shard
 			arrayType->MemoryBytesSize = newSize;
 			*const_cast<void**>(&arrayInstance->Memory) = newPtr;
 			
-			// TODO: fix
-			/*
 			// Adding element
 			size_t indexLast = arrayType->Size - 1;
 			ObjectInstance* valueCopy = GarbageCollector::CopyInstance(value);
 			arrayInstance->SetElement(indexLast, valueCopy);
-			*/
 
 			// setting new array length
 			int64_t arraySize = static_cast<int64_t>(arrayType->Size);
@@ -160,6 +156,7 @@ namespace shard
 			arrayInstance->SetElement(indexValue, value);
 			return nullptr;
 		}
+		*/
 
 	public:
 		SourceProvider* FrameworkModule::GetSource()
@@ -172,17 +169,20 @@ namespace shard
 
 		bool FrameworkModule::BindConstructor(ConstructorSymbol* symbol)
 		{
+			/*
 			if (symbol->Parameters.size() == 0)
 			{
 				symbol->FunctionPointer = Impl_Default_Ctor;
 				return true;
 			}
+			*/
 
 			return false;
 		}
 
 		bool FrameworkModule::BindMethod(MethodSymbol* symbol)
 		{
+			/*
 			if (symbol->Name == L"Add")
 			{
 				symbol->FunctionPointer = Impl_Add;
@@ -206,12 +206,14 @@ namespace shard
 				symbol->FunctionPointer = Impl_Clear;
 				return true;
 			}
+			*/
 
 			return false;
 		}
 
 		bool FrameworkModule::BindAccessor(AccessorSymbol* symbol)
 		{
+			/*
 			if (symbol->Name == L"Length_get")
 			{
 				symbol->FunctionPointer = Impl_Length_Get;
@@ -229,6 +231,7 @@ namespace shard
 				symbol->FunctionPointer = Impl_index_Set;
 				return true;
 			}
+			*/
 
 			return false;
 		}

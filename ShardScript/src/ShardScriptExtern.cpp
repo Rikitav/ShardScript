@@ -1,143 +1,103 @@
-#include <shard/runtime/VirtualMachine.hpp>
-
-#include <shard/parsing/SyntaxTree.hpp>
-#include <shard/parsing/analysis/DiagnosticsContext.hpp>
-#include <shard/parsing/semantic/SemanticModel.hpp>
+#include <shard/ShardScriptAPI.hpp>
+#include <shard/CompilationContext.hpp>
+#include <shard/ApplicationDomain.hpp>
 
 #include <shard/parsing/lexical/LexicalAnalyzer.hpp>
 #include <shard/parsing/lexical/reading/StringStreamReader.hpp>
 
-#include <shard/parsing/SemanticAnalyzer.hpp>
-#include <shard/parsing/SourceParser.hpp>
-#include <shard/parsing/LayoutGenerator.hpp>
-
-//#include <shard/FrameworkLoader.hpp>
-
-#include <shard/compilation/ProgramVirtualImage.hpp>
-#include <shard/compilation/AbstractEmiter.hpp>
-
-#include <shard/CompilationContext.hpp>
-#include <shard/ApplicationDomain.hpp>
-
 #include <sstream>
 #include <algorithm>
+#include <filesystem>
 
-#define SHARD_EXPORT extern "C" __declspec(dllexport)
+#define SHARD_EXPORT extern "C" SHARD_API
 
 using namespace shard;
 
-/*
-SHARD_EXPORT ProgramVirtualImage* Program_Create()
-{
-    ProgramVirtualImage* program = new ProgramVirtualImage();
-    return program;
-}
+// =========================================================================
+// Compilation Context API
+// =========================================================================
 
-SHARD_EXPORT void Program_Destroy(ProgramVirtualImage* program)
-{
-    delete program;
-}
-
-SHARD_EXPORT VirtualMachine* VirtualMachine_Create(ProgramVirtualImage* programImagePtr)
-{
-    if (programImagePtr == nullptr)
-        return nullptr;
-
-    ProgramVirtualImage* program = static_cast<ProgramVirtualImage*>(programImagePtr);
-    VirtualMachine* virtualMachine = new VirtualMachine(*program);
-
-    return virtualMachine;
-}
-
-SHARD_EXPORT void VirtualMachine_Destroy(VirtualMachine* virtualMachinePtr)
-{
-    if (virtualMachinePtr == nullptr)
-        return;
-
-    delete virtualMachinePtr;
-}
-
-SHARD_EXPORT void VirtualMachine_Run(VirtualMachine* virtualMachinePtr)
-{
-    if (virtualMachinePtr == nullptr)
-        return;
-
-    VirtualMachine* virtualMachine = static_cast<VirtualMachine*>(virtualMachinePtr);
-    virtualMachine->Run();
-}
-
-SHARD_EXPORT void AddLibrary(const wchar_t* path)
-{
-    if (path != nullptr)
-        FrameworkLoader::AddLib(std::wstring(path));
-}
-
-struct CompilationContext
-{
-    DiagnosticsContext Diagnostics;
-    SyntaxTree Tree;
-    SemanticModel Model;
-
-    CompilationContext() : Model(Tree) {}
-};
-
-SHARD_EXPORT CompilationContext* CompilationContext_Create()
+SHARD_EXPORT CompilationContext* Shard_CreateCompilationContext()
 {
     return new CompilationContext();
 }
 
-SHARD_EXPORT void CompilationContext_Destroy(CompilationContext* ctx)
+SHARD_EXPORT void Shard_DestroyCompilationContext(CompilationContext* ctx)
 {
-    delete ctx;
+    if (ctx != nullptr)
+        delete ctx;
 }
 
-SHARD_EXPORT void LoadFramework(CompilationContext* ctx)
+SHARD_EXPORT void Shard_AddLibrary(CompilationContext* ctx, const wchar_t* path)
 {
-    if (ctx)
-        FrameworkLoader::Load(ctx->Model, ctx->Diagnostics);
+    if (ctx != nullptr && path != nullptr)
+        ctx->AddLib(std::filesystem::path(path));
 }
 
-SHARD_EXPORT int GetDiagnostics(CompilationContext* ctx, wchar_t* buffer, int bufferLen)
+SHARD_EXPORT void Shard_AddSource(CompilationContext* ctx, const wchar_t* sourceName, const wchar_t* code)
 {
-    if (!ctx) return 0;
+    if (ctx == nullptr || code == nullptr || sourceName == nullptr)
+        return;
+
+    std::wstring sourceCode(code);
+    StringStreamReader reader(sourceName, sourceCode);
+    LexicalAnalyzer lexer(reader);
+
+    ctx->EnrichTree(lexer);
+}
+
+SHARD_EXPORT void Shard_Analyze(CompilationContext* ctx)
+{
+    if (ctx != nullptr)
+        ctx->AnalyzeTree();
+}
+
+SHARD_EXPORT ApplicationDomain* Shard_Compile(CompilationContext* ctx)
+{
+    if (ctx == nullptr)
+        return nullptr;
+
+    return ctx->Compile();
+}
+
+SHARD_EXPORT bool Shard_HasErrors(CompilationContext* ctx)
+{
+    if (ctx == nullptr)
+        return true;
+
+    return ctx->GetDiagnosticsContext().AnyError;
+}
+
+SHARD_EXPORT int Shard_GetDiagnostics(CompilationContext* ctx, wchar_t* buffer, int bufferLen)
+{
+    if (ctx == nullptr) return 0;
+
     std::wstringstream ss;
-    ctx->Diagnostics.WriteDiagnostics(ss);
+    ctx->GetDiagnosticsContext().WriteDiagnostics(ss);
     std::wstring str = ss.str();
 
-    if (buffer && bufferLen > 0) {
-        size_t copyLen = (std::min)((size_t)bufferLen - 1, str.length());
-        wcsncpy_s(buffer, bufferLen, str.c_str(), copyLen);
+    if (buffer != nullptr && bufferLen > 0)
+    {
+        size_t copyLen = std::min((size_t)bufferLen - 1, str.length());
+        wcsncpy(buffer, str.c_str(), copyLen);
+        buffer[copyLen] = L'\0';
     }
+
     return (int)str.length();
 }
 
-SHARD_EXPORT int CompileCode(ProgramVirtualImage* programPtr, CompilationContext* context, const wchar_t* code)
+// =========================================================================
+// Application Domain API
+// =========================================================================
+
+SHARD_EXPORT void Shard_RunDomain(ApplicationDomain* domain)
 {
-    if (programPtr == nullptr || context == nullptr || code == nullptr)
-        return -1;
-
-    std::wstring sourceCode(code);
-    StringStreamReader reader(L"Host", sourceCode);
-    LexicalAnalyzer lexer(reader);
-    SourceParser parser(context->Diagnostics);
-    parser.FromSourceProvider(context->Tree, lexer);
-
-    SemanticAnalyzer semanticAnalyzer(context->Diagnostics);
-    semanticAnalyzer.Analyze(context->Tree, context->Model);
-
-    if (context->Diagnostics.AnyError)
-        return 1;
-
-    LayoutGenerator layoutGenerator(context->Diagnostics);
-    layoutGenerator.Generate(context->Model);
-
-    AbstractEmiter emiter(*programPtr, context->Model, context->Diagnostics);
-    emiter.VisitSyntaxTree(context->Tree);
-    emiter.SetEntryPoint();
-
-    if (context->Diagnostics.AnyError)
-        return 2;
-
-    return 0;
+    if (domain != nullptr)
+        domain->GetVirtualMachine().Run();
 }
-*/
+
+SHARD_EXPORT void Shard_DestroyDomain(ApplicationDomain* domain)
+{
+    if (domain != nullptr)
+        delete domain;
+}
