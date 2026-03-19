@@ -12,7 +12,7 @@ SyntaxSymbol *const SemanticScope::Lookup(const std::wstring& name)
         return lookup->second;
 
     if (Parent != nullptr)
-        return const_cast<SemanticScope*>(Parent)->Lookup(name);
+        return Parent->Lookup(name);
 
     return nullptr;
 }

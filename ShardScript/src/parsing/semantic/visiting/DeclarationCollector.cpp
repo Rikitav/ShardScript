@@ -348,6 +348,12 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax *const
             }
         }
 
+        if (!symbol->IsStatic)
+        {
+            // `this` instance
+            symbol->EvalStackLocalsCount += 1;
+        }
+
         for (ParameterSymbol* const param : symbol->Parameters)
         {
             param->SlotIndex = symbol->EvalStackLocalsCount;
@@ -411,6 +417,12 @@ void DeclarationCollector::VisitConstructorDeclaration(ConstructorDeclarationSyn
                 if (!symbol->IsExtern && node->Body == nullptr)
                     Diagnostics.ReportError(node->IdentifierToken, L"Constructor should have a Body, as it's not marked as 'extern' or 'abstract'");
             }
+        }
+
+        if (!symbol->IsStatic)
+        {
+            // `this` instance
+            symbol->EvalStackLocalsCount += 1;
         }
 
         for (ParameterSymbol* const param : symbol->Parameters)
