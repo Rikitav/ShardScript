@@ -1,8 +1,20 @@
 #include <shard/compilation/ByteCodeEncoder.hpp>
 #include <shard/compilation/OperationCode.hpp>
 
+#include <shard/syntax/symbols/ArrayTypeSymbol.hpp>
+#include <shard/syntax/symbols/FieldSymbol.hpp>
+#include <shard/syntax/symbols/MethodSymbol.hpp>
+#include <shard/syntax/symbols/TypeSymbol.hpp>
+
 #include <string>
 #include <stdexcept>
+#include <string.h>
+#include <wchar.h>
+#include <Windows.h>
+#include <cstddef>
+#include <cstdint>
+#include <type_traits>
+#include <vector>
 
 using namespace shard;
 
@@ -21,7 +33,7 @@ void ByteCodeEncoder::AppendData(std::vector<std::byte>& code, const void* data,
 
     if (needed_capacity > code.capacity())
     {
-        size_t new_capacity = std::max(needed_capacity, code.capacity() * 2);
+        size_t new_capacity = max(needed_capacity, code.capacity() * 2);
         code.reserve(new_capacity);
     }
 

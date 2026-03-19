@@ -9,19 +9,16 @@ namespace shard
 {
 	class FileSystem_Directory : public FrameworkModule
 	{
-		// TODO: fix
-		/*
-		static ObjectInstance* Impl_GetDirectory(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+		static ObjectInstance* Impl_GetDirectory(const CallState& context)
 		{
-			static FieldSymbol* field = static_cast<ClassSymbol*>(method->Parent)->Fields.at(0);
+			static FieldSymbol* field = static_cast<ClassSymbol*>(context.Method->Parent)->Fields.at(0);
 
-			ObjectInstance* fullName = arguments[0]; // fullName
-			ObjectInstance* instance = GarbageCollector::AllocateInstance(method->ReturnType);
+			ObjectInstance* fullName = context.Args[0]; // fullName
+			ObjectInstance* instance = context.Collector.AllocateInstance(context.Method->ReturnType);
 
 			instance->SetField(field, fullName);
 			return instance;
 		}
-		*/
 
 	public:
 		SourceProvider* FrameworkModule::GetSource()
@@ -41,10 +38,8 @@ namespace shard
 		{
 			if (symbol->Name == L"GetDirectory")
 			{
-				/*
 				symbol->FunctionPointer = Impl_GetDirectory;
 				return true;
-				*/
 			}
 
 			return false;

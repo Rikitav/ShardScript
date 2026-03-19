@@ -12,14 +12,14 @@
 #include <system/collections/List.cpp>
 #include <system/Random.cpp>
 
+#define ONLY_ONCE static bool visited = false; if (visited) return; visited = true;
+
 using namespace shard;
 
-// TODO: fix
-/*
-static ObjectInstance* Gc_Info(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+static ObjectInstance* Gc_Info(const CallState& context)
 {
 	std::wcout << "\nGarbage collector info dump" << std::endl;
-	for (ObjectInstance* reg : GarbageCollector::Heap)
+	for (ObjectInstance* reg : context.Collector.Heap)
 	{
 		std::wcout
 			<< L" * PTR : " << reg->Memory
@@ -27,16 +27,16 @@ static ObjectInstance* Gc_Info(const VirtualMachine* host, const MethodSymbol* m
 			<< L" | REFS : " << reg->ReferencesCounter << std::endl;
 	}
 
-	std::wcout << "Total count : " << GarbageCollector::Heap.size() << std::endl;
+	std::wcout << "Total count : " << context.Collector.Heap.size() << std::endl;
 	return nullptr; // void
 }
 
-static ObjectInstance* Var_Info(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+static ObjectInstance* Var_Info(const CallState& context)
 {
 	std::wcout << "\nCall stack frame variables dump :" << std::endl;
 	
-	CallStackFrame* frame = host->CurrentFrame()->PreviousFrame;
-	for (int i = 0; i < method->EvalStackLocalsCount; i++)
+	CallStackFrame* frame = context.Runtimer.CurrentFrame()->PreviousFrame;
+	for (int i = 0; i < context.Method->EvalStackLocalsCount; i++)
 	{
 		ObjectInstance* reg = frame->EvalStack[i];
 		std::wcout
@@ -45,13 +45,13 @@ static ObjectInstance* Var_Info(const VirtualMachine* host, const MethodSymbol* 
 			<< L" | REFS : " << reg->ReferencesCounter << std::endl;
 	}
 
-	std::wcout << "Total count : " << method->EvalStackLocalsCount << std::endl;
+	std::wcout << "Total count : " << context.Method->EvalStackLocalsCount << std::endl;
 	return nullptr; // void
 }
 
-static ObjectInstance* Print(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+static ObjectInstance* Print(const CallState& context)
 {
-	ObjectInstance* instance = arguments[0]; // var
+	ObjectInstance* instance = context.Args[0]; // var
 	TypeSymbol* type = const_cast<TypeSymbol*>(instance->Info);
 
 	if (type->IsPrimitive())
@@ -65,8 +65,8 @@ static ObjectInstance* Print(const VirtualMachine* host, const MethodSymbol* met
 
 	if (toString != nullptr)
 	{
-		host->InvokeMethod(toString, { instance });
-		ObjectInstance* result = host->CurrentFrame()->PopStack();
+		context.Runtimer.InvokeMethod(toString, { instance });
+		ObjectInstance* result = context.Runtimer.CurrentFrame()->PopStack();
 
 		if (type != SymbolTable::Primitives::String)
 		{
@@ -85,9 +85,9 @@ static ObjectInstance* Print(const VirtualMachine* host, const MethodSymbol* met
 	return nullptr; // void
 }
 
-static ObjectInstance* Println(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+static ObjectInstance* Println(const CallState& context)
 {
-	ObjectInstance* instance = arguments[0]; // var
+	ObjectInstance* instance = context.Args[0]; // var
 	TypeSymbol* type = const_cast<TypeSymbol*>(instance->Info);
 
 	if (type->IsPrimitive())
@@ -101,8 +101,8 @@ static ObjectInstance* Println(const VirtualMachine* host, const MethodSymbol* m
 
 	if (toString != nullptr)
 	{
-		host->InvokeMethod(toString, { instance });
-		ObjectInstance* result = host->CurrentFrame()->PopStack();
+		context.Runtimer.InvokeMethod(toString, { instance });
+		ObjectInstance* result = context.Runtimer.CurrentFrame()->PopStack();
 
 		if (result->Info != SymbolTable::Primitives::String)
 		{
@@ -118,35 +118,33 @@ static ObjectInstance* Println(const VirtualMachine* host, const MethodSymbol* m
 	return nullptr; // void
 }
 
-static ObjectInstance* Input(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+static ObjectInstance* Input(const CallState& context)
 {
 	std::wstring input;
 	getline(std::wcin, input);
-	return ObjectInstance::FromValue(input);
+	return context.Collector.FromValue(input);
 }
 
-static ObjectInstance* Impl_typeof(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+static ObjectInstance* Impl_typeof(const CallState& context)
 {
-	const ObjectInstance* instance = arguments[0];
+	const ObjectInstance* instance = context.Args[0];
 	if (instance == GarbageCollector::NullInstance)
 		throw std::runtime_error("cannot get type of null instance");
 
-	return ObjectInstance::FromValue(instance->Info->Name);
+	return context.Collector.FromValue(instance->Info->Name);
 }
 
-static ObjectInstance* Impl_sizeof(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+static ObjectInstance* Impl_sizeof(const CallState& context)
 {
-	const ObjectInstance* instance = arguments[0];
+	const ObjectInstance* instance = context.Args[0];
 	if (instance == GarbageCollector::NullInstance)
 		throw std::runtime_error("cannot get size of null instance");
 
-	return ObjectInstance::FromValue(static_cast<int64_t>(instance->Info->MemoryBytesSize));
+	return context.Collector.FromValue(static_cast<int64_t>(instance->Info->MemoryBytesSize));
 }
-	*/
 
-static void ReflectGlobalMethods()
+static void ReflectGlobalMethods(CompilationContext& context)
 {
-	/*
 	// gc_info
 	{
 		MethodSymbol* gcInfoMethod = new MethodSymbol(L"gc_info", Gc_Info);
@@ -154,7 +152,7 @@ static void ReflectGlobalMethods()
 		gcInfoMethod->Accesibility = SymbolAccesibility::Public;
 		gcInfoMethod->IsStatic = true;
 
-		SymbolTable::Global::Type->Methods.push_back(gcInfoMethod);
+		context.GetSemanticAnalyzer().AddSymbol(gcInfoMethod);
 	}
 
 	// Var_Info
@@ -164,7 +162,7 @@ static void ReflectGlobalMethods()
 		gcInfoMethod->Accesibility = SymbolAccesibility::Public;
 		gcInfoMethod->IsStatic = true;
 
-		SymbolTable::Global::Type->Methods.push_back(gcInfoMethod);
+		context.GetSemanticAnalyzer().AddSymbol(gcInfoMethod);
 	}
 
 	// print
@@ -178,7 +176,7 @@ static void ReflectGlobalMethods()
 		printMessageParam->Type = SymbolTable::Primitives::Any;
 		printMethod->Parameters.push_back(printMessageParam);
 
-		SymbolTable::Global::Type->Methods.push_back(printMethod);
+		context.GetSemanticAnalyzer().AddSymbol(printMethod);
 	}
 
 	// println
@@ -192,7 +190,7 @@ static void ReflectGlobalMethods()
 		printlnMessageParam->Type = SymbolTable::Primitives::Any;
 		printlnMethod->Parameters.push_back(printlnMessageParam);
 
-		SymbolTable::Global::Type->Methods.push_back(printlnMethod);
+		context.GetSemanticAnalyzer().AddSymbol(printlnMethod);
 	}
 
 	// typeof
@@ -206,7 +204,7 @@ static void ReflectGlobalMethods()
 		typeofObjectParam->Type = SymbolTable::Primitives::Any;
 		typeofMethod->Parameters.push_back(typeofObjectParam);
 
-		SymbolTable::Global::Type->Methods.push_back(typeofMethod);
+		context.GetSemanticAnalyzer().AddSymbol(typeofMethod);
 	}
 
 	// sizeof
@@ -220,13 +218,14 @@ static void ReflectGlobalMethods()
 		typeofObjectParam->Type = SymbolTable::Primitives::Any;
 		sizeofMethod->Parameters.push_back(typeofObjectParam);
 
-		SymbolTable::Global::Type->Methods.push_back(sizeofMethod);
+		context.GetSemanticAnalyzer().AddSymbol(sizeofMethod);
 	}
-	*/
 }
 
-static void ReflectPrimitives()
+static void ReflectPrimitives(CompilationContext& context)
 {
+	ONLY_ONCE
+
 	BooleanPrimitive::Reflect(SymbolTable::Primitives::Boolean);
 	IntegerPrimitive::Reflect(SymbolTable::Primitives::Integer);
 	DoublePrimitive::Reflect(SymbolTable::Primitives::Double);
@@ -235,25 +234,34 @@ static void ReflectPrimitives()
 	ArrayPrimitive::Reflect(SymbolTable::Primitives::Array);
 }
 
+static ShardLibMetadata LibMetadata = ShardLibMetadata
+{
+	.Name = L"ShardScript.Framework",
+	.Description = L"ShardScript standart library framework",
+	.Version = L"beta 0.6"
+};
+
+SHARDLIB_GETMETADATA
+{
+	memcpy(&LibMetadata, &lib, sizeof(ShardLibMetadata));
+}
+
+SHARDLIB_ENTRYPOINT
+{
+	ReflectPrimitives(context);
+	ReflectGlobalMethods(context);
+	
+	context.AddModule(new FileSystem_Directory());
+	context.AddModule(new FileSystem_File());
+	context.AddModule(new Collections_List());
+	context.AddModule(new Random());
+}
+
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
     switch (ul_reason_for_call)
     {
         case DLL_PROCESS_ATTACH:
-        {
-			ReflectPrimitives();
-			ReflectGlobalMethods();
-
-			// TODO: fix
-			/*
-			shard::FrameworkLoader::AddModule(new FileSystem_Directory());
-			shard::FrameworkLoader::AddModule(new FileSystem_File());
-			shard::FrameworkLoader::AddModule(new Collections_List());
-			shard::FrameworkLoader::AddModule(new Random());
-			*/
-			break;
-        }
-
         case DLL_THREAD_ATTACH:
         case DLL_THREAD_DETACH:
         case DLL_PROCESS_DETACH:

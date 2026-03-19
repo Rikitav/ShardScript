@@ -26,7 +26,7 @@ namespace shard
 	{
 		ApplicationDomain* const domain;
 		ProgramVirtualImage& program;
-		GarbageCollector& gc;
+		GarbageCollector& garbageCollector;
 		PrimitiveMathModule math;
 
 		std::stack<CallStackFrame*> CallStack;
@@ -47,7 +47,7 @@ namespace shard
 		void InvokeMethod(MethodSymbol* method, std::initializer_list<ObjectInstance*> args) const;
 		void RaiseException(ObjectInstance* exceptionReg) const;
 
-		void Run() const;
+		void Run();
 		void Abort() const;
 		void TerminateCallStack();
 

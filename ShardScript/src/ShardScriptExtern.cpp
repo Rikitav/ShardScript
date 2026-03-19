@@ -6,8 +6,10 @@
 #include <shard/parsing/lexical/reading/StringStreamReader.hpp>
 
 #include <sstream>
-#include <algorithm>
 #include <filesystem>
+#include <wchar.h>
+#include <Windows.h>
+#include <string>
 
 #define SHARD_EXPORT extern "C" SHARD_API
 
@@ -78,7 +80,7 @@ SHARD_EXPORT int Shard_GetDiagnostics(CompilationContext* ctx, wchar_t* buffer, 
 
     if (buffer != nullptr && bufferLen > 0)
     {
-        size_t copyLen = std::min((size_t)bufferLen - 1, str.length());
+        size_t copyLen = min((size_t)bufferLen - 1, str.length());
         wcsncpy(buffer, str.c_str(), copyLen);
         buffer[copyLen] = L'\0';
     }
