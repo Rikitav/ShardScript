@@ -183,6 +183,7 @@ void GarbageCollector::CollectInstance(ObjectInstance* instance)
 	if (instance->ReferencesCounter > 0)
 		return;
 
+	Heap.erase(instance);
 	TerminateInstance(instance);
 }
 
@@ -198,8 +199,8 @@ void GarbageCollector::DestroyInstance(ObjectInstance* instance)
 	if (instance->ReferencesCounter > 0)
 		return;
 
-	TerminateInstance(instance);
 	Heap.erase(instance);
+	TerminateInstance(instance);
 }
 
 void GarbageCollector::TerminateInstance(ObjectInstance* instance)

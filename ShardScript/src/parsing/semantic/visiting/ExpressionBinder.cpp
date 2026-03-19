@@ -1328,12 +1328,12 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax *const 
 
 	if (method == nullptr)
 	{
-		SyntaxSymbol* delegateFindVar = CurrentScope()->Lookup(methodName);
-		if (delegateFindVar != nullptr)
+		SyntaxSymbol* lookupMethod = CurrentScope()->Lookup(methodName);
+		if (lookupMethod != nullptr)
 		{
-			if (delegateFindVar->Kind == SyntaxKind::VariableStatement)
+			if (lookupMethod->Kind == SyntaxKind::VariableStatement)
 			{
-				VariableSymbol* delegateVar = static_cast<VariableSymbol*>(delegateFindVar);
+				VariableSymbol* delegateVar = static_cast<VariableSymbol*>(lookupMethod);
 				if (delegateVar->Type != nullptr)
 				{
 					if (delegateVar->Type->Kind == SyntaxKind::DelegateType)
@@ -1342,6 +1342,10 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax *const 
 						method = delegate->AnonymousSymbol;
 					}
 				}
+			}
+			else if (lookupMethod->Kind == SyntaxKind::MethodDeclaration)
+			{
+				method = static_cast<MethodSymbol*>(lookupMethod);
 			}
 		}
 	}

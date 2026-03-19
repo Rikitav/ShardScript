@@ -415,11 +415,7 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 
 	size_t argsCount = method->Parameters.size();
 	if (!method->IsStatic)
-	{
-		ObjectInstance* prevInstance = callingFrame->PopStack();
-		prevInstance->IncrementReference();
-		currentFrame->PushStack(prevInstance);
-	}
+		argsCount += 1;
 
 	for (size_t i = 0; i < argsCount; i++)
 	{
@@ -427,9 +423,6 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 		argument->IncrementReference();
 		currentFrame->PushStack(argument);
 	}
-
-	if (!method->IsStatic)
-		argsCount += 1;
 
 	switch (method->HandleType)
 	{
@@ -502,19 +495,8 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 		}
 	}
 
-	for (size_t i = 0; i < method->EvalStackLocalsCount; i++)
-	{
-		ObjectInstance* local = currentFrame->PopStack();
-		local->DecrementReference();
-		garbageCollector.CollectInstance(local);
-	}
-
-	if (!method->IsStatic)
-	{
-		ObjectInstance* prevInstance = currentFrame->PopStack();
-		prevInstance->DecrementReference();
-		garbageCollector.CollectInstance(prevInstance);
-	}
+	while (currentFrame->EvalStack.size() != 0)
+		garbageCollector.DestroyInstance(currentFrame->PopStack());
 }
 
 ObjectInstance* VirtualMachine::InstantiateObject(TypeSymbol* type, ConstructorSymbol* ctor)
