@@ -419,7 +419,6 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 		ObjectInstance* prevInstance = callingFrame->PopStack();
 		prevInstance->IncrementReference();
 		currentFrame->PushStack(prevInstance);
-		argsCount += 1;
 	}
 
 	for (size_t i = 0; i < argsCount; i++)
@@ -428,6 +427,9 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 		argument->IncrementReference();
 		currentFrame->PushStack(argument);
 	}
+
+	if (!method->IsStatic)
+		argsCount += 1;
 
 	switch (method->HandleType)
 	{
@@ -471,6 +473,8 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 					.Program = program,
 					.Runtimer = *this,
 					.Collector = garbageCollector,
+
+					.Frame = currentFrame,
 					.Method = method,
 					.Args = args
 				};
@@ -527,13 +531,15 @@ ObjectInstance* VirtualMachine::InstantiateObject(TypeSymbol* type, ConstructorS
 		withinType = genericInfo->UnderlayingType;
 	}
 
+	// TODO: add field initialization
+	callingFrame->PushStack(newInstance);
+
 	CallStackFrame* currentFrame = PushFrame(ctor);
 	InvokeMethodInternal(ctor, currentFrame);
 	PopFrame();
 
 	return newInstance;
 
-	// TODO: add field initialization
 	/*
 	for (FieldSymbol* field : withinType->Fields)
 	{

@@ -668,7 +668,7 @@ void AbstractEmiter::VisitLiteralExpression(LiteralExpressionSyntax* const node)
 void AbstractEmiter::VisitObjectCreationExpression(ObjectExpressionSyntax* const node)
 {
 	VisitArgumentsList(node->ArgumentsList);
-	Encoder.EmitNewObject(GeneratingFor->ExecutableByteCode, node->TypeSymbol);
+	Encoder.EmitNewObject(GeneratingFor->ExecutableByteCode, node->TypeSymbol, node->CtorSymbol);
 }
 
 void AbstractEmiter::VisitCollectionExpression(CollectionExpressionSyntax* const node)

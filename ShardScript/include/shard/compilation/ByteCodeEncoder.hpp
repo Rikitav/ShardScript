@@ -5,6 +5,11 @@
 #include <shard/syntax/symbols/FieldSymbol.hpp>
 #include <shard/syntax/symbols/MethodSymbol.hpp>
 #include <shard/syntax/symbols/ArrayTypeSymbol.hpp>
+#include <shard/syntax/symbols/ConstructorSymbol.hpp>
+
+#include <cstddef>
+#include <cstdint>
+#include <vector>
 
 namespace shard
 {
@@ -58,7 +63,7 @@ namespace shard
 		void EmitLogicalOr(std::vector<std::byte>& code);
 		void EmitLogicalAnd(std::vector<std::byte>& code);
 
-		void EmitNewObject(std::vector<std::byte>& code, TypeSymbol* type);
+		void EmitNewObject(std::vector<std::byte>& code, TypeSymbol* type, ConstructorSymbol* ctor);
 		void EmitLoadField(std::vector<std::byte>& code, FieldSymbol* type);
 		void EmitStoreField(std::vector<std::byte>& code, FieldSymbol* type);
 
