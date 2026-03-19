@@ -18,9 +18,8 @@
 ### Syntax & Language Constructs
 * **Basic Types:** `int`, `double`, `bool`, `char`, `string`, `void`, `var` (type inference).
 * **Control Flow:**
-  * Conditionals: `if`, `else`.
-  * Loops: `for`, `while`, `do...while`.
-  * Unique Operators: `until` (loop until condition), `unless` (inverse if).
+  * Conditionals: `if`, `else if`, `else`, `unless` (inverse if).
+  * Loops: `for`, `while`, `until` (loop until condition).
 * **Functional Programming:**
   * typedef Delegates.
   * Static Lambda expressions.
@@ -29,7 +28,6 @@
   * Access Modifiers (`public`, `private`, `protected`, `internal`).
   * Properties with `get`/`set`.
   * Static fields and methods.
-* **Generics:** Basic support for simple structures, fields, and variables (primarily used for `extern` backing; constraints and generalization not yet available).
 * **External modules:** write libs in C++ and add them to run-time
   * see `modules.md` for more info
 
@@ -37,7 +35,7 @@
 * **Interpreter:** Tree-walking interpreter with custom call stack handling.
 * **Error Handling:** Runtime exception system (`throw`).
 * **Standard Library (WIP):**
-  * `System.Collections`: `List<T>` (Dynamic array implementation).
+  * `System.Collections`: `List<T>` (Dynamic array implementation). DO NOT USE, generic type parameter are under rewriting!
   * `System.Filesystem`: Basic file and directory operations.
   * `System`: Primitives, Math, Random.
 
@@ -119,6 +117,7 @@ namespace Functional
 ​[ ] Error Handling: Full try-catch blocks.  
 ​[ ] Generics: Advanced constraints and full generalization support.  
 ​[ ] Diagnostics: Improved compile-time and runtime error reporting.  
+[ ] Generics: Basic support for simple structures, fields, and variables (primarily used for `extern` backing; constraints and generalization not yet available).
 
 ## ​🤝 Contributing
 ​The project is under active development. If you find a bug, have ideas for syntax improvements, or want to suggest a new feature — please create an Issue! All feedback is welcome. In case of a sudden crash of the interpreter, please attach your code to issue so I can debug it.

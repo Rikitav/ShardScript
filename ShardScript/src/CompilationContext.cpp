@@ -52,6 +52,9 @@ using namespace shard;
 typedef void (*GetMetadataFunction)(ShardLibMetadata& lib);
 typedef void (*EntryPointFunction)(CompilationContext& context);
 
+static std::vector<FrameworkModule*> PendingModules;
+static std::vector<CompilationUnitSyntax*> PendingUnits;
+
 static LibraryHandle LoadLibraryHandle(const std::filesystem::path& path)
 {
 #ifdef _WIN32
@@ -296,34 +299,51 @@ void CompilationContext::AddLib(const LibraryHandle& handle)
 	try
 	{
 		entryPoint(*this);
+		Semanter.Analyze(Tree, Model);
+
+		for (size_t i = 0; i < PendingModules.size(); i++)
+		{
+			FrameworkModule* module = PendingModules.back(); PendingModules.pop_back();
+			CompilationUnitSyntax* unit = PendingUnits.back(); PendingUnits.pop_back();
+
+			for (MemberDeclarationSyntax* member : unit->Members)
+				BindMemberDeclaration(member, module, Model, Diagnostics);
+		}
+
+		PendingModules.clear();
+		PendingUnits.clear();
+		ReAnalyze = false;
 	}
 	catch (...)
 	{
 		return;
 	}
-
-	ReAnalyze = true;
 }
 
 void CompilationContext::AddModule(shard::FrameworkModule* module)
 {
 	try
 	{
+		size_t beforeEnrich = Tree.CompilationUnits.size();
+
 		SourceProvider* source = module->GetSource();
 		EnrichTree(*source);
-		Semanter.Analyze(Tree, Model);
 		delete source;
 
-		CompilationUnitSyntax* unit = Tree.CompilationUnits.back();
-		for (MemberDeclarationSyntax* member : unit->Members)
-			BindMemberDeclaration(member, module, Model, Diagnostics);
+		size_t afterEnrich = Tree.CompilationUnits.size();
+
+		if (afterEnrich - 1 == beforeEnrich)
+		{
+			PendingModules.push_back(module);
+			PendingUnits.push_back(Tree.CompilationUnits.back());
+		}
+
+		ReAnalyze = true;
 	}
 	catch (...)
 	{
 		return;
 	}
-
-	ReAnalyze = true;
 }
 
 void CompilationContext::EnrichTree(SourceProvider& sourceProvider)

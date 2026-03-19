@@ -20,6 +20,7 @@ namespace shard
     class GarbageCollector;
     class VirtualMachine;
     class ObjectInstance;
+    class CallStackFrame;
 
     using ArgumentsSpan = std::span<ObjectInstance*>;
 
@@ -36,6 +37,7 @@ namespace shard
         VirtualMachine& Runtimer;
         GarbageCollector& Collector;
 
+        CallStackFrame* Frame;
         MethodSymbol* Method;
         ArgumentsSpan& Args;
     };

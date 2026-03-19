@@ -5,6 +5,7 @@
 #include <shard/syntax/symbols/FieldSymbol.hpp>
 #include <shard/syntax/symbols/MethodSymbol.hpp>
 #include <shard/syntax/symbols/TypeSymbol.hpp>
+#include <shard/syntax/symbols/ConstructorSymbol.hpp>
 
 #include <string>
 #include <stdexcept>
@@ -248,10 +249,11 @@ void ByteCodeEncoder::EmitLogicalAnd(std::vector<std::byte>& code)
     AppendDataT(code, OpCode::Logical_And);
 }
 
-void ByteCodeEncoder::EmitNewObject(std::vector<std::byte>& code, TypeSymbol* type)
+void ByteCodeEncoder::EmitNewObject(std::vector<std::byte>& code, TypeSymbol* type, ConstructorSymbol* ctor)
 {
     AppendDataT(code, OpCode::NewObject);
     AppendData(code, &type, sizeof(type));
+    AppendData(code, &ctor, sizeof(ctor));
 }
 
 void ByteCodeEncoder::EmitLoadField(std::vector<std::byte>& code, FieldSymbol* type)
