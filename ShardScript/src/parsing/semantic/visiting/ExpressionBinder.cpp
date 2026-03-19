@@ -78,7 +78,7 @@
 
 using namespace shard;
 
-static bool IsAssignmentOperator(TokenType type)
+static bool IsAssignmentOperator(shard::TokenType type)
 {
 	switch (type)
 	{

@@ -8,61 +8,57 @@
 
 using namespace shard;
 
-// TODO: fix
-/*
 // Char methods
-static ObjectInstance* ToString(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+static ObjectInstance* ToString(const CallState& context)
 {
-	ObjectInstance* instance = arguments[0]; // this
+	ObjectInstance* instance = context.Args[0]; // this
 	wchar_t value = instance->AsCharacter();
 	std::wstring str(1, value);
-	return ObjectInstance::FromValue(str);
+	return context.Collector.FromValue(str);
 }
 
-static ObjectInstance* ToUpper(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+static ObjectInstance* ToUpper(const CallState& context)
 {
-	ObjectInstance* instance = arguments[0]; // this
+	ObjectInstance* instance = context.Args[0]; // this
 	wchar_t value = instance->AsCharacter();
 	wchar_t result = static_cast<wchar_t>(towupper(value));
-	return ObjectInstance::FromValue(result);
+	return context.Collector.FromValue(result);
 }
 
-static ObjectInstance* ToLower(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+static ObjectInstance* ToLower(const CallState& context)
 {
-	ObjectInstance* instance = arguments[0]; // this
+	ObjectInstance* instance = context.Args[0]; // this
 	wchar_t value = instance->AsCharacter();
 	wchar_t result = static_cast<wchar_t>(towlower(value));
-	return ObjectInstance::FromValue(result);
+	return context.Collector.FromValue(result);
 }
 
-static ObjectInstance* IsDigit(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+static ObjectInstance* IsDigit(const CallState& context)
 {
-	ObjectInstance* instance = arguments[0]; // this
+	ObjectInstance* instance = context.Args[0]; // this
 	wchar_t value = instance->AsCharacter();
 	bool result = iswdigit(value) != 0;
-	return ObjectInstance::FromValue(result);
+	return context.Collector.FromValue(result);
 }
 
-static ObjectInstance* IsLetter(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+static ObjectInstance* IsLetter(const CallState& context)
 {
-	ObjectInstance* instance = arguments[0]; // this
+	ObjectInstance* instance = context.Args[0]; // this
 	wchar_t value = instance->AsCharacter();
 	bool result = iswalpha(value) != 0;
-	return ObjectInstance::FromValue(result);
+	return context.Collector.FromValue(result);
 }
 
-static ObjectInstance* IsWhiteSpace(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+static ObjectInstance* IsWhiteSpace(const CallState& context)
 {
-	ObjectInstance* instance = arguments[0]; // this
+	ObjectInstance* instance = context.Args[0]; // this
 	wchar_t value = instance->AsCharacter();
 	bool result = iswspace(value) != 0;
-	return ObjectInstance::FromValue(result);
+	return context.Collector.FromValue(result);
 }
-*/
 
 void CharPrimitive::Reflect(TypeSymbol* symbol)
 {
-	/*
 	// ToString()
 	MethodSymbol* toString = new MethodSymbol(L"ToString", ToString);
 	toString->Accesibility = SymbolAccesibility::Public;
@@ -104,5 +100,4 @@ void CharPrimitive::Reflect(TypeSymbol* symbol)
 	isWhiteSpace->ReturnType = SymbolTable::Primitives::Boolean;
 	isWhiteSpace->IsStatic = false;
 	symbol->Methods.push_back(isWhiteSpace);
-	*/
 }

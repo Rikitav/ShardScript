@@ -4,61 +4,57 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
-#include <algorithm>
 
+#include <Windows.h>
 #include <ShardScript.hpp>
 #include <primitives/PrimitivesLoading.hpp>
 
 using namespace shard;
 
-// TODO: fix
-/*
 // Integer methods
-static ObjectInstance* ToString(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+static ObjectInstance* ToString(const CallState& context)
 {
-	int64_t value = arguments[0]->AsInteger(); // this
+	int64_t value = context.Args[0]->AsInteger(); // this
 	std::wstring str = std::to_wstring(value);
-	return ObjectInstance::FromValue(str);
+	return context.Collector.FromValue(str);
 }
 
-static ObjectInstance* Abs(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+static ObjectInstance* Abs(const CallState& context)
 {
-	int64_t value = arguments[0]->AsInteger(); // this
+	int64_t value = context.Args[0]->AsInteger(); // this
 	int64_t result = abs(value);
-	return ObjectInstance::FromValue(result);
+	return context.Collector.FromValue(result);
 }
 
-static ObjectInstance* Min(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+static ObjectInstance* Min(const CallState& context)
 {
-	int64_t value = arguments[0]->AsInteger(); // this
-	int64_t other = arguments[1]->AsInteger(); // other
+	int64_t value = context.Args[0]->AsInteger(); // this
+	int64_t other = context.Args[1]->AsInteger(); // other
 
-	int64_t result = std::min(value, other);
-	return ObjectInstance::FromValue(result);
+	int64_t result = min(value, other);
+	return context.Collector.FromValue(result);
 }
 
-static ObjectInstance* Max(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+static ObjectInstance* Max(const CallState& context)
 {
-	int64_t value = arguments[0]->AsInteger(); // this
-	int64_t other = arguments[1]->AsInteger(); // other
+	int64_t value = context.Args[0]->AsInteger(); // this
+	int64_t other = context.Args[1]->AsInteger(); // other
 
-	int64_t result = std::max(value, other);
-	return ObjectInstance::FromValue(result);
+	int64_t result = max(value, other);
+	return context.Collector.FromValue(result);
 }
 
-static ObjectInstance* Pow(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+static ObjectInstance* Pow(const CallState& context)
 {
-	int64_t value = arguments[0]->AsInteger(); // this
-	int64_t power = arguments[1]->AsInteger(); // power
+	int64_t value = context.Args[0]->AsInteger(); // this
+	int64_t power = context.Args[1]->AsInteger(); // power
 
 	int64_t result = static_cast<int64_t>(std::pow(value, power));
-	return ObjectInstance::FromValue(result);
+	return context.Collector.FromValue(result);
 }
-*/
 
 void IntegerPrimitive::Reflect(TypeSymbol* symbol)
 {
-	/*
 	// ToString()
 	MethodSymbol* toString = new MethodSymbol(L"ToString", ToString);
 	toString->Accesibility = SymbolAccesibility::Public;
@@ -102,5 +98,4 @@ void IntegerPrimitive::Reflect(TypeSymbol* symbol)
 	powParam->Type = SymbolTable::Primitives::Integer;
 	pow->Parameters.push_back(powParam);
 	symbol->Methods.push_back(pow);
-	*/
 }

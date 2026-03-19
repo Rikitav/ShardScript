@@ -10,40 +10,38 @@
 
 using namespace shard;
 
-// TODO: rewrite
-/*
 // String methods
-static ObjectInstance* IsEmpty(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+static ObjectInstance* IsEmpty(const CallState& context)
 {
-	ObjectInstance* instance = arguments[0]; // this
+	ObjectInstance* instance = context.Args[0]; // this
 	std::wstring value = instance->AsString();
-	return ObjectInstance::FromValue(value.size() == 0);
+	return context.Collector.FromValue(value.size() == 0);
 }
 
-static ObjectInstance* GetLength(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+static ObjectInstance* GetLength(const CallState& context)
 {
-	ObjectInstance* instance = arguments[0]; // this
+	ObjectInstance* instance = context.Args[0]; // this
 	std::wstring value = instance->AsString();
-	return ObjectInstance::FromValue(static_cast<int64_t>(value.size()));
+	return context.Collector.FromValue(static_cast<int64_t>(value.size()));
 }
 
-static ObjectInstance* Substring(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+static ObjectInstance* Substring(const CallState& context)
 {
-	ObjectInstance* instance = arguments[0]; // this
+	ObjectInstance* instance = context.Args[0]; // this
 	std::wstring value = instance->AsString();
 	
-	ObjectInstance* startArg = arguments[1]; // start
+	ObjectInstance* startArg = context.Args[1]; // start
 	if (startArg == nullptr)
-		return ObjectInstance::FromValue(L"");
+		return context.Collector.FromValue(L"");
 	
 	int64_t start = startArg->AsInteger();
 	if (start < 0)
 		start = 0;
 
 	if (start >= static_cast<int>(value.size()))
-		return ObjectInstance::FromValue(L"");
+		return context.Collector.FromValue(L"");
 	
-	ObjectInstance* lengthArg = arguments[2]; // length
+	ObjectInstance* lengthArg = context.Args[2]; // length
 	if (lengthArg != nullptr)
 	{
 		int64_t length = lengthArg->AsInteger();
@@ -54,98 +52,98 @@ static ObjectInstance* Substring(const VirtualMachine* host, const MethodSymbol*
 			length = static_cast<int64_t>(value.size()) - start;
 		
 		std::wstring result = value.substr(start, length);
-		return ObjectInstance::FromValue(result);
+		return context.Collector.FromValue(result);
 	}
 	else
 	{
 		std::wstring result = value.substr(start);
-		return ObjectInstance::FromValue(result);
+		return context.Collector.FromValue(result);
 	}
 }
 
-static ObjectInstance* Contains(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+static ObjectInstance* Contains(const CallState& context)
 {
-	ObjectInstance* instance = arguments[0]; // this
+	ObjectInstance* instance = context.Args[0]; // this
 	std::wstring value = instance->AsString();
 
-	ObjectInstance* searchArg = arguments[1]; // value
+	ObjectInstance* searchArg = context.Args[1]; // value
 	if (searchArg == nullptr)
-		return ObjectInstance::FromValue(false);
+		return context.Collector.FromValue(false);
 	
 	std::wstring search = searchArg->AsString();
-	return ObjectInstance::FromValue(value.find(search) != std::wstring::npos);
+	return context.Collector.FromValue(value.find(search) != std::wstring::npos);
 }
 
-static ObjectInstance* StartsWith(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+static ObjectInstance* StartsWith(const CallState& context)
 {
-	ObjectInstance* instance = arguments[0]; // this
+	ObjectInstance* instance = context.Args[0]; // this
 	std::wstring value = instance->AsString();
 
-	ObjectInstance* prefixArg = arguments[1]; // value
+	ObjectInstance* prefixArg = context.Args[1]; // value
 	if (prefixArg == nullptr)
-		return ObjectInstance::FromValue(false);
+		return context.Collector.FromValue(false);
 	
 	std::wstring prefix = prefixArg->AsString();
 	if (prefix.size() > value.size())
-		return ObjectInstance::FromValue(false);
+		return context.Collector.FromValue(false);
 	
-	return ObjectInstance::FromValue(value.substr(0, prefix.size()) == prefix);
+	return context.Collector.FromValue(value.substr(0, prefix.size()) == prefix);
 }
 
-static ObjectInstance* EndsWith(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+static ObjectInstance* EndsWith(const CallState& context)
 {
-	ObjectInstance* instance = arguments[0]; // this
+	ObjectInstance* instance = context.Args[0]; // this
 	std::wstring value = instance->AsString();
 
-	ObjectInstance* suffixArg = arguments[1]; // value
+	ObjectInstance* suffixArg = context.Args[1]; // value
 	if (suffixArg == nullptr)
-		return ObjectInstance::FromValue(false);
+		return context.Collector.FromValue(false);
 	
 	std::wstring suffix = suffixArg->AsString();
 	if (suffix.size() > value.size())
-		return ObjectInstance::FromValue(false);
+		return context.Collector.FromValue(false);
 	
-	return ObjectInstance::FromValue(value.substr(value.size() - suffix.size()) == suffix);
+	return context.Collector.FromValue(value.substr(value.size() - suffix.size()) == suffix);
 }
 
-static ObjectInstance* IndexOf(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+static ObjectInstance* IndexOf(const CallState& context)
 {
-	ObjectInstance* instance = arguments[0]; // this
+	ObjectInstance* instance = context.Args[0]; // this
 	std::wstring value = instance->AsString();
 
-	ObjectInstance* searchArg = arguments[1]; // value
+	ObjectInstance* searchArg = context.Args[1]; // value
 	if (searchArg == nullptr)
-		return ObjectInstance::FromValue(-1.0);
+		return context.Collector.FromValue(-1.0);
 	
 	std::wstring search = searchArg->AsString();
 	size_t pos = value.find(search);
-	return ObjectInstance::FromValue(pos == std::wstring::npos ? -1 : static_cast<int64_t>(pos));
+	return context.Collector.FromValue(pos == std::wstring::npos ? -1 : static_cast<int64_t>(pos));
 }
 
-static ObjectInstance* LastIndexOf(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+static ObjectInstance* LastIndexOf(const CallState& context)
 {
-	ObjectInstance* instance = arguments[0]; // this
+	ObjectInstance* instance = context.Args[0]; // this
 	std::wstring value = instance->AsString();
 
-	ObjectInstance* searchArg = arguments[1]; // value
+	ObjectInstance* searchArg = context.Args[1]; // value
 	if (searchArg == nullptr)
-		return ObjectInstance::FromValue(-1.0);
+		return context.Collector.FromValue(-1.0);
 	
 	std::wstring search = searchArg->AsString();
 	size_t pos = value.rfind(search);
-	return ObjectInstance::FromValue(pos == std::wstring::npos ? -1 : static_cast<int64_t>(pos));
+	return context.Collector.FromValue(pos == std::wstring::npos ? -1 : static_cast<int64_t>(pos));
 }
 
-static ObjectInstance* Replace(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+static ObjectInstance* Replace(const CallState& context)
 {
-	ObjectInstance* instance = arguments[0]; // this
+	ObjectInstance* instance = context.Args[0]; // this
 	std::wstring value = instance->AsString();
 
-	ObjectInstance* oldStrArg = arguments[1]; // oldValue
-	ObjectInstance* newStrArg = arguments[2]; // newValue
+	ObjectInstance* oldStrArg = context.Args[1]; // oldValue
+	ObjectInstance* newStrArg = context.Args[2]; // newValue
 	
 	if (oldStrArg == nullptr || newStrArg == nullptr)
-		return ObjectInstance::FromValue(value);
+		return context.Collector.FromValue(value);
 	
 	std::wstring oldStr = oldStrArg->AsString();
 	std::wstring newStr = newStrArg->AsString();
@@ -159,50 +157,50 @@ static ObjectInstance* Replace(const VirtualMachine* host, const MethodSymbol* m
 		pos += newStr.length();
 	}
 	
-	return ObjectInstance::FromValue(result);
+	return context.Collector.FromValue(result);
 }
 
-static ObjectInstance* ToUpper(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+static ObjectInstance* ToUpper(const CallState& context)
 {
-	ObjectInstance* instance = arguments[0]; // this
+	ObjectInstance* instance = context.Args[0]; // this
 	std::wstring value = instance->AsString();
 	
 	std::wstring result = value;
 	transform(result.begin(), result.end(), result.begin(), ::towupper);
-	return ObjectInstance::FromValue(result);
+	return context.Collector.FromValue(result);
 }
 
-static ObjectInstance* ToLower(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+static ObjectInstance* ToLower(const CallState& context)
 {
-	ObjectInstance* instance = arguments[0]; // this
+	ObjectInstance* instance = context.Args[0]; // this
 	std::wstring value = instance->AsString();
 	
 	std::wstring result = value;
 	transform(result.begin(), result.end(), result.begin(), ::towlower);
-	return ObjectInstance::FromValue(result);
+	return context.Collector.FromValue(result);
 }
 
-static ObjectInstance* Trim(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+static ObjectInstance* Trim(const CallState& context)
 {
-	ObjectInstance* instance = arguments[0]; // this
+	ObjectInstance* instance = context.Args[0]; // this
 	std::wstring value = instance->AsString();
 	
 	// Trim from start
 	size_t start = value.find_first_not_of(L" \t\n\r");
 	if (start == std::wstring::npos)
-		return ObjectInstance::FromValue(L"");
+		return context.Collector.FromValue(L"");
 	
 	// Trim from end
 	size_t end = value.find_last_not_of(L" \t\n\r");
 	
 	std::wstring result = value.substr(start, end - start + 1);
-	return ObjectInstance::FromValue(result);
+	return context.Collector.FromValue(result);
 }
 
-static ObjectInstance* Format(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+static ObjectInstance* Format(const CallState& context)
 {
-	ObjectInstance* instance = arguments[0]; // this
-	ObjectInstance* formatArgs = arguments[1]; // args
+	ObjectInstance* instance = context.Args[0]; // this
+	ObjectInstance* formatArgs = context.Args[1]; // args
 
 	std::wstring format = instance->AsString();
 	std::wstring result = format;
@@ -253,8 +251,8 @@ static ObjectInstance* Format(const VirtualMachine* host, const MethodSymbol* me
 			{
 				try
 				{
-					host->InvokeMethod(toStringMethod, { arg });
-					ObjectInstance* toStringResult = host->CurrentFrame()->PopStack();
+					context.Runtimer.InvokeMethod(toStringMethod, { arg });
+					ObjectInstance* toStringResult = context.Runtimer.CurrentFrame()->PopStack();
 					
 					if (toStringResult != nullptr && toStringResult->Info == SymbolTable::Primitives::String)
 					{
@@ -281,74 +279,74 @@ static ObjectInstance* Format(const VirtualMachine* host, const MethodSymbol* me
 		}
 	}
 	
-	return ObjectInstance::FromValue(result);
+	return context.Collector.FromValue(result);
 }
 
-static ObjectInstance* PadLeft(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+static ObjectInstance* PadLeft(const CallState& context)
 {
-	ObjectInstance* instance = arguments[0]; // this
+	ObjectInstance* instance = context.Args[0]; // this
 	std::wstring value = instance->AsString();
 	
-	ObjectInstance* widthArg = arguments[1]; // width
+	ObjectInstance* widthArg = context.Args[1]; // width
 	if (widthArg == nullptr)
-		return ObjectInstance::FromValue(value);
+		return context.Collector.FromValue(value);
 	
 	int64_t width = widthArg->AsInteger();
 	if (width <= static_cast<int64_t>(value.size()))
-		return ObjectInstance::FromValue(value);
+		return context.Collector.FromValue(value);
 	
 	wchar_t padChar = L' ';
-	ObjectInstance* padCharArg = arguments[2]; // padChar
+	ObjectInstance* padCharArg = context.Args[2]; // padChar
 	if (padCharArg != nullptr)
 	{
 		padChar = padCharArg->AsCharacter();
 	}
 	
 	std::wstring result = std::wstring(width - value.size(), padChar) + value;
-	return ObjectInstance::FromValue(result);
+	return context.Collector.FromValue(result);
 }
 
-static ObjectInstance* PadRight(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+static ObjectInstance* PadRight(const CallState& context)
 {
-	ObjectInstance* instance = arguments[0]; // this
+	ObjectInstance* instance = context.Args[0]; // this
 	std::wstring value = instance->AsString();
 
-	ObjectInstance* widthArg = arguments[1]; // width
+	ObjectInstance* widthArg = context.Args[1]; // width
 	if (widthArg == nullptr)
-		return ObjectInstance::FromValue(value);
+		return context.Collector.FromValue(value);
 	
 	size_t width = widthArg->AsInteger();
 	if (width <= static_cast<int>(value.size()))
-		return ObjectInstance::FromValue(value);
+		return context.Collector.FromValue(value);
 	
 	wchar_t padChar = L' ';
-	ObjectInstance* padCharArg = arguments[2]; // padChar
+	ObjectInstance* padCharArg = context.Args[2]; // padChar
 	if (padCharArg != nullptr)
 	{
 		padChar = padCharArg->AsCharacter();
 	}
 	
 	std::wstring result = value + std::wstring(width - value.size(), padChar);
-	return ObjectInstance::FromValue(result);
+	return context.Collector.FromValue(result);
 }
 
-static ObjectInstance* Remove(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+static ObjectInstance* Remove(const CallState& context)
 {
-	ObjectInstance* instance = arguments[0]; // this
+	ObjectInstance* instance = context.Args[0]; // this
 	std::wstring value = instance->AsString();
 	
-	ObjectInstance* startArg = arguments[1]; // start
+	ObjectInstance* startArg = context.Args[1]; // start
 	if (startArg == nullptr)
-		return ObjectInstance::FromValue(value);
+		return context.Collector.FromValue(value);
 	
 	int64_t start = startArg->AsInteger();
 	if (start < 0)
 		start = 0;
 
 	if (start >= static_cast<int>(value.size()))
-		return ObjectInstance::FromValue(value);
+		return context.Collector.FromValue(value);
 	
-	ObjectInstance* countArg = arguments[2]; // count
+	ObjectInstance* countArg = context.Args[2]; // count
 	if (countArg != nullptr)
 	{
 		int64_t count = countArg->AsInteger();
@@ -360,25 +358,25 @@ static ObjectInstance* Remove(const VirtualMachine* host, const MethodSymbol* me
 		
 		std::wstring result = value;
 		result.erase(start, count);
-		return ObjectInstance::FromValue(result);
+		return context.Collector.FromValue(result);
 	}
 	else
 	{
 		std::wstring result = value.substr(0, start);
-		return ObjectInstance::FromValue(result);
+		return context.Collector.FromValue(result);
 	}
 }
 
-static ObjectInstance* Insert(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+static ObjectInstance* Insert(const CallState& context)
 {
-	ObjectInstance* instance = arguments[0]; // this
+	ObjectInstance* instance = context.Args[0]; // this
 	std::wstring value = instance->AsString();
 	
-	ObjectInstance* startArg = arguments[1]; // start
-	ObjectInstance* strArg = arguments[2]; // value
+	ObjectInstance* startArg = context.Args[1]; // start
+	ObjectInstance* strArg = context.Args[2]; // value
 	
 	if (startArg == nullptr || strArg == nullptr)
-		return ObjectInstance::FromValue(value);
+		return context.Collector.FromValue(value);
 	
 	int64_t start = startArg->AsInteger();
 	std::wstring str = strArg->AsString();
@@ -391,13 +389,11 @@ static ObjectInstance* Insert(const VirtualMachine* host, const MethodSymbol* me
 	
 	std::wstring result = value;
 	result.insert(start, str);
-	return ObjectInstance::FromValue(result);
+	return context.Collector.FromValue(result);
 }
-*/
 
 void StringPrimitive::Reflect(TypeSymbol* symbol)
 {
-	/*
 	// IsEmpty
 	MethodSymbol* isEmpty = new MethodSymbol(L"IsEmpty", IsEmpty);
 	isEmpty->Accesibility = SymbolAccesibility::Public;
@@ -582,5 +578,4 @@ void StringPrimitive::Reflect(TypeSymbol* symbol)
 	insertValue->Type = SymbolTable::Primitives::String;
 	insert->Parameters.push_back(insertValue);
 	symbol->Methods.push_back(insert);
-	*/
 }

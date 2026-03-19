@@ -1,6 +1,5 @@
 #include <shard/runtime/GarbageCollector.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
-#include <shard/runtime/VirtualMachine.hpp>
 
 #include <shard/syntax/SyntaxKind.hpp>
 
@@ -8,9 +7,14 @@
 #include <shard/syntax/symbols/FieldSymbol.hpp>
 #include <shard/syntax/symbols/ArrayTypeSymbol.hpp>
 
+#include <shard/parsing/semantic/SymbolTable.hpp>
+
 #include <malloc.h>
 #include <stdexcept>
 #include <cstring>
+#include <wchar.h>
+#include <cstdint>
+#include <string>
 
 using namespace shard;
 

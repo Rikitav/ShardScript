@@ -1,7 +1,7 @@
-#include <shard/CompilationContext.hpp>
-#include <shard/FrameworkModule.hpp>
 #include <shard/ShardScriptAPI.hpp>
+#include <shard/ShardScriptLIB.hpp>
 #include <shard/ApplicationDomain.hpp>
+#include <shard/CompilationContext.hpp>
 
 #include <shard/parsing/SourceParser.hpp>
 #include <shard/parsing/SyntaxTree.hpp>
@@ -44,10 +44,13 @@
 #include <filesystem>
 
 #ifdef _WIN32
-#include <windows.h> // TODO: remove
+#include <windows.h> 
 #endif
 
 using namespace shard;
+
+typedef void (*GetMetadataFunction)(ShardLibMetadata& lib);
+typedef void (*EntryPointFunction)(CompilationContext& context);
 
 static LibraryHandle LoadLibraryHandle(const std::filesystem::path& path)
 {
@@ -68,8 +71,18 @@ static void FreeLibraryHandle(LibraryHandle handle)
 #endif
 }
 
+static void* GetLibFunction(LibraryHandle handle, const char* procName)
+{
+#ifdef _WIN32
+	return GetProcAddress(handle, procName);
+#else
+	throw std::runtime_error("Loading libraries is not supported on this platform");
+#endif
+}
+
 static std::wstring GetLastErrorAsString()
 {
+#ifdef _WIN32
 	DWORD errorMessageID = GetLastError();
 	if (errorMessageID == 0)
 		return std::wstring();
@@ -82,6 +95,9 @@ static std::wstring GetLastErrorAsString()
 	std::wstring message(messageBuffer, size);
 	LocalFree(messageBuffer);
 	return message;
+#else
+	throw std::runtime_error("Loading libraries is not supported on this platform");
+#endif
 }
 
 static void BindMemberDeclaration(MemberDeclarationSyntax* member, FrameworkModule* module, SemanticModel& semanticModel, DiagnosticsContext& diagnostics)
@@ -124,7 +140,7 @@ static void BindMemberDeclaration(MemberDeclarationSyntax* member, FrameworkModu
 				break;
 
 			if (!module->BindMethod(symbol))
-				diagnostics.ReportError(method->IdentifierToken, L"Unexpected method \'" + symbol->FullName + L"\'");
+				diagnostics.ReportError(method->IdentifierToken, L"Unexpected unbound extern method declaration : \'" + symbol->FullName + L"\'");
 
 			break;
 		}
@@ -138,7 +154,7 @@ static void BindMemberDeclaration(MemberDeclarationSyntax* member, FrameworkModu
 				break;
 
 			if (!module->BindConstructor(symbol))
-				diagnostics.ReportError(ctor->IdentifierToken, L"Unexpected constructor \'" + symbol->FullName + L"\'");
+				diagnostics.ReportError(ctor->IdentifierToken, L"Unexpected unbound extern constructor declaration : \'" + symbol->FullName + L"\'");
 
 			break;
 		}
@@ -155,7 +171,7 @@ static void BindMemberDeclaration(MemberDeclarationSyntax* member, FrameworkModu
 					break;
 
 				if (!module->BindAccessor(getter))
-					diagnostics.ReportError(prop->IdentifierToken, L"Unexpected getter accessor \'" + symbol->FullName + L"\'");
+					diagnostics.ReportError(prop->IdentifierToken, L"Unexpected unbound extern getter accessor declaration : \'" + symbol->FullName + L"\'");
 			}
 
 			if (symbol->Setter != nullptr)
@@ -165,7 +181,7 @@ static void BindMemberDeclaration(MemberDeclarationSyntax* member, FrameworkModu
 					break;
 
 				if (!module->BindAccessor(setter))
-					diagnostics.ReportError(prop->IdentifierToken, L"Unexpected setter accessor \'" + symbol->FullName + L"\'");
+					diagnostics.ReportError(prop->IdentifierToken, L"Unexpected unbound extern setter accessor declaration : \'" + symbol->FullName + L"\'");
 			}
 
 			break;
@@ -183,7 +199,7 @@ static void BindMemberDeclaration(MemberDeclarationSyntax* member, FrameworkModu
 					break;
 
 				if (!module->BindAccessor(getter))
-					diagnostics.ReportError(prop->IdentifierToken, L"Unexpected getter accessor \'" + symbol->FullName + L"\'");
+					diagnostics.ReportError(prop->IdentifierToken, L"Unexpected unbound extern getter accessor declaration \'" + symbol->FullName + L"\'");
 			}
 
 			if (symbol->Setter != nullptr)
@@ -193,7 +209,7 @@ static void BindMemberDeclaration(MemberDeclarationSyntax* member, FrameworkModu
 					break;
 
 				if (!module->BindAccessor(setter))
-					diagnostics.ReportError(prop->IdentifierToken, L"Unexpected setter accessor \'" + symbol->FullName + L"\'");
+					diagnostics.ReportError(prop->IdentifierToken, L"Unexpected unbound extern setter accessor declaration : \'" + symbol->FullName + L"\'");
 			}
 
 			break;
@@ -260,22 +276,52 @@ void CompilationContext::AddLib(const LibraryHandle& handle)
 		std::wstring errorMessage = GetLastErrorAsString();
 		throw std::runtime_error(errorMessage);
 		*/
+
 		return;
 	}
 
 	LibHandles.push_back(handle);
+	EntryPointFunction entryPoint = static_cast<EntryPointFunction>(GetLibFunction(handle, "ShardLib_EntryPoint"));
 
-	// TODO: add modules reading and handling
-	
-	/*
-	SourceProvider* source = module->GetSource();
-	EnrichTree(source);
-	delete source;
+	if (entryPoint == nullptr)
+	{
+		/*
+		std::wstring errorMessage = GetLastErrorAsString();
+		throw std::runtime_error(errorMessage);
+		*/
 
-	CompilationUnitSyntax* unit = semanticModel.Tree.CompilationUnits.back();
-	for (MemberDeclarationSyntax* member : unit->Members)
-		BindMemberDeclaration(member, module, semanticModel, diagnostics);
-	*/
+		return;
+	}
+
+	try
+	{
+		entryPoint(*this);
+	}
+	catch (...)
+	{
+		return;
+	}
+
+	ReAnalyze = true;
+}
+
+void CompilationContext::AddModule(shard::FrameworkModule* module)
+{
+	try
+	{
+		SourceProvider* source = module->GetSource();
+		EnrichTree(*source);
+		Semanter.Analyze(Tree, Model);
+		delete source;
+
+		CompilationUnitSyntax* unit = Tree.CompilationUnits.back();
+		for (MemberDeclarationSyntax* member : unit->Members)
+			BindMemberDeclaration(member, module, Model, Diagnostics);
+	}
+	catch (...)
+	{
+		return;
+	}
 
 	ReAnalyze = true;
 }

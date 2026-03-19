@@ -12,33 +12,31 @@ namespace shard
 {
 	class Collections_List : public FrameworkModule
 	{
-		// TODO: fix
-		/*
 		// public extern List();
-		static ObjectInstance* Impl_Default_Ctor(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+		static ObjectInstance* Impl_Default_Ctor(const CallState& context)
 		{
-			static FieldSymbol* arrayField = static_cast<ClassSymbol*>(method->Parent)->Fields.at(0); // T[] _array
+			static FieldSymbol* arrayField = static_cast<ClassSymbol*>(context.Method->Parent)->Fields.at(0); // T[] _array
 
 			// Getting arguments
-			ObjectInstance* instance = arguments[0]; // List<T> this
+			ObjectInstance* instance = context.Args[0]; // List<T> this
 
 			// Initializing fields
 			TypeSymbol* arrayType = TypeSymbol::ReturnOf(arrayField);
-			ObjectInstance* arrayInstance = GarbageCollector::AllocateInstance(arrayType);
+			ObjectInstance* arrayInstance = context.Collector.AllocateInstance(arrayType);
 			instance->SetField(arrayField, arrayInstance);
 
 			return nullptr; // void
 		}
 
 		// public static extern void List.Add(T value);
-		static ObjectInstance* Impl_Add(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+		static ObjectInstance* Impl_Add(const CallState& context)
 		{
-			static FieldSymbol* arrayField = static_cast<ClassSymbol*>(method->Parent)->Fields.at(0); // T[] _array
+			static FieldSymbol* arrayField = static_cast<ClassSymbol*>(context.Method->Parent)->Fields.at(0); // T[] _array
 			static FieldSymbol* arrayLengthField = SymbolTable::Primitives::Array->Fields.at(0); // <Length>k__BackingField
 
 			// Getting arguments
-			ObjectInstance* instance = arguments[0]; // List<T> this
-			ObjectInstance* value = arguments[1]; // T value
+			ObjectInstance* instance = context.Args[0]; // List<T> this
+			ObjectInstance* value = context.Args[1]; // T value
 
 			// Getting fields
 			ObjectInstance* arrayInstance = instance->GetField(arrayField); // T[] _array
@@ -59,7 +57,7 @@ namespace shard
 			
 			// Adding element
 			size_t indexLast = arrayType->Size - 1;
-			ObjectInstance* valueCopy = GarbageCollector::CopyInstance(value);
+			ObjectInstance* valueCopy = context.Collector.CopyInstance(value);
 			arrayInstance->SetElement(indexLast, valueCopy);
 
 			// setting new array length
@@ -70,13 +68,13 @@ namespace shard
 		}
 
 		// public static extern T ElementAt(int index);
-		static ObjectInstance* Impl_ElementAt(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+		static ObjectInstance* Impl_ElementAt(const CallState& context)
 		{
-			static FieldSymbol* arrayField = static_cast<ClassSymbol*>(method->Parent)->Fields.at(0); // T[] _array
+			static FieldSymbol* arrayField = static_cast<ClassSymbol*>(context.Method->Parent)->Fields.at(0); // T[] _array
 
 			// Getting arguments
-			ObjectInstance* instance = arguments[0]; // List<T> this
-			ObjectInstance* index = arguments[1]; // int index
+			ObjectInstance* instance = context.Args[0]; // List<T> this
+			ObjectInstance* index = context.Args[1]; // int index
 
 			ObjectInstance* arrayInstance = instance->GetField(arrayField); // T[] _array
 			ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->Info));
@@ -90,25 +88,25 @@ namespace shard
 		}
 
 		// public extern void RemoveAt(int index);
-		static ObjectInstance* Impl_RemoveAt(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+		static ObjectInstance* Impl_RemoveAt(const CallState& context)
 		{
 			throw std::runtime_error("not implemented");
 		}
 
 		// public extern void Clear();
-		static ObjectInstance* Impl_Clear(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+		static ObjectInstance* Impl_Clear(const CallState& context)
 		{
 			throw std::runtime_error("not implemented");
 		}
 
 		// public int Length { extern get; }
-		static ObjectInstance* Impl_Length_Get(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments) // public int Length { extern get; }
+		static ObjectInstance* Impl_Length_Get(const CallState& context) // public int Length { extern get; }
 		{
-			static FieldSymbol* arrayField = static_cast<ClassSymbol*>(method->Parent->Parent)->Fields.at(0); // T[] _array
+			static FieldSymbol* arrayField = static_cast<ClassSymbol*>(context.Method->Parent->Parent)->Fields.at(0); // T[] _array
 			static FieldSymbol* arrayLengthField = SymbolTable::Primitives::Array->Fields.at(0); // <Length>k__BackingField
 
 			// Getting arguments
-			ObjectInstance* instance = arguments[0]; // List<T> this
+			ObjectInstance* instance = context.Args[0]; // List<T> this
 
 			// Getting fields
 			ObjectInstance* arrayInstance = instance->GetField(arrayField); // T[] _array
@@ -117,13 +115,13 @@ namespace shard
 			return lengthInstance;
 		}
 
-		static ObjectInstance* Impl_index_Get(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+		static ObjectInstance* Impl_index_Get(const CallState& context)
 		{
-			static FieldSymbol* arrayField = static_cast<ClassSymbol*>(method->Parent->Parent)->Fields.at(0); // T[] _array
+			static FieldSymbol* arrayField = static_cast<ClassSymbol*>(context.Method->Parent->Parent)->Fields.at(0); // T[] _array
 
 			// Getting arguments
-			ObjectInstance* instance = arguments[0]; // List<T> this
-			ObjectInstance* index = arguments[1]; // int index
+			ObjectInstance* instance = context.Args[0]; // List<T> this
+			ObjectInstance* index = context.Args[1]; // int index
 
 			ObjectInstance* arrayInstance = instance->GetField(arrayField); // T[] _array
 			ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->Info));
@@ -136,14 +134,14 @@ namespace shard
 			return arrayInstance->GetElement(indexValue);
 		}
 
-		static ObjectInstance* Impl_index_Set(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+		static ObjectInstance* Impl_index_Set(const CallState& context)
 		{
-			static FieldSymbol* arrayField = static_cast<ClassSymbol*>(method->Parent->Parent)->Fields.at(0); // T[] _array
+			static FieldSymbol* arrayField = static_cast<ClassSymbol*>(context.Method->Parent->Parent)->Fields.at(0); // T[] _array
 
 			// getting arguments
-			ObjectInstance* instance = arguments[0]; // List<T> this
-			ObjectInstance* index = arguments[1]; // int index
-			ObjectInstance* value = arguments[2]; // T value
+			ObjectInstance* instance = context.Args[0]; // List<T> this
+			ObjectInstance* index = context.Args[1]; // int index
+			ObjectInstance* value = context.Args[2]; // T value
 
 			ObjectInstance* arrayInstance = instance->GetField(arrayField); // T[] _array
 			ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->Info));
@@ -156,7 +154,6 @@ namespace shard
 			arrayInstance->SetElement(indexValue, value);
 			return nullptr;
 		}
-		*/
 
 	public:
 		SourceProvider* FrameworkModule::GetSource()
@@ -169,20 +166,17 @@ namespace shard
 
 		bool FrameworkModule::BindConstructor(ConstructorSymbol* symbol)
 		{
-			/*
 			if (symbol->Parameters.size() == 0)
 			{
 				symbol->FunctionPointer = Impl_Default_Ctor;
 				return true;
 			}
-			*/
 
 			return false;
 		}
 
 		bool FrameworkModule::BindMethod(MethodSymbol* symbol)
 		{
-			/*
 			if (symbol->Name == L"Add")
 			{
 				symbol->FunctionPointer = Impl_Add;
@@ -206,14 +200,12 @@ namespace shard
 				symbol->FunctionPointer = Impl_Clear;
 				return true;
 			}
-			*/
 
 			return false;
 		}
 
 		bool FrameworkModule::BindAccessor(AccessorSymbol* symbol)
 		{
-			/*
 			if (symbol->Name == L"Length_get")
 			{
 				symbol->FunctionPointer = Impl_Length_Get;
@@ -231,7 +223,6 @@ namespace shard
 				symbol->FunctionPointer = Impl_index_Set;
 				return true;
 			}
-			*/
 
 			return false;
 		}

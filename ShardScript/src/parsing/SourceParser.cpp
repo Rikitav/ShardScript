@@ -3,6 +3,15 @@
 #include <shard/parsing/MemberDeclarationInfo.hpp>
 #include <shard/parsing/SyntaxTree.hpp>
 
+#include <shard/parsing/analysis/TextLocation.hpp>
+#include <shard/parsing/analysis/DiagnosticsContext.hpp>
+
+#include <shard/syntax/SyntaxToken.hpp>
+#include <shard/syntax/TokenType.hpp>
+#include <shard/syntax/SyntaxFacts.hpp>
+#include <shard/syntax/SyntaxKind.hpp>
+#include <shard/syntax/SyntaxNode.hpp>
+
 #include <shard/syntax/nodes/CompilationUnitSyntax.hpp>
 #include <shard/syntax/nodes/TypeDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarationSyntax.hpp>
@@ -14,14 +23,8 @@
 #include <shard/syntax/nodes/StatementsBlockSyntax.hpp>
 #include <shard/syntax/nodes/TypeSyntax.hpp>
 
-#include <shard/syntax/SyntaxToken.hpp>
-#include <shard/syntax/TokenType.hpp>
-#include <shard/syntax/SyntaxFacts.hpp>
-#include <shard/syntax/SyntaxKind.hpp>
-#include <shard/syntax/SyntaxNode.hpp>
-
-#include <shard/parsing/analysis/TextLocation.hpp>
-#include <shard/parsing/analysis/DiagnosticsContext.hpp>
+#include <shard/syntax/nodes/TypeArgumentsListSyntax.hpp>
+#include <shard/syntax/nodes/TypeParametersListSyntax.hpp>
 
 #include <shard/syntax/nodes/Loops/ForStatementSyntax.hpp>
 #include <shard/syntax/nodes/Loops/WhileStatementSyntax.hpp>
@@ -36,6 +39,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/IndexatorDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/DelegateDeclarationSyntax.hpp>
 
 #include <shard/syntax/nodes/Directives/UsingDirectiveSyntax.hpp>
 
@@ -53,6 +57,8 @@
 #include <shard/syntax/nodes/Expressions/ObjectExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/LinkedExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/CollectionExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/LambdaExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/TernaryExpressionSyntax.hpp>
 
 #include <shard/syntax/nodes/Types/ArrayTypeSyntax.hpp>
 #include <shard/syntax/nodes/Types/IdentifierNameTypeSyntax.hpp>
@@ -62,7 +68,6 @@
 #include <shard/syntax/nodes/Types/DelegateTypeSyntax.hpp>
 
 #include <vector>
-#include <stdexcept>
 #include <initializer_list>
 #include <set>
 #include <new>
@@ -1855,7 +1860,7 @@ TypeSyntax *const SourceParser::ReadGenericType(SourceProvider& reader, TypeSynt
 }
 
 // Smart error recovery with synchronization tokens
-static const std::vector<TokenType> SynchronizationTokens = {
+static const std::vector<shard::TokenType> SynchronizationTokens = {
 	TokenType::Semicolon,
 	TokenType::OpenBrace,
 	TokenType::CloseBrace,
@@ -1867,9 +1872,9 @@ static const std::vector<TokenType> SynchronizationTokens = {
 	TokenType::EndOfFile
 };
 
-static bool IsSynchronizationToken(TokenType type)
+static bool IsSynchronizationToken(shard::TokenType type)
 {
-	for (TokenType syncToken : SynchronizationTokens)
+	for (shard::TokenType syncToken : SynchronizationTokens)
 	{
 		if (syncToken == type)
 			return true;
@@ -1878,7 +1883,7 @@ static bool IsSynchronizationToken(TokenType type)
 	return false;
 }
 
-static bool TrySynchronize(SourceProvider& reader, const std::vector<TokenType>& expectedTokens, int maxSkips = 10)
+static bool TrySynchronize(SourceProvider& reader, const std::vector<shard::TokenType>& expectedTokens, int maxSkips = 10)
 {
 	// Skip tokens until we find a synchronization point or expected token
 	int skipped = 0;
@@ -1887,7 +1892,7 @@ static bool TrySynchronize(SourceProvider& reader, const std::vector<TokenType>&
 		SyntaxToken current = reader.Current();
 
 		// Check if current token is one of expected
-		for (TokenType expected : expectedTokens)
+		for (shard::TokenType expected : expectedTokens)
 		{
 			if (current.Type == expected)
 				return true;

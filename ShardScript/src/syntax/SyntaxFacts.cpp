@@ -1,24 +1,31 @@
 #include <shard/syntax/SyntaxFacts.hpp>
 #include <shard/syntax/TokenType.hpp>
+#include <shard/syntax/SyntaxKind.hpp>
 
 using namespace shard;
 
-int GetOperatorPrecendence(TokenType type)
+int GetOperatorPrecendence(shard::TokenType type)
 {
 	switch (type)
 	{
 		case TokenType::IncrementOperator:
 		case TokenType::DecrementOperator:
-			return 9;
+			return 11;
+
+		case TokenType::PowOperator:
+			return 10;
 
 		case TokenType::MultOperator:
 		case TokenType::DivOperator:
 		case TokenType::ModOperator:
-		case TokenType::PowOperator:
-			return 8;
+			return 9;
 
 		case TokenType::AddOperator:
 		case TokenType::SubOperator:
+			return 8;
+
+		case TokenType::LeftShiftOperator:
+		case TokenType::RightShiftOperator:
 			return 7;
 
 		case TokenType::LessOperator:
@@ -27,18 +34,20 @@ int GetOperatorPrecendence(TokenType type)
 		case TokenType::GreaterOrEqualsOperator:
 			return 6;
 
-		case TokenType::LeftShiftOperator:
-		case TokenType::RightShiftOperator:
-			return 5;
-
 		case TokenType::EqualsOperator:
 		case TokenType::NotEqualsOperator:
+			return 5;
+
+		case TokenType::AndOperator:
 			return 4;
 
 		case TokenType::OrOperator:
-		case TokenType::AndOperator:
 			return 3;
 
+		case TokenType::Question: // ternary
+			return 2;
+
+		case TokenType::AssignOperator:
 		case TokenType::AddAssignOperator:
 		case TokenType::SubAssignOperator:
 		case TokenType::MultAssignOperator:
@@ -47,10 +56,6 @@ int GetOperatorPrecendence(TokenType type)
 		case TokenType::PowAssignOperator:
 		case TokenType::OrAssignOperator:
 		case TokenType::AndAssignOperator:
-			return 2;
-
-		case TokenType::AssignOperator:
-		case TokenType::Question: // ternary
 			return 1;
 
 		default:
@@ -58,7 +63,7 @@ int GetOperatorPrecendence(TokenType type)
 	}
 }
 
-bool IsBinaryArithmeticOperator(TokenType type)
+bool IsBinaryArithmeticOperator(shard::TokenType type)
 {
 	switch (type)
 	{
@@ -81,7 +86,7 @@ bool IsBinaryArithmeticOperator(TokenType type)
 	}
 }
 
-bool IsBinaryBooleanOperator(TokenType type)
+bool IsBinaryBooleanOperator(shard::TokenType type)
 {
 	switch (type)
 	{
@@ -113,7 +118,7 @@ bool IsBinaryBitOperator(shard::TokenType type)
 	}
 }
 
-bool IsBinaryOperator(TokenType type)
+bool IsBinaryOperator(shard::TokenType type)
 {
 	if (IsBinaryArithmeticOperator(type))
 		return true;
@@ -127,7 +132,7 @@ bool IsBinaryOperator(TokenType type)
 	return false;
 }
 
-bool IsRightUnaryArithmeticOperator(TokenType type)
+bool IsRightUnaryArithmeticOperator(shard::TokenType type)
 {
 	switch (type)
 	{
@@ -140,7 +145,7 @@ bool IsRightUnaryArithmeticOperator(TokenType type)
 	}
 }
 
-bool IsRightUnaryBooleanOperator(TokenType type)
+bool IsRightUnaryBooleanOperator(shard::TokenType type)
 {
 	switch (type)
 	{
@@ -194,7 +199,7 @@ bool IsUnaryOperator(shard::TokenType type)
 	return false;
 }
 
-bool IsRightUnaryOperator(TokenType type)
+bool IsRightUnaryOperator(shard::TokenType type)
 {
 	if (IsRightUnaryArithmeticOperator(type))
 		return true;
@@ -205,7 +210,7 @@ bool IsRightUnaryOperator(TokenType type)
 	return false;
 }
 
-bool IsOperator(TokenType type)
+bool IsOperator(shard::TokenType type)
 {
 	if (type == TokenType::AssignOperator)
 		return true;
@@ -219,7 +224,7 @@ bool IsOperator(TokenType type)
 	return false;
 }
 
-bool IsMemberKeyword(TokenType type)
+bool IsMemberKeyword(shard::TokenType type)
 {
 	switch (type)
 	{
@@ -231,7 +236,7 @@ bool IsMemberKeyword(TokenType type)
 	}
 }
 
-bool IsPredefinedType(TokenType type)
+bool IsPredefinedType(shard::TokenType type)
 {
 	switch (type)
 	{
@@ -249,7 +254,7 @@ bool IsPredefinedType(TokenType type)
 	}
 }
 
-bool IsType(TokenType type, TokenType peekType)
+bool IsType(shard::TokenType type, shard::TokenType peekType)
 {
 	if (IsPredefinedType(type))
 		return true;
@@ -279,7 +284,7 @@ bool IsType(TokenType type, TokenType peekType)
 	return false;
 }
 
-bool IsModifier(TokenType type)
+bool IsModifier(shard::TokenType type)
 {
 	switch (type)
 	{
@@ -316,7 +321,7 @@ bool IsTypeKeyword(shard::TokenType type)
 	}
 }
 
-bool IsMemberDeclaration(TokenType currentType, TokenType peekType)
+bool IsMemberDeclaration(shard::TokenType currentType, shard::TokenType peekType)
 {
 	if (IsModifier(currentType))
 		return true;
@@ -348,7 +353,7 @@ bool IsMemberDeclaration(TokenType currentType, TokenType peekType)
 	return false;
 }
 
-bool IsLoopKeyword(TokenType type)
+bool IsLoopKeyword(shard::TokenType type)
 {
 	switch (type)
 	{
@@ -364,7 +369,7 @@ bool IsLoopKeyword(TokenType type)
 	}
 }
 
-bool IsConditionalKeyword(TokenType type)
+bool IsConditionalKeyword(shard::TokenType type)
 {
 	switch (type)
 	{
@@ -378,7 +383,7 @@ bool IsConditionalKeyword(TokenType type)
 	}
 }
 
-bool IsFunctionalKeyword(TokenType type)
+bool IsFunctionalKeyword(shard::TokenType type)
 {
 	switch (type)
 	{
@@ -406,7 +411,7 @@ bool IsLinkedExpressionNode(shard::SyntaxKind kind)
 	}
 }
 
-bool IsKeyword(TokenType type)
+bool IsKeyword(shard::TokenType type)
 {
 	if (IsFunctionalKeyword(type))
 		return true;
@@ -421,7 +426,7 @@ bool IsKeyword(TokenType type)
 }
 
 /*
-bool IsKeywordHasExpression(TokenType type)
+bool IsKeywordHasExpression(shard::TokenType type)
 {
 	switch (type)
 	{
@@ -433,7 +438,7 @@ bool IsKeywordHasExpression(TokenType type)
 	}
 }
 
-bool IsMethodInvokationExpression(TokenType current, TokenType peek)
+bool IsMethodInvokationExpression(shard::TokenType current, TokenType peek)
 {
 	if (current == TokenType::Identifier)
 	{
@@ -445,7 +450,7 @@ bool IsMethodInvokationExpression(TokenType current, TokenType peek)
 }
 */
 
-bool IsPunctuation(TokenType type)
+bool IsPunctuation(shard::TokenType type)
 {
 	switch (type)
 	{

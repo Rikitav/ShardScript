@@ -1,6 +1,7 @@
 #include <shard/compilation/AbstractEmiter.hpp>
 #include <shard/compilation/ProgramVirtualImage.hpp>
 #include <shard/compilation/OperationCode.hpp>
+#include <shard/compilation/ByteCodeEncoder.hpp>
 
 #include <shard/parsing/analysis/DiagnosticsContext.hpp>
 #include <shard/parsing/semantic/SymbolTable.hpp>
@@ -36,6 +37,7 @@
 
 #include <shard/syntax/SymbolAccesibility.hpp>
 #include <shard/syntax/SyntaxToken.hpp>
+#include <shard/syntax/SyntaxKind.hpp>
 #include <shard/syntax/TokenType.hpp>
 
 #include <shard/syntax/symbols/LiteralSymbol.hpp>
@@ -49,12 +51,13 @@
 
 #include <stdexcept>
 #include <vector>
+#include <cstddef>
 
 using namespace shard;
 
 const int ReserveMultiplier = 25;
 
-static bool IsAssignExpression(TokenType type)
+static bool IsAssignExpression(shard::TokenType type)
 {
 	switch (type)
 	{
@@ -76,7 +79,7 @@ static bool IsAssignExpression(TokenType type)
 	}
 }
 
-static void EmitUnaryOperation(TokenType type, ByteCodeEncoder& encoder, std::vector<std::byte>& code, bool isRightDetermined)
+static void EmitUnaryOperation(shard::TokenType type, ByteCodeEncoder& encoder, std::vector<std::byte>& code, bool isRightDetermined)
 {
 	switch (type)
 	{
@@ -135,7 +138,7 @@ static void EmitUnaryOperation(TokenType type, ByteCodeEncoder& encoder, std::ve
 	}
 }
 
-static void EmitBinaryOperation(TokenType type, ByteCodeEncoder& encoder, std::vector<std::byte>& code)
+static void EmitBinaryOperation(shard::TokenType type, ByteCodeEncoder& encoder, std::vector<std::byte>& code)
 {
 	switch (type)
 	{

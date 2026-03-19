@@ -9,21 +9,19 @@
 
 using namespace shard;
 
-// TODO: fix 
-/*
-static ObjectInstance* get_Length(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+static ObjectInstance* get_Length(const CallState& context)
 {
 	static FieldSymbol* lengthField = SymbolTable::Primitives::Array->Fields.at(0); // <Length>k__BackingField
 
-	ObjectInstance* instance = arguments[0];
+	ObjectInstance* instance = context.Args[0];
 	ObjectInstance* lengthInstance = instance->GetField(lengthField);
 	return lengthInstance;
 }
 
-static ObjectInstance* get_Item(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+static ObjectInstance* get_Item(const CallState& context)
 {
-	ObjectInstance* instance = arguments[0]; // this
-	ObjectInstance* index = arguments[1]; // index
+	ObjectInstance* instance = context.Args[0]; // this
+	ObjectInstance* index = context.Args[1]; // index
 
 	int64_t indexValue = index->AsInteger();
 	if (!instance->IsInBounds(indexValue))
@@ -32,11 +30,11 @@ static ObjectInstance* get_Item(const VirtualMachine* host, const MethodSymbol* 
 	return instance->GetElement(indexValue);
 }
 
-static ObjectInstance* set_Item(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+static ObjectInstance* set_Item(const CallState& context)
 {
-	ObjectInstance* instance = arguments[0]; // this
-	ObjectInstance* index = arguments[1]; // index
-	ObjectInstance* value = arguments[2]; // value
+	ObjectInstance* instance = context.Args[0]; // this
+	ObjectInstance* index = context.Args[1]; // index
+	ObjectInstance* value = context.Args[2]; // value
 
 	int64_t indexValue = index->AsInteger();
 	if (!instance->IsInBounds(indexValue))
@@ -46,7 +44,7 @@ static ObjectInstance* set_Item(const VirtualMachine* host, const MethodSymbol* 
 	return nullptr;
 }
 
-static std::wstring ObjectInstanceToString(const VirtualMachine* host, ObjectInstance* instance)
+static std::wstring ObjectInstanceToString(const CallState& context, ObjectInstance* instance)
 {
 	static std::wstring findName = L"ToString";
 	static std::vector<TypeSymbol*> findArgs;
@@ -57,47 +55,45 @@ static std::wstring ObjectInstanceToString(const VirtualMachine* host, ObjectIns
 	if (toString == nullptr)
 		return info->FullName;
 
-	host->InvokeMethod(toString, { instance });
-	CallStackFrame* currentFrame = host->CurrentFrame();
+	context.Runtimer.InvokeMethod(toString, { instance });
+	CallStackFrame* currentFrame = context.Runtimer.CurrentFrame();
 
 	ObjectInstance* resultInstance = currentFrame->PopStack();
 	std::wstring resultStr = resultInstance->AsString();
 
-	GarbageCollector::CollectInstance(resultInstance);
+	context.Collector.CollectInstance(resultInstance);
 	return resultStr;
 }
 
-static ObjectInstance* to_string(const VirtualMachine* host, const MethodSymbol* method, ArgumentsSpan& arguments)
+static ObjectInstance* to_string(const CallState& context)
 {
-	ObjectInstance* instance = arguments[0]; // this
+	ObjectInstance* instance = context.Args[0]; // this
 	const ArrayTypeSymbol* array = static_cast<const ArrayTypeSymbol*>(instance->Info);
 	size_t size = array->Size;
 
 	if (size == 0)
-		return ObjectInstance::FromValue(L"[]");
+		return context.Collector.FromValue(L"[]");
 
 	std::wostringstream result;
 	result << L"[";
 
 	ObjectInstance* element = instance->GetElement(0);
-	result << ObjectInstanceToString(host, element);
-	GarbageCollector::CollectInstance(element);
+	result << ObjectInstanceToString(context, element);
+	context.Collector.CollectInstance(element);
 
 	for (size_t i = 1; i < size; i++)
 	{
 		element = instance->GetElement(i);
-		result << L", " << ObjectInstanceToString(host, element);
-		GarbageCollector::CollectInstance(element);
+		result << L", " << ObjectInstanceToString(context, element);
+		context.Collector.CollectInstance(element);
 	}
 
 	result << L"]";
-	return ObjectInstance::FromValue(result.str());
+	return context.Collector.FromValue(result.str());
 }
-*/
 
 void ArrayPrimitive::Reflect(TypeSymbol* symbol)
 {
-	/*
 	// Length
 	{
 		PropertySymbol* lengthProperty = new PropertySymbol(std::wstring(L"Length"));
@@ -145,5 +141,4 @@ void ArrayPrimitive::Reflect(TypeSymbol* symbol)
 
 		symbol->Methods.push_back(toStringMethod);
 	}
-	*/
 }

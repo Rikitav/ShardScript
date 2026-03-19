@@ -16,19 +16,31 @@
 namespace shard
 {
     class ApplicationDomain;
-    class ObjectInstance;
+    class ProgramVirtualImage;
+    class GarbageCollector;
     class VirtualMachine;
+    class ObjectInstance;
 
-    using ArgumentsSpan = std::span<ObjectInstance*, UINT8_MAX>;
-    struct InvokeContext
+    using ArgumentsSpan = std::span<ObjectInstance*>;
+
+    struct CallState
     {
+        /*
+        * DO NOT MODIFY THIS STRUCTURE!
+        * ANY CHANGES IN THIS CODE WILL RESULT
+        * LOSS OF BACKWARDS COMPATIBILITY AND UNDEFINED BEHAVIOUR!
+        */
+        
         ApplicationDomain& Domain;
-        VirtualMachine& Host;
+        ProgramVirtualImage& Program;
+        VirtualMachine& Runtimer;
+        GarbageCollector& Collector;
+
         MethodSymbol* Method;
         ArgumentsSpan& Args;
     };
 
-    typedef SHARD_API shard::ObjectInstance* (*MethodSymbolDelegate)(const InvokeContext& context);
+    typedef SHARD_API shard::ObjectInstance* (*MethodSymbolDelegate)(const CallState& context);
 
     enum class SHARD_API MethodHandleType
     {

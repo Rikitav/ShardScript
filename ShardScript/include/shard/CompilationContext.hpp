@@ -1,6 +1,6 @@
 #pragma once
 #include <shard/ShardScriptAPI.hpp>
-#include <shard/FrameworkModule.hpp>
+#include <shard/ShardScriptLIB.hpp>
 #include <shard/ApplicationDomain.hpp>
 
 #include <shard/parsing/SyntaxTree.hpp>
@@ -47,6 +47,7 @@ namespace shard
 
 		void AddLib(const std::filesystem::path& path);
 		void AddLib(const LibraryHandle& handle);
+		void AddModule(shard::FrameworkModule* module);
 
 		void EnrichTree(SourceProvider& sourceProvider);
 		void AnalyzeTree();
