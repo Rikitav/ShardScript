@@ -12,6 +12,7 @@
 #include <shard/syntax/symbols/MethodSymbol.hpp>
 #include <shard/syntax/symbols/ConstructorSymbol.hpp>
 #include <shard/syntax/symbols/TypeSymbol.hpp>
+#include <shard/syntax/symbols/DelegateTypeSymbol.hpp>
 
 #include <stack>
 #include <atomic>
@@ -32,9 +33,10 @@ namespace shard
 		std::stack<CallStackFrame*> CallStack;
 		std::atomic<bool> AbortFlag;
 
+		void ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder, const OpCode opCode);
 		void InvokeMethodInternal(MethodSymbol* method, CallStackFrame* currentFrame);
 		ObjectInstance* InstantiateObject(TypeSymbol* type, ConstructorSymbol* ctor);
-		void ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder, const OpCode opCode);
+		ObjectInstance* InstantiateDelegate(DelegateTypeSymbol* type);
 
 	public:
 		VirtualMachine(ApplicationDomain* appDomain);

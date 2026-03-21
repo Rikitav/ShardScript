@@ -63,7 +63,10 @@ namespace shard
 		static PropertySymbol* Property(const std::wstring& name, TypeSymbol* returnType, bool isStatic = false);
 
 		static MethodSymbol* Method(MethodDeclarationSyntax* node);
+		static MethodSymbol* Method(const wchar_t* name, TypeSymbol* returnType, bool isStatic = false);
 		static MethodSymbol* Method(const std::wstring& name, TypeSymbol* returnType, bool isStatic = false);
+		static MethodSymbol* Method(SymbolAccesibility accessibility, bool isStatic, TypeSymbol* returnType, const wchar_t* name, MethodSymbolDelegate function);
+		static MethodSymbol* Method(SymbolAccesibility accessibility, bool isStatic, TypeSymbol* returnType, const std::wstring& name, MethodSymbolDelegate function);
 
 		static ConstructorSymbol* Constructor(ConstructorDeclarationSyntax* node);
 		static ConstructorSymbol* Constructor(const std::wstring& name);

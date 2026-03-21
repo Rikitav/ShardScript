@@ -3,9 +3,7 @@
 
 #include <shard/syntax/SyntaxSymbol.hpp>
 #include <shard/syntax/SyntaxNode.hpp>
-#include <shard/syntax/SyntaxKind.hpp>
 
-#include <shard/syntax/symbols/MethodSymbol.hpp>
 #include <shard/syntax/symbols/TypeSymbol.hpp>
 #include <shard/syntax/symbols/NamespaceSymbol.hpp>
 
@@ -14,7 +12,17 @@
 #include <unordered_map>
 #include <vector>
 #include <string>
-#include <ranges>
+
+#define TYPE_VOID shard::SymbolTable::Primitives::Void
+#define TYPE_NULL shard::SymbolTable::Primitives::Null
+#define TYPE_ANY shard::SymbolTable::Primitives::Any
+
+#define TYPE_BOOl shard::SymbolTable::Primitives::Boolean
+#define TYPE_INT shard::SymbolTable::Primitives::Integer
+#define TYPE_DOUBLE shard::SymbolTable::Primitives::Double
+#define TYPE_CHAR shard::SymbolTable::Primitives::Char
+#define TYPE_STRING shard::SymbolTable::Primitives::String
+#define TYPE_ARRAY shard::SymbolTable::Primitives::Array
 
 namespace shard
 {

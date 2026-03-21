@@ -444,7 +444,9 @@ DelegateTypeSymbol* SymbolFactory::Delegate(MethodSymbol* method)
 	delegate->AnonymousSymbol = method;
 	delegate->Parameters = method->Parameters;
 	delegate->ReturnType = method->ReturnType;
-
+	delegate->State = TypeLayoutingState::Visited;
+	delegate->MemoryBytesSize = 0;
+	delegate->FullName = method->FullName;
 	return delegate;
 }
 
@@ -482,12 +484,43 @@ PropertySymbol* SymbolFactory::Property(const std::wstring& name, TypeSymbol* re
 	return symbol;
 }
 
+MethodSymbol* SymbolFactory::Method(const wchar_t* name, TypeSymbol* returnType, bool isStatic)
+{
+	MethodSymbol* symbol = new MethodSymbol(name);
+	symbol->ReturnType = returnType;
+	symbol->IsStatic = isStatic;
+	symbol->Accesibility = SymbolAccesibility::Private;
+	return symbol;
+}
+
 MethodSymbol* SymbolFactory::Method(const std::wstring& name, TypeSymbol* returnType, bool isStatic)
 {
 	MethodSymbol* symbol = new MethodSymbol(name);
 	symbol->ReturnType = returnType;
 	symbol->IsStatic = isStatic;
 	symbol->Accesibility = SymbolAccesibility::Private;
+	return symbol;
+}
+
+MethodSymbol* SymbolFactory::Method(SymbolAccesibility accessibility, bool isStatic, TypeSymbol* returnType, const wchar_t* name, MethodSymbolDelegate function)
+{
+	MethodSymbol* symbol = new MethodSymbol(name);
+	symbol->ReturnType = returnType;
+	symbol->IsStatic = isStatic;
+	symbol->Accesibility = accessibility;
+	symbol->FunctionPointer = function;
+	symbol->HandleType = MethodHandleType::External;
+	return symbol;
+}
+
+MethodSymbol* SymbolFactory::Method(SymbolAccesibility accessibility, bool isStatic, TypeSymbol* returnType, const std::wstring& name, MethodSymbolDelegate function)
+{
+	MethodSymbol* symbol = new MethodSymbol(name);
+	symbol->ReturnType = returnType;
+	symbol->IsStatic = isStatic;
+	symbol->Accesibility = accessibility;
+	symbol->FunctionPointer = function;
+	symbol->HandleType = MethodHandleType::External;
 	return symbol;
 }
 

@@ -196,6 +196,13 @@ namespace shard
         /// <para>> ConstructorSymbol* pCtor - The Constructor to invoke.</para>
         /// </summary>
         NewObject,
+			
+		/// <summary>
+        /// Creates a new instance of a delegate defined by DelegateTypeSymbol.
+        /// <para>Includes 2 parameters :</para>
+        /// <para>> DelegateTypeSymbol* pType - The delegate type.</para>
+        /// </summary>
+        NewDelegate,
 
         /// <summary>
         /// Pops an object instance from the stack, loads a field value from it and pushes gotten instance to stack.

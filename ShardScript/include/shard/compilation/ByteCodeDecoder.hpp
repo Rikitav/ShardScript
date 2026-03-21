@@ -8,6 +8,7 @@
 #include <shard/syntax/symbols/MethodSymbol.hpp>
 #include <shard/syntax/symbols/ConstructorSymbol.hpp>
 #include <shard/syntax/symbols/ArrayTypeSymbol.hpp>
+#include <shard/syntax/symbols/DelegateTypeSymbol.hpp>
 
 #include <cstdint>
 #include <cstddef>
@@ -41,6 +42,7 @@ namespace shard
 		size_t AbsorbJump();
 		
 		TypeSymbol* AbsorbTypeSymbol();
+		DelegateTypeSymbol* AbsordDelegateTypeSymbol();
 		FieldSymbol* AbsorbFieldSymbol();
 		ArrayTypeSymbol* AbsorbArraySymbol();
 		MethodSymbol* AbsorbMethodSymbol();

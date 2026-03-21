@@ -18,6 +18,7 @@
 #include <shard/syntax/symbols/FieldSymbol.hpp>
 #include <shard/syntax/symbols/TypeSymbol.hpp>
 #include <shard/syntax/symbols/GenericTypeSymbol.hpp>
+#include <shard/syntax/symbols/DelegateTypeSymbol.hpp>
 
 #include <shard/ApplicationDomain.hpp>
 
@@ -139,6 +140,14 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ConstructorSymbol* ctor = decoder.AbsorbConstructorSymbol();
 
 			ObjectInstance* instance = InstantiateObject(type, ctor);
+			frame->PushStack(instance);
+			break;
+		}
+
+		case OpCode::NewDelegate:
+		{
+			DelegateTypeSymbol* type = decoder.AbsordDelegateTypeSymbol();
+			ObjectInstance* instance = InstantiateDelegate(type);
 			frame->PushStack(instance);
 			break;
 		}
@@ -555,6 +564,12 @@ ObjectInstance* VirtualMachine::InstantiateObject(TypeSymbol* type, ConstructorS
 	AbstractInterpreter::PopFrame();
 	return newInstance;
 	*/
+}
+
+ObjectInstance* shard::VirtualMachine::InstantiateDelegate(DelegateTypeSymbol* type)
+{
+	ObjectInstance* newInstance = garbageCollector.AllocateInstance(type);
+	return newInstance;
 }
 
 VirtualMachine::VirtualMachine(ApplicationDomain* appDomain) : domain(appDomain),
