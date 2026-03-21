@@ -15,7 +15,7 @@ namespace shard
 		static void Write(double data);
 		static void Write(wchar_t data);
 		static void Write(const wchar_t* data);
-		static void Write(std::wstring data);
+		static void Write(const std::wstring& data);
 
 		static void WriteLine(ObjectInstance* instance);
 		static void WriteLine();
@@ -24,6 +24,6 @@ namespace shard
 		static void WriteLine(double data);
 		static void WriteLine(wchar_t data);
 		static void WriteLine(const wchar_t* data);
-		static void WriteLine(std::wstring data);
+		static void WriteLine(const std::wstring& data);
 	};
 }

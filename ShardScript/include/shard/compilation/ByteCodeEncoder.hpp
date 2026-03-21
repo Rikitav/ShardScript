@@ -6,6 +6,7 @@
 #include <shard/syntax/symbols/MethodSymbol.hpp>
 #include <shard/syntax/symbols/ArrayTypeSymbol.hpp>
 #include <shard/syntax/symbols/ConstructorSymbol.hpp>
+#include <shard/syntax/symbols/DelegateTypeSymbol.hpp>
 
 #include <cstddef>
 #include <cstdint>
@@ -64,6 +65,7 @@ namespace shard
 		void EmitLogicalAnd(std::vector<std::byte>& code);
 
 		void EmitNewObject(std::vector<std::byte>& code, TypeSymbol* type, ConstructorSymbol* ctor);
+		void EmitNewDelegate(std::vector<std::byte>& code, DelegateTypeSymbol* type);
 		void EmitLoadField(std::vector<std::byte>& code, FieldSymbol* type);
 		void EmitStoreField(std::vector<std::byte>& code, FieldSymbol* type);
 

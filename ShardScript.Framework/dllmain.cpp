@@ -13,10 +13,11 @@
 #include <system/Random.cpp>
 
 #define ONLY_ONCE static bool visited = false; if (visited) return; visited = true;
+#define STATIC true
 
 using namespace shard;
 
-static ObjectInstance* Gc_Info(const CallState& context)
+static ObjectInstance* Impl_Gc_Info(const CallState& context)
 {
 	std::wcout << "\nGarbage collector info dump" << std::endl;
 	for (ObjectInstance* reg : context.Collector.Heap)
@@ -31,7 +32,7 @@ static ObjectInstance* Gc_Info(const CallState& context)
 	return nullptr; // void
 }
 
-static ObjectInstance* Var_Info(const CallState& context)
+static ObjectInstance* Impl_Var_Info(const CallState& context)
 {
 	std::wcout << "\nCall stack frame variables dump :" << std::endl;
 	
@@ -49,7 +50,7 @@ static ObjectInstance* Var_Info(const CallState& context)
 	return nullptr; // void
 }
 
-static ObjectInstance* Print(const CallState& context)
+static ObjectInstance* Impl_Print(const CallState& context)
 {
 	ObjectInstance* instance = context.Args[0]; // var
 	TypeSymbol* type = const_cast<TypeSymbol*>(instance->Info);
@@ -85,7 +86,7 @@ static ObjectInstance* Print(const CallState& context)
 	return nullptr; // void
 }
 
-static ObjectInstance* Println(const CallState& context)
+static ObjectInstance* Impl_Println(const CallState& context)
 {
 	ObjectInstance* instance = context.Args[0]; // var
 	TypeSymbol* type = const_cast<TypeSymbol*>(instance->Info);
@@ -118,7 +119,7 @@ static ObjectInstance* Println(const CallState& context)
 	return nullptr; // void
 }
 
-static ObjectInstance* Input(const CallState& context)
+static ObjectInstance* Impl_Input(const CallState& context)
 {
 	std::wstring input;
 	getline(std::wcin, input);
@@ -146,80 +147,36 @@ static ObjectInstance* Impl_sizeof(const CallState& context)
 static void ReflectGlobalMethods(CompilationContext& context)
 {
 	// gc_info
-	{
-		MethodSymbol* gcInfoMethod = new MethodSymbol(L"gc_info", Gc_Info);
-		gcInfoMethod->ReturnType = SymbolTable::Primitives::Void;
-		gcInfoMethod->Accesibility = SymbolAccesibility::Public;
-		gcInfoMethod->IsStatic = true;
-
-		context.GetSemanticAnalyzer().AddSymbol(gcInfoMethod);
-	}
+	MethodSymbol* gcInfoMethod = SymbolFactory::Method(ACS_PUBLIC, STATIC, TYPE_VOID, L"gc_info", Impl_Gc_Info);
+	context.GetSemanticAnalyzer().AddSymbol(gcInfoMethod);
 
 	// Var_Info
-	{
-		MethodSymbol* gcInfoMethod = new MethodSymbol(L"var_info", Var_Info);
-		gcInfoMethod->ReturnType = SymbolTable::Primitives::Void;
-		gcInfoMethod->Accesibility = SymbolAccesibility::Public;
-		gcInfoMethod->IsStatic = true;
+	MethodSymbol* varInfoMethod = SymbolFactory::Method(ACS_PUBLIC, STATIC, TYPE_VOID, L"var_info", Impl_Var_Info);
+	context.GetSemanticAnalyzer().AddSymbol(varInfoMethod);
 
-		context.GetSemanticAnalyzer().AddSymbol(gcInfoMethod);
-	}
+	// inputln
+	MethodSymbol* inputlnMethod = SymbolFactory::Method(ACS_PUBLIC, STATIC, TYPE_STRING, L"inputln", Impl_Input);
+	context.GetSemanticAnalyzer().AddSymbol(inputlnMethod);
 
 	// print
-	{
-		MethodSymbol* printMethod = new MethodSymbol(L"print", Print);
-		printMethod->ReturnType = SymbolTable::Primitives::Void;
-		printMethod->Accesibility = SymbolAccesibility::Public;
-		printMethod->IsStatic = true;
-
-		ParameterSymbol* printMessageParam = new ParameterSymbol(L"message");
-		printMessageParam->Type = SymbolTable::Primitives::Any;
-		printMethod->Parameters.push_back(printMessageParam);
-
-		context.GetSemanticAnalyzer().AddSymbol(printMethod);
-	}
+	MethodSymbol* printMethod = SymbolFactory::Method(ACS_PUBLIC, STATIC, TYPE_VOID, L"print", Impl_Print);
+	printMethod->Parameters.push_back(SymbolFactory::Parameter(L"message", TYPE_ANY));
+	context.GetSemanticAnalyzer().AddSymbol(printMethod);
 
 	// println
-	{
-		MethodSymbol* printlnMethod = new MethodSymbol(L"println", Println);
-		printlnMethod->ReturnType = SymbolTable::Primitives::Void;
-		printlnMethod->Accesibility = SymbolAccesibility::Public;
-		printlnMethod->IsStatic = true;
-
-		ParameterSymbol* printlnMessageParam = new ParameterSymbol(L"message");
-		printlnMessageParam->Type = SymbolTable::Primitives::Any;
-		printlnMethod->Parameters.push_back(printlnMessageParam);
-
-		context.GetSemanticAnalyzer().AddSymbol(printlnMethod);
-	}
+	MethodSymbol* printlnMethod = SymbolFactory::Method(ACS_PUBLIC, STATIC, TYPE_VOID, L"println", Impl_Println);
+	printlnMethod->Parameters.push_back(SymbolFactory::Parameter(L"object", TYPE_ANY));
+	context.GetSemanticAnalyzer().AddSymbol(printlnMethod);
 
 	// typeof
-	{
-		MethodSymbol* typeofMethod = new MethodSymbol(L"typeof", Impl_typeof);
-		typeofMethod->ReturnType = SymbolTable::Primitives::String;
-		typeofMethod->Accesibility = SymbolAccesibility::Public;
-		typeofMethod->IsStatic = true;
-
-		ParameterSymbol* typeofObjectParam = new ParameterSymbol(L"object");
-		typeofObjectParam->Type = SymbolTable::Primitives::Any;
-		typeofMethod->Parameters.push_back(typeofObjectParam);
-
-		context.GetSemanticAnalyzer().AddSymbol(typeofMethod);
-	}
+	MethodSymbol* typeofMethod = SymbolFactory::Method(ACS_PUBLIC, STATIC, TYPE_STRING, L"typeof", Impl_typeof);
+	typeofMethod->Parameters.push_back(SymbolFactory::Parameter(L"object", TYPE_ANY));
+	context.GetSemanticAnalyzer().AddSymbol(typeofMethod);
 
 	// sizeof
-	{
-		MethodSymbol* sizeofMethod = new MethodSymbol(L"sizeof", Impl_sizeof);
-		sizeofMethod->ReturnType = SymbolTable::Primitives::Integer;
-		sizeofMethod->Accesibility = SymbolAccesibility::Public;
-		sizeofMethod->IsStatic = true;
-
-		ParameterSymbol* typeofObjectParam = new ParameterSymbol(L"object");
-		typeofObjectParam->Type = SymbolTable::Primitives::Any;
-		sizeofMethod->Parameters.push_back(typeofObjectParam);
-
-		context.GetSemanticAnalyzer().AddSymbol(sizeofMethod);
-	}
+	MethodSymbol* sizeofMethod = SymbolFactory::Method(ACS_PUBLIC, STATIC, TYPE_INT, L"sizeof", Impl_sizeof);
+	sizeofMethod->Parameters.push_back(SymbolFactory::Parameter(L"object", TYPE_ANY));
+	context.GetSemanticAnalyzer().AddSymbol(sizeofMethod);
 }
 
 static void ReflectPrimitives(CompilationContext& context)

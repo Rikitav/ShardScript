@@ -12,6 +12,8 @@
 #include <minidumpapiset.h>
 #include <excpt.h>
 #include <ios>
+#include <fcntl.h>
+#include <io.h>
 
 #pragma comment(lib, "shlwapi.lib")
 #pragma comment(lib, "dbghelp.lib")

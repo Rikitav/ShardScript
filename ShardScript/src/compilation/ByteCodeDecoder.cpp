@@ -6,6 +6,7 @@
 #include <shard/syntax/symbols/FieldSymbol.hpp>
 #include <shard/syntax/symbols/MethodSymbol.hpp>
 #include <shard/syntax/symbols/TypeSymbol.hpp>
+#include <shard/syntax/symbols/DelegateTypeSymbol.hpp>
 
 #include <stdexcept>
 #include <cstddef>
@@ -114,6 +115,13 @@ size_t ByteCodeDecoder::AbsorbJump()
 TypeSymbol* ByteCodeDecoder::AbsorbTypeSymbol()
 {
     TypeSymbol* value{};
+    ReadUnaligned(_code, _ip, value);
+    return value;
+}
+
+DelegateTypeSymbol* ByteCodeDecoder::AbsordDelegateTypeSymbol()
+{
+    DelegateTypeSymbol* value{};
     ReadUnaligned(_code, _ip, value);
     return value;
 }

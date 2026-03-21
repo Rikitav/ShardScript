@@ -865,7 +865,7 @@ void AbstractEmiter::VisitMemberAccessExpression(MemberAccessExpressionSyntax* c
 
 	if (node->ToDelegate != nullptr)
 	{
-		Encoder.EmitCallMethodSymbol(GeneratingFor->ExecutableByteCode, node->ToDelegate->AnonymousSymbol);
+		Encoder.EmitNewDelegate(GeneratingFor->ExecutableByteCode, node->ToDelegate);
 		return;
 	}
 }

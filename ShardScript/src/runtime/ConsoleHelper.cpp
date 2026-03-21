@@ -2,14 +2,18 @@
 #include <shard/runtime/ObjectInstance.hpp>
 #include <shard/parsing/semantic/SymbolTable.hpp>
 
-#include <windows.h> // TODO: remove
 #include <iostream>
-#include <malloc.h>
 #include <consoleapi.h>
 #include <processenv.h>
-#include <cstdio>
 #include <stdexcept>
 #include <string>
+#include <wchar.h>
+#include <cstdint>
+
+#if defined(_MSC_VER)
+#include <windows.h>
+#define USEWIN 1
+#endif
 
 using namespace shard;
 
@@ -52,105 +56,78 @@ void ConsoleHelper::Write(ObjectInstance* instance)
 		return;
 	}
 
+	if (instance->Info->FullName.capacity() > 0)
+	{
+		Write(instance->Info->FullName);
+		return;
+	}
+
+	if (instance->Info->Name.capacity() > 0)
+	{
+		Write(instance->Info->Name);
+		return;
+	}
+
 	throw std::runtime_error("unknown type");
 }
 
 void ConsoleHelper::Write(bool data)
 {
-	DWORD charsWritten;
 	const wchar_t* text = data ? L"true" : L"false";
-	WriteConsoleW(stdOut, text, static_cast<DWORD>(wcslen(text)), &charsWritten, NULL);
+	Write(text);
 }
 
 void ConsoleHelper::Write(int64_t data)
 {
-	int needed_size = _scwprintf(L"%lld", data) + 1;
-	if (needed_size <= 0)
-		return;
-
-	wchar_t* buffer = (wchar_t*)malloc(needed_size * sizeof(wchar_t));
-	if (!buffer)
-		return;
-
-	DWORD charsWritten;
-	swprintf_s(buffer, needed_size, L"%lld", data);
-	WriteConsoleW(stdOut, buffer, static_cast<DWORD>(wcslen(buffer)), &charsWritten, NULL);
-	free(buffer);
+	std::wstring strData = std::to_wstring(data);
+	Write(strData);
 }
 
 void ConsoleHelper::Write(double data)
 {
-	int needed_size = _scwprintf(L"%.*g", DBL_DECIMAL_DIG, data) + 1;
-	if (needed_size <= 0)
-		return;
-
-	wchar_t* buffer = (wchar_t*)malloc(needed_size * sizeof(wchar_t));
-	if (!buffer)
-		return;
-
-	DWORD charsWritten;
-	swprintf_s(buffer, needed_size, L"%.*g", DBL_DECIMAL_DIG, data);
-	WriteConsoleW(stdOut, buffer, static_cast<DWORD>(wcslen(buffer)), &charsWritten, NULL);
-	free(buffer);
+	std::wstring strData = std::to_wstring(data);
+	Write(strData);
 }
 
 void ConsoleHelper::Write(wchar_t data)
 {
 	DWORD charsWritten;
+#if USEWIN
 	WriteConsoleW(stdOut, &data, sizeof(wchar_t), &charsWritten, NULL);
+#else
+	wprintf(L"%ls", data);
+	fflush(stdout);
+#endif
 }
 
 void ConsoleHelper::Write(const wchar_t* data)
 {
 	DWORD charsWritten;
+#if USEWIN
 	WriteConsoleW(stdOut, data, static_cast<DWORD>(wcslen(data)), &charsWritten, NULL);
+#else
+	wprintf(L"%ls", data);
+	fflush(stdout);
+#endif
 }
 
-void ConsoleHelper::Write(std::wstring data)
+void ConsoleHelper::Write(const std::wstring& data)
 {
 	DWORD charsWritten;
 	const wchar_t* text = data.c_str();
-	WriteConsoleW(stdOut, text, static_cast<DWORD>(wcslen(text)), &charsWritten, NULL);
+
+#if USEWIN
+	WriteConsoleW(stdOut, text, static_cast<DWORD>(data.size()), &charsWritten, NULL);
+#else
+	wprintf(L"%ls", text);
+	fflush(stdout);
+#endif
 }
 
 void ConsoleHelper::WriteLine(ObjectInstance* instance)
 {
-	if (instance->Info == SymbolTable::Primitives::Boolean)
-	{
-		bool data = instance->AsBoolean();
-		WriteLine(data);
-		return;
-	}
-
-	if (instance->Info == SymbolTable::Primitives::Integer)
-	{
-		int64_t data = instance->AsInteger();
-		WriteLine(data);
-		return;
-	}
-
-	if (instance->Info == SymbolTable::Primitives::Double)
-	{
-		double data = instance->AsDouble();
-		WriteLine(data);
-		return;
-	}
-
-	if (instance->Info == SymbolTable::Primitives::Char)
-	{
-		wchar_t data = instance->AsCharacter();
-		WriteLine(data);
-		return;
-	}
-
-	if (instance->Info == SymbolTable::Primitives::String)
-	{
-		const wchar_t* data = instance->AsString();
-		WriteLine(data);
-		return;
-	}
-
-	throw std::runtime_error("unknown type");
+	Write(instance);
+	WriteLine();
 }
 
 void ConsoleHelper::WriteLine()
@@ -188,7 +165,7 @@ void ConsoleHelper::WriteLine(const wchar_t* data)
 	std::cout << std::endl;
 }
 
-void ConsoleHelper::WriteLine(std::wstring data)
+void ConsoleHelper::WriteLine(const std::wstring& data)
 {
 	Write(data);
 	std::cout << std::endl;
