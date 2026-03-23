@@ -8,6 +8,8 @@
 #include <vector>
 #include <ostream>
 #include <stdexcept>
+#include <memory>
+#include <string_view>
 
 namespace shard
 {
@@ -27,8 +29,11 @@ namespace shard
 		inline DiagnosticsContext() : Diagnostics() {}
 
 		void ReportError(shard::SyntaxToken token, std::wstring message);
+		void ReportError(shard::SyntaxToken token, const wchar_t* message);
 		void ReportWarning(shard::SyntaxToken token, std::wstring message);
+		void ReportWarning(shard::SyntaxToken token, const wchar_t* message);
 		void ReportInfo(shard::SyntaxToken token, std::wstring message);
+		void ReportInfo(shard::SyntaxToken token, const wchar_t* message);
 		void WriteDiagnostics(std::wostream& out);
 		void Reset();
 	};

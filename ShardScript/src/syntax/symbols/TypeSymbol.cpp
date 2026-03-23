@@ -48,9 +48,6 @@ TypeSymbol::~TypeSymbol()
 	for (TypeParameterSymbol* typeParamSymbol : TypeParameters)
 		delete typeParamSymbol;
 #pragma warning (pop)
-
-	if (BaseType != nullptr)
-		BaseType = nullptr;
 }
 
 size_t TypeSymbol::GetInlineSize() const

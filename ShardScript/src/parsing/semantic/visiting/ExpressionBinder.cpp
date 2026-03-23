@@ -888,14 +888,13 @@ bool ExpressionBinder::MatchMethodArguments(std::vector<ParameterSymbol*> parame
 			return false;
 		}
 		
-		ExpressionSyntax* expr = const_cast<ExpressionSyntax*>(arg->Expression);
 		/*
 		PushScope(new LeftDenotationSymbol(param->Type));
 		VisitExpression(expr);
 		PopScope();
 		*/
 		
-		TypeSymbol* argType = GetExpressionType(expr);
+		TypeSymbol* argType = GetExpressionType(arg->Expression);
 		if (argType == nullptr)
 		{
 			//Diagnostics.ReportError(SyntaxToken(), L"Argument type could not be determined for parameter '" + param->Name + L"'");
@@ -1205,16 +1204,12 @@ TypeSymbol* ExpressionBinder::AnalyzeInvokationExpression(InvokationExpressionSy
 		return nullptr;
 	}
 
-	// Передаем genericType для замены type parameters в параметрах метода
 	GenericTypeSymbol* genericType = nullptr;
 	if (currentType->Kind == SyntaxKind::GenericType)
 		genericType = static_cast<GenericTypeSymbol*>(currentType);
 
 	if (!MatchMethodArguments(method->Parameters, node->ArgumentsList->Arguments, genericType))
-	{
-		//Diagnostics.ReportError(node->IdentifierToken, L"Method '" + methodName + L"' argument types do not match");
 		return nullptr;
-	}
 
 	node->Symbol = method;
 	node->IsStaticContext = false;
@@ -1226,12 +1221,8 @@ TypeSymbol* ExpressionBinder::AnalyzeInvokationExpression(InvokationExpressionSy
 	}
 
 	TypeSymbol* returnType = method->ReturnType;
-	
-	// Если currentType является GenericTypeSymbol, заменяем type parameters на type arguments
 	if (returnType->Kind == SyntaxKind::TypeParameter)
-	{
 		returnType = SubstituteTypeParameters(returnType, genericType);
-	}
 	
 	return returnType;
 }
@@ -1248,10 +1239,9 @@ ConstructorSymbol* ExpressionBinder::ResolveConstructor(ObjectExpressionSyntax *
 	std::vector<TypeSymbol*> argTypes;
 	for (ArgumentSyntax* arg : node->ArgumentsList->Arguments)
 	{
-		ExpressionSyntax* expr = const_cast<ExpressionSyntax*>(arg->Expression);
-		VisitExpression(expr);
+		VisitExpression(arg->Expression);
 
-		TypeSymbol* argType = GetExpressionType(expr);
+		TypeSymbol* argType = GetExpressionType(arg->Expression);
 		if (argType == nullptr)
 			return nullptr;
 
@@ -1310,18 +1300,18 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax *const 
 
 	for (ArgumentSyntax* arg : node->ArgumentsList->Arguments)
 	{
-		ExpressionSyntax* expr = const_cast<ExpressionSyntax*>(arg->Expression);
 		//PushScope(new LeftDenotationSymbol(param->Type));
-		VisitExpression(expr);
+		VisitExpression(arg->Expression);
 		//PopScope();
 
-		TypeSymbol* argType = GetExpressionType(expr);
+		TypeSymbol* argType = GetExpressionType(arg->Expression);
 		if (argType == nullptr)
 			return nullptr;
 
 		argTypes.push_back(argType);
 	}
 
+	// Try to find method inside current type
 	MethodSymbol* method = currentType->FindMethod(methodName, argTypes);
 	if (method == nullptr)
 		method = SymbolTable::Global::Type->FindMethod(methodName, argTypes);
@@ -1660,10 +1650,9 @@ IndexatorSymbol* ExpressionBinder::ResolveIndexator(IndexatorExpressionSyntax *c
 
 	for (ArgumentSyntax* arg : node->IndexatorList->Arguments)
 	{
-		ExpressionSyntax* expr = const_cast<ExpressionSyntax*>(arg->Expression);
-		VisitExpression(expr);
+		VisitExpression(arg->Expression);
 
-		TypeSymbol* argType = GetExpressionType(expr);
+		TypeSymbol* argType = GetExpressionType(arg->Expression);
 		if (argType == nullptr)
 			return nullptr;
 
@@ -1848,24 +1837,31 @@ void ExpressionBinder::VisitIfStatement(IfStatementSyntax *const node)
 {
 	if (node->ConditionExpression != nullptr)
 	{
-		ExpressionSyntax* conditionExpr = dynamic_cast<ExpressionStatementSyntax*>(node->ConditionExpression)->Expression;
-		if (conditionExpr != nullptr)
+		if (node->ConditionExpression->Kind != SyntaxKind::ExpressionStatement)
 		{
-			VisitExpression(conditionExpr);
-			TypeSymbol* conditionType = GetExpressionType(conditionExpr);
-			
-			if (conditionType == nullptr)
-			{
-				Diagnostics.ReportError(node->KeywordToken, L"If condition type could not be determined");
-			}
-			else if (conditionType != SymbolTable::Primitives::Boolean)
-			{
-				Diagnostics.ReportError(node->KeywordToken, L"If condition must be boolean, got '" + conditionType->Name + L"'");
-			}
+			Diagnostics.ReportError(node->KeywordToken, L"");
 		}
 		else
 		{
-			Diagnostics.ReportError(node->KeywordToken, L"If condition must be an expression");
+			ExpressionSyntax* conditionExpr = static_cast<ExpressionStatementSyntax*>(node->ConditionExpression)->Expression;
+			if (conditionExpr != nullptr)
+			{
+				VisitExpression(conditionExpr);
+				TypeSymbol* conditionType = GetExpressionType(conditionExpr);
+				
+				if (conditionType == nullptr)
+				{
+					Diagnostics.ReportError(node->KeywordToken, L"If condition type could not be determined");
+				}
+				else if (conditionType != SymbolTable::Primitives::Boolean)
+				{
+					Diagnostics.ReportError(node->KeywordToken, L"If condition must be boolean, got '" + conditionType->Name + L"'");
+				}
+			}
+			else
+			{
+				Diagnostics.ReportError(node->KeywordToken, L"If condition must be an expression");
+			}
 		}
 	}
 	
