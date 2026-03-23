@@ -30,7 +30,6 @@ namespace shard
 	class SHARD_API TypeSymbol : public SyntaxSymbol
 	{
 	public:
-        TypeSymbol* BaseType = nullptr;
         std::vector<TypeSymbol*> Interfaces;
         std::vector<TypeParameterSymbol*> TypeParameters;
 

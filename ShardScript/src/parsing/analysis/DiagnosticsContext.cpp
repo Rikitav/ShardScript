@@ -6,6 +6,8 @@
 #include <string>
 #include <ostream>
 #include <stdexcept>
+#include <memory>
+#include <string_view>
 
 using namespace shard;
 
@@ -18,12 +20,29 @@ void DiagnosticsContext::ReportError(SyntaxToken token, std::wstring message)
 	Diagnostics.push_back(Diagnostic(token, DiagnosticSeverity::Error, message));
 }
 
+void DiagnosticsContext::ReportError(SyntaxToken token, const wchar_t* message)
+{
+	AnyError = true;
+	Diagnostics.push_back(Diagnostic(token, DiagnosticSeverity::Error, message));
+}
+
 void DiagnosticsContext::ReportWarning(SyntaxToken token, std::wstring message)
 {
 	Diagnostics.push_back(Diagnostic(token, DiagnosticSeverity::Warning, message));
 }
 
+void DiagnosticsContext::ReportWarning(SyntaxToken token, const wchar_t* message)
+{
+	Diagnostics.push_back(Diagnostic(token, DiagnosticSeverity::Warning, message));
+}
+
 void DiagnosticsContext::ReportInfo(SyntaxToken token, std::wstring message)
+{
+	Diagnostic dgnstc = Diagnostic(token, DiagnosticSeverity::Info, message);
+	Diagnostics.push_back(dgnstc);
+}
+
+void DiagnosticsContext::ReportInfo(SyntaxToken token, const wchar_t* message)
 {
 	Diagnostic dgnstc = Diagnostic(token, DiagnosticSeverity::Info, message);
 	Diagnostics.push_back(dgnstc);

@@ -14,10 +14,10 @@ namespace shard
 	class SHARD_API ArgumentSyntax : public SyntaxNode
 	{
 	public:
-		const ExpressionSyntax* Expression;
+		ExpressionSyntax *const Expression;
 		const bool IsByReference;
 
-		inline ArgumentSyntax(const ExpressionSyntax* expression, SyntaxNode *const parent)
+		inline ArgumentSyntax(ExpressionSyntax *const expression, SyntaxNode *const parent)
 			: SyntaxNode(SyntaxKind::Argument, parent), Expression(expression), IsByReference(false) { }
 
 		inline ArgumentSyntax(const ArgumentSyntax& other) = delete;
