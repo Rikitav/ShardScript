@@ -1,5 +1,17 @@
+#include <shard/ShardScriptLIB.hpp>
+#include <shard/runtime/ConsoleHelper.hpp>
+#include <shard/syntax/nodes/Types/PredefinedTypeSyntax.hpp>
+#include <shard/syntax/nodes/Statements/ExpressionStatementSyntax.hpp>
+#include <shard/syntax/SyntaxFacts.hpp>
+#include <shard/compilation/AbstractEmiter.hpp>
+#include <shard/runtime/GarbageCollector.hpp>
+#include <shard/parsing/lexical/LexicalAnalyzer.hpp>
+#include <shard/parsing/lexical/reading/StringStreamReader.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.hpp>
+
 #include <Windows.h>
-#include <ShardScript.hpp>
 #include <InteractiveConsole.hpp>
 #include <utilities/InterpreterUtilities.hpp>
 

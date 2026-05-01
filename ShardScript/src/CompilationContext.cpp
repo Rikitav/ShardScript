@@ -68,7 +68,7 @@ static LibraryHandle LoadLibraryHandle(const std::filesystem::path& path)
 static void FreeLibraryHandle(LibraryHandle handle)
 {
 #ifdef _WIN32
-	FreeLibrary(handle);
+	FreeLibrary((HMODULE)handle);
 #else
 	throw std::runtime_error("Loading libraries is not supported on this platform");
 #endif
@@ -77,7 +77,7 @@ static void FreeLibraryHandle(LibraryHandle handle)
 static void* GetLibFunction(LibraryHandle handle, const char* procName)
 {
 #ifdef _WIN32
-	return GetProcAddress(handle, procName);
+	return (void*)GetProcAddress((HMODULE)handle, procName);
 #else
 	throw std::runtime_error("Loading libraries is not supported on this platform");
 #endif
@@ -284,7 +284,7 @@ void CompilationContext::AddLib(const LibraryHandle& handle)
 	}
 
 	LibHandles.push_back(handle);
-	EntryPointFunction entryPoint = static_cast<EntryPointFunction>(GetLibFunction(handle, "ShardLib_EntryPoint"));
+	EntryPointFunction entryPoint = reinterpret_cast<EntryPointFunction>(GetLibFunction(handle, "ShardLib_EntryPoint"));
 
 	if (entryPoint == nullptr)
 	{

@@ -15,35 +15,6 @@
 
 namespace shard
 {
-    class ApplicationDomain;
-    class ProgramVirtualImage;
-    class GarbageCollector;
-    class VirtualMachine;
-    class ObjectInstance;
-    class CallStackFrame;
-
-    using ArgumentsSpan = std::span<ObjectInstance*>;
-
-    struct CallState
-    {
-        /*
-        * DO NOT MODIFY THIS STRUCTURE!
-        * ANY CHANGES IN THIS CODE WILL RESULT LOSS OF BACKWARDS COMPATIBILITY AND UNDEFINED BEHAVIOUR!
-        * IN CASE OF CHANGES, RECOMPILE DEPENDENT LIBRARIES!
-        */
-        
-        ApplicationDomain& Domain;
-        ProgramVirtualImage& Program;
-        VirtualMachine& Runtimer;
-        GarbageCollector& Collector;
-
-        CallStackFrame* Frame;
-        MethodSymbol* Method;
-        ArgumentsSpan& Args;
-    };
-
-    typedef SHARD_API shard::ObjectInstance* (*MethodSymbolDelegate)(const CallState& context);
-
     enum class SHARD_API MethodHandleType
     {
         None,
@@ -51,6 +22,10 @@ namespace shard
         External,
         Lambda,
     };
+
+    class ObjectInstance;
+    struct CallState;
+    typedef SHARD_API shard::ObjectInstance* (*MethodSymbolDelegate)(const CallState& context);
 
     class SHARD_API MethodSymbol : public SyntaxSymbol
     {

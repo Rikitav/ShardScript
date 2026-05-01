@@ -3,21 +3,21 @@
 #include <shard/parsing/semantic/SymbolTable.hpp>
 
 #include <iostream>
-#include <consoleapi.h>
-#include <processenv.h>
 #include <stdexcept>
 #include <string>
 #include <wchar.h>
 #include <cstdint>
 
-#if defined(_MSC_VER)
+#if defined(_WIN32)
 #include <windows.h>
 #define USEWIN 1
 #endif
 
 using namespace shard;
 
+#if USEWIN
 static const HANDLE stdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+#endif
 
 void ConsoleHelper::Write(ObjectInstance* instance)
 {
@@ -91,19 +91,19 @@ void ConsoleHelper::Write(double data)
 
 void ConsoleHelper::Write(wchar_t data)
 {
-	DWORD charsWritten;
 #if USEWIN
-	WriteConsoleW(stdOut, &data, sizeof(wchar_t), &charsWritten, NULL);
+	DWORD charsWritten;
+	WriteConsoleW(stdOut, &data, 1, &charsWritten, NULL);
 #else
-	wprintf(L"%ls", data);
+	wprintf(L"%lc", data);
 	fflush(stdout);
 #endif
 }
 
 void ConsoleHelper::Write(const wchar_t* data)
 {
-	DWORD charsWritten;
 #if USEWIN
+	DWORD charsWritten;
 	WriteConsoleW(stdOut, data, static_cast<DWORD>(wcslen(data)), &charsWritten, NULL);
 #else
 	wprintf(L"%ls", data);
@@ -113,10 +113,10 @@ void ConsoleHelper::Write(const wchar_t* data)
 
 void ConsoleHelper::Write(const std::wstring& data)
 {
-	DWORD charsWritten;
 	const wchar_t* text = data.c_str();
 
 #if USEWIN
+	DWORD charsWritten;
 	WriteConsoleW(stdOut, text, static_cast<DWORD>(data.size()), &charsWritten, NULL);
 #else
 	wprintf(L"%ls", text);

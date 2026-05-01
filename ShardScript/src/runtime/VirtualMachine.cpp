@@ -1,4 +1,5 @@
 #include <shard/runtime/VirtualMachine.hpp>
+#include <shard/runtime/MethodCallState.hpp>
 #include <shard/runtime/PrimitiveMathModule.hpp>
 #include <shard/runtime/CallStackFrame.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
@@ -35,39 +36,39 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 {
 	switch (opCode)
 	{
-		case OpCode::Nop:
+		case OpCode::NOP:
 		{
 			// 0xBAD + 0xC0DE;
 			break;
 		}
 
-		case OpCode::Halt:
+		case OpCode::HALT:
 		{
 			AbortFlag = true;
 			break;
 		}
 
-		case OpCode::PopStack:
+		case OpCode::POPSTACK:
 		{
 			ObjectInstance* pop = frame->PopStack();
 			garbageCollector.CollectInstance(pop);
 			break;
 		}
 
-		case OpCode::CallMethodSymbol:
+		case OpCode::CALLMETHODSYMBOL:
 		{
 			MethodSymbol* methodSymbol = decoder.AbsorbMethodSymbol();
 			InvokeMethod(methodSymbol);
 			break;
 		}
 
-		case OpCode::LoadConst_Null:
+		case OpCode::LOADCONST_NULL:
 		{
 			frame->PushStack(garbageCollector.NullInstance);
 			break;
 		}
 
-		case OpCode::LoadConst_Boolean:
+		case OpCode::LOADCONST_BOOLEAN:
 		{
 			bool value = decoder.AbsorbBoolean();
 			ObjectInstance* instance = garbageCollector.FromValue(value);
@@ -75,7 +76,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::LoadConst_Integer64:
+		case OpCode::LOADCONST_INTEGER64:
 		{
 			int64_t value = decoder.AbsorbInt64();
 			ObjectInstance* instance = garbageCollector.FromValue(value);
@@ -83,7 +84,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::LoadConst_Rational64:
+		case OpCode::LOADCONST_RATIONAL64:
 		{
 			double value = decoder.AbsorbDouble64();
 			ObjectInstance* instance = garbageCollector.FromValue(value);
@@ -91,7 +92,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::LoadConst_Char:
+		case OpCode::LOADCONST_CHAR:
 		{
 			wchar_t value = decoder.AbsorbChar16();
 			ObjectInstance* instance = garbageCollector.FromValue(value);
@@ -99,7 +100,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::LoadConst_String:
+		case OpCode::LOADCONST_STRING:
 		{
 			size_t data = decoder.AbsorbString();
 			const wchar_t* str = reinterpret_cast<wchar_t*>(program.DataSection.data() + data);
@@ -109,7 +110,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::LoadVariable:
+		case OpCode::LOADVARIABLE:
 		{
 			uint16_t slot = decoder.AbsorbVariableSlot();
 			ObjectInstance* instance = frame->EvalStack[slot];
@@ -117,7 +118,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::StoreVariable:
+		case OpCode::STOREVARIABLE:
 		{
 			uint16_t slot = decoder.AbsorbVariableSlot();
 			ObjectInstance* instance = frame->PopStack();
@@ -134,7 +135,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::NewObject:
+		case OpCode::NEWOBJECT:
 		{
 			TypeSymbol* type = decoder.AbsorbTypeSymbol();
 			ConstructorSymbol* ctor = decoder.AbsorbConstructorSymbol();
@@ -144,7 +145,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::NewDelegate:
+		case OpCode::NEWDELEGATE:
 		{
 			DelegateTypeSymbol* type = decoder.AbsordDelegateTypeSymbol();
 			ObjectInstance* instance = InstantiateDelegate(type);
@@ -152,7 +153,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::LoadField:
+		case OpCode::LOADFIELD:
 		{
 			FieldSymbol* field = decoder.AbsorbFieldSymbol();
 			ObjectInstance* instance = frame->PopStack();
@@ -163,7 +164,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::StoreField:
+		case OpCode::STOREFIELD:
 		{
 			FieldSymbol* field = decoder.AbsorbFieldSymbol();
 			ObjectInstance* fieldValue = frame->PopStack();
@@ -175,7 +176,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::LoadStaticField:
+		case OpCode::LOADSTATICFIELD:
 		{
 			FieldSymbol* field = decoder.AbsorbFieldSymbol();
 			ObjectInstance* fieldValue = garbageCollector.GetStaticField(field);
@@ -184,7 +185,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::StoreStaticField:
+		case OpCode::STORESTATICFIELD:
 		{
 			FieldSymbol* field = decoder.AbsorbFieldSymbol();
 			ObjectInstance* fieldValue = frame->PopStack();
@@ -194,7 +195,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::CreateDuplicate:
+		case OpCode::CREATEDUPLICATE:
 		{
 			ObjectInstance* instance = frame->PeekStack();
 			ObjectInstance* duplicate = garbageCollector.CopyInstance(instance);
@@ -203,7 +204,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::Math_Addition:
+		case OpCode::MATH_ADDITION:
 		{
 			ObjectInstance* right = frame->PopStack();
 			ObjectInstance* left = frame->PopStack();
@@ -216,7 +217,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::Math_Substraction:
+		case OpCode::MATH_SUBSTRACTION:
 		{
 			ObjectInstance* right = frame->PopStack();
 			ObjectInstance* left = frame->PopStack();
@@ -229,7 +230,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::Math_Multiplication:
+		case OpCode::MATH_MULTIPLICATION:
 		{
 			ObjectInstance* right = frame->PopStack();
 			ObjectInstance* left = frame->PopStack();
@@ -242,7 +243,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::Math_Division:
+		case OpCode::MATH_DIVISION:
 		{
 			ObjectInstance* right = frame->PopStack();
 			ObjectInstance* left = frame->PopStack();
@@ -255,7 +256,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::Math_Module:
+		case OpCode::MATH_MODULE:
 		{
 			ObjectInstance* right = frame->PopStack();
 			ObjectInstance* left = frame->PopStack();
@@ -268,7 +269,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::Math_Power:
+		case OpCode::MATH_POWER:
 		{
 			ObjectInstance* right = frame->PopStack();
 			ObjectInstance* left = frame->PopStack();
@@ -281,7 +282,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::Compare_Equal:
+		case OpCode::COMPARE_EQUAL:
 		{
 			ObjectInstance* right = frame->PopStack();
 			ObjectInstance* left = frame->PopStack();
@@ -294,7 +295,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::Compare_NotEqual:
+		case OpCode::COMPARE_NOTEQUAL:
 		{
 			ObjectInstance* right = frame->PopStack();
 			ObjectInstance* left = frame->PopStack();
@@ -307,7 +308,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::Compare_Less:
+		case OpCode::COMPARE_LESS:
 		{
 			ObjectInstance* right = frame->PopStack();
 			ObjectInstance* left = frame->PopStack();
@@ -320,7 +321,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::Compare_LessOrEqual:
+		case OpCode::COMPARE_LESSOREQUAL:
 		{
 			ObjectInstance* right = frame->PopStack();
 			ObjectInstance* left = frame->PopStack();
@@ -333,7 +334,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::Compare_Greater:
+		case OpCode::COMPARE_GREATER:
 		{
 			ObjectInstance* right = frame->PopStack();
 			ObjectInstance* left = frame->PopStack();
@@ -347,7 +348,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::Compare_GreaterOrEqual:
+		case OpCode::COMPARE_GREATEROREQUAL:
 		{
 			ObjectInstance* right = frame->PopStack();
 			ObjectInstance* left = frame->PopStack();
@@ -360,7 +361,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::Logical_Not:
+		case OpCode::LOGICAL_NOT:
 		{
 			ObjectInstance* right = frame->PopStack();
 
@@ -372,14 +373,14 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::Jump:
+		case OpCode::JUMP:
 		{
 			size_t jump = decoder.AbsorbJump();
 			decoder.SetCursor(jump);
 			break;
 		}
 
-		case OpCode::Jump_False:
+		case OpCode::JUMP_FALSE:
 		{
 			size_t jump = decoder.AbsorbJump();
 			ObjectInstance* value = frame->PopStack();
@@ -391,7 +392,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::Jump_True:
+		case OpCode::JUMP_TRUE:
 		{
 			size_t jump = decoder.AbsorbJump();
 			ObjectInstance* value = frame->PopStack();
@@ -403,7 +404,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::Return:
+		case OpCode::RETURN:
 		{
 			decoder.Return();
 			break;
@@ -663,7 +664,7 @@ ObjectInstance* VirtualMachine::RunInteractive(size_t& pointer)
 			throw std::runtime_error("Execution aborted by host.");
 
 		OpCode opCode = decoder.AbsorbOpCode();
-		if (opCode == OpCode::PopStack && decoder.IsEOF())
+		if (opCode == OpCode::POPSTACK && decoder.IsEOF())
 			continue;
 
 		ProcessCode(currentFrame, decoder, opCode);
