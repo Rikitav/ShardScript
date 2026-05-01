@@ -11,7 +11,7 @@ using namespace shard;
 FileReader::FileReader(const std::wstring& fileName) : SourceTextProvider()
 {
 	Filename = fileName;
-	InputStream = std::wfstream(fileName, std::ios::in);
+	InputStream = std::wfstream(fileName.c_str(), std::ios::in);
 	InputStream.imbue(std::locale("en_US.UTF8"));
 
 	if (!InputStream)

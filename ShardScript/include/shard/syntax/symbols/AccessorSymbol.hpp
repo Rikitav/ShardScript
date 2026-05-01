@@ -1,12 +1,11 @@
 #pragma once
+#include <string>
+
 #include <shard/ShardScriptAPI.hpp>
 
 #include <shard/syntax/SyntaxKind.hpp>
 #include <shard/syntax/SyntaxSymbol.hpp>
-
 #include <shard/syntax/symbols/MethodSymbol.hpp>
-
-#include <string>
 
 namespace shard
 {

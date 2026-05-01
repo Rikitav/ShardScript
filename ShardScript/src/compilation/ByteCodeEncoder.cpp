@@ -10,6 +10,8 @@
 
 #include <string>
 #include <stdexcept>
+#include <cstring>
+#include <algorithm>
 #include <string.h>
 #include <wchar.h>
 #include <Windows.h>
@@ -35,7 +37,7 @@ void ByteCodeEncoder::AppendData(std::vector<std::byte>& code, const void* data,
 
     if (needed_capacity > code.capacity())
     {
-        size_t new_capacity = max(needed_capacity, code.capacity() * 2);
+        size_t new_capacity = (std::max)(needed_capacity, code.capacity() * 2);
         code.reserve(new_capacity);
     }
 
@@ -69,45 +71,45 @@ static void PasteData(std::vector<std::byte>& code, size_t at, const T& value)
 
 void ByteCodeEncoder::EmitNop(std::vector<std::byte>& code)
 {
-    AppendDataT(code, OpCode::Nop);
+    AppendDataT(code, OpCode::NOP);
 }
 
 void ByteCodeEncoder::EmitHalt(std::vector<std::byte>& code)
 {
-    AppendDataT(code, OpCode::Halt);
+    AppendDataT(code, OpCode::HALT);
 }
 
 void ByteCodeEncoder::EmitPop(std::vector<std::byte>& code)
 {
-    AppendDataT(code, OpCode::PopStack);
+    AppendDataT(code, OpCode::POPSTACK);
 }
 
 void ByteCodeEncoder::EmitLoadConstNull(std::vector<std::byte>& code)
 {
-    AppendDataT(code, OpCode::LoadConst_Null);
+    AppendDataT(code, OpCode::LOADCONST_NULL);
 }
 
 void ByteCodeEncoder::EmitLoadConstBool(std::vector<std::byte>& code, bool value)
 {
-    AppendDataT(code, OpCode::LoadConst_Boolean);
+    AppendDataT(code, OpCode::LOADCONST_BOOLEAN);
     AppendDataT(code, value);
 }
 
 void ByteCodeEncoder::EmitLoadConstInt64(std::vector<std::byte>& code, int64_t value)
 {
-    AppendDataT(code, OpCode::LoadConst_Integer64);
+    AppendDataT(code, OpCode::LOADCONST_INTEGER64);
     AppendDataT(code, value);
 }
 
 void ByteCodeEncoder::EmitLoadConstDouble64(std::vector<std::byte>& code, double value)
 {
-    AppendDataT(code, OpCode::LoadConst_Rational64);
+    AppendDataT(code, OpCode::LOADCONST_RATIONAL64);
     AppendDataT(code, value);
 }
 
 void ByteCodeEncoder::EmitLoadConstChar16(std::vector<std::byte>& code, wchar_t value)
 {
-    AppendDataT(code, OpCode::LoadConst_Char);
+    AppendDataT(code, OpCode::LOADCONST_CHAR);
     AppendDataT(code, value);
 }
 
@@ -116,203 +118,203 @@ void ByteCodeEncoder::EmitLoadConstString(std::vector<std::byte>& code, std::vec
     size_t dataOrigin = data.size();
     AppendDataS(data, value);
 
-    AppendDataT(code, OpCode::LoadConst_String);
+    AppendDataT(code, OpCode::LOADCONST_STRING);
     AppendDataT(code, dataOrigin);
 }
 
 void ByteCodeEncoder::EmitDuplicate(std::vector<std::byte>& code)
 {
-    AppendDataT(code, OpCode::CreateDuplicate);
+    AppendDataT(code, OpCode::CREATEDUPLICATE);
 }
 
 void ByteCodeEncoder::EmitLoadVarible(std::vector<std::byte>& code, uint16_t index)
 {
-    AppendDataT(code, OpCode::LoadVariable);
+    AppendDataT(code, OpCode::LOADVARIABLE);
     AppendDataT(code, index);
 }
 
 void ByteCodeEncoder::EmitStoreVarible(std::vector<std::byte>& code, uint16_t index)
 {
-    AppendDataT(code, OpCode::StoreVariable);
+    AppendDataT(code, OpCode::STOREVARIABLE);
     AppendDataT(code, index);
 }
 
 void ByteCodeEncoder::EmitJump(std::vector<std::byte>& code, size_t jump)
 {
-    AppendDataT(code, OpCode::Jump);
+    AppendDataT(code, OpCode::JUMP);
     AppendDataT(code, jump);
 }
 
 void ByteCodeEncoder::EmitJumpTrue(std::vector<std::byte>& code, size_t jump)
 {
-    AppendDataT(code, OpCode::Jump_True);
+    AppendDataT(code, OpCode::JUMP_TRUE);
     AppendDataT(code, jump);
 }
 
 void ByteCodeEncoder::EmitJumpFalse(std::vector<std::byte>& code, size_t jump)
 {
-    AppendDataT(code, OpCode::Jump_False);
+    AppendDataT(code, OpCode::JUMP_FALSE);
     AppendDataT(code, jump);
 }
 
 void ByteCodeEncoder::EmitReturn(std::vector<std::byte>& code)
 {
-    AppendDataT(code, OpCode::Return);
+    AppendDataT(code, OpCode::RETURN);
 }
 
 void shard::ByteCodeEncoder::EmitThrow(std::vector<std::byte>& code)
 {
-    AppendDataT(code, OpCode::Throw);
+    AppendDataT(code, OpCode::THROW);
 }
 
 void ByteCodeEncoder::EmitMathAdd(std::vector<std::byte>& code)
 {
-    AppendDataT(code, OpCode::Math_Addition);
+    AppendDataT(code, OpCode::MATH_ADDITION);
 }
 
 void ByteCodeEncoder::EmitMathSub(std::vector<std::byte>& code)
 {
-    AppendDataT(code, OpCode::Math_Substraction);
+    AppendDataT(code, OpCode::MATH_SUBSTRACTION);
 }
 
 void ByteCodeEncoder::EmitMathMult(std::vector<std::byte>& code)
 {
-    AppendDataT(code, OpCode::Math_Multiplication);
+    AppendDataT(code, OpCode::MATH_MULTIPLICATION);
 }
 
 void ByteCodeEncoder::EmitMathDiv(std::vector<std::byte>& code)
 {
-    AppendDataT(code, OpCode::Math_Division);
+    AppendDataT(code, OpCode::MATH_DIVISION);
 }
 
 void ByteCodeEncoder::EmitMathMod(std::vector<std::byte>& code)
 {
-    AppendDataT(code, OpCode::Math_Module);
+    AppendDataT(code, OpCode::MATH_MODULE);
 }
 
 void ByteCodeEncoder::EmitMathPow(std::vector<std::byte>& code)
 {
-    AppendDataT(code, OpCode::Math_Power);
+    AppendDataT(code, OpCode::MATH_POWER);
 }
 
 void ByteCodeEncoder::EmitMathNegative(std::vector<std::byte>& code)
 {
-    AppendDataT(code, OpCode::Math_Negative);
+    AppendDataT(code, OpCode::MATH_NEGATIVE);
 }
 
 void ByteCodeEncoder::EmitMathPositive(std::vector<std::byte>& code)
 {
-    AppendDataT(code, OpCode::Math_Positive);
+    AppendDataT(code, OpCode::MATH_POSITIVE);
 }
 
 void ByteCodeEncoder::EmitCompareEqual(std::vector<std::byte>& code)
 {
-    AppendDataT(code, OpCode::Compare_Equal);
+    AppendDataT(code, OpCode::COMPARE_EQUAL);
 }
 
 void ByteCodeEncoder::EmitCompareNotEqual(std::vector<std::byte>& code)
 {
-    AppendDataT(code, OpCode::Compare_NotEqual);
+    AppendDataT(code, OpCode::COMPARE_NOTEQUAL);
 }
 
 void ByteCodeEncoder::EmitCompareGreater(std::vector<std::byte>& code)
 {
-    AppendDataT(code, OpCode::Compare_Greater);
+    AppendDataT(code, OpCode::COMPARE_GREATER);
 }
 
 void ByteCodeEncoder::EmitCompareGreaterOrEqual(std::vector<std::byte>& code)
 {
-    AppendDataT(code, OpCode::Compare_GreaterOrEqual);
+    AppendDataT(code, OpCode::COMPARE_GREATEROREQUAL);
 }
 
 void ByteCodeEncoder::EmitCompareLess(std::vector<std::byte>& code)
 {
-    AppendDataT(code, OpCode::Compare_Less);
+    AppendDataT(code, OpCode::COMPARE_LESS);
 }
 
 void ByteCodeEncoder::EmitCompareLessOrEqual(std::vector<std::byte>& code)
 {
-    AppendDataT(code, OpCode::Compare_LessOrEqual);
+    AppendDataT(code, OpCode::COMPARE_LESSOREQUAL);
 }
 
 void ByteCodeEncoder::EmitLogicalNot(std::vector<std::byte>& code)
 {
-    AppendDataT(code, OpCode::Logical_Not);
+    AppendDataT(code, OpCode::LOGICAL_NOT);
 }
 
 void ByteCodeEncoder::EmitLogicalOr(std::vector<std::byte>& code)
 {
-    AppendDataT(code, OpCode::Logical_Or);
+    AppendDataT(code, OpCode::LOGICAL_OR);
 }
 
 void ByteCodeEncoder::EmitLogicalAnd(std::vector<std::byte>& code)
 {
-    AppendDataT(code, OpCode::Logical_And);
+    AppendDataT(code, OpCode::LOGICAL_AND);
 }
 
 void ByteCodeEncoder::EmitNewObject(std::vector<std::byte>& code, TypeSymbol* type, ConstructorSymbol* ctor)
 {
-    AppendDataT(code, OpCode::NewObject);
+    AppendDataT(code, OpCode::NEWOBJECT);
     AppendData(code, &type, sizeof(type));
     AppendData(code, &ctor, sizeof(ctor));
 }
 
 void ByteCodeEncoder::EmitNewDelegate(std::vector<std::byte>& code, DelegateTypeSymbol* type)
 {
-    AppendDataT(code, OpCode::NewDelegate);
+    AppendDataT(code, OpCode::NEWDELEGATE);
     AppendData(code, &type, sizeof(type));
 }
 
 void ByteCodeEncoder::EmitLoadField(std::vector<std::byte>& code, FieldSymbol* type)
 {
-    AppendDataT(code, OpCode::LoadField);
+    AppendDataT(code, OpCode::LOADFIELD);
     AppendData(code, &type, sizeof(type));
 }
 
 void ByteCodeEncoder::EmitStoreField(std::vector<std::byte>& code, FieldSymbol* type)
 {
-    AppendDataT(code, OpCode::StoreField);
+    AppendDataT(code, OpCode::STOREFIELD);
     AppendData(code, &type, sizeof(type));
 }
 
 void ByteCodeEncoder::EmitNewArray(std::vector<std::byte>& code, ArrayTypeSymbol* type)
 {
-    AppendDataT(code, OpCode::NewArray);
+    AppendDataT(code, OpCode::NEWARRAY);
     AppendData(code, &type, sizeof(type));
 }
 
 void ByteCodeEncoder::EmitLoadArrayElement(std::vector<std::byte>& code)
 {
-    AppendDataT(code, OpCode::LoadArrayElement);
+    AppendDataT(code, OpCode::LOADARRAYELEMENT);
 }
 
 void ByteCodeEncoder::EmitStoreArrayElement(std::vector<std::byte>& code)
 {
-    AppendDataT(code, OpCode::StoreArrayElement);
+    AppendDataT(code, OpCode::STOREARRAYELEMENT);
 }
 
 void ByteCodeEncoder::EmitLoadStaticField(std::vector<std::byte>& code, FieldSymbol* type)
 {
-    AppendDataT(code, OpCode::LoadStaticField);
+    AppendDataT(code, OpCode::LOADSTATICFIELD);
     AppendData(code, &type, sizeof(type));
 }
 
 void ByteCodeEncoder::EmitStoreStaticField(std::vector<std::byte>& code, FieldSymbol* type)
 {
-    AppendDataT(code, OpCode::StoreStaticField);
+    AppendDataT(code, OpCode::STORESTATICFIELD);
     AppendData(code, &type, sizeof(type));
 }
 
 void ByteCodeEncoder::EmitCallMethodSymbol(std::vector<std::byte>& code, MethodSymbol* method)
 {
-    AppendDataT(code, OpCode::CallMethodSymbol);
+    AppendDataT(code, OpCode::CALLMETHODSYMBOL);
     AppendData(code, &method, sizeof(method));
 }
 
 /*
 void ByteCodeEncoder::EmitCallFunction(std::vector<std::byte>& code, MethodSymbolDelegate* func)
 {
-    AppendDataT(code, OpCode::CallFunction);
+    AppendDataT(code, OpCode::CALLFUNCTION);
     AppendData(code, &func, sizeof(func));
 }
 */

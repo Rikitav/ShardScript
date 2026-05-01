@@ -1,6 +1,6 @@
-﻿#include <ShardScript.hpp>
-#include <windows.h>
+﻿#include <windows.h>
 
+#include <algorithm>
 #include <iostream>
 #include <string>
 #include <stdexcept>
@@ -9,7 +9,7 @@
 #include <csignal>
 #include <cstdlib>
 #include <filesystem>
-#include <minidumpapiset.h>
+#include <dbghelp.h>
 #include <excpt.h>
 #include <ios>
 #include <fcntl.h>
@@ -20,6 +20,9 @@
 
 #include <InteractiveConsole.hpp>
 #include <utilities/InterpreterUtilities.hpp>
+#include <shard/parsing/lexical/reading/FileReader.hpp>
+#include <shard/parsing/lexical/LexicalAnalyzer.hpp>
+#include <shard/runtime/ProgramDisassembler.hpp>
 
 using namespace shard;
 namespace fs = std::filesystem;
@@ -90,7 +93,7 @@ static LONG WINAPI UnhandledExceptionFilterFunction(PEXCEPTION_POINTERS exceptio
         std::cout << "Number of Parameters: " << exceptionRecord->NumberParameters << std::endl;
         std::cout << "Parameters: ";
 
-        for (ULONG i = 0; i < min(exceptionRecord->NumberParameters, 15); i++)
+        for (ULONG i = 0; i < std::min<ULONG>(exceptionRecord->NumberParameters, 15); i++)
             std::cout << "0x" << exceptionRecord->ExceptionInformation[i] << ", ";
 
         std::cout << std::endl;

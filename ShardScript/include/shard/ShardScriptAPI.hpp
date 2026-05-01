@@ -1,4 +1,5 @@
 #pragma once
+#include <cstddef>
 
 //  Microsoft 
 #if defined(_MSC_VER)
@@ -17,16 +18,23 @@
 	#define SHARD_API __attribute__((visibility("default")))
 	
 	#include <stdlib.h>
-	using LibraryHandle = void*
+	using LibraryHandle = void*;
 
 //  do nothing and hope for the best?
 #else
 	#define SHARD_API
 	#pragma warning Unknown dynamic link import/export semantics.
 	
-	using LibraryHandle = void*
+	using LibraryHandle = void*;
 #endif
 
 #if _DEBUG
 	#pragma warning(disable: 4251)
+#endif
+
+#if !defined(_CSTDDEF_) //__cpp_lib_byte
+	namespace std
+	{
+		enum class byte : unsigned char {};
+	}
 #endif
