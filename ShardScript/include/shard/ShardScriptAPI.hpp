@@ -32,7 +32,7 @@
 	#pragma warning(disable: 4251)
 #endif
 
-#if !defined(_CSTDDEF_) //__cpp_lib_byte
+#if !defined(__cpp_lib_byte)
 	namespace std
 	{
 		enum class byte : unsigned char {};
