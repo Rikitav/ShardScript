@@ -43,6 +43,7 @@
 #include <shard/syntax/symbols/LiteralSymbol.hpp>
 #include <shard/syntax/symbols/AccessorSymbol.hpp>
 #include <shard/syntax/symbols/ConstructorSymbol.hpp>
+#include <shard/syntax/symbols/GenericTypeSymbol.hpp>
 #include <shard/syntax/symbols/FieldSymbol.hpp>
 #include <shard/syntax/symbols/MethodSymbol.hpp>
 #include <shard/syntax/symbols/ParameterSymbol.hpp>
@@ -667,6 +668,19 @@ void AbstractEmiter::VisitLiteralExpression(LiteralExpressionSyntax* const node)
 
 void AbstractEmiter::VisitObjectCreationExpression(ObjectExpressionSyntax* const node)
 {
+	if (node->TypeSymbol != nullptr && node->TypeSymbol->Kind == SyntaxKind::GenericType)
+	{
+		GenericTypeSymbol* genericType = static_cast<GenericTypeSymbol*>(node->TypeSymbol);
+		TypeSymbol* underlyingType = genericType->UnderlayingType;
+
+		for (size_t i = 0; i < underlyingType->TypeParameters.size(); i++)
+		{
+			TypeSymbol* concreteType = genericType->SubstituteTypeParameters(underlyingType->TypeParameters[i]);
+			if (concreteType != nullptr)
+				Encoder.EmitLoadTypeArgument(GeneratingFor->ExecutableByteCode, static_cast<uint16_t>(i), concreteType);
+		}
+	}
+
 	VisitArgumentsList(node->ArgumentsList);
 	Encoder.EmitNewObject(GeneratingFor->ExecutableByteCode, node->TypeSymbol, node->CtorSymbol);
 }
@@ -812,6 +826,18 @@ void AbstractEmiter::VisitBinaryAssignExpression(BinaryExpressionSyntax* const n
 
 void AbstractEmiter::VisitInvocationExpression(InvokationExpressionSyntax* const node)
 {
+	if (node->ReceiverType != nullptr && node->ReceiverType->Kind == SyntaxKind::GenericType)
+	{
+		GenericTypeSymbol* genericType = static_cast<GenericTypeSymbol*>(node->ReceiverType);
+		TypeSymbol* underlyingType = genericType->UnderlayingType;
+		for (size_t i = 0; i < underlyingType->TypeParameters.size(); i++)
+		{
+			TypeSymbol* concreteType = genericType->SubstituteTypeParameters(underlyingType->TypeParameters[i]);
+			if (concreteType != nullptr)
+				Encoder.EmitLoadTypeArgument(GeneratingFor->ExecutableByteCode, static_cast<uint16_t>(i), concreteType);
+		}
+	}
+
 	VisitArgumentsList(node->ArgumentsList);
 	if (!node->Symbol->IsStatic)
 		VisitExpression(node->PreviousExpression);

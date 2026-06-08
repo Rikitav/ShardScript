@@ -39,6 +39,7 @@ namespace shard
 		size_t AbsorbString();
 
 		uint16_t AbsorbVariableSlot();
+		uint16_t AbsorbUInt16();
 		size_t AbsorbJump();
 		
 		TypeSymbol* AbsorbTypeSymbol();

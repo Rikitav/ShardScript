@@ -212,6 +212,12 @@ SHARDLIB_ENTRYPOINT
 		auto reader = std::make_unique<StringStreamReader>(L"Random.ss", std::wstring(resourceData, resourceSize / sizeof(wchar_t)));
 		context.ProvideSource(reader.get());
 	}
+
+	{
+		resources::GetResource(L"COLLECTIONS_LIST", resourceData, resourceSize);
+		auto reader = std::make_unique<StringStreamReader>(L"List.ss", std::wstring(resourceData, resourceSize / sizeof(wchar_t)));
+		context.ProvideSource(reader.get());
+	}
 	
 	//context.AddModule(new FileSystem_Directory());
 	//context.AddModule(new FileSystem_File());

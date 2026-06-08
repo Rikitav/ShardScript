@@ -257,6 +257,14 @@ namespace shard
 		/// <para>Includes 1 parameter :</para>
 		/// <para>> MethodSymbol* pValue - pointer to MethodSymbol to invoke.</para>
 		/// </summary>
-		CALLMETHODSYMBOL
+		CALLMETHODSYMBOL,
+
+		/// <summary>
+		/// Loads a type argument into the current call frame's TypeArguments vector.
+		/// <para>Includes 2 parameters :</para>
+		/// <para>> uint16_t Index - Zero-based index in TypeArguments.</para>
+		/// <para>> TypeSymbol* pType - The concrete type to load.</para>
+		/// </summary>
+		LOAD_TYPEARGUMENT
 	};
 }

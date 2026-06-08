@@ -475,3 +475,18 @@ bool IsPunctuation(shard::TokenType type)
 			return false;
 	}
 }
+
+bool IsReservedIdentifier(shard::TokenType type)
+{
+	switch (type)
+	{
+		case TokenType::ValueKeyword:
+		case TokenType::FieldKeyword:
+		//case TokenType::ThisKeyword:
+		case TokenType::WhileKeyword:
+			return true;
+
+		default:
+			return false;
+	}
+}

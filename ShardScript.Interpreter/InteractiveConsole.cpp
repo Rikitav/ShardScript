@@ -422,6 +422,7 @@ void InteractiveConsole::Run()
 			if (!pushedFrame)
 			{
 				InteractiveEntryPoint = static_cast<MethodSymbol*>(ParentSemanticModel.Table->LookupSymbol(InteractiveMethod));
+				Program.EntryPoint = InteractiveEntryPoint;
 				Runtimer.PushFrame(InteractiveEntryPoint);
 				pushedFrame = true;
 			}

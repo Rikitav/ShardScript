@@ -1289,6 +1289,7 @@ TypeSymbol* ExpressionBinder::AnalyzeInvokationExpression(InvokationExpressionSy
 		return nullptr;
 
 	node->Symbol = method;
+	node->ReceiverType = currentType;
 	node->IsStaticContext = false;
 
 	if (method->ReturnType == nullptr)

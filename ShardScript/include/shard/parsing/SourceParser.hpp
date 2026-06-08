@@ -141,7 +141,7 @@ namespace shard
 		shard::TypeParametersListSyntax *const ReadTypeParametersList(shard::SourceProvider& reader, shard::SyntaxNode *const parent);
 		shard::TypeArgumentsListSyntax *const ReadTypeArgumentsList(shard::SourceProvider& reader, shard::SyntaxNode *const parent);
 
-		// 8. Other
+		// 9. Other
 		shard::TypeSyntax *const ReadType(shard::SourceProvider& reader, shard::SyntaxNode *const parent);
 		shard::TypeSyntax *const ReadIdentifierNameType(shard::SourceProvider& reader, shard::SyntaxNode *const parent);
 		shard::TypeSyntax *const ReadDelegateType(shard::SourceProvider& reader, shard::SyntaxNode *const parent);
@@ -150,9 +150,10 @@ namespace shard
 		shard::TypeSyntax *const ReadGenericType(shard::SourceProvider& reader, shard::TypeSyntax *const previous, shard::SyntaxNode *const parent);
 
 	private:
-		// Fourth layer - lexing helpers
+		// 10. Helpers
 		shard::SyntaxToken Expect(shard::SourceProvider& reader, shard::TokenType kind, const wchar_t* message);
 		bool Matches(shard::SourceProvider& reader, std::initializer_list<shard::TokenType> types);
 		bool TryMatch(shard::SourceProvider& reader, std::initializer_list<shard::TokenType> types, const wchar_t* errorMessage, int maxSkips = 5);
+		bool TryMatchIdentifier(shard::SourceProvider& reader, int maxSkips = 5);
 	};
 }

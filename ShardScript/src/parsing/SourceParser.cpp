@@ -134,7 +134,7 @@ UsingDirectiveSyntax *const SourceParser::ReadUsingDirective(SourceProvider& rea
 
 	while (reader.CanConsume())
 	{
-		if (!TryMatch(reader, { TokenType::Identifier }, L"Expected identifier", 3))
+		if (!TryMatchIdentifier(reader, 3))
 		{
 			if (TryMatch(reader, { TokenType::Semicolon }, nullptr, 10))
 			{
@@ -172,7 +172,7 @@ NamespaceDeclarationSyntax *const SourceParser::ReadNamespaceDeclaration(SourceP
 	NamespaceDeclarationSyntax *const syntax = new NamespaceDeclarationSyntax(parent);
 	syntax->DeclareToken = Expect(reader, TokenType::NamespaceKeyword, L"Expected 'namespace' keyword");
 
-	if (!TryMatch(reader, { TokenType::Identifier }, L"Expected namespace identifier", 5))
+	if (!TryMatchIdentifier(reader, 5))
 	{
 		// Create missing identifier if we couldn't recover
 		syntax->IdentifierToken = SyntaxToken(TokenType::Identifier, L"", TextLocation(), true);
@@ -223,6 +223,7 @@ MemberDeclarationSyntax *const SourceParser::ReadMemberDeclaration(SourceProvide
 	{
 		info.DeclareType = current;
 		reader.Consume();
+
 		switch (current.Type)
 		{
 			case TokenType::ClassKeyword:
@@ -247,7 +248,7 @@ MemberDeclarationSyntax *const SourceParser::ReadMemberDeclaration(SourceProvide
 	if (current.Type == TokenType::FnKeyword)
 	{
 		reader.Consume(); // fn
-		if (!TryMatch(reader, { TokenType::Identifier }, L"Expected function name", 3))
+		if (!TryMatchIdentifier(reader, 3))
 		{
 			info.Identifier = SyntaxToken(TokenType::Identifier, L"", TextLocation(), true);
 		}
@@ -266,6 +267,14 @@ MemberDeclarationSyntax *const SourceParser::ReadMemberDeclaration(SourceProvide
 		reader.Consume(); // init
 		info.Identifier = SyntaxToken(TokenType::InitKeyword, L"init", TextLocation(), false);
 		return ReadConstructorDeclaration(reader, info, parent);
+	}
+
+	// Declaration prediction: indexer[params]: type { }
+	if (current.Type == TokenType::IndexerKeyword)
+	{
+		reader.Consume(); // indexer
+		info.Identifier = current;
+		return ReadIndexatorDeclaration(reader, info, parent);
 	}
 
 	// Declaration prediction: Identifier: type ...
@@ -320,7 +329,7 @@ MemberDeclarationSyntax *const SourceParser::ReadMemberDeclaration(SourceProvide
 ClassDeclarationSyntax *const SourceParser::ReadClassDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode *const parent)
 {
 	ClassDeclarationSyntax *const syntax = new ClassDeclarationSyntax(info, parent);
-	if (TryMatch(reader, { TokenType::Identifier }, L"Expected class identifier", 5))
+	if (TryMatchIdentifier(reader, 5))
 	{
 		syntax->IdentifierToken = reader.Current();
 		reader.Consume();
@@ -359,7 +368,7 @@ StructDeclarationSyntax *const SourceParser::ReadStructDeclaration(SourceProvide
 {
 	StructDeclarationSyntax *const syntax = new StructDeclarationSyntax(info, parent);
 
-	if (TryMatch(reader, { TokenType::Identifier }, L"Expected struct identifier", 5))
+	if (TryMatchIdentifier(reader, 5))
 	{
 		syntax->IdentifierToken = reader.Current();
 		reader.Consume();
@@ -494,7 +503,7 @@ InterfaceDeclarationSyntax *const SourceParser::ReadInterfaceDeclaration(SourceP
 {
 	InterfaceDeclarationSyntax *const syntax = new InterfaceDeclarationSyntax(info, parent);
 
-	if (TryMatch(reader, { TokenType::Identifier }, L"Expected interface identifier", 5))
+	if (TryMatchIdentifier(reader, 5))
 	{
 		syntax->IdentifierToken = reader.Current();
 		reader.Consume();
@@ -532,16 +541,15 @@ DelegateDeclarationSyntax *const SourceParser::ReadDelegateDeclaration(SourcePro
 
 PropertyDeclarationSyntax *const SourceParser::ReadPropertyDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode *const parent)
 {
-	PropertyDeclarationSyntax *const property = new PropertyDeclarationSyntax(info, parent);
-	property->OpenBraceToken = Expect(reader, TokenType::OpenBrace, L"Expected '{' for property accessors");
+	PropertyDeclarationSyntax *const syntax = new PropertyDeclarationSyntax(info, parent);
+	syntax->OpenBraceToken = Expect(reader, TokenType::OpenBrace, L"Expected '{' for property accessors");
 
 	while (reader.CanConsume())
 	{
 		SyntaxToken current = reader.Current();
-
 		if (current.Type == TokenType::CloseBrace)
 		{
-			property->CloseBraceToken = current;
+			syntax->CloseBraceToken = current;
 			reader.Consume();
 			break;
 		}
@@ -549,27 +557,27 @@ PropertyDeclarationSyntax *const SourceParser::ReadPropertyDeclaration(SourcePro
 		if (current.Type == TokenType::EndOfFile)
 		{
 			Diagnostics.ReportError(current, L"Unexpected end of file in property - expected '}'");
-			property->CloseBraceToken = SyntaxToken(TokenType::CloseBrace, L"", current.Location, true);
+			syntax->CloseBraceToken = SyntaxToken(TokenType::CloseBrace, L"", current.Location, true);
 			break;
 		}
 
-		if (IsModifier(current.Type) || current.Type == TokenType::GetKeyword || current.Type == TokenType::SetKeyword)
+		if (IsModifier(current.Type) || current.Type == TokenType::GetKeyword || current.Type == TokenType::SetKeyword || current.Type == TokenType::OpenSquare)
 		{
-			AccessorDeclarationSyntax *const accessor = ReadAccessorDeclaration(reader, property);
+			AccessorDeclarationSyntax *const accessor = ReadAccessorDeclaration(reader, syntax);
 
 			if (accessor->KeywordToken.Type == TokenType::GetKeyword)
 			{
-				if (property->Getter != nullptr)
+				if (syntax->Getter != nullptr)
 					Diagnostics.ReportError(current, L"Duplicate get accessor");
 				else
-					property->Getter = accessor;
+					syntax->Getter = accessor;
 			}
 			else if (accessor->KeywordToken.Type == TokenType::SetKeyword)
 			{
-				if (property->Setter != nullptr)
+				if (syntax->Setter != nullptr)
 					Diagnostics.ReportError(current, L"Duplicate set accessor");
 				else
-					property->Setter = accessor;
+					syntax->Setter = accessor;
 			}
 
 			continue;
@@ -580,10 +588,10 @@ PropertyDeclarationSyntax *const SourceParser::ReadPropertyDeclaration(SourcePro
 			reader.Consume();
 	}
 
-	if (property->Getter == nullptr && property->Setter == nullptr)
-		Diagnostics.ReportError(property->IdentifierToken, L"Property must have at least one accessor (get or set)");
+	if (syntax->Getter == nullptr && syntax->Setter == nullptr)
+		Diagnostics.ReportError(syntax->IdentifierToken, L"Property must have at least one accessor (get or set)");
 
-	return property;
+	return syntax;
 }
 
 IndexatorDeclarationSyntax *const SourceParser::ReadIndexatorDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode *const parent)
@@ -592,8 +600,27 @@ IndexatorDeclarationSyntax *const SourceParser::ReadIndexatorDeclaration(SourceP
 	//syntax->IndexKeyword = Expect(reader, TokenType::IndexerKeyword, L"Expected 'index' keyword");
 	syntax->IndexKeyword = info.Identifier;
 	syntax->Parameters = ReadIndexerParametersList(reader, syntax);
-	syntax->OpenBraceToken = Expect(reader, TokenType::OpenBrace, L"Expected '{' for indexer accessors");
 
+	SyntaxToken current = reader.Current();
+	if (current.Type == TokenType::Colon)
+	{
+		reader.Consume(); // :
+		syntax->ReturnType = ReadType(reader, syntax);
+	}
+	else
+	{
+		//syntax->ReturnType = new PredefinedTypeSyntax(SyntaxToken(TokenType::VoidKeyword, L"void", TextLocation(), false), syntax);
+		if (current.Type == TokenType::Identifier)
+		{
+			Diagnostics.ReportError(current, L"Expected ':' before return type.");
+		}
+		else
+		{
+			Diagnostics.ReportError(current, L"Indexer must have a return type.");
+		}
+	}
+
+	syntax->OpenBraceToken = Expect(reader, TokenType::OpenBrace, L"Expected '{' for indexer accessors");
 	while (reader.CanConsume())
 	{
 		SyntaxToken current = reader.Current();
@@ -612,7 +639,7 @@ IndexatorDeclarationSyntax *const SourceParser::ReadIndexatorDeclaration(SourceP
 			break;
 		}
 
-		if (IsModifier(current.Type) || current.Type == TokenType::GetKeyword || current.Type == TokenType::SetKeyword)
+		if (IsModifier(current.Type) || current.Type == TokenType::GetKeyword || current.Type == TokenType::SetKeyword || current.Type == TokenType::OpenSquare)
 		{
 			AccessorDeclarationSyntax *const accessor = ReadAccessorDeclaration(reader, syntax);
 
@@ -647,39 +674,40 @@ IndexatorDeclarationSyntax *const SourceParser::ReadIndexatorDeclaration(SourceP
 
 AccessorDeclarationSyntax *const SourceParser::ReadAccessorDeclaration(SourceProvider& reader, SyntaxNode *const parent)
 {
-	AccessorDeclarationSyntax *const accessor = new AccessorDeclarationSyntax(parent);
+	AccessorDeclarationSyntax *const syntax = new AccessorDeclarationSyntax(parent);
+	syntax->Attributes = ReadAttributeList(reader, parent);
 
 	if (!reader.CanConsume())
 	{
-		Diagnostics.ReportError(accessor->KeywordToken, L"Unexpected end of file after accessor keyword");
-		return accessor;
+		Diagnostics.ReportError(syntax->KeywordToken, L"Unexpected end of file after accessor keyword");
+		return syntax;
 	}
 
 	SyntaxToken current = reader.Current();
 	if (IsModifier(current.Type))
-		accessor->Modifiers = ReadMemberModifiers(reader);
+		syntax->Modifiers = ReadMemberModifiers(reader);
 
 	if (!TryMatch(reader, { TokenType::SetKeyword, TokenType::GetKeyword }, L"Expected 'get' or 'set' keywprd"))
-		return accessor;
+		return syntax;
 
-	accessor->KeywordToken = reader.Current();
+	syntax->KeywordToken = reader.Current();
 	current = reader.Consume();
 
 	if (!TryMatch(reader, { TokenType::Semicolon, TokenType::OpenBrace }, L"Expected ';' or '{' after accessor keyword"))
-		return accessor;
+		return syntax;
 
 	switch (current.Type)
 	{
 		case TokenType::Semicolon:
 		{
-			accessor->SemicolonToken = current;
+			syntax->SemicolonToken = current;
 			reader.Consume();
 			break;
 		}
 
 		case TokenType::OpenBrace:
 		{
-			accessor->Body = ReadStatementsBlock(reader, accessor);
+			syntax->Body = ReadStatementsBlock(reader, syntax);
 			break;
 		}
 
@@ -690,7 +718,7 @@ AccessorDeclarationSyntax *const SourceParser::ReadAccessorDeclaration(SourcePro
 		}
 	}
 
-	return accessor;
+	return syntax;
 }
 
 std::vector<SyntaxToken> SourceParser::ReadMemberModifiers(SourceProvider& reader)
@@ -847,10 +875,8 @@ ParametersListSyntax *const SourceParser::ReadIndexerParametersList(SourceProvid
 
 	while (reader.CanConsume())
 	{
-		TypeSyntax *const type = ReadType(reader, syntax);
 		SyntaxToken identifierToken;
-
-		if (!TryMatch(reader, { TokenType::Identifier }, L"Expected parameter name", 3))
+		if (!TryMatchIdentifier(reader, 3))
 		{
 			if (reader.CanConsume() && reader.Current().Type == TokenType::CloseSquare)
 			{
@@ -874,6 +900,9 @@ ParametersListSyntax *const SourceParser::ReadIndexerParametersList(SourceProvid
 			syntax->CloseToken = identifierToken;
 			break;
 		}
+
+		Expect(reader, TokenType::Colon, L"Expected ':' after parameter name");
+		TypeSyntax* const type = ReadType(reader, syntax);
 
 		ParameterSyntax *const param = new ParameterSyntax(type, identifierToken, syntax);
 		syntax->Parameters.push_back(param);
@@ -913,7 +942,7 @@ ParametersListSyntax *const SourceParser::ReadParametersList(SourceProvider& rea
 	while (reader.CanConsume())
 	{
 		SyntaxToken identifierToken;
-		if (!TryMatch(reader, { TokenType::Identifier }, L"Expected parameter name", 3))
+		if (!TryMatchIdentifier(reader, 3))
 		{
 			if (reader.CanConsume() && reader.Current().Type == TokenType::CloseCurl)
 			{
@@ -922,6 +951,7 @@ ParametersListSyntax *const SourceParser::ReadParametersList(SourceProvider& rea
 				reader.Consume();
 				break;
 			}
+
 			identifierToken = SyntaxToken(TokenType::Identifier, L"", TextLocation(), true);
 		}
 		else
@@ -1460,7 +1490,7 @@ TryStatementSyntax *const SourceParser::ReadTryStatement(SourceProvider& reader,
 		CatchClauseSyntax *const clause = new CatchClauseSyntax(syntax);
 		clause->CatchKeywordToken = Expect(reader, TokenType::CatchKeyword, L"Expected 'catch' keyword");
 
-		if (TryMatch(reader, { TokenType::Identifier }, L"Expected exception variable name", 3))
+		if (TryMatchIdentifier(reader, 3))
 		{
 			clause->IdentifierToken = reader.Current();
 			reader.Consume();
@@ -2172,7 +2202,6 @@ bool SourceParser::Matches(SourceProvider& reader, std::initializer_list<TokenTy
 	return false;
 }
 
-// New method: Try to match one of expected tokens, with error recovery
 bool SourceParser::TryMatch(SourceProvider& reader, std::initializer_list<TokenType> types, const wchar_t* errorMessage, int maxSkips)
 {
 	if (!reader.CanConsume())
@@ -2189,6 +2218,29 @@ bool SourceParser::TryMatch(SourceProvider& reader, std::initializer_list<TokenT
 
 	// Try to synchronize to one of expected tokens
 	std::vector<TokenType> expectedTypes(types);
+	if (TrySynchronize(reader, expectedTypes, maxSkips))
+		return true;
+
+	return false;
+}
+
+bool SourceParser::TryMatchIdentifier(shard::SourceProvider& reader, int maxSkips)
+{
+	if (!reader.CanConsume())
+		return false;
+
+	SyntaxToken current = reader.Current();
+	if (current.Type == TokenType::Identifier)
+		return true;
+
+	if (IsReservedIdentifier(current.Type))
+	{
+		Diagnostics.ReportError(current, L"Identifier cannot be a reserved keyword.");
+		return false;
+	}
+
+	// Try to synchronize to one of expected tokens
+	std::vector<TokenType> expectedTypes({ TokenType::Identifier });
 	if (TrySynchronize(reader, expectedTypes, maxSkips))
 		return true;
 

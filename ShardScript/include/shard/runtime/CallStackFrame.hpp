@@ -43,6 +43,8 @@ namespace shard
 			return InterruptionReason != FrameInterruptionReason::None;
 		}
 
+		TypeSymbol* ResolveType(TypeSymbol* type);
+
 		void PushStack(ObjectInstance* value);
 		ObjectInstance* PopStack();
 		ObjectInstance* PeekStack();

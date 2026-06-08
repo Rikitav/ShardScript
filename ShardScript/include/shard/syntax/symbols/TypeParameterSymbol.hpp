@@ -18,6 +18,8 @@ namespace shard
 		// В будущем здесь можно добавить ограничения (constraints)
 		//TypeSymbol* ConstraintType = nullptr;
 
+		uint16_t TypeArgumentIndex = 0;
+
 		inline TypeParameterSymbol(std::wstring name) : TypeSymbol(name, SyntaxKind::TypeParameter)
 		{
 			Accesibility = SymbolAccesibility::Public;
