@@ -71,6 +71,12 @@ void SyntaxVisitor::VisitCompilationUnit(CompilationUnitSyntax* node)
 	if (node == nullptr)
 		return;
 
+	for (UsingDirectiveSyntax* directive : node->Usings)
+		VisitUsingDirective(directive);
+
+	if (node->Namespace != nullptr)
+		VisitNamespaceDeclaration(node->Namespace);
+
 	for (MemberDeclarationSyntax* member : node->Members)
 		VisitMemberDeclaration(member);
 }
@@ -135,9 +141,6 @@ void SyntaxVisitor::VisitNamespaceDeclaration(NamespaceDeclarationSyntax* node)
 {
 	if (node == nullptr)
 		return;
-
-	for (MemberDeclarationSyntax* member : node->Members)
-		VisitMemberDeclaration(member);
 }
 
 void SyntaxVisitor::VisitClassDeclaration(ClassDeclarationSyntax* node)

@@ -118,15 +118,6 @@ static void LinkExternSymbols(MemberDeclarationSyntax* member, LibraryHandle han
 {
 	switch (member->Kind)
 	{
-		case SyntaxKind::NamespaceDeclaration:
-		{
-			NamespaceDeclarationSyntax* namespaceDecl = static_cast<NamespaceDeclarationSyntax*>(member);
-			for (MemberDeclarationSyntax* child : namespaceDecl->Members)
-				LinkExternSymbols(child, handle, model, diagnostics);
-			
-			break;
-		}
-
 		case SyntaxKind::ClassDeclaration:
 		{
 			ClassDeclarationSyntax* classDecl = static_cast<ClassDeclarationSyntax*>(member);

@@ -86,8 +86,23 @@ void TypeBinder::VisitCompilationUnit(CompilationUnitSyntax *const node)
 	for (UsingDirectiveSyntax* directive : node->Usings)
 		VisitUsingDirective(directive);
 
+	if (node->Namespace != nullptr)
+	{
+		NamespaceSymbol* symbol = LookupSymbol<NamespaceSymbol>(node->Namespace);
+		if (symbol == nullptr)
+			throw std::runtime_error("symbol not found");
+		Declare(symbol);
+		PushScope(symbol);
+	}
+
+	for (MemberDeclarationSyntax* member : node->Members)
+		Declare(Table->LookupSymbol(member));
+
 	for (MemberDeclarationSyntax* member : node->Members)
 		VisitMemberDeclaration(member);
+
+	if (node->Namespace != nullptr)
+		PopScope();
 
 	PopScope();
 }
@@ -116,20 +131,7 @@ void TypeBinder::VisitUsingDirective(UsingDirectiveSyntax *const node)
 
 void TypeBinder::VisitNamespaceDeclaration(NamespaceDeclarationSyntax *const node)
 {
-	NamespaceSymbol* symbol = LookupSymbol<NamespaceSymbol>(node);
-	if (symbol == nullptr)
-		throw std::runtime_error("symbol not found");
-
-	Declare(symbol);
-	PushScope(symbol);
-
-	for (MemberDeclarationSyntax* member : node->Members)
-		Declare(Table->LookupSymbol(member));
-
-	for (MemberDeclarationSyntax* member : node->Members)
-		VisitMemberDeclaration(member);
-
-	PopScope();
+	// Namespace declarations are now handled inline in VisitCompilationUnit
 }
 
 void TypeBinder::VisitClassDeclaration(ClassDeclarationSyntax *const node)
