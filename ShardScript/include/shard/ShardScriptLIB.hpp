@@ -17,6 +17,7 @@ namespace shard
 		const wchar_t* Version = nullptr;
 	};
 
+	/* OBSOLETE
 	class SHARD_API FrameworkModule
 	{
 	public:
@@ -25,6 +26,7 @@ namespace shard
 		virtual bool BindMethod(MethodSymbol* symbol) = 0;
 		virtual bool BindAccessor(AccessorSymbol* symbol) = 0;
 	};
+	*/
 }
 
 #define SHARDLIB_GETMETADATA_FUNCNAME ShardLib_GetMetadata

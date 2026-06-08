@@ -87,7 +87,7 @@ void TypeBinder::VisitCompilationUnit(CompilationUnitSyntax *const node)
 		VisitUsingDirective(directive);
 
 	for (MemberDeclarationSyntax* member : node->Members)
-		VisitTypeDeclaration(member);
+		VisitMemberDeclaration(member);
 
 	PopScope();
 }
@@ -220,7 +220,10 @@ void TypeBinder::VisitMethodDeclaration(MethodDeclarationSyntax *const node)
 
 	PushScope(symbol);
 	if (node->ReturnType != nullptr)
+	{
 		VisitType(node->ReturnType);
+		symbol->ReturnType = node->ReturnType->Symbol;
+	}
 
 	if (node->Params != nullptr)
 	{
@@ -231,7 +234,6 @@ void TypeBinder::VisitMethodDeclaration(MethodDeclarationSyntax *const node)
 	if (node->Body != nullptr)
 		VisitStatementsBlock(node->Body);
 
-	symbol->ReturnType = node->ReturnType->Symbol;
 	PopScope();
 }
 

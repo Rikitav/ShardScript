@@ -47,6 +47,9 @@
 #include <shard/syntax/nodes/Expressions/CollectionExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/LambdaExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/TernaryExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/IfExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/SwitchExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Statements/TryStatementSyntax.hpp>
 
 #include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.hpp>
@@ -167,7 +170,7 @@ void ExpressionBinder::VisitCompilationUnit(CompilationUnitSyntax *const node)
 		VisitUsingDirective(directive);
 
 	for (MemberDeclarationSyntax* member : node->Members)
-		VisitTypeDeclaration(member);
+		VisitMemberDeclaration(member);
 	
 	PopScope();
 }
@@ -266,6 +269,12 @@ void ExpressionBinder::VisitMethodDeclaration(MethodDeclarationSyntax *const nod
 	MethodSymbol* symbol = LookupSymbol<MethodSymbol>(node);
 	if (symbol == nullptr)
 		throw std::runtime_error("symbol not found");
+
+	if (symbol->Parent == nullptr)
+	{
+		Diagnostics.ReportError(node->IdentifierToken, L"Cannot find parent node of method.");
+		return;
+	}
 
 	if (!symbol->Parent->IsType())
 		return;
@@ -382,7 +391,6 @@ void ExpressionBinder::VisitAccessorDeclaration(AccessorDeclarationSyntax *const
 			Declare(param);
 
 		PropertySymbol* propSymbol = static_cast<PropertySymbol*>(symbol->Parent);
-		Declare(new ParameterSymbol(L"value", propSymbol->ReturnType));
 
 		if (!symbol->IsStatic)
 			Declare(new ParameterSymbol(L"this", static_cast<TypeSymbol*>(propSymbol->Parent)));
@@ -869,6 +877,73 @@ void ExpressionBinder::VisitTernaryExpression(TernaryExpressionSyntax *const nod
 	}
 }
 
+void ExpressionBinder::VisitIfExpression(IfExpressionSyntax *const node)
+{
+	VisitExpression(node->Condition);
+	VisitExpression(node->ThenExpression);
+	VisitExpression(node->ElseExpression);
+
+	TypeSymbol* conditionType = GetExpressionType(node->Condition);
+	if (conditionType == nullptr)
+	{
+		Diagnostics.ReportError(node->IfKeywordToken, L"If expression's condition return type could not be determined");
+	}
+	else if (conditionType != SymbolTable::Primitives::Boolean)
+	{
+		Diagnostics.ReportError(node->IfKeywordToken, L"If expression's condition expected to return 'bool', but got '" + conditionType->Name + L"'");
+	}
+
+	TypeSymbol* thenType = GetExpressionType(node->ThenExpression);
+	TypeSymbol* elseType = GetExpressionType(node->ElseExpression);
+	SetExpressionType(node, thenType == nullptr ? elseType : thenType);
+
+	if (thenType == nullptr)
+	{
+		Diagnostics.ReportError(node->IfKeywordToken, L"If expression's then-branch return type could not be determined");
+	}
+	else if (elseType == nullptr)
+	{
+		Diagnostics.ReportError(node->IfKeywordToken, L"If expression's else-branch return type could not be determined");
+	}
+	else if (thenType != elseType)
+	{
+		Diagnostics.ReportError(node->IfKeywordToken, L"If expression's branches have different types: '" + thenType->Name + L"' and '" + elseType->Name + L"'");
+	}
+}
+
+void ExpressionBinder::VisitSwitchExpression(SwitchExpressionSyntax *const node)
+{
+	VisitExpression(node->Expression);
+	TypeSymbol* exprType = GetExpressionType(node->Expression);
+
+	TypeSymbol* armType = nullptr;
+	for (SwitchArmSyntax* arm : node->Arms)
+	{
+		VisitExpression(arm->Pattern);
+		VisitExpression(arm->Expression);
+
+		TypeSymbol* currentArmType = GetExpressionType(arm->Expression);
+		if (armType == nullptr)
+			armType = currentArmType;
+	}
+
+	SetExpressionType(node, armType);
+}
+
+void ExpressionBinder::VisitTryStatement(TryStatementSyntax *const node)
+{
+	if (node->TryBlock != nullptr)
+		VisitStatementsBlock(node->TryBlock);
+
+	for (CatchClauseSyntax* clause : node->CatchClauses)
+	{
+		PushScope(new LeftDenotationSymbol(clause->ExceptionType != nullptr ? clause->ExceptionType->Symbol : SymbolTable::Primitives::Any));
+		if (clause->Body != nullptr)
+			VisitStatementsBlock(clause->Body);
+		PopScope();
+	}
+}
+
 bool ExpressionBinder::MatchMethodArguments(std::vector<ParameterSymbol*> parameters, std::vector<ArgumentSyntax*> arguments, GenericTypeSymbol* genericType)
 {
 	if (parameters.size() != arguments.size())
@@ -980,15 +1055,17 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 			symbol = currentType->FindField(memberName);
 			if (symbol == nullptr)
 			{
-				symbol = *std::find_if(
+				auto methodIt = std::find_if(
 					currentType->Methods.begin(), currentType->Methods.end(),
 					[memberName](const MethodSymbol* method) { return method->Name == memberName; });
 
-				if (symbol == nullptr)
+				if (methodIt == currentType->Methods.end())
 				{
 					Diagnostics.ReportError(node->IdentifierToken, L"Member '" + memberName + L"' not found in type '" + currentType->Name + L"'");
 					return nullptr;
 				}
+
+				symbol = *methodIt;
 			}
 		}
 	}

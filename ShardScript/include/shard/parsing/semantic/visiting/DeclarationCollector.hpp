@@ -47,5 +47,8 @@ namespace shard
 		void VisitIndexatorDeclaration(shard::IndexatorDeclarationSyntax *const node) override;
 		void VisitAccessorDeclaration(shard::AccessorDeclarationSyntax *const node) override;
 		void VisitVariableStatement(shard::VariableStatementSyntax *const node) override;
+
+	private:
+		void ApplyMethodAttributes(shard::MethodSymbol* symbol, std::vector<shard::AttributeSyntax*>& attributes);
 	};
 }

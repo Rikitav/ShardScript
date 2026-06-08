@@ -27,6 +27,7 @@ namespace shard
 
 		inline DelegateDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) : MemberDeclarationSyntax(SyntaxKind::DelegateDeclaration, parent)
 		{
+			Attributes = info.Attributes;
 			Modifiers = info.Modifiers;
 			DelegateToken = info.DeclareType;
 			ReturnType = info.ReturnType;

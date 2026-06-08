@@ -1,64 +1,132 @@
-﻿// Скрипт ресурсов, созданный в Microsoft Visual C++.
-//
-#include "resource.hpp"
-
-#define APSTUDIO_READONLY_SYMBOLS
-/////////////////////////////////////////////////////////////////////////////
-//
-// Создано из ресурса TEXTINCLUDE 2.
-//
-#include "winres.h"
-
-/////////////////////////////////////////////////////////////////////////////
-#undef APSTUDIO_READONLY_SYMBOLS
-
-/////////////////////////////////////////////////////////////////////////////
-// ресурсы Русский (Россия)
-
-#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_RUS)
-LANGUAGE 25, 1
-
-#ifdef APSTUDIO_INVOKED
-/////////////////////////////////////////////////////////////////////////////
-//
-// TEXTINCLUDE
-//
-
-1 TEXTINCLUDE  
-BEGIN
-    "resource.hpp\0"
-END
-
-2 TEXTINCLUDE  
-BEGIN
-    "#include ""winres.h""\r\n"
-    "\0"
-END
-
-3 TEXTINCLUDE  
-BEGIN
-    "\r\n"
-    "\0"
-END
-
-#endif    // APSTUDIO_INVOKED
-
-#endif    // ресурсы Русский (Россия)
-/////////////////////////////////////////////////////////////////////////////
-
-
-
-#ifndef APSTUDIO_INVOKED
-/////////////////////////////////////////////////////////////////////////////
-//
-// Создано из ресурса TEXTINCLUDE 3.
-//
-
-
-/////////////////////////////////////////////////////////////////////////////
-#endif    // не APSTUDIO_INVOKED
-
-COLLECTIONS_LIST SOURCE_CODE "system\\collections\\List.ss"
-FILESYSTEM_FILE SOURCE_CODE "system\\filesystem\\File.ss"
-FILESYSTEM_DIRECTORY SOURCE_CODE "system\\filesystem\\Directory.ss"
-SYSTEM_RANDOM SOURCE_CODE "system\\Random.ss"
+﻿// Скрипт ресурсов, созданный в Microsoft Visual C++.
+
+//
+
+#ifdef APSTUDIO_INVOKED
+#ifndef APSTUDIO_READONLY_SYMBOLS
+#define _APS_NEXT_RESOURCE_VALUE        101
+#define _APS_NEXT_COMMAND_VALUE         40001
+#define _APS_NEXT_CONTROL_VALUE         1001
+#define _APS_NEXT_SYMED_VALUE           101
+#endif
+#endif
+#define APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+
+//
+
+// Создано из ресурса TEXTINCLUDE 2.
+
+//
+
+#include "winres.h"
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+
+#undef APSTUDIO_READONLY_SYMBOLS
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+
+// ресурсы Русский (Россия)
+
+
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_RUS)
+
+LANGUAGE 25, 1
+
+
+
+#ifdef APSTUDIO_INVOKED
+
+/////////////////////////////////////////////////////////////////////////////
+
+//
+
+// TEXTINCLUDE
+
+//
+
+
+
+1 TEXTINCLUDE  
+
+BEGIN
+
+    "resource.hpp\0"
+
+END
+
+
+
+2 TEXTINCLUDE  
+
+BEGIN
+
+    "#include ""winres.h""\r\n"
+
+    "\0"
+
+END
+
+
+
+3 TEXTINCLUDE  
+
+BEGIN
+
+    "\r\n"
+
+    "\0"
+
+END
+
+
+
+#endif    // APSTUDIO_INVOKED
+
+
+
+#endif    // ресурсы Русский (Россия)
+
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+#ifndef APSTUDIO_INVOKED
+
+/////////////////////////////////////////////////////////////////////////////
+
+//
+
+// Создано из ресурса TEXTINCLUDE 3.
+
+//
+
+
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+
+#endif    // не APSTUDIO_INVOKED
+
+
+
+COLLECTIONS_LIST SOURCE_CODE "system\\collections\\List.ss"
+
+FILESYSTEM_FILE SOURCE_CODE "system\\filesystem\\File.ss"
+
+FILESYSTEM_DIRECTORY SOURCE_CODE "system\\filesystem\\Directory.ss"
+
+SYSTEM_RANDOM SOURCE_CODE "system\\Random.ss"
+

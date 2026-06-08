@@ -15,6 +15,7 @@
 #include <shard/syntax/nodes/CompilationUnitSyntax.hpp>
 #include <shard/syntax/nodes/TypeDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/AttributeSyntax.hpp>
 #include <shard/syntax/nodes/ParametersListSyntax.hpp>
 #include <shard/syntax/nodes/BodyDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/StatementSyntax.hpp>
@@ -208,155 +209,117 @@ NamespaceDeclarationSyntax *const SourceParser::ReadNamespaceDeclaration(SourceP
 
 MemberDeclarationSyntax *const SourceParser::ReadMemberDeclaration(SourceProvider& reader, SyntaxNode *const parent)
 {
-	// Reading identifiers
 	MemberDeclarationInfo info;
+	info.Attributes = ReadAttributeList(reader, parent);
 	info.Modifiers = ReadMemberModifiers(reader);
 
-	// Reading member keyword or return type
-	while (reader.CanConsume())
+	if (!reader.CanConsume())
+		return nullptr;
+
+	SyntaxToken current = reader.Current();
+
+	// Declaration prediction: class, struct, interface, delegate
+	if (IsTypeKeyword(current.Type))
 	{
-		SyntaxToken current = reader.Current();
-		if (IsTypeKeyword(current.Type))
-		{
-			info.DeclareType = current;
-			reader.Consume();
-
-			switch (current.Type)
-			{
-				// Declaration prediction : Class   `{modifiers} class`
-				case TokenType::ClassKeyword:
-					return ReadClassDeclaration(reader, info, parent);
-
-					// Declaration prediction : Struct   `{modifiers} struct`
-				case TokenType::StructKeyword:
-					return ReadStructDeclaration(reader, info, parent);
-
-					/*
-					// Declaration prediction : Interface   `{modifiers} interface`
-					case TokenType::InterfaceKeyword:
-						return ReadInterfaceDeclaration(reader, info, parent);
-					*/
-
-					// Declaration prediction : Delegate   `{modifiers} delegate`
-				case TokenType::DelegateKeyword:
-					return ReadDelegateDeclaration(reader, info, parent);
-
-				default:
-				{
-					Diagnostics.ReportError(info.DeclareType, L"Unsupported member keyword");
-					return nullptr;
-				}
-			}
-
-			break;
-		}
-
-		SyntaxToken peek = reader.Peek();
-
-		// Declaration prediction : Constructor   `{modifiers} Identifier(`
-		if (current.Type == TokenType::Identifier && peek.Type == TokenType::OpenCurl)
-		{
-			info.Identifier = current;
-			reader.Consume();
-
-			return ReadConstructorDeclaration(reader, info, parent);
-		}
-
-		// Declaration prediction : `{modifiers} string`
-		if (IsType(current.Type, peek.Type))
-		{
-			info.ReturnType = ReadType(reader, parent);
-
-			// Declaration prediction : `{modifiers} string Identifier`
-			if (!TryMatch(reader, { TokenType::Identifier, TokenType::IndexerKeyword }, L"Expected member identifier", 5))
-			{
-				info.Identifier = SyntaxToken(TokenType::Identifier, L"", TextLocation(), true);
-			}
-			else
-			{
-				info.Identifier = reader.Current();
-				reader.Consume();
-			}
-
-			// Declaration prediction : Indexator   `{modifiers} index`
-			if (info.Identifier.Type == TokenType::IndexerKeyword)
-			{
-				return ReadIndexatorDeclaration(reader, info, parent);
-			}
-
-			if (!TryMatch(reader,
-				{ TokenType::OpenCurl, TokenType::OpenBrace, TokenType::Semicolon, TokenType::AssignOperator },
-				L"Expected parameters list '(', accessors body '{', semicolon ';' or assignment '='", 5))
-			{
-				continue;
-			}
-
-			SyntaxToken current = reader.Current();
-			switch (current.Type)
-			{
-				// Declaration prediction : Property   `{modifiers} string Identifier {`
-				case TokenType::OpenBrace:
-					return ReadPropertyDeclaration(reader, info, parent);
-
-					// Declaration prediction : Field   `{modifiers} string Identifier;`, `{modifiers} string Identifier =`
-				case TokenType::Semicolon:
-				case TokenType::AssignOperator:
-					return ReadFieldDeclaration(reader, info, parent);
-
-					// Declaration prediction : Method   `{modifiers} string Identifier(`
-				case TokenType::OpenCurl:
-					return ReadMethodDeclaration(reader, info, parent);
-			}
-		}
-
-		Diagnostics.ReportError(current, L"Expected member declaration keyword");
+		info.DeclareType = current;
 		reader.Consume();
-		continue;
-	}
-
-	/*
-	if (info.ReturnType != nullptr)
-	{
-	}
-
-	if (!TryMatch(reader, { TokenType::Identifier }, L"Expected member identifier", 5))
-	{
-		info.Identifier = SyntaxToken(TokenType::Identifier, L"", TextLocation(), true);
-	}
-	else
-	{
-		info.Identifier = reader.Current();
-		reader.Consume();
-	}
-
-	// Reading parameters list
-	if (info.DeclareType.Type == TokenType::DelegateKeyword)
-	{
-		return ReadDelegateDeclaration(reader, info, parent);
-	}
-	else if (info.ReturnType != nullptr)
-	{
-	}
-	else if (!info.DeclareType.IsMissing)
-	{
-		if (!TryMatch(reader, { TokenType::OpenBrace, TokenType::Semicolon }, L"Expected type body '{' or semicolon ';'", 5))
+		switch (current.Type)
 		{
-			// If we couldn't recover, try to continue anyway
+			case TokenType::ClassKeyword:
+				return ReadClassDeclaration(reader, info, parent);
+
+			case TokenType::StructKeyword:
+				return ReadStructDeclaration(reader, info, parent);
+
+			case TokenType::InterfaceKeyword:
+				return ReadInterfaceDeclaration(reader, info, parent);
+
+			case TokenType::DelegateKeyword:
+				return ReadDelegateDeclaration(reader, info, parent);
+
+			default:
+				Diagnostics.ReportError(info.DeclareType, L"Unsupported member keyword");
+				return nullptr;
+		}
+	}
+
+	// Declaration prediction: fn name(params) -> type { }
+	if (current.Type == TokenType::FnKeyword)
+	{
+		reader.Consume(); // fn
+		if (!TryMatch(reader, { TokenType::Identifier }, L"Expected function name", 3))
+		{
+			info.Identifier = SyntaxToken(TokenType::Identifier, L"", TextLocation(), true);
+		}
+		else
+		{
+			info.Identifier = reader.Current();
+			reader.Consume();
 		}
 
-		TypeDeclarationSyntax *const type = make_type(info, parent);
-		ReadTypeBody(reader, type);
-		return type;
+		return ReadMethodDeclaration(reader, info, parent);
 	}
-	*/
 
+	// Declaration prediction: init(params) { }
+	if (current.Type == TokenType::InitKeyword)
+	{
+		reader.Consume(); // init
+		info.Identifier = SyntaxToken(TokenType::InitKeyword, L"init", TextLocation(), false);
+		return ReadConstructorDeclaration(reader, info, parent);
+	}
+
+	// Declaration prediction: Identifier: type ...
+	if (current.Type == TokenType::Identifier)
+	{
+		info.Identifier = current;
+		reader.Consume();
+
+		SyntaxToken next = reader.Current();
+		if (next.Type == TokenType::OpenCurl)
+		{
+			Diagnostics.ReportError(info.Identifier, L"Missed 'fn' keyword");
+			return ReadMethodDeclaration(reader, info, parent);
+		}
+
+		if (!TryMatch(reader, { TokenType::Colon }, L"Expected ':' after identifier", 3))
+			return nullptr;
+
+		reader.Consume(); // :
+		info.ReturnType = ReadType(reader, parent);
+		if (info.ReturnType == nullptr)
+		{
+			Diagnostics.ReportError(reader.Current(), L"Expected type after ':'");
+			return nullptr;
+		}
+
+		next = reader.Current();
+		if (next.Type == TokenType::OpenBrace)
+		{
+			return ReadPropertyDeclaration(reader, info, parent);
+		}
+		else if (next.Type == TokenType::ArrowOperator) // =>
+		{
+			return ReadComputedPropertyDeclaration(reader, info, parent);
+		}
+		else if (next.Type == TokenType::AssignOperator || next.Type == TokenType::Semicolon)
+		{
+			return ReadFieldDeclaration(reader, info, parent);
+		}
+		else
+		{
+			Diagnostics.ReportError(next, L"Expected '{', '=>', '=' or ';' after type");
+			return nullptr;
+		}
+	}
+
+	Diagnostics.ReportError(current, L"Expected member declaration");
+	reader.Consume();
 	return nullptr;
 }
 
 ClassDeclarationSyntax *const SourceParser::ReadClassDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode *const parent)
 {
 	ClassDeclarationSyntax *const syntax = new ClassDeclarationSyntax(info, parent);
-
 	if (TryMatch(reader, { TokenType::Identifier }, L"Expected class identifier", 5))
 	{
 		syntax->IdentifierToken = reader.Current();
@@ -454,6 +417,25 @@ MethodDeclarationSyntax *const SourceParser::ReadMethodDeclaration(SourceProvide
 	syntax->Params = ReadParametersList(reader, syntax);
 
 	SyntaxToken current = reader.Current();
+	if (current.Type == TokenType::ArrowOperator)
+	{
+		reader.Consume(); // ->
+		syntax->ReturnType = ReadType(reader, syntax);
+	}
+	else
+	{
+		//syntax->ReturnType = new PredefinedTypeSyntax(SyntaxToken(TokenType::VoidKeyword, L"void", TextLocation(), false), syntax);
+		if (current.Type == TokenType::Identifier)
+		{
+			Diagnostics.ReportError(current, L"Expected '->' before return type.");
+		}
+		else
+		{
+			Diagnostics.ReportError(current, L"Function must have a return type.");
+		}
+	}
+
+	current = reader.Current();
 	if (current.Type == TokenType::Semicolon)
 	{
 		syntax->Semicolon = current;
@@ -482,6 +464,13 @@ FieldDeclarationSyntax *const SourceParser::ReadFieldDeclaration(SourceProvider&
 			return syntax;
 		}
 
+		case TokenType::Semicolon:
+		{
+			syntax->SemicolonToken = current;
+			reader.Consume();
+			return syntax;
+		}
+
 		default:
 		{
 			syntax->SemicolonToken = Expect(reader, TokenType::Semicolon, L"Expected ';' token");
@@ -490,6 +479,47 @@ FieldDeclarationSyntax *const SourceParser::ReadFieldDeclaration(SourceProvider&
 	}
 
 	return nullptr;
+}
+
+PropertyDeclarationSyntax *const SourceParser::ReadComputedPropertyDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode *const parent)
+{
+	PropertyDeclarationSyntax *const property = new PropertyDeclarationSyntax(info, parent);
+	property->ArrowToken = Expect(reader, TokenType::ArrowOperator, L"Expected '=>'");
+	property->InitializerExpression = ReadExpression(reader, property, 0);
+	property->SemicolonToken = Expect(reader, TokenType::Semicolon, L"Expected ';' token");
+	return property;
+}
+
+InterfaceDeclarationSyntax *const SourceParser::ReadInterfaceDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode *const parent)
+{
+	InterfaceDeclarationSyntax *const syntax = new InterfaceDeclarationSyntax(info, parent);
+
+	if (TryMatch(reader, { TokenType::Identifier }, L"Expected interface identifier", 5))
+	{
+		syntax->IdentifierToken = reader.Current();
+		reader.Consume();
+	}
+	else
+	{
+		syntax->IdentifierToken = SyntaxToken(TokenType::Identifier, L"", TextLocation(), true);
+	}
+
+	SyntaxToken current = reader.Current();
+	if (current.Type == TokenType::LessOperator)
+	{
+		syntax->TypeParameters = ReadTypeParametersList(reader, parent);
+	}
+
+	if (TryMatch(reader, { TokenType::OpenBrace, TokenType::Semicolon }, L"Expected interface body '{' or semicolon ';'", 5))
+	{
+		current = reader.Current();
+		if (current.Type == TokenType::OpenBrace)
+		{
+			ReadTypeBody(reader, syntax);
+		}
+	}
+
+	return syntax;
 }
 
 DelegateDeclarationSyntax *const SourceParser::ReadDelegateDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode *const parent)
@@ -675,6 +705,7 @@ std::vector<SyntaxToken> SourceParser::ReadMemberModifiers(SourceProvider& reade
 		TokenType::PrivateKeyword,
 		TokenType::ProtectedKeyword,
 		TokenType::InternalKeyword,
+		TokenType::ExportKeyword,
 		TokenType::StaticKeyword,
 		TokenType::ExternKeyword,
 		/*
@@ -743,6 +774,62 @@ std::vector<SyntaxToken> SourceParser::ReadMemberModifiers(SourceProvider& reade
 	}
 
 	return modifiers;
+}
+
+AttributeSyntax *const SourceParser::ReadAttribute(SourceProvider& reader, SyntaxNode *const parent)
+{
+	AttributeSyntax *const syntax = new AttributeSyntax(parent);
+	syntax->OpenBracketToken = Expect(reader, TokenType::OpenSquare, L"Expected '['");
+	syntax->NameToken = Expect(reader, TokenType::Identifier, L"Expected attribute name");
+
+	if (reader.Current().Type == TokenType::OpenCurl)
+	{
+		syntax->OpenCurlToken = reader.Current();
+		reader.Consume(); // (
+
+		while (reader.CanConsume() && reader.Current().Type != TokenType::CloseCurl)
+		{
+			SyntaxToken arg = reader.Current();
+			if (arg.Type == TokenType::StringLiteral)
+			{
+				syntax->Arguments.push_back(arg);
+				reader.Consume();
+			}
+			else
+			{
+				Diagnostics.ReportError(arg, L"Expected string literal in attribute arguments");
+				reader.Consume();
+			}
+
+			if (reader.Current().Type == TokenType::Comma)
+			{
+				reader.Consume(); // ,
+			}
+			else if (reader.Current().Type != TokenType::CloseCurl)
+			{
+				Diagnostics.ReportError(reader.Current(), L"Expected ',' or ')' in attribute arguments");
+				break;
+			}
+		}
+
+		syntax->CloseCurlToken = Expect(reader, TokenType::CloseCurl, L"Expected ')'");
+	}
+
+	syntax->CloseBracketToken = Expect(reader, TokenType::CloseSquare, L"Expected ']'");
+	return syntax;
+}
+
+std::vector<AttributeSyntax*> SourceParser::ReadAttributeList(SourceProvider& reader, SyntaxNode *const parent)
+{
+	std::vector<AttributeSyntax*> attributes;
+	while (reader.CanConsume() && reader.Current().Type == TokenType::OpenSquare)
+	{
+		AttributeSyntax *const attr = ReadAttribute(reader, parent);
+		if (attr != nullptr)
+			attributes.push_back(attr);
+	}
+
+	return attributes;
 }
 
 ParametersListSyntax *const SourceParser::ReadIndexerParametersList(SourceProvider& reader, SyntaxNode *const parent)
@@ -825,9 +912,7 @@ ParametersListSyntax *const SourceParser::ReadParametersList(SourceProvider& rea
 
 	while (reader.CanConsume())
 	{
-		TypeSyntax *const type = ReadType(reader, syntax);
 		SyntaxToken identifierToken;
-
 		if (!TryMatch(reader, { TokenType::Identifier }, L"Expected parameter name", 3))
 		{
 			if (reader.CanConsume() && reader.Current().Type == TokenType::CloseCurl)
@@ -837,7 +922,6 @@ ParametersListSyntax *const SourceParser::ReadParametersList(SourceProvider& rea
 				reader.Consume();
 				break;
 			}
-
 			identifierToken = SyntaxToken(TokenType::Identifier, L"", TextLocation(), true);
 		}
 		else
@@ -846,12 +930,8 @@ ParametersListSyntax *const SourceParser::ReadParametersList(SourceProvider& rea
 			reader.Consume();
 		}
 
-		if (identifierToken.Type == TokenType::CloseCurl)
-		{
-			Diagnostics.ReportError(identifierToken, L"Unexpected ')' - expected parameter name");
-			syntax->CloseToken = identifierToken;
-			break;
-		}
+		Expect(reader, TokenType::Colon, L"Expected ':' after parameter name");
+		TypeSyntax *const type = ReadType(reader, syntax);
 
 		ParameterSyntax *const param = new ParameterSyntax(type, identifierToken, syntax);
 		syntax->Parameters.push_back(param);
@@ -1107,25 +1187,42 @@ StatementSyntax *const SourceParser::ReadStatement(SourceProvider& reader, Synta
 	if (reader.CanPeek())
 	{
 		SyntaxToken peek = reader.Peek();
-		if (IsType(current.Type, peek.Type))
+
+		// name: type = value
+		if (current.Type == TokenType::Identifier && peek.Type == TokenType::Colon)
 		{
-			// TODO: Add indexator access checking
-
+			reader.Consume(); // name
+			reader.Consume(); // :
 			TypeSyntax *const type = ReadType(reader, parent);
-			if (reader.CanPeek())
+			
+			if (type == nullptr)
 			{
-				current = reader.Current();
-				peek = reader.Peek();
-
-				if (current.Type == TokenType::Identifier && peek.Type == TokenType::AssignOperator)
-				{
-					reader.Consume(); // Id
-					reader.Consume(); // =
-
-					ExpressionSyntax *const expr = ReadExpression(reader, parent, 0);
-					return new VariableStatementSyntax(type, current, peek, expr, parent);
-				}
+				Diagnostics.ReportError(reader.Current(), L"Expected type after ':'");
+				return nullptr;
 			}
+
+			SyntaxToken name = current;
+			SyntaxToken assign;
+			ExpressionSyntax *expr = nullptr;
+			
+			if (reader.Current().Type == TokenType::AssignOperator)
+			{
+				assign = reader.Current();
+				reader.Consume();
+				expr = ReadExpression(reader, parent, 0);
+			}
+
+			return new VariableStatementSyntax(type, name, assign, expr, parent);
+		}
+
+		// name := value
+		if (current.Type == TokenType::Identifier && peek.Type == TokenType::DeclareAssignOperator)
+		{
+			reader.Consume(); // name
+			SyntaxToken walrus = reader.Current();
+			reader.Consume(); // :=
+			ExpressionSyntax *const expr = ReadExpression(reader, parent, 0);
+			return new VariableStatementSyntax(new PredefinedTypeSyntax(SyntaxToken(TokenType::VarKeyword, L"var", current.Location, false), parent), current, walrus, expr, parent);
 		}
 	}
 
@@ -1163,6 +1260,9 @@ KeywordStatementSyntax *const SourceParser::ReadKeywordStatement(SourceProvider&
 		case TokenType::UnlessKeyword:
 		case TokenType::ElseKeyword:
 			return ReadConditionalClause(reader, parent);
+
+		case TokenType::TryKeyword:
+			return ReadTryStatement(reader, parent);
 
 		default:
 		{
@@ -1349,6 +1449,37 @@ ForStatementSyntax *const SourceParser::ReadForStatement(SourceProvider& reader,
 	return syntax;
 }
 
+TryStatementSyntax *const SourceParser::ReadTryStatement(SourceProvider& reader, SyntaxNode *const parent)
+{
+	TryStatementSyntax *const syntax = new TryStatementSyntax(parent);
+	syntax->TryKeywordToken = Expect(reader, TokenType::TryKeyword, L"Expected 'try' keyword");
+	syntax->TryBlock = ReadStatementsBlock(reader, syntax);
+
+	while (reader.CanConsume() && reader.Current().Type == TokenType::CatchKeyword)
+	{
+		CatchClauseSyntax *const clause = new CatchClauseSyntax(syntax);
+		clause->CatchKeywordToken = Expect(reader, TokenType::CatchKeyword, L"Expected 'catch' keyword");
+
+		if (TryMatch(reader, { TokenType::Identifier }, L"Expected exception variable name", 3))
+		{
+			clause->IdentifierToken = reader.Current();
+			reader.Consume();
+		}
+
+		if (reader.Current().Type == TokenType::Colon)
+		{
+			clause->ColonToken = reader.Current();
+			reader.Consume();
+			clause->ExceptionType = ReadType(reader, clause);
+		}
+
+		clause->Body = ReadStatementsBlock(reader, clause);
+		syntax->CatchClauses.push_back(clause);
+	}
+
+	return syntax;
+}
+
 ExpressionSyntax *const SourceParser::ReadExpression(SourceProvider& reader, SyntaxNode *const parent, int bindingPower)
 {
 	ExpressionSyntax* leftExpr = ReadNullDenotation(reader, parent);
@@ -1424,6 +1555,21 @@ ExpressionSyntax *const SourceParser::ReadNullDenotation(SourceProvider& reader,
 		case TokenType::NewKeyword:
 			return ReadObjectExpression(reader, parent);
 
+		case TokenType::ThrowKeyword:
+		{
+			SyntaxToken throwToken = reader.Current();
+			reader.Consume();
+			UnaryExpressionSyntax *const syntax = new UnaryExpressionSyntax(throwToken, false, parent);
+			syntax->Expression = ReadNullDenotation(reader, syntax);
+			return syntax;
+		}
+
+		case TokenType::IfKeyword:
+			return ReadIfExpression(reader, parent);
+
+		case TokenType::SwitchKeyword:
+			return ReadSwitchExpression(reader, parent);
+
 		case TokenType::EndOfFile:
 		{
 			Diagnostics.ReportError(current, L"Unexpected file end in expression");
@@ -1462,6 +1608,20 @@ ExpressionSyntax *const SourceParser::ReadLeftDenotation(SourceProvider& reader,
 		case TokenType::Question:
 		{
 			return ReadTernaryExpression(reader, leftExpr, parent);
+		}
+
+		case TokenType::NullCoalescingOperator:
+		{
+			int precendce = GetOperatorPrecendence(current.Type);
+			if (precendce == 0)
+				return leftExpr;
+
+			reader.Consume();
+			BinaryExpressionSyntax *const syntax = new BinaryExpressionSyntax(current, parent);
+			*const_cast<SyntaxNode**>(&leftExpr->Parent) = syntax;
+			syntax->Left = leftExpr;
+			syntax->Right = ReadExpression(reader, syntax, precendce);
+			return syntax;
 		}
 	}
 
@@ -1565,6 +1725,58 @@ LambdaExpressionSyntax *const SourceParser::ReadLambdaExpression(SourceProvider&
 	syntax->Params = ReadParametersList(reader, syntax);
 	syntax->LambdaOperatorToken = Expect(reader, TokenType::LambdaOperator, L"Expected '=>' operator");
 	syntax->Body = ReadStatementsBlock(reader, syntax);
+	return syntax;
+}
+
+IfExpressionSyntax *const SourceParser::ReadIfExpression(SourceProvider& reader, SyntaxNode *const parent)
+{
+	IfExpressionSyntax *const syntax = new IfExpressionSyntax(parent);
+	syntax->IfKeywordToken = Expect(reader, TokenType::IfKeyword, L"Expected 'if' keyword");
+	syntax->Condition = ReadExpression(reader, syntax, 0);
+	syntax->OpenBraceToken = Expect(reader, TokenType::OpenBrace, L"Expected '{'");
+	syntax->ThenExpression = ReadExpression(reader, syntax, 0);
+	syntax->CloseBraceToken = Expect(reader, TokenType::CloseBrace, L"Expected '}'");
+
+	if (reader.Current().Type == TokenType::ElseKeyword)
+	{
+		syntax->ElseKeywordToken = reader.Current();
+		reader.Consume();
+		syntax->ElseExpression = ReadExpression(reader, syntax, 0);
+	}
+
+	return syntax;
+}
+
+SwitchExpressionSyntax *const SourceParser::ReadSwitchExpression(SourceProvider& reader, SyntaxNode *const parent)
+{
+	SwitchExpressionSyntax *const syntax = new SwitchExpressionSyntax(parent);
+	syntax->SwitchKeywordToken = Expect(reader, TokenType::SwitchKeyword, L"Expected 'switch' keyword");
+	syntax->Expression = ReadExpression(reader, syntax, 0);
+	syntax->OpenBraceToken = Expect(reader, TokenType::OpenBrace, L"Expected '{'");
+
+	while (reader.CanConsume() && reader.Current().Type != TokenType::CloseBrace)
+	{
+		SwitchArmSyntax *const arm = new SwitchArmSyntax(syntax);
+
+		if (reader.Current().Type == TokenType::Identifier && reader.Current().Word == L"_") // '_' as default
+		{
+			arm->Pattern = new LiteralExpressionSyntax(SyntaxToken(TokenType::Identifier, L"_", reader.Current().Location, false), arm);
+			reader.Consume();
+		}
+		else
+		{
+			arm->Pattern = ReadExpression(reader, arm, 0);
+		}
+
+		arm->ArrowToken = Expect(reader, TokenType::LambdaOperator, L"Expected '=>'");
+		arm->Expression = ReadExpression(reader, arm, 0);
+		syntax->Arms.push_back(arm);
+
+		if (reader.Current().Type == TokenType::Comma)
+			reader.Consume();
+	}
+
+	syntax->CloseBraceToken = Expect(reader, TokenType::CloseBrace, L"Expected '}'");
 	return syntax;
 }
 

@@ -22,6 +22,7 @@ namespace shard
 		SyntaxToken ReturnTypeToken;
 		SyntaxToken OpenBraceToken;
 		SyntaxToken CloseBraceToken;
+		SyntaxToken ArrowToken;
 		SyntaxToken SemicolonToken;
 
 		TypeSyntax* ReturnType = nullptr;
@@ -37,6 +38,7 @@ namespace shard
 		inline PropertyDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) 
 			: MemberDeclarationSyntax(SyntaxKind::PropertyDeclaration, parent)
 		{
+			Attributes = info.Attributes;
 			Modifiers = info.Modifiers;
 			IdentifierToken = info.Identifier;
 			ReturnType = info.ReturnType;

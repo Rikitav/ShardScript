@@ -21,6 +21,7 @@
 #include <shard/syntax/nodes/StatementSyntax.hpp>
 #include <shard/syntax/nodes/StatementsBlockSyntax.hpp>
 #include <shard/syntax/nodes/TypeSyntax.hpp>
+#include <shard/syntax/nodes/AttributeSyntax.hpp>
 
 #include <shard/syntax/nodes/Directives/UsingDirectiveSyntax.hpp>
 
@@ -29,6 +30,7 @@
 #include <shard/syntax/nodes/Statements/ThrowStatementSyntax.hpp>
 #include <shard/syntax/nodes/Statements/BreakStatementSyntax.hpp>
 #include <shard/syntax/nodes/Statements/ContinueStatementSyntax.hpp>
+#include <shard/syntax/nodes/Statements/TryStatementSyntax.hpp>
 
 #include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/DelegateDeclarationSyntax.hpp>
@@ -41,12 +43,15 @@
 #include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/IndexatorDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/InterfaceDeclarationSyntax.hpp>
 
 #include <shard/syntax/nodes/Expressions/LinkedExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/ObjectExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/CollectionExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/LambdaExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/TernaryExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/IfExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/SwitchExpressionSyntax.hpp>
 
 #include <shard/syntax/nodes/Loops/ForStatementSyntax.hpp>
 #include <shard/syntax/nodes/Loops/WhileStatementSyntax.hpp>
@@ -78,10 +83,12 @@ namespace shard
 		shard::MemberDeclarationSyntax *const ReadMemberDeclaration(shard::SourceProvider& reader, shard::SyntaxNode *const parent);
 		shard::ClassDeclarationSyntax *const ReadClassDeclaration(shard::SourceProvider& reader, shard::MemberDeclarationInfo& info, shard::SyntaxNode *const parent);
 		shard::StructDeclarationSyntax *const ReadStructDeclaration(shard::SourceProvider& reader, shard::MemberDeclarationInfo& info, shard::SyntaxNode *const parent);
-		//shard::InterfaceDelcarationSyntax *const ReadInterfaceDeclaration(shard::SourceProvider& reader, shard::MemberDeclarationInfo& info, shard::SyntaxNode *const parent);
+		shard::InterfaceDeclarationSyntax *const ReadInterfaceDeclaration(shard::SourceProvider& reader, shard::MemberDeclarationInfo& info, shard::SyntaxNode *const parent);
 		shard::DelegateDeclarationSyntax *const ReadDelegateDeclaration(shard::SourceProvider& reader, shard::MemberDeclarationInfo& info, shard::SyntaxNode *const parent);
 
 		std::vector<shard::SyntaxToken> ReadMemberModifiers(shard::SourceProvider& reader);
+		shard::AttributeSyntax *const ReadAttribute(shard::SourceProvider& reader, shard::SyntaxNode *const parent);
+		std::vector<shard::AttributeSyntax*> ReadAttributeList(shard::SourceProvider& reader, shard::SyntaxNode *const parent);
 		void ReadTypeBody(shard::SourceProvider& reader, shard::TypeDeclarationSyntax *const syntax);
 		//shard::TypeDeclarationSyntax *const make_type(shard::MemberDeclarationInfo& info, shard::SyntaxNode *const parent);
 
@@ -90,6 +97,7 @@ namespace shard
 		shard::MethodDeclarationSyntax *const ReadMethodDeclaration(shard::SourceProvider& reader, shard::MemberDeclarationInfo& info, shard::SyntaxNode *const parent);
 		shard::FieldDeclarationSyntax *const ReadFieldDeclaration(shard::SourceProvider& reader, shard::MemberDeclarationInfo& info, shard::SyntaxNode *const parent);
 		shard::PropertyDeclarationSyntax *const ReadPropertyDeclaration(shard::SourceProvider& reader, shard::MemberDeclarationInfo& info, shard::SyntaxNode *const parent);
+		shard::PropertyDeclarationSyntax *const ReadComputedPropertyDeclaration(shard::SourceProvider& reader, shard::MemberDeclarationInfo& info, shard::SyntaxNode *const parent);
 		shard::IndexatorDeclarationSyntax *const ReadIndexatorDeclaration(shard::SourceProvider& reader, shard::MemberDeclarationInfo& info, shard::SyntaxNode *const parent);
 		shard::AccessorDeclarationSyntax *const ReadAccessorDeclaration(shard::SourceProvider& reader, shard::SyntaxNode *const parent);
 
@@ -109,6 +117,7 @@ namespace shard
 		shard::WhileStatementSyntax *const ReadWhileStatement(shard::SourceProvider& reader, shard::SyntaxNode *const parent);
 		shard::UntilStatementSyntax *const ReadUntilStatement(shard::SourceProvider& reader, shard::SyntaxNode *const parent);
 		shard::ForStatementSyntax *const ReadForStatement(shard::SourceProvider& reader, shard::SyntaxNode *const parent);
+		shard::TryStatementSyntax *const ReadTryStatement(shard::SourceProvider& reader, shard::SyntaxNode *const parent);
 
 		// 7. Expression
 		shard::ExpressionSyntax *const ReadExpression(shard::SourceProvider& reader, shard::SyntaxNode *const parent, int bindingPower);
@@ -118,6 +127,8 @@ namespace shard
 		shard::CollectionExpressionSyntax *const ReadCollectionExpression(shard::SourceProvider& reader, shard::SyntaxNode *const parent);
 		shard::ObjectExpressionSyntax *const ReadObjectExpression(shard::SourceProvider& reader, shard::SyntaxNode *const parent);
 		shard::TernaryExpressionSyntax *const ReadTernaryExpression(shard::SourceProvider& reader, shard::ExpressionSyntax *const condition, shard::SyntaxNode *const parent);
+		shard::IfExpressionSyntax *const ReadIfExpression(shard::SourceProvider& reader, shard::SyntaxNode *const parent);
+		shard::SwitchExpressionSyntax *const ReadSwitchExpression(shard::SourceProvider& reader, shard::SyntaxNode *const parent);
 
 		shard::LambdaExpressionSyntax *const ReadLambdaExpression(shard::SourceProvider& reader, shard::SyntaxNode *const parent);
 		shard::LinkedExpressionNode *const ReadLinkedExpressionNode(shard::SourceProvider& reader, shard::SyntaxNode *const parent, shard::ExpressionSyntax *const lastNode, bool isFirst);

@@ -13,6 +13,7 @@
 #include <shard/syntax/nodes/ParametersListSyntax.hpp>
 #include <shard/syntax/nodes/CompilationUnitSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/AttributeSyntax.hpp>
 
 #include <shard/syntax/nodes/Statements/VariableStatementSyntax.hpp>
 
@@ -348,17 +349,11 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax *const
             }
         }
 
-        if (!symbol->IsStatic)
-        {
-            // `this` instance
-            symbol->EvalStackLocalsCount += 1;
-        }
+        uint16_t baseIndex = symbol->IsStatic ? 0 : 1;
+        for (size_t i = 0; i < symbol->Parameters.size(); ++i)
+            symbol->Parameters[i]->SlotIndex = baseIndex + i;
 
-        for (ParameterSymbol* const param : symbol->Parameters)
-        {
-            param->SlotIndex = symbol->EvalStackLocalsCount;
-            symbol->EvalStackLocalsCount += 1;
-        }
+        ApplyMethodAttributes(symbol, node->Attributes);
     }
 
     Declare(symbol);
@@ -402,7 +397,8 @@ void DeclarationCollector::VisitConstructorDeclaration(ConstructorDeclarationSyn
                 TypeSymbol* ownerType = static_cast<TypeSymbol*>(symbol->Parent);
 
                 // Assert: Constructors' name should match owners' Type name
-                if (symbol->Name != ownerType->Name)
+                // (skip for 'init' keyword which is the new constructor syntax)
+                if (node->IdentifierToken.Type != TokenType::InitKeyword && symbol->Name != ownerType->Name)
                     Diagnostics.ReportError(node->IdentifierToken, L"Constructor should have same name as containing Type");
 
                 // Assert: Type cannot have static Constructors'
@@ -419,17 +415,11 @@ void DeclarationCollector::VisitConstructorDeclaration(ConstructorDeclarationSyn
             }
         }
 
-        if (!symbol->IsStatic)
-        {
-            // `this` instance
-            symbol->EvalStackLocalsCount += 1;
-        }
+        uint16_t baseIndex = symbol->IsStatic ? 0 : 1;
+        for (size_t i = 0; i < symbol->Parameters.size(); ++i)
+            symbol->Parameters[i]->SlotIndex = baseIndex + i;
 
-        for (ParameterSymbol* const param : symbol->Parameters)
-        {
-            param->SlotIndex = symbol->EvalStackLocalsCount;
-            symbol->EvalStackLocalsCount += 1;
-        }
+        ApplyMethodAttributes(symbol, node->Attributes);
     }
 
     Declare(symbol);
@@ -565,12 +555,18 @@ void DeclarationCollector::VisitIndexatorDeclaration(IndexatorDeclarationSyntax 
 
     for (ParameterSymbol* const param : symbol->Parameters)
     {
-        param->SlotIndex = symbol->Getter->EvalStackLocalsCount;
+        // TODO: fix
+        /*
         if (symbol->Getter != nullptr)
-            symbol->Getter->EvalStackLocalsCount += 1;
+        {
+            param->SlotIndex = symbol->Getter->GetEvalStackArgumentsCount() + symbol->Getter->AddVariableCount();
+        }
 
         if (symbol->Setter != nullptr)
-            symbol->Setter->EvalStackLocalsCount += 1;
+        {
+            symbol->Setter->AddVariableCount();
+        }
+        */
     }
 
     if (symbol->Getter != nullptr)
@@ -583,7 +579,6 @@ void DeclarationCollector::VisitIndexatorDeclaration(IndexatorDeclarationSyntax 
     if (symbol->Setter != nullptr)
     {
         // Assert: extern Method cannot have body
-        symbol->Setter->EvalStackLocalsCount += 1;
         if (symbol->Setter->IsExtern && node->Setter->Body != nullptr)
             Diagnostics.ReportError(node->IdentifierToken, L"Set Accessors' marked as 'extern' cannot have Body");
     }
@@ -653,12 +648,18 @@ void DeclarationCollector::VisitAccessorDeclaration(AccessorDeclarationSyntax *c
 
                 case TokenType::SetKeyword:
                 {
-                    symbol->EvalStackLocalsCount += 1;
                     symbol->ReturnType = SymbolTable::Primitives::Void;
                     break;
                 }
             }
         }
+    }
+
+    // Assign slot indices for accessor parameters (e.g. setter's 'value')
+    {
+        uint16_t baseIndex = symbol->IsStatic ? 0 : 1;
+        for (size_t i = 0; i < symbol->Parameters.size(); ++i)
+            symbol->Parameters[i]->SlotIndex = baseIndex + i;
     }
 
     Declare(symbol);
@@ -675,7 +676,6 @@ void DeclarationCollector::VisitAccessorDeclaration(AccessorDeclarationSyntax *c
 
             case TokenType::SetKeyword:
             {
-                symbol->EvalStackLocalsCount += 1;
                 symbol->ReturnType = SymbolTable::Primitives::Void;
                 break;
             }
@@ -692,8 +692,7 @@ void DeclarationCollector::VisitVariableStatement(VariableStatementSyntax *const
         symbol = new VariableSymbol(varName, nullptr);
 
         MethodSymbol *const hostMethod = FindHostMethodSymbol();
-        symbol->SlotIndex = hostMethod->EvalStackLocalsCount;
-        hostMethod->EvalStackLocalsCount += 1;
+        symbol->SlotIndex = hostMethod->GetEvalStackArgumentsCount() + hostMethod->AddVariableCount();
 
         Table->BindSymbol(node, symbol);
 
@@ -712,4 +711,23 @@ void DeclarationCollector::VisitVariableStatement(VariableStatementSyntax *const
         VisitExpression(node->Expression);
 
     PopScope();
+}
+
+void DeclarationCollector::ApplyMethodAttributes(MethodSymbol* symbol, std::vector<AttributeSyntax*>& attributes)
+{
+    for (AttributeSyntax* attr : attributes)
+    {
+        if (attr->NameToken.Word == L"link")
+        {
+            if (attr->Arguments.size() == 1)
+            {
+                symbol->LinkSymbol = attr->Arguments[0].Word;
+            }
+            else if (attr->Arguments.size() == 2)
+            {
+                symbol->LinkLibrary = attr->Arguments[0].Word;
+                symbol->LinkSymbol = attr->Arguments[1].Word;
+            }
+        }
+    }
 }

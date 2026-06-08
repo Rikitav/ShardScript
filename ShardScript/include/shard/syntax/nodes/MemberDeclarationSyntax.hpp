@@ -5,6 +5,7 @@
 #include <shard/syntax/SyntaxToken.hpp>
 #include <shard/syntax/SyntaxKind.hpp>
 #include <shard/syntax/nodes/TypeParametersListSyntax.hpp>
+#include <shard/syntax/nodes/AttributeSyntax.hpp>
 
 #include <vector>
 
@@ -13,6 +14,7 @@ namespace shard
 	class SHARD_API MemberDeclarationSyntax : public SyntaxNode
 	{
 	public:
+		std::vector<AttributeSyntax*> Attributes;
 		std::vector<SyntaxToken> Modifiers;
 		SyntaxToken DeclareToken;
 		SyntaxToken IdentifierToken;
@@ -25,7 +27,8 @@ namespace shard
 
 		inline virtual ~MemberDeclarationSyntax()
 		{
-
+			for (AttributeSyntax* attr : Attributes)
+				delete attr;
 		}
 	};
 }

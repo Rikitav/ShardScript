@@ -29,16 +29,43 @@ namespace shard
 
     class SHARD_API MethodSymbol : public SyntaxSymbol
     {
+        uint16_t EvalStackVariablesCount = 0;
+
     public:
         TypeSymbol* ReturnType = nullptr;
         std::vector<ParameterSymbol*> Parameters;
-        uint16_t EvalStackLocalsCount = 0;
 
         MethodHandleType HandleType = MethodHandleType::Body;
         std::vector<std::byte> ExecutableByteCode;
         MethodSymbolDelegate FunctionPointer = nullptr;
 
         bool IsStatic = false;
+        std::wstring LinkLibrary;
+        std::wstring LinkSymbol;
+
+        inline uint16_t GetEvalStackArgumentsCount() const
+        {
+            uint16_t count = static_cast<uint16_t>(Parameters.size());
+            if (!IsStatic)
+                count += 1; // implicit 'this'
+
+            return count;
+        }
+
+        inline uint16_t AddVariableCount()
+        {
+            return EvalStackVariablesCount++;
+        }
+
+        inline uint16_t GetEvalStackVariablesCount() const
+        {
+            return EvalStackVariablesCount;
+        }
+
+        inline uint16_t GetEvalStackLocalsCount() const
+        {
+            return GetEvalStackArgumentsCount() + EvalStackVariablesCount;
+        }
 
         inline MethodSymbol(const std::wstring& name)
             : SyntaxSymbol(name, SyntaxKind::MethodDeclaration), HandleType(MethodHandleType::None) { }

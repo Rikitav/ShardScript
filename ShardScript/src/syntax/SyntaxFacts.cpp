@@ -44,6 +44,9 @@ int GetOperatorPrecendence(shard::TokenType type)
 		case TokenType::OrOperator:
 			return 3;
 
+		case TokenType::NullCoalescingOperator:
+			return 2;
+
 		case TokenType::Question: // ternary
 			return 2;
 
@@ -127,6 +130,9 @@ bool IsBinaryOperator(shard::TokenType type)
 		return true;
 
 	if (IsBinaryBitOperator(type))
+		return true;
+
+	if (type == TokenType::NullCoalescingOperator)
 		return true;
 
 	return false;
@@ -294,6 +300,7 @@ bool IsModifier(shard::TokenType type)
 		case TokenType::InternalKeyword:
 		case TokenType::StaticKeyword:
 		case TokenType::ExternKeyword:
+		case TokenType::ExportKeyword:
 			/*
 		case TokenType::AbstractKeyword:
 		case TokenType::SealedKeyword:
@@ -326,29 +333,23 @@ bool IsMemberDeclaration(shard::TokenType currentType, shard::TokenType peekType
 	if (IsModifier(currentType))
 		return true;
 
-	/*
-	if (IsType(currentType, peekType))
-	{
-		if (peekType == TokenType::Identifier)
-			return true;
-	}
-	*/
-
 	if (IsMemberKeyword(currentType))
-	{
 		return true;
-	}
 
 	if (IsTypeKeyword(currentType))
-	{
 		return true;
-	}
+
+	if (currentType == TokenType::FnKeyword)
+		return true;
+
+	if (currentType == TokenType::InitKeyword)
+		return true;
 
 	if (currentType == TokenType::Identifier)
-	{
-		if (peekType == TokenType::Identifier)
-			return true;
-	}
+		return peekType == TokenType::Colon;
+
+	if (currentType == TokenType::OpenSquare)
+		return true;
 
 	return false;
 }
@@ -390,6 +391,9 @@ bool IsFunctionalKeyword(shard::TokenType type)
 		case TokenType::BreakKeyword:
 		case TokenType::ContinueKeyword:
 		case TokenType::ReturnKeyword:
+		case TokenType::ThrowKeyword:
+		case TokenType::TryKeyword:
+		case TokenType::CatchKeyword:
 			return true;
 
 		default:

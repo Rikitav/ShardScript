@@ -1,25 +1,13 @@
-#include <shard/ShardScriptLIB.hpp>
-#include <shard/runtime/ConsoleHelper.hpp>
-#include <shard/syntax/nodes/Types/PredefinedTypeSyntax.hpp>
-#include <shard/syntax/nodes/Statements/ExpressionStatementSyntax.hpp>
-#include <shard/syntax/SyntaxFacts.hpp>
-#include <shard/compilation/AbstractEmiter.hpp>
-#include <shard/runtime/GarbageCollector.hpp>
-#include <shard/parsing/lexical/LexicalAnalyzer.hpp>
-#include <shard/parsing/lexical/reading/StringStreamReader.hpp>
-#include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.hpp>
-#include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.hpp>
-#include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.hpp>
-
 #include <Windows.h>
-#include <InteractiveConsole.hpp>
-#include <utilities/InterpreterUtilities.hpp>
-
 #include <processenv.h>
 #include <string>
 #include <iostream>
 #include <vector>
 #include <exception>
+
+#include <utilities/InterpreterUtilities.hpp>
+#include <ShardScript.hpp>
+#include <InteractiveConsole.hpp>
 
 using namespace shard;
 
@@ -28,6 +16,7 @@ static MethodDeclarationSyntax* InitImplicitEntryPoint(SyntaxNode* parent)
 	MemberDeclarationInfo info;
 	info.ReturnType = new PredefinedTypeSyntax(SyntaxToken(TokenType::VoidKeyword, L"void", TextLocation(), false), nullptr);
 	info.Identifier = SyntaxToken(TokenType::Identifier, L"__interactive_console__", TextLocation());
+	info.Modifiers = { SyntaxToken(TokenType::StaticKeyword, L"static", TextLocation(), false) };
 
 	MethodDeclarationSyntax* implMethod = new MethodDeclarationSyntax(info, parent);
 	implMethod->Params = new ParametersListSyntax(parent);
@@ -329,11 +318,12 @@ InteractiveConsole::InteractiveConsole(shard::CompilationContext* context, shard
 {
 	InteractiveUnit = InitImplicitCompilationUnit(InteractiveMethod);
 	InteractiveClass = static_cast<ClassDeclarationSyntax*>(static_cast<NamespaceDeclarationSyntax*>(InteractiveUnit->Members.at(0))->Members.at(0));
-	context->GetSyntaxTree().CompilationUnits.push_back(InteractiveUnit);
+	ParentSyntaxTree.CompilationUnits.push_back(InteractiveUnit);
 
-	InteractiveEntryPoint = new MethodSymbol(InteractiveMethod->IdentifierToken.Word);
-	Program.EntryPoint = InteractiveEntryPoint;
-	Runtimer.PushFrame(InteractiveEntryPoint);
+	//InteractiveEntryPoint = new MethodSymbol(InteractiveMethod->IdentifierToken.Word);
+	//Program.EntryPoint = InteractiveEntryPoint;
+
+	//Runtimer.PushFrame(InteractiveEntryPoint);
 }
 
 void InteractiveConsole::Run()
@@ -341,6 +331,7 @@ void InteractiveConsole::Run()
 	ConsoleHelper::WriteLine(L"ShardScript Interactive Console v" + shard::ShardUtilities::GetFileVersion());
 	ConsoleHelper::WriteLine(L"Type 'exit' or 'quit' to exit");
 	ConsoleHelper::WriteLine();
+	bool pushedFrame = false;
 
 	while (true)
 	{
@@ -373,7 +364,11 @@ void InteractiveConsole::Run()
 			if (sequenceReader.Size() > 1)
 			{
 				SyntaxToken secondToken = sequenceReader.At(1);
-				if (IsMemberDeclaration(firstToken.Type, secondToken.Type))
+				bool isMemberDecl = IsMemberDeclaration(firstToken.Type, secondToken.Type);
+				if (firstToken.Type == TokenType::Identifier && secondToken.Type == TokenType::Colon)
+					isMemberDecl = false;
+
+				if (isMemberDecl)
 				{
 					MemberDeclarationSyntax* member = ReadMember(sequenceReader);
 					if (member == nullptr)
@@ -424,12 +419,18 @@ void InteractiveConsole::Run()
 				continue;
 			}
 
+			if (!pushedFrame)
+			{
+				InteractiveEntryPoint = static_cast<MethodSymbol*>(ParentSemanticModel.Table->LookupSymbol(InteractiveMethod));
+				Runtimer.PushFrame(InteractiveEntryPoint);
+				pushedFrame = true;
+			}
+
 			AbstractEmiter abstractEmiter(Program, ParentSemanticModel, Diagnostics);
 			abstractEmiter.SetGeneratingTarget(InteractiveEntryPoint);
-
 			abstractEmiter.VisitStatement(statement);
-			ObjectInstance* result = Runtimer.RunInteractive(Breakpoint);
 
+			ObjectInstance* result = Runtimer.RunInteractive(Breakpoint);
 			if (result != nullptr)
 			{
 				ConsoleHelper::Write(result);

@@ -535,6 +535,16 @@ bool LexicalAnalyzer::IsPunctuation(std::wstring& word, TokenType& type)
 
 		case ':':
 		{
+			if (SourceText->PeekNext(PeekSymbol))
+			{
+				if (PeekSymbol == '=')
+				{
+					SourceText->ReadNext(PeekSymbol);
+					type = TokenType::DeclareAssignOperator;
+					word = L":=";
+					return true;
+				}
+			}
 			type = TokenType::Colon;
 			word = L":";
 			return true;
@@ -549,6 +559,16 @@ bool LexicalAnalyzer::IsPunctuation(std::wstring& word, TokenType& type)
 
 		case '?':
 		{
+			if (SourceText->PeekNext(PeekSymbol))
+			{
+				if (PeekSymbol == '?')
+				{
+					SourceText->ReadNext(PeekSymbol);
+					type = TokenType::NullCoalescingOperator;
+					word = L"??";
+					return true;
+				}
+			}
 			type = TokenType::Question;
 			word = L"?";
 			return true;
@@ -723,6 +743,13 @@ bool LexicalAnalyzer::IsOperator(std::wstring& word, TokenType& type)
 					SourceText->ReadNext(PeekSymbol);
 					type = TokenType::DecrementOperator;
 					word = L"--";
+					return true;
+				}
+				else if (PeekSymbol == '>')
+				{
+					SourceText->ReadNext(PeekSymbol);
+					type = TokenType::ArrowOperator;
+					word = L"->";
 					return true;
 				}
 			}
@@ -1019,6 +1046,11 @@ bool LexicalAnalyzer::IsModifier(std::wstring& word, TokenType& type)
 		type = TokenType::ExternKeyword;
 		return true;
 	}
+	else if (word == L"export")
+	{
+		type = TokenType::ExportKeyword;
+		return true;
+	}
 	else
 	{
 		return false;
@@ -1155,6 +1187,41 @@ bool LexicalAnalyzer::IsKeyword(std::wstring& word, TokenType& type)
 		type = TokenType::IndexerKeyword;
 		return true;
 	}
+	else if (word == L"try")
+	{
+		type = TokenType::TryKeyword;
+		return true;
+	}
+	else if (word == L"catch")
+	{
+		type = TokenType::CatchKeyword;
+		return true;
+	}
+	else if (word == L"where")
+	{
+		type = TokenType::WhereKeyword;
+		return true;
+	}
+	else if (word == L"const")
+	{
+		type = TokenType::ConstKeyword;
+		return true;
+	}
+	else if (word == L"fn")
+	{
+		type = TokenType::FnKeyword;
+		return true;
+	}
+	else if (word == L"init")
+	{
+		type = TokenType::InitKeyword;
+		return true;
+	}
+	else if (word == L"value")
+	{
+		type = TokenType::ValueKeyword;
+		return true;
+	}
 
 	return false;
 }
@@ -1235,6 +1302,16 @@ bool LexicalAnalyzer::IsFunctionalKeyword(std::wstring& word, TokenType& type)
 	else if (word == L"throw")
 	{
 		type = TokenType::ThrowKeyword;
+		return true;
+	}
+	else if (word == L"try")
+	{
+		type = TokenType::TryKeyword;
+		return true;
+	}
+	else if (word == L"catch")
+	{
+		type = TokenType::CatchKeyword;
 		return true;
 	}
 	else

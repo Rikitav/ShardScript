@@ -1,3 +1,5 @@
+#include <stdexcept>
+
 #include <shard/SyntaxVisitor.hpp>
 #include <shard/parsing/SyntaxTree.hpp>
 
@@ -23,6 +25,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/DelegateDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/InterfaceDeclarationSyntax.hpp>
 
 #include <shard/syntax/nodes/Expressions/BinaryExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/LinkedExpressionSyntax.hpp>
@@ -31,6 +34,8 @@
 #include <shard/syntax/nodes/Expressions/UnaryExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/CollectionExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/LambdaExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/IfExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/SwitchExpressionSyntax.hpp>
 
 #include <shard/syntax/nodes/Loops/ForStatementSyntax.hpp>
 #include <shard/syntax/nodes/Loops/UntilStatementSyntax.hpp>
@@ -50,7 +55,6 @@
 #include <shard/syntax/nodes/Types/NullableTypeSyntax.hpp>
 #include <shard/syntax/nodes/Types/PredefinedTypeSyntax.hpp>
 
-#include <stdexcept>
 #include <shard/syntax/nodes/Expressions/TernaryExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Types/DelegateTypeSyntax.hpp>
 
@@ -68,7 +72,7 @@ void SyntaxVisitor::VisitCompilationUnit(CompilationUnitSyntax* node)
 		return;
 
 	for (MemberDeclarationSyntax* member : node->Members)
-		VisitTypeDeclaration(member);
+		VisitMemberDeclaration(member);
 }
 
 void SyntaxVisitor::VisitUsingDirective(UsingDirectiveSyntax* node)
@@ -117,6 +121,13 @@ void SyntaxVisitor::VisitTypeDeclaration(MemberDeclarationSyntax* node)
 			VisitDelegateDeclaration(declNode);
 			return;
 		}
+
+		case SyntaxKind::InterfaceDeclaration:
+		{
+			InterfaceDeclarationSyntax* declNode = static_cast<InterfaceDeclarationSyntax*>(node);
+			VisitInterfaceDeclaration(declNode);
+			return;
+		}
 	}
 }
 
@@ -126,7 +137,7 @@ void SyntaxVisitor::VisitNamespaceDeclaration(NamespaceDeclarationSyntax* node)
 		return;
 
 	for (MemberDeclarationSyntax* member : node->Members)
-		VisitTypeDeclaration(member);
+		VisitMemberDeclaration(member);
 }
 
 void SyntaxVisitor::VisitClassDeclaration(ClassDeclarationSyntax* node)
@@ -142,6 +153,18 @@ void SyntaxVisitor::VisitClassDeclaration(ClassDeclarationSyntax* node)
 }
 
 void SyntaxVisitor::VisitStructDeclaration(StructDeclarationSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (node->TypeParameters != nullptr)
+		VisitTypeParametersList(node->TypeParameters);
+
+	for (MemberDeclarationSyntax* member : node->Members)
+		VisitMemberDeclaration(member);
+}
+
+void SyntaxVisitor::VisitInterfaceDeclaration(InterfaceDeclarationSyntax* node)
 {
 	if (node == nullptr)
 		return;
@@ -245,6 +268,13 @@ void SyntaxVisitor::VisitMemberDeclaration(MemberDeclarationSyntax* node)
 		{
 			ConstructorDeclarationSyntax* declNode = static_cast<ConstructorDeclarationSyntax*>(node);
 			VisitConstructorDeclaration(declNode);
+			return;
+		}
+
+		case SyntaxKind::InterfaceDeclaration:
+		{
+			InterfaceDeclarationSyntax* declNode = static_cast<InterfaceDeclarationSyntax*>(node);
+			VisitInterfaceDeclaration(declNode);
 			return;
 		}
 	}
@@ -429,6 +459,13 @@ void SyntaxVisitor::VisitStatement(StatementSyntax* node)
 			VisitUnlessStatement(statement);
 			return;
 		}
+
+		case SyntaxKind::TryStatement:
+		{
+			TryStatementSyntax* statement = dynamic_cast<TryStatementSyntax*>(node);
+			VisitTryStatement(statement);
+			return;
+		}
 	}
 }
 
@@ -606,6 +643,54 @@ void SyntaxVisitor::VisitElseStatement(ElseStatementSyntax* node)
 		VisitConditionalClause(node->NextStatement);
 }
 
+void SyntaxVisitor::VisitTryStatement(TryStatementSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (node->TryBlock != nullptr)
+		VisitStatementsBlock(node->TryBlock);
+
+	for (CatchClauseSyntax* clause : node->CatchClauses)
+	{
+		if (clause->Body != nullptr)
+			VisitStatementsBlock(clause->Body);
+	}
+}
+
+void SyntaxVisitor::VisitIfExpression(IfExpressionSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (node->Condition != nullptr)
+		VisitExpression(node->Condition);
+
+	if (node->ThenExpression != nullptr)
+		VisitExpression(node->ThenExpression);
+
+	if (node->ElseExpression != nullptr)
+		VisitExpression(node->ElseExpression);
+}
+
+void SyntaxVisitor::VisitSwitchExpression(SwitchExpressionSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (node->Expression != nullptr)
+		VisitExpression(node->Expression);
+
+	for (SwitchArmSyntax* arm : node->Arms)
+	{
+		if (arm->Pattern != nullptr)
+			VisitExpression(arm->Pattern);
+
+		if (arm->Expression != nullptr)
+			VisitExpression(arm->Expression);
+	}
+}
+
 void SyntaxVisitor::VisitExpression(ExpressionSyntax* node)
 {
 	if (node == nullptr)
@@ -683,6 +768,20 @@ void SyntaxVisitor::VisitExpression(ExpressionSyntax* node)
 		{
 			TernaryExpressionSyntax* expression = static_cast<TernaryExpressionSyntax*>(node);
 			VisitTernaryExpression(expression);
+			return;
+		}
+
+		case SyntaxKind::IfExpression:
+		{
+			IfExpressionSyntax* expression = static_cast<IfExpressionSyntax*>(node);
+			VisitIfExpression(expression);
+			return;
+		}
+
+		case SyntaxKind::SwitchExpression:
+		{
+			SwitchExpressionSyntax* expression = static_cast<SwitchExpressionSyntax*>(node);
+			VisitSwitchExpression(expression);
 			return;
 		}
 	}

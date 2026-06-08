@@ -88,6 +88,7 @@
 #include <shard/syntax/nodes/Statements/BreakStatementSyntax.hpp>
 #include <shard/syntax/nodes/Statements/ContinueStatementSyntax.hpp>
 #include <shard/syntax/nodes/Statements/ThrowStatementSyntax.hpp>
+#include <shard/syntax/nodes/Statements/TryStatementSyntax.hpp>
 
 // --- Syntax / Loops ---
 #include <shard/syntax/nodes/Loops/ForStatementSyntax.hpp>
@@ -100,6 +101,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/IndexatorDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/DelegateDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/InterfaceDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.hpp>
@@ -112,6 +114,8 @@
 #include <shard/syntax/nodes/Expressions/CollectionExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/LambdaExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/TernaryExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/IfExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/SwitchExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/LiteralExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/UnaryExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/BinaryExpressionSyntax.hpp>
@@ -123,6 +127,9 @@
 #include <shard/syntax/nodes/Types/ArrayTypeSyntax.hpp>
 #include <shard/syntax/nodes/Types/PredefinedTypeSyntax.hpp>
 #include <shard/syntax/nodes/Types/IdentifierNameTypeSyntax.hpp>
+
+// --- Attributes ---
+#include <shard/syntax/nodes/AttributeSyntax.hpp>
 
 // --- Syntax / Utilities ---
 #include <shard/syntax/SymbolFactory.hpp>
