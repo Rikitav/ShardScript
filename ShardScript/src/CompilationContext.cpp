@@ -52,9 +52,6 @@ using namespace shard;
 typedef void (*GetMetadataFunction)(ShardLibMetadata& lib);
 typedef void (*EntryPointFunction)(CompilationContext& context);
 
-static std::vector<FrameworkModule*> PendingModules;
-static std::vector<CompilationUnitSyntax*> PendingUnits;
-
 static LibraryHandle LoadLibraryHandle(const std::filesystem::path& path)
 {
 #ifdef _WIN32
@@ -83,6 +80,20 @@ static void* GetLibFunction(LibraryHandle handle, const char* procName)
 #endif
 }
 
+static std::string WStringToUtf8(const std::wstring& wstr)
+{
+#ifdef _WIN32
+	if (wstr.empty()) return {};
+	int size_needed = WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), (int)wstr.size(), nullptr, 0, nullptr, nullptr);
+	std::string str(size_needed, 0);
+	WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), (int)wstr.size(), &str[0], size_needed, nullptr, nullptr);
+	return str;
+#else
+	// naive fallback
+	return std::string(wstr.begin(), wstr.end());
+#endif
+}
+
 static std::wstring GetLastErrorAsString()
 {
 #ifdef _WIN32
@@ -103,33 +114,33 @@ static std::wstring GetLastErrorAsString()
 #endif
 }
 
-static void BindMemberDeclaration(MemberDeclarationSyntax* member, FrameworkModule* module, SemanticModel& semanticModel, DiagnosticsContext& diagnostics)
+static void LinkExternSymbols(MemberDeclarationSyntax* member, LibraryHandle handle, SemanticModel& model, DiagnosticsContext& diagnostics)
 {
 	switch (member->Kind)
 	{
 		case SyntaxKind::NamespaceDeclaration:
 		{
 			NamespaceDeclarationSyntax* namespaceDecl = static_cast<NamespaceDeclarationSyntax*>(member);
-			for (MemberDeclarationSyntax* member : namespaceDecl->Members)
-				BindMemberDeclaration(member, module, semanticModel, diagnostics);
-
+			for (MemberDeclarationSyntax* child : namespaceDecl->Members)
+				LinkExternSymbols(child, handle, model, diagnostics);
+			
 			break;
 		}
 
 		case SyntaxKind::ClassDeclaration:
 		{
 			ClassDeclarationSyntax* classDecl = static_cast<ClassDeclarationSyntax*>(member);
-			for (MemberDeclarationSyntax* member : classDecl->Members)
-				BindMemberDeclaration(member, module, semanticModel, diagnostics);
-
+			for (MemberDeclarationSyntax* child : classDecl->Members)
+				LinkExternSymbols(child, handle, model, diagnostics);
+			
 			break;
 		}
 
 		case SyntaxKind::StructDeclaration:
 		{
 			StructDeclarationSyntax* structDecl = static_cast<StructDeclarationSyntax*>(member);
-			for (MemberDeclarationSyntax* member : structDecl->Members)
-				BindMemberDeclaration(member, module, semanticModel, diagnostics);
+			for (MemberDeclarationSyntax* child : structDecl->Members)
+				LinkExternSymbols(child, handle, model, diagnostics);
 
 			break;
 		}
@@ -137,13 +148,22 @@ static void BindMemberDeclaration(MemberDeclarationSyntax* member, FrameworkModu
 		case SyntaxKind::MethodDeclaration:
 		{
 			MethodDeclarationSyntax* method = static_cast<MethodDeclarationSyntax*>(member);
-			MethodSymbol* symbol = static_cast<MethodSymbol*>(semanticModel.Table->LookupSymbol(method));
+			MethodSymbol* symbol = static_cast<MethodSymbol*>(model.Table->LookupSymbol(method));
 
-			if (!symbol->IsExtern)
+			if (symbol == nullptr || !symbol->IsExtern || symbol->LinkSymbol.empty())
 				break;
 
-			if (!module->BindMethod(symbol))
-				diagnostics.ReportError(method->IdentifierToken, L"Unexpected unbound extern method declaration : \'" + symbol->FullName + L"\'");
+			std::string procName = WStringToUtf8(symbol->LinkSymbol);
+			void* proc = GetLibFunction(handle, procName.c_str());
+
+			if (proc != nullptr)
+			{
+				symbol->FunctionPointer = reinterpret_cast<MethodSymbolDelegate>(proc);
+			}
+			else
+			{
+				diagnostics.ReportError(method->IdentifierToken, L"Could not link extern method '" + symbol->FullName + L"' to symbol '" + symbol->LinkSymbol + L"'");
+			}
 
 			break;
 		}
@@ -151,40 +171,62 @@ static void BindMemberDeclaration(MemberDeclarationSyntax* member, FrameworkModu
 		case SyntaxKind::ConstructorDeclaration:
 		{
 			ConstructorDeclarationSyntax* ctor = static_cast<ConstructorDeclarationSyntax*>(member);
-			ConstructorSymbol* symbol = static_cast<ConstructorSymbol*>(semanticModel.Table->LookupSymbol(ctor));
-
-			if (!symbol->IsExtern)
+			ConstructorSymbol* symbol = static_cast<ConstructorSymbol*>(model.Table->LookupSymbol(ctor));
+			
+			if (symbol == nullptr || !symbol->IsExtern || symbol->LinkSymbol.empty())
 				break;
 
-			if (!module->BindConstructor(symbol))
-				diagnostics.ReportError(ctor->IdentifierToken, L"Unexpected unbound extern constructor declaration : \'" + symbol->FullName + L"\'");
-
+			std::string procName = WStringToUtf8(symbol->LinkSymbol);
+			void* proc = GetLibFunction(handle, procName.c_str());
+			
+			if (proc != nullptr)
+			{
+				symbol->FunctionPointer = reinterpret_cast<MethodSymbolDelegate>(proc);
+			}
+			else
+			{
+				diagnostics.ReportError(ctor->IdentifierToken, L"Could not link extern constructor '" + symbol->FullName + L"' to symbol '" + symbol->LinkSymbol + L"'");
+			}
+			
 			break;
 		}
 
 		case SyntaxKind::PropertyDeclaration:
 		{
 			PropertyDeclarationSyntax* prop = static_cast<PropertyDeclarationSyntax*>(member);
-			PropertySymbol* symbol = static_cast<PropertySymbol*>(semanticModel.Table->LookupSymbol(prop));
+			PropertySymbol* propSymbol = static_cast<PropertySymbol*>(model.Table->LookupSymbol(prop));
+			
+			if (propSymbol == nullptr)
+				break;
 
-			if (symbol->Getter != nullptr)
+			if (propSymbol->Getter != nullptr && propSymbol->Getter->IsExtern && !propSymbol->Getter->LinkSymbol.empty())
 			{
-				AccessorSymbol* getter = symbol->Getter;
-				if (!getter->IsExtern)
-					break;
-
-				if (!module->BindAccessor(getter))
-					diagnostics.ReportError(prop->IdentifierToken, L"Unexpected unbound extern getter accessor declaration : \'" + symbol->FullName + L"\'");
+				std::string procName = WStringToUtf8(propSymbol->Getter->LinkSymbol);
+				void* proc = GetLibFunction(handle, procName.c_str());
+				
+				if (proc != nullptr)
+				{
+					propSymbol->Getter->FunctionPointer = reinterpret_cast<MethodSymbolDelegate>(proc);
+				}
+				else
+				{
+					diagnostics.ReportError(prop->IdentifierToken, L"Could not link extern getter '" + propSymbol->Getter->FullName + L"' to symbol '" + propSymbol->Getter->LinkSymbol + L"'");
+				}
 			}
 
-			if (symbol->Setter != nullptr)
+			if (propSymbol->Setter != nullptr && propSymbol->Setter->IsExtern && !propSymbol->Setter->LinkSymbol.empty())
 			{
-				AccessorSymbol* setter = symbol->Setter;
-				if (!setter->IsExtern)
-					break;
+				std::string procName = WStringToUtf8(propSymbol->Setter->LinkSymbol);
+				void* proc = GetLibFunction(handle, procName.c_str());
 
-				if (!module->BindAccessor(setter))
-					diagnostics.ReportError(prop->IdentifierToken, L"Unexpected unbound extern setter accessor declaration : \'" + symbol->FullName + L"\'");
+				if (proc != nullptr)
+				{
+					propSymbol->Setter->FunctionPointer = reinterpret_cast<MethodSymbolDelegate>(proc);
+				}
+				else
+				{
+					diagnostics.ReportError(prop->IdentifierToken, L"Could not link extern setter '" + propSymbol->Setter->FullName + L"' to symbol '" + propSymbol->Setter->LinkSymbol + L"'");
+				}
 			}
 
 			break;
@@ -192,27 +234,40 @@ static void BindMemberDeclaration(MemberDeclarationSyntax* member, FrameworkModu
 
 		case SyntaxKind::IndexatorDeclaration:
 		{
-			IndexatorDeclarationSyntax* prop = static_cast<IndexatorDeclarationSyntax*>(member);
-			IndexatorSymbol* symbol = static_cast<IndexatorSymbol*>(semanticModel.Table->LookupSymbol(prop));
+			IndexatorDeclarationSyntax* indexer = static_cast<IndexatorDeclarationSyntax*>(member);
+			IndexatorSymbol* idxSymbol = static_cast<IndexatorSymbol*>(model.Table->LookupSymbol(indexer));
 
-			if (symbol->Getter != nullptr)
+			if (idxSymbol == nullptr)
+				break;
+
+			if (idxSymbol->Getter != nullptr && idxSymbol->Getter->IsExtern && !idxSymbol->Getter->LinkSymbol.empty())
 			{
-				AccessorSymbol* getter = symbol->Getter;
-				if (!getter->IsExtern)
-					break;
+				std::string procName = WStringToUtf8(idxSymbol->Getter->LinkSymbol);
+				void* proc = GetLibFunction(handle, procName.c_str());
 
-				if (!module->BindAccessor(getter))
-					diagnostics.ReportError(prop->IdentifierToken, L"Unexpected unbound extern getter accessor declaration \'" + symbol->FullName + L"\'");
+				if (proc != nullptr)
+				{
+					idxSymbol->Getter->FunctionPointer = reinterpret_cast<MethodSymbolDelegate>(proc);
+				}
+				else
+				{
+					diagnostics.ReportError(indexer->IdentifierToken, L"Could not link extern indexer getter '" + idxSymbol->Getter->FullName + L"' to symbol '" + idxSymbol->Getter->LinkSymbol + L"'");
+				}
 			}
 
-			if (symbol->Setter != nullptr)
+			if (idxSymbol->Setter != nullptr && idxSymbol->Setter->IsExtern && !idxSymbol->Setter->LinkSymbol.empty())
 			{
-				AccessorSymbol* setter = symbol->Setter;
-				if (!setter->IsExtern)
-					break;
+				std::string procName = WStringToUtf8(idxSymbol->Setter->LinkSymbol);
+				void* proc = GetLibFunction(handle, procName.c_str());
 
-				if (!module->BindAccessor(setter))
-					diagnostics.ReportError(prop->IdentifierToken, L"Unexpected unbound extern setter accessor declaration : \'" + symbol->FullName + L"\'");
+				if (proc != nullptr)
+				{
+					idxSymbol->Setter->FunctionPointer = reinterpret_cast<MethodSymbolDelegate>(proc);
+				}
+				else
+				{
+					diagnostics.ReportError(indexer->IdentifierToken, L"Could not link extern indexer setter '" + idxSymbol->Setter->FullName + L"' to symbol '" + idxSymbol->Setter->LinkSymbol + L"'");
+				}
 			}
 
 			break;
@@ -228,9 +283,6 @@ CompilationContext::CompilationContext()
 
 CompilationContext::~CompilationContext()
 {
-	for (FrameworkModule* module : LibModules)
-		delete module;
-
 	for (LibraryHandle hLib : LibHandles)
 		FreeLibraryHandle(hLib);
 }
@@ -274,44 +326,27 @@ void CompilationContext::AddLib(const std::filesystem::path& path)
 void CompilationContext::AddLib(const LibraryHandle& handle)
 {
 	if (handle == nullptr)
-	{
-		/*
-		std::wstring errorMessage = GetLastErrorAsString();
-		throw std::runtime_error(errorMessage);
-		*/
-
 		return;
-	}
 
 	LibHandles.push_back(handle);
 	EntryPointFunction entryPoint = reinterpret_cast<EntryPointFunction>(GetLibFunction(handle, "ShardLib_EntryPoint"));
 
 	if (entryPoint == nullptr)
-	{
-		/*
-		std::wstring errorMessage = GetLastErrorAsString();
-		throw std::runtime_error(errorMessage);
-		*/
-
 		return;
-	}
 
 	try
 	{
 		entryPoint(*this);
-		Semanter.Analyze(Tree, Model);
+		if (ReAnalyze)
+			Semanter.Analyze(Tree, Model);
 
-		for (size_t i = 0; i < PendingModules.size(); i++)
+		for (const auto& unit : PendingSources)
 		{
-			FrameworkModule* module = PendingModules.back(); PendingModules.pop_back();
-			CompilationUnitSyntax* unit = PendingUnits.back(); PendingUnits.pop_back();
-
 			for (MemberDeclarationSyntax* member : unit->Members)
-				BindMemberDeclaration(member, module, Model, Diagnostics);
+				LinkExternSymbols(member, handle, Model, Diagnostics);
 		}
 
-		PendingModules.clear();
-		PendingUnits.clear();
+		PendingSources.clear();
 		ReAnalyze = false;
 	}
 	catch (...)
@@ -320,29 +355,48 @@ void CompilationContext::AddLib(const LibraryHandle& handle)
 	}
 }
 
-void CompilationContext::AddModule(shard::FrameworkModule* module)
+void CompilationContext::ProvideSource(SourceTextProvider* source)
 {
 	try
 	{
 		size_t beforeEnrich = Tree.CompilationUnits.size();
-
-		SourceProvider* source = module->GetSource();
-		EnrichTree(*source);
-		delete source;
+		LexicalAnalyzer lexer(source, false);
+		EnrichTree(lexer);
 
 		size_t afterEnrich = Tree.CompilationUnits.size();
-
 		if (afterEnrich - 1 == beforeEnrich)
 		{
-			PendingModules.push_back(module);
-			PendingUnits.push_back(Tree.CompilationUnits.back());
+			for (const auto& unit : Tree.CompilationUnits)
+				PendingSources.push_back(unit);
 		}
 
 		ReAnalyze = true;
 	}
 	catch (...)
 	{
-		return;
+
+	}
+}
+
+void CompilationContext::ProvideSource(SourceProvider* source)
+{
+	try
+	{
+		size_t beforeEnrich = Tree.CompilationUnits.size();
+		EnrichTree(*source);
+
+		size_t afterEnrich = Tree.CompilationUnits.size();
+		if (afterEnrich - 1 == beforeEnrich)
+		{
+			for (const auto& unit : Tree.CompilationUnits)
+				PendingSources.push_back(unit);
+		}
+
+		ReAnalyze = true;
+	}
+	catch (...)
+	{
+
 	}
 }
 

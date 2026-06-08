@@ -26,6 +26,7 @@ namespace shard
 
 		inline MethodDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) : MemberDeclarationSyntax(SyntaxKind::MethodDeclaration, parent)
 		{
+			Attributes = info.Attributes;
 			Modifiers = info.Modifiers;
 			IdentifierToken = info.Identifier;
 			ReturnType = info.ReturnType;

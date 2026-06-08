@@ -1,5 +1,7 @@
 #include <shard/runtime/VirtualMachine.hpp>
 #include <shard/runtime/MethodCallState.hpp>
+
+#include <cstring>
 #include <shard/runtime/PrimitiveMathModule.hpp>
 #include <shard/runtime/CallStackFrame.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
@@ -122,6 +124,11 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		{
 			uint16_t slot = decoder.AbsorbVariableSlot();
 			ObjectInstance* instance = frame->PopStack();
+
+			if (slot >= frame->EvalStack.size())
+			{
+				frame->EvalStack.resize(slot + 1, nullptr);
+			}
 
 			ObjectInstance* oldVar = frame->EvalStack[slot];
 			if (oldVar != nullptr)
@@ -421,18 +428,25 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 		throw std::runtime_error("Execution aborted by host.");
 
 	CallStackFrame* callingFrame = currentFrame->PreviousFrame;
-	callingFrame->EvalStack.reserve(method->EvalStackLocalsCount * 2);
+	currentFrame->EvalStack.reserve(method->GetEvalStackLocalsCount() * 2);
 
 	size_t argsCount = method->Parameters.size();
 	if (!method->IsStatic)
 		argsCount += 1;
 
+	ObjectInstance* thisInstance = nullptr;
 	for (size_t i = 0; i < argsCount; i++)
 	{
 		ObjectInstance* argument = callingFrame->PopStack();
 		argument->IncrementReference();
 		currentFrame->PushStack(argument);
+
+		if (!method->IsStatic && i == 0)
+			thisInstance = argument;
 	}
+
+	if (thisInstance != nullptr)
+		currentFrame->WithinType = const_cast<TypeSymbol*>(thisInstance->Info);
 
 	switch (method->HandleType)
 	{
@@ -512,59 +526,45 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 ObjectInstance* VirtualMachine::InstantiateObject(TypeSymbol* type, ConstructorSymbol* ctor)
 {
 	GenericTypeSymbol* genericInfo = nullptr;
-	TypeSymbol* withinType = type;
 
 	CallStackFrame* callingFrame = CurrentFrame();
 	ObjectInstance* newInstance = garbageCollector.AllocateInstance(type);
 
 	if (type->Kind == SyntaxKind::GenericType)
-	{
 		genericInfo = static_cast<GenericTypeSymbol*>(type);
-		withinType = genericInfo->UnderlayingType;
+
+	TypeSymbol* fieldOwnerType = genericInfo != nullptr ? genericInfo->UnderlayingType : type;
+	for (FieldSymbol* field : fieldOwnerType->Fields)
+	{
+		if (field->IsStatic)
+			continue;
+
+		TypeSymbol* fieldType = field->ReturnType;
+		if (fieldType->Kind == SyntaxKind::TypeParameter && genericInfo != nullptr)
+			fieldType = genericInfo->SubstituteTypeParameters(static_cast<TypeParameterSymbol*>(fieldType));
+
+		if (fieldType == nullptr)
+			continue;
+
+		if (fieldType->IsReferenceType)
+		{
+			void* offset = newInstance->OffsetMemory(field->MemoryBytesOffset, sizeof(ObjectInstance*));
+			memset(offset, 0, sizeof(ObjectInstance*));
+		}
+		else
+		{
+			void* offset = newInstance->OffsetMemory(field->MemoryBytesOffset, fieldType->GetInlineSize());
+			memset(offset, 0, fieldType->GetInlineSize());
+		}
 	}
 
-	// TODO: add field initialization
 	callingFrame->PushStack(newInstance);
 
-	CallStackFrame* currentFrame = PushFrame(ctor);
+	CallStackFrame* currentFrame = PushFrame(ctor, type);
 	InvokeMethodInternal(ctor, currentFrame);
 	PopFrame();
 
 	return newInstance;
-
-	/*
-	for (FieldSymbol* field : withinType->Fields)
-	{
-		ObjectInstance* assignInstance = nullptr;
-		TypeSymbol* fieldType = field->ReturnType;
-
-		if (fieldType->Kind == SyntaxKind::TypeParameter)
-			fieldType = genericInfo->SubstituteTypeParameters(fieldType);
-
-		if (field->DefaultValueExpression != nullptr)
-		{
-			assignInstance = AbstractInterpreter::EvaluateExpression(field->DefaultValueExpression);
-		}
-		else
-		{
-			assignInstance = fieldType->IsReferenceType
-				? gc.NullInstance
-				: gc.AllocateInstance(fieldType);
-		}
-
-		newInstance->SetField(fieldInstance);
-	}
-	*/
-
-	/*
-	newInstance->IncrementReference();
-	InboundVariablesContext* arguments = CreateArgumentsContext(expression->ArgumentsList->Arguments, expression->CtorSymbol->Parameters, expression->CtorSymbol->IsStatic, newInstance);
-	ExecuteMethod(expression->CtorSymbol, withinType, arguments);
-	newInstance->DecrementReference();
-
-	AbstractInterpreter::PopFrame();
-	return newInstance;
-	*/
 }
 
 ObjectInstance* shard::VirtualMachine::InstantiateDelegate(DelegateTypeSymbol* type)
@@ -590,6 +590,13 @@ CallStackFrame* VirtualMachine::CurrentFrame() const
 CallStackFrame* VirtualMachine::PushFrame(MethodSymbol* methodSymbol)
 {
 	CallStackFrame* frame = new CallStackFrame(this, CurrentFrame(), nullptr, methodSymbol);	
+	CallStack.push(frame);
+	return frame;
+}
+
+CallStackFrame* VirtualMachine::PushFrame(MethodSymbol* methodSymbol, TypeSymbol* withinType)
+{
+	CallStackFrame* frame = new CallStackFrame(this, CurrentFrame(), withinType, methodSymbol);	
 	CallStack.push(frame);
 	return frame;
 }
@@ -654,6 +661,7 @@ ObjectInstance* VirtualMachine::RunInteractive(size_t& pointer)
 {
 	CallStackFrame* currentFrame = CurrentFrame();
 	MethodSymbol* method = currentFrame->Method;
+	currentFrame->EvalStack.reserve(static_cast<size_t>(method->GetEvalStackLocalsCount()) * 2);
 
 	ByteCodeDecoder decoder = ByteCodeDecoder(method->ExecutableByteCode);
 	decoder.SetCursor(pointer);
@@ -671,7 +679,7 @@ ObjectInstance* VirtualMachine::RunInteractive(size_t& pointer)
 	}
 
 	pointer = decoder.Index();
-	if (currentFrame->EvalStack.size() > method->EvalStackLocalsCount)
+	if (currentFrame->EvalStack.size() > method->GetEvalStackLocalsCount())
 	{
 		ObjectInstance* retReg = currentFrame->PopStack();
 		return retReg;

@@ -37,6 +37,7 @@ void SymbolFactory::SetAccesibility(SyntaxSymbol* symbol, std::vector<SyntaxToke
 		switch (modifier.Type)
 		{
 			case TokenType::PublicKeyword:
+			case TokenType::ExportKeyword:
 			{
 				symbol->Accesibility = SymbolAccesibility::Public;
 				break;
@@ -70,6 +71,7 @@ void SymbolFactory::SetAccesibility(TypeSymbol* symbol, std::vector<SyntaxToken>
 		switch (modifier.Type)
 		{
 			case TokenType::PublicKeyword:
+			case TokenType::ExportKeyword:
 			{
 				symbol->Accesibility = SymbolAccesibility::Public;
 				break;
@@ -123,6 +125,7 @@ void SymbolFactory::SetAccesibility(MethodSymbol* symbol, std::vector<SyntaxToke
 		switch (modifier.Type)
 		{
 			case TokenType::PublicKeyword:
+			case TokenType::ExportKeyword:
 			{
 				symbol->Accesibility = SymbolAccesibility::Public;
 				break;
@@ -182,6 +185,7 @@ void SymbolFactory::SetAccesibility(PropertySymbol* symbol, std::vector<SyntaxTo
 		switch (modifier.Type)
 		{
 			case TokenType::PublicKeyword:
+			case TokenType::ExportKeyword:
 			{
 				symbol->Accesibility = SymbolAccesibility::Public;
 				break;
@@ -235,6 +239,7 @@ void SymbolFactory::SetAccesibility(FieldSymbol* symbol, std::vector<SyntaxToken
 		switch (modifier.Type)
 		{
 			case TokenType::PublicKeyword:
+			case TokenType::ExportKeyword:
 			{
 				symbol->Accesibility = SymbolAccesibility::Public;
 				break;
@@ -360,12 +365,6 @@ MethodSymbol* SymbolFactory::Method(MethodDeclarationSyntax* node)
 	else
 		symbol->HandleType = MethodHandleType::Body;
 
-	if (!symbol->IsStatic)
-	{
-		// implicit 'this' parameter
-		symbol->EvalStackLocalsCount += 1;
-	}
-
     for (ParameterSyntax* parameter : node->Params->Parameters)
     {
         ParameterSymbol* paramSymbol = new ParameterSymbol(parameter->Identifier.Word);
@@ -386,12 +385,6 @@ ConstructorSymbol* SymbolFactory::Constructor(ConstructorDeclarationSyntax* node
 		symbol->HandleType = MethodHandleType::External;
 	else
 		symbol->HandleType = MethodHandleType::Body;
-
-	if (!symbol->IsStatic)
-	{
-		// implicit 'this' parameter
-		symbol->EvalStackLocalsCount += 1;
-	}
 
 	for (ParameterSyntax* parameter : node->Params->Parameters)
 	{
@@ -540,10 +533,10 @@ AccessorSymbol* SymbolFactory::Accessor(const std::wstring& name, PropertySymbol
 	symbol->IsStatic = property->IsStatic;
 	symbol->ReturnType = isGetter ? property->ReturnType : shard::SymbolTable::Primitives::Void;
 
-	if (!symbol->IsStatic)
+	if (!isGetter)
 	{
-		// implicit 'this' parameter
-		symbol->EvalStackLocalsCount += 1;
+		ParameterSymbol* valueParam = new ParameterSymbol(L"value");
+		symbol->Parameters.push_back(valueParam);
 	}
 
 	if (isGetter)

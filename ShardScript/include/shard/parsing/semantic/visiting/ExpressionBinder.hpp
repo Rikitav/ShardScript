@@ -26,6 +26,9 @@
 #include <shard/syntax/nodes/Expressions/CollectionExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/LambdaExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/TernaryExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/IfExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/SwitchExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Statements/TryStatementSyntax.hpp>
 
 #include <shard/syntax/nodes/Loops/ForStatementSyntax.hpp>
 #include <shard/syntax/nodes/Loops/UntilStatementSyntax.hpp>
@@ -113,6 +116,9 @@ namespace shard
 		void VisitCollectionExpression(shard::CollectionExpressionSyntax *const node) override;
 		void VisitLambdaExpression(shard::LambdaExpressionSyntax *const node) override;
 		void VisitTernaryExpression(shard::TernaryExpressionSyntax *const node) override;
+		void VisitIfExpression(shard::IfExpressionSyntax *const node) override;
+		void VisitSwitchExpression(shard::SwitchExpressionSyntax *const node) override;
+		void VisitTryStatement(shard::TryStatementSyntax *const node) override;
 
 		void VisitMemberAccessExpression(shard::MemberAccessExpressionSyntax *const node) override;
 		void VisitInvocationExpression(shard::InvokationExpressionSyntax *const node) override;

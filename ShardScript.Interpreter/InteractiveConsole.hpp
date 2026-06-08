@@ -1,13 +1,5 @@
 #pragma once
-#include <shard/parsing/semantic/SemanticModel.hpp>
-#include <shard/parsing/lexical/LexicalBuffer.hpp>
-
-#include <shard/parsing/SyntaxTree.hpp>
-#include <shard/parsing/SourceParser.hpp>
-#include <shard/parsing/SemanticAnalyzer.hpp>
-#include <shard/parsing/LayoutGenerator.hpp>
-
-#include <shard/CompilationContext.hpp>
+#include <ShardScript.hpp>
 
 namespace shard
 {

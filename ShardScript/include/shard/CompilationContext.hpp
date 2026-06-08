@@ -5,8 +5,9 @@
 
 #include <shard/parsing/SyntaxTree.hpp>
 #include <shard/parsing/semantic/SemanticModel.hpp>
-#include <shard/parsing/lexical/SourceProvider.hpp>
 #include <shard/parsing/analysis/DiagnosticsContext.hpp>
+#include <shard/parsing/lexical/SourceProvider.hpp>
+#include <shard/parsing/lexical/reading/SourceTextProvider.hpp>
 
 #include <shard/parsing/SourceParser.hpp>
 #include <shard/parsing/SemanticAnalyzer.hpp>
@@ -19,7 +20,7 @@ namespace shard
 	class SHARD_API CompilationContext
 	{
 		std::vector<LibraryHandle> LibHandles;
-		std::vector<FrameworkModule*> LibModules;
+		std::vector<CompilationUnitSyntax*> PendingSources;
 
 		SyntaxTree Tree;
 		SemanticModel Model;
@@ -47,7 +48,8 @@ namespace shard
 
 		void AddLib(const std::filesystem::path& path);
 		void AddLib(const LibraryHandle& handle);
-		void AddModule(shard::FrameworkModule* module);
+		void ProvideSource(shard::SourceTextProvider* source);
+		void ProvideSource(shard::SourceProvider* source);
 
 		void EnrichTree(SourceProvider& sourceProvider);
 		void AnalyzeTree();

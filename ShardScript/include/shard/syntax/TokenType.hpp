@@ -14,7 +14,10 @@ namespace shard
 
 		// Generic operators
 		AssignOperator,     // =
+		DeclareAssignOperator, // :=
+		ArrowOperator,      // ->
 		LambdaOperator,		// =>
+		NullCoalescingOperator, // ??
 
 		// Binary arithmetic operators
 		AddOperator,		  // +
@@ -88,6 +91,7 @@ namespace shard
 		InternalKeyword,	  // internal
 		StaticKeyword,		  // static
 		ExternKeyword,		  // extern
+		ExportKeyword,		  // export
 
 		/*
 		// OOP specific
@@ -97,7 +101,7 @@ namespace shard
 		OverrideKeyword,	  // override
 		VirtualKeyword,		  // virtual
 		*/
-		
+
 		// Property accessor keywords
 		GetKeyword,			  // get
 		SetKeyword,			  // set
@@ -121,6 +125,8 @@ namespace shard
 		UsingKeyword,		  // using
 		FromKeyword,		  // from
 		ImportKeyword,		  // import
+		ConstKeyword,         // const
+		ValueKeyword,         // value
 
 		// Type declaration keywords
 		MethodKeyword,		  // method
@@ -128,6 +134,8 @@ namespace shard
 		StructKeyword,		  // struct
 		InterfaceKeyword,	  // interface
 		NamespaceKeyword,	  // namespace
+		FnKeyword,            // fn
+		InitKeyword,          // init
 
 		// Loops keywords
 		ForKeyword,			// for
@@ -140,11 +148,15 @@ namespace shard
 		IfKeyword,		 // if
 		UnlessKeyword,	 // unless
 		ElseKeyword,	 // else
+		SwitchKeyword,    // switch
 
 		// Functional keywords
 		ReturnKeyword,		  // return
 		ThrowKeyword,		  // throw
 		BreakKeyword,		  // break
 		ContinueKeyword,	  // continue
+		TryKeyword,           // try
+		CatchKeyword,         // catch
+		WhereKeyword          // where
 	};
 }

@@ -23,6 +23,7 @@ namespace shard
 
 		inline ConstructorDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) : MemberDeclarationSyntax(SyntaxKind::ConstructorDeclaration, parent)
 		{
+			Attributes = info.Attributes;
 			Modifiers = info.Modifiers;
 			IdentifierToken = info.Identifier;
 			TypeParameters = info.Generics;

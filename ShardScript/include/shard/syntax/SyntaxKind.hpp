@@ -52,6 +52,8 @@ namespace shard
 		IfStatement,
 		UnlessStatement,
 		ElseStatement,
+		TryStatement,
+		CatchClause,
 
 		// Expressions
 		ObjectExpression,
@@ -60,6 +62,9 @@ namespace shard
 		UnaryExpression,
 		TernaryExpression,
 		CollectionExpression,
+		IfExpression,
+		SwitchExpression,
+		PostfixIfExpression,
 
 		// Linked expressions
 		LinkedExpression,
@@ -68,6 +73,9 @@ namespace shard
 		IndexatorExpression,
 		LambdaExpression,
 		
+		// Attributes
+		Attribute,
+
 		// Type identifiers
 		PredefinedType,
 		IdentifierNameType,

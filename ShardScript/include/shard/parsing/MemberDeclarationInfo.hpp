@@ -4,6 +4,7 @@
 #include <shard/syntax/SyntaxToken.hpp>
 #include <shard/syntax/nodes/TypeParametersListSyntax.hpp>
 #include <shard/syntax/nodes/TypeSyntax.hpp>
+#include <shard/syntax/nodes/AttributeSyntax.hpp>
 
 #include <vector>
 
@@ -11,6 +12,7 @@ namespace shard
 {
 	struct SHARD_API MemberDeclarationInfo
 	{
+		std::vector<shard::AttributeSyntax*> Attributes;
 		std::vector<shard::SyntaxToken> Modifiers;
 		shard::SyntaxToken DeclareType;
 		shard::SyntaxToken Identifier;

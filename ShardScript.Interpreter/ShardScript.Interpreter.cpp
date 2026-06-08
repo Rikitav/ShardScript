@@ -1,5 +1,4 @@
 ﻿#include <windows.h>
-
 #include <algorithm>
 #include <iostream>
 #include <string>
@@ -18,11 +17,9 @@
 #pragma comment(lib, "shlwapi.lib")
 #pragma comment(lib, "dbghelp.lib")
 
-#include <InteractiveConsole.hpp>
 #include <utilities/InterpreterUtilities.hpp>
-#include <shard/parsing/lexical/reading/FileReader.hpp>
-#include <shard/parsing/lexical/LexicalAnalyzer.hpp>
-#include <shard/runtime/ProgramDisassembler.hpp>
+#include <ShardScript.hpp>
+#include <InteractiveConsole.hpp>
 
 using namespace shard;
 namespace fs = std::filesystem;

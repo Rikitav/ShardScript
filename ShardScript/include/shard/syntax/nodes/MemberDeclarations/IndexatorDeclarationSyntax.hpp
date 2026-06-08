@@ -36,6 +36,7 @@ namespace shard
         inline IndexatorDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) 
             : MemberDeclarationSyntax(SyntaxKind::IndexatorDeclaration, parent)
         {
+            Attributes = info.Attributes;
             Modifiers = info.Modifiers;
             IdentifierToken = info.Identifier;
             ReturnType = info.ReturnType;

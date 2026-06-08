@@ -30,6 +30,7 @@ namespace shard
 
 		inline FieldDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) : MemberDeclarationSyntax(SyntaxKind::FieldDeclaration, parent)
 		{
+			Attributes = info.Attributes;
 			Modifiers = info.Modifiers;
 			IdentifierToken = info.Identifier;
 			ReturnType = info.ReturnType;
