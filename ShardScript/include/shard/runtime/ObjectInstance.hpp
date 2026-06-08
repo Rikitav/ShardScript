@@ -9,6 +9,8 @@
 
 namespace shard
 {
+	class CallStackFrame;
+
 	class SHARD_API ObjectInstance
 	{
 	public:
@@ -22,11 +24,11 @@ namespace shard
 		
 		inline ~ObjectInstance() = default;
 
-		ObjectInstance* GetField(FieldSymbol* field);
-		void SetField(FieldSymbol* field, ObjectInstance* instance);
+		ObjectInstance* GetField(FieldSymbol* field, CallStackFrame* frame = nullptr);
+		void SetField(FieldSymbol* field, ObjectInstance* instance, CallStackFrame* frame = nullptr);
 
-		ObjectInstance* GetElement(size_t index);
-		void SetElement(size_t index, ObjectInstance* instance);
+		ObjectInstance* GetElement(size_t index, CallStackFrame* frame = nullptr);
+		void SetElement(size_t index, ObjectInstance* instance, CallStackFrame* frame = nullptr);
 		bool IsInBounds(size_t index);
 
 		void IncrementReference();

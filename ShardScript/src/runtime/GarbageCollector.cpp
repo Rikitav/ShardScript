@@ -6,6 +6,7 @@
 #include <shard/syntax/symbols/TypeSymbol.hpp>
 #include <shard/syntax/symbols/FieldSymbol.hpp>
 #include <shard/syntax/symbols/ArrayTypeSymbol.hpp>
+#include <shard/syntax/symbols/GenericTypeSymbol.hpp>
 
 #include <shard/parsing/semantic/SymbolTable.hpp>
 
@@ -160,7 +161,11 @@ ObjectInstance* GarbageCollector::CopyInstance(ObjectInstance* instance)
 	ObjectInstance* newInstance = GarbageCollector::AllocateInstance(instance->Info);
 	newInstance->WriteMemory(0, instance->Info->MemoryBytesSize, instance->GetObjectMemory());
 	
-	for (FieldSymbol* field : instance->Info->Fields)
+	TypeSymbol* fieldOwner = const_cast<TypeSymbol*>(instance->Info);
+	if (fieldOwner->Kind == SyntaxKind::GenericType)
+		fieldOwner = static_cast<GenericTypeSymbol*>(fieldOwner)->UnderlayingType;
+
+	for (FieldSymbol* field : fieldOwner->Fields)
 	{
 		if (field->ReturnType->IsReferenceType)
 		{
@@ -211,7 +216,11 @@ void GarbageCollector::TerminateInstance(ObjectInstance* instance)
 	if (instance == NullInstance)
 		return;
 
-	for (FieldSymbol* field : instance->Info->Fields)
+	TypeSymbol* fieldOwner = const_cast<TypeSymbol*>(instance->Info);
+	if (fieldOwner->Kind == SyntaxKind::GenericType)
+		fieldOwner = static_cast<GenericTypeSymbol*>(fieldOwner)->UnderlayingType;
+
+	for (FieldSymbol* field : fieldOwner->Fields)
 	{
 		if (field->ReturnType->IsReferenceType)
 			DestroyInstance(instance->GetField(field));

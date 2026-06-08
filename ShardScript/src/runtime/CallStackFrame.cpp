@@ -1,7 +1,22 @@
 #include <shard/runtime/CallStackFrame.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
 
+#include <shard/syntax/symbols/TypeParameterSymbol.hpp>
+
 using namespace shard;
+
+TypeSymbol* CallStackFrame::ResolveType(TypeSymbol* type)
+{
+	if (type == nullptr || type->Kind != SyntaxKind::TypeParameter)
+		return type;
+
+	TypeParameterSymbol* typeParam = static_cast<TypeParameterSymbol*>(type);
+	uint16_t index = typeParam->TypeArgumentIndex;
+	if (index < TypeArguments.size())
+		return TypeArguments[index];
+
+	return type;
+}
 
 void CallStackFrame::PushStack(ObjectInstance* value)
 {

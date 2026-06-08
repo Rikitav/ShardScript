@@ -252,6 +252,13 @@ void ByteCodeEncoder::EmitLogicalAnd(std::vector<std::byte>& code)
     AppendDataT(code, OpCode::LOGICAL_AND);
 }
 
+void ByteCodeEncoder::EmitLoadTypeArgument(std::vector<std::byte>& code, uint16_t index, TypeSymbol* type)
+{
+    AppendDataT(code, OpCode::LOAD_TYPEARGUMENT);
+    AppendDataT(code, index);
+    AppendData(code, &type, sizeof(type));
+}
+
 void ByteCodeEncoder::EmitNewObject(std::vector<std::byte>& code, TypeSymbol* type, ConstructorSymbol* ctor)
 {
     AppendDataT(code, OpCode::NEWOBJECT);

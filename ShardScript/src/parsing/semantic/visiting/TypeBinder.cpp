@@ -298,25 +298,27 @@ void TypeBinder::VisitIndexatorDeclaration(IndexatorDeclarationSyntax *const nod
 
 	PushScope(symbol);
 	if (node->ReturnType != nullptr)
+	{
 		VisitType(node->ReturnType);
+
+		// Resolve property return type
+		TypeSymbol* propertyType = node->ReturnType->Symbol;
+		symbol->ReturnType = propertyType;
+
+		// Resolve getter return type
+		if (symbol->Getter != nullptr && node->Getter->Body != nullptr)
+			symbol->Getter->ReturnType = propertyType;
+
+		// Resolve setter parameter type
+		if (symbol->Setter != nullptr && node->Setter->Body != nullptr && !symbol->Setter->Parameters.empty())
+			symbol->Setter->Parameters[0]->Type = propertyType;
+	}
 	
 	if (node->Parameters != nullptr)
 	{
 		VisitParametersList(node->Parameters);
 		BindParametersList(node->Parameters, symbol->Parameters);
 	}
-	
-	// Resolve property return type
-	TypeSymbol* propertyType = node->ReturnType->Symbol;
-	symbol->ReturnType = propertyType;
-
-	// Resolve getter return type
-	if (symbol->Getter != nullptr && node->Getter->Body != nullptr)
-		symbol->Getter->ReturnType = propertyType;
-
-	// Resolve setter parameter type
-	if (symbol->Setter != nullptr && node->Setter->Body != nullptr && !symbol->Setter->Parameters.empty())
-		symbol->Setter->Parameters[0]->Type = propertyType;
 
 	if (node->Setter != nullptr)
 		VisitAccessorDeclaration(node->Setter);

@@ -1,11 +1,11 @@
 #include <shard/runtime/VirtualMachine.hpp>
 #include <shard/runtime/MethodCallState.hpp>
 
-#include <cstring>
 #include <shard/runtime/PrimitiveMathModule.hpp>
 #include <shard/runtime/CallStackFrame.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
 #include <shard/runtime/GarbageCollector.hpp>
+#include <shard/runtime/ProgramDisassembler.hpp>
 
 #include <shard/compilation/ByteCodeDecoder.hpp>
 #include <shard/compilation/OperationCode.hpp>
@@ -25,6 +25,8 @@
 
 #include <shard/ApplicationDomain.hpp>
 
+#include <iostream>
+#include <cstring>
 #include <vector>
 #include <stdexcept>
 #include <cstdint>
@@ -145,6 +147,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		case OpCode::NEWOBJECT:
 		{
 			TypeSymbol* type = decoder.AbsorbTypeSymbol();
+			type = frame->ResolveType(type);
 			ConstructorSymbol* ctor = decoder.AbsorbConstructorSymbol();
 
 			ObjectInstance* instance = InstantiateObject(type, ctor);
@@ -160,11 +163,21 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
+		case OpCode::LOAD_TYPEARGUMENT:
+		{
+			uint16_t index = decoder.AbsorbUInt16();
+			TypeSymbol* type = decoder.AbsorbTypeSymbol();
+			if (PendingTypeArguments.size() <= index)
+				PendingTypeArguments.resize(index + 1);
+			PendingTypeArguments[index] = type;
+			break;
+		}
+
 		case OpCode::LOADFIELD:
 		{
 			FieldSymbol* field = decoder.AbsorbFieldSymbol();
 			ObjectInstance* instance = frame->PopStack();
-			ObjectInstance* fieldValue = instance->GetField(field);
+			ObjectInstance* fieldValue = instance->GetField(field, frame);
 
 			frame->PushStack(fieldValue);
 			garbageCollector.CollectInstance(instance);
@@ -177,7 +190,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance* fieldValue = frame->PopStack();
 			ObjectInstance* instance = frame->PopStack();
 
-			instance->SetField(field, fieldValue);
+			instance->SetField(field, fieldValue, frame);
 			garbageCollector.CollectInstance(fieldValue);
 			garbageCollector.CollectInstance(instance);
 			break;
@@ -428,7 +441,7 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 		throw std::runtime_error("Execution aborted by host.");
 
 	CallStackFrame* callingFrame = currentFrame->PreviousFrame;
-	currentFrame->EvalStack.reserve(method->GetEvalStackLocalsCount() * 2);
+	currentFrame->EvalStack.reserve(static_cast<size_t>(method->GetEvalStackLocalsCount()) * 2);
 
 	size_t argsCount = method->Parameters.size();
 	if (!method->IsStatic)
@@ -446,7 +459,20 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 	}
 
 	if (thisInstance != nullptr)
+	{
 		currentFrame->WithinType = const_cast<TypeSymbol*>(thisInstance->Info);
+
+		if (currentFrame->TypeArguments.empty() && thisInstance->Info->Kind == SyntaxKind::GenericType)
+		{
+			GenericTypeSymbol* genericInfo = const_cast<GenericTypeSymbol*>(static_cast<const GenericTypeSymbol*>(thisInstance->Info));
+			TypeSymbol* underlyingType = genericInfo->UnderlayingType;
+			currentFrame->TypeArguments.resize(underlyingType->TypeParameters.size());
+			for (size_t i = 0; i < underlyingType->TypeParameters.size(); i++)
+			{
+				currentFrame->TypeArguments[i] = genericInfo->SubstituteTypeParameters(underlyingType->TypeParameters[i]);
+			}
+		}
+	}
 
 	switch (method->HandleType)
 	{
@@ -561,9 +587,12 @@ ObjectInstance* VirtualMachine::InstantiateObject(TypeSymbol* type, ConstructorS
 	callingFrame->PushStack(newInstance);
 
 	CallStackFrame* currentFrame = PushFrame(ctor, type);
+	newInstance->IncrementReference();
+
 	InvokeMethodInternal(ctor, currentFrame);
 	PopFrame();
 
+	newInstance->DecrementReference();
 	return newInstance;
 }
 
@@ -590,6 +619,8 @@ CallStackFrame* VirtualMachine::CurrentFrame() const
 CallStackFrame* VirtualMachine::PushFrame(MethodSymbol* methodSymbol)
 {
 	CallStackFrame* frame = new CallStackFrame(this, CurrentFrame(), nullptr, methodSymbol);	
+	frame->TypeArguments = std::move(PendingTypeArguments);
+	PendingTypeArguments.clear();
 	CallStack.push(frame);
 	return frame;
 }
@@ -597,6 +628,8 @@ CallStackFrame* VirtualMachine::PushFrame(MethodSymbol* methodSymbol)
 CallStackFrame* VirtualMachine::PushFrame(MethodSymbol* methodSymbol, TypeSymbol* withinType)
 {
 	CallStackFrame* frame = new CallStackFrame(this, CurrentFrame(), withinType, methodSymbol);	
+	frame->TypeArguments = std::move(PendingTypeArguments);
+	PendingTypeArguments.clear();
 	CallStack.push(frame);
 	return frame;
 }
@@ -664,6 +697,9 @@ ObjectInstance* VirtualMachine::RunInteractive(size_t& pointer)
 	currentFrame->EvalStack.reserve(static_cast<size_t>(method->GetEvalStackLocalsCount()) * 2);
 
 	ByteCodeDecoder decoder = ByteCodeDecoder(method->ExecutableByteCode);
+	ProgramDisassembler disassembler;
+	disassembler.Disassemble(std::wcout, program);
+
 	decoder.SetCursor(pointer);
 
 	while (!decoder.IsEOF())

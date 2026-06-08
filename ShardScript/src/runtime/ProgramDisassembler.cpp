@@ -124,14 +124,16 @@ void ProgramDisassembler::Disassemble(std::wostream& out, ProgramVirtualImage& p
             case OpCode::NEWOBJECT:
             {
                 auto* sym = decoder.AbsorbTypeSymbol();
+                auto* ctor = decoder.AbsorbConstructorSymbol();
+
                 if (sym == nullptr)
                 {
                     out << L"newobj null";
                     break;
                 }
 
-                std::wstring name = sym->FullName.size() > 0 ? sym->FullName : sym->Name;
-                out << L"newobj " << name;
+                std::wstring symName = sym->FullName.size() > 0 ? sym->FullName : sym->Name;
+                out << L"newobj " << symName; // << L" " << ctor->Name;
                 break;
             }
 
@@ -208,6 +210,21 @@ void ProgramDisassembler::Disassemble(std::wostream& out, ProgramVirtualImage& p
 
                 std::wstring name = sym->UnderlayingType->FullName.size() > 0 ? sym->UnderlayingType->FullName : sym->Name;
                 out << L"newarr " << name << "[]";
+                break;
+            }
+
+            case OpCode::LOAD_TYPEARGUMENT:
+            {
+                uint16_t index = decoder.AbsorbUInt16();
+				auto* sym = decoder.AbsorbTypeSymbol();
+
+                out << L"ldtypearg " << index;
+				if (sym != nullptr)
+				{
+					std::wstring name = sym->FullName.size() > 0 ? sym->FullName : sym->Name;
+					out << L" (" << name << L")";
+				}
+
                 break;
             }
 

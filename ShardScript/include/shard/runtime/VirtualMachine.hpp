@@ -32,6 +32,7 @@ namespace shard
 
 		std::stack<CallStackFrame*> CallStack;
 		std::atomic<bool> AbortFlag;
+		std::vector<TypeSymbol*> PendingTypeArguments;
 
 		void ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder, const OpCode opCode);
 		void InvokeMethodInternal(MethodSymbol* method, CallStackFrame* currentFrame);

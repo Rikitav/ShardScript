@@ -105,6 +105,13 @@ uint16_t ByteCodeDecoder::AbsorbVariableSlot()
     return value;
 }
 
+uint16_t ByteCodeDecoder::AbsorbUInt16()
+{
+    uint16_t value{};
+    ReadUnaligned(_code, _ip, value);
+    return value;
+}
+
 size_t ByteCodeDecoder::AbsorbJump()
 {
     size_t value{};

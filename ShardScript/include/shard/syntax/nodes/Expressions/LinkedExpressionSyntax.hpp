@@ -89,6 +89,7 @@ namespace shard
 		const SyntaxToken IdentifierToken;
 		ArgumentsListSyntax* ArgumentsList = nullptr;
 		shard::MethodSymbol* Symbol = nullptr;
+		shard::TypeSymbol* ReceiverType = nullptr;
 
 		inline InvokationExpressionSyntax(SyntaxToken identifier, ExpressionSyntax* previous, SyntaxNode* const parent)
 			: LinkedExpressionNode(SyntaxKind::InvokationExpression, previous, parent), IdentifierToken(identifier) {

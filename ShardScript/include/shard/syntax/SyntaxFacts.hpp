@@ -5,6 +5,7 @@
 #include <shard/syntax/SyntaxKind.hpp>
 
 SHARD_API bool IsPunctuation(shard::TokenType type);
+SHARD_API bool IsReservedIdentifier(shard::TokenType type);
 
 SHARD_API int GetOperatorPrecendence(shard::TokenType type);
 SHARD_API bool IsOperator(shard::TokenType type);

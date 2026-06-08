@@ -140,10 +140,11 @@ void DeclarationCollector::VisitClassDeclaration(ClassDeclarationSyntax *const n
 
         if (node->TypeParameters != nullptr)
         {
-            for (const SyntaxToken& typeParamToken : node->TypeParameters->Types)
+            for (size_t i = 0; i < node->TypeParameters->Types.size(); i++)
             {
-                TypeParameterSymbol* typeParamSymbol = new TypeParameterSymbol(typeParamToken.Word);
+                TypeParameterSymbol* typeParamSymbol = new TypeParameterSymbol(node->TypeParameters->Types[i].Word);
                 typeParamSymbol->Parent = symbol;
+                typeParamSymbol->TypeArgumentIndex = static_cast<uint16_t>(i);
                 symbol->TypeParameters.push_back(typeParamSymbol);
             }
         }
@@ -200,10 +201,11 @@ void DeclarationCollector::VisitStructDeclaration(StructDeclarationSyntax *const
 
         if (node->TypeParameters != nullptr)
         {
-            for (const SyntaxToken& typeParamToken : node->TypeParameters->Types)
+            for (size_t i = 0; i < node->TypeParameters->Types.size(); i++)
             {
-                TypeParameterSymbol* typeParamSymbol = new TypeParameterSymbol(typeParamToken.Word);
+                TypeParameterSymbol* typeParamSymbol = new TypeParameterSymbol(node->TypeParameters->Types[i].Word);
                 typeParamSymbol->Parent = symbol;
+                typeParamSymbol->TypeArgumentIndex = static_cast<uint16_t>(i);
                 symbol->TypeParameters.push_back(typeParamSymbol);
             }
         }
@@ -635,6 +637,8 @@ void DeclarationCollector::VisitAccessorDeclaration(AccessorDeclarationSyntax *c
         symbol->FullName = FormatFullNameOf(symbol);
         symbol->IsStatic = propertySymbol->IsStatic;
         symbol->Parent->OnSymbolDeclared(symbol);
+
+        ApplyMethodAttributes(symbol, node->Attributes);
 
         if (node->Body != nullptr)
         {
