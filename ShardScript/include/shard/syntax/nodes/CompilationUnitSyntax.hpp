@@ -6,6 +6,7 @@
 
 #include <shard/syntax/nodes/MemberDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/Directives/UsingDirectiveSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.hpp>
 
 #include <vector>
 
@@ -16,6 +17,7 @@ namespace shard
 	public:
 		std::vector<UsingDirectiveSyntax*> Usings;
 		std::vector<MemberDeclarationSyntax*> Members;
+		NamespaceDeclarationSyntax* Namespace = nullptr;
 
 		inline CompilationUnitSyntax()
 			: SyntaxNode(SyntaxKind::CompilationUnit, nullptr) { }
@@ -26,6 +28,9 @@ namespace shard
 		{
 			for (const UsingDirectiveSyntax* usingDirective : Usings)
 				delete usingDirective;
+
+			if (Namespace != nullptr)
+				delete Namespace;
 
 			for (const MemberDeclarationSyntax* member : Members)
 				delete member;

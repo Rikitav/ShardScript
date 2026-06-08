@@ -169,9 +169,25 @@ void ExpressionBinder::VisitCompilationUnit(CompilationUnitSyntax *const node)
 	for (UsingDirectiveSyntax* directive : node->Usings)
 		VisitUsingDirective(directive);
 
+	if (node->Namespace != nullptr)
+	{
+		NamespaceSymbol* symbol = LookupSymbol<NamespaceSymbol>(node->Namespace);
+		if (symbol != nullptr)
+			PushScope(symbol);
+	}
+
+	for (MemberDeclarationSyntax* member : node->Members)
+	{
+		SyntaxSymbol* symbol = Table->LookupSymbol(member);
+		Declare(symbol);
+	}
+
 	for (MemberDeclarationSyntax* member : node->Members)
 		VisitMemberDeclaration(member);
-	
+
+	if (node->Namespace != nullptr)
+		PopScope();
+
 	PopScope();
 }
 
@@ -184,22 +200,7 @@ void ExpressionBinder::VisitUsingDirective(UsingDirectiveSyntax *const node)
 
 void ExpressionBinder::VisitNamespaceDeclaration(NamespaceDeclarationSyntax *const node)
 {
-	NamespaceSymbol* symbol = LookupSymbol<NamespaceSymbol>(node);
-	if (symbol != nullptr)
-	{
-		PushScope(symbol);
-
-		for (MemberDeclarationSyntax* member : node->Members)
-		{
-			SyntaxSymbol* symbol = Table->LookupSymbol(member);
-			Declare(symbol);
-		}
-
-		for (MemberDeclarationSyntax* member : node->Members)
-			VisitMemberDeclaration(member);
-
-		PopScope();
-	}
+	// Namespace declarations are now handled inline in VisitCompilationUnit
 }
 
 void ExpressionBinder::VisitClassDeclaration(ClassDeclarationSyntax *const node)

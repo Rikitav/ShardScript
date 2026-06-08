@@ -5,22 +5,24 @@
 #include <shard/syntax/SyntaxNode.hpp>
 #include <shard/syntax/SyntaxToken.hpp>
 
-#include <shard/syntax/nodes/TypeDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarationSyntax.hpp>
 #include <shard/parsing/MemberDeclarationInfo.hpp>
 
 #include <vector>
 
 namespace shard
 {
-	class SHARD_API NamespaceDeclarationSyntax : public TypeDeclarationSyntax
+	class SHARD_API NamespaceDeclarationSyntax : public MemberDeclarationSyntax
 	{
 	public:
 		std::vector<SyntaxToken> IdentifierTokens;
+		SyntaxToken SemicolonToken;
 
 		inline NamespaceDeclarationSyntax(SyntaxNode *const parent)
-			: TypeDeclarationSyntax(SyntaxKind::NamespaceDeclaration, parent) { }
+			: MemberDeclarationSyntax(SyntaxKind::NamespaceDeclaration, parent) { }
 
-		inline NamespaceDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) : TypeDeclarationSyntax(SyntaxKind::NamespaceDeclaration, parent)
+		inline NamespaceDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent)
+			: MemberDeclarationSyntax(SyntaxKind::NamespaceDeclaration, parent)
 		{
 			Modifiers = info.Modifiers;
 			IdentifierToken = info.Identifier;
@@ -28,9 +30,6 @@ namespace shard
 
 		inline NamespaceDeclarationSyntax(const NamespaceDeclarationSyntax& other) = delete;
 
-		inline virtual ~NamespaceDeclarationSyntax()
-		{
-
-		}
+		inline virtual ~NamespaceDeclarationSyntax() { }
 	};
 }

@@ -44,7 +44,6 @@ static NamespaceDeclarationSyntax* InitImplicitNamespaceDeclaration(MethodDeclar
 	NamespaceDeclarationSyntax* implNamespace = new NamespaceDeclarationSyntax(parent);
 	implNamespace->DeclareToken = SyntaxToken(TokenType::NamespaceKeyword, L"namespace", TextLocation(), false);
 	implNamespace->IdentifierTokens.push_back(SyntaxToken(TokenType::Identifier, L"__InteractiveNamespace__", TextLocation(), false));
-	implNamespace->Members.push_back(InitImplicitClassDeclaration(entryPoint, implNamespace));
 
 	return implNamespace;
 }
@@ -52,7 +51,8 @@ static NamespaceDeclarationSyntax* InitImplicitNamespaceDeclaration(MethodDeclar
 static CompilationUnitSyntax* InitImplicitCompilationUnit(MethodDeclarationSyntax*& entryPoint)
 {
 	CompilationUnitSyntax* implUnit = new CompilationUnitSyntax();
-	implUnit->Members.push_back(InitImplicitNamespaceDeclaration(entryPoint, implUnit));
+	implUnit->Namespace = InitImplicitNamespaceDeclaration(entryPoint, implUnit);
+	implUnit->Members.push_back(InitImplicitClassDeclaration(entryPoint, implUnit));
 	return implUnit;
 }
 
@@ -317,7 +317,7 @@ InteractiveConsole::InteractiveConsole(shard::CompilationContext* context, shard
 	Program(domain->GetProgram())
 {
 	InteractiveUnit = InitImplicitCompilationUnit(InteractiveMethod);
-	InteractiveClass = static_cast<ClassDeclarationSyntax*>(static_cast<NamespaceDeclarationSyntax*>(InteractiveUnit->Members.at(0))->Members.at(0));
+	InteractiveClass = static_cast<ClassDeclarationSyntax*>(InteractiveUnit->Members.at(0));
 	ParentSyntaxTree.CompilationUnits.push_back(InteractiveUnit);
 
 	//InteractiveEntryPoint = new MethodSymbol(InteractiveMethod->IdentifierToken.Word);

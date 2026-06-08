@@ -66,49 +66,52 @@ void DeclarationCollector::VisitCompilationUnit(CompilationUnitSyntax *const nod
     // First scope is declared as nullptr symbol
     PushScope(nullptr);
 
+    if (node->Namespace != nullptr)
+    {
+        NamespaceSymbol* symbol = LookupSymbol<NamespaceSymbol>(node->Namespace);
+        if (symbol == nullptr)
+        {
+            symbol = SymbolFactory::Namespace(node->Namespace);
+            Table->BindSymbol(node->Namespace, symbol);
+
+            symbol->Parent = OwnerSymbol();
+            if (symbol->Parent != nullptr)
+            {
+                symbol->FullName = symbol->Parent->FullName + L"." + symbol->Name;
+                symbol->Parent->OnSymbolDeclared(symbol);
+            }
+
+            if (!node->Namespace->IdentifierTokens.empty())
+            {
+                NamespaceNode* nsNode = Namespaces->Root;
+                for (SyntaxToken token : node->Namespace->IdentifierTokens)
+                {
+                    nsNode = nsNode->LookupOrCreate(token.Word, symbol);
+                }
+
+                CurrentScope()->Namespace = nsNode;
+                symbol->Node = nsNode;
+            }
+        }
+
+        Declare(symbol);
+        PushScope(symbol);
+    }
+
     // Visiting members of unit
     for (MemberDeclarationSyntax* member : node->Members)
         VisitMemberDeclaration(member);
+
+    if (node->Namespace != nullptr)
+        PopScope();
 
     PopScope();
 }
 
 void DeclarationCollector::VisitNamespaceDeclaration(NamespaceDeclarationSyntax *const node)
 {
-    NamespaceSymbol* symbol = LookupSymbol<NamespaceSymbol>(node);
-    if (symbol == nullptr)
-    {
-        symbol = SymbolFactory::Namespace(node);
-        Table->BindSymbol(node, symbol);
-
-        symbol->Parent = OwnerSymbol();
-        if (symbol->Parent != nullptr)
-        {
-            symbol->FullName = symbol->Parent->FullName + L"." + symbol->Name;
-            symbol->Parent->OnSymbolDeclared(symbol);
-        }
-
-        if (!node->IdentifierTokens.empty())
-        {
-            NamespaceNode* nsNode = Namespaces->Root;
-            for (SyntaxToken token : node->IdentifierTokens)
-            {
-                nsNode = nsNode->LookupOrCreate(token.Word, symbol);
-                continue;
-            }
-
-            CurrentScope()->Namespace = nsNode;
-            symbol->Node = nsNode;
-        }
-    }
-
-    Declare(symbol);
-    PushScope(symbol);
-    
-    for (MemberDeclarationSyntax* member : node->Members)
-        VisitMemberDeclaration(member);
-
-    PopScope();
+    // Namespace declarations are now handled inline in VisitCompilationUnit
+    // This method is kept for SyntaxVisitor compatibility only
 }
 
 void DeclarationCollector::VisitClassDeclaration(ClassDeclarationSyntax *const node)

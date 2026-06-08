@@ -100,9 +100,22 @@ CompilationUnitSyntax *const SourceParser::ReadCompilationUnit(SourceProvider& r
 
 			case TokenType::NamespaceKeyword:
 			{
+				if (unit->Namespace != nullptr)
+				{
+					Diagnostics.ReportError(token, L"Only one namespace declaration is allowed per compilation unit");
+					reader.Consume();
+					while (reader.CanConsume() && reader.Current().Type != TokenType::Semicolon)
+						reader.Consume();
+
+					if (reader.CanConsume())
+						reader.Consume();
+					
+					break;
+				}
+
 				NamespaceDeclarationSyntax *const pNamespace = ReadNamespaceDeclaration(reader, unit);
 				*const_cast<SyntaxNode**>(&pNamespace->Parent) = unit;
-				unit->Members.push_back(pNamespace);
+				unit->Namespace = pNamespace;
 				break;
 			}
 
@@ -188,22 +201,19 @@ NamespaceDeclarationSyntax *const SourceParser::ReadNamespaceDeclaration(SourceP
 	SyntaxToken current = reader.Current();
 	while (current.Type == TokenType::Delimeter)
 	{
-		SyntaxToken identifier = reader.Consume();
-		syntax->IdentifierTokens.push_back(identifier);
-		current = reader.Consume();
-	}
-
-	if (!TryMatch(reader, { TokenType::OpenBrace }, L"Expected '{' or ';'", 5))
-	{
-		if (reader.CanConsume() && reader.Current().Type == TokenType::OpenBrace)
+		reader.Consume(); // consume '.'
+		if (!TryMatchIdentifier(reader, 5))
 		{
-			ReadTypeBody(reader, syntax);
+			// Error recovery: expected identifier after '.'
+			break;
 		}
-
-		return syntax;
+		SyntaxToken identifier = reader.Current();
+		syntax->IdentifierTokens.push_back(identifier);
+		reader.Consume();
+		current = reader.Current();
 	}
 
-	ReadTypeBody(reader, syntax);
+	syntax->SemicolonToken = Expect(reader, TokenType::Semicolon, L"Expected ';' after namespace declaration");
 	return syntax;
 }
 
