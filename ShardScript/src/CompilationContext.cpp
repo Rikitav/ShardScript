@@ -417,8 +417,10 @@ ApplicationDomain* CompilationContext::Compile()
 
 	ProgramVirtualImage* program = new ProgramVirtualImage();
 	AbstractEmiter emiter(*program, Model, Diagnostics);
-	emiter.VisitSyntaxTree(Tree);
+	if (!PopExpressionStatement)
+		emiter.SetPopExpressionStatement(false);
 
+	emiter.VisitSyntaxTree(Tree);
 	if (SetEntryPoint)
 		emiter.SetEntryPoint();
 

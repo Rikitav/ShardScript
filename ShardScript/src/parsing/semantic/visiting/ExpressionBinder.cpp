@@ -277,8 +277,10 @@ void ExpressionBinder::VisitMethodDeclaration(MethodDeclarationSyntax *const nod
 		return;
 	}
 
+	/*
 	if (!symbol->Parent->IsType())
 		return;
+	*/
 
 	TypeSymbol* ownerType = static_cast<TypeSymbol*>(symbol->Parent);
 	PushScope(symbol);
@@ -1267,8 +1269,10 @@ TypeSymbol* ExpressionBinder::AnalyzeFieldKeywordExpression(MemberAccessExpressi
 
 TypeSymbol* ExpressionBinder::AnalyzeInvokationExpression(InvokationExpressionSyntax *const node, TypeSymbol* currentType)
 {
+	/*
 	if (currentType == nullptr)
 		return nullptr;
+	*/
 
 	std::wstring methodName = node->IdentifierToken.Word;
 	MethodSymbol* method = ResolveMethod(node, currentType);
@@ -1283,7 +1287,7 @@ TypeSymbol* ExpressionBinder::AnalyzeInvokationExpression(InvokationExpressionSy
 	}
 
 	GenericTypeSymbol* genericType = nullptr;
-	if (currentType->Kind == SyntaxKind::GenericType)
+	if (currentType != nullptr && currentType->Kind == SyntaxKind::GenericType)
 		genericType = static_cast<GenericTypeSymbol*>(currentType);
 
 	if (!MatchMethodArguments(method->Parameters, node->ArgumentsList->Arguments, genericType))
@@ -1391,9 +1395,13 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax *const 
 	}
 
 	// Try to find method inside current type
-	MethodSymbol* method = currentType->FindMethod(methodName, argTypes);
-	if (method == nullptr)
-		method = SymbolTable::Global::Type->FindMethod(methodName, argTypes);
+	MethodSymbol* method = nullptr;
+	if (currentType != nullptr)
+	{
+		currentType->FindMethod(methodName, argTypes);
+		if (method == nullptr)
+			method = SymbolTable::Global::Type->FindMethod(methodName, argTypes);
+	}
 
 	if (method == nullptr)
 	{

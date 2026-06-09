@@ -288,7 +288,7 @@ void DeclarationCollector::VisitFieldDeclaration(FieldDeclarationSyntax *const n
             // Checking if owner is type
             if (!symbol->Parent->IsType())
             {
-                Diagnostics.ReportError(node->IdentifierToken, L"Methods cannot be declared outside of Classes or Structures");
+                Diagnostics.ReportError(node->IdentifierToken, L"Fields cannot be declared outside of Classes or Structures");
             }
             else
             {
@@ -332,7 +332,7 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax *const
             symbol->Parent->OnSymbolDeclared(symbol);
 
             // Checking if owner is type
-            if (!symbol->Parent->IsType())
+            if (false) // (!symbol->Parent->IsType())
             {
                 Diagnostics.ReportError(node->IdentifierToken, L"Methods cannot be declared outside of Classes or Structures");
             }
@@ -395,7 +395,7 @@ void DeclarationCollector::VisitConstructorDeclaration(ConstructorDeclarationSyn
             // Checking if owner is type
             if (!symbol->Parent->IsType())
             {
-                Diagnostics.ReportError(node->IdentifierToken, L"Methods cannot be declared outside of Classes or Structures");
+                Diagnostics.ReportError(node->IdentifierToken, L"Constructors cannot be declared outside of Classes or Structures");
             }
             else
             {
@@ -460,7 +460,7 @@ void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax *c
             // Checking if owner is type
             if (!symbol->Parent->IsType())
             {
-                Diagnostics.ReportError(node->IdentifierToken, L"Methods cannot be declared outside of Classes or Structures");
+                Diagnostics.ReportError(node->IdentifierToken, L"Properties cannot be declared outside of Classes or Structures");
             }
             else
             {
