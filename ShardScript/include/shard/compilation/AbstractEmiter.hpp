@@ -69,6 +69,7 @@ namespace shard
 		ProgramVirtualImage& Program;
 		std::vector<MethodSymbol*> EntryPointCandidates;
 
+		bool PopExpressionStatement = true;
         std::stack<LoopScope> Loops;
         std::stack<ClauseScope> Clauses;
 
@@ -78,6 +79,11 @@ namespace shard
         
         void SetEntryPoint();
         void SetGeneratingTarget(MethodSymbol* method);
+		void SetPopExpressionStatement(bool pop)
+		{
+			PopExpressionStatement = pop;
+		}
+
         void VisitSyntaxTree(SyntaxTree& tree) override;
 
         void VisitArgumentsList(ArgumentsListSyntax* node) override;

@@ -216,7 +216,7 @@ int wmain(int argc, wchar_t* argv[])
 			return 1;
 
 		compiler = new CompilationContext();
-		compiler->SetEntryPoint = ConsoleArguments::RunProgram;
+		compiler->SetEntryPoint = ConsoleArguments::RunProgram || ConsoleArguments::ShowDecompile;
 		DiagnosticsContext& diagnostics = compiler->GetDiagnosticsContext();
 
 		if (!ConsoleArguments::ExcludeStd)
@@ -245,6 +245,11 @@ int wmain(int argc, wchar_t* argv[])
 			FileReader reader(file);
 			LexicalAnalyzer lexer(reader);
 			compiler->EnrichTree(lexer);
+		}
+
+		if (ConsoleArguments::UseInteractive)
+		{
+			compiler->SetPopExpressionStatement(false);
 		}
 
 		ApplicationDomain* domain = compiler->Compile();

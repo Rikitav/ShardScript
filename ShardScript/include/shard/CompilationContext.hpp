@@ -30,6 +30,7 @@ namespace shard
 		SemanticAnalyzer Semanter;
 		LayoutGenerator Layouter;
 
+		bool PopExpressionStatement = true;
 		bool ReAnalyze = true;
 
 	public:
@@ -37,6 +38,11 @@ namespace shard
 
 		CompilationContext();
 		~CompilationContext();
+
+		void SetPopExpressionStatement(bool pop)
+		{
+			PopExpressionStatement = pop;
+		}
 
 		SyntaxTree& GetSyntaxTree();
 		SemanticModel& GetSemanticModel();

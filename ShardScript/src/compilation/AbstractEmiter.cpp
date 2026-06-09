@@ -328,9 +328,13 @@ void AbstractEmiter::VisitMethodDeclaration(MethodDeclarationSyntax* const node)
 		if (GeneratingFor->ReturnType != SymbolTable::Primitives::Void)
 			Diagnostics.ReportError(node->IdentifierToken, L"Main entry point should have 'void' return type");
 
-		TypeSymbol* withinType = static_cast<TypeSymbol*>(GeneratingFor->Parent);
-		if (withinType->TypeParameters.size() > 0)
-			Diagnostics.ReportError(node->IdentifierToken, L"Type containing entry point should not have any type parameters");
+		SyntaxSymbol* parent = GeneratingFor->Parent;
+		if (parent != nullptr && parent->IsType())
+		{
+			TypeSymbol* withinType = static_cast<TypeSymbol*>(parent);
+			if (withinType != nullptr && withinType->TypeParameters.size() > 0)
+				Diagnostics.ReportError(node->IdentifierToken, L"Type containing entry point should not have any type parameters");
+		}
 	}
 
 	GeneratingFor->ExecutableByteCode.shrink_to_fit();
@@ -385,7 +389,17 @@ void AbstractEmiter::VisitAccessorDeclaration(AccessorDeclarationSyntax* const n
 void AbstractEmiter::VisitExpressionStatement(ExpressionStatementSyntax* const node)
 {
 	VisitExpression(node->Expression);
-	Encoder.EmitPop(GeneratingFor->ExecutableByteCode);
+	switch (node->Expression->Kind)
+	{
+		case SyntaxKind::InvokationExpression:
+		{
+			InvokationExpressionSyntax* invokation = static_cast<InvokationExpressionSyntax*>(node->Expression);
+			if (invokation->Symbol->ReturnType != SymbolTable::Primitives::Void && PopExpressionStatement)
+				Encoder.EmitPop(GeneratingFor->ExecutableByteCode);
+
+			break;
+		}
+	}
 }
 
 void AbstractEmiter::VisitVariableStatement(VariableStatementSyntax* const node)
