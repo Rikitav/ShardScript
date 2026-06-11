@@ -405,10 +405,12 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			size_t jump = decoder.AbsorbJump();
 			ObjectInstance* value = frame->PopStack();
 
-			if (value->AsBoolean())
-				break;
+			bool asBool = value->AsBoolean();
+			garbageCollector.DestroyInstance(value);
 
-			decoder.SetCursor(jump);
+			if (!asBool)
+				decoder.SetCursor(jump);
+
 			break;
 		}
 
@@ -417,10 +419,12 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			size_t jump = decoder.AbsorbJump();
 			ObjectInstance* value = frame->PopStack();
 
-			if (!value->AsBoolean())
-				break;
+			bool asBool = value->AsBoolean();
+			garbageCollector.DestroyInstance(value);
 
-			decoder.SetCursor(jump);
+			if (asBool)
+				decoder.SetCursor(jump);
+
 			break;
 		}
 

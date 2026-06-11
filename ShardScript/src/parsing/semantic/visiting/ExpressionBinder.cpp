@@ -738,7 +738,7 @@ TypeSymbol* ExpressionBinder::AnalyzeObjectExpression(ObjectExpressionSyntax *co
 	if (method == nullptr)
 		return nullptr;
 
-	if (!IsSymbolAccessible(method))
+	if (!IsSymbolAccessible(method, Table->GetSyntaxNode(method), node))
 	{
 		Diagnostics.ReportError(node->IdentifierToken, L"Method '" + methodName + L"' is not accessible");
 		return nullptr;
@@ -980,6 +980,11 @@ bool ExpressionBinder::MatchMethodArguments(std::vector<ParameterSymbol*> parame
 		}
 
 		TypeSymbol* paramType = param->Type;
+		if (paramType == nullptr)
+		{
+			return false;
+		}
+
 		if (paramType->Kind == SyntaxKind::TypeParameter)
 		{
 			paramType = SubstituteTypeParameters(paramType, genericType);
@@ -1002,9 +1007,6 @@ bool ExpressionBinder::MatchMethodArguments(std::vector<ParameterSymbol*> parame
 
 TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressionSyntax *const node, TypeSymbol* currentType)
 {
-	if (currentType == nullptr)
-		return nullptr;
-
 	std::wstring memberName = node->IdentifierToken.Word;
 	SyntaxSymbol* symbol = nullptr;
 
@@ -1023,7 +1025,7 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 			return nullptr;
 		}
 
-		if (!IsSymbolAccessible(symbol))
+		if (!IsSymbolAccessible(symbol, Table->GetSyntaxNode(symbol), node))
 		{
 			Diagnostics.ReportError(node->IdentifierToken, L"Symbol '" + name + L"' is not accessible");
 			return nullptr;
@@ -1037,6 +1039,9 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 	}
 	else
 	{
+		if (currentType == nullptr)
+			return nullptr;
+
 		ExpressionSyntax* previousExpression = const_cast<ExpressionSyntax*>(node->PreviousExpression);
 		VisitExpression(previousExpression);
 		currentType = GetExpressionType(previousExpression);
@@ -1073,7 +1078,7 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 		}
 	}
 
-	if (!IsSymbolAccessible(node->ToField))
+	if (!IsSymbolAccessible(node->ToField, Table->GetSyntaxNode(node->ToField), node))
 	{
 		std::wstring declName;
 		Diagnostics.ReportError(node->IdentifierToken, declName + L" '" + memberName + L"' is not accessible");
@@ -1189,7 +1194,7 @@ TypeSymbol* ExpressionBinder::AnalyzePropertyAccessExpression(MemberAccessExpres
 		return nullptr;
 	}
 
-	if (!IsSymbolAccessible(accessor))
+	if (!IsSymbolAccessible(accessor, Table->GetSyntaxNode(accessor), node))
 	{
 		Diagnostics.ReportError(node->IdentifierToken, (requiresSetter ? L"Setter" : L"Getter") + (L" of property '" + memberName + L"' is not accessible"));
 		return nullptr;
@@ -1278,9 +1283,11 @@ TypeSymbol* ExpressionBinder::AnalyzeInvokationExpression(InvokationExpressionSy
 	MethodSymbol* method = ResolveMethod(node, currentType);
 
 	if (method == nullptr)
+	{
 		return nullptr;
+	}
 
-	if (!IsSymbolAccessible(method))
+	if (!IsSymbolAccessible(method, Table->GetSyntaxNode(method), node))
 	{
 		Diagnostics.ReportError(node->IdentifierToken, L"Method '" + methodName + L"' is not accessible");
 		return nullptr;

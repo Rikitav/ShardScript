@@ -332,26 +332,36 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax *const
             symbol->Parent->OnSymbolDeclared(symbol);
 
             // Checking if owner is type
-            if (false) // (!symbol->Parent->IsType())
+            if (symbol->Parent->Kind == SyntaxKind::NamespaceDeclaration)
             {
-                Diagnostics.ReportError(node->IdentifierToken, L"Methods cannot be declared outside of Classes or Structures");
+                // Assert: namespace cannot have instance Methods
+                if (!symbol->IsStatic)
+                    Diagnostics.ReportError(node->IdentifierToken, L"Cannot declare a non static Method in namespace");
             }
-            else
+            else if (symbol->Parent->IsType())
             {
                 TypeSymbol* ownerType = static_cast<TypeSymbol*>(symbol->Parent);
 
                 // Assert: static Class cannot have instance Methods
                 if (!symbol->IsStatic && ownerType->IsStatic)
                     Diagnostics.ReportError(node->IdentifierToken, L"Cannot declare a non static Method in static Type");
-
-                // Assert: extern Method cannot have body
-                if (symbol->IsExtern && node->Body != nullptr)
-                    Diagnostics.ReportError(node->IdentifierToken, L"Methods marked as 'extern' cannot have Body");
-
-                // Assert: Method should have body
-                if (!symbol->IsExtern && node->Body == nullptr)
-                    Diagnostics.ReportError(node->IdentifierToken, L"Method should have a Body, as it's not marked as 'extern' or 'abstract'");
             }
+            else if (symbol->Parent->IsMember())
+            {
+                Diagnostics.ReportError(node->IdentifierToken, L"Methods cannot be declared inside of members");
+            }
+            else
+            {
+                Diagnostics.ReportError(node->IdentifierToken, L"Methods cannot be declared inside of UNKNOWN");
+            }
+
+            // Assert: extern Method cannot have body
+            if (symbol->IsExtern && node->Body != nullptr)
+                Diagnostics.ReportError(node->IdentifierToken, L"Methods marked as 'extern' cannot have Body");
+
+            // Assert: Method should have body
+            if (!symbol->IsExtern && node->Body == nullptr)
+                Diagnostics.ReportError(node->IdentifierToken, L"Method should have a Body, as it's not marked as 'extern' or 'abstract'");
         }
 
         uint16_t baseIndex = symbol->IsStatic ? 0 : 1;

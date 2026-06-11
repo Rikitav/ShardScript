@@ -970,9 +970,16 @@ ParametersListSyntax *const SourceParser::ReadParametersList(SourceProvider& rea
 			reader.Consume();
 		}
 
-		Expect(reader, TokenType::Colon, L"Expected ':' after parameter name");
-		TypeSyntax *const type = ReadType(reader, syntax);
+		if (reader.Current().Type == TokenType::Colon)
+		{
+			reader.Consume();
+		}
+		else
+		{
+			Diagnostics.ReportError(reader.Current(), L"Expected ':' after parameter name. Use 'name: type' syntax, not C-style 'type name'.");
+		}
 
+		TypeSyntax *const type = ReadType(reader, syntax);
 		ParameterSyntax *const param = new ParameterSyntax(type, identifierToken, syntax);
 		syntax->Parameters.push_back(param);
 
