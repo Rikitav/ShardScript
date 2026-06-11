@@ -187,8 +187,8 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		case OpCode::STOREFIELD:
 		{
 			FieldSymbol* field = decoder.AbsorbFieldSymbol();
-			ObjectInstance* fieldValue = frame->PopStack();
 			ObjectInstance* instance = frame->PopStack();
+			ObjectInstance* fieldValue = frame->PopStack();
 
 			instance->SetField(field, fieldValue, frame);
 			garbageCollector.CollectInstance(fieldValue);
@@ -445,13 +445,11 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 		throw std::runtime_error("Execution aborted by host.");
 
 	CallStackFrame* callingFrame = currentFrame->PreviousFrame;
-	currentFrame->EvalStack.reserve(static_cast<size_t>(method->GetEvalStackLocalsCount()) * 2);
+	currentFrame->EvalStack.reserve(static_cast<size_t>(method->GetEvalStackLocalsCount()));
 
-	size_t argsCount = method->Parameters.size();
-	if (!method->IsStatic)
-		argsCount += 1;
-
+	size_t argsCount = method->GetEvalStackArgumentsCount();
 	ObjectInstance* thisInstance = nullptr;
+
 	for (size_t i = 0; i < argsCount; i++)
 	{
 		ObjectInstance* argument = callingFrame->PopStack();
@@ -464,17 +462,15 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 
 	if (thisInstance != nullptr)
 	{
-		currentFrame->WithinType = const_cast<TypeSymbol*>(thisInstance->Info);
-
-		if (currentFrame->TypeArguments.empty() && thisInstance->Info->Kind == SyntaxKind::GenericType)
+		currentFrame->WithinType = const_cast<TypeSymbol*>(thisInstance->getInfo());
+		if (currentFrame->TypeArguments.empty() && thisInstance->getInfo()->Kind == SyntaxKind::GenericType)
 		{
-			GenericTypeSymbol* genericInfo = const_cast<GenericTypeSymbol*>(static_cast<const GenericTypeSymbol*>(thisInstance->Info));
+			GenericTypeSymbol* genericInfo = const_cast<GenericTypeSymbol*>(static_cast<const GenericTypeSymbol*>(thisInstance->getInfo()));
 			TypeSymbol* underlyingType = genericInfo->UnderlayingType;
+
 			currentFrame->TypeArguments.resize(underlyingType->TypeParameters.size());
 			for (size_t i = 0; i < underlyingType->TypeParameters.size(); i++)
-			{
 				currentFrame->TypeArguments[i] = genericInfo->SubstituteTypeParameters(underlyingType->TypeParameters[i]);
-			}
 		}
 	}
 
@@ -498,7 +494,7 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 				ProcessCode(currentFrame, decoder, opCode);
 			}
 
-			if (method->ReturnType != SymbolTable::Primitives::Void)
+			if (method->ReturnType != nullptr && method->ReturnType != SymbolTable::Primitives::Void)
 			{
 				callingFrame->PushStack(currentFrame->PopStack());
 			}
@@ -527,7 +523,7 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 				};
 
 				ObjectInstance* retReg = method->FunctionPointer(context);
-				if (method->ReturnType != SymbolTable::Primitives::Void)
+				if (method->ReturnType != nullptr && method->ReturnType != SymbolTable::Primitives::Void)
 				{
 					if (retReg == nullptr)
 						throw std::runtime_error("method returned nullptr (void), when expected instance");
@@ -589,7 +585,7 @@ ObjectInstance* VirtualMachine::InstantiateObject(TypeSymbol* type, ConstructorS
 	}
 
 	callingFrame->PushStack(newInstance);
-
+	
 	CallStackFrame* currentFrame = PushFrame(ctor, type);
 	newInstance->IncrementReference();
 

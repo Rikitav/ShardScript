@@ -40,25 +40,25 @@ PrimitiveMathModule::PrimitiveMathModule(GarbageCollector& gc) : garbageCollecto
 
 ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(ObjectInstance* leftInstance, TokenType opToken, ObjectInstance* rightInstance)
 {
-	if (leftInstance->Info == SymbolTable::Primitives::Boolean)
+	if (leftInstance->getInfo() == SymbolTable::Primitives::Boolean)
 	{
 		bool leftData = leftInstance->AsBoolean();
 		return EvaluateBinaryOperator(leftData, opToken, rightInstance);
 	}
 
-	if (leftInstance->Info == SymbolTable::Primitives::Integer)
+	if (leftInstance->getInfo() == SymbolTable::Primitives::Integer)
 	{
 		int64_t leftData = leftInstance->AsInteger();
 		return EvaluateBinaryOperator(leftData, opToken, rightInstance);
 	}
 
-	if (leftInstance->Info == SymbolTable::Primitives::Char)
+	if (leftInstance->getInfo() == SymbolTable::Primitives::Char)
 	{
 		wchar_t leftData = leftInstance->AsCharacter();
 		return EvaluateBinaryOperator(leftData, opToken, rightInstance);
 	}
 
-	if (leftInstance->Info == SymbolTable::Primitives::String)
+	if (leftInstance->getInfo() == SymbolTable::Primitives::String)
 	{
 		const wchar_t* leftData = leftInstance->AsString();
 		return EvaluateBinaryOperator(leftData, opToken, rightInstance);
@@ -69,7 +69,7 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(ObjectInstance* left
 
 ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(bool leftData, TokenType opToken, ObjectInstance* rightInstance)
 {
-	if (rightInstance->Info == SymbolTable::Primitives::Boolean)
+	if (rightInstance->getInfo() == SymbolTable::Primitives::Boolean)
 	{
 		bool rightData = rightInstance->AsBoolean();
 		switch (opToken)
@@ -99,7 +99,7 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(bool leftData, Token
 
 ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(int64_t leftData, TokenType opToken, ObjectInstance* rightInstance)
 {
-	if (rightInstance->Info == SymbolTable::Primitives::Integer)
+	if (rightInstance->getInfo() == SymbolTable::Primitives::Integer)
 	{
 		int64_t rightData = rightInstance->AsInteger();
 		switch (opToken)
@@ -167,7 +167,7 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(int64_t leftData, To
 
 ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(wchar_t leftData, TokenType opToken, ObjectInstance* rightInstance)
 {
-	if (rightInstance->Info == SymbolTable::Primitives::Integer)
+	if (rightInstance->getInfo() == SymbolTable::Primitives::Integer)
 	{
 		int64_t rightData = rightInstance->AsInteger();
 		switch (opToken)
@@ -210,7 +210,7 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(wchar_t leftData, To
 		}
 	}
 
-	if (rightInstance->Info == SymbolTable::Primitives::Char)
+	if (rightInstance->getInfo() == SymbolTable::Primitives::Char)
 	{
 		wchar_t rightData = rightInstance->AsCharacter();
 		switch (opToken)
@@ -233,7 +233,7 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(wchar_t leftData, To
 		}
 	}
 
-	if (rightInstance->Info == SymbolTable::Primitives::String)
+	if (rightInstance->getInfo() == SymbolTable::Primitives::String)
 	{
 		const wchar_t* rightData = rightInstance->AsString();
 		switch (opToken)
@@ -256,7 +256,7 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(wchar_t leftData, To
 
 ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(const wchar_t* leftData, TokenType opToken, ObjectInstance* rightInstance)
 {
-	if (rightInstance->Info == SymbolTable::Primitives::String)
+	if (rightInstance->getInfo() == SymbolTable::Primitives::String)
 	{
 		const wchar_t* rightData = rightInstance->AsString();
 		switch (opToken)
@@ -279,7 +279,7 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(const wchar_t* leftD
 		}
 	}
 
-	if (rightInstance->Info == SymbolTable::Primitives::Integer)
+	if (rightInstance->getInfo() == SymbolTable::Primitives::Integer)
 	{
 		int64_t rightData = rightInstance->AsInteger();
 		switch (opToken)
@@ -320,7 +320,7 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(const wchar_t* leftD
 		}
 	}
 
-	if (rightInstance->Info == SymbolTable::Primitives::Boolean)
+	if (rightInstance->getInfo() == SymbolTable::Primitives::Boolean)
 	{
 		bool rightData = rightInstance->AsBoolean();
 		switch (opToken)
@@ -338,7 +338,7 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(const wchar_t* leftD
 		}
 	}
 
-	if (rightInstance->Info == SymbolTable::Primitives::Char)
+	if (rightInstance->getInfo() == SymbolTable::Primitives::Char)
 	{
 		wchar_t rightData = rightInstance->AsCharacter();
 		switch (opToken)
@@ -361,19 +361,19 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(const wchar_t* leftD
 
 ObjectInstance* PrimitiveMathModule::EvaluateUnaryOperator(ObjectInstance* sourceInstance, TokenType opToken, bool rightDetermined)
 {
-	if (sourceInstance->Info == SymbolTable::Primitives::Boolean)
+	if (sourceInstance->getInfo() == SymbolTable::Primitives::Boolean)
 	{
 		bool data = sourceInstance->AsBoolean();
 		return EvaluateUnaryOperator(sourceInstance, data, opToken, rightDetermined);
 	}
 	
-	if (sourceInstance->Info == SymbolTable::Primitives::Integer)
+	if (sourceInstance->getInfo() == SymbolTable::Primitives::Integer)
 	{
 		int64_t data = sourceInstance->AsInteger();
 		return EvaluateUnaryOperator(sourceInstance, data, opToken, rightDetermined);
 	}
 	
-	if (sourceInstance->Info == SymbolTable::Primitives::String)
+	if (sourceInstance->getInfo() == SymbolTable::Primitives::String)
 	{
 		const wchar_t* data = sourceInstance->AsString();
 		return EvaluateUnaryOperator(sourceInstance, data, opToken, rightDetermined);

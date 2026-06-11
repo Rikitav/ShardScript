@@ -241,6 +241,12 @@ bool LexicalAnalyzer::ReadNextWord(std::wstring& word, TokenType& type)
 
 						continue;
 					}
+
+					default:
+					{
+						SourceText->ReadNext(Symbol);
+						continue;
+					}
 				}
 			}
 

@@ -754,8 +754,6 @@ void AbstractEmiter::VisitUnaryExpression(UnaryExpressionSyntax* const node)
 void AbstractEmiter::VisitUnaryAssignExpression(UnaryExpressionSyntax* const node)
 {
 	MemberAccessExpressionSyntax* memberExpression = static_cast<MemberAccessExpressionSyntax*>(node->Expression);
-	VisitExpression(memberExpression);
-	EmitUnaryOperation(node->OperatorToken.Type, Encoder, GeneratingFor->ExecutableByteCode, node->IsRightDetermined);
 
 	if (memberExpression->ToParameter)
 	{
@@ -771,6 +769,7 @@ void AbstractEmiter::VisitUnaryAssignExpression(UnaryExpressionSyntax* const nod
 
 	if (memberExpression->ToProperty != nullptr)
 	{
+		VisitExpression(memberExpression);
 		Encoder.EmitCallMethodSymbol(GeneratingFor->ExecutableByteCode, memberExpression->ToProperty->Setter);
 		return;
 	}
@@ -783,6 +782,7 @@ void AbstractEmiter::VisitUnaryAssignExpression(UnaryExpressionSyntax* const nod
 			return;
 		}
 
+		VisitExpression(memberExpression);
 		Encoder.EmitStoreField(GeneratingFor->ExecutableByteCode, memberExpression->ToField);
 		return;
 	}
@@ -804,9 +804,6 @@ void AbstractEmiter::VisitBinaryExpression(BinaryExpressionSyntax* const node)
 void AbstractEmiter::VisitBinaryAssignExpression(BinaryExpressionSyntax* const node)
 {
 	MemberAccessExpressionSyntax* memberExpression = static_cast<MemberAccessExpressionSyntax*>(node->Left);
-	VisitExpression(memberExpression);
-	EmitBinaryOperation(node->OperatorToken.Type, Encoder, GeneratingFor->ExecutableByteCode);
-
 	if (memberExpression->ToParameter)
 	{
 		Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, memberExpression->ToParameter->SlotIndex);
@@ -821,6 +818,8 @@ void AbstractEmiter::VisitBinaryAssignExpression(BinaryExpressionSyntax* const n
 
 	if (memberExpression->ToProperty != nullptr)
 	{
+		VisitExpression(node->Right);
+		VisitExpression(memberExpression->PreviousExpression);
 		Encoder.EmitCallMethodSymbol(GeneratingFor->ExecutableByteCode, memberExpression->ToProperty->Setter);
 		return;
 	}
@@ -833,6 +832,8 @@ void AbstractEmiter::VisitBinaryAssignExpression(BinaryExpressionSyntax* const n
 			return;
 		}
 
+		VisitExpression(node->Right);
+		VisitExpression(memberExpression->PreviousExpression);
 		Encoder.EmitStoreField(GeneratingFor->ExecutableByteCode, memberExpression->ToField);
 		return;
 	}
@@ -871,8 +872,6 @@ void AbstractEmiter::VisitIndexatorExpression(IndexatorExpressionSyntax* const n
 
 void AbstractEmiter::VisitMemberAccessExpression(MemberAccessExpressionSyntax* const node)
 {
-	VisitExpression(node->PreviousExpression);
-
 	if (node->ToParameter != nullptr)
 	{
 		Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, node->ToParameter->SlotIndex);
@@ -893,12 +892,14 @@ void AbstractEmiter::VisitMemberAccessExpression(MemberAccessExpressionSyntax* c
 			return;
 		}
 
+		VisitExpression(node->PreviousExpression);
 		Encoder.EmitLoadField(GeneratingFor->ExecutableByteCode, node->ToField);
 		return;
 	}
 
 	if (node->ToProperty != nullptr)
 	{
+		VisitExpression(node->PreviousExpression);
 		Encoder.EmitCallMethodSymbol(GeneratingFor->ExecutableByteCode, node->ToProperty->Getter);
 		return;
 	}

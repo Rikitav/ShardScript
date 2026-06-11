@@ -58,9 +58,9 @@ namespace shard
 
         void OnSymbolDeclared(SyntaxSymbol* symbol) override;
 
-        virtual ConstructorSymbol* FindConstructor(std::vector<TypeSymbol*> parameterTypes);
-        virtual MethodSymbol* FindMethod(std::wstring& name, std::vector<TypeSymbol*> parameterTypes);
-        virtual IndexatorSymbol* FindIndexator(std::vector<TypeSymbol*> parameterTypes);
+        virtual ConstructorSymbol* FindConstructor(const std::vector<TypeSymbol*>& parameterTypes);
+        virtual MethodSymbol* FindMethod(std::wstring& name, const std::vector<TypeSymbol*>& parameterTypes);
+        virtual IndexatorSymbol* FindIndexator(const std::vector<TypeSymbol*>& parameterTypes);
         virtual FieldSymbol* FindField(std::wstring& name);
         virtual PropertySymbol* FindProperty(std::wstring& name);
 

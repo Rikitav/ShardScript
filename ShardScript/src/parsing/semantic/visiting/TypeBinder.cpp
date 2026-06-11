@@ -497,13 +497,14 @@ void TypeBinder::VisitIdentifierNameType(IdentifierNameTypeSyntax *const node)
 		return;
 	}
 
-	// Если это type parameter, возвращаем Any (пока нет ограничений)
 	if (symbol->Kind == SyntaxKind::TypeParameter)
 	{
 		TypeParameterSymbol* typeParamSymbol = static_cast<TypeParameterSymbol*>(symbol);
-		// Пока нет ограничений, возвращаем Any
-		// В будущем можно будет использовать typeParamSymbol->ConstraintType
 		node->Symbol = typeParamSymbol;
+		
+		if (!IsSymbolAccessible(typeParamSymbol, Table->GetSyntaxNode(typeParamSymbol), node))
+			Diagnostics.ReportError(node->Identifier, L"Symbol inaccessible");
+
 		return;
 	}
 
@@ -513,15 +514,14 @@ void TypeBinder::VisitIdentifierNameType(IdentifierNameTypeSyntax *const node)
 		return;
 	}
 
-	if (!IsSymbolAccessible(symbol, node, nullptr))
+	TypeSymbol* typeSymbol = static_cast<TypeSymbol*>(symbol);
+	node->Symbol = typeSymbol;
+
+	if (!IsSymbolAccessible(symbol, Table->GetSyntaxNode(symbol), node))
 	{
 		Diagnostics.ReportError(node->Identifier, L"Symbol inaccessible");
 		return;
 	}
-
-	TypeSymbol* typeSymbol = static_cast<TypeSymbol*>(symbol);
-	//Table->BindSymbol(typeSyntax, typeSymbol);
-	node->Symbol = typeSymbol;
 }
 
 void TypeBinder::VisitArrayType(ArrayTypeSyntax *const node)

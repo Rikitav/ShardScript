@@ -21,50 +21,50 @@ static const HANDLE stdOut = GetStdHandle(STD_OUTPUT_HANDLE);
 
 void ConsoleHelper::Write(ObjectInstance* instance)
 {
-	if (instance->Info == SymbolTable::Primitives::Boolean)
+	if (instance->getInfo() == SymbolTable::Primitives::Boolean)
 	{
 		bool data = instance->AsBoolean();
 		Write(data);
 		return;
 	}
 
-	if (instance->Info == SymbolTable::Primitives::Integer)
+	if (instance->getInfo() == SymbolTable::Primitives::Integer)
 	{
 		int64_t data = instance->AsInteger();
 		Write(data);
 		return;
 	}
 
-	if (instance->Info == SymbolTable::Primitives::Double)
+	if (instance->getInfo() == SymbolTable::Primitives::Double)
 	{
 		double data = instance->AsDouble();
 		Write(data);
 		return;
 	}
 
-	if (instance->Info == SymbolTable::Primitives::Char)
+	if (instance->getInfo() == SymbolTable::Primitives::Char)
 	{
 		wchar_t data = instance->AsCharacter();
 		Write(data);
 		return;
 	}
 
-	if (instance->Info == SymbolTable::Primitives::String)
+	if (instance->getInfo() == SymbolTable::Primitives::String)
 	{
 		std::wstring data = instance->AsString();
 		Write(data);
 		return;
 	}
 
-	if (instance->Info->FullName.capacity() > 0)
+	if (instance->getInfo()->FullName.capacity() > 0)
 	{
-		Write(instance->Info->FullName);
+		Write(instance->getInfo()->FullName);
 		return;
 	}
 
-	if (instance->Info->Name.capacity() > 0)
+	if (instance->getInfo()->Name.capacity() > 0)
 	{
-		Write(instance->Info->Name);
+		Write(instance->getInfo()->Name);
 		return;
 	}
 

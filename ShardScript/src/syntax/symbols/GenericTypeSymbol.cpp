@@ -1,3 +1,5 @@
+#include <shard/syntax/SyntaxKind.hpp>
+
 #include <shard/syntax/symbols/GenericTypeSymbol.hpp>
 #include <shard/syntax/symbols/FieldSymbol.hpp>
 #include <shard/syntax/symbols/MethodSymbol.hpp>
@@ -6,8 +8,6 @@
 #include <shard/syntax/symbols/IndexatorSymbol.hpp>
 #include <shard/syntax/symbols/ParameterSymbol.hpp>
 #include <shard/syntax/symbols/TypeParameterSymbol.hpp>
-
-#include <shard/syntax/SyntaxKind.hpp>
 
 #include <shard/parsing/semantic/SymbolTable.hpp>
 
@@ -28,7 +28,7 @@ TypeSymbol* GenericTypeSymbol::SubstituteTypeParameters(TypeParameterSymbol* typ
 	return find == _typeParametersMap.end() ? nullptr : find->second;
 }
 
-MethodSymbol* GenericTypeSymbol::FindMethod(std::wstring& name, std::vector<TypeSymbol*> parameterTypes)
+MethodSymbol* GenericTypeSymbol::FindMethod(std::wstring& name, const std::vector<TypeSymbol*>& parameterTypes)
 {
 	static const auto predicate = [this](ParameterSymbol* left, TypeSymbol* right)
 	{
@@ -57,7 +57,7 @@ MethodSymbol* GenericTypeSymbol::FindMethod(std::wstring& name, std::vector<Type
 	return nullptr;
 }
 
-IndexatorSymbol* GenericTypeSymbol::FindIndexator(std::vector<TypeSymbol*> parameterTypes)
+IndexatorSymbol* GenericTypeSymbol::FindIndexator(const std::vector<TypeSymbol*>& parameterTypes)
 {
 	static const auto predicate = [this](ParameterSymbol* left, TypeSymbol* right)
 	{

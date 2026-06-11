@@ -16,11 +16,22 @@ void ProgramDisassembler::Disassemble(std::wostream& out, ProgramVirtualImage& p
         return;
     }
 
-    ByteCodeDecoder decoder(program.EntryPoint->ExecutableByteCode);
+    Disassemble(out, program.EntryPoint);
+}
 
+void ProgramDisassembler::Disassemble(std::wostream& out, MethodSymbol* method)
+{
     out << L"; --- DISASSEMBLY START ---\n";
-    out << L"; Method: " << program.EntryPoint->Name << L"\n\n";
+    out << L"; Method: " << method->FullName << L"\n\n";
 
+    if (method->HandleType == MethodHandleType::External)
+    {
+		out << L"; Method " << method->FullName << L" is an external method. No bytecode to disassemble.\n";
+        out << L"; --- DISASSEMBLY END ---\n";
+		return;
+    }
+
+    ByteCodeDecoder decoder(method->ExecutableByteCode);
     while (!decoder.IsEOF())
     {
         size_t currentOffset = decoder.Index();

@@ -254,9 +254,15 @@ void ExpressionBinder::VisitConstructorDeclaration(ConstructorDeclarationSyntax 
 	{
 		PushScope(symbol);
 
-		Declare(new VariableSymbol(L"this", ownerType));
+		if (!symbol->IsStatic) // how tf not?
+			Declare(new VariableSymbol(L"this", ownerType));
+
+		int counter = symbol->IsStatic ? 0 : 1;
 		for (ParameterSymbol* parameter : symbol->Parameters)
-			Declare(new VariableSymbol(parameter->Name, parameter->Type));
+		{
+			parameter->SlotIndex = counter++;
+			Declare(parameter);
+		}
 
 		CurrentScope()->ReturnFound = false;
 		VisitStatementsBlock(node->Body);
@@ -288,8 +294,12 @@ void ExpressionBinder::VisitMethodDeclaration(MethodDeclarationSyntax *const nod
 	if (!symbol->IsStatic)
 		Declare(new VariableSymbol(L"this", ownerType));
 
+	int counter = symbol->IsStatic ? 0 : 1;
 	for (ParameterSymbol* parameter : symbol->Parameters)
-		Declare(new VariableSymbol(parameter->Name, parameter->Type));
+	{
+		parameter->SlotIndex = counter++;
+		Declare(parameter);
+	}
 
 	if (node->Body != nullptr)
 	{
@@ -367,12 +377,16 @@ void ExpressionBinder::VisitAccessorDeclaration(AccessorDeclarationSyntax *const
 	if (node->KeywordToken.Type == TokenType::GetKeyword)
 	{
 		// Getter
-		for (ParameterSymbol* param : symbol->Parameters)
-			Declare(param);
-
 		PropertySymbol* propSymbol = static_cast<PropertySymbol*>(symbol->Parent);
 		if (!symbol->IsStatic)
 			Declare(new ParameterSymbol(L"this", static_cast<TypeSymbol*>(propSymbol->Parent)));
+
+		int counter = symbol->IsStatic ? 0 : 1;
+		for (ParameterSymbol* parameter : symbol->Parameters)
+		{
+			parameter->SlotIndex = counter++;
+			Declare(parameter);
+		}
 
 		if (node->Body != nullptr)
 		{
@@ -390,13 +404,17 @@ void ExpressionBinder::VisitAccessorDeclaration(AccessorDeclarationSyntax *const
 	else if (node->KeywordToken.Type == TokenType::SetKeyword)
 	{
 		// Setter
-		for (ParameterSymbol* param : symbol->Parameters)
-			Declare(param);
-
 		PropertySymbol* propSymbol = static_cast<PropertySymbol*>(symbol->Parent);
 
 		if (!symbol->IsStatic)
 			Declare(new ParameterSymbol(L"this", static_cast<TypeSymbol*>(propSymbol->Parent)));
+
+		int counter = symbol->IsStatic ? 0 : 1;
+		for (ParameterSymbol* parameter : symbol->Parameters)
+		{
+			parameter->SlotIndex = counter++;
+			Declare(parameter);
+		}
 
 		if (node->Body != nullptr)
 		{
@@ -736,24 +754,20 @@ TypeSymbol* ExpressionBinder::AnalyzeObjectExpression(ObjectExpressionSyntax *co
 	std::wstring methodName = node->IdentifierToken.Word;
 	ConstructorSymbol* method = ResolveConstructor(node);
 	if (method == nullptr)
-		return nullptr;
+		return node->TypeSymbol;
 
 	if (!IsSymbolAccessible(method, Table->GetSyntaxNode(method), node))
 	{
 		Diagnostics.ReportError(node->IdentifierToken, L"Method '" + methodName + L"' is not accessible");
-		return nullptr;
+		return node->TypeSymbol;
 	}
 
-	// Передаем genericType для замены type parameters в параметрах конструктора
 	GenericTypeSymbol* genericType = nullptr;
 	if (node->TypeSymbol->Kind == SyntaxKind::GenericType)
 		genericType = static_cast<GenericTypeSymbol*>(node->TypeSymbol);
 
 	if (!MatchMethodArguments(method->Parameters, node->ArgumentsList->Arguments, genericType))
-	{
-		//Diagnostics.ReportError(node->IdentifierToken, L"Method '" + methodName + L"' argument types do not match");
-		return nullptr;
-	}
+		return node->TypeSymbol;
 
 	node->CtorSymbol = method;
 	return node->TypeSymbol;
@@ -1016,18 +1030,16 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 		if (node->IdentifierToken.Type == TokenType::FieldKeyword)
 			return AnalyzeFieldKeywordExpression(node, nullptr);
 
-		std::wstring name = node->IdentifierToken.Word;
-		symbol = CurrentScope()->Lookup(name);
-
+		symbol = CurrentScope()->Lookup(memberName);
 		if (symbol == nullptr)
 		{
-			Diagnostics.ReportError(node->IdentifierToken, L"Symbol '" + name + L"' not found in current scope");
+			Diagnostics.ReportError(node->IdentifierToken, L"Symbol '" + memberName + L"' not found in current scope");
 			return nullptr;
 		}
 
 		if (!IsSymbolAccessible(symbol, Table->GetSyntaxNode(symbol), node))
 		{
-			Diagnostics.ReportError(node->IdentifierToken, L"Symbol '" + name + L"' is not accessible");
+			Diagnostics.ReportError(node->IdentifierToken, L"Symbol '" + memberName + L"' is not accessible");
 			return nullptr;
 		}
 
@@ -1106,24 +1118,8 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 		case SyntaxKind::FieldDeclaration:
 		{
 			FieldSymbol* fieldSymbol = static_cast<FieldSymbol*>(symbol);
-			bool isStaticContext = GetIsStaticContext(node->PreviousExpression);
-
-			if (isStaticContext && !fieldSymbol->IsStatic)
-			{
-				Diagnostics.ReportError(node->IdentifierToken, L"Cannot access instance field '" + fieldSymbol->FullName + L"' from type context");
-				return nullptr;
-			}
-
-			if (!isStaticContext && fieldSymbol->IsStatic)
-			{
-				Diagnostics.ReportError(node->IdentifierToken, L"Cannot access static field '" + fieldSymbol->FullName + L"' from instance reference");
-				return nullptr;
-			}
-
-			node->IsStaticContext = false;
-			node->ToField = fieldSymbol;
-
 			TypeSymbol* fieldType = fieldSymbol->ReturnType;
+			
 			if (fieldType->Kind == SyntaxKind::TypeParameter)
 			{
 				if (currentType->Kind == SyntaxKind::GenericType)
@@ -1132,7 +1128,17 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 					fieldType = SubstituteTypeParameters(fieldType, genericType);
 				}
 			}
-			
+
+			node->IsStaticContext = false;
+			node->ToField = fieldSymbol;
+
+			bool isStaticContext = GetIsStaticContext(node->PreviousExpression);
+			if (isStaticContext && !fieldSymbol->IsStatic)
+				Diagnostics.ReportError(node->IdentifierToken, L"Cannot access instance field '" + fieldSymbol->FullName + L"' from type context");
+
+			if (!isStaticContext && fieldSymbol->IsStatic)
+				Diagnostics.ReportError(node->IdentifierToken, L"Cannot access static field '" + fieldSymbol->FullName + L"' from instance reference");
+
 			return fieldType;
 		}
 

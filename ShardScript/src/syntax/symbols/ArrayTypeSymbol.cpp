@@ -11,17 +11,17 @@
 
 using namespace shard;
 
-ConstructorSymbol* ArrayTypeSymbol::FindConstructor(std::vector<TypeSymbol*> parameterTypes)
+ConstructorSymbol* ArrayTypeSymbol::FindConstructor(const std::vector<TypeSymbol*>& parameterTypes)
 {
 	return SymbolTable::Primitives::Array->FindConstructor(parameterTypes);
 }
 
-MethodSymbol* ArrayTypeSymbol::FindMethod(std::wstring& name, std::vector<TypeSymbol*> parameterTypes)
+MethodSymbol* ArrayTypeSymbol::FindMethod(std::wstring& name, const std::vector<TypeSymbol*>& parameterTypes)
 {
 	return SymbolTable::Primitives::Array->FindMethod(name, parameterTypes);
 }
 
-IndexatorSymbol* ArrayTypeSymbol::FindIndexator(std::vector<TypeSymbol*> parameterTypes)
+IndexatorSymbol* ArrayTypeSymbol::FindIndexator(const std::vector<TypeSymbol*>& parameterTypes)
 {
 	return SymbolTable::Primitives::Array->FindIndexator(parameterTypes);
 }

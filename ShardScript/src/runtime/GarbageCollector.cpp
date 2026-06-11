@@ -56,8 +56,7 @@ ObjectInstance* GarbageCollector::FromValue(wchar_t value)
 
 ObjectInstance* GarbageCollector::FromValue(const wchar_t* value, bool isTransient)
 {
-	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String);
-	*(const_cast<bool*>(&instance->IsTransient)) = isTransient;
+	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String, isTransient);
 
 	instance->WriteInteger(wcslen(value));
 	instance->WriteMemory(sizeof(int64_t), sizeof(wchar_t*), &value);
@@ -66,8 +65,7 @@ ObjectInstance* GarbageCollector::FromValue(const wchar_t* value, bool isTransie
 
 ObjectInstance* GarbageCollector::FromValue(const std::wstring& value)
 {
-	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String);
-	*(const_cast<bool*>(&instance->IsTransient)) = false;
+	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String, false);
 
 	size_t length = value.size();
 	size_t size = length * sizeof(wchar_t) + sizeof(wchar_t);
@@ -121,7 +119,7 @@ void GarbageCollector::SetStaticField(FieldSymbol* field, ObjectInstance* instan
 	staticFields[field] = CopyInstance(instance);
 }
 
-ObjectInstance* GarbageCollector::AllocateInstance(const TypeSymbol* objectInfo)
+ObjectInstance* GarbageCollector::AllocateInstance(const TypeSymbol* objectInfo, bool isTransient)
 {
 	if (objectInfo == nullptr)
 		throw std::runtime_error("objectInfo is nullptr");
@@ -139,7 +137,7 @@ ObjectInstance* GarbageCollector::AllocateInstance(const TypeSymbol* objectInfo)
 		std::memset(rawMemory, 0, objectInfo->MemoryBytesSize);
 	}
 
-	ObjectInstance* instance = new ObjectInstance(objectInfo, rawMemory, false);
+	ObjectInstance* instance = new ObjectInstance(objectInfo, rawMemory, isTransient);
 	Heap.add(instance);
 	return instance;
 }
@@ -152,16 +150,16 @@ ObjectInstance* GarbageCollector::CopyInstance(ObjectInstance* instance)
 	if (instance == NullInstance)
 		return instance;
 
-	if (instance->Info->IsReferenceType)
+	if (instance->getInfo()->IsReferenceType)
 	{
 		instance->IncrementReference();
 		return instance;
 	}
 
-	ObjectInstance* newInstance = GarbageCollector::AllocateInstance(instance->Info);
-	newInstance->WriteMemory(0, instance->Info->MemoryBytesSize, instance->GetObjectMemory());
+	ObjectInstance* newInstance = GarbageCollector::AllocateInstance(instance->getInfo());
+	newInstance->WriteMemory(0, instance->getInfo()->MemoryBytesSize, instance->getMemory());
 	
-	TypeSymbol* fieldOwner = const_cast<TypeSymbol*>(instance->Info);
+	TypeSymbol* fieldOwner = const_cast<TypeSymbol*>(instance->getInfo());
 	if (fieldOwner->Kind == SyntaxKind::GenericType)
 		fieldOwner = static_cast<GenericTypeSymbol*>(fieldOwner)->UnderlayingType;
 
@@ -185,7 +183,7 @@ void GarbageCollector::CollectInstance(ObjectInstance* instance)
 	if (instance == NullInstance)
 		return;
 
-	if (instance->ReferencesCounter > 0)
+	if (instance->getReferencesCounter() > 0)
 		return;
 
 	Heap.erase(instance);
@@ -201,7 +199,7 @@ void GarbageCollector::DestroyInstance(ObjectInstance* instance)
 		return;
 
 	instance->DecrementReference();
-	if (instance->ReferencesCounter > 0)
+	if (instance->getReferencesCounter() > 0)
 		return;
 
 	Heap.erase(instance);
@@ -216,7 +214,7 @@ void GarbageCollector::TerminateInstance(ObjectInstance* instance)
 	if (instance == NullInstance)
 		return;
 
-	TypeSymbol* fieldOwner = const_cast<TypeSymbol*>(instance->Info);
+	TypeSymbol* fieldOwner = const_cast<TypeSymbol*>(instance->getInfo());
 	if (fieldOwner->Kind == SyntaxKind::GenericType)
 		fieldOwner = static_cast<GenericTypeSymbol*>(fieldOwner)->UnderlayingType;
 
@@ -226,9 +224,9 @@ void GarbageCollector::TerminateInstance(ObjectInstance* instance)
 			DestroyInstance(instance->GetField(field));
 	}
 
-	if (instance->Info->Kind == SyntaxKind::ArrayType)
+	if (instance->getInfo()->Kind == SyntaxKind::ArrayType)
 	{
-		const ArrayTypeSymbol* array = static_cast<const ArrayTypeSymbol*>(instance->Info);
+		const ArrayTypeSymbol* array = static_cast<const ArrayTypeSymbol*>(instance->getInfo());
 		for (size_t i = 0; i < array->Size; i++)
 		{
 			ObjectInstance* element = instance->GetElement(i);
@@ -236,16 +234,16 @@ void GarbageCollector::TerminateInstance(ObjectInstance* instance)
 		}
 	}
 
-	if (!instance->IsTransient)
+	if (!instance->getIsTransient())
 	{
-		if (instance->Info == SymbolTable::Primitives::String)
+		if (instance->getInfo() == SymbolTable::Primitives::String)
 		{
 			void* stringPtr = instance->OffsetMemory(sizeof(int64_t), sizeof(wchar_t*));
 			wchar_t* stringData = *static_cast<wchar_t**>(stringPtr);
 			free(stringData);
 		}
 
-		free(instance->Memory);
+		free(instance->getMemory());
 	}
 
 	delete instance;

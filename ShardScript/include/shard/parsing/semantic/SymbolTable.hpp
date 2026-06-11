@@ -34,6 +34,7 @@ namespace shard
         std::unordered_map<SyntaxSymbol*, SyntaxNode*> symbolToNodeMap;
         std::vector<NamespaceSymbol*> namespacesList;
         std::vector<TypeSymbol*> typesList;
+        std::vector<MethodSymbol*> methodsList;
 
     public:
         struct Global
@@ -67,5 +68,6 @@ namespace shard
 
         const std::vector<NamespaceSymbol*> GetNamespaceSymbols();
         const std::vector<TypeSymbol*> GetTypeSymbols();
+        const std::vector<MethodSymbol*> GetMethodSymbols();
     };
 }

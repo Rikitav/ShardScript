@@ -38,8 +38,8 @@ namespace shard
 		void AddTypeParameter(TypeParameterSymbol* typeParam, TypeSymbol* constraintType);
 		TypeSymbol* SubstituteTypeParameters(TypeParameterSymbol* typeParam);
 
-		MethodSymbol* FindMethod(std::wstring& name, std::vector<TypeSymbol*> parameterTypes) override;
-		IndexatorSymbol* FindIndexator(std::vector<TypeSymbol*> parameterTypes) override;
+		MethodSymbol* FindMethod(std::wstring& name, const std::vector<TypeSymbol*>& parameterTypes) override;
+		IndexatorSymbol* FindIndexator(const std::vector<TypeSymbol*>& parameterTypes) override;
 		FieldSymbol* FindField(std::wstring& name) override;
 		PropertySymbol* FindProperty(std::wstring& name) override;
 	};

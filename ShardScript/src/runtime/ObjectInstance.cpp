@@ -19,6 +19,26 @@
 
 using namespace shard;
 
+const TypeSymbol* ObjectInstance::getInfo() const
+{
+	return Info;
+}
+
+bool shard::ObjectInstance::getIsTransient() const
+{
+	return IsTransient;
+}
+
+void* ObjectInstance::getMemory() const
+{
+	return Memory;
+}
+
+fpos_t ObjectInstance::getReferencesCounter() const
+{
+	return ReferencesCounter;
+}
+
 ObjectInstance* ObjectInstance::GetField(FieldSymbol* field, CallStackFrame* frame)
 {
 	TypeSymbol* fieldType = field->ReturnType;
@@ -80,7 +100,7 @@ void ObjectInstance::SetField(FieldSymbol* field, ObjectInstance* instance, Call
 		if (instance == GarbageCollector::NullInstance)
 			throw std::runtime_error("cannot write null value to ValueType field");
 		
-		WriteMemory(field->MemoryBytesOffset, fieldType->GetInlineSize(), instance->GetObjectMemory());
+		WriteMemory(field->MemoryBytesOffset, fieldType->GetInlineSize(), instance->getMemory());
 	}
 }
 
@@ -138,7 +158,7 @@ void ObjectInstance::SetElement(size_t index, ObjectInstance* instance, CallStac
 		if (instance == GarbageCollector::NullInstance)
 			throw std::runtime_error("cannot write null value to ValueType field");
 
-		WriteMemory(memoryOffset, type->MemoryBytesSize, instance->GetObjectMemory());
+		WriteMemory(memoryOffset, type->MemoryBytesSize, instance->getMemory());
 	}
 }
 
@@ -167,11 +187,6 @@ void ObjectInstance::DecrementReference()
 	ReferencesCounter -= 1;
 }
 
-void* ObjectInstance::GetObjectMemory() const
-{
-	return Memory;
-}
-
 void* ObjectInstance::OffsetMemory(const size_t offset, const size_t size) const
 {
 	if (size == 0)
@@ -180,7 +195,7 @@ void* ObjectInstance::OffsetMemory(const size_t offset, const size_t size) const
 	if (offset + size > Info->MemoryBytesSize)
 		throw std::out_of_range("offset (" + std::to_string(offset) + ") + size (" + std::to_string(size) + ") is out of instance's memory range (" + std::to_string(Info->MemoryBytesSize) + ").");
 
-	return static_cast<char*>(GetObjectMemory()) + offset;
+	return static_cast<char*>(getMemory()) + offset;
 }
 
 void ObjectInstance::ReadMemory(const size_t offset, const size_t size, void* dst) const
@@ -194,7 +209,7 @@ void ObjectInstance::ReadMemory(const size_t offset, const size_t size, void* ds
 	if (offset + size > Info->MemoryBytesSize)
 		throw std::out_of_range("offset (" + std::to_string(offset) + ") + size (" + std::to_string(size) + ") is out of instance's memory range (" + std::to_string(Info->MemoryBytesSize) + ").");
 
-	const char* memOffset = static_cast<char*>(GetObjectMemory()) + offset;
+	const char* memOffset = static_cast<char*>(getMemory()) + offset;
 	memcpy(dst, memOffset, size);
 }
 
@@ -209,7 +224,7 @@ void ObjectInstance::WriteMemory(const size_t offset, const size_t size, const v
 	if (offset + size > Info->MemoryBytesSize)
 		throw std::out_of_range("offset (" + std::to_string(offset) + ") + size (" + std::to_string(size) + ") is out of instance's memory range (" + std::to_string(Info->MemoryBytesSize) + ").");
 
-	char* memOffset = static_cast<char*>(GetObjectMemory()) + offset;
+	char* memOffset = static_cast<char*>(getMemory()) + offset;
 	memcpy(memOffset, src, size);
 }
 
@@ -256,22 +271,22 @@ void ObjectInstance::WriteString(const std::wstring& value) const
 
 bool& ObjectInstance::AsBoolean() const
 {
-	return *reinterpret_cast<bool*>(GetObjectMemory());
+	return *reinterpret_cast<bool*>(getMemory());
 }
 
 int64_t& ObjectInstance::AsInteger() const
 {
-	return *reinterpret_cast<int64_t*>(GetObjectMemory());
+	return *reinterpret_cast<int64_t*>(getMemory());
 }
 
 double& ObjectInstance::AsDouble() const
 {
-	return *reinterpret_cast<double*>(GetObjectMemory());
+	return *reinterpret_cast<double*>(getMemory());
 }
 
 wchar_t& ObjectInstance::AsCharacter() const
 {
-	return *reinterpret_cast<wchar_t*>(GetObjectMemory());
+	return *reinterpret_cast<wchar_t*>(getMemory());
 }
 
 const wchar_t* ObjectInstance::AsString() const
