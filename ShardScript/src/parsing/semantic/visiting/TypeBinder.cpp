@@ -75,8 +75,11 @@ static void BindParametersList(ParametersListSyntax *const node, std::vector<Par
 		ParameterSyntax* paramSyntax = node->Parameters[i];
 		ParameterSymbol* paramSymbol = symbols[i];
 
-		if (paramSyntax->Type->Symbol != nullptr)
-			paramSymbol->Type = paramSyntax->Type->Symbol;
+		if (paramSyntax->Type != nullptr)
+		{
+			if (paramSyntax->Type->Symbol != nullptr)
+				paramSymbol->Type = paramSyntax->Type->Symbol;
+		}
 	}
 }
 
@@ -91,6 +94,7 @@ void TypeBinder::VisitCompilationUnit(CompilationUnitSyntax *const node)
 		NamespaceSymbol* symbol = LookupSymbol<NamespaceSymbol>(node->Namespace);
 		if (symbol == nullptr)
 			throw std::runtime_error("symbol not found");
+
 		Declare(symbol);
 		PushScope(symbol);
 	}
@@ -393,9 +397,17 @@ void TypeBinder::VisitParameter(ParameterSyntax *const node)
 	ParameterSymbol* paramSymbol = new ParameterSymbol(node->Identifier.Word);
 	Table->BindSymbol(node, paramSymbol);
 
-	TypeSyntax* type = const_cast<TypeSyntax*>(node->Type);
-	VisitType(type);
-	node->Symbol = paramSymbol->Type = type->Symbol;
+	if (node->Type != nullptr)
+	{
+		TypeSyntax* type = const_cast<TypeSyntax*>(node->Type);
+		VisitType(type);
+
+		if (type->Symbol != nullptr)
+		{
+			node->Symbol = type->Symbol;
+			paramSymbol->Type = type->Symbol;
+		}
+	}
 }
 
 void TypeBinder::VisitPredefinedType(PredefinedTypeSyntax *const node)
@@ -501,7 +513,7 @@ void TypeBinder::VisitIdentifierNameType(IdentifierNameTypeSyntax *const node)
 		return;
 	}
 
-	if (!IsSymbolAccessible(symbol))
+	if (!IsSymbolAccessible(symbol, node, nullptr))
 	{
 		Diagnostics.ReportError(node->Identifier, L"Symbol inaccessible");
 		return;

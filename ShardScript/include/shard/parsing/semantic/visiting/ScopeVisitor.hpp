@@ -38,10 +38,8 @@ namespace shard
 		
 		SyntaxSymbol *const OwnerSymbol();
 		TypeSymbol *const OwnerType();
-		//NamespaceSymbol* OwnerNamespace();
-		//NamespaceNode* OwnerNamespaceNode();
 		MethodSymbol *const FindHostMethodSymbol();
 		
-		bool IsSymbolAccessible(SyntaxSymbol *const symbol);
+		bool IsSymbolAccessible(SyntaxSymbol *const symbol, SyntaxNode* symbolDeclaringNode, SyntaxNode* callSiteNode);
 	};
 }
