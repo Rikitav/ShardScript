@@ -12,7 +12,7 @@ namespace shard
 		{
 			ObjectInstance* listInstance = context.Args[0];
 
-			TypeSymbol* ownerType = const_cast<TypeSymbol*>(listInstance->Info);
+			TypeSymbol* ownerType = const_cast<TypeSymbol*>(listInstance->getInfo());
 			if (ownerType->Kind == SyntaxKind::GenericType)
 				ownerType = static_cast<GenericTypeSymbol*>(ownerType)->UnderlayingType;
 
@@ -35,13 +35,13 @@ namespace shard
 			ObjectInstance* listInstance = context.Args[0];
 			ObjectInstance* value = context.Args[1];
 
-			TypeSymbol* ownerType = const_cast<TypeSymbol*>(listInstance->Info);
+			TypeSymbol* ownerType = const_cast<TypeSymbol*>(listInstance->getInfo());
 			if (ownerType->Kind == SyntaxKind::GenericType)
 				ownerType = static_cast<GenericTypeSymbol*>(ownerType)->UnderlayingType;
 
 			FieldSymbol* arrayField = ownerType->Fields[0];
 			ObjectInstance* arrayInstance = listInstance->GetField(arrayField, context.Frame);
-			ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->Info));
+			ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->getInfo()));
 			TypeSymbol* concreteT = context.Frame->TypeArguments[0];
 
 			size_t currentSize = arrayType->Size;
@@ -71,13 +71,13 @@ namespace shard
 			ObjectInstance* listInstance = context.Args[0];
 			int64_t index = context.Args[1]->AsInteger();
 
-			TypeSymbol* ownerType = const_cast<TypeSymbol*>(listInstance->Info);
+			TypeSymbol* ownerType = const_cast<TypeSymbol*>(listInstance->getInfo());
 			if (ownerType->Kind == SyntaxKind::GenericType)
 				ownerType = static_cast<GenericTypeSymbol*>(ownerType)->UnderlayingType;
 
 			FieldSymbol* arrayField = ownerType->Fields[0];
 			ObjectInstance* arrayInstance = listInstance->GetField(arrayField, context.Frame);
-			ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->Info));
+			ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->getInfo()));
 
 			if (index < 0 || static_cast<size_t>(index) >= arrayType->Size)
 				throw std::runtime_error("index is out of bounds");
@@ -90,13 +90,13 @@ namespace shard
 			ObjectInstance* listInstance = context.Args[0];
 			int64_t index = context.Args[1]->AsInteger();
 
-			TypeSymbol* ownerType = const_cast<TypeSymbol*>(listInstance->Info);
+			TypeSymbol* ownerType = const_cast<TypeSymbol*>(listInstance->getInfo());
 			if (ownerType->Kind == SyntaxKind::GenericType)
 				ownerType = static_cast<GenericTypeSymbol*>(ownerType)->UnderlayingType;
 
 			FieldSymbol* arrayField = ownerType->Fields[0];
 			ObjectInstance* arrayInstance = listInstance->GetField(arrayField, context.Frame);
-			ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->Info));
+			ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->getInfo()));
 			TypeSymbol* concreteT = context.Frame->TypeArguments[0];
 
 			if (index < 0 || static_cast<size_t>(index) >= arrayType->Size)
@@ -131,7 +131,7 @@ namespace shard
 		{
 			ObjectInstance* listInstance = context.Args[0];
 
-			TypeSymbol* ownerType = const_cast<TypeSymbol*>(listInstance->Info);
+			TypeSymbol* ownerType = const_cast<TypeSymbol*>(listInstance->getInfo());
 			if (ownerType->Kind == SyntaxKind::GenericType)
 				ownerType = static_cast<GenericTypeSymbol*>(ownerType)->UnderlayingType;
 
@@ -153,13 +153,13 @@ namespace shard
 		{
 			ObjectInstance* listInstance = context.Args[0];
 
-			TypeSymbol* ownerType = const_cast<TypeSymbol*>(listInstance->Info);
+			TypeSymbol* ownerType = const_cast<TypeSymbol*>(listInstance->getInfo());
 			if (ownerType->Kind == SyntaxKind::GenericType)
 				ownerType = static_cast<GenericTypeSymbol*>(ownerType)->UnderlayingType;
 
 			FieldSymbol* arrayField = ownerType->Fields[0];
 			ObjectInstance* arrayInstance = listInstance->GetField(arrayField, context.Frame);
-			ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->Info));
+			ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->getInfo()));
 
 			return context.Collector.FromValue(static_cast<int64_t>(arrayType->Size));
 		}
@@ -169,13 +169,13 @@ namespace shard
 			ObjectInstance* listInstance = context.Args[0];
 			int64_t index = context.Args[1]->AsInteger();
 
-			TypeSymbol* ownerType = const_cast<TypeSymbol*>(listInstance->Info);
+			TypeSymbol* ownerType = const_cast<TypeSymbol*>(listInstance->getInfo());
 			if (ownerType->Kind == SyntaxKind::GenericType)
 				ownerType = static_cast<GenericTypeSymbol*>(ownerType)->UnderlayingType;
 
 			FieldSymbol* arrayField = ownerType->Fields[0];
 			ObjectInstance* arrayInstance = listInstance->GetField(arrayField, context.Frame);
-			ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->Info));
+			ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->getInfo()));
 
 			if (index < 0 || static_cast<size_t>(index) >= arrayType->Size)
 				throw std::runtime_error("index is out of bounds");
@@ -189,13 +189,13 @@ namespace shard
 			int64_t index = context.Args[1]->AsInteger();
 			ObjectInstance* value = context.Args[2];
 
-			TypeSymbol* ownerType = const_cast<TypeSymbol*>(listInstance->Info);
+			TypeSymbol* ownerType = const_cast<TypeSymbol*>(listInstance->getInfo());
 			if (ownerType->Kind == SyntaxKind::GenericType)
 				ownerType = static_cast<GenericTypeSymbol*>(ownerType)->UnderlayingType;
 
 			FieldSymbol* arrayField = ownerType->Fields[0];
 			ObjectInstance* arrayInstance = listInstance->GetField(arrayField, context.Frame);
-			ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->Info));
+			ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->getInfo()));
 
 			if (index < 0 || static_cast<size_t>(index) >= arrayType->Size)
 				throw std::runtime_error("index is out of bounds");

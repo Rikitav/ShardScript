@@ -77,6 +77,7 @@ void SymbolTable::ClearSymbols()
 	nodeToSymbolMap.clear();
 	namespacesList.clear();
 	typesList.clear();
+	methodsList.clear();
 }
 
 SyntaxSymbol *const SymbolTable::LookupSymbol(SyntaxNode *const node)
@@ -99,6 +100,9 @@ void SymbolTable::BindSymbol(SyntaxNode* node, SyntaxSymbol* symbol)
 	if (symbol->IsType())
 		typesList.push_back(static_cast<TypeSymbol*>(symbol));
 
+	if (symbol->Kind == SyntaxKind::MethodDeclaration || symbol->Kind == SyntaxKind::ConstructorDeclaration)
+		methodsList.push_back(static_cast<MethodSymbol*>(symbol));
+
 	if (symbol->Kind == SyntaxKind::NamespaceDeclaration)
 		namespacesList.push_back(static_cast<NamespaceSymbol*>(symbol));
 }
@@ -118,4 +122,9 @@ const std::vector<TypeSymbol*> SymbolTable::GetTypeSymbols()
 	*/
 
 	return typesList;
+}
+
+const std::vector<MethodSymbol*> shard::SymbolTable::GetMethodSymbols()
+{
+	return methodsList;
 }

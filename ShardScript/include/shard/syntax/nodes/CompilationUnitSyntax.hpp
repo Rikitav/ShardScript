@@ -12,15 +12,23 @@
 
 namespace shard
 {
+	enum CompilationUnitOrigin
+	{
+		Unknown,
+		SourceFile,
+		DynamicLib
+	};
+
 	class SHARD_API CompilationUnitSyntax : public SyntaxNode
 	{
 	public:
+		CompilationUnitOrigin Origin;
 		std::vector<UsingDirectiveSyntax*> Usings;
 		std::vector<MemberDeclarationSyntax*> Members;
 		NamespaceDeclarationSyntax* Namespace = nullptr;
 
 		inline CompilationUnitSyntax()
-			: SyntaxNode(SyntaxKind::CompilationUnit, nullptr) { }
+			: SyntaxNode(SyntaxKind::CompilationUnit, nullptr), Origin(CompilationUnitOrigin::Unknown) { }
 
 		inline CompilationUnitSyntax(const CompilationUnitSyntax& other) = delete;
 

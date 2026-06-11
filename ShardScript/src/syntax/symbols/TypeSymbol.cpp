@@ -206,7 +206,7 @@ void TypeSymbol::OnSymbolDeclared(SyntaxSymbol* symbol)
 	}
 }
 
-ConstructorSymbol* TypeSymbol::FindConstructor(std::vector<TypeSymbol*> parameterTypes)
+ConstructorSymbol* TypeSymbol::FindConstructor(const std::vector<TypeSymbol*>& parameterTypes)
 {
 	for (ConstructorSymbol* symbol : Constructors)
 	{
@@ -220,7 +220,7 @@ ConstructorSymbol* TypeSymbol::FindConstructor(std::vector<TypeSymbol*> paramete
 	return nullptr;
 }
 
-MethodSymbol* TypeSymbol::FindMethod(std::wstring& name, std::vector<TypeSymbol*> parameterTypes)
+MethodSymbol* TypeSymbol::FindMethod(std::wstring& name, const std::vector<TypeSymbol*>& parameterTypes)
 {
 	for (MethodSymbol* symbol : Methods)
 	{
@@ -237,7 +237,7 @@ MethodSymbol* TypeSymbol::FindMethod(std::wstring& name, std::vector<TypeSymbol*
 	return nullptr;
 }
 
-IndexatorSymbol* TypeSymbol::FindIndexator(std::vector<TypeSymbol*> parameterTypes)
+IndexatorSymbol* TypeSymbol::FindIndexator(const std::vector<TypeSymbol*>& parameterTypes)
 {
 	for (IndexatorSymbol* symbol : Indexators)
 	{

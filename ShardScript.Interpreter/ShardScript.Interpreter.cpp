@@ -183,6 +183,14 @@ static fs::path GetWorkingDirectoryPath()
 	return fs::path(pathBuffer);
 }
 
+static CompilationUnitSyntax* GetCompilationUnit(SyntaxNode* node)
+{
+	while (node != nullptr && node->Kind != SyntaxKind::CompilationUnit)
+		node = node->Parent;
+
+	return static_cast<CompilationUnitSyntax*>(node);
+}
+
 int wmain(int argc, wchar_t* argv[])
 {
 	try
@@ -244,7 +252,7 @@ int wmain(int argc, wchar_t* argv[])
 		{
 			FileReader reader(file);
 			LexicalAnalyzer lexer(reader);
-			compiler->EnrichTree(lexer);
+			compiler->EnrichTree(lexer, CompilationUnitOrigin::SourceFile);
 		}
 
 		if (ConsoleArguments::UseInteractive)
@@ -265,9 +273,18 @@ int wmain(int argc, wchar_t* argv[])
 
 		if (ConsoleArguments::ShowDecompile)
 		{
-			ProgramVirtualImage& program = domain->GetProgram();
+			SymbolTable* table = compiler->GetSemanticModel().Table;
 			ProgramDisassembler disassembler;
-			disassembler.Disassemble(std::wcout, program);
+
+			const std::vector<MethodSymbol*>& methods = table->GetMethodSymbols();
+			for (const auto& method : methods)
+			{
+				CompilationUnitSyntax* unit = GetCompilationUnit(table->GetSyntaxNode(method));
+				if (unit->Origin != CompilationUnitOrigin::SourceFile)
+					continue;
+
+				disassembler.Disassemble(std::wcout, method);
+			}
 		}
 
 		if (ConsoleArguments::RunProgram)

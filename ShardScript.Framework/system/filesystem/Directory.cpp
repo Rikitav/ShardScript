@@ -14,7 +14,7 @@ namespace shard
 			ObjectInstance* fullName = context.Args[0];
 			ObjectInstance* instance = context.Collector.AllocateInstance(context.Method->ReturnType);
 
-			TypeSymbol* ownerType = const_cast<TypeSymbol*>(instance->Info);
+			TypeSymbol* ownerType = const_cast<TypeSymbol*>(instance->getInfo());
 			FieldSymbol* field = ownerType->Fields[0];
 
 			instance->SetField(field, fullName);
@@ -24,7 +24,7 @@ namespace shard
 		__declspec(dllexport) ObjectInstance* shard_directory_Name_get(const CallState& context) noexcept(false)
 		{
 			ObjectInstance* instance = context.Args[0];
-			TypeSymbol* ownerType = const_cast<TypeSymbol*>(instance->Info);
+			TypeSymbol* ownerType = const_cast<TypeSymbol*>(instance->getInfo());
 
 			FieldSymbol* field = ownerType->Fields[0];
 			ObjectInstance* fullName = instance->GetField(field);
@@ -40,7 +40,7 @@ namespace shard
 		__declspec(dllexport) ObjectInstance* shard_directory_Exists_get(const CallState& context) noexcept(false)
 		{
 			ObjectInstance* instance = context.Args[0];
-			TypeSymbol* ownerType = const_cast<TypeSymbol*>(instance->Info);
+			TypeSymbol* ownerType = const_cast<TypeSymbol*>(instance->getInfo());
 
 			FieldSymbol* field = ownerType->Fields[0];
 			ObjectInstance* fullName = instance->GetField(field);
@@ -53,7 +53,7 @@ namespace shard
 		__declspec(dllexport) ObjectInstance* shard_directory_Create(const CallState& context) noexcept(false)
 		{
 			ObjectInstance* instance = context.Args[0];
-			TypeSymbol* ownerType = const_cast<TypeSymbol*>(instance->Info);
+			TypeSymbol* ownerType = const_cast<TypeSymbol*>(instance->getInfo());
 
 			FieldSymbol* field = ownerType->Fields[0];
 			ObjectInstance* fullName = instance->GetField(field);
@@ -70,7 +70,7 @@ namespace shard
 		__declspec(dllexport) ObjectInstance* shard_directory_Delete(const CallState& context) noexcept(false)
 		{
 			ObjectInstance* instance = context.Args[0];
-			TypeSymbol* ownerType = const_cast<TypeSymbol*>(instance->Info);
+			TypeSymbol* ownerType = const_cast<TypeSymbol*>(instance->getInfo());
 
 			FieldSymbol* field = ownerType->Fields[0];
 			ObjectInstance* fullName = instance->GetField(field);
@@ -99,7 +99,7 @@ namespace shard
 			}
 
 			ObjectInstance* instance = context.Collector.AllocateInstance(context.Method->ReturnType);
-			TypeSymbol* ownerType = const_cast<TypeSymbol*>(instance->Info);
+			TypeSymbol* ownerType = const_cast<TypeSymbol*>(instance->getInfo());
 			FieldSymbol* field = ownerType->Fields[0];
 			instance->SetField(field, context.Args[0]);
 			return instance;

@@ -40,7 +40,7 @@ SHARD_EXPORT void Shard_AddLibrary(CompilationContext* ctx, const wchar_t* path)
         ctx->AddLib(std::filesystem::path(path));
 }
 
-SHARD_EXPORT void Shard_AddSource(CompilationContext* ctx, const wchar_t* sourceName, const wchar_t* code)
+SHARD_EXPORT void Shard_AddSource(CompilationContext* ctx, const wchar_t* sourceName, const wchar_t* code, CompilationUnitOrigin origin)
 {
     if (ctx == nullptr || code == nullptr || sourceName == nullptr)
         return;
@@ -49,7 +49,7 @@ SHARD_EXPORT void Shard_AddSource(CompilationContext* ctx, const wchar_t* source
     StringStreamReader reader(sourceName, sourceCode);
     LexicalAnalyzer lexer(reader);
 
-    ctx->EnrichTree(lexer);
+    ctx->EnrichTree(lexer, origin);
 }
 
 SHARD_EXPORT void Shard_Analyze(CompilationContext* ctx)

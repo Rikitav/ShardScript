@@ -352,7 +352,7 @@ void CompilationContext::ProvideSource(SourceTextProvider* source)
 	{
 		size_t beforeEnrich = Tree.CompilationUnits.size();
 		LexicalAnalyzer lexer(source, false);
-		EnrichTree(lexer);
+		EnrichTree(lexer, CompilationUnitOrigin::DynamicLib);
 
 		size_t afterEnrich = Tree.CompilationUnits.size();
 		if (afterEnrich - 1 == beforeEnrich)
@@ -374,7 +374,7 @@ void CompilationContext::ProvideSource(SourceProvider* source)
 	try
 	{
 		size_t beforeEnrich = Tree.CompilationUnits.size();
-		EnrichTree(*source);
+		EnrichTree(*source, CompilationUnitOrigin::DynamicLib);
 
 		size_t afterEnrich = Tree.CompilationUnits.size();
 		if (afterEnrich - 1 == beforeEnrich)
@@ -391,9 +391,10 @@ void CompilationContext::ProvideSource(SourceProvider* source)
 	}
 }
 
-void CompilationContext::EnrichTree(SourceProvider& sourceProvider)
+void CompilationContext::EnrichTree(SourceProvider& sourceProvider, CompilationUnitOrigin origin)
 {
 	Parser.FromSourceProvider(Tree, sourceProvider);
+	Tree.CompilationUnits.back()->Origin = origin;
 	ReAnalyze = true;
 }
 

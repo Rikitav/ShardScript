@@ -11,5 +11,6 @@ namespace shard
 	{
 	public:
 		void Disassemble(std::wostream& out, ProgramVirtualImage& program);
+		void Disassemble(std::wostream& out, MethodSymbol* method);
 	};
 }

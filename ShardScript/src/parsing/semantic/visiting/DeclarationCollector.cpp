@@ -223,6 +223,16 @@ void DeclarationCollector::VisitStructDeclaration(StructDeclarationSyntax *const
     for (MemberDeclarationSyntax* member : node->Members)
         VisitMemberDeclaration(member);
 
+    if (!symbol->IsStatic && symbol->Constructors.empty())
+    {
+        ConstructorSymbol* ctor = new ConstructorSymbol(L"default");
+        ctor->HandleType = MethodHandleType::Body;
+        ctor->Accesibility = SymbolAccesibility::Public;
+        ctor->Parent = symbol;
+        ctor->FullName = FormatFullNameOf(ctor);
+        symbol->Constructors.push_back(ctor);
+    }
+
     PopScope();
 }
 

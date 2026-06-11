@@ -57,7 +57,7 @@ namespace shard
 		void ProvideSource(shard::SourceTextProvider* source);
 		void ProvideSource(shard::SourceProvider* source);
 
-		void EnrichTree(SourceProvider& sourceProvider);
+		void EnrichTree(SourceProvider& sourceProvider, CompilationUnitOrigin origin);
 		void AnalyzeTree();
 
 		ApplicationDomain* Compile();

@@ -62,12 +62,12 @@ namespace shard
 
         inline void add(ObjectInstance* instance)
         {
-            PtrMap[instance->Memory] = instance;
+            PtrMap[instance->getMemory()] = instance;
         }
 
         inline void erase(ObjectInstance* instance)
         {
-            PtrMap.erase(instance->Memory);
+            PtrMap.erase(instance->getMemory());
         }
 
         inline void clear()
@@ -103,7 +103,7 @@ namespace shard
         ObjectInstance* GetStaticField(FieldSymbol* field);
         void SetStaticField(FieldSymbol* field, ObjectInstance* instance);
 
-		ObjectInstance* AllocateInstance(const TypeSymbol* objectInfo);
+		ObjectInstance* AllocateInstance(const TypeSymbol* objectInfo, bool isTransient = false);
         ObjectInstance* CopyInstance(ObjectInstance* instance);
 		
         void CollectInstance(ObjectInstance* instance);

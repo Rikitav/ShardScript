@@ -20,9 +20,9 @@ static ObjectInstance* Impl_Gc_Info(const CallState& context)
 	for (ObjectInstance* reg : context.Collector.Heap)
 	{
 		std::wcout
-			<< L" * PTR : " << reg->Memory
-			<< L" | TYPE : '" << reg->Info->Name << "'"
-			<< L" | REFS : " << reg->ReferencesCounter << std::endl;
+			<< L" * PTR : " << reg->getMemory()
+			<< L" | TYPE : '" << reg->getInfo()->Name << "'"
+			<< L" | REFS : " << reg->getReferencesCounter() << std::endl;
 	}
 
 	std::wcout << "Total count : " << context.Collector.Heap.size() << std::endl;
@@ -38,9 +38,9 @@ static ObjectInstance* Impl_Var_Info(const CallState& context)
 	{
 		ObjectInstance* reg = frame->EvalStack[i];
 		std::wcout
-			<< L" * PTR : " << reg->Memory
-			<< L" | TYPE : '" << reg->Info->Name << "'"
-			<< L" | REFS : " << reg->ReferencesCounter << std::endl;
+			<< L" * PTR : " << reg->getMemory()
+			<< L" | TYPE : '" << reg->getInfo()->Name << "'"
+			<< L" | REFS : " << reg->getReferencesCounter() << std::endl;
 	}
 
 	std::wcout << "Total count : " << context.Method->GetEvalStackLocalsCount() << std::endl;
@@ -50,7 +50,7 @@ static ObjectInstance* Impl_Var_Info(const CallState& context)
 static ObjectInstance* Impl_Print(const CallState& context)
 {
 	ObjectInstance* instance = context.Args[0]; // var
-	TypeSymbol* type = const_cast<TypeSymbol*>(instance->Info);
+	TypeSymbol* type = const_cast<TypeSymbol*>(instance->getInfo());
 
 	if (type->IsPrimitive())
 	{
@@ -86,7 +86,7 @@ static ObjectInstance* Impl_Print(const CallState& context)
 static ObjectInstance* Impl_Println(const CallState& context)
 {
 	ObjectInstance* instance = context.Args[0]; // var
-	TypeSymbol* type = const_cast<TypeSymbol*>(instance->Info);
+	TypeSymbol* type = const_cast<TypeSymbol*>(instance->getInfo());
 
 	if (type->IsPrimitive())
 	{
@@ -102,7 +102,7 @@ static ObjectInstance* Impl_Println(const CallState& context)
 		context.Runtimer.InvokeMethod(toString, { instance });
 		ObjectInstance* result = context.Runtimer.CurrentFrame()->PopStack();
 
-		if (result->Info != SymbolTable::Primitives::String)
+		if (result->getInfo() != SymbolTable::Primitives::String)
 		{
 			std::string methodName = std::string(toString->FullName.begin(), toString->FullName.end());
 			throw std::runtime_error("Failed to evaluate ToString method of \'" + methodName + "\'. Reason: returned not a string!");
@@ -129,7 +129,7 @@ static ObjectInstance* Impl_typeof(const CallState& context)
 	if (instance == GarbageCollector::NullInstance)
 		throw std::runtime_error("cannot get type of null instance");
 
-	return context.Collector.FromValue(instance->Info->Name);
+	return context.Collector.FromValue(instance->getInfo()->Name);
 }
 
 static ObjectInstance* Impl_sizeof(const CallState& context)
@@ -138,7 +138,7 @@ static ObjectInstance* Impl_sizeof(const CallState& context)
 	if (instance == GarbageCollector::NullInstance)
 		throw std::runtime_error("cannot get size of null instance");
 
-	return context.Collector.FromValue(static_cast<int64_t>(instance->Info->MemoryBytesSize));
+	return context.Collector.FromValue(static_cast<int64_t>(instance->getInfo()->MemoryBytesSize));
 }
 
 static void ReflectGlobalMethods(CompilationContext& context)

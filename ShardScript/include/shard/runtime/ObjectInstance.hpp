@@ -13,16 +13,21 @@ namespace shard
 
 	class SHARD_API ObjectInstance
 	{
-	public:
 		const TypeSymbol* Info;
-		void* const Memory;
-		size_t ReferencesCounter;
 		const bool IsTransient;
+		fpos_t ReferencesCounter;
+		void* const Memory;
 
+	public:
 		inline ObjectInstance(const TypeSymbol* info, void* memory, bool isTransient)
 			: Info(info), Memory(memory), IsTransient(isTransient), ReferencesCounter(0) { }
 		
 		inline ~ObjectInstance() = default;
+
+		const TypeSymbol* getInfo() const;
+		void* getMemory() const;
+		bool getIsTransient() const;
+		fpos_t getReferencesCounter() const;
 
 		ObjectInstance* GetField(FieldSymbol* field, CallStackFrame* frame = nullptr);
 		void SetField(FieldSymbol* field, ObjectInstance* instance, CallStackFrame* frame = nullptr);
@@ -48,7 +53,6 @@ namespace shard
 		wchar_t& AsCharacter() const;
 		const wchar_t* AsString() const;
 
-		void* GetObjectMemory() const;
 		void* OffsetMemory(const size_t offset, const size_t size) const;
 		void ReadMemory(const size_t offset, const size_t size, void* dst) const;
 		void WriteMemory(const size_t offset, const size_t size, const void* src) const;
