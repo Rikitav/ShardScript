@@ -254,8 +254,8 @@ MemberDeclarationSyntax *const SourceParser::ReadMemberDeclaration(SourceProvide
 		}
 	}
 
-	// Declaration prediction: fn name(params) -> type { }
-	if (current.Type == TokenType::FnKeyword)
+	// Declaration prediction: func name(params) -> type { }
+	if (current.Type == TokenType::FunctionKeyword)
 	{
 		reader.Consume(); // fn
 		if (!TryMatchIdentifier(reader, 3))

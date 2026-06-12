@@ -141,7 +141,7 @@ fn calculate_hash(data: string) -> int {
 Привязана к классу, но не имеет доступа к `this`. Используется для паттерна Фабрики.
 
 ```rust
-export static fn create_default() -> Node {
+export static func create_default() -> Node {
     return new Node();
 }
 
@@ -151,7 +151,7 @@ export static fn create_default() -> Node {
 Имеет скрытый параметр `this`.
 
 ```rust
-export fn resize_window(new_w: int, new_h: int) {
+export func resize_window(new_w: int, new_h: int) {
     this.width = new_w;
     this.height = new_h;
 }
@@ -165,7 +165,7 @@ export fn resize_window(new_w: int, new_h: int) {
 fn process_items(items: List<int>) {
     multiplier := 2;
 
-    fn apply_multiplier(val: int) -> int {
+    func apply_multiplier(val: int) -> int {
         return val * multiplier;
     }
 
@@ -192,7 +192,7 @@ filter_logic := (x: int, y: int) => x > y;
 ```rust
 interface IRenderable {
     is_visible: bool { get; }
-    fn render(context: GraphicsContext);
+    func render(context: GraphicsContext);
 }
 
 ```
@@ -204,7 +204,7 @@ class Sprite : IRenderable {
     is_visible: bool { get; private set; }
 
     init() { this.is_visible = true; }
-    fn render(context: GraphicsContext) { /* ... */ }
+    func render(context: GraphicsContext) { /* ... */ }
 }
 
 ```
@@ -289,7 +289,7 @@ export static active_connections: int = 0;
 ```rust
 [inline]
 [deprecated("Use v2.0 API")]
-export fn legacy_update() { }
+export func legacy_update() { }
 
 ```
 
@@ -353,11 +353,11 @@ try {
 
 ```rust
 // Указываем библиотеку и экспортированный символ extern "C"
-export extern fn fast_inv_sqrt(number: float) -> float;
+export extern func fast_inv_sqrt(number: float) -> float;
 
 // Если имена совпадают, второй аргумент можно опустить
 [link("physics_engine")]
-extern fn calculate_collision(a: Vector2, b: Vector2) -> bool;
+extern func calculate_collision(a: Vector2, b: Vector2) -> bool;
 
 ```
 
@@ -369,7 +369,7 @@ export class GraphicsBuffer {
 
     // В C++: void ClearBuffer(GraphicsBuffer* this_ptr, int color)
     [link("renderer_vulkan", "ClearBuffer")]
-    export extern fn clear(color: int);
+    export extern func clear(color: int);
 }
 
 ```

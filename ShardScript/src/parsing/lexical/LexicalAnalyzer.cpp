@@ -1213,9 +1213,9 @@ bool LexicalAnalyzer::IsKeyword(std::wstring& word, TokenType& type)
 		type = TokenType::ConstKeyword;
 		return true;
 	}
-	else if (word == L"fn")
+	else if (word == L"func")
 	{
-		type = TokenType::FnKeyword;
+		type = TokenType::FunctionKeyword;
 		return true;
 	}
 	else if (word == L"init")
