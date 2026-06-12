@@ -339,7 +339,7 @@ bool IsMemberDeclaration(shard::TokenType currentType, shard::TokenType peekType
 	if (IsTypeKeyword(currentType))
 		return true;
 
-	if (currentType == TokenType::FnKeyword)
+	if (currentType == TokenType::FunctionKeyword)
 		return true;
 
 	if (currentType == TokenType::InitKeyword)

@@ -134,7 +134,7 @@ namespace shard
 		StructKeyword,		  // struct
 		InterfaceKeyword,	  // interface
 		NamespaceKeyword,	  // namespace
-		FnKeyword,            // fn
+		FunctionKeyword,      // func
 		InitKeyword,          // init
 
 		// Loops keywords
