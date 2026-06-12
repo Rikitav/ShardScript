@@ -5,8 +5,11 @@
 
 #include <shard/syntax/symbols/TypeSymbol.hpp>
 #include <shard/syntax/symbols/FieldSymbol.hpp>
+#include <shard/syntax/symbols/ArrayTypeSymbol.hpp>
 
 #include <unordered_map>
+#include <vector>
+#include <memory>
 #include <iterator>
 #include <cstdint>
 
@@ -86,12 +89,19 @@ namespace shard
 		ApplicationDomain* const applicationDomain;
 		uint64_t objectsCounter = 0;
         std::unordered_map<FieldSymbol*, ObjectInstance*> staticFields;
+		std::vector<std::unique_ptr<ArrayTypeSymbol>> dynamicArrayTypes;
         
     public:
         static ObjectInstance* NullInstance;
         InstancesHeap Heap;
-		
+
         GarbageCollector(ApplicationDomain* domain);
+        
+        GarbageCollector(const GarbageCollector&) = delete;
+        GarbageCollector& operator=(const GarbageCollector&) = delete;
+
+        GarbageCollector(GarbageCollector&&) = default;
+        GarbageCollector& operator=(GarbageCollector&&) = default;
 
         ObjectInstance* FromValue(int64_t value);
         ObjectInstance* FromValue(double value);
@@ -104,6 +114,7 @@ namespace shard
         void SetStaticField(FieldSymbol* field, ObjectInstance* instance);
 
 		ObjectInstance* AllocateInstance(const TypeSymbol* objectInfo, bool isTransient = false);
+		ObjectInstance* AllocateArray(TypeSymbol* elementType, size_t length, bool isTransient = false);
         ObjectInstance* CopyInstance(ObjectInstance* instance);
 		
         void CollectInstance(ObjectInstance* instance);

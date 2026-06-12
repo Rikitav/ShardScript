@@ -14,6 +14,8 @@ namespace shard
 	class SHARD_API SourceProvider
 	{
 	public:
+		virtual ~SourceProvider() = default;
+
 		virtual shard::SyntaxToken Current() = 0;
 		virtual shard::SyntaxToken Consume() = 0;
 		virtual shard::SyntaxToken Peek(int index = 0) = 0;

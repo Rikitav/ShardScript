@@ -14,6 +14,7 @@
 
 #include <shard/syntax/nodes/Expressions/BinaryExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/CollectionExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/RangeExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/LambdaExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/LinkedExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/LiteralExpressionSyntax.hpp>
@@ -22,6 +23,7 @@
 #include <shard/syntax/nodes/Expressions/UnaryExpressionSyntax.hpp>
 
 #include <shard/syntax/nodes/Loops/ForStatementSyntax.hpp>
+#include <shard/syntax/nodes/Loops/ForEachStatementSyntax.hpp>
 #include <shard/syntax/nodes/Loops/UntilStatementSyntax.hpp>
 #include <shard/syntax/nodes/Loops/WhileStatementSyntax.hpp>
 
@@ -101,6 +103,7 @@ namespace shard
 
         void VisitWhileStatement(WhileStatementSyntax *const node) override;
         void VisitForStatement(ForStatementSyntax *const node) override;
+        void VisitForEachStatement(ForEachStatementSyntax *const node) override;
         void VisitUntilStatement(UntilStatementSyntax *const node) override;
 
         void VisitIfStatement(IfStatementSyntax *const node) override;
@@ -110,6 +113,7 @@ namespace shard
         void VisitLiteralExpression(LiteralExpressionSyntax *const node) override;
         void VisitObjectCreationExpression(ObjectExpressionSyntax *const node) override;
         void VisitCollectionExpression(CollectionExpressionSyntax *const node) override;
+        void VisitRangeExpression(RangeExpressionSyntax *const node) override;
         void VisitLambdaExpression(LambdaExpressionSyntax *const node) override;
         void VisitTernaryExpression(TernaryExpressionSyntax *const node) override;
 

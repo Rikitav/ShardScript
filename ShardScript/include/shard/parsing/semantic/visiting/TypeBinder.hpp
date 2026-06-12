@@ -39,7 +39,7 @@ namespace shard
 	{
 	public:
 		inline TypeBinder(shard::SemanticModel& model, shard::DiagnosticsContext& diagnostics)
-			: SyntaxVisitor(model, diagnostics), ScopeVisitor(model.Table) { }
+			: SyntaxVisitor(model, diagnostics), ScopeVisitor(model.Table.get()) { }
 
 		void VisitCompilationUnit(shard::CompilationUnitSyntax *const node) override;
 		void VisitUsingDirective(shard::UsingDirectiveSyntax *const node) override;

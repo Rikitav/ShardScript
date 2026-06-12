@@ -28,6 +28,10 @@ int GetOperatorPrecendence(shard::TokenType type)
 		case TokenType::RightShiftOperator:
 			return 7;
 
+		case TokenType::RangeOperator:
+		case TokenType::RangeInclusiveOperator:
+			return 7;
+
 		case TokenType::LessOperator:
 		case TokenType::LessOrEqualsOperator:
 		case TokenType::GreaterOperator:
@@ -133,6 +137,12 @@ bool IsBinaryOperator(shard::TokenType type)
 		return true;
 
 	if (type == TokenType::NullCoalescingOperator)
+		return true;
+
+	if (type == TokenType::RangeOperator)
+		return true;
+
+	if (type == TokenType::RangeInclusiveOperator)
 		return true;
 
 	return false;

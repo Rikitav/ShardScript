@@ -237,6 +237,20 @@ namespace shard
         /// <para>Includes no additional parameters.</para>
         /// </summary>
         STOREARRAYELEMENT,
+
+        /// <summary>
+        /// Loads the length of an array. Pops array reference, pushes int64 length.
+        /// <para>Includes no additional parameters.</para>
+        /// </summary>
+        ARRAYLENGTH,
+
+        /// <summary>
+        /// Creates a new array of specified element type and dynamic size.
+        /// Pops size (int) from stack.
+        /// <para>Includes 1 parameter :</para>
+        /// <para>> TypeSymbol* pElementType - Type of array elements.</para>
+        /// </summary>
+        NEWDYNAMICARRAY,
 	
         /// <summary>
         /// Loads a static field value.

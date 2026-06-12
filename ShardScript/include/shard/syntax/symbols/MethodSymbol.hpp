@@ -13,9 +13,16 @@
 #include <cstddef>
 #include <cstdint>
 
+// Forward declarations
 namespace shard
 {
-    enum class SHARD_API MethodHandleType
+    class ObjectInstance;
+    struct CallState;
+}
+
+namespace shard
+{
+    enum class MethodHandleType
     {
         None,
         Body,
@@ -23,9 +30,7 @@ namespace shard
         Lambda,
     };
 
-    class ObjectInstance;
-    struct CallState;
-    typedef SHARD_API shard::ObjectInstance* (*MethodSymbolDelegate)(const CallState& context);
+    typedef shard::ObjectInstance* (*MethodSymbolDelegate)(const CallState& context);
 
     class SHARD_API MethodSymbol : public SyntaxSymbol
     {
@@ -85,9 +90,6 @@ namespace shard
 
             if (FunctionPointer != nullptr)
                 FunctionPointer = nullptr;
-
-            for (ParameterSymbol* param : Parameters)
-                delete param;
         }
     };
 }

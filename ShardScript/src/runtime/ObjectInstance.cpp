@@ -73,6 +73,9 @@ void ObjectInstance::SetField(FieldSymbol* field, ObjectInstance* instance, Call
 		throw std::runtime_error("got nullptr instance");
 
 	TypeSymbol* fieldType = field->ReturnType;
+	if (!TypeSymbol::Equals(fieldType, instance->getInfo()))
+		throw std::runtime_error("incompatible field type");
+
 	if (fieldType->Kind == SyntaxKind::TypeParameter)
 	{
 		if (frame != nullptr)
@@ -167,8 +170,7 @@ bool ObjectInstance::IsInBounds(size_t index)
 	if (Info->Kind != SyntaxKind::ArrayType)
 		throw std::runtime_error("Tried to get size of non array instance");
 
-	const ArrayTypeSymbol* array = static_cast<const ArrayTypeSymbol*>(Info);
-	return index >= 0 && index < array->Size;
+	return index >= 0 && index < GetArrayLength();
 }
 
 void ObjectInstance::IncrementReference()
@@ -192,8 +194,8 @@ void* ObjectInstance::OffsetMemory(const size_t offset, const size_t size) const
 	if (size == 0)
 		throw std::out_of_range("Cannot read 0 bytes");
 
-	if (offset + size > Info->MemoryBytesSize)
-		throw std::out_of_range("offset (" + std::to_string(offset) + ") + size (" + std::to_string(size) + ") is out of instance's memory range (" + std::to_string(Info->MemoryBytesSize) + ").");
+	if (offset + size > GetMemorySize())
+		throw std::out_of_range("offset (" + std::to_string(offset) + ") + size (" + std::to_string(size) + ") is out of instance's memory range (" + std::to_string(GetMemorySize()) + ").");
 
 	return static_cast<char*>(getMemory()) + offset;
 }
@@ -206,8 +208,8 @@ void ObjectInstance::ReadMemory(const size_t offset, const size_t size, void* ds
 	if (size == 0)
 		throw std::out_of_range("Cannot read 0 bytes");
 
-	if (offset + size > Info->MemoryBytesSize)
-		throw std::out_of_range("offset (" + std::to_string(offset) + ") + size (" + std::to_string(size) + ") is out of instance's memory range (" + std::to_string(Info->MemoryBytesSize) + ").");
+	if (offset + size > GetMemorySize())
+		throw std::out_of_range("offset (" + std::to_string(offset) + ") + size (" + std::to_string(size) + ") is out of instance's memory range (" + std::to_string(GetMemorySize()) + ").");
 
 	const char* memOffset = static_cast<char*>(getMemory()) + offset;
 	memcpy(dst, memOffset, size);
@@ -221,8 +223,8 @@ void ObjectInstance::WriteMemory(const size_t offset, const size_t size, const v
 	if (size == 0)
 		throw std::out_of_range("Cannot read 0 bytes");
 
-	if (offset + size > Info->MemoryBytesSize)
-		throw std::out_of_range("offset (" + std::to_string(offset) + ") + size (" + std::to_string(size) + ") is out of instance's memory range (" + std::to_string(Info->MemoryBytesSize) + ").");
+	if (offset + size > GetMemorySize())
+		throw std::out_of_range("offset (" + std::to_string(offset) + ") + size (" + std::to_string(size) + ") is out of instance's memory range (" + std::to_string(GetMemorySize()) + ").");
 
 	char* memOffset = static_cast<char*>(getMemory()) + offset;
 	memcpy(memOffset, src, size);
@@ -231,25 +233,25 @@ void ObjectInstance::WriteMemory(const size_t offset, const size_t size, const v
 void ObjectInstance::WriteBoolean(const bool& value) const
 {
 	const void* ptr = &value;
-	WriteMemory(0, Info->MemoryBytesSize, ptr);
+	WriteMemory(0, GetMemorySize(), ptr);
 }
 
 void ObjectInstance::WriteInteger(const int64_t& value) const
 {
 	const void* ptr = &value;
-	WriteMemory(0, Info->MemoryBytesSize, ptr);
+	WriteMemory(0, GetMemorySize(), ptr);
 }
 
 void ObjectInstance::WriteDouble(const double& value) const
 {
 	const void* ptr = &value;
-	WriteMemory(0, Info->MemoryBytesSize, ptr);
+	WriteMemory(0, GetMemorySize(), ptr);
 }
 
 void ObjectInstance::WriteCharacter(const wchar_t& value) const
 {
 	const void* ptr = &value;
-	WriteMemory(0, Info->MemoryBytesSize, ptr);
+	WriteMemory(0, GetMemorySize(), ptr);
 }
 
 void ObjectInstance::WriteString(const wchar_t* value) const

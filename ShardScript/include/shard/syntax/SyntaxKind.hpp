@@ -43,6 +43,7 @@ namespace shard
 
 		// Keyword statements
 		ForStatement,
+		ForEachStatement,
 		WhileStatement,
 		UntilStatement,
 		ThrowStatement,
@@ -62,6 +63,7 @@ namespace shard
 		UnaryExpression,
 		TernaryExpression,
 		CollectionExpression,
+		RangeExpression,
 		IfExpression,
 		SwitchExpression,
 		PostfixIfExpression,

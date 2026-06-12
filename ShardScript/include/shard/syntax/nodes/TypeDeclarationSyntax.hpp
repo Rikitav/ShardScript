@@ -8,23 +8,20 @@
 #include <shard/syntax/nodes/BodyDeclarationSyntax.hpp>
 
 #include <vector>
+#include <memory>
 
 namespace shard
 {
 	class SHARD_API TypeDeclarationSyntax : public BodyDeclarationSyntax
 	{
 	public:
-		std::vector<MemberDeclarationSyntax*> Members;
+		std::vector<std::unique_ptr<MemberDeclarationSyntax>> Members;
 
 		inline TypeDeclarationSyntax(const SyntaxKind kind, SyntaxNode *const parent)
 			: BodyDeclarationSyntax(kind, parent) { }
 
 		inline TypeDeclarationSyntax(const TypeDeclarationSyntax& other) = delete;
 
-		inline virtual ~TypeDeclarationSyntax()
-		{
-			for (const MemberDeclarationSyntax* member : Members)
-				delete member;
-		}
+		inline virtual ~TypeDeclarationSyntax() = default;
 	};
 }

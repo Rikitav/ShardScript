@@ -40,6 +40,7 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 #include <stdexcept>
 #include <filesystem>
 
@@ -121,8 +122,8 @@ static void LinkExternSymbols(MemberDeclarationSyntax* member, LibraryHandle han
 		case SyntaxKind::ClassDeclaration:
 		{
 			ClassDeclarationSyntax* classDecl = static_cast<ClassDeclarationSyntax*>(member);
-			for (MemberDeclarationSyntax* child : classDecl->Members)
-				LinkExternSymbols(child, handle, model, diagnostics);
+			for (const auto& child : classDecl->Members)
+				LinkExternSymbols(child.get(), handle, model, diagnostics);
 			
 			break;
 		}
@@ -130,8 +131,8 @@ static void LinkExternSymbols(MemberDeclarationSyntax* member, LibraryHandle han
 		case SyntaxKind::StructDeclaration:
 		{
 			StructDeclarationSyntax* structDecl = static_cast<StructDeclarationSyntax*>(member);
-			for (MemberDeclarationSyntax* child : structDecl->Members)
-				LinkExternSymbols(child, handle, model, diagnostics);
+			for (const auto& child : structDecl->Members)
+				LinkExternSymbols(child.get(), handle, model, diagnostics);
 
 			break;
 		}
@@ -139,7 +140,7 @@ static void LinkExternSymbols(MemberDeclarationSyntax* member, LibraryHandle han
 		case SyntaxKind::MethodDeclaration:
 		{
 			MethodDeclarationSyntax* method = static_cast<MethodDeclarationSyntax*>(member);
-			MethodSymbol* symbol = static_cast<MethodSymbol*>(model.Table->LookupSymbol(method));
+			MethodSymbol* symbol = static_cast<MethodSymbol*>(model.Table->LookupSymbol(method).value_or(nullptr));
 
 			if (symbol == nullptr || !symbol->IsExtern || symbol->LinkSymbol.empty())
 				break;
@@ -162,7 +163,7 @@ static void LinkExternSymbols(MemberDeclarationSyntax* member, LibraryHandle han
 		case SyntaxKind::ConstructorDeclaration:
 		{
 			ConstructorDeclarationSyntax* ctor = static_cast<ConstructorDeclarationSyntax*>(member);
-			ConstructorSymbol* symbol = static_cast<ConstructorSymbol*>(model.Table->LookupSymbol(ctor));
+			ConstructorSymbol* symbol = static_cast<ConstructorSymbol*>(model.Table->LookupSymbol(ctor).value_or(nullptr));
 			
 			if (symbol == nullptr || !symbol->IsExtern || symbol->LinkSymbol.empty())
 				break;
@@ -185,7 +186,7 @@ static void LinkExternSymbols(MemberDeclarationSyntax* member, LibraryHandle han
 		case SyntaxKind::PropertyDeclaration:
 		{
 			PropertyDeclarationSyntax* prop = static_cast<PropertyDeclarationSyntax*>(member);
-			PropertySymbol* propSymbol = static_cast<PropertySymbol*>(model.Table->LookupSymbol(prop));
+			PropertySymbol* propSymbol = static_cast<PropertySymbol*>(model.Table->LookupSymbol(prop).value_or(nullptr));
 			
 			if (propSymbol == nullptr)
 				break;
@@ -226,7 +227,7 @@ static void LinkExternSymbols(MemberDeclarationSyntax* member, LibraryHandle han
 		case SyntaxKind::IndexatorDeclaration:
 		{
 			IndexatorDeclarationSyntax* indexer = static_cast<IndexatorDeclarationSyntax*>(member);
-			IndexatorSymbol* idxSymbol = static_cast<IndexatorSymbol*>(model.Table->LookupSymbol(indexer));
+			IndexatorSymbol* idxSymbol = static_cast<IndexatorSymbol*>(model.Table->LookupSymbol(indexer).value_or(nullptr));
 
 			if (idxSymbol == nullptr)
 				break;
@@ -333,8 +334,8 @@ void CompilationContext::AddLib(const LibraryHandle& handle)
 
 		for (const auto& unit : PendingSources)
 		{
-			for (MemberDeclarationSyntax* member : unit->Members)
-				LinkExternSymbols(member, handle, Model, Diagnostics);
+			for (const auto& member : unit->Members)
+				LinkExternSymbols(member.get(), handle, Model, Diagnostics);
 		}
 
 		PendingSources.clear();
@@ -355,32 +356,10 @@ void CompilationContext::ProvideSource(SourceTextProvider* source)
 		EnrichTree(lexer, CompilationUnitOrigin::DynamicLib);
 
 		size_t afterEnrich = Tree.CompilationUnits.size();
-		if (afterEnrich - 1 == beforeEnrich)
+		for (size_t i = beforeEnrich; i < afterEnrich; i++)
 		{
-			for (const auto& unit : Tree.CompilationUnits)
-				PendingSources.push_back(unit);
-		}
-
-		ReAnalyze = true;
-	}
-	catch (...)
-	{
-
-	}
-}
-
-void CompilationContext::ProvideSource(SourceProvider* source)
-{
-	try
-	{
-		size_t beforeEnrich = Tree.CompilationUnits.size();
-		EnrichTree(*source, CompilationUnitOrigin::DynamicLib);
-
-		size_t afterEnrich = Tree.CompilationUnits.size();
-		if (afterEnrich - 1 == beforeEnrich)
-		{
-			for (const auto& unit : Tree.CompilationUnits)
-				PendingSources.push_back(unit);
+			CompilationUnitSyntax* unit = Tree.CompilationUnits[i].get();
+			PendingSources.push_back(unit);
 		}
 
 		ReAnalyze = true;
@@ -407,7 +386,7 @@ void CompilationContext::AnalyzeTree()
 	ReAnalyze = false;
 }
 
-ApplicationDomain* CompilationContext::Compile()
+std::unique_ptr<ApplicationDomain> CompilationContext::Compile()
 {
 	if (ReAnalyze)
 		AnalyzeTree();
@@ -416,7 +395,7 @@ ApplicationDomain* CompilationContext::Compile()
 	if (Diagnostics.AnyError)
 		throw diagnostics_exception("Model layout generation ended with errors.");
 
-	ProgramVirtualImage* program = new ProgramVirtualImage();
+	auto program = std::make_unique<ProgramVirtualImage>();
 	AbstractEmiter emiter(*program, Model, Diagnostics);
 	if (!PopExpressionStatement)
 		emiter.SetPopExpressionStatement(false);
@@ -428,6 +407,5 @@ ApplicationDomain* CompilationContext::Compile()
 	if (Diagnostics.AnyError)
 		throw diagnostics_exception("Code Compilation ended with errors.");
 
-	ApplicationDomain* domain = new ApplicationDomain(program);
-	return domain;
+	return std::make_unique<ApplicationDomain>(std::move(program));
 }

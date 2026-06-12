@@ -166,24 +166,24 @@ void ExpressionBinder::VisitCompilationUnit(CompilationUnitSyntax *const node)
 {
 	PushScope(nullptr);
 
-	for (UsingDirectiveSyntax* directive : node->Usings)
-		VisitUsingDirective(directive);
+	for (const auto& directive : node->Usings)
+		VisitUsingDirective(directive.get());
 
 	if (node->Namespace != nullptr)
 	{
-		NamespaceSymbol* symbol = LookupSymbol<NamespaceSymbol>(node->Namespace);
+		NamespaceSymbol* symbol = LookupSymbol<NamespaceSymbol>(node->Namespace.get()).value_or(nullptr);
 		if (symbol != nullptr)
 			PushScope(symbol);
 	}
 
-	for (MemberDeclarationSyntax* member : node->Members)
+	for (const auto& member : node->Members)
 	{
-		SyntaxSymbol* symbol = Table->LookupSymbol(member);
+		SyntaxSymbol* symbol = Table->LookupSymbol(member.get()).value_or(nullptr);
 		Declare(symbol);
 	}
 
-	for (MemberDeclarationSyntax* member : node->Members)
-		VisitMemberDeclaration(member);
+	for (const auto& member : node->Members)
+		VisitMemberDeclaration(member.get());
 
 	if (node->Namespace != nullptr)
 		PopScope();
@@ -205,19 +205,19 @@ void ExpressionBinder::VisitNamespaceDeclaration(NamespaceDeclarationSyntax *con
 
 void ExpressionBinder::VisitClassDeclaration(ClassDeclarationSyntax *const node)
 {
-	ClassSymbol* symbol = LookupSymbol<ClassSymbol>(node);
+	ClassSymbol* symbol = LookupSymbol<ClassSymbol>(node).value_or(nullptr);
 	if (symbol != nullptr)
 	{
 		PushScope(symbol);
 
-		for (MemberDeclarationSyntax* member : node->Members)
+		for (const auto& member : node->Members)
 		{
-			SyntaxSymbol* symbol = Table->LookupSymbol(member);
+			SyntaxSymbol* symbol = Table->LookupSymbol(member.get()).value_or(nullptr);
 			Declare(symbol);
 		}
 
-		for (MemberDeclarationSyntax* member : node->Members)
-			VisitMemberDeclaration(member);
+		for (const auto& member : node->Members)
+			VisitMemberDeclaration(member.get());
 
 		PopScope();
 	}
@@ -225,19 +225,19 @@ void ExpressionBinder::VisitClassDeclaration(ClassDeclarationSyntax *const node)
 
 void ExpressionBinder::VisitStructDeclaration(StructDeclarationSyntax *const node)
 {
-	StructSymbol* symbol = LookupSymbol<StructSymbol>(node);
+	StructSymbol* symbol = LookupSymbol<StructSymbol>(node).value_or(nullptr);
 	if (symbol != nullptr)
 	{
 		PushScope(symbol);
 
-		for (MemberDeclarationSyntax* member : node->Members)
+		for (const auto& member : node->Members)
 		{
-			SyntaxSymbol* symbol = Table->LookupSymbol(member);
+			SyntaxSymbol* symbol = Table->LookupSymbol(member.get()).value_or(nullptr);
 			Declare(symbol);
 		}
 
-		for (MemberDeclarationSyntax* member : node->Members)
-			VisitMemberDeclaration(member);
+		for (const auto& member : node->Members)
+			VisitMemberDeclaration(member.get());
 
 		PopScope();
 	}
@@ -245,7 +245,7 @@ void ExpressionBinder::VisitStructDeclaration(StructDeclarationSyntax *const nod
 
 void ExpressionBinder::VisitConstructorDeclaration(ConstructorDeclarationSyntax *const node)
 {
-	MethodSymbol* symbol = LookupSymbol<MethodSymbol>(node);
+	MethodSymbol* symbol = LookupSymbol<MethodSymbol>(node).value_or(nullptr);
 	if (!symbol->Parent->IsType())
 		return;
 
@@ -273,7 +273,7 @@ void ExpressionBinder::VisitConstructorDeclaration(ConstructorDeclarationSyntax 
 
 void ExpressionBinder::VisitMethodDeclaration(MethodDeclarationSyntax *const node)
 {
-	MethodSymbol* symbol = LookupSymbol<MethodSymbol>(node);
+	MethodSymbol* symbol = LookupSymbol<MethodSymbol>(node).value_or(nullptr);
 	if (symbol == nullptr)
 		throw std::runtime_error("symbol not found");
 
@@ -318,7 +318,7 @@ void ExpressionBinder::VisitMethodDeclaration(MethodDeclarationSyntax *const nod
 
 void ExpressionBinder::VisitPropertyDeclaration(PropertyDeclarationSyntax *const node)
 {
-	PropertySymbol* symbol = LookupSymbol<PropertySymbol>(node);
+	PropertySymbol* symbol = LookupSymbol<PropertySymbol>(node).value_or(nullptr);
 	if (symbol == nullptr)
 		throw std::runtime_error("symbol not found");
 
@@ -343,7 +343,7 @@ void ExpressionBinder::VisitPropertyDeclaration(PropertyDeclarationSyntax *const
 
 void ExpressionBinder::VisitIndexatorDeclaration(IndexatorDeclarationSyntax *const node)
 {
-	IndexatorSymbol* symbol = LookupSymbol<IndexatorSymbol>(node);
+	IndexatorSymbol* symbol = LookupSymbol<IndexatorSymbol>(node).value_or(nullptr);
 	if (symbol == nullptr)
 		throw std::runtime_error("symbol not found");
 
@@ -368,7 +368,7 @@ void ExpressionBinder::VisitIndexatorDeclaration(IndexatorDeclarationSyntax *con
 
 void ExpressionBinder::VisitAccessorDeclaration(AccessorDeclarationSyntax *const node)
 {
-	AccessorSymbol* symbol = LookupSymbol<AccessorSymbol>(node);
+	AccessorSymbol* symbol = LookupSymbol<AccessorSymbol>(node).value_or(nullptr);
 	if (symbol == nullptr)
 		throw std::runtime_error("symbol not found");
 
@@ -443,7 +443,7 @@ void ExpressionBinder::VisitFieldDeclaration(FieldDeclarationSyntax *const node)
 		VisitExpression(node->InitializerExpression);
 	}
 
-	FieldSymbol* symbol = LookupSymbol<FieldSymbol>(node);
+	FieldSymbol* symbol = LookupSymbol<FieldSymbol>(node).value_or(nullptr);
 	if (symbol == nullptr)
 		throw std::runtime_error("symbol not found");
 
@@ -466,7 +466,7 @@ void ExpressionBinder::VisitFieldDeclaration(FieldDeclarationSyntax *const node)
 
 void ExpressionBinder::VisitVariableStatement(VariableStatementSyntax *const node)
 {
-	VariableSymbol* symbol = LookupSymbol<VariableSymbol>(node);
+	VariableSymbol* symbol = LookupSymbol<VariableSymbol>(node).value_or(nullptr);
 	if (symbol == nullptr)
 		throw std::runtime_error("symbol not found");
 
@@ -756,7 +756,7 @@ TypeSymbol* ExpressionBinder::AnalyzeObjectExpression(ObjectExpressionSyntax *co
 	if (method == nullptr)
 		return node->TypeSymbol;
 
-	if (!IsSymbolAccessible(method, Table->GetSyntaxNode(method), node))
+	if (!IsSymbolAccessible(method, Table->GetSyntaxNode(method).value_or(nullptr), node))
 	{
 		Diagnostics.ReportError(node->IdentifierToken, L"Method '" + methodName + L"' is not accessible");
 		return node->TypeSymbol;
@@ -809,6 +809,24 @@ void ExpressionBinder::VisitCollectionExpression(CollectionExpressionSyntax *con
 	ArrayTypeSymbol* arrayType = new ArrayTypeSymbol(type);
 	arrayType->Size = node->ValuesExpressions.size();
 	node->Symbol = arrayType;
+	Table->BindSymbol(node, arrayType);
+	SetExpressionType(node, arrayType);
+}
+
+void ExpressionBinder::VisitRangeExpression(RangeExpressionSyntax *const node)
+{
+	VisitExpression(node->Left);
+	VisitExpression(node->Right);
+
+	TypeSymbol* leftType = GetExpressionType(node->Left);
+	TypeSymbol* rightType = GetExpressionType(node->Right);
+
+	if (leftType != SymbolTable::Primitives::Integer || rightType != SymbolTable::Primitives::Integer)
+	{
+		Diagnostics.ReportError(node->OperatorToken, L"Range bounds must be integers");
+	}
+
+	ArrayTypeSymbol* arrayType = new ArrayTypeSymbol(SymbolTable::Primitives::Integer);
 	Table->BindSymbol(node, arrayType);
 	SetExpressionType(node, arrayType);
 }
@@ -1037,7 +1055,7 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 			return nullptr;
 		}
 
-		if (!IsSymbolAccessible(symbol, Table->GetSyntaxNode(symbol), node))
+		if (!IsSymbolAccessible(symbol, Table->GetSyntaxNode(symbol).value_or(nullptr), node))
 		{
 			Diagnostics.ReportError(node->IdentifierToken, L"Symbol '" + memberName + L"' is not accessible");
 			return nullptr;
@@ -1090,7 +1108,7 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 		}
 	}
 
-	if (!IsSymbolAccessible(node->ToField, Table->GetSyntaxNode(node->ToField), node))
+	if (!IsSymbolAccessible(node->ToField, Table->GetSyntaxNode(node->ToField).value_or(nullptr), node))
 	{
 		std::wstring declName;
 		Diagnostics.ReportError(node->IdentifierToken, declName + L" '" + memberName + L"' is not accessible");
@@ -1200,7 +1218,7 @@ TypeSymbol* ExpressionBinder::AnalyzePropertyAccessExpression(MemberAccessExpres
 		return nullptr;
 	}
 
-	if (!IsSymbolAccessible(accessor, Table->GetSyntaxNode(accessor), node))
+	if (!IsSymbolAccessible(accessor, Table->GetSyntaxNode(accessor).value_or(nullptr), node))
 	{
 		Diagnostics.ReportError(node->IdentifierToken, (requiresSetter ? L"Setter" : L"Getter") + (L" of property '" + memberName + L"' is not accessible"));
 		return nullptr;
@@ -1293,7 +1311,7 @@ TypeSymbol* ExpressionBinder::AnalyzeInvokationExpression(InvokationExpressionSy
 		return nullptr;
 	}
 
-	if (!IsSymbolAccessible(method, Table->GetSyntaxNode(method), node))
+	if (!IsSymbolAccessible(method, Table->GetSyntaxNode(method).value_or(nullptr), node))
 	{
 		Diagnostics.ReportError(node->IdentifierToken, L"Method '" + methodName + L"' is not accessible");
 		return nullptr;
@@ -1615,7 +1633,7 @@ static bool IsValidIntegerSymbol(wchar_t symbol, int base)
 
 TypeSymbol* ExpressionBinder::AnalyzeNumberLiteral(LiteralExpressionSyntax *const node)
 {
-	LiteralSymbol* const symbol = LookupSymbol<LiteralSymbol>(node);
+	LiteralSymbol* const symbol = LookupSymbol<LiteralSymbol>(node).value_or(nullptr);
 
 	SyntaxToken token = node->LiteralToken;
 	std::wstring word = token.Word;
@@ -1681,7 +1699,7 @@ TypeSymbol* ExpressionBinder::AnalyzeNumberLiteral(LiteralExpressionSyntax *cons
 
 TypeSymbol* ExpressionBinder::AnalyzeDoubleLiteral(LiteralExpressionSyntax* const node)
 {
-	LiteralSymbol* const symbol = LookupSymbol<LiteralSymbol>(node);
+	LiteralSymbol* const symbol = LookupSymbol<LiteralSymbol>(node).value_or(nullptr);
 
 	SyntaxToken token = node->LiteralToken;
 	std::wstring word = token.Word;
@@ -1931,6 +1949,40 @@ void ExpressionBinder::VisitForStatement(ForStatementSyntax *const node)
 	
 	if (node->StatementsBlock != nullptr)
 		VisitStatementsBlock(node->StatementsBlock);
+}
+
+void ExpressionBinder::VisitForEachStatement(ForEachStatementSyntax *const node)
+{
+	VariableSymbol* variable = static_cast<VariableSymbol*>(Table->LookupSymbol(node).value_or(nullptr));
+
+	if (node->RangeExpression != nullptr)
+	{
+		VisitExpression(node->RangeExpression);
+		TypeSymbol* rangeType = GetExpressionType(node->RangeExpression);
+
+		if (rangeType != nullptr && rangeType->Kind == SyntaxKind::ArrayType)
+		{
+			ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(rangeType);
+			if (variable != nullptr)
+				variable->Type = arrayType->UnderlayingType;
+		}
+		else
+		{
+			Diagnostics.ReportError(node->InKeywordToken, L"For-in expression must be an array");
+		}
+	}
+
+	if (variable != nullptr)
+	{
+		Declare(variable);
+		PushScope(variable);
+	}
+
+	if (node->StatementsBlock != nullptr)
+		VisitStatementsBlock(node->StatementsBlock);
+
+	if (variable != nullptr)
+		PopScope();
 }
 
 void ExpressionBinder::VisitIfStatement(IfStatementSyntax *const node)

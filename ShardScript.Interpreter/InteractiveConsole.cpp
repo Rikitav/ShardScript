@@ -11,48 +11,47 @@
 
 using namespace shard;
 
-static MethodDeclarationSyntax* InitImplicitEntryPoint(SyntaxNode* parent)
+static std::unique_ptr<MethodDeclarationSyntax> InitImplicitEntryPoint(SyntaxNode* parent)
 {
 	MemberDeclarationInfo info;
 	info.ReturnType = new PredefinedTypeSyntax(SyntaxToken(TokenType::VoidKeyword, L"void", TextLocation(), false), nullptr);
 	info.Identifier = SyntaxToken(TokenType::Identifier, L"__interactive_console__", TextLocation());
 	info.Modifiers = { SyntaxToken(TokenType::StaticKeyword, L"static", TextLocation(), false) };
 
-	MethodDeclarationSyntax* implMethod = new MethodDeclarationSyntax(info, parent);
+	auto implMethod = std::make_unique<MethodDeclarationSyntax>(info, parent);
 	implMethod->Params = new ParametersListSyntax(parent);
-	implMethod->Body = new StatementsBlockSyntax(implMethod);
+	implMethod->Body = new StatementsBlockSyntax(implMethod.get());
 	return implMethod;
 }
 
-static ClassDeclarationSyntax* InitImplicitClassDeclaration(MethodDeclarationSyntax*& entryPoint, SyntaxNode* parent)
+static std::unique_ptr<ClassDeclarationSyntax> InitImplicitClassDeclaration(SyntaxNode* parent)
 {
 	MemberDeclarationInfo info;
 	info.Identifier = SyntaxToken(TokenType::Identifier, L"__InteractiveClass__", TextLocation());
 
-	ClassDeclarationSyntax* implClass = new ClassDeclarationSyntax(info, parent);
+	auto implClass = std::make_unique<ClassDeclarationSyntax>(info, parent);
 	implClass->DeclareToken = SyntaxToken(TokenType::ClassKeyword, L"class", TextLocation(), false);
 
-	entryPoint = InitImplicitEntryPoint(implClass);
-	*const_cast<SyntaxNode**>(&entryPoint->Parent) = implClass;
-	implClass->Members.push_back(entryPoint);
+	auto entryPoint = InitImplicitEntryPoint(implClass.get());
+	implClass->Members.push_back(std::move(entryPoint));
 
 	return implClass;
 }
 
-static NamespaceDeclarationSyntax* InitImplicitNamespaceDeclaration(MethodDeclarationSyntax*& entryPoint, SyntaxNode* parent)
+static std::unique_ptr<NamespaceDeclarationSyntax> InitImplicitNamespaceDeclaration(SyntaxNode* parent)
 {
-	NamespaceDeclarationSyntax* implNamespace = new NamespaceDeclarationSyntax(parent);
+	auto implNamespace = std::make_unique<NamespaceDeclarationSyntax>(parent);
 	implNamespace->DeclareToken = SyntaxToken(TokenType::NamespaceKeyword, L"namespace", TextLocation(), false);
 	implNamespace->IdentifierTokens.push_back(SyntaxToken(TokenType::Identifier, L"__InteractiveNamespace__", TextLocation(), false));
 
 	return implNamespace;
 }
 
-static CompilationUnitSyntax* InitImplicitCompilationUnit(MethodDeclarationSyntax*& entryPoint)
+static CompilationUnitSyntax* InitImplicitCompilationUnit()
 {
 	CompilationUnitSyntax* implUnit = new CompilationUnitSyntax();
-	implUnit->Namespace = InitImplicitNamespaceDeclaration(entryPoint, implUnit);
-	implUnit->Members.push_back(InitImplicitClassDeclaration(entryPoint, implUnit));
+	implUnit->Namespace = InitImplicitNamespaceDeclaration(implUnit);
+	implUnit->Members.push_back(std::unique_ptr<MemberDeclarationSyntax>(InitImplicitClassDeclaration(implUnit)));
 	return implUnit;
 }
 
@@ -306,7 +305,9 @@ void InteractiveConsole::EvaluateUsing(LexicalBuffer& buffer)
 	std::wcout << "(" << counter << " symbols)" << std::endl;
 }
 
-InteractiveConsole::InteractiveConsole(shard::CompilationContext* context, shard::ApplicationDomain* domain) : compilationContext(context), applicationDomain(domain),
+InteractiveConsole::InteractiveConsole(shard::CompilationContext* context, shard::ApplicationDomain* domain) :
+	compilationContext(context),
+	applicationDomain(domain),
 	ParentSyntaxTree(context->GetSyntaxTree()),
 	ParentSemanticModel(context->GetSemanticModel()),
 	Diagnostics(context->GetDiagnosticsContext()),
@@ -316,10 +317,11 @@ InteractiveConsole::InteractiveConsole(shard::CompilationContext* context, shard
 	Runtimer(domain->GetVirtualMachine()),
 	Program(domain->GetProgram())
 {
-	InteractiveUnit = InitImplicitCompilationUnit(InteractiveMethod);
-	InteractiveClass = static_cast<ClassDeclarationSyntax*>(InteractiveUnit->Members.at(0));
-	ParentSyntaxTree.CompilationUnits.push_back(InteractiveUnit);
-
+	InteractiveUnit = InitImplicitCompilationUnit();
+	InteractiveClass = static_cast<ClassDeclarationSyntax*>(InteractiveUnit->Members.at(0).get());
+	InteractiveMethod = static_cast<MethodDeclarationSyntax*>(InteractiveClass->Members.at(0).get());
+	ParentSyntaxTree.CompilationUnits.push_back(std::unique_ptr<CompilationUnitSyntax>(InteractiveUnit));
+	
 	//InteractiveEntryPoint = new MethodSymbol(InteractiveMethod->IdentifierToken.Word);
 	//Program.EntryPoint = InteractiveEntryPoint;
 
@@ -375,7 +377,7 @@ void InteractiveConsole::Run()
 						continue;
 
 					MethodDeclarationSyntax* method = static_cast<MethodDeclarationSyntax*>(member);
-					InteractiveClass->Members.push_back(method);
+					InteractiveClass->Members.push_back(std::unique_ptr<MemberDeclarationSyntax>(member));
 
 					// Re-analyze syntax tree
 					Semanter.Analyze(ParentSyntaxTree, ParentSemanticModel);
@@ -388,7 +390,6 @@ void InteractiveConsole::Run()
 						Diagnostics.Reset();
 
 						InteractiveClass->Members.pop_back();
-						delete method;
 						continue;
 					}
 
@@ -421,7 +422,7 @@ void InteractiveConsole::Run()
 
 			if (!pushedFrame)
 			{
-				InteractiveEntryPoint = static_cast<MethodSymbol*>(ParentSemanticModel.Table->LookupSymbol(InteractiveMethod));
+				InteractiveEntryPoint = static_cast<MethodSymbol*>(ParentSemanticModel.Table->LookupSymbol(InteractiveMethod).value_or(nullptr));
 				Program.EntryPoint = InteractiveEntryPoint;
 				Runtimer.PushFrame(InteractiveEntryPoint);
 				pushedFrame = true;

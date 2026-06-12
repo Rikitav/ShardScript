@@ -13,6 +13,7 @@
 #include <ranges>
 #include <new>
 #include <utility>
+#include <optional>
 
 using namespace std::ranges;
 using namespace std::views;
@@ -80,16 +81,16 @@ void SymbolTable::ClearSymbols()
 	methodsList.clear();
 }
 
-SyntaxSymbol *const SymbolTable::LookupSymbol(SyntaxNode *const node)
+std::optional<SyntaxSymbol*> SymbolTable::LookupSymbol(SyntaxNode *const node)
 {
 	auto choise = nodeToSymbolMap.find(node);
-	return choise == nodeToSymbolMap.end() ? nullptr : choise->second;
+	return choise == nodeToSymbolMap.end() ? std::nullopt : std::optional<SyntaxSymbol*>(choise->second);
 }
 
-SyntaxNode *const SymbolTable::GetSyntaxNode(SyntaxSymbol * const symbol)
+std::optional<SyntaxNode*> SymbolTable::GetSyntaxNode(SyntaxSymbol * const symbol)
 {
 	auto choise = symbolToNodeMap.find(symbol);
-	return choise == symbolToNodeMap.end() ? nullptr : choise->second;
+	return choise == symbolToNodeMap.end() ? std::nullopt : std::optional<SyntaxNode*>(choise->second);
 }
 
 void SymbolTable::BindSymbol(SyntaxNode* node, SyntaxSymbol* symbol)

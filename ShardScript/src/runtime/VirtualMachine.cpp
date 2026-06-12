@@ -169,6 +169,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			TypeSymbol* type = decoder.AbsorbTypeSymbol();
 			if (PendingTypeArguments.size() <= index)
 				PendingTypeArguments.resize(index + 1);
+
 			PendingTypeArguments[index] = type;
 			break;
 		}
@@ -212,6 +213,66 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 
 			garbageCollector.SetStaticField(field, fieldValue);
 			garbageCollector.CollectInstance(fieldValue);
+			break;
+		}
+
+		case OpCode::NEWARRAY:
+		{
+			TypeSymbol* type = decoder.AbsorbTypeSymbol();
+			type = frame->ResolveType(type);
+			ObjectInstance* instance = garbageCollector.AllocateInstance(type);
+			frame->PushStack(instance);
+			break;
+		}
+
+		case OpCode::NEWDYNAMICARRAY:
+		{
+			TypeSymbol* elementType = decoder.AbsorbTypeSymbol();
+			elementType = frame->ResolveType(elementType);
+
+			ObjectInstance* sizeInstance = frame->PopStack();
+			int64_t length = sizeInstance->AsInteger();
+			garbageCollector.CollectInstance(sizeInstance);
+
+			ObjectInstance* instance = garbageCollector.AllocateArray(elementType, static_cast<size_t>(length));
+			frame->PushStack(instance);
+			break;
+		}
+
+		case OpCode::LOADARRAYELEMENT:
+		{
+			ObjectInstance* indexInstance = frame->PopStack();
+			ObjectInstance* arrayInstance = frame->PopStack();
+
+			int64_t index = indexInstance->AsInteger();
+			ObjectInstance* element = arrayInstance->GetElement(static_cast<size_t>(index), frame);
+
+			frame->PushStack(element);
+
+			garbageCollector.CollectInstance(indexInstance);
+			break;
+		}
+
+		case OpCode::STOREARRAYELEMENT:
+		{
+			ObjectInstance* valueInstance = frame->PopStack();
+			ObjectInstance* indexInstance = frame->PopStack();
+			ObjectInstance* arrayInstance = frame->PopStack();
+
+			int64_t index = indexInstance->AsInteger();
+			arrayInstance->SetElement(static_cast<size_t>(index), valueInstance, frame);
+
+			garbageCollector.CollectInstance(valueInstance);
+			garbageCollector.CollectInstance(indexInstance);
+			break;
+		}
+
+		case OpCode::ARRAYLENGTH:
+		{
+			ObjectInstance* arrayInstance = frame->PopStack();
+			int64_t length = static_cast<int64_t>(arrayInstance->GetArrayLength());
+			frame->PushStack(garbageCollector.FromValue(length));
+			garbageCollector.CollectInstance(arrayInstance);
 			break;
 		}
 
@@ -596,14 +657,17 @@ ObjectInstance* VirtualMachine::InstantiateObject(TypeSymbol* type, ConstructorS
 	return newInstance;
 }
 
-ObjectInstance* shard::VirtualMachine::InstantiateDelegate(DelegateTypeSymbol* type)
+ObjectInstance* VirtualMachine::InstantiateDelegate(DelegateTypeSymbol* type)
 {
 	ObjectInstance* newInstance = garbageCollector.AllocateInstance(type);
 	return newInstance;
 }
 
-VirtualMachine::VirtualMachine(ApplicationDomain* appDomain) : domain(appDomain),
-	program(domain->GetProgram()), garbageCollector(domain->GetGarbageCollector()), math(garbageCollector)
+VirtualMachine::VirtualMachine(ApplicationDomain* appDomain) :
+	domain(appDomain),
+	program(domain->GetProgram()),
+	garbageCollector(domain->GetGarbageCollector()),
+	math(garbageCollector)
 {
 	AbortFlag = false;
 }
@@ -613,25 +677,27 @@ CallStackFrame* VirtualMachine::CurrentFrame() const
 	if (CallStack.empty())
 		return nullptr;
 
-	return CallStack.top();
+	return CallStack.top().get();
 }
 
 CallStackFrame* VirtualMachine::PushFrame(MethodSymbol* methodSymbol)
 {
-	CallStackFrame* frame = new CallStackFrame(this, CurrentFrame(), nullptr, methodSymbol);	
+	auto frame = std::make_unique<CallStackFrame>(this, CurrentFrame(), nullptr, methodSymbol);
 	frame->TypeArguments = std::move(PendingTypeArguments);
 	PendingTypeArguments.clear();
-	CallStack.push(frame);
-	return frame;
+	CallStackFrame* rawFrame = frame.get();
+	CallStack.push(std::move(frame));
+	return rawFrame;
 }
 
 CallStackFrame* VirtualMachine::PushFrame(MethodSymbol* methodSymbol, TypeSymbol* withinType)
 {
-	CallStackFrame* frame = new CallStackFrame(this, CurrentFrame(), withinType, methodSymbol);	
+	auto frame = std::make_unique<CallStackFrame>(this, CurrentFrame(), withinType, methodSymbol);
 	frame->TypeArguments = std::move(PendingTypeArguments);
 	PendingTypeArguments.clear();
-	CallStack.push(frame);
-	return frame;
+	CallStackFrame* rawFrame = frame.get();
+	CallStack.push(std::move(frame));
+	return rawFrame;
 }
 
 void VirtualMachine::PopFrame()
@@ -639,9 +705,7 @@ void VirtualMachine::PopFrame()
 	if (CallStack.empty())
 		return;
 
-	CallStackFrame* current = CurrentFrame();
 	CallStack.pop();
-	delete current;
 }
 
 void VirtualMachine::InvokeMethod(MethodSymbol* method) const

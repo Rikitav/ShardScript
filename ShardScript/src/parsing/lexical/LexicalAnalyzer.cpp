@@ -447,21 +447,21 @@ bool LexicalAnalyzer::ReadNumberLiteral(std::wstring& word, TokenType& type)
 			if (foundDelimeter)
 				break;
 
-			if (!SourceText->ReadNext(PeekSymbol))
+			wchar_t afterDot;
+			if (!SourceText->PeekNext(afterDot))
 				break;
 
-			if (!SourceText->PeekNext(PeekSymbol))
+			if (!IsNumberSymbol(afterDot))
 				break;
 
-			if (!IsNumberSymbol(PeekSymbol))
-				break;
+			SourceText->ReadNext(PeekSymbol);
+			SourceText->ReadNext(PeekSymbol);
 
 			foundDelimeter = true;
 			type = TokenType::DoubleLiteral;
 
 			word += '.';
-			word += PeekSymbol;
-			SourceText->ReadNext(PeekSymbol);
+			word += afterDot;
 			continue;
 		}
 
@@ -527,6 +527,25 @@ bool LexicalAnalyzer::IsPunctuation(std::wstring& word, TokenType& type)
 
 		case '.':
 		{
+			if (SourceText->PeekNext(PeekSymbol))
+			{
+				if (PeekSymbol == '.')
+				{
+					SourceText->ReadNext(PeekSymbol);
+					if (SourceText->PeekNext(PeekSymbol) && PeekSymbol == '&')
+					{
+						SourceText->ReadNext(PeekSymbol);
+						type = TokenType::RangeInclusiveOperator;
+						word = L"..&";
+						return true;
+					}
+
+					type = TokenType::RangeOperator;
+					word = L"..";
+					return true;
+				}
+			}
+
 			type = TokenType::Delimeter;
 			word = '.';
 			return true;
@@ -1280,6 +1299,11 @@ bool LexicalAnalyzer::IsLoopKeyword(std::wstring& word, TokenType& type)
 	else if (word == L"foreach")
 	{
 		type = TokenType::ForeachKeyword;
+		return true;
+	}
+	else if (word == L"in")
+	{
+		type = TokenType::InKeyword;
 		return true;
 	}
 	else

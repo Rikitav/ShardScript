@@ -19,14 +19,14 @@ StringStreamReader::StringStreamReader(const std::wstring& name, std::wstringstr
 StringStreamReader::StringStreamReader(const std::wstring& name, const std::wstring& source) : SourceTextProvider(), name(name)
 {
 	stringStream = std::wstringstream(source);
-	stringStream.imbue(std::locale("en_US.UTF8"));
+	stringStream.imbue(std::locale::classic());
 }
 
 StringStreamReader::StringStreamReader(const std::wstring& name, const wchar_t* source, size_t count) : SourceTextProvider(), name(name)
 {
 	std::wstring srcStr = std::wstring(source, count);
 	stringStream = std::wstringstream(srcStr);
-	stringStream.imbue(std::locale("en_US.UTF8"));
+	stringStream.imbue(std::locale::classic());
 }
 
 StringStreamReader::~StringStreamReader()

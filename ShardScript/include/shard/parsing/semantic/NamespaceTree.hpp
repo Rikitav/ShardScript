@@ -32,6 +32,9 @@ namespace shard
 				delete node.second;
 		}
 
+		NamespaceNode(const NamespaceNode&) = delete;
+		NamespaceNode& operator=(const NamespaceNode&) = delete;
+
 		NamespaceNode* Lookup(std::wstring name);
 		NamespaceNode* LookupOrCreate(std::wstring name, NamespaceSymbol* current);
 	};
@@ -48,5 +51,8 @@ namespace shard
 		{
 			delete Root;
 		}
+
+		NamespaceTree(const NamespaceTree&) = delete;
+		NamespaceTree& operator=(const NamespaceTree&) = delete;
 	};
 }

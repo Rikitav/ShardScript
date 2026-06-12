@@ -2,16 +2,13 @@
 
 using namespace shard;
 
-ApplicationDomain::ApplicationDomain(ProgramVirtualImage* program) : virtualProgram(program), virtualMachine(this), garbageCollector(this)
+ApplicationDomain::ApplicationDomain(std::unique_ptr<ProgramVirtualImage> program)
+	: virtualProgram(std::move(program)), virtualMachine(this), garbageCollector(this)
 {
 
 }
 
-ApplicationDomain::~ApplicationDomain()
-{
-	if (virtualProgram != nullptr)
-		delete virtualProgram;
-}
+ApplicationDomain::~ApplicationDomain() = default;
 
 ProgramVirtualImage& ApplicationDomain::GetProgram()
 {

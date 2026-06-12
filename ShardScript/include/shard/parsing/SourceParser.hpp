@@ -1,6 +1,7 @@
 #pragma once
 #include <shard/ShardScriptAPI.hpp>
 
+#include <memory>
 #include <shard/parsing/lexical/SourceProvider.hpp>
 #include <shard/parsing/analysis/DiagnosticsContext.hpp>
 #include <shard/parsing/MemberDeclarationInfo.hpp>
@@ -48,12 +49,14 @@
 #include <shard/syntax/nodes/Expressions/LinkedExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/ObjectExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/CollectionExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/RangeExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/LambdaExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/TernaryExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/IfExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/SwitchExpressionSyntax.hpp>
 
 #include <shard/syntax/nodes/Loops/ForStatementSyntax.hpp>
+#include <shard/syntax/nodes/Loops/ForEachStatementSyntax.hpp>
 #include <shard/syntax/nodes/Loops/WhileStatementSyntax.hpp>
 #include <shard/syntax/nodes/Loops/UntilStatementSyntax.hpp>
 
@@ -75,7 +78,7 @@ namespace shard
 		void FromSourceProvider(shard::SyntaxTree& syntaxTree, shard::SourceProvider& reader);
 
 		// 1. top tier components
-		shard::CompilationUnitSyntax *const ReadCompilationUnit(shard::SourceProvider& reader);
+		std::unique_ptr<shard::CompilationUnitSyntax> ReadCompilationUnit(shard::SourceProvider& reader);
 		shard::UsingDirectiveSyntax *const ReadUsingDirective(shard::SourceProvider& reader, shard::SyntaxNode *const parent);
 		shard::NamespaceDeclarationSyntax *const ReadNamespaceDeclaration(shard::SourceProvider& reader, shard::SyntaxNode *const parent);
 
@@ -117,6 +120,7 @@ namespace shard
 		shard::WhileStatementSyntax *const ReadWhileStatement(shard::SourceProvider& reader, shard::SyntaxNode *const parent);
 		shard::UntilStatementSyntax *const ReadUntilStatement(shard::SourceProvider& reader, shard::SyntaxNode *const parent);
 		shard::ForStatementSyntax *const ReadForStatement(shard::SourceProvider& reader, shard::SyntaxNode *const parent);
+		shard::ForEachStatementSyntax *const ReadForEachStatement(shard::SourceProvider& reader, shard::SyntaxNode *const parent);
 		shard::TryStatementSyntax *const ReadTryStatement(shard::SourceProvider& reader, shard::SyntaxNode *const parent);
 
 		// 7. Expression

@@ -290,6 +290,12 @@ void ByteCodeEncoder::EmitNewArray(std::vector<std::byte>& code, ArrayTypeSymbol
     AppendData(code, &type, sizeof(type));
 }
 
+void ByteCodeEncoder::EmitNewDynamicArray(std::vector<std::byte>& code, TypeSymbol* elementType)
+{
+    AppendDataT(code, OpCode::NEWDYNAMICARRAY);
+    AppendData(code, &elementType, sizeof(elementType));
+}
+
 void ByteCodeEncoder::EmitLoadArrayElement(std::vector<std::byte>& code)
 {
     AppendDataT(code, OpCode::LOADARRAYELEMENT);
@@ -298,6 +304,11 @@ void ByteCodeEncoder::EmitLoadArrayElement(std::vector<std::byte>& code)
 void ByteCodeEncoder::EmitStoreArrayElement(std::vector<std::byte>& code)
 {
     AppendDataT(code, OpCode::STOREARRAYELEMENT);
+}
+
+void ByteCodeEncoder::EmitArrayLength(std::vector<std::byte>& code)
+{
+    AppendDataT(code, OpCode::ARRAYLENGTH);
 }
 
 void ByteCodeEncoder::EmitLoadStaticField(std::vector<std::byte>& code, FieldSymbol* type)

@@ -13,7 +13,7 @@ namespace shard
 		__declspec(dllexport) ObjectInstance* shard_file_ReadAllText(const CallState& context) noexcept(false)
 		{
 			std::wstring fileName = context.Args[0]->AsString(); // fileName
-			std::wifstream fileStream(fileName);
+			std::wifstream fileStream(fileName.c_str());
 
 			if (!fileStream.is_open())
 				throw std::runtime_error("Failed to open text file.");
@@ -26,7 +26,7 @@ namespace shard
 		{
 			std::wstring fileName = context.Args[0]->AsString(); // fileName
 			std::wstring content = context.Args[1]->AsString(); // content
-			std::wofstream fileStream(fileName);
+			std::wofstream fileStream(fileName.c_str());
 
 			if (!fileStream.is_open())
 				throw std::runtime_error("Failed to open text file.");
@@ -43,7 +43,7 @@ namespace shard
 		{
 			std::wstring fileName = context.Args[0]->AsString(); // fileName
 			std::wstring content = context.Args[1]->AsString(); // content
-			std::wofstream fileStream(fileName, std::ios_base::app);
+			std::wofstream fileStream(fileName.c_str(), std::ios_base::app);
 
 			if (!fileStream.is_open())
 				throw std::runtime_error("Failed to open text file.");

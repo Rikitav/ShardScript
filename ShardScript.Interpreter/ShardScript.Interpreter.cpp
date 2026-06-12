@@ -1,6 +1,7 @@
 ﻿#include <windows.h>
 #include <algorithm>
 #include <iostream>
+#include <memory>
 #include <string>
 #include <stdexcept>
 #include <exception>
@@ -25,8 +26,6 @@ using namespace shard;
 namespace fs = std::filesystem;
 
 const fs::path stdlibFilename = "ShardScript.Framework.dll";
-
-CompilationContext* compiler = nullptr;
 
 static void SigIntHandler(int signal)
 {
@@ -154,7 +153,7 @@ static bool CheckFilesExisting()
 	return !anyUnrealFiles;
 }
 
-static void LoadLibrariesFromDirectoryPath(fs::path path)
+static void LoadLibrariesFromDirectoryPath(CompilationContext* compiler, fs::path path)
 {
 	for (const fs::directory_entry& entry : fs::directory_iterator(path))
 	{
@@ -193,6 +192,8 @@ static CompilationUnitSyntax* GetCompilationUnit(SyntaxNode* node)
 
 int wmain(int argc, wchar_t* argv[])
 {
+	CompilationContext compiler;
+
 	try
 	{
 		setlocale(LC_ALL, "");
@@ -223,9 +224,8 @@ int wmain(int argc, wchar_t* argv[])
 		if (!CheckFilesExisting())
 			return 1;
 
-		compiler = new CompilationContext();
-		compiler->SetEntryPoint = ConsoleArguments::RunProgram || ConsoleArguments::ShowDecompile;
-		DiagnosticsContext& diagnostics = compiler->GetDiagnosticsContext();
+		DiagnosticsContext& diagnostics = compiler.GetDiagnosticsContext();
+		compiler.SetEntryPoint = ConsoleArguments::RunProgram || ConsoleArguments::ShowDecompile;
 
 		if (!ConsoleArguments::ExcludeStd)
 		{
@@ -238,7 +238,7 @@ int wmain(int argc, wchar_t* argv[])
 				return 1;
 			}
 
-			compiler->AddLib(stdlibFilepath.wstring());
+			compiler.AddLib(stdlibFilepath.wstring());
 		}
 
 		fs::path workingDirectory = GetWorkingDirectoryPath();
@@ -252,34 +252,34 @@ int wmain(int argc, wchar_t* argv[])
 		{
 			FileReader reader(file);
 			LexicalAnalyzer lexer(reader);
-			compiler->EnrichTree(lexer, CompilationUnitOrigin::SourceFile);
+			compiler.EnrichTree(lexer, CompilationUnitOrigin::SourceFile);
 		}
 
 		if (ConsoleArguments::UseInteractive)
 		{
-			compiler->SetPopExpressionStatement(false);
+			compiler.SetPopExpressionStatement(false);
 		}
 
-		ApplicationDomain* domain = compiler->Compile();
+		auto domain = compiler.Compile();
 		if (diagnostics.AnyError)
 			throw diagnostics_exception("Compilation ended with errors.");
 
 		if (ConsoleArguments::UseInteractive)
 		{
-			InteractiveConsole repl(compiler, domain);
+			InteractiveConsole repl(&compiler, domain.get());
 			repl.Run();
 			return 0;
 		}
 
 		if (ConsoleArguments::ShowDecompile)
 		{
-			SymbolTable* table = compiler->GetSemanticModel().Table;
+			SymbolTable* table = compiler.GetSemanticModel().Table.get();
 			ProgramDisassembler disassembler;
 
 			const std::vector<MethodSymbol*>& methods = table->GetMethodSymbols();
 			for (const auto& method : methods)
 			{
-				CompilationUnitSyntax* unit = GetCompilationUnit(table->GetSyntaxNode(method));
+				CompilationUnitSyntax* unit = GetCompilationUnit(table->GetSyntaxNode(method).value_or(nullptr));
 				if (unit->Origin != CompilationUnitOrigin::SourceFile)
 					continue;
 
@@ -295,7 +295,7 @@ int wmain(int argc, wchar_t* argv[])
 	}
 	catch (const diagnostics_exception& err)
 	{
-		DiagnosticsContext& diagnostics = compiler->GetDiagnosticsContext();
+		DiagnosticsContext& diagnostics = compiler.GetDiagnosticsContext();
 		if (diagnostics.AnyError)
 		{
 			std::wcout << L"=== Diagnostics output ===" << std::endl;
@@ -308,6 +308,5 @@ int wmain(int argc, wchar_t* argv[])
 		std::cout << "CRITICAL ERROR : " << err.what() << std::endl;
 	}
 
-	//GarbageCollector::Terminate();
-	//FrameworkLoader::Destroy();
+	return 0;
 }
