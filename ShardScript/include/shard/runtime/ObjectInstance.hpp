@@ -17,12 +17,23 @@ namespace shard
 		const bool IsTransient;
 		fpos_t ReferencesCounter;
 		void* const Memory;
+		size_t ArrayLength = 0;
+		size_t ArrayMemorySize = 0;
 
 	public:
 		inline ObjectInstance(const TypeSymbol* info, void* memory, bool isTransient)
-			: Info(info), Memory(memory), IsTransient(isTransient), ReferencesCounter(0) { }
+			: Info(info), Memory(memory), IsTransient(isTransient), ReferencesCounter(0)
+		{
+			if (info != nullptr)
+				ArrayMemorySize = info->MemoryBytesSize;
+		}
 		
 		inline ~ObjectInstance() = default;
+
+		inline size_t GetArrayLength() const { return ArrayLength; }
+		inline void SetArrayLength(size_t length) { ArrayLength = length; }
+		inline size_t GetMemorySize() const { return ArrayMemorySize; }
+		inline void SetMemorySize(size_t size) { ArrayMemorySize = size; }
 
 		const TypeSymbol* getInfo() const;
 		void* getMemory() const;

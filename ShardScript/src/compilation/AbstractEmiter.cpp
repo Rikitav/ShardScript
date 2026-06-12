@@ -261,7 +261,7 @@ void AbstractEmiter::SetEntryPoint()
 	{
 		for (MethodSymbol* entry : EntryPointCandidates)
 		{
-			MethodDeclarationSyntax* decl = static_cast<MethodDeclarationSyntax*>(Table->GetSyntaxNode(entry));
+			MethodDeclarationSyntax* decl = static_cast<MethodDeclarationSyntax*>(Table->GetSyntaxNode(entry).value_or(nullptr));
 			Diagnostics.ReportError(decl->IdentifierToken, L"Script cannot have multiple entry points");
 		}
 
@@ -280,8 +280,8 @@ void AbstractEmiter::SetGeneratingTarget(MethodSymbol* method)
 
 void AbstractEmiter::VisitSyntaxTree(SyntaxTree& tree)
 {
-	for (CompilationUnitSyntax* unit : tree.CompilationUnits)
-		VisitCompilationUnit(unit);
+	for (const auto& unit : tree.CompilationUnits)
+		VisitCompilationUnit(unit.get());
 }
 
 void AbstractEmiter::VisitArgumentsList(ArgumentsListSyntax* node)
@@ -296,7 +296,7 @@ void AbstractEmiter::VisitArgumentsList(ArgumentsListSyntax* node)
 
 void AbstractEmiter::VisitMethodDeclaration(MethodDeclarationSyntax* const node)
 {
-	GeneratingFor = LookupSymbol<MethodSymbol>(node);
+	GeneratingFor = LookupSymbol<MethodSymbol>(node).value_or(nullptr);
 	if (GeneratingFor == nullptr)
 	{
 		Diagnostics.ReportError(node->IdentifierToken, L"Emiting target not found");
@@ -343,7 +343,7 @@ void AbstractEmiter::VisitMethodDeclaration(MethodDeclarationSyntax* const node)
 
 void AbstractEmiter::VisitConstructorDeclaration(ConstructorDeclarationSyntax* const node)
 {
-	GeneratingFor = LookupSymbol<ConstructorSymbol>(node);
+	GeneratingFor = LookupSymbol<ConstructorSymbol>(node).value_or(nullptr);
 	if (GeneratingFor == nullptr)
 	{
 		Diagnostics.ReportError(node->IdentifierToken, L"Emiting target not found");
@@ -365,7 +365,7 @@ void AbstractEmiter::VisitConstructorDeclaration(ConstructorDeclarationSyntax* c
 
 void AbstractEmiter::VisitAccessorDeclaration(AccessorDeclarationSyntax* const node)
 {
-	GeneratingFor = LookupSymbol<AccessorSymbol>(node);
+	GeneratingFor = LookupSymbol<AccessorSymbol>(node).value_or(nullptr);
 	if (GeneratingFor == nullptr)
 	{
 		Diagnostics.ReportError(node->IdentifierToken, L"Emiting target not found");
@@ -404,7 +404,7 @@ void AbstractEmiter::VisitExpressionStatement(ExpressionStatementSyntax* const n
 
 void AbstractEmiter::VisitVariableStatement(VariableStatementSyntax* const node)
 {
-	VariableSymbol* var = LookupSymbol<VariableSymbol>(node);
+	VariableSymbol* var = LookupSymbol<VariableSymbol>(node).value_or(nullptr);
 	VisitExpression(node->Expression);
 	Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, var->SlotIndex);
 }
@@ -550,6 +550,67 @@ void AbstractEmiter::VisitForStatement(ForStatementSyntax* const node)
 	Loops.pop();
 }
 
+void AbstractEmiter::VisitForEachStatement(ForEachStatementSyntax* const node)
+{
+	Loops.emplace();
+	LoopScope& scope = Loops.top();
+
+	uint16_t base = GeneratingFor->GetEvalStackArgumentsCount();
+	uint16_t arraySlot = base + GeneratingFor->AddVariableCount();
+	uint16_t indexSlot = base + GeneratingFor->AddVariableCount();
+	uint16_t lengthSlot = base + GeneratingFor->AddVariableCount();
+
+	VisitExpression(node->RangeExpression);
+	Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, arraySlot);
+
+	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, arraySlot);
+	Encoder.EmitDuplicate(GeneratingFor->ExecutableByteCode);
+	Encoder.EmitArrayLength(GeneratingFor->ExecutableByteCode);
+	Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, lengthSlot);
+
+	Encoder.EmitLoadConstInt64(GeneratingFor->ExecutableByteCode, 0);
+	Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, indexSlot);
+
+	scope.LoopStart = GeneratingFor->ExecutableByteCode.size();
+
+	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, indexSlot);
+	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, lengthSlot);
+	Encoder.EmitCompareLess(GeneratingFor->ExecutableByteCode);
+
+	scope.LoopEndBacktracks.push_back(GeneratingFor->ExecutableByteCode.size());
+	Encoder.EmitJumpFalse(GeneratingFor->ExecutableByteCode, 0);
+
+	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, arraySlot);
+	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, indexSlot);
+	Encoder.EmitLoadArrayElement(GeneratingFor->ExecutableByteCode);
+
+	VariableSymbol* loopVariable = LookupSymbol<VariableSymbol>(node).value_or(nullptr);
+	if (loopVariable != nullptr)
+		Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, loopVariable->SlotIndex);
+	else
+		Encoder.EmitPop(GeneratingFor->ExecutableByteCode);
+
+	VisitStatementsBlock(node->StatementsBlock);
+
+	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, indexSlot);
+	Encoder.EmitLoadConstInt64(GeneratingFor->ExecutableByteCode, 1);
+	Encoder.EmitMathAdd(GeneratingFor->ExecutableByteCode);
+	Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, indexSlot);
+
+	scope.BlockEnd = GeneratingFor->ExecutableByteCode.size();
+	Encoder.EmitJump(GeneratingFor->ExecutableByteCode, scope.LoopStart);
+
+	scope.LoopEnd = GeneratingFor->ExecutableByteCode.size();
+
+	for (size_t backtrack : scope.BlockEndBacktracks)
+		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack + sizeof(OpCode), &scope.BlockEnd, sizeof(size_t));
+
+	for (size_t backtrack : scope.LoopEndBacktracks)
+		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack + sizeof(OpCode), &scope.LoopEnd, sizeof(size_t));
+
+	Loops.pop();
+}
+
 static bool IsConditionalClause(SyntaxKind kind)
 {
 	return kind == SyntaxKind::IfStatement
@@ -636,7 +697,7 @@ void AbstractEmiter::VisitElseStatement(ElseStatementSyntax* const node)
 
 void AbstractEmiter::VisitLiteralExpression(LiteralExpressionSyntax* const node)
 {
-	LiteralSymbol* const symbol = static_cast<LiteralSymbol*>(Table->LookupSymbol(node));
+	LiteralSymbol* const symbol = static_cast<LiteralSymbol*>(Table->LookupSymbol(node).value_or(nullptr));
 	switch (symbol->LiteralType)
 	{
 		case TokenType::NullLiteral:
@@ -705,6 +766,64 @@ void AbstractEmiter::VisitCollectionExpression(CollectionExpressionSyntax* const
 		VisitExpression(*riter);
 
 	Encoder.EmitNewArray(GeneratingFor->ExecutableByteCode, node->Symbol);
+}
+
+void AbstractEmiter::VisitRangeExpression(RangeExpressionSyntax* const node)
+{
+	uint16_t base = GeneratingFor->GetEvalStackArgumentsCount();
+	uint16_t upperSlot = base + GeneratingFor->AddVariableCount();
+	uint16_t lowerSlot = base + GeneratingFor->AddVariableCount();
+	uint16_t lengthSlot = base + GeneratingFor->AddVariableCount();
+	uint16_t arraySlot = base + GeneratingFor->AddVariableCount();
+	uint16_t indexSlot = base + GeneratingFor->AddVariableCount();
+
+	VisitExpression(node->Right);
+	Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, upperSlot);
+
+	VisitExpression(node->Left);
+	Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, lowerSlot);
+
+	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, upperSlot);
+	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, lowerSlot);
+	Encoder.EmitMathSub(GeneratingFor->ExecutableByteCode);
+
+	if (node->IsInclusive)
+	{
+		Encoder.EmitLoadConstInt64(GeneratingFor->ExecutableByteCode, 1);
+		Encoder.EmitMathAdd(GeneratingFor->ExecutableByteCode);
+	}
+
+	Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, lengthSlot);
+	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, lengthSlot);
+	Encoder.EmitNewDynamicArray(GeneratingFor->ExecutableByteCode, SymbolTable::Primitives::Integer);
+	Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, arraySlot);
+
+	Encoder.EmitLoadConstInt64(GeneratingFor->ExecutableByteCode, 0);
+	Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, indexSlot);
+
+	size_t fillStart = GeneratingFor->ExecutableByteCode.size();
+
+	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, arraySlot);
+	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, indexSlot);
+	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, lowerSlot);
+	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, indexSlot);
+	Encoder.EmitMathAdd(GeneratingFor->ExecutableByteCode);
+	Encoder.EmitStoreArrayElement(GeneratingFor->ExecutableByteCode);
+
+	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, indexSlot);
+	Encoder.EmitLoadConstInt64(GeneratingFor->ExecutableByteCode, 1);
+	Encoder.EmitMathAdd(GeneratingFor->ExecutableByteCode);
+	Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, indexSlot);
+
+	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, indexSlot);
+	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, lengthSlot);
+	Encoder.EmitCompareLess(GeneratingFor->ExecutableByteCode);
+
+	size_t jumpBacktrack = GeneratingFor->ExecutableByteCode.size();
+	Encoder.EmitJumpTrue(GeneratingFor->ExecutableByteCode, 0);
+	ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, jumpBacktrack + sizeof(OpCode), &fillStart, sizeof(size_t));
+
+	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, arraySlot);
 }
 
 void AbstractEmiter::VisitLambdaExpression(LambdaExpressionSyntax* const node)

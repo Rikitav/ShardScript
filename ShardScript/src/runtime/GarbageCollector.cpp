@@ -138,6 +138,45 @@ ObjectInstance* GarbageCollector::AllocateInstance(const TypeSymbol* objectInfo,
 	}
 
 	ObjectInstance* instance = new ObjectInstance(objectInfo, rawMemory, isTransient);
+
+	if (objectInfo->Kind == SyntaxKind::ArrayType)
+	{
+		const ArrayTypeSymbol* arrayInfo = static_cast<const ArrayTypeSymbol*>(objectInfo);
+		instance->SetArrayLength(arrayInfo->Size);
+		instance->SetMemorySize(objectInfo->MemoryBytesSize);
+	}
+
+	Heap.add(instance);
+	return instance;
+}
+
+ObjectInstance* GarbageCollector::AllocateArray(TypeSymbol* elementType, size_t length, bool isTransient)
+{
+	if (elementType == nullptr)
+		throw std::runtime_error("elementType is nullptr");
+
+	size_t headerSize = SymbolTable::Primitives::Array->MemoryBytesSize;
+	size_t elementSize = elementType->GetInlineSize();
+	size_t totalSize = headerSize + elementSize * length;
+
+	void* rawMemory = nullptr;
+	if (totalSize > 0)
+	{
+		rawMemory = malloc(totalSize);
+		if (rawMemory == nullptr)
+			throw std::runtime_error("cannot allocate memory for dynamic array");
+
+		std::memset(rawMemory, 0, totalSize);
+	}
+
+	ArrayTypeSymbol* arrayType = new ArrayTypeSymbol(elementType);
+	arrayType->Size = length;
+	arrayType->MemoryBytesSize = totalSize;
+	dynamicArrayTypes.emplace_back(arrayType);
+
+	ObjectInstance* instance = new ObjectInstance(arrayType, rawMemory, isTransient);
+	instance->SetArrayLength(length);
+	instance->SetMemorySize(totalSize);
 	Heap.add(instance);
 	return instance;
 }

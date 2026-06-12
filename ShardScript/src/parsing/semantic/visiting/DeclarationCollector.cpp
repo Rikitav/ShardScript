@@ -68,11 +68,11 @@ void DeclarationCollector::VisitCompilationUnit(CompilationUnitSyntax *const nod
 
     if (node->Namespace != nullptr)
     {
-        NamespaceSymbol* symbol = LookupSymbol<NamespaceSymbol>(node->Namespace);
+        NamespaceSymbol* symbol = LookupSymbol<NamespaceSymbol>(node->Namespace.get()).value_or(nullptr);
         if (symbol == nullptr)
         {
-            symbol = SymbolFactory::Namespace(node->Namespace);
-            Table->BindSymbol(node->Namespace, symbol);
+            symbol = SymbolFactory::Namespace(node->Namespace.get());
+            Table->BindSymbol(node->Namespace.get(), symbol);
 
             symbol->Parent = OwnerSymbol();
             if (symbol->Parent != nullptr)
@@ -99,8 +99,8 @@ void DeclarationCollector::VisitCompilationUnit(CompilationUnitSyntax *const nod
     }
 
     // Visiting members of unit
-    for (MemberDeclarationSyntax* member : node->Members)
-        VisitMemberDeclaration(member);
+    for (const auto& member : node->Members)
+        VisitMemberDeclaration(member.get());
 
     if (node->Namespace != nullptr)
         PopScope();
@@ -116,7 +116,7 @@ void DeclarationCollector::VisitNamespaceDeclaration(NamespaceDeclarationSyntax 
 
 void DeclarationCollector::VisitClassDeclaration(ClassDeclarationSyntax *const node)
 {
-    ClassSymbol* symbol = LookupSymbol<ClassSymbol>(node);
+    ClassSymbol* symbol = LookupSymbol<ClassSymbol>(node).value_or(nullptr);
     if (symbol == nullptr)
     {
         symbol = SymbolFactory::Class(node);
@@ -159,8 +159,8 @@ void DeclarationCollector::VisitClassDeclaration(ClassDeclarationSyntax *const n
     for (TypeParameterSymbol* typeParam : symbol->TypeParameters)
         Declare(typeParam);
 
-    for (MemberDeclarationSyntax* member : node->Members)
-        VisitMemberDeclaration(member);
+    for (const auto& member : node->Members)
+        VisitMemberDeclaration(member.get());
 
     if (!symbol->IsStatic && symbol->Constructors.empty())
     {
@@ -177,7 +177,7 @@ void DeclarationCollector::VisitClassDeclaration(ClassDeclarationSyntax *const n
 
 void DeclarationCollector::VisitStructDeclaration(StructDeclarationSyntax *const node)
 {
-    StructSymbol* symbol = LookupSymbol<StructSymbol>(node);
+    StructSymbol* symbol = LookupSymbol<StructSymbol>(node).value_or(nullptr);
     if (symbol == nullptr)
     {
         symbol = SymbolFactory::Struct(node);
@@ -220,8 +220,8 @@ void DeclarationCollector::VisitStructDeclaration(StructDeclarationSyntax *const
     for (TypeParameterSymbol* typeParam : symbol->TypeParameters)
         Declare(typeParam);
 
-    for (MemberDeclarationSyntax* member : node->Members)
-        VisitMemberDeclaration(member);
+    for (const auto& member : node->Members)
+        VisitMemberDeclaration(member.get());
 
     if (!symbol->IsStatic && symbol->Constructors.empty())
     {
@@ -239,7 +239,7 @@ void DeclarationCollector::VisitStructDeclaration(StructDeclarationSyntax *const
 void DeclarationCollector::VisitDelegateDeclaration(DelegateDeclarationSyntax *const node)
 {
     // Creating symbol
-    DelegateTypeSymbol* symbol = LookupSymbol<DelegateTypeSymbol>(node);
+    DelegateTypeSymbol* symbol = LookupSymbol<DelegateTypeSymbol>(node).value_or(nullptr);
     if (symbol == nullptr)
     {
         symbol = SymbolFactory::Delegate(node);
@@ -277,7 +277,7 @@ void DeclarationCollector::VisitDelegateDeclaration(DelegateDeclarationSyntax *c
 void DeclarationCollector::VisitFieldDeclaration(FieldDeclarationSyntax *const node)
 {
     // Creating symbol
-    FieldSymbol* symbol = LookupSymbol<FieldSymbol>(node);
+    FieldSymbol* symbol = LookupSymbol<FieldSymbol>(node).value_or(nullptr);
     if (symbol == nullptr)
     {
         symbol = SymbolFactory::Field(node);
@@ -322,7 +322,7 @@ void DeclarationCollector::VisitFieldDeclaration(FieldDeclarationSyntax *const n
 void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax *const node)
 {
     // Creating symbol
-    MethodSymbol* symbol = LookupSymbol<MethodSymbol>(node);
+    MethodSymbol* symbol = LookupSymbol<MethodSymbol>(node).value_or(nullptr);
     if (symbol == nullptr)
     {
         symbol = SymbolFactory::Method(node);
@@ -393,7 +393,7 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax *const
 void DeclarationCollector::VisitConstructorDeclaration(ConstructorDeclarationSyntax *const node)
 {
     // Creating symbol
-    ConstructorSymbol* symbol = LookupSymbol<ConstructorSymbol>(node);
+    ConstructorSymbol* symbol = LookupSymbol<ConstructorSymbol>(node).value_or(nullptr);
     if (symbol == nullptr)
     {
         symbol = SymbolFactory::Constructor(node);
@@ -458,7 +458,7 @@ void DeclarationCollector::VisitConstructorDeclaration(ConstructorDeclarationSyn
 void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax *const node)
 {
     // Creating symbol
-    PropertySymbol* symbol = LookupSymbol<PropertySymbol>(node);
+    PropertySymbol* symbol = LookupSymbol<PropertySymbol>(node).value_or(nullptr);
     if (symbol == nullptr)
     {
         symbol = SymbolFactory::Property(node);
@@ -526,7 +526,7 @@ void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax *c
 void DeclarationCollector::VisitIndexatorDeclaration(IndexatorDeclarationSyntax *const node)
 {
     // Creating symbol
-    IndexatorSymbol* symbol = LookupSymbol<IndexatorSymbol>(node);
+    IndexatorSymbol* symbol = LookupSymbol<IndexatorSymbol>(node).value_or(nullptr);
     if (symbol == nullptr)
     {
         symbol = SymbolFactory::Indexator(node);
@@ -578,10 +578,10 @@ void DeclarationCollector::VisitIndexatorDeclaration(IndexatorDeclarationSyntax 
 
     PopScope();
 
+    // TODO: fix
+    /*
     for (ParameterSymbol* const param : symbol->Parameters)
     {
-        // TODO: fix
-        /*
         if (symbol->Getter != nullptr)
         {
             param->SlotIndex = symbol->Getter->GetEvalStackArgumentsCount() + symbol->Getter->AddVariableCount();
@@ -591,8 +591,8 @@ void DeclarationCollector::VisitIndexatorDeclaration(IndexatorDeclarationSyntax 
         {
             symbol->Setter->AddVariableCount();
         }
-        */
     }
+    */
 
     if (symbol->Getter != nullptr)
     {
@@ -627,12 +627,12 @@ void DeclarationCollector::VisitAccessorDeclaration(AccessorDeclarationSyntax *c
     if(node->Parent->Kind == SyntaxKind::PropertyDeclaration)
 	{
 		PropertyDeclarationSyntax* propertyNode = static_cast<PropertyDeclarationSyntax*>(node->Parent);
-		propertySymbol = LookupSymbol<PropertySymbol>(propertyNode);
+		propertySymbol = LookupSymbol<PropertySymbol>(propertyNode).value_or(nullptr);
 	}
     else if(node->Parent->Kind == SyntaxKind::IndexatorDeclaration)
     {
         IndexatorDeclarationSyntax* indexerNode = static_cast<IndexatorDeclarationSyntax*>(node->Parent);
-        propertySymbol = LookupSymbol<IndexatorSymbol>(indexerNode);
+        propertySymbol = LookupSymbol<IndexatorSymbol>(indexerNode).value_or(nullptr);
     }
     else
     {
@@ -640,7 +640,7 @@ void DeclarationCollector::VisitAccessorDeclaration(AccessorDeclarationSyntax *c
         return;
     }
 
-    AccessorSymbol* symbol = LookupSymbol<AccessorSymbol>(node);
+    AccessorSymbol* symbol = LookupSymbol<AccessorSymbol>(node).value_or(nullptr);
     if (symbol == nullptr)
     {
         // Creating symbol
@@ -712,7 +712,7 @@ void DeclarationCollector::VisitAccessorDeclaration(AccessorDeclarationSyntax *c
 
 void DeclarationCollector::VisitVariableStatement(VariableStatementSyntax *const node)
 {
-    VariableSymbol* symbol = LookupSymbol<VariableSymbol>(node);
+    VariableSymbol* symbol = LookupSymbol<VariableSymbol>(node).value_or(nullptr);
     if (symbol == nullptr)
     {
         std::wstring varName = node->IdentifierToken.Word;
@@ -736,6 +736,39 @@ void DeclarationCollector::VisitVariableStatement(VariableStatementSyntax *const
 
     if (node->Expression != nullptr)
         VisitExpression(node->Expression);
+
+    PopScope();
+}
+
+void DeclarationCollector::VisitForEachStatement(ForEachStatementSyntax *const node)
+{
+    VariableSymbol* symbol = LookupSymbol<VariableSymbol>(node).value_or(nullptr);
+    if (symbol == nullptr)
+    {
+        std::wstring varName = node->IdentifierToken.Word;
+        symbol = new VariableSymbol(varName, SymbolTable::Primitives::Integer);
+
+        MethodSymbol *const hostMethod = FindHostMethodSymbol();
+        symbol->SlotIndex = hostMethod->GetEvalStackArgumentsCount() + hostMethod->AddVariableCount();
+
+        Table->BindSymbol(node, symbol);
+
+        symbol->Parent = OwnerSymbol();
+        if (symbol->Parent != nullptr)
+        {
+            symbol->FullName = symbol->Parent->FullName + L"." + symbol->Name;
+            symbol->Parent->OnSymbolDeclared(symbol);
+        }
+    }
+
+    Declare(symbol);
+    PushScope(symbol);
+
+    if (node->RangeExpression != nullptr)
+        VisitExpression(node->RangeExpression);
+
+    if (node->StatementsBlock != nullptr)
+        VisitStatementsBlock(node->StatementsBlock);
 
     PopScope();
 }

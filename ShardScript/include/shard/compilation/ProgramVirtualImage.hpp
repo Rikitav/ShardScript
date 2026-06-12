@@ -16,5 +16,6 @@ namespace shard
 
 		inline ProgramVirtualImage() { }
 		inline ProgramVirtualImage(const ProgramVirtualImage& other) = delete;
+		inline ProgramVirtualImage& operator=(const ProgramVirtualImage& other) = delete;
 	};
 }

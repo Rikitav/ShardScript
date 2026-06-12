@@ -70,8 +70,10 @@ namespace shard
 		void EmitStoreField(std::vector<std::byte>& code, FieldSymbol* type);
 
 		void EmitNewArray(std::vector<std::byte>& code, ArrayTypeSymbol* type);
+		void EmitNewDynamicArray(std::vector<std::byte>& code, TypeSymbol* elementType);
 		void EmitLoadArrayElement(std::vector<std::byte>& code);
 		void EmitStoreArrayElement(std::vector<std::byte>& code);
+		void EmitArrayLength(std::vector<std::byte>& code);
 
 		void EmitLoadStaticField(std::vector<std::byte>& code, FieldSymbol* type);
 		void EmitStoreStaticField(std::vector<std::byte>& code, FieldSymbol* type);

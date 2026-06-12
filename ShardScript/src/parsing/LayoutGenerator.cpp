@@ -43,7 +43,7 @@ void LayoutGenerator::FixObjectLayout(SemanticModel& semanticModel, TypeSymbol* 
 		{
 			if (returnType->State == TypeLayoutingState::Visiting)
 			{
-				SyntaxToken token = static_cast<FieldDeclarationSyntax*>(semanticModel.Table->GetSyntaxNode(field))->IdentifierToken;
+				SyntaxToken token = static_cast<FieldDeclarationSyntax*>(semanticModel.Table->GetSyntaxNode(field).value_or(nullptr))->IdentifierToken;
 				Diagnostics.ReportError(token, L"Recursive struct inlining");
 				continue;
 			}

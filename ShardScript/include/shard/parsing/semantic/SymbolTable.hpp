@@ -12,6 +12,7 @@
 #include <unordered_map>
 #include <vector>
 #include <string>
+#include <optional>
 
 #define TYPE_VOID shard::SymbolTable::Primitives::Void
 #define TYPE_NULL shard::SymbolTable::Primitives::Null
@@ -60,11 +61,14 @@ namespace shard
         SymbolTable();
         ~SymbolTable();
 
+        SymbolTable(const SymbolTable&) = delete;
+        SymbolTable& operator=(const SymbolTable&) = delete;
+
         void ClearSymbols();
 
         void BindSymbol(SyntaxNode *const node, SyntaxSymbol *const symbol);
-        SyntaxSymbol *const LookupSymbol(SyntaxNode *const node);
-        SyntaxNode *const GetSyntaxNode(SyntaxSymbol *const symbol);
+        std::optional<SyntaxSymbol*> LookupSymbol(SyntaxNode *const node);
+        std::optional<SyntaxNode*> GetSyntaxNode(SyntaxSymbol *const symbol);
 
         const std::vector<NamespaceSymbol*> GetNamespaceSymbols();
         const std::vector<TypeSymbol*> GetTypeSymbols();

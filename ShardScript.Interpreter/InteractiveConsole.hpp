@@ -13,13 +13,13 @@ namespace shard
 		SemanticAnalyzer& Semanter;
 		LayoutGenerator& Layouter;
 
-		CompilationUnitSyntax* InteractiveUnit;
-		ClassDeclarationSyntax* InteractiveClass;
-		MethodDeclarationSyntax* InteractiveMethod;
-		MethodSymbol* InteractiveEntryPoint;
+		CompilationUnitSyntax* InteractiveUnit = nullptr;
+		ClassDeclarationSyntax* InteractiveClass = nullptr;
+		MethodDeclarationSyntax* InteractiveMethod = nullptr;
+		MethodSymbol* InteractiveEntryPoint = nullptr;
 
-		CompilationContext* compilationContext;
-		ApplicationDomain* applicationDomain;
+		CompilationContext* compilationContext = nullptr;
+		ApplicationDomain* applicationDomain = nullptr;
 		
 		ProgramVirtualImage& Program;
 		VirtualMachine& Runtimer;

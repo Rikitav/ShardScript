@@ -13,24 +13,24 @@
 #include <shard/parsing/semantic/TypeInfo.hpp>
 
 #include <stdexcept>
+#include <memory>
 
 using namespace shard;
 
 SemanticModel::SemanticModel(shard::SyntaxTree& tree) : Tree(tree)
 {
-	Table = new SymbolTable();
-	Namespaces = new NamespaceTree();
+	Table = std::make_unique<SymbolTable>();
+	Namespaces = std::make_unique<NamespaceTree>();
 }
 
 SemanticModel::~SemanticModel()
 {
-	delete Table;
-	delete Namespaces;
 }
 
 SymbolInfo SemanticModel::GetSymbolInfo(SyntaxNode* node)
 {
-	return SymbolInfo(Table->LookupSymbol(node));
+	auto symbol = Table->LookupSymbol(node);
+	return SymbolInfo(symbol.value_or(nullptr));
 }
 
 TypeInfo SemanticModel::GetTypeInfo(ExpressionSyntax* expression)

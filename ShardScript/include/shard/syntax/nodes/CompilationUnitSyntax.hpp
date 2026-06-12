@@ -9,6 +9,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.hpp>
 
 #include <vector>
+#include <memory>
 
 namespace shard
 {
@@ -23,25 +24,15 @@ namespace shard
 	{
 	public:
 		CompilationUnitOrigin Origin;
-		std::vector<UsingDirectiveSyntax*> Usings;
-		std::vector<MemberDeclarationSyntax*> Members;
-		NamespaceDeclarationSyntax* Namespace = nullptr;
+		std::vector<std::unique_ptr<UsingDirectiveSyntax>> Usings;
+		std::vector<std::unique_ptr<MemberDeclarationSyntax>> Members;
+		std::unique_ptr<NamespaceDeclarationSyntax> Namespace;
 
 		inline CompilationUnitSyntax()
 			: SyntaxNode(SyntaxKind::CompilationUnit, nullptr), Origin(CompilationUnitOrigin::Unknown) { }
 
 		inline CompilationUnitSyntax(const CompilationUnitSyntax& other) = delete;
 
-		inline virtual ~CompilationUnitSyntax()
-		{
-			for (const UsingDirectiveSyntax* usingDirective : Usings)
-				delete usingDirective;
-
-			if (Namespace != nullptr)
-				delete Namespace;
-
-			for (const MemberDeclarationSyntax* member : Members)
-				delete member;
-		}
+		inline virtual ~CompilationUnitSyntax() = default;
 	};
 }

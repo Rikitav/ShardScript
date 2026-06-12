@@ -224,6 +224,26 @@ void ProgramDisassembler::Disassemble(std::wostream& out, MethodSymbol* method)
                 break;
             }
 
+            case OpCode::NEWDYNAMICARRAY:
+            {
+                auto* sym = decoder.AbsorbTypeSymbol();
+                if (sym == nullptr)
+                {
+                    out << L"newdynarr null";
+                    break;
+                }
+
+                std::wstring name = sym->FullName.size() > 0 ? sym->FullName : sym->Name;
+                out << L"newdynarr " << name;
+                break;
+            }
+
+            case OpCode::ARRAYLENGTH:
+            {
+                out << L"ldlen";
+                break;
+            }
+
             case OpCode::LOAD_TYPEARGUMENT:
             {
                 uint16_t index = decoder.AbsorbUInt16();

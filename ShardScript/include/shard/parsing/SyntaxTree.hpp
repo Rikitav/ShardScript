@@ -1,21 +1,21 @@
 #pragma once
 #include <shard/ShardScriptAPI.hpp>
 #include <shard/syntax/nodes/CompilationUnitSyntax.hpp>
+
 #include <vector>
+#include <memory>
 
 namespace shard
 {
 	class SHARD_API SyntaxTree
 	{
 	public:
-		std::vector<shard::CompilationUnitSyntax*> CompilationUnits;
+		std::vector<std::unique_ptr<shard::CompilationUnitSyntax>> CompilationUnits;
 
-		inline SyntaxTree() { }
+		inline SyntaxTree() = default;
+		inline virtual ~SyntaxTree() = default;
 
-		inline virtual ~SyntaxTree()
-		{
-			for (const auto unit : CompilationUnits)
-				delete unit;
-		}
+		SyntaxTree(const SyntaxTree&) = delete;
+		SyntaxTree& operator=(const SyntaxTree&) = delete;
 	};
 }

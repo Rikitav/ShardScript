@@ -3,6 +3,8 @@
 
 #include <shard/parsing/SyntaxTree.hpp>
 #include <shard/parsing/analysis/DiagnosticsContext.hpp>
+
+#include <optional>
 #include <shard/parsing/semantic/SymbolTable.hpp>
 #include <shard/parsing/semantic/SemanticModel.hpp>
 #include <shard/parsing/semantic/NamespaceTree.hpp>
@@ -45,6 +47,7 @@
 
 #include <shard/syntax/nodes/Loops/WhileStatementSyntax.hpp>
 #include <shard/syntax/nodes/Loops/ForStatementSyntax.hpp>
+#include <shard/syntax/nodes/Loops/ForEachStatementSyntax.hpp>
 #include <shard/syntax/nodes/Loops/UntilStatementSyntax.hpp>
 
 #include <shard/syntax/nodes/Expressions/UnaryExpressionSyntax.hpp>
@@ -53,6 +56,7 @@
 #include <shard/syntax/nodes/Expressions/LinkedExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/ObjectExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/CollectionExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/RangeExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/LambdaExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/TernaryExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/IfExpressionSyntax.hpp>
@@ -75,12 +79,15 @@ namespace shard
         DiagnosticsContext& Diagnostics;
 
         inline SyntaxVisitor(SemanticModel& model, DiagnosticsContext& diagnostics)
-            : Table(model.Table), Namespaces(model.Namespaces), Diagnostics(diagnostics) { }
+            : Table(model.Table.get()), Namespaces(model.Namespaces.get()), Diagnostics(diagnostics) { }
 
         template<typename T>
-        inline T *const LookupSymbol(SyntaxNode *const node)
+        inline std::optional<T*> LookupSymbol(SyntaxNode *const node)
         {
-            return static_cast<T *const>(Table->LookupSymbol(node));
+            auto symbol = Table->LookupSymbol(node);
+            if (!symbol.has_value())
+                return std::nullopt;
+            return static_cast<T*>(symbol.value());
         }
 
 	public:
@@ -114,6 +121,7 @@ namespace shard
 
         virtual void VisitWhileStatement(WhileStatementSyntax *const node);
         virtual void VisitForStatement(ForStatementSyntax *const node);
+        virtual void VisitForEachStatement(ForEachStatementSyntax *const node);
         virtual void VisitUntilStatement(UntilStatementSyntax *const node);
 
         virtual void VisitConditionalClause(ConditionalClauseBaseSyntax *const node);
@@ -128,6 +136,7 @@ namespace shard
         virtual void VisitUnaryExpression(UnaryExpressionSyntax *const node);
         virtual void VisitObjectCreationExpression(ObjectExpressionSyntax *const node);
         virtual void VisitCollectionExpression(CollectionExpressionSyntax *const node);
+        virtual void VisitRangeExpression(RangeExpressionSyntax *const node);
         virtual void VisitLambdaExpression(LambdaExpressionSyntax *const node);
         virtual void VisitTernaryExpression(TernaryExpressionSyntax *const node);
         virtual void VisitIfExpression(IfExpressionSyntax *const node);

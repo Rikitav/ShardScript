@@ -77,13 +77,14 @@ using namespace shard;
 
 void SourceParser::FromSourceProvider(SyntaxTree& syntaxTree, SourceProvider& reader)
 {
-	CompilationUnitSyntax *const unit = ReadCompilationUnit(reader);
-	syntaxTree.CompilationUnits.push_back(unit);
+	auto unit = ReadCompilationUnit(reader);
+	syntaxTree.CompilationUnits.push_back(std::move(unit));
 }
 
-CompilationUnitSyntax *const SourceParser::ReadCompilationUnit(SourceProvider& reader)
+std::unique_ptr<CompilationUnitSyntax> SourceParser::ReadCompilationUnit(SourceProvider& reader)
 {
-	CompilationUnitSyntax *const unit = new CompilationUnitSyntax();
+	auto unit = std::make_unique<CompilationUnitSyntax>();
+	CompilationUnitSyntax* const rawUnit = unit.get();
 
 	while (reader.CanConsume())
 	{
@@ -92,15 +93,15 @@ CompilationUnitSyntax *const SourceParser::ReadCompilationUnit(SourceProvider& r
 		{
 			case TokenType::UsingKeyword:
 			{
-				UsingDirectiveSyntax *const pDirective = ReadUsingDirective(reader, unit);
-				*const_cast<SyntaxNode**>(&pDirective->Parent) = unit;
-				unit->Usings.push_back(pDirective);
+				auto pDirective = ReadUsingDirective(reader, rawUnit);
+				*const_cast<SyntaxNode**>(&pDirective->Parent) = rawUnit;
+				rawUnit->Usings.push_back(std::unique_ptr<UsingDirectiveSyntax>(pDirective));
 				break;
 			}
 
 			case TokenType::NamespaceKeyword:
 			{
-				if (unit->Namespace != nullptr)
+				if (rawUnit->Namespace != nullptr)
 				{
 					Diagnostics.ReportError(token, L"Only one namespace declaration is allowed per compilation unit");
 					reader.Consume();
@@ -113,9 +114,9 @@ CompilationUnitSyntax *const SourceParser::ReadCompilationUnit(SourceProvider& r
 					break;
 				}
 
-				NamespaceDeclarationSyntax *const pNamespace = ReadNamespaceDeclaration(reader, unit);
-				*const_cast<SyntaxNode**>(&pNamespace->Parent) = unit;
-				unit->Namespace = pNamespace;
+				auto pNamespace = ReadNamespaceDeclaration(reader, rawUnit);
+				*const_cast<SyntaxNode**>(&pNamespace->Parent) = rawUnit;
+				rawUnit->Namespace.reset(pNamespace);
 				break;
 			}
 
@@ -124,9 +125,9 @@ CompilationUnitSyntax *const SourceParser::ReadCompilationUnit(SourceProvider& r
 				SyntaxToken peek = reader.Peek();
 				if (IsMemberDeclaration(token.Type, peek.Type))
 				{
-					MemberDeclarationSyntax *const pMember = ReadMemberDeclaration(reader, unit);
-					*const_cast<SyntaxNode**>(&pMember->Parent) = unit;
-					unit->Members.push_back(pMember);
+					auto pMember = ReadMemberDeclaration(reader, rawUnit);
+					*const_cast<SyntaxNode**>(&pMember->Parent) = rawUnit;
+					rawUnit->Members.push_back(std::unique_ptr<MemberDeclarationSyntax>(pMember));
 					break;
 				}
 
@@ -1104,7 +1105,7 @@ void SourceParser::ReadTypeBody(SourceProvider& reader, TypeDeclarationSyntax *c
 			if (pMember != nullptr)
 			{
 				*const_cast<SyntaxNode**>(&pMember->Parent) = syntax;
-				syntax->Members.push_back(pMember);
+				syntax->Members.push_back(std::unique_ptr<MemberDeclarationSyntax>(pMember));
 				continue; // Continue reading more members
 			}
 			else
@@ -1286,7 +1287,12 @@ KeywordStatementSyntax *const SourceParser::ReadKeywordStatement(SourceProvider&
 	switch (current.Type)
 	{
 		case TokenType::ForKeyword:
+		{
+			if (reader.Peek(0).Type == TokenType::Identifier && reader.Peek(1).Type == TokenType::InKeyword)
+				return ReadForEachStatement(reader, parent);
+
 			return ReadForStatement(reader, parent);
+		}
 
 		case TokenType::WhileKeyword:
 			return ReadWhileStatement(reader, parent);
@@ -1496,6 +1502,31 @@ ForStatementSyntax *const SourceParser::ReadForStatement(SourceProvider& reader,
 	return syntax;
 }
 
+ForEachStatementSyntax *const SourceParser::ReadForEachStatement(SourceProvider& reader, SyntaxNode *const parent)
+{
+	ForEachStatementSyntax *const syntax = new ForEachStatementSyntax(parent);
+	syntax->KeywordToken = Expect(reader, TokenType::ForKeyword, L"Expected 'for' keyword");
+	//syntax->OpenCurlToken = Expect(reader, TokenType::OpenCurl, L"expected '(' token");
+
+	SyntaxToken identifier = reader.Current();
+	if (identifier.Type != TokenType::Identifier)
+	{
+		Diagnostics.ReportError(reader.Current(), L"Expected identifier after 'for'");
+		identifier = SyntaxToken(TokenType::Identifier, L"<missing>", reader.Current().Location, false);
+	}
+	else
+	{
+		reader.Consume();
+	}
+
+	syntax->IdentifierToken = identifier;
+	syntax->InKeywordToken = Expect(reader, TokenType::InKeyword, L"Expected 'in' keyword");
+	syntax->RangeExpression = ReadExpression(reader, syntax, 0);
+	//syntax->CloseCurlToken = Expect(reader, TokenType::CloseCurl, L"expected ')' token");
+	syntax->StatementsBlock = ReadStatementsBlock(reader, syntax);
+	return syntax;
+}
+
 TryStatementSyntax *const SourceParser::ReadTryStatement(SourceProvider& reader, SyntaxNode *const parent)
 {
 	TryStatementSyntax *const syntax = new TryStatementSyntax(parent);
@@ -1666,6 +1697,23 @@ ExpressionSyntax *const SourceParser::ReadLeftDenotation(SourceProvider& reader,
 			reader.Consume();
 			BinaryExpressionSyntax *const syntax = new BinaryExpressionSyntax(current, parent);
 			*const_cast<SyntaxNode**>(&leftExpr->Parent) = syntax;
+			syntax->Left = leftExpr;
+			syntax->Right = ReadExpression(reader, syntax, precendce);
+			return syntax;
+		}
+
+		case TokenType::RangeOperator:
+		case TokenType::RangeInclusiveOperator:
+		{
+			int precendce = GetOperatorPrecendence(current.Type);
+			if (precendce == 0)
+				return leftExpr;
+
+			reader.Consume();
+			RangeExpressionSyntax *const syntax = new RangeExpressionSyntax(parent);
+			*const_cast<SyntaxNode**>(&leftExpr->Parent) = syntax;
+			syntax->OperatorToken = current;
+			syntax->IsInclusive = current.Type == TokenType::RangeInclusiveOperator;
 			syntax->Left = leftExpr;
 			syntax->Right = ReadExpression(reader, syntax, precendce);
 			return syntax;

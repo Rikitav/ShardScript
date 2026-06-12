@@ -86,12 +86,12 @@ static void BindParametersList(ParametersListSyntax *const node, std::vector<Par
 void TypeBinder::VisitCompilationUnit(CompilationUnitSyntax *const node)
 {
 	PushScope(nullptr);
-	for (UsingDirectiveSyntax* directive : node->Usings)
-		VisitUsingDirective(directive);
+	for (const auto& directive : node->Usings)
+		VisitUsingDirective(directive.get());
 
 	if (node->Namespace != nullptr)
 	{
-		NamespaceSymbol* symbol = LookupSymbol<NamespaceSymbol>(node->Namespace);
+		NamespaceSymbol* symbol = LookupSymbol<NamespaceSymbol>(node->Namespace.get()).value_or(nullptr);
 		if (symbol == nullptr)
 			throw std::runtime_error("symbol not found");
 
@@ -99,11 +99,11 @@ void TypeBinder::VisitCompilationUnit(CompilationUnitSyntax *const node)
 		PushScope(symbol);
 	}
 
-	for (MemberDeclarationSyntax* member : node->Members)
-		Declare(Table->LookupSymbol(member));
+	for (const auto& member : node->Members)
+		Declare(Table->LookupSymbol(member.get()).value_or(nullptr));
 
-	for (MemberDeclarationSyntax* member : node->Members)
-		VisitMemberDeclaration(member);
+	for (const auto& member : node->Members)
+		VisitMemberDeclaration(member.get());
 
 	if (node->Namespace != nullptr)
 		PopScope();
@@ -140,7 +140,7 @@ void TypeBinder::VisitNamespaceDeclaration(NamespaceDeclarationSyntax *const nod
 
 void TypeBinder::VisitClassDeclaration(ClassDeclarationSyntax *const node)
 {
-	ClassSymbol* symbol = LookupSymbol<ClassSymbol>(node);
+	ClassSymbol* symbol = LookupSymbol<ClassSymbol>(node).value_or(nullptr);
 	if (symbol == nullptr)
 		throw std::runtime_error("symbol not found");
 
@@ -151,18 +151,18 @@ void TypeBinder::VisitClassDeclaration(ClassDeclarationSyntax *const node)
 	for (TypeParameterSymbol* typeParam : symbol->TypeParameters)
 		Declare(typeParam);
 
-	for (MemberDeclarationSyntax* member : node->Members)
-		Declare(Table->LookupSymbol(member));
+	for (const auto& member : node->Members)
+		Declare(Table->LookupSymbol(member.get()).value_or(nullptr));
 
-	for (MemberDeclarationSyntax* member : node->Members)
-		VisitMemberDeclaration(member);
+	for (const auto& member : node->Members)
+		VisitMemberDeclaration(member.get());
 
 	PopScope();
 }
 
 void TypeBinder::VisitStructDeclaration(StructDeclarationSyntax *const node)
 {
-	StructSymbol* symbol = LookupSymbol<StructSymbol>(node);
+	StructSymbol* symbol = LookupSymbol<StructSymbol>(node).value_or(nullptr);
 	if (symbol == nullptr)
 		throw std::runtime_error("symbol not found");
 
@@ -170,18 +170,18 @@ void TypeBinder::VisitStructDeclaration(StructDeclarationSyntax *const node)
 	for (TypeParameterSymbol* typeParam : symbol->TypeParameters)
 		Declare(typeParam);
 
-	for (MemberDeclarationSyntax* member : node->Members)
-		Declare(Table->LookupSymbol(member));
+	for (const auto& member : node->Members)
+		Declare(Table->LookupSymbol(member.get()).value_or(nullptr));
 
-	for (MemberDeclarationSyntax* member : node->Members)
-		VisitMemberDeclaration(member);
+	for (const auto& member : node->Members)
+		VisitMemberDeclaration(member.get());
 
 	PopScope();
 }
 
 void TypeBinder::VisitDelegateDeclaration(DelegateDeclarationSyntax *const node)
 {
-	DelegateTypeSymbol* symbol = LookupSymbol<DelegateTypeSymbol>(node);
+	DelegateTypeSymbol* symbol = LookupSymbol<DelegateTypeSymbol>(node).value_or(nullptr);
 	if (symbol == nullptr)
 		throw std::runtime_error("symbol not found");
 
@@ -201,7 +201,7 @@ void TypeBinder::VisitDelegateDeclaration(DelegateDeclarationSyntax *const node)
 
 void TypeBinder::VisitConstructorDeclaration(ConstructorDeclarationSyntax *const node)
 {
-	MethodSymbol* symbol = LookupSymbol<MethodSymbol>(node);
+	MethodSymbol* symbol = LookupSymbol<MethodSymbol>(node).value_or(nullptr);
 	if (symbol == nullptr)
 		throw std::runtime_error("symbol not found");
 
@@ -220,7 +220,7 @@ void TypeBinder::VisitConstructorDeclaration(ConstructorDeclarationSyntax *const
 
 void TypeBinder::VisitMethodDeclaration(MethodDeclarationSyntax *const node)
 {
-	MethodSymbol* symbol = LookupSymbol<MethodSymbol>(node);
+	MethodSymbol* symbol = LookupSymbol<MethodSymbol>(node).value_or(nullptr);
 	if (symbol == nullptr)
 		throw std::runtime_error("symbol not found");
 
@@ -245,7 +245,7 @@ void TypeBinder::VisitMethodDeclaration(MethodDeclarationSyntax *const node)
 
 void TypeBinder::VisitFieldDeclaration(FieldDeclarationSyntax *const node)
 {
-	FieldSymbol* symbol = LookupSymbol<FieldSymbol>(node);
+	FieldSymbol* symbol = LookupSymbol<FieldSymbol>(node).value_or(nullptr);
 	if (symbol == nullptr)
 		throw std::runtime_error("symbol not found");
 
@@ -261,7 +261,7 @@ void TypeBinder::VisitFieldDeclaration(FieldDeclarationSyntax *const node)
 
 void TypeBinder::VisitPropertyDeclaration(PropertyDeclarationSyntax *const node)
 {
-	PropertySymbol* symbol = LookupSymbol<PropertySymbol>(node);
+	PropertySymbol* symbol = LookupSymbol<PropertySymbol>(node).value_or(nullptr);
 	if (symbol == nullptr)
 		throw std::runtime_error("symbol not found");
 
@@ -298,7 +298,7 @@ void TypeBinder::VisitPropertyDeclaration(PropertyDeclarationSyntax *const node)
 
 void TypeBinder::VisitIndexatorDeclaration(IndexatorDeclarationSyntax *const node)
 {
-	IndexatorSymbol* symbol = LookupSymbol<IndexatorSymbol>(node);
+	IndexatorSymbol* symbol = LookupSymbol<IndexatorSymbol>(node).value_or(nullptr);
 	if (symbol == nullptr)
 		throw std::runtime_error("symbol not found");
 
@@ -337,7 +337,7 @@ void TypeBinder::VisitIndexatorDeclaration(IndexatorDeclarationSyntax *const nod
 
 void TypeBinder::VisitAccessorDeclaration(AccessorDeclarationSyntax *const node)
 {
-	AccessorSymbol* symbol = LookupSymbol<AccessorSymbol>(node);
+	AccessorSymbol* symbol = LookupSymbol<AccessorSymbol>(node).value_or(nullptr);
 	if (symbol == nullptr)
 		throw std::runtime_error("symbol not found");
 
@@ -374,7 +374,7 @@ void TypeBinder::VisitAccessorDeclaration(AccessorDeclarationSyntax *const node)
 
 void TypeBinder::VisitVariableStatement(VariableStatementSyntax *const node)
 {
-	VariableSymbol* symbol = LookupSymbol<VariableSymbol>(node);
+	VariableSymbol* symbol = LookupSymbol<VariableSymbol>(node).value_or(nullptr);
 	if (symbol == nullptr)
 		throw std::runtime_error("symbol not found");
 
@@ -502,7 +502,7 @@ void TypeBinder::VisitIdentifierNameType(IdentifierNameTypeSyntax *const node)
 		TypeParameterSymbol* typeParamSymbol = static_cast<TypeParameterSymbol*>(symbol);
 		node->Symbol = typeParamSymbol;
 		
-		if (!IsSymbolAccessible(typeParamSymbol, Table->GetSyntaxNode(typeParamSymbol), node))
+		if (!IsSymbolAccessible(typeParamSymbol, Table->GetSyntaxNode(typeParamSymbol).value_or(nullptr), node))
 			Diagnostics.ReportError(node->Identifier, L"Symbol inaccessible");
 
 		return;
@@ -517,7 +517,7 @@ void TypeBinder::VisitIdentifierNameType(IdentifierNameTypeSyntax *const node)
 	TypeSymbol* typeSymbol = static_cast<TypeSymbol*>(symbol);
 	node->Symbol = typeSymbol;
 
-	if (!IsSymbolAccessible(symbol, Table->GetSyntaxNode(symbol), node))
+	if (!IsSymbolAccessible(symbol, Table->GetSyntaxNode(symbol).value_or(nullptr), node))
 	{
 		Diagnostics.ReportError(node->Identifier, L"Symbol inaccessible");
 		return;
@@ -621,7 +621,7 @@ void TypeBinder::VisitDelegateType(DelegateTypeSyntax *const node)
 	DelegateTypeSymbol* symbol = SymbolFactory::Delegate(node);
 	for (ParameterSyntax* param : node->Params->Parameters)
 	{
-		ParameterSymbol* paramSymbol = LookupSymbol<ParameterSymbol>(param);
+		ParameterSymbol* paramSymbol = LookupSymbol<ParameterSymbol>(param).value_or(nullptr);
 		paramSymbol->Type = param->Type->Symbol;
 
 		symbol->Parameters.push_back(paramSymbol);

@@ -24,6 +24,7 @@
 #include <shard/syntax/nodes/Expressions/ObjectExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/UnaryExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/CollectionExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/RangeExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/LambdaExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/TernaryExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/IfExpressionSyntax.hpp>
@@ -31,6 +32,7 @@
 #include <shard/syntax/nodes/Statements/TryStatementSyntax.hpp>
 
 #include <shard/syntax/nodes/Loops/ForStatementSyntax.hpp>
+#include <shard/syntax/nodes/Loops/ForEachStatementSyntax.hpp>
 #include <shard/syntax/nodes/Loops/UntilStatementSyntax.hpp>
 #include <shard/syntax/nodes/Loops/WhileStatementSyntax.hpp>
 
@@ -85,7 +87,7 @@ namespace shard
 
 	public:
 		inline ExpressionBinder(shard::SemanticModel& model, shard::DiagnosticsContext& diagnostics)
-			: SyntaxVisitor(model, diagnostics), ScopeVisitor(model.Table) { }
+			: SyntaxVisitor(model, diagnostics), ScopeVisitor(model.Table.get()) { }
 
 		void VisitCompilationUnit(shard::CompilationUnitSyntax *const node) override;
 		void VisitUsingDirective(shard::UsingDirectiveSyntax *const node) override;
@@ -105,6 +107,7 @@ namespace shard
 		void VisitWhileStatement(shard::WhileStatementSyntax *const node) override;
 		void VisitUntilStatement(shard::UntilStatementSyntax *const node) override;
 		void VisitForStatement(shard::ForStatementSyntax *const node) override;
+		void VisitForEachStatement(shard::ForEachStatementSyntax *const node) override;
 		void VisitIfStatement(shard::IfStatementSyntax *const node) override;
 		void VisitUnlessStatement(shard::UnlessStatementSyntax *const node) override;
 		void VisitReturnStatement(shard::ReturnStatementSyntax *const node) override;
@@ -114,6 +117,7 @@ namespace shard
 		void VisitUnaryExpression(shard::UnaryExpressionSyntax *const node) override;
 		void VisitObjectCreationExpression(shard::ObjectExpressionSyntax *const node) override;
 		void VisitCollectionExpression(shard::CollectionExpressionSyntax *const node) override;
+		void VisitRangeExpression(shard::RangeExpressionSyntax *const node) override;
 		void VisitLambdaExpression(shard::LambdaExpressionSyntax *const node) override;
 		void VisitTernaryExpression(shard::TernaryExpressionSyntax *const node) override;
 		void VisitIfExpression(shard::IfExpressionSyntax *const node) override;

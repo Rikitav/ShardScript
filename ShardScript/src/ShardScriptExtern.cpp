@@ -63,7 +63,7 @@ SHARD_EXPORT ApplicationDomain* Shard_Compile(CompilationContext* ctx)
     if (ctx == nullptr)
         return nullptr;
 
-    return ctx->Compile();
+    return ctx->Compile().release();
 }
 
 SHARD_EXPORT bool Shard_HasErrors(CompilationContext* ctx)

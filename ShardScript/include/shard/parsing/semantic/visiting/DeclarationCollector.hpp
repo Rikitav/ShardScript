@@ -21,6 +21,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/DelegateDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/Loops/ForEachStatementSyntax.hpp>
 
 namespace shard
 {
@@ -31,7 +32,7 @@ namespace shard
 
 	public:
 		inline DeclarationCollector(shard::SemanticModel& model, shard::DiagnosticsContext& diagnostics)
-			: SyntaxVisitor(model, diagnostics), ScopeVisitor(model.Table) { }
+			: SyntaxVisitor(model, diagnostics), ScopeVisitor(model.Table.get()) { }
 
 		void VisitCompilationUnit(shard::CompilationUnitSyntax *const node) override;
 
@@ -47,6 +48,7 @@ namespace shard
 		void VisitIndexatorDeclaration(shard::IndexatorDeclarationSyntax *const node) override;
 		void VisitAccessorDeclaration(shard::AccessorDeclarationSyntax *const node) override;
 		void VisitVariableStatement(shard::VariableStatementSyntax *const node) override;
+		void VisitForEachStatement(shard::ForEachStatementSyntax *const node) override;
 
 	private:
 		void ApplyMethodAttributes(shard::MethodSymbol* symbol, std::vector<shard::AttributeSyntax*>& attributes);

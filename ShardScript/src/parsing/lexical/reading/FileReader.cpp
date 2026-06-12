@@ -12,7 +12,7 @@ FileReader::FileReader(const std::wstring& fileName) : SourceTextProvider()
 {
 	Filename = fileName;
 	InputStream = std::wfstream(fileName.c_str(), std::ios::in);
-	InputStream.imbue(std::locale("en_US.UTF8"));
+	InputStream.imbue(std::locale::classic());
 
 	if (!InputStream)
 		throw std::runtime_error("Cannot open file");

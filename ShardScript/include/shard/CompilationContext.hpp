@@ -14,6 +14,7 @@
 #include <shard/parsing/LayoutGenerator.hpp>
 
 #include <filesystem>
+#include <memory>
 
 namespace shard
 {
@@ -39,6 +40,9 @@ namespace shard
 		CompilationContext();
 		~CompilationContext();
 
+		CompilationContext(const CompilationContext&) = delete;
+		CompilationContext& operator=(const CompilationContext&) = delete;
+
 		void SetPopExpressionStatement(bool pop)
 		{
 			PopExpressionStatement = pop;
@@ -55,11 +59,10 @@ namespace shard
 		void AddLib(const std::filesystem::path& path);
 		void AddLib(const LibraryHandle& handle);
 		void ProvideSource(shard::SourceTextProvider* source);
-		void ProvideSource(shard::SourceProvider* source);
 
 		void EnrichTree(SourceProvider& sourceProvider, CompilationUnitOrigin origin);
 		void AnalyzeTree();
 
-		ApplicationDomain* Compile();
+		std::unique_ptr<ApplicationDomain> Compile();
 	};
 }

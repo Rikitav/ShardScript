@@ -62,8 +62,8 @@ using namespace shard;
 
 void SyntaxVisitor::VisitSyntaxTree(SyntaxTree& tree)
 {
-	for (CompilationUnitSyntax* unit : tree.CompilationUnits)
-		VisitCompilationUnit(unit);
+	for (const auto& unit : tree.CompilationUnits)
+		VisitCompilationUnit(unit.get());
 }
 
 void SyntaxVisitor::VisitCompilationUnit(CompilationUnitSyntax* node)
@@ -71,14 +71,14 @@ void SyntaxVisitor::VisitCompilationUnit(CompilationUnitSyntax* node)
 	if (node == nullptr)
 		return;
 
-	for (UsingDirectiveSyntax* directive : node->Usings)
-		VisitUsingDirective(directive);
+	for (const auto& directive : node->Usings)
+		VisitUsingDirective(directive.get());
 
 	if (node->Namespace != nullptr)
-		VisitNamespaceDeclaration(node->Namespace);
+		VisitNamespaceDeclaration(node->Namespace.get());
 
-	for (MemberDeclarationSyntax* member : node->Members)
-		VisitMemberDeclaration(member);
+	for (const auto& member : node->Members)
+		VisitMemberDeclaration(member.get());
 }
 
 void SyntaxVisitor::VisitUsingDirective(UsingDirectiveSyntax* node)
@@ -151,8 +151,8 @@ void SyntaxVisitor::VisitClassDeclaration(ClassDeclarationSyntax* node)
 	if (node->TypeParameters != nullptr)
 		VisitTypeParametersList(node->TypeParameters);
 
-	for (MemberDeclarationSyntax* member : node->Members)
-		VisitMemberDeclaration(member);
+	for (const auto& member : node->Members)
+		VisitMemberDeclaration(member.get());
 }
 
 void SyntaxVisitor::VisitStructDeclaration(StructDeclarationSyntax* node)
@@ -163,8 +163,8 @@ void SyntaxVisitor::VisitStructDeclaration(StructDeclarationSyntax* node)
 	if (node->TypeParameters != nullptr)
 		VisitTypeParametersList(node->TypeParameters);
 
-	for (MemberDeclarationSyntax* member : node->Members)
-		VisitMemberDeclaration(member);
+	for (const auto& member : node->Members)
+		VisitMemberDeclaration(member.get());
 }
 
 void SyntaxVisitor::VisitInterfaceDeclaration(InterfaceDeclarationSyntax* node)
@@ -175,8 +175,8 @@ void SyntaxVisitor::VisitInterfaceDeclaration(InterfaceDeclarationSyntax* node)
 	if (node->TypeParameters != nullptr)
 		VisitTypeParametersList(node->TypeParameters);
 
-	for (MemberDeclarationSyntax* member : node->Members)
-		VisitMemberDeclaration(member);
+	for (const auto& member : node->Members)
+		VisitMemberDeclaration(member.get());
 }
 
 void SyntaxVisitor::VisitDelegateDeclaration(DelegateDeclarationSyntax* node)
@@ -449,6 +449,13 @@ void SyntaxVisitor::VisitStatement(StatementSyntax* node)
 			return;
 		}
 
+		case SyntaxKind::ForEachStatement:
+		{
+			ForEachStatementSyntax* statement = dynamic_cast<ForEachStatementSyntax*>(node);
+			VisitForEachStatement(statement);
+			return;
+		}
+
 		case SyntaxKind::IfStatement:
 		{
 			IfStatementSyntax* statement = dynamic_cast<IfStatementSyntax*>(node);
@@ -530,6 +537,18 @@ void SyntaxVisitor::VisitForStatement(ForStatementSyntax* node)
 
 	if (node->AfterRepeatStatement != nullptr)
 		VisitStatement(node->AfterRepeatStatement);
+
+	if (node->StatementsBlock != nullptr)
+		VisitStatementsBlock(node->StatementsBlock);
+}
+
+void SyntaxVisitor::VisitForEachStatement(ForEachStatementSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (node->RangeExpression != nullptr)
+		VisitExpression(node->RangeExpression);
 
 	if (node->StatementsBlock != nullptr)
 		VisitStatementsBlock(node->StatementsBlock);
@@ -760,6 +779,13 @@ void SyntaxVisitor::VisitExpression(ExpressionSyntax* node)
 			return;
 		}
 
+		case SyntaxKind::RangeExpression:
+		{
+			RangeExpressionSyntax* expression = static_cast<RangeExpressionSyntax*>(node);
+			VisitRangeExpression(expression);
+			return;
+		}
+
 		case SyntaxKind::LambdaExpression:
 		{
 			LambdaExpressionSyntax* expression = static_cast<LambdaExpressionSyntax*>(node);
@@ -827,6 +853,18 @@ void SyntaxVisitor::VisitCollectionExpression(CollectionExpressionSyntax* node)
 
 	for (ExpressionSyntax* expression : node->ValuesExpressions)
 		VisitExpression(expression);
+}
+
+void SyntaxVisitor::VisitRangeExpression(RangeExpressionSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (node->Left != nullptr)
+		VisitExpression(node->Left);
+
+	if (node->Right != nullptr)
+		VisitExpression(node->Right);
 }
 
 void SyntaxVisitor::VisitLambdaExpression(LambdaExpressionSyntax* node)

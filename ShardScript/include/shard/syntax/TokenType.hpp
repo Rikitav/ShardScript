@@ -18,6 +18,8 @@ namespace shard
 		ArrowOperator,      // ->
 		LambdaOperator,		// =>
 		NullCoalescingOperator, // ??
+		RangeOperator,          // ..
+		RangeInclusiveOperator, // ..&
 
 		// Binary arithmetic operators
 		AddOperator,		  // +
@@ -143,6 +145,7 @@ namespace shard
 		UntilKeyword,		// until
 		DoKeyword,			// do
 		ForeachKeyword,		// foreach
+		InKeyword,          // in
 
 		// Conditional clause keywords
 		IfKeyword,		 // if

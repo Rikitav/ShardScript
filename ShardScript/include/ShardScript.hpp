@@ -92,6 +92,7 @@
 
 // --- Syntax / Loops ---
 #include <shard/syntax/nodes/Loops/ForStatementSyntax.hpp>
+#include <shard/syntax/nodes/Loops/ForEachStatementSyntax.hpp>
 #include <shard/syntax/nodes/Loops/WhileStatementSyntax.hpp>
 #include <shard/syntax/nodes/Loops/UntilStatementSyntax.hpp>
 
@@ -112,6 +113,7 @@
 #include <shard/syntax/nodes/Expressions/LinkedExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/ObjectExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/CollectionExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/RangeExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/LambdaExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/TernaryExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/IfExpressionSyntax.hpp>

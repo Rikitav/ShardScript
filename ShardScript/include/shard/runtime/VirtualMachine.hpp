@@ -16,6 +16,7 @@
 
 #include <stack>
 #include <atomic>
+#include <memory>
 #include <initializer_list>
 
 namespace shard
@@ -30,7 +31,7 @@ namespace shard
 		GarbageCollector& garbageCollector;
 		PrimitiveMathModule math;
 
-		std::stack<CallStackFrame*> CallStack;
+		std::stack<std::unique_ptr<CallStackFrame>> CallStack;
 		std::atomic<bool> AbortFlag;
 		std::vector<TypeSymbol*> PendingTypeArguments;
 
@@ -41,6 +42,10 @@ namespace shard
 
 	public:
 		VirtualMachine(ApplicationDomain* appDomain);
+		~VirtualMachine() = default;
+
+		VirtualMachine(const VirtualMachine&) = delete;
+		VirtualMachine& operator=(const VirtualMachine&) = delete;
 
 		CallStackFrame* CurrentFrame() const;
 		CallStackFrame* PushFrame(MethodSymbol* methodSymbol);
