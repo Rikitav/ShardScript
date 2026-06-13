@@ -17,22 +17,16 @@ namespace shard
 	public:
 		SyntaxToken LambdaToken;
 		SyntaxToken LambdaOperatorToken;
-		ParametersListSyntax* Params = nullptr;
-		StatementsBlockSyntax* Body = nullptr;
-		shard::DelegateTypeSymbol* Symbol = nullptr;
+
+		std::unique_ptr<ParametersListSyntax> ParametersList = nullptr;
+		std::unique_ptr<StatementsBlockSyntax> Body = nullptr;
+		DelegateTypeSymbol* Symbol = nullptr;
 
 		inline LambdaExpressionSyntax(SyntaxNode *const parent)
 			: ExpressionSyntax(SyntaxKind::LambdaExpression, parent) { }
 
 		inline LambdaExpressionSyntax(const LambdaExpressionSyntax&) = delete;
 
-		inline virtual ~LambdaExpressionSyntax()
-		{
-			if (Params != nullptr)
-				delete Params;
-			
-			if (Body != nullptr)
-				delete Body;
-		}
+		inline virtual ~LambdaExpressionSyntax() = default;
 	};
 }

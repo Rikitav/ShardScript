@@ -28,10 +28,6 @@ namespace shard
 
 		void OnSymbolDeclared(SyntaxSymbol* symbol) override;
 
-		inline virtual ~NamespaceSymbol()
-		{
-			for (SyntaxSymbol* member : Members)
-				delete member;
-		}
+		inline virtual ~NamespaceSymbol() = default;
 	};
 }

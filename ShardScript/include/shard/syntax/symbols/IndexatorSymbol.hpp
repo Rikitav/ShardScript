@@ -5,6 +5,7 @@
 #include <shard/syntax/symbols/ParameterSymbol.hpp>
 
 #include <vector>
+#include <memory>
 
 namespace shard
 {
@@ -20,11 +21,7 @@ namespace shard
 
         inline IndexatorSymbol(const IndexatorSymbol& other) = delete;
 
-        inline ~IndexatorSymbol() override
-        {
-            for (ParameterSymbol* param : Parameters)
-                delete param;
-        }
+        inline ~IndexatorSymbol() override = default;
     };
 }
 

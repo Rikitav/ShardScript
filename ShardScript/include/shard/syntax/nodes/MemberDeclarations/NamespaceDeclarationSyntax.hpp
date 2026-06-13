@@ -24,12 +24,13 @@ namespace shard
 		inline NamespaceDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent)
 			: MemberDeclarationSyntax(SyntaxKind::NamespaceDeclaration, parent)
 		{
+			Attributes = std::move(info.Attributes);
 			Modifiers = info.Modifiers;
 			IdentifierToken = info.Identifier;
 		}
 
 		inline NamespaceDeclarationSyntax(const NamespaceDeclarationSyntax& other) = delete;
 
-		inline virtual ~NamespaceDeclarationSyntax() { }
+		inline virtual ~NamespaceDeclarationSyntax() = default;
 	};
 }

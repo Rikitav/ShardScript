@@ -8,25 +8,22 @@
 #include <shard/syntax/nodes/ExpressionSyntax.hpp>
 
 #include <vector>
+#include <memory>
 
 namespace shard
 {
 	class SHARD_API ArgumentSyntax : public SyntaxNode
 	{
 	public:
-		ExpressionSyntax *const Expression;
+		std::unique_ptr<ExpressionSyntax> Expression;
 		const bool IsByReference;
 
-		inline ArgumentSyntax(ExpressionSyntax *const expression, SyntaxNode *const parent)
-			: SyntaxNode(SyntaxKind::Argument, parent), Expression(expression), IsByReference(false) { }
+		inline ArgumentSyntax(std::unique_ptr<ExpressionSyntax> expression, SyntaxNode *const parent)
+			: SyntaxNode(SyntaxKind::Argument, parent), Expression(std::move(expression)), IsByReference(false) { }
 
 		inline ArgumentSyntax(const ArgumentSyntax& other) = delete;
 
-		inline virtual ~ArgumentSyntax()
-		{
-			Expression->~ExpressionSyntax();
-			delete Expression;
-		}
+		inline virtual ~ArgumentSyntax() = default;
 	};
 
 	class SHARD_API ArgumentsListSyntax : public SyntaxNode
@@ -34,21 +31,14 @@ namespace shard
 	public:
 		SyntaxToken OpenCurlToken;
 		SyntaxToken CloseCurlToken;
-		std::vector<ArgumentSyntax*> Arguments;
+		std::vector<std::unique_ptr<ArgumentSyntax>> Arguments;
 
 		inline ArgumentsListSyntax(SyntaxNode *const parent)
 			: SyntaxNode(SyntaxKind::ArgumentsList, parent) { }
 
 		inline ArgumentsListSyntax(const ArgumentsListSyntax& other) = delete;
 
-		inline virtual ~ArgumentsListSyntax()
-		{
-			for (const ArgumentSyntax* argument : Arguments)
-			{
-				argument->~ArgumentSyntax();
-				delete argument;
-			}
-		}
+		inline virtual ~ArgumentsListSyntax() = default;
 	};
 
 	class SHARD_API IndexatorListSyntax : public SyntaxNode
@@ -56,20 +46,13 @@ namespace shard
 	public:
 		SyntaxToken OpenSquareToken;
 		SyntaxToken CloseSquareToken;
-		std::vector<ArgumentSyntax*> Arguments;
+		std::vector<std::unique_ptr<ArgumentSyntax>> Arguments;
 
 		inline IndexatorListSyntax(SyntaxNode *const parent)
 			: SyntaxNode(SyntaxKind::IndexatorList, parent) { }
 
 		inline IndexatorListSyntax(const IndexatorListSyntax& other) = delete;
 
-		inline virtual ~IndexatorListSyntax()
-		{
-			for (const ArgumentSyntax* argument : Arguments)
-			{
-				argument->~ArgumentSyntax();
-				delete argument;
-			}
-		}
+		inline virtual ~IndexatorListSyntax() = default;
 	};
 }

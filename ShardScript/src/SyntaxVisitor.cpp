@@ -149,7 +149,7 @@ void SyntaxVisitor::VisitClassDeclaration(ClassDeclarationSyntax* node)
 		return;
 
 	if (node->TypeParameters != nullptr)
-		VisitTypeParametersList(node->TypeParameters);
+		VisitTypeParametersList(node->TypeParameters.get());
 
 	for (const auto& member : node->Members)
 		VisitMemberDeclaration(member.get());
@@ -161,7 +161,7 @@ void SyntaxVisitor::VisitStructDeclaration(StructDeclarationSyntax* node)
 		return;
 
 	if (node->TypeParameters != nullptr)
-		VisitTypeParametersList(node->TypeParameters);
+		VisitTypeParametersList(node->TypeParameters.get());
 
 	for (const auto& member : node->Members)
 		VisitMemberDeclaration(member.get());
@@ -173,7 +173,7 @@ void SyntaxVisitor::VisitInterfaceDeclaration(InterfaceDeclarationSyntax* node)
 		return;
 
 	if (node->TypeParameters != nullptr)
-		VisitTypeParametersList(node->TypeParameters);
+		VisitTypeParametersList(node->TypeParameters.get());
 
 	for (const auto& member : node->Members)
 		VisitMemberDeclaration(member.get());
@@ -185,13 +185,13 @@ void SyntaxVisitor::VisitDelegateDeclaration(DelegateDeclarationSyntax* node)
 		return;
 
 	if (node->ReturnType != nullptr)
-		VisitType(node->ReturnType);
+		VisitType(node->ReturnType.get());
 
 	if (node->TypeParameters != nullptr)
-		VisitTypeParametersList(node->TypeParameters);
+		VisitTypeParametersList(node->TypeParameters.get());
 
-	if (node->Params != nullptr)
-		VisitParametersList(node->Params);
+	if (node->ParametersList != nullptr)
+		VisitParametersList(node->ParametersList.get());
 }
 
 void SyntaxVisitor::VisitMemberDeclaration(MemberDeclarationSyntax* node)
@@ -289,10 +289,10 @@ void SyntaxVisitor::VisitFieldDeclaration(FieldDeclarationSyntax* node)
 		return;
 
 	if (node->ReturnType != nullptr)
-		VisitType(node->ReturnType);
+		VisitType(node->ReturnType.get());
 
 	if (node->InitializerExpression != nullptr)
-		VisitExpression(node->InitializerExpression);
+		VisitExpression(node->InitializerExpression.get());
 }
 
 void SyntaxVisitor::VisitMethodDeclaration(MethodDeclarationSyntax* node)
@@ -301,13 +301,13 @@ void SyntaxVisitor::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 		return;
 
 	if (node->ReturnType != nullptr)
-		VisitType(node->ReturnType);
+		VisitType(node->ReturnType.get());
 
-	if (node->Params != nullptr)
-		VisitParametersList(node->Params);
+	if (node->ParametersList != nullptr)
+		VisitParametersList(node->ParametersList.get());
 
 	if (node->Body != nullptr)
-		VisitStatementsBlock(node->Body);
+		VisitStatementsBlock(node->Body.get());
 }
 
 void SyntaxVisitor::VisitConstructorDeclaration(ConstructorDeclarationSyntax* node)
@@ -315,11 +315,11 @@ void SyntaxVisitor::VisitConstructorDeclaration(ConstructorDeclarationSyntax* no
 	if (node == nullptr)
 		return;
 
-	if (node->Params != nullptr)
-		VisitParametersList(node->Params);
+	if (node->ParametersList != nullptr)
+		VisitParametersList(node->ParametersList.get());
 
 	if (node->Body != nullptr)
-		VisitStatementsBlock(node->Body);
+		VisitStatementsBlock(node->Body.get());
 }
 
 void SyntaxVisitor::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
@@ -328,16 +328,16 @@ void SyntaxVisitor::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
 		return;
 
 	if (node->ReturnType != nullptr)
-		VisitType(node->ReturnType);
+		VisitType(node->ReturnType.get());
 
 	if (node->Getter != nullptr)
-		VisitAccessorDeclaration(node->Getter);
+		VisitAccessorDeclaration(node->Getter.get());
 	
 	if (node->Setter != nullptr)
-		VisitAccessorDeclaration(node->Setter);
+		VisitAccessorDeclaration(node->Setter.get());
 	
 	if (node->InitializerExpression != nullptr)
-		VisitExpression(node->InitializerExpression);
+		VisitExpression(node->InitializerExpression.get());
 }
 
 void SyntaxVisitor::VisitIndexatorDeclaration(IndexatorDeclarationSyntax* node)
@@ -346,16 +346,16 @@ void SyntaxVisitor::VisitIndexatorDeclaration(IndexatorDeclarationSyntax* node)
 		return;
 
 	if (node->ReturnType != nullptr)
-		VisitType(node->ReturnType);
+		VisitType(node->ReturnType.get());
 
-	if (node->Parameters != nullptr)
-		VisitParametersList(node->Parameters);
+	if (node->ParametersList != nullptr)
+		VisitParametersList(node->ParametersList.get());
 
 	if (node->Getter != nullptr)
-		VisitAccessorDeclaration(node->Getter);
+		VisitAccessorDeclaration(node->Getter.get());
 
 	if (node->Setter != nullptr)
-		VisitAccessorDeclaration(node->Setter);
+		VisitAccessorDeclaration(node->Setter.get());
 }
 
 void SyntaxVisitor::VisitAccessorDeclaration(AccessorDeclarationSyntax* node)
@@ -364,7 +364,7 @@ void SyntaxVisitor::VisitAccessorDeclaration(AccessorDeclarationSyntax* node)
 		return;
 
 	if (node->Body != nullptr)
-		VisitStatementsBlock(node->Body);
+		VisitStatementsBlock(node->Body.get());
 }
 
 void SyntaxVisitor::VisitStatementsBlock(StatementsBlockSyntax* node)
@@ -372,8 +372,8 @@ void SyntaxVisitor::VisitStatementsBlock(StatementsBlockSyntax* node)
 	if (node == nullptr)
 		return;
 
-	for (StatementSyntax* statement : node->Statements)
-		VisitStatement(statement);
+	for (const auto& statement : node->Statements)
+		VisitStatement(statement.get());
 }
 
 void SyntaxVisitor::VisitStatement(StatementSyntax* node)
@@ -485,7 +485,7 @@ void SyntaxVisitor::VisitExpressionStatement(ExpressionStatementSyntax* node)
 		return;
 
 	if (node->Expression != nullptr)
-		VisitExpression(node->Expression);
+		VisitExpression(node->Expression.get());
 }
 
 void SyntaxVisitor::VisitVariableStatement(VariableStatementSyntax* node)
@@ -494,10 +494,10 @@ void SyntaxVisitor::VisitVariableStatement(VariableStatementSyntax* node)
 		return;
 
 	if (node->Type != nullptr)
-		VisitType(node->Type);
+		VisitType(node->Type.get());
 
 	if (node->Expression != nullptr)
-		VisitExpression(node->Expression);
+		VisitExpression(node->Expression.get());
 }
 
 void SyntaxVisitor::VisitWhileStatement(WhileStatementSyntax* node)
@@ -506,10 +506,10 @@ void SyntaxVisitor::VisitWhileStatement(WhileStatementSyntax* node)
 		return;
 
 	if (node->ConditionExpression != nullptr)
-		VisitExpression(node->ConditionExpression);
+		VisitExpression(node->ConditionExpression.get());
 
 	if (node->StatementsBlock != nullptr)
-		VisitStatementsBlock(node->StatementsBlock);
+		VisitStatementsBlock(node->StatementsBlock.get());
 }
 
 void SyntaxVisitor::VisitUntilStatement(UntilStatementSyntax* node)
@@ -518,10 +518,10 @@ void SyntaxVisitor::VisitUntilStatement(UntilStatementSyntax* node)
 		return;
 
 	if (node->ConditionExpression != nullptr)
-		VisitExpression(node->ConditionExpression);
+		VisitExpression(node->ConditionExpression.get());
 
 	if (node->StatementsBlock != nullptr)
-		VisitStatementsBlock(node->StatementsBlock);
+		VisitStatementsBlock(node->StatementsBlock.get());
 }
 
 void SyntaxVisitor::VisitForStatement(ForStatementSyntax* node)
@@ -530,16 +530,16 @@ void SyntaxVisitor::VisitForStatement(ForStatementSyntax* node)
 		return;
 
 	if (node->InitializerStatement != nullptr)
-		VisitStatement(node->InitializerStatement);
+		VisitStatement(node->InitializerStatement.get());
 
 	if (node->ConditionExpression != nullptr)
-		VisitExpression(node->ConditionExpression);
+		VisitExpression(node->ConditionExpression.get());
 
 	if (node->AfterRepeatStatement != nullptr)
-		VisitStatement(node->AfterRepeatStatement);
+		VisitStatement(node->AfterRepeatStatement.get());
 
 	if (node->StatementsBlock != nullptr)
-		VisitStatementsBlock(node->StatementsBlock);
+		VisitStatementsBlock(node->StatementsBlock.get());
 }
 
 void SyntaxVisitor::VisitForEachStatement(ForEachStatementSyntax* node)
@@ -548,10 +548,10 @@ void SyntaxVisitor::VisitForEachStatement(ForEachStatementSyntax* node)
 		return;
 
 	if (node->RangeExpression != nullptr)
-		VisitExpression(node->RangeExpression);
+		VisitExpression(node->RangeExpression.get());
 
 	if (node->StatementsBlock != nullptr)
-		VisitStatementsBlock(node->StatementsBlock);
+		VisitStatementsBlock(node->StatementsBlock.get());
 }
 
 void SyntaxVisitor::VisitReturnStatement(ReturnStatementSyntax* node)
@@ -560,7 +560,7 @@ void SyntaxVisitor::VisitReturnStatement(ReturnStatementSyntax* node)
 		return;
 
 	if (node->Expression != nullptr)
-		VisitExpression(node->Expression);
+		VisitExpression(node->Expression.get());
 }
 
 void SyntaxVisitor::VisitThrowStatement(ThrowStatementSyntax* node)
@@ -569,7 +569,7 @@ void SyntaxVisitor::VisitThrowStatement(ThrowStatementSyntax* node)
 		return;
 
 	if (node->Expression != nullptr)
-		VisitExpression(node->Expression);
+		VisitExpression(node->Expression.get());
 }
 
 void SyntaxVisitor::VisitBreakStatement(BreakStatementSyntax* node)
@@ -629,13 +629,13 @@ void SyntaxVisitor::VisitIfStatement(IfStatementSyntax* node)
 		return;
 
 	if (node->ConditionExpression != nullptr)
-		VisitStatement(node->ConditionExpression);
+		VisitStatement(node->ConditionExpression.get());
 
 	if (node->StatementsBlock != nullptr)
-		VisitStatementsBlock(node->StatementsBlock);
-	
+		VisitStatementsBlock(node->StatementsBlock.get());
+
 	if (node->NextStatement != nullptr)
-		VisitConditionalClause(node->NextStatement);
+		VisitConditionalClause(node->NextStatement.get());
 }
 
 void SyntaxVisitor::VisitUnlessStatement(UnlessStatementSyntax* node)
@@ -644,13 +644,13 @@ void SyntaxVisitor::VisitUnlessStatement(UnlessStatementSyntax* node)
 		return;
 
 	if (node->ConditionExpression != nullptr)
-		VisitStatement(node->ConditionExpression);
+		VisitStatement(node->ConditionExpression.get());
 
 	if (node->StatementsBlock != nullptr)
-		VisitStatementsBlock(node->StatementsBlock);
+		VisitStatementsBlock(node->StatementsBlock.get());
 
 	if (node->NextStatement != nullptr)
-		VisitConditionalClause(node->NextStatement);
+		VisitConditionalClause(node->NextStatement.get());
 }
 
 void SyntaxVisitor::VisitElseStatement(ElseStatementSyntax* node)
@@ -659,10 +659,10 @@ void SyntaxVisitor::VisitElseStatement(ElseStatementSyntax* node)
 		return;
 
 	if (node->StatementsBlock != nullptr)
-		VisitStatementsBlock(node->StatementsBlock);
+		VisitStatementsBlock(node->StatementsBlock.get());
 
 	if (node->NextStatement != nullptr)
-		VisitConditionalClause(node->NextStatement);
+		VisitConditionalClause(node->NextStatement.get());
 }
 
 void SyntaxVisitor::VisitTryStatement(TryStatementSyntax* node)
@@ -671,12 +671,12 @@ void SyntaxVisitor::VisitTryStatement(TryStatementSyntax* node)
 		return;
 
 	if (node->TryBlock != nullptr)
-		VisitStatementsBlock(node->TryBlock);
+		VisitStatementsBlock(node->TryBlock.get());
 
-	for (CatchClauseSyntax* clause : node->CatchClauses)
+	for (const auto& clause : node->CatchClauses)
 	{
 		if (clause->Body != nullptr)
-			VisitStatementsBlock(clause->Body);
+			VisitStatementsBlock(clause->Body.get());
 	}
 }
 
@@ -686,13 +686,13 @@ void SyntaxVisitor::VisitIfExpression(IfExpressionSyntax* node)
 		return;
 
 	if (node->Condition != nullptr)
-		VisitExpression(node->Condition);
+		VisitExpression(node->Condition.get());
 
 	if (node->ThenExpression != nullptr)
-		VisitExpression(node->ThenExpression);
+		VisitExpression(node->ThenExpression.get());
 
 	if (node->ElseExpression != nullptr)
-		VisitExpression(node->ElseExpression);
+		VisitExpression(node->ElseExpression.get());
 }
 
 void SyntaxVisitor::VisitSwitchExpression(SwitchExpressionSyntax* node)
@@ -701,15 +701,15 @@ void SyntaxVisitor::VisitSwitchExpression(SwitchExpressionSyntax* node)
 		return;
 
 	if (node->Expression != nullptr)
-		VisitExpression(node->Expression);
+		VisitExpression(node->Expression.get());
 
-	for (SwitchArmSyntax* arm : node->Arms)
+	for (const auto& arm : node->Arms)
 	{
 		if (arm->Pattern != nullptr)
-			VisitExpression(arm->Pattern);
+			VisitExpression(arm->Pattern.get());
 
 		if (arm->Expression != nullptr)
-			VisitExpression(arm->Expression);
+			VisitExpression(arm->Expression.get());
 	}
 }
 
@@ -831,10 +831,10 @@ void SyntaxVisitor::VisitBinaryExpression(BinaryExpressionSyntax* node)
 		return;
 
 	if (node->Left != nullptr)
-		VisitExpression(node->Left);
+		VisitExpression(node->Left.get());
 
 	if (node->Right != nullptr)
-		VisitExpression(node->Right);
+		VisitExpression(node->Right.get());
 }
 
 void SyntaxVisitor::VisitUnaryExpression(UnaryExpressionSyntax* node)
@@ -843,7 +843,7 @@ void SyntaxVisitor::VisitUnaryExpression(UnaryExpressionSyntax* node)
 		return;
 
 	if (node->Expression != nullptr)
-		VisitExpression(node->Expression);
+		VisitExpression(node->Expression.get());
 }
 
 void SyntaxVisitor::VisitCollectionExpression(CollectionExpressionSyntax* node)
@@ -851,8 +851,8 @@ void SyntaxVisitor::VisitCollectionExpression(CollectionExpressionSyntax* node)
 	if (node == nullptr)
 		return;
 
-	for (ExpressionSyntax* expression : node->ValuesExpressions)
-		VisitExpression(expression);
+	for (const auto& expression : node->ValuesExpressions)
+		VisitExpression(expression.get());
 }
 
 void SyntaxVisitor::VisitRangeExpression(RangeExpressionSyntax* node)
@@ -861,10 +861,10 @@ void SyntaxVisitor::VisitRangeExpression(RangeExpressionSyntax* node)
 		return;
 
 	if (node->Left != nullptr)
-		VisitExpression(node->Left);
+		VisitExpression(node->Left.get());
 
 	if (node->Right != nullptr)
-		VisitExpression(node->Right);
+		VisitExpression(node->Right.get());
 }
 
 void SyntaxVisitor::VisitLambdaExpression(LambdaExpressionSyntax* node)
@@ -872,11 +872,11 @@ void SyntaxVisitor::VisitLambdaExpression(LambdaExpressionSyntax* node)
 	if (node == nullptr)
 		return;
 
-	if (node->Params != nullptr)
-		VisitParametersList(node->Params);
+	if (node->ParametersList != nullptr)
+		VisitParametersList(node->ParametersList.get());
 
 	if (node->Body != nullptr)
-		VisitStatementsBlock(node->Body);
+		VisitStatementsBlock(node->Body.get());
 }
 
 void SyntaxVisitor::VisitTernaryExpression(TernaryExpressionSyntax* node)
@@ -885,13 +885,13 @@ void SyntaxVisitor::VisitTernaryExpression(TernaryExpressionSyntax* node)
 		return;
 
 	if (node->Condition != nullptr)
-		VisitExpression(node->Condition);
+		VisitExpression(node->Condition.get());
 
 	if (node->Left != nullptr)
-		VisitExpression(node->Left);
+		VisitExpression(node->Left.get());
 
 	if (node->Right != nullptr)
-		VisitExpression(node->Right);
+		VisitExpression(node->Right.get());
 }
 
 void SyntaxVisitor::VisitObjectCreationExpression(ObjectExpressionSyntax* node)
@@ -900,10 +900,10 @@ void SyntaxVisitor::VisitObjectCreationExpression(ObjectExpressionSyntax* node)
 		return;
 
 	if (node->Type != nullptr)
-		VisitType(node->Type);
+		VisitType(node->Type.get());
 
 	if (node->ArgumentsList != nullptr)
-		VisitArgumentsList(node->ArgumentsList);
+		VisitArgumentsList(node->ArgumentsList.get());
 }
 
 void SyntaxVisitor::VisitMemberAccessExpression(MemberAccessExpressionSyntax* node)
@@ -921,7 +921,7 @@ void SyntaxVisitor::VisitInvocationExpression(InvokationExpressionSyntax* node)
 		return;
 
 	if (node->ArgumentsList != nullptr)
-		VisitArgumentsList(node->ArgumentsList);
+		VisitArgumentsList(node->ArgumentsList.get());
 }
 
 void SyntaxVisitor::VisitIndexatorExpression(IndexatorExpressionSyntax* node)
@@ -930,7 +930,7 @@ void SyntaxVisitor::VisitIndexatorExpression(IndexatorExpressionSyntax* node)
 		return;
 
 	if (node->IndexatorList != nullptr)
-		VisitIndexatorList(node->IndexatorList);
+		VisitIndexatorList(node->IndexatorList.get());
 }
 
 void SyntaxVisitor::VisitArgumentsList(ArgumentsListSyntax* node)
@@ -938,8 +938,8 @@ void SyntaxVisitor::VisitArgumentsList(ArgumentsListSyntax* node)
 	if (node == nullptr)
 		return;
 
-	for (ArgumentSyntax* argument : node->Arguments)
-		VisitArgument(argument);
+	for (const auto& argument : node->Arguments)
+		VisitArgument(argument.get());
 }
 
 void SyntaxVisitor::VisitIndexatorList(IndexatorListSyntax* node)
@@ -947,8 +947,8 @@ void SyntaxVisitor::VisitIndexatorList(IndexatorListSyntax* node)
 	if (node == nullptr)
 		return;
 
-	for (ArgumentSyntax* argument : node->Arguments)
-		VisitArgument(argument);
+	for (const auto& argument : node->Arguments)
+		VisitArgument(argument.get());
 }
 
 void SyntaxVisitor::VisitTypeParametersList(TypeParametersListSyntax* node)
@@ -964,8 +964,8 @@ void SyntaxVisitor::VisitTypeArgumentsList(TypeArgumentsListSyntax* node)
 	if (node == nullptr)
 		return;
 
-	for (TypeSyntax* type : node->Types)
-		VisitType(type);
+	for (const auto& type : node->Types)
+		VisitType(type.get());
 }
 
 void SyntaxVisitor::VisitArgument(ArgumentSyntax* node)
@@ -974,13 +974,13 @@ void SyntaxVisitor::VisitArgument(ArgumentSyntax* node)
 		return;
 
 	if (node->Expression != nullptr)
-		VisitExpression(const_cast<ExpressionSyntax*>(node->Expression));
+		VisitExpression(node->Expression.get());
 }
 
 void SyntaxVisitor::VisitParametersList(ParametersListSyntax* node)
 {
-	for (ParameterSyntax* parameter : node->Parameters)
-		VisitParameter(parameter);
+	for (const auto& parameter : node->Parameters)
+		VisitParameter(parameter.get());
 }
 
 void SyntaxVisitor::VisitParameter(ParameterSyntax* node)
@@ -989,7 +989,7 @@ void SyntaxVisitor::VisitParameter(ParameterSyntax* node)
 		return;
 
 	if (node->Type != nullptr)
-		VisitType(const_cast<TypeSyntax*>(node->Type));
+		VisitType(node->Type.get());
 }
 
 void SyntaxVisitor::VisitType(TypeSyntax* node)
@@ -1070,7 +1070,7 @@ void SyntaxVisitor::VisitArrayType(ArrayTypeSyntax* node)
 		return;
 
 	if (node->UnderlayingType != nullptr)
-		VisitType(node->UnderlayingType);
+		VisitType(node->UnderlayingType.get());
 }
 
 void SyntaxVisitor::VisitNullableType(NullableTypeSyntax* node)
@@ -1079,7 +1079,7 @@ void SyntaxVisitor::VisitNullableType(NullableTypeSyntax* node)
 		return;
 
 	if (node->UnderlayingType != nullptr)
-		VisitType(node->UnderlayingType);
+		VisitType(node->UnderlayingType.get());
 }
 
 void SyntaxVisitor::VisitGenericType(GenericTypeSyntax* node)
@@ -1088,17 +1088,17 @@ void SyntaxVisitor::VisitGenericType(GenericTypeSyntax* node)
 		return;
 
 	if (node->UnderlayingType != nullptr)
-		VisitType(node->UnderlayingType);
+		VisitType(node->UnderlayingType.get());
 
 	if (node->Arguments != nullptr)
-		VisitTypeArgumentsList(node->Arguments);
+		VisitTypeArgumentsList(node->Arguments.get());
 }
 
 void SyntaxVisitor::VisitDelegateType(DelegateTypeSyntax* node)
 {
 	if (node->ReturnType != nullptr)
-		VisitType(node->ReturnType);
+		VisitType(node->ReturnType.get());
 
 	if (node->Params != nullptr)
-		VisitParametersList(node->Params);
+		VisitParametersList(node->Params.get());
 }

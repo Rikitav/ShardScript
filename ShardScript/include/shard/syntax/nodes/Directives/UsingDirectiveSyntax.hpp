@@ -18,17 +18,14 @@ namespace shard
 		SyntaxToken UsingKeywordToken;
 		SyntaxToken SemicolonToken;
 		std::vector<SyntaxToken> TokensList;
-		shard::NamespaceNode* Namespace = nullptr;
+		NamespaceNode* Namespace = nullptr;
 
 		inline UsingDirectiveSyntax(SyntaxNode *const parent)
 			: SyntaxNode(SyntaxKind::UsingDirective, parent) { }
 
 		inline UsingDirectiveSyntax(const UsingDirectiveSyntax&) = delete;
 
-		inline virtual ~UsingDirectiveSyntax()
-		{
-
-		}
+		inline virtual ~UsingDirectiveSyntax() = default;
 
 		std::wstring ToString();
 	};

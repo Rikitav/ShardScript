@@ -22,6 +22,21 @@ using namespace shard;
 TypeSymbol* const SymbolTable::Global::Type = new TypeSymbol(GlobalTypeName, SyntaxKind::CompilationUnit);
 SemanticScope* const SymbolTable::Global::Scope = new SemanticScope(Type, nullptr);
 
+template<typename B, typename D>
+static std::unique_ptr<D> unique_cast(std::unique_ptr<B> ptr)
+{
+	D* tmp = static_cast<D*>(ptr.get());
+	std::unique_ptr<D> derivedPointer;
+
+	if (tmp != nullptr)
+	{
+		ptr.release();
+		derivedPointer.reset(tmp);
+	}
+
+	return derivedPointer;
+}
+
 static void ResolvePrimitives()
 {
 	SymbolTable::Primitives::Void = new StructSymbol(L"Void");
@@ -68,17 +83,13 @@ SymbolTable::~SymbolTable()
 
 void SymbolTable::ClearSymbols()
 {
-	for (shard::SyntaxSymbol* symbol : (symbolToNodeMap | std::views::keys))
-	{
-		if (symbol->IsType())
-			delete symbol;
-	}
-
 	symbolToNodeMap.clear();
 	nodeToSymbolMap.clear();
+
 	namespacesList.clear();
 	typesList.clear();
-	methodsList.clear();
+	membersList.clear();
+	triviasList.clear();
 }
 
 std::optional<SyntaxSymbol*> SymbolTable::LookupSymbol(SyntaxNode *const node)
@@ -87,45 +98,87 @@ std::optional<SyntaxSymbol*> SymbolTable::LookupSymbol(SyntaxNode *const node)
 	return choise == nodeToSymbolMap.end() ? std::nullopt : std::optional<SyntaxSymbol*>(choise->second);
 }
 
-std::optional<SyntaxNode*> SymbolTable::GetSyntaxNode(SyntaxSymbol * const symbol)
+std::optional<SyntaxNode*> SymbolTable::LookupNode(SyntaxSymbol * const symbol)
 {
 	auto choise = symbolToNodeMap.find(symbol);
 	return choise == symbolToNodeMap.end() ? std::nullopt : std::optional<SyntaxNode*>(choise->second);
 }
 
-void SymbolTable::BindSymbol(SyntaxNode* node, SyntaxSymbol* symbol)
+SyntaxSymbol* SymbolTable::BindSymbol(SyntaxNode* node, std::unique_ptr<SyntaxSymbol> symbol)
 {
-	nodeToSymbolMap[node] = symbol;
-	symbolToNodeMap[symbol] = node;
-
-	if (symbol->IsType())
-		typesList.push_back(static_cast<TypeSymbol*>(symbol));
-
-	if (symbol->Kind == SyntaxKind::MethodDeclaration || symbol->Kind == SyntaxKind::ConstructorDeclaration)
-		methodsList.push_back(static_cast<MethodSymbol*>(symbol));
+	SyntaxSymbol* raw = symbol.get();
+	nodeToSymbolMap[node] = raw;
+	symbolToNodeMap[raw] = node;
 
 	if (symbol->Kind == SyntaxKind::NamespaceDeclaration)
-		namespacesList.push_back(static_cast<NamespaceSymbol*>(symbol));
+	{
+		namespacesList.push_back(unique_cast<SyntaxSymbol, NamespaceSymbol>(std::move(symbol)));
+	}
+	else if (symbol->IsType())
+	{
+		typesList.push_back(unique_cast<SyntaxSymbol, TypeSymbol>(std::move(symbol)));
+	}
+	else if (symbol->IsMember())
+	{
+		membersList.push_back(unique_cast<SyntaxSymbol, MemberSymbol>(std::move(symbol)));
+	}
+	else
+	{
+		triviasList.push_back(std::move(symbol));
+	}
+
+	return raw;
+}
+
+SyntaxSymbol* SymbolTable::ImplicitSymbol(std::unique_ptr<SyntaxSymbol> symbol)
+{
+	SyntaxSymbol* raw = symbol.get();
+	if (symbol->Kind == SyntaxKind::NamespaceDeclaration)
+	{
+		namespacesList.push_back(unique_cast<SyntaxSymbol, NamespaceSymbol>(std::move(symbol)));
+	}
+	else if (symbol->IsType())
+	{
+		typesList.push_back(unique_cast<SyntaxSymbol, TypeSymbol>(std::move(symbol)));
+	}
+	else if (symbol->IsMember())
+	{
+		membersList.push_back(unique_cast<SyntaxSymbol, MemberSymbol>(std::move(symbol)));
+	}
+	else
+	{
+		triviasList.push_back(std::move(symbol));
+	}
+
+	return raw;
 }
 
 const std::vector<NamespaceSymbol*> SymbolTable::GetNamespaceSymbols()
 {
-	return namespacesList;
+	std::vector<NamespaceSymbol*> result;
+	result.reserve(namespacesList.size());
+	for (const auto& symbol : namespacesList)
+		result.push_back(symbol.get());
+	return result;
 }
 
 const std::vector<TypeSymbol*> SymbolTable::GetTypeSymbols()
 {
-	/*
-	auto cond = [](const SyntaxSymbol* symbol) { return symbol->Kind == SyntaxKind::ClassDeclaration || symbol->Kind == SyntaxKind::StructDeclaration || symbol->Kind == SyntaxKind::CollectionExpression; };
-	auto trans = [](const SyntaxSymbol* symbol) { return static_cast<TypeSymbol*>((SyntaxSymbol*)symbol); };
-	auto types = symbolToNodeMap | keys | filter(cond) | transform(trans);
-	return std::vector<TypeSymbol*>(types.begin(), types.end());
-	*/
-
-	return typesList;
+	std::vector<TypeSymbol*> result;
+	result.reserve(typesList.size());
+	for (const auto& symbol : typesList)
+		result.push_back(symbol.get());
+	return result;
 }
 
 const std::vector<MethodSymbol*> shard::SymbolTable::GetMethodSymbols()
 {
-	return methodsList;
+	std::vector<MethodSymbol*> methods;
+	for (const auto& member : membersList)
+	{
+		if (member->Kind == SyntaxKind::MethodDeclaration)
+			methods.push_back(static_cast<MethodSymbol*>(member.get()));
+	}
+
+	return methods;
 }

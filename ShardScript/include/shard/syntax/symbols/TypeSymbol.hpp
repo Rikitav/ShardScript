@@ -6,6 +6,7 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 
 // Forward declaration
 namespace shard
@@ -33,11 +34,11 @@ namespace shard
         std::vector<TypeSymbol*> Interfaces;
         std::vector<TypeParameterSymbol*> TypeParameters;
 
-        std::vector<ConstructorSymbol*> Constructors;
-        std::vector<MethodSymbol*> Methods;
-        std::vector<IndexatorSymbol*> Indexators;
         std::vector<FieldSymbol*> Fields;
         std::vector<PropertySymbol*> Properties;
+        std::vector<IndexatorSymbol*> Indexators;
+        std::vector<ConstructorSymbol*> Constructors;
+        std::vector<MethodSymbol*> Methods;
 
         TypeLayoutingState State = TypeLayoutingState::Unvisited;
         size_t MemoryBytesSize = 0;
@@ -49,9 +50,11 @@ namespace shard
         bool IsAbstract = false;
         bool IsSealed = false;
         
-        inline TypeSymbol(const TypeSymbol& other) = delete;
-        TypeSymbol(const std::wstring& name, const SyntaxKind kind);
-        ~TypeSymbol() override;
+        TypeSymbol(const std::wstring& name, const SyntaxKind kind)
+            : SyntaxSymbol(name, kind) { }
+        
+        TypeSymbol(const TypeSymbol& other) = delete;
+        virtual ~TypeSymbol() = default;
 
         size_t GetInlineSize() const;
         bool IsPrimitive();

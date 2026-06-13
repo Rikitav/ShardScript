@@ -20,23 +20,17 @@ namespace shard
 		SyntaxToken NewToken;
 		SyntaxToken IdentifierToken;
 
-		TypeSyntax* Type = nullptr;
-		ArgumentsListSyntax* ArgumentsList = nullptr;
-		shard::TypeSymbol* TypeSymbol = nullptr;
-		shard::ConstructorSymbol* CtorSymbol = nullptr;
+		std::unique_ptr<ArgumentsListSyntax> ArgumentsList = nullptr;
+		std::unique_ptr<TypeSyntax> Type = nullptr;
+		
+		ConstructorSymbol* CtorSymbol = nullptr;
+		TypeSymbol* TypeSymbol = nullptr;
 
 		inline ObjectExpressionSyntax(SyntaxNode *const parent)
 			: ExpressionSyntax(SyntaxKind::ObjectExpression, parent) { }
 
 		inline ObjectExpressionSyntax(const ObjectExpressionSyntax&) = delete;
 
-		inline virtual ~ObjectExpressionSyntax()
-		{
-			if (Type != nullptr)
-				delete Type;
-
-			if (ArgumentsList != nullptr)
-				delete ArgumentsList;
-		}
+		inline virtual ~ObjectExpressionSyntax() = default;
 	};
 }

@@ -4,10 +4,9 @@ using namespace shard;
 
 void NamespaceSymbol::OnSymbolDeclared(SyntaxSymbol* symbol)
 {
-	if (symbol->IsType())
+	if (symbol->IsType() || symbol->IsMember())
 	{
-		TypeSymbol* type = static_cast<TypeSymbol*>(symbol);
-		Members.push_back(type);
-		Node->Types.push_back(type);
+		Members.push_back(symbol);
+		Node->Members.push_back(symbol);
 	}
 }

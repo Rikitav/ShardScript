@@ -11,11 +11,14 @@
 
 namespace shard
 {
+	class TypeSymbol;
+}
+
+namespace shard
+{
 	class SHARD_API TypeParameterSymbol : public TypeSymbol
 	{
 	public:
-		// Для type parameters без ограничений возвращаем Any
-		// В будущем здесь можно добавить ограничения (constraints)
 		//TypeSymbol* ConstraintType = nullptr;
 
 		uint16_t TypeArgumentIndex = 0;

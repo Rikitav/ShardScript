@@ -16,16 +16,14 @@ namespace shard
 
 		inline InterfaceDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) : TypeDeclarationSyntax(SyntaxKind::InterfaceDeclaration, parent)
 		{
+			Attributes = std::move(info.Attributes);
 			Modifiers = info.Modifiers;
 			IdentifierToken = info.Identifier;
-			TypeParameters = info.Generics;
+			TypeParameters = std::move(info.Generics);
 		}
 
 		inline InterfaceDeclarationSyntax(const InterfaceDeclarationSyntax& other) = delete;
 
-		inline virtual ~InterfaceDeclarationSyntax()
-		{
-
-		}
+		inline virtual ~InterfaceDeclarationSyntax() = default;
 	};
 }

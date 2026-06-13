@@ -16,8 +16,8 @@ namespace shard
 		const int TypeCode;
 		const SyntaxKind Kind;
 		const std::wstring Name;
-		std::wstring FullName;
 		SyntaxSymbol* Parent = nullptr;
+		std::wstring FullName;
 
 		SymbolAccesibility Accesibility = SymbolAccesibility::Private;
 		bool IsExtern = false;

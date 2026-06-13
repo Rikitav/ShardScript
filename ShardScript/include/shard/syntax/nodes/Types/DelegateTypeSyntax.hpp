@@ -9,6 +9,7 @@
 #include <shard/syntax/nodes/ParametersListSyntax.hpp>
 
 #include <string>
+#include <memory>
 
 namespace shard
 {
@@ -16,19 +17,15 @@ namespace shard
 	{
 	public:
 		SyntaxToken DelegateToken;
-		TypeSyntax* ReturnType = nullptr;
-		ParametersListSyntax* Params = nullptr;
+		std::unique_ptr<TypeSyntax> ReturnType = nullptr;
+		std::unique_ptr<ParametersListSyntax> Params = nullptr;
 
 		inline DelegateTypeSyntax(SyntaxNode *const parent)
 			: TypeSyntax(SyntaxKind::DelegateType, parent) { }
 
 		inline DelegateTypeSyntax(const DelegateTypeSyntax& other) = delete;
 
-		inline virtual ~DelegateTypeSyntax()
-		{
-			if (Params != nullptr)
-				delete Params;
-		}
+		inline virtual ~DelegateTypeSyntax() = default;
 
 		std::wstring ToString() override;
 	};

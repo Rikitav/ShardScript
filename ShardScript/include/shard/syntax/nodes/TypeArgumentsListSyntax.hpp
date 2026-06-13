@@ -8,6 +8,7 @@
 #include <shard/syntax/nodes/TypeSyntax.hpp>
 
 #include <vector>
+#include <memory>
 
 namespace shard
 {
@@ -16,7 +17,7 @@ namespace shard
 	public:
 		SyntaxToken OpenToken;
 		SyntaxToken CloseToken;
-		std::vector<TypeSyntax*> Types;
+		std::vector<std::unique_ptr<TypeSyntax>> Types;
 
 		inline TypeArgumentsListSyntax(SyntaxNode *const parent)
 			: SyntaxNode(SyntaxKind::ParametersList, parent) {
@@ -24,10 +25,6 @@ namespace shard
 
 		inline TypeArgumentsListSyntax(const TypeArgumentsListSyntax& other) = delete;
 
-		inline virtual ~TypeArgumentsListSyntax()
-		{
-			for (const TypeSyntax* parameter : Types)
-				delete parameter;
-		}
+		inline virtual ~TypeArgumentsListSyntax() = default;
 	};
 }

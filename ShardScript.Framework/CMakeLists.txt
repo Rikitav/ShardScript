@@ -10,7 +10,7 @@ add_library(ShardScript.Framework SHARED
     ${FRAMEWORK_SOURCES} 
     ${FRAMEWORK_HEADERS}
     ${FRAMEWORK_RESOURCES}
-)
+ "system/stdio/Constream.cpp")
 
 target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../ShardScript/include")

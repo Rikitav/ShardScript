@@ -1,18 +1,47 @@
 #define ONLY_ONCE static bool visited = false; if (visited) return; visited = true;
 
-#include <Windows.h>
 #include <iostream>
 #include <string>
 #include <stdexcept>
 #include <vector>
 #include <cstdint>
-
-#include <resources.hpp>
+#include <Windows.h>
 #include <ShardScript.hpp>
 
 constexpr auto STATIC = true;
 
 using namespace shard;
+
+typedef HMODULE(*CurrentModuleQuery)(void);
+
+inline static HMODULE GetCurrentModule()
+{
+	HMODULE hModule = nullptr;
+	CurrentModuleQuery query = GetCurrentModule;
+
+	GetModuleHandleExW(
+		GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
+		reinterpret_cast<LPCWSTR>(query),
+		&hModule);
+
+	return hModule;
+}
+
+inline static void GetResource(const wchar_t* name, const wchar_t*& resourceData, size_t & resourceSize)
+{
+	HMODULE hModule = GetCurrentModule();
+	HRSRC hResource = FindResourceW(hModule, name, L"SOURCE_CODE");
+	if (!hResource)
+		throw std::runtime_error("");
+
+	HGLOBAL hResourceData = LoadResource(hModule, hResource);
+	if (!hResourceData)
+		throw std::runtime_error("");
+
+	resourceSize = static_cast<size_t>(SizeofResource(hModule, hResource));
+	resourceData = static_cast<wchar_t*>(LockResource(hResourceData));
+	//FreeLibrary(hModule);
+}
 
 static ObjectInstance* Impl_Gc_Info(const CallState& context)
 {
@@ -47,82 +76,6 @@ static ObjectInstance* Impl_Var_Info(const CallState& context)
 	return nullptr; // void
 }
 
-static ObjectInstance* Impl_Print(const CallState& context)
-{
-	ObjectInstance* instance = context.Args[0]; // var
-	TypeSymbol* type = const_cast<TypeSymbol*>(instance->getInfo());
-
-	if (type->IsPrimitive())
-	{
-		ConsoleHelper::Write(instance);
-		return nullptr; // void
-	}
-
-	static std::wstring methodWName = L"ToString";
-	MethodSymbol* toString = type->FindMethod(methodWName, std::vector<TypeSymbol*>());
-
-	if (toString != nullptr)
-	{
-		context.Runtimer.InvokeMethod(toString, { instance });
-		ObjectInstance* result = context.Runtimer.CurrentFrame()->PopStack();
-
-		if (type != SymbolTable::Primitives::String)
-		{
-#pragma warning (push)
-#pragma warning (disable: 4244)
-			std::string methodName = std::string(toString->FullName.begin(), toString->FullName.end());
-			throw std::runtime_error("Failed to evaluate ToString method of \'" + methodName + "\'. Reason: returned not a string!");
-#pragma warning (pop)
-		}
-
-		ConsoleHelper::Write(instance);
-		return nullptr; // void
-	}
-
-	ConsoleHelper::Write(type->FullName);
-	return nullptr; // void
-}
-
-static ObjectInstance* Impl_Println(const CallState& context)
-{
-	ObjectInstance* instance = context.Args[0]; // var
-	TypeSymbol* type = const_cast<TypeSymbol*>(instance->getInfo());
-
-	if (type->IsPrimitive())
-	{
-		ConsoleHelper::WriteLine(instance);
-		return nullptr; // void
-	}
-
-	static std::wstring methodWName = L"ToString";
-	MethodSymbol* toString = type->FindMethod(methodWName, std::vector<TypeSymbol*>());
-
-	if (toString != nullptr)
-	{
-		context.Runtimer.InvokeMethod(toString, { instance });
-		ObjectInstance* result = context.Runtimer.CurrentFrame()->PopStack();
-
-		if (result->getInfo() != SymbolTable::Primitives::String)
-		{
-			std::string methodName = std::string(toString->FullName.begin(), toString->FullName.end());
-			throw std::runtime_error("Failed to evaluate ToString method of \'" + methodName + "\'. Reason: returned not a string!");
-		}
-
-		ConsoleHelper::WriteLine(result);
-		return nullptr; // void
-	}
-
-	ConsoleHelper::WriteLine(type->FullName);
-	return nullptr; // void
-}
-
-static ObjectInstance* Impl_Input(const CallState& context)
-{
-	std::wstring input;
-	getline(std::wcin, input);
-	return context.Collector.FromValue(input);
-}
-
 static ObjectInstance* Impl_typeof(const CallState& context)
 {
 	const ObjectInstance* instance = context.Args[0];
@@ -143,36 +96,24 @@ static ObjectInstance* Impl_sizeof(const CallState& context)
 
 static void ReflectGlobalMethods(CompilationContext& context)
 {
+	SymbolFactory factory(context.GetSemanticModel().Table.get());
+
 	// gc_info
-	MethodSymbol* gcInfoMethod = SymbolFactory::Method(ACS_PUBLIC, STATIC, TYPE_VOID, L"gc_info", Impl_Gc_Info);
+	MethodSymbol* gcInfoMethod = factory.Method(ACS_PUBLIC, STATIC, TYPE_VOID, L"gc_info", Impl_Gc_Info);
 	context.GetSemanticAnalyzer().AddSymbol(gcInfoMethod);
 
 	// Var_Info
-	MethodSymbol* varInfoMethod = SymbolFactory::Method(ACS_PUBLIC, STATIC, TYPE_VOID, L"var_info", Impl_Var_Info);
+	MethodSymbol* varInfoMethod = factory.Method(ACS_PUBLIC, STATIC, TYPE_VOID, L"var_info", Impl_Var_Info);
 	context.GetSemanticAnalyzer().AddSymbol(varInfoMethod);
 
-	// inputln
-	MethodSymbol* inputlnMethod = SymbolFactory::Method(ACS_PUBLIC, STATIC, TYPE_STRING, L"inputln", Impl_Input);
-	context.GetSemanticAnalyzer().AddSymbol(inputlnMethod);
-
-	// print
-	MethodSymbol* printMethod = SymbolFactory::Method(ACS_PUBLIC, STATIC, TYPE_VOID, L"print", Impl_Print);
-	printMethod->Parameters.push_back(SymbolFactory::Parameter(L"message", TYPE_ANY));
-	context.GetSemanticAnalyzer().AddSymbol(printMethod);
-
-	// println
-	MethodSymbol* printlnMethod = SymbolFactory::Method(ACS_PUBLIC, STATIC, TYPE_VOID, L"println", Impl_Println);
-	printlnMethod->Parameters.push_back(SymbolFactory::Parameter(L"object", TYPE_ANY));
-	context.GetSemanticAnalyzer().AddSymbol(printlnMethod);
-
 	// typeof
-	MethodSymbol* typeofMethod = SymbolFactory::Method(ACS_PUBLIC, STATIC, TYPE_STRING, L"typeof", Impl_typeof);
-	typeofMethod->Parameters.push_back(SymbolFactory::Parameter(L"object", TYPE_ANY));
+	MethodSymbol* typeofMethod = factory.Method(ACS_PUBLIC, STATIC, TYPE_STRING, L"typeof", Impl_typeof);
+	typeofMethod->Parameters.push_back(factory.Parameter(L"object", TYPE_ANY));
 	context.GetSemanticAnalyzer().AddSymbol(typeofMethod);
 
 	// sizeof
-	MethodSymbol* sizeofMethod = SymbolFactory::Method(ACS_PUBLIC, STATIC, TYPE_INT, L"sizeof", Impl_sizeof);
-	sizeofMethod->Parameters.push_back(SymbolFactory::Parameter(L"object", TYPE_ANY));
+	MethodSymbol* sizeofMethod = factory.Method(ACS_PUBLIC, STATIC, TYPE_INT, L"sizeof", Impl_sizeof);
+	sizeofMethod->Parameters.push_back(factory.Parameter(L"object", TYPE_ANY));
 	context.GetSemanticAnalyzer().AddSymbol(sizeofMethod);
 }
 
@@ -208,32 +149,34 @@ SHARDLIB_ENTRYPOINT
 	const wchar_t* resourceData; size_t resourceSize;
 
 	{
-		resources::GetResource(L"SYSTEM_RANDOM", resourceData, resourceSize);
+		GetResource(L"MATH_RANDOM", resourceData, resourceSize);
 		auto reader = std::make_unique<StringStreamReader>(L"Random.ss", std::wstring(resourceData, resourceSize / sizeof(wchar_t)));
 		context.ProvideSource(reader.get());
 	}
 
 	{
-		resources::GetResource(L"COLLECTIONS_LIST", resourceData, resourceSize);
+		GetResource(L"COLLECTIONS_LIST", resourceData, resourceSize);
 		auto reader = std::make_unique<StringStreamReader>(L"List.ss", std::wstring(resourceData, resourceSize / sizeof(wchar_t)));
 		context.ProvideSource(reader.get());
 	}
 
 	{
-		resources::GetResource(L"FILESYSTEM_FILE", resourceData, resourceSize);
+		GetResource(L"FILESYSTEM_FILE", resourceData, resourceSize);
 		auto reader = std::make_unique<StringStreamReader>(L"File.ss", std::wstring(resourceData, resourceSize / sizeof(wchar_t)));
 		context.ProvideSource(reader.get());
 	}
 
 	{
-		resources::GetResource(L"FILESYSTEM_DIRECTORY", resourceData, resourceSize);
+		GetResource(L"FILESYSTEM_DIRECTORY", resourceData, resourceSize);
 		auto reader = std::make_unique<StringStreamReader>(L"Directory.ss", std::wstring(resourceData, resourceSize / sizeof(wchar_t)));
 		context.ProvideSource(reader.get());
 	}
-	
-	//context.AddModule(new FileSystem_Directory());
-	//context.AddModule(new FileSystem_File());
-	//context.AddModule(new Collections_List());
+
+	{
+		GetResource(L"STDIO_CONSTREAM", resourceData, resourceSize);
+		auto reader = std::make_unique<StringStreamReader>(L"Constream.ss", std::wstring(resourceData, resourceSize / sizeof(wchar_t)));
+		context.ProvideSource(reader.get());
+	}
 }
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)

@@ -32,8 +32,8 @@ namespace shard
 #define SHARDLIB_GETMETADATA_FUNCNAME ShardLib_GetMetadata
 #define SHARDLIB_ENTRYPOINT_FUNCNAME ShardLib_EntryPoint
 
-// Microsoft
-#if defined(_MSC_VER)
+// Microsoft / MinGW
+#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__)
 #define SHARDLIB_GETMETADATA extern "C" __declspec(dllexport) void SHARDLIB_GETMETADATA_FUNCNAME(ShardLibMetadata& lib)
 #define SHARDLIB_ENTRYPOINT extern "C" __declspec(dllexport) void SHARDLIB_ENTRYPOINT_FUNCNAME(CompilationContext& context)
 

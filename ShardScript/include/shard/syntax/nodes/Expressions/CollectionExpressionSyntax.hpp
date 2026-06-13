@@ -8,6 +8,7 @@
 #include <shard/syntax/SyntaxNode.hpp>
 
 #include <vector>
+#include <memory>
 
 namespace shard
 {
@@ -16,18 +17,15 @@ namespace shard
 	public:
 		SyntaxToken OpenSquareToken;
 		SyntaxToken CloseSquareToken;
-		std::vector<ExpressionSyntax*> ValuesExpressions;
-		shard::ArrayTypeSymbol* Symbol = nullptr;
+		
+		std::vector<std::unique_ptr<ExpressionSyntax>> ValuesExpressions;
+		ArrayTypeSymbol* Symbol = nullptr;
 
 		inline CollectionExpressionSyntax(SyntaxNode *const parent)
 			: ExpressionSyntax(SyntaxKind::CollectionExpression, parent) { }
 
 		inline CollectionExpressionSyntax(const CollectionExpressionSyntax&) = delete;
 
-		inline virtual ~CollectionExpressionSyntax()
-		{
-			for (ExpressionSyntax* expression : ValuesExpressions)
-				delete expression;
-		}
+		inline virtual ~CollectionExpressionSyntax() = default;
 	};
 }

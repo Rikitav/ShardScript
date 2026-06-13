@@ -13,6 +13,7 @@
 #include <shard/parsing/MemberDeclarationInfo.hpp>
 
 #include <vector>
+#include <memory>
 
 namespace shard
 {
@@ -20,31 +21,21 @@ namespace shard
 	{
 	public:
 		SyntaxToken Semicolon;
-		TypeSyntax* ReturnType = nullptr;
-		ParametersListSyntax* Params = nullptr;
-		StatementsBlockSyntax* Body = nullptr;
+		std::unique_ptr<TypeSyntax> ReturnType = nullptr;
+		std::unique_ptr<ParametersListSyntax> ParametersList = nullptr;
+		std::unique_ptr<StatementsBlockSyntax> Body = nullptr;
 
 		inline MethodDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) : MemberDeclarationSyntax(SyntaxKind::MethodDeclaration, parent)
 		{
-			Attributes = info.Attributes;
+			Attributes = std::move(info.Attributes);
 			Modifiers = info.Modifiers;
 			IdentifierToken = info.Identifier;
-			ReturnType = info.ReturnType;
-			TypeParameters = info.Generics;
+			ReturnType = std::move(info.ReturnType);
+			TypeParameters = std::move(info.Generics);
 		}
 
 		inline MethodDeclarationSyntax(const MethodDeclarationSyntax&) = delete;
 
-		inline ~MethodDeclarationSyntax() override
-		{
-			if (ReturnType != nullptr)
-				delete ReturnType;
-
-			if (Params != nullptr)
-				delete Params;
-
-			if (Body != nullptr)
-				delete Body;
-		}
+		inline ~MethodDeclarationSyntax() override = default;
 	};
 }

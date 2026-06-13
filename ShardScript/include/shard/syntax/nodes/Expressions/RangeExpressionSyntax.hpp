@@ -12,8 +12,10 @@ namespace shard
 	{
 	public:
 		SyntaxToken OperatorToken;
-		ExpressionSyntax* Left = nullptr;
-		ExpressionSyntax* Right = nullptr;
+		
+		std::unique_ptr<ExpressionSyntax> Left = nullptr;
+		std::unique_ptr<ExpressionSyntax> Right = nullptr;
+
 		bool IsInclusive = false;
 
 		inline RangeExpressionSyntax(SyntaxNode *const parent)
@@ -21,19 +23,6 @@ namespace shard
 
 		inline RangeExpressionSyntax(const RangeExpressionSyntax& other) = delete;
 
-		inline virtual ~RangeExpressionSyntax()
-		{
-			if (Left != nullptr)
-			{
-				Left->~ExpressionSyntax();
-				delete Left;
-			}
-
-			if (Right != nullptr)
-			{
-				Right->~ExpressionSyntax();
-				delete Right;
-			}
-		}
+		inline virtual ~RangeExpressionSyntax() = default;
 	};
 }

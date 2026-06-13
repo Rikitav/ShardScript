@@ -46,6 +46,15 @@
 
 using namespace shard;
 
+static void GeneratePropertyBackingField(SymbolTable* table, PropertySymbol* symbol, SymbolFactory& factory)
+{
+    FieldSymbol* backingField = factory.Field(L"<" + symbol->Name + L">k__BackingField", symbol->ReturnType, symbol->IsStatic);
+    backingField->Accesibility = SymbolAccesibility::Private;
+    backingField->DefaultValueExpression = symbol->DefaultValueExpression;
+
+    symbol->BackingField = backingField;
+}
+
 static std::wstring FormatFullNameOf(SyntaxSymbol* symbol)
 {
     if (symbol->Parent == nullptr)
@@ -71,8 +80,8 @@ void DeclarationCollector::VisitCompilationUnit(CompilationUnitSyntax *const nod
         NamespaceSymbol* symbol = LookupSymbol<NamespaceSymbol>(node->Namespace.get()).value_or(nullptr);
         if (symbol == nullptr)
         {
-            symbol = SymbolFactory::Namespace(node->Namespace.get());
-            Table->BindSymbol(node->Namespace.get(), symbol);
+			// Creating symbol
+			symbol = Factory.Namespace(node->Namespace.get());
 
             symbol->Parent = OwnerSymbol();
             if (symbol->Parent != nullptr)
@@ -119,8 +128,8 @@ void DeclarationCollector::VisitClassDeclaration(ClassDeclarationSyntax *const n
     ClassSymbol* symbol = LookupSymbol<ClassSymbol>(node).value_or(nullptr);
     if (symbol == nullptr)
     {
-        symbol = SymbolFactory::Class(node);
-        Table->BindSymbol(node, symbol);
+		// Creating symbol
+		symbol = Factory.Class(node);
 
         // Resolving owner symbol
         symbol->Parent = OwnerSymbol();
@@ -145,18 +154,20 @@ void DeclarationCollector::VisitClassDeclaration(ClassDeclarationSyntax *const n
         {
             for (size_t i = 0; i < node->TypeParameters->Types.size(); i++)
             {
-                TypeParameterSymbol* typeParamSymbol = new TypeParameterSymbol(node->TypeParameters->Types[i].Word);
+                SyntaxToken& param = node->TypeParameters->Types.at(i);
+                TypeParameterSymbol* typeParamSymbol = Factory.TypeParameter(param.Word);
                 typeParamSymbol->Parent = symbol;
                 typeParamSymbol->TypeArgumentIndex = static_cast<uint16_t>(i);
+
                 symbol->TypeParameters.push_back(typeParamSymbol);
             }
         }
     }
 
     Declare(symbol);
-
     PushScope(symbol);
-    for (TypeParameterSymbol* typeParam : symbol->TypeParameters)
+
+    for (const auto& typeParam : symbol->TypeParameters)
         Declare(typeParam);
 
     for (const auto& member : node->Members)
@@ -164,11 +175,10 @@ void DeclarationCollector::VisitClassDeclaration(ClassDeclarationSyntax *const n
 
     if (!symbol->IsStatic && symbol->Constructors.empty())
     {
-        ConstructorSymbol* ctor = new ConstructorSymbol(L"default");
-        ctor->HandleType = MethodHandleType::Body;
-        ctor->Accesibility = SymbolAccesibility::Public;
+        ConstructorSymbol* ctor = Factory.Constructor(L"default");
         ctor->Parent = symbol;
         ctor->FullName = FormatFullNameOf(ctor);
+
         symbol->Constructors.push_back(ctor);
     }
 
@@ -180,8 +190,8 @@ void DeclarationCollector::VisitStructDeclaration(StructDeclarationSyntax *const
     StructSymbol* symbol = LookupSymbol<StructSymbol>(node).value_or(nullptr);
     if (symbol == nullptr)
     {
-        symbol = SymbolFactory::Struct(node);
-        Table->BindSymbol(node, symbol);
+		// Creating symbol
+		symbol = Factory.Struct(node);
 
         // Resolving owner symbol
         symbol->Parent = OwnerSymbol();
@@ -206,18 +216,20 @@ void DeclarationCollector::VisitStructDeclaration(StructDeclarationSyntax *const
         {
             for (size_t i = 0; i < node->TypeParameters->Types.size(); i++)
             {
-                TypeParameterSymbol* typeParamSymbol = new TypeParameterSymbol(node->TypeParameters->Types[i].Word);
+                SyntaxToken& param = node->TypeParameters->Types.at(i);
+                TypeParameterSymbol* typeParamSymbol = Factory.TypeParameter(param.Word);
                 typeParamSymbol->Parent = symbol;
                 typeParamSymbol->TypeArgumentIndex = static_cast<uint16_t>(i);
+
                 symbol->TypeParameters.push_back(typeParamSymbol);
             }
         }
     }
 
     Declare(symbol);
-
     PushScope(symbol);
-    for (TypeParameterSymbol* typeParam : symbol->TypeParameters)
+
+    for (const auto& typeParam : symbol->TypeParameters)
         Declare(typeParam);
 
     for (const auto& member : node->Members)
@@ -225,11 +237,10 @@ void DeclarationCollector::VisitStructDeclaration(StructDeclarationSyntax *const
 
     if (!symbol->IsStatic && symbol->Constructors.empty())
     {
-        ConstructorSymbol* ctor = new ConstructorSymbol(L"default");
-        ctor->HandleType = MethodHandleType::Body;
-        ctor->Accesibility = SymbolAccesibility::Public;
+        ConstructorSymbol* ctor = Factory.Constructor(L"default");
         ctor->Parent = symbol;
         ctor->FullName = FormatFullNameOf(ctor);
+
         symbol->Constructors.push_back(ctor);
     }
 
@@ -242,8 +253,8 @@ void DeclarationCollector::VisitDelegateDeclaration(DelegateDeclarationSyntax *c
     DelegateTypeSymbol* symbol = LookupSymbol<DelegateTypeSymbol>(node).value_or(nullptr);
     if (symbol == nullptr)
     {
-        symbol = SymbolFactory::Delegate(node);
-        Table->BindSymbol(node, symbol);
+		// Creating symbol
+		symbol = Factory.Delegate(node);
 
         // Resolving owner symbol
         symbol->Parent = OwnerSymbol();
@@ -266,11 +277,11 @@ void DeclarationCollector::VisitDelegateDeclaration(DelegateDeclarationSyntax *c
     }
 
     Declare(symbol);
-
-    // Resolving Methods' full name
     PushScope(symbol);
-    VisitType(node->ReturnType);
-    VisitParametersList(node->Params);
+
+    VisitType(node->ReturnType.get());
+    VisitParametersList(node->ParametersList.get());
+
     PopScope();
 }
 
@@ -280,8 +291,8 @@ void DeclarationCollector::VisitFieldDeclaration(FieldDeclarationSyntax *const n
     FieldSymbol* symbol = LookupSymbol<FieldSymbol>(node).value_or(nullptr);
     if (symbol == nullptr)
     {
-        symbol = SymbolFactory::Field(node);
-        Table->BindSymbol(node, symbol);
+        // Creating symbol
+		symbol = Factory.Field(node);
 
         // Resolving owner symbol
         symbol->Parent = OwnerSymbol();
@@ -312,10 +323,11 @@ void DeclarationCollector::VisitFieldDeclaration(FieldDeclarationSyntax *const n
     }
 
     Declare(symbol);
-
     PushScope(symbol);
-    VisitType(node->ReturnType);
-    VisitExpression(node->InitializerExpression);
+
+    VisitType(node->ReturnType.get());
+    VisitExpression(node->InitializerExpression.get());
+    
     PopScope();
 }
 
@@ -325,8 +337,15 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax *const
     MethodSymbol* symbol = LookupSymbol<MethodSymbol>(node).value_or(nullptr);
     if (symbol == nullptr)
     {
-        symbol = SymbolFactory::Method(node);
-        Table->BindSymbol(node, symbol);
+		// Creating symbol
+		symbol = Factory.Method(node);
+
+        // Creating parameters symbols
+        for (const auto& parameter : node->ParametersList->Parameters)
+        {
+            auto paramSymbol = Factory.Parameter(parameter.get());
+            symbol->Parameters.push_back(paramSymbol);
+        }
 
         // Resolving owner symbol
         symbol->Parent = OwnerSymbol();
@@ -382,11 +401,12 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax *const
     }
 
     Declare(symbol);
-
     PushScope(symbol);
-    VisitType(node->ReturnType);
-    VisitParametersList(node->Params);
-    VisitStatementsBlock(node->Body);
+
+    VisitType(node->ReturnType.get());
+    VisitParametersList(node->ParametersList.get());
+    VisitStatementsBlock(node->Body.get());
+
     PopScope();
 }
 
@@ -396,8 +416,15 @@ void DeclarationCollector::VisitConstructorDeclaration(ConstructorDeclarationSyn
     ConstructorSymbol* symbol = LookupSymbol<ConstructorSymbol>(node).value_or(nullptr);
     if (symbol == nullptr)
     {
-        symbol = SymbolFactory::Constructor(node);
-        Table->BindSymbol(node, symbol);
+		// Creating symbol
+		symbol = Factory.Constructor(node);
+
+		// Creating parameters symbols
+        for (const auto& parameter : node->ParametersList->Parameters)
+        {
+            auto paramSymbol = Factory.Parameter(parameter.get());
+            symbol->Parameters.push_back(paramSymbol);
+        }
 
         // Resolving owner symbol
         symbol->Parent = OwnerSymbol();
@@ -448,10 +475,11 @@ void DeclarationCollector::VisitConstructorDeclaration(ConstructorDeclarationSyn
     }
 
     Declare(symbol);
-
     PushScope(symbol);
-    VisitParametersList(node->Params);
-    VisitStatementsBlock(node->Body);
+
+    VisitParametersList(node->ParametersList.get());
+    VisitStatementsBlock(node->Body.get());
+    
     PopScope();
 }
 
@@ -461,8 +489,16 @@ void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax *c
     PropertySymbol* symbol = LookupSymbol<PropertySymbol>(node).value_or(nullptr);
     if (symbol == nullptr)
     {
-        symbol = SymbolFactory::Property(node);
-        Table->BindSymbol(node, symbol);
+        // Creating symbol
+        symbol = Factory.Property(node);
+
+        // Create backing field for auto-properties
+        bool isAutoProperty =
+            (node->Getter != nullptr && node->Getter->Body == nullptr) ||
+            (node->Setter != nullptr && node->Setter->Body == nullptr);
+
+        if (isAutoProperty)
+            GeneratePropertyBackingField(Table, symbol, Factory);
 
         // Resolving owner symbol
         symbol->Parent = OwnerSymbol();
@@ -493,34 +529,21 @@ void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax *c
         }
     }
 
-    Declare(symbol);
-
     if (symbol->BackingField != nullptr)
         Declare(symbol->BackingField);
 
+    Declare(symbol);
     PushScope(symbol);
+
     if (node->Getter != nullptr)
-        VisitAccessorDeclaration(node->Getter);
+        VisitAccessorDeclaration(node->Getter.get());
 
     if (node->Setter != nullptr)
-        VisitAccessorDeclaration(node->Setter);
+        VisitAccessorDeclaration(node->Setter.get());
 
-    VisitExpression(node->InitializerExpression);
+    VisitExpression(node->InitializerExpression.get());
+
     PopScope();
-
-    if (symbol->Getter != nullptr)
-    {
-        // Assert: extern Method cannot have body
-        if (symbol->Getter->IsExtern && node->Getter->Body != nullptr)
-            Diagnostics.ReportError(node->IdentifierToken, L"Get Accessors' marked as 'extern' cannot have Body");
-    }
-
-    if (symbol->Setter != nullptr)
-    {
-        // Assert: extern Method cannot have body
-        if (symbol->Setter->IsExtern && node->Setter->Body != nullptr)
-            Diagnostics.ReportError(node->IdentifierToken, L"Set Accessors' marked as 'extern' cannot have Body");
-    }
 }
 
 void DeclarationCollector::VisitIndexatorDeclaration(IndexatorDeclarationSyntax *const node)
@@ -529,8 +552,15 @@ void DeclarationCollector::VisitIndexatorDeclaration(IndexatorDeclarationSyntax 
     IndexatorSymbol* symbol = LookupSymbol<IndexatorSymbol>(node).value_or(nullptr);
     if (symbol == nullptr)
     {
-        symbol = SymbolFactory::Indexator(node);
-        Table->BindSymbol(node, symbol);
+        // Creating symbol
+        symbol = Factory.Indexator(node);
+
+        // Creating parameters symbols
+        for (const auto& parameter : node->ParametersList->Parameters)
+        {
+            auto paramSymbol = Factory.Parameter(parameter.get());
+            symbol->Parameters.push_back(paramSymbol);
+        }
 
         // Resolving owner symbol
         symbol->Parent = OwnerSymbol();
@@ -567,14 +597,14 @@ void DeclarationCollector::VisitIndexatorDeclaration(IndexatorDeclarationSyntax 
         Declare(symbol->BackingField);
 
     PushScope(symbol);
-    if (node->Parameters != nullptr)
-        VisitParametersList(node->Parameters);
+    if (node->ParametersList != nullptr)
+        VisitParametersList(node->ParametersList.get());
 
     if (node->Getter != nullptr)
-        VisitAccessorDeclaration(node->Getter);
+        VisitAccessorDeclaration(node->Getter.get());
 
     if (node->Setter != nullptr)
-        VisitAccessorDeclaration(node->Setter);
+        VisitAccessorDeclaration(node->Setter.get());
 
     PopScope();
 
@@ -593,20 +623,6 @@ void DeclarationCollector::VisitIndexatorDeclaration(IndexatorDeclarationSyntax 
         }
     }
     */
-
-    if (symbol->Getter != nullptr)
-    {
-        // Assert: extern Method cannot have body
-        if (symbol->Getter->IsExtern && node->Getter->Body != nullptr)
-            Diagnostics.ReportError(node->IdentifierToken, L"Get Accessors' marked as 'extern' cannot have Body");
-    }
-
-    if (symbol->Setter != nullptr)
-    {
-        // Assert: extern Method cannot have body
-        if (symbol->Setter->IsExtern && node->Setter->Body != nullptr)
-            Diagnostics.ReportError(node->IdentifierToken, L"Set Accessors' marked as 'extern' cannot have Body");
-    }
 
     if (node->Getter == nullptr && node->Setter == nullptr)
     {
@@ -644,8 +660,7 @@ void DeclarationCollector::VisitAccessorDeclaration(AccessorDeclarationSyntax *c
     if (symbol == nullptr)
     {
         // Creating symbol
-        symbol = SymbolFactory::Accessor(node, propertySymbol);
-        Table->BindSymbol(node, symbol);
+        symbol = Factory.Accessor(node, propertySymbol);
 
         // Resolving owner symbol
         symbol->Parent = OwnerSymbol();
@@ -662,6 +677,10 @@ void DeclarationCollector::VisitAccessorDeclaration(AccessorDeclarationSyntax *c
         symbol->Parent->OnSymbolDeclared(symbol);
 
         ApplyMethodAttributes(symbol, node->Attributes);
+
+        // Assert: extern Method cannot have body
+        if (symbol->IsExtern && node->Body != nullptr)
+            Diagnostics.ReportError(node->IdentifierToken, L"Set Accessors' marked as 'extern' cannot have Body");
 
         if (node->Body != nullptr)
         {
@@ -716,12 +735,11 @@ void DeclarationCollector::VisitVariableStatement(VariableStatementSyntax *const
     if (symbol == nullptr)
     {
         std::wstring varName = node->IdentifierToken.Word;
-        symbol = new VariableSymbol(varName, nullptr);
+        symbol = Factory.Variable(node);
 
         MethodSymbol *const hostMethod = FindHostMethodSymbol();
         symbol->SlotIndex = hostMethod->GetEvalStackArgumentsCount() + hostMethod->AddVariableCount();
 
-        Table->BindSymbol(node, symbol);
 
         symbol->Parent = OwnerSymbol();
         if (symbol->Parent != nullptr)
@@ -735,7 +753,7 @@ void DeclarationCollector::VisitVariableStatement(VariableStatementSyntax *const
     PushScope(symbol);
 
     if (node->Expression != nullptr)
-        VisitExpression(node->Expression);
+        VisitExpression(node->Expression.get());
 
     PopScope();
 }
@@ -745,13 +763,10 @@ void DeclarationCollector::VisitForEachStatement(ForEachStatementSyntax *const n
     VariableSymbol* symbol = LookupSymbol<VariableSymbol>(node).value_or(nullptr);
     if (symbol == nullptr)
     {
-        std::wstring varName = node->IdentifierToken.Word;
-        symbol = new VariableSymbol(varName, SymbolTable::Primitives::Integer);
+		symbol = Factory.Variable(node);
 
         MethodSymbol *const hostMethod = FindHostMethodSymbol();
         symbol->SlotIndex = hostMethod->GetEvalStackArgumentsCount() + hostMethod->AddVariableCount();
-
-        Table->BindSymbol(node, symbol);
 
         symbol->Parent = OwnerSymbol();
         if (symbol->Parent != nullptr)
@@ -765,17 +780,17 @@ void DeclarationCollector::VisitForEachStatement(ForEachStatementSyntax *const n
     PushScope(symbol);
 
     if (node->RangeExpression != nullptr)
-        VisitExpression(node->RangeExpression);
+        VisitExpression(node->RangeExpression.get());
 
     if (node->StatementsBlock != nullptr)
-        VisitStatementsBlock(node->StatementsBlock);
+        VisitStatementsBlock(node->StatementsBlock.get());
 
     PopScope();
 }
 
-void DeclarationCollector::ApplyMethodAttributes(MethodSymbol* symbol, std::vector<AttributeSyntax*>& attributes)
+void DeclarationCollector::ApplyMethodAttributes(MethodSymbol* symbol, const std::vector<std::unique_ptr<AttributeSyntax>>& attributes)
 {
-    for (AttributeSyntax* attr : attributes)
+    for (const auto& attr : attributes)
     {
         if (attr->NameToken.Word == L"link")
         {

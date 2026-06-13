@@ -21,10 +21,7 @@ namespace shard
 
 		inline IdentifierNameTypeSyntax(const IdentifierNameTypeSyntax& other) = delete;
 
-		inline virtual ~IdentifierNameTypeSyntax()
-		{
-
-		}
+		inline virtual ~IdentifierNameTypeSyntax() = default;
 
 		std::wstring ToString() override;
 	};

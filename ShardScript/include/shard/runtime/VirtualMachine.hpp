@@ -54,6 +54,7 @@ namespace shard
 
 		void InvokeMethod(MethodSymbol* method) const;
 		void InvokeMethod(MethodSymbol* method, std::initializer_list<ObjectInstance*> args) const;
+		ObjectInstance* InvokeMethod(MethodSymbol* method, ObjectInstance** args, size_t count) const;
 		void RaiseException(ObjectInstance* exceptionReg) const;
 
 		void Run();

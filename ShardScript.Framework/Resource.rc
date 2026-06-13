@@ -128,5 +128,7 @@ FILESYSTEM_FILE SOURCE_CODE "system\\filesystem\\File.ss"
 
 FILESYSTEM_DIRECTORY SOURCE_CODE "system\\filesystem\\Directory.ss"
 
-SYSTEM_RANDOM SOURCE_CODE "system\\Random.ss"
+MATH_RANDOM SOURCE_CODE "system\\math\\Random.ss"
+
+STDIO_CONSTREAM SOURCE_CODE "system\\stdio\\Constream.ss"
 

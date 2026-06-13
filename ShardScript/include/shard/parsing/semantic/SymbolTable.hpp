@@ -4,6 +4,7 @@
 #include <shard/syntax/SyntaxSymbol.hpp>
 #include <shard/syntax/SyntaxNode.hpp>
 
+#include <shard/syntax/symbols/MemberSymbol.hpp>
 #include <shard/syntax/symbols/TypeSymbol.hpp>
 #include <shard/syntax/symbols/NamespaceSymbol.hpp>
 
@@ -29,13 +30,15 @@ namespace shard
 {
     class SHARD_API SymbolTable
     {
-        inline static const std::wstring GlobalTypeName = L"<>_GLOBAL";
+        inline static const std::wstring GlobalTypeName = L"__GLOBAL__";
 
         std::unordered_map<SyntaxNode*, SyntaxSymbol*> nodeToSymbolMap;
         std::unordered_map<SyntaxSymbol*, SyntaxNode*> symbolToNodeMap;
-        std::vector<NamespaceSymbol*> namespacesList;
-        std::vector<TypeSymbol*> typesList;
-        std::vector<MethodSymbol*> methodsList;
+
+        std::vector<std::unique_ptr<NamespaceSymbol>> namespacesList;
+        std::vector<std::unique_ptr<TypeSymbol>> typesList;
+        std::vector<std::unique_ptr<MemberSymbol>> membersList;
+        std::vector<std::unique_ptr<SyntaxSymbol>> triviasList;
 
     public:
         struct Global
@@ -66,9 +69,11 @@ namespace shard
 
         void ClearSymbols();
 
-        void BindSymbol(SyntaxNode *const node, SyntaxSymbol *const symbol);
+        SyntaxSymbol* BindSymbol(SyntaxNode *const node, std::unique_ptr<SyntaxSymbol> symbol);
+        SyntaxSymbol* ImplicitSymbol(std::unique_ptr<SyntaxSymbol> symbol);
+
         std::optional<SyntaxSymbol*> LookupSymbol(SyntaxNode *const node);
-        std::optional<SyntaxNode*> GetSyntaxNode(SyntaxSymbol *const symbol);
+        std::optional<SyntaxNode*> LookupNode(SyntaxSymbol *const symbol);
 
         const std::vector<NamespaceSymbol*> GetNamespaceSymbols();
         const std::vector<TypeSymbol*> GetTypeSymbols();
