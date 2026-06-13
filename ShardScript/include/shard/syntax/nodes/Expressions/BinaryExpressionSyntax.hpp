@@ -6,24 +6,22 @@
 #include <shard/syntax/SyntaxToken.hpp>
 #include <shard/syntax/SyntaxNode.hpp>
 
+#include <memory>
+
 namespace shard
 {
 	class SHARD_API BinaryExpressionSyntax : public ExpressionSyntax
 	{
 	public:
 		const SyntaxToken OperatorToken;
-		ExpressionSyntax* Left = nullptr;
-		ExpressionSyntax* Right = nullptr;
+		std::unique_ptr<ExpressionSyntax> Left = nullptr;
+		std::unique_ptr<ExpressionSyntax> Right = nullptr;
 
 		inline BinaryExpressionSyntax(const SyntaxToken operatorToken, SyntaxNode *const parent)
 			: ExpressionSyntax(SyntaxKind::BinaryExpression, parent), OperatorToken(operatorToken) {}
 		
 		inline BinaryExpressionSyntax(const BinaryExpressionSyntax&) = delete;
 
-		inline virtual ~BinaryExpressionSyntax()
-		{
-			delete Left;
-			delete Right;
-		}
+		inline virtual ~BinaryExpressionSyntax() = default;
 	};
 }

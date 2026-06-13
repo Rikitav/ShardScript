@@ -17,16 +17,14 @@ namespace shard
 
 		inline StructDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) : TypeDeclarationSyntax(SyntaxKind::StructDeclaration, parent)
 		{
+			Attributes = std::move(info.Attributes);
 			Modifiers = info.Modifiers;
 			IdentifierToken = info.Identifier;
-			TypeParameters = info.Generics;
+			TypeParameters = std::move(info.Generics);
 		}
 
 		inline StructDeclarationSyntax(const StructDeclarationSyntax& other) = delete;
 
-		inline virtual ~StructDeclarationSyntax()
-		{
-
-		}
+		inline virtual ~StructDeclarationSyntax() = default;
 	};
 }

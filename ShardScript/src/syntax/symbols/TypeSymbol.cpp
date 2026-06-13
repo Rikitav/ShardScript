@@ -21,35 +21,6 @@
 
 using namespace shard;
 
-TypeSymbol::TypeSymbol(const std::wstring& name, const SyntaxKind kind) : SyntaxSymbol(name, kind)
-{
-
-}
-
-TypeSymbol::~TypeSymbol()
-{
-#pragma warning (push)
-#pragma warning (disable: 4150)
-	for (MethodSymbol* methodSymbol : Methods)
-		delete methodSymbol;
-
-	for (FieldSymbol* fieldSymbol : Fields)
-		delete fieldSymbol;
-
-	for (PropertySymbol* propertySymbol : Properties)
-		delete propertySymbol;
-
-	for (IndexatorSymbol* indexatorSymbol : Indexators)
-		delete indexatorSymbol;
-
-	for (ConstructorSymbol* ctorSymbol : Constructors)
-		delete ctorSymbol;
-
-	for (TypeParameterSymbol* typeParamSymbol : TypeParameters)
-		delete typeParamSymbol;
-#pragma warning (pop)
-}
-
 size_t TypeSymbol::GetInlineSize() const
 {
 	return IsReferenceType ? sizeof(void*) : MemoryBytesSize;
@@ -59,6 +30,12 @@ static bool paramPredicate(ParameterSymbol* left, TypeSymbol* right)
 {
 	if (left->Type == SymbolTable::Primitives::Any)
 		return true;
+
+	/*
+	MemberSymbol* member = static_cast<MemberSymbol*>(left->Parent);
+	if (left->Name == L"this" && !member->IsStatic)
+		return true;
+	*/
 
 	return TypeSymbol::Equals(left->Type, right);
 }
@@ -149,7 +126,8 @@ bool TypeSymbol::IsPrimitive()
 		|| this == SymbolTable::Primitives::Integer
 		|| this == SymbolTable::Primitives::Double
 		|| this == SymbolTable::Primitives::Char
-		|| this == SymbolTable::Primitives::String;
+		|| this == SymbolTable::Primitives::String
+		|| this == SymbolTable::Primitives::Array;
 }
 
 void TypeSymbol::OnSymbolDeclared(SyntaxSymbol* symbol)

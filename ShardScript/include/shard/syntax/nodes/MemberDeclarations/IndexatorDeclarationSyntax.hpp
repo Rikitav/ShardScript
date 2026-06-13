@@ -14,6 +14,7 @@
 #include <shard/syntax/nodes/ParametersListSyntax.hpp>
 
 #include <vector>
+#include <memory>
 
 namespace shard
 {
@@ -24,11 +25,11 @@ namespace shard
         SyntaxToken OpenBraceToken;
         SyntaxToken CloseBraceToken;
 
-        TypeSyntax* ReturnType = nullptr;
-        ParametersListSyntax* Parameters = nullptr;
+        std::unique_ptr<TypeSyntax> ReturnType = nullptr;
+        std::unique_ptr<ParametersListSyntax> ParametersList = nullptr;
         
-        AccessorDeclarationSyntax* Getter = nullptr;
-        AccessorDeclarationSyntax* Setter = nullptr;
+        std::unique_ptr<AccessorDeclarationSyntax> Getter = nullptr;
+        std::unique_ptr<AccessorDeclarationSyntax> Setter = nullptr;
 
         inline IndexatorDeclarationSyntax(SyntaxNode *const parent)
             : MemberDeclarationSyntax(SyntaxKind::IndexatorDeclaration, parent) { }
@@ -36,38 +37,13 @@ namespace shard
         inline IndexatorDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) 
             : MemberDeclarationSyntax(SyntaxKind::IndexatorDeclaration, parent)
         {
-            Attributes = info.Attributes;
+            Attributes = std::move(info.Attributes);
             Modifiers = info.Modifiers;
             IdentifierToken = info.Identifier;
-            ReturnType = info.ReturnType;
-            TypeParameters = info.Generics;
+            ReturnType = std::move(info.ReturnType);
+            TypeParameters = std::move(info.Generics);
         }
 
-        inline virtual ~IndexatorDeclarationSyntax()
-        {
-            if (Getter != nullptr)
-            {
-                delete Getter;
-                Getter = nullptr;
-            }
-
-            if (Setter != nullptr)
-            {
-                delete Setter;
-                Setter = nullptr;
-            }
-
-            if (ReturnType != nullptr)
-            {
-                delete ReturnType;
-                ReturnType = nullptr;
-            }
-
-            if (Parameters != nullptr)
-            {
-                delete Parameters;
-                Parameters = nullptr;
-            }
-        }
+        inline virtual ~IndexatorDeclarationSyntax() = default;
     };
 }

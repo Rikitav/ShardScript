@@ -87,6 +87,7 @@ namespace shard
             auto symbol = Table->LookupSymbol(node);
             if (!symbol.has_value())
                 return std::nullopt;
+
             return static_cast<T*>(symbol.value());
         }
 

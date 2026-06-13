@@ -8,6 +8,7 @@
 #include <shard/syntax/nodes/StatementsBlockSyntax.hpp>
 
 #include <vector>
+#include <memory>
 
 namespace shard
 {
@@ -17,21 +18,16 @@ namespace shard
 		SyntaxToken KeywordToken;
 		std::vector<SyntaxToken> Modifiers;
 		SyntaxToken SemicolonToken;
-		StatementsBlockSyntax* Body = nullptr;
+		std::unique_ptr<StatementsBlockSyntax> Body = nullptr;
 
 		inline AccessorDeclarationSyntax(SyntaxNode *const parent)
 			: MemberDeclarationSyntax(SyntaxKind::AccessorDeclaration, parent) { }
 
-		inline AccessorDeclarationSyntax(SyntaxNode *const parent, StatementsBlockSyntax* body)
-			: MemberDeclarationSyntax(SyntaxKind::AccessorDeclaration, parent), Body(body) { }
+		inline AccessorDeclarationSyntax(SyntaxNode *const parent, std::unique_ptr<StatementsBlockSyntax> body)
+			: MemberDeclarationSyntax(SyntaxKind::AccessorDeclaration, parent), Body(std::move(body)) { }
 
 		inline AccessorDeclarationSyntax(const AccessorDeclarationSyntax&) = delete;
 
-		inline ~AccessorDeclarationSyntax() override
-		{
-
-		}
+		inline ~AccessorDeclarationSyntax() override = default;
 	};
 }
-
-

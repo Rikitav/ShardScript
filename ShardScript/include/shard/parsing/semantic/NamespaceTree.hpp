@@ -18,7 +18,7 @@ namespace shard
 	{
 	public:
 		std::vector<NamespaceSymbol*> Owners;
-		std::vector<TypeSymbol*> Types;
+		std::vector<SyntaxSymbol*> Members;
 		std::unordered_map<std::wstring, NamespaceNode*> Nodes;
 
 		inline NamespaceNode()

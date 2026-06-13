@@ -9,6 +9,8 @@
 #include <shard/syntax/SyntaxToken.hpp>
 #include <shard/syntax/SyntaxNode.hpp>
 
+#include <memory>
+
 namespace shard
 {
 	class SHARD_API ForStatementSyntax : public KeywordStatementSyntax
@@ -19,29 +21,16 @@ namespace shard
 		SyntaxToken SecondSemicolon;
 		SyntaxToken CloseCurlToken;
 
-		StatementSyntax* InitializerStatement = nullptr;
-		ExpressionSyntax* ConditionExpression = nullptr;
-		StatementSyntax* AfterRepeatStatement = nullptr;
-		StatementsBlockSyntax* StatementsBlock = nullptr;
+		std::unique_ptr<StatementSyntax> InitializerStatement = nullptr;
+		std::unique_ptr<ExpressionSyntax> ConditionExpression = nullptr;
+		std::unique_ptr<StatementSyntax> AfterRepeatStatement = nullptr;
+		std::unique_ptr<StatementsBlockSyntax> StatementsBlock = nullptr;
 
 		inline ForStatementSyntax(SyntaxNode *const parent)
 			: KeywordStatementSyntax(SyntaxKind::ForStatement, parent) { }
 
 		inline ForStatementSyntax(const ForStatementSyntax&) = delete;
 
-		inline virtual ~ForStatementSyntax()
-		{
-			if (InitializerStatement != nullptr)
-				delete InitializerStatement;
-
-			if (ConditionExpression != nullptr)
-				delete ConditionExpression;
-
-			if (AfterRepeatStatement != nullptr)
-				delete AfterRepeatStatement;
-
-			if (StatementsBlock != nullptr)
-				delete StatementsBlock;
-		}
+		inline virtual ~ForStatementSyntax() = default;
 	};
 }

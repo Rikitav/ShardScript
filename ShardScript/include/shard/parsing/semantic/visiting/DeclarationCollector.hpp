@@ -2,6 +2,9 @@
 #include <shard/ShardScriptAPI.hpp>
 
 #include <shard/syntax/SyntaxSymbol.hpp>
+#include <shard/syntax/SymbolFactory.hpp>
+
+#include <memory>
 
 #include <shard/SyntaxVisitor.hpp>
 #include <shard/parsing/semantic/visiting/ScopeVisitor.hpp>
@@ -28,11 +31,13 @@ namespace shard
 	class SHARD_API DeclarationCollector : public SyntaxVisitor, public ScopeVisitor
 	{
 	protected:
+		SymbolFactory Factory;
+
 		void Declare(shard::SyntaxSymbol *const symbol) override;
 
 	public:
 		inline DeclarationCollector(shard::SemanticModel& model, shard::DiagnosticsContext& diagnostics)
-			: SyntaxVisitor(model, diagnostics), ScopeVisitor(model.Table.get()) { }
+			: SyntaxVisitor(model, diagnostics), ScopeVisitor(model.Table.get()), Factory(model.Table.get()) { }
 
 		void VisitCompilationUnit(shard::CompilationUnitSyntax *const node) override;
 
@@ -51,6 +56,6 @@ namespace shard
 		void VisitForEachStatement(shard::ForEachStatementSyntax *const node) override;
 
 	private:
-		void ApplyMethodAttributes(shard::MethodSymbol* symbol, std::vector<shard::AttributeSyntax*>& attributes);
+		void ApplyMethodAttributes(shard::MethodSymbol* symbol, const std::vector<std::unique_ptr<shard::AttributeSyntax>>& attributes);
 	};
 }

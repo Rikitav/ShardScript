@@ -212,7 +212,7 @@ namespace shard
         LOADFIELD,
 
         /// <summary>
-        /// Pops a value and an object instance, then stores the value into the object's field.
+        /// Pops an object instance and a value, then stores the value into the object's field.
         /// <para>Includes 1 parameter :</para>
         /// <para>> FieldSymbol* pField - The field description.</para>
         /// </summary>

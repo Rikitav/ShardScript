@@ -5,8 +5,6 @@
 #include <climits>
 #include <cstdint>
 
-#include "../resources.hpp"
-
 using namespace shard;
 
 namespace shard

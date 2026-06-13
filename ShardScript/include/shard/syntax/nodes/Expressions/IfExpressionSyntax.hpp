@@ -6,6 +6,8 @@
 #include <shard/syntax/SyntaxToken.hpp>
 #include <shard/syntax/SyntaxNode.hpp>
 
+#include <memory>
+
 namespace shard
 {
 	class SHARD_API IfExpressionSyntax : public ExpressionSyntax
@@ -16,25 +18,15 @@ namespace shard
 		SyntaxToken CloseBraceToken;
 		SyntaxToken ElseKeywordToken;
 
-		ExpressionSyntax* Condition = nullptr;
-		ExpressionSyntax* ThenExpression = nullptr;
-		ExpressionSyntax* ElseExpression = nullptr;
+		std::unique_ptr<ExpressionSyntax> Condition = nullptr;
+		std::unique_ptr<ExpressionSyntax> ThenExpression = nullptr;
+		std::unique_ptr<ExpressionSyntax> ElseExpression = nullptr;
 
 		inline IfExpressionSyntax(SyntaxNode* const parent)
 			: ExpressionSyntax(SyntaxKind::IfExpression, parent) { }
 
 		inline IfExpressionSyntax(const IfExpressionSyntax&) = delete;
 
-		inline virtual ~IfExpressionSyntax()
-		{
-			if (Condition != nullptr)
-				delete Condition;
-
-			if (ThenExpression != nullptr)
-				delete ThenExpression;
-			
-			if (ElseExpression != nullptr)
-				delete ElseExpression;
-		}
+		inline virtual ~IfExpressionSyntax() = default;
 	};
 }

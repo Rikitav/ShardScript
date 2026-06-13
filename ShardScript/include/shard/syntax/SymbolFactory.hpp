@@ -19,6 +19,10 @@
 #include <shard/syntax/nodes/Types/GenericTypeSyntax.hpp>
 #include <shard/syntax/nodes/Types/DelegateTypeSyntax.hpp>
 
+#include <shard/syntax/nodes/Statements/VariableStatementSyntax.hpp>
+
+#include <shard/syntax/nodes/Loops/ForEachStatementSyntax.hpp>
+
 #include <shard/syntax/symbols/NamespaceSymbol.hpp>
 #include <shard/syntax/symbols/ClassSymbol.hpp>
 #include <shard/syntax/symbols/StructSymbol.hpp>
@@ -39,75 +43,85 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 
 namespace shard
 {
 	class SHARD_API SymbolFactory
 	{
+		SymbolTable* Table;
+
+		void SetAccesibility(SyntaxSymbol* node, std::vector<SyntaxToken> modifiers);
+		void SetAccesibility(TypeSymbol* node, std::vector<SyntaxToken> modifiers);
+		void SetAccesibility(FieldSymbol* node, std::vector<SyntaxToken> modifiers);
+		void SetAccesibility(PropertySymbol* node, std::vector<SyntaxToken> modifiers);
+		void SetAccesibility(MethodSymbol* node, std::vector<SyntaxToken> modifiers);
+
+		std::wstring FormatFullName(SyntaxSymbol* symbol);
+		std::wstring FormatFullName(SyntaxSymbol* symbol, SyntaxSymbol* parent);
+		std::wstring FormatMethodSignature(MethodSymbol* method);
+		std::wstring FormatTypeName(TypeSymbol* type);
+
 	public:
-		static void SetAccesibility(SyntaxSymbol* node, std::vector<SyntaxToken> modifiers);
-		static void SetAccesibility(TypeSymbol* node, std::vector<SyntaxToken> modifiers);
-		static void SetAccesibility(FieldSymbol* node, std::vector<SyntaxToken> modifiers);
-		static void SetAccesibility(PropertySymbol* node, std::vector<SyntaxToken> modifiers);
-		static void SetAccesibility(MethodSymbol* node, std::vector<SyntaxToken> modifiers);
+		SymbolFactory(SymbolTable* table)
+			: Table(table) { }
 
-		static NamespaceSymbol* Namespace(NamespaceDeclarationSyntax* node);
-		static NamespaceSymbol* Namespace(const std::wstring& name);
-		static StructSymbol* Struct(StructDeclarationSyntax* node);
-		static ClassSymbol* Class(ClassDeclarationSyntax* node);
+		NamespaceSymbol* Namespace(NamespaceDeclarationSyntax* node);
+		NamespaceSymbol* Namespace(const std::wstring& name);
+		StructSymbol* Struct(StructDeclarationSyntax* node);
+		ClassSymbol* Class(ClassDeclarationSyntax* node);
 
-		static FieldSymbol* Field(FieldDeclarationSyntax* node);
-		static FieldSymbol* Field(const std::wstring& name, TypeSymbol* type, bool isStatic = false);
+		FieldSymbol* Field(FieldDeclarationSyntax* node);
+		FieldSymbol* Field(const std::wstring& name, TypeSymbol* type, bool isStatic = false);
 
-		static PropertySymbol* Property(PropertyDeclarationSyntax* node);
-		static PropertySymbol* Property(const std::wstring& name, TypeSymbol* returnType, bool isStatic = false);
+		PropertySymbol* Property(PropertyDeclarationSyntax* node);
+		PropertySymbol* Property(const std::wstring& name, TypeSymbol* returnType, bool isStatic = false);
 
-		static MethodSymbol* Method(MethodDeclarationSyntax* node);
-		static MethodSymbol* Method(const wchar_t* name, TypeSymbol* returnType, bool isStatic = false);
-		static MethodSymbol* Method(const std::wstring& name, TypeSymbol* returnType, bool isStatic = false);
-		static MethodSymbol* Method(SymbolAccesibility accessibility, bool isStatic, TypeSymbol* returnType, const wchar_t* name, MethodSymbolDelegate function);
-		static MethodSymbol* Method(SymbolAccesibility accessibility, bool isStatic, TypeSymbol* returnType, const std::wstring& name, MethodSymbolDelegate function);
+		MethodSymbol* Method(MethodDeclarationSyntax* node);
+		MethodSymbol* Method(const wchar_t* name, TypeSymbol* returnType, bool isStatic = false);
+		MethodSymbol* Method(const std::wstring& name, TypeSymbol* returnType, bool isStatic = false);
+		MethodSymbol* Method(SymbolAccesibility accessibility, bool isStatic, TypeSymbol* returnType, const wchar_t* name, MethodSymbolDelegate function);
+		MethodSymbol* Method(SymbolAccesibility accessibility, bool isStatic, TypeSymbol* returnType, const std::wstring& name, MethodSymbolDelegate function);
 
-		static ConstructorSymbol* Constructor(ConstructorDeclarationSyntax* node);
-		static ConstructorSymbol* Constructor(const std::wstring& name);
+		MethodSymbol* CreateAnonymousMethod(const std::wstring& name, TypeSymbol* returnType);
+		MethodSymbol* CreateLambdaMethod(StatementsBlockSyntax* body);
 
-		static AccessorSymbol* Accessor(AccessorDeclarationSyntax* node, PropertySymbol* propertySymbol, bool setProperty = true);
-		static AccessorSymbol* Accessor(const std::wstring& name, PropertySymbol* property, bool isGetter);
-		static AccessorSymbol* Getter(const std::wstring& propertyName, PropertySymbol* property);
-		static AccessorSymbol* Setter(const std::wstring& propertyName, PropertySymbol* property);
+		ConstructorSymbol* Constructor(ConstructorDeclarationSyntax* node);
+		ConstructorSymbol* Constructor(const std::wstring& name);
 
-		static IndexatorSymbol* Indexator(IndexatorDeclarationSyntax* node);
-		static IndexatorSymbol* Indexator(const std::wstring& name, TypeSymbol* returnType);
-		static IndexatorSymbol* Indexator(const std::wstring& name, TypeSymbol* returnType, std::vector<ParameterSymbol*> parameters);
+		AccessorSymbol* Accessor(AccessorDeclarationSyntax* node, PropertySymbol* propertySymbol, bool setProperty = true);
+		AccessorSymbol* Accessor(const std::wstring& name, PropertySymbol* property, bool isGetter);
+		AccessorSymbol* Getter(const std::wstring& propertyName, PropertySymbol* property);
+		AccessorSymbol* Setter(const std::wstring& propertyName, PropertySymbol* property);
 
-		static ParameterSymbol* Parameter(const std::wstring& name);
-		static ParameterSymbol* Parameter(const std::wstring& name, TypeSymbol* type);
-		static ParameterSymbol* Parameter(const std::wstring& name, TypeSymbol* type, bool isOptional);
+		IndexatorSymbol* Indexator(IndexatorDeclarationSyntax* node);
+		IndexatorSymbol* Indexator(const std::wstring& name, TypeSymbol* returnType);
+		IndexatorSymbol* Indexator(const std::wstring& name, TypeSymbol* returnType, std::vector<ParameterSymbol*>& parameters);
 
-		static VariableSymbol* Variable(const std::wstring& name, TypeSymbol* type);
-		static VariableSymbol* Variable(const std::wstring& name, TypeSymbol* type, bool isConst);
+		ParameterSymbol* Parameter(ParameterSyntax* node);
+		ParameterSymbol* Parameter(const std::wstring& name);
+		ParameterSymbol* Parameter(const std::wstring& name, TypeSymbol* type);
+		ParameterSymbol* Parameter(const std::wstring& name, TypeSymbol* type, bool isOptional);
 
-		static TypeParameterSymbol* TypeParameter(const std::wstring& name);
+		VariableSymbol* Variable(ForEachStatementSyntax* node);
+		VariableSymbol* Variable(VariableStatementSyntax* node);
+		VariableSymbol* Variable(const std::wstring& name);
+		VariableSymbol* Variable(const std::wstring& name, TypeSymbol* type);
+		VariableSymbol* Variable(const std::wstring& name, TypeSymbol* type, bool isConst);
 
-		static DelegateTypeSymbol* Delegate(DelegateDeclarationSyntax* node);
-		static DelegateTypeSymbol* Delegate(DelegateTypeSyntax* node);
-		static DelegateTypeSymbol* Delegate(MethodSymbol* method);
-		static DelegateTypeSymbol* Delegate(const std::wstring& name, TypeSymbol* returnType, std::vector<ParameterSymbol*> parameters);
+		TypeParameterSymbol* TypeParameter(const std::wstring& name);
 
-		static ArrayTypeSymbol* Array(ArrayTypeSyntax* node);
-		static ArrayTypeSymbol* Array(TypeSymbol* underlayingType);
-		static ArrayTypeSymbol* Array(TypeSymbol* underlayingType, size_t size);
-		static ArrayTypeSymbol* Array(TypeSymbol* underlayingType, size_t size, int rank);
+		DelegateTypeSymbol* Delegate(DelegateDeclarationSyntax* node);
+		DelegateTypeSymbol* Delegate(DelegateTypeSyntax* node);
+		DelegateTypeSymbol* Delegate(MethodSymbol* method);
+		DelegateTypeSymbol* Delegate(const std::wstring& name, TypeSymbol* returnType, std::vector<ParameterSymbol*>& parameters);
 
-		static GenericTypeSymbol* GenericType(TypeSymbol* underlayingType);
-		static GenericTypeSymbol* GenericType(TypeSymbol* underlayingType, std::unordered_map<std::wstring, TypeSymbol*> typeArguments);
+		ArrayTypeSymbol* Array(ArrayTypeSyntax* node);
+		ArrayTypeSymbol* Array(TypeSymbol* underlayingType);
+		ArrayTypeSymbol* Array(TypeSymbol* underlayingType, size_t size);
+		ArrayTypeSymbol* Array(TypeSymbol* underlayingType, size_t size, int rank);
 
-		static std::wstring FormatFullName(SyntaxSymbol* symbol);
-		static std::wstring FormatFullName(SyntaxSymbol* symbol, SyntaxSymbol* parent);
-		static std::wstring FormatMethodSignature(MethodSymbol* method);
-		static std::wstring FormatTypeName(TypeSymbol* type);
-
-		static MethodSymbol* CreateAnonymousMethod(const std::wstring& name, TypeSymbol* returnType);
-		static MethodSymbol* CreateLambdaMethod(StatementsBlockSyntax* body);
+		GenericTypeSymbol* GenericType(TypeSymbol* underlayingType);
+		GenericTypeSymbol* GenericType(TypeSymbol* underlayingType, std::unordered_map<std::wstring, TypeSymbol*> typeArguments);
 	};
 }

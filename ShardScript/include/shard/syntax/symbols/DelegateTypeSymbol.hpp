@@ -9,6 +9,7 @@
 
 #include <new>
 #include <vector>
+#include <memory>
 
 namespace shard
 {
@@ -26,13 +27,6 @@ namespace shard
 
 		inline DelegateTypeSymbol(const DelegateTypeSymbol& other) = delete;
 
-		inline virtual ~DelegateTypeSymbol()
-		{
-			if (AnonymousSymbol != nullptr)
-				delete AnonymousSymbol;
-
-			for (ParameterSymbol* parameter : Parameters)
-				delete parameter;
-		}
+		inline virtual ~DelegateTypeSymbol() = default;
 	};
 }

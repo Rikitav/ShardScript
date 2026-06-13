@@ -11,6 +11,7 @@
 #include <shard/syntax/nodes/TypeSyntax.hpp>
 
 #include <vector>
+#include <memory>
 
 namespace shard
 {
@@ -20,41 +21,30 @@ namespace shard
 		SyntaxToken CatchKeywordToken;
 		SyntaxToken IdentifierToken;
 		SyntaxToken ColonToken;
-		TypeSyntax* ExceptionType = nullptr;
-		StatementsBlockSyntax* Body = nullptr;
+
+		std::unique_ptr<TypeSyntax> ExceptionType = nullptr;
+		std::unique_ptr<StatementsBlockSyntax> Body = nullptr;
 
 		inline CatchClauseSyntax(SyntaxNode* const parent)
 			: SyntaxNode(SyntaxKind::CatchClause, parent) { }
 
 		inline CatchClauseSyntax(const CatchClauseSyntax&) = delete;
 
-		inline virtual ~CatchClauseSyntax()
-		{
-			if (ExceptionType != nullptr)
-				delete ExceptionType;
-			if (Body != nullptr)
-				delete Body;
-		}
+		inline virtual ~CatchClauseSyntax() = default;
 	};
 
 	class SHARD_API TryStatementSyntax : public KeywordStatementSyntax
 	{
 	public:
 		SyntaxToken TryKeywordToken;
-		StatementsBlockSyntax* TryBlock = nullptr;
-		std::vector<CatchClauseSyntax*> CatchClauses;
+		std::unique_ptr<StatementsBlockSyntax> TryBlock = nullptr;
+		std::vector<std::unique_ptr<CatchClauseSyntax>> CatchClauses;
 
-		inline TryStatementSyntax(SyntaxNode* const parent)
+		inline TryStatementSyntax(SyntaxNode *const parent)
 			: KeywordStatementSyntax(SyntaxKind::TryStatement, parent) { }
 
 		inline TryStatementSyntax(const TryStatementSyntax&) = delete;
 
-		inline virtual ~TryStatementSyntax()
-		{
-			if (TryBlock != nullptr)
-				delete TryBlock;
-			for (auto clause : CatchClauses)
-				delete clause;
-		}
+		inline virtual ~TryStatementSyntax() = default;
 	};
 }

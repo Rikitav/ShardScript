@@ -8,27 +8,24 @@
 #include <shard/syntax/nodes/TypeSyntax.hpp>
 
 #include <string>
+#include <memory>
 
 namespace shard
 {
 	class SHARD_API ArrayTypeSyntax : public TypeSyntax
 	{
 	public:
-		TypeSyntax* UnderlayingType = nullptr;
+		std::unique_ptr<TypeSyntax> UnderlayingType = nullptr;
 		SyntaxToken OpenSquareToken;
 		SyntaxToken CloseSquareToken;
 		int Rank = 1;
 
-		inline ArrayTypeSyntax(TypeSyntax* underlaying, SyntaxNode *const parent)
-			: TypeSyntax(SyntaxKind::ArrayType, parent), UnderlayingType(underlaying) { }
+		inline ArrayTypeSyntax(std::unique_ptr<TypeSyntax> underlaying, SyntaxNode *const parent)
+			: TypeSyntax(SyntaxKind::ArrayType, parent), UnderlayingType(std::move(underlaying)) { }
 
 		inline ArrayTypeSyntax(const ArrayTypeSyntax& other) = delete;
 
-		inline virtual ~ArrayTypeSyntax()
-		{
-			if (UnderlayingType != nullptr)
-				delete UnderlayingType;
-		}
+		inline virtual ~ArrayTypeSyntax() = default;
 
 		std::wstring ToString() override;
 	};

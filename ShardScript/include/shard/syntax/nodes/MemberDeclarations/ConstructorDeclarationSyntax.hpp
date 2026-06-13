@@ -10,6 +10,8 @@
 #include <shard/syntax/nodes/StatementsBlockSyntax.hpp>
 
 #include <shard/parsing/MemberDeclarationInfo.hpp>
+
+#include <memory>
 #include <vector>
 
 namespace shard
@@ -18,26 +20,19 @@ namespace shard
 	{
 	public:
 		SyntaxToken Semicolon;
-		StatementsBlockSyntax* Body = nullptr;
-		ParametersListSyntax* Params = nullptr;
+		std::unique_ptr<StatementsBlockSyntax> Body = nullptr;
+		std::unique_ptr<ParametersListSyntax> ParametersList = nullptr;
 
 		inline ConstructorDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) : MemberDeclarationSyntax(SyntaxKind::ConstructorDeclaration, parent)
 		{
-			Attributes = info.Attributes;
+			Attributes = std::move(info.Attributes);
 			Modifiers = info.Modifiers;
 			IdentifierToken = info.Identifier;
-			TypeParameters = info.Generics;
+			TypeParameters = std::move(info.Generics);
 		}
 
 		inline ConstructorDeclarationSyntax(const ConstructorDeclarationSyntax&) = delete;
 
-		inline ~ConstructorDeclarationSyntax() override
-		{
-			if (Body != nullptr)
-				delete Body;
-
-			if (Params != nullptr)
-				delete Params;
-		}
+		inline virtual ~ConstructorDeclarationSyntax() = default;
 	};
 }

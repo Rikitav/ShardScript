@@ -11,6 +11,7 @@
 #include <shard/syntax/nodes/ExpressionSyntax.hpp>
 #include <shard/syntax/nodes/TypeSyntax.hpp>
 
+#include <memory>
 #include <vector>
 
 namespace shard
@@ -22,30 +23,23 @@ namespace shard
 		SyntaxToken SemicolonToken;
 		SyntaxToken InitializerAssignToken;
 
-		ExpressionSyntax* InitializerExpression = nullptr;
-		TypeSyntax* ReturnType = nullptr;
+		std::unique_ptr<ExpressionSyntax> InitializerExpression = nullptr;
+		std::unique_ptr<TypeSyntax> ReturnType = nullptr;
 
 		inline FieldDeclarationSyntax(SyntaxNode *const parent)
 			: MemberDeclarationSyntax(SyntaxKind::FieldDeclaration, parent) { }
 
 		inline FieldDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) : MemberDeclarationSyntax(SyntaxKind::FieldDeclaration, parent)
 		{
-			Attributes = info.Attributes;
+			Attributes = std::move(info.Attributes);
 			Modifiers = info.Modifiers;
 			IdentifierToken = info.Identifier;
-			ReturnType = info.ReturnType;
-			TypeParameters = info.Generics;
+			ReturnType = std::move(info.ReturnType);
+			TypeParameters = std::move(info.Generics);
 		}
 
 		inline FieldDeclarationSyntax(const FieldDeclarationSyntax& other) = delete;
 
-		inline virtual ~FieldDeclarationSyntax()
-		{
-			if (InitializerExpression != nullptr)
-				delete InitializerExpression;
-
-			if (ReturnType != nullptr)
-				delete ReturnType;
-		}
+		inline virtual ~FieldDeclarationSyntax() = default;
 	};
 }

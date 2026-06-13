@@ -16,16 +16,14 @@ namespace shard
 
 		inline ClassDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) : TypeDeclarationSyntax(SyntaxKind::ClassDeclaration, parent)
 		{
+			Attributes = std::move(info.Attributes);
 			Modifiers = info.Modifiers;
 			IdentifierToken = info.Identifier;
-			TypeParameters = info.Generics;
+			TypeParameters = std::move(info.Generics);
 		}
 
 		inline ClassDeclarationSyntax(const ClassDeclarationSyntax& other) = delete;
 
-		inline virtual ~ClassDeclarationSyntax()
-		{
-
-		}
+		inline virtual ~ClassDeclarationSyntax() = default;
 	};
 }

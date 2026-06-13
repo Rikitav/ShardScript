@@ -7,21 +7,19 @@
 #include <shard/syntax/SyntaxNode.hpp>
 #include <shard/syntax/SyntaxKind.hpp>
 
+#include <memory>
+
 namespace shard
 {
 	class SHARD_API ExpressionStatementSyntax : public StatementSyntax
 	{
 	public:
-		ExpressionSyntax* Expression = nullptr;
+		std::unique_ptr<ExpressionSyntax> Expression = nullptr;
 
 		inline ExpressionStatementSyntax(SyntaxNode *const parent) : StatementSyntax(SyntaxKind::ExpressionStatement, parent) { }
-		inline ExpressionStatementSyntax(ExpressionSyntax* expression, SyntaxNode *const parent) : StatementSyntax(SyntaxKind::ExpressionStatement, parent), Expression(expression) { }
+		inline ExpressionStatementSyntax(std::unique_ptr<ExpressionSyntax> expression, SyntaxNode *const parent) : StatementSyntax(SyntaxKind::ExpressionStatement, parent), Expression(std::move(expression)) { }
 		inline ExpressionStatementSyntax(const ExpressionStatementSyntax& other) = delete;
 
-		inline virtual ~ExpressionStatementSyntax()
-		{
-			if (Expression != nullptr)
-				delete Expression;
-		}
+		inline virtual ~ExpressionStatementSyntax() = default;
 	};
 }

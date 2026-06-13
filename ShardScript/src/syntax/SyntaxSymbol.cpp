@@ -11,6 +11,7 @@ bool SyntaxSymbol::IsType() const
 {
 	return Kind == SyntaxKind::ClassDeclaration
 		|| Kind == SyntaxKind::StructDeclaration
+		|| Kind == SyntaxKind::DelegateDeclaration
 		|| Kind == SyntaxKind::ArrayType
 		|| Kind == SyntaxKind::DelegateType
 		|| Kind == SyntaxKind::GenericType;
@@ -21,5 +22,7 @@ bool SyntaxSymbol::IsMember() const
 	return Kind == SyntaxKind::MethodDeclaration
 		|| Kind == SyntaxKind::PropertyDeclaration
 		|| Kind == SyntaxKind::IndexatorDeclaration
-		|| Kind == SyntaxKind::FieldDeclaration;
+		|| Kind == SyntaxKind::FieldDeclaration
+		|| Kind == SyntaxKind::AccessorDeclaration
+		|| Kind == SyntaxKind::ConstructorDeclaration;
 }

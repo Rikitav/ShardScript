@@ -9,6 +9,8 @@
 #include <shard/syntax/SyntaxToken.hpp>
 #include <shard/syntax/SyntaxNode.hpp>
 
+#include <memory>
+
 namespace shard
 {
 	class SHARD_API ForEachStatementSyntax : public KeywordStatementSyntax
@@ -19,27 +21,14 @@ namespace shard
 		SyntaxToken IdentifierToken;
 		SyntaxToken InKeywordToken;
 		
-		ExpressionSyntax* RangeExpression = nullptr;
-		StatementsBlockSyntax* StatementsBlock = nullptr;
+		std::unique_ptr<ExpressionSyntax> RangeExpression = nullptr;
+		std::unique_ptr<StatementsBlockSyntax> StatementsBlock = nullptr;
 
 		inline ForEachStatementSyntax(SyntaxNode *const parent)
 			: KeywordStatementSyntax(SyntaxKind::ForEachStatement, parent) { }
 
 		inline ForEachStatementSyntax(const ForEachStatementSyntax& other) = delete;
 
-		inline virtual ~ForEachStatementSyntax()
-		{
-			if (RangeExpression != nullptr)
-			{
-				RangeExpression->~ExpressionSyntax();
-				delete RangeExpression;
-			}
-
-			if (StatementsBlock != nullptr)
-			{
-				StatementsBlock->~StatementsBlockSyntax();
-				delete StatementsBlock;
-			}
-		}
+		inline virtual ~ForEachStatementSyntax() = default;
 	};
 }

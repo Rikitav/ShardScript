@@ -81,6 +81,15 @@
 
 using namespace shard;
 
+static void GeneratePropertyBackingField(SymbolFactory& factory, PropertySymbol* symbol)
+{
+	FieldSymbol* backingField = factory.Field(L"<" + symbol->Name + L">k__BackingField", symbol->ReturnType, symbol->IsStatic);
+	backingField->Accesibility = SymbolAccesibility::Private;
+	backingField->DefaultValueExpression = symbol->DefaultValueExpression;
+
+	symbol->BackingField = backingField;
+}
+
 static bool IsAssignmentOperator(shard::TokenType type)
 {
 	switch (type)
@@ -106,7 +115,7 @@ static bool IsAssignmentContext(const MemberAccessExpressionSyntax* expression)
 	if (expression->Parent->Kind != SyntaxKind::BinaryExpression)
 		return false;
 
-	const BinaryExpressionSyntax* binaryExpr = static_cast<const BinaryExpressionSyntax*>(expression->Parent);
+	BinaryExpressionSyntax* binaryExpr = static_cast<BinaryExpressionSyntax*>(expression->Parent);
 	if (binaryExpr->OperatorToken.Type != TokenType::AssignOperator)
 		return false;
 
@@ -121,11 +130,11 @@ static bool IsAssignmentContext(const IndexatorExpressionSyntax* expression)
 	if (expression->Parent->Kind != SyntaxKind::BinaryExpression)
 		return false;
 
-	const BinaryExpressionSyntax* binaryExpr = static_cast<const BinaryExpressionSyntax*>(expression->Parent);
+	BinaryExpressionSyntax* binaryExpr = static_cast<BinaryExpressionSyntax*>(expression->Parent);
 	if (!IsAssignmentOperator(binaryExpr->OperatorToken.Type))
 		return false;
 
-	if (binaryExpr->Left != expression)
+	if (binaryExpr->Left.get() != expression)
 		return false;
 
 	return true;
@@ -194,7 +203,7 @@ void ExpressionBinder::VisitCompilationUnit(CompilationUnitSyntax *const node)
 void ExpressionBinder::VisitUsingDirective(UsingDirectiveSyntax *const node)
 {
 	SemanticScope* current = CurrentScope();
-	for (const auto& symbol : node->Namespace->Types)
+	for (const auto& symbol : node->Namespace->Members)
 		current->DeclareSymbol(symbol);
 }
 
@@ -254,18 +263,19 @@ void ExpressionBinder::VisitConstructorDeclaration(ConstructorDeclarationSyntax 
 	{
 		PushScope(symbol);
 
+		auto thisVar = Factory.Parameter(L"this", ownerType);
 		if (!symbol->IsStatic) // how tf not?
-			Declare(new VariableSymbol(L"this", ownerType));
+			Declare(thisVar);
 
 		int counter = symbol->IsStatic ? 0 : 1;
-		for (ParameterSymbol* parameter : symbol->Parameters)
+		for (const auto& parameter : symbol->Parameters)
 		{
 			parameter->SlotIndex = counter++;
 			Declare(parameter);
 		}
 
 		CurrentScope()->ReturnFound = false;
-		VisitStatementsBlock(node->Body);
+		VisitStatementsBlock(node->Body.get());
 		
 		PopScope();
 	}
@@ -291,11 +301,12 @@ void ExpressionBinder::VisitMethodDeclaration(MethodDeclarationSyntax *const nod
 	TypeSymbol* ownerType = static_cast<TypeSymbol*>(symbol->Parent);
 	PushScope(symbol);
 
+	auto thisVar = Factory.Parameter(L"this", ownerType);
 	if (!symbol->IsStatic)
-		Declare(new VariableSymbol(L"this", ownerType));
+		Declare(thisVar);
 
 	int counter = symbol->IsStatic ? 0 : 1;
-	for (ParameterSymbol* parameter : symbol->Parameters)
+	for (const auto& parameter : symbol->Parameters)
 	{
 		parameter->SlotIndex = counter++;
 		Declare(parameter);
@@ -304,12 +315,15 @@ void ExpressionBinder::VisitMethodDeclaration(MethodDeclarationSyntax *const nod
 	if (node->Body != nullptr)
 	{
 		CurrentScope()->ReturnFound = false;
-		VisitStatementsBlock(node->Body);
+		VisitStatementsBlock(node->Body.get());
 
-		if (symbol->ReturnType->Name != L"Void")
+		if (symbol->ReturnType != nullptr)
 		{
-			if (!CurrentScope()->ReturnFound)
-				Diagnostics.ReportError(node->IdentifierToken, L"Method must return a value of type '" + symbol->ReturnType->Name + L"'");
+			if (symbol->ReturnType->Name != L"Void")
+			{
+				if (!CurrentScope()->ReturnFound)
+					Diagnostics.ReportError(node->IdentifierToken, L"Method must return a value of type '" + symbol->ReturnType->Name + L"'");
+			}
 		}
 	}
 
@@ -333,10 +347,10 @@ void ExpressionBinder::VisitPropertyDeclaration(PropertyDeclarationSyntax *const
 
 	PushScope(symbol);
 	if (node->Getter != nullptr)
-		VisitAccessorDeclaration(node->Getter);
+		VisitAccessorDeclaration(node->Getter.get());
 
 	if (node->Setter != nullptr)
-		VisitAccessorDeclaration(node->Getter);
+		VisitAccessorDeclaration(node->Getter.get());
 
 	PopScope();
 }
@@ -358,10 +372,10 @@ void ExpressionBinder::VisitIndexatorDeclaration(IndexatorDeclarationSyntax *con
 
 	PushScope(symbol);
 	if (node->Getter != nullptr)
-		VisitAccessorDeclaration(node->Getter);
+		VisitAccessorDeclaration(node->Getter.get());
 
 	if (node->Setter != nullptr)
-		VisitAccessorDeclaration(node->Getter);
+		VisitAccessorDeclaration(node->Getter.get());
 
 	PopScope();
 }
@@ -378,11 +392,13 @@ void ExpressionBinder::VisitAccessorDeclaration(AccessorDeclarationSyntax *const
 	{
 		// Getter
 		PropertySymbol* propSymbol = static_cast<PropertySymbol*>(symbol->Parent);
+
+		auto thisVar = Factory.Parameter(L"this", static_cast<TypeSymbol*>(propSymbol->Parent));
 		if (!symbol->IsStatic)
-			Declare(new ParameterSymbol(L"this", static_cast<TypeSymbol*>(propSymbol->Parent)));
+			Declare(thisVar);
 
 		int counter = symbol->IsStatic ? 0 : 1;
-		for (ParameterSymbol* parameter : symbol->Parameters)
+		for (const auto& parameter : symbol->Parameters)
 		{
 			parameter->SlotIndex = counter++;
 			Declare(parameter);
@@ -393,7 +409,7 @@ void ExpressionBinder::VisitAccessorDeclaration(AccessorDeclarationSyntax *const
 			SemanticScope* scope = CurrentScope();
 			scope->ReturnFound = false;
 
-			VisitStatementsBlock(node->Body);
+			VisitStatementsBlock(node->Body.get());
 
 			if (!scope->ReturnFound)
 				Diagnostics.ReportError(node->KeywordToken, L"Accessor must return a value of type '" + symbol->ReturnType->Name + L"'");
@@ -406,11 +422,12 @@ void ExpressionBinder::VisitAccessorDeclaration(AccessorDeclarationSyntax *const
 		// Setter
 		PropertySymbol* propSymbol = static_cast<PropertySymbol*>(symbol->Parent);
 
+		auto thisVar = Factory.Parameter(L"this", static_cast<TypeSymbol*>(propSymbol->Parent));
 		if (!symbol->IsStatic)
-			Declare(new ParameterSymbol(L"this", static_cast<TypeSymbol*>(propSymbol->Parent)));
+			Declare(thisVar);
 
 		int counter = symbol->IsStatic ? 0 : 1;
-		for (ParameterSymbol* parameter : symbol->Parameters)
+		for (const auto& parameter : symbol->Parameters)
 		{
 			parameter->SlotIndex = counter++;
 			Declare(parameter);
@@ -420,7 +437,7 @@ void ExpressionBinder::VisitAccessorDeclaration(AccessorDeclarationSyntax *const
 		{
 			SemanticScope* scope = CurrentScope();
 			scope->ReturnsAnything = false;
-			VisitStatementsBlock(node->Body);
+			VisitStatementsBlock(node->Body.get());
 
 			if (scope->ReturnsAnything)
 				Diagnostics.ReportError(node->KeywordToken, L"Setter method of '" + node->IdentifierToken.Word + L"' should not return any values");
@@ -440,7 +457,7 @@ void ExpressionBinder::VisitFieldDeclaration(FieldDeclarationSyntax *const node)
 {
 	if (node->InitializerExpression != nullptr)
 	{
-		VisitExpression(node->InitializerExpression);
+		VisitExpression(node->InitializerExpression.get());
 	}
 
 	FieldSymbol* symbol = LookupSymbol<FieldSymbol>(node).value_or(nullptr);
@@ -449,7 +466,7 @@ void ExpressionBinder::VisitFieldDeclaration(FieldDeclarationSyntax *const node)
 
 	if (node->InitializerExpression != nullptr)
 	{
-		TypeSymbol* initExprType = GetExpressionType(node->InitializerExpression);
+		TypeSymbol* initExprType = GetExpressionType(node->InitializerExpression.get());
 		if (initExprType == nullptr)
 		{
 			Diagnostics.ReportError(node->IdentifierToken, L"Field initializer expression type could not be determined");
@@ -480,11 +497,11 @@ void ExpressionBinder::VisitVariableStatement(VariableStatementSyntax *const nod
 	if (node->Expression != nullptr)
 	{
 		PushScope(new LeftDenotationSymbol(symbol->Type));
-		VisitExpression(node->Expression);
+		VisitExpression(node->Expression.get());
 		PopScope();
 	}
 
-	TypeSymbol* expressionType = GetExpressionType(node->Expression);
+	TypeSymbol* expressionType = GetExpressionType(node->Expression.get());
 	if (expressionType == nullptr)
 	{
 		return;
@@ -505,9 +522,7 @@ void ExpressionBinder::VisitVariableStatement(VariableStatementSyntax *const nod
 
 TypeSymbol* ExpressionBinder::AnalyzeLiteralExpression(LiteralExpressionSyntax *const node)
 {
-	LiteralSymbol* symbol = new LiteralSymbol(node->LiteralToken.Type);
-	Table->BindSymbol(node, symbol);
-
+	LiteralSymbol* symbol = static_cast<LiteralSymbol*>(Table->BindSymbol(node, std::make_unique<LiteralSymbol>(node->LiteralToken.Type)));
 	switch (node->LiteralToken.Type)
 	{
 		case TokenType::NullLiteral:
@@ -566,8 +581,8 @@ void ExpressionBinder::VisitLiteralExpression(LiteralExpressionSyntax *const nod
 
 TypeSymbol* ExpressionBinder::AnalyzeBinaryExpression(BinaryExpressionSyntax *const node)
 {
-	VisitExpression(node->Left);
-	TypeSymbol* leftType = GetExpressionType(node->Left);
+	VisitExpression(node->Left.get());
+	TypeSymbol* leftType = GetExpressionType(node->Left.get());
 	
 	if (leftType == nullptr)
 	{
@@ -578,10 +593,10 @@ TypeSymbol* ExpressionBinder::AnalyzeBinaryExpression(BinaryExpressionSyntax *co
 	if (node->OperatorToken.Type == TokenType::AssignOperator)
 	{
 		PushScope(new LeftDenotationSymbol(leftType));
-		VisitExpression(node->Right);
+		VisitExpression(node->Right.get());
 		PopScope();
 
-		TypeSymbol* rightType = GetExpressionType(node->Right);
+		TypeSymbol* rightType = GetExpressionType(node->Right.get());
 		if (rightType == nullptr)
 		{
 			Diagnostics.ReportError(node->OperatorToken, L"Right operand type could not be determined");
@@ -597,8 +612,8 @@ TypeSymbol* ExpressionBinder::AnalyzeBinaryExpression(BinaryExpressionSyntax *co
 		return leftType;
 	}
 
-	VisitExpression(node->Right);
-	TypeSymbol* rightType = GetExpressionType(node->Right);
+	VisitExpression(node->Right.get());
+	TypeSymbol* rightType = GetExpressionType(node->Right.get());
 
 	if (rightType == nullptr)
 	{
@@ -696,7 +711,7 @@ void ExpressionBinder::VisitBinaryExpression(BinaryExpressionSyntax *const node)
 
 TypeSymbol* ExpressionBinder::AnalyzeUnaryExpression(UnaryExpressionSyntax *const node)
 {
-	TypeSymbol* exprType = GetExpressionType(node->Expression);
+	TypeSymbol* exprType = GetExpressionType(node->Expression.get());
 	
 	if (exprType == nullptr)
 	{
@@ -740,7 +755,7 @@ TypeSymbol* ExpressionBinder::AnalyzeUnaryExpression(UnaryExpressionSyntax *cons
 
 void ExpressionBinder::VisitUnaryExpression(UnaryExpressionSyntax *const node)
 {
-	VisitExpression(node->Expression);
+	VisitExpression(node->Expression.get());
 
 	TypeSymbol* type = AnalyzeUnaryExpression(node);
 	SetExpressionType(node, type);
@@ -756,7 +771,7 @@ TypeSymbol* ExpressionBinder::AnalyzeObjectExpression(ObjectExpressionSyntax *co
 	if (method == nullptr)
 		return node->TypeSymbol;
 
-	if (!IsSymbolAccessible(method, Table->GetSyntaxNode(method).value_or(nullptr), node))
+	if (!IsSymbolAccessible(method, Table->LookupNode(method).value_or(nullptr), node))
 	{
 		Diagnostics.ReportError(node->IdentifierToken, L"Method '" + methodName + L"' is not accessible");
 		return node->TypeSymbol;
@@ -775,8 +790,8 @@ TypeSymbol* ExpressionBinder::AnalyzeObjectExpression(ObjectExpressionSyntax *co
 
 void ExpressionBinder::VisitObjectCreationExpression(ObjectExpressionSyntax *const node)
 {
-	VisitType(node->Type);
-	VisitArgumentsList(node->ArgumentsList);
+	VisitType(node->Type.get());
+	VisitArgumentsList(node->ArgumentsList.get());
 
 	TypeSymbol* type = AnalyzeObjectExpression(node);
 	SetExpressionType(node, type);
@@ -786,11 +801,11 @@ TypeSymbol* ExpressionBinder::AnalyzeCollectionExpression(CollectionExpressionSy
 {
 	TypeSymbol* collectionType = nullptr;
 	for (size_t i = 0; i < node->ValuesExpressions.size() && collectionType == nullptr; i++)
-		collectionType = GetExpressionType(node->ValuesExpressions.at(i));
+		collectionType = GetExpressionType(node->ValuesExpressions.at(i).get());
 
-	for (ExpressionSyntax* expression : node->ValuesExpressions)
+	for (const auto& expression : node->ValuesExpressions)
 	{
-		TypeSymbol* exprType = GetExpressionType(expression);
+		TypeSymbol* exprType = GetExpressionType(expression.get());
 		if (exprType != collectionType)
 		{
 			Diagnostics.ReportError(node->OpenSquareToken, L"Element have type different from collection's target type");
@@ -802,46 +817,42 @@ TypeSymbol* ExpressionBinder::AnalyzeCollectionExpression(CollectionExpressionSy
 
 void ExpressionBinder::VisitCollectionExpression(CollectionExpressionSyntax *const node)
 {
-	for (ExpressionSyntax* expression : node->ValuesExpressions)
-		VisitExpression(expression);
+	for (const auto& expression : node->ValuesExpressions)
+		VisitExpression(expression.get());
 
 	TypeSymbol* type = AnalyzeCollectionExpression(node);
-	ArrayTypeSymbol* arrayType = new ArrayTypeSymbol(type);
+	auto arrayType = std::make_unique<ArrayTypeSymbol>(type);
+
 	arrayType->Size = node->ValuesExpressions.size();
-	node->Symbol = arrayType;
-	Table->BindSymbol(node, arrayType);
-	SetExpressionType(node, arrayType);
+	ArrayTypeSymbol* rawArrayType = arrayType.get();
+	node->Symbol = rawArrayType;
+
+	Table->BindSymbol(node, std::move(arrayType));
+	SetExpressionType(node, rawArrayType);
 }
 
 void ExpressionBinder::VisitRangeExpression(RangeExpressionSyntax *const node)
 {
-	VisitExpression(node->Left);
-	VisitExpression(node->Right);
+	VisitExpression(node->Left.get());
+	VisitExpression(node->Right.get());
 
-	TypeSymbol* leftType = GetExpressionType(node->Left);
-	TypeSymbol* rightType = GetExpressionType(node->Right);
+	TypeSymbol* leftType = GetExpressionType(node->Left.get());
+	TypeSymbol* rightType = GetExpressionType(node->Right.get());
 
 	if (leftType != SymbolTable::Primitives::Integer || rightType != SymbolTable::Primitives::Integer)
 	{
 		Diagnostics.ReportError(node->OperatorToken, L"Range bounds must be integers");
 	}
 
-	ArrayTypeSymbol* arrayType = new ArrayTypeSymbol(SymbolTable::Primitives::Integer);
-	Table->BindSymbol(node, arrayType);
+	ArrayTypeSymbol* arrayType = Factory.Array(SymbolTable::Primitives::Integer);
 	SetExpressionType(node, arrayType);
 }
 
 void ExpressionBinder::VisitLambdaExpression(LambdaExpressionSyntax *const node)
 {
-	MethodSymbol* anonymousMethod = new MethodSymbol(L"Lambda");
-	anonymousMethod->HandleType = MethodHandleType::Lambda;
-	anonymousMethod->Accesibility = SymbolAccesibility::Public;
-	anonymousMethod->ReturnType = SymbolTable::Primitives::Any;
-	anonymousMethod->IsStatic = true;
+	MethodSymbol* anonymousMethod = Factory.CreateAnonymousMethod(L"Lambda", SymbolTable::Primitives::Any);
 
-	DelegateTypeSymbol* delegate = new DelegateTypeSymbol(L"Lambda");
-	delegate->Accesibility = SymbolAccesibility::Public;
-	delegate->AnonymousSymbol = anonymousMethod;
+	DelegateTypeSymbol* delegate = Factory.Delegate(anonymousMethod);
 	node->Symbol = delegate;
 
 	/*
@@ -853,22 +864,20 @@ void ExpressionBinder::VisitLambdaExpression(LambdaExpressionSyntax *const node)
 	}
 	*/
 
-	VisitParametersList(node->Params);
-	for (ParameterSyntax* parameter : node->Params->Parameters)
+	VisitParametersList(node->ParametersList.get());
+	for (const auto& parameter : node->ParametersList->Parameters)
 	{
-		ParameterSymbol* paramSymbol = new ParameterSymbol(parameter->Identifier.Word);
-		paramSymbol->Type = parameter->Type->Symbol;
-
+		ParameterSymbol* paramSymbol = Factory.Parameter(parameter->Identifier.Word, parameter->Type->Symbol);
 		delegate->Parameters.push_back(paramSymbol);
 		anonymousMethod->Parameters.push_back(paramSymbol);
 	}
 
 	PushScope(anonymousMethod);
-	for (ParameterSymbol* parameter : anonymousMethod->Parameters)
+	for (const auto& parameter : anonymousMethod->Parameters)
 		Declare(parameter);
 
 	CurrentScope()->ReturnFound = false;
-	VisitStatementsBlock(node->Body);
+	VisitStatementsBlock(node->Body.get());
 	PopScope();
 
 	delegate->ReturnType = anonymousMethod->ReturnType;
@@ -877,11 +886,11 @@ void ExpressionBinder::VisitLambdaExpression(LambdaExpressionSyntax *const node)
 
 void ExpressionBinder::VisitTernaryExpression(TernaryExpressionSyntax *const node)
 {
-	VisitExpression(node->Condition);
-	VisitExpression(node->Left);
-	VisitExpression(node->Right);
+	VisitExpression(node->Condition.get());
+	VisitExpression(node->Left.get());
+	VisitExpression(node->Right.get());
 
-	TypeSymbol* conditionType = GetExpressionType(node->Condition);
+	TypeSymbol* conditionType = GetExpressionType(node->Condition.get());
 	if (conditionType == nullptr)
 	{
 		Diagnostics.ReportError(node->QuestionToken, L"Ternary expression's condition return type could not be determined");
@@ -891,8 +900,8 @@ void ExpressionBinder::VisitTernaryExpression(TernaryExpressionSyntax *const nod
 		Diagnostics.ReportError(node->QuestionToken, L"Ternary expression's condition expected to return 'bool', but got '" + conditionType->Name + L"'");
 	}
 
-	TypeSymbol* leftType = GetExpressionType(node->Left);
-	TypeSymbol* rightType = GetExpressionType(node->Right);
+	TypeSymbol* leftType = GetExpressionType(node->Left.get());
+	TypeSymbol* rightType = GetExpressionType(node->Right.get());
 	SetExpressionType(node, leftType == nullptr ? rightType : leftType);
 
 	if (leftType == nullptr)
@@ -914,11 +923,11 @@ void ExpressionBinder::VisitTernaryExpression(TernaryExpressionSyntax *const nod
 
 void ExpressionBinder::VisitIfExpression(IfExpressionSyntax *const node)
 {
-	VisitExpression(node->Condition);
-	VisitExpression(node->ThenExpression);
-	VisitExpression(node->ElseExpression);
+	VisitExpression(node->Condition.get());
+	VisitExpression(node->ThenExpression.get());
+	VisitExpression(node->ElseExpression.get());
 
-	TypeSymbol* conditionType = GetExpressionType(node->Condition);
+	TypeSymbol* conditionType = GetExpressionType(node->Condition.get());
 	if (conditionType == nullptr)
 	{
 		Diagnostics.ReportError(node->IfKeywordToken, L"If expression's condition return type could not be determined");
@@ -928,8 +937,8 @@ void ExpressionBinder::VisitIfExpression(IfExpressionSyntax *const node)
 		Diagnostics.ReportError(node->IfKeywordToken, L"If expression's condition expected to return 'bool', but got '" + conditionType->Name + L"'");
 	}
 
-	TypeSymbol* thenType = GetExpressionType(node->ThenExpression);
-	TypeSymbol* elseType = GetExpressionType(node->ElseExpression);
+	TypeSymbol* thenType = GetExpressionType(node->ThenExpression.get());
+	TypeSymbol* elseType = GetExpressionType(node->ElseExpression.get());
 	SetExpressionType(node, thenType == nullptr ? elseType : thenType);
 
 	if (thenType == nullptr)
@@ -948,16 +957,16 @@ void ExpressionBinder::VisitIfExpression(IfExpressionSyntax *const node)
 
 void ExpressionBinder::VisitSwitchExpression(SwitchExpressionSyntax *const node)
 {
-	VisitExpression(node->Expression);
-	TypeSymbol* exprType = GetExpressionType(node->Expression);
+	VisitExpression(node->Expression.get());
+	TypeSymbol* exprType = GetExpressionType(node->Expression.get());
 
 	TypeSymbol* armType = nullptr;
-	for (SwitchArmSyntax* arm : node->Arms)
+	for (const auto& arm : node->Arms)
 	{
-		VisitExpression(arm->Pattern);
-		VisitExpression(arm->Expression);
+		VisitExpression(arm->Pattern.get());
+		VisitExpression(arm->Expression.get());
 
-		TypeSymbol* currentArmType = GetExpressionType(arm->Expression);
+		TypeSymbol* currentArmType = GetExpressionType(arm->Expression.get());
 		if (armType == nullptr)
 			armType = currentArmType;
 	}
@@ -968,18 +977,21 @@ void ExpressionBinder::VisitSwitchExpression(SwitchExpressionSyntax *const node)
 void ExpressionBinder::VisitTryStatement(TryStatementSyntax *const node)
 {
 	if (node->TryBlock != nullptr)
-		VisitStatementsBlock(node->TryBlock);
+		VisitStatementsBlock(node->TryBlock.get());
 
-	for (CatchClauseSyntax* clause : node->CatchClauses)
+	for (const auto& clause : node->CatchClauses)
 	{
-		PushScope(new LeftDenotationSymbol(clause->ExceptionType != nullptr ? clause->ExceptionType->Symbol : SymbolTable::Primitives::Any));
+		auto leftDen = std::make_unique<LeftDenotationSymbol>(clause->ExceptionType != nullptr ? clause->ExceptionType->Symbol : SymbolTable::Primitives::Any);
+		PushScope(leftDen.get());
+
 		if (clause->Body != nullptr)
-			VisitStatementsBlock(clause->Body);
+			VisitStatementsBlock(clause->Body.get());
+
 		PopScope();
 	}
 }
 
-bool ExpressionBinder::MatchMethodArguments(std::vector<ParameterSymbol*> parameters, std::vector<ArgumentSyntax*> arguments, GenericTypeSymbol* genericType)
+bool ExpressionBinder::MatchMethodArguments(std::vector<ParameterSymbol*>& parameters, std::vector<std::unique_ptr<ArgumentSyntax>>& arguments, GenericTypeSymbol* genericType)
 {
 	if (parameters.size() != arguments.size())
 	{
@@ -990,7 +1002,7 @@ bool ExpressionBinder::MatchMethodArguments(std::vector<ParameterSymbol*> parame
 	for (size_t i = 0; i < parameters.size(); i++)
 	{
 		ParameterSymbol* param = parameters[i];
-		ArgumentSyntax* arg = arguments[i];
+		ArgumentSyntax* arg = arguments[i].get();
 
 		if (param == nullptr || arg == nullptr || arg->Expression == nullptr)
 		{
@@ -1004,7 +1016,7 @@ bool ExpressionBinder::MatchMethodArguments(std::vector<ParameterSymbol*> parame
 		PopScope();
 		*/
 		
-		TypeSymbol* argType = GetExpressionType(arg->Expression);
+		TypeSymbol* argType = GetExpressionType(arg->Expression.get());
 		if (argType == nullptr)
 		{
 			//Diagnostics.ReportError(SyntaxToken(), L"Argument type could not be determined for parameter '" + param->Name + L"'");
@@ -1055,7 +1067,7 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 			return nullptr;
 		}
 
-		if (!IsSymbolAccessible(symbol, Table->GetSyntaxNode(symbol).value_or(nullptr), node))
+		if (!IsSymbolAccessible(symbol, Table->LookupNode(symbol).value_or(nullptr), node))
 		{
 			Diagnostics.ReportError(node->IdentifierToken, L"Symbol '" + memberName + L"' is not accessible");
 			return nullptr;
@@ -1072,7 +1084,7 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 		if (currentType == nullptr)
 			return nullptr;
 
-		ExpressionSyntax* previousExpression = const_cast<ExpressionSyntax*>(node->PreviousExpression);
+		ExpressionSyntax* previousExpression = node->PreviousExpression.get();
 		VisitExpression(previousExpression);
 		currentType = GetExpressionType(previousExpression);
 
@@ -1108,7 +1120,7 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 		}
 	}
 
-	if (!IsSymbolAccessible(node->ToField, Table->GetSyntaxNode(node->ToField).value_or(nullptr), node))
+	if (!IsSymbolAccessible(node->ToField, Table->LookupNode(node->ToField).value_or(nullptr), node))
 	{
 		std::wstring declName;
 		Diagnostics.ReportError(node->IdentifierToken, declName + L" '" + memberName + L"' is not accessible");
@@ -1150,7 +1162,7 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 			node->IsStaticContext = false;
 			node->ToField = fieldSymbol;
 
-			bool isStaticContext = GetIsStaticContext(node->PreviousExpression);
+			bool isStaticContext = GetIsStaticContext(node->PreviousExpression.get());
 			if (isStaticContext && !fieldSymbol->IsStatic)
 				Diagnostics.ReportError(node->IdentifierToken, L"Cannot access instance field '" + fieldSymbol->FullName + L"' from type context");
 
@@ -1163,9 +1175,11 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 		case SyntaxKind::MethodDeclaration:
 		{
 			MethodSymbol* methodSymbol = static_cast<MethodSymbol*>(symbol);
-			DelegateTypeSymbol* delegate = SymbolFactory::Delegate(methodSymbol);
+			DelegateTypeSymbol* delegate = Factory.Delegate(methodSymbol);
+
 			node->ToDelegate = delegate;
 			node->IsStaticContext = false;
+			
 			return delegate;
 		}
 
@@ -1218,13 +1232,13 @@ TypeSymbol* ExpressionBinder::AnalyzePropertyAccessExpression(MemberAccessExpres
 		return nullptr;
 	}
 
-	if (!IsSymbolAccessible(accessor, Table->GetSyntaxNode(accessor).value_or(nullptr), node))
+	if (!IsSymbolAccessible(accessor, Table->LookupNode(accessor).value_or(nullptr), node))
 	{
 		Diagnostics.ReportError(node->IdentifierToken, (requiresSetter ? L"Setter" : L"Getter") + (L" of property '" + memberName + L"' is not accessible"));
 		return nullptr;
 	}
 
-	bool isStaticCtx = GetIsStaticContext(node->PreviousExpression);
+	bool isStaticCtx = GetIsStaticContext(node->PreviousExpression.get());
 	if (isStaticCtx && !accessor->IsStatic)
 	{
 		Diagnostics.ReportError(node->IdentifierToken, L"Cannot access instance property '" + memberName + L"' from type context");
@@ -1281,7 +1295,7 @@ TypeSymbol* ExpressionBinder::AnalyzeFieldKeywordExpression(MemberAccessExpressi
 
 	// Create backing field if it doesn't exist yet (for explicit property bodies using 'field')
 	if (propertySymbol->BackingField == nullptr)
-		propertySymbol->GenerateBackingField();
+		GeneratePropertyBackingField(Factory, propertySymbol);
 
 	// Resolve 'field' as the backing field
 	node->ToField = propertySymbol->BackingField;
@@ -1311,7 +1325,7 @@ TypeSymbol* ExpressionBinder::AnalyzeInvokationExpression(InvokationExpressionSy
 		return nullptr;
 	}
 
-	if (!IsSymbolAccessible(method, Table->GetSyntaxNode(method).value_or(nullptr), node))
+	if (!IsSymbolAccessible(method, Table->LookupNode(method).value_or(nullptr), node))
 	{
 		Diagnostics.ReportError(node->IdentifierToken, L"Method '" + methodName + L"' is not accessible");
 		return nullptr;
@@ -1351,11 +1365,11 @@ ConstructorSymbol* ExpressionBinder::ResolveConstructor(ObjectExpressionSyntax *
 		symbol = static_cast<GenericTypeSymbol*>(symbol)->UnderlayingType;
 
 	std::vector<TypeSymbol*> argTypes;
-	for (ArgumentSyntax* arg : node->ArgumentsList->Arguments)
+	for (const auto& arg : node->ArgumentsList->Arguments)
 	{
-		VisitExpression(arg->Expression);
+		VisitExpression(arg->Expression.get());
 
-		TypeSymbol* argType = GetExpressionType(arg->Expression);
+		TypeSymbol* argType = GetExpressionType(arg->Expression.get());
 		if (argType == nullptr)
 			return nullptr;
 
@@ -1412,13 +1426,13 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax *const 
 	std::wstring methodName = node->IdentifierToken.Word;
 	std::vector<TypeSymbol*> argTypes;
 
-	for (ArgumentSyntax* arg : node->ArgumentsList->Arguments)
+	for (const auto& arg : node->ArgumentsList->Arguments)
 	{
 		//PushScope(new LeftDenotationSymbol(param->Type));
-		VisitExpression(arg->Expression);
+		VisitExpression(arg->Expression.get());
 		//PopScope();
 
-		TypeSymbol* argType = GetExpressionType(arg->Expression);
+		TypeSymbol* argType = GetExpressionType(arg->Expression.get());
 		if (argType == nullptr)
 			return nullptr;
 
@@ -1429,7 +1443,7 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax *const 
 	MethodSymbol* method = nullptr;
 	if (currentType != nullptr)
 	{
-		currentType->FindMethod(methodName, argTypes);
+		method = currentType->FindMethod(methodName, argTypes);
 		if (method == nullptr)
 			method = SymbolTable::Global::Type->FindMethod(methodName, argTypes);
 	}
@@ -1499,7 +1513,7 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax *const 
 		return nullptr;
 	}
 	
-	bool isStaticContext = GetIsStaticContext(node->PreviousExpression);
+	bool isStaticContext = GetIsStaticContext(node->PreviousExpression.get());
 	if (isStaticContext && !method->IsStatic)
 	{
 		Diagnostics.ReportError(node->IdentifierToken, L"Cannot call instance method '" + methodName + L"' from type context");
@@ -1523,8 +1537,8 @@ TypeSymbol* ExpressionBinder::AnalyzeIndexatorExpression(IndexatorExpressionSynt
 	if (node->PreviousExpression == nullptr)
 		return nullptr;
 
-	VisitExpression(node->PreviousExpression);
-	currentType = GetExpressionType(node->PreviousExpression);
+	VisitExpression(node->PreviousExpression.get());
+	currentType = GetExpressionType(node->PreviousExpression.get());
 
 	IndexatorSymbol* indexator = ResolveIndexator(node, currentType);
 	TypeSymbol* resultType = AnalyzePropertyAccessExpression(node, indexator, currentType);
@@ -1762,15 +1776,15 @@ TypeSymbol* ExpressionBinder::AnalyzeDoubleLiteral(LiteralExpressionSyntax* cons
 
 IndexatorSymbol* ExpressionBinder::ResolveIndexator(IndexatorExpressionSyntax *const node, TypeSymbol* currentType)
 {
-	MemberAccessExpressionSyntax* access = static_cast<MemberAccessExpressionSyntax*>(const_cast<ExpressionSyntax*>(node->PreviousExpression));
+	MemberAccessExpressionSyntax* access = static_cast<MemberAccessExpressionSyntax*>(const_cast<ExpressionSyntax*>(node->PreviousExpression.get()));
 	std::wstring methodName = access->IdentifierToken.Word;
 	std::vector<TypeSymbol*> argTypes;
 
-	for (ArgumentSyntax* arg : node->IndexatorList->Arguments)
+	for (const auto& arg : node->IndexatorList->Arguments)
 	{
-		VisitExpression(arg->Expression);
+		VisitExpression(arg->Expression.get());
 
-		TypeSymbol* argType = GetExpressionType(arg->Expression);
+		TypeSymbol* argType = GetExpressionType(arg->Expression.get());
 		if (argType == nullptr)
 			return nullptr;
 
@@ -1830,7 +1844,7 @@ IndexatorSymbol* ExpressionBinder::ResolveIndexator(IndexatorExpressionSyntax *c
 		return nullptr;
 	}
 
-	bool isStaticContext = GetIsStaticContext(node->PreviousExpression);
+	bool isStaticContext = GetIsStaticContext(node->PreviousExpression.get());
 	if (isStaticContext && !indexator->IsStatic)
 	{
 		Diagnostics.ReportError(access->IdentifierToken, L"Cannot call instance indexator '" + methodName + L"' from type context");
@@ -1848,7 +1862,7 @@ IndexatorSymbol* ExpressionBinder::ResolveIndexator(IndexatorExpressionSyntax *c
 
 void ExpressionBinder::VisitMemberAccessExpression(MemberAccessExpressionSyntax *const node)
 {
-	ExpressionSyntax* previous = const_cast<ExpressionSyntax*>(node->PreviousExpression);
+	ExpressionSyntax* previous = const_cast<ExpressionSyntax*>(node->PreviousExpression.get());
 	if (previous != nullptr)
 		VisitExpression(previous);
 
@@ -1859,7 +1873,7 @@ void ExpressionBinder::VisitMemberAccessExpression(MemberAccessExpressionSyntax 
 
 void ExpressionBinder::VisitInvocationExpression(InvokationExpressionSyntax *const node)
 {
-	ExpressionSyntax* previous = const_cast<ExpressionSyntax*>(node->PreviousExpression);
+	ExpressionSyntax* previous = const_cast<ExpressionSyntax*>(node->PreviousExpression.get());
 	if (previous != nullptr)
 		VisitExpression(previous);
 
@@ -1871,9 +1885,9 @@ void ExpressionBinder::VisitInvocationExpression(InvokationExpressionSyntax *con
 void ExpressionBinder::VisitIndexatorExpression(IndexatorExpressionSyntax *const node)
 {
 	if (node->IndexatorList != nullptr)
-		VisitIndexatorList(node->IndexatorList);
+		VisitIndexatorList(node->IndexatorList.get());
 
-	ExpressionSyntax* previous = const_cast<ExpressionSyntax*>(node->PreviousExpression);
+	ExpressionSyntax* previous = const_cast<ExpressionSyntax*>(node->PreviousExpression.get());
 	if (previous != nullptr)
 		VisitExpression(previous);
 
@@ -1886,8 +1900,8 @@ void ExpressionBinder::VisitWhileStatement(WhileStatementSyntax *const node)
 {
 	if (node->ConditionExpression != nullptr)
 	{
-		VisitExpression(node->ConditionExpression);
-		TypeSymbol* conditionType = GetExpressionType(node->ConditionExpression);
+		VisitExpression(node->ConditionExpression.get());
+		TypeSymbol* conditionType = GetExpressionType(node->ConditionExpression.get());
 		
 		if (conditionType == nullptr)
 		{
@@ -1900,15 +1914,15 @@ void ExpressionBinder::VisitWhileStatement(WhileStatementSyntax *const node)
 	}
 	
 	if (node->StatementsBlock != nullptr)
-		VisitStatementsBlock(node->StatementsBlock);
+		VisitStatementsBlock(node->StatementsBlock.get());
 }
 
 void ExpressionBinder::VisitUntilStatement(UntilStatementSyntax *const node)
 {
 	if (node->ConditionExpression != nullptr)
 	{
-		VisitExpression(node->ConditionExpression);
-		TypeSymbol* conditionType = GetExpressionType(node->ConditionExpression);
+		VisitExpression(node->ConditionExpression.get());
+		TypeSymbol* conditionType = GetExpressionType(node->ConditionExpression.get());
 		
 		if (conditionType == nullptr)
 		{
@@ -1921,18 +1935,18 @@ void ExpressionBinder::VisitUntilStatement(UntilStatementSyntax *const node)
 	}
 	
 	if (node->StatementsBlock != nullptr)
-		VisitStatementsBlock(node->StatementsBlock);
+		VisitStatementsBlock(node->StatementsBlock.get());
 }
 
 void ExpressionBinder::VisitForStatement(ForStatementSyntax *const node)
 {
 	if (node->InitializerStatement != nullptr)
-		VisitStatement(node->InitializerStatement);
+		VisitStatement(node->InitializerStatement.get());
 	
 	if (node->ConditionExpression != nullptr)
 	{
-		VisitExpression(node->ConditionExpression);
-		TypeSymbol* conditionType = GetExpressionType(node->ConditionExpression);
+		VisitExpression(node->ConditionExpression.get());
+		TypeSymbol* conditionType = GetExpressionType(node->ConditionExpression.get());
 		
 		if (conditionType == nullptr)
 		{
@@ -1945,10 +1959,10 @@ void ExpressionBinder::VisitForStatement(ForStatementSyntax *const node)
 	}
 	
 	if (node->AfterRepeatStatement != nullptr)
-		VisitStatement(node->AfterRepeatStatement);
+		VisitStatement(node->AfterRepeatStatement.get());
 	
 	if (node->StatementsBlock != nullptr)
-		VisitStatementsBlock(node->StatementsBlock);
+		VisitStatementsBlock(node->StatementsBlock.get());
 }
 
 void ExpressionBinder::VisitForEachStatement(ForEachStatementSyntax *const node)
@@ -1957,8 +1971,8 @@ void ExpressionBinder::VisitForEachStatement(ForEachStatementSyntax *const node)
 
 	if (node->RangeExpression != nullptr)
 	{
-		VisitExpression(node->RangeExpression);
-		TypeSymbol* rangeType = GetExpressionType(node->RangeExpression);
+		VisitExpression(node->RangeExpression.get());
+		TypeSymbol* rangeType = GetExpressionType(node->RangeExpression.get());
 
 		if (rangeType != nullptr && rangeType->Kind == SyntaxKind::ArrayType)
 		{
@@ -1979,7 +1993,7 @@ void ExpressionBinder::VisitForEachStatement(ForEachStatementSyntax *const node)
 	}
 
 	if (node->StatementsBlock != nullptr)
-		VisitStatementsBlock(node->StatementsBlock);
+		VisitStatementsBlock(node->StatementsBlock.get());
 
 	if (variable != nullptr)
 		PopScope();
@@ -1995,7 +2009,9 @@ void ExpressionBinder::VisitIfStatement(IfStatementSyntax *const node)
 		}
 		else
 		{
-			ExpressionSyntax* conditionExpr = static_cast<ExpressionStatementSyntax*>(node->ConditionExpression)->Expression;
+			ExpressionStatementSyntax* statement = static_cast<ExpressionStatementSyntax*>(node->ConditionExpression.get());
+			ExpressionSyntax* conditionExpr = statement->Expression.get();
+
 			if (conditionExpr != nullptr)
 			{
 				VisitExpression(conditionExpr);
@@ -2018,17 +2034,19 @@ void ExpressionBinder::VisitIfStatement(IfStatementSyntax *const node)
 	}
 	
 	if (node->StatementsBlock != nullptr)
-		VisitStatementsBlock(node->StatementsBlock);
+		VisitStatementsBlock(node->StatementsBlock.get());
 	
 	if (node->NextStatement != nullptr)
-		VisitConditionalClause(node->NextStatement);
+		VisitConditionalClause(node->NextStatement.get());
 }
 
 void ExpressionBinder::VisitUnlessStatement(UnlessStatementSyntax *const node)
 {
 	if (node->ConditionExpression != nullptr)
 	{
-		ExpressionSyntax* conditionExpr = dynamic_cast<ExpressionSyntax*>(node->ConditionExpression);
+		ExpressionStatementSyntax* statement = static_cast<ExpressionStatementSyntax*>(node->ConditionExpression.get());
+		ExpressionSyntax* conditionExpr = statement->Expression.get();
+
 		if (conditionExpr != nullptr)
 		{
 			VisitExpression(conditionExpr);
@@ -2050,10 +2068,10 @@ void ExpressionBinder::VisitUnlessStatement(UnlessStatementSyntax *const node)
 	}
 	
 	if (node->StatementsBlock != nullptr)
-		VisitStatementsBlock(node->StatementsBlock);
+		VisitStatementsBlock(node->StatementsBlock.get());
 	
 	if (node->NextStatement != nullptr)
-		VisitConditionalClause(node->NextStatement);
+		VisitConditionalClause(node->NextStatement.get());
 }
 
 static bool SymbolHasReturnType(const SyntaxSymbol* symbol)
@@ -2161,8 +2179,8 @@ void ExpressionBinder::VisitReturnStatement(ReturnStatementSyntax *const node)
 		}
 		else
 		{
-			VisitExpression(node->Expression);
-			delegate->ReturnType = GetExpressionType(node->Expression);
+			VisitExpression(node->Expression.get());
+			delegate->ReturnType = GetExpressionType(node->Expression.get());
 			return;
 		}
 	}
@@ -2172,7 +2190,7 @@ void ExpressionBinder::VisitReturnStatement(ReturnStatementSyntax *const node)
 		if (node->Expression != nullptr)
 		{
 			searchingScope->ReturnsAnything = true;
-			VisitExpression(node->Expression);
+			VisitExpression(node->Expression.get());
 
 			Diagnostics.ReportError(node->KeywordToken, L"Void method cannot return a value");
 		}
@@ -2187,8 +2205,8 @@ void ExpressionBinder::VisitReturnStatement(ReturnStatementSyntax *const node)
 	}
 
 	searchingScope->ReturnsAnything = true;
-	VisitExpression(node->Expression);
-	TypeSymbol* returnExprType = GetExpressionType(node->Expression);
+	VisitExpression(node->Expression.get());
+	TypeSymbol* returnExprType = GetExpressionType(node->Expression.get());
 
 	if (returnExprType == nullptr)
 	{

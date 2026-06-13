@@ -24,12 +24,6 @@ namespace shard
 
 		inline StructSymbol(const StructSymbol& other) = delete;
 
-		inline virtual ~StructSymbol() override
-		{
-			/*
-			for (MethodSymbol* ctor : Constructors)
-				delete ctor;
-			*/
-		}
+		inline virtual ~StructSymbol() = default;
 	};
 }

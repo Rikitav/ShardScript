@@ -9,6 +9,8 @@
 #include <shard/syntax/SyntaxToken.hpp>
 #include <shard/syntax/SyntaxNode.hpp>
 
+#include <memory>
+
 namespace shard
 {
 	class SHARD_API UntilStatementSyntax : public KeywordStatementSyntax
@@ -17,21 +19,14 @@ namespace shard
 		SyntaxToken OpenCurlToken;
 		SyntaxToken CloseCurlToken;
 
-		ExpressionSyntax* ConditionExpression = nullptr;
-		StatementsBlockSyntax* StatementsBlock = nullptr;
+		std::unique_ptr<ExpressionSyntax> ConditionExpression = nullptr;
+		std::unique_ptr<StatementsBlockSyntax> StatementsBlock = nullptr;
 
 		inline UntilStatementSyntax(SyntaxNode *const parent)
 			: KeywordStatementSyntax(SyntaxKind::UntilStatement, parent) { }
 
 		inline UntilStatementSyntax(const UntilStatementSyntax&) = delete;
 
-		inline virtual ~UntilStatementSyntax()
-		{
-			if (ConditionExpression != nullptr)
-				delete ConditionExpression;
-
-			if (StatementsBlock != nullptr)
-				delete StatementsBlock;
-		}
+		inline virtual ~UntilStatementSyntax() = default;
 	};
 }

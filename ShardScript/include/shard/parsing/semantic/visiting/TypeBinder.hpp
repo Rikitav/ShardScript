@@ -6,6 +6,7 @@
 #include <shard/parsing/analysis/DiagnosticsContext.hpp>
 #include <shard/parsing/semantic/SemanticModel.hpp>
 
+#include <shard/syntax/SymbolFactory.hpp>
 #include <shard/syntax/symbols/TypeSymbol.hpp>
 
 #include <shard/syntax/nodes/CompilationUnitSyntax.hpp>
@@ -37,9 +38,12 @@ namespace shard
 {
 	class SHARD_API TypeBinder : public SyntaxVisitor, public ScopeVisitor
 	{
+		SymbolFactory Factory;
+
+	public:
 	public:
 		inline TypeBinder(shard::SemanticModel& model, shard::DiagnosticsContext& diagnostics)
-			: SyntaxVisitor(model, diagnostics), ScopeVisitor(model.Table.get()) { }
+			: SyntaxVisitor(model, diagnostics), ScopeVisitor(model.Table.get()), Factory(model.Table.get()) { }
 
 		void VisitCompilationUnit(shard::CompilationUnitSyntax *const node) override;
 		void VisitUsingDirective(shard::UsingDirectiveSyntax *const node) override;

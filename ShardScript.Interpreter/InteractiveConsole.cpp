@@ -14,13 +14,13 @@ using namespace shard;
 static std::unique_ptr<MethodDeclarationSyntax> InitImplicitEntryPoint(SyntaxNode* parent)
 {
 	MemberDeclarationInfo info;
-	info.ReturnType = new PredefinedTypeSyntax(SyntaxToken(TokenType::VoidKeyword, L"void", TextLocation(), false), nullptr);
+	info.ReturnType = std::make_unique<PredefinedTypeSyntax>(SyntaxToken(TokenType::VoidKeyword, L"void", TextLocation(), false), nullptr);
 	info.Identifier = SyntaxToken(TokenType::Identifier, L"__interactive_console__", TextLocation());
 	info.Modifiers = { SyntaxToken(TokenType::StaticKeyword, L"static", TextLocation(), false) };
 
 	auto implMethod = std::make_unique<MethodDeclarationSyntax>(info, parent);
-	implMethod->Params = new ParametersListSyntax(parent);
-	implMethod->Body = new StatementsBlockSyntax(implMethod.get());
+	implMethod->ParametersList = std::make_unique<ParametersListSyntax>(parent);
+	implMethod->Body = std::make_unique<StatementsBlockSyntax>(implMethod.get());
 	return implMethod;
 }
 
@@ -239,7 +239,7 @@ StatementSyntax* InteractiveConsole::ReadStatement(LexicalBuffer& sequenceReader
 	{
 		// Read as expression
 		ReadMultilineInput(sequenceReader, true);
-		ExpressionStatementSyntax* exprStatement = new ExpressionStatementSyntax(nullptr, InteractiveMethod->Body);
+		ExpressionStatementSyntax* exprStatement = new ExpressionStatementSyntax(InteractiveMethod->Body.get());
 		exprStatement->Expression = Parser.ReadExpression(sequenceReader, exprStatement, 0);
 
 		if (exprStatement->Expression == nullptr)
@@ -257,11 +257,11 @@ StatementSyntax* InteractiveConsole::ReadStatement(LexicalBuffer& sequenceReader
 	if (IsLoopKeyword(firstToken.Type) || IsConditionalKeyword(firstToken.Type) || IsFunctionalKeyword(firstToken.Type))
 	{
 		ReadMultilineInput(sequenceReader, false);
-		return Parser.ReadKeywordStatement(sequenceReader, InteractiveMethod->Body);
+		return Parser.ReadKeywordStatement(sequenceReader, InteractiveMethod->Body.get()).release();
 	}
 
 	// Read as statement
-	return Parser.ReadStatement(sequenceReader, InteractiveMethod->Body);
+	return Parser.ReadStatement(sequenceReader, InteractiveMethod->Body.get()).release();
 }
 
 MemberDeclarationSyntax* InteractiveConsole::ReadMember(LexicalBuffer& sequenceReader)
@@ -270,7 +270,7 @@ MemberDeclarationSyntax* InteractiveConsole::ReadMember(LexicalBuffer& sequenceR
 		return nullptr;
 
 	ReadMultilineInput(sequenceReader, false);
-	MemberDeclarationSyntax* member = Parser.ReadMemberDeclaration(sequenceReader, InteractiveClass);
+	MemberDeclarationSyntax* member = Parser.ReadMemberDeclaration(sequenceReader, InteractiveClass).release();
 
 	if (member->Kind != SyntaxKind::MethodDeclaration)
 		Diagnostics.ReportError(member->DeclareToken, L"Only methods compilation supported");
@@ -280,7 +280,7 @@ MemberDeclarationSyntax* InteractiveConsole::ReadMember(LexicalBuffer& sequenceR
 
 void InteractiveConsole::EvaluateUsing(LexicalBuffer& buffer)
 {
- 	UsingDirectiveSyntax* directive = Parser.ReadUsingDirective(buffer, nullptr);
+	auto directive = Parser.ReadUsingDirective(buffer, nullptr);
 	NamespaceNode* node = ParentSemanticModel.Namespaces->Root;
 
 	for (SyntaxToken token : directive->TokensList)
@@ -295,7 +295,7 @@ void InteractiveConsole::EvaluateUsing(LexicalBuffer& buffer)
 
 	int counter = 0;
 	std::wcout << L"Loaded : ";
-	for (const auto& symbol : node->Types)
+	for (const auto& symbol : node->Members)
 	{
 		compilationContext->GetSemanticAnalyzer().AddSymbol(symbol);
 		std::wcout << symbol->Name << L", ";
@@ -403,7 +403,7 @@ void InteractiveConsole::Run()
 			if (statement == nullptr)
 				continue;
 
-			InteractiveMethod->Body->Statements.push_back(statement);
+			InteractiveMethod->Body->Statements.push_back(std::unique_ptr<StatementSyntax>(statement));
 
 			// Re-analyze syntax tree
 			Semanter.Analyze(ParentSyntaxTree, ParentSemanticModel);

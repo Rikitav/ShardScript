@@ -8,27 +8,25 @@
 #include <shard/syntax/nodes/AttributeSyntax.hpp>
 
 #include <vector>
+#include <memory>
 
 namespace shard
 {
 	class SHARD_API MemberDeclarationSyntax : public SyntaxNode
 	{
 	public:
-		std::vector<AttributeSyntax*> Attributes;
 		std::vector<SyntaxToken> Modifiers;
 		SyntaxToken DeclareToken;
 		SyntaxToken IdentifierToken;
-		TypeParametersListSyntax* TypeParameters = nullptr;
+
+		std::vector<std::unique_ptr<AttributeSyntax>> Attributes;
+		std::unique_ptr<TypeParametersListSyntax> TypeParameters = nullptr;
 
 		inline MemberDeclarationSyntax(const SyntaxKind kind, SyntaxNode *const parent)
 			: SyntaxNode(kind, parent) { }
 
 		inline MemberDeclarationSyntax(const MemberDeclarationSyntax& other) = delete;
 
-		inline virtual ~MemberDeclarationSyntax()
-		{
-			for (AttributeSyntax* attr : Attributes)
-				delete attr;
-		}
+		inline virtual ~MemberDeclarationSyntax() = default;
 	};
 }

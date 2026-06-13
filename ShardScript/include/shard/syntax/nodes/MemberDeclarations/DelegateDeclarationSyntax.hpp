@@ -10,6 +10,8 @@
 #include <shard/syntax/SyntaxNode.hpp>
 #include <shard/syntax/SyntaxToken.hpp>
 
+#include <memory>
+
 namespace shard
 {
 	class SHARD_API DelegateDeclarationSyntax : public MemberDeclarationSyntax
@@ -17,31 +19,25 @@ namespace shard
 	public:
 		SyntaxToken DelegateToken;
 		SyntaxToken Semicolon;
-		TypeSyntax* ReturnType = nullptr;
-		ParametersListSyntax* Params = nullptr;
+
+		std::unique_ptr<TypeSyntax> ReturnType = nullptr;
+		std::unique_ptr<ParametersListSyntax> ParametersList = nullptr;
 
 		inline DelegateDeclarationSyntax(SyntaxNode *const parent)
 			: MemberDeclarationSyntax(SyntaxKind::DelegateDeclaration, parent) { }
 
-		inline DelegateDeclarationSyntax(const DelegateDeclarationSyntax& other) = delete;
-
 		inline DelegateDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) : MemberDeclarationSyntax(SyntaxKind::DelegateDeclaration, parent)
 		{
-			Attributes = info.Attributes;
+			Attributes = std::move(info.Attributes);
 			Modifiers = info.Modifiers;
 			DelegateToken = info.DeclareType;
-			ReturnType = info.ReturnType;
+			ReturnType = std::move(info.ReturnType);
 			IdentifierToken = info.Identifier;
-			TypeParameters = info.Generics;
+			TypeParameters = std::move(info.Generics);
 		}
 
-		inline virtual ~DelegateDeclarationSyntax()
-		{
-			if (ReturnType != nullptr)
-				delete ReturnType;
+		inline DelegateDeclarationSyntax(const DelegateDeclarationSyntax& other) = delete;
 
-			if (Params != nullptr)
-				delete Params;
-		}
+		inline virtual ~DelegateDeclarationSyntax() = default;
 	};
 }

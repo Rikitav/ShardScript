@@ -158,6 +158,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		case OpCode::NEWDELEGATE:
 		{
 			DelegateTypeSymbol* type = decoder.AbsordDelegateTypeSymbol();
+
 			ObjectInstance* instance = InstantiateDelegate(type);
 			frame->PushStack(instance);
 			break;
@@ -188,8 +189,8 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		case OpCode::STOREFIELD:
 		{
 			FieldSymbol* field = decoder.AbsorbFieldSymbol();
-			ObjectInstance* instance = frame->PopStack();
 			ObjectInstance* fieldValue = frame->PopStack();
+			ObjectInstance* instance = frame->PopStack();
 
 			instance->SetField(field, fieldValue, frame);
 			garbageCollector.CollectInstance(fieldValue);
@@ -731,6 +732,38 @@ void VirtualMachine::InvokeMethod(MethodSymbol* method, std::initializer_list<Ob
 
 	vm->InvokeMethodInternal(method, currentFrame);
 	vm->PopFrame();
+}
+
+ObjectInstance* VirtualMachine::InvokeMethod(MethodSymbol* method, ObjectInstance** args, size_t count) const
+{
+	VirtualMachine* vm = const_cast<VirtualMachine*>(this);
+
+	bool pushedRootFrame = false;
+	CallStackFrame* callingFrame = vm->CurrentFrame();
+	if (callingFrame == nullptr)
+	{
+		MethodSymbol* rootMethod = program.EntryPoint != nullptr ? program.EntryPoint : method;
+		callingFrame = vm->PushFrame(rootMethod);
+		pushedRootFrame = true;
+	}
+
+	CallStackFrame* currentFrame = vm->PushFrame(method);
+
+	for (size_t i = 0; i < count; i++)
+		callingFrame->PushStack(args[i]);
+
+	vm->InvokeMethodInternal(method, currentFrame);
+
+	ObjectInstance* result = nullptr;
+	if (method->ReturnType != nullptr && method->ReturnType != SymbolTable::Primitives::Void && !callingFrame->EvalStack.empty())
+		result = callingFrame->PopStack();
+
+	vm->PopFrame();
+
+	if (pushedRootFrame)
+		vm->PopFrame();
+
+	return result;
 }
 
 void VirtualMachine::RaiseException(ObjectInstance* exceptionReg) const

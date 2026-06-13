@@ -42,6 +42,7 @@
 #include <shard/parsing/SemanticAnalyzer.hpp>
 
 // --- Syntax / Symbols ---
+#include <shard/syntax/symbols/MemberSymbol.hpp>
 #include <shard/syntax/symbols/TypeSymbol.hpp>
 #include <shard/syntax/symbols/NamespaceSymbol.hpp>
 #include <shard/syntax/symbols/ParameterSymbol.hpp>

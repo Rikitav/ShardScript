@@ -261,7 +261,7 @@ void AbstractEmiter::SetEntryPoint()
 	{
 		for (MethodSymbol* entry : EntryPointCandidates)
 		{
-			MethodDeclarationSyntax* decl = static_cast<MethodDeclarationSyntax*>(Table->GetSyntaxNode(entry).value_or(nullptr));
+			MethodDeclarationSyntax* decl = static_cast<MethodDeclarationSyntax*>(Table->LookupNode(entry).value_or(nullptr));
 			Diagnostics.ReportError(decl->IdentifierToken, L"Script cannot have multiple entry points");
 		}
 
@@ -291,7 +291,7 @@ void AbstractEmiter::VisitArgumentsList(ArgumentsListSyntax* node)
 
 	// reverse itteration for method stack loading
 	for (auto riter = node->Arguments.rbegin(); riter != node->Arguments.rend(); riter++)
-		VisitArgument(*riter);
+		VisitArgument((*riter).get());
 }
 
 void AbstractEmiter::VisitMethodDeclaration(MethodDeclarationSyntax* const node)
@@ -307,7 +307,7 @@ void AbstractEmiter::VisitMethodDeclaration(MethodDeclarationSyntax* const node)
 	{
 		size_t reserve = node->Body->Statements.size() * ReserveMultiplier;
 		GeneratingFor->ExecutableByteCode.reserve(reserve);
-		VisitStatementsBlock(node->Body);
+		VisitStatementsBlock(node->Body.get());
 	}
 
 	if (GeneratingFor->Name == L"Main")
@@ -356,7 +356,7 @@ void AbstractEmiter::VisitConstructorDeclaration(ConstructorDeclarationSyntax* c
 	{
 		size_t reserve = node->Body->Statements.size() * ReserveMultiplier;
 		GeneratingFor->ExecutableByteCode.reserve(reserve);
-		VisitStatementsBlock(node->Body);
+		VisitStatementsBlock(node->Body.get());
 	}
 
 	GeneratingFor->ExecutableByteCode.shrink_to_fit();
@@ -378,7 +378,7 @@ void AbstractEmiter::VisitAccessorDeclaration(AccessorDeclarationSyntax* const n
 		{
 			size_t reserve = node->Body->Statements.size() * ReserveMultiplier;
 			GeneratingFor->ExecutableByteCode.reserve(reserve);
-			VisitStatementsBlock(node->Body);
+			VisitStatementsBlock(node->Body.get());
 		}
 	}
 
@@ -388,12 +388,12 @@ void AbstractEmiter::VisitAccessorDeclaration(AccessorDeclarationSyntax* const n
 
 void AbstractEmiter::VisitExpressionStatement(ExpressionStatementSyntax* const node)
 {
-	VisitExpression(node->Expression);
+	VisitExpression(node->Expression.get());
 	switch (node->Expression->Kind)
 	{
 		case SyntaxKind::InvokationExpression:
 		{
-			InvokationExpressionSyntax* invokation = static_cast<InvokationExpressionSyntax*>(node->Expression);
+			InvokationExpressionSyntax* invokation = static_cast<InvokationExpressionSyntax*>(node->Expression.get());
 			if (invokation->Symbol->ReturnType != SymbolTable::Primitives::Void && PopExpressionStatement)
 				Encoder.EmitPop(GeneratingFor->ExecutableByteCode);
 
@@ -405,19 +405,19 @@ void AbstractEmiter::VisitExpressionStatement(ExpressionStatementSyntax* const n
 void AbstractEmiter::VisitVariableStatement(VariableStatementSyntax* const node)
 {
 	VariableSymbol* var = LookupSymbol<VariableSymbol>(node).value_or(nullptr);
-	VisitExpression(node->Expression);
+	VisitExpression(node->Expression.get());
 	Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, var->SlotIndex);
 }
 
 void AbstractEmiter::VisitReturnStatement(ReturnStatementSyntax* const node)
 {
-	VisitExpression(node->Expression);
+	VisitExpression(node->Expression.get());
 	Encoder.EmitReturn(GeneratingFor->ExecutableByteCode);
 }
 
 void AbstractEmiter::VisitThrowStatement(ThrowStatementSyntax* const node)
 {
-	VisitExpression(node->Expression);
+	VisitExpression(node->Expression.get());
 	Encoder.EmitThrow(GeneratingFor->ExecutableByteCode);
 }
 
@@ -445,14 +445,14 @@ void AbstractEmiter::VisitWhileStatement(WhileStatementSyntax* const node)
 	scope.LoopStart = GeneratingFor->ExecutableByteCode.size();
 
 	// Emiting looping condition expression
-	VisitExpression(node->ConditionExpression);
+	VisitExpression(node->ConditionExpression.get());
 
 	// Emiting jump to loop end if condition is false
 	scope.LoopEndBacktracks.push_back(GeneratingFor->ExecutableByteCode.size());
 	Encoder.EmitJumpFalse(GeneratingFor->ExecutableByteCode, 0);
 
 	// Emiting loop body
-	VisitStatementsBlock(node->StatementsBlock);
+	VisitStatementsBlock(node->StatementsBlock.get());
 
 	// Getting loop block ending and miting looping jump
 	scope.BlockEnd = GeneratingFor->ExecutableByteCode.size();
@@ -482,14 +482,14 @@ void AbstractEmiter::VisitUntilStatement(UntilStatementSyntax* const node)
 	scope.LoopStart = GeneratingFor->ExecutableByteCode.size();
 
 	// Emiting looping condition expression
-	VisitExpression(node->ConditionExpression);
+	VisitExpression(node->ConditionExpression.get());
 
 	// Emiting jump to loop end if condition is false
 	scope.LoopEndBacktracks.push_back(GeneratingFor->ExecutableByteCode.size());
 	Encoder.EmitJumpTrue(GeneratingFor->ExecutableByteCode, 0);
 
 	// Emiting loop body
-	VisitStatementsBlock(node->StatementsBlock);
+	VisitStatementsBlock(node->StatementsBlock.get());
 
 	// Getting loop block ending and miting looping jump
 	scope.BlockEnd = GeneratingFor->ExecutableByteCode.size();
@@ -516,21 +516,21 @@ void AbstractEmiter::VisitForStatement(ForStatementSyntax* const node)
 	LoopScope& scope = Loops.top();
 
 	// Emiting initializer expression
-	VisitStatement(node->InitializerStatement);
+	VisitStatement(node->InitializerStatement.get());
 
 	// Getting loop starting position, current cursor pos
 	scope.LoopStart = GeneratingFor->ExecutableByteCode.size();
 
 	// Emiting looping condition expression
-	VisitExpression(node->ConditionExpression);
+	VisitExpression(node->ConditionExpression.get());
 
 	// Emiting jump to loop end if condition is false
 	scope.LoopEndBacktracks.push_back(GeneratingFor->ExecutableByteCode.size());
 	Encoder.EmitJumpFalse(GeneratingFor->ExecutableByteCode, 0);
 
 	// Emiting loop body
-	VisitStatementsBlock(node->StatementsBlock);
-	VisitStatement(node->AfterRepeatStatement);
+	VisitStatementsBlock(node->StatementsBlock.get());
+	VisitStatement(node->AfterRepeatStatement.get());
 
 	// Getting loop block ending and miting looping jump
 	scope.BlockEnd = GeneratingFor->ExecutableByteCode.size();
@@ -560,7 +560,7 @@ void AbstractEmiter::VisitForEachStatement(ForEachStatementSyntax* const node)
 	uint16_t indexSlot = base + GeneratingFor->AddVariableCount();
 	uint16_t lengthSlot = base + GeneratingFor->AddVariableCount();
 
-	VisitExpression(node->RangeExpression);
+	VisitExpression(node->RangeExpression.get());
 	Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, arraySlot);
 
 	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, arraySlot);
@@ -590,7 +590,7 @@ void AbstractEmiter::VisitForEachStatement(ForEachStatementSyntax* const node)
 	else
 		Encoder.EmitPop(GeneratingFor->ExecutableByteCode);
 
-	VisitStatementsBlock(node->StatementsBlock);
+	VisitStatementsBlock(node->StatementsBlock.get());
 
 	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, indexSlot);
 	Encoder.EmitLoadConstInt64(GeneratingFor->ExecutableByteCode, 1);
@@ -627,13 +627,13 @@ void AbstractEmiter::VisitIfStatement(IfStatementSyntax* const node)
 	}
 
 	ClauseScope& scope = Clauses.top();
-	VisitStatement(node->ConditionExpression);
+	VisitStatement(node->ConditionExpression.get());
 
 	size_t jumpAddress = GeneratingFor->ExecutableByteCode.size();
 	Encoder.EmitJumpFalse(GeneratingFor->ExecutableByteCode, 0);
 	scope.ClauseEndBacktracks.push_back(jumpAddress);
 
-	VisitStatementsBlock(node->StatementsBlock);
+	VisitStatementsBlock(node->StatementsBlock.get());
 
 	if (node->NextStatement != nullptr)
 	{
@@ -641,7 +641,7 @@ void AbstractEmiter::VisitIfStatement(IfStatementSyntax* const node)
 		Encoder.EmitJump(GeneratingFor->ExecutableByteCode, 0);
 		scope.ClauseEndBacktracks.push_back(jumpAddress);
 
-		VisitConditionalClause(node->NextStatement);
+		VisitConditionalClause(node->NextStatement.get());
 	}
 
 	if (isFirst)
@@ -663,13 +663,13 @@ void AbstractEmiter::VisitUnlessStatement(UnlessStatementSyntax* const node)
 	}
 
 	ClauseScope& scope = Clauses.top();
-	VisitStatement(node->ConditionExpression);
+	VisitStatement(node->ConditionExpression.get());
 
 	size_t jumpAddress = GeneratingFor->ExecutableByteCode.size();
 	Encoder.EmitJumpTrue(GeneratingFor->ExecutableByteCode, 0);
 	scope.ClauseEndBacktracks.push_back(jumpAddress);
 
-	VisitStatementsBlock(node->StatementsBlock);
+	VisitStatementsBlock(node->StatementsBlock.get());
 
 	if (node->NextStatement != nullptr)
 	{
@@ -677,7 +677,7 @@ void AbstractEmiter::VisitUnlessStatement(UnlessStatementSyntax* const node)
 		Encoder.EmitJump(GeneratingFor->ExecutableByteCode, 0);
 		scope.ClauseEndBacktracks.push_back(jumpAddress);
 
-		VisitConditionalClause(node->NextStatement);
+		VisitConditionalClause(node->NextStatement.get());
 	}
 
 	if (isFirst)
@@ -692,7 +692,7 @@ void AbstractEmiter::VisitUnlessStatement(UnlessStatementSyntax* const node)
 
 void AbstractEmiter::VisitElseStatement(ElseStatementSyntax* const node)
 {
-	VisitStatementsBlock(node->StatementsBlock);
+	VisitStatementsBlock(node->StatementsBlock.get());
 }
 
 void AbstractEmiter::VisitLiteralExpression(LiteralExpressionSyntax* const node)
@@ -756,14 +756,14 @@ void AbstractEmiter::VisitObjectCreationExpression(ObjectExpressionSyntax* const
 		}
 	}
 
-	VisitArgumentsList(node->ArgumentsList);
+	VisitArgumentsList(node->ArgumentsList.get());
 	Encoder.EmitNewObject(GeneratingFor->ExecutableByteCode, node->TypeSymbol, node->CtorSymbol);
 }
 
 void AbstractEmiter::VisitCollectionExpression(CollectionExpressionSyntax* const node)
 {
 	for (auto riter = node->ValuesExpressions.rbegin(); riter != node->ValuesExpressions.rend(); riter++)
-		VisitExpression(*riter);
+		VisitExpression((*riter).get());
 
 	Encoder.EmitNewArray(GeneratingFor->ExecutableByteCode, node->Symbol);
 }
@@ -777,10 +777,10 @@ void AbstractEmiter::VisitRangeExpression(RangeExpressionSyntax* const node)
 	uint16_t arraySlot = base + GeneratingFor->AddVariableCount();
 	uint16_t indexSlot = base + GeneratingFor->AddVariableCount();
 
-	VisitExpression(node->Right);
+	VisitExpression(node->Right.get());
 	Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, upperSlot);
 
-	VisitExpression(node->Left);
+	VisitExpression(node->Left.get());
 	Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, lowerSlot);
 
 	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, upperSlot);
@@ -833,7 +833,7 @@ void AbstractEmiter::VisitLambdaExpression(LambdaExpressionSyntax* const node)
 	
 	size_t reserve = node->Body->Statements.size() * 20;
 	GeneratingFor->ExecutableByteCode.reserve(reserve);
-	VisitStatementsBlock(node->Body);
+	VisitStatementsBlock(node->Body.get());
 
 	GeneratingFor->ExecutableByteCode.shrink_to_fit();
 	GeneratingFor = previous;
@@ -841,17 +841,17 @@ void AbstractEmiter::VisitLambdaExpression(LambdaExpressionSyntax* const node)
 
 void AbstractEmiter::VisitTernaryExpression(TernaryExpressionSyntax* const node)
 {
-	VisitExpression(node->Condition);
+	VisitExpression(node->Condition.get());
 
 	size_t jumpFalseAddress = GeneratingFor->ExecutableByteCode.size();
 	Encoder.EmitJumpFalse(GeneratingFor->ExecutableByteCode, 0);
 
-	VisitExpression(node->Left);
+	VisitExpression(node->Left.get());
 	size_t jumpEndAddress = GeneratingFor->ExecutableByteCode.size();
 	Encoder.EmitJump(GeneratingFor->ExecutableByteCode, 0);
 
 	size_t rightAddress = GeneratingFor->ExecutableByteCode.size();
-	VisitExpression(node->Right);
+	VisitExpression(node->Right.get());
 	size_t ternaryEndAddress = GeneratingFor->ExecutableByteCode.size();
 
 	ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, jumpFalseAddress + sizeof(OpCode), &rightAddress, sizeof(size_t));
@@ -866,13 +866,13 @@ void AbstractEmiter::VisitUnaryExpression(UnaryExpressionSyntax* const node)
 		return;
 	}
 
-	VisitExpression(node->Expression);
+	VisitExpression(node->Expression.get());
 	EmitUnaryOperation(node->OperatorToken.Type, Encoder, GeneratingFor->ExecutableByteCode, node->IsRightDetermined);
 }
 
 void AbstractEmiter::VisitUnaryAssignExpression(UnaryExpressionSyntax* const node)
 {
-	MemberAccessExpressionSyntax* memberExpression = static_cast<MemberAccessExpressionSyntax*>(node->Expression);
+	MemberAccessExpressionSyntax* memberExpression = static_cast<MemberAccessExpressionSyntax*>(node->Expression.get());
 
 	if (memberExpression->ToParameter)
 	{
@@ -915,14 +915,14 @@ void AbstractEmiter::VisitBinaryExpression(BinaryExpressionSyntax* const node)
 		return;
 	}
 
-	VisitExpression(node->Left);
-	VisitExpression(node->Right);
+	VisitExpression(node->Left.get());
+	VisitExpression(node->Right.get());
 	EmitBinaryOperation(node->OperatorToken.Type, Encoder, GeneratingFor->ExecutableByteCode);
 }
 
 void AbstractEmiter::VisitBinaryAssignExpression(BinaryExpressionSyntax* const node)
 {
-	MemberAccessExpressionSyntax* memberExpression = static_cast<MemberAccessExpressionSyntax*>(node->Left);
+	MemberAccessExpressionSyntax* memberExpression = static_cast<MemberAccessExpressionSyntax*>(node->Left.get());
 	if (memberExpression->ToParameter)
 	{
 		Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, memberExpression->ToParameter->SlotIndex);
@@ -937,8 +937,8 @@ void AbstractEmiter::VisitBinaryAssignExpression(BinaryExpressionSyntax* const n
 
 	if (memberExpression->ToProperty != nullptr)
 	{
-		VisitExpression(node->Right);
-		VisitExpression(memberExpression->PreviousExpression);
+		VisitExpression(memberExpression->PreviousExpression.get());
+		VisitExpression(node->Right.get());
 		Encoder.EmitCallMethodSymbol(GeneratingFor->ExecutableByteCode, memberExpression->ToProperty->Setter);
 		return;
 	}
@@ -951,8 +951,8 @@ void AbstractEmiter::VisitBinaryAssignExpression(BinaryExpressionSyntax* const n
 			return;
 		}
 
-		VisitExpression(node->Right);
-		VisitExpression(memberExpression->PreviousExpression);
+		VisitExpression(memberExpression->PreviousExpression.get());
+		VisitExpression(node->Right.get());
 		Encoder.EmitStoreField(GeneratingFor->ExecutableByteCode, memberExpression->ToField);
 		return;
 	}
@@ -972,18 +972,18 @@ void AbstractEmiter::VisitInvocationExpression(InvokationExpressionSyntax* const
 		}
 	}
 
-	VisitArgumentsList(node->ArgumentsList);
-	if (!node->Symbol->IsStatic)
-		VisitExpression(node->PreviousExpression);
+	VisitArgumentsList(node->ArgumentsList.get());
+	if (node->PreviousExpression != nullptr)
+		VisitExpression(node->PreviousExpression.get());
 
 	Encoder.EmitCallMethodSymbol(GeneratingFor->ExecutableByteCode, node->Symbol);
 }
 
 void AbstractEmiter::VisitIndexatorExpression(IndexatorExpressionSyntax* const node)
 {
-	VisitExpression(node->PreviousExpression);
+	VisitExpression(node->PreviousExpression.get());
 	if (!node->ToProperty->IsStatic)
-		VisitExpression(node->PreviousExpression);
+		VisitExpression(node->PreviousExpression.get());
 
 	Encoder.EmitCallMethodSymbol(GeneratingFor->ExecutableByteCode, node->ToProperty->Getter);
 	return;
@@ -1011,14 +1011,14 @@ void AbstractEmiter::VisitMemberAccessExpression(MemberAccessExpressionSyntax* c
 			return;
 		}
 
-		VisitExpression(node->PreviousExpression);
+		VisitExpression(node->PreviousExpression.get());
 		Encoder.EmitLoadField(GeneratingFor->ExecutableByteCode, node->ToField);
 		return;
 	}
 
 	if (node->ToProperty != nullptr)
 	{
-		VisitExpression(node->PreviousExpression);
+		VisitExpression(node->PreviousExpression.get());
 		Encoder.EmitCallMethodSymbol(GeneratingFor->ExecutableByteCode, node->ToProperty->Getter);
 		return;
 	}

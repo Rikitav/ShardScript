@@ -9,6 +9,8 @@
 #include <shard/syntax/SyntaxToken.hpp>
 #include <shard/syntax/SyntaxNode.hpp>
 
+#include <memory>
+
 namespace shard
 {
 	class SHARD_API WhileStatementSyntax : public KeywordStatementSyntax
@@ -17,21 +19,14 @@ namespace shard
 		SyntaxToken OpenCurlToken;
 		SyntaxToken CloseCurlToken;
 
-		ExpressionSyntax* ConditionExpression = nullptr;
-		StatementsBlockSyntax* StatementsBlock = nullptr;
+		std::unique_ptr<ExpressionSyntax> ConditionExpression = nullptr;
+		std::unique_ptr<StatementsBlockSyntax> StatementsBlock = nullptr;
 
 		inline WhileStatementSyntax(SyntaxNode *const parent)
 			: KeywordStatementSyntax(SyntaxKind::WhileStatement, parent) { }
 
 		inline WhileStatementSyntax(const WhileStatementSyntax&) = delete;
 
-		inline virtual ~WhileStatementSyntax()
-		{
-			if (ConditionExpression != nullptr)
-				delete ConditionExpression;
-
-			if (StatementsBlock != nullptr)
-				delete StatementsBlock;
-		}
+		inline virtual ~WhileStatementSyntax() = default;
 	};
 }

@@ -10,6 +10,7 @@
 #include <shard/syntax/nodes/Types/DelegateTypeSyntax.hpp>
 #include <shard/syntax/nodes/Types/ArrayTypeSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/Loops/ForEachStatementSyntax.hpp>
 #include <shard/syntax/nodes/StatementsBlockSyntax.hpp>
 
 #include <shard/syntax/symbols/DelegateTypeSymbol.hpp>
@@ -25,6 +26,7 @@
 #include <shard/syntax/symbols/PropertySymbol.hpp>
 #include <shard/syntax/symbols/MethodSymbol.hpp>
 
+#include <memory>
 #include <sstream>
 #include <algorithm>
 
@@ -277,61 +279,51 @@ void SymbolFactory::SetAccesibility(FieldSymbol* symbol, std::vector<SyntaxToken
 StructSymbol* SymbolFactory::Struct(StructDeclarationSyntax* node)
 {
 	std::wstring structName = node->IdentifierToken.Word;
-	StructSymbol* symbol = new StructSymbol(structName);
-	SetAccesibility(symbol, node->Modifiers);
+	auto symbol = std::make_unique<StructSymbol>(structName);
+	SetAccesibility(symbol.get(), node->Modifiers);
 
-	return symbol;
+	return static_cast<StructSymbol*>(Table->BindSymbol(node, std::move(symbol)));
 }
 
 ClassSymbol* SymbolFactory::Class(ClassDeclarationSyntax* node)
 {
 	std::wstring className = node->IdentifierToken.Word;
-	ClassSymbol* symbol = new ClassSymbol(className);
-	SetAccesibility(symbol, node->Modifiers);
+	auto symbol = std::make_unique<ClassSymbol>(className);
+	SetAccesibility(symbol.get(), node->Modifiers);
 
-	return symbol;
+	return static_cast<ClassSymbol*>(Table->BindSymbol(node, std::move(symbol)));
 }
 
 FieldSymbol* SymbolFactory::Field(FieldDeclarationSyntax* node)
 {
 	std::wstring fieldName = node->IdentifierToken.Word;
-	FieldSymbol* symbol = new FieldSymbol(fieldName);
-	symbol->DefaultValueExpression = node->InitializerExpression;
-	SetAccesibility(symbol, node->Modifiers);
+	auto symbol = std::make_unique<FieldSymbol>(fieldName);
+	symbol->DefaultValueExpression = node->InitializerExpression.get();
+	SetAccesibility(symbol.get(), node->Modifiers);
 
-	return symbol;
+	return static_cast<FieldSymbol*>(Table->BindSymbol(node, std::move(symbol)));
 }
 
 PropertySymbol* SymbolFactory::Property(PropertyDeclarationSyntax* node)
 {
 	std::wstring propertyName = node->IdentifierToken.Word;
-	PropertySymbol* symbol = new PropertySymbol(propertyName);
-	SetAccesibility(symbol, node->Modifiers);
-	symbol->DefaultValueExpression = node->InitializerExpression;
+	auto symbol = std::make_unique<PropertySymbol>(propertyName);
+	SetAccesibility(symbol.get(), node->Modifiers);
+	symbol->DefaultValueExpression = node->InitializerExpression.get();
 
-	// Create backing field for auto-properties
-	bool isAutoProperty =
-		(node->Getter != nullptr && node->Getter->Body == nullptr) ||
-		(node->Setter != nullptr && node->Setter->Body == nullptr);
-
-	if (isAutoProperty)
-		symbol->GenerateBackingField();
-
-	return symbol;
+	return static_cast<PropertySymbol*>(Table->BindSymbol(node, std::move(symbol)));
 }
 
 AccessorSymbol* SymbolFactory::Accessor(AccessorDeclarationSyntax* node, PropertySymbol* propertySymbol, bool setProperty)
 {
 	std::wstring accessorName = propertySymbol->Name + L"_" + node->KeywordToken.Word;
-	AccessorSymbol* symbol = new AccessorSymbol(accessorName);
-	symbol->Accesibility = SymbolAccesibility::Public;
-	symbol->IsStatic = propertySymbol->IsStatic;
-	SetAccesibility(symbol, node->Modifiers);
+	auto symbol = std::make_unique<AccessorSymbol>(accessorName);
 
-	if (symbol->IsExtern)
-		symbol->HandleType = MethodHandleType::External;
-	else
-		symbol->HandleType = MethodHandleType::Body;
+	SetAccesibility(symbol.get(), node->Modifiers);
+	symbol->IsStatic = propertySymbol->IsStatic;
+	symbol->HandleType = symbol->IsExtern
+		? MethodHandleType::External
+		: MethodHandleType::Body;
 
 	if (setProperty)
 	{
@@ -339,108 +331,116 @@ AccessorSymbol* SymbolFactory::Accessor(AccessorDeclarationSyntax* node, Propert
 		{
 			case TokenType::GetKeyword:
 			{
-				propertySymbol->Getter = symbol;
+				propertySymbol->Getter = symbol.get();
 				break;
 			}
 
 			case TokenType::SetKeyword:
 			{
-				propertySymbol->Setter = symbol;
+				propertySymbol->Setter = symbol.get();
 				break;
 			}
 		}
 	}
 
-	return symbol;
+	return static_cast<AccessorSymbol*>(Table->BindSymbol(node, std::move(symbol)));
 }
 
 MethodSymbol* SymbolFactory::Method(MethodDeclarationSyntax* node)
 {
     std::wstring methodName = node->IdentifierToken.Word;
-    MethodSymbol* symbol = new MethodSymbol(methodName);
-    SetAccesibility(symbol, node->Modifiers);
+    auto symbol = std::make_unique<MethodSymbol>(methodName);
 
-	if (symbol->IsExtern)
-		symbol->HandleType = MethodHandleType::External;
-	else
-		symbol->HandleType = MethodHandleType::Body;
+    SetAccesibility(symbol.get(), node->Modifiers);
+	symbol->HandleType = symbol->IsExtern
+		? MethodHandleType::External
+		: MethodHandleType::Body;;
 
-    for (ParameterSyntax* parameter : node->Params->Parameters)
-    {
-        ParameterSymbol* paramSymbol = new ParameterSymbol(parameter->Identifier.Word);
-        symbol->Parameters.push_back(paramSymbol);
-    }
-
-    return symbol;
+	return static_cast<MethodSymbol*>(Table->BindSymbol(node, std::move(symbol)));
 }
 
 ConstructorSymbol* SymbolFactory::Constructor(ConstructorDeclarationSyntax* node)
 {
 	std::wstring methodName = node->IdentifierToken.Word;
-	ConstructorSymbol* symbol = new ConstructorSymbol(methodName);
-	symbol->ReturnType = shard::SymbolTable::Primitives::Void;
-	SetAccesibility(symbol, node->Modifiers);
+	auto symbol = std::make_unique<ConstructorSymbol>(methodName);
+	symbol->ReturnType = SymbolTable::Primitives::Void;
 
-	if (symbol->IsExtern)
-		symbol->HandleType = MethodHandleType::External;
-	else
-		symbol->HandleType = MethodHandleType::Body;
+	SetAccesibility(symbol.get(), node->Modifiers);
+	symbol->HandleType = symbol->IsExtern
+		? MethodHandleType::External
+		: MethodHandleType::Body;
 
-	for (ParameterSyntax* parameter : node->Params->Parameters)
-	{
-		ParameterSymbol* paramSymbol = new ParameterSymbol(parameter->Identifier.Word);
-		symbol->Parameters.push_back(paramSymbol);
-	}
-
-	return symbol;
+	return static_cast<ConstructorSymbol*>(Table->BindSymbol(node, std::move(symbol)));
 }
 
 DelegateTypeSymbol* SymbolFactory::Delegate(DelegateDeclarationSyntax* node)
 {
-	MethodSymbol* anonymousMethod = new MethodSymbol(L"");
+	// Anonymous method symbol
+	auto anonymousMethod = std::make_unique<MethodSymbol>(L"Delegate");
 	anonymousMethod->HandleType = MethodHandleType::Lambda;
 	anonymousMethod->Accesibility = SymbolAccesibility::Public;
 	anonymousMethod->ReturnType = node->ReturnType->Symbol;
 	anonymousMethod->IsStatic = true;
 
-	std::wstring delegateName = node->IdentifierToken.Word;
-	DelegateTypeSymbol* symbol = new DelegateTypeSymbol(delegateName);
+	auto symbol = std::make_unique<DelegateTypeSymbol>(node->IdentifierToken.Word);
 	symbol->ReturnType = node->ReturnType->Symbol;
-	symbol->AnonymousSymbol = anonymousMethod;
-	SetAccesibility(symbol, node->Modifiers);
+	symbol->AnonymousSymbol = anonymousMethod.get();
+	SetAccesibility(symbol.get(), node->Modifiers);
 
-	return symbol;
+	Table->ImplicitSymbol(std::move(anonymousMethod));
+	return static_cast<DelegateTypeSymbol*>(Table->BindSymbol(node, std::move(symbol)));
 }
 
 DelegateTypeSymbol* SymbolFactory::Delegate(DelegateTypeSyntax* node)
 {
 	// Anonymous method symbol
-	MethodSymbol* anonymousMethod = new MethodSymbol(L"Delegate");
+	auto anonymousMethod = std::make_unique<MethodSymbol>(L"Delegate");
 	anonymousMethod->HandleType = MethodHandleType::Lambda;
 	anonymousMethod->Accesibility = SymbolAccesibility::Public;
 	anonymousMethod->ReturnType = node->ReturnType->Symbol;
 	anonymousMethod->IsStatic = true;
 
 	// Delegate symbol
-	DelegateTypeSymbol* symbol = new DelegateTypeSymbol(L"Delegate");
+	auto symbol = std::make_unique<DelegateTypeSymbol>(L"Delegate");
 	symbol->ReturnType = node->ReturnType->Symbol;
-	symbol->AnonymousSymbol = anonymousMethod;
+	symbol->AnonymousSymbol = anonymousMethod.get();
 
-	node->Symbol = symbol;
-	return symbol;
+	node->Symbol = symbol.get();
+	Table->ImplicitSymbol(std::move(anonymousMethod));
+	return static_cast<DelegateTypeSymbol*>(Table->BindSymbol(node, std::move(symbol)));
+}
+
+DelegateTypeSymbol* SymbolFactory::Delegate(const std::wstring& name, TypeSymbol* returnType, std::vector<ParameterSymbol*>& parameters)
+{
+	auto anonymousMethod = std::make_unique<MethodSymbol>(L"");
+	anonymousMethod->HandleType = MethodHandleType::Lambda;
+	anonymousMethod->Accesibility = SymbolAccesibility::Public;
+	anonymousMethod->ReturnType = returnType;
+	anonymousMethod->IsStatic = true;
+	anonymousMethod->Parameters = std::move(parameters);
+
+	auto symbol = std::make_unique<DelegateTypeSymbol>(name);
+	symbol->ReturnType = returnType;
+	symbol->AnonymousSymbol = anonymousMethod.get();
+	symbol->Parameters = std::move(parameters);
+	symbol->Accesibility = SymbolAccesibility::Public;
+
+	Table->ImplicitSymbol(std::move(anonymousMethod));
+	return static_cast<DelegateTypeSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
 DelegateTypeSymbol* SymbolFactory::Delegate(MethodSymbol* method)
 {
-	DelegateTypeSymbol* delegate = new DelegateTypeSymbol(method->Name);
-	delegate->Accesibility = SymbolAccesibility::Public;
-	delegate->AnonymousSymbol = method;
-	delegate->Parameters = method->Parameters;
-	delegate->ReturnType = method->ReturnType;
-	delegate->State = TypeLayoutingState::Visited;
-	delegate->MemoryBytesSize = 0;
-	delegate->FullName = method->FullName;
-	return delegate;
+	auto symbol = std::make_unique<DelegateTypeSymbol>(method->Name);
+	symbol->Accesibility = SymbolAccesibility::Public;
+	symbol->AnonymousSymbol = method;
+	symbol->Parameters = method->Parameters;
+	symbol->ReturnType = method->ReturnType;
+	symbol->State = TypeLayoutingState::Visited;
+	symbol->MemoryBytesSize = 0;
+	symbol->FullName = method->FullName;
+
+	return static_cast<DelegateTypeSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
 NamespaceSymbol* SymbolFactory::Namespace(NamespaceDeclarationSyntax* node)
@@ -449,102 +449,105 @@ NamespaceSymbol* SymbolFactory::Namespace(NamespaceDeclarationSyntax* node)
 	for (int i = 1; i < node->IdentifierTokens.size(); i++)
 		namespaceName += L"." + node->IdentifierTokens.at(i).Word;
 
-	NamespaceSymbol* symbol = new NamespaceSymbol(namespaceName);
-	SetAccesibility(symbol, node->Modifiers);
-	return symbol;
+	auto symbol = std::make_unique<NamespaceSymbol>(namespaceName);
+	return static_cast<NamespaceSymbol*>(Table->BindSymbol(node, std::move(symbol)));
 }
 
 NamespaceSymbol* SymbolFactory::Namespace(const std::wstring& name)
 {
-	return new NamespaceSymbol(name);
+	auto symbol = std::make_unique<NamespaceSymbol>(name);
+	return static_cast<NamespaceSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
 FieldSymbol* SymbolFactory::Field(const std::wstring& name, TypeSymbol* type, bool isStatic)
 {
-	FieldSymbol* symbol = new FieldSymbol(name);
+	auto symbol = std::make_unique<FieldSymbol>(name);
 	symbol->ReturnType = type;
 	symbol->IsStatic = isStatic;
 	symbol->Accesibility = SymbolAccesibility::Private;
-	return symbol;
+	return static_cast<FieldSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
 PropertySymbol* SymbolFactory::Property(const std::wstring& name, TypeSymbol* returnType, bool isStatic)
 {
-	PropertySymbol* symbol = new PropertySymbol(name);
+	auto symbol = std::make_unique<PropertySymbol>(name);
 	symbol->ReturnType = returnType;
 	symbol->IsStatic = isStatic;
 	symbol->Accesibility = SymbolAccesibility::Private;
-	return symbol;
+	return static_cast<PropertySymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
 MethodSymbol* SymbolFactory::Method(const wchar_t* name, TypeSymbol* returnType, bool isStatic)
 {
-	MethodSymbol* symbol = new MethodSymbol(name);
+	auto symbol = std::make_unique<MethodSymbol>(name);
 	symbol->ReturnType = returnType;
 	symbol->IsStatic = isStatic;
 	symbol->Accesibility = SymbolAccesibility::Private;
-	return symbol;
+	return static_cast<MethodSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
 MethodSymbol* SymbolFactory::Method(const std::wstring& name, TypeSymbol* returnType, bool isStatic)
 {
-	MethodSymbol* symbol = new MethodSymbol(name);
+	auto symbol = std::make_unique<MethodSymbol>(name);
 	symbol->ReturnType = returnType;
 	symbol->IsStatic = isStatic;
 	symbol->Accesibility = SymbolAccesibility::Private;
-	return symbol;
+	return static_cast<MethodSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
 MethodSymbol* SymbolFactory::Method(SymbolAccesibility accessibility, bool isStatic, TypeSymbol* returnType, const wchar_t* name, MethodSymbolDelegate function)
 {
-	MethodSymbol* symbol = new MethodSymbol(name);
+	auto symbol = std::make_unique<MethodSymbol>(name);
 	symbol->ReturnType = returnType;
 	symbol->IsStatic = isStatic;
 	symbol->Accesibility = accessibility;
 	symbol->FunctionPointer = function;
 	symbol->HandleType = MethodHandleType::External;
-	return symbol;
+	return static_cast<MethodSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
 MethodSymbol* SymbolFactory::Method(SymbolAccesibility accessibility, bool isStatic, TypeSymbol* returnType, const std::wstring& name, MethodSymbolDelegate function)
 {
-	MethodSymbol* symbol = new MethodSymbol(name);
+	auto symbol = std::make_unique<MethodSymbol>(name);
 	symbol->ReturnType = returnType;
 	symbol->IsStatic = isStatic;
 	symbol->Accesibility = accessibility;
 	symbol->FunctionPointer = function;
 	symbol->HandleType = MethodHandleType::External;
-	return symbol;
+	return static_cast<MethodSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
 ConstructorSymbol* SymbolFactory::Constructor(const std::wstring& name)
 {
-	ConstructorSymbol* symbol = new ConstructorSymbol(name);
-	symbol->ReturnType = shard::SymbolTable::Primitives::Void;
+	auto symbol = std::make_unique<ConstructorSymbol>(name);
+	symbol->ReturnType = SymbolTable::Primitives::Void;
 	symbol->Accesibility = SymbolAccesibility::Public;
-	return symbol;
+	symbol->HandleType = MethodHandleType::Body;
+	return static_cast<ConstructorSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
 AccessorSymbol* SymbolFactory::Accessor(const std::wstring& name, PropertySymbol* property, bool isGetter)
 {
-	AccessorSymbol* symbol = new AccessorSymbol(name);
+	auto symbol = std::make_unique<AccessorSymbol>(name);
 	symbol->HandleType = MethodHandleType::Body;
 	symbol->Accesibility = SymbolAccesibility::Public;
 	symbol->IsStatic = property->IsStatic;
-	symbol->ReturnType = isGetter ? property->ReturnType : shard::SymbolTable::Primitives::Void;
+	symbol->ReturnType = isGetter ? property->ReturnType : SymbolTable::Primitives::Void;
 
 	if (!isGetter)
 	{
-		ParameterSymbol* valueParam = new ParameterSymbol(L"value");
-		symbol->Parameters.push_back(valueParam);
+		auto valueParam = std::make_unique<ParameterSymbol>(L"value");
+		symbol->Parameters.push_back(valueParam.get());
+		Table->ImplicitSymbol(std::move(valueParam));
 	}
 
+	AccessorSymbol* raw = symbol.get();
 	if (isGetter)
-		property->Getter = symbol;
+		property->Getter = raw;
 	else
-		property->Setter = symbol;
+		property->Setter = raw;
 	
-	return symbol;
+	return static_cast<AccessorSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
 AccessorSymbol* SymbolFactory::Getter(const std::wstring& propertyName, PropertySymbol* property)
@@ -561,84 +564,91 @@ AccessorSymbol* SymbolFactory::Setter(const std::wstring& propertyName, Property
 
 IndexatorSymbol* SymbolFactory::Indexator(IndexatorDeclarationSyntax* node)
 {
-	IndexatorSymbol* symbol = new IndexatorSymbol(L"index"); // Name is always "index"
-	SetAccesibility(symbol, node->Modifiers);
+	auto symbol = std::make_unique<IndexatorSymbol>(L"index"); // Name is always "index"
+	SetAccesibility(symbol.get(), node->Modifiers);
 
-	for (ParameterSyntax* parameter : node->Parameters->Parameters)
-	{
-		ParameterSymbol* paramSymbol = new ParameterSymbol(parameter->Identifier.Word);
-		symbol->Parameters.push_back(paramSymbol);
-	}
-
-	return symbol;
+	return static_cast<IndexatorSymbol*>(Table->BindSymbol(node, std::move(symbol)));
 }
 
 IndexatorSymbol* SymbolFactory::Indexator(const std::wstring& name, TypeSymbol* returnType)
 {
-	IndexatorSymbol* symbol = new IndexatorSymbol(name);
+	auto symbol = std::make_unique<IndexatorSymbol>(name);
 	symbol->ReturnType = returnType;
 	symbol->Accesibility = SymbolAccesibility::Public;
 	symbol->IsStatic = false;
-	return symbol;
+	return static_cast<IndexatorSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
-IndexatorSymbol* SymbolFactory::Indexator(const std::wstring& name, TypeSymbol* returnType, std::vector<ParameterSymbol*> parameters)
+IndexatorSymbol* SymbolFactory::Indexator(const std::wstring& name, TypeSymbol* returnType, std::vector<ParameterSymbol*>& parameters)
 {
-	IndexatorSymbol* symbol = Indexator(name, returnType);
+	auto symbol = std::make_unique<IndexatorSymbol>(name);
+	symbol->ReturnType = returnType;
+	symbol->Accesibility = SymbolAccesibility::Public;
+	symbol->IsStatic = false;
 	symbol->Parameters = parameters;
-	return symbol;
+	return static_cast<IndexatorSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
+}
+
+ParameterSymbol* SymbolFactory::Parameter(ParameterSyntax* node)
+{
+	auto symbol = std::make_unique<ParameterSymbol>(node->Identifier.Word);
+	return static_cast<ParameterSymbol*>(Table->BindSymbol(node, std::move(symbol)));
 }
 
 ParameterSymbol* SymbolFactory::Parameter(const std::wstring& name)
 {
-	return new ParameterSymbol(name);
+	auto symbol = std::make_unique<ParameterSymbol>(name);
+	return static_cast<ParameterSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
 ParameterSymbol* SymbolFactory::Parameter(const std::wstring& name, TypeSymbol* type)
 {
-	return new ParameterSymbol(name, type);
+	auto symbol = std::make_unique<ParameterSymbol>(name, type);
+	return static_cast<ParameterSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
 ParameterSymbol* SymbolFactory::Parameter(const std::wstring& name, TypeSymbol* type, bool isOptional)
 {
-	ParameterSymbol* symbol = new ParameterSymbol(name, type);
+	auto symbol = std::make_unique<ParameterSymbol>(name, type);
 	symbol->IsOptional = isOptional;
-	return symbol;
+	return static_cast<ParameterSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
+}
+
+VariableSymbol* SymbolFactory::Variable(VariableStatementSyntax* node)
+{
+	auto symbol = std::make_unique<VariableSymbol>(node->IdentifierToken.Word, SymbolTable::Primitives::Integer);
+	return static_cast<VariableSymbol*>(Table->BindSymbol(node, std::move(symbol)));
+}
+
+VariableSymbol* SymbolFactory::Variable(ForEachStatementSyntax* node)
+{
+	auto symbol = std::make_unique<VariableSymbol>(node->IdentifierToken.Word);
+	return static_cast<VariableSymbol*>(Table->BindSymbol(node, std::move(symbol)));
+}
+
+VariableSymbol* SymbolFactory::Variable(const std::wstring& name)
+{
+	auto symbol = std::make_unique<VariableSymbol>(name);
+	return static_cast<VariableSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
 VariableSymbol* SymbolFactory::Variable(const std::wstring& name, TypeSymbol* type)
 {
-	return new VariableSymbol(name, type);
+	auto symbol = std::make_unique<VariableSymbol>(name, type);
+	return static_cast<VariableSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
 VariableSymbol* SymbolFactory::Variable(const std::wstring& name, TypeSymbol* type, bool isConst)
 {
-	VariableSymbol* symbol = new VariableSymbol(name, type);
+	auto symbol = std::make_unique<VariableSymbol>(name, type);
 	symbol->IsConst = isConst;
-	return symbol;
+	return static_cast<VariableSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
 TypeParameterSymbol* SymbolFactory::TypeParameter(const std::wstring& name)
 {
-	return new TypeParameterSymbol(name);
-}
-
-DelegateTypeSymbol* SymbolFactory::Delegate(const std::wstring& name, TypeSymbol* returnType, std::vector<ParameterSymbol*> parameters)
-{
-	MethodSymbol* anonymousMethod = new MethodSymbol(L"");
-	anonymousMethod->HandleType = MethodHandleType::Lambda;
-	anonymousMethod->Accesibility = SymbolAccesibility::Public;
-	anonymousMethod->ReturnType = returnType;
-	anonymousMethod->IsStatic = true;
-	anonymousMethod->Parameters = parameters;
-
-	DelegateTypeSymbol* symbol = new DelegateTypeSymbol(name);
-	symbol->ReturnType = returnType;
-	symbol->AnonymousSymbol = anonymousMethod;
-	symbol->Parameters = parameters;
-	symbol->Accesibility = SymbolAccesibility::Public;
-
-	return symbol;
+	auto symbol = std::make_unique<TypeParameterSymbol>(name);
+	return static_cast<TypeParameterSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
 ArrayTypeSymbol* SymbolFactory::Array(ArrayTypeSyntax* node)
@@ -646,39 +656,41 @@ ArrayTypeSymbol* SymbolFactory::Array(ArrayTypeSyntax* node)
 	if (node == nullptr || node->UnderlayingType == nullptr || node->UnderlayingType->Symbol == nullptr)
 		return nullptr;
 
-	ArrayTypeSymbol* symbol = new ArrayTypeSymbol(node->UnderlayingType->Symbol);
+	auto symbol = std::make_unique<ArrayTypeSymbol>(node->UnderlayingType->Symbol);
 	symbol->Rank = node->Rank;
-	return symbol;
+	return static_cast<ArrayTypeSymbol*>(Table->BindSymbol(node, std::move(symbol)));
 }
 
 ArrayTypeSymbol* SymbolFactory::Array(TypeSymbol* underlayingType)
 {
-	return new ArrayTypeSymbol(underlayingType);
+	auto symbol = std::make_unique<ArrayTypeSymbol>(underlayingType);
+	return static_cast<ArrayTypeSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
 ArrayTypeSymbol* SymbolFactory::Array(TypeSymbol* underlayingType, size_t size)
 {
-	ArrayTypeSymbol* symbol = new ArrayTypeSymbol(underlayingType);
+	auto symbol = std::make_unique<ArrayTypeSymbol>(underlayingType);
 	symbol->Size = size;
-	return symbol;
+	return static_cast<ArrayTypeSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
 ArrayTypeSymbol* SymbolFactory::Array(TypeSymbol* underlayingType, size_t size, int rank)
 {
-	ArrayTypeSymbol* symbol = new ArrayTypeSymbol(underlayingType);
+	auto symbol = std::make_unique<ArrayTypeSymbol>(underlayingType);
 	symbol->Size = size;
 	symbol->Rank = rank;
-	return symbol;
+	return static_cast<ArrayTypeSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
 GenericTypeSymbol* SymbolFactory::GenericType(TypeSymbol* underlayingType)
 {
-	return new GenericTypeSymbol(underlayingType);
+	auto symbol = std::make_unique<GenericTypeSymbol>(underlayingType);
+	return static_cast<GenericTypeSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
 GenericTypeSymbol* SymbolFactory::GenericType(TypeSymbol* underlayingType, std::unordered_map<std::wstring, TypeSymbol*> typeArguments)
 {
-	GenericTypeSymbol* symbol = new GenericTypeSymbol(underlayingType);
+	auto symbol = std::make_unique<GenericTypeSymbol>(underlayingType);
 	
 	// Заполняем маппинг type parameters -> type arguments
 	for (size_t i = 0; i < underlayingType->TypeParameters.size(); i++)
@@ -691,7 +703,7 @@ GenericTypeSymbol* SymbolFactory::GenericType(TypeSymbol* underlayingType, std::
 		}
 	}
 	
-	return symbol;
+	return static_cast<GenericTypeSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
 std::wstring SymbolFactory::FormatFullName(SyntaxSymbol* symbol)
@@ -767,9 +779,10 @@ std::wstring SymbolFactory::FormatTypeName(TypeSymbol* type)
 		{
 			if (!first)
 				name << L", ";
-			first = false;
 
+			first = false;
 			TypeSymbol* argType = genericType->SubstituteTypeParameters(typeParam);
+			
 			if (argType != nullptr)
 				name << argType->Name;
 			else
@@ -785,20 +798,20 @@ std::wstring SymbolFactory::FormatTypeName(TypeSymbol* type)
 
 MethodSymbol* SymbolFactory::CreateAnonymousMethod(const std::wstring& name, TypeSymbol* returnType)
 {
-	MethodSymbol* symbol = new MethodSymbol(name);
+	auto symbol = std::make_unique<MethodSymbol>(name);
 	symbol->ReturnType = returnType;
 	symbol->Accesibility = SymbolAccesibility::Public;
 	symbol->IsStatic = true;
 	symbol->HandleType = MethodHandleType::Lambda;
-	return symbol;
+	return static_cast<MethodSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
 MethodSymbol* SymbolFactory::CreateLambdaMethod(StatementsBlockSyntax* body)
 {
-	MethodSymbol* symbol = new MethodSymbol(std::wstring(L"Lambda"));
-	symbol->ReturnType = shard::SymbolTable::Primitives::Any;
+	auto symbol = std::make_unique<MethodSymbol>(L"Lambda");
+	symbol->ReturnType = SymbolTable::Primitives::Any;
 	symbol->Accesibility = SymbolAccesibility::Public;
 	symbol->IsStatic = true;
 	symbol->HandleType = MethodHandleType::Lambda;
-	return symbol;
+	return static_cast<MethodSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }

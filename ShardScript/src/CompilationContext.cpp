@@ -312,19 +312,22 @@ LayoutGenerator& CompilationContext::GetLayoutGenerator()
 void CompilationContext::AddLib(const std::filesystem::path& path)
 {
 	LibraryHandle hLib = LoadLibraryHandle(path);
+	if (hLib == nullptr)
+		throw std::runtime_error("could not load library: " + WStringToUtf8(path.wstring()));
+
 	AddLib(hLib);
 }
 
 void CompilationContext::AddLib(const LibraryHandle& handle)
 {
 	if (handle == nullptr)
-		return;
+		throw std::runtime_error("library handle is null");
 
 	LibHandles.push_back(handle);
 	EntryPointFunction entryPoint = reinterpret_cast<EntryPointFunction>(GetLibFunction(handle, "ShardLib_EntryPoint"));
 
 	if (entryPoint == nullptr)
-		return;
+		throw std::runtime_error("library does not export ShardLib_EntryPoint");
 
 	try
 	{
@@ -341,9 +344,9 @@ void CompilationContext::AddLib(const LibraryHandle& handle)
 		PendingSources.clear();
 		ReAnalyze = false;
 	}
-	catch (...)
+	catch (const std::exception&)
 	{
-		return;
+		throw;
 	}
 }
 

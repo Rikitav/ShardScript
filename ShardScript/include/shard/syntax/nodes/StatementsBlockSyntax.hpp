@@ -8,23 +8,20 @@
 #include <shard/syntax/nodes/StatementSyntax.hpp>
 
 #include <vector>
+#include <memory>
 
 namespace shard
 {
 	class SHARD_API StatementsBlockSyntax : public BodyDeclarationSyntax
 	{
 	public:
-		std::vector<StatementSyntax*> Statements;
+		std::vector<std::unique_ptr<StatementSyntax>> Statements;
 
 		inline StatementsBlockSyntax(SyntaxNode *const parent)
 			: BodyDeclarationSyntax(SyntaxKind::StatementsBlock, parent) { }
 
 		inline StatementsBlockSyntax(const StatementsBlockSyntax& other) = delete;
 
-		inline virtual ~StatementsBlockSyntax()
-		{
-			for (const StatementSyntax* statement : Statements)
-				delete statement;
-		}
+		inline virtual ~StatementsBlockSyntax() = default;
 	};
 }

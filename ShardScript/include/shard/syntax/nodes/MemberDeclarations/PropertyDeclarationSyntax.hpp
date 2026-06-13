@@ -13,6 +13,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.hpp>
 
 #include <vector>
+#include <memory>
 
 namespace shard
 {
@@ -25,12 +26,11 @@ namespace shard
 		SyntaxToken ArrowToken;
 		SyntaxToken SemicolonToken;
 
-		TypeSyntax* ReturnType = nullptr;
+		std::unique_ptr<AccessorDeclarationSyntax> Getter = nullptr;
+		std::unique_ptr<AccessorDeclarationSyntax> Setter = nullptr;
+		std::unique_ptr<ExpressionSyntax> InitializerExpression = nullptr;
 		
-		AccessorDeclarationSyntax* Getter = nullptr;
-		AccessorDeclarationSyntax* Setter = nullptr;
-		
-		ExpressionSyntax* InitializerExpression = nullptr;
+		std::unique_ptr<TypeSyntax> ReturnType = nullptr;
 
 		inline PropertyDeclarationSyntax(SyntaxNode *const parent)
 			: MemberDeclarationSyntax(SyntaxKind::PropertyDeclaration, parent) { }
@@ -38,41 +38,15 @@ namespace shard
 		inline PropertyDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) 
 			: MemberDeclarationSyntax(SyntaxKind::PropertyDeclaration, parent)
 		{
-			Attributes = info.Attributes;
+			Attributes = std::move(info.Attributes);
 			Modifiers = info.Modifiers;
 			IdentifierToken = info.Identifier;
-			ReturnType = info.ReturnType;
-			TypeParameters = info.Generics;
+			ReturnType = std::move(info.ReturnType);
+			TypeParameters = std::move(info.Generics);
 		}
 
 		inline PropertyDeclarationSyntax(const PropertyDeclarationSyntax& other) = delete;
 
-		inline virtual ~PropertyDeclarationSyntax()
-		{
-			if (Getter != nullptr)
-			{
-				delete Getter;
-				Getter = nullptr;
-			}
-
-			if (Setter != nullptr)
-			{
-				delete Setter;
-				Setter = nullptr;
-			}
-
-			if (InitializerExpression != nullptr)
-			{
-				delete InitializerExpression;
-				InitializerExpression = nullptr;
-			}
-
-			if (ReturnType != nullptr)
-			{
-				delete ReturnType;
-				ReturnType = nullptr;
-			}
-		}
+		inline virtual ~PropertyDeclarationSyntax() = default;
 	};
 }
-

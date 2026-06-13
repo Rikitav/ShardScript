@@ -7,6 +7,7 @@
 #include <shard/parsing/semantic/SemanticScope.hpp>
 #include <shard/parsing/semantic/SemanticModel.hpp>
 
+#include <shard/syntax/SymbolFactory.hpp>
 #include <shard/syntax/symbols/TypeSymbol.hpp>
 #include <shard/syntax/symbols/MethodSymbol.hpp>
 #include <shard/syntax/symbols/GenericTypeSymbol.hpp>
@@ -50,11 +51,13 @@
 
 #include <unordered_map>
 #include <vector>
+#include <memory>
 
 namespace shard
 {
 	class SHARD_API ExpressionBinder : public SyntaxVisitor, public ScopeVisitor
 	{
+		SymbolFactory Factory;
 		std::unordered_map<shard::ExpressionSyntax*, shard::TypeSymbol*> expressionTypes;
 
 		bool GetIsStaticContext(const shard::ExpressionSyntax* expression);
@@ -78,8 +81,8 @@ namespace shard
 		shard::ConstructorSymbol* ResolveConstructor(shard::ObjectExpressionSyntax *const node);
 		shard::MethodSymbol* ResolveMethod(shard::InvokationExpressionSyntax *const node, shard::TypeSymbol* currentType);
 		shard::IndexatorSymbol* ResolveIndexator(shard::IndexatorExpressionSyntax *const node, shard::TypeSymbol* currentType);
-		
-		bool MatchMethodArguments(std::vector<ParameterSymbol*> parameters, std::vector<shard::ArgumentSyntax*> arguments, shard::GenericTypeSymbol* genericType = nullptr);
+
+		bool MatchMethodArguments(std::vector<ParameterSymbol*>& parameters, std::vector<std::unique_ptr<ArgumentSyntax>>& arguments, GenericTypeSymbol* genericType = nullptr);
 		shard::TypeSymbol* SubstituteTypeParameters(shard::TypeSymbol* type, shard::GenericTypeSymbol* genericType);
 
 		shard::TypeSymbol* AnalyzeNumberLiteral(shard::LiteralExpressionSyntax *const node);
@@ -87,7 +90,7 @@ namespace shard
 
 	public:
 		inline ExpressionBinder(shard::SemanticModel& model, shard::DiagnosticsContext& diagnostics)
-			: SyntaxVisitor(model, diagnostics), ScopeVisitor(model.Table.get()) { }
+			: SyntaxVisitor(model, diagnostics), ScopeVisitor(model.Table.get()), Factory(model.Table.get()) { }
 
 		void VisitCompilationUnit(shard::CompilationUnitSyntax *const node) override;
 		void VisitUsingDirective(shard::UsingDirectiveSyntax *const node) override;

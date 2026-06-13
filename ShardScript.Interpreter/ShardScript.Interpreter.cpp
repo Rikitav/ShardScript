@@ -279,7 +279,23 @@ int wmain(int argc, wchar_t* argv[])
 			const std::vector<MethodSymbol*>& methods = table->GetMethodSymbols();
 			for (const auto& method : methods)
 			{
-				CompilationUnitSyntax* unit = GetCompilationUnit(table->GetSyntaxNode(method).value_or(nullptr));
+				if (method->HandleType != MethodHandleType::Body)
+					continue;
+
+				MethodDeclarationSyntax* methodNode = static_cast<MethodDeclarationSyntax*>(table->LookupNode(method).value_or(nullptr));
+				if (methodNode == nullptr)
+				{
+					std::cout << "Failed to resolve methods node" << std::endl;
+					continue;
+				}
+
+				CompilationUnitSyntax* unit = GetCompilationUnit(methodNode);
+				if (unit == nullptr)
+				{
+					std::wcout << L"Failed to resolve " << methodNode->IdentifierToken.Word << L" methods unit" << std::endl;
+					continue;
+				}
+
 				if (unit->Origin != CompilationUnitOrigin::SourceFile)
 					continue;
 
