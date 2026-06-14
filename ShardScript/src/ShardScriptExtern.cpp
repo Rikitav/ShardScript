@@ -1,3 +1,5 @@
+#if !defined(SHARDSCRIPT_STATIC)
+
 #include <shard/ShardScriptAPI.hpp>
 #include <shard/CompilationContext.hpp>
 #include <shard/ApplicationDomain.hpp>
@@ -1122,3 +1124,5 @@ SHARD_EXPORT const wchar_t* Shard_GetVersion()
 {
     return L"0.2.0";
 }
+
+#endif // !defined(SHARDSCRIPT_STATIC)
