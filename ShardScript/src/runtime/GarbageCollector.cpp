@@ -68,13 +68,13 @@ ObjectInstance* GarbageCollector::FromValue(const std::wstring& value)
 	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String, false);
 
 	size_t length = value.size();
-	size_t size = length * sizeof(wchar_t) + sizeof(wchar_t);
+	size_t size = (length + 1) * sizeof(wchar_t);
 
 	wchar_t* copy = static_cast<wchar_t*>(malloc(size));
 	if (copy == nullptr)
 		throw std::runtime_error("Failed to allocate string");
 
-	wcscpy(copy, value.data());
+	memcpy(copy, value.c_str(), size);
 
 	instance->WriteInteger(length);
 	instance->WriteMemory(sizeof(int64_t), sizeof(wchar_t*), &copy);

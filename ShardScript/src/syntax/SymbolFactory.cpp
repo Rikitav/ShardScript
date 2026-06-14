@@ -682,6 +682,12 @@ ArrayTypeSymbol* SymbolFactory::Array(TypeSymbol* underlayingType, size_t size, 
 	return static_cast<ArrayTypeSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
+GenericTypeSymbol* SymbolFactory::GenericType(GenericTypeSyntax* node)
+{
+	auto symbol = std::make_unique<GenericTypeSymbol>(node->Symbol);
+	return static_cast<GenericTypeSymbol*>(Table->BindSymbol(node, std::move(symbol)));
+}
+
 GenericTypeSymbol* SymbolFactory::GenericType(TypeSymbol* underlayingType)
 {
 	auto symbol = std::make_unique<GenericTypeSymbol>(underlayingType);

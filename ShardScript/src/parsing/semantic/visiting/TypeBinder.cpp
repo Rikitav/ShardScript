@@ -398,8 +398,7 @@ void TypeBinder::VisitObjectCreationExpression(ObjectExpressionSyntax *const nod
 
 void TypeBinder::VisitParameter(ParameterSyntax *const node)
 {
-	ParameterSymbol* paramSymbol = ExchangeBindSymbol(node, Factory.Parameter(node->Identifier.Word));
-
+	ParameterSymbol* paramSymbol = Factory.Parameter(node);
 	if (node->Type != nullptr)
 	{
 		TypeSyntax* type = const_cast<TypeSyntax*>(node->Type.get());
@@ -544,7 +543,7 @@ void TypeBinder::VisitArrayType(ArrayTypeSyntax *const node)
 	if (underlayingType == nullptr)
 		return;
 
-	ArrayTypeSymbol* symbol = ExchangeBindSymbol(node, Factory.Array(underlayingType));
+	ArrayTypeSymbol* symbol = Factory.Array(node);
 	symbol->MemoryBytesSize = SymbolTable::Primitives::Array->MemoryBytesSize;
 	node->Symbol = symbol;
 }
@@ -588,7 +587,7 @@ void TypeBinder::VisitGenericType(GenericTypeSyntax *const node)
 		return;
 	}
 
-	GenericTypeSymbol* symbol = ExchangeBindSymbol(node, Factory.GenericType(underlayingType));
+	GenericTypeSymbol* symbol = Factory.GenericType(node);
 	node->Symbol = symbol;
 
 	size_t argsCount = node->Arguments->Types.size();
@@ -624,7 +623,7 @@ void TypeBinder::VisitDelegateType(DelegateTypeSyntax *const node)
 	VisitType(node->ReturnType.get());
 	VisitParametersList(node->Params.get());
 
-	DelegateTypeSymbol* symbol = ExchangeBindSymbol(node, Factory.Delegate(node));
+	DelegateTypeSymbol* symbol = Factory.Delegate(node);
 	node->Symbol = symbol;
 
 	for (const auto& param : node->Params->Parameters)

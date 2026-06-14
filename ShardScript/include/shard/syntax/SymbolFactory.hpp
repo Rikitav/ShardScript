@@ -121,6 +121,7 @@ namespace shard
 		ArrayTypeSymbol* Array(TypeSymbol* underlayingType, size_t size);
 		ArrayTypeSymbol* Array(TypeSymbol* underlayingType, size_t size, int rank);
 
+		GenericTypeSymbol* GenericType(GenericTypeSyntax* node);
 		GenericTypeSymbol* GenericType(TypeSymbol* underlayingType);
 		GenericTypeSymbol* GenericType(TypeSymbol* underlayingType, std::unordered_map<std::wstring, TypeSymbol*> typeArguments);
 	};

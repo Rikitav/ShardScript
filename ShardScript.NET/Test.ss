@@ -13,6 +13,6 @@ public class Program
 public static func Main() -> void
 {
     x := 21;
-    y := x + 46;
+    y := Program.Add(x + 46);
     println(y); // 67
 }
