@@ -44,8 +44,16 @@
 #include <stdexcept>
 #include <filesystem>
 
-#ifdef _WIN32
-#include <windows.h> 
+// Platform-specific headers
+#if defined(_WIN32)
+	#define WIN32_LEAN_AND_MEAN
+	#include <windows.h>
+#elif defined(__linux__)
+	#include <unistd.h>
+	#include <limits.h>
+#elif defined(__APPLE__)
+	#include <mach-o/dyld.h>
+	#include <climits>
 #endif
 
 using namespace shard;
@@ -84,7 +92,9 @@ static void* GetLibFunction(LibraryHandle handle, const char* procName)
 static std::string WStringToUtf8(const std::wstring& wstr)
 {
 #ifdef _WIN32
-	if (wstr.empty()) return {};
+	if (wstr.empty())
+		return {};
+	
 	int size_needed = WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), (int)wstr.size(), nullptr, 0, nullptr, nullptr);
 	std::string str(size_needed, 0);
 	WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), (int)wstr.size(), &str[0], size_needed, nullptr, nullptr);
