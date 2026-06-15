@@ -15,7 +15,7 @@ namespace shard
 	{
 	private:
 		std::vector<shard::SyntaxToken> Sequence;
-		size_t CurrentIndex;
+		std::size_t CurrentIndex;
 
 	public:
 		LexicalBuffer();
@@ -30,10 +30,10 @@ namespace shard
 		void PopulateFrom(std::vector<shard::SyntaxToken> fromvector);
 		
 		void SetSequence(std::vector<shard::SyntaxToken> setvector);
-		void SetIndex(size_t newIndex);
+		void SetIndex(std::size_t newIndex);
 
-		size_t Size();
-		shard::SyntaxToken At(size_t index);
+		std::size_t Size();
+		shard::SyntaxToken At(std::size_t index);
 		void Push(shard::SyntaxToken token);
 		void Clear();
 

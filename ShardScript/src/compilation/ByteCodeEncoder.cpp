@@ -22,7 +22,7 @@
 
 using namespace shard;
 
-void ByteCodeEncoder::PasteData(std::vector<std::byte>& code, size_t at, const void* data, size_t size)
+void ByteCodeEncoder::PasteData(std::vector<std::byte>& code, std::size_t at, const void* data, std::size_t size)
 {
     if (at + size > code.size())
         throw std::runtime_error("ByteCodeEncoder::PasteData: Out of bounds write!");
@@ -30,14 +30,14 @@ void ByteCodeEncoder::PasteData(std::vector<std::byte>& code, size_t at, const v
     std::memcpy(code.data() + at, data, size);
 }
 
-void ByteCodeEncoder::AppendData(std::vector<std::byte>& code, const void* data, size_t size)
+void ByteCodeEncoder::AppendData(std::vector<std::byte>& code, const void* data, std::size_t size)
 {
-    size_t current_size = code.size();
-    size_t needed_capacity = current_size + size;
+    std::size_t current_size = code.size();
+    std::size_t needed_capacity = current_size + size;
 
     if (needed_capacity > code.capacity())
     {
-        size_t new_capacity = (std::max)(needed_capacity, code.capacity() * 2);
+        std::size_t new_capacity = (std::max)(needed_capacity, code.capacity() * 2);
         code.reserve(new_capacity);
     }
 
@@ -63,7 +63,7 @@ static void AppendDataT(std::vector<std::byte>& code, const T& value)
 }
 
 template <typename T>
-static void PasteData(std::vector<std::byte>& code, size_t at, const T& value)
+static void PasteData(std::vector<std::byte>& code, std::size_t at, const T& value)
 {
     static_assert(std::is_trivially_copyable_v<T>, "Type must be trivially copyable");
     ByteCodeEncoder::PasteData(code, at, &value, sizeof(T));
@@ -115,7 +115,7 @@ void ByteCodeEncoder::EmitLoadConstChar16(std::vector<std::byte>& code, wchar_t 
 
 void ByteCodeEncoder::EmitLoadConstString(std::vector<std::byte>& code, std::vector<std::byte>& data, const wchar_t* value)
 {
-    size_t dataOrigin = data.size();
+    std::size_t dataOrigin = data.size();
     AppendDataS(data, value);
 
     AppendDataT(code, OpCode::LOADCONST_STRING);
@@ -127,31 +127,31 @@ void ByteCodeEncoder::EmitDuplicate(std::vector<std::byte>& code)
     AppendDataT(code, OpCode::CREATEDUPLICATE);
 }
 
-void ByteCodeEncoder::EmitLoadVarible(std::vector<std::byte>& code, uint16_t index)
+void ByteCodeEncoder::EmitLoadVarible(std::vector<std::byte>& code, std::uint16_t index)
 {
     AppendDataT(code, OpCode::LOADVARIABLE);
     AppendDataT(code, index);
 }
 
-void ByteCodeEncoder::EmitStoreVarible(std::vector<std::byte>& code, uint16_t index)
+void ByteCodeEncoder::EmitStoreVarible(std::vector<std::byte>& code, std::uint16_t index)
 {
     AppendDataT(code, OpCode::STOREVARIABLE);
     AppendDataT(code, index);
 }
 
-void ByteCodeEncoder::EmitJump(std::vector<std::byte>& code, size_t jump)
+void ByteCodeEncoder::EmitJump(std::vector<std::byte>& code, std::size_t jump)
 {
     AppendDataT(code, OpCode::JUMP);
     AppendDataT(code, jump);
 }
 
-void ByteCodeEncoder::EmitJumpTrue(std::vector<std::byte>& code, size_t jump)
+void ByteCodeEncoder::EmitJumpTrue(std::vector<std::byte>& code, std::size_t jump)
 {
     AppendDataT(code, OpCode::JUMP_TRUE);
     AppendDataT(code, jump);
 }
 
-void ByteCodeEncoder::EmitJumpFalse(std::vector<std::byte>& code, size_t jump)
+void ByteCodeEncoder::EmitJumpFalse(std::vector<std::byte>& code, std::size_t jump)
 {
     AppendDataT(code, OpCode::JUMP_FALSE);
     AppendDataT(code, jump);
@@ -252,7 +252,7 @@ void ByteCodeEncoder::EmitLogicalAnd(std::vector<std::byte>& code)
     AppendDataT(code, OpCode::LOGICAL_AND);
 }
 
-void ByteCodeEncoder::EmitLoadTypeArgument(std::vector<std::byte>& code, uint16_t index, TypeSymbol* type)
+void ByteCodeEncoder::EmitLoadTypeArgument(std::vector<std::byte>& code, std::uint16_t index, TypeSymbol* type)
 {
     AppendDataT(code, OpCode::LOAD_TYPEARGUMENT);
     AppendDataT(code, index);

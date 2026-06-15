@@ -44,8 +44,8 @@ namespace shard
 			ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->getInfo()));
 			TypeSymbol* concreteT = context.Frame->TypeArguments[0];
 
-			size_t currentSize = arrayType->Size;
-			size_t newSize = currentSize + 1;
+			std::size_t currentSize = arrayType->Size;
+			std::size_t newSize = currentSize + 1;
 
 			ArrayTypeSymbol* newArrayType = new ArrayTypeSymbol(concreteT);
 			newArrayType->Size = newSize;
@@ -54,7 +54,7 @@ namespace shard
 
 			ObjectInstance* newArray = context.Collector.AllocateInstance(newArrayType);
 
-			for (size_t i = 0; i < currentSize; i++)
+			for (std::size_t i = 0; i < currentSize; i++)
 			{
 				ObjectInstance* element = arrayInstance->GetElement(i, context.Frame);
 				newArray->SetElement(i, element, context.Frame);
@@ -79,10 +79,10 @@ namespace shard
 			ObjectInstance* arrayInstance = listInstance->GetField(arrayField, context.Frame);
 			ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->getInfo()));
 
-			if (index < 0 || static_cast<size_t>(index) >= arrayType->Size)
+			if (index < 0 || static_cast<std::size_t>(index) >= arrayType->Size)
 				throw std::runtime_error("index is out of bounds");
 
-			return arrayInstance->GetElement(static_cast<size_t>(index), context.Frame);
+			return arrayInstance->GetElement(static_cast<std::size_t>(index), context.Frame);
 		}
 
 		__declspec(dllexport) ObjectInstance* shard_list_RemoveAt(const CallState& context) noexcept(false)
@@ -99,10 +99,10 @@ namespace shard
 			ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->getInfo()));
 			TypeSymbol* concreteT = context.Frame->TypeArguments[0];
 
-			if (index < 0 || static_cast<size_t>(index) >= arrayType->Size)
+			if (index < 0 || static_cast<std::size_t>(index) >= arrayType->Size)
 				throw std::runtime_error("index is out of bounds");
 
-			size_t newSize = arrayType->Size - 1;
+			std::size_t newSize = arrayType->Size - 1;
 
 			ArrayTypeSymbol* newArrayType = new ArrayTypeSymbol(concreteT);
 			newArrayType->Size = newSize;
@@ -111,13 +111,13 @@ namespace shard
 
 			ObjectInstance* newArray = context.Collector.AllocateInstance(newArrayType);
 
-			for (size_t i = 0; i < static_cast<size_t>(index); i++)
+			for (std::size_t i = 0; i < static_cast<std::size_t>(index); i++)
 			{
 				ObjectInstance* element = arrayInstance->GetElement(i, context.Frame);
 				newArray->SetElement(i, element, context.Frame);
 			}
 
-			for (size_t i = static_cast<size_t>(index) + 1; i < arrayType->Size; i++)
+			for (std::size_t i = static_cast<std::size_t>(index) + 1; i < arrayType->Size; i++)
 			{
 				ObjectInstance* element = arrayInstance->GetElement(i, context.Frame);
 				newArray->SetElement(i - 1, element, context.Frame);
@@ -177,10 +177,10 @@ namespace shard
 			ObjectInstance* arrayInstance = listInstance->GetField(arrayField, context.Frame);
 			ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->getInfo()));
 
-			if (index < 0 || static_cast<size_t>(index) >= arrayType->Size)
+			if (index < 0 || static_cast<std::size_t>(index) >= arrayType->Size)
 				throw std::runtime_error("index is out of bounds");
 
-			return arrayInstance->GetElement(static_cast<size_t>(index), context.Frame);
+			return arrayInstance->GetElement(static_cast<std::size_t>(index), context.Frame);
 		}
 
 		__declspec(dllexport) ObjectInstance* shard_list_Indexer_set(const CallState& context) noexcept(false)
@@ -197,10 +197,10 @@ namespace shard
 			ObjectInstance* arrayInstance = listInstance->GetField(arrayField, context.Frame);
 			ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->getInfo()));
 
-			if (index < 0 || static_cast<size_t>(index) >= arrayType->Size)
+			if (index < 0 || static_cast<std::size_t>(index) >= arrayType->Size)
 				throw std::runtime_error("index is out of bounds");
 
-			arrayInstance->SetElement(static_cast<size_t>(index), value, context.Frame);
+			arrayInstance->SetElement(static_cast<std::size_t>(index), value, context.Frame);
 			return nullptr;
 		}
 	}

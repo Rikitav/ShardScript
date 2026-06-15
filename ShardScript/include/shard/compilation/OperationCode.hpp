@@ -3,7 +3,7 @@
 
 namespace shard
 {
-	enum class OpCode : uint16_t
+	enum class OpCode : std::uint16_t
 	{
 		/// <summary>
 		/// Upon receiving this byte, VM does nothing.
@@ -68,7 +68,7 @@ namespace shard
 		/// <summary>
 		/// Loads NULL-terminated UTF16 string from data section, and pushes its ObjectInstance to stack.
 		/// <para>Includes 1 parameter :</para>
-		/// <para>> size_t Value - offset inside Data section of program, to first symbol of NULL-Terminated UTF16 string to load.</para>
+		/// <para>> std::size_t Value - offset inside Data section of program, to first symbol of NULL-Terminated UTF16 string to load.</para>
 		/// </summary>
 		LOADCONST_STRING,
 
@@ -81,35 +81,35 @@ namespace shard
 		/// <summary>
 		/// Pops ObjectInstance* from stack and stores it to variable slot at given index.
 		/// <para>Includes 1 parameter :</para>
-		/// <para>> uint16_t Value - Zero-based index of variable, where instance will be written to.</para>
+		/// <para>> std::uint16_t Value - Zero-based index of variable, where instance will be written to.</para>
 		/// </summary>
 		STOREVARIABLE,
 		
 		/// <summary>
 		/// Pushes copy of ObjectInstance* from variable slot on given index to stack top.
 		/// <para>Includes 1 parameter :</para>
-		/// <para>> uint16_t Value - Zero-based index of variable, where instance will be readed from.</para>
+		/// <para>> std::uint16_t Value - Zero-based index of variable, where instance will be readed from.</para>
 		/// </summary>
 		LOADVARIABLE,
 
 		/// <summary>
 		/// Unconditional jump to a relative offset.
 		/// <para>Includes 1 parameter :</para>
-		/// <para>> size_t Offset - Relative offset in bytes from current instruction pointer.</para>
+		/// <para>> std::size_t Offset - Relative offset in bytes from current instruction pointer.</para>
 		/// </summary>
 		JUMP,
 
 		/// <summary>
 		/// Conditional jump to a relative offset if stack top contains True.
 		/// <para>Includes 1 parameter :</para>
-		/// <para>> size_t Offset - Relative offset in bytes from current instruction pointer.</para>
+		/// <para>> std::size_t Offset - Relative offset in bytes from current instruction pointer.</para>
 		/// </summary>
 		JUMP_TRUE,
 
 		/// <summary>
 		/// Conditional jump to a relative offset if stack top contains False.
 		/// <para>Includes 1 parameter :</para>
-		/// <para>> size_t Offset - Relative offset in bytes from current instruction pointer.</para>
+		/// <para>> std::size_t Offset - Relative offset in bytes from current instruction pointer.</para>
 		/// </summary>
 		JUMP_FALSE,
 
@@ -276,7 +276,7 @@ namespace shard
 		/// <summary>
 		/// Loads a type argument into the current call frame's TypeArguments vector.
 		/// <para>Includes 2 parameters :</para>
-		/// <para>> uint16_t Index - Zero-based index in TypeArguments.</para>
+		/// <para>> std::uint16_t Index - Zero-based index in TypeArguments.</para>
 		/// <para>> TypeSymbol* pType - The concrete type to load.</para>
 		/// </summary>
 		LOAD_TYPEARGUMENT

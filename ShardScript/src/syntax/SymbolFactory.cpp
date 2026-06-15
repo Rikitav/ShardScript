@@ -294,6 +294,34 @@ ClassSymbol* SymbolFactory::Class(ClassDeclarationSyntax* node)
 	return static_cast<ClassSymbol*>(Table->BindSymbol(node, std::move(symbol)));
 }
 
+
+ClassSymbol* SymbolFactory::Class(const std::wstring& name)
+{
+	auto symbol = std::make_unique<ClassSymbol>(name);
+	symbol->Accesibility = SymbolAccesibility::Private;
+	return static_cast<ClassSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
+}
+
+ClassSymbol* SymbolFactory::Class(const wchar_t* name)
+{
+	auto symbol = std::make_unique<ClassSymbol>(name);
+	symbol->Accesibility = SymbolAccesibility::Private;
+	return static_cast<ClassSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
+}
+
+StructSymbol* SymbolFactory::Struct(const std::wstring& name)
+{
+	auto symbol = std::make_unique<StructSymbol>(name);
+	symbol->Accesibility = SymbolAccesibility::Private;
+	return static_cast<StructSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
+}
+
+StructSymbol* SymbolFactory::Struct(const wchar_t* name)
+{
+	auto symbol = std::make_unique<StructSymbol>(name);
+	symbol->Accesibility = SymbolAccesibility::Private;
+	return static_cast<StructSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
+}
 FieldSymbol* SymbolFactory::Field(FieldDeclarationSyntax* node)
 {
 	std::wstring fieldName = node->IdentifierToken.Word;
@@ -459,6 +487,12 @@ NamespaceSymbol* SymbolFactory::Namespace(const std::wstring& name)
 	return static_cast<NamespaceSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
+
+NamespaceSymbol* SymbolFactory::Namespace(const wchar_t* name)
+{
+	auto symbol = std::make_unique<NamespaceSymbol>(name);
+	return static_cast<NamespaceSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
+}
 FieldSymbol* SymbolFactory::Field(const std::wstring& name, TypeSymbol* type, bool isStatic)
 {
 	auto symbol = std::make_unique<FieldSymbol>(name);
@@ -667,14 +701,14 @@ ArrayTypeSymbol* SymbolFactory::Array(TypeSymbol* underlayingType)
 	return static_cast<ArrayTypeSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
-ArrayTypeSymbol* SymbolFactory::Array(TypeSymbol* underlayingType, size_t size)
+ArrayTypeSymbol* SymbolFactory::Array(TypeSymbol* underlayingType, std::size_t size)
 {
 	auto symbol = std::make_unique<ArrayTypeSymbol>(underlayingType);
 	symbol->Size = size;
 	return static_cast<ArrayTypeSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
-ArrayTypeSymbol* SymbolFactory::Array(TypeSymbol* underlayingType, size_t size, int rank)
+ArrayTypeSymbol* SymbolFactory::Array(TypeSymbol* underlayingType, std::size_t size, int rank)
 {
 	auto symbol = std::make_unique<ArrayTypeSymbol>(underlayingType);
 	symbol->Size = size;
@@ -699,7 +733,7 @@ GenericTypeSymbol* SymbolFactory::GenericType(TypeSymbol* underlayingType, std::
 	auto symbol = std::make_unique<GenericTypeSymbol>(underlayingType);
 	
 	// Заполняем маппинг type parameters -> type arguments
-	for (size_t i = 0; i < underlayingType->TypeParameters.size(); i++)
+	for (std::size_t i = 0; i < underlayingType->TypeParameters.size(); i++)
 	{
 		TypeParameterSymbol* typeParam = underlayingType->TypeParameters[i];
 		auto it = typeArguments.find(typeParam->Name);
@@ -752,7 +786,7 @@ std::wstring SymbolFactory::FormatMethodSignature(MethodSymbol* method)
 	std::wostringstream signature;
 	signature << method->Name << L"(";
 
-	for (size_t i = 0; i < method->Parameters.size(); i++)
+	for (std::size_t i = 0; i < method->Parameters.size(); i++)
 	{
 		if (i > 0)
 			signature << L", ";

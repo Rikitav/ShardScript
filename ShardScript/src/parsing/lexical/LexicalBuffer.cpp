@@ -82,12 +82,12 @@ void LexicalBuffer::SetSequence(std::vector<SyntaxToken> setvector)
 	Sequence = setvector;
 }
 
-void LexicalBuffer::SetIndex(size_t newIndex)
+void LexicalBuffer::SetIndex(std::size_t newIndex)
 {
 	CurrentIndex = newIndex;
 }
 
-SyntaxToken LexicalBuffer::At(size_t index)
+SyntaxToken LexicalBuffer::At(std::size_t index)
 {
 	return Sequence.at(index);
 }
@@ -122,7 +122,7 @@ std::vector<SyntaxToken>::const_iterator LexicalBuffer::end() const
 	return Sequence.end();
 }
 
-size_t LexicalBuffer::Size()
+std::size_t LexicalBuffer::Size()
 {
 	return Sequence.size();
 }

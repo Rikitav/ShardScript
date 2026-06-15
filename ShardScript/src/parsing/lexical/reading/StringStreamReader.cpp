@@ -22,7 +22,7 @@ StringStreamReader::StringStreamReader(const std::wstring& name, const std::wstr
 	stringStream.imbue(std::locale::classic());
 }
 
-StringStreamReader::StringStreamReader(const std::wstring& name, const wchar_t* source, size_t count) : SourceTextProvider(), name(name)
+StringStreamReader::StringStreamReader(const std::wstring& name, const wchar_t* source, std::size_t count) : SourceTextProvider(), name(name)
 {
 	std::wstring srcStr = std::wstring(source, count);
 	stringStream = std::wstringstream(srcStr);

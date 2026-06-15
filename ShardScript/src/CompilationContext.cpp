@@ -103,7 +103,7 @@ static std::wstring GetLastErrorAsString()
 		return std::wstring();
 
 	LPWSTR messageBuffer = nullptr;
-	size_t size = FormatMessageW(
+	std::size_t size = FormatMessageW(
 		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
 		NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR)&messageBuffer, 0, NULL);
 
@@ -354,12 +354,12 @@ void CompilationContext::ProvideSource(SourceTextProvider* source)
 {
 	try
 	{
-		size_t beforeEnrich = Tree.CompilationUnits.size();
+		std::size_t beforeEnrich = Tree.CompilationUnits.size();
 		LexicalAnalyzer lexer(source, false);
 		EnrichTree(lexer, CompilationUnitOrigin::DynamicLib);
 
-		size_t afterEnrich = Tree.CompilationUnits.size();
-		for (size_t i = beforeEnrich; i < afterEnrich; i++)
+		std::size_t afterEnrich = Tree.CompilationUnits.size();
+		for (std::size_t i = beforeEnrich; i < afterEnrich; i++)
 		{
 			CompilationUnitSyntax* unit = Tree.CompilationUnits[i].get();
 			PendingSources.push_back(unit);

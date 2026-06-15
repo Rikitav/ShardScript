@@ -68,8 +68,13 @@ namespace shard
 
 		NamespaceSymbol* Namespace(NamespaceDeclarationSyntax* node);
 		NamespaceSymbol* Namespace(const std::wstring& name);
+		NamespaceSymbol* Namespace(const wchar_t* name);
 		StructSymbol* Struct(StructDeclarationSyntax* node);
+		StructSymbol* Struct(const std::wstring& name);
+		StructSymbol* Struct(const wchar_t* name);
 		ClassSymbol* Class(ClassDeclarationSyntax* node);
+		ClassSymbol* Class(const std::wstring& name);
+		ClassSymbol* Class(const wchar_t* name);
 
 		FieldSymbol* Field(FieldDeclarationSyntax* node);
 		FieldSymbol* Field(const std::wstring& name, TypeSymbol* type, bool isStatic = false);
@@ -118,8 +123,8 @@ namespace shard
 
 		ArrayTypeSymbol* Array(ArrayTypeSyntax* node);
 		ArrayTypeSymbol* Array(TypeSymbol* underlayingType);
-		ArrayTypeSymbol* Array(TypeSymbol* underlayingType, size_t size);
-		ArrayTypeSymbol* Array(TypeSymbol* underlayingType, size_t size, int rank);
+		ArrayTypeSymbol* Array(TypeSymbol* underlayingType, std::size_t size);
+		ArrayTypeSymbol* Array(TypeSymbol* underlayingType, std::size_t size, int rank);
 
 		GenericTypeSymbol* GenericType(GenericTypeSyntax* node);
 		GenericTypeSymbol* GenericType(TypeSymbol* underlayingType);

@@ -11,7 +11,7 @@ TypeSymbol* CallStackFrame::ResolveType(TypeSymbol* type)
 		return type;
 
 	TypeParameterSymbol* typeParam = static_cast<TypeParameterSymbol*>(type);
-	uint16_t index = typeParam->TypeArgumentIndex;
+	std::uint16_t index = typeParam->TypeArgumentIndex;
 	if (index < TypeArguments.size())
 		return TypeArguments[index];
 

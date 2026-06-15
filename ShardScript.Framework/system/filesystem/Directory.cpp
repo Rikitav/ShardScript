@@ -30,7 +30,7 @@ namespace shard
 			ObjectInstance* fullName = instance->GetField(field);
 			std::wstring path = fullName->AsString();
 
-			size_t pos = path.find_last_of(L"\\/");
+			std::size_t pos = path.find_last_of(L"\\/");
 			if (pos != std::wstring::npos && pos != path.length() - 1)
 				path = path.substr(pos + 1);
 

@@ -20,7 +20,7 @@ namespace shard
 	{
 	public:
 		TypeSymbol* UnderlayingType = nullptr;
-		size_t Size = 0;
+		std::size_t Size = 0;
 		int Rank = 0;
 
 		inline ArrayTypeSymbol(TypeSymbol* underlayingType) : TypeSymbol(L"Array", SyntaxKind::ArrayType), UnderlayingType(underlayingType)

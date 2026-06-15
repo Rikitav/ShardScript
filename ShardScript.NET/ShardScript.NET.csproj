@@ -9,21 +9,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="..\out\build\x64-debug\bin\ShardScript.dll" Link="ShardScript.dll">
+    <None Include="..\build\bin\libShardScript.dll" Link="libShardScript.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="..\out\build\x64-debug\bin\ShardScript.Framework.dll" Link="ShardScript.Framework.dll">
+    <None Include="..\build\bin\libShardScript.Framework.dll" Link="libShardScript.Framework.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
 
-    <None Include="..\out\build\x64-debug\bin\ShardScript.pdb" Link="ShardScript.pdb">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\out\build\x64-debug\bin\ShardScript.Framework.pdb" Link="ShardScript.Framework.pdb">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
-	
+
   <ItemGroup>
     <None Update="Test.ss">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

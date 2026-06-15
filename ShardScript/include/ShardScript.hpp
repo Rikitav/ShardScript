@@ -23,6 +23,7 @@
 #include <shard/syntax/SyntaxNode.hpp>
 #include <shard/syntax/TokenType.hpp>
 #include <shard/syntax/SyntaxToken.hpp>
+#include <shard/syntax/SymbolBuilder.hpp>
 
 // --- Semantic / Parsing Infrastructure ---
 #include <shard/parsing/analysis/TextLocation.hpp>

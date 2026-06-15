@@ -19,8 +19,8 @@ namespace shard
 	public:
 		inline ByteCodeEncoder() { }
 
-		static void AppendData(std::vector<std::byte>& code, const void* data, size_t size);
-		static void PasteData(std::vector<std::byte>& code, size_t at, const void* data, size_t size);
+		static void AppendData(std::vector<std::byte>& code, const void* data, std::size_t size);
+		static void PasteData(std::vector<std::byte>& code, std::size_t at, const void* data, std::size_t size);
 
 		void EmitNop(std::vector<std::byte>& code);
 		void EmitHalt(std::vector<std::byte>& code);
@@ -35,12 +35,12 @@ namespace shard
 		void EmitLoadConstString(std::vector<std::byte>& code, std::vector<std::byte>& data, const wchar_t* value);
 		void EmitDuplicate(std::vector<std::byte>& code);
 
-		void EmitLoadVarible(std::vector<std::byte>& code, uint16_t index);
-		void EmitStoreVarible(std::vector<std::byte>& code, uint16_t index);
+		void EmitLoadVarible(std::vector<std::byte>& code, std::uint16_t index);
+		void EmitStoreVarible(std::vector<std::byte>& code, std::uint16_t index);
 
-		void EmitJump(std::vector<std::byte>& code, size_t jump);
-		void EmitJumpTrue(std::vector<std::byte>& code, size_t jump);
-		void EmitJumpFalse(std::vector<std::byte>& code, size_t jump);
+		void EmitJump(std::vector<std::byte>& code, std::size_t jump);
+		void EmitJumpTrue(std::vector<std::byte>& code, std::size_t jump);
+		void EmitJumpFalse(std::vector<std::byte>& code, std::size_t jump);
 		void EmitReturn(std::vector<std::byte>& code);
 		void EmitThrow(std::vector<std::byte>& code);
 
@@ -78,7 +78,7 @@ namespace shard
 		void EmitLoadStaticField(std::vector<std::byte>& code, FieldSymbol* type);
 		void EmitStoreStaticField(std::vector<std::byte>& code, FieldSymbol* type);
 
-		void EmitLoadTypeArgument(std::vector<std::byte>& code, uint16_t index, TypeSymbol* type);
+		void EmitLoadTypeArgument(std::vector<std::byte>& code, std::uint16_t index, TypeSymbol* type);
 		void EmitCallMethodSymbol(std::vector<std::byte>& code, MethodSymbol* method);
 		//void EmitCallFunction(std::vector<std::byte>& code, MethodSymbolDelegate* func);
 	};

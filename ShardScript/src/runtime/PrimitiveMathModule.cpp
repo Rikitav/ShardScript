@@ -16,12 +16,12 @@ static const wchar_t* concatStrings(const wchar_t* left, const wchar_t* right)
 	if (left == nullptr || right == nullptr)
 		throw std::invalid_argument("Input strings cannot be null");
 
-	size_t leftLen = wcslen(left);
-	size_t rightLen = wcslen(right);
+	std::size_t leftLen = wcslen(left);
+	std::size_t rightLen = wcslen(right);
 
-	size_t leftSize = leftLen * sizeof(wchar_t);
-	size_t rightSize = rightLen * sizeof(wchar_t);
-	size_t totalSize = leftSize + rightSize + sizeof(wchar_t); // + L'\0'
+	std::size_t leftSize = leftLen * sizeof(wchar_t);
+	std::size_t rightSize = rightLen * sizeof(wchar_t);
+	std::size_t totalSize = leftSize + rightSize + sizeof(wchar_t); // + L'\0'
 
 	wchar_t* result = static_cast<wchar_t*>(malloc(totalSize));
 	if (result == nullptr)
@@ -181,8 +181,8 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(wchar_t leftData, To
 				if (rightData == 1)
 					return garbageCollector.FromValue(leftData);
 
-				size_t stringSize = rightData * sizeof(wchar_t);
-				size_t totalSize = stringSize * rightData + sizeof(wchar_t);
+				std::size_t stringSize = rightData * sizeof(wchar_t);
+				std::size_t totalSize = stringSize * rightData + sizeof(wchar_t);
 
 				wchar_t* result = static_cast<wchar_t*>(malloc(totalSize));
 				if (result == nullptr)
@@ -293,9 +293,9 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(const wchar_t* leftD
 				if (rightData == 1)
 					return garbageCollector.FromValue(leftData);
 
-				size_t length = wcslen(leftData);
-				size_t stringSize = length * sizeof(wchar_t);
-				size_t totalSize = stringSize * rightData + sizeof(wchar_t);
+				std::size_t length = wcslen(leftData);
+				std::size_t stringSize = length * sizeof(wchar_t);
+				std::size_t totalSize = stringSize * rightData + sizeof(wchar_t);
 
 				wchar_t* result = static_cast<wchar_t*>(malloc(totalSize));
 				if (result == nullptr)

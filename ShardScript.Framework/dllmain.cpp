@@ -27,7 +27,7 @@ inline static HMODULE GetCurrentModule()
 	return hModule;
 }
 
-inline static void GetResource(const wchar_t* name, const wchar_t*& resourceData, size_t & resourceSize)
+inline static void GetResource(const wchar_t* name, const wchar_t*& resourceData, std::size_t & resourceSize)
 {
 	HMODULE hModule = GetCurrentModule();
 	HRSRC hResource = FindResourceW(hModule, name, L"SOURCE_CODE");
@@ -38,7 +38,7 @@ inline static void GetResource(const wchar_t* name, const wchar_t*& resourceData
 	if (!hResourceData)
 		throw std::runtime_error("");
 
-	resourceSize = static_cast<size_t>(SizeofResource(hModule, hResource));
+	resourceSize = static_cast<std::size_t>(SizeofResource(hModule, hResource));
 	resourceData = static_cast<wchar_t*>(LockResource(hResourceData));
 	//FreeLibrary(hModule);
 }
@@ -146,7 +146,7 @@ SHARDLIB_ENTRYPOINT
 	ReflectPrimitives(context);
 	ReflectGlobalMethods(context);
 
-	const wchar_t* resourceData; size_t resourceSize;
+	const wchar_t* resourceData; std::size_t resourceSize;
 
 	{
 		GetResource(L"MATH_RANDOM", resourceData, resourceSize);

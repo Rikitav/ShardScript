@@ -19,7 +19,7 @@ namespace shard
 		const TypeSymbol* Type = nullptr;
         ExpressionSyntax* Declaration = nullptr;
 
-		uint16_t SlotIndex = 0;
+		std::uint16_t SlotIndex = 0;
         bool IsConst = false;
 
 		inline VariableSymbol(const std::wstring& name) : SyntaxSymbol(name, SyntaxKind::VariableStatement)

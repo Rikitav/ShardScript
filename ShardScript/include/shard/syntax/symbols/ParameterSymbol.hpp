@@ -20,7 +20,7 @@ namespace shard
         ExpressionSyntax* DefaultValueExpression = nullptr;
         TypeSymbol* Type = nullptr;
 
-        uint16_t SlotIndex = 0;
+        std::uint16_t SlotIndex = 0;
         bool IsOptional = false;
 
         inline ParameterSymbol(const std::wstring& name) : SyntaxSymbol(name, SyntaxKind::Parameter)

@@ -106,7 +106,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 
 		case OpCode::LOADCONST_STRING:
 		{
-			size_t data = decoder.AbsorbString();
+			std::size_t data = decoder.AbsorbString();
 			const wchar_t* str = reinterpret_cast<wchar_t*>(program.DataSection.data() + data);
 
 			ObjectInstance* instance = garbageCollector.FromValue(str, true);
@@ -116,7 +116,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 
 		case OpCode::LOADVARIABLE:
 		{
-			uint16_t slot = decoder.AbsorbVariableSlot();
+			std::uint16_t slot = decoder.AbsorbVariableSlot();
 			ObjectInstance* instance = frame->EvalStack[slot];
 			frame->PushStack(instance);
 			break;
@@ -124,7 +124,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 
 		case OpCode::STOREVARIABLE:
 		{
-			uint16_t slot = decoder.AbsorbVariableSlot();
+			std::uint16_t slot = decoder.AbsorbVariableSlot();
 			ObjectInstance* instance = frame->PopStack();
 
 			if (slot >= frame->EvalStack.size())
@@ -166,7 +166,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 
 		case OpCode::LOAD_TYPEARGUMENT:
 		{
-			uint16_t index = decoder.AbsorbUInt16();
+			std::uint16_t index = decoder.AbsorbUInt16();
 			TypeSymbol* type = decoder.AbsorbTypeSymbol();
 			if (PendingTypeArguments.size() <= index)
 				PendingTypeArguments.resize(index + 1);
@@ -235,7 +235,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			int64_t length = sizeInstance->AsInteger();
 			garbageCollector.CollectInstance(sizeInstance);
 
-			ObjectInstance* instance = garbageCollector.AllocateArray(elementType, static_cast<size_t>(length));
+			ObjectInstance* instance = garbageCollector.AllocateArray(elementType, static_cast<std::size_t>(length));
 			frame->PushStack(instance);
 			break;
 		}
@@ -246,7 +246,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance* arrayInstance = frame->PopStack();
 
 			int64_t index = indexInstance->AsInteger();
-			ObjectInstance* element = arrayInstance->GetElement(static_cast<size_t>(index), frame);
+			ObjectInstance* element = arrayInstance->GetElement(static_cast<std::size_t>(index), frame);
 
 			frame->PushStack(element);
 
@@ -261,7 +261,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance* arrayInstance = frame->PopStack();
 
 			int64_t index = indexInstance->AsInteger();
-			arrayInstance->SetElement(static_cast<size_t>(index), valueInstance, frame);
+			arrayInstance->SetElement(static_cast<std::size_t>(index), valueInstance, frame);
 
 			garbageCollector.CollectInstance(valueInstance);
 			garbageCollector.CollectInstance(indexInstance);
@@ -457,14 +457,14 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 
 		case OpCode::JUMP:
 		{
-			size_t jump = decoder.AbsorbJump();
+			std::size_t jump = decoder.AbsorbJump();
 			decoder.SetCursor(jump);
 			break;
 		}
 
 		case OpCode::JUMP_FALSE:
 		{
-			size_t jump = decoder.AbsorbJump();
+			std::size_t jump = decoder.AbsorbJump();
 			ObjectInstance* value = frame->PopStack();
 
 			bool asBool = value->AsBoolean();
@@ -478,7 +478,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 
 		case OpCode::JUMP_TRUE:
 		{
-			size_t jump = decoder.AbsorbJump();
+			std::size_t jump = decoder.AbsorbJump();
 			ObjectInstance* value = frame->PopStack();
 
 			bool asBool = value->AsBoolean();
@@ -507,12 +507,12 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 		throw std::runtime_error("Execution aborted by host.");
 
 	CallStackFrame* callingFrame = currentFrame->PreviousFrame;
-	currentFrame->EvalStack.reserve(static_cast<size_t>(method->GetEvalStackLocalsCount()));
+	currentFrame->EvalStack.reserve(static_cast<std::size_t>(method->GetEvalStackLocalsCount()));
 
-	size_t argsCount = method->GetEvalStackArgumentsCount();
+	std::size_t argsCount = method->GetEvalStackArgumentsCount();
 	ObjectInstance* thisInstance = nullptr;
 
-	for (size_t i = 0; i < argsCount; i++)
+	for (std::size_t i = 0; i < argsCount; i++)
 	{
 		ObjectInstance* argument = callingFrame->PopStack();
 		argument->IncrementReference();
@@ -531,7 +531,7 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 			TypeSymbol* underlyingType = genericInfo->UnderlayingType;
 
 			currentFrame->TypeArguments.resize(underlyingType->TypeParameters.size());
-			for (size_t i = 0; i < underlyingType->TypeParameters.size(); i++)
+			for (std::size_t i = 0; i < underlyingType->TypeParameters.size(); i++)
 				currentFrame->TypeArguments[i] = genericInfo->SubstituteTypeParameters(underlyingType->TypeParameters[i]);
 		}
 	}
@@ -734,7 +734,7 @@ void VirtualMachine::InvokeMethod(MethodSymbol* method, std::initializer_list<Ob
 	vm->PopFrame();
 }
 
-ObjectInstance* VirtualMachine::InvokeMethod(MethodSymbol* method, ObjectInstance** args, size_t count) const
+ObjectInstance* VirtualMachine::InvokeMethod(MethodSymbol* method, ObjectInstance** args, std::size_t count) const
 {
 	VirtualMachine* vm = const_cast<VirtualMachine*>(this);
 
@@ -749,7 +749,7 @@ ObjectInstance* VirtualMachine::InvokeMethod(MethodSymbol* method, ObjectInstanc
 
 	CallStackFrame* currentFrame = vm->PushFrame(method);
 
-	for (size_t i = 0; i < count; i++)
+	for (std::size_t i = 0; i < count; i++)
 		callingFrame->PushStack(args[i]);
 
 	vm->InvokeMethodInternal(method, currentFrame);
@@ -787,11 +787,11 @@ void VirtualMachine::Abort() const
 	vm->AbortFlag = true;
 }
 
-ObjectInstance* VirtualMachine::RunInteractive(size_t& pointer)
+ObjectInstance* VirtualMachine::RunInteractive(std::size_t& pointer)
 {
 	CallStackFrame* currentFrame = CurrentFrame();
 	MethodSymbol* method = currentFrame->Method;
-	currentFrame->EvalStack.reserve(static_cast<size_t>(method->GetEvalStackLocalsCount()) * 2);
+	currentFrame->EvalStack.reserve(static_cast<std::size_t>(method->GetEvalStackLocalsCount()) * 2);
 
 	ByteCodeDecoder decoder = ByteCodeDecoder(method->ExecutableByteCode);
 	ProgramDisassembler disassembler;

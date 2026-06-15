@@ -305,7 +305,7 @@ void AbstractEmiter::VisitMethodDeclaration(MethodDeclarationSyntax* const node)
 
 	if (!GeneratingFor->IsExtern)
 	{
-		size_t reserve = node->Body->Statements.size() * ReserveMultiplier;
+		std::size_t reserve = node->Body->Statements.size() * ReserveMultiplier;
 		GeneratingFor->ExecutableByteCode.reserve(reserve);
 		VisitStatementsBlock(node->Body.get());
 	}
@@ -354,7 +354,7 @@ void AbstractEmiter::VisitConstructorDeclaration(ConstructorDeclarationSyntax* c
 
 	if (!GeneratingFor->IsExtern)
 	{
-		size_t reserve = node->Body->Statements.size() * ReserveMultiplier;
+		std::size_t reserve = node->Body->Statements.size() * ReserveMultiplier;
 		GeneratingFor->ExecutableByteCode.reserve(reserve);
 		VisitStatementsBlock(node->Body.get());
 	}
@@ -376,7 +376,7 @@ void AbstractEmiter::VisitAccessorDeclaration(AccessorDeclarationSyntax* const n
 	{
 		if (node->Body != nullptr)
 		{
-			size_t reserve = node->Body->Statements.size() * ReserveMultiplier;
+			std::size_t reserve = node->Body->Statements.size() * ReserveMultiplier;
 			GeneratingFor->ExecutableByteCode.reserve(reserve);
 			VisitStatementsBlock(node->Body.get());
 		}
@@ -462,11 +462,11 @@ void AbstractEmiter::VisitWhileStatement(WhileStatementSyntax* const node)
 	scope.LoopEnd = GeneratingFor->ExecutableByteCode.size();
 
 	// Backtracking uninitialized jumps
-	for (size_t backtrack : scope.BlockEndBacktracks)
-		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack + sizeof(OpCode), &scope.BlockEnd, sizeof(size_t));
+	for (std::size_t backtrack : scope.BlockEndBacktracks)
+		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack + sizeof(OpCode), &scope.BlockEnd, sizeof(std::size_t));
 
-	for (size_t backtrack : scope.LoopEndBacktracks)
-		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack + sizeof(OpCode), &scope.LoopEnd, sizeof(size_t));
+	for (std::size_t backtrack : scope.LoopEndBacktracks)
+		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack + sizeof(OpCode), &scope.LoopEnd, sizeof(std::size_t));
 
 	// Exiting loop scope
 	Loops.pop();
@@ -499,11 +499,11 @@ void AbstractEmiter::VisitUntilStatement(UntilStatementSyntax* const node)
 	scope.LoopEnd = GeneratingFor->ExecutableByteCode.size();
 
 	// Backtracking uninitialized jumps
-	for (size_t backtrack : scope.BlockEndBacktracks)
-		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack + sizeof(OpCode), &scope.BlockEnd, sizeof(size_t));
+	for (std::size_t backtrack : scope.BlockEndBacktracks)
+		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack + sizeof(OpCode), &scope.BlockEnd, sizeof(std::size_t));
 
-	for (size_t backtrack : scope.LoopEndBacktracks)
-		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack + sizeof(OpCode), &scope.LoopEnd, sizeof(size_t));
+	for (std::size_t backtrack : scope.LoopEndBacktracks)
+		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack + sizeof(OpCode), &scope.LoopEnd, sizeof(std::size_t));
 
 	// Exiting loop scope
 	Loops.pop();
@@ -540,11 +540,11 @@ void AbstractEmiter::VisitForStatement(ForStatementSyntax* const node)
 	scope.LoopEnd = GeneratingFor->ExecutableByteCode.size();
 
 	// Backtracking uninitialized jumps
-	for (size_t backtrack : scope.BlockEndBacktracks)
-		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack + sizeof(OpCode), &scope.BlockEnd, sizeof(size_t));
+	for (std::size_t backtrack : scope.BlockEndBacktracks)
+		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack + sizeof(OpCode), &scope.BlockEnd, sizeof(std::size_t));
 
-	for (size_t backtrack : scope.LoopEndBacktracks)
-		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack + sizeof(OpCode), &scope.LoopEnd, sizeof(size_t));
+	for (std::size_t backtrack : scope.LoopEndBacktracks)
+		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack + sizeof(OpCode), &scope.LoopEnd, sizeof(std::size_t));
 
 	// Exiting loop scope
 	Loops.pop();
@@ -555,10 +555,10 @@ void AbstractEmiter::VisitForEachStatement(ForEachStatementSyntax* const node)
 	Loops.emplace();
 	LoopScope& scope = Loops.top();
 
-	uint16_t base = GeneratingFor->GetEvalStackArgumentsCount();
-	uint16_t arraySlot = base + GeneratingFor->AddVariableCount();
-	uint16_t indexSlot = base + GeneratingFor->AddVariableCount();
-	uint16_t lengthSlot = base + GeneratingFor->AddVariableCount();
+	std::uint16_t base = GeneratingFor->GetEvalStackArgumentsCount();
+	std::uint16_t arraySlot = base + GeneratingFor->AddVariableCount();
+	std::uint16_t indexSlot = base + GeneratingFor->AddVariableCount();
+	std::uint16_t lengthSlot = base + GeneratingFor->AddVariableCount();
 
 	VisitExpression(node->RangeExpression.get());
 	Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, arraySlot);
@@ -602,11 +602,11 @@ void AbstractEmiter::VisitForEachStatement(ForEachStatementSyntax* const node)
 
 	scope.LoopEnd = GeneratingFor->ExecutableByteCode.size();
 
-	for (size_t backtrack : scope.BlockEndBacktracks)
-		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack + sizeof(OpCode), &scope.BlockEnd, sizeof(size_t));
+	for (std::size_t backtrack : scope.BlockEndBacktracks)
+		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack + sizeof(OpCode), &scope.BlockEnd, sizeof(std::size_t));
 
-	for (size_t backtrack : scope.LoopEndBacktracks)
-		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack + sizeof(OpCode), &scope.LoopEnd, sizeof(size_t));
+	for (std::size_t backtrack : scope.LoopEndBacktracks)
+		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack + sizeof(OpCode), &scope.LoopEnd, sizeof(std::size_t));
 
 	Loops.pop();
 }
@@ -629,7 +629,7 @@ void AbstractEmiter::VisitIfStatement(IfStatementSyntax* const node)
 	ClauseScope& scope = Clauses.top();
 	VisitStatement(node->ConditionExpression.get());
 
-	size_t jumpAddress = GeneratingFor->ExecutableByteCode.size();
+	std::size_t jumpAddress = GeneratingFor->ExecutableByteCode.size();
 	Encoder.EmitJumpFalse(GeneratingFor->ExecutableByteCode, 0);
 	scope.ClauseEndBacktracks.push_back(jumpAddress);
 
@@ -647,8 +647,8 @@ void AbstractEmiter::VisitIfStatement(IfStatementSyntax* const node)
 	if (isFirst)
 	{
 		scope.ClauseEnd = GeneratingFor->ExecutableByteCode.size();
-		for (size_t backtrack : scope.ClauseEndBacktracks)
-			ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack + sizeof(OpCode), &scope.ClauseEnd, sizeof(size_t));
+		for (std::size_t backtrack : scope.ClauseEndBacktracks)
+			ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack + sizeof(OpCode), &scope.ClauseEnd, sizeof(std::size_t));
 
 		Clauses.pop();
 	}
@@ -665,7 +665,7 @@ void AbstractEmiter::VisitUnlessStatement(UnlessStatementSyntax* const node)
 	ClauseScope& scope = Clauses.top();
 	VisitStatement(node->ConditionExpression.get());
 
-	size_t jumpAddress = GeneratingFor->ExecutableByteCode.size();
+	std::size_t jumpAddress = GeneratingFor->ExecutableByteCode.size();
 	Encoder.EmitJumpTrue(GeneratingFor->ExecutableByteCode, 0);
 	scope.ClauseEndBacktracks.push_back(jumpAddress);
 
@@ -683,8 +683,8 @@ void AbstractEmiter::VisitUnlessStatement(UnlessStatementSyntax* const node)
 	if (isFirst)
 	{
 		scope.ClauseEnd = GeneratingFor->ExecutableByteCode.size();
-		for (size_t backtrack : scope.ClauseEndBacktracks)
-			ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack + sizeof(OpCode), &scope.ClauseEnd, sizeof(size_t));
+		for (std::size_t backtrack : scope.ClauseEndBacktracks)
+			ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack + sizeof(OpCode), &scope.ClauseEnd, sizeof(std::size_t));
 
 		Clauses.pop();
 	}
@@ -748,11 +748,11 @@ void AbstractEmiter::VisitObjectCreationExpression(ObjectExpressionSyntax* const
 		GenericTypeSymbol* genericType = static_cast<GenericTypeSymbol*>(node->TypeSymbol);
 		TypeSymbol* underlyingType = genericType->UnderlayingType;
 
-		for (size_t i = 0; i < underlyingType->TypeParameters.size(); i++)
+		for (std::size_t i = 0; i < underlyingType->TypeParameters.size(); i++)
 		{
 			TypeSymbol* concreteType = genericType->SubstituteTypeParameters(underlyingType->TypeParameters[i]);
 			if (concreteType != nullptr)
-				Encoder.EmitLoadTypeArgument(GeneratingFor->ExecutableByteCode, static_cast<uint16_t>(i), concreteType);
+				Encoder.EmitLoadTypeArgument(GeneratingFor->ExecutableByteCode, static_cast<std::uint16_t>(i), concreteType);
 		}
 	}
 
@@ -770,12 +770,12 @@ void AbstractEmiter::VisitCollectionExpression(CollectionExpressionSyntax* const
 
 void AbstractEmiter::VisitRangeExpression(RangeExpressionSyntax* const node)
 {
-	uint16_t base = GeneratingFor->GetEvalStackArgumentsCount();
-	uint16_t upperSlot = base + GeneratingFor->AddVariableCount();
-	uint16_t lowerSlot = base + GeneratingFor->AddVariableCount();
-	uint16_t lengthSlot = base + GeneratingFor->AddVariableCount();
-	uint16_t arraySlot = base + GeneratingFor->AddVariableCount();
-	uint16_t indexSlot = base + GeneratingFor->AddVariableCount();
+	std::uint16_t base = GeneratingFor->GetEvalStackArgumentsCount();
+	std::uint16_t upperSlot = base + GeneratingFor->AddVariableCount();
+	std::uint16_t lowerSlot = base + GeneratingFor->AddVariableCount();
+	std::uint16_t lengthSlot = base + GeneratingFor->AddVariableCount();
+	std::uint16_t arraySlot = base + GeneratingFor->AddVariableCount();
+	std::uint16_t indexSlot = base + GeneratingFor->AddVariableCount();
 
 	VisitExpression(node->Right.get());
 	Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, upperSlot);
@@ -801,7 +801,7 @@ void AbstractEmiter::VisitRangeExpression(RangeExpressionSyntax* const node)
 	Encoder.EmitLoadConstInt64(GeneratingFor->ExecutableByteCode, 0);
 	Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, indexSlot);
 
-	size_t fillStart = GeneratingFor->ExecutableByteCode.size();
+	std::size_t fillStart = GeneratingFor->ExecutableByteCode.size();
 
 	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, arraySlot);
 	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, indexSlot);
@@ -819,9 +819,9 @@ void AbstractEmiter::VisitRangeExpression(RangeExpressionSyntax* const node)
 	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, lengthSlot);
 	Encoder.EmitCompareLess(GeneratingFor->ExecutableByteCode);
 
-	size_t jumpBacktrack = GeneratingFor->ExecutableByteCode.size();
+	std::size_t jumpBacktrack = GeneratingFor->ExecutableByteCode.size();
 	Encoder.EmitJumpTrue(GeneratingFor->ExecutableByteCode, 0);
-	ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, jumpBacktrack + sizeof(OpCode), &fillStart, sizeof(size_t));
+	ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, jumpBacktrack + sizeof(OpCode), &fillStart, sizeof(std::size_t));
 
 	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, arraySlot);
 }
@@ -831,7 +831,7 @@ void AbstractEmiter::VisitLambdaExpression(LambdaExpressionSyntax* const node)
 	MethodSymbol* previous = GeneratingFor;
 	GeneratingFor = node->Symbol->AnonymousSymbol;
 	
-	size_t reserve = node->Body->Statements.size() * 20;
+	std::size_t reserve = node->Body->Statements.size() * 20;
 	GeneratingFor->ExecutableByteCode.reserve(reserve);
 	VisitStatementsBlock(node->Body.get());
 
@@ -843,19 +843,19 @@ void AbstractEmiter::VisitTernaryExpression(TernaryExpressionSyntax* const node)
 {
 	VisitExpression(node->Condition.get());
 
-	size_t jumpFalseAddress = GeneratingFor->ExecutableByteCode.size();
+	std::size_t jumpFalseAddress = GeneratingFor->ExecutableByteCode.size();
 	Encoder.EmitJumpFalse(GeneratingFor->ExecutableByteCode, 0);
 
 	VisitExpression(node->Left.get());
-	size_t jumpEndAddress = GeneratingFor->ExecutableByteCode.size();
+	std::size_t jumpEndAddress = GeneratingFor->ExecutableByteCode.size();
 	Encoder.EmitJump(GeneratingFor->ExecutableByteCode, 0);
 
-	size_t rightAddress = GeneratingFor->ExecutableByteCode.size();
+	std::size_t rightAddress = GeneratingFor->ExecutableByteCode.size();
 	VisitExpression(node->Right.get());
-	size_t ternaryEndAddress = GeneratingFor->ExecutableByteCode.size();
+	std::size_t ternaryEndAddress = GeneratingFor->ExecutableByteCode.size();
 
-	ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, jumpFalseAddress + sizeof(OpCode), &rightAddress, sizeof(size_t));
-	ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, jumpEndAddress + sizeof(OpCode), &ternaryEndAddress, sizeof(size_t));
+	ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, jumpFalseAddress + sizeof(OpCode), &rightAddress, sizeof(std::size_t));
+	ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, jumpEndAddress + sizeof(OpCode), &ternaryEndAddress, sizeof(std::size_t));
 }
 
 void AbstractEmiter::VisitUnaryExpression(UnaryExpressionSyntax* const node)
@@ -964,11 +964,11 @@ void AbstractEmiter::VisitInvocationExpression(InvokationExpressionSyntax* const
 	{
 		GenericTypeSymbol* genericType = static_cast<GenericTypeSymbol*>(node->ReceiverType);
 		TypeSymbol* underlyingType = genericType->UnderlayingType;
-		for (size_t i = 0; i < underlyingType->TypeParameters.size(); i++)
+		for (std::size_t i = 0; i < underlyingType->TypeParameters.size(); i++)
 		{
 			TypeSymbol* concreteType = genericType->SubstituteTypeParameters(underlyingType->TypeParameters[i]);
 			if (concreteType != nullptr)
-				Encoder.EmitLoadTypeArgument(GeneratingFor->ExecutableByteCode, static_cast<uint16_t>(i), concreteType);
+				Encoder.EmitLoadTypeArgument(GeneratingFor->ExecutableByteCode, static_cast<std::uint16_t>(i), concreteType);
 		}
 	}
 

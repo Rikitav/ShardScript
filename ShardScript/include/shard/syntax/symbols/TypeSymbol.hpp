@@ -41,7 +41,7 @@ namespace shard
         std::vector<MethodSymbol*> Methods;
 
         TypeLayoutingState State = TypeLayoutingState::Unvisited;
-        size_t MemoryBytesSize = 0;
+        std::size_t MemoryBytesSize = 0;
         bool IsReferenceType = false;
         bool IsValueType = false;
         bool IsNullable = false;
@@ -56,7 +56,7 @@ namespace shard
         TypeSymbol(const TypeSymbol& other) = delete;
         virtual ~TypeSymbol() = default;
 
-        size_t GetInlineSize() const;
+        std::size_t GetInlineSize() const;
         bool IsPrimitive();
 
         void OnSymbolDeclared(SyntaxSymbol* symbol) override;

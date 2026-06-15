@@ -23,7 +23,7 @@ namespace shard
 		
 		ProgramVirtualImage& Program;
 		VirtualMachine& Runtimer;
-		size_t Breakpoint = 0;
+		std::size_t Breakpoint = 0;
 
 		void EvaluateUsing(LexicalBuffer& buffer);
 		MemberDeclarationSyntax* ReadMember(LexicalBuffer& sequenceReader);
