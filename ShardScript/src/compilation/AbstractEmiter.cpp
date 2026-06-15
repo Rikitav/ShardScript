@@ -743,9 +743,9 @@ void AbstractEmiter::VisitLiteralExpression(LiteralExpressionSyntax* const node)
 
 void AbstractEmiter::VisitObjectCreationExpression(ObjectExpressionSyntax* const node)
 {
-	if (node->TypeSymbol != nullptr && node->TypeSymbol->Kind == SyntaxKind::GenericType)
+	if (node->Symbol != nullptr && node->Symbol->Kind == SyntaxKind::GenericType)
 	{
-		GenericTypeSymbol* genericType = static_cast<GenericTypeSymbol*>(node->TypeSymbol);
+		GenericTypeSymbol* genericType = static_cast<GenericTypeSymbol*>(node->Symbol);
 		TypeSymbol* underlyingType = genericType->UnderlayingType;
 
 		for (std::size_t i = 0; i < underlyingType->TypeParameters.size(); i++)
@@ -757,7 +757,7 @@ void AbstractEmiter::VisitObjectCreationExpression(ObjectExpressionSyntax* const
 	}
 
 	VisitArgumentsList(node->ArgumentsList.get());
-	Encoder.EmitNewObject(GeneratingFor->ExecutableByteCode, node->TypeSymbol, node->CtorSymbol);
+	Encoder.EmitNewObject(GeneratingFor->ExecutableByteCode, node->Symbol, node->CtorSymbol);
 }
 
 void AbstractEmiter::VisitCollectionExpression(CollectionExpressionSyntax* const node)

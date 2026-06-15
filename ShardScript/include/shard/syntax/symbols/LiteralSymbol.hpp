@@ -11,7 +11,7 @@ namespace shard
 		union
 		{
 			bool AsBooleanValue = false;
-			int64_t AsIntegerValue;
+			std::int64_t AsIntegerValue;
 			double AsDoubleValue;
 		};
 

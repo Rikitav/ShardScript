@@ -767,29 +767,29 @@ void ExpressionBinder::VisitUnaryExpression(UnaryExpressionSyntax *const node)
 
 TypeSymbol* ExpressionBinder::AnalyzeObjectExpression(ObjectExpressionSyntax *const node)
 {
-	if (node->TypeSymbol == nullptr)
+	if (node->Symbol == nullptr)
 		return nullptr;
 
 	std::wstring methodName = node->IdentifierToken.Word;
 	ConstructorSymbol* method = ResolveConstructor(node);
 	if (method == nullptr)
-		return node->TypeSymbol;
+		return node->Symbol;
 
 	if (!IsSymbolAccessible(method, Table->LookupNode(method).value_or(nullptr), node))
 	{
 		Diagnostics.ReportError(node->IdentifierToken, L"Method '" + methodName + L"' is not accessible");
-		return node->TypeSymbol;
+		return node->Symbol;
 	}
 
 	GenericTypeSymbol* genericType = nullptr;
-	if (node->TypeSymbol->Kind == SyntaxKind::GenericType)
-		genericType = static_cast<GenericTypeSymbol*>(node->TypeSymbol);
+	if (node->Symbol->Kind == SyntaxKind::GenericType)
+		genericType = static_cast<GenericTypeSymbol*>(node->Symbol);
 
 	if (!MatchMethodArguments(method->Parameters, node->ArgumentsList->Arguments, genericType))
-		return node->TypeSymbol;
+		return node->Symbol;
 
 	node->CtorSymbol = method;
-	return node->TypeSymbol;
+	return node->Symbol;
 }
 
 void ExpressionBinder::VisitObjectCreationExpression(ObjectExpressionSyntax *const node)
@@ -1361,7 +1361,7 @@ TypeSymbol* ExpressionBinder::AnalyzeInvokationExpression(InvokationExpressionSy
 
 ConstructorSymbol* ExpressionBinder::ResolveConstructor(ObjectExpressionSyntax *const node)
 {
-	TypeSymbol* symbol = node->TypeSymbol;
+	TypeSymbol* symbol = node->Symbol;
 	if (symbol == nullptr)
 		return nullptr;
 

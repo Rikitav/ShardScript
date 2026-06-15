@@ -30,7 +30,7 @@ void ConsoleHelper::Write(ObjectInstance* instance)
 
 	if (instance->getInfo() == SymbolTable::Primitives::Integer)
 	{
-		int64_t data = instance->AsInteger();
+		std::int64_t data = instance->AsInteger();
 		Write(data);
 		return;
 	}
@@ -77,7 +77,7 @@ void ConsoleHelper::Write(bool data)
 	Write(text);
 }
 
-void ConsoleHelper::Write(int64_t data)
+void ConsoleHelper::Write(std::int64_t data)
 {
 	std::wstring strData = std::to_wstring(data);
 	Write(strData);
@@ -141,7 +141,7 @@ void ConsoleHelper::WriteLine(bool data)
 	std::cout << std::endl;
 }
 
-void ConsoleHelper::WriteLine(int64_t data)
+void ConsoleHelper::WriteLine(std::int64_t data)
 {
 	Write(data);
 	std::cout << std::endl;

@@ -63,11 +63,11 @@ static void ResolvePrimitives()
 	SymbolTable::Primitives::Array->State = TypeLayoutingState::Visited;
 
 	SymbolTable::Primitives::Boolean->MemoryBytesSize = sizeof(bool);
-	SymbolTable::Primitives::Integer->MemoryBytesSize = sizeof(int64_t);
+	SymbolTable::Primitives::Integer->MemoryBytesSize = sizeof(std::int64_t);
 	SymbolTable::Primitives::Double->MemoryBytesSize = sizeof(double);
 	SymbolTable::Primitives::Char->MemoryBytesSize = sizeof(wchar_t);
-	SymbolTable::Primitives::String->MemoryBytesSize = sizeof(int64_t) + sizeof(wchar_t*); // long _length + char[] _data
-	SymbolTable::Primitives::Array->MemoryBytesSize = sizeof(int64_t);					   // long _length
+	SymbolTable::Primitives::String->MemoryBytesSize = sizeof(std::int64_t) + sizeof(wchar_t*); // long _length + char[] _data
+	SymbolTable::Primitives::Array->MemoryBytesSize = sizeof(std::int64_t);					   // long _length
 }
 
 SymbolTable::SymbolTable()

@@ -16,7 +16,7 @@ namespace shard
 		{
 			/*
 			if (kind < SyntaxKind::Statement || kind > SyntaxKind::ElseStatement)
-				throw std::std::runtime_error("StatementSyntax kind out of range (" + std::to_string(static_cast<int>(kind)) + ")");
+				throw std::runtime_error("StatementSyntax kind out of range (" + std::to_string(static_cast<int>(kind)) + ")");
 			*/
 		}
 
@@ -37,7 +37,7 @@ namespace shard
 		{
 			/*
 			if (kind < SyntaxKind::KeywordStatement || kind > SyntaxKind::ElseStatement)
-				throw std::std::runtime_error("KeywordStatementSyntax kind out of range (" + std::to_string(static_cast<int>(kind)) + ")");
+				throw std::runtime_error("KeywordStatementSyntax kind out of range (" + std::to_string(static_cast<int>(kind)) + ")");
 			*/
 		}
 

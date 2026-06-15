@@ -34,7 +34,7 @@ void* ObjectInstance::getMemory() const
 	return Memory;
 }
 
-std::fpos_t ObjectInstance::getReferencesCounter() const
+std::int64_t ObjectInstance::getReferencesCounter() const
 {
 	return ReferencesCounter;
 }
@@ -212,7 +212,7 @@ void ObjectInstance::ReadMemory(const std::size_t offset, const std::size_t size
 		throw std::out_of_range("offset (" + std::to_string(offset) + ") + size (" + std::to_string(size) + ") is out of instance's memory range (" + std::to_string(GetMemorySize()) + ").");
 
 	const char* memOffset = static_cast<char*>(getMemory()) + offset;
-	memcpy(dst, memOffset, size);
+	std::memcpy(dst, memOffset, size);
 }
 
 void ObjectInstance::WriteMemory(const std::size_t offset, const std::size_t size, const void* src) const
@@ -227,7 +227,7 @@ void ObjectInstance::WriteMemory(const std::size_t offset, const std::size_t siz
 		throw std::out_of_range("offset (" + std::to_string(offset) + ") + size (" + std::to_string(size) + ") is out of instance's memory range (" + std::to_string(GetMemorySize()) + ").");
 
 	char* memOffset = static_cast<char*>(getMemory()) + offset;
-	memcpy(memOffset, src, size);
+	std::memcpy(memOffset, src, size);
 }
 
 void ObjectInstance::WriteBoolean(const bool& value) const
@@ -236,7 +236,7 @@ void ObjectInstance::WriteBoolean(const bool& value) const
 	WriteMemory(0, GetMemorySize(), ptr);
 }
 
-void ObjectInstance::WriteInteger(const int64_t& value) const
+void ObjectInstance::WriteInteger(const std::int64_t& value) const
 {
 	const void* ptr = &value;
 	WriteMemory(0, GetMemorySize(), ptr);
@@ -262,8 +262,8 @@ void ObjectInstance::WriteString(const wchar_t* value) const
 
 void ObjectInstance::WriteString(const wchar_t* value, std::size_t size) const
 {
-	WriteMemory(0, sizeof(int64_t), &size);
-	WriteMemory(sizeof(int64_t), sizeof(wchar_t) * size, value);
+	WriteMemory(0, sizeof(std::int64_t), &size);
+	WriteMemory(sizeof(std::int64_t), sizeof(wchar_t) * size, value);
 }
 
 void ObjectInstance::WriteString(const std::wstring& value) const
@@ -276,9 +276,9 @@ bool& ObjectInstance::AsBoolean() const
 	return *reinterpret_cast<bool*>(getMemory());
 }
 
-int64_t& ObjectInstance::AsInteger() const
+std::int64_t& ObjectInstance::AsInteger() const
 {
-	return *reinterpret_cast<int64_t*>(getMemory());
+	return *reinterpret_cast<std::int64_t*>(getMemory());
 }
 
 double& ObjectInstance::AsDouble() const
@@ -293,5 +293,5 @@ wchar_t& ObjectInstance::AsCharacter() const
 
 const wchar_t* ObjectInstance::AsString() const
 {
-	return *reinterpret_cast<const wchar_t**>(OffsetMemory(sizeof(int64_t), sizeof(wchar_t*)));
+	return *reinterpret_cast<const wchar_t**>(OffsetMemory(sizeof(std::int64_t), sizeof(wchar_t*)));
 }

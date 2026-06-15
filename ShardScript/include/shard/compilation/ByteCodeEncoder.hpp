@@ -29,7 +29,7 @@ namespace shard
 		
 		void EmitLoadConstNull(std::vector<std::byte>& code);
 		void EmitLoadConstBool(std::vector<std::byte>& code, bool value);
-		void EmitLoadConstInt64(std::vector<std::byte>& code, int64_t value);
+		void EmitLoadConstInt64(std::vector<std::byte>& code, std::int64_t value);
 		void EmitLoadConstDouble64(std::vector<std::byte>& code, double value);
 		void EmitLoadConstChar16(std::vector<std::byte>& code, wchar_t value);
 		void EmitLoadConstString(std::vector<std::byte>& code, std::vector<std::byte>& data, const wchar_t* value);

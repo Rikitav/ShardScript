@@ -103,7 +103,7 @@ namespace shard
         GarbageCollector(GarbageCollector&&) = default;
         GarbageCollector& operator=(GarbageCollector&&) = default;
 
-        ObjectInstance* FromValue(int64_t value);
+        ObjectInstance* FromValue(std::int64_t value);
         ObjectInstance* FromValue(double value);
         ObjectInstance* FromValue(bool value);
         ObjectInstance* FromValue(wchar_t value);

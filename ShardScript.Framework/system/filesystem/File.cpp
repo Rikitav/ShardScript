@@ -1,19 +1,20 @@
 #include <ShardScript.hpp>
-#include <Windows.h>
-#include <cstdio>
+#include <filesystem>
+#include <fstream>
 #include <stdexcept>
 #include <string>
 
+namespace fs = std::filesystem;
 using namespace shard;
 
 namespace shard
 {
 	extern "C"
 	{
-		__declspec(dllexport) ObjectInstance* shard_file_ReadAllText(const CallState& context) noexcept(false)
+		SHARDLIB_EXPORT ObjectInstance* shard_file_ReadAllText(const CallState& context) noexcept(false)
 		{
 			std::wstring fileName = context.Args[0]->AsString(); // fileName
-			std::wifstream fileStream(fileName.c_str());
+			std::wifstream fileStream = std::wifstream(fs::path(fileName));
 
 			if (!fileStream.is_open())
 				throw std::runtime_error("Failed to open text file.");
@@ -22,28 +23,27 @@ namespace shard
 			return context.Collector.FromValue(content);
 		}
 
-		__declspec(dllexport) ObjectInstance* shard_file_WriteAllText(const CallState& context) noexcept(false)
+		SHARDLIB_EXPORT ObjectInstance* shard_file_WriteAllText(const CallState& context) noexcept(false)
 		{
 			std::wstring fileName = context.Args[0]->AsString(); // fileName
 			std::wstring content = context.Args[1]->AsString(); // content
-			std::wofstream fileStream(fileName.c_str());
+			std::wofstream fileStream = std::wofstream(fs::path(fileName));
 
 			if (!fileStream.is_open())
 				throw std::runtime_error("Failed to open text file.");
 
 			fileStream.write(content.c_str(), content.size());
-
 			if (fileStream.fail())
 				throw std::runtime_error("File writing failed.");
 
 			return nullptr;
 		}
 
-		__declspec(dllexport) ObjectInstance* shard_file_AppendAllText(const CallState& context) noexcept(false)
+		SHARDLIB_EXPORT ObjectInstance* shard_file_AppendAllText(const CallState& context) noexcept(false)
 		{
 			std::wstring fileName = context.Args[0]->AsString(); // fileName
 			std::wstring content = context.Args[1]->AsString(); // content
-			std::wofstream fileStream(fileName.c_str(), std::ios_base::app);
+			std::wofstream fileStream = std::wofstream(fs::path(fileName), std::ios_base::app);
 
 			if (!fileStream.is_open())
 				throw std::runtime_error("Failed to open text file.");
@@ -52,38 +52,42 @@ namespace shard
 			return nullptr;
 		}
 
-		__declspec(dllexport) ObjectInstance* shard_file_Exists(const CallState& context) noexcept(false)
+		SHARDLIB_EXPORT ObjectInstance* shard_file_Exists(const CallState& context) noexcept(false)
 		{
 			std::wstring fileName = context.Args[0]->AsString();
-			DWORD attrib = GetFileAttributesW(fileName.c_str());
-			bool exists = (attrib != INVALID_FILE_ATTRIBUTES && !(attrib & FILE_ATTRIBUTE_DIRECTORY));
+			bool exists = fs::exists(fileName);
 			return context.Collector.FromValue(exists);
 		}
 
-		__declspec(dllexport) ObjectInstance* shard_file_Delete(const CallState& context) noexcept(false)
+		SHARDLIB_EXPORT ObjectInstance* shard_file_Delete(const CallState& context) noexcept(false)
 		{
 			std::wstring fileName = context.Args[0]->AsString();
-			if (_wremove(fileName.c_str()) != 0)
+			if (!fs::remove(fileName))
 				throw std::runtime_error("Failed to delete file.");
 
 			return nullptr;
 		}
 
-		__declspec(dllexport) ObjectInstance* shard_file_Copy(const CallState& context) noexcept(false)
+		SHARDLIB_EXPORT ObjectInstance* shard_file_Copy(const CallState& context) noexcept(false)
 		{
 			std::wstring sourceFileName = context.Args[0]->AsString();
 			std::wstring destFileName = context.Args[1]->AsString();
-			if (!CopyFileW(sourceFileName.c_str(), destFileName.c_str(), FALSE))
+
+			if (!fs::copy_file(sourceFileName.c_str(), destFileName.c_str(), std::filesystem::copy_options::overwrite_existing))
 				throw std::runtime_error("Failed to copy file.");
 
 			return nullptr;
 		}
 
-		__declspec(dllexport) ObjectInstance* shard_file_Move(const CallState& context) noexcept(false)
+		SHARDLIB_EXPORT ObjectInstance* shard_file_Move(const CallState& context) noexcept(false)
 		{
 			std::wstring sourceFileName = context.Args[0]->AsString();
 			std::wstring destFileName = context.Args[1]->AsString();
-			if (!MoveFileW(sourceFileName.c_str(), destFileName.c_str()))
+
+			if (!fs::copy_file(sourceFileName.c_str(), destFileName.c_str(), std::filesystem::copy_options::overwrite_existing))
+				throw std::runtime_error("Failed to move file.");
+
+			if (!fs::remove(sourceFileName.c_str()))
 				throw std::runtime_error("Failed to move file.");
 
 			return nullptr;

@@ -11,7 +11,7 @@
 #include <stdexcept>
 #include <cstddef>
 #include <cstdint>
-#include <cstdio>
+#include <cstring>
 #include <vector>
 
 using namespace shard;
@@ -22,7 +22,7 @@ static bool ReadUnaligned(const std::vector<std::byte>& code, std::size_t& ip, T
     if (ip + sizeof(T) > code.size())
         return false;
 
-    memcpy(&value, &code[ip], sizeof(T));
+    std::memcpy(&value, &code[ip], sizeof(T));
     ip += sizeof(T);
     return true;
 }
@@ -37,15 +37,15 @@ std::size_t ByteCodeDecoder::Index() const
     return _ip;
 }
 
-void ByteCodeDecoder::SetCursor(std::fpos_t amount)
+void ByteCodeDecoder::SetCursor(std::int64_t amount)
 {
     // lower bound check
-    if (amount < 0)
-        throw new std::out_of_range("Tried to below code boundaries");
+    if (amount < static_cast<std::int64_t>(0))
+        throw std::out_of_range("Tried to below code boundaries");
 
     // upper bound check
-    if (amount > _code.size())
-        throw new std::out_of_range("Tried to read out of code boundaries");
+    if (amount > static_cast<std::int64_t>(_code.size()))
+        throw std::out_of_range("Tried to read out of code boundaries");
 
     // seeking
     _ip = amount;
@@ -70,9 +70,9 @@ bool ByteCodeDecoder::AbsorbBoolean()
     return value;
 }
 
-int64_t ByteCodeDecoder::AbsorbInt64()
+std::int64_t ByteCodeDecoder::AbsorbInt64()
 {
-    int64_t value{};
+    std::int64_t value{};
     ReadUnaligned(_code, _ip, value);
     return value;
 }

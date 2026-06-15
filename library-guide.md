@@ -104,13 +104,13 @@ using MethodSymbolDelegate = shard::ObjectInstance* (*)(const shard::CallState& 
 Основные методы:
 
 ```cpp
-int64_t& AsInteger() const;
+std::int64_t& AsInteger() const;
 double& AsDouble() const;
 bool& AsBoolean() const;
 wchar_t& AsCharacter() const;
 const wchar_t* AsString() const;
 
-void WriteInteger(const int64_t& value) const;
+void WriteInteger(const std::int64_t& value) const;
 void WriteDouble(const double& value) const;
 void WriteBoolean(const bool& value) const;
 void WriteCharacter(const wchar_t& value) const;
@@ -128,7 +128,7 @@ std::size_t GetArrayLength() const;
 Для создания новых значений используется `GarbageCollector`:
 
 ```cpp
-ObjectInstance* FromValue(int64_t value);
+ObjectInstance* FromValue(std::int64_t value);
 ObjectInstance* FromValue(double value);
 ObjectInstance* FromValue(bool value);
 ObjectInstance* FromValue(wchar_t value);
@@ -214,8 +214,8 @@ using namespace shard;
 
 static ObjectInstance* MyAdd(const CallState& ctx)
 {
-    int64_t a = ctx.Args[0]->AsInteger();
-    int64_t b = ctx.Args[1]->AsInteger();
+    std::int64_t a = ctx.Args[0]->AsInteger();
+    std::int64_t b = ctx.Args[1]->AsInteger();
     return ctx.Collector.FromValue(a + b);
 }
 
@@ -257,8 +257,8 @@ using namespace shard;
 
 static ObjectInstance* MyAdd(const CallState& ctx)
 {
-    int64_t a = ctx.Args[0]->AsInteger();
-    int64_t b = ctx.Args[1]->AsInteger();
+    std::int64_t a = ctx.Args[0]->AsInteger();
+    std::int64_t b = ctx.Args[1]->AsInteger();
     return ctx.Collector.FromValue(a + b);
 }
 
@@ -301,7 +301,7 @@ SHARDLIB_ENTRYPOINT
 ```cpp
 static ObjectInstance* CloneInteger(const CallState& ctx)
 {
-    int64_t value = ctx.Args[0]->AsInteger();
+    std::int64_t value = ctx.Args[0]->AsInteger();
     return ctx.Collector.FromValue(value);
 }
 
@@ -338,8 +338,8 @@ static ObjectInstance* SafeAdd(const CallState& ctx)
         throw std::runtime_error("Add expects 2 arguments");
     }
 
-    int64_t a = ctx.Args[0]->AsInteger();
-    int64_t b = ctx.Args[1]->AsInteger();
+    std::int64_t a = ctx.Args[0]->AsInteger();
+    std::int64_t b = ctx.Args[1]->AsInteger();
     return ctx.Collector.FromValue(a + b);
 }
 ```
@@ -348,7 +348,7 @@ static ObjectInstance* SafeAdd(const CallState& ctx)
 
 | ShardScript | C++ тип | Чтение | Запись |
 |-------------|---------|--------|--------|
-| `int` | `int64_t` | `AsInteger()` | `WriteInteger(v)` / `FromValue(v)` |
+| `int` | `std::int64_t` | `AsInteger()` | `WriteInteger(v)` / `FromValue(v)` |
 | `double` | `double` | `AsDouble()` | `WriteDouble(v)` / `FromValue(v)` |
 | `bool` | `bool` | `AsBoolean()` | `WriteBoolean(v)` / `FromValue(v)` |
 | `char` | `wchar_t` | `AsCharacter()` | `WriteCharacter(v)` / `FromValue(v)` |
@@ -395,7 +395,7 @@ math.AddMethod(L"Add", SymbolTable::Primitives::Integer, true)
 static ObjectInstance* CounterNext(const CallState& ctx)
 {
     ObjectInstance* self = ctx.Args[0];
-    int64_t value = self->AsInteger();
+    std::int64_t value = self->AsInteger();
     self->WriteInteger(value + 1);
     return self;
 }
@@ -410,7 +410,7 @@ static ObjectInstance* CounterNext(const CallState& ctx)
 {
     ObjectInstance* self = ctx.Args[0];
     ObjectInstance* valueObj = self->GetField(g_valueField, ctx.Frame);
-    int64_t value = valueObj->AsInteger();
+    std::int64_t value = valueObj->AsInteger();
     valueObj->WriteInteger(value + 1);
     return valueObj;
 }
@@ -424,7 +424,7 @@ static ObjectInstance* CounterNext(const CallState& ctx)
 static ObjectInstance* CounterCtor(const CallState& ctx)
 {
     ObjectInstance* self = ctx.Args[0];
-    int64_t initial = ctx.Args[1]->AsInteger();
+    std::int64_t initial = ctx.Args[1]->AsInteger();
 
     ObjectInstance* valueField = self->GetField(g_valueField, ctx.Frame);
     valueField->WriteInteger(initial);
@@ -518,7 +518,7 @@ static ObjectInstance* SumArray(const CallState& ctx)
     ObjectInstance* arr = ctx.Args[0];
     std::size_t len = arr->GetArrayLength();
 
-    int64_t sum = 0;
+    std::int64_t sum = 0;
     for (std::size_t i = 0; i < len; ++i)
     {
         ObjectInstance* elem = arr->GetElement(i, ctx.Frame);
@@ -534,8 +534,8 @@ static ObjectInstance* SumArray(const CallState& ctx)
 ```cpp
 static ObjectInstance* Range(const CallState& ctx)
 {
-    int64_t from = ctx.Args[0]->AsInteger();
-    int64_t to   = ctx.Args[1]->AsInteger();
+    std::int64_t from = ctx.Args[0]->AsInteger();
+    std::int64_t to   = ctx.Args[1]->AsInteger();
     std::size_t count = static_cast<std::size_t>(to - from + 1);
 
     ObjectInstance* arr = ctx.Collector.AllocateArray(
@@ -544,7 +544,7 @@ static ObjectInstance* Range(const CallState& ctx)
 
     for (std::size_t i = 0; i < count; ++i)
     {
-        ObjectInstance* elem = ctx.Collector.FromValue(from + static_cast<int64_t>(i));
+        ObjectInstance* elem = ctx.Collector.FromValue(from + static_cast<std::int64_t>(i));
         arr->SetElement(i, elem, ctx.Frame);
     }
 
@@ -970,8 +970,8 @@ public static extern func Foo() -> void;
 extern "C" __declspec(dllexport) // Windows
 shard::ObjectInstance* MyAdd(const shard::CallState& ctx)
 {
-    int64_t a = ctx.Args[0]->AsInteger();
-    int64_t b = ctx.Args[1]->AsInteger();
+    std::int64_t a = ctx.Args[0]->AsInteger();
+    std::int64_t b = ctx.Args[1]->AsInteger();
     return ctx.Collector.FromValue(a + b);
 }
 ```
@@ -998,8 +998,8 @@ using namespace shard;
 extern "C" __declspec(dllexport)
 ObjectInstance* NativeAdd(const CallState& ctx)
 {
-    int64_t a = ctx.Args[0]->AsInteger();
-    int64_t b = ctx.Args[1]->AsInteger();
+    std::int64_t a = ctx.Args[0]->AsInteger();
+    std::int64_t b = ctx.Args[1]->AsInteger();
     return ctx.Collector.FromValue(a + b);
 }
 
@@ -1064,7 +1064,7 @@ println(y); // 4
 
 static ObjectInstance* GlobalNow(const CallState& ctx)
 {
-    return ctx.Collector.FromValue(static_cast<int64_t>(time(nullptr)));
+    return ctx.Collector.FromValue(static_cast<std::int64_t>(time(nullptr)));
 }
 
 SHARDLIB_ENTRYPOINT

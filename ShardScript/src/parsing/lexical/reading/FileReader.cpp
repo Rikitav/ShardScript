@@ -5,13 +5,14 @@
 #include <fstream>
 #include <stdexcept>
 #include <string>
+#include <filesystem>
 
 using namespace shard;
 
 FileReader::FileReader(const std::wstring& fileName) : SourceTextProvider()
 {
 	Filename = fileName;
-	InputStream = std::wfstream(fileName.c_str(), std::ios::in);
+	InputStream = std::wfstream(std::filesystem::path(fileName), std::ios::in);
 	InputStream.imbue(std::locale::classic());
 
 	if (!InputStream)

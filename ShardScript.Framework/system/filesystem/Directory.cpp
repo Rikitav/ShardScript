@@ -1,15 +1,16 @@
-#include <ShardScript.hpp>
-#include <Windows.h>
 #include <string>
 #include <stdexcept>
+#include <filesystem>
+#include <ShardScript.hpp>
 
+namespace fs = std::filesystem;
 using namespace shard;
 
 namespace shard
 {
 	extern "C"
 	{
-		__declspec(dllexport) ObjectInstance* shard_directory_GetDirectory(const CallState& context) noexcept(false)
+		SHARDLIB_EXPORT ObjectInstance* shard_directory_GetDirectory(const CallState& context) noexcept(false)
 		{
 			ObjectInstance* fullName = context.Args[0];
 			ObjectInstance* instance = context.Collector.AllocateInstance(context.Method->ReturnType);
@@ -21,7 +22,7 @@ namespace shard
 			return instance;
 		}
 
-		__declspec(dllexport) ObjectInstance* shard_directory_Name_get(const CallState& context) noexcept(false)
+		SHARDLIB_EXPORT ObjectInstance* shard_directory_Name_get(const CallState& context) noexcept(false)
 		{
 			ObjectInstance* instance = context.Args[0];
 			TypeSymbol* ownerType = const_cast<TypeSymbol*>(instance->getInfo());
@@ -37,7 +38,7 @@ namespace shard
 			return context.Collector.FromValue(path);
 		}
 
-		__declspec(dllexport) ObjectInstance* shard_directory_Exists_get(const CallState& context) noexcept(false)
+		SHARDLIB_EXPORT ObjectInstance* shard_directory_Exists_get(const CallState& context) noexcept(false)
 		{
 			ObjectInstance* instance = context.Args[0];
 			TypeSymbol* ownerType = const_cast<TypeSymbol*>(instance->getInfo());
@@ -45,12 +46,11 @@ namespace shard
 			FieldSymbol* field = ownerType->Fields[0];
 			ObjectInstance* fullName = instance->GetField(field);
 
-			DWORD attrib = GetFileAttributesW(fullName->AsString());
-			bool exists = (attrib != INVALID_FILE_ATTRIBUTES && (attrib & FILE_ATTRIBUTE_DIRECTORY));
+			bool exists = fs::exists(fullName->AsString());
 			return context.Collector.FromValue(exists);
 		}
 
-		__declspec(dllexport) ObjectInstance* shard_directory_Create(const CallState& context) noexcept(false)
+		SHARDLIB_EXPORT ObjectInstance* shard_directory_Create(const CallState& context) noexcept(false)
 		{
 			ObjectInstance* instance = context.Args[0];
 			TypeSymbol* ownerType = const_cast<TypeSymbol*>(instance->getInfo());
@@ -58,16 +58,16 @@ namespace shard
 			FieldSymbol* field = ownerType->Fields[0];
 			ObjectInstance* fullName = instance->GetField(field);
 
-			if (!CreateDirectoryW(fullName->AsString(), nullptr))
-			{
-				if (GetLastError() != ERROR_ALREADY_EXISTS)
-					throw std::runtime_error("Failed to create directory.");
-			}
+			if (fs::exists(fullName->AsString()))
+				return nullptr;
+
+			if (!fs::create_directories(fullName->AsString()))
+				throw std::runtime_error("Failed to create directory.");
 
 			return nullptr;
 		}
 
-		__declspec(dllexport) ObjectInstance* shard_directory_Delete(const CallState& context) noexcept(false)
+		SHARDLIB_EXPORT ObjectInstance* shard_directory_Delete(const CallState& context) noexcept(false)
 		{
 			ObjectInstance* instance = context.Args[0];
 			TypeSymbol* ownerType = const_cast<TypeSymbol*>(instance->getInfo());
@@ -75,28 +75,27 @@ namespace shard
 			FieldSymbol* field = ownerType->Fields[0];
 			ObjectInstance* fullName = instance->GetField(field);
 
-			if (!RemoveDirectoryW(fullName->AsString()))
+			if (!fs::remove(fullName->AsString()))
 				throw std::runtime_error("Failed to delete directory.");
 
 			return nullptr;
 		}
 
-		__declspec(dllexport) ObjectInstance* shard_directory_Exists(const CallState& context) noexcept(false)
+		SHARDLIB_EXPORT ObjectInstance* shard_directory_Exists(const CallState& context) noexcept(false)
 		{
 			std::wstring path = context.Args[0]->AsString();
-			DWORD attrib = GetFileAttributesW(path.c_str());
-			bool exists = (attrib != INVALID_FILE_ATTRIBUTES && (attrib & FILE_ATTRIBUTE_DIRECTORY));
+			bool exists = fs::exists(path);;
 			return context.Collector.FromValue(exists);
 		}
 
-		__declspec(dllexport) ObjectInstance* shard_directory_CreateDirectory(const CallState& context) noexcept(false)
+		SHARDLIB_EXPORT ObjectInstance* shard_directory_CreateDirectory(const CallState& context) noexcept(false)
 		{
 			std::wstring path = context.Args[0]->AsString();
-			if (!CreateDirectoryW(path.c_str(), nullptr))
-			{
-				if (GetLastError() != ERROR_ALREADY_EXISTS)
-					throw std::runtime_error("Failed to create directory.");
-			}
+			if (fs::exists(path))
+				return nullptr;
+
+			if (!fs::create_directories(path))
+				throw std::runtime_error("Failed to create directory.");
 
 			ObjectInstance* instance = context.Collector.AllocateInstance(context.Method->ReturnType);
 			TypeSymbol* ownerType = const_cast<TypeSymbol*>(instance->getInfo());
@@ -105,10 +104,10 @@ namespace shard
 			return instance;
 		}
 
-		__declspec(dllexport) ObjectInstance* shard_directory_DeleteStatic(const CallState& context) noexcept(false)
+		SHARDLIB_EXPORT ObjectInstance* shard_directory_DeleteStatic(const CallState& context) noexcept(false)
 		{
 			std::wstring path = context.Args[0]->AsString();
-			if (!RemoveDirectoryW(path.c_str()))
+			if (!fs::remove(path))
 				throw std::runtime_error("Failed to delete directory.");
 
 			return nullptr;
