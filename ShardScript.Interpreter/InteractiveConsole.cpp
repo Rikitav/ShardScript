@@ -1,13 +1,11 @@
-//#include <Windows.h>
-//#include <processenv.h>
 #include <string>
 #include <iostream>
 #include <vector>
 #include <exception>
 
-#include <utilities/InterpreterUtilities.hpp>
 #include <ShardScript.hpp>
 #include <InteractiveConsole.hpp>
+#include <utilities/InterpreterUtilities.hpp>
 
 using namespace shard;
 
@@ -332,7 +330,7 @@ InteractiveConsole::InteractiveConsole(shard::CompilationContext* context, shard
 
 void InteractiveConsole::Run()
 {
-	ConsoleHelper::WriteLine(L"ShardScript Interactive Console v" + shard::ShardUtilities::GetFileVersion());
+	ConsoleHelper::WriteLine(L"ShardScript Interactive Console v0.2.0");
 	ConsoleHelper::WriteLine(L"Type 'exit' or 'quit' to exit");
 	ConsoleHelper::WriteLine();
 	bool pushedFrame = false;

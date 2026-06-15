@@ -30,10 +30,6 @@ void shard::ShardUtilities::ParseArguments(int argc, wchar_t* argv[])
         {
             ConsoleArguments::ShowHelp = true;
         }
-        else if (arg == L"--associate")
-        {
-            ConsoleArguments::AssociateScriptFile = true;
-        }
         else if (arg == L"--no-std")
         {
             ConsoleArguments::ExcludeStd = true;
@@ -43,19 +39,4 @@ void shard::ShardUtilities::ParseArguments(int argc, wchar_t* argv[])
             ConsoleArguments::FilesToCompile.push_back(arg);
         }
     }
-}
-
-std::wstring shard::ShardUtilities::NoralizePath(const std::wstring& messyPath)
-{
-    using namespace std::filesystem;
-    path input(messyPath);
-    if (input.is_absolute())
-        return weakly_canonical(input).wstring();
-
-    path combined = current_path() / input;
-    return combined.wstring();
-
-    path normalized = weakly_canonical(combined);
-    path rel = relative(normalized, current_path());
-    return rel.empty() ? normalized.wstring() : rel.wstring();
 }

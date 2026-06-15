@@ -80,25 +80,23 @@
 
 using namespace shard;
 
-extern "C" {
-
-//namespace
-//{
+namespace
+{
     thread_local std::wstring LastErrorMessage;
 
-    static void SetLastError(const std::string& message)
+    static void SetLastShardError(const std::string& message)
     {
         LastErrorMessage = std::wstring(message.begin(), message.end());
     }
 
-    static void SetLastWError(const std::wstring& message)
+    static void SetLastShardWError(const std::wstring& message)
     {
         LastErrorMessage = message;
     }
 
     static void SetLastErrorFromException(const std::exception& ex)
     {
-        SetLastError(ex.what());
+        SetLastShardError(ex.what());
     }
 
     static SyntaxToken MakeToken(shard::TokenType type, const wchar_t* word = nullptr)
@@ -107,2353 +105,2355 @@ extern "C" {
     }
 }
 
-// =========================================================================
-// Error Handling
-// =========================================================================
-
-SHARD_API int Shard_GetLastError(wchar_t* buffer, int bufferLen)
+extern "C"
 {
-    if (buffer != nullptr && bufferLen > 0)
+    // =========================================================================
+    // Error Handling
+    // =========================================================================
+
+    SHARD_API int Shard_GetLastError(wchar_t* buffer, int bufferLen)
     {
-        std::size_t copyLen = (std::min)((std::size_t)bufferLen - 1, LastErrorMessage.length());
-        wcsncpy(buffer, LastErrorMessage.c_str(), copyLen);
-        buffer[copyLen] = L'\0';
-    }
-
-    return (int)LastErrorMessage.length();
-}
-
-// =========================================================================
-// Compilation Context API
-// =========================================================================
-
-SHARD_API CompilationContext* Shard_CreateCompilationContext()
-{
-    try
-    {
-        return new CompilationContext();
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API int Shard_DestroyCompilationContext(CompilationContext* ctx)
-{
-    try
-    {
-        if (ctx != nullptr)
-            delete ctx;
-
-        return 0;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return -1;
-    }
-}
-
-SHARD_API int Shard_AddLibrary(CompilationContext* ctx, const wchar_t* path)
-{
-    try
-    {
-        if (ctx == nullptr)
-        {
-            SetLastWError(L"compilation context is null");
-            return -1;
-        }
-
-        if (path == nullptr)
-        {
-            SetLastWError(L"library path is null");
-            return -1;
-        }
-
-        ctx->AddLib(std::filesystem::path(path));
-        return 0;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return -1;
-    }
-}
-
-SHARD_API int Shard_AddSource(CompilationContext* ctx, const wchar_t* sourceName, const wchar_t* code, CompilationUnitOrigin origin)
-{
-    try
-    {
-        if (ctx == nullptr || code == nullptr || sourceName == nullptr)
-        {
-            SetLastWError(L"invalid argument");
-            return -1;
-        }
-
-        std::wstring sourceCode(code);
-        StringStreamReader reader(sourceName, sourceCode);
-        LexicalAnalyzer lexer(reader);
-
-        ctx->EnrichTree(lexer, origin);
-        return 0;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return -1;
-    }
-}
-
-SHARD_API int Shard_AddSourceFile(CompilationContext* ctx, const wchar_t* filePath, CompilationUnitOrigin origin)
-{
-    try
-    {
-        if (ctx == nullptr || filePath == nullptr)
-        {
-            SetLastWError(L"invalid argument");
-            return -1;
-        }
-
-        FileReader reader(filePath);
-        LexicalAnalyzer lexer(reader);
-
-        ctx->EnrichTree(lexer, origin);
-        return 0;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return -1;
-    }
-}
-
-SHARD_API int Shard_Analyze(CompilationContext* ctx)
-{
-    try
-    {
-        if (ctx == nullptr)
-        {
-            SetLastWError(L"compilation context is null");
-            return -1;
-        }
-
-        ctx->AnalyzeTree();
-        return 0;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return -1;
-    }
-}
-
-SHARD_API ApplicationDomain* Shard_Compile(CompilationContext* ctx)
-{
-    try
-    {
-        if (ctx == nullptr)
-        {
-            SetLastWError(L"compilation context is null");
-            return nullptr;
-        }
-
-        return ctx->Compile().release();
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API ApplicationDomain* Shard_CompileAndRun(CompilationContext* ctx)
-{
-    try
-    {
-        ApplicationDomain* domain = Shard_Compile(ctx);
-        if (domain != nullptr)
-            domain->GetVirtualMachine().Run();
-
-        return domain;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API int Shard_SetEntryPoint(CompilationContext* ctx, int value)
-{
-    try
-    {
-        if (ctx == nullptr)
-        {
-            SetLastWError(L"compilation context is null");
-            return -1;
-        }
-
-        ctx->SetEntryPoint = value != 0;
-        return 0;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return -1;
-    }
-}
-
-SHARD_API int Shard_GetEntryPoint(CompilationContext* ctx)
-{
-    try
-    {
-        if (ctx == nullptr)
-        {
-            SetLastWError(L"compilation context is null");
-            return 0;
-        }
-
-        return ctx->SetEntryPoint ? 1 : 0;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return 0;
-    }
-}
-
-SHARD_API int Shard_HasErrors(CompilationContext* ctx)
-{
-    try
-    {
-        if (ctx == nullptr)
-            return 1;
-
-        return ctx->GetDiagnosticsContext().AnyError ? 1 : 0;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return 1;
-    }
-}
-
-SHARD_API int Shard_GetErrorCount(CompilationContext* ctx)
-{
-    try
-    {
-        if (ctx == nullptr)
-            return 0;
-
-        const auto& diagnostics = ctx->GetDiagnosticsContext().Diagnostics;
-        return static_cast<int>(std::count_if(diagnostics.begin(), diagnostics.end(),
-            [](const Diagnostic& d) { return d.Severity == DiagnosticSeverity::Error; }));
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return 0;
-    }
-}
-
-SHARD_API int Shard_ResetDiagnostics(CompilationContext* ctx)
-{
-    try
-    {
-        if (ctx != nullptr)
-            ctx->GetDiagnosticsContext().Reset();
-
-        return 0;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return -1;
-    }
-}
-
-SHARD_API int Shard_GetDiagnostics(CompilationContext* ctx, wchar_t* buffer, int bufferLen)
-{
-    try
-    {
-        if (ctx == nullptr)
-            return 0;
-
-        std::wstringstream ss;
-        ctx->GetDiagnosticsContext().WriteDiagnostics(ss);
-        std::wstring str = ss.str();
-
         if (buffer != nullptr && bufferLen > 0)
         {
-            std::size_t copyLen = (std::min)((std::size_t)bufferLen - 1, str.length());
-            wcsncpy(buffer, str.c_str(), copyLen);
+            std::size_t copyLen = (std::min)((std::size_t)bufferLen - 1, LastErrorMessage.length());
+            wcsncpy(buffer, LastErrorMessage.c_str(), copyLen);
             buffer[copyLen] = L'\0';
         }
 
-        return (int)str.length();
+        return (int)LastErrorMessage.length();
     }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return 0;
-    }
-}
 
-// =========================================================================
-// Application Domain API
-// =========================================================================
+    // =========================================================================
+    // Compilation Context API
+    // =========================================================================
 
-SHARD_API int Shard_RunDomain(ApplicationDomain* domain)
-{
-    try
+    SHARD_API CompilationContext* Shard_CreateCompilationContext()
     {
-        if (domain == nullptr)
+        try
         {
-            SetLastWError(L"domain is null");
+            return new CompilationContext();
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API int Shard_DestroyCompilationContext(CompilationContext* ctx)
+    {
+        try
+        {
+            if (ctx != nullptr)
+                delete ctx;
+
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
             return -1;
         }
-
-        domain->GetVirtualMachine().Run();
-        return 0;
     }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return -1;
-    }
-}
 
-SHARD_API int Shard_DestroyDomain(ApplicationDomain* domain)
-{
-    try
+    SHARD_API int Shard_AddLibrary(CompilationContext* ctx, const wchar_t* path)
     {
-        if (domain != nullptr)
-            delete domain;
-
-        return 0;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return -1;
-    }
-}
-
-SHARD_API VirtualMachine* Shard_GetVirtualMachine(ApplicationDomain* domain)
-{
-    try
-    {
-        if (domain == nullptr)
+        try
         {
-            SetLastWError(L"domain is null");
-            return nullptr;
-        }
-
-        return &domain->GetVirtualMachine();
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API GarbageCollector* Shard_GetGarbageCollector(ApplicationDomain* domain)
-{
-    try
-    {
-        if (domain == nullptr)
-        {
-            SetLastWError(L"domain is null");
-            return nullptr;
-        }
-
-        return &domain->GetGarbageCollector();
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API ProgramVirtualImage* Shard_GetProgram(ApplicationDomain* domain)
-{
-    try
-    {
-        if (domain == nullptr)
-        {
-            SetLastWError(L"domain is null");
-            return nullptr;
-        }
-
-        return &domain->GetProgram();
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API MethodSymbol* Shard_GetEntryPointMethod(ApplicationDomain* domain)
-{
-    try
-    {
-        if (domain == nullptr)
-        {
-            SetLastWError(L"domain is null");
-            return nullptr;
-        }
-
-        return domain->GetProgram().EntryPoint;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-// =========================================================================
-// Virtual Machine API
-// =========================================================================
-
-SHARD_API int Shard_VMRun(VirtualMachine* vm)
-{
-    try
-    {
-        if (vm == nullptr)
-        {
-            SetLastWError(L"virtual machine is null");
-            return -1;
-        }
-
-        vm->Run();
-        return 0;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return -1;
-    }
-}
-
-SHARD_API int Shard_VMAbort(VirtualMachine* vm)
-{
-    try
-    {
-        if (vm != nullptr)
-            vm->Abort();
-
-        return 0;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return -1;
-    }
-}
-
-SHARD_API int Shard_VMTerminateCallStack(VirtualMachine* vm)
-{
-    try
-    {
-        if (vm != nullptr)
-            vm->TerminateCallStack();
-
-        return 0;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return -1;
-    }
-}
-
-SHARD_API ObjectInstance* Shard_VMInvokeMethod(VirtualMachine* vm, MethodSymbol* method, ObjectInstance** args, int argCount)
-{
-    try
-    {
-        if (vm == nullptr)
-        {
-            SetLastWError(L"virtual machine is null");
-            return nullptr;
-        }
-
-        if (method == nullptr)
-        {
-            SetLastWError(L"method is null");
-            return nullptr;
-        }
-
-        return vm->InvokeMethod(method, args, static_cast<std::size_t>(argCount));
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-// =========================================================================
-// Garbage Collector / Value API
-// =========================================================================
-
-SHARD_API ObjectInstance* Shard_GCFromInteger(GarbageCollector* gc, std::int64_t value)
-{
-    try
-    {
-        if (gc == nullptr)
-        {
-            SetLastWError(L"garbage collector is null");
-            return nullptr;
-        }
-
-        return gc->FromValue(value);
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API ObjectInstance* Shard_GCFromDouble(GarbageCollector* gc, double value)
-{
-    try
-    {
-        if (gc == nullptr)
-        {
-            SetLastWError(L"garbage collector is null");
-            return nullptr;
-        }
-
-        return gc->FromValue(value);
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API ObjectInstance* Shard_GCFromBool(GarbageCollector* gc, int value)
-{
-    try
-    {
-        if (gc == nullptr)
-        {
-            SetLastWError(L"garbage collector is null");
-            return nullptr;
-        }
-
-        return gc->FromValue(value != 0);
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API ObjectInstance* Shard_GCFromString(GarbageCollector* gc, const wchar_t* value)
-{
-    try
-    {
-        if (gc == nullptr || value == nullptr)
-        {
-            SetLastWError(L"garbage collector or value is null");
-            return nullptr;
-        }
-
-        return gc->FromValue(value, false);
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API std::int64_t Shard_ReadInteger(ObjectInstance* instance)
-{
-    try
-    {
-        if (instance == nullptr)
-            return 0;
-
-        return instance->AsInteger();
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return 0;
-    }
-}
-
-SHARD_API double Shard_ReadDouble(ObjectInstance* instance)
-{
-    try
-    {
-        if (instance == nullptr)
-            return 0.0;
-
-        return instance->AsDouble();
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return 0.0;
-    }
-}
-
-SHARD_API int Shard_ReadBool(ObjectInstance* instance)
-{
-    try
-    {
-        if (instance == nullptr)
-            return 0;
-
-        return instance->AsBoolean() ? 1 : 0;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return 0;
-    }
-}
-
-SHARD_API const wchar_t* Shard_ReadString(ObjectInstance* instance)
-{
-    try
-    {
-        if (instance == nullptr)
-            return nullptr;
-
-        return instance->AsString();
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-// =========================================================================
-// Symbol Inspection API
-// =========================================================================
-
-SHARD_API int Shard_GetCompilationUnitCount(CompilationContext* ctx)
-{
-    try
-    {
-        if (ctx == nullptr)
-            return 0;
-
-        return static_cast<int>(ctx->GetSyntaxTree().CompilationUnits.size());
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return 0;
-    }
-}
-
-SHARD_API CompilationUnitSyntax* Shard_GetCompilationUnit(CompilationContext* ctx, int index)
-{
-    try
-    {
-        if (ctx == nullptr)
-            return nullptr;
-
-        auto& units = ctx->GetSyntaxTree().CompilationUnits;
-        if (index < 0 || index >= static_cast<int>(units.size()))
-            return nullptr;
-
-        return units[index].get();
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API int Shard_GetCompilationUnitOrigin(CompilationUnitSyntax* unit)
-{
-    try
-    {
-        if (unit == nullptr)
-            return 0;
-
-        return static_cast<int>(unit->Origin);
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return 0;
-    }
-}
-
-SHARD_API NamespaceDeclarationSyntax* Shard_GetUnitNamespace(CompilationUnitSyntax* unit)
-{
-    try
-    {
-        if (unit == nullptr)
-            return nullptr;
-
-        return unit->Namespace.get();
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API int Shard_GetNamespaceIdentifierCount(NamespaceDeclarationSyntax* ns)
-{
-    try
-    {
-        if (ns == nullptr)
-            return 0;
-
-        return static_cast<int>(ns->IdentifierTokens.size());
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return 0;
-    }
-}
-
-SHARD_API const wchar_t* Shard_GetNamespaceIdentifier(NamespaceDeclarationSyntax* ns, int index)
-{
-    try
-    {
-        if (ns == nullptr)
-            return nullptr;
-
-        if (index < 0 || index >= static_cast<int>(ns->IdentifierTokens.size()))
-            return nullptr;
-
-        return ns->IdentifierTokens[index].Word.c_str();
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API int Shard_GetUnitClassCount(CompilationUnitSyntax* unit)
-{
-    try
-    {
-        if (unit == nullptr)
-            return 0;
-
-        int count = 0;
-        for (const auto& member : unit->Members)
-        {
-            if (member->Kind == SyntaxKind::ClassDeclaration)
-                count++;
-        }
-
-        return count;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return 0;
-    }
-}
-
-SHARD_API ClassDeclarationSyntax* Shard_GetUnitClass(CompilationUnitSyntax* unit, int index)
-{
-    try
-    {
-        if (unit == nullptr)
-            return nullptr;
-
-        int current = 0;
-        for (const auto& member : unit->Members)
-        {
-            if (member->Kind == SyntaxKind::ClassDeclaration)
+            if (ctx == nullptr)
             {
-                if (current == index)
-                    return static_cast<ClassDeclarationSyntax*>(member.get());
-
-                current++;
+                SetLastShardWError(L"compilation context is null");
+                return -1;
             }
-        }
 
-        return nullptr;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API const wchar_t* Shard_GetTypeName(TypeDeclarationSyntax* type)
-{
-    try
-    {
-        if (type == nullptr)
-            return nullptr;
-
-        return type->IdentifierToken.Word.c_str();
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API int Shard_GetTypeMethodCount(CompilationContext* ctx, TypeDeclarationSyntax* type)
-{
-    try
-    {
-        if (ctx == nullptr || type == nullptr)
-            return 0;
-
-        auto symbolOpt = ctx->GetSemanticModel().Table->LookupSymbol(type);
-        if (!symbolOpt.has_value())
-            return 0;
-
-        auto* typeSymbol = static_cast<TypeSymbol*>(symbolOpt.value());
-        return static_cast<int>(typeSymbol->Methods.size());
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return 0;
-    }
-}
-
-SHARD_API MethodSymbol* Shard_GetTypeMethod(CompilationContext* ctx, TypeDeclarationSyntax* type, int index)
-{
-    try
-    {
-        if (ctx == nullptr || type == nullptr)
-            return nullptr;
-
-        auto symbolOpt = ctx->GetSemanticModel().Table->LookupSymbol(type);
-        if (!symbolOpt.has_value())
-            return nullptr;
-
-        auto* typeSymbol = static_cast<TypeSymbol*>(symbolOpt.value());
-        if (index < 0 || index >= static_cast<int>(typeSymbol->Methods.size()))
-            return nullptr;
-
-        return typeSymbol->Methods[index];
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API int Shard_GetSymbolTableTypeCount(CompilationContext* ctx)
-{
-    try
-    {
-        if (ctx == nullptr)
-            return 0;
-
-        return static_cast<int>(ctx->GetSemanticModel().Table->GetTypeSymbols().size());
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return 0;
-    }
-}
-
-SHARD_API TypeSymbol* Shard_GetSymbolTableType(CompilationContext* ctx, int index)
-{
-    try
-    {
-        if (ctx == nullptr)
-            return nullptr;
-
-        auto types = ctx->GetSemanticModel().Table->GetTypeSymbols();
-        if (index < 0 || index >= static_cast<int>(types.size()))
-            return nullptr;
-
-        return types[index];
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API TypeSymbol* Shard_FindType(CompilationContext* ctx, const wchar_t* name)
-{
-    try
-    {
-        if (ctx == nullptr || name == nullptr)
-            return nullptr;
-
-        auto types = ctx->GetSemanticModel().Table->GetTypeSymbols();
-        for (TypeSymbol* type : types)
-        {
-            if (type != nullptr && type->Name == name)
-                return type;
-        }
-
-        return nullptr;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API MethodSymbol* Shard_FindMethodInType(TypeSymbol* type, const wchar_t* name, int parameterCount)
-{
-    try
-    {
-        if (type == nullptr || name == nullptr)
-            return nullptr;
-
-        for (MethodSymbol* method : type->Methods)
-        {
-            if (method != nullptr && method->Name == name &&
-                static_cast<int>(method->Parameters.size()) == parameterCount)
+            if (path == nullptr)
             {
-                return method;
+                SetLastShardWError(L"library path is null");
+                return -1;
             }
-        }
 
-        return nullptr;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API const wchar_t* Shard_GetSymbolName(SyntaxSymbol* symbol)
-{
-    try
-    {
-        if (symbol == nullptr)
-            return nullptr;
-
-        return symbol->Name.c_str();
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API const wchar_t* Shard_GetMethodName(MethodSymbol* method)
-{
-    try
-    {
-        if (method == nullptr)
-            return nullptr;
-
-        return method->Name.c_str();
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API int Shard_GetMethodParameterCount(MethodSymbol* method)
-{
-    try
-    {
-        if (method == nullptr)
+            ctx->AddLib(std::filesystem::path(path));
             return 0;
-
-        return static_cast<int>(method->Parameters.size());
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
     }
-    catch (const std::exception& e)
+
+    SHARD_API int Shard_AddSource(CompilationContext* ctx, const wchar_t* sourceName, const wchar_t* code, CompilationUnitOrigin origin)
     {
-        SetLastErrorFromException(e);
-        return 0;
-    }
-}
+        try
+        {
+            if (ctx == nullptr || code == nullptr || sourceName == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return -1;
+            }
 
-SHARD_API const wchar_t* Shard_GetMethodParameterName(MethodSymbol* method, int index)
-{
-    try
-    {
-        if (method == nullptr)
-            return nullptr;
+            std::wstring sourceCode(code);
+            StringStreamReader reader(sourceName, sourceCode);
+            LexicalAnalyzer lexer(reader);
 
-        if (index < 0 || index >= static_cast<int>(method->Parameters.size()))
-            return nullptr;
-
-        return method->Parameters[index]->Name.c_str();
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API TypeSymbol* Shard_GetMethodParameterType(MethodSymbol* method, int index)
-{
-    try
-    {
-        if (method == nullptr)
-            return nullptr;
-
-        if (index < 0 || index >= static_cast<int>(method->Parameters.size()))
-            return nullptr;
-
-        return method->Parameters[index]->Type;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API TypeSymbol* Shard_GetMethodReturnType(MethodSymbol* method)
-{
-    try
-    {
-        if (method == nullptr)
-            return nullptr;
-
-        return method->ReturnType;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API int Shard_IsMethodStatic(MethodSymbol* method)
-{
-    try
-    {
-        if (method == nullptr)
+            ctx->EnrichTree(lexer, origin);
             return 0;
-
-        return method->IsStatic ? 1 : 0;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return 0;
-    }
-}
-
-// =========================================================================
-// Utility API
-// =========================================================================
-
-SHARD_API const wchar_t* Shard_GetVersion()
-{
-    return L"0.2.0";
-}
-
-// =========================================================================
-// Syntax Builder API
-// =========================================================================
-
-SHARD_API CompilationUnitSyntax* Shard_CreateCompilationUnit(CompilationContext* ctx)
-{
-    try
-    {
-        if (ctx == nullptr)
-        {
-            SetLastWError(L"compilation context is null");
-            return nullptr;
         }
-
-        return new CompilationUnitSyntax();
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API int Shard_AddCompilationUnit(CompilationContext* ctx, CompilationUnitSyntax* unit)
-{
-    try
-    {
-        if (ctx == nullptr || unit == nullptr)
+        catch (const std::exception& e)
         {
-            SetLastWError(L"invalid argument");
+            SetLastErrorFromException(e);
             return -1;
         }
-
-        ctx->GetSyntaxTree().CompilationUnits.push_back(std::unique_ptr<CompilationUnitSyntax>(unit));
-        ctx->MarkForReAnalyze();
-        return 0;
     }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return -1;
-    }
-}
 
-SHARD_API int Shard_MarkForReAnalyze(CompilationContext* ctx)
-{
-    try
+    SHARD_API int Shard_AddSourceFile(CompilationContext* ctx, const wchar_t* filePath, CompilationUnitOrigin origin)
     {
-        if (ctx == nullptr)
+        try
         {
-            SetLastWError(L"compilation context is null");
+            if (ctx == nullptr || filePath == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return -1;
+            }
+
+            FileReader reader(filePath);
+            LexicalAnalyzer lexer(reader);
+
+            ctx->EnrichTree(lexer, origin);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
             return -1;
         }
-
-        ctx->MarkForReAnalyze();
-        return 0;
     }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return -1;
-    }
-}
 
-SHARD_API int Shard_SetCompilationUnitOrigin(CompilationUnitSyntax* unit, CompilationUnitOrigin origin)
-{
-    try
+    SHARD_API int Shard_Analyze(CompilationContext* ctx)
     {
-        if (unit == nullptr)
+        try
         {
-            SetLastWError(L"compilation unit is null");
+            if (ctx == nullptr)
+            {
+                SetLastShardWError(L"compilation context is null");
+                return -1;
+            }
+
+            ctx->AnalyzeTree();
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
             return -1;
         }
-
-        unit->Origin = origin;
-        return 0;
     }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return -1;
-    }
-}
 
-SHARD_API int Shard_SetCompilationUnitNamespace(CompilationUnitSyntax* unit, NamespaceDeclarationSyntax* ns)
-{
-    try
+    SHARD_API ApplicationDomain* Shard_Compile(CompilationContext* ctx)
     {
-        if (unit == nullptr)
+        try
         {
-            SetLastWError(L"compilation unit is null");
-            return -1;
-        }
-
-        unit->Namespace.reset(ns);
-        return 0;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return -1;
-    }
-}
-
-SHARD_API int Shard_AddCompilationUnitMember(CompilationUnitSyntax* unit, MemberDeclarationSyntax* member)
-{
-    try
-    {
-        if (unit == nullptr || member == nullptr)
-        {
-            SetLastWError(L"invalid argument");
-            return -1;
-        }
-
-        unit->Members.push_back(std::unique_ptr<MemberDeclarationSyntax>(member));
-        return 0;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return -1;
-    }
-}
-
-SHARD_API NamespaceDeclarationSyntax* Shard_CreateNamespaceDeclaration(SyntaxNode* parent)
-{
-    try
-    {
-        auto* ns = new NamespaceDeclarationSyntax(parent);
-        ns->SemicolonToken = MakeToken(shard::TokenType::Semicolon, L";");
-        return ns;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API int Shard_AddNamespaceIdentifier(NamespaceDeclarationSyntax* ns, const wchar_t* name)
-{
-    try
-    {
-        if (ns == nullptr || name == nullptr)
-        {
-            SetLastWError(L"invalid argument");
-            return -1;
-        }
-
-        ns->IdentifierTokens.push_back(MakeToken(shard::TokenType::Identifier, name));
-        return 0;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return -1;
-    }
-}
-
-SHARD_API int Shard_AddMemberModifier(MemberDeclarationSyntax* member, int modifierTokenType)
-{
-    try
-    {
-        if (member == nullptr)
-        {
-            SetLastWError(L"member is null");
-            return -1;
-        }
-
-        member->Modifiers.push_back(MakeToken(static_cast<shard::TokenType>(modifierTokenType)));
-        return 0;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return -1;
-    }
-}
-
-SHARD_API ClassDeclarationSyntax* Shard_CreateClassDeclaration(SyntaxNode* parent, const wchar_t* name)
-{
-    try
-    {
-        if (name == nullptr)
-        {
-            SetLastWError(L"name is null");
-            return nullptr;
-        }
-
-        MemberDeclarationInfo info;
-        info.Identifier = MakeToken(shard::TokenType::Identifier, name);
-        auto* decl = new ClassDeclarationSyntax(info, parent);
-        decl->DeclareToken = MakeToken(shard::TokenType::ClassKeyword, L"class");
-        return decl;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API StructDeclarationSyntax* Shard_CreateStructDeclaration(SyntaxNode* parent, const wchar_t* name)
-{
-    try
-    {
-        if (name == nullptr)
-        {
-            SetLastWError(L"name is null");
-            return nullptr;
-        }
-
-        MemberDeclarationInfo info;
-        info.Identifier = MakeToken(shard::TokenType::Identifier, name);
-        auto* decl = new StructDeclarationSyntax(info, parent);
-        decl->DeclareToken = MakeToken(shard::TokenType::StructKeyword, L"struct");
-        return decl;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API int Shard_AddTypeMember(TypeDeclarationSyntax* type, MemberDeclarationSyntax* member)
-{
-    try
-    {
-        if (type == nullptr || member == nullptr)
-        {
-            SetLastWError(L"invalid argument");
-            return -1;
-        }
-
-        type->Members.push_back(std::unique_ptr<MemberDeclarationSyntax>(member));
-        return 0;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return -1;
-    }
-}
-
-SHARD_API FieldDeclarationSyntax* Shard_CreateFieldDeclaration(SyntaxNode* parent, const wchar_t* name, TypeSyntax* type)
-{
-    try
-    {
-        if (name == nullptr)
-        {
-            SetLastWError(L"name is null");
-            return nullptr;
-        }
-
-        MemberDeclarationInfo info;
-        info.Identifier = MakeToken(shard::TokenType::Identifier, name);
-        auto* decl = new FieldDeclarationSyntax(info, parent);
-        decl->DeclareToken = MakeToken(shard::TokenType::FieldKeyword, L"field");
-        decl->ReturnType.reset(type);
-        return decl;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API int Shard_SetFieldInitializer(FieldDeclarationSyntax* field, ExpressionSyntax* expression)
-{
-    try
-    {
-        if (field == nullptr)
-        {
-            SetLastWError(L"field is null");
-            return -1;
-        }
-
-        field->InitializerExpression.reset(expression);
-        if (expression != nullptr)
-            field->InitializerAssignToken = MakeToken(shard::TokenType::AssignOperator, L"=");
-
-        return 0;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return -1;
-    }
-}
-
-SHARD_API MethodDeclarationSyntax* Shard_CreateMethodDeclaration(SyntaxNode* parent, const wchar_t* name, TypeSyntax* returnType)
-{
-    try
-    {
-        if (name == nullptr)
-        {
-            SetLastWError(L"name is null");
-            return nullptr;
-        }
-
-        MemberDeclarationInfo info;
-        info.Identifier = MakeToken(shard::TokenType::Identifier, name);
-        info.ReturnType.reset(returnType);
-        auto* decl = new MethodDeclarationSyntax(info, parent);
-        decl->DeclareToken = MakeToken(shard::TokenType::FunctionKeyword, L"func");
-        return decl;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API ConstructorDeclarationSyntax* Shard_CreateConstructorDeclaration(SyntaxNode* parent, const wchar_t* name)
-{
-    try
-    {
-        if (name == nullptr)
-        {
-            SetLastWError(L"name is null");
-            return nullptr;
-        }
-
-        MemberDeclarationInfo info;
-        info.Identifier = MakeToken(shard::TokenType::Identifier, name);
-        info.ReturnType = std::make_unique<PredefinedTypeSyntax>(MakeToken(shard::TokenType::VoidKeyword, L"void"), nullptr);
-        auto* decl = new ConstructorDeclarationSyntax(info, parent);
-        decl->DeclareToken = MakeToken(shard::TokenType::InitKeyword, L"init");
-        return decl;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API int Shard_SetMethodReturnType(MethodDeclarationSyntax* method, TypeSyntax* returnType)
-{
-    try
-    {
-        if (method == nullptr)
-        {
-            SetLastWError(L"method is null");
-            return -1;
-        }
-
-        method->ReturnType.reset(returnType);
-        return 0;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return -1;
-    }
-}
-
-SHARD_API int Shard_SetMethodParametersList(MethodDeclarationSyntax* method, ParametersListSyntax* parameters)
-{
-    try
-    {
-        if (method == nullptr)
-        {
-            SetLastWError(L"method is null");
-            return -1;
-        }
-
-        method->ParametersList.reset(parameters);
-        return 0;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return -1;
-    }
-}
-
-SHARD_API int Shard_SetMethodBody(MethodDeclarationSyntax* method, StatementsBlockSyntax* body)
-{
-    try
-    {
-        if (method == nullptr)
-        {
-            SetLastWError(L"method is null");
-            return -1;
-        }
-
-        method->Body.reset(body);
-        return 0;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return -1;
-    }
-}
-
-SHARD_API int Shard_SetConstructorParametersList(ConstructorDeclarationSyntax* ctor, ParametersListSyntax* parameters)
-{
-    try
-    {
-        if (ctor == nullptr)
-        {
-            SetLastWError(L"constructor is null");
-            return -1;
-        }
-
-        ctor->ParametersList.reset(parameters);
-        return 0;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return -1;
-    }
-}
-
-SHARD_API int Shard_SetConstructorBody(ConstructorDeclarationSyntax* ctor, StatementsBlockSyntax* body)
-{
-    try
-    {
-        if (ctor == nullptr)
-        {
-            SetLastWError(L"constructor is null");
-            return -1;
-        }
-
-        ctor->Body.reset(body);
-        return 0;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return -1;
-    }
-}
-
-SHARD_API ParametersListSyntax* Shard_CreateParametersList(SyntaxNode* parent)
-{
-    try
-    {
-        return new ParametersListSyntax(parent);
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API int Shard_AddParameter(ParametersListSyntax* list, const wchar_t* name, TypeSyntax* type)
-{
-    try
-    {
-        if (list == nullptr || name == nullptr)
-        {
-            SetLastWError(L"invalid argument");
-            return -1;
-        }
-
-        auto param = std::make_unique<ParameterSyntax>(std::unique_ptr<TypeSyntax>(type), MakeToken(shard::TokenType::Identifier, name), list);
-        list->Parameters.push_back(std::move(param));
-        return 0;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return -1;
-    }
-}
-
-SHARD_API StatementsBlockSyntax* Shard_CreateStatementsBlock(SyntaxNode* parent)
-{
-    try
-    {
-        return new StatementsBlockSyntax(parent);
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API int Shard_AddStatement(StatementsBlockSyntax* block, StatementSyntax* statement)
-{
-    try
-    {
-        if (block == nullptr || statement == nullptr)
-        {
-            SetLastWError(L"invalid argument");
-            return -1;
-        }
-
-        block->Statements.push_back(std::unique_ptr<StatementSyntax>(statement));
-        return 0;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return -1;
-    }
-}
-
-SHARD_API PredefinedTypeSyntax* Shard_CreatePredefinedType(SyntaxNode* parent, int tokenType)
-{
-    try
-    {
-        return new PredefinedTypeSyntax(MakeToken(static_cast<shard::TokenType>(tokenType)), parent);
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API IdentifierNameTypeSyntax* Shard_CreateIdentifierNameType(SyntaxNode* parent, const wchar_t* name)
-{
-    try
-    {
-        if (name == nullptr)
-        {
-            SetLastWError(L"name is null");
-            return nullptr;
-        }
-
-        auto* type = new IdentifierNameTypeSyntax(parent);
-        type->Identifier = MakeToken(shard::TokenType::Identifier, name);
-        return type;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API ArrayTypeSyntax* Shard_CreateArrayType(SyntaxNode* parent, TypeSyntax* elementType, int rank)
-{
-    try
-    {
-        auto* type = new ArrayTypeSyntax(std::unique_ptr<TypeSyntax>(elementType), parent);
-        type->Rank = rank;
-        return type;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API NullableTypeSyntax* Shard_CreateNullableType(SyntaxNode* parent, TypeSyntax* underlayingType)
-{
-    try
-    {
-        auto* type = new NullableTypeSyntax(std::unique_ptr<TypeSyntax>(underlayingType), parent);
-        type->QuestionToken = MakeToken(shard::TokenType::Question, L"?");
-        return type;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API GenericTypeSyntax* Shard_CreateGenericType(SyntaxNode* parent, TypeSyntax* underlayingType)
-{
-    try
-    {
-        auto* type = new GenericTypeSyntax(std::unique_ptr<TypeSyntax>(underlayingType), parent);
-        return type;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API TypeArgumentsListSyntax* Shard_CreateTypeArgumentsList(SyntaxNode* parent)
-{
-    try
-    {
-        return new TypeArgumentsListSyntax(parent);
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API int Shard_AddTypeArgument(TypeArgumentsListSyntax* list, TypeSyntax* type)
-{
-    try
-    {
-        if (list == nullptr || type == nullptr)
-        {
-            SetLastWError(L"invalid argument");
-            return -1;
-        }
-
-        list->Types.push_back(std::unique_ptr<TypeSyntax>(type));
-        return 0;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return -1;
-    }
-}
-
-SHARD_API int Shard_SetGenericTypeArguments(GenericTypeSyntax* generic, TypeArgumentsListSyntax* arguments)
-{
-    try
-    {
-        if (generic == nullptr)
-        {
-            SetLastWError(L"generic type is null");
-            return -1;
-        }
-
-        generic->Arguments.reset(arguments);
-        return 0;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return -1;
-    }
-}
-
-SHARD_API VariableStatementSyntax* Shard_CreateVariableStatement(SyntaxNode* parent, const wchar_t* name, TypeSyntax* type, ExpressionSyntax* initializer)
-{
-    try
-    {
-        if (name == nullptr)
-        {
-            SetLastWError(L"name is null");
-            return nullptr;
-        }
-
-        auto* stmt = new VariableStatementSyntax(
-            std::unique_ptr<TypeSyntax>(type),
-            MakeToken(shard::TokenType::Identifier, name),
-            initializer != nullptr ? MakeToken(shard::TokenType::DeclareAssignOperator, L":=") : MakeToken(shard::TokenType::Unknown),
-            std::unique_ptr<ExpressionSyntax>(initializer),
-            parent);
-
-        return stmt;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API ExpressionStatementSyntax* Shard_CreateExpressionStatement(SyntaxNode* parent, ExpressionSyntax* expression)
-{
-    try
-    {
-        if (expression == nullptr)
-        {
-            SetLastWError(L"expression is null");
-            return nullptr;
-        }
-
-        return new ExpressionStatementSyntax(std::unique_ptr<ExpressionSyntax>(expression), parent);
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API ReturnStatementSyntax* Shard_CreateReturnStatement(SyntaxNode* parent, ExpressionSyntax* expression)
-{
-    try
-    {
-        auto* stmt = new ReturnStatementSyntax(parent);
-        stmt->KeywordToken = MakeToken(shard::TokenType::ReturnKeyword, L"return");
-        stmt->Expression.reset(expression);
-        return stmt;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API ForEachStatementSyntax* Shard_CreateForEachStatement(SyntaxNode* parent, const wchar_t* variableName, ExpressionSyntax* range, StatementsBlockSyntax* body)
-{
-    try
-    {
-        if (variableName == nullptr)
-        {
-            SetLastWError(L"variable name is null");
-            return nullptr;
-        }
-
-        auto* stmt = new ForEachStatementSyntax(parent);
-        stmt->KeywordToken = MakeToken(shard::TokenType::ForeachKeyword, L"foreach");
-        stmt->IdentifierToken = MakeToken(shard::TokenType::Identifier, variableName);
-        stmt->InKeywordToken = MakeToken(shard::TokenType::InKeyword, L"in");
-        stmt->RangeExpression.reset(range);
-        stmt->StatementsBlock.reset(body);
-        return stmt;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API WhileStatementSyntax* Shard_CreateWhileStatement(SyntaxNode* parent, ExpressionSyntax* condition, StatementsBlockSyntax* body)
-{
-    try
-    {
-        auto* stmt = new WhileStatementSyntax(parent);
-        stmt->KeywordToken = MakeToken(shard::TokenType::WhileKeyword, L"while");
-        stmt->ConditionExpression.reset(condition);
-        stmt->StatementsBlock.reset(body);
-        return stmt;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API LiteralExpressionSyntax* Shard_CreateLiteralExpression(SyntaxNode* parent, int tokenType, const wchar_t* value)
-{
-    try
-    {
-        if (value == nullptr)
-        {
-            SetLastWError(L"value is null");
-            return nullptr;
-        }
-
-        return new LiteralExpressionSyntax(MakeToken(static_cast<shard::TokenType>(tokenType), value), parent);
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API MemberAccessExpressionSyntax* Shard_CreateIdentifierExpression(SyntaxNode* parent, const wchar_t* name)
-{
-    try
-    {
-        if (name == nullptr)
-        {
-            SetLastWError(L"name is null");
-            return nullptr;
-        }
-
-        return new MemberAccessExpressionSyntax(MakeToken(shard::TokenType::Identifier, name), std::unique_ptr<ExpressionSyntax>(nullptr), parent);
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API MemberAccessExpressionSyntax* Shard_CreateMemberAccessExpression(SyntaxNode* parent, ExpressionSyntax* previous, const wchar_t* memberName)
-{
-    try
-    {
-        if (memberName == nullptr)
-        {
-            SetLastWError(L"member name is null");
-            return nullptr;
-        }
-
-        auto* expr = new MemberAccessExpressionSyntax(MakeToken(shard::TokenType::Identifier, memberName), std::unique_ptr<ExpressionSyntax>(previous), parent);
-        expr->DelimeterToken = MakeToken(shard::TokenType::Delimeter, L".");
-        return expr;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API BinaryExpressionSyntax* Shard_CreateBinaryExpression(SyntaxNode* parent, ExpressionSyntax* left, ExpressionSyntax* right, int operatorTokenType)
-{
-    try
-    {
-        auto* expr = new BinaryExpressionSyntax(MakeToken(static_cast<shard::TokenType>(operatorTokenType)), parent);
-        expr->Left.reset(left);
-        expr->Right.reset(right);
-        return expr;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API UnaryExpressionSyntax* Shard_CreateUnaryExpression(SyntaxNode* parent, ExpressionSyntax* operand, int operatorTokenType, int isPostfix)
-{
-    try
-    {
-        auto* expr = new UnaryExpressionSyntax(MakeToken(static_cast<shard::TokenType>(operatorTokenType)), isPostfix != 0, parent);
-        expr->Expression.reset(operand);
-        return expr;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API InvokationExpressionSyntax* Shard_CreateInvocationExpression(SyntaxNode* parent, ExpressionSyntax* target, const wchar_t* methodName)
-{
-    try
-    {
-        auto* expr = new InvokationExpressionSyntax(
-            methodName != nullptr ? MakeToken(shard::TokenType::Identifier, methodName) : MakeToken(shard::TokenType::Unknown),
-            std::unique_ptr<ExpressionSyntax>(target),
-            parent);
-
-        expr->DelimeterToken = MakeToken(shard::TokenType::Delimeter, L".");
-        return expr;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API int Shard_SetInvocationArgumentsList(InvokationExpressionSyntax* invocation, ArgumentsListSyntax* arguments)
-{
-    try
-    {
-        if (invocation == nullptr)
-        {
-            SetLastWError(L"invocation is null");
-            return -1;
-        }
-
-        invocation->ArgumentsList.reset(arguments);
-        return 0;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return -1;
-    }
-}
-
-SHARD_API ObjectExpressionSyntax* Shard_CreateObjectExpression(SyntaxNode* parent, TypeSyntax* type)
-{
-    try
-    {
-        auto* expr = new ObjectExpressionSyntax(parent);
-        expr->NewToken = MakeToken(shard::TokenType::NewKeyword, L"new");
-        expr->Type.reset(type);
-        return expr;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API int Shard_SetObjectArgumentsList(ObjectExpressionSyntax* objectExpr, ArgumentsListSyntax* arguments)
-{
-    try
-    {
-        if (objectExpr == nullptr)
-        {
-            SetLastWError(L"object expression is null");
-            return -1;
-        }
-
-        objectExpr->ArgumentsList.reset(arguments);
-        return 0;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return -1;
-    }
-}
-
-SHARD_API RangeExpressionSyntax* Shard_CreateRangeExpression(SyntaxNode* parent, ExpressionSyntax* left, ExpressionSyntax* right, int isInclusive)
-{
-    try
-    {
-        auto* expr = new RangeExpressionSyntax(parent);
-        expr->OperatorToken = MakeToken(isInclusive != 0 ? shard::TokenType::RangeInclusiveOperator : shard::TokenType::RangeOperator, isInclusive != 0 ? L"..&" : L"..");
-        expr->Left.reset(left);
-        expr->Right.reset(right);
-        expr->IsInclusive = isInclusive != 0;
-        return expr;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API CollectionExpressionSyntax* Shard_CreateCollectionExpression(SyntaxNode* parent)
-{
-    try
-    {
-        return new CollectionExpressionSyntax(parent);
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API int Shard_AddCollectionElement(CollectionExpressionSyntax* collection, ExpressionSyntax* element)
-{
-    try
-    {
-        if (collection == nullptr || element == nullptr)
-        {
-            SetLastWError(L"invalid argument");
-            return -1;
-        }
-
-        collection->ValuesExpressions.push_back(std::unique_ptr<ExpressionSyntax>(element));
-        return 0;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return -1;
-    }
-}
-
-SHARD_API ArgumentsListSyntax* Shard_CreateArgumentsList(SyntaxNode* parent)
-{
-    try
-    {
-        return new ArgumentsListSyntax(parent);
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API int Shard_AddArgument(ArgumentsListSyntax* list, ExpressionSyntax* expression)
-{
-    try
-    {
-        if (list == nullptr || expression == nullptr)
-        {
-            SetLastWError(L"invalid argument");
-            return -1;
-        }
-
-        list->Arguments.push_back(std::make_unique<ArgumentSyntax>(std::unique_ptr<ExpressionSyntax>(expression), list));
-        return 0;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return -1;
-    }
-}
-
-// =========================================================================
-// Symbol Builder API
-// =========================================================================
-
-static ObjectInstance* ShardManagedMethodAdapter(const CallState& context)
-{
-    MethodSymbol* method = context.Method;
-    if (method == nullptr || method->ManagedCallback == nullptr)
-    {
-        SetLastWError(L"managed method callback not set");
-        throw std::runtime_error("managed method callback not set");
-    }
-
-    return method->ManagedCallback(method, context.Args.data(), context.Args.size(), method->ManagedCallbackUserData, &context.Collector);
-}
-
-SHARD_API SymbolTable* Shard_GetSymbolTable(CompilationContext* ctx)
-{
-    try
-    {
-        if (ctx == nullptr)
-        {
-            SetLastWError(L"compilation context is null");
-            return nullptr;
-        }
-
-        return ctx->GetSemanticModel().Table.get();
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API TypeSymbol* Shard_GetPrimitiveType(CompilationContext* ctx, int primitiveKind)
-{
-    try
-    {
-        if (ctx == nullptr)
-        {
-            SetLastWError(L"compilation context is null");
-            return nullptr;
-        }
-
-        switch (primitiveKind)
-        {
-            case 0: return SymbolTable::Primitives::Void;
-            case 1: return SymbolTable::Primitives::Null;
-            case 2: return SymbolTable::Primitives::Any;
-            case 3: return SymbolTable::Primitives::Boolean;
-            case 4: return SymbolTable::Primitives::Integer;
-            case 5: return SymbolTable::Primitives::Double;
-            case 6: return SymbolTable::Primitives::Char;
-            case 7: return SymbolTable::Primitives::String;
-            case 8: return SymbolTable::Primitives::Array;
-            default:
-                SetLastWError(L"invalid primitive type kind");
+            if (ctx == nullptr)
+            {
+                SetLastShardWError(L"compilation context is null");
                 return nullptr;
-        }
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
+            }
 
-SHARD_API NamespaceSymbol* Shard_CreateNamespaceSymbol(CompilationContext* ctx, NamespaceSymbol* parent, const wchar_t* name)
-{
-    try
-    {
-        if (ctx == nullptr || name == nullptr)
+            return ctx->Compile().release();
+        }
+        catch (const std::exception& e)
         {
-            SetLastWError(L"invalid argument");
+            SetLastErrorFromException(e);
             return nullptr;
         }
-
-        SymbolFactory factory(ctx->GetSemanticModel().Table.get());
-        auto* symbol = factory.Namespace(name);
-        symbol->Parent = parent;
-        symbol->Accesibility = SymbolAccesibility::Public;
-
-        NamespaceNode* parentNode = parent != nullptr ? parent->Node : ctx->GetSemanticModel().Namespaces->Root;
-        if (parentNode != nullptr)
-            symbol->Node = parentNode->LookupOrCreate(symbol->Name, symbol);
-
-        if (parent != nullptr)
-        {
-            parent->OnSymbolDeclared(symbol);
-            symbol->FullName = parent->FullName + L"." + symbol->Name;
-        }
-        else
-        {
-            symbol->FullName = symbol->Name;
-        }
-
-        return symbol;
     }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
 
-SHARD_API ClassSymbol* Shard_CreateClassSymbol(CompilationContext* ctx, NamespaceSymbol* parent, const wchar_t* name)
-{
-    try
+    SHARD_API ApplicationDomain* Shard_CompileAndRun(CompilationContext* ctx)
     {
-        if (ctx == nullptr || name == nullptr)
+        try
         {
-            SetLastWError(L"invalid argument");
+            ApplicationDomain* domain = Shard_Compile(ctx);
+            if (domain != nullptr)
+                domain->GetVirtualMachine().Run();
+
+            return domain;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
             return nullptr;
         }
+    }
 
-        SymbolFactory factory(ctx->GetSemanticModel().Table.get());
-        auto* symbol = factory.Class(name);
-        symbol->Parent = parent;
-        symbol->Accesibility = SymbolAccesibility::Public;
-        symbol->IsReferenceType = true;
-
-        if (parent != nullptr)
+    SHARD_API int Shard_SetEntryPoint(CompilationContext* ctx, int value)
+    {
+        try
         {
-            parent->OnSymbolDeclared(symbol);
-            symbol->FullName = parent->FullName + L"." + symbol->Name;
+            if (ctx == nullptr)
+            {
+                SetLastShardWError(L"compilation context is null");
+                return -1;
+            }
+
+            ctx->SetEntryPoint = value != 0;
+            return 0;
         }
-        else
+        catch (const std::exception& e)
         {
-            symbol->FullName = symbol->Name;
-        }
-
-        return symbol;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API MethodSymbol* Shard_CreateMethodSymbol(CompilationContext* ctx, TypeSymbol* parentType, const wchar_t* name, TypeSymbol* returnType, int isStatic, int accessibility)
-{
-    try
-    {
-        if (ctx == nullptr || name == nullptr || parentType == nullptr)
-        {
-            SetLastWError(L"invalid argument");
-            return nullptr;
-        }
-
-        SymbolFactory factory(ctx->GetSemanticModel().Table.get());
-        auto* symbol = factory.Method(name, returnType, isStatic != 0);
-        symbol->Parent = parentType;
-        symbol->ReturnType = returnType;
-        symbol->Accesibility = static_cast<SymbolAccesibility>(accessibility);
-        symbol->IsExtern = true;
-        symbol->HandleType = MethodHandleType::External;
-        symbol->FunctionPointer = ShardManagedMethodAdapter;
-
-        parentType->OnSymbolDeclared(symbol);
-
-        NamespaceSymbol* ns = parentType->Parent != nullptr && parentType->Parent->Kind == SyntaxKind::NamespaceDeclaration
-            ? static_cast<NamespaceSymbol*>(parentType->Parent)
-            : nullptr;
-
-        if (ns != nullptr)
-            symbol->FullName = ns->FullName + L"." + parentType->Name + L"." + symbol->Name;
-        else
-            symbol->FullName = parentType->Name + L"." + symbol->Name;
-
-        return symbol;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API ParameterSymbol* Shard_CreateParameterSymbol(CompilationContext* ctx, const wchar_t* name, TypeSymbol* type)
-{
-    try
-    {
-        if (ctx == nullptr || name == nullptr || type == nullptr)
-        {
-            SetLastWError(L"invalid argument");
-            return nullptr;
-        }
-
-        SymbolFactory factory(ctx->GetSemanticModel().Table.get());
-        auto* symbol = factory.Parameter(name);
-        symbol->Type = type;
-        return symbol;
-    }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
-
-SHARD_API int Shard_AddMethodParameter(MethodSymbol* method, ParameterSymbol* parameter)
-{
-    try
-    {
-        if (method == nullptr || parameter == nullptr)
-        {
-            SetLastWError(L"invalid argument");
+            SetLastErrorFromException(e);
             return -1;
         }
-
-        parameter->Parent = method;
-        method->Parameters.push_back(parameter);
-        return 0;
     }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return -1;
-    }
-}
 
-SHARD_API FieldSymbol* Shard_CreateFieldSymbol(CompilationContext* ctx, TypeSymbol* parentType, const wchar_t* name, TypeSymbol* type, int isStatic)
-{
-    try
+    SHARD_API int Shard_GetEntryPoint(CompilationContext* ctx)
     {
-        if (ctx == nullptr || name == nullptr || parentType == nullptr || type == nullptr)
+        try
         {
-            SetLastWError(L"invalid argument");
+            if (ctx == nullptr)
+            {
+                SetLastShardWError(L"compilation context is null");
+                return 0;
+            }
+
+            return ctx->SetEntryPoint ? 1 : 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return 0;
+        }
+    }
+
+    SHARD_API int Shard_HasErrors(CompilationContext* ctx)
+    {
+        try
+        {
+            if (ctx == nullptr)
+                return 1;
+
+            return ctx->GetDiagnosticsContext().AnyError ? 1 : 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return 1;
+        }
+    }
+
+    SHARD_API int Shard_GetErrorCount(CompilationContext* ctx)
+    {
+        try
+        {
+            if (ctx == nullptr)
+                return 0;
+
+            const auto& diagnostics = ctx->GetDiagnosticsContext().Diagnostics;
+            return static_cast<int>(std::count_if(diagnostics.begin(), diagnostics.end(),
+                [](const Diagnostic& d) { return d.Severity == DiagnosticSeverity::Error; }));
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return 0;
+        }
+    }
+
+    SHARD_API int Shard_ResetDiagnostics(CompilationContext* ctx)
+    {
+        try
+        {
+            if (ctx != nullptr)
+                ctx->GetDiagnosticsContext().Reset();
+
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_GetDiagnostics(CompilationContext* ctx, wchar_t* buffer, int bufferLen)
+    {
+        try
+        {
+            if (ctx == nullptr)
+                return 0;
+
+            std::wstringstream ss;
+            ctx->GetDiagnosticsContext().WriteDiagnostics(ss);
+            std::wstring str = ss.str();
+
+            if (buffer != nullptr && bufferLen > 0)
+            {
+                std::size_t copyLen = (std::min)((std::size_t)bufferLen - 1, str.length());
+                wcsncpy(buffer, str.c_str(), copyLen);
+                buffer[copyLen] = L'\0';
+            }
+
+            return (int)str.length();
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return 0;
+        }
+    }
+
+    // =========================================================================
+    // Application Domain API
+    // =========================================================================
+
+    SHARD_API int Shard_RunDomain(ApplicationDomain* domain)
+    {
+        try
+        {
+            if (domain == nullptr)
+            {
+                SetLastShardWError(L"domain is null");
+                return -1;
+            }
+
+            domain->GetVirtualMachine().Run();
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_DestroyDomain(ApplicationDomain* domain)
+    {
+        try
+        {
+            if (domain != nullptr)
+                delete domain;
+
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API VirtualMachine* Shard_GetVirtualMachine(ApplicationDomain* domain)
+    {
+        try
+        {
+            if (domain == nullptr)
+            {
+                SetLastShardWError(L"domain is null");
+                return nullptr;
+            }
+
+            return &domain->GetVirtualMachine();
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
             return nullptr;
         }
-
-        SymbolFactory factory(ctx->GetSemanticModel().Table.get());
-        auto* symbol = factory.Field(name, type, isStatic != 0);
-        symbol->Parent = parentType;
-        symbol->ReturnType = type;
-        symbol->Accesibility = SymbolAccesibility::Public;
-
-        parentType->OnSymbolDeclared(symbol);
-        return symbol;
     }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return nullptr;
-    }
-}
 
-SHARD_API int Shard_SetMethodManagedCallback(MethodSymbol* method, ShardManagedMethodCallback callback, void* userData)
-{
-    try
+    SHARD_API GarbageCollector* Shard_GetGarbageCollector(ApplicationDomain* domain)
     {
-        if (method == nullptr || callback == nullptr)
+        try
         {
-            SetLastWError(L"invalid argument");
+            if (domain == nullptr)
+            {
+                SetLastShardWError(L"domain is null");
+                return nullptr;
+            }
+
+            return &domain->GetGarbageCollector();
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API ProgramVirtualImage* Shard_GetProgram(ApplicationDomain* domain)
+    {
+        try
+        {
+            if (domain == nullptr)
+            {
+                SetLastShardWError(L"domain is null");
+                return nullptr;
+            }
+
+            return &domain->GetProgram();
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API MethodSymbol* Shard_GetEntryPointMethod(ApplicationDomain* domain)
+    {
+        try
+        {
+            if (domain == nullptr)
+            {
+                SetLastShardWError(L"domain is null");
+                return nullptr;
+            }
+
+            return domain->GetProgram().EntryPoint;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    // =========================================================================
+    // Virtual Machine API
+    // =========================================================================
+
+    SHARD_API int Shard_VMRun(VirtualMachine* vm)
+    {
+        try
+        {
+            if (vm == nullptr)
+            {
+                SetLastShardWError(L"virtual machine is null");
+                return -1;
+            }
+
+            vm->Run();
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
             return -1;
         }
-
-        method->ManagedCallback = callback;
-        method->ManagedCallbackUserData = userData;
-        method->FunctionPointer = ShardManagedMethodAdapter;
-        method->HandleType = MethodHandleType::External;
-        method->IsExtern = true;
-        return 0;
     }
-    catch (const std::exception& e)
-    {
-        SetLastErrorFromException(e);
-        return -1;
-    }
-}
 
-SHARD_API int Shard_SetSymbolAccesibility(SyntaxSymbol* symbol, int accessibility)
-{
-    try
+    SHARD_API int Shard_VMAbort(VirtualMachine* vm)
     {
-        if (symbol == nullptr)
+        try
         {
-            SetLastWError(L"symbol is null");
+            if (vm != nullptr)
+                vm->Abort();
+
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
             return -1;
         }
-
-        symbol->Accesibility = static_cast<SymbolAccesibility>(accessibility);
-        return 0;
     }
-    catch (const std::exception& e)
+
+    SHARD_API int Shard_VMTerminateCallStack(VirtualMachine* vm)
     {
-        SetLastErrorFromException(e);
-        return -1;
-    }
-//}
+        try
+        {
+            if (vm != nullptr)
+                vm->TerminateCallStack();
 
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API ObjectInstance* Shard_VMInvokeMethod(VirtualMachine* vm, MethodSymbol* method, ObjectInstance** args, int argCount)
+    {
+        try
+        {
+            if (vm == nullptr)
+            {
+                SetLastShardWError(L"virtual machine is null");
+                return nullptr;
+            }
+
+            if (method == nullptr)
+            {
+                SetLastShardWError(L"method is null");
+                return nullptr;
+            }
+
+            return vm->InvokeMethod(method, args, static_cast<std::size_t>(argCount));
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    // =========================================================================
+    // Garbage Collector / Value API
+    // =========================================================================
+
+    SHARD_API ObjectInstance* Shard_GCFromInteger(GarbageCollector* gc, std::int64_t value)
+    {
+        try
+        {
+            if (gc == nullptr)
+            {
+                SetLastShardWError(L"garbage collector is null");
+                return nullptr;
+            }
+
+            return gc->FromValue(value);
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API ObjectInstance* Shard_GCFromDouble(GarbageCollector* gc, double value)
+    {
+        try
+        {
+            if (gc == nullptr)
+            {
+                SetLastShardWError(L"garbage collector is null");
+                return nullptr;
+            }
+
+            return gc->FromValue(value);
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API ObjectInstance* Shard_GCFromBool(GarbageCollector* gc, int value)
+    {
+        try
+        {
+            if (gc == nullptr)
+            {
+                SetLastShardWError(L"garbage collector is null");
+                return nullptr;
+            }
+
+            return gc->FromValue(value != 0);
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API ObjectInstance* Shard_GCFromString(GarbageCollector* gc, const wchar_t* value)
+    {
+        try
+        {
+            if (gc == nullptr || value == nullptr)
+            {
+                SetLastShardWError(L"garbage collector or value is null");
+                return nullptr;
+            }
+
+            return gc->FromValue(value, false);
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API std::int64_t Shard_ReadInteger(ObjectInstance* instance)
+    {
+        try
+        {
+            if (instance == nullptr)
+                return 0;
+
+            return instance->AsInteger();
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return 0;
+        }
+    }
+
+    SHARD_API double Shard_ReadDouble(ObjectInstance* instance)
+    {
+        try
+        {
+            if (instance == nullptr)
+                return 0.0;
+
+            return instance->AsDouble();
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return 0.0;
+        }
+    }
+
+    SHARD_API int Shard_ReadBool(ObjectInstance* instance)
+    {
+        try
+        {
+            if (instance == nullptr)
+                return 0;
+
+            return instance->AsBoolean() ? 1 : 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return 0;
+        }
+    }
+
+    SHARD_API const wchar_t* Shard_ReadString(ObjectInstance* instance)
+    {
+        try
+        {
+            if (instance == nullptr)
+                return nullptr;
+
+            return instance->AsString();
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    // =========================================================================
+    // Symbol Inspection API
+    // =========================================================================
+
+    SHARD_API int Shard_GetCompilationUnitCount(CompilationContext* ctx)
+    {
+        try
+        {
+            if (ctx == nullptr)
+                return 0;
+
+            return static_cast<int>(ctx->GetSyntaxTree().CompilationUnits.size());
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return 0;
+        }
+    }
+
+    SHARD_API CompilationUnitSyntax* Shard_GetCompilationUnit(CompilationContext* ctx, int index)
+    {
+        try
+        {
+            if (ctx == nullptr)
+                return nullptr;
+
+            auto& units = ctx->GetSyntaxTree().CompilationUnits;
+            if (index < 0 || index >= static_cast<int>(units.size()))
+                return nullptr;
+
+            return units[index].get();
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API int Shard_GetCompilationUnitOrigin(CompilationUnitSyntax* unit)
+    {
+        try
+        {
+            if (unit == nullptr)
+                return 0;
+
+            return static_cast<int>(unit->Origin);
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return 0;
+        }
+    }
+
+    SHARD_API NamespaceDeclarationSyntax* Shard_GetUnitNamespace(CompilationUnitSyntax* unit)
+    {
+        try
+        {
+            if (unit == nullptr)
+                return nullptr;
+
+            return unit->Namespace.get();
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API int Shard_GetNamespaceIdentifierCount(NamespaceDeclarationSyntax* ns)
+    {
+        try
+        {
+            if (ns == nullptr)
+                return 0;
+
+            return static_cast<int>(ns->IdentifierTokens.size());
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return 0;
+        }
+    }
+
+    SHARD_API const wchar_t* Shard_GetNamespaceIdentifier(NamespaceDeclarationSyntax* ns, int index)
+    {
+        try
+        {
+            if (ns == nullptr)
+                return nullptr;
+
+            if (index < 0 || index >= static_cast<int>(ns->IdentifierTokens.size()))
+                return nullptr;
+
+            return ns->IdentifierTokens[index].Word.c_str();
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API int Shard_GetUnitClassCount(CompilationUnitSyntax* unit)
+    {
+        try
+        {
+            if (unit == nullptr)
+                return 0;
+
+            int count = 0;
+            for (const auto& member : unit->Members)
+            {
+                if (member->Kind == SyntaxKind::ClassDeclaration)
+                    count++;
+            }
+
+            return count;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return 0;
+        }
+    }
+
+    SHARD_API ClassDeclarationSyntax* Shard_GetUnitClass(CompilationUnitSyntax* unit, int index)
+    {
+        try
+        {
+            if (unit == nullptr)
+                return nullptr;
+
+            int current = 0;
+            for (const auto& member : unit->Members)
+            {
+                if (member->Kind == SyntaxKind::ClassDeclaration)
+                {
+                    if (current == index)
+                        return static_cast<ClassDeclarationSyntax*>(member.get());
+
+                    current++;
+                }
+            }
+
+            return nullptr;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API const wchar_t* Shard_GetTypeName(TypeDeclarationSyntax* type)
+    {
+        try
+        {
+            if (type == nullptr)
+                return nullptr;
+
+            return type->IdentifierToken.Word.c_str();
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API int Shard_GetTypeMethodCount(CompilationContext* ctx, TypeDeclarationSyntax* type)
+    {
+        try
+        {
+            if (ctx == nullptr || type == nullptr)
+                return 0;
+
+            auto symbolOpt = ctx->GetSemanticModel().Table->LookupSymbol(type);
+            if (!symbolOpt.has_value())
+                return 0;
+
+            auto* typeSymbol = static_cast<TypeSymbol*>(symbolOpt.value());
+            return static_cast<int>(typeSymbol->Methods.size());
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return 0;
+        }
+    }
+
+    SHARD_API MethodSymbol* Shard_GetTypeMethod(CompilationContext* ctx, TypeDeclarationSyntax* type, int index)
+    {
+        try
+        {
+            if (ctx == nullptr || type == nullptr)
+                return nullptr;
+
+            auto symbolOpt = ctx->GetSemanticModel().Table->LookupSymbol(type);
+            if (!symbolOpt.has_value())
+                return nullptr;
+
+            auto* typeSymbol = static_cast<TypeSymbol*>(symbolOpt.value());
+            if (index < 0 || index >= static_cast<int>(typeSymbol->Methods.size()))
+                return nullptr;
+
+            return typeSymbol->Methods[index];
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API int Shard_GetSymbolTableTypeCount(CompilationContext* ctx)
+    {
+        try
+        {
+            if (ctx == nullptr)
+                return 0;
+
+            return static_cast<int>(ctx->GetSemanticModel().Table->GetTypeSymbols().size());
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return 0;
+        }
+    }
+
+    SHARD_API TypeSymbol* Shard_GetSymbolTableType(CompilationContext* ctx, int index)
+    {
+        try
+        {
+            if (ctx == nullptr)
+                return nullptr;
+
+            auto types = ctx->GetSemanticModel().Table->GetTypeSymbols();
+            if (index < 0 || index >= static_cast<int>(types.size()))
+                return nullptr;
+
+            return types[index];
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API TypeSymbol* Shard_FindType(CompilationContext* ctx, const wchar_t* name)
+    {
+        try
+        {
+            if (ctx == nullptr || name == nullptr)
+                return nullptr;
+
+            auto types = ctx->GetSemanticModel().Table->GetTypeSymbols();
+            for (TypeSymbol* type : types)
+            {
+                if (type != nullptr && type->Name == name)
+                    return type;
+            }
+
+            return nullptr;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API MethodSymbol* Shard_FindMethodInType(TypeSymbol* type, const wchar_t* name, int parameterCount)
+    {
+        try
+        {
+            if (type == nullptr || name == nullptr)
+                return nullptr;
+
+            for (MethodSymbol* method : type->Methods)
+            {
+                if (method != nullptr && method->Name == name &&
+                    static_cast<int>(method->Parameters.size()) == parameterCount)
+                {
+                    return method;
+                }
+            }
+
+            return nullptr;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API const wchar_t* Shard_GetSymbolName(SyntaxSymbol* symbol)
+    {
+        try
+        {
+            if (symbol == nullptr)
+                return nullptr;
+
+            return symbol->Name.c_str();
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API const wchar_t* Shard_GetMethodName(MethodSymbol* method)
+    {
+        try
+        {
+            if (method == nullptr)
+                return nullptr;
+
+            return method->Name.c_str();
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API int Shard_GetMethodParameterCount(MethodSymbol* method)
+    {
+        try
+        {
+            if (method == nullptr)
+                return 0;
+
+            return static_cast<int>(method->Parameters.size());
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return 0;
+        }
+    }
+
+    SHARD_API const wchar_t* Shard_GetMethodParameterName(MethodSymbol* method, int index)
+    {
+        try
+        {
+            if (method == nullptr)
+                return nullptr;
+
+            if (index < 0 || index >= static_cast<int>(method->Parameters.size()))
+                return nullptr;
+
+            return method->Parameters[index]->Name.c_str();
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API TypeSymbol* Shard_GetMethodParameterType(MethodSymbol* method, int index)
+    {
+        try
+        {
+            if (method == nullptr)
+                return nullptr;
+
+            if (index < 0 || index >= static_cast<int>(method->Parameters.size()))
+                return nullptr;
+
+            return method->Parameters[index]->Type;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API TypeSymbol* Shard_GetMethodReturnType(MethodSymbol* method)
+    {
+        try
+        {
+            if (method == nullptr)
+                return nullptr;
+
+            return method->ReturnType;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API int Shard_IsMethodStatic(MethodSymbol* method)
+    {
+        try
+        {
+            if (method == nullptr)
+                return 0;
+
+            return method->IsStatic ? 1 : 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return 0;
+        }
+    }
+
+    // =========================================================================
+    // Utility API
+    // =========================================================================
+
+    SHARD_API const wchar_t* Shard_GetVersion()
+    {
+        return L"0.2.0";
+    }
+
+    // =========================================================================
+    // Syntax Builder API
+    // =========================================================================
+
+    SHARD_API CompilationUnitSyntax* Shard_CreateCompilationUnit(CompilationContext* ctx)
+    {
+        try
+        {
+            if (ctx == nullptr)
+            {
+                SetLastShardWError(L"compilation context is null");
+                return nullptr;
+            }
+
+            return new CompilationUnitSyntax();
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API int Shard_AddCompilationUnit(CompilationContext* ctx, CompilationUnitSyntax* unit)
+    {
+        try
+        {
+            if (ctx == nullptr || unit == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return -1;
+            }
+
+            ctx->GetSyntaxTree().CompilationUnits.push_back(std::unique_ptr<CompilationUnitSyntax>(unit));
+            ctx->MarkForReAnalyze();
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_MarkForReAnalyze(CompilationContext* ctx)
+    {
+        try
+        {
+            if (ctx == nullptr)
+            {
+                SetLastShardWError(L"compilation context is null");
+                return -1;
+            }
+
+            ctx->MarkForReAnalyze();
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_SetCompilationUnitOrigin(CompilationUnitSyntax* unit, CompilationUnitOrigin origin)
+    {
+        try
+        {
+            if (unit == nullptr)
+            {
+                SetLastShardWError(L"compilation unit is null");
+                return -1;
+            }
+
+            unit->Origin = origin;
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_SetCompilationUnitNamespace(CompilationUnitSyntax* unit, NamespaceDeclarationSyntax* ns)
+    {
+        try
+        {
+            if (unit == nullptr)
+            {
+                SetLastShardWError(L"compilation unit is null");
+                return -1;
+            }
+
+            unit->Namespace.reset(ns);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_AddCompilationUnitMember(CompilationUnitSyntax* unit, MemberDeclarationSyntax* member)
+    {
+        try
+        {
+            if (unit == nullptr || member == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return -1;
+            }
+
+            unit->Members.push_back(std::unique_ptr<MemberDeclarationSyntax>(member));
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API NamespaceDeclarationSyntax* Shard_CreateNamespaceDeclaration(SyntaxNode* parent)
+    {
+        try
+        {
+            auto* ns = new NamespaceDeclarationSyntax(parent);
+            ns->SemicolonToken = MakeToken(shard::TokenType::Semicolon, L";");
+            return ns;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API int Shard_AddNamespaceIdentifier(NamespaceDeclarationSyntax* ns, const wchar_t* name)
+    {
+        try
+        {
+            if (ns == nullptr || name == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return -1;
+            }
+
+            ns->IdentifierTokens.push_back(MakeToken(shard::TokenType::Identifier, name));
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_AddMemberModifier(MemberDeclarationSyntax* member, int modifierTokenType)
+    {
+        try
+        {
+            if (member == nullptr)
+            {
+                SetLastShardWError(L"member is null");
+                return -1;
+            }
+
+            member->Modifiers.push_back(MakeToken(static_cast<shard::TokenType>(modifierTokenType)));
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API ClassDeclarationSyntax* Shard_CreateClassDeclaration(SyntaxNode* parent, const wchar_t* name)
+    {
+        try
+        {
+            if (name == nullptr)
+            {
+                SetLastShardWError(L"name is null");
+                return nullptr;
+            }
+
+            MemberDeclarationInfo info;
+            info.Identifier = MakeToken(shard::TokenType::Identifier, name);
+            auto* decl = new ClassDeclarationSyntax(info, parent);
+            decl->DeclareToken = MakeToken(shard::TokenType::ClassKeyword, L"class");
+            return decl;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API StructDeclarationSyntax* Shard_CreateStructDeclaration(SyntaxNode* parent, const wchar_t* name)
+    {
+        try
+        {
+            if (name == nullptr)
+            {
+                SetLastShardWError(L"name is null");
+                return nullptr;
+            }
+
+            MemberDeclarationInfo info;
+            info.Identifier = MakeToken(shard::TokenType::Identifier, name);
+            auto* decl = new StructDeclarationSyntax(info, parent);
+            decl->DeclareToken = MakeToken(shard::TokenType::StructKeyword, L"struct");
+            return decl;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API int Shard_AddTypeMember(TypeDeclarationSyntax* type, MemberDeclarationSyntax* member)
+    {
+        try
+        {
+            if (type == nullptr || member == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return -1;
+            }
+
+            type->Members.push_back(std::unique_ptr<MemberDeclarationSyntax>(member));
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API FieldDeclarationSyntax* Shard_CreateFieldDeclaration(SyntaxNode* parent, const wchar_t* name, TypeSyntax* type)
+    {
+        try
+        {
+            if (name == nullptr)
+            {
+                SetLastShardWError(L"name is null");
+                return nullptr;
+            }
+
+            MemberDeclarationInfo info;
+            info.Identifier = MakeToken(shard::TokenType::Identifier, name);
+            auto* decl = new FieldDeclarationSyntax(info, parent);
+            decl->DeclareToken = MakeToken(shard::TokenType::FieldKeyword, L"field");
+            decl->ReturnType.reset(type);
+            return decl;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API int Shard_SetFieldInitializer(FieldDeclarationSyntax* field, ExpressionSyntax* expression)
+    {
+        try
+        {
+            if (field == nullptr)
+            {
+                SetLastShardWError(L"field is null");
+                return -1;
+            }
+
+            field->InitializerExpression.reset(expression);
+            if (expression != nullptr)
+                field->InitializerAssignToken = MakeToken(shard::TokenType::AssignOperator, L"=");
+
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API MethodDeclarationSyntax* Shard_CreateMethodDeclaration(SyntaxNode* parent, const wchar_t* name, TypeSyntax* returnType)
+    {
+        try
+        {
+            if (name == nullptr)
+            {
+                SetLastShardWError(L"name is null");
+                return nullptr;
+            }
+
+            MemberDeclarationInfo info;
+            info.Identifier = MakeToken(shard::TokenType::Identifier, name);
+            info.ReturnType.reset(returnType);
+            auto* decl = new MethodDeclarationSyntax(info, parent);
+            decl->DeclareToken = MakeToken(shard::TokenType::FunctionKeyword, L"func");
+            return decl;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API ConstructorDeclarationSyntax* Shard_CreateConstructorDeclaration(SyntaxNode* parent, const wchar_t* name)
+    {
+        try
+        {
+            if (name == nullptr)
+            {
+                SetLastShardWError(L"name is null");
+                return nullptr;
+            }
+
+            MemberDeclarationInfo info;
+            info.Identifier = MakeToken(shard::TokenType::Identifier, name);
+            info.ReturnType = std::make_unique<PredefinedTypeSyntax>(MakeToken(shard::TokenType::VoidKeyword, L"void"), nullptr);
+            auto* decl = new ConstructorDeclarationSyntax(info, parent);
+            decl->DeclareToken = MakeToken(shard::TokenType::InitKeyword, L"init");
+            return decl;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API int Shard_SetMethodReturnType(MethodDeclarationSyntax* method, TypeSyntax* returnType)
+    {
+        try
+        {
+            if (method == nullptr)
+            {
+                SetLastShardWError(L"method is null");
+                return -1;
+            }
+
+            method->ReturnType.reset(returnType);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_SetMethodParametersList(MethodDeclarationSyntax* method, ParametersListSyntax* parameters)
+    {
+        try
+        {
+            if (method == nullptr)
+            {
+                SetLastShardWError(L"method is null");
+                return -1;
+            }
+
+            method->ParametersList.reset(parameters);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_SetMethodBody(MethodDeclarationSyntax* method, StatementsBlockSyntax* body)
+    {
+        try
+        {
+            if (method == nullptr)
+            {
+                SetLastShardWError(L"method is null");
+                return -1;
+            }
+
+            method->Body.reset(body);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_SetConstructorParametersList(ConstructorDeclarationSyntax* ctor, ParametersListSyntax* parameters)
+    {
+        try
+        {
+            if (ctor == nullptr)
+            {
+                SetLastShardWError(L"constructor is null");
+                return -1;
+            }
+
+            ctor->ParametersList.reset(parameters);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_SetConstructorBody(ConstructorDeclarationSyntax* ctor, StatementsBlockSyntax* body)
+    {
+        try
+        {
+            if (ctor == nullptr)
+            {
+                SetLastShardWError(L"constructor is null");
+                return -1;
+            }
+
+            ctor->Body.reset(body);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API ParametersListSyntax* Shard_CreateParametersList(SyntaxNode* parent)
+    {
+        try
+        {
+            return new ParametersListSyntax(parent);
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API int Shard_AddParameter(ParametersListSyntax* list, const wchar_t* name, TypeSyntax* type)
+    {
+        try
+        {
+            if (list == nullptr || name == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return -1;
+            }
+
+            auto param = std::make_unique<ParameterSyntax>(std::unique_ptr<TypeSyntax>(type), MakeToken(shard::TokenType::Identifier, name), list);
+            list->Parameters.push_back(std::move(param));
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API StatementsBlockSyntax* Shard_CreateStatementsBlock(SyntaxNode* parent)
+    {
+        try
+        {
+            return new StatementsBlockSyntax(parent);
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API int Shard_AddStatement(StatementsBlockSyntax* block, StatementSyntax* statement)
+    {
+        try
+        {
+            if (block == nullptr || statement == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return -1;
+            }
+
+            block->Statements.push_back(std::unique_ptr<StatementSyntax>(statement));
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API PredefinedTypeSyntax* Shard_CreatePredefinedType(SyntaxNode* parent, int tokenType)
+    {
+        try
+        {
+            return new PredefinedTypeSyntax(MakeToken(static_cast<shard::TokenType>(tokenType)), parent);
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API IdentifierNameTypeSyntax* Shard_CreateIdentifierNameType(SyntaxNode* parent, const wchar_t* name)
+    {
+        try
+        {
+            if (name == nullptr)
+            {
+                SetLastShardWError(L"name is null");
+                return nullptr;
+            }
+
+            auto* type = new IdentifierNameTypeSyntax(parent);
+            type->Identifier = MakeToken(shard::TokenType::Identifier, name);
+            return type;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API ArrayTypeSyntax* Shard_CreateArrayType(SyntaxNode* parent, TypeSyntax* elementType, int rank)
+    {
+        try
+        {
+            auto* type = new ArrayTypeSyntax(std::unique_ptr<TypeSyntax>(elementType), parent);
+            type->Rank = rank;
+            return type;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API NullableTypeSyntax* Shard_CreateNullableType(SyntaxNode* parent, TypeSyntax* underlayingType)
+    {
+        try
+        {
+            auto* type = new NullableTypeSyntax(std::unique_ptr<TypeSyntax>(underlayingType), parent);
+            type->QuestionToken = MakeToken(shard::TokenType::Question, L"?");
+            return type;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API GenericTypeSyntax* Shard_CreateGenericType(SyntaxNode* parent, TypeSyntax* underlayingType)
+    {
+        try
+        {
+            auto* type = new GenericTypeSyntax(std::unique_ptr<TypeSyntax>(underlayingType), parent);
+            return type;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API TypeArgumentsListSyntax* Shard_CreateTypeArgumentsList(SyntaxNode* parent)
+    {
+        try
+        {
+            return new TypeArgumentsListSyntax(parent);
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API int Shard_AddTypeArgument(TypeArgumentsListSyntax* list, TypeSyntax* type)
+    {
+        try
+        {
+            if (list == nullptr || type == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return -1;
+            }
+
+            list->Types.push_back(std::unique_ptr<TypeSyntax>(type));
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_SetGenericTypeArguments(GenericTypeSyntax* generic, TypeArgumentsListSyntax* arguments)
+    {
+        try
+        {
+            if (generic == nullptr)
+            {
+                SetLastShardWError(L"generic type is null");
+                return -1;
+            }
+
+            generic->Arguments.reset(arguments);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API VariableStatementSyntax* Shard_CreateVariableStatement(SyntaxNode* parent, const wchar_t* name, TypeSyntax* type, ExpressionSyntax* initializer)
+    {
+        try
+        {
+            if (name == nullptr)
+            {
+                SetLastShardWError(L"name is null");
+                return nullptr;
+            }
+
+            auto* stmt = new VariableStatementSyntax(
+                std::unique_ptr<TypeSyntax>(type),
+                MakeToken(shard::TokenType::Identifier, name),
+                initializer != nullptr ? MakeToken(shard::TokenType::DeclareAssignOperator, L":=") : MakeToken(shard::TokenType::Unknown),
+                std::unique_ptr<ExpressionSyntax>(initializer),
+                parent);
+
+            return stmt;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API ExpressionStatementSyntax* Shard_CreateExpressionStatement(SyntaxNode* parent, ExpressionSyntax* expression)
+    {
+        try
+        {
+            if (expression == nullptr)
+            {
+                SetLastShardWError(L"expression is null");
+                return nullptr;
+            }
+
+            return new ExpressionStatementSyntax(std::unique_ptr<ExpressionSyntax>(expression), parent);
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API ReturnStatementSyntax* Shard_CreateReturnStatement(SyntaxNode* parent, ExpressionSyntax* expression)
+    {
+        try
+        {
+            auto* stmt = new ReturnStatementSyntax(parent);
+            stmt->KeywordToken = MakeToken(shard::TokenType::ReturnKeyword, L"return");
+            stmt->Expression.reset(expression);
+            return stmt;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API ForEachStatementSyntax* Shard_CreateForEachStatement(SyntaxNode* parent, const wchar_t* variableName, ExpressionSyntax* range, StatementsBlockSyntax* body)
+    {
+        try
+        {
+            if (variableName == nullptr)
+            {
+                SetLastShardWError(L"variable name is null");
+                return nullptr;
+            }
+
+            auto* stmt = new ForEachStatementSyntax(parent);
+            stmt->KeywordToken = MakeToken(shard::TokenType::ForeachKeyword, L"foreach");
+            stmt->IdentifierToken = MakeToken(shard::TokenType::Identifier, variableName);
+            stmt->InKeywordToken = MakeToken(shard::TokenType::InKeyword, L"in");
+            stmt->RangeExpression.reset(range);
+            stmt->StatementsBlock.reset(body);
+            return stmt;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API WhileStatementSyntax* Shard_CreateWhileStatement(SyntaxNode* parent, ExpressionSyntax* condition, StatementsBlockSyntax* body)
+    {
+        try
+        {
+            auto* stmt = new WhileStatementSyntax(parent);
+            stmt->KeywordToken = MakeToken(shard::TokenType::WhileKeyword, L"while");
+            stmt->ConditionExpression.reset(condition);
+            stmt->StatementsBlock.reset(body);
+            return stmt;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API LiteralExpressionSyntax* Shard_CreateLiteralExpression(SyntaxNode* parent, int tokenType, const wchar_t* value)
+    {
+        try
+        {
+            if (value == nullptr)
+            {
+                SetLastShardWError(L"value is null");
+                return nullptr;
+            }
+
+            return new LiteralExpressionSyntax(MakeToken(static_cast<shard::TokenType>(tokenType), value), parent);
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API MemberAccessExpressionSyntax* Shard_CreateIdentifierExpression(SyntaxNode* parent, const wchar_t* name)
+    {
+        try
+        {
+            if (name == nullptr)
+            {
+                SetLastShardWError(L"name is null");
+                return nullptr;
+            }
+
+            return new MemberAccessExpressionSyntax(MakeToken(shard::TokenType::Identifier, name), std::unique_ptr<ExpressionSyntax>(nullptr), parent);
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API MemberAccessExpressionSyntax* Shard_CreateMemberAccessExpression(SyntaxNode* parent, ExpressionSyntax* previous, const wchar_t* memberName)
+    {
+        try
+        {
+            if (memberName == nullptr)
+            {
+                SetLastShardWError(L"member name is null");
+                return nullptr;
+            }
+
+            auto* expr = new MemberAccessExpressionSyntax(MakeToken(shard::TokenType::Identifier, memberName), std::unique_ptr<ExpressionSyntax>(previous), parent);
+            expr->DelimeterToken = MakeToken(shard::TokenType::Delimeter, L".");
+            return expr;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API BinaryExpressionSyntax* Shard_CreateBinaryExpression(SyntaxNode* parent, ExpressionSyntax* left, ExpressionSyntax* right, int operatorTokenType)
+    {
+        try
+        {
+            auto* expr = new BinaryExpressionSyntax(MakeToken(static_cast<shard::TokenType>(operatorTokenType)), parent);
+            expr->Left.reset(left);
+            expr->Right.reset(right);
+            return expr;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API UnaryExpressionSyntax* Shard_CreateUnaryExpression(SyntaxNode* parent, ExpressionSyntax* operand, int operatorTokenType, int isPostfix)
+    {
+        try
+        {
+            auto* expr = new UnaryExpressionSyntax(MakeToken(static_cast<shard::TokenType>(operatorTokenType)), isPostfix != 0, parent);
+            expr->Expression.reset(operand);
+            return expr;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API InvokationExpressionSyntax* Shard_CreateInvocationExpression(SyntaxNode* parent, ExpressionSyntax* target, const wchar_t* methodName)
+    {
+        try
+        {
+            auto* expr = new InvokationExpressionSyntax(
+                methodName != nullptr ? MakeToken(shard::TokenType::Identifier, methodName) : MakeToken(shard::TokenType::Unknown),
+                std::unique_ptr<ExpressionSyntax>(target),
+                parent);
+
+            expr->DelimeterToken = MakeToken(shard::TokenType::Delimeter, L".");
+            return expr;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API int Shard_SetInvocationArgumentsList(InvokationExpressionSyntax* invocation, ArgumentsListSyntax* arguments)
+    {
+        try
+        {
+            if (invocation == nullptr)
+            {
+                SetLastShardWError(L"invocation is null");
+                return -1;
+            }
+
+            invocation->ArgumentsList.reset(arguments);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API ObjectExpressionSyntax* Shard_CreateObjectExpression(SyntaxNode* parent, TypeSyntax* type)
+    {
+        try
+        {
+            auto* expr = new ObjectExpressionSyntax(parent);
+            expr->NewToken = MakeToken(shard::TokenType::NewKeyword, L"new");
+            expr->Type.reset(type);
+            return expr;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API int Shard_SetObjectArgumentsList(ObjectExpressionSyntax* objectExpr, ArgumentsListSyntax* arguments)
+    {
+        try
+        {
+            if (objectExpr == nullptr)
+            {
+                SetLastShardWError(L"object expression is null");
+                return -1;
+            }
+
+            objectExpr->ArgumentsList.reset(arguments);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API RangeExpressionSyntax* Shard_CreateRangeExpression(SyntaxNode* parent, ExpressionSyntax* left, ExpressionSyntax* right, int isInclusive)
+    {
+        try
+        {
+            auto* expr = new RangeExpressionSyntax(parent);
+            expr->OperatorToken = MakeToken(isInclusive != 0 ? shard::TokenType::RangeInclusiveOperator : shard::TokenType::RangeOperator, isInclusive != 0 ? L"..&" : L"..");
+            expr->Left.reset(left);
+            expr->Right.reset(right);
+            expr->IsInclusive = isInclusive != 0;
+            return expr;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API CollectionExpressionSyntax* Shard_CreateCollectionExpression(SyntaxNode* parent)
+    {
+        try
+        {
+            return new CollectionExpressionSyntax(parent);
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API int Shard_AddCollectionElement(CollectionExpressionSyntax* collection, ExpressionSyntax* element)
+    {
+        try
+        {
+            if (collection == nullptr || element == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return -1;
+            }
+
+            collection->ValuesExpressions.push_back(std::unique_ptr<ExpressionSyntax>(element));
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API ArgumentsListSyntax* Shard_CreateArgumentsList(SyntaxNode* parent)
+    {
+        try
+        {
+            return new ArgumentsListSyntax(parent);
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API int Shard_AddArgument(ArgumentsListSyntax* list, ExpressionSyntax* expression)
+    {
+        try
+        {
+            if (list == nullptr || expression == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return -1;
+            }
+
+            list->Arguments.push_back(std::make_unique<ArgumentSyntax>(std::unique_ptr<ExpressionSyntax>(expression), list));
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    // =========================================================================
+    // Symbol Builder API
+    // =========================================================================
+
+    static ObjectInstance* ShardManagedMethodAdapter(const CallState& context) noexcept(false)
+    {
+        MethodSymbol* method = context.Method;
+        if (method == nullptr || method->ManagedCallback == nullptr)
+        {
+            SetLastShardWError(L"managed method callback not set");
+            throw std::runtime_error("managed method callback not set");
+        }
+
+        return method->ManagedCallback(method, context.Args.data(), context.Args.size(), method->ManagedCallbackUserData, &context.Collector);
+    }
+
+    SHARD_API SymbolTable* Shard_GetSymbolTable(CompilationContext* ctx)
+    {
+        try
+        {
+            if (ctx == nullptr)
+            {
+                SetLastShardWError(L"compilation context is null");
+                return nullptr;
+            }
+
+            return ctx->GetSemanticModel().Table.get();
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API TypeSymbol* Shard_GetPrimitiveType(CompilationContext* ctx, int primitiveKind)
+    {
+        try
+        {
+            if (ctx == nullptr)
+            {
+                SetLastShardWError(L"compilation context is null");
+                return nullptr;
+            }
+
+            switch (primitiveKind)
+            {
+                case 0: return SymbolTable::Primitives::Void;
+                case 1: return SymbolTable::Primitives::Null;
+                case 2: return SymbolTable::Primitives::Any;
+                case 3: return SymbolTable::Primitives::Boolean;
+                case 4: return SymbolTable::Primitives::Integer;
+                case 5: return SymbolTable::Primitives::Double;
+                case 6: return SymbolTable::Primitives::Char;
+                case 7: return SymbolTable::Primitives::String;
+                case 8: return SymbolTable::Primitives::Array;
+                default:
+                    SetLastShardWError(L"invalid primitive type kind");
+                    return nullptr;
+            }
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API NamespaceSymbol* Shard_CreateNamespaceSymbol(CompilationContext* ctx, NamespaceSymbol* parent, const wchar_t* name)
+    {
+        try
+        {
+            if (ctx == nullptr || name == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return nullptr;
+            }
+
+            SymbolFactory factory(ctx->GetSemanticModel().Table.get());
+            auto* symbol = factory.Namespace(name);
+            symbol->Parent = parent;
+            symbol->Accesibility = SymbolAccesibility::Public;
+
+            NamespaceNode* parentNode = parent != nullptr ? parent->Node : ctx->GetSemanticModel().Namespaces->Root;
+            if (parentNode != nullptr)
+                symbol->Node = parentNode->LookupOrCreate(symbol->Name, symbol);
+
+            if (parent != nullptr)
+            {
+                parent->OnSymbolDeclared(symbol);
+                symbol->FullName = parent->FullName + L"." + symbol->Name;
+            }
+            else
+            {
+                symbol->FullName = symbol->Name;
+            }
+
+            return symbol;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API ClassSymbol* Shard_CreateClassSymbol(CompilationContext* ctx, NamespaceSymbol* parent, const wchar_t* name)
+    {
+        try
+        {
+            if (ctx == nullptr || name == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return nullptr;
+            }
+
+            SymbolFactory factory(ctx->GetSemanticModel().Table.get());
+            auto* symbol = factory.Class(name);
+            symbol->Parent = parent;
+            symbol->Accesibility = SymbolAccesibility::Public;
+            symbol->IsReferenceType = true;
+
+            if (parent != nullptr)
+            {
+                parent->OnSymbolDeclared(symbol);
+                symbol->FullName = parent->FullName + L"." + symbol->Name;
+            }
+            else
+            {
+                symbol->FullName = symbol->Name;
+            }
+
+            return symbol;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API MethodSymbol* Shard_CreateMethodSymbol(CompilationContext* ctx, TypeSymbol* parentType, const wchar_t* name, TypeSymbol* returnType, int isStatic, int accessibility)
+    {
+        try
+        {
+            if (ctx == nullptr || name == nullptr || parentType == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return nullptr;
+            }
+
+            SymbolFactory factory(ctx->GetSemanticModel().Table.get());
+            auto* symbol = factory.Method(name, returnType, isStatic != 0);
+            symbol->Parent = parentType;
+            symbol->ReturnType = returnType;
+            symbol->Accesibility = static_cast<SymbolAccesibility>(accessibility);
+            symbol->IsExtern = true;
+            symbol->HandleType = MethodHandleType::External;
+            symbol->FunctionPointer = ShardManagedMethodAdapter;
+
+            parentType->OnSymbolDeclared(symbol);
+
+            NamespaceSymbol* ns = parentType->Parent != nullptr && parentType->Parent->Kind == SyntaxKind::NamespaceDeclaration
+                ? static_cast<NamespaceSymbol*>(parentType->Parent)
+                : nullptr;
+
+            if (ns != nullptr)
+                symbol->FullName = ns->FullName + L"." + parentType->Name + L"." + symbol->Name;
+            else
+                symbol->FullName = parentType->Name + L"." + symbol->Name;
+
+            return symbol;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API ParameterSymbol* Shard_CreateParameterSymbol(CompilationContext* ctx, const wchar_t* name, TypeSymbol* type)
+    {
+        try
+        {
+            if (ctx == nullptr || name == nullptr || type == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return nullptr;
+            }
+
+            SymbolFactory factory(ctx->GetSemanticModel().Table.get());
+            auto* symbol = factory.Parameter(name);
+            symbol->Type = type;
+            return symbol;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API int Shard_AddMethodParameter(MethodSymbol* method, ParameterSymbol* parameter)
+    {
+        try
+        {
+            if (method == nullptr || parameter == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return -1;
+            }
+
+            parameter->Parent = method;
+            method->Parameters.push_back(parameter);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API FieldSymbol* Shard_CreateFieldSymbol(CompilationContext* ctx, TypeSymbol* parentType, const wchar_t* name, TypeSymbol* type, int isStatic)
+    {
+        try
+        {
+            if (ctx == nullptr || name == nullptr || parentType == nullptr || type == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return nullptr;
+            }
+
+            SymbolFactory factory(ctx->GetSemanticModel().Table.get());
+            auto* symbol = factory.Field(name, type, isStatic != 0);
+            symbol->Parent = parentType;
+            symbol->ReturnType = type;
+            symbol->Accesibility = SymbolAccesibility::Public;
+
+            parentType->OnSymbolDeclared(symbol);
+            return symbol;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API int Shard_SetMethodManagedCallback(MethodSymbol* method, ShardManagedMethodCallback callback, void* userData)
+    {
+        try
+        {
+            if (method == nullptr || callback == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return -1;
+            }
+
+            method->ManagedCallback = callback;
+            method->ManagedCallbackUserData = userData;
+            method->FunctionPointer = ShardManagedMethodAdapter;
+            method->HandleType = MethodHandleType::External;
+            method->IsExtern = true;
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_SetSymbolAccesibility(SyntaxSymbol* symbol, int accessibility)
+    {
+        try
+        {
+            if (symbol == nullptr)
+            {
+                SetLastShardWError(L"symbol is null");
+                return -1;
+            }
+
+            symbol->Accesibility = static_cast<SymbolAccesibility>(accessibility);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
 }
+
 #endif // !defined(SHARDSCRIPT_STATIC)
