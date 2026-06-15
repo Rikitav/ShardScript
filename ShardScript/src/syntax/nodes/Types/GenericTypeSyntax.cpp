@@ -12,7 +12,7 @@ std::wstring GenericTypeSyntax::ToString()
 	if (!Arguments->Types.empty())
 	{
 		result << Arguments->Types[0]->ToString();
-		for (size_t i = 1; i < Arguments->Types.size(); i++)
+		for (std::size_t i = 1; i < Arguments->Types.size(); i++)
 			result << L", " << Arguments->Types[i]->ToString();
 	}
 

@@ -21,7 +21,7 @@ namespace shard
 	public:
 		//TypeSymbol* ConstraintType = nullptr;
 
-		uint16_t TypeArgumentIndex = 0;
+		std::uint16_t TypeArgumentIndex = 0;
 
 		inline TypeParameterSymbol(std::wstring name) : TypeSymbol(name, SyntaxKind::TypeParameter)
 		{

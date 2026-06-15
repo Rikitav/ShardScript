@@ -67,8 +67,8 @@ ObjectInstance* GarbageCollector::FromValue(const std::wstring& value)
 {
 	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String, false);
 
-	size_t length = value.size();
-	size_t size = (length + 1) * sizeof(wchar_t);
+	std::size_t length = value.size();
+	std::size_t size = (length + 1) * sizeof(wchar_t);
 
 	wchar_t* copy = static_cast<wchar_t*>(malloc(size));
 	if (copy == nullptr)
@@ -150,14 +150,14 @@ ObjectInstance* GarbageCollector::AllocateInstance(const TypeSymbol* objectInfo,
 	return instance;
 }
 
-ObjectInstance* GarbageCollector::AllocateArray(TypeSymbol* elementType, size_t length, bool isTransient)
+ObjectInstance* GarbageCollector::AllocateArray(TypeSymbol* elementType, std::size_t length, bool isTransient)
 {
 	if (elementType == nullptr)
 		throw std::runtime_error("elementType is nullptr");
 
-	size_t headerSize = SymbolTable::Primitives::Array->MemoryBytesSize;
-	size_t elementSize = elementType->GetInlineSize();
-	size_t totalSize = headerSize + elementSize * length;
+	std::size_t headerSize = SymbolTable::Primitives::Array->MemoryBytesSize;
+	std::size_t elementSize = elementType->GetInlineSize();
+	std::size_t totalSize = headerSize + elementSize * length;
 
 	void* rawMemory = nullptr;
 	if (totalSize > 0)
@@ -266,7 +266,7 @@ void GarbageCollector::TerminateInstance(ObjectInstance* instance)
 	if (instance->getInfo()->Kind == SyntaxKind::ArrayType)
 	{
 		const ArrayTypeSymbol* array = static_cast<const ArrayTypeSymbol*>(instance->getInfo());
-		for (size_t i = 0; i < array->Size; i++)
+		for (std::size_t i = 0; i < array->Size; i++)
 		{
 			ObjectInstance* element = instance->GetElement(i);
 			DestroyInstance(element);

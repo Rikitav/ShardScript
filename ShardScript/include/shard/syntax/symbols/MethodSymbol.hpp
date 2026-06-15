@@ -20,6 +20,7 @@ namespace shard
 {
     class ObjectInstance;
     struct CallState;
+    class GarbageCollector;
 }
 
 namespace shard
@@ -33,10 +34,11 @@ namespace shard
     };
 
     typedef shard::ObjectInstance* (*MethodSymbolDelegate)(const CallState& context);
+    typedef shard::ObjectInstance* (*ShardManagedMethodCallback)(MethodSymbol* method, ObjectInstance** args, std::size_t argsCount, void* userData, GarbageCollector* collector);
 
     class SHARD_API MethodSymbol : public MemberSymbol
     {
-        uint16_t EvalStackVariablesCount = 0;
+        std::uint16_t EvalStackVariablesCount = 0;
 
     public:
         TypeSymbol* ReturnType = nullptr;
@@ -45,30 +47,32 @@ namespace shard
         MethodHandleType HandleType = MethodHandleType::Body;
         std::vector<std::byte> ExecutableByteCode;
         MethodSymbolDelegate FunctionPointer = nullptr;
+        ShardManagedMethodCallback ManagedCallback = nullptr;
+        void* ManagedCallbackUserData = nullptr;
 
         std::wstring LinkLibrary;
         std::wstring LinkSymbol;
 
-        inline uint16_t GetEvalStackArgumentsCount() const
+        inline std::uint16_t GetEvalStackArgumentsCount() const
         {
-            uint16_t count = static_cast<uint16_t>(Parameters.size());
+            std::uint16_t count = static_cast<std::uint16_t>(Parameters.size());
             if (!IsStatic)
                 count += 1; // implicit 'this'
 
             return count;
         }
 
-        inline uint16_t AddVariableCount()
+        inline std::uint16_t AddVariableCount()
         {
             return EvalStackVariablesCount++;
         }
 
-        inline uint16_t GetEvalStackVariablesCount() const
+        inline std::uint16_t GetEvalStackVariablesCount() const
         {
             return EvalStackVariablesCount;
         }
 
-        inline uint16_t GetEvalStackLocalsCount() const
+        inline std::uint16_t GetEvalStackLocalsCount() const
         {
             return GetEvalStackArgumentsCount() + EvalStackVariablesCount;
         }

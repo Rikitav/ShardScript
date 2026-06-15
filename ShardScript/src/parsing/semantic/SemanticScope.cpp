@@ -11,6 +11,15 @@ SyntaxSymbol *const SemanticScope::Lookup(const std::wstring& name)
     if (lookup != _symbols.end())
         return lookup->second;
 
+    if (Namespace != nullptr)
+    {
+        for (SyntaxSymbol* member : Namespace->Members)
+        {
+            if (member != nullptr && member->Name == name)
+                return member;
+        }
+    }
+
     if (Parent != nullptr)
         return Parent->Lookup(name);
 

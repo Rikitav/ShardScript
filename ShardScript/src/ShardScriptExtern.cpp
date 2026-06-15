@@ -18,12 +18,58 @@
 #include <shard/syntax/symbols/MemberSymbol.hpp>
 #include <shard/syntax/symbols/MethodSymbol.hpp>
 #include <shard/syntax/symbols/ParameterSymbol.hpp>
+#include <shard/syntax/symbols/NamespaceSymbol.hpp>
+#include <shard/syntax/symbols/ClassSymbol.hpp>
+#include <shard/syntax/symbols/FieldSymbol.hpp>
+
+#include <shard/syntax/SymbolFactory.hpp>
+#include <shard/parsing/semantic/SymbolTable.hpp>
+#include <shard/parsing/semantic/SemanticModel.hpp>
+#include <shard/runtime/MethodCallState.hpp>
 
 #include <shard/syntax/nodes/CompilationUnitSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.hpp>
+#include <shard/syntax/SyntaxToken.hpp>
+#include <shard/syntax/TokenType.hpp>
+#include <shard/parsing/analysis/TextLocation.hpp>
+
+#include <shard/syntax/nodes/BodyDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/TypeDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/StatementsBlockSyntax.hpp>
+#include <shard/syntax/nodes/ArgumentsListSyntax.hpp>
+#include <shard/syntax/nodes/ParametersListSyntax.hpp>
+
 #include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.hpp>
+
+#include <shard/syntax/nodes/StatementSyntax.hpp>
+#include <shard/syntax/nodes/Statements/ExpressionStatementSyntax.hpp>
+#include <shard/syntax/nodes/Statements/ReturnStatementSyntax.hpp>
+#include <shard/syntax/nodes/Statements/VariableStatementSyntax.hpp>
+
+#include <shard/syntax/nodes/Loops/ForEachStatementSyntax.hpp>
+#include <shard/syntax/nodes/Loops/WhileStatementSyntax.hpp>
+
+#include <shard/syntax/nodes/ExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/LiteralExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/BinaryExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/UnaryExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/LinkedExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/ObjectExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/RangeExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/CollectionExpressionSyntax.hpp>
+
+#include <shard/syntax/nodes/Types/PredefinedTypeSyntax.hpp>
+#include <shard/syntax/nodes/Types/IdentifierNameTypeSyntax.hpp>
+#include <shard/syntax/nodes/Types/ArrayTypeSyntax.hpp>
+#include <shard/syntax/nodes/Types/NullableTypeSyntax.hpp>
+#include <shard/syntax/nodes/Types/GenericTypeSyntax.hpp>
+#include <shard/syntax/nodes/TypeArgumentsListSyntax.hpp>
+
 #include <shard/compilation/ProgramVirtualImage.hpp>
 
 #include <sstream>
@@ -58,6 +104,11 @@ namespace
     {
         SetLastError(ex.what());
     }
+
+    static SyntaxToken MakeToken(shard::TokenType type, const wchar_t* word = nullptr)
+    {
+        return SyntaxToken(type, word != nullptr ? std::wstring(word) : std::wstring(), TextLocation(), false);
+    }
 }
 
 // =========================================================================
@@ -68,7 +119,7 @@ SHARD_EXPORT int Shard_GetLastError(wchar_t* buffer, int bufferLen)
 {
     if (buffer != nullptr && bufferLen > 0)
     {
-        size_t copyLen = (std::min)((size_t)bufferLen - 1, LastErrorMessage.length());
+        std::size_t copyLen = (std::min)((std::size_t)bufferLen - 1, LastErrorMessage.length());
         wcsncpy(buffer, LastErrorMessage.c_str(), copyLen);
         buffer[copyLen] = L'\0';
     }
@@ -340,7 +391,7 @@ SHARD_EXPORT int Shard_GetDiagnostics(CompilationContext* ctx, wchar_t* buffer, 
 
         if (buffer != nullptr && bufferLen > 0)
         {
-            size_t copyLen = (std::min)((size_t)bufferLen - 1, str.length());
+            std::size_t copyLen = (std::min)((std::size_t)bufferLen - 1, str.length());
             wcsncpy(buffer, str.c_str(), copyLen);
             buffer[copyLen] = L'\0';
         }
@@ -542,7 +593,7 @@ SHARD_EXPORT ObjectInstance* Shard_VMInvokeMethod(VirtualMachine* vm, MethodSymb
             return nullptr;
         }
 
-        return vm->InvokeMethod(method, args, static_cast<size_t>(argCount));
+        return vm->InvokeMethod(method, args, static_cast<std::size_t>(argCount));
     }
     catch (const std::exception& e)
     {
@@ -1123,6 +1174,1289 @@ SHARD_EXPORT int Shard_IsMethodStatic(MethodSymbol* method)
 SHARD_EXPORT const wchar_t* Shard_GetVersion()
 {
     return L"0.2.0";
+}
+
+// =========================================================================
+// Syntax Builder API
+// =========================================================================
+
+SHARD_EXPORT CompilationUnitSyntax* Shard_CreateCompilationUnit(CompilationContext* ctx)
+{
+    try
+    {
+        if (ctx == nullptr)
+        {
+            SetLastError(L"compilation context is null");
+            return nullptr;
+        }
+
+        return new CompilationUnitSyntax();
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return nullptr;
+    }
+}
+
+SHARD_EXPORT int Shard_AddCompilationUnit(CompilationContext* ctx, CompilationUnitSyntax* unit)
+{
+    try
+    {
+        if (ctx == nullptr || unit == nullptr)
+        {
+            SetLastError(L"invalid argument");
+            return -1;
+        }
+
+        ctx->GetSyntaxTree().CompilationUnits.push_back(std::unique_ptr<CompilationUnitSyntax>(unit));
+        ctx->MarkForReAnalyze();
+        return 0;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return -1;
+    }
+}
+
+SHARD_EXPORT int Shard_MarkForReAnalyze(CompilationContext* ctx)
+{
+    try
+    {
+        if (ctx == nullptr)
+        {
+            SetLastError(L"compilation context is null");
+            return -1;
+        }
+
+        ctx->MarkForReAnalyze();
+        return 0;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return -1;
+    }
+}
+
+SHARD_EXPORT int Shard_SetCompilationUnitOrigin(CompilationUnitSyntax* unit, CompilationUnitOrigin origin)
+{
+    try
+    {
+        if (unit == nullptr)
+        {
+            SetLastError(L"compilation unit is null");
+            return -1;
+        }
+
+        unit->Origin = origin;
+        return 0;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return -1;
+    }
+}
+
+SHARD_EXPORT int Shard_SetCompilationUnitNamespace(CompilationUnitSyntax* unit, NamespaceDeclarationSyntax* ns)
+{
+    try
+    {
+        if (unit == nullptr)
+        {
+            SetLastError(L"compilation unit is null");
+            return -1;
+        }
+
+        unit->Namespace.reset(ns);
+        return 0;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return -1;
+    }
+}
+
+SHARD_EXPORT int Shard_AddCompilationUnitMember(CompilationUnitSyntax* unit, MemberDeclarationSyntax* member)
+{
+    try
+    {
+        if (unit == nullptr || member == nullptr)
+        {
+            SetLastError(L"invalid argument");
+            return -1;
+        }
+
+        unit->Members.push_back(std::unique_ptr<MemberDeclarationSyntax>(member));
+        return 0;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return -1;
+    }
+}
+
+SHARD_EXPORT NamespaceDeclarationSyntax* Shard_CreateNamespaceDeclaration(SyntaxNode* parent)
+{
+    try
+    {
+        auto* ns = new NamespaceDeclarationSyntax(parent);
+        ns->SemicolonToken = MakeToken(shard::TokenType::Semicolon, L";");
+        return ns;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return nullptr;
+    }
+}
+
+SHARD_EXPORT int Shard_AddNamespaceIdentifier(NamespaceDeclarationSyntax* ns, const wchar_t* name)
+{
+    try
+    {
+        if (ns == nullptr || name == nullptr)
+        {
+            SetLastError(L"invalid argument");
+            return -1;
+        }
+
+        ns->IdentifierTokens.push_back(MakeToken(shard::TokenType::Identifier, name));
+        return 0;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return -1;
+    }
+}
+
+SHARD_EXPORT int Shard_AddMemberModifier(MemberDeclarationSyntax* member, int modifierTokenType)
+{
+    try
+    {
+        if (member == nullptr)
+        {
+            SetLastError(L"member is null");
+            return -1;
+        }
+
+        member->Modifiers.push_back(MakeToken(static_cast<shard::TokenType>(modifierTokenType)));
+        return 0;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return -1;
+    }
+}
+
+SHARD_EXPORT ClassDeclarationSyntax* Shard_CreateClassDeclaration(SyntaxNode* parent, const wchar_t* name)
+{
+    try
+    {
+        if (name == nullptr)
+        {
+            SetLastError(L"name is null");
+            return nullptr;
+        }
+
+        MemberDeclarationInfo info;
+        info.Identifier = MakeToken(shard::TokenType::Identifier, name);
+        auto* decl = new ClassDeclarationSyntax(info, parent);
+        decl->DeclareToken = MakeToken(shard::TokenType::ClassKeyword, L"class");
+        return decl;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return nullptr;
+    }
+}
+
+SHARD_EXPORT StructDeclarationSyntax* Shard_CreateStructDeclaration(SyntaxNode* parent, const wchar_t* name)
+{
+    try
+    {
+        if (name == nullptr)
+        {
+            SetLastError(L"name is null");
+            return nullptr;
+        }
+
+        MemberDeclarationInfo info;
+        info.Identifier = MakeToken(shard::TokenType::Identifier, name);
+        auto* decl = new StructDeclarationSyntax(info, parent);
+        decl->DeclareToken = MakeToken(shard::TokenType::StructKeyword, L"struct");
+        return decl;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return nullptr;
+    }
+}
+
+SHARD_EXPORT int Shard_AddTypeMember(TypeDeclarationSyntax* type, MemberDeclarationSyntax* member)
+{
+    try
+    {
+        if (type == nullptr || member == nullptr)
+        {
+            SetLastError(L"invalid argument");
+            return -1;
+        }
+
+        type->Members.push_back(std::unique_ptr<MemberDeclarationSyntax>(member));
+        return 0;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return -1;
+    }
+}
+
+SHARD_EXPORT FieldDeclarationSyntax* Shard_CreateFieldDeclaration(SyntaxNode* parent, const wchar_t* name, TypeSyntax* type)
+{
+    try
+    {
+        if (name == nullptr)
+        {
+            SetLastError(L"name is null");
+            return nullptr;
+        }
+
+        MemberDeclarationInfo info;
+        info.Identifier = MakeToken(shard::TokenType::Identifier, name);
+        auto* decl = new FieldDeclarationSyntax(info, parent);
+        decl->DeclareToken = MakeToken(shard::TokenType::FieldKeyword, L"field");
+        decl->ReturnType.reset(type);
+        return decl;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return nullptr;
+    }
+}
+
+SHARD_EXPORT int Shard_SetFieldInitializer(FieldDeclarationSyntax* field, ExpressionSyntax* expression)
+{
+    try
+    {
+        if (field == nullptr)
+        {
+            SetLastError(L"field is null");
+            return -1;
+        }
+
+        field->InitializerExpression.reset(expression);
+        if (expression != nullptr)
+            field->InitializerAssignToken = MakeToken(shard::TokenType::AssignOperator, L"=");
+
+        return 0;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return -1;
+    }
+}
+
+SHARD_EXPORT MethodDeclarationSyntax* Shard_CreateMethodDeclaration(SyntaxNode* parent, const wchar_t* name, TypeSyntax* returnType)
+{
+    try
+    {
+        if (name == nullptr)
+        {
+            SetLastError(L"name is null");
+            return nullptr;
+        }
+
+        MemberDeclarationInfo info;
+        info.Identifier = MakeToken(shard::TokenType::Identifier, name);
+        info.ReturnType.reset(returnType);
+        auto* decl = new MethodDeclarationSyntax(info, parent);
+        decl->DeclareToken = MakeToken(shard::TokenType::FunctionKeyword, L"func");
+        return decl;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return nullptr;
+    }
+}
+
+SHARD_EXPORT ConstructorDeclarationSyntax* Shard_CreateConstructorDeclaration(SyntaxNode* parent, const wchar_t* name)
+{
+    try
+    {
+        if (name == nullptr)
+        {
+            SetLastError(L"name is null");
+            return nullptr;
+        }
+
+        MemberDeclarationInfo info;
+        info.Identifier = MakeToken(shard::TokenType::Identifier, name);
+        info.ReturnType = std::make_unique<PredefinedTypeSyntax>(MakeToken(shard::TokenType::VoidKeyword, L"void"), nullptr);
+        auto* decl = new ConstructorDeclarationSyntax(info, parent);
+        decl->DeclareToken = MakeToken(shard::TokenType::InitKeyword, L"init");
+        return decl;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return nullptr;
+    }
+}
+
+SHARD_EXPORT int Shard_SetMethodReturnType(MethodDeclarationSyntax* method, TypeSyntax* returnType)
+{
+    try
+    {
+        if (method == nullptr)
+        {
+            SetLastError(L"method is null");
+            return -1;
+        }
+
+        method->ReturnType.reset(returnType);
+        return 0;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return -1;
+    }
+}
+
+SHARD_EXPORT int Shard_SetMethodParametersList(MethodDeclarationSyntax* method, ParametersListSyntax* parameters)
+{
+    try
+    {
+        if (method == nullptr)
+        {
+            SetLastError(L"method is null");
+            return -1;
+        }
+
+        method->ParametersList.reset(parameters);
+        return 0;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return -1;
+    }
+}
+
+SHARD_EXPORT int Shard_SetMethodBody(MethodDeclarationSyntax* method, StatementsBlockSyntax* body)
+{
+    try
+    {
+        if (method == nullptr)
+        {
+            SetLastError(L"method is null");
+            return -1;
+        }
+
+        method->Body.reset(body);
+        return 0;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return -1;
+    }
+}
+
+SHARD_EXPORT int Shard_SetConstructorParametersList(ConstructorDeclarationSyntax* ctor, ParametersListSyntax* parameters)
+{
+    try
+    {
+        if (ctor == nullptr)
+        {
+            SetLastError(L"constructor is null");
+            return -1;
+        }
+
+        ctor->ParametersList.reset(parameters);
+        return 0;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return -1;
+    }
+}
+
+SHARD_EXPORT int Shard_SetConstructorBody(ConstructorDeclarationSyntax* ctor, StatementsBlockSyntax* body)
+{
+    try
+    {
+        if (ctor == nullptr)
+        {
+            SetLastError(L"constructor is null");
+            return -1;
+        }
+
+        ctor->Body.reset(body);
+        return 0;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return -1;
+    }
+}
+
+SHARD_EXPORT ParametersListSyntax* Shard_CreateParametersList(SyntaxNode* parent)
+{
+    try
+    {
+        return new ParametersListSyntax(parent);
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return nullptr;
+    }
+}
+
+SHARD_EXPORT int Shard_AddParameter(ParametersListSyntax* list, const wchar_t* name, TypeSyntax* type)
+{
+    try
+    {
+        if (list == nullptr || name == nullptr)
+        {
+            SetLastError(L"invalid argument");
+            return -1;
+        }
+
+        auto param = std::make_unique<ParameterSyntax>(std::unique_ptr<TypeSyntax>(type), MakeToken(shard::TokenType::Identifier, name), list);
+        list->Parameters.push_back(std::move(param));
+        return 0;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return -1;
+    }
+}
+
+SHARD_EXPORT StatementsBlockSyntax* Shard_CreateStatementsBlock(SyntaxNode* parent)
+{
+    try
+    {
+        return new StatementsBlockSyntax(parent);
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return nullptr;
+    }
+}
+
+SHARD_EXPORT int Shard_AddStatement(StatementsBlockSyntax* block, StatementSyntax* statement)
+{
+    try
+    {
+        if (block == nullptr || statement == nullptr)
+        {
+            SetLastError(L"invalid argument");
+            return -1;
+        }
+
+        block->Statements.push_back(std::unique_ptr<StatementSyntax>(statement));
+        return 0;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return -1;
+    }
+}
+
+SHARD_EXPORT PredefinedTypeSyntax* Shard_CreatePredefinedType(SyntaxNode* parent, int tokenType)
+{
+    try
+    {
+        return new PredefinedTypeSyntax(MakeToken(static_cast<shard::TokenType>(tokenType)), parent);
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return nullptr;
+    }
+}
+
+SHARD_EXPORT IdentifierNameTypeSyntax* Shard_CreateIdentifierNameType(SyntaxNode* parent, const wchar_t* name)
+{
+    try
+    {
+        if (name == nullptr)
+        {
+            SetLastError(L"name is null");
+            return nullptr;
+        }
+
+        auto* type = new IdentifierNameTypeSyntax(parent);
+        type->Identifier = MakeToken(shard::TokenType::Identifier, name);
+        return type;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return nullptr;
+    }
+}
+
+SHARD_EXPORT ArrayTypeSyntax* Shard_CreateArrayType(SyntaxNode* parent, TypeSyntax* elementType, int rank)
+{
+    try
+    {
+        auto* type = new ArrayTypeSyntax(std::unique_ptr<TypeSyntax>(elementType), parent);
+        type->Rank = rank;
+        return type;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return nullptr;
+    }
+}
+
+SHARD_EXPORT NullableTypeSyntax* Shard_CreateNullableType(SyntaxNode* parent, TypeSyntax* underlayingType)
+{
+    try
+    {
+        auto* type = new NullableTypeSyntax(std::unique_ptr<TypeSyntax>(underlayingType), parent);
+        type->QuestionToken = MakeToken(shard::TokenType::Question, L"?");
+        return type;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return nullptr;
+    }
+}
+
+SHARD_EXPORT GenericTypeSyntax* Shard_CreateGenericType(SyntaxNode* parent, TypeSyntax* underlayingType)
+{
+    try
+    {
+        auto* type = new GenericTypeSyntax(std::unique_ptr<TypeSyntax>(underlayingType), parent);
+        return type;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return nullptr;
+    }
+}
+
+SHARD_EXPORT TypeArgumentsListSyntax* Shard_CreateTypeArgumentsList(SyntaxNode* parent)
+{
+    try
+    {
+        return new TypeArgumentsListSyntax(parent);
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return nullptr;
+    }
+}
+
+SHARD_EXPORT int Shard_AddTypeArgument(TypeArgumentsListSyntax* list, TypeSyntax* type)
+{
+    try
+    {
+        if (list == nullptr || type == nullptr)
+        {
+            SetLastError(L"invalid argument");
+            return -1;
+        }
+
+        list->Types.push_back(std::unique_ptr<TypeSyntax>(type));
+        return 0;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return -1;
+    }
+}
+
+SHARD_EXPORT int Shard_SetGenericTypeArguments(GenericTypeSyntax* generic, TypeArgumentsListSyntax* arguments)
+{
+    try
+    {
+        if (generic == nullptr)
+        {
+            SetLastError(L"generic type is null");
+            return -1;
+        }
+
+        generic->Arguments.reset(arguments);
+        return 0;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return -1;
+    }
+}
+
+SHARD_EXPORT VariableStatementSyntax* Shard_CreateVariableStatement(SyntaxNode* parent, const wchar_t* name, TypeSyntax* type, ExpressionSyntax* initializer)
+{
+    try
+    {
+        if (name == nullptr)
+        {
+            SetLastError(L"name is null");
+            return nullptr;
+        }
+
+        auto* stmt = new VariableStatementSyntax(
+            std::unique_ptr<TypeSyntax>(type),
+            MakeToken(shard::TokenType::Identifier, name),
+            initializer != nullptr ? MakeToken(shard::TokenType::DeclareAssignOperator, L":=") : MakeToken(shard::TokenType::Unknown),
+            std::unique_ptr<ExpressionSyntax>(initializer),
+            parent);
+
+        return stmt;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return nullptr;
+    }
+}
+
+SHARD_EXPORT ExpressionStatementSyntax* Shard_CreateExpressionStatement(SyntaxNode* parent, ExpressionSyntax* expression)
+{
+    try
+    {
+        if (expression == nullptr)
+        {
+            SetLastError(L"expression is null");
+            return nullptr;
+        }
+
+        return new ExpressionStatementSyntax(std::unique_ptr<ExpressionSyntax>(expression), parent);
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return nullptr;
+    }
+}
+
+SHARD_EXPORT ReturnStatementSyntax* Shard_CreateReturnStatement(SyntaxNode* parent, ExpressionSyntax* expression)
+{
+    try
+    {
+        auto* stmt = new ReturnStatementSyntax(parent);
+        stmt->KeywordToken = MakeToken(shard::TokenType::ReturnKeyword, L"return");
+        stmt->Expression.reset(expression);
+        return stmt;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return nullptr;
+    }
+}
+
+SHARD_EXPORT ForEachStatementSyntax* Shard_CreateForEachStatement(SyntaxNode* parent, const wchar_t* variableName, ExpressionSyntax* range, StatementsBlockSyntax* body)
+{
+    try
+    {
+        if (variableName == nullptr)
+        {
+            SetLastError(L"variable name is null");
+            return nullptr;
+        }
+
+        auto* stmt = new ForEachStatementSyntax(parent);
+        stmt->KeywordToken = MakeToken(shard::TokenType::ForeachKeyword, L"foreach");
+        stmt->IdentifierToken = MakeToken(shard::TokenType::Identifier, variableName);
+        stmt->InKeywordToken = MakeToken(shard::TokenType::InKeyword, L"in");
+        stmt->RangeExpression.reset(range);
+        stmt->StatementsBlock.reset(body);
+        return stmt;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return nullptr;
+    }
+}
+
+SHARD_EXPORT WhileStatementSyntax* Shard_CreateWhileStatement(SyntaxNode* parent, ExpressionSyntax* condition, StatementsBlockSyntax* body)
+{
+    try
+    {
+        auto* stmt = new WhileStatementSyntax(parent);
+        stmt->KeywordToken = MakeToken(shard::TokenType::WhileKeyword, L"while");
+        stmt->ConditionExpression.reset(condition);
+        stmt->StatementsBlock.reset(body);
+        return stmt;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return nullptr;
+    }
+}
+
+SHARD_EXPORT LiteralExpressionSyntax* Shard_CreateLiteralExpression(SyntaxNode* parent, int tokenType, const wchar_t* value)
+{
+    try
+    {
+        if (value == nullptr)
+        {
+            SetLastError(L"value is null");
+            return nullptr;
+        }
+
+        return new LiteralExpressionSyntax(MakeToken(static_cast<shard::TokenType>(tokenType), value), parent);
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return nullptr;
+    }
+}
+
+SHARD_EXPORT MemberAccessExpressionSyntax* Shard_CreateIdentifierExpression(SyntaxNode* parent, const wchar_t* name)
+{
+    try
+    {
+        if (name == nullptr)
+        {
+            SetLastError(L"name is null");
+            return nullptr;
+        }
+
+        return new MemberAccessExpressionSyntax(MakeToken(shard::TokenType::Identifier, name), std::unique_ptr<ExpressionSyntax>(nullptr), parent);
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return nullptr;
+    }
+}
+
+SHARD_EXPORT MemberAccessExpressionSyntax* Shard_CreateMemberAccessExpression(SyntaxNode* parent, ExpressionSyntax* previous, const wchar_t* memberName)
+{
+    try
+    {
+        if (memberName == nullptr)
+        {
+            SetLastError(L"member name is null");
+            return nullptr;
+        }
+
+        auto* expr = new MemberAccessExpressionSyntax(MakeToken(shard::TokenType::Identifier, memberName), std::unique_ptr<ExpressionSyntax>(previous), parent);
+        expr->DelimeterToken = MakeToken(shard::TokenType::Delimeter, L".");
+        return expr;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return nullptr;
+    }
+}
+
+SHARD_EXPORT BinaryExpressionSyntax* Shard_CreateBinaryExpression(SyntaxNode* parent, ExpressionSyntax* left, ExpressionSyntax* right, int operatorTokenType)
+{
+    try
+    {
+        auto* expr = new BinaryExpressionSyntax(MakeToken(static_cast<shard::TokenType>(operatorTokenType)), parent);
+        expr->Left.reset(left);
+        expr->Right.reset(right);
+        return expr;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return nullptr;
+    }
+}
+
+SHARD_EXPORT UnaryExpressionSyntax* Shard_CreateUnaryExpression(SyntaxNode* parent, ExpressionSyntax* operand, int operatorTokenType, int isPostfix)
+{
+    try
+    {
+        auto* expr = new UnaryExpressionSyntax(MakeToken(static_cast<shard::TokenType>(operatorTokenType)), isPostfix != 0, parent);
+        expr->Expression.reset(operand);
+        return expr;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return nullptr;
+    }
+}
+
+SHARD_EXPORT InvokationExpressionSyntax* Shard_CreateInvocationExpression(SyntaxNode* parent, ExpressionSyntax* target, const wchar_t* methodName)
+{
+    try
+    {
+        auto* expr = new InvokationExpressionSyntax(
+            methodName != nullptr ? MakeToken(shard::TokenType::Identifier, methodName) : MakeToken(shard::TokenType::Unknown),
+            std::unique_ptr<ExpressionSyntax>(target),
+            parent);
+
+        expr->DelimeterToken = MakeToken(shard::TokenType::Delimeter, L".");
+        return expr;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return nullptr;
+    }
+}
+
+SHARD_EXPORT int Shard_SetInvocationArgumentsList(InvokationExpressionSyntax* invocation, ArgumentsListSyntax* arguments)
+{
+    try
+    {
+        if (invocation == nullptr)
+        {
+            SetLastError(L"invocation is null");
+            return -1;
+        }
+
+        invocation->ArgumentsList.reset(arguments);
+        return 0;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return -1;
+    }
+}
+
+SHARD_EXPORT ObjectExpressionSyntax* Shard_CreateObjectExpression(SyntaxNode* parent, TypeSyntax* type)
+{
+    try
+    {
+        auto* expr = new ObjectExpressionSyntax(parent);
+        expr->NewToken = MakeToken(shard::TokenType::NewKeyword, L"new");
+        expr->Type.reset(type);
+        return expr;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return nullptr;
+    }
+}
+
+SHARD_EXPORT int Shard_SetObjectArgumentsList(ObjectExpressionSyntax* objectExpr, ArgumentsListSyntax* arguments)
+{
+    try
+    {
+        if (objectExpr == nullptr)
+        {
+            SetLastError(L"object expression is null");
+            return -1;
+        }
+
+        objectExpr->ArgumentsList.reset(arguments);
+        return 0;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return -1;
+    }
+}
+
+SHARD_EXPORT RangeExpressionSyntax* Shard_CreateRangeExpression(SyntaxNode* parent, ExpressionSyntax* left, ExpressionSyntax* right, int isInclusive)
+{
+    try
+    {
+        auto* expr = new RangeExpressionSyntax(parent);
+        expr->OperatorToken = MakeToken(isInclusive != 0 ? shard::TokenType::RangeInclusiveOperator : shard::TokenType::RangeOperator, isInclusive != 0 ? L"..&" : L"..");
+        expr->Left.reset(left);
+        expr->Right.reset(right);
+        expr->IsInclusive = isInclusive != 0;
+        return expr;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return nullptr;
+    }
+}
+
+SHARD_EXPORT CollectionExpressionSyntax* Shard_CreateCollectionExpression(SyntaxNode* parent)
+{
+    try
+    {
+        return new CollectionExpressionSyntax(parent);
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return nullptr;
+    }
+}
+
+SHARD_EXPORT int Shard_AddCollectionElement(CollectionExpressionSyntax* collection, ExpressionSyntax* element)
+{
+    try
+    {
+        if (collection == nullptr || element == nullptr)
+        {
+            SetLastError(L"invalid argument");
+            return -1;
+        }
+
+        collection->ValuesExpressions.push_back(std::unique_ptr<ExpressionSyntax>(element));
+        return 0;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return -1;
+    }
+}
+
+SHARD_EXPORT ArgumentsListSyntax* Shard_CreateArgumentsList(SyntaxNode* parent)
+{
+    try
+    {
+        return new ArgumentsListSyntax(parent);
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return nullptr;
+    }
+}
+
+SHARD_EXPORT int Shard_AddArgument(ArgumentsListSyntax* list, ExpressionSyntax* expression)
+{
+    try
+    {
+        if (list == nullptr || expression == nullptr)
+        {
+            SetLastError(L"invalid argument");
+            return -1;
+        }
+
+        list->Arguments.push_back(std::make_unique<ArgumentSyntax>(std::unique_ptr<ExpressionSyntax>(expression), list));
+        return 0;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return -1;
+    }
+}
+
+// =========================================================================
+// Symbol Builder API
+// =========================================================================
+
+static ObjectInstance* ShardManagedMethodAdapter(const CallState& context)
+{
+    MethodSymbol* method = context.Method;
+    if (method == nullptr || method->ManagedCallback == nullptr)
+    {
+        SetLastError(L"managed method callback not set");
+        throw std::runtime_error("managed method callback not set");
+    }
+
+    return method->ManagedCallback(method, context.Args.data(), context.Args.size(), method->ManagedCallbackUserData, &context.Collector);
+}
+
+SHARD_EXPORT SymbolTable* Shard_GetSymbolTable(CompilationContext* ctx)
+{
+    try
+    {
+        if (ctx == nullptr)
+        {
+            SetLastError(L"compilation context is null");
+            return nullptr;
+        }
+
+        return ctx->GetSemanticModel().Table.get();
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return nullptr;
+    }
+}
+
+SHARD_EXPORT TypeSymbol* Shard_GetPrimitiveType(CompilationContext* ctx, int primitiveKind)
+{
+    try
+    {
+        if (ctx == nullptr)
+        {
+            SetLastError(L"compilation context is null");
+            return nullptr;
+        }
+
+        switch (primitiveKind)
+        {
+            case 0: return SymbolTable::Primitives::Void;
+            case 1: return SymbolTable::Primitives::Null;
+            case 2: return SymbolTable::Primitives::Any;
+            case 3: return SymbolTable::Primitives::Boolean;
+            case 4: return SymbolTable::Primitives::Integer;
+            case 5: return SymbolTable::Primitives::Double;
+            case 6: return SymbolTable::Primitives::Char;
+            case 7: return SymbolTable::Primitives::String;
+            case 8: return SymbolTable::Primitives::Array;
+            default:
+                SetLastError(L"invalid primitive type kind");
+                return nullptr;
+        }
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return nullptr;
+    }
+}
+
+SHARD_EXPORT NamespaceSymbol* Shard_CreateNamespaceSymbol(CompilationContext* ctx, NamespaceSymbol* parent, const wchar_t* name)
+{
+    try
+    {
+        if (ctx == nullptr || name == nullptr)
+        {
+            SetLastError(L"invalid argument");
+            return nullptr;
+        }
+
+        SymbolFactory factory(ctx->GetSemanticModel().Table.get());
+        auto* symbol = factory.Namespace(name);
+        symbol->Parent = parent;
+        symbol->Accesibility = SymbolAccesibility::Public;
+
+        NamespaceNode* parentNode = parent != nullptr ? parent->Node : ctx->GetSemanticModel().Namespaces->Root;
+        if (parentNode != nullptr)
+            symbol->Node = parentNode->LookupOrCreate(symbol->Name, symbol);
+
+        if (parent != nullptr)
+        {
+            parent->OnSymbolDeclared(symbol);
+            symbol->FullName = parent->FullName + L"." + symbol->Name;
+        }
+        else
+        {
+            symbol->FullName = symbol->Name;
+        }
+
+        return symbol;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return nullptr;
+    }
+}
+
+SHARD_EXPORT ClassSymbol* Shard_CreateClassSymbol(CompilationContext* ctx, NamespaceSymbol* parent, const wchar_t* name)
+{
+    try
+    {
+        if (ctx == nullptr || name == nullptr)
+        {
+            SetLastError(L"invalid argument");
+            return nullptr;
+        }
+
+        SymbolFactory factory(ctx->GetSemanticModel().Table.get());
+        auto* symbol = factory.Class(name);
+        symbol->Parent = parent;
+        symbol->Accesibility = SymbolAccesibility::Public;
+        symbol->IsReferenceType = true;
+
+        if (parent != nullptr)
+        {
+            parent->OnSymbolDeclared(symbol);
+            symbol->FullName = parent->FullName + L"." + symbol->Name;
+        }
+        else
+        {
+            symbol->FullName = symbol->Name;
+        }
+
+        return symbol;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return nullptr;
+    }
+}
+
+SHARD_EXPORT MethodSymbol* Shard_CreateMethodSymbol(CompilationContext* ctx, TypeSymbol* parentType, const wchar_t* name, TypeSymbol* returnType, int isStatic, int accessibility)
+{
+    try
+    {
+        if (ctx == nullptr || name == nullptr || parentType == nullptr)
+        {
+            SetLastError(L"invalid argument");
+            return nullptr;
+        }
+
+        SymbolFactory factory(ctx->GetSemanticModel().Table.get());
+        auto* symbol = factory.Method(name, returnType, isStatic != 0);
+        symbol->Parent = parentType;
+        symbol->ReturnType = returnType;
+        symbol->Accesibility = static_cast<SymbolAccesibility>(accessibility);
+        symbol->IsExtern = true;
+        symbol->HandleType = MethodHandleType::External;
+        symbol->FunctionPointer = ShardManagedMethodAdapter;
+
+        parentType->OnSymbolDeclared(symbol);
+
+        NamespaceSymbol* ns = parentType->Parent != nullptr && parentType->Parent->Kind == SyntaxKind::NamespaceDeclaration
+            ? static_cast<NamespaceSymbol*>(parentType->Parent)
+            : nullptr;
+
+        if (ns != nullptr)
+            symbol->FullName = ns->FullName + L"." + parentType->Name + L"." + symbol->Name;
+        else
+            symbol->FullName = parentType->Name + L"." + symbol->Name;
+
+        return symbol;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return nullptr;
+    }
+}
+
+SHARD_EXPORT ParameterSymbol* Shard_CreateParameterSymbol(CompilationContext* ctx, const wchar_t* name, TypeSymbol* type)
+{
+    try
+    {
+        if (ctx == nullptr || name == nullptr || type == nullptr)
+        {
+            SetLastError(L"invalid argument");
+            return nullptr;
+        }
+
+        SymbolFactory factory(ctx->GetSemanticModel().Table.get());
+        auto* symbol = factory.Parameter(name);
+        symbol->Type = type;
+        return symbol;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return nullptr;
+    }
+}
+
+SHARD_EXPORT int Shard_AddMethodParameter(MethodSymbol* method, ParameterSymbol* parameter)
+{
+    try
+    {
+        if (method == nullptr || parameter == nullptr)
+        {
+            SetLastError(L"invalid argument");
+            return -1;
+        }
+
+        parameter->Parent = method;
+        method->Parameters.push_back(parameter);
+        return 0;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return -1;
+    }
+}
+
+SHARD_EXPORT FieldSymbol* Shard_CreateFieldSymbol(CompilationContext* ctx, TypeSymbol* parentType, const wchar_t* name, TypeSymbol* type, int isStatic)
+{
+    try
+    {
+        if (ctx == nullptr || name == nullptr || parentType == nullptr || type == nullptr)
+        {
+            SetLastError(L"invalid argument");
+            return nullptr;
+        }
+
+        SymbolFactory factory(ctx->GetSemanticModel().Table.get());
+        auto* symbol = factory.Field(name, type, isStatic != 0);
+        symbol->Parent = parentType;
+        symbol->ReturnType = type;
+        symbol->Accesibility = SymbolAccesibility::Public;
+
+        parentType->OnSymbolDeclared(symbol);
+        return symbol;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return nullptr;
+    }
+}
+
+SHARD_EXPORT int Shard_SetMethodManagedCallback(MethodSymbol* method, ShardManagedMethodCallback callback, void* userData)
+{
+    try
+    {
+        if (method == nullptr || callback == nullptr)
+        {
+            SetLastError(L"invalid argument");
+            return -1;
+        }
+
+        method->ManagedCallback = callback;
+        method->ManagedCallbackUserData = userData;
+        method->FunctionPointer = ShardManagedMethodAdapter;
+        method->HandleType = MethodHandleType::External;
+        method->IsExtern = true;
+        return 0;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return -1;
+    }
+}
+
+SHARD_EXPORT int Shard_SetSymbolAccesibility(SyntaxSymbol* symbol, int accessibility)
+{
+    try
+    {
+        if (symbol == nullptr)
+        {
+            SetLastError(L"symbol is null");
+            return -1;
+        }
+
+        symbol->Accesibility = static_cast<SymbolAccesibility>(accessibility);
+        return 0;
+    }
+    catch (const std::exception& e)
+    {
+        SetLastErrorFromException(e);
+        return -1;
+    }
 }
 
 #endif // !defined(SHARDSCRIPT_STATIC)

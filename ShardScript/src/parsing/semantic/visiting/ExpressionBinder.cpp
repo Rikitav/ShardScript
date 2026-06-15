@@ -182,7 +182,11 @@ void ExpressionBinder::VisitCompilationUnit(CompilationUnitSyntax *const node)
 	{
 		NamespaceSymbol* symbol = LookupSymbol<NamespaceSymbol>(node->Namespace.get()).value_or(nullptr);
 		if (symbol != nullptr)
+		{
 			PushScope(symbol);
+			if (symbol->Node != nullptr)
+				CurrentScope()->Namespace = symbol->Node;
+		}
 	}
 
 	for (const auto& member : node->Members)
@@ -800,7 +804,7 @@ void ExpressionBinder::VisitObjectCreationExpression(ObjectExpressionSyntax *con
 TypeSymbol* ExpressionBinder::AnalyzeCollectionExpression(CollectionExpressionSyntax *const node)
 {
 	TypeSymbol* collectionType = nullptr;
-	for (size_t i = 0; i < node->ValuesExpressions.size() && collectionType == nullptr; i++)
+	for (std::size_t i = 0; i < node->ValuesExpressions.size() && collectionType == nullptr; i++)
 		collectionType = GetExpressionType(node->ValuesExpressions.at(i).get());
 
 	for (const auto& expression : node->ValuesExpressions)
@@ -999,7 +1003,7 @@ bool ExpressionBinder::MatchMethodArguments(std::vector<ParameterSymbol*>& param
 		return false;
 	}
 	
-	for (size_t i = 0; i < parameters.size(); i++)
+	for (std::size_t i = 0; i < parameters.size(); i++)
 	{
 		ParameterSymbol* param = parameters[i];
 		ArgumentSyntax* arg = arguments[i].get();
@@ -1426,6 +1430,12 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax *const 
 	std::wstring methodName = node->IdentifierToken.Word;
 	std::vector<TypeSymbol*> argTypes;
 
+	if (node->ArgumentsList == nullptr)
+	{
+		Diagnostics.ReportError(node->IdentifierToken, L"Method '" + methodName + L"' invocation has no arguments list");
+		return nullptr;
+	}
+
 	for (const auto& arg : node->ArgumentsList->Arguments)
 	{
 		//PushScope(new LeftDenotationSymbol(param->Type));
@@ -1598,7 +1608,7 @@ static bool IsNumBasePrefix(std::wstring& prefix, int& base)
 	}
 }
 
-static bool IsVolumeRatioPostfix(std::wstring& postfix, size_t& multiplier)
+static bool IsVolumeRatioPostfix(std::wstring& postfix, std::size_t& multiplier)
 {
 	if (postfix[1] != L'B' && postfix[1] != L'b')
 		return false;
@@ -1608,11 +1618,11 @@ static bool IsVolumeRatioPostfix(std::wstring& postfix, size_t& multiplier)
 		default:
 			return false;
 
-		case L'k': case L'K': multiplier = ((size_t)1 << 10); return true;
-		case L'm': case L'M': multiplier = ((size_t)1 << 20); return true;
-		case L'g': case L'G': multiplier = ((size_t)1 << 30); return true;
-		case L't': case L'T': multiplier = ((size_t)1 << 40); return true;
-		case L'p': case L'P': multiplier = ((size_t)1 << 50); return true;
+		case L'k': case L'K': multiplier = ((std::size_t)1 << 10); return true;
+		case L'm': case L'M': multiplier = ((std::size_t)1 << 20); return true;
+		case L'g': case L'G': multiplier = ((std::size_t)1 << 30); return true;
+		case L't': case L'T': multiplier = ((std::size_t)1 << 40); return true;
+		case L'p': case L'P': multiplier = ((std::size_t)1 << 50); return true;
 	}
 }
 
@@ -1651,10 +1661,10 @@ TypeSymbol* ExpressionBinder::AnalyzeNumberLiteral(LiteralExpressionSyntax *cons
 
 	SyntaxToken token = node->LiteralToken;
 	std::wstring word = token.Word;
-	size_t size = word.size();
+	std::size_t size = word.size();
 
-	size_t numStart = 0;
-	size_t multiplier = 1;
+	std::size_t numStart = 0;
+	std::size_t multiplier = 1;
 	int base = 10;
 
 	if (size >= 2)
@@ -1670,13 +1680,13 @@ TypeSymbol* ExpressionBinder::AnalyzeNumberLiteral(LiteralExpressionSyntax *cons
 
 	try
 	{
-		size_t pos = 0;
+		std::size_t pos = 0;
 		std::wstring numPart = word.substr(numStart, size);
 		symbol->AsIntegerValue = std::stol(numPart, &pos) * multiplier;
 
 		if (pos != size)
 		{
-			for (size_t i = pos; i < size; i++)
+			for (std::size_t i = pos; i < size; i++)
 			{
 				if (!IsValidIntegerSymbol(word[i], base))
 				{
@@ -1717,9 +1727,9 @@ TypeSymbol* ExpressionBinder::AnalyzeDoubleLiteral(LiteralExpressionSyntax* cons
 
 	SyntaxToken token = node->LiteralToken;
 	std::wstring word = token.Word;
-	size_t size = word.size();
+	std::size_t size = word.size();
 
-	size_t delimeterIndex = word.find('.');
+	std::size_t delimeterIndex = word.find('.');
 	//word.pop_back(); // deleting symbol 'f'
 
 	if (word.size() >= 2)
@@ -1734,7 +1744,7 @@ TypeSymbol* ExpressionBinder::AnalyzeDoubleLiteral(LiteralExpressionSyntax* cons
 		}
 
 		std::wstring postfix = word.substr(size - 2);
-		size_t dummy2 = 0;
+		std::size_t dummy2 = 0;
 
 		if (IsVolumeRatioPostfix(postfix, dummy2))
 		{
@@ -1746,13 +1756,13 @@ TypeSymbol* ExpressionBinder::AnalyzeDoubleLiteral(LiteralExpressionSyntax* cons
 	try
 	{
 		return SymbolTable::Primitives::Double;
-		size_t pos = 0;
+		std::size_t pos = 0;
 		word[delimeterIndex] = L',';
 		symbol->AsDoubleValue = std::stod(word, &pos);
 
 		if (pos != size)
 		{
-			for (size_t i = pos; i < size; i++)
+			for (std::size_t i = pos; i < size; i++)
 			{
 				if (!std::isdigit(word[i]) && !IsValidIntegerPunctuation(word[i]))
 				{

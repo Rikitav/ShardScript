@@ -34,7 +34,7 @@ void ProgramDisassembler::Disassemble(std::wostream& out, MethodSymbol* method)
     ByteCodeDecoder decoder(method->ExecutableByteCode);
     while (!decoder.IsEOF())
     {
-        size_t currentOffset = decoder.Index();
+        std::size_t currentOffset = decoder.Index();
 
         out << L"SS_"
             << std::hex << std::uppercase << std::setw(4) << std::setfill(L'0')
@@ -92,7 +92,7 @@ void ProgramDisassembler::Disassemble(std::wostream& out, MethodSymbol* method)
 
             case OpCode::LOADCONST_STRING:
             {
-                size_t strIdx = decoder.AbsorbString();
+                std::size_t strIdx = decoder.AbsorbString();
                 out << L"ldstr pool[" << strIdx << L"]";
                 // out << L" \"" << program.DataSection[strIdx] << L"\"";
                 break;
@@ -246,7 +246,7 @@ void ProgramDisassembler::Disassemble(std::wostream& out, MethodSymbol* method)
 
             case OpCode::LOAD_TYPEARGUMENT:
             {
-                uint16_t index = decoder.AbsorbUInt16();
+                std::uint16_t index = decoder.AbsorbUInt16();
 				auto* sym = decoder.AbsorbTypeSymbol();
 
                 out << L"ldtypearg " << index;
@@ -261,7 +261,7 @@ void ProgramDisassembler::Disassemble(std::wostream& out, MethodSymbol* method)
 
             default:
             {
-                out << L"unknown (0x" << std::hex << static_cast<uint16_t>(op) << L")";
+                out << L"unknown (0x" << std::hex << static_cast<std::uint16_t>(op) << L")";
                 break;
             }
         }

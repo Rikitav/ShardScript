@@ -34,7 +34,7 @@ void* ObjectInstance::getMemory() const
 	return Memory;
 }
 
-fpos_t ObjectInstance::getReferencesCounter() const
+std::fpos_t ObjectInstance::getReferencesCounter() const
 {
 	return ReferencesCounter;
 }
@@ -107,7 +107,7 @@ void ObjectInstance::SetField(FieldSymbol* field, ObjectInstance* instance, Call
 	}
 }
 
-ObjectInstance* ObjectInstance::GetElement(size_t index, CallStackFrame* frame)
+ObjectInstance* ObjectInstance::GetElement(std::size_t index, CallStackFrame* frame)
 {
 	if (Info->Kind != SyntaxKind::ArrayType)
 		throw std::runtime_error("Tried to get element from non array instance");
@@ -118,7 +118,7 @@ ObjectInstance* ObjectInstance::GetElement(size_t index, CallStackFrame* frame)
 	if (frame != nullptr)
 		type = frame->ResolveType(type);
 
-	size_t memoryOffset = SymbolTable::Primitives::Array->MemoryBytesSize + type->GetInlineSize() * index;
+	std::size_t memoryOffset = SymbolTable::Primitives::Array->MemoryBytesSize + type->GetInlineSize() * index;
 	if (type->IsReferenceType)
 	{
 		void* offset = OffsetMemory(memoryOffset, sizeof(ObjectInstance*));
@@ -133,7 +133,7 @@ ObjectInstance* ObjectInstance::GetElement(size_t index, CallStackFrame* frame)
 	}
 }
 
-void ObjectInstance::SetElement(size_t index, ObjectInstance* instance, CallStackFrame* frame)
+void ObjectInstance::SetElement(std::size_t index, ObjectInstance* instance, CallStackFrame* frame)
 {
 	if (Info->Kind != SyntaxKind::ArrayType)
 		throw std::runtime_error("Tried to set element in non array instance");
@@ -147,7 +147,7 @@ void ObjectInstance::SetElement(size_t index, ObjectInstance* instance, CallStac
 	if (frame != nullptr)
 		type = frame->ResolveType(type);
 
-	size_t memoryOffset = SymbolTable::Primitives::Array->MemoryBytesSize + type->GetInlineSize() * index;
+	std::size_t memoryOffset = SymbolTable::Primitives::Array->MemoryBytesSize + type->GetInlineSize() * index;
 	if (type->IsReferenceType)
 	{
 		ObjectInstance* oldValue = GetElement(index, frame);
@@ -165,7 +165,7 @@ void ObjectInstance::SetElement(size_t index, ObjectInstance* instance, CallStac
 	}
 }
 
-bool ObjectInstance::IsInBounds(size_t index)
+bool ObjectInstance::IsInBounds(std::size_t index)
 {
 	if (Info->Kind != SyntaxKind::ArrayType)
 		throw std::runtime_error("Tried to get size of non array instance");
@@ -175,7 +175,7 @@ bool ObjectInstance::IsInBounds(size_t index)
 
 void ObjectInstance::IncrementReference()
 {
-	if (ReferencesCounter == (size_t)(-1))
+	if (ReferencesCounter == (std::size_t)(-1))
 		return;
 
 	ReferencesCounter += 1;
@@ -189,7 +189,7 @@ void ObjectInstance::DecrementReference()
 	ReferencesCounter -= 1;
 }
 
-void* ObjectInstance::OffsetMemory(const size_t offset, const size_t size) const
+void* ObjectInstance::OffsetMemory(const std::size_t offset, const std::size_t size) const
 {
 	if (size == 0)
 		throw std::out_of_range("Cannot read 0 bytes");
@@ -200,7 +200,7 @@ void* ObjectInstance::OffsetMemory(const size_t offset, const size_t size) const
 	return static_cast<char*>(getMemory()) + offset;
 }
 
-void ObjectInstance::ReadMemory(const size_t offset, const size_t size, void* dst) const
+void ObjectInstance::ReadMemory(const std::size_t offset, const std::size_t size, void* dst) const
 {
 	if (!dst)
 		throw std::invalid_argument("Destination is nullptr");
@@ -215,7 +215,7 @@ void ObjectInstance::ReadMemory(const size_t offset, const size_t size, void* ds
 	memcpy(dst, memOffset, size);
 }
 
-void ObjectInstance::WriteMemory(const size_t offset, const size_t size, const void* src) const
+void ObjectInstance::WriteMemory(const std::size_t offset, const std::size_t size, const void* src) const
 {
 	if (!src)
 		throw std::invalid_argument("Source is nullptr");
@@ -256,11 +256,11 @@ void ObjectInstance::WriteCharacter(const wchar_t& value) const
 
 void ObjectInstance::WriteString(const wchar_t* value) const
 {
-	size_t size = wcslen(value);
+	std::size_t size = wcslen(value);
 	WriteString(value, size);
 }
 
-void ObjectInstance::WriteString(const wchar_t* value, size_t size) const
+void ObjectInstance::WriteString(const wchar_t* value, std::size_t size) const
 {
 	WriteMemory(0, sizeof(int64_t), &size);
 	WriteMemory(sizeof(int64_t), sizeof(wchar_t) * size, value);

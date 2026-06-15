@@ -17,7 +17,7 @@
 using namespace shard;
 
 template <typename T>
-static bool ReadUnaligned(const std::vector<std::byte>& code, size_t& ip, T& value)
+static bool ReadUnaligned(const std::vector<std::byte>& code, std::size_t& ip, T& value)
 {
     if (ip + sizeof(T) > code.size())
         return false;
@@ -32,12 +32,12 @@ bool ByteCodeDecoder::IsEOF()
     return _ip >= _code.size();
 }
 
-size_t ByteCodeDecoder::Index() const
+std::size_t ByteCodeDecoder::Index() const
 {
     return _ip;
 }
 
-void ByteCodeDecoder::SetCursor(fpos_t amount)
+void ByteCodeDecoder::SetCursor(std::fpos_t amount)
 {
     // lower bound check
     if (amount < 0)
@@ -91,30 +91,30 @@ wchar_t ByteCodeDecoder::AbsorbChar16()
     return value;
 }
 
-size_t ByteCodeDecoder::AbsorbString()
+std::size_t ByteCodeDecoder::AbsorbString()
 {
-    size_t value{};
+    std::size_t value{};
     ReadUnaligned(_code, _ip, value);
     return value;
 }
 
-uint16_t ByteCodeDecoder::AbsorbVariableSlot()
+std::uint16_t ByteCodeDecoder::AbsorbVariableSlot()
 {
-    uint16_t value{};
+    std::uint16_t value{};
     ReadUnaligned(_code, _ip, value);
     return value;
 }
 
-uint16_t ByteCodeDecoder::AbsorbUInt16()
+std::uint16_t ByteCodeDecoder::AbsorbUInt16()
 {
-    uint16_t value{};
+    std::uint16_t value{};
     ReadUnaligned(_code, _ip, value);
     return value;
 }
 
-size_t ByteCodeDecoder::AbsorbJump()
+std::size_t ByteCodeDecoder::AbsorbJump()
 {
-    size_t value{};
+    std::size_t value{};
     ReadUnaligned(_code, _ip, value);
     return value;
 }

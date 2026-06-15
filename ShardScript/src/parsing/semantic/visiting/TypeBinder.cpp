@@ -70,7 +70,7 @@ static void BindParametersList(ParametersListSyntax *const node, std::vector<Par
 	if (node->Parameters.size() != symbols.size())
 		return;
 
-	for (size_t i = 0; i < node->Parameters.size(); i++)
+	for (std::size_t i = 0; i < node->Parameters.size(); i++)
 	{
 		ParameterSyntax* paramSyntax = node->Parameters[i].get();
 		ParameterSymbol* paramSymbol = symbols[i];
@@ -97,6 +97,9 @@ void TypeBinder::VisitCompilationUnit(CompilationUnitSyntax *const node)
 
 		Declare(symbol);
 		PushScope(symbol);
+
+		if (symbol->Node != nullptr)
+			CurrentScope()->Namespace = symbol->Node;
 	}
 
 	for (const auto& member : node->Members)
@@ -590,8 +593,8 @@ void TypeBinder::VisitGenericType(GenericTypeSyntax *const node)
 	GenericTypeSymbol* symbol = Factory.GenericType(node);
 	node->Symbol = symbol;
 
-	size_t argsCount = node->Arguments->Types.size();
-	size_t paramsCount = underlayingType->TypeParameters.size();
+	std::size_t argsCount = node->Arguments->Types.size();
+	std::size_t paramsCount = underlayingType->TypeParameters.size();
 
 	if (argsCount != paramsCount)
 	{
@@ -599,7 +602,7 @@ void TypeBinder::VisitGenericType(GenericTypeSyntax *const node)
 		return;
 	}
 
-	for (size_t i = 0; i < argsCount; i++)
+	for (std::size_t i = 0; i < argsCount; i++)
 	{
 		TypeSyntax* typeArg = node->Arguments->Types[i].get();
 		VisitType(typeArg);

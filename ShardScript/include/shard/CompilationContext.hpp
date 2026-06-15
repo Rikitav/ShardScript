@@ -62,6 +62,7 @@ namespace shard
 
 		void EnrichTree(SourceProvider& sourceProvider, CompilationUnitOrigin origin);
 		void AnalyzeTree();
+		void MarkForReAnalyze() { ReAnalyze = true; }
 
 		std::unique_ptr<ApplicationDomain> Compile();
 	};

@@ -824,7 +824,7 @@ std::vector<SyntaxToken> SourceParser::ReadMemberModifiers(SourceProvider& reade
 
 		// Check order
 		int modifierIndex = -1;
-		for (size_t i = 0; i < expectedOrder.size(); i++)
+		for (std::size_t i = 0; i < expectedOrder.size(); i++)
 		{
 			if (expectedOrder[i] == currentType)
 			{

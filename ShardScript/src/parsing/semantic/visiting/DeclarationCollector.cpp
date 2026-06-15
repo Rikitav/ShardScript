@@ -152,12 +152,12 @@ void DeclarationCollector::VisitClassDeclaration(ClassDeclarationSyntax *const n
 
         if (node->TypeParameters != nullptr)
         {
-            for (size_t i = 0; i < node->TypeParameters->Types.size(); i++)
+            for (std::size_t i = 0; i < node->TypeParameters->Types.size(); i++)
             {
                 SyntaxToken& param = node->TypeParameters->Types.at(i);
                 TypeParameterSymbol* typeParamSymbol = Factory.TypeParameter(param.Word);
                 typeParamSymbol->Parent = symbol;
-                typeParamSymbol->TypeArgumentIndex = static_cast<uint16_t>(i);
+                typeParamSymbol->TypeArgumentIndex = static_cast<std::uint16_t>(i);
 
                 symbol->TypeParameters.push_back(typeParamSymbol);
             }
@@ -214,12 +214,12 @@ void DeclarationCollector::VisitStructDeclaration(StructDeclarationSyntax *const
 
         if (node->TypeParameters != nullptr)
         {
-            for (size_t i = 0; i < node->TypeParameters->Types.size(); i++)
+            for (std::size_t i = 0; i < node->TypeParameters->Types.size(); i++)
             {
                 SyntaxToken& param = node->TypeParameters->Types.at(i);
                 TypeParameterSymbol* typeParamSymbol = Factory.TypeParameter(param.Word);
                 typeParamSymbol->Parent = symbol;
-                typeParamSymbol->TypeArgumentIndex = static_cast<uint16_t>(i);
+                typeParamSymbol->TypeArgumentIndex = static_cast<std::uint16_t>(i);
 
                 symbol->TypeParameters.push_back(typeParamSymbol);
             }
@@ -393,8 +393,8 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax *const
                 Diagnostics.ReportError(node->IdentifierToken, L"Method should have a Body, as it's not marked as 'extern' or 'abstract'");
         }
 
-        uint16_t baseIndex = symbol->IsStatic ? 0 : 1;
-        for (size_t i = 0; i < symbol->Parameters.size(); ++i)
+        std::uint16_t baseIndex = symbol->IsStatic ? 0 : 1;
+        for (std::size_t i = 0; i < symbol->Parameters.size(); ++i)
             symbol->Parameters[i]->SlotIndex = baseIndex + i;
 
         ApplyMethodAttributes(symbol, node->Attributes);
@@ -467,8 +467,8 @@ void DeclarationCollector::VisitConstructorDeclaration(ConstructorDeclarationSyn
             }
         }
 
-        uint16_t baseIndex = symbol->IsStatic ? 0 : 1;
-        for (size_t i = 0; i < symbol->Parameters.size(); ++i)
+        std::uint16_t baseIndex = symbol->IsStatic ? 0 : 1;
+        for (std::size_t i = 0; i < symbol->Parameters.size(); ++i)
             symbol->Parameters[i]->SlotIndex = baseIndex + i;
 
         ApplyMethodAttributes(symbol, node->Attributes);
@@ -703,8 +703,8 @@ void DeclarationCollector::VisitAccessorDeclaration(AccessorDeclarationSyntax *c
 
     // Assign slot indices for accessor parameters (e.g. setter's 'value')
     {
-        uint16_t baseIndex = symbol->IsStatic ? 0 : 1;
-        for (size_t i = 0; i < symbol->Parameters.size(); ++i)
+        std::uint16_t baseIndex = symbol->IsStatic ? 0 : 1;
+        for (std::size_t i = 0; i < symbol->Parameters.size(); ++i)
             symbol->Parameters[i]->SlotIndex = baseIndex + i;
     }
 

@@ -21,7 +21,7 @@
 
 using namespace shard;
 
-size_t TypeSymbol::GetInlineSize() const
+std::size_t TypeSymbol::GetInlineSize() const
 {
 	return IsReferenceType ? sizeof(void*) : MemoryBytesSize;
 }
@@ -58,11 +58,11 @@ bool TypeSymbol::Equals(const TypeSymbol* left, const TypeSymbol* right)
 			if (!TypeSymbol::Equals(thisGenericInfo->UnderlayingType, otherGenericInfo->UnderlayingType))
 				return false;
 
-			size_t size = thisGenericInfo->TypeParameters.size();
+			std::size_t size = thisGenericInfo->TypeParameters.size();
 			if (otherGenericInfo->TypeParameters.size() != size)
 				return false;
 
-			for (size_t i = 0; i < size; i++)
+			for (std::size_t i = 0; i < size; i++)
 			{
 				TypeSymbol* thisParam = thisGenericInfo->SubstituteTypeParameters(thisGenericInfo->TypeParameters.at(i));
 				TypeSymbol* otherParam = otherGenericInfo->SubstituteTypeParameters(otherGenericInfo->TypeParameters.at(i));
@@ -88,11 +88,11 @@ bool TypeSymbol::Equals(const TypeSymbol* left, const TypeSymbol* right)
 			if (!TypeSymbol::Equals(thisLambdaInfo->ReturnType, otherLambdaInfo->ReturnType))
 				return false;
 
-			size_t size = thisLambdaInfo->Parameters.size();
+			std::size_t size = thisLambdaInfo->Parameters.size();
 			if (otherLambdaInfo->Parameters.size() != size)
 				return false;
 
-			for (size_t i = 0; i < size; i++)
+			for (std::size_t i = 0; i < size; i++)
 			{
 				ParameterSymbol* thisParam = thisLambdaInfo->Parameters.at(i);
 				ParameterSymbol* otherParam = otherLambdaInfo->Parameters.at(i);

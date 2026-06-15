@@ -54,13 +54,13 @@ namespace shard
 
 		void InvokeMethod(MethodSymbol* method) const;
 		void InvokeMethod(MethodSymbol* method, std::initializer_list<ObjectInstance*> args) const;
-		ObjectInstance* InvokeMethod(MethodSymbol* method, ObjectInstance** args, size_t count) const;
+		ObjectInstance* InvokeMethod(MethodSymbol* method, ObjectInstance** args, std::size_t count) const;
 		void RaiseException(ObjectInstance* exceptionReg) const;
 
 		void Run();
 		void Abort() const;
 		void TerminateCallStack();
 
-		ObjectInstance* RunInteractive(size_t& pointer);
+		ObjectInstance* RunInteractive(std::size_t& pointer);
 	};
 }

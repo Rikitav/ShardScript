@@ -20,14 +20,14 @@ namespace shard
 	class SHARD_API ByteCodeDecoder
 	{
 		const std::vector<std::byte>& _code;
-		size_t _ip = 0;
+		std::size_t _ip = 0;
 
 	public:
 		inline ByteCodeDecoder(const std::vector<std::byte>& code) : _code(code) { }
 
 		bool IsEOF();
-		size_t Index() const;
-		void SetCursor(std::fpos_t amount);
+		std::size_t Index() const;
+		void SetCursor(std::std::fpos_t amount);
 		void Return();
 
 		OpCode AbsorbOpCode();
@@ -36,11 +36,11 @@ namespace shard
 		int64_t AbsorbInt64();
 		double AbsorbDouble64();
 		wchar_t AbsorbChar16();
-		size_t AbsorbString();
+		std::size_t AbsorbString();
 
-		uint16_t AbsorbVariableSlot();
-		uint16_t AbsorbUInt16();
-		size_t AbsorbJump();
+		std::uint16_t AbsorbVariableSlot();
+		std::uint16_t AbsorbUInt16();
+		std::size_t AbsorbJump();
 		
 		TypeSymbol* AbsorbTypeSymbol();
 		DelegateTypeSymbol* AbsordDelegateTypeSymbol();

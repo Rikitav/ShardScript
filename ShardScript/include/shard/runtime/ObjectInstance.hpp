@@ -15,10 +15,10 @@ namespace shard
 	{
 		const TypeSymbol* Info;
 		const bool IsTransient;
-		fpos_t ReferencesCounter;
+		std::fpos_t ReferencesCounter;
 		void* const Memory;
-		size_t ArrayLength = 0;
-		size_t ArrayMemorySize = 0;
+		std::size_t ArrayLength = 0;
+		std::size_t ArrayMemorySize = 0;
 
 	public:
 		inline ObjectInstance(const TypeSymbol* info, void* memory, bool isTransient)
@@ -30,22 +30,22 @@ namespace shard
 		
 		inline ~ObjectInstance() = default;
 
-		inline size_t GetArrayLength() const { return ArrayLength; }
-		inline void SetArrayLength(size_t length) { ArrayLength = length; }
-		inline size_t GetMemorySize() const { return ArrayMemorySize; }
-		inline void SetMemorySize(size_t size) { ArrayMemorySize = size; }
+		inline std::size_t GetArrayLength() const { return ArrayLength; }
+		inline void SetArrayLength(std::size_t length) { ArrayLength = length; }
+		inline std::size_t GetMemorySize() const { return ArrayMemorySize; }
+		inline void SetMemorySize(std::size_t size) { ArrayMemorySize = size; }
 
 		const TypeSymbol* getInfo() const;
 		void* getMemory() const;
 		bool getIsTransient() const;
-		fpos_t getReferencesCounter() const;
+		std::fpos_t getReferencesCounter() const;
 
 		ObjectInstance* GetField(FieldSymbol* field, CallStackFrame* frame = nullptr);
 		void SetField(FieldSymbol* field, ObjectInstance* instance, CallStackFrame* frame = nullptr);
 
-		ObjectInstance* GetElement(size_t index, CallStackFrame* frame = nullptr);
-		void SetElement(size_t index, ObjectInstance* instance, CallStackFrame* frame = nullptr);
-		bool IsInBounds(size_t index);
+		ObjectInstance* GetElement(std::size_t index, CallStackFrame* frame = nullptr);
+		void SetElement(std::size_t index, ObjectInstance* instance, CallStackFrame* frame = nullptr);
+		bool IsInBounds(std::size_t index);
 
 		void IncrementReference();
 		void DecrementReference();
@@ -55,7 +55,7 @@ namespace shard
 		void WriteDouble(const double& value) const;
 		void WriteCharacter(const wchar_t& value) const;
 		void WriteString(const wchar_t* value) const;
-		void WriteString(const wchar_t* value, size_t size) const;
+		void WriteString(const wchar_t* value, std::size_t size) const;
 		void WriteString(const std::wstring& value) const;
 
 		bool& AsBoolean() const;
@@ -64,8 +64,8 @@ namespace shard
 		wchar_t& AsCharacter() const;
 		const wchar_t* AsString() const;
 
-		void* OffsetMemory(const size_t offset, const size_t size) const;
-		void ReadMemory(const size_t offset, const size_t size, void* dst) const;
-		void WriteMemory(const size_t offset, const size_t size, const void* src) const;
+		void* OffsetMemory(const std::size_t offset, const std::size_t size) const;
+		void ReadMemory(const std::size_t offset, const std::size_t size, void* dst) const;
+		void WriteMemory(const std::size_t offset, const std::size_t size, const void* src) const;
 	};
 }

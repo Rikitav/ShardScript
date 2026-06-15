@@ -17,7 +17,7 @@ namespace shard
     {
     public:
         ExpressionSyntax* DefaultValueExpression = nullptr;
-        size_t MemoryBytesOffset = 0;
+        std::size_t MemoryBytesOffset = 0;
         TypeSymbol* ReturnType = nullptr;
 
         inline FieldSymbol(const std::wstring& name)

@@ -17,7 +17,7 @@ namespace shard
 	public:
 		StringStreamReader(const std::wstring& name, std::wstringstream& source);
 		StringStreamReader(const std::wstring& name, const std::wstring& source);
-		StringStreamReader(const std::wstring& name, const wchar_t* source, size_t size);
+		StringStreamReader(const std::wstring& name, const wchar_t* source, std::size_t size);
 		virtual ~StringStreamReader();
 
 		bool ReadNext(wchar_t& ch) override;

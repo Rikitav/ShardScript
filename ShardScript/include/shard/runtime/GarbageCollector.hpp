@@ -78,7 +78,7 @@ namespace shard
             PtrMap.clear();
         }
 
-        inline size_t size()
+        inline std::size_t size()
         {
             return PtrMap.size();
         }
@@ -87,7 +87,7 @@ namespace shard
 	class SHARD_API GarbageCollector
 	{
 		ApplicationDomain* const applicationDomain;
-		uint64_t objectsCounter = 0;
+		std::uint64_t objectsCounter = 0;
         std::unordered_map<FieldSymbol*, ObjectInstance*> staticFields;
 		std::vector<std::unique_ptr<ArrayTypeSymbol>> dynamicArrayTypes;
         
@@ -114,7 +114,7 @@ namespace shard
         void SetStaticField(FieldSymbol* field, ObjectInstance* instance);
 
 		ObjectInstance* AllocateInstance(const TypeSymbol* objectInfo, bool isTransient = false);
-		ObjectInstance* AllocateArray(TypeSymbol* elementType, size_t length, bool isTransient = false);
+		ObjectInstance* AllocateArray(TypeSymbol* elementType, std::size_t length, bool isTransient = false);
         ObjectInstance* CopyInstance(ObjectInstance* instance);
 		
         void CollectInstance(ObjectInstance* instance);
