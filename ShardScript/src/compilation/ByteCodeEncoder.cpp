@@ -14,7 +14,6 @@
 #include <algorithm>
 #include <string.h>
 #include <wchar.h>
-#include <Windows.h>
 #include <cstddef>
 #include <cstdint>
 #include <type_traits>
@@ -95,7 +94,7 @@ void ByteCodeEncoder::EmitLoadConstBool(std::vector<std::byte>& code, bool value
     AppendDataT(code, value);
 }
 
-void ByteCodeEncoder::EmitLoadConstInt64(std::vector<std::byte>& code, int64_t value)
+void ByteCodeEncoder::EmitLoadConstInt64(std::vector<std::byte>& code, std::int64_t value)
 {
     AppendDataT(code, OpCode::LOADCONST_INTEGER64);
     AppendDataT(code, value);

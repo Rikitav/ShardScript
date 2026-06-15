@@ -6,7 +6,7 @@
 #else
 
 	// Microsoft
-	#if defined(_MSC_VER)
+	#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(__WIN32)
 		#ifdef SHARD_API_EXPORT
 			#define SHARD_API __declspec(dllexport)
 		#else
@@ -21,6 +21,7 @@
 	#else
 		#define SHARD_API
 		#pragma warning Unknown dynamic link import/export semantics.
+
 	#endif
 #endif
 

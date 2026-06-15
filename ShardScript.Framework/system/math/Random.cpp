@@ -1,9 +1,8 @@
-#include <ShardScript.hpp>
 #include <stdexcept>
-#include <string>
 #include <random>
 #include <climits>
 #include <cstdint>
+#include <ShardScript.hpp>
 
 using namespace shard;
 
@@ -11,19 +10,19 @@ namespace shard
 {
 	extern "C"
 	{
-		__declspec(dllexport) ObjectInstance* shard_random_Integer(const CallState& context) noexcept(false)
+		SHARDLIB_EXPORT ObjectInstance* shard_random_Integer(const CallState& context) noexcept(false)
 		{
 			std::random_device rd;
 			std::mt19937 gen(rd());
-			std::uniform_int_distribution<> distrib(LONG_MIN, LONG_MAX);
+			std::uniform_int_distribution<std::int64_t> distrib(LONG_MIN, LONG_MAX);
 
-			int64_t value = distrib(gen);
+			std::int64_t value = distrib(gen);
 			return context.Domain.GetGarbageCollector().FromValue(value);
 		}
 
-		__declspec(dllexport) ObjectInstance* shard_random_Integer_top(const CallState& context) noexcept(false)
+		SHARDLIB_EXPORT ObjectInstance* shard_random_Integer_top(const CallState& context) noexcept(false)
 		{
-			int64_t top = context.Args[0]->AsInteger();
+			std::int64_t top = context.Args[0]->AsInteger();
 
 			if (top == 0)
 				return context.Collector.FromValue(0.0);
@@ -35,14 +34,14 @@ namespace shard
 			std::mt19937 gen(rd());
 			std::uniform_int_distribution<> distrib(0, INT_MAX);
 
-			int64_t value = distrib(gen);
+			std::int64_t value = distrib(gen);
 			return context.Collector.FromValue(value);
 		}
 
-		__declspec(dllexport) ObjectInstance* shard_random_Integer_bottom_top(const CallState& context) noexcept(false)
+		SHARDLIB_EXPORT ObjectInstance* shard_random_Integer_bottom_top(const CallState& context) noexcept(false)
 		{
-			int64_t bottom = context.Args[0]->AsInteger();
-			int64_t top = context.Args[1]->AsInteger();
+			std::int64_t bottom = context.Args[0]->AsInteger();
+			std::int64_t top = context.Args[1]->AsInteger();
 
 			if (bottom == top)
 				return context.Collector.FromValue(bottom);
@@ -54,11 +53,11 @@ namespace shard
 			std::mt19937 gen(rd());
 			std::uniform_int_distribution<> distrib(static_cast<int>(bottom), static_cast<int>(top));
 
-			int64_t value = distrib(gen);
+			std::int64_t value = distrib(gen);
 			return context.Collector.FromValue(value);
 		}
 
-		__declspec(dllexport) ObjectInstance* shard_random_Double(const CallState& context) noexcept(false)
+		SHARDLIB_EXPORT ObjectInstance* shard_random_Double(const CallState& context) noexcept(false)
 		{
 			std::random_device rd;
 			std::mt19937 gen(rd());
@@ -68,7 +67,7 @@ namespace shard
 			return context.Collector.FromValue(value);
 		}
 
-		__declspec(dllexport) ObjectInstance* shard_random_Double_top(const CallState& context) noexcept(false)
+		SHARDLIB_EXPORT ObjectInstance* shard_random_Double_top(const CallState& context) noexcept(false)
 		{
 			double top = context.Args[0]->AsDouble();
 
@@ -86,7 +85,7 @@ namespace shard
 			return context.Collector.FromValue(value);
 		}
 
-		__declspec(dllexport) ObjectInstance* shard_random_Double_bottom_top(const CallState& context) noexcept(false)
+		SHARDLIB_EXPORT ObjectInstance* shard_random_Double_bottom_top(const CallState& context) noexcept(false)
 		{
 			double bottom = context.Args[0]->AsDouble();
 			double top = context.Args[1]->AsDouble();
@@ -105,7 +104,7 @@ namespace shard
 			return context.Collector.FromValue(value);
 		}
 
-		__declspec(dllexport) ObjectInstance* shard_random_Propably(const CallState& context) noexcept(false)
+		SHARDLIB_EXPORT ObjectInstance* shard_random_Propably(const CallState& context) noexcept(false)
 		{
 			double chance = context.Args[0]->AsDouble();
 

@@ -24,7 +24,7 @@ namespace shard
 		std::unique_ptr<TypeSyntax> Type = nullptr;
 		
 		ConstructorSymbol* CtorSymbol = nullptr;
-		TypeSymbol* TypeSymbol = nullptr;
+		TypeSymbol* Symbol = nullptr;
 
 		inline ObjectExpressionSyntax(SyntaxNode *const parent)
 			: ExpressionSyntax(SyntaxKind::ObjectExpression, parent) { }

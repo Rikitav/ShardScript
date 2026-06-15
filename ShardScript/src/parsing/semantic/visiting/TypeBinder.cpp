@@ -396,7 +396,7 @@ void TypeBinder::VisitObjectCreationExpression(ObjectExpressionSyntax *const nod
 {
 	VisitType(node->Type.get());
 	VisitArgumentsList(node->ArgumentsList.get());
-	node->TypeSymbol = node->Type->Symbol;
+	node->Symbol = node->Type->Symbol;
 }
 
 void TypeBinder::VisitParameter(ParameterSyntax *const node)

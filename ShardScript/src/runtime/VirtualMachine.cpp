@@ -82,7 +82,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 
 		case OpCode::LOADCONST_INTEGER64:
 		{
-			int64_t value = decoder.AbsorbInt64();
+			std::int64_t value = decoder.AbsorbInt64();
 			ObjectInstance* instance = garbageCollector.FromValue(value);
 			frame->PushStack(instance);
 			break;
@@ -232,7 +232,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			elementType = frame->ResolveType(elementType);
 
 			ObjectInstance* sizeInstance = frame->PopStack();
-			int64_t length = sizeInstance->AsInteger();
+			std::int64_t length = sizeInstance->AsInteger();
 			garbageCollector.CollectInstance(sizeInstance);
 
 			ObjectInstance* instance = garbageCollector.AllocateArray(elementType, static_cast<std::size_t>(length));
@@ -245,7 +245,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance* indexInstance = frame->PopStack();
 			ObjectInstance* arrayInstance = frame->PopStack();
 
-			int64_t index = indexInstance->AsInteger();
+			std::int64_t index = indexInstance->AsInteger();
 			ObjectInstance* element = arrayInstance->GetElement(static_cast<std::size_t>(index), frame);
 
 			frame->PushStack(element);
@@ -260,7 +260,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance* indexInstance = frame->PopStack();
 			ObjectInstance* arrayInstance = frame->PopStack();
 
-			int64_t index = indexInstance->AsInteger();
+			std::int64_t index = indexInstance->AsInteger();
 			arrayInstance->SetElement(static_cast<std::size_t>(index), valueInstance, frame);
 
 			garbageCollector.CollectInstance(valueInstance);
@@ -271,7 +271,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		case OpCode::ARRAYLENGTH:
 		{
 			ObjectInstance* arrayInstance = frame->PopStack();
-			int64_t length = static_cast<int64_t>(arrayInstance->GetArrayLength());
+			std::int64_t length = static_cast<std::int64_t>(arrayInstance->GetArrayLength());
 			frame->PushStack(garbageCollector.FromValue(length));
 			garbageCollector.CollectInstance(arrayInstance);
 			break;

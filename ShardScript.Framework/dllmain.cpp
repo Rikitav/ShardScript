@@ -2,46 +2,18 @@
 
 #include <iostream>
 #include <string>
+#include <cstring>
 #include <stdexcept>
 #include <vector>
 #include <cstdint>
-#include <Windows.h>
+
 #include <ShardScript.hpp>
+
+#include <List_compiled.h>
 
 constexpr auto STATIC = true;
 
 using namespace shard;
-
-typedef HMODULE(*CurrentModuleQuery)(void);
-
-inline static HMODULE GetCurrentModule()
-{
-	HMODULE hModule = nullptr;
-	CurrentModuleQuery query = GetCurrentModule;
-
-	GetModuleHandleExW(
-		GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
-		reinterpret_cast<LPCWSTR>(query),
-		&hModule);
-
-	return hModule;
-}
-
-inline static void GetResource(const wchar_t* name, const wchar_t*& resourceData, std::size_t & resourceSize)
-{
-	HMODULE hModule = GetCurrentModule();
-	HRSRC hResource = FindResourceW(hModule, name, L"SOURCE_CODE");
-	if (!hResource)
-		throw std::runtime_error("");
-
-	HGLOBAL hResourceData = LoadResource(hModule, hResource);
-	if (!hResourceData)
-		throw std::runtime_error("");
-
-	resourceSize = static_cast<std::size_t>(SizeofResource(hModule, hResource));
-	resourceData = static_cast<wchar_t*>(LockResource(hResourceData));
-	//FreeLibrary(hModule);
-}
 
 static ObjectInstance* Impl_Gc_Info(const CallState& context)
 {
@@ -91,7 +63,7 @@ static ObjectInstance* Impl_sizeof(const CallState& context)
 	if (instance == GarbageCollector::NullInstance)
 		throw std::runtime_error("cannot get size of null instance");
 
-	return context.Collector.FromValue(static_cast<int64_t>(instance->getInfo()->MemoryBytesSize));
+	return context.Collector.FromValue(static_cast<std::int64_t>(instance->getInfo()->MemoryBytesSize));
 }
 
 static void ReflectGlobalMethods(CompilationContext& context)
@@ -138,7 +110,7 @@ static ShardLibMetadata LibMetadata = ShardLibMetadata
 
 SHARDLIB_GETMETADATA
 {
-	memcpy(&lib, &LibMetadata, sizeof(ShardLibMetadata));
+	std::memcpy(&lib, &LibMetadata, sizeof(ShardLibMetadata));
 }
 
 SHARDLIB_ENTRYPOINT
@@ -148,18 +120,21 @@ SHARDLIB_ENTRYPOINT
 
 	const wchar_t* resourceData; std::size_t resourceSize;
 
+	/*
 	{
 		GetResource(L"MATH_RANDOM", resourceData, resourceSize);
 		auto reader = std::make_unique<StringStreamReader>(L"Random.ss", std::wstring(resourceData, resourceSize / sizeof(wchar_t)));
 		context.ProvideSource(reader.get());
 	}
+	*/
 
 	{
-		GetResource(L"COLLECTIONS_LIST", resourceData, resourceSize);
-		auto reader = std::make_unique<StringStreamReader>(L"List.ss", std::wstring(resourceData, resourceSize / sizeof(wchar_t)));
+		auto reader = std::make_unique<StringStreamReader>(L"List.ss",
+			std::wstring(script_List_ss, script_List_ss + script_List_ss_len/ sizeof(wchar_t)));
 		context.ProvideSource(reader.get());
 	}
 
+	/*
 	{
 		GetResource(L"FILESYSTEM_FILE", resourceData, resourceSize);
 		auto reader = std::make_unique<StringStreamReader>(L"File.ss", std::wstring(resourceData, resourceSize / sizeof(wchar_t)));
@@ -177,8 +152,10 @@ SHARDLIB_ENTRYPOINT
 		auto reader = std::make_unique<StringStreamReader>(L"Constream.ss", std::wstring(resourceData, resourceSize / sizeof(wchar_t)));
 		context.ProvideSource(reader.get());
 	}
+	*/
 }
 
+#ifdef _WIN32
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
 	switch (ul_reason_for_call)
@@ -192,3 +169,4 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
 	return TRUE;
 }
+#endif

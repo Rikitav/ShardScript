@@ -33,7 +33,7 @@ ObjectInstance* GarbageCollector::FromValue(bool value)
 	return instance;
 }
 
-ObjectInstance* GarbageCollector::FromValue(int64_t value)
+ObjectInstance* GarbageCollector::FromValue(std::int64_t value)
 {
 	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::Integer);
 	instance->WriteInteger(value);
@@ -59,7 +59,7 @@ ObjectInstance* GarbageCollector::FromValue(const wchar_t* value, bool isTransie
 	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String, isTransient);
 
 	instance->WriteInteger(wcslen(value));
-	instance->WriteMemory(sizeof(int64_t), sizeof(wchar_t*), &value);
+	instance->WriteMemory(sizeof(std::int64_t), sizeof(wchar_t*), &value);
 	return instance;
 }
 
@@ -74,10 +74,10 @@ ObjectInstance* GarbageCollector::FromValue(const std::wstring& value)
 	if (copy == nullptr)
 		throw std::runtime_error("Failed to allocate string");
 
-	memcpy(copy, value.c_str(), size);
+	std::memcpy(copy, value.c_str(), size);
 
 	instance->WriteInteger(length);
-	instance->WriteMemory(sizeof(int64_t), sizeof(wchar_t*), &copy);
+	instance->WriteMemory(sizeof(std::int64_t), sizeof(wchar_t*), &copy);
 	return instance;
 }
 
@@ -277,7 +277,7 @@ void GarbageCollector::TerminateInstance(ObjectInstance* instance)
 	{
 		if (instance->getInfo() == SymbolTable::Primitives::String)
 		{
-			void* stringPtr = instance->OffsetMemory(sizeof(int64_t), sizeof(wchar_t*));
+			void* stringPtr = instance->OffsetMemory(sizeof(std::int64_t), sizeof(wchar_t*));
 			wchar_t* stringData = *static_cast<wchar_t**>(stringPtr);
 			free(stringData);
 		}

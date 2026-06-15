@@ -78,16 +78,12 @@
 #include <algorithm>
 #include <string>
 
-#ifdef __WIN32
-#include <Windows.h>
-#endif
-
-#define SHARD_EXPORT extern "C" SHARD_API
-
 using namespace shard;
 
-namespace
-{
+extern "C" {
+
+//namespace
+//{
     thread_local std::wstring LastErrorMessage;
 
     static void SetLastError(const std::string& message)
@@ -95,7 +91,7 @@ namespace
         LastErrorMessage = std::wstring(message.begin(), message.end());
     }
 
-    static void SetLastError(const std::wstring& message)
+    static void SetLastWError(const std::wstring& message)
     {
         LastErrorMessage = message;
     }
@@ -115,7 +111,7 @@ namespace
 // Error Handling
 // =========================================================================
 
-SHARD_EXPORT int Shard_GetLastError(wchar_t* buffer, int bufferLen)
+SHARD_API int Shard_GetLastError(wchar_t* buffer, int bufferLen)
 {
     if (buffer != nullptr && bufferLen > 0)
     {
@@ -131,7 +127,7 @@ SHARD_EXPORT int Shard_GetLastError(wchar_t* buffer, int bufferLen)
 // Compilation Context API
 // =========================================================================
 
-SHARD_EXPORT CompilationContext* Shard_CreateCompilationContext()
+SHARD_API CompilationContext* Shard_CreateCompilationContext()
 {
     try
     {
@@ -144,7 +140,7 @@ SHARD_EXPORT CompilationContext* Shard_CreateCompilationContext()
     }
 }
 
-SHARD_EXPORT int Shard_DestroyCompilationContext(CompilationContext* ctx)
+SHARD_API int Shard_DestroyCompilationContext(CompilationContext* ctx)
 {
     try
     {
@@ -160,19 +156,19 @@ SHARD_EXPORT int Shard_DestroyCompilationContext(CompilationContext* ctx)
     }
 }
 
-SHARD_EXPORT int Shard_AddLibrary(CompilationContext* ctx, const wchar_t* path)
+SHARD_API int Shard_AddLibrary(CompilationContext* ctx, const wchar_t* path)
 {
     try
     {
         if (ctx == nullptr)
         {
-            SetLastError(L"compilation context is null");
+            SetLastWError(L"compilation context is null");
             return -1;
         }
 
         if (path == nullptr)
         {
-            SetLastError(L"library path is null");
+            SetLastWError(L"library path is null");
             return -1;
         }
 
@@ -186,13 +182,13 @@ SHARD_EXPORT int Shard_AddLibrary(CompilationContext* ctx, const wchar_t* path)
     }
 }
 
-SHARD_EXPORT int Shard_AddSource(CompilationContext* ctx, const wchar_t* sourceName, const wchar_t* code, CompilationUnitOrigin origin)
+SHARD_API int Shard_AddSource(CompilationContext* ctx, const wchar_t* sourceName, const wchar_t* code, CompilationUnitOrigin origin)
 {
     try
     {
         if (ctx == nullptr || code == nullptr || sourceName == nullptr)
         {
-            SetLastError(L"invalid argument");
+            SetLastWError(L"invalid argument");
             return -1;
         }
 
@@ -210,13 +206,13 @@ SHARD_EXPORT int Shard_AddSource(CompilationContext* ctx, const wchar_t* sourceN
     }
 }
 
-SHARD_EXPORT int Shard_AddSourceFile(CompilationContext* ctx, const wchar_t* filePath, CompilationUnitOrigin origin)
+SHARD_API int Shard_AddSourceFile(CompilationContext* ctx, const wchar_t* filePath, CompilationUnitOrigin origin)
 {
     try
     {
         if (ctx == nullptr || filePath == nullptr)
         {
-            SetLastError(L"invalid argument");
+            SetLastWError(L"invalid argument");
             return -1;
         }
 
@@ -233,13 +229,13 @@ SHARD_EXPORT int Shard_AddSourceFile(CompilationContext* ctx, const wchar_t* fil
     }
 }
 
-SHARD_EXPORT int Shard_Analyze(CompilationContext* ctx)
+SHARD_API int Shard_Analyze(CompilationContext* ctx)
 {
     try
     {
         if (ctx == nullptr)
         {
-            SetLastError(L"compilation context is null");
+            SetLastWError(L"compilation context is null");
             return -1;
         }
 
@@ -253,13 +249,13 @@ SHARD_EXPORT int Shard_Analyze(CompilationContext* ctx)
     }
 }
 
-SHARD_EXPORT ApplicationDomain* Shard_Compile(CompilationContext* ctx)
+SHARD_API ApplicationDomain* Shard_Compile(CompilationContext* ctx)
 {
     try
     {
         if (ctx == nullptr)
         {
-            SetLastError(L"compilation context is null");
+            SetLastWError(L"compilation context is null");
             return nullptr;
         }
 
@@ -272,7 +268,7 @@ SHARD_EXPORT ApplicationDomain* Shard_Compile(CompilationContext* ctx)
     }
 }
 
-SHARD_EXPORT ApplicationDomain* Shard_CompileAndRun(CompilationContext* ctx)
+SHARD_API ApplicationDomain* Shard_CompileAndRun(CompilationContext* ctx)
 {
     try
     {
@@ -289,13 +285,13 @@ SHARD_EXPORT ApplicationDomain* Shard_CompileAndRun(CompilationContext* ctx)
     }
 }
 
-SHARD_EXPORT int Shard_SetEntryPoint(CompilationContext* ctx, int value)
+SHARD_API int Shard_SetEntryPoint(CompilationContext* ctx, int value)
 {
     try
     {
         if (ctx == nullptr)
         {
-            SetLastError(L"compilation context is null");
+            SetLastWError(L"compilation context is null");
             return -1;
         }
 
@@ -309,13 +305,13 @@ SHARD_EXPORT int Shard_SetEntryPoint(CompilationContext* ctx, int value)
     }
 }
 
-SHARD_EXPORT int Shard_GetEntryPoint(CompilationContext* ctx)
+SHARD_API int Shard_GetEntryPoint(CompilationContext* ctx)
 {
     try
     {
         if (ctx == nullptr)
         {
-            SetLastError(L"compilation context is null");
+            SetLastWError(L"compilation context is null");
             return 0;
         }
 
@@ -328,7 +324,7 @@ SHARD_EXPORT int Shard_GetEntryPoint(CompilationContext* ctx)
     }
 }
 
-SHARD_EXPORT int Shard_HasErrors(CompilationContext* ctx)
+SHARD_API int Shard_HasErrors(CompilationContext* ctx)
 {
     try
     {
@@ -344,7 +340,7 @@ SHARD_EXPORT int Shard_HasErrors(CompilationContext* ctx)
     }
 }
 
-SHARD_EXPORT int Shard_GetErrorCount(CompilationContext* ctx)
+SHARD_API int Shard_GetErrorCount(CompilationContext* ctx)
 {
     try
     {
@@ -362,7 +358,7 @@ SHARD_EXPORT int Shard_GetErrorCount(CompilationContext* ctx)
     }
 }
 
-SHARD_EXPORT int Shard_ResetDiagnostics(CompilationContext* ctx)
+SHARD_API int Shard_ResetDiagnostics(CompilationContext* ctx)
 {
     try
     {
@@ -378,7 +374,7 @@ SHARD_EXPORT int Shard_ResetDiagnostics(CompilationContext* ctx)
     }
 }
 
-SHARD_EXPORT int Shard_GetDiagnostics(CompilationContext* ctx, wchar_t* buffer, int bufferLen)
+SHARD_API int Shard_GetDiagnostics(CompilationContext* ctx, wchar_t* buffer, int bufferLen)
 {
     try
     {
@@ -409,13 +405,13 @@ SHARD_EXPORT int Shard_GetDiagnostics(CompilationContext* ctx, wchar_t* buffer, 
 // Application Domain API
 // =========================================================================
 
-SHARD_EXPORT int Shard_RunDomain(ApplicationDomain* domain)
+SHARD_API int Shard_RunDomain(ApplicationDomain* domain)
 {
     try
     {
         if (domain == nullptr)
         {
-            SetLastError(L"domain is null");
+            SetLastWError(L"domain is null");
             return -1;
         }
 
@@ -429,7 +425,7 @@ SHARD_EXPORT int Shard_RunDomain(ApplicationDomain* domain)
     }
 }
 
-SHARD_EXPORT int Shard_DestroyDomain(ApplicationDomain* domain)
+SHARD_API int Shard_DestroyDomain(ApplicationDomain* domain)
 {
     try
     {
@@ -445,13 +441,13 @@ SHARD_EXPORT int Shard_DestroyDomain(ApplicationDomain* domain)
     }
 }
 
-SHARD_EXPORT VirtualMachine* Shard_GetVirtualMachine(ApplicationDomain* domain)
+SHARD_API VirtualMachine* Shard_GetVirtualMachine(ApplicationDomain* domain)
 {
     try
     {
         if (domain == nullptr)
         {
-            SetLastError(L"domain is null");
+            SetLastWError(L"domain is null");
             return nullptr;
         }
 
@@ -464,13 +460,13 @@ SHARD_EXPORT VirtualMachine* Shard_GetVirtualMachine(ApplicationDomain* domain)
     }
 }
 
-SHARD_EXPORT GarbageCollector* Shard_GetGarbageCollector(ApplicationDomain* domain)
+SHARD_API GarbageCollector* Shard_GetGarbageCollector(ApplicationDomain* domain)
 {
     try
     {
         if (domain == nullptr)
         {
-            SetLastError(L"domain is null");
+            SetLastWError(L"domain is null");
             return nullptr;
         }
 
@@ -483,13 +479,13 @@ SHARD_EXPORT GarbageCollector* Shard_GetGarbageCollector(ApplicationDomain* doma
     }
 }
 
-SHARD_EXPORT ProgramVirtualImage* Shard_GetProgram(ApplicationDomain* domain)
+SHARD_API ProgramVirtualImage* Shard_GetProgram(ApplicationDomain* domain)
 {
     try
     {
         if (domain == nullptr)
         {
-            SetLastError(L"domain is null");
+            SetLastWError(L"domain is null");
             return nullptr;
         }
 
@@ -502,13 +498,13 @@ SHARD_EXPORT ProgramVirtualImage* Shard_GetProgram(ApplicationDomain* domain)
     }
 }
 
-SHARD_EXPORT MethodSymbol* Shard_GetEntryPointMethod(ApplicationDomain* domain)
+SHARD_API MethodSymbol* Shard_GetEntryPointMethod(ApplicationDomain* domain)
 {
     try
     {
         if (domain == nullptr)
         {
-            SetLastError(L"domain is null");
+            SetLastWError(L"domain is null");
             return nullptr;
         }
 
@@ -525,13 +521,13 @@ SHARD_EXPORT MethodSymbol* Shard_GetEntryPointMethod(ApplicationDomain* domain)
 // Virtual Machine API
 // =========================================================================
 
-SHARD_EXPORT int Shard_VMRun(VirtualMachine* vm)
+SHARD_API int Shard_VMRun(VirtualMachine* vm)
 {
     try
     {
         if (vm == nullptr)
         {
-            SetLastError(L"virtual machine is null");
+            SetLastWError(L"virtual machine is null");
             return -1;
         }
 
@@ -545,7 +541,7 @@ SHARD_EXPORT int Shard_VMRun(VirtualMachine* vm)
     }
 }
 
-SHARD_EXPORT int Shard_VMAbort(VirtualMachine* vm)
+SHARD_API int Shard_VMAbort(VirtualMachine* vm)
 {
     try
     {
@@ -561,7 +557,7 @@ SHARD_EXPORT int Shard_VMAbort(VirtualMachine* vm)
     }
 }
 
-SHARD_EXPORT int Shard_VMTerminateCallStack(VirtualMachine* vm)
+SHARD_API int Shard_VMTerminateCallStack(VirtualMachine* vm)
 {
     try
     {
@@ -577,19 +573,19 @@ SHARD_EXPORT int Shard_VMTerminateCallStack(VirtualMachine* vm)
     }
 }
 
-SHARD_EXPORT ObjectInstance* Shard_VMInvokeMethod(VirtualMachine* vm, MethodSymbol* method, ObjectInstance** args, int argCount)
+SHARD_API ObjectInstance* Shard_VMInvokeMethod(VirtualMachine* vm, MethodSymbol* method, ObjectInstance** args, int argCount)
 {
     try
     {
         if (vm == nullptr)
         {
-            SetLastError(L"virtual machine is null");
+            SetLastWError(L"virtual machine is null");
             return nullptr;
         }
 
         if (method == nullptr)
         {
-            SetLastError(L"method is null");
+            SetLastWError(L"method is null");
             return nullptr;
         }
 
@@ -606,13 +602,13 @@ SHARD_EXPORT ObjectInstance* Shard_VMInvokeMethod(VirtualMachine* vm, MethodSymb
 // Garbage Collector / Value API
 // =========================================================================
 
-SHARD_EXPORT ObjectInstance* Shard_GCFromInteger(GarbageCollector* gc, int64_t value)
+SHARD_API ObjectInstance* Shard_GCFromInteger(GarbageCollector* gc, std::int64_t value)
 {
     try
     {
         if (gc == nullptr)
         {
-            SetLastError(L"garbage collector is null");
+            SetLastWError(L"garbage collector is null");
             return nullptr;
         }
 
@@ -625,13 +621,13 @@ SHARD_EXPORT ObjectInstance* Shard_GCFromInteger(GarbageCollector* gc, int64_t v
     }
 }
 
-SHARD_EXPORT ObjectInstance* Shard_GCFromDouble(GarbageCollector* gc, double value)
+SHARD_API ObjectInstance* Shard_GCFromDouble(GarbageCollector* gc, double value)
 {
     try
     {
         if (gc == nullptr)
         {
-            SetLastError(L"garbage collector is null");
+            SetLastWError(L"garbage collector is null");
             return nullptr;
         }
 
@@ -644,13 +640,13 @@ SHARD_EXPORT ObjectInstance* Shard_GCFromDouble(GarbageCollector* gc, double val
     }
 }
 
-SHARD_EXPORT ObjectInstance* Shard_GCFromBool(GarbageCollector* gc, int value)
+SHARD_API ObjectInstance* Shard_GCFromBool(GarbageCollector* gc, int value)
 {
     try
     {
         if (gc == nullptr)
         {
-            SetLastError(L"garbage collector is null");
+            SetLastWError(L"garbage collector is null");
             return nullptr;
         }
 
@@ -663,13 +659,13 @@ SHARD_EXPORT ObjectInstance* Shard_GCFromBool(GarbageCollector* gc, int value)
     }
 }
 
-SHARD_EXPORT ObjectInstance* Shard_GCFromString(GarbageCollector* gc, const wchar_t* value)
+SHARD_API ObjectInstance* Shard_GCFromString(GarbageCollector* gc, const wchar_t* value)
 {
     try
     {
         if (gc == nullptr || value == nullptr)
         {
-            SetLastError(L"garbage collector or value is null");
+            SetLastWError(L"garbage collector or value is null");
             return nullptr;
         }
 
@@ -682,7 +678,7 @@ SHARD_EXPORT ObjectInstance* Shard_GCFromString(GarbageCollector* gc, const wcha
     }
 }
 
-SHARD_EXPORT int64_t Shard_ReadInteger(ObjectInstance* instance)
+SHARD_API std::int64_t Shard_ReadInteger(ObjectInstance* instance)
 {
     try
     {
@@ -698,7 +694,7 @@ SHARD_EXPORT int64_t Shard_ReadInteger(ObjectInstance* instance)
     }
 }
 
-SHARD_EXPORT double Shard_ReadDouble(ObjectInstance* instance)
+SHARD_API double Shard_ReadDouble(ObjectInstance* instance)
 {
     try
     {
@@ -714,7 +710,7 @@ SHARD_EXPORT double Shard_ReadDouble(ObjectInstance* instance)
     }
 }
 
-SHARD_EXPORT int Shard_ReadBool(ObjectInstance* instance)
+SHARD_API int Shard_ReadBool(ObjectInstance* instance)
 {
     try
     {
@@ -730,7 +726,7 @@ SHARD_EXPORT int Shard_ReadBool(ObjectInstance* instance)
     }
 }
 
-SHARD_EXPORT const wchar_t* Shard_ReadString(ObjectInstance* instance)
+SHARD_API const wchar_t* Shard_ReadString(ObjectInstance* instance)
 {
     try
     {
@@ -750,7 +746,7 @@ SHARD_EXPORT const wchar_t* Shard_ReadString(ObjectInstance* instance)
 // Symbol Inspection API
 // =========================================================================
 
-SHARD_EXPORT int Shard_GetCompilationUnitCount(CompilationContext* ctx)
+SHARD_API int Shard_GetCompilationUnitCount(CompilationContext* ctx)
 {
     try
     {
@@ -766,7 +762,7 @@ SHARD_EXPORT int Shard_GetCompilationUnitCount(CompilationContext* ctx)
     }
 }
 
-SHARD_EXPORT CompilationUnitSyntax* Shard_GetCompilationUnit(CompilationContext* ctx, int index)
+SHARD_API CompilationUnitSyntax* Shard_GetCompilationUnit(CompilationContext* ctx, int index)
 {
     try
     {
@@ -786,7 +782,7 @@ SHARD_EXPORT CompilationUnitSyntax* Shard_GetCompilationUnit(CompilationContext*
     }
 }
 
-SHARD_EXPORT int Shard_GetCompilationUnitOrigin(CompilationUnitSyntax* unit)
+SHARD_API int Shard_GetCompilationUnitOrigin(CompilationUnitSyntax* unit)
 {
     try
     {
@@ -802,7 +798,7 @@ SHARD_EXPORT int Shard_GetCompilationUnitOrigin(CompilationUnitSyntax* unit)
     }
 }
 
-SHARD_EXPORT NamespaceDeclarationSyntax* Shard_GetUnitNamespace(CompilationUnitSyntax* unit)
+SHARD_API NamespaceDeclarationSyntax* Shard_GetUnitNamespace(CompilationUnitSyntax* unit)
 {
     try
     {
@@ -818,7 +814,7 @@ SHARD_EXPORT NamespaceDeclarationSyntax* Shard_GetUnitNamespace(CompilationUnitS
     }
 }
 
-SHARD_EXPORT int Shard_GetNamespaceIdentifierCount(NamespaceDeclarationSyntax* ns)
+SHARD_API int Shard_GetNamespaceIdentifierCount(NamespaceDeclarationSyntax* ns)
 {
     try
     {
@@ -834,7 +830,7 @@ SHARD_EXPORT int Shard_GetNamespaceIdentifierCount(NamespaceDeclarationSyntax* n
     }
 }
 
-SHARD_EXPORT const wchar_t* Shard_GetNamespaceIdentifier(NamespaceDeclarationSyntax* ns, int index)
+SHARD_API const wchar_t* Shard_GetNamespaceIdentifier(NamespaceDeclarationSyntax* ns, int index)
 {
     try
     {
@@ -853,7 +849,7 @@ SHARD_EXPORT const wchar_t* Shard_GetNamespaceIdentifier(NamespaceDeclarationSyn
     }
 }
 
-SHARD_EXPORT int Shard_GetUnitClassCount(CompilationUnitSyntax* unit)
+SHARD_API int Shard_GetUnitClassCount(CompilationUnitSyntax* unit)
 {
     try
     {
@@ -876,7 +872,7 @@ SHARD_EXPORT int Shard_GetUnitClassCount(CompilationUnitSyntax* unit)
     }
 }
 
-SHARD_EXPORT ClassDeclarationSyntax* Shard_GetUnitClass(CompilationUnitSyntax* unit, int index)
+SHARD_API ClassDeclarationSyntax* Shard_GetUnitClass(CompilationUnitSyntax* unit, int index)
 {
     try
     {
@@ -904,7 +900,7 @@ SHARD_EXPORT ClassDeclarationSyntax* Shard_GetUnitClass(CompilationUnitSyntax* u
     }
 }
 
-SHARD_EXPORT const wchar_t* Shard_GetTypeName(TypeDeclarationSyntax* type)
+SHARD_API const wchar_t* Shard_GetTypeName(TypeDeclarationSyntax* type)
 {
     try
     {
@@ -920,7 +916,7 @@ SHARD_EXPORT const wchar_t* Shard_GetTypeName(TypeDeclarationSyntax* type)
     }
 }
 
-SHARD_EXPORT int Shard_GetTypeMethodCount(CompilationContext* ctx, TypeDeclarationSyntax* type)
+SHARD_API int Shard_GetTypeMethodCount(CompilationContext* ctx, TypeDeclarationSyntax* type)
 {
     try
     {
@@ -941,7 +937,7 @@ SHARD_EXPORT int Shard_GetTypeMethodCount(CompilationContext* ctx, TypeDeclarati
     }
 }
 
-SHARD_EXPORT MethodSymbol* Shard_GetTypeMethod(CompilationContext* ctx, TypeDeclarationSyntax* type, int index)
+SHARD_API MethodSymbol* Shard_GetTypeMethod(CompilationContext* ctx, TypeDeclarationSyntax* type, int index)
 {
     try
     {
@@ -965,7 +961,7 @@ SHARD_EXPORT MethodSymbol* Shard_GetTypeMethod(CompilationContext* ctx, TypeDecl
     }
 }
 
-SHARD_EXPORT int Shard_GetSymbolTableTypeCount(CompilationContext* ctx)
+SHARD_API int Shard_GetSymbolTableTypeCount(CompilationContext* ctx)
 {
     try
     {
@@ -981,7 +977,7 @@ SHARD_EXPORT int Shard_GetSymbolTableTypeCount(CompilationContext* ctx)
     }
 }
 
-SHARD_EXPORT TypeSymbol* Shard_GetSymbolTableType(CompilationContext* ctx, int index)
+SHARD_API TypeSymbol* Shard_GetSymbolTableType(CompilationContext* ctx, int index)
 {
     try
     {
@@ -1001,7 +997,7 @@ SHARD_EXPORT TypeSymbol* Shard_GetSymbolTableType(CompilationContext* ctx, int i
     }
 }
 
-SHARD_EXPORT TypeSymbol* Shard_FindType(CompilationContext* ctx, const wchar_t* name)
+SHARD_API TypeSymbol* Shard_FindType(CompilationContext* ctx, const wchar_t* name)
 {
     try
     {
@@ -1024,7 +1020,7 @@ SHARD_EXPORT TypeSymbol* Shard_FindType(CompilationContext* ctx, const wchar_t* 
     }
 }
 
-SHARD_EXPORT MethodSymbol* Shard_FindMethodInType(TypeSymbol* type, const wchar_t* name, int parameterCount)
+SHARD_API MethodSymbol* Shard_FindMethodInType(TypeSymbol* type, const wchar_t* name, int parameterCount)
 {
     try
     {
@@ -1049,7 +1045,7 @@ SHARD_EXPORT MethodSymbol* Shard_FindMethodInType(TypeSymbol* type, const wchar_
     }
 }
 
-SHARD_EXPORT const wchar_t* Shard_GetSymbolName(SyntaxSymbol* symbol)
+SHARD_API const wchar_t* Shard_GetSymbolName(SyntaxSymbol* symbol)
 {
     try
     {
@@ -1065,7 +1061,7 @@ SHARD_EXPORT const wchar_t* Shard_GetSymbolName(SyntaxSymbol* symbol)
     }
 }
 
-SHARD_EXPORT const wchar_t* Shard_GetMethodName(MethodSymbol* method)
+SHARD_API const wchar_t* Shard_GetMethodName(MethodSymbol* method)
 {
     try
     {
@@ -1081,7 +1077,7 @@ SHARD_EXPORT const wchar_t* Shard_GetMethodName(MethodSymbol* method)
     }
 }
 
-SHARD_EXPORT int Shard_GetMethodParameterCount(MethodSymbol* method)
+SHARD_API int Shard_GetMethodParameterCount(MethodSymbol* method)
 {
     try
     {
@@ -1097,7 +1093,7 @@ SHARD_EXPORT int Shard_GetMethodParameterCount(MethodSymbol* method)
     }
 }
 
-SHARD_EXPORT const wchar_t* Shard_GetMethodParameterName(MethodSymbol* method, int index)
+SHARD_API const wchar_t* Shard_GetMethodParameterName(MethodSymbol* method, int index)
 {
     try
     {
@@ -1116,7 +1112,7 @@ SHARD_EXPORT const wchar_t* Shard_GetMethodParameterName(MethodSymbol* method, i
     }
 }
 
-SHARD_EXPORT TypeSymbol* Shard_GetMethodParameterType(MethodSymbol* method, int index)
+SHARD_API TypeSymbol* Shard_GetMethodParameterType(MethodSymbol* method, int index)
 {
     try
     {
@@ -1135,7 +1131,7 @@ SHARD_EXPORT TypeSymbol* Shard_GetMethodParameterType(MethodSymbol* method, int 
     }
 }
 
-SHARD_EXPORT TypeSymbol* Shard_GetMethodReturnType(MethodSymbol* method)
+SHARD_API TypeSymbol* Shard_GetMethodReturnType(MethodSymbol* method)
 {
     try
     {
@@ -1151,7 +1147,7 @@ SHARD_EXPORT TypeSymbol* Shard_GetMethodReturnType(MethodSymbol* method)
     }
 }
 
-SHARD_EXPORT int Shard_IsMethodStatic(MethodSymbol* method)
+SHARD_API int Shard_IsMethodStatic(MethodSymbol* method)
 {
     try
     {
@@ -1171,7 +1167,7 @@ SHARD_EXPORT int Shard_IsMethodStatic(MethodSymbol* method)
 // Utility API
 // =========================================================================
 
-SHARD_EXPORT const wchar_t* Shard_GetVersion()
+SHARD_API const wchar_t* Shard_GetVersion()
 {
     return L"0.2.0";
 }
@@ -1180,13 +1176,13 @@ SHARD_EXPORT const wchar_t* Shard_GetVersion()
 // Syntax Builder API
 // =========================================================================
 
-SHARD_EXPORT CompilationUnitSyntax* Shard_CreateCompilationUnit(CompilationContext* ctx)
+SHARD_API CompilationUnitSyntax* Shard_CreateCompilationUnit(CompilationContext* ctx)
 {
     try
     {
         if (ctx == nullptr)
         {
-            SetLastError(L"compilation context is null");
+            SetLastWError(L"compilation context is null");
             return nullptr;
         }
 
@@ -1199,13 +1195,13 @@ SHARD_EXPORT CompilationUnitSyntax* Shard_CreateCompilationUnit(CompilationConte
     }
 }
 
-SHARD_EXPORT int Shard_AddCompilationUnit(CompilationContext* ctx, CompilationUnitSyntax* unit)
+SHARD_API int Shard_AddCompilationUnit(CompilationContext* ctx, CompilationUnitSyntax* unit)
 {
     try
     {
         if (ctx == nullptr || unit == nullptr)
         {
-            SetLastError(L"invalid argument");
+            SetLastWError(L"invalid argument");
             return -1;
         }
 
@@ -1220,13 +1216,13 @@ SHARD_EXPORT int Shard_AddCompilationUnit(CompilationContext* ctx, CompilationUn
     }
 }
 
-SHARD_EXPORT int Shard_MarkForReAnalyze(CompilationContext* ctx)
+SHARD_API int Shard_MarkForReAnalyze(CompilationContext* ctx)
 {
     try
     {
         if (ctx == nullptr)
         {
-            SetLastError(L"compilation context is null");
+            SetLastWError(L"compilation context is null");
             return -1;
         }
 
@@ -1240,13 +1236,13 @@ SHARD_EXPORT int Shard_MarkForReAnalyze(CompilationContext* ctx)
     }
 }
 
-SHARD_EXPORT int Shard_SetCompilationUnitOrigin(CompilationUnitSyntax* unit, CompilationUnitOrigin origin)
+SHARD_API int Shard_SetCompilationUnitOrigin(CompilationUnitSyntax* unit, CompilationUnitOrigin origin)
 {
     try
     {
         if (unit == nullptr)
         {
-            SetLastError(L"compilation unit is null");
+            SetLastWError(L"compilation unit is null");
             return -1;
         }
 
@@ -1260,13 +1256,13 @@ SHARD_EXPORT int Shard_SetCompilationUnitOrigin(CompilationUnitSyntax* unit, Com
     }
 }
 
-SHARD_EXPORT int Shard_SetCompilationUnitNamespace(CompilationUnitSyntax* unit, NamespaceDeclarationSyntax* ns)
+SHARD_API int Shard_SetCompilationUnitNamespace(CompilationUnitSyntax* unit, NamespaceDeclarationSyntax* ns)
 {
     try
     {
         if (unit == nullptr)
         {
-            SetLastError(L"compilation unit is null");
+            SetLastWError(L"compilation unit is null");
             return -1;
         }
 
@@ -1280,13 +1276,13 @@ SHARD_EXPORT int Shard_SetCompilationUnitNamespace(CompilationUnitSyntax* unit, 
     }
 }
 
-SHARD_EXPORT int Shard_AddCompilationUnitMember(CompilationUnitSyntax* unit, MemberDeclarationSyntax* member)
+SHARD_API int Shard_AddCompilationUnitMember(CompilationUnitSyntax* unit, MemberDeclarationSyntax* member)
 {
     try
     {
         if (unit == nullptr || member == nullptr)
         {
-            SetLastError(L"invalid argument");
+            SetLastWError(L"invalid argument");
             return -1;
         }
 
@@ -1300,7 +1296,7 @@ SHARD_EXPORT int Shard_AddCompilationUnitMember(CompilationUnitSyntax* unit, Mem
     }
 }
 
-SHARD_EXPORT NamespaceDeclarationSyntax* Shard_CreateNamespaceDeclaration(SyntaxNode* parent)
+SHARD_API NamespaceDeclarationSyntax* Shard_CreateNamespaceDeclaration(SyntaxNode* parent)
 {
     try
     {
@@ -1315,13 +1311,13 @@ SHARD_EXPORT NamespaceDeclarationSyntax* Shard_CreateNamespaceDeclaration(Syntax
     }
 }
 
-SHARD_EXPORT int Shard_AddNamespaceIdentifier(NamespaceDeclarationSyntax* ns, const wchar_t* name)
+SHARD_API int Shard_AddNamespaceIdentifier(NamespaceDeclarationSyntax* ns, const wchar_t* name)
 {
     try
     {
         if (ns == nullptr || name == nullptr)
         {
-            SetLastError(L"invalid argument");
+            SetLastWError(L"invalid argument");
             return -1;
         }
 
@@ -1335,13 +1331,13 @@ SHARD_EXPORT int Shard_AddNamespaceIdentifier(NamespaceDeclarationSyntax* ns, co
     }
 }
 
-SHARD_EXPORT int Shard_AddMemberModifier(MemberDeclarationSyntax* member, int modifierTokenType)
+SHARD_API int Shard_AddMemberModifier(MemberDeclarationSyntax* member, int modifierTokenType)
 {
     try
     {
         if (member == nullptr)
         {
-            SetLastError(L"member is null");
+            SetLastWError(L"member is null");
             return -1;
         }
 
@@ -1355,13 +1351,13 @@ SHARD_EXPORT int Shard_AddMemberModifier(MemberDeclarationSyntax* member, int mo
     }
 }
 
-SHARD_EXPORT ClassDeclarationSyntax* Shard_CreateClassDeclaration(SyntaxNode* parent, const wchar_t* name)
+SHARD_API ClassDeclarationSyntax* Shard_CreateClassDeclaration(SyntaxNode* parent, const wchar_t* name)
 {
     try
     {
         if (name == nullptr)
         {
-            SetLastError(L"name is null");
+            SetLastWError(L"name is null");
             return nullptr;
         }
 
@@ -1378,13 +1374,13 @@ SHARD_EXPORT ClassDeclarationSyntax* Shard_CreateClassDeclaration(SyntaxNode* pa
     }
 }
 
-SHARD_EXPORT StructDeclarationSyntax* Shard_CreateStructDeclaration(SyntaxNode* parent, const wchar_t* name)
+SHARD_API StructDeclarationSyntax* Shard_CreateStructDeclaration(SyntaxNode* parent, const wchar_t* name)
 {
     try
     {
         if (name == nullptr)
         {
-            SetLastError(L"name is null");
+            SetLastWError(L"name is null");
             return nullptr;
         }
 
@@ -1401,13 +1397,13 @@ SHARD_EXPORT StructDeclarationSyntax* Shard_CreateStructDeclaration(SyntaxNode* 
     }
 }
 
-SHARD_EXPORT int Shard_AddTypeMember(TypeDeclarationSyntax* type, MemberDeclarationSyntax* member)
+SHARD_API int Shard_AddTypeMember(TypeDeclarationSyntax* type, MemberDeclarationSyntax* member)
 {
     try
     {
         if (type == nullptr || member == nullptr)
         {
-            SetLastError(L"invalid argument");
+            SetLastWError(L"invalid argument");
             return -1;
         }
 
@@ -1421,13 +1417,13 @@ SHARD_EXPORT int Shard_AddTypeMember(TypeDeclarationSyntax* type, MemberDeclarat
     }
 }
 
-SHARD_EXPORT FieldDeclarationSyntax* Shard_CreateFieldDeclaration(SyntaxNode* parent, const wchar_t* name, TypeSyntax* type)
+SHARD_API FieldDeclarationSyntax* Shard_CreateFieldDeclaration(SyntaxNode* parent, const wchar_t* name, TypeSyntax* type)
 {
     try
     {
         if (name == nullptr)
         {
-            SetLastError(L"name is null");
+            SetLastWError(L"name is null");
             return nullptr;
         }
 
@@ -1445,13 +1441,13 @@ SHARD_EXPORT FieldDeclarationSyntax* Shard_CreateFieldDeclaration(SyntaxNode* pa
     }
 }
 
-SHARD_EXPORT int Shard_SetFieldInitializer(FieldDeclarationSyntax* field, ExpressionSyntax* expression)
+SHARD_API int Shard_SetFieldInitializer(FieldDeclarationSyntax* field, ExpressionSyntax* expression)
 {
     try
     {
         if (field == nullptr)
         {
-            SetLastError(L"field is null");
+            SetLastWError(L"field is null");
             return -1;
         }
 
@@ -1468,13 +1464,13 @@ SHARD_EXPORT int Shard_SetFieldInitializer(FieldDeclarationSyntax* field, Expres
     }
 }
 
-SHARD_EXPORT MethodDeclarationSyntax* Shard_CreateMethodDeclaration(SyntaxNode* parent, const wchar_t* name, TypeSyntax* returnType)
+SHARD_API MethodDeclarationSyntax* Shard_CreateMethodDeclaration(SyntaxNode* parent, const wchar_t* name, TypeSyntax* returnType)
 {
     try
     {
         if (name == nullptr)
         {
-            SetLastError(L"name is null");
+            SetLastWError(L"name is null");
             return nullptr;
         }
 
@@ -1492,13 +1488,13 @@ SHARD_EXPORT MethodDeclarationSyntax* Shard_CreateMethodDeclaration(SyntaxNode* 
     }
 }
 
-SHARD_EXPORT ConstructorDeclarationSyntax* Shard_CreateConstructorDeclaration(SyntaxNode* parent, const wchar_t* name)
+SHARD_API ConstructorDeclarationSyntax* Shard_CreateConstructorDeclaration(SyntaxNode* parent, const wchar_t* name)
 {
     try
     {
         if (name == nullptr)
         {
-            SetLastError(L"name is null");
+            SetLastWError(L"name is null");
             return nullptr;
         }
 
@@ -1516,13 +1512,13 @@ SHARD_EXPORT ConstructorDeclarationSyntax* Shard_CreateConstructorDeclaration(Sy
     }
 }
 
-SHARD_EXPORT int Shard_SetMethodReturnType(MethodDeclarationSyntax* method, TypeSyntax* returnType)
+SHARD_API int Shard_SetMethodReturnType(MethodDeclarationSyntax* method, TypeSyntax* returnType)
 {
     try
     {
         if (method == nullptr)
         {
-            SetLastError(L"method is null");
+            SetLastWError(L"method is null");
             return -1;
         }
 
@@ -1536,13 +1532,13 @@ SHARD_EXPORT int Shard_SetMethodReturnType(MethodDeclarationSyntax* method, Type
     }
 }
 
-SHARD_EXPORT int Shard_SetMethodParametersList(MethodDeclarationSyntax* method, ParametersListSyntax* parameters)
+SHARD_API int Shard_SetMethodParametersList(MethodDeclarationSyntax* method, ParametersListSyntax* parameters)
 {
     try
     {
         if (method == nullptr)
         {
-            SetLastError(L"method is null");
+            SetLastWError(L"method is null");
             return -1;
         }
 
@@ -1556,13 +1552,13 @@ SHARD_EXPORT int Shard_SetMethodParametersList(MethodDeclarationSyntax* method, 
     }
 }
 
-SHARD_EXPORT int Shard_SetMethodBody(MethodDeclarationSyntax* method, StatementsBlockSyntax* body)
+SHARD_API int Shard_SetMethodBody(MethodDeclarationSyntax* method, StatementsBlockSyntax* body)
 {
     try
     {
         if (method == nullptr)
         {
-            SetLastError(L"method is null");
+            SetLastWError(L"method is null");
             return -1;
         }
 
@@ -1576,13 +1572,13 @@ SHARD_EXPORT int Shard_SetMethodBody(MethodDeclarationSyntax* method, Statements
     }
 }
 
-SHARD_EXPORT int Shard_SetConstructorParametersList(ConstructorDeclarationSyntax* ctor, ParametersListSyntax* parameters)
+SHARD_API int Shard_SetConstructorParametersList(ConstructorDeclarationSyntax* ctor, ParametersListSyntax* parameters)
 {
     try
     {
         if (ctor == nullptr)
         {
-            SetLastError(L"constructor is null");
+            SetLastWError(L"constructor is null");
             return -1;
         }
 
@@ -1596,13 +1592,13 @@ SHARD_EXPORT int Shard_SetConstructorParametersList(ConstructorDeclarationSyntax
     }
 }
 
-SHARD_EXPORT int Shard_SetConstructorBody(ConstructorDeclarationSyntax* ctor, StatementsBlockSyntax* body)
+SHARD_API int Shard_SetConstructorBody(ConstructorDeclarationSyntax* ctor, StatementsBlockSyntax* body)
 {
     try
     {
         if (ctor == nullptr)
         {
-            SetLastError(L"constructor is null");
+            SetLastWError(L"constructor is null");
             return -1;
         }
 
@@ -1616,7 +1612,7 @@ SHARD_EXPORT int Shard_SetConstructorBody(ConstructorDeclarationSyntax* ctor, St
     }
 }
 
-SHARD_EXPORT ParametersListSyntax* Shard_CreateParametersList(SyntaxNode* parent)
+SHARD_API ParametersListSyntax* Shard_CreateParametersList(SyntaxNode* parent)
 {
     try
     {
@@ -1629,13 +1625,13 @@ SHARD_EXPORT ParametersListSyntax* Shard_CreateParametersList(SyntaxNode* parent
     }
 }
 
-SHARD_EXPORT int Shard_AddParameter(ParametersListSyntax* list, const wchar_t* name, TypeSyntax* type)
+SHARD_API int Shard_AddParameter(ParametersListSyntax* list, const wchar_t* name, TypeSyntax* type)
 {
     try
     {
         if (list == nullptr || name == nullptr)
         {
-            SetLastError(L"invalid argument");
+            SetLastWError(L"invalid argument");
             return -1;
         }
 
@@ -1650,7 +1646,7 @@ SHARD_EXPORT int Shard_AddParameter(ParametersListSyntax* list, const wchar_t* n
     }
 }
 
-SHARD_EXPORT StatementsBlockSyntax* Shard_CreateStatementsBlock(SyntaxNode* parent)
+SHARD_API StatementsBlockSyntax* Shard_CreateStatementsBlock(SyntaxNode* parent)
 {
     try
     {
@@ -1663,13 +1659,13 @@ SHARD_EXPORT StatementsBlockSyntax* Shard_CreateStatementsBlock(SyntaxNode* pare
     }
 }
 
-SHARD_EXPORT int Shard_AddStatement(StatementsBlockSyntax* block, StatementSyntax* statement)
+SHARD_API int Shard_AddStatement(StatementsBlockSyntax* block, StatementSyntax* statement)
 {
     try
     {
         if (block == nullptr || statement == nullptr)
         {
-            SetLastError(L"invalid argument");
+            SetLastWError(L"invalid argument");
             return -1;
         }
 
@@ -1683,7 +1679,7 @@ SHARD_EXPORT int Shard_AddStatement(StatementsBlockSyntax* block, StatementSynta
     }
 }
 
-SHARD_EXPORT PredefinedTypeSyntax* Shard_CreatePredefinedType(SyntaxNode* parent, int tokenType)
+SHARD_API PredefinedTypeSyntax* Shard_CreatePredefinedType(SyntaxNode* parent, int tokenType)
 {
     try
     {
@@ -1696,13 +1692,13 @@ SHARD_EXPORT PredefinedTypeSyntax* Shard_CreatePredefinedType(SyntaxNode* parent
     }
 }
 
-SHARD_EXPORT IdentifierNameTypeSyntax* Shard_CreateIdentifierNameType(SyntaxNode* parent, const wchar_t* name)
+SHARD_API IdentifierNameTypeSyntax* Shard_CreateIdentifierNameType(SyntaxNode* parent, const wchar_t* name)
 {
     try
     {
         if (name == nullptr)
         {
-            SetLastError(L"name is null");
+            SetLastWError(L"name is null");
             return nullptr;
         }
 
@@ -1717,7 +1713,7 @@ SHARD_EXPORT IdentifierNameTypeSyntax* Shard_CreateIdentifierNameType(SyntaxNode
     }
 }
 
-SHARD_EXPORT ArrayTypeSyntax* Shard_CreateArrayType(SyntaxNode* parent, TypeSyntax* elementType, int rank)
+SHARD_API ArrayTypeSyntax* Shard_CreateArrayType(SyntaxNode* parent, TypeSyntax* elementType, int rank)
 {
     try
     {
@@ -1732,7 +1728,7 @@ SHARD_EXPORT ArrayTypeSyntax* Shard_CreateArrayType(SyntaxNode* parent, TypeSynt
     }
 }
 
-SHARD_EXPORT NullableTypeSyntax* Shard_CreateNullableType(SyntaxNode* parent, TypeSyntax* underlayingType)
+SHARD_API NullableTypeSyntax* Shard_CreateNullableType(SyntaxNode* parent, TypeSyntax* underlayingType)
 {
     try
     {
@@ -1747,7 +1743,7 @@ SHARD_EXPORT NullableTypeSyntax* Shard_CreateNullableType(SyntaxNode* parent, Ty
     }
 }
 
-SHARD_EXPORT GenericTypeSyntax* Shard_CreateGenericType(SyntaxNode* parent, TypeSyntax* underlayingType)
+SHARD_API GenericTypeSyntax* Shard_CreateGenericType(SyntaxNode* parent, TypeSyntax* underlayingType)
 {
     try
     {
@@ -1761,7 +1757,7 @@ SHARD_EXPORT GenericTypeSyntax* Shard_CreateGenericType(SyntaxNode* parent, Type
     }
 }
 
-SHARD_EXPORT TypeArgumentsListSyntax* Shard_CreateTypeArgumentsList(SyntaxNode* parent)
+SHARD_API TypeArgumentsListSyntax* Shard_CreateTypeArgumentsList(SyntaxNode* parent)
 {
     try
     {
@@ -1774,13 +1770,13 @@ SHARD_EXPORT TypeArgumentsListSyntax* Shard_CreateTypeArgumentsList(SyntaxNode* 
     }
 }
 
-SHARD_EXPORT int Shard_AddTypeArgument(TypeArgumentsListSyntax* list, TypeSyntax* type)
+SHARD_API int Shard_AddTypeArgument(TypeArgumentsListSyntax* list, TypeSyntax* type)
 {
     try
     {
         if (list == nullptr || type == nullptr)
         {
-            SetLastError(L"invalid argument");
+            SetLastWError(L"invalid argument");
             return -1;
         }
 
@@ -1794,13 +1790,13 @@ SHARD_EXPORT int Shard_AddTypeArgument(TypeArgumentsListSyntax* list, TypeSyntax
     }
 }
 
-SHARD_EXPORT int Shard_SetGenericTypeArguments(GenericTypeSyntax* generic, TypeArgumentsListSyntax* arguments)
+SHARD_API int Shard_SetGenericTypeArguments(GenericTypeSyntax* generic, TypeArgumentsListSyntax* arguments)
 {
     try
     {
         if (generic == nullptr)
         {
-            SetLastError(L"generic type is null");
+            SetLastWError(L"generic type is null");
             return -1;
         }
 
@@ -1814,13 +1810,13 @@ SHARD_EXPORT int Shard_SetGenericTypeArguments(GenericTypeSyntax* generic, TypeA
     }
 }
 
-SHARD_EXPORT VariableStatementSyntax* Shard_CreateVariableStatement(SyntaxNode* parent, const wchar_t* name, TypeSyntax* type, ExpressionSyntax* initializer)
+SHARD_API VariableStatementSyntax* Shard_CreateVariableStatement(SyntaxNode* parent, const wchar_t* name, TypeSyntax* type, ExpressionSyntax* initializer)
 {
     try
     {
         if (name == nullptr)
         {
-            SetLastError(L"name is null");
+            SetLastWError(L"name is null");
             return nullptr;
         }
 
@@ -1840,13 +1836,13 @@ SHARD_EXPORT VariableStatementSyntax* Shard_CreateVariableStatement(SyntaxNode* 
     }
 }
 
-SHARD_EXPORT ExpressionStatementSyntax* Shard_CreateExpressionStatement(SyntaxNode* parent, ExpressionSyntax* expression)
+SHARD_API ExpressionStatementSyntax* Shard_CreateExpressionStatement(SyntaxNode* parent, ExpressionSyntax* expression)
 {
     try
     {
         if (expression == nullptr)
         {
-            SetLastError(L"expression is null");
+            SetLastWError(L"expression is null");
             return nullptr;
         }
 
@@ -1859,7 +1855,7 @@ SHARD_EXPORT ExpressionStatementSyntax* Shard_CreateExpressionStatement(SyntaxNo
     }
 }
 
-SHARD_EXPORT ReturnStatementSyntax* Shard_CreateReturnStatement(SyntaxNode* parent, ExpressionSyntax* expression)
+SHARD_API ReturnStatementSyntax* Shard_CreateReturnStatement(SyntaxNode* parent, ExpressionSyntax* expression)
 {
     try
     {
@@ -1875,13 +1871,13 @@ SHARD_EXPORT ReturnStatementSyntax* Shard_CreateReturnStatement(SyntaxNode* pare
     }
 }
 
-SHARD_EXPORT ForEachStatementSyntax* Shard_CreateForEachStatement(SyntaxNode* parent, const wchar_t* variableName, ExpressionSyntax* range, StatementsBlockSyntax* body)
+SHARD_API ForEachStatementSyntax* Shard_CreateForEachStatement(SyntaxNode* parent, const wchar_t* variableName, ExpressionSyntax* range, StatementsBlockSyntax* body)
 {
     try
     {
         if (variableName == nullptr)
         {
-            SetLastError(L"variable name is null");
+            SetLastWError(L"variable name is null");
             return nullptr;
         }
 
@@ -1900,7 +1896,7 @@ SHARD_EXPORT ForEachStatementSyntax* Shard_CreateForEachStatement(SyntaxNode* pa
     }
 }
 
-SHARD_EXPORT WhileStatementSyntax* Shard_CreateWhileStatement(SyntaxNode* parent, ExpressionSyntax* condition, StatementsBlockSyntax* body)
+SHARD_API WhileStatementSyntax* Shard_CreateWhileStatement(SyntaxNode* parent, ExpressionSyntax* condition, StatementsBlockSyntax* body)
 {
     try
     {
@@ -1917,13 +1913,13 @@ SHARD_EXPORT WhileStatementSyntax* Shard_CreateWhileStatement(SyntaxNode* parent
     }
 }
 
-SHARD_EXPORT LiteralExpressionSyntax* Shard_CreateLiteralExpression(SyntaxNode* parent, int tokenType, const wchar_t* value)
+SHARD_API LiteralExpressionSyntax* Shard_CreateLiteralExpression(SyntaxNode* parent, int tokenType, const wchar_t* value)
 {
     try
     {
         if (value == nullptr)
         {
-            SetLastError(L"value is null");
+            SetLastWError(L"value is null");
             return nullptr;
         }
 
@@ -1936,13 +1932,13 @@ SHARD_EXPORT LiteralExpressionSyntax* Shard_CreateLiteralExpression(SyntaxNode* 
     }
 }
 
-SHARD_EXPORT MemberAccessExpressionSyntax* Shard_CreateIdentifierExpression(SyntaxNode* parent, const wchar_t* name)
+SHARD_API MemberAccessExpressionSyntax* Shard_CreateIdentifierExpression(SyntaxNode* parent, const wchar_t* name)
 {
     try
     {
         if (name == nullptr)
         {
-            SetLastError(L"name is null");
+            SetLastWError(L"name is null");
             return nullptr;
         }
 
@@ -1955,13 +1951,13 @@ SHARD_EXPORT MemberAccessExpressionSyntax* Shard_CreateIdentifierExpression(Synt
     }
 }
 
-SHARD_EXPORT MemberAccessExpressionSyntax* Shard_CreateMemberAccessExpression(SyntaxNode* parent, ExpressionSyntax* previous, const wchar_t* memberName)
+SHARD_API MemberAccessExpressionSyntax* Shard_CreateMemberAccessExpression(SyntaxNode* parent, ExpressionSyntax* previous, const wchar_t* memberName)
 {
     try
     {
         if (memberName == nullptr)
         {
-            SetLastError(L"member name is null");
+            SetLastWError(L"member name is null");
             return nullptr;
         }
 
@@ -1976,7 +1972,7 @@ SHARD_EXPORT MemberAccessExpressionSyntax* Shard_CreateMemberAccessExpression(Sy
     }
 }
 
-SHARD_EXPORT BinaryExpressionSyntax* Shard_CreateBinaryExpression(SyntaxNode* parent, ExpressionSyntax* left, ExpressionSyntax* right, int operatorTokenType)
+SHARD_API BinaryExpressionSyntax* Shard_CreateBinaryExpression(SyntaxNode* parent, ExpressionSyntax* left, ExpressionSyntax* right, int operatorTokenType)
 {
     try
     {
@@ -1992,7 +1988,7 @@ SHARD_EXPORT BinaryExpressionSyntax* Shard_CreateBinaryExpression(SyntaxNode* pa
     }
 }
 
-SHARD_EXPORT UnaryExpressionSyntax* Shard_CreateUnaryExpression(SyntaxNode* parent, ExpressionSyntax* operand, int operatorTokenType, int isPostfix)
+SHARD_API UnaryExpressionSyntax* Shard_CreateUnaryExpression(SyntaxNode* parent, ExpressionSyntax* operand, int operatorTokenType, int isPostfix)
 {
     try
     {
@@ -2007,7 +2003,7 @@ SHARD_EXPORT UnaryExpressionSyntax* Shard_CreateUnaryExpression(SyntaxNode* pare
     }
 }
 
-SHARD_EXPORT InvokationExpressionSyntax* Shard_CreateInvocationExpression(SyntaxNode* parent, ExpressionSyntax* target, const wchar_t* methodName)
+SHARD_API InvokationExpressionSyntax* Shard_CreateInvocationExpression(SyntaxNode* parent, ExpressionSyntax* target, const wchar_t* methodName)
 {
     try
     {
@@ -2026,13 +2022,13 @@ SHARD_EXPORT InvokationExpressionSyntax* Shard_CreateInvocationExpression(Syntax
     }
 }
 
-SHARD_EXPORT int Shard_SetInvocationArgumentsList(InvokationExpressionSyntax* invocation, ArgumentsListSyntax* arguments)
+SHARD_API int Shard_SetInvocationArgumentsList(InvokationExpressionSyntax* invocation, ArgumentsListSyntax* arguments)
 {
     try
     {
         if (invocation == nullptr)
         {
-            SetLastError(L"invocation is null");
+            SetLastWError(L"invocation is null");
             return -1;
         }
 
@@ -2046,7 +2042,7 @@ SHARD_EXPORT int Shard_SetInvocationArgumentsList(InvokationExpressionSyntax* in
     }
 }
 
-SHARD_EXPORT ObjectExpressionSyntax* Shard_CreateObjectExpression(SyntaxNode* parent, TypeSyntax* type)
+SHARD_API ObjectExpressionSyntax* Shard_CreateObjectExpression(SyntaxNode* parent, TypeSyntax* type)
 {
     try
     {
@@ -2062,13 +2058,13 @@ SHARD_EXPORT ObjectExpressionSyntax* Shard_CreateObjectExpression(SyntaxNode* pa
     }
 }
 
-SHARD_EXPORT int Shard_SetObjectArgumentsList(ObjectExpressionSyntax* objectExpr, ArgumentsListSyntax* arguments)
+SHARD_API int Shard_SetObjectArgumentsList(ObjectExpressionSyntax* objectExpr, ArgumentsListSyntax* arguments)
 {
     try
     {
         if (objectExpr == nullptr)
         {
-            SetLastError(L"object expression is null");
+            SetLastWError(L"object expression is null");
             return -1;
         }
 
@@ -2082,7 +2078,7 @@ SHARD_EXPORT int Shard_SetObjectArgumentsList(ObjectExpressionSyntax* objectExpr
     }
 }
 
-SHARD_EXPORT RangeExpressionSyntax* Shard_CreateRangeExpression(SyntaxNode* parent, ExpressionSyntax* left, ExpressionSyntax* right, int isInclusive)
+SHARD_API RangeExpressionSyntax* Shard_CreateRangeExpression(SyntaxNode* parent, ExpressionSyntax* left, ExpressionSyntax* right, int isInclusive)
 {
     try
     {
@@ -2100,7 +2096,7 @@ SHARD_EXPORT RangeExpressionSyntax* Shard_CreateRangeExpression(SyntaxNode* pare
     }
 }
 
-SHARD_EXPORT CollectionExpressionSyntax* Shard_CreateCollectionExpression(SyntaxNode* parent)
+SHARD_API CollectionExpressionSyntax* Shard_CreateCollectionExpression(SyntaxNode* parent)
 {
     try
     {
@@ -2113,13 +2109,13 @@ SHARD_EXPORT CollectionExpressionSyntax* Shard_CreateCollectionExpression(Syntax
     }
 }
 
-SHARD_EXPORT int Shard_AddCollectionElement(CollectionExpressionSyntax* collection, ExpressionSyntax* element)
+SHARD_API int Shard_AddCollectionElement(CollectionExpressionSyntax* collection, ExpressionSyntax* element)
 {
     try
     {
         if (collection == nullptr || element == nullptr)
         {
-            SetLastError(L"invalid argument");
+            SetLastWError(L"invalid argument");
             return -1;
         }
 
@@ -2133,7 +2129,7 @@ SHARD_EXPORT int Shard_AddCollectionElement(CollectionExpressionSyntax* collecti
     }
 }
 
-SHARD_EXPORT ArgumentsListSyntax* Shard_CreateArgumentsList(SyntaxNode* parent)
+SHARD_API ArgumentsListSyntax* Shard_CreateArgumentsList(SyntaxNode* parent)
 {
     try
     {
@@ -2146,13 +2142,13 @@ SHARD_EXPORT ArgumentsListSyntax* Shard_CreateArgumentsList(SyntaxNode* parent)
     }
 }
 
-SHARD_EXPORT int Shard_AddArgument(ArgumentsListSyntax* list, ExpressionSyntax* expression)
+SHARD_API int Shard_AddArgument(ArgumentsListSyntax* list, ExpressionSyntax* expression)
 {
     try
     {
         if (list == nullptr || expression == nullptr)
         {
-            SetLastError(L"invalid argument");
+            SetLastWError(L"invalid argument");
             return -1;
         }
 
@@ -2175,20 +2171,20 @@ static ObjectInstance* ShardManagedMethodAdapter(const CallState& context)
     MethodSymbol* method = context.Method;
     if (method == nullptr || method->ManagedCallback == nullptr)
     {
-        SetLastError(L"managed method callback not set");
+        SetLastWError(L"managed method callback not set");
         throw std::runtime_error("managed method callback not set");
     }
 
     return method->ManagedCallback(method, context.Args.data(), context.Args.size(), method->ManagedCallbackUserData, &context.Collector);
 }
 
-SHARD_EXPORT SymbolTable* Shard_GetSymbolTable(CompilationContext* ctx)
+SHARD_API SymbolTable* Shard_GetSymbolTable(CompilationContext* ctx)
 {
     try
     {
         if (ctx == nullptr)
         {
-            SetLastError(L"compilation context is null");
+            SetLastWError(L"compilation context is null");
             return nullptr;
         }
 
@@ -2201,13 +2197,13 @@ SHARD_EXPORT SymbolTable* Shard_GetSymbolTable(CompilationContext* ctx)
     }
 }
 
-SHARD_EXPORT TypeSymbol* Shard_GetPrimitiveType(CompilationContext* ctx, int primitiveKind)
+SHARD_API TypeSymbol* Shard_GetPrimitiveType(CompilationContext* ctx, int primitiveKind)
 {
     try
     {
         if (ctx == nullptr)
         {
-            SetLastError(L"compilation context is null");
+            SetLastWError(L"compilation context is null");
             return nullptr;
         }
 
@@ -2223,7 +2219,7 @@ SHARD_EXPORT TypeSymbol* Shard_GetPrimitiveType(CompilationContext* ctx, int pri
             case 7: return SymbolTable::Primitives::String;
             case 8: return SymbolTable::Primitives::Array;
             default:
-                SetLastError(L"invalid primitive type kind");
+                SetLastWError(L"invalid primitive type kind");
                 return nullptr;
         }
     }
@@ -2234,13 +2230,13 @@ SHARD_EXPORT TypeSymbol* Shard_GetPrimitiveType(CompilationContext* ctx, int pri
     }
 }
 
-SHARD_EXPORT NamespaceSymbol* Shard_CreateNamespaceSymbol(CompilationContext* ctx, NamespaceSymbol* parent, const wchar_t* name)
+SHARD_API NamespaceSymbol* Shard_CreateNamespaceSymbol(CompilationContext* ctx, NamespaceSymbol* parent, const wchar_t* name)
 {
     try
     {
         if (ctx == nullptr || name == nullptr)
         {
-            SetLastError(L"invalid argument");
+            SetLastWError(L"invalid argument");
             return nullptr;
         }
 
@@ -2272,13 +2268,13 @@ SHARD_EXPORT NamespaceSymbol* Shard_CreateNamespaceSymbol(CompilationContext* ct
     }
 }
 
-SHARD_EXPORT ClassSymbol* Shard_CreateClassSymbol(CompilationContext* ctx, NamespaceSymbol* parent, const wchar_t* name)
+SHARD_API ClassSymbol* Shard_CreateClassSymbol(CompilationContext* ctx, NamespaceSymbol* parent, const wchar_t* name)
 {
     try
     {
         if (ctx == nullptr || name == nullptr)
         {
-            SetLastError(L"invalid argument");
+            SetLastWError(L"invalid argument");
             return nullptr;
         }
 
@@ -2307,13 +2303,13 @@ SHARD_EXPORT ClassSymbol* Shard_CreateClassSymbol(CompilationContext* ctx, Names
     }
 }
 
-SHARD_EXPORT MethodSymbol* Shard_CreateMethodSymbol(CompilationContext* ctx, TypeSymbol* parentType, const wchar_t* name, TypeSymbol* returnType, int isStatic, int accessibility)
+SHARD_API MethodSymbol* Shard_CreateMethodSymbol(CompilationContext* ctx, TypeSymbol* parentType, const wchar_t* name, TypeSymbol* returnType, int isStatic, int accessibility)
 {
     try
     {
         if (ctx == nullptr || name == nullptr || parentType == nullptr)
         {
-            SetLastError(L"invalid argument");
+            SetLastWError(L"invalid argument");
             return nullptr;
         }
 
@@ -2346,13 +2342,13 @@ SHARD_EXPORT MethodSymbol* Shard_CreateMethodSymbol(CompilationContext* ctx, Typ
     }
 }
 
-SHARD_EXPORT ParameterSymbol* Shard_CreateParameterSymbol(CompilationContext* ctx, const wchar_t* name, TypeSymbol* type)
+SHARD_API ParameterSymbol* Shard_CreateParameterSymbol(CompilationContext* ctx, const wchar_t* name, TypeSymbol* type)
 {
     try
     {
         if (ctx == nullptr || name == nullptr || type == nullptr)
         {
-            SetLastError(L"invalid argument");
+            SetLastWError(L"invalid argument");
             return nullptr;
         }
 
@@ -2368,13 +2364,13 @@ SHARD_EXPORT ParameterSymbol* Shard_CreateParameterSymbol(CompilationContext* ct
     }
 }
 
-SHARD_EXPORT int Shard_AddMethodParameter(MethodSymbol* method, ParameterSymbol* parameter)
+SHARD_API int Shard_AddMethodParameter(MethodSymbol* method, ParameterSymbol* parameter)
 {
     try
     {
         if (method == nullptr || parameter == nullptr)
         {
-            SetLastError(L"invalid argument");
+            SetLastWError(L"invalid argument");
             return -1;
         }
 
@@ -2389,13 +2385,13 @@ SHARD_EXPORT int Shard_AddMethodParameter(MethodSymbol* method, ParameterSymbol*
     }
 }
 
-SHARD_EXPORT FieldSymbol* Shard_CreateFieldSymbol(CompilationContext* ctx, TypeSymbol* parentType, const wchar_t* name, TypeSymbol* type, int isStatic)
+SHARD_API FieldSymbol* Shard_CreateFieldSymbol(CompilationContext* ctx, TypeSymbol* parentType, const wchar_t* name, TypeSymbol* type, int isStatic)
 {
     try
     {
         if (ctx == nullptr || name == nullptr || parentType == nullptr || type == nullptr)
         {
-            SetLastError(L"invalid argument");
+            SetLastWError(L"invalid argument");
             return nullptr;
         }
 
@@ -2415,13 +2411,13 @@ SHARD_EXPORT FieldSymbol* Shard_CreateFieldSymbol(CompilationContext* ctx, TypeS
     }
 }
 
-SHARD_EXPORT int Shard_SetMethodManagedCallback(MethodSymbol* method, ShardManagedMethodCallback callback, void* userData)
+SHARD_API int Shard_SetMethodManagedCallback(MethodSymbol* method, ShardManagedMethodCallback callback, void* userData)
 {
     try
     {
         if (method == nullptr || callback == nullptr)
         {
-            SetLastError(L"invalid argument");
+            SetLastWError(L"invalid argument");
             return -1;
         }
 
@@ -2439,13 +2435,13 @@ SHARD_EXPORT int Shard_SetMethodManagedCallback(MethodSymbol* method, ShardManag
     }
 }
 
-SHARD_EXPORT int Shard_SetSymbolAccesibility(SyntaxSymbol* symbol, int accessibility)
+SHARD_API int Shard_SetSymbolAccesibility(SyntaxSymbol* symbol, int accessibility)
 {
     try
     {
         if (symbol == nullptr)
         {
-            SetLastError(L"symbol is null");
+            SetLastWError(L"symbol is null");
             return -1;
         }
 
@@ -2457,6 +2453,7 @@ SHARD_EXPORT int Shard_SetSymbolAccesibility(SyntaxSymbol* symbol, int accessibi
         SetLastErrorFromException(e);
         return -1;
     }
-}
+//}
 
+}
 #endif // !defined(SHARDSCRIPT_STATIC)

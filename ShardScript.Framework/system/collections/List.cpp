@@ -8,7 +8,7 @@ namespace shard
 {
 	extern "C"
 	{
-		__declspec(dllexport) ObjectInstance* shard_list_Ctor(const CallState& context) noexcept(false)
+		SHARDLIB_EXPORT ObjectInstance* shard_list_Ctor(const CallState& context) noexcept(false)
 		{
 			ObjectInstance* listInstance = context.Args[0];
 
@@ -30,7 +30,7 @@ namespace shard
 			return nullptr;
 		}
 
-		__declspec(dllexport) ObjectInstance* shard_list_Add(const CallState& context) noexcept(false)
+		SHARDLIB_EXPORT ObjectInstance* shard_list_Add(const CallState& context) noexcept(false)
 		{
 			ObjectInstance* listInstance = context.Args[0];
 			ObjectInstance* value = context.Args[1];
@@ -66,10 +66,10 @@ namespace shard
 			return nullptr;
 		}
 
-		__declspec(dllexport) ObjectInstance* shard_list_ElementAt(const CallState& context) noexcept(false)
+		SHARDLIB_EXPORT ObjectInstance* shard_list_ElementAt(const CallState& context) noexcept(false)
 		{
 			ObjectInstance* listInstance = context.Args[0];
-			int64_t index = context.Args[1]->AsInteger();
+			std::int64_t index = context.Args[1]->AsInteger();
 
 			TypeSymbol* ownerType = const_cast<TypeSymbol*>(listInstance->getInfo());
 			if (ownerType->Kind == SyntaxKind::GenericType)
@@ -85,10 +85,10 @@ namespace shard
 			return arrayInstance->GetElement(static_cast<std::size_t>(index), context.Frame);
 		}
 
-		__declspec(dllexport) ObjectInstance* shard_list_RemoveAt(const CallState& context) noexcept(false)
+		SHARDLIB_EXPORT ObjectInstance* shard_list_RemoveAt(const CallState& context) noexcept(false)
 		{
 			ObjectInstance* listInstance = context.Args[0];
-			int64_t index = context.Args[1]->AsInteger();
+			std::int64_t index = context.Args[1]->AsInteger();
 
 			TypeSymbol* ownerType = const_cast<TypeSymbol*>(listInstance->getInfo());
 			if (ownerType->Kind == SyntaxKind::GenericType)
@@ -127,7 +127,7 @@ namespace shard
 			return nullptr;
 		}
 
-		__declspec(dllexport) ObjectInstance* shard_list_Clear(const CallState& context) noexcept(false)
+		SHARDLIB_EXPORT ObjectInstance* shard_list_Clear(const CallState& context) noexcept(false)
 		{
 			ObjectInstance* listInstance = context.Args[0];
 
@@ -149,7 +149,7 @@ namespace shard
 			return nullptr;
 		}
 
-		__declspec(dllexport) ObjectInstance* shard_list_Length_get(const CallState& context) noexcept(false)
+		SHARDLIB_EXPORT ObjectInstance* shard_list_Length_get(const CallState& context) noexcept(false)
 		{
 			ObjectInstance* listInstance = context.Args[0];
 
@@ -161,13 +161,13 @@ namespace shard
 			ObjectInstance* arrayInstance = listInstance->GetField(arrayField, context.Frame);
 			ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->getInfo()));
 
-			return context.Collector.FromValue(static_cast<int64_t>(arrayType->Size));
+			return context.Collector.FromValue(static_cast<std::int64_t>(arrayType->Size));
 		}
 
-		__declspec(dllexport) ObjectInstance* shard_list_Indexer_get(const CallState& context) noexcept(false)
+		SHARDLIB_EXPORT ObjectInstance* shard_list_Indexer_get(const CallState& context) noexcept(false)
 		{
 			ObjectInstance* listInstance = context.Args[0];
-			int64_t index = context.Args[1]->AsInteger();
+			std::int64_t index = context.Args[1]->AsInteger();
 
 			TypeSymbol* ownerType = const_cast<TypeSymbol*>(listInstance->getInfo());
 			if (ownerType->Kind == SyntaxKind::GenericType)
@@ -183,10 +183,10 @@ namespace shard
 			return arrayInstance->GetElement(static_cast<std::size_t>(index), context.Frame);
 		}
 
-		__declspec(dllexport) ObjectInstance* shard_list_Indexer_set(const CallState& context) noexcept(false)
+		SHARDLIB_EXPORT ObjectInstance* shard_list_Indexer_set(const CallState& context) noexcept(false)
 		{
 			ObjectInstance* listInstance = context.Args[0];
-			int64_t index = context.Args[1]->AsInteger();
+			std::int64_t index = context.Args[1]->AsInteger();
 			ObjectInstance* value = context.Args[2];
 
 			TypeSymbol* ownerType = const_cast<TypeSymbol*>(listInstance->getInfo());

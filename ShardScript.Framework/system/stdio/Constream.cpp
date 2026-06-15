@@ -13,7 +13,7 @@ namespace shard
 {
 	extern "C"
 	{
-		__declspec(dllexport) ObjectInstance* shard_constream_print(const CallState& context) noexcept(false)
+		SHARDLIB_EXPORT ObjectInstance* shard_constream_print(const CallState& context) noexcept(false)
 		{
 			ObjectInstance* instance = context.Args[0]; // var
 			TypeSymbol* type = const_cast<TypeSymbol*>(instance->getInfo());
@@ -49,7 +49,7 @@ namespace shard
 			return nullptr; // void
 		}
 
-		__declspec(dllexport) ObjectInstance* shard_constream_println(const CallState& context) noexcept(false)
+		SHARDLIB_EXPORT ObjectInstance* shard_constream_println(const CallState& context) noexcept(false)
 		{
 			ObjectInstance* instance = context.Args[0]; // var
 			TypeSymbol* type = const_cast<TypeSymbol*>(instance->getInfo());
@@ -82,7 +82,7 @@ namespace shard
 			return nullptr; // void
 		}
 
-		__declspec(dllexport) ObjectInstance* shard_constream_input(const CallState& context) noexcept(false)
+		SHARDLIB_EXPORT ObjectInstance* shard_constream_input(const CallState& context) noexcept(false)
 		{
 			std::wstring input;
 			getline(std::wcin, input);

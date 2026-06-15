@@ -15,7 +15,7 @@ namespace shard
 	{
 		const TypeSymbol* Info;
 		const bool IsTransient;
-		std::fpos_t ReferencesCounter;
+		std::int64_t ReferencesCounter;
 		void* const Memory;
 		std::size_t ArrayLength = 0;
 		std::size_t ArrayMemorySize = 0;
@@ -38,7 +38,7 @@ namespace shard
 		const TypeSymbol* getInfo() const;
 		void* getMemory() const;
 		bool getIsTransient() const;
-		std::fpos_t getReferencesCounter() const;
+		std::int64_t getReferencesCounter() const;
 
 		ObjectInstance* GetField(FieldSymbol* field, CallStackFrame* frame = nullptr);
 		void SetField(FieldSymbol* field, ObjectInstance* instance, CallStackFrame* frame = nullptr);
@@ -51,7 +51,7 @@ namespace shard
 		void DecrementReference();
 
 		void WriteBoolean(const bool& value) const;
-		void WriteInteger(const int64_t& value) const;
+		void WriteInteger(const std::int64_t& value) const;
 		void WriteDouble(const double& value) const;
 		void WriteCharacter(const wchar_t& value) const;
 		void WriteString(const wchar_t* value) const;
@@ -59,7 +59,7 @@ namespace shard
 		void WriteString(const std::wstring& value) const;
 
 		bool& AsBoolean() const;
-		int64_t& AsInteger() const;
+		std::int64_t& AsInteger() const;
 		double& AsDouble() const;
 		wchar_t& AsCharacter() const;
 		const wchar_t* AsString() const;

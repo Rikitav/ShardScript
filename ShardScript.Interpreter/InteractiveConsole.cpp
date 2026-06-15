@@ -1,5 +1,5 @@
-#include <Windows.h>
-#include <processenv.h>
+//#include <Windows.h>
+//#include <processenv.h>
 #include <string>
 #include <iostream>
 #include <vector>
@@ -183,6 +183,7 @@ static std::wstring ReadLine(const std::wstring& prompt = L">>> ")
 
 static void MoveToNewLineIfNeeded()
 {
+	/*
 	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 	CONSOLE_SCREEN_BUFFER_INFO csbi;
 
@@ -191,6 +192,7 @@ static void MoveToNewLineIfNeeded()
 		if (csbi.dwCursorPosition.X > 0)
 			ConsoleHelper::WriteLine();
 	}
+	*/
 }
 
 static void ReadMultilineInput(LexicalBuffer& sequenceReader, bool isExpression = false)

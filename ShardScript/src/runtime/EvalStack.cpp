@@ -13,7 +13,7 @@ void EvalStack::Push(void* value, std::size_t size)
 	if (BytesCursor + size > BytesSize)
 		throw std::runtime_error("stack overflow");
 
-	memcpy(value, StackBase[BytesCursor], size);
+	std::memcpy(value, StackBase[BytesCursor], size);
 	BytesCursor += size;
 }
 

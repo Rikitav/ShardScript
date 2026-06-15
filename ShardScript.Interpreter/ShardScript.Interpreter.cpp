@@ -1,5 +1,4 @@
-﻿#include <windows.h>
-#include <algorithm>
+﻿#include <algorithm>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -9,14 +8,18 @@
 #include <csignal>
 #include <cstdlib>
 #include <filesystem>
-#include <dbghelp.h>
-#include <excpt.h>
 #include <ios>
 #include <fcntl.h>
+
+/*
+#include <windows.h>
+#include <dbghelp.h>
+#include <excpt.h>
 #include <io.h>
 
 #pragma comment(lib, "shlwapi.lib")
 #pragma comment(lib, "dbghelp.lib")
+*/
 
 #include <utilities/InterpreterUtilities.hpp>
 #include <ShardScript.hpp>
@@ -34,6 +37,7 @@ static void SigIntHandler(int signal)
 	exit(SIGINT);
 }
 
+/*
 static LONG WINAPI UnhandledExceptionFilterFunction(PEXCEPTION_POINTERS exception)
 {
     PEXCEPTION_RECORD exceptionRecord = exception->ExceptionRecord;
@@ -137,6 +141,7 @@ static LONG WINAPI UnhandledExceptionFilterFunction(PEXCEPTION_POINTERS exceptio
 
     return EXCEPTION_CONTINUE_SEARCH;
 }
+*/
 
 static bool CheckFilesExisting()
 {
@@ -170,16 +175,24 @@ static void LoadLibrariesFromDirectoryPath(CompilationContext* compiler, fs::pat
 
 static fs::path GetCurrentDirectoryPath()
 {
+	/*
 	WCHAR pathBuffer[MAX_PATH];
 	GetModuleFileNameW(NULL, pathBuffer, MAX_PATH);
 	return fs::path(pathBuffer).parent_path();
+	*/
+
+	return fs::path("./");
 }
 
 static fs::path GetWorkingDirectoryPath()
 {
+	/*
 	WCHAR pathBuffer[MAX_PATH];
 	GetCurrentDirectoryW(MAX_PATH, pathBuffer);
 	return fs::path(pathBuffer);
+	*/
+
+	return fs::path("./");
 }
 
 static CompilationUnitSyntax* GetCompilationUnit(SyntaxNode* node)
@@ -198,7 +211,7 @@ int wmain(int argc, wchar_t* argv[])
 	{
 		setlocale(LC_ALL, "");
 		signal(SIGINT, SigIntHandler);
-		SetUnhandledExceptionFilter(UnhandledExceptionFilterFunction);
+		//SetUnhandledExceptionFilter(UnhandledExceptionFilterFunction);
 		ShardUtilities::ParseArguments(argc, argv);
 
 		if (ConsoleArguments::ShowHelp)
@@ -210,14 +223,14 @@ int wmain(int argc, wchar_t* argv[])
 			std::wcout << L"\t> '-i', '--interactive' \t Run REPL console" << std::endl;
 			std::wcout << L"\t> '-d', '--decompiled'  \t Instead of running program, decompile it entry point and print its bytecode" << std::endl;
 			std::wcout << L"\t> '--associate'         \t Registers '.ss' files and associates them as executable with this interpreter in registry" << std::endl;
-			std::wcout << L"\t> '--no-std'	          \t Preserve loading standart library from " << stdlibFilename << std::endl;
+			std::wcout << L"\t> '--no-std'	          \t Preserve loading standard library from " << stdlibFilename << std::endl;
 			return 0;
 		}
 
 		if (ConsoleArguments::AssociateScriptFile)
 		{
 			ShardUtilities::AssociateRegistry();
-			std::wcout << L"File association successsfuly installed" << std::endl;
+			std::wcout << L"File association successfully installed" << std::endl;
 			return 0;
 		}
 
@@ -234,11 +247,11 @@ int wmain(int argc, wchar_t* argv[])
 
 			if (!fs::exists(stdlibFilepath))
 			{
-				std::wcout << L"'" << stdlibFilename << L"' not found! use '--no-std' flag to disable standart library loading requirement" << std::endl;
+				std::wcout << L"'" << stdlibFilename << L"' not found! use '--no-std' flag to disable standard library loading requirement" << std::endl;
 				return 1;
 			}
 
-			compiler.AddLib(stdlibFilepath.wstring());
+			//compiler.AddLib(stdlibFilepath.wstring());
 		}
 
 		fs::path workingDirectory = GetWorkingDirectoryPath();

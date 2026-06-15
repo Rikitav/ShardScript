@@ -27,13 +27,13 @@ namespace shard
 
 		bool IsEOF();
 		std::size_t Index() const;
-		void SetCursor(std::std::fpos_t amount);
+		void SetCursor(std::int64_t amount);
 		void Return();
 
 		OpCode AbsorbOpCode();
 
 		bool AbsorbBoolean();
-		int64_t AbsorbInt64();
+		std::int64_t AbsorbInt64();
 		double AbsorbDouble64();
 		wchar_t AbsorbChar16();
 		std::size_t AbsorbString();

@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <cmath>
 #include <string>
+#include <cstring>
 
 using namespace shard;
 
@@ -27,8 +28,8 @@ static const wchar_t* concatStrings(const wchar_t* left, const wchar_t* right)
 	if (result == nullptr)
 		throw std::runtime_error("Failed to allocate space for new string");
 
-	memcpy(result, left, leftSize);
-	memcpy(result + leftLen, right, rightSize + sizeof(wchar_t)); // + L'\0'
+	std::memcpy(result, left, leftSize);
+	std::memcpy(result + leftLen, right, rightSize + sizeof(wchar_t)); // + L'\0'
 
 	return result;
 }
@@ -48,7 +49,7 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(ObjectInstance* left
 
 	if (leftInstance->getInfo() == SymbolTable::Primitives::Integer)
 	{
-		int64_t leftData = leftInstance->AsInteger();
+		std::int64_t leftData = leftInstance->AsInteger();
 		return EvaluateBinaryOperator(leftData, opToken, rightInstance);
 	}
 
@@ -97,11 +98,11 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(bool leftData, Token
 	throw std::runtime_error("unknown primitive");
 }
 
-ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(int64_t leftData, TokenType opToken, ObjectInstance* rightInstance)
+ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(std::int64_t leftData, TokenType opToken, ObjectInstance* rightInstance)
 {
 	if (rightInstance->getInfo() == SymbolTable::Primitives::Integer)
 	{
-		int64_t rightData = rightInstance->AsInteger();
+		std::int64_t rightData = rightInstance->AsInteger();
 		switch (opToken)
 		{
 			case TokenType::AddOperator:
@@ -126,7 +127,7 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(int64_t leftData, To
 
 			case TokenType::PowOperator:
 			case TokenType::PowAssignOperator:
-				return garbageCollector.FromValue(static_cast<int64_t>(pow(leftData, rightData)));
+				return garbageCollector.FromValue(static_cast<std::int64_t>(pow(leftData, rightData)));
 
 			case TokenType::OrOperator:
 			case TokenType::OrAssignOperator:
@@ -169,7 +170,7 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(wchar_t leftData, To
 {
 	if (rightInstance->getInfo() == SymbolTable::Primitives::Integer)
 	{
-		int64_t rightData = rightInstance->AsInteger();
+		std::int64_t rightData = rightInstance->AsInteger();
 		switch (opToken)
 		{
 			case TokenType::MultOperator:
@@ -188,8 +189,8 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(wchar_t leftData, To
 				if (result == nullptr)
 					throw std::runtime_error("Failed to allocate space for new string");
 
-				for (int64_t i = 0; i < rightData; i++)
-					memcpy(result + i, &leftData, sizeof(wchar_t));
+				for (std::int64_t i = 0; i < rightData; i++)
+					std::memcpy(result + i, &leftData, sizeof(wchar_t));
 
 				result[leftData * rightData] = L'\0';
 				return garbageCollector.FromValue(result, false);
@@ -281,7 +282,7 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(const wchar_t* leftD
 
 	if (rightInstance->getInfo() == SymbolTable::Primitives::Integer)
 	{
-		int64_t rightData = rightInstance->AsInteger();
+		std::int64_t rightData = rightInstance->AsInteger();
 		switch (opToken)
 		{
 			case TokenType::MultOperator:
@@ -301,8 +302,8 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(const wchar_t* leftD
 				if (result == nullptr)
 					throw std::runtime_error("Failed to allocate space for new string");
 
-				for (int64_t i = 0; i < rightData; i++)
-					memcpy(result + i * length, leftData, stringSize);
+				for (std::int64_t i = 0; i < rightData; i++)
+					std::memcpy(result + i * length, leftData, stringSize);
 
 				result[length * rightData] = L'\0';
 				return garbageCollector.FromValue(result, false);
@@ -369,7 +370,7 @@ ObjectInstance* PrimitiveMathModule::EvaluateUnaryOperator(ObjectInstance* sourc
 	
 	if (sourceInstance->getInfo() == SymbolTable::Primitives::Integer)
 	{
-		int64_t data = sourceInstance->AsInteger();
+		std::int64_t data = sourceInstance->AsInteger();
 		return EvaluateUnaryOperator(sourceInstance, data, opToken, rightDetermined);
 	}
 	
@@ -382,20 +383,20 @@ ObjectInstance* PrimitiveMathModule::EvaluateUnaryOperator(ObjectInstance* sourc
 	throw std::runtime_error("unknown primitive");
 }
 
-ObjectInstance* PrimitiveMathModule::EvaluateUnaryOperator(ObjectInstance* sourceInstance, int64_t data, TokenType opToken, bool rightDetermined)
+ObjectInstance* PrimitiveMathModule::EvaluateUnaryOperator(ObjectInstance* sourceInstance, std::int64_t data, TokenType opToken, bool rightDetermined)
 {
 	switch (opToken)
 	{
 		case TokenType::IncrementOperator:
 		{
-			int64_t newValue = data + 1;
+			std::int64_t newValue = data + 1;
 			sourceInstance->WriteInteger(newValue);
 			return rightDetermined ? garbageCollector.FromValue(data) : sourceInstance;
 		}
 
 		case TokenType::DecrementOperator:
 		{
-			int64_t newValue = data + 1;
+			std::int64_t newValue = data + 1;
 			sourceInstance->WriteInteger(newValue);
 			return rightDetermined ? garbageCollector.FromValue(data) : sourceInstance;
 		}
