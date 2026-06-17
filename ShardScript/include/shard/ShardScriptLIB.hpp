@@ -16,17 +16,6 @@ namespace shard
 		const wchar_t* Description = nullptr;
 		const wchar_t* Version = nullptr;
 	};
-
-	/* OBSOLETE
-	class SHARD_API FrameworkModule
-	{
-	public:
-		virtual SourceProvider* GetSource() = 0;
-		virtual bool BindConstructor(ConstructorSymbol* symbol) = 0;
-		virtual bool BindMethod(MethodSymbol* symbol) = 0;
-		virtual bool BindAccessor(AccessorSymbol* symbol) = 0;
-	};
-	*/
 }
 
 #define SHARDLIB_GETMETADATA_FUNCNAME ShardLib_GetMetadata
@@ -41,7 +30,7 @@ namespace shard
 //  GCC
 #elif defined(__GNUC__)
     #define SHARDLIB_EXPORT __attribute__((visibility("default")))
-	#define SHARDLIB_GETMETADATA extern "C" __attribute__((visibility("default"))) void ShardLib_GetMetadata(ShardLibMetadata& lib)
-	#define SHARDLIB_ENTRYPOINT extern "C" __attribute__((visibility("default"))) void ShardLib_EntryPoint(CompilationContext& context)
+	#define SHARDLIB_GETMETADATA extern "C" __attribute__((visibility("default"))) void SHARDLIB_GETMETADATA_FUNCNAME(ShardLibMetadata& lib)
+	#define SHARDLIB_ENTRYPOINT extern "C" __attribute__((visibility("default"))) void SHARDLIB_ENTRYPOINT_FUNCNAME(CompilationContext& context)
 
 #endif

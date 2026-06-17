@@ -18,8 +18,8 @@
 // Forward declarations
 namespace shard
 {
-    class ObjectInstance;
     struct CallState;
+    class ObjectInstance;
     class GarbageCollector;
 }
 
@@ -53,10 +53,29 @@ namespace shard
         std::wstring LinkLibrary;
         std::wstring LinkSymbol;
 
+        inline MethodSymbol(const std::wstring& name)
+            : MemberSymbol(name, SyntaxKind::MethodDeclaration), HandleType(MethodHandleType::None) { }
+
+        inline MethodSymbol(const std::wstring& name, const SyntaxKind kind)
+            : MemberSymbol(name, kind), HandleType(MethodHandleType::None) { }
+
+        inline MethodSymbol(const std::wstring& name, MethodSymbolDelegate delegate)
+            : MemberSymbol(name, SyntaxKind::MethodDeclaration), FunctionPointer(delegate), HandleType(MethodHandleType::External) { }
+
+        inline MethodSymbol(const MethodSymbol& other) = delete;
+
+        inline virtual ~MethodSymbol() override
+        {
+            if (FunctionPointer != nullptr)
+                FunctionPointer = nullptr;
+        }
+
+        void OnSymbolDeclared(SyntaxSymbol* symbol) override;
+
         inline std::uint16_t GetEvalStackArgumentsCount() const
         {
             std::uint16_t count = static_cast<std::uint16_t>(Parameters.size());
-            if (!IsStatic)
+            if (Linking == LINK_INSTANCE)
                 count += 1; // implicit 'this'
 
             return count;
@@ -75,23 +94,6 @@ namespace shard
         inline std::uint16_t GetEvalStackLocalsCount() const
         {
             return GetEvalStackArgumentsCount() + EvalStackVariablesCount;
-        }
-
-        inline MethodSymbol(const std::wstring& name)
-            : MemberSymbol(name, SyntaxKind::MethodDeclaration), HandleType(MethodHandleType::None) { }
-
-        inline MethodSymbol(const std::wstring& name, const SyntaxKind kind)
-            : MemberSymbol(name, kind), HandleType(MethodHandleType::None) { }
-
-        inline MethodSymbol(const std::wstring& name, MethodSymbolDelegate delegate)
-            : MemberSymbol(name, SyntaxKind::MethodDeclaration), FunctionPointer(delegate), HandleType(MethodHandleType::External) { }
-
-        inline MethodSymbol(const MethodSymbol& other) = delete;
-
-        inline virtual ~MethodSymbol() override
-        {
-            if (FunctionPointer != nullptr)
-                FunctionPointer = nullptr;
         }
     };
 }

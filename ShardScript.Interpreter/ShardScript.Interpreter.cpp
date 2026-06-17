@@ -62,7 +62,14 @@ static void LoadLibrariesFromDirectoryPath(CompilationContext* compiler, fs::pat
 		if (!filename.string().ends_with(".dll"))
 			continue;
 
-		compiler->AddLib(entry.path().wstring());
+		try
+		{
+			compiler->AddLib(entry.path().wstring());
+		}
+		catch (std::runtime_error& err)
+		{
+			std::cout << err.what();
+		}
 	}
 }
 
@@ -118,7 +125,6 @@ int wmain(int argc, wchar_t* argv[])
 			std::wcout << L"\t> '-h', '--help'        \t Show this help screen." << std::endl;
 			std::wcout << L"\t> '-i', '--interactive' \t Run REPL console" << std::endl;
 			std::wcout << L"\t> '-d', '--decompiled'  \t Instead of running program, decompile it entry point and print its bytecode" << std::endl;
-			//std::wcout << L"\t> '--associate'         \t Registers '.ss' files and associates them as executable with this interpreter in registry" << std::endl;
 			std::wcout << L"\t> '--no-std'	          \t Prevents loading standard library from " << stdlibFilename << std::endl;
 			return 0;
 		}
@@ -131,9 +137,11 @@ int wmain(int argc, wchar_t* argv[])
 
 		if (!ConsoleArguments::ExcludeStd)
 		{
-			fs::path currentDirectory = GetCurrentDirectoryPath();
-			fs::path stdlibFilepath = currentDirectory / stdlibFilename;
+			fs::path currentDirectory = GetCurrentDirectoryPath() / L"framework";
+			LoadLibrariesFromDirectoryPath(&compiler, currentDirectory);
 
+			/*
+			fs::path stdlibFilepath = currentDirectory / stdlibFilename;
 			if (!fs::exists(stdlibFilepath))
 			{
 				std::wcout << L"'" << stdlibFilename << L"' not found! use '--no-std' flag to disable standard library loading requirement" << std::endl;
@@ -141,6 +149,7 @@ int wmain(int argc, wchar_t* argv[])
 			}
 
 			compiler.AddLib(stdlibFilepath.wstring());
+			*/
 		}
 
 		fs::path workingDirectory = GetWorkingDirectoryPath();

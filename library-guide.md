@@ -227,7 +227,7 @@ ns.AddClass(L"Math")
       .SetCallback(&MyAdd);
 ```
 
-`AddMethod` создаёт `MethodSymbol`, регистрирует его в `SymbolTable` и по умолчанию делает его статическим (`IsStatic = true`). `SetCallback` устанавливает `HandleType = External`, `FunctionPointer = fn` и `IsExtern = true`.
+`AddMethod` создаёт `MethodSymbol`, регистрирует его в `SymbolTable` и по умолчанию делает его статическим (`Linking = LINK_STATIC`). `SetCallback` устанавливает `HandleType = External`, `FunctionPointer = fn` и `IsExtern = true`.
 
 ### 3.4. Шаг 4 — параметры
 
@@ -378,7 +378,7 @@ static ObjectInstance* MaybeNull(const CallState& ctx)
 
 ### 5.1. Статический метод
 
-Для статического метода `IsStatic = true`, и в `ctx.Args[0]` лежит первый параметр.
+Для статического метода `Linking = LINK_STATIC`, и в `ctx.Args[0]` лежит первый параметр.
 
 ```cpp
 math.AddMethod(L"Add", SymbolTable::Primitives::Integer, true)
@@ -389,7 +389,7 @@ math.AddMethod(L"Add", SymbolTable::Primitives::Integer, true)
 
 ### 5.2. Instance-метод
 
-Для нестатического метода `IsStatic = false`, и `ctx.Args[0]` — это `this`.
+Для нестатического метода `Linking = LINK_INSTANCE`, и `ctx.Args[0]` — это `this`.
 
 ```cpp
 static ObjectInstance* CounterNext(const CallState& ctx)
@@ -494,7 +494,7 @@ ctx.Collector.SetStaticField(g_piField, piValue);
 PropertySymbol* prop = factory.Property(L"Value", SymbolTable::Primitives::Integer);
 prop->Accesibility = SymbolAccesibility::Public;
 prop->Parent = cls;
-prop->IsStatic = false;
+prop->Linking = LINK_INSTANCE;
 cls->OnSymbolDeclared(prop);
 
 AccessorSymbol* getter = factory.Getter(L"Value", prop);

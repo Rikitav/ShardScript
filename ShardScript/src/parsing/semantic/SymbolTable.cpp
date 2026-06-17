@@ -39,6 +39,10 @@ static std::unique_ptr<D> unique_cast(std::unique_ptr<B> ptr)
 
 static void ResolvePrimitives()
 {
+	static bool resolved = false;
+	if (resolved)
+		return;
+
 	SymbolTable::Primitives::Void = new StructSymbol(L"Void");
 	SymbolTable::Primitives::Any = new StructSymbol(L"Any");
 
@@ -68,6 +72,8 @@ static void ResolvePrimitives()
 	SymbolTable::Primitives::Char->MemoryBytesSize = sizeof(wchar_t);
 	SymbolTable::Primitives::String->MemoryBytesSize = sizeof(std::int64_t) + sizeof(wchar_t*); // long _length + char[] _data
 	SymbolTable::Primitives::Array->MemoryBytesSize = sizeof(std::int64_t);					   // long _length
+
+	resolved = true;
 }
 
 SymbolTable::SymbolTable()

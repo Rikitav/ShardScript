@@ -51,12 +51,6 @@ void SymbolFactory::SetAccesibility(SyntaxSymbol* symbol, std::vector<SyntaxToke
 				break;
 			}
 
-			case TokenType::ProtectedKeyword:
-			{
-				symbol->Accesibility = SymbolAccesibility::Protected;
-				break;
-			}
-
 			case TokenType::ExternKeyword:
 			{
 				symbol->IsExtern = true;
@@ -85,15 +79,9 @@ void SymbolFactory::SetAccesibility(TypeSymbol* symbol, std::vector<SyntaxToken>
 				break;
 			}
 
-			case TokenType::ProtectedKeyword:
-			{
-				symbol->Accesibility = SymbolAccesibility::Protected;
-				break;
-			}
-
 			case TokenType::StaticKeyword:
 			{
-				symbol->IsStatic = true;
+				symbol->Linking = LINK_STATIC;
 				break;
 			}
 			
@@ -139,15 +127,9 @@ void SymbolFactory::SetAccesibility(MethodSymbol* symbol, std::vector<SyntaxToke
 				break;
 			}
 
-			case TokenType::ProtectedKeyword:
-			{
-				symbol->Accesibility = SymbolAccesibility::Protected;
-				break;
-			}
-
 			case TokenType::StaticKeyword:
 			{
-				symbol->IsStatic = true;
+				symbol->Linking = LINK_STATIC;
 				break;
 			}
 
@@ -199,15 +181,9 @@ void SymbolFactory::SetAccesibility(PropertySymbol* symbol, std::vector<SyntaxTo
 				break;
 			}
 
-			case TokenType::ProtectedKeyword:
-			{
-				symbol->Accesibility = SymbolAccesibility::Protected;
-				break;
-			}
-
 			case TokenType::StaticKeyword:
 			{
-				symbol->IsStatic = true;
+				symbol->Linking = LINK_STATIC;
 				break;
 			}
 
@@ -263,7 +239,7 @@ void SymbolFactory::SetAccesibility(FieldSymbol* symbol, std::vector<SyntaxToken
 
 			case TokenType::StaticKeyword:
 			{
-				symbol->IsStatic = true;
+				symbol->Linking = LINK_STATIC;
 				break;
 			}
 
@@ -348,7 +324,7 @@ AccessorSymbol* SymbolFactory::Accessor(AccessorDeclarationSyntax* node, Propert
 	auto symbol = std::make_unique<AccessorSymbol>(accessorName);
 
 	SetAccesibility(symbol.get(), node->Modifiers);
-	symbol->IsStatic = propertySymbol->IsStatic;
+	symbol->Linking = propertySymbol->Linking;
 	symbol->HandleType = symbol->IsExtern
 		? MethodHandleType::External
 		: MethodHandleType::Body;
@@ -401,6 +377,15 @@ ConstructorSymbol* SymbolFactory::Constructor(ConstructorDeclarationSyntax* node
 	return static_cast<ConstructorSymbol*>(Table->BindSymbol(node, std::move(symbol)));
 }
 
+ConstructorSymbol* SymbolFactory::Constructor(TypeSymbol* owner, SymbolAccesibility accessibility)
+{
+	auto symbol = std::make_unique<ConstructorSymbol>(L"init");
+	symbol->ReturnType = owner;
+	symbol->Accesibility = accessibility;
+	symbol->HandleType = MethodHandleType::Body;
+	return static_cast<ConstructorSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
+}
+
 DelegateTypeSymbol* SymbolFactory::Delegate(DelegateDeclarationSyntax* node)
 {
 	// Anonymous method symbol
@@ -408,7 +393,7 @@ DelegateTypeSymbol* SymbolFactory::Delegate(DelegateDeclarationSyntax* node)
 	anonymousMethod->HandleType = MethodHandleType::Lambda;
 	anonymousMethod->Accesibility = SymbolAccesibility::Public;
 	anonymousMethod->ReturnType = node->ReturnType->Symbol;
-	anonymousMethod->IsStatic = true;
+	anonymousMethod->Linking = LINK_STATIC;
 
 	auto symbol = std::make_unique<DelegateTypeSymbol>(node->IdentifierToken.Word);
 	symbol->ReturnType = node->ReturnType->Symbol;
@@ -426,7 +411,7 @@ DelegateTypeSymbol* SymbolFactory::Delegate(DelegateTypeSyntax* node)
 	anonymousMethod->HandleType = MethodHandleType::Lambda;
 	anonymousMethod->Accesibility = SymbolAccesibility::Public;
 	anonymousMethod->ReturnType = node->ReturnType->Symbol;
-	anonymousMethod->IsStatic = true;
+	anonymousMethod->Linking = LINK_STATIC;
 
 	// Delegate symbol
 	auto symbol = std::make_unique<DelegateTypeSymbol>(L"Delegate");
@@ -444,13 +429,13 @@ DelegateTypeSymbol* SymbolFactory::Delegate(const std::wstring& name, TypeSymbol
 	anonymousMethod->HandleType = MethodHandleType::Lambda;
 	anonymousMethod->Accesibility = SymbolAccesibility::Public;
 	anonymousMethod->ReturnType = returnType;
-	anonymousMethod->IsStatic = true;
-	anonymousMethod->Parameters = std::move(parameters);
+	anonymousMethod->Linking = LINK_STATIC;
+	anonymousMethod->Parameters = parameters;
 
 	auto symbol = std::make_unique<DelegateTypeSymbol>(name);
 	symbol->ReturnType = returnType;
 	symbol->AnonymousSymbol = anonymousMethod.get();
-	symbol->Parameters = std::move(parameters);
+	symbol->Parameters = parameters;
 	symbol->Accesibility = SymbolAccesibility::Public;
 
 	Table->ImplicitSymbol(std::move(anonymousMethod));
@@ -493,71 +478,73 @@ NamespaceSymbol* SymbolFactory::Namespace(const wchar_t* name)
 	auto symbol = std::make_unique<NamespaceSymbol>(name);
 	return static_cast<NamespaceSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
-FieldSymbol* SymbolFactory::Field(const std::wstring& name, TypeSymbol* type, bool isStatic)
+
+FieldSymbol* SymbolFactory::Field(const std::wstring& name, TypeSymbol* type, SymbolLinking linking)
 {
 	auto symbol = std::make_unique<FieldSymbol>(name);
 	symbol->ReturnType = type;
-	symbol->IsStatic = isStatic;
+	symbol->Linking = linking;
 	symbol->Accesibility = SymbolAccesibility::Private;
 	return static_cast<FieldSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
-PropertySymbol* SymbolFactory::Property(const std::wstring& name, TypeSymbol* returnType, bool isStatic)
+FieldSymbol* SymbolFactory::BackingField(PropertySymbol* symbol)
+{
+	FieldSymbol* backingField = Field(L"<" + symbol->Name + L">k__BackingField", symbol->ReturnType, symbol->Linking);
+	backingField->Accesibility = SymbolAccesibility::Private;
+	backingField->DefaultValueExpression = symbol->DefaultValueExpression;
+
+	symbol->BackingField = backingField;
+	return backingField;
+}
+
+PropertySymbol* SymbolFactory::Property(const std::wstring& name, TypeSymbol* returnType, SymbolLinking linking)
 {
 	auto symbol = std::make_unique<PropertySymbol>(name);
 	symbol->ReturnType = returnType;
-	symbol->IsStatic = isStatic;
+	symbol->Linking = linking;
 	symbol->Accesibility = SymbolAccesibility::Private;
 	return static_cast<PropertySymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
-MethodSymbol* SymbolFactory::Method(const wchar_t* name, TypeSymbol* returnType, bool isStatic)
+MethodSymbol* SymbolFactory::Method(const wchar_t* name, TypeSymbol* returnType, SymbolLinking linking)
 {
 	auto symbol = std::make_unique<MethodSymbol>(name);
 	symbol->ReturnType = returnType;
-	symbol->IsStatic = isStatic;
+	symbol->Linking = linking;
 	symbol->Accesibility = SymbolAccesibility::Private;
 	return static_cast<MethodSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
-MethodSymbol* SymbolFactory::Method(const std::wstring& name, TypeSymbol* returnType, bool isStatic)
+MethodSymbol* SymbolFactory::Method(const std::wstring& name, TypeSymbol* returnType, SymbolLinking linking)
 {
 	auto symbol = std::make_unique<MethodSymbol>(name);
 	symbol->ReturnType = returnType;
-	symbol->IsStatic = isStatic;
+	symbol->Linking = linking;
 	symbol->Accesibility = SymbolAccesibility::Private;
 	return static_cast<MethodSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
-MethodSymbol* SymbolFactory::Method(SymbolAccesibility accessibility, bool isStatic, TypeSymbol* returnType, const wchar_t* name, MethodSymbolDelegate function)
+MethodSymbol* SymbolFactory::Method(SymbolAccesibility accessibility, SymbolLinking linking, TypeSymbol* returnType, const wchar_t* name, MethodSymbolDelegate function)
 {
 	auto symbol = std::make_unique<MethodSymbol>(name);
 	symbol->ReturnType = returnType;
-	symbol->IsStatic = isStatic;
+	symbol->Linking = linking;
 	symbol->Accesibility = accessibility;
 	symbol->FunctionPointer = function;
 	symbol->HandleType = MethodHandleType::External;
 	return static_cast<MethodSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
-MethodSymbol* SymbolFactory::Method(SymbolAccesibility accessibility, bool isStatic, TypeSymbol* returnType, const std::wstring& name, MethodSymbolDelegate function)
+MethodSymbol* SymbolFactory::Method(SymbolAccesibility accessibility, SymbolLinking linking, TypeSymbol* returnType, const std::wstring& name, MethodSymbolDelegate function)
 {
 	auto symbol = std::make_unique<MethodSymbol>(name);
 	symbol->ReturnType = returnType;
-	symbol->IsStatic = isStatic;
+	symbol->Linking = linking;
 	symbol->Accesibility = accessibility;
 	symbol->FunctionPointer = function;
 	symbol->HandleType = MethodHandleType::External;
 	return static_cast<MethodSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
-}
-
-ConstructorSymbol* SymbolFactory::Constructor(const std::wstring& name)
-{
-	auto symbol = std::make_unique<ConstructorSymbol>(name);
-	symbol->ReturnType = SymbolTable::Primitives::Void;
-	symbol->Accesibility = SymbolAccesibility::Public;
-	symbol->HandleType = MethodHandleType::Body;
-	return static_cast<ConstructorSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
 AccessorSymbol* SymbolFactory::Accessor(const std::wstring& name, PropertySymbol* property, bool isGetter)
@@ -565,7 +552,7 @@ AccessorSymbol* SymbolFactory::Accessor(const std::wstring& name, PropertySymbol
 	auto symbol = std::make_unique<AccessorSymbol>(name);
 	symbol->HandleType = MethodHandleType::Body;
 	symbol->Accesibility = SymbolAccesibility::Public;
-	symbol->IsStatic = property->IsStatic;
+	symbol->Linking = property->Linking;
 	symbol->ReturnType = isGetter ? property->ReturnType : SymbolTable::Primitives::Void;
 
 	if (!isGetter)
@@ -584,15 +571,15 @@ AccessorSymbol* SymbolFactory::Accessor(const std::wstring& name, PropertySymbol
 	return static_cast<AccessorSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
-AccessorSymbol* SymbolFactory::Getter(const std::wstring& propertyName, PropertySymbol* property)
+AccessorSymbol* SymbolFactory::Getter(PropertySymbol* property)
 {
-	std::wstring getterName = L"get_" + propertyName;
+	std::wstring getterName = L"get_" + property->Name;
 	return Accessor(getterName, property, true);
 }
 
-AccessorSymbol* SymbolFactory::Setter(const std::wstring& propertyName, PropertySymbol* property)
+AccessorSymbol* SymbolFactory::Setter(PropertySymbol* property)
 {
-	std::wstring setterName = L"set_" + propertyName;
+	std::wstring setterName = L"set_" + property->Name;
 	return Accessor(setterName, property, false);
 }
 
@@ -609,7 +596,7 @@ IndexatorSymbol* SymbolFactory::Indexator(const std::wstring& name, TypeSymbol* 
 	auto symbol = std::make_unique<IndexatorSymbol>(name);
 	symbol->ReturnType = returnType;
 	symbol->Accesibility = SymbolAccesibility::Public;
-	symbol->IsStatic = false;
+	symbol->Linking = LINK_INSTANCE;
 	return static_cast<IndexatorSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
@@ -618,7 +605,7 @@ IndexatorSymbol* SymbolFactory::Indexator(const std::wstring& name, TypeSymbol* 
 	auto symbol = std::make_unique<IndexatorSymbol>(name);
 	symbol->ReturnType = returnType;
 	symbol->Accesibility = SymbolAccesibility::Public;
-	symbol->IsStatic = false;
+	symbol->Linking = LINK_INSTANCE;
 	symbol->Parameters = parameters;
 	return static_cast<IndexatorSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
@@ -718,7 +705,7 @@ ArrayTypeSymbol* SymbolFactory::Array(TypeSymbol* underlayingType, std::size_t s
 
 GenericTypeSymbol* SymbolFactory::GenericType(GenericTypeSyntax* node)
 {
-	auto symbol = std::make_unique<GenericTypeSymbol>(node->Symbol);
+	auto symbol = std::make_unique<GenericTypeSymbol>(node->UnderlayingType->Symbol);
 	return static_cast<GenericTypeSymbol*>(Table->BindSymbol(node, std::move(symbol)));
 }
 
@@ -841,7 +828,7 @@ MethodSymbol* SymbolFactory::CreateAnonymousMethod(const std::wstring& name, Typ
 	auto symbol = std::make_unique<MethodSymbol>(name);
 	symbol->ReturnType = returnType;
 	symbol->Accesibility = SymbolAccesibility::Public;
-	symbol->IsStatic = true;
+	symbol->Linking = LINK_STATIC;
 	symbol->HandleType = MethodHandleType::Lambda;
 	return static_cast<MethodSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
@@ -851,7 +838,7 @@ MethodSymbol* SymbolFactory::CreateLambdaMethod(StatementsBlockSyntax* body)
 	auto symbol = std::make_unique<MethodSymbol>(L"Lambda");
 	symbol->ReturnType = SymbolTable::Primitives::Any;
 	symbol->Accesibility = SymbolAccesibility::Public;
-	symbol->IsStatic = true;
+	symbol->Linking = LINK_STATIC;
 	symbol->HandleType = MethodHandleType::Lambda;
 	return static_cast<MethodSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }

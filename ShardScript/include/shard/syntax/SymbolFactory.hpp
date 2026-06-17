@@ -77,27 +77,28 @@ namespace shard
 		ClassSymbol* Class(const wchar_t* name);
 
 		FieldSymbol* Field(FieldDeclarationSyntax* node);
-		FieldSymbol* Field(const std::wstring& name, TypeSymbol* type, bool isStatic = false);
+		FieldSymbol* Field(const std::wstring& name, TypeSymbol* type, SymbolLinking linking = LINK_INSTANCE);
+		FieldSymbol* BackingField(PropertySymbol* symbol);
 
 		PropertySymbol* Property(PropertyDeclarationSyntax* node);
-		PropertySymbol* Property(const std::wstring& name, TypeSymbol* returnType, bool isStatic = false);
+		PropertySymbol* Property(const std::wstring& name, TypeSymbol* returnType, SymbolLinking linking = LINK_INSTANCE);
 
 		MethodSymbol* Method(MethodDeclarationSyntax* node);
-		MethodSymbol* Method(const wchar_t* name, TypeSymbol* returnType, bool isStatic = false);
-		MethodSymbol* Method(const std::wstring& name, TypeSymbol* returnType, bool isStatic = false);
-		MethodSymbol* Method(SymbolAccesibility accessibility, bool isStatic, TypeSymbol* returnType, const wchar_t* name, MethodSymbolDelegate function);
-		MethodSymbol* Method(SymbolAccesibility accessibility, bool isStatic, TypeSymbol* returnType, const std::wstring& name, MethodSymbolDelegate function);
+		MethodSymbol* Method(const wchar_t* name, TypeSymbol* returnType, SymbolLinking linking = LINK_INSTANCE);
+		MethodSymbol* Method(const std::wstring& name, TypeSymbol* returnType, SymbolLinking linking = LINK_INSTANCE);
+		MethodSymbol* Method(SymbolAccesibility accessibility, SymbolLinking linking, TypeSymbol* returnType, const wchar_t* name, MethodSymbolDelegate function);
+		MethodSymbol* Method(SymbolAccesibility accessibility, SymbolLinking linking, TypeSymbol* returnType, const std::wstring& name, MethodSymbolDelegate function);
 
 		MethodSymbol* CreateAnonymousMethod(const std::wstring& name, TypeSymbol* returnType);
 		MethodSymbol* CreateLambdaMethod(StatementsBlockSyntax* body);
 
 		ConstructorSymbol* Constructor(ConstructorDeclarationSyntax* node);
-		ConstructorSymbol* Constructor(const std::wstring& name);
+		ConstructorSymbol* Constructor(TypeSymbol* owner, SymbolAccesibility accessibility);
 
 		AccessorSymbol* Accessor(AccessorDeclarationSyntax* node, PropertySymbol* propertySymbol, bool setProperty = true);
 		AccessorSymbol* Accessor(const std::wstring& name, PropertySymbol* property, bool isGetter);
-		AccessorSymbol* Getter(const std::wstring& propertyName, PropertySymbol* property);
-		AccessorSymbol* Setter(const std::wstring& propertyName, PropertySymbol* property);
+		AccessorSymbol* Getter(PropertySymbol* property);
+		AccessorSymbol* Setter(PropertySymbol* property);
 
 		IndexatorSymbol* Indexator(IndexatorDeclarationSyntax* node);
 		IndexatorSymbol* Indexator(const std::wstring& name, TypeSymbol* returnType);

@@ -15,17 +15,6 @@
 #include <string>
 #include <optional>
 
-#define TYPE_VOID shard::SymbolTable::Primitives::Void
-#define TYPE_NULL shard::SymbolTable::Primitives::Null
-#define TYPE_ANY shard::SymbolTable::Primitives::Any
-
-#define TYPE_BOOl shard::SymbolTable::Primitives::Boolean
-#define TYPE_INT shard::SymbolTable::Primitives::Integer
-#define TYPE_DOUBLE shard::SymbolTable::Primitives::Double
-#define TYPE_CHAR shard::SymbolTable::Primitives::Char
-#define TYPE_STRING shard::SymbolTable::Primitives::String
-#define TYPE_ARRAY shard::SymbolTable::Primitives::Array
-
 namespace shard
 {
     class SHARD_API SymbolTable
@@ -79,4 +68,15 @@ namespace shard
         const std::vector<TypeSymbol*> GetTypeSymbols();
         const std::vector<MethodSymbol*> GetMethodSymbols();
     };
+
+    inline TypeSymbol*& TYPE_VOID = shard::SymbolTable::Primitives::Void;
+    inline TypeSymbol*& TYPE_NULL = shard::SymbolTable::Primitives::Null;
+    inline TypeSymbol*& TYPE_ANY = shard::SymbolTable::Primitives::Any;
+
+    inline TypeSymbol*& TYPE_BOOL = shard::SymbolTable::Primitives::Boolean;
+    inline TypeSymbol*& TYPE_INT = shard::SymbolTable::Primitives::Integer;
+    inline TypeSymbol*& TYPE_DOUBLE = shard::SymbolTable::Primitives::Double;
+    inline TypeSymbol*& TYPE_CHAR = shard::SymbolTable::Primitives::Char;
+    inline TypeSymbol*& TYPE_STRING = shard::SymbolTable::Primitives::String;
+    inline TypeSymbol*& TYPE_ARRAY = shard::SymbolTable::Primitives::Array;
 }

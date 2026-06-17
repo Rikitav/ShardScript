@@ -1,8 +1,9 @@
 #pragma once
 #include <shard/ShardScriptAPI.hpp>
 
-#include <shard/syntax/SyntaxSymbol.hpp>
 #include <shard/syntax/SyntaxKind.hpp>
+#include <shard/syntax/SyntaxSymbol.hpp>
+#include <shard/syntax/symbols/MemberSymbol.hpp>
 
 #include <string>
 #include <vector>
@@ -28,7 +29,7 @@ namespace shard
         Visited
     };
 
-	class SHARD_API TypeSymbol : public SyntaxSymbol
+	class SHARD_API TypeSymbol : public MemberSymbol
 	{
 	public:
         std::vector<TypeSymbol*> Interfaces;
@@ -46,12 +47,13 @@ namespace shard
         bool IsValueType = false;
         bool IsNullable = false;
         
-        bool IsStatic = false;
+        /*
         bool IsAbstract = false;
         bool IsSealed = false;
+        */
         
         TypeSymbol(const std::wstring& name, const SyntaxKind kind)
-            : SyntaxSymbol(name, kind) { }
+            : MemberSymbol(name, kind) { }
         
         TypeSymbol(const TypeSymbol& other) = delete;
         virtual ~TypeSymbol() = default;

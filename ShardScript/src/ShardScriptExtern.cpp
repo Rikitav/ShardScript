@@ -1154,7 +1154,7 @@ extern "C"
             if (method == nullptr)
                 return 0;
 
-            return method->IsStatic ? 1 : 0;
+            return method->Linking == LINK_STATIC ? 1 : 0;
         }
         catch (const std::exception& e)
         {
@@ -2314,7 +2314,7 @@ extern "C"
             }
 
             SymbolFactory factory(ctx->GetSemanticModel().Table.get());
-            auto* symbol = factory.Method(name, returnType, isStatic != 0);
+            auto* symbol = factory.Method(name, returnType, isStatic ? LINK_STATIC : LINK_INSTANCE);
             symbol->Parent = parentType;
             symbol->ReturnType = returnType;
             symbol->Accesibility = static_cast<SymbolAccesibility>(accessibility);
@@ -2396,7 +2396,7 @@ extern "C"
             }
 
             SymbolFactory factory(ctx->GetSemanticModel().Table.get());
-            auto* symbol = factory.Field(name, type, isStatic != 0);
+            auto* symbol = factory.Field(name, type, isStatic ? LINK_STATIC : LINK_INSTANCE);
             symbol->Parent = parentType;
             symbol->ReturnType = type;
             symbol->Accesibility = SymbolAccesibility::Public;

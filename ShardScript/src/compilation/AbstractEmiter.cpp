@@ -316,7 +316,7 @@ void AbstractEmiter::VisitMethodDeclaration(MethodDeclarationSyntax* const node)
 		if (GeneratingFor->Accesibility != SymbolAccesibility::Public)
 			Diagnostics.ReportError(node->IdentifierToken, L"Main entry point should be public");
 
-		if (!GeneratingFor->IsStatic)
+		if (GeneratingFor->Linking == LINK_INSTANCE)
 			Diagnostics.ReportError(node->IdentifierToken, L"Main entry point should be static");
 
 		if (GeneratingFor->IsExtern)
@@ -895,7 +895,7 @@ void AbstractEmiter::VisitUnaryAssignExpression(UnaryExpressionSyntax* const nod
 
 	if (memberExpression->ToField != nullptr)
 	{
-		if (memberExpression->ToField->IsStatic)
+		if (memberExpression->ToField->Linking == LINK_STATIC)
 		{
 			Encoder.EmitStoreStaticField(GeneratingFor->ExecutableByteCode, memberExpression->ToField);
 			return;
@@ -945,7 +945,7 @@ void AbstractEmiter::VisitBinaryAssignExpression(BinaryExpressionSyntax* const n
 
 	if (memberExpression->ToField != nullptr)
 	{
-		if (memberExpression->ToField->IsStatic)
+		if (memberExpression->ToField->Linking == LINK_STATIC)
 		{
 			Encoder.EmitStoreStaticField(GeneratingFor->ExecutableByteCode, memberExpression->ToField);
 			return;
@@ -982,7 +982,7 @@ void AbstractEmiter::VisitInvocationExpression(InvokationExpressionSyntax* const
 void AbstractEmiter::VisitIndexatorExpression(IndexatorExpressionSyntax* const node)
 {
 	VisitExpression(node->PreviousExpression.get());
-	if (!node->ToProperty->IsStatic)
+	if (node->ToProperty->Linking == LINK_INSTANCE)
 		VisitExpression(node->PreviousExpression.get());
 
 	Encoder.EmitCallMethodSymbol(GeneratingFor->ExecutableByteCode, node->ToProperty->Getter);
@@ -1005,7 +1005,7 @@ void AbstractEmiter::VisitMemberAccessExpression(MemberAccessExpressionSyntax* c
 
 	if (node->ToField != nullptr)
 	{
-		if (node->ToField->IsStatic)
+		if (node->ToField->Linking == LINK_STATIC)
 		{
 			Encoder.EmitLoadStaticField(GeneratingFor->ExecutableByteCode, node->ToField);
 			return;
