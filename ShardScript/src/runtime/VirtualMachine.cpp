@@ -518,7 +518,7 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 		argument->IncrementReference();
 		currentFrame->PushStack(argument);
 
-		if (!method->IsStatic && i == 0)
+		if (method->Linking == LINK_INSTANCE && i == 0)
 			thisInstance = argument;
 	}
 
@@ -624,7 +624,7 @@ ObjectInstance* VirtualMachine::InstantiateObject(TypeSymbol* type, ConstructorS
 	TypeSymbol* fieldOwnerType = genericInfo != nullptr ? genericInfo->UnderlayingType : type;
 	for (FieldSymbol* field : fieldOwnerType->Fields)
 	{
-		if (field->IsStatic)
+		if (field->Linking == LINK_STATIC)
 			continue;
 
 		TypeSymbol* fieldType = field->ReturnType;

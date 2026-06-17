@@ -154,7 +154,6 @@
 #include <shard/runtime/CallStackFrame.hpp>
 #include <shard/runtime/VirtualMachine.hpp>
 #include <shard/runtime/ArgumentsSpan.hpp>
-#include <shard/runtime/AbstractInterpreter.hpp>
 #include <shard/runtime/ConsoleHelper.hpp>
 #include <shard/runtime/MethodCallState.hpp>
 #include <shard/runtime/ProgramDisassembler.hpp>

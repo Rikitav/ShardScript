@@ -13,6 +13,7 @@
 #include <shard/syntax/nodes/ParametersListSyntax.hpp>
 #include <shard/syntax/nodes/CompilationUnitSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/TypeParametersListSyntax.hpp>
 #include <shard/syntax/nodes/AttributeSyntax.hpp>
 
 #include <shard/syntax/nodes/Statements/VariableStatementSyntax.hpp>
@@ -40,20 +41,10 @@
 #include <shard/syntax/symbols/AccessorSymbol.hpp>
 #include <shard/syntax/symbols/DelegateTypeSymbol.hpp>
 #include <shard/syntax/symbols/TypeParameterSymbol.hpp>
-#include <shard/syntax/nodes/TypeParametersListSyntax.hpp>
 
 #include <string>
 
 using namespace shard;
-
-static void GeneratePropertyBackingField(SymbolTable* table, PropertySymbol* symbol, SymbolFactory& factory)
-{
-    FieldSymbol* backingField = factory.Field(L"<" + symbol->Name + L">k__BackingField", symbol->ReturnType, symbol->IsStatic);
-    backingField->Accesibility = SymbolAccesibility::Private;
-    backingField->DefaultValueExpression = symbol->DefaultValueExpression;
-
-    symbol->BackingField = backingField;
-}
 
 static std::wstring FormatFullNameOf(SyntaxSymbol* symbol)
 {
@@ -173,10 +164,9 @@ void DeclarationCollector::VisitClassDeclaration(ClassDeclarationSyntax *const n
     for (const auto& member : node->Members)
         VisitMemberDeclaration(member.get());
 
-    if (!symbol->IsStatic && symbol->Constructors.empty())
+    if (symbol->Linking == LINK_INSTANCE && symbol->Constructors.empty())
     {
-        ConstructorSymbol* ctor = Factory.Constructor(L"default");
-        ctor->Parent = symbol;
+        ConstructorSymbol* ctor = Factory.Constructor(symbol, ACS_PUBLIC);
         ctor->FullName = FormatFullNameOf(ctor);
 
         symbol->Constructors.push_back(ctor);
@@ -235,10 +225,9 @@ void DeclarationCollector::VisitStructDeclaration(StructDeclarationSyntax *const
     for (const auto& member : node->Members)
         VisitMemberDeclaration(member.get());
 
-    if (!symbol->IsStatic && symbol->Constructors.empty())
+    if (symbol->Linking == LINK_INSTANCE && symbol->Constructors.empty())
     {
-        ConstructorSymbol* ctor = Factory.Constructor(L"default");
-        ctor->Parent = symbol;
+        ConstructorSymbol* ctor = Factory.Constructor(symbol, ACS_PUBLIC);
         ctor->FullName = FormatFullNameOf(ctor);
 
         symbol->Constructors.push_back(ctor);
@@ -316,7 +305,7 @@ void DeclarationCollector::VisitFieldDeclaration(FieldDeclarationSyntax *const n
                 TypeSymbol* ownerType = static_cast<TypeSymbol*>(symbol->Parent);
 
                 // Assert: static Class cannot have instance Fields
-                if (!symbol->IsStatic && ownerType->IsStatic)
+                if (symbol->Linking == LINK_INSTANCE && ownerType->Linking == LINK_STATIC)
                     Diagnostics.ReportError(node->IdentifierToken, L"Cannot declare a non static Field in static Type");
             }
         }
@@ -364,7 +353,7 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax *const
             if (symbol->Parent->Kind == SyntaxKind::NamespaceDeclaration)
             {
                 // Assert: namespace cannot have instance Methods
-                if (!symbol->IsStatic)
+                if (symbol->Linking == LINK_INSTANCE)
                     Diagnostics.ReportError(node->IdentifierToken, L"Cannot declare a non static Method in namespace");
             }
             else if (symbol->Parent->IsType())
@@ -372,7 +361,7 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax *const
                 TypeSymbol* ownerType = static_cast<TypeSymbol*>(symbol->Parent);
 
                 // Assert: static Class cannot have instance Methods
-                if (!symbol->IsStatic && ownerType->IsStatic)
+                if (symbol->Linking == LINK_INSTANCE && ownerType->Linking == LINK_STATIC)
                     Diagnostics.ReportError(node->IdentifierToken, L"Cannot declare a non static Method in static Type");
             }
             else if (symbol->Parent->IsMember())
@@ -393,7 +382,7 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax *const
                 Diagnostics.ReportError(node->IdentifierToken, L"Method should have a Body, as it's not marked as 'extern' or 'abstract'");
         }
 
-        std::uint16_t baseIndex = symbol->IsStatic ? 0 : 1;
+        std::uint16_t baseIndex = symbol->Linking == LINK_STATIC ? 0 : 1;
         for (std::size_t i = 0; i < symbol->Parameters.size(); ++i)
             symbol->Parameters[i]->SlotIndex = baseIndex + i;
 
@@ -454,7 +443,7 @@ void DeclarationCollector::VisitConstructorDeclaration(ConstructorDeclarationSyn
                     Diagnostics.ReportError(node->IdentifierToken, L"Constructor should have same name as containing Type");
 
                 // Assert: Type cannot have static Constructors'
-                if (symbol->IsStatic)
+                if (symbol->Linking == LINK_STATIC)
                     Diagnostics.ReportError(node->IdentifierToken, L"Type Constructors' cannot be static");
 
                 // Assert: extern Method cannot have body
@@ -467,7 +456,7 @@ void DeclarationCollector::VisitConstructorDeclaration(ConstructorDeclarationSyn
             }
         }
 
-        std::uint16_t baseIndex = symbol->IsStatic ? 0 : 1;
+        std::uint16_t baseIndex = symbol->Linking == LINK_STATIC ? 0 : 1;
         for (std::size_t i = 0; i < symbol->Parameters.size(); ++i)
             symbol->Parameters[i]->SlotIndex = baseIndex + i;
 
@@ -498,7 +487,7 @@ void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax *c
             (node->Setter != nullptr && node->Setter->Body == nullptr);
 
         if (isAutoProperty)
-            GeneratePropertyBackingField(Table, symbol, Factory);
+            Factory.BackingField(symbol);
 
         // Resolving owner symbol
         symbol->Parent = OwnerSymbol();
@@ -523,7 +512,7 @@ void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax *c
                 TypeSymbol* ownerType = static_cast<TypeSymbol*>(symbol->Parent);
 
                 // Assert: static Class cannot have instance Methods
-                if (!symbol->IsStatic && ownerType->IsStatic)
+                if (symbol->Linking == LINK_INSTANCE && ownerType->Linking == LINK_STATIC)
                     Diagnostics.ReportError(node->IdentifierToken, L"Cannot declare a non static Method in static Type");
             }
         }
@@ -585,7 +574,7 @@ void DeclarationCollector::VisitIndexatorDeclaration(IndexatorDeclarationSyntax 
                 TypeSymbol* ownerType = static_cast<TypeSymbol*>(symbol->Parent);
 
                 // Assert: static Class cannot have instance Indexators
-                if (!symbol->IsStatic && ownerType->IsStatic)
+                if (symbol->Linking == LINK_INSTANCE && ownerType->Linking == LINK_STATIC)
                     Diagnostics.ReportError(node->IdentifierToken, L"Cannot declare a non static Indexator in static Type");
             }
         }
@@ -673,7 +662,7 @@ void DeclarationCollector::VisitAccessorDeclaration(AccessorDeclarationSyntax *c
 
         // Resolving Methods' full name
         symbol->FullName = FormatFullNameOf(symbol);
-        symbol->IsStatic = propertySymbol->IsStatic;
+        symbol->Linking = propertySymbol->Linking;
         symbol->Parent->OnSymbolDeclared(symbol);
 
         ApplyMethodAttributes(symbol, node->Attributes);
@@ -703,7 +692,7 @@ void DeclarationCollector::VisitAccessorDeclaration(AccessorDeclarationSyntax *c
 
     // Assign slot indices for accessor parameters (e.g. setter's 'value')
     {
-        std::uint16_t baseIndex = symbol->IsStatic ? 0 : 1;
+        std::uint16_t baseIndex = symbol->Linking == LINK_STATIC ? 0 : 1;
         for (std::size_t i = 0; i < symbol->Parameters.size(); ++i)
             symbol->Parameters[i]->SlotIndex = baseIndex + i;
     }

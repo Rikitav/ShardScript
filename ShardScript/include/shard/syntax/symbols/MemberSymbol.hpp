@@ -1,9 +1,6 @@
 #pragma once
 #include <shard/ShardScriptAPI.hpp>
 
-#include <shard/syntax/nodes/ExpressionSyntax.hpp>
-#include <shard/syntax/symbols/TypeSymbol.hpp>
-
 #include <shard/syntax/SyntaxKind.hpp>
 #include <shard/syntax/SyntaxSymbol.hpp>
 
@@ -12,10 +9,19 @@
 
 namespace shard
 {
+    enum class SymbolLinking
+    {
+        Static,
+        Instance
+    };
+
+    constexpr SymbolLinking LINK_STATIC = shard::SymbolLinking::Static;
+    constexpr SymbolLinking LINK_INSTANCE = shard::SymbolLinking::Instance;
+
     class SHARD_API MemberSymbol : public SyntaxSymbol
     {
     public:
-        bool IsStatic = false;
+        SymbolLinking Linking = SymbolLinking::Instance;
 
         inline MemberSymbol(const std::wstring& name, const SyntaxKind kind)
             : SyntaxSymbol(name, kind) { }

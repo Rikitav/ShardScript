@@ -20,12 +20,11 @@ namespace shard
     {
     public:
         FieldSymbol* BackingField = nullptr;
+        TypeSymbol* ReturnType = nullptr;
         AccessorSymbol* Getter = nullptr;
         AccessorSymbol* Setter = nullptr;
-        ExpressionSyntax* DefaultValueExpression = nullptr;
         
-        TypeSymbol* ReturnType = nullptr;
-        bool IsStatic = false;
+        ExpressionSyntax* DefaultValueExpression = nullptr;
 
         inline PropertySymbol(const std::wstring& name)
             : MemberSymbol(name, SyntaxKind::PropertyDeclaration) { }

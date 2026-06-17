@@ -353,7 +353,7 @@ void TypeBinder::VisitAccessorDeclaration(AccessorDeclarationSyntax *const node)
 
 	// TODO: fix
 	/*
-	if (!propSymbol->IsStatic)
+	if (!propsymbol->Linking)
 	{
 		ParameterSymbol* thisParam = new ParameterSymbol(L"this");
 		thisParam->Type = static_cast<TypeSymbol*>(propSymbol->Parent);

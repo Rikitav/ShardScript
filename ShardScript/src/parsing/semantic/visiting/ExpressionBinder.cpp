@@ -83,7 +83,7 @@ using namespace shard;
 
 static void GeneratePropertyBackingField(SymbolFactory& factory, PropertySymbol* symbol)
 {
-	FieldSymbol* backingField = factory.Field(L"<" + symbol->Name + L">k__BackingField", symbol->ReturnType, symbol->IsStatic);
+	FieldSymbol* backingField = factory.Field(L"<" + symbol->Name + L">k__BackingField", symbol->ReturnType, symbol->Linking);
 	backingField->Accesibility = SymbolAccesibility::Private;
 	backingField->DefaultValueExpression = symbol->DefaultValueExpression;
 
@@ -268,10 +268,10 @@ void ExpressionBinder::VisitConstructorDeclaration(ConstructorDeclarationSyntax 
 		PushScope(symbol);
 
 		auto thisVar = Factory.Parameter(L"this", ownerType);
-		if (!symbol->IsStatic) // how tf not?
+		if (symbol->Linking == LINK_INSTANCE) // how tf not?
 			Declare(thisVar);
 
-		int counter = symbol->IsStatic ? 0 : 1;
+		int counter = symbol->Linking == LINK_STATIC ? 0 : 1;
 		for (const auto& parameter : symbol->Parameters)
 		{
 			parameter->SlotIndex = counter++;
@@ -306,10 +306,10 @@ void ExpressionBinder::VisitMethodDeclaration(MethodDeclarationSyntax *const nod
 	PushScope(symbol);
 
 	auto thisVar = Factory.Parameter(L"this", ownerType);
-	if (!symbol->IsStatic)
+	if (symbol->Linking == LINK_INSTANCE)
 		Declare(thisVar);
 
-	int counter = symbol->IsStatic ? 0 : 1;
+	int counter = symbol->Linking == LINK_STATIC ? 0 : 1;
 	for (const auto& parameter : symbol->Parameters)
 	{
 		parameter->SlotIndex = counter++;
@@ -398,10 +398,10 @@ void ExpressionBinder::VisitAccessorDeclaration(AccessorDeclarationSyntax *const
 		PropertySymbol* propSymbol = static_cast<PropertySymbol*>(symbol->Parent);
 
 		auto thisVar = Factory.Parameter(L"this", static_cast<TypeSymbol*>(propSymbol->Parent));
-		if (!symbol->IsStatic)
+		if (symbol->Linking == LINK_INSTANCE)
 			Declare(thisVar);
 
-		int counter = symbol->IsStatic ? 0 : 1;
+		int counter = symbol->Linking == LINK_STATIC ? 0 : 1;
 		for (const auto& parameter : symbol->Parameters)
 		{
 			parameter->SlotIndex = counter++;
@@ -427,10 +427,10 @@ void ExpressionBinder::VisitAccessorDeclaration(AccessorDeclarationSyntax *const
 		PropertySymbol* propSymbol = static_cast<PropertySymbol*>(symbol->Parent);
 
 		auto thisVar = Factory.Parameter(L"this", static_cast<TypeSymbol*>(propSymbol->Parent));
-		if (!symbol->IsStatic)
+		if (symbol->Linking == LINK_INSTANCE)
 			Declare(thisVar);
 
-		int counter = symbol->IsStatic ? 0 : 1;
+		int counter = symbol->Linking == LINK_STATIC ? 0 : 1;
 		for (const auto& parameter : symbol->Parameters)
 		{
 			parameter->SlotIndex = counter++;
@@ -1167,10 +1167,10 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 			node->ToField = fieldSymbol;
 
 			bool isStaticContext = GetIsStaticContext(node->PreviousExpression.get());
-			if (isStaticContext && !fieldSymbol->IsStatic)
+			if (isStaticContext && fieldSymbol->Linking == LINK_INSTANCE)
 				Diagnostics.ReportError(node->IdentifierToken, L"Cannot access instance field '" + fieldSymbol->FullName + L"' from type context");
 
-			if (!isStaticContext && fieldSymbol->IsStatic)
+			if (!isStaticContext && fieldSymbol->Linking == LINK_STATIC)
 				Diagnostics.ReportError(node->IdentifierToken, L"Cannot access static field '" + fieldSymbol->FullName + L"' from instance reference");
 
 			return fieldType;
@@ -1242,14 +1242,14 @@ TypeSymbol* ExpressionBinder::AnalyzePropertyAccessExpression(MemberAccessExpres
 		return nullptr;
 	}
 
-	bool isStaticCtx = GetIsStaticContext(node->PreviousExpression.get());
-	if (isStaticCtx && !accessor->IsStatic)
+	bool isStaticContext = GetIsStaticContext(node->PreviousExpression.get());
+	if (isStaticContext && accessor->Linking == LINK_INSTANCE)
 	{
 		Diagnostics.ReportError(node->IdentifierToken, L"Cannot access instance property '" + memberName + L"' from type context");
 		return nullptr;
 	}
 
-	if (!isStaticCtx && accessor->IsStatic)
+	if (!isStaticContext && accessor->Linking == LINK_STATIC)
 	{
 		Diagnostics.ReportError(node->IdentifierToken, L"Cannot access static property '" + memberName + L"' from instance reference");
 		return nullptr;
@@ -1274,7 +1274,7 @@ TypeSymbol* ExpressionBinder::AnalyzePropertyAccessExpression(MemberAccessExpres
 	return propertyType;
 }
 
-TypeSymbol* ExpressionBinder::AnalyzeFieldKeywordExpression(MemberAccessExpressionSyntax *const node, TypeSymbol* currentType)
+TypeSymbol* ExpressionBinder::AnalyzeFieldKeywordExpression(MemberAccessExpressionSyntax* const node, TypeSymbol* currentType)
 {
 	// Find PropertySymbol in current scope chain
 	PropertySymbol* propertySymbol = nullptr;
@@ -1299,11 +1299,18 @@ TypeSymbol* ExpressionBinder::AnalyzeFieldKeywordExpression(MemberAccessExpressi
 
 	// Create backing field if it doesn't exist yet (for explicit property bodies using 'field')
 	if (propertySymbol->BackingField == nullptr)
+	{
 		GeneratePropertyBackingField(Factory, propertySymbol);
+		if (propertySymbol->BackingField == nullptr)
+		{
+			Diagnostics.ReportError(node->IdentifierToken, L"Backing field type not resolved for property '" + propertySymbol->Name + L"'");
+			return nullptr;
+		}
+	}
 
 	// Resolve 'field' as the backing field
 	node->ToField = propertySymbol->BackingField;
-	node->IsStaticContext = propertySymbol->IsStatic;
+	node->IsStaticContext = propertySymbol->Linking == LINK_STATIC;
 
 	if (propertySymbol->BackingField->ReturnType == nullptr)
 	{
@@ -1450,15 +1457,15 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax *const 
 	}
 
 	// Try to find method inside current type
-	MethodSymbol* method = nullptr;
+	MethodSymbol* symbol = nullptr;
 	if (currentType != nullptr)
 	{
-		method = currentType->FindMethod(methodName, argTypes);
-		if (method == nullptr)
-			method = SymbolTable::Global::Type->FindMethod(methodName, argTypes);
+		symbol = currentType->FindMethod(methodName, argTypes);
+		if (symbol == nullptr)
+			symbol = SymbolTable::Global::Type->FindMethod(methodName, argTypes);
 	}
 
-	if (method == nullptr)
+	if (symbol == nullptr)
 	{
 		SyntaxSymbol* lookupMethod = CurrentScope()->Lookup(methodName);
 		if (lookupMethod != nullptr)
@@ -1471,18 +1478,18 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax *const 
 					if (delegateVar->Type->Kind == SyntaxKind::DelegateType)
 					{
 						const DelegateTypeSymbol* delegate = static_cast<const DelegateTypeSymbol*>(delegateVar->Type);
-						method = delegate->AnonymousSymbol;
+						symbol = delegate->AnonymousSymbol;
 					}
 				}
 			}
 			else if (lookupMethod->Kind == SyntaxKind::MethodDeclaration)
 			{
-				method = static_cast<MethodSymbol*>(lookupMethod);
+				symbol = static_cast<MethodSymbol*>(lookupMethod);
 			}
 		}
 	}
 
-	if (method == nullptr)
+	if (symbol == nullptr)
 	{
 		std::wstringstream diag;
 		diag << "No method \"" << methodName << "\" found that accepts ";
@@ -1524,19 +1531,19 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax *const 
 	}
 	
 	bool isStaticContext = GetIsStaticContext(node->PreviousExpression.get());
-	if (isStaticContext && !method->IsStatic)
+	if (isStaticContext && symbol->Linking == LINK_INSTANCE)
 	{
 		Diagnostics.ReportError(node->IdentifierToken, L"Cannot call instance method '" + methodName + L"' from type context");
 		return nullptr;
 	}
 
-	if (!isStaticContext && method->IsStatic)
+	if (!isStaticContext && symbol->Linking == LINK_STATIC)
 	{
 		Diagnostics.ReportError(node->IdentifierToken, L"Cannot call static method '" + methodName + L"' on instance reference");
 		return nullptr;
 	}
 
-	return method;
+	return symbol;
 }
 
 TypeSymbol* ExpressionBinder::AnalyzeIndexatorExpression(IndexatorExpressionSyntax *const node, TypeSymbol* currentType)
@@ -1809,11 +1816,11 @@ IndexatorSymbol* ExpressionBinder::ResolveIndexator(IndexatorExpressionSyntax *c
 		return SymbolTable::Primitives::Array->Indexators[0];
 	}
 
-	IndexatorSymbol* indexator = currentType->FindIndexator(argTypes);
-	if (indexator == nullptr)
-		indexator = SymbolTable::Global::Type->FindIndexator(argTypes);
+	IndexatorSymbol* symbol = currentType->FindIndexator(argTypes);
+	if (symbol == nullptr)
+		symbol = SymbolTable::Global::Type->FindIndexator(argTypes);
 
-	if (indexator == nullptr)
+	if (symbol == nullptr)
 	{
 		std::wstringstream diag;
 		diag << "No indeaxtors for type \"" << currentType->Name << "\" found that accepts ";
@@ -1855,19 +1862,19 @@ IndexatorSymbol* ExpressionBinder::ResolveIndexator(IndexatorExpressionSyntax *c
 	}
 
 	bool isStaticContext = GetIsStaticContext(node->PreviousExpression.get());
-	if (isStaticContext && !indexator->IsStatic)
+	if (isStaticContext && symbol->Linking == LINK_INSTANCE)
 	{
 		Diagnostics.ReportError(access->IdentifierToken, L"Cannot call instance indexator '" + methodName + L"' from type context");
 		return nullptr;
 	}
 
-	if (!isStaticContext && indexator->IsStatic)
+	if (!isStaticContext && symbol->Linking == LINK_STATIC)
 	{
 		Diagnostics.ReportError(access->IdentifierToken, L"Cannot call static indexator '" + methodName + L"' on instance reference");
 		return nullptr;
 	}
 
-	return indexator;
+	return symbol;
 }
 
 void ExpressionBinder::VisitMemberAccessExpression(MemberAccessExpressionSyntax *const node)

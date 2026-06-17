@@ -169,6 +169,13 @@ void TypeSymbol::OnSymbolDeclared(SyntaxSymbol* symbol)
 			break;
 		}
 
+		case SyntaxKind::TypeParameter:
+		{
+			TypeParameterSymbol* typeParam = static_cast<TypeParameterSymbol*>(symbol);
+			TypeParameters.push_back(typeParam);
+			break;
+		}
+
 		default:
 		{
 			/*

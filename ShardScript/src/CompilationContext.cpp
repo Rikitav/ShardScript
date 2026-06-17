@@ -337,7 +337,17 @@ void CompilationContext::AddLib(const LibraryHandle& handle)
 	EntryPointFunction entryPoint = reinterpret_cast<EntryPointFunction>(GetLibFunction(handle, "ShardLib_EntryPoint"));
 
 	if (entryPoint == nullptr)
-		throw std::runtime_error("library does not export ShardLib_EntryPoint");
+	{
+#ifdef _WIN32
+		char dllPath[MAX_PATH];
+		if (GetModuleFileNameA(handle, dllPath, MAX_PATH) > 0)
+		{
+			throw std::runtime_error("library \"" + std::string(dllPath) + "\" does not export ShardLib_EntryPoint");
+		}
+#endif
+
+		throw std::runtime_error("library \"<UNKNOWN>\" does not export ShardLib_EntryPoint");
+	}
 
 	try
 	{
