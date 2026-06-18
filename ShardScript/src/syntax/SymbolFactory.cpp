@@ -427,13 +427,22 @@ DelegateTypeSymbol* SymbolFactory::Delegate(DelegateDeclarationSyntax* node)
 	auto anonymousMethod = std::make_unique<MethodSymbol>(L"Delegate");
 	anonymousMethod->HandleType = MethodHandleType::Lambda;
 	anonymousMethod->Accesibility = SymbolAccesibility::Public;
-	anonymousMethod->ReturnType = node->ReturnType->Symbol;
+	anonymousMethod->ReturnType = SymbolTable::Primitives::Void;
 	anonymousMethod->Linking = LINK_STATIC;
 
 	auto symbol = std::make_unique<DelegateTypeSymbol>(node->IdentifierToken.Word);
-	symbol->ReturnType = node->ReturnType->Symbol;
 	symbol->AnonymousSymbol = anonymousMethod.get();
 	SetAccesibility(symbol.get(), node->Modifiers);
+
+	if (node->ParametersList != nullptr)
+	{
+		for (const auto& parameter : node->ParametersList->Parameters)
+		{
+			ParameterSymbol* paramSymbol = Parameter(parameter->Identifier.Word, SymbolTable::Primitives::Any);
+			symbol->Parameters.push_back(paramSymbol);
+			anonymousMethod->Parameters.push_back(paramSymbol);
+		}
+	}
 
 	Table->ImplicitSymbol(std::move(anonymousMethod));
 	return static_cast<DelegateTypeSymbol*>(Table->BindSymbol(node, std::move(symbol)));

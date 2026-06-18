@@ -132,6 +132,10 @@ void ProgramDisassembler::Disassemble(std::wostream& out, MethodSymbol* method)
                 break;
             }
 
+            case OpCode::CALLDELEGATE:
+                out << L"calldelegate";
+                break;
+
             case OpCode::NEWOBJECT:
             {
                 auto* sym = decoder.AbsorbTypeSymbol();

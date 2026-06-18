@@ -84,7 +84,7 @@ namespace shard
 		shard::MethodSymbol* ResolveMethod(shard::InvokationExpressionSyntax *const node, shard::TypeSymbol* currentType);
 		shard::IndexatorSymbol* ResolveIndexator(shard::IndexatorExpressionSyntax *const node, shard::TypeSymbol* currentType);
 
-		bool MatchMethodArguments(std::vector<ParameterSymbol*>& parameters, std::vector<std::unique_ptr<ArgumentSyntax>>& arguments, GenericTypeSymbol* genericType = nullptr);
+		bool MatchMethodArguments(SyntaxToken blameToken, std::vector<ParameterSymbol*>& parameters, std::vector<std::unique_ptr<ArgumentSyntax>>& arguments, GenericTypeSymbol* genericType = nullptr);
 		shard::TypeSymbol* SubstituteTypeParameters(shard::TypeSymbol* type, shard::GenericTypeSymbol* genericType);
 
 		shard::TypeSymbol* AnalyzeNumberLiteral(shard::LiteralExpressionSyntax *const node);

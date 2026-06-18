@@ -274,6 +274,12 @@ namespace shard
 		CALLMETHODSYMBOL,
 
 		/// <summary>
+		/// Invokes the target method stored in a delegate instance.
+		/// <para>Includes no additional parameters.</para>
+		/// </summary>
+		CALLDELEGATE,
+
+		/// <summary>
 		/// Loads a type argument into the current call frame's TypeArguments vector.
 		/// <para>Includes 2 parameters :</para>
 		/// <para>> std::uint16_t Index - Zero-based index in TypeArguments.</para>

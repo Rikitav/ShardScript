@@ -143,6 +143,26 @@ bool TypeSymbol::IsAssignableFrom(const TypeSymbol* target, const TypeSymbol* so
         }
     }
 
+    if (target->Kind == SyntaxKind::DelegateType && source->Kind == SyntaxKind::DelegateType)
+    {
+        const DelegateTypeSymbol* targetDelegate = static_cast<const DelegateTypeSymbol*>(target);
+        const DelegateTypeSymbol* sourceDelegate = static_cast<const DelegateTypeSymbol*>(source);
+
+        if (!Equals(targetDelegate->ReturnType, sourceDelegate->ReturnType))
+            return false;
+
+        if (targetDelegate->Parameters.size() != sourceDelegate->Parameters.size())
+            return false;
+
+        for (std::size_t i = 0; i < targetDelegate->Parameters.size(); ++i)
+        {
+            if (!Equals(targetDelegate->Parameters[i]->Type, sourceDelegate->Parameters[i]->Type))
+                return false;
+        }
+
+        return true;
+    }
+
     return false;
 }
 

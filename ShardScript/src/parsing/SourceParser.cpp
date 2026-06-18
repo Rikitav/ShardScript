@@ -74,8 +74,11 @@
 #include <initializer_list>
 #include <set>
 #include <new>
+#include <cwctype>
 
 using namespace shard;
+
+static bool IsTypeStartToken(const shard::TokenType type);
 
 void SourceParser::FromSourceProvider(SyntaxTree& syntaxTree, SourceProvider& reader)
 {
@@ -600,7 +603,25 @@ std::unique_ptr<InterfaceDeclarationSyntax> SourceParser::ReadInterfaceDeclarati
 std::unique_ptr<DelegateDeclarationSyntax> SourceParser::ReadDelegateDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode *const parent)
 {
 	auto syntax = std::make_unique<DelegateDeclarationSyntax>(info, parent);
+
+	if (TryMatchIdentifier(reader, 5))
+	{
+		syntax->IdentifierToken = reader.Current();
+		reader.Consume();
+	}
+	else
+	{
+		syntax->IdentifierToken = SyntaxToken(TokenType::Identifier, L"", TextLocation(), true);
+	}
+
 	syntax->ParametersList = ReadParametersList(reader, syntax.get());
+
+	if (reader.Current().Type == TokenType::ArrowOperator)
+	{
+		reader.Consume();
+		syntax->ReturnType = ReadType(reader, syntax.get());
+	}
+
 	syntax->Semicolon = Expect(reader, TokenType::Semicolon, L"Expected ';' token");
 	return syntax;
 }
@@ -1085,6 +1106,44 @@ std::unique_ptr<ParametersListSyntax> SourceParser::ReadParametersList(SourcePro
 	return syntax;
 }
 
+std::unique_ptr<ParametersListSyntax> SourceParser::ReadDelegateParametersList(SourceProvider& reader, SyntaxNode* const parent)
+{
+	auto syntax = std::make_unique<ParametersListSyntax>(parent);
+	syntax->OpenToken = Expect(reader, TokenType::OpenCurl, L"Expected '(' token");
+
+	SyntaxToken checkCloser = reader.Current();
+	if (checkCloser.Type == TokenType::CloseCurl)
+	{
+		syntax->CloseToken = checkCloser;
+		reader.Consume();
+		return syntax;
+	}
+
+	while (reader.CanConsume())
+	{
+		auto type = ReadType(reader, syntax.get());
+		auto param = std::make_unique<ParameterSyntax>(std::move(type), SyntaxToken(), syntax.get());
+		syntax->Parameters.push_back(std::move(param));
+
+		// Try to match separator
+		if (!TryMatch(reader, { TokenType::Comma, TokenType::CloseCurl }, L"Expected ',' or ')'", 3))
+		{
+			break;
+		}
+
+		SyntaxToken separatorToken = reader.Current();
+		reader.Consume();
+
+		if (separatorToken.Type == TokenType::CloseCurl)
+		{
+			syntax->CloseToken = separatorToken;
+			break;
+		}
+	}
+
+	return syntax;
+}
+
 std::unique_ptr<TypeParametersListSyntax> SourceParser::ReadTypeParametersList(SourceProvider& reader, SyntaxNode *const parent)
 {
 	auto syntax = std::make_unique<TypeParametersListSyntax>(parent);
@@ -1351,6 +1410,7 @@ std::unique_ptr<StatementSyntax> SourceParser::ReadStatement(SourceProvider& rea
 			reader.Consume(); // name
 			SyntaxToken walrus = reader.Current();
 			reader.Consume(); // :=
+
 			auto expr = ReadExpression(reader, parent, 0);
 			return std::make_unique<VariableStatementSyntax>(
 				std::make_unique<PredefinedTypeSyntax>(SyntaxToken(TokenType::VarKeyword, L"var", current.Location, false), parent),
@@ -1957,7 +2017,18 @@ std::unique_ptr<LambdaExpressionSyntax> SourceParser::ReadLambdaExpression(Sourc
 	auto syntax = std::make_unique<LambdaExpressionSyntax>(parent);
 	syntax->LambdaToken = Expect(reader, TokenType::LambdaKeyword, L"Expected 'lambda' keyword");
 	syntax->ParametersList = ReadParametersList(reader, syntax.get());
-	syntax->LambdaOperatorToken = Expect(reader, TokenType::LambdaOperator, L"Expected '=>' operator");
+
+	if (reader.Current().Type == TokenType::ArrowOperator)
+	{
+		syntax->ReturnTypeArrowToken = reader.Current();
+		reader.Consume();
+		syntax->ReturnType = ReadType(reader, syntax.get());
+	}
+	else
+	{
+		syntax->LambdaOperatorToken = Expect(reader, TokenType::LambdaOperator, L"Expected '=>' or '->' operator");
+	}
+
 	syntax->Body = ReadStatementsBlock(reader, syntax.get());
 	return syntax;
 }
@@ -2273,9 +2344,9 @@ std::unique_ptr<TypeSyntax> SourceParser::ReadIdentifierNameType(SourceProvider&
 std::unique_ptr<TypeSyntax> SourceParser::ReadDelegateType(SourceProvider& reader, SyntaxNode *const parent)
 {
 	auto delegate = std::make_unique<DelegateTypeSyntax>(parent);
-	delegate->DelegateToken = Expect(reader, TokenType::DelegateKeyword, L"Excpected 'lambda' keyword");
+	delegate->DelegateToken = Expect(reader, TokenType::DelegateKeyword, L"Expected 'delegate' keyword");
 	delegate->ReturnType = ReadType(reader, delegate.get());
-	delegate->Params = ReadParametersList(reader, delegate.get());
+	delegate->Params = ReadDelegateParametersList(reader, delegate.get());
 
 	return ReadModifiedType(reader, delegate.release(), parent);
 }
