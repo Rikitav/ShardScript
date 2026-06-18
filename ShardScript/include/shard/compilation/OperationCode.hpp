@@ -306,6 +306,32 @@ namespace shard
 		CASTINTERFACE,
 
 		/// <summary>
+		/// Marks the beginning of a try-protected region. If an exception is raised
+		/// inside this region, execution continues at the given handler offset.
+		/// <para>Includes 1 parameter :</para>
+		/// <para>> std::size_t HandlerOffset - absolute bytecode offset of catch dispatch block.</para>
+		/// </summary>
+		ENTER_TRY,
+
+		/// <summary>
+		/// Marks the end of a try-protected region. Pops the active handler record.
+		/// <para>Includes no additional parameters.</para>
+		/// </summary>
+		LEAVE_TRY,
+
+		/// <summary>
+		/// Re-throws the exception currently being handled. Must only appear inside a catch block.
+		/// <para>Includes no additional parameters.</para>
+		/// </summary>
+		RETHROW,
+
+		/// <summary>
+		/// Marks the end of a catch handler. Clears the current exception being handled.
+		/// <para>Includes no additional parameters.</para>
+		/// </summary>
+		END_CATCH,
+
+		/// <summary>
 		/// Creates a new integer array from a range. Pops upper bound, lower bound and
 		/// an inclusive flag, then pushes the populated array.
 		/// <para>Includes 1 parameter :</para>

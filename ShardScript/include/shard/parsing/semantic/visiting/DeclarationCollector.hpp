@@ -14,6 +14,7 @@
 #include <shard/syntax/nodes/CompilationUnitSyntax.hpp>
 #include <shard/syntax/nodes/StatementsBlockSyntax.hpp>
 #include <shard/syntax/nodes/Statements/VariableStatementSyntax.hpp>
+#include <shard/syntax/nodes/Statements/TryStatementSyntax.hpp>
 
 #include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.hpp>
@@ -56,6 +57,7 @@ namespace shard
 		void VisitAccessorDeclaration(shard::AccessorDeclarationSyntax *const node) override;
 		void VisitVariableStatement(shard::VariableStatementSyntax *const node) override;
 		void VisitForEachStatement(shard::ForEachStatementSyntax *const node) override;
+		void VisitTryStatement(shard::TryStatementSyntax *const node) override;
 
 	private:
 		void ApplyMethodAttributes(shard::MethodSymbol* symbol, const std::vector<std::unique_ptr<shard::AttributeSyntax>>& attributes);

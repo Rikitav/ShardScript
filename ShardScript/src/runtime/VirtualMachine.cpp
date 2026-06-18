@@ -17,7 +17,11 @@
 #include <shard/syntax/SyntaxKind.hpp>
 
 #include <shard/syntax/symbols/MethodSymbol.hpp>
+#include <shard/syntax/symbols/AccessorSymbol.hpp>
+#include <shard/syntax/symbols/PropertySymbol.hpp>
+#include <shard/syntax/symbols/InterfaceSymbol.hpp>
 #include <shard/syntax/symbols/ConstructorSymbol.hpp>
+#include <shard/syntax/symbols/ClassSymbol.hpp>
 #include <shard/syntax/symbols/FieldSymbol.hpp>
 #include <shard/syntax/symbols/TypeSymbol.hpp>
 #include <shard/syntax/symbols/GenericTypeSymbol.hpp>
@@ -587,9 +591,143 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
+		case OpCode::THROW:
+		{
+			ObjectInstance* exception = frame->PopStack();
+			if (exception == nullptr || exception == garbageCollector.NullInstance)
+				throw std::runtime_error("Cannot throw null exception");
+
+			exception->IncrementReference();
+			frame->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
+			frame->InterruptionRegister = exception;
+			frame->CurrentException = exception;
+			break;
+		}
+
+		case OpCode::RETHROW:
+		{
+			ObjectInstance* exception = frame->CurrentException;
+			if (exception == nullptr)
+				throw std::runtime_error("Cannot rethrow outside of catch block");
+
+			exception->IncrementReference();
+			frame->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
+			frame->InterruptionRegister = exception;
+			break;
+		}
+
+		case OpCode::ENTER_TRY:
+		{
+			std::size_t handlerOffset = decoder.AbsorbJump();
+			frame->ExceptionHandlers.push_back(handlerOffset);
+			break;
+		}
+
+		case OpCode::LEAVE_TRY:
+		{
+			if (!frame->ExceptionHandlers.empty())
+				frame->ExceptionHandlers.pop_back();
+			break;
+		}
+
+		case OpCode::END_CATCH:
+		{
+			if (frame->CurrentException != nullptr)
+			{
+				garbageCollector.CollectInstance(frame->CurrentException);
+				frame->CurrentException = nullptr;
+			}
+			break;
+		}
+
 		default:
 			throw std::runtime_error("CRITICAL SHIT! UNKNOWN OPCODE");
 	}
+}
+
+std::wstring VirtualMachine::GetStackTrace() const
+{
+	std::wstring result;
+	for (const auto& framePtr : CallStack)
+	{
+		CallStackFrame* frame = framePtr.get();
+		if (frame == nullptr || frame->Method == nullptr)
+			continue;
+
+		if (!result.empty())
+			result += L"\n";
+
+		result += frame->Method->FullName;
+	}
+	return result;
+}
+
+ObjectInstance* VirtualMachine::CreateRuntimeException(const std::exception& err)
+{
+	ClassSymbol* runtimeExceptionType = SymbolTable::StandardTypes::RuntimeException;
+	if (runtimeExceptionType == nullptr)
+		throw std::runtime_error("RuntimeException type was not initialized");
+
+	ConstructorSymbol* ctor = nullptr;
+	for (ConstructorSymbol* candidate : runtimeExceptionType->Constructors)
+	{
+		if (candidate->Parameters.empty())
+		{
+			ctor = candidate;
+			break;
+		}
+	}
+	if (ctor == nullptr)
+		throw std::runtime_error("RuntimeException has no parameterless constructor");
+
+	ObjectInstance* instance = InstantiateObject(runtimeExceptionType, ctor);
+
+	if (SymbolTable::StandardTypes::RuntimeExceptionMessageField != nullptr)
+	{
+		const char* what = err.what();
+		std::wstring msg(what, what + std::strlen(what));
+		ObjectInstance* msgInstance = garbageCollector.FromValue(msg);
+		instance->SetField(SymbolTable::StandardTypes::RuntimeExceptionMessageField, msgInstance, nullptr);
+	}
+
+	if (SymbolTable::StandardTypes::RuntimeExceptionStackTraceField != nullptr)
+	{
+		std::wstring trace = GetStackTrace();
+		ObjectInstance* traceInstance = garbageCollector.FromValue(trace);
+		instance->SetField(SymbolTable::StandardTypes::RuntimeExceptionStackTraceField, traceInstance, nullptr);
+	}
+
+	return instance;
+}
+
+static bool HandleExceptionInFrame(CallStackFrame* frame, ByteCodeDecoder& decoder, GarbageCollector& gc)
+{
+	ObjectInstance* exception = frame->InterruptionRegister;
+	if (exception == nullptr)
+		throw std::runtime_error("Exception was raised without an exception object");
+
+	while (!frame->EvalStack.empty())
+	{
+		ObjectInstance* top = frame->PopStack();
+		if (top != nullptr)
+			gc.DestroyInstance(top);
+	}
+
+	while (!frame->ExceptionHandlers.empty())
+	{
+		std::size_t handlerOffset = frame->ExceptionHandlers.back();
+		frame->ExceptionHandlers.pop_back();
+
+		decoder.SetCursor(handlerOffset);
+		frame->EvalStack.push_back(exception);
+		exception->IncrementReference();
+		frame->CurrentException = exception;
+		frame->InterruptionReason = FrameInterruptionReason::None;
+		frame->InterruptionRegister = nullptr;
+		return true;
+	}
+
+	return false;
 }
 
 void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* currentFrame)
@@ -638,16 +776,28 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 		case MethodHandleType::Body:
 		{
 			ByteCodeDecoder decoder = ByteCodeDecoder(method->ExecutableByteCode);
-			while (!decoder.IsEOF())
+			while (true)
 			{
 				if (AbortFlag)
 					throw std::runtime_error("Execution aborted by host.");
+
+				if (currentFrame->InterruptionReason == FrameInterruptionReason::ExceptionRaised)
+				{
+					if (!HandleExceptionInFrame(currentFrame, decoder, garbageCollector))
+						break;
+
+					continue;
+				}
+
+				if (decoder.IsEOF())
+					break;
 
 				OpCode opCode = decoder.AbsorbOpCode();
 				ProcessCode(currentFrame, decoder, opCode);
 			}
 
-			if (method->ReturnType != nullptr && method->ReturnType != SymbolTable::Primitives::Void)
+			if (method->ReturnType != nullptr && method->ReturnType != SymbolTable::Primitives::Void &&
+			    currentFrame->InterruptionReason != FrameInterruptionReason::ExceptionRaised)
 			{
 				callingFrame->PushStack(currentFrame->PopStack());
 			}
@@ -686,20 +836,36 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 			}
 			catch (const std::exception& err)
 			{
-				std::string description = err.what();
-				std::wstring wdescription = std::wstring(description.begin(), description.end());
+				ObjectInstance* exception = CreateRuntimeException(err);
 
 				currentFrame->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
-				currentFrame->InterruptionRegister = garbageCollector.FromValue(wdescription);
-				currentFrame->InterruptionRegister->IncrementReference();
+				currentFrame->InterruptionRegister = exception;
+				currentFrame->CurrentException = exception;
+				exception->IncrementReference();
 			}
 
 			break;
 		}
 	}
 
+	if (currentFrame->InterruptionReason == FrameInterruptionReason::ExceptionRaised)
+	{
+		ObjectInstance* exception = currentFrame->InterruptionRegister;
+		if (callingFrame != nullptr && exception != nullptr)
+		{
+			callingFrame->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
+			callingFrame->InterruptionRegister = exception;
+			callingFrame->CurrentException = exception;
+			exception->IncrementReference();
+		}
+	}
+
 	while (currentFrame->EvalStack.size() != 0)
-		garbageCollector.DestroyInstance(currentFrame->PopStack());
+	{
+		ObjectInstance* top = currentFrame->PopStack();
+		if (top != nullptr)
+			garbageCollector.DestroyInstance(top);
+	}
 }
 
 ObjectInstance* VirtualMachine::InstantiateObject(TypeSymbol* type, ConstructorSymbol* ctor)
@@ -769,7 +935,7 @@ CallStackFrame* VirtualMachine::CurrentFrame() const
 	if (CallStack.empty())
 		return nullptr;
 
-	return CallStack.top().get();
+	return CallStack.back().get();
 }
 
 CallStackFrame* VirtualMachine::PushFrame(MethodSymbol* methodSymbol)
@@ -778,7 +944,7 @@ CallStackFrame* VirtualMachine::PushFrame(MethodSymbol* methodSymbol)
 	frame->TypeArguments = std::move(PendingTypeArguments);
 	PendingTypeArguments.clear();
 	CallStackFrame* rawFrame = frame.get();
-	CallStack.push(std::move(frame));
+	CallStack.push_back(std::move(frame));
 	return rawFrame;
 }
 
@@ -788,7 +954,7 @@ CallStackFrame* VirtualMachine::PushFrame(MethodSymbol* methodSymbol, TypeSymbol
 	frame->TypeArguments = std::move(PendingTypeArguments);
 	PendingTypeArguments.clear();
 	CallStackFrame* rawFrame = frame.get();
-	CallStack.push(std::move(frame));
+	CallStack.push_back(std::move(frame));
 	return rawFrame;
 }
 
@@ -797,7 +963,7 @@ void VirtualMachine::PopFrame()
 	if (CallStack.empty())
 		return;
 
-	CallStack.pop();
+	CallStack.pop_back();
 }
 
 void VirtualMachine::InvokeMethod(MethodSymbol* method) const
@@ -862,13 +1028,91 @@ void VirtualMachine::RaiseException(ObjectInstance* exceptionReg) const
 	// TODO: implement method
 }
 
+static std::wstring GetThrowablePropertyValue(VirtualMachine& vm, ObjectInstance* exception, PropertySymbol* interfaceProperty)
+{
+	if (exception == nullptr || interfaceProperty == nullptr || interfaceProperty->Getter == nullptr)
+		return L"";
+
+	TypeSymbol* exceptionType = const_cast<TypeSymbol*>(exception->getInfo());
+	if (exceptionType == nullptr)
+		return L"";
+
+	MethodSymbol* implementation = exceptionType->FindInterfaceImplementation(interfaceProperty->Getter);
+	if (implementation == nullptr)
+		return L"";
+
+	vm.InvokeMethod(implementation, { exception });
+
+	CallStackFrame* frame = vm.CurrentFrame();
+	if (frame == nullptr || frame->EvalStack.empty())
+		return L"";
+
+	ObjectInstance* result = frame->PopStack();
+	if (result == nullptr)
+		return L"";
+
+	if (result->getInfo() == nullptr || result->getInfo() != SymbolTable::Primitives::String)
+		return L"";
+
+	const wchar_t* data = result->AsString();
+	std::wstring value = data != nullptr ? std::wstring(data) : L"";
+
+	if (result != GarbageCollector::NullInstance)
+		result->DecrementReference();
+
+	return value;
+}
+
 void VirtualMachine::Run()
 {
 	if (program.EntryPoint == nullptr)
 		throw std::runtime_error("entry point was null");
 
+	if (UnhandledException != nullptr)
+	{
+		garbageCollector.CollectInstance(UnhandledException);
+		UnhandledException = nullptr;
+	}
+	UnhandledExceptionMessage.clear();
+	UnhandledExceptionStackTrace.clear();
+
 	AbortFlag = false;
-	InvokeMethod(program.EntryPoint);
+	CallStackFrame* entryFrame = PushFrame(program.EntryPoint);
+	InvokeMethodInternal(program.EntryPoint, entryFrame);
+
+	if (entryFrame->InterruptionReason == FrameInterruptionReason::ExceptionRaised)
+	{
+		ObjectInstance* exception = entryFrame->InterruptionRegister;
+		if (exception != nullptr)
+		{
+			exception->IncrementReference();
+			UnhandledException = exception;
+
+			if (SymbolTable::StandardTypes::IThrowable != nullptr && TypeSymbol::IsAssignableFrom(
+				static_cast<TypeSymbol*>(SymbolTable::StandardTypes::IThrowable),
+			    const_cast<TypeSymbol*>(exception->getInfo())))
+			{
+				for (PropertySymbol* property : SymbolTable::StandardTypes::IThrowable->Properties)
+				{
+					if (property == nullptr)
+						continue;
+
+					if (property->Name == L"message")
+						UnhandledExceptionMessage = GetThrowablePropertyValue(*this, exception, property);
+					else if (property->Name == L"stack_trace")
+						UnhandledExceptionStackTrace = GetThrowablePropertyValue(*this, exception, property);
+				}
+			}
+
+			if (UnhandledExceptionStackTrace.empty())
+				UnhandledExceptionStackTrace = GetStackTrace();
+		}
+
+		PopFrame();
+		return;
+	}
+
+	PopFrame();
 }
 
 void VirtualMachine::Abort() const

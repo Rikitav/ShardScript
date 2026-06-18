@@ -260,7 +260,11 @@ void GarbageCollector::TerminateInstance(ObjectInstance* instance)
 	for (FieldSymbol* field : fieldOwner->Fields)
 	{
 		if (field->ReturnType->IsReferenceType)
-			DestroyInstance(instance->GetField(field));
+		{
+			ObjectInstance* fieldValue = instance->GetField(field);
+			if (fieldValue != nullptr)
+				DestroyInstance(fieldValue);
+		}
 	}
 
 	if (instance->getInfo()->Kind == SyntaxKind::ArrayType)
@@ -269,7 +273,8 @@ void GarbageCollector::TerminateInstance(ObjectInstance* instance)
 		for (std::size_t i = 0; i < array->Size; i++)
 		{
 			ObjectInstance* element = instance->GetElement(i);
-			DestroyInstance(element);
+			if (element != nullptr)
+				DestroyInstance(element);
 		}
 	}
 

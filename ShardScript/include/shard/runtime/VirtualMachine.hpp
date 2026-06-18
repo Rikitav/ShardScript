@@ -18,6 +18,7 @@
 #include <atomic>
 #include <memory>
 #include <initializer_list>
+#include <string>
 
 namespace shard
 {
@@ -31,14 +32,19 @@ namespace shard
 		GarbageCollector& garbageCollector;
 		PrimitiveMathModule math;
 
-		std::stack<std::unique_ptr<CallStackFrame>> CallStack;
+		std::vector<std::unique_ptr<CallStackFrame>> CallStack;
 		std::atomic<bool> AbortFlag;
 		std::vector<TypeSymbol*> PendingTypeArguments;
+
+		ObjectInstance* UnhandledException = nullptr;
+		std::wstring UnhandledExceptionMessage;
+		std::wstring UnhandledExceptionStackTrace;
 
 		void ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder, const OpCode opCode);
 		void InvokeMethodInternal(MethodSymbol* method, CallStackFrame* currentFrame);
 		ObjectInstance* InstantiateObject(TypeSymbol* type, ConstructorSymbol* ctor);
 		ObjectInstance* InstantiateDelegate(DelegateTypeSymbol* type);
+		ObjectInstance* CreateRuntimeException(const std::exception& err);
 
 	public:
 		VirtualMachine(ApplicationDomain* appDomain);
@@ -57,9 +63,15 @@ namespace shard
 		ObjectInstance* InvokeMethod(MethodSymbol* method, ObjectInstance** args, std::size_t count) const;
 		void RaiseException(ObjectInstance* exceptionReg) const;
 
+		std::wstring GetStackTrace() const;
+
 		void Run();
 		void Abort() const;
 		void TerminateCallStack();
+
+		ObjectInstance* GetUnhandledException() const { return UnhandledException; }
+		const std::wstring& GetUnhandledExceptionMessage() const { return UnhandledExceptionMessage; }
+		const std::wstring& GetUnhandledExceptionStackTrace() const { return UnhandledExceptionStackTrace; }
 
 		ObjectInstance* RunInteractive(std::size_t& pointer);
 	};

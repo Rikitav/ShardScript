@@ -17,6 +17,7 @@
 #include <shard/syntax/nodes/AttributeSyntax.hpp>
 
 #include <shard/syntax/nodes/Statements/VariableStatementSyntax.hpp>
+#include <shard/syntax/nodes/Statements/TryStatementSyntax.hpp>
 
 #include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.hpp>
@@ -848,6 +849,48 @@ void DeclarationCollector::VisitForEachStatement(ForEachStatementSyntax *const n
         VisitStatementsBlock(node->StatementsBlock.get());
 
     PopScope();
+}
+
+void DeclarationCollector::VisitTryStatement(TryStatementSyntax *const node)
+{
+    if (node->TryBlock != nullptr)
+        VisitStatementsBlock(node->TryBlock.get());
+
+    for (const auto& clause : node->CatchClauses)
+    {
+        if (clause->IdentifierToken.Type != TokenType::Unknown)
+        {
+            VariableSymbol* symbol = LookupSymbol<VariableSymbol>(clause.get()).value_or(nullptr);
+            if (symbol == nullptr)
+            {
+                auto variable = std::make_unique<VariableSymbol>(clause->IdentifierToken.Word);
+                symbol = variable.get();
+                symbol->Type = SymbolTable::Primitives::Any;
+
+                MethodSymbol* const hostMethod = FindHostMethodSymbol();
+                symbol->SlotIndex = hostMethod->GetEvalStackArgumentsCount() + hostMethod->AddVariableCount();
+
+                symbol->Parent = OwnerSymbol();
+                if (symbol->Parent != nullptr)
+                {
+                    symbol->FullName = symbol->Parent->FullName + L"." + symbol->Name;
+                    symbol->Parent->OnSymbolDeclared(symbol);
+                }
+
+                Table->BindSymbol(clause.get(), std::move(variable));
+            }
+
+            clause->Symbol = symbol;
+            Declare(symbol);
+            PushScope(symbol);
+        }
+
+        if (clause->Body != nullptr)
+            VisitStatementsBlock(clause->Body.get());
+
+        if (clause->IdentifierToken.Type != TokenType::Unknown)
+            PopScope();
+    }
 }
 
 void DeclarationCollector::ApplyMethodAttributes(MethodSymbol* symbol, const std::vector<std::unique_ptr<AttributeSyntax>>& attributes)

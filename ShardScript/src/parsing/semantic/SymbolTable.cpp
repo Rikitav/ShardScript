@@ -1,5 +1,9 @@
 #include <shard/parsing/semantic/SymbolTable.hpp>
 
+#include <shard/compilation/ByteCodeEncoder.hpp>
+#include <shard/syntax/SymbolFactory.hpp>
+#include <shard/runtime/MethodCallState.hpp>
+
 #include <shard/syntax/SyntaxNode.hpp>
 #include <shard/syntax/SyntaxSymbol.hpp>
 #include <shard/syntax/SyntaxKind.hpp>
@@ -7,7 +11,14 @@
 #include <shard/syntax/symbols/TypeSymbol.hpp>
 #include <shard/syntax/symbols/StructSymbol.hpp>
 #include <shard/syntax/symbols/ClassSymbol.hpp>
+#include <shard/syntax/symbols/InterfaceSymbol.hpp>
 #include <shard/syntax/symbols/NamespaceSymbol.hpp>
+#include <shard/syntax/symbols/FieldSymbol.hpp>
+#include <shard/syntax/symbols/MethodSymbol.hpp>
+#include <shard/syntax/symbols/PropertySymbol.hpp>
+#include <shard/syntax/symbols/AccessorSymbol.hpp>
+#include <shard/syntax/symbols/ConstructorSymbol.hpp>
+#include <shard/syntax/symbols/TypeParameterSymbol.hpp>
 
 #include <vector>
 #include <ranges>
@@ -79,10 +90,184 @@ static void ResolvePrimitives()
 	resolved = true;
 }
 
+static ObjectInstance* runtime_capture_stack_trace(const CallState& context)
+{
+	std::wstring trace = context.Runtimer.GetStackTrace();
+	return context.Collector.FromValue(trace);
+}
+
+static void AddInterfaceGetter(InterfaceSymbol* iface, const std::wstring& name, SymbolFactory& factory)
+{
+	PropertySymbol* property = factory.Property(name, SymbolTable::Primitives::String, LINK_INSTANCE);
+	property->Accesibility = SymbolAccesibility::Public;
+	property->Parent = iface;
+
+	AccessorSymbol* getter = factory.Getter(property);
+	getter->Parent = property;
+	getter->HandleType = MethodHandleType::None;
+
+	iface->Properties.push_back(property);
+	iface->Methods.push_back(getter);
+}
+
+static void AddRuntimeExceptionProperty(ClassSymbol* cls, const std::wstring& name, FieldSymbol*& outField, SymbolFactory& factory)
+{
+	PropertySymbol* property = factory.Property(name, SymbolTable::Primitives::String, LINK_INSTANCE);
+	property->Accesibility = SymbolAccesibility::Public;
+	property->Parent = cls;
+
+	FieldSymbol* backingField = factory.BackingField(property);
+	backingField->Parent = cls;
+	cls->Fields.push_back(backingField);
+
+	AccessorSymbol* getter = factory.Getter(property);
+	getter->Parent = property;
+
+	ByteCodeEncoder encoder;
+	encoder.EmitLoadVarible(getter->ExecutableByteCode, 0);
+	encoder.EmitLoadField(getter->ExecutableByteCode, backingField);
+
+	cls->Properties.push_back(property);
+	cls->Methods.push_back(getter);
+
+	outField = backingField;
+}
+
+static void ResolveStandardTypes(SymbolTable* table)
+{
+	static bool resolved = false;
+	if (resolved)
+		return;
+
+	SymbolFactory factory(table);
+
+	SemanticScope* globalScope = SymbolTable::Global::Scope;
+	auto declareGlobal = [&](SyntaxSymbol* symbol)
+	{
+		globalScope->DeclareSymbol(symbol);
+	};
+
+	// IThrowable
+	{
+		InterfaceSymbol* raw = factory.Interface(L"IThrowable");
+		raw->Accesibility = SymbolAccesibility::Public;
+		raw->Parent = SymbolTable::Global::Type;
+		raw->FullName = L"IThrowable";
+		declareGlobal(raw);
+
+		AddInterfaceGetter(raw, L"message", factory);
+		AddInterfaceGetter(raw, L"stack_trace", factory);
+
+		SymbolTable::StandardTypes::IThrowable = raw;
+	}
+
+	// IDisposable
+	{
+		InterfaceSymbol* raw = factory.Interface(L"IDisposable");
+		raw->Accesibility = SymbolAccesibility::Public;
+		raw->Parent = SymbolTable::Global::Type;
+		raw->FullName = L"IDisposable";
+		declareGlobal(raw);
+
+		MethodSymbol* dispose = factory.Method(L"Dispose", SymbolTable::Primitives::Void, LINK_INSTANCE);
+		dispose->Accesibility = SymbolAccesibility::Public;
+		dispose->Parent = raw;
+		raw->Methods.push_back(dispose);
+
+		SymbolTable::StandardTypes::IDisposable = raw;
+	}
+
+	// IEnumerable<T>
+	{
+		InterfaceSymbol* raw = factory.Interface(L"IEnumerable");
+		raw->Accesibility = SymbolAccesibility::Public;
+		raw->Parent = SymbolTable::Global::Type;
+		raw->FullName = L"IEnumerable";
+
+		TypeParameterSymbol* typeParam = factory.TypeParameter(L"T");
+		typeParam->Parent = raw;
+		typeParam->TypeArgumentIndex = 0;
+		raw->TypeParameters.push_back(typeParam);
+
+		declareGlobal(raw);
+
+		SymbolTable::StandardTypes::IEnumerable = raw;
+	}
+
+	// Runtime class with capture_stack_trace
+	{
+		ClassSymbol* raw = factory.Class(L"runtime");
+		raw->Accesibility = SymbolAccesibility::Public;
+		raw->Parent = SymbolTable::Global::Type;
+		raw->FullName = L"runtime";
+		declareGlobal(raw);
+
+		MethodSymbol* method = factory.Method(
+			SymbolAccesibility::Public,
+			LINK_STATIC,
+			SymbolTable::Primitives::String,
+			L"capture_stack_trace",
+			&runtime_capture_stack_trace);
+		method->Parent = raw;
+		raw->Methods.push_back(method);
+
+		SymbolTable::StandardTypes::Runtime = raw;
+		SymbolTable::StandardTypes::RuntimeCaptureStackTrace = method;
+	}
+
+	// RuntimeException class
+	{
+		ClassSymbol* raw = factory.Class(L"RuntimeException");
+		raw->Accesibility = SymbolAccesibility::Public;
+		raw->Parent = SymbolTable::Global::Type;
+		raw->FullName = L"RuntimeException";
+		raw->Interfaces.push_back(SymbolTable::StandardTypes::IThrowable);
+		declareGlobal(raw);
+
+		ConstructorSymbol* ctor = factory.Constructor(raw, SymbolAccesibility::Public);
+		ctor->Parent = raw;
+		raw->Constructors.push_back(ctor);
+
+		FieldSymbol* messageField = nullptr;
+		FieldSymbol* stackTraceField = nullptr;
+		AddRuntimeExceptionProperty(raw, L"message", messageField, factory);
+		AddRuntimeExceptionProperty(raw, L"stack_trace", stackTraceField, factory);
+
+		SymbolTable::StandardTypes::RuntimeExceptionMessageField = messageField;
+		SymbolTable::StandardTypes::RuntimeExceptionStackTraceField = stackTraceField;
+
+		// Map IThrowable getters to RuntimeException getters
+		for (PropertySymbol* ifaceProp : SymbolTable::StandardTypes::IThrowable->Properties)
+		{
+			if (ifaceProp->Getter == nullptr)
+				continue;
+
+			for (PropertySymbol* classProp : raw->Properties)
+			{
+				if (classProp->Getter == nullptr)
+					continue;
+
+				if (classProp->Name == ifaceProp->Name &&
+				    TypeSymbol::Equals(classProp->ReturnType, ifaceProp->ReturnType))
+				{
+					raw->InterfaceMethodMap[ifaceProp->Getter] = classProp->Getter;
+					break;
+				}
+			}
+		}
+
+		SymbolTable::StandardTypes::RuntimeException = raw;
+	}
+
+	resolved = true;
+}
+
 SymbolTable::SymbolTable()
 {
 	if (SymbolTable::Primitives::Void == nullptr)
 		ResolvePrimitives();
+
+	ResolveStandardTypes(this);
 }
 
 SymbolTable::~SymbolTable()

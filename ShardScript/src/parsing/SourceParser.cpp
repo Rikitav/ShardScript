@@ -1410,6 +1410,9 @@ std::unique_ptr<KeywordStatementSyntax> SourceParser::ReadKeywordStatement(Sourc
 		case TokenType::TryKeyword:
 			return ReadTryStatement(reader, parent);
 
+		case TokenType::ThrowKeyword:
+			return ReadThrowStatement(reader, parent);
+
 		default:
 		{
 			// Don't consume - let caller handle it to avoid infinite loop
@@ -1422,7 +1425,7 @@ std::unique_ptr<KeywordStatementSyntax> SourceParser::ReadKeywordStatement(Sourc
 std::unique_ptr<ReturnStatementSyntax> SourceParser::ReadReturnStatement(SourceProvider& reader, SyntaxNode *const parent)
 {
 	auto syntax = std::make_unique<ReturnStatementSyntax>(parent);
-	syntax->KeywordToken = Expect(reader, TokenType::ReturnKeyword, L"Expected return keyword");
+	syntax->KeywordToken = Expect(reader, TokenType::ReturnKeyword, L"Expected 'return' keyword");
 
 	SyntaxToken current = reader.Current();
 	if (current.Type != TokenType::Semicolon)
@@ -1435,7 +1438,7 @@ std::unique_ptr<ReturnStatementSyntax> SourceParser::ReadReturnStatement(SourceP
 std::unique_ptr<ThrowStatementSyntax> SourceParser::ReadThrowStatement(SourceProvider& reader, SyntaxNode *const parent)
 {
 	auto syntax = std::make_unique<ThrowStatementSyntax>(parent);
-	syntax->KeywordToken = Expect(reader, TokenType::ReturnKeyword, L"Expected return keyword");
+	syntax->KeywordToken = Expect(reader, TokenType::ThrowKeyword, L"Expected 'throw' keyword");
 
 	SyntaxToken current = reader.Current();
 	if (current.Type != TokenType::Semicolon)
@@ -1637,6 +1640,14 @@ std::unique_ptr<TryStatementSyntax> SourceParser::ReadTryStatement(SourceProvide
 		auto clause = std::make_unique<CatchClauseSyntax>(syntax.get());
 		clause->CatchKeywordToken = Expect(reader, TokenType::CatchKeyword, L"Expected 'catch' keyword");
 
+		bool hasParens = false;
+		if (reader.Current().Type == TokenType::OpenCurl)
+		{
+			hasParens = true;
+			clause->OpenParenToken = reader.Current();
+			reader.Consume();
+		}
+
 		if (TryMatchIdentifier(reader, 3))
 		{
 			clause->IdentifierToken = reader.Current();
@@ -1649,6 +1660,9 @@ std::unique_ptr<TryStatementSyntax> SourceParser::ReadTryStatement(SourceProvide
 			reader.Consume();
 			clause->ExceptionType = ReadType(reader, clause.get());
 		}
+
+		if (hasParens)
+			clause->CloseParenToken = Expect(reader, TokenType::CloseCurl, L"Expected ')' after catch clause");
 
 		clause->Body = ReadStatementsBlock(reader, clause.get());
 		syntax->CatchClauses.push_back(std::move(clause));

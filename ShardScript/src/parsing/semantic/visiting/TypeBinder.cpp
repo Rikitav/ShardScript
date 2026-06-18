@@ -36,6 +36,7 @@
 #include <shard/syntax/nodes/Types/NullableTypeSyntax.hpp>
 
 #include <shard/syntax/nodes/Directives/UsingDirectiveSyntax.hpp>
+#include <shard/syntax/nodes/Statements/TryStatementSyntax.hpp>
 
 #include <shard/syntax/nodes/Types/IdentifierNameTypeSyntax.hpp>
 #include <shard/syntax/nodes/Types/ArrayTypeSyntax.hpp>
@@ -559,6 +560,40 @@ void TypeBinder::VisitVariableStatement(VariableStatementSyntax *const node)
 
 	if (node->Expression != nullptr)
 		VisitExpression(node->Expression.get());
+}
+
+void TypeBinder::VisitTryStatement(TryStatementSyntax *const node)
+{
+	if (node->TryBlock != nullptr)
+		VisitStatementsBlock(node->TryBlock.get());
+
+	for (const auto& clause : node->CatchClauses)
+	{
+		TypeSymbol* exceptionType = SymbolTable::Primitives::Any;
+		if (clause->ExceptionType != nullptr)
+		{
+			VisitType(clause->ExceptionType.get());
+			if (clause->ExceptionType->Symbol != nullptr)
+				exceptionType = clause->ExceptionType->Symbol;
+		}
+
+		if (exceptionType != SymbolTable::Primitives::Any)
+		{
+			TypeSymbol* throwable = SymbolTable::StandardTypes::IThrowable;
+			if (throwable != nullptr && !TypeSymbol::IsAssignableFrom(throwable, exceptionType))
+			{
+				Diagnostics.ReportError(clause->CatchKeywordToken,
+					L"Catch type must implement IThrowable");
+			}
+		}
+
+		VariableSymbol* catchVariable = clause->Symbol;
+		if (catchVariable != nullptr)
+			catchVariable->Type = exceptionType;
+
+		if (clause->Body != nullptr)
+			VisitStatementsBlock(clause->Body.get());
+	}
 }
 
 void TypeBinder::VisitObjectCreationExpression(ObjectExpressionSyntax *const node)

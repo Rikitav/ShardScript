@@ -166,6 +166,27 @@ void shard::ByteCodeEncoder::EmitThrow(std::vector<std::byte>& code)
     AppendDataT(code, OpCode::THROW);
 }
 
+void shard::ByteCodeEncoder::EmitEnterTry(std::vector<std::byte>& code, std::size_t handlerOffset)
+{
+    AppendDataT(code, OpCode::ENTER_TRY);
+    AppendDataT(code, handlerOffset);
+}
+
+void shard::ByteCodeEncoder::EmitLeaveTry(std::vector<std::byte>& code)
+{
+    AppendDataT(code, OpCode::LEAVE_TRY);
+}
+
+void shard::ByteCodeEncoder::EmitRethrow(std::vector<std::byte>& code)
+{
+    AppendDataT(code, OpCode::RETHROW);
+}
+
+void shard::ByteCodeEncoder::EmitEndCatch(std::vector<std::byte>& code)
+{
+    AppendDataT(code, OpCode::END_CATCH);
+}
+
 void ByteCodeEncoder::EmitMathAdd(std::vector<std::byte>& code)
 {
     AppendDataT(code, OpCode::MATH_ADDITION);

@@ -301,6 +301,36 @@ void ProgramDisassembler::Disassemble(std::wostream& out, MethodSymbol* method)
                 break;
             }
 
+            case OpCode::THROW:
+            {
+                out << L"throw";
+                break;
+            }
+
+            case OpCode::ENTER_TRY:
+            {
+                out << L"enter_try SS_" << std::hex << std::setw(4) << std::setfill(L'0') << decoder.AbsorbJump();
+                break;
+            }
+
+            case OpCode::LEAVE_TRY:
+            {
+                out << L"leave_try";
+                break;
+            }
+
+            case OpCode::RETHROW:
+            {
+                out << L"rethrow";
+                break;
+            }
+
+            case OpCode::END_CATCH:
+            {
+                out << L"end_catch";
+                break;
+            }
+
             default:
             {
                 out << L"unknown (0x" << std::hex << static_cast<std::uint16_t>(op) << L")";
