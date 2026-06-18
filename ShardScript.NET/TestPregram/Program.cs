@@ -1,10 +1,21 @@
-namespace ShardScript.NET;
+using ShardScript.NET.Application;
+using ShardScript.NET.Runtime;
+using ShardScript.NET.Syntax.Nodes;
+using ShardScript.NET.Syntax.Symbols;
+
+namespace ShardScript.NET.TestPregram;
 
 class Program
 {
-    public static int Main()
+    public static int Main(string[] args)
     {
-        Console.WriteLine($"ShardScript version: {ShardInfo.Version}");
+        Console.WriteLine($"ShardScript version: {ShardScriptAPI.Version}");
+
+        if (args.Length > 0)
+        {
+            RunFile(args[0]);
+            return 0;
+        }
 
         RunFileBasedExample();
         RunSyntaxBuilderExample();
@@ -13,23 +24,67 @@ class Program
         return 0;
     }
 
+    private static void RunFile(string filePath)
+    {
+        Console.WriteLine($"\n--- Running file: {filePath} ---");
+
+        using CompilationContext context = new CompilationContext();
+        AddStandardLibraries(context);
+
+        context.AddSourceFile(filePath, CompilationUnitOrigin.SourceFile);
+        context.Analyze();
+
+        if (context.HasErrors)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"Compilation failed with {context.ErrorCount} error(s):");
+            Console.WriteLine(context.GetDiagnostics());
+            Console.ResetColor();
+            return;
+        }
+
+        using ApplicationDomain? domain = context.Compile();
+        if (domain is null)
+        {
+            Console.WriteLine("Compilation returned null domain.");
+            return;
+        }
+
+        Console.WriteLine("\nRunning entry point...");
+        domain.Run();
+    }
+
+    private static void AddStandardLibraries(CompilationContext context)
+    {
+        string frameworkDir = Path.Combine(AppContext.BaseDirectory, "framework");
+        if (!Directory.Exists(frameworkDir))
+        {
+            Console.WriteLine($"Warning: framework directory not found at '{frameworkDir}'.");
+            return;
+        }
+
+        foreach (string libraryPath in Directory.EnumerateFiles(frameworkDir, "*.dll"))
+        {
+            try
+            {
+                context.AddLibrary(libraryPath);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Warning: failed to load library '{libraryPath}': {ex.Message}");
+            }
+        }
+    }
+
     private static void RunFileBasedExample()
     {
         Console.WriteLine("\n--- File-based example ---");
 
         using CompilationContext context = new CompilationContext();
 
-        string stdLibPath = Path.Combine(AppContext.BaseDirectory, "libShardScript.Framework.dll");
-        if (File.Exists(stdLibPath))
-        {
-            context.AddLibrary(stdLibPath);
-        }
-        else
-        {
-            Console.WriteLine("Warning: standard library not found next to the executable.");
-        }
+        AddStandardLibraries(context);
 
-        context.AddSource("Test.ss", File.ReadAllText("Test.ss"), CompilationUnitOrigin.SourceFile);
+        context.AddSourceFile("Test.ss", CompilationUnitOrigin.SourceFile);
         context.Analyze();
 
         if (context.HasErrors)
@@ -42,12 +97,12 @@ class Program
         }
 
         Console.WriteLine("\nCompilation units:");
-        foreach (CompilationUnit? unit in context.GetCompilationUnits().Where(u => u.Origin == CompilationUnitOrigin.SourceFile))
+        foreach (CompilationUnitSyntax? unit in context.GetCompilationUnits().Where(u => u.Origin == CompilationUnitOrigin.SourceFile))
         {
             if (unit.Namespace is { } ns)
                 Console.WriteLine($"  Namespace: {ns.Name}");
 
-            foreach (ClassDeclaration cls in unit.GetClasses())
+            foreach (ClassDeclarationSyntax cls in unit.GetClasses())
             {
                 Console.WriteLine($"  Class: {cls.Name}");
                 foreach (MethodSymbol method in cls.GetMethods(context))
@@ -73,8 +128,8 @@ class Program
             MethodSymbol? addMethod = programType.FindMethod("Add", 2);
             if (addMethod != null)
             {
-                VirtualMachine vm = domain.GetVirtualMachine();
-                GarbageCollector gc = domain.GetGarbageCollector();
+                VirtualMachine vm = domain.GetVirtualMachine;
+                GarbageCollector gc = domain.GetGarbageCollector;
 
                 ObjectInstance argA = gc.FromInteger(37);
                 ObjectInstance argB = gc.FromInteger(32);
@@ -91,9 +146,7 @@ class Program
 
         using CompilationContext context = new CompilationContext();
 
-        string stdLibPath = Path.Combine(AppContext.BaseDirectory, "libShardScript.Framework.dll");
-        if (File.Exists(stdLibPath))
-            context.AddLibrary(stdLibPath);
+        AddStandardLibraries(context);
 
         // Build a compilation unit programmatically:
         // namespace syntax_builder_demo;
@@ -175,8 +228,8 @@ class Program
             MethodSymbol? addSymbol = programType.FindMethod("Add", 2);
             if (addSymbol != null)
             {
-                VirtualMachine vm = domain.GetVirtualMachine();
-                GarbageCollector gc = domain.GetGarbageCollector();
+                VirtualMachine vm = domain.GetVirtualMachine;
+                GarbageCollector gc = domain.GetGarbageCollector;
 
                 ObjectInstance argA = gc.FromInteger(10);
                 ObjectInstance argB = gc.FromInteger(32);
@@ -193,40 +246,28 @@ class Program
 
         using CompilationContext context = new CompilationContext();
 
-        string stdLibPath = Path.Combine(AppContext.BaseDirectory, "libShardScript.Framework.dll");
-        if (File.Exists(stdLibPath))
-            context.AddLibrary(stdLibPath);
+        AddStandardLibraries(context);
 
         // Programmatically create the namespace, type and method symbols, then
         // bind a C# callback to the method. The script below can see the type
         // because the compiler resolves namespace members through the shared
         // namespace tree.
-        SymbolNamespace ns = SymbolFactory.CreateNamespace(context, "callback_demo");
-        SymbolType externalMath = SymbolFactory.CreateClass(context, "ExternalMath", ns);
+        NamespaceSymbol ns = SymbolBuilder.Namespace(context, "callback_demo").Build();
+        TypeSymbol externalMath = SymbolBuilder.Class(context, "ExternalMath", ns).Build();
 
-        SymbolMethod addMethod = SymbolFactory.CreateMethod(
-            context,
-            externalMath,
-            "Add",
-            SymbolFactory.GetPrimitiveType(context, PrimitiveType.Integer),
-            true,
-            SymbolAccessibility.Public);
-
-        SymbolFactory.AddParameter(
-            addMethod,
-            SymbolFactory.CreateParameter(context, "a", SymbolFactory.GetPrimitiveType(context, PrimitiveType.Integer)));
-        SymbolFactory.AddParameter(
-            addMethod,
-            SymbolFactory.CreateParameter(context, "b", SymbolFactory.GetPrimitiveType(context, PrimitiveType.Integer)));
-
-        SymbolFactory.SetCallback(
-            addMethod,
-            (method, args, argsCount, userData, collector) =>
+        MethodSymbol addMethod = SymbolBuilder.Method(context, externalMath, "Add",
+                SymbolBuilder.Primitive(context, PrimitiveType.Integer))
+            .Public()
+            .Static()
+            .Parameter("a", SymbolBuilder.Primitive(context, PrimitiveType.Integer))
+            .Parameter("b", SymbolBuilder.Primitive(context, PrimitiveType.Integer))
+            .Callback((method, args, argsCount, userData, collector) =>
             {
                 long a = new ObjectInstance(args[0]).AsInteger();
                 long b = new ObjectInstance(args[1]).AsInteger();
                 return new GarbageCollector(collector).FromInteger(a + b).Handle;
-            });
+            })
+            .Build();
 
         context.AddSource("Callback.ss", """
             using stdio;
@@ -260,8 +301,8 @@ class Program
         domain.Run();
 
         // Also invoke the callback directly from C#.
-        VirtualMachine vm = domain.GetVirtualMachine();
-        GarbageCollector gc = domain.GetGarbageCollector();
+        VirtualMachine vm = domain.GetVirtualMachine;
+        GarbageCollector gc = domain.GetGarbageCollector;
 
         ObjectInstance argA = gc.FromInteger(100);
         ObjectInstance argB = gc.FromInteger(23);

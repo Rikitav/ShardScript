@@ -73,7 +73,10 @@ static void BindParametersList(ParametersListSyntax *const node, std::vector<Par
 	for (std::size_t i = 0; i < node->Parameters.size(); i++)
 	{
 		ParameterSyntax* paramSyntax = node->Parameters[i].get();
-		ParameterSymbol* paramSymbol = symbols[i];
+		ParameterSymbol* paramSymbol = i < symbols.size() ? symbols[i] : nullptr;
+
+		if (paramSymbol == nullptr)
+			continue;
 
 		if (paramSyntax->Type != nullptr)
 		{
@@ -103,7 +106,11 @@ void TypeBinder::VisitCompilationUnit(CompilationUnitSyntax *const node)
 	}
 
 	for (const auto& member : node->Members)
-		Declare(Table->LookupSymbol(member.get()).value_or(nullptr));
+	{
+		SyntaxSymbol* memberSymbol = Table->LookupSymbol(member.get()).value_or(nullptr);
+		if (memberSymbol != nullptr)
+			Declare(memberSymbol);
+	}
 
 	for (const auto& member : node->Members)
 		VisitMemberDeclaration(member.get());
@@ -122,7 +129,8 @@ void TypeBinder::VisitUsingDirective(UsingDirectiveSyntax *const node)
 		NamespaceNode* nextNsNode = nsNode->Lookup(token.Word);
 		if (nextNsNode == nullptr)
 		{
-			Diagnostics.ReportError(token, L"Identifier \'" + token.Word + L"\' doesnt exists in namespace \'" + nsNode->Owners.at(0)->FullName + L"\'");
+			std::wstring nsName = nsNode->Owners.empty() ? L"<global>" : nsNode->Owners.at(0)->FullName;
+			Diagnostics.ReportError(token, L"Identifier \'" + token.Word + L"\' doesnt exists in namespace \'" + nsName + L"\'");
 			return;
 		}
 
@@ -155,7 +163,11 @@ void TypeBinder::VisitClassDeclaration(ClassDeclarationSyntax *const node)
 		Declare(typeParam);
 
 	for (const auto& member : node->Members)
-		Declare(Table->LookupSymbol(member.get()).value_or(nullptr));
+	{
+		SyntaxSymbol* memberSymbol = Table->LookupSymbol(member.get()).value_or(nullptr);
+		if (memberSymbol != nullptr)
+			Declare(memberSymbol);
+	}
 
 	for (const auto& member : node->Members)
 		VisitMemberDeclaration(member.get());
@@ -174,7 +186,11 @@ void TypeBinder::VisitStructDeclaration(StructDeclarationSyntax *const node)
 		Declare(typeParam);
 
 	for (const auto& member : node->Members)
-		Declare(Table->LookupSymbol(member.get()).value_or(nullptr));
+	{
+		SyntaxSymbol* memberSymbol = Table->LookupSymbol(member.get()).value_or(nullptr);
+		if (memberSymbol != nullptr)
+			Declare(memberSymbol);
+	}
 
 	for (const auto& member : node->Members)
 		VisitMemberDeclaration(member.get());
@@ -190,7 +206,10 @@ void TypeBinder::VisitDelegateDeclaration(DelegateDeclarationSyntax *const node)
 
 	PushScope(symbol);
 	if (node->ReturnType != nullptr)
+	{
 		VisitType(node->ReturnType.get());
+		symbol->ReturnType = node->ReturnType->Symbol;
+	}
 
 	if (node->ParametersList != nullptr)
 	{
@@ -198,7 +217,6 @@ void TypeBinder::VisitDelegateDeclaration(DelegateDeclarationSyntax *const node)
 		BindParametersList(node->ParametersList.get(), symbol->Parameters);
 	}
 
-	symbol->ReturnType = node->ReturnType->Symbol;
 	PopScope();
 }
 
@@ -267,6 +285,9 @@ void TypeBinder::VisitPropertyDeclaration(PropertyDeclarationSyntax *const node)
 	PropertySymbol* symbol = LookupSymbol<PropertySymbol>(node).value_or(nullptr);
 	if (symbol == nullptr)
 		throw std::runtime_error("symbol not found");
+
+	if (node->ReturnType == nullptr)
+		return;
 
 	PushScope(symbol);
 	VisitType(node->ReturnType.get());
@@ -344,31 +365,19 @@ void TypeBinder::VisitAccessorDeclaration(AccessorDeclarationSyntax *const node)
 	if (symbol == nullptr)
 		throw std::runtime_error("symbol not found");
 
+	if (symbol->Parent == nullptr)
+		throw std::runtime_error("accessor parent not found");
+
 	PropertySymbol* propSymbol = static_cast<PropertySymbol*>(symbol->Parent);
 	if (propSymbol->Kind == SyntaxKind::IndexatorDeclaration)
 	{
 		IndexatorSymbol* indexSymbol = static_cast<IndexatorSymbol*>(propSymbol);
-		symbol->Parameters = indexSymbol->Parameters;
+		// Append indexer parameters to the accessor's own parameter list.
+		// For a setter the implicit 'value' parameter is created by SymbolFactory and already
+		// occupies the last slot; indexer arguments must precede it.
+		for (ParameterSymbol* indexParam : indexSymbol->Parameters)
+			symbol->Parameters.push_back(indexParam);
 	}
-
-	// TODO: fix
-	/*
-	if (!propsymbol->Linking)
-	{
-		ParameterSymbol* thisParam = new ParameterSymbol(L"this");
-		thisParam->Type = static_cast<TypeSymbol*>(propSymbol->Parent);
-		symbol->Parameters.push_back(thisParam);
-	}
-	*/
-
-	/*
-	if (node->KeywordToken.Type == TokenType::SetKeyword)
-	{
-		ParameterSymbol* valueParam = new ParameterSymbol(L"value");
-		valueParam->Type = propSymbol->ReturnType;
-		symbol->Parameters.push_back(valueParam);
-	}
-	*/
 
 	if (node->KeywordToken.Type == TokenType::GetKeyword)
 	{
@@ -394,6 +403,9 @@ void TypeBinder::VisitVariableStatement(VariableStatementSyntax *const node)
 
 void TypeBinder::VisitObjectCreationExpression(ObjectExpressionSyntax *const node)
 {
+	if (node->Type == nullptr)
+		return;
+
 	VisitType(node->Type.get());
 	VisitArgumentsList(node->ArgumentsList.get());
 	node->Symbol = node->Type->Symbol;
@@ -623,6 +635,9 @@ void TypeBinder::VisitGenericType(GenericTypeSyntax *const node)
 
 void TypeBinder::VisitDelegateType(DelegateTypeSyntax *const node)
 {
+	if (node->ReturnType == nullptr || node->Params == nullptr)
+		return;
+
 	VisitType(node->ReturnType.get());
 	VisitParametersList(node->Params.get());
 
@@ -632,7 +647,11 @@ void TypeBinder::VisitDelegateType(DelegateTypeSyntax *const node)
 	for (const auto& param : node->Params->Parameters)
 	{
 		ParameterSymbol* delegateParamSymbol = LookupSymbol<ParameterSymbol>(param.get()).value_or(nullptr);
-		delegateParamSymbol->Type = param->Type->Symbol;
+		if (delegateParamSymbol == nullptr)
+			continue;
+
+		if (param->Type != nullptr)
+			delegateParamSymbol->Type = param->Type->Symbol;
 
 		symbol->Parameters.push_back(delegateParamSymbol);
 		symbol->AnonymousSymbol->Parameters.push_back(delegateParamSymbol);

@@ -1321,7 +1321,16 @@ std::unique_ptr<KeywordStatementSyntax> SourceParser::ReadKeywordStatement(Sourc
 	{
 		case TokenType::ForKeyword:
 		{
-			if (reader.Peek(0).Type == TokenType::Identifier && reader.Peek(1).Type == TokenType::InKeyword)
+			bool isRangeForNoParens =
+				reader.Peek(0).Type == TokenType::Identifier &&
+				reader.Peek(1).Type == TokenType::InKeyword;
+
+			bool isRangeForWithParens =
+				reader.Peek(0).Type == TokenType::OpenCurl &&
+				reader.Peek(1).Type == TokenType::Identifier &&
+				reader.Peek(2).Type == TokenType::InKeyword;
+
+			if (isRangeForNoParens || isRangeForWithParens)
 				return ReadForEachStatement(reader, parent);
 
 			return ReadForStatement(reader, parent);
@@ -1539,7 +1548,10 @@ std::unique_ptr<ForEachStatementSyntax> SourceParser::ReadForEachStatement(Sourc
 {
 	auto syntax = std::make_unique<ForEachStatementSyntax>(parent);
 	syntax->KeywordToken = Expect(reader, TokenType::ForKeyword, L"Expected 'for' keyword");
-	//syntax->OpenCurlToken = Expect(reader, TokenType::OpenCurl, L"expected '(' token");
+
+	bool hasParens = reader.Current().Type == TokenType::OpenCurl;
+	if (hasParens)
+		Expect(reader, TokenType::OpenCurl, L"expected '(' token");
 
 	SyntaxToken identifier = reader.Current();
 	if (identifier.Type != TokenType::Identifier)
@@ -1555,7 +1567,10 @@ std::unique_ptr<ForEachStatementSyntax> SourceParser::ReadForEachStatement(Sourc
 	syntax->IdentifierToken = identifier;
 	syntax->InKeywordToken = Expect(reader, TokenType::InKeyword, L"Expected 'in' keyword");
 	syntax->RangeExpression = std::move(ReadExpression(reader, syntax.get(), 0));
-	//syntax->CloseCurlToken = Expect(reader, TokenType::CloseCurl, L"expected ')' token");
+
+	if (hasParens)
+		Expect(reader, TokenType::CloseCurl, L"expected ')' token");
+
 	syntax->StatementsBlock = ReadStatementsBlock(reader, syntax.get());
 	return syntax;
 }

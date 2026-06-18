@@ -295,6 +295,12 @@ void ByteCodeEncoder::EmitNewDynamicArray(std::vector<std::byte>& code, TypeSymb
     AppendData(code, &elementType, sizeof(elementType));
 }
 
+void ByteCodeEncoder::EmitCreateRange(std::vector<std::byte>& code, TypeSymbol* elementType)
+{
+    AppendDataT(code, OpCode::CREATERANGE);
+    AppendData(code, &elementType, sizeof(elementType));
+}
+
 void ByteCodeEncoder::EmitLoadArrayElement(std::vector<std::byte>& code)
 {
     AppendDataT(code, OpCode::LOADARRAYELEMENT);

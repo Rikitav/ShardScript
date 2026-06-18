@@ -9,17 +9,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="..\build\bin\libShardScript.dll" Link="libShardScript.dll">
+    <None Include="..\out\build\x64-debug\bin\ShardScript.dll" Link="ShardScript.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="..\build\bin\libShardScript.Framework.dll" Link="libShardScript.Framework.dll">
+    <None Include="..\out\build\x64-debug\bin\framework\*.dll" Link="framework\%(Filename)%(Extension)">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="Test.ss">
+    <None Update="TestPregram\Test.ss">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

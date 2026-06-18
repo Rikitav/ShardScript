@@ -42,6 +42,9 @@ static bool paramPredicate(ParameterSymbol* left, TypeSymbol* right)
 
 bool TypeSymbol::Equals(const TypeSymbol* left, const TypeSymbol* right)
 {
+	if (left == nullptr || right == nullptr)
+		return false;
+
 	switch (left->Kind)
 	{
 		default:

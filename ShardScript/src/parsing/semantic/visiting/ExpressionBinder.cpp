@@ -192,7 +192,8 @@ void ExpressionBinder::VisitCompilationUnit(CompilationUnitSyntax *const node)
 	for (const auto& member : node->Members)
 	{
 		SyntaxSymbol* symbol = Table->LookupSymbol(member.get()).value_or(nullptr);
-		Declare(symbol);
+		if (symbol != nullptr)
+			Declare(symbol);
 	}
 
 	for (const auto& member : node->Members)
@@ -206,9 +207,15 @@ void ExpressionBinder::VisitCompilationUnit(CompilationUnitSyntax *const node)
 
 void ExpressionBinder::VisitUsingDirective(UsingDirectiveSyntax *const node)
 {
+	if (node->Namespace == nullptr)
+		return;
+
 	SemanticScope* current = CurrentScope();
 	for (const auto& symbol : node->Namespace->Members)
-		current->DeclareSymbol(symbol);
+	{
+		if (symbol != nullptr)
+			current->DeclareSymbol(symbol);
+	}
 }
 
 void ExpressionBinder::VisitNamespaceDeclaration(NamespaceDeclarationSyntax *const node)
@@ -226,7 +233,8 @@ void ExpressionBinder::VisitClassDeclaration(ClassDeclarationSyntax *const node)
 		for (const auto& member : node->Members)
 		{
 			SyntaxSymbol* symbol = Table->LookupSymbol(member.get()).value_or(nullptr);
-			Declare(symbol);
+			if (symbol != nullptr)
+				Declare(symbol);
 		}
 
 		for (const auto& member : node->Members)
@@ -246,7 +254,8 @@ void ExpressionBinder::VisitStructDeclaration(StructDeclarationSyntax *const nod
 		for (const auto& member : node->Members)
 		{
 			SyntaxSymbol* symbol = Table->LookupSymbol(member.get()).value_or(nullptr);
-			Declare(symbol);
+			if (symbol != nullptr)
+				Declare(symbol);
 		}
 
 		for (const auto& member : node->Members)
@@ -259,7 +268,7 @@ void ExpressionBinder::VisitStructDeclaration(StructDeclarationSyntax *const nod
 void ExpressionBinder::VisitConstructorDeclaration(ConstructorDeclarationSyntax *const node)
 {
 	MethodSymbol* symbol = LookupSymbol<MethodSymbol>(node).value_or(nullptr);
-	if (!symbol->Parent->IsType())
+	if (symbol == nullptr || symbol->Parent == nullptr || !symbol->Parent->IsType())
 		return;
 
 	TypeSymbol* ownerType = static_cast<TypeSymbol*>(symbol->Parent);
@@ -395,9 +404,16 @@ void ExpressionBinder::VisitAccessorDeclaration(AccessorDeclarationSyntax *const
 	if (node->KeywordToken.Type == TokenType::GetKeyword)
 	{
 		// Getter
-		PropertySymbol* propSymbol = static_cast<PropertySymbol*>(symbol->Parent);
+		if (symbol->Parent == nullptr)
+		{
+			PopScope();
+			return;
+		}
 
-		auto thisVar = Factory.Parameter(L"this", static_cast<TypeSymbol*>(propSymbol->Parent));
+		PropertySymbol* propSymbol = static_cast<PropertySymbol*>(symbol->Parent);
+		TypeSymbol* ownerType = propSymbol->Parent != nullptr ? static_cast<TypeSymbol*>(propSymbol->Parent) : nullptr;
+
+		auto thisVar = Factory.Parameter(L"this", ownerType);
 		if (symbol->Linking == LINK_INSTANCE)
 			Declare(thisVar);
 
@@ -416,7 +432,12 @@ void ExpressionBinder::VisitAccessorDeclaration(AccessorDeclarationSyntax *const
 			VisitStatementsBlock(node->Body.get());
 
 			if (!scope->ReturnFound)
-				Diagnostics.ReportError(node->KeywordToken, L"Accessor must return a value of type '" + symbol->ReturnType->Name + L"'");
+			{
+				if (symbol->ReturnType != nullptr)
+					Diagnostics.ReportError(node->KeywordToken, L"Accessor must return a value of type '" + symbol->ReturnType->Name + L"'");
+				else
+					Diagnostics.ReportError(node->KeywordToken, L"Accessor must return a value");
+			}
 		}
 
 		PopScope();
@@ -424,9 +445,16 @@ void ExpressionBinder::VisitAccessorDeclaration(AccessorDeclarationSyntax *const
 	else if (node->KeywordToken.Type == TokenType::SetKeyword)
 	{
 		// Setter
-		PropertySymbol* propSymbol = static_cast<PropertySymbol*>(symbol->Parent);
+		if (symbol->Parent == nullptr)
+		{
+			PopScope();
+			return;
+		}
 
-		auto thisVar = Factory.Parameter(L"this", static_cast<TypeSymbol*>(propSymbol->Parent));
+		PropertySymbol* propSymbol = static_cast<PropertySymbol*>(symbol->Parent);
+		TypeSymbol* ownerType = propSymbol->Parent != nullptr ? static_cast<TypeSymbol*>(propSymbol->Parent) : nullptr;
+
+		auto thisVar = Factory.Parameter(L"this", ownerType);
 		if (symbol->Linking == LINK_INSTANCE)
 			Declare(thisVar);
 
@@ -474,6 +502,12 @@ void ExpressionBinder::VisitFieldDeclaration(FieldDeclarationSyntax *const node)
 		if (initExprType == nullptr)
 		{
 			Diagnostics.ReportError(node->IdentifierToken, L"Field initializer expression type could not be determined");
+			return;
+		}
+
+		if (symbol->ReturnType == nullptr)
+		{
+			Diagnostics.ReportError(node->IdentifierToken, L"Field return type not resolved");
 			return;
 		}
 
@@ -785,6 +819,9 @@ TypeSymbol* ExpressionBinder::AnalyzeObjectExpression(ObjectExpressionSyntax *co
 	if (node->Symbol->Kind == SyntaxKind::GenericType)
 		genericType = static_cast<GenericTypeSymbol*>(node->Symbol);
 
+	if (node->ArgumentsList == nullptr)
+		return node->Symbol;
+
 	if (!MatchMethodArguments(method->Parameters, node->ArgumentsList->Arguments, genericType))
 		return node->Symbol;
 
@@ -868,12 +905,16 @@ void ExpressionBinder::VisitLambdaExpression(LambdaExpressionSyntax *const node)
 	}
 	*/
 
-	VisitParametersList(node->ParametersList.get());
-	for (const auto& parameter : node->ParametersList->Parameters)
+	if (node->ParametersList != nullptr)
 	{
-		ParameterSymbol* paramSymbol = Factory.Parameter(parameter->Identifier.Word, parameter->Type->Symbol);
-		delegate->Parameters.push_back(paramSymbol);
-		anonymousMethod->Parameters.push_back(paramSymbol);
+		VisitParametersList(node->ParametersList.get());
+		for (const auto& parameter : node->ParametersList->Parameters)
+		{
+			TypeSymbol* paramType = parameter->Type != nullptr ? parameter->Type->Symbol : SymbolTable::Primitives::Any;
+			ParameterSymbol* paramSymbol = Factory.Parameter(parameter->Identifier.Word, paramType);
+			delegate->Parameters.push_back(paramSymbol);
+			anonymousMethod->Parameters.push_back(paramSymbol);
+		}
 	}
 
 	PushScope(anonymousMethod);
@@ -985,7 +1026,11 @@ void ExpressionBinder::VisitTryStatement(TryStatementSyntax *const node)
 
 	for (const auto& clause : node->CatchClauses)
 	{
-		auto leftDen = std::make_unique<LeftDenotationSymbol>(clause->ExceptionType != nullptr ? clause->ExceptionType->Symbol : SymbolTable::Primitives::Any);
+		TypeSymbol* exceptionType = SymbolTable::Primitives::Any;
+		if (clause->ExceptionType != nullptr && clause->ExceptionType->Symbol != nullptr)
+			exceptionType = clause->ExceptionType->Symbol;
+
+		auto leftDen = std::make_unique<LeftDenotationSymbol>(exceptionType);
 		PushScope(leftDen.get());
 
 		if (clause->Body != nullptr)
@@ -1154,6 +1199,12 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 			FieldSymbol* fieldSymbol = static_cast<FieldSymbol*>(symbol);
 			TypeSymbol* fieldType = fieldSymbol->ReturnType;
 			
+			if (fieldType == nullptr)
+			{
+				Diagnostics.ReportError(node->IdentifierToken, L"Field '" + memberName + L"' type not resolved");
+				return nullptr;
+			}
+
 			if (fieldType->Kind == SyntaxKind::TypeParameter)
 			{
 				if (currentType->Kind == SyntaxKind::GenericType)
@@ -1206,6 +1257,9 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 TypeSymbol* ExpressionBinder::AnalyzePropertyAccessExpression(MemberAccessExpressionSyntax *const node, PropertySymbol* property, TypeSymbol* currentType)
 {
 	if (property == nullptr)
+		return nullptr;
+
+	if (currentType == nullptr)
 		return nullptr;
 
 	std::wstring memberName = node->IdentifierToken.Word;
@@ -1281,10 +1335,13 @@ TypeSymbol* ExpressionBinder::AnalyzeFieldKeywordExpression(MemberAccessExpressi
 	for (const SemanticScope* scope = CurrentScope(); scope != nullptr; scope = scope->Parent)
 	{
 		SyntaxSymbol* symbol = const_cast<SyntaxSymbol*>(scope->Owner);
+		if (symbol == nullptr)
+			continue;
+
 		if (symbol->IsType())
 			break;
 
-		if (scope->Owner->Kind != SyntaxKind::PropertyDeclaration)
+		if (symbol->Kind != SyntaxKind::PropertyDeclaration)
 			continue;
 
 		propertySymbol = static_cast<PropertySymbol*>(symbol);
@@ -1376,8 +1433,14 @@ ConstructorSymbol* ExpressionBinder::ResolveConstructor(ObjectExpressionSyntax *
 		symbol = static_cast<GenericTypeSymbol*>(symbol)->UnderlayingType;
 
 	std::vector<TypeSymbol*> argTypes;
+	if (node->ArgumentsList == nullptr)
+		return nullptr;
+
 	for (const auto& arg : node->ArgumentsList->Arguments)
 	{
+		if (arg == nullptr || arg->Expression == nullptr)
+			return nullptr;
+
 		VisitExpression(arg->Expression.get());
 
 		TypeSymbol* argType = GetExpressionType(arg->Expression.get());
@@ -1665,6 +1728,8 @@ static bool IsValidIntegerSymbol(wchar_t symbol, int base)
 TypeSymbol* ExpressionBinder::AnalyzeNumberLiteral(LiteralExpressionSyntax *const node)
 {
 	LiteralSymbol* const symbol = LookupSymbol<LiteralSymbol>(node).value_or(nullptr);
+	if (symbol == nullptr)
+		return SymbolTable::Primitives::Integer;
 
 	SyntaxToken token = node->LiteralToken;
 	std::wstring word = token.Word;
@@ -1810,7 +1875,7 @@ IndexatorSymbol* ExpressionBinder::ResolveIndexator(IndexatorExpressionSyntax *c
 
 	if (currentType->Kind == SyntaxKind::ArrayType)
 	{
-		if (SymbolTable::Primitives::Array->Indexators.empty())
+		if (SymbolTable::Primitives::Array == nullptr || SymbolTable::Primitives::Array->Indexators.empty())
 			return nullptr;
 
 		return SymbolTable::Primitives::Array->Indexators[0];
@@ -2061,8 +2126,14 @@ void ExpressionBinder::VisitUnlessStatement(UnlessStatementSyntax *const node)
 {
 	if (node->ConditionExpression != nullptr)
 	{
-		ExpressionStatementSyntax* statement = static_cast<ExpressionStatementSyntax*>(node->ConditionExpression.get());
-		ExpressionSyntax* conditionExpr = statement->Expression.get();
+		if (node->ConditionExpression->Kind != SyntaxKind::ExpressionStatement)
+		{
+			Diagnostics.ReportError(node->KeywordToken, L"Unless condition must be an expression statement");
+		}
+		else
+		{
+			ExpressionStatementSyntax* statement = static_cast<ExpressionStatementSyntax*>(node->ConditionExpression.get());
+			ExpressionSyntax* conditionExpr = statement->Expression.get();
 
 		if (conditionExpr != nullptr)
 		{
@@ -2078,12 +2149,13 @@ void ExpressionBinder::VisitUnlessStatement(UnlessStatementSyntax *const node)
 				Diagnostics.ReportError(node->KeywordToken, L"Unless condition must be boolean, got '" + conditionType->Name + L"'");
 			}
 		}
-		else
-		{
-			Diagnostics.ReportError(node->KeywordToken, L"Unless condition must be an expression");
+			else
+			{
+				Diagnostics.ReportError(node->KeywordToken, L"Unless condition must be an expression");
+			}
 		}
 	}
-	
+
 	if (node->StatementsBlock != nullptr)
 		VisitStatementsBlock(node->StatementsBlock.get());
 	
@@ -2188,6 +2260,12 @@ void ExpressionBinder::VisitReturnStatement(ReturnStatementSyntax *const node)
 	searchingScope->ReturnFound = true;
 	if (returnType == SymbolTable::Primitives::Any)
 	{
+		if (searchingScope->Owner == nullptr || searchingScope->Owner->Kind != SyntaxKind::MethodDeclaration)
+		{
+			Diagnostics.ReportError(node->KeywordToken, L"Return within invalid scope");
+			return;
+		}
+
 		MethodSymbol* delegate = const_cast<MethodSymbol*>(static_cast<const MethodSymbol*>(searchingScope->Owner));
 		if (node->Expression == nullptr)
 		{
@@ -2212,6 +2290,12 @@ void ExpressionBinder::VisitReturnStatement(ReturnStatementSyntax *const node)
 			Diagnostics.ReportError(node->KeywordToken, L"Void method cannot return a value");
 		}
 
+		return;
+	}
+
+	if (returnType == nullptr)
+	{
+		Diagnostics.ReportError(node->KeywordToken, L"Return target type could not be determined");
 		return;
 	}
 
