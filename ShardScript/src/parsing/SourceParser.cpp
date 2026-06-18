@@ -60,6 +60,8 @@
 #include <shard/syntax/nodes/Expressions/CollectionExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/LambdaExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/TernaryExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/CastExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/IsExpressionSyntax.hpp>
 
 #include <shard/syntax/nodes/Types/ArrayTypeSyntax.hpp>
 #include <shard/syntax/nodes/Types/IdentifierNameTypeSyntax.hpp>
@@ -323,6 +325,25 @@ std::unique_ptr<MemberDeclarationSyntax> SourceParser::ReadMemberDeclaration(Sou
 		}
 		else if (next.Type == TokenType::AssignOperator || next.Type == TokenType::Semicolon)
 		{
+			if (parent->Kind == SyntaxKind::InterfaceDeclaration)
+			{
+				if (next.Type == TokenType::AssignOperator)
+				{
+					Diagnostics.ReportError(next, L"Interfaces cannot contain fields");
+					return nullptr;
+				}
+
+				auto syntax = std::make_unique<PropertyDeclarationSyntax>(info, parent);
+				syntax->SemicolonToken = next;
+				reader.Consume();
+
+				auto getter = std::make_unique<AccessorDeclarationSyntax>(syntax.get());
+				getter->KeywordToken = SyntaxToken(TokenType::GetKeyword, L"get", info.Identifier.Location, false);
+				syntax->Getter = std::move(getter);
+
+				return syntax;
+			}
+
 			return ReadFieldDeclaration(reader, info, parent);
 		}
 		else
@@ -360,7 +381,7 @@ std::unique_ptr<ClassDeclarationSyntax> SourceParser::ReadClassDeclaration(Sourc
 	if (current.Type == TokenType::Colon)
 	{
 		reader.Consume();
-		Diagnostics.ReportError(current, L"Inheritance is not implemented yet");
+		syntax->BaseInterfaces = ReadBaseInterfacesList(reader, syntax.get());
 	}
 
 	if (TryMatch(reader, { TokenType::OpenBrace, TokenType::Semicolon }, L"Expected class body '{' or semicolon ';'", 5))
@@ -399,7 +420,7 @@ std::unique_ptr<StructDeclarationSyntax> SourceParser::ReadStructDeclaration(Sou
 	if (current.Type == TokenType::Colon)
 	{
 		reader.Consume();
-		Diagnostics.ReportError(current, L"Inheritance is not implemented yet");
+		syntax->BaseInterfaces = ReadBaseInterfacesList(reader, syntax.get());
 	}
 
 	if (TryMatch(reader, { TokenType::OpenBrace, TokenType::Semicolon }, L"Expected struct body '{' or semicolon ';'", 5))
@@ -512,6 +533,36 @@ std::unique_ptr<PropertyDeclarationSyntax> SourceParser::ReadComputedPropertyDec
 	property->InitializerExpression = std::move(ReadExpression(reader, property.get(), 0));
 	property->SemicolonToken = Expect(reader, TokenType::Semicolon, L"Expected ';' token");
 	return property;
+}
+
+std::vector<std::unique_ptr<TypeSyntax>> SourceParser::ReadBaseInterfacesList(SourceProvider& reader, SyntaxNode *const parent)
+{
+    std::vector<std::unique_ptr<TypeSyntax>> interfaces;
+
+    while (reader.CanConsume())
+    {
+        SyntaxToken current = reader.Current();
+        if (current.Type != TokenType::Identifier)
+        {
+            Diagnostics.ReportError(current, L"Expected interface name");
+            break;
+        }
+
+        auto type = ReadType(reader, parent);
+        if (type != nullptr)
+            interfaces.push_back(std::move(type));
+
+        current = reader.Current();
+        if (current.Type == TokenType::Comma)
+        {
+            reader.Consume();
+            continue;
+        }
+
+        break;
+    }
+
+    return interfaces;
 }
 
 std::unique_ptr<InterfaceDeclarationSyntax> SourceParser::ReadInterfaceDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode *const parent)
@@ -1766,6 +1817,31 @@ std::unique_ptr<ExpressionSyntax> SourceParser::ReadLeftDenotation(SourceProvide
 			syntax->Right = std::move(ReadExpression(reader, syntax.get(), precendce));
 			return syntax;
 		}
+
+		case TokenType::AsOperator:
+		case TokenType::IsOperator:
+		{
+			int precendce = GetOperatorPrecendence(current.Type);
+			if (precendce == 0)
+				return std::move(leftExpr);
+
+			reader.Consume();
+
+			if (current.Type == TokenType::AsOperator)
+			{
+				auto syntax = std::make_unique<CastExpressionSyntax>(current, parent);
+				syntax->Expression = std::move(leftExpr);
+				syntax->TargetType = ReadType(reader, syntax.get());
+				return syntax;
+			}
+			else
+			{
+				auto syntax = std::make_unique<IsExpressionSyntax>(current, parent);
+				syntax->Expression = std::move(leftExpr);
+				syntax->TargetType = ReadType(reader, syntax.get());
+				return syntax;
+			}
+		}
 	}
 
 	if (IsRightUnaryOperator(current.Type))
@@ -1790,6 +1866,8 @@ std::unique_ptr<ExpressionSyntax> SourceParser::ReadLeftDenotation(SourceProvide
 		auto syntax = std::make_unique<BinaryExpressionSyntax>(current, parent);
 
 		syntax->Left = std::move(leftExpr);
+		if (syntax->Left != nullptr)
+			syntax->Left->Parent = syntax.get();
 		syntax->Right = std::move(ReadExpression(reader, syntax.get(), precendce));
 		return syntax;
 	}

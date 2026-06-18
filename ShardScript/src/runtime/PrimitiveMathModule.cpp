@@ -65,6 +65,15 @@ ObjectInstance* PrimitiveMathModule::EvaluateBinaryOperator(ObjectInstance* left
 		return EvaluateBinaryOperator(leftData, opToken, rightInstance);
 	}
 
+	if (opToken == TokenType::EqualsOperator || opToken == TokenType::NotEqualsOperator)
+	{
+		bool equal = leftInstance == rightInstance;
+		if (opToken == TokenType::NotEqualsOperator)
+			equal = !equal;
+
+		return garbageCollector.FromValue(equal);
+	}
+
 	throw std::runtime_error("unknown primitive");
 }
 

@@ -1247,6 +1247,16 @@ bool LexicalAnalyzer::IsKeyword(std::wstring& word, TokenType& type)
 		type = TokenType::ValueKeyword;
 		return true;
 	}
+	else if (word == L"is")
+	{
+		type = TokenType::IsOperator;
+		return true;
+	}
+	else if (word == L"as")
+	{
+		type = TokenType::AsOperator;
+		return true;
+	}
 
 	return false;
 }

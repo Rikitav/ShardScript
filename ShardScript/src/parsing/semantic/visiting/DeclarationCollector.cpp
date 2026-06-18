@@ -28,6 +28,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/DelegateDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/IndexatorDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/InterfaceDeclarationSyntax.hpp>
 
 #include <shard/syntax/symbols/TypeSymbol.hpp>
 #include <shard/syntax/symbols/StructSymbol.hpp>
@@ -41,6 +42,7 @@
 #include <shard/syntax/symbols/AccessorSymbol.hpp>
 #include <shard/syntax/symbols/DelegateTypeSymbol.hpp>
 #include <shard/syntax/symbols/TypeParameterSymbol.hpp>
+#include <shard/syntax/symbols/InterfaceSymbol.hpp>
 
 #include <string>
 
@@ -175,6 +177,62 @@ void DeclarationCollector::VisitClassDeclaration(ClassDeclarationSyntax *const n
     PopScope();
 }
 
+void DeclarationCollector::VisitInterfaceDeclaration(InterfaceDeclarationSyntax *const node)
+{
+    InterfaceSymbol* symbol = LookupSymbol<InterfaceSymbol>(node).value_or(nullptr);
+    if (symbol == nullptr)
+    {
+        symbol = Factory.Interface(node);
+
+        symbol->Parent = OwnerSymbol();
+        if (symbol->Parent == nullptr)
+        {
+            Diagnostics.ReportError(node->IdentifierToken, L"Cannot resolve Interfaces' owner type");
+        }
+        else
+        {
+            symbol->FullName = FormatFullNameOf(symbol);
+            symbol->Parent->OnSymbolDeclared(symbol);
+
+            if (symbol->Parent->Kind != SyntaxKind::NamespaceDeclaration)
+            {
+                Diagnostics.ReportError(node->IdentifierToken, L"Interfaces can only be declared inside Namespace");
+            }
+        }
+
+        if (node->TypeParameters != nullptr)
+        {
+            for (std::size_t i = 0; i < node->TypeParameters->Types.size(); i++)
+            {
+                SyntaxToken& param = node->TypeParameters->Types.at(i);
+                TypeParameterSymbol* typeParamSymbol = Factory.TypeParameter(param.Word);
+                typeParamSymbol->Parent = symbol;
+                typeParamSymbol->TypeArgumentIndex = static_cast<std::uint16_t>(i);
+
+                symbol->TypeParameters.push_back(typeParamSymbol);
+            }
+        }
+    }
+
+    Declare(symbol);
+    PushScope(symbol);
+
+    for (const auto& typeParam : symbol->TypeParameters)
+        Declare(typeParam);
+
+    for (const auto& member : node->Members)
+        VisitMemberDeclaration(member.get());
+
+    for (const auto& member : node->Members)
+    {
+        SyntaxSymbol* memberSymbol = Table->LookupSymbol(member.get()).value_or(nullptr);
+        if (memberSymbol != nullptr)
+            memberSymbol->Accesibility = SymbolAccesibility::Public;
+    }
+
+    PopScope();
+}
+
 void DeclarationCollector::VisitStructDeclaration(StructDeclarationSyntax *const node)
 {
     StructSymbol* symbol = LookupSymbol<StructSymbol>(node).value_or(nullptr);
@@ -300,6 +358,10 @@ void DeclarationCollector::VisitFieldDeclaration(FieldDeclarationSyntax *const n
             {
                 Diagnostics.ReportError(node->IdentifierToken, L"Fields cannot be declared outside of Classes or Structures");
             }
+            else if (symbol->Parent->Kind == SyntaxKind::InterfaceDeclaration)
+            {
+                Diagnostics.ReportError(node->IdentifierToken, L"Interfaces cannot contain fields");
+            }
             else
             {
                 TypeSymbol* ownerType = static_cast<TypeSymbol*>(symbol->Parent);
@@ -377,8 +439,8 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax *const
             if (symbol->IsExtern && node->Body != nullptr)
                 Diagnostics.ReportError(node->IdentifierToken, L"Methods marked as 'extern' cannot have Body");
 
-            // Assert: Method should have body
-            if (!symbol->IsExtern && node->Body == nullptr)
+            // Assert: Method should have body (interfaces may declare abstract methods)
+            if (!symbol->IsExtern && node->Body == nullptr && symbol->Parent->Kind != SyntaxKind::InterfaceDeclaration)
                 Diagnostics.ReportError(node->IdentifierToken, L"Method should have a Body, as it's not marked as 'extern' or 'abstract'");
         }
 
@@ -481,16 +543,27 @@ void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax *c
         // Creating symbol
         symbol = Factory.Property(node);
 
-        // Create backing field for auto-properties
-        bool isAutoProperty =
-            (node->Getter != nullptr && node->Getter->Body == nullptr) ||
-            (node->Setter != nullptr && node->Setter->Body == nullptr);
-
-        if (isAutoProperty)
-            Factory.BackingField(symbol);
-
         // Resolving owner symbol
         symbol->Parent = OwnerSymbol();
+
+        // Create backing field for auto-properties
+        bool isInterfaceProperty = symbol->Parent != nullptr && symbol->Parent->Kind == SyntaxKind::InterfaceDeclaration;
+        bool isAutoProperty = !isInterfaceProperty &&
+            ((node->Getter != nullptr && node->Getter->Body == nullptr) ||
+             (node->Setter != nullptr && node->Setter->Body == nullptr));
+
+        if (isAutoProperty)
+        {
+            Factory.BackingField(symbol);
+
+            if (symbol->BackingField != nullptr && symbol->Parent != nullptr && symbol->Parent->IsType())
+            {
+                symbol->BackingField->Parent = symbol->Parent;
+                symbol->BackingField->FullName = FormatFullNameOf(symbol->BackingField);
+                static_cast<TypeSymbol*>(symbol->Parent)->OnSymbolDeclared(symbol->BackingField);
+            }
+        }
+
         if (symbol->Parent == nullptr)
         {
             // Failed

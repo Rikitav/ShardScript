@@ -66,6 +66,64 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
+		case OpCode::CALLINTERFACE:
+		{
+			MethodSymbol* interfaceMethod = decoder.AbsorbMethodSymbol();
+			ObjectInstance* thisInstance = frame->PeekStack();
+
+			if (thisInstance == nullptr || thisInstance == garbageCollector.NullInstance)
+				throw std::runtime_error("Cannot invoke interface method on a null reference");
+
+			TypeSymbol* concreteType = const_cast<TypeSymbol*>(thisInstance->getInfo());
+			MethodSymbol* implementation = concreteType->FindInterfaceImplementation(interfaceMethod);
+
+			if (implementation == nullptr)
+				throw std::runtime_error("Interface method implementation not found");
+
+			InvokeMethod(implementation);
+			break;
+		}
+
+		case OpCode::ISINSTANCE:
+		{
+			TypeSymbol* targetType = decoder.AbsorbTypeSymbol();
+			ObjectInstance* instance = frame->PopStack();
+
+			bool result = false;
+			if (instance != nullptr && instance != garbageCollector.NullInstance)
+			{
+				TypeSymbol* instanceType = const_cast<TypeSymbol*>(instance->getInfo());
+				result = TypeSymbol::IsAssignableFrom(targetType, instanceType);
+				garbageCollector.CollectInstance(instance);
+			}
+
+			frame->PushStack(garbageCollector.FromValue(result));
+			break;
+		}
+
+		case OpCode::CASTINTERFACE:
+		{
+			TypeSymbol* targetType = decoder.AbsorbTypeSymbol();
+			ObjectInstance* instance = frame->PopStack();
+
+			bool compatible = false;
+			if (instance != nullptr && instance != garbageCollector.NullInstance)
+			{
+				TypeSymbol* instanceType = const_cast<TypeSymbol*>(instance->getInfo());
+				compatible = TypeSymbol::IsAssignableFrom(targetType, instanceType);
+			}
+
+			if (compatible)
+				frame->PushStack(instance);
+			else
+			{
+				frame->PushStack(garbageCollector.NullInstance);
+				garbageCollector.CollectInstance(instance);
+			}
+
+			break;
+		}
+
 		case OpCode::LOADCONST_NULL:
 		{
 			frame->PushStack(garbageCollector.NullInstance);

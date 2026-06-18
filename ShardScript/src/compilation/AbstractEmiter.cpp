@@ -47,6 +47,7 @@
 #include <shard/syntax/symbols/FieldSymbol.hpp>
 #include <shard/syntax/symbols/MethodSymbol.hpp>
 #include <shard/syntax/symbols/ParameterSymbol.hpp>
+#include <shard/syntax/symbols/PropertySymbol.hpp>
 #include <shard/syntax/symbols/TypeSymbol.hpp>
 #include <shard/syntax/symbols/VariableSymbol.hpp>
 
@@ -312,7 +313,7 @@ void AbstractEmiter::VisitMethodDeclaration(MethodDeclarationSyntax* const node)
 		return;
 	}
 
-	if (!GeneratingFor->IsExtern)
+	if (!GeneratingFor->IsExtern && node->Body != nullptr)
 	{
 		std::size_t reserve = node->Body->Statements.size() * ReserveMultiplier;
 		GeneratingFor->ExecutableByteCode.reserve(reserve);
@@ -388,6 +389,24 @@ void AbstractEmiter::VisitAccessorDeclaration(AccessorDeclarationSyntax* const n
 			std::size_t reserve = node->Body->Statements.size() * ReserveMultiplier;
 			GeneratingFor->ExecutableByteCode.reserve(reserve);
 			VisitStatementsBlock(node->Body.get());
+		}
+		else if (GeneratingFor->Parent != nullptr && GeneratingFor->Parent->Kind == SyntaxKind::PropertyDeclaration)
+		{
+			PropertySymbol* property = static_cast<PropertySymbol*>(GeneratingFor->Parent);
+			if (property->BackingField != nullptr)
+			{
+				if (node->KeywordToken.Type == TokenType::GetKeyword)
+				{
+					Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, 0);
+					Encoder.EmitLoadField(GeneratingFor->ExecutableByteCode, property->BackingField);
+				}
+				else if (node->KeywordToken.Type == TokenType::SetKeyword)
+				{
+					Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, 0);
+					Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, 1);
+					Encoder.EmitStoreField(GeneratingFor->ExecutableByteCode, property->BackingField);
+				}
+			}
 		}
 	}
 
@@ -879,9 +898,9 @@ void AbstractEmiter::VisitUnaryAssignExpression(UnaryExpressionSyntax* const nod
 
 		if (isStatic)
 		{
-			Encoder.EmitCallMethodSymbol(GeneratingFor->ExecutableByteCode, getter);
+			EmitMethodCall(getter);
 			EmitUnaryOperation(node->OperatorToken.Type, Encoder, GeneratingFor->ExecutableByteCode, node->IsRightDetermined);
-			Encoder.EmitCallMethodSymbol(GeneratingFor->ExecutableByteCode, setter);
+			EmitMethodCall(setter);
 		}
 		else
 		{
@@ -902,7 +921,7 @@ void AbstractEmiter::VisitUnaryAssignExpression(UnaryExpressionSyntax* const nod
 				EmitIndexatorArguments(this, indexatorExpr->IndexatorList.get());
 
 			// Call getter: leaves [this, value] on the eval stack
-			Encoder.EmitCallMethodSymbol(GeneratingFor->ExecutableByteCode, getter);
+			EmitMethodCall(getter);
 
 			// Apply ++/--. For prefix this leaves [this, new, new];
 			// for postfix this leaves [this, old, new].
@@ -920,7 +939,7 @@ void AbstractEmiter::VisitUnaryAssignExpression(UnaryExpressionSyntax* const nod
 			Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, tempValueSlot);
 			Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, tempThisSlot);
 
-			Encoder.EmitCallMethodSymbol(GeneratingFor->ExecutableByteCode, setter);
+			EmitMethodCall(setter);
 		}
 
 		return;
@@ -945,12 +964,14 @@ void AbstractEmiter::VisitBinaryAssignExpression(BinaryExpressionSyntax* const n
 	MemberAccessExpressionSyntax* memberExpression = static_cast<MemberAccessExpressionSyntax*>(node->Left.get());
 	if (memberExpression->ToParameter)
 	{
+		VisitExpression(node->Right.get());
 		Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, memberExpression->ToParameter->SlotIndex);
 		return;
 	}
 
 	if (memberExpression->ToVariable != nullptr)
 	{
+		VisitExpression(node->Right.get());
 		Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, memberExpression->ToVariable->SlotIndex);
 		return;
 	}
@@ -977,7 +998,7 @@ void AbstractEmiter::VisitBinaryAssignExpression(BinaryExpressionSyntax* const n
 		if (setter == nullptr || setter->Linking == LINK_INSTANCE)
 			VisitExpression(memberExpression->PreviousExpression.get());
 
-		Encoder.EmitCallMethodSymbol(GeneratingFor->ExecutableByteCode, setter);
+		EmitMethodCall(setter);
 		return;
 	}
 
@@ -1014,7 +1035,7 @@ void AbstractEmiter::VisitInvocationExpression(InvokationExpressionSyntax* const
 	if (node->PreviousExpression != nullptr)
 		VisitExpression(node->PreviousExpression.get());
 
-	Encoder.EmitCallMethodSymbol(GeneratingFor->ExecutableByteCode, node->Symbol);
+	EmitMethodCall(node->Symbol);
 }
 
 void AbstractEmiter::VisitIndexatorExpression(IndexatorExpressionSyntax* const node)
@@ -1027,7 +1048,7 @@ void AbstractEmiter::VisitIndexatorExpression(IndexatorExpressionSyntax* const n
 	if (node->IndexatorList != nullptr)
 		EmitIndexatorArguments(this, node->IndexatorList.get());
 
-	Encoder.EmitCallMethodSymbol(GeneratingFor->ExecutableByteCode, node->ToProperty->Getter);
+	EmitMethodCall(node->ToProperty->Getter);
 	return;
 }
 
@@ -1064,7 +1085,7 @@ void AbstractEmiter::VisitMemberAccessExpression(MemberAccessExpressionSyntax* c
 			return;
 
 		VisitExpression(node->PreviousExpression.get());
-		Encoder.EmitCallMethodSymbol(GeneratingFor->ExecutableByteCode, node->ToProperty->Getter);
+		EmitMethodCall(node->ToProperty->Getter);
 		return;
 	}
 
@@ -1073,4 +1094,47 @@ void AbstractEmiter::VisitMemberAccessExpression(MemberAccessExpressionSyntax* c
 		Encoder.EmitNewDelegate(GeneratingFor->ExecutableByteCode, node->ToDelegate);
 		return;
 	}
+}
+
+static bool IsInterfaceMember(MethodSymbol* method)
+{
+    SyntaxSymbol* owner = method->Parent;
+    while (owner != nullptr)
+    {
+        if (owner->Kind == SyntaxKind::InterfaceDeclaration)
+            return true;
+        if (owner->IsType())
+            return false;
+        owner = owner->Parent;
+    }
+    return false;
+}
+
+void AbstractEmiter::EmitMethodCall(MethodSymbol* method)
+{
+    if (method == nullptr)
+        return;
+
+    if (IsInterfaceMember(method))
+        Encoder.EmitCallInterface(GeneratingFor->ExecutableByteCode, method);
+    else
+        Encoder.EmitCallMethodSymbol(GeneratingFor->ExecutableByteCode, method);
+}
+
+void AbstractEmiter::VisitCastExpression(CastExpressionSyntax* const node)
+{
+    if (node->Expression != nullptr)
+        VisitExpression(node->Expression.get());
+
+    if (node->TargetType != nullptr && node->TargetType->Symbol != nullptr)
+        Encoder.EmitCastInterface(GeneratingFor->ExecutableByteCode, node->TargetType->Symbol);
+}
+
+void AbstractEmiter::VisitIsExpression(IsExpressionSyntax* const node)
+{
+    if (node->Expression != nullptr)
+        VisitExpression(node->Expression.get());
+
+    if (node->TargetType != nullptr && node->TargetType->Symbol != nullptr)
+        Encoder.EmitIsInstance(GeneratingFor->ExecutableByteCode, node->TargetType->Symbol);
 }

@@ -81,6 +81,9 @@ namespace shard
 
 		void EmitLoadTypeArgument(std::vector<std::byte>& code, std::uint16_t index, TypeSymbol* type);
 		void EmitCallMethodSymbol(std::vector<std::byte>& code, MethodSymbol* method);
+		void EmitCallInterface(std::vector<std::byte>& code, MethodSymbol* interfaceMethod);
+		void EmitIsInstance(std::vector<std::byte>& code, TypeSymbol* type);
+		void EmitCastInterface(std::vector<std::byte>& code, TypeSymbol* type);
 		//void EmitCallFunction(std::vector<std::byte>& code, MethodSymbolDelegate* func);
 	};
 }

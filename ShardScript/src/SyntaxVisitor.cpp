@@ -813,6 +813,20 @@ void SyntaxVisitor::VisitExpression(ExpressionSyntax* node)
 			VisitSwitchExpression(expression);
 			return;
 		}
+
+		case SyntaxKind::CastExpression:
+		{
+			CastExpressionSyntax* expression = static_cast<CastExpressionSyntax*>(node);
+			VisitCastExpression(expression);
+			return;
+		}
+
+		case SyntaxKind::IsExpression:
+		{
+			IsExpressionSyntax* expression = static_cast<IsExpressionSyntax*>(node);
+			VisitIsExpression(expression);
+			return;
+		}
 	}
 }
 
@@ -1101,4 +1115,28 @@ void SyntaxVisitor::VisitDelegateType(DelegateTypeSyntax* node)
 
 	if (node->Params != nullptr)
 		VisitParametersList(node->Params.get());
+}
+
+void SyntaxVisitor::VisitCastExpression(CastExpressionSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (node->Expression != nullptr)
+		VisitExpression(node->Expression.get());
+
+	if (node->TargetType != nullptr)
+		VisitType(node->TargetType.get());
+}
+
+void SyntaxVisitor::VisitIsExpression(IsExpressionSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (node->Expression != nullptr)
+		VisitExpression(node->Expression.get());
+
+	if (node->TargetType != nullptr)
+		VisitType(node->TargetType.get());
 }

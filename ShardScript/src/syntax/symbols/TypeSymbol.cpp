@@ -37,7 +37,7 @@ static bool paramPredicate(ParameterSymbol* left, TypeSymbol* right)
 		return true;
 	*/
 
-	return TypeSymbol::Equals(left->Type, right);
+	return TypeSymbol::IsAssignableFrom(left->Type, right);
 }
 
 bool TypeSymbol::Equals(const TypeSymbol* left, const TypeSymbol* right)
@@ -121,6 +121,29 @@ bool TypeSymbol::Equals(const TypeSymbol* left, const TypeSymbol* right)
 			return Equals(thisArrayInfo->UnderlayingType, otherArrayInfo->UnderlayingType);
 		}
 	}
+}
+
+bool TypeSymbol::IsAssignableFrom(const TypeSymbol* target, const TypeSymbol* source)
+{
+    if (target == nullptr || source == nullptr)
+        return false;
+
+    if (Equals(target, source))
+        return true;
+
+    if (source == SymbolTable::Primitives::Null)
+        return target->IsReferenceType || target == SymbolTable::Primitives::Any;
+
+    if (target->Kind == SyntaxKind::InterfaceDeclaration)
+    {
+        for (TypeSymbol* iface : source->Interfaces)
+        {
+            if (Equals(target, iface))
+                return true;
+        }
+    }
+
+    return false;
 }
 
 bool TypeSymbol::IsPrimitive()
@@ -261,6 +284,15 @@ PropertySymbol* TypeSymbol::FindProperty(std::wstring& name)
 		
 		return symbol;
 	}
+
+	return nullptr;
+}
+
+MethodSymbol* TypeSymbol::FindInterfaceImplementation(MethodSymbol* interfaceMethod)
+{
+	auto it = InterfaceMethodMap.find(interfaceMethod);
+	if (it != InterfaceMethodMap.end())
+		return it->second;
 
 	return nullptr;
 }

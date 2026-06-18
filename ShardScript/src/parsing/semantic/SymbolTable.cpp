@@ -45,12 +45,15 @@ static void ResolvePrimitives()
 
 	SymbolTable::Primitives::Void = new StructSymbol(L"Void");
 	SymbolTable::Primitives::Any = new StructSymbol(L"Any");
+	SymbolTable::Primitives::Null = new StructSymbol(L"Null");
 
 	SymbolTable::Primitives::Void->State = TypeLayoutingState::Visited;
 	SymbolTable::Primitives::Any->State = TypeLayoutingState::Visited;
+	SymbolTable::Primitives::Null->State = TypeLayoutingState::Visited;
 
 	SymbolTable::Primitives::Void->MemoryBytesSize = 0;
 	SymbolTable::Primitives::Any->MemoryBytesSize = 0;
+	SymbolTable::Primitives::Null->MemoryBytesSize = 0;
 
 	SymbolTable::Primitives::Boolean = new StructSymbol(L"Boolean");
 	SymbolTable::Primitives::Integer = new StructSymbol(L"Integer");

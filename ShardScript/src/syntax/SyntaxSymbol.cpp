@@ -11,6 +11,7 @@ bool SyntaxSymbol::IsType() const
 {
 	return Kind == SyntaxKind::ClassDeclaration
 		|| Kind == SyntaxKind::StructDeclaration
+		|| Kind == SyntaxKind::InterfaceDeclaration
 		|| Kind == SyntaxKind::DelegateDeclaration
 		|| Kind == SyntaxKind::ArrayType
 		|| Kind == SyntaxKind::DelegateType

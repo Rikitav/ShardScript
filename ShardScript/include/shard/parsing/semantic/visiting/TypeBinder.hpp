@@ -25,6 +25,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/PropertyDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/InterfaceDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.hpp>
 
 #include <shard/syntax/nodes/ParametersListSyntax.hpp>
@@ -51,6 +52,7 @@ namespace shard
 		void VisitNamespaceDeclaration(shard::NamespaceDeclarationSyntax *const node) override;
 		void VisitClassDeclaration(shard::ClassDeclarationSyntax *const node) override;
 		void VisitStructDeclaration(shard::StructDeclarationSyntax *const node) override;
+		void VisitInterfaceDeclaration(shard::InterfaceDeclarationSyntax *const node) override;
 		void VisitDelegateDeclaration(shard::DelegateDeclarationSyntax *const node) override;
 
 		void VisitConstructorDeclaration(shard::ConstructorDeclarationSyntax *const node) override;
