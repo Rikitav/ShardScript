@@ -11,76 +11,78 @@
 #include <vector>
 #include <memory>
 #include <iterator>
+#include <algorithm>
 #include <cstdint>
 
 namespace shard
 {
     class ApplicationDomain;
 
-    template<typename MapType>
-    class SHARD_API ValueIterator
-    {
-    private:
-        using MapIterator = typename MapType::iterator;
-        MapIterator it;
-
-    public:
-        using iterator_category = std::forward_iterator_tag;
-        using value_type = typename MapType::mapped_type;
-        using difference_type = std::ptrdiff_t;
-        using pointer = value_type*;
-        using reference = value_type&;
-
-        ValueIterator(MapIterator iterator) : it(iterator) {}
-
-        value_type& operator*() { return it->second; }
-        value_type* operator->() { return &it->second; }
-
-        const value_type& operator*() const { return it->second; }
-        const value_type* operator->() const { return &it->second; }
-
-        ValueIterator& operator++() { ++it; return *this; }
-        ValueIterator operator++(int) { ValueIterator temp = *this; ++it; return temp; }
-
-        bool operator==(const ValueIterator& other) const { return it == other.it; }
-        bool operator!=(const ValueIterator& other) const { return it != other.it; }
-    };
-
 	class SHARD_API InstancesHeap
 	{
     private:
-        std::unordered_map<void*, ObjectInstance*> PtrMap;
+        std::vector<std::unique_ptr<ObjectInstance>> Instances;
 
     public:
-        using iterator = ValueIterator<decltype(PtrMap)>;
-        using const_iterator = ValueIterator<const decltype(PtrMap)>;
+        InstancesHeap() = default;
 
-        inline iterator begin() { return iterator(PtrMap.begin()); }
-        inline iterator end() { return iterator(PtrMap.end()); }
+        InstancesHeap(const InstancesHeap&) = delete;
+        InstancesHeap(InstancesHeap&&) = default;
 
-        inline auto pairs_begin() { return PtrMap.begin(); }
-        inline auto pairs_end() { return PtrMap.end(); }
+        InstancesHeap& operator=(const InstancesHeap&) = delete;
+        InstancesHeap& operator=(InstancesHeap&&) = default;
 
-        inline ObjectInstance* at(void* ptr) { return PtrMap.at(ptr); }
+        class iterator
+        {
+        public:
+            using iterator_category = std::forward_iterator_tag;
+            using value_type = ObjectInstance*;
+            using difference_type = std::ptrdiff_t;
+            using pointer = ObjectInstance**;
+            using reference = ObjectInstance*&;
+
+            iterator(std::vector<std::unique_ptr<ObjectInstance>>::iterator it) : it(it) {}
+
+            ObjectInstance* operator*() const { return it->get(); }
+            ObjectInstance* operator->() const { return it->get(); }
+
+            iterator& operator++() { ++it; return *this; }
+            iterator operator++(int) { iterator tmp = *this; ++it; return tmp; }
+
+            bool operator==(const iterator& other) const { return it == other.it; }
+            bool operator!=(const iterator& other) const { return it != other.it; }
+
+        private:
+            std::vector<std::unique_ptr<ObjectInstance>>::iterator it;
+        };
+
+        using const_iterator = iterator;
+
+        inline iterator begin() { return iterator(Instances.begin()); }
+        inline iterator end() { return iterator(Instances.end()); }
 
         inline void add(ObjectInstance* instance)
         {
-            PtrMap[instance->getMemory()] = instance;
+            Instances.emplace_back(instance);
         }
 
         inline void erase(ObjectInstance* instance)
         {
-            PtrMap.erase(instance->getMemory());
+            auto it = std::find_if(Instances.begin(), Instances.end(),
+                [instance](const std::unique_ptr<ObjectInstance>& entry) { return entry.get() == instance; });
+
+            if (it != Instances.end())
+                Instances.erase(it);
         }
 
         inline void clear()
         {
-            PtrMap.clear();
+            Instances.clear();
         }
 
-        inline std::size_t size()
+        inline std::size_t size() const
         {
-            return PtrMap.size();
+            return Instances.size();
         }
 	};
 
@@ -90,13 +92,13 @@ namespace shard
 		std::uint64_t objectsCounter = 0;
         std::unordered_map<FieldSymbol*, ObjectInstance*> staticFields;
 		std::vector<std::unique_ptr<ArrayTypeSymbol>> dynamicArrayTypes;
-        
+
     public:
         static ObjectInstance* NullInstance;
         InstancesHeap Heap;
 
         GarbageCollector(ApplicationDomain* domain);
-        
+
         GarbageCollector(const GarbageCollector&) = delete;
         GarbageCollector& operator=(const GarbageCollector&) = delete;
 
@@ -116,7 +118,7 @@ namespace shard
 		ObjectInstance* AllocateInstance(const TypeSymbol* objectInfo, bool isTransient = false);
 		ObjectInstance* AllocateArray(TypeSymbol* elementType, std::size_t length, bool isTransient = false);
         ObjectInstance* CopyInstance(ObjectInstance* instance);
-		
+
         void CollectInstance(ObjectInstance* instance);
         void DestroyInstance(ObjectInstance* instance);
         void TerminateInstance(ObjectInstance* instance);

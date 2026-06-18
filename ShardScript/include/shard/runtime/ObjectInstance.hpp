@@ -23,6 +23,7 @@ namespace shard
 
 	public:
 		MethodSymbol* DelegateTarget = nullptr;
+		bool Terminated = false;
 
 	public:
 		inline ObjectInstance(const TypeSymbol* info, void* memory, bool isTransient)

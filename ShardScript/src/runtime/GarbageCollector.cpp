@@ -253,6 +253,10 @@ void GarbageCollector::TerminateInstance(ObjectInstance* instance)
 	if (instance == NullInstance)
 		return;
 
+	if (instance->Terminated)
+		return;
+	instance->Terminated = true;
+
 	TypeSymbol* fieldOwner = const_cast<TypeSymbol*>(instance->getInfo());
 	if (fieldOwner->Kind == SyntaxKind::GenericType)
 		fieldOwner = static_cast<GenericTypeSymbol*>(fieldOwner)->UnderlayingType;
@@ -298,8 +302,16 @@ void GarbageCollector::Terminate()
 	// Destroy all static instances
 	for (const auto& choise : staticFields)
 		TerminateInstance(choise.second);
+	staticFields.clear();
+
+	// Snapshot and clear heap before terminating to avoid iterator invalidation
+	std::vector<ObjectInstance*> snapshot;
+	snapshot.reserve(Heap.size());
+	for (ObjectInstance* instance : Heap)
+		snapshot.push_back(instance);
+	Heap.clear();
 
 	// Destroy all regular instances
-	for (ObjectInstance* instance : Heap)
+	for (ObjectInstance* instance : snapshot)
 		TerminateInstance(instance);
 }
