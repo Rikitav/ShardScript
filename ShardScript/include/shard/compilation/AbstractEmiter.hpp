@@ -21,6 +21,8 @@
 #include <shard/syntax/nodes/Expressions/ObjectExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/TernaryExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/UnaryExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/CastExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/IsExpressionSyntax.hpp>
 
 #include <shard/syntax/nodes/Loops/ForStatementSyntax.hpp>
 #include <shard/syntax/nodes/Loops/ForEachStatementSyntax.hpp>
@@ -126,5 +128,11 @@ namespace shard
         void VisitInvocationExpression(InvokationExpressionSyntax *const node) override;
         void VisitIndexatorExpression(IndexatorExpressionSyntax *const node) override;
         void VisitMemberAccessExpression(MemberAccessExpressionSyntax *const node) override;
+
+        void VisitCastExpression(CastExpressionSyntax *const node) override;
+        void VisitIsExpression(IsExpressionSyntax *const node) override;
+
+private:
+        void EmitMethodCall(MethodSymbol* method);
 	};
 }

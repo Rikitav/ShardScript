@@ -146,6 +146,8 @@ namespace shard
 		std::unique_ptr<TypeArgumentsListSyntax> ReadTypeArgumentsList(SourceProvider& reader, SyntaxNode *const parent);
 
 		// 9. Other
+		std::vector<std::unique_ptr<TypeSyntax>> ReadBaseInterfacesList(SourceProvider& reader, SyntaxNode *const parent);
+
 		std::unique_ptr<TypeSyntax> ReadType(SourceProvider& reader, SyntaxNode *const parent);
 		std::unique_ptr<TypeSyntax> ReadIdentifierNameType(SourceProvider& reader, SyntaxNode *const parent);
 		std::unique_ptr<TypeSyntax> ReadDelegateType(SourceProvider& reader, SyntaxNode *const parent);

@@ -24,6 +24,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/DelegateDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/InterfaceDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/Loops/ForEachStatementSyntax.hpp>
 
 namespace shard
@@ -44,6 +45,7 @@ namespace shard
 		void VisitNamespaceDeclaration(shard::NamespaceDeclarationSyntax *const node) override;
 		void VisitClassDeclaration(shard::ClassDeclarationSyntax *const node) override;
 		void VisitStructDeclaration(shard::StructDeclarationSyntax *const node) override;
+		void VisitInterfaceDeclaration(shard::InterfaceDeclarationSyntax *const node) override;
 		void VisitDelegateDeclaration(shard::DelegateDeclarationSyntax *const node) override;
 
 		void VisitMethodDeclaration(shard::MethodDeclarationSyntax *const node) override;

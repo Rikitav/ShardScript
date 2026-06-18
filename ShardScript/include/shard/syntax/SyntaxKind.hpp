@@ -67,6 +67,8 @@ namespace shard
 		IfExpression,
 		SwitchExpression,
 		PostfixIfExpression,
+		CastExpression,
+		IsExpression,
 
 		// Linked expressions
 		LinkedExpression,

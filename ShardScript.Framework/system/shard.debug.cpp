@@ -81,6 +81,6 @@ SHARDLIB_ENTRYPOINT
 	debug.AddMethod(L"PrintGcInfo", TYPE_VOID, LINK_STATIC, ACS_PUBLIC)
 		 .SetCallback(&shard_debug_PrintGcInfo);
 
-	debug.AddMethod(L"PrintGcInfo", TYPE_VOID, LINK_STATIC, ACS_PUBLIC)
-		.SetCallback(&shard_debug_PrintGcInfo);
+	debug.AddMethod(L"PrintStackFrameInfo", TYPE_VOID, LINK_STATIC, ACS_PUBLIC)
+		.SetCallback(&shard_debug_PrintStackFrameInfo);
 }

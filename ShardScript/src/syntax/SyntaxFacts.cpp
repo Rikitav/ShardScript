@@ -40,6 +40,8 @@ int GetOperatorPrecendence(shard::TokenType type)
 
 		case TokenType::EqualsOperator:
 		case TokenType::NotEqualsOperator:
+		case TokenType::IsOperator:
+		case TokenType::AsOperator:
 			return 5;
 
 		case TokenType::AndOperator:
@@ -143,6 +145,12 @@ bool IsBinaryOperator(shard::TokenType type)
 		return true;
 
 	if (type == TokenType::RangeInclusiveOperator)
+		return true;
+
+	if (type == TokenType::IsOperator)
+		return true;
+
+	if (type == TokenType::AsOperator)
 		return true;
 
 	return false;

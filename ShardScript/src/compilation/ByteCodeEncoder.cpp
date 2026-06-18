@@ -334,6 +334,24 @@ void ByteCodeEncoder::EmitCallMethodSymbol(std::vector<std::byte>& code, MethodS
     AppendData(code, &method, sizeof(method));
 }
 
+void ByteCodeEncoder::EmitCallInterface(std::vector<std::byte>& code, MethodSymbol* interfaceMethod)
+{
+    AppendDataT(code, OpCode::CALLINTERFACE);
+    AppendData(code, &interfaceMethod, sizeof(interfaceMethod));
+}
+
+void ByteCodeEncoder::EmitIsInstance(std::vector<std::byte>& code, TypeSymbol* type)
+{
+    AppendDataT(code, OpCode::ISINSTANCE);
+    AppendData(code, &type, sizeof(type));
+}
+
+void ByteCodeEncoder::EmitCastInterface(std::vector<std::byte>& code, TypeSymbol* type)
+{
+    AppendDataT(code, OpCode::CASTINTERFACE);
+    AppendData(code, &type, sizeof(type));
+}
+
 /*
 void ByteCodeEncoder::EmitCallFunction(std::vector<std::byte>& code, MethodSymbolDelegate* func)
 {

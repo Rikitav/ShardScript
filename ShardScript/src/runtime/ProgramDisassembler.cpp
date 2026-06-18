@@ -259,6 +259,48 @@ void ProgramDisassembler::Disassemble(std::wostream& out, MethodSymbol* method)
                 break;
             }
 
+            case OpCode::CALLINTERFACE:
+            {
+                auto* sym = decoder.AbsorbMethodSymbol();
+                if (sym == nullptr)
+                {
+                    out << L"callinterface null";
+                    break;
+                }
+
+                std::wstring name = sym->FullName.size() > 0 ? sym->FullName : sym->Name;
+                out << L"callinterface " << name;
+                break;
+            }
+
+            case OpCode::ISINSTANCE:
+            {
+                auto* sym = decoder.AbsorbTypeSymbol();
+                if (sym == nullptr)
+                {
+                    out << L"isinst null";
+                    break;
+                }
+
+                std::wstring name = sym->FullName.size() > 0 ? sym->FullName : sym->Name;
+                out << L"isinst " << name;
+                break;
+            }
+
+            case OpCode::CASTINTERFACE:
+            {
+                auto* sym = decoder.AbsorbTypeSymbol();
+                if (sym == nullptr)
+                {
+                    out << L"castinterface null";
+                    break;
+                }
+
+                std::wstring name = sym->FullName.size() > 0 ? sym->FullName : sym->Name;
+                out << L"castinterface " << name;
+                break;
+            }
+
             default:
             {
                 out << L"unknown (0x" << std::hex << static_cast<std::uint16_t>(op) << L")";

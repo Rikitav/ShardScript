@@ -7,6 +7,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/InterfaceDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/DelegateDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/PropertyDeclarationSyntax.hpp>
@@ -25,6 +26,7 @@
 
 #include <shard/syntax/symbols/NamespaceSymbol.hpp>
 #include <shard/syntax/symbols/ClassSymbol.hpp>
+#include <shard/syntax/symbols/InterfaceSymbol.hpp>
 #include <shard/syntax/symbols/StructSymbol.hpp>
 #include <shard/syntax/symbols/MethodSymbol.hpp>
 #include <shard/syntax/symbols/ConstructorSymbol.hpp>
@@ -75,6 +77,10 @@ namespace shard
 		ClassSymbol* Class(ClassDeclarationSyntax* node);
 		ClassSymbol* Class(const std::wstring& name);
 		ClassSymbol* Class(const wchar_t* name);
+
+		InterfaceSymbol* Interface(InterfaceDeclarationSyntax* node);
+		InterfaceSymbol* Interface(const std::wstring& name);
+		InterfaceSymbol* Interface(const wchar_t* name);
 
 		FieldSymbol* Field(FieldDeclarationSyntax* node);
 		FieldSymbol* Field(const std::wstring& name, TypeSymbol* type, SymbolLinking linking = LINK_INSTANCE);

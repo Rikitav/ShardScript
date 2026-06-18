@@ -22,6 +22,7 @@
 #include <shard/syntax/symbols/TypeParameterSymbol.hpp>
 #include <shard/syntax/symbols/DelegateTypeSymbol.hpp>
 #include <shard/syntax/symbols/GenericTypeSymbol.hpp>
+#include <shard/syntax/symbols/InterfaceSymbol.hpp>
 #include <shard/syntax/symbols/AccessorSymbol.hpp>
 #include <shard/syntax/symbols/IndexatorSymbol.hpp>
 
@@ -144,6 +145,98 @@ void TypeBinder::VisitUsingDirective(UsingDirectiveSyntax *const node)
 		current->DeclareSymbol(symbol);
 }
 
+static bool IsInterfaceImplementationMatching(MethodSymbol* interfaceMethod, MethodSymbol* classMethod)
+{
+    if (interfaceMethod->Name != classMethod->Name)
+        return false;
+
+    if (interfaceMethod->Parameters.size() != classMethod->Parameters.size())
+        return false;
+
+    if (!TypeSymbol::Equals(interfaceMethod->ReturnType, classMethod->ReturnType))
+        return false;
+
+    for (std::size_t i = 0; i < interfaceMethod->Parameters.size(); i++)
+    {
+        if (!TypeSymbol::Equals(interfaceMethod->Parameters[i]->Type, classMethod->Parameters[i]->Type))
+            return false;
+    }
+
+    return true;
+}
+
+static bool IsInterfaceImplementationMatching(PropertySymbol* interfaceProperty, PropertySymbol* classProperty)
+{
+    if (interfaceProperty->Name != classProperty->Name)
+        return false;
+
+    if (!TypeSymbol::Equals(interfaceProperty->ReturnType, classProperty->ReturnType))
+        return false;
+
+    if (interfaceProperty->Getter != nullptr && classProperty->Getter == nullptr)
+        return false;
+
+    if (interfaceProperty->Setter != nullptr && classProperty->Setter == nullptr)
+        return false;
+
+    return true;
+}
+
+static void ValidateInterfaceImplementation(TypeSymbol* typeSymbol, InterfaceSymbol* interfaceSymbol, DiagnosticsContext& diagnostics, SyntaxToken errorToken)
+{
+    for (MethodSymbol* interfaceMethod : interfaceSymbol->Methods)
+    {
+        MethodSymbol* matchedMethod = nullptr;
+        for (MethodSymbol* classMethod : typeSymbol->Methods)
+        {
+            if (IsInterfaceImplementationMatching(interfaceMethod, classMethod))
+            {
+                matchedMethod = classMethod;
+                break;
+            }
+        }
+
+        if (matchedMethod == nullptr)
+        {
+            diagnostics.ReportError(
+                errorToken,
+                L"Type '" + typeSymbol->Name + L"' does not implement interface method '" + interfaceMethod->Name + L"' from '" + interfaceSymbol->Name + L"'");
+        }
+        else
+        {
+            typeSymbol->InterfaceMethodMap[interfaceMethod] = matchedMethod;
+        }
+    }
+
+    for (PropertySymbol* interfaceProperty : interfaceSymbol->Properties)
+    {
+        PropertySymbol* matchedProperty = nullptr;
+        for (PropertySymbol* classProperty : typeSymbol->Properties)
+        {
+            if (IsInterfaceImplementationMatching(interfaceProperty, classProperty))
+            {
+                matchedProperty = classProperty;
+                break;
+            }
+        }
+
+        if (matchedProperty == nullptr)
+        {
+            diagnostics.ReportError(
+                errorToken,
+                L"Type '" + typeSymbol->Name + L"' does not implement interface property '" + interfaceProperty->Name + L"' from '" + interfaceSymbol->Name + L"'");
+        }
+        else
+        {
+            if (interfaceProperty->Getter != nullptr && matchedProperty->Getter != nullptr)
+                typeSymbol->InterfaceMethodMap[interfaceProperty->Getter] = matchedProperty->Getter;
+            
+			if (interfaceProperty->Setter != nullptr && matchedProperty->Setter != nullptr)
+                typeSymbol->InterfaceMethodMap[interfaceProperty->Setter] = matchedProperty->Setter;
+        }
+    }
+}
+
 void TypeBinder::VisitNamespaceDeclaration(NamespaceDeclarationSyntax *const node)
 {
 	// Namespace declarations are now handled inline in VisitCompilationUnit
@@ -162,6 +255,25 @@ void TypeBinder::VisitClassDeclaration(ClassDeclarationSyntax *const node)
 	for (const auto& typeParam : symbol->TypeParameters)
 		Declare(typeParam);
 
+	std::vector<InterfaceSymbol*> baseInterfaces;
+	for (const auto& baseInterface : node->BaseInterfaces)
+	{
+		VisitType(baseInterface.get());
+		TypeSymbol* baseSymbol = baseInterface->Symbol;
+		if (baseSymbol == nullptr)
+			continue;
+
+		if (baseSymbol->Kind != SyntaxKind::InterfaceDeclaration)
+		{
+			Diagnostics.ReportError(node->IdentifierToken, L"Base type must be an interface");
+			continue;
+		}
+
+		InterfaceSymbol* interfaceSymbol = static_cast<InterfaceSymbol*>(baseSymbol);
+		symbol->Interfaces.push_back(interfaceSymbol);
+		baseInterfaces.push_back(interfaceSymbol);
+	}
+
 	for (const auto& member : node->Members)
 	{
 		SyntaxSymbol* memberSymbol = Table->LookupSymbol(member.get()).value_or(nullptr);
@@ -171,6 +283,9 @@ void TypeBinder::VisitClassDeclaration(ClassDeclarationSyntax *const node)
 
 	for (const auto& member : node->Members)
 		VisitMemberDeclaration(member.get());
+
+	for (InterfaceSymbol* interfaceSymbol : baseInterfaces)
+		ValidateInterfaceImplementation(symbol, interfaceSymbol, Diagnostics, node->IdentifierToken);
 
 	PopScope();
 }
@@ -185,6 +300,25 @@ void TypeBinder::VisitStructDeclaration(StructDeclarationSyntax *const node)
 	for (const auto& typeParam : symbol->TypeParameters)
 		Declare(typeParam);
 
+	std::vector<InterfaceSymbol*> baseInterfaces;
+	for (const auto& baseInterface : node->BaseInterfaces)
+	{
+		VisitType(baseInterface.get());
+		TypeSymbol* baseSymbol = baseInterface->Symbol;
+		if (baseSymbol == nullptr)
+			continue;
+
+		if (baseSymbol->Kind != SyntaxKind::InterfaceDeclaration)
+		{
+			Diagnostics.ReportError(node->IdentifierToken, L"Base type must be an interface");
+			continue;
+		}
+
+		InterfaceSymbol* interfaceSymbol = static_cast<InterfaceSymbol*>(baseSymbol);
+		symbol->Interfaces.push_back(interfaceSymbol);
+		baseInterfaces.push_back(interfaceSymbol);
+	}
+
 	for (const auto& member : node->Members)
 	{
 		SyntaxSymbol* memberSymbol = Table->LookupSymbol(member.get()).value_or(nullptr);
@@ -195,7 +329,33 @@ void TypeBinder::VisitStructDeclaration(StructDeclarationSyntax *const node)
 	for (const auto& member : node->Members)
 		VisitMemberDeclaration(member.get());
 
+	for (InterfaceSymbol* interfaceSymbol : baseInterfaces)
+		ValidateInterfaceImplementation(symbol, interfaceSymbol, Diagnostics, node->IdentifierToken);
+
 	PopScope();
+}
+
+void TypeBinder::VisitInterfaceDeclaration(InterfaceDeclarationSyntax *const node)
+{
+    InterfaceSymbol* symbol = LookupSymbol<InterfaceSymbol>(node).value_or(nullptr);
+    if (symbol == nullptr)
+        throw std::runtime_error("symbol not found");
+
+    PushScope(symbol);
+    for (const auto& typeParam : symbol->TypeParameters)
+        Declare(typeParam);
+
+    for (const auto& member : node->Members)
+    {
+        SyntaxSymbol* memberSymbol = Table->LookupSymbol(member.get()).value_or(nullptr);
+        if (memberSymbol != nullptr)
+            Declare(memberSymbol);
+    }
+
+    for (const auto& member : node->Members)
+        VisitMemberDeclaration(member.get());
+
+    PopScope();
 }
 
 void TypeBinder::VisitDelegateDeclaration(DelegateDeclarationSyntax *const node)
@@ -301,11 +461,11 @@ void TypeBinder::VisitPropertyDeclaration(PropertyDeclarationSyntax *const node)
 		symbol->BackingField->ReturnType = propertyType;
 
 	// Resolve getter return type
-	if (symbol->Getter != nullptr && node->Getter->Body != nullptr)
+	if (symbol->Getter != nullptr)
 		symbol->Getter->ReturnType = propertyType;
 
 	// Resolve setter parameter type
-	if (symbol->Setter != nullptr && node->Setter->Body != nullptr && !symbol->Setter->Parameters.empty())
+	if (symbol->Setter != nullptr && !symbol->Setter->Parameters.empty())
 		symbol->Setter->Parameters[0]->Type = propertyType;
 
 	if (node->InitializerExpression != nullptr)

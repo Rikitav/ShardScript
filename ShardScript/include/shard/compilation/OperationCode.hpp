@@ -282,6 +282,30 @@ namespace shard
 		LOAD_TYPEARGUMENT,
 
 		/// <summary>
+		/// Invokes an interface method on the object currently on the evaluation stack.
+		/// The concrete implementing method is resolved at runtime from the object's type.
+		/// <para>Includes 1 parameter :</para>
+		/// <para>> MethodSymbol* pInterfaceMethod - pointer to the interface MethodSymbol to invoke.</para>
+		/// </summary>
+		CALLINTERFACE,
+
+		/// <summary>
+		/// Pops an object instance and a target type, checks whether the instance is
+		/// compatible with the type, and pushes a boolean result.
+		/// <para>Includes 1 parameter :</para>
+		/// <para>> TypeSymbol* pType - The type to test against.</para>
+		/// </summary>
+		ISINSTANCE,
+
+		/// <summary>
+		/// Pops an object instance and a target type, returns the instance if it is
+		/// compatible with the type, or null otherwise.
+		/// <para>Includes 1 parameter :</para>
+		/// <para>> TypeSymbol* pType - The type to cast to.</para>
+		/// </summary>
+		CASTINTERFACE,
+
+		/// <summary>
 		/// Creates a new integer array from a range. Pops upper bound, lower bound and
 		/// an inclusive flag, then pushes the populated array.
 		/// <para>Includes 1 parameter :</para>

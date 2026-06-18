@@ -298,6 +298,34 @@ StructSymbol* SymbolFactory::Struct(const wchar_t* name)
 	symbol->Accesibility = SymbolAccesibility::Private;
 	return static_cast<StructSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
+
+InterfaceSymbol* SymbolFactory::Interface(InterfaceDeclarationSyntax* node)
+{
+	std::wstring interfaceName = node->IdentifierToken.Word;
+	auto symbol = std::make_unique<InterfaceSymbol>(interfaceName);
+	SetAccesibility(symbol.get(), node->Modifiers);
+	symbol->Accesibility = SymbolAccesibility::Public;
+	symbol->IsReferenceType = true;
+
+	return static_cast<InterfaceSymbol*>(Table->BindSymbol(node, std::move(symbol)));
+}
+
+InterfaceSymbol* SymbolFactory::Interface(const std::wstring& name)
+{
+	auto symbol = std::make_unique<InterfaceSymbol>(name);
+	symbol->Accesibility = SymbolAccesibility::Private;
+	symbol->IsReferenceType = true;
+	return static_cast<InterfaceSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
+}
+
+InterfaceSymbol* SymbolFactory::Interface(const wchar_t* name)
+{
+	auto symbol = std::make_unique<InterfaceSymbol>(name);
+	symbol->Accesibility = SymbolAccesibility::Private;
+	symbol->IsReferenceType = true;
+	return static_cast<InterfaceSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
+}
+
 FieldSymbol* SymbolFactory::Field(FieldDeclarationSyntax* node)
 {
 	std::wstring fieldName = node->IdentifierToken.Word;
@@ -387,7 +415,7 @@ ConstructorSymbol* SymbolFactory::Constructor(ConstructorDeclarationSyntax* node
 ConstructorSymbol* SymbolFactory::Constructor(TypeSymbol* owner, SymbolAccesibility accessibility)
 {
 	auto symbol = std::make_unique<ConstructorSymbol>(L"init");
-	symbol->ReturnType = owner;
+	symbol->ReturnType = SymbolTable::Primitives::Void;
 	symbol->Accesibility = accessibility;
 	symbol->HandleType = MethodHandleType::Body;
 	return static_cast<ConstructorSymbol*>(Table->ImplicitSymbol(std::move(symbol)));

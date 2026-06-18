@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <unordered_map>
 
 // Forward declaration
 namespace shard
@@ -41,6 +42,8 @@ namespace shard
         std::vector<ConstructorSymbol*> Constructors;
         std::vector<MethodSymbol*> Methods;
 
+        std::unordered_map<MethodSymbol*, MethodSymbol*> InterfaceMethodMap;
+
         TypeLayoutingState State = TypeLayoutingState::Unvisited;
         std::size_t MemoryBytesSize = 0;
         bool IsReferenceType = false;
@@ -69,7 +72,10 @@ namespace shard
         virtual FieldSymbol* FindField(std::wstring& name);
         virtual PropertySymbol* FindProperty(std::wstring& name);
 
+        MethodSymbol* FindInterfaceImplementation(MethodSymbol* interfaceMethod);
+
         static bool Equals(const TypeSymbol* left, const TypeSymbol* right);
+        static bool IsAssignableFrom(const TypeSymbol* target, const TypeSymbol* source);
 
         static TypeSymbol* SubstituteType(TypeSymbol* type);
 		static TypeSymbol* ReturnOf(FieldSymbol* field);

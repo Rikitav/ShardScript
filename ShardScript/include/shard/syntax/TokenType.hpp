@@ -61,6 +61,10 @@ namespace shard
 		LessOperator,		     // <
 		LessOrEqualsOperator,    // <=
 
+		// Type testing operators
+		IsOperator,			     // is
+		AsOperator,			     // as
+
 		// Unary boolean operators
 		NotOperator,         // !
 

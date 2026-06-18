@@ -30,6 +30,8 @@
 #include <shard/syntax/nodes/Expressions/TernaryExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/IfExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/SwitchExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/CastExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/IsExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Statements/TryStatementSyntax.hpp>
 
 #include <shard/syntax/nodes/Loops/ForStatementSyntax.hpp>
@@ -130,6 +132,9 @@ namespace shard
 		void VisitMemberAccessExpression(shard::MemberAccessExpressionSyntax *const node) override;
 		void VisitInvocationExpression(shard::InvokationExpressionSyntax *const node) override;
 		void VisitIndexatorExpression(shard::IndexatorExpressionSyntax *const node) override;
+
+		void VisitCastExpression(shard::CastExpressionSyntax *const node) override;
+		void VisitIsExpression(shard::IsExpressionSyntax *const node) override;
 	};
 }
 

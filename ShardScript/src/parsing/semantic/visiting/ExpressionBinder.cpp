@@ -511,7 +511,7 @@ void ExpressionBinder::VisitFieldDeclaration(FieldDeclarationSyntax *const node)
 			return;
 		}
 
-		if (!TypeSymbol::Equals(initExprType, symbol->ReturnType))
+		if (!TypeSymbol::IsAssignableFrom(symbol->ReturnType, initExprType))
 		{
 			Diagnostics.ReportError(node->IdentifierToken, L"Field initializer type mismatch: expected '" + symbol->ReturnType->Name + L"' but got '" + initExprType->Name + L"'");
 			return;
@@ -551,7 +551,7 @@ void ExpressionBinder::VisitVariableStatement(VariableStatementSyntax *const nod
 		return;
 	}
 
-	if (!TypeSymbol::Equals(symbol->Type, expressionType))
+	if (!TypeSymbol::IsAssignableFrom(symbol->Type, expressionType))
 	{
 		Diagnostics.ReportError(node->IdentifierToken, L"Type mismatch: expected '" + symbol->Type->Name + L"' but got '" + expressionType->Name + L"'");
 		return;
@@ -641,9 +641,9 @@ TypeSymbol* ExpressionBinder::AnalyzeBinaryExpression(BinaryExpressionSyntax *co
 			return leftType;
 		}
 
-		if (!TypeSymbol::Equals(leftType, rightType))
+		if (leftType != SymbolTable::Primitives::Any && !TypeSymbol::IsAssignableFrom(leftType, rightType))
 		{
-			Diagnostics.ReportError(node->OperatorToken, L"Type mismatch in comparison: '" + leftType->Name + L"' and '" + rightType->Name + L"'");
+			Diagnostics.ReportError(node->OperatorToken, L"Type mismatch in assignment: expected '" + leftType->Name + L"' but got '" + rightType->Name + L"'");
 			return leftType;
 		}
 
@@ -670,7 +670,11 @@ TypeSymbol* ExpressionBinder::AnalyzeBinaryExpression(BinaryExpressionSyntax *co
 		case TokenType::LessOperator:
 		case TokenType::LessOrEqualsOperator:
 		{
-			if (!TypeSymbol::Equals(leftType, rightType))
+			bool nullComparison =
+				(leftType == SymbolTable::Primitives::Null && rightType->IsReferenceType) ||
+				(rightType == SymbolTable::Primitives::Null && leftType->IsReferenceType);
+
+			if (!nullComparison && !TypeSymbol::Equals(leftType, rightType))
 			{
 				Diagnostics.ReportError(node->OperatorToken, L"Type mismatch in comparison: '" + leftType->Name + L"' and '" + rightType->Name + L"'");
 			}
@@ -1088,7 +1092,7 @@ bool ExpressionBinder::MatchMethodArguments(std::vector<ParameterSymbol*>& param
 			return true;
 		}
 
-		if (!TypeSymbol::Equals(paramType, argType))
+		if (!TypeSymbol::IsAssignableFrom(paramType, argType))
 		{
 			Diagnostics.ReportError(SyntaxToken(), L"Argument type mismatch for parameter '" + param->Name + L"': expected '" + paramType->Name + L"' but got '" + argType->Name + L"'");
 			return false;
@@ -2313,8 +2317,48 @@ void ExpressionBinder::VisitReturnStatement(ReturnStatementSyntax *const node)
 	{
 		Diagnostics.ReportError(node->KeywordToken, L"Return expression type could not be determined");
 	}
-	else if (!TypeSymbol::Equals(returnExprType, returnType))
+	else if (!TypeSymbol::IsAssignableFrom(returnType, returnExprType))
 	{
 		Diagnostics.ReportError(node->KeywordToken, L"Return type mismatch: expected '" + returnType->Name + L"' but got '" + returnExprType->Name + L"'");
 	}
+}
+
+void ExpressionBinder::VisitCastExpression(CastExpressionSyntax *const node)
+{
+	if (node->Expression != nullptr)
+		VisitExpression(node->Expression.get());
+
+	if (node->TargetType != nullptr)
+		VisitType(node->TargetType.get());
+
+	if (node->TargetType == nullptr || node->TargetType->Symbol == nullptr)
+	{
+		SetExpressionType(node, nullptr);
+		return;
+	}
+
+	TypeSymbol* targetType = node->TargetType->Symbol;
+	if (!targetType->IsReferenceType)
+	{
+		Diagnostics.ReportError(node->OperatorToken, L"The 'as' operator may only be used with reference types");
+	}
+
+	SetExpressionType(node, targetType);
+}
+
+void ExpressionBinder::VisitIsExpression(IsExpressionSyntax *const node)
+{
+	if (node->Expression != nullptr)
+		VisitExpression(node->Expression.get());
+
+	if (node->TargetType != nullptr)
+		VisitType(node->TargetType.get());
+
+	if (node->TargetType == nullptr || node->TargetType->Symbol == nullptr)
+	{
+		SetExpressionType(node, SymbolTable::Primitives::Boolean);
+		return;
+	}
+
+	SetExpressionType(node, SymbolTable::Primitives::Boolean);
 }

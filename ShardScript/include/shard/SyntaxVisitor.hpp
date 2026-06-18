@@ -61,6 +61,8 @@
 #include <shard/syntax/nodes/Expressions/TernaryExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/IfExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/SwitchExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/CastExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/IsExpressionSyntax.hpp>
 
 #include <shard/syntax/nodes/Types/PredefinedTypeSyntax.hpp>
 #include <shard/syntax/nodes/Types/GenericTypeSyntax.hpp>
@@ -146,6 +148,9 @@ namespace shard
         virtual void VisitInvocationExpression(InvokationExpressionSyntax *const node);
         virtual void VisitMemberAccessExpression(MemberAccessExpressionSyntax *const node);
         virtual void VisitIndexatorExpression(IndexatorExpressionSyntax *const node);
+
+        virtual void VisitCastExpression(CastExpressionSyntax *const node);
+        virtual void VisitIsExpression(IsExpressionSyntax *const node);
 
         virtual void VisitArgumentsList(ArgumentsListSyntax *const node);
         virtual void VisitArgument(ArgumentSyntax *const node);
