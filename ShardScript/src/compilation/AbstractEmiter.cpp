@@ -33,6 +33,7 @@
 #include <shard/syntax/nodes/Statements/ExpressionStatementSyntax.hpp>
 #include <shard/syntax/nodes/Statements/ReturnStatementSyntax.hpp>
 #include <shard/syntax/nodes/Statements/ThrowStatementSyntax.hpp>
+#include <shard/syntax/nodes/Statements/TryStatementSyntax.hpp>
 #include <shard/syntax/nodes/Statements/VariableStatementSyntax.hpp>
 
 #include <shard/syntax/SymbolAccesibility.hpp>
@@ -48,9 +49,11 @@
 #include <shard/syntax/symbols/MethodSymbol.hpp>
 #include <shard/syntax/symbols/ParameterSymbol.hpp>
 #include <shard/syntax/symbols/PropertySymbol.hpp>
+#include <shard/syntax/symbols/VariableSymbol.hpp>
 #include <shard/syntax/symbols/TypeSymbol.hpp>
 #include <shard/syntax/symbols/VariableSymbol.hpp>
 
+#include <optional>
 #include <stdexcept>
 #include <vector>
 #include <cstddef>
@@ -445,8 +448,113 @@ void AbstractEmiter::VisitReturnStatement(ReturnStatementSyntax* const node)
 
 void AbstractEmiter::VisitThrowStatement(ThrowStatementSyntax* const node)
 {
-	VisitExpression(node->Expression.get());
+	if (node->Expression != nullptr)
+	{
+		VisitExpression(node->Expression.get());
+		Encoder.EmitThrow(GeneratingFor->ExecutableByteCode);
+	}
+	else
+	{
+		Encoder.EmitRethrow(GeneratingFor->ExecutableByteCode);
+	}
+}
+
+void AbstractEmiter::VisitTryStatement(TryStatementSyntax* const node)
+{
+	if (node->CatchClauses.empty())
+	{
+		if (node->TryBlock != nullptr)
+			VisitStatementsBlock(node->TryBlock.get());
+		return;
+	}
+
+	std::size_t enterTryBacktrack = GeneratingFor->ExecutableByteCode.size();
+	Encoder.EmitEnterTry(GeneratingFor->ExecutableByteCode, 0);
+
+	if (node->TryBlock != nullptr)
+		VisitStatementsBlock(node->TryBlock.get());
+
+	Encoder.EmitLeaveTry(GeneratingFor->ExecutableByteCode);
+	std::size_t tryEndJumpBacktrack = GeneratingFor->ExecutableByteCode.size();
+	Encoder.EmitJump(GeneratingFor->ExecutableByteCode, 0);
+
+	std::size_t handlerStart = GeneratingFor->ExecutableByteCode.size();
+	ByteCodeEncoder::PasteData(
+		GeneratingFor->ExecutableByteCode,
+		enterTryBacktrack + sizeof(OpCode),
+		&handlerStart,
+		sizeof(std::size_t));
+
+	std::vector<std::size_t> clauseStarts;
+	std::vector<std::size_t> bodyEndBacktracks;
+	std::vector<std::optional<std::size_t>> filterFailBacktracks;
+
+	for (const auto& clauseUnique : node->CatchClauses)
+	{
+		CatchClauseSyntax* clause = clauseUnique.get();
+		clauseStarts.push_back(GeneratingFor->ExecutableByteCode.size());
+		filterFailBacktracks.emplace_back(std::nullopt);
+
+		TypeSymbol* catchType = (clause->ExceptionType != nullptr && clause->ExceptionType->Symbol != nullptr)
+			? clause->ExceptionType->Symbol
+			: SymbolTable::Primitives::Any;
+
+		if (catchType != SymbolTable::Primitives::Any)
+		{
+			Encoder.EmitDuplicate(GeneratingFor->ExecutableByteCode);
+			Encoder.EmitIsInstance(GeneratingFor->ExecutableByteCode, catchType);
+			filterFailBacktracks.back() = GeneratingFor->ExecutableByteCode.size();
+			Encoder.EmitJumpFalse(GeneratingFor->ExecutableByteCode, 0);
+		}
+
+		VariableSymbol* catchVariable = clause->Symbol;
+		if (catchVariable != nullptr)
+			Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, catchVariable->SlotIndex);
+		else
+			Encoder.EmitPop(GeneratingFor->ExecutableByteCode);
+
+		if (clause->Body != nullptr)
+			VisitStatementsBlock(clause->Body.get());
+
+		bodyEndBacktracks.push_back(GeneratingFor->ExecutableByteCode.size());
+		Encoder.EmitJump(GeneratingFor->ExecutableByteCode, 0);
+	}
+
+	std::size_t fallbackStart = GeneratingFor->ExecutableByteCode.size();
 	Encoder.EmitThrow(GeneratingFor->ExecutableByteCode);
+
+	std::size_t endLabel = GeneratingFor->ExecutableByteCode.size();
+	Encoder.EmitEndCatch(GeneratingFor->ExecutableByteCode);
+
+	for (std::size_t i = 0; i < node->CatchClauses.size(); ++i)
+	{
+		if (filterFailBacktracks[i].has_value())
+		{
+			std::size_t target = (i + 1 < clauseStarts.size())
+				? clauseStarts[i + 1]
+				: fallbackStart;
+			ByteCodeEncoder::PasteData(
+				GeneratingFor->ExecutableByteCode,
+				filterFailBacktracks[i].value() + sizeof(OpCode),
+				&target,
+				sizeof(std::size_t));
+		}
+	}
+
+	for (std::size_t backtrack : bodyEndBacktracks)
+	{
+		ByteCodeEncoder::PasteData(
+			GeneratingFor->ExecutableByteCode,
+			backtrack + sizeof(OpCode),
+			&endLabel,
+			sizeof(std::size_t));
+	}
+
+	ByteCodeEncoder::PasteData(
+		GeneratingFor->ExecutableByteCode,
+		tryEndJumpBacktrack + sizeof(OpCode),
+		&endLabel,
+		sizeof(std::size_t));
 }
 
 void AbstractEmiter::VisitBreakStatement(BreakStatementSyntax* const node)

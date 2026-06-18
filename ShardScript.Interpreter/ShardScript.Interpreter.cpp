@@ -218,6 +218,18 @@ int wmain(int argc, wchar_t* argv[])
 		{
 			VirtualMachine& virtualMachine = domain->GetVirtualMachine();
 			virtualMachine.Run();
+
+			ObjectInstance* unhandledException = virtualMachine.GetUnhandledException();
+			if (unhandledException != nullptr)
+			{
+				std::wcerr << L"Unhandled exception";
+				const std::wstring& message = virtualMachine.GetUnhandledExceptionMessage();
+				if (!message.empty())
+					std::wcerr << L": " << message;
+
+				std::wcerr << L"\nStack trace:\n" << virtualMachine.GetUnhandledExceptionStackTrace() << std::endl;
+				return 1;
+			}
 		}
 	}
 	catch (const diagnostics_exception& err)

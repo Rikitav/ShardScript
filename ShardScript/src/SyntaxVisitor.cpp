@@ -675,6 +675,9 @@ void SyntaxVisitor::VisitTryStatement(TryStatementSyntax* node)
 
 	for (const auto& clause : node->CatchClauses)
 	{
+		if (clause->ExceptionType != nullptr)
+			VisitType(clause->ExceptionType.get());
+
 		if (clause->Body != nullptr)
 			VisitStatementsBlock(clause->Body.get());
 	}

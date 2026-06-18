@@ -39,6 +39,7 @@
 #include <shard/syntax/nodes/Statements/ExpressionStatementSyntax.hpp>
 #include <shard/syntax/nodes/Statements/ReturnStatementSyntax.hpp>
 #include <shard/syntax/nodes/Statements/ThrowStatementSyntax.hpp>
+#include <shard/syntax/nodes/Statements/TryStatementSyntax.hpp>
 #include <shard/syntax/nodes/Statements/VariableStatementSyntax.hpp>
 
 #include <shard/syntax/symbols/MethodSymbol.hpp>
@@ -100,6 +101,7 @@ namespace shard
         void VisitVariableStatement(VariableStatementSyntax *const node) override;
         void VisitReturnStatement(ReturnStatementSyntax *const node) override;
         void VisitThrowStatement(ThrowStatementSyntax *const node) override;
+        void VisitTryStatement(TryStatementSyntax *const node) override;
         void VisitBreakStatement(BreakStatementSyntax *const node) override;
         void VisitContinueStatement(ContinueStatementSyntax *const node) override;
 

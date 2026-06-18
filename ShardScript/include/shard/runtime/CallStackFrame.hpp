@@ -34,6 +34,9 @@ namespace shard
 
 		FrameInterruptionReason InterruptionReason = FrameInterruptionReason::None;
 		ObjectInstance* InterruptionRegister = nullptr;
+		ObjectInstance* CurrentException = nullptr;
+
+		std::vector<std::size_t> ExceptionHandlers;
 
 		inline CallStackFrame(const VirtualMachine* host, CallStackFrame* previousFrame, TypeSymbol* withinType, MethodSymbol* method)
 			: Host(host), WithinType(withinType), Method(method), PreviousFrame(previousFrame) { }

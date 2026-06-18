@@ -99,6 +99,17 @@ namespace
         SetLastShardError(ex.what());
     }
 
+    static void SetLastUnhandledExceptionError(VirtualMachine& vm)
+    {
+        std::wstring error = L"Unhandled exception";
+        const std::wstring& message = vm.GetUnhandledExceptionMessage();
+        if (!message.empty())
+            error += L": " + message;
+
+        error += L"\nStack trace:\n" + vm.GetUnhandledExceptionStackTrace();
+        SetLastShardWError(error);
+    }
+
     static SyntaxToken MakeToken(shard::TokenType type, const wchar_t* word = nullptr)
     {
         return SyntaxToken(type, word != nullptr ? std::wstring(word) : std::wstring(), TextLocation(), false);
@@ -274,7 +285,14 @@ extern "C"
         {
             ApplicationDomain* domain = Shard_Compile(ctx);
             if (domain != nullptr)
+            {
                 domain->GetVirtualMachine().Run();
+                if (domain->GetVirtualMachine().GetUnhandledException() != nullptr)
+                {
+                    SetLastUnhandledExceptionError(domain->GetVirtualMachine());
+                    return nullptr;
+                }
+            }
 
             return domain;
         }
@@ -416,6 +434,12 @@ extern "C"
             }
 
             domain->GetVirtualMachine().Run();
+            if (domain->GetVirtualMachine().GetUnhandledException() != nullptr)
+            {
+                SetLastUnhandledExceptionError(domain->GetVirtualMachine());
+                return -1;
+            }
+
             return 0;
         }
         catch (const std::exception& e)
@@ -532,6 +556,12 @@ extern "C"
             }
 
             vm->Run();
+            if (vm->GetUnhandledException() != nullptr)
+            {
+                SetLastUnhandledExceptionError(*vm);
+                return -1;
+            }
+
             return 0;
         }
         catch (const std::exception& e)

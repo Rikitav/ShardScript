@@ -1030,17 +1030,18 @@ void ExpressionBinder::VisitTryStatement(TryStatementSyntax *const node)
 
 	for (const auto& clause : node->CatchClauses)
 	{
-		TypeSymbol* exceptionType = SymbolTable::Primitives::Any;
-		if (clause->ExceptionType != nullptr && clause->ExceptionType->Symbol != nullptr)
-			exceptionType = clause->ExceptionType->Symbol;
-
-		auto leftDen = std::make_unique<LeftDenotationSymbol>(exceptionType);
-		PushScope(leftDen.get());
+		VariableSymbol* catchVariable = clause->Symbol;
+		if (catchVariable != nullptr)
+		{
+			PushScope(catchVariable);
+			Declare(catchVariable);
+		}
 
 		if (clause->Body != nullptr)
 			VisitStatementsBlock(clause->Body.get());
 
-		PopScope();
+		if (catchVariable != nullptr)
+			PopScope();
 	}
 }
 

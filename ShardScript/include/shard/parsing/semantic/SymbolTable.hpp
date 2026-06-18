@@ -17,6 +17,11 @@
 
 namespace shard
 {
+    class InterfaceSymbol;
+    class ClassSymbol;
+    class FieldSymbol;
+    class MethodSymbol;
+
     class SHARD_API SymbolTable
     {
         inline static const std::wstring GlobalTypeName = L"__GLOBAL__";
@@ -48,6 +53,20 @@ namespace shard
             inline static SHARD_API TypeSymbol* Char;
             inline static SHARD_API TypeSymbol* String;
             inline static SHARD_API TypeSymbol* Array;
+        };
+
+        struct StandardTypes
+        {
+            inline static SHARD_API InterfaceSymbol* IThrowable = nullptr;
+            inline static SHARD_API InterfaceSymbol* IEnumerable = nullptr;
+            inline static SHARD_API InterfaceSymbol* IDisposable = nullptr;
+
+            inline static SHARD_API ClassSymbol* Runtime = nullptr;
+            inline static SHARD_API MethodSymbol* RuntimeCaptureStackTrace = nullptr;
+
+            inline static SHARD_API ClassSymbol* RuntimeException = nullptr;
+            inline static SHARD_API FieldSymbol* RuntimeExceptionMessageField = nullptr;
+            inline static SHARD_API FieldSymbol* RuntimeExceptionStackTraceField = nullptr;
         };
 
         SymbolTable();

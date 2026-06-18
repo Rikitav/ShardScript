@@ -18,6 +18,7 @@
 //#include <shard/syntax/nodes/Expressions/LinkedExpressionSyntax.hpp>
 
 #include <shard/syntax/nodes/Statements/VariableStatementSyntax.hpp>
+#include <shard/syntax/nodes/Statements/TryStatementSyntax.hpp>
 
 #include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.hpp>
@@ -62,6 +63,7 @@ namespace shard
 		void VisitIndexatorDeclaration(shard::IndexatorDeclarationSyntax *const node) override;
 		void VisitAccessorDeclaration(shard::AccessorDeclarationSyntax *const node) override;
 		void VisitVariableStatement(shard::VariableStatementSyntax *const node) override;
+		void VisitTryStatement(shard::TryStatementSyntax *const node) override;
 
 		void VisitObjectCreationExpression(shard::ObjectExpressionSyntax *const node) override;
 

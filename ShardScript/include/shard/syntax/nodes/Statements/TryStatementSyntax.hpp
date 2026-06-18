@@ -15,15 +15,20 @@
 
 namespace shard
 {
+	class VariableSymbol;
+
 	class SHARD_API CatchClauseSyntax : public SyntaxNode
 	{
 	public:
 		SyntaxToken CatchKeywordToken;
+		SyntaxToken OpenParenToken;
 		SyntaxToken IdentifierToken;
 		SyntaxToken ColonToken;
+		SyntaxToken CloseParenToken;
 
 		std::unique_ptr<TypeSyntax> ExceptionType = nullptr;
 		std::unique_ptr<StatementsBlockSyntax> Body = nullptr;
+		VariableSymbol* Symbol = nullptr;
 
 		inline CatchClauseSyntax(SyntaxNode* const parent)
 			: SyntaxNode(SyntaxKind::CatchClause, parent) { }
