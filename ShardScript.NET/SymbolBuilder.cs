@@ -1,26 +1,10 @@
+using ShardScript.NET.Application;
+using ShardScript.NET.Runtime;
+using ShardScript.NET.Syntax.Builders;
+using ShardScript.NET.Syntax.Symbols;
 using System.Runtime.InteropServices;
 
 namespace ShardScript.NET;
-
-public enum SymbolAccessibility
-{
-    Private = 0,
-    Public = 1,
-    Protected = 2
-}
-
-public enum PrimitiveType
-{
-    Void = 0,
-    Null = 1,
-    Any = 2,
-    Boolean = 3,
-    Integer = 4,
-    Double = 5,
-    Char = 6,
-    String = 7,
-    Array = 8
-}
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate IntPtr ShardManagedMethodCallback(
@@ -31,103 +15,33 @@ public delegate IntPtr ShardManagedMethodCallback(
     IntPtr collector);
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-internal delegate IntPtr ShardManagedMethodCallbackNative(
+public delegate IntPtr ShardManagedMethodCallbackNative(
     IntPtr method,
     IntPtr args,
     int argsCount,
     IntPtr userData,
     IntPtr collector);
 
-public abstract class Symbol
-{
-    public IntPtr Handle { get; }
-
-    internal Symbol(IntPtr handle)
-    {
-        Handle = handle;
-    }
-
-    internal static IntPtr CreateHandle(Func<IntPtr> factory)
-    {
-        IntPtr handle = factory();
-        if (handle == IntPtr.Zero)
-            throw new InvalidOperationException($"Failed to create symbol: {ShardException.GetLastError()}");
-
-        return handle;
-    }
-
-    internal static void ThrowIfError(int result)
-    {
-        if (result != 0)
-            throw new InvalidOperationException($"Failed to modify symbol: {ShardException.GetLastError()}");
-    }
-}
-
-public sealed class SymbolNamespace : Symbol
-{
-    internal SymbolNamespace(IntPtr handle) : base(handle) { }
-}
-
-public sealed class SymbolType : Symbol
-{
-    internal SymbolType(IntPtr handle) : base(handle) { }
-}
-
-public sealed class SymbolMethod : Symbol
-{
-    internal SymbolMethod(IntPtr handle) : base(handle) { }
-}
-
-public sealed class SymbolParameter : Symbol
-{
-    internal SymbolParameter(IntPtr handle) : base(handle) { }
-}
-
-public sealed class SymbolField : Symbol
-{
-    internal SymbolField(IntPtr handle) : base(handle) { }
-}
-
 public static class SymbolFactory
 {
     private static readonly Dictionary<IntPtr, ShardManagedMethodCallbackNative> Callbacks = new();
 
-    public static SymbolType GetPrimitiveType(CompilationContext context, PrimitiveType primitive)
+    public static TypeSymbol GetPrimitiveType(CompilationContext context, PrimitiveType primitive)
     {
         if (context == null)
             throw new ArgumentNullException(nameof(context));
 
-        return new SymbolType(Symbol.CreateHandle(() => Native.Shard_GetPrimitiveType(context.Handle, (int)primitive)));
+        IntPtr handle = ShardScriptAPI.Shard_GetPrimitiveType(context.Handle, (int)primitive);
+        ShardEngineException.ThrowIfError(0); // primitive lookup does not return an error code; zero handle will fail downstream
+        return new TypeSymbol(handle);
     }
 
-    public static SymbolNamespace CreateNamespace(CompilationContext context, string name, SymbolNamespace? parent = null)
-    {
-        if (context == null)
-            throw new ArgumentNullException(nameof(context));
-
-        if (name == null)
-            throw new ArgumentNullException(nameof(name));
-
-        return new SymbolNamespace(Symbol.CreateHandle(() => Native.Shard_CreateNamespaceSymbol(context.Handle, parent?.Handle ?? IntPtr.Zero, name)));
-    }
-
-    public static SymbolType CreateClass(CompilationContext context, string name, SymbolNamespace? parent = null)
-    {
-        if (context == null)
-            throw new ArgumentNullException(nameof(context));
-
-        if (name == null)
-            throw new ArgumentNullException(nameof(name));
-
-        return new SymbolType(Symbol.CreateHandle(() => Native.Shard_CreateClassSymbol(context.Handle, parent?.Handle ?? IntPtr.Zero, name)));
-    }
-
-    public static SymbolMethod CreateMethod(
+    public static MethodSymbol CreateMethod(
         CompilationContext context,
-        SymbolType parentType,
+        TypeSymbol parentType,
         string name,
-        SymbolType returnType,
-        bool isStatic = true,
+        TypeSymbol returnType,
+        SymbolLinking linking = SymbolLinking.Static,
         SymbolAccessibility accessibility = SymbolAccessibility.Public)
     {
         if (context == null)
@@ -142,11 +56,17 @@ public static class SymbolFactory
         if (returnType == null)
             throw new ArgumentNullException(nameof(returnType));
 
-        return new SymbolMethod(Symbol.CreateHandle(() =>
-            Native.Shard_CreateMethodSymbol(context.Handle, parentType.Handle, name, returnType.Handle, isStatic ? 1 : 0, (int)accessibility)));
+        MethodBuilder method = new MethodBuilder(context, parentType, name, returnType);
+
+        if (linking == SymbolLinking.Instance)
+            method.Instance();
+        if (accessibility == SymbolAccessibility.Private)
+            method.Private();
+
+        return method.Build();
     }
 
-    public static SymbolParameter CreateParameter(CompilationContext context, string name, SymbolType type)
+    public static ParameterSymbol CreateParameter(CompilationContext context, string name, TypeSymbol type)
     {
         if (context == null)
             throw new ArgumentNullException(nameof(context));
@@ -157,10 +77,13 @@ public static class SymbolFactory
         if (type == null)
             throw new ArgumentNullException(nameof(type));
 
-        return new SymbolParameter(Symbol.CreateHandle(() => Native.Shard_CreateParameterSymbol(context.Handle, name, type.Handle)));
+        IntPtr handle = ShardScriptAPI.Shard_CreateParameterSymbol(context.Handle, name, type.Handle);
+        if (handle == IntPtr.Zero)
+            throw new InvalidOperationException("Failed to create parameter symbol.");
+        return new ParameterSymbol(handle);
     }
 
-    public static void AddParameter(SymbolMethod method, SymbolParameter parameter)
+    public static void AddParameter(MethodSymbol method, ParameterSymbol parameter)
     {
         if (method == null)
             throw new ArgumentNullException(nameof(method));
@@ -168,15 +91,15 @@ public static class SymbolFactory
         if (parameter == null)
             throw new ArgumentNullException(nameof(parameter));
 
-        Symbol.ThrowIfError(Native.Shard_AddMethodParameter(method.Handle, parameter.Handle));
+        ShardEngineException.ThrowIfError(ShardScriptAPI.Shard_AddMethodParameter(method.Handle, parameter.Handle));
     }
 
-    public static SymbolField CreateField(
+    public static FieldSymbol CreateField(
         CompilationContext context,
-        SymbolType parentType,
+        TypeSymbol parentType,
         string name,
-        SymbolType type,
-        bool isStatic = false)
+        TypeSymbol type,
+        SymbolLinking linking = SymbolLinking.Static)
     {
         if (context == null)
             throw new ArgumentNullException(nameof(context));
@@ -190,11 +113,15 @@ public static class SymbolFactory
         if (type == null)
             throw new ArgumentNullException(nameof(type));
 
-        return new SymbolField(Symbol.CreateHandle(() =>
-            Native.Shard_CreateFieldSymbol(context.Handle, parentType.Handle, name, type.Handle, isStatic ? 1 : 0)));
+        FieldBuilder field = new FieldBuilder(context, parentType, name, type);
+
+        if (linking == SymbolLinking.Instance)
+            field.Instance();
+
+        return field.Build();
     }
 
-    public static void SetCallback(SymbolMethod method, ShardManagedMethodCallback callback, IntPtr userData = default)
+    public static void SetCallback(MethodSymbol method, ShardManagedMethodCallback callback, IntPtr userData = default)
     {
         if (method == null)
             throw new ArgumentNullException(nameof(method));
@@ -212,22 +139,51 @@ public static class SymbolFactory
         };
 
         Callbacks[method.Handle] = nativeCallback;
-        Symbol.ThrowIfError(Native.Shard_SetMethodManagedCallback(method.Handle, nativeCallback, userData));
+        method.KeepCallbackAlive(nativeCallback);
+        ShardEngineException.ThrowIfError(ShardScriptAPI.Shard_SetMethodManagedCallback(method.Handle, nativeCallback, userData));
+    }
+
+    public static void SetAccessibility(SyntaxSymbol symbol, SymbolAccessibility accessibility)
+    {
+        if (symbol == null)
+            throw new ArgumentNullException(nameof(symbol));
+
+        ShardEngineException.ThrowIfError(ShardScriptAPI.Shard_SetSymbolAccesibility(symbol.Handle, (int)accessibility));
     }
 }
 
 public static class SymbolBuilder
 {
-    public static SymbolMethod CallbackMethod(
+    public static NamespaceBuilder Namespace(CompilationContext context, string name, NamespaceSymbol? parent = null)
+    {
+        return new NamespaceBuilder(context, name, parent);
+    }
+
+    public static ClassBuilder Class(CompilationContext context, string name, NamespaceSymbol? parentNamespace = null)
+    {
+        return new ClassBuilder(context, parentNamespace, name);
+    }
+
+    public static MethodBuilder Method(CompilationContext context, TypeSymbol parentType, string name, TypeSymbol returnType)
+    {
+        return new MethodBuilder(context, parentType, name, returnType);
+    }
+
+    public static TypeSymbol Primitive(CompilationContext context, PrimitiveType primitive)
+    {
+        return SymbolFactory.GetPrimitiveType(context, primitive);
+    }
+
+    public static MethodBuilder CallbackMethod(
         CompilationContext context,
         string typeName,
         string methodName,
         ShardManagedMethodCallback callback,
-        SymbolType returnType,
-        IEnumerable<(string Name, SymbolType Type)> parameters,
-        bool isStatic = true,
+        TypeSymbol returnType,
+        IEnumerable<(string Name, TypeSymbol Type)> parameters,
+        SymbolLinking linking = SymbolLinking.Static,
         SymbolAccessibility accessibility = SymbolAccessibility.Public,
-        SymbolNamespace? parentNamespace = null)
+        NamespaceSymbol? parentNamespace = null)
     {
         if (context == null)
             throw new ArgumentNullException(nameof(context));
@@ -242,16 +198,19 @@ public static class SymbolBuilder
         if (parameters == null)
             throw new ArgumentNullException(nameof(parameters));
 
-        SymbolType type = SymbolFactory.CreateClass(context, typeName, parentNamespace);
-        SymbolMethod method = SymbolFactory.CreateMethod(context, type, methodName, returnType, isStatic, accessibility);
-
-        foreach ((string name, SymbolType type) parameter in parameters)
+        ClassBuilder type = Class(context, typeName, parentNamespace);
+        MethodBuilder method = (linking, accessibility) switch
         {
-            SymbolParameter param = SymbolFactory.CreateParameter(context, parameter.name, parameter.type);
-            SymbolFactory.AddParameter(method, param);
-        }
+            (SymbolLinking.Static, SymbolAccessibility.Public) => Method(context, type.Symbol, methodName, returnType).Static().Public().Callback(callback),
+            (SymbolLinking.Static, SymbolAccessibility.Private) => Method(context, type.Symbol, methodName, returnType).Static().Private().Callback(callback),
+            (SymbolLinking.Instance, SymbolAccessibility.Public) => Method(context, type.Symbol, methodName, returnType).Instance().Public().Callback(callback),
+            (SymbolLinking.Instance, SymbolAccessibility.Private) => Method(context, type.Symbol, methodName, returnType).Instance().Private().Callback(callback),
+            _ => Method(context, type.Symbol, methodName, returnType).Static().Public().Callback(callback)
+        };
 
-        SymbolFactory.SetCallback(method, callback);
+        foreach ((string name, TypeSymbol type) parameter in parameters)
+            method.Parameter(parameter.name, parameter.type);
+
         return method;
     }
 }

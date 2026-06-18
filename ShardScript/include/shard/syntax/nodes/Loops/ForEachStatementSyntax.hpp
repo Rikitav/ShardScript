@@ -16,8 +16,6 @@ namespace shard
 	class SHARD_API ForEachStatementSyntax : public KeywordStatementSyntax
 	{
 	public:
-		//SyntaxToken OpenCurlToken;
-		//SyntaxToken CloseCurlToken;
 		SyntaxToken IdentifierToken;
 		SyntaxToken InKeywordToken;
 		

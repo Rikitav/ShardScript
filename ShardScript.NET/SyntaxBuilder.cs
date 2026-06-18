@@ -1,3 +1,5 @@
+using ShardScript.NET.Application;
+using ShardScript.NET.Syntax.Nodes;
 using System.Runtime.InteropServices;
 
 namespace ShardScript.NET;
@@ -126,7 +128,7 @@ public abstract class SyntaxNode
     {
         IntPtr handle = factory();
         if (handle == IntPtr.Zero)
-            throw new InvalidOperationException($"Failed to create syntax node: {ShardException.GetLastError()}");
+            throw new InvalidOperationException($"Failed to create syntax node: {ShardEngineException.GetLastErrorMessage()}");
 
         return handle;
     }
@@ -134,7 +136,7 @@ public abstract class SyntaxNode
     internal static void ThrowIfError(int result)
     {
         if (result != 0)
-            throw new InvalidOperationException($"Failed to modify syntax node: {ShardException.GetLastError()}");
+            throw new InvalidOperationException($"Failed to modify syntax node: {ShardEngineException.GetLastErrorMessage()}");
     }
 
     internal static IntPtr ToNative(SyntaxNode? node) => node?.Handle ?? IntPtr.Zero;
@@ -146,7 +148,7 @@ public abstract class SyntaxMemberDeclaration : SyntaxNode
 
     public SyntaxMemberDeclaration AddModifier(TokenType modifier)
     {
-        ThrowIfError(Native.Shard_AddMemberModifier(Handle, (int)modifier));
+        ThrowIfError(ShardScriptAPI.Shard_AddMemberModifier(Handle, (int)modifier));
         return this;
     }
 }
@@ -160,7 +162,7 @@ public abstract class SyntaxTypeDeclaration : SyntaxMemberDeclaration
         if (member == null)
             throw new ArgumentNullException(nameof(member));
 
-        ThrowIfError(Native.Shard_AddTypeMember(Handle, member.Handle));
+        ThrowIfError(ShardScriptAPI.Shard_AddTypeMember(Handle, member.Handle));
         return this;
     }
 }
@@ -189,13 +191,13 @@ public sealed class SyntaxCompilationUnit : SyntaxNode
         if (ns == null)
             throw new ArgumentNullException(nameof(ns));
 
-        ThrowIfError(Native.Shard_SetCompilationUnitNamespace(Handle, ns.Handle));
+        ThrowIfError(ShardScriptAPI.Shard_SetCompilationUnitNamespace(Handle, ns.Handle));
         return this;
     }
 
     public SyntaxCompilationUnit SetOrigin(CompilationUnitOrigin origin)
     {
-        ThrowIfError(Native.Shard_SetCompilationUnitOrigin(Handle, (int)origin));
+        ThrowIfError(ShardScriptAPI.Shard_SetCompilationUnitOrigin(Handle, (int)origin));
         return this;
     }
 
@@ -204,7 +206,7 @@ public sealed class SyntaxCompilationUnit : SyntaxNode
         if (member == null)
             throw new ArgumentNullException(nameof(member));
 
-        ThrowIfError(Native.Shard_AddCompilationUnitMember(Handle, member.Handle));
+        ThrowIfError(ShardScriptAPI.Shard_AddCompilationUnitMember(Handle, member.Handle));
         return this;
     }
 }
@@ -218,13 +220,13 @@ public sealed class SyntaxNamespaceDeclaration : SyntaxMemberDeclaration
         if (name == null)
             throw new ArgumentNullException(nameof(name));
 
-        ThrowIfError(Native.Shard_AddNamespaceIdentifier(Handle, name));
+        ThrowIfError(ShardScriptAPI.Shard_AddNamespaceIdentifier(Handle, name));
         return this;
     }
 
     new public SyntaxNamespaceDeclaration AddModifier(TokenType modifier)
     {
-        ThrowIfError(Native.Shard_AddMemberModifier(Handle, (int)modifier));
+        ThrowIfError(ShardScriptAPI.Shard_AddMemberModifier(Handle, (int)modifier));
         return this;
     }
 }
@@ -238,13 +240,13 @@ public sealed class SyntaxClassDeclaration : SyntaxTypeDeclaration
         if (member == null)
             throw new ArgumentNullException(nameof(member));
 
-        ThrowIfError(Native.Shard_AddTypeMember(Handle, member.Handle));
+        ThrowIfError(ShardScriptAPI.Shard_AddTypeMember(Handle, member.Handle));
         return this;
     }
 
     new public SyntaxClassDeclaration AddModifier(TokenType modifier)
     {
-        ThrowIfError(Native.Shard_AddMemberModifier(Handle, (int)modifier));
+        ThrowIfError(ShardScriptAPI.Shard_AddMemberModifier(Handle, (int)modifier));
         return this;
     }
 }
@@ -258,13 +260,13 @@ public sealed class SyntaxStructDeclaration : SyntaxTypeDeclaration
         if (member == null)
             throw new ArgumentNullException(nameof(member));
 
-        ThrowIfError(Native.Shard_AddTypeMember(Handle, member.Handle));
+        ThrowIfError(ShardScriptAPI.Shard_AddTypeMember(Handle, member.Handle));
         return this;
     }
 
     new public SyntaxStructDeclaration AddModifier(TokenType modifier)
     {
-        ThrowIfError(Native.Shard_AddMemberModifier(Handle, (int)modifier));
+        ThrowIfError(ShardScriptAPI.Shard_AddMemberModifier(Handle, (int)modifier));
         return this;
     }
 }
@@ -275,13 +277,13 @@ public sealed class SyntaxFieldDeclaration : SyntaxMemberDeclaration
 
     public SyntaxFieldDeclaration SetInitializer(SyntaxExpression? expression)
     {
-        ThrowIfError(Native.Shard_SetFieldInitializer(Handle, ToNative(expression)));
+        ThrowIfError(ShardScriptAPI.Shard_SetFieldInitializer(Handle, ToNative(expression)));
         return this;
     }
 
     new public SyntaxFieldDeclaration AddModifier(TokenType modifier)
     {
-        ThrowIfError(Native.Shard_AddMemberModifier(Handle, (int)modifier));
+        ThrowIfError(ShardScriptAPI.Shard_AddMemberModifier(Handle, (int)modifier));
         return this;
     }
 }
@@ -292,7 +294,7 @@ public sealed class SyntaxMethodDeclaration : SyntaxMemberDeclaration
 
     public SyntaxMethodDeclaration SetReturnType(SyntaxType? returnType)
     {
-        ThrowIfError(Native.Shard_SetMethodReturnType(Handle, ToNative(returnType)));
+        ThrowIfError(ShardScriptAPI.Shard_SetMethodReturnType(Handle, ToNative(returnType)));
         return this;
     }
 
@@ -301,7 +303,7 @@ public sealed class SyntaxMethodDeclaration : SyntaxMemberDeclaration
         if (parameters == null)
             throw new ArgumentNullException(nameof(parameters));
 
-        ThrowIfError(Native.Shard_SetMethodParametersList(Handle, parameters.Handle));
+        ThrowIfError(ShardScriptAPI.Shard_SetMethodParametersList(Handle, parameters.Handle));
         return this;
     }
 
@@ -310,13 +312,13 @@ public sealed class SyntaxMethodDeclaration : SyntaxMemberDeclaration
         if (body == null)
             throw new ArgumentNullException(nameof(body));
 
-        ThrowIfError(Native.Shard_SetMethodBody(Handle, body.Handle));
+        ThrowIfError(ShardScriptAPI.Shard_SetMethodBody(Handle, body.Handle));
         return this;
     }
 
     new public SyntaxMethodDeclaration AddModifier(TokenType modifier)
     {
-        ThrowIfError(Native.Shard_AddMemberModifier(Handle, (int)modifier));
+        ThrowIfError(ShardScriptAPI.Shard_AddMemberModifier(Handle, (int)modifier));
         return this;
     }
 }
@@ -330,7 +332,7 @@ public sealed class SyntaxConstructorDeclaration : SyntaxMemberDeclaration
         if (parameters == null)
             throw new ArgumentNullException(nameof(parameters));
 
-        ThrowIfError(Native.Shard_SetConstructorParametersList(Handle, parameters.Handle));
+        ThrowIfError(ShardScriptAPI.Shard_SetConstructorParametersList(Handle, parameters.Handle));
         return this;
     }
 
@@ -339,13 +341,13 @@ public sealed class SyntaxConstructorDeclaration : SyntaxMemberDeclaration
         if (body == null)
             throw new ArgumentNullException(nameof(body));
 
-        ThrowIfError(Native.Shard_SetConstructorBody(Handle, body.Handle));
+        ThrowIfError(ShardScriptAPI.Shard_SetConstructorBody(Handle, body.Handle));
         return this;
     }
 
     new public SyntaxConstructorDeclaration AddModifier(TokenType modifier)
     {
-        ThrowIfError(Native.Shard_AddMemberModifier(Handle, (int)modifier));
+        ThrowIfError(ShardScriptAPI.Shard_AddMemberModifier(Handle, (int)modifier));
         return this;
     }
 }
@@ -361,7 +363,7 @@ public sealed class SyntaxParametersList : SyntaxNode
         if (type == null)
             throw new ArgumentNullException(nameof(type));
 
-        ThrowIfError(Native.Shard_AddParameter(Handle, name, type.Handle));
+        ThrowIfError(ShardScriptAPI.Shard_AddParameter(Handle, name, type.Handle));
         return this;
     }
 }
@@ -375,7 +377,7 @@ public sealed class SyntaxStatementsBlock : SyntaxNode
         if (statement == null)
             throw new ArgumentNullException(nameof(statement));
 
-        ThrowIfError(Native.Shard_AddStatement(Handle, statement.Handle));
+        ThrowIfError(ShardScriptAPI.Shard_AddStatement(Handle, statement.Handle));
         return this;
     }
 }
@@ -409,7 +411,7 @@ public sealed class SyntaxGenericType : SyntaxType
         if (arguments == null)
             throw new ArgumentNullException(nameof(arguments));
 
-        ThrowIfError(Native.Shard_SetGenericTypeArguments(Handle, arguments.Handle));
+        ThrowIfError(ShardScriptAPI.Shard_SetGenericTypeArguments(Handle, arguments.Handle));
         return this;
     }
 }
@@ -423,7 +425,7 @@ public sealed class SyntaxTypeArgumentsList : SyntaxNode
         if (type == null)
             throw new ArgumentNullException(nameof(type));
 
-        ThrowIfError(Native.Shard_AddTypeArgument(Handle, type.Handle));
+        ThrowIfError(ShardScriptAPI.Shard_AddTypeArgument(Handle, type.Handle));
         return this;
     }
 }
@@ -487,7 +489,7 @@ public sealed class SyntaxInvocationExpression : SyntaxExpression
         if (arguments == null)
             throw new ArgumentNullException(nameof(arguments));
 
-        ThrowIfError(Native.Shard_SetInvocationArgumentsList(Handle, arguments.Handle));
+        ThrowIfError(ShardScriptAPI.Shard_SetInvocationArgumentsList(Handle, arguments.Handle));
         return this;
     }
 }
@@ -501,7 +503,7 @@ public sealed class SyntaxObjectExpression : SyntaxExpression
         if (arguments == null)
             throw new ArgumentNullException(nameof(arguments));
 
-        ThrowIfError(Native.Shard_SetObjectArgumentsList(Handle, arguments.Handle));
+        ThrowIfError(ShardScriptAPI.Shard_SetObjectArgumentsList(Handle, arguments.Handle));
         return this;
     }
 }
@@ -520,7 +522,7 @@ public sealed class SyntaxCollectionExpression : SyntaxExpression
         if (element == null)
             throw new ArgumentNullException(nameof(element));
 
-        ThrowIfError(Native.Shard_AddCollectionElement(Handle, element.Handle));
+        ThrowIfError(ShardScriptAPI.Shard_AddCollectionElement(Handle, element.Handle));
         return this;
     }
 }
@@ -534,7 +536,7 @@ public sealed class SyntaxArgumentsList : SyntaxNode
         if (expression == null)
             throw new ArgumentNullException(nameof(expression));
 
-        ThrowIfError(Native.Shard_AddArgument(Handle, expression.Handle));
+        ThrowIfError(ShardScriptAPI.Shard_AddArgument(Handle, expression.Handle));
         return this;
     }
 }
@@ -546,18 +548,18 @@ public static class SyntaxBuilder
         if (context == null)
             throw new ArgumentNullException(nameof(context));
 
-        return new SyntaxCompilationUnit(SyntaxNode.CreateHandle(() => Native.Shard_CreateCompilationUnit(context.Handle)));
+        return new SyntaxCompilationUnit(SyntaxNode.CreateHandle(() => ShardScriptAPI.Shard_CreateCompilationUnit(context.Handle)));
     }
 
     public static SyntaxNamespaceDeclaration Namespace(SyntaxNode? parent = null)
-        => new SyntaxNamespaceDeclaration(SyntaxNode.CreateHandle(() => Native.Shard_CreateNamespaceDeclaration(SyntaxNode.ToNative(parent))));
+        => new SyntaxNamespaceDeclaration(SyntaxNode.CreateHandle(() => ShardScriptAPI.Shard_CreateNamespaceDeclaration(SyntaxNode.ToNative(parent))));
 
     public static SyntaxClassDeclaration Class(SyntaxNode? parent, string name)
     {
         if (name == null)
             throw new ArgumentNullException(nameof(name));
 
-        return new SyntaxClassDeclaration(SyntaxNode.CreateHandle(() => Native.Shard_CreateClassDeclaration(SyntaxNode.ToNative(parent), name)));
+        return new SyntaxClassDeclaration(SyntaxNode.CreateHandle(() => ShardScriptAPI.Shard_CreateClassDeclaration(SyntaxNode.ToNative(parent), name)));
     }
 
     public static SyntaxStructDeclaration Struct(SyntaxNode? parent, string name)
@@ -565,7 +567,7 @@ public static class SyntaxBuilder
         if (name == null)
             throw new ArgumentNullException(nameof(name));
 
-        return new SyntaxStructDeclaration(SyntaxNode.CreateHandle(() => Native.Shard_CreateStructDeclaration(SyntaxNode.ToNative(parent), name)));
+        return new SyntaxStructDeclaration(SyntaxNode.CreateHandle(() => ShardScriptAPI.Shard_CreateStructDeclaration(SyntaxNode.ToNative(parent), name)));
     }
 
     public static SyntaxFieldDeclaration Field(SyntaxNode? parent, string name, SyntaxType type)
@@ -575,7 +577,7 @@ public static class SyntaxBuilder
         if (type == null)
             throw new ArgumentNullException(nameof(type));
 
-        return new SyntaxFieldDeclaration(SyntaxNode.CreateHandle(() => Native.Shard_CreateFieldDeclaration(SyntaxNode.ToNative(parent), name, type.Handle)));
+        return new SyntaxFieldDeclaration(SyntaxNode.CreateHandle(() => ShardScriptAPI.Shard_CreateFieldDeclaration(SyntaxNode.ToNative(parent), name, type.Handle)));
     }
 
     public static SyntaxMethodDeclaration Method(SyntaxNode? parent, string name, SyntaxType? returnType = null)
@@ -583,7 +585,7 @@ public static class SyntaxBuilder
         if (name == null)
             throw new ArgumentNullException(nameof(name));
 
-        return new SyntaxMethodDeclaration(SyntaxNode.CreateHandle(() => Native.Shard_CreateMethodDeclaration(SyntaxNode.ToNative(parent), name, SyntaxNode.ToNative(returnType))));
+        return new SyntaxMethodDeclaration(SyntaxNode.CreateHandle(() => ShardScriptAPI.Shard_CreateMethodDeclaration(SyntaxNode.ToNative(parent), name, SyntaxNode.ToNative(returnType))));
     }
 
     public static SyntaxConstructorDeclaration Constructor(SyntaxNode? parent, string name)
@@ -591,30 +593,30 @@ public static class SyntaxBuilder
         if (name == null)
             throw new ArgumentNullException(nameof(name));
 
-        return new SyntaxConstructorDeclaration(SyntaxNode.CreateHandle(() => Native.Shard_CreateConstructorDeclaration(SyntaxNode.ToNative(parent), name)));
+        return new SyntaxConstructorDeclaration(SyntaxNode.CreateHandle(() => ShardScriptAPI.Shard_CreateConstructorDeclaration(SyntaxNode.ToNative(parent), name)));
     }
 
     public static SyntaxParametersList Parameters(SyntaxNode? parent = null)
-        => new SyntaxParametersList(SyntaxNode.CreateHandle(() => Native.Shard_CreateParametersList(SyntaxNode.ToNative(parent))));
+        => new SyntaxParametersList(SyntaxNode.CreateHandle(() => ShardScriptAPI.Shard_CreateParametersList(SyntaxNode.ToNative(parent))));
 
     public static SyntaxStatementsBlock Block(SyntaxNode? parent = null)
-        => new SyntaxStatementsBlock(SyntaxNode.CreateHandle(() => Native.Shard_CreateStatementsBlock(SyntaxNode.ToNative(parent))));
+        => new SyntaxStatementsBlock(SyntaxNode.CreateHandle(() => ShardScriptAPI.Shard_CreateStatementsBlock(SyntaxNode.ToNative(parent))));
 
     public static SyntaxArgumentsList Arguments(SyntaxNode? parent = null)
-        => new SyntaxArgumentsList(SyntaxNode.CreateHandle(() => Native.Shard_CreateArgumentsList(SyntaxNode.ToNative(parent))));
+        => new SyntaxArgumentsList(SyntaxNode.CreateHandle(() => ShardScriptAPI.Shard_CreateArgumentsList(SyntaxNode.ToNative(parent))));
 
     public static SyntaxTypeArgumentsList TypeArguments(SyntaxNode? parent = null)
-        => new SyntaxTypeArgumentsList(SyntaxNode.CreateHandle(() => Native.Shard_CreateTypeArgumentsList(SyntaxNode.ToNative(parent))));
+        => new SyntaxTypeArgumentsList(SyntaxNode.CreateHandle(() => ShardScriptAPI.Shard_CreateTypeArgumentsList(SyntaxNode.ToNative(parent))));
 
     public static SyntaxPredefinedType PredefinedType(SyntaxNode? parent, TokenType tokenType)
-        => new SyntaxPredefinedType(SyntaxNode.CreateHandle(() => Native.Shard_CreatePredefinedType(SyntaxNode.ToNative(parent), (int)tokenType)));
+        => new SyntaxPredefinedType(SyntaxNode.CreateHandle(() => ShardScriptAPI.Shard_CreatePredefinedType(SyntaxNode.ToNative(parent), (int)tokenType)));
 
     public static SyntaxIdentifierNameType IdentifierType(SyntaxNode? parent, string name)
     {
         if (name == null)
             throw new ArgumentNullException(nameof(name));
 
-        return new SyntaxIdentifierNameType(SyntaxNode.CreateHandle(() => Native.Shard_CreateIdentifierNameType(SyntaxNode.ToNative(parent), name)));
+        return new SyntaxIdentifierNameType(SyntaxNode.CreateHandle(() => ShardScriptAPI.Shard_CreateIdentifierNameType(SyntaxNode.ToNative(parent), name)));
     }
 
     public static SyntaxArrayType ArrayType(SyntaxNode? parent, SyntaxType elementType, int rank = 1)
@@ -622,7 +624,7 @@ public static class SyntaxBuilder
         if (elementType == null)
             throw new ArgumentNullException(nameof(elementType));
 
-        return new SyntaxArrayType(SyntaxNode.CreateHandle(() => Native.Shard_CreateArrayType(SyntaxNode.ToNative(parent), elementType.Handle, rank)));
+        return new SyntaxArrayType(SyntaxNode.CreateHandle(() => ShardScriptAPI.Shard_CreateArrayType(SyntaxNode.ToNative(parent), elementType.Handle, rank)));
     }
 
     public static SyntaxNullableType NullableType(SyntaxNode? parent, SyntaxType underlyingType)
@@ -630,7 +632,7 @@ public static class SyntaxBuilder
         if (underlyingType == null)
             throw new ArgumentNullException(nameof(underlyingType));
 
-        return new SyntaxNullableType(SyntaxNode.CreateHandle(() => Native.Shard_CreateNullableType(SyntaxNode.ToNative(parent), underlyingType.Handle)));
+        return new SyntaxNullableType(SyntaxNode.CreateHandle(() => ShardScriptAPI.Shard_CreateNullableType(SyntaxNode.ToNative(parent), underlyingType.Handle)));
     }
 
     public static SyntaxGenericType GenericType(SyntaxNode? parent, SyntaxType underlyingType)
@@ -638,7 +640,7 @@ public static class SyntaxBuilder
         if (underlyingType == null)
             throw new ArgumentNullException(nameof(underlyingType));
 
-        return new SyntaxGenericType(SyntaxNode.CreateHandle(() => Native.Shard_CreateGenericType(SyntaxNode.ToNative(parent), underlyingType.Handle)));
+        return new SyntaxGenericType(SyntaxNode.CreateHandle(() => ShardScriptAPI.Shard_CreateGenericType(SyntaxNode.ToNative(parent), underlyingType.Handle)));
     }
 
     public static SyntaxPredefinedType VoidType(SyntaxNode? parent = null) => PredefinedType(parent, TokenType.VoidKeyword);
@@ -652,7 +654,7 @@ public static class SyntaxBuilder
         if (name == null)
             throw new ArgumentNullException(nameof(name));
 
-        return new SyntaxVariableStatement(SyntaxNode.CreateHandle(() => Native.Shard_CreateVariableStatement(SyntaxNode.ToNative(parent), name, SyntaxNode.ToNative(type), SyntaxNode.ToNative(initializer))));
+        return new SyntaxVariableStatement(SyntaxNode.CreateHandle(() => ShardScriptAPI.Shard_CreateVariableStatement(SyntaxNode.ToNative(parent), name, SyntaxNode.ToNative(type), SyntaxNode.ToNative(initializer))));
     }
 
     public static SyntaxExpressionStatement ExpressionStatement(SyntaxNode? parent, SyntaxExpression expression)
@@ -660,11 +662,11 @@ public static class SyntaxBuilder
         if (expression == null)
             throw new ArgumentNullException(nameof(expression));
 
-        return new SyntaxExpressionStatement(SyntaxNode.CreateHandle(() => Native.Shard_CreateExpressionStatement(SyntaxNode.ToNative(parent), expression.Handle)));
+        return new SyntaxExpressionStatement(SyntaxNode.CreateHandle(() => ShardScriptAPI.Shard_CreateExpressionStatement(SyntaxNode.ToNative(parent), expression.Handle)));
     }
 
     public static SyntaxReturnStatement Return(SyntaxNode? parent, SyntaxExpression? expression = null)
-        => new SyntaxReturnStatement(SyntaxNode.CreateHandle(() => Native.Shard_CreateReturnStatement(SyntaxNode.ToNative(parent), SyntaxNode.ToNative(expression))));
+        => new SyntaxReturnStatement(SyntaxNode.CreateHandle(() => ShardScriptAPI.Shard_CreateReturnStatement(SyntaxNode.ToNative(parent), SyntaxNode.ToNative(expression))));
 
     public static SyntaxForEachStatement ForEach(SyntaxNode? parent, string variableName, SyntaxExpression range, SyntaxStatementsBlock body)
     {
@@ -675,7 +677,7 @@ public static class SyntaxBuilder
         if (body == null)
             throw new ArgumentNullException(nameof(body));
 
-        return new SyntaxForEachStatement(SyntaxNode.CreateHandle(() => Native.Shard_CreateForEachStatement(SyntaxNode.ToNative(parent), variableName, range.Handle, body.Handle)));
+        return new SyntaxForEachStatement(SyntaxNode.CreateHandle(() => ShardScriptAPI.Shard_CreateForEachStatement(SyntaxNode.ToNative(parent), variableName, range.Handle, body.Handle)));
     }
 
     public static SyntaxWhileStatement While(SyntaxNode? parent, SyntaxExpression condition, SyntaxStatementsBlock body)
@@ -685,7 +687,7 @@ public static class SyntaxBuilder
         if (body == null)
             throw new ArgumentNullException(nameof(body));
 
-        return new SyntaxWhileStatement(SyntaxNode.CreateHandle(() => Native.Shard_CreateWhileStatement(SyntaxNode.ToNative(parent), condition.Handle, body.Handle)));
+        return new SyntaxWhileStatement(SyntaxNode.CreateHandle(() => ShardScriptAPI.Shard_CreateWhileStatement(SyntaxNode.ToNative(parent), condition.Handle, body.Handle)));
     }
 
     public static SyntaxLiteralExpression Literal(TokenType tokenType, string value, SyntaxNode? parent = null)
@@ -693,7 +695,7 @@ public static class SyntaxBuilder
         if (value == null)
             throw new ArgumentNullException(nameof(value));
 
-        return new SyntaxLiteralExpression(SyntaxNode.CreateHandle(() => Native.Shard_CreateLiteralExpression(SyntaxNode.ToNative(parent), (int)tokenType, value)));
+        return new SyntaxLiteralExpression(SyntaxNode.CreateHandle(() => ShardScriptAPI.Shard_CreateLiteralExpression(SyntaxNode.ToNative(parent), (int)tokenType, value)));
     }
 
     public static SyntaxLiteralExpression Literal(int value, SyntaxNode? parent = null)
@@ -713,7 +715,7 @@ public static class SyntaxBuilder
         if (name == null)
             throw new ArgumentNullException(nameof(name));
 
-        return new SyntaxIdentifierExpression(SyntaxNode.CreateHandle(() => Native.Shard_CreateIdentifierExpression(SyntaxNode.ToNative(parent), name)));
+        return new SyntaxIdentifierExpression(SyntaxNode.CreateHandle(() => ShardScriptAPI.Shard_CreateIdentifierExpression(SyntaxNode.ToNative(parent), name)));
     }
 
     public static SyntaxMemberAccessExpression MemberAccess(SyntaxExpression? previous, string memberName, SyntaxNode? parent = null)
@@ -721,7 +723,7 @@ public static class SyntaxBuilder
         if (memberName == null)
             throw new ArgumentNullException(nameof(memberName));
 
-        return new SyntaxMemberAccessExpression(SyntaxNode.CreateHandle(() => Native.Shard_CreateMemberAccessExpression(SyntaxNode.ToNative(parent), SyntaxNode.ToNative(previous), memberName)));
+        return new SyntaxMemberAccessExpression(SyntaxNode.CreateHandle(() => ShardScriptAPI.Shard_CreateMemberAccessExpression(SyntaxNode.ToNative(parent), SyntaxNode.ToNative(previous), memberName)));
     }
 
     public static SyntaxBinaryExpression Binary(SyntaxExpression left, SyntaxExpression right, TokenType operatorTokenType, SyntaxNode? parent = null)
@@ -731,7 +733,7 @@ public static class SyntaxBuilder
         if (right == null)
             throw new ArgumentNullException(nameof(right));
 
-        return new SyntaxBinaryExpression(SyntaxNode.CreateHandle(() => Native.Shard_CreateBinaryExpression(SyntaxNode.ToNative(parent), left.Handle, right.Handle, (int)operatorTokenType)));
+        return new SyntaxBinaryExpression(SyntaxNode.CreateHandle(() => ShardScriptAPI.Shard_CreateBinaryExpression(SyntaxNode.ToNative(parent), left.Handle, right.Handle, (int)operatorTokenType)));
     }
 
     public static SyntaxUnaryExpression Unary(SyntaxExpression operand, TokenType operatorTokenType, bool postfix = false, SyntaxNode? parent = null)
@@ -739,7 +741,7 @@ public static class SyntaxBuilder
         if (operand == null)
             throw new ArgumentNullException(nameof(operand));
 
-        return new SyntaxUnaryExpression(SyntaxNode.CreateHandle(() => Native.Shard_CreateUnaryExpression(SyntaxNode.ToNative(parent), operand.Handle, (int)operatorTokenType, postfix ? 1 : 0)));
+        return new SyntaxUnaryExpression(SyntaxNode.CreateHandle(() => ShardScriptAPI.Shard_CreateUnaryExpression(SyntaxNode.ToNative(parent), operand.Handle, (int)operatorTokenType, postfix ? 1 : 0)));
     }
 
     public static SyntaxInvocationExpression Invocation(SyntaxExpression target, string? methodName = null, SyntaxNode? parent = null)
@@ -747,7 +749,7 @@ public static class SyntaxBuilder
         if (target == null)
             throw new ArgumentNullException(nameof(target));
 
-        return new SyntaxInvocationExpression(SyntaxNode.CreateHandle(() => Native.Shard_CreateInvocationExpression(SyntaxNode.ToNative(parent), target.Handle, methodName)));
+        return new SyntaxInvocationExpression(SyntaxNode.CreateHandle(() => ShardScriptAPI.Shard_CreateInvocationExpression(SyntaxNode.ToNative(parent), target.Handle, methodName)));
     }
 
     public static SyntaxObjectExpression Object(SyntaxType type, SyntaxNode? parent = null)
@@ -755,7 +757,7 @@ public static class SyntaxBuilder
         if (type == null)
             throw new ArgumentNullException(nameof(type));
 
-        return new SyntaxObjectExpression(SyntaxNode.CreateHandle(() => Native.Shard_CreateObjectExpression(SyntaxNode.ToNative(parent), type.Handle)));
+        return new SyntaxObjectExpression(SyntaxNode.CreateHandle(() => ShardScriptAPI.Shard_CreateObjectExpression(SyntaxNode.ToNative(parent), type.Handle)));
     }
 
     public static SyntaxRangeExpression Range(SyntaxExpression left, SyntaxExpression right, bool inclusive = false, SyntaxNode? parent = null)
@@ -765,9 +767,9 @@ public static class SyntaxBuilder
         if (right == null)
             throw new ArgumentNullException(nameof(right));
 
-        return new SyntaxRangeExpression(SyntaxNode.CreateHandle(() => Native.Shard_CreateRangeExpression(SyntaxNode.ToNative(parent), left.Handle, right.Handle, inclusive ? 1 : 0)));
+        return new SyntaxRangeExpression(SyntaxNode.CreateHandle(() => ShardScriptAPI.Shard_CreateRangeExpression(SyntaxNode.ToNative(parent), left.Handle, right.Handle, inclusive ? 1 : 0)));
     }
 
     public static SyntaxCollectionExpression Collection(SyntaxNode? parent = null)
-        => new SyntaxCollectionExpression(SyntaxNode.CreateHandle(() => Native.Shard_CreateCollectionExpression(SyntaxNode.ToNative(parent))));
+        => new SyntaxCollectionExpression(SyntaxNode.CreateHandle(() => ShardScriptAPI.Shard_CreateCollectionExpression(SyntaxNode.ToNative(parent))));
 }

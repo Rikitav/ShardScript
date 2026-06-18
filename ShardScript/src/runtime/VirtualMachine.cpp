@@ -240,6 +240,39 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
+		case OpCode::CREATERANGE:
+		{
+			TypeSymbol* elementType = decoder.AbsorbTypeSymbol();
+			elementType = frame->ResolveType(elementType);
+
+			ObjectInstance* inclusiveInstance = frame->PopStack();
+			bool inclusive = inclusiveInstance->AsBoolean();
+			garbageCollector.CollectInstance(inclusiveInstance);
+
+			ObjectInstance* upperInstance = frame->PopStack();
+			std::int64_t upper = upperInstance->AsInteger();
+			garbageCollector.CollectInstance(upperInstance);
+
+			ObjectInstance* lowerInstance = frame->PopStack();
+			std::int64_t lower = lowerInstance->AsInteger();
+			garbageCollector.CollectInstance(lowerInstance);
+
+			std::int64_t length = upper - lower + (inclusive ? 1 : 0);
+			if (length < 0)
+				length = 0;
+
+			ObjectInstance* arrayInstance = garbageCollector.AllocateArray(elementType, static_cast<std::size_t>(length));
+			for (std::int64_t i = 0; i < length; i++)
+			{
+				ObjectInstance* valueInstance = garbageCollector.FromValue(lower + i);
+				arrayInstance->SetElement(static_cast<std::size_t>(i), valueInstance, frame);
+				valueInstance->DecrementReference();
+			}
+
+			frame->PushStack(arrayInstance);
+			break;
+		}
+
 		case OpCode::LOADARRAYELEMENT:
 		{
 			ObjectInstance* indexInstance = frame->PopStack();

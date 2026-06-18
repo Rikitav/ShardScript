@@ -329,21 +329,28 @@ AccessorSymbol* SymbolFactory::Accessor(AccessorDeclarationSyntax* node, Propert
 		? MethodHandleType::External
 		: MethodHandleType::Body;
 
-	if (setProperty)
+	switch (node->KeywordToken.Type)
 	{
-		switch (node->KeywordToken.Type)
+		case TokenType::GetKeyword:
 		{
-			case TokenType::GetKeyword:
-			{
+			symbol->ReturnType = propertySymbol->ReturnType;
+			if (setProperty)
 				propertySymbol->Getter = symbol.get();
-				break;
-			}
+			break;
+		}
 
-			case TokenType::SetKeyword:
-			{
+		case TokenType::SetKeyword:
+		{
+			symbol->ReturnType = SymbolTable::Primitives::Void;
+
+			auto valueParam = std::make_unique<ParameterSymbol>(L"value");
+			valueParam->Type = propertySymbol->ReturnType;
+			symbol->Parameters.push_back(valueParam.get());
+			Table->ImplicitSymbol(std::move(valueParam));
+
+			if (setProperty)
 				propertySymbol->Setter = symbol.get();
-				break;
-			}
+			break;
 		}
 	}
 

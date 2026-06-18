@@ -284,6 +284,15 @@ void AbstractEmiter::VisitSyntaxTree(SyntaxTree& tree)
 		VisitCompilationUnit(unit.get());
 }
 
+static void EmitIndexatorArguments(AbstractEmiter* emitter, IndexatorListSyntax* node)
+{
+	if (node == nullptr || emitter == nullptr)
+		return;
+
+	for (auto riter = node->Arguments.rbegin(); riter != node->Arguments.rend(); riter++)
+		emitter->VisitArgument((*riter).get());
+}
+
 void AbstractEmiter::VisitArgumentsList(ArgumentsListSyntax* node)
 {
 	if (node == nullptr)
@@ -770,60 +779,11 @@ void AbstractEmiter::VisitCollectionExpression(CollectionExpressionSyntax* const
 
 void AbstractEmiter::VisitRangeExpression(RangeExpressionSyntax* const node)
 {
-	std::uint16_t base = GeneratingFor->GetEvalStackArgumentsCount();
-	std::uint16_t upperSlot = base + GeneratingFor->AddVariableCount();
-	std::uint16_t lowerSlot = base + GeneratingFor->AddVariableCount();
-	std::uint16_t lengthSlot = base + GeneratingFor->AddVariableCount();
-	std::uint16_t arraySlot = base + GeneratingFor->AddVariableCount();
-	std::uint16_t indexSlot = base + GeneratingFor->AddVariableCount();
-
-	VisitExpression(node->Right.get());
-	Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, upperSlot);
-
+	// Evaluate bounds in natural left-to-right order and let the VM build the array.
 	VisitExpression(node->Left.get());
-	Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, lowerSlot);
-
-	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, upperSlot);
-	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, lowerSlot);
-	Encoder.EmitMathSub(GeneratingFor->ExecutableByteCode);
-
-	if (node->IsInclusive)
-	{
-		Encoder.EmitLoadConstInt64(GeneratingFor->ExecutableByteCode, 1);
-		Encoder.EmitMathAdd(GeneratingFor->ExecutableByteCode);
-	}
-
-	Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, lengthSlot);
-	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, lengthSlot);
-	Encoder.EmitNewDynamicArray(GeneratingFor->ExecutableByteCode, SymbolTable::Primitives::Integer);
-	Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, arraySlot);
-
-	Encoder.EmitLoadConstInt64(GeneratingFor->ExecutableByteCode, 0);
-	Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, indexSlot);
-
-	std::size_t fillStart = GeneratingFor->ExecutableByteCode.size();
-
-	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, arraySlot);
-	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, indexSlot);
-	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, lowerSlot);
-	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, indexSlot);
-	Encoder.EmitMathAdd(GeneratingFor->ExecutableByteCode);
-	Encoder.EmitStoreArrayElement(GeneratingFor->ExecutableByteCode);
-
-	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, indexSlot);
-	Encoder.EmitLoadConstInt64(GeneratingFor->ExecutableByteCode, 1);
-	Encoder.EmitMathAdd(GeneratingFor->ExecutableByteCode);
-	Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, indexSlot);
-
-	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, indexSlot);
-	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, lengthSlot);
-	Encoder.EmitCompareLess(GeneratingFor->ExecutableByteCode);
-
-	std::size_t jumpBacktrack = GeneratingFor->ExecutableByteCode.size();
-	Encoder.EmitJumpTrue(GeneratingFor->ExecutableByteCode, 0);
-	ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, jumpBacktrack + sizeof(OpCode), &fillStart, sizeof(std::size_t));
-
-	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, arraySlot);
+	VisitExpression(node->Right.get());
+	Encoder.EmitLoadConstBool(GeneratingFor->ExecutableByteCode, node->IsInclusive);
+	Encoder.EmitCreateRange(GeneratingFor->ExecutableByteCode, SymbolTable::Primitives::Integer);
 }
 
 void AbstractEmiter::VisitLambdaExpression(LambdaExpressionSyntax* const node)
@@ -874,22 +834,19 @@ void AbstractEmiter::VisitUnaryAssignExpression(UnaryExpressionSyntax* const nod
 {
 	MemberAccessExpressionSyntax* memberExpression = static_cast<MemberAccessExpressionSyntax*>(node->Expression.get());
 
-	if (memberExpression->ToParameter)
+	if (memberExpression->ToParameter != nullptr)
 	{
+		Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, memberExpression->ToParameter->SlotIndex);
+		EmitUnaryOperation(node->OperatorToken.Type, Encoder, GeneratingFor->ExecutableByteCode, node->IsRightDetermined);
 		Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, memberExpression->ToParameter->SlotIndex);
 		return;
 	}
 
 	if (memberExpression->ToVariable != nullptr)
 	{
+		Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, memberExpression->ToVariable->SlotIndex);
+		EmitUnaryOperation(node->OperatorToken.Type, Encoder, GeneratingFor->ExecutableByteCode, node->IsRightDetermined);
 		Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, memberExpression->ToVariable->SlotIndex);
-		return;
-	}
-
-	if (memberExpression->ToProperty != nullptr)
-	{
-		VisitExpression(memberExpression);
-		Encoder.EmitCallMethodSymbol(GeneratingFor->ExecutableByteCode, memberExpression->ToProperty->Setter);
 		return;
 	}
 
@@ -897,12 +854,75 @@ void AbstractEmiter::VisitUnaryAssignExpression(UnaryExpressionSyntax* const nod
 	{
 		if (memberExpression->ToField->Linking == LINK_STATIC)
 		{
+			Encoder.EmitLoadStaticField(GeneratingFor->ExecutableByteCode, memberExpression->ToField);
+			EmitUnaryOperation(node->OperatorToken.Type, Encoder, GeneratingFor->ExecutableByteCode, node->IsRightDetermined);
 			Encoder.EmitStoreStaticField(GeneratingFor->ExecutableByteCode, memberExpression->ToField);
 			return;
 		}
 
-		VisitExpression(memberExpression);
+		VisitExpression(memberExpression->PreviousExpression.get());
+		Encoder.EmitDuplicate(GeneratingFor->ExecutableByteCode);
+		Encoder.EmitLoadField(GeneratingFor->ExecutableByteCode, memberExpression->ToField);
+		EmitUnaryOperation(node->OperatorToken.Type, Encoder, GeneratingFor->ExecutableByteCode, node->IsRightDetermined);
 		Encoder.EmitStoreField(GeneratingFor->ExecutableByteCode, memberExpression->ToField);
+		return;
+	}
+
+	if (memberExpression->ToProperty != nullptr)
+	{
+		PropertySymbol* property = memberExpression->ToProperty;
+		AccessorSymbol* getter = property->Getter;
+		AccessorSymbol* setter = property->Setter;
+
+		bool isStatic = (getter != nullptr && getter->Linking == LINK_STATIC) ||
+		                (setter != nullptr && setter->Linking == LINK_STATIC);
+
+		if (isStatic)
+		{
+			Encoder.EmitCallMethodSymbol(GeneratingFor->ExecutableByteCode, getter);
+			EmitUnaryOperation(node->OperatorToken.Type, Encoder, GeneratingFor->ExecutableByteCode, node->IsRightDetermined);
+			Encoder.EmitCallMethodSymbol(GeneratingFor->ExecutableByteCode, setter);
+		}
+		else
+		{
+			std::uint16_t base = GeneratingFor->GetEvalStackArgumentsCount();
+			std::uint16_t tempThisSlot = base + GeneratingFor->AddVariableCount();
+			std::uint16_t tempValueSlot = base + GeneratingFor->AddVariableCount();
+
+			IndexatorExpressionSyntax* indexatorExpr = (memberExpression->Kind == SyntaxKind::IndexatorExpression)
+				? static_cast<IndexatorExpressionSyntax*>(memberExpression)
+				: nullptr;
+
+			// Load receiver
+			VisitExpression(memberExpression->PreviousExpression.get());
+			Encoder.EmitDuplicate(GeneratingFor->ExecutableByteCode);
+
+			// Load index arguments for indexers
+			if (indexatorExpr != nullptr && indexatorExpr->IndexatorList != nullptr)
+				EmitIndexatorArguments(this, indexatorExpr->IndexatorList.get());
+
+			// Call getter: leaves [this, value] on the eval stack
+			Encoder.EmitCallMethodSymbol(GeneratingFor->ExecutableByteCode, getter);
+
+			// Apply ++/--. For prefix this leaves [this, new, new];
+			// for postfix this leaves [this, old, new].
+			EmitUnaryOperation(node->OperatorToken.Type, Encoder, GeneratingFor->ExecutableByteCode, node->IsRightDetermined);
+
+			// Preserve the new value and the receiver in temporary slots so we can
+			// reorder the stack for the setter call ([args..., value, this]).
+			Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, tempValueSlot);
+			Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, tempThisSlot);
+
+			// Push setter arguments
+			if (indexatorExpr != nullptr && indexatorExpr->IndexatorList != nullptr)
+				EmitIndexatorArguments(this, indexatorExpr->IndexatorList.get());
+
+			Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, tempValueSlot);
+			Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, tempThisSlot);
+
+			Encoder.EmitCallMethodSymbol(GeneratingFor->ExecutableByteCode, setter);
+		}
+
 		return;
 	}
 }
@@ -937,9 +957,27 @@ void AbstractEmiter::VisitBinaryAssignExpression(BinaryExpressionSyntax* const n
 
 	if (memberExpression->ToProperty != nullptr)
 	{
-		VisitExpression(memberExpression->PreviousExpression.get());
+		PropertySymbol* property = memberExpression->ToProperty;
+		AccessorSymbol* setter = property->Setter;
+
+		IndexatorExpressionSyntax* indexatorExpr = (memberExpression->Kind == SyntaxKind::IndexatorExpression)
+			? static_cast<IndexatorExpressionSyntax*>(memberExpression)
+			: nullptr;
+
+		// Push the value being assigned first; for instance setters the receiver
+		// must end up on top of the evaluation stack.
 		VisitExpression(node->Right.get());
-		Encoder.EmitCallMethodSymbol(GeneratingFor->ExecutableByteCode, memberExpression->ToProperty->Setter);
+
+		// Push index arguments for indexers (reverse order so the first argument
+		// is at the lowest stack position).
+		if (indexatorExpr != nullptr && indexatorExpr->IndexatorList != nullptr)
+			EmitIndexatorArguments(this, indexatorExpr->IndexatorList.get());
+
+		// Push the receiver for instance properties/indexers.
+		if (setter == nullptr || setter->Linking == LINK_INSTANCE)
+			VisitExpression(memberExpression->PreviousExpression.get());
+
+		Encoder.EmitCallMethodSymbol(GeneratingFor->ExecutableByteCode, setter);
 		return;
 	}
 
@@ -981,9 +1019,13 @@ void AbstractEmiter::VisitInvocationExpression(InvokationExpressionSyntax* const
 
 void AbstractEmiter::VisitIndexatorExpression(IndexatorExpressionSyntax* const node)
 {
+	if (node->ToProperty == nullptr)
+		return;
+
 	VisitExpression(node->PreviousExpression.get());
-	if (node->ToProperty->Linking == LINK_INSTANCE)
-		VisitExpression(node->PreviousExpression.get());
+
+	if (node->IndexatorList != nullptr)
+		EmitIndexatorArguments(this, node->IndexatorList.get());
 
 	Encoder.EmitCallMethodSymbol(GeneratingFor->ExecutableByteCode, node->ToProperty->Getter);
 	return;
@@ -1018,6 +1060,9 @@ void AbstractEmiter::VisitMemberAccessExpression(MemberAccessExpressionSyntax* c
 
 	if (node->ToProperty != nullptr)
 	{
+		if (node->ToProperty->Getter == nullptr)
+			return;
+
 		VisitExpression(node->PreviousExpression.get());
 		Encoder.EmitCallMethodSymbol(GeneratingFor->ExecutableByteCode, node->ToProperty->Getter);
 		return;

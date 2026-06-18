@@ -2,7 +2,6 @@
   "profiles": {
     "ShardScript.NET": {
       "commandName": "Project",
-      "commandLineArgs": "-a",
       "nativeDebugging": true,
       "dotnetRunMessages": true
     }

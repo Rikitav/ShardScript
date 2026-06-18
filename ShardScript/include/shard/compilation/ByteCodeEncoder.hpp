@@ -71,6 +71,7 @@ namespace shard
 
 		void EmitNewArray(std::vector<std::byte>& code, ArrayTypeSymbol* type);
 		void EmitNewDynamicArray(std::vector<std::byte>& code, TypeSymbol* elementType);
+		void EmitCreateRange(std::vector<std::byte>& code, TypeSymbol* elementType);
 		void EmitLoadArrayElement(std::vector<std::byte>& code);
 		void EmitStoreArrayElement(std::vector<std::byte>& code);
 		void EmitArrayLength(std::vector<std::byte>& code);

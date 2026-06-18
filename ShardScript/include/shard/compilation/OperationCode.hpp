@@ -279,6 +279,14 @@ namespace shard
 		/// <para>> std::uint16_t Index - Zero-based index in TypeArguments.</para>
 		/// <para>> TypeSymbol* pType - The concrete type to load.</para>
 		/// </summary>
-		LOAD_TYPEARGUMENT
+		LOAD_TYPEARGUMENT,
+
+		/// <summary>
+		/// Creates a new integer array from a range. Pops upper bound, lower bound and
+		/// an inclusive flag, then pushes the populated array.
+		/// <para>Includes 1 parameter :</para>
+		/// <para>> TypeSymbol* pElementType - Type of array elements.</para>
+		/// </summary>
+		CREATERANGE
 	};
 }
