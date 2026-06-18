@@ -20,6 +20,7 @@
 #include <shard/syntax/symbols/FieldSymbol.hpp>
 #include <shard/syntax/symbols/PropertySymbol.hpp>
 #include <shard/syntax/symbols/ParameterSymbol.hpp>
+#include <shard/syntax/symbols/FieldSymbol.hpp>
 #include <shard/syntax/symbols/VariableSymbol.hpp>
 #include <shard/syntax/symbols/ArrayTypeSymbol.hpp>
 #include <shard/syntax/symbols/AccessorSymbol.hpp>
@@ -826,7 +827,7 @@ TypeSymbol* ExpressionBinder::AnalyzeObjectExpression(ObjectExpressionSyntax *co
 	if (node->ArgumentsList == nullptr)
 		return node->Symbol;
 
-	if (!MatchMethodArguments(method->Parameters, node->ArgumentsList->Arguments, genericType))
+	if (!MatchMethodArguments(node->IdentifierToken, method->Parameters, node->ArgumentsList->Arguments, genericType))
 		return node->Symbol;
 
 	node->CtorSymbol = method;
@@ -900,14 +901,17 @@ void ExpressionBinder::VisitLambdaExpression(LambdaExpressionSyntax *const node)
 	DelegateTypeSymbol* delegate = Factory.Delegate(anonymousMethod);
 	node->Symbol = delegate;
 
-	/*
-	TypeSymbol* targetReturnType = ResolveLeftDenotation();
-	if (targetReturnType == nullptr)
+	bool hasExplicitReturnType = false;
+	if (node->ReturnType != nullptr)
 	{
-		Diagnostics.ReportError(node->LambdaToken, L"Cannot resolve left denotation");
-		return;
+		VisitType(node->ReturnType.get());
+		if (node->ReturnType->Symbol != nullptr)
+		{
+			anonymousMethod->ReturnType = node->ReturnType->Symbol;
+			delegate->ReturnType = node->ReturnType->Symbol;
+			hasExplicitReturnType = true;
+		}
 	}
-	*/
 
 	if (node->ParametersList != nullptr)
 	{
@@ -929,7 +933,9 @@ void ExpressionBinder::VisitLambdaExpression(LambdaExpressionSyntax *const node)
 	VisitStatementsBlock(node->Body.get());
 	PopScope();
 
-	delegate->ReturnType = anonymousMethod->ReturnType;
+	if (!hasExplicitReturnType)
+		delegate->ReturnType = anonymousMethod->ReturnType;
+
 	SetExpressionType(node, delegate);
 }
 
@@ -1045,11 +1051,11 @@ void ExpressionBinder::VisitTryStatement(TryStatementSyntax *const node)
 	}
 }
 
-bool ExpressionBinder::MatchMethodArguments(std::vector<ParameterSymbol*>& parameters, std::vector<std::unique_ptr<ArgumentSyntax>>& arguments, GenericTypeSymbol* genericType)
+bool ExpressionBinder::MatchMethodArguments(SyntaxToken blameToken, std::vector<ParameterSymbol*>& parameters, std::vector<std::unique_ptr<ArgumentSyntax>>& arguments, GenericTypeSymbol* genericType)
 {
 	if (parameters.size() != arguments.size())
 	{
-		Diagnostics.ReportError(SyntaxToken(), L"Method expects " + std::to_wstring(parameters.size()) + L" arguments but got " + std::to_wstring(arguments.size()));
+		Diagnostics.ReportError(blameToken, L"Method expects " + std::to_wstring(parameters.size()) + L" arguments but got " + std::to_wstring(arguments.size()));
 		return false;
 	}
 	
@@ -1060,7 +1066,7 @@ bool ExpressionBinder::MatchMethodArguments(std::vector<ParameterSymbol*>& param
 
 		if (param == nullptr || arg == nullptr || arg->Expression == nullptr)
 		{
-			Diagnostics.ReportError(SyntaxToken(), L"Invalid argument at position " + std::to_wstring(i));
+			Diagnostics.ReportError(blameToken, L"Invalid argument at position " + std::to_wstring(i));
 			return false;
 		}
 		
@@ -1073,7 +1079,7 @@ bool ExpressionBinder::MatchMethodArguments(std::vector<ParameterSymbol*>& param
 		TypeSymbol* argType = GetExpressionType(arg->Expression.get());
 		if (argType == nullptr)
 		{
-			//Diagnostics.ReportError(SyntaxToken(), L"Argument type could not be determined for parameter '" + param->Name + L"'");
+			//Diagnostics.ReportError(blameToken, L"Argument type could not be determined for parameter '" + param->Name + L"'");
 			return false;
 		}
 
@@ -1095,7 +1101,7 @@ bool ExpressionBinder::MatchMethodArguments(std::vector<ParameterSymbol*>& param
 
 		if (!TypeSymbol::IsAssignableFrom(paramType, argType))
 		{
-			Diagnostics.ReportError(SyntaxToken(), L"Argument type mismatch for parameter '" + param->Name + L"': expected '" + paramType->Name + L"' but got '" + argType->Name + L"'");
+			Diagnostics.ReportError(blameToken, L"Argument type mismatch for parameter '" + param->Name + L"': expected '" + paramType->Name + L"' but got '" + argType->Name + L"'");
 			return false;
 		}
 	}
@@ -1408,7 +1414,7 @@ TypeSymbol* ExpressionBinder::AnalyzeInvokationExpression(InvokationExpressionSy
 	if (currentType != nullptr && currentType->Kind == SyntaxKind::GenericType)
 		genericType = static_cast<GenericTypeSymbol*>(currentType);
 
-	if (!MatchMethodArguments(method->Parameters, node->ArgumentsList->Arguments, genericType))
+	if (!MatchMethodArguments(node->IdentifierToken, method->Parameters, node->ArgumentsList->Arguments, genericType))
 		return nullptr;
 
 	node->Symbol = method;
@@ -1546,7 +1552,55 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax *const 
 					if (delegateVar->Type->Kind == SyntaxKind::DelegateType)
 					{
 						const DelegateTypeSymbol* delegate = static_cast<const DelegateTypeSymbol*>(delegateVar->Type);
-						symbol = delegate->AnonymousSymbol;
+						if (node->PreviousExpression == nullptr)
+						{
+							auto target = std::make_unique<MemberAccessExpressionSyntax>(node->IdentifierToken, nullptr, node);
+							target->ToVariable = delegateVar;
+							node->PreviousExpression = std::move(target);
+						}
+						node->Symbol = delegate->AnonymousSymbol;
+						node->IsDelegateInvocation = true;
+						return node->Symbol;
+					}
+				}
+			}
+			else if (lookupMethod->Kind == SyntaxKind::Parameter)
+			{
+				ParameterSymbol* delegateParam = static_cast<ParameterSymbol*>(lookupMethod);
+				if (delegateParam->Type != nullptr)
+				{
+					if (delegateParam->Type->Kind == SyntaxKind::DelegateType)
+					{
+						const DelegateTypeSymbol* delegate = static_cast<const DelegateTypeSymbol*>(delegateParam->Type);
+						if (node->PreviousExpression == nullptr)
+						{
+							auto target = std::make_unique<MemberAccessExpressionSyntax>(node->IdentifierToken, nullptr, node);
+							target->ToParameter = delegateParam;
+							node->PreviousExpression = std::move(target);
+						}
+						node->Symbol = delegate->AnonymousSymbol;
+						node->IsDelegateInvocation = true;
+						return node->Symbol;
+					}
+				}
+			}
+			else if (lookupMethod->Kind == SyntaxKind::FieldDeclaration)
+			{
+				FieldSymbol* delegateField = static_cast<FieldSymbol*>(lookupMethod);
+				if (delegateField->ReturnType != nullptr)
+				{
+					if (delegateField->ReturnType->Kind == SyntaxKind::DelegateType)
+					{
+						const DelegateTypeSymbol* delegate = static_cast<const DelegateTypeSymbol*>(delegateField->ReturnType);
+						if (node->PreviousExpression == nullptr && delegateField->Linking == LINK_STATIC)
+						{
+							auto target = std::make_unique<MemberAccessExpressionSyntax>(node->IdentifierToken, nullptr, node);
+							target->ToField = delegateField;
+							node->PreviousExpression = std::move(target);
+						}
+						node->Symbol = delegate->AnonymousSymbol;
+						node->IsDelegateInvocation = true;
+						return node->Symbol;
 					}
 				}
 			}
@@ -1643,7 +1697,7 @@ TypeSymbol* ExpressionBinder::AnalyzeIndexatorExpression(IndexatorExpressionSynt
 		if (currentType->Kind == SyntaxKind::GenericType)
 			genericType = static_cast<GenericTypeSymbol*>(currentType);
 
-		if (!MatchMethodArguments(indexator->Parameters, node->IndexatorList->Arguments, genericType))
+		if (!MatchMethodArguments(node->IdentifierToken, indexator->Parameters, node->IndexatorList->Arguments, genericType))
 		{
 			//Diagnostics.ReportError(node->MemberAccess->IdentifierToken, L"Indexator arguments types do not match");
 			return nullptr;

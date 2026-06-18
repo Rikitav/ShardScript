@@ -917,13 +917,15 @@ void AbstractEmiter::VisitLambdaExpression(LambdaExpressionSyntax* const node)
 {
 	MethodSymbol* previous = GeneratingFor;
 	GeneratingFor = node->Symbol->AnonymousSymbol;
-	
+
 	std::size_t reserve = node->Body->Statements.size() * 20;
 	GeneratingFor->ExecutableByteCode.reserve(reserve);
 	VisitStatementsBlock(node->Body.get());
 
 	GeneratingFor->ExecutableByteCode.shrink_to_fit();
 	GeneratingFor = previous;
+
+	Encoder.EmitNewDelegate(GeneratingFor->ExecutableByteCode, node->Symbol);
 }
 
 void AbstractEmiter::VisitTernaryExpression(TernaryExpressionSyntax* const node)
@@ -1143,7 +1145,10 @@ void AbstractEmiter::VisitInvocationExpression(InvokationExpressionSyntax* const
 	if (node->PreviousExpression != nullptr)
 		VisitExpression(node->PreviousExpression.get());
 
-	EmitMethodCall(node->Symbol);
+	if (node->IsDelegateInvocation)
+		Encoder.EmitCallDelegate(GeneratingFor->ExecutableByteCode);
+	else
+		EmitMethodCall(node->Symbol);
 }
 
 void AbstractEmiter::VisitIndexatorExpression(IndexatorExpressionSyntax* const node)

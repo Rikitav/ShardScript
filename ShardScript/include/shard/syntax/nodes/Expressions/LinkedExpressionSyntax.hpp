@@ -86,6 +86,7 @@ namespace shard
 		std::unique_ptr<ArgumentsListSyntax> ArgumentsList = nullptr;
 		MethodSymbol* Symbol = nullptr;
 		TypeSymbol* ReceiverType = nullptr;
+		bool IsDelegateInvocation = false;
 
 		inline InvokationExpressionSyntax(SyntaxToken identifier, std::unique_ptr<ExpressionSyntax>&& previous, SyntaxNode* const parent)
 			: LinkedExpressionNode(SyntaxKind::InvokationExpression, std::move(previous), parent), IdentifierToken(identifier) { }

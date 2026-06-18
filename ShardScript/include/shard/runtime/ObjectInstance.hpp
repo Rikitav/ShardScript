@@ -10,6 +10,7 @@
 namespace shard
 {
 	class CallStackFrame;
+	class MethodSymbol;
 
 	class SHARD_API ObjectInstance
 	{
@@ -19,6 +20,9 @@ namespace shard
 		void* const Memory;
 		std::size_t ArrayLength = 0;
 		std::size_t ArrayMemorySize = 0;
+
+	public:
+		MethodSymbol* DelegateTarget = nullptr;
 
 	public:
 		inline ObjectInstance(const TypeSymbol* info, void* memory, bool isTransient)

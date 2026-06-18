@@ -17,8 +17,10 @@ namespace shard
 	public:
 		SyntaxToken LambdaToken;
 		SyntaxToken LambdaOperatorToken;
+		SyntaxToken ReturnTypeArrowToken;
 
 		std::unique_ptr<ParametersListSyntax> ParametersList = nullptr;
+		std::unique_ptr<TypeSyntax> ReturnType = nullptr;
 		std::unique_ptr<StatementsBlockSyntax> Body = nullptr;
 		DelegateTypeSymbol* Symbol = nullptr;
 

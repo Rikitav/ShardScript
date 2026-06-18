@@ -142,6 +142,7 @@ namespace shard
 		std::unique_ptr<IndexatorListSyntax> ReadIndexatorList(SourceProvider& reader, SyntaxNode *const parent);
 		std::unique_ptr<ParametersListSyntax> ReadIndexerParametersList(SourceProvider& reader, SyntaxNode *const parent);
 		std::unique_ptr<ParametersListSyntax> ReadParametersList(SourceProvider& reader, SyntaxNode *const parent);
+		std::unique_ptr<ParametersListSyntax> ReadDelegateParametersList(SourceProvider& reader, SyntaxNode *const parent);
 		std::unique_ptr<TypeParametersListSyntax> ReadTypeParametersList(SourceProvider& reader, SyntaxNode *const parent);
 		std::unique_ptr<TypeArgumentsListSyntax> ReadTypeArgumentsList(SourceProvider& reader, SyntaxNode *const parent);
 

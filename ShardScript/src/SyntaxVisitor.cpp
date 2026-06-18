@@ -892,6 +892,9 @@ void SyntaxVisitor::VisitLambdaExpression(LambdaExpressionSyntax* node)
 	if (node->ParametersList != nullptr)
 		VisitParametersList(node->ParametersList.get());
 
+	if (node->ReturnType != nullptr)
+		VisitType(node->ReturnType.get());
+
 	if (node->Body != nullptr)
 		VisitStatementsBlock(node->Body.get());
 }

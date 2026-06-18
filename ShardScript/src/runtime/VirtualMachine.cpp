@@ -70,6 +70,20 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
+		case OpCode::CALLDELEGATE:
+		{
+			ObjectInstance* delegateInstance = frame->PopStack();
+			if (delegateInstance == nullptr || delegateInstance == garbageCollector.NullInstance)
+				throw std::runtime_error("Cannot invoke a null delegate");
+
+			MethodSymbol* target = delegateInstance->DelegateTarget;
+			if (target == nullptr)
+				throw std::runtime_error("Delegate has no target method");
+
+			InvokeMethod(target);
+			break;
+		}
+
 		case OpCode::CALLINTERFACE:
 		{
 			MethodSymbol* interfaceMethod = decoder.AbsorbMethodSymbol();
@@ -222,6 +236,9 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			DelegateTypeSymbol* type = decoder.AbsordDelegateTypeSymbol();
 
 			ObjectInstance* instance = InstantiateDelegate(type);
+			if (instance != nullptr)
+				instance->DelegateTarget = type->AnonymousSymbol;
+
 			frame->PushStack(instance);
 			break;
 		}

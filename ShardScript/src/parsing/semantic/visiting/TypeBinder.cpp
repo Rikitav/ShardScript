@@ -370,6 +370,8 @@ void TypeBinder::VisitDelegateDeclaration(DelegateDeclarationSyntax *const node)
 	{
 		VisitType(node->ReturnType.get());
 		symbol->ReturnType = node->ReturnType->Symbol;
+		if (symbol->AnonymousSymbol != nullptr)
+			symbol->AnonymousSymbol->ReturnType = symbol->ReturnType;
 	}
 
 	if (node->ParametersList != nullptr)
