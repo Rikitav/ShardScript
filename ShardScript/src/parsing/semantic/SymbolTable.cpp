@@ -25,6 +25,7 @@
 #include <new>
 #include <utility>
 #include <optional>
+#include <sstream>
 
 using namespace std::ranges;
 using namespace std::views;
@@ -133,6 +134,110 @@ static void AddRuntimeExceptionProperty(ClassSymbol* cls, const std::wstring& na
 	outField = backingField;
 }
 
+static ObjectInstance* primitive_boolean_to_string(const CallState& context)
+{
+	bool value = context.Args[0]->AsBoolean();
+	return context.Collector.FromValue(std::wstring(value ? L"true" : L"false"));
+}
+
+static ObjectInstance* primitive_integer_to_string(const CallState& context)
+{
+	std::int64_t value = context.Args[0]->AsInteger();
+	return context.Collector.FromValue(std::to_wstring(value));
+}
+
+static ObjectInstance* primitive_double_to_string(const CallState& context)
+{
+	double value = context.Args[0]->AsDouble();
+	return context.Collector.FromValue(std::to_wstring(value));
+}
+
+static ObjectInstance* primitive_char_to_string(const CallState& context)
+{
+	wchar_t value = context.Args[0]->AsCharacter();
+	return context.Collector.FromValue(std::wstring(1, value));
+}
+
+static ObjectInstance* primitive_string_to_string(const CallState& context)
+{
+	ObjectInstance* self = context.Args[0];
+	//self->IncrementReference();
+	return self;
+}
+
+static MethodSymbol* GetIPrintableToString()
+{
+	static std::wstring methodName = L"ToString";
+	static MethodSymbol* method = SymbolTable::StandardTypes::IPrintable->FindMethod(methodName, std::vector<TypeSymbol*>());
+	return method;
+}
+
+static std::string WStringToString(const std::wstring& value)
+{
+	std::string result;
+	result.reserve(value.size());
+	for (wchar_t ch : value)
+		result.push_back(static_cast<char>(ch));
+	return result;
+}
+
+static std::wstring ObjectInstanceToString(const VirtualMachine* host, ObjectInstance* instance)
+{
+    TypeSymbol* type = const_cast<TypeSymbol*>(instance->getInfo());
+	MethodSymbol* implementation = type->FindInterfaceImplementation(GetIPrintableToString());
+	
+	/*
+	if (implementation == nullptr)
+		throw std::runtime_error("Type '" + WStringToString(type->FullName) + "' does not implement IPrintable");
+	*/
+
+	if (implementation == nullptr)
+		return type->FullName;
+
+	host->InvokeMethod(implementation, { instance });
+	ObjectInstance* result = host->CurrentFrame()->PopStack();
+	if (result == nullptr || result->getInfo() != SymbolTable::Primitives::String)
+		throw std::runtime_error("ToString did not return a string");
+
+	return result->AsString();
+}
+
+static ObjectInstance* primitive_array_to_string(const CallState& context)
+{
+    ObjectInstance* instance = context.Args[0]; // this
+	const ArrayTypeSymbol* array = static_cast<const ArrayTypeSymbol*>(instance->getInfo());
+	size_t size = array->Size;
+
+	if (size == 0)
+		return context.Collector.FromValue(L"[]");
+
+	std::wostringstream result;
+	result << L"[";
+
+	ObjectInstance* element = instance->GetElement(0);
+	result << ObjectInstanceToString(&context.Runtimer, element);
+	context.Collector.CollectInstance(element);
+
+	for (size_t i = 1; i < size; i++)
+	{
+		element = instance->GetElement(i);
+		result << L", " << ObjectInstanceToString(&context.Runtimer, element);
+		context.Collector.CollectInstance(element);
+	}
+
+	result << L"]";
+	return context.Collector.FromValue(result.str());
+}
+
+static void MakePrimitivePrintable(TypeSymbol* primitive, MethodSymbolDelegate toString, SymbolFactory& factory, MethodSymbol* iPrintableToString)
+{
+	MethodSymbol* method = factory.Method(SymbolAccesibility::Public, LINK_INSTANCE, SymbolTable::Primitives::String, L"ToString", toString);
+	method->Parent = primitive;
+	primitive->Methods.push_back(method);
+	primitive->Interfaces.push_back(SymbolTable::StandardTypes::IPrintable);
+	primitive->InterfaceMethodMap[iPrintableToString] = method;
+}
+
 static void ResolveStandardTypes(SymbolTable* table)
 {
 	static bool resolved = false;
@@ -177,6 +282,32 @@ static void ResolveStandardTypes(SymbolTable* table)
 		SymbolTable::StandardTypes::IDisposable = raw;
 	}
 
+	// IPrintable
+	MethodSymbol* iPrintableToString = nullptr;
+	{
+		InterfaceSymbol* raw = factory.Interface(L"IPrintable");
+		raw->Accesibility = SymbolAccesibility::Public;
+		raw->Parent = SymbolTable::Global::Type;
+		raw->FullName = L"IPrintable";
+		declareGlobal(raw);
+
+		MethodSymbol* toString = factory.Method(L"ToString", SymbolTable::Primitives::String, LINK_INSTANCE);
+		toString->Accesibility = SymbolAccesibility::Public;
+		toString->Parent = raw;
+		raw->Methods.push_back(toString);
+		iPrintableToString = toString;
+
+		SymbolTable::StandardTypes::IPrintable = raw;
+	}
+
+	// Make standard primitives implement IPrintable
+	MakePrimitivePrintable(SymbolTable::Primitives::Boolean, &primitive_boolean_to_string, factory, iPrintableToString);
+	MakePrimitivePrintable(SymbolTable::Primitives::Integer, &primitive_integer_to_string, factory, iPrintableToString);
+	MakePrimitivePrintable(SymbolTable::Primitives::Double, &primitive_double_to_string, factory, iPrintableToString);
+	MakePrimitivePrintable(SymbolTable::Primitives::Char, &primitive_char_to_string, factory, iPrintableToString);
+	MakePrimitivePrintable(SymbolTable::Primitives::String, &primitive_string_to_string, factory, iPrintableToString);
+	MakePrimitivePrintable(SymbolTable::Primitives::Array, &primitive_array_to_string, factory, iPrintableToString);
+
 	// IEnumerable<T>
 	{
 		InterfaceSymbol* raw = factory.Interface(L"IEnumerable");
@@ -208,6 +339,7 @@ static void ResolveStandardTypes(SymbolTable* table)
 			SymbolTable::Primitives::String,
 			L"capture_stack_trace",
 			&runtime_capture_stack_trace);
+
 		method->Parent = raw;
 		raw->Methods.push_back(method);
 

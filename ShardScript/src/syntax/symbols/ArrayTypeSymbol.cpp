@@ -21,6 +21,11 @@ MethodSymbol* ArrayTypeSymbol::FindMethod(std::wstring& name, const std::vector<
 	return SymbolTable::Primitives::Array->FindMethod(name, parameterTypes);
 }
 
+MethodSymbol* ArrayTypeSymbol::FindInterfaceImplementation(MethodSymbol* interfaceMethod)
+{
+	return SymbolTable::Primitives::Array->FindInterfaceImplementation(interfaceMethod);
+}
+
 IndexatorSymbol* ArrayTypeSymbol::FindIndexator(const std::vector<TypeSymbol*>& parameterTypes)
 {
 	return SymbolTable::Primitives::Array->FindIndexator(parameterTypes);

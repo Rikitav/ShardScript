@@ -72,7 +72,7 @@ namespace shard
         virtual FieldSymbol* FindField(std::wstring& name);
         virtual PropertySymbol* FindProperty(std::wstring& name);
 
-        MethodSymbol* FindInterfaceImplementation(MethodSymbol* interfaceMethod);
+        virtual MethodSymbol* FindInterfaceImplementation(MethodSymbol* interfaceMethod);
 
         static bool Equals(const TypeSymbol* left, const TypeSymbol* right);
         static bool IsAssignableFrom(const TypeSymbol* target, const TypeSymbol* source);
