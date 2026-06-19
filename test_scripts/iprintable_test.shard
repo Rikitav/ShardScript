@@ -1,0 +1,17 @@
+using stdio;
+namespace hello_world;
+public static func Main() -> void
+{
+    println(42);
+    println(true);
+    println(false);
+    println("hello");
+    i: int = 3;
+    println(i);
+    s: string = "world";
+    println(s);
+    b: bool = true;
+    println(b);
+    arr: int[] = null;
+    println(arr);
+}
