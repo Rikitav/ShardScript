@@ -1,0 +1,10 @@
+using stdio;
+using helpers;
+
+namespace hello_world;
+
+public static func Main() -> void
+{
+    a: int = 5;
+    println(a.Double());
+}

@@ -1051,22 +1051,26 @@ void ExpressionBinder::VisitTryStatement(TryStatementSyntax *const node)
 	}
 }
 
-bool ExpressionBinder::MatchMethodArguments(SyntaxToken blameToken, std::vector<ParameterSymbol*>& parameters, std::vector<std::unique_ptr<ArgumentSyntax>>& arguments, GenericTypeSymbol* genericType)
+bool ExpressionBinder::MatchMethodArguments(SyntaxToken blameToken, std::vector<ParameterSymbol*>& parameters, std::vector<std::unique_ptr<ArgumentSyntax>>& arguments, GenericTypeSymbol* genericType, std::size_t parameterOffset)
 {
-	if (parameters.size() != arguments.size())
+	if (parameterOffset > parameters.size())
+		parameterOffset = parameters.size();
+
+	std::size_t expectedArguments = parameters.size() - parameterOffset;
+	if (expectedArguments != arguments.size())
 	{
-		Diagnostics.ReportError(blameToken, L"Method expects " + std::to_wstring(parameters.size()) + L" arguments but got " + std::to_wstring(arguments.size()));
+		Diagnostics.ReportError(blameToken, L"Method expects " + std::to_wstring(expectedArguments) + L" arguments but got " + std::to_wstring(arguments.size()));
 		return false;
 	}
 	
-	for (std::size_t i = 0; i < parameters.size(); i++)
+	for (std::size_t i = parameterOffset; i < parameters.size(); i++)
 	{
 		ParameterSymbol* param = parameters[i];
-		ArgumentSyntax* arg = arguments[i].get();
+		ArgumentSyntax* arg = arguments[i - parameterOffset].get();
 
 		if (param == nullptr || arg == nullptr || arg->Expression == nullptr)
 		{
-			Diagnostics.ReportError(blameToken, L"Invalid argument at position " + std::to_wstring(i));
+			Diagnostics.ReportError(blameToken, L"Invalid argument at position " + std::to_wstring(i - parameterOffset));
 			return false;
 		}
 		
@@ -1414,12 +1418,25 @@ TypeSymbol* ExpressionBinder::AnalyzeInvokationExpression(InvokationExpressionSy
 	if (currentType != nullptr && currentType->Kind == SyntaxKind::GenericType)
 		genericType = static_cast<GenericTypeSymbol*>(currentType);
 
-	if (!MatchMethodArguments(node->IdentifierToken, method->Parameters, node->ArgumentsList->Arguments, genericType))
-		return nullptr;
+	if (node->IsExtensionMethodInvocation)
+	{
+		std::vector<ParameterSymbol*> effectiveParameters(method->Parameters.begin() + 1, method->Parameters.end());
+		if (!MatchMethodArguments(node->IdentifierToken, effectiveParameters, node->ArgumentsList->Arguments, genericType))
+			return nullptr;
 
-	node->Symbol = method;
-	node->ReceiverType = currentType;
-	node->IsStaticContext = false;
+		node->Symbol = method;
+		node->ReceiverType = currentType;
+		node->IsStaticContext = true;
+	}
+	else
+	{
+		if (!MatchMethodArguments(node->IdentifierToken, method->Parameters, node->ArgumentsList->Arguments, genericType))
+			return nullptr;
+
+		node->Symbol = method;
+		node->ReceiverType = currentType;
+		node->IsStaticContext = false;
+	}
 
 	if (method->ReturnType == nullptr)
 	{
@@ -1504,6 +1521,37 @@ ConstructorSymbol* ExpressionBinder::ResolveConstructor(ObjectExpressionSyntax *
 	}
 
 	return method;
+}
+
+static bool IsExtensionMethodCandidate(MethodSymbol* method, TypeSymbol* receiverType, const std::vector<TypeSymbol*>& argTypes)
+{
+	if (method == nullptr || method->Linking != LINK_STATIC)
+		return false;
+
+	if (method->Parameters.empty())
+		return false;
+
+	if (receiverType == nullptr)
+		return false;
+
+	if (!TypeSymbol::IsAssignableFrom(method->Parameters[0]->Type, receiverType))
+		return false;
+
+	if (method->Parameters.size() != argTypes.size() + 1)
+		return false;
+
+	for (std::size_t i = 1; i < method->Parameters.size(); ++i)
+	{
+		TypeSymbol* paramType = method->Parameters[i]->Type;
+		TypeSymbol* argType = argTypes[i - 1];
+		if (paramType == nullptr || argType == nullptr)
+			return false;
+
+		if (!TypeSymbol::IsAssignableFrom(paramType, argType))
+			return false;
+	}
+
+	return true;
 }
 
 MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax *const node, TypeSymbol* currentType)
@@ -1661,8 +1709,15 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax *const 
 
 	if (!isStaticContext && symbol->Linking == LINK_STATIC)
 	{
-		Diagnostics.ReportError(node->IdentifierToken, L"Cannot call static method '" + methodName + L"' on instance reference");
-		return nullptr;
+		if (IsExtensionMethodCandidate(symbol, currentType, argTypes))
+		{
+			node->IsExtensionMethodInvocation = true;
+		}
+		else
+		{
+			Diagnostics.ReportError(node->IdentifierToken, L"Cannot call static method '" + methodName + L"' on instance reference");
+			return nullptr;
+		}
 	}
 
 	return symbol;
