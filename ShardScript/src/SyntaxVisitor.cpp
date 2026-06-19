@@ -476,6 +476,13 @@ void SyntaxVisitor::VisitStatement(StatementSyntax* node)
 			VisitTryStatement(statement);
 			return;
 		}
+
+		case SyntaxKind::DeferStatement:
+		{
+			DeferStatementSyntax* statement = dynamic_cast<DeferStatementSyntax*>(node);
+			VisitDeferStatement(statement);
+			return;
+		}
 	}
 }
 
@@ -663,6 +670,15 @@ void SyntaxVisitor::VisitElseStatement(ElseStatementSyntax* node)
 
 	if (node->NextStatement != nullptr)
 		VisitConditionalClause(node->NextStatement.get());
+}
+
+void SyntaxVisitor::VisitDeferStatement(DeferStatementSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (node->Statement != nullptr)
+		VisitStatement(node->Statement.get());
 }
 
 void SyntaxVisitor::VisitTryStatement(TryStatementSyntax* node)

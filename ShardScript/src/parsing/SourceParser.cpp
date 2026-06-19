@@ -46,6 +46,7 @@
 
 #include <shard/syntax/nodes/Statements/ConditionalClauseSyntax.hpp>
 #include <shard/syntax/nodes/Statements/ReturnStatementSyntax.hpp>
+#include <shard/syntax/nodes/Statements/DeferStatementSyntax.hpp>
 #include <shard/syntax/nodes/Statements/ThrowStatementSyntax.hpp>
 #include <shard/syntax/nodes/Statements/VariableStatementSyntax.hpp>
 #include <shard/syntax/nodes/Statements/ExpressionStatementSyntax.hpp>
@@ -1470,6 +1471,9 @@ std::unique_ptr<KeywordStatementSyntax> SourceParser::ReadKeywordStatement(Sourc
 		case TokenType::TryKeyword:
 			return ReadTryStatement(reader, parent);
 
+		case TokenType::DeferKeyword:
+			return ReadDeferStatement(reader, parent);
+
 		case TokenType::ThrowKeyword:
 			return ReadThrowStatement(reader, parent);
 
@@ -1520,6 +1524,23 @@ std::unique_ptr<ContinueStatementSyntax> SourceParser::ReadContinueStatement(Sou
 {
 	auto syntax = std::make_unique<ContinueStatementSyntax>(parent);
 	syntax->KeywordToken = Expect(reader, TokenType::ContinueKeyword, L"Expected return keyword");
+	syntax->SemicolonToken = Expect(reader, TokenType::Semicolon, L"Missing ';' token");
+	return syntax;
+}
+
+std::unique_ptr<DeferStatementSyntax> SourceParser::ReadDeferStatement(SourceProvider& reader, SyntaxNode *const parent)
+{
+	auto syntax = std::make_unique<DeferStatementSyntax>(reader.Current(), parent);
+	syntax->DeferToken = Expect(reader, TokenType::DeferKeyword, L"Expected 'defer' keyword");
+
+	SyntaxToken current = reader.Current();
+	if (current.Type == TokenType::Semicolon)
+	{
+		Diagnostics.ReportError(current, L"defer statement cannot be empty");
+		return syntax;
+	}
+
+	syntax->Statement = ReadStatement(reader, syntax.get());
 	syntax->SemicolonToken = Expect(reader, TokenType::Semicolon, L"Missing ';' token");
 	return syntax;
 }

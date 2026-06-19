@@ -55,6 +55,7 @@ namespace shard
 		ElseStatement,
 		TryStatement,
 		CatchClause,
+		DeferStatement,
 
 		// Expressions
 		ObjectExpression,

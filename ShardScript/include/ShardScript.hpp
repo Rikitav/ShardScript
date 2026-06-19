@@ -86,6 +86,7 @@
 #include <shard/syntax/nodes/Statements/ConditionalClauseSyntax.hpp>
 #include <shard/syntax/nodes/Statements/ExpressionStatementSyntax.hpp>
 #include <shard/syntax/nodes/Statements/VariableStatementSyntax.hpp>
+#include <shard/syntax/nodes/Statements/DeferStatementSyntax.hpp>
 #include <shard/syntax/nodes/Statements/ReturnStatementSyntax.hpp>
 #include <shard/syntax/nodes/Statements/BreakStatementSyntax.hpp>
 #include <shard/syntax/nodes/Statements/ContinueStatementSyntax.hpp>

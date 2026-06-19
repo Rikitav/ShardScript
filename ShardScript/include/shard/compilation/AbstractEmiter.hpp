@@ -37,6 +37,7 @@
 #include <shard/syntax/nodes/Statements/ConditionalClauseSyntax.hpp>
 #include <shard/syntax/nodes/Statements/ContinueStatementSyntax.hpp>
 #include <shard/syntax/nodes/Statements/ExpressionStatementSyntax.hpp>
+#include <shard/syntax/nodes/Statements/DeferStatementSyntax.hpp>
 #include <shard/syntax/nodes/Statements/ReturnStatementSyntax.hpp>
 #include <shard/syntax/nodes/Statements/ThrowStatementSyntax.hpp>
 #include <shard/syntax/nodes/Statements/TryStatementSyntax.hpp>
@@ -78,6 +79,19 @@ namespace shard
         std::stack<LoopScope> Loops;
         std::stack<ClauseScope> Clauses;
 
+        struct DeferScope
+        {
+            std::vector<DeferStatementSyntax*> Defers;
+            bool IsLoop = false;
+        };
+        std::vector<DeferScope> DeferScopes;
+        bool PendingDeferScopeIsLoop = false;
+
+        void EmitDefer(DeferStatementSyntax* defer);
+        void EmitCurrentScopeDefers();
+        void EmitDefersUntilLoop();
+        void EmitAllDefers();
+
 	public:
 		inline AbstractEmiter(ProgramVirtualImage& program, SemanticModel& model, DiagnosticsContext& diagnostics)
             : SyntaxVisitor(model, diagnostics), Program(program), Encoder() { }
@@ -104,6 +118,8 @@ namespace shard
         void VisitTryStatement(TryStatementSyntax *const node) override;
         void VisitBreakStatement(BreakStatementSyntax *const node) override;
         void VisitContinueStatement(ContinueStatementSyntax *const node) override;
+        void VisitDeferStatement(DeferStatementSyntax *const node) override;
+        void VisitStatementsBlock(StatementsBlockSyntax *const node) override;
 
         void VisitWhileStatement(WhileStatementSyntax *const node) override;
         void VisitForStatement(ForStatementSyntax *const node) override;

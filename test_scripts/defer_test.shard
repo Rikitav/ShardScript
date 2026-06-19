@@ -1,0 +1,18 @@
+using stdio;
+
+namespace hello_world;
+
+public class Resource : IDisposable
+{
+    public func Dispose() -> void
+    {
+        println("disposed");
+    }
+}
+
+public static func Main() -> void
+{
+    defer r: Resource = new Resource();
+    defer println("deferred expression");
+    println("using resource");
+}

@@ -56,6 +56,7 @@ namespace shard
 		void VisitIndexatorDeclaration(shard::IndexatorDeclarationSyntax *const node) override;
 		void VisitAccessorDeclaration(shard::AccessorDeclarationSyntax *const node) override;
 		void VisitVariableStatement(shard::VariableStatementSyntax *const node) override;
+		void VisitDeferStatement(shard::DeferStatementSyntax *const node) override;
 		void VisitForEachStatement(shard::ForEachStatementSyntax *const node) override;
 		void VisitTryStatement(shard::TryStatementSyntax *const node) override;
 

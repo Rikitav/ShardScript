@@ -17,6 +17,7 @@
 #include <shard/syntax/nodes/AttributeSyntax.hpp>
 
 #include <shard/syntax/nodes/Statements/VariableStatementSyntax.hpp>
+#include <shard/syntax/nodes/Statements/DeferStatementSyntax.hpp>
 #include <shard/syntax/nodes/Statements/TryStatementSyntax.hpp>
 
 #include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.hpp>
@@ -819,6 +820,12 @@ void DeclarationCollector::VisitVariableStatement(VariableStatementSyntax *const
         VisitExpression(node->Expression.get());
 
     PopScope();
+}
+
+void DeclarationCollector::VisitDeferStatement(DeferStatementSyntax *const node)
+{
+    if (node->Statement != nullptr)
+        VisitStatement(node->Statement.get());
 }
 
 void DeclarationCollector::VisitForEachStatement(ForEachStatementSyntax *const node)

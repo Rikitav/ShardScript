@@ -440,25 +440,6 @@ void AbstractEmiter::VisitVariableStatement(VariableStatementSyntax* const node)
 	Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, var->SlotIndex);
 }
 
-void AbstractEmiter::VisitReturnStatement(ReturnStatementSyntax* const node)
-{
-	VisitExpression(node->Expression.get());
-	Encoder.EmitReturn(GeneratingFor->ExecutableByteCode);
-}
-
-void AbstractEmiter::VisitThrowStatement(ThrowStatementSyntax* const node)
-{
-	if (node->Expression != nullptr)
-	{
-		VisitExpression(node->Expression.get());
-		Encoder.EmitThrow(GeneratingFor->ExecutableByteCode);
-	}
-	else
-	{
-		Encoder.EmitRethrow(GeneratingFor->ExecutableByteCode);
-	}
-}
-
 void AbstractEmiter::VisitTryStatement(TryStatementSyntax* const node)
 {
 	if (node->CatchClauses.empty())
@@ -555,13 +536,6 @@ void AbstractEmiter::VisitTryStatement(TryStatementSyntax* const node)
 		tryEndJumpBacktrack + sizeof(OpCode),
 		&endLabel,
 		sizeof(std::size_t));
-}
-
-void AbstractEmiter::VisitBreakStatement(BreakStatementSyntax* const node)
-{
-	LoopScope& scope = Loops.top();
-	scope.LoopEndBacktracks.push_back(GeneratingFor->ExecutableByteCode.size());
-	Encoder.EmitJump(GeneratingFor->ExecutableByteCode, 0);
 }
 
 void AbstractEmiter::VisitContinueStatement(ContinueStatementSyntax* const node)
@@ -1207,6 +1181,130 @@ void AbstractEmiter::VisitMemberAccessExpression(MemberAccessExpressionSyntax* c
 		Encoder.EmitNewDelegate(GeneratingFor->ExecutableByteCode, node->ToDelegate);
 		return;
 	}
+}
+
+void AbstractEmiter::EmitDefer(DeferStatementSyntax* defer)
+{
+	if (defer == nullptr)
+		return;
+
+	if (defer->IsResourceDefer)
+	{
+		if (defer->Variable != nullptr)
+			Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, defer->Variable->SlotIndex);
+
+		if (defer->DisposeMethod != nullptr)
+			EmitMethodCall(defer->DisposeMethod);
+	}
+	else if (defer->Statement != nullptr)
+	{
+		VisitStatement(defer->Statement.get());
+	}
+}
+
+void AbstractEmiter::EmitCurrentScopeDefers()
+{
+	if (DeferScopes.empty())
+		return;
+
+	DeferScope& scope = DeferScopes.back();
+	for (auto it = scope.Defers.rbegin(); it != scope.Defers.rend(); ++it)
+		EmitDefer(*it);
+
+	scope.Defers.clear();
+}
+
+void AbstractEmiter::EmitDefersUntilLoop()
+{
+	for (auto it = DeferScopes.rbegin(); it != DeferScopes.rend(); ++it)
+	{
+		for (auto deferIt = it->Defers.rbegin(); deferIt != it->Defers.rend(); ++deferIt)
+			EmitDefer(*deferIt);
+
+		it->Defers.clear();
+
+		if (it->IsLoop)
+			break;
+	}
+}
+
+void AbstractEmiter::EmitAllDefers()
+{
+	for (auto it = DeferScopes.rbegin(); it != DeferScopes.rend(); ++it)
+	{
+		for (auto deferIt = it->Defers.rbegin(); deferIt != it->Defers.rend(); ++deferIt)
+			EmitDefer(*deferIt);
+
+		it->Defers.clear();
+	}
+}
+
+void AbstractEmiter::VisitStatementsBlock(StatementsBlockSyntax* const node)
+{
+	if (node == nullptr)
+		return;
+
+	bool isLoop = node->Parent != nullptr && (
+		node->Parent->Kind == SyntaxKind::WhileStatement ||
+		node->Parent->Kind == SyntaxKind::UntilStatement ||
+		node->Parent->Kind == SyntaxKind::ForStatement ||
+		node->Parent->Kind == SyntaxKind::ForEachStatement);
+
+	DeferScopes.push_back({ {}, isLoop });
+
+	for (const auto& statement : node->Statements)
+		VisitStatement(statement.get());
+
+	EmitCurrentScopeDefers();
+	DeferScopes.pop_back();
+}
+
+void AbstractEmiter::VisitDeferStatement(DeferStatementSyntax* const node)
+{
+	if (node == nullptr)
+		return;
+
+	if (DeferScopes.empty())
+	{
+		Diagnostics.ReportError(node->DeferToken, L"defer statement must be inside a block");
+		return;
+	}
+
+	if (node->IsResourceDefer && node->Statement != nullptr)
+		VisitStatement(node->Statement.get());
+
+	DeferScopes.back().Defers.push_back(node);
+}
+
+void AbstractEmiter::VisitReturnStatement(ReturnStatementSyntax* const node)
+{
+	if (node->Expression != nullptr)
+		VisitExpression(node->Expression.get());
+
+	EmitAllDefers();
+	Encoder.EmitReturn(GeneratingFor->ExecutableByteCode);
+}
+
+void AbstractEmiter::VisitBreakStatement(BreakStatementSyntax* const node)
+{
+	EmitDefersUntilLoop();
+
+	LoopScope& scope = Loops.top();
+	scope.LoopEndBacktracks.push_back(GeneratingFor->ExecutableByteCode.size());
+	Encoder.EmitJump(GeneratingFor->ExecutableByteCode, 0);
+}
+
+void AbstractEmiter::VisitThrowStatement(ThrowStatementSyntax* const node)
+{
+	if (node->Expression != nullptr)
+		VisitExpression(node->Expression.get());
+
+	EmitAllDefers();
+
+	if (node->Expression != nullptr)
+		Encoder.EmitThrow(GeneratingFor->ExecutableByteCode);
+	else
+		Encoder.EmitRethrow(GeneratingFor->ExecutableByteCode);
 }
 
 static bool IsInterfaceMember(MethodSymbol* method)
