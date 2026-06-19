@@ -72,11 +72,17 @@ namespace shard
                 [instance](const std::unique_ptr<ObjectInstance>& entry) { return entry.get() == instance; });
 
             if (it != Instances.end())
+            {
+                it->release();
                 Instances.erase(it);
+            }
         }
 
         inline void clear()
         {
+            for (auto& entry : Instances)
+                entry.release();
+
             Instances.clear();
         }
 

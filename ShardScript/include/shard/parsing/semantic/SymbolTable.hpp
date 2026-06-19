@@ -60,6 +60,7 @@ namespace shard
             inline static SHARD_API InterfaceSymbol* IThrowable = nullptr;
             inline static SHARD_API InterfaceSymbol* IEnumerable = nullptr;
             inline static SHARD_API InterfaceSymbol* IDisposable = nullptr;
+            inline static SHARD_API InterfaceSymbol* IPrintable = nullptr;
 
             inline static SHARD_API ClassSymbol* Runtime = nullptr;
             inline static SHARD_API MethodSymbol* RuntimeCaptureStackTrace = nullptr;

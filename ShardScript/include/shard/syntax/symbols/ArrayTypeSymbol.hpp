@@ -38,6 +38,7 @@ namespace shard
 
 		ConstructorSymbol* FindConstructor(const std::vector<TypeSymbol*>& parameterTypes) override;
 		MethodSymbol* FindMethod(std::wstring& name, const std::vector<TypeSymbol*>& parameterTypes) override;
+		MethodSymbol* FindInterfaceImplementation(MethodSymbol* interfaceMethod) override;
 		IndexatorSymbol* FindIndexator(const std::vector<TypeSymbol*>& parameterTypes) override;
 		FieldSymbol* FindField(std::wstring& name) override;
 		PropertySymbol* FindProperty(std::wstring& name) override;

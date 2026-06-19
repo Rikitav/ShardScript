@@ -9,76 +9,66 @@
 
 using namespace shard;
 
+static MethodSymbol* GetIPrintableToString()
+{
+	static std::wstring methodName = L"ToString";
+	static MethodSymbol* method = SymbolTable::StandardTypes::IPrintable->FindMethod(methodName, std::vector<TypeSymbol*>());
+	return method;
+}
+
+static std::string WStringToString(const std::wstring& value)
+{
+	std::string result;
+	result.reserve(value.size());
+	for (wchar_t ch : value)
+		result.push_back(static_cast<char>(ch));
+	return result;
+}
+
+static ObjectInstance* InvokeToString(const CallState& context, ObjectInstance* instance)
+{
+	TypeSymbol* type = const_cast<TypeSymbol*>(instance->getInfo());
+	MethodSymbol* implementation = type->FindInterfaceImplementation(GetIPrintableToString());
+	if (implementation == nullptr)
+		throw std::runtime_error("Type '" + WStringToString(type->FullName) + "' does not implement IPrintable");
+
+	context.Runtimer.InvokeMethod(implementation, { instance });
+	ObjectInstance* result = context.Runtimer.CurrentFrame()->PopStack();
+	if (result == nullptr || result->getInfo() != SymbolTable::Primitives::String)
+		throw std::runtime_error("ToString did not return a string");
+
+	return result;
+}
+
 static ObjectInstance* shard_constream_print(const CallState& context) noexcept(false)
 {
-	ObjectInstance* instance = context.Args[0]; // var
-	TypeSymbol* type = const_cast<TypeSymbol*>(instance->getInfo());
-
-	if (type->IsPrimitive())
+	ObjectInstance* instance = context.Args[0];
+	if (instance == nullptr || instance == context.Collector.NullInstance)
 	{
-		ConsoleHelper::Write(instance);
-		return nullptr; // void
+		ConsoleHelper::Write(L"null");
+		return nullptr;
 	}
 
-	static std::wstring methodWName = L"ToString";
-	MethodSymbol* toString = type->FindMethod(methodWName, std::vector<TypeSymbol*>());
-
-	if (toString != nullptr)
-	{
-		context.Runtimer.InvokeMethod(toString, { instance });
-		ObjectInstance* result = context.Runtimer.CurrentFrame()->PopStack();
-
-		if (type != SymbolTable::Primitives::String)
-		{
-#pragma warning (push)
-#pragma warning (disable: 4244)
-			std::string methodName = std::string(toString->FullName.begin(), toString->FullName.end());
-			throw std::runtime_error("Failed to evaluate ToString method of \'" + methodName + "\'. Reason: returned not a string!");
-#pragma warning (pop)
-		}
-
-		ConsoleHelper::Write(instance);
-		return nullptr; // void
-	}
-
-	ConsoleHelper::Write(type->FullName);
+	ObjectInstance* result = InvokeToString(context, instance);
+	ConsoleHelper::Write(result);
 	return nullptr; // void
 }
 
 static ObjectInstance* shard_constream_println(const CallState& context) noexcept(false)
 {
-	ObjectInstance* instance = context.Args[0]; // var
-	TypeSymbol* type = const_cast<TypeSymbol*>(instance->getInfo());
-
-	if (type->IsPrimitive())
+	ObjectInstance* instance = context.Args[0];
+	if (instance == nullptr || instance == context.Collector.NullInstance)
 	{
-		ConsoleHelper::WriteLine(instance);
-		return nullptr; // void
+		ConsoleHelper::WriteLine(L"null");
+		return nullptr;
 	}
 
-	static std::wstring methodWName = L"ToString";
-	MethodSymbol* toString = type->FindMethod(methodWName, std::vector<TypeSymbol*>());
-
-	if (toString != nullptr)
-	{
-		context.Runtimer.InvokeMethod(toString, { instance });
-		ObjectInstance* result = context.Runtimer.CurrentFrame()->PopStack();
-
-		if (result->getInfo() != SymbolTable::Primitives::String)
-		{
-			std::string methodName = std::string(toString->FullName.begin(), toString->FullName.end());
-			throw std::runtime_error("Failed to evaluate ToString method of \'" + methodName + "\'. Reason: returned not a string!");
-		}
-
-		ConsoleHelper::WriteLine(result);
-		return nullptr; // void
-	}
-
-	ConsoleHelper::WriteLine(type->FullName);
+	ObjectInstance* result = InvokeToString(context, instance);
+	ConsoleHelper::WriteLine(result);
 	return nullptr; // void
 }
 
-static ObjectInstance* shard_constream_input(const CallState& context) noexcept(false)
+static ObjectInstance* shard_constream_input(const CallState& context)
 {
 	std::wstring input;
 	getline(std::wcin, input);
@@ -97,11 +87,11 @@ SHARDLIB_ENTRYPOINT
 	SymbolBuilder<NamespaceSymbol> stdio(context, L"stdio");
 
 	stdio.AddMethod(L"print", TYPE_VOID, LINK_STATIC, ACS_PUBLIC)
-		 .AddParameter(L"message", TYPE_ANY)
+		 .AddParameter(L"message", SymbolTable::StandardTypes::IPrintable)
 		 .SetCallback(&shard_constream_print);
 
 	stdio.AddMethod(L"println", TYPE_VOID, LINK_STATIC, ACS_PUBLIC)
-		 .AddParameter(L"message", TYPE_ANY)
+		 .AddParameter(L"message", SymbolTable::StandardTypes::IPrintable)
 		 .SetCallback(&shard_constream_println);
 
 	stdio.AddMethod(L"input", TYPE_STRING, LINK_STATIC, ACS_PUBLIC)

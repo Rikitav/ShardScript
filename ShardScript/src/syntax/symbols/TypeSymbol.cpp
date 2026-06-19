@@ -141,6 +141,15 @@ bool TypeSymbol::IsAssignableFrom(const TypeSymbol* target, const TypeSymbol* so
             if (Equals(target, iface))
                 return true;
         }
+
+        if (source->Kind == SyntaxKind::ArrayType)
+        {
+            for (TypeSymbol* iface : SymbolTable::Primitives::Array->Interfaces)
+            {
+                if (Equals(target, iface))
+                    return true;
+            }
+        }
     }
 
     if (target->Kind == SyntaxKind::DelegateType && source->Kind == SyntaxKind::DelegateType)
