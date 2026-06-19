@@ -38,6 +38,7 @@
 
 #include <shard/syntax/nodes/Statements/VariableStatementSyntax.hpp>
 #include <shard/syntax/nodes/Statements/ExpressionStatementSyntax.hpp>
+#include <shard/syntax/nodes/Statements/DeferStatementSyntax.hpp>
 #include <shard/syntax/nodes/Statements/ConditionalClauseSyntax.hpp>
 #include <shard/syntax/nodes/Statements/ReturnStatementSyntax.hpp>
 #include <shard/syntax/nodes/Statements/ThrowStatementSyntax.hpp>
@@ -121,6 +122,7 @@ namespace shard
         virtual void VisitThrowStatement(ThrowStatementSyntax *const node);
         virtual void VisitBreakStatement(BreakStatementSyntax *const node);
         virtual void VisitContinueStatement(ContinueStatementSyntax *const node);
+        virtual void VisitDeferStatement(DeferStatementSyntax *const node);
 
         virtual void VisitWhileStatement(WhileStatementSyntax *const node);
         virtual void VisitForStatement(ForStatementSyntax *const node);

@@ -55,6 +55,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/IndexatorDeclarationSyntax.hpp>
 
 #include <shard/syntax/nodes/Statements/VariableStatementSyntax.hpp>
+#include <shard/syntax/nodes/Statements/DeferStatementSyntax.hpp>
 
 #include <shard/syntax/nodes/Expressions/ObjectExpressionSyntax.hpp>
 
@@ -562,6 +563,12 @@ void TypeBinder::VisitVariableStatement(VariableStatementSyntax *const node)
 
 	if (node->Expression != nullptr)
 		VisitExpression(node->Expression.get());
+}
+
+void TypeBinder::VisitDeferStatement(DeferStatementSyntax *const node)
+{
+	if (node->Statement != nullptr)
+		VisitStatement(node->Statement.get());
 }
 
 void TypeBinder::VisitTryStatement(TryStatementSyntax *const node)

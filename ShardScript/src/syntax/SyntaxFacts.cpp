@@ -412,6 +412,7 @@ bool IsFunctionalKeyword(shard::TokenType type)
 		case TokenType::ThrowKeyword:
 		case TokenType::TryKeyword:
 		case TokenType::CatchKeyword:
+		case TokenType::DeferKeyword:
 			return true;
 
 		default:

@@ -28,6 +28,7 @@
 
 #include <shard/syntax/nodes/Statements/ConditionalClauseSyntax.hpp>
 #include <shard/syntax/nodes/Statements/ReturnStatementSyntax.hpp>
+#include <shard/syntax/nodes/Statements/DeferStatementSyntax.hpp>
 #include <shard/syntax/nodes/Statements/ThrowStatementSyntax.hpp>
 #include <shard/syntax/nodes/Statements/BreakStatementSyntax.hpp>
 #include <shard/syntax/nodes/Statements/ContinueStatementSyntax.hpp>
@@ -114,6 +115,7 @@ namespace shard
 		std::unique_ptr<ThrowStatementSyntax> ReadThrowStatement(SourceProvider& reader, SyntaxNode *const parent);
 		std::unique_ptr<BreakStatementSyntax> ReadBreakStatement(SourceProvider& reader, SyntaxNode *const parent);
 		std::unique_ptr<ContinueStatementSyntax> ReadContinueStatement(SourceProvider& reader, SyntaxNode *const parent);
+		std::unique_ptr<DeferStatementSyntax> ReadDeferStatement(SourceProvider& reader, SyntaxNode *const parent);
 
 		// 6. Lexical structures
 		std::unique_ptr<ConditionalClauseBaseSyntax> ReadConditionalClause(SourceProvider& reader, SyntaxNode *const parent);

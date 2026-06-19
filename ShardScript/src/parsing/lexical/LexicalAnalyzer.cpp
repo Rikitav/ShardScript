@@ -1222,6 +1222,11 @@ bool LexicalAnalyzer::IsKeyword(std::wstring& word, TokenType& type)
 		type = TokenType::CatchKeyword;
 		return true;
 	}
+	else if (word == L"defer")
+	{
+		type = TokenType::DeferKeyword;
+		return true;
+	}
 	else if (word == L"where")
 	{
 		type = TokenType::WhereKeyword;

@@ -164,6 +164,7 @@ namespace shard
 		ContinueKeyword,	  // continue
 		TryKeyword,           // try
 		CatchKeyword,         // catch
+		DeferKeyword,         // defer
 		WhereKeyword          // where
 	};
 }

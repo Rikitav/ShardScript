@@ -63,6 +63,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/IndexatorDeclarationSyntax.hpp>
 
 #include <shard/syntax/nodes/Statements/VariableStatementSyntax.hpp>
+#include <shard/syntax/nodes/Statements/DeferStatementSyntax.hpp>
 #include <shard/syntax/nodes/Statements/ReturnStatementSyntax.hpp>
 #include <shard/syntax/nodes/Statements/ConditionalClauseSyntax.hpp>
 #include <shard/syntax/nodes/Statements/ExpressionStatementSyntax.hpp>
@@ -2430,6 +2431,64 @@ void ExpressionBinder::VisitReturnStatement(ReturnStatementSyntax *const node)
 	else if (!TypeSymbol::IsAssignableFrom(returnType, returnExprType))
 	{
 		Diagnostics.ReportError(node->KeywordToken, L"Return type mismatch: expected '" + returnType->Name + L"' but got '" + returnExprType->Name + L"'");
+	}
+}
+
+void ExpressionBinder::VisitDeferStatement(DeferStatementSyntax *const node)
+{
+	if (node->Statement == nullptr)
+		return;
+
+	VisitStatement(node->Statement.get());
+
+	if (node->Statement->Kind == SyntaxKind::VariableStatement)
+	{
+		VariableStatementSyntax* variableStatement = static_cast<VariableStatementSyntax*>(node->Statement.get());
+		VariableSymbol* variable = LookupSymbol<VariableSymbol>(variableStatement).value_or(nullptr);
+		if (variable == nullptr)
+		{
+			Diagnostics.ReportError(node->DeferToken, L"Variable declared in defer statement could not be resolved");
+			return;
+		}
+
+		TypeSymbol* variableType = const_cast<TypeSymbol*>(variable->Type);
+		if (variableType == nullptr)
+		{
+			Diagnostics.ReportError(node->DeferToken, L"Variable type could not be determined");
+			return;
+		}
+
+		InterfaceSymbol* disposable = SymbolTable::StandardTypes::IDisposable;
+		if (disposable == nullptr)
+		{
+			Diagnostics.ReportError(node->DeferToken, L"IDisposable interface is not defined");
+			return;
+		}
+
+		if (!TypeSymbol::IsAssignableFrom(disposable, variableType))
+		{
+			Diagnostics.ReportError(node->DeferToken, L"Type '" + variableType->Name + L"' declared in defer statement must implement IDisposable");
+			return;
+		}
+
+		std::wstring disposeName = L"Dispose";
+		MethodSymbol* interfaceDispose = disposable->FindMethod(disposeName, std::vector<TypeSymbol*>());
+		if (interfaceDispose == nullptr)
+		{
+			Diagnostics.ReportError(node->DeferToken, L"IDisposable.Dispose() method not found");
+			return;
+		}
+
+		MethodSymbol* implementation = variableType->FindInterfaceImplementation(interfaceDispose);
+		if (implementation == nullptr)
+		{
+			Diagnostics.ReportError(node->DeferToken, L"Type '" + variableType->Name + L"' does not provide an implementation for IDisposable.Dispose()");
+			return;
+		}
+
+		node->Variable = variable;
+		node->DisposeMethod = implementation;
+		node->IsResourceDefer = true;
 	}
 }
 
