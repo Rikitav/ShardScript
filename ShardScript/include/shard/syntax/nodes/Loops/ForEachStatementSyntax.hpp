@@ -22,7 +22,7 @@ namespace shard
 		std::unique_ptr<ExpressionSyntax> RangeExpression = nullptr;
 		std::unique_ptr<StatementsBlockSyntax> StatementsBlock = nullptr;
 
-		inline ForEachStatementSyntax(SyntaxNode *const parent)
+		inline ForEachStatementSyntax(SyntaxNode* parent)
 			: KeywordStatementSyntax(SyntaxKind::ForEachStatement, parent) { }
 
 		inline ForEachStatementSyntax(const ForEachStatementSyntax& other) = delete;

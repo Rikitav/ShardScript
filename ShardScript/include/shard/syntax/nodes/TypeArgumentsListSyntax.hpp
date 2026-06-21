@@ -19,7 +19,7 @@ namespace shard
 		SyntaxToken CloseToken;
 		std::vector<std::unique_ptr<TypeSyntax>> Types;
 
-		inline TypeArgumentsListSyntax(SyntaxNode *const parent)
+		inline TypeArgumentsListSyntax(SyntaxNode* parent)
 			: SyntaxNode(SyntaxKind::ParametersList, parent) {
 		}
 

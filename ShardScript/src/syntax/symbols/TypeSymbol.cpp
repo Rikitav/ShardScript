@@ -23,19 +23,13 @@ using namespace shard;
 
 std::size_t TypeSymbol::GetInlineSize() const
 {
-	return IsReferenceType ? sizeof(void*) : MemoryBytesSize;
+	return Inlining == TypeInlining::ByReference ? sizeof(void*) : MemoryBytesSize;
 }
 
 static bool paramPredicate(ParameterSymbol* left, TypeSymbol* right)
 {
 	if (left->Type == SymbolTable::Primitives::Any)
 		return true;
-
-	/*
-	MemberSymbol* member = static_cast<MemberSymbol*>(left->Parent);
-	if (left->Name == L"this" && !member->IsStatic)
-		return true;
-	*/
 
 	return TypeSymbol::IsAssignableFrom(left->Type, right);
 }
@@ -48,7 +42,7 @@ bool TypeSymbol::Equals(const TypeSymbol* left, const TypeSymbol* right)
 	switch (left->Kind)
 	{
 		default:
-			return left->TypeCode == right->TypeCode;
+			return left->DefinitionIndex == right->DefinitionIndex;
 
 		case SyntaxKind::GenericType:
 		{
@@ -132,7 +126,7 @@ bool TypeSymbol::IsAssignableFrom(const TypeSymbol* target, const TypeSymbol* so
         return true;
 
     if (source == SymbolTable::Primitives::Null)
-        return target->IsReferenceType || target == SymbolTable::Primitives::Any;
+        return target->Inlining == TypeInlining::ByReference || target == SymbolTable::Primitives::Any;
 
     if (target->Kind == SyntaxKind::InterfaceDeclaration)
     {
@@ -182,7 +176,8 @@ bool TypeSymbol::IsPrimitive()
 		|| this == SymbolTable::Primitives::Double
 		|| this == SymbolTable::Primitives::Char
 		|| this == SymbolTable::Primitives::String
-		|| this == SymbolTable::Primitives::Array;
+		|| this == SymbolTable::Primitives::Array
+		|| this == SymbolTable::Primitives::NativeInteger;
 }
 
 void TypeSymbol::OnSymbolDeclared(SyntaxSymbol* symbol)
@@ -191,6 +186,9 @@ void TypeSymbol::OnSymbolDeclared(SyntaxSymbol* symbol)
 	{
 		case SyntaxKind::ConstructorDeclaration:
 		{
+			symbol->Parent = this;
+			symbol->FullName = this->FullName + L"." + symbol->Name;
+			
 			ConstructorSymbol* ctor = static_cast<ConstructorSymbol*>(symbol);
 			Constructors.push_back(ctor);
 			break;
@@ -198,6 +196,9 @@ void TypeSymbol::OnSymbolDeclared(SyntaxSymbol* symbol)
 
 		case SyntaxKind::MethodDeclaration:
 		{
+			symbol->Parent = this;
+			symbol->FullName = this->FullName + L"." + symbol->Name;
+			
 			MethodSymbol* method = static_cast<MethodSymbol*>(symbol);
 			Methods.push_back(method);
 			break;
@@ -205,6 +206,9 @@ void TypeSymbol::OnSymbolDeclared(SyntaxSymbol* symbol)
 
 		case SyntaxKind::FieldDeclaration:
 		{
+			symbol->Parent = this;
+			symbol->FullName = this->FullName + L"." + symbol->Name;
+			
 			FieldSymbol* field = static_cast<FieldSymbol*>(symbol);
 			Fields.push_back(field);
 			break;
@@ -212,6 +216,9 @@ void TypeSymbol::OnSymbolDeclared(SyntaxSymbol* symbol)
 
 		case SyntaxKind::PropertyDeclaration:
 		{
+			symbol->Parent = this;
+			symbol->FullName = this->FullName + L"." + symbol->Name;
+			
 			PropertySymbol* prop = static_cast<PropertySymbol*>(symbol);
 			Properties.push_back(prop);
 			break;
@@ -219,6 +226,9 @@ void TypeSymbol::OnSymbolDeclared(SyntaxSymbol* symbol)
 
 		case SyntaxKind::IndexatorDeclaration:
 		{
+			symbol->Parent = this;
+			symbol->FullName = this->FullName + L"." + symbol->Name;
+			
 			IndexatorSymbol* index = static_cast<IndexatorSymbol*>(symbol);
 			Indexators.push_back(index);
 			break;
@@ -226,24 +236,24 @@ void TypeSymbol::OnSymbolDeclared(SyntaxSymbol* symbol)
 
 		case SyntaxKind::TypeParameter:
 		{
+			symbol->Parent = this;
+			symbol->FullName = this->FullName + L"." + symbol->Name;
+
 			TypeParameterSymbol* typeParam = static_cast<TypeParameterSymbol*>(symbol);
 			TypeParameters.push_back(typeParam);
 			break;
 		}
-
-		default:
-		{
-			/*
-			if (symbol->IsType())
-			{
-				TypeSymbol* type = static_cast<TypeSymbol*>(symbol);
-				Members.push_back(type);
-			}
-			*/
-
-			break;
-		}
 	}
+}
+
+bool TypeSymbol::IsType() const
+{
+	return true;
+}
+
+bool TypeSymbol::IsMember() const
+{
+	return false;
 }
 
 ConstructorSymbol* TypeSymbol::FindConstructor(const std::vector<TypeSymbol*>& parameterTypes)
@@ -352,8 +362,7 @@ TypeSymbol* TypeSymbol::SubstituteType(TypeSymbol* type)
 					throw std::runtime_error("Cannot resolve underlaying type of array");
 
 				ArrayTypeSymbol* newArrayType = new ArrayTypeSymbol(underlayingType);
-				newArrayType->Size = arrayType->Size;
-				newArrayType->Rank = arrayType->Rank;
+				newArrayType->Length = arrayType->Length;
 				return newArrayType;
 			}
 
@@ -408,15 +417,6 @@ TypeSymbol* TypeSymbol::ReturnOf(PropertySymbol* property)
 		return nullptr;
 
 	TypeSymbol* resolvedType = SubstituteType(property->ReturnType);
-	return resolvedType;
-}
-
-TypeSymbol* TypeSymbol::ReturnOf(IndexatorSymbol* indexator)
-{
-	if (indexator == nullptr || indexator->ReturnType == nullptr)
-		return nullptr;
-
-	TypeSymbol* resolvedType = SubstituteType(indexator->ReturnType);
 	return resolvedType;
 }
 

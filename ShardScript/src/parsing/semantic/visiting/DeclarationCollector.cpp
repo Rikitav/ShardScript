@@ -7,7 +7,6 @@
 #include <shard/syntax/TokenType.hpp>
 #include <shard/syntax/SyntaxKind.hpp>
 #include <shard/syntax/SyntaxToken.hpp>
-#include <shard/syntax/SymbolAccesibility.hpp>
 #include <shard/syntax/SymbolFactory.hpp>
 
 #include <shard/syntax/nodes/ParametersListSyntax.hpp>
@@ -50,21 +49,7 @@
 
 using namespace shard;
 
-static std::wstring FormatFullNameOf(SyntaxSymbol* symbol)
-{
-    if (symbol->Parent == nullptr)
-        return symbol->Name;
-
-    return symbol->Parent->FullName + L"." + symbol->Name;
-}
-
-void DeclarationCollector::Declare(SyntaxSymbol *const symbol)
-{
-    SemanticScope* current = CurrentScope();
-    current->DeclareSymbol(symbol);
-}
-
-void DeclarationCollector::VisitCompilationUnit(CompilationUnitSyntax *const node)
+void DeclarationCollector::VisitCompilationUnit(CompilationUnitSyntax* node)
 {
     // The beginning of each script file in compilation
     // First scope is declared as nullptr symbol
@@ -77,28 +62,19 @@ void DeclarationCollector::VisitCompilationUnit(CompilationUnitSyntax *const nod
         {
 			// Creating symbol
 			symbol = Factory.Namespace(node->Namespace.get());
-
-            symbol->Parent = OwnerSymbol();
-            if (symbol->Parent != nullptr)
-            {
-                symbol->FullName = symbol->Parent->FullName + L"." + symbol->Name;
-                symbol->Parent->OnSymbolDeclared(symbol);
-            }
+            Declare(symbol);
 
             if (!node->Namespace->IdentifierTokens.empty())
             {
                 NamespaceNode* nsNode = Namespaces->Root;
                 for (SyntaxToken token : node->Namespace->IdentifierTokens)
-                {
                     nsNode = nsNode->LookupOrCreate(token.Word, symbol);
-                }
 
-                CurrentScope()->Namespace = nsNode;
                 symbol->Node = nsNode;
+                CurrentScope()->Namespace = nsNode;
             }
         }
 
-        Declare(symbol);
         PushScope(symbol);
     }
 
@@ -112,54 +88,38 @@ void DeclarationCollector::VisitCompilationUnit(CompilationUnitSyntax *const nod
     PopScope();
 }
 
-void DeclarationCollector::VisitNamespaceDeclaration(NamespaceDeclarationSyntax *const node)
+void DeclarationCollector::VisitNamespaceDeclaration(NamespaceDeclarationSyntax* node)
 {
     // Namespace declarations are now handled inline in VisitCompilationUnit
     // This method is kept for SyntaxVisitor compatibility only
 }
 
-void DeclarationCollector::VisitClassDeclaration(ClassDeclarationSyntax *const node)
+void DeclarationCollector::VisitClassDeclaration(ClassDeclarationSyntax* node)
 {
     ClassSymbol* symbol = LookupSymbol<ClassSymbol>(node).value_or(nullptr);
     if (symbol == nullptr)
     {
 		// Creating symbol
 		symbol = Factory.Class(node);
+        Declare(symbol);
 
         // Resolving owner symbol
-        symbol->Parent = OwnerSymbol();
         if (symbol->Parent == nullptr)
         {
             Diagnostics.ReportError(node->IdentifierToken, L"Cannot resolve Classes' owner type");
         }
-        else
+        else if (symbol->Parent->Kind != SyntaxKind::NamespaceDeclaration)
         {
-            // Resolving Methods' full name
-            symbol->FullName = FormatFullNameOf(symbol);
-            symbol->Parent->OnSymbolDeclared(symbol);
-
-            // Checking if owner is type
-            if (symbol->Parent->Kind != SyntaxKind::NamespaceDeclaration)
-            {
-                Diagnostics.ReportError(node->IdentifierToken, L"Classes can only be declared inside Namespace");
-            }
+            Diagnostics.ReportError(node->IdentifierToken, L"Classes can only be declared inside Namespace");
         }
 
         if (node->TypeParameters != nullptr)
         {
-            for (std::size_t i = 0; i < node->TypeParameters->Types.size(); i++)
-            {
-                SyntaxToken& param = node->TypeParameters->Types.at(i);
-                TypeParameterSymbol* typeParamSymbol = Factory.TypeParameter(param.Word);
-                typeParamSymbol->Parent = symbol;
-                typeParamSymbol->TypeArgumentIndex = static_cast<std::uint16_t>(i);
-
-                symbol->TypeParameters.push_back(typeParamSymbol);
-            }
+            for (const auto& param : node->TypeParameters->Types)
+                Declare(Factory.TypeParameter(param.Word, symbol));
         }
     }
 
-    Declare(symbol);
     PushScope(symbol);
 
     for (const auto& typeParam : symbol->TypeParameters)
@@ -169,54 +129,36 @@ void DeclarationCollector::VisitClassDeclaration(ClassDeclarationSyntax *const n
         VisitMemberDeclaration(member.get());
 
     if (symbol->Linking == LINK_INSTANCE && symbol->Constructors.empty())
-    {
-        ConstructorSymbol* ctor = Factory.Constructor(symbol, ACS_PUBLIC);
-        ctor->FullName = FormatFullNameOf(ctor);
-
-        symbol->Constructors.push_back(ctor);
-    }
+        Declare(Factory.Constructor(symbol, ACS_PUBLIC));
 
     PopScope();
 }
 
-void DeclarationCollector::VisitInterfaceDeclaration(InterfaceDeclarationSyntax *const node)
+void DeclarationCollector::VisitInterfaceDeclaration(InterfaceDeclarationSyntax* node)
 {
     InterfaceSymbol* symbol = LookupSymbol<InterfaceSymbol>(node).value_or(nullptr);
     if (symbol == nullptr)
     {
         symbol = Factory.Interface(node);
+        Declare(symbol);
 
-        symbol->Parent = OwnerSymbol();
+        // Resolving owner symbol
         if (symbol->Parent == nullptr)
         {
             Diagnostics.ReportError(node->IdentifierToken, L"Cannot resolve Interfaces' owner type");
         }
-        else
+        else if(symbol->Parent->Kind != SyntaxKind::NamespaceDeclaration)
         {
-            symbol->FullName = FormatFullNameOf(symbol);
-            symbol->Parent->OnSymbolDeclared(symbol);
-
-            if (symbol->Parent->Kind != SyntaxKind::NamespaceDeclaration)
-            {
-                Diagnostics.ReportError(node->IdentifierToken, L"Interfaces can only be declared inside Namespace");
-            }
+            Diagnostics.ReportError(node->IdentifierToken, L"Interfaces can only be declared inside Namespace");
         }
 
         if (node->TypeParameters != nullptr)
         {
-            for (std::size_t i = 0; i < node->TypeParameters->Types.size(); i++)
-            {
-                SyntaxToken& param = node->TypeParameters->Types.at(i);
-                TypeParameterSymbol* typeParamSymbol = Factory.TypeParameter(param.Word);
-                typeParamSymbol->Parent = symbol;
-                typeParamSymbol->TypeArgumentIndex = static_cast<std::uint16_t>(i);
-
-                symbol->TypeParameters.push_back(typeParamSymbol);
-            }
+            for (const auto& param : node->TypeParameters->Types)
+                Declare(Factory.TypeParameter(param.Word, symbol));
         }
     }
 
-    Declare(symbol);
     PushScope(symbol);
 
     for (const auto& typeParam : symbol->TypeParameters)
@@ -235,68 +177,51 @@ void DeclarationCollector::VisitInterfaceDeclaration(InterfaceDeclarationSyntax 
     PopScope();
 }
 
-void DeclarationCollector::VisitStructDeclaration(StructDeclarationSyntax *const node)
+void DeclarationCollector::VisitStructDeclaration(StructDeclarationSyntax* node)
 {
-    StructSymbol* symbol = LookupSymbol<StructSymbol>(node).value_or(nullptr);
-    if (symbol == nullptr)
+    auto symbolOpt = LookupSymbol<StructSymbol>(node);
+    StructSymbol* symbol = symbolOpt.value_or(nullptr);
+
+    // Checking, is table had symbol for that node already
+    if (!symbolOpt.has_value())
     {
-		// Creating symbol
+		// If not, we should create it
 		symbol = Factory.Struct(node);
+        Declare(symbol);
 
         // Resolving owner symbol
-        symbol->Parent = OwnerSymbol();
         if (symbol->Parent == nullptr)
         {
             Diagnostics.ReportError(node->IdentifierToken, L"Cannot resolve Structs' owner type");
         }
-        else
+        else if (symbol->Parent->Kind != SyntaxKind::NamespaceDeclaration)
         {
-            // Resolving Methods' full name
-            symbol->FullName = FormatFullNameOf(symbol);
-            symbol->Parent->OnSymbolDeclared(symbol);
-
-            // Checking if owner is type
-            if (symbol->Parent->Kind != SyntaxKind::NamespaceDeclaration)
-            {
-                Diagnostics.ReportError(node->IdentifierToken, L"Structs can only be declared inside Namespace");
-            }
+            Diagnostics.ReportError(node->IdentifierToken, L"Structs can only be declared inside Namespace");
         }
 
         if (node->TypeParameters != nullptr)
         {
-            for (std::size_t i = 0; i < node->TypeParameters->Types.size(); i++)
-            {
-                SyntaxToken& param = node->TypeParameters->Types.at(i);
-                TypeParameterSymbol* typeParamSymbol = Factory.TypeParameter(param.Word);
-                typeParamSymbol->Parent = symbol;
-                typeParamSymbol->TypeArgumentIndex = static_cast<std::uint16_t>(i);
-
-                symbol->TypeParameters.push_back(typeParamSymbol);
-            }
+            for (const auto& param : node->TypeParameters->Types)
+                Declare(Factory.TypeParameter(param.Word, symbol));
         }
     }
 
-    Declare(symbol);
+    // Pushing new semantic scope, with symbol, as owner
     PushScope(symbol);
-
-    for (const auto& typeParam : symbol->TypeParameters)
-        Declare(typeParam);
 
     for (const auto& member : node->Members)
         VisitMemberDeclaration(member.get());
 
-    if (symbol->Linking == LINK_INSTANCE && symbol->Constructors.empty())
+    if (!symbolOpt.has_value())
     {
-        ConstructorSymbol* ctor = Factory.Constructor(symbol, ACS_PUBLIC);
-        ctor->FullName = FormatFullNameOf(ctor);
-
-        symbol->Constructors.push_back(ctor);
+        if (symbol->Linking == LINK_INSTANCE && symbol->Constructors.empty())
+            Declare(Factory.Constructor(symbol, ACS_PUBLIC));
     }
 
     PopScope();
 }
 
-void DeclarationCollector::VisitDelegateDeclaration(DelegateDeclarationSyntax *const node)
+void DeclarationCollector::VisitDelegateDeclaration(DelegateDeclarationSyntax* node)
 {
     // Creating symbol
     DelegateTypeSymbol* symbol = LookupSymbol<DelegateTypeSymbol>(node).value_or(nullptr);
@@ -304,28 +229,25 @@ void DeclarationCollector::VisitDelegateDeclaration(DelegateDeclarationSyntax *c
     {
 		// Creating symbol
 		symbol = Factory.Delegate(node);
+        Declare(symbol);
 
         // Resolving owner symbol
-        symbol->Parent = OwnerSymbol();
         if (symbol->Parent == nullptr)
         {
             Diagnostics.ReportError(node->IdentifierToken, L"Cannot resolve Delegates' owner type");
         }
-        else
+        else if (symbol->Parent->Kind != SyntaxKind::NamespaceDeclaration)
         {
-            // Resolving Methods' full name
-            symbol->FullName = FormatFullNameOf(symbol);
-            symbol->Parent->OnSymbolDeclared(symbol);
+            Diagnostics.ReportError(node->IdentifierToken, L"Delegates can only be declared inside Namespace");
+        }
 
-            // Checking if owner is type
-            if (symbol->Parent->Kind != SyntaxKind::NamespaceDeclaration)
-            {
-                Diagnostics.ReportError(node->IdentifierToken, L"Delegates cannot be declared outside of Namespaces");
-            }
+        if (node->TypeParameters != nullptr)
+        {
+            for (const auto& param : node->TypeParameters->Types)
+                Declare(Factory.TypeParameter(param.Word, symbol));
         }
     }
 
-    Declare(symbol);
     PushScope(symbol);
 
     VisitType(node->ReturnType.get());
@@ -334,7 +256,7 @@ void DeclarationCollector::VisitDelegateDeclaration(DelegateDeclarationSyntax *c
     PopScope();
 }
 
-void DeclarationCollector::VisitFieldDeclaration(FieldDeclarationSyntax *const node)
+void DeclarationCollector::VisitFieldDeclaration(FieldDeclarationSyntax* node)
 {
     // Creating symbol
     FieldSymbol* symbol = LookupSymbol<FieldSymbol>(node).value_or(nullptr);
@@ -342,19 +264,15 @@ void DeclarationCollector::VisitFieldDeclaration(FieldDeclarationSyntax *const n
     {
         // Creating symbol
 		symbol = Factory.Field(node);
+        Declare(symbol);
 
         // Resolving owner symbol
-        symbol->Parent = OwnerSymbol();
         if (symbol->Parent == nullptr)
         {
             Diagnostics.ReportError(node->IdentifierToken, L"Cannot resolve Fields' owner type");
         }
         else
         {
-            // Resolving Methods' full name
-            symbol->FullName = FormatFullNameOf(symbol);
-            symbol->Parent->OnSymbolDeclared(symbol);
-
             // Checking if owner is type
             if (!symbol->Parent->IsType())
             {
@@ -384,7 +302,7 @@ void DeclarationCollector::VisitFieldDeclaration(FieldDeclarationSyntax *const n
     PopScope();
 }
 
-void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax *const node)
+void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 {
     // Creating symbol
     MethodSymbol* symbol = LookupSymbol<MethodSymbol>(node).value_or(nullptr);
@@ -392,16 +310,21 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax *const
     {
 		// Creating symbol
 		symbol = Factory.Method(node);
+        Declare(symbol);
 
         // Creating parameters symbols
+        std::uint16_t baseIndex = 0;
+        if (symbol->Linking == LINK_STATIC)
+            baseIndex += 1;
+
         for (const auto& parameter : node->ParametersList->Parameters)
         {
-            auto paramSymbol = Factory.Parameter(parameter.get());
-            symbol->Parameters.push_back(paramSymbol);
+            ParameterSymbol* param = Factory.Parameter(parameter.get());
+            param->SlotIndex = baseIndex++;
+            Declare(param);
         }
 
         // Resolving owner symbol
-        symbol->Parent = OwnerSymbol();
         if (symbol->Parent == nullptr)
         {
             // Failed
@@ -409,10 +332,6 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax *const
         }
         else
         {
-            // Resolving Methods' full name
-            symbol->FullName = FormatFullNameOf(symbol);
-            symbol->Parent->OnSymbolDeclared(symbol);
-
             // Checking if owner is type
             if (symbol->Parent->Kind == SyntaxKind::NamespaceDeclaration)
             {
@@ -437,6 +356,7 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax *const
                 Diagnostics.ReportError(node->IdentifierToken, L"Methods cannot be declared inside of UNKNOWN");
             }
 
+            /*
             // Assert: extern Method cannot have body
             if (symbol->IsExtern && node->Body != nullptr)
                 Diagnostics.ReportError(node->IdentifierToken, L"Methods marked as 'extern' cannot have Body");
@@ -444,16 +364,16 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax *const
             // Assert: Method should have body (interfaces may declare abstract methods)
             if (!symbol->IsExtern && node->Body == nullptr && symbol->Parent->Kind != SyntaxKind::InterfaceDeclaration)
                 Diagnostics.ReportError(node->IdentifierToken, L"Method should have a Body, as it's not marked as 'extern' or 'abstract'");
-        }
+            */
 
-        std::uint16_t baseIndex = symbol->Linking == LINK_STATIC ? 0 : 1;
-        for (std::size_t i = 0; i < symbol->Parameters.size(); ++i)
-            symbol->Parameters[i]->SlotIndex = baseIndex + i;
+            // Assert: Method should have body (interfaces may declare abstract methods)
+            if (node->Body == nullptr && symbol->Parent->Kind != SyntaxKind::InterfaceDeclaration)
+                Diagnostics.ReportError(node->IdentifierToken, L"Method should have a Body, as it's not marked as 'abstract'");
+        }
 
         ApplyMethodAttributes(symbol, node->Attributes);
     }
 
-    Declare(symbol);
     PushScope(symbol);
 
     VisitType(node->ReturnType.get());
@@ -463,7 +383,7 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax *const
     PopScope();
 }
 
-void DeclarationCollector::VisitConstructorDeclaration(ConstructorDeclarationSyntax *const node)
+void DeclarationCollector::VisitConstructorDeclaration(ConstructorDeclarationSyntax* node)
 {
     // Creating symbol
     ConstructorSymbol* symbol = LookupSymbol<ConstructorSymbol>(node).value_or(nullptr);
@@ -471,16 +391,21 @@ void DeclarationCollector::VisitConstructorDeclaration(ConstructorDeclarationSyn
     {
 		// Creating symbol
 		symbol = Factory.Constructor(node);
+        Declare(symbol);
 
-		// Creating parameters symbols
+        // Creating parameters symbols
+        std::uint16_t baseIndex = 0;
+        if (symbol->Linking == LINK_STATIC)
+            baseIndex += 1;
+
         for (const auto& parameter : node->ParametersList->Parameters)
         {
-            auto paramSymbol = Factory.Parameter(parameter.get());
-            symbol->Parameters.push_back(paramSymbol);
+            ParameterSymbol* param = Factory.Parameter(parameter.get());
+            param->SlotIndex = baseIndex++;
+            Declare(param);
         }
 
         // Resolving owner symbol
-        symbol->Parent = OwnerSymbol();
         if (symbol->Parent == nullptr)
         {
             // Failed
@@ -488,10 +413,6 @@ void DeclarationCollector::VisitConstructorDeclaration(ConstructorDeclarationSyn
         }
         else
         {
-            // Resolving Methods' full name
-            symbol->FullName = FormatFullNameOf(symbol);
-            symbol->Parent->OnSymbolDeclared(symbol);
-
             // Checking if owner is type
             if (!symbol->Parent->IsType())
             {
@@ -510,6 +431,7 @@ void DeclarationCollector::VisitConstructorDeclaration(ConstructorDeclarationSyn
                 if (symbol->Linking == LINK_STATIC)
                     Diagnostics.ReportError(node->IdentifierToken, L"Type Constructors' cannot be static");
 
+                /*
                 // Assert: extern Method cannot have body
                 if (symbol->IsExtern && node->Body != nullptr)
                     Diagnostics.ReportError(node->IdentifierToken, L"Constructors' marked as 'extern' cannot have Body");
@@ -517,17 +439,17 @@ void DeclarationCollector::VisitConstructorDeclaration(ConstructorDeclarationSyn
                 // Assert: Method should have body
                 if (!symbol->IsExtern && node->Body == nullptr)
                     Diagnostics.ReportError(node->IdentifierToken, L"Constructor should have a Body, as it's not marked as 'extern' or 'abstract'");
+                */
+
+                // Assert: Method should have body
+                if (node->Body == nullptr)
+                    Diagnostics.ReportError(node->IdentifierToken, L"Constructor should have a Body, as it's not marked as 'extern' or 'abstract'");
             }
         }
-
-        std::uint16_t baseIndex = symbol->Linking == LINK_STATIC ? 0 : 1;
-        for (std::size_t i = 0; i < symbol->Parameters.size(); ++i)
-            symbol->Parameters[i]->SlotIndex = baseIndex + i;
 
         ApplyMethodAttributes(symbol, node->Attributes);
     }
 
-    Declare(symbol);
     PushScope(symbol);
 
     VisitParametersList(node->ParametersList.get());
@@ -536,7 +458,7 @@ void DeclarationCollector::VisitConstructorDeclaration(ConstructorDeclarationSyn
     PopScope();
 }
 
-void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax *const node)
+void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
 {
     // Creating symbol
     PropertySymbol* symbol = LookupSymbol<PropertySymbol>(node).value_or(nullptr);
@@ -544,9 +466,7 @@ void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax *c
     {
         // Creating symbol
         symbol = Factory.Property(node);
-
-        // Resolving owner symbol
-        symbol->Parent = OwnerSymbol();
+        Declare(symbol);
 
         // Create backing field for auto-properties
         bool isInterfaceProperty = symbol->Parent != nullptr && symbol->Parent->Kind == SyntaxKind::InterfaceDeclaration;
@@ -557,13 +477,7 @@ void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax *c
         if (isAutoProperty)
         {
             Factory.BackingField(symbol);
-
-            if (symbol->BackingField != nullptr && symbol->Parent != nullptr && symbol->Parent->IsType())
-            {
-                symbol->BackingField->Parent = symbol->Parent;
-                symbol->BackingField->FullName = FormatFullNameOf(symbol->BackingField);
-                static_cast<TypeSymbol*>(symbol->Parent)->OnSymbolDeclared(symbol->BackingField);
-            }
+            Declare(symbol->BackingField);
         }
 
         if (symbol->Parent == nullptr)
@@ -573,10 +487,6 @@ void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax *c
         }
         else
         {
-            // Resolving Methods' full name
-            symbol->FullName = FormatFullNameOf(symbol);
-            symbol->Parent->OnSymbolDeclared(symbol);
-
             // Checking if owner is type
             if (!symbol->Parent->IsType())
             {
@@ -593,12 +503,7 @@ void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax *c
         }
     }
 
-    if (symbol->BackingField != nullptr)
-        Declare(symbol->BackingField);
-
-    Declare(symbol);
     PushScope(symbol);
-
     if (node->Getter != nullptr)
         VisitAccessorDeclaration(node->Getter.get());
 
@@ -606,11 +511,10 @@ void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax *c
         VisitAccessorDeclaration(node->Setter.get());
 
     VisitExpression(node->InitializerExpression.get());
-
     PopScope();
 }
 
-void DeclarationCollector::VisitIndexatorDeclaration(IndexatorDeclarationSyntax *const node)
+void DeclarationCollector::VisitIndexatorDeclaration(IndexatorDeclarationSyntax* node)
 {
     // Creating symbol
     IndexatorSymbol* symbol = LookupSymbol<IndexatorSymbol>(node).value_or(nullptr);
@@ -618,16 +522,25 @@ void DeclarationCollector::VisitIndexatorDeclaration(IndexatorDeclarationSyntax 
     {
         // Creating symbol
         symbol = Factory.Indexator(node);
+        Declare(symbol);
 
         // Creating parameters symbols
+        std::uint16_t baseIndex = 0;
+        if (symbol->Linking == LINK_STATIC)
+            baseIndex += 1;
+
         for (const auto& parameter : node->ParametersList->Parameters)
         {
-            auto paramSymbol = Factory.Parameter(parameter.get());
-            symbol->Parameters.push_back(paramSymbol);
+            ParameterSymbol* param = Factory.Parameter(parameter.get());
+            param->SlotIndex = baseIndex++;
+            Declare(param);
         }
 
+        // Checking if indexator has backing field
+        if (symbol->BackingField != nullptr)
+            Diagnostics.ReportError(node->IdentifierToken, L"Indexators' should not have backing fields.");
+
         // Resolving owner symbol
-        symbol->Parent = OwnerSymbol();
         if (symbol->Parent == nullptr)
         {
             // Failed
@@ -635,10 +548,6 @@ void DeclarationCollector::VisitIndexatorDeclaration(IndexatorDeclarationSyntax 
         }
         else
         {
-            // Resolving Indexators' full name
-            symbol->FullName = FormatFullNameOf(symbol);
-            symbol->Parent->OnSymbolDeclared(symbol);
-
             // Checking if owner is type
             if (!symbol->Parent->IsType())
             {
@@ -655,11 +564,6 @@ void DeclarationCollector::VisitIndexatorDeclaration(IndexatorDeclarationSyntax 
         }
     }
 
-    Declare(symbol);
-
-    if (symbol->BackingField != nullptr)
-        Declare(symbol->BackingField);
-
     PushScope(symbol);
     if (node->ParametersList != nullptr)
         VisitParametersList(node->ParametersList.get());
@@ -670,31 +574,13 @@ void DeclarationCollector::VisitIndexatorDeclaration(IndexatorDeclarationSyntax 
     if (node->Setter != nullptr)
         VisitAccessorDeclaration(node->Setter.get());
 
-    PopScope();
-
-    // TODO: fix
-    /*
-    for (ParameterSymbol* const param : symbol->Parameters)
-    {
-        if (symbol->Getter != nullptr)
-        {
-            param->SlotIndex = symbol->Getter->GetEvalStackArgumentsCount() + symbol->Getter->AddVariableCount();
-        }
-
-        if (symbol->Setter != nullptr)
-        {
-            symbol->Setter->AddVariableCount();
-        }
-    }
-    */
-
     if (node->Getter == nullptr && node->Setter == nullptr)
-    {
         Diagnostics.ReportError(node->IdentifierToken, L"Indexator should have at least one accessor");
-    }
+
+    PopScope();
 }
 
-void DeclarationCollector::VisitAccessorDeclaration(AccessorDeclarationSyntax *const node)
+void DeclarationCollector::VisitAccessorDeclaration(AccessorDeclarationSyntax* node)
 {
     // Expecting parent node to be property
     if (node->Parent->Kind != SyntaxKind::PropertyDeclaration && node->Parent->Kind != SyntaxKind::IndexatorDeclaration)
@@ -725,9 +611,9 @@ void DeclarationCollector::VisitAccessorDeclaration(AccessorDeclarationSyntax *c
     {
         // Creating symbol
         symbol = Factory.Accessor(node, propertySymbol);
+        Declare(symbol);
 
         // Resolving owner symbol
-        symbol->Parent = OwnerSymbol();
         if (symbol->Parent == nullptr)
         {
             // Failed
@@ -735,16 +621,7 @@ void DeclarationCollector::VisitAccessorDeclaration(AccessorDeclarationSyntax *c
             return;
         }
 
-        // Resolving Methods' full name
-        symbol->FullName = FormatFullNameOf(symbol);
-        symbol->Linking = propertySymbol->Linking;
-        symbol->Parent->OnSymbolDeclared(symbol);
-
         ApplyMethodAttributes(symbol, node->Attributes);
-
-        // Assert: extern Method cannot have body
-        if (symbol->IsExtern && node->Body != nullptr)
-            Diagnostics.ReportError(node->IdentifierToken, L"Set Accessors' marked as 'extern' cannot have Body");
 
         if (node->Body != nullptr)
         {
@@ -765,15 +642,6 @@ void DeclarationCollector::VisitAccessorDeclaration(AccessorDeclarationSyntax *c
         }
     }
 
-    // Assign slot indices for accessor parameters (e.g. setter's 'value')
-    {
-        std::uint16_t baseIndex = symbol->Linking == LINK_STATIC ? 0 : 1;
-        for (std::size_t i = 0; i < symbol->Parameters.size(); ++i)
-            symbol->Parameters[i]->SlotIndex = baseIndex + i;
-    }
-
-    Declare(symbol);
-
     if (node->Body != nullptr)
     {
         switch (node->KeywordToken.Type)
@@ -793,7 +661,7 @@ void DeclarationCollector::VisitAccessorDeclaration(AccessorDeclarationSyntax *c
     }
 }
 
-void DeclarationCollector::VisitVariableStatement(VariableStatementSyntax *const node)
+void DeclarationCollector::VisitVariableStatement(VariableStatementSyntax* node)
 {
     VariableSymbol* symbol = LookupSymbol<VariableSymbol>(node).value_or(nullptr);
     if (symbol == nullptr)
@@ -801,11 +669,11 @@ void DeclarationCollector::VisitVariableStatement(VariableStatementSyntax *const
         std::wstring varName = node->IdentifierToken.Word;
         symbol = Factory.Variable(node);
 
-        MethodSymbol *const hostMethod = FindHostMethodSymbol();
+        MethodSymbol* hostMethod = FindHostMethodSymbol().value_or(nullptr);
         symbol->SlotIndex = hostMethod->GetEvalStackArgumentsCount() + hostMethod->AddVariableCount();
 
 
-        symbol->Parent = OwnerSymbol();
+        symbol->Parent = OwnerSymbol().value_or(nullptr);
         if (symbol->Parent != nullptr)
         {
             symbol->FullName = symbol->Parent->FullName + L"." + symbol->Name;
@@ -822,23 +690,23 @@ void DeclarationCollector::VisitVariableStatement(VariableStatementSyntax *const
     PopScope();
 }
 
-void DeclarationCollector::VisitDeferStatement(DeferStatementSyntax *const node)
+void DeclarationCollector::VisitDeferStatement(DeferStatementSyntax* node)
 {
     if (node->Statement != nullptr)
         VisitStatement(node->Statement.get());
 }
 
-void DeclarationCollector::VisitForEachStatement(ForEachStatementSyntax *const node)
+void DeclarationCollector::VisitForEachStatement(ForEachStatementSyntax* node)
 {
     VariableSymbol* symbol = LookupSymbol<VariableSymbol>(node).value_or(nullptr);
     if (symbol == nullptr)
     {
 		symbol = Factory.Variable(node);
 
-        MethodSymbol *const hostMethod = FindHostMethodSymbol();
+        MethodSymbol* hostMethod = FindHostMethodSymbol().value_or(nullptr);
         symbol->SlotIndex = hostMethod->GetEvalStackArgumentsCount() + hostMethod->AddVariableCount();
 
-        symbol->Parent = OwnerSymbol();
+        symbol->Parent = OwnerSymbol().value_or(nullptr);
         if (symbol->Parent != nullptr)
         {
             symbol->FullName = symbol->Parent->FullName + L"." + symbol->Name;
@@ -858,7 +726,7 @@ void DeclarationCollector::VisitForEachStatement(ForEachStatementSyntax *const n
     PopScope();
 }
 
-void DeclarationCollector::VisitTryStatement(TryStatementSyntax *const node)
+void DeclarationCollector::VisitTryStatement(TryStatementSyntax* node)
 {
     if (node->TryBlock != nullptr)
         VisitStatementsBlock(node->TryBlock.get());
@@ -870,21 +738,11 @@ void DeclarationCollector::VisitTryStatement(TryStatementSyntax *const node)
             VariableSymbol* symbol = LookupSymbol<VariableSymbol>(clause.get()).value_or(nullptr);
             if (symbol == nullptr)
             {
-                auto variable = std::make_unique<VariableSymbol>(clause->IdentifierToken.Word);
-                symbol = variable.get();
-                symbol->Type = SymbolTable::Primitives::Any;
+                symbol = Factory.Variable(clause->IdentifierToken.Word, SymbolTable::Primitives::Any);
+                Declare(symbol);
 
-                MethodSymbol* const hostMethod = FindHostMethodSymbol();
+                MethodSymbol* hostMethod = FindHostMethodSymbol().value_or(nullptr);
                 symbol->SlotIndex = hostMethod->GetEvalStackArgumentsCount() + hostMethod->AddVariableCount();
-
-                symbol->Parent = OwnerSymbol();
-                if (symbol->Parent != nullptr)
-                {
-                    symbol->FullName = symbol->Parent->FullName + L"." + symbol->Name;
-                    symbol->Parent->OnSymbolDeclared(symbol);
-                }
-
-                Table->BindSymbol(clause.get(), std::move(variable));
             }
 
             clause->Symbol = symbol;
@@ -904,6 +762,7 @@ void DeclarationCollector::ApplyMethodAttributes(MethodSymbol* symbol, const std
 {
     for (const auto& attr : attributes)
     {
+        /*
         if (attr->NameToken.Word == L"link")
         {
             if (attr->Arguments.size() == 1)
@@ -916,5 +775,6 @@ void DeclarationCollector::ApplyMethodAttributes(MethodSymbol* symbol, const std
                 symbol->LinkSymbol = attr->Arguments[1].Word;
             }
         }
+        */
     }
 }

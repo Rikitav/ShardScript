@@ -28,7 +28,7 @@ namespace shard
 		std::unique_ptr<ExpressionSyntax> PreviousExpression = nullptr;
 		bool IsStaticContext = true;
 
-		inline LinkedExpressionNode(const SyntaxKind kind, std::unique_ptr<ExpressionSyntax>&& previous, SyntaxNode *const parent)
+		inline LinkedExpressionNode(const SyntaxKind kind, std::unique_ptr<ExpressionSyntax>&& previous, SyntaxNode* parent)
 			: ExpressionSyntax(kind, parent), PreviousExpression(std::move(previous)) { }
 
 		inline LinkedExpressionNode(const LinkedExpressionNode&) = delete;
@@ -47,10 +47,10 @@ namespace shard
 
 		const SyntaxToken IdentifierToken;
 
-		inline MemberAccessExpressionSyntax(SyntaxToken identifier, std::unique_ptr<ExpressionSyntax>&& previous, SyntaxNode *const parent)
+		inline MemberAccessExpressionSyntax(SyntaxToken identifier, std::unique_ptr<ExpressionSyntax>&& previous, SyntaxNode* parent)
 			: LinkedExpressionNode(SyntaxKind::MemberAccessExpression, std::move(previous), parent), IdentifierToken(identifier) { }
 
-		inline MemberAccessExpressionSyntax(SyntaxToken identifier, std::unique_ptr<ExpressionSyntax>&& previous, SyntaxNode* const parent, const SyntaxKind kind)
+		inline MemberAccessExpressionSyntax(SyntaxToken identifier, std::unique_ptr<ExpressionSyntax>&& previous, SyntaxNode* parent, const SyntaxKind kind)
 			: LinkedExpressionNode(kind, std::move(previous), parent), IdentifierToken(identifier) { }
 
 		inline MemberAccessExpressionSyntax(const MemberAccessExpressionSyntax&) = delete;
@@ -71,7 +71,7 @@ namespace shard
 		std::unique_ptr<IndexatorListSyntax> IndexatorList = nullptr;
 		//shard::IndexatorSymbol* IndexatorSymbol = nullptr;
 
-		inline IndexatorExpressionSyntax(SyntaxToken& indexerToken, std::unique_ptr<ExpressionSyntax>&& previous, SyntaxNode *const parent)
+		inline IndexatorExpressionSyntax(SyntaxToken& indexerToken, std::unique_ptr<ExpressionSyntax>&& previous, SyntaxNode* parent)
 			: MemberAccessExpressionSyntax(indexerToken, std::move(previous), parent, SyntaxKind::IndexatorExpression) { }
 
 		inline IndexatorExpressionSyntax(const IndexatorExpressionSyntax&) = delete;
@@ -89,7 +89,7 @@ namespace shard
 		bool IsDelegateInvocation = false;
 		bool IsExtensionMethodInvocation = false;
 
-		inline InvokationExpressionSyntax(SyntaxToken identifier, std::unique_ptr<ExpressionSyntax>&& previous, SyntaxNode* const parent)
+		inline InvokationExpressionSyntax(SyntaxToken identifier, std::unique_ptr<ExpressionSyntax>&& previous, SyntaxNode* parent)
 			: LinkedExpressionNode(SyntaxKind::InvokationExpression, std::move(previous), parent), IdentifierToken(identifier) { }
 
 		inline InvokationExpressionSyntax(const InvokationExpressionSyntax&) = delete;

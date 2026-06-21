@@ -1,11 +1,13 @@
 #include <shard/syntax/SyntaxSymbol.hpp>
 #include <shard/parsing/semantic/SemanticScope.hpp>
+
+#include <optional>
 #include <stdexcept>
 #include <string>
 
 using namespace shard;
 
-SyntaxSymbol *const SemanticScope::Lookup(const std::wstring& name)
+std::optional<SyntaxSymbol*> SemanticScope::Lookup(const std::wstring& name)
 {
     auto lookup = _symbols.find(name);
     if (lookup != _symbols.end())
@@ -26,7 +28,7 @@ SyntaxSymbol *const SemanticScope::Lookup(const std::wstring& name)
     return nullptr;
 }
 
-void SemanticScope::DeclareSymbol(SyntaxSymbol *const symbol)
+void SemanticScope::DeclareSymbol(SyntaxSymbol* symbol)
 {
     if (symbol == nullptr)
         throw std::runtime_error("tried to declare nullptr symbol");
@@ -36,9 +38,5 @@ void SemanticScope::DeclareSymbol(SyntaxSymbol *const symbol)
         throw std::runtime_error("Symbol already defined");
 
     _symbols[symbol->Name] = symbol;
-}
 
-void SemanticScope::RemoveSymbol(SyntaxSymbol *const symbol)
-{
-    _symbols.erase(symbol->Name);
 }

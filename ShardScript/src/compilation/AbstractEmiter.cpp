@@ -36,7 +36,6 @@
 #include <shard/syntax/nodes/Statements/TryStatementSyntax.hpp>
 #include <shard/syntax/nodes/Statements/VariableStatementSyntax.hpp>
 
-#include <shard/syntax/SymbolAccesibility.hpp>
 #include <shard/syntax/SyntaxToken.hpp>
 #include <shard/syntax/SyntaxKind.hpp>
 #include <shard/syntax/TokenType.hpp>
@@ -307,7 +306,7 @@ void AbstractEmiter::VisitArgumentsList(ArgumentsListSyntax* node)
 		VisitArgument((*riter).get());
 }
 
-void AbstractEmiter::VisitMethodDeclaration(MethodDeclarationSyntax* const node)
+void AbstractEmiter::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 {
 	GeneratingFor = LookupSymbol<MethodSymbol>(node).value_or(nullptr);
 	if (GeneratingFor == nullptr)
@@ -316,7 +315,7 @@ void AbstractEmiter::VisitMethodDeclaration(MethodDeclarationSyntax* const node)
 		return;
 	}
 
-	if (!GeneratingFor->IsExtern && node->Body != nullptr)
+	if (node->Body != nullptr)
 	{
 		std::size_t reserve = node->Body->Statements.size() * ReserveMultiplier;
 		GeneratingFor->ExecutableByteCode.reserve(reserve);
@@ -331,9 +330,6 @@ void AbstractEmiter::VisitMethodDeclaration(MethodDeclarationSyntax* const node)
 
 		if (GeneratingFor->Linking == LINK_INSTANCE)
 			Diagnostics.ReportError(node->IdentifierToken, L"Main entry point should be static");
-
-		if (GeneratingFor->IsExtern)
-			Diagnostics.ReportError(node->IdentifierToken, L"Main entry point cannot be external");
 
 		if (GeneratingFor->Parameters.size() != 0)
 			Diagnostics.ReportError(node->IdentifierToken, L"Main entry point should have empty parameters list");
@@ -354,7 +350,7 @@ void AbstractEmiter::VisitMethodDeclaration(MethodDeclarationSyntax* const node)
 	GeneratingFor = nullptr;
 }
 
-void AbstractEmiter::VisitConstructorDeclaration(ConstructorDeclarationSyntax* const node)
+void AbstractEmiter::VisitConstructorDeclaration(ConstructorDeclarationSyntax* node)
 {
 	GeneratingFor = LookupSymbol<ConstructorSymbol>(node).value_or(nullptr);
 	if (GeneratingFor == nullptr)
@@ -365,7 +361,7 @@ void AbstractEmiter::VisitConstructorDeclaration(ConstructorDeclarationSyntax* c
 
 	// TODO: add field initialization
 
-	if (!GeneratingFor->IsExtern)
+	if (node->Body != nullptr)
 	{
 		std::size_t reserve = node->Body->Statements.size() * ReserveMultiplier;
 		GeneratingFor->ExecutableByteCode.reserve(reserve);
@@ -376,7 +372,7 @@ void AbstractEmiter::VisitConstructorDeclaration(ConstructorDeclarationSyntax* c
 	GeneratingFor = nullptr;
 }
 
-void AbstractEmiter::VisitAccessorDeclaration(AccessorDeclarationSyntax* const node)
+void AbstractEmiter::VisitAccessorDeclaration(AccessorDeclarationSyntax* node)
 {
 	GeneratingFor = LookupSymbol<AccessorSymbol>(node).value_or(nullptr);
 	if (GeneratingFor == nullptr)
@@ -385,30 +381,27 @@ void AbstractEmiter::VisitAccessorDeclaration(AccessorDeclarationSyntax* const n
 		return;
 	}
 
-	if (!GeneratingFor->IsExtern)
+	if (node->Body != nullptr)
 	{
-		if (node->Body != nullptr)
+		std::size_t reserve = node->Body->Statements.size() * ReserveMultiplier;
+		GeneratingFor->ExecutableByteCode.reserve(reserve);
+		VisitStatementsBlock(node->Body.get());
+	}
+	else if (GeneratingFor->Parent != nullptr && GeneratingFor->Parent->Kind == SyntaxKind::PropertyDeclaration)
+	{
+		PropertySymbol* property = static_cast<PropertySymbol*>(GeneratingFor->Parent);
+		if (property->BackingField != nullptr)
 		{
-			std::size_t reserve = node->Body->Statements.size() * ReserveMultiplier;
-			GeneratingFor->ExecutableByteCode.reserve(reserve);
-			VisitStatementsBlock(node->Body.get());
-		}
-		else if (GeneratingFor->Parent != nullptr && GeneratingFor->Parent->Kind == SyntaxKind::PropertyDeclaration)
-		{
-			PropertySymbol* property = static_cast<PropertySymbol*>(GeneratingFor->Parent);
-			if (property->BackingField != nullptr)
+			if (node->KeywordToken.Type == TokenType::GetKeyword)
 			{
-				if (node->KeywordToken.Type == TokenType::GetKeyword)
-				{
-					Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, 0);
-					Encoder.EmitLoadField(GeneratingFor->ExecutableByteCode, property->BackingField);
-				}
-				else if (node->KeywordToken.Type == TokenType::SetKeyword)
-				{
-					Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, 0);
-					Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, 1);
-					Encoder.EmitStoreField(GeneratingFor->ExecutableByteCode, property->BackingField);
-				}
+				Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, 0);
+				Encoder.EmitLoadField(GeneratingFor->ExecutableByteCode, property->BackingField);
+			}
+			else if (node->KeywordToken.Type == TokenType::SetKeyword)
+			{
+				Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, 0);
+				Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, 1);
+				Encoder.EmitStoreField(GeneratingFor->ExecutableByteCode, property->BackingField);
 			}
 		}
 	}
@@ -417,7 +410,7 @@ void AbstractEmiter::VisitAccessorDeclaration(AccessorDeclarationSyntax* const n
 	GeneratingFor = nullptr;
 }
 
-void AbstractEmiter::VisitExpressionStatement(ExpressionStatementSyntax* const node)
+void AbstractEmiter::VisitExpressionStatement(ExpressionStatementSyntax* node)
 {
 	VisitExpression(node->Expression.get());
 	switch (node->Expression->Kind)
@@ -433,14 +426,14 @@ void AbstractEmiter::VisitExpressionStatement(ExpressionStatementSyntax* const n
 	}
 }
 
-void AbstractEmiter::VisitVariableStatement(VariableStatementSyntax* const node)
+void AbstractEmiter::VisitVariableStatement(VariableStatementSyntax* node)
 {
 	VariableSymbol* var = LookupSymbol<VariableSymbol>(node).value_or(nullptr);
 	VisitExpression(node->Expression.get());
 	Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, var->SlotIndex);
 }
 
-void AbstractEmiter::VisitTryStatement(TryStatementSyntax* const node)
+void AbstractEmiter::VisitTryStatement(TryStatementSyntax* node)
 {
 	if (node->CatchClauses.empty())
 	{
@@ -538,14 +531,14 @@ void AbstractEmiter::VisitTryStatement(TryStatementSyntax* const node)
 		sizeof(std::size_t));
 }
 
-void AbstractEmiter::VisitContinueStatement(ContinueStatementSyntax* const node)
+void AbstractEmiter::VisitContinueStatement(ContinueStatementSyntax* node)
 {
 	LoopScope& scope = Loops.top();
 	scope.BlockEndBacktracks.push_back(GeneratingFor->ExecutableByteCode.size());
 	Encoder.EmitJump(GeneratingFor->ExecutableByteCode, 0);
 }
 
-void AbstractEmiter::VisitWhileStatement(WhileStatementSyntax* const node)
+void AbstractEmiter::VisitWhileStatement(WhileStatementSyntax* node)
 {
 	// Entering loop scope
 	Loops.emplace();
@@ -582,7 +575,7 @@ void AbstractEmiter::VisitWhileStatement(WhileStatementSyntax* const node)
 	Loops.pop();
 }
 
-void AbstractEmiter::VisitUntilStatement(UntilStatementSyntax* const node)
+void AbstractEmiter::VisitUntilStatement(UntilStatementSyntax* node)
 {
 	// Entering loop scope
 	Loops.emplace();
@@ -619,7 +612,7 @@ void AbstractEmiter::VisitUntilStatement(UntilStatementSyntax* const node)
 	Loops.pop();
 }
 
-void AbstractEmiter::VisitForStatement(ForStatementSyntax* const node)
+void AbstractEmiter::VisitForStatement(ForStatementSyntax* node)
 {
 	// Entering loop scope
 	Loops.emplace();
@@ -660,7 +653,7 @@ void AbstractEmiter::VisitForStatement(ForStatementSyntax* const node)
 	Loops.pop();
 }
 
-void AbstractEmiter::VisitForEachStatement(ForEachStatementSyntax* const node)
+void AbstractEmiter::VisitForEachStatement(ForEachStatementSyntax* node)
 {
 	Loops.emplace();
 	LoopScope& scope = Loops.top();
@@ -728,7 +721,7 @@ static bool IsConditionalClause(SyntaxKind kind)
 		|| kind == SyntaxKind::ElseStatement;
 }
 
-void AbstractEmiter::VisitIfStatement(IfStatementSyntax* const node)
+void AbstractEmiter::VisitIfStatement(IfStatementSyntax* node)
 {
 	bool isFirst = !IsConditionalClause(node->Parent->Kind);
 	if (isFirst)
@@ -764,7 +757,7 @@ void AbstractEmiter::VisitIfStatement(IfStatementSyntax* const node)
 	}
 }
 
-void AbstractEmiter::VisitUnlessStatement(UnlessStatementSyntax* const node)
+void AbstractEmiter::VisitUnlessStatement(UnlessStatementSyntax* node)
 {
 	bool isFirst = !IsConditionalClause(node->Parent->Kind);
 	if (isFirst)
@@ -800,14 +793,14 @@ void AbstractEmiter::VisitUnlessStatement(UnlessStatementSyntax* const node)
 	}
 }
 
-void AbstractEmiter::VisitElseStatement(ElseStatementSyntax* const node)
+void AbstractEmiter::VisitElseStatement(ElseStatementSyntax* node)
 {
 	VisitStatementsBlock(node->StatementsBlock.get());
 }
 
-void AbstractEmiter::VisitLiteralExpression(LiteralExpressionSyntax* const node)
+void AbstractEmiter::VisitLiteralExpression(LiteralExpressionSyntax* node)
 {
-	LiteralSymbol* const symbol = static_cast<LiteralSymbol*>(Table->LookupSymbol(node).value_or(nullptr));
+	LiteralSymbol* symbol = static_cast<LiteralSymbol*>(Table->LookupSymbol(node).value_or(nullptr));
 	switch (symbol->LiteralType)
 	{
 		case TokenType::NullLiteral:
@@ -851,7 +844,7 @@ void AbstractEmiter::VisitLiteralExpression(LiteralExpressionSyntax* const node)
 	}
 }
 
-void AbstractEmiter::VisitObjectCreationExpression(ObjectExpressionSyntax* const node)
+void AbstractEmiter::VisitObjectCreationExpression(ObjectExpressionSyntax* node)
 {
 	if (node->Symbol != nullptr && node->Symbol->Kind == SyntaxKind::GenericType)
 	{
@@ -870,7 +863,7 @@ void AbstractEmiter::VisitObjectCreationExpression(ObjectExpressionSyntax* const
 	Encoder.EmitNewObject(GeneratingFor->ExecutableByteCode, node->Symbol, node->CtorSymbol);
 }
 
-void AbstractEmiter::VisitCollectionExpression(CollectionExpressionSyntax* const node)
+void AbstractEmiter::VisitCollectionExpression(CollectionExpressionSyntax* node)
 {
 	for (auto riter = node->ValuesExpressions.rbegin(); riter != node->ValuesExpressions.rend(); riter++)
 		VisitExpression((*riter).get());
@@ -878,7 +871,7 @@ void AbstractEmiter::VisitCollectionExpression(CollectionExpressionSyntax* const
 	Encoder.EmitNewArray(GeneratingFor->ExecutableByteCode, node->Symbol);
 }
 
-void AbstractEmiter::VisitRangeExpression(RangeExpressionSyntax* const node)
+void AbstractEmiter::VisitRangeExpression(RangeExpressionSyntax* node)
 {
 	// Evaluate bounds in natural left-to-right order and let the VM build the array.
 	VisitExpression(node->Left.get());
@@ -887,7 +880,7 @@ void AbstractEmiter::VisitRangeExpression(RangeExpressionSyntax* const node)
 	Encoder.EmitCreateRange(GeneratingFor->ExecutableByteCode, SymbolTable::Primitives::Integer);
 }
 
-void AbstractEmiter::VisitLambdaExpression(LambdaExpressionSyntax* const node)
+void AbstractEmiter::VisitLambdaExpression(LambdaExpressionSyntax* node)
 {
 	MethodSymbol* previous = GeneratingFor;
 	GeneratingFor = node->Symbol->AnonymousSymbol;
@@ -902,7 +895,7 @@ void AbstractEmiter::VisitLambdaExpression(LambdaExpressionSyntax* const node)
 	Encoder.EmitNewDelegate(GeneratingFor->ExecutableByteCode, node->Symbol);
 }
 
-void AbstractEmiter::VisitTernaryExpression(TernaryExpressionSyntax* const node)
+void AbstractEmiter::VisitTernaryExpression(TernaryExpressionSyntax* node)
 {
 	VisitExpression(node->Condition.get());
 
@@ -921,7 +914,7 @@ void AbstractEmiter::VisitTernaryExpression(TernaryExpressionSyntax* const node)
 	ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, jumpEndAddress + sizeof(OpCode), &ternaryEndAddress, sizeof(std::size_t));
 }
 
-void AbstractEmiter::VisitUnaryExpression(UnaryExpressionSyntax* const node)
+void AbstractEmiter::VisitUnaryExpression(UnaryExpressionSyntax* node)
 {
 	if (IsAssignExpression(node->OperatorToken.Type))
 	{
@@ -933,7 +926,7 @@ void AbstractEmiter::VisitUnaryExpression(UnaryExpressionSyntax* const node)
 	EmitUnaryOperation(node->OperatorToken.Type, Encoder, GeneratingFor->ExecutableByteCode, node->IsRightDetermined);
 }
 
-void AbstractEmiter::VisitUnaryAssignExpression(UnaryExpressionSyntax* const node)
+void AbstractEmiter::VisitUnaryAssignExpression(UnaryExpressionSyntax* node)
 {
 	MemberAccessExpressionSyntax* memberExpression = static_cast<MemberAccessExpressionSyntax*>(node->Expression.get());
 
@@ -1030,7 +1023,7 @@ void AbstractEmiter::VisitUnaryAssignExpression(UnaryExpressionSyntax* const nod
 	}
 }
 
-void AbstractEmiter::VisitBinaryExpression(BinaryExpressionSyntax* const node)
+void AbstractEmiter::VisitBinaryExpression(BinaryExpressionSyntax* node)
 {
 	if (IsAssignExpression(node->OperatorToken.Type))
 	{
@@ -1043,7 +1036,7 @@ void AbstractEmiter::VisitBinaryExpression(BinaryExpressionSyntax* const node)
 	EmitBinaryOperation(node->OperatorToken.Type, Encoder, GeneratingFor->ExecutableByteCode);
 }
 
-void AbstractEmiter::VisitBinaryAssignExpression(BinaryExpressionSyntax* const node)
+void AbstractEmiter::VisitBinaryAssignExpression(BinaryExpressionSyntax* node)
 {
 	MemberAccessExpressionSyntax* memberExpression = static_cast<MemberAccessExpressionSyntax*>(node->Left.get());
 	if (memberExpression->ToParameter)
@@ -1101,7 +1094,7 @@ void AbstractEmiter::VisitBinaryAssignExpression(BinaryExpressionSyntax* const n
 	}
 }
 
-void AbstractEmiter::VisitInvocationExpression(InvokationExpressionSyntax* const node)
+void AbstractEmiter::VisitInvocationExpression(InvokationExpressionSyntax* node)
 {
 	if (node->ReceiverType != nullptr && node->ReceiverType->Kind == SyntaxKind::GenericType)
 	{
@@ -1125,7 +1118,7 @@ void AbstractEmiter::VisitInvocationExpression(InvokationExpressionSyntax* const
 		EmitMethodCall(node->Symbol);
 }
 
-void AbstractEmiter::VisitIndexatorExpression(IndexatorExpressionSyntax* const node)
+void AbstractEmiter::VisitIndexatorExpression(IndexatorExpressionSyntax* node)
 {
 	if (node->ToProperty == nullptr)
 		return;
@@ -1139,7 +1132,7 @@ void AbstractEmiter::VisitIndexatorExpression(IndexatorExpressionSyntax* const n
 	return;
 }
 
-void AbstractEmiter::VisitMemberAccessExpression(MemberAccessExpressionSyntax* const node)
+void AbstractEmiter::VisitMemberAccessExpression(MemberAccessExpressionSyntax* node)
 {
 	if (node->ToParameter != nullptr)
 	{
@@ -1239,7 +1232,7 @@ void AbstractEmiter::EmitAllDefers()
 	}
 }
 
-void AbstractEmiter::VisitStatementsBlock(StatementsBlockSyntax* const node)
+void AbstractEmiter::VisitStatementsBlock(StatementsBlockSyntax* node)
 {
 	if (node == nullptr)
 		return;
@@ -1259,7 +1252,7 @@ void AbstractEmiter::VisitStatementsBlock(StatementsBlockSyntax* const node)
 	DeferScopes.pop_back();
 }
 
-void AbstractEmiter::VisitDeferStatement(DeferStatementSyntax* const node)
+void AbstractEmiter::VisitDeferStatement(DeferStatementSyntax* node)
 {
 	if (node == nullptr)
 		return;
@@ -1276,7 +1269,7 @@ void AbstractEmiter::VisitDeferStatement(DeferStatementSyntax* const node)
 	DeferScopes.back().Defers.push_back(node);
 }
 
-void AbstractEmiter::VisitReturnStatement(ReturnStatementSyntax* const node)
+void AbstractEmiter::VisitReturnStatement(ReturnStatementSyntax* node)
 {
 	if (node->Expression != nullptr)
 		VisitExpression(node->Expression.get());
@@ -1285,7 +1278,7 @@ void AbstractEmiter::VisitReturnStatement(ReturnStatementSyntax* const node)
 	Encoder.EmitReturn(GeneratingFor->ExecutableByteCode);
 }
 
-void AbstractEmiter::VisitBreakStatement(BreakStatementSyntax* const node)
+void AbstractEmiter::VisitBreakStatement(BreakStatementSyntax* node)
 {
 	EmitDefersUntilLoop();
 
@@ -1294,7 +1287,7 @@ void AbstractEmiter::VisitBreakStatement(BreakStatementSyntax* const node)
 	Encoder.EmitJump(GeneratingFor->ExecutableByteCode, 0);
 }
 
-void AbstractEmiter::VisitThrowStatement(ThrowStatementSyntax* const node)
+void AbstractEmiter::VisitThrowStatement(ThrowStatementSyntax* node)
 {
 	if (node->Expression != nullptr)
 		VisitExpression(node->Expression.get());
@@ -1332,7 +1325,7 @@ void AbstractEmiter::EmitMethodCall(MethodSymbol* method)
         Encoder.EmitCallMethodSymbol(GeneratingFor->ExecutableByteCode, method);
 }
 
-void AbstractEmiter::VisitCastExpression(CastExpressionSyntax* const node)
+void AbstractEmiter::VisitCastExpression(CastExpressionSyntax* node)
 {
     if (node->Expression != nullptr)
         VisitExpression(node->Expression.get());
@@ -1341,7 +1334,7 @@ void AbstractEmiter::VisitCastExpression(CastExpressionSyntax* const node)
         Encoder.EmitCastInterface(GeneratingFor->ExecutableByteCode, node->TargetType->Symbol);
 }
 
-void AbstractEmiter::VisitIsExpression(IsExpressionSyntax* const node)
+void AbstractEmiter::VisitIsExpression(IsExpressionSyntax* node)
 {
     if (node->Expression != nullptr)
         VisitExpression(node->Expression.get());

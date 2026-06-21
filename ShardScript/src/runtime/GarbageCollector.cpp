@@ -112,7 +112,7 @@ ObjectInstance* GarbageCollector::GetStaticField(FieldSymbol* field)
 		return nullptr;
 	}
 
-	ObjectInstance* staticFieldInstance = !field->ReturnType->IsReferenceType
+	ObjectInstance* staticFieldInstance = field->ReturnType->Inlining == TypeInlining::ByValue
 		? GarbageCollector::AllocateInstance(field->ReturnType)
 		: NullInstance;
 
@@ -153,11 +153,10 @@ ObjectInstance* GarbageCollector::AllocateInstance(const TypeSymbol* objectInfo,
 	}
 
 	ObjectInstance* instance = new ObjectInstance(objectInfo, rawMemory, isTransient);
-
 	if (objectInfo->Kind == SyntaxKind::ArrayType)
 	{
 		const ArrayTypeSymbol* arrayInfo = static_cast<const ArrayTypeSymbol*>(objectInfo);
-		instance->SetArrayLength(arrayInfo->Size);
+		instance->SetArrayLength(arrayInfo->Length);
 		instance->SetMemorySize(objectInfo->MemoryBytesSize);
 	}
 
@@ -185,7 +184,7 @@ ObjectInstance* GarbageCollector::AllocateArray(TypeSymbol* elementType, std::si
 	}
 
 	ArrayTypeSymbol* arrayType = new ArrayTypeSymbol(elementType);
-	arrayType->Size = length;
+	arrayType->Length = length;
 	arrayType->MemoryBytesSize = totalSize;
 	dynamicArrayTypes.emplace_back(arrayType);
 
@@ -204,7 +203,7 @@ ObjectInstance* GarbageCollector::CopyInstance(ObjectInstance* instance)
 	if (instance == NullInstance)
 		return instance;
 
-	if (instance->getInfo()->IsReferenceType)
+	if (instance->getInfo()->Inlining == TypeInlining::ByReference)
 	{
 		instance->IncrementReference();
 		return instance;
@@ -219,7 +218,7 @@ ObjectInstance* GarbageCollector::CopyInstance(ObjectInstance* instance)
 
 	for (FieldSymbol* field : fieldOwner->Fields)
 	{
-		if (field->ReturnType->IsReferenceType)
+		if (field->ReturnType->Inlining == TypeInlining::ByReference)
 		{
 			ObjectInstance* fieldValue = instance->GetField(field);
 			fieldValue->IncrementReference();
@@ -279,7 +278,7 @@ void GarbageCollector::TerminateInstance(ObjectInstance* instance)
 
 	for (FieldSymbol* field : fieldOwner->Fields)
 	{
-		if (field->ReturnType->IsReferenceType)
+		if (field->ReturnType->Inlining == TypeInlining::ByReference)
 		{
 			ObjectInstance* fieldValue = instance->GetField(field);
 			if (fieldValue != nullptr)
@@ -290,7 +289,7 @@ void GarbageCollector::TerminateInstance(ObjectInstance* instance)
 	if (instance->getInfo()->Kind == SyntaxKind::ArrayType)
 	{
 		const ArrayTypeSymbol* array = static_cast<const ArrayTypeSymbol*>(instance->getInfo());
-		for (std::size_t i = 0; i < array->Size; i++)
+		for (std::size_t i = 0; i < array->Length; i++)
 		{
 			ObjectInstance* element = instance->GetElement(i);
 			if (element != nullptr)

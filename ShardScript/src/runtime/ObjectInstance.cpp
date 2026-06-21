@@ -43,8 +43,7 @@ static TypeSymbol* ResolveRuntimeType(TypeSymbol* type, CallStackFrame* frame, G
             return type;
 
         ArrayTypeSymbol* resolvedArray = new ArrayTypeSymbol(resolvedUnderlying);
-        resolvedArray->Size = arrayType->Size;
-        resolvedArray->Rank = arrayType->Rank;
+        resolvedArray->Length = arrayType->Length;
         resolvedArray->State = arrayType->State;
         return resolvedArray;
     }
@@ -119,7 +118,6 @@ static GenericTypeSymbol* GetGenericInfo(ObjectInstance* instance)
 
     return nullptr;
 }
-
 const TypeSymbol* ObjectInstance::getInfo() const
 {
 	return Info;
@@ -145,7 +143,7 @@ ObjectInstance* ObjectInstance::GetField(FieldSymbol* field, CallStackFrame* fra
 	GenericTypeSymbol* genericInfo = GetGenericInfo(this);
 	TypeSymbol* fieldType = ResolveRuntimeType(field->ReturnType, frame, genericInfo);
 
-	if (fieldType->IsReferenceType)
+	if (fieldType->Inlining == TypeInlining::ByReference)
 	{
 		void* offset = OffsetMemory(field->MemoryBytesOffset, sizeof(ObjectInstance*));
 		ObjectInstance* valuePtr = *static_cast<ObjectInstance**>(offset);
@@ -171,7 +169,7 @@ void ObjectInstance::SetField(FieldSymbol* field, ObjectInstance* instance, Call
 
 	fieldType = ResolveRuntimeType(fieldType, frame, genericInfo);
 
-	if (fieldType->IsReferenceType)
+	if (fieldType->Inlining == TypeInlining::ByReference)
 	{
 		ObjectInstance* oldValue = GetField(field, frame);
 		if (oldValue != nullptr)
@@ -203,7 +201,7 @@ ObjectInstance* ObjectInstance::GetElement(std::size_t index, CallStackFrame* fr
 		type = frame->ResolveType(type);
 
 	std::size_t memoryOffset = SymbolTable::Primitives::Array->MemoryBytesSize + type->GetInlineSize() * index;
-	if (type->IsReferenceType)
+	if (type->Inlining == TypeInlining::ByReference)
 	{
 		void* offset = OffsetMemory(memoryOffset, sizeof(ObjectInstance*));
 		ObjectInstance* valuePtr = *static_cast<ObjectInstance**>(offset);
@@ -232,7 +230,7 @@ void ObjectInstance::SetElement(std::size_t index, ObjectInstance* instance, Cal
 		type = frame->ResolveType(type);
 
 	std::size_t memoryOffset = SymbolTable::Primitives::Array->MemoryBytesSize + type->GetInlineSize() * index;
-	if (type->IsReferenceType)
+	if (type->Inlining == TypeInlining::ByReference)
 	{
 		ObjectInstance* oldValue = GetElement(index, frame);
 		oldValue->DecrementReference();

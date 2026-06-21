@@ -3,7 +3,6 @@
 
 #include <shard/CompilationContext.hpp>
 #include <shard/syntax/SymbolFactory.hpp>
-#include <shard/syntax/SymbolAccesibility.hpp>
 #include <shard/parsing/semantic/NamespaceTree.hpp>
 
 #include <shard/syntax/symbols/NamespaceSymbol.hpp>
@@ -112,9 +111,11 @@ namespace shard
         SymbolBuilder<ConstructorSymbol>& SetCallback(
             MethodSymbolDelegate callback);
 
+        /*
         SymbolBuilder<ConstructorSymbol>& SetCallback(
             ShardManagedMethodCallback callback,
             void* userData = nullptr);
+        */
 
         SymbolBuilder<TypeParameterSymbol> AddTypeParameter(
             const std::wstring& name);
@@ -138,9 +139,11 @@ namespace shard
         SymbolBuilder<MethodSymbol>& SetCallback(
             MethodSymbolDelegate callback);
 
+        /*
         SymbolBuilder<MethodSymbol>& SetCallback(
             ShardManagedMethodCallback callback,
             void* userData = nullptr);
+        */
 
         SymbolBuilder<TypeParameterSymbol> AddTypeParameter(
             const std::wstring& name);
@@ -158,9 +161,11 @@ namespace shard
         SymbolBuilder<AccessorSymbol>& SetCallback(
             MethodSymbolDelegate callback);
 
+        /*
         SymbolBuilder<AccessorSymbol>& SetCallback(
             ShardManagedMethodCallback callback,
             void* userData = nullptr);
+        */
     };
 
     template<>

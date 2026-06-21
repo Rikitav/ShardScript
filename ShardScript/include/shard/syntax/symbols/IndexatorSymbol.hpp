@@ -22,6 +22,8 @@ namespace shard
         inline IndexatorSymbol(const IndexatorSymbol& other) = delete;
 
         inline ~IndexatorSymbol() override = default;
+
+        void OnSymbolDeclared(SyntaxSymbol* symbol) override;
     };
 }
 

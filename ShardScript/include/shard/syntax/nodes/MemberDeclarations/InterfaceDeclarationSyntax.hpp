@@ -11,10 +11,10 @@ namespace shard
 	class SHARD_API InterfaceDeclarationSyntax : public TypeDeclarationSyntax
 	{
 	public:
-		inline InterfaceDeclarationSyntax(SyntaxNode *const parent)
+		inline InterfaceDeclarationSyntax(SyntaxNode* parent)
 			: TypeDeclarationSyntax(SyntaxKind::InterfaceDeclaration, parent) { }
 
-		inline InterfaceDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) : TypeDeclarationSyntax(SyntaxKind::InterfaceDeclaration, parent)
+		inline InterfaceDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode* parent) : TypeDeclarationSyntax(SyntaxKind::InterfaceDeclaration, parent)
 		{
 			Attributes = std::move(info.Attributes);
 			Modifiers = info.Modifiers;

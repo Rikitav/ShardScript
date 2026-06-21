@@ -22,7 +22,7 @@ namespace shard
 		std::unique_ptr<ExpressionSyntax> ConditionExpression = nullptr;
 		std::unique_ptr<StatementsBlockSyntax> StatementsBlock = nullptr;
 
-		inline UntilStatementSyntax(SyntaxNode *const parent)
+		inline UntilStatementSyntax(SyntaxNode* parent)
 			: KeywordStatementSyntax(SyntaxKind::UntilStatement, parent) { }
 
 		inline UntilStatementSyntax(const UntilStatementSyntax&) = delete;

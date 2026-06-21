@@ -18,7 +18,7 @@ namespace shard
 		std::unique_ptr<ExpressionSyntax> Expression = nullptr;
 		std::unique_ptr<TypeSyntax> TargetType = nullptr;
 
-		inline IsExpressionSyntax(const SyntaxToken operatorToken, SyntaxNode *const parent)
+		inline IsExpressionSyntax(const SyntaxToken operatorToken, SyntaxNode* parent)
 			: ExpressionSyntax(SyntaxKind::IsExpression, parent), OperatorToken(operatorToken) {}
 
 		inline IsExpressionSyntax(const IsExpressionSyntax&) = delete;

@@ -3,7 +3,6 @@
 #include <shard/syntax/SyntaxKind.hpp>
 #include <shard/syntax/SyntaxToken.hpp>
 #include <shard/syntax/TokenType.hpp>
-#include <shard/syntax/SymbolAccesibility.hpp>
 
 #include <shard/parsing/semantic/SymbolTable.hpp>
 
@@ -32,220 +31,27 @@
 
 using namespace shard;
 
-void SymbolFactory::SetAccesibility(SyntaxSymbol* symbol, std::vector<SyntaxToken> modifiers)
+void SymbolFactory::SetAccesibility(std::vector<SyntaxToken> modifiers, SymbolAccesibility& accesibility, SymbolLinking& linking)
 {
 	for (SyntaxToken modifier : modifiers)
 	{
 		switch (modifier.Type)
 		{
 			case TokenType::PublicKeyword:
-			case TokenType::ExportKeyword:
 			{
-				symbol->Accesibility = SymbolAccesibility::Public;
+				accesibility = SymbolAccesibility::Public;
 				break;
 			}
 
 			case TokenType::PrivateKeyword:
 			{
-				symbol->Accesibility = SymbolAccesibility::Private;
-				break;
-			}
-
-			case TokenType::ExternKeyword:
-			{
-				symbol->IsExtern = true;
-				break;
-			}
-		}
-	}
-}
-
-void SymbolFactory::SetAccesibility(TypeSymbol* symbol, std::vector<SyntaxToken> modifiers)
-{
-	for (SyntaxToken modifier : modifiers)
-	{
-		switch (modifier.Type)
-		{
-			case TokenType::PublicKeyword:
-			case TokenType::ExportKeyword:
-			{
-				symbol->Accesibility = SymbolAccesibility::Public;
-				break;
-			}
-
-			case TokenType::PrivateKeyword:
-			{
-				symbol->Accesibility = SymbolAccesibility::Private;
+				accesibility = SymbolAccesibility::Private;
 				break;
 			}
 
 			case TokenType::StaticKeyword:
 			{
-				symbol->Linking = LINK_STATIC;
-				break;
-			}
-			
-			/*
-			case TokenType::AbstractKeyword:
-			{
-				symbol->IsAbstract = true;
-				break;
-			}
-
-			case TokenType::SealedKeyword:
-			{
-				symbol->IsSealed = true;
-				break;
-			}
-			*/
-
-			case TokenType::ExternKeyword:
-			{
-				symbol->IsExtern = true;
-				break;
-			}
-		}
-	}
-}
-
-void SymbolFactory::SetAccesibility(MethodSymbol* symbol, std::vector<SyntaxToken> modifiers)
-{
-	for (SyntaxToken modifier : modifiers)
-	{
-		switch (modifier.Type)
-		{
-			case TokenType::PublicKeyword:
-			case TokenType::ExportKeyword:
-			{
-				symbol->Accesibility = SymbolAccesibility::Public;
-				break;
-			}
-
-			case TokenType::PrivateKeyword:
-			{
-				symbol->Accesibility = SymbolAccesibility::Private;
-				break;
-			}
-
-			case TokenType::StaticKeyword:
-			{
-				symbol->Linking = LINK_STATIC;
-				break;
-			}
-
-			/*
-			case TokenType::AbstractKeyword:
-			{
-				symbol->IsAbstract = true;
-				break;
-			}
-
-			case TokenType::OverrideKeyword:
-			{
-				symbol->IsOverride = true;
-				break;
-			}
-
-			case TokenType::VirtualKeyword:
-			{
-				symbol->IsVirtual = true;
-				break;
-			}
-			*/
-
-			case TokenType::ExternKeyword:
-			{
-				symbol->IsExtern = true;
-				break;
-			}
-		}
-	}
-}
-
-void SymbolFactory::SetAccesibility(PropertySymbol* symbol, std::vector<SyntaxToken> modifiers)
-{
-	for (SyntaxToken modifier : modifiers)
-	{
-		switch (modifier.Type)
-		{
-			case TokenType::PublicKeyword:
-			case TokenType::ExportKeyword:
-			{
-				symbol->Accesibility = SymbolAccesibility::Public;
-				break;
-			}
-
-			case TokenType::PrivateKeyword:
-			{
-				symbol->Accesibility = SymbolAccesibility::Private;
-				break;
-			}
-
-			case TokenType::StaticKeyword:
-			{
-				symbol->Linking = LINK_STATIC;
-				break;
-			}
-
-			case TokenType::ExternKeyword:
-			{
-				symbol->IsExtern = true;
-				break;
-			}
-
-			/*
-			case TokenType::OverrideKeyword:
-			{
-				symbol->IsOverride = true;
-				break;
-			}
-
-			case TokenType::VirtualKeyword:
-			{
-				symbol->IsVirtual = true;
-				break;
-			}
-			*/
-		}
-	}
-}
-
-void SymbolFactory::SetAccesibility(FieldSymbol* symbol, std::vector<SyntaxToken> modifiers)
-{
-	for (SyntaxToken modifier : modifiers)
-	{
-		switch (modifier.Type)
-		{
-			case TokenType::PublicKeyword:
-			case TokenType::ExportKeyword:
-			{
-				symbol->Accesibility = SymbolAccesibility::Public;
-				break;
-			}
-
-			case TokenType::PrivateKeyword:
-			{
-				symbol->Accesibility = SymbolAccesibility::Private;
-				break;
-			}
-
-			/*
-			case TokenType::ProtectedKeyword:
-			{
-				symbol->Accesibility = SymbolAccesibility::Protected;
-				break;
-			}
-			*/
-
-			case TokenType::StaticKeyword:
-			{
-				symbol->Linking = LINK_STATIC;
-				break;
-			}
-
-			case TokenType::ExternKeyword:
-			{
-				symbol->IsExtern = true;
+				linking = LINK_STATIC;
 				break;
 			}
 		}
@@ -256,7 +62,7 @@ StructSymbol* SymbolFactory::Struct(StructDeclarationSyntax* node)
 {
 	std::wstring structName = node->IdentifierToken.Word;
 	auto symbol = std::make_unique<StructSymbol>(structName);
-	SetAccesibility(symbol.get(), node->Modifiers);
+	SetAccesibility(node->Modifiers, symbol.get()->Accesibility, symbol.get()->Linking);
 
 	return static_cast<StructSymbol*>(Table->BindSymbol(node, std::move(symbol)));
 }
@@ -265,7 +71,7 @@ ClassSymbol* SymbolFactory::Class(ClassDeclarationSyntax* node)
 {
 	std::wstring className = node->IdentifierToken.Word;
 	auto symbol = std::make_unique<ClassSymbol>(className);
-	SetAccesibility(symbol.get(), node->Modifiers);
+	SetAccesibility(node->Modifiers, symbol.get()->Accesibility, symbol.get()->Linking);
 
 	return static_cast<ClassSymbol*>(Table->BindSymbol(node, std::move(symbol)));
 }
@@ -303,9 +109,7 @@ InterfaceSymbol* SymbolFactory::Interface(InterfaceDeclarationSyntax* node)
 {
 	std::wstring interfaceName = node->IdentifierToken.Word;
 	auto symbol = std::make_unique<InterfaceSymbol>(interfaceName);
-	SetAccesibility(symbol.get(), node->Modifiers);
-	symbol->Accesibility = SymbolAccesibility::Public;
-	symbol->IsReferenceType = true;
+	SetAccesibility(node->Modifiers, symbol.get()->Accesibility, symbol.get()->Linking);
 
 	return static_cast<InterfaceSymbol*>(Table->BindSymbol(node, std::move(symbol)));
 }
@@ -315,7 +119,7 @@ InterfaceSymbol* SymbolFactory::Interface(const std::wstring& name, SymbolAccesi
 	auto symbol = std::make_unique<InterfaceSymbol>(name);
 	symbol->Accesibility = accesibility;
 	symbol->Parent = parent;
-	symbol->IsReferenceType = true;
+	symbol->Inlining = TypeInlining::ByReference;
 	return static_cast<InterfaceSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
@@ -324,7 +128,7 @@ InterfaceSymbol* SymbolFactory::Interface(const wchar_t* name, SymbolAccesibilit
 	auto symbol = std::make_unique<InterfaceSymbol>(name);
 	symbol->Accesibility = accesibility;
 	symbol->Parent = parent;
-	symbol->IsReferenceType = true;
+	symbol->Inlining = TypeInlining::ByReference;
 	return static_cast<InterfaceSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
@@ -333,7 +137,7 @@ FieldSymbol* SymbolFactory::Field(FieldDeclarationSyntax* node)
 	std::wstring fieldName = node->IdentifierToken.Word;
 	auto symbol = std::make_unique<FieldSymbol>(fieldName);
 	symbol->DefaultValueExpression = node->InitializerExpression.get();
-	SetAccesibility(symbol.get(), node->Modifiers);
+	SetAccesibility(node->Modifiers, symbol.get()->Accesibility, symbol.get()->Linking);
 
 	return static_cast<FieldSymbol*>(Table->BindSymbol(node, std::move(symbol)));
 }
@@ -342,7 +146,7 @@ PropertySymbol* SymbolFactory::Property(PropertyDeclarationSyntax* node)
 {
 	std::wstring propertyName = node->IdentifierToken.Word;
 	auto symbol = std::make_unique<PropertySymbol>(propertyName);
-	SetAccesibility(symbol.get(), node->Modifiers);
+	SetAccesibility(node->Modifiers, symbol.get()->Accesibility, symbol.get()->Linking);
 	symbol->DefaultValueExpression = node->InitializerExpression.get();
 
 	return static_cast<PropertySymbol*>(Table->BindSymbol(node, std::move(symbol)));
@@ -353,11 +157,9 @@ AccessorSymbol* SymbolFactory::Accessor(AccessorDeclarationSyntax* node, Propert
 	std::wstring accessorName = propertySymbol->Name + L"_" + node->KeywordToken.Word;
 	auto symbol = std::make_unique<AccessorSymbol>(accessorName);
 
-	SetAccesibility(symbol.get(), node->Modifiers);
+	SetAccesibility(node->Modifiers, symbol.get()->Accesibility, symbol.get()->Linking);
 	symbol->Linking = propertySymbol->Linking;
-	symbol->HandleType = symbol->IsExtern
-		? MethodHandleType::External
-		: MethodHandleType::Body;
+	symbol->HandleType = MethodHandleType::Body;
 
 	switch (node->KeywordToken.Type)
 	{
@@ -392,10 +194,8 @@ MethodSymbol* SymbolFactory::Method(MethodDeclarationSyntax* node)
     std::wstring methodName = node->IdentifierToken.Word;
     auto symbol = std::make_unique<MethodSymbol>(methodName);
 
-    SetAccesibility(symbol.get(), node->Modifiers);
-	symbol->HandleType = symbol->IsExtern
-		? MethodHandleType::External
-		: MethodHandleType::Body;;
+    SetAccesibility(node->Modifiers, symbol.get()->Accesibility, symbol.get()->Linking);
+	symbol->HandleType = MethodHandleType::Body;
 
 	return static_cast<MethodSymbol*>(Table->BindSymbol(node, std::move(symbol)));
 }
@@ -406,10 +206,8 @@ ConstructorSymbol* SymbolFactory::Constructor(ConstructorDeclarationSyntax* node
 	auto symbol = std::make_unique<ConstructorSymbol>(methodName);
 	symbol->ReturnType = SymbolTable::Primitives::Void;
 
-	SetAccesibility(symbol.get(), node->Modifiers);
-	symbol->HandleType = symbol->IsExtern
-		? MethodHandleType::External
-		: MethodHandleType::Body;
+	SetAccesibility(node->Modifiers, symbol.get()->Accesibility, symbol.get()->Linking);
+	symbol->HandleType = MethodHandleType::Body;
 
 	return static_cast<ConstructorSymbol*>(Table->BindSymbol(node, std::move(symbol)));
 }
@@ -434,7 +232,7 @@ DelegateTypeSymbol* SymbolFactory::Delegate(DelegateDeclarationSyntax* node)
 
 	auto symbol = std::make_unique<DelegateTypeSymbol>(node->IdentifierToken.Word);
 	symbol->AnonymousSymbol = anonymousMethod.get();
-	SetAccesibility(symbol.get(), node->Modifiers);
+	SetAccesibility(node->Modifiers, symbol.get()->Accesibility, symbol.get()->Linking);
 
 	if (node->ParametersList != nullptr)
 	{
@@ -632,7 +430,7 @@ AccessorSymbol* SymbolFactory::Setter(PropertySymbol* property)
 IndexatorSymbol* SymbolFactory::Indexator(IndexatorDeclarationSyntax* node)
 {
 	auto symbol = std::make_unique<IndexatorSymbol>(L"index"); // Name is always "index"
-	SetAccesibility(symbol.get(), node->Modifiers);
+	SetAccesibility(node->Modifiers, symbol.get()->Accesibility, symbol.get()->Linking);
 
 	return static_cast<IndexatorSymbol*>(Table->BindSymbol(node, std::move(symbol)));
 }
@@ -712,10 +510,24 @@ VariableSymbol* SymbolFactory::Variable(const std::wstring& name, TypeSymbol* ty
 	return static_cast<VariableSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
-TypeParameterSymbol* SymbolFactory::TypeParameter(const std::wstring& name, SyntaxSymbol* parent)
+TypeParameterSymbol* SymbolFactory::TypeParameter(const std::wstring& name, TypeSymbol* parent)
 {
 	auto symbol = std::make_unique<TypeParameterSymbol>(name);
+	symbol->TypeArgumentIndex = parent->TypeParameters.size();
+	symbol->TypeParameters.push_back(symbol.get());
 	symbol->Parent = parent;
+	return static_cast<TypeParameterSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
+}
+
+TypeParameterSymbol* SymbolFactory::TypeParameter(const std::wstring& name, MethodSymbol* parent)
+{
+	auto symbol = std::make_unique<TypeParameterSymbol>(name);
+	symbol->TypeParameters.push_back(symbol.get());
+	symbol->Parent = parent;
+
+	if (parent != nullptr)
+		symbol->TypeArgumentIndex = parent->TypeParameters.size();
+
 	return static_cast<TypeParameterSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
@@ -725,7 +537,6 @@ ArrayTypeSymbol* SymbolFactory::Array(ArrayTypeSyntax* node)
 		return nullptr;
 
 	auto symbol = std::make_unique<ArrayTypeSymbol>(node->UnderlayingType->Symbol);
-	symbol->Rank = node->Rank;
 	return static_cast<ArrayTypeSymbol*>(Table->BindSymbol(node, std::move(symbol)));
 }
 
@@ -738,15 +549,14 @@ ArrayTypeSymbol* SymbolFactory::Array(TypeSymbol* underlayingType)
 ArrayTypeSymbol* SymbolFactory::Array(TypeSymbol* underlayingType, std::size_t size)
 {
 	auto symbol = std::make_unique<ArrayTypeSymbol>(underlayingType);
-	symbol->Size = size;
+	symbol->Length = size;
 	return static_cast<ArrayTypeSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
 ArrayTypeSymbol* SymbolFactory::Array(TypeSymbol* underlayingType, std::size_t size, int rank)
 {
 	auto symbol = std::make_unique<ArrayTypeSymbol>(underlayingType);
-	symbol->Size = size;
-	symbol->Rank = rank;
+	symbol->Length = size;
 	return static_cast<ArrayTypeSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 

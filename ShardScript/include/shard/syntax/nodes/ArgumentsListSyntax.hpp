@@ -18,7 +18,7 @@ namespace shard
 		std::unique_ptr<ExpressionSyntax> Expression;
 		const bool IsByReference;
 
-		inline ArgumentSyntax(std::unique_ptr<ExpressionSyntax> expression, SyntaxNode *const parent)
+		inline ArgumentSyntax(std::unique_ptr<ExpressionSyntax> expression, SyntaxNode* parent)
 			: SyntaxNode(SyntaxKind::Argument, parent), Expression(std::move(expression)), IsByReference(false) { }
 
 		inline ArgumentSyntax(const ArgumentSyntax& other) = delete;
@@ -33,7 +33,7 @@ namespace shard
 		SyntaxToken CloseCurlToken;
 		std::vector<std::unique_ptr<ArgumentSyntax>> Arguments;
 
-		inline ArgumentsListSyntax(SyntaxNode *const parent)
+		inline ArgumentsListSyntax(SyntaxNode* parent)
 			: SyntaxNode(SyntaxKind::ArgumentsList, parent) { }
 
 		inline ArgumentsListSyntax(const ArgumentsListSyntax& other) = delete;
@@ -48,7 +48,7 @@ namespace shard
 		SyntaxToken CloseSquareToken;
 		std::vector<std::unique_ptr<ArgumentSyntax>> Arguments;
 
-		inline IndexatorListSyntax(SyntaxNode *const parent)
+		inline IndexatorListSyntax(SyntaxNode* parent)
 			: SyntaxNode(SyntaxKind::IndexatorList, parent) { }
 
 		inline IndexatorListSyntax(const IndexatorListSyntax& other) = delete;

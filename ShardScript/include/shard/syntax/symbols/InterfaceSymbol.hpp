@@ -14,7 +14,7 @@ namespace shard
     public:
         inline InterfaceSymbol(const std::wstring& name) : TypeSymbol(name, SyntaxKind::InterfaceDeclaration)
         {
-            IsReferenceType = true;
+            Inlining = TypeInlining::ByReference;
         }
 
         inline InterfaceSymbol(const InterfaceSymbol& other) = delete;

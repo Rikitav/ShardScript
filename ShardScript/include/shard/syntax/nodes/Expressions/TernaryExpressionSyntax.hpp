@@ -19,7 +19,7 @@ namespace shard
 		std::unique_ptr<ExpressionSyntax> Left = nullptr;
 		std::unique_ptr<ExpressionSyntax> Right = nullptr;
 
-		inline TernaryExpressionSyntax(SyntaxNode *const parent)
+		inline TernaryExpressionSyntax(SyntaxNode* parent)
 			: ExpressionSyntax(SyntaxKind::TernaryExpression, parent) { }
 
 		inline TernaryExpressionSyntax(const TernaryExpressionSyntax&) = delete;

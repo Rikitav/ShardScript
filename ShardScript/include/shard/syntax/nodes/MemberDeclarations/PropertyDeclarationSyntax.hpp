@@ -32,10 +32,10 @@ namespace shard
 		
 		std::unique_ptr<TypeSyntax> ReturnType = nullptr;
 
-		inline PropertyDeclarationSyntax(SyntaxNode *const parent)
+		inline PropertyDeclarationSyntax(SyntaxNode* parent)
 			: MemberDeclarationSyntax(SyntaxKind::PropertyDeclaration, parent) { }
 
-		inline PropertyDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) 
+		inline PropertyDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode* parent) 
 			: MemberDeclarationSyntax(SyntaxKind::PropertyDeclaration, parent)
 		{
 			Attributes = std::move(info.Attributes);

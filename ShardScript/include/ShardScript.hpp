@@ -18,7 +18,6 @@
 
 // --- Syntax / Foundation ---
 #include <shard/syntax/SyntaxKind.hpp>
-#include <shard/syntax/SymbolAccesibility.hpp>
 #include <shard/syntax/SyntaxSymbol.hpp>
 #include <shard/syntax/SyntaxNode.hpp>
 #include <shard/syntax/TokenType.hpp>

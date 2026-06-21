@@ -20,7 +20,7 @@ namespace shard
 		std::unique_ptr<TypeSyntax> ReturnType = nullptr;
 		std::unique_ptr<ParametersListSyntax> Params = nullptr;
 
-		inline DelegateTypeSyntax(SyntaxNode *const parent)
+		inline DelegateTypeSyntax(SyntaxNode* parent)
 			: TypeSyntax(SyntaxKind::DelegateType, parent) { }
 
 		inline DelegateTypeSyntax(const DelegateTypeSyntax& other) = delete;

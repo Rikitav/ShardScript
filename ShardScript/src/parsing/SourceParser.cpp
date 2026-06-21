@@ -90,7 +90,7 @@ void SourceParser::FromSourceProvider(SyntaxTree& syntaxTree, SourceProvider& re
 std::unique_ptr<CompilationUnitSyntax> SourceParser::ReadCompilationUnit(SourceProvider& reader)
 {
 	auto unit = std::make_unique<CompilationUnitSyntax>();
-	CompilationUnitSyntax* const rawUnit = unit.get();
+	CompilationUnitSyntax* rawUnit = unit.get();
 
 	while (reader.CanConsume())
 	{
@@ -147,7 +147,7 @@ std::unique_ptr<CompilationUnitSyntax> SourceParser::ReadCompilationUnit(SourceP
 	return unit;
 }
 
-std::unique_ptr<UsingDirectiveSyntax> SourceParser::ReadUsingDirective(SourceProvider& reader, SyntaxNode *const parent)
+std::unique_ptr<UsingDirectiveSyntax> SourceParser::ReadUsingDirective(SourceProvider& reader, SyntaxNode* parent)
 {
 	auto syntax = std::make_unique<UsingDirectiveSyntax>(parent);
 	syntax->UsingKeywordToken = Expect(reader, TokenType::UsingKeyword, L"Exprected 'using' keyword");
@@ -187,7 +187,7 @@ std::unique_ptr<UsingDirectiveSyntax> SourceParser::ReadUsingDirective(SourcePro
 	return syntax;
 }
 
-std::unique_ptr<NamespaceDeclarationSyntax> SourceParser::ReadNamespaceDeclaration(SourceProvider& reader, SyntaxNode *const parent)
+std::unique_ptr<NamespaceDeclarationSyntax> SourceParser::ReadNamespaceDeclaration(SourceProvider& reader, SyntaxNode* parent)
 {
 	auto syntax = std::make_unique<NamespaceDeclarationSyntax>(parent);
 	syntax->DeclareToken = Expect(reader, TokenType::NamespaceKeyword, L"Expected 'namespace' keyword");
@@ -224,7 +224,7 @@ std::unique_ptr<NamespaceDeclarationSyntax> SourceParser::ReadNamespaceDeclarati
 	return syntax;
 }
 
-std::unique_ptr<MemberDeclarationSyntax> SourceParser::ReadMemberDeclaration(SourceProvider& reader, SyntaxNode *const parent)
+std::unique_ptr<MemberDeclarationSyntax> SourceParser::ReadMemberDeclaration(SourceProvider& reader, SyntaxNode* parent)
 {
 	MemberDeclarationInfo info;
 	info.Attributes = ReadAttributeList(reader, parent);
@@ -362,7 +362,7 @@ std::unique_ptr<MemberDeclarationSyntax> SourceParser::ReadMemberDeclaration(Sou
 	return nullptr;
 }
 
-std::unique_ptr<ClassDeclarationSyntax> SourceParser::ReadClassDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode *const parent)
+std::unique_ptr<ClassDeclarationSyntax> SourceParser::ReadClassDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode* parent)
 {
 	auto syntax = std::make_unique<ClassDeclarationSyntax>(info, parent);
 	if (TryMatchIdentifier(reader, 5))
@@ -400,7 +400,7 @@ std::unique_ptr<ClassDeclarationSyntax> SourceParser::ReadClassDeclaration(Sourc
 	return syntax;
 }
 
-std::unique_ptr<StructDeclarationSyntax> SourceParser::ReadStructDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode *const parent)
+std::unique_ptr<StructDeclarationSyntax> SourceParser::ReadStructDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode* parent)
 {
 	auto syntax = std::make_unique<StructDeclarationSyntax>(info, parent);
 
@@ -439,7 +439,7 @@ std::unique_ptr<StructDeclarationSyntax> SourceParser::ReadStructDeclaration(Sou
 	return syntax;
 }
 
-std::unique_ptr<ConstructorDeclarationSyntax> SourceParser::ReadConstructorDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode *const parent)
+std::unique_ptr<ConstructorDeclarationSyntax> SourceParser::ReadConstructorDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode* parent)
 {
 	auto syntax = std::make_unique<ConstructorDeclarationSyntax>(info, parent);
 	syntax->ParametersList = ReadParametersList(reader, syntax.get());
@@ -456,7 +456,7 @@ std::unique_ptr<ConstructorDeclarationSyntax> SourceParser::ReadConstructorDecla
 	return syntax;
 }
 
-std::unique_ptr<MethodDeclarationSyntax> SourceParser::ReadMethodDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode *const parent)
+std::unique_ptr<MethodDeclarationSyntax> SourceParser::ReadMethodDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode* parent)
 {
 	auto syntax = std::make_unique<MethodDeclarationSyntax>(info, parent);
 	syntax->ParametersList = ReadParametersList(reader, syntax.get());
@@ -496,7 +496,7 @@ std::unique_ptr<MethodDeclarationSyntax> SourceParser::ReadMethodDeclaration(Sou
 	return syntax;
 }
 
-std::unique_ptr<FieldDeclarationSyntax> SourceParser::ReadFieldDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode *const parent)
+std::unique_ptr<FieldDeclarationSyntax> SourceParser::ReadFieldDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode* parent)
 {
 	auto syntax = std::make_unique<FieldDeclarationSyntax>(info, parent);
 
@@ -530,7 +530,7 @@ std::unique_ptr<FieldDeclarationSyntax> SourceParser::ReadFieldDeclaration(Sourc
 	return nullptr;
 }
 
-std::unique_ptr<PropertyDeclarationSyntax> SourceParser::ReadComputedPropertyDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode *const parent)
+std::unique_ptr<PropertyDeclarationSyntax> SourceParser::ReadComputedPropertyDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode* parent)
 {
 	auto property = std::make_unique<PropertyDeclarationSyntax>(info, parent);
 	property->ArrowToken = Expect(reader, TokenType::ArrowOperator, L"Expected '=>'");
@@ -539,7 +539,7 @@ std::unique_ptr<PropertyDeclarationSyntax> SourceParser::ReadComputedPropertyDec
 	return property;
 }
 
-std::vector<std::unique_ptr<TypeSyntax>> SourceParser::ReadBaseInterfacesList(SourceProvider& reader, SyntaxNode *const parent)
+std::vector<std::unique_ptr<TypeSyntax>> SourceParser::ReadBaseInterfacesList(SourceProvider& reader, SyntaxNode* parent)
 {
     std::vector<std::unique_ptr<TypeSyntax>> interfaces;
 
@@ -569,7 +569,7 @@ std::vector<std::unique_ptr<TypeSyntax>> SourceParser::ReadBaseInterfacesList(So
     return interfaces;
 }
 
-std::unique_ptr<InterfaceDeclarationSyntax> SourceParser::ReadInterfaceDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode *const parent)
+std::unique_ptr<InterfaceDeclarationSyntax> SourceParser::ReadInterfaceDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode* parent)
 {
 	auto syntax = std::make_unique<InterfaceDeclarationSyntax>(info, parent);
 
@@ -601,7 +601,7 @@ std::unique_ptr<InterfaceDeclarationSyntax> SourceParser::ReadInterfaceDeclarati
 	return syntax;
 }
 
-std::unique_ptr<DelegateDeclarationSyntax> SourceParser::ReadDelegateDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode *const parent)
+std::unique_ptr<DelegateDeclarationSyntax> SourceParser::ReadDelegateDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode* parent)
 {
 	auto syntax = std::make_unique<DelegateDeclarationSyntax>(info, parent);
 
@@ -627,7 +627,7 @@ std::unique_ptr<DelegateDeclarationSyntax> SourceParser::ReadDelegateDeclaration
 	return syntax;
 }
 
-std::unique_ptr<PropertyDeclarationSyntax> SourceParser::ReadPropertyDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode *const parent)
+std::unique_ptr<PropertyDeclarationSyntax> SourceParser::ReadPropertyDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode* parent)
 {
 	auto syntax = std::make_unique<PropertyDeclarationSyntax>(info, parent);
 	syntax->OpenBraceToken = Expect(reader, TokenType::OpenBrace, L"Expected '{' for property accessors");
@@ -699,7 +699,7 @@ std::unique_ptr<PropertyDeclarationSyntax> SourceParser::ReadPropertyDeclaration
 	return syntax;
 }
 
-std::unique_ptr<IndexatorDeclarationSyntax> SourceParser::ReadIndexatorDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode *const parent)
+std::unique_ptr<IndexatorDeclarationSyntax> SourceParser::ReadIndexatorDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode* parent)
 {
 	auto syntax = std::make_unique<IndexatorDeclarationSyntax>(info, parent);
 	//syntax->IndexKeyword = Expect(reader, TokenType::IndexerKeyword, L"Expected 'index' keyword");
@@ -794,7 +794,7 @@ std::unique_ptr<IndexatorDeclarationSyntax> SourceParser::ReadIndexatorDeclarati
 	return syntax;
 }
 
-std::unique_ptr<AccessorDeclarationSyntax> SourceParser::ReadAccessorDeclaration(SourceProvider& reader, SyntaxNode *const parent)
+std::unique_ptr<AccessorDeclarationSyntax> SourceParser::ReadAccessorDeclaration(SourceProvider& reader, SyntaxNode* parent)
 {
 	auto syntax = std::make_unique<AccessorDeclarationSyntax>(parent);
 	syntax->Attributes = ReadAttributeList(reader, syntax.get());
@@ -926,7 +926,7 @@ std::vector<SyntaxToken> SourceParser::ReadMemberModifiers(SourceProvider& reade
 	return modifiers;
 }
 
-std::unique_ptr<AttributeSyntax> SourceParser::ReadAttribute(SourceProvider& reader, SyntaxNode *const parent)
+std::unique_ptr<AttributeSyntax> SourceParser::ReadAttribute(SourceProvider& reader, SyntaxNode* parent)
 {
 	auto syntax = std::make_unique<AttributeSyntax>(parent);
 	syntax->OpenBracketToken = Expect(reader, TokenType::OpenSquare, L"Expected '['");
@@ -969,7 +969,7 @@ std::unique_ptr<AttributeSyntax> SourceParser::ReadAttribute(SourceProvider& rea
 	return syntax;
 }
 
-std::vector<std::unique_ptr<AttributeSyntax>> SourceParser::ReadAttributeList(SourceProvider& reader, SyntaxNode *const parent)
+std::vector<std::unique_ptr<AttributeSyntax>> SourceParser::ReadAttributeList(SourceProvider& reader, SyntaxNode* parent)
 {
 	std::vector<std::unique_ptr<AttributeSyntax>> attributes;
 	while (reader.CanConsume() && reader.Current().Type == TokenType::OpenSquare)
@@ -982,7 +982,7 @@ std::vector<std::unique_ptr<AttributeSyntax>> SourceParser::ReadAttributeList(So
 	return attributes;
 }
 
-std::unique_ptr<ParametersListSyntax> SourceParser::ReadIndexerParametersList(SourceProvider& reader, SyntaxNode *const parent)
+std::unique_ptr<ParametersListSyntax> SourceParser::ReadIndexerParametersList(SourceProvider& reader, SyntaxNode* parent)
 {
 	auto syntax = std::make_unique<ParametersListSyntax>(parent);
 	syntax->OpenToken = Expect(reader, TokenType::OpenSquare, L"Expected '[' token");
@@ -1048,7 +1048,7 @@ std::unique_ptr<ParametersListSyntax> SourceParser::ReadIndexerParametersList(So
 	return syntax;
 }
 
-std::unique_ptr<ParametersListSyntax> SourceParser::ReadParametersList(SourceProvider& reader, SyntaxNode *const parent)
+std::unique_ptr<ParametersListSyntax> SourceParser::ReadParametersList(SourceProvider& reader, SyntaxNode* parent)
 {
 	auto syntax = std::make_unique<ParametersListSyntax>(parent);
 	syntax->OpenToken = Expect(reader, TokenType::OpenCurl, L"Expected '(' token");
@@ -1107,7 +1107,7 @@ std::unique_ptr<ParametersListSyntax> SourceParser::ReadParametersList(SourcePro
 	return syntax;
 }
 
-std::unique_ptr<ParametersListSyntax> SourceParser::ReadDelegateParametersList(SourceProvider& reader, SyntaxNode* const parent)
+std::unique_ptr<ParametersListSyntax> SourceParser::ReadDelegateParametersList(SourceProvider& reader, SyntaxNode* parent)
 {
 	auto syntax = std::make_unique<ParametersListSyntax>(parent);
 	syntax->OpenToken = Expect(reader, TokenType::OpenCurl, L"Expected '(' token");
@@ -1145,7 +1145,7 @@ std::unique_ptr<ParametersListSyntax> SourceParser::ReadDelegateParametersList(S
 	return syntax;
 }
 
-std::unique_ptr<TypeParametersListSyntax> SourceParser::ReadTypeParametersList(SourceProvider& reader, SyntaxNode *const parent)
+std::unique_ptr<TypeParametersListSyntax> SourceParser::ReadTypeParametersList(SourceProvider& reader, SyntaxNode* parent)
 {
 	auto syntax = std::make_unique<TypeParametersListSyntax>(parent);
 	syntax->OpenToken = Expect(reader, TokenType::LessOperator, L"Expected '<' token");
@@ -1182,7 +1182,7 @@ std::unique_ptr<TypeParametersListSyntax> SourceParser::ReadTypeParametersList(S
 	return syntax;
 }
 
-std::unique_ptr<TypeArgumentsListSyntax> SourceParser::ReadTypeArgumentsList(SourceProvider& reader, SyntaxNode *const parent)
+std::unique_ptr<TypeArgumentsListSyntax> SourceParser::ReadTypeArgumentsList(SourceProvider& reader, SyntaxNode* parent)
 {
 	auto syntax = std::make_unique<TypeArgumentsListSyntax>(parent);
 	syntax->OpenToken = Expect(reader, TokenType::LessOperator, L"Expected '<' token");
@@ -1219,24 +1219,24 @@ std::unique_ptr<TypeArgumentsListSyntax> SourceParser::ReadTypeArgumentsList(Sou
 	return syntax;
 }
 
-void SourceParser::ReadTypeBody(SourceProvider& reader, TypeDeclarationSyntax *const syntax)
+void SourceParser::ReadTypeBody(SourceProvider& reader, TypeDeclarationSyntax* syntax)
 {
 	syntax->OpenBraceToken = Expect(reader, TokenType::OpenBrace, L"Expected '{'");
 
 	while (reader.CanConsume())
 	{
 		SyntaxToken current = reader.Current();
-		if (current.Type == TokenType::CloseBrace)
-		{
-			syntax->CloseBraceToken = current;
-			reader.Consume();
-			break;
-		}
-
 		if (current.Type == TokenType::EndOfFile)
 		{
 			Diagnostics.ReportError(current, L"Unexpected end of file in type body - expected '}'");
 			syntax->CloseBraceToken = SyntaxToken(TokenType::CloseBrace, L"", current.Location, true);
+			break;
+		}
+
+		if (current.Type == TokenType::CloseBrace)
+		{
+			syntax->CloseBraceToken = current;
+			reader.Consume();
 			break;
 		}
 
@@ -1271,7 +1271,7 @@ void SourceParser::ReadTypeBody(SourceProvider& reader, TypeDeclarationSyntax *c
 	}
 }
 
-std::unique_ptr<StatementsBlockSyntax> SourceParser::ReadStatementsBlock(SourceProvider& reader, SyntaxNode *const parent)
+std::unique_ptr<StatementsBlockSyntax> SourceParser::ReadStatementsBlock(SourceProvider& reader, SyntaxNode* parent)
 {
 	auto syntax = std::make_unique<StatementsBlockSyntax>(parent);
 
@@ -1366,7 +1366,7 @@ std::unique_ptr<StatementsBlockSyntax> SourceParser::ReadStatementsBlock(SourceP
 	return syntax;
 }
 
-std::unique_ptr<StatementSyntax> SourceParser::ReadStatement(SourceProvider& reader, SyntaxNode *const parent)
+std::unique_ptr<StatementSyntax> SourceParser::ReadStatement(SourceProvider& reader, SyntaxNode* parent)
 {
 	SyntaxToken current = reader.Current();
 	if (current.Type == TokenType::Semicolon)
@@ -1423,7 +1423,7 @@ std::unique_ptr<StatementSyntax> SourceParser::ReadStatement(SourceProvider& rea
 	return std::make_unique<ExpressionStatementSyntax>(std::move(expression), parent);
 }
 
-std::unique_ptr<KeywordStatementSyntax> SourceParser::ReadKeywordStatement(SourceProvider& reader, SyntaxNode *const parent)
+std::unique_ptr<KeywordStatementSyntax> SourceParser::ReadKeywordStatement(SourceProvider& reader, SyntaxNode* parent)
 {
 	if (!reader.CanConsume())
 		return nullptr;
@@ -1486,7 +1486,7 @@ std::unique_ptr<KeywordStatementSyntax> SourceParser::ReadKeywordStatement(Sourc
 	}
 }
 
-std::unique_ptr<ReturnStatementSyntax> SourceParser::ReadReturnStatement(SourceProvider& reader, SyntaxNode *const parent)
+std::unique_ptr<ReturnStatementSyntax> SourceParser::ReadReturnStatement(SourceProvider& reader, SyntaxNode* parent)
 {
 	auto syntax = std::make_unique<ReturnStatementSyntax>(parent);
 	syntax->KeywordToken = Expect(reader, TokenType::ReturnKeyword, L"Expected 'return' keyword");
@@ -1499,7 +1499,7 @@ std::unique_ptr<ReturnStatementSyntax> SourceParser::ReadReturnStatement(SourceP
 	return syntax;
 }
 
-std::unique_ptr<ThrowStatementSyntax> SourceParser::ReadThrowStatement(SourceProvider& reader, SyntaxNode *const parent)
+std::unique_ptr<ThrowStatementSyntax> SourceParser::ReadThrowStatement(SourceProvider& reader, SyntaxNode* parent)
 {
 	auto syntax = std::make_unique<ThrowStatementSyntax>(parent);
 	syntax->KeywordToken = Expect(reader, TokenType::ThrowKeyword, L"Expected 'throw' keyword");
@@ -1512,7 +1512,7 @@ std::unique_ptr<ThrowStatementSyntax> SourceParser::ReadThrowStatement(SourcePro
 	return syntax;
 }
 
-std::unique_ptr<BreakStatementSyntax> SourceParser::ReadBreakStatement(SourceProvider& reader, SyntaxNode *const parent)
+std::unique_ptr<BreakStatementSyntax> SourceParser::ReadBreakStatement(SourceProvider& reader, SyntaxNode* parent)
 {
 	auto syntax = std::make_unique<BreakStatementSyntax>(parent);
 	syntax->KeywordToken = Expect(reader, TokenType::BreakKeyword, L"Expected return keyword");
@@ -1520,7 +1520,7 @@ std::unique_ptr<BreakStatementSyntax> SourceParser::ReadBreakStatement(SourcePro
 	return syntax;
 }
 
-std::unique_ptr<ContinueStatementSyntax> SourceParser::ReadContinueStatement(SourceProvider& reader, SyntaxNode *const parent)
+std::unique_ptr<ContinueStatementSyntax> SourceParser::ReadContinueStatement(SourceProvider& reader, SyntaxNode* parent)
 {
 	auto syntax = std::make_unique<ContinueStatementSyntax>(parent);
 	syntax->KeywordToken = Expect(reader, TokenType::ContinueKeyword, L"Expected return keyword");
@@ -1528,7 +1528,7 @@ std::unique_ptr<ContinueStatementSyntax> SourceParser::ReadContinueStatement(Sou
 	return syntax;
 }
 
-std::unique_ptr<DeferStatementSyntax> SourceParser::ReadDeferStatement(SourceProvider& reader, SyntaxNode *const parent)
+std::unique_ptr<DeferStatementSyntax> SourceParser::ReadDeferStatement(SourceProvider& reader, SyntaxNode* parent)
 {
 	auto syntax = std::make_unique<DeferStatementSyntax>(reader.Current(), parent);
 	syntax->DeferToken = Expect(reader, TokenType::DeferKeyword, L"Expected 'defer' keyword");
@@ -1545,7 +1545,7 @@ std::unique_ptr<DeferStatementSyntax> SourceParser::ReadDeferStatement(SourcePro
 	return syntax;
 }
 
-std::unique_ptr<ConditionalClauseBaseSyntax> SourceParser::ReadConditionalClause(SourceProvider& reader, SyntaxNode *const parent)
+std::unique_ptr<ConditionalClauseBaseSyntax> SourceParser::ReadConditionalClause(SourceProvider& reader, SyntaxNode* parent)
 {
 	while (reader.CanConsume())
 	{
@@ -1619,7 +1619,7 @@ std::unique_ptr<ConditionalClauseBaseSyntax> SourceParser::ReadConditionalClause
 	return nullptr;
 }
 
-std::unique_ptr<WhileStatementSyntax> SourceParser::ReadWhileStatement(SourceProvider& reader, SyntaxNode *const parent)
+std::unique_ptr<WhileStatementSyntax> SourceParser::ReadWhileStatement(SourceProvider& reader, SyntaxNode* parent)
 {
 	auto syntax = std::make_unique<WhileStatementSyntax>(parent);
 	syntax->SemicolonToken = SyntaxToken(TokenType::Semicolon, L"", TextLocation(), false);
@@ -1632,7 +1632,7 @@ std::unique_ptr<WhileStatementSyntax> SourceParser::ReadWhileStatement(SourcePro
 	return syntax;
 }
 
-std::unique_ptr<UntilStatementSyntax> SourceParser::ReadUntilStatement(SourceProvider& reader, SyntaxNode *const parent)
+std::unique_ptr<UntilStatementSyntax> SourceParser::ReadUntilStatement(SourceProvider& reader, SyntaxNode* parent)
 {
 	auto syntax = std::make_unique<UntilStatementSyntax>(parent);
 	syntax->SemicolonToken = SyntaxToken(TokenType::Semicolon, L"", TextLocation(), false);
@@ -1645,7 +1645,7 @@ std::unique_ptr<UntilStatementSyntax> SourceParser::ReadUntilStatement(SourcePro
 	return syntax;
 }
 
-std::unique_ptr<ForStatementSyntax> SourceParser::ReadForStatement(SourceProvider& reader, SyntaxNode *const parent)
+std::unique_ptr<ForStatementSyntax> SourceParser::ReadForStatement(SourceProvider& reader, SyntaxNode* parent)
 {
 	auto syntax = std::make_unique<ForStatementSyntax>(parent);
 	syntax->SemicolonToken = SyntaxToken(TokenType::Semicolon, L"", TextLocation(), false);
@@ -1654,7 +1654,7 @@ std::unique_ptr<ForStatementSyntax> SourceParser::ReadForStatement(SourceProvide
 
 	// Reading init statement
 	syntax->InitializerStatement = ReadStatement(reader, syntax.get());
-	if (auto keywordStatement = dynamic_cast<KeywordStatementSyntax *const>(syntax->InitializerStatement.get()))
+	if (auto keywordStatement = dynamic_cast<KeywordStatementSyntax*>(syntax->InitializerStatement.get()))
 		Diagnostics.ReportError(keywordStatement->KeywordToken, L"Cannot use keyword statements inside for loop initializer");
 
 	// Reading first semicolon
@@ -1668,7 +1668,7 @@ std::unique_ptr<ForStatementSyntax> SourceParser::ReadForStatement(SourceProvide
 
 	// Reading after loop statement
 	syntax->AfterRepeatStatement = ReadStatement(reader, syntax.get());
-	if (auto keywordStatement = dynamic_cast<KeywordStatementSyntax *const>(syntax->AfterRepeatStatement.get()))
+	if (auto keywordStatement = dynamic_cast<KeywordStatementSyntax*>(syntax->AfterRepeatStatement.get()))
 		Diagnostics.ReportError(keywordStatement->KeywordToken, L"Cannot use keyword statements inside for loop repeater");
 
 	// Reading close curl token
@@ -1679,7 +1679,7 @@ std::unique_ptr<ForStatementSyntax> SourceParser::ReadForStatement(SourceProvide
 	return syntax;
 }
 
-std::unique_ptr<ForEachStatementSyntax> SourceParser::ReadForEachStatement(SourceProvider& reader, SyntaxNode *const parent)
+std::unique_ptr<ForEachStatementSyntax> SourceParser::ReadForEachStatement(SourceProvider& reader, SyntaxNode* parent)
 {
 	auto syntax = std::make_unique<ForEachStatementSyntax>(parent);
 	syntax->KeywordToken = Expect(reader, TokenType::ForKeyword, L"Expected 'for' keyword");
@@ -1710,7 +1710,7 @@ std::unique_ptr<ForEachStatementSyntax> SourceParser::ReadForEachStatement(Sourc
 	return syntax;
 }
 
-std::unique_ptr<TryStatementSyntax> SourceParser::ReadTryStatement(SourceProvider& reader, SyntaxNode *const parent)
+std::unique_ptr<TryStatementSyntax> SourceParser::ReadTryStatement(SourceProvider& reader, SyntaxNode* parent)
 {
 	auto syntax = std::make_unique<TryStatementSyntax>(parent);
 	syntax->TryKeywordToken = Expect(reader, TokenType::TryKeyword, L"Expected 'try' keyword");
@@ -1752,7 +1752,7 @@ std::unique_ptr<TryStatementSyntax> SourceParser::ReadTryStatement(SourceProvide
 	return syntax;
 }
 
-std::unique_ptr<ExpressionSyntax> SourceParser::ReadExpression(SourceProvider& reader, SyntaxNode *const parent, int bindingPower)
+std::unique_ptr<ExpressionSyntax> SourceParser::ReadExpression(SourceProvider& reader, SyntaxNode* parent, int bindingPower)
 {
 	auto leftExpr = ReadNullDenotation(reader, parent);
 	if (!reader.CanConsume())
@@ -1774,7 +1774,7 @@ std::unique_ptr<ExpressionSyntax> SourceParser::ReadExpression(SourceProvider& r
 	return leftExpr;
 }
 
-std::unique_ptr<ExpressionSyntax> SourceParser::ReadNullDenotation(SourceProvider& reader, SyntaxNode *const parent)
+std::unique_ptr<ExpressionSyntax> SourceParser::ReadNullDenotation(SourceProvider& reader, SyntaxNode* parent)
 {
 	SyntaxToken current = reader.Current();
 	switch (current.Type)
@@ -1864,7 +1864,7 @@ std::unique_ptr<ExpressionSyntax> SourceParser::ReadNullDenotation(SourceProvide
 	return nullptr;
 }
 
-std::unique_ptr<ExpressionSyntax> SourceParser::ReadLeftDenotation(SourceProvider& reader, SyntaxNode *const parent, std::unique_ptr<ExpressionSyntax> leftExpr)
+std::unique_ptr<ExpressionSyntax> SourceParser::ReadLeftDenotation(SourceProvider& reader, SyntaxNode* parent, std::unique_ptr<ExpressionSyntax> leftExpr)
 {
 	if (!reader.CanConsume())
 		return std::move(leftExpr);
@@ -1968,7 +1968,7 @@ std::unique_ptr<ExpressionSyntax> SourceParser::ReadLeftDenotation(SourceProvide
 	return std::move(leftExpr);
 }
 
-std::unique_ptr<ObjectExpressionSyntax> SourceParser::ReadObjectExpression(SourceProvider& reader, SyntaxNode *const parent)
+std::unique_ptr<ObjectExpressionSyntax> SourceParser::ReadObjectExpression(SourceProvider& reader, SyntaxNode* parent)
 {
 	auto syntax = std::make_unique<ObjectExpressionSyntax>(parent);
 	syntax->NewToken = Expect(reader, TokenType::NewKeyword, L"Expected 'new' keyword");
@@ -1977,7 +1977,7 @@ std::unique_ptr<ObjectExpressionSyntax> SourceParser::ReadObjectExpression(Sourc
 	return syntax;
 }
 
-std::unique_ptr<TernaryExpressionSyntax> SourceParser::ReadTernaryExpression(SourceProvider& reader, std::unique_ptr<ExpressionSyntax> condition, SyntaxNode *const parent)
+std::unique_ptr<TernaryExpressionSyntax> SourceParser::ReadTernaryExpression(SourceProvider& reader, std::unique_ptr<ExpressionSyntax> condition, SyntaxNode* parent)
 {
 	auto syntax = std::make_unique<TernaryExpressionSyntax>(parent);
 	syntax->Condition = std::move(condition);
@@ -1991,7 +1991,7 @@ std::unique_ptr<TernaryExpressionSyntax> SourceParser::ReadTernaryExpression(Sou
 	return syntax;
 }
 
-std::unique_ptr<CollectionExpressionSyntax> SourceParser::ReadCollectionExpression(SourceProvider& reader, SyntaxNode *const parent)
+std::unique_ptr<CollectionExpressionSyntax> SourceParser::ReadCollectionExpression(SourceProvider& reader, SyntaxNode* parent)
 {
 	auto syntax = std::make_unique<CollectionExpressionSyntax>(parent);
 	syntax->OpenSquareToken = Expect(reader, TokenType::OpenSquare, L"Expected '[' token");
@@ -2028,7 +2028,7 @@ std::unique_ptr<CollectionExpressionSyntax> SourceParser::ReadCollectionExpressi
 	return syntax;
 }
 
-std::unique_ptr<LambdaExpressionSyntax> SourceParser::ReadLambdaExpression(SourceProvider& reader, SyntaxNode *const parent)
+std::unique_ptr<LambdaExpressionSyntax> SourceParser::ReadLambdaExpression(SourceProvider& reader, SyntaxNode* parent)
 {
 	auto syntax = std::make_unique<LambdaExpressionSyntax>(parent);
 	syntax->LambdaToken = Expect(reader, TokenType::LambdaKeyword, L"Expected 'lambda' keyword");
@@ -2049,7 +2049,7 @@ std::unique_ptr<LambdaExpressionSyntax> SourceParser::ReadLambdaExpression(Sourc
 	return syntax;
 }
 
-std::unique_ptr<IfExpressionSyntax> SourceParser::ReadIfExpression(SourceProvider& reader, SyntaxNode *const parent)
+std::unique_ptr<IfExpressionSyntax> SourceParser::ReadIfExpression(SourceProvider& reader, SyntaxNode* parent)
 {
 	auto syntax = std::make_unique<IfExpressionSyntax>(parent);
 	syntax->IfKeywordToken = Expect(reader, TokenType::IfKeyword, L"Expected 'if' keyword");
@@ -2068,7 +2068,7 @@ std::unique_ptr<IfExpressionSyntax> SourceParser::ReadIfExpression(SourceProvide
 	return syntax;
 }
 
-std::unique_ptr<SwitchExpressionSyntax> SourceParser::ReadSwitchExpression(SourceProvider& reader, SyntaxNode *const parent)
+std::unique_ptr<SwitchExpressionSyntax> SourceParser::ReadSwitchExpression(SourceProvider& reader, SyntaxNode* parent)
 {
 	auto syntax = std::make_unique<SwitchExpressionSyntax>(parent);
 	syntax->SwitchKeywordToken = Expect(reader, TokenType::SwitchKeyword, L"Expected 'switch' keyword");
@@ -2101,7 +2101,7 @@ std::unique_ptr<SwitchExpressionSyntax> SourceParser::ReadSwitchExpression(Sourc
 	return syntax;
 }
 
-std::unique_ptr<LinkedExpressionNode> SourceParser::ReadLinkedExpressionNode(SourceProvider& reader, SyntaxNode *const parent, std::unique_ptr<ExpressionSyntax> previous, bool isFirst)
+std::unique_ptr<LinkedExpressionNode> SourceParser::ReadLinkedExpressionNode(SourceProvider& reader, SyntaxNode* parent, std::unique_ptr<ExpressionSyntax> previous, bool isFirst)
 {
 	if (!reader.CanConsume())
 		return nullptr;
@@ -2199,7 +2199,7 @@ std::unique_ptr<LinkedExpressionNode> SourceParser::ReadLinkedExpressionNode(Sou
 	return std::move(currentNode);
 }
 
-std::unique_ptr<IndexatorExpressionSyntax> SourceParser::ReadIndexatorExpressionNode(SourceProvider& reader, SyntaxNode* const parent, std::unique_ptr<ExpressionSyntax> lastNode, bool isFirst)
+std::unique_ptr<IndexatorExpressionSyntax> SourceParser::ReadIndexatorExpressionNode(SourceProvider& reader, SyntaxNode* parent, std::unique_ptr<ExpressionSyntax> lastNode, bool isFirst)
 {
 	static SyntaxToken indexerKeyword(TokenType::IndexerKeyword, L"indexer", TextLocation(), false);
 	auto currentNode = std::make_unique<IndexatorExpressionSyntax>(indexerKeyword, std::move(lastNode), parent);
@@ -2215,7 +2215,7 @@ std::unique_ptr<IndexatorExpressionSyntax> SourceParser::ReadIndexatorExpression
 	return currentNode;
 }
 
-std::unique_ptr<ArgumentsListSyntax> SourceParser::ReadArgumentsList(SourceProvider& reader, SyntaxNode *const parent)
+std::unique_ptr<ArgumentsListSyntax> SourceParser::ReadArgumentsList(SourceProvider& reader, SyntaxNode* parent)
 {
 	auto arguments = std::make_unique<ArgumentsListSyntax>(parent);
 	arguments->OpenCurlToken = Expect(reader, TokenType::OpenCurl, L"Expected '(' token");
@@ -2253,7 +2253,7 @@ std::unique_ptr<ArgumentsListSyntax> SourceParser::ReadArgumentsList(SourceProvi
 	return arguments;
 }
 
-std::unique_ptr<IndexatorListSyntax> SourceParser::ReadIndexatorList(SourceProvider& reader, SyntaxNode *const parent)
+std::unique_ptr<IndexatorListSyntax> SourceParser::ReadIndexatorList(SourceProvider& reader, SyntaxNode* parent)
 {
 	auto arguments = std::make_unique<IndexatorListSyntax>(parent);
 	arguments->OpenSquareToken = Expect(reader, TokenType::OpenSquare, L"Exprected '[' token");
@@ -2291,7 +2291,7 @@ std::unique_ptr<IndexatorListSyntax> SourceParser::ReadIndexatorList(SourceProvi
 	return arguments;
 }
 
-std::unique_ptr<TypeSyntax> SourceParser::ReadType(SourceProvider& reader, SyntaxNode *const parent)
+std::unique_ptr<TypeSyntax> SourceParser::ReadType(SourceProvider& reader, SyntaxNode* parent)
 {
 	SyntaxToken current = reader.Current();
 
@@ -2316,7 +2316,7 @@ std::unique_ptr<TypeSyntax> SourceParser::ReadType(SourceProvider& reader, Synta
 	return nullptr;
 }
 
-std::unique_ptr<TypeSyntax> SourceParser::ReadModifiedType(SourceProvider& reader, TypeSyntax *const type, SyntaxNode *const parent)
+std::unique_ptr<TypeSyntax> SourceParser::ReadModifiedType(SourceProvider& reader, TypeSyntax* type, SyntaxNode* parent)
 {
 	if (!reader.CanConsume())
 		return std::unique_ptr<TypeSyntax>(type);
@@ -2349,7 +2349,7 @@ std::unique_ptr<TypeSyntax> SourceParser::ReadModifiedType(SourceProvider& reade
 	}
 }
 
-std::unique_ptr<TypeSyntax> SourceParser::ReadIdentifierNameType(SourceProvider& reader, SyntaxNode *const parent)
+std::unique_ptr<TypeSyntax> SourceParser::ReadIdentifierNameType(SourceProvider& reader, SyntaxNode* parent)
 {
 	auto identifier = std::make_unique<IdentifierNameTypeSyntax>(parent);
 	identifier->Identifier = Expect(reader, TokenType::Identifier, L"Expected identifier");
@@ -2357,7 +2357,7 @@ std::unique_ptr<TypeSyntax> SourceParser::ReadIdentifierNameType(SourceProvider&
 	return ReadModifiedType(reader, identifier.release(), parent);
 }
 
-std::unique_ptr<TypeSyntax> SourceParser::ReadDelegateType(SourceProvider& reader, SyntaxNode *const parent)
+std::unique_ptr<TypeSyntax> SourceParser::ReadDelegateType(SourceProvider& reader, SyntaxNode* parent)
 {
 	auto delegate = std::make_unique<DelegateTypeSyntax>(parent);
 	delegate->DelegateToken = Expect(reader, TokenType::DelegateKeyword, L"Expected 'delegate' keyword");
@@ -2367,7 +2367,7 @@ std::unique_ptr<TypeSyntax> SourceParser::ReadDelegateType(SourceProvider& reade
 	return ReadModifiedType(reader, delegate.release(), parent);
 }
 
-std::unique_ptr<TypeSyntax> SourceParser::ReadArrayType(SourceProvider& reader, TypeSyntax *const previous, SyntaxNode *const parent)
+std::unique_ptr<TypeSyntax> SourceParser::ReadArrayType(SourceProvider& reader, TypeSyntax* previous, SyntaxNode* parent)
 {
 	auto array = std::make_unique<ArrayTypeSyntax>(std::unique_ptr<TypeSyntax>(previous), parent);
 	array->OpenSquareToken = Expect(reader, TokenType::OpenSquare, L"Expected '['");
@@ -2377,7 +2377,7 @@ std::unique_ptr<TypeSyntax> SourceParser::ReadArrayType(SourceProvider& reader, 
 	return ReadModifiedType(reader, array.release(), parent);
 }
 
-std::unique_ptr<TypeSyntax> SourceParser::ReadGenericType(SourceProvider& reader, TypeSyntax *const previous, SyntaxNode *const parent)
+std::unique_ptr<TypeSyntax> SourceParser::ReadGenericType(SourceProvider& reader, TypeSyntax* previous, SyntaxNode* parent)
 {
 	auto generic = std::make_unique<GenericTypeSyntax>(std::unique_ptr<TypeSyntax>(previous), parent);
 	generic->Arguments = ReadTypeArgumentsList(reader, generic.get());

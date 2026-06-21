@@ -18,7 +18,7 @@ namespace shard
 		std::unique_ptr<ExpressionSyntax> Pattern = nullptr;
 		std::unique_ptr<ExpressionSyntax> Expression = nullptr;
 
-		inline SwitchArmSyntax(SyntaxNode* const parent)
+		inline SwitchArmSyntax(SyntaxNode* parent)
 			: SyntaxNode(SyntaxKind::Unknown, parent) { }
 
 		inline SwitchArmSyntax(const SwitchArmSyntax&) = delete;
@@ -36,7 +36,7 @@ namespace shard
 		std::unique_ptr<ExpressionSyntax> Expression = nullptr;
 		std::vector<std::unique_ptr<SwitchArmSyntax>> Arms;
 
-		inline SwitchExpressionSyntax(SyntaxNode* const parent)
+		inline SwitchExpressionSyntax(SyntaxNode* parent)
 			: ExpressionSyntax(SyntaxKind::SwitchExpression, parent) { }
 
 		inline SwitchExpressionSyntax(const SwitchExpressionSyntax&) = delete;

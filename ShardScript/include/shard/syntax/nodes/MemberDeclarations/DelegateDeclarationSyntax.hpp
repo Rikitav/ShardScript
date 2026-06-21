@@ -23,10 +23,10 @@ namespace shard
 		std::unique_ptr<TypeSyntax> ReturnType = nullptr;
 		std::unique_ptr<ParametersListSyntax> ParametersList = nullptr;
 
-		inline DelegateDeclarationSyntax(SyntaxNode *const parent)
+		inline DelegateDeclarationSyntax(SyntaxNode* parent)
 			: MemberDeclarationSyntax(SyntaxKind::DelegateDeclaration, parent) { }
 
-		inline DelegateDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) : MemberDeclarationSyntax(SyntaxKind::DelegateDeclaration, parent)
+		inline DelegateDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode* parent) : MemberDeclarationSyntax(SyntaxKind::DelegateDeclaration, parent)
 		{
 			Attributes = std::move(info.Attributes);
 			Modifiers = info.Modifiers;

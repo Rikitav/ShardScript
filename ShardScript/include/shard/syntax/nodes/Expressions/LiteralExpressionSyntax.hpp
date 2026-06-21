@@ -13,7 +13,7 @@ namespace shard
 	public:
 		const SyntaxToken LiteralToken;
 
-		inline LiteralExpressionSyntax(const SyntaxToken literal, SyntaxNode *const parent) : ExpressionSyntax(SyntaxKind::LiteralExpression, parent), LiteralToken(literal) { }
+		inline LiteralExpressionSyntax(const SyntaxToken literal, SyntaxNode* parent) : ExpressionSyntax(SyntaxKind::LiteralExpression, parent), LiteralToken(literal) { }
 		inline LiteralExpressionSyntax(const LiteralExpressionSyntax&) = delete;
 		inline virtual ~LiteralExpressionSyntax() { }
 	};

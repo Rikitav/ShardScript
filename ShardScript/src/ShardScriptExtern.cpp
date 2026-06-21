@@ -2206,18 +2206,6 @@ extern "C"
     // Symbol Builder API
     // =========================================================================
 
-    static ObjectInstance* ShardManagedMethodAdapter(const CallState& context) noexcept(false)
-    {
-        MethodSymbol* method = context.Method;
-        if (method == nullptr || method->ManagedCallback == nullptr)
-        {
-            SetLastShardWError(L"managed method callback not set");
-            throw std::runtime_error("managed method callback not set");
-        }
-
-        return method->ManagedCallback(method, context.Args.data(), context.Args.size(), method->ManagedCallbackUserData, &context.Collector);
-    }
-
     SHARD_API SymbolTable* Shard_GetSymbolTable(CompilationContext* ctx)
     {
         try
@@ -2322,7 +2310,7 @@ extern "C"
             auto* symbol = factory.Class(name);
             symbol->Parent = parent;
             symbol->Accesibility = SymbolAccesibility::Public;
-            symbol->IsReferenceType = true;
+            symbol->Inlining = TypeInlining::ByReference;
 
             if (parent != nullptr)
             {
@@ -2358,9 +2346,7 @@ extern "C"
             symbol->Parent = parentType;
             symbol->ReturnType = returnType;
             symbol->Accesibility = static_cast<SymbolAccesibility>(accessibility);
-            symbol->IsExtern = true;
             symbol->HandleType = MethodHandleType::External;
-            symbol->FunctionPointer = ShardManagedMethodAdapter;
 
             parentType->OnSymbolDeclared(symbol);
 
@@ -2448,30 +2434,6 @@ extern "C"
         {
             SetLastErrorFromException(e);
             return nullptr;
-        }
-    }
-
-    SHARD_API int Shard_SetMethodManagedCallback(MethodSymbol* method, ShardManagedMethodCallback callback, void* userData)
-    {
-        try
-        {
-            if (method == nullptr || callback == nullptr)
-            {
-                SetLastShardWError(L"invalid argument");
-                return -1;
-            }
-
-            method->ManagedCallback = callback;
-            method->ManagedCallbackUserData = userData;
-            method->FunctionPointer = ShardManagedMethodAdapter;
-            method->HandleType = MethodHandleType::External;
-            method->IsExtern = true;
-            return 0;
-        }
-        catch (const std::exception& e)
-        {
-            SetLastErrorFromException(e);
-            return -1;
         }
     }
 

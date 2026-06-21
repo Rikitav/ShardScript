@@ -85,7 +85,7 @@ namespace shard
             : Table(model.Table.get()), Namespaces(model.Namespaces.get()), Diagnostics(diagnostics) { }
 
         template<typename T>
-        inline std::optional<T*> LookupSymbol(SyntaxNode *const node)
+        inline std::optional<T*> LookupSymbol(SyntaxNode* node)
         {
             auto symbol = Table->LookupSymbol(node);
             if (!symbol.has_value())
@@ -96,78 +96,78 @@ namespace shard
 
 	public:
         virtual void VisitSyntaxTree(SyntaxTree& tree);
-        virtual void VisitCompilationUnit(CompilationUnitSyntax *const node);
-        virtual void VisitUsingDirective(UsingDirectiveSyntax *const node);
+        virtual void VisitCompilationUnit(CompilationUnitSyntax* node);
+        virtual void VisitUsingDirective(UsingDirectiveSyntax* node);
 
-        virtual void VisitTypeDeclaration(MemberDeclarationSyntax *const node);
-        virtual void VisitNamespaceDeclaration(NamespaceDeclarationSyntax *const node);
-        virtual void VisitClassDeclaration(ClassDeclarationSyntax *const node);
-        virtual void VisitStructDeclaration(StructDeclarationSyntax *const node);
-        virtual void VisitInterfaceDeclaration(InterfaceDeclarationSyntax *const node);
-        virtual void VisitDelegateDeclaration(DelegateDeclarationSyntax *const node);
+        virtual void VisitTypeDeclaration(MemberDeclarationSyntax* node);
+        virtual void VisitNamespaceDeclaration(NamespaceDeclarationSyntax* node);
+        virtual void VisitClassDeclaration(ClassDeclarationSyntax* node);
+        virtual void VisitStructDeclaration(StructDeclarationSyntax* node);
+        virtual void VisitInterfaceDeclaration(InterfaceDeclarationSyntax* node);
+        virtual void VisitDelegateDeclaration(DelegateDeclarationSyntax* node);
 
-        virtual void VisitMemberDeclaration(MemberDeclarationSyntax *const node);
-        virtual void VisitMethodDeclaration(MethodDeclarationSyntax *const node);
-        virtual void VisitConstructorDeclaration(ConstructorDeclarationSyntax *const node);
-        virtual void VisitFieldDeclaration(FieldDeclarationSyntax *const node);
-        virtual void VisitPropertyDeclaration(PropertyDeclarationSyntax *const node);
-        virtual void VisitIndexatorDeclaration(IndexatorDeclarationSyntax *const node);
-		virtual void VisitAccessorDeclaration(AccessorDeclarationSyntax *const node);
+        virtual void VisitMemberDeclaration(MemberDeclarationSyntax* node);
+        virtual void VisitMethodDeclaration(MethodDeclarationSyntax* node);
+        virtual void VisitConstructorDeclaration(ConstructorDeclarationSyntax* node);
+        virtual void VisitFieldDeclaration(FieldDeclarationSyntax* node);
+        virtual void VisitPropertyDeclaration(PropertyDeclarationSyntax* node);
+        virtual void VisitIndexatorDeclaration(IndexatorDeclarationSyntax* node);
+		virtual void VisitAccessorDeclaration(AccessorDeclarationSyntax* node);
 
-        virtual void VisitStatementsBlock(StatementsBlockSyntax *const node);
-        virtual void VisitStatement(StatementSyntax *const node);
-        virtual void VisitExpressionStatement(ExpressionStatementSyntax *const node);
-        virtual void VisitVariableStatement(VariableStatementSyntax *const node);
-        virtual void VisitReturnStatement(ReturnStatementSyntax *const node);
-        virtual void VisitThrowStatement(ThrowStatementSyntax *const node);
-        virtual void VisitBreakStatement(BreakStatementSyntax *const node);
-        virtual void VisitContinueStatement(ContinueStatementSyntax *const node);
-        virtual void VisitDeferStatement(DeferStatementSyntax *const node);
+        virtual void VisitStatementsBlock(StatementsBlockSyntax* node);
+        virtual void VisitStatement(StatementSyntax* node);
+        virtual void VisitExpressionStatement(ExpressionStatementSyntax* node);
+        virtual void VisitVariableStatement(VariableStatementSyntax* node);
+        virtual void VisitReturnStatement(ReturnStatementSyntax* node);
+        virtual void VisitThrowStatement(ThrowStatementSyntax* node);
+        virtual void VisitBreakStatement(BreakStatementSyntax* node);
+        virtual void VisitContinueStatement(ContinueStatementSyntax* node);
+        virtual void VisitDeferStatement(DeferStatementSyntax* node);
 
-        virtual void VisitWhileStatement(WhileStatementSyntax *const node);
-        virtual void VisitForStatement(ForStatementSyntax *const node);
-        virtual void VisitForEachStatement(ForEachStatementSyntax *const node);
-        virtual void VisitUntilStatement(UntilStatementSyntax *const node);
+        virtual void VisitWhileStatement(WhileStatementSyntax* node);
+        virtual void VisitForStatement(ForStatementSyntax* node);
+        virtual void VisitForEachStatement(ForEachStatementSyntax* node);
+        virtual void VisitUntilStatement(UntilStatementSyntax* node);
 
-        virtual void VisitConditionalClause(ConditionalClauseBaseSyntax *const node);
-        virtual void VisitIfStatement(IfStatementSyntax *const node);
-        virtual void VisitUnlessStatement(UnlessStatementSyntax *const node);
-        virtual void VisitElseStatement(ElseStatementSyntax *const node);
-        virtual void VisitTryStatement(TryStatementSyntax *const node);
+        virtual void VisitConditionalClause(ConditionalClauseBaseSyntax* node);
+        virtual void VisitIfStatement(IfStatementSyntax* node);
+        virtual void VisitUnlessStatement(UnlessStatementSyntax* node);
+        virtual void VisitElseStatement(ElseStatementSyntax* node);
+        virtual void VisitTryStatement(TryStatementSyntax* node);
 
-        virtual void VisitExpression(ExpressionSyntax *const node);
-        virtual void VisitLiteralExpression(LiteralExpressionSyntax *const node);
-        virtual void VisitBinaryExpression(BinaryExpressionSyntax *const node);
-        virtual void VisitUnaryExpression(UnaryExpressionSyntax *const node);
-        virtual void VisitObjectCreationExpression(ObjectExpressionSyntax *const node);
-        virtual void VisitCollectionExpression(CollectionExpressionSyntax *const node);
-        virtual void VisitRangeExpression(RangeExpressionSyntax *const node);
-        virtual void VisitLambdaExpression(LambdaExpressionSyntax *const node);
-        virtual void VisitTernaryExpression(TernaryExpressionSyntax *const node);
-        virtual void VisitIfExpression(IfExpressionSyntax *const node);
-        virtual void VisitSwitchExpression(SwitchExpressionSyntax *const node);
+        virtual void VisitExpression(ExpressionSyntax* node);
+        virtual void VisitLiteralExpression(LiteralExpressionSyntax* node);
+        virtual void VisitBinaryExpression(BinaryExpressionSyntax* node);
+        virtual void VisitUnaryExpression(UnaryExpressionSyntax* node);
+        virtual void VisitObjectCreationExpression(ObjectExpressionSyntax* node);
+        virtual void VisitCollectionExpression(CollectionExpressionSyntax* node);
+        virtual void VisitRangeExpression(RangeExpressionSyntax* node);
+        virtual void VisitLambdaExpression(LambdaExpressionSyntax* node);
+        virtual void VisitTernaryExpression(TernaryExpressionSyntax* node);
+        virtual void VisitIfExpression(IfExpressionSyntax* node);
+        virtual void VisitSwitchExpression(SwitchExpressionSyntax* node);
 
-        virtual void VisitInvocationExpression(InvokationExpressionSyntax *const node);
-        virtual void VisitMemberAccessExpression(MemberAccessExpressionSyntax *const node);
-        virtual void VisitIndexatorExpression(IndexatorExpressionSyntax *const node);
+        virtual void VisitInvocationExpression(InvokationExpressionSyntax* node);
+        virtual void VisitMemberAccessExpression(MemberAccessExpressionSyntax* node);
+        virtual void VisitIndexatorExpression(IndexatorExpressionSyntax* node);
 
-        virtual void VisitCastExpression(CastExpressionSyntax *const node);
-        virtual void VisitIsExpression(IsExpressionSyntax *const node);
+        virtual void VisitCastExpression(CastExpressionSyntax* node);
+        virtual void VisitIsExpression(IsExpressionSyntax* node);
 
-        virtual void VisitArgumentsList(ArgumentsListSyntax *const node);
-        virtual void VisitArgument(ArgumentSyntax *const node);
-        virtual void VisitParametersList(ParametersListSyntax *const node);
-        virtual void VisitParameter(ParameterSyntax *const node);
-        virtual void VisitIndexatorList(IndexatorListSyntax *const node);
-        virtual void VisitTypeParametersList(TypeParametersListSyntax *const node);
-        virtual void VisitTypeArgumentsList(TypeArgumentsListSyntax *const node);
+        virtual void VisitArgumentsList(ArgumentsListSyntax* node);
+        virtual void VisitArgument(ArgumentSyntax* node);
+        virtual void VisitParametersList(ParametersListSyntax* node);
+        virtual void VisitParameter(ParameterSyntax* node);
+        virtual void VisitIndexatorList(IndexatorListSyntax* node);
+        virtual void VisitTypeParametersList(TypeParametersListSyntax* node);
+        virtual void VisitTypeArgumentsList(TypeArgumentsListSyntax* node);
 
-        virtual void VisitType(TypeSyntax *const node);
-        virtual void VisitPredefinedType(PredefinedTypeSyntax *const node);
-        virtual void VisitIdentifierNameType(IdentifierNameTypeSyntax *const node);
-        virtual void VisitArrayType(ArrayTypeSyntax *const node);
-        virtual void VisitNullableType(NullableTypeSyntax *const node);
-        virtual void VisitGenericType(GenericTypeSyntax *const node);
-        virtual void VisitDelegateType(DelegateTypeSyntax *const node);
+        virtual void VisitType(TypeSyntax* node);
+        virtual void VisitPredefinedType(PredefinedTypeSyntax* node);
+        virtual void VisitIdentifierNameType(IdentifierNameTypeSyntax* node);
+        virtual void VisitArrayType(ArrayTypeSyntax* node);
+        virtual void VisitNullableType(NullableTypeSyntax* node);
+        virtual void VisitGenericType(GenericTypeSyntax* node);
+        virtual void VisitDelegateType(DelegateTypeSyntax* node);
 	};
 }

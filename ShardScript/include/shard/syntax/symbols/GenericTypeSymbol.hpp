@@ -25,7 +25,9 @@ namespace shard
 
 		inline GenericTypeSymbol(TypeSymbol* underlayingType) : TypeSymbol(underlayingType->Name, SyntaxKind::GenericType), UnderlayingType(underlayingType)
 		{
-			IsReferenceType = underlayingType->IsReferenceType;
+			FullName = UnderlayingType->FullName;
+			Inlining = UnderlayingType->Inlining;
+			//Inlining = TypeInlining::ByReference;
 		}
 
 		inline GenericTypeSymbol(const GenericTypeSymbol& other) = delete;

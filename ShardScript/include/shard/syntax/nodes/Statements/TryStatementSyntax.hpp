@@ -30,7 +30,7 @@ namespace shard
 		std::unique_ptr<StatementsBlockSyntax> Body = nullptr;
 		VariableSymbol* Symbol = nullptr;
 
-		inline CatchClauseSyntax(SyntaxNode* const parent)
+		inline CatchClauseSyntax(SyntaxNode* parent)
 			: SyntaxNode(SyntaxKind::CatchClause, parent) { }
 
 		inline CatchClauseSyntax(const CatchClauseSyntax&) = delete;
@@ -45,7 +45,7 @@ namespace shard
 		std::unique_ptr<StatementsBlockSyntax> TryBlock = nullptr;
 		std::vector<std::unique_ptr<CatchClauseSyntax>> CatchClauses;
 
-		inline TryStatementSyntax(SyntaxNode *const parent)
+		inline TryStatementSyntax(SyntaxNode* parent)
 			: KeywordStatementSyntax(SyntaxKind::TryStatement, parent) { }
 
 		inline TryStatementSyntax(const TryStatementSyntax&) = delete;

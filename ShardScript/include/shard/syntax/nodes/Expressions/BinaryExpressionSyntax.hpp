@@ -17,7 +17,7 @@ namespace shard
 		std::unique_ptr<ExpressionSyntax> Left = nullptr;
 		std::unique_ptr<ExpressionSyntax> Right = nullptr;
 
-		inline BinaryExpressionSyntax(const SyntaxToken operatorToken, SyntaxNode *const parent)
+		inline BinaryExpressionSyntax(const SyntaxToken operatorToken, SyntaxNode* parent)
 			: ExpressionSyntax(SyntaxKind::BinaryExpression, parent), OperatorToken(operatorToken) {}
 		
 		inline BinaryExpressionSyntax(const BinaryExpressionSyntax&) = delete;

@@ -18,10 +18,10 @@ namespace shard
 		std::vector<SyntaxToken> IdentifierTokens;
 		SyntaxToken SemicolonToken;
 
-		inline NamespaceDeclarationSyntax(SyntaxNode *const parent)
+		inline NamespaceDeclarationSyntax(SyntaxNode* parent)
 			: MemberDeclarationSyntax(SyntaxKind::NamespaceDeclaration, parent) { }
 
-		inline NamespaceDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent)
+		inline NamespaceDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode* parent)
 			: MemberDeclarationSyntax(SyntaxKind::NamespaceDeclaration, parent)
 		{
 			Attributes = std::move(info.Attributes);

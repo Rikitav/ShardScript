@@ -1,5 +1,4 @@
 #include <shard/syntax/SyntaxHelpers.hpp>
-#include <shard/syntax/SymbolAccesibility.hpp>
 #include <shard/syntax/SyntaxSymbol.hpp>
 #include <shard/syntax/SyntaxToken.hpp>
 #include <shard/syntax/TokenType.hpp>

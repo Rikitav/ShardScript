@@ -9,15 +9,6 @@
 
 namespace shard
 {
-    enum class SymbolLinking
-    {
-        Static,
-        Instance
-    };
-
-    constexpr SymbolLinking LINK_STATIC = shard::SymbolLinking::Static;
-    constexpr SymbolLinking LINK_INSTANCE = shard::SymbolLinking::Instance;
-
     class SHARD_API MemberSymbol : public SyntaxSymbol
     {
     public:
@@ -29,5 +20,9 @@ namespace shard
         inline MemberSymbol(const MemberSymbol& other) = delete;
 
         inline virtual ~MemberSymbol() = default;
+
+        void OnSymbolDeclared(SyntaxSymbol* symbol) override;
+        bool IsType() const override;
+        bool IsMember() const override;
     };
 }

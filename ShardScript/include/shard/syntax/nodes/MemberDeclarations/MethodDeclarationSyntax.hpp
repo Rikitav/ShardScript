@@ -25,7 +25,7 @@ namespace shard
 		std::unique_ptr<ParametersListSyntax> ParametersList = nullptr;
 		std::unique_ptr<StatementsBlockSyntax> Body = nullptr;
 
-		inline MethodDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) : MemberDeclarationSyntax(SyntaxKind::MethodDeclaration, parent)
+		inline MethodDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode* parent) : MemberDeclarationSyntax(SyntaxKind::MethodDeclaration, parent)
 		{
 			Attributes = std::move(info.Attributes);
 			Modifiers = info.Modifiers;

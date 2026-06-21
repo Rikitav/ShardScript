@@ -26,10 +26,10 @@ namespace shard
 		std::unique_ptr<ExpressionSyntax> InitializerExpression = nullptr;
 		std::unique_ptr<TypeSyntax> ReturnType = nullptr;
 
-		inline FieldDeclarationSyntax(SyntaxNode *const parent)
+		inline FieldDeclarationSyntax(SyntaxNode* parent)
 			: MemberDeclarationSyntax(SyntaxKind::FieldDeclaration, parent) { }
 
-		inline FieldDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) : MemberDeclarationSyntax(SyntaxKind::FieldDeclaration, parent)
+		inline FieldDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode* parent) : MemberDeclarationSyntax(SyntaxKind::FieldDeclaration, parent)
 		{
 			Attributes = std::move(info.Attributes);
 			Modifiers = info.Modifiers;

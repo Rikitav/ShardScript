@@ -25,10 +25,8 @@ namespace shard
         }
 
         inline AccessorSymbol(const AccessorSymbol& other) = delete;
+        inline virtual ~AccessorSymbol() = default;
 
-        inline virtual ~AccessorSymbol()
-        {
-
-        }
+        void OnSymbolDeclared(SyntaxSymbol* symbol) override;
     };
 }

@@ -18,7 +18,7 @@ static ObjectInstance* shard_list_init(const CallState& context) noexcept(false)
 	TypeSymbol* concreteT = context.Frame->TypeArguments[0];
 
 	ArrayTypeSymbol* arrayType = new ArrayTypeSymbol(concreteT);
-	arrayType->Size = 0;
+	arrayType->Length = 0;
 	arrayType->MemoryBytesSize = SymbolTable::Primitives::Array->MemoryBytesSize;
 	arrayType->State = TypeLayoutingState::Visited;
 
@@ -39,7 +39,7 @@ static ObjectInstance* shard_list_init_capacity(const CallState& context) noexce
 	TypeSymbol* concreteT = context.Frame->TypeArguments[0];
 
 	ArrayTypeSymbol* arrayType = new ArrayTypeSymbol(concreteT);
-	arrayType->Size = 0;
+	arrayType->Length = 0;
 	arrayType->MemoryBytesSize = SymbolTable::Primitives::Array->MemoryBytesSize;
 	arrayType->State = TypeLayoutingState::Visited;
 
@@ -62,11 +62,11 @@ static ObjectInstance* shard_list_Add(const CallState& context) noexcept(false)
 	ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->getInfo()));
 	TypeSymbol* concreteT = context.Frame->TypeArguments[0];
 
-	std::size_t currentSize = arrayType->Size;
+	std::size_t currentSize = arrayType->Length;
 	std::size_t newSize = currentSize + 1;
 
 	ArrayTypeSymbol* newArrayType = new ArrayTypeSymbol(concreteT);
-	newArrayType->Size = newSize;
+	newArrayType->Length = newSize;
 	newArrayType->MemoryBytesSize = SymbolTable::Primitives::Array->MemoryBytesSize + concreteT->GetInlineSize() * newSize;
 	newArrayType->State = TypeLayoutingState::Visited;
 
@@ -96,7 +96,7 @@ static ObjectInstance* shard_list_ElementAt(const CallState& context) noexcept(f
 	ObjectInstance* arrayInstance = listInstance->GetField(list_arrayField, context.Frame);
 	ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->getInfo()));
 
-	if (index < 0 || static_cast<std::size_t>(index) >= arrayType->Size)
+	if (index < 0 || static_cast<std::size_t>(index) >= arrayType->Length)
 		throw std::runtime_error("index is out of bounds");
 
 	return arrayInstance->GetElement(static_cast<std::size_t>(index), context.Frame);
@@ -115,13 +115,13 @@ static ObjectInstance* shard_list_RemoveAt(const CallState& context) noexcept(fa
 	ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->getInfo()));
 	TypeSymbol* concreteT = context.Frame->TypeArguments[0];
 
-	if (index < 0 || static_cast<std::size_t>(index) >= arrayType->Size)
+	if (index < 0 || static_cast<std::size_t>(index) >= arrayType->Length)
 		throw std::runtime_error("index is out of bounds");
 
-	std::size_t newSize = arrayType->Size - 1;
+	std::size_t newSize = arrayType->Length - 1;
 
 	ArrayTypeSymbol* newArrayType = new ArrayTypeSymbol(concreteT);
-	newArrayType->Size = newSize;
+	newArrayType->Length = newSize;
 	newArrayType->MemoryBytesSize = SymbolTable::Primitives::Array->MemoryBytesSize + concreteT->GetInlineSize() * newSize;
 	newArrayType->State = TypeLayoutingState::Visited;
 
@@ -133,7 +133,7 @@ static ObjectInstance* shard_list_RemoveAt(const CallState& context) noexcept(fa
 		newArray->SetElement(i, element, context.Frame);
 	}
 
-	for (std::size_t i = static_cast<std::size_t>(index) + 1; i < arrayType->Size; i++)
+	for (std::size_t i = static_cast<std::size_t>(index) + 1; i < arrayType->Length; i++)
 	{
 		ObjectInstance* element = arrayInstance->GetElement(i, context.Frame);
 		newArray->SetElement(i - 1, element, context.Frame);
@@ -154,7 +154,7 @@ static ObjectInstance* shard_list_Clear(const CallState& context) noexcept(false
 	TypeSymbol* concreteT = context.Frame->TypeArguments[0];
 
 	ArrayTypeSymbol* newArrayType = new ArrayTypeSymbol(concreteT);
-	newArrayType->Size = 0;
+	newArrayType->Length = 0;
 	newArrayType->MemoryBytesSize = SymbolTable::Primitives::Array->MemoryBytesSize;
 	newArrayType->State = TypeLayoutingState::Visited;
 
@@ -175,7 +175,7 @@ static ObjectInstance* shard_list_Length_get(const CallState& context) noexcept(
 	ObjectInstance* arrayInstance = listInstance->GetField(list_arrayField, context.Frame);
 	ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->getInfo()));
 
-	return context.Collector.FromValue(static_cast<std::int64_t>(arrayType->Size));
+	return context.Collector.FromValue(static_cast<std::int64_t>(arrayType->Length));
 }
 
 static ObjectInstance* shard_list_Indexer_get(const CallState& context) noexcept(false)
@@ -190,7 +190,7 @@ static ObjectInstance* shard_list_Indexer_get(const CallState& context) noexcept
 	ObjectInstance* arrayInstance = listInstance->GetField(list_arrayField, context.Frame);
 	ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->getInfo()));
 
-	if (index < 0 || static_cast<std::size_t>(index) >= arrayType->Size)
+	if (index < 0 || static_cast<std::size_t>(index) >= arrayType->Length)
 		throw std::runtime_error("index is out of bounds");
 
 	return arrayInstance->GetElement(static_cast<std::size_t>(index), context.Frame);
@@ -209,7 +209,7 @@ static ObjectInstance* shard_list_Indexer_set(const CallState& context) noexcept
 	ObjectInstance* arrayInstance = listInstance->GetField(list_arrayField, context.Frame);
 	ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->getInfo()));
 
-	if (index < 0 || static_cast<std::size_t>(index) >= arrayType->Size)
+	if (index < 0 || static_cast<std::size_t>(index) >= arrayType->Length)
 		throw std::runtime_error("index is out of bounds");
 
 	arrayInstance->SetElement(static_cast<std::size_t>(index), value, context.Frame);

@@ -5,26 +5,31 @@
 
 #include <string>
 #include <unordered_map>
+#include <optional>
 
 namespace shard
 {
 	class SHARD_API SemanticScope
 	{
 	public:
-		std::unordered_map<std::wstring, shard::SyntaxSymbol*> _symbols;
+		std::unordered_map<std::wstring, SyntaxSymbol*> _symbols;
 	
-		SemanticScope *const Parent;
-		shard::SyntaxSymbol *const Owner;
+		SemanticScope* Parent;
+		SyntaxSymbol* Owner;
 		NamespaceNode* Namespace = nullptr;
 
 		bool ReturnFound = false;
 		bool ReturnsAnything = false;
 
-		inline SemanticScope(shard::SyntaxSymbol *const owner, SemanticScope *const parent)
+		inline SemanticScope(SyntaxSymbol* owner, SemanticScope* parent)
 			: Owner(owner), Parent(parent) { }
 
-		shard::SyntaxSymbol *const Lookup(const std::wstring& name);
-		void DeclareSymbol(shard::SyntaxSymbol *const symbol);
-		void RemoveSymbol(shard::SyntaxSymbol *const symbol);
+		inline ~SemanticScope()
+		{
+
+		}
+
+		std::optional<SyntaxSymbol*> Lookup(const std::wstring& name);
+		void DeclareSymbol(SyntaxSymbol* symbol);
 	};
 }

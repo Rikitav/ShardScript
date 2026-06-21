@@ -19,6 +19,8 @@ namespace shard
     class FieldSymbol;
     class PropertySymbol;
     class IndexatorSymbol;
+    class CallStackFrame;
+    class GenericTypeSymbol;
 }
 
 namespace shard
@@ -28,6 +30,12 @@ namespace shard
         Unvisited,
         Visiting,
         Visited
+    };
+
+    enum class TypeInlining
+    {
+        ByReference,
+        ByValue
     };
 
 	class SHARD_API TypeSymbol : public MemberSymbol
@@ -45,9 +53,9 @@ namespace shard
         std::unordered_map<MethodSymbol*, MethodSymbol*> InterfaceMethodMap;
 
         TypeLayoutingState State = TypeLayoutingState::Unvisited;
+        TypeInlining Inlining = TypeInlining::ByReference;
+
         std::size_t MemoryBytesSize = 0;
-        bool IsReferenceType = false;
-        bool IsValueType = false;
         bool IsNullable = false;
         
         TypeSymbol(const std::wstring& name, const SyntaxKind kind)
@@ -60,6 +68,8 @@ namespace shard
         bool IsPrimitive();
 
         void OnSymbolDeclared(SyntaxSymbol* symbol) override;
+        bool IsType() const override;
+        bool IsMember() const override;
 
         virtual ConstructorSymbol* FindConstructor(const std::vector<TypeSymbol*>& parameterTypes);
         virtual MethodSymbol* FindMethod(std::wstring& name, const std::vector<TypeSymbol*>& parameterTypes);
@@ -69,14 +79,13 @@ namespace shard
 
         virtual MethodSymbol* FindInterfaceImplementation(MethodSymbol* interfaceMethod);
 
-        static bool Equals(const TypeSymbol* left, const TypeSymbol* right);
+        static bool Equals(const TypeSymbol* expected, const TypeSymbol* actual);
         static bool IsAssignableFrom(const TypeSymbol* target, const TypeSymbol* source);
-
+        
         static TypeSymbol* SubstituteType(TypeSymbol* type);
 		static TypeSymbol* ReturnOf(FieldSymbol* field);
 		static TypeSymbol* ReturnOf(MethodSymbol* method);
 		static TypeSymbol* ReturnOf(PropertySymbol* property);
-		static TypeSymbol* ReturnOf(IndexatorSymbol* indexator);
 		static TypeSymbol* ReturnOf(ConstructorSymbol* constructor);
 	};
 }

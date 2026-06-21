@@ -17,7 +17,7 @@ namespace shard
 		std::unique_ptr<TypeSyntax> UnderlayingType = nullptr;
 		SyntaxToken QuestionToken;
 
-		inline NullableTypeSyntax(std::unique_ptr<TypeSyntax> underlaying, SyntaxNode *const parent)
+		inline NullableTypeSyntax(std::unique_ptr<TypeSyntax> underlaying, SyntaxNode* parent)
 			: TypeSyntax(SyntaxKind::NullableType, parent), UnderlayingType(std::move(underlaying)) { }
 
 		inline NullableTypeSyntax(const NullableTypeSyntax& other) = delete;

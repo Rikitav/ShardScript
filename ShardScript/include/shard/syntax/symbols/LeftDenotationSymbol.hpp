@@ -17,9 +17,6 @@ namespace shard
 
         inline LeftDenotationSymbol(const LeftDenotationSymbol& other) = delete;
 
-        inline ~LeftDenotationSymbol()
-        {
-
-        }
+        inline virtual ~LeftDenotationSymbol() = default;
     };
 }
