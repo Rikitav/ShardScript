@@ -1,6 +1,6 @@
 project(ShardScript.Framework)
 
-file(GLOB_RECURSE CPP_FILES CONFIGURE_DEPENDS "system/*.cpp")
+file(GLOB_RECURSE CPP_FILES CONFIGURE_DEPENDS "system/*.shard.cpp")
 
 foreach(CPP_FILE IN LISTS CPP_FILES)
     get_filename_component(TARGET_NAME "${CPP_FILE}" NAME_WLE)

@@ -236,7 +236,7 @@ SHARDLIB_ENTRYPOINT
 	
 	// List<T>._array: T[]
 	list_arrayField = listClass
-		.AddField(L"_array", typeParamT, LINK_INSTANCE, ACS_PRIVATE).Get();
+		.AddField(L"_array", listClass.GetFactory().Array(typeParamT), LINK_INSTANCE, ACS_PRIVATE).Get();
 
 	listClass.AddInit()
 		.SetCallback(&shard_list_init);

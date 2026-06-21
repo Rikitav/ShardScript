@@ -68,6 +68,7 @@ namespace shard
 		double& AsDouble() const;
 		wchar_t& AsCharacter() const;
 		const wchar_t* AsString() const;
+		void* AsNint() const;
 
 		void* OffsetMemory(const std::size_t offset, const std::size_t size) const;
 		void ReadMemory(const std::size_t offset, const std::size_t size, void* dst) const;

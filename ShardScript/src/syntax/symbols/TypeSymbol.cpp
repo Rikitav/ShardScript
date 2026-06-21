@@ -320,10 +320,7 @@ PropertySymbol* TypeSymbol::FindProperty(std::wstring& name)
 MethodSymbol* TypeSymbol::FindInterfaceImplementation(MethodSymbol* interfaceMethod)
 {
 	auto it = InterfaceMethodMap.find(interfaceMethod);
-	if (it != InterfaceMethodMap.end())
-		return it->second;
-
-	return nullptr;
+	return it == InterfaceMethodMap.end() ? nullptr : it->second;
 }
 
 TypeSymbol* TypeSymbol::SubstituteType(TypeSymbol* type)

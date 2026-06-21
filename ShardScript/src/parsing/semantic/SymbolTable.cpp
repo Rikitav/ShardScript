@@ -34,6 +34,11 @@ using namespace shard;
 TypeSymbol* const SymbolTable::Global::Type = new TypeSymbol(GlobalTypeName, SyntaxKind::CompilationUnit);
 SemanticScope* const SymbolTable::Global::Scope = new SemanticScope(Type, nullptr);
 
+inline static void declareGlobal(SyntaxSymbol* symbol)
+{
+	SymbolTable::Global::Scope->DeclareSymbol(symbol);
+}
+
 template<typename B, typename D>
 static std::unique_ptr<D> unique_cast(std::unique_ptr<B> ptr)
 {
@@ -49,89 +54,35 @@ static std::unique_ptr<D> unique_cast(std::unique_ptr<B> ptr)
 	return derivedPointer;
 }
 
-static void ResolvePrimitives()
+static std::string WStringToString(const std::wstring& value)
 {
-	static bool resolved = false;
-	if (resolved)
-		return;
+	std::string result;
+	result.reserve(value.size());
+	for (wchar_t ch : value)
+		result.push_back(static_cast<char>(ch));
 
-	SymbolTable::Primitives::Void = new StructSymbol(L"Void");
-	SymbolTable::Primitives::Any = new StructSymbol(L"Any");
-	SymbolTable::Primitives::Null = new StructSymbol(L"Null");
-
-	SymbolTable::Primitives::Void->State = TypeLayoutingState::Visited;
-	SymbolTable::Primitives::Any->State = TypeLayoutingState::Visited;
-	SymbolTable::Primitives::Null->State = TypeLayoutingState::Visited;
-
-	SymbolTable::Primitives::Void->MemoryBytesSize = 0;
-	SymbolTable::Primitives::Any->MemoryBytesSize = 0;
-	SymbolTable::Primitives::Null->MemoryBytesSize = 0;
-
-	SymbolTable::Primitives::Boolean = new StructSymbol(L"Boolean");
-	SymbolTable::Primitives::Integer = new StructSymbol(L"Integer");
-	SymbolTable::Primitives::Double = new StructSymbol(L"Double");
-	SymbolTable::Primitives::Char = new StructSymbol(L"Char");
-	SymbolTable::Primitives::String = new ClassSymbol(L"String");
-	SymbolTable::Primitives::Array = new ClassSymbol(L"Array");
-
-	SymbolTable::Primitives::Boolean->State = TypeLayoutingState::Visited;
-	SymbolTable::Primitives::Integer->State = TypeLayoutingState::Visited;
-	SymbolTable::Primitives::Double->State = TypeLayoutingState::Visited;
-	SymbolTable::Primitives::Char->State = TypeLayoutingState::Visited;
-	SymbolTable::Primitives::String->State = TypeLayoutingState::Visited;
-	SymbolTable::Primitives::Array->State = TypeLayoutingState::Visited;
-
-	SymbolTable::Primitives::Boolean->MemoryBytesSize = sizeof(bool);
-	SymbolTable::Primitives::Integer->MemoryBytesSize = sizeof(std::int64_t);
-	SymbolTable::Primitives::Double->MemoryBytesSize = sizeof(double);
-	SymbolTable::Primitives::Char->MemoryBytesSize = sizeof(wchar_t);
-	SymbolTable::Primitives::String->MemoryBytesSize = sizeof(std::int64_t) + sizeof(wchar_t*); // long _length + char[] _data
-	SymbolTable::Primitives::Array->MemoryBytesSize = sizeof(std::int64_t);					   // long _length
-
-	resolved = true;
+	return result;
 }
 
-static ObjectInstance* runtime_capture_stack_trace(const CallState& context)
+static std::wstring ObjectInstanceToString(const VirtualMachine* host, ObjectInstance* instance)
 {
-	std::wstring trace = context.Runtimer.GetStackTrace();
-	return context.Collector.FromValue(trace);
-}
+	TypeSymbol* type = const_cast<TypeSymbol*>(instance->getInfo());
+	MethodSymbol* implementation = type->FindInterfaceImplementation(TRAIT_PRINTABLE_ToString);
 
-static void AddInterfaceGetter(InterfaceSymbol* iface, const std::wstring& name, SymbolFactory& factory)
-{
-	PropertySymbol* property = factory.Property(name, SymbolTable::Primitives::String, LINK_INSTANCE);
-	property->Accesibility = SymbolAccesibility::Public;
-	property->Parent = iface;
+	/*
+	if (implementation == nullptr)
+		throw std::runtime_error("Type '" + WStringToString(type->FullName) + "' does not implement IPrintable");
+	*/
 
-	AccessorSymbol* getter = factory.Getter(property);
-	getter->Parent = property;
-	getter->HandleType = MethodHandleType::None;
+	if (implementation == nullptr)
+		return type->FullName;
 
-	iface->Properties.push_back(property);
-	iface->Methods.push_back(getter);
-}
+	host->InvokeMethod(implementation, { instance });
+	ObjectInstance* result = host->CurrentFrame()->PopStack();
+	if (result == nullptr || result->getInfo() != SymbolTable::Primitives::String)
+		throw std::runtime_error("ToString did not return a string");
 
-static void AddRuntimeExceptionProperty(ClassSymbol* cls, const std::wstring& name, FieldSymbol*& outField, SymbolFactory& factory)
-{
-	PropertySymbol* property = factory.Property(name, SymbolTable::Primitives::String, LINK_INSTANCE);
-	property->Accesibility = SymbolAccesibility::Public;
-	property->Parent = cls;
-
-	FieldSymbol* backingField = factory.BackingField(property);
-	backingField->Parent = cls;
-	cls->Fields.push_back(backingField);
-
-	AccessorSymbol* getter = factory.Getter(property);
-	getter->Parent = property;
-
-	ByteCodeEncoder encoder;
-	encoder.EmitLoadVarible(getter->ExecutableByteCode, 0);
-	encoder.EmitLoadField(getter->ExecutableByteCode, backingField);
-
-	cls->Properties.push_back(property);
-	cls->Methods.push_back(getter);
-
-	outField = backingField;
+	return result->AsString();
 }
 
 static ObjectInstance* primitive_boolean_to_string(const CallState& context)
@@ -165,46 +116,9 @@ static ObjectInstance* primitive_string_to_string(const CallState& context)
 	return self;
 }
 
-static MethodSymbol* GetIPrintableToString()
-{
-	static std::wstring methodName = L"ToString";
-	static MethodSymbol* method = SymbolTable::StandardTypes::IPrintable->FindMethod(methodName, std::vector<TypeSymbol*>());
-	return method;
-}
-
-static std::string WStringToString(const std::wstring& value)
-{
-	std::string result;
-	result.reserve(value.size());
-	for (wchar_t ch : value)
-		result.push_back(static_cast<char>(ch));
-	return result;
-}
-
-static std::wstring ObjectInstanceToString(const VirtualMachine* host, ObjectInstance* instance)
-{
-    TypeSymbol* type = const_cast<TypeSymbol*>(instance->getInfo());
-	MethodSymbol* implementation = type->FindInterfaceImplementation(GetIPrintableToString());
-	
-	/*
-	if (implementation == nullptr)
-		throw std::runtime_error("Type '" + WStringToString(type->FullName) + "' does not implement IPrintable");
-	*/
-
-	if (implementation == nullptr)
-		return type->FullName;
-
-	host->InvokeMethod(implementation, { instance });
-	ObjectInstance* result = host->CurrentFrame()->PopStack();
-	if (result == nullptr || result->getInfo() != SymbolTable::Primitives::String)
-		throw std::runtime_error("ToString did not return a string");
-
-	return result->AsString();
-}
-
 static ObjectInstance* primitive_array_to_string(const CallState& context)
 {
-    ObjectInstance* instance = context.Args[0]; // this
+	ObjectInstance* instance = context.Args[0]; // this
 	const ArrayTypeSymbol* array = static_cast<const ArrayTypeSymbol*>(instance->getInfo());
 	size_t size = array->Size;
 
@@ -229,16 +143,68 @@ static ObjectInstance* primitive_array_to_string(const CallState& context)
 	return context.Collector.FromValue(result.str());
 }
 
-static void MakePrimitivePrintable(TypeSymbol* primitive, MethodSymbolDelegate toString, SymbolFactory& factory, MethodSymbol* iPrintableToString)
+static ObjectInstance* primitive_nint_to_string(const CallState& context)
+{
+	std::size_t self = reinterpret_cast<std::size_t>(context.Args[0]->AsNint());
+	return context.Collector.FromValue(std::to_wstring(self));
+}
+
+static ObjectInstance* runtime_capture_stack_trace(const CallState& context)
+{
+	std::wstring trace = context.Runtimer.GetStackTrace();
+	return context.Collector.FromValue(trace);
+}
+
+static AccessorSymbol* AddInterfaceGetter(InterfaceSymbol* iface, const std::wstring& name, SymbolFactory& factory)
+{
+	PropertySymbol* property = factory.Property(name, SymbolTable::Primitives::String, LINK_INSTANCE);
+	property->Accesibility = SymbolAccesibility::Public;
+	property->Parent = iface;
+
+	AccessorSymbol* getter = factory.Getter(property);
+	getter->Parent = property;
+	getter->HandleType = MethodHandleType::None;
+
+	iface->Properties.push_back(property);
+	iface->Methods.push_back(getter);
+
+	return getter;
+}
+
+static void AddRuntimeExceptionProperty(ClassSymbol* cls, const std::wstring& name, FieldSymbol*& outField, SymbolFactory& factory)
+{
+	PropertySymbol* property = factory.Property(name, SymbolTable::Primitives::String, LINK_INSTANCE);
+	property->Accesibility = SymbolAccesibility::Public;
+	property->Parent = cls;
+
+	FieldSymbol* backingField = factory.BackingField(property);
+	backingField->Parent = cls;
+	cls->Fields.push_back(backingField);
+
+	AccessorSymbol* getter = factory.Getter(property);
+	getter->Parent = property;
+
+	ByteCodeEncoder encoder;
+	encoder.EmitLoadVarible(getter->ExecutableByteCode, 0);
+	encoder.EmitLoadField(getter->ExecutableByteCode, backingField);
+
+	cls->Properties.push_back(property);
+	cls->Methods.push_back(getter);
+
+	outField = backingField;
+}
+
+static void MakePrimitivePrintable(TypeSymbol* primitive, MethodSymbolDelegate toString, SymbolFactory& factory, MethodSymbol* TRAIT_PRINTABLE_ToString)
 {
 	MethodSymbol* method = factory.Method(SymbolAccesibility::Public, LINK_INSTANCE, SymbolTable::Primitives::String, L"ToString", toString);
 	method->Parent = primitive;
+
 	primitive->Methods.push_back(method);
-	primitive->Interfaces.push_back(SymbolTable::StandardTypes::IPrintable);
-	primitive->InterfaceMethodMap[iPrintableToString] = method;
+	primitive->Interfaces.push_back(TRAIT_PRINTABLE);
+	primitive->InterfaceMethodMap[TRAIT_PRINTABLE_ToString] = method;
 }
 
-static void ResolveStandardTypes(SymbolTable* table)
+static void ResolveInterfaces(SymbolTable* table)
 {
 	static bool resolved = false;
 	if (resolved)
@@ -246,84 +212,105 @@ static void ResolveStandardTypes(SymbolTable* table)
 
 	SymbolFactory factory(table);
 
-	SemanticScope* globalScope = SymbolTable::Global::Scope;
-	auto declareGlobal = [&](SyntaxSymbol* symbol)
-	{
-		globalScope->DeclareSymbol(symbol);
-	};
-
 	// IThrowable
 	{
-		InterfaceSymbol* raw = factory.Interface(L"IThrowable");
-		raw->Accesibility = SymbolAccesibility::Public;
-		raw->Parent = SymbolTable::Global::Type;
-		raw->FullName = L"IThrowable";
-		declareGlobal(raw);
+		TRAIT_THROWABLE = factory.Interface(L"IThrowable", SymbolAccesibility::Public, SymbolTable::Global::Type);
+		TRAIT_THROWABLE_getMessage = AddInterfaceGetter(TRAIT_THROWABLE, L"message", factory);
+		TRAIT_THROWABLE_getStackTrace = AddInterfaceGetter(TRAIT_THROWABLE, L"stack_trace", factory);
 
-		AddInterfaceGetter(raw, L"message", factory);
-		AddInterfaceGetter(raw, L"stack_trace", factory);
-
-		SymbolTable::StandardTypes::IThrowable = raw;
+		declareGlobal(TRAIT_THROWABLE);
 	}
 
 	// IDisposable
 	{
-		InterfaceSymbol* raw = factory.Interface(L"IDisposable");
-		raw->Accesibility = SymbolAccesibility::Public;
-		raw->Parent = SymbolTable::Global::Type;
-		raw->FullName = L"IDisposable";
-		declareGlobal(raw);
+		TRAIT_DISPOSABLE = factory.Interface(L"IDisposable", SymbolAccesibility::Public, SymbolTable::Global::Type);
+		TRAIT_DISPOSABLE_Dispose = factory.Method(L"Dispose", SymbolTable::Primitives::Void, LINK_INSTANCE);
 
-		MethodSymbol* dispose = factory.Method(L"Dispose", SymbolTable::Primitives::Void, LINK_INSTANCE);
-		dispose->Accesibility = SymbolAccesibility::Public;
-		dispose->Parent = raw;
-		raw->Methods.push_back(dispose);
+		TRAIT_DISPOSABLE_Dispose->Parent = TRAIT_DISPOSABLE;
+		TRAIT_DISPOSABLE->Methods.push_back(TRAIT_DISPOSABLE_Dispose);
 
-		SymbolTable::StandardTypes::IDisposable = raw;
+		declareGlobal(TRAIT_DISPOSABLE);
 	}
 
 	// IPrintable
-	MethodSymbol* iPrintableToString = nullptr;
 	{
-		InterfaceSymbol* raw = factory.Interface(L"IPrintable");
-		raw->Accesibility = SymbolAccesibility::Public;
-		raw->Parent = SymbolTable::Global::Type;
-		raw->FullName = L"IPrintable";
-		declareGlobal(raw);
+		TRAIT_PRINTABLE = factory.Interface(L"IPrintable", SymbolAccesibility::Public, SymbolTable::Global::Type);
+		TRAIT_PRINTABLE_ToString = factory.Method(L"ToString", SymbolTable::Primitives::String, LINK_INSTANCE);
+		
+		TRAIT_PRINTABLE_ToString->Parent = TRAIT_PRINTABLE;
+		TRAIT_PRINTABLE->Methods.push_back(TRAIT_PRINTABLE_ToString);
 
-		MethodSymbol* toString = factory.Method(L"ToString", SymbolTable::Primitives::String, LINK_INSTANCE);
-		toString->Accesibility = SymbolAccesibility::Public;
-		toString->Parent = raw;
-		raw->Methods.push_back(toString);
-		iPrintableToString = toString;
-
-		SymbolTable::StandardTypes::IPrintable = raw;
+		declareGlobal(TRAIT_PRINTABLE);
 	}
-
-	// Make standard primitives implement IPrintable
-	MakePrimitivePrintable(SymbolTable::Primitives::Boolean, &primitive_boolean_to_string, factory, iPrintableToString);
-	MakePrimitivePrintable(SymbolTable::Primitives::Integer, &primitive_integer_to_string, factory, iPrintableToString);
-	MakePrimitivePrintable(SymbolTable::Primitives::Double, &primitive_double_to_string, factory, iPrintableToString);
-	MakePrimitivePrintable(SymbolTable::Primitives::Char, &primitive_char_to_string, factory, iPrintableToString);
-	MakePrimitivePrintable(SymbolTable::Primitives::String, &primitive_string_to_string, factory, iPrintableToString);
-	MakePrimitivePrintable(SymbolTable::Primitives::Array, &primitive_array_to_string, factory, iPrintableToString);
 
 	// IEnumerable<T>
 	{
-		InterfaceSymbol* raw = factory.Interface(L"IEnumerable");
-		raw->Accesibility = SymbolAccesibility::Public;
-		raw->Parent = SymbolTable::Global::Type;
-		raw->FullName = L"IEnumerable";
+		TRAIT_ENUMERABLE = factory.Interface(L"IEnumerable", SymbolAccesibility::Public, SymbolTable::Global::Type);
 
-		TypeParameterSymbol* typeParam = factory.TypeParameter(L"T");
-		typeParam->Parent = raw;
-		typeParam->TypeArgumentIndex = 0;
-		raw->TypeParameters.push_back(typeParam);
+		TypeParameterSymbol* typeParam = factory.TypeParameter(L"T", TRAIT_ENUMERABLE);
+		TRAIT_ENUMERABLE->TypeParameters.push_back(typeParam);
 
-		declareGlobal(raw);
-
-		SymbolTable::StandardTypes::IEnumerable = raw;
+		declareGlobal(TRAIT_ENUMERABLE);
 	}
+
+	resolved = true;
+}
+
+static void ResolvePrimitives(SymbolTable* table)
+{
+	static bool resolved = false;
+	if (resolved)
+		return;
+
+	SymbolFactory factory(table);
+
+	// ============================================================================
+	// Matters
+	// ============================================================================
+	SymbolTable::Primitives::Void = new StructSymbol(L"Void");
+	SymbolTable::Primitives::Any = new StructSymbol(L"Any");
+	SymbolTable::Primitives::Null = new StructSymbol(L"Null");
+	SymbolTable::Primitives::NativeInteger = new ClassSymbol(L"IntPtr");
+
+	SymbolTable::Primitives::Void->State = TypeLayoutingState::Visited;
+	SymbolTable::Primitives::Any->State = TypeLayoutingState::Visited;
+	SymbolTable::Primitives::Null->State = TypeLayoutingState::Visited;
+
+	SymbolTable::Primitives::Void->MemoryBytesSize = 0;
+	SymbolTable::Primitives::Any->MemoryBytesSize = 0;
+	SymbolTable::Primitives::Null->MemoryBytesSize = 0;
+	SymbolTable::Primitives::NativeInteger->MemoryBytesSize = sizeof(void*);
+
+	// ============================================================================
+	// Primitives
+	// ============================================================================
+	SymbolTable::Primitives::Boolean = new StructSymbol(L"Boolean");
+	SymbolTable::Primitives::Integer = new StructSymbol(L"Integer");
+	SymbolTable::Primitives::Double = new StructSymbol(L"Double");
+	SymbolTable::Primitives::Char = new StructSymbol(L"Char");
+	SymbolTable::Primitives::String = new ClassSymbol(L"String");
+	SymbolTable::Primitives::Array = new ClassSymbol(L"Array");
+
+	SymbolTable::Primitives::Boolean->State = TypeLayoutingState::Visited;
+	SymbolTable::Primitives::Integer->State = TypeLayoutingState::Visited;
+	SymbolTable::Primitives::Double->State = TypeLayoutingState::Visited;
+	SymbolTable::Primitives::Char->State = TypeLayoutingState::Visited;
+	SymbolTable::Primitives::String->State = TypeLayoutingState::Visited;
+	SymbolTable::Primitives::Array->State = TypeLayoutingState::Visited;
+	SymbolTable::Primitives::NativeInteger->State = TypeLayoutingState::Visited;
+
+	SymbolTable::Primitives::Boolean->MemoryBytesSize = sizeof(bool);
+	SymbolTable::Primitives::Integer->MemoryBytesSize = sizeof(std::int64_t);
+	SymbolTable::Primitives::Double->MemoryBytesSize = sizeof(double);
+	SymbolTable::Primitives::Char->MemoryBytesSize = sizeof(wchar_t);
+	SymbolTable::Primitives::String->MemoryBytesSize = sizeof(std::int64_t) + sizeof(wchar_t*); // long _length + char[] _data
+	SymbolTable::Primitives::Array->MemoryBytesSize = sizeof(std::int64_t);					    // long _length
+
+	// ============================================================================
+	// Standard
+	// ============================================================================
+
+
 
 	// Runtime class with capture_stack_trace
 	{
@@ -353,7 +340,7 @@ static void ResolveStandardTypes(SymbolTable* table)
 		raw->Accesibility = SymbolAccesibility::Public;
 		raw->Parent = SymbolTable::Global::Type;
 		raw->FullName = L"RuntimeException";
-		raw->Interfaces.push_back(SymbolTable::StandardTypes::IThrowable);
+		raw->Interfaces.push_back(TRAIT_THROWABLE);
 		declareGlobal(raw);
 
 		ConstructorSymbol* ctor = factory.Constructor(raw, SymbolAccesibility::Public);
@@ -369,7 +356,7 @@ static void ResolveStandardTypes(SymbolTable* table)
 		SymbolTable::StandardTypes::RuntimeExceptionStackTraceField = stackTraceField;
 
 		// Map IThrowable getters to RuntimeException getters
-		for (PropertySymbol* ifaceProp : SymbolTable::StandardTypes::IThrowable->Properties)
+		for (PropertySymbol* ifaceProp : TRAIT_THROWABLE->Properties)
 		{
 			if (ifaceProp->Getter == nullptr)
 				continue;
@@ -380,7 +367,7 @@ static void ResolveStandardTypes(SymbolTable* table)
 					continue;
 
 				if (classProp->Name == ifaceProp->Name &&
-				    TypeSymbol::Equals(classProp->ReturnType, ifaceProp->ReturnType))
+					TypeSymbol::Equals(classProp->ReturnType, ifaceProp->ReturnType))
 				{
 					raw->InterfaceMethodMap[ifaceProp->Getter] = classProp->Getter;
 					break;
@@ -391,15 +378,21 @@ static void ResolveStandardTypes(SymbolTable* table)
 		SymbolTable::StandardTypes::RuntimeException = raw;
 	}
 
+	// Make standard primitives implement IPrintable
+	MakePrimitivePrintable(SymbolTable::Primitives::Boolean, &primitive_boolean_to_string, factory, TRAIT_PRINTABLE_ToString);
+	MakePrimitivePrintable(SymbolTable::Primitives::Integer, &primitive_integer_to_string, factory, TRAIT_PRINTABLE_ToString);
+	MakePrimitivePrintable(SymbolTable::Primitives::Double, &primitive_double_to_string, factory, TRAIT_PRINTABLE_ToString);
+	MakePrimitivePrintable(SymbolTable::Primitives::Char, &primitive_char_to_string, factory, TRAIT_PRINTABLE_ToString);
+	MakePrimitivePrintable(SymbolTable::Primitives::String, &primitive_string_to_string, factory, TRAIT_PRINTABLE_ToString);
+	MakePrimitivePrintable(SymbolTable::Primitives::Array, &primitive_array_to_string, factory, TRAIT_PRINTABLE_ToString);
+	MakePrimitivePrintable(SymbolTable::Primitives::NativeInteger, &primitive_nint_to_string, factory, TRAIT_PRINTABLE_ToString);
+
 	resolved = true;
 }
 
 SymbolTable::SymbolTable()
 {
-	if (SymbolTable::Primitives::Void == nullptr)
-		ResolvePrimitives();
-
-	ResolveStandardTypes(this);
+	ResolvePrimitives(this);
 }
 
 SymbolTable::~SymbolTable()
@@ -485,6 +478,7 @@ const std::vector<NamespaceSymbol*> SymbolTable::GetNamespaceSymbols()
 	result.reserve(namespacesList.size());
 	for (const auto& symbol : namespacesList)
 		result.push_back(symbol.get());
+
 	return result;
 }
 
@@ -494,6 +488,7 @@ const std::vector<TypeSymbol*> SymbolTable::GetTypeSymbols()
 	result.reserve(typesList.size());
 	for (const auto& symbol : typesList)
 		result.push_back(symbol.get());
+
 	return result;
 }
 

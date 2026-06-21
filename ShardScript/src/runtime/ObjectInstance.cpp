@@ -19,6 +19,107 @@
 
 using namespace shard;
 
+static TypeSymbol* ResolveRuntimeType(TypeSymbol* type, CallStackFrame* frame, GenericTypeSymbol* genericInfo)
+{
+    if (type == nullptr)
+        return nullptr;
+
+    if (type->Kind == SyntaxKind::TypeParameter)
+    {
+        if (frame != nullptr)
+            return frame->ResolveType(type);
+
+        if (genericInfo != nullptr)
+            return genericInfo->SubstituteTypeParameters(static_cast<TypeParameterSymbol*>(type));
+
+        return type;
+    }
+
+    if (type->Kind == SyntaxKind::ArrayType)
+    {
+        ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(type);
+        TypeSymbol* resolvedUnderlying = ResolveRuntimeType(arrayType->UnderlayingType, frame, genericInfo);
+        if (resolvedUnderlying == nullptr || resolvedUnderlying == arrayType->UnderlayingType)
+            return type;
+
+        ArrayTypeSymbol* resolvedArray = new ArrayTypeSymbol(resolvedUnderlying);
+        resolvedArray->Size = arrayType->Size;
+        resolvedArray->Rank = arrayType->Rank;
+        resolvedArray->State = arrayType->State;
+        return resolvedArray;
+    }
+
+    return type;
+}
+
+static bool RuntimeTypeEquals(TypeSymbol* expected, TypeSymbol* actual, CallStackFrame* frame, GenericTypeSymbol* genericInfo)
+{
+    if (expected == actual)
+        return true;
+    if (expected == nullptr || actual == nullptr)
+        return false;
+
+    if (expected->Kind == SyntaxKind::TypeParameter)
+    {
+        TypeSymbol* resolved = ResolveRuntimeType(expected, frame, genericInfo);
+        if (resolved == expected)
+            return TypeSymbol::Equals(expected, actual);
+
+        return RuntimeTypeEquals(resolved, actual, frame, genericInfo);
+    }
+
+    if (expected->Kind == SyntaxKind::ArrayType)
+    {
+        if (actual->Kind != SyntaxKind::ArrayType)
+            return false;
+
+        ArrayTypeSymbol* expectedArray = static_cast<ArrayTypeSymbol*>(expected);
+        ArrayTypeSymbol* actualArray = static_cast<ArrayTypeSymbol*>(actual);
+
+        return RuntimeTypeEquals(expectedArray->UnderlayingType, actualArray->UnderlayingType, frame, genericInfo);
+    }
+
+    if (expected->Kind == SyntaxKind::GenericType)
+    {
+        if (actual->Kind != SyntaxKind::GenericType)
+            return false;
+
+        GenericTypeSymbol* expectedGeneric = static_cast<GenericTypeSymbol*>(expected);
+        GenericTypeSymbol* actualGeneric = static_cast<GenericTypeSymbol*>(actual);
+
+        if (!RuntimeTypeEquals(expectedGeneric->UnderlayingType, actualGeneric->UnderlayingType, frame, genericInfo))
+            return false;
+
+        for (TypeParameterSymbol* typeParam : expectedGeneric->UnderlayingType->TypeParameters)
+        {
+            TypeSymbol* expectedArg = expectedGeneric->SubstituteTypeParameters(typeParam);
+            TypeSymbol* actualArg = actualGeneric->SubstituteTypeParameters(typeParam);
+
+            if (expectedArg == nullptr)
+                expectedArg = typeParam;
+
+            if (actualArg == nullptr)
+                actualArg = typeParam;
+
+            if (!RuntimeTypeEquals(expectedArg, actualArg, frame, genericInfo))
+                return false;
+        }
+
+        return true;
+    }
+
+    return TypeSymbol::Equals(expected, actual);
+}
+
+static GenericTypeSymbol* GetGenericInfo(ObjectInstance* instance)
+{
+    const TypeSymbol* info = instance->getInfo();
+    if (info != nullptr && info->Kind == SyntaxKind::GenericType)
+        return const_cast<GenericTypeSymbol*>(static_cast<const GenericTypeSymbol*>(info));
+
+    return nullptr;
+}
+
 const TypeSymbol* ObjectInstance::getInfo() const
 {
 	return Info;
@@ -41,17 +142,8 @@ std::int64_t ObjectInstance::getReferencesCounter() const
 
 ObjectInstance* ObjectInstance::GetField(FieldSymbol* field, CallStackFrame* frame)
 {
-	TypeSymbol* fieldType = field->ReturnType;
-	if (fieldType->Kind == SyntaxKind::TypeParameter)
-	{
-		if (frame != nullptr)
-			fieldType = frame->ResolveType(fieldType);
-		else
-		{
-			GenericTypeSymbol* genericInfo = const_cast<GenericTypeSymbol*>(static_cast<const GenericTypeSymbol*>(Info));
-			fieldType = genericInfo->SubstituteTypeParameters(static_cast<TypeParameterSymbol*>(fieldType));
-		}
-	}
+	GenericTypeSymbol* genericInfo = GetGenericInfo(this);
+	TypeSymbol* fieldType = ResolveRuntimeType(field->ReturnType, frame, genericInfo);
 
 	if (fieldType->IsReferenceType)
 	{
@@ -62,7 +154,7 @@ ObjectInstance* ObjectInstance::GetField(FieldSymbol* field, CallStackFrame* fra
 	else
 	{
 		void* offset = OffsetMemory(field->MemoryBytesOffset, fieldType->GetInlineSize());
-		ObjectInstance* instance = new ObjectInstance(field->ReturnType, offset, true);
+		ObjectInstance* instance = new ObjectInstance(fieldType, offset, true);
 		return instance;
 	}
 }
@@ -72,20 +164,12 @@ void ObjectInstance::SetField(FieldSymbol* field, ObjectInstance* instance, Call
 	if (instance == nullptr)
 		throw std::runtime_error("got nullptr instance");
 
+	GenericTypeSymbol* genericInfo = GetGenericInfo(this);
 	TypeSymbol* fieldType = field->ReturnType;
-	if (!TypeSymbol::Equals(fieldType, instance->getInfo()))
+	if (!RuntimeTypeEquals(fieldType, const_cast<TypeSymbol*>(instance->getInfo()), frame, genericInfo))
 		throw std::runtime_error("incompatible field type");
 
-	if (fieldType->Kind == SyntaxKind::TypeParameter)
-	{
-		if (frame != nullptr)
-			fieldType = frame->ResolveType(fieldType);
-		else
-		{
-			GenericTypeSymbol* genericInfo = const_cast<GenericTypeSymbol*>(static_cast<const GenericTypeSymbol*>(Info));
-			fieldType = genericInfo->SubstituteTypeParameters(static_cast<TypeParameterSymbol*>(fieldType));
-		}
-	}
+	fieldType = ResolveRuntimeType(fieldType, frame, genericInfo);
 
 	if (fieldType->IsReferenceType)
 	{
@@ -294,4 +378,9 @@ wchar_t& ObjectInstance::AsCharacter() const
 const wchar_t* ObjectInstance::AsString() const
 {
 	return *reinterpret_cast<const wchar_t**>(OffsetMemory(sizeof(std::int64_t), sizeof(wchar_t*)));
+}
+
+void* ObjectInstance::AsNint() const
+{
+	return getMemory();
 }

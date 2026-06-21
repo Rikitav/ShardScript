@@ -1105,11 +1105,11 @@ void VirtualMachine::Run()
 			exception->IncrementReference();
 			UnhandledException = exception;
 
-			if (SymbolTable::StandardTypes::IThrowable != nullptr && TypeSymbol::IsAssignableFrom(
-				static_cast<TypeSymbol*>(SymbolTable::StandardTypes::IThrowable),
+			if (TRAIT_THROWABLE != nullptr && TypeSymbol::IsAssignableFrom(
+				static_cast<TypeSymbol*>(TRAIT_THROWABLE),
 			    const_cast<TypeSymbol*>(exception->getInfo())))
 			{
-				for (PropertySymbol* property : SymbolTable::StandardTypes::IThrowable->Properties)
+				for (PropertySymbol* property : TRAIT_THROWABLE->Properties)
 				{
 					if (property == nullptr)
 						continue;

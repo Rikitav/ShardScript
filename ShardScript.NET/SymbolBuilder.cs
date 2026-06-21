@@ -32,7 +32,6 @@ public static class SymbolFactory
             throw new ArgumentNullException(nameof(context));
 
         IntPtr handle = ShardScriptAPI.Shard_GetPrimitiveType(context.Handle, (int)primitive);
-        ShardEngineException.ThrowIfError(0); // primitive lookup does not return an error code; zero handle will fail downstream
         return new TypeSymbol(handle);
     }
 

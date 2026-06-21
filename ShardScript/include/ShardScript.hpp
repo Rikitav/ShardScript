@@ -164,6 +164,9 @@
 #include <shard/CompilationContext.hpp>
 #include <shard/ShardScriptLIB.hpp>
 
+// --- Public C/C++ API ---
+#include <shard/ShardScriptExtern.hpp>
+
 // --- Lexical / Reading ---
 #include <shard/parsing/lexical/SourceProvider.hpp>
 #include <shard/parsing/lexical/reading/SourceTextProvider.hpp>

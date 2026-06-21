@@ -14,7 +14,7 @@ static ObjectInstance* shard_random_Integer(const CallState& context) noexcept(f
 	std::uniform_int_distribution<std::int64_t> distrib(LONG_MIN, LONG_MAX);
 
 	std::int64_t value = distrib(gen);
-	return context.Domain.GetGarbageCollector().FromValue(value);
+	return context.Collector.FromValue(value);
 }
 
 static ObjectInstance* shard_random_Integer_top(const CallState& context) noexcept(false)

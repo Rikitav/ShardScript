@@ -50,11 +50,6 @@ namespace shard
         bool IsValueType = false;
         bool IsNullable = false;
         
-        /*
-        bool IsAbstract = false;
-        bool IsSealed = false;
-        */
-        
         TypeSymbol(const std::wstring& name, const SyntaxKind kind)
             : MemberSymbol(name, kind) { }
         

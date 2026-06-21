@@ -1,9 +1,10 @@
 using ShardScript.NET.Application;
 using ShardScript.NET.Runtime;
+using ShardScript.NET.Syntax.Builders;
 using ShardScript.NET.Syntax.Nodes;
 using ShardScript.NET.Syntax.Symbols;
 
-namespace ShardScript.NET.TestPregram;
+namespace ShardScript.NET.TestProgram;
 
 class Program
 {
@@ -255,8 +256,7 @@ class Program
         NamespaceSymbol ns = SymbolBuilder.Namespace(context, "callback_demo").Build();
         TypeSymbol externalMath = SymbolBuilder.Class(context, "ExternalMath", ns).Build();
 
-        MethodSymbol addMethod = SymbolBuilder.Method(context, externalMath, "Add",
-                SymbolBuilder.Primitive(context, PrimitiveType.Integer))
+        MethodSymbol addMethod = SymbolBuilder.Method(context, externalMath, "Add", SymbolBuilder.Primitive(context, PrimitiveType.Integer))
             .Public()
             .Static()
             .Parameter("a", SymbolBuilder.Primitive(context, PrimitiveType.Integer))
@@ -266,8 +266,7 @@ class Program
                 long a = new ObjectInstance(args[0]).AsInteger();
                 long b = new ObjectInstance(args[1]).AsInteger();
                 return new GarbageCollector(collector).FromInteger(a + b).Handle;
-            })
-            .Build();
+            }).Symbol;
 
         context.AddSource("Callback.ss", """
             using stdio;
