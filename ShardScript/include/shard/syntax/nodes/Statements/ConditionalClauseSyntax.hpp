@@ -18,7 +18,7 @@ namespace shard
 		std::unique_ptr<StatementsBlockSyntax> StatementsBlock = nullptr;
 		std::unique_ptr<ConditionalClauseBaseSyntax> NextStatement = nullptr;
 
-		inline ConditionalClauseBaseSyntax(const SyntaxKind kind, SyntaxNode *const parent) : KeywordStatementSyntax(kind, parent) { }
+		inline ConditionalClauseBaseSyntax(const SyntaxKind kind, SyntaxNode* parent) : KeywordStatementSyntax(kind, parent) { }
 		inline ConditionalClauseBaseSyntax(const ConditionalClauseBaseSyntax& other) = delete;
 
 		inline virtual ~ConditionalClauseBaseSyntax() = default;
@@ -31,7 +31,7 @@ namespace shard
 		SyntaxToken CloseCurlToken;
 		std::unique_ptr<StatementSyntax> ConditionExpression = nullptr;
 
-		inline ConditionalClauseSyntax(const SyntaxKind kind, SyntaxNode *const parent)
+		inline ConditionalClauseSyntax(const SyntaxKind kind, SyntaxNode* parent)
 			: ConditionalClauseBaseSyntax(kind, parent) { }
 		
 		inline ConditionalClauseSyntax(const ConditionalClauseSyntax& other) = delete;
@@ -42,7 +42,7 @@ namespace shard
 	class SHARD_API IfStatementSyntax : public ConditionalClauseSyntax
 	{
 	public:
-		inline IfStatementSyntax(SyntaxNode *const parent) : ConditionalClauseSyntax(SyntaxKind::IfStatement, parent) { }
+		inline IfStatementSyntax(SyntaxNode* parent) : ConditionalClauseSyntax(SyntaxKind::IfStatement, parent) { }
 		inline IfStatementSyntax(const IfStatementSyntax& other) = delete;
 		inline virtual ~IfStatementSyntax() = default;
 	};
@@ -50,7 +50,7 @@ namespace shard
 	class SHARD_API UnlessStatementSyntax : public ConditionalClauseSyntax
 	{
 	public:
-		inline UnlessStatementSyntax(SyntaxNode *const parent) : ConditionalClauseSyntax(SyntaxKind::UnlessStatement, parent) { }
+		inline UnlessStatementSyntax(SyntaxNode* parent) : ConditionalClauseSyntax(SyntaxKind::UnlessStatement, parent) { }
 		inline UnlessStatementSyntax(const UnlessStatementSyntax& other) = delete;
 		inline virtual ~UnlessStatementSyntax() = default;
 	};
@@ -58,7 +58,7 @@ namespace shard
 	class SHARD_API ElseStatementSyntax : public ConditionalClauseBaseSyntax
 	{
 	public:
-		inline ElseStatementSyntax(SyntaxNode *const parent) : ConditionalClauseBaseSyntax(SyntaxKind::ElseStatement, parent) { }
+		inline ElseStatementSyntax(SyntaxNode* parent) : ConditionalClauseBaseSyntax(SyntaxKind::ElseStatement, parent) { }
 		inline ElseStatementSyntax(const ElseStatementSyntax& other) = delete;
 		inline virtual ~ElseStatementSyntax() = default;
 	};

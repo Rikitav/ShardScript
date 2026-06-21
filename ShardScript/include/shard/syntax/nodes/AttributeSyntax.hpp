@@ -20,7 +20,7 @@ namespace shard
 
 		std::vector<SyntaxToken> Arguments;
 
-		inline AttributeSyntax(SyntaxNode* const parent)
+		inline AttributeSyntax(SyntaxNode* parent)
 			: SyntaxNode(SyntaxKind::Attribute, parent) { }
 
 		inline AttributeSyntax(const AttributeSyntax&) = delete;

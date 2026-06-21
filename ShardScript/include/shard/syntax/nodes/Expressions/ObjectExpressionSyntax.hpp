@@ -26,7 +26,7 @@ namespace shard
 		ConstructorSymbol* CtorSymbol = nullptr;
 		TypeSymbol* Symbol = nullptr;
 
-		inline ObjectExpressionSyntax(SyntaxNode *const parent)
+		inline ObjectExpressionSyntax(SyntaxNode* parent)
 			: ExpressionSyntax(SyntaxKind::ObjectExpression, parent) { }
 
 		inline ObjectExpressionSyntax(const ObjectExpressionSyntax&) = delete;

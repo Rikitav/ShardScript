@@ -31,10 +31,10 @@ namespace shard
         std::unique_ptr<AccessorDeclarationSyntax> Getter = nullptr;
         std::unique_ptr<AccessorDeclarationSyntax> Setter = nullptr;
 
-        inline IndexatorDeclarationSyntax(SyntaxNode *const parent)
+        inline IndexatorDeclarationSyntax(SyntaxNode* parent)
             : MemberDeclarationSyntax(SyntaxKind::IndexatorDeclaration, parent) { }
 
-        inline IndexatorDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) 
+        inline IndexatorDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode* parent) 
             : MemberDeclarationSyntax(SyntaxKind::IndexatorDeclaration, parent)
         {
             Attributes = std::move(info.Attributes);

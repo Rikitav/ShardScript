@@ -22,7 +22,7 @@ namespace shard
 		std::unique_ptr<ExpressionSyntax> ThenExpression = nullptr;
 		std::unique_ptr<ExpressionSyntax> ElseExpression = nullptr;
 
-		inline IfExpressionSyntax(SyntaxNode* const parent)
+		inline IfExpressionSyntax(SyntaxNode* parent)
 			: ExpressionSyntax(SyntaxKind::IfExpression, parent) { }
 
 		inline IfExpressionSyntax(const IfExpressionSyntax&) = delete;

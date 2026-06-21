@@ -62,7 +62,7 @@ SymbolBuilder<TypeParameterSymbol>::SymbolBuilder(CompilationContext& ctx,
     SyntaxSymbol* parent)
     : SymbolBuilderBase(ctx)
 {
-    Symbol = Factory.TypeParameter(name);
+    Symbol = Factory.TypeParameter(name, static_cast<MethodSymbol*>(nullptr));
     Symbol->Parent = parent;
 
     if (parent != nullptr)
@@ -87,7 +87,7 @@ SymbolBuilder<ClassSymbol>::SymbolBuilder(CompilationContext& ctx,
 {
     Symbol = Factory.Class(name);
     Symbol->Accesibility = SymbolAccesibility::Public;
-    Symbol->IsReferenceType = true;
+    Symbol->Inlining = TypeInlining::ByReference;
     Symbol->Parent = parent;
 
     if (parent != nullptr)
@@ -164,7 +164,7 @@ SymbolBuilder<StructSymbol>::SymbolBuilder(CompilationContext& ctx,
 {
     Symbol = Factory.Struct(name);
     Symbol->Accesibility = SymbolAccesibility::Public;
-    Symbol->IsReferenceType = true;
+    Symbol->Inlining = TypeInlining::ByReference;
     Symbol->Parent = parent;
 
     if (parent != nullptr)
@@ -271,10 +271,10 @@ SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::SetCallback(MethodSymb
 {
     Symbol->FunctionPointer = callback;
     Symbol->HandleType = MethodHandleType::External;
-    Symbol->IsExtern = true;
     return *this;
 }
 
+/*
 SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::SetCallback(
     ShardManagedMethodCallback callback,
     void* userData)
@@ -286,6 +286,7 @@ SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::SetCallback(
     Symbol->IsExtern = true;
     return *this;
 }
+*/
 
 SymbolBuilder<TypeParameterSymbol> SymbolBuilder<MethodSymbol>::AddTypeParameter(const std::wstring& name)
 {
@@ -322,10 +323,10 @@ SymbolBuilder<AccessorSymbol>& SymbolBuilder<AccessorSymbol>::SetCallback(Method
 {
     Symbol->FunctionPointer = callback;
     Symbol->HandleType = MethodHandleType::External;
-    Symbol->IsExtern = true;
     return *this;
 }
 
+/*
 SymbolBuilder<AccessorSymbol>& SymbolBuilder<AccessorSymbol>::SetCallback(
     ShardManagedMethodCallback callback,
     void* userData)
@@ -337,6 +338,7 @@ SymbolBuilder<AccessorSymbol>& SymbolBuilder<AccessorSymbol>::SetCallback(
     Symbol->IsExtern = true;
     return *this;
 }
+*/
 
 // =========================================================================
 // FieldSymbol
@@ -526,10 +528,10 @@ SymbolBuilder<ConstructorSymbol>& SymbolBuilder<ConstructorSymbol>::SetCallback(
 {
     Symbol->FunctionPointer = callback;
     Symbol->HandleType = MethodHandleType::External;
-    Symbol->IsExtern = true;
     return *this;
 }
 
+/*
 SymbolBuilder<ConstructorSymbol>& SymbolBuilder<ConstructorSymbol>::SetCallback(
     ShardManagedMethodCallback callback,
     void* userData)
@@ -541,3 +543,4 @@ SymbolBuilder<ConstructorSymbol>& SymbolBuilder<ConstructorSymbol>::SetCallback(
     Symbol->IsExtern = true;
     return *this;
 }
+*/

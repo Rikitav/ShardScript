@@ -19,7 +19,7 @@ namespace shard
 		std::vector<std::unique_ptr<TypeSyntax>> BaseInterfaces;
 		std::vector<std::unique_ptr<MemberDeclarationSyntax>> Members;
 
-		inline TypeDeclarationSyntax(const SyntaxKind kind, SyntaxNode *const parent)
+		inline TypeDeclarationSyntax(const SyntaxKind kind, SyntaxNode* parent)
 			: BodyDeclarationSyntax(kind, parent) { }
 
 		inline TypeDeclarationSyntax(const TypeDeclarationSyntax& other) = delete;

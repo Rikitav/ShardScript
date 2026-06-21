@@ -16,7 +16,7 @@ namespace shard
 	public:
 		inline ClassSymbol(const std::wstring& name) : TypeSymbol(name, SyntaxKind::ClassDeclaration)
 		{
-			IsReferenceType = true;
+			Inlining = TypeInlining::ByReference;
 		}
 
 		inline ClassSymbol(const ClassSymbol& other) = delete;

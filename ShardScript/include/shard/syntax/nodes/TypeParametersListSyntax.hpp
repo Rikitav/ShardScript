@@ -18,7 +18,7 @@ namespace shard
 		SyntaxToken CloseToken;
 		std::vector<SyntaxToken> Types;
 
-		inline TypeParametersListSyntax(SyntaxNode *const parent)
+		inline TypeParametersListSyntax(SyntaxNode* parent)
 			: SyntaxNode(SyntaxKind::ParametersList, parent) { }
 
 		inline TypeParametersListSyntax(const TypeParametersListSyntax& other) = delete;

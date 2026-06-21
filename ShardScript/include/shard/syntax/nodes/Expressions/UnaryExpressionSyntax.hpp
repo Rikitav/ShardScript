@@ -17,7 +17,7 @@ namespace shard
 		std::unique_ptr<ExpressionSyntax> Expression = nullptr;
 		const bool IsRightDetermined;
 
-		inline UnaryExpressionSyntax(const SyntaxToken operatorToken, const bool isRightDetermined, SyntaxNode *const parent)
+		inline UnaryExpressionSyntax(const SyntaxToken operatorToken, const bool isRightDetermined, SyntaxNode* parent)
 			: ExpressionSyntax(SyntaxKind::UnaryExpression, parent), OperatorToken(operatorToken), IsRightDetermined(isRightDetermined) { }
 
 		inline UnaryExpressionSyntax(const UnaryExpressionSyntax&) = delete;

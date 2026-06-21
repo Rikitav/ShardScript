@@ -16,7 +16,7 @@ namespace shard
 	public:
 		std::unique_ptr<ExpressionSyntax> Expression = nullptr;
 
-		inline ThrowStatementSyntax(SyntaxNode *const parent) : KeywordStatementSyntax(SyntaxKind::ThrowStatement, parent) {}
+		inline ThrowStatementSyntax(SyntaxNode* parent) : KeywordStatementSyntax(SyntaxKind::ThrowStatement, parent) {}
 		inline ThrowStatementSyntax(const ThrowStatementSyntax& other) = delete;
 
 		inline virtual ~ThrowStatementSyntax() = default;

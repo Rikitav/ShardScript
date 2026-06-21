@@ -908,7 +908,7 @@ ObjectInstance* VirtualMachine::InstantiateObject(TypeSymbol* type, ConstructorS
 		if (fieldType == nullptr)
 			continue;
 
-		if (fieldType->IsReferenceType)
+		if (fieldType->Inlining == TypeInlining::ByReference)
 		{
 			void* offset = newInstance->OffsetMemory(field->MemoryBytesOffset, sizeof(ObjectInstance*));
 			memset(offset, 0, sizeof(ObjectInstance*));

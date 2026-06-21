@@ -20,13 +20,12 @@ namespace shard
 	{
 	public:
 		TypeSymbol* UnderlayingType = nullptr;
-		std::size_t Size = 0;
-		int Rank = 0;
+		std::size_t Length = 0;
 
 		inline ArrayTypeSymbol(TypeSymbol* underlayingType) : TypeSymbol(L"Array", SyntaxKind::ArrayType), UnderlayingType(underlayingType)
 		{
 			MemoryBytesSize = shard::SymbolTable::Primitives::Array->MemoryBytesSize;
-			IsReferenceType = true;
+			Inlining = TypeInlining::ByReference;
 		}
 
 		inline ArrayTypeSymbol(const ArrayTypeSymbol& other) = delete;

@@ -107,48 +107,48 @@ namespace shard
 
         void VisitArgumentsList(ArgumentsListSyntax* node) override;
 
-		void VisitMethodDeclaration(MethodDeclarationSyntax *const node) override;
-		void VisitConstructorDeclaration(ConstructorDeclarationSyntax *const node) override;
-		void VisitAccessorDeclaration(AccessorDeclarationSyntax *const node) override;
+		void VisitMethodDeclaration(MethodDeclarationSyntax* node) override;
+		void VisitConstructorDeclaration(ConstructorDeclarationSyntax* node) override;
+		void VisitAccessorDeclaration(AccessorDeclarationSyntax* node) override;
 
-        void VisitExpressionStatement(ExpressionStatementSyntax *const node) override;
-        void VisitVariableStatement(VariableStatementSyntax *const node) override;
-        void VisitReturnStatement(ReturnStatementSyntax *const node) override;
-        void VisitThrowStatement(ThrowStatementSyntax *const node) override;
-        void VisitTryStatement(TryStatementSyntax *const node) override;
-        void VisitBreakStatement(BreakStatementSyntax *const node) override;
-        void VisitContinueStatement(ContinueStatementSyntax *const node) override;
-        void VisitDeferStatement(DeferStatementSyntax *const node) override;
-        void VisitStatementsBlock(StatementsBlockSyntax *const node) override;
+        void VisitExpressionStatement(ExpressionStatementSyntax* node) override;
+        void VisitVariableStatement(VariableStatementSyntax* node) override;
+        void VisitReturnStatement(ReturnStatementSyntax* node) override;
+        void VisitThrowStatement(ThrowStatementSyntax* node) override;
+        void VisitTryStatement(TryStatementSyntax* node) override;
+        void VisitBreakStatement(BreakStatementSyntax* node) override;
+        void VisitContinueStatement(ContinueStatementSyntax* node) override;
+        void VisitDeferStatement(DeferStatementSyntax* node) override;
+        void VisitStatementsBlock(StatementsBlockSyntax* node) override;
 
-        void VisitWhileStatement(WhileStatementSyntax *const node) override;
-        void VisitForStatement(ForStatementSyntax *const node) override;
-        void VisitForEachStatement(ForEachStatementSyntax *const node) override;
-        void VisitUntilStatement(UntilStatementSyntax *const node) override;
+        void VisitWhileStatement(WhileStatementSyntax* node) override;
+        void VisitForStatement(ForStatementSyntax* node) override;
+        void VisitForEachStatement(ForEachStatementSyntax* node) override;
+        void VisitUntilStatement(UntilStatementSyntax* node) override;
 
-        void VisitIfStatement(IfStatementSyntax *const node) override;
-        void VisitUnlessStatement(UnlessStatementSyntax *const node) override;
-        void VisitElseStatement(ElseStatementSyntax *const node) override;
+        void VisitIfStatement(IfStatementSyntax* node) override;
+        void VisitUnlessStatement(UnlessStatementSyntax* node) override;
+        void VisitElseStatement(ElseStatementSyntax* node) override;
 
-        void VisitLiteralExpression(LiteralExpressionSyntax *const node) override;
-        void VisitObjectCreationExpression(ObjectExpressionSyntax *const node) override;
-        void VisitCollectionExpression(CollectionExpressionSyntax *const node) override;
-        void VisitRangeExpression(RangeExpressionSyntax *const node) override;
-        void VisitLambdaExpression(LambdaExpressionSyntax *const node) override;
-        void VisitTernaryExpression(TernaryExpressionSyntax *const node) override;
+        void VisitLiteralExpression(LiteralExpressionSyntax* node) override;
+        void VisitObjectCreationExpression(ObjectExpressionSyntax* node) override;
+        void VisitCollectionExpression(CollectionExpressionSyntax* node) override;
+        void VisitRangeExpression(RangeExpressionSyntax* node) override;
+        void VisitLambdaExpression(LambdaExpressionSyntax* node) override;
+        void VisitTernaryExpression(TernaryExpressionSyntax* node) override;
 
-        void VisitUnaryExpression(UnaryExpressionSyntax* const node) override;
-        void VisitUnaryAssignExpression(UnaryExpressionSyntax* const node);
+        void VisitUnaryExpression(UnaryExpressionSyntax* node) override;
+        void VisitUnaryAssignExpression(UnaryExpressionSyntax* node);
 
-        void VisitBinaryExpression(BinaryExpressionSyntax *const node) override;
-        void VisitBinaryAssignExpression(BinaryExpressionSyntax* const node);
+        void VisitBinaryExpression(BinaryExpressionSyntax* node) override;
+        void VisitBinaryAssignExpression(BinaryExpressionSyntax* node);
 
-        void VisitInvocationExpression(InvokationExpressionSyntax *const node) override;
-        void VisitIndexatorExpression(IndexatorExpressionSyntax *const node) override;
-        void VisitMemberAccessExpression(MemberAccessExpressionSyntax *const node) override;
+        void VisitInvocationExpression(InvokationExpressionSyntax* node) override;
+        void VisitIndexatorExpression(IndexatorExpressionSyntax* node) override;
+        void VisitMemberAccessExpression(MemberAccessExpressionSyntax* node) override;
 
-        void VisitCastExpression(CastExpressionSyntax *const node) override;
-        void VisitIsExpression(IsExpressionSyntax *const node) override;
+        void VisitCastExpression(CastExpressionSyntax* node) override;
+        void VisitIsExpression(IsExpressionSyntax* node) override;
 
 private:
         void EmitMethodCall(MethodSymbol* method);

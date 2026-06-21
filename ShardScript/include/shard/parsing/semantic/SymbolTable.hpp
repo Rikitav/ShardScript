@@ -38,8 +38,8 @@ namespace shard
     public:
         struct Global
         {
-            static SHARD_API TypeSymbol *const Type;
-            static SHARD_API SemanticScope *const Scope;
+            static SHARD_API TypeSymbol* Type;
+            static SHARD_API SemanticScope* Scope;
         };
 
         struct Primitives
@@ -87,11 +87,11 @@ namespace shard
 
         void ClearSymbols();
 
-        SyntaxSymbol* BindSymbol(SyntaxNode *const node, std::unique_ptr<SyntaxSymbol> symbol);
+        SyntaxSymbol* BindSymbol(SyntaxNode* node, std::unique_ptr<SyntaxSymbol> symbol);
         SyntaxSymbol* ImplicitSymbol(std::unique_ptr<SyntaxSymbol> symbol);
 
-        std::optional<SyntaxSymbol*> LookupSymbol(SyntaxNode *const node);
-        std::optional<SyntaxNode*> LookupNode(SyntaxSymbol *const symbol);
+        std::optional<SyntaxSymbol*> LookupSymbol(SyntaxNode* node);
+        std::optional<SyntaxNode*> LookupNode(SyntaxSymbol* symbol);
 
         const std::vector<NamespaceSymbol*> GetNamespaceSymbols();
         const std::vector<TypeSymbol*> GetTypeSymbols();

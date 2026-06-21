@@ -17,7 +17,7 @@ namespace shard
 		const TypeSymbol* Info;
 		const bool IsTransient;
 		std::int64_t ReferencesCounter;
-		void* const Memory;
+		void* Memory;
 		std::size_t ArrayLength = 0;
 		std::size_t ArrayMemorySize = 0;
 

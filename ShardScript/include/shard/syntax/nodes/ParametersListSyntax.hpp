@@ -20,7 +20,7 @@ namespace shard
 		const SyntaxToken Identifier;
 		shard::TypeSymbol* Symbol = nullptr;
 
-		inline ParameterSyntax(std::unique_ptr<TypeSyntax> type, const SyntaxToken identifier, SyntaxNode *const parent)
+		inline ParameterSyntax(std::unique_ptr<TypeSyntax> type, const SyntaxToken identifier, SyntaxNode* parent)
 			: SyntaxNode(SyntaxKind::Parameter, parent), Type(std::move(type)), Identifier(identifier) { }
 
 		inline ParameterSyntax(const ParameterSyntax& other) = delete;
@@ -35,7 +35,7 @@ namespace shard
 		SyntaxToken CloseToken;
 		std::vector<std::unique_ptr<ParameterSyntax>> Parameters;
 
-		inline ParametersListSyntax(SyntaxNode *const parent)
+		inline ParametersListSyntax(SyntaxNode* parent)
 			: SyntaxNode(SyntaxKind::ParametersList, parent) {}
 
 		inline ParametersListSyntax(const ParametersListSyntax& other) = delete;

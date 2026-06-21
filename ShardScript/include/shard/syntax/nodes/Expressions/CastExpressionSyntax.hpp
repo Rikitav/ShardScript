@@ -18,7 +18,7 @@ namespace shard
 		std::unique_ptr<ExpressionSyntax> Expression = nullptr;
 		std::unique_ptr<TypeSyntax> TargetType = nullptr;
 
-		inline CastExpressionSyntax(const SyntaxToken operatorToken, SyntaxNode *const parent)
+		inline CastExpressionSyntax(const SyntaxToken operatorToken, SyntaxNode* parent)
 			: ExpressionSyntax(SyntaxKind::CastExpression, parent), OperatorToken(operatorToken) {}
 
 		inline CastExpressionSyntax(const CastExpressionSyntax&) = delete;

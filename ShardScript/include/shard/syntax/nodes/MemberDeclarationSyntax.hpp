@@ -22,7 +22,7 @@ namespace shard
 		std::vector<std::unique_ptr<AttributeSyntax>> Attributes;
 		std::unique_ptr<TypeParametersListSyntax> TypeParameters = nullptr;
 
-		inline MemberDeclarationSyntax(const SyntaxKind kind, SyntaxNode *const parent)
+		inline MemberDeclarationSyntax(const SyntaxKind kind, SyntaxNode* parent)
 			: SyntaxNode(kind, parent) { }
 
 		inline MemberDeclarationSyntax(const MemberDeclarationSyntax& other) = delete;

@@ -3,7 +3,6 @@
 #include <shard/parsing/semantic/NamespaceTree.hpp>
 
 #include <shard/syntax/SyntaxSymbol.hpp>
-#include <shard/syntax/SymbolAccesibility.hpp>
 #include <shard/syntax/SyntaxKind.hpp>
 
 #include <shard/syntax/symbols/NamespaceSymbol.hpp>
@@ -15,17 +14,17 @@
 
 using namespace shard;
 
-SemanticScope* const ScopeVisitor::CurrentScope()
+SemanticScope* ScopeVisitor::CurrentScope()
 {
 	return scopeStack.top();
 }
 
-void ScopeVisitor::PushScopeStack(SemanticScope* const scope)
+void ScopeVisitor::PushScopeStack(SemanticScope* scope)
 {
 	scopeStack.push(scope);
 }
 
-void ScopeVisitor::PushScope(SyntaxSymbol* const symbol)
+void ScopeVisitor::PushScope(SyntaxSymbol* symbol)
 {
 	SemanticScope* newScope = new SemanticScope(symbol, CurrentScope());
 	scopeStack.push(newScope);
@@ -33,12 +32,18 @@ void ScopeVisitor::PushScope(SyntaxSymbol* const symbol)
 
 void ScopeVisitor::PopScope()
 {
+	SemanticScope* scope = scopeStack.top();
 	scopeStack.pop();
+	delete scope;
 }
 
-void ScopeVisitor::Declare(SyntaxSymbol* const symbol)
+void ScopeVisitor::Declare(SyntaxSymbol* symbol)
 {
-	CurrentScope()->DeclareSymbol(symbol);
+	SemanticScope* scope = CurrentScope();
+	scope->DeclareSymbol(symbol);
+
+	if (scope->Owner != nullptr)
+		scope->Owner->OnSymbolDeclared(symbol);
 }
 
 bool ScopeVisitor::CheckNameDeclared(const std::wstring& name)
@@ -53,7 +58,7 @@ bool ScopeVisitor::CheckNameDeclared(const std::wstring& name)
 	return false;
 }
 
-bool ScopeVisitor::CheckSymbolNameDeclared(SyntaxSymbol* const symbol)
+bool ScopeVisitor::CheckNameDeclared(SyntaxSymbol* symbol)
 {
 	for (SemanticScope* scope = CurrentScope(); scope != nullptr; scope = scope->Parent)
 	{
@@ -68,22 +73,22 @@ bool ScopeVisitor::CheckSymbolNameDeclared(SyntaxSymbol* const symbol)
 	return false;
 }
 
-SyntaxSymbol* const ScopeVisitor::OwnerSymbol()
+std::optional<SyntaxSymbol*> ScopeVisitor::OwnerSymbol()
 {
 	for (SemanticScope* scope = CurrentScope(); scope != nullptr; scope = scope->Parent)
 	{
 		if (scope->Owner == nullptr)
 			continue;
 
-		SyntaxSymbol* const symbol = scope->Owner;
+		SyntaxSymbol* symbol = scope->Owner;
 		if (symbol->IsMember() || symbol->IsType() || symbol->Kind == SyntaxKind::NamespaceDeclaration)
 			return symbol;
 	}
 
-	return nullptr;
+	return std::nullopt;
 }
 
-TypeSymbol* const ScopeVisitor::OwnerType()
+std::optional<TypeSymbol*> ScopeVisitor::OwnerType()
 {
 	for (SemanticScope* scope = CurrentScope(); scope != nullptr; scope = scope->Parent)
 	{
@@ -91,10 +96,10 @@ TypeSymbol* const ScopeVisitor::OwnerType()
 			continue;
 
 		if (scope->Owner->IsType())
-			return static_cast<TypeSymbol* const>(scope->Owner);
+			return static_cast<TypeSymbol*>(scope->Owner);
 	}
 
-	return nullptr;
+	return std::nullopt;
 }
 
 static CompilationUnitSyntax* GetCompilationUnit(SyntaxNode* node)
@@ -105,7 +110,7 @@ static CompilationUnitSyntax* GetCompilationUnit(SyntaxNode* node)
 	return static_cast<CompilationUnitSyntax*>(node);
 }
 
-static bool IsMethodSymbol(SyntaxSymbol* const symbol)
+static bool IsMethodSymbol(SyntaxSymbol* symbol)
 {
 	if (symbol == nullptr)
 		return false;
@@ -122,18 +127,18 @@ static bool IsMethodSymbol(SyntaxSymbol* const symbol)
 	}
 }
 
-MethodSymbol* const ScopeVisitor::FindHostMethodSymbol()
+std::optional<MethodSymbol*> ScopeVisitor::FindHostMethodSymbol()
 {
 	for (SemanticScope* scope = CurrentScope(); scope != nullptr; scope = scope->Parent)
 	{
 		if (IsMethodSymbol(scope->Owner))
-			return static_cast<MethodSymbol* const>(scope->Owner);
+			return static_cast<MethodSymbol*>(scope->Owner);
 	}
 
-	return nullptr;
+	return std::nullopt;
 }
 
-bool ScopeVisitor::IsSymbolAccessible(SyntaxSymbol* const symbol, SyntaxNode* symbolDeclaringNode, SyntaxNode* callSiteNode)
+bool ScopeVisitor::IsSymbolAccessible(SyntaxSymbol* symbol, SyntaxNode* symbolDeclaringNode, SyntaxNode* callSiteNode)
 {
 	if (symbol == nullptr)
 		return true;

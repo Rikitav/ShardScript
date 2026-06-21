@@ -11,10 +11,10 @@ namespace shard
 	class SHARD_API ClassDeclarationSyntax : public TypeDeclarationSyntax
 	{
 	public:
-		inline ClassDeclarationSyntax(SyntaxNode *const parent)
+		inline ClassDeclarationSyntax(SyntaxNode* parent)
 			: TypeDeclarationSyntax(SyntaxKind::ClassDeclaration, parent) { }
 
-		inline ClassDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode *const parent) : TypeDeclarationSyntax(SyntaxKind::ClassDeclaration, parent)
+		inline ClassDeclarationSyntax(shard::MemberDeclarationInfo& info, SyntaxNode* parent) : TypeDeclarationSyntax(SyntaxKind::ClassDeclaration, parent)
 		{
 			Attributes = std::move(info.Attributes);
 			Modifiers = info.Modifiers;

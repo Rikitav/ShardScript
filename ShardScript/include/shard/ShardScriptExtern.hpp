@@ -299,6 +299,5 @@ extern "C"
     SHARD_API shard::ParameterSymbol* Shard_CreateParameterSymbol(shard::CompilationContext* ctx, const wchar_t* name, shard::TypeSymbol* type);
     SHARD_API int Shard_AddMethodParameter(shard::MethodSymbol* method, shard::ParameterSymbol* parameter);
     SHARD_API shard::FieldSymbol* Shard_CreateFieldSymbol(shard::CompilationContext* ctx, shard::TypeSymbol* parentType, const wchar_t* name, shard::TypeSymbol* type, int isStatic, int accessibility);
-    SHARD_API int Shard_SetMethodManagedCallback(shard::MethodSymbol* method, shard::ShardManagedMethodCallback callback, void* userData);
     SHARD_API int Shard_SetSymbolAccesibility(shard::SyntaxSymbol* symbol, int accessibility);
 }

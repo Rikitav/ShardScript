@@ -15,7 +15,7 @@ namespace shard
 	public:
 		shard::TypeSymbol* Symbol = nullptr;
 
-		inline TypeSyntax(const SyntaxKind kind, SyntaxNode *const parent)
+		inline TypeSyntax(const SyntaxKind kind, SyntaxNode* parent)
 			: SyntaxNode(kind, parent) { }
 
 		inline TypeSyntax(const TypeSyntax& other) = delete;

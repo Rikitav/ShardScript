@@ -16,7 +16,7 @@ namespace shard
 		SyntaxToken CloseBraceToken;
 		SyntaxToken SemicolonToken;
 		
-		inline BodyDeclarationSyntax(const SyntaxKind kind, SyntaxNode *const parent)
+		inline BodyDeclarationSyntax(const SyntaxKind kind, SyntaxNode* parent)
 			: MemberDeclarationSyntax(kind, parent) { }
 
 		inline BodyDeclarationSyntax(const BodyDeclarationSyntax& other) = delete;

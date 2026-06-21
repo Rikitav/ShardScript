@@ -18,7 +18,7 @@ namespace shard
 
 		bool IsInclusive = false;
 
-		inline RangeExpressionSyntax(SyntaxNode *const parent)
+		inline RangeExpressionSyntax(SyntaxNode* parent)
 			: ExpressionSyntax(SyntaxKind::RangeExpression, parent) { }
 
 		inline RangeExpressionSyntax(const RangeExpressionSyntax& other) = delete;

@@ -26,8 +26,8 @@ namespace shard
 
 		inline NamespaceSymbol(const NamespaceSymbol& other) = delete;
 
-		void OnSymbolDeclared(SyntaxSymbol* symbol) override;
-
 		inline virtual ~NamespaceSymbol() = default;
+
+		void OnSymbolDeclared(SyntaxSymbol* symbol) override;
 	};
 }

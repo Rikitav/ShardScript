@@ -22,7 +22,7 @@ namespace shard
 		std::unique_ptr<ExpressionSyntax> ConditionExpression = nullptr;
 		std::unique_ptr<StatementsBlockSyntax> StatementsBlock = nullptr;
 
-		inline WhileStatementSyntax(SyntaxNode *const parent)
+		inline WhileStatementSyntax(SyntaxNode* parent)
 			: KeywordStatementSyntax(SyntaxKind::WhileStatement, parent) { }
 
 		inline WhileStatementSyntax(const WhileStatementSyntax&) = delete;

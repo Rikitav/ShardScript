@@ -21,7 +21,7 @@ namespace shard
 		std::vector<std::unique_ptr<ExpressionSyntax>> ValuesExpressions;
 		ArrayTypeSymbol* Symbol = nullptr;
 
-		inline CollectionExpressionSyntax(SyntaxNode *const parent)
+		inline CollectionExpressionSyntax(SyntaxNode* parent)
 			: ExpressionSyntax(SyntaxKind::CollectionExpression, parent) { }
 
 		inline CollectionExpressionSyntax(const CollectionExpressionSyntax&) = delete;

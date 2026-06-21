@@ -31,8 +31,8 @@ using namespace std::ranges;
 using namespace std::views;
 using namespace shard;
 
-TypeSymbol* const SymbolTable::Global::Type = new TypeSymbol(GlobalTypeName, SyntaxKind::CompilationUnit);
-SemanticScope* const SymbolTable::Global::Scope = new SemanticScope(Type, nullptr);
+TypeSymbol* SymbolTable::Global::Type = new TypeSymbol(GlobalTypeName, SyntaxKind::CompilationUnit);
+SemanticScope* SymbolTable::Global::Scope = new SemanticScope(Type, nullptr);
 
 inline static void declareGlobal(SyntaxSymbol* symbol)
 {
@@ -120,7 +120,7 @@ static ObjectInstance* primitive_array_to_string(const CallState& context)
 {
 	ObjectInstance* instance = context.Args[0]; // this
 	const ArrayTypeSymbol* array = static_cast<const ArrayTypeSymbol*>(instance->getInfo());
-	size_t size = array->Size;
+	size_t size = array->Length;
 
 	if (size == 0)
 		return context.Collector.FromValue(L"[]");
@@ -411,13 +411,13 @@ void SymbolTable::ClearSymbols()
 	triviasList.clear();
 }
 
-std::optional<SyntaxSymbol*> SymbolTable::LookupSymbol(SyntaxNode *const node)
+std::optional<SyntaxSymbol*> SymbolTable::LookupSymbol(SyntaxNode* node)
 {
 	auto choise = nodeToSymbolMap.find(node);
 	return choise == nodeToSymbolMap.end() ? std::nullopt : std::optional<SyntaxSymbol*>(choise->second);
 }
 
-std::optional<SyntaxNode*> SymbolTable::LookupNode(SyntaxSymbol * const symbol)
+std::optional<SyntaxNode*> SymbolTable::LookupNode(SyntaxSymbol * symbol)
 {
 	auto choise = symbolToNodeMap.find(symbol);
 	return choise == symbolToNodeMap.end() ? std::nullopt : std::optional<SyntaxNode*>(choise->second);

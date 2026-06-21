@@ -13,10 +13,10 @@ namespace shard
 		Identifier,	 // member name
 
 		// Generic operators
-		AssignOperator,     // =
-		DeclareAssignOperator, // :=
-		ArrowOperator,      // ->
-		LambdaOperator,		// =>
+		AssignOperator,			// =
+		DeclareAssignOperator,	// :=
+		ArrowOperator,			// ->
+		LambdaOperator,			// =>
 		NullCoalescingOperator, // ??
 		RangeOperator,          // ..
 		RangeInclusiveOperator, // ..&
@@ -99,15 +99,6 @@ namespace shard
 		ExternKeyword,		  // extern
 		ExportKeyword,		  // export
 
-		/*
-		// OOP specific
-		AbstractKeyword,	  // abstract
-		SealedKeyword,		  // sealed
-		PartialKeyword,		  // partial
-		OverrideKeyword,	  // override
-		VirtualKeyword,		  // virtual
-		*/
-
 		// Property accessor keywords
 		GetKeyword,			  // get
 		SetKeyword,			  // set
@@ -152,10 +143,10 @@ namespace shard
 		InKeyword,          // in
 
 		// Conditional clause keywords
-		IfKeyword,		 // if
-		UnlessKeyword,	 // unless
-		ElseKeyword,	 // else
-		SwitchKeyword,    // switch
+		IfKeyword,			// if
+		UnlessKeyword,		// unless
+		ElseKeyword,		// else
+		SwitchKeyword,		// switch
 
 		// Functional keywords
 		ReturnKeyword,		  // return

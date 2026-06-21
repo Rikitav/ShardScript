@@ -27,7 +27,7 @@ namespace shard
 
 	class SHARD_API VirtualMachine
 	{
-		ApplicationDomain* const domain;
+		ApplicationDomain* domain;
 		ProgramVirtualImage& program;
 		GarbageCollector& garbageCollector;
 		PrimitiveMathModule math;

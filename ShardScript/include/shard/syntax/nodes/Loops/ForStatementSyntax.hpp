@@ -26,7 +26,7 @@ namespace shard
 		std::unique_ptr<StatementSyntax> AfterRepeatStatement = nullptr;
 		std::unique_ptr<StatementsBlockSyntax> StatementsBlock = nullptr;
 
-		inline ForStatementSyntax(SyntaxNode *const parent)
+		inline ForStatementSyntax(SyntaxNode* parent)
 			: KeywordStatementSyntax(SyntaxKind::ForStatement, parent) { }
 
 		inline ForStatementSyntax(const ForStatementSyntax&) = delete;

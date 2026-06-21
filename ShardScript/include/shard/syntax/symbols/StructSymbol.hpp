@@ -14,12 +14,9 @@ namespace shard
 	class SHARD_API StructSymbol : public TypeSymbol
 	{
 	public:
-		//std::vector<MethodSymbol*> Constructors;
-
 		inline StructSymbol(const std::wstring& name) : TypeSymbol(name, SyntaxKind::StructDeclaration)
 		{
-			//MemoryBytesSize += 0;
-			IsValueType = true;
+			Inlining = TypeInlining::ByValue;
 		}
 
 		inline StructSymbol(const StructSymbol& other) = delete;

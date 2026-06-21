@@ -16,7 +16,7 @@ namespace shard
 	public:
 		std::unique_ptr<ExpressionSyntax> Expression = nullptr;
 
-		inline ReturnStatementSyntax(SyntaxNode *const parent) : KeywordStatementSyntax(SyntaxKind::ReturnStatement, parent) { }
+		inline ReturnStatementSyntax(SyntaxNode* parent) : KeywordStatementSyntax(SyntaxKind::ReturnStatement, parent) { }
 		inline ReturnStatementSyntax(const ReturnStatementSyntax& other) = delete;
 
 		inline virtual ~ReturnStatementSyntax() = default;

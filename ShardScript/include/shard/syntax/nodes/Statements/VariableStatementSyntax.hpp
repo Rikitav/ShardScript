@@ -22,7 +22,7 @@ namespace shard
 		std::unique_ptr<TypeSyntax> Type = nullptr;
 		std::unique_ptr<ExpressionSyntax> Expression = nullptr;
 
-		inline VariableStatementSyntax(std::unique_ptr<TypeSyntax> type, SyntaxToken name, SyntaxToken assignOp, std::unique_ptr<ExpressionSyntax> expression, SyntaxNode *const parent)
+		inline VariableStatementSyntax(std::unique_ptr<TypeSyntax> type, SyntaxToken name, SyntaxToken assignOp, std::unique_ptr<ExpressionSyntax> expression, SyntaxNode* parent)
 			: StatementSyntax(SyntaxKind::VariableStatement, parent), Type(std::move(type)), IdentifierToken(name), AssignToken(assignOp), Expression(std::move(expression)) { }
 
 		inline VariableStatementSyntax(const VariableStatementSyntax& other) = delete;

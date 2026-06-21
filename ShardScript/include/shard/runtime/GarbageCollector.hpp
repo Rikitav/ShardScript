@@ -94,7 +94,7 @@ namespace shard
 
 	class SHARD_API GarbageCollector
 	{
-		ApplicationDomain* const applicationDomain;
+		ApplicationDomain* applicationDomain;
 		std::uint64_t objectsCounter = 0;
         std::unordered_map<FieldSymbol*, ObjectInstance*> staticFields;
 		std::vector<std::unique_ptr<ArrayTypeSymbol>> dynamicArrayTypes;

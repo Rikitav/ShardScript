@@ -39,7 +39,7 @@ void LayoutGenerator::FixObjectLayout(SemanticModel& semanticModel, TypeSymbol* 
 		if (returnType == nullptr)
 			continue;
 
-		if (!returnType->IsReferenceType)
+		if (returnType->Inlining == TypeInlining::ByValue)
 		{
 			if (returnType->State == TypeLayoutingState::Visiting)
 			{
@@ -65,7 +65,7 @@ void LayoutGenerator::FixObjectLayout(SemanticModel& semanticModel, TypeSymbol* 
 		if (arrayInfo->UnderlayingType->State == TypeLayoutingState::Unvisited)
 			FixObjectLayout(semanticModel, arrayInfo->UnderlayingType);
 
-		objectInfo->MemoryBytesSize = SymbolTable::Primitives::Array->MemoryBytesSize + arrayInfo->UnderlayingType->MemoryBytesSize * arrayInfo->Size;
+		objectInfo->MemoryBytesSize = SymbolTable::Primitives::Array->MemoryBytesSize + arrayInfo->UnderlayingType->MemoryBytesSize * arrayInfo->Length;
 	}
 
 	if (objectInfo->Kind == SyntaxKind::GenericType)

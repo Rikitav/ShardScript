@@ -21,7 +21,7 @@ namespace shard
 		MethodSymbol* DisposeMethod = nullptr;
 		bool IsResourceDefer = false;
 
-		inline DeferStatementSyntax(SyntaxToken deferToken, SyntaxNode *const parent)
+		inline DeferStatementSyntax(SyntaxToken deferToken, SyntaxNode* parent)
 			: KeywordStatementSyntax(SyntaxKind::DeferStatement, parent), DeferToken(deferToken) { }
 
 		inline DeferStatementSyntax(const DeferStatementSyntax& other) = delete;

@@ -125,6 +125,7 @@ static std::wstring GetLastErrorAsString()
 #endif
 }
 
+/*
 static void LinkExternSymbols(MemberDeclarationSyntax* member, LibraryHandle handle, SemanticModel& model, DiagnosticsContext& diagnostics)
 {
 	switch (member->Kind)
@@ -276,6 +277,7 @@ static void LinkExternSymbols(MemberDeclarationSyntax* member, LibraryHandle han
 		}
 	}
 }
+*/
 
 CompilationContext::CompilationContext()
 	: Tree(), Model(Tree), Diagnostics(), Parser(Diagnostics), Semanter(Diagnostics), Layouter(Diagnostics)
@@ -355,11 +357,13 @@ void CompilationContext::AddLib(const LibraryHandle& handle)
 		if (ReAnalyze)
 			Semanter.Analyze(Tree, Model);
 
+		/*
 		for (const auto& unit : PendingSources)
 		{
 			for (const auto& member : unit->Members)
 				LinkExternSymbols(member.get(), handle, Model, Diagnostics);
 		}
+		*/
 
 		PendingSources.clear();
 		ReAnalyze = false;

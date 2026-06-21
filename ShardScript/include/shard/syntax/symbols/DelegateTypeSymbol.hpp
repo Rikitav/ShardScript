@@ -22,7 +22,7 @@ namespace shard
 
 		inline DelegateTypeSymbol(std::wstring name) : TypeSymbol(name, SyntaxKind::DelegateType)
 		{
-			IsReferenceType = true;
+			Inlining = TypeInlining::ByReference;
 		}
 
 		inline DelegateTypeSymbol(const DelegateTypeSymbol& other) = delete;

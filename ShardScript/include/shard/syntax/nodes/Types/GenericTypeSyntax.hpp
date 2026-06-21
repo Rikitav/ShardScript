@@ -19,7 +19,7 @@ namespace shard
 		std::unique_ptr<TypeSyntax> UnderlayingType = nullptr;
 		std::unique_ptr<TypeArgumentsListSyntax> Arguments = nullptr;
 
-		inline GenericTypeSyntax(std::unique_ptr<TypeSyntax> underlaying, SyntaxNode *const parent)
+		inline GenericTypeSyntax(std::unique_ptr<TypeSyntax> underlaying, SyntaxNode* parent)
 			: TypeSyntax(SyntaxKind::GenericType, parent), UnderlayingType(std::move(underlaying)) { }
 
 		inline GenericTypeSyntax(const GenericTypeSyntax& other) = delete;

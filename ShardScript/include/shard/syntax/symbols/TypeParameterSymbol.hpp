@@ -3,7 +3,6 @@
 
 #include <shard/syntax/SyntaxKind.hpp>
 #include <shard/syntax/SyntaxSymbol.hpp>
-#include <shard/syntax/SymbolAccesibility.hpp>
 
 #include <shard/syntax/symbols/TypeSymbol.hpp>
 

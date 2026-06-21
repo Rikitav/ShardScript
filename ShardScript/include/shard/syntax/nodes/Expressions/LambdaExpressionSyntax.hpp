@@ -24,7 +24,7 @@ namespace shard
 		std::unique_ptr<StatementsBlockSyntax> Body = nullptr;
 		DelegateTypeSymbol* Symbol = nullptr;
 
-		inline LambdaExpressionSyntax(SyntaxNode *const parent)
+		inline LambdaExpressionSyntax(SyntaxNode* parent)
 			: ExpressionSyntax(SyntaxKind::LambdaExpression, parent) { }
 
 		inline LambdaExpressionSyntax(const LambdaExpressionSyntax&) = delete;

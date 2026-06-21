@@ -41,7 +41,6 @@
 #include <shard/syntax/symbols/ArrayTypeSymbol.hpp>
 
 #include <shard/syntax/SyntaxSymbol.hpp>
-#include <shard/syntax/SymbolAccesibility.hpp>
 
 #include <string>
 #include <vector>
@@ -53,11 +52,7 @@ namespace shard
 	{
 		SymbolTable* Table;
 
-		void SetAccesibility(SyntaxSymbol* node, std::vector<SyntaxToken> modifiers);
-		void SetAccesibility(TypeSymbol* node, std::vector<SyntaxToken> modifiers);
-		void SetAccesibility(FieldSymbol* node, std::vector<SyntaxToken> modifiers);
-		void SetAccesibility(PropertySymbol* node, std::vector<SyntaxToken> modifiers);
-		void SetAccesibility(MethodSymbol* node, std::vector<SyntaxToken> modifiers);
+		void SetAccesibility(std::vector<SyntaxToken> modifiers, SymbolAccesibility& accesibility, SymbolLinking& linking);
 
 		std::wstring FormatFullName(SyntaxSymbol* symbol);
 		std::wstring FormatFullName(SyntaxSymbol* symbol, SyntaxSymbol* parent);
@@ -121,7 +116,8 @@ namespace shard
 		VariableSymbol* Variable(const std::wstring& name, TypeSymbol* type);
 		VariableSymbol* Variable(const std::wstring& name, TypeSymbol* type, bool isConst);
 
-		TypeParameterSymbol* TypeParameter(const std::wstring& name, SyntaxSymbol* parent = nullptr);
+		TypeParameterSymbol* TypeParameter(const std::wstring& name, TypeSymbol* parent);
+		TypeParameterSymbol* TypeParameter(const std::wstring& name, MethodSymbol* parent);
 
 		DelegateTypeSymbol* Delegate(DelegateDeclarationSyntax* node);
 		DelegateTypeSymbol* Delegate(DelegateTypeSyntax* node);
