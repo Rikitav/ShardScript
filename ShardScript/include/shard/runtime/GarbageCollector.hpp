@@ -117,6 +117,8 @@ namespace shard
         ObjectInstance* FromValue(wchar_t value);
         ObjectInstance* FromValue(const wchar_t* value, bool isTransient);
         ObjectInstance* FromValue(const std::wstring& value);
+        
+        ObjectInstance* FromNint(void* rawMemory, bool isTransient);
 
         ObjectInstance* GetStaticField(FieldSymbol* field);
         void SetStaticField(FieldSymbol* field, ObjectInstance* instance);

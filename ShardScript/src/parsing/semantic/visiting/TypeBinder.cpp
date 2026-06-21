@@ -588,7 +588,7 @@ void TypeBinder::VisitTryStatement(TryStatementSyntax *const node)
 
 		if (exceptionType != SymbolTable::Primitives::Any)
 		{
-			TypeSymbol* throwable = SymbolTable::StandardTypes::IThrowable;
+			TypeSymbol* throwable = TRAIT_THROWABLE;
 			if (throwable != nullptr && !TypeSymbol::IsAssignableFrom(throwable, exceptionType))
 			{
 				Diagnostics.ReportError(clause->CatchKeywordToken,

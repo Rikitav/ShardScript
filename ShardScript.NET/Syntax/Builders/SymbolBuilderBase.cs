@@ -1,29 +1,37 @@
-﻿using ShardScript.NET.Syntax.Symbols;
+﻿using ShardScript.NET.Application;
+using ShardScript.NET.Syntax.Symbols;
 
 namespace ShardScript.NET.Syntax.Builders;
 
 public interface ISymbolBuilder<out TSymbol> where TSymbol : SyntaxSymbol
 {
+    CompilationContext Context { get; }
     IntPtr Handle { get; }
     TSymbol Symbol { get; }
 }
 
-public interface IAccessible<out TBuilder> where TBuilder : IAccessible<TBuilder>
+public interface IAccessible
 {
+    CompilationContext Context { get; }
     IntPtr Handle { get; }
 }
 
-public interface ILinkable<out TBuilder> where TBuilder : ILinkable<TBuilder>
+public interface ILinkable
 {
+    CompilationContext Context { get; }
     IntPtr Handle { get; }
 }
 
-public interface IParameterizable<out TBuilder> where TBuilder : IParameterizable<TBuilder>
+public interface IParameterizable
 {
+    CompilationContext Context { get; }
     IntPtr Handle { get; }
 }
 
-public interface ICallback<out TBuilder> where TBuilder : ICallback<TBuilder>
+public interface ICallback
 {
+    CompilationContext Context { get; }
     IntPtr Handle { get; }
+
+    void KeepCallbackAlive(ShardManagedMethodCallbackNative callback);
 }

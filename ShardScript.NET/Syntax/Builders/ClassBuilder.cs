@@ -4,30 +4,24 @@ using System.Runtime.InteropServices;
 
 namespace ShardScript.NET.Syntax.Builders;
 
-public sealed class ClassBuilder : ISymbolBuilder<TypeSymbol>, IAccessible<ClassBuilder>, ILinkable<ClassBuilder>
+public sealed class ClassBuilder : ISymbolBuilder<TypeSymbol>, IAccessible, ILinkable
 {
-    private readonly CompilationContext _context;
-    private readonly NamespaceSymbol? _parentNamespace;
-    private readonly string _name;
-
+    public CompilationContext Context { get; }
     public IntPtr Handle { get; }
     public TypeSymbol Symbol { get; }
 
     public ClassBuilder(CompilationContext context, NamespaceSymbol? parentNamespace, string name)
     {
-        _context = context ?? throw new ArgumentNullException(nameof(context));
-        _parentNamespace = parentNamespace;
-        _name = name ?? throw new ArgumentNullException(nameof(name));
-
+        Context = context ?? throw new ArgumentNullException(nameof(context));
         Handle = NativeMethods.Shard_CreateClassSymbol(context.Handle, parentNamespace?.Handle ?? IntPtr.Zero, name);
         Symbol = new TypeSymbol(Handle);
     }
 
     public MethodBuilder Method(string name, TypeSymbol returnType)
-        => new MethodBuilder(_context, Symbol, name, returnType);
+        => new MethodBuilder(Context, Symbol, name, returnType);
 
     public FieldBuilder Field(string name, TypeSymbol type)
-        => new FieldBuilder(_context, Symbol, name, type);
+        => new FieldBuilder(Context, Symbol, name, type);
 
     public TypeSymbol Build() => Symbol;
 

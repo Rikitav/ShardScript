@@ -50,6 +50,11 @@
 #include <shard/syntax/nodes/Statements/ExpressionStatementSyntax.hpp>
 #include <shard/syntax/nodes/Statements/ReturnStatementSyntax.hpp>
 #include <shard/syntax/nodes/Statements/VariableStatementSyntax.hpp>
+#include <shard/syntax/nodes/Statements/DeferStatementSyntax.hpp>
+#include <shard/syntax/nodes/Statements/BreakStatementSyntax.hpp>
+#include <shard/syntax/nodes/Statements/ContinueStatementSyntax.hpp>
+#include <shard/syntax/nodes/Statements/ThrowStatementSyntax.hpp>
+#include <shard/syntax/nodes/Statements/TryStatementSyntax.hpp>
 
 #include <shard/syntax/nodes/Loops/ForEachStatementSyntax.hpp>
 #include <shard/syntax/nodes/Loops/WhileStatementSyntax.hpp>
@@ -62,6 +67,11 @@
 #include <shard/syntax/nodes/Expressions/ObjectExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/RangeExpressionSyntax.hpp>
 #include <shard/syntax/nodes/Expressions/CollectionExpressionSyntax.hpp>
+#include <shard/syntax/nodes/Expressions/LinkedExpressionSyntax.hpp>
+
+#include <shard/syntax/symbols/InterfaceSymbol.hpp>
+
+#include <shard/ShardScriptExtern.hpp>
 
 #include <shard/syntax/nodes/Types/PredefinedTypeSyntax.hpp>
 #include <shard/syntax/nodes/Types/IdentifierNameTypeSyntax.hpp>
@@ -2415,7 +2425,7 @@ extern "C"
         }
     }
 
-    SHARD_API FieldSymbol* Shard_CreateFieldSymbol(CompilationContext* ctx, TypeSymbol* parentType, const wchar_t* name, TypeSymbol* type, int isStatic)
+    SHARD_API FieldSymbol* Shard_CreateFieldSymbol(CompilationContext* ctx, TypeSymbol* parentType, const wchar_t* name, TypeSymbol* type, int isStatic, int accesibility)
     {
         try
         {
@@ -2426,10 +2436,10 @@ extern "C"
             }
 
             SymbolFactory factory(ctx->GetSemanticModel().Table.get());
-            auto* symbol = factory.Field(name, type, isStatic ? LINK_STATIC : LINK_INSTANCE);
+            auto* symbol = factory.Field(name, type, static_cast<SymbolLinking>(isStatic));
             symbol->Parent = parentType;
             symbol->ReturnType = type;
-            symbol->Accesibility = SymbolAccesibility::Public;
+            symbol->Accesibility = static_cast<SymbolAccesibility>(accesibility);
 
             parentType->OnSymbolDeclared(symbol);
             return symbol;
@@ -2482,6 +2492,507 @@ extern "C"
         {
             SetLastErrorFromException(e);
             return -1;
+        }
+    }
+
+    // =========================================================================
+    // Extended Syntax Builder API
+    // =========================================================================
+
+    SHARD_API DeferStatementSyntax* Shard_CreateDeferStatement(SyntaxNode* parent, StatementSyntax* statement)
+    {
+        try
+        {
+            auto* defer = new DeferStatementSyntax(MakeToken(shard::TokenType::DeferKeyword, L"defer"), parent);
+            defer->Statement.reset(statement);
+            return defer;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API BreakStatementSyntax* Shard_CreateBreakStatement(SyntaxNode* parent)
+    {
+        try
+        {
+            auto* stmt = new BreakStatementSyntax(parent);
+            stmt->KeywordToken = MakeToken(shard::TokenType::BreakKeyword, L"break");
+            return stmt;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API ContinueStatementSyntax* Shard_CreateContinueStatement(SyntaxNode* parent)
+    {
+        try
+        {
+            auto* stmt = new ContinueStatementSyntax(parent);
+            stmt->KeywordToken = MakeToken(shard::TokenType::ContinueKeyword, L"continue");
+            return stmt;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API ThrowStatementSyntax* Shard_CreateThrowStatement(SyntaxNode* parent, ExpressionSyntax* expression)
+    {
+        try
+        {
+            auto* stmt = new ThrowStatementSyntax(parent);
+            stmt->KeywordToken = MakeToken(shard::TokenType::ThrowKeyword, L"throw");
+            stmt->Expression.reset(expression);
+            return stmt;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API TryStatementSyntax* Shard_CreateTryStatement(SyntaxNode* parent, StatementsBlockSyntax* tryBlock)
+    {
+        try
+        {
+            auto* stmt = new TryStatementSyntax(parent);
+            stmt->TryKeywordToken = MakeToken(shard::TokenType::TryKeyword, L"try");
+            stmt->TryBlock.reset(tryBlock);
+            return stmt;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API int Shard_AddCatchClause(TryStatementSyntax* tryStmt, const wchar_t* variableName, TypeSyntax* exceptionType, StatementsBlockSyntax* body)
+    {
+        try
+        {
+            if (tryStmt == nullptr || variableName == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return -1;
+            }
+
+            auto* clause = new CatchClauseSyntax(tryStmt);
+            clause->CatchKeywordToken = MakeToken(shard::TokenType::CatchKeyword, L"catch");
+            clause->OpenParenToken = MakeToken(shard::TokenType::OpenCurl, L"(");
+            clause->IdentifierToken = MakeToken(shard::TokenType::Identifier, variableName);
+            clause->ColonToken = MakeToken(shard::TokenType::Colon, L":");
+            clause->ExceptionType.reset(exceptionType);
+            clause->CloseParenToken = MakeToken(shard::TokenType::CloseCurl, L")");
+            clause->Body.reset(body);
+
+            tryStmt->CatchClauses.push_back(std::unique_ptr<CatchClauseSyntax>(clause));
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    // =========================================================================
+    // Extended Diagnostics API
+    // =========================================================================
+
+    SHARD_API int Shard_GetWarningCount(CompilationContext* ctx)
+    {
+        try
+        {
+            if (ctx == nullptr)
+                return 0;
+
+            const auto& diagnostics = ctx->GetDiagnosticsContext().Diagnostics;
+            return static_cast<int>(std::count_if(diagnostics.begin(), diagnostics.end(),
+                [](const Diagnostic& d) { return d.Severity == DiagnosticSeverity::Warning; }));
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return 0;
+        }
+    }
+
+    SHARD_API int Shard_GetDiagnosticCount(CompilationContext* ctx)
+    {
+        try
+        {
+            if (ctx == nullptr)
+                return 0;
+
+            return static_cast<int>(ctx->GetDiagnosticsContext().Diagnostics.size());
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return 0;
+        }
+    }
+
+    static const Diagnostic* GetDiagnosticAt(CompilationContext* ctx, int index)
+    {
+        if (ctx == nullptr)
+            return nullptr;
+
+        const auto& diagnostics = ctx->GetDiagnosticsContext().Diagnostics;
+        if (index < 0 || index >= static_cast<int>(diagnostics.size()))
+            return nullptr;
+
+        return &diagnostics[index];
+    }
+
+    SHARD_API int Shard_GetDiagnosticSeverity(CompilationContext* ctx, int index)
+    {
+        try
+        {
+            const Diagnostic* diagnostic = GetDiagnosticAt(ctx, index);
+            if (diagnostic == nullptr)
+                return -1;
+
+            switch (diagnostic->Severity)
+            {
+                case DiagnosticSeverity::Info:    return 0;
+                case DiagnosticSeverity::Warning: return 1;
+                case DiagnosticSeverity::Error:   return 2;
+                default:                          return -1;
+            }
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_GetDiagnosticLine(CompilationContext* ctx, int index)
+    {
+        try
+        {
+            const Diagnostic* diagnostic = GetDiagnosticAt(ctx, index);
+            if (diagnostic == nullptr)
+                return -1;
+
+            return diagnostic->Location.Line;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_GetDiagnosticColumn(CompilationContext* ctx, int index)
+    {
+        try
+        {
+            const Diagnostic* diagnostic = GetDiagnosticAt(ctx, index);
+            if (diagnostic == nullptr)
+                return -1;
+
+            return diagnostic->Location.Offset;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_GetDiagnosticLength(CompilationContext* ctx, int index)
+    {
+        try
+        {
+            const Diagnostic* diagnostic = GetDiagnosticAt(ctx, index);
+            if (diagnostic == nullptr)
+                return -1;
+
+            return diagnostic->Location.Length;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_GetDiagnosticMessage(CompilationContext* ctx, int index, wchar_t* buffer, int bufferLen)
+    {
+        try
+        {
+            const Diagnostic* diagnostic = GetDiagnosticAt(ctx, index);
+            if (diagnostic == nullptr)
+                return 0;
+
+            const std::wstring& message = diagnostic->Description;
+            if (buffer != nullptr && bufferLen > 0)
+            {
+                std::size_t copyLen = (std::min)((std::size_t)bufferLen - 1, message.length());
+                wcsncpy(buffer, message.c_str(), copyLen);
+                buffer[copyLen] = L'\0';
+            }
+
+            return (int)message.length();
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return 0;
+        }
+    }
+
+    // =========================================================================
+    // Extended Symbol Inspection API
+    // =========================================================================
+
+    SHARD_API int Shard_GetTypeFieldCount(CompilationContext* ctx, TypeDeclarationSyntax* type)
+    {
+        try
+        {
+            if (ctx == nullptr || type == nullptr)
+                return 0;
+
+            auto symbolOpt = ctx->GetSemanticModel().Table->LookupSymbol(type);
+            if (!symbolOpt.has_value())
+                return 0;
+
+            auto* typeSymbol = static_cast<TypeSymbol*>(symbolOpt.value());
+            return static_cast<int>(typeSymbol->Fields.size());
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return 0;
+        }
+    }
+
+    SHARD_API FieldSymbol* Shard_GetTypeField(CompilationContext* ctx, TypeDeclarationSyntax* type, int index)
+    {
+        try
+        {
+            if (ctx == nullptr || type == nullptr)
+                return nullptr;
+
+            auto symbolOpt = ctx->GetSemanticModel().Table->LookupSymbol(type);
+            if (!symbolOpt.has_value())
+                return nullptr;
+
+            auto* typeSymbol = static_cast<TypeSymbol*>(symbolOpt.value());
+            if (index < 0 || index >= static_cast<int>(typeSymbol->Fields.size()))
+                return nullptr;
+
+            return typeSymbol->Fields[index];
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API int Shard_GetTypeInterfaceCount(CompilationContext* ctx, TypeDeclarationSyntax* type)
+    {
+        try
+        {
+            if (ctx == nullptr || type == nullptr)
+                return 0;
+
+            auto symbolOpt = ctx->GetSemanticModel().Table->LookupSymbol(type);
+            if (!symbolOpt.has_value())
+                return 0;
+
+            auto* typeSymbol = static_cast<TypeSymbol*>(symbolOpt.value());
+            return static_cast<int>(typeSymbol->Interfaces.size());
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return 0;
+        }
+    }
+
+    SHARD_API TypeSymbol* Shard_GetTypeInterface(CompilationContext* ctx, TypeDeclarationSyntax* type, int index)
+    {
+        try
+        {
+            if (ctx == nullptr || type == nullptr)
+                return nullptr;
+
+            auto symbolOpt = ctx->GetSemanticModel().Table->LookupSymbol(type);
+            if (!symbolOpt.has_value())
+                return nullptr;
+
+            auto* typeSymbol = static_cast<TypeSymbol*>(symbolOpt.value());
+            if (index < 0 || index >= static_cast<int>(typeSymbol->Interfaces.size()))
+                return nullptr;
+
+            return typeSymbol->Interfaces[index];
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API InterfaceSymbol* Shard_GetStandardInterface(CompilationContext* ctx, int kind)
+    {
+        try
+        {
+            if (ctx == nullptr)
+            {
+                SetLastShardWError(L"compilation context is null");
+                return nullptr;
+            }
+
+            switch (kind)
+            {
+                case 0: return TRAIT_PRINTABLE;
+                case 1: return TRAIT_DISPOSABLE;
+                case 2: return TRAIT_ENUMERABLE;
+                case 3: return TRAIT_THROWABLE;
+                default:
+                    SetLastShardWError(L"invalid standard interface kind");
+                    return nullptr;
+            }
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API int Shard_IsTypeAssignableFrom(TypeSymbol* target, TypeSymbol* source)
+    {
+        try
+        {
+            if (target == nullptr || source == nullptr)
+                return 0;
+
+            return TypeSymbol::IsAssignableFrom(target, source) ? 1 : 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return 0;
+        }
+    }
+
+    SHARD_API TypeSymbol* Shard_GetFieldType(FieldSymbol* field)
+    {
+        try
+        {
+            if (field == nullptr)
+                return nullptr;
+
+            return field->ReturnType;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API int Shard_IsFieldStatic(FieldSymbol* field)
+    {
+        try
+        {
+            if (field == nullptr)
+                return 0;
+
+            return field->Linking == LINK_STATIC ? 1 : 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return 0;
+        }
+    }
+
+    SHARD_API int Shard_GetMethodHandleType(MethodSymbol* method)
+    {
+        try
+        {
+            if (method == nullptr)
+                return 0;
+
+            return static_cast<int>(method->HandleType);
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return 0;
+        }
+    }
+
+    SHARD_API int Shard_SetMethodHandleType(MethodSymbol* method, int handleType)
+    {
+        try
+        {
+            if (method == nullptr)
+            {
+                SetLastShardWError(L"method is null");
+                return -1;
+            }
+
+            method->HandleType = static_cast<MethodHandleType>(handleType);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_SetInvocationAsExtension(InvokationExpressionSyntax* invocation, int value)
+    {
+        try
+        {
+            if (invocation == nullptr)
+            {
+                SetLastShardWError(L"invocation is null");
+                return -1;
+            }
+
+            invocation->IsExtensionMethodInvocation = value != 0;
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_IsInvocationExtension(InvokationExpressionSyntax* invocation)
+    {
+        try
+        {
+            if (invocation == nullptr)
+                return 0;
+
+            return invocation->IsExtensionMethodInvocation ? 1 : 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return 0;
         }
     }
 }

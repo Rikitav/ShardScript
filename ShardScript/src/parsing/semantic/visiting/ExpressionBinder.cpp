@@ -2458,7 +2458,7 @@ void ExpressionBinder::VisitDeferStatement(DeferStatementSyntax *const node)
 			return;
 		}
 
-		InterfaceSymbol* disposable = SymbolTable::StandardTypes::IDisposable;
+		InterfaceSymbol* disposable = TRAIT_DISPOSABLE;
 		if (disposable == nullptr)
 		{
 			Diagnostics.ReportError(node->DeferToken, L"IDisposable interface is not defined");

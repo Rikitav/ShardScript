@@ -12,7 +12,7 @@ using namespace shard;
 static MethodSymbol* GetIPrintableToString()
 {
 	static std::wstring methodName = L"ToString";
-	static MethodSymbol* method = SymbolTable::StandardTypes::IPrintable->FindMethod(methodName, std::vector<TypeSymbol*>());
+	static MethodSymbol* method = TRAIT_PRINTABLE->FindMethod(methodName, std::vector<TypeSymbol*>());
 	return method;
 }
 
@@ -87,11 +87,11 @@ SHARDLIB_ENTRYPOINT
 	SymbolBuilder<NamespaceSymbol> stdio(context, L"stdio");
 
 	stdio.AddMethod(L"print", TYPE_VOID, LINK_STATIC, ACS_PUBLIC)
-		 .AddParameter(L"message", SymbolTable::StandardTypes::IPrintable)
+		 .AddParameter(L"message", TRAIT_PRINTABLE)
 		 .SetCallback(&shard_constream_print);
 
 	stdio.AddMethod(L"println", TYPE_VOID, LINK_STATIC, ACS_PUBLIC)
-		 .AddParameter(L"message", SymbolTable::StandardTypes::IPrintable)
+		 .AddParameter(L"message", TRAIT_PRINTABLE)
 		 .SetCallback(&shard_constream_println);
 
 	stdio.AddMethod(L"input", TYPE_STRING, LINK_STATIC, ACS_PUBLIC)

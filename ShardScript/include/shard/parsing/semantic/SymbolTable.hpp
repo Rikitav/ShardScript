@@ -21,6 +21,7 @@ namespace shard
     class ClassSymbol;
     class FieldSymbol;
     class MethodSymbol;
+    class AccessorSymbol;
 
     class SHARD_API SymbolTable
     {
@@ -53,14 +54,22 @@ namespace shard
             inline static SHARD_API TypeSymbol* Char;
             inline static SHARD_API TypeSymbol* String;
             inline static SHARD_API TypeSymbol* Array;
+            inline static SHARD_API TypeSymbol* NativeInteger;
         };
 
         struct StandardTypes
         {
             inline static SHARD_API InterfaceSymbol* IThrowable = nullptr;
-            inline static SHARD_API InterfaceSymbol* IEnumerable = nullptr;
+            inline static SHARD_API AccessorSymbol* IThrowable_getMessage = nullptr;
+            inline static SHARD_API AccessorSymbol* IThrowable_getStackTrace = nullptr;
+
             inline static SHARD_API InterfaceSymbol* IDisposable = nullptr;
+            inline static SHARD_API MethodSymbol* IDisposable_Dispose = nullptr;
+
             inline static SHARD_API InterfaceSymbol* IPrintable = nullptr;
+            inline static SHARD_API MethodSymbol* IPrintable_ToString = nullptr;
+
+            inline static SHARD_API InterfaceSymbol* IEnumerable = nullptr;
 
             inline static SHARD_API ClassSymbol* Runtime = nullptr;
             inline static SHARD_API MethodSymbol* RuntimeCaptureStackTrace = nullptr;
@@ -99,4 +108,15 @@ namespace shard
     inline TypeSymbol*& TYPE_CHAR = shard::SymbolTable::Primitives::Char;
     inline TypeSymbol*& TYPE_STRING = shard::SymbolTable::Primitives::String;
     inline TypeSymbol*& TYPE_ARRAY = shard::SymbolTable::Primitives::Array;
+
+    inline InterfaceSymbol*& TRAIT_DISPOSABLE = shard::SymbolTable::StandardTypes::IDisposable;
+    inline InterfaceSymbol*& TRAIT_PRINTABLE = shard::SymbolTable::StandardTypes::IPrintable;
+    inline InterfaceSymbol*& TRAIT_THROWABLE = shard::SymbolTable::StandardTypes::IThrowable;
+    inline InterfaceSymbol*& TRAIT_ENUMERABLE = shard::SymbolTable::StandardTypes::IEnumerable;
+
+    inline MethodSymbol*& TRAIT_DISPOSABLE_Dispose = shard::SymbolTable::StandardTypes::IDisposable_Dispose;
+    inline MethodSymbol*& TRAIT_PRINTABLE_ToString = shard::SymbolTable::StandardTypes::IPrintable_ToString;
+    //inline InterfaceSymbol*& TRAIT_ENUMERABLE = shard::SymbolTable::StandardTypes::IEnumerable_GetEnumerator;
+    inline AccessorSymbol*& TRAIT_THROWABLE_getStackTrace = shard::SymbolTable::StandardTypes::IThrowable_getStackTrace;
+    inline AccessorSymbol*& TRAIT_THROWABLE_getMessage = shard::SymbolTable::StandardTypes::IThrowable_getMessage;
 }

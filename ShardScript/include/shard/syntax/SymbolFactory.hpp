@@ -79,8 +79,8 @@ namespace shard
 		ClassSymbol* Class(const wchar_t* name);
 
 		InterfaceSymbol* Interface(InterfaceDeclarationSyntax* node);
-		InterfaceSymbol* Interface(const std::wstring& name);
-		InterfaceSymbol* Interface(const wchar_t* name);
+		InterfaceSymbol* Interface(const std::wstring& name, SymbolAccesibility accesibility = ACS_PUBLIC, SyntaxSymbol* parent = nullptr);
+		InterfaceSymbol* Interface(const wchar_t* name, SymbolAccesibility accesibility = ACS_PUBLIC, SyntaxSymbol* parent = nullptr);
 
 		FieldSymbol* Field(FieldDeclarationSyntax* node);
 		FieldSymbol* Field(const std::wstring& name, TypeSymbol* type, SymbolLinking linking = LINK_INSTANCE);
@@ -121,7 +121,7 @@ namespace shard
 		VariableSymbol* Variable(const std::wstring& name, TypeSymbol* type);
 		VariableSymbol* Variable(const std::wstring& name, TypeSymbol* type, bool isConst);
 
-		TypeParameterSymbol* TypeParameter(const std::wstring& name);
+		TypeParameterSymbol* TypeParameter(const std::wstring& name, SyntaxSymbol* parent = nullptr);
 
 		DelegateTypeSymbol* Delegate(DelegateDeclarationSyntax* node);
 		DelegateTypeSymbol* Delegate(DelegateTypeSyntax* node);

@@ -1877,11 +1877,6 @@ std::unique_ptr<ExpressionSyntax> SourceParser::ReadLeftDenotation(SourceProvide
 			return std::move(ReadLinkedExpressionNode(reader, parent, std::move(leftExpr), false));
 		}
 
-		case TokenType::Question:
-		{
-			return std::move(ReadTernaryExpression(reader, std::move(leftExpr), parent));
-		}
-
 		case TokenType::NullCoalescingOperator:
 		{
 			int precendce = GetOperatorPrecendence(current.Type);
@@ -2059,9 +2054,9 @@ std::unique_ptr<IfExpressionSyntax> SourceParser::ReadIfExpression(SourceProvide
 	auto syntax = std::make_unique<IfExpressionSyntax>(parent);
 	syntax->IfKeywordToken = Expect(reader, TokenType::IfKeyword, L"Expected 'if' keyword");
 	syntax->Condition = std::move(ReadExpression(reader, syntax.get(), 0));
-	syntax->OpenBraceToken = Expect(reader, TokenType::OpenBrace, L"Expected '{'");
+	//syntax->OpenBraceToken = Expect(reader, TokenType::OpenBrace, L"Expected '{'");
 	syntax->ThenExpression = std::move(ReadExpression(reader, syntax.get(), 0));
-	syntax->CloseBraceToken = Expect(reader, TokenType::CloseBrace, L"Expected '}'");
+	//syntax->CloseBraceToken = Expect(reader, TokenType::CloseBrace, L"Expected '}'");
 
 	if (reader.Current().Type == TokenType::ElseKeyword)
 	{

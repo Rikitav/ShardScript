@@ -50,6 +50,7 @@ namespace shard
         SymbolBuilderBase(SymbolBuilderBase&&) = default;
         SymbolBuilderBase& operator=(SymbolBuilderBase&&) = default;
 
+        SymbolFactory& GetFactory() { return Factory; }
         T* Get() const { return Symbol; }
         operator T*() const { return Symbol; }
     };
@@ -240,6 +241,9 @@ namespace shard
 
         SymbolBuilder<TypeParameterSymbol> AddTypeParameter(
             const std::wstring& name);
+
+        SymbolBuilder<ClassSymbol> Implements(
+            TypeSymbol* interface);
     };
 
     template<>
@@ -276,5 +280,8 @@ namespace shard
 
         SymbolBuilder<TypeParameterSymbol> AddTypeParameter(
             const std::wstring& name);
+
+        SymbolBuilder<ClassSymbol> Implements(
+            TypeSymbol* interface);
     };
 }

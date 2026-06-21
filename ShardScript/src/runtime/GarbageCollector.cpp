@@ -58,7 +58,8 @@ ObjectInstance* GarbageCollector::FromValue(const wchar_t* value, bool isTransie
 {
 	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String, isTransient);
 
-	instance->WriteInteger(wcslen(value));
+	std::size_t length = wcslen(value);
+	instance->WriteMemory(0, sizeof(std::int64_t), static_cast<std::uint64_t*>(&length));
 	instance->WriteMemory(sizeof(std::int64_t), sizeof(wchar_t*), &value);
 	return instance;
 }
@@ -76,8 +77,22 @@ ObjectInstance* GarbageCollector::FromValue(const std::wstring& value)
 
 	std::memcpy(copy, value.c_str(), size);
 
-	instance->WriteInteger(length);
+	instance->WriteMemory(0, sizeof(std::int64_t), static_cast<std::uint64_t*>(&length));
 	instance->WriteMemory(sizeof(std::int64_t), sizeof(wchar_t*), &copy);
+	return instance;
+}
+
+ObjectInstance* GarbageCollector::FromNint(void* rawMemory, bool isTransient)
+{
+	TypeSymbol* objectInfo = SymbolTable::Primitives::NativeInteger;
+	if (objectInfo == nullptr)
+		throw std::runtime_error("objectInfo is nullptr");
+
+	if (objectInfo->State != TypeLayoutingState::Visited)
+		throw std::runtime_error("objectInfo is uninitialized");
+
+	ObjectInstance* instance = new ObjectInstance(objectInfo, rawMemory, isTransient);
+	Heap.add(instance);
 	return instance;
 }
 
@@ -255,6 +270,7 @@ void GarbageCollector::TerminateInstance(ObjectInstance* instance)
 
 	if (instance->Terminated)
 		return;
+
 	instance->Terminated = true;
 
 	TypeSymbol* fieldOwner = const_cast<TypeSymbol*>(instance->getInfo());

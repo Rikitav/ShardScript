@@ -310,18 +310,20 @@ InterfaceSymbol* SymbolFactory::Interface(InterfaceDeclarationSyntax* node)
 	return static_cast<InterfaceSymbol*>(Table->BindSymbol(node, std::move(symbol)));
 }
 
-InterfaceSymbol* SymbolFactory::Interface(const std::wstring& name)
+InterfaceSymbol* SymbolFactory::Interface(const std::wstring& name, SymbolAccesibility accesibility, SyntaxSymbol* parent)
 {
 	auto symbol = std::make_unique<InterfaceSymbol>(name);
-	symbol->Accesibility = SymbolAccesibility::Private;
+	symbol->Accesibility = accesibility;
+	symbol->Parent = parent;
 	symbol->IsReferenceType = true;
 	return static_cast<InterfaceSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
-InterfaceSymbol* SymbolFactory::Interface(const wchar_t* name)
+InterfaceSymbol* SymbolFactory::Interface(const wchar_t* name, SymbolAccesibility accesibility, SyntaxSymbol* parent)
 {
 	auto symbol = std::make_unique<InterfaceSymbol>(name);
-	symbol->Accesibility = SymbolAccesibility::Private;
+	symbol->Accesibility = accesibility;
+	symbol->Parent = parent;
 	symbol->IsReferenceType = true;
 	return static_cast<InterfaceSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
@@ -710,9 +712,10 @@ VariableSymbol* SymbolFactory::Variable(const std::wstring& name, TypeSymbol* ty
 	return static_cast<VariableSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
-TypeParameterSymbol* SymbolFactory::TypeParameter(const std::wstring& name)
+TypeParameterSymbol* SymbolFactory::TypeParameter(const std::wstring& name, SyntaxSymbol* parent)
 {
 	auto symbol = std::make_unique<TypeParameterSymbol>(name);
+	symbol->Parent = parent;
 	return static_cast<TypeParameterSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
