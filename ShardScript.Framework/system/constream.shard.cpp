@@ -51,6 +51,7 @@ static ObjectInstance* shard_constream_print(const CallState& context) noexcept(
 
 	ObjectInstance* result = InvokeToString(context, instance);
 	ConsoleHelper::Write(result);
+	context.Collector.CollectInstance(result);
 	return nullptr; // void
 }
 
@@ -65,6 +66,7 @@ static ObjectInstance* shard_constream_println(const CallState& context) noexcep
 
 	ObjectInstance* result = InvokeToString(context, instance);
 	ConsoleHelper::WriteLine(result);
+	context.Collector.CollectInstance(result);
 	return nullptr; // void
 }
 

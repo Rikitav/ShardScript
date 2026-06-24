@@ -404,8 +404,10 @@ void DeclarationCollector::VisitOperatorDeclaration(OperatorDeclarationSyntax* n
 
         if (node->OperatorToken.Type == TokenType::Delimeter)
         {
+            /*
             if (symbol->Linking == LINK_STATIC)
                 Diagnostics.ReportError(node->OperatorToken, L"Access operator ('.') cannot be static; it must be an instance member");
+            */
         }
         else
         {
@@ -444,7 +446,7 @@ void DeclarationCollector::VisitOperatorDeclaration(OperatorDeclarationSyntax* n
             }
             else
             {
-                if (ownerType->Linking == LINK_STATIC)
+                if (ownerType->Linking == LINK_STATIC && node->OperatorToken.Type != TokenType::Delimeter)
                     Diagnostics.ReportError(node->OperatorToken, L"Cannot declare an operator overload in a static Type");
             }
 

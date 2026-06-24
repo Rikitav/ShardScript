@@ -1023,12 +1023,11 @@ void ExpressionBinder::VisitLambdaExpression(LambdaExpressionSyntax* node)
 			TypeSymbol* paramType = parameter->Type != nullptr ? parameter->Type->Symbol : SymbolTable::Primitives::Any;
 			ParameterSymbol* paramSymbol = Factory.Parameter(parameter->Identifier.Word, paramType);
 			delegate->Parameters.push_back(paramSymbol);
-			anonymousMethod->Parameters.push_back(paramSymbol);
 		}
 	}
 
 	PushScope(anonymousMethod);
-	for (const auto& parameter : anonymousMethod->Parameters)
+	for (const auto& parameter : delegate->Parameters)
 		Declare(parameter);
 
 	CurrentScope()->ReturnFound = false;

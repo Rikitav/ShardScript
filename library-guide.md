@@ -29,6 +29,7 @@ A symbol is an object in the ShardScript semantic model that represents a langua
 | `ClassSymbol` | Class (`class Foo { }`) |
 | `StructSymbol` | Structure (`struct Bar { }`) |
 | `MethodSymbol` | Method / function (`func Add(a: int, b: int) -> int`) |
+| `OperatorSymbol` | Operator overload (`operator +`, `operator .`) |
 | `ConstructorSymbol` | Constructor (`init() { }`) |
 | `FieldSymbol` | Field (`x: int`) |
 | `PropertySymbol` | Property (`Value: int { get; set; }`) |
@@ -451,6 +452,97 @@ ParameterSymbol* initial = factory.Parameter(L"initial", SymbolTable::Primitives
 initial->Parent = ctor;
 ctor->Parameters.push_back(initial);
 ```
+
+### 5.4. Operator Overloads
+
+You can register operator overloads on classes and structs through `AddOperator`. The builder takes the operator token, return type, and linking. The internal name (e.g. `op_AddOperator`, `op_DotOperator`) is generated automatically.
+
+#### 5.4.1. Static Operator
+
+All overloadable operators except the access operator (`.`) must be static.
+
+```cpp
+static ObjectInstance* VectorAdd(const CallState& ctx)
+{
+    ObjectInstance* a = ctx.Args[0];
+    ObjectInstance* b = ctx.Args[1];
+    // custom logic...
+    return ctx.Collector.FromValue(0);
+}
+
+auto vecClass = ns.AddClass(L"Vector2");
+
+vecClass.AddOperator(shard::TokenType::AddOperator, SymbolTable::Primitives::Integer, LINK_STATIC)
+    .AddParameter(L"a", vecClass)
+    .AddParameter(L"b", vecClass)
+    .SetCallback(&VectorAdd);
+```
+
+#### 5.4.2. Access Operator
+
+The access operator (`.`) takes a single `string` parameter and returns the dynamic member value. It can be declared either as an instance member or as a static member:
+
+- **Instance** — invoked on an object (`obj.member`). The callback receives `this` as `Args[0]` and the member name as `Args[1]`.
+- **Static** — invoked on the type itself (`TypeName.member`). The callback receives only the member name as `Args[0]`.
+
+A type that declares an access operator cannot have public fields.
+
+**Instance example:**
+
+```cpp
+static ObjectInstance* DynamicAccess(const CallState& ctx)
+{
+    ObjectInstance* self = ctx.Args[0];
+    const wchar_t* name = ctx.Args[1]->AsString();
+    // Resolve by name and return value...
+    return ctx.Collector.FromValue(42);
+}
+
+auto dynamicClass = ns.AddClass(L"Dynamic");
+
+dynamicClass.AddOperator(shard::TokenType::Delimeter, SymbolTable::Primitives::Integer, LINK_INSTANCE)
+    .AddParameter(L"name", SymbolTable::Primitives::String)
+    .SetCallback(&DynamicAccess);
+```
+
+```shard
+using mylib;
+
+d := Dynamic();
+println(d.foo);   // calls DynamicAccess(d, "foo")
+```
+
+**Static example:**
+
+```cpp
+#include <cstdlib>
+
+static ObjectInstance* EnvironmentAccess(const CallState& ctx)
+{
+    const wchar_t* name = ctx.Args[0]->AsString();
+    const wchar_t* value = _wgetenv(name);
+    if (value == nullptr)
+        value = L"";
+
+    return ctx.Collector.FromValue(std::wstring(value));
+}
+
+auto envClass = ns.AddClass(L"Environment");
+envClass.Get()->Linking = LINK_STATIC;
+
+envClass.AddOperator(shard::TokenType::Delimeter, SymbolTable::Primitives::String, LINK_STATIC)
+    .AddParameter(L"name", SymbolTable::Primitives::String)
+    .SetCallback(&EnvironmentAccess);
+```
+
+```shard
+using environment;
+
+println(Environment.PROCESSOR_ARCHITECTURE);
+println(Environment.COMPUTERNAME);
+```
+
+> **Note:** when the access operator is static, the callback receives the member name as `Args[0]`. There is no implicit `this`.
 
 ---
 
