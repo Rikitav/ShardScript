@@ -30,6 +30,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/InterfaceDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/OperatorDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/PropertyDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.hpp>
@@ -108,6 +109,7 @@ namespace shard
 
         virtual void VisitMemberDeclaration(MemberDeclarationSyntax* node);
         virtual void VisitMethodDeclaration(MethodDeclarationSyntax* node);
+        virtual void VisitOperatorDeclaration(OperatorDeclarationSyntax* node);
         virtual void VisitConstructorDeclaration(ConstructorDeclarationSyntax* node);
         virtual void VisitFieldDeclaration(FieldDeclarationSyntax* node);
         virtual void VisitPropertyDeclaration(PropertyDeclarationSyntax* node);

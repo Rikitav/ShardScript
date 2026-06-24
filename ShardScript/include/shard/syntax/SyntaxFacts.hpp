@@ -4,6 +4,8 @@
 #include <shard/syntax/TokenType.hpp>
 #include <shard/syntax/SyntaxKind.hpp>
 
+#include <string>
+
 SHARD_API bool IsPunctuation(shard::TokenType type);
 SHARD_API bool IsReservedIdentifier(shard::TokenType type);
 
@@ -38,6 +40,10 @@ SHARD_API bool IsConditionalKeyword(shard::TokenType type);
 SHARD_API bool IsFunctionalKeyword(shard::TokenType type);
 
 SHARD_API bool IsLinkedExpressionNode(shard::SyntaxKind kind);
+
+SHARD_API std::wstring GetOperatorMethodName(shard::TokenType type);
+SHARD_API bool IsOverloadableOperator(shard::TokenType type);
+SHARD_API shard::TokenType GetTokenTypeFromOperatorName(const std::wstring& name);
 
 //SHARD_API bool IsKeywordHasExpression(shard::TokenType type);
 //SHARD_API bool IsMethodInvokationExpression(shard::TokenType current, shard::TokenType peek);

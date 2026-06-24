@@ -14,6 +14,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/OperatorDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/IndexatorDeclarationSyntax.hpp>
 
 #include <shard/syntax/nodes/Types/ArrayTypeSyntax.hpp>
@@ -85,6 +86,7 @@ namespace shard
 		PropertySymbol* Property(const std::wstring& name, TypeSymbol* returnType, SymbolLinking linking = LINK_INSTANCE);
 
 		MethodSymbol* Method(MethodDeclarationSyntax* node);
+		MethodSymbol* Method(OperatorDeclarationSyntax* node);
 		MethodSymbol* Method(const wchar_t* name, TypeSymbol* returnType, SymbolLinking linking = LINK_INSTANCE);
 		MethodSymbol* Method(const std::wstring& name, TypeSymbol* returnType, SymbolLinking linking = LINK_INSTANCE);
 		MethodSymbol* Method(SymbolAccesibility accessibility, SymbolLinking linking, TypeSymbol* returnType, const wchar_t* name, MethodSymbolDelegate function);

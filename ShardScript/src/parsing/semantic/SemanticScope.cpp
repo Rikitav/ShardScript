@@ -7,6 +7,15 @@
 
 using namespace shard;
 
+static std::string WStringToString(const std::wstring& value)
+{
+    std::string result;
+    result.reserve(value.size());
+    for (wchar_t c : value)
+        result.push_back(static_cast<char>(c));
+    return result;
+}
+
 std::optional<SyntaxSymbol*> SemanticScope::Lookup(const std::wstring& name)
 {
     auto lookup = _symbols.find(name);
@@ -35,7 +44,7 @@ void SemanticScope::DeclareSymbol(SyntaxSymbol* symbol)
 
     auto find = _symbols.find(symbol->Name);
     if (find != _symbols.end() && find->second == symbol)
-        throw std::runtime_error("Symbol already defined");
+        throw std::runtime_error("Symbol already defined: " + WStringToString(symbol->Name));
 
     _symbols[symbol->Name] = symbol;
 

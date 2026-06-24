@@ -32,6 +32,7 @@
 #include <shard/syntax/nodes/Loops/UntilStatementSyntax.hpp>
 
 #include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/OperatorDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/PropertyDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.hpp>
@@ -278,6 +279,13 @@ std::unique_ptr<MemberDeclarationSyntax> SourceParser::ReadMemberDeclaration(Sou
 		return ReadMethodDeclaration(reader, info, parent);
 	}
 
+	// Declaration prediction: operator +(params) -> type { }
+	if (current.Type == TokenType::OperatorKeyword)
+	{
+		reader.Consume(); // operator
+		return ReadOperatorDeclaration(reader, info, parent);
+	}
+
 	// Declaration prediction: init(params) { }
 	if (current.Type == TokenType::InitKeyword)
 	{
@@ -481,6 +489,60 @@ std::unique_ptr<MethodDeclarationSyntax> SourceParser::ReadMethodDeclaration(Sou
 		else
 		{
 			Diagnostics.ReportError(current, L"Function must have a return type.");
+		}
+	}
+
+	current = reader.Current();
+	if (current.Type == TokenType::Semicolon)
+	{
+		syntax->Semicolon = current;
+		reader.Consume();
+		return syntax;
+	}
+
+	syntax->Body = ReadStatementsBlock(reader, syntax.get());
+	return syntax;
+}
+
+std::unique_ptr<OperatorDeclarationSyntax> SourceParser::ReadOperatorDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode* parent)
+{
+	SyntaxToken operatorToken = reader.Current();
+	if (operatorToken.Type == TokenType::Identifier)
+	{
+		TokenType mapped = GetTokenTypeFromOperatorName(operatorToken.Word);
+		if (mapped != TokenType::Unknown)
+			operatorToken = SyntaxToken(mapped, operatorToken.Word, operatorToken.Location, operatorToken.IsMissing);
+	}
+
+	if (!IsOverloadableOperator(operatorToken.Type))
+	{
+		Diagnostics.ReportError(operatorToken, L"Expected overloadable operator token");
+		operatorToken = SyntaxToken(TokenType::Unknown, L"", TextLocation(), true);
+	}
+	reader.Consume();
+
+	auto syntax = std::make_unique<OperatorDeclarationSyntax>(info, operatorToken, parent);
+	syntax->ParametersList = ReadParametersList(reader, syntax.get());
+
+	SyntaxToken current = reader.Current();
+	if (current.Type == TokenType::ArrowOperator)
+	{
+		reader.Consume(); // ->
+		syntax->ReturnType = ReadType(reader, syntax.get());
+	}
+	else
+	{
+		if (current.Type == TokenType::Identifier)
+		{
+			Diagnostics.ReportError(current, L"Expected '->' before return type.");
+		}
+		else if (current.Type == TokenType::OpenBrace)
+		{
+			Diagnostics.ReportError(current, L"Expected arrow and defined return type before block.");
+		}
+		else
+		{
+			Diagnostics.ReportError(current, L"Operator must have a return type.");
 		}
 	}
 
@@ -1416,6 +1478,43 @@ std::unique_ptr<StatementSyntax> SourceParser::ReadStatement(SourceProvider& rea
 			return std::make_unique<VariableStatementSyntax>(
 				std::make_unique<PredefinedTypeSyntax>(SyntaxToken(TokenType::VarKeyword, L"var", current.Location, false), parent),
 				current, walrus, std::move(expr), parent);
+		}
+
+		// Wrong: type name = value (e.g. int x = 0; or var x = 0;)
+		if (IsPredefinedType(current.Type) && peek.Type == TokenType::Identifier)
+		{
+			Diagnostics.ReportError(current, L"Invalid variable declaration syntax. Use 'name: type = value' or 'name := value'.");
+
+			reader.Consume(); // type keyword
+			SyntaxToken name = reader.Current();
+			reader.Consume(); // name
+
+			std::unique_ptr<ExpressionSyntax> expr = nullptr;
+			if (reader.Current().Type == TokenType::AssignOperator)
+			{
+				reader.Consume(); // =
+				expr = ReadExpression(reader, parent, 0);
+			}
+
+			return std::make_unique<VariableStatementSyntax>(
+				std::make_unique<PredefinedTypeSyntax>(current, parent),
+				name, SyntaxToken(), std::move(expr), parent);
+		}
+
+		// Wrong: name = value (missing type)
+		if (current.Type == TokenType::Identifier && peek.Type == TokenType::AssignOperator)
+		{
+			Diagnostics.ReportError(current, L"Invalid variable declaration syntax. Use 'name: type = value' or 'name := value'.");
+
+			SyntaxToken name = current;
+			reader.Consume(); // name
+			SyntaxToken assign = reader.Current();
+			reader.Consume(); // =
+			auto expr = ReadExpression(reader, parent, 0);
+
+			return std::make_unique<VariableStatementSyntax>(
+				std::make_unique<PredefinedTypeSyntax>(SyntaxToken(TokenType::VarKeyword, L"var", name.Location, false), parent),
+				name, assign, std::move(expr), parent);
 		}
 	}
 

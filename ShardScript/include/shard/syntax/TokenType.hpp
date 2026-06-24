@@ -133,6 +133,7 @@ namespace shard
 		NamespaceKeyword,	  // namespace
 		FunctionKeyword,      // func
 		InitKeyword,          // init
+		OperatorKeyword,      // operator
 
 		// Loops keywords
 		ForKeyword,			// for

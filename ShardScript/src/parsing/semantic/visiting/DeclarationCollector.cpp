@@ -22,6 +22,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/OperatorDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/PropertyDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.hpp>
@@ -293,7 +294,6 @@ void DeclarationCollector::VisitFieldDeclaration(FieldDeclarationSyntax* node)
         }
     }
 
-    Declare(symbol);
     PushScope(symbol);
 
     VisitType(node->ReturnType.get());
@@ -306,17 +306,21 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 {
     // Creating symbol
     MethodSymbol* symbol = LookupSymbol<MethodSymbol>(node).value_or(nullptr);
-    if (symbol == nullptr)
+    bool isNewSymbol = symbol == nullptr;
+    if (isNewSymbol)
     {
-		// Creating symbol
-		symbol = Factory.Method(node);
+        // Creating symbol
+        symbol = Factory.Method(node);
         Declare(symbol);
+        ApplyMethodAttributes(symbol, node->Attributes);
+    }
 
+    PushScope(symbol);
+
+    if (isNewSymbol)
+    {
         // Creating parameters symbols
-        std::uint16_t baseIndex = 0;
-        if (symbol->Linking == LINK_STATIC)
-            baseIndex += 1;
-
+        std::uint16_t baseIndex = symbol->Linking == LINK_STATIC ? 0 : 1;
         for (const auto& parameter : node->ParametersList->Parameters)
         {
             ParameterSymbol* param = Factory.Parameter(parameter.get());
@@ -356,25 +360,11 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax* node)
                 Diagnostics.ReportError(node->IdentifierToken, L"Methods cannot be declared inside of UNKNOWN");
             }
 
-            /*
-            // Assert: extern Method cannot have body
-            if (symbol->IsExtern && node->Body != nullptr)
-                Diagnostics.ReportError(node->IdentifierToken, L"Methods marked as 'extern' cannot have Body");
-
-            // Assert: Method should have body (interfaces may declare abstract methods)
-            if (!symbol->IsExtern && node->Body == nullptr && symbol->Parent->Kind != SyntaxKind::InterfaceDeclaration)
-                Diagnostics.ReportError(node->IdentifierToken, L"Method should have a Body, as it's not marked as 'extern' or 'abstract'");
-            */
-
             // Assert: Method should have body (interfaces may declare abstract methods)
             if (node->Body == nullptr && symbol->Parent->Kind != SyntaxKind::InterfaceDeclaration)
                 Diagnostics.ReportError(node->IdentifierToken, L"Method should have a Body, as it's not marked as 'abstract'");
         }
-
-        ApplyMethodAttributes(symbol, node->Attributes);
     }
-
-    PushScope(symbol);
 
     VisitType(node->ReturnType.get());
     VisitParametersList(node->ParametersList.get());
@@ -382,22 +372,79 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 
     PopScope();
 }
+void DeclarationCollector::VisitOperatorDeclaration(OperatorDeclarationSyntax* node)
+{
+    MethodSymbol* symbol = LookupSymbol<MethodSymbol>(node).value_or(nullptr);
+    bool isNewSymbol = symbol == nullptr;
+    if (isNewSymbol)
+    {
+        symbol = Factory.Method(node);
+        Declare(symbol);
 
+        if (symbol->Linking != LINK_STATIC)
+            Diagnostics.ReportError(node->OperatorToken, L"Operator overloads must be declared static");
+
+        ApplyMethodAttributes(symbol, node->Attributes);
+    }
+
+    PushScope(symbol);
+
+    if (isNewSymbol)
+    {
+        std::uint16_t baseIndex = 1; // operators are always static
+        for (const auto& parameter : node->ParametersList->Parameters)
+        {
+            ParameterSymbol* param = Factory.Parameter(parameter.get());
+            param->SlotIndex = baseIndex++;
+            Declare(param);
+        }
+
+        if (symbol->Parent == nullptr)
+        {
+            Diagnostics.ReportError(node->OperatorToken, L"Cannot resolve Operators' owner Type");
+        }
+        else
+        {
+            if (!symbol->Parent->IsType())
+            {
+                Diagnostics.ReportError(node->OperatorToken, L"Operators cannot be declared outside of Classes or Structures");
+            }
+            else
+            {
+                TypeSymbol* ownerType = static_cast<TypeSymbol*>(symbol->Parent);
+                if (ownerType->Linking == LINK_STATIC)
+                    Diagnostics.ReportError(node->OperatorToken, L"Cannot declare an operator overload in a static Type");
+            }
+
+            if (node->Body == nullptr)
+                Diagnostics.ReportError(node->OperatorToken, L"Operator overload should have a Body");
+        }
+    }
+
+    VisitType(node->ReturnType.get());
+    VisitParametersList(node->ParametersList.get());
+    VisitStatementsBlock(node->Body.get());
+
+    PopScope();
+}
 void DeclarationCollector::VisitConstructorDeclaration(ConstructorDeclarationSyntax* node)
 {
     // Creating symbol
     ConstructorSymbol* symbol = LookupSymbol<ConstructorSymbol>(node).value_or(nullptr);
-    if (symbol == nullptr)
+    bool isNewSymbol = symbol == nullptr;
+    if (isNewSymbol)
     {
-		// Creating symbol
-		symbol = Factory.Constructor(node);
+        symbol = Factory.Constructor(node);
         Declare(symbol);
+        ApplyMethodAttributes(symbol, node->Attributes);
+    }
 
+    PushScope(symbol);
+
+    if (isNewSymbol)
+    {
         // Creating parameters symbols
-        std::uint16_t baseIndex = 0;
-        if (symbol->Linking == LINK_STATIC)
-            baseIndex += 1;
-
+        std::uint16_t baseIndex = symbol->Linking == LINK_STATIC ? 0 : 1;
         for (const auto& parameter : node->ParametersList->Parameters)
         {
             ParameterSymbol* param = Factory.Parameter(parameter.get());
@@ -431,33 +478,18 @@ void DeclarationCollector::VisitConstructorDeclaration(ConstructorDeclarationSyn
                 if (symbol->Linking == LINK_STATIC)
                     Diagnostics.ReportError(node->IdentifierToken, L"Type Constructors' cannot be static");
 
-                /*
-                // Assert: extern Method cannot have body
-                if (symbol->IsExtern && node->Body != nullptr)
-                    Diagnostics.ReportError(node->IdentifierToken, L"Constructors' marked as 'extern' cannot have Body");
-
-                // Assert: Method should have body
-                if (!symbol->IsExtern && node->Body == nullptr)
-                    Diagnostics.ReportError(node->IdentifierToken, L"Constructor should have a Body, as it's not marked as 'extern' or 'abstract'");
-                */
-
                 // Assert: Method should have body
                 if (node->Body == nullptr)
                     Diagnostics.ReportError(node->IdentifierToken, L"Constructor should have a Body, as it's not marked as 'extern' or 'abstract'");
             }
         }
-
-        ApplyMethodAttributes(symbol, node->Attributes);
     }
-
-    PushScope(symbol);
 
     VisitParametersList(node->ParametersList.get());
     VisitStatementsBlock(node->Body.get());
-    
+
     PopScope();
 }
-
 void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
 {
     // Creating symbol
@@ -518,17 +550,19 @@ void DeclarationCollector::VisitIndexatorDeclaration(IndexatorDeclarationSyntax*
 {
     // Creating symbol
     IndexatorSymbol* symbol = LookupSymbol<IndexatorSymbol>(node).value_or(nullptr);
-    if (symbol == nullptr)
+    bool isNewSymbol = symbol == nullptr;
+    if (isNewSymbol)
     {
-        // Creating symbol
         symbol = Factory.Indexator(node);
         Declare(symbol);
+    }
 
+    PushScope(symbol);
+
+    if (isNewSymbol)
+    {
         // Creating parameters symbols
-        std::uint16_t baseIndex = 0;
-        if (symbol->Linking == LINK_STATIC)
-            baseIndex += 1;
-
+        std::uint16_t baseIndex = symbol->Linking == LINK_STATIC ? 1 : 0;
         for (const auto& parameter : node->ParametersList->Parameters)
         {
             ParameterSymbol* param = Factory.Parameter(parameter.get());
@@ -564,7 +598,6 @@ void DeclarationCollector::VisitIndexatorDeclaration(IndexatorDeclarationSyntax*
         }
     }
 
-    PushScope(symbol);
     if (node->ParametersList != nullptr)
         VisitParametersList(node->ParametersList.get());
 
@@ -579,7 +612,6 @@ void DeclarationCollector::VisitIndexatorDeclaration(IndexatorDeclarationSyntax*
 
     PopScope();
 }
-
 void DeclarationCollector::VisitAccessorDeclaration(AccessorDeclarationSyntax* node)
 {
     // Expecting parent node to be property

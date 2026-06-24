@@ -1,4 +1,5 @@
 #include <shard/parsing/semantic/SymbolTable.hpp>
+#include <shard/parsing/semantic/PrimitiveOperators.hpp>
 
 #include <shard/compilation/ByteCodeEncoder.hpp>
 #include <shard/syntax/SymbolFactory.hpp>
@@ -306,6 +307,9 @@ static void ResolvePrimitives(SymbolTable* table)
 	SymbolTable::Primitives::String->MemoryBytesSize = sizeof(std::int64_t) + sizeof(wchar_t*); // long _length + char[] _data
 	SymbolTable::Primitives::Array->MemoryBytesSize = sizeof(std::int64_t);					    // long _length
 
+	// Resolve standard interface traits before they are used below.
+	ResolveInterfaces(table);
+
 	// ============================================================================
 	// Standard
 	// ============================================================================
@@ -386,6 +390,8 @@ static void ResolvePrimitives(SymbolTable* table)
 	MakePrimitivePrintable(SymbolTable::Primitives::String, &primitive_string_to_string, factory, TRAIT_PRINTABLE_ToString);
 	MakePrimitivePrintable(SymbolTable::Primitives::Array, &primitive_array_to_string, factory, TRAIT_PRINTABLE_ToString);
 	MakePrimitivePrintable(SymbolTable::Primitives::NativeInteger, &primitive_nint_to_string, factory, TRAIT_PRINTABLE_ToString);
+
+	RegisterPrimitiveOperators(factory);
 
 	resolved = true;
 }

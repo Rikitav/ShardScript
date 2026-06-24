@@ -1,6 +1,7 @@
 #include <shard/syntax/SymbolFactory.hpp>
 #include <shard/syntax/SyntaxHelpers.hpp>
 #include <shard/syntax/SyntaxKind.hpp>
+#include <shard/syntax/SyntaxFacts.hpp>
 #include <shard/syntax/SyntaxToken.hpp>
 #include <shard/syntax/TokenType.hpp>
 
@@ -11,6 +12,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/Loops/ForEachStatementSyntax.hpp>
 #include <shard/syntax/nodes/StatementsBlockSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/OperatorDeclarationSyntax.hpp>
 
 #include <shard/syntax/symbols/DelegateTypeSymbol.hpp>
 #include <shard/syntax/symbols/NamespaceSymbol.hpp>
@@ -192,6 +194,17 @@ AccessorSymbol* SymbolFactory::Accessor(AccessorDeclarationSyntax* node, Propert
 MethodSymbol* SymbolFactory::Method(MethodDeclarationSyntax* node)
 {
     std::wstring methodName = node->IdentifierToken.Word;
+    auto symbol = std::make_unique<MethodSymbol>(methodName);
+
+    SetAccesibility(node->Modifiers, symbol.get()->Accesibility, symbol.get()->Linking);
+	symbol->HandleType = MethodHandleType::Body;
+
+	return static_cast<MethodSymbol*>(Table->BindSymbol(node, std::move(symbol)));
+}
+
+MethodSymbol* SymbolFactory::Method(OperatorDeclarationSyntax* node)
+{
+    std::wstring methodName = GetOperatorMethodName(node->OperatorToken.Type);
     auto symbol = std::make_unique<MethodSymbol>(methodName);
 
     SetAccesibility(node->Modifiers, symbol.get()->Accesibility, symbol.get()->Linking);

@@ -43,6 +43,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/OperatorDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/IndexatorDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/InterfaceDeclarationSyntax.hpp>
@@ -99,6 +100,7 @@ namespace shard
 		// 3. Type members
 		std::unique_ptr<ConstructorDeclarationSyntax> ReadConstructorDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode* parent);
 		std::unique_ptr<MethodDeclarationSyntax> ReadMethodDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode* parent);
+		std::unique_ptr<OperatorDeclarationSyntax> ReadOperatorDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode* parent);
 		std::unique_ptr<FieldDeclarationSyntax> ReadFieldDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode* parent);
 		std::unique_ptr<PropertyDeclarationSyntax> ReadPropertyDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode* parent);
 		std::unique_ptr<PropertyDeclarationSyntax> ReadComputedPropertyDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode* parent);

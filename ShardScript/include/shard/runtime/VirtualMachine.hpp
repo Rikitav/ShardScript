@@ -7,7 +7,6 @@
 
 #include <shard/runtime/CallStackFrame.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
-#include <shard/runtime/PrimitiveMathModule.hpp>
 
 #include <shard/syntax/symbols/MethodSymbol.hpp>
 #include <shard/syntax/symbols/ConstructorSymbol.hpp>
@@ -30,7 +29,6 @@ namespace shard
 		ApplicationDomain* domain;
 		ProgramVirtualImage& program;
 		GarbageCollector& garbageCollector;
-		PrimitiveMathModule math;
 
 		std::vector<std::unique_ptr<CallStackFrame>> CallStack;
 		std::atomic<bool> AbortFlag;
@@ -46,12 +44,19 @@ namespace shard
 		ObjectInstance* InstantiateDelegate(DelegateTypeSymbol* type);
 		ObjectInstance* CreateRuntimeException(const std::exception& err);
 
+		ObjectInstance* InvokeOperatorMethod(ObjectInstance* leftInstance, TokenType opToken, ObjectInstance* rightInstance);
+		ObjectInstance* InvokeOperatorMethod(ObjectInstance* sourceInstance, TokenType opToken);
+
 	public:
 		VirtualMachine(ApplicationDomain* appDomain);
 		~VirtualMachine() = default;
 
 		VirtualMachine(const VirtualMachine&) = delete;
 		VirtualMachine& operator=(const VirtualMachine&) = delete;
+
+		ApplicationDomain* GetDomain() const { return domain; }
+		ProgramVirtualImage& GetProgram() const { return program; }
+		GarbageCollector& GetGarbageCollector() const { return garbageCollector; }
 
 		CallStackFrame* CurrentFrame() const;
 		CallStackFrame* PushFrame(MethodSymbol* methodSymbol);

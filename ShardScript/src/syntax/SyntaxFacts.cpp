@@ -509,3 +509,85 @@ bool IsReservedIdentifier(shard::TokenType type)
 			return false;
 	}
 }
+
+std::wstring GetOperatorMethodName(shard::TokenType type)
+{
+	switch (type)
+	{
+		case TokenType::AddOperator: return L"op_AddOperator";
+		case TokenType::SubOperator: return L"op_SubOperator";
+		case TokenType::MultOperator: return L"op_MultOperator";
+		case TokenType::DivOperator: return L"op_DivOperator";
+		case TokenType::ModOperator: return L"op_ModOperator";
+		case TokenType::PowOperator: return L"op_PowOperator";
+
+		case TokenType::AddAssignOperator: return L"op_AddAssignOperator";
+		case TokenType::SubAssignOperator: return L"op_SubAssignOperator";
+		case TokenType::MultAssignOperator: return L"op_MultAssignOperator";
+		case TokenType::DivAssignOperator: return L"op_DivAssignOperator";
+		case TokenType::ModAssignOperator: return L"op_ModAssignOperator";
+		case TokenType::PowAssignOperator: return L"op_PowAssignOperator";
+
+		case TokenType::OrOperator: return L"op_OrOperator";
+		case TokenType::AndOperator: return L"op_AndOperator";
+		case TokenType::OrAssignOperator: return L"op_OrAssignOperator";
+		case TokenType::AndAssignOperator: return L"op_AndAssignOperator";
+		case TokenType::RightShiftOperator: return L"op_RightShiftOperator";
+		case TokenType::LeftShiftOperator: return L"op_LeftShiftOperator";
+
+		case TokenType::EqualsOperator: return L"op_EqualsOperator";
+		case TokenType::NotEqualsOperator: return L"op_NotEqualsOperator";
+		case TokenType::GreaterOperator: return L"op_GreaterOperator";
+		case TokenType::GreaterOrEqualsOperator: return L"op_GreaterOrEqualsOperator";
+		case TokenType::LessOperator: return L"op_LessOperator";
+		case TokenType::LessOrEqualsOperator: return L"op_LessOrEqualsOperator";
+
+		case TokenType::IncrementOperator: return L"op_IncrementOperator";
+		case TokenType::DecrementOperator: return L"op_DecrementOperator";
+		case TokenType::NotOperator: return L"op_NotOperator";
+
+		default: return L"";
+	}
+}
+
+bool IsOverloadableOperator(shard::TokenType type)
+{
+	return !GetOperatorMethodName(type).empty();
+}
+
+shard::TokenType GetTokenTypeFromOperatorName(const std::wstring& name)
+{
+	if (name == L"AddOperator") return TokenType::AddOperator;
+	if (name == L"SubOperator") return TokenType::SubOperator;
+	if (name == L"MultOperator") return TokenType::MultOperator;
+	if (name == L"DivOperator") return TokenType::DivOperator;
+	if (name == L"ModOperator") return TokenType::ModOperator;
+	if (name == L"PowOperator") return TokenType::PowOperator;
+
+	if (name == L"AddAssignOperator") return TokenType::AddAssignOperator;
+	if (name == L"SubAssignOperator") return TokenType::SubAssignOperator;
+	if (name == L"MultAssignOperator") return TokenType::MultAssignOperator;
+	if (name == L"DivAssignOperator") return TokenType::DivAssignOperator;
+	if (name == L"ModAssignOperator") return TokenType::ModAssignOperator;
+	if (name == L"PowAssignOperator") return TokenType::PowAssignOperator;
+
+	if (name == L"OrOperator") return TokenType::OrOperator;
+	if (name == L"AndOperator") return TokenType::AndOperator;
+	if (name == L"OrAssignOperator") return TokenType::OrAssignOperator;
+	if (name == L"AndAssignOperator") return TokenType::AndAssignOperator;
+	if (name == L"RightShiftOperator") return TokenType::RightShiftOperator;
+	if (name == L"LeftShiftOperator") return TokenType::LeftShiftOperator;
+
+	if (name == L"EqualsOperator") return TokenType::EqualsOperator;
+	if (name == L"NotEqualsOperator") return TokenType::NotEqualsOperator;
+	if (name == L"GreaterOperator") return TokenType::GreaterOperator;
+	if (name == L"GreaterOrEqualsOperator") return TokenType::GreaterOrEqualsOperator;
+	if (name == L"LessOperator") return TokenType::LessOperator;
+	if (name == L"LessOrEqualsOperator") return TokenType::LessOrEqualsOperator;
+
+	if (name == L"IncrementOperator") return TokenType::IncrementOperator;
+	if (name == L"DecrementOperator") return TokenType::DecrementOperator;
+	if (name == L"NotOperator") return TokenType::NotOperator;
+
+	return TokenType::Unknown;
+}
