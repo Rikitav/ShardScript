@@ -1,6 +1,7 @@
 #include <shard/syntax/SymbolBuilder.hpp>
 
 #include <shard/syntax/symbols/StructSymbol.hpp>
+#include <shard/syntax/SyntaxFacts.hpp>
 
 using namespace shard;
 
@@ -153,6 +154,16 @@ SymbolBuilder<TypeParameterSymbol> SymbolBuilder<ClassSymbol>::AddTypeParameter(
     return builder;
 }
 
+SymbolBuilder<OperatorSymbol> SymbolBuilder<ClassSymbol>::AddOperator(
+    TokenType opToken,
+    TypeSymbol* returnType,
+    SymbolLinking linking,
+    SymbolAccesibility access)
+{
+    SymbolBuilder<OperatorSymbol> builder(Context, opToken, returnType, linking, access, Symbol);
+    return builder;
+}
+
 // =========================================================================
 // StructSymbol
 // =========================================================================
@@ -230,6 +241,16 @@ SymbolBuilder<TypeParameterSymbol> SymbolBuilder<StructSymbol>::AddTypeParameter
     return builder;
 }
 
+SymbolBuilder<OperatorSymbol> SymbolBuilder<StructSymbol>::AddOperator(
+    TokenType opToken,
+    TypeSymbol* returnType,
+    SymbolLinking linking,
+    SymbolAccesibility access)
+{
+    SymbolBuilder<OperatorSymbol> builder(Context, opToken, returnType, linking, access, Symbol);
+    return builder;
+}
+
 // =========================================================================
 // MethodSymbol
 // =========================================================================
@@ -293,6 +314,52 @@ SymbolBuilder<TypeParameterSymbol> SymbolBuilder<MethodSymbol>::AddTypeParameter
     SymbolBuilder<TypeParameterSymbol> builder(Context, name, Symbol);
     // TODO: add type parameters reg
     return builder;
+}
+
+// =========================================================================
+// OperatorSymbol
+// =========================================================================
+
+SymbolBuilder<OperatorSymbol>::SymbolBuilder(CompilationContext& ctx,
+    TokenType opToken,
+    TypeSymbol* returnType,
+    SymbolLinking linking,
+    SymbolAccesibility access,
+    TypeSymbol* parent)
+    : SymbolBuilderBase(ctx)
+{
+    std::wstring name = GetOperatorMethodName(opToken);
+    Symbol = Factory.Operator(name, opToken, returnType, nullptr, {});
+    Symbol->Accesibility = access;
+    Symbol->Linking = linking;
+    Symbol->Parent = parent;
+
+    if (parent != nullptr)
+    {
+        Symbol->FullName = parent->FullName + L"." + name;
+        parent->OnSymbolDeclared(Symbol);
+    }
+    else
+    {
+        Symbol->FullName = name;
+    }
+}
+
+SymbolBuilder<OperatorSymbol>& SymbolBuilder<OperatorSymbol>::AddParameter(
+    const std::wstring& name,
+    TypeSymbol* type)
+{
+    ParameterSymbol* parameter = Factory.Parameter(name, type);
+    parameter->Parent = Symbol;
+    Symbol->Parameters.push_back(parameter);
+    return *this;
+}
+
+SymbolBuilder<OperatorSymbol>& SymbolBuilder<OperatorSymbol>::SetCallback(MethodSymbolDelegate callback)
+{
+    Symbol->FunctionPointer = callback;
+    Symbol->HandleType = MethodHandleType::External;
+    return *this;
 }
 
 // =========================================================================

@@ -13,6 +13,8 @@
 #include <shard/syntax/symbols/PropertySymbol.hpp>
 #include <shard/syntax/symbols/IndexatorSymbol.hpp>
 #include <shard/syntax/symbols/ConstructorSymbol.hpp>
+#include <shard/syntax/symbols/OperatorSymbol.hpp>
+#include <shard/syntax/TokenType.hpp>
 
 #include <string>
 #include <type_traits>
@@ -247,6 +249,12 @@ namespace shard
         SymbolBuilder<TypeParameterSymbol> AddTypeParameter(
             const std::wstring& name);
 
+        SymbolBuilder<OperatorSymbol> AddOperator(
+            TokenType opToken,
+            TypeSymbol* returnType,
+            SymbolLinking linking,
+            SymbolAccesibility access = SymbolAccesibility::Public);
+
         SymbolBuilder<ClassSymbol> Implements(
             TypeSymbol* interface);
     };
@@ -286,7 +294,32 @@ namespace shard
         SymbolBuilder<TypeParameterSymbol> AddTypeParameter(
             const std::wstring& name);
 
+        SymbolBuilder<OperatorSymbol> AddOperator(
+            TokenType opToken,
+            TypeSymbol* returnType,
+            SymbolLinking linking,
+            SymbolAccesibility access = SymbolAccesibility::Public);
+
         SymbolBuilder<ClassSymbol> Implements(
             TypeSymbol* interface);
+    };
+
+    template<>
+    class SHARD_API SymbolBuilder<OperatorSymbol> : public SymbolBuilderBase<OperatorSymbol>
+    {
+    public:
+        SymbolBuilder(CompilationContext& ctx,
+            TokenType opToken,
+            TypeSymbol* returnType,
+            SymbolLinking linking,
+            SymbolAccesibility access,
+            TypeSymbol* parent);
+
+        SymbolBuilder<OperatorSymbol>& AddParameter(
+            const std::wstring& name,
+            TypeSymbol* type);
+
+        SymbolBuilder<OperatorSymbol>& SetCallback(
+            MethodSymbolDelegate callback);
     };
 }
