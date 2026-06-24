@@ -546,6 +546,8 @@ std::wstring GetOperatorMethodName(shard::TokenType type)
 		case TokenType::DecrementOperator: return L"op_DecrementOperator";
 		case TokenType::NotOperator: return L"op_NotOperator";
 
+		case TokenType::Delimeter: return L"op_DotOperator";
+
 		default: return L"";
 	}
 }

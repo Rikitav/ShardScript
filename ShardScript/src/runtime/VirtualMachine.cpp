@@ -16,6 +16,7 @@
 #include <shard/syntax/SyntaxKind.hpp>
 
 #include <shard/syntax/symbols/MethodSymbol.hpp>
+#include <shard/syntax/symbols/OperatorSymbol.hpp>
 #include <shard/syntax/SyntaxFacts.hpp>
 #include <shard/syntax/symbols/AccessorSymbol.hpp>
 #include <shard/syntax/symbols/PropertySymbol.hpp>
@@ -1006,7 +1007,7 @@ ObjectInstance* VirtualMachine::InvokeOperatorMethod(ObjectInstance* leftInstanc
 		const_cast<TypeSymbol*>(rightInstance->getInfo())
 	};
 
-	MethodSymbol* method = ownerType->FindMethod(opName, paramTypes);
+	OperatorSymbol* method = ownerType->FindOperator(opToken, paramTypes);
 	if (method == nullptr)
 		throw std::runtime_error("operator overload not found");
 
@@ -1021,7 +1022,7 @@ ObjectInstance* VirtualMachine::InvokeOperatorMethod(ObjectInstance* sourceInsta
 		throw std::runtime_error("operator is not overloadable");
 
 	TypeSymbol* ownerType = const_cast<TypeSymbol*>(sourceInstance->getInfo());
-	MethodSymbol* method = ownerType->FindMethod(opName, { ownerType });
+	OperatorSymbol* method = ownerType->FindOperator(opToken, { ownerType });
 	if (method == nullptr)
 		throw std::runtime_error("operator overload not found");
 

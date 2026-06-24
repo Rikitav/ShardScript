@@ -30,6 +30,7 @@
 #include <shard/syntax/symbols/InterfaceSymbol.hpp>
 #include <shard/syntax/symbols/StructSymbol.hpp>
 #include <shard/syntax/symbols/MethodSymbol.hpp>
+#include <shard/syntax/symbols/OperatorSymbol.hpp>
 #include <shard/syntax/symbols/ConstructorSymbol.hpp>
 #include <shard/syntax/symbols/TypeParameterSymbol.hpp>
 #include <shard/syntax/symbols/VariableSymbol.hpp>
@@ -86,11 +87,13 @@ namespace shard
 		PropertySymbol* Property(const std::wstring& name, TypeSymbol* returnType, SymbolLinking linking = LINK_INSTANCE);
 
 		MethodSymbol* Method(MethodDeclarationSyntax* node);
-		MethodSymbol* Method(OperatorDeclarationSyntax* node);
+		OperatorSymbol* Operator(OperatorDeclarationSyntax* node);
 		MethodSymbol* Method(const wchar_t* name, TypeSymbol* returnType, SymbolLinking linking = LINK_INSTANCE);
 		MethodSymbol* Method(const std::wstring& name, TypeSymbol* returnType, SymbolLinking linking = LINK_INSTANCE);
 		MethodSymbol* Method(SymbolAccesibility accessibility, SymbolLinking linking, TypeSymbol* returnType, const wchar_t* name, MethodSymbolDelegate function);
 		MethodSymbol* Method(SymbolAccesibility accessibility, SymbolLinking linking, TypeSymbol* returnType, const std::wstring& name, MethodSymbolDelegate function);
+
+		OperatorSymbol* Operator(const std::wstring& name, TokenType opToken, TypeSymbol* returnType, MethodSymbolDelegate callback, const std::vector<TypeSymbol*>& paramTypes);
 
 		MethodSymbol* CreateAnonymousMethod(const std::wstring& name, TypeSymbol* returnType);
 		MethodSymbol* CreateLambdaMethod(StatementsBlockSyntax* body);

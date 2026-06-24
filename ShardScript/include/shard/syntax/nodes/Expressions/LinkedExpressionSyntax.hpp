@@ -10,6 +10,7 @@
 
 #include <shard/syntax/symbols/FieldSymbol.hpp>
 #include <shard/syntax/symbols/MethodSymbol.hpp>
+#include <shard/syntax/symbols/OperatorSymbol.hpp>
 #include <shard/syntax/symbols/PropertySymbol.hpp>
 #include <shard/syntax/symbols/IndexatorSymbol.hpp>
 #include <shard/syntax/symbols/TypeSymbol.hpp>
@@ -43,6 +44,7 @@ namespace shard
 		VariableSymbol* ToVariable = nullptr;
 		FieldSymbol* ToField = nullptr;
 		PropertySymbol* ToProperty = nullptr;
+		OperatorSymbol* ToOperator = nullptr;
 		DelegateTypeSymbol* ToDelegate = nullptr;
 
 		const SyntaxToken IdentifierToken;

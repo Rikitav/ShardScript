@@ -6,17 +6,21 @@ public class Box
 {
     public Value: int;
 
+    public init(val: int)
+    {
+        this.Value = val;
+    }
+
     public static operator +(a: Box, b: Box) -> int
     {
-        return 42;
+        return a.Value + b.Value;
     }
 }
 
 public static func Main() -> void
 {
-    a: Box = new Box();
-    b: Box = new Box();
+    a: Box = new Box(2);
+    b: Box = new Box(1);
     c: int = a + b;
-    print(c);
-    println("");
+    println(c);
 }

@@ -10,7 +10,7 @@
 
 namespace shard
 {
-	class MethodSymbol;
+	class OperatorSymbol;
 
 	class SHARD_API UnaryExpressionSyntax : public ExpressionSyntax
 	{
@@ -18,7 +18,7 @@ namespace shard
 		const SyntaxToken OperatorToken;
 		std::unique_ptr<ExpressionSyntax> Expression = nullptr;
 		const bool IsRightDetermined;
-		MethodSymbol* OperatorMethod = nullptr;
+		OperatorSymbol* ToOperator = nullptr;
 
 		inline UnaryExpressionSyntax(const SyntaxToken operatorToken, const bool isRightDetermined, SyntaxNode* parent)
 			: ExpressionSyntax(SyntaxKind::UnaryExpression, parent), OperatorToken(operatorToken), IsRightDetermined(isRightDetermined) { }
