@@ -1,4 +1,5 @@
 #include <stdexcept>
+#include <string>
 
 #include <shard/SyntaxVisitor.hpp>
 #include <shard/parsing/SyntaxTree.hpp>
@@ -19,6 +20,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/OperatorDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/PropertyDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.hpp>
@@ -246,6 +248,13 @@ void SyntaxVisitor::VisitMemberDeclaration(MemberDeclarationSyntax* node)
 			return;
 		}
 
+		case SyntaxKind::OperatorDeclaration:
+		{
+			OperatorDeclarationSyntax* declNode = static_cast<OperatorDeclarationSyntax*>(node);
+			VisitOperatorDeclaration(declNode);
+			return;
+		}
+
 		case SyntaxKind::PropertyDeclaration:
 		{
 			PropertyDeclarationSyntax* declNode = static_cast<PropertyDeclarationSyntax*>(node);
@@ -296,6 +305,21 @@ void SyntaxVisitor::VisitFieldDeclaration(FieldDeclarationSyntax* node)
 }
 
 void SyntaxVisitor::VisitMethodDeclaration(MethodDeclarationSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (node->ReturnType != nullptr)
+		VisitType(node->ReturnType.get());
+
+	if (node->ParametersList != nullptr)
+		VisitParametersList(node->ParametersList.get());
+
+	if (node->Body != nullptr)
+		VisitStatementsBlock(node->Body.get());
+}
+
+void SyntaxVisitor::VisitOperatorDeclaration(OperatorDeclarationSyntax* node)
 {
 	if (node == nullptr)
 		return;
@@ -384,7 +408,10 @@ void SyntaxVisitor::VisitStatement(StatementSyntax* node)
 	switch (node->Kind)
 	{
 		default:
-			throw std::runtime_error("unknown statement kind");
+			{
+				std::string msg = "unknown statement kind: " + std::to_string(static_cast<int>(node->Kind));
+				throw std::runtime_error(msg);
+			}
 
 		case SyntaxKind::ExpressionStatement:
 		{

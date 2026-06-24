@@ -52,6 +52,7 @@
 #include <shard/syntax/nodes/Statements/TryStatementSyntax.hpp>
 
 #include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/OperatorDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.hpp>
@@ -89,6 +90,15 @@ static void GeneratePropertyBackingField(SymbolFactory& factory, PropertySymbol*
 	backingField->DefaultValueExpression = symbol->DefaultValueExpression;
 
 	symbol->BackingField = backingField;
+}
+
+static MethodSymbol* ResolveOperatorMethod(TypeSymbol* ownerType, shard::TokenType opToken, const std::vector<TypeSymbol*>& paramTypes)
+{
+	if (ownerType == nullptr || !IsOverloadableOperator(opToken))
+		return nullptr;
+
+	std::wstring opName = GetOperatorMethodName(opToken);
+	return ownerType->FindMethod(opName, paramTypes);
 }
 
 static bool IsAssignmentOperator(shard::TokenType type)
@@ -279,13 +289,13 @@ void ExpressionBinder::VisitConstructorDeclaration(ConstructorDeclarationSyntax*
 
 		auto thisVar = Factory.Parameter(L"this", ownerType);
 		if (symbol->Linking == LINK_INSTANCE) // how tf not?
-			Declare(thisVar);
+			CurrentScope()->DeclareSymbol(thisVar);
 
 		int counter = symbol->Linking == LINK_STATIC ? 0 : 1;
 		for (const auto& parameter : symbol->Parameters)
 		{
 			parameter->SlotIndex = counter++;
-			Declare(parameter);
+			CurrentScope()->DeclareSymbol(parameter);
 		}
 
 		CurrentScope()->ReturnFound = false;
@@ -317,13 +327,13 @@ void ExpressionBinder::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 
 	auto thisVar = Factory.Parameter(L"this", ownerType);
 	if (symbol->Linking == LINK_INSTANCE)
-		Declare(thisVar);
+		CurrentScope()->DeclareSymbol(thisVar);
 
 	int counter = symbol->Linking == LINK_STATIC ? 0 : 1;
 	for (const auto& parameter : symbol->Parameters)
 	{
 		parameter->SlotIndex = counter++;
-		Declare(parameter);
+		CurrentScope()->DeclareSymbol(parameter);
 	}
 
 	if (node->Body != nullptr)
@@ -337,6 +347,50 @@ void ExpressionBinder::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 			{
 				if (!CurrentScope()->ReturnFound)
 					Diagnostics.ReportError(node->IdentifierToken, L"Method must return a value of type '" + symbol->ReturnType->Name + L"'");
+			}
+		}
+	}
+
+	PopScope();
+}
+
+void ExpressionBinder::VisitOperatorDeclaration(OperatorDeclarationSyntax* node)
+{
+	MethodSymbol* symbol = LookupSymbol<MethodSymbol>(node).value_or(nullptr);
+	if (symbol == nullptr)
+		throw std::runtime_error("operator symbol not found");
+
+	if (symbol->Parent == nullptr)
+	{
+		Diagnostics.ReportError(node->OperatorToken, L"Cannot find parent node of operator.");
+		return;
+	}
+
+	TypeSymbol* ownerType = static_cast<TypeSymbol*>(symbol->Parent);
+	PushScope(symbol);
+
+	auto thisVar = Factory.Parameter(L"this", ownerType);
+	if (symbol->Linking == LINK_INSTANCE)
+		CurrentScope()->DeclareSymbol(thisVar);
+
+	int counter = symbol->Linking == LINK_STATIC ? 0 : 1;
+	for (const auto& parameter : symbol->Parameters)
+	{
+		parameter->SlotIndex = counter++;
+		CurrentScope()->DeclareSymbol(parameter);
+	}
+
+	if (node->Body != nullptr)
+	{
+		CurrentScope()->ReturnFound = false;
+		VisitStatementsBlock(node->Body.get());
+
+		if (symbol->ReturnType != nullptr)
+		{
+			if (symbol->ReturnType->Name != L"Void")
+			{
+				if (!CurrentScope()->ReturnFound)
+					Diagnostics.ReportError(node->OperatorToken, L"Operator must return a value of type '" + symbol->ReturnType->Name + L"'");
 			}
 		}
 	}
@@ -416,13 +470,13 @@ void ExpressionBinder::VisitAccessorDeclaration(AccessorDeclarationSyntax* node)
 
 		auto thisVar = Factory.Parameter(L"this", ownerType);
 		if (symbol->Linking == LINK_INSTANCE)
-			Declare(thisVar);
+			CurrentScope()->DeclareSymbol(thisVar);
 
 		int counter = symbol->Linking == LINK_STATIC ? 0 : 1;
 		for (const auto& parameter : symbol->Parameters)
 		{
 			parameter->SlotIndex = counter++;
-			Declare(parameter);
+			CurrentScope()->DeclareSymbol(parameter);
 		}
 
 		if (node->Body != nullptr)
@@ -457,13 +511,13 @@ void ExpressionBinder::VisitAccessorDeclaration(AccessorDeclarationSyntax* node)
 
 		auto thisVar = Factory.Parameter(L"this", ownerType);
 		if (symbol->Linking == LINK_INSTANCE)
-			Declare(thisVar);
+			CurrentScope()->DeclareSymbol(thisVar);
 
 		int counter = symbol->Linking == LINK_STATIC ? 0 : 1;
 		for (const auto& parameter : symbol->Parameters)
 		{
 			parameter->SlotIndex = counter++;
-			Declare(parameter);
+			CurrentScope()->DeclareSymbol(parameter);
 		}
 
 		if (node->Body != nullptr)
@@ -661,6 +715,24 @@ TypeSymbol* ExpressionBinder::AnalyzeBinaryExpression(BinaryExpressionSyntax* no
 		return leftType;
 	}
 
+	{
+		std::vector<TypeSymbol*> paramTypes = { leftType, rightType };
+		MethodSymbol* opMethod = ResolveOperatorMethod(leftType, node->OperatorToken.Type, paramTypes);
+		if (opMethod != nullptr)
+		{
+			node->OperatorMethod = opMethod;
+			return opMethod->ReturnType;
+		}
+
+		if (!leftType->IsPrimitive() &&
+			node->OperatorToken.Type != TokenType::EqualsOperator &&
+			node->OperatorToken.Type != TokenType::NotEqualsOperator)
+		{
+			Diagnostics.ReportError(node->OperatorToken, L"Operator '" + GetOperatorMethodName(node->OperatorToken.Type) + L"' is not defined for type '" + leftType->Name + L"'");
+			return nullptr;
+		}
+	}
+
 	switch (node->OperatorToken.Type)
 	{
 		case TokenType::EqualsOperator:
@@ -762,7 +834,29 @@ TypeSymbol* ExpressionBinder::AnalyzeUnaryExpression(UnaryExpressionSyntax* node
 		Diagnostics.ReportError(node->OperatorToken, L"Operand type could not be determined");
 		return nullptr;
 	}
-	
+
+	{
+		bool tryOperatorMethod = exprType->IsPrimitive() ||
+			(node->OperatorToken.Type != TokenType::IncrementOperator && node->OperatorToken.Type != TokenType::DecrementOperator);
+
+		if (tryOperatorMethod)
+		{
+			std::vector<TypeSymbol*> paramTypes = { exprType };
+			MethodSymbol* opMethod = ResolveOperatorMethod(exprType, node->OperatorToken.Type, paramTypes);
+			if (opMethod != nullptr)
+			{
+				node->OperatorMethod = opMethod;
+				return opMethod->ReturnType;
+			}
+		}
+
+		if (!exprType->IsPrimitive())
+		{
+			Diagnostics.ReportError(node->OperatorToken, L"Operator '" + GetOperatorMethodName(node->OperatorToken.Type) + L"' is not defined for type '" + exprType->Name + L"'");
+			return nullptr;
+		}
+	}
+
 	switch (node->OperatorToken.Type)
 	{
 		case TokenType::NotOperator:
@@ -777,16 +871,17 @@ TypeSymbol* ExpressionBinder::AnalyzeUnaryExpression(UnaryExpressionSyntax* node
 		}
 
 		case TokenType::SubOperator:
+		case TokenType::AddOperator:
 		case TokenType::IncrementOperator:
 		case TokenType::DecrementOperator:
 		{
-			if (exprType != SymbolTable::Primitives::Integer)
+			if (exprType != SymbolTable::Primitives::Integer && exprType != SymbolTable::Primitives::Double)
 			{
-				Diagnostics.ReportError(node->OperatorToken, L"Increment/Decrement operator requires integer type, got '" + exprType->Name + L"'");
+				Diagnostics.ReportError(node->OperatorToken, L"Arithmetic unary operator requires numeric type, got '" + exprType->Name + L"'");
 				return nullptr;
 			}
-			
-			return SymbolTable::Primitives::Integer;
+
+			return exprType;
 		}
 			
 		default:

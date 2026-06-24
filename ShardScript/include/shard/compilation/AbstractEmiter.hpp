@@ -32,6 +32,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/OperatorDeclarationSyntax.hpp>
 
 #include <shard/syntax/nodes/Statements/BreakStatementSyntax.hpp>
 #include <shard/syntax/nodes/Statements/ConditionalClauseSyntax.hpp>
@@ -108,6 +109,7 @@ namespace shard
         void VisitArgumentsList(ArgumentsListSyntax* node) override;
 
 		void VisitMethodDeclaration(MethodDeclarationSyntax* node) override;
+		void VisitOperatorDeclaration(OperatorDeclarationSyntax* node) override;
 		void VisitConstructorDeclaration(ConstructorDeclarationSyntax* node) override;
 		void VisitAccessorDeclaration(AccessorDeclarationSyntax* node) override;
 

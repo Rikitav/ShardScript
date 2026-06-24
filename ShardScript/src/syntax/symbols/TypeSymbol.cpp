@@ -195,6 +195,7 @@ void TypeSymbol::OnSymbolDeclared(SyntaxSymbol* symbol)
 		}
 
 		case SyntaxKind::MethodDeclaration:
+		case SyntaxKind::OperatorDeclaration:
 		{
 			symbol->Parent = this;
 			symbol->FullName = this->FullName + L"." + symbol->Name;

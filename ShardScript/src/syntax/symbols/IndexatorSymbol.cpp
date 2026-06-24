@@ -16,6 +16,9 @@ void IndexatorSymbol::OnSymbolDeclared(SyntaxSymbol* symbol)
 		}
 	}
 
-	Getter->OnSymbolDeclared(symbol);
-	Setter->OnSymbolDeclared(symbol);
+	if (Getter != nullptr)
+		Getter->OnSymbolDeclared(symbol);
+
+	if (Setter != nullptr)
+		Setter->OnSymbolDeclared(symbol);
 }

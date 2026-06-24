@@ -1,0 +1,11 @@
+using stdio;
+
+namespace hello_world;
+
+public class Program
+{
+    public static func Main() -> void
+    {
+        println("hello world");
+    }
+}

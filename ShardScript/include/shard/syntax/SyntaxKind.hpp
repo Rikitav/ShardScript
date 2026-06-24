@@ -22,6 +22,7 @@ namespace shard
 		// Members
 		FieldDeclaration,
 		MethodDeclaration,
+		OperatorDeclaration,
 		ConstructorDeclaration,
 		PropertyDeclaration,
 		AccessorDeclaration,

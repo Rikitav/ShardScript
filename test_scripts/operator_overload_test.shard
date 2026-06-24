@@ -1,0 +1,22 @@
+using stdio;
+
+namespace operator_test;
+
+public class Box
+{
+    public Value: int;
+
+    public static operator +(a: Box, b: Box) -> int
+    {
+        return 42;
+    }
+}
+
+public static func Main() -> void
+{
+    a: Box = new Box();
+    b: Box = new Box();
+    c: int = a + b;
+    print(c);
+    println("");
+}

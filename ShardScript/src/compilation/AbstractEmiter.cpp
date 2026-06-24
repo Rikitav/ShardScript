@@ -26,6 +26,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/OperatorDeclarationSyntax.hpp>
 
 #include <shard/syntax/nodes/Statements/BreakStatementSyntax.hpp>
 #include <shard/syntax/nodes/Statements/ConditionalClauseSyntax.hpp>
@@ -96,6 +97,12 @@ static void EmitUnaryOperation(shard::TokenType type, ByteCodeEncoder& encoder, 
 		case TokenType::AddOperator:
 		{
 			encoder.EmitMathPositive(code);
+			break;
+		}
+
+		case TokenType::NotOperator:
+		{
+			encoder.EmitLogicalNot(code);
 			break;
 		}
 
@@ -344,6 +351,26 @@ void AbstractEmiter::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 			if (withinType != nullptr && withinType->TypeParameters.size() > 0)
 				Diagnostics.ReportError(node->IdentifierToken, L"Type containing entry point should not have any type parameters");
 		}
+	}
+
+	GeneratingFor->ExecutableByteCode.shrink_to_fit();
+	GeneratingFor = nullptr;
+}
+
+void AbstractEmiter::VisitOperatorDeclaration(OperatorDeclarationSyntax* node)
+{
+	GeneratingFor = LookupSymbol<MethodSymbol>(node).value_or(nullptr);
+	if (GeneratingFor == nullptr)
+	{
+		Diagnostics.ReportError(node->OperatorToken, L"Emiting target not found");
+		return;
+	}
+
+	if (node->Body != nullptr)
+	{
+		std::size_t reserve = node->Body->Statements.size() * ReserveMultiplier;
+		GeneratingFor->ExecutableByteCode.reserve(reserve);
+		VisitStatementsBlock(node->Body.get());
 	}
 
 	GeneratingFor->ExecutableByteCode.shrink_to_fit();
@@ -922,6 +949,13 @@ void AbstractEmiter::VisitUnaryExpression(UnaryExpressionSyntax* node)
 		return;
 	}
 
+	if (node->OperatorMethod != nullptr)
+	{
+		VisitExpression(node->Expression.get());
+		EmitMethodCall(node->OperatorMethod);
+		return;
+	}
+
 	VisitExpression(node->Expression.get());
 	EmitUnaryOperation(node->OperatorToken.Type, Encoder, GeneratingFor->ExecutableByteCode, node->IsRightDetermined);
 }
@@ -1028,6 +1062,14 @@ void AbstractEmiter::VisitBinaryExpression(BinaryExpressionSyntax* node)
 	if (IsAssignExpression(node->OperatorToken.Type))
 	{
 		VisitBinaryAssignExpression(node);
+		return;
+	}
+
+	if (node->OperatorMethod != nullptr)
+	{
+		VisitExpression(node->Right.get());
+		VisitExpression(node->Left.get());
+		EmitMethodCall(node->OperatorMethod);
 		return;
 	}
 

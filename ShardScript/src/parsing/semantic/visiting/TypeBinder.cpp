@@ -44,6 +44,7 @@
 #include <shard/syntax/nodes/Types/GenericTypeSyntax.hpp>
 
 #include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/OperatorDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/PropertyDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.hpp>
@@ -408,6 +409,31 @@ void TypeBinder::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 	MethodSymbol* symbol = LookupSymbol<MethodSymbol>(node).value_or(nullptr);
 	if (symbol == nullptr)
 		throw std::runtime_error("symbol not found");
+
+	PushScope(symbol);
+	if (node->ReturnType != nullptr)
+	{
+		VisitType(node->ReturnType.get());
+		symbol->ReturnType = node->ReturnType->Symbol;
+	}
+
+	if (node->ParametersList != nullptr)
+	{
+		VisitParametersList(node->ParametersList.get());
+		BindParametersList(node->ParametersList.get(), symbol->Parameters);
+	}
+
+	if (node->Body != nullptr)
+		VisitStatementsBlock(node->Body.get());
+
+	PopScope();
+}
+
+void TypeBinder::VisitOperatorDeclaration(OperatorDeclarationSyntax* node)
+{
+	MethodSymbol* symbol = LookupSymbol<MethodSymbol>(node).value_or(nullptr);
+	if (symbol == nullptr)
+		throw std::runtime_error("operator symbol not found");
 
 	PushScope(symbol);
 	if (node->ReturnType != nullptr)
