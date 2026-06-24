@@ -1,123 +1,289 @@
 # ShardScript
 
-**ShardScript** is an compiled, object-oriented programming language with strict static typing, developed in C++. The project features a custom lexer/parser, semantic analyzer, a stack virtual machine, and a standard library framework.
+**ShardScript** is an embeddable, scripting, compiled, programming language with strict static typing, developed in C++. The project features a custom lexer/parser, semantic analyzer, bytecode compiler, stack virtual machine, and a standard library framework.
 
 ## Check out my Website!
 [ShardScript.ru](https://ShardScript.ru)
 
 ## 📋 Specifications
 
-* **Implementation:** C++ (MS Visual C++).
-* **Typing:** Static, Strong.
-* **Paradigm:** Object-Oriented (Classes, Structs) & Functional elements.
-* **Memory Management:** Automatic (Garbage Collector based on reference counting and object tracking).
-* **Interop:** `extern` methods mechanism for C++ implementations.
+* **Implementation:** C++20 (MSVC), CMake/Ninja build system.
+* **Typing:** Static, strong.
+* **Paradigm:** Object-oriented (classes, structs, interfaces) with functional elements (delegates, lambdas).
+* **Memory Management:** Automatic garbage collector based on reference counting and object tracking.
+* **Target:** Custom stack-based virtual machine with compiled bytecode.
 
 ## ✅ Implemented Features
 
 ### Syntax & Language Constructs
-* **Basic Types:** `int`, `double`, `bool`, `char`, `string`, `void`, `var` (type inference).
+* **Basic Types:** `int`, `double`, `bool`, `char`, `string`, `void`.
 * **Control Flow:**
-  * Conditionals: `if`, `else if`, `else`, `unless` (inverse if).
-  * Loops: `for`, `while`, `until` (loop until condition).
+  * Conditionals: `if`, `else if`, `else`, `unless` (inverse `if`).
+  * Loops: `for`, `while`, `until`, `foreach`.
+  * Jump statements: `break`, `continue`, `return`, `throw`.
+* **Functions:** Top-level and member functions with `func Name(args) -> ReturnType` syntax.
 * **Functional Programming:**
-  * typedef Delegates.
-  * Static Lambda expressions.
-* **OOP (Basic):**
-  * Classes and Structures.
-  * Access Modifiers (`public`, `private`, `protected`, `internal`).
-  * Properties with `get`/`set`.
-  * Static fields and methods.
-* **External modules:** write libs in C++ and add them to run-time
-  * see `modules.md` for more info
+  * Named delegates and inline delegate types.
+  * Static lambda expressions.
+* **OOP:**
+  * Classes and structures.
+  * Interfaces with implementation mapping.
+  * Access modifiers: `public`, `private`, `protected`, `internal`.
+  * Fields, properties with `get`/`set`, indexers, constructors.
+  * Static fields, methods and properties.
+  * Operator overloading (`operator +`, `-`, `==`, etc.).
+  * Access operator overload (`operator .(name: string) -> T`) for dynamic member resolution.
+* **Other:**
+  * Namespaces and `using` directives.
+  * `defer` statements for deterministic cleanup.
+  * `try`/`catch` blocks.
+  * `extern` methods for native C++ interop.
+* **External modules:** write libs in C++ and load them at runtime.
+  * See `library-guide.md` for more info.
 
 ### Runtime & Framework
-* **Interpreter:** Tree-walking interpreter with custom call stack handling.
-* **Error Handling:** Runtime exception system (`throw`).
+* **Compiler:** Lexer/parser → semantic analysis → bytecode emission.
+* **Interpreter:** Stack virtual machine with custom call-stack handling.
+* **Error Handling:** Compile-time diagnostics and runtime exception system (`throw`/`try`/`catch`).
 * **Standard Library (WIP):**
-  * `System.Collections`: `List<T>` (Dynamic array implementation). DO NOT USE, generic type parameter are under rewriting!
-  * `System.Filesystem`: Basic file and directory operations.
-  * `System`: Primitives, Math, Random.
+  * `stdio`: Console input and output.
+  * `collections`: `List<T>` (dynamic array). Generic type parameters are still being stabilized.
+  * `filesystem`: Basic file and directory operations.
+  * `System`: Primitives, math, random.
 
 ## 📝 Code Examples
 
-### 1. Generics & Custom Loops
+### 1. Functions & Custom Loops
 ```csharp
-using System.Collections;
+using stdio;
 
-namespace MyApp
+namespace MyApp;
+
+public static func Main() -> void
 {
-    class Program
+    int i = 0;
+    until (i == 5)
     {
-        public static void Main()
-        {
-            // Using generics (basic usage)
-            List<int> numbers = new List<int>();
-            numbers.Add(10);
-            numbers.Add(20);
-
-            // Unique 'until' loop syntax
-            int i = 0;
-            until (i == numbers.Length)
-            {
-                println(numbers.ElementAt(i));
-                i++;
-            }
-        }
+        println(i);
+        i++;
     }
 }
 ```
 
 ### 2. Recursion (Fibonacci)
 ```csharp
-namespace Math
-{
-    class Algorithms
-    {
-        public static int Fibonacci(int n)
-        {
-            if (n <= 1)
-                return n;
-            
-            return Fibonacci(n - 1) + Fibonacci(n - 2);
-        }
+using stdio;
 
-        public static void Main()
-        {
-            int result = Fibonacci(10);
-            // Output: 55
-        }
-    }
+namespace Math;
+
+public static func Fibonacci(n: int) -> int
+{
+    if (n <= 1)
+        return n;
+
+    return Fibonacci(n - 1) + Fibonacci(n - 2);
+}
+
+public static func Main() -> void
+{
+    int result = Fibonacci(10);
+    println(result);
+    // Output: 55
 }
 ```
 
 ### 3. Delegates & Lambdas
 ```csharp
-namespace Functional
+using stdio;
+
+namespace Functional;
+
+delegate Operation(a: int, b: int) -> int;
+
+public static func Main() -> void
 {
-    private delegate int Operation(int a, int b);
-
-    class Program
+    Operation sum = lambda (x: int, y: int) -> int
     {
-        public static void Main()
-        {
-            // Lambda expression assignment
-            Operation sum = lambda (int x, int y) => return x + y;
+        return x + y;
+    };
 
-            int res = sum(5, 7); 
-            // res is 12
-        }
+    int res = sum(5, 7);
+    println(res);
+    // Output: 12
+}
+```
+
+### 4. Operator Overloading
+```csharp
+using stdio;
+
+namespace Operators;
+
+class Box
+{
+    public Value: int;
+
+    public static operator +(a: Box, b: Box) -> int
+    {
+        return 42;
+    }
+}
+
+public static func Main() -> void
+{
+    Box a = new Box();
+    Box b = new Box();
+    println(a + b);
+    // Output: 42
+}
+```
+
+### 5. Access Operator Overload
+```csharp
+using stdio;
+
+namespace DynamicAccess;
+
+class Dynamic
+{
+    public operator .(name: string) -> int
+    {
+        return 42;
+    }
+}
+
+public static func Main() -> void
+{
+    Dynamic d = new Dynamic();
+    println(d.foo);
+    // Output: 42
+}
+```
+
+### 6. Extension Method
+```csharp
+using stdio;
+
+namespace hello_world;
+
+static func Double(x: int) -> int
+{
+    return x * 2;
+}
+
+public static func Main() -> void
+{
+    int a = 5;
+    println(a.Double());
+    // Output: 10
+}
+```
+
+### 7. Resource Cleanup with `defer`
+```csharp
+using stdio;
+
+namespace hello_world;
+
+public class Resource : IDisposable
+{
+    public func Dispose() -> void
+    {
+        println("disposed");
+    }
+}
+
+public static func Main() -> void
+{
+    defer r: Resource = new Resource();
+    defer println("deferred expression");
+    println("using resource");
+    // Output:
+    // using resource
+    // deferred expression
+    // disposed
+}
+```
+
+### 8. Ranges and `for ... in`
+```csharp
+using stdio;
+
+namespace hello_world;
+
+public static func Main() -> void
+{
+    for (i in 0..3)
+    {
+        defer println("Completed: " + i);
+        println("Step: " + i);
     }
 }
 ```
 
-## 🚀 Roadmap
-​[ ] OOP Complete: Interfaces, extension methods and pipe operator.  
-​[ ] Meta-Programming: Attributes, Decorators, and AOP (Aspect-Oriented Programming).  
-​[ ] Error Handling: Full try-catch blocks.  
-​[ ] Generics: Advanced constraints and full generalization support.  
-​[ ] Diagnostics: Improved compile-time and runtime error reporting.  
-[ ] Generics: Basic support for simple structures, fields, and variables (primarily used for `extern` backing; constraints and generalization not yet available).
+### 9. Generic Collections
+```csharp
+using collections;
 
-## ​🤝 Contributing
-​The project is under active development. If you find a bug, have ideas for syntax improvements, or want to suggest a new feature — please create an Issue! All feedback is welcome. In case of a sudden crash of the interpreter, please attach your code to issue so I can debug it.
+namespace hello_world;
+
+public static func Main() -> void
+{
+    List<int> list = new List<int>();
+    list.Add(10);
+    list.Add(20);
+}
+```
+
+### 10. Printing Built-in Types
+```csharp
+using stdio;
+
+namespace hello_world;
+
+public static func Main() -> void
+{
+    println(42);
+    println(true);
+    println("hello");
+
+    int i = 3;
+    string s = "world";
+    bool b = true;
+
+    println(i);
+    println(s);
+    println(b);
+}
+```
+
+## 🚀 Roadmap
+
+### Language Core
+* [x] **IPrintable interface** — standard contract for string conversion; all primitives implement it; `print`/`println` accept `IPrintable` instead of `any`.
+* [ ] **Branching as expression** — `current_status := if is_active "online" else "offline";`
+* [ ] **Attributes** — metadata annotations on declarations (e.g. `[deprecated("...")]`).
+* [x] **Exceptions** — `IThrowable` contract, custom exception classes, polymorphic `try`/`catch`, `throw` as expression.
+* [ ] **Enums** — plain enums, flag enums (`: flags`), and record-style enums (`: struct(...)`).
+* [x] **Implicit extension methods** — any static method taking a type as its first argument becomes callable as a member on that type.
+* [x] **Operator overload by token identifier** — `operator AddOperator`, `operator EqualsOperator`, etc.
+
+### Collections & Iteration
+* [ ] **Foreach and IEnumerable** — `IEnumerator<T>` / `IEnumerable<T>` contracts; arrays and collections implement them.
+* [ ] **Iterators** — `yield return`, `yield break`, and `yield range` with compiler-generated state machines.
+* [ ] **LINQ-style library (`shard.linq`)** — `Where`, `Select`, `ToList`, etc., built on extension methods and `IEnumerable`.
+
+### Advanced Runtime Features
+* [x] **Enhanced defer / IDisposable** — resource cleanup via `defer variable := expression` and `IDisposable` support.
+* [ ] **Async / await** — non-blocking asynchronous methods without explicit `Task<T>` wrapping; compiler-generated state machines.
+* [ ] **Yield + defer interaction** — iterator state machines guarantee deferred cleanup even when iteration is abandoned.
+
+### Tooling & Ecosystem
+* [ ] **Sharding** — continue expanding and improving "Basic Shards Collection" (BSC), by adding and refiining new shards (libraries) 
+* [ ] **Diagnostics** — improved compile-time and runtime error reporting.
+* [ ] **Lang-based build system** — declarative project builds via `shard.build` and a `build.ss` script.
+* [ ] **Shell interpreter** — REPL mode and `shard.shell` module for system automation tasks.
+
+## 🤝 Contributing
+
+The project is under active development. If you find a bug, have ideas for syntax improvements, or want to suggest a new feature — please create an Issue! All feedback is welcome. In case of a sudden crash of the interpreter, please attach your code to the issue so I can debug it.

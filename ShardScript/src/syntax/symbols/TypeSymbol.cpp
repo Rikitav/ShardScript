@@ -8,9 +8,11 @@
 #include <shard/syntax/symbols/DelegateTypeSymbol.hpp>
 #include <shard/syntax/symbols/GenericTypeSymbol.hpp>
 #include <shard/syntax/symbols/ConstructorSymbol.hpp>
+#include <shard/syntax/symbols/OperatorSymbol.hpp>
 
 #include <shard/syntax/SyntaxSymbol.hpp>
 #include <shard/syntax/SyntaxKind.hpp>
+#include <shard/syntax/SyntaxFacts.hpp>
 
 #include <shard/parsing/semantic/SymbolTable.hpp>
 
@@ -195,13 +197,22 @@ void TypeSymbol::OnSymbolDeclared(SyntaxSymbol* symbol)
 		}
 
 		case SyntaxKind::MethodDeclaration:
-		case SyntaxKind::OperatorDeclaration:
 		{
 			symbol->Parent = this;
 			symbol->FullName = this->FullName + L"." + symbol->Name;
 			
 			MethodSymbol* method = static_cast<MethodSymbol*>(symbol);
 			Methods.push_back(method);
+			break;
+		}
+
+		case SyntaxKind::OperatorDeclaration:
+		{
+			symbol->Parent = this;
+			symbol->FullName = this->FullName + L"." + symbol->Name;
+			
+			OperatorSymbol* op = static_cast<OperatorSymbol*>(symbol);
+			Operators.push_back(op);
 			break;
 		}
 
@@ -276,6 +287,27 @@ MethodSymbol* TypeSymbol::FindMethod(std::wstring& name, const std::vector<TypeS
 	for (MethodSymbol* symbol : Methods)
 	{
 		if (symbol->Name != name)
+			continue;
+
+		if (symbol->Parameters.size() != parameterTypes.size())
+			continue;
+
+		if (std::equal(symbol->Parameters.begin(), symbol->Parameters.end(), parameterTypes.begin(), paramPredicate))
+			return symbol;
+	}
+
+	return nullptr;
+}
+
+OperatorSymbol* TypeSymbol::FindOperator(TokenType opToken, const std::vector<TypeSymbol*>& parameterTypes)
+{
+	std::wstring opName = GetOperatorMethodName(opToken);
+	if (opName.empty())
+		return nullptr;
+
+	for (OperatorSymbol* symbol : Operators)
+	{
+		if (symbol->Name != opName)
 			continue;
 
 		if (symbol->Parameters.size() != parameterTypes.size())

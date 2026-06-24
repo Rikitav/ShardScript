@@ -16,6 +16,7 @@
 #include <shard/syntax/symbols/NamespaceSymbol.hpp>
 #include <shard/syntax/symbols/ClassSymbol.hpp>
 #include <shard/syntax/symbols/MethodSymbol.hpp>
+#include <shard/syntax/symbols/OperatorSymbol.hpp>
 #include <shard/syntax/symbols/StructSymbol.hpp>
 #include <shard/syntax/symbols/FieldSymbol.hpp>
 #include <shard/syntax/symbols/PropertySymbol.hpp>
@@ -92,13 +93,12 @@ static void GeneratePropertyBackingField(SymbolFactory& factory, PropertySymbol*
 	symbol->BackingField = backingField;
 }
 
-static MethodSymbol* ResolveOperatorMethod(TypeSymbol* ownerType, shard::TokenType opToken, const std::vector<TypeSymbol*>& paramTypes)
+static OperatorSymbol* ResolveOperatorMethod(TypeSymbol* ownerType, shard::TokenType opToken, const std::vector<TypeSymbol*>& paramTypes)
 {
 	if (ownerType == nullptr || !IsOverloadableOperator(opToken))
 		return nullptr;
 
-	std::wstring opName = GetOperatorMethodName(opToken);
-	return ownerType->FindMethod(opName, paramTypes);
+	return ownerType->FindOperator(opToken, paramTypes);
 }
 
 static bool IsAssignmentOperator(shard::TokenType type)
@@ -393,6 +393,12 @@ void ExpressionBinder::VisitOperatorDeclaration(OperatorDeclarationSyntax* node)
 					Diagnostics.ReportError(node->OperatorToken, L"Operator must return a value of type '" + symbol->ReturnType->Name + L"'");
 			}
 		}
+	}
+
+	if (node->OperatorToken.Type == TokenType::Delimeter)
+	{
+		if (symbol->Parameters.size() != 1 || symbol->Parameters[0]->Type != SymbolTable::Primitives::String)
+			Diagnostics.ReportError(node->OperatorToken, L"Access operator ('.') parameter must be of type 'string'");
 	}
 
 	PopScope();
@@ -717,10 +723,10 @@ TypeSymbol* ExpressionBinder::AnalyzeBinaryExpression(BinaryExpressionSyntax* no
 
 	{
 		std::vector<TypeSymbol*> paramTypes = { leftType, rightType };
-		MethodSymbol* opMethod = ResolveOperatorMethod(leftType, node->OperatorToken.Type, paramTypes);
+		OperatorSymbol* opMethod = ResolveOperatorMethod(leftType, node->OperatorToken.Type, paramTypes);
 		if (opMethod != nullptr)
 		{
-			node->OperatorMethod = opMethod;
+			node->ToOperator = opMethod;
 			return opMethod->ReturnType;
 		}
 
@@ -842,10 +848,10 @@ TypeSymbol* ExpressionBinder::AnalyzeUnaryExpression(UnaryExpressionSyntax* node
 		if (tryOperatorMethod)
 		{
 			std::vector<TypeSymbol*> paramTypes = { exprType };
-			MethodSymbol* opMethod = ResolveOperatorMethod(exprType, node->OperatorToken.Type, paramTypes);
+			OperatorSymbol* opMethod = ResolveOperatorMethod(exprType, node->OperatorToken.Type, paramTypes);
 			if (opMethod != nullptr)
 			{
-				node->OperatorMethod = opMethod;
+				node->ToOperator = opMethod;
 				return opMethod->ReturnType;
 			}
 		}
@@ -1271,6 +1277,13 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 
 				if (methodIt == currentType->Methods.end())
 				{
+					OperatorSymbol* accessOp = currentType->FindOperator(TokenType::Delimeter, { SymbolTable::Primitives::String });
+					if (accessOp != nullptr)
+					{
+						node->ToOperator = accessOp;
+						return accessOp->ReturnType;
+					}
+
 					Diagnostics.ReportError(node->IdentifierToken, L"Member '" + memberName + L"' not found in type '" + currentType->Name + L"'");
 					return nullptr;
 				}
@@ -2381,6 +2394,7 @@ static bool SymbolHasReturnType(const SyntaxSymbol* symbol)
 	switch (symbol->Kind)
 	{
 		case SyntaxKind::MethodDeclaration:
+		case SyntaxKind::OperatorDeclaration:
 		case SyntaxKind::FieldDeclaration:
 		case SyntaxKind::PropertyDeclaration:
 		case SyntaxKind::IndexatorDeclaration:
@@ -2409,6 +2423,7 @@ TypeSymbol* ExpressionBinder::FindTargetReturnType(SemanticScope*& scope)
 	switch (symbol->Kind)
 	{
 		case SyntaxKind::MethodDeclaration:
+		case SyntaxKind::OperatorDeclaration:
 		{
 			MethodSymbol* methodSymbol = static_cast<MethodSymbol*>(symbol);
 			return methodSymbol->ReturnType;

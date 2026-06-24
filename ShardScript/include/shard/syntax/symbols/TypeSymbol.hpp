@@ -3,6 +3,7 @@
 
 #include <shard/syntax/SyntaxKind.hpp>
 #include <shard/syntax/SyntaxSymbol.hpp>
+#include <shard/syntax/SyntaxToken.hpp>
 #include <shard/syntax/symbols/MemberSymbol.hpp>
 
 #include <string>
@@ -16,6 +17,7 @@ namespace shard
     class TypeParameterSymbol;
     class MethodSymbol;
     class ConstructorSymbol;
+    class OperatorSymbol;
     class FieldSymbol;
     class PropertySymbol;
     class IndexatorSymbol;
@@ -48,6 +50,7 @@ namespace shard
         std::vector<PropertySymbol*> Properties;
         std::vector<IndexatorSymbol*> Indexators;
         std::vector<ConstructorSymbol*> Constructors;
+        std::vector<OperatorSymbol*> Operators;
         std::vector<MethodSymbol*> Methods;
 
         std::unordered_map<MethodSymbol*, MethodSymbol*> InterfaceMethodMap;
@@ -73,6 +76,7 @@ namespace shard
 
         virtual ConstructorSymbol* FindConstructor(const std::vector<TypeSymbol*>& parameterTypes);
         virtual MethodSymbol* FindMethod(std::wstring& name, const std::vector<TypeSymbol*>& parameterTypes);
+        virtual OperatorSymbol* FindOperator(TokenType opToken, const std::vector<TypeSymbol*>& parameterTypes);
         virtual IndexatorSymbol* FindIndexator(const std::vector<TypeSymbol*>& parameterTypes);
         virtual FieldSymbol* FindField(std::wstring& name);
         virtual PropertySymbol* FindProperty(std::wstring& name);

@@ -202,15 +202,33 @@ MethodSymbol* SymbolFactory::Method(MethodDeclarationSyntax* node)
 	return static_cast<MethodSymbol*>(Table->BindSymbol(node, std::move(symbol)));
 }
 
-MethodSymbol* SymbolFactory::Method(OperatorDeclarationSyntax* node)
+OperatorSymbol* SymbolFactory::Operator(OperatorDeclarationSyntax* node)
 {
     std::wstring methodName = GetOperatorMethodName(node->OperatorToken.Type);
-    auto symbol = std::make_unique<MethodSymbol>(methodName);
+    auto symbol = std::make_unique<OperatorSymbol>(methodName, node->OperatorToken.Type);
 
     SetAccesibility(node->Modifiers, symbol.get()->Accesibility, symbol.get()->Linking);
 	symbol->HandleType = MethodHandleType::Body;
 
-	return static_cast<MethodSymbol*>(Table->BindSymbol(node, std::move(symbol)));
+	return static_cast<OperatorSymbol*>(Table->BindSymbol(node, std::move(symbol)));
+}
+
+OperatorSymbol* SymbolFactory::Operator(const std::wstring& name, TokenType opToken, TypeSymbol* returnType, MethodSymbolDelegate callback, const std::vector<TypeSymbol*>& paramTypes)
+{
+	auto symbol = std::make_unique<OperatorSymbol>(name, opToken, callback);
+	symbol->ReturnType = returnType;
+	symbol->Accesibility = ACS_PUBLIC;
+	symbol->Linking = LINK_STATIC;
+	symbol->HandleType = MethodHandleType::External;
+
+	for (TypeSymbol* paramType : paramTypes)
+	{
+		ParameterSymbol* param = Parameter(L"", paramType);
+		param->Parent = symbol.get();
+		symbol->Parameters.push_back(param);
+	}
+
+	return static_cast<OperatorSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
 ConstructorSymbol* SymbolFactory::Constructor(ConstructorDeclarationSyntax* node)

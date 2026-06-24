@@ -10,7 +10,7 @@
 
 namespace shard
 {
-	class MethodSymbol;
+	class OperatorSymbol;
 
 	class SHARD_API BinaryExpressionSyntax : public ExpressionSyntax
 	{
@@ -18,7 +18,7 @@ namespace shard
 		const SyntaxToken OperatorToken;
 		std::unique_ptr<ExpressionSyntax> Left = nullptr;
 		std::unique_ptr<ExpressionSyntax> Right = nullptr;
-		MethodSymbol* OperatorMethod = nullptr;
+		OperatorSymbol* ToOperator = nullptr;
 
 		inline BinaryExpressionSyntax(const SyntaxToken operatorToken, SyntaxNode* parent)
 			: ExpressionSyntax(SyntaxKind::BinaryExpression, parent), OperatorToken(operatorToken) {}

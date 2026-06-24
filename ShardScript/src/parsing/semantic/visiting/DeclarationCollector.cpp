@@ -38,6 +38,7 @@
 #include <shard/syntax/symbols/ClassSymbol.hpp>
 #include <shard/syntax/symbols/FieldSymbol.hpp>
 #include <shard/syntax/symbols/MethodSymbol.hpp>
+#include <shard/syntax/symbols/OperatorSymbol.hpp>
 #include <shard/syntax/symbols/PropertySymbol.hpp>
 #include <shard/syntax/symbols/ParameterSymbol.hpp>
 #include <shard/syntax/symbols/VariableSymbol.hpp>
@@ -49,6 +50,20 @@
 #include <string>
 
 using namespace shard;
+
+static bool HasAccessOperator(TypeSymbol* type)
+{
+    if (type == nullptr)
+        return false;
+
+    for (OperatorSymbol* op : type->Operators)
+    {
+        if (op->OperatorToken == TokenType::Delimeter)
+            return true;
+    }
+
+    return false;
+}
 
 void DeclarationCollector::VisitCompilationUnit(CompilationUnitSyntax* node)
 {
@@ -290,6 +305,9 @@ void DeclarationCollector::VisitFieldDeclaration(FieldDeclarationSyntax* node)
                 // Assert: static Class cannot have instance Fields
                 if (symbol->Linking == LINK_INSTANCE && ownerType->Linking == LINK_STATIC)
                     Diagnostics.ReportError(node->IdentifierToken, L"Cannot declare a non static Field in static Type");
+
+                if (HasAccessOperator(ownerType) && symbol->Accesibility == SymbolAccesibility::Public)
+                    Diagnostics.ReportError(node->IdentifierToken, L"Type declaring access operator ('.') cannot have public fields");
             }
         }
     }
@@ -374,24 +392,39 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 }
 void DeclarationCollector::VisitOperatorDeclaration(OperatorDeclarationSyntax* node)
 {
-    MethodSymbol* symbol = LookupSymbol<MethodSymbol>(node).value_or(nullptr);
+    OperatorSymbol* symbol = LookupSymbol<OperatorSymbol>(node).value_or(nullptr);
     bool isNewSymbol = symbol == nullptr;
     if (isNewSymbol)
     {
-        symbol = Factory.Method(node);
+        symbol = Factory.Operator(node);
         Declare(symbol);
 
-        if (symbol->Linking != LINK_STATIC)
-            Diagnostics.ReportError(node->OperatorToken, L"Operator overloads must be declared static");
+        if (symbol->Accesibility != SymbolAccesibility::Public)
+            Diagnostics.ReportError(node->OperatorToken, L"Operator overloads must be declared public");
+
+        if (node->OperatorToken.Type == TokenType::Delimeter)
+        {
+            if (symbol->Linking == LINK_STATIC)
+                Diagnostics.ReportError(node->OperatorToken, L"Access operator ('.') cannot be static; it must be an instance member");
+        }
+        else
+        {
+            if (symbol->Linking != LINK_STATIC)
+                Diagnostics.ReportError(node->OperatorToken, L"Operator overloads must be declared static");
+        }
 
         ApplyMethodAttributes(symbol, node->Attributes);
     }
 
     PushScope(symbol);
 
+    TypeSymbol* ownerType = nullptr;
+    if (symbol->Parent != nullptr && symbol->Parent->IsType())
+        ownerType = static_cast<TypeSymbol*>(symbol->Parent);
+
     if (isNewSymbol)
     {
-        std::uint16_t baseIndex = 1; // operators are always static
+        std::uint16_t baseIndex = 1;
         for (const auto& parameter : node->ParametersList->Parameters)
         {
             ParameterSymbol* param = Factory.Parameter(parameter.get());
@@ -411,7 +444,6 @@ void DeclarationCollector::VisitOperatorDeclaration(OperatorDeclarationSyntax* n
             }
             else
             {
-                TypeSymbol* ownerType = static_cast<TypeSymbol*>(symbol->Parent);
                 if (ownerType->Linking == LINK_STATIC)
                     Diagnostics.ReportError(node->OperatorToken, L"Cannot declare an operator overload in a static Type");
             }
@@ -423,6 +455,38 @@ void DeclarationCollector::VisitOperatorDeclaration(OperatorDeclarationSyntax* n
 
     VisitType(node->ReturnType.get());
     VisitParametersList(node->ParametersList.get());
+
+    if (isNewSymbol && ownerType != nullptr)
+    {
+        if (node->OperatorToken.Type == TokenType::Delimeter)
+        {
+            std::size_t dotCount = 0;
+            for (OperatorSymbol* op : ownerType->Operators)
+            {
+                if (op->OperatorToken == TokenType::Delimeter)
+                    dotCount++;
+            }
+
+            if (dotCount > 1)
+                Diagnostics.ReportError(node->OperatorToken, L"Type can only declare one access operator ('.') overload");
+
+            if (symbol->ReturnType == SymbolTable::Primitives::Void || symbol->ReturnType == SymbolTable::Primitives::Any)
+                Diagnostics.ReportError(node->OperatorToken, L"Access operator ('.') cannot return 'void' or 'any'");
+
+            for (FieldSymbol* field : ownerType->Fields)
+            {
+                if (field->Accesibility == SymbolAccesibility::Public)
+                {
+                    Diagnostics.ReportError(node->OperatorToken, L"Type declaring access operator ('.') cannot have public fields");
+                    break;
+                }
+            }
+
+            if (node->ParametersList == nullptr || node->ParametersList->Parameters.size() != 1)
+                Diagnostics.ReportError(node->OperatorToken, L"Access operator ('.') must take exactly one parameter");
+        }
+    }
+
     VisitStatementsBlock(node->Body.get());
 
     PopScope();

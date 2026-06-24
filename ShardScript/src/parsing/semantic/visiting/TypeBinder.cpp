@@ -71,21 +71,38 @@ static void BindParametersList(ParametersListSyntax* node, std::vector<Parameter
 	if (node == nullptr)
 		return;
 
-	if (node->Parameters.size() != symbols.size())
-		return;
-
-	for (std::size_t i = 0; i < node->Parameters.size(); i++)
+	if (node->Parameters.size() == symbols.size())
 	{
-		ParameterSyntax* paramSyntax = node->Parameters[i].get();
-		ParameterSymbol* paramSymbol = i < symbols.size() ? symbols[i] : nullptr;
-
-		if (paramSymbol == nullptr)
-			continue;
-
-		if (paramSyntax->Type != nullptr)
+		for (std::size_t i = 0; i < node->Parameters.size(); i++)
 		{
-			if (paramSyntax->Type->Symbol != nullptr)
+			ParameterSyntax* paramSyntax = node->Parameters[i].get();
+			ParameterSymbol* paramSymbol = symbols[i];
+
+			if (paramSymbol == nullptr)
+				continue;
+
+			if (paramSyntax->Type != nullptr && paramSyntax->Type->Symbol != nullptr)
 				paramSymbol->Type = paramSyntax->Type->Symbol;
+		}
+	}
+	else
+	{
+		// Symbols and syntax parameters may differ when the compiler injects
+		// implicit parameters (e.g. the receiver for the access operator).
+		for (ParameterSymbol* paramSymbol : symbols)
+		{
+			if (paramSymbol == nullptr || paramSymbol->Type != nullptr)
+				continue;
+
+			for (const auto& paramSyntax : node->Parameters)
+			{
+				if (paramSyntax->Identifier.Word == paramSymbol->Name)
+				{
+					if (paramSyntax->Type != nullptr && paramSyntax->Type->Symbol != nullptr)
+						paramSymbol->Type = paramSyntax->Type->Symbol;
+					break;
+				}
+			}
 		}
 	}
 }

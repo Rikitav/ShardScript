@@ -7,6 +7,7 @@
 
 #include <shard/syntax/symbols/TypeSymbol.hpp>
 #include <shard/syntax/symbols/MethodSymbol.hpp>
+#include <shard/syntax/symbols/OperatorSymbol.hpp>
 #include <shard/syntax/symbols/ParameterSymbol.hpp>
 
 #include <shard/runtime/MethodCallState.hpp>
@@ -530,16 +531,12 @@ static ObjectInstance* double_op_AddOperator_String(const CallState& context)
 // Registration helpers
 // -----------------------------------------------------------------------------
 
-static MethodSymbol* RegisterOperator(TypeSymbol* type, TypeSymbol* returnType, const wchar_t* name, MethodSymbolDelegate callback, const std::vector<TypeSymbol*>& paramTypes, SymbolFactory& factory)
+static OperatorSymbol* RegisterOperator(TypeSymbol* type, TypeSymbol* returnType, const wchar_t* name, MethodSymbolDelegate callback, const std::vector<TypeSymbol*>& paramTypes, SymbolFactory& factory)
 {
-	MethodSymbol* method = factory.Method(ACS_PUBLIC, LINK_STATIC, returnType, name, callback);
-	for (TypeSymbol* paramType : paramTypes)
-	{
-		ParameterSymbol* param = factory.Parameter(L"", paramType);
-		method->Parameters.push_back(param);
-	}
-	type->OnSymbolDeclared(method);
-	return method;
+	shard::TokenType opToken = GetTokenTypeFromOperatorName(std::wstring(name));
+	OperatorSymbol* op = factory.Operator(std::wstring(name), opToken, returnType, callback, paramTypes);
+	type->OnSymbolDeclared(op);
+	return op;
 }
 
 static void RegisterIntegerOperators(SymbolFactory& factory)

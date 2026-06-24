@@ -47,6 +47,7 @@
 #include <shard/syntax/symbols/GenericTypeSymbol.hpp>
 #include <shard/syntax/symbols/FieldSymbol.hpp>
 #include <shard/syntax/symbols/MethodSymbol.hpp>
+#include <shard/syntax/symbols/OperatorSymbol.hpp>
 #include <shard/syntax/symbols/ParameterSymbol.hpp>
 #include <shard/syntax/symbols/PropertySymbol.hpp>
 #include <shard/syntax/symbols/VariableSymbol.hpp>
@@ -949,10 +950,10 @@ void AbstractEmiter::VisitUnaryExpression(UnaryExpressionSyntax* node)
 		return;
 	}
 
-	if (node->OperatorMethod != nullptr)
+	if (node->ToOperator != nullptr)
 	{
 		VisitExpression(node->Expression.get());
-		EmitMethodCall(node->OperatorMethod);
+		EmitMethodCall(node->ToOperator);
 		return;
 	}
 
@@ -1065,11 +1066,11 @@ void AbstractEmiter::VisitBinaryExpression(BinaryExpressionSyntax* node)
 		return;
 	}
 
-	if (node->OperatorMethod != nullptr)
+	if (node->ToOperator != nullptr)
 	{
 		VisitExpression(node->Right.get());
 		VisitExpression(node->Left.get());
-		EmitMethodCall(node->OperatorMethod);
+		EmitMethodCall(node->ToOperator);
 		return;
 	}
 
@@ -1214,6 +1215,14 @@ void AbstractEmiter::VisitMemberAccessExpression(MemberAccessExpressionSyntax* n
 	if (node->ToDelegate != nullptr)
 	{
 		Encoder.EmitNewDelegate(GeneratingFor->ExecutableByteCode, node->ToDelegate);
+		return;
+	}
+
+	if (node->ToOperator != nullptr)
+	{
+		Encoder.EmitLoadConstString(GeneratingFor->ExecutableByteCode, Program.DataSection, node->IdentifierToken.Word.data());
+		VisitExpression(node->PreviousExpression.get());
+		EmitMethodCall(node->ToOperator);
 		return;
 	}
 }
