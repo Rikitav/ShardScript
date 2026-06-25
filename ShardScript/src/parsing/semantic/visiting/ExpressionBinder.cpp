@@ -2254,6 +2254,55 @@ void ExpressionBinder::VisitForStatement(ForStatementSyntax* node)
 		VisitStatementsBlock(node->StatementsBlock.get());
 }
 
+static TypeSymbol* FindEnumerableElementType(TypeSymbol* rangeType, bool& isArrayRange, bool allowArray = true)
+{
+	isArrayRange = false;
+	if (rangeType == nullptr)
+		return nullptr;
+
+	if (rangeType->Kind == SyntaxKind::ArrayType)
+	{
+		isArrayRange = allowArray;
+		return static_cast<ArrayTypeSymbol*>(rangeType)->UnderlayingType;
+	}
+
+	TypeSymbol* underlying = rangeType;
+	GenericTypeSymbol* genericRange = nullptr;
+	if (rangeType->Kind == SyntaxKind::GenericType)
+	{
+		genericRange = static_cast<GenericTypeSymbol*>(rangeType);
+		underlying = genericRange->UnderlayingType;
+	}
+
+	auto tryExtractElement = [&](GenericTypeSymbol* genericIface) -> TypeSymbol*
+	{
+		if (genericIface->UnderlayingType != TRAIT_ENUMERABLE)
+			return nullptr;
+
+		TypeParameterSymbol* enumerableT = TRAIT_ENUMERABLE->TypeParameters[0];
+		TypeSymbol* elementType = genericIface->SubstituteTypeParameters(enumerableT);
+		if (elementType != nullptr && elementType->Kind == SyntaxKind::TypeParameter && genericRange != nullptr)
+			elementType = genericRange->SubstituteTypeParameters(static_cast<TypeParameterSymbol*>(elementType));
+
+		return elementType;
+	};
+
+	if (underlying == TRAIT_ENUMERABLE && genericRange != nullptr)
+		return tryExtractElement(genericRange);
+
+	for (TypeSymbol* iface : underlying->Interfaces)
+	{
+		if (iface->Kind != SyntaxKind::GenericType)
+			continue;
+
+		GenericTypeSymbol* genericIface = static_cast<GenericTypeSymbol*>(iface);
+		if (TypeSymbol* elementType = tryExtractElement(genericIface))
+			return elementType;
+	}
+
+	return nullptr;
+}
+
 void ExpressionBinder::VisitForEachStatement(ForEachStatementSyntax* node)
 {
 	VariableSymbol* variable = static_cast<VariableSymbol*>(Table->LookupSymbol(node).value_or(nullptr));
@@ -2262,16 +2311,60 @@ void ExpressionBinder::VisitForEachStatement(ForEachStatementSyntax* node)
 	{
 		VisitExpression(node->RangeExpression.get());
 		TypeSymbol* rangeType = GetExpressionType(node->RangeExpression.get());
+		node->RangeType = rangeType;
 
-		if (rangeType != nullptr && rangeType->Kind == SyntaxKind::ArrayType)
+		bool isArrayRange = false;
+		if (TypeSymbol* elementType = FindEnumerableElementType(rangeType, isArrayRange, false))
 		{
-			ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(rangeType);
+			node->IsArrayRange = false;
 			if (variable != nullptr)
-				variable->Type = arrayType->UnderlayingType;
+				variable->Type = elementType;
 		}
 		else
 		{
-			Diagnostics.ReportError(node->InKeywordToken, L"For-in expression must be an array");
+			Diagnostics.ReportError(node->InKeywordToken, L"'foreach' expression must implement IEnumerable<T>");
+		}
+	}
+
+	if (variable != nullptr)
+	{
+		Declare(variable);
+		PushScope(variable);
+	}
+
+	if (node->StatementsBlock != nullptr)
+		VisitStatementsBlock(node->StatementsBlock.get());
+
+	if (variable != nullptr)
+		PopScope();
+}
+
+void ExpressionBinder::VisitForInStatement(ForInStatementSyntax* node)
+{
+	VariableSymbol* variable = static_cast<VariableSymbol*>(Table->LookupSymbol(node).value_or(nullptr));
+
+	if (node->RangeExpression != nullptr)
+	{
+		VisitExpression(node->RangeExpression.get());
+		TypeSymbol* rangeType = GetExpressionType(node->RangeExpression.get());
+		node->RangeType = rangeType;
+
+		bool isArrayRange = false;
+		if (TypeSymbol* elementType = FindEnumerableElementType(rangeType, isArrayRange))
+		{
+			node->IsArrayRange = isArrayRange;
+			if (!isArrayRange)
+			{
+				Diagnostics.ReportError(node->InKeywordToken, L"'for-in' expression must be an array");
+			}
+			else if (variable != nullptr)
+			{
+				variable->Type = elementType;
+			}
+		}
+		else
+		{
+			Diagnostics.ReportError(node->InKeywordToken, L"'for-in' expression must be an array");
 		}
 	}
 

@@ -59,6 +59,7 @@
 
 #include <shard/syntax/nodes/Loops/ForStatementSyntax.hpp>
 #include <shard/syntax/nodes/Loops/ForEachStatementSyntax.hpp>
+#include <shard/syntax/nodes/Loops/ForInStatementSyntax.hpp>
 #include <shard/syntax/nodes/Loops/WhileStatementSyntax.hpp>
 #include <shard/syntax/nodes/Loops/UntilStatementSyntax.hpp>
 
@@ -128,6 +129,7 @@ namespace shard
 		std::unique_ptr<UntilStatementSyntax> ReadUntilStatement(SourceProvider& reader, SyntaxNode* parent);
 		std::unique_ptr<ForStatementSyntax> ReadForStatement(SourceProvider& reader, SyntaxNode* parent);
 		std::unique_ptr<ForEachStatementSyntax> ReadForEachStatement(SourceProvider& reader, SyntaxNode* parent);
+		std::unique_ptr<ForInStatementSyntax> ReadForInStatement(SourceProvider& reader, SyntaxNode* parent);
 		std::unique_ptr<TryStatementSyntax> ReadTryStatement(SourceProvider& reader, SyntaxNode* parent);
 
 		// 7. Expression

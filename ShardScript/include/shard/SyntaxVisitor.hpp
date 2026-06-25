@@ -50,6 +50,7 @@
 #include <shard/syntax/nodes/Loops/WhileStatementSyntax.hpp>
 #include <shard/syntax/nodes/Loops/ForStatementSyntax.hpp>
 #include <shard/syntax/nodes/Loops/ForEachStatementSyntax.hpp>
+#include <shard/syntax/nodes/Loops/ForInStatementSyntax.hpp>
 #include <shard/syntax/nodes/Loops/UntilStatementSyntax.hpp>
 
 #include <shard/syntax/nodes/Expressions/UnaryExpressionSyntax.hpp>
@@ -129,6 +130,7 @@ namespace shard
         virtual void VisitWhileStatement(WhileStatementSyntax* node);
         virtual void VisitForStatement(ForStatementSyntax* node);
         virtual void VisitForEachStatement(ForEachStatementSyntax* node);
+        virtual void VisitForInStatement(ForInStatementSyntax* node);
         virtual void VisitUntilStatement(UntilStatementSyntax* node);
 
         virtual void VisitConditionalClause(ConditionalClauseBaseSyntax* node);

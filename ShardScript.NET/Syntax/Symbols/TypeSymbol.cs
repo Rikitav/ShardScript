@@ -21,10 +21,19 @@ public sealed class TypeSymbol : SyntaxSymbol
         return method == IntPtr.Zero ? null : new MethodSymbol(method);
     }
 
+    public FieldSymbol? FindField(string name)
+    {
+        IntPtr field = NativeMethods.Shard_FindFieldInType(Handle, name);
+        return field == IntPtr.Zero ? null : new FieldSymbol(field);
+    }
+
     private static class NativeMethods
     {
         [DllImport(ShardScriptAPI.LibraryName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
         public static extern IntPtr Shard_FindMethodInType(IntPtr type, [MarshalAs(UnmanagedType.LPWStr)] string name, int parameterCount);
+
+        [DllImport(ShardScriptAPI.LibraryName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        public static extern IntPtr Shard_FindFieldInType(IntPtr type, [MarshalAs(UnmanagedType.LPWStr)] string name);
 
         [DllImport(ShardScriptAPI.LibraryName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
         public static extern IntPtr Shard_GetSymbolName(IntPtr symbol);

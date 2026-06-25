@@ -5,6 +5,9 @@ using System.Text;
 
 namespace ShardScript.NET.Application;
 
+/// <summary>
+/// Represents a single compilation session. Owns the syntax tree, semantic model and diagnostics.
+/// </summary>
 public sealed class CompilationContext : IDisposable
 {
     private IntPtr _handle;

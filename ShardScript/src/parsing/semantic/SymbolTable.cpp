@@ -20,6 +20,11 @@
 #include <shard/syntax/symbols/AccessorSymbol.hpp>
 #include <shard/syntax/symbols/ConstructorSymbol.hpp>
 #include <shard/syntax/symbols/TypeParameterSymbol.hpp>
+#include <shard/syntax/symbols/ArrayTypeSymbol.hpp>
+#include <shard/syntax/symbols/GenericTypeSymbol.hpp>
+
+#include <shard/runtime/ObjectInstance.hpp>
+#include <shard/runtime/GarbageCollector.hpp>
 
 #include <vector>
 #include <ranges>
@@ -27,6 +32,7 @@
 #include <utility>
 #include <optional>
 #include <sstream>
+#include <memory>
 
 using namespace std::ranges;
 using namespace std::views;
@@ -34,6 +40,9 @@ using namespace shard;
 
 TypeSymbol* SymbolTable::Global::Type = new TypeSymbol(GlobalTypeName, SyntaxKind::CompilationUnit);
 SemanticScope* SymbolTable::Global::Scope = new SemanticScope(Type, nullptr);
+
+static std::unique_ptr<SymbolTable> GlobalSymbolTable;
+static bool CreatingGlobalSymbolTable = false;
 
 inline static void declareGlobal(SyntaxSymbol* symbol)
 {
@@ -195,6 +204,50 @@ static void AddRuntimeExceptionProperty(ClassSymbol* cls, const std::wstring& na
 	outField = backingField;
 }
 
+static ClassSymbol* g_ArrayEnumeratorClass = nullptr;
+static TypeParameterSymbol* g_ArrayEnumeratorT = nullptr;
+static FieldSymbol* g_ArrayEnumeratorSource = nullptr;
+static FieldSymbol* g_ArrayEnumeratorIndex = nullptr;
+static FieldSymbol* g_ArrayEnumeratorLength = nullptr;
+
+static ObjectInstance* array_enumerator_MoveNext(const CallState& context)
+{
+	ObjectInstance* self = context.Args[0];
+	std::int64_t index = self->GetField(g_ArrayEnumeratorIndex, context.Frame)->AsInteger();
+	std::int64_t length = self->GetField(g_ArrayEnumeratorLength, context.Frame)->AsInteger();
+	index++;
+	self->SetField(g_ArrayEnumeratorIndex, context.Collector.FromValue(index), context.Frame);
+	return context.Collector.FromValue(index < length);
+}
+
+static ObjectInstance* array_enumerator_Current_get(const CallState& context)
+{
+	ObjectInstance* self = context.Args[0];
+	std::int64_t index = self->GetField(g_ArrayEnumeratorIndex, context.Frame)->AsInteger();
+	ObjectInstance* source = self->GetField(g_ArrayEnumeratorSource, context.Frame);
+	return source->GetElement(static_cast<std::size_t>(index), context.Frame);
+}
+
+static ObjectInstance* primitive_array_get_enumerator(const CallState& context)
+{
+	ObjectInstance* array = context.Args[0];
+	const ArrayTypeSymbol* arrayType = static_cast<const ArrayTypeSymbol*>(array->getInfo());
+	TypeSymbol* concreteT = const_cast<TypeSymbol*>(arrayType->UnderlayingType);
+
+	GenericTypeSymbol* enumeratorType = new GenericTypeSymbol(g_ArrayEnumeratorClass);
+	enumeratorType->AddTypeParameter(g_ArrayEnumeratorT, concreteT);
+	enumeratorType->Inlining = TypeInlining::ByReference;
+	enumeratorType->MemoryBytesSize = g_ArrayEnumeratorClass->MemoryBytesSize;
+	enumeratorType->State = TypeLayoutingState::Visited;
+
+	ObjectInstance* enumerator = context.Collector.AllocateInstance(enumeratorType);
+	enumerator->SetField(g_ArrayEnumeratorSource, array, context.Frame);
+	enumerator->SetField(g_ArrayEnumeratorIndex, context.Collector.FromValue(static_cast<std::int64_t>(-1)), context.Frame);
+	enumerator->SetField(g_ArrayEnumeratorLength, context.Collector.FromValue(static_cast<std::int64_t>(arrayType->Length)), context.Frame);
+
+	return enumerator;
+}
+
 static void MakePrimitivePrintable(TypeSymbol* primitive, MethodSymbolDelegate toString, SymbolFactory& factory, MethodSymbol* TRAIT_PRINTABLE_ToString)
 {
 	MethodSymbol* method = factory.Method(SymbolAccesibility::Public, LINK_INSTANCE, SymbolTable::Primitives::String, L"ToString", toString);
@@ -297,14 +350,143 @@ static void ResolveInterfaces(SymbolTable* table)
 		declareGlobal(TRAIT_PRINTABLE);
 	}
 
+	// IEnumerator<T>
+	{
+		TRAIT_ENUMERATOR = factory.Interface(L"IEnumerator", SymbolAccesibility::Public, SymbolTable::Global::Type);
+
+		TypeParameterSymbol* enumeratorTypeParam = factory.TypeParameter(L"T", TRAIT_ENUMERATOR);
+		TRAIT_ENUMERATOR->TypeParameters.push_back(enumeratorTypeParam);
+
+		TRAIT_ENUMERATOR_MOVENEXT = factory.Method(L"MoveNext", SymbolTable::Primitives::Boolean, LINK_INSTANCE);
+		TRAIT_ENUMERATOR_MOVENEXT->Accesibility = SymbolAccesibility::Public;
+		TRAIT_ENUMERATOR_MOVENEXT->Parent = TRAIT_ENUMERATOR;
+		TRAIT_ENUMERATOR->Methods.push_back(TRAIT_ENUMERATOR_MOVENEXT);
+
+		PropertySymbol* currentProperty = factory.Property(L"Current", enumeratorTypeParam, LINK_INSTANCE);
+		currentProperty->Accesibility = SymbolAccesibility::Public;
+		currentProperty->Parent = TRAIT_ENUMERATOR;
+		AccessorSymbol* currentGetter = factory.Getter(currentProperty);
+		currentGetter->Parent = currentProperty;
+		currentGetter->HandleType = MethodHandleType::None;
+		TRAIT_ENUMERATOR->Properties.push_back(currentProperty);
+		TRAIT_ENUMERATOR->Methods.push_back(currentGetter);
+		TRAIT_ENUMERATOR_CURRENT_GET = currentGetter;
+
+		declareGlobal(TRAIT_ENUMERATOR);
+	}
+
 	// IEnumerable<T>
 	{
 		TRAIT_ENUMERABLE = factory.Interface(L"IEnumerable", SymbolAccesibility::Public, SymbolTable::Global::Type);
 
-		TypeParameterSymbol* typeParam = factory.TypeParameter(L"T", TRAIT_ENUMERABLE);
-		TRAIT_ENUMERABLE->TypeParameters.push_back(typeParam);
+		TypeParameterSymbol* enumerableTypeParam = factory.TypeParameter(L"T", TRAIT_ENUMERABLE);
+		TRAIT_ENUMERABLE->TypeParameters.push_back(enumerableTypeParam);
+
+		GenericTypeSymbol* enumeratorReturnType = factory.GenericType(TRAIT_ENUMERATOR, { { L"T", enumerableTypeParam } });
+
+		TRAIT_ENUMERABLE_GETENUMERATOR = factory.Method(L"GetEnumerator", enumeratorReturnType, LINK_INSTANCE);
+		TRAIT_ENUMERABLE_GETENUMERATOR->Accesibility = SymbolAccesibility::Public;
+		TRAIT_ENUMERABLE_GETENUMERATOR->Parent = TRAIT_ENUMERABLE;
+		TRAIT_ENUMERABLE->Methods.push_back(TRAIT_ENUMERABLE_GETENUMERATOR);
 
 		declareGlobal(TRAIT_ENUMERABLE);
+	}
+
+	resolved = true;
+}
+
+static void ResolveEnumerables(SymbolTable* table)
+{
+	static bool resolved = false;
+	if (resolved)
+		return;
+
+	SymbolFactory factory(table);
+
+	// ArrayEnumerator<T>
+	{
+		ClassSymbol* raw = factory.Class(L"ArrayEnumerator");
+		raw->Accesibility = SymbolAccesibility::Public;
+		raw->Inlining = TypeInlining::ByReference;
+		raw->Parent = SymbolTable::Global::Type;
+		raw->FullName = L"ArrayEnumerator";
+		declareGlobal(raw);
+
+		TypeParameterSymbol* typeParam = factory.TypeParameter(L"T", raw);
+		raw->TypeParameters.push_back(typeParam);
+
+		g_ArrayEnumeratorClass = raw;
+		g_ArrayEnumeratorT = typeParam;
+
+		g_ArrayEnumeratorSource = factory.Field(L"_source", factory.Array(typeParam), LINK_INSTANCE);
+		g_ArrayEnumeratorSource->Accesibility = SymbolAccesibility::Private;
+		g_ArrayEnumeratorSource->Parent = raw;
+		raw->Fields.push_back(g_ArrayEnumeratorSource);
+
+		g_ArrayEnumeratorIndex = factory.Field(L"_index", SymbolTable::Primitives::Integer, LINK_INSTANCE);
+		g_ArrayEnumeratorIndex->Accesibility = SymbolAccesibility::Private;
+		g_ArrayEnumeratorIndex->Parent = raw;
+		raw->Fields.push_back(g_ArrayEnumeratorIndex);
+
+		g_ArrayEnumeratorLength = factory.Field(L"_length", SymbolTable::Primitives::Integer, LINK_INSTANCE);
+		g_ArrayEnumeratorLength->Accesibility = SymbolAccesibility::Private;
+		g_ArrayEnumeratorLength->Parent = raw;
+		raw->Fields.push_back(g_ArrayEnumeratorLength);
+
+		std::size_t layoutOffset = 0;
+		g_ArrayEnumeratorSource->MemoryBytesOffset = layoutOffset;
+		layoutOffset += sizeof(void*);
+		g_ArrayEnumeratorIndex->MemoryBytesOffset = layoutOffset;
+		layoutOffset += sizeof(std::int64_t);
+		g_ArrayEnumeratorLength->MemoryBytesOffset = layoutOffset;
+		layoutOffset += sizeof(std::int64_t);
+		raw->MemoryBytesSize = layoutOffset;
+		raw->State = TypeLayoutingState::Visited;
+
+		MethodSymbol* moveNext = factory.Method(
+			SymbolAccesibility::Public,
+			LINK_INSTANCE,
+			SymbolTable::Primitives::Boolean,
+			L"MoveNext",
+			&array_enumerator_MoveNext);
+		moveNext->Parent = raw;
+		raw->Methods.push_back(moveNext);
+
+		PropertySymbol* currentProperty = factory.Property(L"Current", typeParam, LINK_INSTANCE);
+		currentProperty->Accesibility = SymbolAccesibility::Public;
+		currentProperty->Parent = raw;
+		AccessorSymbol* currentGetter = factory.Getter(currentProperty);
+		currentGetter->Parent = currentProperty;
+		currentGetter->FunctionPointer = &array_enumerator_Current_get;
+		currentGetter->HandleType = MethodHandleType::External;
+		raw->Properties.push_back(currentProperty);
+		raw->Methods.push_back(currentGetter);
+
+		GenericTypeSymbol* enumeratorInterface = factory.GenericType(TRAIT_ENUMERATOR, { { L"T", typeParam } });
+		raw->Interfaces.push_back(enumeratorInterface);
+		raw->InterfaceMethodMap[TRAIT_ENUMERATOR_MOVENEXT] = moveNext;
+		raw->InterfaceMethodMap[TRAIT_ENUMERATOR_CURRENT_GET] = currentGetter;
+
+		SymbolTable::StandardTypes::ArrayEnumerator = raw;
+		SymbolTable::StandardTypes::ArrayEnumerator_T = typeParam;
+		SymbolTable::StandardTypes::ArrayEnumerator_SourceField = g_ArrayEnumeratorSource;
+		SymbolTable::StandardTypes::ArrayEnumerator_IndexField = g_ArrayEnumeratorIndex;
+		SymbolTable::StandardTypes::ArrayEnumerator_LengthField = g_ArrayEnumeratorLength;
+	}
+
+	// Make the primitive array type implement IEnumerable<T> through a native GetEnumerator
+	{
+		GenericTypeSymbol* enumerableInterface = factory.GenericType(TRAIT_ENUMERABLE, { { L"T", TRAIT_ENUMERABLE->TypeParameters[0] } });
+		MethodSymbol* getEnumerator = factory.Method(
+			SymbolAccesibility::Public,
+			LINK_INSTANCE,
+			factory.GenericType(TRAIT_ENUMERATOR, { { L"T", TRAIT_ENUMERATOR->TypeParameters[0] } }),
+			L"GetEnumerator",
+			&primitive_array_get_enumerator);
+		getEnumerator->Parent = SymbolTable::Primitives::Array;
+		SymbolTable::Primitives::Array->Methods.push_back(getEnumerator);
+		SymbolTable::Primitives::Array->Interfaces.push_back(enumerableInterface);
+		SymbolTable::Primitives::Array->InterfaceMethodMap[TRAIT_ENUMERABLE_GETENUMERATOR] = getEnumerator;
 	}
 
 	resolved = true;
@@ -393,12 +575,21 @@ static void ResolveGlobalComponents(SymbolTable* table)
 	if (resolved)
 		return;
 
-	ResolvePrimitives(table);
-	ResolveInterfaces(table); // Resolve standard interface traits before they are used below.
-	ResolveStandards(table);
+	// Standard components are owned by a process-wide table so that their
+	// pointers remain valid after any individual CompilationContext is destroyed.
+	CreatingGlobalSymbolTable = true;
+	GlobalSymbolTable = std::make_unique<SymbolTable>();
+	CreatingGlobalSymbolTable = false;
+
+	SymbolTable* global = GlobalSymbolTable.get();
+
+	ResolvePrimitives(global);
+	ResolveInterfaces(global); // Resolve standard interface traits before they are used below.
+	ResolveEnumerables(global);
+	ResolveStandards(global);
 
 	// Make standard primitives implement IPrintable
-	SymbolFactory factory(table);
+	SymbolFactory factory(global);
 
 	MakePrimitivePrintable(SymbolTable::Primitives::Boolean, &primitive_boolean_to_string, factory, TRAIT_PRINTABLE_ToString);
 	MakePrimitivePrintable(SymbolTable::Primitives::Integer, &primitive_integer_to_string, factory, TRAIT_PRINTABLE_ToString);
@@ -415,6 +606,9 @@ static void ResolveGlobalComponents(SymbolTable* table)
 
 SymbolTable::SymbolTable()
 {
+	if (CreatingGlobalSymbolTable)
+		return;
+
 	ResolveGlobalComponents(this);
 }
 

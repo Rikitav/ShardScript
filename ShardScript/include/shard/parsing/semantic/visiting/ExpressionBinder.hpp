@@ -36,6 +36,7 @@
 
 #include <shard/syntax/nodes/Loops/ForStatementSyntax.hpp>
 #include <shard/syntax/nodes/Loops/ForEachStatementSyntax.hpp>
+#include <shard/syntax/nodes/Loops/ForInStatementSyntax.hpp>
 #include <shard/syntax/nodes/Loops/UntilStatementSyntax.hpp>
 #include <shard/syntax/nodes/Loops/WhileStatementSyntax.hpp>
 
@@ -115,6 +116,7 @@ namespace shard
 		void VisitUntilStatement(shard::UntilStatementSyntax* node) override;
 		void VisitForStatement(shard::ForStatementSyntax* node) override;
 		void VisitForEachStatement(shard::ForEachStatementSyntax* node) override;
+		void VisitForInStatement(shard::ForInStatementSyntax* node) override;
 		void VisitIfStatement(shard::IfStatementSyntax* node) override;
 		void VisitUnlessStatement(shard::UnlessStatementSyntax* node) override;
 		void VisitReturnStatement(shard::ReturnStatementSyntax* node) override;

@@ -1,4 +1,4 @@
-﻿using stdio;
+using stdio;
 
 namespace hello_world;
 

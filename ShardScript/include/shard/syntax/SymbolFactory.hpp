@@ -24,6 +24,7 @@
 #include <shard/syntax/nodes/Statements/VariableStatementSyntax.hpp>
 
 #include <shard/syntax/nodes/Loops/ForEachStatementSyntax.hpp>
+#include <shard/syntax/nodes/Loops/ForInStatementSyntax.hpp>
 
 #include <shard/syntax/symbols/NamespaceSymbol.hpp>
 #include <shard/syntax/symbols/ClassSymbol.hpp>
@@ -116,6 +117,7 @@ namespace shard
 		ParameterSymbol* Parameter(const std::wstring& name, TypeSymbol* type, bool isOptional);
 
 		VariableSymbol* Variable(ForEachStatementSyntax* node);
+		VariableSymbol* Variable(ForInStatementSyntax* node);
 		VariableSymbol* Variable(VariableStatementSyntax* node);
 		VariableSymbol* Variable(const std::wstring& name);
 		VariableSymbol* Variable(const std::wstring& name, TypeSymbol* type);

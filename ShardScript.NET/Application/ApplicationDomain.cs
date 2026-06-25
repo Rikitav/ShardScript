@@ -4,13 +4,16 @@ using System.Runtime.InteropServices;
 
 namespace ShardScript.NET.Application;
 
+/// <summary>
+/// Represents a compiled ShardScript application that can be executed by the virtual machine.
+/// </summary>
 public sealed class ApplicationDomain : IDisposable
 {
     private IntPtr _handle;
 
     public IntPtr Handle => _handle;
 
-    public VirtualMachine GetVirtualMachine
+    public VirtualMachine VirtualMachine
     {
         get
         {
@@ -22,7 +25,7 @@ public sealed class ApplicationDomain : IDisposable
         }
     }
 
-    public GarbageCollector GetGarbageCollector
+    public GarbageCollector GarbageCollector
     {
         get
         {

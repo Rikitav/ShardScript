@@ -483,6 +483,13 @@ void SyntaxVisitor::VisitStatement(StatementSyntax* node)
 			return;
 		}
 
+		case SyntaxKind::ForInStatement:
+		{
+			ForInStatementSyntax* statement = static_cast<ForInStatementSyntax*>(node);
+			VisitForInStatement(statement);
+			return;
+		}
+
 		case SyntaxKind::IfStatement:
 		{
 			IfStatementSyntax* statement = dynamic_cast<IfStatementSyntax*>(node);
@@ -577,6 +584,18 @@ void SyntaxVisitor::VisitForStatement(ForStatementSyntax* node)
 }
 
 void SyntaxVisitor::VisitForEachStatement(ForEachStatementSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (node->RangeExpression != nullptr)
+		VisitExpression(node->RangeExpression.get());
+
+	if (node->StatementsBlock != nullptr)
+		VisitStatementsBlock(node->StatementsBlock.get());
+}
+
+void SyntaxVisitor::VisitForInStatement(ForInStatementSyntax* node)
 {
 	if (node == nullptr)
 		return;

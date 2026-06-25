@@ -1,0 +1,15 @@
+using stdio;
+
+namespace hello_world;
+
+public static func Main() -> void
+{
+    arr: int[] = 1..4;
+    enumerable: IEnumerable<int> = arr;
+    foreach (n in enumerable)
+    {
+        print(n);
+        print(" ");
+    }
+    println("");
+}

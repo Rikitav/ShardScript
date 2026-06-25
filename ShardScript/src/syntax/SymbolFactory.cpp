@@ -522,6 +522,12 @@ VariableSymbol* SymbolFactory::Variable(ForEachStatementSyntax* node)
 	return static_cast<VariableSymbol*>(Table->BindSymbol(node, std::move(symbol)));
 }
 
+VariableSymbol* SymbolFactory::Variable(ForInStatementSyntax* node)
+{
+	auto symbol = std::make_unique<VariableSymbol>(node->IdentifierToken.Word);
+	return static_cast<VariableSymbol*>(Table->BindSymbol(node, std::move(symbol)));
+}
+
 VariableSymbol* SymbolFactory::Variable(const std::wstring& name)
 {
 	auto symbol = std::make_unique<VariableSymbol>(name);

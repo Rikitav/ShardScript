@@ -1,0 +1,19 @@
+using stdio;
+using collections;
+
+namespace hello_world;
+
+public static func Main() -> void
+{
+    list: List<int> = new List<int>();
+    list.Add(5);
+    list.Add(6);
+
+    e: IEnumerator<int> = list.GetEnumerator();
+    while (e.MoveNext())
+    {
+        print(e.Current);
+        print(" ");
+    }
+    println("");
+}

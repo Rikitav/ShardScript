@@ -22,6 +22,7 @@ namespace shard
     class FieldSymbol;
     class MethodSymbol;
     class AccessorSymbol;
+    class TypeParameterSymbol;
 
     class SHARD_API SymbolTable
     {
@@ -70,6 +71,17 @@ namespace shard
             inline static SHARD_API MethodSymbol* IPrintable_ToString = nullptr;
 
             inline static SHARD_API InterfaceSymbol* IEnumerable = nullptr;
+            inline static SHARD_API MethodSymbol* IEnumerable_GetEnumerator = nullptr;
+
+            inline static SHARD_API InterfaceSymbol* IEnumerator = nullptr;
+            inline static SHARD_API MethodSymbol* IEnumerator_MoveNext = nullptr;
+            inline static SHARD_API AccessorSymbol* IEnumerator_Current_get = nullptr;
+
+            inline static SHARD_API ClassSymbol* ArrayEnumerator = nullptr;
+            inline static SHARD_API TypeParameterSymbol* ArrayEnumerator_T = nullptr;
+            inline static SHARD_API FieldSymbol* ArrayEnumerator_SourceField = nullptr;
+            inline static SHARD_API FieldSymbol* ArrayEnumerator_IndexField = nullptr;
+            inline static SHARD_API FieldSymbol* ArrayEnumerator_LengthField = nullptr;
 
             inline static SHARD_API ClassSymbol* Runtime = nullptr;
             inline static SHARD_API MethodSymbol* RuntimeCaptureStackTrace = nullptr;
@@ -113,6 +125,11 @@ namespace shard
     inline InterfaceSymbol*& TRAIT_PRINTABLE = shard::SymbolTable::StandardTypes::IPrintable;
     inline InterfaceSymbol*& TRAIT_THROWABLE = shard::SymbolTable::StandardTypes::IThrowable;
     inline InterfaceSymbol*& TRAIT_ENUMERABLE = shard::SymbolTable::StandardTypes::IEnumerable;
+    inline MethodSymbol*& TRAIT_ENUMERABLE_GETENUMERATOR = shard::SymbolTable::StandardTypes::IEnumerable_GetEnumerator;
+
+    inline InterfaceSymbol*& TRAIT_ENUMERATOR = shard::SymbolTable::StandardTypes::IEnumerator;
+    inline MethodSymbol*& TRAIT_ENUMERATOR_MOVENEXT = shard::SymbolTable::StandardTypes::IEnumerator_MoveNext;
+    inline AccessorSymbol*& TRAIT_ENUMERATOR_CURRENT_GET = shard::SymbolTable::StandardTypes::IEnumerator_Current_get;
 
     inline MethodSymbol*& TRAIT_DISPOSABLE_Dispose = shard::SymbolTable::StandardTypes::IDisposable_Dispose;
     inline MethodSymbol*& TRAIT_PRINTABLE_ToString = shard::SymbolTable::StandardTypes::IPrintable_ToString;

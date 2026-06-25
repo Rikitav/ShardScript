@@ -8,6 +8,7 @@
 #include <shard/syntax/SyntaxKind.hpp>
 #include <shard/syntax/SyntaxToken.hpp>
 #include <shard/syntax/SyntaxNode.hpp>
+#include <shard/syntax/symbols/TypeSymbol.hpp>
 
 #include <memory>
 
@@ -18,7 +19,10 @@ namespace shard
 	public:
 		SyntaxToken IdentifierToken;
 		SyntaxToken InKeywordToken;
-		
+
+		TypeSymbol* RangeType = nullptr;
+		bool IsArrayRange = false;
+
 		std::unique_ptr<ExpressionSyntax> RangeExpression = nullptr;
 		std::unique_ptr<StatementsBlockSyntax> StatementsBlock = nullptr;
 

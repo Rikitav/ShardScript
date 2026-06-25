@@ -22,7 +22,7 @@ public delegate IntPtr ShardManagedMethodCallbackNative(
     IntPtr userData,
     IntPtr collector);
 
-public static class SymbolFactory
+internal static class SymbolFactory
 {
     private static readonly Dictionary<IntPtr, ShardManagedMethodCallbackNative> Callbacks = new();
 
@@ -31,7 +31,7 @@ public static class SymbolFactory
         if (context == null)
             throw new ArgumentNullException(nameof(context));
 
-        IntPtr handle = ShardScriptAPI.Shard_GetPrimitiveType(context.Handle, (int)primitive);
+        IntPtr handle = NativeMethods.Shard_GetPrimitiveType(context.Handle, (int)primitive);
         return new TypeSymbol(handle);
     }
 
@@ -76,7 +76,7 @@ public static class SymbolFactory
         if (type == null)
             throw new ArgumentNullException(nameof(type));
 
-        IntPtr handle = ShardScriptAPI.Shard_CreateParameterSymbol(context.Handle, name, type.Handle);
+        IntPtr handle = NativeMethods.Shard_CreateParameterSymbol(context.Handle, name, type.Handle);
         if (handle == IntPtr.Zero)
             throw new InvalidOperationException("Failed to create parameter symbol.");
         return new ParameterSymbol(handle);
@@ -90,7 +90,7 @@ public static class SymbolFactory
         if (parameter == null)
             throw new ArgumentNullException(nameof(parameter));
 
-        ShardEngineException.ThrowIfError(ShardScriptAPI.Shard_AddMethodParameter(method.Handle, parameter.Handle));
+        ShardEngineException.ThrowIfError(NativeMethods.Shard_AddMethodParameter(method.Handle, parameter.Handle));
     }
 
     public static FieldSymbol CreateField(
@@ -139,7 +139,7 @@ public static class SymbolFactory
 
         Callbacks[method.Handle] = nativeCallback;
         method.KeepCallbackAlive(nativeCallback);
-        ShardEngineException.ThrowIfError(ShardScriptAPI.Shard_SetMethodManagedCallback(method.Handle, nativeCallback, userData));
+        ShardEngineException.ThrowIfError(NativeMethods.Shard_SetMethodManagedCallback(method.Handle, nativeCallback, userData));
     }
 
     public static void SetAccessibility(SyntaxSymbol symbol, SymbolAccessibility accessibility)
@@ -147,10 +147,31 @@ public static class SymbolFactory
         if (symbol == null)
             throw new ArgumentNullException(nameof(symbol));
 
-        ShardEngineException.ThrowIfError(ShardScriptAPI.Shard_SetSymbolAccesibility(symbol.Handle, (int)accessibility));
+        ShardEngineException.ThrowIfError(NativeMethods.Shard_SetSymbolAccesibility(symbol.Handle, (int)accessibility));
+    }
+
+    private static class NativeMethods
+    {
+        [DllImport(ShardScriptAPI.LibraryName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        public static extern IntPtr Shard_GetPrimitiveType(IntPtr ctx, int primitiveKind);
+
+        [DllImport(ShardScriptAPI.LibraryName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        public static extern IntPtr Shard_CreateParameterSymbol(IntPtr ctx, [MarshalAs(UnmanagedType.LPWStr)] string name, IntPtr type);
+
+        [DllImport(ShardScriptAPI.LibraryName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        public static extern int Shard_AddMethodParameter(IntPtr method, IntPtr parameter);
+
+        [DllImport(ShardScriptAPI.LibraryName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        public static extern int Shard_SetSymbolAccesibility(IntPtr symbol, int accessibility);
+
+        [DllImport(ShardScriptAPI.LibraryName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        public static extern int Shard_SetMethodManagedCallback(IntPtr method, ShardManagedMethodCallbackNative callback, IntPtr userData);
     }
 }
 
+/// <summary>
+/// Factory for building ShardScript symbols programmatically and binding managed callbacks to them.
+/// </summary>
 public static class SymbolBuilder
 {
     public static NamespaceBuilder Namespace(CompilationContext context, string name, NamespaceSymbol? parent = null)
