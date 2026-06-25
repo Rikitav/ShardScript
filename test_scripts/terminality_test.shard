@@ -1,0 +1,45 @@
+using terminality;
+
+namespace hello_world;
+
+public delegate Action() -> void;
+
+public static func Main() -> void
+{
+    HostApplication.EnterTerminal();
+
+    root: StackPanel = new StackPanel();
+    root.Set_HorizontalAlignment_Center();
+    root.Set_VerticalAlignment_Stretch();
+    root.Set_HorizontalContentAlignment_Center();
+    root.Set_VerticalContentAlignment_Center();
+
+    label: Label = new Label();
+    label.Text = "Hello, Terminality!";
+    label.Set_HorizontalAlignment_Center();
+    label.Set_VerticalAlignment_Center();
+    root.AddChild(label);
+
+    exitAction: Action = lambda () -> void
+    {
+        HostApplication.RequestStop();
+    };
+
+    exitBtn: Button = new Button();
+    exitBtn.Text = "Exit";
+    exitBtn.Set_HorizontalAlignment_Center();
+    exitBtn.Set_VerticalAlignment_Top();
+    exitBtn.SetClicked(exitAction);
+    root.AddChild(exitBtn);
+
+    exitBtn2: Button = new Button();
+    exitBtn2.Text = "Exit";
+    exitBtn2.Set_HorizontalAlignment_Center();
+    exitBtn2.Set_VerticalAlignment_Top();
+    exitBtn2.SetClicked(exitAction);
+    root.AddChild(exitBtn2);
+
+    HostApplication.RequestStopAfter(2000);
+    HostApplication.RunUILoop(root);
+    HostApplication.ExitTerminal();
+}

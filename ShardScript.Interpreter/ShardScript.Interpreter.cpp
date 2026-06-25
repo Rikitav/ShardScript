@@ -2,10 +2,12 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>
+#include <sstream>
 #include <memory>
 #include <string>
 #include <stdexcept>
 #include <exception>
+#include <unordered_map>
 #include <clocale>
 #include <csignal>
 #include <cstdlib>
@@ -35,6 +37,7 @@ const fs::path stdlibFilename = "ShardScript.Framework.dll";
 
 // ANSI color escape sequences
 static const wchar_t* CReset   = L"\x1B[0m";
+static const wchar_t* CBold    = L"\x1B[1m";
 static const wchar_t* CRed     = L"\x1B[91m";
 static const wchar_t* CYellow  = L"\x1B[93m";
 static const wchar_t* CBlue    = L"\x1B[94m";
@@ -45,16 +48,22 @@ static const wchar_t* CWhite   = L"\x1B[97m";
 static void EnableTerminalColors()
 {
 #if defined(_WIN32)
-	HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-	if (hOut == INVALID_HANDLE_VALUE)
-		return;
+	auto enableFor = [](DWORD handle)
+	{
+		HANDLE h = GetStdHandle(handle);
+		if (h == INVALID_HANDLE_VALUE)
+			return;
 
-	DWORD mode = 0;
-	if (!GetConsoleMode(hOut, &mode))
-		return;
+		DWORD mode = 0;
+		if (!GetConsoleMode(h, &mode))
+			return;
 
-	mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-	SetConsoleMode(hOut, mode);
+		mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+		SetConsoleMode(h, mode);
+	};
+
+	enableFor(STD_OUTPUT_HANDLE);
+	enableFor(STD_ERROR_HANDLE);
 #endif
 }
 
@@ -206,6 +215,114 @@ static void PrintDiagnostics(DiagnosticsContext& diagnostics)
 	}
 }
 
+static void PrintPrettyUnhandledException(
+	ObjectInstance* exception,
+	const std::wstring& message,
+	const std::wstring& stackTrace,
+	SymbolTable* table)
+{
+	std::wstring exceptionType = (exception != nullptr && exception->getInfo() != nullptr)
+		? exception->getInfo()->Name
+		: L"UnknownException";
+
+	std::wcerr << std::endl;
+	std::wcerr << CRed << CBold << L"Unhandled exception." << CReset;
+	std::wcerr << L" " << CCyan << exceptionType << CReset;
+	std::wcerr << CRed << L":" << CReset;
+	std::wcerr << L" " << CRed << message << CReset;
+	std::wcerr << std::endl;
+
+	std::wcerr << std::endl;
+	std::wcerr << CWhite << L"Stack trace:" << CReset << std::endl;
+
+	std::unordered_map<std::wstring, MethodSymbol*> methodMap;
+	if (table != nullptr)
+	{
+		for (MethodSymbol* method : table->GetMethodSymbols())
+		{
+			if (method != nullptr)
+				methodMap[method->FullName] = method;
+		}
+	}
+
+	std::wistringstream traceReader(stackTrace);
+	std::wstring frameName;
+	bool anyFrame = false;
+
+	while (std::getline(traceReader, frameName))
+	{
+		if (frameName.empty())
+			continue;
+
+		anyFrame = true;
+
+		std::wcerr << std::endl;
+		std::wcerr << CGray << L"   at " << CReset
+		           << CCyan << frameName << CReset;
+
+		MethodSymbol* method = nullptr;
+		auto it = methodMap.find(frameName);
+		if (it != methodMap.end())
+			method = it->second;
+
+		if (method != nullptr && table != nullptr)
+		{
+			MethodDeclarationSyntax* methodNode = static_cast<MethodDeclarationSyntax*>(
+				table->LookupNode(method).value_or(nullptr));
+
+			if (methodNode != nullptr)
+			{
+				const shard::TextLocation& loc = methodNode->IdentifierToken.Location;
+				if (!loc.FileName.empty())
+				{
+					std::wcerr << CGray << L" in " << CReset
+					           << CBlue << loc.FileName << CReset
+					           << CGray << L":line " << CReset
+					           << CWhite << loc.Line << CReset;
+
+					/*
+					std::wstring sourceLine = ReadSourceLine(loc.FileName, loc.Line);
+					if (!sourceLine.empty())
+					{
+						std::wcerr << std::endl;
+						std::wcerr << CGray << L"      " << std::setw(4) << loc.Line << L" | " << CReset
+						           << sourceLine << std::endl;
+
+						int start = (std::max)(0, loc.Offset - 1);
+						int length = (std::max)(1, loc.Length);
+
+						if (start > static_cast<int>(sourceLine.length()))
+							start = static_cast<int>(sourceLine.length());
+
+						if (start + length > static_cast<int>(sourceLine.length()))
+							length = static_cast<int>(sourceLine.length()) - start;
+
+						std::wcerr << CGray << std::wstring(11, L' ') << L"| " << CReset
+						           << std::wstring(start, L' ')
+						           << CRed << std::wstring(length, L'^') << CReset;
+					}
+					*/
+				}
+			}
+		}
+	}
+
+	if (!anyFrame)
+	{
+		std::wcerr << CGray << L"   <no stack trace available>" << CReset << std::endl;
+	}
+
+	std::wcerr << std::endl;
+}
+
+static void PrintCriticalError(const char* message)
+{
+	std::wcerr << std::endl;
+	std::wcerr << CRed << CBold << L"Critical error:" << CReset
+	           << L" " << CWhite << message << CReset << std::endl;
+	std::wcerr << std::endl;
+}
+
 static CompilationUnitSyntax* GetCompilationUnit(SyntaxNode* node)
 {
 	while (node != nullptr && node->Kind != SyntaxKind::CompilationUnit)
@@ -324,17 +441,17 @@ int wmain(int argc, wchar_t* argv[])
 		if (ConsoleArguments::RunProgram)
 		{
 			VirtualMachine& virtualMachine = domain->GetVirtualMachine();
+			SymbolTable* symbolTable = compiler.GetSemanticModel().Table.get();
 			virtualMachine.Run();
 
 			ObjectInstance* unhandledException = virtualMachine.GetUnhandledException();
 			if (unhandledException != nullptr)
 			{
-				std::wcerr << L"Unhandled exception";
-				const std::wstring& message = virtualMachine.GetUnhandledExceptionMessage();
-				if (!message.empty())
-					std::wcerr << L": " << message;
-
-				std::wcerr << L"\nStack trace:\n" << virtualMachine.GetUnhandledExceptionStackTrace() << std::endl;
+				PrintPrettyUnhandledException(
+					unhandledException,
+					virtualMachine.GetUnhandledExceptionMessage(),
+					virtualMachine.GetUnhandledExceptionStackTrace(),
+					symbolTable);
 				return 1;
 			}
 		}
@@ -350,16 +467,16 @@ int wmain(int argc, wchar_t* argv[])
 	}
 	catch (const std::runtime_error& err)
 	{
-		std::cout << "CRITICAL ERROR : " << err.what() << std::endl;
+		PrintCriticalError(err.what());
 	}
 	catch (const std::exception& err)
 	{
-		std::cout << "CRITICAL ERROR (std::exception) : " << err.what() << std::endl;
+		PrintCriticalError(err.what());
 		return 3;
 	}
 	catch (...)
 	{
-		std::cout << "CRITICAL ERROR : unknown exception" << std::endl;
+		PrintCriticalError("unknown exception");
 		return 3;
 	}
 
