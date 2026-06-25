@@ -38,6 +38,7 @@ namespace shard
 		wchar_t AbsorbChar16();
 		std::size_t AbsorbString();
 
+		std::uint8_t AbsorbUInt8();
 		std::uint16_t AbsorbVariableSlot();
 		std::uint16_t AbsorbUInt16();
 		std::size_t AbsorbJump();
