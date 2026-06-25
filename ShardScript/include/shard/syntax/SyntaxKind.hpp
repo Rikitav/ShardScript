@@ -45,6 +45,7 @@ namespace shard
 		// Keyword statements
 		ForStatement,
 		ForEachStatement,
+		ForInStatement,
 		WhileStatement,
 		UntilStatement,
 		ThrowStatement,

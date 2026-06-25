@@ -4,6 +4,9 @@ using System.Runtime.InteropServices;
 
 namespace ShardScript.NET.Runtime;
 
+/// <summary>
+/// Provides access to the ShardScript virtual machine for invoking methods and running the entry point.
+/// </summary>
 public sealed class VirtualMachine
 {
     private readonly IntPtr _handle;

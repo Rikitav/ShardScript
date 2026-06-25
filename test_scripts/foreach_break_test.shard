@@ -1,0 +1,15 @@
+using stdio;
+
+namespace hello_world;
+
+public static func Main() -> void
+{
+    foreach (x in 1..10)
+    {
+        if (x > 3)
+            break;
+        print(x);
+        print(" ");
+    }
+    println("");
+}

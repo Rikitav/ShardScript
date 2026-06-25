@@ -60,6 +60,8 @@ namespace shard
 
         std::size_t MemoryBytesSize = 0;
         bool IsNullable = false;
+
+        inline bool IsReferenceType() const { return Inlining == TypeInlining::ByReference; }
         
         TypeSymbol(const std::wstring& name, const SyntaxKind kind)
             : MemberSymbol(name, kind) { }

@@ -1574,10 +1574,13 @@ std::unique_ptr<KeywordStatementSyntax> SourceParser::ReadKeywordStatement(Sourc
 			}
 
 			if (isRangeForNoParens || isRangeForWithParens)
-				return ReadForEachStatement(reader, parent);
+				return ReadForInStatement(reader, parent);
 
 			return ReadForStatement(reader, parent);
 		}
+
+		case TokenType::ForeachKeyword:
+			return ReadForEachStatement(reader, parent);
 
 		case TokenType::WhileKeyword:
 			return ReadWhileStatement(reader, parent);
@@ -1826,6 +1829,37 @@ std::unique_ptr<ForStatementSyntax> SourceParser::ReadForStatement(SourceProvide
 std::unique_ptr<ForEachStatementSyntax> SourceParser::ReadForEachStatement(SourceProvider& reader, SyntaxNode* parent)
 {
 	auto syntax = std::make_unique<ForEachStatementSyntax>(parent);
+	syntax->KeywordToken = Expect(reader, TokenType::ForeachKeyword, L"Expected 'foreach' keyword");
+
+	bool hasParens = reader.Current().Type == TokenType::OpenCurl;
+	if (hasParens)
+		Expect(reader, TokenType::OpenCurl, L"expected '(' token");
+
+	SyntaxToken identifier = reader.Current();
+	if (identifier.Type != TokenType::Identifier)
+	{
+		Diagnostics.ReportError(reader.Current(), L"Expected identifier after 'foreach'");
+		identifier = SyntaxToken(TokenType::Identifier, L"<missing>", reader.Current().Location, false);
+	}
+	else
+	{
+		reader.Consume();
+	}
+
+	syntax->IdentifierToken = identifier;
+	syntax->InKeywordToken = Expect(reader, TokenType::InKeyword, L"Expected 'in' keyword");
+	syntax->RangeExpression = std::move(ReadExpression(reader, syntax.get(), 0));
+
+	if (hasParens)
+		Expect(reader, TokenType::CloseCurl, L"expected ')' token");
+
+	syntax->StatementsBlock = ReadStatementsBlock(reader, syntax.get());
+	return syntax;
+}
+
+std::unique_ptr<ForInStatementSyntax> SourceParser::ReadForInStatement(SourceProvider& reader, SyntaxNode* parent)
+{
+	auto syntax = std::make_unique<ForInStatementSyntax>(parent);
 	syntax->KeywordToken = Expect(reader, TokenType::ForKeyword, L"Expected 'for' keyword");
 
 	bool hasParens = reader.Current().Type == TokenType::OpenCurl;

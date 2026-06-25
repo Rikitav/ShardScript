@@ -28,6 +28,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/DelegateDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/InterfaceDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/Loops/ForEachStatementSyntax.hpp>
+#include <shard/syntax/nodes/Loops/ForInStatementSyntax.hpp>
 
 namespace shard
 {
@@ -58,6 +59,7 @@ namespace shard
 		void VisitVariableStatement(shard::VariableStatementSyntax* node) override;
 		void VisitDeferStatement(shard::DeferStatementSyntax* node) override;
 		void VisitForEachStatement(shard::ForEachStatementSyntax* node) override;
+		void VisitForInStatement(shard::ForInStatementSyntax* node) override;
 		void VisitTryStatement(shard::TryStatementSyntax* node) override;
 
 	private:

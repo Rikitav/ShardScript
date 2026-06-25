@@ -87,6 +87,7 @@
 #include <wchar.h>
 #include <algorithm>
 #include <string>
+#include <unordered_map>
 
 using namespace shard;
 
@@ -123,6 +124,40 @@ namespace
     static SyntaxToken MakeToken(shard::TokenType type, const wchar_t* word = nullptr)
     {
         return SyntaxToken(type, word != nullptr ? std::wstring(word) : std::wstring(), TextLocation(), false);
+    }
+
+    // =========================================================================
+    // Managed callbacks from host languages (e.g. C#)
+    // =========================================================================
+
+    typedef shard::ObjectInstance* (*ShardManagedMethodCallback)(
+        shard::MethodSymbol* method,
+        shard::ObjectInstance** args,
+        int argsCount,
+        void* userData,
+        shard::GarbageCollector* collector);
+
+    struct ManagedMethodCallbackEntry
+    {
+        ShardManagedMethodCallback Callback;
+        void* UserData;
+    };
+
+    static std::unordered_map<shard::MethodSymbol*, ManagedMethodCallbackEntry> ManagedMethodCallbacks;
+
+    static shard::ObjectInstance* InvokeManagedMethodCallback(const shard::CallState& context)
+    {
+        auto it = ManagedMethodCallbacks.find(context.Method);
+        if (it == ManagedMethodCallbacks.end())
+            return nullptr;
+
+        const ManagedMethodCallbackEntry& entry = it->second;
+        return entry.Callback(
+            context.Method,
+            context.Args.data(),
+            static_cast<int>(context.Args.size()),
+            entry.UserData,
+            &context.Collector);
     }
 }
 
@@ -2457,6 +2492,54 @@ extern "C"
         }
     }
 
+    SHARD_API int Shard_SetSymbolLinking(SyntaxSymbol* symbol, int linking)
+    {
+        try
+        {
+            if (symbol == nullptr)
+            {
+                SetLastShardWError(L"symbol is null");
+                return -1;
+            }
+
+            if (!symbol->IsMember())
+            {
+                SetLastShardWError(L"symbol does not support linking");
+                return -1;
+            }
+
+            static_cast<MemberSymbol*>(symbol)->Linking = static_cast<SymbolLinking>(linking);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_SetMethodManagedCallback(MethodSymbol* method, ShardManagedMethodCallback callback, void* userData)
+    {
+        try
+        {
+            if (method == nullptr || callback == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return -1;
+            }
+
+            ManagedMethodCallbacks[method] = { callback, userData };
+            method->FunctionPointer = &InvokeManagedMethodCallback;
+            method->HandleType = MethodHandleType::External;
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
     // =========================================================================
     // Extended Syntax Builder API
     // =========================================================================
@@ -2883,6 +2966,76 @@ extern "C"
         {
             SetLastErrorFromException(e);
             return 0;
+        }
+    }
+
+    SHARD_API const wchar_t* Shard_GetFieldName(FieldSymbol* field)
+    {
+        try
+        {
+            if (field == nullptr)
+                return nullptr;
+
+            return field->Name.c_str();
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API FieldSymbol* Shard_FindFieldInType(TypeSymbol* type, const wchar_t* name)
+    {
+        try
+        {
+            if (type == nullptr || name == nullptr)
+                return nullptr;
+
+            std::wstring fieldName(name);
+            return type->FindField(fieldName);
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    // =========================================================================
+    // Runtime Field Access API
+    // =========================================================================
+
+    SHARD_API ObjectInstance* Shard_GCGetStaticField(GarbageCollector* gc, FieldSymbol* field)
+    {
+        try
+        {
+            if (gc == nullptr || field == nullptr)
+                return nullptr;
+
+            return gc->GetStaticField(field);
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API int Shard_GCSetStaticField(GarbageCollector* gc, FieldSymbol* field, ObjectInstance* value)
+    {
+        try
+        {
+            if (gc == nullptr || field == nullptr)
+                return -1;
+
+            gc->SetStaticField(field, value);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
         }
     }
 

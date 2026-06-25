@@ -4,8 +4,17 @@ using System.Runtime.InteropServices;
 
 namespace ShardScript.NET.Syntax.Builders;
 
+/// <summary>
+/// Fluent extensions for configuring symbols created with <see cref="SymbolBuilder"/>.
+/// </summary>
 public static class SymbolBuilderExtensions
 {
+    public static TSymbol Build<TSymbol>(this ISymbolBuilder<TSymbol> builder)
+        where TSymbol : SyntaxSymbol
+    {
+        return builder.Symbol;
+    }
+
     public static T Public<T>(this T builder) where T : IAccessible
     {
         int result = NativeMethods.Shard_SetSymbolAccesibility(builder.Handle, (int)SymbolAccessibility.Public);
@@ -46,7 +55,7 @@ public static class SymbolBuilderExtensions
         if (parameterHandle == IntPtr.Zero)
             throw new InvalidOperationException("Failed to create parameter symbol.");
 
-        ShardEngineException.ThrowIfError(NativeMethods.Shard_AddMethodParameter(builder.Context.Handle, parameterHandle));
+        ShardEngineException.ThrowIfError(NativeMethods.Shard_AddMethodParameter(builder.Handle, parameterHandle));
         return builder;
     }
 

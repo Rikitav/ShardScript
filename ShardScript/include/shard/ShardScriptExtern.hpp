@@ -203,6 +203,15 @@ extern "C"
 
     SHARD_API shard::TypeSymbol* Shard_GetFieldType(shard::FieldSymbol* field);
     SHARD_API int Shard_IsFieldStatic(shard::FieldSymbol* field);
+    SHARD_API const wchar_t* Shard_GetFieldName(shard::FieldSymbol* field);
+    SHARD_API shard::FieldSymbol* Shard_FindFieldInType(shard::TypeSymbol* type, const wchar_t* name);
+
+    // =========================================================================
+    // Runtime Field Access API
+    // =========================================================================
+
+    SHARD_API shard::ObjectInstance* Shard_GCGetStaticField(shard::GarbageCollector* gc, shard::FieldSymbol* field);
+    SHARD_API int Shard_GCSetStaticField(shard::GarbageCollector* gc, shard::FieldSymbol* field, shard::ObjectInstance* value);
 
     // =========================================================================
     // Utility API

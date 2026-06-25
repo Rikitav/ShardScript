@@ -83,6 +83,11 @@ IndexatorSymbol* GenericTypeSymbol::FindIndexator(const std::vector<TypeSymbol*>
 	return nullptr;
 }
 
+MethodSymbol* GenericTypeSymbol::FindInterfaceImplementation(MethodSymbol* interfaceMethod)
+{
+	return UnderlayingType->FindInterfaceImplementation(interfaceMethod);
+}
+
 FieldSymbol* GenericTypeSymbol::FindField(std::wstring& name)
 {
 	return UnderlayingType->FindField(name);

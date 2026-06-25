@@ -337,13 +337,16 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 
     if (isNewSymbol)
     {
-        // Creating parameters symbols
-        std::uint16_t baseIndex = symbol->Linking == LINK_STATIC ? 0 : 1;
-        for (const auto& parameter : node->ParametersList->Parameters)
+        if (node->ParametersList != nullptr)
         {
-            ParameterSymbol* param = Factory.Parameter(parameter.get());
-            param->SlotIndex = baseIndex++;
-            Declare(param);
+            // Creating parameters symbols
+            std::uint16_t baseIndex = symbol->Linking == LINK_STATIC ? 0 : 1;
+            for (const auto& parameter : node->ParametersList->Parameters)
+            {
+                ParameterSymbol* param = Factory.Parameter(parameter.get());
+                param->SlotIndex = baseIndex++;
+                Declare(param);
+            }
         }
 
         // Resolving owner symbol
@@ -795,6 +798,36 @@ void DeclarationCollector::VisitDeferStatement(DeferStatementSyntax* node)
 }
 
 void DeclarationCollector::VisitForEachStatement(ForEachStatementSyntax* node)
+{
+    VariableSymbol* symbol = LookupSymbol<VariableSymbol>(node).value_or(nullptr);
+    if (symbol == nullptr)
+    {
+		symbol = Factory.Variable(node);
+
+        MethodSymbol* hostMethod = FindHostMethodSymbol().value_or(nullptr);
+        symbol->SlotIndex = hostMethod->GetEvalStackArgumentsCount() + hostMethod->AddVariableCount();
+
+        symbol->Parent = OwnerSymbol().value_or(nullptr);
+        if (symbol->Parent != nullptr)
+        {
+            symbol->FullName = symbol->Parent->FullName + L"." + symbol->Name;
+            symbol->Parent->OnSymbolDeclared(symbol);
+        }
+    }
+
+    Declare(symbol);
+    PushScope(symbol);
+
+    if (node->RangeExpression != nullptr)
+        VisitExpression(node->RangeExpression.get());
+
+    if (node->StatementsBlock != nullptr)
+        VisitStatementsBlock(node->StatementsBlock.get());
+
+    PopScope();
+}
+
+void DeclarationCollector::VisitForInStatement(ForInStatementSyntax* node)
 {
     VariableSymbol* symbol = LookupSymbol<VariableSymbol>(node).value_or(nullptr);
     if (symbol == nullptr)

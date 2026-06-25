@@ -4,18 +4,18 @@ using System.Runtime.InteropServices;
 
 namespace ShardScript.NET.Syntax.Builders;
 
-public sealed class NamespaceBuilder : ISymbolBuilder<NamespaceSymbol>, IAccessible<NamespaceBuilder>
+public sealed class NamespaceBuilder : ISymbolBuilder<NamespaceSymbol>, IAccessible, ILinkable
 {
-    private readonly CompilationContext _context;
     private readonly NamespaceSymbol? _parent;
     private readonly string _name;
 
+    public CompilationContext Context { get; }
     public IntPtr Handle { get; }
     public NamespaceSymbol Symbol { get; }
 
     public NamespaceBuilder(CompilationContext context, string name, NamespaceSymbol? parent = null)
     {
-        _context = context ?? throw new ArgumentNullException(nameof(context));
+        Context = context ?? throw new ArgumentNullException(nameof(context));
         _name = name ?? throw new ArgumentNullException(nameof(name));
         _parent = parent;
 
@@ -35,9 +35,9 @@ public sealed class NamespaceBuilder : ISymbolBuilder<NamespaceSymbol>, IAccessi
         return this;
     }
 
-    public ClassBuilder Class(string name) => new(_context, Symbol, name);
+    public ClassBuilder Class(string name) => new(Context, Symbol, name);
 
-    public NamespaceBuilder Namespace(string name) => new(_context, name, Symbol);
+    public NamespaceBuilder Namespace(string name) => new(Context, name, Symbol);
 
     public NamespaceSymbol Build() => Symbol;
 

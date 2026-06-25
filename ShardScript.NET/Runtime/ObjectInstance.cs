@@ -15,7 +15,10 @@ public enum PrimitiveType
     Array = 8
 }
 
-public readonly struct ObjectInstance
+/// <summary>
+/// A handle to a ShardScript runtime object instance.
+/// </summary>
+public readonly struct ObjectInstance : IEquatable<ObjectInstance>
 {
     public IntPtr Handle { get; }
 
@@ -25,6 +28,20 @@ public readonly struct ObjectInstance
     }
 
     public bool IsValid => Handle != IntPtr.Zero;
+
+    public bool IsNull => Handle == IntPtr.Zero;
+
+    public bool Equals(ObjectInstance other) => Handle == other.Handle;
+
+    public override bool Equals(object? obj) => obj is ObjectInstance other && Equals(other);
+
+    public override int GetHashCode() => Handle.GetHashCode();
+
+    public static bool operator ==(ObjectInstance left, ObjectInstance right) => left.Equals(right);
+
+    public static bool operator !=(ObjectInstance left, ObjectInstance right) => !left.Equals(right);
+
+    public override string ToString() => $"ObjectInstance(0x{Handle:X})";
 
     public long AsInteger()
     {

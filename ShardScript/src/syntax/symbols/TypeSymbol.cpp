@@ -5,8 +5,10 @@
 #include <shard/syntax/symbols/IndexatorSymbol.hpp>
 #include <shard/syntax/symbols/ParameterSymbol.hpp>
 #include <shard/syntax/symbols/ArrayTypeSymbol.hpp>
+#include <shard/syntax/symbols/InterfaceSymbol.hpp>
 #include <shard/syntax/symbols/DelegateTypeSymbol.hpp>
 #include <shard/syntax/symbols/GenericTypeSymbol.hpp>
+#include <shard/syntax/symbols/TypeParameterSymbol.hpp>
 #include <shard/syntax/symbols/ConstructorSymbol.hpp>
 #include <shard/syntax/symbols/OperatorSymbol.hpp>
 
@@ -119,6 +121,75 @@ bool TypeSymbol::Equals(const TypeSymbol* left, const TypeSymbol* right)
 	}
 }
 
+static bool IsConstructedInterfaceImplemented(GenericTypeSymbol* targetInterface, TypeSymbol* sourceType)
+{
+    TypeSymbol* underlying = targetInterface->UnderlayingType;
+    if (underlying->Kind != SyntaxKind::InterfaceDeclaration)
+        return false;
+
+    auto matchesInterface = [&](GenericTypeSymbol* candidateInterface) -> bool
+    {
+        if (candidateInterface->UnderlayingType != underlying)
+            return false;
+
+        for (TypeParameterSymbol* param : underlying->TypeParameters)
+        {
+            TypeSymbol* targetArg = targetInterface->SubstituteTypeParameters(param);
+            TypeSymbol* sourceArg = candidateInterface->SubstituteTypeParameters(param);
+            if (sourceArg != nullptr && sourceArg->Kind == SyntaxKind::TypeParameter && sourceType != nullptr && sourceType->Kind == SyntaxKind::GenericType)
+                sourceArg = static_cast<GenericTypeSymbol*>(sourceType)->SubstituteTypeParameters(static_cast<TypeParameterSymbol*>(sourceArg));
+
+            if (!TypeSymbol::Equals(targetArg, sourceArg))
+                return false;
+        }
+
+        return true;
+    };
+
+    for (TypeSymbol* iface : sourceType->Interfaces)
+    {
+        if (iface->Kind != SyntaxKind::GenericType)
+            continue;
+
+        if (matchesInterface(static_cast<GenericTypeSymbol*>(iface)))
+            return true;
+    }
+
+    if (sourceType->Kind == SyntaxKind::GenericType)
+    {
+        for (TypeSymbol* iface : static_cast<GenericTypeSymbol*>(sourceType)->UnderlayingType->Interfaces)
+        {
+            if (iface->Kind != SyntaxKind::GenericType)
+                continue;
+
+            if (matchesInterface(static_cast<GenericTypeSymbol*>(iface)))
+                return true;
+        }
+    }
+
+    if (sourceType->Kind == SyntaxKind::ArrayType)
+    {
+        for (TypeSymbol* iface : SymbolTable::Primitives::Array->Interfaces)
+        {
+            if (iface->Kind != SyntaxKind::GenericType)
+                continue;
+
+            if (matchesInterface(static_cast<GenericTypeSymbol*>(iface)))
+                return true;
+        }
+
+        if (underlying == SymbolTable::StandardTypes::IEnumerable && underlying->TypeParameters.size() == 1)
+        {
+            TypeSymbol* targetArg = targetInterface->SubstituteTypeParameters(underlying->TypeParameters[0]);
+            TypeSymbol* elementType = static_cast<ArrayTypeSymbol*>(sourceType)->UnderlayingType;
+            if (TypeSymbol::Equals(targetArg, elementType))
+                return true;
+        }
+    }
+
+    return false;
+}
+
 bool TypeSymbol::IsAssignableFrom(const TypeSymbol* target, const TypeSymbol* source)
 {
     if (target == nullptr || source == nullptr)
@@ -146,6 +217,13 @@ bool TypeSymbol::IsAssignableFrom(const TypeSymbol* target, const TypeSymbol* so
                     return true;
             }
         }
+    }
+
+    if (target->Kind == SyntaxKind::GenericType)
+    {
+        GenericTypeSymbol* targetGeneric = const_cast<GenericTypeSymbol*>(static_cast<const GenericTypeSymbol*>(target));
+        if (IsConstructedInterfaceImplemented(targetGeneric, const_cast<TypeSymbol*>(source)))
+            return true;
     }
 
     if (target->Kind == SyntaxKind::DelegateType && source->Kind == SyntaxKind::DelegateType)

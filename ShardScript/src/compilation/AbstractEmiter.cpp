@@ -692,6 +692,54 @@ void AbstractEmiter::VisitForEachStatement(ForEachStatementSyntax* node)
 	Loops.emplace();
 	LoopScope& scope = Loops.top();
 
+	VariableSymbol* loopVariable = LookupSymbol<VariableSymbol>(node).value_or(nullptr);
+
+	std::uint16_t base = GeneratingFor->GetEvalStackArgumentsCount();
+	std::uint16_t enumeratorSlot = base + GeneratingFor->AddVariableCount();
+
+	VisitExpression(node->RangeExpression.get());
+	EmitMethodCall(TRAIT_ENUMERABLE_GETENUMERATOR);
+	Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, enumeratorSlot);
+
+	scope.LoopStart = GeneratingFor->ExecutableByteCode.size();
+
+	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, enumeratorSlot);
+	EmitMethodCall(TRAIT_ENUMERATOR_MOVENEXT);
+
+	scope.LoopEndBacktracks.push_back(GeneratingFor->ExecutableByteCode.size());
+	Encoder.EmitJumpFalse(GeneratingFor->ExecutableByteCode, 0);
+
+	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, enumeratorSlot);
+	EmitMethodCall(TRAIT_ENUMERATOR_CURRENT_GET);
+
+	if (loopVariable != nullptr)
+		Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, loopVariable->SlotIndex);
+	else
+		Encoder.EmitPop(GeneratingFor->ExecutableByteCode);
+
+	VisitStatementsBlock(node->StatementsBlock.get());
+
+	scope.BlockEnd = GeneratingFor->ExecutableByteCode.size();
+	Encoder.EmitJump(GeneratingFor->ExecutableByteCode, scope.LoopStart);
+
+	scope.LoopEnd = GeneratingFor->ExecutableByteCode.size();
+
+	for (std::size_t backtrack : scope.BlockEndBacktracks)
+		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack + sizeof(OpCode), &scope.BlockEnd, sizeof(std::size_t));
+
+	for (std::size_t backtrack : scope.LoopEndBacktracks)
+		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack + sizeof(OpCode), &scope.LoopEnd, sizeof(std::size_t));
+
+	Loops.pop();
+}
+
+void AbstractEmiter::VisitForInStatement(ForInStatementSyntax* node)
+{
+	Loops.emplace();
+	LoopScope& scope = Loops.top();
+
+	VariableSymbol* loopVariable = LookupSymbol<VariableSymbol>(node).value_or(nullptr);
+
 	std::uint16_t base = GeneratingFor->GetEvalStackArgumentsCount();
 	std::uint16_t arraySlot = base + GeneratingFor->AddVariableCount();
 	std::uint16_t indexSlot = base + GeneratingFor->AddVariableCount();
@@ -721,7 +769,6 @@ void AbstractEmiter::VisitForEachStatement(ForEachStatementSyntax* node)
 	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, indexSlot);
 	Encoder.EmitLoadArrayElement(GeneratingFor->ExecutableByteCode);
 
-	VariableSymbol* loopVariable = LookupSymbol<VariableSymbol>(node).value_or(nullptr);
 	if (loopVariable != nullptr)
 		Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, loopVariable->SlotIndex);
 	else
