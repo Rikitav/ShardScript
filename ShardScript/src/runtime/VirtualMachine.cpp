@@ -337,14 +337,21 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			std::int64_t lower = lowerInstance->AsInteger();
 			garbageCollector.CollectInstance(lowerInstance);
 
-			std::int64_t length = upper - lower + (inclusive ? 1 : 0);
+			std::int64_t diff = upper - lower;
+			std::int64_t length = diff + (inclusive ? 1 : 0);
+			if (diff < 0)
+			{
+				length = -diff + (inclusive ? 1 : 0);
+			}
 			if (length < 0)
 				length = 0;
+
+			std::int64_t step = (diff < 0) ? -1 : 1;
 
 			ObjectInstance* arrayInstance = garbageCollector.AllocateArray(elementType, static_cast<std::size_t>(length));
 			for (std::int64_t i = 0; i < length; i++)
 			{
-				ObjectInstance* valueInstance = garbageCollector.FromValue(lower + i);
+				ObjectInstance* valueInstance = garbageCollector.FromValue(lower + step * i);
 				arrayInstance->SetElement(static_cast<std::size_t>(i), valueInstance, frame);
 				valueInstance->DecrementReference();
 			}

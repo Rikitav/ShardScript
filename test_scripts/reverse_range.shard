@@ -1,0 +1,11 @@
+using stdio;
+
+namespace hello_world;
+
+public static func Main() -> void
+{
+	for (i in 3..0)
+    {
+        println("Step: " + i);
+    }
+}
