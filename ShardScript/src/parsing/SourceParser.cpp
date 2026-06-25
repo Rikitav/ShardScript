@@ -36,6 +36,8 @@
 #include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/PropertyDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/EnumDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/EnumFieldDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.hpp>
@@ -263,6 +265,9 @@ std::unique_ptr<MemberDeclarationSyntax> SourceParser::ReadMemberDeclaration(Sou
 
 			case TokenType::DelegateKeyword:
 				return ReadDelegateDeclaration(reader, info, parent);
+
+			case TokenType::EnumKeyword:
+				return ReadEnumDeclaration(reader, info, parent);
 
 			default:
 				Diagnostics.ReportError(info.DeclareType, L"Unsupported member keyword");
@@ -694,6 +699,144 @@ std::unique_ptr<DelegateDeclarationSyntax> SourceParser::ReadDelegateDeclaration
 	}
 
 	syntax->Semicolon = Expect(reader, TokenType::Semicolon, L"Expected ';' token");
+	return syntax;
+}
+
+std::unique_ptr<EnumDeclarationSyntax> SourceParser::ReadEnumDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode* parent)
+{
+	auto syntax = std::make_unique<EnumDeclarationSyntax>(info, parent);
+
+	if (TryMatchIdentifier(reader, 5))
+	{
+		syntax->IdentifierToken = reader.Current();
+		reader.Consume();
+	}
+	else
+	{
+		syntax->IdentifierToken = SyntaxToken(TokenType::Identifier, L"", TextLocation(), true);
+	}
+
+	SyntaxToken current = reader.Current();
+	if (current.Type == TokenType::Colon)
+	{
+		syntax->ColonToken = current;
+		reader.Consume();
+
+		SyntaxToken next = reader.Current();
+		if (next.Type == TokenType::Identifier && next.Word == L"flags")
+		{
+			syntax->IsFlags = true;
+			syntax->UnderlyingTypeToken = next;
+			reader.Consume();
+		}
+		else if (next.Type == TokenType::IntegerKeyword || next.Type == TokenType::LongKeyword)
+		{
+			syntax->UnderlyingTypeToken = next;
+			reader.Consume();
+		}
+		else
+		{
+			Diagnostics.ReportError(next, L"Expected 'flags', 'int' or 'long' after ':' in enum declaration");
+		}
+	}
+
+	if (TryMatch(reader, { TokenType::OpenBrace, TokenType::Semicolon }, L"Expected enum body '{' or semicolon ';'", 5))
+	{
+		current = reader.Current();
+		if (current.Type == TokenType::OpenBrace)
+		{
+			ReadEnumBody(reader, syntax.get());
+		}
+	}
+
+	return syntax;
+}
+
+void SourceParser::ReadEnumBody(SourceProvider& reader, EnumDeclarationSyntax* syntax)
+{
+	syntax->OpenBraceToken = Expect(reader, TokenType::OpenBrace, L"Expected '{'");
+
+	while (reader.CanConsume())
+	{
+		SyntaxToken current = reader.Current();
+		if (current.Type == TokenType::EndOfFile)
+		{
+			Diagnostics.ReportError(current, L"Unexpected end of file in enum body - expected '}'");
+			syntax->CloseBraceToken = SyntaxToken(TokenType::CloseBrace, L"", current.Location, true);
+			break;
+		}
+
+		if (current.Type == TokenType::CloseBrace)
+		{
+			syntax->CloseBraceToken = current;
+			reader.Consume();
+			break;
+		}
+
+		if (current.Type == TokenType::Identifier)
+		{
+			auto field = ReadEnumFieldDeclaration(reader, syntax);
+			if (field != nullptr)
+			{
+				field->Parent = syntax;
+				syntax->Fields.push_back(std::move(field));
+			}
+		}
+		else
+		{
+			Diagnostics.ReportError(current, L"Expected enum field identifier");
+			reader.Consume();
+		}
+
+		current = reader.Current();
+		if (current.Type == TokenType::Comma)
+		{
+			reader.Consume();
+			continue;
+		}
+		else if (current.Type == TokenType::CloseBrace)
+		{
+			syntax->CloseBraceToken = current;
+			reader.Consume();
+			break;
+		}
+		else if (current.Type == TokenType::EndOfFile)
+		{
+			Diagnostics.ReportError(current, L"Unexpected end of file in enum body - expected '}'");
+			syntax->CloseBraceToken = SyntaxToken(TokenType::CloseBrace, L"", current.Location, true);
+			break;
+		}
+		else
+		{
+			Diagnostics.ReportError(current, L"Expected ',' or '}' after enum field");
+			break;
+		}
+	}
+}
+
+std::unique_ptr<EnumFieldDeclarationSyntax> SourceParser::ReadEnumFieldDeclaration(SourceProvider& reader, SyntaxNode* parent)
+{
+	auto syntax = std::make_unique<EnumFieldDeclarationSyntax>(parent);
+
+	SyntaxToken current = reader.Current();
+	if (current.Type == TokenType::Identifier)
+	{
+		syntax->IdentifierToken = current;
+		reader.Consume();
+	}
+	else
+	{
+		syntax->IdentifierToken = SyntaxToken(TokenType::Identifier, L"", TextLocation(), true);
+	}
+
+	current = reader.Current();
+	if (current.Type == TokenType::AssignOperator)
+	{
+		syntax->AssignToken = current;
+		reader.Consume();
+		syntax->InitializerExpression = std::move(ReadExpression(reader, syntax.get(), 0));
+	}
+
 	return syntax;
 }
 

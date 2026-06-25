@@ -1158,6 +1158,11 @@ bool LexicalAnalyzer::IsTypeDecl(std::wstring& word, TokenType& type)
 		type = TokenType::InterfaceKeyword;
 		return true;
 	}
+	else if (word == L"enum")
+	{
+		type = TokenType::EnumKeyword;
+		return true;
+	}
 	else if (word == L"namespace")
 	{
 		type = TokenType::NamespaceKeyword;

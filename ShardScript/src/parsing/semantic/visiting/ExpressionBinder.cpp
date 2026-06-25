@@ -15,6 +15,7 @@
 #include <shard/syntax/symbols/TypeSymbol.hpp>
 #include <shard/syntax/symbols/NamespaceSymbol.hpp>
 #include <shard/syntax/symbols/ClassSymbol.hpp>
+#include <shard/syntax/symbols/EnumSymbol.hpp>
 #include <shard/syntax/symbols/MethodSymbol.hpp>
 #include <shard/syntax/symbols/OperatorSymbol.hpp>
 #include <shard/syntax/symbols/StructSymbol.hpp>
@@ -714,7 +715,26 @@ TypeSymbol* ExpressionBinder::AnalyzeBinaryExpression(BinaryExpressionSyntax* no
 		return leftType;
 	}
 
+	bool enumBitwiseContext =
+		leftType != nullptr &&
+		leftType->Kind == SyntaxKind::EnumDeclaration &&
+		(node->OperatorToken.Type == TokenType::OrOperator || node->OperatorToken.Type == TokenType::AndOperator);
+
+	if (enumBitwiseContext)
+	{
+		PushScope(nullptr);
+		for (FieldSymbol* field : static_cast<EnumSymbol*>(leftType)->Fields)
+		{
+			if (field != nullptr && field->IsEnumValue)
+				CurrentScope()->DeclareSymbol(field);
+		}
+	}
+
 	VisitExpression(node->Right.get());
+
+	if (enumBitwiseContext)
+		PopScope();
+
 	TypeSymbol* rightType = GetExpressionType(node->Right.get());
 
 	if (rightType == nullptr)
@@ -732,7 +752,7 @@ TypeSymbol* ExpressionBinder::AnalyzeBinaryExpression(BinaryExpressionSyntax* no
 			return opMethod->ReturnType;
 		}
 
-		if (!leftType->IsPrimitive() &&
+		if (//!leftType->IsPrimitive() &&
 			node->OperatorToken.Type != TokenType::EqualsOperator &&
 			node->OperatorToken.Type != TokenType::NotEqualsOperator)
 		{
@@ -1230,8 +1250,23 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 		symbol = CurrentScope()->Lookup(memberName).value_or(nullptr);
 		if (symbol == nullptr)
 		{
-			Diagnostics.ReportError(node->IdentifierToken, L"Symbol '" + memberName + L"' not found in current scope");
-			return nullptr;
+			TypeSymbol* expectedType = ResolveLeftDenotation();
+			if (expectedType != nullptr && expectedType->Kind == SyntaxKind::EnumDeclaration)
+			{
+				EnumSymbol* enumType = static_cast<EnumSymbol*>(expectedType);
+				FieldSymbol* field = enumType->FindField(memberName);
+				if (field != nullptr && field->IsEnumValue)
+				{
+					symbol = field;
+					currentType = enumType;
+				}
+			}
+
+			if (symbol == nullptr)
+			{
+				Diagnostics.ReportError(node->IdentifierToken, L"Symbol '" + memberName + L"' not found in current scope");
+				return nullptr;
+			}
 		}
 
 		if (!IsSymbolAccessible(symbol, Table->LookupNode(symbol).value_or(nullptr), node))

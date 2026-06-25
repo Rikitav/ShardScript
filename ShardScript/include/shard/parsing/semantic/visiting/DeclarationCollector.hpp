@@ -18,6 +18,8 @@
 
 #include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/EnumDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/EnumFieldDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/OperatorDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.hpp>
@@ -48,6 +50,7 @@ namespace shard
 		void VisitStructDeclaration(shard::StructDeclarationSyntax* node) override;
 		void VisitInterfaceDeclaration(shard::InterfaceDeclarationSyntax* node) override;
 		void VisitDelegateDeclaration(shard::DelegateDeclarationSyntax* node) override;
+		void VisitEnumDeclaration(shard::EnumDeclarationSyntax* node) override;
 
 		void VisitMethodDeclaration(shard::MethodDeclarationSyntax* node) override;
 		void VisitOperatorDeclaration(shard::OperatorDeclarationSyntax* node) override;

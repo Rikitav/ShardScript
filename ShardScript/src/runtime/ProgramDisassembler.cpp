@@ -194,6 +194,20 @@ void ProgramDisassembler::Disassemble(std::wostream& out, MethodSymbol* method)
                 break;
             }
 
+            case OpCode::LOADENUMFIELD:
+            {
+                auto* sym = decoder.AbsorbFieldSymbol();
+                if (sym == nullptr)
+                {
+                    out << L"ldenum null";
+                    break;
+                }
+
+                std::wstring name = sym->FullName.size() > 0 ? sym->FullName : sym->Name;
+                out << L"ldenum " << name;
+                break;
+            }
+
             case OpCode::STORESTATICFIELD:
             {
                 auto* sym = decoder.AbsorbFieldSymbol();

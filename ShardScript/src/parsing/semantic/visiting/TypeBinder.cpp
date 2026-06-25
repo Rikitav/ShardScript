@@ -9,10 +9,16 @@
 #include <shard/syntax/SyntaxToken.hpp>
 #include <shard/syntax/SymbolFactory.hpp>
 
+#include <shard/runtime/MethodCallState.hpp>
+#include <shard/runtime/GarbageCollector.hpp>
+#include <shard/runtime/ObjectInstance.hpp>
+
 #include <shard/syntax/symbols/TypeSymbol.hpp>
+#include <shard/syntax/symbols/EnumSymbol.hpp>
 #include <shard/syntax/symbols/NamespaceSymbol.hpp>
 #include <shard/syntax/symbols/ClassSymbol.hpp>
 #include <shard/syntax/symbols/MethodSymbol.hpp>
+#include <shard/syntax/symbols/OperatorSymbol.hpp>
 #include <shard/syntax/symbols/StructSymbol.hpp>
 #include <shard/syntax/symbols/FieldSymbol.hpp>
 #include <shard/syntax/symbols/PropertySymbol.hpp>
@@ -49,6 +55,8 @@
 #include <shard/syntax/nodes/MemberDeclarations/PropertyDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/EnumDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/EnumFieldDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.hpp>
@@ -63,6 +71,7 @@
 #include <vector>
 #include <string>
 #include <stdexcept>
+#include <sstream>
 
 using namespace shard;
 
@@ -398,6 +407,161 @@ void TypeBinder::VisitDelegateDeclaration(DelegateDeclarationSyntax* node)
 		VisitParametersList(node->ParametersList.get());
 		BindParametersList(node->ParametersList.get(), symbol->Parameters);
 	}
+
+	PopScope();
+}
+
+static ObjectInstance* AllocateEnumValue(GarbageCollector& collector, TypeSymbol* enumType, std::int64_t value)
+{
+	ObjectInstance* instance = collector.AllocateInstance(enumType);
+	instance->WriteInteger(value);
+	return instance;
+}
+
+static ObjectInstance* enum_operator_or(const CallState& context)
+{
+	std::int64_t left = context.Args[0]->AsInteger();
+	std::int64_t right = context.Args[1]->AsInteger();
+	return AllocateEnumValue(context.Collector, static_cast<TypeSymbol*>(context.Method->Parent), left | right);
+}
+
+static ObjectInstance* enum_operator_and(const CallState& context)
+{
+	std::int64_t left = context.Args[0]->AsInteger();
+	std::int64_t right = context.Args[1]->AsInteger();
+	return AllocateEnumValue(context.Collector, static_cast<TypeSymbol*>(context.Method->Parent), left & right);
+}
+
+static ObjectInstance* enum_operator_equals(const CallState& context)
+{
+	std::int64_t left = context.Args[0]->AsInteger();
+	std::int64_t right = context.Args[1]->AsInteger();
+	return context.Collector.FromValue(left == right);
+}
+
+static ObjectInstance* enum_operator_not_equals(const CallState& context)
+{
+	std::int64_t left = context.Args[0]->AsInteger();
+	std::int64_t right = context.Args[1]->AsInteger();
+	return context.Collector.FromValue(left != right);
+}
+
+static ObjectInstance* enum_has_flag(const CallState& context)
+{
+	std::int64_t self = context.Args[0]->AsInteger();
+	std::int64_t flag = context.Args[1]->AsInteger();
+	bool result = (self & flag) == flag;
+	return context.Collector.FromValue(result);
+}
+
+static ObjectInstance* enum_to_string(const CallState& context)
+{
+	TypeSymbol* enumType = static_cast<TypeSymbol*>(context.Method->Parent);
+	if (enumType == nullptr)
+		return context.Collector.FromValue(std::wstring());
+
+	std::int64_t value = context.Args[0]->AsInteger();
+
+	EnumSymbol* enumSymbol = nullptr;
+	if (enumType->Kind == SyntaxKind::EnumDeclaration)
+		enumSymbol = static_cast<EnumSymbol*>(enumType);
+
+	if (enumSymbol != nullptr && enumSymbol->IsFlags)
+	{
+		if (value == 0)
+			return context.Collector.FromValue(std::to_wstring(value));
+
+		std::wostringstream result;
+		bool first = true;
+
+		for (FieldSymbol* field : enumSymbol->Fields)
+		{
+			if (field == nullptr || !field->IsEnumValue)
+				continue;
+
+			std::int64_t fieldValue = field->EnumValue;
+			if (fieldValue == 0)
+				continue;
+
+			if ((value & fieldValue) == fieldValue)
+			{
+				if (!first)
+					result << L" | ";
+				result << field->Name;
+				first = false;
+			}
+		}
+
+		if (first)
+			return context.Collector.FromValue(std::to_wstring(value));
+
+		return context.Collector.FromValue(result.str());
+	}
+	else
+	{
+		for (FieldSymbol* field : enumType->Fields)
+		{
+			if (field != nullptr && field->IsEnumValue && field->EnumValue == value)
+				return context.Collector.FromValue(field->Name);
+		}
+
+		return context.Collector.FromValue(std::to_wstring(value));
+	}
+}
+
+static void RegisterEnumHelpers(EnumSymbol* enumSymbol, SymbolFactory& factory)
+{
+	// ToString for IPrintable
+	MethodSymbol* toString = factory.Method(ACS_PUBLIC, LINK_INSTANCE, SymbolTable::Primitives::String, L"ToString", enum_to_string);
+	toString->Parent = enumSymbol;
+	enumSymbol->Methods.push_back(toString);
+	enumSymbol->Interfaces.push_back(TRAIT_PRINTABLE);
+	enumSymbol->InterfaceMethodMap[TRAIT_PRINTABLE_ToString] = toString;
+
+	// HasFlag
+	MethodSymbol* hasFlag = factory.Method(ACS_PUBLIC, LINK_INSTANCE, SymbolTable::Primitives::Boolean, L"HasFlag", enum_has_flag);
+	hasFlag->Parent = enumSymbol;
+	ParameterSymbol* hasFlagParam = factory.Parameter(L"flag", enumSymbol);
+	hasFlagParam->Parent = hasFlag;
+	hasFlag->Parameters.push_back(hasFlagParam);
+	enumSymbol->Methods.push_back(hasFlag);
+
+	// Bitwise operators (useful for flags, but registered for every enum)
+	OperatorSymbol* orOp = factory.Operator(L"op_OrOperator", TokenType::OrOperator, enumSymbol, enum_operator_or, { enumSymbol, enumSymbol });
+	orOp->Parent = enumSymbol;
+	enumSymbol->Operators.push_back(orOp);
+
+	OperatorSymbol* andOp = factory.Operator(L"op_AndOperator", TokenType::AndOperator, enumSymbol, enum_operator_and, { enumSymbol, enumSymbol });
+	andOp->Parent = enumSymbol;
+	enumSymbol->Operators.push_back(andOp);
+
+	OperatorSymbol* eqOp = factory.Operator(L"op_EqualsOperator", TokenType::EqualsOperator, SymbolTable::Primitives::Boolean, enum_operator_equals, { enumSymbol, enumSymbol });
+	eqOp->Parent = enumSymbol;
+	enumSymbol->Operators.push_back(eqOp);
+
+	OperatorSymbol* neqOp = factory.Operator(L"op_NotEqualsOperator", TokenType::NotEqualsOperator, SymbolTable::Primitives::Boolean, enum_operator_not_equals, { enumSymbol, enumSymbol });
+	neqOp->Parent = enumSymbol;
+	enumSymbol->Operators.push_back(neqOp);
+}
+
+void TypeBinder::VisitEnumDeclaration(EnumDeclarationSyntax* node)
+{
+	EnumSymbol* symbol = LookupSymbol<EnumSymbol>(node).value_or(nullptr);
+	if (symbol == nullptr)
+		throw std::runtime_error("symbol not found");
+
+	if (CheckNameDeclared(symbol))
+		Diagnostics.ReportError(node->IdentifierToken, L"Symbol with the same name is already declared in current, or including context");
+
+	PushScope(symbol);
+
+	for (const auto& field : node->Fields)
+	{
+		if (field->InitializerExpression != nullptr)
+			VisitExpression(field->InitializerExpression.get());
+	}
+
+	RegisterEnumHelpers(symbol, Factory);
 
 	PopScope();
 }

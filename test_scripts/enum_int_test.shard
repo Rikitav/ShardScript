@@ -1,0 +1,22 @@
+using stdio;
+
+namespace enum_int_test;
+
+public enum Size : int
+{
+    Small,
+    Medium,
+    Large
+}
+
+public static func Main() -> void
+{
+    print(Size.Small);
+    println("");
+
+    print(Size.Medium);
+    println("");
+
+    print(Size.Large);
+    println("");
+}

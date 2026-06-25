@@ -134,6 +134,7 @@ namespace shard
 		FunctionKeyword,      // func
 		InitKeyword,          // init
 		OperatorKeyword,      // operator
+		EnumKeyword,          // enum
 
 		// Loops keywords
 		ForKeyword,			// for

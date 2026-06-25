@@ -38,6 +38,8 @@
 #include <shard/syntax/nodes/MemberDeclarations/DelegateDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/EnumDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/EnumFieldDeclarationSyntax.hpp>
 
 #include <shard/syntax/nodes/MemberDeclarations/PropertyDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.hpp>
@@ -94,6 +96,10 @@ namespace shard
 		std::unique_ptr<StructDeclarationSyntax> ReadStructDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode* parent);
 		std::unique_ptr<InterfaceDeclarationSyntax> ReadInterfaceDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode* parent);
 		std::unique_ptr<DelegateDeclarationSyntax> ReadDelegateDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode* parent);
+		std::unique_ptr<EnumDeclarationSyntax> ReadEnumDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode* parent);
+
+		std::unique_ptr<EnumFieldDeclarationSyntax> ReadEnumFieldDeclaration(SourceProvider& reader, SyntaxNode* parent);
+		void ReadEnumBody(SourceProvider& reader, EnumDeclarationSyntax* syntax);
 
 		std::vector<SyntaxToken> ReadMemberModifiers(SourceProvider& reader);
 		std::unique_ptr<AttributeSyntax> ReadAttribute(SourceProvider& reader, SyntaxNode* parent);

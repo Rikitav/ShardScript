@@ -20,6 +20,8 @@
 #include <shard/syntax/nodes/Statements/TryStatementSyntax.hpp>
 
 #include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/EnumDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/EnumFieldDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/OperatorDeclarationSyntax.hpp>
@@ -36,6 +38,7 @@
 #include <shard/syntax/symbols/StructSymbol.hpp>
 #include <shard/syntax/symbols/NamespaceSymbol.hpp>
 #include <shard/syntax/symbols/ClassSymbol.hpp>
+#include <shard/syntax/symbols/EnumSymbol.hpp>
 #include <shard/syntax/symbols/FieldSymbol.hpp>
 #include <shard/syntax/symbols/MethodSymbol.hpp>
 #include <shard/syntax/symbols/OperatorSymbol.hpp>
@@ -270,6 +273,83 @@ void DeclarationCollector::VisitDelegateDeclaration(DelegateDeclarationSyntax* n
     VisitParametersList(node->ParametersList.get());
 
     PopScope();
+}
+
+static std::int64_t ReadEnumFieldValue(const ExpressionSyntax* expression)
+{
+	if (expression == nullptr)
+		return 0;
+
+	if (expression->Kind == SyntaxKind::LiteralExpression)
+	{
+		const LiteralExpressionSyntax* literal = static_cast<const LiteralExpressionSyntax*>(expression);
+		if (literal->LiteralToken.Type == TokenType::NumberLiteral)
+		{
+			try
+			{
+				return static_cast<std::int64_t>(std::stoll(literal->LiteralToken.Word));
+			}
+			catch (...)
+			{
+				return 0;
+			}
+		}
+	}
+
+	return 0;
+}
+
+void DeclarationCollector::VisitEnumDeclaration(EnumDeclarationSyntax* node)
+{
+	EnumSymbol* symbol = LookupSymbol<EnumSymbol>(node).value_or(nullptr);
+	if (symbol == nullptr)
+	{
+		symbol = Factory.Enum(node, node->IsFlags);
+		Declare(symbol);
+
+		if (symbol->Parent == nullptr)
+		{
+			Diagnostics.ReportError(node->IdentifierToken, L"Cannot resolve Enums' owner type");
+		}
+		else if (symbol->Parent->Kind != SyntaxKind::NamespaceDeclaration)
+		{
+			Diagnostics.ReportError(node->IdentifierToken, L"Enums can only be declared inside Namespace");
+		}
+	}
+
+	PushScope(symbol);
+
+	std::int64_t previousValue = 0;
+	for (std::size_t i = 0; i < node->Fields.size(); i++)
+	{
+		EnumFieldDeclarationSyntax* fieldNode = node->Fields[i].get();
+		std::int64_t value = 0;
+
+		if (fieldNode->InitializerExpression != nullptr)
+		{
+			value = ReadEnumFieldValue(fieldNode->InitializerExpression.get());
+			previousValue = value;
+		}
+		else if (symbol->IsFlags)
+		{
+			value = 1LL << static_cast<std::int64_t>(i);
+			previousValue = value;
+		}
+		else
+		{
+			if (i == 0)
+				value = 0;
+			else
+				value = previousValue + 1;
+			previousValue = value;
+		}
+
+		FieldSymbol* fieldSymbol = Factory.EnumField(fieldNode->IdentifierToken.Word, symbol, value);
+		Declare(fieldSymbol);
+		fieldNode->Symbol = fieldSymbol;
+	}
+
+	PopScope();
 }
 
 void DeclarationCollector::VisitFieldDeclaration(FieldDeclarationSyntax* node)

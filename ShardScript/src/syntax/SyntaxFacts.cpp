@@ -339,6 +339,7 @@ bool IsTypeKeyword(shard::TokenType type)
 		case TokenType::StructKeyword:
 		case TokenType::InterfaceKeyword:
 		case TokenType::DelegateKeyword:
+		case TokenType::EnumKeyword:
 			return true;
 
 		default:

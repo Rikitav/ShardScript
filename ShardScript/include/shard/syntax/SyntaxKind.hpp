@@ -18,6 +18,8 @@ namespace shard
 		StructDeclaration,
 		InterfaceDeclaration,
 		DelegateDeclaration,
+		EnumDeclaration,
+		EnumFieldDeclaration,
 
 		// Members
 		FieldDeclaration,

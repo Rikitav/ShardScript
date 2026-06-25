@@ -9,6 +9,7 @@
 #include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/InterfaceDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/DelegateDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/EnumDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/PropertyDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.hpp>
@@ -28,6 +29,7 @@
 
 #include <shard/syntax/symbols/NamespaceSymbol.hpp>
 #include <shard/syntax/symbols/ClassSymbol.hpp>
+#include <shard/syntax/symbols/EnumSymbol.hpp>
 #include <shard/syntax/symbols/InterfaceSymbol.hpp>
 #include <shard/syntax/symbols/StructSymbol.hpp>
 #include <shard/syntax/symbols/MethodSymbol.hpp>
@@ -76,12 +78,17 @@ namespace shard
 		ClassSymbol* Class(const std::wstring& name);
 		ClassSymbol* Class(const wchar_t* name);
 
+		EnumSymbol* Enum(EnumDeclarationSyntax* node, bool isFlags = false);
+		EnumSymbol* Enum(const std::wstring& name, bool isFlags = false);
+		EnumSymbol* Enum(const wchar_t* name, bool isFlags = false);
+
 		InterfaceSymbol* Interface(InterfaceDeclarationSyntax* node);
 		InterfaceSymbol* Interface(const std::wstring& name, SymbolAccesibility accesibility = ACS_PUBLIC, SyntaxSymbol* parent = nullptr);
 		InterfaceSymbol* Interface(const wchar_t* name, SymbolAccesibility accesibility = ACS_PUBLIC, SyntaxSymbol* parent = nullptr);
 
 		FieldSymbol* Field(FieldDeclarationSyntax* node);
 		FieldSymbol* Field(const std::wstring& name, TypeSymbol* type, SymbolLinking linking = LINK_INSTANCE);
+		FieldSymbol* EnumField(const std::wstring& name, TypeSymbol* enumType, std::int64_t value);
 		FieldSymbol* BackingField(PropertySymbol* symbol);
 
 		PropertySymbol* Property(PropertyDeclarationSyntax* node);

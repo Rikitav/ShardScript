@@ -260,6 +260,13 @@ namespace shard
         LOADSTATICFIELD,
 
         /// <summary>
+        /// Loads an enum field value as a strongly-typed enum instance.
+        /// <para>Includes 1 parameter :</para>
+        /// <para>> FieldSymbol* pField - The enum field description.</para>
+        /// </summary>
+        LOADENUMFIELD,
+
+        /// <summary>
         /// Pops a value, then stores the value into the static field.
         /// <para>Includes 1 parameter :</para>
         /// <para>> FieldSymbol* pField - The field description.</para>

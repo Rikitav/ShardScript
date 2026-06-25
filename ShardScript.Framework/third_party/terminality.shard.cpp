@@ -18,6 +18,17 @@
 using namespace shard;
 using namespace terminality;
 
+static TypeSymbol* gHorizontalAlignmentEnum = nullptr;
+static TypeSymbol* gVerticalAlignmentEnum = nullptr;
+static TypeSymbol* gOrientationEnum = nullptr;
+
+static ObjectInstance* MakeEnumValue(GarbageCollector& collector, TypeSymbol* enumType, std::int64_t value)
+{
+	ObjectInstance* instance = collector.AllocateInstance(enumType);
+	instance->WriteInteger(value);
+	return instance;
+}
+
 // ============================================================================
 // Native control lifetime management.
 //
@@ -193,73 +204,98 @@ static ObjectInstance* shard_StackPanel_Clear(const CallState& context) noexcept
 	return nullptr;
 }
 
-static ObjectInstance* shard_StackPanel_Set_HorizontalContentAlignment_Stretch(const CallState& context) noexcept(false)
+static HorizontalAlign ToHorizontalAlign(std::int64_t value)
+{
+	return static_cast<HorizontalAlign>(value);
+}
+
+static VerticalAlign ToVerticalAlign(std::int64_t value)
+{
+	return static_cast<VerticalAlign>(value);
+}
+
+static Orientation ToOrientation(std::int64_t value)
+{
+	return static_cast<Orientation>(value);
+}
+
+static ObjectInstance* shard_StackPanel_HorizontalContentAlignment_get(const CallState& context) noexcept(false)
 {
 	auto* panel = static_cast<StackPanel*>(ExtractControlPtr(context.Args[0]));
-	if (panel != nullptr) panel->HorizontalContentAlignment.Set(HorizontalAlign::Stretch);
+	if (panel == nullptr)
+		return MakeEnumValue(context.Collector, gHorizontalAlignmentEnum, 0);
+
+	return MakeEnumValue(context.Collector, gHorizontalAlignmentEnum, static_cast<std::int64_t>(panel->HorizontalContentAlignment.Get()));
+}
+
+static ObjectInstance* shard_StackPanel_HorizontalContentAlignment_set(const CallState& context) noexcept(false)
+{
+	auto* panel = static_cast<StackPanel*>(ExtractControlPtr(context.Args[0]));
+	if (panel != nullptr) panel->HorizontalContentAlignment.Set(ToHorizontalAlign(context.Args[1]->AsInteger()));
 	return nullptr;
 }
 
-static ObjectInstance* shard_StackPanel_Set_HorizontalContentAlignment_Center(const CallState& context) noexcept(false)
+static ObjectInstance* shard_StackPanel_VerticalContentAlignment_get(const CallState& context) noexcept(false)
 {
 	auto* panel = static_cast<StackPanel*>(ExtractControlPtr(context.Args[0]));
-	if (panel != nullptr) panel->HorizontalContentAlignment.Set(HorizontalAlign::Center);
+	if (panel == nullptr)
+		return MakeEnumValue(context.Collector, gVerticalAlignmentEnum, 0);
+
+	return MakeEnumValue(context.Collector, gVerticalAlignmentEnum, static_cast<std::int64_t>(panel->VerticalContentAlignment.Get()));
+}
+
+static ObjectInstance* shard_StackPanel_VerticalContentAlignment_set(const CallState& context) noexcept(false)
+{
+	auto* panel = static_cast<StackPanel*>(ExtractControlPtr(context.Args[0]));
+	if (panel != nullptr) panel->VerticalContentAlignment.Set(ToVerticalAlign(context.Args[1]->AsInteger()));
 	return nullptr;
 }
 
-static ObjectInstance* shard_StackPanel_Set_HorizontalContentAlignment_Left(const CallState& context) noexcept(false)
+static ObjectInstance* shard_StackPanel_ContentOrientation_get(const CallState& context) noexcept(false)
 {
 	auto* panel = static_cast<StackPanel*>(ExtractControlPtr(context.Args[0]));
-	if (panel != nullptr) panel->HorizontalContentAlignment.Set(HorizontalAlign::Left);
+	if (panel == nullptr)
+		return MakeEnumValue(context.Collector, gOrientationEnum, 0);
+
+	return MakeEnumValue(context.Collector, gOrientationEnum, static_cast<std::int64_t>(panel->ContentOrientation.Get()));
+}
+
+static ObjectInstance* shard_StackPanel_ContentOrientation_set(const CallState& context) noexcept(false)
+{
+	auto* panel = static_cast<StackPanel*>(ExtractControlPtr(context.Args[0]));
+	if (panel != nullptr) panel->ContentOrientation.Set(ToOrientation(context.Args[1]->AsInteger()));
 	return nullptr;
 }
 
-static ObjectInstance* shard_StackPanel_Set_HorizontalContentAlignment_Right(const CallState& context) noexcept(false)
+static ObjectInstance* shard_Control_HorizontalAlignment_get(const CallState& context) noexcept(false)
 {
-	auto* panel = static_cast<StackPanel*>(ExtractControlPtr(context.Args[0]));
-	if (panel != nullptr) panel->HorizontalContentAlignment.Set(HorizontalAlign::Right);
+	auto* control = ExtractControlPtr(context.Args[0]);
+	if (control == nullptr)
+		return MakeEnumValue(context.Collector, gHorizontalAlignmentEnum, 0);
+
+	return MakeEnumValue(context.Collector, gHorizontalAlignmentEnum, static_cast<std::int64_t>(control->HorizontalAlignment.Get()));
+}
+
+static ObjectInstance* shard_Control_HorizontalAlignment_set(const CallState& context) noexcept(false)
+{
+	auto* control = ExtractControlPtr(context.Args[0]);
+	if (control != nullptr) control->HorizontalAlignment.Set(ToHorizontalAlign(context.Args[1]->AsInteger()));
 	return nullptr;
 }
 
-static ObjectInstance* shard_StackPanel_Set_VerticalContentAlignment_Stretch(const CallState& context) noexcept(false)
+static ObjectInstance* shard_Control_VerticalAlignment_get(const CallState& context) noexcept(false)
 {
-	auto* panel = static_cast<StackPanel*>(ExtractControlPtr(context.Args[0]));
-	if (panel != nullptr) panel->VerticalContentAlignment.Set(VerticalAlign::Stretch);
-	return nullptr;
+	auto* control = ExtractControlPtr(context.Args[0]);
+	if (control == nullptr)
+		return MakeEnumValue(context.Collector, gVerticalAlignmentEnum, 0);
+
+	return MakeEnumValue(context.Collector, gVerticalAlignmentEnum, static_cast<std::int64_t>(control->VerticalAlignment.Get()));
 }
 
-static ObjectInstance* shard_StackPanel_Set_VerticalContentAlignment_Center(const CallState& context) noexcept(false)
+static ObjectInstance* shard_Control_VerticalAlignment_set(const CallState& context) noexcept(false)
 {
-	auto* panel = static_cast<StackPanel*>(ExtractControlPtr(context.Args[0]));
-	if (panel != nullptr) panel->VerticalContentAlignment.Set(VerticalAlign::Center);
-	return nullptr;
-}
-
-static ObjectInstance* shard_StackPanel_Set_VerticalContentAlignment_Top(const CallState& context) noexcept(false)
-{
-	auto* panel = static_cast<StackPanel*>(ExtractControlPtr(context.Args[0]));
-	if (panel != nullptr) panel->VerticalContentAlignment.Set(VerticalAlign::Top);
-	return nullptr;
-}
-
-static ObjectInstance* shard_StackPanel_Set_VerticalContentAlignment_Bottom(const CallState& context) noexcept(false)
-{
-	auto* panel = static_cast<StackPanel*>(ExtractControlPtr(context.Args[0]));
-	if (panel != nullptr) panel->VerticalContentAlignment.Set(VerticalAlign::Bottom);
-	return nullptr;
-}
-
-static ObjectInstance* shard_StackPanel_Set_ContentOrientation_Vertical(const CallState& context) noexcept(false)
-{
-	auto* panel = static_cast<StackPanel*>(ExtractControlPtr(context.Args[0]));
-	if (panel != nullptr) panel->ContentOrientation.Set(Orientation::Vertical);
-	return nullptr;
-}
-
-static ObjectInstance* shard_StackPanel_Set_ContentOrientation_Horizontal(const CallState& context) noexcept(false)
-{
-	auto* panel = static_cast<StackPanel*>(ExtractControlPtr(context.Args[0]));
-	if (panel != nullptr) panel->ContentOrientation.Set(Orientation::Horizontal);
+	auto* control = ExtractControlPtr(context.Args[0]);
+	if (control != nullptr) control->VerticalAlignment.Set(ToVerticalAlign(context.Args[1]->AsInteger()));
 	return nullptr;
 }
 
@@ -289,62 +325,6 @@ static ObjectInstance* shard_Label_Text_set(const CallState& context) noexcept(f
 	auto* label = static_cast<Label*>(ExtractControlPtr(context.Args[0]));
 	if (label != nullptr)
 		label->Text.Set(context.Args[1]->AsString());
-	return nullptr;
-}
-
-static ObjectInstance* shard_Label_Set_HorizontalAlignment_Stretch(const CallState& context) noexcept(false)
-{
-	auto* control = ExtractControlPtr(context.Args[0]);
-	if (control != nullptr) control->HorizontalAlignment.Set(HorizontalAlign::Stretch);
-	return nullptr;
-}
-
-static ObjectInstance* shard_Label_Set_HorizontalAlignment_Center(const CallState& context) noexcept(false)
-{
-	auto* control = ExtractControlPtr(context.Args[0]);
-	if (control != nullptr) control->HorizontalAlignment.Set(HorizontalAlign::Center);
-	return nullptr;
-}
-
-static ObjectInstance* shard_Label_Set_HorizontalAlignment_Left(const CallState& context) noexcept(false)
-{
-	auto* control = ExtractControlPtr(context.Args[0]);
-	if (control != nullptr) control->HorizontalAlignment.Set(HorizontalAlign::Left);
-	return nullptr;
-}
-
-static ObjectInstance* shard_Label_Set_HorizontalAlignment_Right(const CallState& context) noexcept(false)
-{
-	auto* control = ExtractControlPtr(context.Args[0]);
-	if (control != nullptr) control->HorizontalAlignment.Set(HorizontalAlign::Right);
-	return nullptr;
-}
-
-static ObjectInstance* shard_Label_Set_VerticalAlignment_Stretch(const CallState& context) noexcept(false)
-{
-	auto* control = ExtractControlPtr(context.Args[0]);
-	if (control != nullptr) control->VerticalAlignment.Set(VerticalAlign::Stretch);
-	return nullptr;
-}
-
-static ObjectInstance* shard_Label_Set_VerticalAlignment_Center(const CallState& context) noexcept(false)
-{
-	auto* control = ExtractControlPtr(context.Args[0]);
-	if (control != nullptr) control->VerticalAlignment.Set(VerticalAlign::Center);
-	return nullptr;
-}
-
-static ObjectInstance* shard_Label_Set_VerticalAlignment_Top(const CallState& context) noexcept(false)
-{
-	auto* control = ExtractControlPtr(context.Args[0]);
-	if (control != nullptr) control->VerticalAlignment.Set(VerticalAlign::Top);
-	return nullptr;
-}
-
-static ObjectInstance* shard_Label_Set_VerticalAlignment_Bottom(const CallState& context) noexcept(false)
-{
-	auto* control = ExtractControlPtr(context.Args[0]);
-	if (control != nullptr) control->VerticalAlignment.Set(VerticalAlign::Bottom);
 	return nullptr;
 }
 
@@ -416,121 +396,9 @@ static ObjectInstance* shard_Button_Text_set(const CallState& context) noexcept(
 	return nullptr;
 }
 
-static ObjectInstance* shard_Button_Set_HorizontalAlignment_Stretch(const CallState& context) noexcept(false)
-{
-	auto* control = ExtractControlPtr(context.Args[0]);
-	if (control != nullptr) control->HorizontalAlignment.Set(HorizontalAlign::Stretch);
-	return nullptr;
-}
-
-static ObjectInstance* shard_Button_Set_HorizontalAlignment_Center(const CallState& context) noexcept(false)
-{
-	auto* control = ExtractControlPtr(context.Args[0]);
-	if (control != nullptr) control->HorizontalAlignment.Set(HorizontalAlign::Center);
-	return nullptr;
-}
-
-static ObjectInstance* shard_Button_Set_HorizontalAlignment_Left(const CallState& context) noexcept(false)
-{
-	auto* control = ExtractControlPtr(context.Args[0]);
-	if (control != nullptr) control->HorizontalAlignment.Set(HorizontalAlign::Left);
-	return nullptr;
-}
-
-static ObjectInstance* shard_Button_Set_HorizontalAlignment_Right(const CallState& context) noexcept(false)
-{
-	auto* control = ExtractControlPtr(context.Args[0]);
-	if (control != nullptr) control->HorizontalAlignment.Set(HorizontalAlign::Right);
-	return nullptr;
-}
-
-static ObjectInstance* shard_Button_Set_VerticalAlignment_Stretch(const CallState& context) noexcept(false)
-{
-	auto* control = ExtractControlPtr(context.Args[0]);
-	if (control != nullptr) control->VerticalAlignment.Set(VerticalAlign::Stretch);
-	return nullptr;
-}
-
-static ObjectInstance* shard_Button_Set_VerticalAlignment_Center(const CallState& context) noexcept(false)
-{
-	auto* control = ExtractControlPtr(context.Args[0]);
-	if (control != nullptr) control->VerticalAlignment.Set(VerticalAlign::Center);
-	return nullptr;
-}
-
-static ObjectInstance* shard_Button_Set_VerticalAlignment_Top(const CallState& context) noexcept(false)
-{
-	auto* control = ExtractControlPtr(context.Args[0]);
-	if (control != nullptr) control->VerticalAlignment.Set(VerticalAlign::Top);
-	return nullptr;
-}
-
-static ObjectInstance* shard_Button_Set_VerticalAlignment_Bottom(const CallState& context) noexcept(false)
-{
-	auto* control = ExtractControlPtr(context.Args[0]);
-	if (control != nullptr) control->VerticalAlignment.Set(VerticalAlign::Bottom);
-	return nullptr;
-}
-
 // ============================================================================
 // Shared alignment helpers (used by StackPanel too for its own alignment)
 // ============================================================================
-
-static ObjectInstance* shard_Control_Set_HorizontalAlignment_Stretch(const CallState& context) noexcept(false)
-{
-	auto* control = ExtractControlPtr(context.Args[0]);
-	if (control != nullptr) control->HorizontalAlignment.Set(HorizontalAlign::Stretch);
-	return nullptr;
-}
-
-static ObjectInstance* shard_Control_Set_HorizontalAlignment_Center(const CallState& context) noexcept(false)
-{
-	auto* control = ExtractControlPtr(context.Args[0]);
-	if (control != nullptr) control->HorizontalAlignment.Set(HorizontalAlign::Center);
-	return nullptr;
-}
-
-static ObjectInstance* shard_Control_Set_HorizontalAlignment_Left(const CallState& context) noexcept(false)
-{
-	auto* control = ExtractControlPtr(context.Args[0]);
-	if (control != nullptr) control->HorizontalAlignment.Set(HorizontalAlign::Left);
-	return nullptr;
-}
-
-static ObjectInstance* shard_Control_Set_HorizontalAlignment_Right(const CallState& context) noexcept(false)
-{
-	auto* control = ExtractControlPtr(context.Args[0]);
-	if (control != nullptr) control->HorizontalAlignment.Set(HorizontalAlign::Right);
-	return nullptr;
-}
-
-static ObjectInstance* shard_Control_Set_VerticalAlignment_Stretch(const CallState& context) noexcept(false)
-{
-	auto* control = ExtractControlPtr(context.Args[0]);
-	if (control != nullptr) control->VerticalAlignment.Set(VerticalAlign::Stretch);
-	return nullptr;
-}
-
-static ObjectInstance* shard_Control_Set_VerticalAlignment_Center(const CallState& context) noexcept(false)
-{
-	auto* control = ExtractControlPtr(context.Args[0]);
-	if (control != nullptr) control->VerticalAlignment.Set(VerticalAlign::Center);
-	return nullptr;
-}
-
-static ObjectInstance* shard_Control_Set_VerticalAlignment_Top(const CallState& context) noexcept(false)
-{
-	auto* control = ExtractControlPtr(context.Args[0]);
-	if (control != nullptr) control->VerticalAlignment.Set(VerticalAlign::Top);
-	return nullptr;
-}
-
-static ObjectInstance* shard_Control_Set_VerticalAlignment_Bottom(const CallState& context) noexcept(false)
-{
-	auto* control = ExtractControlPtr(context.Args[0]);
-	if (control != nullptr) control->VerticalAlignment.Set(VerticalAlign::Bottom);
-	return nullptr;
-}
 
 // ============================================================================
 // ShardScript library metadata and entry point
@@ -546,6 +414,32 @@ SHARDLIB_GETMETADATA
 SHARDLIB_ENTRYPOINT
 {
 	SymbolBuilder<NamespaceSymbol> terminality(context, L"terminality");
+
+	// ------------------------------------------------------------------------
+	// Enums
+	// ------------------------------------------------------------------------
+	SymbolBuilder<EnumSymbol> horizontalAlignmentEnum = terminality.AddEnum(L"HorizontalAlignment");
+	horizontalAlignmentEnum
+		.AddValue(L"Left", static_cast<std::int64_t>(HorizontalAlign::Left))
+		.AddValue(L"Center", static_cast<std::int64_t>(HorizontalAlign::Center))
+		.AddValue(L"Right", static_cast<std::int64_t>(HorizontalAlign::Right))
+		.AddValue(L"Stretch", static_cast<std::int64_t>(HorizontalAlign::Stretch));
+
+	SymbolBuilder<EnumSymbol> verticalAlignmentEnum = terminality.AddEnum(L"VerticalAlignment");
+	verticalAlignmentEnum
+		.AddValue(L"Top", static_cast<std::int64_t>(VerticalAlign::Top))
+		.AddValue(L"Center", static_cast<std::int64_t>(VerticalAlign::Center))
+		.AddValue(L"Bottom", static_cast<std::int64_t>(VerticalAlign::Bottom))
+		.AddValue(L"Stretch", static_cast<std::int64_t>(VerticalAlign::Stretch));
+
+	SymbolBuilder<EnumSymbol> orientationEnum = terminality.AddEnum(L"Orientation");
+	orientationEnum
+		.AddValue(L"Vertical", static_cast<std::int64_t>(Orientation::Vertical))
+		.AddValue(L"Horizontal", static_cast<std::int64_t>(Orientation::Horizontal));
+
+	gHorizontalAlignmentEnum = horizontalAlignmentEnum.Get();
+	gVerticalAlignmentEnum = verticalAlignmentEnum.Get();
+	gOrientationEnum = orientationEnum.Get();
 
 	// ------------------------------------------------------------------------
 	// HostApplication (singleton exposed as a static class)
@@ -586,46 +480,31 @@ SHARDLIB_ENTRYPOINT
 	stackPanelClass.AddMethod(L"Clear", TYPE_VOID, LINK_INSTANCE, ACS_PUBLIC)
 		.SetCallback(&shard_StackPanel_Clear);
 
-	stackPanelClass.AddMethod(L"Set_HorizontalAlignment_Stretch", TYPE_VOID, LINK_INSTANCE, ACS_PUBLIC)
-		.SetCallback(&shard_Control_Set_HorizontalAlignment_Stretch);
-	stackPanelClass.AddMethod(L"Set_HorizontalAlignment_Center", TYPE_VOID, LINK_INSTANCE, ACS_PUBLIC)
-		.SetCallback(&shard_Control_Set_HorizontalAlignment_Center);
-	stackPanelClass.AddMethod(L"Set_HorizontalAlignment_Left", TYPE_VOID, LINK_INSTANCE, ACS_PUBLIC)
-		.SetCallback(&shard_Control_Set_HorizontalAlignment_Left);
-	stackPanelClass.AddMethod(L"Set_HorizontalAlignment_Right", TYPE_VOID, LINK_INSTANCE, ACS_PUBLIC)
-		.SetCallback(&shard_Control_Set_HorizontalAlignment_Right);
-
-	stackPanelClass.AddMethod(L"Set_VerticalAlignment_Stretch", TYPE_VOID, LINK_INSTANCE, ACS_PUBLIC)
-		.SetCallback(&shard_Control_Set_VerticalAlignment_Stretch);
-	stackPanelClass.AddMethod(L"Set_VerticalAlignment_Center", TYPE_VOID, LINK_INSTANCE, ACS_PUBLIC)
-		.SetCallback(&shard_Control_Set_VerticalAlignment_Center);
-	stackPanelClass.AddMethod(L"Set_VerticalAlignment_Top", TYPE_VOID, LINK_INSTANCE, ACS_PUBLIC)
-		.SetCallback(&shard_Control_Set_VerticalAlignment_Top);
-	stackPanelClass.AddMethod(L"Set_VerticalAlignment_Bottom", TYPE_VOID, LINK_INSTANCE, ACS_PUBLIC)
-		.SetCallback(&shard_Control_Set_VerticalAlignment_Bottom);
-
-	stackPanelClass.AddMethod(L"Set_HorizontalContentAlignment_Stretch", TYPE_VOID, LINK_INSTANCE, ACS_PUBLIC)
-		.SetCallback(&shard_StackPanel_Set_HorizontalContentAlignment_Stretch);
-	stackPanelClass.AddMethod(L"Set_HorizontalContentAlignment_Center", TYPE_VOID, LINK_INSTANCE, ACS_PUBLIC)
-		.SetCallback(&shard_StackPanel_Set_HorizontalContentAlignment_Center);
-	stackPanelClass.AddMethod(L"Set_HorizontalContentAlignment_Left", TYPE_VOID, LINK_INSTANCE, ACS_PUBLIC)
-		.SetCallback(&shard_StackPanel_Set_HorizontalContentAlignment_Left);
-	stackPanelClass.AddMethod(L"Set_HorizontalContentAlignment_Right", TYPE_VOID, LINK_INSTANCE, ACS_PUBLIC)
-		.SetCallback(&shard_StackPanel_Set_HorizontalContentAlignment_Right);
-
-	stackPanelClass.AddMethod(L"Set_VerticalContentAlignment_Stretch", TYPE_VOID, LINK_INSTANCE, ACS_PUBLIC)
-		.SetCallback(&shard_StackPanel_Set_VerticalContentAlignment_Stretch);
-	stackPanelClass.AddMethod(L"Set_VerticalContentAlignment_Center", TYPE_VOID, LINK_INSTANCE, ACS_PUBLIC)
-		.SetCallback(&shard_StackPanel_Set_VerticalContentAlignment_Center);
-	stackPanelClass.AddMethod(L"Set_VerticalContentAlignment_Top", TYPE_VOID, LINK_INSTANCE, ACS_PUBLIC)
-		.SetCallback(&shard_StackPanel_Set_VerticalContentAlignment_Top);
-	stackPanelClass.AddMethod(L"Set_VerticalContentAlignment_Bottom", TYPE_VOID, LINK_INSTANCE, ACS_PUBLIC)
-		.SetCallback(&shard_StackPanel_Set_VerticalContentAlignment_Bottom);
-
-	stackPanelClass.AddMethod(L"Set_ContentOrientation_Vertical", TYPE_VOID, LINK_INSTANCE, ACS_PUBLIC)
-		.SetCallback(&shard_StackPanel_Set_ContentOrientation_Vertical);
-	stackPanelClass.AddMethod(L"Set_ContentOrientation_Horizontal", TYPE_VOID, LINK_INSTANCE, ACS_PUBLIC)
-		.SetCallback(&shard_StackPanel_Set_ContentOrientation_Horizontal);
+	{
+		auto prop = stackPanelClass.AddProperty(L"HorizontalAlignment", gHorizontalAlignmentEnum, LINK_INSTANCE, ACS_PUBLIC);
+		prop.AddGetter().SetCallback(&shard_Control_HorizontalAlignment_get);
+		prop.AddSetter().SetCallback(&shard_Control_HorizontalAlignment_set);
+	}
+	{
+		auto prop = stackPanelClass.AddProperty(L"VerticalAlignment", gVerticalAlignmentEnum, LINK_INSTANCE, ACS_PUBLIC);
+		prop.AddGetter().SetCallback(&shard_Control_VerticalAlignment_get);
+		prop.AddSetter().SetCallback(&shard_Control_VerticalAlignment_set);
+	}
+	{
+		auto prop = stackPanelClass.AddProperty(L"HorizontalContentAlignment", gHorizontalAlignmentEnum, LINK_INSTANCE, ACS_PUBLIC);
+		prop.AddGetter().SetCallback(&shard_StackPanel_HorizontalContentAlignment_get);
+		prop.AddSetter().SetCallback(&shard_StackPanel_HorizontalContentAlignment_set);
+	}
+	{
+		auto prop = stackPanelClass.AddProperty(L"VerticalContentAlignment", gVerticalAlignmentEnum, LINK_INSTANCE, ACS_PUBLIC);
+		prop.AddGetter().SetCallback(&shard_StackPanel_VerticalContentAlignment_get);
+		prop.AddSetter().SetCallback(&shard_StackPanel_VerticalContentAlignment_set);
+	}
+	{
+		auto prop = stackPanelClass.AddProperty(L"ContentOrientation", gOrientationEnum, LINK_INSTANCE, ACS_PUBLIC);
+		prop.AddGetter().SetCallback(&shard_StackPanel_ContentOrientation_get);
+		prop.AddSetter().SetCallback(&shard_StackPanel_ContentOrientation_set);
+	}
 
 	// ------------------------------------------------------------------------
 	// Label
@@ -643,23 +522,16 @@ SHARDLIB_ENTRYPOINT
 		textProp.AddSetter().SetCallback(&shard_Label_Text_set);
 	}
 
-	labelClass.AddMethod(L"Set_HorizontalAlignment_Stretch", TYPE_VOID, LINK_INSTANCE, ACS_PUBLIC)
-		.SetCallback(&shard_Label_Set_HorizontalAlignment_Stretch);
-	labelClass.AddMethod(L"Set_HorizontalAlignment_Center", TYPE_VOID, LINK_INSTANCE, ACS_PUBLIC)
-		.SetCallback(&shard_Label_Set_HorizontalAlignment_Center);
-	labelClass.AddMethod(L"Set_HorizontalAlignment_Left", TYPE_VOID, LINK_INSTANCE, ACS_PUBLIC)
-		.SetCallback(&shard_Label_Set_HorizontalAlignment_Left);
-	labelClass.AddMethod(L"Set_HorizontalAlignment_Right", TYPE_VOID, LINK_INSTANCE, ACS_PUBLIC)
-		.SetCallback(&shard_Label_Set_HorizontalAlignment_Right);
-
-	labelClass.AddMethod(L"Set_VerticalAlignment_Stretch", TYPE_VOID, LINK_INSTANCE, ACS_PUBLIC)
-		.SetCallback(&shard_Label_Set_VerticalAlignment_Stretch);
-	labelClass.AddMethod(L"Set_VerticalAlignment_Center", TYPE_VOID, LINK_INSTANCE, ACS_PUBLIC)
-		.SetCallback(&shard_Label_Set_VerticalAlignment_Center);
-	labelClass.AddMethod(L"Set_VerticalAlignment_Top", TYPE_VOID, LINK_INSTANCE, ACS_PUBLIC)
-		.SetCallback(&shard_Label_Set_VerticalAlignment_Top);
-	labelClass.AddMethod(L"Set_VerticalAlignment_Bottom", TYPE_VOID, LINK_INSTANCE, ACS_PUBLIC)
-		.SetCallback(&shard_Label_Set_VerticalAlignment_Bottom);
+	{
+		auto prop = labelClass.AddProperty(L"HorizontalAlignment", gHorizontalAlignmentEnum, LINK_INSTANCE, ACS_PUBLIC);
+		prop.AddGetter().SetCallback(&shard_Control_HorizontalAlignment_get);
+		prop.AddSetter().SetCallback(&shard_Control_HorizontalAlignment_set);
+	}
+	{
+		auto prop = labelClass.AddProperty(L"VerticalAlignment", gVerticalAlignmentEnum, LINK_INSTANCE, ACS_PUBLIC);
+		prop.AddGetter().SetCallback(&shard_Control_VerticalAlignment_get);
+		prop.AddSetter().SetCallback(&shard_Control_VerticalAlignment_set);
+	}
 
 	// ------------------------------------------------------------------------
 	// Button
@@ -681,21 +553,14 @@ SHARDLIB_ENTRYPOINT
 		.AddParameter(L"action", TYPE_ANY)
 		.SetCallback(&shard_Button_SetClicked);
 
-	buttonClass.AddMethod(L"Set_HorizontalAlignment_Stretch", TYPE_VOID, LINK_INSTANCE, ACS_PUBLIC)
-		.SetCallback(&shard_Button_Set_HorizontalAlignment_Stretch);
-	buttonClass.AddMethod(L"Set_HorizontalAlignment_Center", TYPE_VOID, LINK_INSTANCE, ACS_PUBLIC)
-		.SetCallback(&shard_Button_Set_HorizontalAlignment_Center);
-	buttonClass.AddMethod(L"Set_HorizontalAlignment_Left", TYPE_VOID, LINK_INSTANCE, ACS_PUBLIC)
-		.SetCallback(&shard_Button_Set_HorizontalAlignment_Left);
-	buttonClass.AddMethod(L"Set_HorizontalAlignment_Right", TYPE_VOID, LINK_INSTANCE, ACS_PUBLIC)
-		.SetCallback(&shard_Button_Set_HorizontalAlignment_Right);
-
-	buttonClass.AddMethod(L"Set_VerticalAlignment_Stretch", TYPE_VOID, LINK_INSTANCE, ACS_PUBLIC)
-		.SetCallback(&shard_Button_Set_VerticalAlignment_Stretch);
-	buttonClass.AddMethod(L"Set_VerticalAlignment_Center", TYPE_VOID, LINK_INSTANCE, ACS_PUBLIC)
-		.SetCallback(&shard_Button_Set_VerticalAlignment_Center);
-	buttonClass.AddMethod(L"Set_VerticalAlignment_Top", TYPE_VOID, LINK_INSTANCE, ACS_PUBLIC)
-		.SetCallback(&shard_Button_Set_VerticalAlignment_Top);
-	buttonClass.AddMethod(L"Set_VerticalAlignment_Bottom", TYPE_VOID, LINK_INSTANCE, ACS_PUBLIC)
-		.SetCallback(&shard_Button_Set_VerticalAlignment_Bottom);
+	{
+		auto prop = buttonClass.AddProperty(L"HorizontalAlignment", gHorizontalAlignmentEnum, LINK_INSTANCE, ACS_PUBLIC);
+		prop.AddGetter().SetCallback(&shard_Control_HorizontalAlignment_get);
+		prop.AddSetter().SetCallback(&shard_Control_HorizontalAlignment_set);
+	}
+	{
+		auto prop = buttonClass.AddProperty(L"VerticalAlignment", gVerticalAlignmentEnum, LINK_INSTANCE, ACS_PUBLIC);
+		prop.AddGetter().SetCallback(&shard_Control_VerticalAlignment_get);
+		prop.AddSetter().SetCallback(&shard_Control_VerticalAlignment_set);
+	}
 }

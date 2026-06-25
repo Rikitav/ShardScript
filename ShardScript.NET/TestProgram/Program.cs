@@ -234,6 +234,47 @@ class Program
         RunCallAndIndexerExample();
         RunReflectionBinderExample();
         RunScopedAstBuilderExample();
+        RunEnumExample();
+    }
+
+    private static void RunEnumExample()
+    {
+        Console.WriteLine("\n--- SDK enum example ---");
+
+        using var state = new ScriptState(ScriptOptions.Default.WithStandardLibraries().WithEntryPoint(false));
+        state.Compile("""
+            using stdio;
+            namespace enum_demo;
+
+            public enum Color
+            {
+                Red,
+                Green,
+                Blue
+            }
+
+            public enum Permissions : flags
+            {
+                Read,
+                Write,
+                Execute
+            }
+
+            public static class Program
+            {
+                public static func GetColorName() -> string { return Color.Red.ToString(); }
+                public static func GetPermissions() -> string { return (Permissions.Read | Permissions.Write).ToString(); }
+                public static func HasExecute(p: Permissions) -> bool { return p.HasFlag(Permissions.Execute); }
+                public static func CheckReadHasExecute() -> bool { return HasExecute(Permissions.Read); }
+            }
+            """);
+
+        string colorName = state.Call<string>("Program.GetColorName");
+        string permissions = state.Call<string>("Program.GetPermissions");
+        bool hasExecute = state.Call<bool>("Program.CheckReadHasExecute");
+        Console.WriteLine($"Program.GetColorName() -> {colorName}");
+        Console.WriteLine($"Program.GetPermissions() -> {permissions}");
+        Console.WriteLine($"Program.CheckReadHasExecute() -> {hasExecute}");
     }
 
     private static void RunEvaluateExample()

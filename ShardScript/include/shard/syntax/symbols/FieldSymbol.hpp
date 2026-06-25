@@ -20,6 +20,9 @@ namespace shard
         std::size_t MemoryBytesOffset = 0;
         TypeSymbol* ReturnType = nullptr;
 
+        bool IsEnumValue = false;
+        std::int64_t EnumValue = 0;
+
         inline FieldSymbol(const std::wstring& name)
             : MemberSymbol(name, SyntaxKind::FieldDeclaration) { }
 
