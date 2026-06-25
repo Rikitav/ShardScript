@@ -976,7 +976,7 @@ ObjectInstance* VirtualMachine::InstantiateObject(TypeSymbol* type, ConstructorS
 	}
 
 	callingFrame->PushStack(newInstance);
-	
+
 	CallStackFrame* currentFrame = PushFrame(ctor, type);
 	newInstance->IncrementReference();
 
@@ -1236,9 +1236,6 @@ ObjectInstance* VirtualMachine::RunInteractive(std::size_t& pointer)
 	currentFrame->EvalStack.reserve(static_cast<std::size_t>(method->GetEvalStackLocalsCount()) * 2);
 
 	ByteCodeDecoder decoder = ByteCodeDecoder(method->ExecutableByteCode);
-	ProgramDisassembler disassembler;
-	disassembler.Disassemble(std::wcout, program);
-
 	decoder.SetCursor(pointer);
 
 	while (!decoder.IsEOF())

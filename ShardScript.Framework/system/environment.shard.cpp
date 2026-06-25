@@ -6,6 +6,8 @@
 #include <shard/runtime/ObjectInstance.hpp>
 
 #include <cstdlib>
+#include <cstring>
+#include <cwchar>
 #include <string>
 
 using namespace shard;
@@ -13,11 +15,16 @@ using namespace shard;
 static ObjectInstance* shard_environment_GetEnv(const CallState& context)
 {
     const wchar_t* name = context.Args[0]->AsString();
+#ifdef _WIN32
     const wchar_t* value = _wgetenv(name);
+    return context.Collector.FromValue(std::wstring(value ? value : L""));
+#else
+    std::string narrowName(name, name + std::wcslen(name));
+    const char* value = std::getenv(narrowName.c_str());
     if (value == nullptr)
-        value = L"";
-
-    return context.Collector.FromValue(std::wstring(value));
+        value = "";
+    return context.Collector.FromValue(std::wstring(value, value + std::strlen(value)));
+#endif
 }
 
 SHARDLIB_GETMETADATA
