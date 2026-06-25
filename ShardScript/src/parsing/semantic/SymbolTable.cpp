@@ -205,6 +205,59 @@ static void MakePrimitivePrintable(TypeSymbol* primitive, MethodSymbolDelegate t
 	primitive->InterfaceMethodMap[TRAIT_PRINTABLE_ToString] = method;
 }
 
+static void ResolvePrimitives(SymbolTable* table)
+{
+	static bool resolved = false;
+	if (resolved)
+		return;
+
+	SymbolFactory factory(table);
+
+	// ============================================================================
+	// Matters
+	// ============================================================================
+	SymbolTable::Primitives::Void = new StructSymbol(L"Void");
+	SymbolTable::Primitives::Any = new StructSymbol(L"Any");
+	SymbolTable::Primitives::Null = new StructSymbol(L"Null");
+	SymbolTable::Primitives::NativeInteger = new ClassSymbol(L"IntPtr");
+
+	SymbolTable::Primitives::Void->State = TypeLayoutingState::Visited;
+	SymbolTable::Primitives::Any->State = TypeLayoutingState::Visited;
+	SymbolTable::Primitives::Null->State = TypeLayoutingState::Visited;
+
+	SymbolTable::Primitives::Void->MemoryBytesSize = 0;
+	SymbolTable::Primitives::Any->MemoryBytesSize = 0;
+	SymbolTable::Primitives::Null->MemoryBytesSize = 0;
+	SymbolTable::Primitives::NativeInteger->MemoryBytesSize = sizeof(void*);
+
+	// ============================================================================
+	// Primitives
+	// ============================================================================
+	SymbolTable::Primitives::Boolean = new StructSymbol(L"Boolean");
+	SymbolTable::Primitives::Integer = new StructSymbol(L"Integer");
+	SymbolTable::Primitives::Double = new StructSymbol(L"Double");
+	SymbolTable::Primitives::Char = new StructSymbol(L"Char");
+	SymbolTable::Primitives::String = new ClassSymbol(L"String");
+	SymbolTable::Primitives::Array = new ClassSymbol(L"Array");
+
+	SymbolTable::Primitives::Boolean->State = TypeLayoutingState::Visited;
+	SymbolTable::Primitives::Integer->State = TypeLayoutingState::Visited;
+	SymbolTable::Primitives::Double->State = TypeLayoutingState::Visited;
+	SymbolTable::Primitives::Char->State = TypeLayoutingState::Visited;
+	SymbolTable::Primitives::String->State = TypeLayoutingState::Visited;
+	SymbolTable::Primitives::Array->State = TypeLayoutingState::Visited;
+	SymbolTable::Primitives::NativeInteger->State = TypeLayoutingState::Visited;
+
+	SymbolTable::Primitives::Boolean->MemoryBytesSize = sizeof(bool);
+	SymbolTable::Primitives::Integer->MemoryBytesSize = sizeof(std::int64_t);
+	SymbolTable::Primitives::Double->MemoryBytesSize = sizeof(double);
+	SymbolTable::Primitives::Char->MemoryBytesSize = sizeof(wchar_t);
+	SymbolTable::Primitives::String->MemoryBytesSize = sizeof(std::int64_t) + sizeof(wchar_t*); // long _length + char[] _data
+	SymbolTable::Primitives::Array->MemoryBytesSize = sizeof(std::int64_t);					    // long _length
+
+	resolved = true;
+}
+
 static void ResolveInterfaces(SymbolTable* table)
 {
 	static bool resolved = false;
@@ -257,64 +310,13 @@ static void ResolveInterfaces(SymbolTable* table)
 	resolved = true;
 }
 
-static void ResolvePrimitives(SymbolTable* table)
+static void ResolveStandards(SymbolTable* table)
 {
 	static bool resolved = false;
 	if (resolved)
 		return;
 
 	SymbolFactory factory(table);
-
-	// ============================================================================
-	// Matters
-	// ============================================================================
-	SymbolTable::Primitives::Void = new StructSymbol(L"Void");
-	SymbolTable::Primitives::Any = new StructSymbol(L"Any");
-	SymbolTable::Primitives::Null = new StructSymbol(L"Null");
-	SymbolTable::Primitives::NativeInteger = new ClassSymbol(L"IntPtr");
-
-	SymbolTable::Primitives::Void->State = TypeLayoutingState::Visited;
-	SymbolTable::Primitives::Any->State = TypeLayoutingState::Visited;
-	SymbolTable::Primitives::Null->State = TypeLayoutingState::Visited;
-
-	SymbolTable::Primitives::Void->MemoryBytesSize = 0;
-	SymbolTable::Primitives::Any->MemoryBytesSize = 0;
-	SymbolTable::Primitives::Null->MemoryBytesSize = 0;
-	SymbolTable::Primitives::NativeInteger->MemoryBytesSize = sizeof(void*);
-
-	// ============================================================================
-	// Primitives
-	// ============================================================================
-	SymbolTable::Primitives::Boolean = new StructSymbol(L"Boolean");
-	SymbolTable::Primitives::Integer = new StructSymbol(L"Integer");
-	SymbolTable::Primitives::Double = new StructSymbol(L"Double");
-	SymbolTable::Primitives::Char = new StructSymbol(L"Char");
-	SymbolTable::Primitives::String = new ClassSymbol(L"String");
-	SymbolTable::Primitives::Array = new ClassSymbol(L"Array");
-
-	SymbolTable::Primitives::Boolean->State = TypeLayoutingState::Visited;
-	SymbolTable::Primitives::Integer->State = TypeLayoutingState::Visited;
-	SymbolTable::Primitives::Double->State = TypeLayoutingState::Visited;
-	SymbolTable::Primitives::Char->State = TypeLayoutingState::Visited;
-	SymbolTable::Primitives::String->State = TypeLayoutingState::Visited;
-	SymbolTable::Primitives::Array->State = TypeLayoutingState::Visited;
-	SymbolTable::Primitives::NativeInteger->State = TypeLayoutingState::Visited;
-
-	SymbolTable::Primitives::Boolean->MemoryBytesSize = sizeof(bool);
-	SymbolTable::Primitives::Integer->MemoryBytesSize = sizeof(std::int64_t);
-	SymbolTable::Primitives::Double->MemoryBytesSize = sizeof(double);
-	SymbolTable::Primitives::Char->MemoryBytesSize = sizeof(wchar_t);
-	SymbolTable::Primitives::String->MemoryBytesSize = sizeof(std::int64_t) + sizeof(wchar_t*); // long _length + char[] _data
-	SymbolTable::Primitives::Array->MemoryBytesSize = sizeof(std::int64_t);					    // long _length
-
-	// Resolve standard interface traits before they are used below.
-	ResolveInterfaces(table);
-
-	// ============================================================================
-	// Standard
-	// ============================================================================
-
-
 
 	// Runtime class with capture_stack_trace
 	{
@@ -382,7 +384,22 @@ static void ResolvePrimitives(SymbolTable* table)
 		SymbolTable::StandardTypes::RuntimeException = raw;
 	}
 
+	resolved = true;
+}
+
+static void ResolveGlobalComponents(SymbolTable* table)
+{
+	static bool resolved = false;
+	if (resolved)
+		return;
+
+	ResolvePrimitives(table);
+	ResolveInterfaces(table); // Resolve standard interface traits before they are used below.
+	ResolveStandards(table);
+
 	// Make standard primitives implement IPrintable
+	SymbolFactory factory(table);
+
 	MakePrimitivePrintable(SymbolTable::Primitives::Boolean, &primitive_boolean_to_string, factory, TRAIT_PRINTABLE_ToString);
 	MakePrimitivePrintable(SymbolTable::Primitives::Integer, &primitive_integer_to_string, factory, TRAIT_PRINTABLE_ToString);
 	MakePrimitivePrintable(SymbolTable::Primitives::Double, &primitive_double_to_string, factory, TRAIT_PRINTABLE_ToString);
@@ -398,7 +415,7 @@ static void ResolvePrimitives(SymbolTable* table)
 
 SymbolTable::SymbolTable()
 {
-	ResolvePrimitives(this);
+	ResolveGlobalComponents(this);
 }
 
 SymbolTable::~SymbolTable()
