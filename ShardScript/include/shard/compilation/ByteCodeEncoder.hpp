@@ -82,6 +82,7 @@ namespace shard
 
 		void EmitLoadStaticField(std::vector<std::byte>& code, FieldSymbol* type);
 		void EmitStoreStaticField(std::vector<std::byte>& code, FieldSymbol* type);
+		void EmitLoadEnumField(std::vector<std::byte>& code, FieldSymbol* type);
 
 		void EmitLoadTypeArgument(std::vector<std::byte>& code, std::uint16_t index, TypeSymbol* type);
 		void EmitCallMethodSymbol(std::vector<std::byte>& code, MethodSymbol* method);

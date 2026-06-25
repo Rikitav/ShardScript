@@ -91,8 +91,10 @@ ObjectInstance* GarbageCollector::FromNint(void* rawMemory, bool isTransient)
 	if (objectInfo->State != TypeLayoutingState::Visited)
 		throw std::runtime_error("objectInfo is uninitialized");
 
-	ObjectInstance* instance = new ObjectInstance(objectInfo, rawMemory, isTransient);
-	Heap.add(instance);
+	ObjectInstance* instance = AllocateInstance(objectInfo, isTransient);
+	if (objectInfo->MemoryBytesSize > 0)
+		instance->WriteMemory(0, objectInfo->MemoryBytesSize, &rawMemory);
+
 	return instance;
 }
 

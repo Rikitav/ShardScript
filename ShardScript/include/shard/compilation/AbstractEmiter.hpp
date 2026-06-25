@@ -32,6 +32,7 @@
 
 #include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/EnumDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/OperatorDeclarationSyntax.hpp>
 
@@ -113,6 +114,7 @@ namespace shard
 		void VisitOperatorDeclaration(OperatorDeclarationSyntax* node) override;
 		void VisitConstructorDeclaration(ConstructorDeclarationSyntax* node) override;
 		void VisitAccessorDeclaration(AccessorDeclarationSyntax* node) override;
+		void VisitEnumDeclaration(EnumDeclarationSyntax* node) override;
 
         void VisitExpressionStatement(ExpressionStatementSyntax* node) override;
         void VisitVariableStatement(VariableStatementSyntax* node) override;

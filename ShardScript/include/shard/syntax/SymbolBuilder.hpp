@@ -7,6 +7,7 @@
 
 #include <shard/syntax/symbols/NamespaceSymbol.hpp>
 #include <shard/syntax/symbols/ClassSymbol.hpp>
+#include <shard/syntax/symbols/EnumSymbol.hpp>
 #include <shard/syntax/symbols/MethodSymbol.hpp>
 #include <shard/syntax/symbols/FieldSymbol.hpp>
 #include <shard/syntax/symbols/ParameterSymbol.hpp>
@@ -70,6 +71,11 @@ namespace shard
 
         SymbolBuilder<ClassSymbol> AddClass(
             const std::wstring& name,
+            SymbolAccesibility access = SymbolAccesibility::Public);
+
+        SymbolBuilder<EnumSymbol> AddEnum(
+            const std::wstring& name,
+            bool isFlags = false,
             SymbolAccesibility access = SymbolAccesibility::Public);
 
         SymbolBuilder<NamespaceSymbol> AddNamespace(
@@ -302,6 +308,22 @@ namespace shard
 
         SymbolBuilder<ClassSymbol> Implements(
             TypeSymbol* interface);
+    };
+
+    template<>
+    class SHARD_API SymbolBuilder<EnumSymbol> : public SymbolBuilderBase<EnumSymbol>
+    {
+    public:
+        SymbolBuilder(CompilationContext& ctx,
+            const std::wstring& name,
+            bool isFlags,
+            SyntaxSymbol* parent);
+
+        SymbolBuilder<EnumSymbol>& SetFlags(bool value = true);
+
+        SymbolBuilder<EnumSymbol>& AddValue(
+            const std::wstring& name,
+            std::int64_t value);
     };
 
     template<>

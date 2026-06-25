@@ -287,6 +287,17 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
+		case OpCode::LOADENUMFIELD:
+		{
+			FieldSymbol* field = decoder.AbsorbFieldSymbol();
+			TypeSymbol* enumType = static_cast<TypeSymbol*>(field->Parent);
+
+			ObjectInstance* instance = garbageCollector.AllocateInstance(enumType);
+			instance->WriteInteger(field->EnumValue);
+			frame->PushStack(instance);
+			break;
+		}
+
 		case OpCode::STORESTATICFIELD:
 		{
 			FieldSymbol* field = decoder.AbsorbFieldSymbol();
@@ -339,10 +350,10 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 
 			std::int64_t diff = upper - lower;
 			std::int64_t length = diff + (inclusive ? 1 : 0);
+
 			if (diff < 0)
-			{
 				length = -diff + (inclusive ? 1 : 0);
-			}
+
 			if (length < 0)
 				length = 0;
 
@@ -976,7 +987,7 @@ ObjectInstance* VirtualMachine::InstantiateObject(TypeSymbol* type, ConstructorS
 	}
 
 	callingFrame->PushStack(newInstance);
-
+	
 	CallStackFrame* currentFrame = PushFrame(ctor, type);
 	newInstance->IncrementReference();
 
@@ -1236,6 +1247,9 @@ ObjectInstance* VirtualMachine::RunInteractive(std::size_t& pointer)
 	currentFrame->EvalStack.reserve(static_cast<std::size_t>(method->GetEvalStackLocalsCount()) * 2);
 
 	ByteCodeDecoder decoder = ByteCodeDecoder(method->ExecutableByteCode);
+	ProgramDisassembler disassembler;
+	disassembler.Disassemble(std::wcout, program);
+
 	decoder.SetCursor(pointer);
 
 	while (!decoder.IsEOF())

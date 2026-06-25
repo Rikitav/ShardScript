@@ -23,6 +23,7 @@
 #include <shard/syntax/symbols/AccessorSymbol.hpp>
 #include <shard/syntax/symbols/GenericTypeSymbol.hpp>
 #include <shard/syntax/symbols/ArrayTypeSymbol.hpp>
+#include <shard/syntax/symbols/EnumSymbol.hpp>
 #include <shard/syntax/symbols/FieldSymbol.hpp>
 #include <shard/syntax/symbols/PropertySymbol.hpp>
 #include <shard/syntax/symbols/MethodSymbol.hpp>
@@ -91,6 +92,32 @@ ClassSymbol* SymbolFactory::Class(const wchar_t* name)
 	auto symbol = std::make_unique<ClassSymbol>(name);
 	symbol->Accesibility = SymbolAccesibility::Private;
 	return static_cast<ClassSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
+}
+
+EnumSymbol* SymbolFactory::Enum(EnumDeclarationSyntax* node, bool isFlags)
+{
+	std::wstring enumName = node->IdentifierToken.Word;
+	auto symbol = std::make_unique<EnumSymbol>(enumName);
+	symbol->IsFlags = isFlags;
+	SetAccesibility(node->Modifiers, symbol.get()->Accesibility, symbol.get()->Linking);
+
+	return static_cast<EnumSymbol*>(Table->BindSymbol(node, std::move(symbol)));
+}
+
+EnumSymbol* SymbolFactory::Enum(const std::wstring& name, bool isFlags)
+{
+	auto symbol = std::make_unique<EnumSymbol>(name);
+	symbol->IsFlags = isFlags;
+	symbol->Accesibility = SymbolAccesibility::Private;
+	return static_cast<EnumSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
+}
+
+EnumSymbol* SymbolFactory::Enum(const wchar_t* name, bool isFlags)
+{
+	auto symbol = std::make_unique<EnumSymbol>(name);
+	symbol->IsFlags = isFlags;
+	symbol->Accesibility = SymbolAccesibility::Private;
+	return static_cast<EnumSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
 StructSymbol* SymbolFactory::Struct(const std::wstring& name)
@@ -360,6 +387,17 @@ FieldSymbol* SymbolFactory::Field(const std::wstring& name, TypeSymbol* type, Sy
 	symbol->ReturnType = type;
 	symbol->Linking = linking;
 	symbol->Accesibility = SymbolAccesibility::Private;
+	return static_cast<FieldSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
+}
+
+FieldSymbol* SymbolFactory::EnumField(const std::wstring& name, TypeSymbol* enumType, std::int64_t value)
+{
+	auto symbol = std::make_unique<FieldSymbol>(name);
+	symbol->ReturnType = enumType;
+	symbol->Linking = LINK_STATIC;
+	symbol->Accesibility = SymbolAccesibility::Public;
+	symbol->IsEnumValue = true;
+	symbol->EnumValue = value;
 	return static_cast<FieldSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 

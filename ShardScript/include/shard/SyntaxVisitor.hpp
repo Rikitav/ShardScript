@@ -35,6 +35,8 @@
 #include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/DelegateDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/EnumDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/EnumFieldDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/IndexatorDeclarationSyntax.hpp>
 
 #include <shard/syntax/nodes/Statements/VariableStatementSyntax.hpp>
@@ -107,6 +109,8 @@ namespace shard
         virtual void VisitStructDeclaration(StructDeclarationSyntax* node);
         virtual void VisitInterfaceDeclaration(InterfaceDeclarationSyntax* node);
         virtual void VisitDelegateDeclaration(DelegateDeclarationSyntax* node);
+        virtual void VisitEnumDeclaration(EnumDeclarationSyntax* node);
+        virtual void VisitEnumFieldDeclaration(EnumFieldDeclarationSyntax* node);
 
         virtual void VisitMemberDeclaration(MemberDeclarationSyntax* node);
         virtual void VisitMethodDeclaration(MethodDeclarationSyntax* node);

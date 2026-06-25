@@ -27,6 +27,8 @@
 #include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/DelegateDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/EnumDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/EnumFieldDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/InterfaceDeclarationSyntax.hpp>
 
 #include <shard/syntax/nodes/Expressions/BinaryExpressionSyntax.hpp>
@@ -196,6 +198,24 @@ void SyntaxVisitor::VisitDelegateDeclaration(DelegateDeclarationSyntax* node)
 		VisitParametersList(node->ParametersList.get());
 }
 
+void SyntaxVisitor::VisitEnumDeclaration(EnumDeclarationSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	for (const auto& field : node->Fields)
+		VisitEnumFieldDeclaration(field.get());
+}
+
+void SyntaxVisitor::VisitEnumFieldDeclaration(EnumFieldDeclarationSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (node->InitializerExpression != nullptr)
+		VisitExpression(node->InitializerExpression.get());
+}
+
 void SyntaxVisitor::VisitMemberDeclaration(MemberDeclarationSyntax* node)
 {
 	if (node == nullptr)
@@ -287,6 +307,13 @@ void SyntaxVisitor::VisitMemberDeclaration(MemberDeclarationSyntax* node)
 		{
 			InterfaceDeclarationSyntax* declNode = static_cast<InterfaceDeclarationSyntax*>(node);
 			VisitInterfaceDeclaration(declNode);
+			return;
+		}
+
+		case SyntaxKind::EnumDeclaration:
+		{
+			EnumDeclarationSyntax* declNode = static_cast<EnumDeclarationSyntax*>(node);
+			VisitEnumDeclaration(declNode);
 			return;
 		}
 	}

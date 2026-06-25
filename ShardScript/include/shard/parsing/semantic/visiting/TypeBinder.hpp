@@ -7,6 +7,7 @@
 #include <shard/parsing/semantic/SemanticModel.hpp>
 
 #include <shard/syntax/SymbolFactory.hpp>
+#include <shard/syntax/symbols/EnumSymbol.hpp>
 #include <shard/syntax/symbols/TypeSymbol.hpp>
 
 #include <shard/syntax/nodes/CompilationUnitSyntax.hpp>
@@ -21,6 +22,8 @@
 #include <shard/syntax/nodes/Statements/TryStatementSyntax.hpp>
 
 #include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/EnumDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/EnumFieldDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/FieldDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/OperatorDeclarationSyntax.hpp>
@@ -56,6 +59,7 @@ namespace shard
 		void VisitStructDeclaration(shard::StructDeclarationSyntax* node) override;
 		void VisitInterfaceDeclaration(shard::InterfaceDeclarationSyntax* node) override;
 		void VisitDelegateDeclaration(shard::DelegateDeclarationSyntax* node) override;
+		void VisitEnumDeclaration(shard::EnumDeclarationSyntax* node) override;
 
 		void VisitConstructorDeclaration(shard::ConstructorDeclarationSyntax* node) override;
 		void VisitMethodDeclaration(shard::MethodDeclarationSyntax* node) override;

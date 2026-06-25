@@ -269,7 +269,7 @@ public static func Main() -> void
 * [x] **Operator overload by token identifier** — `operator AddOperator`, `operator EqualsOperator`, etc.
 
 ### Collections & Iteration
-* [ ] **Foreach and IEnumerable** — `IEnumerator<T>` / `IEnumerable<T>` contracts; arrays and collections implement them.
+* [x] **Foreach and IEnumerable** — `IEnumerator<T>` / `IEnumerable<T>` contracts; arrays and collections implement them.
 * [ ] **Iterators** — `yield return`, `yield break`, and `yield range` with compiler-generated state machines.
 * [ ] **LINQ-style library (`shard.linq`)** — `Where`, `Select`, `ToList`, etc., built on extension methods and `IEnumerable`.
 

@@ -1,6 +1,7 @@
 #include <shard/syntax/SymbolBuilder.hpp>
 
 #include <shard/syntax/symbols/StructSymbol.hpp>
+#include <shard/syntax/symbols/EnumSymbol.hpp>
 #include <shard/syntax/SyntaxFacts.hpp>
 
 using namespace shard;
@@ -43,6 +44,16 @@ SymbolBuilder<ClassSymbol> SymbolBuilder<NamespaceSymbol>::AddClass(
     SymbolAccesibility access)
 {
     SymbolBuilder<ClassSymbol> builder(Context, name, Symbol);
+    builder.Get()->Accesibility = access;
+    return builder;
+}
+
+SymbolBuilder<EnumSymbol> SymbolBuilder<NamespaceSymbol>::AddEnum(
+    const std::wstring& name,
+    bool isFlags,
+    SymbolAccesibility access)
+{
+    SymbolBuilder<EnumSymbol> builder(Context, name, isFlags, Symbol);
     builder.Get()->Accesibility = access;
     return builder;
 }
@@ -249,6 +260,46 @@ SymbolBuilder<OperatorSymbol> SymbolBuilder<StructSymbol>::AddOperator(
 {
     SymbolBuilder<OperatorSymbol> builder(Context, opToken, returnType, linking, access, Symbol);
     return builder;
+}
+
+// =========================================================================
+// EnumSymbol
+// =========================================================================
+
+SymbolBuilder<EnumSymbol>::SymbolBuilder(CompilationContext& ctx,
+    const std::wstring& name,
+    bool isFlags,
+    SyntaxSymbol* parent)
+    : SymbolBuilderBase(ctx)
+{
+    Symbol = Factory.Enum(name, isFlags);
+    Symbol->Accesibility = SymbolAccesibility::Public;
+    Symbol->Parent = parent;
+
+    if (parent != nullptr)
+    {
+        Symbol->FullName = parent->FullName + L"." + name;
+        parent->OnSymbolDeclared(Symbol);
+    }
+    else
+    {
+        Symbol->FullName = name;
+    }
+}
+
+SymbolBuilder<EnumSymbol>& SymbolBuilder<EnumSymbol>::SetFlags(bool value)
+{
+    Symbol->IsFlags = value;
+    return *this;
+}
+
+SymbolBuilder<EnumSymbol>& SymbolBuilder<EnumSymbol>::AddValue(
+    const std::wstring& name,
+    std::int64_t value)
+{
+    FieldSymbol* field = Factory.EnumField(name, Symbol, value);
+    Symbol->OnSymbolDeclared(field);
+    return *this;
 }
 
 // =========================================================================

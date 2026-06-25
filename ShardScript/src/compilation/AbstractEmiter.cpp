@@ -25,6 +25,7 @@
 
 #include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.hpp>
+#include <shard/syntax/nodes/MemberDeclarations/EnumDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.hpp>
 #include <shard/syntax/nodes/MemberDeclarations/OperatorDeclarationSyntax.hpp>
 
@@ -436,6 +437,12 @@ void AbstractEmiter::VisitAccessorDeclaration(AccessorDeclarationSyntax* node)
 
 	GeneratingFor->ExecutableByteCode.shrink_to_fit();
 	GeneratingFor = nullptr;
+}
+
+void AbstractEmiter::VisitEnumDeclaration(EnumDeclarationSyntax* node)
+{
+	// Enum fields are constants; no runtime initialization is emitted here.
+	// Enum member access is handled directly by VisitMemberAccessExpression.
 }
 
 void AbstractEmiter::VisitExpressionStatement(ExpressionStatementSyntax* node)
@@ -1244,6 +1251,12 @@ void AbstractEmiter::VisitMemberAccessExpression(MemberAccessExpressionSyntax* n
 
 	if (node->ToField != nullptr)
 	{
+		if (node->ToField->IsEnumValue)
+		{
+			Encoder.EmitLoadEnumField(GeneratingFor->ExecutableByteCode, node->ToField);
+			return;
+		}
+
 		if (node->ToField->Linking == LINK_STATIC)
 		{
 			Encoder.EmitLoadStaticField(GeneratingFor->ExecutableByteCode, node->ToField);

@@ -349,6 +349,12 @@ void ByteCodeEncoder::EmitStoreStaticField(std::vector<std::byte>& code, FieldSy
     AppendData(code, &type, sizeof(type));
 }
 
+void ByteCodeEncoder::EmitLoadEnumField(std::vector<std::byte>& code, FieldSymbol* type)
+{
+    AppendDataT(code, OpCode::LOADENUMFIELD);
+    AppendData(code, &type, sizeof(type));
+}
+
 void ByteCodeEncoder::EmitCallMethodSymbol(std::vector<std::byte>& code, MethodSymbol* method)
 {
     AppendDataT(code, OpCode::CALLMETHODSYMBOL);
