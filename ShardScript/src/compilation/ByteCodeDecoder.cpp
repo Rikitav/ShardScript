@@ -98,6 +98,13 @@ std::size_t ByteCodeDecoder::AbsorbString()
     return value;
 }
 
+std::uint8_t ByteCodeDecoder::AbsorbUInt8()
+{
+    std::uint8_t value{};
+    ReadUnaligned(_code, _ip, value);
+    return value;
+}
+
 std::uint16_t ByteCodeDecoder::AbsorbVariableSlot()
 {
     std::uint16_t value{};
