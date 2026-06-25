@@ -413,21 +413,45 @@ static bool IsNumberSymbol(wchar_t symbol)
 	if (symbol >= L'a' && symbol <= L'f')
 		return true;
 
+	// Base prefixes
+	if (symbol == L'x' || symbol == L'X')
+		return true;
+
+	if (symbol == L'd' || symbol == L'D')
+		return true;
+
+	if (symbol == L'b' || symbol == L'B')
+		return true;
+
+	// Volume ratio suffix first letters (k, m, g, t, p)
+	if (symbol == L'k' || symbol == L'K')
+		return true;
+
+	if (symbol == L'm' || symbol == L'M')
+		return true;
+
+	if (symbol == L'g' || symbol == L'G')
+		return true;
+
+	if (symbol == L't' || symbol == L'T')
+		return true;
+
+	if (symbol == L'p' || symbol == L'P')
+		return true;
+
 	return false;
 }
 
-static bool IsVolumeRatio(wchar_t symbol)
+static bool IsBasePrefixLetter(wchar_t symbol)
 {
 	switch (symbol)
 	{
-		default:
-			return false;
+		case L'x': case L'X':
+		case L'd': case L'D':
+		case L'b': case L'B':
+			return true;
 
-		case 'K':
-		case 'G':
-		case 'M':
-		case 'T':
-		case 'P':
+		default:
 			return false;
 	}
 }
@@ -436,6 +460,13 @@ bool LexicalAnalyzer::ReadNumberLiteral(std::wstring& word, TokenType& type)
 {
 	if (IsNumberSymbol(Symbol))
 		word += Symbol;
+
+	// Consume a base prefix immediately after a standalone 0, e.g. 0x, 0b, 0d.
+	if (word == L"0" && SourceText->PeekNext(PeekSymbol) && IsBasePrefixLetter(PeekSymbol))
+	{
+		Advance(PeekSymbol);
+		word += PeekSymbol;
+	}
 
 	bool foundDelimeter = false;
 	while (SourceText->PeekNext(PeekSymbol))
