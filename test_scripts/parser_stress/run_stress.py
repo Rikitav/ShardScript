@@ -8,9 +8,26 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-INTERPRETER = (
-    ROOT / "out" / "build" / "x64-debug" / "bin" / "ShardScript.Interpreter.exe"
-)
+
+# Auto-detect interpreter location depending on platform/build layout.
+_CANDIDATES = [
+    ROOT / "cmake-build-debug" / "bin" / "ShardScript.Interpreter",
+    ROOT / "out" / "build" / "linux-debug" / "bin" / "ShardScript.Interpreter",
+    ROOT / "out" / "build" / "x64-debug" / "bin" / "ShardScript.Interpreter.exe",
+]
+INTERPRETER = None
+for candidate in _CANDIDATES:
+    if candidate.exists():
+        INTERPRETER = candidate
+        break
+
+if INTERPRETER is None:
+    print("ERROR: Could not find ShardScript.Interpreter binary.", file=sys.stderr)
+    print("Searched:", file=sys.stderr)
+    for candidate in _CANDIDATES:
+        print(f"  {candidate}", file=sys.stderr)
+    sys.exit(2)
+
 STRESS_DIR = Path(__file__).parent
 TIMEOUT = 10
 

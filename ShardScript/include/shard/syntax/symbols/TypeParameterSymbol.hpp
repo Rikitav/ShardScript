@@ -6,6 +6,7 @@
 
 #include <shard/syntax/symbols/TypeSymbol.hpp>
 
+#include <cstdint>
 #include <string>
 
 namespace shard

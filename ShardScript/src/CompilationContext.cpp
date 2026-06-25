@@ -51,6 +51,7 @@
 #elif defined(__linux__)
 	#include <unistd.h>
 	#include <limits.h>
+	#include <dlfcn.h>
 #elif defined(__APPLE__)
 	#include <mach-o/dyld.h>
 	#include <climits>
@@ -67,7 +68,10 @@ static LibraryHandle LoadLibraryHandle(const std::filesystem::path& path)
 	HMODULE hModule = LoadLibraryW(path.c_str());
 	return hModule;
 #else
-	throw std::runtime_error("Loading libraries is not supported on this platform");
+	void* handle = dlopen(path.c_str(), RTLD_NOW);
+	if (!handle)
+		throw std::runtime_error(std::string("Failed to load library: ") + dlerror());
+	return handle;
 #endif
 }
 
@@ -76,7 +80,7 @@ static void FreeLibraryHandle(LibraryHandle handle)
 #ifdef _WIN32
 	FreeLibrary((HMODULE)handle);
 #else
-	throw std::runtime_error("Loading libraries is not supported on this platform");
+	dlclose(handle);
 #endif
 }
 
@@ -85,7 +89,10 @@ static void* GetLibFunction(LibraryHandle handle, const char* procName)
 #ifdef _WIN32
 	return (void*)GetProcAddress((HMODULE)handle, procName);
 #else
-	throw std::runtime_error("Loading libraries is not supported on this platform");
+	void* func = dlsym(handle, procName);
+	if (!func)
+		throw std::runtime_error(std::string("Failed to resolve symbol: ") + dlerror());
+	return func;
 #endif
 }
 
@@ -121,7 +128,11 @@ static std::wstring GetLastErrorAsString()
 	LocalFree(messageBuffer);
 	return message;
 #else
-	throw std::runtime_error("Loading libraries is not supported on this platform");
+	const char* err = dlerror();
+	if (!err)
+		return std::wstring();
+	std::string errStr(err);
+	return std::wstring(errStr.begin(), errStr.end());
 #endif
 }
 

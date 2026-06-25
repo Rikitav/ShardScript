@@ -7,6 +7,7 @@
 #include <shard/syntax/nodes/ExpressionSyntax.hpp>
 #include <shard/syntax/symbols/TypeSymbol.hpp>
 
+#include <cstdint>
 #include <string>
 #include <memory>
 

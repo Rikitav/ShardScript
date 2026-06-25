@@ -65,9 +65,9 @@ namespace shard
 
         void OnSymbolDeclared(SyntaxSymbol* symbol) override;
 
-        inline std::uint16_t GetEvalStackArgumentsCount() const;
-        inline std::uint16_t GetEvalStackVariablesCount() const;
-        inline std::uint16_t GetEvalStackLocalsCount() const;
-        inline std::uint16_t AddVariableCount();
+        std::uint16_t GetEvalStackArgumentsCount() const;
+        std::uint16_t GetEvalStackVariablesCount() const;
+        std::uint16_t GetEvalStackLocalsCount() const;
+        std::uint16_t AddVariableCount();
     };
 }

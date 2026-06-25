@@ -13,6 +13,10 @@ add_library(${PROJECT_NAME} SHARED
 target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_compile_definitions(${PROJECT_NAME} PRIVATE "SHARD_API_EXPORT;UNICODE;_UNICODE")
 
+if(NOT WIN32)
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${CMAKE_DL_LIBS})
+endif()
+
 set_target_properties(${PROJECT_NAME} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
 set_target_properties(${PROJECT_NAME} PROPERTIES VS_GLOBAL_KEYWORD "Win32Proj")
 

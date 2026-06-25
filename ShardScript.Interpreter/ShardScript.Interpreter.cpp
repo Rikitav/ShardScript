@@ -1,4 +1,4 @@
-﻿#include <algorithm>
+#include <algorithm>
 #include <iostream>
 #include <fstream>
 #include <iomanip>
@@ -13,6 +13,7 @@
 #include <cstdlib>
 #include <filesystem>
 #include <ios>
+#include <vector>
 
 #include <ShardScript.hpp>
 #include <InteractiveConsole.hpp>
@@ -33,7 +34,11 @@
 using namespace shard;
 namespace fs = std::filesystem;
 
+#if defined(_WIN32)
 const fs::path stdlibFilename = "ShardScript.Framework.dll";
+#else
+const fs::path stdlibFilename = "libShardScript.Framework.so";
+#endif
 
 // ANSI color escape sequences
 static const wchar_t* CReset   = L"\x1B[0m";
@@ -95,7 +100,11 @@ static void LoadLibrariesFromDirectoryPath(CompilationContext* compiler, fs::pat
 			continue;
 
 		const auto filename = entry.path().filename();
+#if defined(_WIN32)
 		if (!filename.string().ends_with(".dll"))
+#else
+		if (!filename.string().ends_with(".so"))
+#endif
 			continue;
 
 		try
@@ -119,12 +128,12 @@ static fs::path GetCurrentDirectoryPath()
 
 #elif defined(__linux__)
 	// Linux Implementation
-	WCHAR pathBuffer[MAX_PATH];
-	while (true)
-	{
-		ssize_t len = readlink("/proc/self/exe", buffer, MAX_PATH);
-		return std::filesystem::path(buffer.data()).parent_path();
-	}
+	char pathBuffer[PATH_MAX];
+	ssize_t len = readlink("/proc/self/exe", pathBuffer, sizeof(pathBuffer) - 1);
+	if (len == -1)
+		return "";
+	pathBuffer[len] = '\0';
+	return std::filesystem::path(pathBuffer).parent_path();
 
 #else
 	return ""; // Unsupported OS
@@ -138,7 +147,8 @@ static fs::path GetWorkingDirectoryPath()
 
 static std::wstring ReadSourceLine(const std::wstring& filePath, int targetLine)
 {
-	std::wifstream in(filePath);
+	std::filesystem::path sourcePath(filePath);
+	std::wifstream in(sourcePath);
 	in.imbue(std::locale::classic());
 	if (!in.is_open())
 		return L"";
@@ -443,6 +453,7 @@ int wmain(int argc, wchar_t* argv[])
 			VirtualMachine& virtualMachine = domain->GetVirtualMachine();
 			SymbolTable* symbolTable = compiler.GetSemanticModel().Table.get();
 			virtualMachine.Run();
+			ConsoleHelper::Write(L"\n");
 
 			ObjectInstance* unhandledException = virtualMachine.GetUnhandledException();
 			if (unhandledException != nullptr)
@@ -482,3 +493,22 @@ int wmain(int argc, wchar_t* argv[])
 
 	return 0;
 }
+#if !defined(_WIN32)
+int main(int argc, char* argv[])
+{
+	std::setlocale(LC_ALL, "");
+
+	std::vector<std::wstring> wideArgs;
+	wideArgs.reserve(argc);
+	for (int i = 0; i < argc; ++i)
+		wideArgs.push_back(std::filesystem::path(argv[i]).wstring());
+
+	std::vector<wchar_t*> wideArgv;
+	wideArgv.reserve(argc + 1);
+	for (auto& arg : wideArgs)
+		wideArgv.push_back(const_cast<wchar_t*>(arg.data()));
+	wideArgv.push_back(nullptr);
+
+	return wmain(argc, wideArgv.data());
+}
+#endif
