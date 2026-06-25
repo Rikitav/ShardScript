@@ -1,0 +1,5 @@
+namespace hello;
+public static func Main() -> void
+{
+    var x: int = 1 +;
+}

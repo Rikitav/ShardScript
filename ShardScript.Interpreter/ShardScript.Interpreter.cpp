@@ -1,5 +1,7 @@
 ﻿#include <algorithm>
 #include <iostream>
+#include <fstream>
+#include <iomanip>
 #include <memory>
 #include <string>
 #include <stdexcept>
@@ -30,6 +32,31 @@ using namespace shard;
 namespace fs = std::filesystem;
 
 const fs::path stdlibFilename = "ShardScript.Framework.dll";
+
+// ANSI color escape sequences
+static const wchar_t* CReset   = L"\x1B[0m";
+static const wchar_t* CRed     = L"\x1B[91m";
+static const wchar_t* CYellow  = L"\x1B[93m";
+static const wchar_t* CBlue    = L"\x1B[94m";
+static const wchar_t* CCyan    = L"\x1B[96m";
+static const wchar_t* CGray    = L"\x1B[90m";
+static const wchar_t* CWhite   = L"\x1B[97m";
+
+static void EnableTerminalColors()
+{
+#if defined(_WIN32)
+	HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	if (hOut == INVALID_HANDLE_VALUE)
+		return;
+
+	DWORD mode = 0;
+	if (!GetConsoleMode(hOut, &mode))
+		return;
+
+	mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+	SetConsoleMode(hOut, mode);
+#endif
+}
 
 static void SigIntHandler(int signal)
 {
@@ -100,6 +127,85 @@ static fs::path GetWorkingDirectoryPath()
 	return fs::current_path();
 }
 
+static std::wstring ReadSourceLine(const std::wstring& filePath, int targetLine)
+{
+	std::wifstream in(filePath);
+	in.imbue(std::locale::classic());
+	if (!in.is_open())
+		return L"";
+
+	std::wstring line;
+	int currentLine = 1;
+	while (currentLine < targetLine && std::getline(in, line))
+		++currentLine;
+
+	if (!std::getline(in, line))
+		return L"";
+
+	if (!line.empty() && line.back() == L'\r')
+		line.pop_back();
+
+	return line;
+}
+
+static const wchar_t* SeverityText(shard::DiagnosticSeverity severity)
+{
+	switch (severity)
+	{
+		case shard::DiagnosticSeverity::Warning: return L"warning";
+		case shard::DiagnosticSeverity::Info:    return L"info";
+		default:                                 return L"error";
+	}
+}
+
+static const wchar_t* SeverityColor(shard::DiagnosticSeverity severity)
+{
+	switch (severity)
+	{
+		case shard::DiagnosticSeverity::Warning: return CYellow;
+		case shard::DiagnosticSeverity::Info:    return CBlue;
+		default:                                 return CRed;
+	}
+}
+
+static void PrintDiagnostics(DiagnosticsContext& diagnostics)
+{
+	for (const shard::Diagnostic& diag : diagnostics.Diagnostics)
+	{
+		const shard::TextLocation& loc = diag.Location;
+		const wchar_t* severityColor = SeverityColor(diag.Severity);
+
+		std::wcout << severityColor << SeverityText(diag.Severity) << CReset
+		           << L": " << diag.Description << std::endl;
+
+		std::wcout << CGray << L" --> " << CReset
+		           << CCyan << loc.FileName << CReset
+		           << CGray << L":" << loc.Line << L":" << loc.Offset << CReset << std::endl;
+
+		std::wcout << CGray << L"    |" << CReset << std::endl;
+
+		std::wstring sourceLine = ReadSourceLine(loc.FileName, loc.Line);
+		if (!sourceLine.empty())
+		{
+			std::wcout << CGray << std::setw(3) << loc.Line << L" | " << CReset
+			           << sourceLine << std::endl;
+
+			int start = (std::max)(0, loc.Offset - 1);
+			int length = (std::max)(1, loc.Length);
+
+			if (start > static_cast<int>(sourceLine.length()))
+				start = static_cast<int>(sourceLine.length());
+
+			if (start + length > static_cast<int>(sourceLine.length()))
+				length = static_cast<int>(sourceLine.length()) - start;
+
+			std::wcout << CGray << L"    | " << CReset
+			           << std::wstring(start, L' ')
+			           << severityColor << std::wstring(length, L'^') << CReset << std::endl;
+		}
+	}
+}
+
 static CompilationUnitSyntax* GetCompilationUnit(SyntaxNode* node)
 {
 	while (node != nullptr && node->Kind != SyntaxKind::CompilationUnit)
@@ -115,6 +221,7 @@ int wmain(int argc, wchar_t* argv[])
 	try
 	{
 		setlocale(LC_ALL, "");
+		EnableTerminalColors();
 		signal(SIGINT, SigIntHandler);
 		ShardUtilities::ParseArguments(argc, argv);
 
@@ -237,14 +344,23 @@ int wmain(int argc, wchar_t* argv[])
 		DiagnosticsContext& diagnostics = compiler.GetDiagnosticsContext();
 		if (diagnostics.AnyError)
 		{
-			std::wcout << L"=== Diagnostics output ===" << std::endl;
-			diagnostics.WriteDiagnostics(std::wcout);
+			PrintDiagnostics(diagnostics);
 			return 1;
 		}
 	}
 	catch (const std::runtime_error& err)
 	{
 		std::cout << "CRITICAL ERROR : " << err.what() << std::endl;
+	}
+	catch (const std::exception& err)
+	{
+		std::cout << "CRITICAL ERROR (std::exception) : " << err.what() << std::endl;
+		return 3;
+	}
+	catch (...)
+	{
+		std::cout << "CRITICAL ERROR : unknown exception" << std::endl;
+		return 3;
 	}
 
 	return 0;

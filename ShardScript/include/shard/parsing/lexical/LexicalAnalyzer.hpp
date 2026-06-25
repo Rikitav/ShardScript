@@ -38,6 +38,8 @@ namespace shard
 		bool CanPeek() override;
 
 	protected:
+		bool Advance(wchar_t& ch);
+
 		shard::TextLocation GetLocation(std::wstring& word);
 		bool ReadNextToken(shard::SyntaxToken& pToken);
 

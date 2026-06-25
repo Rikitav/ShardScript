@@ -1,0 +1,2 @@
+namespace hello;
+return 1;

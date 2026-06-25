@@ -149,7 +149,11 @@ SyntaxToken LexicalBuffer::Consume()
 
 SyntaxToken LexicalBuffer::Peek(int index)
 {
-	return Sequence[CurrentIndex + 1 + index];
+	std::size_t target = CurrentIndex + 1 + static_cast<std::size_t>(index);
+	if (target >= Sequence.size())
+		return SyntaxToken(TokenType::EndOfFile, L"", TextLocation());
+
+	return Sequence[target];
 }
 
 bool LexicalBuffer::CanConsume()
@@ -159,5 +163,8 @@ bool LexicalBuffer::CanConsume()
 
 bool LexicalBuffer::CanPeek()
 {
-	return CurrentIndex < Sequence.size() - 1;
+	if (Sequence.empty())
+		return false;
+
+	return CurrentIndex + 1 < Sequence.size();
 }

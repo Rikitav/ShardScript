@@ -90,11 +90,19 @@ void SourceParser::FromSourceProvider(SyntaxTree& syntaxTree, SourceProvider& re
 
 std::unique_ptr<CompilationUnitSyntax> SourceParser::ReadCompilationUnit(SourceProvider& reader)
 {
+	ExpressionDepth = 0;
 	auto unit = std::make_unique<CompilationUnitSyntax>();
 	CompilationUnitSyntax* rawUnit = unit.get();
 
+	int loopGuard = 0;
 	while (reader.CanConsume())
 	{
+		if (++loopGuard > 10000)
+		{
+			Diagnostics.ReportError(reader.Current(), L"Parser loop detected - aborting compilation unit");
+			throw std::runtime_error("parser loop detected");
+		}
+
 		SyntaxToken token = reader.Current();
 		switch (token.Type)
 		{
@@ -863,7 +871,7 @@ std::unique_ptr<AccessorDeclarationSyntax> SourceParser::ReadAccessorDeclaration
 
 	if (!reader.CanConsume())
 	{
-		Diagnostics.ReportError(syntax->KeywordToken, L"Unexpected end of file after accessor keyword");
+		Diagnostics.ReportError(SyntaxToken(TokenType::EndOfFile, L"", TextLocation()), L"Unexpected end of file after accessor attributes");
 		return syntax;
 	}
 
@@ -1283,10 +1291,17 @@ std::unique_ptr<TypeArgumentsListSyntax> SourceParser::ReadTypeArgumentsList(Sou
 
 void SourceParser::ReadTypeBody(SourceProvider& reader, TypeDeclarationSyntax* syntax)
 {
+	int loopGuard = 0;
 	syntax->OpenBraceToken = Expect(reader, TokenType::OpenBrace, L"Expected '{'");
 
 	while (reader.CanConsume())
 	{
+		if (++loopGuard > 10000)
+		{
+			Diagnostics.ReportError(reader.Current(), L"Type body parser loop detected");
+			break;
+		}
+
 		SyntaxToken current = reader.Current();
 		if (current.Type == TokenType::EndOfFile)
 		{
@@ -1336,6 +1351,7 @@ void SourceParser::ReadTypeBody(SourceProvider& reader, TypeDeclarationSyntax* s
 std::unique_ptr<StatementsBlockSyntax> SourceParser::ReadStatementsBlock(SourceProvider& reader, SyntaxNode* parent)
 {
 	auto syntax = std::make_unique<StatementsBlockSyntax>(parent);
+	int loopGuard = 0;
 
 	if (!reader.CanConsume())
 	{
@@ -1357,6 +1373,12 @@ std::unique_ptr<StatementsBlockSyntax> SourceParser::ReadStatementsBlock(SourceP
 
 		while (reader.CanConsume())
 		{
+			if (++loopGuard > 10000)
+			{
+				Diagnostics.ReportError(reader.Current(), L"Statement block parser loop detected");
+				break;
+			}
+
 			current = reader.Current();
 			if (current.Type == TokenType::CloseBrace)
 			{
@@ -1433,7 +1455,7 @@ std::unique_ptr<StatementSyntax> SourceParser::ReadStatement(SourceProvider& rea
 	SyntaxToken current = reader.Current();
 	if (current.Type == TokenType::Semicolon)
 	{
-		return std::make_unique<StatementSyntax>(SyntaxKind::ExpressionStatement, parent);
+		return std::make_unique<ExpressionStatementSyntax>(nullptr, parent);
 	}
 
 	if (reader.CanPeek())
@@ -1462,6 +1484,10 @@ std::unique_ptr<StatementSyntax> SourceParser::ReadStatement(SourceProvider& rea
 				assign = reader.Current();
 				reader.Consume();
 				expr = ReadExpression(reader, parent, 0);
+			}
+			else
+			{
+				Diagnostics.ReportError(reader.Current(), L"Variable declaration is missing an initializer");
 			}
 
 			return std::make_unique<VariableStatementSyntax>(std::move(type), name, assign, std::move(expr), parent);
@@ -1532,14 +1558,20 @@ std::unique_ptr<KeywordStatementSyntax> SourceParser::ReadKeywordStatement(Sourc
 	{
 		case TokenType::ForKeyword:
 		{
-			bool isRangeForNoParens =
-				reader.Peek(0).Type == TokenType::Identifier &&
-				reader.Peek(1).Type == TokenType::InKeyword;
+			bool isRangeForNoParens = false;
+			bool isRangeForWithParens = false;
 
-			bool isRangeForWithParens =
-				reader.Peek(0).Type == TokenType::OpenCurl &&
-				reader.Peek(1).Type == TokenType::Identifier &&
-				reader.Peek(2).Type == TokenType::InKeyword;
+			if (reader.CanPeek())
+			{
+				isRangeForNoParens =
+					reader.Peek(0).Type == TokenType::Identifier &&
+					reader.Peek(1).Type == TokenType::InKeyword;
+
+				isRangeForWithParens =
+					reader.Peek(0).Type == TokenType::OpenCurl &&
+					reader.Peek(1).Type == TokenType::Identifier &&
+					reader.Peek(2).Type == TokenType::InKeyword;
+			}
 
 			if (isRangeForNoParens || isRangeForWithParens)
 				return ReadForEachStatement(reader, parent);
@@ -1704,6 +1736,19 @@ std::unique_ptr<ConditionalClauseBaseSyntax> SourceParser::ReadConditionalClause
 						syntax->StatementsBlock = ReadStatementsBlock(reader, syntax.get());
 						return syntax;
 					}
+
+					default:
+					{
+						if (!reader.CanConsume())
+						{
+							Diagnostics.ReportError(elseKeyword, L"Unexpected end of file after 'else'");
+							return nullptr;
+						}
+
+						Diagnostics.ReportError(current, L"Expected 'if', 'unless', or '{' after 'else'");
+						reader.Consume();
+						continue;
+					}
 				}
 			}
 
@@ -1853,6 +1898,22 @@ std::unique_ptr<TryStatementSyntax> SourceParser::ReadTryStatement(SourceProvide
 
 std::unique_ptr<ExpressionSyntax> SourceParser::ReadExpression(SourceProvider& reader, SyntaxNode* parent, int bindingPower)
 {
+	struct DepthGuard
+	{
+		int& depth;
+		DepthGuard(int& d) : depth(d) { ++depth; }
+		~DepthGuard() { --depth; }
+	};
+
+	DepthGuard guard(ExpressionDepth);
+	if (ExpressionDepth > MaxExpressionDepth)
+	{
+		Diagnostics.ReportError(reader.Current(), L"Expression is too deeply nested");
+		SyntaxToken fallbackLocation = reader.Current();
+		reader.Consume();
+		return std::make_unique<LiteralExpressionSyntax>(SyntaxToken(TokenType::NullLiteral, L"null", fallbackLocation.Location, true), parent);
+	}
+
 	auto leftExpr = ReadNullDenotation(reader, parent);
 	if (!reader.CanConsume())
 		return leftExpr;
@@ -1860,8 +1921,16 @@ std::unique_ptr<ExpressionSyntax> SourceParser::ReadExpression(SourceProvider& r
 	SyntaxToken current = reader.Current();
 	int precendence = GetOperatorPrecendence(current.Type);
 
+	int operatorsInExpression = 0;
 	while (reader.CanConsume() && precendence != 0 && bindingPower < precendence)
 	{
+		if (++operatorsInExpression > MaxExpressionOperators)
+		{
+			Diagnostics.ReportError(reader.Current(), L"Expression is too long");
+			reader.Consume();
+			break;
+		}
+
 		leftExpr = std::move(ReadLeftDenotation(reader, parent, std::move(leftExpr)));
 		if (!reader.CanConsume())
 			break;
@@ -2246,7 +2315,7 @@ std::unique_ptr<LinkedExpressionNode> SourceParser::ReadLinkedExpressionNode(Sou
 
 		case TokenType::Delimeter:
 		{
-			auto currentNode = std::make_unique<MemberAccessExpressionSyntax>(identifier, std::move(previous), parent);
+			currentNode = std::make_unique<MemberAccessExpressionSyntax>(identifier, std::move(previous), parent);
 			currentNode->DelimeterToken = delimeter;
 
 			return ReadLinkedExpressionNode(reader, parent, std::move(currentNode), false);
@@ -2268,7 +2337,7 @@ std::unique_ptr<LinkedExpressionNode> SourceParser::ReadLinkedExpressionNode(Sou
 
 			if (IsOperator(current.Type) || IsPunctuation(current.Type))
 			{
-				auto currentNode = std::make_unique<MemberAccessExpressionSyntax>(identifier, std::move(previous), parent);
+				currentNode = std::make_unique<MemberAccessExpressionSyntax>(identifier, std::move(previous), parent);
 				currentNode->DelimeterToken = delimeter;
 				return currentNode;
 			}

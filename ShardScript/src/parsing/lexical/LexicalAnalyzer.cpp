@@ -5,10 +5,29 @@
 #include <shard/parsing/lexical/LexicalAnalyzer.hpp>
 
 #include <cctype>
+#include <cwctype>
 #include <string>
 #include <stdexcept>
 
 using namespace shard;
+
+bool LexicalAnalyzer::Advance(wchar_t& ch)
+{
+	if (!SourceText->ReadNext(ch))
+		return false;
+
+	if (ch == L'\n')
+	{
+		Line += 1;
+		Offset = 0;
+	}
+	else if (ch != L'\0')
+	{
+		Offset += 1;
+	}
+
+	return true;
+}
 
 LexicalAnalyzer::LexicalAnalyzer(SourceTextProvider& sourceText) : SourceText(&sourceText), Line(1), Offset(0), Symbol(-1), PeekSymbol(-1)
 {
@@ -40,7 +59,6 @@ SyntaxToken LexicalAnalyzer::Current()
 
 SyntaxToken LexicalAnalyzer::Consume()
 {
-	static int eofConsumeCounter = 0;
 	switch (ReadBuffer.size())
 	{
 		case 0: // no tokens
@@ -63,16 +81,12 @@ SyntaxToken LexicalAnalyzer::Consume()
 	SyntaxToken consumeBuffer = SyntaxToken();
 	if (!ReadNextToken(consumeBuffer))
 	{
-		if (++eofConsumeCounter == 10)
-			throw std::runtime_error("critical bug: eof consume overflow");
-
 		consumeBuffer = SyntaxToken(TokenType::EndOfFile, L"", TextLocation());
 		ReadBuffer.push_back(consumeBuffer);
 		return consumeBuffer;
 	}
 	else
 	{
-		eofConsumeCounter = 0;
 		ReadBuffer.push_back(consumeBuffer);
 		return consumeBuffer;
 	}
@@ -80,8 +94,6 @@ SyntaxToken LexicalAnalyzer::Consume()
 
 SyntaxToken LexicalAnalyzer::Peek(int index)
 {
-	static int eofPeekCounter = 0;
-
 	index += 1;
 	int bufferSize = static_cast<int>(ReadBuffer.size());
 
@@ -93,19 +105,18 @@ SyntaxToken LexicalAnalyzer::Peek(int index)
 			SyntaxToken peekToken = SyntaxToken();
 			if (ReadNextToken(peekToken))
 			{
-				eofPeekCounter = 0;
 				ReadBuffer.push_back(peekToken);
 				continue;
 			}
-
-			if (++eofPeekCounter == 10)
-				throw std::runtime_error("critical bug: eof peek overflow");
 
 			peekToken = SyntaxToken(TokenType::EndOfFile, L"", TextLocation());
 			ReadBuffer.push_back(peekToken);
 			return SyntaxToken(peekToken);
 		}
 	}
+
+	if (index < 0 || index >= static_cast<int>(ReadBuffer.size()))
+		return SyntaxToken(TokenType::EndOfFile, L"", TextLocation());
 
 	return SyntaxToken(ReadBuffer.at(index));
 }
@@ -117,7 +128,7 @@ bool LexicalAnalyzer::CanConsume()
 
 bool LexicalAnalyzer::CanPeek()
 {
-	return Peek().Type != TokenType::EndOfFile;
+	return Peek(0).Type != TokenType::EndOfFile;
 }
 
 bool LexicalAnalyzer::ReadNextToken(SyntaxToken& token)
@@ -134,7 +145,7 @@ bool LexicalAnalyzer::ReadNextToken(SyntaxToken& token)
 
 bool LexicalAnalyzer::ReadNextReal()
 {
-	while (SourceText->ReadNext(Symbol))
+	while (Advance(Symbol))
 	{
 		switch (Symbol)
 		{
@@ -148,9 +159,6 @@ bool LexicalAnalyzer::ReadNextReal()
 
 			case L'\n':
 			{
-				Line += 1;
-				Offset = 0;
-
 				continue;
 			}
 
@@ -167,7 +175,7 @@ bool LexicalAnalyzer::ReadNextReal()
 
 			default:
 			{
-				if (!isspace(Symbol))
+				if (!std::iswspace(static_cast<wint_t>(Symbol)))
 					return true;
 
 				continue;
@@ -184,10 +192,10 @@ bool LexicalAnalyzer::ReadNextWhileAlpha(std::wstring& word)
 	word += Symbol;
 	while (SourceText->PeekNext(PeekSymbol))
 	{
-		if (!isalnum(PeekSymbol) && PeekSymbol != '_')
+		if (!std::iswalnum(static_cast<wint_t>(PeekSymbol)) && PeekSymbol != '_')
 			break;
 
-		SourceText->ReadNext(Symbol);
+		Advance(Symbol);
 		word += Symbol;
 	}
 
@@ -196,7 +204,12 @@ bool LexicalAnalyzer::ReadNextWhileAlpha(std::wstring& word)
 
 TextLocation LexicalAnalyzer::GetLocation(std::wstring& word)
 {
-	return TextLocation(SourceText->GetName(), Line, Offset, static_cast<int>(word.length()));
+	int length = static_cast<int>(word.length());
+	int startOffset = Offset - length + 1;
+	if (startOffset < 1)
+		startOffset = 1;
+
+	return TextLocation(SourceText->GetName(), Line, startOffset, length);
 }
 
 bool LexicalAnalyzer::ReadNextWord(std::wstring& word, TokenType& type)
@@ -219,15 +232,12 @@ bool LexicalAnalyzer::ReadNextWord(std::wstring& word, TokenType& type)
 		// Handling comment
 		if (type == TokenType::Trivia)
 		{
-			while (SourceText->ReadNext(PeekSymbol))
+			while (Advance(PeekSymbol))
 			{
 				switch (Symbol)
 				{
 					case L'\n':
 					{
-						Line += 1;
-						Offset = 0;
-
 						return ReadNextWord(word, type);
 					}
 
@@ -244,7 +254,7 @@ bool LexicalAnalyzer::ReadNextWord(std::wstring& word, TokenType& type)
 
 					default:
 					{
-						SourceText->ReadNext(Symbol);
+						Advance(Symbol);
 						continue;
 					}
 				}
@@ -298,7 +308,7 @@ bool LexicalAnalyzer::ReadNextWord(std::wstring& word, TokenType& type)
 
 bool LexicalAnalyzer::ReadCharLiteral(std::wstring& word, bool notEcran, bool& wasClosed)
 {
-	while (SourceText->ReadNext(PeekSymbol))
+	while (Advance(PeekSymbol))
 	{
 		switch (Symbol)
 		{
@@ -323,7 +333,7 @@ bool LexicalAnalyzer::ReadCharLiteral(std::wstring& word, bool notEcran, bool& w
 bool LexicalAnalyzer::ReadStringLiteral(std::wstring& word, bool dontEcran, bool& wasClosed)
 {
 	bool ecran = false;
-	while (SourceText->ReadNext(Symbol))
+	while (Advance(Symbol))
 	{
 		switch (Symbol)
 		{
@@ -432,7 +442,7 @@ bool LexicalAnalyzer::ReadNumberLiteral(std::wstring& word, TokenType& type)
 	{
 		if (PeekSymbol == '`')
 		{
-			if (!SourceText->ReadNext(PeekSymbol))
+			if (!Advance(PeekSymbol))
 				break;
 
 			if (!SourceText->PeekNext(PeekSymbol))
@@ -454,8 +464,8 @@ bool LexicalAnalyzer::ReadNumberLiteral(std::wstring& word, TokenType& type)
 			if (!IsNumberSymbol(afterDot))
 				break;
 
-			SourceText->ReadNext(PeekSymbol);
-			SourceText->ReadNext(PeekSymbol);
+			Advance(PeekSymbol);
+			Advance(PeekSymbol);
 
 			foundDelimeter = true;
 			type = TokenType::DoubleLiteral;
@@ -468,7 +478,7 @@ bool LexicalAnalyzer::ReadNumberLiteral(std::wstring& word, TokenType& type)
 		if (IsNumberSymbol(PeekSymbol))
 		{
 			word += PeekSymbol;
-			SourceText->ReadNext(PeekSymbol);
+			Advance(PeekSymbol);
 			continue;
 		}
 
@@ -531,10 +541,10 @@ bool LexicalAnalyzer::IsPunctuation(std::wstring& word, TokenType& type)
 			{
 				if (PeekSymbol == '.')
 				{
-					SourceText->ReadNext(PeekSymbol);
+					Advance(PeekSymbol);
 					if (SourceText->PeekNext(PeekSymbol) && PeekSymbol == '&')
 					{
-						SourceText->ReadNext(PeekSymbol);
+						Advance(PeekSymbol);
 						type = TokenType::RangeInclusiveOperator;
 						word = L"..&";
 						return true;
@@ -564,7 +574,7 @@ bool LexicalAnalyzer::IsPunctuation(std::wstring& word, TokenType& type)
 			{
 				if (PeekSymbol == '=')
 				{
-					SourceText->ReadNext(PeekSymbol);
+					Advance(PeekSymbol);
 					type = TokenType::DeclareAssignOperator;
 					word = L":=";
 					return true;
@@ -588,7 +598,7 @@ bool LexicalAnalyzer::IsPunctuation(std::wstring& word, TokenType& type)
 			{
 				if (PeekSymbol == '?')
 				{
-					SourceText->ReadNext(PeekSymbol);
+					Advance(PeekSymbol);
 					type = TokenType::NullCoalescingOperator;
 					word = L"??";
 					return true;
@@ -640,14 +650,14 @@ bool LexicalAnalyzer::IsOperator(std::wstring& word, TokenType& type)
 			{
 				if (PeekSymbol == '=')
 				{
-					SourceText->ReadNext(PeekSymbol);
+					Advance(PeekSymbol);
 					type = TokenType::EqualsOperator;
 					word = L"==";
 					return true;
 				}
 				else if (PeekSymbol == '>')
 				{
-					SourceText->ReadNext(PeekSymbol);
+					Advance(PeekSymbol);
 					type = TokenType::LambdaOperator;
 					word = L"=>";
 					return true;
@@ -665,7 +675,7 @@ bool LexicalAnalyzer::IsOperator(std::wstring& word, TokenType& type)
 			{
 				if (PeekSymbol == '=')
 				{
-					SourceText->ReadNext(PeekSymbol);
+					Advance(PeekSymbol);
 					type = TokenType::NotEqualsOperator;
 					word = L"!=";
 					return true;
@@ -683,14 +693,14 @@ bool LexicalAnalyzer::IsOperator(std::wstring& word, TokenType& type)
 			{
 				if (PeekSymbol == '=')
 				{
-					SourceText->ReadNext(PeekSymbol);
+					Advance(PeekSymbol);
 					type = TokenType::GreaterOrEqualsOperator;
 					word = L">=";
 					return true;
 				}
 				else if (PeekSymbol == '>')
 				{
-					SourceText->ReadNext(PeekSymbol);
+					Advance(PeekSymbol);
 					type = TokenType::RightShiftOperator;
 					word = L">>";
 					return true;
@@ -708,14 +718,14 @@ bool LexicalAnalyzer::IsOperator(std::wstring& word, TokenType& type)
 			{
 				if (PeekSymbol == '=')
 				{
-					SourceText->ReadNext(PeekSymbol);
+					Advance(PeekSymbol);
 					type = TokenType::LessOrEqualsOperator;
 					word = L"<=";
 					return true;
 				}
 				else if (PeekSymbol == '<')
 				{
-					SourceText->ReadNext(PeekSymbol);
+					Advance(PeekSymbol);
 					type = TokenType::LeftShiftOperator;
 					word = L"<<";
 					return true;
@@ -733,14 +743,14 @@ bool LexicalAnalyzer::IsOperator(std::wstring& word, TokenType& type)
 			{
 				if (PeekSymbol == '=')
 				{
-					SourceText->ReadNext(PeekSymbol);
+					Advance(PeekSymbol);
 					type = TokenType::AddAssignOperator;
 					word = L"+=";
 					return true;
 				}
 				else if (PeekSymbol == '+')
 				{
-					SourceText->ReadNext(PeekSymbol);
+					Advance(PeekSymbol);
 					type = TokenType::IncrementOperator;
 					word = L"++";
 					return true;
@@ -758,21 +768,21 @@ bool LexicalAnalyzer::IsOperator(std::wstring& word, TokenType& type)
 			{
 				if (PeekSymbol == '=')
 				{
-					SourceText->ReadNext(PeekSymbol);
+					Advance(PeekSymbol);
 					type = TokenType::SubAssignOperator;
 					word = L"-=";
 					return true;
 				}
 				else if (PeekSymbol == '-')
 				{
-					SourceText->ReadNext(PeekSymbol);
+					Advance(PeekSymbol);
 					type = TokenType::DecrementOperator;
 					word = L"--";
 					return true;
 				}
 				else if (PeekSymbol == '>')
 				{
-					SourceText->ReadNext(PeekSymbol);
+					Advance(PeekSymbol);
 					type = TokenType::ArrowOperator;
 					word = L"->";
 					return true;
@@ -790,7 +800,7 @@ bool LexicalAnalyzer::IsOperator(std::wstring& word, TokenType& type)
 			{
 				if (PeekSymbol == '=')
 				{
-					SourceText->ReadNext(PeekSymbol);
+					Advance(PeekSymbol);
 					type = TokenType::MultAssignOperator;
 					word = L"*=";
 					return true;
@@ -808,14 +818,14 @@ bool LexicalAnalyzer::IsOperator(std::wstring& word, TokenType& type)
 			{
 				if (PeekSymbol == '=')
 				{
-					SourceText->ReadNext(PeekSymbol);
+					Advance(PeekSymbol);
 					type = TokenType::DivAssignOperator;
 					word = L"/=";
 					return true;
 				}
 				else if (PeekSymbol == '/')
 				{
-					SourceText->ReadNext(PeekSymbol);
+					Advance(PeekSymbol);
 					type = TokenType::Trivia;
 					word = L"//";
 					return true;
@@ -833,7 +843,7 @@ bool LexicalAnalyzer::IsOperator(std::wstring& word, TokenType& type)
 			{
 				if (PeekSymbol == '=')
 				{
-					SourceText->ReadNext(PeekSymbol);
+					Advance(PeekSymbol);
 					type = TokenType::ModAssignOperator;
 					word = L"%=";
 					return true;
@@ -851,7 +861,7 @@ bool LexicalAnalyzer::IsOperator(std::wstring& word, TokenType& type)
 			{
 				if (PeekSymbol == '=')
 				{
-					SourceText->ReadNext(PeekSymbol);
+					Advance(PeekSymbol);
 					type = TokenType::PowAssignOperator;
 					word = L"^=";
 					return true;
@@ -869,14 +879,14 @@ bool LexicalAnalyzer::IsOperator(std::wstring& word, TokenType& type)
 			{
 				if (PeekSymbol == '=')
 				{
-					SourceText->ReadNext(PeekSymbol);
+					Advance(PeekSymbol);
 					type = TokenType::AndAssignOperator;
 					word = L"&=";
 					return true;
 				}
 				else if (PeekSymbol == '&')
 				{
-					SourceText->ReadNext(PeekSymbol);
+					Advance(PeekSymbol);
 					type = TokenType::AndOperator;
 					word = L"&&";
 					return true;
@@ -894,14 +904,14 @@ bool LexicalAnalyzer::IsOperator(std::wstring& word, TokenType& type)
 			{
 				if (PeekSymbol == '=')
 				{
-					SourceText->ReadNext(PeekSymbol);
+					Advance(PeekSymbol);
 					type = TokenType::OrAssignOperator;
 					word = L"|=";
 					return true;
 				}
 				else if (PeekSymbol == '|')
 				{
-					SourceText->ReadNext(PeekSymbol);
+					Advance(PeekSymbol);
 					type = TokenType::OrOperator;
 					word = L"||";
 					return true;
@@ -958,7 +968,7 @@ bool LexicalAnalyzer::IsBooleanLiteral(std::wstring& word, TokenType& type)
 
 bool LexicalAnalyzer::IsNumberLiteral(TokenType& type) const
 {
-	if (isdigit(Symbol))
+	if (Symbol >= L'0' && Symbol <= L'9')
 	{
 		type = TokenType::NumberLiteral;
 		return true;
@@ -996,7 +1006,7 @@ bool LexicalAnalyzer::IsStringLiteral(TokenType& type, bool& dontEcran)
 			if (PeekSymbol != '"')
 				return false;
 
-			SourceText->ReadNext(PeekSymbol);
+			Advance(PeekSymbol);
 			dontEcran = true;
 			return IsStringLiteral(type, dontEcran);
 		}

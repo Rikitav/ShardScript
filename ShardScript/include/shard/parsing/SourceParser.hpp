@@ -72,10 +72,13 @@ namespace shard
 	{
 	private:
 		DiagnosticsContext& Diagnostics;
+		int ExpressionDepth = 0;
+		static constexpr int MaxExpressionDepth = 128;
+		static constexpr int MaxExpressionOperators = 128;
 
 	public:
 		SourceParser(DiagnosticsContext& diagnostics)
-			: Diagnostics(diagnostics) { }
+			: Diagnostics(diagnostics), ExpressionDepth(0) { }
 
 		void FromSourceProvider(SyntaxTree& syntaxTree, SourceProvider& reader);
 

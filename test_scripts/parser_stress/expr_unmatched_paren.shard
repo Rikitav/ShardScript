@@ -1,0 +1,5 @@
+namespace hello;
+public static func Main() -> void
+{
+    println((1+2);
+}

@@ -1,0 +1,617 @@
+===== access_op_bad_param.shard (exit=1, time=0.04s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\access_op_bad_param.shard' | Line: 4 | Offset: 0 | Word: '.' | Index: '10' | Access operator ('.') parameter must be of type 'string'
+
+STDERR:
+
+
+===== args_missing_comma.shard (exit=1, time=0.01s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\args_missing_comma.shard' | Line: 4 | Offset: 0 | Word: '2' | Index: '16' | Expected ',' or ')'
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\args_missing_comma.shard' | Line: 4 | Offset: 0 | Word: 'println' | Index: '12' | No method "println" found that accepts argument (Integer)
+
+STDERR:
+
+
+===== args_trailing_comma.shard (exit=1, time=0.01s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\args_trailing_comma.shard' | Line: 4 | Offset: 0 | Word: ')' | Index: '17' | Unknown expression token
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\args_trailing_comma.shard' | Line: 4 | Offset: 0 | Word: ';' | Index: '18' | Expected ',' or ')'
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\args_trailing_comma.shard' | Line: 4 | Offset: 0 | Word: 'null' | Index: '19' | Unsupported literal type: unknown
+
+STDERR:
+
+
+===== attribute_bad_args.shard (exit=1, time=0.01s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\attribute_bad_args.shard' | Line: 2 | Offset: 0 | Word: '123' | Index: '6' | Expected string literal in attribute arguments
+
+STDERR:
+
+
+===== attribute_no_name.shard (exit=1, time=0.01s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\attribute_no_name.shard' | Line: 2 | Offset: 0 | Word: ']' | Index: '4' | Expected attribute name
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\attribute_no_name.shard' | Line: 3 | Offset: 0 | Word: 'class' | Index: '6' | Expected ']'
+
+STDERR:
+
+
+===== bad_escape.shard (exit=1, time=0.01s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: '' | Line: 0 | Offset: 0 | Word: '' | Index: '16' | Missing ';' token
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\bad_escape.shard' | Line: 4 | Offset: 0 | Word: 'println' | Index: '12' | No method "println" found that accepts no arguments
+
+STDERR:
+
+
+===== binary_op_bad_params.shard (exit=1, time=0.01s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: '' | Line: 0 | Offset: 0 | Word: '' | Index: '-1' | Entry point for script not found
+
+STDERR:
+
+
+===== break_outside_loop.shard (exit=3, time=5.66s) =====
+STDOUT:
+
+STDERR:
+
+
+===== catch_no_body.shard (exit=0, time=0.02s) =====
+STDOUT:
+
+STDERR:
+
+
+===== class_no_name.shard (exit=1, time=0.03s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: '' | Line: 0 | Offset: 0 | Word: '' | Index: '-1' | Entry point for script not found
+
+STDERR:
+
+
+===== defer_empty.shard (exit=3221225477, time=0.01s) =====
+STDOUT:
+
+STDERR:
+
+
+===== delegate_no_sig.shard (exit=1, time=0.01s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\delegate_no_sig.shard' | Line: 2 | Offset: 0 | Word: ';' | Index: '6' | Expected '(' token
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\delegate_no_sig.shard' | Line: 2 | Offset: 0 | Word: ';' | Index: '6' | Expected ':' after parameter name
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\delegate_no_sig.shard' | Line: 2 | Offset: 0 | Word: ';' | Index: '6' | Unexpected token in type syntax
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\delegate_no_sig.shard' | Line: 2 | Offset: 0 | Word: ';' | Index: '6' | Expected ',' or ')'
+
+STDERR:
+
+
+===== double_semicolon.shard (exit=3221225477, time=0.01s) =====
+STDOUT:
+
+STDERR:
+
+
+===== else_without_if.shard (exit=0, time=0.02s) =====
+STDOUT:
+CRITICAL ERROR : unknown statement kind: 36
+
+STDERR:
+
+
+===== empty_class.shard (exit=1, time=0.02s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: '' | Line: 0 | Offset: 0 | Word: '' | Index: '-1' | Entry point for script not found
+
+STDERR:
+
+
+===== empty_parens_expr.shard (exit=1, time=0.02s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\empty_parens_expr.shard' | Line: 4 | Offset: 0 | Word: 'println' | Index: '12' | No method "println" found that accepts no arguments
+
+STDERR:
+
+
+===== eof_char.shard (exit=1, time=0.02s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\eof_char.shard' | Line: 4 | Offset: 0 | Word: 'var' | Index: '12' | Invalid variable declaration syntax. Use 'name: type = value' or 'name := value'.
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\eof_char.shard' | Line: 4 | Offset: 0 | Word: ':' | Index: '14' | Missing ';' token
+
+STDERR:
+
+
+===== eof_class.shard (exit=1, time=0.02s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: '' | Line: 0 | Offset: 0 | Word: '' | Index: '-1' | Entry point for script not found
+
+STDERR:
+
+
+===== eof_comment.shard (exit=0, time=0.02s) =====
+STDOUT:
+
+STDERR:
+
+
+===== eof_expression.shard (exit=1, time=0.02s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: '' | Line: 0 | Offset: 0 | Word: '' | Index: '17' | Unexpected file end in expression
+Error | File: '' | Line: 0 | Offset: 0 | Word: '' | Index: '19' | Missing ';' token
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\eof_expression.shard' | Line: 4 | Offset: 0 | Word: 'println' | Index: '12' | No method "println" found that accepts argument (String)
+
+STDERR:
+
+
+===== eof_method.shard (exit=0, time=0.02s) =====
+STDOUT:
+
+STDERR:
+
+
+===== eof_namespace.shard (exit=1, time=0.02s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: '' | Line: 0 | Offset: 0 | Word: '' | Index: '3' | Expected ';' after namespace declaration
+
+STDERR:
+
+
+===== eof_string.shard (exit=1, time=0.02s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: '' | Line: 0 | Offset: 0 | Word: '' | Index: '16' | Missing ';' token
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\eof_string.shard' | Line: 4 | Offset: 0 | Word: 'println' | Index: '12' | No method "println" found that accepts no arguments
+
+STDERR:
+
+
+===== expr_bad_operator.shard (exit=1, time=0.01s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\expr_bad_operator.shard' | Line: 4 | Offset: 0 | Word: 'var' | Index: '12' | Invalid variable declaration syntax. Use 'name: type = value' or 'name := value'.
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\expr_bad_operator.shard' | Line: 4 | Offset: 0 | Word: ':' | Index: '14' | Missing ';' token
+
+STDERR:
+
+
+===== expr_double_binary.shard (exit=1, time=0.01s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\expr_double_binary.shard' | Line: 4 | Offset: 0 | Word: 'var' | Index: '12' | Invalid variable declaration syntax. Use 'name: type = value' or 'name := value'.
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\expr_double_binary.shard' | Line: 4 | Offset: 0 | Word: ':' | Index: '14' | Missing ';' token
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\expr_double_binary.shard' | Line: 4 | Offset: 0 | Word: '*' | Index: '19' | Unknown expression token
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\expr_double_binary.shard' | Line: 4 | Offset: 0 | Word: '2' | Index: '21' | Missing ';' token
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\expr_double_binary.shard' | Line: 4 | Offset: 0 | Word: 'null' | Index: '22' | Unsupported literal type: unknown
+
+STDERR:
+
+
+===== expr_empty_lambda.shard (exit=1, time=0.01s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\expr_empty_lambda.shard' | Line: 4 | Offset: 0 | Word: 'var' | Index: '12' | Invalid variable declaration syntax. Use 'name: type = value' or 'name := value'.
+
+STDERR:
+
+
+===== expr_empty_paren.shard (exit=1, time=0.01s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\expr_empty_paren.shard' | Line: 4 | Offset: 0 | Word: 'println' | Index: '12' | No method "println" found that accepts no arguments
+
+STDERR:
+
+
+===== expr_lone_dot.shard (exit=1, time=0.01s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\expr_lone_dot.shard' | Line: 4 | Offset: 0 | Word: 'var' | Index: '12' | Invalid variable declaration syntax. Use 'name: type = value' or 'name := value'.
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\expr_lone_dot.shard' | Line: 4 | Offset: 0 | Word: ':' | Index: '14' | Missing ';' token
+
+STDERR:
+
+
+===== expr_missing_operand.shard (exit=3221225477, time=0.01s) =====
+STDOUT:
+
+STDERR:
+
+
+===== expr_two_dots.shard (exit=1, time=0.01s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\expr_two_dots.shard' | Line: 4 | Offset: 0 | Word: 'var' | Index: '12' | Invalid variable declaration syntax. Use 'name: type = value' or 'name := value'.
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\expr_two_dots.shard' | Line: 4 | Offset: 0 | Word: '..' | Index: '17' | Unknown expression token
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\expr_two_dots.shard' | Line: 4 | Offset: 0 | Word: '2' | Index: '18' | Missing ';' token
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\expr_two_dots.shard' | Line: 4 | Offset: 0 | Word: 'null' | Index: '19' | Unsupported literal type: unknown
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\expr_two_dots.shard' | Line: 4 | Offset: 0 | Word: '..' | Index: '16' | Range bounds must be integers
+
+STDERR:
+
+
+===== expr_unmatched_paren.shard (exit=1, time=0.01s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\expr_unmatched_paren.shard' | Line: 4 | Offset: 0 | Word: ';' | Index: '20' | Expected ',' or ')'
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\expr_unmatched_paren.shard' | Line: 4 | Offset: 0 | Word: 'println' | Index: '12' | No method "println" found that accepts argument (Integer)
+
+STDERR:
+
+
+===== extra_close_brace.shard (exit=1, time=0.01s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\extra_close_brace.shard' | Line: 5 | Offset: 0 | Word: '}' | Index: '13' | Unknown token in compilation unit declaration
+
+STDERR:
+
+
+===== field_no_name.shard (exit=1, time=0.01s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\field_no_name.shard' | Line: 4 | Offset: 0 | Word: 'int' | Index: '8' | Expected member declaration
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\field_no_name.shard' | Line: 4 | Offset: 0 | Word: ';' | Index: '9' | Unknown token in compilation unit declaration
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\field_no_name.shard' | Line: 5 | Offset: 0 | Word: '}' | Index: '10' | Unknown token in compilation unit declaration
+
+STDERR:
+
+
+===== field_no_type.shard (exit=1, time=0.01s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\field_no_type.shard' | Line: 4 | Offset: 0 | Word: ';' | Index: '9' | Expected ':' after identifier
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\field_no_type.shard' | Line: 4 | Offset: 0 | Word: ';' | Index: '9' | Unknown token in compilation unit declaration
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\field_no_type.shard' | Line: 5 | Offset: 0 | Word: '}' | Index: '10' | Unknown token in compilation unit declaration
+
+STDERR:
+
+
+===== for_malformed.shard (exit=3221225477, time=0.01s) =====
+STDOUT:
+
+STDERR:
+
+
+===== for_no_parens.shard (exit=3221225477, time=0.01s) =====
+STDOUT:
+
+STDERR:
+
+
+===== if_no_body.shard (exit=0, time=0.02s) =====
+STDOUT:
+
+STDERR:
+
+
+===== if_no_condition.shard (exit=1, time=0.02s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\if_no_condition.shard' | Line: 4 | Offset: 0 | Word: '{' | Index: '13' | Expected '(' token
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\if_no_condition.shard' | Line: 4 | Offset: 0 | Word: '{' | Index: '13' | Unknown expression token
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\if_no_condition.shard' | Line: 4 | Offset: 0 | Word: 'println' | Index: '15' | Expected ')' token
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\if_no_condition.shard' | Line: 5 | Offset: 0 | Word: '}' | Index: '23' | Unknown token in compilation unit declaration
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\if_no_condition.shard' | Line: 4 | Offset: 0 | Word: 'null' | Index: '16' | Unsupported literal type: unknown
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\if_no_condition.shard' | Line: 4 | Offset: 0 | Word: 'if' | Index: '12' | If condition type could not be determined
+
+STDERR:
+
+
+===== interface_with_body.shard (exit=1, time=0.02s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: '' | Line: 0 | Offset: 0 | Word: '' | Index: '-1' | Entry point for script not found
+
+STDERR:
+
+
+===== invalid_modifier.shard (exit=1, time=0.01s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\invalid_modifier.shard' | Line: 2 | Offset: 0 | Word: 'virtual' | Index: '3' | Unknown token in compilation unit declaration
+
+STDERR:
+
+
+===== lambda_no_arrow.shard (exit=1, time=0.02s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\lambda_no_arrow.shard' | Line: 4 | Offset: 0 | Word: 'var' | Index: '12' | Invalid variable declaration syntax. Use 'name: type = value' or 'name := value'.
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\lambda_no_arrow.shard' | Line: 4 | Offset: 0 | Word: '{' | Index: '21' | Expected '=>' or '->' operator
+
+STDERR:
+
+
+===== method_bad_return_type.shard (exit=1, time=0.01s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\method_bad_return_type.shard' | Line: 2 | Offset: 0 | Word: '@' | Index: '10' | Symbol wasnt found in current scope
+
+STDERR:
+
+
+===== method_no_name.shard (exit=1, time=0.02s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: '' | Line: 0 | Offset: 0 | Word: '' | Index: '-1' | Entry point for script not found
+
+STDERR:
+
+
+===== method_no_return_type.shard (exit=1, time=0.01s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\method_no_return_type.shard' | Line: 2 | Offset: 0 | Word: '{' | Index: '9' | Expected arrow and defined return type before block.
+
+STDERR:
+
+
+===== missing_body_brace.shard (exit=1, time=0.02s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\missing_body_brace.shard' | Line: 3 | Offset: 0 | Word: 'println' | Index: '11' | No method "println" found that accepts argument (Integer)
+
+STDERR:
+
+
+===== number_multiple_dots.shard (exit=1, time=0.02s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\number_multiple_dots.shard' | Line: 4 | Offset: 0 | Word: 'var' | Index: '12' | Invalid variable declaration syntax. Use 'name: type = value' or 'name := value'.
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\number_multiple_dots.shard' | Line: 4 | Offset: 0 | Word: ':' | Index: '14' | Missing ';' token
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\number_multiple_dots.shard' | Line: 4 | Offset: 0 | Word: '.' | Index: '21' | Missing ';' token
+
+STDERR:
+
+
+===== only_comments.shard (exit=1, time=0.01s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\only_comments.shard' | Line: 2 | Offset: 0 | Word: '*' | Index: '0' | Unknown token in compilation unit declaration
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\only_comments.shard' | Line: 2 | Offset: 0 | Word: 'block' | Index: '1' | Unknown token in compilation unit declaration
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\only_comments.shard' | Line: 2 | Offset: 0 | Word: '*' | Index: '2' | Unknown token in compilation unit declaration
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\only_comments.shard' | Line: 2 | Offset: 0 | Word: '/' | Index: '3' | Unknown token in compilation unit declaration
+
+STDERR:
+
+
+===== only_whitespace.shard (exit=1, time=0.01s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: '' | Line: 0 | Offset: 0 | Word: '' | Index: '-1' | Entry point for script not found
+
+STDERR:
+
+
+===== operator_no_token.shard (exit=1, time=0.01s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\operator_no_token.shard' | Line: 4 | Offset: 0 | Word: '->' | Index: '10' | Expected overloadable operator token
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\operator_no_token.shard' | Line: 4 | Offset: 0 | Word: 'int' | Index: '12' | Expected '(' token
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\operator_no_token.shard' | Line: 4 | Offset: 0 | Word: '{' | Index: '13' | Expected ':' after parameter name
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\operator_no_token.shard' | Line: 4 | Offset: 0 | Word: '{' | Index: '13' | Unexpected token in type syntax
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\operator_no_token.shard' | Line: 4 | Offset: 0 | Word: '{' | Index: '13' | Expected ',' or ')'
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\operator_no_token.shard' | Line: 4 | Offset: 0 | Word: '{' | Index: '13' | Expected arrow and defined return type before block.
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\operator_no_token.shard' | Line: 4 | Offset: 0 | Word: 'return' | Index: '17' | Return target type could not be determined
+
+STDERR:
+
+
+===== param_no_name.shard (exit=1, time=0.01s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\param_no_name.shard' | Line: 2 | Offset: 0 | Word: ')' | Index: '10' | Unexpected ')' - expected parameter name
+
+STDERR:
+
+
+===== param_no_type.shard (exit=1, time=0.01s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\param_no_type.shard' | Line: 2 | Offset: 0 | Word: ')' | Index: '9' | Expected ':' after parameter name
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\param_no_type.shard' | Line: 2 | Offset: 0 | Word: ')' | Index: '9' | Unexpected token in type syntax
+
+STDERR:
+
+
+===== property_no_name.shard (exit=1, time=0.01s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\property_no_name.shard' | Line: 4 | Offset: 0 | Word: 'int' | Index: '8' | Expected member declaration
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\property_no_name.shard' | Line: 4 | Offset: 0 | Word: '{' | Index: '9' | Unknown token in compilation unit declaration
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\property_no_name.shard' | Line: 4 | Offset: 0 | Word: 'get' | Index: '10' | Unknown token in compilation unit declaration
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\property_no_name.shard' | Line: 4 | Offset: 0 | Word: ';' | Index: '11' | Unknown token in compilation unit declaration
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\property_no_name.shard' | Line: 4 | Offset: 0 | Word: 'set' | Index: '12' | Unknown token in compilation unit declaration
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\property_no_name.shard' | Line: 4 | Offset: 0 | Word: ';' | Index: '13' | Unknown token in compilation unit declaration
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\property_no_name.shard' | Line: 4 | Offset: 0 | Word: '}' | Index: '14' | Unknown token in compilation unit declaration
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\property_no_name.shard' | Line: 5 | Offset: 0 | Word: '}' | Index: '15' | Unknown token in compilation unit declaration
+
+STDERR:
+
+
+===== return_outside_method.shard (exit=1, time=0.01s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\return_outside_method.shard' | Line: 2 | Offset: 0 | Word: 'return' | Index: '3' | Unknown token in compilation unit declaration
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\return_outside_method.shard' | Line: 2 | Offset: 0 | Word: '1' | Index: '4' | Unknown token in compilation unit declaration
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\return_outside_method.shard' | Line: 2 | Offset: 0 | Word: ';' | Index: '5' | Unknown token in compilation unit declaration
+
+STDERR:
+
+
+===== stray_at_top.shard (exit=1, time=0.01s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\stray_at_top.shard' | Line: 1 | Offset: 0 | Word: '@' | Index: '0' | Unknown token in compilation unit declaration
+
+STDERR:
+
+
+===== stray_in_class.shard (exit=1, time=0.01s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\stray_in_class.shard' | Line: 4 | Offset: 0 | Word: '@' | Index: '7' | Unexpected token in type declaration
+
+STDERR:
+
+
+===== stray_in_method.shard (exit=1, time=0.01s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\stray_in_method.shard' | Line: 5 | Offset: 0 | Word: '}' | Index: '13' | Missing ';' token
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\stray_in_method.shard' | Line: 4 | Offset: 0 | Word: '@' | Index: '12' | Symbol '@' not found in current scope
+
+STDERR:
+
+
+===== try_no_catch.shard (exit=0, time=0.01s) =====
+STDOUT:
+
+STDERR:
+
+
+===== type_bad_generic.shard (exit=1, time=0.02s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\type_bad_generic.shard' | Line: 4 | Offset: 0 | Word: 'var' | Index: '12' | Invalid variable declaration syntax. Use 'name: type = value' or 'name := value'.
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\type_bad_generic.shard' | Line: 4 | Offset: 0 | Word: ':' | Index: '14' | Missing ';' token
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\type_bad_generic.shard' | Line: 4 | Offset: 0 | Word: 'int' | Index: '23' | Unknown expression token
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\type_bad_generic.shard' | Line: 4 | Offset: 0 | Word: ')' | Index: '27' | Unknown expression token
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\type_bad_generic.shard' | Line: 4 | Offset: 0 | Word: ';' | Index: '28' | Expected ')' token
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\type_bad_generic.shard' | Line: 4 | Offset: 0 | Word: 'List' | Index: '19' | Symbol 'List' not found in current scope
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\type_bad_generic.shard' | Line: 4 | Offset: 0 | Word: '<' | Index: '21' | Left operand type could not be determined
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\type_bad_generic.shard' | Line: 4 | Offset: 0 | Word: '>' | Index: '24' | Left operand type could not be determined
+
+STDERR:
+
+
+===== type_missing_name.shard (exit=1, time=0.01s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\type_missing_name.shard' | Line: 4 | Offset: 0 | Word: 'var' | Index: '12' | Invalid variable declaration syntax. Use 'name: type = value' or 'name := value'.
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\type_missing_name.shard' | Line: 4 | Offset: 0 | Word: ':' | Index: '14' | Missing ';' token
+
+STDERR:
+
+
+===== type_unclosed_generic.shard (exit=1, time=0.02s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\type_unclosed_generic.shard' | Line: 4 | Offset: 0 | Word: 'var' | Index: '12' | Invalid variable declaration syntax. Use 'name: type = value' or 'name := value'.
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\type_unclosed_generic.shard' | Line: 4 | Offset: 0 | Word: ':' | Index: '14' | Missing ';' token
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\type_unclosed_generic.shard' | Line: 4 | Offset: 0 | Word: 'List' | Index: '21' | Symbol wasnt found in current scope
+
+STDERR:
+
+
+===== unclosed_block_comment.shard (exit=1, time=0.02s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\unclosed_block_comment.shard' | Line: 4 | Offset: 0 | Word: '/' | Index: '12' | Unknown expression token
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\unclosed_block_comment.shard' | Line: 4 | Offset: 0 | Word: 'ends' | Index: '17' | Missing ';' token
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\unclosed_block_comment.shard' | Line: 4 | Offset: 0 | Word: 'null' | Index: '14' | Unsupported literal type: unknown
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\unclosed_block_comment.shard' | Line: 4 | Offset: 0 | Word: '*' | Index: '13' | Left operand type could not be determined
+
+STDERR:
+
+
+===== unicode_garbage.shard (exit=3221225477, time=0.01s) =====
+STDOUT:
+
+STDERR:
+
+
+===== unmatched_close_brace.shard (exit=1, time=0.01s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\unmatched_close_brace.shard' | Line: 3 | Offset: 0 | Word: '}' | Index: '11' | Unknown expression token
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\unmatched_close_brace.shard' | Line: 4 | Offset: 0 | Word: '{' | Index: '12' | Missing ';' token
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\unmatched_close_brace.shard' | Line: 4 | Offset: 0 | Word: '{' | Index: '12' | Unknown token in compilation unit declaration
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\unmatched_close_brace.shard' | Line: 3 | Offset: 0 | Word: 'null' | Index: '13' | Unsupported literal type: unknown
+
+STDERR:
+
+
+===== unmatched_open_brace.shard (exit=1, time=0.01s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\unmatched_open_brace.shard' | Line: 4 | Offset: 0 | Word: '{' | Index: '12' | Unknown expression token
+Error | File: '' | Line: 0 | Offset: 0 | Word: '' | Index: '15' | Missing ';' token
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\unmatched_open_brace.shard' | Line: 4 | Offset: 0 | Word: 'null' | Index: '14' | Unsupported literal type: unknown
+
+STDERR:
+
+
+===== var_invalid_syntax.shard (exit=1, time=0.01s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\var_invalid_syntax.shard' | Line: 4 | Offset: 0 | Word: 'int' | Index: '12' | Invalid variable declaration syntax. Use 'name: type = value' or 'name := value'.
+
+STDERR:
+
+
+===== var_missing_init.shard (exit=3, time=3.01s) =====
+STDOUT:
+
+STDERR:
+
+
+===== var_missing_type.shard (exit=1, time=0.01s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\var_missing_type.shard' | Line: 4 | Offset: 0 | Word: 'x' | Index: '12' | Invalid variable declaration syntax. Use 'name: type = value' or 'name := value'.
+
+STDERR:
+
+
+===== var_no_name.shard (exit=1, time=0.02s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\var_no_name.shard' | Line: 4 | Offset: 0 | Word: ':' | Index: '12' | Unknown expression token
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\var_no_name.shard' | Line: 4 | Offset: 0 | Word: 'int' | Index: '13' | Missing ';' token
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\var_no_name.shard' | Line: 4 | Offset: 0 | Word: 'null' | Index: '14' | Unsupported literal type: unknown
+
+STDERR:
+
+
+===== very_long_line.shard (exit=3221225725, time=0.07s) =====
+STDOUT:
+
+STDERR:
+
+
+===== weird_number_suffix.shard (exit=3221225477, time=0.01s) =====
+STDOUT:
+
+STDERR:
+
+
+===== while_no_condition.shard (exit=1, time=0.02s) =====
+STDOUT:
+=== Diagnostics output ===
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\while_no_condition.shard' | Line: 4 | Offset: 0 | Word: '{' | Index: '14' | expected '(' token
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\while_no_condition.shard' | Line: 4 | Offset: 0 | Word: '{' | Index: '14' | Unknown expression token
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\while_no_condition.shard' | Line: 4 | Offset: 0 | Word: 'println' | Index: '16' | expected ')' token
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\while_no_condition.shard' | Line: 5 | Offset: 0 | Word: '}' | Index: '24' | Unknown token in compilation unit declaration
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\while_no_condition.shard' | Line: 4 | Offset: 0 | Word: 'null' | Index: '17' | Unsupported literal type: unknown
+Error | File: 'D:\repos\Rikitav\ShardScript\test_scripts\parser_stress\while_no_condition.shard' | Line: 4 | Offset: 0 | Word: 'while' | Index: '12' | While loop condition type could not be determined
+
+STDERR:
+
+
