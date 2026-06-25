@@ -1,10 +1,10 @@
-using ShardScript.NET.Application;
-using ShardScript.NET.Runtime;
-using ShardScript.NET.Syntax.Builders;
-using ShardScript.NET.Syntax.Symbols;
+using ShardScript.Application;
+using ShardScript.Runtime;
+using ShardScript.Syntax.Builders;
+using ShardScript.Syntax.Symbols;
 using System.Runtime.InteropServices;
 
-namespace ShardScript.NET;
+namespace ShardScript.Syntax;
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate IntPtr ShardManagedMethodCallback(
@@ -207,14 +207,19 @@ public static class SymbolBuilder
     {
         if (context == null)
             throw new ArgumentNullException(nameof(context));
+
         if (typeName == null)
             throw new ArgumentNullException(nameof(typeName));
+
         if (methodName == null)
             throw new ArgumentNullException(nameof(methodName));
+
         if (callback == null)
             throw new ArgumentNullException(nameof(callback));
+
         if (returnType == null)
             throw new ArgumentNullException(nameof(returnType));
+
         if (parameters == null)
             throw new ArgumentNullException(nameof(parameters));
 

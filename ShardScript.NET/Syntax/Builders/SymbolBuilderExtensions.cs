@@ -1,8 +1,8 @@
-﻿using ShardScript.NET.Application;
-using ShardScript.NET.Syntax.Symbols;
+﻿using ShardScript.Application;
+using ShardScript.Syntax.Symbols;
 using System.Runtime.InteropServices;
 
-namespace ShardScript.NET.Syntax.Builders;
+namespace ShardScript.Syntax.Builders;
 
 /// <summary>
 /// Fluent extensions for configuring symbols created with <see cref="SymbolBuilder"/>.

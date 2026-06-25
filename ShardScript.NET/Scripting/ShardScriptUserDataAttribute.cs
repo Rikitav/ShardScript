@@ -1,4 +1,4 @@
-namespace ShardScript.NET.Scripting;
+namespace ShardScript.Scripting;
 
 /// <summary>
 /// Marks a C# class or struct as available to ShardScript scripts.

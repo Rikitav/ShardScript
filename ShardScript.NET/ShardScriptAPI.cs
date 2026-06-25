@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace ShardScript.NET;
+namespace ShardScript;
 
 internal static class ShardScriptAPI
 {

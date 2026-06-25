@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace ShardScript.NET.Syntax.Symbols;
+namespace ShardScript.Syntax.Symbols;
 
 public sealed class MethodSymbol : SyntaxSymbol
 {

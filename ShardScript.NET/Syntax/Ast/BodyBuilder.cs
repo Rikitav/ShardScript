@@ -1,7 +1,6 @@
-using ShardScript.NET.Runtime;
-using ShardScript.NET.Syntax.Nodes;
+using ShardScript.Runtime;
 
-namespace ShardScript.NET.Syntax.Ast;
+namespace ShardScript.Syntax.Ast;
 
 public sealed class BodyBuilder
 {

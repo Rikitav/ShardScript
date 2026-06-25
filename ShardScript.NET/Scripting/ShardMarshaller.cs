@@ -1,11 +1,11 @@
-using ShardScript.NET.Runtime;
+using ShardScript.Runtime;
 
-namespace ShardScript.NET.Scripting;
+namespace ShardScript.Scripting;
 
 /// <summary>
 /// Converts between C# values and ShardScript runtime object instances.
 /// </summary>
-public static class Marshaller
+public static class ShardMarshaller
 {
     public static ObjectInstance ToObjectInstance(object? value, GarbageCollector gc)
     {

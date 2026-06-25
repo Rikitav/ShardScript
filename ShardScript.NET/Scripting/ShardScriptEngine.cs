@@ -1,22 +1,20 @@
-using ShardScript.NET.Scripting;
-
-namespace ShardScript.NET;
+namespace ShardScript.Scripting;
 
 /// <summary>
 /// Static entry points for compiling and running ShardScript code.
 /// </summary>
-public static class ShardScript
+public static class ShardScriptEngine
 {
     /// <summary>
     /// Compiles and runs the given code, returning the result of the entry point expression.
     /// The code is automatically wrapped in a <c>Main</c> function whose return type matches <typeparamref name="T"/>.
     /// </summary>
-    public static T Evaluate<T>(string code, ScriptOptions? options = null)
+    public static T Evaluate<T>(string code, ShardScriptOptions? options = null)
     {
         if (code == null)
             throw new ArgumentNullException(nameof(code));
 
-        options ??= ScriptOptions.Default;
+        options ??= ShardScriptOptions.Default;
         string returnType = GetShardTypeName(typeof(T));
         string wrappedCode = $@"
 namespace __eval;
@@ -29,7 +27,8 @@ public static class __EvalProgram
     }}
 }}";
 
-        using var state = new ScriptState(options);
+        using ShardScriptState state = new ShardScriptState(options);
+
         try
         {
             state.Compile(wrappedCode);
@@ -38,20 +37,21 @@ public static class __EvalProgram
         {
             throw new InvalidOperationException($"Failed to compile expression. Diagnostics:\n{state.Diagnostics}");
         }
+
         return state.Call<T>("__EvalProgram.GetResult");
     }
 
     /// <summary>
-    /// Compiles and runs the given code, returning a <see cref="ScriptState"/> that can be
+    /// Compiles and runs the given code, returning a <see cref="ShardScriptState"/> that can be
     /// used for further interaction (calling methods, accessing globals, continuing with more code).
     /// </summary>
-    public static ScriptState Run(string code, ScriptOptions? options = null, object? globals = null)
+    public static ShardScriptState DoString(string code, ShardScriptOptions? options = null, object? globals = null)
     {
         if (code == null)
             throw new ArgumentNullException(nameof(code));
 
-        options ??= ScriptOptions.Default;
-        var state = new ScriptState(options, globals);
+        options ??= ShardScriptOptions.Default;
+        ShardScriptState state = new ShardScriptState(options, globals);
 
         try
         {

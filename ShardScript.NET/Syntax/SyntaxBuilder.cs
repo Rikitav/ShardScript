@@ -1,8 +1,8 @@
-using ShardScript.NET.Application;
-using ShardScript.NET.Syntax.Nodes;
+using ShardScript.Application;
+using ShardScript.Syntax.Nodes;
 using System.Runtime.InteropServices;
 
-namespace ShardScript.NET;
+namespace ShardScript.Syntax;
 
 public enum TokenType
 {
@@ -195,29 +195,37 @@ public abstract class SyntaxExpression : SyntaxNode
 
     public static SyntaxBinaryExpression operator +(SyntaxExpression left, SyntaxExpression right)
     {
-        if (left == null) throw new ArgumentNullException(nameof(left));
-        if (right == null) throw new ArgumentNullException(nameof(right));
+        if (left == null)
+            throw new ArgumentNullException(nameof(left));
+        if (right == null)
+            throw new ArgumentNullException(nameof(right));
         return SyntaxBuilder.Binary(left, right, TokenType.AddOperator);
     }
 
     public static SyntaxBinaryExpression operator -(SyntaxExpression left, SyntaxExpression right)
     {
-        if (left == null) throw new ArgumentNullException(nameof(left));
-        if (right == null) throw new ArgumentNullException(nameof(right));
+        if (left == null)
+            throw new ArgumentNullException(nameof(left));
+        if (right == null)
+            throw new ArgumentNullException(nameof(right));
         return SyntaxBuilder.Binary(left, right, TokenType.SubOperator);
     }
 
     public static SyntaxBinaryExpression operator *(SyntaxExpression left, SyntaxExpression right)
     {
-        if (left == null) throw new ArgumentNullException(nameof(left));
-        if (right == null) throw new ArgumentNullException(nameof(right));
+        if (left == null)
+            throw new ArgumentNullException(nameof(left));
+        if (right == null)
+            throw new ArgumentNullException(nameof(right));
         return SyntaxBuilder.Binary(left, right, TokenType.MultOperator);
     }
 
     public static SyntaxBinaryExpression operator /(SyntaxExpression left, SyntaxExpression right)
     {
-        if (left == null) throw new ArgumentNullException(nameof(left));
-        if (right == null) throw new ArgumentNullException(nameof(right));
+        if (left == null)
+            throw new ArgumentNullException(nameof(left));
+        if (right == null)
+            throw new ArgumentNullException(nameof(right));
         return SyntaxBuilder.Binary(left, right, TokenType.DivOperator);
     }
 }
@@ -536,56 +544,6 @@ public sealed class SyntaxTypeArgumentsList : SyntaxNode
         [DllImport(ShardScriptAPI.LibraryName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
         public static extern int Shard_AddTypeArgument(IntPtr list, IntPtr type);
     }
-}
-
-public sealed class SyntaxVariableStatement : SyntaxStatement
-{
-    internal SyntaxVariableStatement(IntPtr handle) : base(handle) { }
-}
-
-public sealed class SyntaxExpressionStatement : SyntaxStatement
-{
-    internal SyntaxExpressionStatement(IntPtr handle) : base(handle) { }
-}
-
-public sealed class SyntaxReturnStatement : SyntaxStatement
-{
-    internal SyntaxReturnStatement(IntPtr handle) : base(handle) { }
-}
-
-public sealed class SyntaxForEachStatement : SyntaxStatement
-{
-    internal SyntaxForEachStatement(IntPtr handle) : base(handle) { }
-}
-
-public sealed class SyntaxWhileStatement : SyntaxStatement
-{
-    internal SyntaxWhileStatement(IntPtr handle) : base(handle) { }
-}
-
-public sealed class SyntaxLiteralExpression : SyntaxExpression
-{
-    internal SyntaxLiteralExpression(IntPtr handle) : base(handle) { }
-}
-
-public sealed class SyntaxIdentifierExpression : SyntaxExpression
-{
-    internal SyntaxIdentifierExpression(IntPtr handle) : base(handle) { }
-}
-
-public sealed class SyntaxMemberAccessExpression : SyntaxExpression
-{
-    internal SyntaxMemberAccessExpression(IntPtr handle) : base(handle) { }
-}
-
-public sealed class SyntaxBinaryExpression : SyntaxExpression
-{
-    internal SyntaxBinaryExpression(IntPtr handle) : base(handle) { }
-}
-
-public sealed class SyntaxUnaryExpression : SyntaxExpression
-{
-    internal SyntaxUnaryExpression(IntPtr handle) : base(handle) { }
 }
 
 public sealed class SyntaxInvocationExpression : SyntaxExpression

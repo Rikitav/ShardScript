@@ -1,8 +1,8 @@
-﻿using ShardScript.NET.Runtime;
-using ShardScript.NET.Syntax.Symbols;
+﻿using ShardScript.Runtime;
+using ShardScript.Syntax.Symbols;
 using System.Runtime.InteropServices;
 
-namespace ShardScript.NET.Application;
+namespace ShardScript.Application;
 
 /// <summary>
 /// Represents a compiled ShardScript application that can be executed by the virtual machine.

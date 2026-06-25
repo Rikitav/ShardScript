@@ -1,8 +1,8 @@
-﻿using ShardScript.NET.Application;
-using ShardScript.NET.Syntax.Symbols;
+﻿using ShardScript.Application;
+using ShardScript.Syntax.Symbols;
 using System.Runtime.InteropServices;
 
-namespace ShardScript.NET.Syntax.Nodes;
+namespace ShardScript.Syntax.Nodes;
 
 public class ClassDeclarationSyntax
 {

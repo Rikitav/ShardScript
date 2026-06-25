@@ -1,7 +1,6 @@
-using ShardScript.NET.Application;
-using ShardScript.NET.Syntax.Nodes;
+using ShardScript.Application;
 
-namespace ShardScript.NET.Syntax.Ast;
+namespace ShardScript.Syntax.Ast;
 
 public sealed class CompilationUnitBuilder
 {
