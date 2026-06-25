@@ -561,6 +561,12 @@ void AbstractEmiter::VisitTryStatement(TryStatementSyntax* node)
 
 void AbstractEmiter::VisitContinueStatement(ContinueStatementSyntax* node)
 {
+	if (Loops.empty())
+	{
+		Diagnostics.ReportError(node->KeywordToken, L"'continue' must be inside a loop");
+		return;
+	}
+
 	LoopScope& scope = Loops.top();
 	scope.BlockEndBacktracks.push_back(GeneratingFor->ExecutableByteCode.size());
 	Encoder.EmitJump(GeneratingFor->ExecutableByteCode, 0);
@@ -1331,6 +1337,12 @@ void AbstractEmiter::VisitReturnStatement(ReturnStatementSyntax* node)
 
 void AbstractEmiter::VisitBreakStatement(BreakStatementSyntax* node)
 {
+	if (Loops.empty())
+	{
+		Diagnostics.ReportError(node->KeywordToken, L"'break' must be inside a loop");
+		return;
+	}
+
 	EmitDefersUntilLoop();
 
 	LoopScope& scope = Loops.top();

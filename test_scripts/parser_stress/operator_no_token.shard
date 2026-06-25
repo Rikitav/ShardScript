@@ -1,0 +1,5 @@
+namespace hello;
+public class Foo
+{
+    public static operator -> int { return 0; }
+}

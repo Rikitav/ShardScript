@@ -1,0 +1,5 @@
+namespace hello;
+public static func Main() -> void
+{
+    var x: List<int = new List<int>();
+}

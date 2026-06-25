@@ -1,0 +1,2 @@
+namespace hello;
+public static func () -> void { }
