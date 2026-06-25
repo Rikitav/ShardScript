@@ -51,6 +51,9 @@ TypeInfo SemanticModel::GetTypeInfo(ExpressionSyntax* expression)
 				case TokenType::NumberLiteral:
 					return SymbolTable::Primitives::Integer;
 
+				case TokenType::DoubleLiteral:
+					return SymbolTable::Primitives::Double;
+
 				case TokenType::CharLiteral:
 					return SymbolTable::Primitives::Char;
 

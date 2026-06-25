@@ -79,6 +79,8 @@
 #include <algorithm>
 #include <cctype>
 #include <climits>
+#include <cstdint>
+#include <limits>
 #include <exception>
 #include <stdexcept>
 
@@ -1884,67 +1886,155 @@ TypeSymbol* ExpressionBinder::SubstituteTypeParameters(TypeSymbol* type, Generic
 	return type;
 }
 
-static bool IsNumBasePrefix(std::wstring& prefix, int& base)
+namespace
 {
-	if (prefix[0] != L'0')
+	struct NumericParseResult
+	{
+		bool Success = false;
+		std::wstring Error;
+	};
+
+	bool IsValidIntegerDigit(wchar_t symbol, int base)
+	{
+		if (symbol >= L'0' && symbol <= L'1')
+			return base >= 2;
+
+		if (symbol >= L'2' && symbol <= L'9')
+			return base >= 10;
+
+		if ((symbol >= L'a' && symbol <= L'f') || (symbol >= L'A' && symbol <= L'F'))
+			return base >= 16;
+
 		return false;
+	}
 
-	switch (prefix[1])
+	bool TryParseBasePrefix(const std::wstring& word, int& base, std::size_t& prefixLength)
 	{
-		default:
+		base = 10;
+		prefixLength = 0;
+
+		if (word.size() < 2 || word[0] != L'0')
 			return false;
 
-		case L'x': case L'X': base = 16; return true;
-		case L'd': case L'D': base = 10; return true;
-		case L'b': case L'B': base = 2; return true;
+		switch (word[1])
+		{
+			case L'x': case L'X': base = 16; prefixLength = 2; return true;
+			case L'd': case L'D': base = 10; prefixLength = 2; return true;
+			case L'b': case L'B': base =  2; prefixLength = 2; return true;
+			default: return false;
+		}
 	}
-}
 
-static bool IsVolumeRatioPostfix(std::wstring& postfix, std::size_t& multiplier)
-{
-	if (postfix[1] != L'B' && postfix[1] != L'b')
-		return false;
-
-	switch (postfix[0])
+	bool TryParseVolumeSuffix(const std::wstring& word, std::size_t& multiplier, std::size_t& suffixLength)
 	{
-		default:
+		multiplier = 1;
+		suffixLength = 0;
+
+		if (word.size() < 2)
 			return false;
 
-		case L'k': case L'K': multiplier = ((std::size_t)1 << 10); return true;
-		case L'm': case L'M': multiplier = ((std::size_t)1 << 20); return true;
-		case L'g': case L'G': multiplier = ((std::size_t)1 << 30); return true;
-		case L't': case L'T': multiplier = ((std::size_t)1 << 40); return true;
-		case L'p': case L'P': multiplier = ((std::size_t)1 << 50); return true;
-	}
-}
+		wchar_t first = word[word.size() - 2];
+		wchar_t second = word[word.size() - 1];
 
-static bool IsValidIntegerPunctuation(wchar_t symbol)
-{
-	switch (symbol)
-	{
-		default:
+		if (second != L'B' && second != L'b')
 			return false;
 
-		case '.':
-			return true;
+		switch (first)
+		{
+			case L'k': case L'K': multiplier = 1ULL << 10; break;
+			case L'm': case L'M': multiplier = 1ULL << 20; break;
+			case L'g': case L'G': multiplier = 1ULL << 30; break;
+			case L't': case L'T': multiplier = 1ULL << 40; break;
+			case L'p': case L'P': multiplier = 1ULL << 50; break;
+			default: return false;
+		}
+
+		suffixLength = 2;
+		return true;
 	}
-}
 
-static bool IsValidIntegerSymbol(wchar_t symbol, int base)
-{
-	if (symbol >= L'0' && symbol <= L'1')
-		return base >= 2;
+	NumericParseResult ParseIntegerLiteral(const std::wstring& word, std::int64_t& outValue)
+	{
+		int base;
+		std::size_t prefixLength;
+		TryParseBasePrefix(word, base, prefixLength);
 
-	if (symbol >= L'2' && symbol <= L'9')
-		return base >= 10;
+		std::size_t numLength = word.size() - prefixLength;
+		std::size_t multiplier = 1;
+		std::size_t suffixLength = 0;
 
-	if (symbol >= L'a' && symbol <= L'f')
-		return base >= 16;
+		if (TryParseVolumeSuffix(word.substr(prefixLength), multiplier, suffixLength))
+			numLength -= suffixLength;
 
-	if (symbol >= L'A' && symbol <= L'F')
-		return base >= 16;
+		std::wstring numPart = word.substr(prefixLength, numLength);
 
-	return false;
+		for (wchar_t symbol : numPart)
+		{
+			if (!IsValidIntegerDigit(symbol, base))
+				return { false, L"Invalid characters in number" };
+		}
+
+		try
+		{
+			std::size_t pos = 0;
+			long long raw = std::stoll(numPart, &pos, base);
+
+			if (pos != numPart.size())
+				return { false, L"Invalid number format" };
+
+			if (multiplier > 1)
+			{
+				if (raw > (std::numeric_limits<std::int64_t>::max)() / static_cast<long long>(multiplier))
+					return { false, L"Multiplication overflow" };
+
+				raw *= static_cast<long long>(multiplier);
+			}
+
+			outValue = static_cast<std::int64_t>(raw);
+			return { true, L"" };
+		}
+		catch (const std::out_of_range&)
+		{
+			return { false, L"Number out of range" };
+		}
+		catch (const std::exception&)
+		{
+			return { false, L"Invalid number format" };
+		}
+	}
+
+	NumericParseResult ParseDoubleLiteral(const std::wstring& word, double& outValue)
+	{
+		int base;
+		std::size_t prefixLength;
+		if (TryParseBasePrefix(word, base, prefixLength))
+			return { false, L"Floating point number cannot have base prefix" };
+
+		std::size_t multiplier;
+		std::size_t suffixLength;
+		if (TryParseVolumeSuffix(word, multiplier, suffixLength))
+			return { false, L"Floating point number cannot have suffix" };
+
+		try
+		{
+			std::size_t pos = 0;
+			double value = std::stod(word, &pos);
+
+			if (pos != word.size())
+				return { false, L"Invalid characters in floating point number" };
+
+			outValue = value;
+			return { true, L"" };
+		}
+		catch (const std::out_of_range&)
+		{
+			return { false, L"Number out of range" };
+		}
+		catch (const std::exception&)
+		{
+			return { false, L"Invalid floating point number format" };
+		}
+	}
 }
 
 TypeSymbol* ExpressionBinder::AnalyzeNumberLiteral(LiteralExpressionSyntax* node)
@@ -1953,127 +2043,22 @@ TypeSymbol* ExpressionBinder::AnalyzeNumberLiteral(LiteralExpressionSyntax* node
 	if (symbol == nullptr)
 		return SymbolTable::Primitives::Integer;
 
-	SyntaxToken token = node->LiteralToken;
-	std::wstring word = token.Word;
-	std::size_t size = word.size();
+	NumericParseResult result = ParseIntegerLiteral(node->LiteralToken.Word, symbol->AsIntegerValue);
+	if (!result.Success)
+		Diagnostics.ReportError(node->LiteralToken, result.Error);
 
-	std::size_t numStart = 0;
-	std::size_t multiplier = 1;
-	int base = 10;
-
-	if (size >= 2)
-	{
-		std::wstring prefix = word.substr(0, 2);
-		if (IsNumBasePrefix(prefix, base))
-			numStart += 2;
-
-		std::wstring postfix = word.substr(size - 2);
-		if (IsVolumeRatioPostfix(postfix, multiplier))
-			size -= 2;
-	}
-
-	try
-	{
-		std::size_t pos = 0;
-		std::wstring numPart = word.substr(numStart, size);
-		symbol->AsIntegerValue = std::stol(numPart, &pos) * multiplier;
-
-		if (pos != size)
-		{
-			for (std::size_t i = pos; i < size; i++)
-			{
-				if (!IsValidIntegerSymbol(word[i], base))
-				{
-					Diagnostics.ReportError(token, L"Invalid characters in number");
-					return SymbolTable::Primitives::Integer;
-				}
-			}
-		}
-
-		// overflow check
-		if (symbol->AsIntegerValue < 0 && multiplier > 1)
-		{
-			long check = std::stol(numPart, nullptr, base);
-			if (check > LONG_MAX / multiplier)
-			{
-				Diagnostics.ReportError(token, L"Multiplication overflow");
-				return SymbolTable::Primitives::Integer;
-			}
-		}
-
-		return SymbolTable::Primitives::Integer;
-	}
-	catch (const std::out_of_range&)
-	{
-		Diagnostics.ReportError(token, L"Number out of range");
-		return SymbolTable::Primitives::Integer;
-	}
-	catch (const std::exception&)
-	{
-		Diagnostics.ReportError(token, L"Invalid number format");
-		return SymbolTable::Primitives::Integer;
-	}
+	return SymbolTable::Primitives::Integer;
 }
 
 TypeSymbol* ExpressionBinder::AnalyzeDoubleLiteral(LiteralExpressionSyntax* node)
 {
 	LiteralSymbol* symbol = LookupSymbol<LiteralSymbol>(node).value_or(nullptr);
-
-	SyntaxToken token = node->LiteralToken;
-	std::wstring word = token.Word;
-	std::size_t size = word.size();
-
-	std::size_t delimeterIndex = word.find('.');
-	//word.pop_back(); // deleting symbol 'f'
-
-	if (word.size() >= 2)
-	{
-		std::wstring prefix = word.substr(0, 2);
-		int dummy = 0;
-
-		if (IsNumBasePrefix(prefix, dummy))
-		{
-			Diagnostics.ReportError(token, L"Floating point number cannot have base prefix");
-			return SymbolTable::Primitives::Double;
-		}
-
-		std::wstring postfix = word.substr(size - 2);
-		std::size_t dummy2 = 0;
-
-		if (IsVolumeRatioPostfix(postfix, dummy2))
-		{
-			Diagnostics.ReportError(token, L"Floating point number cannot have suffix");
-			return SymbolTable::Primitives::Double;
-		}
-	}
-
-	try
-	{
+	if (symbol == nullptr)
 		return SymbolTable::Primitives::Double;
-		std::size_t pos = 0;
-		word[delimeterIndex] = L',';
-		symbol->AsDoubleValue = std::stod(word, &pos);
 
-		if (pos != size)
-		{
-			for (std::size_t i = pos; i < size; i++)
-			{
-				if (!std::isdigit(word[i]) && !IsValidIntegerPunctuation(word[i]))
-				{
-					Diagnostics.ReportError(token, L"Invalid characters in floating point number");
-					return SymbolTable::Primitives::Double;
-				}
-			}
-		}
-	}
-	catch (const std::out_of_range&)
-	{
-		Diagnostics.ReportError(node->LiteralToken, L"Number out of range");
-	}
-	catch (const std::exception&)
-	{
-		Diagnostics.ReportError(node->LiteralToken, L"Invalid floating point number format");
-	}
+	NumericParseResult result = ParseDoubleLiteral(node->LiteralToken.Word, symbol->AsDoubleValue);
+	if (!result.Success)
+		Diagnostics.ReportError(node->LiteralToken, result.Error);
 
 	return SymbolTable::Primitives::Double;
 }
