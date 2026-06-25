@@ -1,74 +1,102 @@
-using ShardScript.NET.Application;
-using ShardScript.NET.Runtime;
-using ShardScript.NET.Scripting;
-using ShardScript.NET.Syntax.Builders;
-using ShardScript.NET.Syntax.Nodes;
-using ShardScript.NET.Syntax.Symbols;
+﻿using ShardScript.Application;
+using ShardScript.Runtime;
+using ShardScript.Scripting;
+using ShardScript.Syntax;
+using ShardScript.Syntax.Builders;
+using ShardScript.Syntax.Nodes;
+using ShardScript.Syntax.Symbols;
 
-namespace ShardScript.NET.TestProgram;
+namespace ShardScript.NET.Tests;
 
-class Program
+// [TestClass]
+public sealed class ProgrammaticalTests
 {
-    public static int Main(string[] args)
+    public static void Main()
     {
-        Console.WriteLine($"ShardScript version: {ShardScriptAPI.Version}");
+        ProgrammaticalTests tests = new ProgrammaticalTests();
 
-        if (args.Length > 0)
-        {
-            RunFile(args[0]);
-            return 0;
-        }
-
-        RunFileBasedExample();
-        RunSyntaxBuilderExample();
-        RunSymbolBuilderCallbackExample();
-        RunSdkExamples();
-
-        return 0;
+        tests.RunFileBasedExample();
+        tests.RunSyntaxBuilderExample();
+        tests.RunSymbolBuilderCallbackExample();
+        tests.RunEvaluateExample();
+        tests.RunGlobalsExample();
+        tests.RunCallAndIndexerExample();
+        tests.RunReflectionBinderExample();
+        tests.RunScopedAstBuilderExample();
+        tests.RunEnumExample();
     }
 
-    private static void RunFile(string filePath)
+    // [TestMethod]
+    public void RunScopedAstBuilderExample()
+    {
+        Console.WriteLine("\n--- SDK scoped AST builder example ---");
+
+        using ShardScriptState state = new ShardScriptState(ShardScriptOptions.Default
+            .WithStandardLibraries()
+            .WithEntryPoint(false));
+
+        state.BuildAst(unit => unit
+            .InNamespace("fluent_demo", ns => ns
+                .AddClass("Program", cls => cls
+                    .Public()
+                    .Static()
+                    .AddMethod("Add", m => m
+                        .Public()
+                        .Static()
+                        .Parameter("a", PrimitiveType.Integer)
+                        .Parameter("b", PrimitiveType.Integer)
+                        .Returns(PrimitiveType.Integer)
+                        .Body(body => body
+                            .Return(ctx => ctx.Identifier("a") + ctx.Identifier("b")))))));
+
+        state.Compile();
+        long result = state.Call<long>("Program.Add", 10, 32);
+        Console.WriteLine($"Scoped AST builder Program.Add(10, 32) -> {result}");
+    }
+
+    // [TestMethod]
+    public void RunFile(string filePath)
     {
         Console.WriteLine($"\n--- Running file: {filePath} ---");
 
-        using ScriptEngine engine = new ScriptEngine();
-        engine.LoadStandardLibraries();
-        engine.AddSourceFile(filePath, CompilationUnitOrigin.SourceFile);
+        using ShardScriptState state = new ShardScriptState(ShardScriptOptions.Default
+            .WithStandardLibraries()
+            .WithEntryPoint(true));
 
-        if (!engine.Compile())
+        state.AddSourceFile(filePath, CompilationUnitOrigin.SourceFile);
+
+        if (!state.TryCompile())
         {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine($"Compilation failed with {engine.Context.ErrorCount} error(s):");
-            Console.WriteLine(engine.Diagnostics);
-            Console.ResetColor();
+            Console.WriteLine($"Compilation failed with {state.Context.ErrorCount} error(s):");
+            Console.WriteLine(state.Diagnostics);
             return;
         }
 
         Console.WriteLine("\nRunning entry point...");
-        engine.Run();
+        state.Run();
     }
 
-    private static void RunFileBasedExample()
+    // [TestMethod]
+    public void RunFileBasedExample()
     {
         Console.WriteLine("\n--- File-based example ---");
 
-        using ScriptEngine engine = new ScriptEngine();
-        engine.LoadStandardLibraries();
+        using ShardScriptState state = new ShardScriptState(ShardScriptOptions.Default
+            .WithStandardLibraries()
+            .WithEntryPoint(true));
 
-        string testFilePath = Path.Combine(AppContext.BaseDirectory, "TestProgram", "Test.ss");
-        engine.AddSourceFile(testFilePath, CompilationUnitOrigin.SourceFile);
+        string testFilePath = Path.Combine(AppContext.BaseDirectory, "Test.ss");
+        state.AddSourceFile(testFilePath, CompilationUnitOrigin.SourceFile);
 
-        if (!engine.Compile())
+        if (!state.TryCompile())
         {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine($"Compilation failed with {engine.Context.ErrorCount} error(s):");
-            Console.WriteLine(engine.Diagnostics);
-            Console.ResetColor();
+            Console.WriteLine($"Compilation failed with {state.Context.ErrorCount} error(s):");
+            Console.WriteLine(state.Diagnostics);
             return;
         }
 
         Console.WriteLine("\nCompilation units:");
-        foreach (CompilationUnitSyntax? unit in engine.GetSourceUnits())
+        foreach (CompilationUnitSyntax? unit in state.GetSourceUnits())
         {
             if (unit.Namespace is { } ns)
                 Console.WriteLine($"  Namespace: {ns.Name}");
@@ -76,7 +104,7 @@ class Program
             foreach (ClassDeclarationSyntax cls in unit.GetClasses())
             {
                 Console.WriteLine($"  Class: {cls.Name}");
-                foreach (MethodSymbol method in cls.GetMethods(engine.Context))
+                foreach (MethodSymbol method in cls.GetMethods(state.Context))
                 {
                     Console.WriteLine($"    Method: {method.Name}({method.ParameterCount} params), static: {method.IsStatic}");
                 }
@@ -84,27 +112,29 @@ class Program
         }
 
         Console.WriteLine("\nRunning entry point...");
-        engine.Run();
+        state.Run();
 
-        MethodSymbol? addMethod = engine.FindMethod("Program", "Add", 2);
+        MethodSymbol? addMethod = state.FindMethod("Program", "Add", 2);
         if (addMethod != null)
         {
-            ObjectInstance argA = engine.GarbageCollector.FromInteger(37);
-            ObjectInstance argB = engine.GarbageCollector.FromInteger(32);
+            ObjectInstance argA = state.GarbageCollector.FromInteger(37);
+            ObjectInstance argB = state.GarbageCollector.FromInteger(32);
 
-            ObjectInstance result = engine.Invoke(addMethod, argA, argB);
+            ObjectInstance result = state.Call(addMethod, argA, argB);
             Console.WriteLine($"\nInvoked Program.Add(37, 32) -> {result.AsInteger()}");
         }
     }
 
-    private static void RunSyntaxBuilderExample()
+    // [TestMethod]
+    public void RunSyntaxBuilderExample()
     {
         Console.WriteLine("\n--- SyntaxBuilder example ---");
 
-        using ScriptEngine engine = new ScriptEngine();
-        engine.LoadStandardLibraries();
+        using ShardScriptState state = new ShardScriptState(ShardScriptOptions.Default
+            .WithStandardLibraries()
+            .WithEntryPoint(true));
 
-        CompilationContext context = engine.Context;
+        CompilationContext context = state.Context;
 
         // Build a compilation unit programmatically:
         // namespace syntax_builder_demo;
@@ -148,36 +178,36 @@ class Program
         unit.AddMember(mainMethod);
         context.AddCompilationUnit(unit);
 
-        if (!engine.Compile())
+        if (!state.TryCompile())
         {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine($"SyntaxBuilder compilation failed with {engine.Context.ErrorCount} error(s):");
-            Console.WriteLine(engine.Diagnostics);
-            Console.ResetColor();
+            Console.WriteLine($"SyntaxBuilder compilation failed with {state.Context.ErrorCount} error(s):");
+            Console.WriteLine(state.Diagnostics);
             return;
         }
 
-        engine.Run();
+        state.Run();
 
-        MethodSymbol? addSymbol = engine.FindMethod("Program", "Add", 2);
+        MethodSymbol? addSymbol = state.FindMethod("Program", "Add", 2);
         if (addSymbol != null)
         {
-            ObjectInstance argA = engine.GarbageCollector.FromInteger(10);
-            ObjectInstance argB = engine.GarbageCollector.FromInteger(32);
+            ObjectInstance argA = state.GarbageCollector.FromInteger(10);
+            ObjectInstance argB = state.GarbageCollector.FromInteger(32);
 
-            ObjectInstance result = engine.Invoke(addSymbol, argA, argB);
+            ObjectInstance result = state.Call(addSymbol, argA, argB);
             Console.WriteLine($"SyntaxBuilder Program.Add(10, 32) -> {result.AsInteger()}");
         }
     }
 
-    private static void RunSymbolBuilderCallbackExample()
+    // [TestMethod]
+    public void RunSymbolBuilderCallbackExample()
     {
         Console.WriteLine("\n--- SymbolBuilder callback example ---");
 
-        using ScriptEngine engine = new ScriptEngine();
-        engine.LoadStandardLibraries();
+        using ShardScriptState state = new ShardScriptState(ShardScriptOptions.Default
+            .WithStandardLibraries()
+            .WithEntryPoint(true));
 
-        CompilationContext context = engine.Context;
+        CompilationContext context = state.Context;
 
         // Programmatically create the namespace, type and method symbols, then
         // bind a C# callback to the method. The script below can see the type
@@ -187,8 +217,7 @@ class Program
         TypeSymbol externalMath = SymbolBuilder.Class(context, "ExternalMath", ns).Build();
 
         MethodSymbol addMethod = SymbolBuilder.Method(context, externalMath, "Add", SymbolBuilder.Primitive(context, PrimitiveType.Integer))
-            .Public()
-            .Static()
+            .Public().Static()
             .Parameter("a", SymbolBuilder.Primitive(context, PrimitiveType.Integer))
             .Parameter("b", SymbolBuilder.Primitive(context, PrimitiveType.Integer))
             .Callback((method, args, argsCount, userData, collector) =>
@@ -198,7 +227,7 @@ class Program
                 return new GarbageCollector(collector).FromInteger(a + b).Handle;
             }).Symbol;
 
-        engine.AddSource("Callback.ss", """
+        state.AddSource("Callback.ss", """
             using stdio;
             namespace callback_demo;
             public static func Main() -> void
@@ -208,40 +237,32 @@ class Program
             }
             """, CompilationUnitOrigin.SourceFile);
 
-        if (!engine.Compile())
+        if (!state.TryCompile())
         {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine($"SymbolBuilder callback compilation failed with {engine.Context.ErrorCount} error(s):");
-            Console.WriteLine(engine.Diagnostics);
-            Console.ResetColor();
+            Console.WriteLine($"SymbolBuilder callback compilation failed with {state.Context.ErrorCount} error(s):");
+            Console.WriteLine(state.Diagnostics);
             return;
         }
 
         Console.WriteLine("Running entry point that calls C# callback...");
-        engine.Run();
+        state.Run();
 
         // Also invoke the callback directly from C#.
-        ObjectInstance argA = engine.GarbageCollector.FromInteger(100);
-        ObjectInstance argB = engine.GarbageCollector.FromInteger(23);
-        ObjectInstance result = engine.Invoke(addMethod, argA, argB);
+        ObjectInstance argA = state.GarbageCollector.FromInteger(100);
+        ObjectInstance argB = state.GarbageCollector.FromInteger(23);
+        ObjectInstance result = state.Call(addMethod, argA, argB);
         Console.WriteLine($"Direct C# invoke ExternalMath.Add(100, 23) -> {result.AsInteger()}");
     }
 
-    private static void RunSdkExamples()
-    {
-        RunEvaluateExample();
-        RunGlobalsExample();
-        RunCallAndIndexerExample();
-        RunReflectionBinderExample();
-        RunScopedAstBuilderExample();
-        RunEnumExample();
-    }
-
-    private static void RunEnumExample()
+    // [TestMethod]
+    public void RunEnumExample()
     {
         Console.WriteLine("\n--- SDK enum example ---");
 
-        using var state = new ScriptState(ScriptOptions.Default.WithStandardLibraries().WithEntryPoint(false));
+        using ShardScriptState state = new ShardScriptState(ShardScriptOptions.Default
+            .WithStandardLibraries()
+            .WithEntryPoint(false));
+
         state.Compile("""
             using stdio;
             namespace enum_demo;
@@ -277,46 +298,59 @@ class Program
         Console.WriteLine($"Program.CheckReadHasExecute() -> {hasExecute}");
     }
 
-    private static void RunEvaluateExample()
+    // [TestMethod]
+    public void RunEvaluateExample()
     {
         Console.WriteLine("\n--- SDK Evaluate<T> example ---");
 
-        int result = ShardScript.Evaluate<int>("1 + 2", ScriptOptions.Default.WithStandardLibraries());
+        int result = ShardScriptEngine.Evaluate<int>("1 + 2", ShardScriptOptions.Default.WithStandardLibraries());
         Console.WriteLine($"Evaluate<int>(\"1 + 2\") -> {result}");
     }
 
-    private static void RunGlobalsExample()
+    // [TestMethod]
+    public void RunGlobalsExample()
     {
         Console.WriteLine("\n--- SDK globals example ---");
 
         var globals = new { PlayerHealth = 100 };
-        using var state = ShardScript.Run("""
+        using var state = ShardScriptEngine.DoString("""
             namespace globals;
             public static class Program
             {
-                public static func GetHealth() -> int { return Globals.PlayerHealth; }
+                public static func GetHealth() -> int
+                {
+                    return Globals.PlayerHealth;
+                }
             }
-            """, ScriptOptions.Default.WithStandardLibraries().WithNamespace("globals").WithEntryPoint(false), globals);
+            """, ShardScriptOptions.Default.WithStandardLibraries().WithNamespace("globals").WithEntryPoint(false), globals);
 
         Console.WriteLine($"Globals.PlayerHealth = {state["Globals.PlayerHealth"]}");
         state["Globals.PlayerHealth"] = 200;
+
         Console.WriteLine($"After assignment: Globals.PlayerHealth = {state["Globals.PlayerHealth"]}");
         Console.WriteLine($"Call<int>(\"Program.GetHealth\") = {state.Call<int>("Program.GetHealth")}");
     }
 
-    private static void RunCallAndIndexerExample()
+    // [TestMethod]
+    public void RunCallAndIndexerExample()
     {
         Console.WriteLine("\n--- SDK Call<T> and indexer example ---");
 
-        using var state = ShardScript.Run("""
+        using var state = ShardScriptEngine.DoString("""
             using stdio;
+            
             namespace call_demo;
+
             public static class Program
             {
-                public static func Add(a: int, b: int) -> int { return a + b; }
                 public static Counter: int;
+
+                public static func Add(a: int, b: int) -> int
+                {
+                    return a + b;
+                }
             }
-            """, ScriptOptions.Default.WithStandardLibraries().WithEntryPoint(false));
+            """, ShardScriptOptions.Default.WithStandardLibraries().WithEntryPoint(false));
 
         long sum = state.Call<long>("Program.Add", 12, 30);
         Console.WriteLine($"Call<long>(\"Program.Add\", 12, 30) -> {sum}");
@@ -332,45 +366,27 @@ class Program
         public static int Multiply(int a, int b) => a * b;
     }
 
-    private static void RunReflectionBinderExample()
+    // [TestMethod]
+    public void RunReflectionBinderExample()
     {
-        Console.WriteLine("\n--- SDK reflection binder example ---");
+        using ShardScriptState state = new ShardScriptState(ShardScriptOptions.Default
+            .WithStandardLibraries()
+            .WithEntryPoint(false));
 
-        using var state = new ScriptState(ScriptOptions.Default.WithStandardLibraries().WithEntryPoint(false));
         state.RegisterFunctions("reflection_demo", options => options.IncludeType<ExternalMathApi>());
         state.Compile("""
             namespace reflection_demo;
+
             public static class Program
             {
-                public static func GetProduct() -> int { return Math.Multiply(6, 7); }
+                public static func GetProduct() -> int
+                {
+                    return Math.Multiply(6, 7);
+                }
             }
             """);
 
-        Console.WriteLine($"Call<int>(\"Program.GetProduct\") = {state.Call<int>("Program.GetProduct")}");
-    }
-
-    private static void RunScopedAstBuilderExample()
-    {
-        Console.WriteLine("\n--- SDK scoped AST builder example ---");
-
-        using var state = new ScriptState(ScriptOptions.Default.WithStandardLibraries().WithEntryPoint(false));
-
-        state.BuildAst(unit => unit
-            .InNamespace("fluent_demo", ns => ns
-                .AddClass("Program", cls => cls
-                    .Public()
-                    .Static()
-                    .AddMethod("Add", m => m
-                        .Public()
-                        .Static()
-                        .Parameter("a", PrimitiveType.Integer)
-                        .Parameter("b", PrimitiveType.Integer)
-                        .Returns(PrimitiveType.Integer)
-                        .Body(body => body
-                            .Return(ctx => ctx.Identifier("a") + ctx.Identifier("b")))))));
-
-        state.Compile();
-        long result = state.Call<long>("Program.Add", 10, 32);
-        Console.WriteLine($"Scoped AST builder Program.Add(10, 32) -> {result}");
+        int retValue = state.Call<int>("Program.GetProduct");
+        Console.WriteLine($"Call<int>(\"Program.GetProduct\") = {retValue}");
     }
 }

@@ -1,7 +1,7 @@
 ﻿using System.Runtime.InteropServices;
 using System.Text;
 
-namespace ShardScript.NET.Application;
+namespace ShardScript.Application;
 
 // TODO: Error codes
 /*

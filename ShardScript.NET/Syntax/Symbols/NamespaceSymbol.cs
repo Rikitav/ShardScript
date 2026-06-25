@@ -1,4 +1,4 @@
-﻿namespace ShardScript.NET.Syntax.Symbols;
+﻿namespace ShardScript.Syntax.Symbols;
 
 public sealed class NamespaceSymbol : SyntaxSymbol
 {

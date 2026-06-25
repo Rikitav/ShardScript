@@ -1,3 +1,4 @@
-﻿<Solution>
+<Solution>
+  <Project Path="../ShardScript.NET.Tests/ShardScript.NET.Tests.csproj" Id="07af53bf-0e37-4304-a52a-b9876e18f0e6" />
   <Project Path="ShardScript.NET.csproj" />
 </Solution>

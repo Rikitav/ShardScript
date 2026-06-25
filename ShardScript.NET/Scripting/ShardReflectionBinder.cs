@@ -1,19 +1,20 @@
-using ShardScript.NET.Application;
-using ShardScript.NET.Runtime;
-using ShardScript.NET.Syntax.Builders;
-using ShardScript.NET.Syntax.Symbols;
+using ShardScript.Application;
+using ShardScript.Runtime;
+using ShardScript.Syntax;
+using ShardScript.Syntax.Builders;
+using ShardScript.Syntax.Symbols;
 using System.Reflection;
 
-namespace ShardScript.NET.Scripting;
+namespace ShardScript.Scripting;
 
 /// <summary>
 /// Reflects over C# types and objects and binds them as ShardScript symbols.
 /// </summary>
-public sealed class ReflectionBinder
+public sealed class ShardReflectionBinder
 {
     private readonly CompilationContext _context;
 
-    public ReflectionBinder(CompilationContext context)
+    public ShardReflectionBinder(CompilationContext context)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
     }
@@ -77,7 +78,7 @@ public sealed class ReflectionBinder
         if (type == null)
             throw new ArgumentNullException(nameof(type));
 
-        var attr = type.GetCustomAttribute<ShardScriptUserDataAttribute>();
+        ShardScriptUserDataAttribute? attr = type.GetCustomAttribute<ShardScriptUserDataAttribute>();
         string namespaceName = ns ?? attr?.Namespace ?? type.Namespace ?? "csharp";
         string typeName = attr?.TypeName ?? type.Name;
 
@@ -96,14 +97,15 @@ public sealed class ReflectionBinder
     /// <summary>
     /// Binds types configured by <paramref name="config"/> under the given namespace path.
     /// </summary>
-    public void RegisterFunctions(string path, Action<BindingOptions> config)
+    public void RegisterFunctions(string path, Action<ShardReflectionBinderOptions> config)
     {
         if (path == null)
             throw new ArgumentNullException(nameof(path));
+
         if (config == null)
             throw new ArgumentNullException(nameof(config));
 
-        var options = new BindingOptions(path);
+        ShardReflectionBinderOptions options = new ShardReflectionBinderOptions(path);
         config(options);
 
         foreach (Type type in options.Types)
@@ -126,6 +128,7 @@ public sealed class ReflectionBinder
 
         if (isStatic)
             builder.Static();
+
         builder.Public();
 
         ParameterInfo[] parameters = method.GetParameters();
@@ -135,7 +138,7 @@ public sealed class ReflectionBinder
             builder.Parameter(parameter.Name ?? "arg", parameterType);
         }
 
-        var callback = new ReflectionMethodCallback(method, parameters);
+        ReflectionMethodCallback callback = new ReflectionMethodCallback(method, parameters);
 
         // The Callback extension wraps the managed delegate in a native delegate and keeps it
         // alive on the builder, so the GC will not collect it while the symbol exists.
@@ -215,13 +218,13 @@ public sealed class ReflectionBinder
             if (argsCount != _parameters.Length)
                 throw new InvalidOperationException($"Method '{_method.Name}' expects {_parameters.Length} arguments but received {argsCount}.");
 
-            var gc = new GarbageCollector(collectorPtr);
+            GarbageCollector gc = new GarbageCollector(collectorPtr);
             object?[] csharpArgs = new object?[_parameters.Length];
 
             for (int i = 0; i < _parameters.Length; i++)
             {
                 ObjectInstance arg = new(args[i]);
-                csharpArgs[i] = Marshaller.FromObjectInstance(arg, _parameters[i].ParameterType);
+                csharpArgs[i] = ShardMarshaller.FromObjectInstance(arg, _parameters[i].ParameterType);
             }
 
             object? result = _method.Invoke(null, csharpArgs);
@@ -229,7 +232,7 @@ public sealed class ReflectionBinder
             if (_method.ReturnType == typeof(void))
                 return IntPtr.Zero;
 
-            return Marshaller.ToObjectInstance(result, gc).Handle;
+            return ShardMarshaller.ToObjectInstance(result, gc).Handle;
         }
     }
 }

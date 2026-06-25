@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace ShardScript.NET.Syntax.Nodes;
+namespace ShardScript.Syntax.Nodes;
 
 public sealed class NamespaceDeclarationSyntax
 {

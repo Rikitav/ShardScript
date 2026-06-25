@@ -1,8 +1,8 @@
-﻿using ShardScript.NET.Application;
-using ShardScript.NET.Syntax.Symbols;
+﻿using ShardScript.Application;
+using ShardScript.Syntax.Symbols;
 using System.Runtime.InteropServices;
 
-namespace ShardScript.NET.Runtime;
+namespace ShardScript.Runtime;
 
 /// <summary>
 /// Allocates and manages ShardScript object instances for the current domain.

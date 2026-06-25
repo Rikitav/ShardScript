@@ -1,6 +1,6 @@
-using ShardScript.NET.Syntax.Nodes;
+using ShardScript.Syntax.Nodes;
 
-namespace ShardScript.NET.Syntax.Ast;
+namespace ShardScript.Syntax.Ast;
 
 /// <summary>
 /// Factory for ShardScript expressions. Supports operator overloading on <see cref="SyntaxExpression"/>.

@@ -1,7 +1,7 @@
-using ShardScript.NET.Application;
-using ShardScript.NET.Syntax.Nodes;
+using ShardScript.Application;
+using ShardScript.Syntax.Nodes;
 
-namespace ShardScript.NET.Syntax.Ast;
+namespace ShardScript.Syntax.Ast;
 
 /// <summary>
 /// Entry point for building ShardScript syntax trees using a scoped, fluent API.

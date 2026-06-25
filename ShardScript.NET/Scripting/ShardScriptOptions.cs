@@ -1,13 +1,13 @@
 using System.Collections.Immutable;
 
-namespace ShardScript.NET.Scripting;
+namespace ShardScript.Scripting;
 
 /// <summary>
 /// Immutable options that control how a ShardScript session is created and executed.
 /// </summary>
-public sealed class ScriptOptions
+public sealed class ShardScriptOptions
 {
-    public static ScriptOptions Default { get; } = new ScriptOptions();
+    public static ShardScriptOptions Default { get; } = new ShardScriptOptions();
 
     public bool LoadStandardLibraries { get; }
     public bool EntryPointEnabled { get; }
@@ -15,7 +15,7 @@ public sealed class ScriptOptions
     public ImmutableArray<string> LibraryPaths { get; }
     public ImmutableArray<string> SourcePaths { get; }
 
-    private ScriptOptions(
+    private ShardScriptOptions(
         bool loadStandardLibraries = false,
         bool entryPointEnabled = true,
         string? defaultNamespace = null,
@@ -29,10 +29,10 @@ public sealed class ScriptOptions
         SourcePaths = sourcePaths ?? ImmutableArray<string>.Empty;
     }
 
-    public ScriptOptions WithStandardLibraries()
-        => new(true, EntryPointEnabled, DefaultNamespace, LibraryPaths, SourcePaths);
+    public ShardScriptOptions WithStandardLibraries()
+        => new ShardScriptOptions(true, EntryPointEnabled, DefaultNamespace, LibraryPaths, SourcePaths);
 
-    public ScriptOptions WithNamespace(string ns)
+    public ShardScriptOptions WithNamespace(string ns)
     {
         if (ns == null)
             throw new ArgumentNullException(nameof(ns));
@@ -40,7 +40,7 @@ public sealed class ScriptOptions
         return new(LoadStandardLibraries, EntryPointEnabled, ns, LibraryPaths, SourcePaths);
     }
 
-    public ScriptOptions WithLibrary(string path)
+    public ShardScriptOptions WithLibrary(string path)
     {
         if (path == null)
             throw new ArgumentNullException(nameof(path));
@@ -48,7 +48,7 @@ public sealed class ScriptOptions
         return new(LoadStandardLibraries, EntryPointEnabled, DefaultNamespace, LibraryPaths.Add(path), SourcePaths);
     }
 
-    public ScriptOptions WithSourceFile(string path)
+    public ShardScriptOptions WithSourceFile(string path)
     {
         if (path == null)
             throw new ArgumentNullException(nameof(path));
@@ -56,6 +56,6 @@ public sealed class ScriptOptions
         return new(LoadStandardLibraries, EntryPointEnabled, DefaultNamespace, LibraryPaths, SourcePaths.Add(path));
     }
 
-    public ScriptOptions WithEntryPoint(bool enabled)
+    public ShardScriptOptions WithEntryPoint(bool enabled)
         => new(LoadStandardLibraries, enabled, DefaultNamespace, LibraryPaths, SourcePaths);
 }

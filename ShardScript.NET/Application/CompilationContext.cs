@@ -1,9 +1,10 @@
-﻿using ShardScript.NET.Syntax.Nodes;
-using ShardScript.NET.Syntax.Symbols;
+﻿using ShardScript.Syntax;
+using ShardScript.Syntax.Nodes;
+using ShardScript.Syntax.Symbols;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace ShardScript.NET.Application;
+namespace ShardScript.Application;
 
 /// <summary>
 /// Represents a single compilation session. Owns the syntax tree, semantic model and diagnostics.

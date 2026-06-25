@@ -1,7 +1,7 @@
-﻿using ShardScript.NET.Application;
-using ShardScript.NET.Syntax.Symbols;
+﻿using ShardScript.Application;
+using ShardScript.Syntax.Symbols;
 
-namespace ShardScript.NET.Syntax.Builders;
+namespace ShardScript.Syntax.Builders;
 
 public interface ISymbolBuilder<out TSymbol> where TSymbol : SyntaxSymbol
 {

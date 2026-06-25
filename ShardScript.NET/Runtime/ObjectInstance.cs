@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace ShardScript.NET.Runtime;
+namespace ShardScript.Runtime;
 
 public enum PrimitiveType
 {
