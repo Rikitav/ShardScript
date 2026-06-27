@@ -57,13 +57,13 @@ jobs:
           tar -czvf ${{ matrix.artifact_thirdparty }} -C ${{ matrix.output_dir }}/third-party .
 
       - name: Upload Interim Main Artifact
-        uses: actions/artifacts/upload@v4
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.os }}-main
           path: ${{ matrix.artifact_main }}
 
       - name: Upload Interim ThirdParty Artifact
-        uses: actions/artifacts/upload@v4
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.os }}-thirdparty
           path: ${{ matrix.artifact_thirdparty }}
