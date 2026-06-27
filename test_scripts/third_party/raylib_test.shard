@@ -3,27 +3,134 @@ using stdio;
 
 namespace raylib_demo;
 
+public class Vector2D
+{
+    public X: double;
+    public Y: double;
+
+    public init(x: double, y: double)
+    {
+        this.X = x;
+        this.Y = y;
+    }
+}
+
+public class RigidBody
+{
+    public Position: Vector2D;
+    public Velocity: Vector2D;
+    public Radius: double;
+    public Restitution: double;
+    public Color: Colors;
+
+    public init(x: double, y: double, radius: double, restitution: double, color: Colors)
+    {
+        this.Position = new Vector2D(x, y);
+        this.Velocity = new Vector2D(0.0, 0.0);
+
+        this.Radius = radius;
+        this.Restitution = restitution;
+        this.Color = color;
+    }
+
+    public func Update(dt: double, gravity: double) -> void
+    {
+        this.Velocity.Y = this.Velocity.Y + (gravity * dt);
+
+        this.Position.X = this.Position.X + (this.Velocity.X * dt);
+        this.Position.Y = this.Position.Y + (this.Velocity.Y * dt);
+    }
+}
+
+public class StaticObstacle
+{
+    public X: double;
+    public Y: double;
+    public Width: double;
+    public Height: double;
+
+    public init(x: double, y: double, width: double, height: double)
+    {
+        this.X = x;
+        this.Y = y;
+        this.Width = width;
+        this.Height = height;
+    }
+}
+
 public static func Main() -> void
 {
-    Window.Init(800, 600, "ShardScript Powered Enums");
+    Window.Init(800, 600, "ShardScript Physics Engine");
     defer Window.Close();
 
-    squareX: int = 400;
-    squareY: int = 300;
+    gravity: double = 980.0;
+    dt: double = 0.017;
+
+    ball: RigidBody = new RigidBody(100.0, 100.0, 20.0, 0.8, Colors.Red);
+    ball.Velocity = new Vector2D(400.0, 0.0);
+
+    floor: StaticObstacle = new StaticObstacle(50.0, 500.0, 700.0, 40.0);
 
     until (Window.ShouldClose())
     {
-        if (Input.IsKeyDown(Keys.Right))
-            squareX = squareX + 5;
-        
-        if (Input.IsKeyDown(Keys.Left))
-            squareX = squareX - 5;
+        ball.Update(dt, gravity);
+
+        if (ball.Position.X - ball.Radius < 0.0)
+        {
+            ball.Position.X = ball.Radius;
+            ball.Velocity.X = -ball.Velocity.X * ball.Restitution;
+        }
+
+        if (ball.Position.X + ball.Radius > 800.0)
+        {
+            ball.Position.X = 800.0 - ball.Radius;
+            ball.Velocity.X = -ball.Velocity.X * ball.Restitution;
+        }
+
+        closestX: double = ball.Position.X;
+        closestY: double = ball.Position.Y;
+
+        if (closestX < floor.X)
+            closestX = floor.X;
+
+        if (closestX > floor.X + floor.Width)
+            closestX = floor.X + floor.Width;
+
+        if (closestY < floor.Y)
+            closestY = floor.Y;
+
+        if (closestY > floor.Y + floor.Height)
+            closestY = floor.Y + floor.Height;
+
+        distanceX: double = ball.Position.X - closestX;
+        distanceY: double = ball.Position.Y - closestY;
+        distanceSquared: double = (distanceX * distanceX) + (distanceY * distanceY);
+
+        if (distanceSquared < (ball.Radius * ball.Radius))
+        {
+            ball.Position.Y = floor.Y - ball.Radius;
+            ball.Velocity.Y = -ball.Velocity.Y * ball.Restitution;
+            ball.Velocity.X = ball.Velocity.X * 0.98;
+        }
 
         Window.BeginDrawing();
         Window.ClearBackground(Colors.RayWhite);
-        
-        Window.DrawRectangle(squareX, squareY, 80, 80, Colors.Red);
-        
+
+        Window.DrawRectangle(
+            (floor.X as int),
+            (floor.Y as int),
+            (floor.Width as int),
+            (floor.Height as int),
+            Colors.DarkGray);
+
+        Window.DrawRectangle(
+            (ball.Position.X - ball.Radius) as int,
+            (ball.Position.Y - ball.Radius) as int,
+            (ball.Radius * 2.0) as int,
+            (ball.Radius * 2.0) as int,
+            ball.Color);
+
+        Window.DrawFPS(10, 10);
         Window.EndDrawing();
     }
 }

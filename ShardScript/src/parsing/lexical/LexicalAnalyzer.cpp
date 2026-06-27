@@ -488,6 +488,9 @@ bool LexicalAnalyzer::ReadNumberLiteral(std::wstring& word, TokenType& type)
 			if (foundDelimeter)
 				break;
 
+			if (!Advance(PeekSymbol))
+				break;
+
 			wchar_t afterDot;
 			if (!SourceText->PeekNext(afterDot))
 				break;
@@ -495,7 +498,6 @@ bool LexicalAnalyzer::ReadNumberLiteral(std::wstring& word, TokenType& type)
 			if (!IsNumberSymbol(afterDot))
 				break;
 
-			Advance(PeekSymbol);
 			Advance(PeekSymbol);
 
 			foundDelimeter = true;

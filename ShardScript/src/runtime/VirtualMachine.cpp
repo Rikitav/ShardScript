@@ -130,10 +130,26 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			{
 				TypeSymbol* instanceType = const_cast<TypeSymbol*>(instance->getInfo());
 				compatible = TypeSymbol::IsAssignableFrom(targetType, instanceType);
+
+				if (!compatible)
+				{
+					if (instanceType == TYPE_INT && targetType == TYPE_DOUBLE)
+					{
+						frame->PushStack(garbageCollector.FromValue(static_cast<double>(instance->AsInteger())));
+						break;
+					}
+					else if (instanceType == TYPE_DOUBLE && targetType == TYPE_INT)
+					{
+						frame->PushStack(garbageCollector.FromValue(static_cast<std::int64_t>(instance->AsDouble())));
+						break;
+					}
+				}
 			}
 
 			if (compatible)
+			{
 				frame->PushStack(instance);
+			}
 			else
 			{
 				frame->PushStack(garbageCollector.NullInstance);
