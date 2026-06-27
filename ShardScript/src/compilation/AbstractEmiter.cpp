@@ -818,7 +818,11 @@ void AbstractEmiter::VisitIfStatement(IfStatementSyntax* node)
 	}
 
 	ClauseScope& scope = Clauses.top();
+
+	bool tmpPopExpressionStatement = PopExpressionStatement;
+	SetPopExpressionStatement(false);
 	VisitStatement(node->ConditionExpression.get());
+	SetPopExpressionStatement(tmpPopExpressionStatement);
 
 	std::size_t jumpAddress = GeneratingFor->ExecutableByteCode.size();
 	Encoder.EmitJumpFalse(GeneratingFor->ExecutableByteCode, 0);
@@ -854,7 +858,11 @@ void AbstractEmiter::VisitUnlessStatement(UnlessStatementSyntax* node)
 	}
 
 	ClauseScope& scope = Clauses.top();
+	
+	bool tmpPopExpressionStatement = PopExpressionStatement;
+	SetPopExpressionStatement(false);
 	VisitStatement(node->ConditionExpression.get());
+	SetPopExpressionStatement(tmpPopExpressionStatement);
 
 	std::size_t jumpAddress = GeneratingFor->ExecutableByteCode.size();
 	Encoder.EmitJumpTrue(GeneratingFor->ExecutableByteCode, 0);

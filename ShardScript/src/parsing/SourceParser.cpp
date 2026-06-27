@@ -1670,6 +1670,7 @@ std::unique_ptr<StatementSyntax> SourceParser::ReadStatement(SourceProvider& rea
 				name, SyntaxToken(), std::move(expr), parent);
 		}
 
+		/*
 		// Wrong: name = value (missing type)
 		if (current.Type == TokenType::Identifier && peek.Type == TokenType::AssignOperator)
 		{
@@ -1685,6 +1686,7 @@ std::unique_ptr<StatementSyntax> SourceParser::ReadStatement(SourceProvider& rea
 				std::make_unique<PredefinedTypeSyntax>(SyntaxToken(TokenType::VarKeyword, L"var", name.Location, false), parent),
 				name, assign, std::move(expr), parent);
 		}
+		*/
 	}
 
 	auto expression = ReadExpression(reader, parent, 0);
