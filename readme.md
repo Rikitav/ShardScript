@@ -39,7 +39,7 @@
   * `try`/`catch` blocks.
   * `extern` methods for native C++ interop.
 * **External modules:** write libs in C++ and load them at runtime.
-  * See `library-guide.md` for more info.
+  * See `library-guide.md` for more info and `ShardScript.Framework` for real examples.
 
 ### Runtime & Framework
 * **Compiler:** Lexer/parser → semantic analysis → bytecode emission.
