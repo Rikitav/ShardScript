@@ -368,7 +368,7 @@ bool& ObjectInstance::AsBoolean() const
 
 std::int64_t& ObjectInstance::AsInteger() const
 {
-	if (getInfo() != TYPE_INT)
+	if (getInfo() != TYPE_INT && getInfo()->Kind != SyntaxKind::EnumDeclaration)
 		throw std::runtime_error("Cannot interpret instance as Integer");
 
 	return *reinterpret_cast<std::int64_t*>(getMemory());

@@ -5,16 +5,25 @@ namespace raylib_demo;
 
 public static func Main() -> void
 {
-    Window.Init(800, 600, "Raylib Demo");
+    Window.Init(800, 600, "ShardScript Powered Enums");
     defer Window.Close();
+
+    squareX: int = 400;
+    squareY: int = 300;
 
     until (Window.ShouldClose())
     {
+        if (Input.IsKeyDown(Keys.Right))
+            squareX = squareX + 5;
+        
+        if (Input.IsKeyDown(Keys.Left))
+            squareX = squareX - 5;
+
         Window.BeginDrawing();
         Window.ClearBackground(Colors.RayWhite);
-        Window.DrawRectangle(100, 100, 200, 200, Colors.Red);
+        
+        Window.DrawRectangle(squareX, squareY, 80, 80, Colors.Red);
+        
         Window.EndDrawing();
     }
-
-    println("Demo finished");
 }

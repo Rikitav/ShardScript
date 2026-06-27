@@ -879,7 +879,8 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 				ProcessCode(currentFrame, decoder, opCode);
 			}
 
-			if (method->ReturnType != nullptr && method->ReturnType != SymbolTable::Primitives::Void &&
+			if (method->ReturnType != nullptr &&
+				method->ReturnType != SymbolTable::Primitives::Void &&
 			    currentFrame->InterruptionReason != FrameInterruptionReason::ExceptionRaised)
 			{
 				callingFrame->PushStack(currentFrame->PopStack());
