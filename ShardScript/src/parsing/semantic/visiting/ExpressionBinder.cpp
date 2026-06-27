@@ -84,6 +84,8 @@
 #include <limits>
 #include <exception>
 #include <stdexcept>
+#include <charconv>
+#include <system_error>
 
 using namespace shard;
 
@@ -1988,6 +1990,37 @@ namespace
 		return true;
 	}
 
+	double wstod_independent(const std::wstring& str, std::size_t* pos = nullptr)
+	{
+		if (str.empty())
+			throw std::invalid_argument("wstod_independent: empty string");
+
+		static _locale_t c_locale = _create_locale(LC_NUMERIC, "C");
+
+		wchar_t* endptr = nullptr;
+		const wchar_t* start = str.c_str();
+
+		errno = 0;
+		double value = _wcstod_l(start, &endptr, c_locale);
+
+		if (endptr == start)
+		{
+			throw std::invalid_argument("wstod_independent: no conversion could be performed");
+		}
+
+		if (errno == ERANGE)
+		{
+			throw std::out_of_range("wstod_independent: argument out of range");
+		}
+
+		if (pos)
+		{
+			*pos = static_cast<std::size_t>(endptr - start);
+		}
+
+		return value;
+	}
+
 	NumericParseResult ParseIntegerLiteral(const std::wstring& word, std::int64_t& outValue)
 	{
 		int base;
@@ -2053,7 +2086,7 @@ namespace
 		try
 		{
 			std::size_t pos = 0;
-			double value = std::stod(word, &pos);
+			double value = wstod_independent(word, &pos);
 
 			if (pos != word.size())
 				return { false, L"Invalid characters in floating point number" };
@@ -2731,7 +2764,7 @@ void ExpressionBinder::VisitCastExpression(CastExpressionSyntax* node)
 	TypeSymbol* targetType = node->TargetType->Symbol;
 	if (targetType->Inlining == TypeInlining::ByValue)
 	{
-		Diagnostics.ReportError(node->OperatorToken, L"The 'as' operator may only be used with reference types");
+		//Diagnostics.ReportError(node->OperatorToken, L"The 'as' operator may only be used with reference types");
 	}
 
 	SetExpressionType(node, targetType);

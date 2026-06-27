@@ -215,6 +215,7 @@ static ObjectInstance* array_enumerator_MoveNext(const CallState& context)
 	ObjectInstance* self = context.Args[0];
 	std::int64_t index = self->GetField(g_ArrayEnumeratorIndex, context.Frame)->AsInteger();
 	std::int64_t length = self->GetField(g_ArrayEnumeratorLength, context.Frame)->AsInteger();
+	
 	index++;
 	self->SetField(g_ArrayEnumeratorIndex, context.Collector.FromValue(index), context.Frame);
 	return context.Collector.FromValue(index < length);
@@ -449,6 +450,7 @@ static void ResolveEnumerables(SymbolTable* table)
 			SymbolTable::Primitives::Boolean,
 			L"MoveNext",
 			&array_enumerator_MoveNext);
+
 		moveNext->Parent = raw;
 		raw->Methods.push_back(moveNext);
 
@@ -483,6 +485,7 @@ static void ResolveEnumerables(SymbolTable* table)
 			factory.GenericType(TRAIT_ENUMERATOR, { { L"T", TRAIT_ENUMERATOR->TypeParameters[0] } }),
 			L"GetEnumerator",
 			&primitive_array_get_enumerator);
+
 		getEnumerator->Parent = SymbolTable::Primitives::Array;
 		SymbolTable::Primitives::Array->Methods.push_back(getEnumerator);
 		SymbolTable::Primitives::Array->Interfaces.push_back(enumerableInterface);
