@@ -25,21 +25,30 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="bin\Release\net10.0\ShardScript.dll" Condition="Exists('bin\Release\net10.0\ShardScript.dll')">
+    <Content Include="bin\Release\net10.0\windows\ShardScript.dll" Condition="Exists('bin\Release\net10.0\windows\ShardScript.dll')">
       <PackagePath>runtimes/win-x64/native</PackagePath>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="bin\Release\net10.0\framework\*.dll" Condition="Exists('bin\Release\net10.0\ShardScript.dll')">
+    <Content Include="bin\Release\net10.0\windows\framework\*.dll" Condition="Exists('bin\Release\net10.0\windows\ShardScript.dll')">
       <PackagePath>runtimes/win-x64/native/framework</PackagePath>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    
+    <Content Include="bin\Release\net10.0\linux\libShardScript.so" Condition="Exists('bin\Release\net10.0\linux\libShardScript.so')">
+      <PackagePath>runtimes/linux-x64/native</PackagePath>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="bin\Release\net10.0\linux\framework\*.so" Condition="Exists('bin\Release\net10.0\linux\libShardScript.so')">
+      <PackagePath>runtimes/linux-x64/native/framework</PackagePath>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
 
-    <Content Include="..\out\build\x64-debug\bin\ShardScript.dll" Condition="!Exists('bin\Release\net10.0\ShardScript.dll') And Exists('..\out\build\x64-debug\bin\ShardScript.dll')">
+    <Content Include="..\out\build\x64-debug\bin\ShardScript.dll" Condition="!Exists('bin\Release\net10.0\windows\ShardScript.dll') And Exists('..\out\build\x64-debug\bin\ShardScript.dll')">
       <PackagePath>runtimes/win-x64/native</PackagePath>
       <Link>ShardScript.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="..\out\build\x64-debug\bin\system\*.dll" Condition="!Exists('bin\Release\net10.0\ShardScript.dll') And Exists('..\out\build\x64-debug\bin\ShardScript.dll')">
+    <Content Include="..\out\build\x64-debug\bin\framework\*.dll" Condition="!Exists('bin\Release\net10.0\windows\ShardScript.dll') And Exists('..\out\build\x64-debug\bin\ShardScript.dll')">
       <PackagePath>runtimes/win-x64/native/framework</PackagePath>
       <Link>framework\%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

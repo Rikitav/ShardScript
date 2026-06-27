@@ -47,9 +47,7 @@ jobs:
       - name: Pack Artifacts (Windows)
         if: matrix.os == 'windows-latest'
         run: |
-          # Фильтруем: берем всё, исключаем папку third-party, а также мусорные .lib и .exp файлы линкера
           powershell "Get-ChildItem -Path '${{ matrix.output_dir }}/*' -Exclude 'third-party','*.lib','*.exp' | Compress-Archive -DestinationPath '${{ matrix.artifact_main }}'"
-          # Для сторонних либ пакуем только рантайм-файлы (.dll), отсекая статический мусор
           powershell "Get-ChildItem -Path '${{ matrix.output_dir }}/third-party/*' -Exclude '*.lib','*.exp' | Compress-Archive -DestinationPath '${{ matrix.artifact_thirdparty }}'"
 
       - name: Pack Artifacts (Linux)
@@ -62,7 +60,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.os }}-main
-          path: ${{ matrix.artifact_main }}
+          path: ${{ matrix.output_dir }}
 
       - name: Upload Interim ThirdParty Artifact
         uses: actions/upload-artifact@v4
@@ -81,8 +79,16 @@ jobs:
       - name: Download Artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: '*-*'
-          merge-multiple: true
+          pattern: "*-*"
+
+      - name: Prepare Files for Release
+        run: |
+          mv windows-latest-thirdparty/*.zip .
+          mv ubuntu-latest-thirdparty/*.tar.gz .
+
+          cd windows-latest-main && zip -r ../shardscript-${{ github.ref_name }}-windows.zip . && cd ..
+          cd ubuntu-latest-main && tar -czvf ../shardscript-${{ github.ref_name }}-linux.tar.gz . && cd ..
+          tar -czvf shardscript-${{ github.ref_name }}-linux.tar.gz -C ubuntu-latest-main .
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -111,16 +117,17 @@ jobs:
         with:
           dotnet-version: "10.0.x"
 
-      - name: Download Native DLLs for NuGet
+      - name: Download Windows Native Artifacts
         uses: actions/download-artifact@v4
         with:
           name: windows-latest-main
-          path: ShardScript.NET/bin/Release/net1.0/
+          path: ShardScript.NET/bin/Release/net10.0/windows/
 
-      - name: Fake Local Build Path for MSBuild
-        run: |
-          mkdir -p out/build/x64-debug/bin/
-          cp ShardScript.NET/bin/Release/net10.0/ShardScript.dll out/build/x64-debug/bin/
+      - name: Download Linux Native Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ubuntu-latest-main
+          path: ShardScript.NET/bin/Release/net10.0/linux/
 
       - name: Restore Dependencies
         run: dotnet restore ShardScript.NET/ShardScript.NET.csproj
