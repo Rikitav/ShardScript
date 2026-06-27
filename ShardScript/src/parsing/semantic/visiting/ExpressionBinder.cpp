@@ -1995,13 +1995,18 @@ namespace
 		if (str.empty())
 			throw std::invalid_argument("wstod_independent: empty string");
 
-		static _locale_t c_locale = _create_locale(LC_NUMERIC, "C");
-
 		wchar_t* endptr = nullptr;
 		const wchar_t* start = str.c_str();
-
 		errno = 0;
-		double value = _wcstod_l(start, &endptr, c_locale);
+		double value = 0.0;
+
+#ifdef _WIN32
+		static _locale_t c_locale = _create_locale(LC_NUMERIC, "C");
+		value = _wcstod_l(start, &endptr, c_locale);
+#else
+		static locale_t c_locale = newlocale(LC_NUMERIC_MASK, "C", nullptr);
+		value = wcstod_l(start, &endptr, c_locale);
+#endif
 
 		if (endptr == start)
 		{
