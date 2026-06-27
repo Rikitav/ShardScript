@@ -40,7 +40,7 @@ jobs:
 
       - name: Configure CMake
         run: cmake -B build -DCMAKE_BUILD_TYPE=Release
-
+        
       - name: Build Project
         run: cmake --build build --config Release
 
@@ -104,6 +104,7 @@ jobs:
 
   publish-nuget:
     name: Pack and Publish NuGet
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository

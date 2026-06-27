@@ -7,20 +7,18 @@ file(GLOB_RECURSE CPP_FILES CONFIGURE_DEPENDS
 )
 
 foreach(CPP_FILE IN LISTS CPP_FILES)
-  get_filename_component(TARGET_NAME "${CPP_FILE}" NAME_WLE)
-  add_library("${TARGET_NAME}" SHARED "${CPP_FILE}")
+  get_filename_component(SHARD_TARGET_NAME "${CPP_FILE}" NAME_WLE)
+  add_library("${SHARD_TARGET_NAME}" SHARED "${CPP_FILE}")
 
-  set_target_properties("${TARGET_NAME}" PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+  set_target_properties("${SHARD_TARGET_NAME}" PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
-  string(FIND "${CPP_FILE}" "/system/" IS_SYSTEM)
-  
-  if(NOT IS_SYSTEM EQUAL -1)
-    set(TARGET_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin/framework")
+  if("${CPP_FILE}" MATCHES "(/system/|\\\\system\\\\)")
+    set(TARGET_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin/system")
   else()
-    set(TARGET_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin/third_party")
+    set(TARGET_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin/third-party")
   endif()
   
-  set_target_properties("${TARGET_NAME}" PROPERTIES
+  set_target_properties("${SHARD_TARGET_NAME}" PROPERTIES
       RUNTIME_OUTPUT_DIRECTORY "${TARGET_OUTPUT_DIR}"
       RUNTIME_OUTPUT_DIRECTORY_DEBUG "${TARGET_OUTPUT_DIR}"
       RUNTIME_OUTPUT_DIRECTORY_RELEASE "${TARGET_OUTPUT_DIR}"
@@ -34,18 +32,18 @@ foreach(CPP_FILE IN LISTS CPP_FILES)
   )
 
   # RayLib target
-  string(FIND "${TARGET_NAME}" "raylib" IS_RAYLIB_TARGET)
+  string(FIND "${SHARD_TARGET_NAME}" "raylib" IS_RAYLIB_TARGET)
   if(NOT IS_RAYLIB_TARGET EQUAL -1)
-    target_include_directories("${TARGET_NAME}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/third_party/include")
+    target_include_directories("${SHARD_TARGET_NAME}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/third_party/include")
     
     if(WIN32)
-        target_link_libraries("${TARGET_NAME}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/third_party/RayLib/lib/raylib.lib" winmm gdi32 shell32 user32)
+        target_link_libraries("${SHARD_TARGET_NAME}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/third_party/RayLib/lib/raylib.lib" winmm gdi32 shell32 user32)
     else()
-        target_link_libraries("${TARGET_NAME}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/third_party/RayLib/lib/libraylib.a" GL m pthread dl rt X11)
+        target_link_libraries("${SHARD_TARGET_NAME}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/third_party/RayLib/lib/libraylib.a" GL m pthread dl rt X11)
     endif()
   endif()
 
-  target_include_directories("${TARGET_NAME}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
-  target_include_directories("${TARGET_NAME}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../ShardScript/include")
-  target_link_libraries("${TARGET_NAME}" PRIVATE ShardScript)
+  target_include_directories("${SHARD_TARGET_NAME}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+  target_include_directories("${SHARD_TARGET_NAME}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../ShardScript/include")
+  target_link_libraries("${SHARD_TARGET_NAME}" PRIVATE ShardScript)
 endforeach()
