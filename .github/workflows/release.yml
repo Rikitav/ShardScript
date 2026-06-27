@@ -1,0 +1,126 @@
+name: Build and Release ShardScript
+
+on:
+  push:
+    tags:
+      - "*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            artifact_main: shardscript-windows.zip
+            artifact_thirdparty: shardscript-thirdparty-windows.zip
+            output_dir: build/bin
+          - os: ubuntu-latest
+            artifact_main: shardscript-linux.tar.gz
+            artifact_thirdparty: shardscript-thirdparty-linux.tar.gz
+            output_dir: build/bin
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Linux Dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libx11-dev libxrandr-dev libxinerama-dev \
+            libxcursor-dev libxi-dev libgl1-mesa-dev libglu1-mesa-dev \
+            mesa-common-dev libasound2-dev
+
+      - name: Configure CMake
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build Project
+        run: cmake --build build --config Release
+
+      - name: Pack Artifacts (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          powershell "Get-ChildItem -Path '${{ matrix.output_dir }}/*' -Exclude 'third-party' | Compress-Archive -DestinationPath '${{ matrix.artifact_main }}'"
+          powershell "Compress-Archive -Path '${{ matrix.output_dir }}/third-party/*' -DestinationPath '${{ matrix.artifact_thirdparty }}'"
+
+      - name: Pack Artifacts (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          tar -czvf ${{ matrix.artifact_main }} --exclude='third-party' -C ${{ matrix.output_dir }} .
+          tar -czvf ${{ matrix.artifact_thirdparty }} -C ${{ matrix.output_dir }}/third-party .
+
+      - name: Upload Interim Main Artifact
+        uses: actions/artifacts/upload@v4
+        with:
+          name: ${{ matrix.os }}-main
+          path: ${{ matrix.artifact_main }}
+
+      - name: Upload Interim ThirdParty Artifact
+        uses: actions/artifacts/upload@v4
+        with:
+          name: ${{ matrix.os }}-thirdparty
+          path: ${{ matrix.artifact_thirdparty }}
+
+  publish-github:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download Artifacts
+        uses: actions/artifacts/download@v4
+        with:
+          pattern: "*-*"
+
+      - name: Prepare Files
+        run: |
+          mv windows-latest-main/*.zip .
+          mv windows-latest-thirdparty/*.zip .
+          mv ubuntu-latest-main/*.tar.gz .
+          mv ubuntu-latest-thirdparty/*.tar.gz .
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            shardscript-${{ github.ref_name }}-windows.zip
+            shardscript-thirdparty-${{ github.ref_name }}-windows.zip
+            shardscript-${{ github.ref_name }}-linux.tar.gz
+            shardscript-thirdparty-${{ github.ref_name }}-linux.tar.gz
+          name: Release ${{ github.ref_name }}
+          tag_name: ${{ github.ref }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+
+  publish-nuget:
+    name: Pack and Publish NuGet
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore Dependencies
+        run: dotnet restore ShardScript.NET/ShardScript.NET.csproj
+
+      - name: Build and Pack NuGet Package
+        run: |
+          dotnet pack ShardScript.NET/ShardScript.NET.csproj -c Release -o out /p:Version=${{ github.ref_name }}
+
+      - name: Push to NuGet.org
+        run: |
+          dotnet nuget push out/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate

@@ -1,0 +1,8 @@
+using socket;
+
+namespace socket_client;
+
+public static func Main() -> void
+{
+	defer sock: Socket = new Socket();
+}

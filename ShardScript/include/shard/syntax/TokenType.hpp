@@ -76,6 +76,7 @@ namespace shard
 		NumberLiteral,	      // number value
 		DoubleLiteral,		  // floating point number value
 		NativeLiteral,		  // architectures' native number
+		ByteLiteral,		  // unsigned byte 0-255
 
 		// Punctuation
 		Colon,				  // :

@@ -175,6 +175,13 @@ SymbolBuilder<OperatorSymbol> SymbolBuilder<ClassSymbol>::AddOperator(
     return builder;
 }
 
+SymbolBuilder<ClassSymbol>& SymbolBuilder<ClassSymbol>::Implements(
+    InterfaceSymbol* interface)
+{
+    Symbol->Interfaces.push_back(interface);
+    return *this;
+}
+
 // =========================================================================
 // StructSymbol
 // =========================================================================

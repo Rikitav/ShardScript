@@ -20,6 +20,7 @@ namespace shard
     class OperatorSymbol;
     class FieldSymbol;
     class PropertySymbol;
+    class InterfaceSymbol;
     class IndexatorSymbol;
     class CallStackFrame;
     class GenericTypeSymbol;
