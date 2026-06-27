@@ -117,13 +117,6 @@ jobs:
         with:
           dotnet-version: "10.0.x"
 
-      - name: Restore Dependencies
-        run: dotnet restore ShardScript.NET/ShardScript.NET.csproj
-
-      - name: Build Managed Project
-        run: |
-          dotnet build ShardScript.NET/ShardScript.NET.csproj --no-restore -c Release /p:Version=${{ github.ref_name }}
-
       - name: Download Windows Native Artifacts
         uses: actions/download-artifact@v4
         with:
@@ -136,9 +129,22 @@ jobs:
           name: ubuntu-latest-main
           path: ShardScript.NET/bin/Release/net10.0/linux/
 
+      - name: Restore Dependencies
+        run: dotnet restore ShardScript.NET/ShardScript.NET.csproj
+
+      - name: Build Managed Project
+        run: |
+          dotnet build ShardScript.NET/ShardScript.NET.csproj --no-restore -c Release /p:Version=${{ github.ref_name }}
+
       - name: Pack NuGet Package
         run: |
           dotnet pack ShardScript.NET/ShardScript.NET.csproj -c Release -o out --no-build /p:Version=${{ github.ref_name }}
+
+      - name: Upload Collected NuGet Artifact for Verification
+        uses: actions/upload-artifact@v4
+        with:
+          name: compiled-nuget-package
+          path: out/*.nupkg
 
       - name: Push to NuGet.org
         run: |
