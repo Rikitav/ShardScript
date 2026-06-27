@@ -1,0 +1,20 @@
+using raylib;
+using stdio;
+
+namespace raylib_demo;
+
+public static func Main() -> void
+{
+    Window.Init(800, 600, "Raylib Demo");
+    defer Window.Close();
+
+    until (Window.ShouldClose())
+    {
+        Window.BeginDrawing();
+        Window.ClearBackground(Colors.RayWhite);
+        Window.DrawRectangle(100, 100, 200, 200, Colors.Red);
+        Window.EndDrawing();
+    }
+
+    println("Demo finished");
+}

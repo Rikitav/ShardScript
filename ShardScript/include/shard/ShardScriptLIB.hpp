@@ -24,13 +24,13 @@ namespace shard
 // Microsoft / MinGW
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(__WIN32)
 	#define SHARDLIB_EXPORT __declspec(dllexport)
-	#define SHARDLIB_GETMETADATA extern "C" __declspec(dllexport) void SHARDLIB_GETMETADATA_FUNCNAME(ShardLibMetadata& lib)
-	#define SHARDLIB_ENTRYPOINT extern "C" __declspec(dllexport) void SHARDLIB_ENTRYPOINT_FUNCNAME(CompilationContext& context)
+	#define SHARDLIB_GETMETADATA extern "C" __declspec(dllexport) void SHARDLIB_GETMETADATA_FUNCNAME(shard::ShardLibMetadata& lib)
+	#define SHARDLIB_ENTRYPOINT extern "C" __declspec(dllexport) void SHARDLIB_ENTRYPOINT_FUNCNAME(shard::CompilationContext& context)
 
 //  GCC
 #elif defined(__GNUC__)
     #define SHARDLIB_EXPORT __attribute__((visibility("default")))
-	#define SHARDLIB_GETMETADATA extern "C" __attribute__((visibility("default"))) void SHARDLIB_GETMETADATA_FUNCNAME(ShardLibMetadata& lib)
-	#define SHARDLIB_ENTRYPOINT extern "C" __attribute__((visibility("default"))) void SHARDLIB_ENTRYPOINT_FUNCNAME(CompilationContext& context)
+	#define SHARDLIB_GETMETADATA extern "C" __attribute__((visibility("default"))) void SHARDLIB_GETMETADATA_FUNCNAME(shard::ShardLibMetadata& lib)
+	#define SHARDLIB_ENTRYPOINT extern "C" __attribute__((visibility("default"))) void SHARDLIB_ENTRYPOINT_FUNCNAME(shard::CompilationContext& context)
 
 #endif

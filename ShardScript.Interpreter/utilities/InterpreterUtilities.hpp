@@ -11,6 +11,8 @@ namespace shard
         static inline bool ExcludeStd = false;
         static inline bool ShowDecompile = false;
         static inline bool RunProgram = true;
+
+        static inline std::vector<std::wstring> LibsToLoad;
         static inline std::vector<std::wstring> FilesToCompile;
     };
 

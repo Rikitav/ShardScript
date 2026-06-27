@@ -360,30 +360,48 @@ void ObjectInstance::WriteString(const std::wstring& value) const
 
 bool& ObjectInstance::AsBoolean() const
 {
+	if (getInfo() != TYPE_BOOL)
+		throw std::runtime_error("Cannot interpret instance as Boolean");
+
 	return *reinterpret_cast<bool*>(getMemory());
 }
 
 std::int64_t& ObjectInstance::AsInteger() const
 {
+	if (getInfo() != TYPE_INT)
+		throw std::runtime_error("Cannot interpret instance as Integer");
+
 	return *reinterpret_cast<std::int64_t*>(getMemory());
 }
 
 double& ObjectInstance::AsDouble() const
 {
+	if (getInfo() != TYPE_DOUBLE)
+		throw std::runtime_error("Cannot interpret instance as Double");
+
 	return *reinterpret_cast<double*>(getMemory());
 }
 
 wchar_t& ObjectInstance::AsCharacter() const
 {
+	if (getInfo() != TYPE_CHAR)
+		throw std::runtime_error("Cannot interpret instance as Character");
+
 	return *reinterpret_cast<wchar_t*>(getMemory());
 }
 
 const wchar_t* ObjectInstance::AsString() const
 {
+	if (getInfo() != TYPE_STRING)
+		throw std::runtime_error("Cannot interpret instance as String");
+
 	return *reinterpret_cast<const wchar_t**>(OffsetMemory(sizeof(std::int64_t), sizeof(wchar_t*)));
 }
 
 void* ObjectInstance::AsNint() const
 {
+	if (getInfo() != TYPE_NINT)
+		throw std::runtime_error("Cannot interpret instance as Nint");
+
 	return *reinterpret_cast<void**>(getMemory());
 }

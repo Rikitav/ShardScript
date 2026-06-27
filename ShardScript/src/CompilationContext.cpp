@@ -353,7 +353,7 @@ void CompilationContext::AddLib(const LibraryHandle& handle)
 	{
 #ifdef _WIN32
 		char dllPath[MAX_PATH];
-		if (GetModuleFileNameA(handle, dllPath, MAX_PATH) > 0)
+		if (GetModuleFileNameA(static_cast<HMODULE>(handle), dllPath, MAX_PATH) > 0)
 		{
 			throw std::runtime_error("library \"" + std::string(dllPath) + "\" does not export ShardLib_EntryPoint");
 		}

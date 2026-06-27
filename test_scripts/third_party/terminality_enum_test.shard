@@ -1,0 +1,30 @@
+using terminality;
+using stdio;
+
+namespace terminality_enum_test;
+
+public static class Program
+{
+    public static func Main() -> void
+    {
+        HostApplication.EnterTerminal();
+
+        panel: StackPanel = new StackPanel();
+        panel.HorizontalAlignment = HorizontalAlignment.Center;
+        panel.VerticalAlignment = VerticalAlignment.Stretch;
+        panel.HorizontalContentAlignment = HorizontalAlignment.Right;
+        panel.VerticalContentAlignment = VerticalAlignment.Bottom;
+        panel.ContentOrientation = Orientation.Horizontal;
+
+        label: Label = new Label();
+        label.HorizontalAlignment = HorizontalAlignment.Left;
+        label.VerticalAlignment = VerticalAlignment.Top;
+
+        button: Button = new Button();
+        button.HorizontalAlignment = HorizontalAlignment.Stretch;
+        button.VerticalAlignment = VerticalAlignment.Center;
+
+        HostApplication.RunUILoop(root);
+        HostApplication.ExitTerminal();
+    }
+}

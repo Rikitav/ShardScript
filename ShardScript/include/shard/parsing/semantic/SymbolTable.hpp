@@ -113,6 +113,7 @@ namespace shard
     inline TypeSymbol*& TYPE_VOID = shard::SymbolTable::Primitives::Void;
     inline TypeSymbol*& TYPE_NULL = shard::SymbolTable::Primitives::Null;
     inline TypeSymbol*& TYPE_ANY = shard::SymbolTable::Primitives::Any;
+    inline TypeSymbol*& TYPE_NINT = shard::SymbolTable::Primitives::NativeInteger;
 
     inline TypeSymbol*& TYPE_BOOL = shard::SymbolTable::Primitives::Boolean;
     inline TypeSymbol*& TYPE_INT = shard::SymbolTable::Primitives::Integer;
@@ -133,7 +134,7 @@ namespace shard
 
     inline MethodSymbol*& TRAIT_DISPOSABLE_Dispose = shard::SymbolTable::StandardTypes::IDisposable_Dispose;
     inline MethodSymbol*& TRAIT_PRINTABLE_ToString = shard::SymbolTable::StandardTypes::IPrintable_ToString;
-    //inline InterfaceSymbol*& TRAIT_ENUMERABLE = shard::SymbolTable::StandardTypes::IEnumerable_GetEnumerator;
+    
     inline AccessorSymbol*& TRAIT_THROWABLE_getStackTrace = shard::SymbolTable::StandardTypes::IThrowable_getStackTrace;
     inline AccessorSymbol*& TRAIT_THROWABLE_getMessage = shard::SymbolTable::StandardTypes::IThrowable_getMessage;
 }

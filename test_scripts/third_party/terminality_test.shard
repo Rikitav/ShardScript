@@ -1,0 +1,44 @@
+using terminality;
+
+namespace hello_world;
+
+public delegate Action() -> void;
+
+public static func Main() -> void
+{
+    HostApplication.EnterTerminal();
+
+    root: StackPanel = new StackPanel();
+    root.HorizontalAlignment = HorizontalAlignment.Center;
+    root.VerticalAlignment = VerticalAlignment.Stretch;
+    root.HorizontalContentAlignment = HorizontalAlignment.Center;
+    root.VerticalContentAlignment = VerticalAlignment.Center;
+
+    label: Label = new Label();
+    label.Text = "Hello, ShardScript!";
+    label.HorizontalAlignment = HorizontalAlignment.Center;
+    label.VerticalAlignment = VerticalAlignment.Center;
+    root.AddChild(label);
+
+    exitAction: Action = lambda () -> void
+    {
+        HostApplication.RequestStop();
+    };
+
+    exitBtn: Button = new Button();
+    exitBtn.Text = "Exit";
+    exitBtn.HorizontalAlignment = HorizontalAlignment.Center;
+    exitBtn.VerticalAlignment = VerticalAlignment.Top;
+    exitBtn.SetClicked(exitAction);
+    root.AddChild(exitBtn);
+
+    exitBtn2: Button = new Button();
+    exitBtn2.Text = "GO FUCK YOURSELF";
+    exitBtn2.HorizontalAlignment = HorizontalAlignment.Center;
+    exitBtn2.VerticalAlignment = VerticalAlignment.Top;
+    exitBtn2.SetClicked(exitAction);
+    root.AddChild(exitBtn2);
+
+    HostApplication.RunUILoop(root);
+    HostApplication.ExitTerminal();
+}
