@@ -28,9 +28,10 @@
 // Microsoft
 #if defined(_MSC_VER)
 
+	using LibraryHandle = void*;
 	#define WIN32_LEAN_AND_MEAN
-	#include <Windows.h>
-	using LibraryHandle = struct HINSTANCE__*;
+	//#include <Windows.h>
+	//using LibraryHandle = struct HINSTANCE__*;
 
 // GCC / Clang
 #elif defined(__GNUC__)

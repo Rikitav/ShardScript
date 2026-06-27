@@ -373,17 +373,11 @@ int wmain(int argc, wchar_t* argv[])
 		{
 			fs::path currentDirectory = GetCurrentDirectoryPath() / L"framework";
 			LoadLibrariesFromDirectoryPath(&compiler, currentDirectory);
+		}
 
-			/*
-			fs::path stdlibFilepath = currentDirectory / stdlibFilename;
-			if (!fs::exists(stdlibFilepath))
-			{
-				std::wcout << L"'" << stdlibFilename << L"' not found! use '--no-std' flag to disable standard library loading requirement" << std::endl;
-				return 1;
-			}
-
-			compiler.AddLib(stdlibFilepath.wstring());
-			*/
+		for (const std::wstring& file : ConsoleArguments::LibsToLoad)
+		{
+			compiler.AddLib(file);
 		}
 
 		fs::path workingDirectory = GetWorkingDirectoryPath();

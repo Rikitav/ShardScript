@@ -34,6 +34,14 @@ void shard::ShardUtilities::ParseArguments(int argc, wchar_t* argv[])
         {
             ConsoleArguments::ExcludeStd = true;
         }
+        else if (arg == L"-l")
+        {
+            if (argc == i)
+                continue;
+
+            arg = argv[++i];
+            ConsoleArguments::LibsToLoad.push_back(arg);
+        }
         else
         {
             ConsoleArguments::FilesToCompile.push_back(arg);

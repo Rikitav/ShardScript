@@ -397,10 +397,6 @@ static ObjectInstance* shard_Button_Text_set(const CallState& context) noexcept(
 }
 
 // ============================================================================
-// Shared alignment helpers (used by StackPanel too for its own alignment)
-// ============================================================================
-
-// ============================================================================
 // ShardScript library metadata and entry point
 // ============================================================================
 
@@ -418,28 +414,21 @@ SHARDLIB_ENTRYPOINT
 	// ------------------------------------------------------------------------
 	// Enums
 	// ------------------------------------------------------------------------
-	SymbolBuilder<EnumSymbol> horizontalAlignmentEnum = terminality.AddEnum(L"HorizontalAlignment");
-	horizontalAlignmentEnum
+	gHorizontalAlignmentEnum = terminality.AddEnum(L"HorizontalAlignment")
 		.AddValue(L"Left", static_cast<std::int64_t>(HorizontalAlign::Left))
 		.AddValue(L"Center", static_cast<std::int64_t>(HorizontalAlign::Center))
 		.AddValue(L"Right", static_cast<std::int64_t>(HorizontalAlign::Right))
 		.AddValue(L"Stretch", static_cast<std::int64_t>(HorizontalAlign::Stretch));
 
-	SymbolBuilder<EnumSymbol> verticalAlignmentEnum = terminality.AddEnum(L"VerticalAlignment");
-	verticalAlignmentEnum
+	gVerticalAlignmentEnum = terminality.AddEnum(L"VerticalAlignment")
 		.AddValue(L"Top", static_cast<std::int64_t>(VerticalAlign::Top))
 		.AddValue(L"Center", static_cast<std::int64_t>(VerticalAlign::Center))
 		.AddValue(L"Bottom", static_cast<std::int64_t>(VerticalAlign::Bottom))
 		.AddValue(L"Stretch", static_cast<std::int64_t>(VerticalAlign::Stretch));
 
-	SymbolBuilder<EnumSymbol> orientationEnum = terminality.AddEnum(L"Orientation");
-	orientationEnum
+	gOrientationEnum = terminality.AddEnum(L"Orientation")
 		.AddValue(L"Vertical", static_cast<std::int64_t>(Orientation::Vertical))
 		.AddValue(L"Horizontal", static_cast<std::int64_t>(Orientation::Horizontal));
-
-	gHorizontalAlignmentEnum = horizontalAlignmentEnum.Get();
-	gVerticalAlignmentEnum = verticalAlignmentEnum.Get();
-	gOrientationEnum = orientationEnum.Get();
 
 	// ------------------------------------------------------------------------
 	// HostApplication (singleton exposed as a static class)
