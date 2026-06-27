@@ -42,7 +42,7 @@ static ObjectInstance* shard_graphics_InitWindow(const CallState& context) noexc
     wcstombs_s(&converted_chars, narrow_str, length, title, _TRUNCATE);
 
     InitWindow(static_cast<int>(width), static_cast<int>(height), narrow_str);
-    SetTargetFPS(60); // Рязань больше не греется!
+    //SetTargetFPS(60);
     delete[] narrow_str;
     return nullptr;
 }

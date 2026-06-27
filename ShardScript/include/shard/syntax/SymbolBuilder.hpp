@@ -261,8 +261,8 @@ namespace shard
             SymbolLinking linking,
             SymbolAccesibility access = SymbolAccesibility::Public);
 
-        SymbolBuilder<ClassSymbol> Implements(
-            TypeSymbol* interface);
+        SymbolBuilder<ClassSymbol>& Implements(
+            InterfaceSymbol* interface);
     };
 
     template<>
