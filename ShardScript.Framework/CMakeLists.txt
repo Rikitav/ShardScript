@@ -12,7 +12,8 @@ foreach(CPP_FILE IN LISTS CPP_FILES)
 
   set_target_properties("${SHARD_TARGET_NAME}" PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
-  if("${CPP_FILE}" MATCHES "(/system/|\\\\system\\\\)")
+  string(FIND "${CPP_FILE}" "/system/" IS_SYSTEM)
+  if(NOT IS_SYSTEM EQUAL -1)
     set(TARGET_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin/system")
   else()
     set(TARGET_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin/third-party")

@@ -6,7 +6,6 @@
 #include <iostream>
 
 #include <ShardScript.hpp>
-#include <Windows.h>
 
 using namespace shard;
 

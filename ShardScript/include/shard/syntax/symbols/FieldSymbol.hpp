@@ -9,7 +9,7 @@
 #include <shard/syntax/SyntaxSymbol.hpp>
 
 #include <string>
-#include <memory>
+#include <cstdint>
 
 namespace shard
 {
