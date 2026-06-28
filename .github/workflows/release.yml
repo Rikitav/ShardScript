@@ -56,8 +56,11 @@ jobs:
       - name: Pack Artifacts (Linux)
         if: matrix.os == 'ubuntu-latest'
         run: |
-          tar -czvf ${{ matrix.artifact_main }} --exclude='third-party' -C ${{ matrix.output_dir }} shardscript
-          tar -czvf ${{ matrix.artifact_thirdparty }} -C ${{ matrix.output_dir }}/third-party shardscript
+          cd build/bin
+          tar -czvf ../../shardscript-${{ github.ref_name }}-linux.tar.gz --exclude='third-party' *
+
+          cd third-party
+          tar -czvf ../../../shardscript-thirdparty-${{ github.ref_name }}-linux.tar.gz *
 
       - name: Upload Interim Main Artifact
         uses: actions/upload-artifact@v4
