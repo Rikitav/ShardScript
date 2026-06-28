@@ -80,13 +80,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           pattern: '*-*'
-
-      - name: Prepare Files
-        run: |
-          mv windows-latest-main/*.zip .
-          mv windows-latest-thirdparty/*.zip .
-          mv ubuntu-latest-main/*.tar.gz .
-          mv ubuntu-latest-thirdparty/*.tar.gz .
+          merge-multiple: true
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
