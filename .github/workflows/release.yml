@@ -16,12 +16,12 @@ jobs:
       matrix:
         include:
           - os: windows-latest
-            artifact_main: shardscript-windows.zip
-            artifact_thirdparty: shardscript-thirdparty-windows.zip
+            artifact_main: shardscript-${{ github.ref_name }}-windows.zip
+            artifact_thirdparty: shardscript-thirdparty-${{ github.ref_name }}-windows.zip
             output_dir: build/bin
           - os: ubuntu-latest
-            artifact_main: shardscript-linux.tar.gz
-            artifact_thirdparty: shardscript-thirdparty-linux.tar.gz
+            artifact_main: shardscript-${{ github.ref_name }}-linux.tar.gz
+            artifact_thirdparty: shardscript-thirdparty-${{ github.ref_name }}-linux.tar.gz
             output_dir: build/bin
 
     steps:
@@ -40,15 +40,17 @@ jobs:
 
       - name: Configure CMake
         run: cmake -B build -DCMAKE_BUILD_TYPE=Release
-        
+
       - name: Build Project
         run: cmake --build build --config Release
 
       - name: Pack Artifacts (Windows)
         if: matrix.os == 'windows-latest'
         run: |
-          powershell "Get-ChildItem -Path '${{ matrix.output_dir }}/*' -Exclude 'third-party' | Compress-Archive -DestinationPath '${{ matrix.artifact_main }}'"
-          powershell "Compress-Archive -Path '${{ matrix.output_dir }}/third-party/*' -DestinationPath '${{ matrix.artifact_thirdparty }}'"
+          # Фильтруем: берем всё, исключаем папку third-party, а также мусорные .lib и .exp файлы линкера
+          powershell "Get-ChildItem -Path '${{ matrix.output_dir }}/*' -Exclude 'third-party','*.lib','*.exp' | Compress-Archive -DestinationPath '${{ matrix.artifact_main }}'"
+          # Для сторонних либ пакуем только рантайм-файлы (.dll), отсекая статический мусор
+          powershell "Get-ChildItem -Path '${{ matrix.output_dir }}/third-party/*' -Exclude '*.lib','*.exp' | Compress-Archive -DestinationPath '${{ matrix.artifact_thirdparty }}'"
 
       - name: Pack Artifacts (Linux)
         if: matrix.os == 'ubuntu-latest'
@@ -108,6 +110,12 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "10.0.x"
+
+      - name: Download Native DLLs for NuGet
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-latest-main
+          path: ShardScript.NET/bin/Release/net8.0/
 
       - name: Restore Dependencies
         run: dotnet restore ShardScript.NET/ShardScript.NET.csproj
