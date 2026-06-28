@@ -115,7 +115,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: windows-latest-main
-          path: ShardScript.NET/bin/Release/net8.0/
+          path: ShardScript.NET/bin/Release/net1.0/
+
+      - name: Fake Local Build Path for MSBuild
+        run: |
+          mkdir -p out/build/x64-debug/bin/
+          cp ShardScript.NET/bin/Release/net10.0/ShardScript.dll out/build/x64-debug/bin/
 
       - name: Restore Dependencies
         run: dotnet restore ShardScript.NET/ShardScript.NET.csproj
