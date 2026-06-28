@@ -17,6 +17,7 @@ if(NOT WIN32)
     target_link_libraries(ShardScript PRIVATE ${CMAKE_DL_LIBS})
 endif()
 
+use_props(ShardScript "${CMAKE_CONFIGURATION_TYPES}" "${DEFAULT_CXX_PROPS}")
 set(TARGET_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin")
 set_target_properties(ShardScript PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${TARGET_OUTPUT_DIR}"
@@ -32,7 +33,5 @@ set_target_properties(ShardScript PROPERTIES
     WINDOWS_EXPORT_ALL_SYMBOLS ON
     VS_GLOBAL_KEYWORD "Win32Proj"
 )
-
-use_props(ShardScript "${CMAKE_CONFIGURATION_TYPES}" "${DEFAULT_CXX_PROPS}")
 
 set(ROOT_NAMESPACE ShardScript)
