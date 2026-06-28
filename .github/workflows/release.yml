@@ -88,6 +88,20 @@ jobs:
           mv ubuntu-latest-main/*.tar.gz .
           mv ubuntu-latest-thirdparty/*.tar.gz .
 
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            shardscript-${{ github.ref_name }}-windows.zip
+            shardscript-thirdparty-${{ github.ref_name }}-windows.zip
+            shardscript-${{ github.ref_name }}-linux.tar.gz
+            shardscript-thirdparty-${{ github.ref_name }}-linux.tar.gz
+          name: Release ${{ github.ref_name }}
+          tag_name: ${{ github.ref }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+
   publish-nuget:
     name: Pack and Publish NuGet
     needs: build
