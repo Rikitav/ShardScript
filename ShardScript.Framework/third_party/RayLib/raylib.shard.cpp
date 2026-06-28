@@ -1,5 +1,6 @@
 #include <ShardScript.hpp>
 #include "include/raylib.h"
+
 #include <string>
 
 using namespace shard;
@@ -29,21 +30,31 @@ static inline Color UnpackColor(const ObjectInstance* arg) noexcept
     return c;
 }
 
+static inline std::string thinify(const wchar_t* wstr)
+{
+    size_t length = wcslen(wstr) + 1;
+    std::string narrow(length, '\0');
+    size_t converted = 0;
+
+#ifdef _WIN32
+    wcstombs_s(&converted, narrow.data(), length, wstr, _TRUNCATE);
+#else
+    wcstombs(narrow.data(), wstr, length);
+#endif
+
+    return narrow;
+}
+
 static ObjectInstance* shard_graphics_InitWindow(const CallState& context) noexcept
 {
     int64_t width = context.Args[0]->AsInteger();
     int64_t height = context.Args[1]->AsInteger();
     const wchar_t* title = context.Args[2]->AsString();
 
-    size_t length = wcslen(title) + 1;
-    char* narrow_str = new char[length];
+    std::string narrow_str = thinify(title);
+    InitWindow(static_cast<int>(width), static_cast<int>(height), narrow_str.c_str());
 
-    size_t converted_chars = 0;
-    wcstombs_s(&converted_chars, narrow_str, length, title, _TRUNCATE);
-
-    InitWindow(static_cast<int>(width), static_cast<int>(height), narrow_str);
-    //SetTargetFPS(60);
-    delete[] narrow_str;
+    SetTargetFPS(60);
     return nullptr;
 }
 
@@ -147,14 +158,9 @@ static ObjectInstance* shard_graphics_DrawText(const CallState& context) noexcep
     int64_t fontSize = context.Args[3]->AsInteger();
     Color color = UnpackColor(context.Args[4]);
 
-    size_t length = wcslen(text) + 1;
-    char* narrow_text = new char[length];
-    size_t converted = 0;
-    wcstombs_s(&converted, narrow_text, length, text, _TRUNCATE);
+    std::string narrow_str = thinify(text);
+    DrawText(narrow_str.c_str(), static_cast<int>(x), static_cast<int>(y), static_cast<int>(fontSize), color);
 
-    DrawText(narrow_text, static_cast<int>(x), static_cast<int>(y), static_cast<int>(fontSize), color);
-
-    delete[] narrow_text;
     return nullptr;
 }
 
