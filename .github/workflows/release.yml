@@ -47,7 +47,7 @@ jobs:
       - name: Pack Artifacts (Windows)
         if: matrix.os == 'windows-latest'
         run: |
-          powershell "Get-ChildItem -Path '${{ matrix.output_dir }}/*' -Exclude 'third-party','*.lib','*.exp' | Compress-Archive -DestinationPath '${{ matrix.artifact_main }}'"
+          powershell "Get-ChildItem -Path '${{ matrix.output_dir }}/system/*.dll' '${{ matrix.output_dir }}/*.dll' '${{ matrix.output_dir }}/*.exe' -Exclude 'third-party','*.lib','*.exp' | Compress-Archive -DestinationPath '${{ matrix.artifact_main }}'"
           powershell "Get-ChildItem -Path '${{ matrix.output_dir }}/third-party/*' -Exclude '*.lib','*.exp' | Compress-Archive -DestinationPath '${{ matrix.artifact_thirdparty }}'"
 
       - name: Pack Artifacts (Linux)
