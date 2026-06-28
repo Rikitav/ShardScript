@@ -77,7 +77,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Download Artifacts
-        uses: actions/artifacts/download@v4
+        uses: actions/upload-artifact@v4
         with:
           pattern: "*-*"
 
