@@ -6,7 +6,7 @@
 #include <shard/runtime/VirtualMachine.hpp>
 
 #include <shard/compilation/ProgramVirtualImage.hpp>
-#include <shard/syntax/symbols/MethodSymbol.hpp>
+#include <shard/semantic/symbols/MethodSymbol.hpp>
 
 #include <shard/ApplicationDomain.hpp>
 #include <shard/ShardScriptAPI.hpp>

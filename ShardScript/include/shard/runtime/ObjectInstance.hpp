@@ -1,8 +1,8 @@
 #pragma once
 #include <shard/ShardScriptAPI.hpp>
 
-#include <shard/syntax/symbols/TypeSymbol.hpp>
-#include <shard/syntax/symbols/FieldSymbol.hpp>
+#include <shard/semantic/symbols/TypeSymbol.hpp>
+#include <shard/semantic/symbols/FieldSymbol.hpp>
 
 #include <string>
 #include <cstdint>

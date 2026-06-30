@@ -371,7 +371,7 @@ int wmain(int argc, wchar_t* argv[])
 
 		if (!ConsoleArguments::ExcludeStd)
 		{
-			fs::path currentDirectory = GetCurrentDirectoryPath() / L"framework";
+			fs::path currentDirectory = GetCurrentDirectoryPath() / L"system";
 			LoadLibrariesFromDirectoryPath(&compiler, currentDirectory);
 		}
 

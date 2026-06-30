@@ -4,49 +4,49 @@
 #include <shard/compilation/ProgramVirtualImage.hpp>
 #include <shard/compilation/ByteCodeEncoder.hpp>
 
-#include <shard/parsing/analysis/DiagnosticsContext.hpp>
-#include <shard/parsing/semantic/SemanticModel.hpp>
+#include <shard/analysis/DiagnosticsContext.hpp>
+#include <shard/semantic/SemanticModel.hpp>
 #include <shard/parsing/SyntaxTree.hpp>
 
-#include <shard/SyntaxVisitor.hpp>
+#include <shard/parsing/SyntaxVisitor.hpp>
 
-#include <shard/syntax/nodes/ArgumentsListSyntax.hpp>
+#include <shard/parsing/nodes/ArgumentsListSyntax.hpp>
 
-#include <shard/syntax/nodes/Expressions/BinaryExpressionSyntax.hpp>
-#include <shard/syntax/nodes/Expressions/CollectionExpressionSyntax.hpp>
-#include <shard/syntax/nodes/Expressions/RangeExpressionSyntax.hpp>
-#include <shard/syntax/nodes/Expressions/LambdaExpressionSyntax.hpp>
-#include <shard/syntax/nodes/Expressions/LinkedExpressionSyntax.hpp>
-#include <shard/syntax/nodes/Expressions/LiteralExpressionSyntax.hpp>
-#include <shard/syntax/nodes/Expressions/ObjectExpressionSyntax.hpp>
-#include <shard/syntax/nodes/Expressions/TernaryExpressionSyntax.hpp>
-#include <shard/syntax/nodes/Expressions/UnaryExpressionSyntax.hpp>
-#include <shard/syntax/nodes/Expressions/CastExpressionSyntax.hpp>
-#include <shard/syntax/nodes/Expressions/IsExpressionSyntax.hpp>
+#include <shard/parsing/nodes/Expressions/BinaryExpressionSyntax.hpp>
+#include <shard/parsing/nodes/Expressions/CollectionExpressionSyntax.hpp>
+#include <shard/parsing/nodes/Expressions/RangeExpressionSyntax.hpp>
+#include <shard/parsing/nodes/Expressions/LambdaExpressionSyntax.hpp>
+#include <shard/parsing/nodes/Expressions/LinkedExpressionSyntax.hpp>
+#include <shard/parsing/nodes/Expressions/LiteralExpressionSyntax.hpp>
+#include <shard/parsing/nodes/Expressions/ObjectExpressionSyntax.hpp>
+#include <shard/parsing/nodes/Expressions/TernaryExpressionSyntax.hpp>
+#include <shard/parsing/nodes/Expressions/UnaryExpressionSyntax.hpp>
+#include <shard/parsing/nodes/Expressions/CastExpressionSyntax.hpp>
+#include <shard/parsing/nodes/Expressions/IsExpressionSyntax.hpp>
 
-#include <shard/syntax/nodes/Loops/ForStatementSyntax.hpp>
-#include <shard/syntax/nodes/Loops/ForEachStatementSyntax.hpp>
-#include <shard/syntax/nodes/Loops/ForInStatementSyntax.hpp>
-#include <shard/syntax/nodes/Loops/UntilStatementSyntax.hpp>
-#include <shard/syntax/nodes/Loops/WhileStatementSyntax.hpp>
+#include <shard/parsing/nodes/Loops/ForStatementSyntax.hpp>
+#include <shard/parsing/nodes/Loops/ForEachStatementSyntax.hpp>
+#include <shard/parsing/nodes/Loops/ForInStatementSyntax.hpp>
+#include <shard/parsing/nodes/Loops/UntilStatementSyntax.hpp>
+#include <shard/parsing/nodes/Loops/WhileStatementSyntax.hpp>
 
-#include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.hpp>
-#include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.hpp>
-#include <shard/syntax/nodes/MemberDeclarations/EnumDeclarationSyntax.hpp>
-#include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.hpp>
-#include <shard/syntax/nodes/MemberDeclarations/OperatorDeclarationSyntax.hpp>
+#include <shard/parsing/nodes/MemberDeclarations/AccessorDeclarationSyntax.hpp>
+#include <shard/parsing/nodes/MemberDeclarations/ConstructorDeclarationSyntax.hpp>
+#include <shard/parsing/nodes/MemberDeclarations/EnumDeclarationSyntax.hpp>
+#include <shard/parsing/nodes/MemberDeclarations/MethodDeclarationSyntax.hpp>
+#include <shard/parsing/nodes/MemberDeclarations/OperatorDeclarationSyntax.hpp>
 
-#include <shard/syntax/nodes/Statements/BreakStatementSyntax.hpp>
-#include <shard/syntax/nodes/Statements/ConditionalClauseSyntax.hpp>
-#include <shard/syntax/nodes/Statements/ContinueStatementSyntax.hpp>
-#include <shard/syntax/nodes/Statements/ExpressionStatementSyntax.hpp>
-#include <shard/syntax/nodes/Statements/DeferStatementSyntax.hpp>
-#include <shard/syntax/nodes/Statements/ReturnStatementSyntax.hpp>
-#include <shard/syntax/nodes/Statements/ThrowStatementSyntax.hpp>
-#include <shard/syntax/nodes/Statements/TryStatementSyntax.hpp>
-#include <shard/syntax/nodes/Statements/VariableStatementSyntax.hpp>
+#include <shard/parsing/nodes/Statements/BreakStatementSyntax.hpp>
+#include <shard/parsing/nodes/Statements/ConditionalClauseSyntax.hpp>
+#include <shard/parsing/nodes/Statements/ContinueStatementSyntax.hpp>
+#include <shard/parsing/nodes/Statements/ExpressionStatementSyntax.hpp>
+#include <shard/parsing/nodes/Statements/DeferStatementSyntax.hpp>
+#include <shard/parsing/nodes/Statements/ReturnStatementSyntax.hpp>
+#include <shard/parsing/nodes/Statements/ThrowStatementSyntax.hpp>
+#include <shard/parsing/nodes/Statements/TryStatementSyntax.hpp>
+#include <shard/parsing/nodes/Statements/VariableStatementSyntax.hpp>
 
-#include <shard/syntax/symbols/MethodSymbol.hpp>
+#include <shard/semantic/symbols/MethodSymbol.hpp>
 
 #include <vector>
 #include <stack>

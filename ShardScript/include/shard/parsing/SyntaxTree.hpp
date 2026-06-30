@@ -1,6 +1,6 @@
 #pragma once
 #include <shard/ShardScriptAPI.hpp>
-#include <shard/syntax/nodes/CompilationUnitSyntax.hpp>
+#include <shard/parsing/nodes/CompilationUnitSyntax.hpp>
 
 #include <vector>
 #include <memory>

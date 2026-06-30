@@ -4,14 +4,14 @@
 #include <shard/ApplicationDomain.hpp>
 
 #include <shard/parsing/SyntaxTree.hpp>
-#include <shard/parsing/semantic/SemanticModel.hpp>
-#include <shard/parsing/analysis/DiagnosticsContext.hpp>
-#include <shard/parsing/lexical/SourceProvider.hpp>
-#include <shard/parsing/lexical/reading/SourceTextProvider.hpp>
+#include <shard/semantic/SemanticModel.hpp>
+#include <shard/analysis/DiagnosticsContext.hpp>
+#include <shard/lexical/SourceProvider.hpp>
+#include <shard/lexical/SourceTextProvider.hpp>
 
 #include <shard/parsing/SourceParser.hpp>
-#include <shard/parsing/SemanticAnalyzer.hpp>
-#include <shard/parsing/LayoutGenerator.hpp>
+#include <shard/semantic/SemanticAnalyzer.hpp>
+#include <shard/compilation/LayoutGenerator.hpp>
 
 #include <filesystem>
 #include <memory>

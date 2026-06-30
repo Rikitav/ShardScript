@@ -2,7 +2,7 @@
 #include <shard/ShardScriptAPI.hpp>
 
 #include <shard/runtime/ObjectInstance.hpp>
-#include <shard/syntax/symbols/MethodSymbol.hpp>
+#include <shard/semantic/symbols/MethodSymbol.hpp>
 
 #include <vector>
 #include <string>

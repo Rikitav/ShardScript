@@ -3,57 +3,57 @@
 #include <shard/compilation/OperationCode.hpp>
 #include <shard/compilation/ByteCodeEncoder.hpp>
 
-#include <shard/parsing/analysis/DiagnosticsContext.hpp>
-#include <shard/parsing/semantic/SymbolTable.hpp>
+#include <shard/analysis/DiagnosticsContext.hpp>
+#include <shard/semantic/SymbolTable.hpp>
 #include <shard/parsing/SyntaxTree.hpp>
 
-#include <shard/syntax/nodes/ArgumentsListSyntax.hpp>
-#include <shard/syntax/nodes/CompilationUnitSyntax.hpp>
+#include <shard/parsing/nodes/ArgumentsListSyntax.hpp>
+#include <shard/parsing/nodes/CompilationUnitSyntax.hpp>
 
-#include <shard/syntax/nodes/Expressions/BinaryExpressionSyntax.hpp>
-#include <shard/syntax/nodes/Expressions/CollectionExpressionSyntax.hpp>
-#include <shard/syntax/nodes/Expressions/LambdaExpressionSyntax.hpp>
-#include <shard/syntax/nodes/Expressions/LinkedExpressionSyntax.hpp>
-#include <shard/syntax/nodes/Expressions/LiteralExpressionSyntax.hpp>
-#include <shard/syntax/nodes/Expressions/ObjectExpressionSyntax.hpp>
-#include <shard/syntax/nodes/Expressions/TernaryExpressionSyntax.hpp>
-#include <shard/syntax/nodes/Expressions/UnaryExpressionSyntax.hpp>
+#include <shard/parsing/nodes/Expressions/BinaryExpressionSyntax.hpp>
+#include <shard/parsing/nodes/Expressions/CollectionExpressionSyntax.hpp>
+#include <shard/parsing/nodes/Expressions/LambdaExpressionSyntax.hpp>
+#include <shard/parsing/nodes/Expressions/LinkedExpressionSyntax.hpp>
+#include <shard/parsing/nodes/Expressions/LiteralExpressionSyntax.hpp>
+#include <shard/parsing/nodes/Expressions/ObjectExpressionSyntax.hpp>
+#include <shard/parsing/nodes/Expressions/TernaryExpressionSyntax.hpp>
+#include <shard/parsing/nodes/Expressions/UnaryExpressionSyntax.hpp>
 
-#include <shard/syntax/nodes/Loops/ForStatementSyntax.hpp>
-#include <shard/syntax/nodes/Loops/UntilStatementSyntax.hpp>
-#include <shard/syntax/nodes/Loops/WhileStatementSyntax.hpp>
+#include <shard/parsing/nodes/Loops/ForStatementSyntax.hpp>
+#include <shard/parsing/nodes/Loops/UntilStatementSyntax.hpp>
+#include <shard/parsing/nodes/Loops/WhileStatementSyntax.hpp>
 
-#include <shard/syntax/nodes/MemberDeclarations/AccessorDeclarationSyntax.hpp>
-#include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.hpp>
-#include <shard/syntax/nodes/MemberDeclarations/EnumDeclarationSyntax.hpp>
-#include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.hpp>
-#include <shard/syntax/nodes/MemberDeclarations/OperatorDeclarationSyntax.hpp>
+#include <shard/parsing/nodes/MemberDeclarations/AccessorDeclarationSyntax.hpp>
+#include <shard/parsing/nodes/MemberDeclarations/ConstructorDeclarationSyntax.hpp>
+#include <shard/parsing/nodes/MemberDeclarations/EnumDeclarationSyntax.hpp>
+#include <shard/parsing/nodes/MemberDeclarations/MethodDeclarationSyntax.hpp>
+#include <shard/parsing/nodes/MemberDeclarations/OperatorDeclarationSyntax.hpp>
 
-#include <shard/syntax/nodes/Statements/BreakStatementSyntax.hpp>
-#include <shard/syntax/nodes/Statements/ConditionalClauseSyntax.hpp>
-#include <shard/syntax/nodes/Statements/ContinueStatementSyntax.hpp>
-#include <shard/syntax/nodes/Statements/ExpressionStatementSyntax.hpp>
-#include <shard/syntax/nodes/Statements/ReturnStatementSyntax.hpp>
-#include <shard/syntax/nodes/Statements/ThrowStatementSyntax.hpp>
-#include <shard/syntax/nodes/Statements/TryStatementSyntax.hpp>
-#include <shard/syntax/nodes/Statements/VariableStatementSyntax.hpp>
+#include <shard/parsing/nodes/Statements/BreakStatementSyntax.hpp>
+#include <shard/parsing/nodes/Statements/ConditionalClauseSyntax.hpp>
+#include <shard/parsing/nodes/Statements/ContinueStatementSyntax.hpp>
+#include <shard/parsing/nodes/Statements/ExpressionStatementSyntax.hpp>
+#include <shard/parsing/nodes/Statements/ReturnStatementSyntax.hpp>
+#include <shard/parsing/nodes/Statements/ThrowStatementSyntax.hpp>
+#include <shard/parsing/nodes/Statements/TryStatementSyntax.hpp>
+#include <shard/parsing/nodes/Statements/VariableStatementSyntax.hpp>
 
-#include <shard/syntax/SyntaxToken.hpp>
-#include <shard/syntax/SyntaxKind.hpp>
-#include <shard/syntax/TokenType.hpp>
+#include <shard/parsing/SyntaxToken.hpp>
+#include <shard/parsing/SyntaxKind.hpp>
+#include <shard/lexical/TokenType.hpp>
 
-#include <shard/syntax/symbols/LiteralSymbol.hpp>
-#include <shard/syntax/symbols/AccessorSymbol.hpp>
-#include <shard/syntax/symbols/ConstructorSymbol.hpp>
-#include <shard/syntax/symbols/GenericTypeSymbol.hpp>
-#include <shard/syntax/symbols/FieldSymbol.hpp>
-#include <shard/syntax/symbols/MethodSymbol.hpp>
-#include <shard/syntax/symbols/OperatorSymbol.hpp>
-#include <shard/syntax/symbols/ParameterSymbol.hpp>
-#include <shard/syntax/symbols/PropertySymbol.hpp>
-#include <shard/syntax/symbols/VariableSymbol.hpp>
-#include <shard/syntax/symbols/TypeSymbol.hpp>
-#include <shard/syntax/symbols/VariableSymbol.hpp>
+#include <shard/semantic/symbols/LiteralSymbol.hpp>
+#include <shard/semantic/symbols/AccessorSymbol.hpp>
+#include <shard/semantic/symbols/ConstructorSymbol.hpp>
+#include <shard/semantic/symbols/GenericTypeSymbol.hpp>
+#include <shard/semantic/symbols/FieldSymbol.hpp>
+#include <shard/semantic/symbols/MethodSymbol.hpp>
+#include <shard/semantic/symbols/OperatorSymbol.hpp>
+#include <shard/semantic/symbols/ParameterSymbol.hpp>
+#include <shard/semantic/symbols/PropertySymbol.hpp>
+#include <shard/semantic/symbols/VariableSymbol.hpp>
+#include <shard/semantic/symbols/TypeSymbol.hpp>
+#include <shard/semantic/symbols/VariableSymbol.hpp>
 
 #include <optional>
 #include <stdexcept>

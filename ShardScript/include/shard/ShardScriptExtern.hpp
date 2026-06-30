@@ -15,8 +15,8 @@
 #include <cstdint>
 
 #include <shard/ShardScriptAPI.hpp>
-#include <shard/syntax/symbols/MethodSymbol.hpp>          // ShardManagedMethodCallback
-#include <shard/syntax/nodes/CompilationUnitSyntax.hpp>   // CompilationUnitOrigin
+#include <shard/semantic/symbols/MethodSymbol.hpp>          // ShardManagedMethodCallback
+#include <shard/parsing/nodes/CompilationUnitSyntax.hpp>   // CompilationUnitOrigin
 
 namespace shard
 {
