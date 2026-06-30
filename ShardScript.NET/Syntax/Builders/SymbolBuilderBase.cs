@@ -35,3 +35,17 @@ public interface ICallback
 
     void KeepCallbackAlive(ShardManagedMethodCallbackNative callback);
 }
+
+/// <summary>
+/// Marker for fluent builders that can contain members (namespaces and types).
+/// Enables shared <c>WithMethod</c> overloads that attach methods to either a
+/// namespace (free functions) or a type.
+/// </summary>
+public interface IContainerBuilder
+{
+    /// <summary>Compilation context owning the symbols.</summary>
+    CompilationContext Context { get; }
+
+    /// <summary>The container symbol (namespace or type) members attach to.</summary>
+    SyntaxSymbol Symbol { get; }
+}

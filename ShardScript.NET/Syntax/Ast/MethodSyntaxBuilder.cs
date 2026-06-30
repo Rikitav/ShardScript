@@ -3,53 +3,53 @@ using ShardScript.Runtime;
 
 namespace ShardScript.Syntax.Ast;
 
-public sealed class MethodBuilder
+public sealed class MethodSyntaxBuilder
 {
     private readonly CompilationContext _context;
     private readonly SyntaxMethodDeclaration _method;
     private SyntaxParametersList? _parameters;
 
-    internal MethodBuilder(CompilationContext context, SyntaxMethodDeclaration method)
+    internal MethodSyntaxBuilder(CompilationContext context, SyntaxMethodDeclaration method)
     {
         _context = context;
         _method = method;
     }
 
-    public MethodBuilder Public()
+    public MethodSyntaxBuilder Public()
     {
         _method.AddModifier(TokenType.PublicKeyword);
         return this;
     }
 
-    public MethodBuilder Static()
+    public MethodSyntaxBuilder Static()
     {
         _method.AddModifier(TokenType.StaticKeyword);
         return this;
     }
 
-    public MethodBuilder Parameter(string name, PrimitiveType type)
+    public MethodSyntaxBuilder Parameter(string name, PrimitiveType type)
     {
         if (name == null)
             throw new ArgumentNullException(nameof(name));
 
-        SyntaxParametersList parameters = _parameters ??= SyntaxBuilder.Parameters(_method);
+        SyntaxParametersList parameters = _parameters ??= Syntax.SyntaxBuilder.Parameters(_method);
         parameters.AddParameter(name, CreateType(type));
         return this;
     }
 
-    public MethodBuilder Returns(PrimitiveType type)
+    public MethodSyntaxBuilder Returns(PrimitiveType type)
     {
         _method.SetReturnType(CreateType(type));
         return this;
     }
 
-    public MethodBuilder Body(Action<BodyBuilder> configure)
+    public MethodSyntaxBuilder Body(Action<BodySyntaxBuilder> configure)
     {
         if (configure == null)
             throw new ArgumentNullException(nameof(configure));
 
-        SyntaxStatementsBlock block = SyntaxBuilder.Block();
-        configure(new BodyBuilder(block));
+        SyntaxStatementsBlock block = Syntax.SyntaxBuilder.Block();
+        configure(new BodySyntaxBuilder(block));
 
         if (_parameters != null)
             _method.SetParameters(_parameters);
@@ -71,6 +71,6 @@ public sealed class MethodBuilder
             _ => throw new NotSupportedException($"Primitive type '{primitive}' is not supported in AST builder.")
         };
 
-        return SyntaxBuilder.PredefinedType(_method, token);
+        return Syntax.SyntaxBuilder.PredefinedType(_method, token);
     }
 }

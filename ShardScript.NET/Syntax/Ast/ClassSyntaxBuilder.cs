@@ -2,38 +2,38 @@ using ShardScript.Application;
 
 namespace ShardScript.Syntax.Ast;
 
-public sealed class ClassBuilder
+public sealed class ClassSyntaxBuilder
 {
     private readonly CompilationContext _context;
     private readonly SyntaxClassDeclaration _class;
 
-    internal ClassBuilder(CompilationContext context, SyntaxClassDeclaration cls)
+    internal ClassSyntaxBuilder(CompilationContext context, SyntaxClassDeclaration cls)
     {
         _context = context;
         _class = cls;
     }
 
-    public ClassBuilder Public()
+    public ClassSyntaxBuilder Public()
     {
         _class.AddModifier(TokenType.PublicKeyword);
         return this;
     }
 
-    public ClassBuilder Static()
+    public ClassSyntaxBuilder Static()
     {
         _class.AddModifier(TokenType.StaticKeyword);
         return this;
     }
 
-    public ClassBuilder AddMethod(string name, Action<MethodBuilder> configure)
+    public ClassSyntaxBuilder AddMethod(string name, Action<MethodSyntaxBuilder> configure)
     {
         if (name == null)
             throw new ArgumentNullException(nameof(name));
         if (configure == null)
             throw new ArgumentNullException(nameof(configure));
 
-        SyntaxMethodDeclaration method = SyntaxBuilder.Method(_class, name);
-        configure(new MethodBuilder(_context, method));
+        SyntaxMethodDeclaration method = Syntax.SyntaxBuilder.Method(_class, name);
+        configure(new MethodSyntaxBuilder(_context, method));
         _class.AddMember(method);
         return this;
     }

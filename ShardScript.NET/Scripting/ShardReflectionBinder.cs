@@ -82,8 +82,8 @@ public sealed class ShardReflectionBinder
         string namespaceName = ns ?? attr?.Namespace ?? type.Namespace ?? "csharp";
         string typeName = attr?.TypeName ?? type.Name;
 
-        NamespaceSymbol namespaceSymbol = SymbolBuilder.Namespace(_context, namespaceName).Build();
-        TypeSymbol typeSymbol = SymbolBuilder.Class(_context, typeName, namespaceSymbol).Build();
+        NamespaceSymbol namespaceSymbol = SymbolBuilder.Namespace(_context, namespaceName).Symbol;
+        TypeSymbol typeSymbol = SymbolBuilder.Class(_context, typeName, namespaceSymbol).Symbol;
 
         foreach (MethodInfo method in type.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly))
         {

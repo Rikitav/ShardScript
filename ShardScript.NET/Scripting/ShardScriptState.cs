@@ -271,15 +271,33 @@ public sealed class ShardScriptState : IDisposable
     /// <summary>
     /// Invokes a compiled method by its symbol.
     /// </summary>
-    public ObjectInstance Call(MethodSymbol method, params ObjectInstance[] args)
+    public ObjectInstance Call(MethodSymbol method, params ObjectInstance[] nativeArgs)
     {
         ThrowIfDisposed();
         if (_domain == null)
             throw new InvalidOperationException("State has not been compiled yet. Call Compile first.");
 
-        ObjectInstance result = _domain.VirtualMachine.InvokeMethod(method, args);
+        ObjectInstance result = _domain.VirtualMachine.InvokeMethod(method, nativeArgs);
         return result;
     }
+
+    /*
+    /// <summary>
+    /// Invokes a compiled method by its symbol.
+    /// </summary>
+    public void Call(MethodSymbol method, params object[] args)
+    {
+        ThrowIfDisposed();
+        if (_domain == null)
+            throw new InvalidOperationException("State has not been compiled yet. Call Compile first.");
+
+        ObjectInstance[] marshalledArgs = new ObjectInstance[args.Length];
+        for (int i = 0; i < args.Length; i++)
+            marshalledArgs[i] = ShardMarshaller.ToObjectInstance(args[i], _domain.GarbageCollector);
+
+        _domain.VirtualMachine.InvokeMethod(method, marshalledArgs);
+    }
+    */
 
     /// <summary>
     /// Invokes a compiled method by its symbol.
@@ -357,13 +375,13 @@ public sealed class ShardScriptState : IDisposable
     /// <summary>
     /// Builds a syntax tree using the scoped fluent AST builder and adds it to the compilation.
     /// </summary>
-    public ShardScriptState BuildAst(Action<Syntax.Ast.CompilationUnitBuilder> configure)
+    public ShardScriptState BuildAst(Action<Syntax.Ast.CompilationUnitSyntaxBuilder> configure)
     {
         ThrowIfDisposed();
         if (configure == null)
             throw new ArgumentNullException(nameof(configure));
 
-        SyntaxCompilationUnit unit = Syntax.Ast.AstBuilder.Unit(_context, configure);
+        SyntaxCompilationUnit unit = Syntax.Ast.SyntaxBuilder.Unit(_context, configure);
         _context.AddCompilationUnit(unit);
         return this;
     }
@@ -394,8 +412,8 @@ public sealed class ShardScriptState : IDisposable
     {
         string[] frameworkDirs =
         {
-            Path.Combine(AppContext.BaseDirectory, "framework"),
-            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "out", "build", "x64-debug", "bin", "framework"))
+            Path.Combine(AppContext.BaseDirectory, "system"),
+            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "out", "build", "x64-debug", "bin", "system"))
         };
 
         foreach (string frameworkDir in frameworkDirs)

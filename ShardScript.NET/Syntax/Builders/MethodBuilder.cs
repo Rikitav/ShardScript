@@ -11,12 +11,12 @@ public sealed class MethodBuilder : ISymbolBuilder<MethodSymbol>,
     public MethodSymbol Symbol { get; }
     public IntPtr Handle => Symbol.Handle;
 
-    public MethodBuilder(CompilationContext context, TypeSymbol parentType, string name, TypeSymbol returnType)
+    public MethodBuilder(CompilationContext context, SyntaxSymbol parent, string name, TypeSymbol returnType)
     {
         Context = context ?? throw new ArgumentNullException(nameof(context));
 
         IntPtr handle = NativeMethods.Shard_CreateMethodSymbol(
-            Context.Handle, parentType.Handle, name, returnType.Handle,
+            Context.Handle, parent.Handle, name, returnType.Handle,
             (int)SymbolLinking.Static, (int)SymbolAccessibility.Public);
 
         if (handle == IntPtr.Zero)

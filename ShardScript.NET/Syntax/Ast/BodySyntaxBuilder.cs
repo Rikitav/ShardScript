@@ -2,51 +2,51 @@ using ShardScript.Runtime;
 
 namespace ShardScript.Syntax.Ast;
 
-public sealed class BodyBuilder
+public sealed class BodySyntaxBuilder
 {
     private readonly SyntaxStatementsBlock _block;
 
-    internal BodyBuilder(SyntaxStatementsBlock block)
+    internal BodySyntaxBuilder(SyntaxStatementsBlock block)
     {
         _block = block;
     }
 
-    public BodyBuilder Return(SyntaxExpression expression)
+    public BodySyntaxBuilder Return(SyntaxExpression expression)
     {
         if (expression == null)
             throw new ArgumentNullException(nameof(expression));
 
-        _block.AddStatement(SyntaxBuilder.Return(_block, expression));
+        _block.AddStatement(Syntax.SyntaxBuilder.Return(_block, expression));
         return this;
     }
 
-    public BodyBuilder Return(Func<ExpressionBuilder, SyntaxExpression> expression)
+    public BodySyntaxBuilder Return(Func<ExpressionSyntaxBuilder, SyntaxExpression> expression)
     {
         if (expression == null)
             throw new ArgumentNullException(nameof(expression));
 
-        return Return(expression(new ExpressionBuilder()));
+        return Return(expression(new ExpressionSyntaxBuilder()));
     }
 
-    public BodyBuilder Declare(string name, PrimitiveType type, SyntaxExpression? initializer = null)
+    public BodySyntaxBuilder Declare(string name, PrimitiveType type, SyntaxExpression? initializer = null)
     {
         if (name == null)
             throw new ArgumentNullException(nameof(name));
 
         SyntaxType syntaxType = CreateType(type);
-        _block.AddStatement(SyntaxBuilder.Variable(_block, name, syntaxType, initializer));
+        _block.AddStatement(Syntax.SyntaxBuilder.Variable(_block, name, syntaxType, initializer));
         return this;
     }
 
-    public BodyBuilder Assign(SyntaxExpression target, SyntaxExpression value)
+    public BodySyntaxBuilder Assign(SyntaxExpression target, SyntaxExpression value)
     {
         if (target == null)
             throw new ArgumentNullException(nameof(target));
         if (value == null)
             throw new ArgumentNullException(nameof(value));
 
-        _block.AddStatement(SyntaxBuilder.ExpressionStatement(_block,
-            SyntaxBuilder.Binary(target, value, TokenType.AssignOperator)));
+        _block.AddStatement(Syntax.SyntaxBuilder.ExpressionStatement(_block,
+            Syntax.SyntaxBuilder.Binary(target, value, TokenType.AssignOperator)));
         return this;
     }
 
@@ -62,6 +62,6 @@ public sealed class BodyBuilder
             _ => throw new NotSupportedException($"Primitive type '{primitive}' is not supported in AST builder.")
         };
 
-        return SyntaxBuilder.PredefinedType(null, token);
+        return Syntax.SyntaxBuilder.PredefinedType(null, token);
     }
 }
