@@ -186,9 +186,9 @@ Available specializations:
 `SymbolBuilder` is non-copyable and moveable. You can get a pointer to the symbol via `Get()` or implicit conversion:
 
 ```cpp
-#include <shard/syntax/SymbolBuilder.hpp>
-#include <shard/syntax/symbols/NamespaceSymbol.hpp>
-#include <shard/syntax/symbols/ClassSymbol.hpp>
+#include <shard/semantic/SymbolBuilder.hpp>
+#include <shard/semantic/symbols/NamespaceSymbol.hpp>
+#include <shard/semantic/symbols/ClassSymbol.hpp>
 
 using namespace shard;
 
@@ -207,7 +207,7 @@ math.AddClass(L"Algorithms");
 ### 3.3. Step 3 — Creating a Method and Binding a C++ Function
 
 ```cpp
-#include <shard/syntax/symbols/MethodSymbol.hpp>
+#include <shard/semantic/symbols/MethodSymbol.hpp>
 #include <shard/runtime/MethodCallState.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
 
@@ -247,8 +247,8 @@ ns.AddClass(L"Math")
 ```cpp
 #include <shard/ShardScriptLIB.hpp>
 #include <shard/CompilationContext.hpp>
-#include <shard/syntax/SymbolBuilder.hpp>
-#include <shard/parsing/semantic/SymbolTable.hpp>
+#include <shard/semantic/SymbolBuilder.hpp>
+#include <shard/semantic/SymbolTable.hpp>
 #include <shard/runtime/MethodCallState.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
 
@@ -658,8 +658,8 @@ Generics in ShardScript work through two symbol kinds:
 Let us declare a `Container<T>` class with a single static method `Identity` that simply returns its argument.
 
 ```cpp
-#include <shard/syntax/symbols/TypeParameterSymbol.hpp>
-#include <shard/syntax/symbols/GenericTypeSymbol.hpp>
+#include <shard/semantic/symbols/TypeParameterSymbol.hpp>
+#include <shard/semantic/symbols/GenericTypeSymbol.hpp>
 
 static ObjectInstance* Identity(const CallState& ctx)
 {
@@ -909,7 +909,7 @@ A native library can not only register symbols directly, but also feed ShardScri
 
 ```cpp
 #include <shard/CompilationContext.hpp>
-#include <shard/parsing/lexical/reading/StringStreamReader.hpp>
+#include <shard/lexical/StringStreamReader.hpp>
 
 static void ProvideStringSource(CompilationContext& ctx,
                                 const wchar_t* fileName,
@@ -1077,7 +1077,7 @@ shard::ObjectInstance* MyAdd(const shard::CallState& ctx)
 ```cpp
 #include <shard/ShardScriptLIB.hpp>
 #include <shard/CompilationContext.hpp>
-#include <shard/parsing/lexical/reading/StringStreamReader.hpp>
+#include <shard/lexical/StringStreamReader.hpp>
 #include <shard/runtime/MethodCallState.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
 
@@ -1273,8 +1273,8 @@ The engine searches for the library:
 ```cpp
 #include <shard/ShardScriptLIB.hpp>
 #include <shard/CompilationContext.hpp>
-#include <shard/syntax/SymbolBuilder.hpp>
-#include <shard/parsing/semantic/SymbolTable.hpp>
+#include <shard/semantic/SymbolBuilder.hpp>
+#include <shard/semantic/SymbolTable.hpp>
 #include <shard/runtime/MethodCallState.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
 

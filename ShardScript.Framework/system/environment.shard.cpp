@@ -1,7 +1,7 @@
 #include <shard/ShardScriptLIB.hpp>
 #include <shard/CompilationContext.hpp>
-#include <shard/syntax/SymbolBuilder.hpp>
-#include <shard/parsing/semantic/SymbolTable.hpp>
+#include <shard/semantic/SymbolBuilder.hpp>
+#include <shard/semantic/SymbolTable.hpp>
 #include <shard/runtime/MethodCallState.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
 

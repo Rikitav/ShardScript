@@ -1,0 +1,33 @@
+#pragma once
+#include <shard/ShardScriptAPI.hpp>
+
+#include <shard/parsing/SyntaxKind.hpp>
+#include <shard/parsing/SyntaxNode.hpp>
+#include <shard/parsing/SyntaxToken.hpp>
+
+#include <shard/parsing/nodes/StatementsBlockSyntax.hpp>
+
+#include <vector>
+#include <memory>
+
+namespace shard
+{
+	class SHARD_API AccessorDeclarationSyntax : public MemberDeclarationSyntax
+	{
+	public:
+		SyntaxToken KeywordToken;
+		std::vector<SyntaxToken> Modifiers;
+		SyntaxToken SemicolonToken;
+		std::unique_ptr<StatementsBlockSyntax> Body = nullptr;
+
+		inline AccessorDeclarationSyntax(SyntaxNode* parent)
+			: MemberDeclarationSyntax(SyntaxKind::AccessorDeclaration, parent) { }
+
+		inline AccessorDeclarationSyntax(SyntaxNode* parent, std::unique_ptr<StatementsBlockSyntax> body)
+			: MemberDeclarationSyntax(SyntaxKind::AccessorDeclaration, parent), Body(std::move(body)) { }
+
+		inline AccessorDeclarationSyntax(const AccessorDeclarationSyntax&) = delete;
+
+		inline ~AccessorDeclarationSyntax() override = default;
+	};
+}

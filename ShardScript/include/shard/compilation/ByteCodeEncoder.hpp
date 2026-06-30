@@ -1,12 +1,12 @@
 #pragma once
 #include <shard/ShardScriptAPI.hpp>
 
-#include <shard/syntax/symbols/TypeSymbol.hpp>
-#include <shard/syntax/symbols/FieldSymbol.hpp>
-#include <shard/syntax/symbols/MethodSymbol.hpp>
-#include <shard/syntax/symbols/ArrayTypeSymbol.hpp>
-#include <shard/syntax/symbols/ConstructorSymbol.hpp>
-#include <shard/syntax/symbols/DelegateTypeSymbol.hpp>
+#include <shard/semantic/symbols/TypeSymbol.hpp>
+#include <shard/semantic/symbols/FieldSymbol.hpp>
+#include <shard/semantic/symbols/MethodSymbol.hpp>
+#include <shard/semantic/symbols/ArrayTypeSymbol.hpp>
+#include <shard/semantic/symbols/ConstructorSymbol.hpp>
+#include <shard/semantic/symbols/DelegateTypeSymbol.hpp>
 
 #include <cstddef>
 #include <cstdint>

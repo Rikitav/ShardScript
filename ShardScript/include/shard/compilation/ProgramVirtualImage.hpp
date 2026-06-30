@@ -1,8 +1,8 @@
 #pragma once
 #include <shard/ShardScriptAPI.hpp>
 
-#include <shard/parsing/semantic/SemanticModel.hpp>
-#include <shard/syntax/symbols/MethodSymbol.hpp>
+#include <shard/semantic/SemanticModel.hpp>
+#include <shard/semantic/symbols/MethodSymbol.hpp>
 
 #include <vector>
 

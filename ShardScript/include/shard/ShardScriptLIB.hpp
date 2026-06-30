@@ -1,11 +1,11 @@
 #pragma once
 #include <shard/ShardScriptAPI.hpp>
 
-#include <shard/parsing/lexical/SourceProvider.hpp>
+#include <shard/lexical/SourceProvider.hpp>
 
-#include <shard/syntax/symbols/MethodSymbol.hpp>
-#include <shard/syntax/symbols/AccessorSymbol.hpp>
-#include <shard/syntax/symbols/ConstructorSymbol.hpp>
+#include <shard/semantic/symbols/MethodSymbol.hpp>
+#include <shard/semantic/symbols/AccessorSymbol.hpp>
+#include <shard/semantic/symbols/ConstructorSymbol.hpp>
 
 namespace shard
 {

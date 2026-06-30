@@ -1,7 +1,7 @@
 #include <shard/runtime/CallStackFrame.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
 
-#include <shard/syntax/symbols/TypeParameterSymbol.hpp>
+#include <shard/semantic/symbols/TypeParameterSymbol.hpp>
 
 using namespace shard;
 

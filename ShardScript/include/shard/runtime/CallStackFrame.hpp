@@ -3,8 +3,8 @@
 
 #include <shard/runtime/ObjectInstance.hpp>
 
-#include <shard/syntax/symbols/TypeSymbol.hpp>
-#include <shard/syntax/symbols/MethodSymbol.hpp>
+#include <shard/semantic/symbols/TypeSymbol.hpp>
+#include <shard/semantic/symbols/MethodSymbol.hpp>
 
 #include <vector>
 

@@ -5,35 +5,35 @@
 
 #include <shard/parsing/SourceParser.hpp>
 #include <shard/parsing/SyntaxTree.hpp>
-#include <shard/parsing/SemanticAnalyzer.hpp>
-#include <shard/parsing/LayoutGenerator.hpp>
+#include <shard/semantic/SemanticAnalyzer.hpp>
+#include <shard/compilation/LayoutGenerator.hpp>
 
-#include <shard/parsing/semantic/SemanticModel.hpp>
-#include <shard/parsing/semantic/SymbolTable.hpp>
+#include <shard/semantic/SemanticModel.hpp>
+#include <shard/semantic/SymbolTable.hpp>
 
-#include <shard/parsing/analysis/DiagnosticsContext.hpp>
-#include <shard/parsing/lexical/LexicalAnalyzer.hpp>
-#include <shard/parsing/lexical/SourceProvider.hpp>
+#include <shard/analysis/DiagnosticsContext.hpp>
+#include <shard/lexical/LexicalAnalyzer.hpp>
+#include <shard/lexical/SourceProvider.hpp>
 
-#include <shard/syntax/SyntaxKind.hpp>
+#include <shard/parsing/SyntaxKind.hpp>
 
-#include <shard/syntax/symbols/MethodSymbol.hpp>
-#include <shard/syntax/symbols/ParameterSymbol.hpp>
-#include <shard/syntax/symbols/AccessorSymbol.hpp>
-#include <shard/syntax/symbols/PropertySymbol.hpp>
-#include <shard/syntax/symbols/ConstructorSymbol.hpp>
-#include <shard/syntax/symbols/IndexatorSymbol.hpp>
+#include <shard/semantic/symbols/MethodSymbol.hpp>
+#include <shard/semantic/symbols/ParameterSymbol.hpp>
+#include <shard/semantic/symbols/AccessorSymbol.hpp>
+#include <shard/semantic/symbols/PropertySymbol.hpp>
+#include <shard/semantic/symbols/ConstructorSymbol.hpp>
+#include <shard/semantic/symbols/IndexatorSymbol.hpp>
 
-#include <shard/syntax/nodes/MemberDeclarationSyntax.hpp>
-#include <shard/syntax/nodes/CompilationUnitSyntax.hpp>
+#include <shard/parsing/nodes/MemberDeclarationSyntax.hpp>
+#include <shard/parsing/nodes/CompilationUnitSyntax.hpp>
 
-#include <shard/syntax/nodes/MemberDeclarations/MethodDeclarationSyntax.hpp>
-#include <shard/syntax/nodes/MemberDeclarations/NamespaceDeclarationSyntax.hpp>
-#include <shard/syntax/nodes/MemberDeclarations/ClassDeclarationSyntax.hpp>
-#include <shard/syntax/nodes/MemberDeclarations/StructDeclarationSyntax.hpp>
-#include <shard/syntax/nodes/MemberDeclarations/ConstructorDeclarationSyntax.hpp>
-#include <shard/syntax/nodes/MemberDeclarations/PropertyDeclarationSyntax.hpp>
-#include <shard/syntax/nodes/MemberDeclarations/IndexatorDeclarationSyntax.hpp>
+#include <shard/parsing/nodes/MemberDeclarations/MethodDeclarationSyntax.hpp>
+#include <shard/parsing/nodes/MemberDeclarations/NamespaceDeclarationSyntax.hpp>
+#include <shard/parsing/nodes/MemberDeclarations/ClassDeclarationSyntax.hpp>
+#include <shard/parsing/nodes/MemberDeclarations/StructDeclarationSyntax.hpp>
+#include <shard/parsing/nodes/MemberDeclarations/ConstructorDeclarationSyntax.hpp>
+#include <shard/parsing/nodes/MemberDeclarations/PropertyDeclarationSyntax.hpp>
+#include <shard/parsing/nodes/MemberDeclarations/IndexatorDeclarationSyntax.hpp>
 
 #include <shard/compilation/AbstractEmiter.hpp>
 #include <shard/compilation/ProgramVirtualImage.hpp>

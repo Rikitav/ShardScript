@@ -8,10 +8,10 @@
 #include <shard/runtime/CallStackFrame.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
 
-#include <shard/syntax/symbols/MethodSymbol.hpp>
-#include <shard/syntax/symbols/ConstructorSymbol.hpp>
-#include <shard/syntax/symbols/TypeSymbol.hpp>
-#include <shard/syntax/symbols/DelegateTypeSymbol.hpp>
+#include <shard/semantic/symbols/MethodSymbol.hpp>
+#include <shard/semantic/symbols/ConstructorSymbol.hpp>
+#include <shard/semantic/symbols/TypeSymbol.hpp>
+#include <shard/semantic/symbols/DelegateTypeSymbol.hpp>
 
 #include <stack>
 #include <atomic>

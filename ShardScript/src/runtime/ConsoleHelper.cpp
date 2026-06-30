@@ -1,6 +1,6 @@
 #include <shard/runtime/ConsoleHelper.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
-#include <shard/parsing/semantic/SymbolTable.hpp>
+#include <shard/semantic/SymbolTable.hpp>
 
 #include <iostream>
 #include <stdexcept>
@@ -93,7 +93,10 @@ void ConsoleHelper::Write(wchar_t data)
 {
 #if USEWIN
 	DWORD charsWritten;
-	WriteConsoleW(stdOut, &data, 1, &charsWritten, NULL);
+	if (FALSE == WriteConsoleW(stdOut, &data, 1, &charsWritten, NULL))
+	{
+		std::wcout << data;
+	}
 #else
 	wprintf(L"%lc", data);
 	fflush(stdout);
@@ -104,7 +107,10 @@ void ConsoleHelper::Write(const wchar_t* data)
 {
 #if USEWIN
 	DWORD charsWritten;
-	WriteConsoleW(stdOut, data, static_cast<DWORD>(wcslen(data)), &charsWritten, NULL);
+	if (FALSE == WriteConsoleW(stdOut, data, static_cast<DWORD>(wcslen(data)), &charsWritten, NULL))
+	{
+		std::wcout << data;
+	}
 #else
 	wprintf(L"%ls", data);
 	fflush(stdout);
@@ -117,7 +123,10 @@ void ConsoleHelper::Write(const std::wstring& data)
 
 #if USEWIN
 	DWORD charsWritten;
-	WriteConsoleW(stdOut, text, static_cast<DWORD>(data.size()), &charsWritten, NULL);
+	if (FALSE == WriteConsoleW(stdOut, text, static_cast<DWORD>(data.size()), &charsWritten, NULL))
+	{
+		std::wcout << data;
+	}
 #else
 	wprintf(L"%ls", text);
 	fflush(stdout);

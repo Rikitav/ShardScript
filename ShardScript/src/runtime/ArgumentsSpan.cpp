@@ -1,7 +1,7 @@
 #include <shard/runtime/ArgumentsSpan.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
 
-#include <shard/syntax/symbols/ParameterSymbol.hpp>
+#include <shard/semantic/symbols/ParameterSymbol.hpp>
 
 #include <string>
 #include <stdexcept>

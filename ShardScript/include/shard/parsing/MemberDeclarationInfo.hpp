@@ -1,10 +1,10 @@
 #pragma once
 #include <shard/ShardScriptAPI.hpp>
 
-#include <shard/syntax/SyntaxToken.hpp>
-#include <shard/syntax/nodes/TypeParametersListSyntax.hpp>
-#include <shard/syntax/nodes/TypeSyntax.hpp>
-#include <shard/syntax/nodes/AttributeSyntax.hpp>
+#include <shard/parsing/SyntaxToken.hpp>
+#include <shard/parsing/nodes/TypeParametersListSyntax.hpp>
+#include <shard/parsing/nodes/TypeSyntax.hpp>
+#include <shard/parsing/nodes/AttributeSyntax.hpp>
 
 #include <vector>
 #include <memory>

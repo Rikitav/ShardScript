@@ -2,15 +2,15 @@
 #include <shard/runtime/CallStackFrame.hpp>
 #include <shard/runtime/GarbageCollector.hpp>
 
-#include <shard/parsing/semantic/SymbolTable.hpp>
+#include <shard/semantic/SymbolTable.hpp>
 
-#include <shard/syntax/SyntaxKind.hpp>
+#include <shard/parsing/SyntaxKind.hpp>
 
-#include <shard/syntax/symbols/FieldSymbol.hpp>
-#include <shard/syntax/symbols/ArrayTypeSymbol.hpp>
-#include <shard/syntax/symbols/GenericTypeSymbol.hpp>
-#include <shard/syntax/symbols/TypeSymbol.hpp>
-#include <shard/syntax/symbols/TypeParameterSymbol.hpp>
+#include <shard/semantic/symbols/FieldSymbol.hpp>
+#include <shard/semantic/symbols/ArrayTypeSymbol.hpp>
+#include <shard/semantic/symbols/GenericTypeSymbol.hpp>
+#include <shard/semantic/symbols/TypeSymbol.hpp>
+#include <shard/semantic/symbols/TypeParameterSymbol.hpp>
 
 #include <cstring>
 #include <stdexcept>

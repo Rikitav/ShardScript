@@ -1,11 +1,11 @@
-#include <shard/syntax/SyntaxToken.hpp>
-#include <shard/parsing/SemanticAnalyzer.hpp>
+#include <shard/parsing/SyntaxToken.hpp>
+#include <shard/semantic/SemanticAnalyzer.hpp>
 #include <shard/parsing/SyntaxTree.hpp>
 
-#include <shard/parsing/semantic/SemanticModel.hpp>
-#include <shard/parsing/semantic/visiting/DeclarationCollector.hpp>
-#include <shard/parsing/semantic/visiting/TypeBinder.hpp>
-#include <shard/parsing/semantic/visiting/ExpressionBinder.hpp>
+#include <shard/semantic/SemanticModel.hpp>
+#include <shard/semantic/DeclarationCollector.hpp>
+#include <shard/semantic/TypeBinder.hpp>
+#include <shard/semantic/ExpressionBinder.hpp>
 
 using namespace shard;
 

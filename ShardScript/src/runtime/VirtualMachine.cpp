@@ -4,29 +4,29 @@
 #include <shard/runtime/CallStackFrame.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
 #include <shard/runtime/GarbageCollector.hpp>
-#include <shard/runtime/ProgramDisassembler.hpp>
+#include <shard/compilation/ProgramDisassembler.hpp>
 
 #include <shard/compilation/ByteCodeDecoder.hpp>
 #include <shard/compilation/OperationCode.hpp>
 #include <shard/compilation/ProgramVirtualImage.hpp>
 
-#include <shard/parsing/semantic/SymbolTable.hpp>
+#include <shard/semantic/SymbolTable.hpp>
 
-#include <shard/syntax/TokenType.hpp>
-#include <shard/syntax/SyntaxKind.hpp>
+#include <shard/lexical/TokenType.hpp>
+#include <shard/parsing/SyntaxKind.hpp>
 
-#include <shard/syntax/symbols/MethodSymbol.hpp>
-#include <shard/syntax/symbols/OperatorSymbol.hpp>
-#include <shard/syntax/SyntaxFacts.hpp>
-#include <shard/syntax/symbols/AccessorSymbol.hpp>
-#include <shard/syntax/symbols/PropertySymbol.hpp>
-#include <shard/syntax/symbols/InterfaceSymbol.hpp>
-#include <shard/syntax/symbols/ConstructorSymbol.hpp>
-#include <shard/syntax/symbols/ClassSymbol.hpp>
-#include <shard/syntax/symbols/FieldSymbol.hpp>
-#include <shard/syntax/symbols/TypeSymbol.hpp>
-#include <shard/syntax/symbols/GenericTypeSymbol.hpp>
-#include <shard/syntax/symbols/DelegateTypeSymbol.hpp>
+#include <shard/semantic/symbols/MethodSymbol.hpp>
+#include <shard/semantic/symbols/OperatorSymbol.hpp>
+#include <shard/parsing/SyntaxFacts.hpp>
+#include <shard/semantic/symbols/AccessorSymbol.hpp>
+#include <shard/semantic/symbols/PropertySymbol.hpp>
+#include <shard/semantic/symbols/InterfaceSymbol.hpp>
+#include <shard/semantic/symbols/ConstructorSymbol.hpp>
+#include <shard/semantic/symbols/ClassSymbol.hpp>
+#include <shard/semantic/symbols/FieldSymbol.hpp>
+#include <shard/semantic/symbols/TypeSymbol.hpp>
+#include <shard/semantic/symbols/GenericTypeSymbol.hpp>
+#include <shard/semantic/symbols/DelegateTypeSymbol.hpp>
 
 #include <shard/ApplicationDomain.hpp>
 
