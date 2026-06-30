@@ -5,25 +5,25 @@ namespace ShardScript.Syntax.Ast;
 /// <summary>
 /// Factory for ShardScript expressions. Supports operator overloading on <see cref="SyntaxExpression"/>.
 /// </summary>
-public sealed class ExpressionBuilder
+public sealed class ExpressionSyntaxBuilder
 {
     public SyntaxIdentifierExpression Identifier(string name)
     {
         if (name == null)
             throw new ArgumentNullException(nameof(name));
 
-        return SyntaxBuilder.Identifier(name);
+        return Syntax.SyntaxBuilder.Identifier(name);
     }
 
-    public SyntaxLiteralExpression Literal(long value) => SyntaxBuilder.Literal(value);
-    public SyntaxLiteralExpression Literal(double value) => SyntaxBuilder.Literal(value);
-    public SyntaxLiteralExpression Literal(bool value) => SyntaxBuilder.Literal(value);
+    public SyntaxLiteralExpression Literal(long value) => Syntax.SyntaxBuilder.Literal(value);
+    public SyntaxLiteralExpression Literal(double value) => Syntax.SyntaxBuilder.Literal(value);
+    public SyntaxLiteralExpression Literal(bool value) => Syntax.SyntaxBuilder.Literal(value);
     public SyntaxLiteralExpression Literal(string value)
     {
         if (value == null)
             throw new ArgumentNullException(nameof(value));
 
-        return SyntaxBuilder.Literal(value);
+        return Syntax.SyntaxBuilder.Literal(value);
     }
 
     public SyntaxMemberAccessExpression MemberAccess(SyntaxExpression previous, string memberName)
@@ -33,7 +33,7 @@ public sealed class ExpressionBuilder
         if (memberName == null)
             throw new ArgumentNullException(nameof(memberName));
 
-        return SyntaxBuilder.MemberAccess(previous, memberName);
+        return Syntax.SyntaxBuilder.MemberAccess(previous, memberName);
     }
 
     public SyntaxInvocationExpression Call(SyntaxExpression target, params SyntaxExpression[] arguments)
@@ -41,10 +41,10 @@ public sealed class ExpressionBuilder
         if (target == null)
             throw new ArgumentNullException(nameof(target));
 
-        SyntaxInvocationExpression invocation = SyntaxBuilder.Invocation(target);
+        SyntaxInvocationExpression invocation = Syntax.SyntaxBuilder.Invocation(target);
         if (arguments.Length > 0)
         {
-            SyntaxArgumentsList list = SyntaxBuilder.Arguments();
+            SyntaxArgumentsList list = Syntax.SyntaxBuilder.Arguments();
             foreach (SyntaxExpression arg in arguments)
                 list.AddArgument(arg);
 

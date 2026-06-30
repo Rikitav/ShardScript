@@ -174,6 +174,28 @@ internal static class SymbolFactory
 /// </summary>
 public static class SymbolBuilder
 {
+    /// <summary>
+    /// Creates a namespace using the fluent lambda-scoped API.
+    /// </summary>
+    public static NamespaceBuilder CreateNamespace(CompilationContext context, string name, Action<NamespaceBuilder> configure)
+    {
+        if (context == null)
+            throw new ArgumentNullException(nameof(context));
+
+        if (name == null)
+            throw new ArgumentNullException(nameof(name));
+
+        if (configure == null)
+            throw new ArgumentNullException(nameof(configure));
+
+        NamespaceBuilder builder = new NamespaceBuilder(context, name);
+        configure(builder);
+        return builder;
+    }
+
+    /// <summary>
+    /// Creates a namespace using the classic chaining API.
+    /// </summary>
     public static NamespaceBuilder Namespace(CompilationContext context, string name, NamespaceSymbol? parent = null)
     {
         return new NamespaceBuilder(context, name, parent);

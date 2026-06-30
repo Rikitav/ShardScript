@@ -6,17 +6,17 @@ namespace ShardScript.Syntax.Ast;
 /// <summary>
 /// Entry point for building ShardScript syntax trees using a scoped, fluent API.
 /// </summary>
-public static class AstBuilder
+public static class SyntaxBuilder
 {
-    public static SyntaxCompilationUnit Unit(CompilationContext context, Action<CompilationUnitBuilder> configure)
+    public static SyntaxCompilationUnit Unit(CompilationContext context, Action<CompilationUnitSyntaxBuilder> configure)
     {
         if (context == null)
             throw new ArgumentNullException(nameof(context));
         if (configure == null)
             throw new ArgumentNullException(nameof(configure));
 
-        SyntaxCompilationUnit unit = SyntaxBuilder.Unit(context).SetOrigin(CompilationUnitOrigin.SourceFile);
-        configure(new CompilationUnitBuilder(context, unit));
+        SyntaxCompilationUnit unit = Syntax.SyntaxBuilder.Unit(context).SetOrigin(CompilationUnitOrigin.SourceFile);
+        configure(new CompilationUnitSyntaxBuilder(context, unit));
         return unit;
     }
 }
