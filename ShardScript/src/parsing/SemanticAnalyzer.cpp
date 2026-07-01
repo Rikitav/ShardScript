@@ -6,6 +6,7 @@
 #include <shard/semantic/DeclarationCollector.hpp>
 #include <shard/semantic/TypeBinder.hpp>
 #include <shard/semantic/ExpressionBinder.hpp>
+#include <shard/semantic/SemanticValidator.hpp>
 
 using namespace shard;
 
@@ -37,4 +38,8 @@ void SemanticAnalyzer::Analyze(SyntaxTree& syntaxTree, SemanticModel& semanticMo
 	ExpressionBinder expressionBinder(semanticModel, Diagnostics);
 	expressionBinder.PushScopeStack(TopScope);
 	expressionBinder.VisitSyntaxTree(syntaxTree);
+
+	// Final cross-symbol validation pass. This also catches interface
+	// implementation mistakes in symbols created by native libraries.
+	SemanticValidator::ValidateAllInterfaceImplementations(semanticModel, Diagnostics);
 }

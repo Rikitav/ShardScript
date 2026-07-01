@@ -1,0 +1,14 @@
+using stdio;
+
+namespace test;
+
+public class Resource : IDisposable
+{
+    public func NotDispose() -> void
+    {
+    }
+}
+
+public static func Main() -> void
+{
+}

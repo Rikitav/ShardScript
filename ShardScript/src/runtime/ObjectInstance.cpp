@@ -49,7 +49,7 @@ static TypeSymbol* ResolveRuntimeType(TypeSymbol* type, CallStackFrame* frame, G
 
         ArrayTypeSymbol* resolvedArray = new ArrayTypeSymbol(resolvedUnderlying);
         resolvedArray->Length = arrayType->Length;
-        resolvedArray->State = arrayType->State;
+        resolvedArray->LayoutingState = arrayType->LayoutingState;
         return resolvedArray;
     }
 

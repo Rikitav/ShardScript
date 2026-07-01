@@ -56,7 +56,7 @@ namespace shard
 
         std::unordered_map<MethodSymbol*, MethodSymbol*> InterfaceMethodMap;
 
-        TypeLayoutingState State = TypeLayoutingState::Unvisited;
+        TypeLayoutingState LayoutingState = TypeLayoutingState::Unvisited;
         TypeInlining Inlining = TypeInlining::ByReference;
 
         std::size_t MemoryBytesSize = 0;

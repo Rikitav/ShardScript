@@ -19,7 +19,7 @@ void LayoutGenerator::Generate(SemanticModel& semanticModel)
 {
 	for (TypeSymbol* objectInfo : semanticModel.Table->GetTypeSymbols())
 	{
-		if (objectInfo->State == TypeLayoutingState::Visited)
+		if (objectInfo->LayoutingState == TypeLayoutingState::Visited)
 			continue;
 
 		FixObjectLayout(semanticModel, objectInfo);
@@ -28,7 +28,7 @@ void LayoutGenerator::Generate(SemanticModel& semanticModel)
 
 void LayoutGenerator::FixObjectLayout(SemanticModel& semanticModel, TypeSymbol* objectInfo)
 {
-	objectInfo->State = TypeLayoutingState::Visiting;
+	objectInfo->LayoutingState = TypeLayoutingState::Visiting;
 
 	for (FieldSymbol* field : objectInfo->Fields)
 	{
@@ -41,7 +41,7 @@ void LayoutGenerator::FixObjectLayout(SemanticModel& semanticModel, TypeSymbol* 
 
 		if (returnType->Inlining == TypeInlining::ByValue)
 		{
-			if (returnType->State == TypeLayoutingState::Visiting)
+			if (returnType->LayoutingState == TypeLayoutingState::Visiting)
 			{
 				SyntaxToken token = static_cast<FieldDeclarationSyntax*>(semanticModel.Table->LookupNode(field).value_or(nullptr))->IdentifierToken;
 				Diagnostics.ReportError(token, L"Recursive struct inlining");
@@ -49,7 +49,7 @@ void LayoutGenerator::FixObjectLayout(SemanticModel& semanticModel, TypeSymbol* 
 			}
 		}
 
-		if (returnType->State == TypeLayoutingState::Unvisited)
+		if (returnType->LayoutingState == TypeLayoutingState::Unvisited)
 			FixObjectLayout(semanticModel, returnType);
 
 		if (field->Linking == LINK_INSTANCE)
@@ -62,7 +62,7 @@ void LayoutGenerator::FixObjectLayout(SemanticModel& semanticModel, TypeSymbol* 
 	if (objectInfo->Kind == SyntaxKind::ArrayType)
 	{
 		ArrayTypeSymbol* arrayInfo = static_cast<ArrayTypeSymbol*>(objectInfo);
-		if (arrayInfo->UnderlayingType->State == TypeLayoutingState::Unvisited)
+		if (arrayInfo->UnderlayingType->LayoutingState == TypeLayoutingState::Unvisited)
 			FixObjectLayout(semanticModel, arrayInfo->UnderlayingType);
 
 		objectInfo->MemoryBytesSize = SymbolTable::Primitives::Array->MemoryBytesSize + arrayInfo->UnderlayingType->MemoryBytesSize * arrayInfo->Length;
@@ -71,7 +71,7 @@ void LayoutGenerator::FixObjectLayout(SemanticModel& semanticModel, TypeSymbol* 
 	if (objectInfo->Kind == SyntaxKind::GenericType)
 	{
 		GenericTypeSymbol* genericInfo = static_cast<GenericTypeSymbol*>(objectInfo);
-		if (genericInfo->UnderlayingType->State == TypeLayoutingState::Unvisited)
+		if (genericInfo->UnderlayingType->LayoutingState == TypeLayoutingState::Unvisited)
 			FixObjectLayout(semanticModel, genericInfo->UnderlayingType);
 
 		genericInfo->MemoryBytesSize = genericInfo->UnderlayingType->MemoryBytesSize;
@@ -89,6 +89,6 @@ void LayoutGenerator::FixObjectLayout(SemanticModel& semanticModel, TypeSymbol* 
 		}
 	}
 
-	objectInfo->State = TypeLayoutingState::Visited;
+	objectInfo->LayoutingState = TypeLayoutingState::Visited;
 	return;
 }

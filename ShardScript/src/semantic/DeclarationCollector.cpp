@@ -73,27 +73,28 @@ void DeclarationCollector::VisitCompilationUnit(CompilationUnitSyntax* node)
     // First scope is declared as nullptr symbol
     PushScope(nullptr);
 
+    NamespaceSymbol* namespaceSymbol = nullptr;
     if (node->Namespace != nullptr)
     {
-        NamespaceSymbol* symbol = LookupSymbol<NamespaceSymbol>(node->Namespace.get()).value_or(nullptr);
-        if (symbol == nullptr)
+        namespaceSymbol = LookupSymbol<NamespaceSymbol>(node->Namespace.get()).value_or(nullptr);
+        if (namespaceSymbol == nullptr)
         {
 			// Creating symbol
-			symbol = Factory.Namespace(node->Namespace.get());
-            Declare(symbol);
+			namespaceSymbol = Factory.Namespace(node->Namespace.get());
+            Declare(namespaceSymbol);
 
             if (!node->Namespace->IdentifierTokens.empty())
             {
                 NamespaceNode* nsNode = Namespaces->Root;
                 for (SyntaxToken token : node->Namespace->IdentifierTokens)
-                    nsNode = nsNode->LookupOrCreate(token.Word, symbol);
+                    nsNode = nsNode->LookupOrCreate(token.Word, namespaceSymbol);
 
-                symbol->Node = nsNode;
+                namespaceSymbol->Node = nsNode;
                 CurrentScope()->Namespace = nsNode;
             }
         }
 
-        PushScope(symbol);
+        PushScope(namespaceSymbol);
     }
 
     // Visiting members of unit
@@ -101,7 +102,10 @@ void DeclarationCollector::VisitCompilationUnit(CompilationUnitSyntax* node)
         VisitMemberDeclaration(member.get());
 
     if (node->Namespace != nullptr)
+    {
+        namespaceSymbol->AdvanceAnalysisState(SymbolAnalysisState::Collected);
         PopScope();
+    }
 
     PopScope();
 }
@@ -149,6 +153,7 @@ void DeclarationCollector::VisitClassDeclaration(ClassDeclarationSyntax* node)
     if (symbol->Linking == LINK_INSTANCE && symbol->Constructors.empty())
         Declare(Factory.Constructor(symbol, ACS_PUBLIC));
 
+    symbol->AdvanceAnalysisState(SymbolAnalysisState::Collected);
     PopScope();
 }
 
@@ -199,6 +204,7 @@ void DeclarationCollector::VisitInterfaceDeclaration(InterfaceDeclarationSyntax*
         }
     }
 
+    symbol->AdvanceAnalysisState(SymbolAnalysisState::Collected);
     PopScope();
 }
 
@@ -243,6 +249,7 @@ void DeclarationCollector::VisitStructDeclaration(StructDeclarationSyntax* node)
             Declare(Factory.Constructor(symbol, ACS_PUBLIC));
     }
 
+    symbol->AdvanceAnalysisState(SymbolAnalysisState::Collected);
     PopScope();
 }
 
@@ -278,6 +285,7 @@ void DeclarationCollector::VisitDelegateDeclaration(DelegateDeclarationSyntax* n
     VisitType(node->ReturnType.get());
     VisitParametersList(node->ParametersList.get());
 
+    symbol->AdvanceAnalysisState(SymbolAnalysisState::Collected);
     PopScope();
 }
 
@@ -353,8 +361,10 @@ void DeclarationCollector::VisitEnumDeclaration(EnumDeclarationSyntax* node)
 		FieldSymbol* fieldSymbol = Factory.EnumField(fieldNode->IdentifierToken.Word, symbol, value);
 		Declare(fieldSymbol);
 		fieldNode->Symbol = fieldSymbol;
+		fieldSymbol->AdvanceAnalysisState(SymbolAnalysisState::Collected);
 	}
 
+	symbol->AdvanceAnalysisState(SymbolAnalysisState::Collected);
 	PopScope();
 }
 
@@ -402,7 +412,8 @@ void DeclarationCollector::VisitFieldDeclaration(FieldDeclarationSyntax* node)
 
     VisitType(node->ReturnType.get());
     VisitExpression(node->InitializerExpression.get());
-    
+
+    symbol->AdvanceAnalysisState(SymbolAnalysisState::Collected);
     PopScope();
 }
 
@@ -410,8 +421,8 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 {
     // Creating symbol
     MethodSymbol* symbol = LookupSymbol<MethodSymbol>(node).value_or(nullptr);
-    bool isNewSymbol = symbol == nullptr;
-    if (isNewSymbol)
+    bool needsCollection = symbol == nullptr || symbol->AnalysisState < SymbolAnalysisState::Collected;
+    if (symbol == nullptr)
     {
         // Creating symbol
         symbol = Factory.Method(node);
@@ -421,7 +432,7 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 
     PushScope(symbol);
 
-    if (isNewSymbol)
+    if (needsCollection)
     {
         if (node->ParametersList != nullptr)
         {
@@ -477,13 +488,14 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax* node)
     VisitParametersList(node->ParametersList.get());
     VisitStatementsBlock(node->Body.get());
 
+    symbol->AdvanceAnalysisState(SymbolAnalysisState::Collected);
     PopScope();
 }
 void DeclarationCollector::VisitOperatorDeclaration(OperatorDeclarationSyntax* node)
 {
     OperatorSymbol* symbol = LookupSymbol<OperatorSymbol>(node).value_or(nullptr);
-    bool isNewSymbol = symbol == nullptr;
-    if (isNewSymbol)
+    bool needsCollection = symbol == nullptr || symbol->AnalysisState < SymbolAnalysisState::Collected;
+    if (symbol == nullptr)
     {
         symbol = Factory.Operator(node);
         Declare(symbol);
@@ -513,7 +525,7 @@ void DeclarationCollector::VisitOperatorDeclaration(OperatorDeclarationSyntax* n
     if (symbol->Parent != nullptr && symbol->Parent->IsType())
         ownerType = static_cast<TypeSymbol*>(symbol->Parent);
 
-    if (isNewSymbol)
+    if (needsCollection)
     {
         std::uint16_t baseIndex = 1;
         for (const auto& parameter : node->ParametersList->Parameters)
@@ -547,7 +559,7 @@ void DeclarationCollector::VisitOperatorDeclaration(OperatorDeclarationSyntax* n
     VisitType(node->ReturnType.get());
     VisitParametersList(node->ParametersList.get());
 
-    if (isNewSymbol && ownerType != nullptr)
+    if (needsCollection && ownerType != nullptr)
     {
         if (node->OperatorToken.Type == TokenType::Delimeter)
         {
@@ -580,14 +592,15 @@ void DeclarationCollector::VisitOperatorDeclaration(OperatorDeclarationSyntax* n
 
     VisitStatementsBlock(node->Body.get());
 
+    symbol->AdvanceAnalysisState(SymbolAnalysisState::Collected);
     PopScope();
 }
 void DeclarationCollector::VisitConstructorDeclaration(ConstructorDeclarationSyntax* node)
 {
     // Creating symbol
     ConstructorSymbol* symbol = LookupSymbol<ConstructorSymbol>(node).value_or(nullptr);
-    bool isNewSymbol = symbol == nullptr;
-    if (isNewSymbol)
+    bool needsCollection = symbol == nullptr || symbol->AnalysisState < SymbolAnalysisState::Collected;
+    if (symbol == nullptr)
     {
         symbol = Factory.Constructor(node);
         Declare(symbol);
@@ -596,7 +609,7 @@ void DeclarationCollector::VisitConstructorDeclaration(ConstructorDeclarationSyn
 
     PushScope(symbol);
 
-    if (isNewSymbol)
+    if (needsCollection)
     {
         // Creating parameters symbols
         std::uint16_t baseIndex = symbol->Linking == LINK_STATIC ? 0 : 1;
@@ -643,6 +656,7 @@ void DeclarationCollector::VisitConstructorDeclaration(ConstructorDeclarationSyn
     VisitParametersList(node->ParametersList.get());
     VisitStatementsBlock(node->Body.get());
 
+    symbol->AdvanceAnalysisState(SymbolAnalysisState::Collected);
     PopScope();
 }
 void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
@@ -698,6 +712,11 @@ void DeclarationCollector::VisitPropertyDeclaration(PropertyDeclarationSyntax* n
         VisitAccessorDeclaration(node->Setter.get());
 
     VisitExpression(node->InitializerExpression.get());
+
+    symbol->AdvanceAnalysisState(SymbolAnalysisState::Collected);
+    if (symbol->BackingField != nullptr)
+        symbol->BackingField->AdvanceAnalysisState(SymbolAnalysisState::Collected);
+
     PopScope();
 }
 
@@ -705,8 +724,8 @@ void DeclarationCollector::VisitIndexatorDeclaration(IndexatorDeclarationSyntax*
 {
     // Creating symbol
     IndexatorSymbol* symbol = LookupSymbol<IndexatorSymbol>(node).value_or(nullptr);
-    bool isNewSymbol = symbol == nullptr;
-    if (isNewSymbol)
+    bool needsCollection = symbol == nullptr || symbol->AnalysisState < SymbolAnalysisState::Collected;
+    if (symbol == nullptr)
     {
         symbol = Factory.Indexator(node);
         Declare(symbol);
@@ -714,7 +733,7 @@ void DeclarationCollector::VisitIndexatorDeclaration(IndexatorDeclarationSyntax*
 
     PushScope(symbol);
 
-    if (isNewSymbol)
+    if (needsCollection)
     {
         // Creating parameters symbols
         std::uint16_t baseIndex = symbol->Linking == LINK_STATIC ? 1 : 0;
@@ -765,6 +784,7 @@ void DeclarationCollector::VisitIndexatorDeclaration(IndexatorDeclarationSyntax*
     if (node->Getter == nullptr && node->Setter == nullptr)
         Diagnostics.ReportError(node->IdentifierToken, L"Indexator should have at least one accessor");
 
+    symbol->AdvanceAnalysisState(SymbolAnalysisState::Collected);
     PopScope();
 }
 void DeclarationCollector::VisitAccessorDeclaration(AccessorDeclarationSyntax* node)
@@ -846,6 +866,8 @@ void DeclarationCollector::VisitAccessorDeclaration(AccessorDeclarationSyntax* n
             }
         }
     }
+
+    symbol->AdvanceAnalysisState(SymbolAnalysisState::Collected);
 }
 
 void DeclarationCollector::VisitVariableStatement(VariableStatementSyntax* node)
@@ -874,6 +896,7 @@ void DeclarationCollector::VisitVariableStatement(VariableStatementSyntax* node)
     if (node->Expression != nullptr)
         VisitExpression(node->Expression.get());
 
+    symbol->AdvanceAnalysisState(SymbolAnalysisState::Collected);
     PopScope();
 }
 
@@ -910,6 +933,7 @@ void DeclarationCollector::VisitForEachStatement(ForEachStatementSyntax* node)
     if (node->StatementsBlock != nullptr)
         VisitStatementsBlock(node->StatementsBlock.get());
 
+    symbol->AdvanceAnalysisState(SymbolAnalysisState::Collected);
     PopScope();
 }
 
@@ -940,6 +964,7 @@ void DeclarationCollector::VisitForInStatement(ForInStatementSyntax* node)
     if (node->StatementsBlock != nullptr)
         VisitStatementsBlock(node->StatementsBlock.get());
 
+    symbol->AdvanceAnalysisState(SymbolAnalysisState::Collected);
     PopScope();
 }
 
@@ -960,6 +985,7 @@ void DeclarationCollector::VisitTryStatement(TryStatementSyntax* node)
 
                 MethodSymbol* hostMethod = FindHostMethodSymbol().value_or(nullptr);
                 symbol->SlotIndex = hostMethod->GetEvalStackArgumentsCount() + hostMethod->AddVariableCount();
+                symbol->AdvanceAnalysisState(SymbolAnalysisState::Collected);
             }
 
             clause->Symbol = symbol;

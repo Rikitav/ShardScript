@@ -350,7 +350,7 @@ DelegateTypeSymbol* SymbolFactory::Delegate(MethodSymbol* method)
 	symbol->AnonymousSymbol = method;
 	symbol->Parameters = method->Parameters;
 	symbol->ReturnType = method->ReturnType;
-	symbol->State = TypeLayoutingState::Visited;
+	symbol->LayoutingState = TypeLayoutingState::Visited;
 	symbol->MemoryBytesSize = 0;
 	symbol->FullName = method->FullName;
 
