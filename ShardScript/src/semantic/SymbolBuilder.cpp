@@ -41,10 +41,12 @@ SymbolBuilder<MethodSymbol> SymbolBuilder<NamespaceSymbol>::AddMethod(
 
 SymbolBuilder<ClassSymbol> SymbolBuilder<NamespaceSymbol>::AddClass(
     const std::wstring& name,
+    SymbolLinking linking,
     SymbolAccesibility access)
 {
     SymbolBuilder<ClassSymbol> builder(Context, name, Symbol);
     builder.Get()->Accesibility = access;
+    builder.Get()->Linking = linking;
     return builder;
 }
 
@@ -91,6 +93,14 @@ SymbolBuilder<TypeParameterSymbol>::SymbolBuilder(CompilationContext& ctx,
 // =========================================================================
 // ClassSymbol
 // =========================================================================
+
+SymbolBuilder<ClassSymbol>::SymbolBuilder(
+    CompilationContext& ctx,
+    ClassSymbol* symbol)
+    : SymbolBuilderBase(ctx)
+{
+    Symbol = symbol;
+}
 
 SymbolBuilder<ClassSymbol>::SymbolBuilder(CompilationContext& ctx,
     const std::wstring& name,
@@ -366,6 +376,20 @@ SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::SetCallback(
     return *this;
 }
 */
+
+SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::IsImplementationOf(MethodSymbol* abstractMethod)
+{
+    if (abstractMethod == nullptr)
+        return *this;
+
+    SyntaxSymbol* parent = Symbol->Parent;
+    if (parent == nullptr || !parent->IsType())
+        return *this;
+
+    TypeSymbol* parentType = static_cast<TypeSymbol*>(parent);
+    parentType->InterfaceMethodMap[abstractMethod] = Symbol;
+    return *this;
+}
 
 SymbolBuilder<TypeParameterSymbol> SymbolBuilder<MethodSymbol>::AddTypeParameter(const std::wstring& name)
 {

@@ -214,6 +214,32 @@ extern "C"
     SHARD_API int Shard_GCSetStaticField(shard::GarbageCollector* gc, shard::FieldSymbol* field, shard::ObjectInstance* value);
 
     // =========================================================================
+    // Runtime Object Allocation API
+    // =========================================================================
+
+    SHARD_API shard::ObjectInstance* Shard_GCAllocateInstance(shard::GarbageCollector* gc, shard::TypeSymbol* type);
+    SHARD_API shard::ObjectInstance* Shard_GCAllocateArray(shard::GarbageCollector* gc, shard::TypeSymbol* elementType, std::size_t length);
+
+    // =========================================================================
+    // Runtime Instance Field / Element Access API
+    // =========================================================================
+
+    SHARD_API shard::ObjectInstance* Shard_GetInstanceField(shard::ObjectInstance* instance, shard::FieldSymbol* field);
+    SHARD_API int Shard_SetInstanceField(shard::ObjectInstance* instance, shard::FieldSymbol* field, shard::ObjectInstance* value);
+
+    SHARD_API shard::ObjectInstance* Shard_GetArrayElement(shard::ObjectInstance* array, std::size_t index);
+    SHARD_API int Shard_SetArrayElement(shard::ObjectInstance* array, std::size_t index, shard::ObjectInstance* value);
+
+    // GC-less typed primitive setters: box the value into a transient instance
+    // typed as field->ReturnType and write it inline. Reference types (e.g.
+    // string) must still go through Shard_SetInstanceField with a GC-owned value.
+    SHARD_API int Shard_SetInstanceFieldInteger(shard::ObjectInstance* instance, shard::FieldSymbol* field, std::int64_t value);
+    SHARD_API int Shard_SetInstanceFieldDouble(shard::ObjectInstance* instance, shard::FieldSymbol* field, double value);
+    SHARD_API int Shard_SetInstanceFieldBool(shard::ObjectInstance* instance, shard::FieldSymbol* field, int value);
+    SHARD_API int Shard_SetInstanceFieldChar(shard::ObjectInstance* instance, shard::FieldSymbol* field, wchar_t value);
+
+
+    // =========================================================================
     // Utility API
     // =========================================================================
 

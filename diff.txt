@@ -1,0 +1,4629 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 9e6b94f..5699710 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -14,7 +14,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE "${OUTPUT_DIR}")
+ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE "${OUTPUT_DIR}")
+ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE "${OUTPUT_DIR}")
+ 
+-project(ShardScript VERSION 0.5.0 LANGUAGES CXX) 
++project(ShardScript VERSION 0.5.0 LANGUAGES C CXX) 
+ 
+ if(MSVC)
+     # remove default flags provided with CMake for MSVC
+diff --git a/ShardScript.Framework/CMakeLists.txt b/ShardScript.Framework/CMakeLists.txt
+index 5a994b7..bb31717 100644
+--- a/ShardScript.Framework/CMakeLists.txt
++++ b/ShardScript.Framework/CMakeLists.txt
+@@ -1,5 +1,16 @@
+ project(ShardScript.Framework)
+ 
++if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/third_party/SQLite3/src/sqlite3.c")
++    add_library(sqlite3_native STATIC "${CMAKE_CURRENT_SOURCE_DIR}/third_party/SQLite3/src/sqlite3.c")
++    set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/third_party/SQLite3/src/sqlite3.c" PROPERTIES LANGUAGE C)
++    
++    if(MSVC)
++        target_compile_options(sqlite3_native PRIVATE /w)
++    else()
++        target_compile_options(sqlite3_native PRIVATE -w)
++    endif()
++endif()
++
+ file(GLOB_RECURSE CPP_FILES CONFIGURE_DEPENDS
+     "system/*.shard.cpp"
+     "system/**/*.shard.cpp"
+@@ -44,6 +55,18 @@ foreach(CPP_FILE IN LISTS CPP_FILES)
+     endif()
+   endif()
+ 
++  # SQLite target
++  string(FIND "${SHARD_TARGET_NAME}" "sqlite" IS_SQLITE_TARGET)
++  if(NOT IS_SQLITE_TARGET EQUAL -1 AND TARGET sqlite3_native)
++    target_include_directories("${SHARD_TARGET_NAME}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/third_party/SQLite3/include")
++    
++    if(MSVC)
++        target_link_libraries("${SHARD_TARGET_NAME}" PRIVATE -WHOLEARCHIVE:${CMAKE_BINARY_DIR}/bin/sqlite3_native)
++    else()
++        target_link_libraries("${SHARD_TARGET_NAME}" PRIVATE -Wl,--whole-archive ${CMAKE_BINARY_DIR}/bin/sqlite3_native -Wl,--no-whole-archive)
++    endif()
++  endif()
++
+   target_include_directories("${SHARD_TARGET_NAME}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+   target_include_directories("${SHARD_TARGET_NAME}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../ShardScript/include")
+   target_link_libraries("${SHARD_TARGET_NAME}" PRIVATE ShardScript)
+diff --git a/ShardScript.Framework/system/constream.shard.cpp b/ShardScript.Framework/system/constream.shard.cpp
+index 3048370..0abf8ed 100644
+--- a/ShardScript.Framework/system/constream.shard.cpp
++++ b/ShardScript.Framework/system/constream.shard.cpp
+@@ -4,98 +4,200 @@
+ #include <climits>
+ #include <cstdint>
+ #include <iostream>
+-
++#include <sstream>
+ #include <ShardScript.hpp>
+ 
++#ifdef _WIN32
++    #include <Windows.h>
++    #include <conio.h>
++#else
++    #include <unistd.h>
++    #include <termios.h>
++#endif
++
+ using namespace shard;
+ 
+-static MethodSymbol* GetIPrintableToString()
++namespace
+ {
+-	static std::wstring methodName = L"ToString";
+-	static MethodSymbol* method = TRAIT_PRINTABLE->FindMethod(methodName, std::vector<TypeSymbol*>());
+-	return method;
++    static MethodSymbol* GetIPrintableToString()
++    {
++        static std::wstring methodName = L"ToString";
++        static MethodSymbol* method = TRAIT_PRINTABLE->FindMethod(methodName, std::vector<TypeSymbol*>());
++        return method;
++    }
++
++    static inline std::string thinify(const wchar_t* wstr)
++    {
++        size_t length = wcslen(wstr) + 1;
++        std::string narrow(length, '\0');
++        size_t converted = 0;
++
++#ifdef _WIN32
++        wcstombs_s(&converted, narrow.data(), length, wstr, _TRUNCATE);
++#else
++        wcstombs(narrow.data(), wstr, length);
++#endif
++
++        return narrow;
++    }
++
++    static ObjectInstance* InvokeToString(const CallState& context, ObjectInstance* instance)
++    {
++        TypeSymbol* type = const_cast<TypeSymbol*>(instance->getInfo());
++        MethodSymbol* implementation = type->FindInterfaceImplementation(GetIPrintableToString());
++        if (implementation == nullptr)
++            throw std::runtime_error("Type '" + thinify(type->FullName.c_str()) + "' does not implement IPrintable");
++
++        context.Runtimer.InvokeMethod(implementation, { instance });
++        ObjectInstance* result = context.Runtimer.CurrentFrame()->PopStack();
++
++        if (result == nullptr || result->getInfo() != SymbolTable::Primitives::String)
++            throw std::runtime_error("ToString did not return a string");
++
++        return result;
++    }
++
++    static void TryEnableVT100Processing()
++    {
++#ifdef _WIN32
++        HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
++        if (hOut == INVALID_HANDLE_VALUE)
++            return;
++
++        DWORD dwMode = 0;
++        if (!GetConsoleMode(hOut, &dwMode))
++            return;
++
++        dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
++        SetConsoleMode(hOut, dwMode);
++#endif
++    }
+ }
+ 
+-static std::string WStringToString(const std::wstring& value)
++static ObjectInstance* shard_constream_print(const CallState& context) noexcept(false)
+ {
+-	std::string result;
+-	result.reserve(value.size());
+-	for (wchar_t ch : value)
+-		result.push_back(static_cast<char>(ch));
+-	return result;
++    ObjectInstance* instance = context.Args[0];
++    if (instance == nullptr || instance == context.Collector.NullInstance)
++    {
++        ConsoleHelper::Write(L"null");
++        return nullptr;
++    }
++
++    ObjectInstance* result = InvokeToString(context, instance);
++    ConsoleHelper::Write(result->AsString());
++    context.Collector.CollectInstance(result);
++    return nullptr; // void
+ }
+ 
+-static ObjectInstance* InvokeToString(const CallState& context, ObjectInstance* instance)
++static ObjectInstance* shard_constream_println(const CallState& context) noexcept(false)
+ {
+-	TypeSymbol* type = const_cast<TypeSymbol*>(instance->getInfo());
+-	MethodSymbol* implementation = type->FindInterfaceImplementation(GetIPrintableToString());
+-	if (implementation == nullptr)
+-		throw std::runtime_error("Type '" + WStringToString(type->FullName) + "' does not implement IPrintable");
++    ObjectInstance* instance = context.Args[0];
++    if (instance == nullptr || instance == context.Collector.NullInstance)
++    {
++        ConsoleHelper::WriteLine(L"null");
++        return nullptr;
++    }
++
++    ObjectInstance* result = InvokeToString(context, instance);
++    ConsoleHelper::WriteLine(result->AsString());
++    context.Collector.CollectInstance(result);
++    return nullptr; // void
++}
+ 
+-	context.Runtimer.InvokeMethod(implementation, { instance });
+-	ObjectInstance* result = context.Runtimer.CurrentFrame()->PopStack();
+-	if (result == nullptr || result->getInfo() != SymbolTable::Primitives::String)
+-		throw std::runtime_error("ToString did not return a string");
++static ObjectInstance* shard_constream_input(const CallState& context)
++{
++    std::wstring input;
++    if (std::getline(std::wcin, input))
++    {
++        return context.Collector.FromValue(input);
++    }
+ 
+-	return result;
++    return context.Collector.FromValue(L"");
+ }
+ 
+-static ObjectInstance* shard_constream_print(const CallState& context) noexcept(false)
++static ObjectInstance* shard_constream_Clear(const CallState& context) noexcept
+ {
+-	ObjectInstance* instance = context.Args[0];
+-	if (instance == nullptr || instance == context.Collector.NullInstance)
+-	{
+-		ConsoleHelper::Write(L"null");
+-		return nullptr;
+-	}
+-
+-	ObjectInstance* result = InvokeToString(context, instance);
+-	ConsoleHelper::Write(result);
+-	context.Collector.CollectInstance(result);
+-	return nullptr; // void
++    std::wcout << L"\x1b[2J\x1b[H" << std::flush;
++    return nullptr;
+ }
+ 
+-static ObjectInstance* shard_constream_println(const CallState& context) noexcept(false)
++static ObjectInstance* shard_constream_SetCursorPosition(const CallState& context) noexcept
+ {
+-	ObjectInstance* instance = context.Args[0];
+-	if (instance == nullptr || instance == context.Collector.NullInstance)
+-	{
+-		ConsoleHelper::WriteLine(L"null");
+-		return nullptr;
+-	}
+-
+-	ObjectInstance* result = InvokeToString(context, instance);
+-	ConsoleHelper::WriteLine(result);
+-	context.Collector.CollectInstance(result);
+-	return nullptr; // void
++    int64_t x = context.Args[0]->AsInteger();
++    int64_t y = context.Args[1]->AsInteger();
++
++    std::wcout << L"\x1b[" << (y + 1) << L";" << (x + 1) << L"H" << std::flush;
++    return nullptr;
+ }
+ 
+-static ObjectInstance* shard_constream_input(const CallState& context)
++static ObjectInstance* shard_constream_SetCursorVisible(const CallState& context) noexcept
+ {
+-	std::wstring input;
+-	getline(std::wcin, input);
+-	return context.Collector.FromValue(input);
++    bool visible = context.Args[0]->AsBoolean();
++    if (visible)
++        std::wcout << L"\x1b[?25h" << std::flush; // ÐŸÐ¾ÐºÐ°Ð·Ð°Ñ‚ÑŒ
++    else
++        std::wcout << L"\x1b[?25l" << std::flush; // Ð¡ÐºÑ€Ñ‹Ñ‚ÑŒ
++    return nullptr;
++}
++
++static ObjectInstance* shard_constream_ReadKey(const CallState& context) noexcept
++{
++    wchar_t ch = L'\0';
++
++#ifdef _WIN32
++    ch = static_cast<wchar_t>(_getwch());
++#else
++    struct termios oldt, newt;
++    tcgetattr(STDIN_FILENO, &oldt);
++    newt = oldt;
++    newt.c_lflag &= ~(ICANON | ECHO);
++    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
++
++    std::wcin.get(ch);
++
++    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
++#endif
++
++    std::wstring resultStr(1, ch);
++    return context.Collector.FromValue(resultStr);
+ }
+ 
+ SHARDLIB_GETMETADATA
+ {
+-	lib.Name = L"shard.stdio";
+-	lib.Description = L"Console IO";
+-	lib.Version = L"1.0.0";
++    lib.Name = L"shard.stdio";
++    lib.Description = L"Console IO with VT100 Support";
++    lib.Version = L"1.1.0";
+ }
+ 
+ SHARDLIB_ENTRYPOINT
+ {
+-	SymbolBuilder<NamespaceSymbol> stdio(context, L"stdio");
++    TryEnableVT100Processing();
++
++    SymbolBuilder<NamespaceSymbol> stdio(context, L"stdio");
++
++    stdio.AddMethod(L"print", TYPE_VOID, LINK_STATIC, ACS_PUBLIC)
++         .AddParameter(L"message", TRAIT_PRINTABLE)
++         .SetCallback(&shard_constream_print);
++
++    stdio.AddMethod(L"println", TYPE_VOID, LINK_STATIC, ACS_PUBLIC)
++         .AddParameter(L"message", TRAIT_PRINTABLE)
++         .SetCallback(&shard_constream_println);
++
++    stdio.AddMethod(L"input", TYPE_STRING, LINK_STATIC, ACS_PUBLIC)
++         .SetCallback(&shard_constream_input);
++
++    stdio.AddMethod(L"clear", TYPE_VOID, LINK_STATIC, ACS_PUBLIC)
++        .SetCallback(&shard_constream_Clear);
+ 
+-	stdio.AddMethod(L"print", TYPE_VOID, LINK_STATIC, ACS_PUBLIC)
+-		 .AddParameter(L"message", TRAIT_PRINTABLE)
+-		 .SetCallback(&shard_constream_print);
++    stdio.AddMethod(L"setCursor", TYPE_VOID, LINK_STATIC, ACS_PUBLIC)
++        .AddParameter(L"x", SymbolTable::Primitives::Integer)
++        .AddParameter(L"y", SymbolTable::Primitives::Integer)
++        .SetCallback(&shard_constream_SetCursorPosition);
+ 
+-	stdio.AddMethod(L"println", TYPE_VOID, LINK_STATIC, ACS_PUBLIC)
+-		 .AddParameter(L"message", TRAIT_PRINTABLE)
+-		 .SetCallback(&shard_constream_println);
++    stdio.AddMethod(L"setCursorVisible", TYPE_VOID, LINK_STATIC, ACS_PUBLIC)
++        .AddParameter(L"visible", SymbolTable::Primitives::Boolean)
++        .SetCallback(&shard_constream_SetCursorVisible);
+ 
+-	stdio.AddMethod(L"input", TYPE_STRING, LINK_STATIC, ACS_PUBLIC)
+-		 .SetCallback(&shard_constream_input);
++    stdio.AddMethod(L"readKey", TYPE_STRING, LINK_STATIC, ACS_PUBLIC)
++        .SetCallback(&shard_constream_ReadKey);
+ }
+diff --git a/ShardScript.Framework/system/environment.shard.cpp b/ShardScript.Framework/system/environment.shard.cpp
+index f3a7e27..b3821d9 100644
+--- a/ShardScript.Framework/system/environment.shard.cpp
++++ b/ShardScript.Framework/system/environment.shard.cpp
+@@ -9,24 +9,119 @@
+ #include <cstring>
+ #include <cwchar>
+ #include <string>
++#include <codecvt>
++#include <locale>
++
++#ifdef _WIN32
++#include <Windows.h>
++#endif
+ 
+ using namespace shard;
+ 
+-static ObjectInstance* shard_environment_GetEnv(const CallState& context)
++#ifdef _WIN32
++static void SetGlobalEnv_Windows(const std::wstring& name, const std::wstring& value, bool is_user_scope = true)
++{
++    HKEY hKey;
++    LPCWSTR subkey = is_user_scope ? L"Environment" : L"System\\CurrentControlSet\\Control\\Session Manager\\Environment";
++    HKEY baseKey = is_user_scope ? HKEY_CURRENT_USER : HKEY_LOCAL_MACHINE;
++
++    if (RegOpenKeyExW(baseKey, subkey, 0, KEY_SET_VALUE, &hKey) == ERROR_SUCCESS)
++    {
++        if (value.empty())
++        {
++            RegDeleteValueW(hKey, name.c_str());
++        }
++        else
++        {
++            RegSetValueExW(hKey, name.c_str(), 0, REG_SZ, (const BYTE*)value.c_str(), (value.size() + 1) * sizeof(wchar_t));
++        }
++
++        RegCloseKey(hKey);
++
++        DWORD_PTR dwReturnValue;
++        SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM)L"Environment", SMTO_ABORTIFHUNG, 5000, &dwReturnValue);
++    }
++}
++
++#else
++static void SetGlobalEnv_Linux(const std::wstring& name, const std::wstring& value)
++{
++    std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
++    std::string u8_name = converter.to_bytes(name);
++    std::string u8_value = converter.to_bytes(value);
++
++    const char* home = std::getenv("HOME");
++    if (home)
++    {
++        std::string profile_path = std::string(home) + "/.profile";
++        std::ofstream outfile;
++
++        outfile.open(profile_path, std::ios_base::app);
++        if (outfile.is_open())
++        {
++            outfile << "\nexport " << u8_name << "=\"" << u8_value << "\"\n";
++        }
++    }
++}
++
++#endif
++
++static std::wstring getEnvVar(const wchar_t* name)
+ {
+-    const wchar_t* name = context.Args[0]->AsString();
+ #ifdef _WIN32
+     const wchar_t* value = _wgetenv(name);
+-    return context.Collector.FromValue(std::wstring(value ? value : L""));
++    return std::wstring(value ? value : L"");
+ #else
+     std::string narrowName(name, name + std::wcslen(name));
+     const char* value = std::getenv(narrowName.c_str());
++
+     if (value == nullptr)
+         value = "";
+-    return context.Collector.FromValue(std::wstring(value, value + std::strlen(value)));
++
++    return std::wstring(value, value + std::strlen(value));
++#endif
++}
++
++static void setEnvVar(const wchar_t* name, const wchar_t* value)
++{
++#ifdef _WIN32
++    _wputenv_s(name, value);
++#else
++    std::string narrowName(name, name + std::wcslen(name));
++    std::string narrowValue(value, value + std::wcslen(value));
++    std::setenv(narrowName.c_str(), narrowValue.c_str(), 1);
+ #endif
+ }
+ 
++static void setGlobalEnvVar(const wchar_t* name, const wchar_t* value)
++{
++#ifdef _WIN32
++    SetGlobalEnv_Windows(name, value, true);
++#else
++    SetGlobalEnv_Linux(name, value);
++#endif
++}
++
++static ObjectInstance* shard_Environment_op_Delimeter(const CallState& context)
++{
++    const wchar_t* name = context.Args[0]->AsString();
++    return context.Collector.FromValue(getEnvVar(name));
++}
++
++static ObjectInstance* shard_Environment_GetEnvVar(const CallState& context)
++{
++    const wchar_t* name = context.Args[0]->AsString();
++    return context.Collector.FromValue(getEnvVar(name));
++}
++
++static ObjectInstance* shard_Environment_SetEnvVar(const CallState& context)
++{
++    const wchar_t* name = context.Args[0]->AsString();
++    const wchar_t* value = context.Args[1]->AsString();
++    setEnvVar(name, value);
++    return nullptr;
++}
++
+ SHARDLIB_GETMETADATA
+ {
+     lib.Name        = L"environment";
+@@ -37,10 +132,17 @@ SHARDLIB_GETMETADATA
+ SHARDLIB_ENTRYPOINT
+ {
+     auto envNamespace = SymbolBuilder<NamespaceSymbol>(context, L"environment");
+-    auto envClass = envNamespace.AddClass(L"Environment");
+-    envClass.Get()->Linking = LINK_STATIC;
++    auto envClass = envNamespace.AddClass(L"Environment", LINK_STATIC);
+ 
+     envClass.AddOperator(shard::TokenType::Delimeter, SymbolTable::Primitives::String, LINK_STATIC)
+         .AddParameter(L"name", SymbolTable::Primitives::String)
+-        .SetCallback(&shard_environment_GetEnv);
++        .SetCallback(&shard_Environment_op_Delimeter);
++
++    envClass.AddMethod(L"GetVariable", TYPE_STRING, LINK_STATIC)
++        .AddParameter(L"name", SymbolTable::Primitives::String)
++        .SetCallback(&shard_Environment_GetEnvVar);
++
++    envClass.AddMethod(L"SetVariable", TYPE_STRING, LINK_STATIC)
++        .AddParameter(L"name", SymbolTable::Primitives::String)
++        .SetCallback(&shard_Environment_SetEnvVar);
+ }
+diff --git a/ShardScript.Framework/system/io.shard.cpp b/ShardScript.Framework/system/io.shard.cpp
+index da59467..02591e5 100644
+--- a/ShardScript.Framework/system/io.shard.cpp
++++ b/ShardScript.Framework/system/io.shard.cpp
+@@ -13,6 +13,118 @@
+ namespace fs = std::filesystem;
+ using namespace shard;
+ 
++TypeSymbol* shard_FileInfo = nullptr;
++FieldSymbol* shard_FileInfo_FullNameBackingField = nullptr;
++
++TypeSymbol* shard_DirectoryInfo = nullptr;
++FieldSymbol* shard_DirectoryInfo_FullNameBackingField = nullptr;
++
++static std::wstring pathJoin(std::span<std::wstring> args)
++{
++    const std::size_t length = args.size();
++    if (length == 0)
++        return L"";
++
++    std::size_t total_reserve_size = 0;
++    for (std::size_t i = 0; i < length; ++i)
++    {
++        total_reserve_size += args[i].size() + 1;
++    }
++
++    std::wstring final_buffer;
++    final_buffer.reserve(total_reserve_size);
++    final_buffer += args[0];
++
++    for (std::size_t i = 1; i < length; ++i)
++    {
++        std::wstring& next_part = args[i];
++        fs::path p(std::move(final_buffer));
++
++        p /= next_part;
++        final_buffer = p.wstring();
++    }
++
++    return final_buffer;
++}
++
++static std::wstring pathJoin(ArgumentsSpan args)
++{
++    const std::size_t length = args.size();
++    if (length == 0)
++        return L"";
++
++    std::size_t total_reserve_size = 0;
++    for (std::size_t i = 0; i < length; ++i)
++    {
++        if (auto* element = args[i])
++            total_reserve_size += wcslen(element->AsString()) + 1;
++    }
++
++    std::wstring final_buffer;
++    final_buffer.reserve(total_reserve_size);
++    final_buffer = args[0]->AsString();
++
++    for (std::size_t i = 1; i < length; ++i)
++    {
++        std::wstring next_part = args[i]->AsString();
++        fs::path p(std::move(final_buffer));
++
++        p /= next_part;
++        final_buffer = p.wstring();
++    }
++
++    return final_buffer;
++}
++
++// ============================================================================
++// class FileInfo
++// ============================================================================
++
++static ObjectInstance* shard_fileInfo_Init(const CallState& context) noexcept(false)
++{
++    ObjectInstance* instance = context.Args[0];
++    ObjectInstance* fullPath = context.Args[1];
++
++    instance->SetField(shard_FileInfo_FullNameBackingField, fullPath);
++    return instance;
++}
++
++static ObjectInstance* shard_fileinfo_Name_get(const CallState& context) noexcept(false)
++{
++    ObjectInstance* instance = context.Args[0];
++    ObjectInstance* fullName = instance->GetField(shard_FileInfo_FullNameBackingField);
++
++    fs::path path(fullName->AsString());
++    return context.Collector.FromValue(path.filename().wstring());
++}
++
++static ObjectInstance* shard_fileinfo_Exists_get(const CallState& context) noexcept(false)
++{
++    ObjectInstance* instance = context.Args[0];
++    ObjectInstance* fullName = instance->GetField(shard_FileInfo_FullNameBackingField);
++
++    bool exists = fs::is_regular_file(fullName->AsString());
++    return context.Collector.FromValue(exists);
++}
++
++static ObjectInstance* shard_fileinfo_Delete(const CallState& context) noexcept(false)
++{
++    ObjectInstance* instance = context.Args[0];
++    ObjectInstance* fullName = instance->GetField(shard_FileInfo_FullNameBackingField);
++    std::wstring pathStr = fullName->AsString();
++
++    if (fs::exists(pathStr))
++    {
++        if (!fs::is_regular_file(pathStr))
++            throw std::runtime_error("Path exists but it is not a regular file.");
++
++        if (!fs::remove(pathStr))
++            throw std::runtime_error("Failed to delete file.");
++    }
++
++    return nullptr; // void
++}
++
+ // ============================================================================
+ // class File
+ // ============================================================================
+@@ -90,19 +202,11 @@ static ObjectInstance* shard_file_Move(const CallState& context) noexcept(false)
+     std::wstring sourceFileName = context.Args[0]->AsString();
+     std::wstring destFileName = context.Args[1]->AsString();
+ 
+-    /*
+-    if (!fs::copy_file(sourceFileName.c_str(), destFileName.c_str(), fs::copy_options::overwrite_existing))
+-        throw std::runtime_error("Failed to move file.");
++    if (!fs::exists(sourceFileName) || !fs::is_regular_file(sourceFileName))
++        throw std::runtime_error("Source file does not exist or is not a regular file.");
+ 
+-    if (!fs::remove(sourceFileName.c_str()))
+-        throw std::runtime_error("Failed to delete original file after move.");
+-    */
+-
+-    if (!fs::is_regular_file(sourceFileName))
+-        throw std::runtime_error("Source is not a file");
+-
+-    if (!fs::is_regular_file(destFileName))
+-        throw std::runtime_error("Destination is not a file");
++    if (fs::exists(destFileName) && fs::is_directory(destFileName))
++        throw std::runtime_error("Destination path cannot be an existing directory.");
+ 
+     fs::rename(sourceFileName.c_str(), destFileName.c_str());
+     return nullptr; // void
+@@ -112,53 +216,37 @@ static ObjectInstance* shard_file_Move(const CallState& context) noexcept(false)
+ // class DirectoryInfo
+ // ============================================================================
+ 
+-static ObjectInstance* shard_directory_GetDirectory(const CallState& context) noexcept(false)
++static ObjectInstance* shard_directoryinfo_Init(const CallState& context) noexcept(false)
+ {
+-    ObjectInstance* fullName = context.Args[0];
+-    ObjectInstance* instance = context.Collector.AllocateInstance(context.Method->ReturnType);
+-
+-    TypeSymbol* ownerType = const_cast<TypeSymbol*>(instance->getInfo());
+-    FieldSymbol* field = ownerType->Fields[0];
++    ObjectInstance* instance = context.Args[0];
++    ObjectInstance* fullName = context.Args[1];
+ 
+-    instance->SetField(field, fullName);
++    instance->SetField(shard_DirectoryInfo_FullNameBackingField, fullName);
+     return instance;
+ }
+ 
+-static ObjectInstance* shard_directory_Name_get(const CallState& context) noexcept(false)
++static ObjectInstance* shard_directoryinfo_Name_get(const CallState& context) noexcept(false)
+ {
+     ObjectInstance* instance = context.Args[0];
+-    TypeSymbol* ownerType = const_cast<TypeSymbol*>(instance->getInfo());
+-
+-    FieldSymbol* field = ownerType->Fields[0];
+-    ObjectInstance* fullName = instance->GetField(field);
+-    std::wstring path = fullName->AsString();
+-
+-    std::size_t pos = path.find_last_of(L"\\/");
+-    if (pos != std::wstring::npos && pos != path.length() - 1)
+-        path = path.substr(pos + 1);
++    ObjectInstance* fullName = instance->GetField(shard_DirectoryInfo_FullNameBackingField);
+ 
+-    return context.Collector.FromValue(path);
++    fs::path p(fullName->AsString());
++    return context.Collector.FromValue(p.filename().wstring());
+ }
+ 
+-static ObjectInstance* shard_directory_Exists_get(const CallState& context) noexcept(false)
++static ObjectInstance* shard_directoryinfo_Exists_get(const CallState& context) noexcept(false)
+ {
+     ObjectInstance* instance = context.Args[0];
+-    TypeSymbol* ownerType = const_cast<TypeSymbol*>(instance->getInfo());
+-
+-    FieldSymbol* field = ownerType->Fields[0];
+-    ObjectInstance* fullName = instance->GetField(field);
++    ObjectInstance* fullName = instance->GetField(shard_DirectoryInfo_FullNameBackingField);
+ 
+-    bool exists = fs::exists(fullName->AsString());
++    bool exists = fs::is_directory(fullName->AsString());
+     return context.Collector.FromValue(exists);
+ }
+ 
+-static ObjectInstance* shard_directory_Create(const CallState& context) noexcept(false)
++static ObjectInstance* shard_directoryinfo_Create(const CallState& context) noexcept(false)
+ {
+     ObjectInstance* instance = context.Args[0];
+-    TypeSymbol* ownerType = const_cast<TypeSymbol*>(instance->getInfo());
+-
+-    FieldSymbol* field = ownerType->Fields[0];
+-    ObjectInstance* fullName = instance->GetField(field);
++    ObjectInstance* fullName = instance->GetField(shard_DirectoryInfo_FullNameBackingField);
+ 
+     if (fs::exists(fullName->AsString()))
+         return nullptr; // void
+@@ -169,25 +257,44 @@ static ObjectInstance* shard_directory_Create(const CallState& context) noexcept
+     return nullptr; // void
+ }
+ 
+-static ObjectInstance* shard_directory_Delete(const CallState& context) noexcept(false)
++static ObjectInstance* shard_directoryinfo_Delete(const CallState& context) noexcept(false)
+ {
+     ObjectInstance* instance = context.Args[0];
+-    TypeSymbol* ownerType = const_cast<TypeSymbol*>(instance->getInfo());
+-
+-    FieldSymbol* field = ownerType->Fields[0];
+-    ObjectInstance* fullName = instance->GetField(field);
++    ObjectInstance* fullName = instance->GetField(shard_DirectoryInfo_FullNameBackingField);
+ 
+-    if (!fs::remove(fullName->AsString()))
+-        throw std::runtime_error("Failed to delete directory.");
++    if (!fs::remove_all(fullName->AsString()))
++        throw std::runtime_error("Failed to delete directory tree.");
+ 
+     return nullptr; // void
+ }
+ 
+-static ObjectInstance* shard_directory_Exists(const CallState& context) noexcept(false)
++static ObjectInstance* shard_string_op_div_directoryinfo_string(const CallState& context) noexcept(false)
+ {
+-    std::wstring path = context.Args[0]->AsString();
+-    bool exists = fs::exists(path);
+-    return context.Collector.FromValue(exists);
++    ObjectInstance* dirFullName = context.Args[0]->GetField(shard_DirectoryInfo_FullNameBackingField);
++    ObjectInstance* right = context.Args[1];
++ 
++    ObjectInstance* args[] = { dirFullName, right };
++    std::wstring final_buffer = pathJoin(args);
++
++    ObjectInstance* resultInstance = context.Collector.AllocateInstance(shard_DirectoryInfo);
++    resultInstance->SetField(shard_DirectoryInfo_FullNameBackingField, context.Collector.FromValue(final_buffer));
++    return resultInstance;
++}
++
++static ObjectInstance* shard_directoryinfo_op_div_directoryinfo_fileinfo(const CallState& context) noexcept(false)
++{
++    ObjectInstance* left = context.Args[0];
++    ObjectInstance* right = context.Args[1];
++
++    ObjectInstance* dirFullName = left->GetField(shard_DirectoryInfo_FullNameBackingField);
++    ObjectInstance* fileFullName = right->GetField(shard_FileInfo_FullNameBackingField);
++
++    std::wstring args[] = { std::wstring(dirFullName->AsString()), fs::path(right->AsString()).filename().wstring() };
++    std::wstring final_buffer = pathJoin(args);
++
++    ObjectInstance* resultInstance = context.Collector.AllocateInstance(shard_FileInfo);
++    resultInstance->SetField(shard_FileInfo_FullNameBackingField, context.Collector.FromValue(final_buffer));
++    return resultInstance;
+ }
+ 
+ // ============================================================================
+@@ -210,7 +317,14 @@ static ObjectInstance* shard_directory_CreateDirectory(const CallState& context)
+     return instance;
+ }
+ 
+-static ObjectInstance* shard_directory_DeleteStatic(const CallState& context) noexcept(false)
++static ObjectInstance* shard_directory_Exists(const CallState& context) noexcept(false)
++{
++    std::wstring path = context.Args[0]->AsString();
++    bool exists = fs::exists(path);
++    return context.Collector.FromValue(exists);
++}
++
++static ObjectInstance* shard_directory_Delete(const CallState& context) noexcept(false)
+ {
+     std::wstring path = context.Args[0]->AsString();
+     if (!fs::remove(path))
+@@ -219,6 +333,126 @@ static ObjectInstance* shard_directory_DeleteStatic(const CallState& context) no
+     return nullptr; // void
+ }
+ 
++// ============================================================================
++// class Directory
++// ============================================================================
++
++static ObjectInstance* shard_string_op_div_string_string(const CallState& context) noexcept(false)
++{
++    std::wstring final_buffer = pathJoin(context.Args);
++    return context.Collector.FromValue(final_buffer);
++}
++
++// ============================================================================
++// class Directory
++// ============================================================================
++
++static ObjectInstance* shard_path_join(const CallState& context) noexcept(false)
++{
++    ObjectInstance* pathsArray = context.Args[0];
++    const std::size_t length = pathsArray->GetArrayLength();
++    if (length == 0)
++        return context.Collector.FromValue(L"");
++
++    std::wstring final_buffer = pathJoin(pathsArray->ArrayAsSpan());
++    return context.Collector.FromValue(final_buffer);
++}
++
++// ============================================================================
++// class Path
++// ============================================================================
++
++static ObjectInstance* shard_path_GetExtension(const CallState& context) noexcept(false)
++{
++    std::wstring pathStr = context.Args[0]->AsString();
++    fs::path p(pathStr);
++    return context.Collector.FromValue(p.extension().wstring());
++}
++
++static ObjectInstance* shard_path_GetFileName(const CallState& context) noexcept(false)
++{
++    std::wstring pathStr = context.Args[0]->AsString();
++    fs::path p(pathStr);
++    return context.Collector.FromValue(p.filename().wstring());
++}
++
++static ObjectInstance* shard_path_GetFileNameWithoutExtension(const CallState& context) noexcept(false)
++{
++    std::wstring pathStr = context.Args[0]->AsString();
++    fs::path p(pathStr);
++    return context.Collector.FromValue(p.stem().wstring());
++}
++
++static ObjectInstance* shard_path_GetDirectoryName(const CallState& context) noexcept(false)
++{
++    std::wstring pathStr = context.Args[0]->AsString();
++    fs::path p(pathStr);
++    return context.Collector.FromValue(p.parent_path().wstring());
++}
++
++static ObjectInstance* shard_path_HasExtension(const CallState& context) noexcept(false)
++{
++    std::wstring pathStr = context.Args[0]->AsString();
++    fs::path p(pathStr);
++    return context.Collector.FromValue(p.has_extension());
++}
++
++static ObjectInstance* shard_path_ChangeExtension(const CallState& context) noexcept(false)
++{
++    std::wstring pathStr = context.Args[0]->AsString();
++    std::wstring newExt = (context.Args[1] == nullptr) ? L"" : context.Args[1]->AsString();
++    fs::path p(pathStr);
++
++    if (!newExt.empty() && newExt[0] != L'.')
++    {
++        newExt = L"." + newExt;
++    }
++
++    p.replace_extension(newExt);
++    return context.Collector.FromValue(p.wstring());
++}
++
++static ObjectInstance* shard_path_GetFullPath(const CallState& context) noexcept(false)
++{
++    std::wstring pathStr = context.Args[0]->AsString();
++    try
++    {
++        fs::path absolutePath = fs::absolute(fs::path(pathStr));
++        return context.Collector.FromValue(absolutePath.wstring());
++    }
++    catch (const std::exception& e)
++    {
++        throw std::runtime_error("Failed to resolve absolute path.");
++    }
++}
++
++static ObjectInstance* shard_path_DirectorySeparatorChar_get(const CallState& context) noexcept(false)
++{
++#ifdef _WIN32
++    return context.Collector.FromValue(L"\\");
++#else
++    return context.Collector.FromValue(L"/");
++#endif
++}
++
++static ObjectInstance* shard_path_AltDirectorySeparatorChar_get(const CallState& context) noexcept(false)
++{
++#ifdef _WIN32
++    return context.Collector.FromValue(L"/");
++#else
++    return context.Collector.FromValue(L"\\");
++#endif
++}
++
++static ObjectInstance* shard_path_PathSeparator_get(const CallState& context) noexcept(false)
++{
++#ifdef _WIN32
++    return context.Collector.FromValue(L";");
++#else
++    return context.Collector.FromValue(L":");
++#endif
++}
++
+ SHARDLIB_GETMETADATA
+ {
+     lib.Name = L"shard.io";
+@@ -230,72 +464,86 @@ SHARDLIB_ENTRYPOINT
+ {
+     SymbolBuilder<NamespaceSymbol> fsNamespace(context, L"filesystem");
+ 
+-    // --- class File ---
+-    SymbolBuilder<ClassSymbol> fileClass = fsNamespace.AddClass(L"File");
+-    
+-    fileClass.AddMethod(L"ReadAllText", TYPE_STRING, LINK_STATIC)
+-             .AddParameter(L"fileName", TYPE_STRING)
+-             .SetCallback(&shard_file_ReadAllText);
+-    
+-    fileClass.AddMethod(L"WriteAllText", TYPE_VOID, LINK_STATIC)
+-             .AddParameter(L"fileName", TYPE_STRING)
+-             .AddParameter(L"content", TYPE_STRING)
+-             .SetCallback(&shard_file_WriteAllText);
+-    
+-    fileClass.AddMethod(L"AppendAllText", TYPE_VOID, LINK_STATIC)
+-             .AddParameter(L"fileName", TYPE_STRING)
+-             .AddParameter(L"content", TYPE_STRING)
+-             .SetCallback(&shard_file_AppendAllText);
+-    
+-    fileClass.AddMethod(L"Exists", TYPE_BOOL, LINK_STATIC)
+-             .AddParameter(L"fileName", TYPE_STRING)
+-             .SetCallback(&shard_file_Exists);
+-    
+-    fileClass.AddMethod(L"Delete", TYPE_VOID, LINK_STATIC)
+-             .AddParameter(L"fileName", TYPE_STRING)
+-             .SetCallback(&shard_file_Delete);
+-    
+-    fileClass.AddMethod(L"Copy", TYPE_VOID, LINK_STATIC)
+-             .AddParameter(L"sourceFileName", TYPE_STRING)
+-             .AddParameter(L"destFileName", TYPE_STRING)
+-             .SetCallback(&shard_file_Copy);
+-    
+-    fileClass.AddMethod(L"Move", TYPE_VOID, LINK_STATIC)
+-             .AddParameter(L"sourceFileName", TYPE_STRING)
+-             .AddParameter(L"destFileName", TYPE_STRING)
+-             .SetCallback(&shard_file_Move);
+-    
+     // --- class DirectoryInfo ---
+     SymbolBuilder<ClassSymbol> dirInfoClass = fsNamespace.AddClass(L"DirectoryInfo");
++    shard_DirectoryInfo = dirInfoClass;
++
++    {
++        SymbolBuilder<PropertySymbol> fullNameProp = dirInfoClass
++            .AddProperty(L"FullName", TYPE_STRING, LINK_INSTANCE);
++
++        shard_DirectoryInfo_FullNameBackingField = fullNameProp
++            .AddBackingField();
++
++        fullNameProp.AddGetter();
++    }
++
++    dirInfoClass.AddInit()
++        .AddParameter(L"fullPath", TYPE_STRING)
++        .SetCallback(&shard_directoryinfo_Init);
+ 
+-    dirInfoClass
+-        .AddField(L"FullName", TYPE_STRING, LINK_INSTANCE);
+-    
+-    dirInfoClass
+-        .AddMethod(L"GetDirectory", dirInfoClass.Get(), LINK_STATIC)
+-        .AddParameter(L"fullName", TYPE_STRING)
+-        .SetCallback(&shard_directory_GetDirectory);
+-    
+     dirInfoClass
+         .AddMethod(L"Create", TYPE_VOID, LINK_INSTANCE)
+-        .SetCallback(&shard_directory_Create);
++        .SetCallback(&shard_directoryinfo_Create);
+     
+     dirInfoClass
+         .AddMethod(L"Delete", TYPE_VOID, LINK_INSTANCE)
+-        .SetCallback(&shard_directory_Delete);
++        .SetCallback(&shard_directoryinfo_Delete);
+     
+     dirInfoClass
+         .AddProperty(L"Name", TYPE_STRING, LINK_INSTANCE, ACS_PUBLIC)
+         .AddGetter()
+-            .SetCallback(&shard_directory_Name_get);
++            .SetCallback(&shard_directoryinfo_Name_get);
+     
+     dirInfoClass
+         .AddProperty(L"Exists", TYPE_BOOL, LINK_INSTANCE, ACS_PUBLIC)
+         .AddGetter()
+-            .SetCallback(&shard_directory_Exists_get);
++            .SetCallback(&shard_directoryinfo_Exists_get);
++
++    // --- class FileInfo ---
++    SymbolBuilder<ClassSymbol> fileInfoClass = fsNamespace.AddClass(L"FileInfo");
++    shard_FileInfo = fileInfoClass;
++
++    {
++        SymbolBuilder<PropertySymbol> fullNameProp = fileInfoClass
++            .AddProperty(L"FullName", TYPE_STRING, LINK_INSTANCE);
++    
++        shard_FileInfo_FullNameBackingField = fullNameProp
++            .AddBackingField();
++
++        fullNameProp.AddGetter();
++    }
++
++    fileInfoClass.AddInit()
++        .AddParameter(L"path", TYPE_STRING)
++        .SetCallback(&shard_fileInfo_Init);
++
++    fileInfoClass
++        .AddProperty(L"Name", TYPE_STRING, LINK_INSTANCE, ACS_PUBLIC)
++        .AddGetter()
++            .SetCallback(&shard_fileinfo_Name_get);
++
++    fileInfoClass
++        .AddProperty(L"Exists", TYPE_BOOL, LINK_INSTANCE, ACS_PUBLIC)
++        .AddGetter()
++            .SetCallback(&shard_fileinfo_Exists_get);
++
++    fileInfoClass
++        .AddMethod(L"Delete", TYPE_VOID, LINK_INSTANCE)
++        .SetCallback(&shard_fileinfo_Delete);
++
++    dirInfoClass.AddOperator(TokenType::DivOperator, shard_DirectoryInfo, LINK_STATIC)
++        .AddParameter(L"left", shard_DirectoryInfo)
++        .AddParameter(L"right", TYPE_STRING)
++        .SetCallback(&shard_string_op_div_directoryinfo_string);
++
++    dirInfoClass.AddOperator(TokenType::DivOperator, shard_FileInfo, LINK_STATIC)
++        .AddParameter(L"left", shard_DirectoryInfo)
++        .AddParameter(L"right", TYPE_STRING)
++        .SetCallback(&shard_directoryinfo_op_div_directoryinfo_fileinfo);
+ 
+     // --- class Directory ---
+-    SymbolBuilder<ClassSymbol> directoryClass = fsNamespace.AddClass(L"Directory");
++    SymbolBuilder<ClassSymbol> directoryClass = fsNamespace.AddClass(L"Directory", LINK_STATIC);
+     
+     directoryClass
+         .AddMethod(L"Exists", TYPE_BOOL, LINK_STATIC)
+@@ -310,5 +558,96 @@ SHARDLIB_ENTRYPOINT
+     directoryClass
+         .AddMethod(L"Delete", TYPE_VOID, LINK_STATIC)
+         .AddParameter(L"path", TYPE_STRING)
+-        .SetCallback(&shard_directory_DeleteStatic);
++        .SetCallback(&shard_directory_Delete);
++
++    // --- class File ---
++    SymbolBuilder<ClassSymbol> fileClass = fsNamespace.AddClass(L"File", LINK_STATIC);
++
++    fileClass.AddMethod(L"ReadAllText", TYPE_STRING, LINK_STATIC)
++        .AddParameter(L"fileName", TYPE_STRING)
++        .SetCallback(&shard_file_ReadAllText);
++
++    fileClass.AddMethod(L"WriteAllText", TYPE_VOID, LINK_STATIC)
++        .AddParameter(L"fileName", TYPE_STRING)
++        .AddParameter(L"content", TYPE_STRING)
++        .SetCallback(&shard_file_WriteAllText);
++
++    fileClass.AddMethod(L"AppendAllText", TYPE_VOID, LINK_STATIC)
++        .AddParameter(L"fileName", TYPE_STRING)
++        .AddParameter(L"content", TYPE_STRING)
++        .SetCallback(&shard_file_AppendAllText);
++
++    fileClass.AddMethod(L"Exists", TYPE_BOOL, LINK_STATIC)
++        .AddParameter(L"fileName", TYPE_STRING)
++        .SetCallback(&shard_file_Exists);
++
++    fileClass.AddMethod(L"Delete", TYPE_VOID, LINK_STATIC)
++        .AddParameter(L"fileName", TYPE_STRING)
++        .SetCallback(&shard_file_Delete);
++
++    fileClass.AddMethod(L"Copy", TYPE_VOID, LINK_STATIC)
++        .AddParameter(L"sourceFileName", TYPE_STRING)
++        .AddParameter(L"destFileName", TYPE_STRING)
++        .SetCallback(&shard_file_Copy);
++
++    fileClass.AddMethod(L"Move", TYPE_VOID, LINK_STATIC)
++        .AddParameter(L"sourceFileName", TYPE_STRING)
++        .AddParameter(L"destFileName", TYPE_STRING)
++        .SetCallback(&shard_file_Move);
++    
++    // --- class Path ---
++    SymbolBuilder<ClassSymbol> pathClass = fsNamespace.AddClass(L"Path", LINK_STATIC);
++
++    pathClass.AddMethod(L"Join", TYPE_STRING, LINK_STATIC)
++        .AddParameter(L"paths", pathClass.GetFactory().Array(TYPE_STRING))
++        .SetCallback(&shard_path_join);
++
++    pathClass.AddMethod(L"GetExtension", TYPE_STRING, LINK_STATIC)
++        .AddParameter(L"path", TYPE_STRING)
++        .SetCallback(&shard_path_GetExtension);
++
++    pathClass.AddMethod(L"GetFileName", TYPE_STRING, LINK_STATIC)
++        .AddParameter(L"path", TYPE_STRING)
++        .SetCallback(&shard_path_GetFileName);
++
++    pathClass.AddMethod(L"GetFileNameWithoutExtension", TYPE_STRING, LINK_STATIC)
++        .AddParameter(L"path", TYPE_STRING)
++        .SetCallback(&shard_path_GetFileNameWithoutExtension);
++
++    pathClass.AddMethod(L"GetDirectoryName", TYPE_STRING, LINK_STATIC)
++        .AddParameter(L"path", TYPE_STRING)
++        .SetCallback(&shard_path_GetDirectoryName);
++
++    pathClass.AddMethod(L"HasExtension", TYPE_BOOL, LINK_STATIC)
++        .AddParameter(L"path", TYPE_STRING)
++        .SetCallback(&shard_path_HasExtension);
++
++    pathClass.AddMethod(L"ChangeExtension", TYPE_STRING, LINK_STATIC)
++        .AddParameter(L"path", TYPE_STRING)
++        .AddParameter(L"extension", TYPE_STRING)
++        .SetCallback(&shard_path_ChangeExtension);
++
++    pathClass.AddMethod(L"GetFullPath", TYPE_STRING, LINK_STATIC)
++        .AddParameter(L"path", TYPE_STRING)
++        .SetCallback(&shard_path_GetFullPath);
++
++    pathClass.AddProperty(L"DirectorySeparatorChar", TYPE_STRING, LINK_STATIC, ACS_PUBLIC)
++        .AddGetter()
++        .SetCallback(&shard_path_DirectorySeparatorChar_get);
++
++    pathClass.AddProperty(L"AltDirectorySeparatorChar", TYPE_STRING, LINK_STATIC, ACS_PUBLIC)
++        .AddGetter()
++        .SetCallback(&shard_path_AltDirectorySeparatorChar_get);
++
++    pathClass.AddProperty(L"PathSeparator", TYPE_STRING, LINK_STATIC, ACS_PUBLIC)
++        .AddGetter()
++        .SetCallback(&shard_path_PathSeparator_get);
++
++    // --- string extensions ---
++    SymbolBuilder<ClassSymbol> stringClass = SymbolBuilder<ClassSymbol>(context, static_cast<ClassSymbol*>(TYPE_STRING));
++
++    stringClass.AddOperator(TokenType::DivOperator, TYPE_STRING, LINK_STATIC)
++        .AddParameter(L"left", TYPE_STRING)
++        .AddParameter(L"right", TYPE_STRING)
++        .SetCallback(&shard_string_op_div_string_string);
+ }
+\ No newline at end of file
+diff --git a/ShardScript.Framework/system/random.shard.cpp b/ShardScript.Framework/system/random.shard.cpp
+deleted file mode 100644
+index add205d..0000000
+--- a/ShardScript.Framework/system/random.shard.cpp
++++ /dev/null
+@@ -1,172 +0,0 @@
+-#include <stdexcept>
+-#include <random>
+-#include <climits>
+-#include <cstdint>
+-
+-#include <ShardScript.hpp>
+-
+-using namespace shard;
+-
+-static ObjectInstance* shard_random_Integer(const CallState& context) noexcept(false)
+-{
+-	std::random_device rd;
+-	std::mt19937 gen(rd());
+-	std::uniform_int_distribution<std::int64_t> distrib(LONG_MIN, LONG_MAX);
+-
+-	std::int64_t value = distrib(gen);
+-	return context.Collector.FromValue(value);
+-}
+-
+-static ObjectInstance* shard_random_Integer_top(const CallState& context) noexcept(false)
+-{
+-	std::int64_t top = context.Args[0]->AsInteger();
+-
+-	if (top == 0)
+-		return context.Collector.FromValue(0.0);
+-
+-	if (top < 0)
+-		throw std::runtime_error("top value must be greater than zero");
+-
+-	std::random_device rd;
+-	std::mt19937 gen(rd());
+-	std::uniform_int_distribution<> distrib(0, INT_MAX);
+-
+-	std::int64_t value = distrib(gen);
+-	return context.Collector.FromValue(value);
+-}
+-
+-static ObjectInstance* shard_random_Integer_bottom_top(const CallState& context) noexcept(false)
+-{
+-	std::int64_t bottom = context.Args[0]->AsInteger();
+-	std::int64_t top = context.Args[1]->AsInteger();
+-
+-	if (bottom == top)
+-		return context.Collector.FromValue(bottom);
+-
+-	if (top < bottom)
+-		throw std::runtime_error("top edge value must be greater than bottom edge value");
+-
+-	std::random_device rd;
+-	std::mt19937 gen(rd());
+-	std::uniform_int_distribution<> distrib(static_cast<int>(bottom), static_cast<int>(top));
+-
+-	std::int64_t value = distrib(gen);
+-	return context.Collector.FromValue(value);
+-}
+-
+-static ObjectInstance* shard_random_Double(const CallState& context) noexcept(false)
+-{
+-	std::random_device rd;
+-	std::mt19937 gen(rd());
+-	std::uniform_real_distribution<> real_distrib(0.0, 1.0);
+-
+-	double value = real_distrib(gen);
+-	return context.Collector.FromValue(value);
+-}
+-
+-static ObjectInstance* shard_random_Double_top(const CallState& context) noexcept(false)
+-{
+-	double top = context.Args[0]->AsDouble();
+-
+-	if (top == 0)
+-		return context.Collector.FromValue(0.0);
+-
+-	if (top < 0)
+-		throw std::runtime_error("top value must be greater than zero");
+-
+-	std::random_device rd;
+-	std::mt19937 gen(rd());
+-	std::uniform_real_distribution<> real_distrib(0.0, top);
+-
+-	double value = real_distrib(gen);
+-	return context.Collector.FromValue(value);
+-}
+-
+-static ObjectInstance* shard_random_Double_bottom_top(const CallState& context) noexcept(false)
+-{
+-	double bottom = context.Args[0]->AsDouble();
+-	double top = context.Args[1]->AsDouble();
+-
+-	if (bottom == top)
+-		return context.Collector.FromValue(bottom);
+-
+-	if (top < bottom)
+-		throw std::runtime_error("top edge value must be greater than bottom edge value");
+-
+-	std::random_device rd;
+-	std::mt19937 gen(rd());
+-	std::uniform_real_distribution<> real_distrib(bottom, top);
+-
+-	double value = real_distrib(gen);
+-	return context.Collector.FromValue(value);
+-}
+-
+-static ObjectInstance* shard_random_Propably(const CallState& context) noexcept(false)
+-{
+-	double chance = context.Args[0]->AsDouble();
+-
+-	if (chance == 0)
+-		return context.Collector.FromValue(false);
+-
+-	if (chance == 100)
+-		return context.Collector.FromValue(true);
+-
+-	if (chance < 0 || chance > 100)
+-		throw std::runtime_error("chance must be greater than 0 and less than 100");
+-
+-	std::random_device rd;
+-	std::mt19937 gen(rd());
+-	std::bernoulli_distribution bernoulli_dist(chance / 100);
+-
+-	bool value = bernoulli_dist(gen);
+-	return context.Collector.FromValue(value);
+-}
+-
+-SHARDLIB_GETMETADATA
+-{
+-	lib.Name = L"shard.random";
+-	lib.Description = L"ShardScript random number generator";
+-	lib.Version = L"0.2.0";
+-}
+-
+-SHARDLIB_ENTRYPOINT
+-{
+-	SymbolBuilder<NamespaceSymbol> math(context, L"math");
+-
+-	SymbolBuilder<ClassSymbol> random = math.AddClass(L"Random");
+-
+-	random
+-		.AddMethod(L"Integer", TYPE_INT, LINK_STATIC)
+-		.SetCallback(&shard_random_Integer);
+-
+-	random
+-		.AddMethod(L"Integer", TYPE_INT, LINK_STATIC)
+-		.AddParameter(L"top", TYPE_INT)
+-		.SetCallback(&shard_random_Integer_top);
+-
+-	random
+-		.AddMethod(L"Integer", TYPE_INT, LINK_STATIC)
+-		.AddParameter(L"bottom", TYPE_INT)
+-		.AddParameter(L"top", TYPE_INT)
+-		.SetCallback(&shard_random_Integer_bottom_top);
+-
+-	random
+-		.AddMethod(L"Double", TYPE_DOUBLE, LINK_STATIC)
+-		.SetCallback(&shard_random_Double);
+-
+-	random
+-		.AddMethod(L"Double", TYPE_DOUBLE, LINK_STATIC)
+-		.AddParameter(L"top", TYPE_DOUBLE)
+-		.SetCallback(&shard_random_Double_top);
+-
+-	random
+-		.AddMethod(L"Double", TYPE_DOUBLE, LINK_STATIC)
+-		.AddParameter(L"bottom", TYPE_DOUBLE)
+-		.AddParameter(L"top", TYPE_DOUBLE)
+-		.SetCallback(&shard_random_Double_bottom_top);
+-
+-	random
+-		.AddMethod(L"Propably", TYPE_BOOL, LINK_STATIC)
+-		.AddParameter(L"chance", TYPE_DOUBLE)
+-		.SetCallback(&shard_random_Propably);
+-}
+diff --git a/ShardScript.Framework/system/socket.shard.cpp b/ShardScript.Framework/system/socket.shard.cpp
+index 8b2ac69..c020d3d 100644
+--- a/ShardScript.Framework/system/socket.shard.cpp
++++ b/ShardScript.Framework/system/socket.shard.cpp
+@@ -79,8 +79,8 @@ static ObjectInstance* shard_socket_init(const CallState& context) noexcept(fals
+ static ObjectInstance* shard_socket_Connect(const CallState& context) noexcept
+ {
+     ObjectInstance* instance = context.Args[0];
+-    const wchar_t* ip_w = context.Args[0]->AsString();
+-    int64_t port = context.Args[1]->AsInteger();
++    const wchar_t* ip_w = context.Args[1]->AsString();
++    int64_t port = context.Args[2]->AsInteger();
+     socket_t socket_handle = static_cast<socket_t>(instance->GetField(shard_socket_handle)->AsInteger());
+ 
+     if (socket_handle == INVALID_SOCKET_VAL)
+@@ -137,10 +137,12 @@ static ObjectInstance* shard_socket_Receive(const CallState& context) noexcept
+ 
+ static ObjectInstance* shard_socket_Close(const CallState& context) noexcept
+ {
+-    int64_t socket_handle = context.Args[0]->AsInteger();
++    ObjectInstance* instance = context.Args[0];
++    int64_t socket_handle = instance->GetField(shard_socket_handle)->AsInteger();
+     if (socket_handle != INVALID_SOCKET_VAL)
+     {
+         close_socket_native(static_cast<socket_t>(socket_handle));
++        instance->SetField(shard_socket_handle, context.Collector.FromValue(static_cast<int64_t>(INVALID_SOCKET_VAL)));
+     }
+ 
+     return nullptr;
+@@ -148,8 +150,7 @@ static ObjectInstance* shard_socket_Close(const CallState& context) noexcept
+ 
+ static ObjectInstance* shard_socket_Dispose(const CallState& context) noexcept
+ {
+-    context.Runtimer.InvokeMethod(shard_socket_close, {});
+-    return nullptr;
++    return shard_socket_Close(context);
+ }
+ 
+ SHARDLIB_GETMETADATA
+@@ -168,10 +169,9 @@ SHARDLIB_ENTRYPOINT
+     shard_socket_handle = tcpSocket.AddField(L"_handle", TYPE_INT, LINK_INSTANCE, ACS_PRIVATE);
+ 
+     tcpSocket.AddInit()
+-        .AddParameter(L"port", TYPE_INT)
+         .SetCallback(&shard_socket_init);
+ 
+-    tcpSocket.AddMethod(L"Connect", tcpSocket, LINK_INSTANCE)
++    tcpSocket.AddMethod(L"Connect", TYPE_BOOL, LINK_INSTANCE)
+         .AddParameter(L"ip", TYPE_STRING)
+         .AddParameter(L"port", TYPE_INT)
+         .SetCallback(&shard_socket_Connect);
+@@ -188,5 +188,6 @@ SHARDLIB_ENTRYPOINT
+         .SetCallback(&shard_socket_Close);
+ 
+     tcpSocket.AddMethod(L"Dispose", TYPE_VOID, LINK_INSTANCE)
+-        .SetCallback(&shard_socket_Dispose);
++        .SetCallback(&shard_socket_Dispose)
++        .IsImplementationOf(TRAIT_DISPOSABLE_Dispose);
+ }
+\ No newline at end of file
+diff --git a/ShardScript.NET/Runtime/GarbageCollector.cs b/ShardScript.NET/Runtime/GarbageCollector.cs
+index 1bfe4f2..e1dfcc8 100644
+--- a/ShardScript.NET/Runtime/GarbageCollector.cs
++++ b/ShardScript.NET/Runtime/GarbageCollector.cs
+@@ -57,6 +57,39 @@ public sealed class GarbageCollector
+             throw new InvalidOperationException($"Failed to set static field '{field.Name}': {ShardEngineException.GetLastErrorMessage()}");
+     }
+ 
++    /// <summary>
++    /// Allocates a new instance of the given class type with default-initialized fields.
++    /// The returned instance bypasses constructors; populate it with <see cref="ObjectInstance.SetField"/>.
++    /// </summary>
++    public ObjectInstance AllocateInstance(TypeSymbol type)
++    {
++        if (type == null)
++            throw new ArgumentNullException(nameof(type));
++
++        IntPtr handle = NativeMethods.Shard_GCAllocateInstance(_handle, type.Handle);
++        if (handle == IntPtr.Zero)
++            throw new InvalidOperationException($"Failed to allocate instance of type '{type.Name}': {ShardEngineException.GetLastErrorMessage()}");
++
++        return new ObjectInstance(handle);
++    }
++
++    /// <summary>
++    /// Allocates a new one-dimensional array of the given element type and length.
++    /// </summary>
++    public ObjectInstance AllocateArray(TypeSymbol elementType, long length)
++    {
++        if (elementType == null)
++            throw new ArgumentNullException(nameof(elementType));
++        if (length < 0)
++            throw new ArgumentOutOfRangeException(nameof(length));
++
++        IntPtr handle = NativeMethods.Shard_GCAllocateArray(_handle, elementType.Handle, (nuint)length);
++        if (handle == IntPtr.Zero)
++            throw new InvalidOperationException($"Failed to allocate array: {ShardEngineException.GetLastErrorMessage()}");
++
++        return new ObjectInstance(handle);
++    }
++
+     private static class NativeMethods
+     {
+         [DllImport(ShardScriptAPI.LibraryName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+@@ -76,5 +109,11 @@ public sealed class GarbageCollector
+ 
+         [DllImport(ShardScriptAPI.LibraryName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+         public static extern int Shard_GCSetStaticField(IntPtr gc, IntPtr field, IntPtr value);
++
++        [DllImport(ShardScriptAPI.LibraryName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
++        public static extern IntPtr Shard_GCAllocateInstance(IntPtr gc, IntPtr type);
++
++        [DllImport(ShardScriptAPI.LibraryName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
++        public static extern IntPtr Shard_GCAllocateArray(IntPtr gc, IntPtr elementType, nuint length);
+     }
+ }
+diff --git a/ShardScript.NET/Runtime/ObjectInstance.cs b/ShardScript.NET/Runtime/ObjectInstance.cs
+index 6336570..7f3263b 100644
+--- a/ShardScript.NET/Runtime/ObjectInstance.cs
++++ b/ShardScript.NET/Runtime/ObjectInstance.cs
+@@ -1,4 +1,6 @@
+-ï»¿using System.Runtime.InteropServices;
++ï»¿using ShardScript.Application;
++using ShardScript.Syntax.Symbols;
++using System.Runtime.InteropServices;
+ 
+ namespace ShardScript.Runtime;
+ 
+@@ -64,6 +66,123 @@ public readonly struct ObjectInstance : IEquatable<ObjectInstance>
+         return ptr == IntPtr.Zero ? string.Empty : Marshal.PtrToStringUni(ptr)!;
+     }
+ 
++    // =====================================================================
++    // Instance field access
++    // =====================================================================
++
++    /// <summary>
++    /// Reads an instance field by its field symbol.
++    /// </summary>
++    public ObjectInstance GetField(FieldSymbol field)
++    {
++        if (field == null)
++            throw new ArgumentNullException(nameof(field));
++
++        IntPtr value = NativeMethods.Shard_GetInstanceField(Handle, field.Handle);
++        if (value == IntPtr.Zero)
++            throw new InvalidOperationException($"Failed to read instance field '{field.Name}': {ShardEngineException.GetLastErrorMessage()}");
++
++        return new ObjectInstance(value);
++    }
++
++    /// <summary>
++    /// Writes an instance field by its field symbol, assigning an existing object instance.
++    /// </summary>
++    public void SetField(FieldSymbol field, ObjectInstance value)
++    {
++        if (field == null)
++            throw new ArgumentNullException(nameof(field));
++
++        int result = NativeMethods.Shard_SetInstanceField(Handle, field.Handle, value.Handle);
++        if (result != 0)
++            throw new InvalidOperationException($"Failed to write instance field '{field.Name}': {ShardEngineException.GetLastErrorMessage()}");
++    }
++
++    /// <summary>Writes a primitive value-type field directly (no GC required).</summary>
++    public void SetField(FieldSymbol field, long value)
++    {
++        if (field == null)
++            throw new ArgumentNullException(nameof(field));
++
++        int result = NativeMethods.Shard_SetInstanceFieldInteger(Handle, field.Handle, value);
++        if (result != 0)
++            throw new InvalidOperationException($"Failed to write instance field '{field.Name}': {ShardEngineException.GetLastErrorMessage()}");
++    }
++
++    /// <summary>Writes a primitive value-type field directly (no GC required).</summary>
++    public void SetField(FieldSymbol field, double value)
++    {
++        if (field == null)
++            throw new ArgumentNullException(nameof(field));
++
++        int result = NativeMethods.Shard_SetInstanceFieldDouble(Handle, field.Handle, value);
++        if (result != 0)
++            throw new InvalidOperationException($"Failed to write instance field '{field.Name}': {ShardEngineException.GetLastErrorMessage()}");
++    }
++
++    /// <summary>Writes a primitive value-type field directly (no GC required).</summary>
++    public void SetField(FieldSymbol field, bool value)
++    {
++        if (field == null)
++            throw new ArgumentNullException(nameof(field));
++
++        int result = NativeMethods.Shard_SetInstanceFieldBool(Handle, field.Handle, value ? 1 : 0);
++        if (result != 0)
++            throw new InvalidOperationException($"Failed to write instance field '{field.Name}': {ShardEngineException.GetLastErrorMessage()}");
++    }
++
++    /// <summary>Writes a primitive value-type field directly (no GC required).</summary>
++    public void SetField(FieldSymbol field, char value)
++    {
++        if (field == null)
++            throw new ArgumentNullException(nameof(field));
++
++        int result = NativeMethods.Shard_SetInstanceFieldChar(Handle, field.Handle, value);
++        if (result != 0)
++            throw new InvalidOperationException($"Failed to write instance field '{field.Name}': {ShardEngineException.GetLastErrorMessage()}");
++    }
++
++    /// <summary>
++    /// Writes a string (reference type) field. Strings require a GC-owned value;
++    /// use <see cref="GarbageCollector.FromString"/> to create one and pass it to
++    /// <see cref="SetField(FieldSymbol, ObjectInstance)"/>.
++    /// </summary>
++    public void SetField(FieldSymbol field, string value, GarbageCollector gc)
++    {
++        if (value == null)
++            value = string.Empty;
++
++        SetField(field, gc.FromString(value));
++    }
++
++    // =====================================================================
++    // Array element access
++    // =====================================================================
++
++    /// <summary>Reads an array element by index.</summary>
++    public ObjectInstance GetElement(long index)
++    {
++        if (index < 0)
++            throw new ArgumentOutOfRangeException(nameof(index));
++
++        IntPtr value = NativeMethods.Shard_GetArrayElement(Handle, (nuint)index);
++        if (value == IntPtr.Zero)
++            throw new InvalidOperationException($"Failed to read array element {index}: {ShardEngineException.GetLastErrorMessage()}");
++
++        return new ObjectInstance(value);
++    }
++
++    /// <summary>Writes an array element by index.</summary>
++    public void SetElement(long index, ObjectInstance value)
++    {
++        if (index < 0)
++            throw new ArgumentOutOfRangeException(nameof(index));
++
++        int result = NativeMethods.Shard_SetArrayElement(Handle, (nuint)index, value.Handle);
++        if (result != 0)
++            throw new InvalidOperationException($"Failed to write array element {index}: {ShardEngineException.GetLastErrorMessage()}");
++    }
++
+     private static class NativeMethods
+     {
+         [DllImport(ShardScriptAPI.LibraryName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+@@ -77,5 +196,29 @@ public readonly struct ObjectInstance : IEquatable<ObjectInstance>
+ 
+         [DllImport(ShardScriptAPI.LibraryName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+         public static extern IntPtr Shard_ReadString(IntPtr instance);
++
++        [DllImport(ShardScriptAPI.LibraryName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
++        public static extern IntPtr Shard_GetInstanceField(IntPtr instance, IntPtr field);
++
++        [DllImport(ShardScriptAPI.LibraryName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
++        public static extern int Shard_SetInstanceField(IntPtr instance, IntPtr field, IntPtr value);
++
++        [DllImport(ShardScriptAPI.LibraryName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
++        public static extern int Shard_SetInstanceFieldInteger(IntPtr instance, IntPtr field, long value);
++
++        [DllImport(ShardScriptAPI.LibraryName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
++        public static extern int Shard_SetInstanceFieldDouble(IntPtr instance, IntPtr field, double value);
++
++        [DllImport(ShardScriptAPI.LibraryName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
++        public static extern int Shard_SetInstanceFieldBool(IntPtr instance, IntPtr field, int value);
++
++        [DllImport(ShardScriptAPI.LibraryName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
++        public static extern int Shard_SetInstanceFieldChar(IntPtr instance, IntPtr field, char value);
++
++        [DllImport(ShardScriptAPI.LibraryName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
++        public static extern IntPtr Shard_GetArrayElement(IntPtr array, nuint index);
++
++        [DllImport(ShardScriptAPI.LibraryName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
++        public static extern int Shard_SetArrayElement(IntPtr array, nuint index, IntPtr value);
+     }
+ }
+diff --git a/ShardScript/include/ShardScript.hpp b/ShardScript/include/ShardScript.hpp
+index 5943602..d8183f1 100644
+--- a/ShardScript/include/ShardScript.hpp
++++ b/ShardScript/include/ShardScript.hpp
+@@ -3,16 +3,16 @@
+ #define SHARDSCRIPT_SINGLE_HEADER_H
+ 
+ /*
+-*                                  .::::::.
+-*                              .:::-+-::-+-:::.
+-*                          .:::-+-:::.@@.:::-=-:::.
+-*                      .:::-+-:::.@@@@@@@@@@::::-+-:::.
++*                                  .:::::::.
++*                              .:::-+-:::-+-:::.
++*                          .::::-+-:::@@@:::-=-::::.
++*                      .:::-+-:::.@@@@@@@@@@@:::-+-:::.
+ *                  .:::-+-:::.@@@@@@@@@@@@@@@@@@.:::-+-:::.
+ *              .:::-+-:::.@@@@@@@@@@@@@@@@@@@@@@@@@@.:::-+-:::.
+ *          .:::-+-:::.@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@.:::-+-:::.
+-*      ::::-++-::.@@@@@@@@@@@@@@@@@.:::::::-@@@@@@@@@@@@@@@@.:::-+-::::      
++*      .:::-++-::.@@@@@@@@@@@@@@@@@.:::::::-@@@@@@@@@@@@@@@@.:::-+-:::.     
+ *    ...##=-::.@@@@@@@@@@@@@@@@.:::-++++++--:::.@@@@@@@@@@@@@@@@.:-=##=..
+-*    .=-:..@@@@@@@@@@@@@@@@.:::-+++++++++++++++-:::.@@@@@@@@@@@@@@@....:.    
++*    .=-:..@@@@@@@@@@@@@@@@.:::-+++++++++++++++-:::.@@@@@@@@@@@@@@@..:-=.    
+ *    .===.@@@@@@@@@@@@@@@..:+++++++++++++++++++++++-:::.@@@@@@@@@@@@.===.    ============================================================================
+ *    .===.@@@@@@@@@@@@@@@@@.::::-+++++++++++++++++++++*====@@@@@@@@@.===.    ShardScript Unified Header
+ *    .===:.@@@@@@@@@@@@@@@@@@@@@.:::-+++++++++++++*###%.....@@@@@@@@.===.    ============================================================================
+@@ -20,7 +20,7 @@
+ *    .=======:....@@@@@@@@@@@@@@@@@@@@@@.:::-=%....:=======.@@@@@@@@.===.    Include this single header to use the entire ShardScript API.
+ *    .===========::....@@@@@@@@@@@@@@@@@@@@@@....:=========:..@@@@@@.===.    Note: This is a manually maintained umbrella header. If you add a new public
+ *    .===:....:=======:....@@@@@@@@@@@@@@@@@@@@@@....:=======:......:===.    header, please append it here in an appropriate location (preferably near
+-*    .===.@@@@....:=======:....@@@@@@@@@@@@@@@@@@@@@@....:==============.    related headers) or rerun the dependency sort.
++*    .===.@@@@@@..:=======:....@@@@@@@@@@@@@@@@@@@@@@....:==============.    related headers) or rerun the dependency sort.
+ *    .===.@@@@@@@@.===========:....@@@@@@@@@@@@@@@@@@@@@@.....:=========.    ============================================================================
+ *    .===.@@@@@@@@.===============:.....@@@@@@@@@@@@@@@@@@@@@@....:=====.
+ *    .===.@@@@@@@@.===================+.....@@@@@@@@@@@@@@@@@@@@@@..:===.
+@@ -31,10 +31,10 @@
+ *      .........@@@@@@@@@@@@@@@@@@...........@@@@@@@@@@@@@@@@@.........
+ *          .........@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@.........
+ *              ..........@@@@@@@@@@@@@@@@@@@@@@@@@@@@@.........
+-*                  ....::....@@@@@@@@@@@@@@@@@@@@..........
+-*                      ....::....:@@@@@@@@@@@....::....
+-*                          ....:-:....@@@....::....
+-*                              ....:=::..::....                          
++*                  ..........@@@@@@@@@@@@@@@@@@@@..........
++*                      ..........:@@@@@@@@@@@..........
++*                          ...........@@@..........
++*                              ...............                          
+ *                                  ........                                  
+ */
+ 
+@@ -58,6 +58,7 @@
+ #include <shard/semantic/TypeInfo.hpp>
+ #include <shard/semantic/SymbolInfo.hpp>
+ #include <shard/semantic/SemanticScope.hpp>
++#include <shard/semantic/PrimitiveOperators.hpp>
+ #include <shard/semantic/SymbolTable.hpp>
+ #include <shard/semantic/SemanticModel.hpp>
+ #include <shard/semantic/SyntaxSymbol.hpp>
+@@ -195,7 +196,6 @@
+ #include <shard/runtime/GarbageCollector.hpp>
+ #include <shard/runtime/CallStackFrame.hpp>
+ #include <shard/runtime/VirtualMachine.hpp>
+-#include <shard/runtime/ArgumentsSpan.hpp>
+ #include <shard/runtime/ConsoleHelper.hpp>
+ #include <shard/runtime/MethodCallState.hpp>
+ 
+diff --git a/ShardScript/include/shard/ShardScriptExtern.hpp b/ShardScript/include/shard/ShardScriptExtern.hpp
+index f7574af..4997255 100644
+--- a/ShardScript/include/shard/ShardScriptExtern.hpp
++++ b/ShardScript/include/shard/ShardScriptExtern.hpp
+@@ -213,6 +213,32 @@ extern "C"
+     SHARD_API shard::ObjectInstance* Shard_GCGetStaticField(shard::GarbageCollector* gc, shard::FieldSymbol* field);
+     SHARD_API int Shard_GCSetStaticField(shard::GarbageCollector* gc, shard::FieldSymbol* field, shard::ObjectInstance* value);
+ 
++    // =========================================================================
++    // Runtime Object Allocation API
++    // =========================================================================
++
++    SHARD_API shard::ObjectInstance* Shard_GCAllocateInstance(shard::GarbageCollector* gc, shard::TypeSymbol* type);
++    SHARD_API shard::ObjectInstance* Shard_GCAllocateArray(shard::GarbageCollector* gc, shard::TypeSymbol* elementType, std::size_t length);
++
++    // =========================================================================
++    // Runtime Instance Field / Element Access API
++    // =========================================================================
++
++    SHARD_API shard::ObjectInstance* Shard_GetInstanceField(shard::ObjectInstance* instance, shard::FieldSymbol* field);
++    SHARD_API int Shard_SetInstanceField(shard::ObjectInstance* instance, shard::FieldSymbol* field, shard::ObjectInstance* value);
++
++    SHARD_API shard::ObjectInstance* Shard_GetArrayElement(shard::ObjectInstance* array, std::size_t index);
++    SHARD_API int Shard_SetArrayElement(shard::ObjectInstance* array, std::size_t index, shard::ObjectInstance* value);
++
++    // GC-less typed primitive setters: box the value into a transient instance
++    // typed as field->ReturnType and write it inline. Reference types (e.g.
++    // string) must still go through Shard_SetInstanceField with a GC-owned value.
++    SHARD_API int Shard_SetInstanceFieldInteger(shard::ObjectInstance* instance, shard::FieldSymbol* field, std::int64_t value);
++    SHARD_API int Shard_SetInstanceFieldDouble(shard::ObjectInstance* instance, shard::FieldSymbol* field, double value);
++    SHARD_API int Shard_SetInstanceFieldBool(shard::ObjectInstance* instance, shard::FieldSymbol* field, int value);
++    SHARD_API int Shard_SetInstanceFieldChar(shard::ObjectInstance* instance, shard::FieldSymbol* field, wchar_t value);
++
++
+     // =========================================================================
+     // Utility API
+     // =========================================================================
+diff --git a/ShardScript/include/shard/runtime/ArgumentsSpan.hpp b/ShardScript/include/shard/runtime/ArgumentsSpan.hpp
+deleted file mode 100644
+index 6914bda..0000000
+--- a/ShardScript/include/shard/runtime/ArgumentsSpan.hpp
++++ /dev/null
+@@ -1,31 +0,0 @@
+-#pragma once
+-#include <shard/ShardScriptAPI.hpp>
+-
+-#include <shard/runtime/ObjectInstance.hpp>
+-#include <shard/semantic/symbols/MethodSymbol.hpp>
+-
+-#include <vector>
+-#include <string>
+-#include <span>
+-
+-namespace shard
+-{
+-	/*
+-	class SHARD_API ArgumentsSpan
+-	{
+-		const MethodSymbol* Method;
+-		const std::vector<ObjectInstance*> Span;
+-
+-	public:
+-		inline ArgumentsSpan(const MethodSymbol* method, std::vector<ObjectInstance*> span)
+-			: Method(method), Span(span) { }
+-
+-		inline ArgumentsSpan(const ArgumentsSpan& other) = delete;
+-
+-		~ArgumentsSpan();
+-
+-		ObjectInstance* operator[](int index) const;
+-		ObjectInstance* Find(const std::wstring& name) const;
+-	};
+-	*/
+-}
+\ No newline at end of file
+diff --git a/ShardScript/include/shard/runtime/MethodCallState.hpp b/ShardScript/include/shard/runtime/MethodCallState.hpp
+index 0f2a82d..1fc4100 100644
+--- a/ShardScript/include/shard/runtime/MethodCallState.hpp
++++ b/ShardScript/include/shard/runtime/MethodCallState.hpp
+@@ -13,8 +13,6 @@
+ 
+ namespace shard
+ {
+-    using ArgumentsSpan = std::span<ObjectInstance*>;
+-
+     struct CallState
+     {
+         /*
+diff --git a/ShardScript/include/shard/runtime/ObjectInstance.hpp b/ShardScript/include/shard/runtime/ObjectInstance.hpp
+index b209aa5..7f9b8ea 100644
+--- a/ShardScript/include/shard/runtime/ObjectInstance.hpp
++++ b/ShardScript/include/shard/runtime/ObjectInstance.hpp
+@@ -6,11 +6,15 @@
+ 
+ #include <string>
+ #include <cstdint>
++#include <span>
+ 
+ namespace shard
+ {
+ 	class CallStackFrame;
+ 	class MethodSymbol;
++	class ObjectInstance;
++
++	using ArgumentsSpan = std::span<ObjectInstance*>;
+ 
+ 	class SHARD_API ObjectInstance
+ 	{
+@@ -51,6 +55,7 @@ namespace shard
+ 		ObjectInstance* GetElement(std::size_t index, CallStackFrame* frame = nullptr);
+ 		void SetElement(std::size_t index, ObjectInstance* instance, CallStackFrame* frame = nullptr);
+ 		bool IsInBounds(std::size_t index);
++		ArgumentsSpan ArrayAsSpan();
+ 
+ 		void IncrementReference();
+ 		void DecrementReference();
+diff --git a/ShardScript/include/shard/semantic/PrimitiveOperators.hpp b/ShardScript/include/shard/semantic/PrimitiveOperators.hpp
+index c62f601..e6aec1a 100644
+--- a/ShardScript/include/shard/semantic/PrimitiveOperators.hpp
++++ b/ShardScript/include/shard/semantic/PrimitiveOperators.hpp
+@@ -5,5 +5,6 @@ namespace shard
+ {
+ 	class SymbolFactory;
+ 
+-	SHARD_API void RegisterPrimitiveOperators(SymbolFactory& factory);
++	void RegisterPrimitiveOperators(SymbolFactory& factory);
++	void RegisterGlobalMethods(SymbolFactory& factory);
+ }
+diff --git a/ShardScript/include/shard/semantic/SymbolBuilder.hpp b/ShardScript/include/shard/semantic/SymbolBuilder.hpp
+index 1bd8936..2edd59b 100644
+--- a/ShardScript/include/shard/semantic/SymbolBuilder.hpp
++++ b/ShardScript/include/shard/semantic/SymbolBuilder.hpp
+@@ -71,7 +71,8 @@ namespace shard
+ 
+         SymbolBuilder<ClassSymbol> AddClass(
+             const std::wstring& name,
+-            SymbolAccesibility access = SymbolAccesibility::Public);
++            SymbolLinking linking = LINK_INSTANCE,
++            SymbolAccesibility access = ACS_PUBLIC);
+ 
+         SymbolBuilder<EnumSymbol> AddEnum(
+             const std::wstring& name,
+@@ -147,11 +148,8 @@ namespace shard
+         SymbolBuilder<MethodSymbol>& SetCallback(
+             MethodSymbolDelegate callback);
+ 
+-        /*
+-        SymbolBuilder<MethodSymbol>& SetCallback(
+-            ShardManagedMethodCallback callback,
+-            void* userData = nullptr);
+-        */
++        SymbolBuilder<MethodSymbol>& IsImplementationOf(
++            MethodSymbol* abstractMethod);
+ 
+         SymbolBuilder<TypeParameterSymbol> AddTypeParameter(
+             const std::wstring& name);
+@@ -224,6 +222,7 @@ namespace shard
+     class SHARD_API SymbolBuilder<ClassSymbol> : public SymbolBuilderBase<ClassSymbol>
+     {
+     public:
++        SymbolBuilder(CompilationContext& ctx, ClassSymbol* symbol);
+         SymbolBuilder(CompilationContext& ctx, const std::wstring& name, SyntaxSymbol* parent);
+ 
+         SymbolBuilder<ConstructorSymbol> AddInit(
+diff --git a/ShardScript/include/shard/semantic/SymbolTable.hpp b/ShardScript/include/shard/semantic/SymbolTable.hpp
+index 09e294d..dc8b25a 100644
+--- a/ShardScript/include/shard/semantic/SymbolTable.hpp
++++ b/ShardScript/include/shard/semantic/SymbolTable.hpp
+@@ -123,18 +123,19 @@ namespace shard
+     inline TypeSymbol*& TYPE_ARRAY = shard::SymbolTable::Primitives::Array;
+ 
+     inline InterfaceSymbol*& TRAIT_DISPOSABLE = shard::SymbolTable::StandardTypes::IDisposable;
++    inline MethodSymbol*& TRAIT_DISPOSABLE_Dispose = shard::SymbolTable::StandardTypes::IDisposable_Dispose;
++
+     inline InterfaceSymbol*& TRAIT_PRINTABLE = shard::SymbolTable::StandardTypes::IPrintable;
++    inline MethodSymbol*& TRAIT_PRINTABLE_ToString = shard::SymbolTable::StandardTypes::IPrintable_ToString;
++
+     inline InterfaceSymbol*& TRAIT_THROWABLE = shard::SymbolTable::StandardTypes::IThrowable;
++    inline AccessorSymbol*& TRAIT_THROWABLE_getStackTrace = shard::SymbolTable::StandardTypes::IThrowable_getStackTrace;
++    inline AccessorSymbol*& TRAIT_THROWABLE_getMessage = shard::SymbolTable::StandardTypes::IThrowable_getMessage;
++
+     inline InterfaceSymbol*& TRAIT_ENUMERABLE = shard::SymbolTable::StandardTypes::IEnumerable;
+     inline MethodSymbol*& TRAIT_ENUMERABLE_GETENUMERATOR = shard::SymbolTable::StandardTypes::IEnumerable_GetEnumerator;
+ 
+     inline InterfaceSymbol*& TRAIT_ENUMERATOR = shard::SymbolTable::StandardTypes::IEnumerator;
+-    inline MethodSymbol*& TRAIT_ENUMERATOR_MOVENEXT = shard::SymbolTable::StandardTypes::IEnumerator_MoveNext;
+     inline AccessorSymbol*& TRAIT_ENUMERATOR_CURRENT_GET = shard::SymbolTable::StandardTypes::IEnumerator_Current_get;
+-
+-    inline MethodSymbol*& TRAIT_DISPOSABLE_Dispose = shard::SymbolTable::StandardTypes::IDisposable_Dispose;
+-    inline MethodSymbol*& TRAIT_PRINTABLE_ToString = shard::SymbolTable::StandardTypes::IPrintable_ToString;
+-    
+-    inline AccessorSymbol*& TRAIT_THROWABLE_getStackTrace = shard::SymbolTable::StandardTypes::IThrowable_getStackTrace;
+-    inline AccessorSymbol*& TRAIT_THROWABLE_getMessage = shard::SymbolTable::StandardTypes::IThrowable_getMessage;
++    inline MethodSymbol*& TRAIT_ENUMERATOR_MOVENEXT = shard::SymbolTable::StandardTypes::IEnumerator_MoveNext;
+ }
+diff --git a/ShardScript/include/shard/semantic/SyntaxSymbol.hpp b/ShardScript/include/shard/semantic/SyntaxSymbol.hpp
+index 59c20c2..5d401f3 100644
+--- a/ShardScript/include/shard/semantic/SyntaxSymbol.hpp
++++ b/ShardScript/include/shard/semantic/SyntaxSymbol.hpp
+@@ -42,6 +42,7 @@ namespace shard
+ 		virtual void OnSymbolDeclared(SyntaxSymbol* symbol) { }
+         virtual bool IsType() const { return false; }
+         virtual bool IsMember() const { return false; }
++        virtual bool IsMethod() const { return false; }
+ 	};
+ 
+ 	constexpr SymbolLinking LINK_STATIC = shard::SymbolLinking::Static;
+diff --git a/ShardScript/include/shard/semantic/symbols/MethodSymbol.hpp b/ShardScript/include/shard/semantic/symbols/MethodSymbol.hpp
+index 2dbfd67..38abd4a 100644
+--- a/ShardScript/include/shard/semantic/symbols/MethodSymbol.hpp
++++ b/ShardScript/include/shard/semantic/symbols/MethodSymbol.hpp
+@@ -48,6 +48,8 @@ namespace shard
+         std::vector<std::byte> ExecutableByteCode;
+         MethodSymbolDelegate FunctionPointer = nullptr;
+ 
++        bool IsAbstract = false;
++
+     protected:
+         inline MethodSymbol(const std::wstring& name, const SyntaxKind kind)
+             : MemberSymbol(name, kind), HandleType(MethodHandleType::None) { }
+@@ -63,6 +65,7 @@ namespace shard
+ 
+         inline virtual ~MethodSymbol() = default;
+ 
++        bool IsMethod() const override;
+         void OnSymbolDeclared(SyntaxSymbol* symbol) override;
+ 
+         std::uint16_t GetEvalStackArgumentsCount() const;
+diff --git a/ShardScript/src/ShardScriptExtern.cpp b/ShardScript/src/ShardScriptExtern.cpp
+index 1c527b6..5def380 100644
+--- a/ShardScript/src/ShardScriptExtern.cpp
++++ b/ShardScript/src/ShardScriptExtern.cpp
+@@ -3039,6 +3039,219 @@ extern "C"
+         }
+     }
+ 
++    // =========================================================================
++    // Runtime Object Allocation API
++    // =========================================================================
++
++    SHARD_API ObjectInstance* Shard_GCAllocateInstance(GarbageCollector* gc, TypeSymbol* type)
++    {
++        try
++        {
++            if (gc == nullptr || type == nullptr)
++            {
++                SetLastShardWError(L"invalid argument");
++                return nullptr;
++            }
++
++            return gc->AllocateInstance(type);
++        }
++        catch (const std::exception& e)
++        {
++            SetLastErrorFromException(e);
++            return nullptr;
++        }
++    }
++
++    SHARD_API ObjectInstance* Shard_GCAllocateArray(GarbageCollector* gc, TypeSymbol* elementType, std::size_t length)
++    {
++        try
++        {
++            if (gc == nullptr || elementType == nullptr)
++            {
++                SetLastShardWError(L"invalid argument");
++                return nullptr;
++            }
++
++            return gc->AllocateArray(elementType, length);
++        }
++        catch (const std::exception& e)
++        {
++            SetLastErrorFromException(e);
++            return nullptr;
++        }
++    }
++
++    // =========================================================================
++    // Runtime Instance Field / Element Access API
++    // =========================================================================
++
++    SHARD_API ObjectInstance* Shard_GetInstanceField(ObjectInstance* instance, FieldSymbol* field)
++    {
++        try
++        {
++            if (instance == nullptr || field == nullptr)
++            {
++                SetLastShardWError(L"invalid argument");
++                return nullptr;
++            }
++
++            return instance->GetField(field);
++        }
++        catch (const std::exception& e)
++        {
++            SetLastErrorFromException(e);
++            return nullptr;
++        }
++    }
++
++    SHARD_API int Shard_SetInstanceField(ObjectInstance* instance, FieldSymbol* field, ObjectInstance* value)
++    {
++        try
++        {
++            if (instance == nullptr || field == nullptr)
++            {
++                SetLastShardWError(L"invalid argument");
++                return -1;
++            }
++
++            instance->SetField(field, value);
++            return 0;
++        }
++        catch (const std::exception& e)
++        {
++            SetLastErrorFromException(e);
++            return -1;
++        }
++    }
++
++    SHARD_API ObjectInstance* Shard_GetArrayElement(ObjectInstance* array, std::size_t index)
++    {
++        try
++        {
++            if (array == nullptr)
++            {
++                SetLastShardWError(L"invalid argument");
++                return nullptr;
++            }
++
++            return array->GetElement(index);
++        }
++        catch (const std::exception& e)
++        {
++            SetLastErrorFromException(e);
++            return nullptr;
++        }
++    }
++
++    SHARD_API int Shard_SetArrayElement(ObjectInstance* array, std::size_t index, ObjectInstance* value)
++    {
++        try
++        {
++            if (array == nullptr)
++            {
++                SetLastShardWError(L"invalid argument");
++                return -1;
++            }
++
++            array->SetElement(index, value);
++            return 0;
++        }
++        catch (const std::exception& e)
++        {
++            SetLastErrorFromException(e);
++            return -1;
++        }
++    }
++
++    // =========================================================================
++    // GC-less Typed Primitive Field Setters
++    // =========================================================================
++
++    SHARD_API int Shard_SetInstanceFieldInteger(ObjectInstance* instance, FieldSymbol* field, std::int64_t value)
++    {
++        try
++        {
++            if (instance == nullptr || field == nullptr)
++            {
++                SetLastShardWError(L"invalid argument");
++                return -1;
++            }
++
++            ObjectInstance temporary(field->ReturnType, &value, true);
++            instance->SetField(field, &temporary);
++            return 0;
++        }
++        catch (const std::exception& e)
++        {
++            SetLastErrorFromException(e);
++            return -1;
++        }
++    }
++
++    SHARD_API int Shard_SetInstanceFieldDouble(ObjectInstance* instance, FieldSymbol* field, double value)
++    {
++        try
++        {
++            if (instance == nullptr || field == nullptr)
++            {
++                SetLastShardWError(L"invalid argument");
++                return -1;
++            }
++
++            ObjectInstance temporary(field->ReturnType, &value, true);
++            instance->SetField(field, &temporary);
++            return 0;
++        }
++        catch (const std::exception& e)
++        {
++            SetLastErrorFromException(e);
++            return -1;
++        }
++    }
++
++    SHARD_API int Shard_SetInstanceFieldBool(ObjectInstance* instance, FieldSymbol* field, int value)
++    {
++        try
++        {
++            if (instance == nullptr || field == nullptr)
++            {
++                SetLastShardWError(L"invalid argument");
++                return -1;
++            }
++
++            bool converted = value != 0;
++            ObjectInstance temporary(field->ReturnType, &converted, true);
++            instance->SetField(field, &temporary);
++            return 0;
++        }
++        catch (const std::exception& e)
++        {
++            SetLastErrorFromException(e);
++            return -1;
++        }
++    }
++
++    SHARD_API int Shard_SetInstanceFieldChar(ObjectInstance* instance, FieldSymbol* field, wchar_t value)
++    {
++        try
++        {
++            if (instance == nullptr || field == nullptr)
++            {
++                SetLastShardWError(L"invalid argument");
++                return -1;
++            }
++
++            ObjectInstance temporary(field->ReturnType, &value, true);
++            instance->SetField(field, &temporary);
++            return 0;
++        }
++        catch (const std::exception& e)
++        {
++            SetLastErrorFromException(e);
++            return -1;
++        }
++    }
++
+     SHARD_API int Shard_GetMethodHandleType(MethodSymbol* method)
+     {
+         try
+diff --git a/ShardScript/src/runtime/ArgumentsSpan.cpp b/ShardScript/src/runtime/ArgumentsSpan.cpp
+deleted file mode 100644
+index 7546cca..0000000
+--- a/ShardScript/src/runtime/ArgumentsSpan.cpp
++++ /dev/null
+@@ -1,35 +0,0 @@
+-#include <shard/runtime/ArgumentsSpan.hpp>
+-#include <shard/runtime/ObjectInstance.hpp>
+-
+-#include <shard/semantic/symbols/ParameterSymbol.hpp>
+-
+-#include <string>
+-#include <stdexcept>
+-
+-using namespace shard;
+-
+-/*
+-ObjectInstance* ArgumentsSpan::operator[](int index) const
+-{
+-	return Span[index];
+-}
+-
+-ObjectInstance* ArgumentsSpan::Find(const std::wstring& name) const
+-{
+-	int i = 0;
+-	for (ParameterSymbol* param : Method->Parameters)
+-	{
+-		if (param->Name == name)
+-			return (*this)[i];
+-
+-		i += 1;
+-	}
+-
+-	throw std::runtime_error("variable not found");
+-}
+-
+-ArgumentsSpan::~ArgumentsSpan()
+-{
+-
+-}
+-*/
+diff --git a/ShardScript/src/runtime/ObjectInstance.cpp b/ShardScript/src/runtime/ObjectInstance.cpp
+index e605b83..ba8ada4 100644
+--- a/ShardScript/src/runtime/ObjectInstance.cpp
++++ b/ShardScript/src/runtime/ObjectInstance.cpp
+@@ -1,11 +1,12 @@
+ #include <shard/runtime/ObjectInstance.hpp>
+ #include <shard/runtime/CallStackFrame.hpp>
+ #include <shard/runtime/GarbageCollector.hpp>
+-
+-#include <shard/semantic/SymbolTable.hpp>
++#include <shard/runtime/MethodCallState.hpp>
+ 
+ #include <shard/parsing/SyntaxKind.hpp>
+ 
++#include <shard/semantic/SymbolTable.hpp>
++
+ #include <shard/semantic/symbols/FieldSymbol.hpp>
+ #include <shard/semantic/symbols/ArrayTypeSymbol.hpp>
+ #include <shard/semantic/symbols/GenericTypeSymbol.hpp>
+@@ -145,6 +146,9 @@ std::int64_t ObjectInstance::getReferencesCounter() const
+ 
+ ObjectInstance* ObjectInstance::GetField(FieldSymbol* field, CallStackFrame* frame)
+ {
++	if (field->Parent != getInfo())
++		throw std::runtime_error("Field does not belong to this instance.");
++
+ 	GenericTypeSymbol* genericInfo = GetGenericInfo(this);
+ 	TypeSymbol* fieldType = ResolveRuntimeType(field->ReturnType, frame, genericInfo);
+ 
+@@ -165,12 +169,12 @@ ObjectInstance* ObjectInstance::GetField(FieldSymbol* field, CallStackFrame* fra
+ void ObjectInstance::SetField(FieldSymbol* field, ObjectInstance* instance, CallStackFrame* frame)
+ {
+ 	if (instance == nullptr)
+-		throw std::runtime_error("got nullptr instance");
++		throw std::runtime_error("Tried to set nullptr ObjectInstance as field value.");
+ 
+ 	GenericTypeSymbol* genericInfo = GetGenericInfo(this);
+ 	TypeSymbol* fieldType = field->ReturnType;
+ 	if (!RuntimeTypeEquals(fieldType, const_cast<TypeSymbol*>(instance->getInfo()), frame, genericInfo))
+-		throw std::runtime_error("incompatible field type");
++		throw std::runtime_error("Tried to set incompatible ObjectInstance type as field value.");
+ 
+ 	fieldType = ResolveRuntimeType(fieldType, frame, genericInfo);
+ 
+@@ -260,6 +264,19 @@ bool ObjectInstance::IsInBounds(std::size_t index)
+ 	return index >= 0 && index < GetArrayLength();
+ }
+ 
++ArgumentsSpan ObjectInstance::ArrayAsSpan()
++{
++	if (Info->Kind != SyntaxKind::ArrayType)
++		throw std::runtime_error("Tried to get args span of non array instance");
++
++	size_t length = GetArrayLength();
++	if (length == 0)
++		return ArgumentsSpan();
++
++	ObjectInstance* first = GetElement(0);
++	return ArgumentsSpan{ &first, length };
++}
++
+ void ObjectInstance::IncrementReference()
+ {
+ 	if (ReferencesCounter == (std::size_t)(-1))
+diff --git a/ShardScript/src/semantic/DeclarationCollector.cpp b/ShardScript/src/semantic/DeclarationCollector.cpp
+index cff95a0..b2ae0df 100644
+--- a/ShardScript/src/semantic/DeclarationCollector.cpp
++++ b/ShardScript/src/semantic/DeclarationCollector.cpp
+@@ -189,7 +189,14 @@ void DeclarationCollector::VisitInterfaceDeclaration(InterfaceDeclarationSyntax*
+     {
+         SyntaxSymbol* memberSymbol = Table->LookupSymbol(member.get()).value_or(nullptr);
+         if (memberSymbol != nullptr)
++        {
+             memberSymbol->Accesibility = SymbolAccesibility::Public;
++            if (memberSymbol->IsMethod())
++            {
++                MethodSymbol* methodSymbol = static_cast<MethodSymbol*>(memberSymbol);
++                methodSymbol->IsAbstract = true;
++            }
++        }
+     }
+ 
+     PopScope();
+diff --git a/ShardScript/src/semantic/PrimitiveOperators.cpp b/ShardScript/src/semantic/PrimitiveOperators.cpp
+deleted file mode 100644
+index beaba3e..0000000
+--- a/ShardScript/src/semantic/PrimitiveOperators.cpp
++++ /dev/null
+@@ -1,661 +0,0 @@
+-#include <shard/semantic/SymbolTable.hpp>
+-#include <shard/semantic/PrimitiveOperators.hpp>
+-
+-#include <shard/semantic/SymbolFactory.hpp>
+-#include <shard/parsing/SyntaxFacts.hpp>
+-#include <shard/lexical/TokenType.hpp>
+-
+-#include <shard/semantic/symbols/TypeSymbol.hpp>
+-#include <shard/semantic/symbols/MethodSymbol.hpp>
+-#include <shard/semantic/symbols/OperatorSymbol.hpp>
+-#include <shard/semantic/symbols/ParameterSymbol.hpp>
+-
+-#include <shard/runtime/MethodCallState.hpp>
+-#include <shard/runtime/ObjectInstance.hpp>
+-#include <shard/runtime/GarbageCollector.hpp>
+-
+-#include <cmath>
+-#include <cstring>
+-#include <stdexcept>
+-#include <string>
+-
+-using namespace shard;
+-
+-static const wchar_t* concatStrings(const wchar_t* left, const wchar_t* right)
+-{
+-	if (left == nullptr || right == nullptr)
+-		throw std::invalid_argument("Input strings cannot be null");
+-
+-	std::size_t leftLen = wcslen(left);
+-	std::size_t rightLen = wcslen(right);
+-
+-	std::size_t leftSize = leftLen * sizeof(wchar_t);
+-	std::size_t rightSize = rightLen * sizeof(wchar_t);
+-	std::size_t totalSize = leftSize + rightSize + sizeof(wchar_t);
+-
+-	wchar_t* result = static_cast<wchar_t*>(malloc(totalSize));
+-	if (result == nullptr)
+-		throw std::runtime_error("Failed to allocate space for new string");
+-
+-	std::memcpy(result, left, leftSize);
+-	std::memcpy(result + leftLen, right, rightSize + sizeof(wchar_t));
+-
+-	return result;
+-}
+-
+-// -----------------------------------------------------------------------------
+-// Integer operators
+-// -----------------------------------------------------------------------------
+-
+-static ObjectInstance* integer_op_AddOperator(const CallState& context)
+-{
+-	std::int64_t left = context.Args[0]->AsInteger();
+-	std::int64_t right = context.Args[1]->AsInteger();
+-	return context.Collector.FromValue(left + right);
+-}
+-
+-static ObjectInstance* integer_op_SubOperator(const CallState& context)
+-{
+-	std::int64_t left = context.Args[0]->AsInteger();
+-	std::int64_t right = context.Args[1]->AsInteger();
+-	return context.Collector.FromValue(left - right);
+-}
+-
+-static ObjectInstance* integer_op_MultOperator(const CallState& context)
+-{
+-	std::int64_t left = context.Args[0]->AsInteger();
+-	std::int64_t right = context.Args[1]->AsInteger();
+-	return context.Collector.FromValue(left * right);
+-}
+-
+-static ObjectInstance* integer_op_DivOperator(const CallState& context)
+-{
+-	std::int64_t left = context.Args[0]->AsInteger();
+-	std::int64_t right = context.Args[1]->AsInteger();
+-	return context.Collector.FromValue(left / right);
+-}
+-
+-static ObjectInstance* integer_op_ModOperator(const CallState& context)
+-{
+-	std::int64_t left = context.Args[0]->AsInteger();
+-	std::int64_t right = context.Args[1]->AsInteger();
+-	return context.Collector.FromValue(left % right);
+-}
+-
+-static ObjectInstance* integer_op_PowOperator(const CallState& context)
+-{
+-	std::int64_t left = context.Args[0]->AsInteger();
+-	std::int64_t right = context.Args[1]->AsInteger();
+-	return context.Collector.FromValue(static_cast<std::int64_t>(pow(left, right)));
+-}
+-
+-static ObjectInstance* integer_op_OrOperator(const CallState& context)
+-{
+-	std::int64_t left = context.Args[0]->AsInteger();
+-	std::int64_t right = context.Args[1]->AsInteger();
+-	return context.Collector.FromValue(left | right);
+-}
+-
+-static ObjectInstance* integer_op_AndOperator(const CallState& context)
+-{
+-	std::int64_t left = context.Args[0]->AsInteger();
+-	std::int64_t right = context.Args[1]->AsInteger();
+-	return context.Collector.FromValue(left & right);
+-}
+-
+-static ObjectInstance* integer_op_LeftShiftOperator(const CallState& context)
+-{
+-	std::int64_t left = context.Args[0]->AsInteger();
+-	std::int64_t right = context.Args[1]->AsInteger();
+-	return context.Collector.FromValue(left << right);
+-}
+-
+-static ObjectInstance* integer_op_RightShiftOperator(const CallState& context)
+-{
+-	std::int64_t left = context.Args[0]->AsInteger();
+-	std::int64_t right = context.Args[1]->AsInteger();
+-	return context.Collector.FromValue(left >> right);
+-}
+-
+-static ObjectInstance* integer_op_EqualsOperator(const CallState& context)
+-{
+-	std::int64_t left = context.Args[0]->AsInteger();
+-	std::int64_t right = context.Args[1]->AsInteger();
+-	return context.Collector.FromValue(left == right);
+-}
+-
+-static ObjectInstance* integer_op_NotEqualsOperator(const CallState& context)
+-{
+-	std::int64_t left = context.Args[0]->AsInteger();
+-	std::int64_t right = context.Args[1]->AsInteger();
+-	return context.Collector.FromValue(left != right);
+-}
+-
+-static ObjectInstance* integer_op_LessOperator(const CallState& context)
+-{
+-	std::int64_t left = context.Args[0]->AsInteger();
+-	std::int64_t right = context.Args[1]->AsInteger();
+-	return context.Collector.FromValue(left < right);
+-}
+-
+-static ObjectInstance* integer_op_LessOrEqualsOperator(const CallState& context)
+-{
+-	std::int64_t left = context.Args[0]->AsInteger();
+-	std::int64_t right = context.Args[1]->AsInteger();
+-	return context.Collector.FromValue(left <= right);
+-}
+-
+-static ObjectInstance* integer_op_GreaterOperator(const CallState& context)
+-{
+-	std::int64_t left = context.Args[0]->AsInteger();
+-	std::int64_t right = context.Args[1]->AsInteger();
+-	return context.Collector.FromValue(left > right);
+-}
+-
+-static ObjectInstance* integer_op_GreaterOrEqualsOperator(const CallState& context)
+-{
+-	std::int64_t left = context.Args[0]->AsInteger();
+-	std::int64_t right = context.Args[1]->AsInteger();
+-	return context.Collector.FromValue(left >= right);
+-}
+-
+-static ObjectInstance* integer_op_IncrementOperator(const CallState& context)
+-{
+-	std::int64_t value = context.Args[0]->AsInteger();
+-	return context.Collector.FromValue(value + 1);
+-}
+-
+-static ObjectInstance* integer_op_DecrementOperator(const CallState& context)
+-{
+-	std::int64_t value = context.Args[0]->AsInteger();
+-	return context.Collector.FromValue(value - 1);
+-}
+-
+-static ObjectInstance* integer_op_UnaryNegation(const CallState& context)
+-{
+-	std::int64_t value = context.Args[0]->AsInteger();
+-	return context.Collector.FromValue(-value);
+-}
+-
+-static ObjectInstance* integer_op_UnaryPositive(const CallState& context)
+-{
+-	std::int64_t value = context.Args[0]->AsInteger();
+-	return context.Collector.FromValue(value);
+-}
+-
+-// -----------------------------------------------------------------------------
+-// Double operators
+-// -----------------------------------------------------------------------------
+-
+-static ObjectInstance* double_op_AddOperator(const CallState& context)
+-{
+-	double left = context.Args[0]->AsDouble();
+-	double right = context.Args[1]->AsDouble();
+-	return context.Collector.FromValue(left + right);
+-}
+-
+-static ObjectInstance* double_op_SubOperator(const CallState& context)
+-{
+-	double left = context.Args[0]->AsDouble();
+-	double right = context.Args[1]->AsDouble();
+-	return context.Collector.FromValue(left - right);
+-}
+-
+-static ObjectInstance* double_op_MultOperator(const CallState& context)
+-{
+-	double left = context.Args[0]->AsDouble();
+-	double right = context.Args[1]->AsDouble();
+-	return context.Collector.FromValue(left * right);
+-}
+-
+-static ObjectInstance* double_op_DivOperator(const CallState& context)
+-{
+-	double left = context.Args[0]->AsDouble();
+-	double right = context.Args[1]->AsDouble();
+-	return context.Collector.FromValue(left / right);
+-}
+-
+-static ObjectInstance* double_op_ModOperator(const CallState& context)
+-{
+-	double left = context.Args[0]->AsDouble();
+-	double right = context.Args[1]->AsDouble();
+-	return context.Collector.FromValue(std::fmod(left, right));
+-}
+-
+-static ObjectInstance* double_op_PowOperator(const CallState& context)
+-{
+-	double left = context.Args[0]->AsDouble();
+-	double right = context.Args[1]->AsDouble();
+-	return context.Collector.FromValue(std::pow(left, right));
+-}
+-
+-static ObjectInstance* double_op_EqualsOperator(const CallState& context)
+-{
+-	double left = context.Args[0]->AsDouble();
+-	double right = context.Args[1]->AsDouble();
+-	return context.Collector.FromValue(left == right);
+-}
+-
+-static ObjectInstance* double_op_NotEqualsOperator(const CallState& context)
+-{
+-	double left = context.Args[0]->AsDouble();
+-	double right = context.Args[1]->AsDouble();
+-	return context.Collector.FromValue(left != right);
+-}
+-
+-static ObjectInstance* double_op_LessOperator(const CallState& context)
+-{
+-	double left = context.Args[0]->AsDouble();
+-	double right = context.Args[1]->AsDouble();
+-	return context.Collector.FromValue(left < right);
+-}
+-
+-static ObjectInstance* double_op_LessOrEqualsOperator(const CallState& context)
+-{
+-	double left = context.Args[0]->AsDouble();
+-	double right = context.Args[1]->AsDouble();
+-	return context.Collector.FromValue(left <= right);
+-}
+-
+-static ObjectInstance* double_op_GreaterOperator(const CallState& context)
+-{
+-	double left = context.Args[0]->AsDouble();
+-	double right = context.Args[1]->AsDouble();
+-	return context.Collector.FromValue(left > right);
+-}
+-
+-static ObjectInstance* double_op_GreaterOrEqualsOperator(const CallState& context)
+-{
+-	double left = context.Args[0]->AsDouble();
+-	double right = context.Args[1]->AsDouble();
+-	return context.Collector.FromValue(left >= right);
+-}
+-
+-static ObjectInstance* double_op_UnaryNegation(const CallState& context)
+-{
+-	double value = context.Args[0]->AsDouble();
+-	return context.Collector.FromValue(-value);
+-}
+-
+-static ObjectInstance* double_op_UnaryPositive(const CallState& context)
+-{
+-	double value = context.Args[0]->AsDouble();
+-	return context.Collector.FromValue(value);
+-}
+-
+-// -----------------------------------------------------------------------------
+-// Boolean operators
+-// -----------------------------------------------------------------------------
+-
+-static ObjectInstance* boolean_op_EqualsOperator(const CallState& context)
+-{
+-	bool left = context.Args[0]->AsBoolean();
+-	bool right = context.Args[1]->AsBoolean();
+-	return context.Collector.FromValue(left == right);
+-}
+-
+-static ObjectInstance* boolean_op_NotEqualsOperator(const CallState& context)
+-{
+-	bool left = context.Args[0]->AsBoolean();
+-	bool right = context.Args[1]->AsBoolean();
+-	return context.Collector.FromValue(left != right);
+-}
+-
+-static ObjectInstance* boolean_op_OrOperator(const CallState& context)
+-{
+-	bool left = context.Args[0]->AsBoolean();
+-	bool right = context.Args[1]->AsBoolean();
+-	return context.Collector.FromValue(left || right);
+-}
+-
+-static ObjectInstance* boolean_op_AndOperator(const CallState& context)
+-{
+-	bool left = context.Args[0]->AsBoolean();
+-	bool right = context.Args[1]->AsBoolean();
+-	return context.Collector.FromValue(left && right);
+-}
+-
+-static ObjectInstance* boolean_op_NotOperator(const CallState& context)
+-{
+-	bool value = context.Args[0]->AsBoolean();
+-	return context.Collector.FromValue(!value);
+-}
+-
+-// -----------------------------------------------------------------------------
+-// Char operators
+-// -----------------------------------------------------------------------------
+-
+-static ObjectInstance* char_op_AddOperator(const CallState& context)
+-{
+-	wchar_t left = context.Args[0]->AsCharacter();
+-	TypeSymbol* rightType = const_cast<TypeSymbol*>(context.Args[1]->getInfo());
+-
+-	if (rightType == SymbolTable::Primitives::Char)
+-	{
+-		wchar_t right = context.Args[1]->AsCharacter();
+-		wchar_t* result = new wchar_t[] { left, right, L'\0' };
+-		return context.Collector.FromValue(result, false);
+-	}
+-
+-	if (rightType == SymbolTable::Primitives::Integer)
+-	{
+-		std::int64_t right = context.Args[1]->AsInteger();
+-		wchar_t temp[] = { left, L'\0' };
+-		const wchar_t* result = concatStrings(temp, std::to_wstring(right).data());
+-		return context.Collector.FromValue(result, false);
+-	}
+-
+-	if (rightType == SymbolTable::Primitives::String)
+-	{
+-		const wchar_t* right = context.Args[1]->AsString();
+-		wchar_t temp[] = { left, L'\0' };
+-		const wchar_t* result = concatStrings(temp, right);
+-		return context.Collector.FromValue(result, false);
+-	}
+-
+-	throw std::runtime_error("unsupported char add operation");
+-}
+-
+-static ObjectInstance* char_op_MultOperator(const CallState& context)
+-{
+-	wchar_t left = context.Args[0]->AsCharacter();
+-	std::int64_t right = context.Args[1]->AsInteger();
+-
+-	if (right <= 0)
+-		return context.Collector.FromValue(L"");
+-
+-	if (right == 1)
+-		return context.Collector.FromValue(left);
+-
+-	std::size_t stringSize = sizeof(wchar_t);
+-	std::size_t totalSize = stringSize * right + sizeof(wchar_t);
+-
+-	wchar_t* result = static_cast<wchar_t*>(malloc(totalSize));
+-	if (result == nullptr)
+-		throw std::runtime_error("Failed to allocate space for new string");
+-
+-	for (std::int64_t i = 0; i < right; i++)
+-		std::memcpy(result + i, &left, sizeof(wchar_t));
+-
+-	result[right] = L'\0';
+-	return context.Collector.FromValue(result, false);
+-}
+-
+-static ObjectInstance* char_op_EqualsOperator(const CallState& context)
+-{
+-	wchar_t left = context.Args[0]->AsCharacter();
+-	wchar_t right = context.Args[1]->AsCharacter();
+-	return context.Collector.FromValue(left == right);
+-}
+-
+-static ObjectInstance* char_op_NotEqualsOperator(const CallState& context)
+-{
+-	wchar_t left = context.Args[0]->AsCharacter();
+-	wchar_t right = context.Args[1]->AsCharacter();
+-	return context.Collector.FromValue(left != right);
+-}
+-
+-static ObjectInstance* char_op_IncrementOperator(const CallState& context)
+-{
+-	wchar_t value = context.Args[0]->AsCharacter();
+-	return context.Collector.FromValue(static_cast<wchar_t>(value + 1));
+-}
+-
+-static ObjectInstance* char_op_DecrementOperator(const CallState& context)
+-{
+-	wchar_t value = context.Args[0]->AsCharacter();
+-	return context.Collector.FromValue(static_cast<wchar_t>(value - 1));
+-}
+-
+-// -----------------------------------------------------------------------------
+-// String operators
+-// -----------------------------------------------------------------------------
+-
+-static ObjectInstance* string_op_AddOperator(const CallState& context)
+-{
+-	const wchar_t* left = context.Args[0]->AsString();
+-	TypeSymbol* rightType = const_cast<TypeSymbol*>(context.Args[1]->getInfo());
+-
+-	if (rightType == SymbolTable::Primitives::String)
+-	{
+-		const wchar_t* right = context.Args[1]->AsString();
+-		const wchar_t* result = concatStrings(left, right);
+-		return context.Collector.FromValue(result, false);
+-	}
+-
+-	if (rightType == SymbolTable::Primitives::Integer)
+-	{
+-		std::int64_t right = context.Args[1]->AsInteger();
+-		const wchar_t* result = concatStrings(left, std::to_wstring(right).data());
+-		return context.Collector.FromValue(result, false);
+-	}
+-
+-	if (rightType == SymbolTable::Primitives::Boolean)
+-	{
+-		bool right = context.Args[1]->AsBoolean();
+-		const wchar_t* dataStr = right ? L"true" : L"false";
+-		const wchar_t* result = concatStrings(left, dataStr);
+-		return context.Collector.FromValue(result, false);
+-	}
+-
+-	if (rightType == SymbolTable::Primitives::Char)
+-	{
+-		wchar_t right = context.Args[1]->AsCharacter();
+-		wchar_t temp[] = { right, L'\0' };
+-		const wchar_t* result = concatStrings(left, temp);
+-		return context.Collector.FromValue(result, false);
+-	}
+-
+-	throw std::runtime_error("unsupported string add operation");
+-}
+-
+-static ObjectInstance* string_op_MultOperator(const CallState& context)
+-{
+-	const wchar_t* left = context.Args[0]->AsString();
+-	std::int64_t right = context.Args[1]->AsInteger();
+-
+-	if (right <= 0)
+-		return context.Collector.FromValue(L"");
+-
+-	if (right == 1)
+-		return context.Collector.FromValue(left);
+-
+-	std::size_t length = wcslen(left);
+-	std::size_t stringSize = length * sizeof(wchar_t);
+-	std::size_t totalSize = stringSize * right + sizeof(wchar_t);
+-
+-	wchar_t* result = static_cast<wchar_t*>(malloc(totalSize));
+-	if (result == nullptr)
+-		throw std::runtime_error("Failed to allocate space for new string");
+-
+-	for (std::int64_t i = 0; i < right; i++)
+-		std::memcpy(result + i * length, left, stringSize);
+-
+-	result[length * right] = L'\0';
+-	return context.Collector.FromValue(result, false);
+-}
+-
+-static ObjectInstance* string_op_EqualsOperator(const CallState& context)
+-{
+-	const wchar_t* left = context.Args[0]->AsString();
+-	const wchar_t* right = context.Args[1]->AsString();
+-	return context.Collector.FromValue(left == right);
+-}
+-
+-static ObjectInstance* string_op_NotEqualsOperator(const CallState& context)
+-{
+-	const wchar_t* left = context.Args[0]->AsString();
+-	const wchar_t* right = context.Args[1]->AsString();
+-	return context.Collector.FromValue(left != right);
+-}
+-
+-// -----------------------------------------------------------------------------
+-// Mixed-type operators (left operand decides owner type)
+-// -----------------------------------------------------------------------------
+-
+-static ObjectInstance* integer_op_AddOperator_String(const CallState& context)
+-{
+-	std::int64_t left = context.Args[0]->AsInteger();
+-	const wchar_t* right = context.Args[1]->AsString();
+-	const wchar_t* result = concatStrings(std::to_wstring(left).data(), right);
+-	return context.Collector.FromValue(result, false);
+-}
+-
+-static ObjectInstance* integer_op_AddOperator_Char(const CallState& context)
+-{
+-	std::int64_t left = context.Args[0]->AsInteger();
+-	wchar_t right = context.Args[1]->AsCharacter();
+-	wchar_t temp[] = { right, L'\0' };
+-	const wchar_t* result = concatStrings(std::to_wstring(left).data(), temp);
+-	return context.Collector.FromValue(result, false);
+-}
+-
+-static ObjectInstance* boolean_op_AddOperator_String(const CallState& context)
+-{
+-	bool left = context.Args[0]->AsBoolean();
+-	const wchar_t* right = context.Args[1]->AsString();
+-	const wchar_t* leftStr = left ? L"true" : L"false";
+-	const wchar_t* result = concatStrings(leftStr, right);
+-	return context.Collector.FromValue(result, false);
+-}
+-
+-static ObjectInstance* double_op_AddOperator_String(const CallState& context)
+-{
+-	double left = context.Args[0]->AsDouble();
+-	const wchar_t* right = context.Args[1]->AsString();
+-	const wchar_t* result = concatStrings(std::to_wstring(left).data(), right);
+-	return context.Collector.FromValue(result, false);
+-}
+-
+-// -----------------------------------------------------------------------------
+-// Registration helpers
+-// -----------------------------------------------------------------------------
+-
+-static OperatorSymbol* RegisterOperator(TypeSymbol* type, TypeSymbol* returnType, const wchar_t* name, MethodSymbolDelegate callback, const std::vector<TypeSymbol*>& paramTypes, SymbolFactory& factory)
+-{
+-	shard::TokenType opToken = GetTokenTypeFromOperatorName(std::wstring(name));
+-	OperatorSymbol* op = factory.Operator(std::wstring(name), opToken, returnType, callback, paramTypes);
+-	type->OnSymbolDeclared(op);
+-	return op;
+-}
+-
+-static void RegisterIntegerOperators(SymbolFactory& factory)
+-{
+-	TypeSymbol* type = SymbolTable::Primitives::Integer;
+-	TypeSymbol* retBool = SymbolTable::Primitives::Boolean;
+-	TypeSymbol* retInt = SymbolTable::Primitives::Integer;
+-	TypeSymbol* retStr = SymbolTable::Primitives::String;
+-
+-	RegisterOperator(type, retInt, L"op_AddOperator", &integer_op_AddOperator, { type, type }, factory);
+-	RegisterOperator(type, retStr, L"op_AddOperator", &integer_op_AddOperator_String, { type, retStr }, factory);
+-	RegisterOperator(type, retStr, L"op_AddOperator", &integer_op_AddOperator_Char, { type, SymbolTable::Primitives::Char }, factory);
+-
+-	RegisterOperator(type, retInt, L"op_SubOperator", &integer_op_SubOperator, { type, type }, factory);
+-	RegisterOperator(type, retInt, L"op_MultOperator", &integer_op_MultOperator, { type, type }, factory);
+-	RegisterOperator(type, retInt, L"op_DivOperator", &integer_op_DivOperator, { type, type }, factory);
+-	RegisterOperator(type, retInt, L"op_ModOperator", &integer_op_ModOperator, { type, type }, factory);
+-	RegisterOperator(type, retInt, L"op_PowOperator", &integer_op_PowOperator, { type, type }, factory);
+-
+-	RegisterOperator(type, retInt, L"op_OrOperator", &integer_op_OrOperator, { type, type }, factory);
+-	RegisterOperator(type, retInt, L"op_AndOperator", &integer_op_AndOperator, { type, type }, factory);
+-	RegisterOperator(type, retInt, L"op_LeftShiftOperator", &integer_op_LeftShiftOperator, { type, type }, factory);
+-	RegisterOperator(type, retInt, L"op_RightShiftOperator", &integer_op_RightShiftOperator, { type, type }, factory);
+-
+-	RegisterOperator(type, retBool, L"op_EqualsOperator", &integer_op_EqualsOperator, { type, type }, factory);
+-	RegisterOperator(type, retBool, L"op_NotEqualsOperator", &integer_op_NotEqualsOperator, { type, type }, factory);
+-	RegisterOperator(type, retBool, L"op_LessOperator", &integer_op_LessOperator, { type, type }, factory);
+-	RegisterOperator(type, retBool, L"op_LessOrEqualsOperator", &integer_op_LessOrEqualsOperator, { type, type }, factory);
+-	RegisterOperator(type, retBool, L"op_GreaterOperator", &integer_op_GreaterOperator, { type, type }, factory);
+-	RegisterOperator(type, retBool, L"op_GreaterOrEqualsOperator", &integer_op_GreaterOrEqualsOperator, { type, type }, factory);
+-
+-	RegisterOperator(type, retInt, L"op_IncrementOperator", &integer_op_IncrementOperator, { type }, factory);
+-	RegisterOperator(type, retInt, L"op_DecrementOperator", &integer_op_DecrementOperator, { type }, factory);
+-	RegisterOperator(type, retInt, L"op_SubOperator", &integer_op_UnaryNegation, { type }, factory);
+-	RegisterOperator(type, retInt, L"op_AddOperator", &integer_op_UnaryPositive, { type }, factory);
+-}
+-
+-static void RegisterBooleanOperators(SymbolFactory& factory)
+-{
+-	TypeSymbol* type = SymbolTable::Primitives::Boolean;
+-	TypeSymbol* retBool = SymbolTable::Primitives::Boolean;
+-	TypeSymbol* retStr = SymbolTable::Primitives::String;
+-
+-	RegisterOperator(type, retStr, L"op_AddOperator", &boolean_op_AddOperator_String, { type, retStr }, factory);
+-
+-	RegisterOperator(type, retBool, L"op_EqualsOperator", &boolean_op_EqualsOperator, { type, type }, factory);
+-	RegisterOperator(type, retBool, L"op_NotEqualsOperator", &boolean_op_NotEqualsOperator, { type, type }, factory);
+-	RegisterOperator(type, retBool, L"op_OrOperator", &boolean_op_OrOperator, { type, type }, factory);
+-	RegisterOperator(type, retBool, L"op_AndOperator", &boolean_op_AndOperator, { type, type }, factory);
+-	RegisterOperator(type, retBool, L"op_NotOperator", &boolean_op_NotOperator, { type }, factory);
+-}
+-
+-static void RegisterCharOperators(SymbolFactory& factory)
+-{
+-	TypeSymbol* type = SymbolTable::Primitives::Char;
+-	TypeSymbol* retBool = SymbolTable::Primitives::Boolean;
+-	TypeSymbol* retStr = SymbolTable::Primitives::String;
+-	TypeSymbol* retChar = SymbolTable::Primitives::Char;
+-	TypeSymbol* retInt = SymbolTable::Primitives::Integer;
+-
+-	RegisterOperator(type, retStr, L"op_AddOperator", &char_op_AddOperator, { type, type }, factory);
+-	RegisterOperator(type, retStr, L"op_AddOperator", &char_op_AddOperator, { type, retInt }, factory);
+-	RegisterOperator(type, retStr, L"op_AddOperator", &char_op_AddOperator, { type, retStr }, factory);
+-	RegisterOperator(type, retStr, L"op_MultOperator", &char_op_MultOperator, { type, retInt }, factory);
+-	RegisterOperator(type, retBool, L"op_EqualsOperator", &char_op_EqualsOperator, { type, type }, factory);
+-	RegisterOperator(type, retBool, L"op_NotEqualsOperator", &char_op_NotEqualsOperator, { type, type }, factory);
+-	RegisterOperator(type, retChar, L"op_IncrementOperator", &char_op_IncrementOperator, { type }, factory);
+-	RegisterOperator(type, retChar, L"op_DecrementOperator", &char_op_DecrementOperator, { type }, factory);
+-}
+-
+-static void RegisterStringOperators(SymbolFactory& factory)
+-{
+-	TypeSymbol* type = SymbolTable::Primitives::String;
+-	TypeSymbol* retBool = SymbolTable::Primitives::Boolean;
+-	TypeSymbol* retStr = SymbolTable::Primitives::String;
+-	TypeSymbol* retInt = SymbolTable::Primitives::Integer;
+-	TypeSymbol* retChar = SymbolTable::Primitives::Char;
+-
+-	RegisterOperator(type, retStr, L"op_AddOperator", &string_op_AddOperator, { type, type }, factory);
+-	RegisterOperator(type, retStr, L"op_AddOperator", &string_op_AddOperator, { type, retInt }, factory);
+-	RegisterOperator(type, retStr, L"op_AddOperator", &string_op_AddOperator, { type, retBool }, factory);
+-	RegisterOperator(type, retStr, L"op_AddOperator", &string_op_AddOperator, { type, retChar }, factory);
+-	RegisterOperator(type, retStr, L"op_MultOperator", &string_op_MultOperator, { type, retInt }, factory);
+-	RegisterOperator(type, retBool, L"op_EqualsOperator", &string_op_EqualsOperator, { type, type }, factory);
+-	RegisterOperator(type, retBool, L"op_NotEqualsOperator", &string_op_NotEqualsOperator, { type, type }, factory);
+-}
+-
+-static void RegisterDoubleOperators(SymbolFactory& factory)
+-{
+-	TypeSymbol* type = SymbolTable::Primitives::Double;
+-	TypeSymbol* retBool = SymbolTable::Primitives::Boolean;
+-	TypeSymbol* retDbl = SymbolTable::Primitives::Double;
+-	TypeSymbol* retStr = SymbolTable::Primitives::String;
+-
+-	RegisterOperator(type, retDbl, L"op_AddOperator", &double_op_AddOperator, { type, type }, factory);
+-	RegisterOperator(type, retStr, L"op_AddOperator", &double_op_AddOperator_String, { type, retStr }, factory);
+-
+-	RegisterOperator(type, retDbl, L"op_SubOperator", &double_op_SubOperator, { type, type }, factory);
+-	RegisterOperator(type, retDbl, L"op_MultOperator", &double_op_MultOperator, { type, type }, factory);
+-	RegisterOperator(type, retDbl, L"op_DivOperator", &double_op_DivOperator, { type, type }, factory);
+-	RegisterOperator(type, retDbl, L"op_ModOperator", &double_op_ModOperator, { type, type }, factory);
+-	RegisterOperator(type, retDbl, L"op_PowOperator", &double_op_PowOperator, { type, type }, factory);
+-
+-	RegisterOperator(type, retBool, L"op_EqualsOperator", &double_op_EqualsOperator, { type, type }, factory);
+-	RegisterOperator(type, retBool, L"op_NotEqualsOperator", &double_op_NotEqualsOperator, { type, type }, factory);
+-	RegisterOperator(type, retBool, L"op_LessOperator", &double_op_LessOperator, { type, type }, factory);
+-	RegisterOperator(type, retBool, L"op_LessOrEqualsOperator", &double_op_LessOrEqualsOperator, { type, type }, factory);
+-	RegisterOperator(type, retBool, L"op_GreaterOperator", &double_op_GreaterOperator, { type, type }, factory);
+-	RegisterOperator(type, retBool, L"op_GreaterOrEqualsOperator", &double_op_GreaterOrEqualsOperator, { type, type }, factory);
+-
+-	RegisterOperator(type, retDbl, L"op_SubOperator", &double_op_UnaryNegation, { type }, factory);
+-	RegisterOperator(type, retDbl, L"op_AddOperator", &double_op_UnaryPositive, { type }, factory);
+-}
+-
+-void shard::RegisterPrimitiveOperators(SymbolFactory& factory)
+-{
+-	RegisterIntegerOperators(factory);
+-	RegisterBooleanOperators(factory);
+-	RegisterCharOperators(factory);
+-	RegisterStringOperators(factory);
+-	RegisterDoubleOperators(factory);
+-}
+diff --git a/ShardScript/src/semantic/SymbolBuilder.cpp b/ShardScript/src/semantic/SymbolBuilder.cpp
+index de660a0..69eb674 100644
+--- a/ShardScript/src/semantic/SymbolBuilder.cpp
++++ b/ShardScript/src/semantic/SymbolBuilder.cpp
+@@ -41,10 +41,12 @@ SymbolBuilder<MethodSymbol> SymbolBuilder<NamespaceSymbol>::AddMethod(
+ 
+ SymbolBuilder<ClassSymbol> SymbolBuilder<NamespaceSymbol>::AddClass(
+     const std::wstring& name,
++    SymbolLinking linking,
+     SymbolAccesibility access)
+ {
+     SymbolBuilder<ClassSymbol> builder(Context, name, Symbol);
+     builder.Get()->Accesibility = access;
++    builder.Get()->Linking = linking;
+     return builder;
+ }
+ 
+@@ -92,6 +94,14 @@ SymbolBuilder<TypeParameterSymbol>::SymbolBuilder(CompilationContext& ctx,
+ // ClassSymbol
+ // =========================================================================
+ 
++SymbolBuilder<ClassSymbol>::SymbolBuilder(
++    CompilationContext& ctx,
++    ClassSymbol* symbol)
++    : SymbolBuilderBase(ctx)
++{
++    Symbol = symbol;
++}
++
+ SymbolBuilder<ClassSymbol>::SymbolBuilder(CompilationContext& ctx,
+     const std::wstring& name,
+     SyntaxSymbol* parent)
+@@ -367,6 +377,20 @@ SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::SetCallback(
+ }
+ */
+ 
++SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::IsImplementationOf(MethodSymbol* abstractMethod)
++{
++    if (abstractMethod == nullptr)
++        return *this;
++
++    SyntaxSymbol* parent = Symbol->Parent;
++    if (parent == nullptr || !parent->IsType())
++        return *this;
++
++    TypeSymbol* parentType = static_cast<TypeSymbol*>(parent);
++    parentType->InterfaceMethodMap[abstractMethod] = Symbol;
++    return *this;
++}
++
+ SymbolBuilder<TypeParameterSymbol> SymbolBuilder<MethodSymbol>::AddTypeParameter(const std::wstring& name)
+ {
+     SymbolBuilder<TypeParameterSymbol> builder(Context, name, Symbol);
+diff --git a/ShardScript/src/semantic/SymbolTable.cpp b/ShardScript/src/semantic/SymbolTable.cpp
+index e3d4e2a..d1f62e4 100644
+--- a/ShardScript/src/semantic/SymbolTable.cpp
++++ b/ShardScript/src/semantic/SymbolTable.cpp
+@@ -1,14 +1,13 @@
+ #include <shard/semantic/SymbolTable.hpp>
+ #include <shard/semantic/PrimitiveOperators.hpp>
+ 
+-#include <shard/compilation/ByteCodeEncoder.hpp>
+-#include <shard/semantic/SymbolFactory.hpp>
+-#include <shard/runtime/MethodCallState.hpp>
+-
+ #include <shard/parsing/SyntaxNode.hpp>
+-#include <shard/semantic/SyntaxSymbol.hpp>
+ #include <shard/parsing/SyntaxKind.hpp>
+ 
++#include <shard/semantic/SyntaxSymbol.hpp>
++#include <shard/semantic/SymbolFactory.hpp>
++#include <shard/semantic/SymbolBuilder.hpp>
++
+ #include <shard/semantic/symbols/TypeSymbol.hpp>
+ #include <shard/semantic/symbols/StructSymbol.hpp>
+ #include <shard/semantic/symbols/ClassSymbol.hpp>
+@@ -22,9 +21,13 @@
+ #include <shard/semantic/symbols/TypeParameterSymbol.hpp>
+ #include <shard/semantic/symbols/ArrayTypeSymbol.hpp>
+ #include <shard/semantic/symbols/GenericTypeSymbol.hpp>
++#include <shard/semantic/symbols/GenericTypeSymbol.hpp>
+ 
+ #include <shard/runtime/ObjectInstance.hpp>
+ #include <shard/runtime/GarbageCollector.hpp>
++#include <shard/runtime/MethodCallState.hpp>
++
++#include <shard/compilation/ByteCodeEncoder.hpp>
+ 
+ #include <vector>
+ #include <ranges>
+@@ -74,27 +77,6 @@ static std::string WStringToString(const std::wstring& value)
+ 	return result;
+ }
+ 
+-static std::wstring ObjectInstanceToString(const VirtualMachine* host, ObjectInstance* instance)
+-{
+-	TypeSymbol* type = const_cast<TypeSymbol*>(instance->getInfo());
+-	MethodSymbol* implementation = type->FindInterfaceImplementation(TRAIT_PRINTABLE_ToString);
+-
+-	/*
+-	if (implementation == nullptr)
+-		throw std::runtime_error("Type '" + WStringToString(type->FullName) + "' does not implement IPrintable");
+-	*/
+-
+-	if (implementation == nullptr)
+-		return type->FullName;
+-
+-	host->InvokeMethod(implementation, { instance });
+-	ObjectInstance* result = host->CurrentFrame()->PopStack();
+-	if (result == nullptr || result->getInfo() != SymbolTable::Primitives::String)
+-		throw std::runtime_error("ToString did not return a string");
+-
+-	return result->AsString();
+-}
+-
+ static ObjectInstance* primitive_boolean_to_string(const CallState& context)
+ {
+ 	bool value = context.Args[0]->AsBoolean();
+@@ -126,6 +108,40 @@ static ObjectInstance* primitive_string_to_string(const CallState& context)
+ 	return self;
+ }
+ 
++static ObjectInstance* InvokeToString(const VirtualMachine* host, ObjectInstance* instance)
++{
++	TypeSymbol* type = const_cast<TypeSymbol*>(instance->getInfo());
++	MethodSymbol* implementation = type->FindInterfaceImplementation(TRAIT_PRINTABLE_ToString);
++
++	/*
++	if (implementation == nullptr)
++		throw std::runtime_error("Type '" + WStringToString(type->FullName) + "' does not implement IPrintable");
++	*/
++
++	if (implementation == nullptr)
++		return nullptr;
++
++	host->InvokeMethod(implementation, { instance });
++	ObjectInstance* result = host->CurrentFrame()->PopStack();
++	if (result == nullptr || result->getInfo() != SymbolTable::Primitives::String)
++		throw std::runtime_error("ToString did not return a string");
++
++	return result;
++}
++
++static void AppendAsString(const CallState& context, std::wostringstream& result, ObjectInstance* instance)
++{
++	ObjectInstance* asString = InvokeToString(&context.Runtimer, instance);
++	if (asString == nullptr)
++	{
++		result << instance->getInfo()->FullName;
++		return;
++	}
++
++	result << asString->AsString();
++	context.Collector.CollectInstance(asString);
++}
++
+ static ObjectInstance* primitive_array_to_string(const CallState& context)
+ {
+ 	ObjectInstance* instance = context.Args[0]; // this
+@@ -139,13 +155,14 @@ static ObjectInstance* primitive_array_to_string(const CallState& context)
+ 	result << L"[";
+ 
+ 	ObjectInstance* element = instance->GetElement(0);
+-	result << ObjectInstanceToString(&context.Runtimer, element);
++	AppendAsString(context, result, element);
+ 	context.Collector.CollectInstance(element);
+ 
+-	for (size_t i = 1; i < size; i++)
++	for (size_t i = 1; i < size; ++i)
+ 	{
+-		element = instance->GetElement(i);
+-		result << L", " << ObjectInstanceToString(&context.Runtimer, element);
++		result << L", ";
++		ObjectInstance* element = instance->GetElement(i);
++		AppendAsString(context, result, element);
+ 		context.Collector.CollectInstance(element);
+ 	}
+ 
+@@ -566,6 +583,13 @@ static void ResolveStandards(SymbolTable* table)
+ 			}
+ 		}
+ 
++		// RuntimeException is created implicitly and does not go through normal
++		// layout generation; lay it out manually so the runtime can instantiate it.
++		messageField->MemoryBytesOffset = 0;
++		stackTraceField->MemoryBytesOffset = sizeof(void*);
++		raw->MemoryBytesSize = 2 * sizeof(void*);
++		raw->State = TypeLayoutingState::Visited;
++
+ 		SymbolTable::StandardTypes::RuntimeException = raw;
+ 	}
+ 
+diff --git a/ShardScript/src/semantic/symbols/MethodSymbol.cpp b/ShardScript/src/semantic/symbols/MethodSymbol.cpp
+index 382de59..f9ccefa 100644
+--- a/ShardScript/src/semantic/symbols/MethodSymbol.cpp
++++ b/ShardScript/src/semantic/symbols/MethodSymbol.cpp
+@@ -3,6 +3,11 @@
+ 
+ using namespace shard;
+ 
++bool MethodSymbol::IsMethod() const
++{
++	return true;
++}
++
+ void MethodSymbol::OnSymbolDeclared(SyntaxSymbol* symbol)
+ {
+ 	switch (symbol->Kind)
+diff --git a/test_scripts/socket_client_test.shard b/test_scripts/socket_client_test.shard
+index 1223632..c3f2600 100644
+--- a/test_scripts/socket_client_test.shard
++++ b/test_scripts/socket_client_test.shard
+@@ -1,4 +1,4 @@
+-using socket;
++using net;
+ 
+ namespace socket_client;
+ 
+diff --git a/tree.txt b/tree.txt
+deleted file mode 100644
+index 4555714..0000000
+--- a/tree.txt
++++ /dev/null
+@@ -1,1520 +0,0 @@
+-Ñòðóêòóðà ïàïîê òîìà DiskD
+-Ñåðèéíûé íîìåð òîìà: A832-6EA4
+-D:.
+-¦   .gitattributes
+-¦   .gitignore
+-¦   CMakePresets.json
+-¦   cpp.hint
+-¦   build_debug.sh
+-¦   license.md
+-¦   build_debug.bat
+-¦   library-guide.md
+-¦   build.log
+-¦   readme.md
+-¦   CMakeLists.txt
+-¦   tree.txt
+-¦   
+-+---.idea
+-¦       workspace.xml
+-¦       ShardScript.iml
+-¦       modules.xml
+-¦       editor.xml
+-¦       misc.xml
+-¦       vcs.xml
+-¦       .gitignore
+-¦       
+-+---cmake-build-debug
+-¦   ¦   .gitignore
+-¦   ¦   .ninja_deps
+-¦   ¦   .ninja_log
+-¦   ¦   CMakeCache.txt
+-¦   ¦   compile_commands.json
+-¦   ¦   build.ninja
+-¦   ¦   cmake_install.cmake
+-¦   ¦   
+-¦   +---CMakeFiles
+-¦   ¦   ¦   clion-environment.txt
+-¦   ¦   ¦   CMakeConfigureLog.yaml
+-¦   ¦   ¦   VerifyGlobs.cmake
+-¦   ¦   ¦   cmake.verify_globs
+-¦   ¦   ¦   cmake.check_cache
+-¦   ¦   ¦   InstallScripts.json
+-¦   ¦   ¦   clion-Debug-log.txt
+-¦   ¦   ¦   rules.ninja
+-¦   ¦   ¦   TargetDirectories.txt
+-¦   ¦   ¦   
+-¦   ¦   +---pkgRedirects
+-¦   ¦   L---4.3.4
+-¦   ¦       ¦   CMakeSystem.cmake
+-¦   ¦       ¦   CMakeCXXCompiler.cmake
+-¦   ¦       ¦   CMakeDetermineCompilerABI_CXX.bin
+-¦   ¦       ¦   CMakeCCompiler.cmake
+-¦   ¦       ¦   CMakeDetermineCompilerABI_C.bin
+-¦   ¦       ¦   
+-¦   ¦       +---CompilerIdCXX
+-¦   ¦       ¦   ¦   CMakeCXXCompilerId.cpp
+-¦   ¦       ¦   ¦   a.out
+-¦   ¦       ¦   ¦   
+-¦   ¦       ¦   L---tmp
+-¦   ¦       L---CompilerIdC
+-¦   ¦           ¦   CMakeCCompilerId.c
+-¦   ¦           ¦   a.out
+-¦   ¦           ¦   
+-¦   ¦           L---tmp
+-¦   +---.cmake
+-¦   ¦   L---api
+-¦   ¦       L---v1
+-¦   ¦           +---query
+-¦   ¦           ¦       codemodel-v2
+-¦   ¦           ¦       cache-v2
+-¦   ¦           ¦       cmakeFiles-v1
+-¦   ¦           ¦       toolchains-v1
+-¦   ¦           ¦       
+-¦   ¦           L---reply
+-¦   ¦                   cache-v2-d07503df3360f055d129.json
+-¦   ¦                   target-ShardScript-Debug-2cd45d453b9005197d4a.json
+-¦   ¦                   target-ShardScript.Interpreter-Debug-dbba5b341109deb4c81e.json
+-¦   ¦                   target-collections.shard-Debug-bf3c84e78155273cb3a8.json
+-¦   ¦                   target-constream.shard-Debug-c844b529a4f5d4229beb.json
+-¦   ¦                   target-debug.shard-Debug-a23f0b42fe5272063bf9.json
+-¦   ¦                   target-environment.shard-Debug-bdd906a35ed2edc76db1.json
+-¦   ¦                   target-io.shard-Debug-5eaa48e478d5c68ece5a.json
+-¦   ¦                   target-random.shard-Debug-40181ddd3041b0fe1900.json
+-¦   ¦                   target-raylib.shard-Debug-9f1170c5ed0bf92325eb.json
+-¦   ¦                   target-socket.shard-Debug-eaa018e82de3354b3e0c.json
+-¦   ¦                   target-terminality.shard-Debug-e419830d69ec6ac0fbcd.json
+-¦   ¦                   directory-.-Debug-fd6451d79dc282e2f566.json
+-¦   ¦                   directory-ShardScript-Debug-271b4d2bd82152048872.json
+-¦   ¦                   directory-ShardScript.Framework-Debug-065f12d92d5f82216bce.json
+-¦   ¦                   directory-ShardScript.Interpreter-Debug-5c5a4fa78d4a894cc79a.json
+-¦   ¦                   codemodel-v2-aebb50c6658a4533d022.json
+-¦   ¦                   toolchains-v1-d0728f44e8cd0535b763.json
+-¦   ¦                   cmakeFiles-v1-e944dc0b25d44f246977.json
+-¦   ¦                   index-2026-06-28T01-36-30-0878.json
+-¦   ¦                   
+-¦   +---ShardScript
+-¦   ¦   ¦   cmake_install.cmake
+-¦   ¦   ¦   
+-¦   ¦   L---CMakeFiles
+-¦   ¦       L---ShardScript.dir
+-¦   ¦           L---src
+-¦   ¦               ¦   ApplicationDomain.cpp.o
+-¦   ¦               ¦   SyntaxVisitor.cpp.o
+-¦   ¦               ¦   CompilationContext.cpp.o
+-¦   ¦               ¦   ShardScriptExtern.cpp.o
+-¦   ¦               ¦   
+-¦   ¦               +---compilation
+-¦   ¦               ¦       ByteCodeEncoder.cpp.o
+-¦   ¦               ¦       ByteCodeDecoder.cpp.o
+-¦   ¦               ¦       AbstractEmiter.cpp.o
+-¦   ¦               ¦       
+-¦   ¦               +---parsing
+-¦   ¦               ¦   ¦   LayoutGenerator.cpp.o
+-¦   ¦               ¦   ¦   SemanticAnalyzer.cpp.o
+-¦   ¦               ¦   ¦   SourceParser.cpp.o
+-¦   ¦               ¦   ¦   
+-¦   ¦               ¦   +---analysis
+-¦   ¦               ¦   ¦       DiagnosticSeverity.cpp.o
+-¦   ¦               ¦   ¦       Diagnostic.cpp.o
+-¦   ¦               ¦   ¦       DiagnosticsContext.cpp.o
+-¦   ¦               ¦   ¦       
+-¦   ¦               ¦   +---lexical
+-¦   ¦               ¦   ¦   ¦   LexicalBuffer.cpp.o
+-¦   ¦               ¦   ¦   ¦   LexicalAnalyzer.cpp.o
+-¦   ¦               ¦   ¦   ¦   
+-¦   ¦               ¦   ¦   L---reading
+-¦   ¦               ¦   ¦           StringStreamReader.cpp.o
+-¦   ¦               ¦   ¦           FileReader.cpp.o
+-¦   ¦               ¦   ¦           
+-¦   ¦               ¦   L---semantic
+-¦   ¦               ¦       ¦   NamespaceTree.cpp.o
+-¦   ¦               ¦       ¦   SemanticScope.cpp.o
+-¦   ¦               ¦       ¦   PrimitiveOperators.cpp.o
+-¦   ¦               ¦       ¦   SemanticModel.cpp.o
+-¦   ¦               ¦       ¦   SymbolTable.cpp.o
+-¦   ¦               ¦       ¦   
+-¦   ¦               ¦       L---visiting
+-¦   ¦               ¦               ScopeVisitor.cpp.o
+-¦   ¦               ¦               DeclarationCollector.cpp.o
+-¦   ¦               ¦               ExpressionBinder.cpp.o
+-¦   ¦               ¦               TypeBinder.cpp.o
+-¦   ¦               ¦               
+-¦   ¦               +---runtime
+-¦   ¦               ¦       EvalStack.cpp.o
+-¦   ¦               ¦       CallStackFrame.cpp.o
+-¦   ¦               ¦       ArgumentsSpan.cpp.o
+-¦   ¦               ¦       ConsoleHelper.cpp.o
+-¦   ¦               ¦       ObjectInstance.cpp.o
+-¦   ¦               ¦       GarbageCollector.cpp.o
+-¦   ¦               ¦       ProgramDisassembler.cpp.o
+-¦   ¦               ¦       VirtualMachine.cpp.o
+-¦   ¦               ¦       
+-¦   ¦               L---syntax
+-¦   ¦                   ¦   SyntaxFacts.cpp.o
+-¦   ¦                   ¦   SyntaxHelpers.cpp.o
+-¦   ¦                   ¦   SymbolBuilder.cpp.o
+-¦   ¦                   ¦   SymbolFactory.cpp.o
+-¦   ¦                   ¦   
+-¦   ¦                   +---nodes
+-¦   ¦                   ¦   +---Directives
+-¦   ¦                   ¦   ¦       UsingDirectiveSyntax.cpp.o
+-¦   ¦                   ¦   ¦       
+-¦   ¦                   ¦   L---Types
+-¦   ¦                   ¦           IdentifierNameTypeSyntax.cpp.o
+-¦   ¦                   ¦           ArrayTypeSyntax.cpp.o
+-¦   ¦                   ¦           GenericTypeSyntax.cpp.o
+-¦   ¦                   ¦           DelegateTypeSyntax.cpp.o
+-¦   ¦                   ¦           NullableTypeSyntax.cpp.o
+-¦   ¦                   ¦           PredefinedTypeSyntax.cpp.o
+-¦   ¦                   ¦           
+-¦   ¦                   L---symbols
+-¦   ¦                           AccessorSymbol.cpp.o
+-¦   ¦                           MemberSymbol.cpp.o
+-¦   ¦                           IndexatorSymbol.cpp.o
+-¦   ¦                           ArrayTypeSymbol.cpp.o
+-¦   ¦                           MethodSymbol.cpp.o
+-¦   ¦                           NamespaceSymbol.cpp.o
+-¦   ¦                           GenericTypeSymbol.cpp.o
+-¦   ¦                           TypeSymbol.cpp.o
+-¦   ¦                           
+-¦   +---ShardScript.Framework
+-¦   ¦   ¦   cmake_install.cmake
+-¦   ¦   ¦   
+-¦   ¦   L---CMakeFiles
+-¦   ¦       +---collections.shard.dir
+-¦   ¦       ¦   L---system
+-¦   ¦       ¦           collections.shard.cpp.o
+-¦   ¦       ¦           
+-¦   ¦       +---constream.shard.dir
+-¦   ¦       ¦   L---system
+-¦   ¦       ¦           constream.shard.cpp.o
+-¦   ¦       ¦           
+-¦   ¦       +---debug.shard.dir
+-¦   ¦       ¦   L---system
+-¦   ¦       ¦           debug.shard.cpp.o
+-¦   ¦       ¦           
+-¦   ¦       +---environment.shard.dir
+-¦   ¦       ¦   L---system
+-¦   ¦       ¦           environment.shard.cpp.o
+-¦   ¦       ¦           
+-¦   ¦       +---io.shard.dir
+-¦   ¦       ¦   L---system
+-¦   ¦       ¦           io.shard.cpp.o
+-¦   ¦       ¦           
+-¦   ¦       +---random.shard.dir
+-¦   ¦       ¦   L---system
+-¦   ¦       ¦           random.shard.cpp.o
+-¦   ¦       ¦           
+-¦   ¦       +---socket.shard.dir
+-¦   ¦       ¦   L---system
+-¦   ¦       ¦           socket.shard.cpp.o
+-¦   ¦       ¦           
+-¦   ¦       +---raylib.shard.dir
+-¦   ¦       ¦   L---third_party
+-¦   ¦       ¦       L---RayLib
+-¦   ¦       ¦               raylib.shard.cpp.o
+-¦   ¦       ¦               
+-¦   ¦       L---terminality.shard.dir
+-¦   ¦           L---third_party
+-¦   ¦               L---Terminality
+-¦   ¦                       terminality.shard.cpp.o
+-¦   ¦                       
+-¦   +---ShardScript.Interpreter
+-¦   ¦   ¦   cmake_install.cmake
+-¦   ¦   ¦   
+-¦   ¦   L---CMakeFiles
+-¦   ¦       L---ShardScript.Interpreter.dir
+-¦   ¦           ¦   InteractiveConsole.cpp.o
+-¦   ¦           ¦   ShardScript.Interpreter.cpp.o
+-¦   ¦           ¦   
+-¦   ¦           L---utilities
+-¦   ¦                   ArgumentsParser.cpp.o
+-¦   ¦                   
+-¦   +---bin
+-¦   ¦   ¦   libShardScript.so
+-¦   ¦   ¦   ShardScript.Interpreter
+-¦   ¦   ¦   
+-¦   ¦   +---system
+-¦   ¦   ¦       libconstream.shard.so
+-¦   ¦   ¦       libdebug.shard.so
+-¦   ¦   ¦       libcollections.shard.so
+-¦   ¦   ¦       libenvironment.shard.so
+-¦   ¦   ¦       libio.shard.so
+-¦   ¦   ¦       librandom.shard.so
+-¦   ¦   ¦       libsocket.shard.so
+-¦   ¦   ¦       
+-¦   ¦   L---third-party
+-¦   ¦           libterminality.shard.so
+-¦   ¦           libraylib.shard.so
+-¦   ¦           
+-¦   L---Testing
+-¦       L---Temporary
+-¦               LastTest.log
+-¦               
+-+---formalization
+-¦       ShardScript-logo.png
+-¦       ShardScript-banner.png
+-¦       
+-+---ShardScript
+-¦   ¦   cpp.hint
+-¦   ¦   make_stub.py
+-¦   ¦   CMakeLists.txt
+-¦   ¦   
+-¦   +---include
+-¦   ¦   ¦   ShardScript.hpp
+-¦   ¦   ¦   
+-¦   ¦   L---shard
+-¦   ¦       ¦   ApplicationDomain.hpp
+-¦   ¦       ¦   CompilationContext.hpp
+-¦   ¦       ¦   ShardScriptExtern.hpp
+-¦   ¦       ¦   SyntaxVisitor.hpp
+-¦   ¦       ¦   ShardScriptLIB.hpp
+-¦   ¦       ¦   ShardScriptAPI.hpp
+-¦   ¦       ¦   
+-¦   ¦       +---compilation
+-¦   ¦       ¦       ProgramVirtualImage.hpp
+-¦   ¦       ¦       AbstractEmiter.hpp
+-¦   ¦       ¦       ByteCodeDecoder.hpp
+-¦   ¦       ¦       ByteCodeEncoder.hpp
+-¦   ¦       ¦       OperationCode.hpp
+-¦   ¦       ¦       
+-¦   ¦       +---parsing
+-¦   ¦       ¦   ¦   LayoutGenerator.hpp
+-¦   ¦       ¦   ¦   MemberDeclarationInfo.hpp
+-¦   ¦       ¦   ¦   SemanticAnalyzer.hpp
+-¦   ¦       ¦   ¦   SyntaxTree.hpp
+-¦   ¦       ¦   ¦   SourceParser.hpp
+-¦   ¦       ¦   ¦   
+-¦   ¦       ¦   +---analysis
+-¦   ¦       ¦   ¦       Diagnostic.hpp
+-¦   ¦       ¦   ¦       DiagnosticsContext.hpp
+-¦   ¦       ¦   ¦       DiagnosticSeverity.hpp
+-¦   ¦       ¦   ¦       TextLocation.hpp
+-¦   ¦       ¦   ¦       
+-¦   ¦       ¦   +---lexical
+-¦   ¦       ¦   ¦   ¦   LexicalAnalyzer.hpp
+-¦   ¦       ¦   ¦   ¦   LexicalBuffer.hpp
+-¦   ¦       ¦   ¦   ¦   SourceProvider.hpp
+-¦   ¦       ¦   ¦   ¦   
+-¦   ¦       ¦   ¦   L---reading
+-¦   ¦       ¦   ¦           FileReader.hpp
+-¦   ¦       ¦   ¦           SourceTextProvider.hpp
+-¦   ¦       ¦   ¦           StringStreamReader.hpp
+-¦   ¦       ¦   ¦           
+-¦   ¦       ¦   L---semantic
+-¦   ¦       ¦       ¦   NamespaceTree.hpp
+-¦   ¦       ¦       ¦   SemanticModel.hpp
+-¦   ¦       ¦       ¦   SymbolInfo.hpp
+-¦   ¦       ¦       ¦   TypeInfo.hpp
+-¦   ¦       ¦       ¦   SemanticScope.hpp
+-¦   ¦       ¦       ¦   PrimitiveOperators.hpp
+-¦   ¦       ¦       ¦   SymbolTable.hpp
+-¦   ¦       ¦       ¦   
+-¦   ¦       ¦       L---visiting
+-¦   ¦       ¦               ExpressionBinder.hpp
+-¦   ¦       ¦               TypeBinder.hpp
+-¦   ¦       ¦               ScopeVisitor.hpp
+-¦   ¦       ¦               DeclarationCollector.hpp
+-¦   ¦       ¦               
+-¦   ¦       +---runtime
+-¦   ¦       ¦       ArgumentsSpan.hpp
+-¦   ¦       ¦       ConsoleHelper.hpp
+-¦   ¦       ¦       MethodCallState.hpp
+-¦   ¦       ¦       ProgramDisassembler.hpp
+-¦   ¦       ¦       GarbageCollector.hpp
+-¦   ¦       ¦       ObjectInstance.hpp
+-¦   ¦       ¦       CallStackFrame.hpp
+-¦   ¦       ¦       VirtualMachine.hpp
+-¦   ¦       ¦       
+-¦   ¦       L---syntax
+-¦   ¦           ¦   SyntaxHelpers.hpp
+-¦   ¦           ¦   SyntaxNode.hpp
+-¦   ¦           ¦   SyntaxToken.hpp
+-¦   ¦           ¦   SyntaxSymbol.hpp
+-¦   ¦           ¦   SyntaxFacts.hpp
+-¦   ¦           ¦   SyntaxKind.hpp
+-¦   ¦           ¦   TokenType.hpp
+-¦   ¦           ¦   SymbolBuilder.hpp
+-¦   ¦           ¦   SymbolFactory.hpp
+-¦   ¦           ¦   
+-¦   ¦           +---nodes
+-¦   ¦           ¦   ¦   CompilationUnitSyntax.hpp
+-¦   ¦           ¦   ¦   AttributeSyntax.hpp
+-¦   ¦           ¦   ¦   ArgumentsListSyntax.hpp
+-¦   ¦           ¦   ¦   BodyDeclarationSyntax.hpp
+-¦   ¦           ¦   ¦   ExpressionSyntax.hpp
+-¦   ¦           ¦   ¦   MemberDeclarationSyntax.hpp
+-¦   ¦           ¦   ¦   StatementSyntax.hpp
+-¦   ¦           ¦   ¦   StatementsBlockSyntax.hpp
+-¦   ¦           ¦   ¦   TypeDeclarationSyntax.hpp
+-¦   ¦           ¦   ¦   ParametersListSyntax.hpp
+-¦   ¦           ¦   ¦   TypeSyntax.hpp
+-¦   ¦           ¦   ¦   TypeArgumentsListSyntax.hpp
+-¦   ¦           ¦   ¦   TypeParametersListSyntax.hpp
+-¦   ¦           ¦   ¦   
+-¦   ¦           ¦   +---Directives
+-¦   ¦           ¦   ¦       UsingDirectiveSyntax.hpp
+-¦   ¦           ¦   ¦       
+-¦   ¦           ¦   +---Expressions
+-¦   ¦           ¦   ¦       IfExpressionSyntax.hpp
+-¦   ¦           ¦   ¦       SwitchExpressionSyntax.hpp
+-¦   ¦           ¦   ¦       IsExpressionSyntax.hpp
+-¦   ¦           ¦   ¦       LinkedExpressionSyntax.hpp
+-¦   ¦           ¦   ¦       CollectionExpressionSyntax.hpp
+-¦   ¦           ¦   ¦       ObjectExpressionSyntax.hpp
+-¦   ¦           ¦   ¦       LambdaExpressionSyntax.hpp
+-¦   ¦           ¦   ¦       RangeExpressionSyntax.hpp
+-¦   ¦           ¦   ¦       LiteralExpressionSyntax.hpp
+-¦   ¦           ¦   ¦       TernaryExpressionSyntax.hpp
+-¦   ¦           ¦   ¦       BinaryExpressionSyntax.hpp
+-¦   ¦           ¦   ¦       UnaryExpressionSyntax.hpp
+-¦   ¦           ¦   ¦       CastExpressionSyntax.hpp
+-¦   ¦           ¦   ¦       
+-¦   ¦           ¦   +---Loops
+-¦   ¦           ¦   ¦       ForStatementSyntax.hpp
+-¦   ¦           ¦   ¦       UntilStatementSyntax.hpp
+-¦   ¦           ¦   ¦       WhileStatementSyntax.hpp
+-¦   ¦           ¦   ¦       ForEachStatementSyntax.hpp
+-¦   ¦           ¦   ¦       ForInStatementSyntax.hpp
+-¦   ¦           ¦   ¦       
+-¦   ¦           ¦   +---MemberDeclarations
+-¦   ¦           ¦   ¦       AccessorDeclarationSyntax.hpp
+-¦   ¦           ¦   ¦       ClassDeclarationSyntax.hpp
+-¦   ¦           ¦   ¦       DelegateDeclarationSyntax.hpp
+-¦   ¦           ¦   ¦       InterfaceDeclarationSyntax.hpp
+-¦   ¦           ¦   ¦       ConstructorDeclarationSyntax.hpp
+-¦   ¦           ¦   ¦       MethodDeclarationSyntax.hpp
+-¦   ¦           ¦   ¦       PropertyDeclarationSyntax.hpp
+-¦   ¦           ¦   ¦       FieldDeclarationSyntax.hpp
+-¦   ¦           ¦   ¦       StructDeclarationSyntax.hpp
+-¦   ¦           ¦   ¦       NamespaceDeclarationSyntax.hpp
+-¦   ¦           ¦   ¦       IndexatorDeclarationSyntax.hpp
+-¦   ¦           ¦   ¦       OperatorDeclarationSyntax.hpp
+-¦   ¦           ¦   ¦       EnumFieldDeclarationSyntax.hpp
+-¦   ¦           ¦   ¦       EnumDeclarationSyntax.hpp
+-¦   ¦           ¦   ¦       
+-¦   ¦           ¦   +---Statements
+-¦   ¦           ¦   ¦       DeferStatementSyntax.hpp
+-¦   ¦           ¦   ¦       BreakStatementSyntax.hpp
+-¦   ¦           ¦   ¦       ReturnStatementSyntax.hpp
+-¦   ¦           ¦   ¦       ConditionalClauseSyntax.hpp
+-¦   ¦           ¦   ¦       ContinueStatementSyntax.hpp
+-¦   ¦           ¦   ¦       TryStatementSyntax.hpp
+-¦   ¦           ¦   ¦       ExpressionStatementSyntax.hpp
+-¦   ¦           ¦   ¦       VariableStatementSyntax.hpp
+-¦   ¦           ¦   ¦       ThrowStatementSyntax.hpp
+-¦   ¦           ¦   ¦       
+-¦   ¦           ¦   L---Types
+-¦   ¦           ¦           DelegateTypeSyntax.hpp
+-¦   ¦           ¦           IdentifierNameTypeSyntax.hpp
+-¦   ¦           ¦           NullableTypeSyntax.hpp
+-¦   ¦           ¦           GenericTypeSyntax.hpp
+-¦   ¦           ¦           ArrayTypeSyntax.hpp
+-¦   ¦           ¦           PredefinedTypeSyntax.hpp
+-¦   ¦           ¦           
+-¦   ¦           L---symbols
+-¦   ¦                   ConstructorSymbol.hpp
+-¦   ¦                   FieldSymbol.hpp
+-¦   ¦                   LiteralSymbol.hpp
+-¦   ¦                   PropertySymbol.hpp
+-¦   ¦                   IndexatorSymbol.hpp
+-¦   ¦                   AccessorSymbol.hpp
+-¦   ¦                   MemberSymbol.hpp
+-¦   ¦                   StructSymbol.hpp
+-¦   ¦                   ClassSymbol.hpp
+-¦   ¦                   ArrayTypeSymbol.hpp
+-¦   ¦                   ParameterSymbol.hpp
+-¦   ¦                   TypeParameterSymbol.hpp
+-¦   ¦                   DelegateTypeSymbol.hpp
+-¦   ¦                   InterfaceSymbol.hpp
+-¦   ¦                   GenericTypeSymbol.hpp
+-¦   ¦                   VariableSymbol.hpp
+-¦   ¦                   LeftDenotationSymbol.hpp
+-¦   ¦                   MethodSymbol.hpp
+-¦   ¦                   NamespaceSymbol.hpp
+-¦   ¦                   OperatorSymbol.hpp
+-¦   ¦                   EnumSymbol.hpp
+-¦   ¦                   TypeSymbol.hpp
+-¦   ¦                   
+-¦   L---src
+-¦       ¦   ApplicationDomain.cpp
+-¦       ¦   ShardScriptExtern.cpp
+-¦       ¦   SyntaxVisitor.cpp
+-¦       ¦   CompilationContext.cpp
+-¦       ¦   
+-¦       +---compilation
+-¦       ¦       AbstractEmiter.cpp
+-¦       ¦       ByteCodeDecoder.cpp
+-¦       ¦       ByteCodeEncoder.cpp
+-¦       ¦       
+-¦       +---parsing
+-¦       ¦   ¦   SemanticAnalyzer.cpp
+-¦       ¦   ¦   LayoutGenerator.cpp
+-¦       ¦   ¦   SourceParser.cpp
+-¦       ¦   ¦   
+-¦       ¦   +---analysis
+-¦       ¦   ¦       Diagnostic.cpp
+-¦       ¦   ¦       DiagnosticsContext.cpp
+-¦       ¦   ¦       DiagnosticSeverity.cpp
+-¦       ¦   ¦       
+-¦       ¦   +---lexical
+-¦       ¦   ¦   ¦   LexicalBuffer.cpp
+-¦       ¦   ¦   ¦   LexicalAnalyzer.cpp
+-¦       ¦   ¦   ¦   
+-¦       ¦   ¦   L---reading
+-¦       ¦   ¦           FileReader.cpp
+-¦       ¦   ¦           StringStreamReader.cpp
+-¦       ¦   ¦           
+-¦       ¦   L---semantic
+-¦       ¦       ¦   NamespaceTree.cpp
+-¦       ¦       ¦   SemanticModel.cpp
+-¦       ¦       ¦   SemanticScope.cpp
+-¦       ¦       ¦   PrimitiveOperators.cpp
+-¦       ¦       ¦   SymbolTable.cpp
+-¦       ¦       ¦   
+-¦       ¦       L---visiting
+-¦       ¦               ScopeVisitor.cpp
+-¦       ¦               TypeBinder.cpp
+-¦       ¦               ExpressionBinder.cpp
+-¦       ¦               DeclarationCollector.cpp
+-¦       ¦               
+-¦       +---runtime
+-¦       ¦       ArgumentsSpan.cpp
+-¦       ¦       EvalStack.cpp
+-¦       ¦       CallStackFrame.cpp
+-¦       ¦       GarbageCollector.cpp
+-¦       ¦       ObjectInstance.cpp
+-¦       ¦       ProgramDisassembler.cpp
+-¦       ¦       VirtualMachine.cpp
+-¦       ¦       ConsoleHelper.cpp
+-¦       ¦       
+-¦       L---syntax
+-¦           ¦   SyntaxHelpers.cpp
+-¦           ¦   SymbolBuilder.cpp
+-¦           ¦   SymbolFactory.cpp
+-¦           ¦   SyntaxFacts.cpp
+-¦           ¦   
+-¦           +---nodes
+-¦           ¦   +---Directives
+-¦           ¦   ¦       UsingDirectiveSyntax.cpp
+-¦           ¦   ¦       
+-¦           ¦   L---Types
+-¦           ¦           ArrayTypeSyntax.cpp
+-¦           ¦           DelegateTypeSyntax.cpp
+-¦           ¦           GenericTypeSyntax.cpp
+-¦           ¦           IdentifierNameTypeSyntax.cpp
+-¦           ¦           NullableTypeSyntax.cpp
+-¦           ¦           PredefinedTypeSyntax.cpp
+-¦           ¦           
+-¦           L---symbols
+-¦                   ArrayTypeSymbol.cpp
+-¦                   NamespaceSymbol.cpp
+-¦                   MemberSymbol.cpp
+-¦                   MethodSymbol.cpp
+-¦                   IndexatorSymbol.cpp
+-¦                   AccessorSymbol.cpp
+-¦                   GenericTypeSymbol.cpp
+-¦                   TypeSymbol.cpp
+-¦                   
+-+---ShardScript.Framework
+-¦   ¦   CMakeLists.txt
+-¦   ¦   
+-¦   +---system
+-¦   ¦       debug.shard.cpp
+-¦   ¦       io.shard.cpp
+-¦   ¦       random.shard.cpp
+-¦   ¦       collections.shard.cpp
+-¦   ¦       environment.shard.cpp
+-¦   ¦       constream.shard.cpp
+-¦   ¦       socket.shard.cpp
+-¦   ¦       
+-¦   +---cmake-build-debug
+-¦   ¦   ¦   .gitignore
+-¦   ¦   ¦   CMakeCache.txt
+-¦   ¦   ¦   
+-¦   ¦   +---CMakeFiles
+-¦   ¦   ¦   ¦   clion-environment.txt
+-¦   ¦   ¦   ¦   CMakeConfigureLog.yaml
+-¦   ¦   ¦   ¦   cmake.check_cache
+-¦   ¦   ¦   ¦   clion-Debug-log.txt
+-¦   ¦   ¦   ¦   VerifyGlobs.cmake
+-¦   ¦   ¦   ¦   cmake.verify_globs
+-¦   ¦   ¦   ¦   
+-¦   ¦   ¦   +---pkgRedirects
+-¦   ¦   ¦   +---4.3.2
+-¦   ¦   ¦   ¦   ¦   CMakeSystem.cmake
+-¦   ¦   ¦   ¦   ¦   CMakeCCompiler.cmake
+-¦   ¦   ¦   ¦   ¦   CMakeCXXCompiler.cmake
+-¦   ¦   ¦   ¦   ¦   CMakeDetermineCompilerABI_C.bin
+-¦   ¦   ¦   ¦   ¦   CMakeDetermineCompilerABI_CXX.bin
+-¦   ¦   ¦   ¦   ¦   
+-¦   ¦   ¦   ¦   +---CompilerIdC
+-¦   ¦   ¦   ¦   ¦   ¦   CMakeCCompilerId.c
+-¦   ¦   ¦   ¦   ¦   ¦   a.out
+-¦   ¦   ¦   ¦   ¦   ¦   
+-¦   ¦   ¦   ¦   ¦   L---tmp
+-¦   ¦   ¦   ¦   L---CompilerIdCXX
+-¦   ¦   ¦   ¦       ¦   CMakeCXXCompilerId.cpp
+-¦   ¦   ¦   ¦       ¦   a.out
+-¦   ¦   ¦   ¦       ¦   
+-¦   ¦   ¦   ¦       L---tmp
+-¦   ¦   ¦   +---4.3.4
+-¦   ¦   ¦   ¦   ¦   CMakeSystem.cmake
+-¦   ¦   ¦   ¦   ¦   CMakeCCompiler.cmake
+-¦   ¦   ¦   ¦   ¦   CMakeCXXCompiler.cmake
+-¦   ¦   ¦   ¦   ¦   CMakeDetermineCompilerABI_C.bin
+-¦   ¦   ¦   ¦   ¦   CMakeDetermineCompilerABI_CXX.bin
+-¦   ¦   ¦   ¦   ¦   
+-¦   ¦   ¦   ¦   +---CompilerIdC
+-¦   ¦   ¦   ¦   ¦   ¦   CMakeCCompilerId.c
+-¦   ¦   ¦   ¦   ¦   ¦   a.out
+-¦   ¦   ¦   ¦   ¦   ¦   
+-¦   ¦   ¦   ¦   ¦   L---tmp
+-¦   ¦   ¦   ¦   L---CompilerIdCXX
+-¦   ¦   ¦   ¦       ¦   CMakeCXXCompilerId.cpp
+-¦   ¦   ¦   ¦       ¦   a.out
+-¦   ¦   ¦   ¦       ¦   
+-¦   ¦   ¦   ¦       L---tmp
+-¦   ¦   ¦   L---CMakeScratch
+-¦   ¦   L---.cmake
+-¦   ¦       L---api
+-¦   ¦           L---v1
+-¦   ¦               +---query
+-¦   ¦               ¦       codemodel-v2
+-¦   ¦               ¦       cache-v2
+-¦   ¦               ¦       cmakeFiles-v1
+-¦   ¦               ¦       toolchains-v1
+-¦   ¦               ¦       
+-¦   ¦               L---reply
+-¦   ¦                       error-2026-06-15T18-52-15-0309.json
+-¦   ¦                       error-2026-06-15T18-53-22-0945.json
+-¦   ¦                       error-2026-06-15T19-19-00-0580.json
+-¦   ¦                       error-2026-06-28T01-24-59-0326.json
+-¦   ¦                       
+-¦   L---third_party
+-¦       +---Terminality
+-¦       ¦       Terminality.hpp
+-¦       ¦       terminality.shard.cpp
+-¦       ¦       
+-¦       L---RayLib
+-¦           ¦   raylib.shard.cpp
+-¦           ¦   
+-¦           +---lib
+-¦           ¦       raylib.lib
+-¦           ¦       libraylib.a
+-¦           ¦       
+-¦           L---include
+-¦                   raylib.h
+-¦                   rlgl.h
+-¦                   raymath.h
+-¦                   
+-+---ShardScript.Interpreter
+-¦   ¦   InteractiveConsole.hpp
+-¦   ¦   InteractiveConsole.cpp
+-¦   ¦   CMakeLists.txt
+-¦   ¦   ShardScript.Interpreter.cpp
+-¦   ¦   
+-¦   L---utilities
+-¦           InterpreterUtilities.hpp
+-¦           ArgumentsParser.cpp
+-¦           
+-+---ShardScript.NET
+-¦   ¦   ShardScript.NET.slnx
+-¦   ¦   GlobalSuppressions.cs
+-¦   ¦   ShardScriptAPI.cs
+-¦   ¦   ShardScript.NET.csproj
+-¦   ¦   
+-¦   +---bin
+-¦   ¦   +---Debug
+-¦   ¦   ¦   ¦   ShardScript.NET.1.0.0.nupkg
+-¦   ¦   ¦   ¦   ShardScript.NET.1.0.0.snupkg
+-¦   ¦   ¦   ¦   
+-¦   ¦   ¦   L---net10.0
+-¦   ¦   ¦       ¦   ShardScript.NET.deps.json
+-¦   ¦   ¦       ¦   ShardScript.dll
+-¦   ¦   ¦       ¦   ShardScript.NET.dll
+-¦   ¦   ¦       ¦   ShardScript.NET.pdb
+-¦   ¦   ¦       ¦   
+-¦   ¦   ¦       +---framework
+-¦   ¦   ¦       ¦       collections.shard.dll
+-¦   ¦   ¦       ¦       debug.shard.dll
+-¦   ¦   ¦       ¦       constream.shard.dll
+-¦   ¦   ¦       ¦       environment.shard.dll
+-¦   ¦   ¦       ¦       io.shard.dll
+-¦   ¦   ¦       ¦       random.shard.dll
+-¦   ¦   ¦       ¦       socket.shard.dll
+-¦   ¦   ¦       ¦       
+-¦   ¦   ¦       +---TestPregram
+-¦   ¦   ¦       L---TestProgram
+-¦   ¦   L---Release
+-¦   ¦       L---net10.0
+-¦   ¦               libShardScript.dll
+-¦   ¦               libShardScript.Framework.dll
+-¦   ¦               ShardScript.NET.deps.json
+-¦   ¦               ShardScript.NET.dll
+-¦   ¦               ShardScript.NET.exe
+-¦   ¦               ShardScript.NET.pdb
+-¦   ¦               ShardScript.NET.runtimeconfig.json
+-¦   ¦               Test.ss
+-¦   ¦               
+-¦   +---obj
+-¦   ¦   ¦   ShardScript.NET.csproj.nuget.g.props
+-¦   ¦   ¦   ShardScript.NET.csproj.nuget.g.targets
+-¦   ¦   ¦   project.assets.json
+-¦   ¦   ¦   project.nuget.cache
+-¦   ¦   ¦   ShardScript.NET.csproj.nuget.dgspec.json
+-¦   ¦   ¦   
+-¦   ¦   +---Debug
+-¦   ¦   ¦   ¦   ShardScript.NET.1.0.0.nuspec
+-¦   ¦   ¦   ¦   ShardScript.NET.1.0.0.symbols.nuspec
+-¦   ¦   ¦   ¦   
+-¦   ¦   ¦   L---net10.0
+-¦   ¦   ¦       ¦   .NETCoreApp,Version=v10.0.AssemblyAttributes.cs
+-¦   ¦   ¦       ¦   ShardScript.NET.assets.cache
+-¦   ¦   ¦       ¦   ShardScript.NET.csproj.BuildWithSkipAnalyzers
+-¦   ¦   ¦       ¦   ShardScript.NET.GlobalUsings.g.cs
+-¦   ¦   ¦       ¦   bonillc5.fbu~
+-¦   ¦   ¦       ¦   1qpdwdmo.erp~
+-¦   ¦   ¦       ¦   apphost.exe
+-¦   ¦   ¦       ¦   ShardScript.NET.GeneratedMSBuildEditorConfig.editorconfig
+-¦   ¦   ¦       ¦   ShardScript.NET.AssemblyInfo.cs
+-¦   ¦   ¦       ¦   ShardScript.NET.csproj.CoreCompileInputs.cache
+-¦   ¦   ¦       ¦   ShardScript.NET.sourcelink.json
+-¦   ¦   ¦       ¦   ShardScript.NET.dll
+-¦   ¦   ¦       ¦   ShardScript.NET.pdb
+-¦   ¦   ¦       ¦   ShardScript.NET.csproj.FileListAbsolute.txt
+-¦   ¦   ¦       ¦   ShardScript.NET.AssemblyInfoInputs.cache
+-¦   ¦   ¦       ¦   
+-¦   ¦   ¦       +---ref
+-¦   ¦   ¦       ¦       ShardScript.NET.dll
+-¦   ¦   ¦       ¦       
+-¦   ¦   ¦       L---refint
+-¦   ¦   ¦               ShardScript.NET.dll
+-¦   ¦   ¦               
+-¦   ¦   L---Release
+-¦   ¦       L---net10.0
+-¦   ¦           ¦   .NETCoreApp,Version=v10.0.AssemblyAttributes.cs
+-¦   ¦           ¦   apphost.exe
+-¦   ¦           ¦   ShardScript.NET.AssemblyInfo.cs
+-¦   ¦           ¦   ShardScript.NET.assets.cache
+-¦   ¦           ¦   ShardScript.NET.csproj.CoreCompileInputs.cache
+-¦   ¦           ¦   ShardScript.NET.csproj.FileListAbsolute.txt
+-¦   ¦           ¦   ShardScript.NET.dll
+-¦   ¦           ¦   ShardScript.NET.GeneratedMSBuildEditorConfig.editorconfig
+-¦   ¦           ¦   ShardScript.NET.genruntimeconfig.cache
+-¦   ¦           ¦   ShardScript.NET.GlobalUsings.g.cs
+-¦   ¦           ¦   ShardScript.NET.pdb
+-¦   ¦           ¦   ShardScript.NET.sourcelink.json
+-¦   ¦           ¦   ShardScript.NET.AssemblyInfoInputs.cache
+-¦   ¦           ¦   
+-¦   ¦           +---ref
+-¦   ¦           ¦       ShardScript.NET.dll
+-¦   ¦           ¦       
+-¦   ¦           L---refint
+-¦   ¦                   ShardScript.NET.dll
+-¦   ¦                   
+-¦   +---Properties
+-¦   ¦       launchSettings.json
+-¦   ¦       
+-¦   +---Syntax
+-¦   ¦   ¦   SymbolBuilder.cs
+-¦   ¦   ¦   SyntaxBuilder.cs
+-¦   ¦   ¦   
+-¦   ¦   +---Symbols
+-¦   ¦   ¦       TypeSymbol.cs
+-¦   ¦   ¦       NamespaceSymbol.cs
+-¦   ¦   ¦       FieldSymbol.cs
+-¦   ¦   ¦       SyntaxSymbol.cs
+-¦   ¦   ¦       MethodSymbol.cs
+-¦   ¦   ¦       ParameterSymbol.cs
+-¦   ¦   ¦       
+-¦   ¦   +---Nodes
+-¦   ¦   ¦       NamespaceDeclarationSyntax.cs
+-¦   ¦   ¦       ClassDeclarationSyntax.cs
+-¦   ¦   ¦       CompilationUnitSyntax.cs
+-¦   ¦   ¦       Expressions.cs
+-¦   ¦   ¦       Statements.cs
+-¦   ¦   ¦       
+-¦   ¦   +---Builders
+-¦   ¦   ¦       MethodBuilder.cs
+-¦   ¦   ¦       ClassBuilder.cs
+-¦   ¦   ¦       SymbolBuilderBase.cs
+-¦   ¦   ¦       SymbolBuilderExtensions.cs
+-¦   ¦   ¦       NamespaceBuilder.cs
+-¦   ¦   ¦       FieldBuilder.cs
+-¦   ¦   ¦       
+-¦   ¦   L---Ast
+-¦   ¦           AstBuilder.cs
+-¦   ¦           MethodBuilder.cs
+-¦   ¦           CompilationUnitBuilder.cs
+-¦   ¦           ClassBuilder.cs
+-¦   ¦           NamespaceBuilder.cs
+-¦   ¦           BodyBuilder.cs
+-¦   ¦           ExpressionBuilder.cs
+-¦   ¦           
+-¦   +---Runtime
+-¦   ¦       GarbageCollector.cs
+-¦   ¦       VirtualMachine.cs
+-¦   ¦       ObjectInstance.cs
+-¦   ¦       
+-¦   +---Application
+-¦   ¦       ShardException.cs
+-¦   ¦       ApplicationDomain.cs
+-¦   ¦       CompilationContext.cs
+-¦   ¦       
+-¦   +---Scripting
+-¦   ¦       ShardScriptUserDataAttribute.cs
+-¦   ¦       ShardReflectionBinderOptions.cs
+-¦   ¦       ShardScriptOptions.cs
+-¦   ¦       ShardMarshaller.cs
+-¦   ¦       ShardScriptEngine.cs
+-¦   ¦       ShardScriptState.cs
+-¦   ¦       ShardReflectionBinder.cs
+-¦   ¦       
+-¦   L---TestResults
+-¦       +---Deploy_gutii 20260626T025213_253584
+-¦       ¦   +---In
+-¦       ¦   ¦   L---RIKITAV
+-¦       ¦   L---Out
+-¦       +---Deploy_gutii 20260626T025413_339304
+-¦       ¦   +---In
+-¦       ¦   ¦   L---RIKITAV
+-¦       ¦   L---Out
+-¦       +---Deploy_gutii 20260626T025426_407172
+-¦       ¦   +---In
+-¦       ¦   ¦   L---RIKITAV
+-¦       ¦   L---Out
+-¦       L---Deploy_gutii 20260626T025555_401548
+-¦           +---In
+-¦           ¦   L---RIKITAV
+-¦           L---Out
+-+---CMake
+-¦       Utils.cmake
+-¦       Default.cmake
+-¦       DefaultCXX.cmake
+-¦       HexGenerator.cmake
+-¦       
+-+---.vs
+-¦   ¦   launch.vs.json
+-¦   ¦   slnx.sqlite
+-¦   ¦   ProjectSettings.json
+-¦   ¦   VSWorkspaceState.json
+-¦   ¦   CMake Overview
+-¦   ¦   cmake.db
+-¦   ¦   
+-¦   +---CopilotSnapshots
+-¦   ¦   L---B7A1468990D34646BA20DDC933F9E03A
+-¦   +---ShardScript.slnx
+-¦   ¦   +---v18
+-¦   ¦   ¦   ¦   Browse.VC.db
+-¦   ¦   ¦   ¦   Browse.VC.db-wal
+-¦   ¦   ¦   ¦   Browse.VC.db-shm
+-¦   ¦   ¦   ¦   DocumentLayout.backup.json
+-¦   ¦   ¦   ¦   DocumentLayout.json
+-¦   ¦   ¦   ¦   
+-¦   ¦   ¦   L---ipch
+-¦   ¦   ¦       L---AutoPCH
+-¦   ¦   ¦           +---e8a693abce434916
+-¦   ¦   ¦           ¦       SHARDSCRIPT.INTERPRETER.ipch
+-¦   ¦   ¦           ¦       
+-¦   ¦   ¦           +---b61cfe3d239506a6
+-¦   ¦   ¦           +---497d043b72e19bd8
+-¦   ¦   ¦           ¦       INTERACTIVECONSOLE.ipch
+-¦   ¦   ¦           ¦       
+-¦   ¦   ¦           +---b63e9e1fd95c956d
+-¦   ¦   ¦           +---9c90f6964cca3e46
+-¦   ¦   ¦           +---f758528575c66d06
+-¦   ¦   ¦           ¦       ARGUMENTSPARSER.ipch
+-¦   ¦   ¦           ¦       
+-¦   ¦   ¦           +---59a5a158df312c7f
+-¦   ¦   ¦           +---217c12a3026f3363
+-¦   ¦   ¦           +---60290bd94993ea7b
+-¦   ¦   ¦           +---7c142ed366add6d5
+-¦   ¦   ¦           ¦       APPLICATIONDOMAIN.ipch
+-¦   ¦   ¦           ¦       
+-¦   ¦   ¦           +---3c9e74cac1de74a7
+-¦   ¦   ¦           ¦       SYMBOLBUILDER.ipch
+-¦   ¦   ¦           ¦       
+-¦   ¦   ¦           +---10871aa7eff09c7e
+-¦   ¦   ¦           ¦       EXPRESSIONBINDER.ipch
+-¦   ¦   ¦           ¦       
+-¦   ¦   ¦           +---57226604776338a
+-¦   ¦   ¦           ¦       SYMBOLFACTORY.ipch
+-¦   ¦   ¦           ¦       
+-¦   ¦   ¦           +---f80af3773ab0db6f
+-¦   ¦   ¦           ¦       DECLARATIONCOLLECTOR.ipch
+-¦   ¦   ¦           ¦       
+-¦   ¦   ¦           +---beb153abd3e96be8
+-¦   ¦   ¦           ¦       TYPEBINDER.ipch
+-¦   ¦   ¦           ¦       
+-¦   ¦   ¦           +---8e4e3a4150a834d7
+-¦   ¦   ¦           +---741143d716e66ae1
+-¦   ¦   ¦           ¦       TYPESYMBOL.ipch
+-¦   ¦   ¦           ¦       
+-¦   ¦   ¦           +---62a59d1abfcf9ab0
+-¦   ¦   ¦           ¦       ABSTRACTEMITER.ipch
+-¦   ¦   ¦           ¦       
+-¦   ¦   ¦           +---41810002b1c8c2c8
+-¦   ¦   ¦           +---9cc0e502ae4fdc4b
+-¦   ¦   ¦           ¦       VIRTUALMACHINE.ipch
+-¦   ¦   ¦           ¦       
+-¦   ¦   ¦           +---8368830d222ebd67
+-¦   ¦   ¦           +---11755002926e9024
+-¦   ¦   ¦           +---1d01e8e95219bac1
+-¦   ¦   ¦           +---36d771299f312d19
+-¦   ¦   ¦           +---d9f48d8ced268e8e
+-¦   ¦   ¦           +---2f3b9c2bc3e06abd
+-¦   ¦   ¦           +---f8c3cccf754bd60
+-¦   ¦   ¦           +---f7e8d12484963a3e
+-¦   ¦   ¦           +---3fe56196ff345a0f
+-¦   ¦   ¦           +---81736659caa61688
+-¦   ¦   ¦           +---7529259b25fa3def
+-¦   ¦   ¦           +---5ac07af63bfc9289
+-¦   ¦   ¦           +---32072cf97febb3f5
+-¦   ¦   ¦           +---811c0e0ad95f040c
+-¦   ¦   ¦           ¦       SYNTAXVISITOR.ipch
+-¦   ¦   ¦           ¦       
+-¦   ¦   ¦           +---5ca489371389d1e5
+-¦   ¦   ¦           +---8ca4af42469641f5
+-¦   ¦   ¦           +---fd88817f114122c4
+-¦   ¦   ¦           +---5290207f62f86e1
+-¦   ¦   ¦           ¦       SOURCEPARSER.ipch
+-¦   ¦   ¦           ¦       
+-¦   ¦   ¦           +---f9b961b31c5d6599
+-¦   ¦   ¦           ¦       PROGRAMDISASSEMBLER.ipch
+-¦   ¦   ¦           ¦       
+-¦   ¦   ¦           +---86494b74962c9adf
+-¦   ¦   ¦           ¦       OBJECTINSTANCE.ipch
+-¦   ¦   ¦           ¦       
+-¦   ¦   ¦           +---a9435594ea814715
+-¦   ¦   ¦           ¦       BYTECODEENCODER.ipch
+-¦   ¦   ¦           ¦       
+-¦   ¦   ¦           +---73fd4a18399d96f9
+-¦   ¦   ¦           ¦       GARBAGECOLLECTOR.ipch
+-¦   ¦   ¦           ¦       
+-¦   ¦   ¦           +---4a0748629d32f4cf
+-¦   ¦   ¦           ¦       SEMANTICSCOPE.ipch
+-¦   ¦   ¦           ¦       
+-¦   ¦   ¦           +---c64c5c22ecf84edf
+-¦   ¦   ¦           +---dc33e25a90d27051
+-¦   ¦   ¦           +---cdde033fc98d91c2
+-¦   ¦   ¦           +---d244fc85c9b61fb8
+-¦   ¦   ¦           +---5ed9aeda1a2994f2
+-¦   ¦   ¦           +---fa1c9d6f01918fd0
+-¦   ¦   ¦           +---b964a9e9e3813542
+-¦   ¦   ¦           ¦       SYNTAXFACTS.ipch
+-¦   ¦   ¦           ¦       
+-¦   ¦   ¦           +---4cbcd20084b8d3c6
+-¦   ¦   ¦           +---1afd05cae34053a8
+-¦   ¦   ¦           +---723cd57e82ee51a
+-¦   ¦   ¦           +---e44fc2aee06e19ec
+-¦   ¦   ¦           ¦       CONSTREAM.SHARD.ipch
+-¦   ¦   ¦           ¦       
+-¦   ¦   ¦           +---e0246db7485bed1d
+-¦   ¦   ¦           +---5c63d41613809f2f
+-¦   ¦   ¦           ¦       DEBUG.SHARD.ipch
+-¦   ¦   ¦           ¦       
+-¦   ¦   ¦           +---49ff04fb11475088
+-¦   ¦   ¦           ¦       PRIMITIVEMATHMODULE.ipch
+-¦   ¦   ¦           ¦       
+-¦   ¦   ¦           +---e3c4691c5ebe156f
+-¦   ¦   ¦           ¦       TERMINALITY.SHARD.ipch
+-¦   ¦   ¦           ¦       
+-¦   ¦   ¦           +---ccfc4e889e8cc8f5
+-¦   ¦   ¦           ¦       PRIMITIVEOPERATORS.ipch
+-¦   ¦   ¦           ¦       
+-¦   ¦   ¦           +---ff03b6a3ca886149
+-¦   ¦   ¦           ¦       COLLECTIONS.SHARD.ipch
+-¦   ¦   ¦           ¦       
+-¦   ¦   ¦           +---b3fa8166e4c5048a
+-¦   ¦   ¦           ¦       IO.SHARD.ipch
+-¦   ¦   ¦           ¦       
+-¦   ¦   ¦           +---88d4c97842250aee
+-¦   ¦   ¦           +---7897c2ebe46aa61f
+-¦   ¦   ¦           ¦       TERMINALITY.SHARD.ipch
+-¦   ¦   ¦           ¦       
+-¦   ¦   ¦           +---473a92e54d626c0d
+-¦   ¦   ¦           +---cd6e994d7c50a877
+-¦   ¦   ¦           ¦       SOCKET.SHARD.ipch
+-¦   ¦   ¦           ¦       
+-¦   ¦   ¦           +---d09f76543e59a4cd
+-¦   ¦   ¦           ¦       LEXICALANALYZER.ipch
+-¦   ¦   ¦           ¦       
+-¦   ¦   ¦           +---1f0b7af4c2e0c5c2
+-¦   ¦   ¦           ¦       CONSOLEHELPER.ipch
+-¦   ¦   ¦           ¦       
+-¦   ¦   ¦           +---b94e873c4568da21
+-¦   ¦   ¦           ¦       BYTECODEDECODER.ipch
+-¦   ¦   ¦           ¦       
+-¦   ¦   ¦           L---dd62ed4814c482cd
+-¦   ¦   ¦                   CASTSYMBOL.ipch
+-¦   ¦   ¦                   
+-¦   ¦   +---FileContentIndex
+-¦   ¦   ¦       90997e48-b488-4cf0-9548-88e8ea5f350b.vsidx
+-¦   ¦   ¦       f0a58a84-df4a-4b1e-9817-46759fc4cd4e.vsidx
+-¦   ¦   ¦       264ca541-9260-4b9c-aa51-54012943d7e2.vsidx
+-¦   ¦   ¦       ac25c593-a768-4e8c-88ab-c66417a9f7b4.vsidx
+-¦   ¦   ¦       8e46c735-cb1b-44c7-b7a9-f4de3b9f76f6.vsidx
+-¦   ¦   ¦       
+-¦   ¦   +---copilot-chat
+-¦   ¦   ¦   L---de626af3
+-¦   ¦   ¦       L---sessions
+-¦   ¦   ¦               8946a1b7-d390-4646-ba20-ddc933f9e03a
+-¦   ¦   ¦               
+-¦   ¦   L---config
+-¦   ¦           applicationhost.config
+-¦   ¦           
+-¦   L---ShardScript
+-¦       L---CopilotIndices
+-¦           L---18.6.39577.51406
+-¦                   SemanticSymbols.db
+-¦                   CodeChunks.db
+-¦                   SemanticSymbols.db-wal
+-¦                   SemanticSymbols.db-shm
+-¦                   CodeChunks.db-wal
+-¦                   CodeChunks.db-shm
+-¦                   
+-+---test_scripts
+-¦   ¦   delegates.ss
+-¦   ¦   iprintable_test.shard
+-¦   ¦   ext_test.shard
+-¦   ¦   helpers_ext.shard
+-¦   ¦   iprintable_var_test.shard
+-¦   ¦   list_test.shard
+-¦   ¦   print_test.shard
+-¦   ¦   defer_test.shard
+-¦   ¦   defer_ranges.shard
+-¦   ¦   hello_world.shard
+-¦   ¦   operator_overload_test.shard
+-¦   ¦   access_operator_test.shard
+-¦   ¦   environment_test.shard
+-¦   ¦   reverse_range.shard
+-¦   ¦   numeric_literals.shard
+-¦   ¦   numeric_prefix_suffix.shard
+-¦   ¦   foreach_test.shard
+-¦   ¦   foreach_ienumerable_test.shard
+-¦   ¦   foreach_old_syntax_test.shard
+-¦   ¦   enumerator_manual_test.shard
+-¦   ¦   foreach_array_ienumerable_test.shard
+-¦   ¦   foreach_parens_test.shard
+-¦   ¦   foreach_break_test.shard
+-¦   ¦   foreach_continue_test.shard
+-¦   ¦   enum_test.shard
+-¦   ¦   enum_flags_test.shard
+-¦   ¦   enum_explicit_test.shard
+-¦   ¦   enum_int_test.shard
+-¦   ¦   enum_comprehensive_test.shard
+-¦   ¦   enum_shorthand_test.shard
+-¦   ¦   socket_server_test.shard
+-¦   ¦   socket_client_test.shard
+-¦   ¦   
+-¦   +---parser_stress
+-¦   ¦       eof_namespace.shard
+-¦   ¦       eof_class.shard
+-¦   ¦       eof_method.shard
+-¦   ¦       eof_expression.shard
+-¦   ¦       eof_string.shard
+-¦   ¦       eof_char.shard
+-¦   ¦       eof_comment.shard
+-¦   ¦       stray_at_top.shard
+-¦   ¦       stray_in_class.shard
+-¦   ¦       stray_in_method.shard
+-¦   ¦       double_semicolon.shard
+-¦   ¦       unmatched_open_brace.shard
+-¦   ¦       unmatched_close_brace.shard
+-¦   ¦       extra_close_brace.shard
+-¦   ¦       missing_body_brace.shard
+-¦   ¦       empty_class.shard
+-¦   ¦       class_no_name.shard
+-¦   ¦       method_no_name.shard
+-¦   ¦       method_no_return_type.shard
+-¦   ¦       method_bad_return_type.shard
+-¦   ¦       field_no_name.shard
+-¦   ¦       field_no_type.shard
+-¦   ¦       property_no_name.shard
+-¦   ¦       operator_no_token.shard
+-¦   ¦       delegate_no_sig.shard
+-¦   ¦       interface_with_body.shard
+-¦   ¦       param_no_type.shard
+-¦   ¦       param_no_name.shard
+-¦   ¦       args_trailing_comma.shard
+-¦   ¦       args_missing_comma.shard
+-¦   ¦       empty_parens_expr.shard
+-¦   ¦       var_missing_type.shard
+-¦   ¦       var_missing_init.shard
+-¦   ¦       var_invalid_syntax.shard
+-¦   ¦       var_no_name.shard
+-¦   ¦       expr_unmatched_paren.shard
+-¦   ¦       expr_empty_paren.shard
+-¦   ¦       expr_bad_operator.shard
+-¦   ¦       expr_missing_operand.shard
+-¦   ¦       expr_double_binary.shard
+-¦   ¦       expr_lone_dot.shard
+-¦   ¦       expr_two_dots.shard
+-¦   ¦       expr_empty_lambda.shard
+-¦   ¦       lambda_no_arrow.shard
+-¦   ¦       if_no_condition.shard
+-¦   ¦       if_no_body.shard
+-¦   ¦       else_without_if.shard
+-¦   ¦       while_no_condition.shard
+-¦   ¦       for_malformed.shard
+-¦   ¦       for_no_parens.shard
+-¦   ¦       return_outside_method.shard
+-¦   ¦       break_outside_loop.shard
+-¦   ¦       defer_empty.shard
+-¦   ¦       try_no_catch.shard
+-¦   ¦       catch_no_body.shard
+-¦   ¦       type_missing_name.shard
+-¦   ¦       type_bad_generic.shard
+-¦   ¦       type_unclosed_generic.shard
+-¦   ¦       attribute_no_name.shard
+-¦   ¦       attribute_bad_args.shard
+-¦   ¦       invalid_modifier.shard
+-¦   ¦       access_op_bad_param.shard
+-¦   ¦       binary_op_bad_params.shard
+-¦   ¦       bad_escape.shard
+-¦   ¦       unclosed_block_comment.shard
+-¦   ¦       weird_number_suffix.shard
+-¦   ¦       number_multiple_dots.shard
+-¦   ¦       only_whitespace.shard
+-¦   ¦       only_comments.shard
+-¦   ¦       unicode_garbage.shard
+-¦   ¦       very_long_line.shard
+-¦   ¦       run_stress.py
+-¦   ¦       stress_log.txt
+-¦   ¦       
+-¦   L---third_party
+-¦           terminality_enum_test.shard
+-¦           terminality_test.shard
+-¦           raylib_test.shard
+-¦           
+-+---ShardScript.NET.Tests
+-¦   ¦   MSTestSettings.cs
+-¦   ¦   Test.ss
+-¦   ¦   ShardScript.NET.Tests.csproj
+-¦   ¦   ProgrammaticalTests.cs
+-¦   ¦   
+-¦   +---bin
+-¦   ¦   +---Debug
+-¦   ¦   ¦   L---net10.0
+-¦   ¦   ¦       ¦   ShardScript.NET.Tests.deps.json
+-¦   ¦   ¦       ¦   ShardScript.NET.Tests.runtimeconfig.json
+-¦   ¦   ¦       ¦   Test.ss
+-¦   ¦   ¦       ¦   ShardScript.NET.Tests.exe
+-¦   ¦   ¦       ¦   ShardScript.dll
+-¦   ¦   ¦       ¦   ShardScript.NET.Tests.dll
+-¦   ¦   ¦       ¦   ShardScript.NET.Tests.pdb
+-¦   ¦   ¦       ¦   ShardScript.NET.dll
+-¦   ¦   ¦       ¦   ShardScript.NET.pdb
+-¦   ¦   ¦       ¦   
+-¦   ¦   ¦       +---cs
+-¦   ¦   ¦       +---de
+-¦   ¦   ¦       +---es
+-¦   ¦   ¦       +---fr
+-¦   ¦   ¦       +---it
+-¦   ¦   ¦       +---hu
+-¦   ¦   ¦       +---ko
+-¦   ¦   ¦       +---ja
+-¦   ¦   ¦       +---nl
+-¦   ¦   ¦       +---pl
+-¦   ¦   ¦       +---pt-BR
+-¦   ¦   ¦       +---pt-PT
+-¦   ¦   ¦       +---ru
+-¦   ¦   ¦       +---sv
+-¦   ¦   ¦       +---tr
+-¦   ¦   ¦       +---zh-Hans
+-¦   ¦   ¦       +---zh-Hant
+-¦   ¦   ¦       +---runtimes
+-¦   ¦   ¦       ¦   +---linux-musl-x64
+-¦   ¦   ¦       ¦   ¦   L---native
+-¦   ¦   ¦       ¦   +---linux-x64
+-¦   ¦   ¦       ¦   ¦   L---native
+-¦   ¦   ¦       ¦   +---osx-x64
+-¦   ¦   ¦       ¦   ¦   L---native
+-¦   ¦   ¦       ¦   +---win-arm64
+-¦   ¦   ¦       ¦   ¦   L---native
+-¦   ¦   ¦       ¦   +---win-x64
+-¦   ¦   ¦       ¦   ¦   L---native
+-¦   ¦   ¦       ¦   L---win-x86
+-¦   ¦   ¦       ¦       L---native
+-¦   ¦   ¦       L---framework
+-¦   ¦   ¦               constream.shard.dll
+-¦   ¦   ¦               collections.shard.dll
+-¦   ¦   ¦               environment.shard.dll
+-¦   ¦   ¦               debug.shard.dll
+-¦   ¦   ¦               random.shard.dll
+-¦   ¦   ¦               io.shard.dll
+-¦   ¦   ¦               socket.shard.dll
+-¦   ¦   ¦               
+-¦   ¦   L---Release
+-¦   ¦       L---net10.0
+-¦   ¦               .msCoverageExtensionSourceRootsMapping_ShardScript.NET.Tests
+-¦   ¦               .msCoverageSourceRootsMapping_ShardScript.NET.Tests
+-¦   ¦               
+-¦   L---obj
+-¦       ¦   ShardScript.NET.Tests.csproj.nuget.g.props
+-¦       ¦   ShardScript.NET.Tests.csproj.nuget.g.targets
+-¦       ¦   project.assets.json
+-¦       ¦   project.nuget.cache
+-¦       ¦   ShardScript.NET.Tests.csproj.nuget.dgspec.json
+-¦       ¦   
+-¦       +---Debug
+-¦       ¦   L---net10.0
+-¦       ¦       ¦   .NETCoreApp,Version=v10.0.AssemblyAttributes.cs
+-¦       ¦       ¦   ShardScript.NET.Tests.assets.cache
+-¦       ¦       ¦   ShardScript.NET.Tests.csproj.BuildWithSkipAnalyzers
+-¦       ¦       ¦   ShardScript.NET.Tests.GlobalUsings.g.cs
+-¦       ¦       ¦   ShardScript.NET.Tests.GeneratedMSBuildEditorConfig.editorconfig
+-¦       ¦       ¦   ShardScript.NET.Tests.AssemblyInfo.cs
+-¦       ¦       ¦   ShardScript.NET.Tests.csproj.CoreCompileInputs.cache
+-¦       ¦       ¦   ShardScript.NET.Tests.sourcelink.json
+-¦       ¦       ¦   ShardScript.NET.Tests.dll
+-¦       ¦       ¦   ShardScript.NET.Tests.pdb
+-¦       ¦       ¦   ShardScr.6F637D0D.Up2Date
+-¦       ¦       ¦   ShardScript.NET.Tests.genruntimeconfig.cache
+-¦       ¦       ¦   apphost.exe
+-¦       ¦       ¦   ShardScript.NET.Tests.csproj.AssemblyReference.cache
+-¦       ¦       ¦   ShardScript.NET.Tests.csproj.FileListAbsolute.txt
+-¦       ¦       ¦   ShardScript.NET.Tests.AssemblyInfoInputs.cache
+-¦       ¦       ¦   
+-¦       ¦       +---refint
+-¦       ¦       ¦       ShardScript.NET.Tests.dll
+-¦       ¦       ¦       
+-¦       ¦       L---ref
+-¦       ¦               ShardScript.NET.Tests.dll
+-¦       ¦               
+-¦       L---Release
+-¦           L---net10.0
+-¦               ¦   ShardScript.NET.Tests.GeneratedMSBuildEditorConfig.editorconfig
+-¦               ¦   .NETCoreApp,Version=v10.0.AssemblyAttributes.cs
+-¦               ¦   ShardScript.NET.Tests.AssemblyInfo.cs
+-¦               ¦   ShardScript.NET.Tests.assets.cache
+-¦               ¦   ShardScript.NET.Tests.gentestingplatformentrypointinputcache.cache
+-¦               ¦   ShardScript.NET.Tests.genautoregisteredextensionsinputcache.cache
+-¦               ¦   ShardScript.NET.Tests.csproj.AssemblyReference.cache
+-¦               ¦   ShardScript.NET.Tests.GlobalUsings.g.cs
+-¦               ¦   ShardScript.NET.Tests.AssemblyInfoInputs.cache
+-¦               ¦   
+-¦               +---refint
+-¦               L---ref
+-+---.github
+-¦   +---workflows
+-¦   ¦       release.yml
+-¦   ¦       
+-¦   L---agents
+-L---out
+-    L---build
+-        L---x64-debug
+-            ¦   CMakeCache.txt
+-            ¦   cmake_install.cmake
+-            ¦   build.ninja
+-            ¦   .ninja_log
+-            ¦   .ninja_deps
+-            ¦   VSInheritEnvironments.txt
+-            ¦   
+-            +---.cmake
+-            ¦   L---api
+-            ¦       L---v1
+-            ¦           +---query
+-            ¦           ¦   L---client-MicrosoftVS
+-            ¦           ¦           query.json
+-            ¦           ¦           
+-            ¦           L---reply
+-            ¦                   target-ShardScript-Debug-c0fe37e552042b00a787.json
+-            ¦                   target-ShardScript.Interpreter-Debug-deec3bde00ba2d317556.json
+-            ¦                   target-collections.shard-Debug-b9dce23f4e1bf86686a9.json
+-            ¦                   target-constream.shard-Debug-aacc799ea4cc1ab838f5.json
+-            ¦                   target-debug.shard-Debug-c19e599537a24587edf0.json
+-            ¦                   target-environment.shard-Debug-9c5a338327475e3c35a6.json
+-            ¦                   target-io.shard-Debug-89b1295c7f2fa4d980b2.json
+-            ¦                   target-random.shard-Debug-257a480fcf7535da1cf7.json
+-            ¦                   target-raylib.shard-Debug-a2e727f8c40cfddb671f.json
+-            ¦                   target-socket.shard-Debug-56ed02c4bad6f6595707.json
+-            ¦                   target-terminality.shard-Debug-f434bdeb601ed9634de0.json
+-            ¦                   directory-.-Debug-f6f22219c74102c3da70.json
+-            ¦                   directory-ShardScript-Debug-3e039e12c1f0b3279383.json
+-            ¦                   directory-ShardScript.Framework-Debug-f43ddb8b289ce065a7b7.json
+-            ¦                   directory-ShardScript.Interpreter-Debug-71d5132e1abe2b31beda.json
+-            ¦                   codemodel-v2-d702e5ad1d242313d435.json
+-            ¦                   cache-v2-d76d0c4e41019ab225a2.json
+-            ¦                   cmakeFiles-v1-bfbf6e7b35760b515dd3.json
+-            ¦                   toolchains-v1-dbfd0813aafd5936a205.json
+-            ¦                   index-2026-06-28T01-43-53-0028.json
+-            ¦                   
+-            +---CMakeFiles
+-            ¦   ¦   CMakeConfigureLog.yaml
+-            ¦   ¦   VerifyGlobs.cmake
+-            ¦   ¦   cmake.verify_globs
+-            ¦   ¦   cmake.check_cache
+-            ¦   ¦   InstallScripts.json
+-            ¦   ¦   TargetDirectories.txt
+-            ¦   ¦   rules.ninja
+-            ¦   ¦   
+-            ¦   +---4.2.3-msvc3
+-            ¦   ¦   ¦   CMakeSystem.cmake
+-            ¦   ¦   ¦   CMakeRCCompiler.cmake
+-            ¦   ¦   ¦   CMakeDetermineCompilerABI_CXX.bin
+-            ¦   ¦   ¦   CMakeCXXCompiler.cmake
+-            ¦   ¦   ¦   CMakeDetermineCompilerABI_C.bin
+-            ¦   ¦   ¦   CMakeCCompiler.cmake
+-            ¦   ¦   ¦   
+-            ¦   ¦   +---CompilerIdCXX
+-            ¦   ¦   ¦   ¦   CMakeCXXCompilerId.cpp
+-            ¦   ¦   ¦   ¦   CMakeCXXCompilerId.obj
+-            ¦   ¦   ¦   ¦   CMakeCXXCompilerId.exe
+-            ¦   ¦   ¦   ¦   
+-            ¦   ¦   ¦   L---tmp
+-            ¦   ¦   L---CompilerIdC
+-            ¦   ¦       ¦   CMakeCCompilerId.c
+-            ¦   ¦       ¦   CMakeCCompilerId.obj
+-            ¦   ¦       ¦   CMakeCCompilerId.exe
+-            ¦   ¦       ¦   
+-            ¦   ¦       L---tmp
+-            ¦   +---ShowIncludes
+-            ¦   ¦       foo.h
+-            ¦   ¦       main.c
+-            ¦   ¦       main.obj
+-            ¦   ¦       
+-            ¦   L---pkgRedirects
+-            +---ShardScript
+-            ¦   ¦   cmake_install.cmake
+-            ¦   ¦   
+-            ¦   L---CMakeFiles
+-            ¦       L---ShardScript.dir
+-            ¦           ¦   vc140.pdb
+-            ¦           ¦   exports.def
+-            ¦           ¦   exports.def.objs
+-            ¦           ¦   
+-            ¦           L---src
+-            ¦               ¦   ApplicationDomain.cpp.obj
+-            ¦               ¦   SyntaxVisitor.cpp.obj
+-            ¦               ¦   CompilationContext.cpp.obj
+-            ¦               ¦   ShardScriptExtern.cpp.obj
+-            ¦               ¦   
+-            ¦               +---compilation
+-            ¦               ¦       ByteCodeDecoder.cpp.obj
+-            ¦               ¦       ByteCodeEncoder.cpp.obj
+-            ¦               ¦       AbstractEmiter.cpp.obj
+-            ¦               ¦       
+-            ¦               +---parsing
+-            ¦               ¦   ¦   SemanticAnalyzer.cpp.obj
+-            ¦               ¦   ¦   LayoutGenerator.cpp.obj
+-            ¦               ¦   ¦   SourceParser.cpp.obj
+-            ¦               ¦   ¦   
+-            ¦               ¦   +---analysis
+-            ¦               ¦   ¦       Diagnostic.cpp.obj
+-            ¦               ¦   ¦       DiagnosticSeverity.cpp.obj
+-            ¦               ¦   ¦       DiagnosticsContext.cpp.obj
+-            ¦               ¦   ¦       
+-            ¦               ¦   +---lexical
+-            ¦               ¦   ¦   ¦   LexicalAnalyzer.cpp.obj
+-            ¦               ¦   ¦   ¦   LexicalBuffer.cpp.obj
+-            ¦               ¦   ¦   ¦   
+-            ¦               ¦   ¦   L---reading
+-            ¦               ¦   ¦           StringStreamReader.cpp.obj
+-            ¦               ¦   ¦           FileReader.cpp.obj
+-            ¦               ¦   ¦           
+-            ¦               ¦   L---semantic
+-            ¦               ¦       ¦   NamespaceTree.cpp.obj
+-            ¦               ¦       ¦   SemanticModel.cpp.obj
+-            ¦               ¦       ¦   SemanticScope.cpp.obj
+-            ¦               ¦       ¦   PrimitiveOperators.cpp.obj
+-            ¦               ¦       ¦   SymbolTable.cpp.obj
+-            ¦               ¦       ¦   
+-            ¦               ¦       L---visiting
+-            ¦               ¦               ScopeVisitor.cpp.obj
+-            ¦               ¦               DeclarationCollector.cpp.obj
+-            ¦               ¦               ExpressionBinder.cpp.obj
+-            ¦               ¦               TypeBinder.cpp.obj
+-            ¦               ¦               
+-            ¦               +---runtime
+-            ¦               ¦       EvalStack.cpp.obj
+-            ¦               ¦       ArgumentsSpan.cpp.obj
+-            ¦               ¦       CallStackFrame.cpp.obj
+-            ¦               ¦       ConsoleHelper.cpp.obj
+-            ¦               ¦       ObjectInstance.cpp.obj
+-            ¦               ¦       GarbageCollector.cpp.obj
+-            ¦               ¦       ProgramDisassembler.cpp.obj
+-            ¦               ¦       VirtualMachine.cpp.obj
+-            ¦               ¦       
+-            ¦               L---syntax
+-            ¦                   ¦   SyntaxFacts.cpp.obj
+-            ¦                   ¦   SyntaxHelpers.cpp.obj
+-            ¦                   ¦   SymbolFactory.cpp.obj
+-            ¦                   ¦   SymbolBuilder.cpp.obj
+-            ¦                   ¦   
+-            ¦                   +---nodes
+-            ¦                   ¦   +---Directives
+-            ¦                   ¦   ¦       UsingDirectiveSyntax.cpp.obj
+-            ¦                   ¦   ¦       
+-            ¦                   ¦   L---Types
+-            ¦                   ¦           ArrayTypeSyntax.cpp.obj
+-            ¦                   ¦           DelegateTypeSyntax.cpp.obj
+-            ¦                   ¦           IdentifierNameTypeSyntax.cpp.obj
+-            ¦                   ¦           NullableTypeSyntax.cpp.obj
+-            ¦                   ¦           PredefinedTypeSyntax.cpp.obj
+-            ¦                   ¦           GenericTypeSyntax.cpp.obj
+-            ¦                   ¦           
+-            ¦                   L---symbols
+-            ¦                           AccessorSymbol.cpp.obj
+-            ¦                           MemberSymbol.cpp.obj
+-            ¦                           IndexatorSymbol.cpp.obj
+-            ¦                           ArrayTypeSymbol.cpp.obj
+-            ¦                           MethodSymbol.cpp.obj
+-            ¦                           GenericTypeSymbol.cpp.obj
+-            ¦                           NamespaceSymbol.cpp.obj
+-            ¦                           TypeSymbol.cpp.obj
+-            ¦                           
+-            +---ShardScript.Framework
+-            ¦   ¦   cmake_install.cmake
+-            ¦   ¦   
+-            ¦   L---CMakeFiles
+-            ¦       +---collections.shard.dir
+-            ¦       ¦   ¦   vc140.pdb
+-            ¦       ¦   ¦   exports.def
+-            ¦       ¦   ¦   exports.def.objs
+-            ¦       ¦   ¦   
+-            ¦       ¦   L---system
+-            ¦       ¦           collections.shard.cpp.obj
+-            ¦       ¦           
+-            ¦       +---constream.shard.dir
+-            ¦       ¦   ¦   vc140.pdb
+-            ¦       ¦   ¦   exports.def
+-            ¦       ¦   ¦   exports.def.objs
+-            ¦       ¦   ¦   
+-            ¦       ¦   L---system
+-            ¦       ¦           constream.shard.cpp.obj
+-            ¦       ¦           
+-            ¦       +---debug.shard.dir
+-            ¦       ¦   ¦   vc140.pdb
+-            ¦       ¦   ¦   exports.def
+-            ¦       ¦   ¦   exports.def.objs
+-            ¦       ¦   ¦   
+-            ¦       ¦   L---system
+-            ¦       ¦           debug.shard.cpp.obj
+-            ¦       ¦           
+-            ¦       +---environment.shard.dir
+-            ¦       ¦   ¦   vc140.pdb
+-            ¦       ¦   ¦   exports.def
+-            ¦       ¦   ¦   exports.def.objs
+-            ¦       ¦   ¦   
+-            ¦       ¦   L---system
+-            ¦       ¦           environment.shard.cpp.obj
+-            ¦       ¦           
+-            ¦       +---io.shard.dir
+-            ¦       ¦   ¦   vc140.pdb
+-            ¦       ¦   ¦   exports.def
+-            ¦       ¦   ¦   exports.def.objs
+-            ¦       ¦   ¦   
+-            ¦       ¦   L---system
+-            ¦       ¦           io.shard.cpp.obj
+-            ¦       ¦           
+-            ¦       +---random.shard.dir
+-            ¦       ¦   ¦   vc140.pdb
+-            ¦       ¦   ¦   exports.def
+-            ¦       ¦   ¦   exports.def.objs
+-            ¦       ¦   ¦   
+-            ¦       ¦   L---system
+-            ¦       ¦           random.shard.cpp.obj
+-            ¦       ¦           
+-            ¦       +---socket.shard.dir
+-            ¦       ¦   ¦   vc140.pdb
+-            ¦       ¦   ¦   exports.def
+-            ¦       ¦   ¦   exports.def.objs
+-            ¦       ¦   ¦   
+-            ¦       ¦   L---system
+-            ¦       ¦           socket.shard.cpp.obj
+-            ¦       ¦           
+-            ¦       +---raylib.shard.dir
+-            ¦       ¦   ¦   vc140.pdb
+-            ¦       ¦   ¦   exports.def
+-            ¦       ¦   ¦   exports.def.objs
+-            ¦       ¦   ¦   
+-            ¦       ¦   L---third_party
+-            ¦       ¦       L---RayLib
+-            ¦       ¦               raylib.shard.cpp.obj
+-            ¦       ¦               
+-            ¦       L---terminality.shard.dir
+-            ¦           ¦   vc140.pdb
+-            ¦           ¦   exports.def
+-            ¦           ¦   exports.def.objs
+-            ¦           ¦   
+-            ¦           L---third_party
+-            ¦               L---Terminality
+-            ¦                       terminality.shard.cpp.obj
+-            ¦                       
+-            +---ShardScript.Interpreter
+-            ¦   ¦   cmake_install.cmake
+-            ¦   ¦   
+-            ¦   L---CMakeFiles
+-            ¦       L---ShardScript.Interpreter.dir
+-            ¦           ¦   vc140.pdb
+-            ¦           ¦   InteractiveConsole.cpp.obj
+-            ¦           ¦   ShardScript.Interpreter.cpp.obj
+-            ¦           ¦   
+-            ¦           L---utilities
+-            ¦                   ArgumentsParser.cpp.obj
+-            ¦                   
+-            +---bin
+-            ¦   ¦   ShardScript.dll
+-            ¦   ¦   ShardScript.pdb
+-            ¦   ¦   ShardScript.exp
+-            ¦   ¦   ShardScript.lib
+-            ¦   ¦   debug.shard.exp
+-            ¦   ¦   debug.shard.lib
+-            ¦   ¦   constream.shard.exp
+-            ¦   ¦   io.shard.exp
+-            ¦   ¦   io.shard.lib
+-            ¦   ¦   constream.shard.lib
+-            ¦   ¦   collections.shard.exp
+-            ¦   ¦   collections.shard.lib
+-            ¦   ¦   environment.shard.exp
+-            ¦   ¦   environment.shard.lib
+-            ¦   ¦   random.shard.exp
+-            ¦   ¦   random.shard.lib
+-            ¦   ¦   raylib.shard.exp
+-            ¦   ¦   raylib.shard.lib
+-            ¦   ¦   socket.shard.exp
+-            ¦   ¦   socket.shard.lib
+-            ¦   ¦   ShardScript.Interpreter.ilk
+-            ¦   ¦   ShardScript.Interpreter.exe
+-            ¦   ¦   ShardScript.Interpreter.pdb
+-            ¦   ¦   terminality.shard.exp
+-            ¦   ¦   terminality.shard.lib
+-            ¦   ¦   ShardScript.ilk
+-            ¦   ¦   
+-            ¦   +---system
+-            ¦   ¦       io.shard.ilk
+-            ¦   ¦       constream.shard.ilk
+-            ¦   ¦       io.shard.dll
+-            ¦   ¦       debug.shard.ilk
+-            ¦   ¦       io.shard.pdb
+-            ¦   ¦       constream.shard.dll
+-            ¦   ¦       debug.shard.dll
+-            ¦   ¦       collections.shard.ilk
+-            ¦   ¦       debug.shard.pdb
+-            ¦   ¦       constream.shard.pdb
+-            ¦   ¦       collections.shard.dll
+-            ¦   ¦       collections.shard.pdb
+-            ¦   ¦       environment.shard.ilk
+-            ¦   ¦       environment.shard.dll
+-            ¦   ¦       environment.shard.pdb
+-            ¦   ¦       random.shard.ilk
+-            ¦   ¦       random.shard.dll
+-            ¦   ¦       random.shard.pdb
+-            ¦   ¦       socket.shard.dll
+-            ¦   ¦       socket.shard.pdb
+-            ¦   ¦       socket.shard.ilk
+-            ¦   ¦       
+-            ¦   L---third-party
+-            ¦           raylib.shard.dll
+-            ¦           raylib.shard.pdb
+-            ¦           terminality.shard.ilk
+-            ¦           terminality.shard.dll
+-            ¦           terminality.shard.pdb
+-            ¦           raylib.shard.ilk
+-            ¦           
+-            L---Testing
+-                L---Temporary
+-                        LastTest.log
+-                        

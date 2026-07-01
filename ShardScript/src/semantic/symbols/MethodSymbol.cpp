@@ -3,6 +3,11 @@
 
 using namespace shard;
 
+bool MethodSymbol::IsMethod() const
+{
+	return true;
+}
+
 void MethodSymbol::OnSymbolDeclared(SyntaxSymbol* symbol)
 {
 	switch (symbol->Kind)

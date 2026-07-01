@@ -42,6 +42,7 @@ namespace shard
 		virtual void OnSymbolDeclared(SyntaxSymbol* symbol) { }
         virtual bool IsType() const { return false; }
         virtual bool IsMember() const { return false; }
+        virtual bool IsMethod() const { return false; }
 	};
 
 	constexpr SymbolLinking LINK_STATIC = shard::SymbolLinking::Static;

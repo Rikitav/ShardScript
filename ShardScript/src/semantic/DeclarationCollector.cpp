@@ -189,7 +189,14 @@ void DeclarationCollector::VisitInterfaceDeclaration(InterfaceDeclarationSyntax*
     {
         SyntaxSymbol* memberSymbol = Table->LookupSymbol(member.get()).value_or(nullptr);
         if (memberSymbol != nullptr)
+        {
             memberSymbol->Accesibility = SymbolAccesibility::Public;
+            if (memberSymbol->IsMethod())
+            {
+                MethodSymbol* methodSymbol = static_cast<MethodSymbol*>(memberSymbol);
+                methodSymbol->IsAbstract = true;
+            }
+        }
     }
 
     PopScope();

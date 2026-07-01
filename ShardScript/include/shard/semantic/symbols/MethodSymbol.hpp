@@ -48,6 +48,8 @@ namespace shard
         std::vector<std::byte> ExecutableByteCode;
         MethodSymbolDelegate FunctionPointer = nullptr;
 
+        bool IsAbstract = false;
+
     protected:
         inline MethodSymbol(const std::wstring& name, const SyntaxKind kind)
             : MemberSymbol(name, kind), HandleType(MethodHandleType::None) { }
@@ -63,6 +65,7 @@ namespace shard
 
         inline virtual ~MethodSymbol() = default;
 
+        bool IsMethod() const override;
         void OnSymbolDeclared(SyntaxSymbol* symbol) override;
 
         std::uint16_t GetEvalStackArgumentsCount() const;

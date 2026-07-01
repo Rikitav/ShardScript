@@ -6,11 +6,15 @@
 
 #include <string>
 #include <cstdint>
+#include <span>
 
 namespace shard
 {
 	class CallStackFrame;
 	class MethodSymbol;
+	class ObjectInstance;
+
+	using ArgumentsSpan = std::span<ObjectInstance*>;
 
 	class SHARD_API ObjectInstance
 	{
@@ -51,6 +55,7 @@ namespace shard
 		ObjectInstance* GetElement(std::size_t index, CallStackFrame* frame = nullptr);
 		void SetElement(std::size_t index, ObjectInstance* instance, CallStackFrame* frame = nullptr);
 		bool IsInBounds(std::size_t index);
+		ArgumentsSpan ArrayAsSpan();
 
 		void IncrementReference();
 		void DecrementReference();
