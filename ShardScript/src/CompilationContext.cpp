@@ -10,6 +10,7 @@
 
 #include <shard/semantic/SemanticModel.hpp>
 #include <shard/semantic/SymbolTable.hpp>
+#include <shard/semantic/SemanticValidator.hpp>
 
 #include <shard/analysis/DiagnosticsContext.hpp>
 #include <shard/lexical/LexicalAnalyzer.hpp>
@@ -365,6 +366,15 @@ void CompilationContext::AddLib(const LibraryHandle& handle)
 	try
 	{
 		entryPoint(*this);
+
+		// Run cross-symbol checks (interface implementations, etc.) for
+		// symbols produced by the library entry point before marking them ready.
+		SemanticValidator::ValidateAllInterfaceImplementations(Model, Diagnostics);
+
+		// Native-library symbols are fully constructed by the entry point and do
+		// not go through the source-based analyzer passes.
+		Model.Table->MarkJustCreatedSymbolsReady();
+
 		if (ReAnalyze)
 			Semanter.Analyze(Tree, Model);
 
@@ -432,6 +442,8 @@ std::unique_ptr<ApplicationDomain> CompilationContext::Compile()
 	Layouter.Generate(Model);
 	if (Diagnostics.AnyError)
 		throw diagnostics_exception("Model layout generation ended with errors.");
+
+	Model.Table->MarkAllSymbolsReady();
 
 	auto program = std::make_unique<ProgramVirtualImage>();
 	AbstractEmiter emiter(*program, Model, Diagnostics);

@@ -308,6 +308,9 @@ void ExpressionBinder::VisitConstructorDeclaration(ConstructorDeclarationSyntax*
 		
 		PopScope();
 	}
+
+	if (symbol != nullptr)
+		symbol->AdvanceAnalysisState(SymbolAnalysisState::Verified);
 }
 
 void ExpressionBinder::VisitMethodDeclaration(MethodDeclarationSyntax* node)
@@ -357,6 +360,8 @@ void ExpressionBinder::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 	}
 
 	PopScope();
+
+	symbol->AdvanceAnalysisState(SymbolAnalysisState::Verified);
 }
 
 void ExpressionBinder::VisitOperatorDeclaration(OperatorDeclarationSyntax* node)
@@ -407,6 +412,8 @@ void ExpressionBinder::VisitOperatorDeclaration(OperatorDeclarationSyntax* node)
 	}
 
 	PopScope();
+
+	symbol->AdvanceAnalysisState(SymbolAnalysisState::Verified);
 }
 
 void ExpressionBinder::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
@@ -432,6 +439,8 @@ void ExpressionBinder::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
 		VisitAccessorDeclaration(node->Getter.get());
 
 	PopScope();
+
+	symbol->AdvanceAnalysisState(SymbolAnalysisState::Verified);
 }
 
 void ExpressionBinder::VisitIndexatorDeclaration(IndexatorDeclarationSyntax* node)
@@ -457,6 +466,8 @@ void ExpressionBinder::VisitIndexatorDeclaration(IndexatorDeclarationSyntax* nod
 		VisitAccessorDeclaration(node->Getter.get());
 
 	PopScope();
+
+	symbol->AdvanceAnalysisState(SymbolAnalysisState::Verified);
 }
 
 void ExpressionBinder::VisitAccessorDeclaration(AccessorDeclarationSyntax* node)
@@ -507,6 +518,7 @@ void ExpressionBinder::VisitAccessorDeclaration(AccessorDeclarationSyntax* node)
 		}
 
 		PopScope();
+		symbol->AdvanceAnalysisState(SymbolAnalysisState::Verified);
 	}
 	else if (node->KeywordToken.Type == TokenType::SetKeyword)
 	{
@@ -542,6 +554,7 @@ void ExpressionBinder::VisitAccessorDeclaration(AccessorDeclarationSyntax* node)
 		}
 
 		PopScope();
+		symbol->AdvanceAnalysisState(SymbolAnalysisState::Verified);
 	}
 	else
 	{
@@ -549,6 +562,7 @@ void ExpressionBinder::VisitAccessorDeclaration(AccessorDeclarationSyntax* node)
 		throw std::runtime_error("Unknown accessor type");
 	}
 
+	symbol->AdvanceAnalysisState(SymbolAnalysisState::Verified);
 }
 
 void ExpressionBinder::VisitFieldDeclaration(FieldDeclarationSyntax* node)
@@ -583,6 +597,8 @@ void ExpressionBinder::VisitFieldDeclaration(FieldDeclarationSyntax* node)
 			return;
 		}
 	}
+
+	symbol->AdvanceAnalysisState(SymbolAnalysisState::Verified);
 }
 
 void ExpressionBinder::VisitVariableStatement(VariableStatementSyntax* node)
@@ -622,6 +638,8 @@ void ExpressionBinder::VisitVariableStatement(VariableStatementSyntax* node)
 		Diagnostics.ReportError(node->IdentifierToken, L"Type mismatch: expected '" + symbol->Type->Name + L"' but got '" + expressionType->Name + L"'");
 		return;
 	}
+
+	symbol->AdvanceAnalysisState(SymbolAnalysisState::Verified);
 }
 
 TypeSymbol* ExpressionBinder::AnalyzeLiteralExpression(LiteralExpressionSyntax* node)

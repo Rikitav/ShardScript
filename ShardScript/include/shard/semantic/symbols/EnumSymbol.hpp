@@ -17,7 +17,7 @@ namespace shard
 		{
 			Inlining = TypeInlining::ByValue;
 			MemoryBytesSize = sizeof(std::int64_t);
-			State = TypeLayoutingState::Visited;
+			LayoutingState = TypeLayoutingState::Visited;
 		}
 
 		inline EnumSymbol(const EnumSymbol& other) = delete;

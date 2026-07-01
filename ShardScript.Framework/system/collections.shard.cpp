@@ -20,7 +20,7 @@ static ObjectInstance* shard_list_init(const CallState& context) noexcept(false)
 	ArrayTypeSymbol* arrayType = new ArrayTypeSymbol(concreteT);
 	arrayType->Length = 0;
 	arrayType->MemoryBytesSize = SymbolTable::Primitives::Array->MemoryBytesSize;
-	arrayType->State = TypeLayoutingState::Visited;
+	arrayType->LayoutingState = TypeLayoutingState::Visited;
 
 	ObjectInstance* array = context.Collector.AllocateInstance(arrayType);
 	listInstance->SetField(list_arrayField, array, context.Frame);
@@ -41,7 +41,7 @@ static ObjectInstance* shard_list_init_capacity(const CallState& context) noexce
 	ArrayTypeSymbol* arrayType = new ArrayTypeSymbol(concreteT);
 	arrayType->Length = 0;
 	arrayType->MemoryBytesSize = SymbolTable::Primitives::Array->MemoryBytesSize;
-	arrayType->State = TypeLayoutingState::Visited;
+	arrayType->LayoutingState = TypeLayoutingState::Visited;
 
 	ObjectInstance* array = context.Collector.AllocateInstance(arrayType);
 	listInstance->SetField(list_arrayField, array, context.Frame);
@@ -68,7 +68,7 @@ static ObjectInstance* shard_list_Add(const CallState& context) noexcept(false)
 	ArrayTypeSymbol* newArrayType = new ArrayTypeSymbol(concreteT);
 	newArrayType->Length = newSize;
 	newArrayType->MemoryBytesSize = SymbolTable::Primitives::Array->MemoryBytesSize + concreteT->GetInlineSize() * newSize;
-	newArrayType->State = TypeLayoutingState::Visited;
+	newArrayType->LayoutingState = TypeLayoutingState::Visited;
 
 	ObjectInstance* newArray = context.Collector.AllocateInstance(newArrayType);
 
@@ -123,7 +123,7 @@ static ObjectInstance* shard_list_RemoveAt(const CallState& context) noexcept(fa
 	ArrayTypeSymbol* newArrayType = new ArrayTypeSymbol(concreteT);
 	newArrayType->Length = newSize;
 	newArrayType->MemoryBytesSize = SymbolTable::Primitives::Array->MemoryBytesSize + concreteT->GetInlineSize() * newSize;
-	newArrayType->State = TypeLayoutingState::Visited;
+	newArrayType->LayoutingState = TypeLayoutingState::Visited;
 
 	ObjectInstance* newArray = context.Collector.AllocateInstance(newArrayType);
 
@@ -156,7 +156,7 @@ static ObjectInstance* shard_list_Clear(const CallState& context) noexcept(false
 	ArrayTypeSymbol* newArrayType = new ArrayTypeSymbol(concreteT);
 	newArrayType->Length = 0;
 	newArrayType->MemoryBytesSize = SymbolTable::Primitives::Array->MemoryBytesSize;
-	newArrayType->State = TypeLayoutingState::Visited;
+	newArrayType->LayoutingState = TypeLayoutingState::Visited;
 
 	ObjectInstance* newArray = context.Collector.AllocateInstance(newArrayType);
 	listInstance->SetField(list_arrayField, newArray, context.Frame);
@@ -180,7 +180,7 @@ static ObjectInstance* shard_list_GetEnumerator(const CallState& context) noexce
 	enumeratorType->AddTypeParameter(SymbolTable::StandardTypes::ArrayEnumerator_T, concreteT);
 	enumeratorType->Inlining = TypeInlining::ByReference;
 	enumeratorType->MemoryBytesSize = SymbolTable::StandardTypes::ArrayEnumerator->MemoryBytesSize;
-	enumeratorType->State = TypeLayoutingState::Visited;
+	enumeratorType->LayoutingState = TypeLayoutingState::Visited;
 
 	ObjectInstance* enumerator = context.Collector.AllocateInstance(enumeratorType);
 	enumerator->SetField(SymbolTable::StandardTypes::ArrayEnumerator_SourceField, arrayInstance, context.Frame);

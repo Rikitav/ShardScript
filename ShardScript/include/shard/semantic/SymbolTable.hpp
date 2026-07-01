@@ -108,6 +108,9 @@ namespace shard
         const std::vector<NamespaceSymbol*> GetNamespaceSymbols();
         const std::vector<TypeSymbol*> GetTypeSymbols();
         const std::vector<MethodSymbol*> GetMethodSymbols();
+
+        void MarkAllSymbolsReady();
+        void MarkJustCreatedSymbolsReady();
     };
 
     inline TypeSymbol*& TYPE_VOID = shard::SymbolTable::Primitives::Void;

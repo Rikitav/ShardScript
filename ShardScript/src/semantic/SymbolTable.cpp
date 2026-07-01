@@ -256,7 +256,7 @@ static ObjectInstance* primitive_array_get_enumerator(const CallState& context)
 	enumeratorType->AddTypeParameter(g_ArrayEnumeratorT, concreteT);
 	enumeratorType->Inlining = TypeInlining::ByReference;
 	enumeratorType->MemoryBytesSize = g_ArrayEnumeratorClass->MemoryBytesSize;
-	enumeratorType->State = TypeLayoutingState::Visited;
+	enumeratorType->LayoutingState = TypeLayoutingState::Visited;
 
 	ObjectInstance* enumerator = context.Collector.AllocateInstance(enumeratorType);
 	enumerator->SetField(g_ArrayEnumeratorSource, array, context.Frame);
@@ -292,14 +292,21 @@ static void ResolvePrimitives(SymbolTable* table)
 	SymbolTable::Primitives::Null = new StructSymbol(L"Null");
 	SymbolTable::Primitives::NativeInteger = new ClassSymbol(L"IntPtr");
 
-	SymbolTable::Primitives::Void->State = TypeLayoutingState::Visited;
-	SymbolTable::Primitives::Any->State = TypeLayoutingState::Visited;
-	SymbolTable::Primitives::Null->State = TypeLayoutingState::Visited;
+	SymbolTable::Primitives::Void->LayoutingState = TypeLayoutingState::Visited;
+	SymbolTable::Primitives::Any->LayoutingState = TypeLayoutingState::Visited;
+	SymbolTable::Primitives::Null->LayoutingState = TypeLayoutingState::Visited;
 
 	SymbolTable::Primitives::Void->MemoryBytesSize = 0;
 	SymbolTable::Primitives::Any->MemoryBytesSize = 0;
 	SymbolTable::Primitives::Null->MemoryBytesSize = 0;
 	SymbolTable::Primitives::NativeInteger->MemoryBytesSize = sizeof(void*);
+
+	// Primitives are created outside the normal declaration pipeline, so they are
+	// marked ready immediately after their layout is fixed.
+	SymbolTable::Primitives::Void->AnalysisState = SymbolAnalysisState::Ready;
+	SymbolTable::Primitives::Any->AnalysisState = SymbolAnalysisState::Ready;
+	SymbolTable::Primitives::Null->AnalysisState = SymbolAnalysisState::Ready;
+	SymbolTable::Primitives::NativeInteger->AnalysisState = SymbolAnalysisState::Ready;
 
 	// ============================================================================
 	// Primitives
@@ -311,13 +318,13 @@ static void ResolvePrimitives(SymbolTable* table)
 	SymbolTable::Primitives::String = new ClassSymbol(L"String");
 	SymbolTable::Primitives::Array = new ClassSymbol(L"Array");
 
-	SymbolTable::Primitives::Boolean->State = TypeLayoutingState::Visited;
-	SymbolTable::Primitives::Integer->State = TypeLayoutingState::Visited;
-	SymbolTable::Primitives::Double->State = TypeLayoutingState::Visited;
-	SymbolTable::Primitives::Char->State = TypeLayoutingState::Visited;
-	SymbolTable::Primitives::String->State = TypeLayoutingState::Visited;
-	SymbolTable::Primitives::Array->State = TypeLayoutingState::Visited;
-	SymbolTable::Primitives::NativeInteger->State = TypeLayoutingState::Visited;
+	SymbolTable::Primitives::Boolean->LayoutingState = TypeLayoutingState::Visited;
+	SymbolTable::Primitives::Integer->LayoutingState = TypeLayoutingState::Visited;
+	SymbolTable::Primitives::Double->LayoutingState = TypeLayoutingState::Visited;
+	SymbolTable::Primitives::Char->LayoutingState = TypeLayoutingState::Visited;
+	SymbolTable::Primitives::String->LayoutingState = TypeLayoutingState::Visited;
+	SymbolTable::Primitives::Array->LayoutingState = TypeLayoutingState::Visited;
+	SymbolTable::Primitives::NativeInteger->LayoutingState = TypeLayoutingState::Visited;
 
 	SymbolTable::Primitives::Boolean->MemoryBytesSize = sizeof(bool);
 	SymbolTable::Primitives::Integer->MemoryBytesSize = sizeof(std::int64_t);
@@ -325,6 +332,13 @@ static void ResolvePrimitives(SymbolTable* table)
 	SymbolTable::Primitives::Char->MemoryBytesSize = sizeof(wchar_t);
 	SymbolTable::Primitives::String->MemoryBytesSize = sizeof(std::int64_t) + sizeof(wchar_t*); // long _length + char[] _data
 	SymbolTable::Primitives::Array->MemoryBytesSize = sizeof(std::int64_t);					    // long _length
+
+	SymbolTable::Primitives::Boolean->AnalysisState = SymbolAnalysisState::Ready;
+	SymbolTable::Primitives::Integer->AnalysisState = SymbolAnalysisState::Ready;
+	SymbolTable::Primitives::Double->AnalysisState = SymbolAnalysisState::Ready;
+	SymbolTable::Primitives::Char->AnalysisState = SymbolAnalysisState::Ready;
+	SymbolTable::Primitives::String->AnalysisState = SymbolAnalysisState::Ready;
+	SymbolTable::Primitives::Array->AnalysisState = SymbolAnalysisState::Ready;
 
 	resolved = true;
 }
@@ -459,7 +473,7 @@ static void ResolveEnumerables(SymbolTable* table)
 		g_ArrayEnumeratorLength->MemoryBytesOffset = layoutOffset;
 		layoutOffset += sizeof(std::int64_t);
 		raw->MemoryBytesSize = layoutOffset;
-		raw->State = TypeLayoutingState::Visited;
+		raw->LayoutingState = TypeLayoutingState::Visited;
 
 		MethodSymbol* moveNext = factory.Method(
 			SymbolAccesibility::Public,
@@ -588,7 +602,7 @@ static void ResolveStandards(SymbolTable* table)
 		messageField->MemoryBytesOffset = 0;
 		stackTraceField->MemoryBytesOffset = sizeof(void*);
 		raw->MemoryBytesSize = 2 * sizeof(void*);
-		raw->State = TypeLayoutingState::Visited;
+		raw->LayoutingState = TypeLayoutingState::Visited;
 
 		SymbolTable::StandardTypes::RuntimeException = raw;
 	}
@@ -627,6 +641,8 @@ static void ResolveGlobalComponents(SymbolTable* table)
 	MakePrimitivePrintable(SymbolTable::Primitives::NativeInteger, &primitive_nint_to_string, factory, TRAIT_PRINTABLE_ToString);
 
 	RegisterPrimitiveOperators(factory);
+
+	global->MarkAllSymbolsReady();
 
 	resolved = true;
 }
@@ -714,6 +730,34 @@ SyntaxSymbol* SymbolTable::ImplicitSymbol(std::unique_ptr<SyntaxSymbol> symbol)
 	}
 
 	return raw;
+}
+
+void SymbolTable::MarkAllSymbolsReady()
+{
+	for (const auto& symbol : namespacesList)
+		symbol->AdvanceAnalysisState(SymbolAnalysisState::Ready);
+	for (const auto& symbol : typesList)
+		symbol->AdvanceAnalysisState(SymbolAnalysisState::Ready);
+	for (const auto& symbol : membersList)
+		symbol->AdvanceAnalysisState(SymbolAnalysisState::Ready);
+	for (const auto& symbol : triviasList)
+		symbol->AdvanceAnalysisState(SymbolAnalysisState::Ready);
+}
+
+void SymbolTable::MarkJustCreatedSymbolsReady()
+{
+	for (const auto& symbol : namespacesList)
+		if (symbol->AnalysisState == SymbolAnalysisState::JustCreated)
+			symbol->AdvanceAnalysisState(SymbolAnalysisState::Ready);
+	for (const auto& symbol : typesList)
+		if (symbol->AnalysisState == SymbolAnalysisState::JustCreated)
+			symbol->AdvanceAnalysisState(SymbolAnalysisState::Ready);
+	for (const auto& symbol : membersList)
+		if (symbol->AnalysisState == SymbolAnalysisState::JustCreated)
+			symbol->AdvanceAnalysisState(SymbolAnalysisState::Ready);
+	for (const auto& symbol : triviasList)
+		if (symbol->AnalysisState == SymbolAnalysisState::JustCreated)
+			symbol->AdvanceAnalysisState(SymbolAnalysisState::Ready);
 }
 
 const std::vector<NamespaceSymbol*> SymbolTable::GetNamespaceSymbols()

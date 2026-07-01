@@ -18,6 +18,15 @@ namespace shard
 		Instance
 	};
 
+	enum class SymbolAnalysisState
+	{
+		JustCreated,
+		Collected,
+		TypeResolved,
+		Verified,
+		Ready
+	};
+
 	class SHARD_API SyntaxSymbol
 	{
 		inline static int counter = 0;
@@ -30,6 +39,18 @@ namespace shard
 		SyntaxSymbol* Parent = nullptr;
 
 		SymbolAccesibility Accesibility = SymbolAccesibility::Private;
+		SymbolAnalysisState AnalysisState = SymbolAnalysisState::JustCreated;
+
+		inline bool IsReadyForRuntime() const
+		{
+			return AnalysisState == SymbolAnalysisState::Ready;
+		}
+
+		inline void AdvanceAnalysisState(SymbolAnalysisState target)
+		{
+			if (AnalysisState < target)
+				AnalysisState = target;
+		}
 
 		inline SyntaxSymbol(const std::wstring& name, const SyntaxKind kind)
 			: DefinitionIndex(counter++), Name(name), FullName(name), Kind(kind) { }

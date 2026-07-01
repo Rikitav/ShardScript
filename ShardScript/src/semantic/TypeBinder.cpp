@@ -2,6 +2,7 @@
 #include <shard/semantic/SymbolTable.hpp>
 #include <shard/semantic/SemanticScope.hpp>
 #include <shard/semantic/NamespaceTree.hpp>
+#include <shard/semantic/SemanticValidator.hpp>
 
 #include <shard/semantic/SyntaxSymbol.hpp>
 #include <shard/parsing/SyntaxKind.hpp>
@@ -174,98 +175,6 @@ void TypeBinder::VisitUsingDirective(UsingDirectiveSyntax* node)
 		current->DeclareSymbol(symbol);
 }
 
-static bool IsInterfaceImplementationMatching(MethodSymbol* interfaceMethod, MethodSymbol* classMethod)
-{
-    if (interfaceMethod->Name != classMethod->Name)
-        return false;
-
-    if (interfaceMethod->Parameters.size() != classMethod->Parameters.size())
-        return false;
-
-    if (!TypeSymbol::Equals(interfaceMethod->ReturnType, classMethod->ReturnType))
-        return false;
-
-    for (std::size_t i = 0; i < interfaceMethod->Parameters.size(); i++)
-    {
-        if (!TypeSymbol::Equals(interfaceMethod->Parameters[i]->Type, classMethod->Parameters[i]->Type))
-            return false;
-    }
-
-    return true;
-}
-
-static bool IsInterfaceImplementationMatching(PropertySymbol* interfaceProperty, PropertySymbol* classProperty)
-{
-    if (interfaceProperty->Name != classProperty->Name)
-        return false;
-
-    if (!TypeSymbol::Equals(interfaceProperty->ReturnType, classProperty->ReturnType))
-        return false;
-
-    if (interfaceProperty->Getter != nullptr && classProperty->Getter == nullptr)
-        return false;
-
-    if (interfaceProperty->Setter != nullptr && classProperty->Setter == nullptr)
-        return false;
-
-    return true;
-}
-
-static void ValidateInterfaceImplementation(TypeSymbol* typeSymbol, InterfaceSymbol* interfaceSymbol, DiagnosticsContext& diagnostics, SyntaxToken errorToken)
-{
-    for (MethodSymbol* interfaceMethod : interfaceSymbol->Methods)
-    {
-        MethodSymbol* matchedMethod = nullptr;
-        for (MethodSymbol* classMethod : typeSymbol->Methods)
-        {
-            if (IsInterfaceImplementationMatching(interfaceMethod, classMethod))
-            {
-                matchedMethod = classMethod;
-                break;
-            }
-        }
-
-        if (matchedMethod == nullptr)
-        {
-            diagnostics.ReportError(
-                errorToken,
-                L"Type '" + typeSymbol->Name + L"' does not implement interface method '" + interfaceMethod->Name + L"' from '" + interfaceSymbol->Name + L"'");
-        }
-        else
-        {
-            typeSymbol->InterfaceMethodMap[interfaceMethod] = matchedMethod;
-        }
-    }
-
-    for (PropertySymbol* interfaceProperty : interfaceSymbol->Properties)
-    {
-        PropertySymbol* matchedProperty = nullptr;
-        for (PropertySymbol* classProperty : typeSymbol->Properties)
-        {
-            if (IsInterfaceImplementationMatching(interfaceProperty, classProperty))
-            {
-                matchedProperty = classProperty;
-                break;
-            }
-        }
-
-        if (matchedProperty == nullptr)
-        {
-            diagnostics.ReportError(
-                errorToken,
-                L"Type '" + typeSymbol->Name + L"' does not implement interface property '" + interfaceProperty->Name + L"' from '" + interfaceSymbol->Name + L"'");
-        }
-        else
-        {
-            if (interfaceProperty->Getter != nullptr && matchedProperty->Getter != nullptr)
-                typeSymbol->InterfaceMethodMap[interfaceProperty->Getter] = matchedProperty->Getter;
-            
-			if (interfaceProperty->Setter != nullptr && matchedProperty->Setter != nullptr)
-                typeSymbol->InterfaceMethodMap[interfaceProperty->Setter] = matchedProperty->Setter;
-        }
-    }
-}
-
 void TypeBinder::VisitNamespaceDeclaration(NamespaceDeclarationSyntax* node)
 {
 	// Namespace declarations are now handled inline in VisitCompilationUnit
@@ -276,6 +185,9 @@ void TypeBinder::VisitClassDeclaration(ClassDeclarationSyntax* node)
 	ClassSymbol* symbol = LookupSymbol<ClassSymbol>(node).value_or(nullptr);
 	if (symbol == nullptr)
 		throw std::runtime_error("symbol not found");
+
+	if (symbol->IsReadyForRuntime())
+		return;
 
 	if (CheckNameDeclared(symbol))
 		Diagnostics.ReportError(node->IdentifierToken, L"Symbol with the same name is already declared in current, or including context");
@@ -314,8 +226,9 @@ void TypeBinder::VisitClassDeclaration(ClassDeclarationSyntax* node)
 		VisitMemberDeclaration(member.get());
 
 	for (InterfaceSymbol* interfaceSymbol : baseInterfaces)
-		ValidateInterfaceImplementation(symbol, interfaceSymbol, Diagnostics, node->IdentifierToken);
+		SemanticValidator::ValidateInterfaceImplementation(symbol, interfaceSymbol, Diagnostics, node->IdentifierToken);
 
+	symbol->AdvanceAnalysisState(SymbolAnalysisState::TypeResolved);
 	PopScope();
 }
 
@@ -324,6 +237,9 @@ void TypeBinder::VisitStructDeclaration(StructDeclarationSyntax* node)
 	StructSymbol* symbol = LookupSymbol<StructSymbol>(node).value_or(nullptr);
 	if (symbol == nullptr)
 		throw std::runtime_error("symbol not found");
+
+	if (symbol->IsReadyForRuntime())
+		return;
 
 	PushScope(symbol);
 	for (const auto& typeParam : symbol->TypeParameters)
@@ -359,8 +275,9 @@ void TypeBinder::VisitStructDeclaration(StructDeclarationSyntax* node)
 		VisitMemberDeclaration(member.get());
 
 	for (InterfaceSymbol* interfaceSymbol : baseInterfaces)
-		ValidateInterfaceImplementation(symbol, interfaceSymbol, Diagnostics, node->IdentifierToken);
+		SemanticValidator::ValidateInterfaceImplementation(symbol, interfaceSymbol, Diagnostics, node->IdentifierToken);
 
+	symbol->AdvanceAnalysisState(SymbolAnalysisState::TypeResolved);
 	PopScope();
 }
 
@@ -369,6 +286,9 @@ void TypeBinder::VisitInterfaceDeclaration(InterfaceDeclarationSyntax* node)
     InterfaceSymbol* symbol = LookupSymbol<InterfaceSymbol>(node).value_or(nullptr);
     if (symbol == nullptr)
         throw std::runtime_error("symbol not found");
+
+    if (symbol->IsReadyForRuntime())
+        return;
 
     PushScope(symbol);
     for (const auto& typeParam : symbol->TypeParameters)
@@ -384,6 +304,7 @@ void TypeBinder::VisitInterfaceDeclaration(InterfaceDeclarationSyntax* node)
     for (const auto& member : node->Members)
         VisitMemberDeclaration(member.get());
 
+    symbol->AdvanceAnalysisState(SymbolAnalysisState::TypeResolved);
     PopScope();
 }
 
@@ -392,6 +313,9 @@ void TypeBinder::VisitDelegateDeclaration(DelegateDeclarationSyntax* node)
 	DelegateTypeSymbol* symbol = LookupSymbol<DelegateTypeSymbol>(node).value_or(nullptr);
 	if (symbol == nullptr)
 		throw std::runtime_error("symbol not found");
+
+	if (symbol->IsReadyForRuntime())
+		return;
 
 	PushScope(symbol);
 	if (node->ReturnType != nullptr)
@@ -408,6 +332,7 @@ void TypeBinder::VisitDelegateDeclaration(DelegateDeclarationSyntax* node)
 		BindParametersList(node->ParametersList.get(), symbol->Parameters);
 	}
 
+	symbol->AdvanceAnalysisState(SymbolAnalysisState::TypeResolved);
 	PopScope();
 }
 
@@ -550,6 +475,9 @@ void TypeBinder::VisitEnumDeclaration(EnumDeclarationSyntax* node)
 	if (symbol == nullptr)
 		throw std::runtime_error("symbol not found");
 
+	if (symbol->IsReadyForRuntime())
+		return;
+
 	if (CheckNameDeclared(symbol))
 		Diagnostics.ReportError(node->IdentifierToken, L"Symbol with the same name is already declared in current, or including context");
 
@@ -563,6 +491,7 @@ void TypeBinder::VisitEnumDeclaration(EnumDeclarationSyntax* node)
 
 	RegisterEnumHelpers(symbol, Factory);
 
+	symbol->AdvanceAnalysisState(SymbolAnalysisState::TypeResolved);
 	PopScope();
 }
 
@@ -572,6 +501,9 @@ void TypeBinder::VisitConstructorDeclaration(ConstructorDeclarationSyntax* node)
 	if (symbol == nullptr)
 		throw std::runtime_error("symbol not found");
 
+	if (symbol->IsReadyForRuntime())
+		return;
+
 	PushScope(symbol);
 	if (node->ParametersList != nullptr)
 	{
@@ -582,6 +514,7 @@ void TypeBinder::VisitConstructorDeclaration(ConstructorDeclarationSyntax* node)
 	if (node->Body != nullptr)
 		VisitStatementsBlock(node->Body.get());
 
+	symbol->AdvanceAnalysisState(SymbolAnalysisState::TypeResolved);
 	PopScope();
 }
 
@@ -591,6 +524,9 @@ void TypeBinder::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 	if (symbol == nullptr)
 		throw std::runtime_error("symbol not found");
 
+	if (symbol->IsReadyForRuntime())
+		return;
+
 	PushScope(symbol);
 	if (node->ReturnType != nullptr)
 	{
@@ -607,6 +543,7 @@ void TypeBinder::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 	if (node->Body != nullptr)
 		VisitStatementsBlock(node->Body.get());
 
+	symbol->AdvanceAnalysisState(SymbolAnalysisState::TypeResolved);
 	PopScope();
 }
 
@@ -616,6 +553,9 @@ void TypeBinder::VisitOperatorDeclaration(OperatorDeclarationSyntax* node)
 	if (symbol == nullptr)
 		throw std::runtime_error("operator symbol not found");
 
+	if (symbol->IsReadyForRuntime())
+		return;
+
 	PushScope(symbol);
 	if (node->ReturnType != nullptr)
 	{
@@ -632,6 +572,7 @@ void TypeBinder::VisitOperatorDeclaration(OperatorDeclarationSyntax* node)
 	if (node->Body != nullptr)
 		VisitStatementsBlock(node->Body.get());
 
+	symbol->AdvanceAnalysisState(SymbolAnalysisState::TypeResolved);
 	PopScope();
 }
 
@@ -641,6 +582,9 @@ void TypeBinder::VisitFieldDeclaration(FieldDeclarationSyntax* node)
 	if (symbol == nullptr)
 		throw std::runtime_error("symbol not found");
 
+	if (symbol->IsReadyForRuntime())
+		return;
+
 	if (node->ReturnType != nullptr)
 	{
 		VisitType(node->ReturnType.get());
@@ -649,6 +593,8 @@ void TypeBinder::VisitFieldDeclaration(FieldDeclarationSyntax* node)
 
 	if (node->InitializerExpression != nullptr)
 		VisitExpression(node->InitializerExpression.get());
+
+	symbol->AdvanceAnalysisState(SymbolAnalysisState::TypeResolved);
 }
 
 void TypeBinder::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
@@ -656,6 +602,9 @@ void TypeBinder::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
 	PropertySymbol* symbol = LookupSymbol<PropertySymbol>(node).value_or(nullptr);
 	if (symbol == nullptr)
 		throw std::runtime_error("symbol not found");
+
+	if (symbol->IsReadyForRuntime())
+		return;
 
 	if (node->ReturnType == nullptr)
 		return;
@@ -688,6 +637,7 @@ void TypeBinder::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
 	if (node->Getter != nullptr)
 		VisitAccessorDeclaration(node->Getter.get());
 
+	symbol->AdvanceAnalysisState(SymbolAnalysisState::TypeResolved);
 	PopScope();
 }
 
@@ -696,6 +646,9 @@ void TypeBinder::VisitIndexatorDeclaration(IndexatorDeclarationSyntax* node)
 	IndexatorSymbol* symbol = LookupSymbol<IndexatorSymbol>(node).value_or(nullptr);
 	if (symbol == nullptr)
 		throw std::runtime_error("symbol not found");
+
+	if (symbol->IsReadyForRuntime())
+		return;
 
 	PushScope(symbol);
 	if (node->ReturnType != nullptr)
@@ -727,6 +680,7 @@ void TypeBinder::VisitIndexatorDeclaration(IndexatorDeclarationSyntax* node)
 	if (node->Getter != nullptr)
 		VisitAccessorDeclaration(node->Getter.get());
 
+	symbol->AdvanceAnalysisState(SymbolAnalysisState::TypeResolved);
 	PopScope();
 }
 
@@ -754,6 +708,8 @@ void TypeBinder::VisitAccessorDeclaration(AccessorDeclarationSyntax* node)
 	{
 		symbol->ReturnType = propSymbol->ReturnType;
 	}
+
+	symbol->AdvanceAnalysisState(SymbolAnalysisState::TypeResolved);
 }
 
 void TypeBinder::VisitVariableStatement(VariableStatementSyntax* node)
@@ -770,6 +726,8 @@ void TypeBinder::VisitVariableStatement(VariableStatementSyntax* node)
 
 	if (node->Expression != nullptr)
 		VisitExpression(node->Expression.get());
+
+	symbol->AdvanceAnalysisState(SymbolAnalysisState::TypeResolved);
 }
 
 void TypeBinder::VisitDeferStatement(DeferStatementSyntax* node)

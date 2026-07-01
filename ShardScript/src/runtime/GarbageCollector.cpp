@@ -19,6 +19,41 @@
 
 using namespace shard;
 
+namespace
+{
+    static inline std::string WStringToUtf8(const std::wstring& wstr)
+    {
+        std::string result;
+        result.reserve(wstr.size());
+        for (wchar_t ch : wstr)
+            result.push_back(static_cast<char>(ch));
+        return result;
+    }
+
+    static inline bool IsTypeReadyForAllocation(const TypeSymbol* type)
+    {
+        if (type == nullptr)
+            return false;
+
+        if (type->IsReadyForRuntime())
+            return true;
+
+        // Runtime-generated array types are synthetic and do not go through
+        // the normal analysis pipeline.
+        if (type->Kind == SyntaxKind::ArrayType)
+            return true;
+
+        // Generic instantiations inherit readiness from their underlying type.
+        if (type->Kind == SyntaxKind::GenericType)
+        {
+            const GenericTypeSymbol* generic = static_cast<const GenericTypeSymbol*>(type);
+            return IsTypeReadyForAllocation(generic->UnderlayingType);
+        }
+
+        return false;
+    }
+}
+
 ObjectInstance* GarbageCollector::NullInstance = new ObjectInstance(nullptr, nullptr, true);
 
 GarbageCollector::GarbageCollector(ApplicationDomain* domain) : applicationDomain(domain)
@@ -88,7 +123,7 @@ ObjectInstance* GarbageCollector::FromNint(void* rawMemory, bool isTransient)
 	if (objectInfo == nullptr)
 		throw std::runtime_error("objectInfo is nullptr");
 
-	if (objectInfo->State != TypeLayoutingState::Visited)
+	if (objectInfo->LayoutingState != TypeLayoutingState::Visited)
 		throw std::runtime_error("objectInfo is uninitialized");
 
 	ObjectInstance* instance = AllocateInstance(objectInfo, isTransient);
@@ -141,8 +176,11 @@ ObjectInstance* GarbageCollector::AllocateInstance(const TypeSymbol* objectInfo,
 	if (objectInfo == nullptr)
 		throw std::runtime_error("objectInfo is nullptr");
 
-	if (objectInfo->State != TypeLayoutingState::Visited)
+	if (objectInfo->LayoutingState != TypeLayoutingState::Visited)
 		throw std::runtime_error("objectInfo is uninitialized");
+
+	if (!IsTypeReadyForAllocation(objectInfo))
+		throw std::runtime_error("Cannot allocate instance of type '" + WStringToUtf8(objectInfo->Name) + "': symbol is not ready for runtime");
 
 	void* rawMemory = nullptr;
 	if (objectInfo->MemoryBytesSize > 0)
@@ -170,6 +208,9 @@ ObjectInstance* GarbageCollector::AllocateArray(TypeSymbol* elementType, std::si
 {
 	if (elementType == nullptr)
 		throw std::runtime_error("elementType is nullptr");
+
+	if (!IsTypeReadyForAllocation(elementType))
+		throw std::runtime_error("Cannot allocate array of element type '" + WStringToUtf8(elementType->Name) + "': symbol is not ready for runtime");
 
 	std::size_t headerSize = SymbolTable::Primitives::Array->MemoryBytesSize;
 	std::size_t elementSize = elementType->GetInlineSize();
@@ -213,7 +254,7 @@ ObjectInstance* GarbageCollector::CopyInstance(ObjectInstance* instance)
 
 	ObjectInstance* newInstance = GarbageCollector::AllocateInstance(instance->getInfo());
 	newInstance->WriteMemory(0, instance->getInfo()->MemoryBytesSize, instance->getMemory());
-	
+
 	TypeSymbol* fieldOwner = const_cast<TypeSymbol*>(instance->getInfo());
 	if (fieldOwner->Kind == SyntaxKind::GenericType)
 		fieldOwner = static_cast<GenericTypeSymbol*>(fieldOwner)->UnderlayingType;
@@ -226,7 +267,7 @@ ObjectInstance* GarbageCollector::CopyInstance(ObjectInstance* instance)
 			fieldValue->IncrementReference();
 		}
 	}
-	
+
 	return newInstance;
 }
 
