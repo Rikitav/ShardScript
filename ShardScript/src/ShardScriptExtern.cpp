@@ -3039,6 +3039,219 @@ extern "C"
         }
     }
 
+    // =========================================================================
+    // Runtime Object Allocation API
+    // =========================================================================
+
+    SHARD_API ObjectInstance* Shard_GCAllocateInstance(GarbageCollector* gc, TypeSymbol* type)
+    {
+        try
+        {
+            if (gc == nullptr || type == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return nullptr;
+            }
+
+            return gc->AllocateInstance(type);
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API ObjectInstance* Shard_GCAllocateArray(GarbageCollector* gc, TypeSymbol* elementType, std::size_t length)
+    {
+        try
+        {
+            if (gc == nullptr || elementType == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return nullptr;
+            }
+
+            return gc->AllocateArray(elementType, length);
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    // =========================================================================
+    // Runtime Instance Field / Element Access API
+    // =========================================================================
+
+    SHARD_API ObjectInstance* Shard_GetInstanceField(ObjectInstance* instance, FieldSymbol* field)
+    {
+        try
+        {
+            if (instance == nullptr || field == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return nullptr;
+            }
+
+            return instance->GetField(field);
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API int Shard_SetInstanceField(ObjectInstance* instance, FieldSymbol* field, ObjectInstance* value)
+    {
+        try
+        {
+            if (instance == nullptr || field == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return -1;
+            }
+
+            instance->SetField(field, value);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API ObjectInstance* Shard_GetArrayElement(ObjectInstance* array, std::size_t index)
+    {
+        try
+        {
+            if (array == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return nullptr;
+            }
+
+            return array->GetElement(index);
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API int Shard_SetArrayElement(ObjectInstance* array, std::size_t index, ObjectInstance* value)
+    {
+        try
+        {
+            if (array == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return -1;
+            }
+
+            array->SetElement(index, value);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    // =========================================================================
+    // GC-less Typed Primitive Field Setters
+    // =========================================================================
+
+    SHARD_API int Shard_SetInstanceFieldInteger(ObjectInstance* instance, FieldSymbol* field, std::int64_t value)
+    {
+        try
+        {
+            if (instance == nullptr || field == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return -1;
+            }
+
+            ObjectInstance temporary(field->ReturnType, &value, true);
+            instance->SetField(field, &temporary);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_SetInstanceFieldDouble(ObjectInstance* instance, FieldSymbol* field, double value)
+    {
+        try
+        {
+            if (instance == nullptr || field == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return -1;
+            }
+
+            ObjectInstance temporary(field->ReturnType, &value, true);
+            instance->SetField(field, &temporary);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_SetInstanceFieldBool(ObjectInstance* instance, FieldSymbol* field, int value)
+    {
+        try
+        {
+            if (instance == nullptr || field == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return -1;
+            }
+
+            bool converted = value != 0;
+            ObjectInstance temporary(field->ReturnType, &converted, true);
+            instance->SetField(field, &temporary);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_SetInstanceFieldChar(ObjectInstance* instance, FieldSymbol* field, wchar_t value)
+    {
+        try
+        {
+            if (instance == nullptr || field == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return -1;
+            }
+
+            ObjectInstance temporary(field->ReturnType, &value, true);
+            instance->SetField(field, &temporary);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
     SHARD_API int Shard_GetMethodHandleType(MethodSymbol* method)
     {
         try

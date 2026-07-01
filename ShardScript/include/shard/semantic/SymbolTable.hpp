@@ -123,18 +123,19 @@ namespace shard
     inline TypeSymbol*& TYPE_ARRAY = shard::SymbolTable::Primitives::Array;
 
     inline InterfaceSymbol*& TRAIT_DISPOSABLE = shard::SymbolTable::StandardTypes::IDisposable;
+    inline MethodSymbol*& TRAIT_DISPOSABLE_Dispose = shard::SymbolTable::StandardTypes::IDisposable_Dispose;
+
     inline InterfaceSymbol*& TRAIT_PRINTABLE = shard::SymbolTable::StandardTypes::IPrintable;
+    inline MethodSymbol*& TRAIT_PRINTABLE_ToString = shard::SymbolTable::StandardTypes::IPrintable_ToString;
+
     inline InterfaceSymbol*& TRAIT_THROWABLE = shard::SymbolTable::StandardTypes::IThrowable;
+    inline AccessorSymbol*& TRAIT_THROWABLE_getStackTrace = shard::SymbolTable::StandardTypes::IThrowable_getStackTrace;
+    inline AccessorSymbol*& TRAIT_THROWABLE_getMessage = shard::SymbolTable::StandardTypes::IThrowable_getMessage;
+
     inline InterfaceSymbol*& TRAIT_ENUMERABLE = shard::SymbolTable::StandardTypes::IEnumerable;
     inline MethodSymbol*& TRAIT_ENUMERABLE_GETENUMERATOR = shard::SymbolTable::StandardTypes::IEnumerable_GetEnumerator;
 
     inline InterfaceSymbol*& TRAIT_ENUMERATOR = shard::SymbolTable::StandardTypes::IEnumerator;
-    inline MethodSymbol*& TRAIT_ENUMERATOR_MOVENEXT = shard::SymbolTable::StandardTypes::IEnumerator_MoveNext;
     inline AccessorSymbol*& TRAIT_ENUMERATOR_CURRENT_GET = shard::SymbolTable::StandardTypes::IEnumerator_Current_get;
-
-    inline MethodSymbol*& TRAIT_DISPOSABLE_Dispose = shard::SymbolTable::StandardTypes::IDisposable_Dispose;
-    inline MethodSymbol*& TRAIT_PRINTABLE_ToString = shard::SymbolTable::StandardTypes::IPrintable_ToString;
-    
-    inline AccessorSymbol*& TRAIT_THROWABLE_getStackTrace = shard::SymbolTable::StandardTypes::IThrowable_getStackTrace;
-    inline AccessorSymbol*& TRAIT_THROWABLE_getMessage = shard::SymbolTable::StandardTypes::IThrowable_getMessage;
+    inline MethodSymbol*& TRAIT_ENUMERATOR_MOVENEXT = shard::SymbolTable::StandardTypes::IEnumerator_MoveNext;
 }

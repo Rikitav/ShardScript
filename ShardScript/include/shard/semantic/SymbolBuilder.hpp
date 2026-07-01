@@ -71,7 +71,8 @@ namespace shard
 
         SymbolBuilder<ClassSymbol> AddClass(
             const std::wstring& name,
-            SymbolAccesibility access = SymbolAccesibility::Public);
+            SymbolLinking linking = LINK_INSTANCE,
+            SymbolAccesibility access = ACS_PUBLIC);
 
         SymbolBuilder<EnumSymbol> AddEnum(
             const std::wstring& name,
@@ -147,11 +148,8 @@ namespace shard
         SymbolBuilder<MethodSymbol>& SetCallback(
             MethodSymbolDelegate callback);
 
-        /*
-        SymbolBuilder<MethodSymbol>& SetCallback(
-            ShardManagedMethodCallback callback,
-            void* userData = nullptr);
-        */
+        SymbolBuilder<MethodSymbol>& IsImplementationOf(
+            MethodSymbol* abstractMethod);
 
         SymbolBuilder<TypeParameterSymbol> AddTypeParameter(
             const std::wstring& name);
@@ -224,6 +222,7 @@ namespace shard
     class SHARD_API SymbolBuilder<ClassSymbol> : public SymbolBuilderBase<ClassSymbol>
     {
     public:
+        SymbolBuilder(CompilationContext& ctx, ClassSymbol* symbol);
         SymbolBuilder(CompilationContext& ctx, const std::wstring& name, SyntaxSymbol* parent);
 
         SymbolBuilder<ConstructorSymbol> AddInit(

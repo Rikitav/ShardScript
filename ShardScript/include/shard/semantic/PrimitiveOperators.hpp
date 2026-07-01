@@ -5,5 +5,6 @@ namespace shard
 {
 	class SymbolFactory;
 
-	SHARD_API void RegisterPrimitiveOperators(SymbolFactory& factory);
+	void RegisterPrimitiveOperators(SymbolFactory& factory);
+	void RegisterGlobalMethods(SymbolFactory& factory);
 }

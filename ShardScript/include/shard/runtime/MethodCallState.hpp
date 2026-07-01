@@ -13,8 +13,6 @@
 
 namespace shard
 {
-    using ArgumentsSpan = std::span<ObjectInstance*>;
-
     struct CallState
     {
         /*

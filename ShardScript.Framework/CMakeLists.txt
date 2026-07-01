@@ -1,5 +1,16 @@
 project(ShardScript.Framework)
 
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/third_party/SQLite3/src/sqlite3.c")
+    add_library(sqlite3_native STATIC "${CMAKE_CURRENT_SOURCE_DIR}/third_party/SQLite3/src/sqlite3.c")
+    set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/third_party/SQLite3/src/sqlite3.c" PROPERTIES LANGUAGE C)
+    
+    if(MSVC)
+        target_compile_options(sqlite3_native PRIVATE /w)
+    else()
+        target_compile_options(sqlite3_native PRIVATE -w)
+    endif()
+endif()
+
 file(GLOB_RECURSE CPP_FILES CONFIGURE_DEPENDS
     "system/*.shard.cpp"
     "system/**/*.shard.cpp"
@@ -41,6 +52,18 @@ foreach(CPP_FILE IN LISTS CPP_FILES)
         target_link_libraries("${SHARD_TARGET_NAME}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/third_party/RayLib/lib/raylib.lib" winmm gdi32 shell32 user32)
     else()
         target_link_libraries("${SHARD_TARGET_NAME}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/third_party/RayLib/lib/libraylib.a" GL m pthread dl rt X11)
+    endif()
+  endif()
+
+  # SQLite target
+  string(FIND "${SHARD_TARGET_NAME}" "sqlite" IS_SQLITE_TARGET)
+  if(NOT IS_SQLITE_TARGET EQUAL -1 AND TARGET sqlite3_native)
+    target_include_directories("${SHARD_TARGET_NAME}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/third_party/SQLite3/include")
+    
+    if(MSVC)
+        target_link_libraries("${SHARD_TARGET_NAME}" PRIVATE -WHOLEARCHIVE:${CMAKE_BINARY_DIR}/bin/sqlite3_native)
+    else()
+        target_link_libraries("${SHARD_TARGET_NAME}" PRIVATE -Wl,--whole-archive ${CMAKE_BINARY_DIR}/bin/sqlite3_native -Wl,--no-whole-archive)
     endif()
   endif()
 

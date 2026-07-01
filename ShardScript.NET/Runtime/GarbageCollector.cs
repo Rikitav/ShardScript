@@ -57,6 +57,39 @@ public sealed class GarbageCollector
             throw new InvalidOperationException($"Failed to set static field '{field.Name}': {ShardEngineException.GetLastErrorMessage()}");
     }
 
+    /// <summary>
+    /// Allocates a new instance of the given class type with default-initialized fields.
+    /// The returned instance bypasses constructors; populate it with <see cref="ObjectInstance.SetField"/>.
+    /// </summary>
+    public ObjectInstance AllocateInstance(TypeSymbol type)
+    {
+        if (type == null)
+            throw new ArgumentNullException(nameof(type));
+
+        IntPtr handle = NativeMethods.Shard_GCAllocateInstance(_handle, type.Handle);
+        if (handle == IntPtr.Zero)
+            throw new InvalidOperationException($"Failed to allocate instance of type '{type.Name}': {ShardEngineException.GetLastErrorMessage()}");
+
+        return new ObjectInstance(handle);
+    }
+
+    /// <summary>
+    /// Allocates a new one-dimensional array of the given element type and length.
+    /// </summary>
+    public ObjectInstance AllocateArray(TypeSymbol elementType, long length)
+    {
+        if (elementType == null)
+            throw new ArgumentNullException(nameof(elementType));
+        if (length < 0)
+            throw new ArgumentOutOfRangeException(nameof(length));
+
+        IntPtr handle = NativeMethods.Shard_GCAllocateArray(_handle, elementType.Handle, (nuint)length);
+        if (handle == IntPtr.Zero)
+            throw new InvalidOperationException($"Failed to allocate array: {ShardEngineException.GetLastErrorMessage()}");
+
+        return new ObjectInstance(handle);
+    }
+
     private static class NativeMethods
     {
         [DllImport(ShardScriptAPI.LibraryName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
@@ -76,5 +109,11 @@ public sealed class GarbageCollector
 
         [DllImport(ShardScriptAPI.LibraryName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
         public static extern int Shard_GCSetStaticField(IntPtr gc, IntPtr field, IntPtr value);
+
+        [DllImport(ShardScriptAPI.LibraryName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        public static extern IntPtr Shard_GCAllocateInstance(IntPtr gc, IntPtr type);
+
+        [DllImport(ShardScriptAPI.LibraryName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        public static extern IntPtr Shard_GCAllocateArray(IntPtr gc, IntPtr elementType, nuint length);
     }
 }

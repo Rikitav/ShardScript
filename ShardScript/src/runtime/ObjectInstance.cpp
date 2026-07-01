@@ -1,10 +1,11 @@
 #include <shard/runtime/ObjectInstance.hpp>
 #include <shard/runtime/CallStackFrame.hpp>
 #include <shard/runtime/GarbageCollector.hpp>
-
-#include <shard/semantic/SymbolTable.hpp>
+#include <shard/runtime/MethodCallState.hpp>
 
 #include <shard/parsing/SyntaxKind.hpp>
+
+#include <shard/semantic/SymbolTable.hpp>
 
 #include <shard/semantic/symbols/FieldSymbol.hpp>
 #include <shard/semantic/symbols/ArrayTypeSymbol.hpp>
@@ -145,6 +146,9 @@ std::int64_t ObjectInstance::getReferencesCounter() const
 
 ObjectInstance* ObjectInstance::GetField(FieldSymbol* field, CallStackFrame* frame)
 {
+	if (field->Parent != getInfo())
+		throw std::runtime_error("Field does not belong to this instance.");
+
 	GenericTypeSymbol* genericInfo = GetGenericInfo(this);
 	TypeSymbol* fieldType = ResolveRuntimeType(field->ReturnType, frame, genericInfo);
 
@@ -165,12 +169,12 @@ ObjectInstance* ObjectInstance::GetField(FieldSymbol* field, CallStackFrame* fra
 void ObjectInstance::SetField(FieldSymbol* field, ObjectInstance* instance, CallStackFrame* frame)
 {
 	if (instance == nullptr)
-		throw std::runtime_error("got nullptr instance");
+		throw std::runtime_error("Tried to set nullptr ObjectInstance as field value.");
 
 	GenericTypeSymbol* genericInfo = GetGenericInfo(this);
 	TypeSymbol* fieldType = field->ReturnType;
 	if (!RuntimeTypeEquals(fieldType, const_cast<TypeSymbol*>(instance->getInfo()), frame, genericInfo))
-		throw std::runtime_error("incompatible field type");
+		throw std::runtime_error("Tried to set incompatible ObjectInstance type as field value.");
 
 	fieldType = ResolveRuntimeType(fieldType, frame, genericInfo);
 
@@ -258,6 +262,19 @@ bool ObjectInstance::IsInBounds(std::size_t index)
 		throw std::runtime_error("Tried to get size of non array instance");
 
 	return index >= 0 && index < GetArrayLength();
+}
+
+ArgumentsSpan ObjectInstance::ArrayAsSpan()
+{
+	if (Info->Kind != SyntaxKind::ArrayType)
+		throw std::runtime_error("Tried to get args span of non array instance");
+
+	size_t length = GetArrayLength();
+	if (length == 0)
+		return ArgumentsSpan();
+
+	ObjectInstance* first = GetElement(0);
+	return ArgumentsSpan{ &first, length };
 }
 
 void ObjectInstance::IncrementReference()

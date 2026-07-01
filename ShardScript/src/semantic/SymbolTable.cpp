@@ -1,13 +1,12 @@
 #include <shard/semantic/SymbolTable.hpp>
 #include <shard/semantic/PrimitiveOperators.hpp>
 
-#include <shard/compilation/ByteCodeEncoder.hpp>
-#include <shard/semantic/SymbolFactory.hpp>
-#include <shard/runtime/MethodCallState.hpp>
-
 #include <shard/parsing/SyntaxNode.hpp>
-#include <shard/semantic/SyntaxSymbol.hpp>
 #include <shard/parsing/SyntaxKind.hpp>
+
+#include <shard/semantic/SyntaxSymbol.hpp>
+#include <shard/semantic/SymbolFactory.hpp>
+#include <shard/semantic/SymbolBuilder.hpp>
 
 #include <shard/semantic/symbols/TypeSymbol.hpp>
 #include <shard/semantic/symbols/StructSymbol.hpp>
@@ -22,9 +21,13 @@
 #include <shard/semantic/symbols/TypeParameterSymbol.hpp>
 #include <shard/semantic/symbols/ArrayTypeSymbol.hpp>
 #include <shard/semantic/symbols/GenericTypeSymbol.hpp>
+#include <shard/semantic/symbols/GenericTypeSymbol.hpp>
 
 #include <shard/runtime/ObjectInstance.hpp>
 #include <shard/runtime/GarbageCollector.hpp>
+#include <shard/runtime/MethodCallState.hpp>
+
+#include <shard/compilation/ByteCodeEncoder.hpp>
 
 #include <vector>
 #include <ranges>
@@ -74,27 +77,6 @@ static std::string WStringToString(const std::wstring& value)
 	return result;
 }
 
-static std::wstring ObjectInstanceToString(const VirtualMachine* host, ObjectInstance* instance)
-{
-	TypeSymbol* type = const_cast<TypeSymbol*>(instance->getInfo());
-	MethodSymbol* implementation = type->FindInterfaceImplementation(TRAIT_PRINTABLE_ToString);
-
-	/*
-	if (implementation == nullptr)
-		throw std::runtime_error("Type '" + WStringToString(type->FullName) + "' does not implement IPrintable");
-	*/
-
-	if (implementation == nullptr)
-		return type->FullName;
-
-	host->InvokeMethod(implementation, { instance });
-	ObjectInstance* result = host->CurrentFrame()->PopStack();
-	if (result == nullptr || result->getInfo() != SymbolTable::Primitives::String)
-		throw std::runtime_error("ToString did not return a string");
-
-	return result->AsString();
-}
-
 static ObjectInstance* primitive_boolean_to_string(const CallState& context)
 {
 	bool value = context.Args[0]->AsBoolean();
@@ -126,6 +108,40 @@ static ObjectInstance* primitive_string_to_string(const CallState& context)
 	return self;
 }
 
+static ObjectInstance* InvokeToString(const VirtualMachine* host, ObjectInstance* instance)
+{
+	TypeSymbol* type = const_cast<TypeSymbol*>(instance->getInfo());
+	MethodSymbol* implementation = type->FindInterfaceImplementation(TRAIT_PRINTABLE_ToString);
+
+	/*
+	if (implementation == nullptr)
+		throw std::runtime_error("Type '" + WStringToString(type->FullName) + "' does not implement IPrintable");
+	*/
+
+	if (implementation == nullptr)
+		return nullptr;
+
+	host->InvokeMethod(implementation, { instance });
+	ObjectInstance* result = host->CurrentFrame()->PopStack();
+	if (result == nullptr || result->getInfo() != SymbolTable::Primitives::String)
+		throw std::runtime_error("ToString did not return a string");
+
+	return result;
+}
+
+static void AppendAsString(const CallState& context, std::wostringstream& result, ObjectInstance* instance)
+{
+	ObjectInstance* asString = InvokeToString(&context.Runtimer, instance);
+	if (asString == nullptr)
+	{
+		result << instance->getInfo()->FullName;
+		return;
+	}
+
+	result << asString->AsString();
+	context.Collector.CollectInstance(asString);
+}
+
 static ObjectInstance* primitive_array_to_string(const CallState& context)
 {
 	ObjectInstance* instance = context.Args[0]; // this
@@ -139,13 +155,14 @@ static ObjectInstance* primitive_array_to_string(const CallState& context)
 	result << L"[";
 
 	ObjectInstance* element = instance->GetElement(0);
-	result << ObjectInstanceToString(&context.Runtimer, element);
+	AppendAsString(context, result, element);
 	context.Collector.CollectInstance(element);
 
-	for (size_t i = 1; i < size; i++)
+	for (size_t i = 1; i < size; ++i)
 	{
-		element = instance->GetElement(i);
-		result << L", " << ObjectInstanceToString(&context.Runtimer, element);
+		result << L", ";
+		ObjectInstance* element = instance->GetElement(i);
+		AppendAsString(context, result, element);
 		context.Collector.CollectInstance(element);
 	}
 
@@ -565,6 +582,13 @@ static void ResolveStandards(SymbolTable* table)
 				}
 			}
 		}
+
+		// RuntimeException is created implicitly and does not go through normal
+		// layout generation; lay it out manually so the runtime can instantiate it.
+		messageField->MemoryBytesOffset = 0;
+		stackTraceField->MemoryBytesOffset = sizeof(void*);
+		raw->MemoryBytesSize = 2 * sizeof(void*);
+		raw->State = TypeLayoutingState::Visited;
 
 		SymbolTable::StandardTypes::RuntimeException = raw;
 	}

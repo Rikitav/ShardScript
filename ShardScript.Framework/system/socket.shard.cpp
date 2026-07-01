@@ -79,8 +79,8 @@ static ObjectInstance* shard_socket_init(const CallState& context) noexcept(fals
 static ObjectInstance* shard_socket_Connect(const CallState& context) noexcept
 {
     ObjectInstance* instance = context.Args[0];
-    const wchar_t* ip_w = context.Args[0]->AsString();
-    int64_t port = context.Args[1]->AsInteger();
+    const wchar_t* ip_w = context.Args[1]->AsString();
+    int64_t port = context.Args[2]->AsInteger();
     socket_t socket_handle = static_cast<socket_t>(instance->GetField(shard_socket_handle)->AsInteger());
 
     if (socket_handle == INVALID_SOCKET_VAL)
@@ -137,10 +137,12 @@ static ObjectInstance* shard_socket_Receive(const CallState& context) noexcept
 
 static ObjectInstance* shard_socket_Close(const CallState& context) noexcept
 {
-    int64_t socket_handle = context.Args[0]->AsInteger();
+    ObjectInstance* instance = context.Args[0];
+    int64_t socket_handle = instance->GetField(shard_socket_handle)->AsInteger();
     if (socket_handle != INVALID_SOCKET_VAL)
     {
         close_socket_native(static_cast<socket_t>(socket_handle));
+        instance->SetField(shard_socket_handle, context.Collector.FromValue(static_cast<int64_t>(INVALID_SOCKET_VAL)));
     }
 
     return nullptr;
@@ -148,8 +150,7 @@ static ObjectInstance* shard_socket_Close(const CallState& context) noexcept
 
 static ObjectInstance* shard_socket_Dispose(const CallState& context) noexcept
 {
-    context.Runtimer.InvokeMethod(shard_socket_close, {});
-    return nullptr;
+    return shard_socket_Close(context);
 }
 
 SHARDLIB_GETMETADATA
@@ -168,10 +169,9 @@ SHARDLIB_ENTRYPOINT
     shard_socket_handle = tcpSocket.AddField(L"_handle", TYPE_INT, LINK_INSTANCE, ACS_PRIVATE);
 
     tcpSocket.AddInit()
-        .AddParameter(L"port", TYPE_INT)
         .SetCallback(&shard_socket_init);
 
-    tcpSocket.AddMethod(L"Connect", tcpSocket, LINK_INSTANCE)
+    tcpSocket.AddMethod(L"Connect", TYPE_BOOL, LINK_INSTANCE)
         .AddParameter(L"ip", TYPE_STRING)
         .AddParameter(L"port", TYPE_INT)
         .SetCallback(&shard_socket_Connect);
@@ -188,5 +188,6 @@ SHARDLIB_ENTRYPOINT
         .SetCallback(&shard_socket_Close);
 
     tcpSocket.AddMethod(L"Dispose", TYPE_VOID, LINK_INSTANCE)
-        .SetCallback(&shard_socket_Dispose);
+        .SetCallback(&shard_socket_Dispose)
+        .IsImplementationOf(TRAIT_DISPOSABLE_Dispose);
 }
