@@ -1,0 +1,10 @@
+using process;
+using stdio;
+
+namespace subprocess_minimal;
+
+public static func Main() -> void
+{
+    defer p: Process = Process.Start("cmd.exe", "/c echo defer");
+    println(p.ReadToEnd());
+}
