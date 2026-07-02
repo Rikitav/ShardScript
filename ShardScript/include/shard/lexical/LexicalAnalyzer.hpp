@@ -25,6 +25,9 @@ namespace shard
 		SourceTextProvider* SourceText;
 		std::deque<shard::SyntaxToken> ReadBuffer;
 
+		bool HasPutbackSymbol = false;
+		wchar_t PutbackSymbol = L'\0';
+
 	public:
 		LexicalAnalyzer(SourceTextProvider& sourceText);
 		LexicalAnalyzer(SourceTextProvider* sourceText, bool ownsProvider);
@@ -33,6 +36,7 @@ namespace shard
 		shard::SyntaxToken Current() override;
 		shard::SyntaxToken Consume() override;
 		shard::SyntaxToken Peek(int index = 0) override;
+		void PutBackToken(shard::SyntaxToken token) override;
 
 		bool CanConsume() override;
 		bool CanPeek() override;

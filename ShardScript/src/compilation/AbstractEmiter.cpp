@@ -1003,6 +1003,12 @@ void AbstractEmiter::VisitLambdaExpression(LambdaExpressionSyntax* node)
 	Encoder.EmitNewDelegate(GeneratingFor->ExecutableByteCode, node->Symbol);
 }
 
+void AbstractEmiter::VisitTypeExpression(TypeExpressionSyntax* node)
+{
+	// Type expressions are used only as static receivers; member access / invocation
+	// use the resolved ReceiverType directly, so no code needs to be emitted here.
+}
+
 void AbstractEmiter::VisitTernaryExpression(TernaryExpressionSyntax* node)
 {
 	VisitExpression(node->Condition.get());
@@ -1219,15 +1225,39 @@ void AbstractEmiter::VisitBinaryAssignExpression(BinaryExpressionSyntax* node)
 
 void AbstractEmiter::VisitInvocationExpression(InvokationExpressionSyntax* node)
 {
+	bool hasTypeArguments = false;
+	std::size_t ownerParamCount = 0;
+
 	if (node->ReceiverType != nullptr && node->ReceiverType->Kind == SyntaxKind::GenericType)
 	{
 		GenericTypeSymbol* genericType = static_cast<GenericTypeSymbol*>(node->ReceiverType);
 		TypeSymbol* underlyingType = genericType->UnderlayingType;
-		for (std::size_t i = 0; i < underlyingType->TypeParameters.size(); i++)
+		ownerParamCount = underlyingType->TypeParameters.size();
+		for (std::size_t i = 0; i < ownerParamCount; i++)
 		{
 			TypeSymbol* concreteType = genericType->SubstituteTypeParameters(underlyingType->TypeParameters[i]);
 			if (concreteType != nullptr)
+			{
 				Encoder.EmitLoadTypeArgument(GeneratingFor->ExecutableByteCode, static_cast<std::uint16_t>(i), concreteType);
+				hasTypeArguments = true;
+			}
+		}
+	}
+	else if (node->Symbol != nullptr && node->Symbol->Parent != nullptr && node->Symbol->Parent->IsType())
+	{
+		ownerParamCount = static_cast<TypeSymbol*>(node->Symbol->Parent)->TypeParameters.size();
+	}
+
+	if (!node->BoundTypeArguments.empty())
+	{
+		for (std::size_t i = 0; i < node->BoundTypeArguments.size(); ++i)
+		{
+			TypeSymbol* concreteType = node->BoundTypeArguments[i];
+			if (concreteType != nullptr)
+			{
+				Encoder.EmitLoadTypeArgument(GeneratingFor->ExecutableByteCode, static_cast<std::uint16_t>(ownerParamCount + i), concreteType);
+				hasTypeArguments = true;
+			}
 		}
 	}
 
@@ -1237,6 +1267,8 @@ void AbstractEmiter::VisitInvocationExpression(InvokationExpressionSyntax* node)
 
 	if (node->IsDelegateInvocation)
 		Encoder.EmitCallDelegate(GeneratingFor->ExecutableByteCode);
+	else if (hasTypeArguments)
+		Encoder.EmitCallGenericMethod(GeneratingFor->ExecutableByteCode, node->Symbol);
 	else
 		EmitMethodCall(node->Symbol);
 }

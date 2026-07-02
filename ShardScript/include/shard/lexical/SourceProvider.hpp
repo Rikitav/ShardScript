@@ -19,7 +19,8 @@ namespace shard
 		virtual shard::SyntaxToken Current() = 0;
 		virtual shard::SyntaxToken Consume() = 0;
 		virtual shard::SyntaxToken Peek(int index = 0) = 0;
-		
+		virtual void PutBackToken(shard::SyntaxToken token) = 0;
+
 		virtual bool CanConsume() = 0;
 		virtual bool CanPeek() = 0;
 	};

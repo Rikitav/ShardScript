@@ -63,6 +63,7 @@
 #include <shard/parsing/nodes/Expressions/LinkedExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/CollectionExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/LambdaExpressionSyntax.hpp>
+#include <shard/parsing/nodes/Expressions/TypeExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/TernaryExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/CastExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/IsExpressionSyntax.hpp>
@@ -275,7 +276,7 @@ std::unique_ptr<MemberDeclarationSyntax> SourceParser::ReadMemberDeclaration(Sou
 		}
 	}
 
-	// Declaration prediction: func name(params) -> type { }
+	// Declaration prediction: func name<T>(params) -> type { }
 	if (current.Type == TokenType::FunctionKeyword)
 	{
 		reader.Consume(); // fn
@@ -288,6 +289,9 @@ std::unique_ptr<MemberDeclarationSyntax> SourceParser::ReadMemberDeclaration(Sou
 			info.Identifier = reader.Current();
 			reader.Consume();
 		}
+
+		if (reader.Current().Type == TokenType::LessOperator)
+			info.Generics = ReadTypeParametersList(reader, parent);
 
 		return ReadMethodDeclaration(reader, info, parent);
 	}
@@ -1408,10 +1412,33 @@ std::unique_ptr<TypeArgumentsListSyntax> SourceParser::ReadTypeArgumentsList(Sou
 		return syntax;
 	}
 
+	if (checkCloser.Type == TokenType::RightShiftOperator)
+	{
+		// Split the >> operator into two closing > tokens so nested
+		// generic types like Container<Container<int>> parse correctly.
+		reader.Consume();
+		SyntaxToken firstGreater(TokenType::GreaterOperator, L">", checkCloser.Location, false);
+		SyntaxToken secondGreater(TokenType::GreaterOperator, L">", checkCloser.Location, false);
+		syntax->CloseToken = firstGreater;
+		reader.PutBackToken(secondGreater);
+		return syntax;
+	}
+
 	while (reader.CanConsume())
 	{
 		auto type = ReadType(reader, syntax.get());
 		syntax->Types.push_back(std::move(type));
+
+		SyntaxToken separatorToken = reader.Current();
+		if (separatorToken.Type == TokenType::RightShiftOperator)
+		{
+			reader.Consume();
+			SyntaxToken firstGreater(TokenType::GreaterOperator, L">", separatorToken.Location, false);
+			SyntaxToken secondGreater(TokenType::GreaterOperator, L">", separatorToken.Location, false);
+			syntax->CloseToken = firstGreater;
+			reader.PutBackToken(secondGreater);
+			break;
+		}
 
 		// Try to match separator with error recovery
 		if (!TryMatch(reader, { TokenType::Comma, TokenType::GreaterOperator }, L"Expected ',' or '>'", 3))
@@ -1419,7 +1446,7 @@ std::unique_ptr<TypeArgumentsListSyntax> SourceParser::ReadTypeArgumentsList(Sou
 			break;
 		}
 
-		SyntaxToken separatorToken = reader.Current();
+		separatorToken = reader.Current();
 		reader.Consume();
 
 		if (separatorToken.Type == TokenType::GreaterOperator)
@@ -2448,6 +2475,37 @@ std::unique_ptr<SwitchExpressionSyntax> SourceParser::ReadSwitchExpression(Sourc
 	return syntax;
 }
 
+static bool IsGenericInvocation(SourceProvider& reader)
+{
+	// The current token is '<'; scan forward to find the matching '>' and
+	// check whether it is immediately followed by '('.
+	std::size_t index = 0;
+	int depth = 1;
+
+	while (true)
+	{
+		SyntaxToken token = reader.Peek(static_cast<int>(index));
+		if (token.Type == TokenType::EndOfFile || token.Type == TokenType::Unknown)
+			return false;
+
+		if (token.Type == TokenType::LessOperator)
+		{
+			depth++;
+		}
+		else if (token.Type == TokenType::GreaterOperator)
+		{
+			depth--;
+			if (depth == 0)
+			{
+				SyntaxToken next = reader.Peek(static_cast<int>(index + 1));
+				return next.Type == TokenType::OpenCurl;
+			}
+		}
+
+		index++;
+	}
+}
+
 std::unique_ptr<LinkedExpressionNode> SourceParser::ReadLinkedExpressionNode(SourceProvider& reader, SyntaxNode* parent, std::unique_ptr<ExpressionSyntax> previous, bool isFirst)
 {
 	if (!reader.CanConsume())
@@ -2487,6 +2545,70 @@ std::unique_ptr<LinkedExpressionNode> SourceParser::ReadLinkedExpressionNode(Sou
 			auto invokation = std::make_unique<InvokationExpressionSyntax>(identifier, std::move(previous), parent);
 			invokation->DelimeterToken = delimeter;
 			invokation->ArgumentsList = ReadArgumentsList(reader, invokation.get());
+
+			currentNode = std::move(invokation);
+			break;
+		}
+
+		case TokenType::LessOperator:
+		{
+			bool genericInvocation = IsGenericInvocation(reader);
+			bool genericTypeReceiver = false;
+			if (!genericInvocation)
+			{
+				// Check whether <...> is followed by '.' (generic type as static receiver).
+				// The current '<' is already consumed as current token, so start with depth=1.
+				std::size_t index = 0;
+				int depth = 1;
+				while (true)
+				{
+					SyntaxToken token = reader.Peek(static_cast<int>(index));
+					if (token.Type == TokenType::EndOfFile || token.Type == TokenType::Unknown)
+						break;
+
+					if (token.Type == TokenType::LessOperator)
+					{
+						depth++;
+					}
+					else if (token.Type == TokenType::GreaterOperator)
+					{
+						depth--;
+						if (depth == 0)
+						{
+							SyntaxToken next = reader.Peek(static_cast<int>(index + 1));
+							if (next.Type == TokenType::Delimeter)
+								genericTypeReceiver = true;
+							break;
+						}
+					}
+
+					index++;
+				}
+			}
+
+			if (!genericInvocation && !genericTypeReceiver)
+			{
+				currentNode = std::make_unique<MemberAccessExpressionSyntax>(identifier, std::move(previous), parent);
+				currentNode->DelimeterToken = delimeter;
+				return currentNode;
+			}
+
+			if (genericTypeReceiver)
+			{
+				auto idType = std::make_unique<IdentifierNameTypeSyntax>(parent);
+				idType->Identifier = identifier;
+				auto genericType = std::make_unique<GenericTypeSyntax>(std::move(idType), parent);
+				genericType->Arguments = ReadTypeArgumentsList(reader, genericType.get());
+				auto typeExpression = std::make_unique<TypeExpressionSyntax>(std::move(genericType), parent);
+				return ReadLinkedExpressionNode(reader, parent, std::move(typeExpression), false);
+			}
+
+			auto invokation = std::make_unique<InvokationExpressionSyntax>(identifier, std::move(previous), parent);
+			invokation->DelimeterToken = delimeter;
+			invokation->TypeArguments = ReadTypeArgumentsList(reader, invokation.get());
+
+			if (reader.Current().Type == TokenType::OpenCurl)
+				invokation->ArgumentsList = ReadArgumentsList(reader, invokation.get());
 
 			currentNode = std::move(invokation);
 			break;

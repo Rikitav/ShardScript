@@ -1,0 +1,24 @@
+using stdio;
+
+namespace hello_world;
+
+public class Factory
+{
+    public static func Make<T>(v: T) -> Container<T>
+    {
+        c: Container<T> = new Container<T>();
+        c.Value = v;
+        return c;
+    }
+}
+
+public class Container<T>
+{
+    public Value: T;
+}
+
+public static func Main() -> void
+{
+    c: Container<int> = Factory.Make(42);
+    println(c.Value);
+}

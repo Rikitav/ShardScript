@@ -28,6 +28,15 @@ TypeSymbol* GenericTypeSymbol::SubstituteTypeParameters(TypeParameterSymbol* typ
 	return find == _typeParametersMap.end() ? nullptr : find->second;
 }
 
+std::size_t GenericTypeSymbol::GetFieldOffset(FieldSymbol* field) const
+{
+	auto it = FieldOffsets.find(field);
+	if (it != FieldOffsets.end())
+		return it->second;
+
+	return field->MemoryBytesOffset;
+}
+
 MethodSymbol* GenericTypeSymbol::FindMethod(std::wstring& name, const std::vector<TypeSymbol*>& parameterTypes)
 {
 	static const auto predicate = [this](ParameterSymbol* left, TypeSymbol* right)

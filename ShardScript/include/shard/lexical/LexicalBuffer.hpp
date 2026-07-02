@@ -49,6 +49,7 @@ namespace shard
 		shard::SyntaxToken Current() override;
 		shard::SyntaxToken Consume() override;
 		shard::SyntaxToken Peek(int index) override;
+		void PutBackToken(shard::SyntaxToken token) override;
 		bool CanConsume() override;
 		bool CanPeek() override;
 	};

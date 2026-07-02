@@ -175,7 +175,13 @@ static std::wstring ReadLine(const std::wstring& prompt = L">>> ")
 {
 	std::wstring line;
 	std::wcout << prompt;
-	std::getline(std::wcin, line);
+	if (!std::getline(std::wcin, line))
+	{
+		std::wcin.clear();
+		std::wcin.ignore((std::numeric_limits<std::streamsize>::max)(), L'\n');
+		return L"exit";
+	}
+
 	return line;
 }
 

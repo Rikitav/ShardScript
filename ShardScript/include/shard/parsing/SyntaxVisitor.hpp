@@ -63,6 +63,7 @@
 #include <shard/parsing/nodes/Expressions/CollectionExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/RangeExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/LambdaExpressionSyntax.hpp>
+#include <shard/parsing/nodes/Expressions/TypeExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/TernaryExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/IfExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/SwitchExpressionSyntax.hpp>
@@ -151,6 +152,7 @@ namespace shard
         virtual void VisitCollectionExpression(CollectionExpressionSyntax* node);
         virtual void VisitRangeExpression(RangeExpressionSyntax* node);
         virtual void VisitLambdaExpression(LambdaExpressionSyntax* node);
+        virtual void VisitTypeExpression(TypeExpressionSyntax* node);
         virtual void VisitTernaryExpression(TernaryExpressionSyntax* node);
         virtual void VisitIfExpression(IfExpressionSyntax* node);
         virtual void VisitSwitchExpression(SwitchExpressionSyntax* node);

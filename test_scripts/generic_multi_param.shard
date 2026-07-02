@@ -1,0 +1,18 @@
+using stdio;
+
+namespace hello_world;
+
+public class Pair<K, V>
+{
+    public Key: K;
+    public Value: V;
+}
+
+public static func Main() -> void
+{
+    p: Pair<int, string> = new Pair<int, string>();
+    p.Key = 1;
+    p.Value = "one";
+    println(p.Key);
+    println(p.Value);
+}

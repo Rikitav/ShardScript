@@ -27,6 +27,7 @@
 #include <shard/parsing/nodes/Expressions/CollectionExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/RangeExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/LambdaExpressionSyntax.hpp>
+#include <shard/parsing/nodes/Expressions/TypeExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/TernaryExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/IfExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/SwitchExpressionSyntax.hpp>
@@ -88,6 +89,12 @@ namespace shard
 
 		bool MatchMethodArguments(SyntaxToken blameToken, std::vector<ParameterSymbol*>& parameters, std::vector<std::unique_ptr<ArgumentSyntax>>& arguments, GenericTypeSymbol* genericType = nullptr, std::size_t parameterOffset = 0);
 		shard::TypeSymbol* SubstituteTypeParameters(shard::TypeSymbol* type, shard::GenericTypeSymbol* genericType);
+		shard::TypeSymbol* SubstituteTypeParameters(shard::TypeSymbol* type, shard::GenericTypeSymbol* genericType, shard::MethodSymbol* method, const std::vector<TypeSymbol*>& methodTypeArgs);
+
+		shard::TypeSymbol* SubstituteMethodTypeParameter(shard::TypeSymbol* type, shard::MethodSymbol* method, const std::vector<TypeSymbol*>& methodTypeArgs);
+		shard::TypeSymbol* ResolveTypeExpression(shard::TypeSyntax* type);
+		bool InferMethodTypeArguments(shard::MethodSymbol* method, const std::vector<TypeSymbol*>& argTypes, std::vector<TypeSymbol*>& outMethodTypeArgs);
+		bool MatchGenericMethodArguments(shard::MethodSymbol* method, const std::vector<TypeSymbol*>& argTypes, shard::GenericTypeSymbol* genericType, const std::vector<TypeSymbol*>& methodTypeArgs);
 
 		shard::TypeSymbol* AnalyzeNumberLiteral(shard::LiteralExpressionSyntax* node);
 		shard::TypeSymbol* AnalyzeDoubleLiteral(shard::LiteralExpressionSyntax* node);
@@ -129,6 +136,7 @@ namespace shard
 		void VisitCollectionExpression(shard::CollectionExpressionSyntax* node) override;
 		void VisitRangeExpression(shard::RangeExpressionSyntax* node) override;
 		void VisitLambdaExpression(shard::LambdaExpressionSyntax* node) override;
+		void VisitTypeExpression(shard::TypeExpressionSyntax* node) override;
 		void VisitTernaryExpression(shard::TernaryExpressionSyntax* node) override;
 		void VisitIfExpression(shard::IfExpressionSyntax* node) override;
 		void VisitSwitchExpression(shard::SwitchExpressionSyntax* node) override;

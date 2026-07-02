@@ -59,14 +59,17 @@ bool TypeSymbol::Equals(const TypeSymbol* left, const TypeSymbol* right)
 			if (!TypeSymbol::Equals(thisGenericInfo->UnderlayingType, otherGenericInfo->UnderlayingType))
 				return false;
 
-			std::size_t size = thisGenericInfo->TypeParameters.size();
-			if (otherGenericInfo->TypeParameters.size() != size)
+			TypeSymbol* thisUnderlyingType = thisGenericInfo->UnderlayingType;
+			TypeSymbol* otherUnderlyingType = otherGenericInfo->UnderlayingType;
+
+			std::size_t size = thisUnderlyingType->TypeParameters.size();
+			if (otherUnderlyingType->TypeParameters.size() != size)
 				return false;
 
 			for (std::size_t i = 0; i < size; i++)
 			{
-				TypeSymbol* thisParam = thisGenericInfo->SubstituteTypeParameters(thisGenericInfo->TypeParameters.at(i));
-				TypeSymbol* otherParam = otherGenericInfo->SubstituteTypeParameters(otherGenericInfo->TypeParameters.at(i));
+				TypeSymbol* thisParam = thisGenericInfo->SubstituteTypeParameters(thisUnderlyingType->TypeParameters.at(i));
+				TypeSymbol* otherParam = otherGenericInfo->SubstituteTypeParameters(otherUnderlyingType->TypeParameters.at(i));
 
 				if (!TypeSymbol::Equals(thisParam, otherParam))
 					return false;
@@ -247,6 +250,46 @@ bool TypeSymbol::IsAssignableFrom(const TypeSymbol* target, const TypeSymbol* so
     }
 
     return false;
+}
+
+std::wstring TypeSymbol::GetDisplayName(const TypeSymbol* type)
+{
+	if (type == nullptr)
+		return L"<error>";
+
+	if (type->Kind == SyntaxKind::GenericType)
+	{
+		const GenericTypeSymbol* generic = static_cast<const GenericTypeSymbol*>(type);
+		const TypeSymbol* underlying = generic->UnderlayingType;
+
+		std::wstring result = underlying != nullptr ? underlying->Name : L"<error>";
+		result += L"<";
+
+		if (underlying != nullptr)
+		{
+			bool first = true;
+			for (TypeParameterSymbol* param : underlying->TypeParameters)
+			{
+				if (!first)
+					result += L", ";
+
+				TypeSymbol* arg = const_cast<GenericTypeSymbol*>(generic)->SubstituteTypeParameters(param);
+				result += GetDisplayName(arg != nullptr ? arg : param);
+				first = false;
+			}
+		}
+
+		result += L">";
+		return result;
+	}
+
+	if (type->Kind == SyntaxKind::ArrayType)
+	{
+		const ArrayTypeSymbol* array = static_cast<const ArrayTypeSymbol*>(type);
+		return GetDisplayName(array->UnderlayingType) + L"[]";
+	}
+
+	return type->Name;
 }
 
 bool TypeSymbol::IsPrimitive()

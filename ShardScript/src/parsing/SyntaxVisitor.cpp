@@ -885,6 +885,13 @@ void SyntaxVisitor::VisitExpression(ExpressionSyntax* node)
 			return;
 		}
 
+		case SyntaxKind::TypeExpression:
+		{
+			TypeExpressionSyntax* expression = static_cast<TypeExpressionSyntax*>(node);
+			VisitTypeExpression(expression);
+			return;
+		}
+
 		case SyntaxKind::TernaryExpression:
 		{
 			TernaryExpressionSyntax* expression = static_cast<TernaryExpressionSyntax*>(node);
@@ -988,6 +995,15 @@ void SyntaxVisitor::VisitLambdaExpression(LambdaExpressionSyntax* node)
 		VisitStatementsBlock(node->Body.get());
 }
 
+void SyntaxVisitor::VisitTypeExpression(TypeExpressionSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (node->Type != nullptr)
+		VisitType(node->Type.get());
+}
+
 void SyntaxVisitor::VisitTernaryExpression(TernaryExpressionSyntax* node)
 {
 	if (node == nullptr)
@@ -1028,6 +1044,12 @@ void SyntaxVisitor::VisitInvocationExpression(InvokationExpressionSyntax* node)
 {
 	if (node == nullptr)
 		return;
+
+	if (node->TypeArguments != nullptr)
+	{
+		for (const auto& typeArg : node->TypeArguments->Types)
+			VisitType(typeArg.get());
+	}
 
 	if (node->ArgumentsList != nullptr)
 		VisitArgumentsList(node->ArgumentsList.get());

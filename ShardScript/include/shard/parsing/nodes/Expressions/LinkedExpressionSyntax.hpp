@@ -7,6 +7,7 @@
 
 #include <shard/parsing/nodes/ExpressionSyntax.hpp>
 #include <shard/parsing/nodes/ArgumentsListSyntax.hpp>
+#include <shard/parsing/nodes/TypeArgumentsListSyntax.hpp>
 
 #include <shard/semantic/symbols/FieldSymbol.hpp>
 #include <shard/semantic/symbols/MethodSymbol.hpp>
@@ -85,11 +86,13 @@ namespace shard
 	{
 	public:
 		const SyntaxToken IdentifierToken;
+		std::unique_ptr<TypeArgumentsListSyntax> TypeArguments = nullptr;
 		std::unique_ptr<ArgumentsListSyntax> ArgumentsList = nullptr;
 		MethodSymbol* Symbol = nullptr;
 		TypeSymbol* ReceiverType = nullptr;
 		bool IsDelegateInvocation = false;
 		bool IsExtensionMethodInvocation = false;
+		std::vector<TypeSymbol*> BoundTypeArguments;
 
 		inline InvokationExpressionSyntax(SyntaxToken identifier, std::unique_ptr<ExpressionSyntax>&& previous, SyntaxNode* parent)
 			: LinkedExpressionNode(SyntaxKind::InvokationExpression, std::move(previous), parent), IdentifierToken(identifier) { }
