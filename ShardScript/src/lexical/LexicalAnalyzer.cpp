@@ -247,7 +247,7 @@ bool LexicalAnalyzer::ReadNextWord(std::wstring& word, TokenType& type)
 		{
 			while (Advance(PeekSymbol))
 			{
-				switch (Symbol)
+				switch (PeekSymbol)
 				{
 					case L'\n':
 					{
@@ -266,10 +266,7 @@ bool LexicalAnalyzer::ReadNextWord(std::wstring& word, TokenType& type)
 					}
 
 					default:
-					{
-						Advance(Symbol);
 						continue;
-					}
 				}
 			}
 
