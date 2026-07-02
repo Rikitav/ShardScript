@@ -146,7 +146,11 @@ std::int64_t ObjectInstance::getReferencesCounter() const
 
 ObjectInstance* ObjectInstance::GetField(FieldSymbol* field, CallStackFrame* frame)
 {
-	if (field->Parent != getInfo())
+	const TypeSymbol* instanceType = getInfo();
+	if (instanceType->Kind == SyntaxKind::GenericType)
+		instanceType = static_cast<const GenericTypeSymbol*>(instanceType)->UnderlayingType;
+
+	if (field->Parent != instanceType)
 		throw std::runtime_error("Field does not belong to this instance.");
 
 	GenericTypeSymbol* genericInfo = GetGenericInfo(this);
@@ -171,13 +175,20 @@ void ObjectInstance::SetField(FieldSymbol* field, ObjectInstance* instance, Call
 	if (instance == nullptr)
 		throw std::runtime_error("Tried to set nullptr ObjectInstance as field value.");
 
+	const TypeSymbol* instanceType = getInfo();
+	if (instanceType->Kind == SyntaxKind::GenericType)
+		instanceType = static_cast<const GenericTypeSymbol*>(instanceType)->UnderlayingType;
+
+	if (field->Parent != instanceType)
+		throw std::runtime_error("Field does not belong to this instance.");
+
 	GenericTypeSymbol* genericInfo = GetGenericInfo(this);
 	TypeSymbol* fieldType = field->ReturnType;
+
 	if (!RuntimeTypeEquals(fieldType, const_cast<TypeSymbol*>(instance->getInfo()), frame, genericInfo))
 		throw std::runtime_error("Tried to set incompatible ObjectInstance type as field value.");
 
 	fieldType = ResolveRuntimeType(fieldType, frame, genericInfo);
-
 	if (fieldType->IsReferenceType())
 	{
 		ObjectInstance* oldValue = GetField(field, frame);
