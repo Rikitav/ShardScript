@@ -111,18 +111,29 @@ std::unique_ptr<CompilationUnitSyntax> SourceParser::ReadCompilationUnit(SourceP
 		{
 			case TokenType::UsingKeyword:
 			{
+				if (rawUnit->Namespace != nullptr || !rawUnit->Members.empty())
+				{
+					Diagnostics.ReportError(token, L"Using directive must be declared at the top of the compilation unit");
+				}
+
 				auto pDirective = ReadUsingDirective(reader, rawUnit);
-				*const_cast<SyntaxNode**>(&pDirective->Parent) = rawUnit;
+				pDirective->Parent = rawUnit;
 				rawUnit->Usings.push_back(std::move(pDirective));
 				break;
 			}
 
 			case TokenType::NamespaceKeyword:
 			{
+				if (!rawUnit->Members.empty())
+				{
+					Diagnostics.ReportError(token, L"Namespace directive must be declared before any member declarations");
+				}
+
 				if (rawUnit->Namespace != nullptr)
 				{
 					Diagnostics.ReportError(token, L"Only one namespace declaration is allowed per compilation unit");
 					reader.Consume();
+					
 					while (reader.CanConsume() && reader.Current().Type != TokenType::Semicolon)
 						reader.Consume();
 
@@ -133,7 +144,7 @@ std::unique_ptr<CompilationUnitSyntax> SourceParser::ReadCompilationUnit(SourceP
 				}
 
 				auto pNamespace = ReadNamespaceDeclaration(reader, rawUnit);
-				*const_cast<SyntaxNode**>(&pNamespace->Parent) = rawUnit;
+				pNamespace->Parent = rawUnit;
 				rawUnit->Namespace = std::move(pNamespace);
 				break;
 			}
@@ -144,7 +155,7 @@ std::unique_ptr<CompilationUnitSyntax> SourceParser::ReadCompilationUnit(SourceP
 				if (IsMemberDeclaration(token.Type, peek.Type))
 				{
 					auto pMember = ReadMemberDeclaration(reader, rawUnit);
-					*const_cast<SyntaxNode**>(&pMember->Parent) = rawUnit;
+					pMember->Parent = rawUnit;
 					rawUnit->Members.push_back(std::move(pMember));
 					break;
 				}
@@ -226,6 +237,7 @@ std::unique_ptr<NamespaceDeclarationSyntax> SourceParser::ReadNamespaceDeclarati
 			// Error recovery: expected identifier after '.'
 			break;
 		}
+
 		SyntaxToken identifier = reader.Current();
 		syntax->IdentifierTokens.push_back(identifier);
 		reader.Consume();
@@ -1493,7 +1505,7 @@ void SourceParser::ReadTypeBody(SourceProvider& reader, TypeDeclarationSyntax* s
 			auto pMember = ReadMemberDeclaration(reader, syntax);
 			if (pMember != nullptr)
 			{
-				*const_cast<SyntaxNode**>(&pMember->Parent) = syntax;
+				pMember->Parent = syntax;
 				syntax->Members.push_back(std::move(pMember));
 				continue; // Continue reading more members
 			}

@@ -15,5 +15,7 @@ namespace shard
         inline CompilationUnit(const CompilationUnit& other) = delete;
 
         inline virtual ~CompilationUnit() = default;
+
+        void OnSymbolDeclared(SyntaxSymbol* symbol) override;
     };
 }

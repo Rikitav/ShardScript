@@ -142,9 +142,9 @@ void DeclarationCollector::VisitClassDeclaration(ClassDeclarationSyntax* node)
         {
             Diagnostics.ReportError(node->IdentifierToken, L"Cannot resolve Classes' owner type");
         }
-        else if (symbol->Parent->Kind != SyntaxKind::NamespaceDeclaration)
+        else if (symbol->Parent->Kind != SyntaxKind::NamespaceDeclaration && symbol->Parent->Kind != SyntaxKind::CompilationUnit)
         {
-            Diagnostics.ReportError(node->IdentifierToken, L"Classes can only be declared inside Namespace");
+            Diagnostics.ReportError(node->IdentifierToken, L"Classes can only be declared inside Namespace or CompilationUnit");
         }
     }
 
@@ -194,9 +194,9 @@ void DeclarationCollector::VisitInterfaceDeclaration(InterfaceDeclarationSyntax*
         {
             Diagnostics.ReportError(node->IdentifierToken, L"Cannot resolve Interfaces' owner type");
         }
-        else if(symbol->Parent->Kind != SyntaxKind::NamespaceDeclaration)
+        else if(symbol->Parent->Kind != SyntaxKind::NamespaceDeclaration && symbol->Parent->Kind != SyntaxKind::CompilationUnit)
         {
-            Diagnostics.ReportError(node->IdentifierToken, L"Interfaces can only be declared inside Namespace");
+            Diagnostics.ReportError(node->IdentifierToken, L"Interfaces can only be declared inside Namespace or CompilationUnit");
         }
     }
 
@@ -261,9 +261,9 @@ void DeclarationCollector::VisitStructDeclaration(StructDeclarationSyntax* node)
         {
             Diagnostics.ReportError(node->IdentifierToken, L"Cannot resolve Structs' owner type");
         }
-        else if (symbol->Parent->Kind != SyntaxKind::NamespaceDeclaration)
+        else if (symbol->Parent->Kind != SyntaxKind::NamespaceDeclaration && symbol->Parent->Kind != SyntaxKind::CompilationUnit)
         {
-            Diagnostics.ReportError(node->IdentifierToken, L"Structs can only be declared inside Namespace");
+            Diagnostics.ReportError(node->IdentifierToken, L"Structs can only be declared inside Namespace or CompilationUnit");
         }
     }
 
@@ -319,9 +319,9 @@ void DeclarationCollector::VisitDelegateDeclaration(DelegateDeclarationSyntax* n
         {
             Diagnostics.ReportError(node->IdentifierToken, L"Cannot resolve Delegates' owner type");
         }
-        else if (symbol->Parent->Kind != SyntaxKind::NamespaceDeclaration)
+        else if (symbol->Parent->Kind != SyntaxKind::NamespaceDeclaration && symbol->Parent->Kind != SyntaxKind::CompilationUnit)
         {
-            Diagnostics.ReportError(node->IdentifierToken, L"Delegates can only be declared inside Namespace");
+            Diagnostics.ReportError(node->IdentifierToken, L"Delegates can only be declared inside Namespace or CompilationUnit");
         }
     }
 
@@ -391,9 +391,9 @@ void DeclarationCollector::VisitEnumDeclaration(EnumDeclarationSyntax* node)
 		{
 			Diagnostics.ReportError(node->IdentifierToken, L"Cannot resolve Enums' owner type");
 		}
-		else if (symbol->Parent->Kind != SyntaxKind::NamespaceDeclaration)
+		else if (symbol->Parent->Kind != SyntaxKind::NamespaceDeclaration && symbol->Parent->Kind != SyntaxKind::CompilationUnit)
 		{
-			Diagnostics.ReportError(node->IdentifierToken, L"Enums can only be declared inside Namespace");
+			Diagnostics.ReportError(node->IdentifierToken, L"Enums can only be declared inside Namespace or CompilationUnit");
 		}
 	}
 
@@ -548,7 +548,7 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax* node)
         else
         {
             // Checking if owner is type
-            if (symbol->Parent->Kind == SyntaxKind::NamespaceDeclaration)
+            if (symbol->Parent->Kind == SyntaxKind::NamespaceDeclaration || symbol->Parent->Kind == SyntaxKind::CompilationUnit)
             {
                 // Assert: namespace cannot have instance Methods
                 if (symbol->Linking == LINK_INSTANCE)

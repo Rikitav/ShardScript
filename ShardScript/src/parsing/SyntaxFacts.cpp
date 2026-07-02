@@ -319,11 +319,6 @@ bool IsModifier(shard::TokenType type)
 		case TokenType::StaticKeyword:
 		case TokenType::ExternKeyword:
 		case TokenType::ExportKeyword:
-			/*
-		case TokenType::AbstractKeyword:
-		case TokenType::SealedKeyword:
-		case TokenType::PartialKeyword:
-			*/
 			return true;
 
 		default:
@@ -448,31 +443,6 @@ bool IsKeyword(shard::TokenType type)
 
 	return false;
 }
-
-/*
-bool IsKeywordHasExpression(shard::TokenType type)
-{
-	switch (type)
-	{
-		case TokenType::ReturnKeyword:
-			return true;
-
-		default:
-			return false;
-	}
-}
-
-bool IsMethodInvokationExpression(shard::TokenType current, TokenType peek)
-{
-	if (current == TokenType::Identifier)
-	{
-		if (peek == TokenType::OpenCurl || peek == TokenType::Delimeter)
-			return true;
-	}
-
-	return false;
-}
-*/
 
 bool IsPunctuation(shard::TokenType type)
 {

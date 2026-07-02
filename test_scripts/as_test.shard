@@ -1,6 +1,6 @@
 using stdio;
 
-namespace hello_world;
+//namespace hello_world;
 
 public interface IWidget
 {

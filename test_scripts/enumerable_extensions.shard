@@ -1,0 +1,28 @@
+using stdio;
+using collections;
+
+namespace EnumerableExtensions;
+
+public delegate Transform<T, U>(value: T) -> U;
+
+public static func Select<T, U>(source: IEnumerable<T>, action: Transform<T, U>) -> IEnumerable<U>
+{
+	temp := new List<U>();
+	foreach (item in source)
+	{
+		temp.Add(action(item));
+	}
+
+	return temp;
+}
+
+public static func Main() -> void
+{
+	test := [1..10];
+	res := test.Select(lambda (a: int) -> int
+	{
+		return a + 10;
+	});
+
+	println(res);
+}
