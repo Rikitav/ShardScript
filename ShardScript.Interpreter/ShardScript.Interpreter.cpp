@@ -34,12 +34,6 @@
 using namespace shard;
 namespace fs = std::filesystem;
 
-#if defined(_WIN32)
-const fs::path stdlibFilename = "ShardScript.Framework.dll";
-#else
-const fs::path stdlibFilename = "libShardScript.Framework.so";
-#endif
-
 // ANSI color escape sequences
 static const wchar_t* CReset   = L"\x1B[0m";
 static const wchar_t* CBold    = L"\x1B[1m";
@@ -359,7 +353,7 @@ int wmain(int argc, wchar_t* argv[])
 			std::wcout << L"\t> '-h', '--help'        \t Show this help screen." << std::endl;
 			std::wcout << L"\t> '-i', '--interactive' \t Run REPL console" << std::endl;
 			std::wcout << L"\t> '-d', '--decompiled'  \t Instead of running program, decompile it entry point and print its bytecode" << std::endl;
-			std::wcout << L"\t> '--no-std'	          \t Prevents loading standard library from " << stdlibFilename << std::endl;
+			std::wcout << L"\t> '--no-std'	          \t Prevents loading standard library from STD directory" << std::endl;
 			return 0;
 		}
 
@@ -487,6 +481,7 @@ int wmain(int argc, wchar_t* argv[])
 
 	return 0;
 }
+
 #if !defined(_WIN32)
 int main(int argc, char* argv[])
 {
@@ -501,8 +496,8 @@ int main(int argc, char* argv[])
 	wideArgv.reserve(argc + 1);
 	for (auto& arg : wideArgs)
 		wideArgv.push_back(const_cast<wchar_t*>(arg.data()));
-	wideArgv.push_back(nullptr);
 
+	wideArgv.push_back(nullptr);
 	return wmain(argc, wideArgv.data());
 }
 #endif
