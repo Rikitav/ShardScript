@@ -56,6 +56,8 @@ namespace shard
 		void EmitMathPow(std::vector<std::byte>& code);
 		void EmitMathNegative(std::vector<std::byte>& code);
 		void EmitMathPositive(std::vector<std::byte>& code);
+		void EmitMathLeftShift(std::vector<std::byte>& code);
+		void EmitMathRightShift(std::vector<std::byte>& code);
 
 		void EmitCompareEqual(std::vector<std::byte>& code);
 		void EmitCompareNotEqual(std::vector<std::byte>& code);
@@ -90,6 +92,8 @@ namespace shard
 		void EmitCallInterface(std::vector<std::byte>& code, MethodSymbol* interfaceMethod);
 		void EmitIsInstance(std::vector<std::byte>& code, TypeSymbol* type);
 		void EmitCastInterface(std::vector<std::byte>& code, TypeSymbol* type);
+		void EmitCast(std::vector<std::byte>& code, TypeSymbol* type);
+		void EmitCastPrimitive(std::vector<std::byte>& code, TypeSymbol* type);
 		//void EmitCallFunction(std::vector<std::byte>& code, MethodSymbolDelegate* func);
 	};
 }

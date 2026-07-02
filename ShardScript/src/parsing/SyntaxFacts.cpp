@@ -548,6 +548,7 @@ std::wstring GetOperatorMethodName(shard::TokenType type)
 		case TokenType::NotOperator: return L"op_NotOperator";
 
 		case TokenType::Delimeter: return L"op_DotOperator";
+		case TokenType::AsOperator: return L"op_AsOperator";
 
 		default: return L"";
 	}
@@ -591,6 +592,7 @@ shard::TokenType GetTokenTypeFromOperatorName(const std::wstring& name)
 	if (name == L"IncrementOperator") return TokenType::IncrementOperator;
 	if (name == L"DecrementOperator") return TokenType::DecrementOperator;
 	if (name == L"NotOperator") return TokenType::NotOperator;
+	if (name == L"AsOperator") return TokenType::AsOperator;
 
 	return TokenType::Unknown;
 }

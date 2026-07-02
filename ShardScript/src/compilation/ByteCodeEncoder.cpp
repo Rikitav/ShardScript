@@ -227,6 +227,16 @@ void ByteCodeEncoder::EmitMathPositive(std::vector<std::byte>& code)
     AppendDataT(code, OpCode::MATH_POSITIVE);
 }
 
+void ByteCodeEncoder::EmitMathLeftShift(std::vector<std::byte>& code)
+{
+    AppendDataT(code, OpCode::MATH_LEFTSHIFT);
+}
+
+void ByteCodeEncoder::EmitMathRightShift(std::vector<std::byte>& code)
+{
+    AppendDataT(code, OpCode::MATH_RIGHTSHIFT);
+}
+
 void ByteCodeEncoder::EmitCompareEqual(std::vector<std::byte>& code)
 {
     AppendDataT(code, OpCode::COMPARE_EQUAL);
@@ -381,6 +391,18 @@ void ByteCodeEncoder::EmitIsInstance(std::vector<std::byte>& code, TypeSymbol* t
 void ByteCodeEncoder::EmitCastInterface(std::vector<std::byte>& code, TypeSymbol* type)
 {
     AppendDataT(code, OpCode::CASTINTERFACE);
+    AppendData(code, &type, sizeof(type));
+}
+
+void ByteCodeEncoder::EmitCast(std::vector<std::byte>& code, TypeSymbol* type)
+{
+    AppendDataT(code, OpCode::CAST);
+    AppendData(code, &type, sizeof(type));
+}
+
+void ByteCodeEncoder::EmitCastPrimitive(std::vector<std::byte>& code, TypeSymbol* type)
+{
+    AppendDataT(code, OpCode::CASTPRIMITIVE);
     AppendData(code, &type, sizeof(type));
 }
 

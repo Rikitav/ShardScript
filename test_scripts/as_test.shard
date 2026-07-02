@@ -1,0 +1,53 @@
+using stdio;
+
+namespace hello_world;
+
+public interface IWidget
+{
+    func Name() -> string;
+}
+
+public class Widget : IWidget
+{
+    public func Name() -> string
+    {
+        return "widget";
+    }
+}
+
+public class Box
+{
+    public static operator as(w: Widget) -> Box
+    {
+        return new Box();
+    }
+
+    public static operator as(w: Box) -> Widget
+    {
+        return new Widget();
+    }
+}
+
+public static func Main() -> void
+{
+    // primitive cast
+    d: double = 7 as double;
+    i: int = 9.5 as int;
+    print(d);
+    print(",");
+    print(i);
+    println("");
+
+    // reference / interface cast
+    w: Widget = new Widget();
+    iw: IWidget = w as IWidget;
+    print(iw.Name());
+    println("");
+
+    // user-defined conversion
+    b: Box = w as Box;
+    println("boxed");
+
+    w2: Widget = w as Widget;
+    println("widgeted");
+}

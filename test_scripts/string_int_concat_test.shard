@@ -1,0 +1,10 @@
+using stdio;
+
+namespace hello_world;
+
+public static func Main() -> void
+{
+    s: string = "value: " + 42;
+    print(s);
+    println("");
+}

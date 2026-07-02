@@ -134,6 +134,8 @@ namespace shard
 		MATH_POWER,
 		MATH_NEGATIVE,
 		MATH_POSITIVE,
+		MATH_LEFTSHIFT,
+		MATH_RIGHTSHIFT,
 
 		/// <summary>
 		/// Pops two values, compares them for equality, pushes boolean result.
@@ -317,6 +319,23 @@ namespace shard
 		/// <para>> TypeSymbol* pType - The type to cast to.</para>
 		/// </summary>
 		CASTINTERFACE,
+
+		/// <summary>
+		/// Pops an object instance and a target type. Throws an exception if the
+		/// instance is not compatible with the target type; otherwise pushes the
+		/// same instance.
+		/// <para>Includes 1 parameter :</para>
+		/// <para>> TypeSymbol* pType - The type to cast to.</para>
+		/// </summary>
+		CAST,
+
+		/// <summary>
+		/// Pops an object instance and a target primitive type, converts the value
+		/// to the target primitive type, and pushes the new instance.
+		/// <para>Includes 1 parameter :</para>
+		/// <para>> TypeSymbol* pType - The primitive type to cast to.</para>
+		/// </summary>
+		CASTPRIMITIVE,
 
 		/// <summary>
 		/// Marks the beginning of a try-protected region. If an exception is raised

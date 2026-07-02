@@ -1,0 +1,7 @@
+using stdio;
+
+namespace hello_world;
+
+public static func Main() -> void
+{
+}

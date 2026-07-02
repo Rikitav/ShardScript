@@ -256,6 +256,18 @@ static void EmitBinaryOperation(shard::TokenType type, ByteCodeEncoder& encoder,
 			break;
 		}
 
+		case TokenType::LeftShiftOperator:
+		{
+			encoder.EmitMathLeftShift(code);
+			break;
+		}
+
+		case TokenType::RightShiftOperator:
+		{
+			encoder.EmitMathRightShift(code);
+			break;
+		}
+
 		default:
 			throw std::runtime_error("unknown operator");
 	}
@@ -1461,8 +1473,22 @@ void AbstractEmiter::VisitCastExpression(CastExpressionSyntax* node)
     if (node->Expression != nullptr)
         VisitExpression(node->Expression.get());
 
-    if (node->TargetType != nullptr && node->TargetType->Symbol != nullptr)
-        Encoder.EmitCastInterface(GeneratingFor->ExecutableByteCode, node->TargetType->Symbol);
+    if (node->TargetType == nullptr || node->TargetType->Symbol == nullptr)
+        return;
+
+    if (node->ToOperator != nullptr)
+    {
+        EmitMethodCall(node->ToOperator);
+        return;
+    }
+
+    if (node->IsPrimitiveCast)
+    {
+        Encoder.EmitCastPrimitive(GeneratingFor->ExecutableByteCode, node->TargetType->Symbol);
+        return;
+    }
+
+    Encoder.EmitCast(GeneratingFor->ExecutableByteCode, node->TargetType->Symbol);
 }
 
 void AbstractEmiter::VisitIsExpression(IsExpressionSyntax* node)

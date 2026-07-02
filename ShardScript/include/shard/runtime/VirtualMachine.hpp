@@ -7,6 +7,7 @@
 
 #include <shard/runtime/CallStackFrame.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
+#include <shard/runtime/PrimitiveMathModule.hpp>
 
 #include <shard/semantic/symbols/MethodSymbol.hpp>
 #include <shard/semantic/symbols/ConstructorSymbol.hpp>
@@ -29,6 +30,7 @@ namespace shard
 		ApplicationDomain* domain;
 		ProgramVirtualImage& program;
 		GarbageCollector& garbageCollector;
+		PrimitiveMathModule primitiveMath;
 
 		std::vector<std::unique_ptr<CallStackFrame>> CallStack;
 		std::atomic<bool> AbortFlag;

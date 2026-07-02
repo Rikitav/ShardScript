@@ -43,6 +43,32 @@ using namespace shard;
 
 void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder, const OpCode opCode)
 {
+	auto executeBinary = [&](TokenType token)
+	{
+		ObjectInstance* right = frame->PopStack();
+		ObjectInstance* left = frame->PopStack();
+
+		ObjectInstance* result = primitiveMath.ExecuteBinary(token, left, right);
+		if (result == nullptr)
+			result = InvokeOperatorMethod(left, token, right);
+
+		frame->PushStack(result);
+		garbageCollector.CollectInstance(right);
+		garbageCollector.CollectInstance(left);
+	};
+
+	auto executeUnary = [&](TokenType token)
+	{
+		ObjectInstance* operand = frame->PopStack();
+
+		ObjectInstance* result = primitiveMath.ExecuteUnary(token, operand);
+		if (result == nullptr)
+			result = InvokeOperatorMethod(operand, token);
+
+		frame->PushStack(result);
+		garbageCollector.CollectInstance(operand);
+	};
+
 	switch (opCode)
 	{
 		case OpCode::NOP:
@@ -123,6 +149,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		case OpCode::CASTINTERFACE:
 		{
 			TypeSymbol* targetType = decoder.AbsorbTypeSymbol();
+			targetType = frame->ResolveType(targetType);
 			ObjectInstance* instance = frame->PopStack();
 
 			bool compatible = false;
@@ -130,20 +157,6 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			{
 				TypeSymbol* instanceType = const_cast<TypeSymbol*>(instance->getInfo());
 				compatible = TypeSymbol::IsAssignableFrom(targetType, instanceType);
-
-				if (!compatible)
-				{
-					if (instanceType == TYPE_INT && targetType == TYPE_DOUBLE)
-					{
-						frame->PushStack(garbageCollector.FromValue(static_cast<double>(instance->AsInteger())));
-						break;
-					}
-					else if (instanceType == TYPE_DOUBLE && targetType == TYPE_INT)
-					{
-						frame->PushStack(garbageCollector.FromValue(static_cast<std::int64_t>(instance->AsDouble())));
-						break;
-					}
-				}
 			}
 
 			if (compatible)
@@ -156,6 +169,58 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 				garbageCollector.CollectInstance(instance);
 			}
 
+			break;
+		}
+
+		case OpCode::CAST:
+		{
+			TypeSymbol* targetType = decoder.AbsorbTypeSymbol();
+			targetType = frame->ResolveType(targetType);
+			ObjectInstance* instance = frame->PopStack();
+
+			if (targetType == SymbolTable::Primitives::Any)
+			{
+				frame->PushStack(instance != nullptr ? instance : garbageCollector.NullInstance);
+				break;
+			}
+
+			if (instance == nullptr || instance == garbageCollector.NullInstance)
+			{
+				if (targetType->Inlining == TypeInlining::ByValue)
+					throw std::runtime_error("Cannot cast null to a value type");
+
+				frame->PushStack(garbageCollector.NullInstance);
+				break;
+			}
+
+			TypeSymbol* instanceType = const_cast<TypeSymbol*>(instance->getInfo());
+			if (TypeSymbol::IsAssignableFrom(targetType, instanceType))
+			{
+				frame->PushStack(instance);
+			}
+			else
+			{
+				throw std::runtime_error("Invalid cast");
+			}
+
+			break;
+		}
+
+		case OpCode::CASTPRIMITIVE:
+		{
+			TypeSymbol* targetType = decoder.AbsorbTypeSymbol();
+			targetType = frame->ResolveType(targetType);
+			ObjectInstance* instance = frame->PopStack();
+
+			if (instance == nullptr || instance == garbageCollector.NullInstance)
+				throw std::runtime_error("Cannot cast null to a primitive type");
+
+			ObjectInstance* result = primitiveMath.ExecuteCast(targetType, instance);
+			if (result == nullptr)
+				throw std::runtime_error("Unsupported primitive cast");
+
+			garbageCollector.CollectInstance(instance);
+			frame->PushStack(result);
 			break;
 		}
 
@@ -435,217 +500,115 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 
 		case OpCode::MATH_ADDITION:
 		{
-			ObjectInstance* right = frame->PopStack();
-			ObjectInstance* left = frame->PopStack();
-
-			ObjectInstance* result = InvokeOperatorMethod(left, TokenType::AddOperator, right);
-			frame->PushStack(result);
-
-			garbageCollector.CollectInstance(right);
-			garbageCollector.CollectInstance(left);
+			executeBinary(TokenType::AddOperator);
 			break;
 		}
 
 		case OpCode::MATH_SUBSTRACTION:
 		{
-			ObjectInstance* right = frame->PopStack();
-			ObjectInstance* left = frame->PopStack();
-
-			ObjectInstance* result = InvokeOperatorMethod(left, TokenType::SubOperator, right);
-			frame->PushStack(result);
-
-			garbageCollector.CollectInstance(right);
-			garbageCollector.CollectInstance(left);
+			executeBinary(TokenType::SubOperator);
 			break;
 		}
 
 		case OpCode::MATH_MULTIPLICATION:
 		{
-			ObjectInstance* right = frame->PopStack();
-			ObjectInstance* left = frame->PopStack();
-
-			ObjectInstance* result = InvokeOperatorMethod(left, TokenType::MultOperator, right);
-			frame->PushStack(result);
-
-			garbageCollector.CollectInstance(right);
-			garbageCollector.CollectInstance(left);
+			executeBinary(TokenType::MultOperator);
 			break;
 		}
 
 		case OpCode::MATH_DIVISION:
 		{
-			ObjectInstance* right = frame->PopStack();
-			ObjectInstance* left = frame->PopStack();
-
-			ObjectInstance* result = InvokeOperatorMethod(left, TokenType::DivOperator, right);
-			frame->PushStack(result);
-
-			garbageCollector.CollectInstance(right);
-			garbageCollector.CollectInstance(left);
+			executeBinary(TokenType::DivOperator);
 			break;
 		}
 
 		case OpCode::MATH_MODULE:
 		{
-			ObjectInstance* right = frame->PopStack();
-			ObjectInstance* left = frame->PopStack();
-
-			ObjectInstance* result = InvokeOperatorMethod(left, TokenType::ModOperator, right);
-			frame->PushStack(result);
-
-			garbageCollector.CollectInstance(right);
-			garbageCollector.CollectInstance(left);
+			executeBinary(TokenType::ModOperator);
 			break;
 		}
 
 		case OpCode::MATH_POWER:
 		{
-			ObjectInstance* right = frame->PopStack();
-			ObjectInstance* left = frame->PopStack();
-
-			ObjectInstance* result = InvokeOperatorMethod(left, TokenType::PowOperator, right);
-			frame->PushStack(result);
-
-			garbageCollector.CollectInstance(right);
-			garbageCollector.CollectInstance(left);
+			executeBinary(TokenType::PowOperator);
 			break;
 		}
 
 		case OpCode::MATH_NEGATIVE:
 		{
-			ObjectInstance* value = frame->PopStack();
-
-			ObjectInstance* result = InvokeOperatorMethod(value, TokenType::SubOperator);
-			frame->PushStack(result);
-
-			garbageCollector.CollectInstance(value);
+			executeUnary(TokenType::SubOperator);
 			break;
 		}
 
 		case OpCode::MATH_POSITIVE:
 		{
-			ObjectInstance* value = frame->PopStack();
+			executeUnary(TokenType::AddOperator);
+			break;
+		}
 
-			ObjectInstance* result = InvokeOperatorMethod(value, TokenType::AddOperator);
-			frame->PushStack(result);
+		case OpCode::MATH_LEFTSHIFT:
+		{
+			executeBinary(TokenType::LeftShiftOperator);
+			break;
+		}
 
-			garbageCollector.CollectInstance(value);
+		case OpCode::MATH_RIGHTSHIFT:
+		{
+			executeBinary(TokenType::RightShiftOperator);
 			break;
 		}
 
 		case OpCode::COMPARE_EQUAL:
 		{
-			ObjectInstance* right = frame->PopStack();
-			ObjectInstance* left = frame->PopStack();
-
-			ObjectInstance* result = InvokeOperatorMethod(left, TokenType::EqualsOperator, right);
-			frame->PushStack(result);
-
-			garbageCollector.CollectInstance(right);
-			garbageCollector.CollectInstance(left);
+			executeBinary(TokenType::EqualsOperator);
 			break;
 		}
 
 		case OpCode::COMPARE_NOTEQUAL:
 		{
-			ObjectInstance* right = frame->PopStack();
-			ObjectInstance* left = frame->PopStack();
-
-			ObjectInstance* result = InvokeOperatorMethod(left, TokenType::NotEqualsOperator, right);
-			frame->PushStack(result);
-
-			garbageCollector.CollectInstance(right);
-			garbageCollector.CollectInstance(left);
+			executeBinary(TokenType::NotEqualsOperator);
 			break;
 		}
 
 		case OpCode::COMPARE_LESS:
 		{
-			ObjectInstance* right = frame->PopStack();
-			ObjectInstance* left = frame->PopStack();
-
-			ObjectInstance* result = InvokeOperatorMethod(left, TokenType::LessOperator, right);
-			frame->PushStack(result);
-
-			garbageCollector.CollectInstance(right);
-			garbageCollector.CollectInstance(left);
+			executeBinary(TokenType::LessOperator);
 			break;
 		}
 
 		case OpCode::COMPARE_LESSOREQUAL:
 		{
-			ObjectInstance* right = frame->PopStack();
-			ObjectInstance* left = frame->PopStack();
-
-			ObjectInstance* result = InvokeOperatorMethod(left, TokenType::LessOrEqualsOperator, right);
-			frame->PushStack(result);
-
-			garbageCollector.CollectInstance(right);
-			garbageCollector.CollectInstance(left);
+			executeBinary(TokenType::LessOrEqualsOperator);
 			break;
 		}
 
 		case OpCode::COMPARE_GREATER:
 		{
-			ObjectInstance* right = frame->PopStack();
-			ObjectInstance* left = frame->PopStack();
-
-			bool assign = false;
-			ObjectInstance* result = InvokeOperatorMethod(left, TokenType::GreaterOperator, right);
-			frame->PushStack(result);
-
-			garbageCollector.CollectInstance(right);
-			garbageCollector.CollectInstance(left);
+			executeBinary(TokenType::GreaterOperator);
 			break;
 		}
 
 		case OpCode::COMPARE_GREATEROREQUAL:
 		{
-			ObjectInstance* right = frame->PopStack();
-			ObjectInstance* left = frame->PopStack();
-
-			ObjectInstance* result = InvokeOperatorMethod(left, TokenType::GreaterOrEqualsOperator, right);
-			frame->PushStack(result);
-
-			garbageCollector.CollectInstance(right);
-			garbageCollector.CollectInstance(left);
+			executeBinary(TokenType::GreaterOrEqualsOperator);
 			break;
 		}
 
 		case OpCode::LOGICAL_NOT:
 		{
-			ObjectInstance* right = frame->PopStack();
-
-			ObjectInstance* result = InvokeOperatorMethod(right, TokenType::NotOperator);
-			frame->PushStack(result);
-
-			garbageCollector.CollectInstance(right);
+			executeUnary(TokenType::NotOperator);
 			break;
 		}
 
 		case OpCode::LOGICAL_OR:
 		{
-			ObjectInstance* right = frame->PopStack();
-			ObjectInstance* left = frame->PopStack();
-
-			ObjectInstance* result = InvokeOperatorMethod(left, TokenType::OrOperator, right);
-			frame->PushStack(result);
-
-			garbageCollector.CollectInstance(right);
-			garbageCollector.CollectInstance(left);
+			executeBinary(TokenType::OrOperator);
 			break;
 		}
 
 		case OpCode::LOGICAL_AND:
 		{
-			ObjectInstance* right = frame->PopStack();
-			ObjectInstance* left = frame->PopStack();
-
-			ObjectInstance* result = InvokeOperatorMethod(left, TokenType::AndOperator, right);
-			frame->PushStack(result);
-
-			garbageCollector.CollectInstance(right);
-			garbageCollector.CollectInstance(left);
+			executeBinary(TokenType::AndOperator);
 			break;
 		}
 
@@ -1024,7 +987,8 @@ ObjectInstance* VirtualMachine::InstantiateDelegate(DelegateTypeSymbol* type)
 VirtualMachine::VirtualMachine(ApplicationDomain* appDomain) :
 	domain(appDomain),
 	program(domain->GetProgram()),
-	garbageCollector(domain->GetGarbageCollector())
+	garbageCollector(domain->GetGarbageCollector()),
+	primitiveMath(garbageCollector)
 {
 	AbortFlag = false;
 }

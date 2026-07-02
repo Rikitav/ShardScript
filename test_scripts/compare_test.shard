@@ -1,0 +1,19 @@
+using stdio;
+
+namespace hello_world;
+
+public static func Main() -> void
+{
+    print(5 == 5);
+    print(",");
+    print(5 != 3);
+    print(",");
+    print(5 > 3);
+    print(",");
+    print(3 < 5);
+    print(",");
+    print(5 >= 5);
+    print(",");
+    print(3 <= 5);
+    println("");
+}

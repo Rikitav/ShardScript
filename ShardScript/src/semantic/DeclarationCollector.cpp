@@ -527,7 +527,7 @@ void DeclarationCollector::VisitOperatorDeclaration(OperatorDeclarationSyntax* n
 
     if (needsCollection)
     {
-        std::uint16_t baseIndex = 1;
+        std::uint16_t baseIndex = symbol->Linking == LINK_STATIC ? 0 : 1;
         for (const auto& parameter : node->ParametersList->Parameters)
         {
             ParameterSymbol* param = Factory.Parameter(parameter.get());
