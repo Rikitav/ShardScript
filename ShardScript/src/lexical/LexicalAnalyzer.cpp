@@ -121,6 +121,11 @@ SyntaxToken LexicalAnalyzer::Peek(int index)
 	return SyntaxToken(ReadBuffer.at(index));
 }
 
+void LexicalAnalyzer::PutBackToken(SyntaxToken token)
+{
+	ReadBuffer.push_front(token);
+}
+
 bool LexicalAnalyzer::CanConsume()
 {
 	return Current().Type != TokenType::EndOfFile;
@@ -145,6 +150,14 @@ bool LexicalAnalyzer::ReadNextToken(SyntaxToken& token)
 
 bool LexicalAnalyzer::ReadNextReal()
 {
+	if (HasPutbackSymbol)
+	{
+		Symbol = PutbackSymbol;
+		HasPutbackSymbol = false;
+		Offset += 1;
+		return true;
+	}
+
 	while (Advance(Symbol))
 	{
 		switch (Symbol)
@@ -488,15 +501,20 @@ bool LexicalAnalyzer::ReadNumberLiteral(std::wstring& word, TokenType& type)
 			if (foundDelimeter)
 				break;
 
+			// Tentatively consume the dot so we can inspect the following character.
 			if (!Advance(PeekSymbol))
 				break;
 
 			wchar_t afterDot;
-			if (!SourceText->PeekNext(afterDot))
+			if (!SourceText->PeekNext(afterDot) || !IsNumberSymbol(afterDot))
+			{
+				// The dot does not start a fractional part (e.g. range operator ".."),
+				// so put it back for the next token.
+				HasPutbackSymbol = true;
+				PutbackSymbol = L'.';
+				Offset -= 1;
 				break;
-
-			if (!IsNumberSymbol(afterDot))
-				break;
+			}
 
 			Advance(PeekSymbol);
 

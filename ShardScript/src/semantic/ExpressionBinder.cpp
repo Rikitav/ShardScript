@@ -163,6 +163,11 @@ bool ExpressionBinder::GetIsStaticContext(const ExpressionSyntax* expression)
 		return true;
 	}
 
+	if (expression->Kind == SyntaxKind::TypeExpression)
+	{
+		return true;
+	}
+
 	if (IsLinkedExpressionNode(expression->Kind))
 	{
 		const LinkedExpressionNode* asNode = static_cast<const LinkedExpressionNode*>(expression);
@@ -292,6 +297,9 @@ void ExpressionBinder::VisitConstructorDeclaration(ConstructorDeclarationSyntax*
 	{
 		PushScope(symbol);
 
+		for (TypeParameterSymbol* typeParam : symbol->TypeParameters)
+			CurrentScope()->DeclareSymbol(typeParam);
+
 		auto thisVar = Factory.Parameter(L"this", ownerType);
 		if (symbol->Linking == LINK_INSTANCE) // how tf not?
 			CurrentScope()->DeclareSymbol(thisVar);
@@ -332,6 +340,9 @@ void ExpressionBinder::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 
 	TypeSymbol* ownerType = static_cast<TypeSymbol*>(symbol->Parent);
 	PushScope(symbol);
+
+	for (TypeParameterSymbol* typeParam : symbol->TypeParameters)
+		CurrentScope()->DeclareSymbol(typeParam);
 
 	auto thisVar = Factory.Parameter(L"this", ownerType);
 	if (symbol->Linking == LINK_INSTANCE)
@@ -777,7 +788,8 @@ TypeSymbol* ExpressionBinder::AnalyzeBinaryExpression(BinaryExpressionSyntax* no
 	};
 
 	bool bothPrimitive = leftType->IsPrimitive() && rightType->IsPrimitive();
-	bool isPrimitiveBinaryOp = bothPrimitive &&
+	bool bothTypeParameters = leftType->Kind == SyntaxKind::TypeParameter && leftType == rightType;
+	bool isPrimitiveBinaryOp = (bothPrimitive || bothTypeParameters) &&
 		(IsBinaryArithmeticOperator(node->OperatorToken.Type) ||
 		 IsBinaryBooleanOperator(node->OperatorToken.Type) ||
 		 IsBinaryBitOperator(node->OperatorToken.Type));
@@ -817,7 +829,8 @@ TypeSymbol* ExpressionBinder::AnalyzeBinaryExpression(BinaryExpressionSyntax* no
 			bool comparable = nullComparison
 				|| (leftType == SymbolTable::Primitives::String && rightType == SymbolTable::Primitives::String)
 				|| (isNumericPrimitive(leftType) && isNumericPrimitive(rightType))
-				|| (leftType == SymbolTable::Primitives::Boolean && rightType == SymbolTable::Primitives::Boolean);
+				|| (leftType == SymbolTable::Primitives::Boolean && rightType == SymbolTable::Primitives::Boolean)
+				|| bothTypeParameters;
 
 			if (!comparable)
 			{
@@ -830,6 +843,9 @@ TypeSymbol* ExpressionBinder::AnalyzeBinaryExpression(BinaryExpressionSyntax* no
 		case TokenType::OrOperator:
 		case TokenType::AndOperator:
 		{
+			if (bothTypeParameters)
+				return leftType;
+
 			bool boolOp = leftType == SymbolTable::Primitives::Boolean && rightType == SymbolTable::Primitives::Boolean;
 			bool bitwiseOp = isIntegralPrimitive(leftType) && isIntegralPrimitive(rightType);
 
@@ -845,6 +861,9 @@ TypeSymbol* ExpressionBinder::AnalyzeBinaryExpression(BinaryExpressionSyntax* no
 		case TokenType::LeftShiftOperator:
 		case TokenType::RightShiftOperator:
 		{
+			if (bothTypeParameters)
+				return leftType;
+
 			if (!isIntegralPrimitive(leftType) || !isIntegralPrimitive(rightType))
 			{
 				Diagnostics.ReportError(node->OperatorToken, L"Operator '" + GetOperatorMethodName(node->OperatorToken.Type) + L"' is not defined for type '" + leftType->Name + L"'");
@@ -856,6 +875,9 @@ TypeSymbol* ExpressionBinder::AnalyzeBinaryExpression(BinaryExpressionSyntax* no
 			
 		case TokenType::AddOperator:
 		{
+			if (bothTypeParameters)
+				return leftType;
+
 			if (leftType == SymbolTable::Primitives::String || rightType == SymbolTable::Primitives::String)
 				return SymbolTable::Primitives::String;
 
@@ -877,6 +899,9 @@ TypeSymbol* ExpressionBinder::AnalyzeBinaryExpression(BinaryExpressionSyntax* no
 		case TokenType::ModOperator:
 		case TokenType::PowOperator:
 		{
+			if (bothTypeParameters)
+				return leftType;
+
 			if (!isNumericPrimitive(leftType) || !isNumericPrimitive(rightType))
 			{
 				Diagnostics.ReportError(node->OperatorToken, L"Type mismatch in arithmetic operation: '" + leftType->Name + L"' and '" + rightType->Name + L"'");
@@ -1142,6 +1167,18 @@ void ExpressionBinder::VisitLambdaExpression(LambdaExpressionSyntax* node)
 		delegate->ReturnType = anonymousMethod->ReturnType;
 
 	SetExpressionType(node, delegate);
+}
+
+void ExpressionBinder::VisitTypeExpression(TypeExpressionSyntax* node)
+{
+	if (node->Type == nullptr)
+	{
+		SetExpressionType(node, nullptr);
+		return;
+	}
+
+	TypeSymbol* type = ResolveTypeExpression(node->Type.get());
+	SetExpressionType(node, type);
 }
 
 void ExpressionBinder::VisitTernaryExpression(TernaryExpressionSyntax* node)
@@ -1622,18 +1659,11 @@ TypeSymbol* ExpressionBinder::AnalyzeFieldKeywordExpression(MemberAccessExpressi
 
 TypeSymbol* ExpressionBinder::AnalyzeInvokationExpression(InvokationExpressionSyntax* node, TypeSymbol* currentType)
 {
-	/*
-	if (currentType == nullptr)
-		return nullptr;
-	*/
-
 	std::wstring methodName = node->IdentifierToken.Word;
 	MethodSymbol* method = ResolveMethod(node, currentType);
 
 	if (method == nullptr)
-	{
 		return nullptr;
-	}
 
 	if (!IsSymbolAccessible(method, Table->LookupNode(method).value_or(nullptr), node))
 	{
@@ -1645,25 +1675,9 @@ TypeSymbol* ExpressionBinder::AnalyzeInvokationExpression(InvokationExpressionSy
 	if (currentType != nullptr && currentType->Kind == SyntaxKind::GenericType)
 		genericType = static_cast<GenericTypeSymbol*>(currentType);
 
-	if (node->IsExtensionMethodInvocation)
-	{
-		std::vector<ParameterSymbol*> effectiveParameters(method->Parameters.begin() + 1, method->Parameters.end());
-		if (!MatchMethodArguments(node->IdentifierToken, effectiveParameters, node->ArgumentsList->Arguments, genericType))
-			return nullptr;
-
-		node->Symbol = method;
-		node->ReceiverType = currentType;
-		node->IsStaticContext = true;
-	}
-	else
-	{
-		if (!MatchMethodArguments(node->IdentifierToken, method->Parameters, node->ArgumentsList->Arguments, genericType))
-			return nullptr;
-
-		node->Symbol = method;
-		node->ReceiverType = currentType;
-		node->IsStaticContext = false;
-	}
+	node->Symbol = method;
+	node->ReceiverType = currentType;
+	node->IsStaticContext = GetIsStaticContext(node->PreviousExpression.get());
 
 	if (method->ReturnType == nullptr)
 	{
@@ -1671,10 +1685,7 @@ TypeSymbol* ExpressionBinder::AnalyzeInvokationExpression(InvokationExpressionSy
 		return nullptr;
 	}
 
-	TypeSymbol* returnType = method->ReturnType;
-	if (returnType->Kind == SyntaxKind::TypeParameter)
-		returnType = SubstituteTypeParameters(returnType, genericType);
-	
+	TypeSymbol* returnType = SubstituteTypeParameters(method->ReturnType, genericType, method, node->BoundTypeArguments);
 	return returnType;
 }
 
@@ -1794,9 +1805,7 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node, 
 
 	for (const auto& arg : node->ArgumentsList->Arguments)
 	{
-		//PushScope(new LeftDenotationSymbol(param->Type));
 		VisitExpression(arg->Expression.get());
-		//PopScope();
 
 		TypeSymbol* argType = GetExpressionType(arg->Expression.get());
 		if (argType == nullptr)
@@ -1805,13 +1814,94 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node, 
 		argTypes.push_back(argType);
 	}
 
-	// Try to find method inside current type
+	std::vector<TypeSymbol*> explicitMethodTypeArgs;
+	if (node->TypeArguments != nullptr)
+	{
+		for (const auto& typeArg : node->TypeArguments->Types)
+		{
+			VisitType(typeArg.get());
+			TypeSymbol* concreteType = typeArg->Symbol;
+			if (concreteType == nullptr)
+				return nullptr;
+
+			explicitMethodTypeArgs.push_back(concreteType);
+		}
+	}
+
+	GenericTypeSymbol* genericType = nullptr;
+	if (currentType != nullptr && currentType->Kind == SyntaxKind::GenericType)
+		genericType = static_cast<GenericTypeSymbol*>(currentType);
+
 	MethodSymbol* symbol = nullptr;
+	std::vector<TypeSymbol*> selectedMethodTypeArgs;
+
+	auto tryMatchMethod = [&](MethodSymbol* method) -> bool
+	{
+		if (method->Name != methodName)
+			return false;
+
+		if (method->TypeParameters.empty())
+		{
+			if (argTypes.size() != method->Parameters.size())
+				return false;
+
+			for (std::size_t i = 0; i < method->Parameters.size(); ++i)
+			{
+				TypeSymbol* paramType = SubstituteTypeParameters(method->Parameters[i]->Type, genericType);
+				if (paramType == SymbolTable::Primitives::Any)
+					continue;
+
+				if (!TypeSymbol::IsAssignableFrom(paramType, argTypes[i]))
+					return false;
+			}
+
+			selectedMethodTypeArgs.clear();
+			return true;
+		}
+
+		std::vector<TypeSymbol*> methodTypeArgs = explicitMethodTypeArgs;
+		if (methodTypeArgs.empty())
+		{
+			if (!InferMethodTypeArguments(method, argTypes, methodTypeArgs))
+				return false;
+		}
+
+		if (methodTypeArgs.size() != method->TypeParameters.size())
+			return false;
+
+		if (!MatchGenericMethodArguments(method, argTypes, genericType, methodTypeArgs))
+			return false;
+
+		selectedMethodTypeArgs = std::move(methodTypeArgs);
+		return true;
+	};
+
 	if (currentType != nullptr)
 	{
-		symbol = currentType->FindMethod(methodName, argTypes);
-		if (symbol == nullptr)
-			symbol = SymbolTable::Global::Type->FindMethod(methodName, argTypes);
+		TypeSymbol* searchType = currentType;
+		if (searchType->Kind == SyntaxKind::GenericType)
+			searchType = static_cast<GenericTypeSymbol*>(searchType)->UnderlayingType;
+
+		for (MethodSymbol* method : searchType->Methods)
+		{
+			if (tryMatchMethod(method))
+			{
+				symbol = method;
+				break;
+			}
+		}
+	}
+
+	if (symbol == nullptr)
+	{
+		for (MethodSymbol* method : SymbolTable::Global::Type->Methods)
+		{
+			if (tryMatchMethod(method))
+			{
+				symbol = method;
+				break;
+			}
+		}
 	}
 
 	if (symbol == nullptr)
@@ -1819,69 +1909,73 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node, 
 		SyntaxSymbol* lookupMethod = CurrentScope()->Lookup(methodName).value_or(nullptr);
 		if (lookupMethod != nullptr)
 		{
-			if (lookupMethod->Kind == SyntaxKind::VariableStatement)
+			if (lookupMethod->Kind == SyntaxKind::MethodDeclaration)
 			{
-				VariableSymbol* delegateVar = static_cast<VariableSymbol*>(lookupMethod);
-				if (delegateVar->Type != nullptr)
+				if (tryMatchMethod(static_cast<MethodSymbol*>(lookupMethod)))
+					symbol = static_cast<MethodSymbol*>(lookupMethod);
+			}
+			else if (explicitMethodTypeArgs.empty())
+			{
+				if (lookupMethod->Kind == SyntaxKind::VariableStatement)
 				{
-					if (delegateVar->Type->Kind == SyntaxKind::DelegateType)
+					VariableSymbol* delegateVar = static_cast<VariableSymbol*>(lookupMethod);
+					if (delegateVar->Type != nullptr)
 					{
-						const DelegateTypeSymbol* delegate = static_cast<const DelegateTypeSymbol*>(delegateVar->Type);
-						if (node->PreviousExpression == nullptr)
+						if (delegateVar->Type->Kind == SyntaxKind::DelegateType)
 						{
-							auto target = std::make_unique<MemberAccessExpressionSyntax>(node->IdentifierToken, nullptr, node);
-							target->ToVariable = delegateVar;
-							node->PreviousExpression = std::move(target);
+							const DelegateTypeSymbol* delegate = static_cast<const DelegateTypeSymbol*>(delegateVar->Type);
+							if (node->PreviousExpression == nullptr)
+							{
+								auto target = std::make_unique<MemberAccessExpressionSyntax>(node->IdentifierToken, nullptr, node);
+								target->ToVariable = delegateVar;
+								node->PreviousExpression = std::move(target);
+							}
+							node->Symbol = delegate->AnonymousSymbol;
+							node->IsDelegateInvocation = true;
+							return node->Symbol;
 						}
-						node->Symbol = delegate->AnonymousSymbol;
-						node->IsDelegateInvocation = true;
-						return node->Symbol;
 					}
 				}
-			}
-			else if (lookupMethod->Kind == SyntaxKind::Parameter)
-			{
-				ParameterSymbol* delegateParam = static_cast<ParameterSymbol*>(lookupMethod);
-				if (delegateParam->Type != nullptr)
+				else if (lookupMethod->Kind == SyntaxKind::Parameter)
 				{
-					if (delegateParam->Type->Kind == SyntaxKind::DelegateType)
+					ParameterSymbol* delegateParam = static_cast<ParameterSymbol*>(lookupMethod);
+					if (delegateParam->Type != nullptr)
 					{
-						const DelegateTypeSymbol* delegate = static_cast<const DelegateTypeSymbol*>(delegateParam->Type);
-						if (node->PreviousExpression == nullptr)
+						if (delegateParam->Type->Kind == SyntaxKind::DelegateType)
 						{
-							auto target = std::make_unique<MemberAccessExpressionSyntax>(node->IdentifierToken, nullptr, node);
-							target->ToParameter = delegateParam;
-							node->PreviousExpression = std::move(target);
+							const DelegateTypeSymbol* delegate = static_cast<const DelegateTypeSymbol*>(delegateParam->Type);
+							if (node->PreviousExpression == nullptr)
+							{
+								auto target = std::make_unique<MemberAccessExpressionSyntax>(node->IdentifierToken, nullptr, node);
+								target->ToParameter = delegateParam;
+								node->PreviousExpression = std::move(target);
+							}
+							node->Symbol = delegate->AnonymousSymbol;
+							node->IsDelegateInvocation = true;
+							return node->Symbol;
 						}
-						node->Symbol = delegate->AnonymousSymbol;
-						node->IsDelegateInvocation = true;
-						return node->Symbol;
 					}
 				}
-			}
-			else if (lookupMethod->Kind == SyntaxKind::FieldDeclaration)
-			{
-				FieldSymbol* delegateField = static_cast<FieldSymbol*>(lookupMethod);
-				if (delegateField->ReturnType != nullptr)
+				else if (lookupMethod->Kind == SyntaxKind::FieldDeclaration)
 				{
-					if (delegateField->ReturnType->Kind == SyntaxKind::DelegateType)
+					FieldSymbol* delegateField = static_cast<FieldSymbol*>(lookupMethod);
+					if (delegateField->ReturnType != nullptr)
 					{
-						const DelegateTypeSymbol* delegate = static_cast<const DelegateTypeSymbol*>(delegateField->ReturnType);
-						if (node->PreviousExpression == nullptr && delegateField->Linking == LINK_STATIC)
+						if (delegateField->ReturnType->Kind == SyntaxKind::DelegateType)
 						{
-							auto target = std::make_unique<MemberAccessExpressionSyntax>(node->IdentifierToken, nullptr, node);
-							target->ToField = delegateField;
-							node->PreviousExpression = std::move(target);
+							const DelegateTypeSymbol* delegate = static_cast<const DelegateTypeSymbol*>(delegateField->ReturnType);
+							if (node->PreviousExpression == nullptr && delegateField->Linking == LINK_STATIC)
+							{
+								auto target = std::make_unique<MemberAccessExpressionSyntax>(node->IdentifierToken, nullptr, node);
+								target->ToField = delegateField;
+								node->PreviousExpression = std::move(target);
+							}
+							node->Symbol = delegate->AnonymousSymbol;
+							node->IsDelegateInvocation = true;
+							return node->Symbol;
 						}
-						node->Symbol = delegate->AnonymousSymbol;
-						node->IsDelegateInvocation = true;
-						return node->Symbol;
 					}
 				}
-			}
-			else if (lookupMethod->Kind == SyntaxKind::MethodDeclaration)
-			{
-				symbol = static_cast<MethodSymbol*>(lookupMethod);
 			}
 		}
 	}
@@ -1926,7 +2020,9 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node, 
 		Diagnostics.ReportError(node->IdentifierToken, diag.str());
 		return nullptr;
 	}
-	
+
+	node->BoundTypeArguments = std::move(selectedMethodTypeArgs);
+
 	bool isStaticContext = GetIsStaticContext(node->PreviousExpression.get());
 	if (isStaticContext && symbol->Linking == LINK_INSTANCE)
 	{
@@ -1993,14 +2089,236 @@ TypeSymbol* ExpressionBinder::AnalyzeIndexatorExpression(IndexatorExpressionSynt
 
 TypeSymbol* ExpressionBinder::SubstituteTypeParameters(TypeSymbol* type, GenericTypeSymbol* genericType)
 {
-	if (type == nullptr || genericType == nullptr)
+	if (type == nullptr || genericType == nullptr || type->Kind != SyntaxKind::TypeParameter)
 		return type;
 
-	type = genericType->SubstituteTypeParameters(static_cast<TypeParameterSymbol*>(type));
+	TypeSymbol* substituted = genericType->SubstituteTypeParameters(static_cast<TypeParameterSymbol*>(type));
+	return substituted != nullptr ? substituted : type;
+}
+
+TypeSymbol* ExpressionBinder::SubstituteTypeParameters(TypeSymbol* type, GenericTypeSymbol* genericType, MethodSymbol* method, const std::vector<TypeSymbol*>& methodTypeArgs)
+{
 	if (type == nullptr)
-		Diagnostics.ReportError(SyntaxToken(), L"Failed to substitute type");
+		return nullptr;
+
+	if (type->Kind == SyntaxKind::TypeParameter)
+	{
+		TypeSymbol* substituted = SubstituteTypeParameters(type, genericType);
+		if (substituted != nullptr && substituted->Kind == SyntaxKind::TypeParameter)
+			substituted = SubstituteMethodTypeParameter(substituted, method, methodTypeArgs);
+
+		return substituted != nullptr ? substituted : type;
+	}
+
+	if (type->Kind == SyntaxKind::GenericType)
+	{
+		GenericTypeSymbol* generic = static_cast<GenericTypeSymbol*>(type);
+		TypeSymbol* underlying = generic->UnderlayingType;
+
+		bool changed = false;
+		std::unordered_map<std::wstring, TypeSymbol*> newArgs;
+		for (TypeParameterSymbol* param : underlying->TypeParameters)
+		{
+			TypeSymbol* arg = generic->SubstituteTypeParameters(param);
+			TypeSymbol* newArg = SubstituteTypeParameters(arg, genericType, method, methodTypeArgs);
+			if (newArg != arg)
+				changed = true;
+
+			newArgs[param->Name] = newArg != nullptr ? newArg : arg;
+		}
+
+		if (!changed)
+			return type;
+
+		return Factory.GenericType(underlying, newArgs);
+	}
+
+	if (type->Kind == SyntaxKind::ArrayType)
+	{
+		ArrayTypeSymbol* array = static_cast<ArrayTypeSymbol*>(type);
+		TypeSymbol* elementType = SubstituteTypeParameters(array->UnderlayingType, genericType, method, methodTypeArgs);
+		if (elementType == array->UnderlayingType)
+			return type;
+
+		return Factory.Array(elementType);
+	}
 
 	return type;
+}
+
+TypeSymbol* ExpressionBinder::ResolveTypeExpression(TypeSyntax* type)
+{
+	if (type == nullptr)
+		return nullptr;
+
+	if (type->Symbol != nullptr)
+		return type->Symbol;
+
+	switch (type->Kind)
+	{
+		case SyntaxKind::PredefinedType:
+		{
+			PredefinedTypeSyntax* pre = static_cast<PredefinedTypeSyntax*>(type);
+			switch (pre->TypeToken.Type)
+			{
+				case TokenType::BooleanKeyword: type->Symbol = SymbolTable::Primitives::Boolean; break;
+				case TokenType::IntegerKeyword: type->Symbol = SymbolTable::Primitives::Integer; break;
+				case TokenType::DoubleKeyword: type->Symbol = SymbolTable::Primitives::Double; break;
+				case TokenType::CharKeyword: type->Symbol = SymbolTable::Primitives::Char; break;
+				case TokenType::StringKeyword: type->Symbol = SymbolTable::Primitives::String; break;
+				case TokenType::VoidKeyword: type->Symbol = SymbolTable::Primitives::Void; break;
+				case TokenType::VarKeyword: type->Symbol = SymbolTable::Primitives::Any; break;
+				default: break;
+			}
+
+			return type->Symbol;
+		}
+
+		case SyntaxKind::IdentifierNameType:
+		{
+			IdentifierNameTypeSyntax* id = static_cast<IdentifierNameTypeSyntax*>(type);
+			SyntaxSymbol* symbol = CurrentScope()->Lookup(id->Identifier.Word).value_or(nullptr);
+			if (symbol == nullptr)
+			{
+				Diagnostics.ReportError(id->Identifier, L"Symbol wasnt found in current scope");
+				return nullptr;
+			}
+
+			if (symbol->Kind == SyntaxKind::TypeParameter)
+			{
+				type->Symbol = static_cast<TypeParameterSymbol*>(symbol);
+				return type->Symbol;
+			}
+
+			if (!symbol->IsType())
+			{
+				Diagnostics.ReportError(id->Identifier, L"Symbol is not a type");
+				return nullptr;
+			}
+
+			type->Symbol = static_cast<TypeSymbol*>(symbol);
+			return type->Symbol;
+		}
+
+		case SyntaxKind::GenericType:
+		{
+			GenericTypeSyntax* generic = static_cast<GenericTypeSyntax*>(type);
+			TypeSymbol* underlying = ResolveTypeExpression(generic->UnderlayingType.get());
+			if (underlying == nullptr)
+				return nullptr;
+
+			std::size_t argsCount = generic->Arguments != nullptr ? generic->Arguments->Types.size() : 0;
+			std::size_t paramsCount = underlying->TypeParameters.size();
+			if (argsCount != paramsCount)
+			{
+				Diagnostics.ReportError(generic->Arguments->OpenToken,
+					L"'" + underlying->FullName + L"' requires " + std::to_wstring(paramsCount) +
+					L" type arguments, but got " + std::to_wstring(argsCount));
+				return nullptr;
+			}
+
+			std::unordered_map<std::wstring, TypeSymbol*> typeArgs;
+			for (std::size_t i = 0; i < argsCount; i++)
+			{
+				TypeSymbol* arg = ResolveTypeExpression(generic->Arguments->Types[i].get());
+				if (arg == nullptr)
+					return nullptr;
+
+				typeArgs[underlying->TypeParameters[i]->Name] = arg;
+			}
+
+			GenericTypeSymbol* symbol = Factory.GenericType(underlying, typeArgs);
+			type->Symbol = symbol;
+			return symbol;
+		}
+
+		default:
+			break;
+	}
+
+	return nullptr;
+}
+
+TypeSymbol* ExpressionBinder::SubstituteMethodTypeParameter(TypeSymbol* type, MethodSymbol* method, const std::vector<TypeSymbol*>& methodTypeArgs)
+{
+	if (type == nullptr || type->Kind != SyntaxKind::TypeParameter)
+		return type;
+
+	TypeParameterSymbol* typeParam = static_cast<TypeParameterSymbol*>(type);
+	if (typeParam->Parent != method)
+		return type;
+
+	for (std::size_t i = 0; i < method->TypeParameters.size(); ++i)
+	{
+		if (method->TypeParameters[i] == typeParam)
+		{
+			if (i < methodTypeArgs.size())
+				return methodTypeArgs[i];
+			break;
+		}
+	}
+
+	return type;
+}
+
+bool ExpressionBinder::InferMethodTypeArguments(MethodSymbol* method, const std::vector<TypeSymbol*>& argTypes, std::vector<TypeSymbol*>& outMethodTypeArgs)
+{
+	outMethodTypeArgs.assign(method->TypeParameters.size(), nullptr);
+
+	std::size_t start = method->Linking == LINK_INSTANCE ? 1 : 0;
+	if (argTypes.size() + start != method->Parameters.size())
+		return false;
+
+	for (std::size_t i = start; i < method->Parameters.size(); ++i)
+	{
+		TypeSymbol* paramType = method->Parameters[i]->Type;
+		if (paramType == nullptr || paramType->Kind != SyntaxKind::TypeParameter)
+			continue;
+
+		TypeParameterSymbol* typeParam = static_cast<TypeParameterSymbol*>(paramType);
+		if (typeParam->Parent != method)
+			continue;
+
+		auto it = std::find(method->TypeParameters.begin(), method->TypeParameters.end(), typeParam);
+		if (it == method->TypeParameters.end())
+			continue;
+
+		std::size_t index = static_cast<std::size_t>(std::distance(method->TypeParameters.begin(), it));
+		TypeSymbol* argType = argTypes[i - start];
+
+		if (outMethodTypeArgs[index] == nullptr)
+			outMethodTypeArgs[index] = argType;
+		else if (outMethodTypeArgs[index] != argType)
+			return false;
+	}
+
+	for (TypeSymbol* type : outMethodTypeArgs)
+		if (type == nullptr)
+			return false;
+
+	return true;
+}
+
+bool ExpressionBinder::MatchGenericMethodArguments(MethodSymbol* method, const std::vector<TypeSymbol*>& argTypes, GenericTypeSymbol* genericType, const std::vector<TypeSymbol*>& methodTypeArgs)
+{
+	if (argTypes.size() != method->Parameters.size())
+		return false;
+
+	for (std::size_t i = 0; i < method->Parameters.size(); ++i)
+	{
+		TypeSymbol* paramType = SubstituteTypeParameters(method->Parameters[i]->Type, genericType, method, methodTypeArgs);
+		if (paramType == nullptr)
+			return false;
+
+		if (paramType == SymbolTable::Primitives::Any)
+			continue;
+
+		TypeSymbol* argType = argTypes[i];
+		if (!TypeSymbol::IsAssignableFrom(paramType, argType))
+			return false;
+	}
+
+	return true;
 }
 
 namespace
@@ -2768,7 +3086,7 @@ void ExpressionBinder::VisitReturnStatement(ReturnStatementSyntax* node)
 	{
 		Diagnostics.ReportError(node->KeywordToken, L"Return expression type could not be determined");
 	}
-	else if (!TypeSymbol::IsAssignableFrom(returnType, returnExprType))
+	else if (returnType->Kind != SyntaxKind::TypeParameter && !TypeSymbol::IsAssignableFrom(returnType, returnExprType))
 	{
 		Diagnostics.ReportError(node->KeywordToken, L"Return type mismatch: expected '" + returnType->Name + L"' but got '" + returnExprType->Name + L"'");
 	}

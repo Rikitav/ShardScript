@@ -648,7 +648,7 @@ GenericTypeSymbol* SymbolFactory::GenericType(TypeSymbol* underlayingType)
 
 GenericTypeSymbol* SymbolFactory::GenericType(TypeSymbol* underlayingType, std::unordered_map<std::wstring, TypeSymbol*> typeArguments)
 {
-	auto symbol = std::make_unique<GenericTypeSymbol>(underlayingType);
+	auto symbol = std::make_unique<GenericTypeSymbol>(underlayingType, typeArguments);
 	
 	// Заполняем маппинг type parameters -> type arguments
 	for (std::size_t i = 0; i < underlayingType->TypeParameters.size(); i++)

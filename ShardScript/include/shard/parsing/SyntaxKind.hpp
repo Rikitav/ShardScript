@@ -81,6 +81,7 @@ namespace shard
 		InvokationExpression,
 		IndexatorExpression,
 		LambdaExpression,
+		TypeExpression,
 		
 		// Attributes
 		Attribute,

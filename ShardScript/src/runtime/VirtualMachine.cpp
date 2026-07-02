@@ -33,6 +33,7 @@
 #include <iostream>
 #include <cstring>
 #include <vector>
+#include <map>
 #include <stdexcept>
 #include <cstdint>
 #include <initializer_list>
@@ -91,6 +92,14 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		}
 
 		case OpCode::CALLMETHODSYMBOL:
+		{
+			MethodSymbol* methodSymbol = decoder.AbsorbMethodSymbol();
+			PendingTypeArguments.clear();
+			InvokeMethod(methodSymbol);
+			break;
+		}
+
+		case OpCode::CALLGENERICMETHOD:
 		{
 			MethodSymbol* methodSymbol = decoder.AbsorbMethodSymbol();
 			InvokeMethod(methodSymbol);
@@ -858,13 +867,6 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 				ProcessCode(currentFrame, decoder, opCode);
 			}
 
-			if (method->ReturnType != nullptr &&
-				method->ReturnType != SymbolTable::Primitives::Void &&
-			    currentFrame->InterruptionReason != FrameInterruptionReason::ExceptionRaised)
-			{
-				callingFrame->PushStack(currentFrame->PopStack());
-			}
-
 			break;
 		}
 
@@ -911,6 +913,19 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 		}
 	}
 
+	ObjectInstance* returnedValue = nullptr;
+	if ((method->HandleType == MethodHandleType::Body || method->HandleType == MethodHandleType::Lambda) &&
+		method->ReturnType != nullptr &&
+		method->ReturnType != SymbolTable::Primitives::Void &&
+		currentFrame->InterruptionReason != FrameInterruptionReason::ExceptionRaised)
+	{
+		if (!currentFrame->EvalStack.empty())
+		{
+			returnedValue = currentFrame->PopStack();
+			callingFrame->PushStack(returnedValue);
+		}
+	}
+
 	if (currentFrame->InterruptionReason == FrameInterruptionReason::ExceptionRaised)
 	{
 		ObjectInstance* exception = currentFrame->InterruptionRegister;
@@ -923,19 +938,120 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 		}
 	}
 
+	bool skippedReturnedValue = false;
 	while (currentFrame->EvalStack.size() != 0)
 	{
 		ObjectInstance* top = currentFrame->PopStack();
-		if (top != nullptr)
-			garbageCollector.DestroyInstance(top);
+		if (top == nullptr)
+			continue;
+
+		if (!skippedReturnedValue && top == returnedValue)
+		{
+			skippedReturnedValue = true;
+			continue;
+		}
+
+		garbageCollector.DestroyInstance(top);
 	}
+}
+
+static std::map<std::pair<TypeSymbol*, std::vector<TypeSymbol*>>, GenericTypeSymbol*>& GetGenericInstantiationCache()
+{
+	static std::map<std::pair<TypeSymbol*, std::vector<TypeSymbol*>>, GenericTypeSymbol*> cache;
+	return cache;
+}
+
+static GenericTypeSymbol* CreateConcreteGenericType(TypeSymbol* underlyingType, const std::vector<TypeSymbol*>& concreteArgs)
+{
+	GenericTypeSymbol* symbol = new GenericTypeSymbol(underlyingType);
+	for (std::size_t i = 0; i < underlyingType->TypeParameters.size(); ++i)
+		symbol->AddTypeParameter(underlyingType->TypeParameters[i], concreteArgs[i]);
+
+	std::size_t offset = 0;
+	for (FieldSymbol* field : underlyingType->Fields)
+	{
+		if (field->Linking == LINK_STATIC)
+			continue;
+
+		TypeSymbol* fieldType = field->ReturnType;
+		if (fieldType != nullptr && fieldType->Kind == SyntaxKind::TypeParameter)
+			fieldType = symbol->SubstituteTypeParameters(static_cast<TypeParameterSymbol*>(fieldType));
+
+		if (fieldType == nullptr)
+			continue;
+
+		symbol->FieldOffsets[field] = offset;
+		offset += fieldType->GetInlineSize();
+	}
+
+	symbol->MemoryBytesSize = offset;
+	symbol->LayoutingState = TypeLayoutingState::Visited;
+	return symbol;
+}
+
+static GenericTypeSymbol* GetConcreteGenericType(TypeSymbol* underlyingType, const std::vector<TypeSymbol*>& concreteArgs)
+{
+	auto key = std::make_pair(underlyingType, concreteArgs);
+	auto& cache = GetGenericInstantiationCache();
+	auto it = cache.find(key);
+	if (it != cache.end())
+		return it->second;
+
+	GenericTypeSymbol* symbol = CreateConcreteGenericType(underlyingType, concreteArgs);
+	cache[key] = symbol;
+	return symbol;
+}
+
+static TypeSymbol* ResolveRuntimeTypeArgument(TypeSymbol* type, CallStackFrame* frame)
+{
+	if (type == nullptr || frame == nullptr)
+		return type;
+
+	if (type->Kind == SyntaxKind::TypeParameter)
+	{
+		TypeSymbol* resolved = frame->ResolveType(type);
+		return resolved != nullptr ? resolved : type;
+	}
+
+	if (type->Kind == SyntaxKind::GenericType)
+	{
+		GenericTypeSymbol* generic = static_cast<GenericTypeSymbol*>(type);
+		TypeSymbol* underlying = generic->UnderlayingType;
+		bool changed = false;
+		std::vector<TypeSymbol*> resolvedArgs;
+		resolvedArgs.reserve(underlying->TypeParameters.size());
+		for (TypeParameterSymbol* param : underlying->TypeParameters)
+		{
+			TypeSymbol* arg = generic->SubstituteTypeParameters(param);
+			TypeSymbol* resolvedArg = ResolveRuntimeTypeArgument(arg, frame);
+			if (resolvedArg != arg)
+				changed = true;
+			resolvedArgs.push_back(resolvedArg != nullptr ? resolvedArg : arg);
+		}
+
+		if (!changed)
+			return type;
+
+		return GetConcreteGenericType(underlying, resolvedArgs);
+	}
+
+	return type;
 }
 
 ObjectInstance* VirtualMachine::InstantiateObject(TypeSymbol* type, ConstructorSymbol* ctor)
 {
-	GenericTypeSymbol* genericInfo = nullptr;
-
 	CallStackFrame* callingFrame = CurrentFrame();
+
+	// Fully resolve generic type arguments using the current frame so that
+	// runtime-created generic instances (e.g. new Container<U>() inside a generic
+	// method) get a concrete type such as Container<int> with correct layout.
+	type = ResolveRuntimeTypeArgument(type, callingFrame);
+
+	// Resolve pending type arguments for the constructor frame as well.
+	for (TypeSymbol*& pendingArg : PendingTypeArguments)
+		pendingArg = ResolveRuntimeTypeArgument(pendingArg, callingFrame);
+
+	GenericTypeSymbol* genericInfo = nullptr;
 	ObjectInstance* newInstance = garbageCollector.AllocateInstance(type);
 
 	if (type->Kind == SyntaxKind::GenericType)
@@ -948,26 +1064,27 @@ ObjectInstance* VirtualMachine::InstantiateObject(TypeSymbol* type, ConstructorS
 			continue;
 
 		TypeSymbol* fieldType = field->ReturnType;
-		if (fieldType->Kind == SyntaxKind::TypeParameter && genericInfo != nullptr)
+		if (fieldType != nullptr && fieldType->Kind == SyntaxKind::TypeParameter && genericInfo != nullptr)
 			fieldType = genericInfo->SubstituteTypeParameters(static_cast<TypeParameterSymbol*>(fieldType));
 
 		if (fieldType == nullptr)
 			continue;
 
+		std::size_t fieldOffset = genericInfo != nullptr ? genericInfo->GetFieldOffset(field) : field->MemoryBytesOffset;
 		if (fieldType->Inlining == TypeInlining::ByReference)
 		{
-			void* offset = newInstance->OffsetMemory(field->MemoryBytesOffset, sizeof(ObjectInstance*));
+			void* offset = newInstance->OffsetMemory(fieldOffset, sizeof(ObjectInstance*));
 			memset(offset, 0, sizeof(ObjectInstance*));
 		}
 		else
 		{
-			void* offset = newInstance->OffsetMemory(field->MemoryBytesOffset, fieldType->GetInlineSize());
+			void* offset = newInstance->OffsetMemory(fieldOffset, fieldType->GetInlineSize());
 			memset(offset, 0, fieldType->GetInlineSize());
 		}
 	}
 
 	callingFrame->PushStack(newInstance);
-	
+
 	CallStackFrame* currentFrame = PushFrame(ctor, type);
 	newInstance->IncrementReference();
 

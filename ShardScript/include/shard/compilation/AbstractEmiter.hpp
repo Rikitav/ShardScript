@@ -16,6 +16,7 @@
 #include <shard/parsing/nodes/Expressions/CollectionExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/RangeExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/LambdaExpressionSyntax.hpp>
+#include <shard/parsing/nodes/Expressions/TypeExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/LinkedExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/LiteralExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/ObjectExpressionSyntax.hpp>
@@ -141,6 +142,7 @@ namespace shard
         void VisitCollectionExpression(CollectionExpressionSyntax* node) override;
         void VisitRangeExpression(RangeExpressionSyntax* node) override;
         void VisitLambdaExpression(LambdaExpressionSyntax* node) override;
+        void VisitTypeExpression(TypeExpressionSyntax* node) override;
         void VisitTernaryExpression(TernaryExpressionSyntax* node) override;
 
         void VisitUnaryExpression(UnaryExpressionSyntax* node) override;

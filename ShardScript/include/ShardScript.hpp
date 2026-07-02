@@ -85,6 +85,7 @@
 #include <shard/semantic/symbols/ClassSymbol.hpp>
 #include <shard/semantic/symbols/LeftDenotationSymbol.hpp>
 #include <shard/semantic/symbols/LiteralSymbol.hpp>
+#include <shard/semantic/symbols/CompilationUnit.hpp>
 
 // --- Syntax / Nodes ---
 #include <shard/parsing/nodes/TypeSyntax.hpp>

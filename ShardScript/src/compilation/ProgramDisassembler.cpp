@@ -357,6 +357,17 @@ void ProgramDisassembler::Disassemble(std::wostream& out, MethodSymbol* method)
                 break;
             }
 
+            case OpCode::CALLGENERICMETHOD:
+            {
+                auto* sym = decoder.AbsorbMethodSymbol();
+                opcode = L"callgeneric";
+                if (sym == nullptr)
+                    args << L"null";
+                else
+                    args << (sym->FullName.empty() ? sym->Name : sym->FullName);
+                break;
+            }
+
             case OpCode::CALLDELEGATE:
                 opcode = L"calldelegate";
                 break;

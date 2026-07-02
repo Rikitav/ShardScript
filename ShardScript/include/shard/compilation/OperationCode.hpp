@@ -283,6 +283,14 @@ namespace shard
 		CALLMETHODSYMBOL,
 
 		/// <summary>
+		/// Invokes a generic MethodSymbol with creation of new CallStackFrame.
+		/// Type arguments must be loaded beforehand with LOAD_TYPEARGUMENT.
+		/// <para>Includes 1 parameter :</para>
+		/// <para>> MethodSymbol* pValue - pointer to MethodSymbol to invoke.</para>
+		/// </summary>
+		CALLGENERICMETHOD,
+
+		/// <summary>
 		/// Invokes the target method stored in a delegate instance.
 		/// <para>Includes no additional parameters.</para>
 		/// </summary>

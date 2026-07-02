@@ -156,6 +156,14 @@ SyntaxToken LexicalBuffer::Peek(int index)
 	return Sequence[target];
 }
 
+void LexicalBuffer::PutBackToken(SyntaxToken token)
+{
+	if (CurrentIndex > Sequence.size())
+		CurrentIndex = Sequence.size();
+
+	Sequence.insert(Sequence.begin() + CurrentIndex, token);
+}
+
 bool LexicalBuffer::CanConsume()
 {
 	return CurrentIndex < Sequence.size();

@@ -194,7 +194,7 @@ void TypeBinder::VisitClassDeclaration(ClassDeclarationSyntax* node)
 
 	PushScope(symbol);
 	for (const auto& typeParam : symbol->TypeParameters)
-		Declare(typeParam);
+		CurrentScope()->DeclareSymbol(typeParam);
 
 	std::vector<InterfaceSymbol*> baseInterfaces;
 	for (const auto& baseInterface : node->BaseInterfaces)
@@ -243,7 +243,7 @@ void TypeBinder::VisitStructDeclaration(StructDeclarationSyntax* node)
 
 	PushScope(symbol);
 	for (const auto& typeParam : symbol->TypeParameters)
-		Declare(typeParam);
+		CurrentScope()->DeclareSymbol(typeParam);
 
 	std::vector<InterfaceSymbol*> baseInterfaces;
 	for (const auto& baseInterface : node->BaseInterfaces)
@@ -292,7 +292,7 @@ void TypeBinder::VisitInterfaceDeclaration(InterfaceDeclarationSyntax* node)
 
     PushScope(symbol);
     for (const auto& typeParam : symbol->TypeParameters)
-        Declare(typeParam);
+        CurrentScope()->DeclareSymbol(typeParam);
 
     for (const auto& member : node->Members)
     {
@@ -528,6 +528,10 @@ void TypeBinder::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 		return;
 
 	PushScope(symbol);
+
+	for (TypeParameterSymbol* typeParam : symbol->TypeParameters)
+		CurrentScope()->DeclareSymbol(typeParam);
+
 	if (node->ReturnType != nullptr)
 	{
 		VisitType(node->ReturnType.get());

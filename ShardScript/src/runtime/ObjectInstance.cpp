@@ -155,16 +155,17 @@ ObjectInstance* ObjectInstance::GetField(FieldSymbol* field, CallStackFrame* fra
 
 	GenericTypeSymbol* genericInfo = GetGenericInfo(this);
 	TypeSymbol* fieldType = ResolveRuntimeType(field->ReturnType, frame, genericInfo);
+	std::size_t fieldOffset = genericInfo != nullptr ? genericInfo->GetFieldOffset(field) : field->MemoryBytesOffset;
 
 	if (fieldType->IsReferenceType())
 	{
-		void* offset = OffsetMemory(field->MemoryBytesOffset, sizeof(ObjectInstance*));
+		void* offset = OffsetMemory(fieldOffset, sizeof(ObjectInstance*));
 		ObjectInstance* valuePtr = *static_cast<ObjectInstance**>(offset);
 		return valuePtr == nullptr ? GarbageCollector::NullInstance : valuePtr;
 	}
 	else
 	{
-		void* offset = OffsetMemory(field->MemoryBytesOffset, fieldType->GetInlineSize());
+		void* offset = OffsetMemory(fieldOffset, fieldType->GetInlineSize());
 		ObjectInstance* instance = new ObjectInstance(fieldType, offset, true);
 		return instance;
 	}
@@ -189,6 +190,7 @@ void ObjectInstance::SetField(FieldSymbol* field, ObjectInstance* instance, Call
 		throw std::runtime_error("Tried to set incompatible ObjectInstance type as field value.");
 
 	fieldType = ResolveRuntimeType(fieldType, frame, genericInfo);
+	std::size_t fieldOffset = genericInfo != nullptr ? genericInfo->GetFieldOffset(field) : field->MemoryBytesOffset;
 	if (fieldType->IsReferenceType())
 	{
 		ObjectInstance* oldValue = GetField(field, frame);
@@ -198,14 +200,14 @@ void ObjectInstance::SetField(FieldSymbol* field, ObjectInstance* instance, Call
 		}
 		
 		instance->IncrementReference();
-		WriteMemory(field->MemoryBytesOffset, sizeof(ObjectInstance*), &instance);
+		WriteMemory(fieldOffset, sizeof(ObjectInstance*), &instance);
 	}
 	else
 	{
 		if (instance == GarbageCollector::NullInstance)
 			throw std::runtime_error("cannot write null value to ValueType field");
 		
-		WriteMemory(field->MemoryBytesOffset, fieldType->GetInlineSize(), instance->getMemory());
+		WriteMemory(fieldOffset, fieldType->GetInlineSize(), instance->getMemory());
 	}
 }
 

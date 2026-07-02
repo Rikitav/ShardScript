@@ -88,7 +88,9 @@ namespace shard
 
         static bool Equals(const TypeSymbol* expected, const TypeSymbol* actual);
         static bool IsAssignableFrom(const TypeSymbol* target, const TypeSymbol* source);
-        
+
+        static std::wstring GetDisplayName(const TypeSymbol* type);
+
         static TypeSymbol* SubstituteType(TypeSymbol* type);
 		static TypeSymbol* ReturnOf(FieldSymbol* field);
 		static TypeSymbol* ReturnOf(MethodSymbol* method);

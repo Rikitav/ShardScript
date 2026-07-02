@@ -371,6 +371,12 @@ void ByteCodeEncoder::EmitCallMethodSymbol(std::vector<std::byte>& code, MethodS
     AppendData(code, &method, sizeof(method));
 }
 
+void ByteCodeEncoder::EmitCallGenericMethod(std::vector<std::byte>& code, MethodSymbol* method)
+{
+    AppendDataT(code, OpCode::CALLGENERICMETHOD);
+    AppendData(code, &method, sizeof(method));
+}
+
 void ByteCodeEncoder::EmitCallDelegate(std::vector<std::byte>& code)
 {
     AppendDataT(code, OpCode::CALLDELEGATE);

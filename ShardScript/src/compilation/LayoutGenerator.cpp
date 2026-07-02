@@ -74,19 +74,32 @@ void LayoutGenerator::FixObjectLayout(SemanticModel& semanticModel, TypeSymbol* 
 		if (genericInfo->UnderlayingType->LayoutingState == TypeLayoutingState::Unvisited)
 			FixObjectLayout(semanticModel, genericInfo->UnderlayingType);
 
-		genericInfo->MemoryBytesSize = genericInfo->UnderlayingType->MemoryBytesSize;
+		genericInfo->FieldOffsets.clear();
+		std::size_t offset = 0;
 		for (FieldSymbol* field : genericInfo->UnderlayingType->Fields)
 		{
-			TypeSymbol* returnType = field->ReturnType;
-			if (returnType == nullptr)
+			if (field->Linking == LINK_STATIC)
 				continue;
 
-			if (returnType->Kind != SyntaxKind::TypeParameter)
+			TypeSymbol* fieldType = field->ReturnType;
+			if (fieldType == nullptr)
 				continue;
 
-			returnType = genericInfo->SubstituteTypeParameters(static_cast<TypeParameterSymbol*>(returnType));
-			objectInfo->MemoryBytesSize += returnType->GetInlineSize();
+			if (fieldType->Kind == SyntaxKind::TypeParameter)
+			{
+				TypeSymbol* concreteType = genericInfo->SubstituteTypeParameters(static_cast<TypeParameterSymbol*>(fieldType));
+				if (concreteType != nullptr)
+					fieldType = concreteType;
+			}
+
+			if (fieldType->LayoutingState == TypeLayoutingState::Unvisited)
+				FixObjectLayout(semanticModel, fieldType);
+
+			genericInfo->FieldOffsets[field] = offset;
+			offset += fieldType->GetInlineSize();
 		}
+
+		objectInfo->MemoryBytesSize = offset;
 	}
 
 	objectInfo->LayoutingState = TypeLayoutingState::Visited;

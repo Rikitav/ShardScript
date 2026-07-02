@@ -1,0 +1,11 @@
+using stdio;
+
+namespace hello_world;
+
+public static func Main() -> void
+{
+    foreach (x in 1..3)
+    {
+        println(x);
+    }
+}
