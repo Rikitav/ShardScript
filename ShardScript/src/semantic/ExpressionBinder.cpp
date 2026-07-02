@@ -763,6 +763,26 @@ TypeSymbol* ExpressionBinder::AnalyzeBinaryExpression(BinaryExpressionSyntax* no
 		return leftType;
 	}
 
+	auto isNumericPrimitive = [](TypeSymbol* type)
+	{
+		return type == SymbolTable::Primitives::Integer
+			|| type == SymbolTable::Primitives::Double
+			|| type == SymbolTable::Primitives::Char;
+	};
+
+	auto isIntegralPrimitive = [](TypeSymbol* type)
+	{
+		return type == SymbolTable::Primitives::Integer
+			|| type == SymbolTable::Primitives::Char;
+	};
+
+	bool bothPrimitive = leftType->IsPrimitive() && rightType->IsPrimitive();
+	bool isPrimitiveBinaryOp = bothPrimitive &&
+		(IsBinaryArithmeticOperator(node->OperatorToken.Type) ||
+		 IsBinaryBooleanOperator(node->OperatorToken.Type) ||
+		 IsBinaryBitOperator(node->OperatorToken.Type));
+
+	if (!isPrimitiveBinaryOp)
 	{
 		std::vector<TypeSymbol*> paramTypes = { leftType, rightType };
 		OperatorSymbol* opMethod = ResolveOperatorMethod(leftType, node->OperatorToken.Type, paramTypes);
@@ -772,7 +792,7 @@ TypeSymbol* ExpressionBinder::AnalyzeBinaryExpression(BinaryExpressionSyntax* no
 			return opMethod->ReturnType;
 		}
 
-		if (//!leftType->IsPrimitive() &&
+		if (!leftType->IsPrimitive() &&
 			node->OperatorToken.Type != TokenType::EqualsOperator &&
 			node->OperatorToken.Type != TokenType::NotEqualsOperator)
 		{
@@ -785,8 +805,6 @@ TypeSymbol* ExpressionBinder::AnalyzeBinaryExpression(BinaryExpressionSyntax* no
 	{
 		case TokenType::EqualsOperator:
 		case TokenType::NotEqualsOperator:
-		case TokenType::OrOperator:
-		case TokenType::AndOperator:
 		case TokenType::GreaterOperator:
 		case TokenType::GreaterOrEqualsOperator:
 		case TokenType::LessOperator:
@@ -796,26 +814,61 @@ TypeSymbol* ExpressionBinder::AnalyzeBinaryExpression(BinaryExpressionSyntax* no
 				(leftType == SymbolTable::Primitives::Null && rightType->Inlining == TypeInlining::ByReference) ||
 				(rightType == SymbolTable::Primitives::Null && leftType->Inlining == TypeInlining::ByReference);
 
-			if (!nullComparison && !TypeSymbol::Equals(leftType, rightType))
+			bool comparable = nullComparison
+				|| (leftType == SymbolTable::Primitives::String && rightType == SymbolTable::Primitives::String)
+				|| (isNumericPrimitive(leftType) && isNumericPrimitive(rightType))
+				|| (leftType == SymbolTable::Primitives::Boolean && rightType == SymbolTable::Primitives::Boolean);
+
+			if (!comparable)
 			{
 				Diagnostics.ReportError(node->OperatorToken, L"Type mismatch in comparison: '" + leftType->Name + L"' and '" + rightType->Name + L"'");
 			}
 			
 			return SymbolTable::Primitives::Boolean;
 		}
+
+		case TokenType::OrOperator:
+		case TokenType::AndOperator:
+		{
+			bool boolOp = leftType == SymbolTable::Primitives::Boolean && rightType == SymbolTable::Primitives::Boolean;
+			bool bitwiseOp = isIntegralPrimitive(leftType) && isIntegralPrimitive(rightType);
+
+			if (!boolOp && !bitwiseOp)
+			{
+				Diagnostics.ReportError(node->OperatorToken, L"Operator '" + GetOperatorMethodName(node->OperatorToken.Type) + L"' is not defined for type '" + leftType->Name + L"'");
+				return nullptr;
+			}
+
+			return boolOp ? SymbolTable::Primitives::Boolean : SymbolTable::Primitives::Integer;
+		}
+
+		case TokenType::LeftShiftOperator:
+		case TokenType::RightShiftOperator:
+		{
+			if (!isIntegralPrimitive(leftType) || !isIntegralPrimitive(rightType))
+			{
+				Diagnostics.ReportError(node->OperatorToken, L"Operator '" + GetOperatorMethodName(node->OperatorToken.Type) + L"' is not defined for type '" + leftType->Name + L"'");
+				return nullptr;
+			}
+
+			return SymbolTable::Primitives::Integer;
+		}
 			
 		case TokenType::AddOperator:
 		{
 			if (leftType == SymbolTable::Primitives::String || rightType == SymbolTable::Primitives::String)
-				return leftType;
+				return SymbolTable::Primitives::String;
 
-			if (!TypeSymbol::Equals(leftType, rightType))
+			if (!isNumericPrimitive(leftType) || !isNumericPrimitive(rightType))
 			{
-				Diagnostics.ReportError(node->OperatorToken, L"Type mismatch in comparison: '" + leftType->Name + L"' and '" + rightType->Name + L"'");
+				Diagnostics.ReportError(node->OperatorToken, L"Type mismatch in addition: '" + leftType->Name + L"' and '" + rightType->Name + L"'");
 				return nullptr;
 			}
 
-			return leftType;
+			if (leftType == SymbolTable::Primitives::Double || rightType == SymbolTable::Primitives::Double)
+				return SymbolTable::Primitives::Double;
+
+			return SymbolTable::Primitives::Integer;
 		}
 
 		case TokenType::SubOperator:
@@ -824,13 +877,16 @@ TypeSymbol* ExpressionBinder::AnalyzeBinaryExpression(BinaryExpressionSyntax* no
 		case TokenType::ModOperator:
 		case TokenType::PowOperator:
 		{
-			if (!TypeSymbol::Equals(leftType, rightType))
+			if (!isNumericPrimitive(leftType) || !isNumericPrimitive(rightType))
 			{
-				Diagnostics.ReportError(node->OperatorToken, L"Type mismatch in comparison: '" + leftType->Name + L"' and '" + rightType->Name + L"'");
+				Diagnostics.ReportError(node->OperatorToken, L"Type mismatch in arithmetic operation: '" + leftType->Name + L"' and '" + rightType->Name + L"'");
 				return nullptr;
 			}
 
-			return leftType;
+			if (leftType == SymbolTable::Primitives::Double || rightType == SymbolTable::Primitives::Double)
+				return SymbolTable::Primitives::Double;
+
+			return SymbolTable::Primitives::Integer;
 		}
 			
 		case TokenType::AddAssignOperator:
@@ -838,13 +894,16 @@ TypeSymbol* ExpressionBinder::AnalyzeBinaryExpression(BinaryExpressionSyntax* no
 			if (leftType == SymbolTable::Primitives::String)
 				return leftType;
 
-			if (!TypeSymbol::Equals(leftType, rightType))
+			if (!isNumericPrimitive(leftType) || !isNumericPrimitive(rightType))
 			{
-				Diagnostics.ReportError(node->OperatorToken, L"Type mismatch in comparison: '" + leftType->Name + L"' and '" + rightType->Name + L"'");
+				Diagnostics.ReportError(node->OperatorToken, L"Type mismatch in addition assignment: '" + leftType->Name + L"' and '" + rightType->Name + L"'");
 				return nullptr;
 			}
 
-			return leftType;
+			if (leftType == SymbolTable::Primitives::Double || rightType == SymbolTable::Primitives::Double)
+				return SymbolTable::Primitives::Double;
+
+			return SymbolTable::Primitives::Integer;
 		}
 
 		case TokenType::SubAssignOperator:
@@ -853,13 +912,16 @@ TypeSymbol* ExpressionBinder::AnalyzeBinaryExpression(BinaryExpressionSyntax* no
 		case TokenType::ModAssignOperator:
 		case TokenType::PowAssignOperator:
 		{
-			if (!TypeSymbol::Equals(leftType, rightType))
+			if (!isNumericPrimitive(leftType) || !isNumericPrimitive(rightType))
 			{
-				Diagnostics.ReportError(node->OperatorToken, L"Type mismatch in comparison: '" + leftType->Name + L"' and '" + rightType->Name + L"'");
+				Diagnostics.ReportError(node->OperatorToken, L"Type mismatch in arithmetic assignment: '" + leftType->Name + L"' and '" + rightType->Name + L"'");
 				return nullptr;
 			}
 
-			return leftType;
+			if (leftType == SymbolTable::Primitives::Double || rightType == SymbolTable::Primitives::Double)
+				return SymbolTable::Primitives::Double;
+
+			return SymbolTable::Primitives::Integer;
 		}
 			
 		default:
@@ -884,7 +946,7 @@ TypeSymbol* ExpressionBinder::AnalyzeUnaryExpression(UnaryExpressionSyntax* node
 	}
 
 	{
-		bool tryOperatorMethod = exprType->IsPrimitive() ||
+		bool tryOperatorMethod = !exprType->IsPrimitive() &&
 			(node->OperatorToken.Type != TokenType::IncrementOperator && node->OperatorToken.Type != TokenType::DecrementOperator);
 
 		if (tryOperatorMethod)
@@ -2770,6 +2832,59 @@ void ExpressionBinder::VisitDeferStatement(DeferStatementSyntax* node)
 	}
 }
 
+static bool IsScalarPrimitive(TypeSymbol* type)
+{
+	if (type == nullptr)
+		return false;
+
+	return type == SymbolTable::Primitives::Boolean
+		|| type == SymbolTable::Primitives::Integer
+		|| type == SymbolTable::Primitives::Double
+		|| type == SymbolTable::Primitives::Char;
+}
+
+static bool IsReferenceCastAllowed(TypeSymbol* source, TypeSymbol* target)
+{
+	if (source == nullptr || target == nullptr)
+		return false;
+
+	if (TypeSymbol::Equals(source, target))
+		return true;
+
+	if (source == SymbolTable::Primitives::Null)
+		return target->Inlining == TypeInlining::ByReference || target == SymbolTable::Primitives::Any;
+
+	if (target == SymbolTable::Primitives::Any || source == SymbolTable::Primitives::Any)
+		return true;
+
+	if (target->Inlining != TypeInlining::ByReference || source->Inlining != TypeInlining::ByReference)
+		return false;
+
+	if (TypeSymbol::IsAssignableFrom(target, source) || TypeSymbol::IsAssignableFrom(source, target))
+		return true;
+
+	if (target->Kind == SyntaxKind::InterfaceDeclaration || source->Kind == SyntaxKind::InterfaceDeclaration)
+		return true;
+
+	return false;
+}
+
+static OperatorSymbol* FindConversionOperator(TypeSymbol* ownerType, TypeSymbol* sourceType, TypeSymbol* targetType)
+{
+	if (ownerType == nullptr || sourceType == nullptr || targetType == nullptr)
+		return nullptr;
+
+	OperatorSymbol* op = ownerType->FindOperator(TokenType::AsOperator, { sourceType });
+	if (op != nullptr && op->ReturnType == targetType)
+		return op;
+
+	op = ownerType->FindOperator(TokenType::AsOperator, {});
+	if (op != nullptr && op->ReturnType == targetType)
+		return op;
+
+	return nullptr;
+}
+
 void ExpressionBinder::VisitCastExpression(CastExpressionSyntax* node)
 {
 	if (node->Expression != nullptr)
@@ -2784,11 +2899,71 @@ void ExpressionBinder::VisitCastExpression(CastExpressionSyntax* node)
 		return;
 	}
 
+	TypeSymbol* sourceType = GetExpressionType(node->Expression.get());
 	TypeSymbol* targetType = node->TargetType->Symbol;
-	if (targetType->Inlining == TypeInlining::ByValue)
+
+	if (sourceType == nullptr)
 	{
-		//Diagnostics.ReportError(node->OperatorToken, L"The 'as' operator may only be used with reference types");
+		SetExpressionType(node, targetType);
+		return;
 	}
+
+	if (TypeSymbol::Equals(sourceType, targetType))
+	{
+		SetExpressionType(node, targetType);
+		return;
+	}
+
+	// 1. User-defined conversion operators.
+	OperatorSymbol* sourceOperator = FindConversionOperator(sourceType, sourceType, targetType);
+	OperatorSymbol* targetOperator = FindConversionOperator(targetType, sourceType, targetType);
+
+	int conversionCount = 0;
+	if (sourceOperator != nullptr) conversionCount++;
+	if (targetOperator != nullptr && targetOperator != sourceOperator) conversionCount++;
+
+	if (conversionCount > 1)
+	{
+		Diagnostics.ReportError(
+			node->OperatorToken,
+			L"Ambiguous cast from '" + sourceType->Name + L"' to '" + targetType->Name +
+			L"'. Multiple user-defined 'operator as' conversions are available.");
+		SetExpressionType(node, targetType);
+		return;
+	}
+
+	if (sourceOperator != nullptr)
+	{
+		node->ToOperator = sourceOperator;
+		SetExpressionType(node, targetType);
+		return;
+	}
+
+	if (targetOperator != nullptr)
+	{
+		node->ToOperator = targetOperator;
+		SetExpressionType(node, targetType);
+		return;
+	}
+
+	// 2. Built-in reference / interface casts.
+	if (IsReferenceCastAllowed(sourceType, targetType))
+	{
+		SetExpressionType(node, targetType);
+		return;
+	}
+
+	// 3. Built-in primitive conversions.
+	if (IsScalarPrimitive(sourceType) && IsScalarPrimitive(targetType))
+	{
+		node->IsPrimitiveCast = true;
+		SetExpressionType(node, targetType);
+		return;
+	}
+
+	Diagnostics.ReportError(
+		node->OperatorToken,
+		L"Cannot cast from '" + sourceType->Name + L"' to '" + targetType->Name + L"'.");
 
 	SetExpressionType(node, targetType);
 }

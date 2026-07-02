@@ -262,6 +262,8 @@ void ProgramDisassembler::Disassemble(std::wostream& out, MethodSymbol* method)
             case OpCode::MATH_POWER:                opcode = L"pow"; break;
             case OpCode::MATH_NEGATIVE:             opcode = L"neg"; break;
             case OpCode::MATH_POSITIVE:             opcode = L"pos"; break;
+            case OpCode::MATH_LEFTSHIFT:            opcode = L"shl"; break;
+            case OpCode::MATH_RIGHTSHIFT:           opcode = L"shr"; break;
 
             case OpCode::COMPARE_EQUAL:             opcode = L"cmp_eq"; break;
             case OpCode::COMPARE_NOTEQUAL:          opcode = L"cmp_neq"; break;

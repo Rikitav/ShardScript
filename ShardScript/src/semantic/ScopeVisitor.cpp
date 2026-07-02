@@ -120,6 +120,7 @@ static bool IsMethodSymbol(SyntaxSymbol* symbol)
 		case SyntaxKind::MethodDeclaration:
 		case SyntaxKind::ConstructorDeclaration:
 		case SyntaxKind::AccessorDeclaration:
+		case SyntaxKind::OperatorDeclaration:
 			return true;
 
 		default:

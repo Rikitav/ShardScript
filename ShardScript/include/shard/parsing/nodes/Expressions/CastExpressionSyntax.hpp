@@ -11,12 +11,17 @@
 
 namespace shard
 {
+	class OperatorSymbol;
+
 	class SHARD_API CastExpressionSyntax : public ExpressionSyntax
 	{
 	public:
 		const SyntaxToken OperatorToken;
 		std::unique_ptr<ExpressionSyntax> Expression = nullptr;
 		std::unique_ptr<TypeSyntax> TargetType = nullptr;
+
+		OperatorSymbol* ToOperator = nullptr;
+		bool IsPrimitiveCast = false;
 
 		inline CastExpressionSyntax(const SyntaxToken operatorToken, SyntaxNode* parent)
 			: ExpressionSyntax(SyntaxKind::CastExpression, parent), OperatorToken(operatorToken) {}

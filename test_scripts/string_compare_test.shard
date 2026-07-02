@@ -1,0 +1,13 @@
+using stdio;
+
+namespace hello_world;
+
+public static func Main() -> void
+{
+    print("abc" == "abc");
+    print(",");
+    print("abc" != "def");
+    print(",");
+    print("abc" < "def");
+    println("");
+}

@@ -195,6 +195,7 @@
 #include <shard/runtime/ObjectInstance.hpp>
 #include <shard/runtime/GarbageCollector.hpp>
 #include <shard/runtime/CallStackFrame.hpp>
+#include <shard/runtime/PrimitiveMathModule.hpp>
 #include <shard/runtime/VirtualMachine.hpp>
 #include <shard/runtime/ConsoleHelper.hpp>
 #include <shard/runtime/MethodCallState.hpp>

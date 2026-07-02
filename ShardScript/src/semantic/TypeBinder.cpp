@@ -572,6 +572,24 @@ void TypeBinder::VisitOperatorDeclaration(OperatorDeclarationSyntax* node)
 	if (node->Body != nullptr)
 		VisitStatementsBlock(node->Body.get());
 
+	OperatorSymbol* opSymbol = static_cast<OperatorSymbol*>(symbol);
+	if (opSymbol->OperatorToken == TokenType::AsOperator)
+	{
+		if (opSymbol->Linking != SymbolLinking::Static)
+		{
+			Diagnostics.ReportError(
+				node->OperatorToken,
+				L"Conversion operator 'as' must be static.");
+		}
+
+		if (opSymbol->Parameters.size() != 1)
+		{
+			Diagnostics.ReportError(
+				node->OperatorToken,
+				L"Conversion operator 'as' must take exactly one parameter.");
+		}
+	}
+
 	symbol->AdvanceAnalysisState(SymbolAnalysisState::TypeResolved);
 	PopScope();
 }
