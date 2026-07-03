@@ -72,6 +72,7 @@ namespace shard
 		std::int64_t& AsInteger() const;
 		double& AsDouble() const;
 		wchar_t& AsCharacter() const;
+		std::int64_t& AsStringLength() const;
 		const wchar_t* AsString() const;
 		void* AsNint() const;
 

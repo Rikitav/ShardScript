@@ -706,6 +706,12 @@ std::unique_ptr<DelegateDeclarationSyntax> SourceParser::ReadDelegateDeclaration
 		syntax->IdentifierToken = SyntaxToken(TokenType::Identifier, L"", TextLocation(), true);
 	}
 
+	SyntaxToken current = reader.Current();
+	if (current.Type == TokenType::LessOperator)
+	{
+		syntax->TypeParameters = ReadTypeParametersList(reader, syntax.get());
+	}
+
 	syntax->ParametersList = ReadParametersList(reader, syntax.get());
 
 	if (reader.Current().Type == TokenType::ArrowOperator)
@@ -1293,7 +1299,14 @@ std::unique_ptr<ParametersListSyntax> SourceParser::ReadParametersList(SourcePro
 	while (reader.CanConsume())
 	{
 		SyntaxToken identifierToken;
-		if (!TryMatchIdentifier(reader, 3))
+		SyntaxToken currentToken = reader.Current();
+		if (currentToken.Type == TokenType::ValueKeyword)
+		{
+			// 'value' is a contextual keyword; allow it as a parameter name.
+			identifierToken = SyntaxToken(TokenType::Identifier, currentToken.Word, currentToken.Location, currentToken.IsMissing);
+			reader.Consume();
+		}
+		else if (!TryMatchIdentifier(reader, 3))
 		{
 			if (reader.CanConsume() && reader.Current().Type == TokenType::CloseCurl)
 			{
@@ -2377,7 +2390,7 @@ std::unique_ptr<TernaryExpressionSyntax> SourceParser::ReadTernaryExpression(Sou
 	return syntax;
 }
 
-std::unique_ptr<CollectionExpressionSyntax> SourceParser::ReadCollectionExpression(SourceProvider& reader, SyntaxNode* parent)
+std::unique_ptr<ExpressionSyntax> SourceParser::ReadCollectionExpression(SourceProvider& reader, SyntaxNode* parent)
 {
 	auto syntax = std::make_unique<CollectionExpressionSyntax>(parent);
 	syntax->OpenSquareToken = Expect(reader, TokenType::OpenSquare, L"Expected '[' token");
@@ -2409,6 +2422,15 @@ std::unique_ptr<CollectionExpressionSyntax> SourceParser::ReadCollectionExpressi
 			syntax->CloseSquareToken = separatorToken;
 			break;
 		}
+	}
+
+	// A collection containing exactly one range expression is treated as an array-range literal,
+	// e.g. [1..10] produces the same value as 1..10 rather than a single-element array of ranges.
+	if (syntax->ValuesExpressions.size() == 1 && syntax->ValuesExpressions[0]->Kind == SyntaxKind::RangeExpression)
+	{
+		auto rangeExpr = std::move(syntax->ValuesExpressions[0]);
+		rangeExpr->Parent = parent;
+		return rangeExpr;
 	}
 
 	return syntax;

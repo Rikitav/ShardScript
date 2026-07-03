@@ -420,6 +420,14 @@ wchar_t& ObjectInstance::AsCharacter() const
 	return *reinterpret_cast<wchar_t*>(getMemory());
 }
 
+std::int64_t& ObjectInstance::AsStringLength() const
+{
+	if (getInfo() != TYPE_STRING)
+		throw std::runtime_error("Cannot interpret instance as String");
+
+	return *reinterpret_cast<std::int64_t*>(getMemory());
+}
+
 const wchar_t* ObjectInstance::AsString() const
 {
 	if (getInfo() != TYPE_STRING)

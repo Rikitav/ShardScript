@@ -33,6 +33,67 @@
 
 using namespace shard;
 
+namespace
+{
+    static inline std::string WToUtf8(const std::wstring& wstr)
+    {
+        if (wstr.empty())
+            return {};
+
+#ifdef _WIN32
+        const int size = ::WideCharToMultiByte(CP_UTF8, 0, wstr.data(),
+            static_cast<int>(wstr.size()),
+            nullptr, 0, nullptr, nullptr);
+        if (size <= 0)
+            return {};
+
+        std::string narrow(static_cast<std::size_t>(size), '\0');
+        ::WideCharToMultiByte(CP_UTF8, 0, wstr.data(),
+            static_cast<int>(wstr.size()),
+            narrow.data(), size, nullptr, nullptr);
+        return narrow;
+#else
+        std::string narrow(wstr.size() * 4 + 1, '\0');
+        std::wcstombs(narrow.data(), wstr.c_str(), narrow.size());
+        narrow.resize(std::strlen(narrow.c_str()));
+        return narrow;
+#endif
+    }
+
+    static inline std::string WToUtf8(const wchar_t* wstr)
+    {
+        if (wstr == nullptr)
+            return {};
+
+        return WToUtf8(std::wstring(wstr));
+    }
+
+    static inline std::wstring Utf8ToW(const std::string& narrow)
+    {
+        if (narrow.empty())
+            return {};
+
+#ifdef _WIN32
+        const int size = ::MultiByteToWideChar(CP_UTF8, 0, narrow.data(),
+            static_cast<int>(narrow.size()),
+            nullptr, 0);
+        if (size <= 0)
+            return {};
+
+        std::wstring wide(static_cast<std::size_t>(size), L'\0');
+        ::MultiByteToWideChar(CP_UTF8, 0, narrow.data(),
+            static_cast<int>(narrow.size()),
+            wide.data(), size);
+        return wide;
+#else
+        std::wstring wide(narrow.size(), L'\0');
+        std::mbstowcs(wide.data(), narrow.c_str(), wide.size());
+        wide.resize(std::wcslen(wide.c_str()));
+        return wide;
+#endif
+    }
+}
+
 static bool InitNetwork() noexcept
 {
 #ifdef _WIN32
@@ -41,21 +102,6 @@ static bool InitNetwork() noexcept
 #else
     return true;
 #endif
-}
-
-static inline std::string thinify(const wchar_t* wstr)
-{
-    size_t length = wcslen(wstr) + 1;
-    std::string narrow(length, '\0');
-    size_t converted = 0;
-
-#ifdef _WIN32
-    wcstombs_s(&converted, narrow.data(), length, wstr, _TRUNCATE);
-#else
-    wcstombs(narrow.data(), wstr, length);
-#endif
-
-    return narrow;
 }
 
 ClassSymbol* shard_socket = nullptr;
@@ -86,7 +132,7 @@ static ObjectInstance* shard_socket_Connect(const CallState& context) noexcept
     if (socket_handle == INVALID_SOCKET_VAL)
         return context.Collector.FromValue(false);
 
-    std::string ip_narrow = thinify(ip_w);
+    std::string ip_narrow = WToUtf8(ip_w);
     sockaddr_in clientService{};
     clientService.sin_family = AF_INET;
     clientService.sin_port = htons(static_cast<u_short>(port));
@@ -104,41 +150,115 @@ static ObjectInstance* shard_socket_Connect(const CallState& context) noexcept
 static ObjectInstance* shard_socket_Send(const CallState& context) noexcept
 {
     ObjectInstance* instance = context.Args[0];
-    const wchar_t* data_w = context.Args[1]->AsString();
     socket_t socket_handle = static_cast<socket_t>(instance->GetField(shard_socket_handle)->AsInteger());
+
+    const wchar_t* data_w = context.Args[1]->AsString();
+    int data_length = static_cast<int>(context.Args[1]->AsStringLength());
 
     if (socket_handle == INVALID_SOCKET_VAL)
         return context.Collector.FromValue(static_cast<int64_t>(-1));
 
-    std::string data_narrow = thinify(data_w);
-    int bytesSent = send(static_cast<socket_t>(socket_handle), data_narrow.data(), static_cast<int>(strlen(data_narrow.data())), 0);
+    int bytesSent = send(socket_handle,
+        reinterpret_cast<const char*>(data_w), data_length * sizeof(wchar_t), 0);
+
     return context.Collector.FromValue(static_cast<int64_t>(bytesSent));
+}
+
+static ObjectInstance* shard_socket_Bind(const CallState& context) noexcept
+{
+    ObjectInstance* instance = context.Args[0];
+    const wchar_t* ip_w = context.Args[1]->AsString();
+    int64_t port = context.Args[2]->AsInteger();
+    socket_t socket_handle = static_cast<socket_t>(instance->GetField(shard_socket_handle)->AsInteger());
+
+    if (socket_handle == INVALID_SOCKET_VAL)
+        return context.Collector.FromValue(false);
+
+    std::string ip_narrow = WToUtf8(ip_w);
+    sockaddr_in service{};
+    service.sin_family = AF_INET;
+    service.sin_port = htons(static_cast<u_short>(port));
+
+    if (ip_narrow.empty() || ip_narrow == "0.0.0.0")
+    {
+        service.sin_addr.s_addr = INADDR_ANY;
+    }
+    else
+    {
+        if (inet_pton(AF_INET, ip_narrow.data(), &service.sin_addr) <= 0)
+            return context.Collector.FromValue(false);
+    }
+
+    int result = bind(socket_handle, reinterpret_cast<sockaddr*>(&service), sizeof(service));
+    return context.Collector.FromValue(result != SOCKET_ERROR_VAL);
+}
+
+static ObjectInstance* shard_socket_Listen(const CallState& context) noexcept
+{
+    ObjectInstance* instance = context.Args[0];
+    int64_t backlog = context.Args[1]->AsInteger();
+    socket_t socket_handle = static_cast<socket_t>(instance->GetField(shard_socket_handle)->AsInteger());
+
+    if (socket_handle == INVALID_SOCKET_VAL)
+        return context.Collector.FromValue(false);
+
+    int result = listen(socket_handle, static_cast<int>(backlog));
+    return context.Collector.FromValue(result != SOCKET_ERROR_VAL);
+}
+
+static ObjectInstance* shard_socket_Accept(const CallState& context) noexcept
+{
+    ObjectInstance* instance = context.Args[0];
+    socket_t server_handle = static_cast<socket_t>(instance->GetField(shard_socket_handle)->AsInteger());
+
+    if (server_handle == INVALID_SOCKET_VAL)
+        throw std::runtime_error("Invalid server socket handle");
+
+    sockaddr_in client_addr{};
+    socklen_t client_addr_len = sizeof(client_addr);
+
+    socket_t client_handle = accept(server_handle, reinterpret_cast<sockaddr*>(&client_addr), &client_addr_len);
+    if (client_handle == INVALID_SOCKET_VAL)
+        throw std::runtime_error("Failed to accept client connection");
+
+    ObjectInstance* client_instance = context.Collector.AllocateInstance(shard_socket);
+    client_instance->SetField(shard_socket_handle, context.Collector.FromValue(static_cast<std::int64_t>(client_handle)));
+    return client_instance;
 }
 
 static ObjectInstance* shard_socket_Receive(const CallState& context) noexcept
 {
     ObjectInstance* instance = context.Args[0];
-    int64_t buffer_size = context.Args[1]->AsInteger();
+    int symbols_requested = static_cast<int>(context.Args[1]->AsInteger());
     socket_t socket_handle = static_cast<socket_t>(instance->GetField(shard_socket_handle)->AsInteger());
 
-    if (socket_handle == INVALID_SOCKET_VAL || buffer_size <= 0)
+    if (socket_handle == INVALID_SOCKET_VAL || symbols_requested <= 0)
         return context.Collector.FromValue(L"");
 
-    std::vector<char> buffer(buffer_size + 1);
-    int bytesReceived = recv(static_cast<socket_t>(socket_handle), buffer.data(), static_cast<int>(buffer_size), 0);
+    std::size_t bytes_to_read = symbols_requested * sizeof(wchar_t);
+    std::vector<char> byte_buffer(bytes_to_read);
 
+    int bytesReceived = recv(socket_handle, byte_buffer.data(), static_cast<int>(bytes_to_read), 0);
     if (bytesReceived <= 0)
         return context.Collector.FromValue(L"");
 
-    buffer[bytesReceived] = '\0';
-    std::wstring w_buffer(buffer.begin(), buffer.end());
-    return context.Collector.FromValue(w_buffer.data());
+    std::size_t symbols_received = bytesReceived / sizeof(wchar_t);
+    if (symbols_received == 0)
+        return context.Collector.FromValue(L"");
+
+    std::wstring w_buffer(
+        reinterpret_cast<const wchar_t*>(byte_buffer.data()),
+        symbols_received
+    );
+
+    return context.Collector.FromValue(w_buffer);
 }
 
 static ObjectInstance* shard_socket_Close(const CallState& context) noexcept
 {
     ObjectInstance* instance = context.Args[0];
     int64_t socket_handle = instance->GetField(shard_socket_handle)->AsInteger();
+
     if (socket_handle != INVALID_SOCKET_VAL)
     {
         close_socket_native(static_cast<socket_t>(socket_handle));
@@ -166,6 +286,7 @@ SHARDLIB_ENTRYPOINT
     SymbolBuilder<ClassSymbol> tcpSocket = netNamespace.AddClass(L"Socket");
     tcpSocket.Implements(TRAIT_DISPOSABLE);
     
+    shard_socket = tcpSocket;
     shard_socket_handle = tcpSocket.AddField(L"_handle", TYPE_INT, LINK_INSTANCE, ACS_PRIVATE);
 
     tcpSocket.AddInit()
@@ -179,6 +300,18 @@ SHARDLIB_ENTRYPOINT
     tcpSocket.AddMethod(L"Send", TYPE_INT, LINK_INSTANCE)
         .AddParameter(L"data", TYPE_STRING)
         .SetCallback(&shard_socket_Send);
+
+    tcpSocket.AddMethod(L"Bind", TYPE_BOOL, LINK_INSTANCE)
+        .AddParameter(L"ip", TYPE_STRING)
+        .AddParameter(L"port", TYPE_INT)
+        .SetCallback(&shard_socket_Bind);
+
+    tcpSocket.AddMethod(L"Listen", TYPE_BOOL, LINK_INSTANCE)
+        .AddParameter(L"backlog", TYPE_INT)
+        .SetCallback(&shard_socket_Listen);
+
+    tcpSocket.AddMethod(L"Accept", shard_socket, LINK_INSTANCE)
+        .SetCallback(&shard_socket_Accept);
 
     tcpSocket.AddMethod(L"Receive", TYPE_STRING, LINK_INSTANCE)
         .AddParameter(L"bufferSize", TYPE_INT)

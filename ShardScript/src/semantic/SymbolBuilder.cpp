@@ -50,6 +50,17 @@ SymbolBuilder<ClassSymbol> SymbolBuilder<NamespaceSymbol>::AddClass(
     return builder;
 }
 
+SymbolBuilder<StructSymbol> SymbolBuilder<NamespaceSymbol>::AddStruct(
+    const std::wstring& name,
+    SymbolLinking linking,
+    SymbolAccesibility access)
+{
+    SymbolBuilder<StructSymbol> builder(Context, name, Symbol);
+    builder.Get()->Accesibility = access;
+    builder.Get()->Linking = linking;
+    return builder;
+}
+
 SymbolBuilder<EnumSymbol> SymbolBuilder<NamespaceSymbol>::AddEnum(
     const std::wstring& name,
     bool isFlags,
@@ -192,6 +203,13 @@ SymbolBuilder<ClassSymbol>& SymbolBuilder<ClassSymbol>::Implements(
     return *this;
 }
 
+SymbolBuilder<ClassSymbol>& SymbolBuilder<ClassSymbol>::Implements(
+    GenericTypeSymbol* interface)
+{
+    Symbol->Interfaces.push_back(interface);
+    return *this;
+}
+
 // =========================================================================
 // StructSymbol
 // =========================================================================
@@ -277,6 +295,20 @@ SymbolBuilder<OperatorSymbol> SymbolBuilder<StructSymbol>::AddOperator(
 {
     SymbolBuilder<OperatorSymbol> builder(Context, opToken, returnType, linking, access, Symbol);
     return builder;
+}
+
+SymbolBuilder<StructSymbol>& SymbolBuilder<StructSymbol>::Implements(
+    InterfaceSymbol* interface)
+{
+    Symbol->Interfaces.push_back(interface);
+    return *this;
+}
+
+SymbolBuilder<StructSymbol>& SymbolBuilder<StructSymbol>::Implements(
+    GenericTypeSymbol* interface)
+{
+    Symbol->Interfaces.push_back(interface);
+    return *this;
 }
 
 // =========================================================================
@@ -394,7 +426,17 @@ SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::IsImplementationOf(Met
 SymbolBuilder<TypeParameterSymbol> SymbolBuilder<MethodSymbol>::AddTypeParameter(const std::wstring& name)
 {
     SymbolBuilder<TypeParameterSymbol> builder(Context, name, Symbol);
-    // TODO: add type parameters reg
+
+    TypeParameterSymbol* typeParam = builder.Get();
+    if (typeParam != nullptr)
+    {
+        std::uint16_t index = static_cast<std::uint16_t>(Symbol->TypeParameters.size() - 1);
+        if (Symbol->Parent != nullptr && Symbol->Parent->IsType())
+            index += static_cast<std::uint16_t>(static_cast<TypeSymbol*>(Symbol->Parent)->TypeParameters.size());
+
+        typeParam->TypeArgumentIndex = index;
+    }
+
     return builder;
 }
 
@@ -475,19 +517,19 @@ SymbolBuilder<AccessorSymbol>& SymbolBuilder<AccessorSymbol>::SetCallback(Method
     return *this;
 }
 
-/*
-SymbolBuilder<AccessorSymbol>& SymbolBuilder<AccessorSymbol>::SetCallback(
-    ShardManagedMethodCallback callback,
-    void* userData)
+SymbolBuilder<AccessorSymbol>& SymbolBuilder<AccessorSymbol>::IsImplementationOf(MethodSymbol* abstractMethod)
 {
-    Symbol->ManagedCallback = callback;
-    Symbol->ManagedCallbackUserData = userData;
-    Symbol->FunctionPointer = nullptr;
-    Symbol->HandleType = MethodHandleType::External;
-    Symbol->IsExtern = true;
+    if (abstractMethod == nullptr)
+        return *this;
+
+    SyntaxSymbol* parent = Symbol->Parent;
+    if (parent == nullptr || !parent->IsType())
+        return *this;
+
+    TypeSymbol* parentType = static_cast<TypeSymbol*>(parent);
+    parentType->InterfaceMethodMap[abstractMethod] = Symbol;
     return *this;
 }
-*/
 
 // =========================================================================
 // FieldSymbol

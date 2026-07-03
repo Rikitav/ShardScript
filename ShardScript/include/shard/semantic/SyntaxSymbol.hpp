@@ -34,7 +34,7 @@ namespace shard
 	public:
 		const int DefinitionIndex;
 		const SyntaxKind Kind;
-		const std::wstring Name;
+		std::wstring Name;
 		std::wstring FullName;
 		SyntaxSymbol* Parent = nullptr;
 

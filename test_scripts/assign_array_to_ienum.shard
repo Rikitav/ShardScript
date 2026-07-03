@@ -1,0 +1,13 @@
+using stdio;
+using collections;
+
+public static func Main() -> void
+{
+	test := [1..10];
+	e: IEnumerable<int> = test;
+	foreach (item in e)
+	{
+		println(item);
+		return;
+	}
+}

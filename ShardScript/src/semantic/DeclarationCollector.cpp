@@ -552,7 +552,10 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax* node)
             {
                 // Assert: namespace cannot have instance Methods
                 if (symbol->Linking == LINK_INSTANCE)
-                    Diagnostics.ReportError(node->IdentifierToken, L"Cannot declare a non static Method in namespace");
+                {
+                    symbol->Linking = LINK_STATIC;
+                    //Diagnostics.ReportError(node->IdentifierToken, L"Cannot declare a non static Method in namespace");
+                }
             }
             else if (symbol->Parent->IsType())
             {

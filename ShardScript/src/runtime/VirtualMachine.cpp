@@ -1239,6 +1239,15 @@ ObjectInstance* VirtualMachine::InvokeMethod(MethodSymbol* method, ObjectInstanc
 	return result;
 }
 
+void VirtualMachine::SetPendingTypeArguments(std::initializer_list<TypeSymbol*> args) const
+{
+	VirtualMachine* vm = const_cast<VirtualMachine*>(this);
+	vm->PendingTypeArguments.clear();
+	vm->PendingTypeArguments.reserve(args.size());
+	for (TypeSymbol* arg : args)
+		vm->PendingTypeArguments.push_back(arg);
+}
+
 void VirtualMachine::RaiseException(ObjectInstance* exceptionReg) const
 {
 	// TODO: implement method
@@ -1345,9 +1354,6 @@ ObjectInstance* VirtualMachine::RunInteractive(std::size_t& pointer)
 	currentFrame->EvalStack.reserve(static_cast<std::size_t>(method->GetEvalStackLocalsCount()) * 2);
 
 	ByteCodeDecoder decoder = ByteCodeDecoder(method->ExecutableByteCode);
-	ProgramDisassembler disassembler;
-	disassembler.Disassemble(std::wcout, program);
-
 	decoder.SetCursor(pointer);
 
 	while (!decoder.IsEOF())

@@ -93,7 +93,8 @@ namespace shard
 
 		shard::TypeSymbol* SubstituteMethodTypeParameter(shard::TypeSymbol* type, shard::MethodSymbol* method, const std::vector<TypeSymbol*>& methodTypeArgs);
 		shard::TypeSymbol* ResolveTypeExpression(shard::TypeSyntax* type);
-		bool InferMethodTypeArguments(shard::MethodSymbol* method, const std::vector<TypeSymbol*>& argTypes, std::vector<TypeSymbol*>& outMethodTypeArgs);
+		bool TryInferTypeArgument(shard::TypeSymbol* pattern, shard::TypeSymbol* concrete, shard::MethodSymbol* method, shard::GenericTypeSymbol* genericType, std::vector<TypeSymbol*>& outMethodTypeArgs);
+		bool InferMethodTypeArguments(shard::MethodSymbol* method, const std::vector<TypeSymbol*>& argTypes, shard::GenericTypeSymbol* genericType, std::vector<TypeSymbol*>& outMethodTypeArgs);
 		bool MatchGenericMethodArguments(shard::MethodSymbol* method, const std::vector<TypeSymbol*>& argTypes, shard::GenericTypeSymbol* genericType, const std::vector<TypeSymbol*>& methodTypeArgs);
 
 		shard::TypeSymbol* AnalyzeNumberLiteral(shard::LiteralExpressionSyntax* node);

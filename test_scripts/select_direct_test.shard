@@ -19,9 +19,9 @@ public static func Select<T, U>(source: IEnumerable<T>, action: Transform<T, U>)
 public static func Main() -> void
 {
 	test := [1..10];
-	res := test.Select(lambda (a: int) -> int
+	res := Select<int, int>(test, lambda (a: int) -> int
 	{
-		return a * 2;
+		return a + 10;
 	});
 
 	println(res);

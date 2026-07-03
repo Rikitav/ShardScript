@@ -18,6 +18,8 @@
 
 #include <shard/semantic/SymbolTable.hpp>
 
+#include <iostream>
+
 #include <algorithm>
 #include <vector>
 #include <string>
@@ -227,6 +229,47 @@ bool TypeSymbol::IsAssignableFrom(const TypeSymbol* target, const TypeSymbol* so
         GenericTypeSymbol* targetGeneric = const_cast<GenericTypeSymbol*>(static_cast<const GenericTypeSymbol*>(target));
         if (IsConstructedInterfaceImplemented(targetGeneric, const_cast<TypeSymbol*>(source)))
             return true;
+
+        // Allow assigning a concrete delegate to a constructed generic delegate type
+        // (e.g. lambda to Transform<int, int>).
+        if (targetGeneric->UnderlayingType->Kind == SyntaxKind::DelegateType && source->Kind == SyntaxKind::DelegateType)
+        {
+            const DelegateTypeSymbol* targetDelegate = static_cast<const DelegateTypeSymbol*>(targetGeneric->UnderlayingType);
+            const DelegateTypeSymbol* sourceDelegate = static_cast<const DelegateTypeSymbol*>(source);
+
+            if (targetDelegate->ReturnType == nullptr || sourceDelegate->ReturnType == nullptr)
+                return false;
+
+            TypeSymbol* targetReturn = targetDelegate->ReturnType;
+            if (targetReturn->Kind == SyntaxKind::TypeParameter)
+            {
+                TypeSymbol* substituted = targetGeneric->SubstituteTypeParameters(static_cast<TypeParameterSymbol*>(targetReturn));
+                if (substituted != nullptr)
+                    targetReturn = substituted;
+            }
+
+            if (!Equals(targetReturn, sourceDelegate->ReturnType))
+                return false;
+
+            if (targetDelegate->Parameters.size() != sourceDelegate->Parameters.size())
+                return false;
+
+            for (std::size_t i = 0; i < targetDelegate->Parameters.size(); ++i)
+            {
+                TypeSymbol* targetParam = targetDelegate->Parameters[i]->Type;
+                if (targetParam->Kind == SyntaxKind::TypeParameter)
+                {
+                    TypeSymbol* substituted = targetGeneric->SubstituteTypeParameters(static_cast<TypeParameterSymbol*>(targetParam));
+                    if (substituted != nullptr)
+                        targetParam = substituted;
+                }
+
+                if (!Equals(targetParam, sourceDelegate->Parameters[i]->Type))
+                    return false;
+            }
+
+            return true;
+        }
     }
 
     if (target->Kind == SyntaxKind::DelegateType && source->Kind == SyntaxKind::DelegateType)
