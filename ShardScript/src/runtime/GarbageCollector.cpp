@@ -89,6 +89,21 @@ ObjectInstance* GarbageCollector::FromValue(wchar_t value)
 	return instance;
 }
 
+/*
+ObjectInstance* GarbageCollector::FromValue(const char* value)
+{
+	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String, false);
+
+	std::size_t length = strlen(value);
+	wchar_t* wvalue = new wchar_t[length];
+	mbstowcs(wvalue, value, length + 1);
+
+	instance->WriteMemory(0, sizeof(std::int64_t), static_cast<std::uint64_t*>(&length));
+	instance->WriteMemory(sizeof(std::int64_t), sizeof(wchar_t*), &wvalue);
+	return instance;
+}
+*/
+
 ObjectInstance* GarbageCollector::FromValue(const wchar_t* value, bool isTransient)
 {
 	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String, isTransient);

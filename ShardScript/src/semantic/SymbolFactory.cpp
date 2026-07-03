@@ -648,9 +648,8 @@ GenericTypeSymbol* SymbolFactory::GenericType(TypeSymbol* underlayingType)
 
 GenericTypeSymbol* SymbolFactory::GenericType(TypeSymbol* underlayingType, std::unordered_map<std::wstring, TypeSymbol*> typeArguments)
 {
-	auto symbol = std::make_unique<GenericTypeSymbol>(underlayingType, typeArguments);
+	auto symbol = std::make_unique<GenericTypeSymbol>(underlayingType);
 	
-	// Заполняем маппинг type parameters -> type arguments
 	for (std::size_t i = 0; i < underlayingType->TypeParameters.size(); i++)
 	{
 		TypeParameterSymbol* typeParam = underlayingType->TypeParameters[i];
@@ -676,6 +675,7 @@ std::wstring SymbolFactory::FormatFullName(SyntaxSymbol* symbol)
 			std::wstring parentName = FormatFullName(symbol->Parent);
 			return parentName.empty() ? symbol->Name : parentName + L"." + symbol->Name;
 		}
+
 		return symbol->Name;
 	}
 

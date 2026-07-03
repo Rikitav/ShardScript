@@ -7,6 +7,10 @@
 #include <InteractiveConsole.hpp>
 #include <utilities/InterpreterUtilities.hpp>
 
+#if _WIN32
+#include <windows.h>
+#endif
+
 using namespace shard;
 
 static std::unique_ptr<MethodDeclarationSyntax> InitImplicitEntryPoint(SyntaxNode* parent)
@@ -187,7 +191,7 @@ static std::wstring ReadLine(const std::wstring& prompt = L">>> ")
 
 static void MoveToNewLineIfNeeded()
 {
-	/*
+#if _WIN32
 	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 	CONSOLE_SCREEN_BUFFER_INFO csbi;
 
@@ -196,7 +200,7 @@ static void MoveToNewLineIfNeeded()
 		if (csbi.dwCursorPosition.X > 0)
 			ConsoleHelper::WriteLine();
 	}
-	*/
+#endif
 }
 
 static void ReadMultilineInput(LexicalBuffer& sequenceReader, bool isExpression = false)

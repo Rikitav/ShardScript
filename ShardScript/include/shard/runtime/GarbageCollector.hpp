@@ -115,6 +115,7 @@ namespace shard
         ObjectInstance* FromValue(double value);
         ObjectInstance* FromValue(bool value);
         ObjectInstance* FromValue(wchar_t value);
+        //ObjectInstance* FromValue(const char* value);
         ObjectInstance* FromValue(const wchar_t* value, bool isTransient);
         ObjectInstance* FromValue(const std::wstring& value);
         

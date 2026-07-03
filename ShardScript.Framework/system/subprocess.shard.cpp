@@ -54,6 +54,7 @@ static std::string WToUtf8(const wchar_t* wstr)
 {
     if (wstr == nullptr)
         return {};
+
     return WToUtf8(std::wstring(wstr));
 }
 

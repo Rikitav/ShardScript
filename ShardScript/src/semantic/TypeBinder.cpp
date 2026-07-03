@@ -318,6 +318,10 @@ void TypeBinder::VisitDelegateDeclaration(DelegateDeclarationSyntax* node)
 		return;
 
 	PushScope(symbol);
+
+	for (TypeParameterSymbol* typeParam : symbol->TypeParameters)
+		CurrentScope()->DeclareSymbol(typeParam);
+
 	if (node->ReturnType != nullptr)
 	{
 		VisitType(node->ReturnType.get());

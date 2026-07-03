@@ -57,6 +57,46 @@ namespace
         return result;
     }
 
+    static TypeSymbol* GetElementTypeOfEnumerable(ObjectInstance* enumerable)
+    {
+        TypeSymbol* type = const_cast<TypeSymbol*>(enumerable->getInfo());
+        if (type == nullptr)
+            return nullptr;
+
+        if (type->Kind == SyntaxKind::ArrayType)
+            return static_cast<ArrayTypeSymbol*>(type)->UnderlayingType;
+
+        GenericTypeSymbol* genericType = nullptr;
+        TypeSymbol* searchType = type;
+        if (type->Kind == SyntaxKind::GenericType)
+        {
+            genericType = static_cast<GenericTypeSymbol*>(type);
+            searchType = genericType->UnderlayingType;
+        }
+
+        for (TypeSymbol* iface : searchType->Interfaces)
+        {
+            if (iface->Kind != SyntaxKind::GenericType)
+                continue;
+
+            GenericTypeSymbol* genericIface = static_cast<GenericTypeSymbol*>(iface);
+            if (genericIface->UnderlayingType != TRAIT_ENUMERABLE)
+                continue;
+
+            TypeSymbol* elementType = genericIface->SubstituteTypeParameters(TRAIT_ENUMERABLE->TypeParameters[0]);
+            if (elementType != nullptr && elementType->Kind == SyntaxKind::TypeParameter && genericType != nullptr)
+            {
+                TypeSymbol* resolved = genericType->SubstituteTypeParameters(static_cast<TypeParameterSymbol*>(elementType));
+                if (resolved != nullptr)
+                    elementType = resolved;
+            }
+
+            return elementType;
+        }
+
+        return nullptr;
+    }
+
     static void TryEnableVT100Processing()
     {
 #ifdef _WIN32
@@ -102,6 +142,63 @@ static ObjectInstance* shard_constream_println(const CallState& context) noexcep
     ConsoleHelper::WriteLine(result->AsString());
     context.Collector.CollectInstance(result);
     return nullptr; // void
+}
+
+static ObjectInstance* shard_constream_println_enumerable(const CallState& context) noexcept(false)
+{
+    ObjectInstance* enumerable = context.Args[0];
+    if (enumerable == nullptr || enumerable == context.Collector.NullInstance)
+    {
+        ConsoleHelper::WriteLine(L"");
+        return nullptr;
+    }
+
+    TypeSymbol* enumerableType = const_cast<TypeSymbol*>(enumerable->getInfo());
+    MethodSymbol* getEnumerator = enumerableType->FindInterfaceImplementation(TRAIT_ENUMERABLE_GETENUMERATOR);
+    if (getEnumerator == nullptr)
+        throw std::runtime_error("Type '" + thinify(enumerableType->FullName.c_str()) + "' does not implement IEnumerable<T>");
+
+    TypeSymbol* elementType = GetElementTypeOfEnumerable(enumerable);
+    if (elementType == nullptr)
+        throw std::runtime_error("Could not determine element type of IEnumerable<T>");
+
+    enumerable->IncrementReference();
+    context.Runtimer.SetPendingTypeArguments({ elementType });
+    ObjectInstance* enumerator = context.Runtimer.InvokeMethod(getEnumerator, &enumerable, 1);
+    if (enumerator == nullptr)
+        throw std::runtime_error("GetEnumerator returned null");
+
+    TypeSymbol* enumeratorType = const_cast<TypeSymbol*>(enumerator->getInfo());
+    MethodSymbol* moveNext = enumeratorType->FindInterfaceImplementation(TRAIT_ENUMERATOR_MOVENEXT);
+    MethodSymbol* currentGetter = enumeratorType->FindInterfaceImplementation(TRAIT_ENUMERATOR_CURRENT_GET);
+    if (moveNext == nullptr)
+        throw std::runtime_error("Enumerator does not implement MoveNext");
+    if (currentGetter == nullptr)
+        throw std::runtime_error("Enumerator does not implement Current getter");
+
+    bool first = true;
+    while (true)
+    {
+        enumerator->IncrementReference();
+        ObjectInstance* moveResult = context.Runtimer.InvokeMethod(moveNext, &enumerator, 1);
+        if (moveResult == nullptr || !moveResult->AsBoolean())
+            break;
+
+        enumerator->IncrementReference();
+        ObjectInstance* current = context.Runtimer.InvokeMethod(currentGetter, &enumerator, 1);
+
+        if (!first)
+            ConsoleHelper::Write(L" ");
+        first = false;
+
+        ObjectInstance* currentString = InvokeToString(context, current);
+        ConsoleHelper::Write(currentString->AsString());
+        context.Collector.CollectInstance(currentString);
+    }
+
+    context.Collector.CollectInstance(enumerator);
+    ConsoleHelper::WriteLine(L"");
+    return nullptr;
 }
 
 static ObjectInstance* shard_constream_input(const CallState& context)
@@ -182,6 +279,14 @@ SHARDLIB_ENTRYPOINT
     stdio.AddMethod(L"println", TYPE_VOID, LINK_STATIC, ACS_PUBLIC)
          .AddParameter(L"message", TRAIT_PRINTABLE)
          .SetCallback(&shard_constream_println);
+
+    {
+        auto printlnEnumerable = stdio.AddMethod(L"println", TYPE_VOID, LINK_STATIC, ACS_PUBLIC);
+        TypeParameterSymbol* enumerableTypeParam = printlnEnumerable.AddTypeParameter(L"T").Get();
+        printlnEnumerable
+            .AddParameter(L"enumerable", stdio.GetFactory().GenericType(TRAIT_ENUMERABLE, { { L"T", enumerableTypeParam } }))
+            .SetCallback(&shard_constream_println_enumerable);
+    }
 
     stdio.AddMethod(L"input", TYPE_STRING, LINK_STATIC, ACS_PUBLIC)
          .SetCallback(&shard_constream_input);

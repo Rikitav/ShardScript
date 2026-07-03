@@ -6,6 +6,11 @@
 using namespace shard;
 
 static FieldSymbol* list_arrayField = nullptr;
+static StructSymbol* listEnumeratorClass_raw = nullptr;
+static TypeParameterSymbol* listEnumerator_typeParam_T = nullptr;
+static FieldSymbol* listEnumerator_sourceField = nullptr;
+static FieldSymbol* listEnumerator_indexField = nullptr;
+static FieldSymbol* listEnumerator_lengthField = nullptr;
 
 static ObjectInstance* shard_list_init(const CallState& context) noexcept(false)
 {
@@ -164,6 +169,25 @@ static ObjectInstance* shard_list_Clear(const CallState& context) noexcept(false
 	return nullptr;
 }
 
+static ObjectInstance* shard_listenumerator_MoveNext(const CallState& context) noexcept(false)
+{
+	ObjectInstance* self = context.Args[0];
+	std::int64_t index = self->GetField(listEnumerator_indexField, context.Frame)->AsInteger();
+	std::int64_t length = self->GetField(listEnumerator_lengthField, context.Frame)->AsInteger();
+
+	index++;
+	self->SetField(listEnumerator_indexField, context.Collector.FromValue(index), context.Frame);
+	return context.Collector.FromValue(index < length);
+}
+
+static ObjectInstance* shard_listenumerator_Current_get(const CallState& context) noexcept(false)
+{
+	ObjectInstance* self = context.Args[0];
+	std::int64_t index = self->GetField(listEnumerator_indexField, context.Frame)->AsInteger();
+	ObjectInstance* source = self->GetField(listEnumerator_sourceField, context.Frame);
+	return source->GetElement(static_cast<std::size_t>(index), context.Frame);
+}
+
 static ObjectInstance* shard_list_GetEnumerator(const CallState& context) noexcept(false)
 {
 	ObjectInstance* listInstance = context.Args[0];
@@ -176,16 +200,16 @@ static ObjectInstance* shard_list_GetEnumerator(const CallState& context) noexce
 	ObjectInstance* arrayInstance = listInstance->GetField(list_arrayField, context.Frame);
 	const ArrayTypeSymbol* arrayType = static_cast<const ArrayTypeSymbol*>(arrayInstance->getInfo());
 
-	GenericTypeSymbol* enumeratorType = new GenericTypeSymbol(SymbolTable::StandardTypes::ArrayEnumerator);
-	enumeratorType->AddTypeParameter(SymbolTable::StandardTypes::ArrayEnumerator_T, concreteT);
+	GenericTypeSymbol* enumeratorType = new GenericTypeSymbol(listEnumeratorClass_raw);
+	enumeratorType->AddTypeParameter(listEnumerator_typeParam_T, concreteT);
 	enumeratorType->Inlining = TypeInlining::ByReference;
-	enumeratorType->MemoryBytesSize = SymbolTable::StandardTypes::ArrayEnumerator->MemoryBytesSize;
+	enumeratorType->MemoryBytesSize = listEnumeratorClass_raw->MemoryBytesSize;
 	enumeratorType->LayoutingState = TypeLayoutingState::Visited;
 
 	ObjectInstance* enumerator = context.Collector.AllocateInstance(enumeratorType);
-	enumerator->SetField(SymbolTable::StandardTypes::ArrayEnumerator_SourceField, arrayInstance, context.Frame);
-	enumerator->SetField(SymbolTable::StandardTypes::ArrayEnumerator_IndexField, context.Collector.FromValue(static_cast<std::int64_t>(-1)), context.Frame);
-	enumerator->SetField(SymbolTable::StandardTypes::ArrayEnumerator_LengthField, context.Collector.FromValue(static_cast<std::int64_t>(arrayType->Length)), context.Frame);
+	enumerator->SetField(listEnumerator_sourceField, arrayInstance, context.Frame);
+	enumerator->SetField(listEnumerator_indexField, context.Collector.FromValue(static_cast<std::int64_t>(-1)), context.Frame);
+	enumerator->SetField(listEnumerator_lengthField, context.Collector.FromValue(static_cast<std::int64_t>(arrayType->Length)), context.Frame);
 
 	return enumerator;
 }
@@ -252,17 +276,52 @@ SHARDLIB_GETMETADATA
 SHARDLIB_ENTRYPOINT
 {
 	SymbolBuilder<NamespaceSymbol> collectionsNs(context, L"collections");
+	SymbolFactory factory(context.GetSemanticModel().Table.get());
+
+	// --- class ListEnumerator<T> ---
+	SymbolBuilder<StructSymbol> listEnumeratorClass = collectionsNs.AddStruct(L"ListEnumerator");
+
+	// T
+	TypeParameterSymbol* listEnumeratorClass_typeParam_T = listEnumeratorClass
+		.AddTypeParameter(L"T");
+
+	listEnumeratorClass_raw = listEnumeratorClass.Get();
+	listEnumerator_typeParam_T = listEnumeratorClass_typeParam_T;
+
+	listEnumeratorClass
+		.Implements(factory.GenericType(TRAIT_ENUMERATOR, { { L"T", listEnumeratorClass_typeParam_T } }));
+
+	listEnumerator_sourceField = listEnumeratorClass
+		.AddField(L"_source", listEnumeratorClass.GetFactory().Array(listEnumeratorClass_typeParam_T), LINK_INSTANCE, ACS_PRIVATE).Get();
+
+	listEnumerator_indexField = listEnumeratorClass
+		.AddField(L"_index", SymbolTable::Primitives::Integer, LINK_INSTANCE, ACS_PRIVATE).Get();
+
+	listEnumerator_lengthField = listEnumeratorClass
+		.AddField(L"_length", SymbolTable::Primitives::Integer, LINK_INSTANCE, ACS_PRIVATE).Get();
+
+	listEnumeratorClass.AddMethod(L"MoveNext", SymbolTable::Primitives::Boolean, LINK_INSTANCE)
+		.IsImplementationOf(TRAIT_ENUMERATOR_MOVENEXT)
+		.SetCallback(&shard_listenumerator_MoveNext);
+
+	SymbolBuilder<PropertySymbol> currentProp = listEnumeratorClass.AddProperty(L"Current", listEnumeratorClass_typeParam_T, LINK_INSTANCE);
+	AccessorSymbol* currentGetter = currentProp.AddGetter()
+		.SetCallback(&shard_listenumerator_Current_get)
+		.IsImplementationOf(TRAIT_ENUMERATOR_CURRENT_GET);
 
 	// --- class List<T> ---
 	SymbolBuilder<ClassSymbol> listClass = collectionsNs.AddClass(L"List");
 
 	// T
-	TypeParameterSymbol* typeParamT = listClass
+	TypeParameterSymbol* listClass_typeParam_T = listClass
 		.AddTypeParameter(L"T");
-	
+
+	listClass.Implements(
+		factory.GenericType(TRAIT_ENUMERABLE, { { L"T", listClass_typeParam_T } }));
+
 	// List<T>._array: T[]
 	list_arrayField = listClass
-		.AddField(L"_array", listClass.GetFactory().Array(typeParamT), LINK_INSTANCE, ACS_PRIVATE).Get();
+		.AddField(L"_array", listClass.GetFactory().Array(listClass_typeParam_T), LINK_INSTANCE, ACS_PRIVATE).Get();
 
 	listClass.AddInit()
 		.SetCallback(&shard_list_init);
@@ -270,10 +329,10 @@ SHARDLIB_ENTRYPOINT
 	// List<T>.Length -> int { get; }
 	SymbolBuilder<PropertySymbol> lengthProp = listClass.AddProperty(L"Length", TYPE_INT, LINK_INSTANCE);
 	lengthProp.AddGetter()
-			.SetCallback(&shard_list_Length_get);
+		.SetCallback(&shard_list_Length_get);
 
 	// List<T>[index: int] -> T { get; set; }
-	SymbolBuilder<IndexatorSymbol> indexer = listClass.AddIndexer(typeParamT, LINK_INSTANCE);
+	SymbolBuilder<IndexatorSymbol> indexer = listClass.AddIndexer(listClass_typeParam_T, LINK_INSTANCE);
 	indexer.AddGetter()
 		.SetCallback(&shard_list_Indexer_get);
 
@@ -283,11 +342,11 @@ SHARDLIB_ENTRYPOINT
 	// List<T>.Add(item: T) -> void
 	SymbolBuilder<MethodSymbol> addMethod = listClass.AddMethod(L"Add", TYPE_VOID, LINK_INSTANCE);
 	addMethod
-		.AddParameter(L"item", typeParamT)
+		.AddParameter(L"item", listClass_typeParam_T)
 		.SetCallback(&shard_list_Add);
 
 	// List<T>.ElementAt(index: int) -> T
-	SymbolBuilder<MethodSymbol> elementAtMethod = listClass.AddMethod(L"ElementAt", typeParamT, LINK_INSTANCE);
+	SymbolBuilder<MethodSymbol> elementAtMethod = listClass.AddMethod(L"ElementAt", listClass_typeParam_T, LINK_INSTANCE);
 	elementAtMethod
 		.AddParameter(L"index", TYPE_INT)
 		.SetCallback(&shard_list_ElementAt);
@@ -303,16 +362,13 @@ SHARDLIB_ENTRYPOINT
 	clearMethod
 		.SetCallback(&shard_list_Clear);
 
-	// List<T> implements IEnumerable<T>
-	listClass.Get()->Interfaces.push_back(listClass.GetFactory().GenericType(TRAIT_ENUMERABLE, { { L"T", typeParamT } }));
-
 	// List<T>.GetEnumerator() -> IEnumerator<T>
 	SymbolBuilder<MethodSymbol> getEnumeratorMethod = listClass.AddMethod(
 		L"GetEnumerator",
-		listClass.GetFactory().GenericType(TRAIT_ENUMERATOR, { { L"T", typeParamT } }),
+		factory.GenericType(TRAIT_ENUMERATOR, { { L"T", listClass_typeParam_T } }),
 		LINK_INSTANCE);
-	getEnumeratorMethod
-		.SetCallback(&shard_list_GetEnumerator);
 
-	listClass.Get()->InterfaceMethodMap[TRAIT_ENUMERABLE_GETENUMERATOR] = getEnumeratorMethod.Get();
+	getEnumeratorMethod
+		.IsImplementationOf(TRAIT_ENUMERABLE_GETENUMERATOR)
+		.SetCallback(&shard_list_GetEnumerator);
 }

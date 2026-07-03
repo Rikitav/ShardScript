@@ -74,6 +74,11 @@ namespace shard
             SymbolLinking linking = LINK_INSTANCE,
             SymbolAccesibility access = ACS_PUBLIC);
 
+        SymbolBuilder<StructSymbol> AddStruct(
+            const std::wstring& name,
+            SymbolLinking linking = LINK_INSTANCE,
+            SymbolAccesibility access = ACS_PUBLIC);
+
         SymbolBuilder<EnumSymbol> AddEnum(
             const std::wstring& name,
             bool isFlags = false,
@@ -167,11 +172,8 @@ namespace shard
         SymbolBuilder<AccessorSymbol>& SetCallback(
             MethodSymbolDelegate callback);
 
-        /*
-        SymbolBuilder<AccessorSymbol>& SetCallback(
-            ShardManagedMethodCallback callback,
-            void* userData = nullptr);
-        */
+        SymbolBuilder<AccessorSymbol>& IsImplementationOf(
+            MethodSymbol* abstractMethod);
     };
 
     template<>
@@ -262,6 +264,9 @@ namespace shard
 
         SymbolBuilder<ClassSymbol>& Implements(
             InterfaceSymbol* interface);
+
+        SymbolBuilder<ClassSymbol>& Implements(
+            GenericTypeSymbol* interface);
     };
 
     template<>
@@ -305,8 +310,11 @@ namespace shard
             SymbolLinking linking,
             SymbolAccesibility access = SymbolAccesibility::Public);
 
-        SymbolBuilder<ClassSymbol> Implements(
-            TypeSymbol* interface);
+        SymbolBuilder<StructSymbol>& Implements(
+            InterfaceSymbol* interface);
+
+        SymbolBuilder<StructSymbol>& Implements(
+            GenericTypeSymbol* interface);
     };
 
     template<>

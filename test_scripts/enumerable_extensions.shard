@@ -21,7 +21,7 @@ public static func Main() -> void
 	test := [1..10];
 	res := test.Select(lambda (a: int) -> int
 	{
-		return a + 10;
+		return a * 2;
 	});
 
 	println(res);

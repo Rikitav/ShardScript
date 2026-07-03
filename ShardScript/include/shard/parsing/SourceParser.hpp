@@ -143,7 +143,7 @@ namespace shard
 		std::unique_ptr<ExpressionSyntax> ReadNullDenotation(SourceProvider& reader, SyntaxNode* parent);
 		std::unique_ptr<ExpressionSyntax> ReadLeftDenotation(SourceProvider& reader, SyntaxNode* parent, std::unique_ptr<ExpressionSyntax> leftExpr);
 
-		std::unique_ptr<CollectionExpressionSyntax> ReadCollectionExpression(SourceProvider& reader, SyntaxNode* parent);
+		std::unique_ptr<ExpressionSyntax> ReadCollectionExpression(SourceProvider& reader, SyntaxNode* parent);
 		std::unique_ptr<ObjectExpressionSyntax> ReadObjectExpression(SourceProvider& reader, SyntaxNode* parent);
 		std::unique_ptr<TernaryExpressionSyntax> ReadTernaryExpression(SourceProvider& reader, std::unique_ptr<ExpressionSyntax> condition, SyntaxNode* parent);
 		std::unique_ptr<IfExpressionSyntax> ReadIfExpression(SourceProvider& reader, SyntaxNode* parent);

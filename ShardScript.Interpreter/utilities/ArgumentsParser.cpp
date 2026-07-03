@@ -62,7 +62,7 @@ static std::vector<std::wstring> ExpandGlob(const std::wstring& pattern)
 
 void shard::ShardUtilities::ParseArguments(int argc, wchar_t* argv[])
 {
-    ConsoleArguments::RunProgram = true;
+    ConsoleArguments::RunProgram = false;
 
     for (int i = 1; i < argc; ++i)
     {
@@ -76,6 +76,7 @@ void shard::ShardUtilities::ParseArguments(int argc, wchar_t* argv[])
         else if (arg == L"-r" || arg == L"--repl")
         {
             ConsoleArguments::UseInteractive = true;
+            ConsoleArguments::RunProgram = false;
         }
         else if (arg == L"--exclude-std")
         {
@@ -123,6 +124,7 @@ void shard::ShardUtilities::ParseArguments(int argc, wchar_t* argv[])
                 }
             }
 
+            ConsoleArguments::RunProgram = true;
             for (const auto& srcFile : expandedSources)
             {
                 ConsoleArguments::FilesToCompile.push_back(srcFile);
