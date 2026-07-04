@@ -1,0 +1,22 @@
+using stdio;
+
+namespace enum_explicit_test;
+
+public enum Color
+{
+    Red = 1,
+    Green = 5,
+    Blue
+}
+
+public static func Main() -> void
+{
+    print(Color.Red);
+    println("");
+
+    print(Color.Green);
+    println("");
+
+    print(Color.Blue);
+    println("");
+}

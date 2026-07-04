@@ -126,22 +126,22 @@ static GenericTypeSymbol* GetGenericInfo(ObjectInstance* instance)
 
 const TypeSymbol* ObjectInstance::getInfo() const
 {
-	return Info;
+	return m_info;
 }
 
 bool shard::ObjectInstance::getIsTransient() const
 {
-	return IsTransient;
+	return m_isTransient;
 }
 
 void* ObjectInstance::getMemory() const
 {
-	return Memory;
+	return m_rawMemoryPtr;
 }
 
 std::int64_t ObjectInstance::getReferencesCounter() const
 {
-	return ReferencesCounter;
+	return m_eeferencesCounter;
 }
 
 ObjectInstance* ObjectInstance::GetField(FieldSymbol* field, CallStackFrame* frame)
@@ -211,12 +211,21 @@ void ObjectInstance::SetField(FieldSymbol* field, ObjectInstance* instance, Call
 	}
 }
 
-ObjectInstance* ObjectInstance::GetElement(std::size_t index, CallStackFrame* frame)
+std::size_t ObjectInstance::GetArrayLength() const
 {
-	if (Info->Kind != SyntaxKind::ArrayType)
+	if (m_info->Kind != SyntaxKind::ArrayType)
 		throw std::runtime_error("Tried to get element from non array instance");
 
-	const ArrayTypeSymbol* info = static_cast<const ArrayTypeSymbol*>(Info);
+	const ArrayTypeSymbol* info = static_cast<const ArrayTypeSymbol*>(m_info);
+	return info->Length;
+}
+
+ObjectInstance* ObjectInstance::GetElement(std::size_t index, CallStackFrame* frame)
+{
+	if (m_info->Kind != SyntaxKind::ArrayType)
+		throw std::runtime_error("Tried to get element from non array instance");
+
+	const ArrayTypeSymbol* info = static_cast<const ArrayTypeSymbol*>(m_info);
 	TypeSymbol* type = info->UnderlayingType;
 
 	if (frame != nullptr)
@@ -239,13 +248,13 @@ ObjectInstance* ObjectInstance::GetElement(std::size_t index, CallStackFrame* fr
 
 void ObjectInstance::SetElement(std::size_t index, ObjectInstance* instance, CallStackFrame* frame)
 {
-	if (Info->Kind != SyntaxKind::ArrayType)
+	if (m_info->Kind != SyntaxKind::ArrayType)
 		throw std::runtime_error("Tried to set element in non array instance");
 
 	if (instance == nullptr)
 		throw std::runtime_error("got nullptr instance in SetElement");
 
-	const ArrayTypeSymbol* info = static_cast<const ArrayTypeSymbol*>(Info);
+	const ArrayTypeSymbol* info = static_cast<const ArrayTypeSymbol*>(m_info);
 	TypeSymbol* type = info->UnderlayingType;
 
 	if (frame != nullptr)
@@ -271,7 +280,7 @@ void ObjectInstance::SetElement(std::size_t index, ObjectInstance* instance, Cal
 
 bool ObjectInstance::IsInBounds(std::size_t index)
 {
-	if (Info->Kind != SyntaxKind::ArrayType)
+	if (m_info->Kind != SyntaxKind::ArrayType)
 		throw std::runtime_error("Tried to get size of non array instance");
 
 	return index >= 0 && index < GetArrayLength();
@@ -279,7 +288,7 @@ bool ObjectInstance::IsInBounds(std::size_t index)
 
 ArgumentsSpan ObjectInstance::ArrayAsSpan()
 {
-	if (Info->Kind != SyntaxKind::ArrayType)
+	if (m_info->Kind != SyntaxKind::ArrayType)
 		throw std::runtime_error("Tried to get args span of non array instance");
 
 	size_t length = GetArrayLength();
@@ -292,18 +301,18 @@ ArgumentsSpan ObjectInstance::ArrayAsSpan()
 
 void ObjectInstance::IncrementReference()
 {
-	if (ReferencesCounter == (std::size_t)(-1))
+	if (m_eeferencesCounter == (std::size_t)(-1))
 		return;
 
-	ReferencesCounter += 1;
+	m_eeferencesCounter += 1;
 }
 
 void ObjectInstance::DecrementReference()
 {
-	if (ReferencesCounter == 0)
+	if (m_eeferencesCounter == 0)
 		return;
 
-	ReferencesCounter -= 1;
+	m_eeferencesCounter -= 1;
 }
 
 void* ObjectInstance::OffsetMemory(const std::size_t offset, const std::size_t size) const

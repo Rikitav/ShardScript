@@ -1,0 +1,25 @@
+using stdio;
+using collections;
+
+namespace hello_world;
+
+public static func Main() -> void
+{
+    for (x in 1..3)
+    {
+        print(x);
+        print(" ");
+    }
+    println("");
+
+    list: List<int> = new List<int>();
+    list.Add(100);
+    list.Add(200);
+
+    foreach (n in list)
+    {
+        print(n);
+        print(" ");
+    }
+    println("");
+}

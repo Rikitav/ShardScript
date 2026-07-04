@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.31.6)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+option(ENABLE_ASAN "Enable AddressSanitizer" ON)
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMake")
 cmake_minimum_required(VERSION 3.16.0 FATAL_ERROR)
 set(CMAKE_SYSTEM_VERSION 10.0 CACHE STRING "" FORCE)
@@ -16,15 +18,23 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE "${OUTPUT_DIR}")
 
 project(ShardScript VERSION 0.5.0 LANGUAGES C CXX) 
 
+if(ENABLE_ASAN)
+    if(MSVC)
+        target_compile_options(${PROJECT_NAME} PRIVATE /fsanitize=address)
+        target_link_options(${PROJECT_NAME} PRIVATE /fsanitize=address)
+    else()
+        target_compile_options(${PROJECT_NAME} PRIVATE -fsanitize=address -fno-omit-frame-pointer)
+        target_link_options(${PROJECT_NAME} PRIVATE -fsanitize=address)
+    endif()
+endif()
+
 if(MSVC)
-    # remove default flags provided with CMake for MSVC
     set(CMAKE_CXX_FLAGS "")
     set(CMAKE_CXX_FLAGS_DEBUG "/Zi /Od")
     set(CMAKE_CXX_FLAGS_RELEASE "")
 endif()
 
 if(MSVC)
-    # remove default flags provided with CMake for MSVC
     add_compile_options(/EHsc)
     set(CMAKE_EXE_LINKER_FLAGS "")
     set(CMAKE_MODULE_LINKER_FLAGS "")

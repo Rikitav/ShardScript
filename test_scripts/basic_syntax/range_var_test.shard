@@ -1,0 +1,7 @@
+using stdio;
+
+public static func Main() -> void
+{
+	test := [1..10];
+	println(test);
+}

@@ -211,8 +211,6 @@ ObjectInstance* GarbageCollector::AllocateInstance(const TypeSymbol* objectInfo,
 	if (objectInfo->Kind == SyntaxKind::ArrayType)
 	{
 		const ArrayTypeSymbol* arrayInfo = static_cast<const ArrayTypeSymbol*>(objectInfo);
-		instance->SetArrayLength(arrayInfo->Length);
-		instance->SetMemorySize(objectInfo->MemoryBytesSize);
 	}
 
 	Heap.add(instance);
@@ -247,8 +245,6 @@ ObjectInstance* GarbageCollector::AllocateArray(TypeSymbol* elementType, std::si
 	dynamicArrayTypes.emplace_back(arrayType);
 
 	ObjectInstance* instance = new ObjectInstance(arrayType, rawMemory, isTransient);
-	instance->SetArrayLength(length);
-	instance->SetMemorySize(totalSize);
 	Heap.add(instance);
 	return instance;
 }

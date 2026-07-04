@@ -1,0 +1,20 @@
+using stdio;
+
+namespace hello_world;
+
+public static func Main() -> void
+{
+    a: int = 5;
+    b: int = 3;
+    print(a + b);
+    print(",");
+    print(a - b);
+    print(",");
+    print(a * b);
+    print(",");
+    print(a / b);
+    print(",");
+    print(a % b);
+    print(",");
+    println("");
+}

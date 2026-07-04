@@ -43,7 +43,7 @@ foreach(CPP_FILE IN LISTS CPP_FILES)
         target_link_libraries("${SHARD_TARGET_NAME}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/third_party/RayLib/lib/libraylib.a" GL m pthread dl rt X11)
     endif()
   endif()
-
+  
   # SQLite target
   string(FIND "${SHARD_TARGET_NAME}" "sqlite" IS_SQLITE_TARGET)
   if(NOT IS_SQLITE_TARGET EQUAL -1)

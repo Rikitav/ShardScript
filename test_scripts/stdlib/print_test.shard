@@ -1,0 +1,10 @@
+using stdio;
+
+namespace hello_world;
+
+public static func Main() -> void
+{
+    print(42);
+    print(" ok");
+    println("");
+}
