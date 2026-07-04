@@ -206,7 +206,7 @@ static ObjectInstance* shard_socket_Listen(const CallState& context) noexcept
     return context.Collector.FromValue(result != SOCKET_ERROR_VAL);
 }
 
-static ObjectInstance* shard_socket_Accept(const CallState& context) noexcept
+static ObjectInstance* shard_socket_Accept(const CallState& context) noexcept(false)
 {
     ObjectInstance* instance = context.Args[0];
     socket_t server_handle = static_cast<socket_t>(instance->GetField(shard_socket_handle)->AsInteger());

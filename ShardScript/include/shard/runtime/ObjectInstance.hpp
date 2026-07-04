@@ -18,12 +18,10 @@ namespace shard
 
 	class SHARD_API ObjectInstance
 	{
-		const TypeSymbol* Info;
-		const bool IsTransient;
-		std::int64_t ReferencesCounter;
-		void* Memory;
-		std::size_t ArrayLength = 0;
-		std::size_t ArrayMemorySize = 0;
+		const TypeSymbol* m_info;
+		const bool m_isTransient;
+		std::int64_t m_eeferencesCounter;
+		void* m_rawMemoryPtr;
 
 	public:
 		MethodSymbol* DelegateTarget = nullptr;
@@ -31,27 +29,21 @@ namespace shard
 
 	public:
 		inline ObjectInstance(const TypeSymbol* info, void* memory, bool isTransient)
-			: Info(info), Memory(memory), IsTransient(isTransient), ReferencesCounter(0)
-		{
-			if (info != nullptr)
-				ArrayMemorySize = info->MemoryBytesSize;
-		}
+			: m_info(info), m_rawMemoryPtr(memory), m_isTransient(isTransient), m_eeferencesCounter(0) { }
 		
 		inline ~ObjectInstance() = default;
-
-		inline std::size_t GetArrayLength() const { return ArrayLength; }
-		inline void SetArrayLength(std::size_t length) { ArrayLength = length; }
-		inline std::size_t GetMemorySize() const { return ArrayMemorySize; }
-		inline void SetMemorySize(std::size_t size) { ArrayMemorySize = size; }
 
 		[[nodiscard]] const TypeSymbol* getInfo() const;
 		[[nodiscard]] void* getMemory() const;
 		[[nodiscard]] bool getIsTransient() const;
 		[[nodiscard]] std::int64_t getReferencesCounter() const;
 
+		// Fields
 		ObjectInstance* GetField(FieldSymbol* field, CallStackFrame* frame = nullptr);
 		void SetField(FieldSymbol* field, ObjectInstance* instance, CallStackFrame* frame = nullptr);
 
+		// Arrays
+		std::size_t GetArrayLength() const;
 		ObjectInstance* GetElement(std::size_t index, CallStackFrame* frame = nullptr);
 		void SetElement(std::size_t index, ObjectInstance* instance, CallStackFrame* frame = nullptr);
 		bool IsInBounds(std::size_t index);
@@ -72,8 +64,8 @@ namespace shard
 		std::int64_t& AsInteger() const;
 		double& AsDouble() const;
 		wchar_t& AsCharacter() const;
-		std::int64_t& AsStringLength() const;
 		const wchar_t* AsString() const;
+		std::int64_t& AsStringLength() const;
 		void* AsNint() const;
 
 		void* OffsetMemory(const std::size_t offset, const std::size_t size) const;

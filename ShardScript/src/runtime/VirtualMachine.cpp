@@ -44,10 +44,20 @@ using namespace shard;
 
 void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder, const OpCode opCode)
 {
-	auto executeBinary = [&](TokenType token)
+	auto executeBinary = [&](TokenType token) -> void
 	{
 		ObjectInstance* right = frame->PopStack();
 		ObjectInstance* left = frame->PopStack();
+
+		if (right == nullptr || left == nullptr)
+			throw std::runtime_error("Cannot perform operation on nullptr instance");
+
+		if (right == GarbageCollector::NullInstance || left == GarbageCollector::NullInstance)
+		{
+			ObjectInstance* result = garbageCollector.FromValue(right == left);
+			frame->PushStack(result);
+			return;
+		}
 
 		ObjectInstance* result = primitiveMath.ExecuteBinary(token, left, right);
 		if (result == nullptr)
@@ -58,9 +68,15 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		garbageCollector.CollectInstance(left);
 	};
 
-	auto executeUnary = [&](TokenType token)
+	auto executeUnary = [&](TokenType token) -> void
 	{
 		ObjectInstance* operand = frame->PopStack();
+
+		if (operand == nullptr)
+			throw std::runtime_error("Cannot perform operation on nullptr instance");
+
+		if (operand == GarbageCollector::NullInstance)
+			throw std::runtime_error("Cannot perform operation on null instance");
 
 		ObjectInstance* result = primitiveMath.ExecuteUnary(token, operand);
 		if (result == nullptr)

@@ -1,0 +1,10 @@
+using net;
+
+namespace socket_client;
+
+public static func Main() -> void
+{
+	defer sock: Socket = new Socket();
+	sock.Connect("127.0.0.1", 6969);
+	sock.Send("Hello, World");
+}

@@ -1,0 +1,22 @@
+using stdio;
+
+namespace hello_world;
+
+public class Container<T>
+{
+    public Value: T;
+
+    public func As<U>() -> Container<U>
+    {
+        result: Container<U> = new Container<U>();
+        return result;
+    }
+}
+
+public static func Main() -> void
+{
+    c: Container<int> = new Container<int>();
+    e: Container<int> = c.As<int>();
+    e.Value = 7;
+    println(e.Value);
+}

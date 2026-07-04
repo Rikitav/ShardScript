@@ -1,0 +1,28 @@
+using stdio;
+
+namespace enum_flags_test;
+
+public enum Permissions : flags
+{
+    None,
+    Read,
+    Write,
+    Execute
+}
+
+public static func Main() -> void
+{
+    p: Permissions = Permissions.Read | Permissions.Write;
+    print(p);
+    println("");
+
+    print(p.HasFlag(Permissions.Read));
+    println("");
+
+    print(p.HasFlag(Permissions.Execute));
+    println("");
+
+    full: Permissions = Permissions.Read | Permissions.Write | Permissions.Execute;
+    print(full);
+    println("");
+}

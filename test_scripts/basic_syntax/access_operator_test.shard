@@ -1,0 +1,24 @@
+using stdio;
+
+namespace access_test;
+
+public class Dynamic
+{
+    Value: int;
+    
+    public init(val: int)
+    {
+        this.Value = val;
+    }
+
+    public operator .(name: string) -> string
+    {
+        return name + this.Value;
+    }
+}
+
+public static func Main() -> void
+{
+    d: Dynamic = new Dynamic(12);
+    println(d.foo);
+}

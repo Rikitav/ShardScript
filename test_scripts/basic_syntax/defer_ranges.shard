@@ -1,0 +1,12 @@
+using stdio;
+
+namespace hello_world;
+
+public static func Main() -> void
+{
+	for (i in 0..3)
+    {
+        defer println("Completed: " + i);
+        println("Step: " + i);
+    }
+}
