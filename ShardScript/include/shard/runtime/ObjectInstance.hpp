@@ -44,10 +44,10 @@ namespace shard
 		inline std::size_t GetMemorySize() const { return ArrayMemorySize; }
 		inline void SetMemorySize(std::size_t size) { ArrayMemorySize = size; }
 
-		inline const TypeSymbol* getInfo() const;
-		inline void* getMemory() const;
-		inline bool getIsTransient() const;
-		inline std::int64_t getReferencesCounter() const;
+		[[nodiscard]] const TypeSymbol* getInfo() const;
+		[[nodiscard]] void* getMemory() const;
+		[[nodiscard]] bool getIsTransient() const;
+		[[nodiscard]] std::int64_t getReferencesCounter() const;
 
 		ObjectInstance* GetField(FieldSymbol* field, CallStackFrame* frame = nullptr);
 		void SetField(FieldSymbol* field, ObjectInstance* instance, CallStackFrame* frame = nullptr);

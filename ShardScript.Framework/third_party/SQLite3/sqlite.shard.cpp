@@ -1,9 +1,4 @@
-#include <shard/ShardScriptLIB.hpp>
-#include <shard/CompilationContext.hpp>
-#include <shard/semantic/SymbolBuilder.hpp>
-#include <shard/semantic/SymbolTable.hpp>
-#include <shard/runtime/MethodCallState.hpp>
-#include <shard/runtime/ObjectInstance.hpp>
+#include <ShardScript.hpp>
 
 #include "include/sqlite3.h"
 
@@ -22,8 +17,6 @@
 #endif
 
 using namespace shard;
-
-TypeSymbol* shard_ScalarResult = nullptr;
 
 TypeSymbol* shard_SqliteConnection = nullptr;
 FieldSymbol* shard_SqliteConnection_HandleField = nullptr;
@@ -409,21 +402,6 @@ SHARDLIB_ENTRYPOINT
 {
     SymbolBuilder<NamespaceSymbol> dbNamespace(context, L"Database");
 
-    SymbolBuilder<ClassSymbol> scalarClass = dbNamespace.AddClass(L"ScalarResult", LINK_INSTANCE);
-    shard_ScalarResult = scalarClass;
-
-    scalarClass.AddCastOperator(TYPE_INT)
-        .AddParameter(L"this", shard_ScalarResult)
-        .SetCallback(&shard_scalar_as_int);
-
-    scalarClass.AddCastOperator(TYPE_STRING)
-        .AddParameter(L"this", shard_ScalarResult)
-        .SetCallback(&shard_scalar_as_string);
-
-    scalarClass.AddOperator(TokenType::Delimeter, shard_ScalarResult, LINK_INSTANCE)
-        .AddParameter(L"field", TYPE_STRING)
-        .SetCallback(&shard_scalar_access_field);
-
     // --- class SqliteConnection ---
     SymbolBuilder<ClassSymbol> connClass = dbNamespace.AddClass(L"SqliteConnection");
     connClass.Implements(TRAIT_DISPOSABLE);
@@ -452,7 +430,7 @@ SHARDLIB_ENTRYPOINT
         .AddParameter(L"sql", TYPE_STRING)
         .SetCallback(&shard_sqlite_Connection_ExecuteNonQuery);
 
-    connClass.AddMethod(L"ExecuteScalar", SymbolTable::Primitives::Any, LINK_INSTANCE)
+    connClass.AddMethod(L"ExecuteScalar", TYPE_ANY, LINK_INSTANCE)
         .AddParameter(L"sql", TYPE_STRING)
         .SetCallback(&shard_sqlite_Connection_ExecuteScalar);
 
@@ -478,9 +456,9 @@ SHARDLIB_ENTRYPOINT
         .AddParameter(L"commandText", TYPE_STRING)
         .SetCallback(&shard_sqlite_Command_Init);
 
-    cmdClass.AddMethod(L"ExecuteNonQuery", SymbolTable::Primitives::Integer, LINK_INSTANCE)
+    cmdClass.AddMethod(L"ExecuteNonQuery", TYPE_INT, LINK_INSTANCE)
         .SetCallback(&shard_sqlite_Command_ExecuteNonQuery);
 
-    cmdClass.AddMethod(L"ExecuteScalar", SymbolTable::Primitives::Any, LINK_INSTANCE)
+    cmdClass.AddMethod(L"ExecuteScalar", TYPE_ANY, LINK_INSTANCE)
         .SetCallback(&shard_sqlite_Command_ExecuteScalar);
 }
