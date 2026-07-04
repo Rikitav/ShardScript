@@ -21,6 +21,7 @@ SemanticModel::SemanticModel(shard::SyntaxTree& tree) : Tree(tree)
 {
 	Table = std::make_unique<SymbolTable>();
 	Namespaces = std::make_unique<NamespaceTree>();
+	//Namespaces->Root = SymbolTable::Global::Namespace->Node;
 }
 
 SemanticModel::~SemanticModel()

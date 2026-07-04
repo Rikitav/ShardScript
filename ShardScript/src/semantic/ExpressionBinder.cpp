@@ -1980,6 +1980,7 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node, 
 							target->ToVariable = delegateVar;
 							node->PreviousExpression = std::move(target);
 						}
+
 						node->Symbol = delegate->AnonymousSymbol;
 						node->IsDelegateInvocation = true;
 						return node->Symbol;
@@ -1996,6 +1997,7 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node, 
 							target->ToParameter = delegateParam;
 							node->PreviousExpression = std::move(target);
 						}
+
 						node->Symbol = delegate->AnonymousSymbol;
 						node->IsDelegateInvocation = true;
 						return node->Symbol;
@@ -2012,6 +2014,7 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node, 
 							target->ToField = delegateField;
 							node->PreviousExpression = std::move(target);
 						}
+
 						node->Symbol = delegate->AnonymousSymbol;
 						node->IsDelegateInvocation = true;
 						return node->Symbol;
@@ -2719,8 +2722,10 @@ IndexatorSymbol* ExpressionBinder::ResolveIndexator(IndexatorExpressionSyntax* n
 	}
 
 	IndexatorSymbol* symbol = currentType->FindIndexator(argTypes);
+	/*
 	if (symbol == nullptr)
-		symbol = SymbolTable::Global::Type->FindIndexator(argTypes);
+		symbol = SymbolTable::Global::Namespace->FindIndexator(argTypes);
+	*/
 
 	if (symbol == nullptr)
 	{

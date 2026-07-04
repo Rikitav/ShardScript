@@ -15,9 +15,15 @@
 
 #ifdef _WIN32
     #include <Windows.h>
+#else
+    #include <unistd.h>
+    #include <fcntl.h>
+    #include <cstring>
 #endif
 
 using namespace shard;
+
+TypeSymbol* shard_ScalarResult = nullptr;
 
 TypeSymbol* shard_SqliteConnection = nullptr;
 FieldSymbol* shard_SqliteConnection_HandleField = nullptr;
@@ -28,6 +34,120 @@ FieldSymbol* shard_SqliteCommand_TextField = nullptr;
 
 namespace
 {
+    static inline std::string WToUtf8(const std::wstring& wstr)
+    {
+        if (wstr.empty())
+            return {};
+
+#ifdef _WIN32
+        const int size = ::WideCharToMultiByte(CP_UTF8, 0, wstr.data(),
+            static_cast<int>(wstr.size()),
+            nullptr, 0, nullptr, nullptr);
+        if (size <= 0)
+            return {};
+
+        std::string narrow(static_cast<std::size_t>(size), '\0');
+        ::WideCharToMultiByte(CP_UTF8, 0, wstr.data(),
+            static_cast<int>(wstr.size()),
+            narrow.data(), size, nullptr, nullptr);
+        return narrow;
+#else
+        std::string narrow(wstr.size() * 4 + 1, '\0');
+        std::wcstombs(narrow.data(), wstr.c_str(), narrow.size());
+        narrow.resize(std::strlen(narrow.c_str()));
+        return narrow;
+#endif
+    }
+
+    static inline std::string WToUtf8(const wchar_t* wstr)
+    {
+        if (wstr == nullptr)
+            return {};
+
+        return WToUtf8(std::wstring(wstr));
+    }
+
+    static inline std::wstring Utf8ToW(const std::string& narrow)
+    {
+        if (narrow.empty())
+            return {};
+
+#ifdef _WIN32
+        const int size = ::MultiByteToWideChar(CP_UTF8, 0, narrow.data(),
+            static_cast<int>(narrow.size()),
+            nullptr, 0);
+        if (size <= 0)
+            return {};
+
+        std::wstring wide(static_cast<std::size_t>(size), L'\0');
+        ::MultiByteToWideChar(CP_UTF8, 0, narrow.data(),
+            static_cast<int>(narrow.size()),
+            wide.data(), size);
+        return wide;
+#else
+        std::wstring wide(narrow.size(), L'\0');
+        std::mbstowcs(wide.data(), narrow.c_str(), wide.size());
+        wide.resize(std::wcslen(wide.c_str()));
+        return wide;
+#endif
+    }
+
+    static ObjectInstance* InvokeToString(const CallState& context, ObjectInstance* instance)
+    {
+        TypeSymbol* type = const_cast<TypeSymbol*>(instance->getInfo());
+        MethodSymbol* implementation = type->FindInterfaceImplementation(TRAIT_PRINTABLE_ToString);
+        if (implementation == nullptr)
+            throw std::runtime_error("Type '" + WToUtf8(type->FullName.c_str()) + "' does not implement IPrintable");
+
+        context.Runtimer.InvokeMethod(implementation, { instance });
+        ObjectInstance* result = context.Runtimer.CurrentFrame()->PopStack();
+
+        if (result == nullptr || result->getInfo() != SymbolTable::Primitives::String)
+            throw std::runtime_error("ToString did not return a string");
+
+        return result;
+    }
+
+    static TypeSymbol* GetElementTypeOfEnumerable(ObjectInstance* enumerable)
+    {
+        TypeSymbol* type = const_cast<TypeSymbol*>(enumerable->getInfo());
+        if (type == nullptr)
+            return nullptr;
+
+        if (type->Kind == SyntaxKind::ArrayType)
+            return static_cast<ArrayTypeSymbol*>(type)->UnderlayingType;
+
+        GenericTypeSymbol* genericType = nullptr;
+        TypeSymbol* searchType = type;
+        if (type->Kind == SyntaxKind::GenericType)
+        {
+            genericType = static_cast<GenericTypeSymbol*>(type);
+            searchType = genericType->UnderlayingType;
+        }
+
+        for (TypeSymbol* iface : searchType->Interfaces)
+        {
+            if (iface->Kind != SyntaxKind::GenericType)
+                continue;
+
+            GenericTypeSymbol* genericIface = static_cast<GenericTypeSymbol*>(iface);
+            if (genericIface->UnderlayingType != TRAIT_ENUMERABLE)
+                continue;
+
+            TypeSymbol* elementType = genericIface->SubstituteTypeParameters(TRAIT_ENUMERABLE->TypeParameters[0]);
+            if (elementType != nullptr && elementType->Kind == SyntaxKind::TypeParameter && genericType != nullptr)
+            {
+                TypeSymbol* resolved = genericType->SubstituteTypeParameters(static_cast<TypeParameterSymbol*>(elementType));
+                if (resolved != nullptr)
+                    elementType = resolved;
+            }
+
+            return elementType;
+        }
+
+        return nullptr;
+    }
+
     sqlite3* GetNativeHandle(ObjectInstance* connInstance)
     {
         if (!connInstance)
@@ -115,12 +235,13 @@ namespace
     {
         sqlite3_stmt* rawStmt = nullptr;
         int rc = sqlite3_prepare16_v2(db, sql.c_str(), -1, &rawStmt, nullptr);
+
         if (rc != SQLITE_OK)
             throw std::runtime_error(std::string("SQLite Prepare Error: ") + sqlite3_errmsg(db));
 
         StatementGuard stmt(rawStmt);
-
         rc = sqlite3_step(stmt.get());
+
         if (rc == SQLITE_ROW)
         {
             switch (sqlite3_column_type(stmt.get(), 0))
@@ -137,23 +258,7 @@ namespace
                     if (text == nullptr)
                         return collector.NullInstance;
 
-                    std::wstring wide;
-#ifdef _WIN32
-                    int required = MultiByteToWideChar(CP_UTF8, 0, text, -1, nullptr, 0);
-                    if (required > 0)
-                    {
-                        wide.resize(static_cast<std::size_t>(required - 1));
-                        MultiByteToWideChar(CP_UTF8, 0, text, -1, wide.data(), required);
-                    }
-#else
-                    std::size_t len = std::mbstowcs(nullptr, text, 0);
-                    if (len != static_cast<std::size_t>(-1))
-                    {
-                        wide.resize(len);
-                        std::mbstowcs(wide.data(), text, len + 1);
-                    }
-#endif
-                    return collector.FromValue(wide);
+                    return collector.FromValue(Utf8ToW(text));
                 }
 
                 case SQLITE_NULL:
@@ -183,11 +288,10 @@ static ObjectInstance* shard_sqlite_Connection_Init(const CallState& context) no
 
     if (rc != SQLITE_OK)
     {
-        std::string errDoc = db
-            ? sqlite3_errmsg(db)
-            : "Failed to open database";
+        std::string errDoc = db != nullptr
+            ? sqlite3_errmsg(db) : "Failed to open database";
 
-        if (db)
+        if (db != nullptr)
             sqlite3_close_v2(db);
 
         throw std::runtime_error("SQLite Open Error: " + errDoc);
@@ -304,6 +408,21 @@ SHARDLIB_GETMETADATA
 SHARDLIB_ENTRYPOINT
 {
     SymbolBuilder<NamespaceSymbol> dbNamespace(context, L"Database");
+
+    SymbolBuilder<ClassSymbol> scalarClass = dbNamespace.AddClass(L"ScalarResult", LINK_INSTANCE);
+    shard_ScalarResult = scalarClass;
+
+    scalarClass.AddCastOperator(TYPE_INT)
+        .AddParameter(L"this", shard_ScalarResult)
+        .SetCallback(&shard_scalar_as_int);
+
+    scalarClass.AddCastOperator(TYPE_STRING)
+        .AddParameter(L"this", shard_ScalarResult)
+        .SetCallback(&shard_scalar_as_string);
+
+    scalarClass.AddOperator(TokenType::Delimeter, shard_ScalarResult, LINK_INSTANCE)
+        .AddParameter(L"field", TYPE_STRING)
+        .SetCallback(&shard_scalar_access_field);
 
     // --- class SqliteConnection ---
     SymbolBuilder<ClassSymbol> connClass = dbNamespace.AddClass(L"SqliteConnection");

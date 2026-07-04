@@ -748,6 +748,7 @@ ObjectInstance* VirtualMachine::CreateRuntimeException(const std::exception& err
 			break;
 		}
 	}
+
 	if (ctor == nullptr)
 		throw std::runtime_error("RuntimeException has no parameterless constructor");
 

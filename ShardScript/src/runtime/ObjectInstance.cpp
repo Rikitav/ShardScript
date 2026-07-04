@@ -311,8 +311,8 @@ void* ObjectInstance::OffsetMemory(const std::size_t offset, const std::size_t s
 	if (size == 0)
 		throw std::out_of_range("Cannot read 0 bytes");
 
-	if (offset + size > GetMemorySize())
-		throw std::out_of_range("offset (" + std::to_string(offset) + ") + size (" + std::to_string(size) + ") is out of instance's memory range (" + std::to_string(GetMemorySize()) + ").");
+	if (offset + size > getInfo()->MemoryBytesSize)
+		throw std::out_of_range("offset (" + std::to_string(offset) + ") + size (" + std::to_string(size) + ") is out of instance's memory range (" + std::to_string(getInfo()->MemoryBytesSize) + ").");
 
 	return static_cast<char*>(getMemory()) + offset;
 }
@@ -325,8 +325,8 @@ void ObjectInstance::ReadMemory(const std::size_t offset, const std::size_t size
 	if (size == 0)
 		throw std::out_of_range("Cannot read 0 bytes");
 
-	if (offset + size > GetMemorySize())
-		throw std::out_of_range("offset (" + std::to_string(offset) + ") + size (" + std::to_string(size) + ") is out of instance's memory range (" + std::to_string(GetMemorySize()) + ").");
+	if (offset + size > getInfo()->MemoryBytesSize)
+		throw std::out_of_range("offset (" + std::to_string(offset) + ") + size (" + std::to_string(size) + ") is out of instance's memory range (" + std::to_string(getInfo()->MemoryBytesSize) + ").");
 
 	const char* memOffset = static_cast<char*>(getMemory()) + offset;
 	std::memcpy(dst, memOffset, size);
@@ -340,8 +340,8 @@ void ObjectInstance::WriteMemory(const std::size_t offset, const std::size_t siz
 	if (size == 0)
 		throw std::out_of_range("Cannot read 0 bytes");
 
-	if (offset + size > GetMemorySize())
-		throw std::out_of_range("offset (" + std::to_string(offset) + ") + size (" + std::to_string(size) + ") is out of instance's memory range (" + std::to_string(GetMemorySize()) + ").");
+	if (offset + size > getInfo()->MemoryBytesSize)
+		throw std::out_of_range("offset (" + std::to_string(offset) + ") + size (" + std::to_string(size) + ") is out of instance's memory range (" + std::to_string(getInfo()->MemoryBytesSize) + ").");
 
 	char* memOffset = static_cast<char*>(getMemory()) + offset;
 	std::memcpy(memOffset, src, size);
@@ -350,25 +350,25 @@ void ObjectInstance::WriteMemory(const std::size_t offset, const std::size_t siz
 void ObjectInstance::WriteBoolean(const bool& value) const
 {
 	const void* ptr = &value;
-	WriteMemory(0, GetMemorySize(), ptr);
+	WriteMemory(0, getInfo()->MemoryBytesSize, ptr);
 }
 
 void ObjectInstance::WriteInteger(const std::int64_t& value) const
 {
 	const void* ptr = &value;
-	WriteMemory(0, GetMemorySize(), ptr);
+	WriteMemory(0, getInfo()->MemoryBytesSize, ptr);
 }
 
 void ObjectInstance::WriteDouble(const double& value) const
 {
 	const void* ptr = &value;
-	WriteMemory(0, GetMemorySize(), ptr);
+	WriteMemory(0, getInfo()->MemoryBytesSize, ptr);
 }
 
 void ObjectInstance::WriteCharacter(const wchar_t& value) const
 {
 	const void* ptr = &value;
-	WriteMemory(0, GetMemorySize(), ptr);
+	WriteMemory(0, getInfo()->MemoryBytesSize, ptr);
 }
 
 void ObjectInstance::WriteString(const wchar_t* value) const

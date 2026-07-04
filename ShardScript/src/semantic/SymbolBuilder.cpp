@@ -10,10 +10,10 @@ using namespace shard;
 // NamespaceSymbol
 // =========================================================================
 
-SymbolBuilder<NamespaceSymbol>::SymbolBuilder(CompilationContext& ctx,
+SymbolBuilder<NamespaceSymbol>::SymbolBuilder(SymbolTable* table,
     const std::wstring& name,
     NamespaceSymbol* parent)
-    : SymbolBuilderBase(ctx)
+    : SymbolBuilderBase(table)
 {
     Symbol = Factory.Namespace(name);
     Symbol->Accesibility = SymbolAccesibility::Public;
@@ -22,11 +22,26 @@ SymbolBuilder<NamespaceSymbol>::SymbolBuilder(CompilationContext& ctx,
         ? parent->FullName + L"." + name
         : name;
 
-    NamespaceNode* parentNode = parent
-        ? parent->Node
-        : ctx.GetSemanticModel().Namespaces->Root;
-
+    NamespaceNode* parentNode = parent == nullptr ? SymbolTable::Global::Namespace->Node : parent->Node;
     Symbol->Node = parentNode->LookupOrCreate(name, Symbol);
+}
+
+SymbolBuilder<NamespaceSymbol>::SymbolBuilder(CompilationContext& ctx,
+    const std::wstring& name,
+    NamespaceSymbol* parent)
+    : SymbolBuilderBase(ctx.GetSemanticModel().Table.get())
+{
+    Symbol = Factory.Namespace(name);
+    Symbol->Accesibility = SymbolAccesibility::Public;
+    Symbol->Parent = parent;
+    Symbol->FullName = parent
+        ? parent->FullName + L"." + name
+        : name;
+
+    //parentNode = SymbolTable::Global::Namespace->Node;
+    Symbol->Node = parent == nullptr
+        ? ctx.GetSemanticModel().Namespaces->Root->LookupOrCreate(name, Symbol)
+        : parent->Node->LookupOrCreate(name, Symbol);
 }
 
 SymbolBuilder<MethodSymbol> SymbolBuilder<NamespaceSymbol>::AddMethod(
@@ -35,7 +50,7 @@ SymbolBuilder<MethodSymbol> SymbolBuilder<NamespaceSymbol>::AddMethod(
     SymbolLinking linking,
     SymbolAccesibility access)
 {
-    SymbolBuilder<MethodSymbol> builder(Context, name, returnType, linking, access, Symbol);
+    SymbolBuilder<MethodSymbol> builder(Table, name, returnType, linking, access, Symbol);
     return builder;
 }
 
@@ -44,7 +59,7 @@ SymbolBuilder<ClassSymbol> SymbolBuilder<NamespaceSymbol>::AddClass(
     SymbolLinking linking,
     SymbolAccesibility access)
 {
-    SymbolBuilder<ClassSymbol> builder(Context, name, Symbol);
+    SymbolBuilder<ClassSymbol> builder(Table, name, Symbol);
     builder.Get()->Accesibility = access;
     builder.Get()->Linking = linking;
     return builder;
@@ -55,7 +70,7 @@ SymbolBuilder<StructSymbol> SymbolBuilder<NamespaceSymbol>::AddStruct(
     SymbolLinking linking,
     SymbolAccesibility access)
 {
-    SymbolBuilder<StructSymbol> builder(Context, name, Symbol);
+    SymbolBuilder<StructSymbol> builder(Table, name, Symbol);
     builder.Get()->Accesibility = access;
     builder.Get()->Linking = linking;
     return builder;
@@ -66,7 +81,16 @@ SymbolBuilder<EnumSymbol> SymbolBuilder<NamespaceSymbol>::AddEnum(
     bool isFlags,
     SymbolAccesibility access)
 {
-    SymbolBuilder<EnumSymbol> builder(Context, name, isFlags, Symbol);
+    SymbolBuilder<EnumSymbol> builder(Table, name, isFlags, Symbol);
+    builder.Get()->Accesibility = access;
+    return builder;
+}
+
+SymbolBuilder<InterfaceSymbol> SymbolBuilder<NamespaceSymbol>::AddInterface(
+    const std::wstring& name,
+    SymbolAccesibility access)
+{
+    SymbolBuilder<InterfaceSymbol> builder(Table, name, Symbol);
     builder.Get()->Accesibility = access;
     return builder;
 }
@@ -74,7 +98,7 @@ SymbolBuilder<EnumSymbol> SymbolBuilder<NamespaceSymbol>::AddEnum(
 SymbolBuilder<NamespaceSymbol> SymbolBuilder<NamespaceSymbol>::AddNamespace(
     const std::wstring& name)
 {
-    SymbolBuilder<NamespaceSymbol> builder(Context, name, Symbol);
+    SymbolBuilder<NamespaceSymbol> builder(Table, name, Symbol);
     return builder;
 }
 
@@ -82,10 +106,10 @@ SymbolBuilder<NamespaceSymbol> SymbolBuilder<NamespaceSymbol>::AddNamespace(
 // TypeParameterSymbol
 // =========================================================================
 
-SymbolBuilder<TypeParameterSymbol>::SymbolBuilder(CompilationContext& ctx,
+SymbolBuilder<TypeParameterSymbol>::SymbolBuilder(SymbolTable* table,
     const std::wstring& name,
     SyntaxSymbol* parent)
-    : SymbolBuilderBase(ctx)
+    : SymbolBuilderBase(table)
 {
     Symbol = Factory.TypeParameter(name, static_cast<MethodSymbol*>(nullptr));
     Symbol->Parent = parent;
@@ -101,6 +125,13 @@ SymbolBuilder<TypeParameterSymbol>::SymbolBuilder(CompilationContext& ctx,
     }
 }
 
+SymbolBuilder<TypeParameterSymbol>::SymbolBuilder(CompilationContext& ctx,
+    const std::wstring& name,
+    SyntaxSymbol* parent)
+    : SymbolBuilder(ctx.GetSemanticModel().Table.get(), name, parent)
+{
+}
+
 // =========================================================================
 // ClassSymbol
 // =========================================================================
@@ -113,10 +144,10 @@ SymbolBuilder<ClassSymbol>::SymbolBuilder(
     Symbol = symbol;
 }
 
-SymbolBuilder<ClassSymbol>::SymbolBuilder(CompilationContext& ctx,
+SymbolBuilder<ClassSymbol>::SymbolBuilder(SymbolTable* table,
     const std::wstring& name,
     SyntaxSymbol* parent)
-    : SymbolBuilderBase(ctx)
+    : SymbolBuilderBase(table)
 {
     Symbol = Factory.Class(name);
     Symbol->Accesibility = SymbolAccesibility::Public;
@@ -134,10 +165,24 @@ SymbolBuilder<ClassSymbol>::SymbolBuilder(CompilationContext& ctx,
     }
 }
 
+SymbolBuilder<ClassSymbol>::SymbolBuilder(SymbolTable* table,
+    ClassSymbol* symbol)
+    : SymbolBuilderBase(table)
+{
+    Symbol = symbol;
+}
+
+SymbolBuilder<ClassSymbol>::SymbolBuilder(CompilationContext& ctx,
+    const std::wstring& name,
+    SyntaxSymbol* parent)
+    : SymbolBuilder(ctx.GetSemanticModel().Table.get(), name, parent)
+{
+}
+
 SymbolBuilder<ConstructorSymbol> SymbolBuilder<ClassSymbol>::AddInit(
     SymbolAccesibility access)
 {
-    SymbolBuilder<ConstructorSymbol> builder(Context, access, Symbol);
+    SymbolBuilder<ConstructorSymbol> builder(Table, access, Symbol);
     return builder;
 }
 
@@ -147,7 +192,7 @@ SymbolBuilder<MethodSymbol> SymbolBuilder<ClassSymbol>::AddMethod(
     SymbolLinking linking,
     SymbolAccesibility access)
 {
-    SymbolBuilder<MethodSymbol> builder(Context, name, returnType, linking, access, Symbol);
+    SymbolBuilder<MethodSymbol> builder(Table, name, returnType, linking, access, Symbol);
     return builder;
 }
 
@@ -157,7 +202,7 @@ SymbolBuilder<FieldSymbol> SymbolBuilder<ClassSymbol>::AddField(
     SymbolLinking linking,
     SymbolAccesibility access)
 {
-    SymbolBuilder<FieldSymbol> builder(Context, name, type, linking, access, Symbol);
+    SymbolBuilder<FieldSymbol> builder(Table, name, type, linking, access, Symbol);
     return builder;
 }
 
@@ -167,7 +212,7 @@ SymbolBuilder<PropertySymbol> SymbolBuilder<ClassSymbol>::AddProperty(
     SymbolLinking linking,
     SymbolAccesibility access)
 {
-    SymbolBuilder<PropertySymbol> builder(Context, name, type, linking, access, Symbol);
+    SymbolBuilder<PropertySymbol> builder(Table, name, type, linking, access, Symbol);
     return builder;
 }
 
@@ -176,13 +221,13 @@ SymbolBuilder<IndexatorSymbol> SymbolBuilder<ClassSymbol>::AddIndexer(
     SymbolLinking linking,
     SymbolAccesibility access)
 {
-    SymbolBuilder<IndexatorSymbol> builder(Context, L"indexer", type, linking, access, Symbol);
+    SymbolBuilder<IndexatorSymbol> builder(Table, L"indexer", type, linking, access, Symbol);
     return builder;
 }
 
 SymbolBuilder<TypeParameterSymbol> SymbolBuilder<ClassSymbol>::AddTypeParameter(const std::wstring& name)
 {
-    SymbolBuilder<TypeParameterSymbol> builder(Context, name, Symbol);
+    SymbolBuilder<TypeParameterSymbol> builder(Table, name, Symbol);
     return builder;
 }
 
@@ -192,7 +237,16 @@ SymbolBuilder<OperatorSymbol> SymbolBuilder<ClassSymbol>::AddOperator(
     SymbolLinking linking,
     SymbolAccesibility access)
 {
-    SymbolBuilder<OperatorSymbol> builder(Context, opToken, returnType, linking, access, Symbol);
+    SymbolBuilder<OperatorSymbol> builder(Table, opToken, returnType, linking, access, Symbol);
+    return builder;
+}
+
+SymbolBuilder<OperatorSymbol> SymbolBuilder<ClassSymbol>::AddCastOperator(
+    TypeSymbol* targetType,
+    SymbolLinking linking,
+    SymbolAccesibility access)
+{
+    SymbolBuilder<OperatorSymbol> builder(Table, TokenType::AsOperator, targetType, linking, access, Symbol);
     return builder;
 }
 
@@ -210,14 +264,33 @@ SymbolBuilder<ClassSymbol>& SymbolBuilder<ClassSymbol>::Implements(
     return *this;
 }
 
+SymbolBuilder<ClassSymbol>& SymbolBuilder<ClassSymbol>::DeclareGlobal()
+{
+    SymbolTable::Global::Scope->DeclareSymbol(Symbol);
+    return *this;
+}
+
+SymbolBuilder<ClassSymbol>& SymbolBuilder<ClassSymbol>::SetFullName(const std::wstring& fullName)
+{
+    Symbol->FullName = fullName;
+    return *this;
+}
+
 // =========================================================================
 // StructSymbol
 // =========================================================================
 
 SymbolBuilder<StructSymbol>::SymbolBuilder(CompilationContext& ctx,
+    StructSymbol* symbol)
+    : SymbolBuilderBase(ctx.GetSemanticModel().Table.get())
+{
+    Symbol = symbol;
+}
+
+SymbolBuilder<StructSymbol>::SymbolBuilder(SymbolTable* table,
     const std::wstring& name,
     SyntaxSymbol* parent)
-    : SymbolBuilderBase(ctx)
+    : SymbolBuilderBase(table)
 {
     Symbol = Factory.Struct(name);
     Symbol->Accesibility = SymbolAccesibility::Public;
@@ -235,10 +308,38 @@ SymbolBuilder<StructSymbol>::SymbolBuilder(CompilationContext& ctx,
     }
 }
 
+SymbolBuilder<StructSymbol>::SymbolBuilder(CompilationContext& ctx,
+    const std::wstring& name,
+    SyntaxSymbol* parent)
+    : SymbolBuilder(ctx.GetSemanticModel().Table.get(), name, parent)
+{
+    Symbol = Factory.Struct(name);
+    Symbol->Accesibility = SymbolAccesibility::Public;
+    Symbol->Inlining = TypeInlining::ByReference;
+    Symbol->Parent = parent;
+
+    if (parent != nullptr)
+    {
+        Symbol->FullName = parent->FullName + L"." + name;
+        parent->OnSymbolDeclared(Symbol);
+    }
+    else
+    {
+        Symbol->FullName = name;
+    }
+}
+
+SymbolBuilder<StructSymbol>::SymbolBuilder(SymbolTable* table,
+    StructSymbol* symbol)
+    : SymbolBuilderBase(table)
+{
+    Symbol = symbol;
+}
+
 SymbolBuilder<ConstructorSymbol> SymbolBuilder<StructSymbol>::AddInit(
     SymbolAccesibility access)
 {
-    SymbolBuilder<ConstructorSymbol> builder(Context, access, Symbol);
+    SymbolBuilder<ConstructorSymbol> builder(Table, access, Symbol);
     return builder;
 }
 
@@ -248,7 +349,7 @@ SymbolBuilder<MethodSymbol> SymbolBuilder<StructSymbol>::AddMethod(
     SymbolLinking linking,
     SymbolAccesibility access)
 {
-    SymbolBuilder<MethodSymbol> builder(Context, name, returnType, linking, access, Symbol);
+    SymbolBuilder<MethodSymbol> builder(Table, name, returnType, linking, access, Symbol);
     return builder;
 }
 
@@ -258,7 +359,7 @@ SymbolBuilder<FieldSymbol> SymbolBuilder<StructSymbol>::AddField(
     SymbolLinking linking,
     SymbolAccesibility access)
 {
-    SymbolBuilder<FieldSymbol> builder(Context, name, type, linking, access, Symbol);
+    SymbolBuilder<FieldSymbol> builder(Table, name, type, linking, access, Symbol);
     return builder;
 }
 
@@ -268,7 +369,7 @@ SymbolBuilder<PropertySymbol> SymbolBuilder<StructSymbol>::AddProperty(
     SymbolLinking linking,
     SymbolAccesibility access)
 {
-    SymbolBuilder<PropertySymbol> builder(Context, name, type, linking, access, Symbol);
+    SymbolBuilder<PropertySymbol> builder(Table, name, type, linking, access, Symbol);
     return builder;
 }
 
@@ -277,13 +378,13 @@ SymbolBuilder<IndexatorSymbol> SymbolBuilder<StructSymbol>::AddIndexer(
     SymbolLinking linking,
     SymbolAccesibility access)
 {
-    SymbolBuilder<IndexatorSymbol> builder(Context, L"indexer", type, linking, access, Symbol);
+    SymbolBuilder<IndexatorSymbol> builder(Table, L"indexer", type, linking, access, Symbol);
     return builder;
 }
 
 SymbolBuilder<TypeParameterSymbol> SymbolBuilder<StructSymbol>::AddTypeParameter(const std::wstring& name)
 {
-    SymbolBuilder<TypeParameterSymbol> builder(Context, name, Symbol);
+    SymbolBuilder<TypeParameterSymbol> builder(Table, name, Symbol);
     return builder;
 }
 
@@ -293,7 +394,16 @@ SymbolBuilder<OperatorSymbol> SymbolBuilder<StructSymbol>::AddOperator(
     SymbolLinking linking,
     SymbolAccesibility access)
 {
-    SymbolBuilder<OperatorSymbol> builder(Context, opToken, returnType, linking, access, Symbol);
+    SymbolBuilder<OperatorSymbol> builder(Table, opToken, returnType, linking, access, Symbol);
+    return builder;
+}
+
+SymbolBuilder<OperatorSymbol> SymbolBuilder<StructSymbol>::AddCastOperator(
+    TypeSymbol* targetType,
+    SymbolLinking linking,
+    SymbolAccesibility access)
+{
+    SymbolBuilder<OperatorSymbol> builder(Table, TokenType::AsOperator, targetType, linking, access, Symbol);
     return builder;
 }
 
@@ -311,15 +421,27 @@ SymbolBuilder<StructSymbol>& SymbolBuilder<StructSymbol>::Implements(
     return *this;
 }
 
+SymbolBuilder<StructSymbol>& SymbolBuilder<StructSymbol>::DeclareGlobal()
+{
+    SymbolTable::Global::Scope->DeclareSymbol(Symbol);
+    return *this;
+}
+
+SymbolBuilder<StructSymbol>& SymbolBuilder<StructSymbol>::SetFullName(const std::wstring& fullName)
+{
+    Symbol->FullName = fullName;
+    return *this;
+}
+
 // =========================================================================
 // EnumSymbol
 // =========================================================================
 
-SymbolBuilder<EnumSymbol>::SymbolBuilder(CompilationContext& ctx,
+SymbolBuilder<EnumSymbol>::SymbolBuilder(SymbolTable* table,
     const std::wstring& name,
     bool isFlags,
     SyntaxSymbol* parent)
-    : SymbolBuilderBase(ctx)
+    : SymbolBuilderBase(table)
 {
     Symbol = Factory.Enum(name, isFlags);
     Symbol->Accesibility = SymbolAccesibility::Public;
@@ -334,6 +456,14 @@ SymbolBuilder<EnumSymbol>::SymbolBuilder(CompilationContext& ctx,
     {
         Symbol->FullName = name;
     }
+}
+
+SymbolBuilder<EnumSymbol>::SymbolBuilder(CompilationContext& ctx,
+    const std::wstring& name,
+    bool isFlags,
+    SyntaxSymbol* parent)
+    : SymbolBuilder(ctx.GetSemanticModel().Table.get(), name, isFlags, parent)
+{
 }
 
 SymbolBuilder<EnumSymbol>& SymbolBuilder<EnumSymbol>::SetFlags(bool value)
@@ -355,13 +485,20 @@ SymbolBuilder<EnumSymbol>& SymbolBuilder<EnumSymbol>::AddValue(
 // MethodSymbol
 // =========================================================================
 
-SymbolBuilder<MethodSymbol>::SymbolBuilder(CompilationContext& ctx,
+SymbolBuilder<MethodSymbol>::SymbolBuilder(SymbolTable* table,
+    MethodSymbol* symbol)
+    : SymbolBuilderBase(table)
+{
+    Symbol = symbol;
+}
+
+SymbolBuilder<MethodSymbol>::SymbolBuilder(SymbolTable* table,
     const std::wstring& name,
     TypeSymbol* returnType,
     SymbolLinking linking,
     SymbolAccesibility access,
     SyntaxSymbol* parent)
-    : SymbolBuilderBase(ctx)
+    : SymbolBuilderBase(table)
 {
     Symbol = Factory.Method(name, returnType, linking);
     Symbol->Accesibility = access;
@@ -376,6 +513,16 @@ SymbolBuilder<MethodSymbol>::SymbolBuilder(CompilationContext& ctx,
     {
         Symbol->FullName = name;
     }
+}
+
+SymbolBuilder<MethodSymbol>::SymbolBuilder(CompilationContext& ctx,
+    const std::wstring& name,
+    TypeSymbol* returnType,
+    SymbolLinking linking,
+    SymbolAccesibility access,
+    SyntaxSymbol* parent)
+    : SymbolBuilder(ctx.GetSemanticModel().Table.get(), name, returnType, linking, access, parent)
+{
 }
 
 SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::AddParameter(
@@ -394,21 +541,6 @@ SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::SetCallback(MethodSymb
     Symbol->HandleType = MethodHandleType::External;
     return *this;
 }
-
-/*
-SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::SetCallback(
-    ShardManagedMethodCallback callback,
-    void* userData)
-{
-    Symbol->ManagedCallback = callback;
-    Symbol->ManagedCallbackUserData = userData;
-    Symbol->FunctionPointer = nullptr;
-    Symbol->HandleType = MethodHandleType::External;
-    Symbol->IsExtern = true;
-    return *this;
-}
-*/
-
 SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::IsImplementationOf(MethodSymbol* abstractMethod)
 {
     if (abstractMethod == nullptr)
@@ -425,7 +557,7 @@ SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::IsImplementationOf(Met
 
 SymbolBuilder<TypeParameterSymbol> SymbolBuilder<MethodSymbol>::AddTypeParameter(const std::wstring& name)
 {
-    SymbolBuilder<TypeParameterSymbol> builder(Context, name, Symbol);
+    SymbolBuilder<TypeParameterSymbol> builder(Table, name, Symbol);
 
     TypeParameterSymbol* typeParam = builder.Get();
     if (typeParam != nullptr)
@@ -444,13 +576,13 @@ SymbolBuilder<TypeParameterSymbol> SymbolBuilder<MethodSymbol>::AddTypeParameter
 // OperatorSymbol
 // =========================================================================
 
-SymbolBuilder<OperatorSymbol>::SymbolBuilder(CompilationContext& ctx,
+SymbolBuilder<OperatorSymbol>::SymbolBuilder(SymbolTable* table,
     TokenType opToken,
     TypeSymbol* returnType,
     SymbolLinking linking,
     SymbolAccesibility access,
     TypeSymbol* parent)
-    : SymbolBuilderBase(ctx)
+    : SymbolBuilderBase(table)
 {
     std::wstring name = GetOperatorMethodName(opToken);
     Symbol = Factory.Operator(name, opToken, returnType, nullptr, {});
@@ -467,6 +599,16 @@ SymbolBuilder<OperatorSymbol>::SymbolBuilder(CompilationContext& ctx,
     {
         Symbol->FullName = name;
     }
+}
+
+SymbolBuilder<OperatorSymbol>::SymbolBuilder(CompilationContext& ctx,
+    TokenType opToken,
+    TypeSymbol* returnType,
+    SymbolLinking linking,
+    SymbolAccesibility access,
+    TypeSymbol* parent)
+    : SymbolBuilder(ctx.GetSemanticModel().Table.get(), opToken, returnType, linking, access, parent)
+{
 }
 
 SymbolBuilder<OperatorSymbol>& SymbolBuilder<OperatorSymbol>::AddParameter(
@@ -491,13 +633,15 @@ SymbolBuilder<OperatorSymbol>& SymbolBuilder<OperatorSymbol>::SetCallback(Method
 // =========================================================================
 
 SymbolBuilder<AccessorSymbol>::SymbolBuilder(
-    CompilationContext& ctx,
+    SymbolTable* table,
     bool isGetter,
     SymbolAccesibility access,
     PropertySymbol* parent)
-    : SymbolBuilderBase(ctx)
+    : SymbolBuilderBase(table)
 {
     Symbol = isGetter ? Factory.Getter(parent) : Factory.Setter(parent);
+    Symbol->Accesibility = access;
+    Symbol->Parent = parent;
 
     if (parent != nullptr)
     {
@@ -508,6 +652,15 @@ SymbolBuilder<AccessorSymbol>::SymbolBuilder(
     {
         Symbol->FullName = Symbol->Name;
     }
+}
+
+SymbolBuilder<AccessorSymbol>::SymbolBuilder(
+    CompilationContext& ctx,
+    bool isGetter,
+    SymbolAccesibility access,
+    PropertySymbol* parent)
+    : SymbolBuilder(ctx.GetSemanticModel().Table.get(), isGetter, access, parent)
+{
 }
 
 SymbolBuilder<AccessorSymbol>& SymbolBuilder<AccessorSymbol>::SetCallback(MethodSymbolDelegate callback)
@@ -522,7 +675,7 @@ SymbolBuilder<AccessorSymbol>& SymbolBuilder<AccessorSymbol>::IsImplementationOf
     if (abstractMethod == nullptr)
         return *this;
 
-    SyntaxSymbol* parent = Symbol->Parent;
+    SyntaxSymbol* parent = Symbol->Parent->Parent;
     if (parent == nullptr || !parent->IsType())
         return *this;
 
@@ -535,13 +688,13 @@ SymbolBuilder<AccessorSymbol>& SymbolBuilder<AccessorSymbol>::IsImplementationOf
 // FieldSymbol
 // =========================================================================
 
-SymbolBuilder<FieldSymbol>::SymbolBuilder(CompilationContext& ctx,
+SymbolBuilder<FieldSymbol>::SymbolBuilder(SymbolTable* table,
     const std::wstring& name,
     TypeSymbol* type,
     SymbolLinking linking,
     SymbolAccesibility access,
     TypeSymbol* parent)
-    : SymbolBuilderBase(ctx)
+    : SymbolBuilderBase(table)
 {
     Symbol = Factory.Field(name, type, linking);
     Symbol->Accesibility = access;
@@ -560,8 +713,18 @@ SymbolBuilder<FieldSymbol>::SymbolBuilder(CompilationContext& ctx,
 }
 
 SymbolBuilder<FieldSymbol>::SymbolBuilder(CompilationContext& ctx,
+    const std::wstring& name,
+    TypeSymbol* type,
+    SymbolLinking linking,
+    SymbolAccesibility access,
+    TypeSymbol* parent)
+    : SymbolBuilder(ctx.GetSemanticModel().Table.get(), name, type, linking, access, parent)
+{
+}
+
+SymbolBuilder<FieldSymbol>::SymbolBuilder(SymbolTable* table,
     PropertySymbol* parent)
-    : SymbolBuilderBase(ctx)
+    : SymbolBuilderBase(table)
 {
     Symbol = Factory.BackingField(parent);
     if (parent != nullptr)
@@ -570,17 +733,23 @@ SymbolBuilder<FieldSymbol>::SymbolBuilder(CompilationContext& ctx,
     }
 }
 
+SymbolBuilder<FieldSymbol>::SymbolBuilder(CompilationContext& ctx,
+    PropertySymbol* parent)
+    : SymbolBuilder(ctx.GetSemanticModel().Table.get(), parent)
+{
+}
+
 // =========================================================================
 // PropertySymbol
 // =========================================================================
 
-SymbolBuilder<PropertySymbol>::SymbolBuilder(CompilationContext& ctx,
+SymbolBuilder<PropertySymbol>::SymbolBuilder(SymbolTable* table,
     const std::wstring& name,
     TypeSymbol* type,
     SymbolLinking linking,
     SymbolAccesibility access,
     TypeSymbol* parent)
-    : SymbolBuilderBase(ctx)
+    : SymbolBuilderBase(table)
 {
     Symbol = Factory.Property(name, type, linking);
     Symbol->Accesibility = access;
@@ -598,21 +767,32 @@ SymbolBuilder<PropertySymbol>::SymbolBuilder(CompilationContext& ctx,
     }
 }
 
+SymbolBuilder<PropertySymbol>::SymbolBuilder(CompilationContext& ctx,
+    const std::wstring& name,
+    TypeSymbol* type,
+    SymbolLinking linking,
+    SymbolAccesibility access,
+    TypeSymbol* parent)
+    : SymbolBuilder(ctx.GetSemanticModel().Table.get(), name, type, linking, access, parent)
+{
+}
+
 SymbolBuilder<FieldSymbol> SymbolBuilder<PropertySymbol>::AddBackingField()
 {
-    SymbolBuilder<FieldSymbol> builder(Context, Symbol);
+    SymbolBuilder<FieldSymbol> builder(Table, Symbol);
+    builder.Get()->Parent = Symbol->Parent;
     return builder;
 }
 
 SymbolBuilder<AccessorSymbol> SymbolBuilder<PropertySymbol>::AddGetter(SymbolAccesibility access)
 {
-    SymbolBuilder<AccessorSymbol> builder(Context, true, access, Symbol);
+    SymbolBuilder<AccessorSymbol> builder(Table, true, access, Symbol);
     return builder;
 }
 
 SymbolBuilder<AccessorSymbol> SymbolBuilder<PropertySymbol>::AddSetter(SymbolAccesibility access)
 {
-    SymbolBuilder<AccessorSymbol> builder(Context, false, access, Symbol);
+    SymbolBuilder<AccessorSymbol> builder(Table, false, access, Symbol);
     return builder;
 }
 
@@ -620,13 +800,13 @@ SymbolBuilder<AccessorSymbol> SymbolBuilder<PropertySymbol>::AddSetter(SymbolAcc
 // IndexatorSymbol
 // =========================================================================
 
-SymbolBuilder<IndexatorSymbol>::SymbolBuilder(CompilationContext& ctx,
+SymbolBuilder<IndexatorSymbol>::SymbolBuilder(SymbolTable* table,
     const std::wstring& name,
     TypeSymbol* type,
     SymbolLinking linking,
     SymbolAccesibility access,
     TypeSymbol* parent)
-    : SymbolBuilderBase(ctx)
+    : SymbolBuilderBase(table)
 {
     Symbol = Factory.Indexator(name, type);
     Symbol->Linking = linking;
@@ -643,6 +823,16 @@ SymbolBuilder<IndexatorSymbol>::SymbolBuilder(CompilationContext& ctx,
     {
         Symbol->FullName = name;
     }
+}
+
+SymbolBuilder<IndexatorSymbol>::SymbolBuilder(CompilationContext& ctx,
+    const std::wstring& name,
+    TypeSymbol* type,
+    SymbolLinking linking,
+    SymbolAccesibility access,
+    TypeSymbol* parent)
+    : SymbolBuilder(ctx.GetSemanticModel().Table.get(), name, type, linking, access, parent)
+{
 }
 
 SymbolBuilder<IndexatorSymbol>& SymbolBuilder<IndexatorSymbol>::AddParameter(
@@ -664,20 +854,21 @@ SymbolBuilder<IndexatorSymbol>& SymbolBuilder<IndexatorSymbol>::AddParameter(
 
 SymbolBuilder<FieldSymbol> SymbolBuilder<IndexatorSymbol>::AddBackingField()
 {
-    SymbolBuilder<FieldSymbol> builder(Context, Symbol);
+    SymbolBuilder<FieldSymbol> builder(Table, Symbol);
+    builder.Get()->Parent = Symbol->Parent;
     return builder;
 }
 
 SymbolBuilder<AccessorSymbol> SymbolBuilder<IndexatorSymbol>::AddGetter(SymbolAccesibility access)
 {
-    SymbolBuilder<AccessorSymbol> builder(Context, true, access, Symbol);
+    SymbolBuilder<AccessorSymbol> builder(Table, true, access, Symbol);
     builder.Get()->Parameters = Symbol->Parameters;
     return builder;
 }
 
 SymbolBuilder<AccessorSymbol> SymbolBuilder<IndexatorSymbol>::AddSetter(SymbolAccesibility access)
 {
-    SymbolBuilder<AccessorSymbol> builder(Context, false, access, Symbol);
+    SymbolBuilder<AccessorSymbol> builder(Table, false, access, Symbol);
     builder.Get()->Parameters = Symbol->Parameters;
     return builder;
 }
@@ -687,10 +878,10 @@ SymbolBuilder<AccessorSymbol> SymbolBuilder<IndexatorSymbol>::AddSetter(SymbolAc
 // =========================================================================
 
 SymbolBuilder<ConstructorSymbol>::SymbolBuilder(
-    CompilationContext& ctx,
+    SymbolTable* table,
     SymbolAccesibility access,
     TypeSymbol* parent)
-    : SymbolBuilderBase(ctx)
+    : SymbolBuilderBase(table)
 {
     Symbol = Factory.Constructor(parent, access);
 
@@ -703,6 +894,14 @@ SymbolBuilder<ConstructorSymbol>::SymbolBuilder(
     {
         Symbol->FullName = L"init";
     }
+}
+
+SymbolBuilder<ConstructorSymbol>::SymbolBuilder(
+    CompilationContext& ctx,
+    SymbolAccesibility access,
+    TypeSymbol* parent)
+    : SymbolBuilder(ctx.GetSemanticModel().Table.get(), access, parent)
+{
 }
 
 SymbolBuilder<ConstructorSymbol>& SymbolBuilder<ConstructorSymbol>::AddParameter(
@@ -722,16 +921,81 @@ SymbolBuilder<ConstructorSymbol>& SymbolBuilder<ConstructorSymbol>::SetCallback(
     return *this;
 }
 
-/*
-SymbolBuilder<ConstructorSymbol>& SymbolBuilder<ConstructorSymbol>::SetCallback(
-    ShardManagedMethodCallback callback,
-    void* userData)
+// =========================================================================
+// InterfaceSymbol
+// =========================================================================
+
+SymbolBuilder<InterfaceSymbol>::SymbolBuilder(SymbolTable* table,
+    const std::wstring& name,
+    SyntaxSymbol* parent)
+    : SymbolBuilderBase(table)
 {
-    Symbol->ManagedCallback = callback;
-    Symbol->ManagedCallbackUserData = userData;
-    Symbol->FunctionPointer = nullptr;
-    Symbol->HandleType = MethodHandleType::External;
-    Symbol->IsExtern = true;
+    SyntaxSymbol* actualParent = parent != nullptr ? parent : SymbolTable::Global::Namespace;
+    Symbol = Factory.Interface(name, SymbolAccesibility::Public, actualParent);
+    Symbol->Inlining = TypeInlining::ByReference;
+
+    if (actualParent != nullptr)
+    {
+        Symbol->FullName = actualParent->FullName + L"." + name;
+        actualParent->OnSymbolDeclared(Symbol);
+    }
+    else
+    {
+        Symbol->FullName = name;
+    }
+}
+
+SymbolBuilder<InterfaceSymbol>::SymbolBuilder(CompilationContext& ctx,
+    const std::wstring& name,
+    SyntaxSymbol* parent)
+    : SymbolBuilder(ctx.GetSemanticModel().Table.get(), name, parent)
+{
+}
+
+SymbolBuilder<MethodSymbol> SymbolBuilder<InterfaceSymbol>::AddMethod(
+    const std::wstring& name,
+    TypeSymbol* returnType,
+    SymbolLinking linking,
+    SymbolAccesibility access)
+{
+    SymbolBuilder<MethodSymbol> builder(Table, name, returnType, linking, access, Symbol);
+    return builder;
+}
+
+SymbolBuilder<PropertySymbol> SymbolBuilder<InterfaceSymbol>::AddProperty(
+    const std::wstring& name,
+    TypeSymbol* type,
+    SymbolLinking linking,
+    SymbolAccesibility access)
+{
+    SymbolBuilder<PropertySymbol> builder(Table, name, type, linking, access, Symbol);
+    return builder;
+}
+
+SymbolBuilder<IndexatorSymbol> SymbolBuilder<InterfaceSymbol>::AddIndexer(
+    TypeSymbol* type,
+    SymbolLinking linking,
+    SymbolAccesibility access)
+{
+    SymbolBuilder<IndexatorSymbol> builder(Table, L"indexer", type, linking, access, Symbol);
+    return builder;
+}
+
+SymbolBuilder<TypeParameterSymbol> SymbolBuilder<InterfaceSymbol>::AddTypeParameter(const std::wstring& name)
+{
+    SymbolBuilder<TypeParameterSymbol> builder(Table, name, Symbol);
+    Symbol->TypeParameters.push_back(builder.Get());
+    return builder;
+}
+
+SymbolBuilder<InterfaceSymbol>& SymbolBuilder<InterfaceSymbol>::DeclareGlobal()
+{
+    SymbolTable::Global::Scope->DeclareSymbol(Symbol);
     return *this;
 }
-*/
+
+SymbolBuilder<InterfaceSymbol>& SymbolBuilder<InterfaceSymbol>::SetFullName(const std::wstring& fullName)
+{
+    Symbol->FullName = fullName;
+    return *this;
+}

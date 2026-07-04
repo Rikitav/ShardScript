@@ -1,0 +1,2391 @@
+diff --git a/ShardScript.Framework/system/constream.shard.cpp b/ShardScript.Framework/system/constream.shard.cpp
+index c385ff8..1afc7e2 100644
+--- a/ShardScript.Framework/system/constream.shard.cpp
++++ b/ShardScript.Framework/system/constream.shard.cpp
+@@ -19,13 +19,6 @@ using namespace shard;
+ 
+ namespace
+ {
+-    static MethodSymbol* GetIPrintableToString()
+-    {
+-        static std::wstring methodName = L"ToString";
+-        static MethodSymbol* method = TRAIT_PRINTABLE->FindMethod(methodName, std::vector<TypeSymbol*>());
+-        return method;
+-    }
+-
+     static inline std::string thinify(const wchar_t* wstr)
+     {
+         size_t length = wcslen(wstr) + 1;
+@@ -44,7 +37,7 @@ namespace
+     static ObjectInstance* InvokeToString(const CallState& context, ObjectInstance* instance)
+     {
+         TypeSymbol* type = const_cast<TypeSymbol*>(instance->getInfo());
+-        MethodSymbol* implementation = type->FindInterfaceImplementation(GetIPrintableToString());
++        MethodSymbol* implementation = type->FindInterfaceImplementation(TRAIT_PRINTABLE_ToString);
+         if (implementation == nullptr)
+             throw std::runtime_error("Type '" + thinify(type->FullName.c_str()) + "' does not implement IPrintable");
+ 
+diff --git a/ShardScript.Framework/third_party/SQLite3/sqlite.shard.cpp b/ShardScript.Framework/third_party/SQLite3/sqlite.shard.cpp
+index e0dbfba..74402ff 100644
+--- a/ShardScript.Framework/third_party/SQLite3/sqlite.shard.cpp
++++ b/ShardScript.Framework/third_party/SQLite3/sqlite.shard.cpp
+@@ -15,10 +15,16 @@
+ 
+ #ifdef _WIN32
+     #include <Windows.h>
++#else
++    #include <unistd.h>
++    #include <fcntl.h>
++    #include <cstring>
+ #endif
+ 
+ using namespace shard;
+ 
++TypeSymbol* shard_ScalarResult = nullptr;
++
+ TypeSymbol* shard_SqliteConnection = nullptr;
+ FieldSymbol* shard_SqliteConnection_HandleField = nullptr;
+ 
+@@ -28,6 +34,120 @@ FieldSymbol* shard_SqliteCommand_TextField = nullptr;
+ 
+ namespace
+ {
++    static inline std::string WToUtf8(const std::wstring& wstr)
++    {
++        if (wstr.empty())
++            return {};
++
++#ifdef _WIN32
++        const int size = ::WideCharToMultiByte(CP_UTF8, 0, wstr.data(),
++            static_cast<int>(wstr.size()),
++            nullptr, 0, nullptr, nullptr);
++        if (size <= 0)
++            return {};
++
++        std::string narrow(static_cast<std::size_t>(size), '\0');
++        ::WideCharToMultiByte(CP_UTF8, 0, wstr.data(),
++            static_cast<int>(wstr.size()),
++            narrow.data(), size, nullptr, nullptr);
++        return narrow;
++#else
++        std::string narrow(wstr.size() * 4 + 1, '\0');
++        std::wcstombs(narrow.data(), wstr.c_str(), narrow.size());
++        narrow.resize(std::strlen(narrow.c_str()));
++        return narrow;
++#endif
++    }
++
++    static inline std::string WToUtf8(const wchar_t* wstr)
++    {
++        if (wstr == nullptr)
++            return {};
++
++        return WToUtf8(std::wstring(wstr));
++    }
++
++    static inline std::wstring Utf8ToW(const std::string& narrow)
++    {
++        if (narrow.empty())
++            return {};
++
++#ifdef _WIN32
++        const int size = ::MultiByteToWideChar(CP_UTF8, 0, narrow.data(),
++            static_cast<int>(narrow.size()),
++            nullptr, 0);
++        if (size <= 0)
++            return {};
++
++        std::wstring wide(static_cast<std::size_t>(size), L'\0');
++        ::MultiByteToWideChar(CP_UTF8, 0, narrow.data(),
++            static_cast<int>(narrow.size()),
++            wide.data(), size);
++        return wide;
++#else
++        std::wstring wide(narrow.size(), L'\0');
++        std::mbstowcs(wide.data(), narrow.c_str(), wide.size());
++        wide.resize(std::wcslen(wide.c_str()));
++        return wide;
++#endif
++    }
++
++    static ObjectInstance* InvokeToString(const CallState& context, ObjectInstance* instance)
++    {
++        TypeSymbol* type = const_cast<TypeSymbol*>(instance->getInfo());
++        MethodSymbol* implementation = type->FindInterfaceImplementation(TRAIT_PRINTABLE_ToString);
++        if (implementation == nullptr)
++            throw std::runtime_error("Type '" + WToUtf8(type->FullName.c_str()) + "' does not implement IPrintable");
++
++        context.Runtimer.InvokeMethod(implementation, { instance });
++        ObjectInstance* result = context.Runtimer.CurrentFrame()->PopStack();
++
++        if (result == nullptr || result->getInfo() != SymbolTable::Primitives::String)
++            throw std::runtime_error("ToString did not return a string");
++
++        return result;
++    }
++
++    static TypeSymbol* GetElementTypeOfEnumerable(ObjectInstance* enumerable)
++    {
++        TypeSymbol* type = const_cast<TypeSymbol*>(enumerable->getInfo());
++        if (type == nullptr)
++            return nullptr;
++
++        if (type->Kind == SyntaxKind::ArrayType)
++            return static_cast<ArrayTypeSymbol*>(type)->UnderlayingType;
++
++        GenericTypeSymbol* genericType = nullptr;
++        TypeSymbol* searchType = type;
++        if (type->Kind == SyntaxKind::GenericType)
++        {
++            genericType = static_cast<GenericTypeSymbol*>(type);
++            searchType = genericType->UnderlayingType;
++        }
++
++        for (TypeSymbol* iface : searchType->Interfaces)
++        {
++            if (iface->Kind != SyntaxKind::GenericType)
++                continue;
++
++            GenericTypeSymbol* genericIface = static_cast<GenericTypeSymbol*>(iface);
++            if (genericIface->UnderlayingType != TRAIT_ENUMERABLE)
++                continue;
++
++            TypeSymbol* elementType = genericIface->SubstituteTypeParameters(TRAIT_ENUMERABLE->TypeParameters[0]);
++            if (elementType != nullptr && elementType->Kind == SyntaxKind::TypeParameter && genericType != nullptr)
++            {
++                TypeSymbol* resolved = genericType->SubstituteTypeParameters(static_cast<TypeParameterSymbol*>(elementType));
++                if (resolved != nullptr)
++                    elementType = resolved;
++            }
++
++            return elementType;
++        }
++
++        return nullptr;
++    }
++
+     sqlite3* GetNativeHandle(ObjectInstance* connInstance)
+     {
+         if (!connInstance)
+@@ -115,12 +235,13 @@ namespace
+     {
+         sqlite3_stmt* rawStmt = nullptr;
+         int rc = sqlite3_prepare16_v2(db, sql.c_str(), -1, &rawStmt, nullptr);
++
+         if (rc != SQLITE_OK)
+             throw std::runtime_error(std::string("SQLite Prepare Error: ") + sqlite3_errmsg(db));
+ 
+         StatementGuard stmt(rawStmt);
+-
+         rc = sqlite3_step(stmt.get());
++
+         if (rc == SQLITE_ROW)
+         {
+             switch (sqlite3_column_type(stmt.get(), 0))
+@@ -137,23 +258,7 @@ namespace
+                     if (text == nullptr)
+                         return collector.NullInstance;
+ 
+-                    std::wstring wide;
+-#ifdef _WIN32
+-                    int required = MultiByteToWideChar(CP_UTF8, 0, text, -1, nullptr, 0);
+-                    if (required > 0)
+-                    {
+-                        wide.resize(static_cast<std::size_t>(required - 1));
+-                        MultiByteToWideChar(CP_UTF8, 0, text, -1, wide.data(), required);
+-                    }
+-#else
+-                    std::size_t len = std::mbstowcs(nullptr, text, 0);
+-                    if (len != static_cast<std::size_t>(-1))
+-                    {
+-                        wide.resize(len);
+-                        std::mbstowcs(wide.data(), text, len + 1);
+-                    }
+-#endif
+-                    return collector.FromValue(wide);
++                    return collector.FromValue(Utf8ToW(text));
+                 }
+ 
+                 case SQLITE_NULL:
+@@ -183,11 +288,10 @@ static ObjectInstance* shard_sqlite_Connection_Init(const CallState& context) no
+ 
+     if (rc != SQLITE_OK)
+     {
+-        std::string errDoc = db
+-            ? sqlite3_errmsg(db)
+-            : "Failed to open database";
++        std::string errDoc = db != nullptr
++            ? sqlite3_errmsg(db) : "Failed to open database";
+ 
+-        if (db)
++        if (db != nullptr)
+             sqlite3_close_v2(db);
+ 
+         throw std::runtime_error("SQLite Open Error: " + errDoc);
+@@ -305,6 +409,21 @@ SHARDLIB_ENTRYPOINT
+ {
+     SymbolBuilder<NamespaceSymbol> dbNamespace(context, L"Database");
+ 
++    SymbolBuilder<ClassSymbol> scalarClass = dbNamespace.AddClass(L"ScalarResult", LINK_INSTANCE);
++    shard_ScalarResult = scalarClass;
++
++    scalarClass.AddCastOperator(TYPE_INT)
++        .AddParameter(L"this", shard_ScalarResult)
++        .SetCallback(&shard_scalar_as_int);
++
++    scalarClass.AddCastOperator(TYPE_STRING)
++        .AddParameter(L"this", shard_ScalarResult)
++        .SetCallback(&shard_scalar_as_string);
++
++    scalarClass.AddOperator(TokenType::Delimeter, shard_ScalarResult, LINK_INSTANCE)
++        .AddParameter(L"field", TYPE_STRING)
++        .SetCallback(&shard_scalar_access_field);
++
+     // --- class SqliteConnection ---
+     SymbolBuilder<ClassSymbol> connClass = dbNamespace.AddClass(L"SqliteConnection");
+     connClass.Implements(TRAIT_DISPOSABLE);
+diff --git a/ShardScript.Interpreter/utilities/ArgumentsParser.cpp b/ShardScript.Interpreter/utilities/ArgumentsParser.cpp
+index 9e5ee93..0420b11 100644
+--- a/ShardScript.Interpreter/utilities/ArgumentsParser.cpp
++++ b/ShardScript.Interpreter/utilities/ArgumentsParser.cpp
+@@ -82,7 +82,7 @@ void shard::ShardUtilities::ParseArguments(int argc, wchar_t* argv[])
+         {
+             ConsoleArguments::ExcludeStd = true;
+         }
+-        else if (arg == L"--decompile")
++        else if (arg == L"--decompiled")
+         {
+             ConsoleArguments::ShowDecompile = true;
+             ConsoleArguments::RunProgram = false;
+diff --git a/ShardScript/include/shard/runtime/ObjectInstance.hpp b/ShardScript/include/shard/runtime/ObjectInstance.hpp
+index 1f03ed6..72e7976 100644
+--- a/ShardScript/include/shard/runtime/ObjectInstance.hpp
++++ b/ShardScript/include/shard/runtime/ObjectInstance.hpp
+@@ -44,10 +44,10 @@ namespace shard
+ 		inline std::size_t GetMemorySize() const { return ArrayMemorySize; }
+ 		inline void SetMemorySize(std::size_t size) { ArrayMemorySize = size; }
+ 
+-		const TypeSymbol* getInfo() const;
+-		void* getMemory() const;
+-		bool getIsTransient() const;
+-		std::int64_t getReferencesCounter() const;
++		inline const TypeSymbol* getInfo() const;
++		inline void* getMemory() const;
++		inline bool getIsTransient() const;
++		inline std::int64_t getReferencesCounter() const;
+ 
+ 		ObjectInstance* GetField(FieldSymbol* field, CallStackFrame* frame = nullptr);
+ 		void SetField(FieldSymbol* field, ObjectInstance* instance, CallStackFrame* frame = nullptr);
+diff --git a/ShardScript/include/shard/semantic/SymbolBuilder.hpp b/ShardScript/include/shard/semantic/SymbolBuilder.hpp
+index d577a3a..a284fb0 100644
+--- a/ShardScript/include/shard/semantic/SymbolBuilder.hpp
++++ b/ShardScript/include/shard/semantic/SymbolBuilder.hpp
+@@ -6,6 +6,7 @@
+ #include <shard/semantic/NamespaceTree.hpp>
+ 
+ #include <shard/semantic/symbols/NamespaceSymbol.hpp>
++#include <shard/semantic/symbols/InterfaceSymbol.hpp>
+ #include <shard/semantic/symbols/ClassSymbol.hpp>
+ #include <shard/semantic/symbols/EnumSymbol.hpp>
+ #include <shard/semantic/symbols/MethodSymbol.hpp>
+@@ -38,12 +39,19 @@ namespace shard
+             "SymbolBuilder<T> can only be used with SyntaxSymbol-derived types");
+ 
+     protected:
+-        CompilationContext& Context;
++        SymbolTable* Table;
+         SymbolFactory Factory;
+         T* Symbol;
+ 
+         SymbolBuilderBase(CompilationContext& ctx)
+-            : Context(ctx), Factory(ctx.GetSemanticModel().Table.get()), Symbol(nullptr) {}
++            : Table(ctx.GetSemanticModel().Table.get()),
++              Factory(ctx.GetSemanticModel().Table.get()),
++              Symbol(nullptr) {}
++
++        SymbolBuilderBase(SymbolTable* table)
++            : Table(table),
++              Factory(table),
++              Symbol(nullptr) {}
+ 
+     public:
+         SymbolBuilderBase(const SymbolBuilderBase&) = delete;
+@@ -62,6 +70,7 @@ namespace shard
+     {
+     public:
+         SymbolBuilder(CompilationContext& ctx, const std::wstring& name, NamespaceSymbol* parent = nullptr);
++        SymbolBuilder(SymbolTable* table, const std::wstring& name, NamespaceSymbol* parent = nullptr);
+ 
+         SymbolBuilder<MethodSymbol> AddMethod(
+             const std::wstring& name,
+@@ -86,6 +95,10 @@ namespace shard
+ 
+         SymbolBuilder<NamespaceSymbol> AddNamespace(
+             const std::wstring& name);
++
++        SymbolBuilder<InterfaceSymbol> AddInterface(
++            const std::wstring& name,
++            SymbolAccesibility access = ACS_PUBLIC);
+     };
+ 
+     template<>
+@@ -93,6 +106,38 @@ namespace shard
+     {
+     public:
+         SymbolBuilder(CompilationContext& ctx, const std::wstring& name, SyntaxSymbol* parent);
++        SymbolBuilder(SymbolTable* table, const std::wstring& name, SyntaxSymbol* parent);
++    };
++
++    template<>
++    class SHARD_API SymbolBuilder<InterfaceSymbol> : public SymbolBuilderBase<InterfaceSymbol>
++    {
++    public:
++        SymbolBuilder(CompilationContext& ctx, const std::wstring& name, SyntaxSymbol* parent);
++        SymbolBuilder(SymbolTable* table, const std::wstring& name, SyntaxSymbol* parent);
++
++        SymbolBuilder<MethodSymbol> AddMethod(
++            const std::wstring& name,
++            TypeSymbol* returnType,
++            SymbolLinking linking,
++            SymbolAccesibility access = SymbolAccesibility::Public);
++
++        SymbolBuilder<PropertySymbol> AddProperty(
++            const std::wstring& name,
++            TypeSymbol* type,
++            SymbolLinking linking,
++            SymbolAccesibility access = SymbolAccesibility::Public);
++
++        SymbolBuilder<IndexatorSymbol> AddIndexer(
++            TypeSymbol* type,
++            SymbolLinking linking,
++            SymbolAccesibility access = SymbolAccesibility::Public);
++
++        SymbolBuilder<TypeParameterSymbol> AddTypeParameter(
++            const std::wstring& name);
++
++        SymbolBuilder<InterfaceSymbol>& DeclareGlobal();
++        SymbolBuilder<InterfaceSymbol>& SetFullName(const std::wstring& fullName);
+     };
+ 
+     template<>
+@@ -106,8 +151,18 @@ namespace shard
+             SymbolAccesibility access,
+             TypeSymbol* parent);
+ 
++        SymbolBuilder(SymbolTable* table,
++            const std::wstring& name,
++            TypeSymbol* type,
++            SymbolLinking linking,
++            SymbolAccesibility access,
++            TypeSymbol* parent);
++
+         SymbolBuilder(CompilationContext& ctx,
+             PropertySymbol* parent);
++
++        SymbolBuilder(SymbolTable* table,
++            PropertySymbol* parent);
+     };
+ 
+     template<>
+@@ -118,6 +173,10 @@ namespace shard
+             SymbolAccesibility access,
+             TypeSymbol* parent);
+ 
++        SymbolBuilder(SymbolTable* table,
++            SymbolAccesibility access,
++            TypeSymbol* parent);
++
+         SymbolBuilder<ConstructorSymbol>& AddParameter(
+             const std::wstring& name,
+             TypeSymbol* type);
+@@ -139,6 +198,9 @@ namespace shard
+     class SHARD_API SymbolBuilder<MethodSymbol> : public SymbolBuilderBase<MethodSymbol>
+     {
+     public:
++        SymbolBuilder(SymbolTable* table,
++            MethodSymbol* symbol);
++
+         SymbolBuilder(CompilationContext& ctx,
+             const std::wstring& name,
+             TypeSymbol* returnType,
+@@ -146,6 +208,13 @@ namespace shard
+             SymbolAccesibility access,
+             SyntaxSymbol* parent);
+ 
++        SymbolBuilder(SymbolTable* table,
++            const std::wstring& name,
++            TypeSymbol* returnType,
++            SymbolLinking linking,
++            SymbolAccesibility access,
++            SyntaxSymbol* parent);
++
+         SymbolBuilder<MethodSymbol>& AddParameter(
+             const std::wstring& name,
+             TypeSymbol* type);
+@@ -169,6 +238,11 @@ namespace shard
+             SymbolAccesibility access,
+             PropertySymbol* parent);
+ 
++        SymbolBuilder(SymbolTable* table,
++            bool isGetter,
++            SymbolAccesibility access,
++            PropertySymbol* parent);
++
+         SymbolBuilder<AccessorSymbol>& SetCallback(
+             MethodSymbolDelegate callback);
+ 
+@@ -187,6 +261,13 @@ namespace shard
+             SymbolAccesibility access,
+             TypeSymbol* parent);
+ 
++        SymbolBuilder(SymbolTable* table,
++            const std::wstring& name,
++            TypeSymbol* type,
++            SymbolLinking linking,
++            SymbolAccesibility access,
++            TypeSymbol* parent);
++
+         SymbolBuilder<FieldSymbol> AddBackingField();
+ 
+         SymbolBuilder<AccessorSymbol> AddGetter(
+@@ -207,6 +288,13 @@ namespace shard
+             SymbolAccesibility access,
+             TypeSymbol* parent);
+ 
++        SymbolBuilder(SymbolTable* table,
++            const std::wstring& name,
++            TypeSymbol* type,
++            SymbolLinking linking,
++            SymbolAccesibility access,
++            TypeSymbol* parent);
++
+         SymbolBuilder<FieldSymbol> AddBackingField();
+ 
+         SymbolBuilder<IndexatorSymbol>& AddParameter(
+@@ -226,6 +314,8 @@ namespace shard
+     public:
+         SymbolBuilder(CompilationContext& ctx, ClassSymbol* symbol);
+         SymbolBuilder(CompilationContext& ctx, const std::wstring& name, SyntaxSymbol* parent);
++        SymbolBuilder(SymbolTable* table, ClassSymbol* symbol);
++        SymbolBuilder(SymbolTable* table, const std::wstring& name, SyntaxSymbol* parent);
+ 
+         SymbolBuilder<ConstructorSymbol> AddInit(
+             SymbolAccesibility access = SymbolAccesibility::Public);
+@@ -262,18 +352,29 @@ namespace shard
+             SymbolLinking linking,
+             SymbolAccesibility access = SymbolAccesibility::Public);
+ 
++        SymbolBuilder<OperatorSymbol> AddCastOperator(
++            TypeSymbol* targetType,
++            SymbolLinking linking = LINK_STATIC,
++            SymbolAccesibility access = SymbolAccesibility::Public);
++
+         SymbolBuilder<ClassSymbol>& Implements(
+             InterfaceSymbol* interface);
+ 
+         SymbolBuilder<ClassSymbol>& Implements(
+             GenericTypeSymbol* interface);
++
++        SymbolBuilder<ClassSymbol>& DeclareGlobal();
++        SymbolBuilder<ClassSymbol>& SetFullName(const std::wstring& fullName);
+     };
+ 
+     template<>
+     class SHARD_API SymbolBuilder<StructSymbol> : public SymbolBuilderBase<StructSymbol>
+     {
+     public:
++        SymbolBuilder(CompilationContext& ctx, StructSymbol* symbol);
+         SymbolBuilder(CompilationContext& ctx, const std::wstring& name, SyntaxSymbol* parent);
++        SymbolBuilder(SymbolTable* table, StructSymbol* symbol);
++        SymbolBuilder(SymbolTable* table, const std::wstring& name, SyntaxSymbol* parent);
+ 
+         SymbolBuilder<ConstructorSymbol> AddInit(
+             SymbolAccesibility access = SymbolAccesibility::Public);
+@@ -310,11 +411,19 @@ namespace shard
+             SymbolLinking linking,
+             SymbolAccesibility access = SymbolAccesibility::Public);
+ 
++        SymbolBuilder<OperatorSymbol> AddCastOperator(
++            TypeSymbol* targetType,
++            SymbolLinking linking = LINK_STATIC,
++            SymbolAccesibility access = SymbolAccesibility::Public);
++
+         SymbolBuilder<StructSymbol>& Implements(
+             InterfaceSymbol* interface);
+ 
+         SymbolBuilder<StructSymbol>& Implements(
+             GenericTypeSymbol* interface);
++
++        SymbolBuilder<StructSymbol>& DeclareGlobal();
++        SymbolBuilder<StructSymbol>& SetFullName(const std::wstring& fullName);
+     };
+ 
+     template<>
+@@ -326,6 +435,11 @@ namespace shard
+             bool isFlags,
+             SyntaxSymbol* parent);
+ 
++        SymbolBuilder(SymbolTable* table,
++            const std::wstring& name,
++            bool isFlags,
++            SyntaxSymbol* parent);
++
+         SymbolBuilder<EnumSymbol>& SetFlags(bool value = true);
+ 
+         SymbolBuilder<EnumSymbol>& AddValue(
+@@ -344,6 +458,13 @@ namespace shard
+             SymbolAccesibility access,
+             TypeSymbol* parent);
+ 
++        SymbolBuilder(SymbolTable* table,
++            TokenType opToken,
++            TypeSymbol* returnType,
++            SymbolLinking linking,
++            SymbolAccesibility access,
++            TypeSymbol* parent);
++
+         SymbolBuilder<OperatorSymbol>& AddParameter(
+             const std::wstring& name,
+             TypeSymbol* type);
+diff --git a/ShardScript/include/shard/semantic/SymbolTable.hpp b/ShardScript/include/shard/semantic/SymbolTable.hpp
+index 258f3b6..80dba56 100644
+--- a/ShardScript/include/shard/semantic/SymbolTable.hpp
++++ b/ShardScript/include/shard/semantic/SymbolTable.hpp
+@@ -22,6 +22,7 @@ namespace shard
+     class FieldSymbol;
+     class MethodSymbol;
+     class AccessorSymbol;
++    class NamespaceSymbol;
+     class TypeParameterSymbol;
+ 
+     class SHARD_API SymbolTable
+@@ -39,7 +40,7 @@ namespace shard
+     public:
+         struct Global
+         {
+-            static SHARD_API TypeSymbol* Type;
++            static SHARD_API NamespaceSymbol* Namespace;
+             static SHARD_API SemanticScope* Scope;
+         };
+ 
+@@ -141,4 +142,11 @@ namespace shard
+     inline InterfaceSymbol*& TRAIT_ENUMERATOR = shard::SymbolTable::StandardTypes::IEnumerator;
+     inline AccessorSymbol*& TRAIT_ENUMERATOR_CURRENT_GET = shard::SymbolTable::StandardTypes::IEnumerator_Current_get;
+     inline MethodSymbol*& TRAIT_ENUMERATOR_MOVENEXT = shard::SymbolTable::StandardTypes::IEnumerator_MoveNext;
++
++    inline ClassSymbol*& CLASS_ARRAYENUMERATOR = shard::SymbolTable::StandardTypes::ArrayEnumerator;
++    inline TypeParameterSymbol*& CLASS_ARRAYENUMERATOR_T = shard::SymbolTable::StandardTypes::ArrayEnumerator_T;
++    inline FieldSymbol*& CLASS_ARRAYENUMERATOR_SourceField = shard::SymbolTable::StandardTypes::ArrayEnumerator_SourceField;
++    inline FieldSymbol*& CLASS_ARRAYENUMERATOR_IndexField = shard::SymbolTable::StandardTypes::ArrayEnumerator_IndexField;
++    inline FieldSymbol*& CLASS_ARRAYENUMERATOR_LengthField = shard::SymbolTable::StandardTypes::ArrayEnumerator_LengthField;
++
+ }
+diff --git a/ShardScript/include/shard/semantic/SyntaxSymbol.hpp b/ShardScript/include/shard/semantic/SyntaxSymbol.hpp
+index 2e1abb6..25ba77a 100644
+--- a/ShardScript/include/shard/semantic/SyntaxSymbol.hpp
++++ b/ShardScript/include/shard/semantic/SyntaxSymbol.hpp
+@@ -59,7 +59,6 @@ namespace shard
+ 
+ 		inline virtual ~SyntaxSymbol() = default;
+ 		
+-		
+ 		virtual void OnSymbolDeclared(SyntaxSymbol* symbol) { }
+         virtual bool IsType() const { return false; }
+         virtual bool IsMember() const { return false; }
+diff --git a/ShardScript/src/compilation/AbstractEmiter.cpp b/ShardScript/src/compilation/AbstractEmiter.cpp
+index 2ba6346..6cfbee1 100644
+--- a/ShardScript/src/compilation/AbstractEmiter.cpp
++++ b/ShardScript/src/compilation/AbstractEmiter.cpp
+@@ -1482,10 +1482,13 @@ static bool IsInterfaceMember(MethodSymbol* method)
+     {
+         if (owner->Kind == SyntaxKind::InterfaceDeclaration)
+             return true;
++
+         if (owner->IsType())
+             return false;
++
+         owner = owner->Parent;
+     }
++
+     return false;
+ }
+ 
+diff --git a/ShardScript/src/runtime/ObjectInstance.cpp b/ShardScript/src/runtime/ObjectInstance.cpp
+index 0b4c70c..3f1fd08 100644
+--- a/ShardScript/src/runtime/ObjectInstance.cpp
++++ b/ShardScript/src/runtime/ObjectInstance.cpp
+@@ -311,8 +311,8 @@ void* ObjectInstance::OffsetMemory(const std::size_t offset, const std::size_t s
+ 	if (size == 0)
+ 		throw std::out_of_range("Cannot read 0 bytes");
+ 
+-	if (offset + size > GetMemorySize())
+-		throw std::out_of_range("offset (" + std::to_string(offset) + ") + size (" + std::to_string(size) + ") is out of instance's memory range (" + std::to_string(GetMemorySize()) + ").");
++	if (offset + size > getInfo()->MemoryBytesSize)
++		throw std::out_of_range("offset (" + std::to_string(offset) + ") + size (" + std::to_string(size) + ") is out of instance's memory range (" + std::to_string(getInfo()->MemoryBytesSize) + ").");
+ 
+ 	return static_cast<char*>(getMemory()) + offset;
+ }
+@@ -325,8 +325,8 @@ void ObjectInstance::ReadMemory(const std::size_t offset, const std::size_t size
+ 	if (size == 0)
+ 		throw std::out_of_range("Cannot read 0 bytes");
+ 
+-	if (offset + size > GetMemorySize())
+-		throw std::out_of_range("offset (" + std::to_string(offset) + ") + size (" + std::to_string(size) + ") is out of instance's memory range (" + std::to_string(GetMemorySize()) + ").");
++	if (offset + size > getInfo()->MemoryBytesSize)
++		throw std::out_of_range("offset (" + std::to_string(offset) + ") + size (" + std::to_string(size) + ") is out of instance's memory range (" + std::to_string(getInfo()->MemoryBytesSize) + ").");
+ 
+ 	const char* memOffset = static_cast<char*>(getMemory()) + offset;
+ 	std::memcpy(dst, memOffset, size);
+@@ -340,8 +340,8 @@ void ObjectInstance::WriteMemory(const std::size_t offset, const std::size_t siz
+ 	if (size == 0)
+ 		throw std::out_of_range("Cannot read 0 bytes");
+ 
+-	if (offset + size > GetMemorySize())
+-		throw std::out_of_range("offset (" + std::to_string(offset) + ") + size (" + std::to_string(size) + ") is out of instance's memory range (" + std::to_string(GetMemorySize()) + ").");
++	if (offset + size > getInfo()->MemoryBytesSize)
++		throw std::out_of_range("offset (" + std::to_string(offset) + ") + size (" + std::to_string(size) + ") is out of instance's memory range (" + std::to_string(getInfo()->MemoryBytesSize) + ").");
+ 
+ 	char* memOffset = static_cast<char*>(getMemory()) + offset;
+ 	std::memcpy(memOffset, src, size);
+@@ -350,25 +350,25 @@ void ObjectInstance::WriteMemory(const std::size_t offset, const std::size_t siz
+ void ObjectInstance::WriteBoolean(const bool& value) const
+ {
+ 	const void* ptr = &value;
+-	WriteMemory(0, GetMemorySize(), ptr);
++	WriteMemory(0, getInfo()->MemoryBytesSize, ptr);
+ }
+ 
+ void ObjectInstance::WriteInteger(const std::int64_t& value) const
+ {
+ 	const void* ptr = &value;
+-	WriteMemory(0, GetMemorySize(), ptr);
++	WriteMemory(0, getInfo()->MemoryBytesSize, ptr);
+ }
+ 
+ void ObjectInstance::WriteDouble(const double& value) const
+ {
+ 	const void* ptr = &value;
+-	WriteMemory(0, GetMemorySize(), ptr);
++	WriteMemory(0, getInfo()->MemoryBytesSize, ptr);
+ }
+ 
+ void ObjectInstance::WriteCharacter(const wchar_t& value) const
+ {
+ 	const void* ptr = &value;
+-	WriteMemory(0, GetMemorySize(), ptr);
++	WriteMemory(0, getInfo()->MemoryBytesSize, ptr);
+ }
+ 
+ void ObjectInstance::WriteString(const wchar_t* value) const
+diff --git a/ShardScript/src/runtime/VirtualMachine.cpp b/ShardScript/src/runtime/VirtualMachine.cpp
+index 95049dd..6e83bf7 100644
+--- a/ShardScript/src/runtime/VirtualMachine.cpp
++++ b/ShardScript/src/runtime/VirtualMachine.cpp
+@@ -748,6 +748,7 @@ ObjectInstance* VirtualMachine::CreateRuntimeException(const std::exception& err
+ 			break;
+ 		}
+ 	}
++
+ 	if (ctor == nullptr)
+ 		throw std::runtime_error("RuntimeException has no parameterless constructor");
+ 
+diff --git a/ShardScript/src/semantic/ExpressionBinder.cpp b/ShardScript/src/semantic/ExpressionBinder.cpp
+index 578d390..d43d41c 100644
+--- a/ShardScript/src/semantic/ExpressionBinder.cpp
++++ b/ShardScript/src/semantic/ExpressionBinder.cpp
+@@ -1980,6 +1980,7 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node,
+ 							target->ToVariable = delegateVar;
+ 							node->PreviousExpression = std::move(target);
+ 						}
++
+ 						node->Symbol = delegate->AnonymousSymbol;
+ 						node->IsDelegateInvocation = true;
+ 						return node->Symbol;
+@@ -1996,6 +1997,7 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node,
+ 							target->ToParameter = delegateParam;
+ 							node->PreviousExpression = std::move(target);
+ 						}
++
+ 						node->Symbol = delegate->AnonymousSymbol;
+ 						node->IsDelegateInvocation = true;
+ 						return node->Symbol;
+@@ -2012,6 +2014,7 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node,
+ 							target->ToField = delegateField;
+ 							node->PreviousExpression = std::move(target);
+ 						}
++
+ 						node->Symbol = delegate->AnonymousSymbol;
+ 						node->IsDelegateInvocation = true;
+ 						return node->Symbol;
+@@ -2719,8 +2722,10 @@ IndexatorSymbol* ExpressionBinder::ResolveIndexator(IndexatorExpressionSyntax* n
+ 	}
+ 
+ 	IndexatorSymbol* symbol = currentType->FindIndexator(argTypes);
++	/*
+ 	if (symbol == nullptr)
+-		symbol = SymbolTable::Global::Type->FindIndexator(argTypes);
++		symbol = SymbolTable::Global::Namespace->FindIndexator(argTypes);
++	*/
+ 
+ 	if (symbol == nullptr)
+ 	{
+diff --git a/ShardScript/src/semantic/SemanticModel.cpp b/ShardScript/src/semantic/SemanticModel.cpp
+index 7ee273b..96a4597 100644
+--- a/ShardScript/src/semantic/SemanticModel.cpp
++++ b/ShardScript/src/semantic/SemanticModel.cpp
+@@ -21,6 +21,7 @@ SemanticModel::SemanticModel(shard::SyntaxTree& tree) : Tree(tree)
+ {
+ 	Table = std::make_unique<SymbolTable>();
+ 	Namespaces = std::make_unique<NamespaceTree>();
++	//Namespaces->Root = SymbolTable::Global::Namespace->Node;
+ }
+ 
+ SemanticModel::~SemanticModel()
+diff --git a/ShardScript/src/semantic/SymbolBuilder.cpp b/ShardScript/src/semantic/SymbolBuilder.cpp
+index 8f7dea5..e603327 100644
+--- a/ShardScript/src/semantic/SymbolBuilder.cpp
++++ b/ShardScript/src/semantic/SymbolBuilder.cpp
+@@ -10,10 +10,10 @@ using namespace shard;
+ // NamespaceSymbol
+ // =========================================================================
+ 
+-SymbolBuilder<NamespaceSymbol>::SymbolBuilder(CompilationContext& ctx,
++SymbolBuilder<NamespaceSymbol>::SymbolBuilder(SymbolTable* table,
+     const std::wstring& name,
+     NamespaceSymbol* parent)
+-    : SymbolBuilderBase(ctx)
++    : SymbolBuilderBase(table)
+ {
+     Symbol = Factory.Namespace(name);
+     Symbol->Accesibility = SymbolAccesibility::Public;
+@@ -22,20 +22,35 @@ SymbolBuilder<NamespaceSymbol>::SymbolBuilder(CompilationContext& ctx,
+         ? parent->FullName + L"." + name
+         : name;
+ 
+-    NamespaceNode* parentNode = parent
+-        ? parent->Node
+-        : ctx.GetSemanticModel().Namespaces->Root;
+-
++    NamespaceNode* parentNode = parent == nullptr ? SymbolTable::Global::Namespace->Node : parent->Node;
+     Symbol->Node = parentNode->LookupOrCreate(name, Symbol);
+ }
+ 
++SymbolBuilder<NamespaceSymbol>::SymbolBuilder(CompilationContext& ctx,
++    const std::wstring& name,
++    NamespaceSymbol* parent)
++    : SymbolBuilderBase(ctx.GetSemanticModel().Table.get())
++{
++    Symbol = Factory.Namespace(name);
++    Symbol->Accesibility = SymbolAccesibility::Public;
++    Symbol->Parent = parent;
++    Symbol->FullName = parent
++        ? parent->FullName + L"." + name
++        : name;
++
++    //parentNode = SymbolTable::Global::Namespace->Node;
++    Symbol->Node = parent == nullptr
++        ? ctx.GetSemanticModel().Namespaces->Root->LookupOrCreate(name, Symbol)
++        : parent->Node->LookupOrCreate(name, Symbol);
++}
++
+ SymbolBuilder<MethodSymbol> SymbolBuilder<NamespaceSymbol>::AddMethod(
+     const std::wstring& name,
+     TypeSymbol* returnType,
+     SymbolLinking linking,
+     SymbolAccesibility access)
+ {
+-    SymbolBuilder<MethodSymbol> builder(Context, name, returnType, linking, access, Symbol);
++    SymbolBuilder<MethodSymbol> builder(Table, name, returnType, linking, access, Symbol);
+     return builder;
+ }
+ 
+@@ -44,7 +59,7 @@ SymbolBuilder<ClassSymbol> SymbolBuilder<NamespaceSymbol>::AddClass(
+     SymbolLinking linking,
+     SymbolAccesibility access)
+ {
+-    SymbolBuilder<ClassSymbol> builder(Context, name, Symbol);
++    SymbolBuilder<ClassSymbol> builder(Table, name, Symbol);
+     builder.Get()->Accesibility = access;
+     builder.Get()->Linking = linking;
+     return builder;
+@@ -55,7 +70,7 @@ SymbolBuilder<StructSymbol> SymbolBuilder<NamespaceSymbol>::AddStruct(
+     SymbolLinking linking,
+     SymbolAccesibility access)
+ {
+-    SymbolBuilder<StructSymbol> builder(Context, name, Symbol);
++    SymbolBuilder<StructSymbol> builder(Table, name, Symbol);
+     builder.Get()->Accesibility = access;
+     builder.Get()->Linking = linking;
+     return builder;
+@@ -66,7 +81,16 @@ SymbolBuilder<EnumSymbol> SymbolBuilder<NamespaceSymbol>::AddEnum(
+     bool isFlags,
+     SymbolAccesibility access)
+ {
+-    SymbolBuilder<EnumSymbol> builder(Context, name, isFlags, Symbol);
++    SymbolBuilder<EnumSymbol> builder(Table, name, isFlags, Symbol);
++    builder.Get()->Accesibility = access;
++    return builder;
++}
++
++SymbolBuilder<InterfaceSymbol> SymbolBuilder<NamespaceSymbol>::AddInterface(
++    const std::wstring& name,
++    SymbolAccesibility access)
++{
++    SymbolBuilder<InterfaceSymbol> builder(Table, name, Symbol);
+     builder.Get()->Accesibility = access;
+     return builder;
+ }
+@@ -74,7 +98,7 @@ SymbolBuilder<EnumSymbol> SymbolBuilder<NamespaceSymbol>::AddEnum(
+ SymbolBuilder<NamespaceSymbol> SymbolBuilder<NamespaceSymbol>::AddNamespace(
+     const std::wstring& name)
+ {
+-    SymbolBuilder<NamespaceSymbol> builder(Context, name, Symbol);
++    SymbolBuilder<NamespaceSymbol> builder(Table, name, Symbol);
+     return builder;
+ }
+ 
+@@ -82,10 +106,10 @@ SymbolBuilder<NamespaceSymbol> SymbolBuilder<NamespaceSymbol>::AddNamespace(
+ // TypeParameterSymbol
+ // =========================================================================
+ 
+-SymbolBuilder<TypeParameterSymbol>::SymbolBuilder(CompilationContext& ctx,
++SymbolBuilder<TypeParameterSymbol>::SymbolBuilder(SymbolTable* table,
+     const std::wstring& name,
+     SyntaxSymbol* parent)
+-    : SymbolBuilderBase(ctx)
++    : SymbolBuilderBase(table)
+ {
+     Symbol = Factory.TypeParameter(name, static_cast<MethodSymbol*>(nullptr));
+     Symbol->Parent = parent;
+@@ -101,6 +125,13 @@ SymbolBuilder<TypeParameterSymbol>::SymbolBuilder(CompilationContext& ctx,
+     }
+ }
+ 
++SymbolBuilder<TypeParameterSymbol>::SymbolBuilder(CompilationContext& ctx,
++    const std::wstring& name,
++    SyntaxSymbol* parent)
++    : SymbolBuilder(ctx.GetSemanticModel().Table.get(), name, parent)
++{
++}
++
+ // =========================================================================
+ // ClassSymbol
+ // =========================================================================
+@@ -113,10 +144,10 @@ SymbolBuilder<ClassSymbol>::SymbolBuilder(
+     Symbol = symbol;
+ }
+ 
+-SymbolBuilder<ClassSymbol>::SymbolBuilder(CompilationContext& ctx,
++SymbolBuilder<ClassSymbol>::SymbolBuilder(SymbolTable* table,
+     const std::wstring& name,
+     SyntaxSymbol* parent)
+-    : SymbolBuilderBase(ctx)
++    : SymbolBuilderBase(table)
+ {
+     Symbol = Factory.Class(name);
+     Symbol->Accesibility = SymbolAccesibility::Public;
+@@ -134,10 +165,24 @@ SymbolBuilder<ClassSymbol>::SymbolBuilder(CompilationContext& ctx,
+     }
+ }
+ 
++SymbolBuilder<ClassSymbol>::SymbolBuilder(SymbolTable* table,
++    ClassSymbol* symbol)
++    : SymbolBuilderBase(table)
++{
++    Symbol = symbol;
++}
++
++SymbolBuilder<ClassSymbol>::SymbolBuilder(CompilationContext& ctx,
++    const std::wstring& name,
++    SyntaxSymbol* parent)
++    : SymbolBuilder(ctx.GetSemanticModel().Table.get(), name, parent)
++{
++}
++
+ SymbolBuilder<ConstructorSymbol> SymbolBuilder<ClassSymbol>::AddInit(
+     SymbolAccesibility access)
+ {
+-    SymbolBuilder<ConstructorSymbol> builder(Context, access, Symbol);
++    SymbolBuilder<ConstructorSymbol> builder(Table, access, Symbol);
+     return builder;
+ }
+ 
+@@ -147,7 +192,7 @@ SymbolBuilder<MethodSymbol> SymbolBuilder<ClassSymbol>::AddMethod(
+     SymbolLinking linking,
+     SymbolAccesibility access)
+ {
+-    SymbolBuilder<MethodSymbol> builder(Context, name, returnType, linking, access, Symbol);
++    SymbolBuilder<MethodSymbol> builder(Table, name, returnType, linking, access, Symbol);
+     return builder;
+ }
+ 
+@@ -157,7 +202,7 @@ SymbolBuilder<FieldSymbol> SymbolBuilder<ClassSymbol>::AddField(
+     SymbolLinking linking,
+     SymbolAccesibility access)
+ {
+-    SymbolBuilder<FieldSymbol> builder(Context, name, type, linking, access, Symbol);
++    SymbolBuilder<FieldSymbol> builder(Table, name, type, linking, access, Symbol);
+     return builder;
+ }
+ 
+@@ -167,7 +212,7 @@ SymbolBuilder<PropertySymbol> SymbolBuilder<ClassSymbol>::AddProperty(
+     SymbolLinking linking,
+     SymbolAccesibility access)
+ {
+-    SymbolBuilder<PropertySymbol> builder(Context, name, type, linking, access, Symbol);
++    SymbolBuilder<PropertySymbol> builder(Table, name, type, linking, access, Symbol);
+     return builder;
+ }
+ 
+@@ -176,13 +221,13 @@ SymbolBuilder<IndexatorSymbol> SymbolBuilder<ClassSymbol>::AddIndexer(
+     SymbolLinking linking,
+     SymbolAccesibility access)
+ {
+-    SymbolBuilder<IndexatorSymbol> builder(Context, L"indexer", type, linking, access, Symbol);
++    SymbolBuilder<IndexatorSymbol> builder(Table, L"indexer", type, linking, access, Symbol);
+     return builder;
+ }
+ 
+ SymbolBuilder<TypeParameterSymbol> SymbolBuilder<ClassSymbol>::AddTypeParameter(const std::wstring& name)
+ {
+-    SymbolBuilder<TypeParameterSymbol> builder(Context, name, Symbol);
++    SymbolBuilder<TypeParameterSymbol> builder(Table, name, Symbol);
+     return builder;
+ }
+ 
+@@ -192,7 +237,16 @@ SymbolBuilder<OperatorSymbol> SymbolBuilder<ClassSymbol>::AddOperator(
+     SymbolLinking linking,
+     SymbolAccesibility access)
+ {
+-    SymbolBuilder<OperatorSymbol> builder(Context, opToken, returnType, linking, access, Symbol);
++    SymbolBuilder<OperatorSymbol> builder(Table, opToken, returnType, linking, access, Symbol);
++    return builder;
++}
++
++SymbolBuilder<OperatorSymbol> SymbolBuilder<ClassSymbol>::AddCastOperator(
++    TypeSymbol* targetType,
++    SymbolLinking linking,
++    SymbolAccesibility access)
++{
++    SymbolBuilder<OperatorSymbol> builder(Table, TokenType::AsOperator, targetType, linking, access, Symbol);
+     return builder;
+ }
+ 
+@@ -210,14 +264,54 @@ SymbolBuilder<ClassSymbol>& SymbolBuilder<ClassSymbol>::Implements(
+     return *this;
+ }
+ 
++SymbolBuilder<ClassSymbol>& SymbolBuilder<ClassSymbol>::DeclareGlobal()
++{
++    SymbolTable::Global::Scope->DeclareSymbol(Symbol);
++    return *this;
++}
++
++SymbolBuilder<ClassSymbol>& SymbolBuilder<ClassSymbol>::SetFullName(const std::wstring& fullName)
++{
++    Symbol->FullName = fullName;
++    return *this;
++}
++
+ // =========================================================================
+ // StructSymbol
+ // =========================================================================
+ 
+ SymbolBuilder<StructSymbol>::SymbolBuilder(CompilationContext& ctx,
++    StructSymbol* symbol)
++    : SymbolBuilderBase(ctx.GetSemanticModel().Table.get())
++{
++    Symbol = symbol;
++}
++
++SymbolBuilder<StructSymbol>::SymbolBuilder(SymbolTable* table,
+     const std::wstring& name,
+     SyntaxSymbol* parent)
+-    : SymbolBuilderBase(ctx)
++    : SymbolBuilderBase(table)
++{
++    Symbol = Factory.Struct(name);
++    Symbol->Accesibility = SymbolAccesibility::Public;
++    Symbol->Inlining = TypeInlining::ByReference;
++    Symbol->Parent = parent;
++
++    if (parent != nullptr)
++    {
++        Symbol->FullName = parent->FullName + L"." + name;
++        parent->OnSymbolDeclared(Symbol);
++    }
++    else
++    {
++        Symbol->FullName = name;
++    }
++}
++
++SymbolBuilder<StructSymbol>::SymbolBuilder(CompilationContext& ctx,
++    const std::wstring& name,
++    SyntaxSymbol* parent)
++    : SymbolBuilder(ctx.GetSemanticModel().Table.get(), name, parent)
+ {
+     Symbol = Factory.Struct(name);
+     Symbol->Accesibility = SymbolAccesibility::Public;
+@@ -235,10 +329,17 @@ SymbolBuilder<StructSymbol>::SymbolBuilder(CompilationContext& ctx,
+     }
+ }
+ 
++SymbolBuilder<StructSymbol>::SymbolBuilder(SymbolTable* table,
++    StructSymbol* symbol)
++    : SymbolBuilderBase(table)
++{
++    Symbol = symbol;
++}
++
+ SymbolBuilder<ConstructorSymbol> SymbolBuilder<StructSymbol>::AddInit(
+     SymbolAccesibility access)
+ {
+-    SymbolBuilder<ConstructorSymbol> builder(Context, access, Symbol);
++    SymbolBuilder<ConstructorSymbol> builder(Table, access, Symbol);
+     return builder;
+ }
+ 
+@@ -248,7 +349,7 @@ SymbolBuilder<MethodSymbol> SymbolBuilder<StructSymbol>::AddMethod(
+     SymbolLinking linking,
+     SymbolAccesibility access)
+ {
+-    SymbolBuilder<MethodSymbol> builder(Context, name, returnType, linking, access, Symbol);
++    SymbolBuilder<MethodSymbol> builder(Table, name, returnType, linking, access, Symbol);
+     return builder;
+ }
+ 
+@@ -258,7 +359,7 @@ SymbolBuilder<FieldSymbol> SymbolBuilder<StructSymbol>::AddField(
+     SymbolLinking linking,
+     SymbolAccesibility access)
+ {
+-    SymbolBuilder<FieldSymbol> builder(Context, name, type, linking, access, Symbol);
++    SymbolBuilder<FieldSymbol> builder(Table, name, type, linking, access, Symbol);
+     return builder;
+ }
+ 
+@@ -268,7 +369,7 @@ SymbolBuilder<PropertySymbol> SymbolBuilder<StructSymbol>::AddProperty(
+     SymbolLinking linking,
+     SymbolAccesibility access)
+ {
+-    SymbolBuilder<PropertySymbol> builder(Context, name, type, linking, access, Symbol);
++    SymbolBuilder<PropertySymbol> builder(Table, name, type, linking, access, Symbol);
+     return builder;
+ }
+ 
+@@ -277,13 +378,13 @@ SymbolBuilder<IndexatorSymbol> SymbolBuilder<StructSymbol>::AddIndexer(
+     SymbolLinking linking,
+     SymbolAccesibility access)
+ {
+-    SymbolBuilder<IndexatorSymbol> builder(Context, L"indexer", type, linking, access, Symbol);
++    SymbolBuilder<IndexatorSymbol> builder(Table, L"indexer", type, linking, access, Symbol);
+     return builder;
+ }
+ 
+ SymbolBuilder<TypeParameterSymbol> SymbolBuilder<StructSymbol>::AddTypeParameter(const std::wstring& name)
+ {
+-    SymbolBuilder<TypeParameterSymbol> builder(Context, name, Symbol);
++    SymbolBuilder<TypeParameterSymbol> builder(Table, name, Symbol);
+     return builder;
+ }
+ 
+@@ -293,7 +394,16 @@ SymbolBuilder<OperatorSymbol> SymbolBuilder<StructSymbol>::AddOperator(
+     SymbolLinking linking,
+     SymbolAccesibility access)
+ {
+-    SymbolBuilder<OperatorSymbol> builder(Context, opToken, returnType, linking, access, Symbol);
++    SymbolBuilder<OperatorSymbol> builder(Table, opToken, returnType, linking, access, Symbol);
++    return builder;
++}
++
++SymbolBuilder<OperatorSymbol> SymbolBuilder<StructSymbol>::AddCastOperator(
++    TypeSymbol* targetType,
++    SymbolLinking linking,
++    SymbolAccesibility access)
++{
++    SymbolBuilder<OperatorSymbol> builder(Table, TokenType::AsOperator, targetType, linking, access, Symbol);
+     return builder;
+ }
+ 
+@@ -311,15 +421,27 @@ SymbolBuilder<StructSymbol>& SymbolBuilder<StructSymbol>::Implements(
+     return *this;
+ }
+ 
++SymbolBuilder<StructSymbol>& SymbolBuilder<StructSymbol>::DeclareGlobal()
++{
++    SymbolTable::Global::Scope->DeclareSymbol(Symbol);
++    return *this;
++}
++
++SymbolBuilder<StructSymbol>& SymbolBuilder<StructSymbol>::SetFullName(const std::wstring& fullName)
++{
++    Symbol->FullName = fullName;
++    return *this;
++}
++
+ // =========================================================================
+ // EnumSymbol
+ // =========================================================================
+ 
+-SymbolBuilder<EnumSymbol>::SymbolBuilder(CompilationContext& ctx,
++SymbolBuilder<EnumSymbol>::SymbolBuilder(SymbolTable* table,
+     const std::wstring& name,
+     bool isFlags,
+     SyntaxSymbol* parent)
+-    : SymbolBuilderBase(ctx)
++    : SymbolBuilderBase(table)
+ {
+     Symbol = Factory.Enum(name, isFlags);
+     Symbol->Accesibility = SymbolAccesibility::Public;
+@@ -336,6 +458,14 @@ SymbolBuilder<EnumSymbol>::SymbolBuilder(CompilationContext& ctx,
+     }
+ }
+ 
++SymbolBuilder<EnumSymbol>::SymbolBuilder(CompilationContext& ctx,
++    const std::wstring& name,
++    bool isFlags,
++    SyntaxSymbol* parent)
++    : SymbolBuilder(ctx.GetSemanticModel().Table.get(), name, isFlags, parent)
++{
++}
++
+ SymbolBuilder<EnumSymbol>& SymbolBuilder<EnumSymbol>::SetFlags(bool value)
+ {
+     Symbol->IsFlags = value;
+@@ -355,13 +485,20 @@ SymbolBuilder<EnumSymbol>& SymbolBuilder<EnumSymbol>::AddValue(
+ // MethodSymbol
+ // =========================================================================
+ 
+-SymbolBuilder<MethodSymbol>::SymbolBuilder(CompilationContext& ctx,
++SymbolBuilder<MethodSymbol>::SymbolBuilder(SymbolTable* table,
++    MethodSymbol* symbol)
++    : SymbolBuilderBase(table)
++{
++    Symbol = symbol;
++}
++
++SymbolBuilder<MethodSymbol>::SymbolBuilder(SymbolTable* table,
+     const std::wstring& name,
+     TypeSymbol* returnType,
+     SymbolLinking linking,
+     SymbolAccesibility access,
+     SyntaxSymbol* parent)
+-    : SymbolBuilderBase(ctx)
++    : SymbolBuilderBase(table)
+ {
+     Symbol = Factory.Method(name, returnType, linking);
+     Symbol->Accesibility = access;
+@@ -378,6 +515,16 @@ SymbolBuilder<MethodSymbol>::SymbolBuilder(CompilationContext& ctx,
+     }
+ }
+ 
++SymbolBuilder<MethodSymbol>::SymbolBuilder(CompilationContext& ctx,
++    const std::wstring& name,
++    TypeSymbol* returnType,
++    SymbolLinking linking,
++    SymbolAccesibility access,
++    SyntaxSymbol* parent)
++    : SymbolBuilder(ctx.GetSemanticModel().Table.get(), name, returnType, linking, access, parent)
++{
++}
++
+ SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::AddParameter(
+     const std::wstring& name,
+     TypeSymbol* type)
+@@ -394,21 +541,6 @@ SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::SetCallback(MethodSymb
+     Symbol->HandleType = MethodHandleType::External;
+     return *this;
+ }
+-
+-/*
+-SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::SetCallback(
+-    ShardManagedMethodCallback callback,
+-    void* userData)
+-{
+-    Symbol->ManagedCallback = callback;
+-    Symbol->ManagedCallbackUserData = userData;
+-    Symbol->FunctionPointer = nullptr;
+-    Symbol->HandleType = MethodHandleType::External;
+-    Symbol->IsExtern = true;
+-    return *this;
+-}
+-*/
+-
+ SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::IsImplementationOf(MethodSymbol* abstractMethod)
+ {
+     if (abstractMethod == nullptr)
+@@ -425,7 +557,7 @@ SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::IsImplementationOf(Met
+ 
+ SymbolBuilder<TypeParameterSymbol> SymbolBuilder<MethodSymbol>::AddTypeParameter(const std::wstring& name)
+ {
+-    SymbolBuilder<TypeParameterSymbol> builder(Context, name, Symbol);
++    SymbolBuilder<TypeParameterSymbol> builder(Table, name, Symbol);
+ 
+     TypeParameterSymbol* typeParam = builder.Get();
+     if (typeParam != nullptr)
+@@ -444,13 +576,13 @@ SymbolBuilder<TypeParameterSymbol> SymbolBuilder<MethodSymbol>::AddTypeParameter
+ // OperatorSymbol
+ // =========================================================================
+ 
+-SymbolBuilder<OperatorSymbol>::SymbolBuilder(CompilationContext& ctx,
++SymbolBuilder<OperatorSymbol>::SymbolBuilder(SymbolTable* table,
+     TokenType opToken,
+     TypeSymbol* returnType,
+     SymbolLinking linking,
+     SymbolAccesibility access,
+     TypeSymbol* parent)
+-    : SymbolBuilderBase(ctx)
++    : SymbolBuilderBase(table)
+ {
+     std::wstring name = GetOperatorMethodName(opToken);
+     Symbol = Factory.Operator(name, opToken, returnType, nullptr, {});
+@@ -469,6 +601,16 @@ SymbolBuilder<OperatorSymbol>::SymbolBuilder(CompilationContext& ctx,
+     }
+ }
+ 
++SymbolBuilder<OperatorSymbol>::SymbolBuilder(CompilationContext& ctx,
++    TokenType opToken,
++    TypeSymbol* returnType,
++    SymbolLinking linking,
++    SymbolAccesibility access,
++    TypeSymbol* parent)
++    : SymbolBuilder(ctx.GetSemanticModel().Table.get(), opToken, returnType, linking, access, parent)
++{
++}
++
+ SymbolBuilder<OperatorSymbol>& SymbolBuilder<OperatorSymbol>::AddParameter(
+     const std::wstring& name,
+     TypeSymbol* type)
+@@ -491,13 +633,15 @@ SymbolBuilder<OperatorSymbol>& SymbolBuilder<OperatorSymbol>::SetCallback(Method
+ // =========================================================================
+ 
+ SymbolBuilder<AccessorSymbol>::SymbolBuilder(
+-    CompilationContext& ctx,
++    SymbolTable* table,
+     bool isGetter,
+     SymbolAccesibility access,
+     PropertySymbol* parent)
+-    : SymbolBuilderBase(ctx)
++    : SymbolBuilderBase(table)
+ {
+     Symbol = isGetter ? Factory.Getter(parent) : Factory.Setter(parent);
++    Symbol->Accesibility = access;
++    Symbol->Parent = parent;
+ 
+     if (parent != nullptr)
+     {
+@@ -510,6 +654,15 @@ SymbolBuilder<AccessorSymbol>::SymbolBuilder(
+     }
+ }
+ 
++SymbolBuilder<AccessorSymbol>::SymbolBuilder(
++    CompilationContext& ctx,
++    bool isGetter,
++    SymbolAccesibility access,
++    PropertySymbol* parent)
++    : SymbolBuilder(ctx.GetSemanticModel().Table.get(), isGetter, access, parent)
++{
++}
++
+ SymbolBuilder<AccessorSymbol>& SymbolBuilder<AccessorSymbol>::SetCallback(MethodSymbolDelegate callback)
+ {
+     Symbol->FunctionPointer = callback;
+@@ -522,7 +675,7 @@ SymbolBuilder<AccessorSymbol>& SymbolBuilder<AccessorSymbol>::IsImplementationOf
+     if (abstractMethod == nullptr)
+         return *this;
+ 
+-    SyntaxSymbol* parent = Symbol->Parent;
++    SyntaxSymbol* parent = Symbol->Parent->Parent;
+     if (parent == nullptr || !parent->IsType())
+         return *this;
+ 
+@@ -535,13 +688,13 @@ SymbolBuilder<AccessorSymbol>& SymbolBuilder<AccessorSymbol>::IsImplementationOf
+ // FieldSymbol
+ // =========================================================================
+ 
+-SymbolBuilder<FieldSymbol>::SymbolBuilder(CompilationContext& ctx,
++SymbolBuilder<FieldSymbol>::SymbolBuilder(SymbolTable* table,
+     const std::wstring& name,
+     TypeSymbol* type,
+     SymbolLinking linking,
+     SymbolAccesibility access,
+     TypeSymbol* parent)
+-    : SymbolBuilderBase(ctx)
++    : SymbolBuilderBase(table)
+ {
+     Symbol = Factory.Field(name, type, linking);
+     Symbol->Accesibility = access;
+@@ -560,8 +713,18 @@ SymbolBuilder<FieldSymbol>::SymbolBuilder(CompilationContext& ctx,
+ }
+ 
+ SymbolBuilder<FieldSymbol>::SymbolBuilder(CompilationContext& ctx,
++    const std::wstring& name,
++    TypeSymbol* type,
++    SymbolLinking linking,
++    SymbolAccesibility access,
++    TypeSymbol* parent)
++    : SymbolBuilder(ctx.GetSemanticModel().Table.get(), name, type, linking, access, parent)
++{
++}
++
++SymbolBuilder<FieldSymbol>::SymbolBuilder(SymbolTable* table,
+     PropertySymbol* parent)
+-    : SymbolBuilderBase(ctx)
++    : SymbolBuilderBase(table)
+ {
+     Symbol = Factory.BackingField(parent);
+     if (parent != nullptr)
+@@ -570,17 +733,23 @@ SymbolBuilder<FieldSymbol>::SymbolBuilder(CompilationContext& ctx,
+     }
+ }
+ 
++SymbolBuilder<FieldSymbol>::SymbolBuilder(CompilationContext& ctx,
++    PropertySymbol* parent)
++    : SymbolBuilder(ctx.GetSemanticModel().Table.get(), parent)
++{
++}
++
+ // =========================================================================
+ // PropertySymbol
+ // =========================================================================
+ 
+-SymbolBuilder<PropertySymbol>::SymbolBuilder(CompilationContext& ctx,
++SymbolBuilder<PropertySymbol>::SymbolBuilder(SymbolTable* table,
+     const std::wstring& name,
+     TypeSymbol* type,
+     SymbolLinking linking,
+     SymbolAccesibility access,
+     TypeSymbol* parent)
+-    : SymbolBuilderBase(ctx)
++    : SymbolBuilderBase(table)
+ {
+     Symbol = Factory.Property(name, type, linking);
+     Symbol->Accesibility = access;
+@@ -598,21 +767,32 @@ SymbolBuilder<PropertySymbol>::SymbolBuilder(CompilationContext& ctx,
+     }
+ }
+ 
++SymbolBuilder<PropertySymbol>::SymbolBuilder(CompilationContext& ctx,
++    const std::wstring& name,
++    TypeSymbol* type,
++    SymbolLinking linking,
++    SymbolAccesibility access,
++    TypeSymbol* parent)
++    : SymbolBuilder(ctx.GetSemanticModel().Table.get(), name, type, linking, access, parent)
++{
++}
++
+ SymbolBuilder<FieldSymbol> SymbolBuilder<PropertySymbol>::AddBackingField()
+ {
+-    SymbolBuilder<FieldSymbol> builder(Context, Symbol);
++    SymbolBuilder<FieldSymbol> builder(Table, Symbol);
++    builder.Get()->Parent = Symbol->Parent;
+     return builder;
+ }
+ 
+ SymbolBuilder<AccessorSymbol> SymbolBuilder<PropertySymbol>::AddGetter(SymbolAccesibility access)
+ {
+-    SymbolBuilder<AccessorSymbol> builder(Context, true, access, Symbol);
++    SymbolBuilder<AccessorSymbol> builder(Table, true, access, Symbol);
+     return builder;
+ }
+ 
+ SymbolBuilder<AccessorSymbol> SymbolBuilder<PropertySymbol>::AddSetter(SymbolAccesibility access)
+ {
+-    SymbolBuilder<AccessorSymbol> builder(Context, false, access, Symbol);
++    SymbolBuilder<AccessorSymbol> builder(Table, false, access, Symbol);
+     return builder;
+ }
+ 
+@@ -620,13 +800,13 @@ SymbolBuilder<AccessorSymbol> SymbolBuilder<PropertySymbol>::AddSetter(SymbolAcc
+ // IndexatorSymbol
+ // =========================================================================
+ 
+-SymbolBuilder<IndexatorSymbol>::SymbolBuilder(CompilationContext& ctx,
++SymbolBuilder<IndexatorSymbol>::SymbolBuilder(SymbolTable* table,
+     const std::wstring& name,
+     TypeSymbol* type,
+     SymbolLinking linking,
+     SymbolAccesibility access,
+     TypeSymbol* parent)
+-    : SymbolBuilderBase(ctx)
++    : SymbolBuilderBase(table)
+ {
+     Symbol = Factory.Indexator(name, type);
+     Symbol->Linking = linking;
+@@ -645,6 +825,16 @@ SymbolBuilder<IndexatorSymbol>::SymbolBuilder(CompilationContext& ctx,
+     }
+ }
+ 
++SymbolBuilder<IndexatorSymbol>::SymbolBuilder(CompilationContext& ctx,
++    const std::wstring& name,
++    TypeSymbol* type,
++    SymbolLinking linking,
++    SymbolAccesibility access,
++    TypeSymbol* parent)
++    : SymbolBuilder(ctx.GetSemanticModel().Table.get(), name, type, linking, access, parent)
++{
++}
++
+ SymbolBuilder<IndexatorSymbol>& SymbolBuilder<IndexatorSymbol>::AddParameter(
+     const std::wstring& name,
+     TypeSymbol* type)
+@@ -664,20 +854,21 @@ SymbolBuilder<IndexatorSymbol>& SymbolBuilder<IndexatorSymbol>::AddParameter(
+ 
+ SymbolBuilder<FieldSymbol> SymbolBuilder<IndexatorSymbol>::AddBackingField()
+ {
+-    SymbolBuilder<FieldSymbol> builder(Context, Symbol);
++    SymbolBuilder<FieldSymbol> builder(Table, Symbol);
++    builder.Get()->Parent = Symbol->Parent;
+     return builder;
+ }
+ 
+ SymbolBuilder<AccessorSymbol> SymbolBuilder<IndexatorSymbol>::AddGetter(SymbolAccesibility access)
+ {
+-    SymbolBuilder<AccessorSymbol> builder(Context, true, access, Symbol);
++    SymbolBuilder<AccessorSymbol> builder(Table, true, access, Symbol);
+     builder.Get()->Parameters = Symbol->Parameters;
+     return builder;
+ }
+ 
+ SymbolBuilder<AccessorSymbol> SymbolBuilder<IndexatorSymbol>::AddSetter(SymbolAccesibility access)
+ {
+-    SymbolBuilder<AccessorSymbol> builder(Context, false, access, Symbol);
++    SymbolBuilder<AccessorSymbol> builder(Table, false, access, Symbol);
+     builder.Get()->Parameters = Symbol->Parameters;
+     return builder;
+ }
+@@ -687,10 +878,10 @@ SymbolBuilder<AccessorSymbol> SymbolBuilder<IndexatorSymbol>::AddSetter(SymbolAc
+ // =========================================================================
+ 
+ SymbolBuilder<ConstructorSymbol>::SymbolBuilder(
+-    CompilationContext& ctx,
++    SymbolTable* table,
+     SymbolAccesibility access,
+     TypeSymbol* parent)
+-    : SymbolBuilderBase(ctx)
++    : SymbolBuilderBase(table)
+ {
+     Symbol = Factory.Constructor(parent, access);
+ 
+@@ -705,6 +896,14 @@ SymbolBuilder<ConstructorSymbol>::SymbolBuilder(
+     }
+ }
+ 
++SymbolBuilder<ConstructorSymbol>::SymbolBuilder(
++    CompilationContext& ctx,
++    SymbolAccesibility access,
++    TypeSymbol* parent)
++    : SymbolBuilder(ctx.GetSemanticModel().Table.get(), access, parent)
++{
++}
++
+ SymbolBuilder<ConstructorSymbol>& SymbolBuilder<ConstructorSymbol>::AddParameter(
+     const std::wstring & name,
+     TypeSymbol * type)
+@@ -722,16 +921,81 @@ SymbolBuilder<ConstructorSymbol>& SymbolBuilder<ConstructorSymbol>::SetCallback(
+     return *this;
+ }
+ 
+-/*
+-SymbolBuilder<ConstructorSymbol>& SymbolBuilder<ConstructorSymbol>::SetCallback(
+-    ShardManagedMethodCallback callback,
+-    void* userData)
++// =========================================================================
++// InterfaceSymbol
++// =========================================================================
++
++SymbolBuilder<InterfaceSymbol>::SymbolBuilder(SymbolTable* table,
++    const std::wstring& name,
++    SyntaxSymbol* parent)
++    : SymbolBuilderBase(table)
+ {
+-    Symbol->ManagedCallback = callback;
+-    Symbol->ManagedCallbackUserData = userData;
+-    Symbol->FunctionPointer = nullptr;
+-    Symbol->HandleType = MethodHandleType::External;
+-    Symbol->IsExtern = true;
++    SyntaxSymbol* actualParent = parent != nullptr ? parent : SymbolTable::Global::Namespace;
++    Symbol = Factory.Interface(name, SymbolAccesibility::Public, actualParent);
++    Symbol->Inlining = TypeInlining::ByReference;
++
++    if (actualParent != nullptr)
++    {
++        Symbol->FullName = actualParent->FullName + L"." + name;
++        actualParent->OnSymbolDeclared(Symbol);
++    }
++    else
++    {
++        Symbol->FullName = name;
++    }
++}
++
++SymbolBuilder<InterfaceSymbol>::SymbolBuilder(CompilationContext& ctx,
++    const std::wstring& name,
++    SyntaxSymbol* parent)
++    : SymbolBuilder(ctx.GetSemanticModel().Table.get(), name, parent)
++{
++}
++
++SymbolBuilder<MethodSymbol> SymbolBuilder<InterfaceSymbol>::AddMethod(
++    const std::wstring& name,
++    TypeSymbol* returnType,
++    SymbolLinking linking,
++    SymbolAccesibility access)
++{
++    SymbolBuilder<MethodSymbol> builder(Table, name, returnType, linking, access, Symbol);
++    return builder;
++}
++
++SymbolBuilder<PropertySymbol> SymbolBuilder<InterfaceSymbol>::AddProperty(
++    const std::wstring& name,
++    TypeSymbol* type,
++    SymbolLinking linking,
++    SymbolAccesibility access)
++{
++    SymbolBuilder<PropertySymbol> builder(Table, name, type, linking, access, Symbol);
++    return builder;
++}
++
++SymbolBuilder<IndexatorSymbol> SymbolBuilder<InterfaceSymbol>::AddIndexer(
++    TypeSymbol* type,
++    SymbolLinking linking,
++    SymbolAccesibility access)
++{
++    SymbolBuilder<IndexatorSymbol> builder(Table, L"indexer", type, linking, access, Symbol);
++    return builder;
++}
++
++SymbolBuilder<TypeParameterSymbol> SymbolBuilder<InterfaceSymbol>::AddTypeParameter(const std::wstring& name)
++{
++    SymbolBuilder<TypeParameterSymbol> builder(Table, name, Symbol);
++    Symbol->TypeParameters.push_back(builder.Get());
++    return builder;
++}
++
++SymbolBuilder<InterfaceSymbol>& SymbolBuilder<InterfaceSymbol>::DeclareGlobal()
++{
++    SymbolTable::Global::Scope->DeclareSymbol(Symbol);
++    return *this;
++}
++
++SymbolBuilder<InterfaceSymbol>& SymbolBuilder<InterfaceSymbol>::SetFullName(const std::wstring& fullName)
++{
++    Symbol->FullName = fullName;
+     return *this;
+ }
+-*/
+diff --git a/ShardScript/src/semantic/SymbolTable.cpp b/ShardScript/src/semantic/SymbolTable.cpp
+index 87edf37..98b0de0 100644
+--- a/ShardScript/src/semantic/SymbolTable.cpp
++++ b/ShardScript/src/semantic/SymbolTable.cpp
+@@ -41,40 +41,70 @@ using namespace std::ranges;
+ using namespace std::views;
+ using namespace shard;
+ 
+-TypeSymbol* SymbolTable::Global::Type = new TypeSymbol(GlobalTypeName, SyntaxKind::CompilationUnit);
+-SemanticScope* SymbolTable::Global::Scope = new SemanticScope(Type, nullptr);
++NamespaceSymbol* SymbolTable::Global::Namespace = new NamespaceSymbol(GlobalTypeName);
++SemanticScope* SymbolTable::Global::Scope = new SemanticScope(Namespace, nullptr);
+ 
+ static std::unique_ptr<SymbolTable> GlobalSymbolTable;
+ static bool CreatingGlobalSymbolTable = false;
+ 
+-inline static void declareGlobal(SyntaxSymbol* symbol)
++namespace
+ {
+-	SymbolTable::Global::Scope->DeclareSymbol(symbol);
+-}
++	inline static void declareGlobal(SyntaxSymbol* symbol)
++	{
++		SymbolTable::Global::Scope->DeclareSymbol(symbol);
++	}
+ 
+-template<typename B, typename D>
+-static std::unique_ptr<D> unique_cast(std::unique_ptr<B> ptr)
+-{
+-	D* tmp = static_cast<D*>(ptr.get());
+-	std::unique_ptr<D> derivedPointer;
++	template<typename B, typename D>
++	static inline std::unique_ptr<D> unique_cast(std::unique_ptr<B> ptr)
++	{
++		D* tmp = static_cast<D*>(ptr.get());
++		std::unique_ptr<D> derivedPointer;
++
++		if (tmp != nullptr)
++		{
++			ptr.release();
++			derivedPointer.reset(tmp);
++		}
++
++		return derivedPointer;
++	}
+ 
+-	if (tmp != nullptr)
++	static inline std::string WStringToString(const std::wstring& value)
+ 	{
+-		ptr.release();
+-		derivedPointer.reset(tmp);
++		std::string result;
++		result.reserve(value.size());
++		for (wchar_t ch : value)
++			result.push_back(static_cast<char>(ch));
++
++		return result;
+ 	}
+ 
+-	return derivedPointer;
+-}
++	template<typename T>
++	static inline void make_primitive(TypeSymbol*& symbol, const wchar_t* name, const size_t memoryBytesSize)
++	{
++		symbol = new T(name);
++		symbol->MemoryBytesSize = memoryBytesSize;
++		symbol->LayoutingState = TypeLayoutingState::Visited;
++		symbol->AnalysisState = SymbolAnalysisState::Ready;
++	}
+ 
+-static std::string WStringToString(const std::wstring& value)
+-{
+-	std::string result;
+-	result.reserve(value.size());
+-	for (wchar_t ch : value)
+-		result.push_back(static_cast<char>(ch));
++	template<typename T>
++	static inline void make_printable(TypeSymbol*& symbol, SymbolTable* table, MethodSymbolDelegate toString)
++	{
++		SymbolBuilder<T> builder(table, static_cast<T*>(symbol));
++		builder.Implements(TRAIT_PRINTABLE);
+ 
+-	return result;
++		builder.AddMethod(L"ToString", SymbolTable::Primitives::String, LINK_INSTANCE)
++			.IsImplementationOf(TRAIT_PRINTABLE_ToString)
++			.SetCallback(toString);
++	}
++
++	static inline void inherit_size(FieldSymbol* field)
++	{
++		TypeSymbol* parent = static_cast<TypeSymbol*>(field->Parent);
++		field->MemoryBytesOffset = parent->MemoryBytesSize;
++		parent->MemoryBytesSize += field->ReturnType->GetInlineSize();
++	}
+ }
+ 
+ static ObjectInstance* primitive_boolean_to_string(const CallState& context)
+@@ -104,46 +134,40 @@ static ObjectInstance* primitive_char_to_string(const CallState& context)
+ static ObjectInstance* primitive_string_to_string(const CallState& context)
+ {
+ 	ObjectInstance* self = context.Args[0];
+-	//self->IncrementReference();
+ 	return self;
+ }
+ 
+-static ObjectInstance* InvokeToString(const VirtualMachine* host, ObjectInstance* instance)
++static ObjectInstance* primitive_array_to_string(const CallState& context)
+ {
+-	TypeSymbol* type = const_cast<TypeSymbol*>(instance->getInfo());
+-	MethodSymbol* implementation = type->FindInterfaceImplementation(TRAIT_PRINTABLE_ToString);
+-
+-	/*
+-	if (implementation == nullptr)
+-		throw std::runtime_error("Type '" + WStringToString(type->FullName) + "' does not implement IPrintable");
+-	*/
++	auto InvokeToString = [&](ObjectInstance* instance) -> ObjectInstance*
++	{
++		TypeSymbol* type = const_cast<TypeSymbol*>(instance->getInfo());
++		MethodSymbol* implementation = type->FindInterfaceImplementation(TRAIT_PRINTABLE_ToString);
+ 
+-	if (implementation == nullptr)
+-		return nullptr;
++		if (implementation == nullptr)
++			return nullptr;
+ 
+-	host->InvokeMethod(implementation, { instance });
+-	ObjectInstance* result = host->CurrentFrame()->PopStack();
+-	if (result == nullptr || result->getInfo() != SymbolTable::Primitives::String)
+-		throw std::runtime_error("ToString did not return a string");
++		context.Runtimer.InvokeMethod(implementation, { instance });
++		ObjectInstance* result = context.Runtimer.CurrentFrame()->PopStack();
++		if (result == nullptr || result->getInfo() != SymbolTable::Primitives::String)
++			throw std::runtime_error("ToString did not return a string");
+ 
+-	return result;
+-}
++		return result;
++	};
+ 
+-static void AppendAsString(const CallState& context, std::wostringstream& result, ObjectInstance* instance)
+-{
+-	ObjectInstance* asString = InvokeToString(&context.Runtimer, instance);
+-	if (asString == nullptr)
++	auto AppendAsString = [&](std::wostringstream& result, ObjectInstance* instance) -> void
+ 	{
+-		result << instance->getInfo()->FullName;
+-		return;
+-	}
++		ObjectInstance* asString = InvokeToString(instance);
++		if (asString == nullptr)
++		{
++			result << instance->getInfo()->FullName;
++			return;
++		}
+ 
+-	result << asString->AsString();
+-	context.Collector.CollectInstance(asString);
+-}
++		result << asString->AsString();
++		context.Collector.CollectInstance(asString);
++	};
+ 
+-static ObjectInstance* primitive_array_to_string(const CallState& context)
+-{
+ 	ObjectInstance* instance = context.Args[0]; // this
+ 	const ArrayTypeSymbol* array = static_cast<const ArrayTypeSymbol*>(instance->getInfo());
+ 	size_t size = array->Length;
+@@ -155,14 +179,14 @@ static ObjectInstance* primitive_array_to_string(const CallState& context)
+ 	result << L"[";
+ 
+ 	ObjectInstance* element = instance->GetElement(0);
+-	AppendAsString(context, result, element);
++	AppendAsString(result, element);
+ 	context.Collector.CollectInstance(element);
+ 
+ 	for (size_t i = 1; i < size; ++i)
+ 	{
+ 		result << L", ";
+ 		ObjectInstance* element = instance->GetElement(i);
+-		AppendAsString(context, result, element);
++		AppendAsString(result, element);
+ 		context.Collector.CollectInstance(element);
+ 	}
+ 
+@@ -182,67 +206,22 @@ static ObjectInstance* runtime_capture_stack_trace(const CallState& context)
+ 	return context.Collector.FromValue(trace);
+ }
+ 
+-static AccessorSymbol* AddInterfaceGetter(InterfaceSymbol* iface, const std::wstring& name, SymbolFactory& factory)
+-{
+-	PropertySymbol* property = factory.Property(name, SymbolTable::Primitives::String, LINK_INSTANCE);
+-	property->Accesibility = SymbolAccesibility::Public;
+-	property->Parent = iface;
+-
+-	AccessorSymbol* getter = factory.Getter(property);
+-	getter->Parent = property;
+-	getter->HandleType = MethodHandleType::None;
+-
+-	iface->Properties.push_back(property);
+-	iface->Methods.push_back(getter);
+-
+-	return getter;
+-}
+-
+-static void AddRuntimeExceptionProperty(ClassSymbol* cls, const std::wstring& name, FieldSymbol*& outField, SymbolFactory& factory)
+-{
+-	PropertySymbol* property = factory.Property(name, SymbolTable::Primitives::String, LINK_INSTANCE);
+-	property->Accesibility = SymbolAccesibility::Public;
+-	property->Parent = cls;
+-
+-	FieldSymbol* backingField = factory.BackingField(property);
+-	backingField->Parent = cls;
+-	cls->Fields.push_back(backingField);
+-
+-	AccessorSymbol* getter = factory.Getter(property);
+-	getter->Parent = property;
+-
+-	ByteCodeEncoder encoder;
+-	encoder.EmitLoadVarible(getter->ExecutableByteCode, 0);
+-	encoder.EmitLoadField(getter->ExecutableByteCode, backingField);
+-
+-	cls->Properties.push_back(property);
+-	cls->Methods.push_back(getter);
+-
+-	outField = backingField;
+-}
+-
+-static ClassSymbol* g_ArrayEnumeratorClass = nullptr;
+-static TypeParameterSymbol* g_ArrayEnumeratorT = nullptr;
+-static FieldSymbol* g_ArrayEnumeratorSource = nullptr;
+-static FieldSymbol* g_ArrayEnumeratorIndex = nullptr;
+-static FieldSymbol* g_ArrayEnumeratorLength = nullptr;
+-
+ static ObjectInstance* array_enumerator_MoveNext(const CallState& context)
+ {
+ 	ObjectInstance* self = context.Args[0];
+-	std::int64_t index = self->GetField(g_ArrayEnumeratorIndex, context.Frame)->AsInteger();
+-	std::int64_t length = self->GetField(g_ArrayEnumeratorLength, context.Frame)->AsInteger();
++	std::int64_t index = self->GetField(CLASS_ARRAYENUMERATOR_IndexField, context.Frame)->AsInteger();
++	std::int64_t length = self->GetField(CLASS_ARRAYENUMERATOR_LengthField, context.Frame)->AsInteger();
+ 	
+ 	index++;
+-	self->SetField(g_ArrayEnumeratorIndex, context.Collector.FromValue(index), context.Frame);
++	self->SetField(CLASS_ARRAYENUMERATOR_IndexField, context.Collector.FromValue(index), context.Frame);
+ 	return context.Collector.FromValue(index < length);
+ }
+ 
+ static ObjectInstance* array_enumerator_Current_get(const CallState& context)
+ {
+ 	ObjectInstance* self = context.Args[0];
+-	std::int64_t index = self->GetField(g_ArrayEnumeratorIndex, context.Frame)->AsInteger();
+-	ObjectInstance* source = self->GetField(g_ArrayEnumeratorSource, context.Frame);
++	std::int64_t index = self->GetField(CLASS_ARRAYENUMERATOR_IndexField, context.Frame)->AsInteger();
++	ObjectInstance* source = self->GetField(CLASS_ARRAYENUMERATOR_SourceField, context.Frame);
+ 	return source->GetElement(static_cast<std::size_t>(index), context.Frame);
+ }
+ 
+@@ -252,30 +231,20 @@ static ObjectInstance* primitive_array_get_enumerator(const CallState& context)
+ 	const ArrayTypeSymbol* arrayType = static_cast<const ArrayTypeSymbol*>(array->getInfo());
+ 	TypeSymbol* concreteT = const_cast<TypeSymbol*>(arrayType->UnderlayingType);
+ 
+-	GenericTypeSymbol* enumeratorType = new GenericTypeSymbol(g_ArrayEnumeratorClass);
+-	enumeratorType->AddTypeParameter(g_ArrayEnumeratorT, concreteT);
++	GenericTypeSymbol* enumeratorType = new GenericTypeSymbol(CLASS_ARRAYENUMERATOR);
++	enumeratorType->AddTypeParameter(CLASS_ARRAYENUMERATOR_T, concreteT);
+ 	enumeratorType->Inlining = TypeInlining::ByReference;
+-	enumeratorType->MemoryBytesSize = g_ArrayEnumeratorClass->MemoryBytesSize;
++	enumeratorType->MemoryBytesSize = CLASS_ARRAYENUMERATOR->MemoryBytesSize;
+ 	enumeratorType->LayoutingState = TypeLayoutingState::Visited;
+ 
+ 	ObjectInstance* enumerator = context.Collector.AllocateInstance(enumeratorType);
+-	enumerator->SetField(g_ArrayEnumeratorSource, array, context.Frame);
+-	enumerator->SetField(g_ArrayEnumeratorIndex, context.Collector.FromValue(static_cast<std::int64_t>(-1)), context.Frame);
+-	enumerator->SetField(g_ArrayEnumeratorLength, context.Collector.FromValue(static_cast<std::int64_t>(arrayType->Length)), context.Frame);
++	enumerator->SetField(CLASS_ARRAYENUMERATOR_SourceField, array, context.Frame);
++	enumerator->SetField(CLASS_ARRAYENUMERATOR_IndexField, context.Collector.FromValue(static_cast<std::int64_t>(-1)), context.Frame);
++	enumerator->SetField(CLASS_ARRAYENUMERATOR_LengthField, context.Collector.FromValue(static_cast<std::int64_t>(arrayType->Length)), context.Frame);
+ 
+ 	return enumerator;
+ }
+ 
+-static void MakePrimitivePrintable(TypeSymbol* primitive, MethodSymbolDelegate toString, SymbolFactory& factory, MethodSymbol* TRAIT_PRINTABLE_ToString)
+-{
+-	MethodSymbol* method = factory.Method(SymbolAccesibility::Public, LINK_INSTANCE, SymbolTable::Primitives::String, L"ToString", toString);
+-	method->Parent = primitive;
+-
+-	primitive->Methods.push_back(method);
+-	primitive->Interfaces.push_back(TRAIT_PRINTABLE);
+-	primitive->InterfaceMethodMap[TRAIT_PRINTABLE_ToString] = method;
+-}
+-
+ static void ResolvePrimitives(SymbolTable* table)
+ {
+ 	static bool resolved = false;
+@@ -287,58 +256,20 @@ static void ResolvePrimitives(SymbolTable* table)
+ 	// ============================================================================
+ 	// Matters
+ 	// ============================================================================
+-	SymbolTable::Primitives::Void = new StructSymbol(L"Void");
+-	SymbolTable::Primitives::Any = new StructSymbol(L"Any");
+-	SymbolTable::Primitives::Null = new StructSymbol(L"Null");
+-	SymbolTable::Primitives::NativeInteger = new ClassSymbol(L"IntPtr");
+-
+-	SymbolTable::Primitives::Void->LayoutingState = TypeLayoutingState::Visited;
+-	SymbolTable::Primitives::Any->LayoutingState = TypeLayoutingState::Visited;
+-	SymbolTable::Primitives::Null->LayoutingState = TypeLayoutingState::Visited;
+-
+-	SymbolTable::Primitives::Void->MemoryBytesSize = 0;
+-	SymbolTable::Primitives::Any->MemoryBytesSize = 0;
+-	SymbolTable::Primitives::Null->MemoryBytesSize = 0;
+-	SymbolTable::Primitives::NativeInteger->MemoryBytesSize = sizeof(void*);
+-
+-	// Primitives are created outside the normal declaration pipeline, so they are
+-	// marked ready immediately after their layout is fixed.
+-	SymbolTable::Primitives::Void->AnalysisState = SymbolAnalysisState::Ready;
+-	SymbolTable::Primitives::Any->AnalysisState = SymbolAnalysisState::Ready;
+-	SymbolTable::Primitives::Null->AnalysisState = SymbolAnalysisState::Ready;
+-	SymbolTable::Primitives::NativeInteger->AnalysisState = SymbolAnalysisState::Ready;
++	make_primitive<StructSymbol>(SymbolTable::Primitives::Void, L"Void", 0);
++	make_primitive<StructSymbol>(SymbolTable::Primitives::Any, L"Any", 0);
++	make_primitive<StructSymbol>(SymbolTable::Primitives::Null, L"Null", 0);
++	make_primitive<ClassSymbol>(SymbolTable::Primitives::NativeInteger, L"IntPtr", sizeof(void*));
+ 
+ 	// ============================================================================
+ 	// Primitives
+ 	// ============================================================================
+-	SymbolTable::Primitives::Boolean = new StructSymbol(L"Boolean");
+-	SymbolTable::Primitives::Integer = new StructSymbol(L"Integer");
+-	SymbolTable::Primitives::Double = new StructSymbol(L"Double");
+-	SymbolTable::Primitives::Char = new StructSymbol(L"Char");
+-	SymbolTable::Primitives::String = new ClassSymbol(L"String");
+-	SymbolTable::Primitives::Array = new ClassSymbol(L"Array");
+-
+-	SymbolTable::Primitives::Boolean->LayoutingState = TypeLayoutingState::Visited;
+-	SymbolTable::Primitives::Integer->LayoutingState = TypeLayoutingState::Visited;
+-	SymbolTable::Primitives::Double->LayoutingState = TypeLayoutingState::Visited;
+-	SymbolTable::Primitives::Char->LayoutingState = TypeLayoutingState::Visited;
+-	SymbolTable::Primitives::String->LayoutingState = TypeLayoutingState::Visited;
+-	SymbolTable::Primitives::Array->LayoutingState = TypeLayoutingState::Visited;
+-	SymbolTable::Primitives::NativeInteger->LayoutingState = TypeLayoutingState::Visited;
+-
+-	SymbolTable::Primitives::Boolean->MemoryBytesSize = sizeof(bool);
+-	SymbolTable::Primitives::Integer->MemoryBytesSize = sizeof(std::int64_t);
+-	SymbolTable::Primitives::Double->MemoryBytesSize = sizeof(double);
+-	SymbolTable::Primitives::Char->MemoryBytesSize = sizeof(wchar_t);
+-	SymbolTable::Primitives::String->MemoryBytesSize = sizeof(std::int64_t) + sizeof(wchar_t*); // long _length + char[] _data
+-	SymbolTable::Primitives::Array->MemoryBytesSize = sizeof(std::int64_t);					    // long _length
+-
+-	SymbolTable::Primitives::Boolean->AnalysisState = SymbolAnalysisState::Ready;
+-	SymbolTable::Primitives::Integer->AnalysisState = SymbolAnalysisState::Ready;
+-	SymbolTable::Primitives::Double->AnalysisState = SymbolAnalysisState::Ready;
+-	SymbolTable::Primitives::Char->AnalysisState = SymbolAnalysisState::Ready;
+-	SymbolTable::Primitives::String->AnalysisState = SymbolAnalysisState::Ready;
+-	SymbolTable::Primitives::Array->AnalysisState = SymbolAnalysisState::Ready;
++	make_primitive<StructSymbol>(SymbolTable::Primitives::Boolean, L"Boolean", sizeof(bool));
++	make_primitive<StructSymbol>(SymbolTable::Primitives::Integer, L"Integer", sizeof(std::int64_t));
++	make_primitive<StructSymbol>(SymbolTable::Primitives::Double, L"Double", sizeof(double));
++	make_primitive<StructSymbol>(SymbolTable::Primitives::Char, L"Char", sizeof(wchar_t));
++	make_primitive<ClassSymbol>(SymbolTable::Primitives::String, L"String", sizeof(std::int64_t) + sizeof(wchar_t*));	// long _length + char[] _data
++	make_primitive<ClassSymbol>(SymbolTable::Primitives::Array, L"Array", sizeof(std::int64_t));						// long _length
+ 
+ 	resolved = true;
+ }
+@@ -353,75 +284,65 @@ static void ResolveInterfaces(SymbolTable* table)
+ 
+ 	// IThrowable
+ 	{
+-		TRAIT_THROWABLE = factory.Interface(L"IThrowable", SymbolAccesibility::Public, SymbolTable::Global::Type);
+-		TRAIT_THROWABLE_getMessage = AddInterfaceGetter(TRAIT_THROWABLE, L"message", factory);
+-		TRAIT_THROWABLE_getStackTrace = AddInterfaceGetter(TRAIT_THROWABLE, L"stack_trace", factory);
++		SymbolBuilder<InterfaceSymbol> builder(table, L"IThrowable", SymbolTable::Global::Namespace);
++		TRAIT_THROWABLE = builder
++			.DeclareGlobal();
++
++		TRAIT_THROWABLE_getMessage = builder.AddProperty(L"message", TYPE_STRING, LINK_INSTANCE).AddGetter();
++		TRAIT_THROWABLE_getStackTrace = builder.AddProperty(L"stack_trace", TYPE_STRING, LINK_INSTANCE).AddGetter();
+ 
+-		declareGlobal(TRAIT_THROWABLE);
++		TRAIT_THROWABLE_getMessage->IsAbstract = true;
++		TRAIT_THROWABLE_getStackTrace->IsAbstract = true;
+ 	}
+ 
+ 	// IDisposable
+ 	{
+-		TRAIT_DISPOSABLE = factory.Interface(L"IDisposable", SymbolAccesibility::Public, SymbolTable::Global::Type);
+-		TRAIT_DISPOSABLE_Dispose = factory.Method(L"Dispose", SymbolTable::Primitives::Void, LINK_INSTANCE);
++		SymbolBuilder<InterfaceSymbol> builder(table, L"IDisposable", SymbolTable::Global::Namespace);
++		TRAIT_DISPOSABLE = builder
++			.DeclareGlobal();
+ 
+-		TRAIT_DISPOSABLE_Dispose->Parent = TRAIT_DISPOSABLE;
+-		TRAIT_DISPOSABLE->Methods.push_back(TRAIT_DISPOSABLE_Dispose);
+-
+-		declareGlobal(TRAIT_DISPOSABLE);
++		TRAIT_DISPOSABLE_Dispose = builder.AddMethod(L"Dispose", TYPE_VOID, LINK_INSTANCE);
++		TRAIT_DISPOSABLE_Dispose->IsAbstract = true;
+ 	}
+ 
+ 	// IPrintable
+ 	{
+-		TRAIT_PRINTABLE = factory.Interface(L"IPrintable", SymbolAccesibility::Public, SymbolTable::Global::Type);
+-		TRAIT_PRINTABLE_ToString = factory.Method(L"ToString", SymbolTable::Primitives::String, LINK_INSTANCE);
+-		
+-		TRAIT_PRINTABLE_ToString->Parent = TRAIT_PRINTABLE;
+-		TRAIT_PRINTABLE->Methods.push_back(TRAIT_PRINTABLE_ToString);
++		SymbolBuilder<InterfaceSymbol> builder(table, L"IPrintable", SymbolTable::Global::Namespace);
++		TRAIT_PRINTABLE = builder
++			.DeclareGlobal();
+ 
+-		declareGlobal(TRAIT_PRINTABLE);
++		TRAIT_PRINTABLE_ToString = builder.AddMethod(L"ToString", TYPE_STRING, LINK_INSTANCE);
++		TRAIT_PRINTABLE_ToString->IsAbstract = true;
+ 	}
+ 
+ 	// IEnumerator<T>
+ 	{
+-		TRAIT_ENUMERATOR = factory.Interface(L"IEnumerator", SymbolAccesibility::Public, SymbolTable::Global::Type);
+-
+-		TypeParameterSymbol* enumeratorTypeParam = factory.TypeParameter(L"T", TRAIT_ENUMERATOR);
+-		TRAIT_ENUMERATOR->TypeParameters.push_back(enumeratorTypeParam);
+-
+-		TRAIT_ENUMERATOR_MOVENEXT = factory.Method(L"MoveNext", SymbolTable::Primitives::Boolean, LINK_INSTANCE);
+-		TRAIT_ENUMERATOR_MOVENEXT->Accesibility = SymbolAccesibility::Public;
+-		TRAIT_ENUMERATOR_MOVENEXT->Parent = TRAIT_ENUMERATOR;
+-		TRAIT_ENUMERATOR->Methods.push_back(TRAIT_ENUMERATOR_MOVENEXT);
+-
+-		PropertySymbol* currentProperty = factory.Property(L"Current", enumeratorTypeParam, LINK_INSTANCE);
+-		currentProperty->Accesibility = SymbolAccesibility::Public;
+-		currentProperty->Parent = TRAIT_ENUMERATOR;
+-		AccessorSymbol* currentGetter = factory.Getter(currentProperty);
+-		currentGetter->Parent = currentProperty;
+-		currentGetter->HandleType = MethodHandleType::None;
+-		TRAIT_ENUMERATOR->Properties.push_back(currentProperty);
+-		TRAIT_ENUMERATOR->Methods.push_back(currentGetter);
+-		TRAIT_ENUMERATOR_CURRENT_GET = currentGetter;
+-
+-		declareGlobal(TRAIT_ENUMERATOR);
++		SymbolBuilder<InterfaceSymbol> builder(table, L"IEnumerator", SymbolTable::Global::Namespace);
++		TRAIT_ENUMERATOR = builder
++			.DeclareGlobal();
++
++		TypeParameterSymbol* enumeratorTypeParam = builder
++			.AddTypeParameter(L"T");
++
++		TRAIT_ENUMERATOR_MOVENEXT = builder.AddMethod(L"MoveNext", TYPE_BOOL, LINK_INSTANCE);
++		TRAIT_ENUMERATOR_CURRENT_GET = builder.AddProperty(L"Current", enumeratorTypeParam, LINK_INSTANCE).AddGetter();
++
++		TRAIT_ENUMERATOR_MOVENEXT->IsAbstract = true;
++		TRAIT_ENUMERATOR_CURRENT_GET->IsAbstract = true;
+ 	}
+ 
+ 	// IEnumerable<T>
+ 	{
+-		TRAIT_ENUMERABLE = factory.Interface(L"IEnumerable", SymbolAccesibility::Public, SymbolTable::Global::Type);
++		SymbolBuilder<InterfaceSymbol> builder(table, L"IEnumerable", SymbolTable::Global::Namespace);
++		TRAIT_ENUMERABLE = builder
++			.DeclareGlobal();
+ 
+-		TypeParameterSymbol* enumerableTypeParam = factory.TypeParameter(L"T", TRAIT_ENUMERABLE);
+-		TRAIT_ENUMERABLE->TypeParameters.push_back(enumerableTypeParam);
++		TypeParameterSymbol* enumerableTypeParam = builder
++			.AddTypeParameter(L"T");
+ 
+ 		GenericTypeSymbol* enumeratorReturnType = factory.GenericType(TRAIT_ENUMERATOR, { { L"T", enumerableTypeParam } });
+-
+-		TRAIT_ENUMERABLE_GETENUMERATOR = factory.Method(L"GetEnumerator", enumeratorReturnType, LINK_INSTANCE);
+-		TRAIT_ENUMERABLE_GETENUMERATOR->Accesibility = SymbolAccesibility::Public;
+-		TRAIT_ENUMERABLE_GETENUMERATOR->Parent = TRAIT_ENUMERABLE;
+-		TRAIT_ENUMERABLE->Methods.push_back(TRAIT_ENUMERABLE_GETENUMERATOR);
+-
+-		declareGlobal(TRAIT_ENUMERABLE);
++		TRAIT_ENUMERABLE_GETENUMERATOR = builder.AddMethod(L"GetEnumerator", enumeratorReturnType, LINK_INSTANCE);
++		TRAIT_ENUMERABLE_GETENUMERATOR->IsAbstract = true;
+ 	}
+ 
+ 	resolved = true;
+@@ -437,90 +358,46 @@ static void ResolveEnumerables(SymbolTable* table)
+ 
+ 	// ArrayEnumerator<T>
+ 	{
+-		ClassSymbol* raw = factory.Class(L"ArrayEnumerator");
+-		raw->Accesibility = SymbolAccesibility::Public;
+-		raw->Inlining = TypeInlining::ByReference;
+-		raw->Parent = SymbolTable::Global::Type;
+-		raw->FullName = L"ArrayEnumerator";
+-		declareGlobal(raw);
+-
+-		TypeParameterSymbol* typeParam = factory.TypeParameter(L"T", raw);
+-		raw->TypeParameters.push_back(typeParam);
+-
+-		g_ArrayEnumeratorClass = raw;
+-		g_ArrayEnumeratorT = typeParam;
+-
+-		g_ArrayEnumeratorSource = factory.Field(L"_source", factory.Array(typeParam), LINK_INSTANCE);
+-		g_ArrayEnumeratorSource->Accesibility = SymbolAccesibility::Private;
+-		g_ArrayEnumeratorSource->Parent = raw;
+-		raw->Fields.push_back(g_ArrayEnumeratorSource);
+-
+-		g_ArrayEnumeratorIndex = factory.Field(L"_index", SymbolTable::Primitives::Integer, LINK_INSTANCE);
+-		g_ArrayEnumeratorIndex->Accesibility = SymbolAccesibility::Private;
+-		g_ArrayEnumeratorIndex->Parent = raw;
+-		raw->Fields.push_back(g_ArrayEnumeratorIndex);
+-
+-		g_ArrayEnumeratorLength = factory.Field(L"_length", SymbolTable::Primitives::Integer, LINK_INSTANCE);
+-		g_ArrayEnumeratorLength->Accesibility = SymbolAccesibility::Private;
+-		g_ArrayEnumeratorLength->Parent = raw;
+-		raw->Fields.push_back(g_ArrayEnumeratorLength);
+-
+-		std::size_t layoutOffset = 0;
+-		g_ArrayEnumeratorSource->MemoryBytesOffset = layoutOffset;
+-		layoutOffset += sizeof(void*);
+-		g_ArrayEnumeratorIndex->MemoryBytesOffset = layoutOffset;
+-		layoutOffset += sizeof(std::int64_t);
+-		g_ArrayEnumeratorLength->MemoryBytesOffset = layoutOffset;
+-		layoutOffset += sizeof(std::int64_t);
+-		raw->MemoryBytesSize = layoutOffset;
+-		raw->LayoutingState = TypeLayoutingState::Visited;
+-
+-		MethodSymbol* moveNext = factory.Method(
+-			SymbolAccesibility::Public,
+-			LINK_INSTANCE,
+-			SymbolTable::Primitives::Boolean,
+-			L"MoveNext",
+-			&array_enumerator_MoveNext);
+-
+-		moveNext->Parent = raw;
+-		raw->Methods.push_back(moveNext);
+-
+-		PropertySymbol* currentProperty = factory.Property(L"Current", typeParam, LINK_INSTANCE);
+-		currentProperty->Accesibility = SymbolAccesibility::Public;
+-		currentProperty->Parent = raw;
+-		AccessorSymbol* currentGetter = factory.Getter(currentProperty);
+-		currentGetter->Parent = currentProperty;
+-		currentGetter->FunctionPointer = &array_enumerator_Current_get;
+-		currentGetter->HandleType = MethodHandleType::External;
+-		raw->Properties.push_back(currentProperty);
+-		raw->Methods.push_back(currentGetter);
+-
+-		GenericTypeSymbol* enumeratorInterface = factory.GenericType(TRAIT_ENUMERATOR, { { L"T", typeParam } });
+-		raw->Interfaces.push_back(enumeratorInterface);
+-		raw->InterfaceMethodMap[TRAIT_ENUMERATOR_MOVENEXT] = moveNext;
+-		raw->InterfaceMethodMap[TRAIT_ENUMERATOR_CURRENT_GET] = currentGetter;
+-
+-		SymbolTable::StandardTypes::ArrayEnumerator = raw;
+-		SymbolTable::StandardTypes::ArrayEnumerator_T = typeParam;
+-		SymbolTable::StandardTypes::ArrayEnumerator_SourceField = g_ArrayEnumeratorSource;
+-		SymbolTable::StandardTypes::ArrayEnumerator_IndexField = g_ArrayEnumeratorIndex;
+-		SymbolTable::StandardTypes::ArrayEnumerator_LengthField = g_ArrayEnumeratorLength;
++		SymbolBuilder<ClassSymbol> builder(table, L"ArrayEnumerator", SymbolTable::Global::Namespace);
++		CLASS_ARRAYENUMERATOR = builder
++			.Implements(TRAIT_ENUMERATOR)
++			.DeclareGlobal();
++
++		CLASS_ARRAYENUMERATOR_T = builder
++			.AddTypeParameter(L"T");
++
++		CLASS_ARRAYENUMERATOR_SourceField = builder
++			.AddField(L"_source", factory.Array(CLASS_ARRAYENUMERATOR_T), LINK_INSTANCE, ACS_PRIVATE);
++
++		CLASS_ARRAYENUMERATOR_IndexField = builder
++			.AddField(L"_index", TYPE_INT, LINK_INSTANCE, ACS_PRIVATE);
++
++		CLASS_ARRAYENUMERATOR_LengthField = builder
++			.AddField(L"_length", TYPE_INT, LINK_INSTANCE, ACS_PRIVATE);
++
++		inherit_size(CLASS_ARRAYENUMERATOR_SourceField);
++		inherit_size(CLASS_ARRAYENUMERATOR_IndexField);
++		inherit_size(CLASS_ARRAYENUMERATOR_LengthField);
++
++		builder.AddMethod(L"MoveNext", TYPE_BOOL, LINK_INSTANCE)
++			.IsImplementationOf(TRAIT_ENUMERATOR_MOVENEXT)
++			.SetCallback(&array_enumerator_MoveNext);
++
++		builder.AddProperty(L"Current", CLASS_ARRAYENUMERATOR_T, LINK_INSTANCE)
++			.AddGetter()
++			.IsImplementationOf(TRAIT_ENUMERATOR_CURRENT_GET)
++			.SetCallback(&array_enumerator_Current_get);
+ 	}
+ 
+ 	// Make the primitive array type implement IEnumerable<T> through a native GetEnumerator
+ 	{
+-		GenericTypeSymbol* enumerableInterface = factory.GenericType(TRAIT_ENUMERABLE, { { L"T", TRAIT_ENUMERABLE->TypeParameters[0] } });
+-		MethodSymbol* getEnumerator = factory.Method(
+-			SymbolAccesibility::Public,
+-			LINK_INSTANCE,
+-			factory.GenericType(TRAIT_ENUMERATOR, { { L"T", TRAIT_ENUMERATOR->TypeParameters[0] } }),
+-			L"GetEnumerator",
+-			&primitive_array_get_enumerator);
+-
+-		getEnumerator->Parent = SymbolTable::Primitives::Array;
+-		SymbolTable::Primitives::Array->Methods.push_back(getEnumerator);
+-		SymbolTable::Primitives::Array->Interfaces.push_back(enumerableInterface);
+-		SymbolTable::Primitives::Array->InterfaceMethodMap[TRAIT_ENUMERABLE_GETENUMERATOR] = getEnumerator;
++		SymbolBuilder<ClassSymbol> builder(table, static_cast<ClassSymbol*>(TYPE_ARRAY));
++		builder.Implements(TRAIT_ENUMERABLE);
++
++		GenericTypeSymbol* enumeratorReturnType = factory.GenericType(TRAIT_ENUMERATOR, { { L"T", TRAIT_ENUMERATOR->TypeParameters[0] } });
++		builder.AddMethod(L"GetEnumerator", enumeratorReturnType, LINK_INSTANCE)
++			.IsImplementationOf(TRAIT_ENUMERABLE_GETENUMERATOR)
++			.SetCallback(&primitive_array_get_enumerator);
+ 	}
+ 
+ 	resolved = true;
+@@ -536,75 +413,47 @@ static void ResolveStandards(SymbolTable* table)
+ 
+ 	// Runtime class with capture_stack_trace
+ 	{
+-		ClassSymbol* raw = factory.Class(L"runtime");
+-		raw->Accesibility = SymbolAccesibility::Public;
+-		raw->Parent = SymbolTable::Global::Type;
+-		raw->FullName = L"runtime";
+-		declareGlobal(raw);
+-
+-		MethodSymbol* method = factory.Method(
+-			SymbolAccesibility::Public,
+-			LINK_STATIC,
+-			SymbolTable::Primitives::String,
+-			L"capture_stack_trace",
+-			&runtime_capture_stack_trace);
+-
+-		method->Parent = raw;
+-		raw->Methods.push_back(method);
+-
+-		SymbolTable::StandardTypes::Runtime = raw;
+-		SymbolTable::StandardTypes::RuntimeCaptureStackTrace = method;
++		SymbolBuilder<ClassSymbol> builder = SymbolBuilder<ClassSymbol>(table, L"runtime", SymbolTable::Global::Namespace);
++		SymbolTable::StandardTypes::Runtime = builder
++			.DeclareGlobal();
++		
++		SymbolTable::StandardTypes::RuntimeCaptureStackTrace = builder.AddMethod(L"capture_stack_trace", SymbolTable::Primitives::String, LINK_STATIC)
++			.SetCallback(&runtime_capture_stack_trace);
+ 	}
+ 
+ 	// RuntimeException class
+ 	{
+-		ClassSymbol* raw = factory.Class(L"RuntimeException");
+-		raw->Accesibility = SymbolAccesibility::Public;
+-		raw->Parent = SymbolTable::Global::Type;
+-		raw->FullName = L"RuntimeException";
+-		raw->Interfaces.push_back(TRAIT_THROWABLE);
+-		declareGlobal(raw);
+-
+-		ConstructorSymbol* ctor = factory.Constructor(raw, SymbolAccesibility::Public);
+-		ctor->Parent = raw;
+-		raw->Constructors.push_back(ctor);
+-
+-		FieldSymbol* messageField = nullptr;
+-		FieldSymbol* stackTraceField = nullptr;
+-		AddRuntimeExceptionProperty(raw, L"message", messageField, factory);
+-		AddRuntimeExceptionProperty(raw, L"stack_trace", stackTraceField, factory);
+-
+-		SymbolTable::StandardTypes::RuntimeExceptionMessageField = messageField;
+-		SymbolTable::StandardTypes::RuntimeExceptionStackTraceField = stackTraceField;
+-
+-		// Map IThrowable getters to RuntimeException getters
+-		for (PropertySymbol* ifaceProp : TRAIT_THROWABLE->Properties)
+-		{
+-			if (ifaceProp->Getter == nullptr)
+-				continue;
+-
+-			for (PropertySymbol* classProp : raw->Properties)
+-			{
+-				if (classProp->Getter == nullptr)
+-					continue;
+-
+-				if (classProp->Name == ifaceProp->Name &&
+-					TypeSymbol::Equals(classProp->ReturnType, ifaceProp->ReturnType))
+-				{
+-					raw->InterfaceMethodMap[ifaceProp->Getter] = classProp->Getter;
+-					break;
+-				}
+-			}
+-		}
++		SymbolBuilder<ClassSymbol> builder = SymbolBuilder<ClassSymbol>(table, L"RuntimeException", SymbolTable::Global::Namespace);
++		SymbolTable::StandardTypes::RuntimeException = builder
++			.Implements(TRAIT_THROWABLE)
++			.DeclareGlobal();
++
++		builder
++			.AddInit();
++
++		SymbolBuilder<PropertySymbol> messageProp = builder.AddProperty(L"message", SymbolTable::Primitives::String, LINK_INSTANCE);
++		SymbolTable::StandardTypes::RuntimeExceptionMessageField = messageProp
++			.AddBackingField();
++
++		messageProp.AddGetter()
++			.IsImplementationOf(TRAIT_THROWABLE_getMessage)
++			.SetCallback([](const CallState& context) { return context.Args[0]->GetField(SymbolTable::StandardTypes::RuntimeExceptionMessageField); });
++			
++		SymbolBuilder<PropertySymbol> stackTraceProp = builder.AddProperty(L"message", SymbolTable::Primitives::String, LINK_INSTANCE);
++		SymbolTable::StandardTypes::RuntimeExceptionStackTraceField = stackTraceProp
++			.AddBackingField();
++
++		stackTraceProp.AddGetter()
++			.IsImplementationOf(TRAIT_THROWABLE_getStackTrace)
++			.SetCallback([](const CallState& context) { return context.Args[0]->GetField(SymbolTable::StandardTypes::RuntimeExceptionStackTraceField); });
+ 
+ 		// RuntimeException is created implicitly and does not go through normal
+ 		// layout generation; lay it out manually so the runtime can instantiate it.
+-		messageField->MemoryBytesOffset = 0;
+-		stackTraceField->MemoryBytesOffset = sizeof(void*);
+-		raw->MemoryBytesSize = 2 * sizeof(void*);
+-		raw->LayoutingState = TypeLayoutingState::Visited;
++		inherit_size(SymbolTable::StandardTypes::RuntimeExceptionMessageField);
++		inherit_size(SymbolTable::StandardTypes::RuntimeExceptionStackTraceField);
+ 
+-		SymbolTable::StandardTypes::RuntimeException = raw;
++		SymbolTable::StandardTypes::RuntimeException->AnalysisState = SymbolAnalysisState::Ready;
++		SymbolTable::StandardTypes::RuntimeException->LayoutingState = TypeLayoutingState::Visited;
+ 	}
+ 
+ 	resolved = true;
+@@ -623,6 +472,7 @@ static void ResolveGlobalComponents(SymbolTable* table)
+ 	CreatingGlobalSymbolTable = false;
+ 
+ 	SymbolTable* global = GlobalSymbolTable.get();
++	SymbolTable::Global::Namespace->Node = new NamespaceNode();
+ 
+ 	ResolvePrimitives(global);
+ 	ResolveInterfaces(global); // Resolve standard interface traits before they are used below.
+@@ -630,16 +480,15 @@ static void ResolveGlobalComponents(SymbolTable* table)
+ 	ResolveStandards(global);
+ 
+ 	// Make standard primitives implement IPrintable
+-	SymbolFactory factory(global);
+-
+-	MakePrimitivePrintable(SymbolTable::Primitives::Boolean, &primitive_boolean_to_string, factory, TRAIT_PRINTABLE_ToString);
+-	MakePrimitivePrintable(SymbolTable::Primitives::Integer, &primitive_integer_to_string, factory, TRAIT_PRINTABLE_ToString);
+-	MakePrimitivePrintable(SymbolTable::Primitives::Double, &primitive_double_to_string, factory, TRAIT_PRINTABLE_ToString);
+-	MakePrimitivePrintable(SymbolTable::Primitives::Char, &primitive_char_to_string, factory, TRAIT_PRINTABLE_ToString);
+-	MakePrimitivePrintable(SymbolTable::Primitives::String, &primitive_string_to_string, factory, TRAIT_PRINTABLE_ToString);
+-	MakePrimitivePrintable(SymbolTable::Primitives::Array, &primitive_array_to_string, factory, TRAIT_PRINTABLE_ToString);
+-	MakePrimitivePrintable(SymbolTable::Primitives::NativeInteger, &primitive_nint_to_string, factory, TRAIT_PRINTABLE_ToString);
++	make_printable<StructSymbol>(SymbolTable::Primitives::Boolean, global, &primitive_boolean_to_string);
++	make_printable<StructSymbol>(SymbolTable::Primitives::Integer, global, &primitive_integer_to_string);
++	make_printable<StructSymbol>(SymbolTable::Primitives::Double, global, &primitive_double_to_string);
++	make_printable<StructSymbol>(SymbolTable::Primitives::Char, global, &primitive_char_to_string);
++	make_printable<ClassSymbol>(SymbolTable::Primitives::String, global, &primitive_string_to_string);
++	make_printable<ClassSymbol>(SymbolTable::Primitives::Array, global, &primitive_array_to_string);
++	make_printable<StructSymbol>(SymbolTable::Primitives::NativeInteger, global, &primitive_nint_to_string);
+ 
++	SymbolFactory factory(table);
+ 	RegisterPrimitiveOperators(factory);
+ 
+ 	global->MarkAllSymbolsReady();
+@@ -736,10 +585,13 @@ void SymbolTable::MarkAllSymbolsReady()
+ {
+ 	for (const auto& symbol : namespacesList)
+ 		symbol->AdvanceAnalysisState(SymbolAnalysisState::Ready);
++
+ 	for (const auto& symbol : typesList)
+ 		symbol->AdvanceAnalysisState(SymbolAnalysisState::Ready);
++
+ 	for (const auto& symbol : membersList)
+ 		symbol->AdvanceAnalysisState(SymbolAnalysisState::Ready);
++
+ 	for (const auto& symbol : triviasList)
+ 		symbol->AdvanceAnalysisState(SymbolAnalysisState::Ready);
+ }
+@@ -747,23 +599,35 @@ void SymbolTable::MarkAllSymbolsReady()
+ void SymbolTable::MarkJustCreatedSymbolsReady()
+ {
+ 	for (const auto& symbol : namespacesList)
++	{
+ 		if (symbol->AnalysisState == SymbolAnalysisState::JustCreated)
+ 			symbol->AdvanceAnalysisState(SymbolAnalysisState::Ready);
++	}
++
+ 	for (const auto& symbol : typesList)
++	{
+ 		if (symbol->AnalysisState == SymbolAnalysisState::JustCreated)
+ 			symbol->AdvanceAnalysisState(SymbolAnalysisState::Ready);
++	}
++
+ 	for (const auto& symbol : membersList)
++	{
+ 		if (symbol->AnalysisState == SymbolAnalysisState::JustCreated)
+ 			symbol->AdvanceAnalysisState(SymbolAnalysisState::Ready);
++	}
++
+ 	for (const auto& symbol : triviasList)
++	{
+ 		if (symbol->AnalysisState == SymbolAnalysisState::JustCreated)
+ 			symbol->AdvanceAnalysisState(SymbolAnalysisState::Ready);
++	}
+ }
+ 
+ const std::vector<NamespaceSymbol*> SymbolTable::GetNamespaceSymbols()
+ {
+ 	std::vector<NamespaceSymbol*> result;
+ 	result.reserve(namespacesList.size());
++
+ 	for (const auto& symbol : namespacesList)
+ 		result.push_back(symbol.get());
+ 
+@@ -774,6 +638,7 @@ const std::vector<TypeSymbol*> SymbolTable::GetTypeSymbols()
+ {
+ 	std::vector<TypeSymbol*> result;
+ 	result.reserve(typesList.size());
++
+ 	for (const auto& symbol : typesList)
+ 		result.push_back(symbol.get());
+ 
+diff --git a/ShardScript/src/semantic/primitives/GlobalMethods.cpp b/ShardScript/src/semantic/primitives/GlobalMethods.cpp
+index a03317d..7219cc5 100644
+--- a/ShardScript/src/semantic/primitives/GlobalMethods.cpp
++++ b/ShardScript/src/semantic/primitives/GlobalMethods.cpp
+@@ -27,5 +27,5 @@ void shard::RegisterGlobalMethods(SymbolFactory& factory)
+ 		return nullptr;
+ 	});
+ 
+-	SymbolTable::Global::Type->OnSymbolDeclared(haltMethod);
++	SymbolTable::Global::Namespace->OnSymbolDeclared(haltMethod);
+ }
