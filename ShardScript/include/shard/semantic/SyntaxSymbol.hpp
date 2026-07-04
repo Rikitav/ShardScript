@@ -59,7 +59,6 @@ namespace shard
 
 		inline virtual ~SyntaxSymbol() = default;
 		
-		
 		virtual void OnSymbolDeclared(SyntaxSymbol* symbol) { }
         virtual bool IsType() const { return false; }
         virtual bool IsMember() const { return false; }

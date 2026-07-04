@@ -1,0 +1,5 @@
+namespace Test;
+
+public static func Main() -> void
+{
+}

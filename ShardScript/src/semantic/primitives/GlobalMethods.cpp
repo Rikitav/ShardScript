@@ -27,5 +27,5 @@ void shard::RegisterGlobalMethods(SymbolFactory& factory)
 		return nullptr;
 	});
 
-	SymbolTable::Global::Type->OnSymbolDeclared(haltMethod);
+	SymbolTable::Global::Namespace->OnSymbolDeclared(haltMethod);
 }

@@ -41,40 +41,70 @@ using namespace std::ranges;
 using namespace std::views;
 using namespace shard;
 
-TypeSymbol* SymbolTable::Global::Type = new TypeSymbol(GlobalTypeName, SyntaxKind::CompilationUnit);
-SemanticScope* SymbolTable::Global::Scope = new SemanticScope(Type, nullptr);
+NamespaceSymbol* SymbolTable::Global::Namespace = new NamespaceSymbol(GlobalTypeName);
+SemanticScope* SymbolTable::Global::Scope = new SemanticScope(Namespace, nullptr);
 
 static std::unique_ptr<SymbolTable> GlobalSymbolTable;
 static bool CreatingGlobalSymbolTable = false;
 
-inline static void declareGlobal(SyntaxSymbol* symbol)
+namespace
 {
-	SymbolTable::Global::Scope->DeclareSymbol(symbol);
-}
-
-template<typename B, typename D>
-static std::unique_ptr<D> unique_cast(std::unique_ptr<B> ptr)
-{
-	D* tmp = static_cast<D*>(ptr.get());
-	std::unique_ptr<D> derivedPointer;
-
-	if (tmp != nullptr)
+	inline static void declareGlobal(SyntaxSymbol* symbol)
 	{
-		ptr.release();
-		derivedPointer.reset(tmp);
+		SymbolTable::Global::Scope->DeclareSymbol(symbol);
 	}
 
-	return derivedPointer;
-}
+	template<typename B, typename D>
+	static inline std::unique_ptr<D> unique_cast(std::unique_ptr<B> ptr)
+	{
+		D* tmp = static_cast<D*>(ptr.get());
+		std::unique_ptr<D> derivedPointer;
 
-static std::string WStringToString(const std::wstring& value)
-{
-	std::string result;
-	result.reserve(value.size());
-	for (wchar_t ch : value)
-		result.push_back(static_cast<char>(ch));
+		if (tmp != nullptr)
+		{
+			ptr.release();
+			derivedPointer.reset(tmp);
+		}
 
-	return result;
+		return derivedPointer;
+	}
+
+	static inline std::string WStringToString(const std::wstring& value)
+	{
+		std::string result;
+		result.reserve(value.size());
+		for (wchar_t ch : value)
+			result.push_back(static_cast<char>(ch));
+
+		return result;
+	}
+
+	template<typename T>
+	static inline void make_primitive(TypeSymbol*& symbol, const wchar_t* name, const size_t memoryBytesSize)
+	{
+		symbol = new T(name);
+		symbol->MemoryBytesSize = memoryBytesSize;
+		symbol->LayoutingState = TypeLayoutingState::Visited;
+		symbol->AnalysisState = SymbolAnalysisState::Ready;
+	}
+
+	template<typename T>
+	static inline void make_printable(TypeSymbol*& symbol, SymbolTable* table, MethodSymbolDelegate toString)
+	{
+		SymbolBuilder<T> builder(table, static_cast<T*>(symbol));
+		builder.Implements(TRAIT_PRINTABLE);
+
+		builder.AddMethod(L"ToString", SymbolTable::Primitives::String, LINK_INSTANCE)
+			.IsImplementationOf(TRAIT_PRINTABLE_ToString)
+			.SetCallback(toString);
+	}
+
+	static inline void inherit_size(FieldSymbol* field)
+	{
+		TypeSymbol* parent = static_cast<TypeSymbol*>(field->Parent);
+		field->MemoryBytesOffset = parent->MemoryBytesSize;
+		parent->MemoryBytesSize += field->ReturnType->GetInlineSize();
+	}
 }
 
 static ObjectInstance* primitive_boolean_to_string(const CallState& context)
@@ -104,46 +134,40 @@ static ObjectInstance* primitive_char_to_string(const CallState& context)
 static ObjectInstance* primitive_string_to_string(const CallState& context)
 {
 	ObjectInstance* self = context.Args[0];
-	//self->IncrementReference();
 	return self;
-}
-
-static ObjectInstance* InvokeToString(const VirtualMachine* host, ObjectInstance* instance)
-{
-	TypeSymbol* type = const_cast<TypeSymbol*>(instance->getInfo());
-	MethodSymbol* implementation = type->FindInterfaceImplementation(TRAIT_PRINTABLE_ToString);
-
-	/*
-	if (implementation == nullptr)
-		throw std::runtime_error("Type '" + WStringToString(type->FullName) + "' does not implement IPrintable");
-	*/
-
-	if (implementation == nullptr)
-		return nullptr;
-
-	host->InvokeMethod(implementation, { instance });
-	ObjectInstance* result = host->CurrentFrame()->PopStack();
-	if (result == nullptr || result->getInfo() != SymbolTable::Primitives::String)
-		throw std::runtime_error("ToString did not return a string");
-
-	return result;
-}
-
-static void AppendAsString(const CallState& context, std::wostringstream& result, ObjectInstance* instance)
-{
-	ObjectInstance* asString = InvokeToString(&context.Runtimer, instance);
-	if (asString == nullptr)
-	{
-		result << instance->getInfo()->FullName;
-		return;
-	}
-
-	result << asString->AsString();
-	context.Collector.CollectInstance(asString);
 }
 
 static ObjectInstance* primitive_array_to_string(const CallState& context)
 {
+	auto InvokeToString = [&](ObjectInstance* instance) -> ObjectInstance*
+	{
+		TypeSymbol* type = const_cast<TypeSymbol*>(instance->getInfo());
+		MethodSymbol* implementation = type->FindInterfaceImplementation(TRAIT_PRINTABLE_ToString);
+
+		if (implementation == nullptr)
+			return nullptr;
+
+		context.Runtimer.InvokeMethod(implementation, { instance });
+		ObjectInstance* result = context.Runtimer.CurrentFrame()->PopStack();
+		if (result == nullptr || result->getInfo() != SymbolTable::Primitives::String)
+			throw std::runtime_error("ToString did not return a string");
+
+		return result;
+	};
+
+	auto AppendAsString = [&](std::wostringstream& result, ObjectInstance* instance) -> void
+	{
+		ObjectInstance* asString = InvokeToString(instance);
+		if (asString == nullptr)
+		{
+			result << instance->getInfo()->FullName;
+			return;
+		}
+
+		result << asString->AsString();
+		context.Collector.CollectInstance(asString);
+	};
+
 	ObjectInstance* instance = context.Args[0]; // this
 	const ArrayTypeSymbol* array = static_cast<const ArrayTypeSymbol*>(instance->getInfo());
 	size_t size = array->Length;
@@ -155,14 +179,14 @@ static ObjectInstance* primitive_array_to_string(const CallState& context)
 	result << L"[";
 
 	ObjectInstance* element = instance->GetElement(0);
-	AppendAsString(context, result, element);
+	AppendAsString(result, element);
 	context.Collector.CollectInstance(element);
 
 	for (size_t i = 1; i < size; ++i)
 	{
 		result << L", ";
 		ObjectInstance* element = instance->GetElement(i);
-		AppendAsString(context, result, element);
+		AppendAsString(result, element);
 		context.Collector.CollectInstance(element);
 	}
 
@@ -182,67 +206,22 @@ static ObjectInstance* runtime_capture_stack_trace(const CallState& context)
 	return context.Collector.FromValue(trace);
 }
 
-static AccessorSymbol* AddInterfaceGetter(InterfaceSymbol* iface, const std::wstring& name, SymbolFactory& factory)
-{
-	PropertySymbol* property = factory.Property(name, SymbolTable::Primitives::String, LINK_INSTANCE);
-	property->Accesibility = SymbolAccesibility::Public;
-	property->Parent = iface;
-
-	AccessorSymbol* getter = factory.Getter(property);
-	getter->Parent = property;
-	getter->HandleType = MethodHandleType::None;
-
-	iface->Properties.push_back(property);
-	iface->Methods.push_back(getter);
-
-	return getter;
-}
-
-static void AddRuntimeExceptionProperty(ClassSymbol* cls, const std::wstring& name, FieldSymbol*& outField, SymbolFactory& factory)
-{
-	PropertySymbol* property = factory.Property(name, SymbolTable::Primitives::String, LINK_INSTANCE);
-	property->Accesibility = SymbolAccesibility::Public;
-	property->Parent = cls;
-
-	FieldSymbol* backingField = factory.BackingField(property);
-	backingField->Parent = cls;
-	cls->Fields.push_back(backingField);
-
-	AccessorSymbol* getter = factory.Getter(property);
-	getter->Parent = property;
-
-	ByteCodeEncoder encoder;
-	encoder.EmitLoadVarible(getter->ExecutableByteCode, 0);
-	encoder.EmitLoadField(getter->ExecutableByteCode, backingField);
-
-	cls->Properties.push_back(property);
-	cls->Methods.push_back(getter);
-
-	outField = backingField;
-}
-
-static ClassSymbol* g_ArrayEnumeratorClass = nullptr;
-static TypeParameterSymbol* g_ArrayEnumeratorT = nullptr;
-static FieldSymbol* g_ArrayEnumeratorSource = nullptr;
-static FieldSymbol* g_ArrayEnumeratorIndex = nullptr;
-static FieldSymbol* g_ArrayEnumeratorLength = nullptr;
-
 static ObjectInstance* array_enumerator_MoveNext(const CallState& context)
 {
 	ObjectInstance* self = context.Args[0];
-	std::int64_t index = self->GetField(g_ArrayEnumeratorIndex, context.Frame)->AsInteger();
-	std::int64_t length = self->GetField(g_ArrayEnumeratorLength, context.Frame)->AsInteger();
+	std::int64_t index = self->GetField(CLASS_ARRAYENUMERATOR_IndexField, context.Frame)->AsInteger();
+	std::int64_t length = self->GetField(CLASS_ARRAYENUMERATOR_LengthField, context.Frame)->AsInteger();
 	
 	index++;
-	self->SetField(g_ArrayEnumeratorIndex, context.Collector.FromValue(index), context.Frame);
+	self->SetField(CLASS_ARRAYENUMERATOR_IndexField, context.Collector.FromValue(index), context.Frame);
 	return context.Collector.FromValue(index < length);
 }
 
 static ObjectInstance* array_enumerator_Current_get(const CallState& context)
 {
 	ObjectInstance* self = context.Args[0];
-	std::int64_t index = self->GetField(g_ArrayEnumeratorIndex, context.Frame)->AsInteger();
-	ObjectInstance* source = self->GetField(g_ArrayEnumeratorSource, context.Frame);
+	std::int64_t index = self->GetField(CLASS_ARRAYENUMERATOR_IndexField, context.Frame)->AsInteger();
+	ObjectInstance* source = self->GetField(CLASS_ARRAYENUMERATOR_SourceField, context.Frame);
 	return source->GetElement(static_cast<std::size_t>(index), context.Frame);
 }
 
@@ -252,28 +231,18 @@ static ObjectInstance* primitive_array_get_enumerator(const CallState& context)
 	const ArrayTypeSymbol* arrayType = static_cast<const ArrayTypeSymbol*>(array->getInfo());
 	TypeSymbol* concreteT = const_cast<TypeSymbol*>(arrayType->UnderlayingType);
 
-	GenericTypeSymbol* enumeratorType = new GenericTypeSymbol(g_ArrayEnumeratorClass);
-	enumeratorType->AddTypeParameter(g_ArrayEnumeratorT, concreteT);
+	GenericTypeSymbol* enumeratorType = new GenericTypeSymbol(CLASS_ARRAYENUMERATOR);
+	enumeratorType->AddTypeParameter(CLASS_ARRAYENUMERATOR_T, concreteT);
 	enumeratorType->Inlining = TypeInlining::ByReference;
-	enumeratorType->MemoryBytesSize = g_ArrayEnumeratorClass->MemoryBytesSize;
+	enumeratorType->MemoryBytesSize = CLASS_ARRAYENUMERATOR->MemoryBytesSize;
 	enumeratorType->LayoutingState = TypeLayoutingState::Visited;
 
 	ObjectInstance* enumerator = context.Collector.AllocateInstance(enumeratorType);
-	enumerator->SetField(g_ArrayEnumeratorSource, array, context.Frame);
-	enumerator->SetField(g_ArrayEnumeratorIndex, context.Collector.FromValue(static_cast<std::int64_t>(-1)), context.Frame);
-	enumerator->SetField(g_ArrayEnumeratorLength, context.Collector.FromValue(static_cast<std::int64_t>(arrayType->Length)), context.Frame);
+	enumerator->SetField(CLASS_ARRAYENUMERATOR_SourceField, array, context.Frame);
+	enumerator->SetField(CLASS_ARRAYENUMERATOR_IndexField, context.Collector.FromValue(static_cast<std::int64_t>(-1)), context.Frame);
+	enumerator->SetField(CLASS_ARRAYENUMERATOR_LengthField, context.Collector.FromValue(static_cast<std::int64_t>(arrayType->Length)), context.Frame);
 
 	return enumerator;
-}
-
-static void MakePrimitivePrintable(TypeSymbol* primitive, MethodSymbolDelegate toString, SymbolFactory& factory, MethodSymbol* TRAIT_PRINTABLE_ToString)
-{
-	MethodSymbol* method = factory.Method(SymbolAccesibility::Public, LINK_INSTANCE, SymbolTable::Primitives::String, L"ToString", toString);
-	method->Parent = primitive;
-
-	primitive->Methods.push_back(method);
-	primitive->Interfaces.push_back(TRAIT_PRINTABLE);
-	primitive->InterfaceMethodMap[TRAIT_PRINTABLE_ToString] = method;
 }
 
 static void ResolvePrimitives(SymbolTable* table)
@@ -287,58 +256,20 @@ static void ResolvePrimitives(SymbolTable* table)
 	// ============================================================================
 	// Matters
 	// ============================================================================
-	SymbolTable::Primitives::Void = new StructSymbol(L"Void");
-	SymbolTable::Primitives::Any = new StructSymbol(L"Any");
-	SymbolTable::Primitives::Null = new StructSymbol(L"Null");
-	SymbolTable::Primitives::NativeInteger = new ClassSymbol(L"IntPtr");
-
-	SymbolTable::Primitives::Void->LayoutingState = TypeLayoutingState::Visited;
-	SymbolTable::Primitives::Any->LayoutingState = TypeLayoutingState::Visited;
-	SymbolTable::Primitives::Null->LayoutingState = TypeLayoutingState::Visited;
-
-	SymbolTable::Primitives::Void->MemoryBytesSize = 0;
-	SymbolTable::Primitives::Any->MemoryBytesSize = 0;
-	SymbolTable::Primitives::Null->MemoryBytesSize = 0;
-	SymbolTable::Primitives::NativeInteger->MemoryBytesSize = sizeof(void*);
-
-	// Primitives are created outside the normal declaration pipeline, so they are
-	// marked ready immediately after their layout is fixed.
-	SymbolTable::Primitives::Void->AnalysisState = SymbolAnalysisState::Ready;
-	SymbolTable::Primitives::Any->AnalysisState = SymbolAnalysisState::Ready;
-	SymbolTable::Primitives::Null->AnalysisState = SymbolAnalysisState::Ready;
-	SymbolTable::Primitives::NativeInteger->AnalysisState = SymbolAnalysisState::Ready;
+	make_primitive<StructSymbol>(SymbolTable::Primitives::Void, L"Void", 0);
+	make_primitive<StructSymbol>(SymbolTable::Primitives::Any, L"Any", 0);
+	make_primitive<StructSymbol>(SymbolTable::Primitives::Null, L"Null", 0);
+	make_primitive<ClassSymbol>(SymbolTable::Primitives::NativeInteger, L"IntPtr", sizeof(void*));
 
 	// ============================================================================
 	// Primitives
 	// ============================================================================
-	SymbolTable::Primitives::Boolean = new StructSymbol(L"Boolean");
-	SymbolTable::Primitives::Integer = new StructSymbol(L"Integer");
-	SymbolTable::Primitives::Double = new StructSymbol(L"Double");
-	SymbolTable::Primitives::Char = new StructSymbol(L"Char");
-	SymbolTable::Primitives::String = new ClassSymbol(L"String");
-	SymbolTable::Primitives::Array = new ClassSymbol(L"Array");
-
-	SymbolTable::Primitives::Boolean->LayoutingState = TypeLayoutingState::Visited;
-	SymbolTable::Primitives::Integer->LayoutingState = TypeLayoutingState::Visited;
-	SymbolTable::Primitives::Double->LayoutingState = TypeLayoutingState::Visited;
-	SymbolTable::Primitives::Char->LayoutingState = TypeLayoutingState::Visited;
-	SymbolTable::Primitives::String->LayoutingState = TypeLayoutingState::Visited;
-	SymbolTable::Primitives::Array->LayoutingState = TypeLayoutingState::Visited;
-	SymbolTable::Primitives::NativeInteger->LayoutingState = TypeLayoutingState::Visited;
-
-	SymbolTable::Primitives::Boolean->MemoryBytesSize = sizeof(bool);
-	SymbolTable::Primitives::Integer->MemoryBytesSize = sizeof(std::int64_t);
-	SymbolTable::Primitives::Double->MemoryBytesSize = sizeof(double);
-	SymbolTable::Primitives::Char->MemoryBytesSize = sizeof(wchar_t);
-	SymbolTable::Primitives::String->MemoryBytesSize = sizeof(std::int64_t) + sizeof(wchar_t*); // long _length + char[] _data
-	SymbolTable::Primitives::Array->MemoryBytesSize = sizeof(std::int64_t);					    // long _length
-
-	SymbolTable::Primitives::Boolean->AnalysisState = SymbolAnalysisState::Ready;
-	SymbolTable::Primitives::Integer->AnalysisState = SymbolAnalysisState::Ready;
-	SymbolTable::Primitives::Double->AnalysisState = SymbolAnalysisState::Ready;
-	SymbolTable::Primitives::Char->AnalysisState = SymbolAnalysisState::Ready;
-	SymbolTable::Primitives::String->AnalysisState = SymbolAnalysisState::Ready;
-	SymbolTable::Primitives::Array->AnalysisState = SymbolAnalysisState::Ready;
+	make_primitive<StructSymbol>(SymbolTable::Primitives::Boolean, L"Boolean", sizeof(bool));
+	make_primitive<StructSymbol>(SymbolTable::Primitives::Integer, L"Integer", sizeof(std::int64_t));
+	make_primitive<StructSymbol>(SymbolTable::Primitives::Double, L"Double", sizeof(double));
+	make_primitive<StructSymbol>(SymbolTable::Primitives::Char, L"Char", sizeof(wchar_t));
+	make_primitive<ClassSymbol>(SymbolTable::Primitives::String, L"String", sizeof(std::int64_t) + sizeof(wchar_t*));	// long _length + char[] _data
+	make_primitive<ClassSymbol>(SymbolTable::Primitives::Array, L"Array", sizeof(std::int64_t));						// long _length
 
 	resolved = true;
 }
@@ -353,75 +284,65 @@ static void ResolveInterfaces(SymbolTable* table)
 
 	// IThrowable
 	{
-		TRAIT_THROWABLE = factory.Interface(L"IThrowable", SymbolAccesibility::Public, SymbolTable::Global::Type);
-		TRAIT_THROWABLE_getMessage = AddInterfaceGetter(TRAIT_THROWABLE, L"message", factory);
-		TRAIT_THROWABLE_getStackTrace = AddInterfaceGetter(TRAIT_THROWABLE, L"stack_trace", factory);
+		SymbolBuilder<InterfaceSymbol> builder(table, L"IThrowable", SymbolTable::Global::Namespace);
+		TRAIT_THROWABLE = builder
+			.DeclareGlobal();
 
-		declareGlobal(TRAIT_THROWABLE);
+		TRAIT_THROWABLE_getMessage = builder.AddProperty(L"message", TYPE_STRING, LINK_INSTANCE).AddGetter();
+		TRAIT_THROWABLE_getStackTrace = builder.AddProperty(L"stack_trace", TYPE_STRING, LINK_INSTANCE).AddGetter();
+
+		TRAIT_THROWABLE_getMessage->IsAbstract = true;
+		TRAIT_THROWABLE_getStackTrace->IsAbstract = true;
 	}
 
 	// IDisposable
 	{
-		TRAIT_DISPOSABLE = factory.Interface(L"IDisposable", SymbolAccesibility::Public, SymbolTable::Global::Type);
-		TRAIT_DISPOSABLE_Dispose = factory.Method(L"Dispose", SymbolTable::Primitives::Void, LINK_INSTANCE);
+		SymbolBuilder<InterfaceSymbol> builder(table, L"IDisposable", SymbolTable::Global::Namespace);
+		TRAIT_DISPOSABLE = builder
+			.DeclareGlobal();
 
-		TRAIT_DISPOSABLE_Dispose->Parent = TRAIT_DISPOSABLE;
-		TRAIT_DISPOSABLE->Methods.push_back(TRAIT_DISPOSABLE_Dispose);
-
-		declareGlobal(TRAIT_DISPOSABLE);
+		TRAIT_DISPOSABLE_Dispose = builder.AddMethod(L"Dispose", TYPE_VOID, LINK_INSTANCE);
+		TRAIT_DISPOSABLE_Dispose->IsAbstract = true;
 	}
 
 	// IPrintable
 	{
-		TRAIT_PRINTABLE = factory.Interface(L"IPrintable", SymbolAccesibility::Public, SymbolTable::Global::Type);
-		TRAIT_PRINTABLE_ToString = factory.Method(L"ToString", SymbolTable::Primitives::String, LINK_INSTANCE);
-		
-		TRAIT_PRINTABLE_ToString->Parent = TRAIT_PRINTABLE;
-		TRAIT_PRINTABLE->Methods.push_back(TRAIT_PRINTABLE_ToString);
+		SymbolBuilder<InterfaceSymbol> builder(table, L"IPrintable", SymbolTable::Global::Namespace);
+		TRAIT_PRINTABLE = builder
+			.DeclareGlobal();
 
-		declareGlobal(TRAIT_PRINTABLE);
+		TRAIT_PRINTABLE_ToString = builder.AddMethod(L"ToString", TYPE_STRING, LINK_INSTANCE);
+		TRAIT_PRINTABLE_ToString->IsAbstract = true;
 	}
 
 	// IEnumerator<T>
 	{
-		TRAIT_ENUMERATOR = factory.Interface(L"IEnumerator", SymbolAccesibility::Public, SymbolTable::Global::Type);
+		SymbolBuilder<InterfaceSymbol> builder(table, L"IEnumerator", SymbolTable::Global::Namespace);
+		TRAIT_ENUMERATOR = builder
+			.DeclareGlobal();
 
-		TypeParameterSymbol* enumeratorTypeParam = factory.TypeParameter(L"T", TRAIT_ENUMERATOR);
-		TRAIT_ENUMERATOR->TypeParameters.push_back(enumeratorTypeParam);
+		TypeParameterSymbol* enumeratorTypeParam = builder
+			.AddTypeParameter(L"T");
 
-		TRAIT_ENUMERATOR_MOVENEXT = factory.Method(L"MoveNext", SymbolTable::Primitives::Boolean, LINK_INSTANCE);
-		TRAIT_ENUMERATOR_MOVENEXT->Accesibility = SymbolAccesibility::Public;
-		TRAIT_ENUMERATOR_MOVENEXT->Parent = TRAIT_ENUMERATOR;
-		TRAIT_ENUMERATOR->Methods.push_back(TRAIT_ENUMERATOR_MOVENEXT);
+		TRAIT_ENUMERATOR_MOVENEXT = builder.AddMethod(L"MoveNext", TYPE_BOOL, LINK_INSTANCE);
+		TRAIT_ENUMERATOR_CURRENT_GET = builder.AddProperty(L"Current", enumeratorTypeParam, LINK_INSTANCE).AddGetter();
 
-		PropertySymbol* currentProperty = factory.Property(L"Current", enumeratorTypeParam, LINK_INSTANCE);
-		currentProperty->Accesibility = SymbolAccesibility::Public;
-		currentProperty->Parent = TRAIT_ENUMERATOR;
-		AccessorSymbol* currentGetter = factory.Getter(currentProperty);
-		currentGetter->Parent = currentProperty;
-		currentGetter->HandleType = MethodHandleType::None;
-		TRAIT_ENUMERATOR->Properties.push_back(currentProperty);
-		TRAIT_ENUMERATOR->Methods.push_back(currentGetter);
-		TRAIT_ENUMERATOR_CURRENT_GET = currentGetter;
-
-		declareGlobal(TRAIT_ENUMERATOR);
+		TRAIT_ENUMERATOR_MOVENEXT->IsAbstract = true;
+		TRAIT_ENUMERATOR_CURRENT_GET->IsAbstract = true;
 	}
 
 	// IEnumerable<T>
 	{
-		TRAIT_ENUMERABLE = factory.Interface(L"IEnumerable", SymbolAccesibility::Public, SymbolTable::Global::Type);
+		SymbolBuilder<InterfaceSymbol> builder(table, L"IEnumerable", SymbolTable::Global::Namespace);
+		TRAIT_ENUMERABLE = builder
+			.DeclareGlobal();
 
-		TypeParameterSymbol* enumerableTypeParam = factory.TypeParameter(L"T", TRAIT_ENUMERABLE);
-		TRAIT_ENUMERABLE->TypeParameters.push_back(enumerableTypeParam);
+		TypeParameterSymbol* enumerableTypeParam = builder
+			.AddTypeParameter(L"T");
 
 		GenericTypeSymbol* enumeratorReturnType = factory.GenericType(TRAIT_ENUMERATOR, { { L"T", enumerableTypeParam } });
-
-		TRAIT_ENUMERABLE_GETENUMERATOR = factory.Method(L"GetEnumerator", enumeratorReturnType, LINK_INSTANCE);
-		TRAIT_ENUMERABLE_GETENUMERATOR->Accesibility = SymbolAccesibility::Public;
-		TRAIT_ENUMERABLE_GETENUMERATOR->Parent = TRAIT_ENUMERABLE;
-		TRAIT_ENUMERABLE->Methods.push_back(TRAIT_ENUMERABLE_GETENUMERATOR);
-
-		declareGlobal(TRAIT_ENUMERABLE);
+		TRAIT_ENUMERABLE_GETENUMERATOR = builder.AddMethod(L"GetEnumerator", enumeratorReturnType, LINK_INSTANCE);
+		TRAIT_ENUMERABLE_GETENUMERATOR->IsAbstract = true;
 	}
 
 	resolved = true;
@@ -437,90 +358,46 @@ static void ResolveEnumerables(SymbolTable* table)
 
 	// ArrayEnumerator<T>
 	{
-		ClassSymbol* raw = factory.Class(L"ArrayEnumerator");
-		raw->Accesibility = SymbolAccesibility::Public;
-		raw->Inlining = TypeInlining::ByReference;
-		raw->Parent = SymbolTable::Global::Type;
-		raw->FullName = L"ArrayEnumerator";
-		declareGlobal(raw);
+		SymbolBuilder<ClassSymbol> builder(table, L"ArrayEnumerator", SymbolTable::Global::Namespace);
+		CLASS_ARRAYENUMERATOR = builder
+			.Implements(TRAIT_ENUMERATOR)
+			.DeclareGlobal();
 
-		TypeParameterSymbol* typeParam = factory.TypeParameter(L"T", raw);
-		raw->TypeParameters.push_back(typeParam);
+		CLASS_ARRAYENUMERATOR_T = builder
+			.AddTypeParameter(L"T");
 
-		g_ArrayEnumeratorClass = raw;
-		g_ArrayEnumeratorT = typeParam;
+		CLASS_ARRAYENUMERATOR_SourceField = builder
+			.AddField(L"_source", factory.Array(CLASS_ARRAYENUMERATOR_T), LINK_INSTANCE, ACS_PRIVATE);
 
-		g_ArrayEnumeratorSource = factory.Field(L"_source", factory.Array(typeParam), LINK_INSTANCE);
-		g_ArrayEnumeratorSource->Accesibility = SymbolAccesibility::Private;
-		g_ArrayEnumeratorSource->Parent = raw;
-		raw->Fields.push_back(g_ArrayEnumeratorSource);
+		CLASS_ARRAYENUMERATOR_IndexField = builder
+			.AddField(L"_index", TYPE_INT, LINK_INSTANCE, ACS_PRIVATE);
 
-		g_ArrayEnumeratorIndex = factory.Field(L"_index", SymbolTable::Primitives::Integer, LINK_INSTANCE);
-		g_ArrayEnumeratorIndex->Accesibility = SymbolAccesibility::Private;
-		g_ArrayEnumeratorIndex->Parent = raw;
-		raw->Fields.push_back(g_ArrayEnumeratorIndex);
+		CLASS_ARRAYENUMERATOR_LengthField = builder
+			.AddField(L"_length", TYPE_INT, LINK_INSTANCE, ACS_PRIVATE);
 
-		g_ArrayEnumeratorLength = factory.Field(L"_length", SymbolTable::Primitives::Integer, LINK_INSTANCE);
-		g_ArrayEnumeratorLength->Accesibility = SymbolAccesibility::Private;
-		g_ArrayEnumeratorLength->Parent = raw;
-		raw->Fields.push_back(g_ArrayEnumeratorLength);
+		inherit_size(CLASS_ARRAYENUMERATOR_SourceField);
+		inherit_size(CLASS_ARRAYENUMERATOR_IndexField);
+		inherit_size(CLASS_ARRAYENUMERATOR_LengthField);
 
-		std::size_t layoutOffset = 0;
-		g_ArrayEnumeratorSource->MemoryBytesOffset = layoutOffset;
-		layoutOffset += sizeof(void*);
-		g_ArrayEnumeratorIndex->MemoryBytesOffset = layoutOffset;
-		layoutOffset += sizeof(std::int64_t);
-		g_ArrayEnumeratorLength->MemoryBytesOffset = layoutOffset;
-		layoutOffset += sizeof(std::int64_t);
-		raw->MemoryBytesSize = layoutOffset;
-		raw->LayoutingState = TypeLayoutingState::Visited;
+		builder.AddMethod(L"MoveNext", TYPE_BOOL, LINK_INSTANCE)
+			.IsImplementationOf(TRAIT_ENUMERATOR_MOVENEXT)
+			.SetCallback(&array_enumerator_MoveNext);
 
-		MethodSymbol* moveNext = factory.Method(
-			SymbolAccesibility::Public,
-			LINK_INSTANCE,
-			SymbolTable::Primitives::Boolean,
-			L"MoveNext",
-			&array_enumerator_MoveNext);
-
-		moveNext->Parent = raw;
-		raw->Methods.push_back(moveNext);
-
-		PropertySymbol* currentProperty = factory.Property(L"Current", typeParam, LINK_INSTANCE);
-		currentProperty->Accesibility = SymbolAccesibility::Public;
-		currentProperty->Parent = raw;
-		AccessorSymbol* currentGetter = factory.Getter(currentProperty);
-		currentGetter->Parent = currentProperty;
-		currentGetter->FunctionPointer = &array_enumerator_Current_get;
-		currentGetter->HandleType = MethodHandleType::External;
-		raw->Properties.push_back(currentProperty);
-		raw->Methods.push_back(currentGetter);
-
-		GenericTypeSymbol* enumeratorInterface = factory.GenericType(TRAIT_ENUMERATOR, { { L"T", typeParam } });
-		raw->Interfaces.push_back(enumeratorInterface);
-		raw->InterfaceMethodMap[TRAIT_ENUMERATOR_MOVENEXT] = moveNext;
-		raw->InterfaceMethodMap[TRAIT_ENUMERATOR_CURRENT_GET] = currentGetter;
-
-		SymbolTable::StandardTypes::ArrayEnumerator = raw;
-		SymbolTable::StandardTypes::ArrayEnumerator_T = typeParam;
-		SymbolTable::StandardTypes::ArrayEnumerator_SourceField = g_ArrayEnumeratorSource;
-		SymbolTable::StandardTypes::ArrayEnumerator_IndexField = g_ArrayEnumeratorIndex;
-		SymbolTable::StandardTypes::ArrayEnumerator_LengthField = g_ArrayEnumeratorLength;
+		builder.AddProperty(L"Current", CLASS_ARRAYENUMERATOR_T, LINK_INSTANCE)
+			.AddGetter()
+			.IsImplementationOf(TRAIT_ENUMERATOR_CURRENT_GET)
+			.SetCallback(&array_enumerator_Current_get);
 	}
 
 	// Make the primitive array type implement IEnumerable<T> through a native GetEnumerator
 	{
-		GenericTypeSymbol* enumerableInterface = factory.GenericType(TRAIT_ENUMERABLE, { { L"T", TRAIT_ENUMERABLE->TypeParameters[0] } });
-		MethodSymbol* getEnumerator = factory.Method(
-			SymbolAccesibility::Public,
-			LINK_INSTANCE,
-			factory.GenericType(TRAIT_ENUMERATOR, { { L"T", TRAIT_ENUMERATOR->TypeParameters[0] } }),
-			L"GetEnumerator",
-			&primitive_array_get_enumerator);
+		SymbolBuilder<ClassSymbol> builder(table, static_cast<ClassSymbol*>(TYPE_ARRAY));
+		builder.Implements(TRAIT_ENUMERABLE);
 
-		getEnumerator->Parent = SymbolTable::Primitives::Array;
-		SymbolTable::Primitives::Array->Methods.push_back(getEnumerator);
-		SymbolTable::Primitives::Array->Interfaces.push_back(enumerableInterface);
-		SymbolTable::Primitives::Array->InterfaceMethodMap[TRAIT_ENUMERABLE_GETENUMERATOR] = getEnumerator;
+		GenericTypeSymbol* enumeratorReturnType = factory.GenericType(TRAIT_ENUMERATOR, { { L"T", TRAIT_ENUMERATOR->TypeParameters[0] } });
+		builder.AddMethod(L"GetEnumerator", enumeratorReturnType, LINK_INSTANCE)
+			.IsImplementationOf(TRAIT_ENUMERABLE_GETENUMERATOR)
+			.SetCallback(&primitive_array_get_enumerator);
 	}
 
 	resolved = true;
@@ -536,75 +413,47 @@ static void ResolveStandards(SymbolTable* table)
 
 	// Runtime class with capture_stack_trace
 	{
-		ClassSymbol* raw = factory.Class(L"runtime");
-		raw->Accesibility = SymbolAccesibility::Public;
-		raw->Parent = SymbolTable::Global::Type;
-		raw->FullName = L"runtime";
-		declareGlobal(raw);
-
-		MethodSymbol* method = factory.Method(
-			SymbolAccesibility::Public,
-			LINK_STATIC,
-			SymbolTable::Primitives::String,
-			L"capture_stack_trace",
-			&runtime_capture_stack_trace);
-
-		method->Parent = raw;
-		raw->Methods.push_back(method);
-
-		SymbolTable::StandardTypes::Runtime = raw;
-		SymbolTable::StandardTypes::RuntimeCaptureStackTrace = method;
+		SymbolBuilder<ClassSymbol> builder = SymbolBuilder<ClassSymbol>(table, L"runtime", SymbolTable::Global::Namespace);
+		SymbolTable::StandardTypes::Runtime = builder
+			.DeclareGlobal();
+		
+		SymbolTable::StandardTypes::RuntimeCaptureStackTrace = builder.AddMethod(L"capture_stack_trace", SymbolTable::Primitives::String, LINK_STATIC)
+			.SetCallback(&runtime_capture_stack_trace);
 	}
 
 	// RuntimeException class
 	{
-		ClassSymbol* raw = factory.Class(L"RuntimeException");
-		raw->Accesibility = SymbolAccesibility::Public;
-		raw->Parent = SymbolTable::Global::Type;
-		raw->FullName = L"RuntimeException";
-		raw->Interfaces.push_back(TRAIT_THROWABLE);
-		declareGlobal(raw);
+		SymbolBuilder<ClassSymbol> builder = SymbolBuilder<ClassSymbol>(table, L"RuntimeException", SymbolTable::Global::Namespace);
+		SymbolTable::StandardTypes::RuntimeException = builder
+			.Implements(TRAIT_THROWABLE)
+			.DeclareGlobal();
 
-		ConstructorSymbol* ctor = factory.Constructor(raw, SymbolAccesibility::Public);
-		ctor->Parent = raw;
-		raw->Constructors.push_back(ctor);
+		builder
+			.AddInit();
 
-		FieldSymbol* messageField = nullptr;
-		FieldSymbol* stackTraceField = nullptr;
-		AddRuntimeExceptionProperty(raw, L"message", messageField, factory);
-		AddRuntimeExceptionProperty(raw, L"stack_trace", stackTraceField, factory);
+		SymbolBuilder<PropertySymbol> messageProp = builder.AddProperty(L"message", SymbolTable::Primitives::String, LINK_INSTANCE);
+		SymbolTable::StandardTypes::RuntimeExceptionMessageField = messageProp
+			.AddBackingField();
 
-		SymbolTable::StandardTypes::RuntimeExceptionMessageField = messageField;
-		SymbolTable::StandardTypes::RuntimeExceptionStackTraceField = stackTraceField;
+		messageProp.AddGetter()
+			.IsImplementationOf(TRAIT_THROWABLE_getMessage)
+			.SetCallback([](const CallState& context) { return context.Args[0]->GetField(SymbolTable::StandardTypes::RuntimeExceptionMessageField); });
+			
+		SymbolBuilder<PropertySymbol> stackTraceProp = builder.AddProperty(L"message", SymbolTable::Primitives::String, LINK_INSTANCE);
+		SymbolTable::StandardTypes::RuntimeExceptionStackTraceField = stackTraceProp
+			.AddBackingField();
 
-		// Map IThrowable getters to RuntimeException getters
-		for (PropertySymbol* ifaceProp : TRAIT_THROWABLE->Properties)
-		{
-			if (ifaceProp->Getter == nullptr)
-				continue;
-
-			for (PropertySymbol* classProp : raw->Properties)
-			{
-				if (classProp->Getter == nullptr)
-					continue;
-
-				if (classProp->Name == ifaceProp->Name &&
-					TypeSymbol::Equals(classProp->ReturnType, ifaceProp->ReturnType))
-				{
-					raw->InterfaceMethodMap[ifaceProp->Getter] = classProp->Getter;
-					break;
-				}
-			}
-		}
+		stackTraceProp.AddGetter()
+			.IsImplementationOf(TRAIT_THROWABLE_getStackTrace)
+			.SetCallback([](const CallState& context) { return context.Args[0]->GetField(SymbolTable::StandardTypes::RuntimeExceptionStackTraceField); });
 
 		// RuntimeException is created implicitly and does not go through normal
 		// layout generation; lay it out manually so the runtime can instantiate it.
-		messageField->MemoryBytesOffset = 0;
-		stackTraceField->MemoryBytesOffset = sizeof(void*);
-		raw->MemoryBytesSize = 2 * sizeof(void*);
-		raw->LayoutingState = TypeLayoutingState::Visited;
+		inherit_size(SymbolTable::StandardTypes::RuntimeExceptionMessageField);
+		inherit_size(SymbolTable::StandardTypes::RuntimeExceptionStackTraceField);
 
-		SymbolTable::StandardTypes::RuntimeException = raw;
+		SymbolTable::StandardTypes::RuntimeException->AnalysisState = SymbolAnalysisState::Ready;
+		SymbolTable::StandardTypes::RuntimeException->LayoutingState = TypeLayoutingState::Visited;
 	}
 
 	resolved = true;
@@ -623,6 +472,7 @@ static void ResolveGlobalComponents(SymbolTable* table)
 	CreatingGlobalSymbolTable = false;
 
 	SymbolTable* global = GlobalSymbolTable.get();
+	SymbolTable::Global::Namespace->Node = new NamespaceNode();
 
 	ResolvePrimitives(global);
 	ResolveInterfaces(global); // Resolve standard interface traits before they are used below.
@@ -630,16 +480,15 @@ static void ResolveGlobalComponents(SymbolTable* table)
 	ResolveStandards(global);
 
 	// Make standard primitives implement IPrintable
-	SymbolFactory factory(global);
+	make_printable<StructSymbol>(SymbolTable::Primitives::Boolean, global, &primitive_boolean_to_string);
+	make_printable<StructSymbol>(SymbolTable::Primitives::Integer, global, &primitive_integer_to_string);
+	make_printable<StructSymbol>(SymbolTable::Primitives::Double, global, &primitive_double_to_string);
+	make_printable<StructSymbol>(SymbolTable::Primitives::Char, global, &primitive_char_to_string);
+	make_printable<ClassSymbol>(SymbolTable::Primitives::String, global, &primitive_string_to_string);
+	make_printable<ClassSymbol>(SymbolTable::Primitives::Array, global, &primitive_array_to_string);
+	make_printable<StructSymbol>(SymbolTable::Primitives::NativeInteger, global, &primitive_nint_to_string);
 
-	MakePrimitivePrintable(SymbolTable::Primitives::Boolean, &primitive_boolean_to_string, factory, TRAIT_PRINTABLE_ToString);
-	MakePrimitivePrintable(SymbolTable::Primitives::Integer, &primitive_integer_to_string, factory, TRAIT_PRINTABLE_ToString);
-	MakePrimitivePrintable(SymbolTable::Primitives::Double, &primitive_double_to_string, factory, TRAIT_PRINTABLE_ToString);
-	MakePrimitivePrintable(SymbolTable::Primitives::Char, &primitive_char_to_string, factory, TRAIT_PRINTABLE_ToString);
-	MakePrimitivePrintable(SymbolTable::Primitives::String, &primitive_string_to_string, factory, TRAIT_PRINTABLE_ToString);
-	MakePrimitivePrintable(SymbolTable::Primitives::Array, &primitive_array_to_string, factory, TRAIT_PRINTABLE_ToString);
-	MakePrimitivePrintable(SymbolTable::Primitives::NativeInteger, &primitive_nint_to_string, factory, TRAIT_PRINTABLE_ToString);
-
+	SymbolFactory factory(table);
 	RegisterPrimitiveOperators(factory);
 
 	global->MarkAllSymbolsReady();
@@ -736,10 +585,13 @@ void SymbolTable::MarkAllSymbolsReady()
 {
 	for (const auto& symbol : namespacesList)
 		symbol->AdvanceAnalysisState(SymbolAnalysisState::Ready);
+
 	for (const auto& symbol : typesList)
 		symbol->AdvanceAnalysisState(SymbolAnalysisState::Ready);
+
 	for (const auto& symbol : membersList)
 		symbol->AdvanceAnalysisState(SymbolAnalysisState::Ready);
+
 	for (const auto& symbol : triviasList)
 		symbol->AdvanceAnalysisState(SymbolAnalysisState::Ready);
 }
@@ -747,23 +599,35 @@ void SymbolTable::MarkAllSymbolsReady()
 void SymbolTable::MarkJustCreatedSymbolsReady()
 {
 	for (const auto& symbol : namespacesList)
+	{
 		if (symbol->AnalysisState == SymbolAnalysisState::JustCreated)
 			symbol->AdvanceAnalysisState(SymbolAnalysisState::Ready);
+	}
+
 	for (const auto& symbol : typesList)
+	{
 		if (symbol->AnalysisState == SymbolAnalysisState::JustCreated)
 			symbol->AdvanceAnalysisState(SymbolAnalysisState::Ready);
+	}
+
 	for (const auto& symbol : membersList)
+	{
 		if (symbol->AnalysisState == SymbolAnalysisState::JustCreated)
 			symbol->AdvanceAnalysisState(SymbolAnalysisState::Ready);
+	}
+
 	for (const auto& symbol : triviasList)
+	{
 		if (symbol->AnalysisState == SymbolAnalysisState::JustCreated)
 			symbol->AdvanceAnalysisState(SymbolAnalysisState::Ready);
+	}
 }
 
 const std::vector<NamespaceSymbol*> SymbolTable::GetNamespaceSymbols()
 {
 	std::vector<NamespaceSymbol*> result;
 	result.reserve(namespacesList.size());
+
 	for (const auto& symbol : namespacesList)
 		result.push_back(symbol.get());
 
@@ -774,6 +638,7 @@ const std::vector<TypeSymbol*> SymbolTable::GetTypeSymbols()
 {
 	std::vector<TypeSymbol*> result;
 	result.reserve(typesList.size());
+
 	for (const auto& symbol : typesList)
 		result.push_back(symbol.get());
 

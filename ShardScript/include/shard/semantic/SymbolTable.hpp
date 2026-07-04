@@ -22,6 +22,7 @@ namespace shard
     class FieldSymbol;
     class MethodSymbol;
     class AccessorSymbol;
+    class NamespaceSymbol;
     class TypeParameterSymbol;
 
     class SHARD_API SymbolTable
@@ -39,7 +40,7 @@ namespace shard
     public:
         struct Global
         {
-            static SHARD_API TypeSymbol* Type;
+            static SHARD_API NamespaceSymbol* Namespace;
             static SHARD_API SemanticScope* Scope;
         };
 
@@ -141,4 +142,11 @@ namespace shard
     inline InterfaceSymbol*& TRAIT_ENUMERATOR = shard::SymbolTable::StandardTypes::IEnumerator;
     inline AccessorSymbol*& TRAIT_ENUMERATOR_CURRENT_GET = shard::SymbolTable::StandardTypes::IEnumerator_Current_get;
     inline MethodSymbol*& TRAIT_ENUMERATOR_MOVENEXT = shard::SymbolTable::StandardTypes::IEnumerator_MoveNext;
+
+    inline ClassSymbol*& CLASS_ARRAYENUMERATOR = shard::SymbolTable::StandardTypes::ArrayEnumerator;
+    inline TypeParameterSymbol*& CLASS_ARRAYENUMERATOR_T = shard::SymbolTable::StandardTypes::ArrayEnumerator_T;
+    inline FieldSymbol*& CLASS_ARRAYENUMERATOR_SourceField = shard::SymbolTable::StandardTypes::ArrayEnumerator_SourceField;
+    inline FieldSymbol*& CLASS_ARRAYENUMERATOR_IndexField = shard::SymbolTable::StandardTypes::ArrayEnumerator_IndexField;
+    inline FieldSymbol*& CLASS_ARRAYENUMERATOR_LengthField = shard::SymbolTable::StandardTypes::ArrayEnumerator_LengthField;
+
 }

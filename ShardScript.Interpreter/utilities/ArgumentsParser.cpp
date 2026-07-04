@@ -82,7 +82,7 @@ void shard::ShardUtilities::ParseArguments(int argc, wchar_t* argv[])
         {
             ConsoleArguments::ExcludeStd = true;
         }
-        else if (arg == L"--decompile")
+        else if (arg == L"--decompiled")
         {
             ConsoleArguments::ShowDecompile = true;
             ConsoleArguments::RunProgram = false;

@@ -1482,10 +1482,13 @@ static bool IsInterfaceMember(MethodSymbol* method)
     {
         if (owner->Kind == SyntaxKind::InterfaceDeclaration)
             return true;
+
         if (owner->IsType())
             return false;
+
         owner = owner->Parent;
     }
+
     return false;
 }
 

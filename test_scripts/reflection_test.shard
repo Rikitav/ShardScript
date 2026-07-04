@@ -1,0 +1,72 @@
+using stdio;
+using collections;
+using reflection;
+
+namespace ReflectionTest;
+
+public static func Main() -> void
+{
+    println("\n@ List<int>");
+    listOfInts: List<int> = new List<int>();
+    listOfInts.Add(10);
+    listOfInts.Add(20);
+
+    listOfIntsType := Type.Of(listOfInts);
+    println("Name      : " + listOfIntsType.Name);
+    println("FullName  : " + listOfIntsType.FullName);
+    println("IsClass   : " + listOfIntsType.IsClass);
+    println("IsGeneric : " + listOfIntsType.IsGeneric);
+    println("IsArray   : " + listOfIntsType.IsArray);
+    
+    println("\n@ int[]");
+    arrayOfInts: int[] = 1..3;
+
+    arrayOfIntsType := Type.Of(arrayOfInts);
+    println("Name    : " + arrayOfIntsType.Name);
+    println("IsArray : " + arrayOfIntsType.IsArray);
+    println("Element : " + arrayOfIntsType.GetElementType().Name);
+    
+    println("\n@ int");
+    intType := Type.GetType("Integer");
+    println("Name        : " + intType.Name);
+    println("IsPrimitive : " + intType.IsPrimitive);
+    
+    println("\n@ collections.List");
+    listTypeByName := Type.GetType("collections.List");
+    println("Name : " + listTypeByName.Name);
+    
+    println("\n@ IEnumerable");
+    iEnumerableType := Type.GetType("IEnumerable");
+    println("Name                              : " + iEnumerableType.Name);
+    println("IsAssignableFrom int[]            : " + iEnumerableType.IsAssignableFrom(arrayOfIntsType));
+    println("IsAssignableFrom List<int>        : " + iEnumerableType.IsAssignableFrom(listOfIntsType));
+    println("IsAssignableFrom collections.List : " + iEnumerableType.IsAssignableFrom(listTypeByName));
+    
+    println("\n # Methods of List<int>");
+    methods := listOfIntsType.GetMethods();
+    foreach (m in methods)
+    {
+        println(m.Name);
+    }
+
+    println("\n # Fields of List<int>");
+    fields := listOfIntsType.GetFields();
+    foreach (f in fields)
+    {
+        println(f.Name);
+    }
+    
+    println("\n # Properties of List<int>");
+    props := listOfIntsType.GetProperties();
+    foreach (p in props)
+    {
+        println(p.Name);
+    }
+    
+    println("\n # Interfaces of List<int>");
+    ifaces := listOfIntsType.GetInterfaces();
+    foreach (i in ifaces)
+    {
+        println(i.Name);
+    }
+}

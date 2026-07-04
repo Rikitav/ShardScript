@@ -19,13 +19,6 @@ using namespace shard;
 
 namespace
 {
-    static MethodSymbol* GetIPrintableToString()
-    {
-        static std::wstring methodName = L"ToString";
-        static MethodSymbol* method = TRAIT_PRINTABLE->FindMethod(methodName, std::vector<TypeSymbol*>());
-        return method;
-    }
-
     static inline std::string thinify(const wchar_t* wstr)
     {
         size_t length = wcslen(wstr) + 1;
@@ -44,7 +37,7 @@ namespace
     static ObjectInstance* InvokeToString(const CallState& context, ObjectInstance* instance)
     {
         TypeSymbol* type = const_cast<TypeSymbol*>(instance->getInfo());
-        MethodSymbol* implementation = type->FindInterfaceImplementation(GetIPrintableToString());
+        MethodSymbol* implementation = type->FindInterfaceImplementation(TRAIT_PRINTABLE_ToString);
         if (implementation == nullptr)
             throw std::runtime_error("Type '" + thinify(type->FullName.c_str()) + "' does not implement IPrintable");
 

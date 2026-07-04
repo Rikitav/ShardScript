@@ -6,6 +6,7 @@
 #include <shard/semantic/NamespaceTree.hpp>
 
 #include <shard/semantic/symbols/NamespaceSymbol.hpp>
+#include <shard/semantic/symbols/InterfaceSymbol.hpp>
 #include <shard/semantic/symbols/ClassSymbol.hpp>
 #include <shard/semantic/symbols/EnumSymbol.hpp>
 #include <shard/semantic/symbols/MethodSymbol.hpp>
@@ -38,12 +39,19 @@ namespace shard
             "SymbolBuilder<T> can only be used with SyntaxSymbol-derived types");
 
     protected:
-        CompilationContext& Context;
+        SymbolTable* Table;
         SymbolFactory Factory;
         T* Symbol;
 
         SymbolBuilderBase(CompilationContext& ctx)
-            : Context(ctx), Factory(ctx.GetSemanticModel().Table.get()), Symbol(nullptr) {}
+            : Table(ctx.GetSemanticModel().Table.get()),
+              Factory(ctx.GetSemanticModel().Table.get()),
+              Symbol(nullptr) {}
+
+        SymbolBuilderBase(SymbolTable* table)
+            : Table(table),
+              Factory(table),
+              Symbol(nullptr) {}
 
     public:
         SymbolBuilderBase(const SymbolBuilderBase&) = delete;
@@ -62,6 +70,7 @@ namespace shard
     {
     public:
         SymbolBuilder(CompilationContext& ctx, const std::wstring& name, NamespaceSymbol* parent = nullptr);
+        SymbolBuilder(SymbolTable* table, const std::wstring& name, NamespaceSymbol* parent = nullptr);
 
         SymbolBuilder<MethodSymbol> AddMethod(
             const std::wstring& name,
@@ -86,6 +95,10 @@ namespace shard
 
         SymbolBuilder<NamespaceSymbol> AddNamespace(
             const std::wstring& name);
+
+        SymbolBuilder<InterfaceSymbol> AddInterface(
+            const std::wstring& name,
+            SymbolAccesibility access = ACS_PUBLIC);
     };
 
     template<>
@@ -93,6 +106,38 @@ namespace shard
     {
     public:
         SymbolBuilder(CompilationContext& ctx, const std::wstring& name, SyntaxSymbol* parent);
+        SymbolBuilder(SymbolTable* table, const std::wstring& name, SyntaxSymbol* parent);
+    };
+
+    template<>
+    class SHARD_API SymbolBuilder<InterfaceSymbol> : public SymbolBuilderBase<InterfaceSymbol>
+    {
+    public:
+        SymbolBuilder(CompilationContext& ctx, const std::wstring& name, SyntaxSymbol* parent);
+        SymbolBuilder(SymbolTable* table, const std::wstring& name, SyntaxSymbol* parent);
+
+        SymbolBuilder<MethodSymbol> AddMethod(
+            const std::wstring& name,
+            TypeSymbol* returnType,
+            SymbolLinking linking,
+            SymbolAccesibility access = SymbolAccesibility::Public);
+
+        SymbolBuilder<PropertySymbol> AddProperty(
+            const std::wstring& name,
+            TypeSymbol* type,
+            SymbolLinking linking,
+            SymbolAccesibility access = SymbolAccesibility::Public);
+
+        SymbolBuilder<IndexatorSymbol> AddIndexer(
+            TypeSymbol* type,
+            SymbolLinking linking,
+            SymbolAccesibility access = SymbolAccesibility::Public);
+
+        SymbolBuilder<TypeParameterSymbol> AddTypeParameter(
+            const std::wstring& name);
+
+        SymbolBuilder<InterfaceSymbol>& DeclareGlobal();
+        SymbolBuilder<InterfaceSymbol>& SetFullName(const std::wstring& fullName);
     };
 
     template<>
@@ -106,7 +151,17 @@ namespace shard
             SymbolAccesibility access,
             TypeSymbol* parent);
 
+        SymbolBuilder(SymbolTable* table,
+            const std::wstring& name,
+            TypeSymbol* type,
+            SymbolLinking linking,
+            SymbolAccesibility access,
+            TypeSymbol* parent);
+
         SymbolBuilder(CompilationContext& ctx,
+            PropertySymbol* parent);
+
+        SymbolBuilder(SymbolTable* table,
             PropertySymbol* parent);
     };
 
@@ -115,6 +170,10 @@ namespace shard
     {
     public:
         SymbolBuilder(CompilationContext& ctx,
+            SymbolAccesibility access,
+            TypeSymbol* parent);
+
+        SymbolBuilder(SymbolTable* table,
             SymbolAccesibility access,
             TypeSymbol* parent);
 
@@ -139,7 +198,17 @@ namespace shard
     class SHARD_API SymbolBuilder<MethodSymbol> : public SymbolBuilderBase<MethodSymbol>
     {
     public:
+        SymbolBuilder(SymbolTable* table,
+            MethodSymbol* symbol);
+
         SymbolBuilder(CompilationContext& ctx,
+            const std::wstring& name,
+            TypeSymbol* returnType,
+            SymbolLinking linking,
+            SymbolAccesibility access,
+            SyntaxSymbol* parent);
+
+        SymbolBuilder(SymbolTable* table,
             const std::wstring& name,
             TypeSymbol* returnType,
             SymbolLinking linking,
@@ -169,6 +238,11 @@ namespace shard
             SymbolAccesibility access,
             PropertySymbol* parent);
 
+        SymbolBuilder(SymbolTable* table,
+            bool isGetter,
+            SymbolAccesibility access,
+            PropertySymbol* parent);
+
         SymbolBuilder<AccessorSymbol>& SetCallback(
             MethodSymbolDelegate callback);
 
@@ -181,6 +255,13 @@ namespace shard
     {
     public:
         SymbolBuilder(CompilationContext& ctx,
+            const std::wstring& name,
+            TypeSymbol* type,
+            SymbolLinking linking,
+            SymbolAccesibility access,
+            TypeSymbol* parent);
+
+        SymbolBuilder(SymbolTable* table,
             const std::wstring& name,
             TypeSymbol* type,
             SymbolLinking linking,
@@ -207,6 +288,13 @@ namespace shard
             SymbolAccesibility access,
             TypeSymbol* parent);
 
+        SymbolBuilder(SymbolTable* table,
+            const std::wstring& name,
+            TypeSymbol* type,
+            SymbolLinking linking,
+            SymbolAccesibility access,
+            TypeSymbol* parent);
+
         SymbolBuilder<FieldSymbol> AddBackingField();
 
         SymbolBuilder<IndexatorSymbol>& AddParameter(
@@ -226,6 +314,8 @@ namespace shard
     public:
         SymbolBuilder(CompilationContext& ctx, ClassSymbol* symbol);
         SymbolBuilder(CompilationContext& ctx, const std::wstring& name, SyntaxSymbol* parent);
+        SymbolBuilder(SymbolTable* table, ClassSymbol* symbol);
+        SymbolBuilder(SymbolTable* table, const std::wstring& name, SyntaxSymbol* parent);
 
         SymbolBuilder<ConstructorSymbol> AddInit(
             SymbolAccesibility access = SymbolAccesibility::Public);
@@ -262,18 +352,29 @@ namespace shard
             SymbolLinking linking,
             SymbolAccesibility access = SymbolAccesibility::Public);
 
+        SymbolBuilder<OperatorSymbol> AddCastOperator(
+            TypeSymbol* targetType,
+            SymbolLinking linking = LINK_STATIC,
+            SymbolAccesibility access = SymbolAccesibility::Public);
+
         SymbolBuilder<ClassSymbol>& Implements(
             InterfaceSymbol* interface);
 
         SymbolBuilder<ClassSymbol>& Implements(
             GenericTypeSymbol* interface);
+
+        SymbolBuilder<ClassSymbol>& DeclareGlobal();
+        SymbolBuilder<ClassSymbol>& SetFullName(const std::wstring& fullName);
     };
 
     template<>
     class SHARD_API SymbolBuilder<StructSymbol> : public SymbolBuilderBase<StructSymbol>
     {
     public:
+        SymbolBuilder(CompilationContext& ctx, StructSymbol* symbol);
         SymbolBuilder(CompilationContext& ctx, const std::wstring& name, SyntaxSymbol* parent);
+        SymbolBuilder(SymbolTable* table, StructSymbol* symbol);
+        SymbolBuilder(SymbolTable* table, const std::wstring& name, SyntaxSymbol* parent);
 
         SymbolBuilder<ConstructorSymbol> AddInit(
             SymbolAccesibility access = SymbolAccesibility::Public);
@@ -310,11 +411,19 @@ namespace shard
             SymbolLinking linking,
             SymbolAccesibility access = SymbolAccesibility::Public);
 
+        SymbolBuilder<OperatorSymbol> AddCastOperator(
+            TypeSymbol* targetType,
+            SymbolLinking linking = LINK_STATIC,
+            SymbolAccesibility access = SymbolAccesibility::Public);
+
         SymbolBuilder<StructSymbol>& Implements(
             InterfaceSymbol* interface);
 
         SymbolBuilder<StructSymbol>& Implements(
             GenericTypeSymbol* interface);
+
+        SymbolBuilder<StructSymbol>& DeclareGlobal();
+        SymbolBuilder<StructSymbol>& SetFullName(const std::wstring& fullName);
     };
 
     template<>
@@ -322,6 +431,11 @@ namespace shard
     {
     public:
         SymbolBuilder(CompilationContext& ctx,
+            const std::wstring& name,
+            bool isFlags,
+            SyntaxSymbol* parent);
+
+        SymbolBuilder(SymbolTable* table,
             const std::wstring& name,
             bool isFlags,
             SyntaxSymbol* parent);
@@ -338,6 +452,13 @@ namespace shard
     {
     public:
         SymbolBuilder(CompilationContext& ctx,
+            TokenType opToken,
+            TypeSymbol* returnType,
+            SymbolLinking linking,
+            SymbolAccesibility access,
+            TypeSymbol* parent);
+
+        SymbolBuilder(SymbolTable* table,
             TokenType opToken,
             TypeSymbol* returnType,
             SymbolLinking linking,
