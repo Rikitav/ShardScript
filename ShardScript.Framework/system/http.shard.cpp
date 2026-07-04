@@ -191,10 +191,10 @@ static ObjectInstance* shard_http_Client_Dispose(const CallState& context) noexc
     ObjectInstance* instance = context.Args[0];
     httplib::Client* client = GetClientPtr(instance);
 
-    if (client)
+    if (client != nullptr)
     {
         delete client;
-        instance->SetField(shard_HttpClient_ClientField, context.Collector.FromValue(static_cast<int64_t>(0)));
+        instance->SetField(shard_HttpClient_ClientField, context.Collector.FromNint(nullptr, false));
     }
     
     return nullptr;
@@ -216,16 +216,18 @@ SHARDLIB_ENTRYPOINT
     shard_HttpResponse = respClass;
 
 	SymbolBuilder<PropertySymbol> statusCodeProp = respClass.AddProperty(L"StatusCode", TYPE_INT, LINK_INSTANCE, ACS_PUBLIC);
-    statusCodeProp.AddGetter();
-
     shard_HttpResponse_StatusField = statusCodeProp
         .AddBackingField();
 
-    SymbolBuilder<PropertySymbol> bodyProp = respClass.AddProperty(L"Body", TYPE_STRING, LINK_INSTANCE, ACS_PUBLIC);
-    bodyProp.AddGetter();
+    statusCodeProp.AddGetter()
+        .SetCallback([](const CallState& context) { return context.Args[0]->GetField(shard_HttpResponse_StatusField); });
 
+    SymbolBuilder<PropertySymbol> bodyProp = respClass.AddProperty(L"Body", TYPE_STRING, LINK_INSTANCE, ACS_PUBLIC);
     shard_HttpResponse_BodyField = bodyProp
         .AddBackingField();
+
+    bodyProp.AddGetter()
+        .SetCallback([](const CallState& context) { return context.Args[0]->GetField(shard_HttpResponse_BodyField); });
 
     // --- class HttpClient ---
     SymbolBuilder<ClassSymbol> clientClass = httpNamespace.AddClass(L"HttpClient");

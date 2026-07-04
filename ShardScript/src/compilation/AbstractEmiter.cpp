@@ -445,6 +445,10 @@ void AbstractEmiter::VisitAccessorDeclaration(AccessorDeclarationSyntax* node)
 				Encoder.EmitStoreField(GeneratingFor->ExecutableByteCode, property->BackingField);
 			}
 		}
+		else
+		{
+			throw std::runtime_error("property backing field not found");
+		}
 	}
 
 	GeneratingFor->ExecutableByteCode.shrink_to_fit();
