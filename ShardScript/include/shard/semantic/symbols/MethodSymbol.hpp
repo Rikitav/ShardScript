@@ -44,7 +44,7 @@ namespace shard
         std::vector<TypeParameterSymbol*> TypeParameters;
         std::vector<ParameterSymbol*> Parameters;
 
-        MethodHandleType HandleType = MethodHandleType::Body;
+        MethodHandleType HandleType = MethodHandleType::None;
         std::vector<std::byte> ExecutableByteCode;
         MethodSymbolDelegate FunctionPointer = nullptr;
 

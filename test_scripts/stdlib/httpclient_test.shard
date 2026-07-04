@@ -4,7 +4,7 @@ using net;
 public static func Main() -> void
 {
     defer client := new HttpClient("http://httpbin.org");
-    response := client.Get("/todos/1");
+    response := client.Get("/get");
 
     println("Status received: " + response.StatusCode);
     if (response.StatusCode == 200)
