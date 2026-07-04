@@ -9,6 +9,7 @@
 #include <cwchar>
 #include <string>
 #include <stdexcept>
+#include <cstdint>
 
 using namespace shard;
 
@@ -18,6 +19,7 @@ namespace
 	{
 		if (instance == nullptr)
 			return nullptr;
+
 		return const_cast<TypeSymbol*>(instance->getInfo());
 	}
 
@@ -25,8 +27,10 @@ namespace
 	{
 		if (instance == nullptr)
 			return true;
+
 		if (instance == GarbageCollector::NullInstance)
 			return true;
+
 		TypeSymbol* type = TypeOf(instance);
 		return type == TYPE_NULL;
 	}

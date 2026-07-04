@@ -9,6 +9,7 @@
 #include <cstring>
 #include <cwchar>
 #include <string>
+#include <sstream>
 #include <codecvt>
 #include <locale>
 
@@ -50,6 +51,7 @@ static void SetGlobalEnv_Linux(const std::wstring& name, const std::wstring& val
     std::string u8_name = converter.to_bytes(name);
     std::string u8_value = converter.to_bytes(value);
 
+    /* TODO
     const char* home = std::getenv("HOME");
     if (home)
     {
@@ -62,6 +64,7 @@ static void SetGlobalEnv_Linux(const std::wstring& name, const std::wstring& val
             outfile << "\nexport " << u8_name << "=\"" << u8_value << "\"\n";
         }
     }
+    */
 }
 
 #endif
@@ -89,7 +92,7 @@ static void setEnvVar(const wchar_t* name, const wchar_t* value)
 #else
     std::string narrowName(name, name + std::wcslen(name));
     std::string narrowValue(value, value + std::wcslen(value));
-    std::setenv(narrowName.c_str(), narrowValue.c_str(), 1);
+    setenv(narrowName.c_str(), narrowValue.c_str(), 1);
 #endif
 }
 

@@ -4,6 +4,8 @@
 #include <shard/lexical/TokenType.hpp>
 #include <shard/semantic/symbols/TypeSymbol.hpp>
 
+#include <cstdint>
+
 namespace shard
 {
 	class GarbageCollector;

@@ -727,9 +727,9 @@ SymbolBuilder<FieldSymbol>::SymbolBuilder(SymbolTable* table,
     : SymbolBuilderBase(table)
 {
     Symbol = Factory.BackingField(parent);
-    if (parent != nullptr)
+    if (parent != nullptr && parent->Parent != nullptr)
     {
-        parent->OnSymbolDeclared(Symbol);
+        parent->Parent->OnSymbolDeclared(Symbol);
     }
 }
 
@@ -780,7 +780,6 @@ SymbolBuilder<PropertySymbol>::SymbolBuilder(CompilationContext& ctx,
 SymbolBuilder<FieldSymbol> SymbolBuilder<PropertySymbol>::AddBackingField()
 {
     SymbolBuilder<FieldSymbol> builder(Table, Symbol);
-    builder.Get()->Parent = Symbol->Parent;
     return builder;
 }
 
