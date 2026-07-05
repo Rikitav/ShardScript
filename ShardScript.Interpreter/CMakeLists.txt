@@ -8,6 +8,16 @@ add_executable(ShardScript.Interpreter
     ${INTERPRETER_HEADERS}
 )
 
+if(ENABLE_ASAN)
+    if(MSVC)
+        target_compile_options(${PROJECT_NAME} PRIVATE /fsanitize=address)
+        target_link_options(${PROJECT_NAME} PRIVATE /fsanitize=address)
+    else()
+        target_compile_options(${PROJECT_NAME} PRIVATE -fsanitize=address -fno-omit-frame-pointer)
+        target_link_options(${PROJECT_NAME} PRIVATE -fsanitize=address)
+    endif()
+endif()
+
 target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../ShardScript/include")
 

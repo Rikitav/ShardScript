@@ -9,6 +9,16 @@ file(GLOB_RECURSE CPP_FILES CONFIGURE_DEPENDS
 foreach(CPP_FILE IN LISTS CPP_FILES)
   get_filename_component(SHARD_TARGET_NAME "${CPP_FILE}" NAME_WLE)
   add_library("${SHARD_TARGET_NAME}" SHARED "${CPP_FILE}")
+  
+if(ENABLE_ASAN)
+    if(MSVC)
+        target_compile_options(${SHARD_TARGET_NAME} PRIVATE /fsanitize=address)
+        target_link_options(${SHARD_TARGET_NAME} PRIVATE /fsanitize=address)
+    else()
+        target_compile_options(${SHARD_TARGET_NAME} PRIVATE -fsanitize=address -fno-omit-frame-pointer)
+        target_link_options(${SHARD_TARGET_NAME} PRIVATE -fsanitize=address)
+    endif()
+endif()
 
   set_target_properties("${SHARD_TARGET_NAME}" PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
 

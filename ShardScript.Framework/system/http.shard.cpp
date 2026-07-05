@@ -8,8 +8,6 @@
 //#define CPPHTTPLIB_OPENSSL_SUPPORT
 #include "httplib.h"
 
-#define lengthof(a) (sizeof(a) / sizeof(a[0]))
-
 using namespace shard;
 
 namespace
@@ -73,8 +71,11 @@ namespace
     }
 }
 
+TypeSymbol* shard_HttpServer = nullptr;
+FieldSymbol* shard_HttpServer_ClientPtrField = nullptr;
+
 TypeSymbol* shard_HttpClient = nullptr;
-FieldSymbol* shard_HttpClient_ClientField = nullptr;
+FieldSymbol* shard_HttpClient_ClientPtrField = nullptr;
 
 TypeSymbol* shard_HttpResponse = nullptr;
 FieldSymbol* shard_HttpResponse_StatusField = nullptr;
@@ -85,11 +86,23 @@ static httplib::Client* GetClientPtr(ObjectInstance* instance)
     if (!instance)
         return nullptr;
 
-    ObjectInstance* handleVal = instance->GetField(shard_HttpClient_ClientField);
+    ObjectInstance* handleVal = instance->GetField(shard_HttpClient_ClientPtrField);
     if (!handleVal)
         return nullptr;
 
     return reinterpret_cast<httplib::Client*>(handleVal->AsNint());
+}
+
+static httplib::Server* GetServerPtr(ObjectInstance* instance)
+{
+    if (!instance)
+        return nullptr;
+
+    ObjectInstance* handleVal = instance->GetField(shard_HttpServer_ClientPtrField);
+    if (!handleVal)
+        return nullptr;
+
+    return reinterpret_cast<httplib::Server*>(handleVal->AsNint());
 }
 
 // ============================================================================
@@ -122,7 +135,7 @@ static ObjectInstance* shard_http_Client_Init(const CallState& context) noexcept
     client->set_connection_timeout(std::chrono::seconds(5));
     client->set_read_timeout(std::chrono::seconds(5));
 
-    instance->SetField(shard_HttpClient_ClientField, context.Collector.FromNint(client, true));
+    instance->SetField(shard_HttpClient_ClientPtrField, context.Collector.FromNint(client, true));
     return instance;
 }
 
@@ -194,9 +207,105 @@ static ObjectInstance* shard_http_Client_Dispose(const CallState& context) noexc
     if (client != nullptr)
     {
         delete client;
-        instance->SetField(shard_HttpClient_ClientField, context.Collector.FromNint(nullptr, false));
+        instance->SetField(shard_HttpClient_ClientPtrField, context.Collector.FromNint(nullptr, false));
     }
     
+    return nullptr;
+}
+
+// ============================================================================
+// class HttpServer
+// ============================================================================
+
+static ObjectInstance* shard_http_Server_Init(const CallState& context) noexcept
+{
+    ObjectInstance* instance = context.Args[0];
+    httplib::Server* server = new httplib::Server();
+
+    instance->SetField(shard_HttpServer_ClientPtrField, context.Collector.FromNint(server, true));
+    return instance;
+}
+
+static ObjectInstance* shard_http_Server_Get(const CallState& context) noexcept(false)
+{
+    ObjectInstance* instance = context.Args[0];
+    ObjectInstance* widePathObj = context.Args[1];
+    ObjectInstance* shardCallback = context.Args[2];
+
+    httplib::Server* server = GetServerPtr(instance);
+    if (server == nullptr)
+        throw std::runtime_error("HttpServer: Server is disposed.");
+
+    shardCallback->IncrementReference();
+    std::string path = WToUtf8(widePathObj->AsString());
+
+    server->Get(path, [shardCallback, &context](const httplib::Request& req, httplib::Response& res)
+    {
+		// Since this callback is executed in a different thread,
+        // we need to create a new VirtualMachine instance for this thread,
+        // to not interfere with the main thread's VM state.
+        // Basically a dumbass hack, for until i make async and thread context switching possible.
+		ApplicationDomain* appDomain = &context.Domain;
+        VirtualMachine innerVm(appDomain);
+
+        std::wstring wideBody = Utf8ToW(req.body);
+
+        //CallStackFrame dumbFrame(&innerVm, nullptr, nullptr, nullptr);
+        innerVm.PushFrame(nullptr);
+        innerVm.InvokeMethod(shardCallback->DelegateTarget, { context.Collector.FromValue(wideBody) });
+        
+        CallStackFrame* dumbFrame = innerVm.CurrentFrame();
+        ObjectInstance* responceBody = dumbFrame->PopStack();
+        
+		if (dumbFrame->InterruptionReason == FrameInterruptionReason::ExceptionRaised)
+		{
+			res.set_content(WToUtf8(dumbFrame->CurrentException->AsString()), "text/plain; charset=utf-8");
+			res.status = 500;
+		}
+        else
+        {
+            res.set_content(WToUtf8(responceBody->AsString()), "text/plain; charset=utf-8");
+            res.status = 200;
+        }
+
+        innerVm.GetGarbageCollector().DestroyInstance(responceBody);
+    });
+
+    return nullptr;
+}
+
+static ObjectInstance* shard_http_Server_Listen(const CallState& context) noexcept(false)
+{
+    ObjectInstance* instance = context.Args[0];
+    ObjectInstance* hostObj = context.Args[1];
+	ObjectInstance* portObj = context.Args[2];
+
+    std::string host = WToUtf8(hostObj->AsString());
+    int64_t port = portObj->AsInteger();
+
+    httplib::Server* server = GetServerPtr(instance);
+    if (server == nullptr)
+        throw std::runtime_error("HttpServer: Server is disposed.");
+
+	// block thread, this will run the server loop
+    bool success = server->listen(host, static_cast<int>(port));
+    if (!success)
+        throw std::runtime_error("HttpServer: Failed to bind or listen on \"" + host + "\" :" + std::to_string(port));
+
+    return nullptr;
+}
+
+static ObjectInstance* shard_http_Server_Dispose(const CallState& context) noexcept
+{
+    ObjectInstance* instance = context.Args[0];
+    httplib::Server* server = GetServerPtr(instance);
+
+    if (server != nullptr)
+    {
+        server->stop();
+        delete server;
+    }
+
     return nullptr;
 }
 
@@ -231,11 +340,10 @@ SHARDLIB_ENTRYPOINT
 
     // --- class HttpClient ---
     SymbolBuilder<ClassSymbol> clientClass = httpNamespace.AddClass(L"HttpClient");
-    shard_HttpClient = clientClass;
+    shard_HttpClient = clientClass
+        .Implements(TRAIT_DISPOSABLE);
 
-    clientClass.Implements(TRAIT_DISPOSABLE);
-
-    shard_HttpClient_ClientField = clientClass
+    shard_HttpClient_ClientPtrField = clientClass
         .AddField(L"_clientPtr", TYPE_NINT, LINK_INSTANCE, ACS_PRIVATE);
 
     clientClass.AddInit()
@@ -253,5 +361,34 @@ SHARDLIB_ENTRYPOINT
 
     clientClass.AddMethod(L"Dispose", TYPE_VOID, LINK_INSTANCE, ACS_PUBLIC)
         .SetCallback(&shard_http_Client_Dispose)
+        .IsImplementationOf(TRAIT_DISPOSABLE_Dispose);
+
+    // --- class HttpServer ---
+    SymbolBuilder<ClassSymbol> serverClass = httpNamespace.AddClass(L"HttpServer");
+    shard_HttpServer = serverClass
+        .Implements(TRAIT_DISPOSABLE);
+
+    shard_HttpServer_ClientPtrField = serverClass
+        .AddField(L"_nativeServer", TYPE_NINT, LINK_INSTANCE, ACS_PRIVATE);
+
+    serverClass.AddInit()
+        .SetCallback(&shard_http_Server_Init);
+
+	SymbolFactory& factory = serverClass.GetFactory();
+    std::vector<ParameterSymbol*> params = { factory.Parameter(L"requestBody", TYPE_STRING) };
+    DelegateTypeSymbol* delegate = factory.Delegate(L"ServerGetCallback", TYPE_STRING, params);
+
+    serverClass.AddMethod(L"Get", TYPE_VOID, LINK_INSTANCE)
+        .AddParameter(L"path", TYPE_STRING)
+        .AddParameter(L"handler", delegate)
+        .SetCallback(&shard_http_Server_Get);
+
+    serverClass.AddMethod(L"Listen", TYPE_VOID, LINK_INSTANCE)
+        .AddParameter(L"host", TYPE_STRING)
+        .AddParameter(L"port", TYPE_INT)
+        .SetCallback(&shard_http_Server_Listen);
+
+    serverClass.AddMethod(L"Dispose", TYPE_VOID, LINK_INSTANCE, ACS_PUBLIC)
+        .SetCallback(&shard_http_Server_Dispose)
         .IsImplementationOf(TRAIT_DISPOSABLE_Dispose);
 }

@@ -997,11 +997,16 @@ void AbstractEmiter::VisitLambdaExpression(LambdaExpressionSyntax* node)
 	MethodSymbol* previous = GeneratingFor;
 	GeneratingFor = node->Symbol->AnonymousSymbol;
 
+	std::vector<DeferScope> previousDefers = std::move(DeferScopes);
+	DeferScopes = std::vector<DeferScope>();
+
 	std::size_t reserve = node->Body->Statements.size() * 20;
 	GeneratingFor->ExecutableByteCode.reserve(reserve);
 	VisitStatementsBlock(node->Body.get());
 
 	GeneratingFor->ExecutableByteCode.shrink_to_fit();
+
+	DeferScopes = std::move(previousDefers);
 	GeneratingFor = previous;
 
 	Encoder.EmitNewDelegate(GeneratingFor->ExecutableByteCode, node->Symbol);
