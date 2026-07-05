@@ -74,6 +74,12 @@ namespace shard
             std::vector<std::size_t> ClauseEndBacktracks;
         };
 
+        struct DeferScope
+        {
+            std::vector<DeferStatementSyntax*> Defers;
+            bool IsLoop = false;
+        };
+
         ByteCodeEncoder Encoder;
         MethodSymbol* GeneratingFor = nullptr;
 		ProgramVirtualImage& Program;
@@ -83,11 +89,6 @@ namespace shard
         std::stack<LoopScope> Loops;
         std::stack<ClauseScope> Clauses;
 
-        struct DeferScope
-        {
-            std::vector<DeferStatementSyntax*> Defers;
-            bool IsLoop = false;
-        };
         std::vector<DeferScope> DeferScopes;
         bool PendingDeferScopeIsLoop = false;
 

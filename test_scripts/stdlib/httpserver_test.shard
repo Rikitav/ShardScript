@@ -1,0 +1,23 @@
+using stdio;
+using net;
+
+public static func Main() -> void
+{
+    defer server := new HttpServer();
+    
+    println("Setting up routes");
+    server.Get("/", lambda(requestBody: string) -> string
+    {
+        println("Received request : " + requestBody);
+        return "Hello World";
+    });
+    
+    server.Get("/test", lambda(requestBody: string) -> string
+    {
+        println("Received request : " + requestBody);
+        return "Keep yourself safe!";
+    });
+
+    println("Starting server on localhost:6969");
+    server.Listen("localhost", 6969);
+}

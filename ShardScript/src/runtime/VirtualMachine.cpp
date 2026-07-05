@@ -809,6 +809,7 @@ static bool HandleExceptionInFrame(CallStackFrame* frame, ByteCodeDecoder& decod
 		decoder.SetCursor(handlerOffset);
 		frame->EvalStack.push_back(exception);
 		exception->IncrementReference();
+
 		frame->CurrentException = exception;
 		frame->InterruptionReason = FrameInterruptionReason::None;
 		frame->InterruptionRegister = nullptr;
@@ -930,19 +931,6 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 		}
 	}
 
-	ObjectInstance* returnedValue = nullptr;
-	if ((method->HandleType == MethodHandleType::Body || method->HandleType == MethodHandleType::Lambda) &&
-		method->ReturnType != nullptr &&
-		method->ReturnType != SymbolTable::Primitives::Void &&
-		currentFrame->InterruptionReason != FrameInterruptionReason::ExceptionRaised)
-	{
-		if (!currentFrame->EvalStack.empty())
-		{
-			returnedValue = currentFrame->PopStack();
-			callingFrame->PushStack(returnedValue);
-		}
-	}
-
 	if (currentFrame->InterruptionReason == FrameInterruptionReason::ExceptionRaised)
 	{
 		ObjectInstance* exception = currentFrame->InterruptionRegister;
@@ -954,21 +942,33 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 			exception->IncrementReference();
 		}
 	}
-
-	bool skippedReturnedValue = false;
-	while (currentFrame->EvalStack.size() != 0)
+	else
 	{
-		ObjectInstance* top = currentFrame->PopStack();
-		if (top == nullptr)
-			continue;
-
-		if (!skippedReturnedValue && top == returnedValue)
+		ObjectInstance* returnedValue = nullptr;
+		if (method->ReturnType != nullptr && method->ReturnType != SymbolTable::Primitives::Void && currentFrame->InterruptionReason != FrameInterruptionReason::ExceptionRaised)
 		{
-			skippedReturnedValue = true;
-			continue;
+			if (!currentFrame->EvalStack.empty())
+			{
+				returnedValue = currentFrame->PopStack();
+				callingFrame->PushStack(returnedValue);
+			}
 		}
 
-		garbageCollector.DestroyInstance(top);
+		bool skippedReturnedValue = false;
+		while (currentFrame->EvalStack.size() != 0)
+		{
+			ObjectInstance* top = currentFrame->PopStack();
+			if (top == nullptr)
+				continue;
+
+			if (!skippedReturnedValue && top == returnedValue)
+			{
+				skippedReturnedValue = true;
+				continue;
+			}
+
+			garbageCollector.DestroyInstance(top);
+		}
 	}
 }
 
