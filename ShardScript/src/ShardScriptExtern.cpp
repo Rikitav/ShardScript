@@ -21,6 +21,7 @@
 #include <shard/semantic/symbols/NamespaceSymbol.hpp>
 #include <shard/semantic/symbols/ClassSymbol.hpp>
 #include <shard/semantic/symbols/FieldSymbol.hpp>
+#include <shard/semantic/symbols/PropertySymbol.hpp>
 
 #include <shard/semantic/SymbolFactory.hpp>
 #include <shard/semantic/SymbolTable.hpp>
@@ -2403,6 +2404,42 @@ extern "C"
         }
     }
 
+    SHARD_API ConstructorSymbol* Shard_CreateConstructorSymbol(CompilationContext* ctx, TypeSymbol* parentType, int accessibility)
+    {
+        try
+        {
+            if (ctx == nullptr || parentType == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return nullptr;
+            }
+
+            SymbolFactory factory(ctx->GetSemanticModel().Table.get());
+            auto* symbol = factory.Constructor(parentType, static_cast<SymbolAccesibility>(accessibility));
+            symbol->Parent = parentType;
+            symbol->ReturnType = SymbolTable::Primitives::Void;
+            symbol->HandleType = MethodHandleType::External;
+
+            parentType->OnSymbolDeclared(symbol);
+
+            NamespaceSymbol* ns = parentType->Parent != nullptr && parentType->Parent->Kind == SyntaxKind::NamespaceDeclaration
+                ? static_cast<NamespaceSymbol*>(parentType->Parent)
+                : nullptr;
+
+            if (ns != nullptr)
+                symbol->FullName = ns->FullName + L"." + parentType->Name + L".init";
+            else
+                symbol->FullName = parentType->Name + L".init";
+
+            return symbol;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
     SHARD_API ParameterSymbol* Shard_CreateParameterSymbol(CompilationContext* ctx, const wchar_t* name, TypeSymbol* type)
     {
         try
@@ -3324,6 +3361,257 @@ extern "C"
         catch (const std::exception& e)
         {
             SetLastErrorFromException(e);
+            return 0;
+        }
+    }
+
+    // =========================================================================
+    // Native callback binding helpers
+    // =========================================================================
+
+    SHARD_API int Shard_SetMethodCallback(MethodSymbol* method, MethodSymbolDelegate callback)
+    {
+        try
+        {
+            if (method == nullptr)
+            {
+                SetLastShardWError(L"method is null");
+                return -1;
+            }
+
+            method->FunctionPointer = callback;
+            method->HandleType = MethodHandleType::External;
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_SetConstructorCallback(ConstructorSymbol* ctor, MethodSymbolDelegate callback)
+    {
+        try
+        {
+            if (ctor == nullptr)
+            {
+                SetLastShardWError(L"constructor is null");
+                return -1;
+            }
+
+            ctor->FunctionPointer = callback;
+            ctor->HandleType = MethodHandleType::External;
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_SetAccessorCallback(AccessorSymbol* accessor, MethodSymbolDelegate callback)
+    {
+        try
+        {
+            if (accessor == nullptr)
+            {
+                SetLastShardWError(L"accessor is null");
+                return -1;
+            }
+
+            accessor->FunctionPointer = callback;
+            accessor->HandleType = MethodHandleType::External;
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API PropertySymbol* Shard_CreatePropertySymbol(
+        CompilationContext* ctx,
+        TypeSymbol* parentType,
+        const wchar_t* name,
+        TypeSymbol* type,
+        int /*isStatic*/,
+        int accessibility)
+    {
+        try
+        {
+            if (ctx == nullptr)
+            {
+                SetLastShardWError(L"compilation context is null");
+                return nullptr;
+            }
+
+            SymbolFactory factory(ctx->GetSemanticModel().Table.get());
+            PropertySymbol* property = factory.Property(name, type, LINK_INSTANCE);
+            property->Accesibility = accessibility != 0
+                ? SymbolAccesibility::Public
+                : SymbolAccesibility::Private;
+            property->Parent = parentType;
+
+            if (parentType != nullptr)
+            {
+                property->FullName = parentType->FullName + L"." + name;
+                parentType->OnSymbolDeclared(property);
+            }
+            else
+            {
+                property->FullName = name;
+            }
+
+            return property;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API AccessorSymbol* Shard_PropertyAddGetter(CompilationContext* ctx, PropertySymbol* property)
+    {
+        try
+        {
+            if (ctx == nullptr || property == nullptr)
+            {
+                SetLastShardWError(L"context or property is null");
+                return nullptr;
+            }
+
+            SymbolFactory factory(ctx->GetSemanticModel().Table.get());
+            AccessorSymbol* getter = factory.Getter(property);
+            getter->HandleType = MethodHandleType::External;
+            return getter;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API AccessorSymbol* Shard_PropertyAddSetter(CompilationContext* ctx, PropertySymbol* property)
+    {
+        try
+        {
+            if (ctx == nullptr || property == nullptr)
+            {
+                SetLastShardWError(L"context or property is null");
+                return nullptr;
+            }
+
+            SymbolFactory factory(ctx->GetSemanticModel().Table.get());
+            AccessorSymbol* setter = factory.Setter(property);
+            setter->HandleType = MethodHandleType::External;
+            return setter;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    // =========================================================================
+    // CallState accessors
+    // =========================================================================
+
+    SHARD_API std::size_t Shard_CallStateArgCount(const CallState* state)
+    {
+        try
+        {
+            if (state == nullptr)
+                return 0;
+
+            return state->Args.size();
+        }
+        catch (const std::exception&)
+        {
+            return 0;
+        }
+    }
+
+    SHARD_API ObjectInstance* Shard_CallStateArg(const CallState* state, std::size_t index)
+    {
+        try
+        {
+            if (state == nullptr || index >= state->Args.size())
+                return nullptr;
+
+            return state->Args[index];
+        }
+        catch (const std::exception&)
+        {
+            return nullptr;
+        }
+    }
+
+    SHARD_API GarbageCollector* Shard_CallStateCollector(const CallState* state)
+    {
+        try
+        {
+            if (state == nullptr)
+                return nullptr;
+
+            return &state->Collector;
+        }
+        catch (const std::exception&)
+        {
+            return nullptr;
+        }
+    }
+
+    SHARD_API MethodSymbol* Shard_CallStateMethod(const CallState* state)
+    {
+        try
+        {
+            if (state == nullptr)
+                return nullptr;
+
+            return state->Method;
+        }
+        catch (const std::exception&)
+        {
+            return nullptr;
+        }
+    }
+
+    SHARD_API CallStackFrame* Shard_CallStateFrame(const CallState* state)
+    {
+        try
+        {
+            if (state == nullptr)
+                return nullptr;
+
+            return state->Frame;
+        }
+        catch (const std::exception&)
+        {
+            return nullptr;
+        }
+    }
+
+    // =========================================================================
+    // String length helper
+    // =========================================================================
+
+    SHARD_API std::int64_t Shard_ReadStringLength(ObjectInstance* instance)
+    {
+        try
+        {
+            if (instance == nullptr)
+                return 0;
+
+            return instance->AsStringLength();
+        }
+        catch (const std::exception&)
+        {
             return 0;
         }
     }
