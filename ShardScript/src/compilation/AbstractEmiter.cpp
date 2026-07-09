@@ -1287,10 +1287,10 @@ void AbstractEmiter::VisitIndexatorExpression(IndexatorExpressionSyntax* node)
 	if (node->ToProperty == nullptr)
 		return;
 
-	VisitExpression(node->PreviousExpression.get());
-
 	if (node->IndexatorList != nullptr)
 		EmitIndexatorArguments(this, node->IndexatorList.get());
+
+	VisitExpression(node->PreviousExpression.get());
 
 	EmitMethodCall(node->ToProperty->Getter);
 	return;

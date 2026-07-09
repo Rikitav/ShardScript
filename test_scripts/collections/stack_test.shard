@@ -1,0 +1,29 @@
+using stdio;
+using collections;
+
+namespace collections_test;
+
+public static func Main() -> void
+{
+	stack := new Stack<int>();
+
+	stack.Push(10);
+	stack.Push(20);
+	stack.Push(30);
+
+	println(stack.Count);
+	println(stack.Peek());
+	println(stack.Pop());
+	println(stack.Pop());
+	println(stack.Count);
+
+	stack.Push(40);
+	println(stack.Contains(40));
+	println(stack.Contains(99));
+
+	while (stack.Count > 0)
+		println(stack.Pop());
+
+	stack.Clear();
+	println(stack.Count);
+}

@@ -54,7 +54,7 @@ Symbols do not own AST nodes (`SyntaxNode`). They live in the `SymbolTable`, whi
   - `Owners` — a list of `NamespaceSymbol*` associated with this node.
   - `Members` — all types/members declared in this namespace.
 
-When you create a `ClassSymbol` inside a `NamespaceSymbol` and call `ns->OnSymbolDeclared(cls)`, the class is added to both `ns->Members` and `ns->Node->Members`. This lets scripts see the type through `using` or through the namespace.
+When you create a `ClassSymbol` inside a `NamespaceSymbol` and call `ns->OnSymbolDeclared(cls)`, the class is added to `ns->Members`. This lets scripts see the type through `using` symbols importation.
 
 ### 2.3. `MethodHandleType`
 
@@ -117,14 +117,16 @@ void WriteBoolean(const bool& value) const;
 void WriteCharacter(const wchar_t& value) const;
 void WriteString(const std::wstring& value) const;
 
-ObjectInstance* GetField(FieldSymbol* field, CallStackFrame* frame = nullptr);
-void SetField(FieldSymbol* field, ObjectInstance* instance, CallStackFrame* frame = nullptr);
+ObjectInstance* GetField(std::uint32_t slot, CallStackFrame* frame = nullptr);
+void SetField(std::uint32_t slot, ObjectInstance* instance, CallStackFrame* frame = nullptr);
 
 ObjectInstance* GetElement(std::size_t index, CallStackFrame* frame = nullptr);
 void SetElement(std::size_t index, ObjectInstance* instance, CallStackFrame* frame = nullptr);
 
 std::size_t GetArrayLength() const;
 ```
+
+> **Note:** `GetField` and `SetField` take a slot index, not a `FieldSymbol*`. Use the `FieldSymbol::SlotIndex` that the layout generator assigns after the field is declared (for example, `self->GetField(g_valueField->SlotIndex, ctx.Frame)`).
 
 To create new values, use the `GarbageCollector`:
 
@@ -149,8 +151,7 @@ ObjectInstance* AllocateArray(TypeSymbol* elementType, std::size_t length, bool 
 Every library must export two functions. The macros in `<shard/ShardScriptLIB.hpp>` make this easy:
 
 ```cpp
-#include <shard/ShardScriptLIB.hpp>
-#include <shard/CompilationContext.hpp>
+#include <ShardScript.hpp>
 
 SHARDLIB_GETMETADATA
 {
@@ -177,8 +178,10 @@ Available specializations:
   - `AddClass(name[, access])` → `SymbolBuilder<ClassSymbol>`
   - `AddNamespace(name[, access])` → `SymbolBuilder<NamespaceSymbol>`
 - `SymbolBuilder<ClassSymbol>(ctx, name[, parent])`
-  - `AddMethod(name, returnType[, isStatic][, access])` → `SymbolBuilder<MethodSymbol>`
-  - `AddField(name, type[, isStatic][, access])` → `SymbolBuilder<FieldSymbol>`
+  - `AddMethod(name, returnType, linking[, access])` → `SymbolBuilder<MethodSymbol>`
+  - `AddField(name, type, linking[, access])` → `SymbolBuilder<FieldSymbol>`
+
+  `linking` is either `LINK_STATIC` (for `static` members) or `LINK_INSTANCE` (for instance members).
 - `SymbolBuilder<MethodSymbol>`
   - `AddParameter(name, type)` → reference to itself
   - `SetCallback(fn)` / `SetCallback(managedFn, userData)` → reference to itself
@@ -186,9 +189,7 @@ Available specializations:
 `SymbolBuilder` is non-copyable and moveable. You can get a pointer to the symbol via `Get()` or implicit conversion:
 
 ```cpp
-#include <shard/semantic/SymbolBuilder.hpp>
-#include <shard/semantic/symbols/NamespaceSymbol.hpp>
-#include <shard/semantic/symbols/ClassSymbol.hpp>
+#include <ShardScript.hpp>
 
 using namespace shard;
 
@@ -207,9 +208,7 @@ math.AddClass(L"Algorithms");
 ### 3.3. Step 3 — Creating a Method and Binding a C++ Function
 
 ```cpp
-#include <shard/semantic/symbols/MethodSymbol.hpp>
-#include <shard/runtime/MethodCallState.hpp>
-#include <shard/runtime/ObjectInstance.hpp>
+#include <ShardScript.hpp>
 
 using namespace shard;
 
@@ -222,7 +221,7 @@ static ObjectInstance* MyAdd(const CallState& ctx)
 
 // inside SHARDLIB_ENTRYPOINT
 ns.AddClass(L"Math")
-  .AddMethod(L"Add", SymbolTable::Primitives::Integer)
+  .AddMethod(L"Add", SymbolTable::Primitives::Integer, LINK_STATIC)
       .AddParameter(L"a", SymbolTable::Primitives::Integer)
       .AddParameter(L"b", SymbolTable::Primitives::Integer)
       .SetCallback(&MyAdd);
@@ -236,7 +235,7 @@ ns.AddClass(L"Math")
 
 ```cpp
 ns.AddClass(L"Math")
-    .AddMethod(L"Pow", SymbolTable::Primitives::Double)
+    .AddMethod(L"Pow", SymbolTable::Primitives::Double, LINK_STATIC)
         .AddParameter(L"base", SymbolTable::Primitives::Double)
         .AddParameter(L"exp",  SymbolTable::Primitives::Double)
         .SetCallback(&MyPow);
@@ -245,13 +244,7 @@ ns.AddClass(L"Math")
 ### 3.5. Complete `MyMath.cpp` File
 
 ```cpp
-#include <shard/ShardScriptLIB.hpp>
-#include <shard/CompilationContext.hpp>
-#include <shard/semantic/SymbolBuilder.hpp>
-#include <shard/semantic/SymbolTable.hpp>
-#include <shard/runtime/MethodCallState.hpp>
-#include <shard/runtime/ObjectInstance.hpp>
-
+#include <ShardScript.hpp>
 #include <cmath>
 
 using namespace shard;
@@ -281,12 +274,12 @@ SHARDLIB_ENTRYPOINT
 {
     auto math = SymbolBuilder<NamespaceSymbol>(context, L"mymath").AddClass(L"Math");
 
-    math.AddMethod(L"Add", SymbolTable::Primitives::Integer)
+    math.AddMethod(L"Add", SymbolTable::Primitives::Integer, LINK_STATIC)
         .AddParameter(L"a", SymbolTable::Primitives::Integer)
         .AddParameter(L"b", SymbolTable::Primitives::Integer)
         .SetCallback(&MyAdd);
 
-    math.AddMethod(L"Pow", SymbolTable::Primitives::Double)
+    math.AddMethod(L"Pow", SymbolTable::Primitives::Double, LINK_STATIC)
         .AddParameter(L"base", SymbolTable::Primitives::Double)
         .AddParameter(L"exp",  SymbolTable::Primitives::Double)
         .SetCallback(&MyPow);
@@ -335,7 +328,8 @@ static ObjectInstance* SafeAdd(const CallState& ctx)
     {
         // You may return null or throw an exception.
         // In the current version of ShardScript, exceptions from native code
-        // are caught by the VM as a fatal error.
+        // are caught by the VM and propagated as managed exceptions,
+        // so you can catch it in managed code.
         throw std::runtime_error("Add expects 2 arguments");
     }
 
@@ -355,7 +349,7 @@ static ObjectInstance* SafeAdd(const CallState& ctx)
 | `char` | `wchar_t` | `AsCharacter()` | `WriteCharacter(v)` / `FromValue(v)` |
 | `string` | `const wchar_t*` / `std::wstring` | `AsString()` | `WriteString(v)` / `FromValue(v)` |
 | `T[]` | `ObjectInstance*` | `GetArrayLength()`, `GetElement(i)` | `AllocateArray(elemType, len)` |
-| class/struct | `ObjectInstance*` | `GetField()`, `SetField()` | `AllocateInstance(typeInfo)` |
+| class/struct | `ObjectInstance*` | `GetField(slot)`, `SetField(slot)` | `AllocateInstance(typeInfo)` |
 | `null` | — | `GarbageCollector::NullInstance` | — |
 
 ### 4.4. Working with `null`
@@ -382,7 +376,7 @@ static ObjectInstance* MaybeNull(const CallState& ctx)
 For a static method, `Linking = LINK_STATIC`, and `ctx.Args[0]` is the first parameter.
 
 ```cpp
-math.AddMethod(L"Add", SymbolTable::Primitives::Integer, true)
+math.AddMethod(L"Add", SymbolTable::Primitives::Integer, LINK_STATIC)
     .AddParameter(L"a", SymbolTable::Primitives::Integer)
     .AddParameter(L"b", SymbolTable::Primitives::Integer)
     .SetCallback(&MathAdd);
@@ -390,7 +384,7 @@ math.AddMethod(L"Add", SymbolTable::Primitives::Integer, true)
 
 ### 5.2. Instance Method
 
-For a non-static method, `Linking = LINK_INSTANCE`, and `ctx.Args[0]` is `this`.
+For a non-static method, `Linking = LINK_INSTANCE`, and `ctx.Args[0]` is `this`, a current instance of the object.
 
 ```cpp
 static ObjectInstance* CounterNext(const CallState& ctx)
@@ -398,7 +392,8 @@ static ObjectInstance* CounterNext(const CallState& ctx)
     ObjectInstance* self = ctx.Args[0];
     std::int64_t value = self->AsInteger();
     self->WriteInteger(value + 1);
-    return self;
+    return nullptr; // you should return nullptr here, if method is void
+                    // If not, VM will dissbalance the EvalStack and emergently halts
 }
 ```
 
@@ -410,7 +405,7 @@ static FieldSymbol* g_valueField = nullptr;
 static ObjectInstance* CounterNext(const CallState& ctx)
 {
     ObjectInstance* self = ctx.Args[0];
-    ObjectInstance* valueObj = self->GetField(g_valueField, ctx.Frame);
+    ObjectInstance* valueObj = self->GetField(g_valueField->SlotIndex, ctx.Frame);
     std::int64_t value = valueObj->AsInteger();
     valueObj->WriteInteger(value + 1);
     return valueObj;
@@ -427,30 +422,22 @@ static ObjectInstance* CounterCtor(const CallState& ctx)
     ObjectInstance* self = ctx.Args[0];
     std::int64_t initial = ctx.Args[1]->AsInteger();
 
-    ObjectInstance* valueField = self->GetField(g_valueField, ctx.Frame);
+    ObjectInstance* valueField = self->GetField(g_valueField->SlotIndex, ctx.Frame);
     valueField->WriteInteger(initial);
 
-    return self; // or GarbageCollector::NullInstance
+    return nullptr; // Because contructor is considered void, you should return nullptr here;
 }
 ```
 
 Registration:
 
 ```cpp
-SymbolFactory factory(ctx.GetSemanticModel().Table.get());
+auto counter = SymbolBuilder<ClassSymbol>(ctx, L"Counter", ns);
+g_valueField = counter.AddField(L"Value", SymbolTable::Primitives::Integer, LINK_INSTANCE).Get();
 
-ConstructorSymbol* ctor = factory.Constructor(L"Counter");
-ctor->Parent = counterClass;
-ctor->FunctionPointer = &CounterCtor;
-ctor->HandleType = MethodHandleType::External;
-ctor->Accesibility = SymbolAccesibility::Public;
-
-counterClass->Constructors.push_back(ctor);
-counterClass->OnSymbolDeclared(ctor);
-
-ParameterSymbol* initial = factory.Parameter(L"initial", SymbolTable::Primitives::Integer);
-initial->Parent = ctor;
-ctor->Parameters.push_back(initial);
+SymbolBuilder<ConstructorSymbol>(ctx, SymbolAccesibility::Public, counter.Get())
+    .AddParameter(L"initial", SymbolTable::Primitives::Integer)
+    .SetCallback(&CounterCtor);
 ```
 
 ### 5.4. Operator Overloads
@@ -509,7 +496,7 @@ dynamicClass.AddOperator(shard::TokenType::Delimeter, SymbolTable::Primitives::I
 using mylib;
 
 d := Dynamic();
-println(d.foo);   // calls DynamicAccess(d, "foo")
+println(d.foo);   // calls DynamicAccess(d, "foo"), returns 42
 ```
 
 **Static example:**
@@ -552,10 +539,10 @@ println(Environment.COMPUTERNAME);
 
 ```cpp
 ns.AddClass(L"Math")
-    .AddField(L"Pi", SymbolTable::Primitives::Double, true);   // static
+    .AddField(L"Pi", SymbolTable::Primitives::Double, LINK_STATIC);   // static
 
 auto counter = ns.AddClass(L"Counter");
-counter.AddField(L"Value", SymbolTable::Primitives::Integer); // instance
+counter.AddField(L"Value", SymbolTable::Primitives::Integer, LINK_INSTANCE); // instance
 ```
 
 ### 6.2. Static Field
@@ -583,19 +570,13 @@ ctx.Collector.SetStaticField(g_piField, piValue);
 A property is registered through `PropertySymbol`, which has `Getter` and `Setter` of type `AccessorSymbol*`. For native properties it is easier to create accessor methods and bind them:
 
 ```cpp
-PropertySymbol* prop = factory.Property(L"Value", SymbolTable::Primitives::Integer);
-prop->Accesibility = SymbolAccesibility::Public;
-prop->Parent = cls;
-prop->Linking = LINK_INSTANCE;
-cls->OnSymbolDeclared(prop);
+auto prop = cls.AddProperty(L"Value", SymbolTable::Primitives::Integer, LINK_INSTANCE);
 
-AccessorSymbol* getter = factory.Getter(L"Value", prop);
-getter->FunctionPointer = &GetValue;
-getter->HandleType = MethodHandleType::External;
+prop.AddGetter()
+    .SetCallback(&GetValue);
 
-AccessorSymbol* setter = factory.Setter(L"Value", prop);
-setter->FunctionPointer = &SetValue;
-setter->HandleType = MethodHandleType::External;
+prop.AddSetter()
+    .SetCallback(&SetValue);
 ```
 
 ---
@@ -658,8 +639,7 @@ Generics in ShardScript work through two symbol kinds:
 Let us declare a `Container<T>` class with a single static method `Identity` that simply returns its argument.
 
 ```cpp
-#include <shard/semantic/symbols/TypeParameterSymbol.hpp>
-#include <shard/semantic/symbols/GenericTypeSymbol.hpp>
+#include <ShardScript.hpp>
 
 static ObjectInstance* Identity(const CallState& ctx)
 {
@@ -669,37 +649,16 @@ static ObjectInstance* Identity(const CallState& ctx)
 
 static void RegisterGenericContainer(CompilationContext& ctx, NamespaceSymbol* ns)
 {
-    SymbolFactory factory(ctx.GetSemanticModel().Table.get());
-
     // 1. Create the open generic type Container<T>.
-    ClassSymbol* container = factory.Class(L"Container");
-    container->Accesibility = SymbolAccesibility::Public;
-    container->IsReferenceType = true;
-    container->Parent = ns;
-    container->FullName = ns->FullName + L".Container";
+    auto container = SymbolBuilder<ClassSymbol>(ctx, L"Container", ns);
 
     // 2. Type parameter T.
-    TypeParameterSymbol* T = factory.TypeParameter(L"T");
-    T->Parent = container;
-    container->TypeParameters.push_back(T);
-
-    ns->OnSymbolDeclared(container);
+    TypeParameterSymbol* T = container.AddTypeParameter(L"T");
 
     // 3. Static method Container<T>.Identity(T value) -> T.
-    MethodSymbol* identity = factory.Method(
-        SymbolAccesibility::Public,
-        true,
-        T,                       // return type is T
-        L"Identity",
-        &Identity);
-
-    identity->Parent = container;
-    identity->FullName = container->FullName + L".Identity";
-    container->OnSymbolDeclared(identity);
-
-    ParameterSymbol* param = factory.Parameter(L"value", T);
-    param->Parent = identity;
-    identity->Parameters.push_back(param);
+    container.AddMethod(L"Identity", T, LINK_STATIC)
+        .AddParameter(L"value", T)
+        .SetCallback(&Identity);
 }
 ```
 
@@ -720,62 +679,36 @@ static FieldSymbol* g_boxValueField = nullptr;
 static ObjectInstance* BoxGetValue(const CallState& ctx)
 {
     ObjectInstance* self = ctx.Args[0];
-    return self->GetField(g_boxValueField, ctx.Frame);
+    return self->GetField(g_boxValueField->SlotIndex, ctx.Frame);
 }
 
 static ObjectInstance* BoxSetValue(const CallState& ctx)
 {
     ObjectInstance* self = ctx.Args[0];
     ObjectInstance* value = ctx.Args[1];
-    self->SetField(g_boxValueField, value, ctx.Frame);
+    self->SetField(g_boxValueField->SlotIndex, value, ctx.Frame);
     return GarbageCollector::NullInstance;
 }
 
 static void RegisterGenericBox(CompilationContext& ctx, NamespaceSymbol* ns)
 {
-    SymbolFactory factory(ctx.GetSemanticModel().Table.get());
+    // 1. Create the open generic type Box<T>.
+    auto box = SymbolBuilder<ClassSymbol>(ctx, L"Box", ns);
+    box.Get()->IsReferenceType = true;
 
-    ClassSymbol* box = factory.Class(L"Box");
-    box->Accesibility = SymbolAccesibility::Public;
-    box->IsReferenceType = true;
-    box->Parent = ns;
-    box->FullName = ns->FullName + L".Box";
+    // 2. Type parameter T.
+    box.AddTypeParameter(L"T");
+    TypeParameterSymbol* T = box.Get()->TypeParameters.back();
 
-    TypeParameterSymbol* T = factory.TypeParameter(L"T");
-    T->Parent = box;
-    box->TypeParameters.push_back(T);
+    // 3. Field and methods.
+    g_boxValueField = box.AddField(L"value", T, LINK_INSTANCE).Get();
 
-    ns->OnSymbolDeclared(box);
+    box.AddMethod(L"GetValue", T, LINK_INSTANCE)
+        .SetCallback(&BoxGetValue);
 
-    g_boxValueField = factory.Field(L"value", T, false);
-    g_boxValueField->Accesibility = SymbolAccesibility::Public;
-    g_boxValueField->Parent = box;
-    g_boxValueField->FullName = box->FullName + L".value";
-    box->OnSymbolDeclared(g_boxValueField);
-
-    MethodSymbol* get = factory.Method(
-        SymbolAccesibility::Public,
-        false,
-        T,
-        L"GetValue",
-        &BoxGetValue);
-    get->Parent = box;
-    get->FullName = box->FullName + L".GetValue";
-    box->OnSymbolDeclared(get);
-
-    MethodSymbol* set = factory.Method(
-        SymbolAccesibility::Public,
-        false,
-        SymbolTable::Primitives::Void,
-        L"SetValue",
-        &BoxSetValue);
-    set->Parent = box;
-    set->FullName = box->FullName + L".SetValue";
-    box->OnSymbolDeclared(set);
-
-    ParameterSymbol* valueParam = factory.Parameter(L"value", T);
-    valueParam->Parent = set;
-    set->Parameters.push_back(valueParam);
+    box.AddMethod(L"SetValue", SymbolTable::Primitives::Void, LINK_INSTANCE)
+        .AddParameter(L"value", T)
+        .SetCallback(&BoxSetValue);
 }
 ```
 
@@ -797,12 +730,13 @@ If a method is called on a concrete instantiation, `ctx.Method->Parent` may be a
 ```cpp
 static ObjectInstance* DumpType(const CallState& ctx)
 {
-    TypeSymbol* parent = ctx.Method->Parent;
-    if (parent != nullptr && parent->Kind == SyntaxKind::GenericType)
+    // For a generic method, ctx.Frame->TypeArguments contains the concrete
+    // substitutions in the same order as the declaring type's TypeParameters.
+    if (!ctx.Frame->TypeArguments.empty())
     {
-        GenericTypeSymbol* generic = static_cast<GenericTypeSymbol*>(parent);
-        // generic->UnderlayingType is Box
-        // Parameter substitutions live inside generic.
+        TypeSymbol* concreteT = ctx.Frame->TypeArguments[0];
+        std::wstring name = SemanticModel::GetTypeDisplayName(concreteT);
+        // ... use the concrete type ...
     }
 
     return GarbageCollector::NullInstance;
@@ -820,7 +754,8 @@ All examples below assume ShardScript is already built and located next to your 
 ```text
 ShardScript/
 ├── include/            # ShardScript headers
-├── build/bin/          # libShardScript.dll, libShardScript.dll.a, libShardScript.so
+├── out/build/x64-debug/bin/   # ShardScript.dll / ShardScript.lib (MSVC)
+│                                # or libShardScript.so (Linux)
 └── MyLib/
     ├── MyLib.cpp
     └── CMakeLists.txt
@@ -832,7 +767,7 @@ ShardScript/
 cd MyLib
 x86_64-w64-mingw32-g++ -shared -O2 -std=c++20 \
     -I../ShardScript/include \
-    -L../ShardScript/build/bin \
+    -L../ShardScript/out/build/x64-debug/bin \
     -lShardScript \
     -o MyLib.dll \
     MyLib.cpp
@@ -850,10 +785,10 @@ The `-lShardScript` flag tells the linker to look for:
 ```cmd
 cd MyLib
 cl /std:c++20 /EHsc /MD /I..\ShardScript\include /LD MyLib.cpp \
-   /link ..\ShardScript\build\bin\libShardScript.lib /OUT:MyLib.dll
+   /link ..\ShardScript\out\build\x64-debug\bin\ShardScript.lib /OUT:MyLib.dll
 ```
 
-> The `.lib` and `.dll` names depend on the CMake configuration. If the CMake target is named `ShardScript`, MSVC usually produces `ShardScript.dll` + `ShardScript.lib`. Check the contents of `build/bin`.
+> The MSVC build of the `ShardScript` target produces `ShardScript.dll` and `ShardScript.lib`. Adjust the path to match your build directory (e.g., `out/build/x64-debug/bin` or `out/build/x64-release/bin`).
 
 ### 9.4. Linux + GCC / Clang
 
@@ -861,7 +796,7 @@ cl /std:c++20 /EHsc /MD /I..\ShardScript\include /LD MyLib.cpp \
 cd MyLib
 g++ -shared -fPIC -O2 -std=c++20 \
     -I../ShardScript/include \
-    -L../ShardScript/build/bin \
+    -L../ShardScript/out/build/x64-debug/bin \
     -lShardScript \
     -o libMyLib.so \
     MyLib.cpp
@@ -870,7 +805,7 @@ g++ -shared -fPIC -O2 -std=c++20 \
 At runtime, make sure both `libShardScript.so` and `libMyLib.so` are visible to the loader:
 
 ```bash
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/ShardScript/build/bin:/path/to/MyLib
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/ShardScript/out/build/x64-debug/bin:/path/to/MyLib
 ```
 
 ### 9.5. CMake Template
@@ -884,16 +819,20 @@ target_include_directories(MyLib PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/../ShardScript/include"
 )
 
-target_link_libraries(MyLib PRIVATE
-    ShardScript
-)
+# If ShardScript is a sub-project:
+target_link_libraries(MyLib PRIVATE ShardScript)
+
+# Otherwise link the import library directly (MSVC example):
+# target_link_libraries(MyLib PRIVATE
+#     "${CMAKE_CURRENT_SOURCE_DIR}/../ShardScript/out/build/x64-debug/bin/ShardScript.lib"
+# )
 
 set_target_properties(MyLib PROPERTIES
     WINDOWS_EXPORT_ALL_SYMBOLS ON
 )
 ```
 
-If you add ShardScript as a subproject, `target_link_libraries(MyLib PRIVATE ShardScript)` will automatically pick up the required include paths and import libraries.
+Adjust the import-library path to match your configuration and toolchain.
 
 ### 9.6. What to Export
 
@@ -908,23 +847,10 @@ A native library can not only register symbols directly, but also feed ShardScri
 ### 10.1. `CompilationContext::ProvideSource`
 
 ```cpp
-#include <shard/CompilationContext.hpp>
-#include <shard/lexical/StringStreamReader.hpp>
-
-static void ProvideStringSource(CompilationContext& ctx,
-                                const wchar_t* fileName,
-                                const std::wstring& code)
-{
-    // StringStreamReader must stay alive until the context is done with it.
-    // The simplest approach is to store it statically.
-    static std::vector<std::unique_ptr<StringStreamReader>> readers;
-
-    auto reader = std::make_unique<StringStreamReader>(fileName, code);
-    StringStreamReader* raw = reader.get();
-    readers.push_back(std::move(reader));
-
-    ctx.ProvideSource(raw);
-}
+void CompilationContext::ProvideStringSource(
+    CompilationContext& ctx,
+    const wchar_t* fileName,
+    const std::wstring& code);
 ```
 
 Usage inside `ShardLib_EntryPoint`:
@@ -1016,49 +942,21 @@ MYLIB_CORE SOURCE_CODE "MyLibCore.ss"
 
 ---
 
-## 11. The `[link]` Attribute
+## 11. Linking Source Declarations to Native Code
 
-The `[link]` attribute lets you declare a method in ShardScript source as `extern`, and bind its implementation to a C++ function in the same native library that provided the source.
+ShardScript recognizes the `[link("symbol_name")]` attribute on `extern` declarations, but the runtime dynamic linker that resolves such declarations to a DLL export is **not currently enabled**. Because of this, the supported way to expose native code is to register the method entirely from C++ inside `SHARDLIB_ENTRYPOINT` (see Section 3). You can still ship ShardScript source wrappers via `ProvideSource` (Section 10), but the actual implementation must be bound through `SetCallback` or through `FunctionPointer`.
 
-### 11.1. Syntax
+### 11.1. Native Function Signature
 
-```shard
-[link("symbol_name")]
-public static extern func Add(a: int, b: int) -> int;
-```
-
-Two arguments are also parsed:
-
-```shard
-[link("library_name", "symbol_name")]
-public static extern func Foo() -> void;
-```
-
-but currently linking always happens against the library that provided the source file.
-
-### 11.2. How It Works
-
-1. The engine loads the library (`AddLibrary`).
-2. The engine calls `ShardLib_EntryPoint`.
-3. Inside the entry point, the library passes source code via `ProvideSource`.
-4. During analysis, `DeclarationCollector` sees the `[link]` attribute and records the symbol name in `MethodSymbol::LinkSymbol`.
-5. `CompilationContext::LinkExternSymbols` looks up this symbol in the loaded library (analogous to `GetProcAddress`) and writes the address into `MethodSymbol::FunctionPointer`.
-6. When the method is called, the VM invokes that C++ function through `FunctionPointer`.
-
-### 11.3. Requirements for the C++ Function
-
-The function referenced by `[link]` must:
-
-- Have the signature `shard::ObjectInstance* (*)(const shard::CallState&)`.
-- Be exported from the DLL (`extern "C"` + `__declspec(dllexport)` / `visibility("default")`).
-- Have a name that exactly matches the string in the attribute.
-
-Example:
+Whether you register a method manually or (in the future) through `[link]`, the C++ callback must have this signature:
 
 ```cpp
-#include <shard/runtime/MethodCallState.hpp>
-#include <shard/runtime/ObjectInstance.hpp>
+shard::ObjectInstance* MyCallback(const shard::CallState& ctx);
+```
 
+If the function is exported for dynamic linking, use the appropriate platform attributes:
+
+```cpp
 extern "C" __declspec(dllexport) // Windows
 shard::ObjectInstance* MyAdd(const shard::CallState& ctx)
 {
@@ -1070,84 +968,7 @@ shard::ObjectInstance* MyAdd(const shard::CallState& ctx)
 
 > On Linux use `__attribute__((visibility("default")))` instead of `__declspec(dllexport)`.
 
-### 11.4. Full Example: Library + Embedded Source + `[link]`
-
-**MathLibNative.cpp**
-
-```cpp
-#include <shard/ShardScriptLIB.hpp>
-#include <shard/CompilationContext.hpp>
-#include <shard/lexical/StringStreamReader.hpp>
-#include <shard/runtime/MethodCallState.hpp>
-#include <shard/runtime/ObjectInstance.hpp>
-
-#include <vector>
-#include <memory>
-#include <cmath>
-
-using namespace shard;
-
-extern "C" __declspec(dllexport)
-ObjectInstance* NativeAdd(const CallState& ctx)
-{
-    std::int64_t a = ctx.Args[0]->AsInteger();
-    std::int64_t b = ctx.Args[1]->AsInteger();
-    return ctx.Collector.FromValue(a + b);
-}
-
-extern "C" __declspec(dllexport)
-ObjectInstance* NativeSqrt(const CallState& ctx)
-{
-    double value = ctx.Args[0]->AsDouble();
-    return ctx.Collector.FromValue(std::sqrt(value));
-}
-
-static std::vector<std::unique_ptr<StringStreamReader>> g_readers;
-
-static void ProvideEmbeddedSource(CompilationContext& ctx)
-{
-    std::wstring code = LR"(
-        namespace mathlib;
-
-        [link("NativeAdd")]
-        public static extern func Add(a: int, b: int) -> int;
-
-        [link("NativeSqrt")]
-        public static extern func Sqrt(value: double) -> double;
-    )";
-
-    auto reader = std::make_unique<StringStreamReader>(L"MathLib.ss", code);
-    StringStreamReader* raw = reader.get();
-    g_readers.push_back(std::move(reader));
-
-    ctx.ProvideSource(raw);
-}
-
-SHARDLIB_GETMETADATA
-{
-    lib.Name        = L"MathLibLink";
-    lib.Description = L"[link] example";
-    lib.Version     = L"1.0.0";
-}
-
-SHARDLIB_ENTRYPOINT
-{
-    ProvideEmbeddedSource(context);
-}
-```
-
-Usage from ShardScript:
-
-```shard
-using mathlib;
-
-x := mathlib.Add(10, 32);
-y := mathlib.Sqrt(16.0);
-println(x); // 42
-println(y); // 4
-```
-
-### 11.5. Global Methods via `SemanticAnalyzer::AddSymbol`
+### 11.2. Global Methods via `SemanticAnalyzer::AddSymbol`
 
 If a method should not belong to any namespace or class, it can be added directly to the global scope:
 
@@ -1161,16 +982,11 @@ static ObjectInstance* GlobalNow(const CallState& ctx)
 
 SHARDLIB_ENTRYPOINT
 {
-    SymbolFactory factory(context.GetSemanticModel().Table.get());
-
-    MethodSymbol* nowMethod = factory.Method(
-        SymbolAccesibility::Public,
-        true,
-        SymbolTable::Primitives::Integer,
-        L"now",
-        &GlobalNow);
-
-    context.GetSemanticAnalyzer().AddSymbol(nowMethod);
+    SymbolBuilder<MethodSymbol> builder = SymbolBuilder<MethodSymbol>(
+        context, L"now", TYPE_INT, LINK_STATIC, ACS_PUBLIC,
+        SymbolTable::Global::Namespace);
+    
+    builder.DeclareGlobal();
 }
 ```
 
@@ -1180,8 +996,6 @@ Now from ShardScript you can simply call:
 t := now();
 println(t);
 ```
-
-> **Important:** `SemanticAnalyzer::AddSymbol` adds the symbol to the global scope. If you add a method with parameters, do not forget to fill `method->Parameters`.
 
 ---
 
@@ -1197,10 +1011,15 @@ context.AddLibrary(@"C:\path\to\MyLib.dll");
 
 context.AddSource("Test.ss", """
     using mymath;
-    x := Math.Add(10, 32);
-    println(x);          // 42
-    y := Math.Pow(2.0, 10.0);
-    println(y);          // 1024
+
+    public static func Main() -> void
+    {
+        x := Math.Add(10, 32);
+        println(x); // 42
+     
+        y := Math.Pow(2.0, 10.0);
+        println(y); // 1024
+    }
     """, CompilationUnitOrigin.SourceFile);
 
 context.Analyze();
@@ -1216,13 +1035,13 @@ domain.Run();
 
 ### 12.2. From the Native Interpreter
 
-If the interpreter supports command-line arguments:
+The native interpreter accepts the script file as the last positional argument and loads libraries with `-l` or `--library`:
 
 ```bash
-ShardScript.Interpreter.exe --library MyLib.dll --source script.ss
+ShardScript.Interpreter.exe -l MyLib.dll script.ss
+# or
+ShardScript.Interpreter.exe --library MyLib.dll script.ss
 ```
-
-The exact syntax depends on the CLI implementation.
 
 ### 12.3. Library Lookup
 
@@ -1238,15 +1057,12 @@ The engine searches for the library:
 
 ### 13.1. `Symbol 'Foo' not found in current scope`
 
-- Make sure the symbol is added to `NamespaceNode->Members` via `ns->OnSymbolDeclared(cls)`.
 - Make sure the script has `using mynamespace;` or that you use the fully qualified name.
-- Ensure `NamespaceSymbol::Node` is not `nullptr`.
 
 ### 13.2. `No method "Add" found that accepts arguments (...)`
 
 - Make sure parameters are added to `method->Parameters`.
 - Check the order and types of parameters.
-- Make sure the method is registered in the class via `cls->OnSymbolDeclared(method)`.
 
 ### 13.3. Segfault Inside a Callback
 
@@ -1257,13 +1073,11 @@ The engine searches for the library:
 ### 13.4. Callback Is Not Called
 
 - Check that `FunctionPointer` is not `nullptr`.
-- Check that `HandleType == MethodHandleType::External`.
-- `factory.Method(...)` with a delegate already sets `HandleType = External`.
+- `SymbolBuilder<MethodSymbol>::SetCallback` already sets `HandleType = External`.
 
 ### 13.5. Library Does Not Load
 
 - Check that `ShardLib_EntryPoint` and `ShardLib_GetMetadata` are exported (use `dumpbin /exports MyLib.dll` or `nm -D libMyLib.so`).
-- Make sure you use `extern "C"`.
 - Check dependencies via `ldd libMyLib.so` (Linux) or Dependencies (Windows).
 
 ---
@@ -1271,13 +1085,7 @@ The engine searches for the library:
 ## 14. Complete Working Example: `StringLib`
 
 ```cpp
-#include <shard/ShardScriptLIB.hpp>
-#include <shard/CompilationContext.hpp>
-#include <shard/semantic/SymbolBuilder.hpp>
-#include <shard/semantic/SymbolTable.hpp>
-#include <shard/runtime/MethodCallState.hpp>
-#include <shard/runtime/ObjectInstance.hpp>
-
+#include <ShardScript.hpp>
 #include <algorithm>
 #include <cwctype>
 
@@ -1310,11 +1118,11 @@ SHARDLIB_ENTRYPOINT
 {
     auto strings = SymbolBuilder<NamespaceSymbol>(context, L"stringlib").AddClass(L"Strings");
 
-    strings.AddMethod(L"ToUpper", SymbolTable::Primitives::String)
+    strings.AddMethod(L"ToUpper", SymbolTable::Primitives::String, LINK_STATIC)
         .AddParameter(L"value", SymbolTable::Primitives::String)
         .SetCallback(&ToUpper);
 
-    strings.AddMethod(L"Concat", SymbolTable::Primitives::String)
+    strings.AddMethod(L"Concat", SymbolTable::Primitives::String, LINK_STATIC)
         .AddParameter(L"a", SymbolTable::Primitives::String)
         .AddParameter(L"b", SymbolTable::Primitives::String)
         .SetCallback(&Concat);
@@ -1326,7 +1134,7 @@ MinGW build:
 ```bash
 x86_64-w64-mingw32-g++ -shared -O2 -std=c++20 \
     -I../ShardScript/include \
-    -L../ShardScript/build/bin \
+    -L../ShardScript/out/build/x64-debug/bin \
     -lShardScript \
     -o StringLib.dll StringLib.cpp
 ```
@@ -1334,11 +1142,16 @@ x86_64-w64-mingw32-g++ -shared -O2 -std=c++20 \
 Usage:
 
 ```shard
+using stdio;
 using stringlib;
-hello := Strings.ToUpper("hello");   // HELLO
-full  := Strings.Concat("Shard", "Script");
-println(hello);
-println(full);
+
+public static func Main() -> void
+{
+    hello := Strings.ToUpper("hello");   // HELLO
+    full  := Strings.Concat("Shard", "Script");
+    println(hello);
+    println(full);
+}
 ```
 
 ---
@@ -1346,7 +1159,7 @@ println(full);
 ## 15. Recommendations
 
 1. **Use `SymbolBuilder<T>` for namespace/class/method/field.** It automatically sets `Parent`, `FullName`, `Accesibility`, registers the symbol in the `NamespaceTree`, and calls `OnSymbolDeclared`.
-2. **When working manually with `SymbolFactory`, do not forget `Parent`, `FullName`, and `OnSymbolDeclared`.** Without them, name resolution and member access break.
+2. **Prefer `SymbolBuilder<T>` over raw `SymbolFactory`.** `SymbolBuilder` sets `Parent`, `FullName`, `Accesibility`, registers the symbol in the `NamespaceTree`, and calls `OnSymbolDeclared` automatically. Only fall back to `SymbolFactory` when the builder does not expose the symbol you need.
 3. **Do not store `ObjectInstance*` across calls without `IncrementReference`.** The GC may collect the object.
 4. **Use `ctx.Collector` to create return values.** Do not allocate memory manually.
 5. **For instance methods, remember `this`.** `ctx.Args[0]` is the object, the rest are parameters.

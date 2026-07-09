@@ -868,7 +868,15 @@ SymbolBuilder<AccessorSymbol> SymbolBuilder<IndexatorSymbol>::AddGetter(SymbolAc
 SymbolBuilder<AccessorSymbol> SymbolBuilder<IndexatorSymbol>::AddSetter(SymbolAccesibility access)
 {
     SymbolBuilder<AccessorSymbol> builder(Table, false, access, Symbol);
-    builder.Get()->Parameters = Symbol->Parameters;
+    AccessorSymbol* setter = builder.Get();
+
+    // The factory creates the setter with the implicit 'value' parameter already
+    // appended. Preserve it after copying the indexer parameters.
+    ParameterSymbol* valueParam = setter->Parameters.empty() ? nullptr : setter->Parameters.back();
+    setter->Parameters = Symbol->Parameters;
+    if (valueParam != nullptr)
+        setter->Parameters.push_back(valueParam);
+
     return builder;
 }
 
