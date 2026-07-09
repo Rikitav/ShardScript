@@ -175,14 +175,24 @@ void ObjectInstance::SetField(std::uint32_t slot, ObjectInstance* instance, Call
 		if (instance == GarbageCollector::NullInstance)
 			throw std::runtime_error("cannot write null value to ValueType field");
 
-		if (instance->getShape() != fieldShape)
+		TypeShape* instanceShape = instance->getShape();
+		const TypeSymbol* instanceType = instance->getInfo();
+		if (instanceShape != nullptr && instanceShape != fieldShape)
 		{
 			std::string msg = "Tried to set incompatible ObjectInstance type as field value. Field base: ";
 			msg += fieldShape->BaseType != nullptr ? std::string(fieldShape->BaseType->Name.begin(), fieldShape->BaseType->Name.end()) : "null";
 			msg += ", instance base: ";
-			msg += instance->getShape() != nullptr && instance->getShape()->BaseType != nullptr
-				? std::string(instance->getShape()->BaseType->Name.begin(), instance->getShape()->BaseType->Name.end())
+			msg += instanceShape->BaseType != nullptr
+				? std::string(instanceShape->BaseType->Name.begin(), instanceShape->BaseType->Name.end())
 				: "null";
+			throw std::runtime_error(msg);
+		}
+
+		if (instanceShape == nullptr && instanceType != fieldShape->BaseType)
+		{
+			std::string msg = "Tried to set incompatible ObjectInstance type as field value. Field base: ";
+			msg += fieldShape->BaseType != nullptr ? std::string(fieldShape->BaseType->Name.begin(), fieldShape->BaseType->Name.end()) : "null";
+			msg += ", instance base: null";
 			throw std::runtime_error(msg);
 		}
 

@@ -1,0 +1,29 @@
+using stdio;
+using collections;
+
+namespace collections_test;
+
+public static func Main() -> void
+{
+	queue := new Queue<int>();
+
+	queue.Enqueue(10);
+	queue.Enqueue(20);
+	queue.Enqueue(30);
+
+	println(queue.Count);
+	println(queue.Peek());
+	println(queue.Dequeue());
+	println(queue.Dequeue());
+	println(queue.Count);
+
+	queue.Enqueue(40);
+	println(queue.Contains(40));
+	println(queue.Contains(99));
+
+	while (queue.Count > 0)
+		println(queue.Dequeue());
+
+	queue.Clear();
+	println(queue.Count);
+}

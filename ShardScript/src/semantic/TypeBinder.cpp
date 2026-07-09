@@ -689,9 +689,9 @@ void TypeBinder::VisitIndexatorDeclaration(IndexatorDeclarationSyntax* node)
 		if (symbol->Getter != nullptr && node->Getter->Body != nullptr)
 			symbol->Getter->ReturnType = propertyType;
 
-		// Resolve setter parameter type
+		// Resolve setter parameter type (the implicit 'value' is the last parameter).
 		if (symbol->Setter != nullptr && node->Setter->Body != nullptr && !symbol->Setter->Parameters.empty())
-			symbol->Setter->Parameters[0]->Type = propertyType;
+			symbol->Setter->Parameters.back()->Type = propertyType;
 	}
 	
 	if (node->ParametersList != nullptr)

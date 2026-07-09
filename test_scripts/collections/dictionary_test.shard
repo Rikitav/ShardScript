@@ -1,0 +1,37 @@
+using stdio;
+using collections;
+
+namespace collections_test;
+
+public static func Main() -> void
+{
+	dict := new Dictionary<int, string>();
+
+	dict.Add(1, "one");
+	dict.Add(2, "two");
+	dict.Add(3, "three");
+
+	println(dict.Count);
+	println(dict[1]);
+	println(dict[2]);
+	println(dict[3]);
+
+	dict[2] = "TWO";
+	println(dict[2]);
+
+	println(dict.ContainsKey(2));
+	println(dict.ContainsKey(42));
+
+	dict.Remove(2);
+	println(dict.Count);
+	println(dict.ContainsKey(2));
+
+	foreach (pair in dict)
+	{
+		println(pair.Key);
+		println(pair.Value);
+	}
+
+	dict.Clear();
+	println(dict.Count);
+}

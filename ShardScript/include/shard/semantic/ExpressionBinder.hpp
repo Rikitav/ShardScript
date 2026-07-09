@@ -90,6 +90,7 @@ namespace shard
 		bool MatchMethodArguments(SyntaxToken blameToken, std::vector<ParameterSymbol*>& parameters, std::vector<std::unique_ptr<ArgumentSyntax>>& arguments, GenericTypeSymbol* genericType = nullptr, std::size_t parameterOffset = 0);
 		shard::TypeSymbol* SubstituteTypeParameters(shard::TypeSymbol* type, shard::GenericTypeSymbol* genericType);
 		shard::TypeSymbol* SubstituteTypeParameters(shard::TypeSymbol* type, shard::GenericTypeSymbol* genericType, shard::MethodSymbol* method, const std::vector<TypeSymbol*>& methodTypeArgs);
+		shard::TypeSymbol* FindEnumerableElementType(shard::TypeSymbol* rangeType, bool& isArrayRange, bool allowArray = true);
 
 		shard::TypeSymbol* SubstituteMethodTypeParameter(shard::TypeSymbol* type, shard::MethodSymbol* method, const std::vector<TypeSymbol*>& methodTypeArgs);
 		shard::TypeSymbol* ResolveTypeExpression(shard::TypeSyntax* type);

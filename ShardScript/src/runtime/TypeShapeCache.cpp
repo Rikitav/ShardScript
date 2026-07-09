@@ -9,6 +9,8 @@
 #include <stdexcept>
 #include <algorithm>
 #include <limits>
+#include <fstream>
+#include <string>
 
 using namespace shard;
 
@@ -138,6 +140,17 @@ void TypeShapeCache::BuildShape(TypeShape* shape, TypeSymbol* baseType, const st
 
 		maxSlotIndex = std::max(maxSlotIndex, field->SlotIndex);
 		hasSlots = true;
+	}
+
+	if (baseType->Name == L"Dictionary")
+	{
+		std::ofstream dbg("D:\\\\repos\\\\Rikitav\\\\ShardScript\\\\shape_debug.log", std::ios::app);
+		dbg << "BuildShape Dictionary args=" << genericArgs.size() << " fields=" << baseType->Fields.size() << " hasSlots=" << hasSlots << " maxSlot=" << maxSlotIndex << "\n";
+		for (FieldSymbol* f : baseType->Fields)
+		{
+			std::string name(f->Name.begin(), f->Name.end());
+			dbg << "  field=" << name << " slot=" << f->SlotIndex << "\n";
+		}
 	}
 
 	if (hasSlots)

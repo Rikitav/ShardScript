@@ -1486,13 +1486,10 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 				return nullptr;
 			}
 
-			if (fieldType->Kind == SyntaxKind::TypeParameter)
+			if (currentType->Kind == SyntaxKind::GenericType)
 			{
-				if (currentType->Kind == SyntaxKind::GenericType)
-				{
-					GenericTypeSymbol* genericType = static_cast<GenericTypeSymbol*>(currentType);
-					fieldType = SubstituteTypeParameters(fieldType, genericType);
-				}
+				GenericTypeSymbol* genericType = static_cast<GenericTypeSymbol*>(currentType);
+				fieldType = SubstituteTypeParameters(fieldType, genericType, nullptr, {});
 			}
 
 			node->IsStaticContext = false;
@@ -1600,10 +1597,10 @@ TypeSymbol* ExpressionBinder::AnalyzePropertyAccessExpression(MemberAccessExpres
 	TypeSymbol* propertyType = property->ReturnType;
 	
 	// Если currentType является GenericTypeSymbol, заменяем type parameters на type arguments
-	if (currentType->Kind == SyntaxKind::GenericType && propertyType != nullptr && propertyType->Kind == SyntaxKind::TypeParameter)
+	if (currentType->Kind == SyntaxKind::GenericType && propertyType != nullptr)
 	{
 		GenericTypeSymbol* genericType = static_cast<GenericTypeSymbol*>(currentType);
-		propertyType = SubstituteTypeParameters(propertyType, genericType);
+		propertyType = SubstituteTypeParameters(propertyType, genericType, nullptr, {});
 	}
 	
 	return propertyType;
@@ -2889,7 +2886,7 @@ void ExpressionBinder::VisitForStatement(ForStatementSyntax* node)
 		VisitStatementsBlock(node->StatementsBlock.get());
 }
 
-static TypeSymbol* FindEnumerableElementType(TypeSymbol* rangeType, bool& isArrayRange, bool allowArray = true)
+TypeSymbol* ExpressionBinder::FindEnumerableElementType(TypeSymbol* rangeType, bool& isArrayRange, bool allowArray)
 {
 	isArrayRange = false;
 	if (rangeType == nullptr)
@@ -2917,18 +2914,10 @@ static TypeSymbol* FindEnumerableElementType(TypeSymbol* rangeType, bool& isArra
 		TypeParameterSymbol* enumerableT = TRAIT_ENUMERABLE->TypeParameters[0];
 		TypeSymbol* elementType = genericIface->SubstituteTypeParameters(enumerableT);
 
-		// If the element type is a type parameter belonging to the underlying generic type
-		// (e.g. List<T> implements IEnumerable<T>), resolve it through the concrete type.
-		if (elementType != nullptr && elementType->Kind == SyntaxKind::TypeParameter && genericRange != nullptr)
-		{
-			TypeParameterSymbol* elementParam = static_cast<TypeParameterSymbol*>(elementType);
-			if (elementParam->Parent == genericRange->UnderlayingType)
-			{
-				TypeSymbol* resolved = genericRange->SubstituteTypeParameters(elementParam);
-				if (resolved != nullptr)
-					elementType = resolved;
-			}
-		}
+		// Resolve type parameters belonging to the underlying generic type
+		// (e.g. List<T> implements IEnumerable<T> or Dictionary<K,V> implements IEnumerable<KeyValuePair<K,V>>).
+		if (genericRange != nullptr && elementType != nullptr)
+			elementType = SubstituteTypeParameters(elementType, genericRange, nullptr, {});
 
 		return elementType;
 	};
