@@ -13,6 +13,8 @@
 #include <shard/semantic/symbols/GenericTypeSymbol.hpp>
 #include <shard/semantic/symbols/TypeParameterSymbol.hpp>
 
+#include <limits>
+
 using namespace shard;
 
 void LayoutGenerator::Generate(SemanticModel& semanticModel)
@@ -24,13 +26,35 @@ void LayoutGenerator::Generate(SemanticModel& semanticModel)
 
 		FixObjectLayout(semanticModel, objectInfo);
 	}
+
+	for (TypeSymbol* objectInfo : semanticModel.Table->GetTypeSymbols())
+	{
+		if (objectInfo->Kind == SyntaxKind::ArrayType)
+			continue;
+
+		std::vector<TypeSymbol*> genericArgs;
+		TypeSymbol* shapeBaseType = objectInfo;
+		if (objectInfo->Kind == SyntaxKind::GenericType)
+		{
+			GenericTypeSymbol* genericInfo = static_cast<GenericTypeSymbol*>(objectInfo);
+			shapeBaseType = genericInfo->UnderlayingType;
+			for (TypeParameterSymbol* parameter : shapeBaseType->TypeParameters)
+				genericArgs.push_back(genericInfo->SubstituteTypeParameters(parameter));
+		}
+
+		(void)semanticModel.TypeShapes->GetOrCreateShape(shapeBaseType, genericArgs);
+	}
 }
 
 void LayoutGenerator::FixObjectLayout(SemanticModel& semanticModel, TypeSymbol* objectInfo)
 {
 	objectInfo->LayoutingState = TypeLayoutingState::Visiting;
 
-	for (FieldSymbol* field : objectInfo->Fields)
+	TypeSymbol* layoutOwner = objectInfo;
+	if (objectInfo->Kind == SyntaxKind::GenericType)
+		layoutOwner = static_cast<GenericTypeSymbol*>(objectInfo)->UnderlayingType;
+
+	for (FieldSymbol* field : layoutOwner->Fields)
 	{
 		if (field->Linking == LINK_STATIC)
 			continue;
@@ -54,6 +78,9 @@ void LayoutGenerator::FixObjectLayout(SemanticModel& semanticModel, TypeSymbol* 
 
 		if (field->Linking == LINK_INSTANCE)
 		{
+			if (field->SlotIndex == std::numeric_limits<std::uint32_t>::max())
+				field->SlotIndex = layoutOwner->NextSlotIndex++;
+
 			field->MemoryBytesOffset = objectInfo->MemoryBytesSize;
 			objectInfo->MemoryBytesSize += returnType->GetInlineSize();
 		}

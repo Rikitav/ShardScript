@@ -397,23 +397,17 @@ void ProgramDisassembler::Disassemble(std::wostream& out, MethodSymbol* method)
 
             case OpCode::LOADFIELD:
             {
-                auto* sym = decoder.AbsorbFieldSymbol();
+                std::uint32_t slot = decoder.AbsorbFieldSlot();
                 opcode = L"ldfld";
-                if (sym == nullptr)
-                    args << L"null";
-                else
-                    args << (sym->FullName.empty() ? sym->Name : sym->FullName);
+                args << L"slot_" << slot;
                 break;
             }
 
             case OpCode::STOREFIELD:
             {
-                auto* sym = decoder.AbsorbFieldSymbol();
+                std::uint32_t slot = decoder.AbsorbFieldSlot();
                 opcode = L"stfld";
-                if (sym == nullptr)
-                    args << L"null";
-                else
-                    args << (sym->FullName.empty() ? sym->Name : sym->FullName);
+                args << L"slot_" << slot;
                 break;
             }
 

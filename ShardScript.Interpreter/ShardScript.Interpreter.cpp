@@ -451,6 +451,7 @@ int wmain(int argc, wchar_t* argv[])
 					virtualMachine.GetUnhandledExceptionMessage(),
 					virtualMachine.GetUnhandledExceptionStackTrace(),
 					symbolTable);
+
 				return 1;
 			}
 		}

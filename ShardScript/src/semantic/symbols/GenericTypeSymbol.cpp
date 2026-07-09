@@ -6,6 +6,7 @@
 #include <shard/semantic/symbols/PropertySymbol.hpp>
 #include <shard/semantic/symbols/TypeSymbol.hpp>
 #include <shard/semantic/symbols/IndexatorSymbol.hpp>
+#include <shard/semantic/SemanticModel.hpp>
 #include <shard/semantic/symbols/ParameterSymbol.hpp>
 #include <shard/semantic/symbols/TypeParameterSymbol.hpp>
 
@@ -30,7 +31,7 @@ void GenericTypeSymbol::RebuildDisplayName()
 
 		TypeParameterSymbol* typeParam = UnderlayingType->TypeParameters[i];
 		TypeSymbol* arg = SubstituteTypeParameters(typeParam);
-		displayName += TypeSymbol::GetDisplayName(arg != nullptr ? arg : typeParam);
+		displayName += SemanticModel::GetTypeDisplayName(arg != nullptr ? arg : typeParam);
 	}
 	displayName += L">";
 
@@ -70,7 +71,7 @@ MethodSymbol* GenericTypeSymbol::FindMethod(std::wstring& name, const std::vecto
 		if (leftType->Kind == SyntaxKind::TypeParameter)
 			leftType = this->SubstituteTypeParameters(static_cast<TypeParameterSymbol*>(leftType));
 
-		return TypeSymbol::Equals(leftType, right);
+		return SemanticModel::AreTypesEqual(leftType, right);
 	};
 
 	for (MethodSymbol* symbol : UnderlayingType->Methods)
@@ -99,7 +100,7 @@ IndexatorSymbol* GenericTypeSymbol::FindIndexator(const std::vector<TypeSymbol*>
 		if (leftType->Kind == SyntaxKind::TypeParameter)
 			leftType = this->SubstituteTypeParameters(static_cast<TypeParameterSymbol*>(leftType));
 
-		return TypeSymbol::Equals(leftType, right);
+		return SemanticModel::AreTypesEqual(leftType, right);
 	};
 
 	for (IndexatorSymbol* symbol : UnderlayingType->Indexators)

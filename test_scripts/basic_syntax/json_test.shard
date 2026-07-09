@@ -1,0 +1,70 @@
+using stdio;
+using json;
+
+namespace json_test;
+
+// Enum -> serialized as its integer value (System.Text.Json default).
+public enum Color { Red, Green, Blue }
+
+public class Address
+{
+    public City: string;
+    public Zip: string;
+}
+
+public class Person
+{
+    public Name: string;
+    public Age: int;
+    public Height: double;
+    public Active: bool;
+    public Status: Color;
+    public Tags: string[];
+    public Home: Address;
+}
+
+public static func Main() -> void
+{
+    p: Person = new Person();
+    p.Name = "Ada Lovelace";
+    p.Age = 36;
+    p.Height = 1.68;
+    p.Active = true;
+    p.Status = Color.Blue;
+    p.Tags = ["math", "compute"];
+
+    home: Address = new Address();
+    home.City = "London";
+    home.Zip = "SW1";
+    p.Home = home;
+
+    println("== Serialize<T> ==");
+    text: string = JsonSerializer.Serialize<Person>(p);
+    println(text);
+
+    println("");
+    println("== Deserialize<T> ==");
+    q: Person = JsonSerializer.Deserialize<Person>(text);
+    print("Name    = "); println(q.Name);
+    print("Age     = "); println(q.Age);
+    print("Height  = "); println(q.Height);
+    print("Active  = "); println(q.Active);
+    print("City    = "); println(q.Home.City);
+    foreach (tag in q.Tags)
+    {
+        print("Tag     = "); println(tag);
+    }
+
+    println("");
+    println("== Round-trip (serialize the deserialized model) ==");
+    println(JsonSerializer.Serialize<Person>(q));
+
+    println("");
+    println("== Untyped DOM (JsonNode) ==");
+    node: JsonNode = JsonNode.Parse("{\"a\":[1,2,3],\"b\":\"hi\",\"c\":null}");
+    print("Kind     = "); println(node.Kind());
+    print("b        = "); println(node.Get("b").AsString());
+    print("a.Length = "); println(node.Get("a").Length());
+    print("a[2]     = "); println(node.Get("a").At(2).AsInt());
+    print("c isNull = "); println(node.Get("c").IsNull());
+}

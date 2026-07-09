@@ -113,7 +113,7 @@ static bool IsNullInstance(ObjectInstance* instance)
 
 static bool GetBoolField(ObjectInstance* instance, FieldSymbol* field)
 {
-    ObjectInstance* value = instance->GetField(field);
+    ObjectInstance* value = instance->GetField(field->SlotIndex);
     if (IsNullInstance(value))
         return false;
 
@@ -122,7 +122,7 @@ static bool GetBoolField(ObjectInstance* instance, FieldSymbol* field)
 
 static const wchar_t* GetStringField(ObjectInstance* instance, FieldSymbol* field)
 {
-    ObjectInstance* value = instance->GetField(field);
+    ObjectInstance* value = instance->GetField(field->SlotIndex);
     if (IsNullInstance(value))
         return L"";
 
@@ -131,7 +131,7 @@ static const wchar_t* GetStringField(ObjectInstance* instance, FieldSymbol* fiel
 
 static subprocess_s* GetProcessHandle(ObjectInstance* instance)
 {
-    ObjectInstance* handleField = instance->GetField(shard_Process_handle);
+    ObjectInstance* handleField = instance->GetField(shard_Process_handle->SlotIndex);
     if (IsNullInstance(handleField))
         return nullptr;
 
@@ -140,12 +140,12 @@ static subprocess_s* GetProcessHandle(ObjectInstance* instance)
 
 static void SetProcessHandle(ObjectInstance* instance, subprocess_s* proc, GarbageCollector& gc)
 {
-    instance->SetField(shard_Process_handle, gc.FromNint(proc, false));
+    instance->SetField(shard_Process_handle->SlotIndex, gc.FromNint(proc, false));
 }
 
 static void SetExitCode(ObjectInstance* instance, std::int64_t code, GarbageCollector& gc)
 {
-    instance->SetField(shard_Process_exitCode, gc.FromValue(code));
+    instance->SetField(shard_Process_exitCode->SlotIndex, gc.FromValue(code));
 }
 
 // ============================================================================
@@ -256,7 +256,7 @@ static ObjectInstance* StartProcess(GarbageCollector& gc, const std::vector<std:
 static ObjectInstance* shard_ProcessStartInfo_Init(const CallState& context) noexcept(false)
 {
     ObjectInstance* instance = context.Args[0];
-    instance->SetField(shard_StartInfo_inheritEnv, context.Collector.FromValue(true));
+    instance->SetField(shard_StartInfo_inheritEnv->SlotIndex, context.Collector.FromValue(true));
     return instance;
 }
 
@@ -318,7 +318,7 @@ static ObjectInstance* shard_Process_HasExited_get(const CallState& context) noe
 static ObjectInstance* shard_Process_ExitCode_get(const CallState& context) noexcept(false)
 {
     ObjectInstance* instance = context.Args[0];
-    return instance->GetField(shard_Process_exitCode);
+    return instance->GetField(shard_Process_exitCode->SlotIndex);
 }
 
 static ObjectInstance* shard_Process_WaitForExit(const CallState& context) noexcept(false)

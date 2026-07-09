@@ -3,6 +3,7 @@
 
 #include <shard/semantic/symbols/TypeSymbol.hpp>
 #include <shard/semantic/symbols/FieldSymbol.hpp>
+#include <shard/runtime/TypeShape.hpp>
 
 #include <string>
 #include <cstdint>
@@ -19,6 +20,7 @@ namespace shard
 	class SHARD_API ObjectInstance
 	{
 		const TypeSymbol* m_info;
+		TypeShape* m_shape;
 		const bool m_isTransient;
 		std::int64_t m_eeferencesCounter;
 		void* m_rawMemoryPtr;
@@ -28,19 +30,20 @@ namespace shard
 		bool Terminated = false;
 
 	public:
-		inline ObjectInstance(const TypeSymbol* info, void* memory, bool isTransient)
-			: m_info(info), m_rawMemoryPtr(memory), m_isTransient(isTransient), m_eeferencesCounter(0) { }
+		inline ObjectInstance(const TypeSymbol* info, TypeShape* shape, void* memory, bool isTransient)
+			: m_info(info), m_shape(shape), m_rawMemoryPtr(memory), m_isTransient(isTransient), m_eeferencesCounter(0) { }
 		
 		inline ~ObjectInstance() = default;
 
 		[[nodiscard]] const TypeSymbol* getInfo() const;
+		[[nodiscard]] TypeShape* getShape() const;
 		[[nodiscard]] void* getMemory() const;
 		[[nodiscard]] bool getIsTransient() const;
 		[[nodiscard]] std::int64_t getReferencesCounter() const;
 
 		// Fields
-		ObjectInstance* GetField(FieldSymbol* field, CallStackFrame* frame = nullptr);
-		void SetField(FieldSymbol* field, ObjectInstance* instance, CallStackFrame* frame = nullptr);
+		ObjectInstance* GetField(std::uint32_t slot, CallStackFrame* frame = nullptr);
+		void SetField(std::uint32_t slot, ObjectInstance* instance, CallStackFrame* frame = nullptr);
 
 		// Arrays
 		std::size_t GetArrayLength() const;

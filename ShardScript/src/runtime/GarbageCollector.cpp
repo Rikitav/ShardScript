@@ -10,6 +10,9 @@
 
 #include <shard/semantic/SymbolTable.hpp>
 
+#include <shard/ApplicationDomain.hpp>
+#include <shard/compilation/ProgramVirtualImage.hpp>
+
 #include <malloc.h>
 #include <stdexcept>
 #include <cstring>
@@ -38,12 +41,9 @@ namespace
         if (type->IsReadyForRuntime())
             return true;
 
-        // Runtime-generated array types are synthetic and do not go through
-        // the normal analysis pipeline.
         if (type->Kind == SyntaxKind::ArrayType)
             return true;
 
-        // Generic instantiations inherit readiness from their underlying type.
         if (type->Kind == SyntaxKind::GenericType)
         {
             const GenericTypeSymbol* generic = static_cast<const GenericTypeSymbol*>(type);
@@ -54,37 +54,49 @@ namespace
     }
 }
 
-ObjectInstance* GarbageCollector::NullInstance = new ObjectInstance(nullptr, nullptr, true);
+ObjectInstance* GarbageCollector::NullInstance = new ObjectInstance(nullptr, nullptr, nullptr, true);
 
 GarbageCollector::GarbageCollector(ApplicationDomain* domain) : applicationDomain(domain)
 {
 
 }
 
+TypeShapeCache& GarbageCollector::GetTypeShapeCache() const
+{
+	if (applicationDomain->GetProgram().TypeShapes == nullptr)
+		throw std::runtime_error("TypeShapeCache is not initialized");
+
+	return *applicationDomain->GetProgram().TypeShapes;
+}
+
 ObjectInstance* GarbageCollector::FromValue(bool value)
 {
-	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::Boolean);
+	TypeShape* shape = GetTypeShapeCache().GetOrCreateShape(SymbolTable::Primitives::Boolean);
+	ObjectInstance* instance = GarbageCollector::AllocateInstance(shape);
 	instance->WriteBoolean(value);
 	return instance;
 }
 
 ObjectInstance* GarbageCollector::FromValue(std::int64_t value)
 {
-	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::Integer);
+	TypeShape* shape = GetTypeShapeCache().GetOrCreateShape(SymbolTable::Primitives::Integer);
+	ObjectInstance* instance = GarbageCollector::AllocateInstance(shape);
 	instance->WriteInteger(value);
 	return instance;
 }
 
 ObjectInstance* GarbageCollector::FromValue(double value)
 {
-	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::Double);
+	TypeShape* shape = GetTypeShapeCache().GetOrCreateShape(SymbolTable::Primitives::Double);
+	ObjectInstance* instance = GarbageCollector::AllocateInstance(shape);
 	instance->WriteDouble(value);
 	return instance;
 }
 
 ObjectInstance* GarbageCollector::FromValue(wchar_t value)
 {
-	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::Char);
+	TypeShape* shape = GetTypeShapeCache().GetOrCreateShape(SymbolTable::Primitives::Char);
+	ObjectInstance* instance = GarbageCollector::AllocateInstance(shape);
 	instance->WriteCharacter(value);
 	return instance;
 }
@@ -106,7 +118,8 @@ ObjectInstance* GarbageCollector::FromValue(const char* value)
 
 ObjectInstance* GarbageCollector::FromValue(const wchar_t* value, bool isTransient)
 {
-	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String, isTransient);
+	TypeShape* shape = GetTypeShapeCache().GetOrCreateShape(SymbolTable::Primitives::String);
+	ObjectInstance* instance = GarbageCollector::AllocateInstance(shape, isTransient);
 
 	std::size_t length = wcslen(value);
 	instance->WriteMemory(0, sizeof(std::int64_t), static_cast<std::uint64_t*>(&length));
@@ -116,7 +129,8 @@ ObjectInstance* GarbageCollector::FromValue(const wchar_t* value, bool isTransie
 
 ObjectInstance* GarbageCollector::FromValue(const std::wstring& value)
 {
-	ObjectInstance* instance = GarbageCollector::AllocateInstance(SymbolTable::Primitives::String, false);
+	TypeShape* shape = GetTypeShapeCache().GetOrCreateShape(SymbolTable::Primitives::String);
+	ObjectInstance* instance = GarbageCollector::AllocateInstance(shape, false);
 
 	std::size_t length = value.size();
 	std::size_t size = (length + 1) * sizeof(wchar_t);
@@ -141,9 +155,10 @@ ObjectInstance* GarbageCollector::FromNint(void* rawMemory, bool isTransient)
 	if (objectInfo->LayoutingState != TypeLayoutingState::Visited)
 		throw std::runtime_error("objectInfo is uninitialized");
 
-	ObjectInstance* instance = AllocateInstance(objectInfo, isTransient);
-	if (objectInfo->MemoryBytesSize > 0)
-		instance->WriteMemory(0, objectInfo->MemoryBytesSize, &rawMemory);
+	TypeShape* shape = GetTypeShapeCache().GetOrCreateShape(objectInfo);
+	ObjectInstance* instance = AllocateInstance(shape, isTransient);
+	if (shape->Size > 0)
+		instance->WriteMemory(0, shape->Size, &rawMemory);
 
 	return instance;
 }
@@ -164,9 +179,17 @@ ObjectInstance* GarbageCollector::GetStaticField(FieldSymbol* field)
 		return nullptr;
 	}
 
-	ObjectInstance* staticFieldInstance = field->ReturnType->Inlining == TypeInlining::ByValue
-		? GarbageCollector::AllocateInstance(field->ReturnType)
-		: NullInstance;
+	TypeSymbol* fieldType = field->ReturnType;
+	ObjectInstance* staticFieldInstance = nullptr;
+	if (fieldType->Inlining == TypeInlining::ByValue)
+	{
+		TypeShape* shape = GetTypeShapeCache().GetOrCreateShape(fieldType);
+		staticFieldInstance = GarbageCollector::AllocateInstance(shape);
+	}
+	else
+	{
+		staticFieldInstance = NullInstance;
+	}
 
 	staticFields[field] = staticFieldInstance;
 	return staticFieldInstance;
@@ -186,35 +209,56 @@ void GarbageCollector::SetStaticField(FieldSymbol* field, ObjectInstance* instan
 	staticFields[field] = CopyInstance(instance);
 }
 
+ObjectInstance* GarbageCollector::AllocateInstance(TypeShape* shape, bool isTransient)
+{
+	if (shape == nullptr)
+		throw std::runtime_error("shape is nullptr");
+
+	void* rawMemory = nullptr;
+	if (shape->Size > 0)
+	{
+		rawMemory = malloc(shape->Size);
+		if (rawMemory == nullptr)
+			throw std::runtime_error("cannot allocate memory for new instance");
+
+		std::memset(rawMemory, 0, shape->Size);
+	}
+
+	ObjectInstance* instance = new ObjectInstance(shape->BaseType, shape, rawMemory, isTransient);
+	Heap.add(instance);
+	return instance;
+}
+
 ObjectInstance* GarbageCollector::AllocateInstance(const TypeSymbol* objectInfo, bool isTransient)
 {
 	if (objectInfo == nullptr)
 		throw std::runtime_error("objectInfo is nullptr");
 
-	if (objectInfo->LayoutingState != TypeLayoutingState::Visited)
-		throw std::runtime_error("objectInfo is uninitialized");
-
 	if (!IsTypeReadyForAllocation(objectInfo))
 		throw std::runtime_error("Cannot allocate instance of type '" + WStringToUtf8(objectInfo->Name) + "': symbol is not ready for runtime");
 
-	void* rawMemory = nullptr;
-	if (objectInfo->MemoryBytesSize > 0)
+	if (objectInfo->Kind == SyntaxKind::GenericType)
 	{
-		rawMemory = malloc(objectInfo->MemoryBytesSize);
-		if (rawMemory == nullptr)
-			throw std::runtime_error("cannot allocate memory for new instance");
+		GenericTypeSymbol* generic = const_cast<GenericTypeSymbol*>(static_cast<const GenericTypeSymbol*>(objectInfo));
+		std::vector<TypeSymbol*> genericArgs;
+		genericArgs.reserve(generic->UnderlayingType->TypeParameters.size());
+		for (TypeParameterSymbol* parameter : generic->UnderlayingType->TypeParameters)
+			genericArgs.push_back(generic->SubstituteTypeParameters(parameter));
 
-		std::memset(rawMemory, 0, objectInfo->MemoryBytesSize);
+		return AllocateGeneric(generic->UnderlayingType, genericArgs, isTransient);
 	}
 
-	ObjectInstance* instance = new ObjectInstance(objectInfo, rawMemory, isTransient);
-	if (objectInfo->Kind == SyntaxKind::ArrayType)
-	{
-		const ArrayTypeSymbol* arrayInfo = static_cast<const ArrayTypeSymbol*>(objectInfo);
-	}
+	TypeShape* shape = GetTypeShapeCache().GetOrCreateShape(const_cast<TypeSymbol*>(objectInfo));
+	return AllocateInstance(shape, isTransient);
+}
 
-	Heap.add(instance);
-	return instance;
+ObjectInstance* GarbageCollector::AllocateGeneric(TypeSymbol* baseType, const std::vector<TypeSymbol*>& genericArgs, bool isTransient)
+{
+	if (baseType == nullptr)
+		throw std::runtime_error("baseType is nullptr");
+
+	TypeShape* shape = GetTypeShapeCache().GetOrCreateShape(baseType, genericArgs);
+	return AllocateInstance(shape, isTransient);
 }
 
 ObjectInstance* GarbageCollector::AllocateArray(TypeSymbol* elementType, std::size_t length, bool isTransient)
@@ -244,7 +288,11 @@ ObjectInstance* GarbageCollector::AllocateArray(TypeSymbol* elementType, std::si
 	arrayType->MemoryBytesSize = totalSize;
 	dynamicArrayTypes.emplace_back(arrayType);
 
-	ObjectInstance* instance = new ObjectInstance(arrayType, rawMemory, isTransient);
+	TypeShape* arrayShape = new TypeShape(arrayType, std::vector<TypeSymbol*>{ elementType });
+	arrayShape->Size = totalSize;
+	dynamicArrayShapes.emplace_back(arrayShape);
+
+	ObjectInstance* instance = new ObjectInstance(arrayType, arrayShape, rawMemory, isTransient);
 	Heap.add(instance);
 	return instance;
 }
@@ -257,25 +305,27 @@ ObjectInstance* GarbageCollector::CopyInstance(ObjectInstance* instance)
 	if (instance == NullInstance)
 		return instance;
 
-	if (instance->getInfo()->Inlining == TypeInlining::ByReference)
+	TypeShape* shape = instance->getShape();
+	if (shape == nullptr)
+		throw std::runtime_error("cannot copy instance without a type shape");
+
+	if (shape->IsReferenceType())
 	{
 		instance->IncrementReference();
 		return instance;
 	}
 
-	ObjectInstance* newInstance = GarbageCollector::AllocateInstance(instance->getInfo());
-	newInstance->WriteMemory(0, instance->getInfo()->MemoryBytesSize, instance->getMemory());
+	ObjectInstance* newInstance = GarbageCollector::AllocateInstance(shape);
+	newInstance->WriteMemory(0, shape->Size, instance->getMemory());
 
-	TypeSymbol* fieldOwner = const_cast<TypeSymbol*>(instance->getInfo());
-	if (fieldOwner->Kind == SyntaxKind::GenericType)
-		fieldOwner = static_cast<GenericTypeSymbol*>(fieldOwner)->UnderlayingType;
-
-	for (FieldSymbol* field : fieldOwner->Fields)
+	for (std::uint32_t slot = 0; slot < static_cast<std::uint32_t>(shape->Slots.size()); ++slot)
 	{
-		if (field->ReturnType->Inlining == TypeInlining::ByReference)
+		TypeShape* fieldShape = shape->GetFieldShape(slot);
+		if (fieldShape != nullptr && fieldShape->IsReferenceType())
 		{
-			ObjectInstance* fieldValue = instance->GetField(field);
-			fieldValue->IncrementReference();
+			ObjectInstance* fieldValue = instance->GetField(slot);
+			if (fieldValue != nullptr && fieldValue != NullInstance)
+				fieldValue->IncrementReference();
 		}
 	}
 
@@ -326,17 +376,18 @@ void GarbageCollector::TerminateInstance(ObjectInstance* instance)
 
 	instance->Terminated = true;
 
-	TypeSymbol* fieldOwner = const_cast<TypeSymbol*>(instance->getInfo());
-	if (fieldOwner->Kind == SyntaxKind::GenericType)
-		fieldOwner = static_cast<GenericTypeSymbol*>(fieldOwner)->UnderlayingType;
-
-	for (FieldSymbol* field : fieldOwner->Fields)
+	TypeShape* shape = instance->getShape();
+	if (shape != nullptr)
 	{
-		if (field->ReturnType->Inlining == TypeInlining::ByReference)
+		for (std::uint32_t slot = 0; slot < static_cast<std::uint32_t>(shape->Slots.size()); ++slot)
 		{
-			ObjectInstance* fieldValue = instance->GetField(field);
-			if (fieldValue != nullptr)
-				DestroyInstance(fieldValue);
+			TypeShape* fieldShape = shape->GetFieldShape(slot);
+			if (fieldShape != nullptr && fieldShape->IsReferenceType())
+			{
+				ObjectInstance* fieldValue = instance->GetField(slot);
+				if (fieldValue != nullptr && fieldValue != NullInstance)
+					DestroyInstance(fieldValue);
+			}
 		}
 	}
 
@@ -346,7 +397,7 @@ void GarbageCollector::TerminateInstance(ObjectInstance* instance)
 		for (std::size_t i = 0; i < array->Length; i++)
 		{
 			ObjectInstance* element = instance->GetElement(i);
-			if (element != nullptr)
+			if (element != nullptr && element != NullInstance)
 				DestroyInstance(element);
 		}
 	}

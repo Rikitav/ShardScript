@@ -102,6 +102,9 @@ namespace
 	static inline void inherit_size(FieldSymbol* field)
 	{
 		TypeSymbol* parent = static_cast<TypeSymbol*>(field->Parent);
+		if (field->SlotIndex == std::numeric_limits<std::uint32_t>::max())
+			field->SlotIndex = parent->NextSlotIndex++;
+
 		field->MemoryBytesOffset = parent->MemoryBytesSize;
 		parent->MemoryBytesSize += field->ReturnType->GetInlineSize();
 	}
@@ -118,6 +121,7 @@ static ObjectInstance* primitive_integer_to_string(const CallState& context)
 	std::int64_t value = context.Args[0]->AsInteger();
 	return context.Collector.FromValue(std::to_wstring(value));
 }
+
 
 static ObjectInstance* primitive_double_to_string(const CallState& context)
 {
@@ -180,14 +184,14 @@ static ObjectInstance* primitive_array_to_string(const CallState& context)
 
 	ObjectInstance* element = instance->GetElement(0);
 	AppendAsString(result, element);
-	context.Collector.CollectInstance(element);
+	// context.Collector.CollectInstance(element);  // GetElement returns array-owned element, do not collect
 
 	for (size_t i = 1; i < size; ++i)
 	{
 		result << L", ";
 		ObjectInstance* element = instance->GetElement(i);
 		AppendAsString(result, element);
-		context.Collector.CollectInstance(element);
+		// context.Collector.CollectInstance(element);  // GetElement returns array-owned element, do not collect
 	}
 
 	result << L"]";
@@ -209,19 +213,19 @@ static ObjectInstance* runtime_capture_stack_trace(const CallState& context)
 static ObjectInstance* array_enumerator_MoveNext(const CallState& context)
 {
 	ObjectInstance* self = context.Args[0];
-	std::int64_t index = self->GetField(CLASS_ARRAYENUMERATOR_IndexField, context.Frame)->AsInteger();
-	std::int64_t length = self->GetField(CLASS_ARRAYENUMERATOR_LengthField, context.Frame)->AsInteger();
+	std::int64_t index = self->GetField(CLASS_ARRAYENUMERATOR_IndexField->SlotIndex, context.Frame)->AsInteger();
+	std::int64_t length = self->GetField(CLASS_ARRAYENUMERATOR_LengthField->SlotIndex, context.Frame)->AsInteger();
 	
 	index++;
-	self->SetField(CLASS_ARRAYENUMERATOR_IndexField, context.Collector.FromValue(index), context.Frame);
+	self->SetField(CLASS_ARRAYENUMERATOR_IndexField->SlotIndex, context.Collector.FromValue(index), context.Frame);
 	return context.Collector.FromValue(index < length);
 }
 
 static ObjectInstance* array_enumerator_Current_get(const CallState& context)
 {
 	ObjectInstance* self = context.Args[0];
-	std::int64_t index = self->GetField(CLASS_ARRAYENUMERATOR_IndexField, context.Frame)->AsInteger();
-	ObjectInstance* source = self->GetField(CLASS_ARRAYENUMERATOR_SourceField, context.Frame);
+	std::int64_t index = self->GetField(CLASS_ARRAYENUMERATOR_IndexField->SlotIndex, context.Frame)->AsInteger();
+	ObjectInstance* source = self->GetField(CLASS_ARRAYENUMERATOR_SourceField->SlotIndex, context.Frame);
 	return source->GetElement(static_cast<std::size_t>(index), context.Frame);
 }
 
@@ -231,16 +235,10 @@ static ObjectInstance* primitive_array_get_enumerator(const CallState& context)
 	const ArrayTypeSymbol* arrayType = static_cast<const ArrayTypeSymbol*>(array->getInfo());
 	TypeSymbol* concreteT = const_cast<TypeSymbol*>(arrayType->UnderlayingType);
 
-	GenericTypeSymbol* enumeratorType = new GenericTypeSymbol(CLASS_ARRAYENUMERATOR);
-	enumeratorType->AddTypeParameter(CLASS_ARRAYENUMERATOR_T, concreteT);
-	enumeratorType->Inlining = TypeInlining::ByReference;
-	enumeratorType->MemoryBytesSize = CLASS_ARRAYENUMERATOR->MemoryBytesSize;
-	enumeratorType->LayoutingState = TypeLayoutingState::Visited;
-
-	ObjectInstance* enumerator = context.Collector.AllocateInstance(enumeratorType);
-	enumerator->SetField(CLASS_ARRAYENUMERATOR_SourceField, array, context.Frame);
-	enumerator->SetField(CLASS_ARRAYENUMERATOR_IndexField, context.Collector.FromValue(static_cast<std::int64_t>(-1)), context.Frame);
-	enumerator->SetField(CLASS_ARRAYENUMERATOR_LengthField, context.Collector.FromValue(static_cast<std::int64_t>(arrayType->Length)), context.Frame);
+	ObjectInstance* enumerator = context.Collector.AllocateGeneric(CLASS_ARRAYENUMERATOR, std::vector<TypeSymbol*>{ concreteT });
+	enumerator->SetField(CLASS_ARRAYENUMERATOR_SourceField->SlotIndex, array, context.Frame);
+	enumerator->SetField(CLASS_ARRAYENUMERATOR_IndexField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(-1)), context.Frame);
+	enumerator->SetField(CLASS_ARRAYENUMERATOR_LengthField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(arrayType->Length)), context.Frame);
 
 	return enumerator;
 }
@@ -437,7 +435,7 @@ static void ResolveStandards(SymbolTable* table)
 
 		messageProp.AddGetter()
 			.IsImplementationOf(TRAIT_THROWABLE_getMessage)
-			.SetCallback([](const CallState& context) { return context.Args[0]->GetField(SymbolTable::StandardTypes::RuntimeExceptionMessageField); });
+			.SetCallback([](const CallState& context) { return context.Args[0]->GetField(SymbolTable::StandardTypes::RuntimeExceptionMessageField->SlotIndex); });
 			
 		SymbolBuilder<PropertySymbol> stackTraceProp = builder.AddProperty(L"message", SymbolTable::Primitives::String, LINK_INSTANCE);
 		SymbolTable::StandardTypes::RuntimeExceptionStackTraceField = stackTraceProp
@@ -445,7 +443,7 @@ static void ResolveStandards(SymbolTable* table)
 
 		stackTraceProp.AddGetter()
 			.IsImplementationOf(TRAIT_THROWABLE_getStackTrace)
-			.SetCallback([](const CallState& context) { return context.Args[0]->GetField(SymbolTable::StandardTypes::RuntimeExceptionStackTraceField); });
+			.SetCallback([](const CallState& context) { return context.Args[0]->GetField(SymbolTable::StandardTypes::RuntimeExceptionStackTraceField->SlotIndex); });
 
 		// RuntimeException is created implicitly and does not go through normal
 		// layout generation; lay it out manually so the runtime can instantiate it.

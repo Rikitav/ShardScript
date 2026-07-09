@@ -780,7 +780,7 @@ void TypeBinder::VisitTryStatement(TryStatementSyntax* node)
 		if (exceptionType != SymbolTable::Primitives::Any)
 		{
 			TypeSymbol* throwable = TRAIT_THROWABLE;
-			if (throwable != nullptr && !TypeSymbol::IsAssignableFrom(throwable, exceptionType))
+			if (throwable != nullptr && !SemanticModel::IsAssignableTo(throwable, exceptionType))
 			{
 				Diagnostics.ReportError(clause->CatchKeywordToken,
 					L"Catch type must implement IThrowable");

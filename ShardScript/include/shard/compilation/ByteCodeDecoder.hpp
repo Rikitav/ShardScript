@@ -45,6 +45,7 @@ namespace shard
 		
 		TypeSymbol* AbsorbTypeSymbol();
 		DelegateTypeSymbol* AbsordDelegateTypeSymbol();
+		std::uint32_t AbsorbFieldSlot();
 		FieldSymbol* AbsorbFieldSymbol();
 		ArrayTypeSymbol* AbsorbArraySymbol();
 		MethodSymbol* AbsorbMethodSymbol();

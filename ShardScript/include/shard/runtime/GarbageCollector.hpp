@@ -2,6 +2,7 @@
 #include <shard/ShardScriptAPI.hpp>
 
 #include <shard/runtime/ObjectInstance.hpp>
+#include <shard/runtime/TypeShapeCache.hpp>
 
 #include <shard/semantic/symbols/TypeSymbol.hpp>
 #include <shard/semantic/symbols/FieldSymbol.hpp>
@@ -98,6 +99,9 @@ namespace shard
 		std::uint64_t objectsCounter = 0;
         std::unordered_map<FieldSymbol*, ObjectInstance*> staticFields;
 		std::vector<std::unique_ptr<ArrayTypeSymbol>> dynamicArrayTypes;
+		std::vector<std::unique_ptr<TypeShape>> dynamicArrayShapes;
+
+		TypeShapeCache& GetTypeShapeCache() const;
 
     public:
         static ObjectInstance* NullInstance;
@@ -124,7 +128,9 @@ namespace shard
         ObjectInstance* GetStaticField(FieldSymbol* field);
         void SetStaticField(FieldSymbol* field, ObjectInstance* instance);
 
+		ObjectInstance* AllocateInstance(TypeShape* shape, bool isTransient = false);
 		ObjectInstance* AllocateInstance(const TypeSymbol* objectInfo, bool isTransient = false);
+		ObjectInstance* AllocateGeneric(TypeSymbol* baseType, const std::vector<TypeSymbol*>& genericArgs, bool isTransient = false);
 		ObjectInstance* AllocateArray(TypeSymbol* elementType, std::size_t length, bool isTransient = false);
         ObjectInstance* CopyInstance(ObjectInstance* instance);
 

@@ -26,7 +26,6 @@ namespace shard
 	public:
 		const VirtualMachine* Host;
 		CallStackFrame* PreviousFrame;
-		TypeSymbol* WithinType;
 		MethodSymbol* Method;
 
 		std::vector<ObjectInstance*> EvalStack;
@@ -38,8 +37,8 @@ namespace shard
 
 		std::vector<std::size_t> ExceptionHandlers;
 
-		inline CallStackFrame(const VirtualMachine* host, CallStackFrame* previousFrame, TypeSymbol* withinType, MethodSymbol* method)
-			: Host(host), WithinType(withinType), Method(method), PreviousFrame(previousFrame) { }
+		inline CallStackFrame(const VirtualMachine* host, CallStackFrame* previousFrame, MethodSymbol* method)
+			: Host(host), Method(method), PreviousFrame(previousFrame) { }
 
 		inline bool interrupted() const
 		{

@@ -983,7 +983,6 @@ SymbolBuilder<IndexatorSymbol> SymbolBuilder<InterfaceSymbol>::AddIndexer(
 SymbolBuilder<TypeParameterSymbol> SymbolBuilder<InterfaceSymbol>::AddTypeParameter(const std::wstring& name)
 {
     SymbolBuilder<TypeParameterSymbol> builder(Table, name, Symbol);
-    Symbol->TypeParameters.push_back(builder.Get());
     return builder;
 }
 

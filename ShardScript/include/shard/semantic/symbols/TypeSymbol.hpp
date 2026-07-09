@@ -22,7 +22,6 @@ namespace shard
     class PropertySymbol;
     class InterfaceSymbol;
     class IndexatorSymbol;
-    class CallStackFrame;
     class GenericTypeSymbol;
 }
 
@@ -60,6 +59,7 @@ namespace shard
         TypeInlining Inlining = TypeInlining::ByReference;
 
         std::size_t MemoryBytesSize = 0;
+        std::uint32_t NextSlotIndex = 0;
         bool IsNullable = false;
 
         inline bool IsReferenceType() const { return Inlining == TypeInlining::ByReference; }
@@ -71,7 +71,6 @@ namespace shard
         virtual ~TypeSymbol() = default;
 
         std::size_t GetInlineSize() const;
-        bool IsPrimitive();
 
         void OnSymbolDeclared(SyntaxSymbol* symbol) override;
         bool IsType() const override;
@@ -85,16 +84,5 @@ namespace shard
         virtual PropertySymbol* FindProperty(std::wstring& name);
 
         virtual MethodSymbol* FindInterfaceImplementation(MethodSymbol* interfaceMethod);
-
-        static bool Equals(const TypeSymbol* expected, const TypeSymbol* actual);
-        static bool IsAssignableFrom(const TypeSymbol* target, const TypeSymbol* source);
-
-        static std::wstring GetDisplayName(const TypeSymbol* type);
-
-        static TypeSymbol* SubstituteType(TypeSymbol* type);
-		static TypeSymbol* ReturnOf(FieldSymbol* field);
-		static TypeSymbol* ReturnOf(MethodSymbol* method);
-		static TypeSymbol* ReturnOf(PropertySymbol* property);
-		static TypeSymbol* ReturnOf(ConstructorSymbol* constructor);
 	};
 }

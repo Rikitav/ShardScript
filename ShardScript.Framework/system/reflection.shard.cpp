@@ -6,6 +6,7 @@
 #include <shard/semantic/symbols/FieldSymbol.hpp>
 #include <shard/semantic/symbols/PropertySymbol.hpp>
 #include <shard/semantic/symbols/ParameterSymbol.hpp>
+#include <shard/semantic/SemanticModel.hpp>
 
 #include <cstdint>
 #include <string>
@@ -38,7 +39,7 @@ static FieldSymbol* parameterInfo_handleField = nullptr;
 template <typename T>
 static T* HandleTo(ObjectInstance* wrapper, FieldSymbol* handleField, CallStackFrame* frame)
 {
-	std::int64_t handle = wrapper->GetField(handleField, frame)->AsInteger();
+	std::int64_t handle = wrapper->GetField(handleField->SlotIndex, frame)->AsInteger();
 	if (handle == 0)
 		return nullptr;
 
@@ -54,13 +55,7 @@ static ObjectInstance* MakeArray(TypeSymbol* elementType,
 	const std::vector<ObjectInstance*>& items,
 	const CallState& context)
 {
-	ArrayTypeSymbol* arrayType = new ArrayTypeSymbol(elementType);
-	arrayType->Length = items.size();
-	arrayType->MemoryBytesSize = SymbolTable::Primitives::Array->MemoryBytesSize
-		+ elementType->GetInlineSize() * items.size();
-	arrayType->LayoutingState = TypeLayoutingState::Visited;
-
-	ObjectInstance* array = context.Collector.AllocateInstance(arrayType);
+	ObjectInstance* array = context.Collector.AllocateArray(elementType, items.size());
 	for (std::size_t i = 0; i < items.size(); ++i)
 		array->SetElement(i, items[i], context.Frame);
 
@@ -77,7 +72,7 @@ static ObjectInstance* MakeType(TypeSymbol* type, const CallState& context)
 		return GarbageCollector::NullInstance;
 
 	ObjectInstance* obj = context.Collector.AllocateInstance(typeClass_raw);
-	obj->SetField(type_handleField,
+	obj->SetField(type_handleField->SlotIndex,
 		context.Collector.FromValue(PointerToHandle(type)),
 		context.Frame);
 
@@ -216,7 +211,7 @@ static ObjectInstance* shard_type_IsGeneric_get(const CallState& context) noexce
 static ObjectInstance* shard_type_IsPrimitive_get(const CallState& context) noexcept(false)
 {
 	TypeSymbol* type = HandleTo<TypeSymbol>(context.Args[0], type_handleField, context.Frame);
-	return context.Collector.FromValue(type != nullptr && type->IsPrimitive());
+	return context.Collector.FromValue(type != nullptr && SemanticModel::IsPrimitiveType(type));
 }
 
 static ObjectInstance* shard_type_GetElementType(const CallState& context) noexcept(false)
@@ -251,7 +246,7 @@ static ObjectInstance* shard_type_IsAssignableFrom(const CallState& context) noe
 	if (target == nullptr || source == nullptr)
 		return context.Collector.FromValue(false);
 
-	return context.Collector.FromValue(TypeSymbol::IsAssignableFrom(target, source));
+	return context.Collector.FromValue(SemanticModel::IsAssignableTo(target, source));
 }
 
 // =========================================================================
@@ -264,7 +259,7 @@ static ObjectInstance* MakeParameterInfo(ParameterSymbol* param, const CallState
 		return GarbageCollector::NullInstance;
 
 	ObjectInstance* obj = context.Collector.AllocateInstance(parameterInfoClass_raw);
-	obj->SetField(parameterInfo_handleField,
+	obj->SetField(parameterInfo_handleField->SlotIndex,
 		context.Collector.FromValue(PointerToHandle(param)),
 		context.Frame);
 
@@ -299,7 +294,7 @@ static ObjectInstance* MakeMethodInfo(MethodSymbol* method, const CallState& con
 		return GarbageCollector::NullInstance;
 
 	ObjectInstance* obj = context.Collector.AllocateInstance(methodInfoClass_raw);
-	obj->SetField(methodInfo_handleField,
+	obj->SetField(methodInfo_handleField->SlotIndex,
 		context.Collector.FromValue(PointerToHandle(method)),
 		context.Frame);
 
@@ -354,7 +349,7 @@ static ObjectInstance* MakeFieldInfo(FieldSymbol* field, const CallState& contex
 		return GarbageCollector::NullInstance;
 
 	ObjectInstance* obj = context.Collector.AllocateInstance(fieldInfoClass_raw);
-	obj->SetField(fieldInfo_handleField,
+	obj->SetField(fieldInfo_handleField->SlotIndex,
 		context.Collector.FromValue(PointerToHandle(field)),
 		context.Frame);
 
@@ -395,7 +390,7 @@ static ObjectInstance* MakePropertyInfo(PropertySymbol* property, const CallStat
 		return GarbageCollector::NullInstance;
 
 	ObjectInstance* obj = context.Collector.AllocateInstance(propertyInfoClass_raw);
-	obj->SetField(propertyInfo_handleField,
+	obj->SetField(propertyInfo_handleField->SlotIndex,
 		context.Collector.FromValue(PointerToHandle(property)),
 		context.Frame);
 
