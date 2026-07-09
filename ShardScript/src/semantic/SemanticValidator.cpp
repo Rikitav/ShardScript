@@ -23,12 +23,12 @@ namespace shard
         if (interfaceMethod->Parameters.size() != classMethod->Parameters.size())
             return false;
 
-        if (!TypeSymbol::Equals(interfaceMethod->ReturnType, classMethod->ReturnType))
+        if (!SemanticModel::AreTypesEqual(interfaceMethod->ReturnType, classMethod->ReturnType))
             return false;
 
         for (std::size_t i = 0; i < interfaceMethod->Parameters.size(); i++)
         {
-            if (!TypeSymbol::Equals(interfaceMethod->Parameters[i]->Type, classMethod->Parameters[i]->Type))
+            if (!SemanticModel::AreTypesEqual(interfaceMethod->Parameters[i]->Type, classMethod->Parameters[i]->Type))
                 return false;
         }
 
@@ -40,7 +40,7 @@ namespace shard
         if (interfaceProperty->Name != classProperty->Name)
             return false;
 
-        if (!TypeSymbol::Equals(interfaceProperty->ReturnType, classProperty->ReturnType))
+        if (!SemanticModel::AreTypesEqual(interfaceProperty->ReturnType, classProperty->ReturnType))
             return false;
 
         if (interfaceProperty->Getter != nullptr && classProperty->Getter == nullptr)

@@ -1,0 +1,15 @@
+using stdio;
+
+namespace hello_world;
+
+public class Container<T>
+{
+    public Value: T;
+}
+
+public static func Main() -> void
+{
+    c: Container<int> = new Container<int>();
+    c.Value = 42;
+    println(c.Value);
+}

@@ -2928,7 +2928,7 @@ extern "C"
             if (target == nullptr || source == nullptr)
                 return 0;
 
-            return TypeSymbol::IsAssignableFrom(target, source) ? 1 : 0;
+            return SemanticModel::IsAssignableTo(target, source) ? 1 : 0;
         }
         catch (const std::exception& e)
         {
@@ -3095,7 +3095,7 @@ extern "C"
                 return nullptr;
             }
 
-            return instance->GetField(field);
+            return instance->GetField(field->SlotIndex);
         }
         catch (const std::exception& e)
         {
@@ -3114,7 +3114,7 @@ extern "C"
                 return -1;
             }
 
-            instance->SetField(field, value);
+            instance->SetField(field->SlotIndex, value);
             return 0;
         }
         catch (const std::exception& e)
@@ -3177,8 +3177,9 @@ extern "C"
                 return -1;
             }
 
-            ObjectInstance temporary(field->ReturnType, &value, true);
-            instance->SetField(field, &temporary);
+            TypeShape* fieldShape = instance->getShape() != nullptr ? instance->getShape()->GetFieldShape(field->SlotIndex) : nullptr;
+            ObjectInstance temporary(field->ReturnType, fieldShape, &value, true);
+            instance->SetField(field->SlotIndex, &temporary);
             return 0;
         }
         catch (const std::exception& e)
@@ -3198,8 +3199,9 @@ extern "C"
                 return -1;
             }
 
-            ObjectInstance temporary(field->ReturnType, &value, true);
-            instance->SetField(field, &temporary);
+            TypeShape* fieldShape = instance->getShape() != nullptr ? instance->getShape()->GetFieldShape(field->SlotIndex) : nullptr;
+            ObjectInstance temporary(field->ReturnType, fieldShape, &value, true);
+            instance->SetField(field->SlotIndex, &temporary);
             return 0;
         }
         catch (const std::exception& e)
@@ -3220,8 +3222,9 @@ extern "C"
             }
 
             bool converted = value != 0;
-            ObjectInstance temporary(field->ReturnType, &converted, true);
-            instance->SetField(field, &temporary);
+            TypeShape* fieldShape = instance->getShape() != nullptr ? instance->getShape()->GetFieldShape(field->SlotIndex) : nullptr;
+            ObjectInstance temporary(field->ReturnType, fieldShape, &converted, true);
+            instance->SetField(field->SlotIndex, &temporary);
             return 0;
         }
         catch (const std::exception& e)
@@ -3241,8 +3244,9 @@ extern "C"
                 return -1;
             }
 
-            ObjectInstance temporary(field->ReturnType, &value, true);
-            instance->SetField(field, &temporary);
+            TypeShape* fieldShape = instance->getShape() != nullptr ? instance->getShape()->GetFieldShape(field->SlotIndex) : nullptr;
+            ObjectInstance temporary(field->ReturnType, fieldShape, &value, true);
+            instance->SetField(field->SlotIndex, &temporary);
             return 0;
         }
         catch (const std::exception& e)

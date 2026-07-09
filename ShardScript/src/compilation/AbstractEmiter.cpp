@@ -436,13 +436,13 @@ void AbstractEmiter::VisitAccessorDeclaration(AccessorDeclarationSyntax* node)
 			if (node->KeywordToken.Type == TokenType::GetKeyword)
 			{
 				Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, 0);
-				Encoder.EmitLoadField(GeneratingFor->ExecutableByteCode, property->BackingField);
+				Encoder.EmitLoadField(GeneratingFor->ExecutableByteCode, property->BackingField->SlotIndex);
 			}
 			else if (node->KeywordToken.Type == TokenType::SetKeyword)
 			{
 				Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, 0);
 				Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, 1);
-				Encoder.EmitStoreField(GeneratingFor->ExecutableByteCode, property->BackingField);
+				Encoder.EmitStoreField(GeneratingFor->ExecutableByteCode, property->BackingField->SlotIndex);
 			}
 		}
 		else
@@ -1088,9 +1088,9 @@ void AbstractEmiter::VisitUnaryAssignExpression(UnaryExpressionSyntax* node)
 
 		VisitExpression(memberExpression->PreviousExpression.get());
 		Encoder.EmitDuplicate(GeneratingFor->ExecutableByteCode);
-		Encoder.EmitLoadField(GeneratingFor->ExecutableByteCode, memberExpression->ToField);
+		Encoder.EmitLoadField(GeneratingFor->ExecutableByteCode, memberExpression->ToField->SlotIndex);
 		EmitUnaryOperation(node->OperatorToken.Type, Encoder, GeneratingFor->ExecutableByteCode, node->IsRightDetermined);
-		Encoder.EmitStoreField(GeneratingFor->ExecutableByteCode, memberExpression->ToField);
+		Encoder.EmitStoreField(GeneratingFor->ExecutableByteCode, memberExpression->ToField->SlotIndex);
 		return;
 	}
 
@@ -1227,7 +1227,7 @@ void AbstractEmiter::VisitBinaryAssignExpression(BinaryExpressionSyntax* node)
 
 		VisitExpression(memberExpression->PreviousExpression.get());
 		VisitExpression(node->Right.get());
-		Encoder.EmitStoreField(GeneratingFor->ExecutableByteCode, memberExpression->ToField);
+		Encoder.EmitStoreField(GeneratingFor->ExecutableByteCode, memberExpression->ToField->SlotIndex);
 		return;
 	}
 }
@@ -1325,7 +1325,7 @@ void AbstractEmiter::VisitMemberAccessExpression(MemberAccessExpressionSyntax* n
 		}
 
 		VisitExpression(node->PreviousExpression.get());
-		Encoder.EmitLoadField(GeneratingFor->ExecutableByteCode, node->ToField);
+		Encoder.EmitLoadField(GeneratingFor->ExecutableByteCode, node->ToField->SlotIndex);
 		return;
 	}
 

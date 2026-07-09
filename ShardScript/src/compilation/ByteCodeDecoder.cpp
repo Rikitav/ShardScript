@@ -140,6 +140,13 @@ DelegateTypeSymbol* ByteCodeDecoder::AbsordDelegateTypeSymbol()
     return value;
 }
 
+std::uint32_t ByteCodeDecoder::AbsorbFieldSlot()
+{
+    std::uint32_t value{};
+    ReadUnaligned(_code, _ip, value);
+    return value;
+}
+
 FieldSymbol* ByteCodeDecoder::AbsorbFieldSymbol()
 {
     FieldSymbol* value{};

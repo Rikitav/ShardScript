@@ -72,8 +72,8 @@ namespace shard
 
 		void EmitNewObject(std::vector<std::byte>& code, TypeSymbol* type, ConstructorSymbol* ctor);
 		void EmitNewDelegate(std::vector<std::byte>& code, DelegateTypeSymbol* type);
-		void EmitLoadField(std::vector<std::byte>& code, FieldSymbol* type);
-		void EmitStoreField(std::vector<std::byte>& code, FieldSymbol* type);
+		void EmitLoadField(std::vector<std::byte>& code, std::uint32_t slot);
+		void EmitStoreField(std::vector<std::byte>& code, std::uint32_t slot);
 
 		void EmitNewArray(std::vector<std::byte>& code, ArrayTypeSymbol* type);
 		void EmitNewDynamicArray(std::vector<std::byte>& code, TypeSymbol* elementType);

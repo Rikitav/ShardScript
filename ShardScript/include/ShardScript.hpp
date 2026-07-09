@@ -193,6 +193,8 @@
 #include <shard/compilation/ProgramDisassembler.hpp>
 
 // --- Runtime ---
+#include <shard/runtime/TypeShape.hpp>
+#include <shard/runtime/TypeShapeCache.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
 #include <shard/runtime/GarbageCollector.hpp>
 #include <shard/runtime/CallStackFrame.hpp>

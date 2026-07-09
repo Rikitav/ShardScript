@@ -62,7 +62,6 @@ namespace shard
 
 		CallStackFrame* CurrentFrame() const;
 		CallStackFrame* PushFrame(MethodSymbol* methodSymbol);
-		CallStackFrame* PushFrame(MethodSymbol* methodSymbol, TypeSymbol* withinType);
 		void PopFrame();
 
 		void InvokeMethod(MethodSymbol* method) const;

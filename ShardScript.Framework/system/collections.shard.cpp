@@ -22,13 +22,8 @@ static ObjectInstance* shard_list_init(const CallState& context) noexcept(false)
 
 	TypeSymbol* concreteT = context.Frame->TypeArguments[0];
 
-	ArrayTypeSymbol* arrayType = new ArrayTypeSymbol(concreteT);
-	arrayType->Length = 0;
-	arrayType->MemoryBytesSize = SymbolTable::Primitives::Array->MemoryBytesSize;
-	arrayType->LayoutingState = TypeLayoutingState::Visited;
-
-	ObjectInstance* array = context.Collector.AllocateInstance(arrayType);
-	listInstance->SetField(list_arrayField, array, context.Frame);
+	ObjectInstance* array = context.Collector.AllocateArray(concreteT, 0);
+	listInstance->SetField(list_arrayField->SlotIndex, array, context.Frame);
 
 	return nullptr;
 }
@@ -43,13 +38,8 @@ static ObjectInstance* shard_list_init_capacity(const CallState& context) noexce
 
 	TypeSymbol* concreteT = context.Frame->TypeArguments[0];
 
-	ArrayTypeSymbol* arrayType = new ArrayTypeSymbol(concreteT);
-	arrayType->Length = 0;
-	arrayType->MemoryBytesSize = SymbolTable::Primitives::Array->MemoryBytesSize;
-	arrayType->LayoutingState = TypeLayoutingState::Visited;
-
-	ObjectInstance* array = context.Collector.AllocateInstance(arrayType);
-	listInstance->SetField(list_arrayField, array, context.Frame);
+	ObjectInstance* array = context.Collector.AllocateArray(concreteT, 0);
+	listInstance->SetField(list_arrayField->SlotIndex, array, context.Frame);
 
 	return nullptr;
 }
@@ -63,19 +53,14 @@ static ObjectInstance* shard_list_Add(const CallState& context) noexcept(false)
 	if (ownerType->Kind == SyntaxKind::GenericType)
 		ownerType = static_cast<GenericTypeSymbol*>(ownerType)->UnderlayingType;
 
-	ObjectInstance* arrayInstance = listInstance->GetField(list_arrayField, context.Frame);
+	ObjectInstance* arrayInstance = listInstance->GetField(list_arrayField->SlotIndex, context.Frame);
 	ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->getInfo()));
 	TypeSymbol* concreteT = context.Frame->TypeArguments[0];
 
 	std::size_t currentSize = arrayType->Length;
 	std::size_t newSize = currentSize + 1;
 
-	ArrayTypeSymbol* newArrayType = new ArrayTypeSymbol(concreteT);
-	newArrayType->Length = newSize;
-	newArrayType->MemoryBytesSize = SymbolTable::Primitives::Array->MemoryBytesSize + concreteT->GetInlineSize() * newSize;
-	newArrayType->LayoutingState = TypeLayoutingState::Visited;
-
-	ObjectInstance* newArray = context.Collector.AllocateInstance(newArrayType);
+	ObjectInstance* newArray = context.Collector.AllocateArray(concreteT, newSize);
 
 	for (std::size_t i = 0; i < currentSize; i++)
 	{
@@ -84,7 +69,7 @@ static ObjectInstance* shard_list_Add(const CallState& context) noexcept(false)
 	}
 
 	newArray->SetElement(currentSize, value, context.Frame);
-	listInstance->SetField(list_arrayField, newArray, context.Frame);
+	listInstance->SetField(list_arrayField->SlotIndex, newArray, context.Frame);
 
 	return nullptr;
 }
@@ -98,7 +83,7 @@ static ObjectInstance* shard_list_ElementAt(const CallState& context) noexcept(f
 	if (ownerType->Kind == SyntaxKind::GenericType)
 		ownerType = static_cast<GenericTypeSymbol*>(ownerType)->UnderlayingType;
 
-	ObjectInstance* arrayInstance = listInstance->GetField(list_arrayField, context.Frame);
+	ObjectInstance* arrayInstance = listInstance->GetField(list_arrayField->SlotIndex, context.Frame);
 	ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->getInfo()));
 
 	if (index < 0 || static_cast<std::size_t>(index) >= arrayType->Length)
@@ -116,7 +101,7 @@ static ObjectInstance* shard_list_RemoveAt(const CallState& context) noexcept(fa
 	if (ownerType->Kind == SyntaxKind::GenericType)
 		ownerType = static_cast<GenericTypeSymbol*>(ownerType)->UnderlayingType;
 
-	ObjectInstance* arrayInstance = listInstance->GetField(list_arrayField, context.Frame);
+	ObjectInstance* arrayInstance = listInstance->GetField(list_arrayField->SlotIndex, context.Frame);
 	ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->getInfo()));
 	TypeSymbol* concreteT = context.Frame->TypeArguments[0];
 
@@ -125,12 +110,7 @@ static ObjectInstance* shard_list_RemoveAt(const CallState& context) noexcept(fa
 
 	std::size_t newSize = arrayType->Length - 1;
 
-	ArrayTypeSymbol* newArrayType = new ArrayTypeSymbol(concreteT);
-	newArrayType->Length = newSize;
-	newArrayType->MemoryBytesSize = SymbolTable::Primitives::Array->MemoryBytesSize + concreteT->GetInlineSize() * newSize;
-	newArrayType->LayoutingState = TypeLayoutingState::Visited;
-
-	ObjectInstance* newArray = context.Collector.AllocateInstance(newArrayType);
+	ObjectInstance* newArray = context.Collector.AllocateArray(concreteT, newSize);
 
 	for (std::size_t i = 0; i < static_cast<std::size_t>(index); i++)
 	{
@@ -144,7 +124,7 @@ static ObjectInstance* shard_list_RemoveAt(const CallState& context) noexcept(fa
 		newArray->SetElement(i - 1, element, context.Frame);
 	}
 
-	listInstance->SetField(list_arrayField, newArray, context.Frame);
+	listInstance->SetField(list_arrayField->SlotIndex, newArray, context.Frame);
 	return nullptr;
 }
 
@@ -158,13 +138,8 @@ static ObjectInstance* shard_list_Clear(const CallState& context) noexcept(false
 
 	TypeSymbol* concreteT = context.Frame->TypeArguments[0];
 
-	ArrayTypeSymbol* newArrayType = new ArrayTypeSymbol(concreteT);
-	newArrayType->Length = 0;
-	newArrayType->MemoryBytesSize = SymbolTable::Primitives::Array->MemoryBytesSize;
-	newArrayType->LayoutingState = TypeLayoutingState::Visited;
-
-	ObjectInstance* newArray = context.Collector.AllocateInstance(newArrayType);
-	listInstance->SetField(list_arrayField, newArray, context.Frame);
+	ObjectInstance* newArray = context.Collector.AllocateArray(concreteT, 0);
+	listInstance->SetField(list_arrayField->SlotIndex, newArray, context.Frame);
 
 	return nullptr;
 }
@@ -172,19 +147,19 @@ static ObjectInstance* shard_list_Clear(const CallState& context) noexcept(false
 static ObjectInstance* shard_listenumerator_MoveNext(const CallState& context) noexcept(false)
 {
 	ObjectInstance* self = context.Args[0];
-	std::int64_t index = self->GetField(listEnumerator_indexField, context.Frame)->AsInteger();
-	std::int64_t length = self->GetField(listEnumerator_lengthField, context.Frame)->AsInteger();
+	std::int64_t index = self->GetField(listEnumerator_indexField->SlotIndex, context.Frame)->AsInteger();
+	std::int64_t length = self->GetField(listEnumerator_lengthField->SlotIndex, context.Frame)->AsInteger();
 
 	index++;
-	self->SetField(listEnumerator_indexField, context.Collector.FromValue(index), context.Frame);
+	self->SetField(listEnumerator_indexField->SlotIndex, context.Collector.FromValue(index), context.Frame);
 	return context.Collector.FromValue(index < length);
 }
 
 static ObjectInstance* shard_listenumerator_Current_get(const CallState& context) noexcept(false)
 {
 	ObjectInstance* self = context.Args[0];
-	std::int64_t index = self->GetField(listEnumerator_indexField, context.Frame)->AsInteger();
-	ObjectInstance* source = self->GetField(listEnumerator_sourceField, context.Frame);
+	std::int64_t index = self->GetField(listEnumerator_indexField->SlotIndex, context.Frame)->AsInteger();
+	ObjectInstance* source = self->GetField(listEnumerator_sourceField->SlotIndex, context.Frame);
 	return source->GetElement(static_cast<std::size_t>(index), context.Frame);
 }
 
@@ -197,19 +172,13 @@ static ObjectInstance* shard_list_GetEnumerator(const CallState& context) noexce
 		ownerType = static_cast<GenericTypeSymbol*>(ownerType)->UnderlayingType;
 
 	TypeSymbol* concreteT = context.Frame->TypeArguments[0];
-	ObjectInstance* arrayInstance = listInstance->GetField(list_arrayField, context.Frame);
+	ObjectInstance* arrayInstance = listInstance->GetField(list_arrayField->SlotIndex, context.Frame);
 	const ArrayTypeSymbol* arrayType = static_cast<const ArrayTypeSymbol*>(arrayInstance->getInfo());
 
-	GenericTypeSymbol* enumeratorType = new GenericTypeSymbol(listEnumeratorClass_raw);
-	enumeratorType->AddTypeParameter(listEnumerator_typeParam_T, concreteT);
-	enumeratorType->Inlining = TypeInlining::ByReference;
-	enumeratorType->MemoryBytesSize = listEnumeratorClass_raw->MemoryBytesSize;
-	enumeratorType->LayoutingState = TypeLayoutingState::Visited;
-
-	ObjectInstance* enumerator = context.Collector.AllocateInstance(enumeratorType);
-	enumerator->SetField(listEnumerator_sourceField, arrayInstance, context.Frame);
-	enumerator->SetField(listEnumerator_indexField, context.Collector.FromValue(static_cast<std::int64_t>(-1)), context.Frame);
-	enumerator->SetField(listEnumerator_lengthField, context.Collector.FromValue(static_cast<std::int64_t>(arrayType->Length)), context.Frame);
+	ObjectInstance* enumerator = context.Collector.AllocateGeneric(listEnumeratorClass_raw, std::vector<TypeSymbol*>{ concreteT });
+	enumerator->SetField(listEnumerator_sourceField->SlotIndex, arrayInstance, context.Frame);
+	enumerator->SetField(listEnumerator_indexField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(-1)), context.Frame);
+	enumerator->SetField(listEnumerator_lengthField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(arrayType->Length)), context.Frame);
 
 	return enumerator;
 }
@@ -222,7 +191,7 @@ static ObjectInstance* shard_list_Length_get(const CallState& context) noexcept(
 	if (ownerType->Kind == SyntaxKind::GenericType)
 		ownerType = static_cast<GenericTypeSymbol*>(ownerType)->UnderlayingType;
 
-	ObjectInstance* arrayInstance = listInstance->GetField(list_arrayField, context.Frame);
+	ObjectInstance* arrayInstance = listInstance->GetField(list_arrayField->SlotIndex, context.Frame);
 	ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->getInfo()));
 
 	return context.Collector.FromValue(static_cast<std::int64_t>(arrayType->Length));
@@ -237,7 +206,7 @@ static ObjectInstance* shard_list_Indexer_get(const CallState& context) noexcept
 	if (ownerType->Kind == SyntaxKind::GenericType)
 		ownerType = static_cast<GenericTypeSymbol*>(ownerType)->UnderlayingType;
 
-	ObjectInstance* arrayInstance = listInstance->GetField(list_arrayField, context.Frame);
+	ObjectInstance* arrayInstance = listInstance->GetField(list_arrayField->SlotIndex, context.Frame);
 	ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->getInfo()));
 
 	if (index < 0 || static_cast<std::size_t>(index) >= arrayType->Length)
@@ -256,7 +225,7 @@ static ObjectInstance* shard_list_Indexer_set(const CallState& context) noexcept
 	if (ownerType->Kind == SyntaxKind::GenericType)
 		ownerType = static_cast<GenericTypeSymbol*>(ownerType)->UnderlayingType;
 
-	ObjectInstance* arrayInstance = listInstance->GetField(list_arrayField, context.Frame);
+	ObjectInstance* arrayInstance = listInstance->GetField(list_arrayField->SlotIndex, context.Frame);
 	ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->getInfo()));
 
 	if (index < 0 || static_cast<std::size_t>(index) >= arrayType->Length)

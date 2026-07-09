@@ -85,14 +85,14 @@ static ObjectInstance* shard_fileInfo_Init(const CallState& context) noexcept(fa
     ObjectInstance* instance = context.Args[0];
     ObjectInstance* fullPath = context.Args[1];
 
-    instance->SetField(shard_FileInfo_FullNameBackingField, fullPath);
+    instance->SetField(shard_FileInfo_FullNameBackingField->SlotIndex, fullPath);
     return instance;
 }
 
 static ObjectInstance* shard_fileinfo_Name_get(const CallState& context) noexcept(false)
 {
     ObjectInstance* instance = context.Args[0];
-    ObjectInstance* fullName = instance->GetField(shard_FileInfo_FullNameBackingField);
+    ObjectInstance* fullName = instance->GetField(shard_FileInfo_FullNameBackingField->SlotIndex);
 
     fs::path path(fullName->AsString());
     return context.Collector.FromValue(path.filename().wstring());
@@ -101,7 +101,7 @@ static ObjectInstance* shard_fileinfo_Name_get(const CallState& context) noexcep
 static ObjectInstance* shard_fileinfo_Exists_get(const CallState& context) noexcept(false)
 {
     ObjectInstance* instance = context.Args[0];
-    ObjectInstance* fullName = instance->GetField(shard_FileInfo_FullNameBackingField);
+    ObjectInstance* fullName = instance->GetField(shard_FileInfo_FullNameBackingField->SlotIndex);
 
     bool exists = fs::is_regular_file(fullName->AsString());
     return context.Collector.FromValue(exists);
@@ -110,7 +110,7 @@ static ObjectInstance* shard_fileinfo_Exists_get(const CallState& context) noexc
 static ObjectInstance* shard_fileinfo_Delete(const CallState& context) noexcept(false)
 {
     ObjectInstance* instance = context.Args[0];
-    ObjectInstance* fullName = instance->GetField(shard_FileInfo_FullNameBackingField);
+    ObjectInstance* fullName = instance->GetField(shard_FileInfo_FullNameBackingField->SlotIndex);
     std::wstring pathStr = fullName->AsString();
 
     if (fs::exists(pathStr))
@@ -221,14 +221,14 @@ static ObjectInstance* shard_directoryinfo_Init(const CallState& context) noexce
     ObjectInstance* instance = context.Args[0];
     ObjectInstance* fullName = context.Args[1];
 
-    instance->SetField(shard_DirectoryInfo_FullNameBackingField, fullName);
+    instance->SetField(shard_DirectoryInfo_FullNameBackingField->SlotIndex, fullName);
     return instance;
 }
 
 static ObjectInstance* shard_directoryinfo_Name_get(const CallState& context) noexcept(false)
 {
     ObjectInstance* instance = context.Args[0];
-    ObjectInstance* fullName = instance->GetField(shard_DirectoryInfo_FullNameBackingField);
+    ObjectInstance* fullName = instance->GetField(shard_DirectoryInfo_FullNameBackingField->SlotIndex);
 
     fs::path p(fullName->AsString());
     return context.Collector.FromValue(p.filename().wstring());
@@ -237,7 +237,7 @@ static ObjectInstance* shard_directoryinfo_Name_get(const CallState& context) no
 static ObjectInstance* shard_directoryinfo_Exists_get(const CallState& context) noexcept(false)
 {
     ObjectInstance* instance = context.Args[0];
-    ObjectInstance* fullName = instance->GetField(shard_DirectoryInfo_FullNameBackingField);
+    ObjectInstance* fullName = instance->GetField(shard_DirectoryInfo_FullNameBackingField->SlotIndex);
 
     bool exists = fs::is_directory(fullName->AsString());
     return context.Collector.FromValue(exists);
@@ -246,7 +246,7 @@ static ObjectInstance* shard_directoryinfo_Exists_get(const CallState& context) 
 static ObjectInstance* shard_directoryinfo_Create(const CallState& context) noexcept(false)
 {
     ObjectInstance* instance = context.Args[0];
-    ObjectInstance* fullName = instance->GetField(shard_DirectoryInfo_FullNameBackingField);
+    ObjectInstance* fullName = instance->GetField(shard_DirectoryInfo_FullNameBackingField->SlotIndex);
 
     if (fs::exists(fullName->AsString()))
         return nullptr; // void
@@ -260,7 +260,7 @@ static ObjectInstance* shard_directoryinfo_Create(const CallState& context) noex
 static ObjectInstance* shard_directoryinfo_Delete(const CallState& context) noexcept(false)
 {
     ObjectInstance* instance = context.Args[0];
-    ObjectInstance* fullName = instance->GetField(shard_DirectoryInfo_FullNameBackingField);
+    ObjectInstance* fullName = instance->GetField(shard_DirectoryInfo_FullNameBackingField->SlotIndex);
 
     if (!fs::remove_all(fullName->AsString()))
         throw std::runtime_error("Failed to delete directory tree.");
@@ -270,14 +270,14 @@ static ObjectInstance* shard_directoryinfo_Delete(const CallState& context) noex
 
 static ObjectInstance* shard_string_op_div_directoryinfo_string(const CallState& context) noexcept(false)
 {
-    ObjectInstance* dirFullName = context.Args[0]->GetField(shard_DirectoryInfo_FullNameBackingField);
+    ObjectInstance* dirFullName = context.Args[0]->GetField(shard_DirectoryInfo_FullNameBackingField->SlotIndex);
     ObjectInstance* right = context.Args[1];
  
     ObjectInstance* args[] = { dirFullName, right };
     std::wstring final_buffer = pathJoin(args);
 
     ObjectInstance* resultInstance = context.Collector.AllocateInstance(shard_DirectoryInfo);
-    resultInstance->SetField(shard_DirectoryInfo_FullNameBackingField, context.Collector.FromValue(final_buffer));
+    resultInstance->SetField(shard_DirectoryInfo_FullNameBackingField->SlotIndex, context.Collector.FromValue(final_buffer));
     return resultInstance;
 }
 
@@ -286,14 +286,14 @@ static ObjectInstance* shard_directoryinfo_op_div_directoryinfo_fileinfo(const C
     ObjectInstance* left = context.Args[0];
     ObjectInstance* right = context.Args[1];
 
-    ObjectInstance* dirFullName = left->GetField(shard_DirectoryInfo_FullNameBackingField);
-    ObjectInstance* fileFullName = right->GetField(shard_FileInfo_FullNameBackingField);
+    ObjectInstance* dirFullName = left->GetField(shard_DirectoryInfo_FullNameBackingField->SlotIndex);
+    ObjectInstance* fileFullName = right->GetField(shard_FileInfo_FullNameBackingField->SlotIndex);
 
     std::wstring args[] = { std::wstring(dirFullName->AsString()), fs::path(right->AsString()).filename().wstring() };
     std::wstring final_buffer = pathJoin(args);
 
     ObjectInstance* resultInstance = context.Collector.AllocateInstance(shard_FileInfo);
-    resultInstance->SetField(shard_FileInfo_FullNameBackingField, context.Collector.FromValue(final_buffer));
+    resultInstance->SetField(shard_FileInfo_FullNameBackingField->SlotIndex, context.Collector.FromValue(final_buffer));
     return resultInstance;
 }
 
@@ -313,7 +313,7 @@ static ObjectInstance* shard_directory_CreateDirectory(const CallState& context)
     ObjectInstance* instance = context.Collector.AllocateInstance(context.Method->ReturnType);
     TypeSymbol* ownerType = const_cast<TypeSymbol*>(instance->getInfo());
     FieldSymbol* field = ownerType->Fields[0];
-    instance->SetField(field, context.Args[0]);
+    instance->SetField(field->SlotIndex, context.Args[0]);
     return instance;
 }
 

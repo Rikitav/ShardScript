@@ -75,7 +75,7 @@ static ControlHolder* GetHolder(ObjectInstance* instance)
 	if (ptrField == nullptr)
 		throw std::runtime_error("Terminality wrapper is missing the `_ptr` field");
 
-	ObjectInstance* ptrInstance = instance->GetField(ptrField);
+	ObjectInstance* ptrInstance = instance->GetField(ptrField->SlotIndex);
 	if (ptrInstance == nullptr || ptrInstance == GarbageCollector::NullInstance)
 		return nullptr;
 
@@ -115,7 +115,7 @@ static void RegisterControlPtr(const CallState& context, ObjectInstance* instanc
 
 	ControlHolder* holder = new ControlHolder{ native, true };
 	ObjectInstance* wrapper = context.Collector.FromNint(holder, false);
-	instance->SetField(ptrField, wrapper);
+	instance->SetField(ptrField->SlotIndex, wrapper);
 }
 
 // ============================================================================

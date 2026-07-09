@@ -604,7 +604,7 @@ void ExpressionBinder::VisitFieldDeclaration(FieldDeclarationSyntax* node)
 			return;
 		}
 
-		if (!TypeSymbol::IsAssignableFrom(symbol->ReturnType, initExprType))
+		if (!SemanticModel::IsAssignableTo(symbol->ReturnType, initExprType))
 		{
 			Diagnostics.ReportError(node->IdentifierToken, L"Field initializer type mismatch: expected '" + symbol->ReturnType->Name + L"' but got '" + initExprType->Name + L"'");
 			return;
@@ -646,7 +646,7 @@ void ExpressionBinder::VisitVariableStatement(VariableStatementSyntax* node)
 		return;
 	}
 
-	if (!TypeSymbol::IsAssignableFrom(symbol->Type, expressionType))
+	if (!SemanticModel::IsAssignableTo(symbol->Type, expressionType))
 	{
 		Diagnostics.ReportError(node->IdentifierToken, L"Type mismatch: expected '" + symbol->Type->Name + L"' but got '" + expressionType->Name + L"'");
 		return;
@@ -739,7 +739,7 @@ TypeSymbol* ExpressionBinder::AnalyzeBinaryExpression(BinaryExpressionSyntax* no
 			return leftType;
 		}
 
-		if (leftType != SymbolTable::Primitives::Any && !TypeSymbol::IsAssignableFrom(leftType, rightType))
+		if (leftType != SymbolTable::Primitives::Any && !SemanticModel::IsAssignableTo(leftType, rightType))
 		{
 			Diagnostics.ReportError(node->OperatorToken, L"Type mismatch in assignment: expected '" + leftType->Name + L"' but got '" + rightType->Name + L"'");
 			return leftType;
@@ -789,7 +789,7 @@ TypeSymbol* ExpressionBinder::AnalyzeBinaryExpression(BinaryExpressionSyntax* no
 			|| type == SymbolTable::Primitives::Char;
 	};
 
-	bool bothPrimitive = leftType->IsPrimitive() && rightType->IsPrimitive();
+	bool bothPrimitive = SemanticModel::IsPrimitiveType(leftType) && SemanticModel::IsPrimitiveType(rightType);
 	bool bothTypeParameters = leftType->Kind == SyntaxKind::TypeParameter && leftType == rightType;
 	bool isPrimitiveBinaryOp = (bothPrimitive || bothTypeParameters) &&
 		(IsBinaryArithmeticOperator(node->OperatorToken.Type) ||
@@ -806,7 +806,7 @@ TypeSymbol* ExpressionBinder::AnalyzeBinaryExpression(BinaryExpressionSyntax* no
 			return opMethod->ReturnType;
 		}
 
-		if (!leftType->IsPrimitive() &&
+		if (!SemanticModel::IsPrimitiveType(leftType) &&
 			node->OperatorToken.Type != TokenType::EqualsOperator &&
 			node->OperatorToken.Type != TokenType::NotEqualsOperator)
 		{
@@ -973,7 +973,7 @@ TypeSymbol* ExpressionBinder::AnalyzeUnaryExpression(UnaryExpressionSyntax* node
 	}
 
 	{
-		bool tryOperatorMethod = !exprType->IsPrimitive() &&
+		bool tryOperatorMethod = !SemanticModel::IsPrimitiveType(exprType) &&
 			(node->OperatorToken.Type != TokenType::IncrementOperator && node->OperatorToken.Type != TokenType::DecrementOperator);
 
 		if (tryOperatorMethod)
@@ -987,7 +987,7 @@ TypeSymbol* ExpressionBinder::AnalyzeUnaryExpression(UnaryExpressionSyntax* node
 			}
 		}
 
-		if (!exprType->IsPrimitive())
+		if (!SemanticModel::IsPrimitiveType(exprType))
 		{
 			Diagnostics.ReportError(node->OperatorToken, L"Operator '" + GetOperatorMethodName(node->OperatorToken.Type) + L"' is not defined for type '" + exprType->Name + L"'");
 			return nullptr;
@@ -1347,7 +1347,7 @@ bool ExpressionBinder::MatchMethodArguments(SyntaxToken blameToken, std::vector<
 			return true;
 		}
 
-		if (!TypeSymbol::IsAssignableFrom(paramType, argType))
+		if (!SemanticModel::IsAssignableTo(paramType, argType))
 		{
 			Diagnostics.ReportError(blameToken, L"Argument type mismatch for parameter '" + param->Name + L"': expected '" + paramType->Name + L"' but got '" + argType->Name + L"'");
 			return false;
@@ -1783,7 +1783,7 @@ static bool IsExtensionMethodCandidate(MethodSymbol* method, TypeSymbol* receive
 	if (receiverType == nullptr)
 		return false;
 
-	if (!TypeSymbol::IsAssignableFrom(method->Parameters[0]->Type, receiverType))
+	if (!SemanticModel::IsAssignableTo(method->Parameters[0]->Type, receiverType))
 		return false;
 
 	if (method->Parameters.size() != argTypes.size() + 1)
@@ -1796,7 +1796,7 @@ static bool IsExtensionMethodCandidate(MethodSymbol* method, TypeSymbol* receive
 		if (paramType == nullptr || argType == nullptr)
 			return false;
 
-		if (!TypeSymbol::IsAssignableFrom(paramType, argType))
+		if (!SemanticModel::IsAssignableTo(paramType, argType))
 			return false;
 	}
 
@@ -1891,7 +1891,7 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node, 
 				if (paramType == SymbolTable::Primitives::Any)
 					continue;
 
-				if (!TypeSymbol::IsAssignableFrom(paramType, candidateArgs[i]))
+				if (!SemanticModel::IsAssignableTo(paramType, candidateArgs[i]))
 					return false;
 			}
 
@@ -2329,7 +2329,7 @@ bool ExpressionBinder::TryInferTypeArgument(TypeSymbol* pattern, TypeSymbol* con
 		std::size_t index = static_cast<std::size_t>(std::distance(method->TypeParameters.begin(), it));
 		if (outMethodTypeArgs[index] == nullptr)
 			outMethodTypeArgs[index] = concrete;
-		else if (!TypeSymbol::Equals(outMethodTypeArgs[index], concrete))
+		else if (!SemanticModel::AreTypesEqual(outMethodTypeArgs[index], concrete))
 			return false;
 
 		return true;
@@ -2476,7 +2476,7 @@ bool ExpressionBinder::MatchGenericMethodArguments(MethodSymbol* method, const s
 			continue;
 
 		TypeSymbol* argType = argTypes[i];
-		if (!TypeSymbol::IsAssignableFrom(paramType, argType))
+		if (!SemanticModel::IsAssignableTo(paramType, argType))
 			return false;
 	}
 
@@ -3261,7 +3261,7 @@ void ExpressionBinder::VisitReturnStatement(ReturnStatementSyntax* node)
 	{
 		Diagnostics.ReportError(node->KeywordToken, L"Return expression type could not be determined");
 	}
-	else if (returnType->Kind != SyntaxKind::TypeParameter && !TypeSymbol::IsAssignableFrom(returnType, returnExprType))
+	else if (returnType->Kind != SyntaxKind::TypeParameter && !SemanticModel::IsAssignableTo(returnType, returnExprType))
 	{
 		Diagnostics.ReportError(node->KeywordToken, L"Return type mismatch: expected '" + returnType->Name + L"' but got '" + returnExprType->Name + L"'");
 	}
@@ -3298,7 +3298,7 @@ void ExpressionBinder::VisitDeferStatement(DeferStatementSyntax* node)
 			return;
 		}
 
-		if (!TypeSymbol::IsAssignableFrom(disposable, variableType))
+		if (!SemanticModel::IsAssignableTo(disposable, variableType))
 		{
 			Diagnostics.ReportError(node->DeferToken, L"Type '" + variableType->Name + L"' declared in defer statement must implement IDisposable");
 			return;
@@ -3341,7 +3341,7 @@ static bool IsReferenceCastAllowed(TypeSymbol* source, TypeSymbol* target)
 	if (source == nullptr || target == nullptr)
 		return false;
 
-	if (TypeSymbol::Equals(source, target))
+	if (SemanticModel::AreTypesEqual(source, target))
 		return true;
 
 	if (source == SymbolTable::Primitives::Null)
@@ -3353,7 +3353,7 @@ static bool IsReferenceCastAllowed(TypeSymbol* source, TypeSymbol* target)
 	if (target->Inlining != TypeInlining::ByReference || source->Inlining != TypeInlining::ByReference)
 		return false;
 
-	if (TypeSymbol::IsAssignableFrom(target, source) || TypeSymbol::IsAssignableFrom(source, target))
+	if (SemanticModel::IsAssignableTo(target, source) || SemanticModel::IsAssignableTo(source, target))
 		return true;
 
 	if (target->Kind == SyntaxKind::InterfaceDeclaration || source->Kind == SyntaxKind::InterfaceDeclaration)
@@ -3401,7 +3401,7 @@ void ExpressionBinder::VisitCastExpression(CastExpressionSyntax* node)
 		return;
 	}
 
-	if (TypeSymbol::Equals(sourceType, targetType))
+	if (SemanticModel::AreTypesEqual(sourceType, targetType))
 	{
 		SetExpressionType(node, targetType);
 		return;

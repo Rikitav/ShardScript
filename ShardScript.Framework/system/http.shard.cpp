@@ -86,7 +86,7 @@ static httplib::Client* GetClientPtr(ObjectInstance* instance)
     if (!instance)
         return nullptr;
 
-    ObjectInstance* handleVal = instance->GetField(shard_HttpClient_ClientPtrField);
+    ObjectInstance* handleVal = instance->GetField(shard_HttpClient_ClientPtrField->SlotIndex);
     if (!handleVal)
         return nullptr;
 
@@ -98,7 +98,7 @@ static httplib::Server* GetServerPtr(ObjectInstance* instance)
     if (!instance)
         return nullptr;
 
-    ObjectInstance* handleVal = instance->GetField(shard_HttpServer_ClientPtrField);
+    ObjectInstance* handleVal = instance->GetField(shard_HttpServer_ClientPtrField->SlotIndex);
     if (!handleVal)
         return nullptr;
 
@@ -115,8 +115,8 @@ static ObjectInstance* shard_http_Response_Init(const CallState& context) noexce
     ObjectInstance* status = context.Args[1];
     ObjectInstance* body = context.Args[2];
 
-    instance->SetField(shard_HttpResponse_StatusField, status);
-    instance->SetField(shard_HttpResponse_BodyField, body);
+    instance->SetField(shard_HttpResponse_StatusField->SlotIndex, status);
+    instance->SetField(shard_HttpResponse_BodyField->SlotIndex, body);
     return instance;
 }
 
@@ -135,7 +135,7 @@ static ObjectInstance* shard_http_Client_Init(const CallState& context) noexcept
     client->set_connection_timeout(std::chrono::seconds(5));
     client->set_read_timeout(std::chrono::seconds(5));
 
-    instance->SetField(shard_HttpClient_ClientPtrField, context.Collector.FromNint(client, true));
+    instance->SetField(shard_HttpClient_ClientPtrField->SlotIndex, context.Collector.FromNint(client, true));
     return instance;
 }
 
@@ -207,7 +207,7 @@ static ObjectInstance* shard_http_Client_Dispose(const CallState& context) noexc
     if (client != nullptr)
     {
         delete client;
-        instance->SetField(shard_HttpClient_ClientPtrField, context.Collector.FromNint(nullptr, false));
+        instance->SetField(shard_HttpClient_ClientPtrField->SlotIndex, context.Collector.FromNint(nullptr, false));
     }
     
     return nullptr;
@@ -222,7 +222,7 @@ static ObjectInstance* shard_http_Server_Init(const CallState& context) noexcept
     ObjectInstance* instance = context.Args[0];
     httplib::Server* server = new httplib::Server();
 
-    instance->SetField(shard_HttpServer_ClientPtrField, context.Collector.FromNint(server, true));
+    instance->SetField(shard_HttpServer_ClientPtrField->SlotIndex, context.Collector.FromNint(server, true));
     return instance;
 }
 
@@ -329,14 +329,14 @@ SHARDLIB_ENTRYPOINT
         .AddBackingField();
 
     statusCodeProp.AddGetter()
-        .SetCallback([](const CallState& context) { return context.Args[0]->GetField(shard_HttpResponse_StatusField); });
+        .SetCallback([](const CallState& context) { return context.Args[0]->GetField(shard_HttpResponse_StatusField->SlotIndex); });
 
     SymbolBuilder<PropertySymbol> bodyProp = respClass.AddProperty(L"Body", TYPE_STRING, LINK_INSTANCE, ACS_PUBLIC);
     shard_HttpResponse_BodyField = bodyProp
         .AddBackingField();
 
     bodyProp.AddGetter()
-        .SetCallback([](const CallState& context) { return context.Args[0]->GetField(shard_HttpResponse_BodyField); });
+        .SetCallback([](const CallState& context) { return context.Args[0]->GetField(shard_HttpResponse_BodyField->SlotIndex); });
 
     // --- class HttpClient ---
     SymbolBuilder<ClassSymbol> clientClass = httpNamespace.AddClass(L"HttpClient");

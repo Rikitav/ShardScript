@@ -146,7 +146,7 @@ namespace
         if (!connInstance)
             return nullptr;
 
-        ObjectInstance* handleVal = connInstance->GetField(shard_SqliteConnection_HandleField);
+        ObjectInstance* handleVal = connInstance->GetField(shard_SqliteConnection_HandleField->SlotIndex);
         if (!handleVal)
             return nullptr;
 
@@ -293,7 +293,7 @@ static ObjectInstance* shard_sqlite_Connection_Init(const CallState& context) no
     // Be tolerant of short-lived locks from other threads/processes.
     sqlite3_busy_timeout(db, 5000);
 
-    instance->SetField(shard_SqliteConnection_HandleField, context.Collector.FromValue(reinterpret_cast<int64_t>(db)));
+    instance->SetField(shard_SqliteConnection_HandleField->SlotIndex, context.Collector.FromValue(reinterpret_cast<int64_t>(db)));
     return instance;
 }
 
@@ -305,7 +305,7 @@ static ObjectInstance* shard_sqlite_Connection_Close(const CallState& context) n
     if (db != nullptr)
     {
         sqlite3_close_v2(db);
-        instance->SetField(shard_SqliteConnection_HandleField, context.Collector.FromValue(static_cast<int64_t>(0)));
+        instance->SetField(shard_SqliteConnection_HandleField->SlotIndex, context.Collector.FromValue(static_cast<int64_t>(0)));
     }
 
     return nullptr;
@@ -366,16 +366,16 @@ static ObjectInstance* shard_sqlite_Command_Init(const CallState& context) noexc
     ObjectInstance* conn = context.Args[1];
     ObjectInstance* sqlText = context.Args[2];
 
-    instance->SetField(shard_SqliteCommand_ConnField, conn);
-    instance->SetField(shard_SqliteCommand_TextField, sqlText);
+    instance->SetField(shard_SqliteCommand_ConnField->SlotIndex, conn);
+    instance->SetField(shard_SqliteCommand_TextField->SlotIndex, sqlText);
     return instance;
 }
 
 static ObjectInstance* shard_sqlite_Command_ExecuteNonQuery(const CallState& context) noexcept(false)
 {
     ObjectInstance* instance = context.Args[0];
-    ObjectInstance* connInstance = instance->GetField(shard_SqliteCommand_ConnField);
-    std::wstring sql = instance->GetField(shard_SqliteCommand_TextField)->AsString();
+    ObjectInstance* connInstance = instance->GetField(shard_SqliteCommand_ConnField->SlotIndex);
+    std::wstring sql = instance->GetField(shard_SqliteCommand_TextField->SlotIndex)->AsString();
 
     sqlite3* db = GetOpenDatabase(connInstance);
     return context.Collector.FromValue(ExecuteNonQuerySql(db, sql));
@@ -384,8 +384,8 @@ static ObjectInstance* shard_sqlite_Command_ExecuteNonQuery(const CallState& con
 static ObjectInstance* shard_sqlite_Command_ExecuteScalar(const CallState& context) noexcept(false)
 {
     ObjectInstance* instance = context.Args[0];
-    ObjectInstance* connInstance = instance->GetField(shard_SqliteCommand_ConnField);
-    std::wstring sql = instance->GetField(shard_SqliteCommand_TextField)->AsString();
+    ObjectInstance* connInstance = instance->GetField(shard_SqliteCommand_ConnField->SlotIndex);
+    std::wstring sql = instance->GetField(shard_SqliteCommand_TextField->SlotIndex)->AsString();
 
     sqlite3* db = GetOpenDatabase(connInstance);
     return ExecuteScalarSql(db, sql, context.Collector);

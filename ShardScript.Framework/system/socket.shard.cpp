@@ -118,7 +118,7 @@ static ObjectInstance* shard_socket_init(const CallState& context) noexcept(fals
     if (sock == INVALID_SOCKET_VAL)
         throw std::runtime_error("Failed to create socket handle.");
 
-    instance->SetField(shard_socket_handle, context.Collector.FromValue(static_cast<std::int64_t>(sock)));
+    instance->SetField(shard_socket_handle->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(sock)));
     return instance;
 }
 
@@ -127,7 +127,7 @@ static ObjectInstance* shard_socket_Connect(const CallState& context) noexcept
     ObjectInstance* instance = context.Args[0];
     const wchar_t* ip_w = context.Args[1]->AsString();
     int64_t port = context.Args[2]->AsInteger();
-    socket_t socket_handle = static_cast<socket_t>(instance->GetField(shard_socket_handle)->AsInteger());
+    socket_t socket_handle = static_cast<socket_t>(instance->GetField(shard_socket_handle->SlotIndex)->AsInteger());
 
     if (socket_handle == INVALID_SOCKET_VAL)
         return context.Collector.FromValue(false);
@@ -150,7 +150,7 @@ static ObjectInstance* shard_socket_Connect(const CallState& context) noexcept
 static ObjectInstance* shard_socket_Send(const CallState& context) noexcept
 {
     ObjectInstance* instance = context.Args[0];
-    socket_t socket_handle = static_cast<socket_t>(instance->GetField(shard_socket_handle)->AsInteger());
+    socket_t socket_handle = static_cast<socket_t>(instance->GetField(shard_socket_handle->SlotIndex)->AsInteger());
 
     const wchar_t* data_w = context.Args[1]->AsString();
     int data_length = static_cast<int>(context.Args[1]->AsStringLength());
@@ -169,7 +169,7 @@ static ObjectInstance* shard_socket_Bind(const CallState& context) noexcept
     ObjectInstance* instance = context.Args[0];
     const wchar_t* ip_w = context.Args[1]->AsString();
     int64_t port = context.Args[2]->AsInteger();
-    socket_t socket_handle = static_cast<socket_t>(instance->GetField(shard_socket_handle)->AsInteger());
+    socket_t socket_handle = static_cast<socket_t>(instance->GetField(shard_socket_handle->SlotIndex)->AsInteger());
 
     if (socket_handle == INVALID_SOCKET_VAL)
         return context.Collector.FromValue(false);
@@ -197,7 +197,7 @@ static ObjectInstance* shard_socket_Listen(const CallState& context) noexcept
 {
     ObjectInstance* instance = context.Args[0];
     int64_t backlog = context.Args[1]->AsInteger();
-    socket_t socket_handle = static_cast<socket_t>(instance->GetField(shard_socket_handle)->AsInteger());
+    socket_t socket_handle = static_cast<socket_t>(instance->GetField(shard_socket_handle->SlotIndex)->AsInteger());
 
     if (socket_handle == INVALID_SOCKET_VAL)
         return context.Collector.FromValue(false);
@@ -209,7 +209,7 @@ static ObjectInstance* shard_socket_Listen(const CallState& context) noexcept
 static ObjectInstance* shard_socket_Accept(const CallState& context) noexcept(false)
 {
     ObjectInstance* instance = context.Args[0];
-    socket_t server_handle = static_cast<socket_t>(instance->GetField(shard_socket_handle)->AsInteger());
+    socket_t server_handle = static_cast<socket_t>(instance->GetField(shard_socket_handle->SlotIndex)->AsInteger());
 
     if (server_handle == INVALID_SOCKET_VAL)
         throw std::runtime_error("Invalid server socket handle");
@@ -222,7 +222,7 @@ static ObjectInstance* shard_socket_Accept(const CallState& context) noexcept(fa
         throw std::runtime_error("Failed to accept client connection");
 
     ObjectInstance* client_instance = context.Collector.AllocateInstance(shard_socket);
-    client_instance->SetField(shard_socket_handle, context.Collector.FromValue(static_cast<std::int64_t>(client_handle)));
+    client_instance->SetField(shard_socket_handle->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(client_handle)));
     return client_instance;
 }
 
@@ -230,7 +230,7 @@ static ObjectInstance* shard_socket_Receive(const CallState& context) noexcept
 {
     ObjectInstance* instance = context.Args[0];
     int symbols_requested = static_cast<int>(context.Args[1]->AsInteger());
-    socket_t socket_handle = static_cast<socket_t>(instance->GetField(shard_socket_handle)->AsInteger());
+    socket_t socket_handle = static_cast<socket_t>(instance->GetField(shard_socket_handle->SlotIndex)->AsInteger());
 
     if (socket_handle == INVALID_SOCKET_VAL || symbols_requested <= 0)
         return context.Collector.FromValue(L"");
@@ -257,12 +257,12 @@ static ObjectInstance* shard_socket_Receive(const CallState& context) noexcept
 static ObjectInstance* shard_socket_Close(const CallState& context) noexcept
 {
     ObjectInstance* instance = context.Args[0];
-    int64_t socket_handle = instance->GetField(shard_socket_handle)->AsInteger();
+    int64_t socket_handle = instance->GetField(shard_socket_handle->SlotIndex)->AsInteger();
 
     if (socket_handle != INVALID_SOCKET_VAL)
     {
         close_socket_native(static_cast<socket_t>(socket_handle));
-        instance->SetField(shard_socket_handle, context.Collector.FromValue(static_cast<int64_t>(INVALID_SOCKET_VAL)));
+        instance->SetField(shard_socket_handle->SlotIndex, context.Collector.FromValue(static_cast<int64_t>(INVALID_SOCKET_VAL)));
     }
 
     return nullptr;

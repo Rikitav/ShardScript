@@ -1,0 +1,48 @@
+// ============================================================================
+//  cinterop example: call MessageBoxW from user32.dll
+//
+//  Exercises the three parts of the `interop` library:
+//    - NativeLibrary : load a DLL and resolve exported function pointers
+//    - Marshal       : allocate/free native memory and marshal strings
+//    - NativeCall    : invoke a raw C function pointer
+//
+//  C signature being called:
+//
+//      int MessageBoxW(HWND hWnd, LPCWSTR lpText, LPCWSTR lpCaption, UINT uType);
+//
+//  Run (after building the framework so that bin/system/cinterop.dll exists):
+//
+//      ShardScript.Interpreter.exe test_scripts/cinterop/messagebox.shard
+// ============================================================================
+
+using stdio;
+using interop;
+
+namespace examples;
+
+public static func Main() -> void
+{
+    // 1. Load user32.dll and resolve the address of MessageBoxW.
+    user32 := NativeLibrary.Load("user32.dll");
+    messageBoxW := NativeLibrary.GetFunction(user32, "MessageBoxW");
+
+    // 2. Marshal the body and title into native UTF-16 (LPCWSTR) buffers.
+    //    The returned pointers are heap-allocated and must be freed afterwards.
+    text := Marshal.StringToUnicode("Hello from ShardScript C-interop!");
+    caption := Marshal.StringToUnicode("ShardScript");
+
+    // 3. Invoke MessageBoxW.
+    //    hWnd  = 0  -> no owner window
+    //    uType = 0  -> MB_OK (a single OK button)
+    //    We use the 4-argument overload of NativeCall.Call (the function pointer
+    //    plus four words). Call is used because MessageBoxW returns a 32-bit int.
+    result := NativeCall.Call(messageBoxW, 0, text, caption, 0);
+
+    // MessageBoxW returns the id of the button that was clicked; IDOK == 1.
+    println(result);
+
+    // 4. Release the native buffers and unload the library.
+    Marshal.Free(text);
+    Marshal.Free(caption);
+    NativeLibrary.Free(user32);
+}

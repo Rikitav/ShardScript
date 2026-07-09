@@ -27,10 +27,10 @@
 #include <shard/semantic/symbols/TypeSymbol.hpp>
 #include <shard/semantic/symbols/GenericTypeSymbol.hpp>
 #include <shard/semantic/symbols/DelegateTypeSymbol.hpp>
+#include <shard/semantic/SemanticModel.hpp>
 
 #include <shard/ApplicationDomain.hpp>
 
-#include <iostream>
 #include <cstring>
 #include <vector>
 #include <map>
@@ -163,7 +163,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			if (instance != nullptr && instance != garbageCollector.NullInstance)
 			{
 				TypeSymbol* instanceType = const_cast<TypeSymbol*>(instance->getInfo());
-				result = TypeSymbol::IsAssignableFrom(targetType, instanceType);
+				result = SemanticModel::IsAssignableTo(targetType, instanceType);
 				garbageCollector.CollectInstance(instance);
 			}
 
@@ -181,7 +181,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			if (instance != nullptr && instance != garbageCollector.NullInstance)
 			{
 				TypeSymbol* instanceType = const_cast<TypeSymbol*>(instance->getInfo());
-				compatible = TypeSymbol::IsAssignableFrom(targetType, instanceType);
+				compatible = SemanticModel::IsAssignableTo(targetType, instanceType);
 			}
 
 			if (compatible)
@@ -219,7 +219,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			}
 
 			TypeSymbol* instanceType = const_cast<TypeSymbol*>(instance->getInfo());
-			if (TypeSymbol::IsAssignableFrom(targetType, instanceType))
+			if (SemanticModel::IsAssignableTo(targetType, instanceType))
 			{
 				frame->PushStack(instance);
 			}
@@ -363,9 +363,9 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 
 		case OpCode::LOADFIELD:
 		{
-			FieldSymbol* field = decoder.AbsorbFieldSymbol();
+			std::uint32_t slot = decoder.AbsorbFieldSlot();
 			ObjectInstance* instance = frame->PopStack();
-			ObjectInstance* fieldValue = instance->GetField(field, frame);
+			ObjectInstance* fieldValue = instance->GetField(slot, frame);
 
 			frame->PushStack(fieldValue);
 			garbageCollector.CollectInstance(instance);
@@ -374,11 +374,11 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 
 		case OpCode::STOREFIELD:
 		{
-			FieldSymbol* field = decoder.AbsorbFieldSymbol();
+			std::uint32_t slot = decoder.AbsorbFieldSlot();
 			ObjectInstance* fieldValue = frame->PopStack();
 			ObjectInstance* instance = frame->PopStack();
 
-			instance->SetField(field, fieldValue, frame);
+			instance->SetField(slot, fieldValue, frame);
 			garbageCollector.CollectInstance(fieldValue);
 			garbageCollector.CollectInstance(instance);
 			break;
@@ -418,7 +418,24 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		{
 			TypeSymbol* type = decoder.AbsorbTypeSymbol();
 			type = frame->ResolveType(type);
+			if (type == nullptr || type->Kind != SyntaxKind::ArrayType)
+				throw std::runtime_error("NEWARRAY expects an array type");
+
+			ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(type);
+			std::size_t length = arrayType->Length;
+			std::vector<ObjectInstance*> elements;
+			elements.reserve(length);
+			for (std::size_t i = 0; i < length; ++i)
+				elements.push_back(frame->PopStack());
+
 			ObjectInstance* instance = garbageCollector.AllocateInstance(type);
+			for (std::size_t i = 0; i < length; ++i)
+			{
+				std::size_t index = i;
+				instance->SetElement(index, elements[i], frame);
+				garbageCollector.CollectInstance(elements[i]);
+			}
+
 			frame->PushStack(instance);
 			break;
 		}
@@ -746,6 +763,7 @@ std::wstring VirtualMachine::GetStackTrace() const
 
 		result += frame->Method->FullName;
 	}
+
 	return result;
 }
 
@@ -775,14 +793,14 @@ ObjectInstance* VirtualMachine::CreateRuntimeException(const std::exception& err
 		const char* what = err.what();
 		std::wstring msg(what, what + std::strlen(what));
 		ObjectInstance* msgInstance = garbageCollector.FromValue(msg);
-		instance->SetField(SymbolTable::StandardTypes::RuntimeExceptionMessageField, msgInstance, nullptr);
+		instance->SetField(SymbolTable::StandardTypes::RuntimeExceptionMessageField->SlotIndex, msgInstance, nullptr);
 	}
 
 	if (SymbolTable::StandardTypes::RuntimeExceptionStackTraceField != nullptr)
 	{
 		std::wstring trace = GetStackTrace();
 		ObjectInstance* traceInstance = garbageCollector.FromValue(trace);
-		instance->SetField(SymbolTable::StandardTypes::RuntimeExceptionStackTraceField, traceInstance, nullptr);
+		instance->SetField(SymbolTable::StandardTypes::RuntimeExceptionStackTraceField->SlotIndex, traceInstance, nullptr);
 	}
 
 	return instance;
@@ -842,15 +860,10 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 
 	if (thisInstance != nullptr)
 	{
-		currentFrame->WithinType = const_cast<TypeSymbol*>(thisInstance->getInfo());
-		if (currentFrame->TypeArguments.empty() && thisInstance->getInfo()->Kind == SyntaxKind::GenericType)
+		TypeShape* thisShape = thisInstance->getShape();
+		if (currentFrame->TypeArguments.empty() && thisShape != nullptr && thisShape->HasGenericArguments())
 		{
-			GenericTypeSymbol* genericInfo = const_cast<GenericTypeSymbol*>(static_cast<const GenericTypeSymbol*>(thisInstance->getInfo()));
-			TypeSymbol* underlyingType = genericInfo->UnderlayingType;
-
-			currentFrame->TypeArguments.resize(underlyingType->TypeParameters.size());
-			for (std::size_t i = 0; i < underlyingType->TypeParameters.size(); i++)
-				currentFrame->TypeArguments[i] = genericInfo->SubstituteTypeParameters(underlyingType->TypeParameters[i]);
+			currentFrame->TypeArguments = thisShape->GenericArguments;
 		}
 	}
 
@@ -945,7 +958,9 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 	else
 	{
 		ObjectInstance* returnedValue = nullptr;
-		if (method->ReturnType != nullptr && method->ReturnType != SymbolTable::Primitives::Void && currentFrame->InterruptionReason != FrameInterruptionReason::ExceptionRaised)
+		if (method->HandleType != MethodHandleType::External &&
+			method->ReturnType != nullptr && method->ReturnType != SymbolTable::Primitives::Void &&
+			currentFrame->InterruptionReason != FrameInterruptionReason::ExceptionRaised)
 		{
 			if (!currentFrame->EvalStack.empty())
 			{
@@ -972,137 +987,58 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 	}
 }
 
-static std::map<std::pair<TypeSymbol*, std::vector<TypeSymbol*>>, GenericTypeSymbol*>& GetGenericInstantiationCache()
+static SemanticModel::TypeParameterResolver MakeFrameResolver(CallStackFrame* frame)
 {
-	static std::map<std::pair<TypeSymbol*, std::vector<TypeSymbol*>>, GenericTypeSymbol*> cache;
-	return cache;
-}
-
-static GenericTypeSymbol* CreateConcreteGenericType(TypeSymbol* underlyingType, const std::vector<TypeSymbol*>& concreteArgs)
-{
-	GenericTypeSymbol* symbol = new GenericTypeSymbol(underlyingType);
-	for (std::size_t i = 0; i < underlyingType->TypeParameters.size(); ++i)
-		symbol->AddTypeParameter(underlyingType->TypeParameters[i], concreteArgs[i]);
-
-	std::size_t offset = 0;
-	for (FieldSymbol* field : underlyingType->Fields)
+	return [frame](TypeParameterSymbol* param) -> TypeSymbol*
 	{
-		if (field->Linking == LINK_STATIC)
-			continue;
+		if (frame == nullptr || param == nullptr)
+			return nullptr;
 
-		TypeSymbol* fieldType = field->ReturnType;
-		if (fieldType != nullptr && fieldType->Kind == SyntaxKind::TypeParameter)
-			fieldType = symbol->SubstituteTypeParameters(static_cast<TypeParameterSymbol*>(fieldType));
-
-		if (fieldType == nullptr)
-			continue;
-
-		symbol->FieldOffsets[field] = offset;
-		offset += fieldType->GetInlineSize();
-	}
-
-	symbol->MemoryBytesSize = offset;
-	symbol->LayoutingState = TypeLayoutingState::Visited;
-	return symbol;
-}
-
-static GenericTypeSymbol* GetConcreteGenericType(TypeSymbol* underlyingType, const std::vector<TypeSymbol*>& concreteArgs)
-{
-	auto key = std::make_pair(underlyingType, concreteArgs);
-	auto& cache = GetGenericInstantiationCache();
-	auto it = cache.find(key);
-	if (it != cache.end())
-		return it->second;
-
-	GenericTypeSymbol* symbol = CreateConcreteGenericType(underlyingType, concreteArgs);
-	cache[key] = symbol;
-	return symbol;
-}
-
-static TypeSymbol* ResolveRuntimeTypeArgument(TypeSymbol* type, CallStackFrame* frame)
-{
-	if (type == nullptr || frame == nullptr)
-		return type;
-
-	if (type->Kind == SyntaxKind::TypeParameter)
-	{
-		TypeSymbol* resolved = frame->ResolveType(type);
-		return resolved != nullptr ? resolved : type;
-	}
-
-	if (type->Kind == SyntaxKind::GenericType)
-	{
-		GenericTypeSymbol* generic = static_cast<GenericTypeSymbol*>(type);
-		TypeSymbol* underlying = generic->UnderlayingType;
-		bool changed = false;
-		std::vector<TypeSymbol*> resolvedArgs;
-		resolvedArgs.reserve(underlying->TypeParameters.size());
-		for (TypeParameterSymbol* param : underlying->TypeParameters)
-		{
-			TypeSymbol* arg = generic->SubstituteTypeParameters(param);
-			TypeSymbol* resolvedArg = ResolveRuntimeTypeArgument(arg, frame);
-			if (resolvedArg != arg)
-				changed = true;
-			resolvedArgs.push_back(resolvedArg != nullptr ? resolvedArg : arg);
-		}
-
-		if (!changed)
-			return type;
-
-		return GetConcreteGenericType(underlying, resolvedArgs);
-	}
-
-	return type;
+		return frame->ResolveType(param);
+	};
 }
 
 ObjectInstance* VirtualMachine::InstantiateObject(TypeSymbol* type, ConstructorSymbol* ctor)
 {
 	CallStackFrame* callingFrame = CurrentFrame();
 
-	// Fully resolve generic type arguments using the current frame so that
-	// runtime-created generic instances (e.g. new Container<U>() inside a generic
-	// method) get a concrete type such as Container<int> with correct layout.
-	type = ResolveRuntimeTypeArgument(type, callingFrame);
+	auto resolver = MakeFrameResolver(callingFrame);
 
-	// Resolve pending type arguments for the constructor frame as well.
-	for (TypeSymbol*& pendingArg : PendingTypeArguments)
-		pendingArg = ResolveRuntimeTypeArgument(pendingArg, callingFrame);
+	TypeSymbol* baseType = type;
+	std::vector<TypeSymbol*> genericArgs;
+	bool isGeneric = SemanticModel::TryResolveGenericArguments(type, resolver, baseType, genericArgs);
 
-	GenericTypeSymbol* genericInfo = nullptr;
-	ObjectInstance* newInstance = garbageCollector.AllocateInstance(type);
+	ObjectInstance* newInstance = isGeneric
+		? garbageCollector.AllocateGeneric(baseType, genericArgs)
+		: garbageCollector.AllocateInstance(SemanticModel::ResolveRuntimeTypeArgument(type, resolver));
 
-	if (type->Kind == SyntaxKind::GenericType)
-		genericInfo = static_cast<GenericTypeSymbol*>(type);
-
-	TypeSymbol* fieldOwnerType = genericInfo != nullptr ? genericInfo->UnderlayingType : type;
-	for (FieldSymbol* field : fieldOwnerType->Fields)
+	// Zero-initialize all field slots using the type shape.
+	TypeShape* shape = newInstance->getShape();
+	if (shape != nullptr)
 	{
-		if (field->Linking == LINK_STATIC)
-			continue;
-
-		TypeSymbol* fieldType = field->ReturnType;
-		if (fieldType != nullptr && fieldType->Kind == SyntaxKind::TypeParameter && genericInfo != nullptr)
-			fieldType = genericInfo->SubstituteTypeParameters(static_cast<TypeParameterSymbol*>(fieldType));
-
-		if (fieldType == nullptr)
-			continue;
-
-		std::size_t fieldOffset = genericInfo != nullptr ? genericInfo->GetFieldOffset(field) : field->MemoryBytesOffset;
-		if (fieldType->Inlining == TypeInlining::ByReference)
+		for (std::uint32_t slot = 0; slot < static_cast<std::uint32_t>(shape->Slots.size()); ++slot)
 		{
-			void* offset = newInstance->OffsetMemory(fieldOffset, sizeof(ObjectInstance*));
-			memset(offset, 0, sizeof(ObjectInstance*));
-		}
-		else
-		{
-			void* offset = newInstance->OffsetMemory(fieldOffset, fieldType->GetInlineSize());
-			memset(offset, 0, fieldType->GetInlineSize());
+			TypeShape* fieldShape = shape->GetFieldShape(slot);
+			std::size_t fieldOffset = shape->GetOffset(slot);
+			std::size_t fieldSize = fieldShape != nullptr
+				? (fieldShape->IsReferenceType() ? sizeof(void*) : fieldShape->Size)
+				: sizeof(void*);
+
+			void* offset = newInstance->OffsetMemory(fieldOffset, fieldSize);
+			std::memset(offset, 0, fieldSize);
 		}
 	}
 
+	// Resolve pending type arguments for the constructor frame as well.
+	for (TypeSymbol*& pendingArg : PendingTypeArguments)
+		pendingArg = SemanticModel::ResolveRuntimeTypeArgument(pendingArg, resolver);
+
 	callingFrame->PushStack(newInstance);
 
-	CallStackFrame* currentFrame = PushFrame(ctor, type);
+	CallStackFrame* currentFrame = PushFrame(ctor);
+	if (isGeneric && currentFrame->TypeArguments.empty())
+		currentFrame->TypeArguments = genericArgs;
+
 	newInstance->IncrementReference();
 
 	InvokeMethodInternal(ctor, currentFrame);
@@ -1173,19 +1109,10 @@ CallStackFrame* VirtualMachine::CurrentFrame() const
 
 CallStackFrame* VirtualMachine::PushFrame(MethodSymbol* methodSymbol)
 {
-	auto frame = std::make_unique<CallStackFrame>(this, CurrentFrame(), nullptr, methodSymbol);
+	auto frame = std::make_unique<CallStackFrame>(this, CurrentFrame(), methodSymbol);
 	frame->TypeArguments = std::move(PendingTypeArguments);
 	PendingTypeArguments.clear();
-	CallStackFrame* rawFrame = frame.get();
-	CallStack.push_back(std::move(frame));
-	return rawFrame;
-}
 
-CallStackFrame* VirtualMachine::PushFrame(MethodSymbol* methodSymbol, TypeSymbol* withinType)
-{
-	auto frame = std::make_unique<CallStackFrame>(this, CurrentFrame(), withinType, methodSymbol);
-	frame->TypeArguments = std::move(PendingTypeArguments);
-	PendingTypeArguments.clear();
 	CallStackFrame* rawFrame = frame.get();
 	CallStack.push_back(std::move(frame));
 	return rawFrame;
@@ -1261,6 +1188,7 @@ void VirtualMachine::SetPendingTypeArguments(std::initializer_list<TypeSymbol*> 
 	VirtualMachine* vm = const_cast<VirtualMachine*>(this);
 	vm->PendingTypeArguments.clear();
 	vm->PendingTypeArguments.reserve(args.size());
+
 	for (TypeSymbol* arg : args)
 		vm->PendingTypeArguments.push_back(arg);
 }
@@ -1270,16 +1198,16 @@ void VirtualMachine::RaiseException(ObjectInstance* exceptionReg) const
 	// TODO: implement method
 }
 
-static std::wstring GetThrowablePropertyValue(VirtualMachine& vm, ObjectInstance* exception, PropertySymbol* interfaceProperty)
+static std::wstring GetThrowablePropertyValue(VirtualMachine& vm, ObjectInstance* exception, AccessorSymbol* interfacePropertyAccessor)
 {
-	if (exception == nullptr || interfaceProperty == nullptr || interfaceProperty->Getter == nullptr)
+	if (exception == nullptr || interfacePropertyAccessor == nullptr)
 		return L"";
 
 	TypeSymbol* exceptionType = const_cast<TypeSymbol*>(exception->getInfo());
 	if (exceptionType == nullptr)
 		return L"";
 
-	MethodSymbol* implementation = exceptionType->FindInterfaceImplementation(interfaceProperty->Getter);
+	MethodSymbol* implementation = exceptionType->FindInterfaceImplementation(interfacePropertyAccessor);
 	if (implementation == nullptr)
 		return L"";
 
@@ -1315,6 +1243,7 @@ void VirtualMachine::Run()
 		garbageCollector.CollectInstance(UnhandledException);
 		UnhandledException = nullptr;
 	}
+
 	UnhandledExceptionMessage.clear();
 	UnhandledExceptionStackTrace.clear();
 
@@ -1330,20 +1259,10 @@ void VirtualMachine::Run()
 			exception->IncrementReference();
 			UnhandledException = exception;
 
-			if (TRAIT_THROWABLE != nullptr && TypeSymbol::IsAssignableFrom(
-				static_cast<TypeSymbol*>(TRAIT_THROWABLE),
-			    const_cast<TypeSymbol*>(exception->getInfo())))
+			if (SemanticModel::IsAssignableTo(TRAIT_THROWABLE, exception->getInfo()))
 			{
-				for (PropertySymbol* property : TRAIT_THROWABLE->Properties)
-				{
-					if (property == nullptr)
-						continue;
-
-					if (property->Name == L"message")
-						UnhandledExceptionMessage = GetThrowablePropertyValue(*this, exception, property);
-					else if (property->Name == L"stack_trace")
-						UnhandledExceptionStackTrace = GetThrowablePropertyValue(*this, exception, property);
-				}
+				UnhandledExceptionMessage = GetThrowablePropertyValue(*this, exception, TRAIT_THROWABLE_getMessage);
+				UnhandledExceptionStackTrace = GetThrowablePropertyValue(*this, exception, TRAIT_THROWABLE_getStackTrace);
 			}
 
 			if (UnhandledExceptionStackTrace.empty())

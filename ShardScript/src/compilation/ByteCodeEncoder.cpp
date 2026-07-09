@@ -302,16 +302,16 @@ void ByteCodeEncoder::EmitNewDelegate(std::vector<std::byte>& code, DelegateType
     AppendData(code, &type, sizeof(type));
 }
 
-void ByteCodeEncoder::EmitLoadField(std::vector<std::byte>& code, FieldSymbol* type)
+void ByteCodeEncoder::EmitLoadField(std::vector<std::byte>& code, std::uint32_t slot)
 {
     AppendDataT(code, OpCode::LOADFIELD);
-    AppendData(code, &type, sizeof(type));
+    AppendDataT(code, slot);
 }
 
-void ByteCodeEncoder::EmitStoreField(std::vector<std::byte>& code, FieldSymbol* type)
+void ByteCodeEncoder::EmitStoreField(std::vector<std::byte>& code, std::uint32_t slot)
 {
     AppendDataT(code, OpCode::STOREFIELD);
-    AppendData(code, &type, sizeof(type));
+    AppendDataT(code, slot);
 }
 
 void ByteCodeEncoder::EmitNewArray(std::vector<std::byte>& code, ArrayTypeSymbol* type)

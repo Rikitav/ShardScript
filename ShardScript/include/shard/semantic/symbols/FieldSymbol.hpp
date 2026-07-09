@@ -10,6 +10,7 @@
 
 #include <string>
 #include <cstdint>
+#include <limits>
 
 namespace shard
 {
@@ -18,6 +19,7 @@ namespace shard
     public:
         ExpressionSyntax* DefaultValueExpression = nullptr;
         std::size_t MemoryBytesOffset = 0;
+        std::uint32_t SlotIndex = std::numeric_limits<std::uint32_t>::max();
         TypeSymbol* ReturnType = nullptr;
 
         bool IsEnumValue = false;
