@@ -16,6 +16,9 @@
 
 #include <shard/ShardScriptAPI.hpp>
 #include <shard/semantic/symbols/MethodSymbol.hpp>          // ShardManagedMethodCallback
+#include <shard/semantic/symbols/ConstructorSymbol.hpp>
+#include <shard/semantic/symbols/PropertySymbol.hpp>
+#include <shard/semantic/symbols/AccessorSymbol.hpp>
 #include <shard/parsing/nodes/CompilationUnitSyntax.hpp>   // CompilationUnitOrigin
 
 namespace shard
@@ -331,8 +334,44 @@ extern "C"
     SHARD_API shard::NamespaceSymbol* Shard_CreateNamespaceSymbol(shard::CompilationContext* ctx, shard::NamespaceSymbol* parent, const wchar_t* name);
     SHARD_API shard::ClassSymbol* Shard_CreateClassSymbol(shard::CompilationContext* ctx, shard::NamespaceSymbol* parent, const wchar_t* name);
     SHARD_API shard::MethodSymbol* Shard_CreateMethodSymbol(shard::CompilationContext* ctx, shard::TypeSymbol* parentType, const wchar_t* name, shard::TypeSymbol* returnType, int isStatic, int accessibility);
+    SHARD_API shard::ConstructorSymbol* Shard_CreateConstructorSymbol(shard::CompilationContext* ctx, shard::TypeSymbol* parentType, int accessibility);
     SHARD_API shard::ParameterSymbol* Shard_CreateParameterSymbol(shard::CompilationContext* ctx, const wchar_t* name, shard::TypeSymbol* type);
     SHARD_API int Shard_AddMethodParameter(shard::MethodSymbol* method, shard::ParameterSymbol* parameter);
     SHARD_API shard::FieldSymbol* Shard_CreateFieldSymbol(shard::CompilationContext* ctx, shard::TypeSymbol* parentType, const wchar_t* name, shard::TypeSymbol* type, int isStatic, int accessibility);
     SHARD_API int Shard_SetSymbolAccesibility(shard::SyntaxSymbol* symbol, int accessibility);
+
+    // =========================================================================
+    // Native callback binding helpers (used by language bindings such as Rust)
+    // =========================================================================
+
+    SHARD_API int Shard_SetMethodCallback(shard::MethodSymbol* method, shard::MethodSymbolDelegate callback);
+    SHARD_API int Shard_SetConstructorCallback(shard::ConstructorSymbol* ctor, shard::MethodSymbolDelegate callback);
+    SHARD_API int Shard_SetAccessorCallback(shard::AccessorSymbol* accessor, shard::MethodSymbolDelegate callback);
+
+    SHARD_API shard::PropertySymbol* Shard_CreatePropertySymbol(
+        shard::CompilationContext* ctx,
+        shard::TypeSymbol* parentType,
+        const wchar_t* name,
+        shard::TypeSymbol* type,
+        int isStatic,
+        int accessibility);
+
+    SHARD_API shard::AccessorSymbol* Shard_PropertyAddGetter(shard::CompilationContext* ctx, shard::PropertySymbol* property);
+    SHARD_API shard::AccessorSymbol* Shard_PropertyAddSetter(shard::CompilationContext* ctx, shard::PropertySymbol* property);
+
+    // =========================================================================
+    // CallState / argument accessors
+    // =========================================================================
+
+    SHARD_API std::size_t Shard_CallStateArgCount(const shard::CallState* state);
+    SHARD_API shard::ObjectInstance* Shard_CallStateArg(const shard::CallState* state, std::size_t index);
+    SHARD_API shard::GarbageCollector* Shard_CallStateCollector(const shard::CallState* state);
+    SHARD_API shard::MethodSymbol* Shard_CallStateMethod(const shard::CallState* state);
+    SHARD_API shard::CallStackFrame* Shard_CallStateFrame(const shard::CallState* state);
+
+    // =========================================================================
+    // String length helper
+    // =========================================================================
+
+    SHARD_API std::int64_t Shard_ReadStringLength(shard::ObjectInstance* instance);
 }
