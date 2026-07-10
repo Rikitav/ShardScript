@@ -292,11 +292,11 @@ static ObjectInstance* shard_camera3D_Init(const CallState& context) noexcept
 {
     ObjectInstance* self = context.Args[0];
 
-    self->SetField(camera3D_Position->SlotIndex, WriteVector3(context.Collector, ReadVector3(context.Args[1])), context.Frame);
-    self->SetField(camera3D_Target->SlotIndex, WriteVector3(context.Collector, ReadVector3(context.Args[2])), context.Frame);
-    self->SetField(camera3D_Up->SlotIndex, WriteVector3(context.Collector, ReadVector3(context.Args[3])), context.Frame);
-    self->SetField(camera3D_Fovy->SlotIndex, context.Collector.FromValue(ArgDouble(context.Args[4])), context.Frame);
-    self->SetField(camera3D_Projection->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(ArgInt(context.Args[5]))), context.Frame);
+    self->SetField(camera3D_Position->SlotIndex, WriteVector3(context.Collector, ReadVector3(context.Args[1])));
+    self->SetField(camera3D_Target->SlotIndex, WriteVector3(context.Collector, ReadVector3(context.Args[2])));
+    self->SetField(camera3D_Up->SlotIndex, WriteVector3(context.Collector, ReadVector3(context.Args[3])));
+    self->SetField(camera3D_Fovy->SlotIndex, context.Collector.FromValue(ArgDouble(context.Args[4])));
+    self->SetField(camera3D_Projection->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(ArgInt(context.Args[5]))));
 
     return nullptr;
 }

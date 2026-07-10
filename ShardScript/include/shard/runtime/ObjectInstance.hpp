@@ -42,8 +42,8 @@ namespace shard
 		[[nodiscard]] std::int64_t getReferencesCounter() const;
 
 		// Fields
-		ObjectInstance* GetField(std::uint32_t slot, CallStackFrame* frame = nullptr);
-		void SetField(std::uint32_t slot, ObjectInstance* instance, CallStackFrame* frame = nullptr);
+		ObjectInstance* GetField(std::uint32_t slot);
+		void SetField(std::uint32_t slot, ObjectInstance* instance);
 
 		// Arrays
 		std::size_t GetArrayLength() const;

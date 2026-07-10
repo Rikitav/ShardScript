@@ -45,16 +45,37 @@ static FieldSymbol* shard_StartInfo_createNoWindow = nullptr;
 static FieldSymbol* shard_StartInfo_inheritEnv = nullptr;
 static FieldSymbol* shard_StartInfo_environment = nullptr;
 
-// Forward declarations for dictionary layout shared with collections.shard.cpp
-extern ClassSymbol* dictionaryClass_raw;
-extern FieldSymbol* dict_keysField;
-extern FieldSymbol* dict_valuesField;
-extern FieldSymbol* dict_statesField;
-extern FieldSymbol* dict_countField;
+// Dictionary<string,string> layout used for environment variables.
+static ClassSymbol* dictionaryClass_raw = nullptr;
+static FieldSymbol* dict_keysField = nullptr;
+static FieldSymbol* dict_valuesField = nullptr;
+static FieldSymbol* dict_statesField = nullptr;
+static FieldSymbol* dict_countField = nullptr;
 
 // ============================================================================
 // Small helpers for reading ShardScript fields safely
 // ============================================================================
+
+static ClassSymbol* FindDictionaryClass(CompilationContext& context)
+{
+    for (TypeSymbol* type : context.GetSemanticModel().Table->GetTypeSymbols())
+    {
+        if (type->Name == L"Dictionary" && type->FullName == L"collections.Dictionary")
+            return static_cast<ClassSymbol*>(type);
+    }
+    return nullptr;
+}
+
+static FieldSymbol* FindFieldByName(TypeSymbol* type, const std::wstring& name)
+{
+    if (type == nullptr) return nullptr;
+    for (FieldSymbol* field : type->Fields)
+    {
+        if (field->Name == name)
+            return field;
+    }
+    return nullptr;
+}
 
 static bool IsNullInstance(ObjectInstance* instance)
 {
@@ -544,6 +565,17 @@ SHARDLIB_GETMETADATA
 SHARDLIB_ENTRYPOINT
 {
     SymbolBuilder<NamespaceSymbol> processNamespace(context, L"process");
+
+    // Locate the collections.Dictionary<string,string> layout we need for
+    // environment variables. This avoids a cross-DLL static-symbol dependency.
+    dictionaryClass_raw = FindDictionaryClass(context);
+    if (dictionaryClass_raw != nullptr)
+    {
+        dict_keysField   = FindFieldByName(dictionaryClass_raw, L"_keys");
+        dict_valuesField = FindFieldByName(dictionaryClass_raw, L"_values");
+        dict_statesField = FindFieldByName(dictionaryClass_raw, L"_states");
+        dict_countField  = FindFieldByName(dictionaryClass_raw, L"_count");
+    }
 
     // ------------------------------------------------------------------------
     // class ProcessStartInfo

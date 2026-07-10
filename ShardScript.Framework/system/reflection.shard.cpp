@@ -37,18 +37,10 @@ static FieldSymbol* parameterInfo_handleField = nullptr;
 // =========================================================================
 
 template <typename T>
-static T* HandleTo(ObjectInstance* wrapper, FieldSymbol* handleField, CallStackFrame* frame)
+static T* HandleTo(ObjectInstance* wrapper, FieldSymbol* handleField)
 {
-	std::int64_t handle = wrapper->GetField(handleField->SlotIndex, frame)->AsInteger();
-	if (handle == 0)
-		return nullptr;
-
-	return reinterpret_cast<T*>(static_cast<std::uintptr_t>(handle));
-}
-
-static std::int64_t PointerToHandle(void* pointer)
-{
-	return static_cast<std::int64_t>(reinterpret_cast<std::uintptr_t>(pointer));
+	void* handle = wrapper->GetField(handleField->SlotIndex)->AsNint();
+	return reinterpret_cast<T*>(handle);
 }
 
 static ObjectInstance* MakeArray(TypeSymbol* elementType,
@@ -57,7 +49,7 @@ static ObjectInstance* MakeArray(TypeSymbol* elementType,
 {
 	ObjectInstance* array = context.Collector.AllocateArray(elementType, items.size());
 	for (std::size_t i = 0; i < items.size(); ++i)
-		array->SetElement(i, items[i], context.Frame);
+		array->SetElement(i, items[i]);
 
 	return array;
 }
@@ -73,8 +65,7 @@ static ObjectInstance* MakeType(TypeSymbol* type, const CallState& context)
 
 	ObjectInstance* obj = context.Collector.AllocateInstance(typeClass_raw);
 	obj->SetField(type_handleField->SlotIndex,
-		context.Collector.FromValue(PointerToHandle(type)),
-		context.Frame);
+		context.Collector.FromNint(type, true));
 
 	return obj;
 }
@@ -142,7 +133,7 @@ static ObjectInstance* shard_type_GetType_name(const CallState& context) noexcep
 
 static ObjectInstance* shard_type_Name_get(const CallState& context) noexcept(false)
 {
-	TypeSymbol* type = HandleTo<TypeSymbol>(context.Args[0], type_handleField, context.Frame);
+	TypeSymbol* type = HandleTo<TypeSymbol>(context.Args[0], type_handleField);
 	if (type == nullptr)
 		return context.Collector.FromValue(std::wstring());
 
@@ -151,7 +142,7 @@ static ObjectInstance* shard_type_Name_get(const CallState& context) noexcept(fa
 
 static ObjectInstance* shard_type_FullName_get(const CallState& context) noexcept(false)
 {
-	TypeSymbol* type = HandleTo<TypeSymbol>(context.Args[0], type_handleField, context.Frame);
+	TypeSymbol* type = HandleTo<TypeSymbol>(context.Args[0], type_handleField);
 	if (type == nullptr)
 		return context.Collector.FromValue(std::wstring());
 
@@ -160,7 +151,7 @@ static ObjectInstance* shard_type_FullName_get(const CallState& context) noexcep
 
 static ObjectInstance* shard_type_Namespace_get(const CallState& context) noexcept(false)
 {
-	TypeSymbol* type = HandleTo<TypeSymbol>(context.Args[0], type_handleField, context.Frame);
+	TypeSymbol* type = HandleTo<TypeSymbol>(context.Args[0], type_handleField);
 	if (type == nullptr)
 		return context.Collector.FromValue(std::wstring());
 
@@ -174,49 +165,49 @@ static ObjectInstance* shard_type_Namespace_get(const CallState& context) noexce
 
 static ObjectInstance* shard_type_IsArray_get(const CallState& context) noexcept(false)
 {
-	TypeSymbol* type = HandleTo<TypeSymbol>(context.Args[0], type_handleField, context.Frame);
+	TypeSymbol* type = HandleTo<TypeSymbol>(context.Args[0], type_handleField);
 	return context.Collector.FromValue(type != nullptr && type->Kind == SyntaxKind::ArrayType);
 }
 
 static ObjectInstance* shard_type_IsClass_get(const CallState& context) noexcept(false)
 {
-	TypeSymbol* type = HandleTo<TypeSymbol>(context.Args[0], type_handleField, context.Frame);
+	TypeSymbol* type = HandleTo<TypeSymbol>(context.Args[0], type_handleField);
 	return context.Collector.FromValue(type != nullptr && type->Kind == SyntaxKind::ClassDeclaration);
 }
 
 static ObjectInstance* shard_type_IsStruct_get(const CallState& context) noexcept(false)
 {
-	TypeSymbol* type = HandleTo<TypeSymbol>(context.Args[0], type_handleField, context.Frame);
+	TypeSymbol* type = HandleTo<TypeSymbol>(context.Args[0], type_handleField);
 	return context.Collector.FromValue(type != nullptr && type->Kind == SyntaxKind::StructDeclaration);
 }
 
 static ObjectInstance* shard_type_IsInterface_get(const CallState& context) noexcept(false)
 {
-	TypeSymbol* type = HandleTo<TypeSymbol>(context.Args[0], type_handleField, context.Frame);
+	TypeSymbol* type = HandleTo<TypeSymbol>(context.Args[0], type_handleField);
 	return context.Collector.FromValue(type != nullptr && type->Kind == SyntaxKind::InterfaceDeclaration);
 }
 
 static ObjectInstance* shard_type_IsEnum_get(const CallState& context) noexcept(false)
 {
-	TypeSymbol* type = HandleTo<TypeSymbol>(context.Args[0], type_handleField, context.Frame);
+	TypeSymbol* type = HandleTo<TypeSymbol>(context.Args[0], type_handleField);
 	return context.Collector.FromValue(type != nullptr && type->Kind == SyntaxKind::EnumDeclaration);
 }
 
 static ObjectInstance* shard_type_IsGeneric_get(const CallState& context) noexcept(false)
 {
-	TypeSymbol* type = HandleTo<TypeSymbol>(context.Args[0], type_handleField, context.Frame);
+	TypeSymbol* type = HandleTo<TypeSymbol>(context.Args[0], type_handleField);
 	return context.Collector.FromValue(type != nullptr && type->Kind == SyntaxKind::GenericType);
 }
 
 static ObjectInstance* shard_type_IsPrimitive_get(const CallState& context) noexcept(false)
 {
-	TypeSymbol* type = HandleTo<TypeSymbol>(context.Args[0], type_handleField, context.Frame);
+	TypeSymbol* type = HandleTo<TypeSymbol>(context.Args[0], type_handleField);
 	return context.Collector.FromValue(type != nullptr && SemanticModel::IsPrimitiveType(type));
 }
 
 static ObjectInstance* shard_type_GetElementType(const CallState& context) noexcept(false)
 {
-	TypeSymbol* type = HandleTo<TypeSymbol>(context.Args[0], type_handleField, context.Frame);
+	TypeSymbol* type = HandleTo<TypeSymbol>(context.Args[0], type_handleField);
 	if (type == nullptr || type->Kind != SyntaxKind::ArrayType)
 		return GarbageCollector::NullInstance;
 
@@ -226,7 +217,7 @@ static ObjectInstance* shard_type_GetElementType(const CallState& context) noexc
 
 static ObjectInstance* shard_type_GetInterfaces(const CallState& context) noexcept(false)
 {
-	TypeSymbol* type = HandleTo<TypeSymbol>(context.Args[0], type_handleField, context.Frame);
+	TypeSymbol* type = HandleTo<TypeSymbol>(context.Args[0], type_handleField);
 	if (type == nullptr)
 		return MakeArray(typeClass_raw, {}, context);
 
@@ -240,8 +231,8 @@ static ObjectInstance* shard_type_GetInterfaces(const CallState& context) noexce
 
 static ObjectInstance* shard_type_IsAssignableFrom(const CallState& context) noexcept(false)
 {
-	TypeSymbol* target = HandleTo<TypeSymbol>(context.Args[0], type_handleField, context.Frame);
-	TypeSymbol* source = HandleTo<TypeSymbol>(context.Args[1], type_handleField, context.Frame);
+	TypeSymbol* target = HandleTo<TypeSymbol>(context.Args[0], type_handleField);
+	TypeSymbol* source = HandleTo<TypeSymbol>(context.Args[1], type_handleField);
 
 	if (target == nullptr || source == nullptr)
 		return context.Collector.FromValue(false);
@@ -260,15 +251,14 @@ static ObjectInstance* MakeParameterInfo(ParameterSymbol* param, const CallState
 
 	ObjectInstance* obj = context.Collector.AllocateInstance(parameterInfoClass_raw);
 	obj->SetField(parameterInfo_handleField->SlotIndex,
-		context.Collector.FromValue(PointerToHandle(param)),
-		context.Frame);
+		context.Collector.FromNint(param, true));
 
 	return obj;
 }
 
 static ObjectInstance* shard_parameterinfo_Name_get(const CallState& context) noexcept(false)
 {
-	ParameterSymbol* param = HandleTo<ParameterSymbol>(context.Args[0], parameterInfo_handleField, context.Frame);
+	ParameterSymbol* param = HandleTo<ParameterSymbol>(context.Args[0], parameterInfo_handleField);
 	if (param == nullptr)
 		return context.Collector.FromValue(std::wstring());
 
@@ -277,7 +267,7 @@ static ObjectInstance* shard_parameterinfo_Name_get(const CallState& context) no
 
 static ObjectInstance* shard_parameterinfo_ParameterType_get(const CallState& context) noexcept(false)
 {
-	ParameterSymbol* param = HandleTo<ParameterSymbol>(context.Args[0], parameterInfo_handleField, context.Frame);
+	ParameterSymbol* param = HandleTo<ParameterSymbol>(context.Args[0], parameterInfo_handleField);
 	if (param == nullptr)
 		return GarbageCollector::NullInstance;
 
@@ -295,15 +285,14 @@ static ObjectInstance* MakeMethodInfo(MethodSymbol* method, const CallState& con
 
 	ObjectInstance* obj = context.Collector.AllocateInstance(methodInfoClass_raw);
 	obj->SetField(methodInfo_handleField->SlotIndex,
-		context.Collector.FromValue(PointerToHandle(method)),
-		context.Frame);
+		context.Collector.FromNint(method, true));
 
 	return obj;
 }
 
 static ObjectInstance* shard_methodinfo_Name_get(const CallState& context) noexcept(false)
 {
-	MethodSymbol* method = HandleTo<MethodSymbol>(context.Args[0], methodInfo_handleField, context.Frame);
+	MethodSymbol* method = HandleTo<MethodSymbol>(context.Args[0], methodInfo_handleField);
 	if (method == nullptr)
 		return context.Collector.FromValue(std::wstring());
 
@@ -312,7 +301,7 @@ static ObjectInstance* shard_methodinfo_Name_get(const CallState& context) noexc
 
 static ObjectInstance* shard_methodinfo_ReturnType_get(const CallState& context) noexcept(false)
 {
-	MethodSymbol* method = HandleTo<MethodSymbol>(context.Args[0], methodInfo_handleField, context.Frame);
+	MethodSymbol* method = HandleTo<MethodSymbol>(context.Args[0], methodInfo_handleField);
 	if (method == nullptr)
 		return GarbageCollector::NullInstance;
 
@@ -321,13 +310,13 @@ static ObjectInstance* shard_methodinfo_ReturnType_get(const CallState& context)
 
 static ObjectInstance* shard_methodinfo_IsStatic_get(const CallState& context) noexcept(false)
 {
-	MethodSymbol* method = HandleTo<MethodSymbol>(context.Args[0], methodInfo_handleField, context.Frame);
+	MethodSymbol* method = HandleTo<MethodSymbol>(context.Args[0], methodInfo_handleField);
 	return context.Collector.FromValue(method != nullptr && method->Linking == SymbolLinking::Static);
 }
 
 static ObjectInstance* shard_methodinfo_GetParameters(const CallState& context) noexcept(false)
 {
-	MethodSymbol* method = HandleTo<MethodSymbol>(context.Args[0], methodInfo_handleField, context.Frame);
+	MethodSymbol* method = HandleTo<MethodSymbol>(context.Args[0], methodInfo_handleField);
 	if (method == nullptr)
 		return MakeArray(parameterInfoClass_raw, {}, context);
 
@@ -350,15 +339,14 @@ static ObjectInstance* MakeFieldInfo(FieldSymbol* field, const CallState& contex
 
 	ObjectInstance* obj = context.Collector.AllocateInstance(fieldInfoClass_raw);
 	obj->SetField(fieldInfo_handleField->SlotIndex,
-		context.Collector.FromValue(PointerToHandle(field)),
-		context.Frame);
+		context.Collector.FromNint(field, true));
 
 	return obj;
 }
 
 static ObjectInstance* shard_fieldinfo_Name_get(const CallState& context) noexcept(false)
 {
-	FieldSymbol* field = HandleTo<FieldSymbol>(context.Args[0], fieldInfo_handleField, context.Frame);
+	FieldSymbol* field = HandleTo<FieldSymbol>(context.Args[0], fieldInfo_handleField);
 	if (field == nullptr)
 		return context.Collector.FromValue(std::wstring());
 
@@ -367,7 +355,7 @@ static ObjectInstance* shard_fieldinfo_Name_get(const CallState& context) noexce
 
 static ObjectInstance* shard_fieldinfo_FieldType_get(const CallState& context) noexcept(false)
 {
-	FieldSymbol* field = HandleTo<FieldSymbol>(context.Args[0], fieldInfo_handleField, context.Frame);
+	FieldSymbol* field = HandleTo<FieldSymbol>(context.Args[0], fieldInfo_handleField);
 	if (field == nullptr)
 		return GarbageCollector::NullInstance;
 
@@ -376,7 +364,7 @@ static ObjectInstance* shard_fieldinfo_FieldType_get(const CallState& context) n
 
 static ObjectInstance* shard_fieldinfo_IsStatic_get(const CallState& context) noexcept(false)
 {
-	FieldSymbol* field = HandleTo<FieldSymbol>(context.Args[0], fieldInfo_handleField, context.Frame);
+	FieldSymbol* field = HandleTo<FieldSymbol>(context.Args[0], fieldInfo_handleField);
 	return context.Collector.FromValue(field != nullptr && field->Linking == SymbolLinking::Static);
 }
 
@@ -391,15 +379,14 @@ static ObjectInstance* MakePropertyInfo(PropertySymbol* property, const CallStat
 
 	ObjectInstance* obj = context.Collector.AllocateInstance(propertyInfoClass_raw);
 	obj->SetField(propertyInfo_handleField->SlotIndex,
-		context.Collector.FromValue(PointerToHandle(property)),
-		context.Frame);
+		context.Collector.FromNint(property, true));
 
 	return obj;
 }
 
 static ObjectInstance* shard_propertyinfo_Name_get(const CallState& context) noexcept(false)
 {
-	PropertySymbol* property = HandleTo<PropertySymbol>(context.Args[0], propertyInfo_handleField, context.Frame);
+	PropertySymbol* property = HandleTo<PropertySymbol>(context.Args[0], propertyInfo_handleField);
 	if (property == nullptr)
 		return context.Collector.FromValue(std::wstring());
 
@@ -408,7 +395,7 @@ static ObjectInstance* shard_propertyinfo_Name_get(const CallState& context) noe
 
 static ObjectInstance* shard_propertyinfo_PropertyType_get(const CallState& context) noexcept(false)
 {
-	PropertySymbol* property = HandleTo<PropertySymbol>(context.Args[0], propertyInfo_handleField, context.Frame);
+	PropertySymbol* property = HandleTo<PropertySymbol>(context.Args[0], propertyInfo_handleField);
 	if (property == nullptr)
 		return GarbageCollector::NullInstance;
 
@@ -417,7 +404,7 @@ static ObjectInstance* shard_propertyinfo_PropertyType_get(const CallState& cont
 
 static ObjectInstance* shard_propertyinfo_IsStatic_get(const CallState& context) noexcept(false)
 {
-	PropertySymbol* property = HandleTo<PropertySymbol>(context.Args[0], propertyInfo_handleField, context.Frame);
+	PropertySymbol* property = HandleTo<PropertySymbol>(context.Args[0], propertyInfo_handleField);
 	return context.Collector.FromValue(property != nullptr && property->Linking == SymbolLinking::Static);
 }
 
@@ -427,7 +414,7 @@ static ObjectInstance* shard_propertyinfo_IsStatic_get(const CallState& context)
 
 static ObjectInstance* shard_type_GetMethods(const CallState& context) noexcept(false)
 {
-	TypeSymbol* type = HandleTo<TypeSymbol>(context.Args[0], type_handleField, context.Frame);
+	TypeSymbol* type = HandleTo<TypeSymbol>(context.Args[0], type_handleField);
 	if (type == nullptr)
 		return MakeArray(methodInfoClass_raw, {}, context);
 
@@ -445,7 +432,7 @@ static ObjectInstance* shard_type_GetMethods(const CallState& context) noexcept(
 
 static ObjectInstance* shard_type_GetFields(const CallState& context) noexcept(false)
 {
-	TypeSymbol* type = HandleTo<TypeSymbol>(context.Args[0], type_handleField, context.Frame);
+	TypeSymbol* type = HandleTo<TypeSymbol>(context.Args[0], type_handleField);
 	if (type == nullptr)
 		return MakeArray(fieldInfoClass_raw, {}, context);
 
@@ -463,7 +450,7 @@ static ObjectInstance* shard_type_GetFields(const CallState& context) noexcept(f
 
 static ObjectInstance* shard_type_GetProperties(const CallState& context) noexcept(false)
 {
-	TypeSymbol* type = HandleTo<TypeSymbol>(context.Args[0], type_handleField, context.Frame);
+	TypeSymbol* type = HandleTo<TypeSymbol>(context.Args[0], type_handleField);
 	if (type == nullptr)
 		return MakeArray(propertyInfoClass_raw, {}, context);
 

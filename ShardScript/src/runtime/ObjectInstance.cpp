@@ -119,7 +119,7 @@ std::int64_t ObjectInstance::getReferencesCounter() const
 	return m_eeferencesCounter;
 }
 
-ObjectInstance* ObjectInstance::GetField(std::uint32_t slot, CallStackFrame* frame)
+ObjectInstance* ObjectInstance::GetField(std::uint32_t slot)
 {
 	if (m_shape == nullptr)
 		throw std::runtime_error("Cannot read field from an instance without a type shape");
@@ -144,7 +144,7 @@ ObjectInstance* ObjectInstance::GetField(std::uint32_t slot, CallStackFrame* fra
 	}
 }
 
-void ObjectInstance::SetField(std::uint32_t slot, ObjectInstance* instance, CallStackFrame* frame)
+void ObjectInstance::SetField(std::uint32_t slot, ObjectInstance* instance)
 {
 
 	if (m_shape == nullptr)
@@ -161,7 +161,7 @@ void ObjectInstance::SetField(std::uint32_t slot, ObjectInstance* instance, Call
 
 	if (fieldShape == nullptr || fieldShape->IsReferenceType())
 	{
-		ObjectInstance* oldValue = GetField(slot, frame);
+		ObjectInstance* oldValue = GetField(slot);
 		if (oldValue != nullptr && oldValue != GarbageCollector::NullInstance)
 			oldValue->DecrementReference();
 
