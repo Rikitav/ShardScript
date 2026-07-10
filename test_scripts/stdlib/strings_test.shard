@@ -1,0 +1,60 @@
+using stdio;
+using strings;
+
+namespace strings_test;
+
+public static func Main() -> void
+{
+    text: string = "  Hello, World!  ";
+    greeting: string = "hi";
+    abc: string = "abc";
+    numbers: string = "one,two,three";
+    comma: string = ",";
+    format: string = "{0} + {1} = {2}";
+    parseIntText: string = "42";
+    parseDoubleText: string = "3.14";
+    badIntText: string = "abc";
+    goodIntText: string = "123";
+    doubleText: string = "1.5e2";
+
+    println("Original: [" + text + "]");
+    println("Trim: [" + text.Trim() + "]");
+    println("TrimStart: [" + text.TrimStart() + "]");
+    println("TrimEnd: [" + text.TrimEnd() + "]");
+    println("ToUpper: [" + text.ToUpper() + "]");
+    println("ToLower: [" + text.ToLower() + "]");
+    println("Length: " + text.Length());
+    println("IsNullOrEmpty: " + text.IsNullOrEmpty());
+
+    empty: string = String.Empty();
+    println("Empty.IsNullOrEmpty: " + empty.IsNullOrEmpty());
+
+    println("Contains 'World': " + text.Contains("World"));
+    println("StartsWith '  Hello': " + text.StartsWith("  Hello"));
+    println("EndsWith '!  ': " + text.EndsWith("!  "));
+    println("IndexOf \"o\": " + text.IndexOf("o"));
+    println("LastIndexOf \"o\": " + text.LastIndexOf("o"));
+    println("Substring 5: [" + text.Substring(5) + "]");
+    println("Substring 5 5: [" + text.Substring(5, 5) + "]");
+    println("Replace: [" + text.Replace("World", "ShardScript") + "]");
+    println("PadLeft 25: [" + greeting.PadLeft(25) + "]");
+    println("PadRight 25: [" + greeting.PadRight(25) + "]");
+    println("Reverse: [" + abc.Reverse() + "]");
+    println("Repeat: [" + abc.Repeat(3) + "]");
+
+    parts: string[] = numbers.Split(comma);
+    joined: string = comma.Join(parts);
+    println("Split+Join: [" + joined + "]");
+
+    formatted: string = format.Format(["2", "3", "5"]);
+    println("Format: [" + formatted + "]");
+
+    println("ParseInt: " + parseIntText.ParseInt());
+    println("ParseDouble: " + parseDoubleText.ParseDouble());
+    println("TryParseInt bad: " + badIntText.TryParseInt(99));
+    println("IsInt: " + goodIntText.IsInt());
+    println("IsDouble: " + doubleText.IsDouble());
+
+    chars := abc.ToCharArray();
+    println("FromCharArray: [" + String.FromCharArray(chars) + "]");
+}
