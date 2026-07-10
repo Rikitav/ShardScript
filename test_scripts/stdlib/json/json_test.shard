@@ -50,6 +50,7 @@ public static func Main() -> void
     print("Height  = "); println(q.Height);
     print("Active  = "); println(q.Active);
     print("City    = "); println(q.Home.City);
+
     foreach (tag in q.Tags)
     {
         print("Tag     = "); println(tag);
@@ -61,10 +62,32 @@ public static func Main() -> void
 
     println("");
     println("== Untyped DOM (JsonNode) ==");
-    node: JsonNode = JsonNode.Parse("{\"a\":[1,2,3],\"b\":\"hi\",\"c\":null}");
+    node: JsonNode = JsonNode.Parse("{\"a\":[1,2,3],\"b\":\"hi\",\"c\":null,\"d\":true,\"e\":-2.5e1}");
+
     print("Kind     = "); println(node.Kind());
     print("b        = "); println(node.Get("b").AsString());
     print("a.Length = "); println(node.Get("a").Length());
     print("a[2]     = "); println(node.Get("a").At(2).AsInt());
     print("c isNull = "); println(node.Get("c").IsNull());
+    print("d bool   = "); println(node.Get("d").AsBool());
+    print("e double = "); println(node.Get("e").AsDouble());
+    print("contains a = "); println(node.Contains("a"));
+    print("contains z = "); println(node.Contains("z"));
+
+    println("");
+    println("== Empty collections ==");
+    emptyObj: JsonNode = JsonNode.Parse("{}");
+    emptyArr: JsonNode = JsonNode.Parse("[]");
+
+    print("empty obj kind = "); println(emptyObj.Kind());
+    print("empty arr kind = "); println(emptyArr.Kind());
+    print("empty arr length = "); println(emptyArr.Length());
+
+    println("");
+    println("== Mutate DOM ==");
+    mut: JsonNode = JsonNode.Parse("{\"x\":1}");
+
+    mut.Set("y", JsonNode.Parse("\"added\""));
+    mut.Get("x").Set("nested", JsonNode.Parse("42")); // turns x into an object
+    println(mut);
 }

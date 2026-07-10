@@ -29,7 +29,7 @@ static ObjectInstance* shard_list_init(const CallState& context) noexcept(false)
 	TypeSymbol* concreteT = context.Frame->TypeArguments[0];
 
 	ObjectInstance* array = context.Collector.AllocateArray(concreteT, 0);
-	listInstance->SetField(list_arrayField->SlotIndex, array, context.Frame);
+	listInstance->SetField(list_arrayField->SlotIndex, array);
 
 	return nullptr;
 }
@@ -49,7 +49,7 @@ static ObjectInstance* shard_list_init_capacity(const CallState& context) noexce
 		capacity = 0;
 
 	ObjectInstance* array = context.Collector.AllocateArray(concreteT, static_cast<std::size_t>(capacity));
-	listInstance->SetField(list_arrayField->SlotIndex, array, context.Frame);
+	listInstance->SetField(list_arrayField->SlotIndex, array);
 
 	return nullptr;
 }
@@ -63,7 +63,7 @@ static ObjectInstance* shard_list_Add(const CallState& context) noexcept(false)
 	if (ownerType->Kind == SyntaxKind::GenericType)
 		ownerType = static_cast<GenericTypeSymbol*>(ownerType)->UnderlayingType;
 
-	ObjectInstance* arrayInstance = listInstance->GetField(list_arrayField->SlotIndex, context.Frame);
+	ObjectInstance* arrayInstance = listInstance->GetField(list_arrayField->SlotIndex);
 	ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->getInfo()));
 	TypeSymbol* concreteT = context.Frame->TypeArguments[0];
 
@@ -74,12 +74,12 @@ static ObjectInstance* shard_list_Add(const CallState& context) noexcept(false)
 
 	for (std::size_t i = 0; i < currentSize; i++)
 	{
-		ObjectInstance* element = arrayInstance->GetElement(i, context.Frame);
-		newArray->SetElement(i, element, context.Frame);
+		ObjectInstance* element = arrayInstance->GetElement(i);
+		newArray->SetElement(i, element);
 	}
 
-	newArray->SetElement(currentSize, value, context.Frame);
-	listInstance->SetField(list_arrayField->SlotIndex, newArray, context.Frame);
+	newArray->SetElement(currentSize, value);
+	listInstance->SetField(list_arrayField->SlotIndex, newArray);
 
 	return nullptr;
 }
@@ -93,13 +93,13 @@ static ObjectInstance* shard_list_ElementAt(const CallState& context) noexcept(f
 	if (ownerType->Kind == SyntaxKind::GenericType)
 		ownerType = static_cast<GenericTypeSymbol*>(ownerType)->UnderlayingType;
 
-	ObjectInstance* arrayInstance = listInstance->GetField(list_arrayField->SlotIndex, context.Frame);
+	ObjectInstance* arrayInstance = listInstance->GetField(list_arrayField->SlotIndex);
 	ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->getInfo()));
 
 	if (index < 0 || static_cast<std::size_t>(index) >= arrayType->Length)
 		throw std::runtime_error("index is out of bounds");
 
-	return arrayInstance->GetElement(static_cast<std::size_t>(index), context.Frame);
+	return arrayInstance->GetElement(static_cast<std::size_t>(index));
 }
 
 static ObjectInstance* shard_list_RemoveAt(const CallState& context) noexcept(false)
@@ -111,7 +111,7 @@ static ObjectInstance* shard_list_RemoveAt(const CallState& context) noexcept(fa
 	if (ownerType->Kind == SyntaxKind::GenericType)
 		ownerType = static_cast<GenericTypeSymbol*>(ownerType)->UnderlayingType;
 
-	ObjectInstance* arrayInstance = listInstance->GetField(list_arrayField->SlotIndex, context.Frame);
+	ObjectInstance* arrayInstance = listInstance->GetField(list_arrayField->SlotIndex);
 	ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->getInfo()));
 	TypeSymbol* concreteT = context.Frame->TypeArguments[0];
 
@@ -124,17 +124,17 @@ static ObjectInstance* shard_list_RemoveAt(const CallState& context) noexcept(fa
 
 	for (std::size_t i = 0; i < static_cast<std::size_t>(index); i++)
 	{
-		ObjectInstance* element = arrayInstance->GetElement(i, context.Frame);
-		newArray->SetElement(i, element, context.Frame);
+		ObjectInstance* element = arrayInstance->GetElement(i);
+		newArray->SetElement(i, element);
 	}
 
 	for (std::size_t i = static_cast<std::size_t>(index) + 1; i < arrayType->Length; i++)
 	{
-		ObjectInstance* element = arrayInstance->GetElement(i, context.Frame);
-		newArray->SetElement(i - 1, element, context.Frame);
+		ObjectInstance* element = arrayInstance->GetElement(i);
+		newArray->SetElement(i - 1, element);
 	}
 
-	listInstance->SetField(list_arrayField->SlotIndex, newArray, context.Frame);
+	listInstance->SetField(list_arrayField->SlotIndex, newArray);
 	return nullptr;
 }
 
@@ -149,7 +149,7 @@ static ObjectInstance* shard_list_Clear(const CallState& context) noexcept(false
 	TypeSymbol* concreteT = context.Frame->TypeArguments[0];
 
 	ObjectInstance* newArray = context.Collector.AllocateArray(concreteT, 0);
-	listInstance->SetField(list_arrayField->SlotIndex, newArray, context.Frame);
+	listInstance->SetField(list_arrayField->SlotIndex, newArray);
 
 	return nullptr;
 }
@@ -157,20 +157,20 @@ static ObjectInstance* shard_list_Clear(const CallState& context) noexcept(false
 static ObjectInstance* shard_listenumerator_MoveNext(const CallState& context) noexcept(false)
 {
 	ObjectInstance* self = context.Args[0];
-	std::int64_t index = self->GetField(listEnumerator_indexField->SlotIndex, context.Frame)->AsInteger();
-	std::int64_t length = self->GetField(listEnumerator_lengthField->SlotIndex, context.Frame)->AsInteger();
+	std::int64_t index = self->GetField(listEnumerator_indexField->SlotIndex)->AsInteger();
+	std::int64_t length = self->GetField(listEnumerator_lengthField->SlotIndex)->AsInteger();
 
 	index++;
-	self->SetField(listEnumerator_indexField->SlotIndex, context.Collector.FromValue(index), context.Frame);
+	self->SetField(listEnumerator_indexField->SlotIndex, context.Collector.FromValue(index));
 	return context.Collector.FromValue(index < length);
 }
 
 static ObjectInstance* shard_listenumerator_Current_get(const CallState& context) noexcept(false)
 {
 	ObjectInstance* self = context.Args[0];
-	std::int64_t index = self->GetField(listEnumerator_indexField->SlotIndex, context.Frame)->AsInteger();
-	ObjectInstance* source = self->GetField(listEnumerator_sourceField->SlotIndex, context.Frame);
-	return source->GetElement(static_cast<std::size_t>(index), context.Frame);
+	std::int64_t index = self->GetField(listEnumerator_indexField->SlotIndex)->AsInteger();
+	ObjectInstance* source = self->GetField(listEnumerator_sourceField->SlotIndex);
+	return source->GetElement(static_cast<std::size_t>(index));
 }
 
 static ObjectInstance* shard_list_GetEnumerator(const CallState& context) noexcept(false)
@@ -182,13 +182,13 @@ static ObjectInstance* shard_list_GetEnumerator(const CallState& context) noexce
 		ownerType = static_cast<GenericTypeSymbol*>(ownerType)->UnderlayingType;
 
 	TypeSymbol* concreteT = context.Frame->TypeArguments[0];
-	ObjectInstance* arrayInstance = listInstance->GetField(list_arrayField->SlotIndex, context.Frame);
+	ObjectInstance* arrayInstance = listInstance->GetField(list_arrayField->SlotIndex);
 	const ArrayTypeSymbol* arrayType = static_cast<const ArrayTypeSymbol*>(arrayInstance->getInfo());
 
 	ObjectInstance* enumerator = context.Collector.AllocateGeneric(listEnumeratorClass_raw, std::vector<TypeSymbol*>{ concreteT });
-	enumerator->SetField(listEnumerator_sourceField->SlotIndex, arrayInstance, context.Frame);
-	enumerator->SetField(listEnumerator_indexField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(-1)), context.Frame);
-	enumerator->SetField(listEnumerator_lengthField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(arrayType->Length)), context.Frame);
+	enumerator->SetField(listEnumerator_sourceField->SlotIndex, arrayInstance);
+	enumerator->SetField(listEnumerator_indexField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(-1)));
+	enumerator->SetField(listEnumerator_lengthField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(arrayType->Length)));
 
 	return enumerator;
 }
@@ -201,7 +201,7 @@ static ObjectInstance* shard_list_Length_get(const CallState& context) noexcept(
 	if (ownerType->Kind == SyntaxKind::GenericType)
 		ownerType = static_cast<GenericTypeSymbol*>(ownerType)->UnderlayingType;
 
-	ObjectInstance* arrayInstance = listInstance->GetField(list_arrayField->SlotIndex, context.Frame);
+	ObjectInstance* arrayInstance = listInstance->GetField(list_arrayField->SlotIndex);
 	ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->getInfo()));
 
 	return context.Collector.FromValue(static_cast<std::int64_t>(arrayType->Length));
@@ -216,13 +216,13 @@ static ObjectInstance* shard_list_Indexer_get(const CallState& context) noexcept
 	if (ownerType->Kind == SyntaxKind::GenericType)
 		ownerType = static_cast<GenericTypeSymbol*>(ownerType)->UnderlayingType;
 
-	ObjectInstance* arrayInstance = listInstance->GetField(list_arrayField->SlotIndex, context.Frame);
+	ObjectInstance* arrayInstance = listInstance->GetField(list_arrayField->SlotIndex);
 	ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->getInfo()));
 
 	if (index < 0 || static_cast<std::size_t>(index) >= arrayType->Length)
 		throw std::runtime_error("index is out of bounds");
 
-	return arrayInstance->GetElement(static_cast<std::size_t>(index), context.Frame);
+	return arrayInstance->GetElement(static_cast<std::size_t>(index));
 }
 
 static ObjectInstance* shard_list_Indexer_set(const CallState& context) noexcept(false)
@@ -235,13 +235,13 @@ static ObjectInstance* shard_list_Indexer_set(const CallState& context) noexcept
 	if (ownerType->Kind == SyntaxKind::GenericType)
 		ownerType = static_cast<GenericTypeSymbol*>(ownerType)->UnderlayingType;
 
-	ObjectInstance* arrayInstance = listInstance->GetField(list_arrayField->SlotIndex, context.Frame);
+	ObjectInstance* arrayInstance = listInstance->GetField(list_arrayField->SlotIndex);
 	ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(const_cast<TypeSymbol*>(arrayInstance->getInfo()));
 
 	if (index < 0 || static_cast<std::size_t>(index) >= arrayType->Length)
 		throw std::runtime_error("index is out of bounds");
 
-	arrayInstance->SetElement(static_cast<std::size_t>(index), value, context.Frame);
+	arrayInstance->SetElement(static_cast<std::size_t>(index), value);
 	return nullptr;
 }
 
@@ -377,11 +377,12 @@ static bool ObjectsEqual(ObjectInstance* a, ObjectInstance* b)
 // =========================================================================
 //  Dictionary<K, V> implementation
 // =========================================================================
-static std::size_t dictionary_Capacity(ObjectInstance* dict, CallStackFrame* frame)
+static std::size_t dictionary_Capacity(ObjectInstance* dict)
 {
-	ObjectInstance* keys = dict->GetField(dict_keysField->SlotIndex, frame);
+	ObjectInstance* keys = dict->GetField(dict_keysField->SlotIndex);
 	if (keys == nullptr)
 		return 0;
+
 	return keys->GetArrayLength();
 }
 
@@ -390,13 +391,12 @@ static void dictionary_Resize(
 	TypeSymbol* keyType,
 	TypeSymbol* valueType,
 	std::size_t newCapacity,
-	CallStackFrame* frame,
 	GarbageCollector& collector)
 {
-	ObjectInstance* oldKeys = dict->GetField(dict_keysField->SlotIndex, frame);
-	ObjectInstance* oldValues = dict->GetField(dict_valuesField->SlotIndex, frame);
-	ObjectInstance* oldHashes = dict->GetField(dict_hashesField->SlotIndex, frame);
-	ObjectInstance* oldStates = dict->GetField(dict_statesField->SlotIndex, frame);
+	ObjectInstance* oldKeys = dict->GetField(dict_keysField->SlotIndex);
+	ObjectInstance* oldValues = dict->GetField(dict_valuesField->SlotIndex);
+	ObjectInstance* oldHashes = dict->GetField(dict_hashesField->SlotIndex);
+	ObjectInstance* oldStates = dict->GetField(dict_statesField->SlotIndex);
 	std::size_t oldCapacity = oldKeys ? oldKeys->GetArrayLength() : 0;
 
 	ObjectInstance* newKeys = collector.AllocateArray(keyType, newCapacity);
@@ -405,57 +405,56 @@ static void dictionary_Resize(
 	ObjectInstance* newStates = collector.AllocateArray(SymbolTable::Primitives::Integer, newCapacity);
 
 	for (std::size_t i = 0; i < newCapacity; ++i)
-		newStates->SetElement(i, collector.FromValue(static_cast<std::int64_t>(0)), frame);
+		newStates->SetElement(i, collector.FromValue(static_cast<std::int64_t>(0)));
 
 	for (std::size_t i = 0; i < oldCapacity; ++i)
 	{
-		std::int64_t state = oldStates->GetElement(i, frame)->AsInteger();
+		std::int64_t state = oldStates->GetElement(i)->AsInteger();
 		if (state != 1)
 			continue;
 
-		ObjectInstance* key = oldKeys->GetElement(i, frame);
-		ObjectInstance* value = oldValues->GetElement(i, frame);
-		std::int64_t hash = oldHashes->GetElement(i, frame)->AsInteger();
+		ObjectInstance* key = oldKeys->GetElement(i);
+		ObjectInstance* value = oldValues->GetElement(i);
+		std::int64_t hash = oldHashes->GetElement(i)->AsInteger();
 
 		std::size_t index = static_cast<std::size_t>((hash % static_cast<std::int64_t>(newCapacity) + static_cast<std::int64_t>(newCapacity)) % static_cast<std::int64_t>(newCapacity));
 		for (std::size_t j = 0; j < newCapacity; ++j)
 		{
 			std::size_t idx = (index + j) % newCapacity;
-			if (newStates->GetElement(idx, frame)->AsInteger() != 0)
+			if (newStates->GetElement(idx)->AsInteger() != 0)
 				continue;
 
-			newHashes->SetElement(idx, collector.FromValue(hash), frame);
-			newStates->SetElement(idx, collector.FromValue(static_cast<std::int64_t>(1)), frame);
-			newKeys->SetElement(idx, key, frame);
-			newValues->SetElement(idx, value, frame);
+			newHashes->SetElement(idx, collector.FromValue(hash));
+			newStates->SetElement(idx, collector.FromValue(static_cast<std::int64_t>(1)));
+			newKeys->SetElement(idx, key);
+			newValues->SetElement(idx, value);
 			break;
 		}
 	}
 
-	dict->SetField(dict_keysField->SlotIndex, newKeys, frame);
-	dict->SetField(dict_valuesField->SlotIndex, newValues, frame);
-	dict->SetField(dict_hashesField->SlotIndex, newHashes, frame);
-	dict->SetField(dict_statesField->SlotIndex, newStates, frame);
+	dict->SetField(dict_keysField->SlotIndex, newKeys);
+	dict->SetField(dict_valuesField->SlotIndex, newValues);
+	dict->SetField(dict_hashesField->SlotIndex, newHashes);
+	dict->SetField(dict_statesField->SlotIndex, newStates);
 }
 
 static void dictionary_EnsureCapacity(
 	ObjectInstance* dict,
 	TypeSymbol* keyType,
 	TypeSymbol* valueType,
-	CallStackFrame* frame,
 	GarbageCollector& collector)
 {
-	std::size_t capacity = dictionary_Capacity(dict, frame);
-	std::int64_t count = dict->GetField(dict_countField->SlotIndex, frame)->AsInteger();
+	std::size_t capacity = dictionary_Capacity(dict);
+	std::int64_t count = dict->GetField(dict_countField->SlotIndex)->AsInteger();
 
 	if (capacity == 0)
 	{
-		dictionary_Resize(dict, keyType, valueType, 4, frame, collector);
+		dictionary_Resize(dict, keyType, valueType, 4, collector);
 		return;
 	}
 
 	if (static_cast<std::size_t>(count) + 1 > (capacity * 3) / 4)
-		dictionary_Resize(dict, keyType, valueType, capacity * 2, frame, collector);
+		dictionary_Resize(dict, keyType, valueType, capacity * 2, collector);
 }
 
 static std::size_t dictionary_FindSlot(
@@ -465,13 +464,13 @@ static std::size_t dictionary_FindSlot(
 	CallStackFrame* frame)
 {
 	found = false;
-	std::size_t capacity = dictionary_Capacity(dict, frame);
+	std::size_t capacity = dictionary_Capacity(dict);
 	if (capacity == 0)
 		return std::numeric_limits<std::size_t>::max();
 
-	ObjectInstance* keys = dict->GetField(dict_keysField->SlotIndex, frame);
-	ObjectInstance* hashes = dict->GetField(dict_hashesField->SlotIndex, frame);
-	ObjectInstance* states = dict->GetField(dict_statesField->SlotIndex, frame);
+	ObjectInstance* keys = dict->GetField(dict_keysField->SlotIndex);
+	ObjectInstance* hashes = dict->GetField(dict_hashesField->SlotIndex);
+	ObjectInstance* states = dict->GetField(dict_statesField->SlotIndex);
 
 	std::int64_t hash = GetObjectHash(key);
 	std::size_t index = static_cast<std::size_t>((hash % static_cast<std::int64_t>(capacity) + static_cast<std::int64_t>(capacity)) % static_cast<std::int64_t>(capacity));
@@ -480,7 +479,7 @@ static std::size_t dictionary_FindSlot(
 	for (std::size_t i = 0; i < capacity; ++i)
 	{
 		std::size_t idx = (index + i) % capacity;
-		std::int64_t state = states->GetElement(idx, frame)->AsInteger();
+		std::int64_t state = states->GetElement(idx)->AsInteger();
 
 		if (state == 0)
 			return firstDeleted != std::numeric_limits<std::size_t>::max() ? firstDeleted : idx;
@@ -488,7 +487,7 @@ static std::size_t dictionary_FindSlot(
 		if (state == -1 && firstDeleted == std::numeric_limits<std::size_t>::max())
 			firstDeleted = idx;
 
-		if (state == 1 && hashes->GetElement(idx, frame)->AsInteger() == hash && ObjectsEqual(keys->GetElement(idx, frame), key))
+		if (state == 1 && hashes->GetElement(idx)->AsInteger() == hash && ObjectsEqual(keys->GetElement(idx, frame), key))
 		{
 			found = true;
 			return idx;
@@ -509,11 +508,11 @@ static ObjectInstance* shard_dict_init(const CallState& context) noexcept(false)
 	ObjectInstance* hashes = context.Collector.AllocateArray(SymbolTable::Primitives::Integer, 0);
 	ObjectInstance* states = context.Collector.AllocateArray(SymbolTable::Primitives::Integer, 0);
 
-	dict->SetField(dict_keysField->SlotIndex, keys, context.Frame);
-	dict->SetField(dict_valuesField->SlotIndex, values, context.Frame);
-	dict->SetField(dict_hashesField->SlotIndex, hashes, context.Frame);
-	dict->SetField(dict_statesField->SlotIndex, states, context.Frame);
-	dict->SetField(dict_countField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(0)), context.Frame);
+	dict->SetField(dict_keysField->SlotIndex, keys);
+	dict->SetField(dict_valuesField->SlotIndex, values);
+	dict->SetField(dict_hashesField->SlotIndex, hashes);
+	dict->SetField(dict_statesField->SlotIndex, states);
+	dict->SetField(dict_countField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(0)));
 	return nullptr;
 }
 
@@ -526,25 +525,25 @@ static ObjectInstance* shard_dict_Add(const CallState& context) noexcept(false)
 	TypeSymbol* keyType = context.Frame->TypeArguments[0];
 	TypeSymbol* valueType = context.Frame->TypeArguments[1];
 
-	dictionary_EnsureCapacity(dict, keyType, valueType, context.Frame, context.Collector);
+	dictionary_EnsureCapacity(dict, keyType, valueType, context.Collector);
 
 	bool found = false;
 	std::size_t slot = dictionary_FindSlot(dict, key, found, context.Frame);
 	if (found)
 		throw std::runtime_error("dictionary already contains the given key");
 
-	ObjectInstance* keys = dict->GetField(dict_keysField->SlotIndex, context.Frame);
-	ObjectInstance* values = dict->GetField(dict_valuesField->SlotIndex, context.Frame);
-	ObjectInstance* hashes = dict->GetField(dict_hashesField->SlotIndex, context.Frame);
-	ObjectInstance* states = dict->GetField(dict_statesField->SlotIndex, context.Frame);
+	ObjectInstance* keys = dict->GetField(dict_keysField->SlotIndex);
+	ObjectInstance* values = dict->GetField(dict_valuesField->SlotIndex);
+	ObjectInstance* hashes = dict->GetField(dict_hashesField->SlotIndex);
+	ObjectInstance* states = dict->GetField(dict_statesField->SlotIndex);
 
-	hashes->SetElement(slot, context.Collector.FromValue(GetObjectHash(key)), context.Frame);
-	states->SetElement(slot, context.Collector.FromValue(static_cast<std::int64_t>(1)), context.Frame);
-	keys->SetElement(slot, key, context.Frame);
-	values->SetElement(slot, value, context.Frame);
+	hashes->SetElement(slot, context.Collector.FromValue(GetObjectHash(key)));
+	states->SetElement(slot, context.Collector.FromValue(static_cast<std::int64_t>(1)));
+	keys->SetElement(slot, key);
+	values->SetElement(slot, value);
 
-	std::int64_t count = dict->GetField(dict_countField->SlotIndex, context.Frame)->AsInteger();
-	dict->SetField(dict_countField->SlotIndex, context.Collector.FromValue(count + 1), context.Frame);
+	std::int64_t count = dict->GetField(dict_countField->SlotIndex)->AsInteger();
+	dict->SetField(dict_countField->SlotIndex, context.Collector.FromValue(count + 1));
 
 	return nullptr;
 }
@@ -559,8 +558,8 @@ static ObjectInstance* shard_dict_Indexer_get(const CallState& context) noexcept
 	if (!found)
 		throw std::runtime_error("key not found in dictionary");
 
-	ObjectInstance* values = dict->GetField(dict_valuesField->SlotIndex, context.Frame);
-	return values->GetElement(slot, context.Frame);
+	ObjectInstance* values = dict->GetField(dict_valuesField->SlotIndex);
+	return values->GetElement(slot);
 }
 
 static ObjectInstance* shard_dict_Indexer_set(const CallState& context) noexcept(false)
@@ -572,29 +571,29 @@ static ObjectInstance* shard_dict_Indexer_set(const CallState& context) noexcept
 	TypeSymbol* keyType = context.Frame->TypeArguments[0];
 	TypeSymbol* valueType = context.Frame->TypeArguments[1];
 
-	dictionary_EnsureCapacity(dict, keyType, valueType, context.Frame, context.Collector);
+	dictionary_EnsureCapacity(dict, keyType, valueType, context.Collector);
 
 	bool found = false;
 	std::size_t slot = dictionary_FindSlot(dict, key, found, context.Frame);
 
-	ObjectInstance* keys = dict->GetField(dict_keysField->SlotIndex, context.Frame);
-	ObjectInstance* values = dict->GetField(dict_valuesField->SlotIndex, context.Frame);
-	ObjectInstance* hashes = dict->GetField(dict_hashesField->SlotIndex, context.Frame);
-	ObjectInstance* states = dict->GetField(dict_statesField->SlotIndex, context.Frame);
+	ObjectInstance* keys = dict->GetField(dict_keysField->SlotIndex);
+	ObjectInstance* values = dict->GetField(dict_valuesField->SlotIndex);
+	ObjectInstance* hashes = dict->GetField(dict_hashesField->SlotIndex);
+	ObjectInstance* states = dict->GetField(dict_statesField->SlotIndex);
 
 	if (found)
 	{
-		values->SetElement(slot, value, context.Frame);
+		values->SetElement(slot, value);
 		return nullptr;
 	}
 
-	hashes->SetElement(slot, context.Collector.FromValue(GetObjectHash(key)), context.Frame);
-	states->SetElement(slot, context.Collector.FromValue(static_cast<std::int64_t>(1)), context.Frame);
-	keys->SetElement(slot, key, context.Frame);
-	values->SetElement(slot, value, context.Frame);
+	hashes->SetElement(slot, context.Collector.FromValue(GetObjectHash(key)));
+	states->SetElement(slot, context.Collector.FromValue(static_cast<std::int64_t>(1)));
+	keys->SetElement(slot, key);
+	values->SetElement(slot, value);
 
-	std::int64_t count = dict->GetField(dict_countField->SlotIndex, context.Frame)->AsInteger();
-	dict->SetField(dict_countField->SlotIndex, context.Collector.FromValue(count + 1), context.Frame);
+	std::int64_t count = dict->GetField(dict_countField->SlotIndex)->AsInteger();
+	dict->SetField(dict_countField->SlotIndex, context.Collector.FromValue(count + 1));
 	return nullptr;
 }
 
@@ -618,11 +617,11 @@ static ObjectInstance* shard_dict_Remove(const CallState& context) noexcept(fals
 	if (!found)
 		return context.Collector.FromValue(false);
 
-	ObjectInstance* states = dict->GetField(dict_statesField->SlotIndex, context.Frame);
-	states->SetElement(slot, context.Collector.FromValue(static_cast<std::int64_t>(-1)), context.Frame);
+	ObjectInstance* states = dict->GetField(dict_statesField->SlotIndex);
+	states->SetElement(slot, context.Collector.FromValue(static_cast<std::int64_t>(-1)));
 
-	std::int64_t count = dict->GetField(dict_countField->SlotIndex, context.Frame)->AsInteger();
-	dict->SetField(dict_countField->SlotIndex, context.Collector.FromValue(count - 1), context.Frame);
+	std::int64_t count = dict->GetField(dict_countField->SlotIndex)->AsInteger();
+	dict->SetField(dict_countField->SlotIndex, context.Collector.FromValue(count - 1));
 	return context.Collector.FromValue(true);
 }
 
@@ -637,18 +636,18 @@ static ObjectInstance* shard_dict_Clear(const CallState& context) noexcept(false
 	ObjectInstance* hashes = context.Collector.AllocateArray(SymbolTable::Primitives::Integer, 0);
 	ObjectInstance* states = context.Collector.AllocateArray(SymbolTable::Primitives::Integer, 0);
 
-	dict->SetField(dict_keysField->SlotIndex, keys, context.Frame);
-	dict->SetField(dict_valuesField->SlotIndex, values, context.Frame);
-	dict->SetField(dict_hashesField->SlotIndex, hashes, context.Frame);
-	dict->SetField(dict_statesField->SlotIndex, states, context.Frame);
-	dict->SetField(dict_countField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(0)), context.Frame);
+	dict->SetField(dict_keysField->SlotIndex, keys);
+	dict->SetField(dict_valuesField->SlotIndex, values);
+	dict->SetField(dict_hashesField->SlotIndex, hashes);
+	dict->SetField(dict_statesField->SlotIndex, states);
+	dict->SetField(dict_countField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(0)));
 	return nullptr;
 }
 
 static ObjectInstance* shard_dict_Count_get(const CallState& context) noexcept(false)
 {
 	ObjectInstance* dict = context.Args[0];
-	return context.Collector.FromValue(dict->GetField(dict_countField->SlotIndex, context.Frame)->AsInteger());
+	return context.Collector.FromValue(dict->GetField(dict_countField->SlotIndex)->AsInteger());
 }
 
 static ObjectInstance* shard_dict_Keys_get(const CallState& context) noexcept(false)
@@ -656,18 +655,18 @@ static ObjectInstance* shard_dict_Keys_get(const CallState& context) noexcept(fa
 	ObjectInstance* dict = context.Args[0];
 	TypeSymbol* keyType = context.Frame->TypeArguments[0];
 
-	ObjectInstance* keys = dict->GetField(dict_keysField->SlotIndex, context.Frame);
-	ObjectInstance* states = dict->GetField(dict_statesField->SlotIndex, context.Frame);
+	ObjectInstance* keys = dict->GetField(dict_keysField->SlotIndex);
+	ObjectInstance* states = dict->GetField(dict_statesField->SlotIndex);
 	std::size_t capacity = keys ? keys->GetArrayLength() : 0;
-	std::int64_t count = dict->GetField(dict_countField->SlotIndex, context.Frame)->AsInteger();
+	std::int64_t count = dict->GetField(dict_countField->SlotIndex)->AsInteger();
 
 	ObjectInstance* result = context.Collector.AllocateArray(keyType, static_cast<std::size_t>(count));
 	std::size_t resultIndex = 0;
 	for (std::size_t i = 0; i < capacity; ++i)
 	{
-		if (states->GetElement(i, context.Frame)->AsInteger() == 1)
+		if (states->GetElement(i)->AsInteger() == 1)
 		{
-			result->SetElement(resultIndex, keys->GetElement(i, context.Frame), context.Frame);
+			result->SetElement(resultIndex, keys->GetElement(i, context.Frame));
 			++resultIndex;
 		}
 	}
@@ -680,18 +679,18 @@ static ObjectInstance* shard_dict_Values_get(const CallState& context) noexcept(
 	ObjectInstance* dict = context.Args[0];
 	TypeSymbol* valueType = context.Frame->TypeArguments[1];
 
-	ObjectInstance* values = dict->GetField(dict_valuesField->SlotIndex, context.Frame);
-	ObjectInstance* states = dict->GetField(dict_statesField->SlotIndex, context.Frame);
+	ObjectInstance* values = dict->GetField(dict_valuesField->SlotIndex);
+	ObjectInstance* states = dict->GetField(dict_statesField->SlotIndex);
 	std::size_t capacity = values ? values->GetArrayLength() : 0;
-	std::int64_t count = dict->GetField(dict_countField->SlotIndex, context.Frame)->AsInteger();
+	std::int64_t count = dict->GetField(dict_countField->SlotIndex)->AsInteger();
 
 	ObjectInstance* result = context.Collector.AllocateArray(valueType, static_cast<std::size_t>(count));
 	std::size_t resultIndex = 0;
 	for (std::size_t i = 0; i < capacity; ++i)
 	{
-		if (states->GetElement(i, context.Frame)->AsInteger() == 1)
+		if (states->GetElement(i)->AsInteger() == 1)
 		{
-			result->SetElement(resultIndex, values->GetElement(i, context.Frame), context.Frame);
+			result->SetElement(resultIndex, values->GetElement(i, context.Frame));
 			++resultIndex;
 		}
 	}
@@ -706,50 +705,50 @@ static ObjectInstance* shard_dict_GetEnumerator(const CallState& context) noexce
 	TypeSymbol* valueType = context.Frame->TypeArguments[1];
 
 	ObjectInstance* enumerator = context.Collector.AllocateGeneric(dictionaryEnumeratorClass_raw, std::vector<TypeSymbol*>{ keyType, valueType });
-	enumerator->SetField(dictEnumerator_sourceField->SlotIndex, dict, context.Frame);
-	enumerator->SetField(dictEnumerator_indexField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(-1)), context.Frame);
+	enumerator->SetField(dictEnumerator_sourceField->SlotIndex, dict);
+	enumerator->SetField(dictEnumerator_indexField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(-1)));
 	return enumerator;
 }
 
 static ObjectInstance* shard_dictionaryenumerator_MoveNext(const CallState& context) noexcept(false)
 {
 	ObjectInstance* self = context.Args[0];
-	ObjectInstance* source = self->GetField(dictEnumerator_sourceField->SlotIndex, context.Frame);
-	ObjectInstance* states = source->GetField(dict_statesField->SlotIndex, context.Frame);
+	ObjectInstance* source = self->GetField(dictEnumerator_sourceField->SlotIndex);
+	ObjectInstance* states = source->GetField(dict_statesField->SlotIndex);
 	std::size_t capacity = states ? states->GetArrayLength() : 0;
 
-	std::int64_t index = self->GetField(dictEnumerator_indexField->SlotIndex, context.Frame)->AsInteger();
+	std::int64_t index = self->GetField(dictEnumerator_indexField->SlotIndex)->AsInteger();
 	++index;
 
 	while (static_cast<std::size_t>(index) < capacity)
 	{
-		if (states->GetElement(static_cast<std::size_t>(index), context.Frame)->AsInteger() == 1)
+		if (states->GetElement(static_cast<std::size_t>(index))->AsInteger() == 1)
 		{
-			self->SetField(dictEnumerator_indexField->SlotIndex, context.Collector.FromValue(index), context.Frame);
+			self->SetField(dictEnumerator_indexField->SlotIndex, context.Collector.FromValue(index));
 			return context.Collector.FromValue(true);
 		}
 		++index;
 	}
 
-	self->SetField(dictEnumerator_indexField->SlotIndex, context.Collector.FromValue(index), context.Frame);
+	self->SetField(dictEnumerator_indexField->SlotIndex, context.Collector.FromValue(index));
 	return context.Collector.FromValue(false);
 }
 
 static ObjectInstance* shard_dictionaryenumerator_Current_get(const CallState& context) noexcept(false)
 {
 	ObjectInstance* self = context.Args[0];
-	std::int64_t index = self->GetField(dictEnumerator_indexField->SlotIndex, context.Frame)->AsInteger();
-	ObjectInstance* source = self->GetField(dictEnumerator_sourceField->SlotIndex, context.Frame);
+	std::int64_t index = self->GetField(dictEnumerator_indexField->SlotIndex)->AsInteger();
+	ObjectInstance* source = self->GetField(dictEnumerator_sourceField->SlotIndex);
 
-	ObjectInstance* keys = source->GetField(dict_keysField->SlotIndex, context.Frame);
-	ObjectInstance* values = source->GetField(dict_valuesField->SlotIndex, context.Frame);
+	ObjectInstance* keys = source->GetField(dict_keysField->SlotIndex);
+	ObjectInstance* values = source->GetField(dict_valuesField->SlotIndex);
 
 	TypeSymbol* keyType = context.Frame->TypeArguments[0];
 	TypeSymbol* valueType = context.Frame->TypeArguments[1];
 
 	ObjectInstance* pair = context.Collector.AllocateGeneric(keyValuePairClass_raw, std::vector<TypeSymbol*>{ keyType, valueType });
-	pair->SetField(kvp_keyField->SlotIndex, keys->GetElement(static_cast<std::size_t>(index), context.Frame), context.Frame);
-	pair->SetField(kvp_valueField->SlotIndex, values->GetElement(static_cast<std::size_t>(index), context.Frame), context.Frame);
+	pair->SetField(kvp_keyField->SlotIndex, keys->GetElement(static_cast<std::size_t>(index), context.Frame));
+	pair->SetField(kvp_valueField->SlotIndex, values->GetElement(static_cast<std::size_t>(index), context.Frame));
 	return pair;
 }
 
@@ -762,8 +761,8 @@ static void queue_EnsureCapacity(
 	CallStackFrame* frame,
 	GarbageCollector& collector)
 {
-	ObjectInstance* array = queue->GetField(queue_arrayField->SlotIndex, frame);
-	std::int64_t size = queue->GetField(queue_sizeField->SlotIndex, frame)->AsInteger();
+	ObjectInstance* array = queue->GetField(queue_arrayField->SlotIndex);
+	std::int64_t size = queue->GetField(queue_sizeField->SlotIndex)->AsInteger();
 	std::size_t capacity = array ? array->GetArrayLength() : 0;
 
 	if (static_cast<std::size_t>(size) < capacity)
@@ -772,16 +771,16 @@ static void queue_EnsureCapacity(
 	std::size_t newCapacity = capacity == 0 ? 4 : capacity * 2;
 	ObjectInstance* newArray = collector.AllocateArray(elementType, newCapacity);
 
-	std::int64_t head = queue->GetField(queue_headField->SlotIndex, frame)->AsInteger();
+	std::int64_t head = queue->GetField(queue_headField->SlotIndex)->AsInteger();
 	for (std::int64_t i = 0; i < size; ++i)
 	{
 		std::size_t oldIdx = static_cast<std::size_t>((head + i) % static_cast<std::int64_t>(capacity));
-		newArray->SetElement(static_cast<std::size_t>(i), array->GetElement(oldIdx, frame), frame);
+		newArray->SetElement(static_cast<std::size_t>(i), array->GetElement(oldIdx, frame));
 	}
 
-	queue->SetField(queue_arrayField->SlotIndex, newArray, frame);
-	queue->SetField(queue_headField->SlotIndex, collector.FromValue(static_cast<std::int64_t>(0)), frame);
-	queue->SetField(queue_tailField->SlotIndex, collector.FromValue(size), frame);
+	queue->SetField(queue_arrayField->SlotIndex, newArray);
+	queue->SetField(queue_headField->SlotIndex, collector.FromValue(static_cast<std::int64_t>(0)));
+	queue->SetField(queue_tailField->SlotIndex, collector.FromValue(size));
 }
 
 static ObjectInstance* shard_queue_init(const CallState& context) noexcept(false)
@@ -789,10 +788,10 @@ static ObjectInstance* shard_queue_init(const CallState& context) noexcept(false
 	ObjectInstance* queue = context.Args[0];
 	TypeSymbol* elementType = context.Frame->TypeArguments[0];
 
-	queue->SetField(queue_arrayField->SlotIndex, context.Collector.AllocateArray(elementType, 0), context.Frame);
-	queue->SetField(queue_headField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(0)), context.Frame);
-	queue->SetField(queue_tailField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(0)), context.Frame);
-	queue->SetField(queue_sizeField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(0)), context.Frame);
+	queue->SetField(queue_arrayField->SlotIndex, context.Collector.AllocateArray(elementType, 0));
+	queue->SetField(queue_headField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(0)));
+	queue->SetField(queue_tailField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(0)));
+	queue->SetField(queue_sizeField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(0)));
 	return nullptr;
 }
 
@@ -804,44 +803,44 @@ static ObjectInstance* shard_queue_Enqueue(const CallState& context) noexcept(fa
 
 	queue_EnsureCapacity(queue, elementType, context.Frame, context.Collector);
 
-	ObjectInstance* array = queue->GetField(queue_arrayField->SlotIndex, context.Frame);
+	ObjectInstance* array = queue->GetField(queue_arrayField->SlotIndex);
 	std::size_t capacity = array->GetArrayLength();
-	std::int64_t tail = queue->GetField(queue_tailField->SlotIndex, context.Frame)->AsInteger();
-	std::int64_t size = queue->GetField(queue_sizeField->SlotIndex, context.Frame)->AsInteger();
+	std::int64_t tail = queue->GetField(queue_tailField->SlotIndex)->AsInteger();
+	std::int64_t size = queue->GetField(queue_sizeField->SlotIndex)->AsInteger();
 
-	array->SetElement(static_cast<std::size_t>(tail), value, context.Frame);
-	queue->SetField(queue_tailField->SlotIndex, context.Collector.FromValue((tail + 1) % static_cast<std::int64_t>(capacity)), context.Frame);
-	queue->SetField(queue_sizeField->SlotIndex, context.Collector.FromValue(size + 1), context.Frame);
+	array->SetElement(static_cast<std::size_t>(tail), value);
+	queue->SetField(queue_tailField->SlotIndex, context.Collector.FromValue((tail + 1) % static_cast<std::int64_t>(capacity)));
+	queue->SetField(queue_sizeField->SlotIndex, context.Collector.FromValue(size + 1));
 	return nullptr;
 }
 
 static ObjectInstance* shard_queue_Dequeue(const CallState& context) noexcept(false)
 {
 	ObjectInstance* queue = context.Args[0];
-	std::int64_t size = queue->GetField(queue_sizeField->SlotIndex, context.Frame)->AsInteger();
+	std::int64_t size = queue->GetField(queue_sizeField->SlotIndex)->AsInteger();
 	if (size == 0)
 		throw std::runtime_error("queue is empty");
 
-	ObjectInstance* array = queue->GetField(queue_arrayField->SlotIndex, context.Frame);
-	std::int64_t head = queue->GetField(queue_headField->SlotIndex, context.Frame)->AsInteger();
+	ObjectInstance* array = queue->GetField(queue_arrayField->SlotIndex);
+	std::int64_t head = queue->GetField(queue_headField->SlotIndex)->AsInteger();
 	std::size_t capacity = array->GetArrayLength();
 
-	ObjectInstance* value = array->GetElement(static_cast<std::size_t>(head), context.Frame);
-	queue->SetField(queue_headField->SlotIndex, context.Collector.FromValue((head + 1) % static_cast<std::int64_t>(capacity)), context.Frame);
-	queue->SetField(queue_sizeField->SlotIndex, context.Collector.FromValue(size - 1), context.Frame);
+	ObjectInstance* value = array->GetElement(static_cast<std::size_t>(head));
+	queue->SetField(queue_headField->SlotIndex, context.Collector.FromValue((head + 1) % static_cast<std::int64_t>(capacity)));
+	queue->SetField(queue_sizeField->SlotIndex, context.Collector.FromValue(size - 1));
 	return value;
 }
 
 static ObjectInstance* shard_queue_Peek(const CallState& context) noexcept(false)
 {
 	ObjectInstance* queue = context.Args[0];
-	std::int64_t size = queue->GetField(queue_sizeField->SlotIndex, context.Frame)->AsInteger();
+	std::int64_t size = queue->GetField(queue_sizeField->SlotIndex)->AsInteger();
 	if (size == 0)
 		throw std::runtime_error("queue is empty");
 
-	ObjectInstance* array = queue->GetField(queue_arrayField->SlotIndex, context.Frame);
-	std::int64_t head = queue->GetField(queue_headField->SlotIndex, context.Frame)->AsInteger();
-	return array->GetElement(static_cast<std::size_t>(head), context.Frame);
+	ObjectInstance* array = queue->GetField(queue_arrayField->SlotIndex);
+	std::int64_t head = queue->GetField(queue_headField->SlotIndex)->AsInteger();
+	return array->GetElement(static_cast<std::size_t>(head));
 }
 
 static ObjectInstance* shard_queue_Clear(const CallState& context) noexcept(false)
@@ -849,16 +848,16 @@ static ObjectInstance* shard_queue_Clear(const CallState& context) noexcept(fals
 	ObjectInstance* queue = context.Args[0];
 	TypeSymbol* elementType = context.Frame->TypeArguments[0];
 
-	queue->SetField(queue_arrayField->SlotIndex, context.Collector.AllocateArray(elementType, 0), context.Frame);
-	queue->SetField(queue_headField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(0)), context.Frame);
-	queue->SetField(queue_tailField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(0)), context.Frame);
-	queue->SetField(queue_sizeField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(0)), context.Frame);
+	queue->SetField(queue_arrayField->SlotIndex, context.Collector.AllocateArray(elementType, 0));
+	queue->SetField(queue_headField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(0)));
+	queue->SetField(queue_tailField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(0)));
+	queue->SetField(queue_sizeField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(0)));
 	return nullptr;
 }
 
 static ObjectInstance* shard_queue_Count_get(const CallState& context) noexcept(false)
 {
-	return context.Collector.FromValue(context.Args[0]->GetField(queue_sizeField->SlotIndex, context.Frame)->AsInteger());
+	return context.Collector.FromValue(context.Args[0]->GetField(queue_sizeField->SlotIndex)->AsInteger());
 }
 
 static ObjectInstance* shard_queue_Contains(const CallState& context) noexcept(false)
@@ -866,9 +865,9 @@ static ObjectInstance* shard_queue_Contains(const CallState& context) noexcept(f
 	ObjectInstance* queue = context.Args[0];
 	ObjectInstance* value = context.Args[1];
 
-	ObjectInstance* array = queue->GetField(queue_arrayField->SlotIndex, context.Frame);
-	std::int64_t size = queue->GetField(queue_sizeField->SlotIndex, context.Frame)->AsInteger();
-	std::int64_t head = queue->GetField(queue_headField->SlotIndex, context.Frame)->AsInteger();
+	ObjectInstance* array = queue->GetField(queue_arrayField->SlotIndex);
+	std::int64_t size = queue->GetField(queue_sizeField->SlotIndex)->AsInteger();
+	std::int64_t head = queue->GetField(queue_headField->SlotIndex)->AsInteger();
 	std::size_t capacity = array->GetArrayLength();
 
 	for (std::int64_t i = 0; i < size; ++i)
@@ -887,33 +886,33 @@ static ObjectInstance* shard_queue_GetEnumerator(const CallState& context) noexc
 	TypeSymbol* elementType = context.Frame->TypeArguments[0];
 
 	ObjectInstance* enumerator = context.Collector.AllocateGeneric(queueEnumeratorClass_raw, std::vector<TypeSymbol*>{ elementType });
-	enumerator->SetField(queueEnumerator_sourceField->SlotIndex, queue, context.Frame);
-	enumerator->SetField(queueEnumerator_indexField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(-1)), context.Frame);
+	enumerator->SetField(queueEnumerator_sourceField->SlotIndex, queue);
+	enumerator->SetField(queueEnumerator_indexField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(-1)));
 	return enumerator;
 }
 
 static ObjectInstance* shard_queueenumerator_MoveNext(const CallState& context) noexcept(false)
 {
 	ObjectInstance* self = context.Args[0];
-	ObjectInstance* source = self->GetField(queueEnumerator_sourceField->SlotIndex, context.Frame);
-	std::int64_t index = self->GetField(queueEnumerator_indexField->SlotIndex, context.Frame)->AsInteger() + 1;
-	std::int64_t size = source->GetField(queue_sizeField->SlotIndex, context.Frame)->AsInteger();
+	ObjectInstance* source = self->GetField(queueEnumerator_sourceField->SlotIndex);
+	std::int64_t index = self->GetField(queueEnumerator_indexField->SlotIndex)->AsInteger() + 1;
+	std::int64_t size = source->GetField(queue_sizeField->SlotIndex)->AsInteger();
 
-	self->SetField(queueEnumerator_indexField->SlotIndex, context.Collector.FromValue(index), context.Frame);
+	self->SetField(queueEnumerator_indexField->SlotIndex, context.Collector.FromValue(index));
 	return context.Collector.FromValue(index < size);
 }
 
 static ObjectInstance* shard_queueenumerator_Current_get(const CallState& context) noexcept(false)
 {
 	ObjectInstance* self = context.Args[0];
-	std::int64_t index = self->GetField(queueEnumerator_indexField->SlotIndex, context.Frame)->AsInteger();
-	ObjectInstance* source = self->GetField(queueEnumerator_sourceField->SlotIndex, context.Frame);
+	std::int64_t index = self->GetField(queueEnumerator_indexField->SlotIndex)->AsInteger();
+	ObjectInstance* source = self->GetField(queueEnumerator_sourceField->SlotIndex);
 
-	ObjectInstance* array = source->GetField(queue_arrayField->SlotIndex, context.Frame);
-	std::int64_t head = source->GetField(queue_headField->SlotIndex, context.Frame)->AsInteger();
+	ObjectInstance* array = source->GetField(queue_arrayField->SlotIndex);
+	std::int64_t head = source->GetField(queue_headField->SlotIndex)->AsInteger();
 	std::size_t capacity = array->GetArrayLength();
 	std::size_t idx = static_cast<std::size_t>((head + index) % static_cast<std::int64_t>(capacity));
-	return array->GetElement(idx, context.Frame);
+	return array->GetElement(idx);
 }
 
 // =========================================================================
@@ -925,8 +924,8 @@ static void stack_EnsureCapacity(
 	CallStackFrame* frame,
 	GarbageCollector& collector)
 {
-	ObjectInstance* array = stack->GetField(stack_arrayField->SlotIndex, frame);
-	std::int64_t size = stack->GetField(stack_sizeField->SlotIndex, frame)->AsInteger();
+	ObjectInstance* array = stack->GetField(stack_arrayField->SlotIndex);
+	std::int64_t size = stack->GetField(stack_sizeField->SlotIndex)->AsInteger();
 	std::size_t capacity = array ? array->GetArrayLength() : 0;
 
 	if (static_cast<std::size_t>(size) < capacity)
@@ -935,9 +934,9 @@ static void stack_EnsureCapacity(
 	std::size_t newCapacity = capacity == 0 ? 4 : capacity * 2;
 	ObjectInstance* newArray = collector.AllocateArray(elementType, newCapacity);
 	for (std::int64_t i = 0; i < size; ++i)
-		newArray->SetElement(static_cast<std::size_t>(i), array->GetElement(static_cast<std::size_t>(i), frame), frame);
+		newArray->SetElement(static_cast<std::size_t>(i), array->GetElement(static_cast<std::size_t>(i), frame));
 
-	stack->SetField(stack_arrayField->SlotIndex, newArray, frame);
+	stack->SetField(stack_arrayField->SlotIndex, newArray);
 }
 
 static ObjectInstance* shard_stack_init(const CallState& context) noexcept(false)
@@ -945,8 +944,8 @@ static ObjectInstance* shard_stack_init(const CallState& context) noexcept(false
 	ObjectInstance* stack = context.Args[0];
 	TypeSymbol* elementType = context.Frame->TypeArguments[0];
 
-	stack->SetField(stack_arrayField->SlotIndex, context.Collector.AllocateArray(elementType, 0), context.Frame);
-	stack->SetField(stack_sizeField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(0)), context.Frame);
+	stack->SetField(stack_arrayField->SlotIndex, context.Collector.AllocateArray(elementType, 0));
+	stack->SetField(stack_sizeField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(0)));
 	return nullptr;
 }
 
@@ -958,36 +957,36 @@ static ObjectInstance* shard_stack_Push(const CallState& context) noexcept(false
 
 	stack_EnsureCapacity(stack, elementType, context.Frame, context.Collector);
 
-	ObjectInstance* array = stack->GetField(stack_arrayField->SlotIndex, context.Frame);
-	std::int64_t size = stack->GetField(stack_sizeField->SlotIndex, context.Frame)->AsInteger();
+	ObjectInstance* array = stack->GetField(stack_arrayField->SlotIndex);
+	std::int64_t size = stack->GetField(stack_sizeField->SlotIndex)->AsInteger();
 
-	array->SetElement(static_cast<std::size_t>(size), value, context.Frame);
-	stack->SetField(stack_sizeField->SlotIndex, context.Collector.FromValue(size + 1), context.Frame);
+	array->SetElement(static_cast<std::size_t>(size), value);
+	stack->SetField(stack_sizeField->SlotIndex, context.Collector.FromValue(size + 1));
 	return nullptr;
 }
 
 static ObjectInstance* shard_stack_Pop(const CallState& context) noexcept(false)
 {
 	ObjectInstance* stack = context.Args[0];
-	std::int64_t size = stack->GetField(stack_sizeField->SlotIndex, context.Frame)->AsInteger();
+	std::int64_t size = stack->GetField(stack_sizeField->SlotIndex)->AsInteger();
 	if (size == 0)
 		throw std::runtime_error("stack is empty");
 
-	ObjectInstance* array = stack->GetField(stack_arrayField->SlotIndex, context.Frame);
-	ObjectInstance* value = array->GetElement(static_cast<std::size_t>(size - 1), context.Frame);
-	stack->SetField(stack_sizeField->SlotIndex, context.Collector.FromValue(size - 1), context.Frame);
+	ObjectInstance* array = stack->GetField(stack_arrayField->SlotIndex);
+	ObjectInstance* value = array->GetElement(static_cast<std::size_t>(size - 1));
+	stack->SetField(stack_sizeField->SlotIndex, context.Collector.FromValue(size - 1));
 	return value;
 }
 
 static ObjectInstance* shard_stack_Peek(const CallState& context) noexcept(false)
 {
 	ObjectInstance* stack = context.Args[0];
-	std::int64_t size = stack->GetField(stack_sizeField->SlotIndex, context.Frame)->AsInteger();
+	std::int64_t size = stack->GetField(stack_sizeField->SlotIndex)->AsInteger();
 	if (size == 0)
 		throw std::runtime_error("stack is empty");
 
-	ObjectInstance* array = stack->GetField(stack_arrayField->SlotIndex, context.Frame);
-	return array->GetElement(static_cast<std::size_t>(size - 1), context.Frame);
+	ObjectInstance* array = stack->GetField(stack_arrayField->SlotIndex);
+	return array->GetElement(static_cast<std::size_t>(size - 1));
 }
 
 static ObjectInstance* shard_stack_Clear(const CallState& context) noexcept(false)
@@ -995,14 +994,14 @@ static ObjectInstance* shard_stack_Clear(const CallState& context) noexcept(fals
 	ObjectInstance* stack = context.Args[0];
 	TypeSymbol* elementType = context.Frame->TypeArguments[0];
 
-	stack->SetField(stack_arrayField->SlotIndex, context.Collector.AllocateArray(elementType, 0), context.Frame);
-	stack->SetField(stack_sizeField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(0)), context.Frame);
+	stack->SetField(stack_arrayField->SlotIndex, context.Collector.AllocateArray(elementType, 0));
+	stack->SetField(stack_sizeField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(0)));
 	return nullptr;
 }
 
 static ObjectInstance* shard_stack_Count_get(const CallState& context) noexcept(false)
 {
-	return context.Collector.FromValue(context.Args[0]->GetField(stack_sizeField->SlotIndex, context.Frame)->AsInteger());
+	return context.Collector.FromValue(context.Args[0]->GetField(stack_sizeField->SlotIndex)->AsInteger());
 }
 
 static ObjectInstance* shard_stack_Contains(const CallState& context) noexcept(false)
@@ -1010,8 +1009,8 @@ static ObjectInstance* shard_stack_Contains(const CallState& context) noexcept(f
 	ObjectInstance* stack = context.Args[0];
 	ObjectInstance* value = context.Args[1];
 
-	ObjectInstance* array = stack->GetField(stack_arrayField->SlotIndex, context.Frame);
-	std::int64_t size = stack->GetField(stack_sizeField->SlotIndex, context.Frame)->AsInteger();
+	ObjectInstance* array = stack->GetField(stack_arrayField->SlotIndex);
+	std::int64_t size = stack->GetField(stack_sizeField->SlotIndex)->AsInteger();
 
 	for (std::int64_t i = size - 1; i >= 0; --i)
 	{
@@ -1028,32 +1027,32 @@ static ObjectInstance* shard_stack_GetEnumerator(const CallState& context) noexc
 	TypeSymbol* elementType = context.Frame->TypeArguments[0];
 
 	ObjectInstance* enumerator = context.Collector.AllocateGeneric(stackEnumeratorClass_raw, std::vector<TypeSymbol*>{ elementType });
-	enumerator->SetField(stackEnumerator_sourceField->SlotIndex, stack, context.Frame);
-	enumerator->SetField(stackEnumerator_indexField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(-1)), context.Frame);
+	enumerator->SetField(stackEnumerator_sourceField->SlotIndex, stack);
+	enumerator->SetField(stackEnumerator_indexField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(-1)));
 	return enumerator;
 }
 
 static ObjectInstance* shard_stackenumerator_MoveNext(const CallState& context) noexcept(false)
 {
 	ObjectInstance* self = context.Args[0];
-	ObjectInstance* source = self->GetField(stackEnumerator_sourceField->SlotIndex, context.Frame);
-	std::int64_t index = self->GetField(stackEnumerator_indexField->SlotIndex, context.Frame)->AsInteger() + 1;
-	std::int64_t size = source->GetField(stack_sizeField->SlotIndex, context.Frame)->AsInteger();
+	ObjectInstance* source = self->GetField(stackEnumerator_sourceField->SlotIndex);
+	std::int64_t index = self->GetField(stackEnumerator_indexField->SlotIndex)->AsInteger() + 1;
+	std::int64_t size = source->GetField(stack_sizeField->SlotIndex)->AsInteger();
 
-	self->SetField(stackEnumerator_indexField->SlotIndex, context.Collector.FromValue(index), context.Frame);
+	self->SetField(stackEnumerator_indexField->SlotIndex, context.Collector.FromValue(index));
 	return context.Collector.FromValue(index < size);
 }
 
 static ObjectInstance* shard_stackenumerator_Current_get(const CallState& context) noexcept(false)
 {
 	ObjectInstance* self = context.Args[0];
-	std::int64_t index = self->GetField(stackEnumerator_indexField->SlotIndex, context.Frame)->AsInteger();
-	ObjectInstance* source = self->GetField(stackEnumerator_sourceField->SlotIndex, context.Frame);
+	std::int64_t index = self->GetField(stackEnumerator_indexField->SlotIndex)->AsInteger();
+	ObjectInstance* source = self->GetField(stackEnumerator_sourceField->SlotIndex);
 
-	ObjectInstance* array = source->GetField(stack_arrayField->SlotIndex, context.Frame);
-	std::int64_t size = source->GetField(stack_sizeField->SlotIndex, context.Frame)->AsInteger();
+	ObjectInstance* array = source->GetField(stack_arrayField->SlotIndex);
+	std::int64_t size = source->GetField(stack_sizeField->SlotIndex)->AsInteger();
 	std::size_t realIndex = static_cast<std::size_t>(size - 1 - index);
-	return array->GetElement(realIndex, context.Frame);
+	return array->GetElement(realIndex);
 }
 
 // =========================================================================

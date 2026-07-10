@@ -213,20 +213,20 @@ static ObjectInstance* runtime_capture_stack_trace(const CallState& context)
 static ObjectInstance* array_enumerator_MoveNext(const CallState& context)
 {
 	ObjectInstance* self = context.Args[0];
-	std::int64_t index = self->GetField(CLASS_ARRAYENUMERATOR_IndexField->SlotIndex, context.Frame)->AsInteger();
-	std::int64_t length = self->GetField(CLASS_ARRAYENUMERATOR_LengthField->SlotIndex, context.Frame)->AsInteger();
+	std::int64_t index = self->GetField(CLASS_ARRAYENUMERATOR_IndexField->SlotIndex)->AsInteger();
+	std::int64_t length = self->GetField(CLASS_ARRAYENUMERATOR_LengthField->SlotIndex)->AsInteger();
 	
 	index++;
-	self->SetField(CLASS_ARRAYENUMERATOR_IndexField->SlotIndex, context.Collector.FromValue(index), context.Frame);
+	self->SetField(CLASS_ARRAYENUMERATOR_IndexField->SlotIndex, context.Collector.FromValue(index));
 	return context.Collector.FromValue(index < length);
 }
 
 static ObjectInstance* array_enumerator_Current_get(const CallState& context)
 {
 	ObjectInstance* self = context.Args[0];
-	std::int64_t index = self->GetField(CLASS_ARRAYENUMERATOR_IndexField->SlotIndex, context.Frame)->AsInteger();
-	ObjectInstance* source = self->GetField(CLASS_ARRAYENUMERATOR_SourceField->SlotIndex, context.Frame);
-	return source->GetElement(static_cast<std::size_t>(index), context.Frame);
+	std::int64_t index = self->GetField(CLASS_ARRAYENUMERATOR_IndexField->SlotIndex)->AsInteger();
+	ObjectInstance* source = self->GetField(CLASS_ARRAYENUMERATOR_SourceField->SlotIndex);
+	return source->GetElement(static_cast<std::size_t>(index));
 }
 
 static ObjectInstance* primitive_array_get_enumerator(const CallState& context)
@@ -236,9 +236,9 @@ static ObjectInstance* primitive_array_get_enumerator(const CallState& context)
 	TypeSymbol* concreteT = const_cast<TypeSymbol*>(arrayType->UnderlayingType);
 
 	ObjectInstance* enumerator = context.Collector.AllocateGeneric(CLASS_ARRAYENUMERATOR, std::vector<TypeSymbol*>{ concreteT });
-	enumerator->SetField(CLASS_ARRAYENUMERATOR_SourceField->SlotIndex, array, context.Frame);
-	enumerator->SetField(CLASS_ARRAYENUMERATOR_IndexField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(-1)), context.Frame);
-	enumerator->SetField(CLASS_ARRAYENUMERATOR_LengthField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(arrayType->Length)), context.Frame);
+	enumerator->SetField(CLASS_ARRAYENUMERATOR_SourceField->SlotIndex, array);
+	enumerator->SetField(CLASS_ARRAYENUMERATOR_IndexField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(-1)));
+	enumerator->SetField(CLASS_ARRAYENUMERATOR_LengthField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(arrayType->Length)));
 
 	return enumerator;
 }

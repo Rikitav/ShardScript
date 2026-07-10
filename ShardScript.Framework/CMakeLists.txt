@@ -42,6 +42,15 @@ endif()
       LIBRARY_OUTPUT_DIRECTORY_MINSIZEREL "${TARGET_OUTPUT_DIR}"
   )
 
+  string (FIND "${SHARD_TARGET_NAME}" "http" IS_HTTP_TARGET)
+  if (NOT IS_HTTP_TARGET EQUAL -1)
+    if(WIN32)
+        target_link_libraries("${SHARD_TARGET_NAME}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/system/lib/openssl.lib" ssl crypto ws2_32 gdi32 crypt32)
+    else()
+        target_link_libraries("${SHARD_TARGET_NAME}" PRIVATE ssl crypto)
+    endif()
+  endif()
+
   # RayLib target
   string(FIND "${SHARD_TARGET_NAME}" "raylib" IS_RAYLIB_TARGET)
   if(NOT IS_RAYLIB_TARGET EQUAL -1)

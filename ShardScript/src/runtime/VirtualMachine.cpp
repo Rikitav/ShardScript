@@ -365,7 +365,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		{
 			std::uint32_t slot = decoder.AbsorbFieldSlot();
 			ObjectInstance* instance = frame->PopStack();
-			ObjectInstance* fieldValue = instance->GetField(slot, frame);
+			ObjectInstance* fieldValue = instance->GetField(slot);
 
 			frame->PushStack(fieldValue);
 			garbageCollector.CollectInstance(instance);
@@ -378,7 +378,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance* fieldValue = frame->PopStack();
 			ObjectInstance* instance = frame->PopStack();
 
-			instance->SetField(slot, fieldValue, frame);
+			instance->SetField(slot, fieldValue);
 			garbageCollector.CollectInstance(fieldValue);
 			garbageCollector.CollectInstance(instance);
 			break;
@@ -432,7 +432,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			for (std::size_t i = 0; i < length; ++i)
 			{
 				std::size_t index = i;
-				instance->SetElement(index, elements[i], frame);
+				instance->SetElement(index, elements[i]);
 				garbageCollector.CollectInstance(elements[i]);
 			}
 
@@ -486,7 +486,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			for (std::int64_t i = 0; i < length; i++)
 			{
 				ObjectInstance* valueInstance = garbageCollector.FromValue(lower + step * i);
-				arrayInstance->SetElement(static_cast<std::size_t>(i), valueInstance, frame);
+				arrayInstance->SetElement(static_cast<std::size_t>(i), valueInstance);
 				valueInstance->DecrementReference();
 			}
 
@@ -500,7 +500,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance* arrayInstance = frame->PopStack();
 
 			std::int64_t index = indexInstance->AsInteger();
-			ObjectInstance* element = arrayInstance->GetElement(static_cast<std::size_t>(index), frame);
+			ObjectInstance* element = arrayInstance->GetElement(static_cast<std::size_t>(index));
 
 			frame->PushStack(element);
 
@@ -515,7 +515,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance* arrayInstance = frame->PopStack();
 
 			std::int64_t index = indexInstance->AsInteger();
-			arrayInstance->SetElement(static_cast<std::size_t>(index), valueInstance, frame);
+			arrayInstance->SetElement(static_cast<std::size_t>(index), valueInstance);
 
 			garbageCollector.CollectInstance(valueInstance);
 			garbageCollector.CollectInstance(indexInstance);
@@ -793,14 +793,14 @@ ObjectInstance* VirtualMachine::CreateRuntimeException(const std::exception& err
 		const char* what = err.what();
 		std::wstring msg(what, what + std::strlen(what));
 		ObjectInstance* msgInstance = garbageCollector.FromValue(msg);
-		instance->SetField(SymbolTable::StandardTypes::RuntimeExceptionMessageField->SlotIndex, msgInstance, nullptr);
+		instance->SetField(SymbolTable::StandardTypes::RuntimeExceptionMessageField->SlotIndex, msgInstance);
 	}
 
 	if (SymbolTable::StandardTypes::RuntimeExceptionStackTraceField != nullptr)
 	{
 		std::wstring trace = GetStackTrace();
 		ObjectInstance* traceInstance = garbageCollector.FromValue(trace);
-		instance->SetField(SymbolTable::StandardTypes::RuntimeExceptionStackTraceField->SlotIndex, traceInstance, nullptr);
+		instance->SetField(SymbolTable::StandardTypes::RuntimeExceptionStackTraceField->SlotIndex, traceInstance);
 	}
 
 	return instance;
