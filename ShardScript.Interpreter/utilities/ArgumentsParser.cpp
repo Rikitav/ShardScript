@@ -73,16 +73,16 @@ void shard::ShardUtilities::ParseArguments(int argc, wchar_t* argv[])
             ConsoleArguments::ShowHelp = true;
             ConsoleArguments::RunProgram = false;
         }
-        else if (arg == L"-r" || arg == L"--repl")
+        else if (arg == L"-i" || arg == L"--interactive" || arg == L"-r" || arg == L"--repl")
         {
             ConsoleArguments::UseInteractive = true;
             ConsoleArguments::RunProgram = false;
         }
-        else if (arg == L"--exclude-std")
+        else if (arg == L"--exclude-std" || arg == L"--no-std")
         {
             ConsoleArguments::ExcludeStd = true;
         }
-        else if (arg == L"--decompiled")
+        else if (arg == L"-d" || arg == L"--decompiled")
         {
             ConsoleArguments::ShowDecompile = true;
             ConsoleArguments::RunProgram = false;

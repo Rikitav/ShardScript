@@ -94,6 +94,9 @@ void SourceParser::FromSourceProvider(SyntaxTree& syntaxTree, SourceProvider& re
 std::unique_ptr<CompilationUnitSyntax> SourceParser::ReadCompilationUnit(SourceProvider& reader)
 {
 	ExpressionDepth = 0;
+	OperatorsInExpression = 0;
+	BlockDepth = 0;
+	LinkedExpressionDepth = 0;
 	auto unit = std::make_unique<CompilationUnitSyntax>();
 	CompilationUnitSyntax* rawUnit = unit.get();
 
@@ -599,7 +602,7 @@ std::unique_ptr<FieldDeclarationSyntax> SourceParser::ReadFieldDeclaration(Sourc
 			syntax->InitializerAssignToken = current;
 			reader.Consume();
 
-			syntax->InitializerExpression = std::move(ReadExpression(reader, syntax.get(), 0));
+			syntax->InitializerExpression = std::move(ReadExpression(reader, syntax.get(), 0, true));
 			syntax->SemicolonToken = Expect(reader, TokenType::Semicolon, L"Expected ';' token");
 			return syntax;
 		}
@@ -625,7 +628,7 @@ std::unique_ptr<PropertyDeclarationSyntax> SourceParser::ReadComputedPropertyDec
 {
 	auto property = std::make_unique<PropertyDeclarationSyntax>(info, parent);
 	property->ArrowToken = Expect(reader, TokenType::ArrowOperator, L"Expected '=>'");
-	property->InitializerExpression = std::move(ReadExpression(reader, property.get(), 0));
+	property->InitializerExpression = std::move(ReadExpression(reader, property.get(), 0, true));
 	property->SemicolonToken = Expect(reader, TokenType::Semicolon, L"Expected ';' token");
 	return property;
 }
@@ -803,6 +806,7 @@ void SourceParser::ReadEnumBody(SourceProvider& reader, EnumDeclarationSyntax* s
 				field->Parent = syntax;
 				syntax->Fields.push_back(std::move(field));
 			}
+
 		}
 		else
 		{
@@ -856,7 +860,7 @@ std::unique_ptr<EnumFieldDeclarationSyntax> SourceParser::ReadEnumFieldDeclarati
 	{
 		syntax->AssignToken = current;
 		reader.Consume();
-		syntax->InitializerExpression = std::move(ReadExpression(reader, syntax.get(), 0));
+		syntax->InitializerExpression = std::move(ReadExpression(reader, syntax.get(), 0, true));
 	}
 
 	return syntax;
@@ -1127,6 +1131,7 @@ std::vector<SyntaxToken> SourceParser::ReadMemberModifiers(SourceProvider& reade
 		if (seenModifiers.count(currentType) > 0)
 		{
 			Diagnostics.ReportError(current, L"Duplicate modifier");
+			reader.Consume();
 			continue;
 		}
 
@@ -1531,6 +1536,7 @@ void SourceParser::ReadTypeBody(SourceProvider& reader, TypeDeclarationSyntax* s
 					break;
 				}
 			}
+
 		}
 		else
 		{
@@ -1545,6 +1551,26 @@ void SourceParser::ReadTypeBody(SourceProvider& reader, TypeDeclarationSyntax* s
 
 std::unique_ptr<StatementsBlockSyntax> SourceParser::ReadStatementsBlock(SourceProvider& reader, SyntaxNode* parent)
 {
+	struct BlockDepthGuard
+	{
+		int& depth;
+		BlockDepthGuard(int& d) : depth(d) { ++depth; }
+		~BlockDepthGuard() { --depth; }
+	};
+
+	BlockDepthGuard guard(BlockDepth);
+	if (BlockDepth > MaxBlockDepth)
+	{
+		Diagnostics.ReportError(reader.Current(), L"Statement nesting is too deep");
+		// Skip the rest of this block to avoid stack overflow.
+		while (reader.CanConsume() && reader.Current().Type != TokenType::CloseBrace)
+			reader.Consume();
+		if (reader.CanConsume())
+			reader.Consume();
+		auto syntax = std::make_unique<StatementsBlockSyntax>(parent);
+		return syntax;
+	}
+
 	auto syntax = std::make_unique<StatementsBlockSyntax>(parent);
 	int loopGuard = 0;
 
@@ -1621,6 +1647,12 @@ std::unique_ptr<StatementsBlockSyntax> SourceParser::ReadStatementsBlock(SourceP
 				}
 			}
 		}
+
+			if (syntax->CloseBraceToken.Type != TokenType::CloseBrace)
+			{
+				TextLocation location = reader.CanConsume() ? reader.Current().Location : syntax->OpenBraceToken.Location;
+				Diagnostics.ReportError(SyntaxToken(TokenType::EndOfFile, L"", location), L"Statement block opened here was not closed - expected '}'");
+			}
 	}
 	else
 	{
@@ -1678,7 +1710,7 @@ std::unique_ptr<StatementSyntax> SourceParser::ReadStatement(SourceProvider& rea
 			{
 				assign = reader.Current();
 				reader.Consume();
-				expr = ReadExpression(reader, parent, 0);
+				expr = ReadExpression(reader, parent, 0, true);
 			}
 			else
 			{
@@ -1695,7 +1727,7 @@ std::unique_ptr<StatementSyntax> SourceParser::ReadStatement(SourceProvider& rea
 			SyntaxToken walrus = reader.Current();
 			reader.Consume(); // :=
 
-			auto expr = ReadExpression(reader, parent, 0);
+			auto expr = ReadExpression(reader, parent, 0, true);
 			return std::make_unique<VariableStatementSyntax>(
 				std::make_unique<PredefinedTypeSyntax>(SyntaxToken(TokenType::VarKeyword, L"var", current.Location, false), parent),
 				current, walrus, std::move(expr), parent);
@@ -1704,7 +1736,17 @@ std::unique_ptr<StatementSyntax> SourceParser::ReadStatement(SourceProvider& rea
 		// Wrong: type name = value (e.g. int x = 0; or var x = 0;)
 		if (IsPredefinedType(current.Type) && peek.Type == TokenType::Identifier)
 		{
-			Diagnostics.ReportError(current, L"Invalid variable declaration syntax. Use 'name: type = value' or 'name := value'.");
+			if (current.Type == TokenType::VarKeyword)
+			{
+				Diagnostics.ReportError(current,
+					L"Invalid use of 'var'. For type inference use 'name := value'; "
+					L"for an explicit type use 'name: type = value'.");
+			}
+			else
+			{
+				Diagnostics.ReportError(current,
+					L"Invalid variable declaration syntax. Use 'name: type = value' or 'name := value'.");
+			}
 
 			reader.Consume(); // type keyword
 			SyntaxToken name = reader.Current();
@@ -1714,7 +1756,15 @@ std::unique_ptr<StatementSyntax> SourceParser::ReadStatement(SourceProvider& rea
 			if (reader.Current().Type == TokenType::AssignOperator)
 			{
 				reader.Consume(); // =
-				expr = ReadExpression(reader, parent, 0);
+				expr = ReadExpression(reader, parent, 0, true);
+			}
+			else
+			{
+				// The declaration is malformed in a way we can't recover from
+				// (e.g. 'var x: int = ...'); skip to the end of the statement
+				// to avoid a flood of follow-up diagnostics.
+				while (reader.CanConsume() && reader.Current().Type != TokenType::Semicolon)
+					reader.Consume();
 			}
 
 			return std::make_unique<VariableStatementSyntax>(
@@ -1741,7 +1791,7 @@ std::unique_ptr<StatementSyntax> SourceParser::ReadStatement(SourceProvider& rea
 		*/
 	}
 
-	auto expression = ReadExpression(reader, parent, 0);
+	auto expression = ReadExpression(reader, parent, 0, true);
 	return std::make_unique<ExpressionStatementSyntax>(std::move(expression), parent);
 }
 
@@ -1796,7 +1846,6 @@ std::unique_ptr<KeywordStatementSyntax> SourceParser::ReadKeywordStatement(Sourc
 
 		case TokenType::IfKeyword:
 		case TokenType::UnlessKeyword:
-		case TokenType::ElseKeyword:
 			return ReadConditionalClause(reader, parent);
 
 		case TokenType::TryKeyword:
@@ -1824,7 +1873,7 @@ std::unique_ptr<ReturnStatementSyntax> SourceParser::ReadReturnStatement(SourceP
 
 	SyntaxToken current = reader.Current();
 	if (current.Type != TokenType::Semicolon)
-		syntax->Expression = std::move(ReadExpression(reader, parent, 0));
+		syntax->Expression = std::move(ReadExpression(reader, parent, 0, true));
 
 	syntax->SemicolonToken = Expect(reader, TokenType::Semicolon, L"Missing ';' token");
 	return syntax;
@@ -1837,7 +1886,7 @@ std::unique_ptr<ThrowStatementSyntax> SourceParser::ReadThrowStatement(SourcePro
 
 	SyntaxToken current = reader.Current();
 	if (current.Type != TokenType::Semicolon)
-		syntax->Expression = ReadExpression(reader, parent, 0);
+		syntax->Expression = ReadExpression(reader, parent, 0, true);
 
 	syntax->SemicolonToken = Expect(reader, TokenType::Semicolon, L"Missing ';' token");
 	return syntax;
@@ -1894,6 +1943,9 @@ std::unique_ptr<ConditionalClauseBaseSyntax> SourceParser::ReadConditionalClause
 				syntax->CloseCurlToken = Expect(reader, TokenType::CloseCurl, L"Expected ')' token");
 				syntax->StatementsBlock = ReadStatementsBlock(reader, syntax.get());
 
+				if (syntax->StatementsBlock != nullptr && syntax->StatementsBlock->SemicolonToken.Type == TokenType::Semicolon)
+					Diagnostics.ReportError(syntax->StatementsBlock->SemicolonToken, L"If/unless statement cannot have an empty body; use an empty block {{}} if you meant no-op");
+
 				TokenType nextType = reader.Current().Type;
 				if (nextType == TokenType::ElseKeyword)
 					syntax->NextStatement = ReadConditionalClause(reader, syntax.get());
@@ -1911,6 +1963,9 @@ std::unique_ptr<ConditionalClauseBaseSyntax> SourceParser::ReadConditionalClause
 				syntax->ConditionExpression = ReadStatement(reader, syntax.get());
 				syntax->CloseCurlToken = Expect(reader, TokenType::CloseCurl, L"Expected ')' token");
 				syntax->StatementsBlock = ReadStatementsBlock(reader, syntax.get());
+
+				if (syntax->StatementsBlock != nullptr && syntax->StatementsBlock->SemicolonToken.Type == TokenType::Semicolon)
+					Diagnostics.ReportError(syntax->StatementsBlock->SemicolonToken, L"If/unless statement cannot have an empty body; use an empty block {{}} if you meant no-op");
 
 				TokenType nextType = reader.Current().Type;
 				if (nextType == TokenType::ElseKeyword)
@@ -1969,7 +2024,7 @@ std::unique_ptr<WhileStatementSyntax> SourceParser::ReadWhileStatement(SourcePro
 	syntax->SemicolonToken = SyntaxToken(TokenType::Semicolon, L"", TextLocation(), false);
 	syntax->KeywordToken = Expect(reader, TokenType::WhileKeyword, L"Expected 'while' keyword");
 	syntax->OpenCurlToken = Expect(reader, TokenType::OpenCurl, L"expected '(' token");
-	syntax->ConditionExpression = std::move(ReadExpression(reader, syntax.get(), 0));
+	syntax->ConditionExpression = std::move(ReadExpression(reader, syntax.get(), 0, true));
 	syntax->CloseCurlToken = Expect(reader, TokenType::CloseCurl, L"expected ')' token");
 	syntax->StatementsBlock = ReadStatementsBlock(reader, syntax.get());
 
@@ -1982,7 +2037,7 @@ std::unique_ptr<UntilStatementSyntax> SourceParser::ReadUntilStatement(SourcePro
 	syntax->SemicolonToken = SyntaxToken(TokenType::Semicolon, L"", TextLocation(), false);
 	syntax->KeywordToken = Expect(reader, TokenType::UntilKeyword, L"Expected 'until' keyword");
 	syntax->OpenCurlToken = Expect(reader, TokenType::OpenCurl, L"expected '(' token");
-	syntax->ConditionExpression = std::move(ReadExpression(reader, syntax.get(), 0));
+	syntax->ConditionExpression = std::move(ReadExpression(reader, syntax.get(), 0, true));
 	syntax->CloseCurlToken = Expect(reader, TokenType::CloseCurl, L"expected ')' token");
 	syntax->StatementsBlock = ReadStatementsBlock(reader, syntax.get());
 
@@ -2005,7 +2060,7 @@ std::unique_ptr<ForStatementSyntax> SourceParser::ReadForStatement(SourceProvide
 	syntax->FirstSemicolon = Expect(reader, TokenType::Semicolon, L"expected ';' token");
 
 	// Reading looping consition
-	syntax->ConditionExpression = std::move(ReadExpression(reader, syntax.get(), 0));
+	syntax->ConditionExpression = std::move(ReadExpression(reader, syntax.get(), 0, true));
 
 	// Reading second semicolon
 	syntax->SecondSemicolon = Expect(reader, TokenType::Semicolon, L"expected ';' token");
@@ -2045,7 +2100,7 @@ std::unique_ptr<ForEachStatementSyntax> SourceParser::ReadForEachStatement(Sourc
 
 	syntax->IdentifierToken = identifier;
 	syntax->InKeywordToken = Expect(reader, TokenType::InKeyword, L"Expected 'in' keyword");
-	syntax->RangeExpression = std::move(ReadExpression(reader, syntax.get(), 0));
+	syntax->RangeExpression = std::move(ReadExpression(reader, syntax.get(), 0, true));
 
 	if (hasParens)
 		Expect(reader, TokenType::CloseCurl, L"expected ')' token");
@@ -2076,7 +2131,7 @@ std::unique_ptr<ForInStatementSyntax> SourceParser::ReadForInStatement(SourcePro
 
 	syntax->IdentifierToken = identifier;
 	syntax->InKeywordToken = Expect(reader, TokenType::InKeyword, L"Expected 'in' keyword");
-	syntax->RangeExpression = std::move(ReadExpression(reader, syntax.get(), 0));
+	syntax->RangeExpression = std::move(ReadExpression(reader, syntax.get(), 0, true));
 
 	if (hasParens)
 		Expect(reader, TokenType::CloseCurl, L"expected ')' token");
@@ -2121,14 +2176,23 @@ std::unique_ptr<TryStatementSyntax> SourceParser::ReadTryStatement(SourceProvide
 			clause->CloseParenToken = Expect(reader, TokenType::CloseCurl, L"Expected ')' after catch clause");
 
 		clause->Body = ReadStatementsBlock(reader, clause.get());
+
+		if (clause->IdentifierToken.Type == TokenType::Unknown && clause->ExceptionType == nullptr)
+			Diagnostics.ReportError(clause->CatchKeywordToken, L"Catch clause must declare an exception variable or type");
+
 		syntax->CatchClauses.push_back(std::move(clause));
 	}
+
+	if (syntax->CatchClauses.empty())
+		Diagnostics.ReportError(syntax->TryKeywordToken, L"'try' statement must have at least one 'catch' clause");
 
 	return syntax;
 }
 
-std::unique_ptr<ExpressionSyntax> SourceParser::ReadExpression(SourceProvider& reader, SyntaxNode* parent, int bindingPower)
+std::unique_ptr<ExpressionSyntax> SourceParser::ReadExpression(SourceProvider& reader, SyntaxNode* parent, int bindingPower, bool resetOperatorCount)
 {
+	if (resetOperatorCount)
+		OperatorsInExpression = 0;
 	struct DepthGuard
 	{
 		int& depth;
@@ -2152,13 +2216,24 @@ std::unique_ptr<ExpressionSyntax> SourceParser::ReadExpression(SourceProvider& r
 	SyntaxToken current = reader.Current();
 	int precendence = GetOperatorPrecendence(current.Type);
 
-	int operatorsInExpression = 0;
 	while (reader.CanConsume() && precendence != 0 && bindingPower < precendence)
 	{
-		if (++operatorsInExpression > MaxExpressionOperators)
+		if (++OperatorsInExpression > MaxExpressionOperators)
 		{
-			Diagnostics.ReportError(reader.Current(), L"Expression is too long");
-			reader.Consume();
+			Diagnostics.ReportError(reader.Current(), L"Expression contains too many operators; reduce the number of operators or split it into multiple statements");
+			// Skip the remainder of this expression to avoid re-parsing the same
+			// long operator chain and producing a flood of follow-up diagnostics.
+			while (reader.CanConsume())
+			{
+				TokenType t = reader.Current().Type;
+				if (t == TokenType::Semicolon || t == TokenType::CloseBrace ||
+				    t == TokenType::CloseCurl || t == TokenType::CloseSquare ||
+				    t == TokenType::Comma)
+				{
+					break;
+				}
+				reader.Consume();
+			}
 			break;
 		}
 
@@ -2382,10 +2457,10 @@ std::unique_ptr<TernaryExpressionSyntax> SourceParser::ReadTernaryExpression(Sou
 	syntax->Condition = std::move(condition);
 
 	syntax->QuestionToken = Expect(reader, TokenType::Question, L"Expected '?' token");
-	syntax->Left = std::move(ReadExpression(reader, syntax.get(), 0));
+	syntax->Left = std::move(ReadExpression(reader, syntax.get(), 0, true));
 
 	syntax->ColonToken = Expect(reader, TokenType::Colon, L"Expected ':' token");
-	syntax->Right = std::move(ReadExpression(reader, syntax.get(), 0));
+	syntax->Right = std::move(ReadExpression(reader, syntax.get(), 0, true));
 
 	return syntax;
 }
@@ -2405,7 +2480,7 @@ std::unique_ptr<ExpressionSyntax> SourceParser::ReadCollectionExpression(SourceP
 
 	while (reader.CanConsume())
 	{
-		auto expr = ReadExpression(reader, syntax.get(), 0);
+		auto expr = ReadExpression(reader, syntax.get(), 0, true);
 		syntax->ValuesExpressions.push_back(std::move(expr));
 
 		// Try to match separator with error recovery
@@ -2461,16 +2536,16 @@ std::unique_ptr<IfExpressionSyntax> SourceParser::ReadIfExpression(SourceProvide
 {
 	auto syntax = std::make_unique<IfExpressionSyntax>(parent);
 	syntax->IfKeywordToken = Expect(reader, TokenType::IfKeyword, L"Expected 'if' keyword");
-	syntax->Condition = std::move(ReadExpression(reader, syntax.get(), 0));
+	syntax->Condition = std::move(ReadExpression(reader, syntax.get(), 0, true));
 	//syntax->OpenBraceToken = Expect(reader, TokenType::OpenBrace, L"Expected '{'");
-	syntax->ThenExpression = std::move(ReadExpression(reader, syntax.get(), 0));
+	syntax->ThenExpression = std::move(ReadExpression(reader, syntax.get(), 0, true));
 	//syntax->CloseBraceToken = Expect(reader, TokenType::CloseBrace, L"Expected '}'");
 
 	if (reader.Current().Type == TokenType::ElseKeyword)
 	{
 		syntax->ElseKeywordToken = reader.Current();
 		reader.Consume();
-		syntax->ElseExpression = std::move(ReadExpression(reader, syntax.get(), 0));
+		syntax->ElseExpression = std::move(ReadExpression(reader, syntax.get(), 0, true));
 	}
 
 	return syntax;
@@ -2480,7 +2555,7 @@ std::unique_ptr<SwitchExpressionSyntax> SourceParser::ReadSwitchExpression(Sourc
 {
 	auto syntax = std::make_unique<SwitchExpressionSyntax>(parent);
 	syntax->SwitchKeywordToken = Expect(reader, TokenType::SwitchKeyword, L"Expected 'switch' keyword");
-	syntax->Expression = std::move(ReadExpression(reader, syntax.get(), 0));
+	syntax->Expression = std::move(ReadExpression(reader, syntax.get(), 0, true));
 	syntax->OpenBraceToken = Expect(reader, TokenType::OpenBrace, L"Expected '{'");
 
 	while (reader.CanConsume() && reader.Current().Type != TokenType::CloseBrace)
@@ -2494,11 +2569,11 @@ std::unique_ptr<SwitchExpressionSyntax> SourceParser::ReadSwitchExpression(Sourc
 		}
 		else
 		{
-			arm->Pattern = std::move(ReadExpression(reader, arm.get(), 0));
+			arm->Pattern = std::move(ReadExpression(reader, arm.get(), 0, true));
 		}
 
 		arm->ArrowToken = Expect(reader, TokenType::LambdaOperator, L"Expected '=>'");
-		arm->Expression = std::move(ReadExpression(reader, arm.get(), 0));
+		arm->Expression = std::move(ReadExpression(reader, arm.get(), 0, true));
 		syntax->Arms.push_back(std::move(arm));
 
 		if (reader.Current().Type == TokenType::Comma)
@@ -2542,6 +2617,25 @@ static bool IsGenericInvocation(SourceProvider& reader)
 
 std::unique_ptr<LinkedExpressionNode> SourceParser::ReadLinkedExpressionNode(SourceProvider& reader, SyntaxNode* parent, std::unique_ptr<ExpressionSyntax> previous, bool isFirst)
 {
+	struct LinkedDepthGuard
+	{
+		int& depth;
+		LinkedDepthGuard(int& d) : depth(d) { ++depth; }
+		~LinkedDepthGuard() { --depth; }
+	};
+
+	LinkedDepthGuard guard(LinkedExpressionDepth);
+	if (LinkedExpressionDepth > MaxLinkedExpressionDepth)
+	{
+		Diagnostics.ReportError(reader.Current(), L"Member access chain is too long");
+		if (auto* linked = dynamic_cast<LinkedExpressionNode*>(previous.get()))
+		{
+			previous.release();
+			return std::unique_ptr<LinkedExpressionNode>(linked);
+		}
+		return nullptr;
+	}
+
 	if (!reader.CanConsume())
 		return nullptr;
 
@@ -2733,7 +2827,7 @@ std::unique_ptr<ArgumentsListSyntax> SourceParser::ReadArgumentsList(SourceProvi
 
 	while (reader.CanConsume())
 	{
-		auto expr = ReadExpression(reader, arguments.get(), 0);
+		auto expr = ReadExpression(reader, arguments.get(), 0, true);
 		auto argument = std::make_unique<ArgumentSyntax>(std::move(expr), arguments.get());
 		arguments->Arguments.push_back(std::move(argument));
 
@@ -2771,7 +2865,7 @@ std::unique_ptr<IndexatorListSyntax> SourceParser::ReadIndexatorList(SourceProvi
 
 	while (reader.CanConsume())
 	{
-		auto expr = ReadExpression(reader, arguments.get(), 0);
+		auto expr = ReadExpression(reader, arguments.get(), 0, true);
 		auto argument = std::make_unique<ArgumentSyntax>(std::move(expr), arguments.get());
 		arguments->Arguments.push_back(std::move(argument));
 

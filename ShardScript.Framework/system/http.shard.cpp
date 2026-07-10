@@ -10,67 +10,6 @@
 
 using namespace shard;
 
-namespace
-{
-    static inline std::string WToUtf8(const std::wstring& wstr)
-    {
-        if (wstr.empty())
-            return {};
-
-#ifdef _WIN32
-        const int size = ::WideCharToMultiByte(CP_UTF8, 0, wstr.data(),
-            static_cast<int>(wstr.size()),
-            nullptr, 0, nullptr, nullptr);
-        if (size <= 0)
-            return {};
-
-        std::string narrow(static_cast<std::size_t>(size), '\0');
-        ::WideCharToMultiByte(CP_UTF8, 0, wstr.data(),
-            static_cast<int>(wstr.size()),
-            narrow.data(), size, nullptr, nullptr);
-        return narrow;
-#else
-        std::string narrow(wstr.size() * 4 + 1, '\0');
-        std::wcstombs(narrow.data(), wstr.c_str(), narrow.size());
-        narrow.resize(std::strlen(narrow.c_str()));
-        return narrow;
-#endif
-    }
-
-    static inline std::string WToUtf8(const wchar_t* wstr)
-    {
-        if (wstr == nullptr)
-            return {};
-
-        return WToUtf8(std::wstring(wstr));
-    }
-
-    static inline std::wstring Utf8ToW(const std::string& narrow)
-    {
-        if (narrow.empty())
-            return {};
-
-#ifdef _WIN32
-        const int size = ::MultiByteToWideChar(CP_UTF8, 0, narrow.data(),
-            static_cast<int>(narrow.size()),
-            nullptr, 0);
-        if (size <= 0)
-            return {};
-
-        std::wstring wide(static_cast<std::size_t>(size), L'\0');
-        ::MultiByteToWideChar(CP_UTF8, 0, narrow.data(),
-            static_cast<int>(narrow.size()),
-            wide.data(), size);
-        return wide;
-#else
-        std::wstring wide(narrow.size(), L'\0');
-        std::mbstowcs(wide.data(), narrow.c_str(), wide.size());
-        wide.resize(std::wcslen(wide.c_str()));
-        return wide;
-#endif
-    }
-}
-
 TypeSymbol* shard_HttpServer = nullptr;
 FieldSymbol* shard_HttpServer_ClientPtrField = nullptr;
 
@@ -129,7 +68,7 @@ static ObjectInstance* shard_http_Client_Init(const CallState& context) noexcept
     ObjectInstance* instance = context.Args[0];
     std::wstring wideBaseUrl = context.Args[1]->AsString();
 
-    std::string u8BaseUrl = WToUtf8(wideBaseUrl);
+    std::string u8BaseUrl = strings::WideToUtf8(wideBaseUrl);
     httplib::Client* client = new httplib::Client(u8BaseUrl);
 
     client->set_connection_timeout(std::chrono::seconds(5));
@@ -148,7 +87,7 @@ static ObjectInstance* shard_http_Client_Get(const CallState& context) noexcept(
     if (client == nullptr)
         throw std::runtime_error("HttpClient: Client is disposed.");
 
-    std::string u8Path = WToUtf8(widePath);
+    std::string u8Path = strings::WideToUtf8(widePath);
 
     httplib::Result res = client->Get(u8Path);
     if (res == nullptr)
@@ -237,7 +176,7 @@ static ObjectInstance* shard_http_Server_Get(const CallState& context) noexcept(
         throw std::runtime_error("HttpServer: Server is disposed.");
 
     shardCallback->IncrementReference();
-    std::string path = WToUtf8(widePathObj->AsString());
+    std::string path = strings::WideToUtf8(widePathObj->AsString());
 
     server->Get(path, [shardCallback, &context](const httplib::Request& req, httplib::Response& res)
     {
@@ -248,7 +187,7 @@ static ObjectInstance* shard_http_Server_Get(const CallState& context) noexcept(
 		ApplicationDomain* appDomain = &context.Domain;
         VirtualMachine innerVm(appDomain);
 
-        std::wstring wideBody = Utf8ToW(req.body);
+        std::wstring wideBody = strings::Utf8ToWide(req.body);
 
         //CallStackFrame dumbFrame(&innerVm, nullptr, nullptr, nullptr);
         innerVm.PushFrame(nullptr);
@@ -259,12 +198,12 @@ static ObjectInstance* shard_http_Server_Get(const CallState& context) noexcept(
         
 		if (dumbFrame->InterruptionReason == FrameInterruptionReason::ExceptionRaised)
 		{
-			res.set_content(WToUtf8(dumbFrame->CurrentException->AsString()), "text/plain; charset=utf-8");
+			res.set_content(strings::WideToUtf8(dumbFrame->CurrentException->AsString()), "text/plain; charset=utf-8");
 			res.status = 500;
 		}
         else
         {
-            res.set_content(WToUtf8(responceBody->AsString()), "text/plain; charset=utf-8");
+            res.set_content(strings::WideToUtf8(responceBody->AsString()), "text/plain; charset=utf-8");
             res.status = 200;
         }
 
@@ -280,7 +219,7 @@ static ObjectInstance* shard_http_Server_Listen(const CallState& context) noexce
     ObjectInstance* hostObj = context.Args[1];
 	ObjectInstance* portObj = context.Args[2];
 
-    std::string host = WToUtf8(hostObj->AsString());
+    std::string host = strings::WideToUtf8(hostObj->AsString());
     int64_t port = portObj->AsInteger();
 
     httplib::Server* server = GetServerPtr(instance);

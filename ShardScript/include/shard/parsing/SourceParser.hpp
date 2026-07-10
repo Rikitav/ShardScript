@@ -76,8 +76,13 @@ namespace shard
 	private:
 		DiagnosticsContext& Diagnostics;
 		int ExpressionDepth = 0;
+		int OperatorsInExpression = 0;
+		int BlockDepth = 0;
+		int LinkedExpressionDepth = 0;
 		static constexpr int MaxExpressionDepth = 128;
-		static constexpr int MaxExpressionOperators = 128;
+		static constexpr int MaxExpressionOperators = 64;
+		static constexpr int MaxBlockDepth = 64;
+		static constexpr int MaxLinkedExpressionDepth = 64;
 
 	public:
 		SourceParser(DiagnosticsContext& diagnostics)
@@ -139,7 +144,7 @@ namespace shard
 		std::unique_ptr<TryStatementSyntax> ReadTryStatement(SourceProvider& reader, SyntaxNode* parent);
 
 		// 7. Expression
-		std::unique_ptr<ExpressionSyntax> ReadExpression(SourceProvider& reader, SyntaxNode* parent, int bindingPower);
+		std::unique_ptr<ExpressionSyntax> ReadExpression(SourceProvider& reader, SyntaxNode* parent, int bindingPower, bool resetOperatorCount = false);
 		std::unique_ptr<ExpressionSyntax> ReadNullDenotation(SourceProvider& reader, SyntaxNode* parent);
 		std::unique_ptr<ExpressionSyntax> ReadLeftDenotation(SourceProvider& reader, SyntaxNode* parent, std::unique_ptr<ExpressionSyntax> leftExpr);
 

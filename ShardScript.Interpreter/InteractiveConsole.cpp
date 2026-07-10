@@ -250,7 +250,7 @@ StatementSyntax* InteractiveConsole::ReadStatement(LexicalBuffer& sequenceReader
 		// Read as expression
 		ReadMultilineInput(sequenceReader, true);
 		ExpressionStatementSyntax* exprStatement = new ExpressionStatementSyntax(InteractiveMethod->Body.get());
-		exprStatement->Expression = Parser.ReadExpression(sequenceReader, exprStatement, 0);
+		exprStatement->Expression = Parser.ReadExpression(sequenceReader, exprStatement, 0, true);
 
 		if (exprStatement->Expression == nullptr)
 		{

@@ -177,14 +177,21 @@ void ObjectInstance::SetField(std::uint32_t slot, ObjectInstance* instance, Call
 
 		TypeShape* instanceShape = instance->getShape();
 		const TypeSymbol* instanceType = instance->getInfo();
+		const TypeSymbol* fieldBaseType = fieldShape->BaseType;
+
+		// Allow assigning a plain Integer value to an enum-typed field.
+		if (fieldBaseType != nullptr && fieldBaseType->Kind == SyntaxKind::EnumDeclaration && instanceType == TYPE_INT)
+		{
+			WriteMemory(fieldOffset, fieldShape->Size, instance->getMemory());
+			return;
+		}
+
 		if (instanceShape != nullptr && instanceShape != fieldShape)
 		{
 			std::string msg = "Tried to set incompatible ObjectInstance type as field value. Field base: ";
 			msg += fieldShape->BaseType != nullptr ? std::string(fieldShape->BaseType->Name.begin(), fieldShape->BaseType->Name.end()) : "null";
 			msg += ", instance base: ";
-			msg += instanceShape->BaseType != nullptr
-				? std::string(instanceShape->BaseType->Name.begin(), instanceShape->BaseType->Name.end())
-				: "null";
+			msg += instanceShape->BaseType != nullptr ? std::string(instanceShape->BaseType->Name.begin(), instanceShape->BaseType->Name.end()) : "null";
 			throw std::runtime_error(msg);
 		}
 

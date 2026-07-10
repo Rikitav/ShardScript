@@ -33,67 +33,6 @@
 
 using namespace shard;
 
-namespace
-{
-    static inline std::string WToUtf8(const std::wstring& wstr)
-    {
-        if (wstr.empty())
-            return {};
-
-#ifdef _WIN32
-        const int size = ::WideCharToMultiByte(CP_UTF8, 0, wstr.data(),
-            static_cast<int>(wstr.size()),
-            nullptr, 0, nullptr, nullptr);
-        if (size <= 0)
-            return {};
-
-        std::string narrow(static_cast<std::size_t>(size), '\0');
-        ::WideCharToMultiByte(CP_UTF8, 0, wstr.data(),
-            static_cast<int>(wstr.size()),
-            narrow.data(), size, nullptr, nullptr);
-        return narrow;
-#else
-        std::string narrow(wstr.size() * 4 + 1, '\0');
-        std::wcstombs(narrow.data(), wstr.c_str(), narrow.size());
-        narrow.resize(std::strlen(narrow.c_str()));
-        return narrow;
-#endif
-    }
-
-    static inline std::string WToUtf8(const wchar_t* wstr)
-    {
-        if (wstr == nullptr)
-            return {};
-
-        return WToUtf8(std::wstring(wstr));
-    }
-
-    static inline std::wstring Utf8ToW(const std::string& narrow)
-    {
-        if (narrow.empty())
-            return {};
-
-#ifdef _WIN32
-        const int size = ::MultiByteToWideChar(CP_UTF8, 0, narrow.data(),
-            static_cast<int>(narrow.size()),
-            nullptr, 0);
-        if (size <= 0)
-            return {};
-
-        std::wstring wide(static_cast<std::size_t>(size), L'\0');
-        ::MultiByteToWideChar(CP_UTF8, 0, narrow.data(),
-            static_cast<int>(narrow.size()),
-            wide.data(), size);
-        return wide;
-#else
-        std::wstring wide(narrow.size(), L'\0');
-        std::mbstowcs(wide.data(), narrow.c_str(), wide.size());
-        wide.resize(std::wcslen(wide.c_str()));
-        return wide;
-#endif
-    }
-}
-
 static bool InitNetwork() noexcept
 {
 #ifdef _WIN32
@@ -132,7 +71,7 @@ static ObjectInstance* shard_socket_Connect(const CallState& context) noexcept
     if (socket_handle == INVALID_SOCKET_VAL)
         return context.Collector.FromValue(false);
 
-    std::string ip_narrow = WToUtf8(ip_w);
+    std::string ip_narrow = strings::WideToUtf8(ip_w);
     sockaddr_in clientService{};
     clientService.sin_family = AF_INET;
     clientService.sin_port = htons(static_cast<u_short>(port));
@@ -174,7 +113,7 @@ static ObjectInstance* shard_socket_Bind(const CallState& context) noexcept
     if (socket_handle == INVALID_SOCKET_VAL)
         return context.Collector.FromValue(false);
 
-    std::string ip_narrow = WToUtf8(ip_w);
+    std::string ip_narrow = strings::WideToUtf8(ip_w);
     sockaddr_in service{};
     service.sin_family = AF_INET;
     service.sin_port = htons(static_cast<u_short>(port));
