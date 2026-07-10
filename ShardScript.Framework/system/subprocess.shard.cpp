@@ -22,74 +22,16 @@
 using namespace shard;
 
 // ============================================================================
-// UTF-8 <-> UTF-16 helpers
-// ============================================================================
-
-static std::string WToUtf8(const std::wstring& wstr)
-{
-    if (wstr.empty())
-        return {};
-
-#ifdef _WIN32
-    const int size = ::WideCharToMultiByte(CP_UTF8, 0, wstr.data(),
-                                           static_cast<int>(wstr.size()),
-                                           nullptr, 0, nullptr, nullptr);
-    if (size <= 0)
-        return {};
-
-    std::string narrow(static_cast<std::size_t>(size), '\0');
-    ::WideCharToMultiByte(CP_UTF8, 0, wstr.data(),
-                          static_cast<int>(wstr.size()),
-                          narrow.data(), size, nullptr, nullptr);
-    return narrow;
-#else
-    std::string narrow(wstr.size() * 4 + 1, '\0');
-    std::wcstombs(narrow.data(), wstr.c_str(), narrow.size());
-    narrow.resize(std::strlen(narrow.c_str()));
-    return narrow;
-#endif
-}
-
-static std::string WToUtf8(const wchar_t* wstr)
-{
-    if (wstr == nullptr)
-        return {};
-
-    return WToUtf8(std::wstring(wstr));
-}
-
-static std::wstring Utf8ToW(const std::string& narrow)
-{
-    if (narrow.empty())
-        return {};
-
-#ifdef _WIN32
-    const int size = ::MultiByteToWideChar(CP_UTF8, 0, narrow.data(),
-                                           static_cast<int>(narrow.size()),
-                                           nullptr, 0);
-    if (size <= 0)
-        return {};
-
-    std::wstring wide(static_cast<std::size_t>(size), L'\0');
-    ::MultiByteToWideChar(CP_UTF8, 0, narrow.data(),
-                          static_cast<int>(narrow.size()),
-                          wide.data(), size);
-    return wide;
-#else
-    std::wstring wide(narrow.size(), L'\0');
-    std::mbstowcs(wide.data(), narrow.c_str(), wide.size());
-    wide.resize(std::wcslen(wide.c_str()));
-    return wide;
-#endif
-}
-
-// ============================================================================
 // Symbol handles
 // ============================================================================
 
 static ClassSymbol* shard_Process = nullptr;
 static FieldSymbol* shard_Process_handle = nullptr;
 static FieldSymbol* shard_Process_exitCode = nullptr;
+static FieldSymbol* shard_Process_redirectOut = nullptr;
+static FieldSymbol* shard_Process_redirectErr = nullptr;
+static FieldSymbol* shard_Process_redirectIn = nullptr;
+static FieldSymbol* shard_Process_processId = nullptr;
 
 static ClassSymbol* shard_ProcessStartInfo = nullptr;
 static FieldSymbol* shard_StartInfo_fileName = nullptr;
@@ -101,6 +43,14 @@ static FieldSymbol* shard_StartInfo_redirectIn = nullptr;
 static FieldSymbol* shard_StartInfo_useShell = nullptr;
 static FieldSymbol* shard_StartInfo_createNoWindow = nullptr;
 static FieldSymbol* shard_StartInfo_inheritEnv = nullptr;
+static FieldSymbol* shard_StartInfo_environment = nullptr;
+
+// Forward declarations for dictionary layout shared with collections.shard.cpp
+extern ClassSymbol* dictionaryClass_raw;
+extern FieldSymbol* dict_keysField;
+extern FieldSymbol* dict_valuesField;
+extern FieldSymbol* dict_statesField;
+extern FieldSymbol* dict_countField;
 
 // ============================================================================
 // Small helpers for reading ShardScript fields safely
@@ -146,6 +96,27 @@ static void SetProcessHandle(ObjectInstance* instance, subprocess_s* proc, Garba
 static void SetExitCode(ObjectInstance* instance, std::int64_t code, GarbageCollector& gc)
 {
     instance->SetField(shard_Process_exitCode->SlotIndex, gc.FromValue(code));
+}
+
+static void SetRedirectFlags(ObjectInstance* instance, bool redirectOut, bool redirectErr, bool redirectIn, GarbageCollector& gc)
+{
+    instance->SetField(shard_Process_redirectOut->SlotIndex, gc.FromValue(redirectOut));
+    instance->SetField(shard_Process_redirectErr->SlotIndex, gc.FromValue(redirectErr));
+    instance->SetField(shard_Process_redirectIn->SlotIndex, gc.FromValue(redirectIn));
+}
+
+static bool GetProcessRedirectFlag(ObjectInstance* instance, FieldSymbol* field)
+{
+    ObjectInstance* value = instance->GetField(field->SlotIndex);
+    if (IsNullInstance(value))
+        return false;
+
+    return value->AsBoolean();
+}
+
+static void SetProcessId(ObjectInstance* instance, std::int64_t pid, GarbageCollector& gc)
+{
+    instance->SetField(shard_Process_processId->SlotIndex, gc.FromValue(pid));
 }
 
 // ============================================================================
@@ -196,18 +167,27 @@ static std::vector<std::wstring> SplitArguments(const std::wstring& arguments)
 static std::vector<std::string> BuildCommandLine(const wchar_t* fileName, const wchar_t* arguments)
 {
     std::vector<std::string> argv;
-    argv.push_back(WToUtf8(fileName));
+    argv.push_back(strings::WideToUtf8(fileName));
 
     if (arguments != nullptr && arguments[0] != L'\0')
     {
         for (const std::wstring& arg : SplitArguments(arguments))
-            argv.push_back(WToUtf8(arg));
+            argv.push_back(strings::WideToUtf8(arg));
     }
 
     return argv;
 }
 
-static ObjectInstance* StartProcess(GarbageCollector& gc, const std::vector<std::string>& argvUtf8, bool inheritEnvironment, const std::string& cwdUtf8, bool createNoWindow)
+static ObjectInstance* StartProcess(
+    GarbageCollector& gc,
+    const std::vector<std::string>& argvUtf8,
+    bool inheritEnvironment,
+    const std::string& cwdUtf8,
+    bool createNoWindow,
+    bool redirectStandardOutput,
+    bool redirectStandardError,
+    bool redirectStandardInput,
+    const std::vector<std::string>& environmentUtf8)
 {
     if (argvUtf8.empty())
         throw std::runtime_error("Process.Start requires a file name.");
@@ -227,13 +207,29 @@ static ObjectInstance* StartProcess(GarbageCollector& gc, const std::vector<std:
     if (createNoWindow)
         options |= subprocess_option_no_window;
 
-    options |= subprocess_option_enable_async;
+    // Always enable async reads when any redirect is requested; also keep async
+    // enabled for the existing blocking ReadToEnd semantics to work reliably.
+    if (redirectStandardOutput || redirectStandardError || redirectStandardInput)
+        options |= subprocess_option_enable_async;
+    else
+        options |= subprocess_option_enable_async;
+
+    const char* const* environmentPtr = nullptr;
+    std::vector<const char*> environmentVector;
+    if (!inheritEnvironment && !environmentUtf8.empty())
+    {
+        environmentVector.reserve(environmentUtf8.size() + 1);
+        for (const std::string& env : environmentUtf8)
+            environmentVector.push_back(env.c_str());
+        environmentVector.push_back(nullptr);
+        environmentPtr = environmentVector.data();
+    }
 
     subprocess_s* proc = new subprocess_s();
     const int result = subprocess_create_ex(
         commandLine.data(),
         options,
-        nullptr,
+        environmentPtr,
         cwdUtf8.empty() ? nullptr : cwdUtf8.c_str(),
         proc);
 
@@ -246,6 +242,14 @@ static ObjectInstance* StartProcess(GarbageCollector& gc, const std::vector<std:
     ObjectInstance* process = gc.AllocateInstance(shard_Process);
     SetProcessHandle(process, proc, gc);
     SetExitCode(process, 0, gc);
+    SetRedirectFlags(process, redirectStandardOutput, redirectStandardError, redirectStandardInput, gc);
+
+#ifdef _WIN32
+    SetProcessId(process, static_cast<std::int64_t>(reinterpret_cast<std::uintptr_t>(proc->hProcess)), gc);
+#else
+    SetProcessId(process, static_cast<std::int64_t>(proc->child), gc);
+#endif
+
     return process;
 }
 
@@ -257,6 +261,11 @@ static ObjectInstance* shard_ProcessStartInfo_Init(const CallState& context) noe
 {
     ObjectInstance* instance = context.Args[0];
     instance->SetField(shard_StartInfo_inheritEnv->SlotIndex, context.Collector.FromValue(true));
+
+    ObjectInstance* envDict = context.Collector.AllocateGeneric(dictionaryClass_raw,
+        { SymbolTable::Primitives::String, SymbolTable::Primitives::String });
+    instance->SetField(shard_StartInfo_environment->SlotIndex, envDict);
+
     return instance;
 }
 
@@ -268,7 +277,7 @@ static ObjectInstance* shard_Process_Start_FileName(const CallState& context) no
 {
     const wchar_t* fileName = context.Args[0]->AsString();
     std::vector<std::string> argv = BuildCommandLine(fileName, L"");
-    return StartProcess(context.Collector, argv, true, {}, false);
+    return StartProcess(context.Collector, argv, true, {}, false, false, false, false, {});
 }
 
 static ObjectInstance* shard_Process_Start_FileNameArgs(const CallState& context) noexcept(false)
@@ -276,7 +285,7 @@ static ObjectInstance* shard_Process_Start_FileNameArgs(const CallState& context
     const wchar_t* fileName = context.Args[0]->AsString();
     const wchar_t* arguments = context.Args[1]->AsString();
     std::vector<std::string> argv = BuildCommandLine(fileName, arguments);
-    return StartProcess(context.Collector, argv, true, {}, false);
+    return StartProcess(context.Collector, argv, true, {}, false, false, false, false, {});
 }
 
 static ObjectInstance* shard_Process_Start_Info(const CallState& context) noexcept(false)
@@ -294,12 +303,35 @@ static ObjectInstance* shard_Process_Start_Info(const CallState& context) noexce
         fileName,
         GetStringField(info, shard_StartInfo_arguments));
 
-    std::string cwdUtf8 = WToUtf8(GetStringField(info, shard_StartInfo_workingDir));
+    std::string cwdUtf8 = strings::WideToUtf8(GetStringField(info, shard_StartInfo_workingDir));
 
     bool inheritEnv = GetBoolField(info, shard_StartInfo_inheritEnv);
     bool createNoWindow = GetBoolField(info, shard_StartInfo_createNoWindow);
+    bool redirectOut = GetBoolField(info, shard_StartInfo_redirectOut);
+    bool redirectErr = GetBoolField(info, shard_StartInfo_redirectErr);
+    bool redirectIn = GetBoolField(info, shard_StartInfo_redirectIn);
 
-    return StartProcess(context.Collector, argv, inheritEnv, cwdUtf8, createNoWindow);
+    std::vector<std::string> environmentVars;
+    ObjectInstance* envDict = info->GetField(shard_StartInfo_environment->SlotIndex);
+    if (!IsNullInstance(envDict) && envDict->GetField(dict_countField->SlotIndex)->AsInteger() > 0)
+    {
+        ObjectInstance* keys = envDict->GetField(dict_keysField->SlotIndex);
+        ObjectInstance* values = envDict->GetField(dict_valuesField->SlotIndex);
+        ObjectInstance* states = envDict->GetField(dict_statesField->SlotIndex);
+        std::size_t capacity = states ? states->GetArrayLength() : 0;
+
+        for (std::size_t i = 0; i < capacity; ++i)
+        {
+            if (states->GetElement(i, context.Frame)->AsInteger() != 1)
+                continue;
+
+            std::wstring key = keys->GetElement(i, context.Frame)->AsString();
+            std::wstring value = values->GetElement(i, context.Frame)->AsString();
+            environmentVars.push_back(strings::WideToUtf8(key + L"=" + value));
+        }
+    }
+
+    return StartProcess(context.Collector, argv, inheritEnv, cwdUtf8, createNoWindow, redirectOut, redirectErr, redirectIn, environmentVars);
 }
 
 // ============================================================================
@@ -319,6 +351,12 @@ static ObjectInstance* shard_Process_ExitCode_get(const CallState& context) noex
 {
     ObjectInstance* instance = context.Args[0];
     return instance->GetField(shard_Process_exitCode->SlotIndex);
+}
+
+static ObjectInstance* shard_Process_ProcessId_get(const CallState& context) noexcept(false)
+{
+    ObjectInstance* instance = context.Args[0];
+    return instance->GetField(shard_Process_processId->SlotIndex);
 }
 
 static ObjectInstance* shard_Process_WaitForExit(const CallState& context) noexcept(false)
@@ -398,21 +436,12 @@ static ObjectInstance* shard_Process_ReadToEnd(const CallState& context) noexcep
             output.append(buffer, bytesRead);
     }
     while (bytesRead > 0);
-    
-    if (subprocess_alive(proc) != 0)
-    {
-        int code = 0;
-        subprocess_join(proc, &code);
-        SetExitCode(instance, static_cast<std::int64_t>(code), context.Collector);
-    }
-    else
-    {
-        int code = 0;
-        subprocess_join(proc, &code);
-        SetExitCode(instance, static_cast<std::int64_t>(code), context.Collector);
-    }
 
-    return context.Collector.FromValue(Utf8ToW(output));
+    int code = 0;
+    subprocess_join(proc, &code);
+    SetExitCode(instance, static_cast<std::int64_t>(code), context.Collector);
+
+    return context.Collector.FromValue(strings::Utf8ToWide(output));
 }
 
 static ObjectInstance* shard_Process_ReadErrorToEnd(const CallState& context) noexcept(false)
@@ -438,20 +467,11 @@ static ObjectInstance* shard_Process_ReadErrorToEnd(const CallState& context) no
     }
     while (bytesRead > 0);
 
-    if (subprocess_alive(proc) != 0)
-    {
-        int code = 0;
-        subprocess_join(proc, &code);
-        SetExitCode(instance, static_cast<std::int64_t>(code), context.Collector);
-    }
-    else
-    {
-        int code = 0;
-        subprocess_join(proc, &code);
-        SetExitCode(instance, static_cast<std::int64_t>(code), context.Collector);
-    }
+    int code = 0;
+    subprocess_join(proc, &code);
+    SetExitCode(instance, static_cast<std::int64_t>(code), context.Collector);
 
-    return context.Collector.FromValue(Utf8ToW(output));
+    return context.Collector.FromValue(strings::Utf8ToWide(output));
 }
 
 static ObjectInstance* shard_Process_Write(const CallState& context) noexcept(false)
@@ -466,9 +486,12 @@ static ObjectInstance* shard_Process_Write(const CallState& context) noexcept(fa
     if (in == nullptr)
         throw std::runtime_error("Standard input is not available.");
 
-    std::string narrow = WToUtf8(text);
+    std::string narrow = strings::WideToUtf8(text);
     if (!narrow.empty())
+    {
         std::fwrite(narrow.data(), 1, narrow.size(), in);
+        std::fflush(in);
+    }
 
     return nullptr;
 }
@@ -486,6 +509,7 @@ static ObjectInstance* shard_Process_WriteLine(const CallState& context) noexcep
         {
             const char newline[] = "\n";
             std::fwrite(newline, 1, 1, in);
+            std::fflush(in);
         }
     }
 
@@ -554,6 +578,11 @@ SHARDLIB_ENTRYPOINT
     shard_StartInfo_inheritEnv = startInfoClass
         .AddField(L"InheritEnvironment", TYPE_BOOL, LINK_INSTANCE, ACS_PUBLIC);
 
+    shard_StartInfo_environment = startInfoClass
+        .AddField(L"EnvironmentVariables", 
+            startInfoClass.GetFactory().GenericType(dictionaryClass_raw, { { L"K", SymbolTable::Primitives::String }, { L"V", SymbolTable::Primitives::String } }),
+            LINK_INSTANCE, ACS_PUBLIC);
+
     startInfoClass.AddInit()
         .SetCallback(&shard_ProcessStartInfo_Init);
 
@@ -561,13 +590,25 @@ SHARDLIB_ENTRYPOINT
     // class Process
     // ------------------------------------------------------------------------
     SymbolBuilder<ClassSymbol> processClass = processNamespace.AddClass(L"Process");
-    processClass.Implements(TRAIT_DISPOSABLE);
-    shard_Process = processClass;
+    shard_Process = processClass.Implements(TRAIT_DISPOSABLE);
 
     shard_Process_handle = processClass
         .AddField(L"_handle", TYPE_NINT, LINK_INSTANCE, ACS_PRIVATE);
+    
     shard_Process_exitCode = processClass
         .AddField(L"_exitCode", TYPE_INT, LINK_INSTANCE, ACS_PRIVATE);
+    
+    shard_Process_redirectOut = processClass
+        .AddField(L"_redirectOut", TYPE_BOOL, LINK_INSTANCE, ACS_PRIVATE);
+    
+    shard_Process_redirectErr = processClass
+        .AddField(L"_redirectErr", TYPE_BOOL, LINK_INSTANCE, ACS_PRIVATE);
+    
+    shard_Process_redirectIn = processClass
+        .AddField(L"_redirectIn", TYPE_BOOL, LINK_INSTANCE, ACS_PRIVATE);
+
+    shard_Process_processId = processClass
+        .AddField(L"_processId", TYPE_INT, LINK_INSTANCE, ACS_PRIVATE);
 
     processClass.AddMethod(L"Start", shard_Process, LINK_STATIC)
         .AddParameter(L"fileName", TYPE_STRING)
@@ -589,6 +630,10 @@ SHARDLIB_ENTRYPOINT
     processClass.AddProperty(L"ExitCode", TYPE_INT, LINK_INSTANCE, ACS_PUBLIC)
         .AddGetter()
         .SetCallback(&shard_Process_ExitCode_get);
+
+    processClass.AddProperty(L"ProcessId", TYPE_INT, LINK_INSTANCE, ACS_PUBLIC)
+        .AddGetter()
+        .SetCallback(&shard_Process_ProcessId_get);
 
     processClass.AddMethod(L"WaitForExit", TYPE_INT, LINK_INSTANCE)
         .SetCallback(&shard_Process_WaitForExit);

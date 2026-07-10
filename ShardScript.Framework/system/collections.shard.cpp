@@ -5,7 +5,6 @@
 #include <limits>
 
 #include <ShardScript.hpp>
-#include <shard/semantic/SemanticModel.hpp>
 
 using namespace shard;
 
@@ -45,7 +44,11 @@ static ObjectInstance* shard_list_init_capacity(const CallState& context) noexce
 
 	TypeSymbol* concreteT = context.Frame->TypeArguments[0];
 
-	ObjectInstance* array = context.Collector.AllocateArray(concreteT, 0);
+	std::int64_t capacity = context.Args[1]->AsInteger();
+	if (capacity < 0)
+		capacity = 0;
+
+	ObjectInstance* array = context.Collector.AllocateArray(concreteT, static_cast<std::size_t>(capacity));
 	listInstance->SetField(list_arrayField->SlotIndex, array, context.Frame);
 
 	return nullptr;
@@ -1112,6 +1115,10 @@ SHARDLIB_ENTRYPOINT
 
 	listClass.AddInit()
 		.SetCallback(&shard_list_init);
+
+	listClass.AddInit()
+		.AddParameter(L"capacity", TYPE_INT)
+		.SetCallback(&shard_list_init_capacity);
 
 	SymbolBuilder<PropertySymbol> lengthProp = listClass.AddProperty(L"Length", TYPE_INT, LINK_INSTANCE);
 	lengthProp.AddGetter()

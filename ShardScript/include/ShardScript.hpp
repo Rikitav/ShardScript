@@ -40,6 +40,7 @@
 
 // --- Core / Platform ---
 #include <shard/ShardScriptAPI.hpp>
+#include <utilities/Strings.hpp>
 
 // --- Syntax / Foundation ---
 #include <shard/lexical/TokenType.hpp>

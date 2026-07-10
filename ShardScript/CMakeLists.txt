@@ -11,20 +11,20 @@ add_library(${PROJECT_NAME} SHARED
 )
 
 if(ENABLE_ASAN)
-    if(MSVC)
-        target_compile_options(${PROJECT_NAME} PRIVATE /fsanitize=address)
-        target_link_options(${PROJECT_NAME} PRIVATE /fsanitize=address)
-    else()
-        target_compile_options(${PROJECT_NAME} PRIVATE -fsanitize=address -fno-omit-frame-pointer)
-        target_link_options(${PROJECT_NAME} PRIVATE -fsanitize=address)
-    endif()
+  if(MSVC)
+    target_compile_options(${PROJECT_NAME} PRIVATE /fsanitize=address)
+    target_link_options(${PROJECT_NAME} PRIVATE /fsanitize=address)
+  else()
+    target_compile_options(${PROJECT_NAME} PRIVATE -fsanitize=address -fno-omit-frame-pointer)
+    target_link_options(${PROJECT_NAME} PRIVATE -fsanitize=address)
+  endif()
 endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_compile_definitions(${PROJECT_NAME} PRIVATE "SHARD_API_EXPORT;UNICODE;_UNICODE")
 
 if(NOT WIN32)
-    target_link_libraries(ShardScript PRIVATE ${CMAKE_DL_LIBS})
+  target_link_libraries(ShardScript PRIVATE ${CMAKE_DL_LIBS})
 endif()
 
 use_props(ShardScript "${CMAKE_CONFIGURATION_TYPES}" "${DEFAULT_CXX_PROPS}")

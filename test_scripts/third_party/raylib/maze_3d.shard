@@ -1,0 +1,64 @@
+using raylib;
+
+namespace raylib_maze_3d;
+
+static func BuildMap() -> int[]
+{
+    return [
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1,
+        1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1,
+        1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1,
+        1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1,
+        1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1,
+        1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1,
+        1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1,
+        1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1,
+        1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1,
+        1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1,
+        1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1,
+        1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1,
+        1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+    ];
+}
+
+public static func Main() -> void
+{
+    MAZE_W: int = 15;
+    MAZE_H: int = 15;
+
+    map: int[] = BuildMap();
+
+    Window.Init(960, 720, "ShardScript 3D Maze");
+    Cursor.Disable();
+    Time.SetTargetFPS(60);
+
+    camera: Camera3D = new Camera3D(
+        Vector3.Create(1.5, 0.5, 1.5),
+        Vector3.Create(1.5, 0.5, 2.5),
+        Vector3.Create(0.0, 1.0, 0.0),
+        60.0,
+        CameraProjection.Perspective
+    );
+
+    while (!Window.ShouldClose())
+    {
+        camera.Update(CameraMode.FirstPerson);
+
+        Window.BeginDrawing();
+        Window.ClearBackground(Colors.RayWhite);
+
+        D3.BeginMode(camera);
+        D3.DrawGrid(30, 1.0);
+        D3.DrawWalls(map, MAZE_W, MAZE_H, Colors.DarkGray);
+        D3.EndMode();
+
+        Shapes.DrawText("WASD to move, mouse to look, ESC to exit", 10, 10, 20, Colors.Black);
+        Window.DrawFPS(10, 30);
+
+        Window.EndDrawing();
+    }
+
+    Window.Close();
+}

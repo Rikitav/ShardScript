@@ -200,8 +200,8 @@ static void PrintDiagnostics(DiagnosticsContext& diagnostics)
 		std::wstring sourceLine = ReadSourceLine(loc.FileName, loc.Line);
 		if (!sourceLine.empty())
 		{
-			std::wcout << CGray << std::setw(3) << loc.Line << L" | " << CReset
-			           << sourceLine << std::endl;
+			constexpr int MaxVisibleLineLength = 160;
+			constexpr int CaretWindowRadius = 60;
 
 			int start = (std::max)(0, loc.Offset - 1);
 			int length = (std::max)(1, loc.Length);
@@ -212,8 +212,50 @@ static void PrintDiagnostics(DiagnosticsContext& diagnostics)
 			if (start + length > static_cast<int>(sourceLine.length()))
 				length = static_cast<int>(sourceLine.length()) - start;
 
+			// If the source line is extremely long, show only a window around the
+			// diagnostic so the output stays readable.
+			std::wstring displayedLine = sourceLine;
+			int lineOffset = 0;
+			bool trimmedPrefix = false;
+			bool trimmedSuffix = false;
+
+			if (static_cast<int>(sourceLine.length()) > MaxVisibleLineLength)
+			{
+				int windowStart = (std::max)(0, start - CaretWindowRadius);
+				int windowEnd = (std::min)(static_cast<int>(sourceLine.length()), start + length + CaretWindowRadius);
+
+				if (windowStart > 0)
+				{
+					trimmedPrefix = true;
+					windowStart = (std::max)(0, windowStart - 4);
+				}
+
+				if (windowEnd < static_cast<int>(sourceLine.length()))
+				{
+					trimmedSuffix = true;
+					windowEnd = (std::min)(static_cast<int>(sourceLine.length()), windowEnd + 4);
+				}
+
+				displayedLine = sourceLine.substr(windowStart, windowEnd - windowStart);
+				lineOffset = windowStart;
+			}
+
+			std::wcout << CGray << std::setw(3) << loc.Line << L" | " << CReset;
+			if (trimmedPrefix)
+				std::wcout << L"...";
+
+			std::wcout << displayedLine;
+			if (trimmedSuffix)
+				std::wcout << L"...";
+
+			std::wcout << std::endl;
+
+			int caretStart = start - lineOffset;
+			if (trimmedPrefix)
+				caretStart += 3;
+
 			std::wcout << CGray << L"    | " << CReset
-			           << std::wstring(start, L' ')
+			           << std::wstring(caretStart, L' ')
 			           << severityColor << std::wstring(length, L'^') << CReset << std::endl;
 		}
 	}

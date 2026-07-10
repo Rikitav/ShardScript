@@ -27,70 +27,12 @@ FieldSymbol* shard_SqliteCommand_TextField = nullptr;
 
 namespace
 {
-    static inline std::string WToUtf8(const std::wstring& wstr)
-    {
-        if (wstr.empty())
-            return {};
-
-#ifdef _WIN32
-        const int size = ::WideCharToMultiByte(CP_UTF8, 0, wstr.data(),
-            static_cast<int>(wstr.size()),
-            nullptr, 0, nullptr, nullptr);
-        if (size <= 0)
-            return {};
-
-        std::string narrow(static_cast<std::size_t>(size), '\0');
-        ::WideCharToMultiByte(CP_UTF8, 0, wstr.data(),
-            static_cast<int>(wstr.size()),
-            narrow.data(), size, nullptr, nullptr);
-        return narrow;
-#else
-        std::string narrow(wstr.size() * 4 + 1, '\0');
-        std::wcstombs(narrow.data(), wstr.c_str(), narrow.size());
-        narrow.resize(std::strlen(narrow.c_str()));
-        return narrow;
-#endif
-    }
-
-    static inline std::string WToUtf8(const wchar_t* wstr)
-    {
-        if (wstr == nullptr)
-            return {};
-
-        return WToUtf8(std::wstring(wstr));
-    }
-
-    static inline std::wstring Utf8ToW(const std::string& narrow)
-    {
-        if (narrow.empty())
-            return {};
-
-#ifdef _WIN32
-        const int size = ::MultiByteToWideChar(CP_UTF8, 0, narrow.data(),
-            static_cast<int>(narrow.size()),
-            nullptr, 0);
-        if (size <= 0)
-            return {};
-
-        std::wstring wide(static_cast<std::size_t>(size), L'\0');
-        ::MultiByteToWideChar(CP_UTF8, 0, narrow.data(),
-            static_cast<int>(narrow.size()),
-            wide.data(), size);
-        return wide;
-#else
-        std::wstring wide(narrow.size(), L'\0');
-        std::mbstowcs(wide.data(), narrow.c_str(), wide.size());
-        wide.resize(std::wcslen(wide.c_str()));
-        return wide;
-#endif
-    }
-
     static ObjectInstance* InvokeToString(const CallState& context, ObjectInstance* instance)
     {
         TypeSymbol* type = const_cast<TypeSymbol*>(instance->getInfo());
         MethodSymbol* implementation = type->FindInterfaceImplementation(TRAIT_PRINTABLE_ToString);
         if (implementation == nullptr)
-            throw std::runtime_error("Type '" + WToUtf8(type->FullName.c_str()) + "' does not implement IPrintable");
+            throw std::runtime_error("Type '" + strings::WideToUtf8(type->FullName.c_str()) + "' does not implement IPrintable");
 
         context.Runtimer.InvokeMethod(implementation, { instance });
         ObjectInstance* result = context.Runtimer.CurrentFrame()->PopStack();
@@ -251,7 +193,7 @@ namespace
                     if (text == nullptr)
                         return collector.NullInstance;
 
-                    return collector.FromValue(Utf8ToW(text));
+                    return collector.FromValue(strings::Utf8ToWide(text));
                 }
 
                 case SQLITE_NULL:

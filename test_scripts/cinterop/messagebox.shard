@@ -24,25 +24,24 @@ public static func Main() -> void
 {
     // 1. Load user32.dll and resolve the address of MessageBoxW.
     user32 := NativeLibrary.Load("user32.dll");
-    messageBoxW := NativeLibrary.GetFunction(user32, "MessageBoxW");
-
+    defer NativeLibrary.Free(user32);
+    
     // 2. Marshal the body and title into native UTF-16 (LPCWSTR) buffers.
     //    The returned pointers are heap-allocated and must be freed afterwards.
     text := Marshal.StringToUnicode("Hello from ShardScript C-interop!");
+    defer Marshal.Free(text);
+    
     caption := Marshal.StringToUnicode("ShardScript");
+    defer Marshal.Free(caption);
 
     // 3. Invoke MessageBoxW.
     //    hWnd  = 0  -> no owner window
     //    uType = 0  -> MB_OK (a single OK button)
     //    We use the 4-argument overload of NativeCall.Call (the function pointer
     //    plus four words). Call is used because MessageBoxW returns a 32-bit int.
+    messageBoxW := NativeLibrary.GetFunction(user32, "MessageBoxW");
     result := NativeCall.Call(messageBoxW, 0, text, caption, 0);
 
     // MessageBoxW returns the id of the button that was clicked; IDOK == 1.
     println(result);
-
-    // 4. Release the native buffers and unload the library.
-    Marshal.Free(text);
-    Marshal.Free(caption);
-    NativeLibrary.Free(user32);
 }
