@@ -85,6 +85,54 @@ using namespace shard;
 
 static bool IsTypeStartToken(const shard::TokenType type);
 
+static bool CanStartCompilationUnit(const SyntaxToken& token)
+{
+	return token.Type == TokenType::UsingKeyword
+	    || token.Type == TokenType::NamespaceKeyword
+	    || IsModifier(token.Type)
+	    || IsMemberKeyword(token.Type)
+	    || IsTypeKeyword(token.Type)
+	    || token.Type == TokenType::FunctionKeyword
+	    || token.Type == TokenType::InitKeyword
+	    || token.Type == TokenType::OpenSquare;
+}
+
+static void SynchronizeToNextTopLevel(SourceProvider& reader)
+{
+	int braceDepth = 0;
+	int parenDepth = 0;
+
+	while (reader.CanConsume())
+	{
+		SyntaxToken token = reader.Current();
+
+		if (braceDepth == 0 && parenDepth == 0 && CanStartCompilationUnit(token))
+			return;
+
+		switch (token.Type)
+		{
+			case TokenType::OpenBrace:
+				++braceDepth;
+				break;
+			case TokenType::CloseBrace:
+				if (braceDepth > 0)
+					--braceDepth;
+				break;
+			case TokenType::OpenCurl:
+				++parenDepth;
+				break;
+			case TokenType::CloseCurl:
+				if (parenDepth > 0)
+					--parenDepth;
+				break;
+			default:
+				break;
+		}
+
+		reader.Consume();
+	}
+}
+
 void SourceParser::FromSourceProvider(SyntaxTree& syntaxTree, SourceProvider& reader)
 {
 	auto unit = ReadCompilationUnit(reader);
@@ -158,6 +206,12 @@ std::unique_ptr<CompilationUnitSyntax> SourceParser::ReadCompilationUnit(SourceP
 				if (IsMemberDeclaration(token.Type, peek.Type))
 				{
 					auto pMember = ReadMemberDeclaration(reader, rawUnit);
+					if (pMember == nullptr)
+					{
+						SynchronizeToNextTopLevel(reader);
+						break;
+					}
+
 					pMember->Parent = rawUnit;
 					rawUnit->Members.push_back(std::move(pMember));
 					break;
@@ -395,6 +449,12 @@ std::unique_ptr<MemberDeclarationSyntax> SourceParser::ReadMemberDeclaration(Sou
 			Diagnostics.ReportError(next, L"Expected '{', '=>', '=' or ';' after type");
 			return nullptr;
 		}
+	}
+
+	if (IsPredefinedType(current.Type))
+	{
+		Diagnostics.ReportError(current, L"Expected 'func' keyword. In ShardScript methods are declared as 'func Name() -> Type'");
+		return nullptr;
 	}
 
 	Diagnostics.ReportError(current, L"Expected member declaration");
