@@ -70,6 +70,7 @@
 
 #include <shard/parsing/nodes/Types/ArrayTypeSyntax.hpp>
 #include <shard/parsing/nodes/Types/IdentifierNameTypeSyntax.hpp>
+#include <shard/parsing/nodes/Types/QualifiedNameTypeSyntax.hpp>
 //#include <shard/parsing/nodes/Types/NullableTypeSyntax.hpp>
 #include <shard/parsing/nodes/Types/PredefinedTypeSyntax.hpp>
 #include <shard/parsing/nodes/Types/GenericTypeSyntax.hpp>
@@ -3009,6 +3010,15 @@ std::unique_ptr<TypeSyntax> SourceParser::ReadModifiedType(SourceProvider& reade
 		case TokenType::LessOperator:
 		{
 			return ReadGenericType(reader, type, parent);
+		}
+
+		case TokenType::Delimeter:
+		{
+			reader.Consume();
+			SyntaxToken identifier = Expect(reader, TokenType::Identifier, L"Expected identifier");
+			auto qualified = std::make_unique<QualifiedNameTypeSyntax>(std::unique_ptr<TypeSyntax>(type), parent);
+			qualified->Identifier = identifier;
+			return ReadModifiedType(reader, qualified.release(), parent);
 		}
 
 		default:

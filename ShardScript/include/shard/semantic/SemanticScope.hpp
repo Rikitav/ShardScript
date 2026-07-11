@@ -5,6 +5,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <optional>
 
 namespace shard
@@ -17,6 +18,9 @@ namespace shard
 		SemanticScope* Parent;
 		SyntaxSymbol* Owner;
 		NamespaceNode* Namespace = nullptr;
+
+		std::unordered_set<NamespaceNode*> ImportedNamespaces;
+		std::unordered_set<std::wstring> AmbiguousNames;
 
 		bool ReturnFound = false;
 		bool ReturnsAnything = false;

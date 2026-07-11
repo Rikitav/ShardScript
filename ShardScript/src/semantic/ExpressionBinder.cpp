@@ -233,11 +233,44 @@ void ExpressionBinder::VisitUsingDirective(UsingDirectiveSyntax* node)
 	if (node->Namespace == nullptr)
 		return;
 
+	ImportNamespace(node, node->Namespace);
+}
+
+void ExpressionBinder::ImportNamespace(UsingDirectiveSyntax* node, NamespaceNode* nsNode)
+{
 	SemanticScope* current = CurrentScope();
-	for (const auto& symbol : node->Namespace->Members)
+	if (current->ImportedNamespaces.count(nsNode))
 	{
-		if (symbol != nullptr)
-			current->DeclareSymbol(symbol);
+		SyntaxToken blameToken = node->TokensList.empty() ? node->UsingKeywordToken : node->TokensList.back();
+		Diagnostics.ReportError(blameToken, L"Namespace is already imported");
+		return;
+	}
+
+	current->ImportedNamespaces.insert(nsNode);
+
+	std::unordered_set<SyntaxSymbol*> nsMemberSet;
+	for (SyntaxSymbol* member : nsNode->Members)
+	{
+		if (member != nullptr)
+			nsMemberSet.insert(member);
+	}
+
+	for (SyntaxSymbol* symbol : nsMemberSet)
+	{
+		auto existing = current->_symbols.find(symbol->Name);
+		if (existing != current->_symbols.end())
+		{
+			if (existing->second != symbol && !nsMemberSet.count(existing->second))
+			{
+				SyntaxSymbol* existingSymbol = existing->second;
+				if (existingSymbol->Kind != SyntaxKind::VariableStatement && existingSymbol->Kind != SyntaxKind::Parameter)
+					current->AmbiguousNames.insert(symbol->Name);
+			}
+
+			continue;
+		}
+
+		current->DeclareSymbol(symbol);
 	}
 }
 
@@ -1402,6 +1435,12 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 		symbol = CurrentScope()->Lookup(memberName).value_or(nullptr);
 		if (symbol == nullptr)
 		{
+			if (IsAmbiguousName(memberName))
+			{
+				Diagnostics.ReportError(node->IdentifierToken, L"Ambiguous reference: '" + memberName + L"' is defined in multiple imported namespaces");
+				return nullptr;
+			}
+
 			TypeSymbol* expectedType = ResolveLeftDenotation();
 			if (expectedType != nullptr && expectedType->Kind == SyntaxKind::EnumDeclaration)
 			{
@@ -1727,6 +1766,275 @@ TypeSymbol* ExpressionBinder::AnalyzeInvokationExpression(InvokationExpressionSy
 
 	TypeSymbol* returnType = SubstituteTypeParameters(method->ReturnType, genericType, method, node->BoundTypeArguments);
 	return returnType;
+}
+
+static std::wstring BuildQualifiedName(const shard::ExpressionSyntax* qualifier, const std::wstring& memberName)
+{
+	std::vector<std::wstring> parts;
+	const shard::ExpressionSyntax* current = qualifier;
+	while (current != nullptr)
+	{
+		const shard::MemberAccessExpressionSyntax* member = dynamic_cast<const shard::MemberAccessExpressionSyntax*>(current);
+		if (member == nullptr)
+			break;
+
+		parts.push_back(member->IdentifierToken.Word);
+		current = member->PreviousExpression.get();
+	}
+
+	std::reverse(parts.begin(), parts.end());
+
+	std::wstring result;
+	for (const std::wstring& part : parts)
+	{
+		if (!result.empty())
+			result += L".";
+		result += part;
+	}
+
+	if (!memberName.empty())
+	{
+		if (!result.empty())
+			result += L".";
+		result += memberName;
+	}
+
+	return result;
+}
+
+NamespaceNode* ExpressionBinder::ResolveNamespaceQualifier(ExpressionSyntax* expression)
+{
+	if (expression == nullptr)
+		return nullptr;
+
+	MemberAccessExpressionSyntax* member = dynamic_cast<MemberAccessExpressionSyntax*>(expression);
+	if (member == nullptr)
+		return nullptr;
+
+	if (member->PreviousExpression == nullptr)
+	{
+		SyntaxSymbol* symbol = CurrentScope()->Lookup(member->IdentifierToken.Word).value_or(nullptr);
+		if (symbol != nullptr)
+		{
+			if (symbol->Kind != SyntaxKind::NamespaceDeclaration)
+				return nullptr;
+
+			NamespaceSymbol* nsSymbol = static_cast<NamespaceSymbol*>(symbol);
+			return nsSymbol->Node;
+		}
+
+		// Not in scope directly: allow qualification with any namespace declared in the project.
+		NamespaceNode* childNs = Namespaces->Root->Lookup(member->IdentifierToken.Word);
+		if (childNs == nullptr)
+			return nullptr;
+
+		if (childNs->Owners.empty() || childNs->Owners[0]->Kind != SyntaxKind::NamespaceDeclaration)
+			return nullptr;
+
+		return childNs;
+	}
+
+	NamespaceNode* parentNs = ResolveNamespaceQualifier(member->PreviousExpression.get());
+	if (parentNs == nullptr)
+		return nullptr;
+
+	NamespaceNode* childNs = parentNs->Lookup(member->IdentifierToken.Word);
+	if (childNs == nullptr)
+		return nullptr;
+
+	if (childNs->Owners.empty() || childNs->Owners[0]->Kind != SyntaxKind::NamespaceDeclaration)
+		return nullptr;
+
+	return childNs;
+}
+
+bool ExpressionBinder::HasAnyMethodNamedInNamespace(const std::wstring& name, NamespaceNode* nsNode)
+{
+	if (nsNode == nullptr)
+		return false;
+
+	std::unordered_set<SyntaxSymbol*> memberSet;
+	for (SyntaxSymbol* member : nsNode->Members)
+	{
+		if (member != nullptr)
+			memberSet.insert(member);
+	}
+
+	for (SyntaxSymbol* symbol : memberSet)
+	{
+		if (symbol == nullptr || symbol->Kind != SyntaxKind::MethodDeclaration)
+			continue;
+
+		MethodSymbol* method = static_cast<MethodSymbol*>(symbol);
+		if (method->Name == name)
+			return true;
+	}
+
+	return false;
+}
+
+TypeSymbol* ExpressionBinder::FindTypeInNamespace(const std::wstring& name, NamespaceNode* nsNode)
+{
+	if (nsNode == nullptr)
+		return nullptr;
+
+	std::unordered_set<SyntaxSymbol*> memberSet;
+	for (SyntaxSymbol* member : nsNode->Members)
+	{
+		if (member != nullptr)
+			memberSet.insert(member);
+	}
+
+	for (SyntaxSymbol* symbol : memberSet)
+	{
+		if (symbol == nullptr || symbol->Name != name)
+			continue;
+
+		if (symbol->IsType())
+			return static_cast<TypeSymbol*>(symbol);
+	}
+
+	return nullptr;
+}
+
+NamespaceNode* ExpressionBinder::FindNamespaceInNamespace(const std::wstring& name, NamespaceNode* nsNode)
+{
+	if (nsNode == nullptr)
+		return nullptr;
+
+	NamespaceNode* childNs = nsNode->Lookup(name);
+	if (childNs == nullptr)
+		return nullptr;
+
+	if (childNs->Owners.empty() || childNs->Owners[0]->Kind != SyntaxKind::NamespaceDeclaration)
+		return nullptr;
+
+	return childNs;
+}
+
+bool ExpressionBinder::IsAmbiguousName(const std::wstring& name)
+{
+	for (SemanticScope* scope = CurrentScope(); scope != nullptr; scope = scope->Parent)
+	{
+		if (scope->AmbiguousNames.count(name))
+			return true;
+	}
+
+	return false;
+}
+
+NamespaceNode* ExpressionBinder::FindNamespaceByName(const std::wstring& name)
+{
+	SyntaxSymbol* symbol = CurrentScope()->Lookup(name).value_or(nullptr);
+	if (symbol != nullptr && symbol->Kind == SyntaxKind::NamespaceDeclaration)
+		return static_cast<NamespaceSymbol*>(symbol)->Node;
+
+	NamespaceNode* childNs = Namespaces->Root->Lookup(name);
+	if (childNs != nullptr && !childNs->Owners.empty() && childNs->Owners[0]->Kind == SyntaxKind::NamespaceDeclaration)
+		return childNs;
+
+	return nullptr;
+}
+
+MethodSymbol* ExpressionBinder::ResolveQualifiedMethod(
+	InvokationExpressionSyntax* node,
+	NamespaceNode* nsNode,
+	const std::vector<TypeSymbol*>& argTypes,
+	const std::vector<TypeSymbol*>& explicitTypeArgs,
+	std::vector<TypeSymbol*>& outMethodTypeArgs)
+{
+	std::wstring methodName = node->IdentifierToken.Word;
+
+	std::unordered_set<SyntaxSymbol*> memberSet;
+	for (SyntaxSymbol* member : nsNode->Members)
+	{
+		if (member != nullptr)
+			memberSet.insert(member);
+	}
+
+	for (SyntaxSymbol* symbol : memberSet)
+	{
+		if (symbol == nullptr || symbol->Kind != SyntaxKind::MethodDeclaration)
+			continue;
+
+		MethodSymbol* method = static_cast<MethodSymbol*>(symbol);
+		if (method->Name != methodName)
+			continue;
+
+		if (method->Linking != LINK_STATIC)
+			continue;
+
+		if (TryMatchMethod(method, methodName, argTypes, nullptr, explicitTypeArgs, outMethodTypeArgs))
+			return method;
+	}
+
+	return nullptr;
+}
+
+TypeSymbol* ExpressionBinder::AnalyzeQualifiedInvokationExpression(InvokationExpressionSyntax* node, NamespaceNode* nsNode)
+{
+	std::wstring methodName = node->IdentifierToken.Word;
+
+	if (node->ArgumentsList == nullptr)
+	{
+		Diagnostics.ReportError(node->IdentifierToken, L"Method '" + methodName + L"' invocation has no arguments list");
+		return nullptr;
+	}
+
+	std::vector<TypeSymbol*> argTypes;
+	if (!CollectArgumentTypes(node, argTypes))
+		return nullptr;
+
+	std::vector<TypeSymbol*> explicitMethodTypeArgs;
+	if (!CollectExplicitTypeArguments(node, explicitMethodTypeArgs))
+		return nullptr;
+
+	std::vector<TypeSymbol*> selectedMethodTypeArgs;
+	MethodSymbol* method = ResolveQualifiedMethod(node, nsNode, argTypes, explicitMethodTypeArgs, selectedMethodTypeArgs);
+
+	if (method == nullptr)
+	{
+		std::wstring qualifierName = BuildQualifiedName(node->PreviousExpression.get(), L"");
+		std::wstring qualifiedName = qualifierName.empty() ? methodName : qualifierName + L"." + methodName;
+
+		if (FindTypeInNamespace(methodName, nsNode) != nullptr)
+		{
+			Diagnostics.ReportError(node->IdentifierToken, L"Use 'new " + qualifiedName + L"()' instead of '" + qualifiedName + L"()' to construct a type");
+			return nullptr;
+		}
+
+		if (FindNamespaceInNamespace(methodName, nsNode) != nullptr)
+		{
+			Diagnostics.ReportError(node->IdentifierToken, L"Cannot call namespace '" + qualifiedName + L"'; use '" + qualifiedName + L".Member()' to access its members");
+			return nullptr;
+		}
+
+		if (HasAnyMethodNamedInNamespace(methodName, nsNode))
+			ReportNoMatchingOverload(methodName, argTypes, node->IdentifierToken);
+		else
+			Diagnostics.ReportError(node->IdentifierToken, L"No method named '" + methodName + L"' exists in namespace '" + qualifierName + L"'");
+
+		return nullptr;
+	}
+
+	if (!IsSymbolAccessible(method, Table->LookupNode(method).value_or(nullptr), node))
+	{
+		Diagnostics.ReportError(node->IdentifierToken, L"Method '" + methodName + L"' is not accessible");
+		return nullptr;
+	}
+
+	node->Symbol = method;
+	node->ReceiverType = nullptr;
+	node->IsStaticContext = true;
+	node->BoundTypeArguments = std::move(selectedMethodTypeArgs);
+
+	if (method->ReturnType == nullptr)
+	{
+		Diagnostics.ReportError(node->IdentifierToken, L"Method '" + methodName + L"' return type not resolved");
+		return nullptr;
+	}
+
+	return SubstituteTypeParameters(method->ReturnType, nullptr, method, node->BoundTypeArguments);
 }
 
 ConstructorSymbol* ExpressionBinder::ResolveConstructor(ObjectExpressionSyntax* node)
@@ -2114,6 +2422,12 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node, 
 	if (!CollectExplicitTypeArguments(node, explicitMethodTypeArgs))
 		return nullptr;
 
+	if (currentType == nullptr && IsAmbiguousName(methodName))
+	{
+		Diagnostics.ReportError(node->IdentifierToken, L"Ambiguous reference: '" + methodName + L"' is defined in multiple imported namespaces");
+		return nullptr;
+	}
+
 	GenericTypeSymbol* genericType = nullptr;
 	if (currentType != nullptr && currentType->Kind == SyntaxKind::GenericType)
 		genericType = static_cast<GenericTypeSymbol*>(currentType);
@@ -2189,6 +2503,23 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node, 
 
 	if (symbol == nullptr)
 	{
+		if (currentType == nullptr)
+		{
+			SyntaxSymbol* lookup = CurrentScope()->Lookup(methodName).value_or(nullptr);
+			if (lookup != nullptr && lookup->IsType())
+			{
+				Diagnostics.ReportError(node->IdentifierToken, L"Use 'new " + methodName + L"()' instead of '" + methodName + L"()' to construct a type");
+				return nullptr;
+			}
+
+			NamespaceNode* nsNode = FindNamespaceByName(methodName);
+			if (nsNode != nullptr)
+			{
+				Diagnostics.ReportError(node->IdentifierToken, L"Cannot call namespace '" + methodName + L"'; use '" + methodName + L".Member()' to access its members");
+				return nullptr;
+			}
+		}
+
 		if (HasAnyMethodNamed(methodName, currentType))
 			ReportNoMatchingOverload(methodName, argTypes, node->IdentifierToken);
 		else
@@ -2941,6 +3272,18 @@ void ExpressionBinder::VisitMemberAccessExpression(MemberAccessExpressionSyntax*
 void ExpressionBinder::VisitInvocationExpression(InvokationExpressionSyntax* node)
 {
 	ExpressionSyntax* previous = const_cast<ExpressionSyntax*>(node->PreviousExpression.get());
+
+	// Namespace-qualified invocation: e.g. a.Foo() where 'a' is a namespace.
+	// Resolve the qualifier chain without visiting the intermediate member-access
+	// nodes, since namespaces are not expression values.
+	NamespaceNode* nsQualifier = ResolveNamespaceQualifier(previous);
+	if (nsQualifier != nullptr)
+	{
+		TypeSymbol* type = AnalyzeQualifiedInvokationExpression(node, nsQualifier);
+		SetExpressionType(node, type);
+		return;
+	}
+
 	if (previous != nullptr)
 		VisitExpression(previous);
 

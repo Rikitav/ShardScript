@@ -81,10 +81,16 @@ namespace shard
 		shard::TypeSymbol* AnalyzePropertyAccessExpression(shard::MemberAccessExpressionSyntax* node, shard::PropertySymbol* property, shard::TypeSymbol* currentType);
 		shard::TypeSymbol* AnalyzeFieldKeywordExpression(shard::MemberAccessExpressionSyntax* node, shard::TypeSymbol* currentType);
 		shard::TypeSymbol* AnalyzeInvokationExpression(shard::InvokationExpressionSyntax* node, shard::TypeSymbol* currentType);
+		shard::TypeSymbol* AnalyzeQualifiedInvokationExpression(shard::InvokationExpressionSyntax* node, shard::NamespaceNode* nsNode);
 		shard::TypeSymbol* AnalyzeIndexatorExpression(shard::IndexatorExpressionSyntax* node, shard::TypeSymbol* currentType);
 
 		shard::ConstructorSymbol* ResolveConstructor(shard::ObjectExpressionSyntax* node);
 		shard::MethodSymbol* ResolveMethod(shard::InvokationExpressionSyntax* node, shard::TypeSymbol* currentType);
+		shard::NamespaceNode* ResolveNamespaceQualifier(shard::ExpressionSyntax* expression);
+		shard::MethodSymbol* ResolveQualifiedMethod(shard::InvokationExpressionSyntax* node, shard::NamespaceNode* nsNode, const std::vector<shard::TypeSymbol*>& argTypes, const std::vector<shard::TypeSymbol*>& explicitTypeArgs, std::vector<shard::TypeSymbol*>& outMethodTypeArgs);
+		bool HasAnyMethodNamedInNamespace(const std::wstring& name, shard::NamespaceNode* nsNode);
+		shard::TypeSymbol* FindTypeInNamespace(const std::wstring& name, shard::NamespaceNode* nsNode);
+		shard::NamespaceNode* FindNamespaceInNamespace(const std::wstring& name, shard::NamespaceNode* nsNode);
 		shard::IndexatorSymbol* ResolveIndexator(shard::IndexatorExpressionSyntax* node, shard::TypeSymbol* currentType);
 
 		bool MatchMethodArguments(SyntaxToken blameToken, std::vector<ParameterSymbol*>& parameters, std::vector<std::unique_ptr<ArgumentSyntax>>& arguments, GenericTypeSymbol* genericType = nullptr, std::size_t parameterOffset = 0);
@@ -98,10 +104,14 @@ namespace shard
 		bool InferMethodTypeArguments(shard::MethodSymbol* method, const std::vector<TypeSymbol*>& argTypes, shard::GenericTypeSymbol* genericType, std::vector<TypeSymbol*>& outMethodTypeArgs);
 		bool MatchGenericMethodArguments(shard::MethodSymbol* method, const std::vector<TypeSymbol*>& argTypes, shard::GenericTypeSymbol* genericType, const std::vector<TypeSymbol*>& methodTypeArgs);
 
+		void ImportNamespace(shard::UsingDirectiveSyntax* node, shard::NamespaceNode* nsNode);
+
 		bool CollectArgumentTypes(shard::InvokationExpressionSyntax* node, std::vector<shard::TypeSymbol*>& outArgTypes);
 		bool CollectExplicitTypeArguments(shard::InvokationExpressionSyntax* node, std::vector<shard::TypeSymbol*>& outTypeArgs);
 		shard::MethodSymbol* TryResolveDelegateInvocation(shard::InvokationExpressionSyntax* node, shard::SyntaxSymbol* lookup);
 		bool HasAnyMethodNamed(const std::wstring& name, shard::TypeSymbol* currentType);
+		bool IsAmbiguousName(const std::wstring& name);
+		shard::NamespaceNode* FindNamespaceByName(const std::wstring& name);
 		bool TryMatchMethod(shard::MethodSymbol* method, const std::wstring& expectedName, const std::vector<shard::TypeSymbol*>& argTypes, shard::GenericTypeSymbol* genericType, const std::vector<shard::TypeSymbol*>& explicitTypeArgs, std::vector<shard::TypeSymbol*>& outMethodTypeArgs);
 		shard::MethodSymbol* FindMethodOverload(const std::vector<shard::MethodSymbol*>& candidates, const std::wstring& name, const std::vector<shard::TypeSymbol*>& argTypes, shard::GenericTypeSymbol* genericType, const std::vector<shard::TypeSymbol*>& explicitTypeArgs, std::vector<shard::TypeSymbol*>& outMethodTypeArgs);
 		void ReportNoMatchingMethod(const std::wstring& methodName, shard::SyntaxToken blameToken);
