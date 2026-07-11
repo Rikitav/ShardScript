@@ -59,6 +59,7 @@ namespace shard
 		void WriteInteger(const std::int64_t& value) const;
 		void WriteDouble(const double& value) const;
 		void WriteCharacter(const wchar_t& value) const;
+		void WriteByte(const std::uint8_t& value) const;
 		void WriteString(const wchar_t* value) const;
 		void WriteString(const wchar_t* value, std::size_t size) const;
 		void WriteString(const std::wstring& value) const;
@@ -67,6 +68,7 @@ namespace shard
 		std::int64_t& AsInteger() const;
 		double& AsDouble() const;
 		wchar_t& AsCharacter() const;
+		std::uint8_t& AsByte() const;
 		const wchar_t* AsString() const;
 		std::int64_t& AsStringLength() const;
 		void* AsNint() const;

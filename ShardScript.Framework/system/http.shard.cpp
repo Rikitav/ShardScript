@@ -5,7 +5,10 @@
 #include <memory>
 #include <stdexcept>
 
-//#define CPPHTTPLIB_OPENSSL_SUPPORT
+#ifndef _WIN32
+#define CPPHTTPLIB_OPENSSL_SUPPORT
+#endif
+
 #include "httplib.h"
 
 using namespace shard;

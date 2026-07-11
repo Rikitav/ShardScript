@@ -26,7 +26,7 @@ public static func Main() -> void
     println("Length: " + text.Length());
     println("IsNullOrEmpty: " + text.IsNullOrEmpty());
 
-    empty: string = String.Empty();
+    empty: string = string.Empty();
     println("Empty.IsNullOrEmpty: " + empty.IsNullOrEmpty());
 
     println("Contains 'World': " + text.Contains("World"));
@@ -56,5 +56,25 @@ public static func Main() -> void
     println("IsDouble: " + doubleText.IsDouble());
 
     chars := abc.ToCharArray();
-    println("FromCharArray: [" + String.FromCharArray(chars) + "]");
+    println("FromCharArray: [" + string.FromCharArray(chars) + "]");
+
+    // char.cter methods
+    letter: char = 'a';
+    digit: char = '5';
+    space: char = ' ';
+    punct: char = '!';
+    control: char = '\t';
+
+    lowered: char = char.ToLower('A');
+    parsed: char = char.Parse("X");
+
+    println("char.ToUpper instance: " + letter.ToUpper().ToString());
+    println("char.ToLower static: " + lowered.ToString());
+    println("char.IsDigit: " + digit.IsDigit());
+    println("char.IsLetter: " + letter.IsLetter());
+    println("char.IsLetterOrDigit: " + digit.IsLetterOrDigit());
+    println("char.IsWhitespace: " + space.IsWhitespace());
+    println("char.IsPunctuation: " + punct.IsPunctuation());
+    println("char.IsControl: " + control.IsControl());
+    println("char.Parse: " + parsed.ToString());
 }

@@ -135,6 +135,12 @@ static ObjectInstance* primitive_char_to_string(const CallState& context)
 	return context.Collector.FromValue(std::wstring(1, value));
 }
 
+static ObjectInstance* primitive_byte_to_string(const CallState& context)
+{
+	std::uint8_t value = context.Args[0]->AsByte();
+	return context.Collector.FromValue(std::to_wstring(static_cast<int>(value)));
+}
+
 static ObjectInstance* primitive_string_to_string(const CallState& context)
 {
 	ObjectInstance* self = context.Args[0];
@@ -243,6 +249,28 @@ static ObjectInstance* primitive_array_get_enumerator(const CallState& context)
 	return enumerator;
 }
 
+static ObjectInstance* primitive_array_Length_get(const CallState& context)
+{
+	ObjectInstance* array = context.Args[0];
+	return context.Collector.FromValue(static_cast<std::int64_t>(array->GetArrayLength()));
+}
+
+static ObjectInstance* primitive_array_GetElement(const CallState& context)
+{
+	ObjectInstance* array = context.Args[0];
+	std::int64_t index = context.Args[1]->AsInteger();
+	return array->GetElement(static_cast<std::size_t>(index), context.Frame);
+}
+
+static ObjectInstance* primitive_array_SetElement(const CallState& context)
+{
+	ObjectInstance* array = context.Args[0];
+	std::int64_t index = context.Args[1]->AsInteger();
+	ObjectInstance* value = context.Args[2];
+	array->SetElement(static_cast<std::size_t>(index), value, context.Frame);
+	return nullptr;
+}
+
 static void ResolvePrimitives(SymbolTable* table)
 {
 	static bool resolved = false;
@@ -257,7 +285,7 @@ static void ResolvePrimitives(SymbolTable* table)
 	make_primitive<StructSymbol>(SymbolTable::Primitives::Void, L"Void", 0);
 	make_primitive<StructSymbol>(SymbolTable::Primitives::Any, L"Any", 0);
 	make_primitive<StructSymbol>(SymbolTable::Primitives::Null, L"Null", 0);
-	make_primitive<ClassSymbol>(SymbolTable::Primitives::NativeInteger, L"IntPtr", sizeof(void*));
+	make_primitive<StructSymbol>(SymbolTable::Primitives::NativeInteger, L"IntPtr", sizeof(void*));
 
 	// ============================================================================
 	// Primitives
@@ -266,6 +294,7 @@ static void ResolvePrimitives(SymbolTable* table)
 	make_primitive<StructSymbol>(SymbolTable::Primitives::Integer, L"Integer", sizeof(std::int64_t));
 	make_primitive<StructSymbol>(SymbolTable::Primitives::Double, L"Double", sizeof(double));
 	make_primitive<StructSymbol>(SymbolTable::Primitives::Char, L"Char", sizeof(wchar_t));
+	make_primitive<StructSymbol>(SymbolTable::Primitives::Byte, L"Byte", sizeof(std::uint8_t));
 	make_primitive<ClassSymbol>(SymbolTable::Primitives::String, L"String", sizeof(std::int64_t) + sizeof(wchar_t*));	// long _length + char[] _data
 	make_primitive<ClassSymbol>(SymbolTable::Primitives::Array, L"Array", sizeof(std::int64_t));						// long _length
 
@@ -396,6 +425,17 @@ static void ResolveEnumerables(SymbolTable* table)
 		builder.AddMethod(L"GetEnumerator", enumeratorReturnType, LINK_INSTANCE)
 			.IsImplementationOf(TRAIT_ENUMERABLE_GETENUMERATOR)
 			.SetCallback(&primitive_array_get_enumerator);
+
+		builder.AddProperty(L"Length", TYPE_INT, LINK_INSTANCE)
+			.AddGetter()
+			.SetCallback(&primitive_array_Length_get);
+
+		auto arrayIndexer = std::move(builder.AddIndexer(TYPE_ANY, LINK_INSTANCE)
+			.AddParameter(L"index", TYPE_INT));
+		arrayIndexer.AddGetter()
+			.SetCallback(&primitive_array_GetElement);
+		arrayIndexer.AddSetter()
+			.SetCallback(&primitive_array_SetElement);
 	}
 
 	resolved = true;
@@ -482,6 +522,7 @@ static void ResolveGlobalComponents(SymbolTable* table)
 	make_printable<StructSymbol>(SymbolTable::Primitives::Integer, global, &primitive_integer_to_string);
 	make_printable<StructSymbol>(SymbolTable::Primitives::Double, global, &primitive_double_to_string);
 	make_printable<StructSymbol>(SymbolTable::Primitives::Char, global, &primitive_char_to_string);
+	make_printable<StructSymbol>(SymbolTable::Primitives::Byte, global, &primitive_byte_to_string);
 	make_printable<ClassSymbol>(SymbolTable::Primitives::String, global, &primitive_string_to_string);
 	make_printable<ClassSymbol>(SymbolTable::Primitives::Array, global, &primitive_array_to_string);
 	make_printable<StructSymbol>(SymbolTable::Primitives::NativeInteger, global, &primitive_nint_to_string);

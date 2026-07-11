@@ -268,6 +268,8 @@ bool IsPredefinedType(shard::TokenType type)
 		case TokenType::VarKeyword:
 		case TokenType::IntegerKeyword:
 		case TokenType::DoubleKeyword:
+		case TokenType::ByteKeyword:
+		case TokenType::NativeIntegerKeyword:
 		case TokenType::CharKeyword:
 		case TokenType::StringKeyword:
 		case TokenType::BooleanKeyword:

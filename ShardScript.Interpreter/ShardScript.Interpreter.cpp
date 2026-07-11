@@ -390,7 +390,7 @@ int wmain(int argc, wchar_t* argv[])
 
 		if (ConsoleArguments::ShowHelp)
 		{
-			std::wcout << std::endl << L"ShardLang interpreter v0.2.0" << std::endl << std::endl;
+			std::wcout << std::endl << L"ShardLang interpreter v" << SHARDSCRIPT_VERSION << std::endl << std::endl;
 
 			std::wcout << L"\t> '-h', '--help'        \t Show this help screen." << std::endl;
 			std::wcout << L"\t> '-i', '--interactive' \t Run REPL console" << std::endl;

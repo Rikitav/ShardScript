@@ -1,0 +1,40 @@
+using stdio;
+
+namespace char_and_array_test;
+
+public class Item
+{
+    public Value: int;
+}
+
+public static func Main() -> void
+{
+    // Character literal
+    ch: char = 'A';
+    if (ch == 'A')
+        println("char literal ok");
+
+    // Array creation via range literal (1..5 produces 4 elements)
+    values: int[] = 1..5;
+
+    // Length property
+    if (values.Length == 4)
+        println("array length ok");
+
+    // Indexer read
+    if (values[0] == 1)
+        println("array index read ok");
+
+    // Indexer assignment
+    values[0] = 42;
+    if (values[0] == 42)
+        println("array index assign ok");
+
+    // Member access on indexed element
+    items: Item[] = [new Item(), new Item()];
+    items[0].Value = 7;
+    if (items[0].Value == 7)
+        println("array element member access ok");
+
+    println("done");
+}

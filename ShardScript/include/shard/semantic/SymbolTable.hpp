@@ -57,6 +57,7 @@ namespace shard
             inline static SHARD_API TypeSymbol* String;
             inline static SHARD_API TypeSymbol* Array;
             inline static SHARD_API TypeSymbol* NativeInteger;
+            inline static SHARD_API TypeSymbol* Byte;
         };
 
         struct StandardTypes
@@ -125,6 +126,7 @@ namespace shard
     inline TypeSymbol*& TYPE_CHAR = shard::SymbolTable::Primitives::Char;
     inline TypeSymbol*& TYPE_STRING = shard::SymbolTable::Primitives::String;
     inline TypeSymbol*& TYPE_ARRAY = shard::SymbolTable::Primitives::Array;
+    inline TypeSymbol*& TYPE_BYTE = shard::SymbolTable::Primitives::Byte;
 
     inline InterfaceSymbol*& TRAIT_DISPOSABLE = shard::SymbolTable::StandardTypes::IDisposable;
     inline MethodSymbol*& TRAIT_DISPOSABLE_Dispose = shard::SymbolTable::StandardTypes::IDisposable_Dispose;

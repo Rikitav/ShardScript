@@ -1245,7 +1245,7 @@ extern "C"
 
     SHARD_API const wchar_t* Shard_GetVersion()
     {
-        return L"0.2.0";
+        return SHARDSCRIPT_VERSION;
     }
 
     // =========================================================================

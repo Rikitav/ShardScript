@@ -55,3 +55,5 @@
 		enum class byte : unsigned char {};
 	}
 #endif
+
+constexpr const wchar_t* SHARDSCRIPT_VERSION = L"0.3.0";;

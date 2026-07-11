@@ -1000,6 +1000,79 @@ namespace
     }
 
     // =====================================================================
+    //  Character helpers
+    // =====================================================================
+
+    static ObjectInstance* chars_ToUpper(const CallState& context)
+    {
+        wchar_t value = GetArgChar(context, 0);
+        return context.Collector.FromValue(static_cast<wchar_t>(std::towupper(value)));
+    }
+
+    static ObjectInstance* chars_ToLower(const CallState& context)
+    {
+        wchar_t value = GetArgChar(context, 0);
+        return context.Collector.FromValue(static_cast<wchar_t>(std::towlower(value)));
+    }
+
+    static ObjectInstance* chars_IsUpper(const CallState& context)
+    {
+        wchar_t value = GetArgChar(context, 0);
+        return context.Collector.FromValue(std::iswupper(value) != 0);
+    }
+
+    static ObjectInstance* chars_IsLower(const CallState& context)
+    {
+        wchar_t value = GetArgChar(context, 0);
+        return context.Collector.FromValue(std::iswlower(value) != 0);
+    }
+
+    static ObjectInstance* chars_IsDigit(const CallState& context)
+    {
+        wchar_t value = GetArgChar(context, 0);
+        return context.Collector.FromValue(std::iswdigit(value) != 0);
+    }
+
+    static ObjectInstance* chars_IsLetter(const CallState& context)
+    {
+        wchar_t value = GetArgChar(context, 0);
+        return context.Collector.FromValue(std::iswalpha(value) != 0);
+    }
+
+    static ObjectInstance* chars_IsLetterOrDigit(const CallState& context)
+    {
+        wchar_t value = GetArgChar(context, 0);
+        return context.Collector.FromValue(std::iswalnum(value) != 0);
+    }
+
+    static ObjectInstance* chars_IsWhitespace(const CallState& context)
+    {
+        wchar_t value = GetArgChar(context, 0);
+        return context.Collector.FromValue(std::iswspace(value) != 0);
+    }
+
+    static ObjectInstance* chars_IsPunctuation(const CallState& context)
+    {
+        wchar_t value = GetArgChar(context, 0);
+        return context.Collector.FromValue(std::iswpunct(value) != 0);
+    }
+
+    static ObjectInstance* chars_IsControl(const CallState& context)
+    {
+        wchar_t value = GetArgChar(context, 0);
+        return context.Collector.FromValue(std::iswcntrl(value) != 0);
+    }
+
+    static ObjectInstance* chars_Parse(const CallState& context)
+    {
+        std::wstring value = GetArgString(context, 0);
+        if (value.size() != 1)
+            return context.Collector.FromValue(L'\0');
+
+        return context.Collector.FromValue(value[0]);
+    }
+
+    // =====================================================================
     //  Static helpers
     // =====================================================================
 
@@ -1022,7 +1095,7 @@ SHARDLIB_ENTRYPOINT
     SymbolFactory factory(context.GetSemanticModel().Table.get());
 
     // =====================================================================
-    //  Extension methods (static methods declared in the namespace)
+    //  string extension methods
     // =====================================================================
 
     stringsNamespace.AddMethod(L"IsNullOrEmpty", TYPE_BOOL, LINK_STATIC)
@@ -1231,10 +1304,10 @@ SHARDLIB_ENTRYPOINT
         .SetCallback(&strings_IsDouble);
 
     // =====================================================================
-    //  Static class strings.String
+    //  Static string methods
     // =====================================================================
 
-    SymbolBuilder<ClassSymbol> stringClass = stringsNamespace.AddClass(L"String", LINK_STATIC);
+    SymbolBuilder<ClassSymbol> stringClass = SymbolBuilder<ClassSymbol>(context.GetSemanticModel().Table.get(), static_cast<ClassSymbol*>(TYPE_STRING));
 
     stringClass.AddMethod(L"IsNullOrEmpty", TYPE_BOOL, LINK_STATIC)
         .AddParameter(L"value", TYPE_STRING)
@@ -1443,4 +1516,104 @@ SHARDLIB_ENTRYPOINT
 
     stringClass.AddMethod(L"Empty", TYPE_STRING, LINK_STATIC)
         .SetCallback(&strings_Empty);
+
+    // =====================================================================
+    //  character extension methods
+    // =====================================================================
+
+    SymbolBuilder<StructSymbol> charClass(context, static_cast<StructSymbol*>(TYPE_CHAR));
+
+    charClass.AddMethod(L"ToUpper", TYPE_CHAR, LINK_STATIC)
+        .AddParameter(L"value", TYPE_CHAR)
+        .SetCallback(&chars_ToUpper);
+
+    charClass.AddMethod(L"ToLower", TYPE_CHAR, LINK_STATIC)
+        .AddParameter(L"value", TYPE_CHAR)
+        .SetCallback(&chars_ToLower);
+
+    charClass.AddMethod(L"IsUpper", TYPE_BOOL, LINK_STATIC)
+        .AddParameter(L"value", TYPE_CHAR)
+        .SetCallback(&chars_IsUpper);
+
+    charClass.AddMethod(L"IsLower", TYPE_BOOL, LINK_STATIC)
+        .AddParameter(L"value", TYPE_CHAR)
+        .SetCallback(&chars_IsLower);
+
+    charClass.AddMethod(L"IsDigit", TYPE_BOOL, LINK_STATIC)
+        .AddParameter(L"value", TYPE_CHAR)
+        .SetCallback(&chars_IsDigit);
+
+    charClass.AddMethod(L"IsLetter", TYPE_BOOL, LINK_STATIC)
+        .AddParameter(L"value", TYPE_CHAR)
+        .SetCallback(&chars_IsLetter);
+
+    charClass.AddMethod(L"IsLetterOrDigit", TYPE_BOOL, LINK_STATIC)
+        .AddParameter(L"value", TYPE_CHAR)
+        .SetCallback(&chars_IsLetterOrDigit);
+
+    charClass.AddMethod(L"IsWhitespace", TYPE_BOOL, LINK_STATIC)
+        .AddParameter(L"value", TYPE_CHAR)
+        .SetCallback(&chars_IsWhitespace);
+
+    charClass.AddMethod(L"IsPunctuation", TYPE_BOOL, LINK_STATIC)
+        .AddParameter(L"value", TYPE_CHAR)
+        .SetCallback(&chars_IsPunctuation);
+
+    charClass.AddMethod(L"IsControl", TYPE_BOOL, LINK_STATIC)
+        .AddParameter(L"value", TYPE_CHAR)
+        .SetCallback(&chars_IsControl);
+
+    charClass.AddMethod(L"Parse", TYPE_CHAR, LINK_STATIC)
+        .AddParameter(L"value", TYPE_STRING)
+        .SetCallback(&chars_Parse);
+
+    // =====================================================================
+    //  Static character helper class
+    // =====================================================================
+
+    SymbolBuilder<StructSymbol> charStaticClass = SymbolBuilder<StructSymbol>(context.GetSemanticModel().Table.get(), static_cast<StructSymbol*>(TYPE_CHAR));
+    
+    charStaticClass.AddMethod(L"ToUpper", TYPE_CHAR, LINK_STATIC)
+        .AddParameter(L"value", TYPE_CHAR)
+        .SetCallback(&chars_ToUpper);
+
+    charStaticClass.AddMethod(L"ToLower", TYPE_CHAR, LINK_STATIC)
+        .AddParameter(L"value", TYPE_CHAR)
+        .SetCallback(&chars_ToLower);
+
+    charStaticClass.AddMethod(L"IsUpper", TYPE_BOOL, LINK_STATIC)
+        .AddParameter(L"value", TYPE_CHAR)
+        .SetCallback(&chars_IsUpper);
+
+    charStaticClass.AddMethod(L"IsLower", TYPE_BOOL, LINK_STATIC)
+        .AddParameter(L"value", TYPE_CHAR)
+        .SetCallback(&chars_IsLower);
+
+    charStaticClass.AddMethod(L"IsDigit", TYPE_BOOL, LINK_STATIC)
+        .AddParameter(L"value", TYPE_CHAR)
+        .SetCallback(&chars_IsDigit);
+
+    charStaticClass.AddMethod(L"IsLetter", TYPE_BOOL, LINK_STATIC)
+        .AddParameter(L"value", TYPE_CHAR)
+        .SetCallback(&chars_IsLetter);
+
+    charStaticClass.AddMethod(L"IsLetterOrDigit", TYPE_BOOL, LINK_STATIC)
+        .AddParameter(L"value", TYPE_CHAR)
+        .SetCallback(&chars_IsLetterOrDigit);
+
+    charStaticClass.AddMethod(L"IsWhitespace", TYPE_BOOL, LINK_STATIC)
+        .AddParameter(L"value", TYPE_CHAR)
+        .SetCallback(&chars_IsWhitespace);
+
+    charStaticClass.AddMethod(L"IsPunctuation", TYPE_BOOL, LINK_STATIC)
+        .AddParameter(L"value", TYPE_CHAR)
+        .SetCallback(&chars_IsPunctuation);
+
+    charStaticClass.AddMethod(L"IsControl", TYPE_BOOL, LINK_STATIC)
+        .AddParameter(L"value", TYPE_CHAR)
+        .SetCallback(&chars_IsControl);
+
+    charStaticClass.AddMethod(L"Parse", TYPE_CHAR, LINK_STATIC)
+        .AddParameter(L"value", TYPE_STRING)
+        .SetCallback(&chars_Parse);
 }

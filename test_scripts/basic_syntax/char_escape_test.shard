@@ -1,0 +1,16 @@
+using stdio;
+
+namespace char_escape_test;
+
+public static func Main() -> void
+{
+    a: char = '\n';
+    b: char = '\t';
+    c: char = '\\';
+    d: char = '\'';
+
+    println("a is newline: " + (a == '\n'));
+    println("b is tab: " + (b == '\t'));
+    println("c is backslash: " + (c == '\\'));
+    println("d is quote: " + (d == '\''));
+}
