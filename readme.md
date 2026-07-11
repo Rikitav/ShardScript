@@ -41,27 +41,31 @@
 * **External modules:** write libs in C++ and load them at runtime.
   * See `library-guide.md` for more info and `ShardScript.Framework` for real examples.
 
-### Runtime & Framework
+### Runtime
 * **Compiler:** Lexer/parser → semantic analysis → bytecode emission.
 * **Interpreter:** Stack virtual machine with custom call-stack handling.
 * **Error Handling:** Compile-time diagnostics and runtime exception system (`throw`/`try`/`catch`).
+
+### Framework
 * **Standard Library (WIP):**
   * `stdio`: Console input and output.
-  * `collections`: `List<T>` (dynamic array). Generic type parameters are still being stabilized.
-  * `filesystem`: Basic file and directory operations.
-  * `System`: Primitives, math, random.
+  * `collections`: `List<T>` `Dictionary<TKey, TValue>`, `Stack<T>`, `Queue<T>`.
+  * `filesystem`: Directories and Files operations, Path resolving, Glob pattern matching.
+  * `math`: Math functions, and random number generation.
+  * `strings`: String manipulation and formatting functions.
+  * `json`: JSON parsing and serialization.
+  * `http`: HTTP client and server.
+  * `socket`: TCP socket operations.
 
 ## 📝 Code Examples
 
 ### 1. Functions & Custom Loops
-```csharp
+```
 using stdio;
-
-namespace MyApp;
 
 public static func Main() -> void
 {
-    int i = 0;
+    i: int = 0;
     until (i == 5)
     {
         println(i);
@@ -71,10 +75,8 @@ public static func Main() -> void
 ```
 
 ### 2. Recursion (Fibonacci)
-```csharp
+```
 using stdio;
-
-namespace Math;
 
 public static func Fibonacci(n: int) -> int
 {
@@ -86,35 +88,33 @@ public static func Fibonacci(n: int) -> int
 
 public static func Main() -> void
 {
-    int result = Fibonacci(10);
+    result: int = Fibonacci(10);
     println(result);
     // Output: 55
 }
 ```
 
 ### 3. Delegates & Lambdas
-```csharp
+```
 using stdio;
-
-namespace Functional;
 
 delegate Operation(a: int, b: int) -> int;
 
 public static func Main() -> void
 {
-    Operation sum = lambda (x: int, y: int) -> int
+    sum: Operation = lambda (x: int, y: int) -> int
     {
         return x + y;
     };
 
-    int res = sum(5, 7);
+    res: int = sum(5, 7);
     println(res);
     // Output: 12
 }
 ```
 
 ### 4. Operator Overloading
-```csharp
+```
 using stdio;
 
 namespace Operators;
@@ -131,15 +131,15 @@ class Box
 
 public static func Main() -> void
 {
-    Box a = new Box();
-    Box b = new Box();
+    a: Box = new Box();
+    b: Box = new Box();
     println(a + b);
     // Output: 42
 }
 ```
 
 ### 5. Access Operator Overload
-```csharp
+```
 using stdio;
 
 namespace DynamicAccess;
@@ -154,14 +154,14 @@ class Dynamic
 
 public static func Main() -> void
 {
-    Dynamic d = new Dynamic();
+    d: Dynamic = new Dynamic();
     println(d.foo);
     // Output: 42
 }
 ```
 
 ### 6. Extension Method
-```csharp
+```
 using stdio;
 
 namespace hello_world;
@@ -173,14 +173,14 @@ static func Double(x: int) -> int
 
 public static func Main() -> void
 {
-    int a = 5;
+    a: int = 5;
     println(a.Double());
     // Output: 10
 }
 ```
 
 ### 7. Resource Cleanup with `defer`
-```csharp
+```
 using stdio;
 
 namespace hello_world;
@@ -206,7 +206,7 @@ public static func Main() -> void
 ```
 
 ### 8. Ranges and `for ... in`
-```csharp
+```
 using stdio;
 
 namespace hello_world;
@@ -222,7 +222,7 @@ public static func Main() -> void
 ```
 
 ### 9. Generic Collections
-```csharp
+```
 using collections;
 
 namespace hello_world;
@@ -236,7 +236,7 @@ public static func Main() -> void
 ```
 
 ### 10. Printing Built-in Types
-```csharp
+```
 using stdio;
 
 namespace hello_world;
@@ -247,9 +247,9 @@ public static func Main() -> void
     println(true);
     println("hello");
 
-    int i = 3;
-    string s = "world";
-    bool b = true;
+    i: int = 3;
+    s: string = "world";
+    b: bool = true;
 
     println(i);
     println(s);

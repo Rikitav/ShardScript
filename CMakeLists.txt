@@ -52,6 +52,7 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 add_subdirectory(ShardScript)
 add_subdirectory(ShardScript.Framework)
 add_subdirectory(ShardScript.Interpreter)
+add_subdirectory(ShardScript.LspServer)
 
 foreach(CONFIG ${CMAKE_CONFIGURATION_TYPES} )
     string(TOUPPER ${CONFIG} CONFIG_UPPER )
