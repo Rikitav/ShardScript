@@ -89,6 +89,7 @@ namespace shard
 		// Type identifiers
 		PredefinedType,
 		IdentifierNameType,
+		QualifiedNameType,
 		ArrayType,
 		NullableType,
 		GenericType,

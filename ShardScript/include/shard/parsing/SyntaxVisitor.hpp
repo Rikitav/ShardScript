@@ -73,6 +73,7 @@
 #include <shard/parsing/nodes/Types/PredefinedTypeSyntax.hpp>
 #include <shard/parsing/nodes/Types/GenericTypeSyntax.hpp>
 #include <shard/parsing/nodes/Types/IdentifierNameTypeSyntax.hpp>
+#include <shard/parsing/nodes/Types/QualifiedNameTypeSyntax.hpp>
 #include <shard/parsing/nodes/Types/ArrayTypeSyntax.hpp>
 #include <shard/parsing/nodes/Types/NullableTypeSyntax.hpp>
 #include <shard/parsing/nodes/Types/DelegateTypeSyntax.hpp>
@@ -175,6 +176,7 @@ namespace shard
         virtual void VisitType(TypeSyntax* node);
         virtual void VisitPredefinedType(PredefinedTypeSyntax* node);
         virtual void VisitIdentifierNameType(IdentifierNameTypeSyntax* node);
+        virtual void VisitQualifiedNameType(QualifiedNameTypeSyntax* node);
         virtual void VisitArrayType(ArrayTypeSyntax* node);
         virtual void VisitNullableType(NullableTypeSyntax* node);
         virtual void VisitGenericType(GenericTypeSyntax* node);

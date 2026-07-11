@@ -46,6 +46,7 @@
 #include <shard/parsing/nodes/Statements/TryStatementSyntax.hpp>
 
 #include <shard/parsing/nodes/Types/IdentifierNameTypeSyntax.hpp>
+#include <shard/parsing/nodes/Types/QualifiedNameTypeSyntax.hpp>
 #include <shard/parsing/nodes/Types/ArrayTypeSyntax.hpp>
 #include <shard/parsing/nodes/Types/PredefinedTypeSyntax.hpp>
 #include <shard/parsing/nodes/Types/GenericTypeSyntax.hpp>
@@ -170,9 +171,56 @@ void TypeBinder::VisitUsingDirective(UsingDirectiveSyntax* node)
 	}
 
 	node->Namespace = nsNode;
+	ImportNamespace(node, nsNode);
+}
+
+void TypeBinder::ImportNamespace(UsingDirectiveSyntax* node, NamespaceNode* nsNode)
+{
 	SemanticScope* current = CurrentScope();
-	for (const auto& symbol : nsNode->Members)
+	if (current->ImportedNamespaces.count(nsNode))
+	{
+		SyntaxToken blameToken = node->TokensList.empty() ? node->UsingKeywordToken : node->TokensList.back();
+		Diagnostics.ReportError(blameToken, L"Namespace is already imported");
+		return;
+	}
+
+	current->ImportedNamespaces.insert(nsNode);
+
+	std::unordered_set<SyntaxSymbol*> nsMemberSet;
+	for (SyntaxSymbol* member : nsNode->Members)
+	{
+		if (member != nullptr)
+			nsMemberSet.insert(member);
+	}
+
+	for (SyntaxSymbol* symbol : nsMemberSet)
+	{
+		auto existing = current->_symbols.find(symbol->Name);
+		if (existing != current->_symbols.end())
+		{
+			if (existing->second != symbol && !nsMemberSet.count(existing->second))
+			{
+				SyntaxSymbol* existingSymbol = existing->second;
+				if (existingSymbol->Kind != SyntaxKind::VariableStatement && existingSymbol->Kind != SyntaxKind::Parameter)
+					current->AmbiguousNames.insert(symbol->Name);
+			}
+
+			continue;
+		}
+
 		current->DeclareSymbol(symbol);
+	}
+}
+
+bool TypeBinder::IsAmbiguousName(const std::wstring& name)
+{
+	for (SemanticScope* scope = CurrentScope(); scope != nullptr; scope = scope->Parent)
+	{
+		if (scope->AmbiguousNames.count(name))
+			return true;
+	}
+
+	return false;
 }
 
 void TypeBinder::VisitNamespaceDeclaration(NamespaceDeclarationSyntax* node)
@@ -929,6 +977,12 @@ void TypeBinder::VisitIdentifierNameType(IdentifierNameTypeSyntax* node)
 
 	if (symbol == nullptr)
 	{
+		if (IsAmbiguousName(name))
+		{
+			Diagnostics.ReportError(node->Identifier, L"Ambiguous reference: '" + name + L"' is defined in multiple imported namespaces");
+			return;
+		}
+
 		Diagnostics.ReportError(node->Identifier, L"Symbol wasnt found in current scope");
 		return;
 	}
@@ -1069,4 +1123,74 @@ void TypeBinder::VisitDelegateType(DelegateTypeSyntax* node)
 		symbol->Parameters.push_back(delegateParamSymbol);
 		symbol->AnonymousSymbol->Parameters.push_back(delegateParamSymbol);
 	}
+}
+
+NamespaceNode* TypeBinder::ResolveNamespaceType(TypeSyntax* type)
+{
+	if (type == nullptr)
+		return nullptr;
+
+	if (type->Kind == SyntaxKind::IdentifierNameType)
+	{
+		IdentifierNameTypeSyntax* id = static_cast<IdentifierNameTypeSyntax*>(type);
+		SyntaxSymbol* symbol = CurrentScope()->Lookup(id->Identifier.Word).value_or(nullptr);
+		if (symbol != nullptr && symbol->Kind == SyntaxKind::NamespaceDeclaration)
+			return static_cast<NamespaceSymbol*>(symbol)->Node;
+
+		NamespaceNode* childNs = Namespaces->Root->Lookup(id->Identifier.Word);
+		if (childNs != nullptr && !childNs->Owners.empty() && childNs->Owners[0]->Kind == SyntaxKind::NamespaceDeclaration)
+			return childNs;
+
+		return nullptr;
+	}
+
+	if (type->Kind == SyntaxKind::QualifiedNameType)
+	{
+		QualifiedNameTypeSyntax* qualified = static_cast<QualifiedNameTypeSyntax*>(type);
+		NamespaceNode* parentNs = ResolveNamespaceType(qualified->Left.get());
+		if (parentNs == nullptr)
+			return nullptr;
+
+		NamespaceNode* childNs = parentNs->Lookup(qualified->Identifier.Word);
+		if (childNs != nullptr && !childNs->Owners.empty() && childNs->Owners[0]->Kind == SyntaxKind::NamespaceDeclaration)
+			return childNs;
+
+		return nullptr;
+	}
+
+	return nullptr;
+}
+
+void TypeBinder::VisitQualifiedNameType(QualifiedNameTypeSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	NamespaceNode* nsNode = ResolveNamespaceType(node->Left.get());
+	if (nsNode == nullptr)
+	{
+		Diagnostics.ReportError(node->Identifier, L"Left side of qualified type name must be a namespace");
+		return;
+	}
+
+	std::unordered_set<SyntaxSymbol*> memberSet;
+	for (SyntaxSymbol* member : nsNode->Members)
+	{
+		if (member != nullptr)
+			memberSet.insert(member);
+	}
+
+	for (SyntaxSymbol* member : memberSet)
+	{
+		if (member == nullptr || member->Name != node->Identifier.Word)
+			continue;
+
+		if (!member->IsType())
+			continue;
+
+		node->Symbol = static_cast<TypeSymbol*>(member);
+		return;
+	}
+
+	Diagnostics.ReportError(node->Identifier, L"Type '" + node->Identifier.Word + L"' not found in namespace");
 }

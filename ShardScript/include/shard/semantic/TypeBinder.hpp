@@ -37,6 +37,7 @@
 #include <shard/parsing/nodes/Types/ArrayTypeSyntax.hpp>
 #include <shard/parsing/nodes/Types/GenericTypeSyntax.hpp>
 #include <shard/parsing/nodes/Types/IdentifierNameTypeSyntax.hpp>
+#include <shard/parsing/nodes/Types/QualifiedNameTypeSyntax.hpp>
 #include <shard/parsing/nodes/Types/NullableTypeSyntax.hpp>
 #include <shard/parsing/nodes/Types/PredefinedTypeSyntax.hpp>
 
@@ -53,6 +54,13 @@ namespace shard
 
 		void VisitCompilationUnit(shard::CompilationUnitSyntax* node) override;
 		void VisitUsingDirective(shard::UsingDirectiveSyntax* node) override;
+
+	private:
+		void ImportNamespace(shard::UsingDirectiveSyntax* node, shard::NamespaceNode* nsNode);
+		bool IsAmbiguousName(const std::wstring& name);
+		shard::NamespaceNode* ResolveNamespaceType(shard::TypeSyntax* type);
+
+	public:
 
 		void VisitNamespaceDeclaration(shard::NamespaceDeclarationSyntax* node) override;
 		void VisitClassDeclaration(shard::ClassDeclarationSyntax* node) override;
@@ -78,6 +86,7 @@ namespace shard
 
 		void VisitPredefinedType(shard::PredefinedTypeSyntax* node) override;
 		void VisitIdentifierNameType(shard::IdentifierNameTypeSyntax* node) override;
+		void VisitQualifiedNameType(shard::QualifiedNameTypeSyntax* node) override;
 		void VisitArrayType(shard::ArrayTypeSyntax* node) override;
 		void VisitNullableType(shard::NullableTypeSyntax* node) override;
 		void VisitGenericType(shard::GenericTypeSyntax* node) override;

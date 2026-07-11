@@ -1147,6 +1147,13 @@ void SyntaxVisitor::VisitType(TypeSyntax* node)
 			return;
 		}
 
+		case SyntaxKind::QualifiedNameType:
+		{
+			QualifiedNameTypeSyntax* expression = static_cast<QualifiedNameTypeSyntax*>(node);
+			VisitQualifiedNameType(expression);
+			return;
+		}
+
 		case SyntaxKind::ArrayType:
 		{
 			ArrayTypeSyntax* expression = static_cast<ArrayTypeSyntax*>(node);
@@ -1193,6 +1200,15 @@ void SyntaxVisitor::VisitIdentifierNameType(IdentifierNameTypeSyntax* node)
 
 	// ...
 	return;
+}
+
+void SyntaxVisitor::VisitQualifiedNameType(QualifiedNameTypeSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (node->Left != nullptr)
+		VisitType(node->Left.get());
 }
 
 void SyntaxVisitor::VisitArrayType(ArrayTypeSyntax* node)
