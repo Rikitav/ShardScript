@@ -8,8 +8,9 @@
 
 #include <string>
 #include <vector>
-#include <memory>
+#include <cstdint>
 #include <unordered_map>
+#include <memory>
 
 // Forward declaration
 namespace shard
