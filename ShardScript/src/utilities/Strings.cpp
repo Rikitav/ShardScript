@@ -1,6 +1,7 @@
 #include <utilities/Strings.hpp>
 
 #include <cwchar>
+#include <cstdint>
 #include <cstdlib>
 
 #ifdef _WIN32
@@ -58,7 +59,7 @@ namespace shard::strings
         return WideToUtf8(std::wstring(wstr));
     }
 
-    std::wstring strings::Utf8ToWide(const std::string& narrow)
+    std::wstring Utf8ToWide(const std::string& narrow)
     {
         if (narrow.empty())
             return {};
@@ -92,7 +93,7 @@ namespace shard::strings
 #endif
     }
 
-    std::wstring strings::Utf8ToWide(const char* narrow)
+    std::wstring Utf8ToWide(const char* narrow)
     {
         if (narrow == nullptr)
             return {};

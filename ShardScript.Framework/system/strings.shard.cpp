@@ -946,7 +946,7 @@ namespace
 
         try
         {
-            return context.Collector.FromValue(std::stoll(NarrowString(value)));
+            return context.Collector.FromValue(static_cast<std::int64_t>(std::stoll(NarrowString(value))));
         }
         catch (...)
         {
