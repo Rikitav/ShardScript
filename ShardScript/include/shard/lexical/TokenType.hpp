@@ -113,6 +113,8 @@ namespace shard
 		DoubleKeyword,		  // double
 		ShortKeyword,		  // short
 		LongKeyword,		  // long
+		ByteKeyword,		  // byte
+		NativeIntegerKeyword, // nint
 		CharKeyword,		  // char
 		StringKeyword,		  // string
 		BooleanKeyword,		  // bool

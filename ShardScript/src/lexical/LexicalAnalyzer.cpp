@@ -281,6 +281,9 @@ bool LexicalAnalyzer::ReadNextWord(std::wstring& word, TokenType& type)
 	if (IsStringLiteral(type, dontEcran))
 		return ReadStringLiteral(word, dontEcran, wasClosed);
 
+	if (IsCharLiteral(type, dontEcran))
+		return ReadCharLiteral(word, dontEcran, wasClosed);
+
 	if (IsNumberLiteral(type))
 		return ReadNumberLiteral(word, type);
 
@@ -318,15 +321,40 @@ bool LexicalAnalyzer::ReadNextWord(std::wstring& word, TokenType& type)
 
 bool LexicalAnalyzer::ReadCharLiteral(std::wstring& word, bool notEcran, bool& wasClosed)
 {
-	while (Advance(PeekSymbol))
+	bool ecran = false;
+
+	while (Advance(Symbol))
 	{
+		if (ecran)
+		{
+			switch (Symbol)
+			{
+				case L'\'': word += L'\''; break;
+				case L'\\': word += L'\\'; break;
+				case L'n':  word += L'\n'; break;
+				case L't':  word += L'\t'; break;
+				case L'r':  word += L'\r'; break;
+				case L'0':  word += L'\0'; break;
+				default:    word += Symbol; break;
+			}
+
+			ecran = false;
+			continue;
+		}
+
 		switch (Symbol)
 		{
-			case '\'':
+			case L'\'':
 			{
 				wasClosed = true;
 				SourceText->PeekNext(PeekSymbol);
 				return true;
+			}
+
+			case L'\\':
+			{
+				ecran = true;
+				continue;
 			}
 
 			default:
@@ -1221,6 +1249,21 @@ bool LexicalAnalyzer::IsType(std::wstring& word, TokenType& type)
 	else if (word == L"int")
 	{
 		type = TokenType::IntegerKeyword;
+		return true;
+	}
+	else if (word == L"char")
+	{
+		type = TokenType::CharKeyword;
+		return true;
+	}
+	else if (word == L"byte")
+	{
+		type = TokenType::ByteKeyword;
+		return true;
+	}
+	else if (word == L"nint")
+	{
+		type = TokenType::NativeIntegerKeyword;
 		return true;
 	}
 	else if (word == L"lambda")

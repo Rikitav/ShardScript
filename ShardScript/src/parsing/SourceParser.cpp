@@ -2193,6 +2193,7 @@ std::unique_ptr<ExpressionSyntax> SourceParser::ReadExpression(SourceProvider& r
 {
 	if (resetOperatorCount)
 		OperatorsInExpression = 0;
+
 	struct DepthGuard
 	{
 		int& depth;
@@ -2221,6 +2222,7 @@ std::unique_ptr<ExpressionSyntax> SourceParser::ReadExpression(SourceProvider& r
 		if (++OperatorsInExpression > MaxExpressionOperators)
 		{
 			Diagnostics.ReportError(reader.Current(), L"Expression contains too many operators; reduce the number of operators or split it into multiple statements");
+
 			// Skip the remainder of this expression to avoid re-parsing the same
 			// long operator chain and producing a flood of follow-up diagnostics.
 			while (reader.CanConsume())
@@ -2291,6 +2293,13 @@ std::unique_ptr<ExpressionSyntax> SourceParser::ReadNullDenotation(SourceProvide
 		case TokenType::OpenSquare:
 			return ReadCollectionExpression(reader, parent);
 
+		case TokenType::StringKeyword:
+		case TokenType::CharKeyword:
+		case TokenType::NativeIntegerKeyword:
+		case TokenType::IntegerKeyword:
+		case TokenType::BooleanKeyword:
+		case TokenType::ByteKeyword:
+		case TokenType::DoubleKeyword:
 		case TokenType::Identifier:
 		case TokenType::FieldKeyword:
 			return std::move(ReadLinkedExpressionNode(reader, parent, nullptr, true));
@@ -2633,6 +2642,7 @@ std::unique_ptr<LinkedExpressionNode> SourceParser::ReadLinkedExpressionNode(Sou
 			previous.release();
 			return std::unique_ptr<LinkedExpressionNode>(linked);
 		}
+
 		return nullptr;
 	}
 
@@ -2646,8 +2656,8 @@ std::unique_ptr<LinkedExpressionNode> SourceParser::ReadLinkedExpressionNode(Sou
 	{
 		delimeter = SyntaxToken(TokenType::Delimeter, L"", TextLocation(), false);
 		identifier = reader.Current();
-		if (!Matches(reader, { TokenType::FieldKeyword, TokenType::Identifier }))
-			Diagnostics.ReportError(identifier, L"Expected identifier or 'field' keyword");
+		if (!Matches(reader, { TokenType::FieldKeyword, TokenType::Identifier, TokenType::StringKeyword, TokenType::CharKeyword, TokenType::NativeIntegerKeyword, TokenType::IntegerKeyword, TokenType::BooleanKeyword, TokenType::ByteKeyword, TokenType::DoubleKeyword }))
+			Diagnostics.ReportError(identifier, L"Expected identifier, primitive name or 'field' keyword");
 
 		reader.Consume();
 	}

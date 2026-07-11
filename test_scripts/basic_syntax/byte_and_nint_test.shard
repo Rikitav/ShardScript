@@ -1,0 +1,45 @@
+using stdio;
+
+namespace byte_and_nint_test;
+
+public static func Main() -> void
+{
+    // Byte type with contextual literal typing
+    a: byte = 10;
+    b: byte = 5;
+
+    if (a == 10)
+        println("byte assign ok");
+
+    if (a + b == 15)
+        println("byte add ok");
+
+    if (a - b == 5)
+        println("byte sub ok");
+
+    if (a * b == 50)
+        println("byte mul ok");
+
+    if (a / b == 2)
+        println("byte div ok");
+
+    if (a > b)
+        println("byte compare ok");
+
+    c: byte = 255;
+    println("byte to string: " + c);
+
+    // nint type with contextual literal typing
+    n: nint = 42;
+    if (n == 42)
+        println("nint assign ok");
+
+    println("nint to string: " + n);
+
+    // Byte array (elements still need explicit cast or context)
+    arr: byte[] = [1 as byte, 2 as byte, 3 as byte];
+    println("byte array length: " + arr.Length);
+    println("byte array[1]: " + arr[1]);
+
+    println("done");
+}

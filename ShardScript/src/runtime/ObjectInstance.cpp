@@ -386,6 +386,13 @@ void ObjectInstance::WriteCharacter(const wchar_t& value) const
 	WriteMemory(0, size, ptr);
 }
 
+void ObjectInstance::WriteByte(const std::uint8_t& value) const
+{
+	const void* ptr = &value;
+	std::size_t size = m_shape != nullptr ? m_shape->Size : (m_info != nullptr ? m_info->MemoryBytesSize : 0);
+	WriteMemory(0, size, ptr);
+}
+
 void ObjectInstance::WriteString(const wchar_t* value) const
 {
 	std::size_t size = wcslen(value);
@@ -433,6 +440,14 @@ wchar_t& ObjectInstance::AsCharacter() const
 		throw std::runtime_error("Cannot interpret instance as Character");
 
 	return *reinterpret_cast<wchar_t*>(getMemory());
+}
+
+std::uint8_t& ObjectInstance::AsByte() const
+{
+	if (getInfo() != TYPE_BYTE)
+		throw std::runtime_error("Cannot interpret instance as Byte");
+
+	return *reinterpret_cast<std::uint8_t*>(getMemory());
 }
 
 std::int64_t& ObjectInstance::AsStringLength() const

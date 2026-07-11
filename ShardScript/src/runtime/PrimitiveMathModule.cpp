@@ -43,18 +43,31 @@ PrimitiveMathModule::PrimitiveMathModule(GarbageCollector& garbageCollector)
 
 bool PrimitiveMathModule::IsNumericType(TypeSymbol* type)
 {
-	return type == TYPE_INT || type == TYPE_DOUBLE || type == TYPE_CHAR || type == TYPE_BOOL;
+	return type == TYPE_INT
+		|| type == TYPE_DOUBLE
+		|| type == TYPE_CHAR
+		|| type == TYPE_BOOL
+		|| type == TYPE_BYTE
+		|| type == TYPE_NINT;
 }
 
 bool PrimitiveMathModule::IsIntegralType(TypeSymbol* type)
 {
-	return type == TYPE_INT || type == TYPE_CHAR;
+	return type == TYPE_INT
+		|| type == TYPE_CHAR
+		|| type == TYPE_BYTE
+		|| type == TYPE_NINT;
 }
 
 bool PrimitiveMathModule::IsPrimitiveType(TypeSymbol* type)
 {
-	return type == TYPE_BOOL || type == TYPE_INT || type == TYPE_DOUBLE
-		|| type == TYPE_CHAR || type == TYPE_STRING;
+	return type == TYPE_BOOL
+		|| type == TYPE_INT
+		|| type == TYPE_DOUBLE
+		|| type == TYPE_CHAR
+		|| type == TYPE_STRING
+		|| type == TYPE_BYTE
+		|| type == TYPE_NINT;
 }
 
 std::int64_t PrimitiveMathModule::AsInteger(ObjectInstance* instance)
@@ -71,6 +84,12 @@ std::int64_t PrimitiveMathModule::AsInteger(ObjectInstance* instance)
 
 	if (type == TYPE_CHAR)
 		return static_cast<std::int64_t>(instance->AsCharacter());
+
+	if (type == TYPE_BYTE)
+		return static_cast<std::int64_t>(instance->AsByte());
+
+	if (type == TYPE_NINT)
+		return reinterpret_cast<std::intptr_t>(instance->AsNint());
 
 	return 0;
 }
@@ -90,6 +109,12 @@ double PrimitiveMathModule::AsDouble(ObjectInstance* instance)
 	if (type == TYPE_CHAR)
 		return static_cast<double>(instance->AsCharacter());
 
+	if (type == TYPE_BYTE)
+		return static_cast<double>(instance->AsByte());
+
+	if (type == TYPE_NINT)
+		return static_cast<double>(reinterpret_cast<std::intptr_t>(instance->AsNint()));
+
 	return 0.0;
 }
 
@@ -107,6 +132,12 @@ bool PrimitiveMathModule::AsBoolean(ObjectInstance* instance)
 
 	if (type == TYPE_CHAR)
 		return instance->AsCharacter() != L'\0';
+
+	if (type == TYPE_BYTE)
+		return instance->AsByte() != 0;
+
+	if (type == TYPE_NINT)
+		return instance->AsNint() != nullptr;
 
 	return false;
 }
@@ -169,6 +200,12 @@ std::wstring PrimitiveMathModule::ToString(ObjectInstance* instance) const
 		wchar_t ch = instance->AsCharacter();
 		return std::wstring(&ch, 1);
 	}
+
+	if (type == TYPE_BYTE)
+		return std::to_wstring(static_cast<int>(instance->AsByte()));
+
+	if (type == TYPE_NINT)
+		return std::to_wstring(reinterpret_cast<std::intptr_t>(instance->AsNint()));
 
 	return L"";
 }
@@ -262,6 +299,12 @@ ObjectInstance* PrimitiveMathModule::ExecuteCast(TypeSymbol* targetType, ObjectI
 	if (targetType == TYPE_CHAR)
 		return FromCharacter(AsCharacter(source));
 
+	if (targetType == TYPE_BYTE)
+		return gc.FromValue(static_cast<std::uint8_t>(AsInteger(source)));
+
+	if (targetType == TYPE_NINT)
+		return gc.FromNint(reinterpret_cast<void*>(AsInteger(source)), false);
+
 	if (targetType->Kind == SyntaxKind::EnumDeclaration)
 	{
 		ObjectInstance* result = gc.AllocateInstance(targetType);
@@ -337,6 +380,7 @@ ObjectInstance* PrimitiveMathModule::ExecuteMathDivision(ObjectInstance* left, O
 		double divisor = AsDouble(right);
 		if (divisor == 0.0)
 			throw std::runtime_error("Division by zero");
+
 		return FromDouble(AsDouble(left) / divisor);
 	}
 

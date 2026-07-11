@@ -690,10 +690,13 @@ TypeSymbol* ExpressionBinder::AnalyzeLiteralExpression(LiteralExpressionSyntax* 
 		case TokenType::CharLiteral:
 		{
 			// TODO: add \u support
-			if (node->LiteralToken.Word.size() > 1)
+			if (node->LiteralToken.Word.empty())
+				Diagnostics.ReportError(node->LiteralToken, L"empty Char literal");
+			else if (node->LiteralToken.Word.size() > 1)
 				Diagnostics.ReportError(node->LiteralToken, L"invalid Char literal length");
+			else
+				symbol->AsCharValue = node->LiteralToken.Word[0];
 
-			//symbol->AsCharValue = node->LiteralToken.Word[0];
 			return SymbolTable::Primitives::Char;
 		}
 
@@ -780,13 +783,17 @@ TypeSymbol* ExpressionBinder::AnalyzeBinaryExpression(BinaryExpressionSyntax* no
 	{
 		return type == SymbolTable::Primitives::Integer
 			|| type == SymbolTable::Primitives::Double
-			|| type == SymbolTable::Primitives::Char;
+			|| type == SymbolTable::Primitives::Char
+			|| type == SymbolTable::Primitives::Byte
+			|| type == SymbolTable::Primitives::NativeInteger;
 	};
 
 	auto isIntegralPrimitive = [](TypeSymbol* type)
 	{
 		return type == SymbolTable::Primitives::Integer
-			|| type == SymbolTable::Primitives::Char;
+			|| type == SymbolTable::Primitives::Char
+			|| type == SymbolTable::Primitives::Byte
+			|| type == SymbolTable::Primitives::NativeInteger;
 	};
 
 	bool bothPrimitive = SemanticModel::IsPrimitiveType(leftType) && SemanticModel::IsPrimitiveType(rightType);
@@ -1364,9 +1371,33 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 
 	if (node->PreviousExpression == nullptr)
 	{
-		// Check if this is the 'field' keyword - resolve to backing field of current property
-		if (node->IdentifierToken.Type == TokenType::FieldKeyword)
-			return AnalyzeFieldKeywordExpression(node, nullptr);
+		switch (node->IdentifierToken.Type)
+		{
+			// Check if this is the 'field' keyword - resolve to backing field of current property
+			case TokenType::FieldKeyword:
+				return AnalyzeFieldKeywordExpression(node, nullptr);
+
+			case TokenType::StringKeyword:
+				return TYPE_STRING;
+			
+			case TokenType::CharKeyword:
+				return TYPE_CHAR;
+			
+			case TokenType::NativeIntegerKeyword:
+				return TYPE_NINT;
+			
+			case TokenType::IntegerKeyword:
+				return TYPE_INT;
+			
+			case TokenType::BooleanKeyword:
+				return TYPE_BOOL;
+			
+			case TokenType::ByteKeyword:
+				return TYPE_BYTE;
+			
+			case TokenType::DoubleKeyword:
+				return TYPE_DOUBLE;
+		}
 
 		symbol = CurrentScope()->Lookup(memberName).value_or(nullptr);
 		if (symbol == nullptr)
@@ -1376,6 +1407,7 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 			{
 				EnumSymbol* enumType = static_cast<EnumSymbol*>(expectedType);
 				FieldSymbol* field = enumType->FindField(memberName);
+
 				if (field != nullptr && field->IsEnumValue)
 				{
 					symbol = field;
@@ -1588,7 +1620,7 @@ TypeSymbol* ExpressionBinder::AnalyzePropertyAccessExpression(MemberAccessExpres
 	}
 
 	node->IsStaticContext = false;
-	if (currentType->Kind == SyntaxKind::ArrayType)
+	if (currentType->Kind == SyntaxKind::ArrayType && node->Kind == SyntaxKind::IndexatorExpression)
 	{
 		ArrayTypeSymbol* array = static_cast<ArrayTypeSymbol*>(currentType);
 		return array->UnderlayingType;
@@ -2205,6 +2237,8 @@ TypeSymbol* ExpressionBinder::ResolveTypeExpression(TypeSyntax* type)
 				case TokenType::IntegerKeyword: type->Symbol = SymbolTable::Primitives::Integer; break;
 				case TokenType::DoubleKeyword: type->Symbol = SymbolTable::Primitives::Double; break;
 				case TokenType::CharKeyword: type->Symbol = SymbolTable::Primitives::Char; break;
+				case TokenType::ByteKeyword: type->Symbol = SymbolTable::Primitives::Byte; break;
+				case TokenType::NativeIntegerKeyword: type->Symbol = SymbolTable::Primitives::NativeInteger; break;
 				case TokenType::StringKeyword: type->Symbol = SymbolTable::Primitives::String; break;
 				case TokenType::VoidKeyword: type->Symbol = SymbolTable::Primitives::Void; break;
 				case TokenType::VarKeyword: type->Symbol = SymbolTable::Primitives::Any; break;
@@ -2676,6 +2710,15 @@ TypeSymbol* ExpressionBinder::AnalyzeNumberLiteral(LiteralExpressionSyntax* node
 	NumericParseResult result = ParseIntegerLiteral(node->LiteralToken.Word, symbol->AsIntegerValue);
 	if (!result.Success)
 		Diagnostics.ReportError(node->LiteralToken, result.Error);
+
+	TypeSymbol* expectedType = ResolveLeftDenotation();
+	if (expectedType != nullptr && (
+		expectedType == SymbolTable::Primitives::Byte ||
+		expectedType == SymbolTable::Primitives::NativeInteger))
+	{
+		symbol->BoundType = expectedType;
+		return expectedType;
+	}
 
 	return SymbolTable::Primitives::Integer;
 }
@@ -3322,7 +3365,9 @@ static bool IsScalarPrimitive(TypeSymbol* type)
 	return type == SymbolTable::Primitives::Boolean
 		|| type == SymbolTable::Primitives::Integer
 		|| type == SymbolTable::Primitives::Double
-		|| type == SymbolTable::Primitives::Char;
+		|| type == SymbolTable::Primitives::Char
+		|| type == SymbolTable::Primitives::Byte
+		|| type == SymbolTable::Primitives::NativeInteger;
 }
 
 static bool IsReferenceCastAllowed(TypeSymbol* source, TypeSymbol* target)

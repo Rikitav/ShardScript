@@ -862,6 +862,24 @@ void TypeBinder::VisitPredefinedType(PredefinedTypeSyntax* node)
 			break;
 		}
 
+		case TokenType::ByteKeyword:
+		{
+			if (SymbolTable::Primitives::Byte == nullptr)
+				Diagnostics.ReportError(node->TypeToken, L"Primitive 'byte' wasn't resolved");
+
+			node->Symbol = SymbolTable::Primitives::Byte;
+			break;
+		}
+
+		case TokenType::NativeIntegerKeyword:
+		{
+			if (SymbolTable::Primitives::NativeInteger == nullptr)
+				Diagnostics.ReportError(node->TypeToken, L"Primitive 'nint' wasn't resolved");
+
+			node->Symbol = SymbolTable::Primitives::NativeInteger;
+			break;
+		}
+
 		case TokenType::StringKeyword:
 		{
 			if (SymbolTable::Primitives::String == nullptr)

@@ -340,7 +340,7 @@ InteractiveConsole::InteractiveConsole(shard::CompilationContext* context, shard
 
 void InteractiveConsole::Run()
 {
-	ConsoleHelper::WriteLine(L"ShardScript Interactive Console v0.2.0");
+	ConsoleHelper::WriteLine(L"ShardScript Interactive Console v" + std::wstring(SHARDSCRIPT_VERSION));
 	ConsoleHelper::WriteLine(L"Type 'exit' or 'quit' to exit");
 	ConsoleHelper::WriteLine();
 	bool pushedFrame = false;

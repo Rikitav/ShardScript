@@ -936,6 +936,8 @@ void AbstractEmiter::VisitLiteralExpression(LiteralExpressionSyntax* node)
 		case TokenType::NumberLiteral:
 		{
 			Encoder.EmitLoadConstInt64(GeneratingFor->ExecutableByteCode, symbol->AsIntegerValue);
+			if (symbol->BoundType != nullptr && symbol->BoundType != SymbolTable::Primitives::Integer)
+				Encoder.EmitCastPrimitive(GeneratingFor->ExecutableByteCode, symbol->BoundType);
 			break;
 		}
 

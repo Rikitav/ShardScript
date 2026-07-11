@@ -44,8 +44,10 @@ endif()
 
   string (FIND "${SHARD_TARGET_NAME}" "http" IS_HTTP_TARGET)
   if (NOT IS_HTTP_TARGET EQUAL -1)
+    target_include_directories("${SHARD_TARGET_NAME}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/system/include")
+
     if(WIN32)
-        target_link_libraries("${SHARD_TARGET_NAME}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/system/lib/openssl.lib" ssl crypto ws2_32 gdi32 crypt32)
+        #target_link_libraries("${SHARD_TARGET_NAME}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/system/lib/libssl_static.lib" "${CMAKE_CURRENT_SOURCE_DIR}/system/lib/libcrypto_static.lib" ws2_32 gdi32 crypt32)
     else()
         target_link_libraries("${SHARD_TARGET_NAME}" PRIVATE ssl crypto)
     endif()

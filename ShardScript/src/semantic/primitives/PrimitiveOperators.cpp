@@ -15,6 +15,7 @@
 #include <shard/runtime/GarbageCollector.hpp>
 
 #include <cmath>
+#include <cstdint>
 #include <cstring>
 #include <stdexcept>
 #include <string>
@@ -651,6 +652,122 @@ static void RegisterDoubleOperators(SymbolFactory& factory)
 	RegisterOperator(type, retDbl, L"op_AddOperator", &double_op_UnaryPositive, { type }, factory);
 }
 
+// -----------------------------------------------------------------------------
+// Byte operators
+// -----------------------------------------------------------------------------
+
+static ObjectInstance* byte_op_AddOperator(const CallState& context)
+{
+	std::uint8_t left = context.Args[0]->AsByte();
+	std::uint8_t right = context.Args[1]->AsByte();
+	return context.Collector.FromValue(static_cast<std::uint8_t>(left + right));
+}
+
+static ObjectInstance* byte_op_SubOperator(const CallState& context)
+{
+	std::uint8_t left = context.Args[0]->AsByte();
+	std::uint8_t right = context.Args[1]->AsByte();
+	return context.Collector.FromValue(static_cast<std::uint8_t>(left - right));
+}
+
+static ObjectInstance* byte_op_MultOperator(const CallState& context)
+{
+	std::uint8_t left = context.Args[0]->AsByte();
+	std::uint8_t right = context.Args[1]->AsByte();
+	return context.Collector.FromValue(static_cast<std::uint8_t>(left * right));
+}
+
+static ObjectInstance* byte_op_DivOperator(const CallState& context)
+{
+	std::uint8_t left = context.Args[0]->AsByte();
+	std::uint8_t right = context.Args[1]->AsByte();
+	return context.Collector.FromValue(static_cast<std::uint8_t>(left / right));
+}
+
+static ObjectInstance* byte_op_ModOperator(const CallState& context)
+{
+	std::uint8_t left = context.Args[0]->AsByte();
+	std::uint8_t right = context.Args[1]->AsByte();
+	return context.Collector.FromValue(static_cast<std::uint8_t>(left % right));
+}
+
+static ObjectInstance* byte_op_EqualsOperator(const CallState& context)
+{
+	std::uint8_t left = context.Args[0]->AsByte();
+	std::uint8_t right = context.Args[1]->AsByte();
+	return context.Collector.FromValue(left == right);
+}
+
+static ObjectInstance* byte_op_NotEqualsOperator(const CallState& context)
+{
+	std::uint8_t left = context.Args[0]->AsByte();
+	std::uint8_t right = context.Args[1]->AsByte();
+	return context.Collector.FromValue(left != right);
+}
+
+static ObjectInstance* byte_op_LessOperator(const CallState& context)
+{
+	std::uint8_t left = context.Args[0]->AsByte();
+	std::uint8_t right = context.Args[1]->AsByte();
+	return context.Collector.FromValue(left < right);
+}
+
+static ObjectInstance* byte_op_LessOrEqualsOperator(const CallState& context)
+{
+	std::uint8_t left = context.Args[0]->AsByte();
+	std::uint8_t right = context.Args[1]->AsByte();
+	return context.Collector.FromValue(left <= right);
+}
+
+static ObjectInstance* byte_op_GreaterOperator(const CallState& context)
+{
+	std::uint8_t left = context.Args[0]->AsByte();
+	std::uint8_t right = context.Args[1]->AsByte();
+	return context.Collector.FromValue(left > right);
+}
+
+static ObjectInstance* byte_op_GreaterOrEqualsOperator(const CallState& context)
+{
+	std::uint8_t left = context.Args[0]->AsByte();
+	std::uint8_t right = context.Args[1]->AsByte();
+	return context.Collector.FromValue(left >= right);
+}
+
+static ObjectInstance* byte_op_IncrementOperator(const CallState& context)
+{
+	std::uint8_t value = context.Args[0]->AsByte();
+	return context.Collector.FromValue(static_cast<std::uint8_t>(value + 1));
+}
+
+static ObjectInstance* byte_op_DecrementOperator(const CallState& context)
+{
+	std::uint8_t value = context.Args[0]->AsByte();
+	return context.Collector.FromValue(static_cast<std::uint8_t>(value - 1));
+}
+
+static void RegisterByteOperators(SymbolFactory& factory)
+{
+	TypeSymbol* type = SymbolTable::Primitives::Byte;
+	TypeSymbol* retBool = SymbolTable::Primitives::Boolean;
+	TypeSymbol* retByte = SymbolTable::Primitives::Byte;
+
+	RegisterOperator(type, retByte, L"op_AddOperator", &byte_op_AddOperator, { type, type }, factory);
+	RegisterOperator(type, retByte, L"op_SubOperator", &byte_op_SubOperator, { type, type }, factory);
+	RegisterOperator(type, retByte, L"op_MultOperator", &byte_op_MultOperator, { type, type }, factory);
+	RegisterOperator(type, retByte, L"op_DivOperator", &byte_op_DivOperator, { type, type }, factory);
+	RegisterOperator(type, retByte, L"op_ModOperator", &byte_op_ModOperator, { type, type }, factory);
+
+	RegisterOperator(type, retBool, L"op_EqualsOperator", &byte_op_EqualsOperator, { type, type }, factory);
+	RegisterOperator(type, retBool, L"op_NotEqualsOperator", &byte_op_NotEqualsOperator, { type, type }, factory);
+	RegisterOperator(type, retBool, L"op_LessOperator", &byte_op_LessOperator, { type, type }, factory);
+	RegisterOperator(type, retBool, L"op_LessOrEqualsOperator", &byte_op_LessOrEqualsOperator, { type, type }, factory);
+	RegisterOperator(type, retBool, L"op_GreaterOperator", &byte_op_GreaterOperator, { type, type }, factory);
+	RegisterOperator(type, retBool, L"op_GreaterOrEqualsOperator", &byte_op_GreaterOrEqualsOperator, { type, type }, factory);
+
+	RegisterOperator(type, retByte, L"op_IncrementOperator", &byte_op_IncrementOperator, { type }, factory);
+	RegisterOperator(type, retByte, L"op_DecrementOperator", &byte_op_DecrementOperator, { type }, factory);
+}
+
 void shard::RegisterPrimitiveOperators(SymbolFactory& factory)
 {
 	RegisterIntegerOperators(factory);
@@ -658,4 +775,5 @@ void shard::RegisterPrimitiveOperators(SymbolFactory& factory)
 	RegisterCharOperators(factory);
 	RegisterStringOperators(factory);
 	RegisterDoubleOperators(factory);
+	RegisterByteOperators(factory);
 }

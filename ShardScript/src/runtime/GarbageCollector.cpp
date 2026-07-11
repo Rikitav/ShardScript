@@ -85,6 +85,14 @@ ObjectInstance* GarbageCollector::FromValue(std::int64_t value)
 	return instance;
 }
 
+ObjectInstance* GarbageCollector::FromValue(std::uint8_t value)
+{
+	TypeShape* shape = GetTypeShapeCache().GetOrCreateShape(SymbolTable::Primitives::Byte);
+	ObjectInstance* instance = GarbageCollector::AllocateInstance(shape);
+	instance->WriteByte(value);
+	return instance;
+}
+
 ObjectInstance* GarbageCollector::FromValue(double value)
 {
 	TypeShape* shape = GetTypeShapeCache().GetOrCreateShape(SymbolTable::Primitives::Double);
@@ -422,16 +430,19 @@ void GarbageCollector::Terminate()
 	// Destroy all static instances
 	for (const auto& choise : staticFields)
 		TerminateInstance(choise.second);
-	staticFields.clear();
+
 
 	// Snapshot and clear heap before terminating to avoid iterator invalidation
 	std::vector<ObjectInstance*> snapshot;
 	snapshot.reserve(Heap.size());
+	
 	for (ObjectInstance* instance : Heap)
 		snapshot.push_back(instance);
-	Heap.clear();
-
+	
 	// Destroy all regular instances
 	for (ObjectInstance* instance : snapshot)
 		TerminateInstance(instance);
+
+	Heap.clear();
+	staticFields.clear();
 }
