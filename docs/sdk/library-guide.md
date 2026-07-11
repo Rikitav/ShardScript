@@ -1059,10 +1059,12 @@ The engine searches for the library:
 
 - Make sure the script has `using mynamespace;` or that you use the fully qualified name.
 
-### 13.2. `No method "Add" found that accepts arguments (...)`
+### 13.2. Method resolution errors
 
-- Make sure parameters are added to `method->Parameters`.
-- Check the order and types of parameters.
+- `No method named 'Add' exists in the current context` — no accessible method with that name was found.
+- `Method 'Add' does not have an overload that accepts the supplied arguments (...)` — a method with that name exists, but none of its overloads match the supplied arguments.
+
+In both cases, make sure parameters are added to `method->Parameters` and check the order and types of parameters.
 
 ### 13.3. Segfault Inside a Callback
 

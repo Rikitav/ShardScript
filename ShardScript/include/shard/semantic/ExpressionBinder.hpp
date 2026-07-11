@@ -98,6 +98,15 @@ namespace shard
 		bool InferMethodTypeArguments(shard::MethodSymbol* method, const std::vector<TypeSymbol*>& argTypes, shard::GenericTypeSymbol* genericType, std::vector<TypeSymbol*>& outMethodTypeArgs);
 		bool MatchGenericMethodArguments(shard::MethodSymbol* method, const std::vector<TypeSymbol*>& argTypes, shard::GenericTypeSymbol* genericType, const std::vector<TypeSymbol*>& methodTypeArgs);
 
+		bool CollectArgumentTypes(shard::InvokationExpressionSyntax* node, std::vector<shard::TypeSymbol*>& outArgTypes);
+		bool CollectExplicitTypeArguments(shard::InvokationExpressionSyntax* node, std::vector<shard::TypeSymbol*>& outTypeArgs);
+		shard::MethodSymbol* TryResolveDelegateInvocation(shard::InvokationExpressionSyntax* node, shard::SyntaxSymbol* lookup);
+		bool HasAnyMethodNamed(const std::wstring& name, shard::TypeSymbol* currentType);
+		bool TryMatchMethod(shard::MethodSymbol* method, const std::wstring& expectedName, const std::vector<shard::TypeSymbol*>& argTypes, shard::GenericTypeSymbol* genericType, const std::vector<shard::TypeSymbol*>& explicitTypeArgs, std::vector<shard::TypeSymbol*>& outMethodTypeArgs);
+		shard::MethodSymbol* FindMethodOverload(const std::vector<shard::MethodSymbol*>& candidates, const std::wstring& name, const std::vector<shard::TypeSymbol*>& argTypes, shard::GenericTypeSymbol* genericType, const std::vector<shard::TypeSymbol*>& explicitTypeArgs, std::vector<shard::TypeSymbol*>& outMethodTypeArgs);
+		void ReportNoMatchingMethod(const std::wstring& methodName, shard::SyntaxToken blameToken);
+		void ReportNoMatchingOverload(const std::wstring& methodName, const std::vector<shard::TypeSymbol*>& argTypes, shard::SyntaxToken blameToken);
+
 		shard::TypeSymbol* AnalyzeNumberLiteral(shard::LiteralExpressionSyntax* node);
 		shard::TypeSymbol* AnalyzeDoubleLiteral(shard::LiteralExpressionSyntax* node);
 

@@ -1,4 +1,5 @@
 # ShardScript
+![ShardScript Banner](https://github.com/Rikitav/ShardScript/blob/master/formalization/ShardScript-banner.png)
 
 **ShardScript** is an embeddable, scripting, compiled, programming language with strict static typing, developed in C++. The project features a custom lexer/parser, semantic analyzer, bytecode compiler, stack virtual machine, and a standard library framework.
 
@@ -281,8 +282,6 @@ public static func Main() -> void
 ### Tooling & Ecosystem
 * [ ] **Sharding** — continue expanding and improving "Basic Shards Collection" (BSC), by adding and refiining new shards (libraries) 
 * [ ] **Diagnostics** — improved compile-time and runtime error reporting.
-* [ ] **Lang-based build system** — declarative project builds via `shard.build` and a `build.ss` script.
-* [ ] **Shell interpreter** — REPL mode and `shard.shell` module for system automation tasks.
 
 ## 🤝 Contributing
 

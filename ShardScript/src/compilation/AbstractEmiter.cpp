@@ -62,6 +62,8 @@
 
 using namespace shard;
 
+static bool IsInterfaceMember(MethodSymbol* method);
+
 const int ReserveMultiplier = 25;
 
 static bool IsAssignExpression(shard::TokenType type)
@@ -1236,6 +1238,16 @@ void AbstractEmiter::VisitBinaryAssignExpression(BinaryExpressionSyntax* node)
 
 void AbstractEmiter::VisitInvocationExpression(InvokationExpressionSyntax* node)
 {
+	if (node->Symbol != nullptr && IsInterfaceMember(node->Symbol))
+	{
+		VisitArgumentsList(node->ArgumentsList.get());
+		if (node->PreviousExpression != nullptr)
+			VisitExpression(node->PreviousExpression.get());
+
+		EmitMethodCall(node->Symbol);
+		return;
+	}
+
 	bool hasTypeArguments = false;
 	std::size_t ownerParamCount = 0;
 

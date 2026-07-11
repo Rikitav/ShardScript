@@ -117,8 +117,6 @@ static void LoadLibrariesIntoContext(shard::CompilationContext* context)
     }
 }
 
-static std::wstring Utf8ToWString(const std::string& str);
-
 static std::wstring ApplyContentChange(const std::wstring& text, const lsp::TextDocumentContentChangeEvent_Range_Text& change)
 {
     auto offsetFromPosition = [&text](const lsp::Position& position)
@@ -146,7 +144,7 @@ static std::wstring ApplyContentChange(const std::wstring& text, const lsp::Text
     const std::size_t start = offsetFromPosition(change.range.start);
     const std::size_t end = offsetFromPosition(change.range.end);
 
-    return text.substr(0, start) + Utf8ToWString(change.text) + text.substr(end);
+    return text.substr(0, start) + Utf8ToWide(change.text) + text.substr(end);
 }
 
 static lsp::DiagnosticSeverity ToLspSeverity(shard::DiagnosticSeverity severity)
@@ -177,7 +175,7 @@ void RunDiagnostics(lsp::MessageHandler& messageHandler)
     {
         try
         {
-            std::wstring wideUri = Utf8ToWString(file.first);
+            std::wstring wideUri = Utf8ToWide(file.first);
             StringStreamReader reader(wideUri, file.second);
             LexicalAnalyzer lexer(reader);
             context->EnrichTree(lexer, CompilationUnitOrigin::SourceFile);
@@ -267,7 +265,7 @@ void registerCallbacks(lsp::MessageHandler& messageHandler) {
     messageHandler.add<lsp::notifications::TextDocument_DidOpen>([&](lsp::notifications::TextDocument_DidOpen::Params&& params)
     {
         std::lock_guard<std::recursive_mutex> lock(g_compiler_mutex);
-        g_open_documents[params.textDocument.uri.toString()] = Utf8ToWString(params.textDocument.text);
+        g_open_documents[params.textDocument.uri.toString()] = Utf8ToWide(params.textDocument.text);
         RunDiagnostics(messageHandler);
     });
 
@@ -283,7 +281,7 @@ void registerCallbacks(lsp::MessageHandler& messageHandler) {
             if (std::holds_alternative<lsp::TextDocumentContentChangeEvent_Text>(change))
             {
                 const auto& textChange = std::get<lsp::TextDocumentContentChangeEvent_Text>(change);
-                g_open_documents[uri] = Utf8ToWString(textChange.text);
+                g_open_documents[uri] = Utf8ToWide(textChange.text);
             }
             else if (std::holds_alternative<lsp::TextDocumentContentChangeEvent_Range_Text>(change))
             {
