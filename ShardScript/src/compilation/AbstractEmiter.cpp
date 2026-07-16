@@ -720,17 +720,15 @@ void AbstractEmiter::VisitForStatement(ForStatementSyntax* node)
 	Loops.pop();
 }
 
-void AbstractEmiter::VisitForEachStatement(ForEachStatementSyntax* node)
+void AbstractEmiter::EmitEnumerationLoop(ExpressionSyntax* range, VariableSymbol* loopVariable, StatementsBlockSyntax* body)
 {
 	Loops.emplace();
 	LoopScope& scope = Loops.top();
 
-	VariableSymbol* loopVariable = LookupSymbol<VariableSymbol>(node).value_or(nullptr);
-
 	std::uint16_t base = GeneratingFor->GetEvalStackArgumentsCount();
 	std::uint16_t enumeratorSlot = base + GeneratingFor->AddVariableCount();
 
-	VisitExpression(node->RangeExpression.get());
+	VisitExpression(range);
 	EmitMethodCall(TRAIT_ENUMERABLE_GETENUMERATOR);
 	Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, enumeratorSlot);
 
@@ -750,7 +748,7 @@ void AbstractEmiter::VisitForEachStatement(ForEachStatementSyntax* node)
 	else
 		Encoder.EmitPop(GeneratingFor->ExecutableByteCode);
 
-	VisitStatementsBlock(node->StatementsBlock.get());
+	VisitStatementsBlock(body);
 
 	scope.BlockEnd = GeneratingFor->ExecutableByteCode.size();
 	Encoder.EmitJump(GeneratingFor->ExecutableByteCode, scope.LoopStart);
@@ -766,66 +764,18 @@ void AbstractEmiter::VisitForEachStatement(ForEachStatementSyntax* node)
 	Loops.pop();
 }
 
+void AbstractEmiter::VisitForEachStatement(ForEachStatementSyntax* node)
+{
+	EmitEnumerationLoop(node->RangeExpression.get(),
+		LookupSymbol<VariableSymbol>(node).value_or(nullptr),
+		node->StatementsBlock.get());
+}
+
 void AbstractEmiter::VisitForInStatement(ForInStatementSyntax* node)
 {
-	Loops.emplace();
-	LoopScope& scope = Loops.top();
-
-	VariableSymbol* loopVariable = LookupSymbol<VariableSymbol>(node).value_or(nullptr);
-
-	std::uint16_t base = GeneratingFor->GetEvalStackArgumentsCount();
-	std::uint16_t arraySlot = base + GeneratingFor->AddVariableCount();
-	std::uint16_t indexSlot = base + GeneratingFor->AddVariableCount();
-	std::uint16_t lengthSlot = base + GeneratingFor->AddVariableCount();
-
-	VisitExpression(node->RangeExpression.get());
-	Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, arraySlot);
-
-	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, arraySlot);
-	Encoder.EmitDuplicate(GeneratingFor->ExecutableByteCode);
-	Encoder.EmitArrayLength(GeneratingFor->ExecutableByteCode);
-	Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, lengthSlot);
-
-	Encoder.EmitLoadConstInt64(GeneratingFor->ExecutableByteCode, 0);
-	Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, indexSlot);
-
-	scope.LoopStart = GeneratingFor->ExecutableByteCode.size();
-
-	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, indexSlot);
-	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, lengthSlot);
-	Encoder.EmitCompareLess(GeneratingFor->ExecutableByteCode);
-
-	scope.LoopEndBacktracks.push_back(GeneratingFor->ExecutableByteCode.size());
-	Encoder.EmitJumpFalse(GeneratingFor->ExecutableByteCode, 0);
-
-	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, arraySlot);
-	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, indexSlot);
-	Encoder.EmitLoadArrayElement(GeneratingFor->ExecutableByteCode);
-
-	if (loopVariable != nullptr)
-		Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, loopVariable->SlotIndex);
-	else
-		Encoder.EmitPop(GeneratingFor->ExecutableByteCode);
-
-	VisitStatementsBlock(node->StatementsBlock.get());
-
-	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, indexSlot);
-	Encoder.EmitLoadConstInt64(GeneratingFor->ExecutableByteCode, 1);
-	Encoder.EmitMathAdd(GeneratingFor->ExecutableByteCode);
-	Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, indexSlot);
-
-	scope.BlockEnd = GeneratingFor->ExecutableByteCode.size();
-	Encoder.EmitJump(GeneratingFor->ExecutableByteCode, scope.LoopStart);
-
-	scope.LoopEnd = GeneratingFor->ExecutableByteCode.size();
-
-	for (std::size_t backtrack : scope.BlockEndBacktracks)
-		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack + sizeof(OpCode), &scope.BlockEnd, sizeof(std::size_t));
-
-	for (std::size_t backtrack : scope.LoopEndBacktracks)
-		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, backtrack + sizeof(OpCode), &scope.LoopEnd, sizeof(std::size_t));
-
-	Loops.pop();
+	EmitEnumerationLoop(node->RangeExpression.get(),
+		LookupSymbol<VariableSymbol>(node).value_or(nullptr),
+		node->StatementsBlock.get());
 }
 
 static bool IsConditionalClause(SyntaxKind kind)

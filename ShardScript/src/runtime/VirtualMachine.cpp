@@ -667,7 +667,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance* value = frame->PopStack();
 
 			bool asBool = value->AsBoolean();
-			garbageCollector.DestroyInstance(value);
+			garbageCollector.CollectInstance(value);
 
 			if (!asBool)
 				decoder.SetCursor(jump);
@@ -681,7 +681,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance* value = frame->PopStack();
 
 			bool asBool = value->AsBoolean();
-			garbageCollector.DestroyInstance(value);
+			garbageCollector.CollectInstance(value);
 
 			if (asBool)
 				decoder.SetCursor(jump);

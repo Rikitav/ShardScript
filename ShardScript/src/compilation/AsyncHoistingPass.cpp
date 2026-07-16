@@ -521,7 +521,7 @@ namespace
 
     static std::unique_ptr<StatementSyntax> HoistStatement(std::unique_ptr<StatementSyntax> statement, std::vector<std::unique_ptr<StatementSyntax>>& prefix, MethodSymbol* method, SyntaxNode* parent, SemanticModel& model, DiagnosticsContext& diagnostics, bool& supported)
     {
-        if (statement == nullptr || !supported)
+        if (statement == nullptr)
             return statement;
 
         supported = false;
@@ -556,6 +556,7 @@ namespace
                     }
                 }
 
+                supported = true;
                 return statement;
             }
 
@@ -589,6 +590,7 @@ namespace
                     }
                 }
 
+                supported = true;
                 return statement;
             }
 
@@ -622,6 +624,7 @@ namespace
                     }
                 }
 
+                supported = true;
                 return statement;
             }
 
@@ -640,6 +643,7 @@ namespace
                     MovePrefix(prefix, result.Prefix);
                 }
 
+                supported = true;
                 return statement;
             }
 
@@ -731,6 +735,33 @@ namespace
                     node->NextStatement.reset(static_cast<ConditionalClauseBaseSyntax*>(rewrittenNext.release()));
                 }
 
+                supported = true;
+                return statement;
+            }
+
+            case SyntaxKind::ElseStatement:
+            {
+                ElseStatementSyntax* node = static_cast<ElseStatementSyntax*>(statement.get());
+                if (node->StatementsBlock != nullptr)
+                    HoistStatements(node->StatementsBlock->Statements, method, node->StatementsBlock.get(), model, diagnostics, supported);
+
+                if (!supported)
+                    return statement;
+
+                if (node->NextStatement != nullptr)
+                {
+                    std::unique_ptr<StatementSyntax> nextStmt(node->NextStatement.release());
+                    std::vector<std::unique_ptr<StatementSyntax>> nextPrefix;
+                    std::unique_ptr<StatementSyntax> rewrittenNext = HoistStatement(std::move(nextStmt), nextPrefix, method, parent, model, diagnostics, supported);
+
+                    if (!supported)
+                        return statement;
+
+                    MovePrefix(prefix, nextPrefix);
+                    node->NextStatement.reset(static_cast<ConditionalClauseBaseSyntax*>(rewrittenNext.release()));
+                }
+
+                supported = true;
                 return statement;
             }
 
@@ -754,6 +785,7 @@ namespace
                 if (node->StatementsBlock != nullptr)
                     HoistStatements(node->StatementsBlock->Statements, method, node->StatementsBlock.get(), model, diagnostics, supported);
 
+                supported = true;
                 return statement;
             }
 
@@ -799,6 +831,7 @@ namespace
                 if (node->StatementsBlock != nullptr)
                     HoistStatements(node->StatementsBlock->Statements, method, node->StatementsBlock.get(), model, diagnostics, supported);
 
+                supported = true;
                 return statement;
             }
 
@@ -820,14 +853,22 @@ namespace
                         return statement;
                 }
 
+                supported = true;
+                return statement;
+            }
+
+            case SyntaxKind::BreakStatement:
+            case SyntaxKind::ContinueStatement:
+            {
+                // break/continue contain no await expressions and can be left
+                // untouched; the regular emitter handles them inside loops.
+                supported = true;
                 return statement;
             }
 
             case SyntaxKind::ForEachStatement:
             case SyntaxKind::ForInStatement:
             case SyntaxKind::DeferStatement:
-            case SyntaxKind::BreakStatement:
-            case SyntaxKind::ContinueStatement:
             {
                 // These statements are not yet supported with awaits inside them.
                 // Defer in particular needs proper finally lowering.
@@ -835,6 +876,7 @@ namespace
 
                 // ScanAsyncStatements will reject them if they
                 // contain await sites.
+                supported = true;
                 return statement;
             }
 
