@@ -8,6 +8,8 @@ add_executable(ShardScript.Interpreter
     ${INTERPRETER_HEADERS}
 )
 
+set_target_properties(ShardScript.Interpreter PROPERTIES OUTPUT_NAME "shard")
+
 if(ENABLE_ASAN)
     if(MSVC)
         target_compile_options(${PROJECT_NAME} PRIVATE /fsanitize=address)
@@ -20,7 +22,6 @@ endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../ShardScript/include")
-
 set(TARGET_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin")
 set_target_properties(ShardScript.Interpreter PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${TARGET_OUTPUT_DIR}"

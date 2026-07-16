@@ -1,0 +1,18 @@
+using stdio;
+
+namespace test_try_catch_empty;
+
+public class Program
+{
+    public static func Main() -> void
+    {
+        try
+        {
+            throw new RuntimeException();
+        }
+        catch { ex: RuntimeException }
+        {
+        }
+        println("done");
+    }
+}

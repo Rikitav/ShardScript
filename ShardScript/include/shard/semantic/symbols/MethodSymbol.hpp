@@ -21,6 +21,7 @@ namespace shard
     struct CallState;
     class ObjectInstance;
     class GarbageCollector;
+    class ClassSymbol;
 }
 
 namespace shard
@@ -49,6 +50,11 @@ namespace shard
         MethodSymbolDelegate FunctionPointer = nullptr;
 
         bool IsAbstract = false;
+        bool IsAsync = false;
+
+        // Populated by async state-machine lowering.
+        ClassSymbol* AsyncStateMachineClass = nullptr;
+        MethodSymbol* AsyncStateMachineMoveNext = nullptr;
 
     protected:
         inline MethodSymbol(const std::wstring& name, const SyntaxKind kind)

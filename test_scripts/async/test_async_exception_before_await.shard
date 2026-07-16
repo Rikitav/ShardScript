@@ -1,0 +1,20 @@
+using stdio;
+using async;
+
+namespace test_async_exception_before_await;
+
+public class Program
+{
+    public static async func ThrowBeforeAwait() -> Task
+    {
+        println("before throw");
+        throw new RuntimeException();
+        println("after throw");
+    }
+
+    public static func Main() -> void
+    {
+        Task.Wait(ThrowBeforeAwait());
+        println("done");
+    }
+}

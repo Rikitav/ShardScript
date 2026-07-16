@@ -56,6 +56,7 @@
 #include <shard/parsing/nodes/Loops/UntilStatementSyntax.hpp>
 
 #include <shard/parsing/nodes/Expressions/UnaryExpressionSyntax.hpp>
+#include <shard/parsing/nodes/Expressions/AwaitExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/BinaryExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/LiteralExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/LinkedExpressionSyntax.hpp>
@@ -149,6 +150,7 @@ namespace shard
         virtual void VisitLiteralExpression(LiteralExpressionSyntax* node);
         virtual void VisitBinaryExpression(BinaryExpressionSyntax* node);
         virtual void VisitUnaryExpression(UnaryExpressionSyntax* node);
+        virtual void VisitAwaitExpression(AwaitExpressionSyntax* node);
         virtual void VisitObjectCreationExpression(ObjectExpressionSyntax* node);
         virtual void VisitCollectionExpression(CollectionExpressionSyntax* node);
         virtual void VisitRangeExpression(RangeExpressionSyntax* node);

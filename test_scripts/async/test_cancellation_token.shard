@@ -1,0 +1,18 @@
+using stdio;
+using async;
+
+namespace test_cancellation_token;
+
+public class Program
+{
+    public static func Main() -> void
+    {
+        cts := new CancellationTokenSource();
+        token := cts.Token;
+
+        println(token.IsCancellationRequested);
+        println(token.CanBeCanceled);
+        cts.Cancel();
+        println(token.IsCancellationRequested);
+    }
+}

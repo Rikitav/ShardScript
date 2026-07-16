@@ -76,38 +76,45 @@ namespace shard
 		/// Pops 1 instance from stack and creates duplicate of it.
 		/// <para>Includes no additional parameters.</para>
 		/// </summary>
-		CREATEDUPLICATE,
+		CREATE_DUPLICATE,
 
 		/// <summary>
-		/// Pops ObjectInstance* from stack and stores it to variable slot at given index.
+		/// Pops an ObjectInstance* from stack and stores it to variable slot at given index.
 		/// <para>Includes 1 parameter :</para>
 		/// <para>> std::uint16_t Value - Zero-based index of variable, where instance will be written to.</para>
 		/// </summary>
-		STOREVARIABLE,
-		
+		STORE_VARIABLE,
+
+		/// <summary>
+		/// Peeks an ObjectInstance* from stack and stores it to variable slot at given index.
+		/// <para>Includes 1 parameter :</para>
+		/// <para>> std::uint16_t Value - Zero-based index of variable, where instance will be written to.</para>
+		/// </summary>
+		PEEK_STORE_VARIABLE,
+
 		/// <summary>
 		/// Pushes copy of ObjectInstance* from variable slot on given index to stack top.
 		/// <para>Includes 1 parameter :</para>
 		/// <para>> std::uint16_t Value - Zero-based index of variable, where instance will be readed from.</para>
 		/// </summary>
-		LOADVARIABLE,
+		LOAD_VARIABLE,
 
 		/// <summary>
-		/// Unconditional jump to a relative offset.
+		/// Unconditional jump to an absolute offset.
 		/// <para>Includes 1 parameter :</para>
 		/// <para>> std::size_t Offset - Relative offset in bytes from current instruction pointer.</para>
 		/// </summary>
 		JUMP,
 
 		/// <summary>
-		/// Conditional jump to a relative offset if stack top contains True.
+		/// Conditional jump to an absolute offset if stack top contains True.
 		/// <para>Includes 1 parameter :</para>
 		/// <para>> std::size_t Offset - Relative offset in bytes from current instruction pointer.</para>
 		/// </summary>
 		JUMP_TRUE,
 
 		/// <summary>
-		/// Conditional jump to a relative offset if stack top contains False.
+		/// Conditional jump to an absolute offset if stack top contains False.
 		/// <para>Includes 1 parameter :</para>
 		/// <para>> std::size_t Offset - Relative offset in bytes from current instruction pointer.</para>
 		/// </summary>

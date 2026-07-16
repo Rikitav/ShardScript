@@ -297,7 +297,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::LOADVARIABLE:
+		case OpCode::LOAD_VARIABLE:
 		{
 			std::uint16_t slot = decoder.AbsorbVariableSlot();
 			ObjectInstance* instance = frame->EvalStack[slot];
@@ -305,7 +305,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::STOREVARIABLE:
+		case OpCode::STORE_VARIABLE:
 		{
 			std::uint16_t slot = decoder.AbsorbVariableSlot();
 			ObjectInstance* instance = frame->PopStack();
@@ -531,7 +531,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::CREATEDUPLICATE:
+		case OpCode::CREATE_DUPLICATE:
 		{
 			ObjectInstance* instance = frame->PeekStack();
 			ObjectInstance* duplicate = garbageCollector.CopyInstance(instance);
@@ -812,12 +812,23 @@ static bool HandleExceptionInFrame(CallStackFrame* frame, ByteCodeDecoder& decod
 	if (exception == nullptr)
 		throw std::runtime_error("Exception was raised without an exception object");
 
-	while (!frame->EvalStack.empty())
+	// Preserve the fixed local-variable slots (arguments + locals); only drain
+	// the temporary evaluation-stack portion above them. Draining locals would
+	// destroy the async state-machine instance and other live variables that
+	// catch/finally handlers still need to access.
+	std::size_t preservedSlots = 0;
+	if (frame->Method != nullptr)
+		preservedSlots = frame->Method->GetEvalStackLocalsCount();
+
+	while (frame->EvalStack.size() > preservedSlots)
 	{
 		ObjectInstance* top = frame->PopStack();
-		if (top != nullptr)
+		if (top != nullptr && top != GarbageCollector::NullInstance)
 			gc.DestroyInstance(top);
 	}
+
+	if (frame->EvalStack.size() < preservedSlots)
+		frame->EvalStack.resize(preservedSlots, nullptr);
 
 	while (!frame->ExceptionHandlers.empty())
 	{
@@ -965,6 +976,9 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 			if (!currentFrame->EvalStack.empty())
 			{
 				returnedValue = currentFrame->PopStack();
+				if (returnedValue != nullptr && returnedValue != GarbageCollector::NullInstance)
+					returnedValue->IncrementReference();
+
 				callingFrame->PushStack(returnedValue);
 			}
 		}

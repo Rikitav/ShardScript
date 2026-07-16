@@ -1,0 +1,25 @@
+using stdio;
+using async;
+
+namespace test_async_await_bool_var;
+
+public class Program
+{
+    public static async func GetBoolAsync() -> ValueTask<bool>
+    {
+        await Task.Delay(10);
+        return true;
+    }
+
+    public static func Main() -> void
+    {
+        task := DoItAsync();
+        ValueTask.Wait(task);
+    }
+
+    public static async func DoItAsync() -> Task
+    {
+        b := await GetBoolAsync();
+        println(b);
+    }
+}

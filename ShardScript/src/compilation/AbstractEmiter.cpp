@@ -338,6 +338,14 @@ void AbstractEmiter::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 		return;
 	}
 
+	if (GeneratingFor->IsAsync && GeneratingFor->AsyncStateMachineClass != nullptr)
+	{
+		// The body of an async method is replaced by the AsyncStateMachineLowering pass.
+		GeneratingFor->ExecutableByteCode.shrink_to_fit();
+		GeneratingFor = nullptr;
+		return;
+	}
+
 	if (node->Body != nullptr)
 	{
 		std::size_t reserve = node->Body->Statements.size() * ReserveMultiplier;
@@ -940,6 +948,7 @@ void AbstractEmiter::VisitLiteralExpression(LiteralExpressionSyntax* node)
 			Encoder.EmitLoadConstInt64(GeneratingFor->ExecutableByteCode, symbol->AsIntegerValue);
 			if (symbol->BoundType != nullptr && symbol->BoundType != SymbolTable::Primitives::Integer)
 				Encoder.EmitCastPrimitive(GeneratingFor->ExecutableByteCode, symbol->BoundType);
+
 			break;
 		}
 

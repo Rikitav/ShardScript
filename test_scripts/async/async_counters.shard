@@ -1,0 +1,42 @@
+using stdio;
+using async;
+
+async func CounterA() -> Task
+{
+    println("A: 1");
+    await Task.Delay(500);
+    println("A: 2");
+    await Task.Delay(500);
+    println("A: 3");
+}
+
+async func CounterB() -> Task
+{
+    println("B: 1");
+    await Task.Delay(800);
+    println("B: 2");
+    await Task.Delay(800);
+    println("B: 3");
+}
+
+async func CounterC() -> Task
+{
+    println("C: 1");
+    await Task.Delay(300);
+    println("C: 2");
+    await Task.Delay(300);
+    println("C: 3");
+}
+
+public func Main() -> void
+{
+    t1 := CounterA();
+    t2 := CounterB();
+    t3 := CounterC();
+
+    t1.Wait();
+    t2.Wait();
+    t3.Wait();
+
+    println("All counters finished");
+}

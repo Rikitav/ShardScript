@@ -1,0 +1,14 @@
+using stdio;
+using async;
+
+namespace test_generic_static_inference;
+
+public class Program
+{
+    public static func Main() -> void
+    {
+        task := ValueTask.FromResult("hi");
+        ValueTask.Wait(task);
+        println(task.Result);
+    }
+}

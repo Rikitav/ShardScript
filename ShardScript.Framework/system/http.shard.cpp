@@ -4,6 +4,15 @@
 #include <vector>
 #include <memory>
 #include <stdexcept>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <deque>
+#include <atomic>
+
+#include <uv.h>
+
+#include <shard/runtime/EventLoop.hpp>
 
 #ifndef _WIN32
 #define CPPHTTPLIB_OPENSSL_SUPPORT
@@ -22,6 +31,124 @@ FieldSymbol* shard_HttpClient_ClientPtrField = nullptr;
 TypeSymbol* shard_HttpResponse = nullptr;
 FieldSymbol* shard_HttpResponse_StatusField = nullptr;
 FieldSymbol* shard_HttpResponse_BodyField = nullptr;
+
+// ============================================================================
+// Async HTTP server support
+// ============================================================================
+
+struct HttpServerRequest
+{
+    ObjectInstance* Handler = nullptr;
+    std::string RequestBody;
+    httplib::Response* Response = nullptr;
+
+    std::mutex Mutex;
+    std::condition_variable CV;
+    bool Done = false;
+    bool ResponseWritten = false;
+
+    bool Faulted = false;
+    int StatusCode = 200;
+    std::string ErrorMessage;
+    std::string ResponseBody;
+};
+
+struct HttpServerContext
+{
+    ~HttpServerContext()
+    {
+        for (ObjectInstance* handler : Handlers)
+        {
+            if (handler != nullptr && handler != GarbageCollector::NullInstance)
+                handler->DecrementReference();
+        }
+    }
+
+    ApplicationDomain* Domain = nullptr;
+    httplib::Server* Server = nullptr;
+    uv_async_t WakeHandle{};
+
+    std::mutex Mutex;
+    std::condition_variable CV;
+    std::deque<std::shared_ptr<HttpServerRequest>> Pending;
+
+    std::atomic<bool> Stopped{ false };
+    std::thread ListenThread;
+
+    std::vector<ObjectInstance*> Handlers;
+};
+
+static HttpServerContext* GetServerContext(ObjectInstance* instance)
+{
+    if (instance == nullptr)
+        return nullptr;
+
+    ObjectInstance* handleVal = instance->GetField(shard_HttpServer_ClientPtrField->SlotIndex);
+    if (handleVal == nullptr || handleVal == GarbageCollector::NullInstance)
+        return nullptr;
+
+    return static_cast<HttpServerContext*>(handleVal->AsNint());
+}
+
+static void ProcessServerRequest(HttpServerContext* ctx, HttpServerRequest* request)
+{
+    VirtualMachine& vm = ctx->Domain->GetVirtualMachine();
+    GarbageCollector& gc = ctx->Domain->GetGarbageCollector();
+
+    ObjectInstance* bodyObj = gc.FromValue(strings::Utf8ToWide(request->RequestBody));
+
+    MethodSymbol* handlerMethod = request->Handler->DelegateTarget;
+    CallStackFrame* rootFrame = vm.PushFrame(handlerMethod);
+    rootFrame->PushStack(request->Handler);
+
+    ObjectInstance* responseBody = nullptr;
+    try
+    {
+        ObjectInstance* handlerArgs[] = { bodyObj };
+        responseBody = vm.InvokeMethod(handlerMethod, handlerArgs, 1);
+    }
+    catch (const std::exception& ex)
+    {
+        request->Faulted = true;
+        request->ErrorMessage = ex.what();
+    }
+
+    vm.PopFrame(); // synthetic root
+
+    if (!request->Faulted && responseBody != nullptr)
+    {
+        request->ResponseBody = strings::WideToUtf8(responseBody->AsString());
+        request->StatusCode = 200;
+        gc.DestroyInstance(responseBody);
+    }
+    else if (!request->Faulted)
+    {
+        request->Faulted = true;
+        request->ErrorMessage = "HTTP handler did not return a response body";
+    }
+
+    {
+        std::lock_guard lock(request->Mutex);
+        request->Done = true;
+        request->CV.notify_one();
+    }
+}
+
+static void ServerWakeCallback(uv_async_t* handle)
+{
+    HttpServerContext* ctx = static_cast<HttpServerContext*>(handle->data);
+    if (ctx == nullptr)
+        return;
+
+    std::deque<std::shared_ptr<HttpServerRequest>> requests;
+    {
+        std::lock_guard lock(ctx->Mutex);
+        requests = std::move(ctx->Pending);
+    }
+
+    for (auto& req : requests)
+        ProcessServerRequest(ctx, req.get());
+}
 
 static httplib::Client* GetClientPtr(ObjectInstance* instance)
 {
@@ -162,9 +289,16 @@ static ObjectInstance* shard_http_Client_Dispose(const CallState& context) noexc
 static ObjectInstance* shard_http_Server_Init(const CallState& context) noexcept
 {
     ObjectInstance* instance = context.Args[0];
-    httplib::Server* server = new httplib::Server();
 
-    instance->SetField(shard_HttpServer_ClientPtrField->SlotIndex, context.Collector.FromNint(server, true));
+    HttpServerContext* ctx = new HttpServerContext();
+    ctx->Domain = &context.Domain;
+    ctx->Server = new httplib::Server();
+
+    uv_loop_t* loop = context.Domain.GetEventLoop().GetLoop();
+    uv_async_init(loop, &ctx->WakeHandle, ServerWakeCallback);
+    ctx->WakeHandle.data = ctx;
+
+    instance->SetField(shard_HttpServer_ClientPtrField->SlotIndex, context.Collector.FromNint(ctx, true));
     return instance;
 }
 
@@ -174,43 +308,44 @@ static ObjectInstance* shard_http_Server_Get(const CallState& context) noexcept(
     ObjectInstance* widePathObj = context.Args[1];
     ObjectInstance* shardCallback = context.Args[2];
 
-    httplib::Server* server = GetServerPtr(instance);
-    if (server == nullptr)
+    HttpServerContext* ctx = GetServerContext(instance);
+    if (ctx == nullptr || ctx->Server == nullptr)
         throw std::runtime_error("HttpServer: Server is disposed.");
 
     shardCallback->IncrementReference();
+    ctx->Handlers.push_back(shardCallback);
+
     std::string path = strings::WideToUtf8(widePathObj->AsString());
 
-    server->Get(path, [shardCallback, &context](const httplib::Request& req, httplib::Response& res)
+    ctx->Server->Get(path, [ctx, shardCallback](const httplib::Request& req, httplib::Response& res)
     {
-		// Since this callback is executed in a different thread,
-        // we need to create a new VirtualMachine instance for this thread,
-        // to not interfere with the main thread's VM state.
-        // Basically a dumbass hack, for until i make async and thread context switching possible.
-		ApplicationDomain* appDomain = &context.Domain;
-        VirtualMachine innerVm(appDomain);
+        auto request = std::make_shared<HttpServerRequest>();
+        request->Handler = shardCallback;
+        request->RequestBody = req.body;
+        request->Response = &res;
 
-        std::wstring wideBody = strings::Utf8ToWide(req.body);
-
-        //CallStackFrame dumbFrame(&innerVm, nullptr, nullptr, nullptr);
-        innerVm.PushFrame(nullptr);
-        innerVm.InvokeMethod(shardCallback->DelegateTarget, { context.Collector.FromValue(wideBody) });
-        
-        CallStackFrame* dumbFrame = innerVm.CurrentFrame();
-        ObjectInstance* responceBody = dumbFrame->PopStack();
-        
-		if (dumbFrame->InterruptionReason == FrameInterruptionReason::ExceptionRaised)
-		{
-			res.set_content(strings::WideToUtf8(dumbFrame->CurrentException->AsString()), "text/plain; charset=utf-8");
-			res.status = 500;
-		}
-        else
         {
-            res.set_content(strings::WideToUtf8(responceBody->AsString()), "text/plain; charset=utf-8");
-            res.status = 200;
+            std::lock_guard lock(ctx->Mutex);
+            ctx->Pending.push_back(request);
         }
 
-        innerVm.GetGarbageCollector().DestroyInstance(responceBody);
+        uv_async_send(&ctx->WakeHandle);
+
+        std::unique_lock lock(request->Mutex);
+        request->CV.wait(lock, [request] { return request->Done; });
+
+        if (request->Faulted)
+        {
+            res.status = 500;
+            res.set_content(request->ErrorMessage, "text/plain; charset=utf-8");
+        }
+        else
+        {
+            res.status = request->StatusCode;
+            res.set_content(request->ResponseBody, "text/plain; charset=utf-8");
+        }
+
+        request->ResponseWritten = true;
     });
 
     return nullptr;
@@ -220,19 +355,43 @@ static ObjectInstance* shard_http_Server_Listen(const CallState& context) noexce
 {
     ObjectInstance* instance = context.Args[0];
     ObjectInstance* hostObj = context.Args[1];
-	ObjectInstance* portObj = context.Args[2];
+    ObjectInstance* portObj = context.Args[2];
+
+    HttpServerContext* ctx = GetServerContext(instance);
+    if (ctx == nullptr || ctx->Server == nullptr)
+        throw std::runtime_error("HttpServer: Server is disposed.");
 
     std::string host = strings::WideToUtf8(hostObj->AsString());
     int64_t port = portObj->AsInteger();
 
-    httplib::Server* server = GetServerPtr(instance);
-    if (server == nullptr)
-        throw std::runtime_error("HttpServer: Server is disposed.");
+    ctx->Stopped = false;
+    ctx->ListenThread = std::thread([ctx, host, port]()
+    {
+        ctx->Server->listen(host, static_cast<int>(port));
+    });
 
-	// block thread, this will run the server loop
-    bool success = server->listen(host, static_cast<int>(port));
-    if (!success)
-        throw std::runtime_error("HttpServer: Failed to bind or listen on \"" + host + "\" :" + std::to_string(port));
+    // Pump the domain event loop on this thread.  Request handlers are
+    // marshalled from httplib's worker threads onto this loop so they run
+    // on the same VM/ApplicationDomain as the rest of the program.
+    ctx->Domain->GetEventLoop().Run();
+
+    if (ctx->ListenThread.joinable())
+        ctx->ListenThread.join();
+
+    // Schedule context destruction; the close callback runs when the loop
+    // processes the handle close.
+    instance->SetField(shard_HttpServer_ClientPtrField->SlotIndex,
+                       GarbageCollector::NullInstance);
+    uv_close(reinterpret_cast<uv_handle_t*>(&ctx->WakeHandle),
+             [](uv_handle_t* handle)
+             {
+                 HttpServerContext* ctx = static_cast<HttpServerContext*>(handle->data);
+                 if (ctx != nullptr)
+                 {
+                     delete ctx->Server;
+                     delete ctx;
+                 }
+             });
 
     return nullptr;
 }
@@ -240,12 +399,27 @@ static ObjectInstance* shard_http_Server_Listen(const CallState& context) noexce
 static ObjectInstance* shard_http_Server_Dispose(const CallState& context) noexcept
 {
     ObjectInstance* instance = context.Args[0];
-    httplib::Server* server = GetServerPtr(instance);
+    HttpServerContext* ctx = GetServerContext(instance);
 
-    if (server != nullptr)
+    if (ctx != nullptr)
     {
-        server->stop();
-        delete server;
+        ctx->Stopped = true;
+
+        if (ctx->Server != nullptr)
+            ctx->Server->stop();
+
+        ctx->Domain->GetEventLoop().Stop();
+
+        // If Listen() has already returned we can clean up immediately;
+        // otherwise Listen() will perform the cleanup after joining the thread.
+        if (!ctx->ListenThread.joinable())
+        {
+            uv_close(reinterpret_cast<uv_handle_t*>(&ctx->WakeHandle), nullptr);
+            delete ctx->Server;
+            delete ctx;
+            instance->SetField(shard_HttpServer_ClientPtrField->SlotIndex,
+                               GarbageCollector::NullInstance);
+        }
     }
 
     return nullptr;

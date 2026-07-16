@@ -212,6 +212,9 @@ bool SemanticModel::IsAssignableTo(const TypeSymbol* target, const TypeSymbol* s
 	if (AreTypesEqual(target, source))
 		return true;
 
+	if (target == SymbolTable::Primitives::Any)
+		return true;
+
 	if (source == SymbolTable::Primitives::Null)
 		return target->Inlining == TypeInlining::ByReference || target == SymbolTable::Primitives::Any;
 

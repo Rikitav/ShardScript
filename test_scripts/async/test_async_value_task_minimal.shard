@@ -1,0 +1,19 @@
+using stdio;
+using async;
+
+namespace test_async_value_task_minimal;
+
+public class Program
+{
+    public static async func GetNumberAsync() -> ValueTask<int>
+    {
+        return 42;
+    }
+
+    public static func Main() -> void
+    {
+        task := GetNumberAsync();
+        ValueTask.Wait(task);
+        println(task.Result);
+    }
+}

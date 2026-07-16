@@ -1,0 +1,18 @@
+using net;
+
+namespace test_http_server_async;
+
+public class Program
+{
+    public static func Handler(body: string) -> string
+    {
+        return "hello " + body;
+    }
+
+    public static func Main() -> void
+    {
+        server := new HttpServer();
+        server.Get("/", Handler);
+        server.Listen("127.0.0.1", 18080);
+    }
+}

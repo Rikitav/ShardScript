@@ -29,7 +29,9 @@
 #if defined(_MSC_VER)
 
 	using LibraryHandle = void*;
-	#define WIN32_LEAN_AND_MEAN
+	#ifndef WIN32_LEAN_AND_MEAN
+		#define WIN32_LEAN_AND_MEAN
+	#endif
 	//#include <Windows.h>
 	//using LibraryHandle = struct HINSTANCE__*;
 

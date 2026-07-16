@@ -1,0 +1,32 @@
+using stdio;
+using async;
+
+namespace test_async_phase3_try;
+
+public class Program
+{
+    public static async func GetNumberAsync() -> ValueTask<int>
+    {
+        return 7;
+    }
+
+    public static async func ComputeAsync() -> ValueTask<int>
+    {
+        try
+        {
+            result: int = await GetNumberAsync();
+            return result + 3;
+        }
+        catch (ex: RuntimeException)
+        {
+            return -1;
+        }
+    }
+
+    public static func Main() -> void
+    {
+        task := ComputeAsync();
+        ValueTask.Wait(task);
+        println(task.Result);
+    }
+}

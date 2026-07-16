@@ -1,0 +1,28 @@
+using stdio;
+using async;
+
+namespace test_async_exception_caught;
+
+public class Program
+{
+    public static async func ThrowAfterAwait() -> Task
+    {
+        println("before await");
+        await Task.Delay(100);
+        println("after await");
+        throw new RuntimeException();
+    }
+
+    public static func Main() -> void
+    {
+        try
+        {
+            Task.Wait(ThrowAfterAwait());
+        }
+        catch (ex: RuntimeException)
+        {
+            println("caught");
+        }
+        println("done");
+    }
+}

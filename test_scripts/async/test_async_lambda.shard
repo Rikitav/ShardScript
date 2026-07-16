@@ -1,0 +1,20 @@
+using stdio;
+using async;
+
+namespace test_async_lambda;
+
+public class Program
+{
+    public static func Main() -> void
+    {
+        f := async lambda () -> Task
+        {
+            println("before");
+            await Task.Delay(100);
+            println("after");
+        };
+
+        Task.Wait(f());
+        println("done");
+    }
+}

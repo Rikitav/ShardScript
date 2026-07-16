@@ -541,6 +541,7 @@ SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::SetCallback(MethodSymb
     Symbol->HandleType = MethodHandleType::External;
     return *this;
 }
+
 SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::IsImplementationOf(MethodSymbol* abstractMethod)
 {
     if (abstractMethod == nullptr)
@@ -570,6 +571,12 @@ SymbolBuilder<TypeParameterSymbol> SymbolBuilder<MethodSymbol>::AddTypeParameter
     }
 
     return builder;
+}
+
+SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::DeclareGlobal()
+{
+    SymbolTable::Global::Scope->DeclareSymbol(Symbol);
+    return *this;
 }
 
 // =========================================================================

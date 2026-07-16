@@ -7,10 +7,13 @@
 
 namespace shard
 {
+	class EventLoop;
+
 	class SHARD_API ApplicationDomain
 	{
 		std::unique_ptr<ProgramVirtualImage> virtualProgram;
 		GarbageCollector garbageCollector;
+		std::unique_ptr<EventLoop> eventLoop;
 		VirtualMachine virtualMachine;
 
 	public:
@@ -21,6 +24,7 @@ namespace shard
 		ApplicationDomain& operator=(const ApplicationDomain&) = delete;
 
 		ProgramVirtualImage& GetProgram();
+		EventLoop& GetEventLoop();
 		GarbageCollector& GetGarbageCollector();
 		VirtualMachine& GetVirtualMachine();
 	};

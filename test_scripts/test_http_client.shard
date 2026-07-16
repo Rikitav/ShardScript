@@ -1,0 +1,14 @@
+using stdio;
+using net;
+
+namespace test_http_client;
+
+public class Program
+{
+    public static func Main() -> void
+    {
+        client := new HttpClient("http://127.0.0.1:18080/");
+        response := client.Get("/");
+        println(response.Body);
+    }
+}

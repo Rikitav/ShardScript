@@ -10,6 +10,7 @@
 #include <shard/lexical/FileReader.hpp>
 
 #include <shard/runtime/VirtualMachine.hpp>
+#include <shard/runtime/EventLoop.hpp>
 #include <shard/runtime/GarbageCollector.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
 
@@ -486,6 +487,8 @@ extern "C"
                 return -1;
             }
 
+            // Pump the libuv event loop until all pending async operations complete.
+            domain->GetEventLoop().Run();
             return 0;
         }
         catch (const std::exception& e)

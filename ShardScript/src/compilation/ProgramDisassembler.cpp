@@ -202,7 +202,7 @@ void ProgramDisassembler::Disassemble(std::wostream& out, MethodSymbol* method)
     if (method->HandleType == MethodHandleType::External)
     {
         color.apply(out, color.dim);
-        out << L"; Method " << method->FullName << L" is an external method. No bytecode to disassemble.\n";
+        out << L"; External call to " << static_cast<std::size_t>(reinterpret_cast<std::uintptr_t>(method->FunctionPointer));
         color.reset_color(out);
         out << L"\n";
         color.apply(out, color.gray);
@@ -279,7 +279,7 @@ void ProgramDisassembler::Disassemble(std::wostream& out, MethodSymbol* method)
             case OpCode::LOADARRAYELEMENT:          opcode = L"ldelem"; break;
             case OpCode::STOREARRAYELEMENT:         opcode = L"stelem"; break;
 
-            case OpCode::CREATEDUPLICATE:           opcode = L"dup"; break;
+            case OpCode::CREATE_DUPLICATE:           opcode = L"dup"; break;
 
             case OpCode::LOADCONST_BOOLEAN:
                 opcode = L"ldc.bool";
@@ -312,12 +312,12 @@ void ProgramDisassembler::Disassemble(std::wostream& out, MethodSymbol* method)
                 break;
             }
 
-            case OpCode::LOADVARIABLE:
+            case OpCode::LOAD_VARIABLE:
                 opcode = L"ldloc";
                 args << decoder.AbsorbVariableSlot();
                 break;
 
-            case OpCode::STOREVARIABLE:
+            case OpCode::STORE_VARIABLE:
                 opcode = L"stloc";
                 args << decoder.AbsorbVariableSlot();
                 break;

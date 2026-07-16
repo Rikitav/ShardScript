@@ -14,6 +14,17 @@
 
 using namespace shard;
 
+namespace
+{
+	static CompilationUnitSyntax* GetCompilationUnit(SyntaxNode* node)
+	{
+		while (node != nullptr && node->Kind != SyntaxKind::CompilationUnit)
+			node = node->Parent;
+
+		return static_cast<CompilationUnitSyntax*>(node);
+	}
+}
+
 SemanticScope* ScopeVisitor::CurrentScope()
 {
 	return scopeStack.top();
@@ -100,14 +111,6 @@ std::optional<TypeSymbol*> ScopeVisitor::OwnerType()
 	}
 
 	return std::nullopt;
-}
-
-static CompilationUnitSyntax* GetCompilationUnit(SyntaxNode* node)
-{
-	while (node != nullptr && node->Kind != SyntaxKind::CompilationUnit)
-		node = node->Parent;
-
-	return static_cast<CompilationUnitSyntax*>(node);
 }
 
 static bool IsMethodSymbol(SyntaxSymbol* symbol)

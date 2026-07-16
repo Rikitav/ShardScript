@@ -161,9 +161,6 @@ static lsp::DiagnosticSeverity ToLspSeverity(shard::DiagnosticSeverity severity)
     }
 }
 
-// ============================================================================
-// Функция валидации кода и отправки Diagnostics контекста
-// ============================================================================
 void RunDiagnostics(lsp::MessageHandler& messageHandler)
 {
     std::lock_guard<std::recursive_mutex> lock(g_compiler_mutex);

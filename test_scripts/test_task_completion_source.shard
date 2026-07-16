@@ -1,0 +1,38 @@
+using stdio;
+using async;
+
+namespace test_task_completion_source;
+
+public class Program
+{
+    public static async func GetResultSync() -> ValueTask<string>
+    {
+        tcs := new TaskCompletionSource<string>();
+        tcs.SetResult("sync");
+        return await tcs.Task;
+    }
+
+    public static async func CompleteLater(tcs: TaskCompletionSource<string>) -> Task
+    {
+        await Task.Delay(10);
+        tcs.SetResult("async");
+    }
+
+    public static async func GetResultAsync() -> ValueTask<string>
+    {
+        tcs := new TaskCompletionSource<string>();
+        CompleteLater(tcs);
+        return await tcs.Task;
+    }
+
+    public static func Main() -> void
+    {
+        task1 := GetResultSync();
+        ValueTask.Wait(task1);
+        println(task1.Result);
+
+        task2 := GetResultAsync();
+        ValueTask.Wait(task2);
+        println(task2.Result);
+    }
+}

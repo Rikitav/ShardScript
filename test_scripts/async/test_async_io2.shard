@@ -1,0 +1,20 @@
+using stdio;
+using async;
+using filesystem;
+
+namespace test_async_io2;
+
+public class Program
+{
+    public static async func ReadIt() -> ValueTask<string>
+    {
+        return await ValueTask.FromResult("hi");
+    }
+
+    public static func Main() -> void
+    {
+        task := ReadIt();
+        ValueTask.Wait(task);
+        println(task.Result);
+    }
+}

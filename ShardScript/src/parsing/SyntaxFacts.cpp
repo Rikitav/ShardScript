@@ -10,6 +10,7 @@ int GetOperatorPrecendence(shard::TokenType type)
 	{
 		case TokenType::IncrementOperator:
 		case TokenType::DecrementOperator:
+		case TokenType::AwaitKeyword:
 			return 11;
 
 		case TokenType::PowOperator:
@@ -319,6 +320,7 @@ bool IsModifier(shard::TokenType type)
 		case TokenType::ProtectedKeyword:
 		case TokenType::InternalKeyword:
 		case TokenType::StaticKeyword:
+		case TokenType::AsyncKeyword:
 		case TokenType::ExternKeyword:
 		case TokenType::ExportKeyword:
 			return true;

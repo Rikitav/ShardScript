@@ -20,6 +20,7 @@ namespace shard
 	class SHARD_API MethodDeclarationSyntax : public MemberDeclarationSyntax
 	{
 	public:
+		SyntaxToken AsyncModifierToken;
 		SyntaxToken Semicolon;
 		std::unique_ptr<TypeSyntax> ReturnType = nullptr;
 		std::unique_ptr<ParametersListSyntax> ParametersList = nullptr;

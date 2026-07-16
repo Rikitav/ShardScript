@@ -1,0 +1,28 @@
+using stdio;
+using async;
+
+namespace test_async_value_task_exception;
+
+public class Program
+{
+    public static async func ThrowingAsync() -> ValueTask<int>
+    {
+        await Task.Delay(10);
+        throw new RuntimeException();
+        return 0;
+    }
+
+    public static func Main() -> void
+    {
+        task := ThrowingAsync();
+        try
+        {
+            ValueTask.Wait(task);
+            println("unexpected success");
+        }
+        catch (ex: RuntimeException)
+        {
+            println("caught");
+        }
+    }
+}

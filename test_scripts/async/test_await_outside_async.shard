@@ -1,0 +1,13 @@
+using stdio;
+using async;
+
+namespace test_await_outside_async;
+
+public class Program
+{
+    public static func Main() -> void
+    {
+        await Task.Delay(100);
+        println("done");
+    }
+}

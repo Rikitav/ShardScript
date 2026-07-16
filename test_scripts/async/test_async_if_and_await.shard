@@ -1,0 +1,32 @@
+using stdio;
+using async;
+
+namespace test_async_if_and_await;
+
+public class Program
+{
+    public static async func GetIntAsync() -> ValueTask<int>
+    {
+        await Task.Delay(10);
+        return 42;
+    }
+
+    public static func Main() -> void
+    {
+        task := DoItAsync();
+        ValueTask.Wait(task);
+    }
+
+    public static async func DoItAsync() -> Task
+    {
+        n := await GetIntAsync();
+        if (n == 42)
+        {
+            println("yes");
+        }
+        else
+        {
+            println("no");
+        }
+    }
+}

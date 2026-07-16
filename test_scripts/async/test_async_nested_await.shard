@@ -1,0 +1,21 @@
+using stdio;
+using async;
+
+namespace test_async_nested_await;
+
+public class Program
+{
+    public static async func GetNumberAsync() -> ValueTask<int>
+    {
+        await Task.Delay(10);
+        return 42;
+    }
+
+    public static func Main() -> void
+    {
+        task := GetNumberAsync();
+        ValueTask.Wait(task);
+        result: int = task.Result + 1;
+        println(result);
+    }
+}

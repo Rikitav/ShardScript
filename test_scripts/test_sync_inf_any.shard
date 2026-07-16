@@ -1,0 +1,12 @@
+using stdio;
+
+namespace test_sync_inf_any;
+
+public class Program
+{
+    public static func Main() -> void
+    {
+        i := 0;
+        println(i + 1);
+    }
+}

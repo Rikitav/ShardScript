@@ -1,0 +1,32 @@
+using stdio;
+using async;
+using filesystem;
+
+namespace test_async_io;
+
+public class Program
+{
+    public static async func ReadIt(path: string) -> ValueTask<string>
+    {
+    await Task.Delay(1000);
+        return await File.ReadAllTextAsync(path);
+    }
+
+    public static async func WriteIt(path: string, content: string) -> Task
+    {
+        await File.WriteAllTextAsync(path, content);
+    }
+
+    public static func Main() -> void
+    {
+        path := "D:/temp/async_io_test.txt";
+        File.WriteAllText(path, "hello async world");
+
+        task := ReadIt(path);
+        Task.Delay(500);
+        println("before");
+        
+        task.Wait();
+        println(task.Result);
+    }
+}

@@ -1,0 +1,28 @@
+using stdio;
+using async;
+
+namespace test_async_try_catch_continue;
+
+public class Program
+{
+    public static async func ContinueAfterCatch() -> Task
+    {
+        try
+        {
+            await Task.Delay(10);
+            println("in try");
+        }
+        catch (ex: RuntimeException)
+        {
+            println("caught");
+        }
+
+        println("after catch");
+    }
+
+    public static func Main() -> void
+    {
+        Task.Wait(ContinueAfterCatch());
+        println("done");
+    }
+}

@@ -45,6 +45,7 @@
 #include <shard/parsing/nodes/Expressions/LiteralExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/BinaryExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/UnaryExpressionSyntax.hpp>
+#include <shard/parsing/nodes/Expressions/AwaitExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/LinkedExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/CollectionExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/LambdaExpressionSyntax.hpp>
@@ -90,6 +91,234 @@
 #include <system_error>
 
 using namespace shard;
+
+static bool IsTaskType(TypeSymbol* type)
+{
+	return type != nullptr && type->FullName == L"async.Task";
+}
+
+static bool IsValueTaskType(TypeSymbol* type, TypeSymbol*& outValue)
+{
+	if (type == nullptr || type->Kind != SyntaxKind::GenericType)
+		return false;
+
+	GenericTypeSymbol* genericType = static_cast<GenericTypeSymbol*>(type);
+	TypeSymbol* underlying = genericType->UnderlayingType;
+	if (underlying == nullptr || underlying->FullName != L"async.ValueTask")
+		return false;
+
+	if (!underlying->TypeParameters.empty())
+		outValue = genericType->SubstituteTypeParameters(underlying->TypeParameters[0]);
+
+	return true;
+}
+
+static bool IsValidAsyncReturnType(TypeSymbol* type)
+{
+	if (type == nullptr)
+		return false;
+
+	if (IsTaskType(type))
+		return true;
+
+	TypeSymbol* valueType = nullptr;
+	return IsValueTaskType(type, valueType);
+}
+
+static TypeSymbol* GetAsyncMethodElementType(MethodSymbol* method)
+{
+	if (method == nullptr || method->ReturnType == nullptr)
+		return nullptr;
+
+	if (IsTaskType(method->ReturnType))
+		return SymbolTable::Primitives::Void;
+
+	TypeSymbol* valueType = nullptr;
+	if (IsValueTaskType(method->ReturnType, valueType))
+		return valueType;
+
+	return nullptr;
+}
+
+static GenericTypeSymbol* AsGenericInstance(TypeSymbol* type)
+{
+	if (type != nullptr && type->Kind == SyntaxKind::GenericType)
+		return static_cast<GenericTypeSymbol*>(type);
+
+	return nullptr;
+}
+
+static TypeSymbol* SubstituteAwaiterTypeArgument(TypeSymbol* type, GenericTypeSymbol* genericInstance)
+{
+	if (type == nullptr || genericInstance == nullptr)
+		return type;
+
+	if (type->Kind == SyntaxKind::TypeParameter)
+	{
+		TypeParameterSymbol* typeParam = static_cast<TypeParameterSymbol*>(type);
+		TypeSymbol* substituted = genericInstance->SubstituteTypeParameters(typeParam);
+		if (substituted != nullptr)
+			return substituted;
+	}
+
+	return type;
+}
+
+static const std::vector<MethodSymbol*>& GetMethodTable(TypeSymbol* type)
+{
+	if (type != nullptr && type->Kind == SyntaxKind::GenericType)
+		return static_cast<GenericTypeSymbol*>(type)->UnderlayingType->Methods;
+
+	if (type != nullptr)
+		return type->Methods;
+
+	static const std::vector<MethodSymbol*> empty;
+	return empty;
+}
+
+static const std::vector<TypeSymbol*>& GetInterfaceTable(TypeSymbol* type)
+{
+	if (type != nullptr && type->Kind == SyntaxKind::GenericType)
+		return static_cast<GenericTypeSymbol*>(type)->UnderlayingType->Interfaces;
+
+	if (type != nullptr)
+		return type->Interfaces;
+
+	static const std::vector<TypeSymbol*> empty;
+	return empty;
+}
+
+static bool TypeImplementsInterface(TypeSymbol* type, InterfaceSymbol* interfaceSymbol)
+{
+	if (type == nullptr || interfaceSymbol == nullptr)
+		return false;
+
+	const std::vector<TypeSymbol*>& interfaces = GetInterfaceTable(type);
+	for (TypeSymbol* iface : interfaces)
+	{
+		if (iface == interfaceSymbol)
+			return true;
+
+		if (iface->Kind == SyntaxKind::GenericType &&
+			static_cast<GenericTypeSymbol*>(iface)->UnderlayingType == interfaceSymbol)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+static TypeSymbol* ResolveAwaitablePattern(AwaitExpressionSyntax* node, TypeSymbol* awaitedType, DiagnosticsContext& diagnostics)
+{
+	GenericTypeSymbol* awaitedGeneric = AsGenericInstance(awaitedType);
+
+	// 1. Resolve the awaiter type. A type is awaitable if it implements IAwaitable
+	// or, as a self-awaiter, directly implements IAwaiter.
+	TypeSymbol* awaiterType = nullptr;
+	InterfaceSymbol* iawaitable = SymbolTable::StandardTypes::IAwaitable;
+	MethodSymbol* iawaitableGetAwaiter = SymbolTable::StandardTypes::IAwaitable_GetAwaiter;
+	InterfaceSymbol* iawaiter = SymbolTable::StandardTypes::IAwaiter;
+
+	if (iawaitable != nullptr && iawaitableGetAwaiter != nullptr &&
+		TypeImplementsInterface(awaitedType, iawaitable))
+	{
+		MethodSymbol* getAwaiter = awaitedType->FindInterfaceImplementation(iawaitableGetAwaiter);
+		if (getAwaiter != nullptr && getAwaiter->ReturnType != nullptr && getAwaiter->ReturnType != TYPE_VOID)
+		{
+			node->GetAwaiterMethod = getAwaiter;
+			awaiterType = SubstituteAwaiterTypeArgument(getAwaiter->ReturnType, awaitedGeneric);
+		}
+	}
+
+	if (awaiterType == nullptr && iawaiter != nullptr && TypeImplementsInterface(awaitedType, iawaiter))
+	{
+		awaiterType = awaitedType;
+	}
+
+	if (awaiterType == nullptr)
+	{
+		diagnostics.ReportError(node->AwaitKeywordToken,
+			L"Type '" + (awaitedType != nullptr ? awaitedType->Name : L"?") +
+			L"' is not awaitable; it must implement 'IAwaitable' or 'IAwaiter'");
+		return nullptr;
+	}
+
+	// Built-ins implement IAwaitable but are their own typed awaiters; keep the concrete type for codegen.
+	if (IsTaskType(awaitedType) || IsValueTaskType(awaitedType, awaiterType))
+		awaiterType = awaitedType;
+
+	node->AwaiterType = awaiterType;
+	GenericTypeSymbol* awaiterGeneric = AsGenericInstance(awaiterType);
+
+	// 2. Resolve the result type. Built-ins are special-cased; otherwise use GetResult's return type.
+	TypeSymbol* resultType = nullptr;
+
+	if (IsTaskType(awaitedType))
+	{
+		resultType = TYPE_VOID;
+	}
+	else
+	{
+		TypeSymbol* valueType = nullptr;
+		if (IsValueTaskType(awaitedType, valueType))
+			resultType = valueType;
+	}
+
+	// 3. Validate the awaiter members through the IAwaiter interface contract.
+	bool hasIsCompleted = false;
+	bool hasOnCompleted = false;
+	bool hasGetResult = false;
+
+	MethodSymbol* iawaiterIsCompleted = SymbolTable::StandardTypes::IAwaiter_IsCompleted;
+	MethodSymbol* iawaiterOnCompleted = SymbolTable::StandardTypes::IAwaiter_OnCompleted;
+	MethodSymbol* iawaiterGetResult = SymbolTable::StandardTypes::IAwaiter_GetResult;
+
+	if (iawaiter != nullptr && TypeImplementsInterface(awaiterType, iawaiter))
+	{
+		if (iawaiterIsCompleted != nullptr)
+		{
+			MethodSymbol* impl = awaiterType->FindInterfaceImplementation(iawaiterIsCompleted);
+			if (impl != nullptr)
+			{
+				hasIsCompleted = true;
+				node->IsCompletedMethod = impl;
+			}
+		}
+
+		if (iawaiterOnCompleted != nullptr)
+		{
+			MethodSymbol* impl = awaiterType->FindInterfaceImplementation(iawaiterOnCompleted);
+			if (impl != nullptr)
+			{
+				hasOnCompleted = true;
+				node->OnCompletedMethod = impl;
+			}
+		}
+
+		if (iawaiterGetResult != nullptr)
+		{
+			MethodSymbol* impl = awaiterType->FindInterfaceImplementation(iawaiterGetResult);
+			if (impl != nullptr)
+			{
+				hasGetResult = true;
+				node->GetResultMethod = impl;
+				if (resultType == nullptr)
+					resultType = SubstituteAwaiterTypeArgument(impl->ReturnType, awaiterGeneric);
+			}
+		}
+	}
+
+	if (!hasIsCompleted || !hasOnCompleted || !hasGetResult)
+	{
+		diagnostics.ReportError(node->AwaitKeywordToken,
+			L"Type '" + (awaitedType != nullptr ? awaitedType->Name : L"?") +
+			L"' is not awaitable; awaiter must implement 'IAwaiter'");
+		return nullptr;
+	}
+
+	return resultType;
+}
 
 static void GeneratePropertyBackingField(SymbolFactory& factory, PropertySymbol* symbol)
 {
@@ -395,7 +624,7 @@ void ExpressionBinder::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 		CurrentScope()->ReturnFound = false;
 		VisitStatementsBlock(node->Body.get());
 
-		if (symbol->ReturnType != nullptr)
+		if (!symbol->IsAsync && symbol->ReturnType != nullptr)
 		{
 			if (symbol->ReturnType->Name != L"Void")
 			{
@@ -1077,6 +1306,35 @@ void ExpressionBinder::VisitUnaryExpression(UnaryExpressionSyntax* node)
 	SetExpressionType(node, type);
 }
 
+void ExpressionBinder::VisitAwaitExpression(AwaitExpressionSyntax* node)
+{
+	VisitExpression(node->Expression.get());
+
+	auto hostMethod = FindHostMethodSymbol();
+	if (!hostMethod.has_value() || !hostMethod.value()->IsAsync)
+	{
+		Diagnostics.ReportError(node->AwaitKeywordToken, L"await can only be used inside async methods");
+		SetExpressionType(node, SymbolTable::Primitives::Any);
+		return;
+	}
+
+	TypeSymbol* awaitedType = GetExpressionType(node->Expression.get());
+	if (awaitedType == nullptr)
+	{
+		SetExpressionType(node, SymbolTable::Primitives::Any);
+		return;
+	}
+
+	TypeSymbol* resultType = ResolveAwaitablePattern(node, awaitedType, Diagnostics);
+	if (resultType == nullptr)
+	{
+		SetExpressionType(node, SymbolTable::Primitives::Any);
+		return;
+	}
+
+	SetExpressionType(node, resultType);
+}
+
 TypeSymbol* ExpressionBinder::AnalyzeObjectExpression(ObjectExpressionSyntax* node)
 {
 	if (node->Symbol == nullptr)
@@ -1174,6 +1432,10 @@ void ExpressionBinder::VisitLambdaExpression(LambdaExpressionSyntax* node)
 	DelegateTypeSymbol* delegate = Factory.Delegate(anonymousMethod);
 	node->Symbol = delegate;
 
+	bool isAsync = node->AsyncModifierToken.Type != TokenType::Unknown;
+	if (isAsync)
+		anonymousMethod->IsAsync = true;
+
 	bool hasExplicitReturnType = false;
 	if (node->ReturnType != nullptr)
 	{
@@ -1183,7 +1445,18 @@ void ExpressionBinder::VisitLambdaExpression(LambdaExpressionSyntax* node)
 			anonymousMethod->ReturnType = node->ReturnType->Symbol;
 			delegate->ReturnType = node->ReturnType->Symbol;
 			hasExplicitReturnType = true;
+
+			if (isAsync && !IsValidAsyncReturnType(anonymousMethod->ReturnType))
+			{
+				Diagnostics.ReportError(node->AsyncModifierToken,
+					L"Async lambda must return 'Task' or 'ValueTask<T>'");
+			}
 		}
+	}
+	else if (isAsync)
+	{
+		Diagnostics.ReportError(node->AsyncModifierToken,
+			L"Async lambda must declare an explicit return type");
 	}
 
 	if (node->ParametersList != nullptr)
@@ -1748,15 +2021,15 @@ TypeSymbol* ExpressionBinder::AnalyzeInvokationExpression(InvokationExpressionSy
 	{
 		VisitExpression(node->PreviousExpression.get());
 		currentType = GetExpressionType(node->PreviousExpression.get());
+		node->ReceiverType = currentType;
 	}
 
-	GenericTypeSymbol* genericType = nullptr;
-	if (currentType != nullptr && currentType->Kind == SyntaxKind::GenericType)
-		genericType = static_cast<GenericTypeSymbol*>(currentType);
-
 	node->Symbol = method;
-	node->ReceiverType = currentType;
 	node->IsStaticContext = GetIsStaticContext(node->PreviousExpression.get());
+
+	GenericTypeSymbol* genericType = nullptr;
+	if (node->ReceiverType != nullptr && node->ReceiverType->Kind == SyntaxKind::GenericType)
+		genericType = static_cast<GenericTypeSymbol*>(node->ReceiverType);
 
 	if (method->ReturnType == nullptr)
 	{
@@ -2447,9 +2720,53 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node, 
 	{
 		TypeSymbol* searchType = currentType;
 		if (searchType->Kind == SyntaxKind::GenericType)
-			searchType = static_cast<GenericTypeSymbol*>(searchType)->UnderlayingType;
+		{
+			genericType = static_cast<GenericTypeSymbol*>(searchType);
+			searchType = genericType->UnderlayingType;
+		}
 
-		symbol = FindMethodOverload(searchType->Methods, methodName, argTypes, genericType, explicitMethodTypeArgs, selectedMethodTypeArgs);
+		if (searchType != nullptr && !searchType->TypeParameters.empty() && genericType == nullptr)
+		{
+			for (MethodSymbol* method : searchType->Methods)
+			{
+				std::vector<TypeSymbol*> classTypeArgs;
+				bool inferred = InferClassTypeArguments(searchType, method, argTypes, classTypeArgs);
+
+				std::vector<TypeSymbol*> methodTypeArgs;
+				if (inferred)
+				{
+					std::unordered_map<std::wstring, TypeSymbol*> typeArgMap;
+					for (std::size_t i = 0; i < searchType->TypeParameters.size(); ++i)
+						typeArgMap[searchType->TypeParameters[i]->Name] = classTypeArgs[i];
+
+					GenericTypeSymbol* constructed = Factory.GenericType(searchType, typeArgMap);
+					if (TryMatchMethod(method, methodName, argTypes, constructed, explicitMethodTypeArgs, methodTypeArgs))
+					{
+						symbol = method;
+						genericType = constructed;
+						selectedMethodTypeArgs = std::move(methodTypeArgs);
+						break;
+					}
+				}
+				else if (method->Linking == LINK_STATIC)
+				{
+					// Static methods on a generic class that do not use the class's
+					// type parameters (e.g. ValueTask.Wait) can be invoked from the
+					// open generic type name without explicit type arguments.
+					if (TryMatchMethod(method, methodName, argTypes, nullptr, explicitMethodTypeArgs, methodTypeArgs))
+					{
+						symbol = method;
+						genericType = nullptr;
+						selectedMethodTypeArgs = std::move(methodTypeArgs);
+						break;
+					}
+				}
+			}
+		}
+		else
+		{
+			symbol = FindMethodOverload(searchType->Methods, methodName, argTypes, genericType, explicitMethodTypeArgs, selectedMethodTypeArgs);
+		}
 	}
 
 	// 2. Top-level static methods and extension methods.
@@ -2529,6 +2846,7 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node, 
 	}
 
 	node->BoundTypeArguments = std::move(selectedMethodTypeArgs);
+	node->ReceiverType = genericType != nullptr ? genericType : currentType;
 
 	if (isStaticContext && symbol->Linking == LINK_INSTANCE)
 	{
@@ -2843,6 +3161,9 @@ bool ExpressionBinder::TryInferTypeArgument(TypeSymbol* pattern, TypeSymbol* con
 		{
 			for (TypeSymbol* iface : concreteUnderlying->Interfaces)
 			{
+				if (iface == nullptr)
+					continue;
+
 				if (iface->Kind != SyntaxKind::GenericType)
 					continue;
 
@@ -2864,6 +3185,7 @@ bool ExpressionBinder::TryInferTypeArgument(TypeSymbol* pattern, TypeSymbol* con
 					if (!TryInferTypeArgument(patternArg, concreteArg, method, genericType, outMethodTypeArgs))
 						return false;
 				}
+
 				return true;
 			}
 		}
@@ -2920,6 +3242,78 @@ bool ExpressionBinder::InferMethodTypeArguments(MethodSymbol* method, const std:
 	}
 
 	for (TypeSymbol* type : outMethodTypeArgs)
+		if (type == nullptr)
+			return false;
+
+	return true;
+}
+
+static bool TryInferClassTypeArgument(TypeSymbol* pattern, TypeSymbol* concrete, TypeSymbol* classDef, std::vector<TypeSymbol*>& outArgs)
+{
+	if (pattern == nullptr || concrete == nullptr)
+		return true;
+
+	if (pattern->Kind == SyntaxKind::TypeParameter)
+	{
+		TypeParameterSymbol* tp = static_cast<TypeParameterSymbol*>(pattern);
+		if (tp->TypeArgumentIndex < outArgs.size() && classDef->TypeParameters[tp->TypeArgumentIndex] == tp)
+		{
+			TypeSymbol*& slot = outArgs[tp->TypeArgumentIndex];
+			if (slot == nullptr)
+				slot = concrete;
+			else if (!SemanticModel::AreTypesEqual(slot, concrete))
+				return false;
+		}
+		return true;
+	}
+
+	if (pattern->Kind == SyntaxKind::ArrayType)
+	{
+		if (concrete->Kind != SyntaxKind::ArrayType)
+			return false;
+
+		return TryInferClassTypeArgument(static_cast<ArrayTypeSymbol*>(pattern)->UnderlayingType,
+			static_cast<ArrayTypeSymbol*>(concrete)->UnderlayingType, classDef, outArgs);
+	}
+
+	if (pattern->Kind == SyntaxKind::GenericType)
+	{
+		GenericTypeSymbol* patternGeneric = static_cast<GenericTypeSymbol*>(pattern);
+		if (concrete->Kind != SyntaxKind::GenericType)
+			return false;
+
+		GenericTypeSymbol* concreteGeneric = static_cast<GenericTypeSymbol*>(concrete);
+		if (patternGeneric->UnderlayingType != concreteGeneric->UnderlayingType)
+			return false;
+
+		for (TypeParameterSymbol* param : patternGeneric->UnderlayingType->TypeParameters)
+		{
+			TypeSymbol* patternArg = patternGeneric->SubstituteTypeParameters(param);
+			TypeSymbol* concreteArg = concreteGeneric->SubstituteTypeParameters(param);
+			if (!TryInferClassTypeArgument(patternArg, concreteArg, classDef, outArgs))
+				return false;
+		}
+		return true;
+	}
+
+	return true;
+}
+
+bool ExpressionBinder::InferClassTypeArguments(TypeSymbol* classDef, MethodSymbol* method, const std::vector<TypeSymbol*>& argTypes, std::vector<TypeSymbol*>& outClassTypeArgs)
+{
+	outClassTypeArgs.assign(classDef->TypeParameters.size(), nullptr);
+
+	std::size_t start = method->Linking == LINK_INSTANCE ? 1 : 0;
+	if (argTypes.size() + start != method->Parameters.size())
+		return false;
+
+	for (std::size_t i = start; i < method->Parameters.size(); ++i)
+	{
+		if (!TryInferClassTypeArgument(method->Parameters[i]->Type, argTypes[i - start], classDef, outClassTypeArgs))
+			return false;
+	}
+
+	for (TypeSymbol* type : outClassTypeArgs)
 		if (type == nullptr)
 			return false;
 
@@ -3684,6 +4078,43 @@ void ExpressionBinder::VisitReturnStatement(ReturnStatementSyntax* node)
 	}
 
 	searchingScope->ReturnFound = true;
+
+	if (searchingScope->Owner != nullptr && searchingScope->Owner->Kind == SyntaxKind::MethodDeclaration)
+	{
+		MethodSymbol* method = const_cast<MethodSymbol*>(static_cast<const MethodSymbol*>(searchingScope->Owner));
+		if (method->IsAsync)
+		{
+			TypeSymbol* elementType = GetAsyncMethodElementType(method);
+			if (elementType == SymbolTable::Primitives::Void)
+			{
+				if (node->Expression != nullptr)
+				{
+					VisitExpression(node->Expression.get());
+					Diagnostics.ReportError(node->KeywordToken, L"Async Task method cannot return a value");
+				}
+			}
+			else if (elementType != nullptr)
+			{
+				if (node->Expression == nullptr)
+				{
+					Diagnostics.ReportError(node->KeywordToken, L"Async ValueTask<T> method must return a value of type '" + elementType->Name + L"'");
+					return;
+				}
+
+				VisitExpression(node->Expression.get());
+				TypeSymbol* returnExprType = GetExpressionType(node->Expression.get());
+				if (returnExprType == nullptr)
+				{
+					Diagnostics.ReportError(node->KeywordToken, L"Return expression type could not be determined");
+				}
+				else if (!SemanticModel::IsAssignableTo(elementType, returnExprType))
+				{
+					Diagnostics.ReportError(node->KeywordToken, L"Return type mismatch: expected '" + elementType->Name + L"' but got '" + returnExprType->Name + L"'");
+				}
+			}
+			return;
+		}
+	}
 	if (returnType == SymbolTable::Primitives::Any)
 	{
 		if (searchingScope->Owner == nullptr || searchingScope->Owner->Kind != SyntaxKind::MethodDeclaration)

@@ -78,6 +78,7 @@ namespace shard
 		// Linked expressions
 		LinkedExpression,
 		MemberAccessExpression,
+		AwaitExpression,
 		InvokationExpression,
 		IndexatorExpression,
 		LambdaExpression,

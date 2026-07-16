@@ -62,6 +62,52 @@ namespace shard
 
         struct StandardTypes
         {
+            inline static SHARD_API InterfaceSymbol* IAsyncState = nullptr;
+            inline static SHARD_API MethodSymbol* IAsyncState_MoveNext = nullptr;
+
+            inline static SHARD_API InterfaceSymbol* IAwaitable = nullptr;
+            inline static SHARD_API MethodSymbol* IAwaitable_GetAwaiter = nullptr;
+
+            inline static SHARD_API InterfaceSymbol* IAwaiter = nullptr;
+            inline static SHARD_API MethodSymbol* IAwaiter_IsCompleted = nullptr;
+            inline static SHARD_API MethodSymbol* IAwaiter_OnCompleted = nullptr;
+            inline static SHARD_API MethodSymbol* IAwaiter_GetResult = nullptr;
+
+            inline static SHARD_API ClassSymbol* Task = nullptr;
+            inline static SHARD_API FieldSymbol* Task_StateField = nullptr;
+            inline static SHARD_API FieldSymbol* Task_ContinuationField = nullptr;
+            inline static SHARD_API FieldSymbol* Task_ExceptionField = nullptr;
+            inline static SHARD_API MethodSymbol* Task_MoveNext = nullptr;
+            inline static SHARD_API MethodSymbol* Task_IsCompleted = nullptr;
+            inline static SHARD_API MethodSymbol* Task_GetAwaiter = nullptr;
+            inline static SHARD_API MethodSymbol* Task_GetResult = nullptr;
+            inline static SHARD_API MethodSymbol* Task_OnCompleted = nullptr;
+            inline static SHARD_API MethodSymbol* Task_Complete = nullptr;
+            inline static SHARD_API MethodSymbol* Task_SetException = nullptr;
+            inline static SHARD_API MethodSymbol* Task_InternalRoot = nullptr;
+            inline static SHARD_API MethodSymbol* Task_Delay = nullptr;
+            inline static SHARD_API MethodSymbol* Task_Wait = nullptr;
+
+            inline static SHARD_API ClassSymbol* ValueTask = nullptr;
+            inline static SHARD_API TypeParameterSymbol* ValueTask_T = nullptr;
+            inline static SHARD_API FieldSymbol* ValueTask_StateField = nullptr;
+            inline static SHARD_API FieldSymbol* ValueTask_ResultField = nullptr;
+            inline static SHARD_API FieldSymbol* ValueTask_ContinuationField = nullptr;
+            inline static SHARD_API FieldSymbol* ValueTask_ExceptionField = nullptr;
+            inline static SHARD_API AccessorSymbol* ValueTask_IsCompleted_get = nullptr;
+            inline static SHARD_API AccessorSymbol* ValueTask_Result_get = nullptr;
+            inline static SHARD_API MethodSymbol* ValueTask_MoveNext = nullptr;
+            inline static SHARD_API MethodSymbol* ValueTask_GetAwaiter = nullptr;
+            inline static SHARD_API MethodSymbol* ValueTask_GetResult = nullptr;
+            inline static SHARD_API MethodSymbol* ValueTask_OnCompleted = nullptr;
+            inline static SHARD_API MethodSymbol* ValueTask_InternalRoot = nullptr;
+            inline static SHARD_API MethodSymbol* ValueTask_FromResult = nullptr;
+            inline static SHARD_API MethodSymbol* ValueTask_SetResult = nullptr;
+            inline static SHARD_API MethodSymbol* ValueTask_SetException = nullptr;
+            
+            inline static SHARD_API MethodSymbol* Wait_Task = nullptr;
+            inline static SHARD_API MethodSymbol* Wait_ValueTask = nullptr;
+
             inline static SHARD_API InterfaceSymbol* IThrowable = nullptr;
             inline static SHARD_API AccessorSymbol* IThrowable_getMessage = nullptr;
             inline static SHARD_API AccessorSymbol* IThrowable_getStackTrace = nullptr;
@@ -104,6 +150,18 @@ namespace shard
         SyntaxSymbol* BindSymbol(SyntaxNode* node, std::unique_ptr<SyntaxSymbol> symbol);
         SyntaxSymbol* ImplicitSymbol(std::unique_ptr<SyntaxSymbol> symbol);
 
+        template<typename T>
+        inline T* BindSymbolEx(SyntaxNode* node, std::unique_ptr<T> symbol)
+        {
+            return static_cast<T*>(BindSymbol(node, std::move(symbol)));
+        }
+
+        template<typename T>
+        inline T* ImplicitSymbolEx(std::unique_ptr<T> symbol)
+        {
+            return static_cast<T*>(ImplicitSymbol(std::move(symbol)));
+        }
+
         std::optional<SyntaxSymbol*> LookupSymbol(SyntaxNode* node);
         std::optional<SyntaxNode*> LookupNode(SyntaxSymbol* symbol);
 
@@ -113,6 +171,19 @@ namespace shard
 
         void MarkAllSymbolsReady();
         void MarkJustCreatedSymbolsReady();
+
+    private:
+        static void ResolveGlobalComponents(SymbolTable* globalTable);
+
+        static void ResolvePrimitives(SymbolTable* globalTable);
+        static void ResolvePrimitiveOperators(SymbolTable* globalTable);
+        static void ResolvePrimitivePrintables(SymbolTable* globalTable);
+
+        static void ResolveGlobalMethods(SymbolTable* globalTable);
+        static void ResolveInterfaces(SymbolTable* globalTable);
+        static void ResolveEnumerables(SymbolTable* globalTable);
+        static void ResolveExceptions(SymbolTable* globalTable);
+        static void ResolveAsyncTypes(SymbolTable* globalTable);
     };
 
     inline TypeSymbol*& TYPE_VOID = shard::SymbolTable::Primitives::Void;
@@ -127,6 +198,29 @@ namespace shard
     inline TypeSymbol*& TYPE_STRING = shard::SymbolTable::Primitives::String;
     inline TypeSymbol*& TYPE_ARRAY = shard::SymbolTable::Primitives::Array;
     inline TypeSymbol*& TYPE_BYTE = shard::SymbolTable::Primitives::Byte;
+
+    inline InterfaceSymbol*& TRAIT_ASYNCSTATE = shard::SymbolTable::StandardTypes::IAsyncState;
+    inline MethodSymbol*& TRAIT_ASYNCSTATE_MoveNext = shard::SymbolTable::StandardTypes::IAsyncState_MoveNext;
+    
+    inline InterfaceSymbol*& TRAIT_AWAITABLE = shard::SymbolTable::StandardTypes::IAwaitable;
+    inline MethodSymbol*& TRAIT_AWAITABLE_GetAwaiter = shard::SymbolTable::StandardTypes::IAwaitable_GetAwaiter;
+    
+    inline InterfaceSymbol*& TRAIT_AWAITER = shard::SymbolTable::StandardTypes::IAwaiter;
+    inline MethodSymbol*& TRAIT_AWAITER_IsCompleted = shard::SymbolTable::StandardTypes::IAwaiter_IsCompleted;
+    inline MethodSymbol*& TRAIT_AWAITER_OnCompleted = shard::SymbolTable::StandardTypes::IAwaiter_OnCompleted;
+    inline MethodSymbol*& TRAIT_AWAITER_GetResult = shard::SymbolTable::StandardTypes::IAwaiter_GetResult;
+    
+    inline ClassSymbol*& CLASS_TASK = shard::SymbolTable::StandardTypes::Task;
+    inline FieldSymbol*& CLASS_TASK_StateField = shard::SymbolTable::StandardTypes::Task_StateField;
+    inline FieldSymbol*& CLASS_TASK_ContinuationField = shard::SymbolTable::StandardTypes::Task_ContinuationField;
+    inline FieldSymbol*& CLASS_TASK_ExceptionField = shard::SymbolTable::StandardTypes::Task_ExceptionField;
+
+    inline ClassSymbol*& CLASS_VALUETASK = shard::SymbolTable::StandardTypes::ValueTask;
+    inline TypeParameterSymbol*& CLASS_VALUETASK_T = shard::SymbolTable::StandardTypes::ValueTask_T;
+    inline FieldSymbol*& CLASS_VALUETASK_StateField = shard::SymbolTable::StandardTypes::ValueTask_StateField;
+    inline FieldSymbol*& CLASS_VALUETASK_ResultField = shard::SymbolTable::StandardTypes::ValueTask_ResultField;
+    inline FieldSymbol*& CLASS_VALUETASK_ContinuationField = shard::SymbolTable::StandardTypes::ValueTask_ContinuationField;
+    inline FieldSymbol*& CLASS_VALUETASK_ExceptionField = shard::SymbolTable::StandardTypes::ValueTask_ExceptionField;
 
     inline InterfaceSymbol*& TRAIT_DISPOSABLE = shard::SymbolTable::StandardTypes::IDisposable;
     inline MethodSymbol*& TRAIT_DISPOSABLE_Dispose = shard::SymbolTable::StandardTypes::IDisposable_Dispose;
@@ -150,5 +244,4 @@ namespace shard
     inline FieldSymbol*& CLASS_ARRAYENUMERATOR_SourceField = shard::SymbolTable::StandardTypes::ArrayEnumerator_SourceField;
     inline FieldSymbol*& CLASS_ARRAYENUMERATOR_IndexField = shard::SymbolTable::StandardTypes::ArrayEnumerator_IndexField;
     inline FieldSymbol*& CLASS_ARRAYENUMERATOR_LengthField = shard::SymbolTable::StandardTypes::ArrayEnumerator_LengthField;
-
 }

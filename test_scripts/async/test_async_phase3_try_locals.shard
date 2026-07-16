@@ -1,0 +1,28 @@
+using stdio;
+using async;
+
+namespace test_async_phase3_try_locals;
+
+public class Program
+{
+    public static async func ComputeAsync(baseValue: int) -> ValueTask<int>
+    {
+        try
+        {
+            local: int = baseValue + 1;
+            await Task.Delay(10);
+            return local + 100;
+        }
+        catch (ex: RuntimeException)
+        {
+            return -1;
+        }
+    }
+
+    public static func Main() -> void
+    {
+        task := ComputeAsync(4);
+        ValueTask.Wait(task);
+        println(task.Result);
+    }
+}

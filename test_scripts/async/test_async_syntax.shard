@@ -1,0 +1,20 @@
+using stdio;
+using async;
+
+namespace test_async_syntax;
+
+public class Program
+{
+    public static async func DelayedHello() -> Task
+    {
+        println("before delay");
+        await Task.Delay(100);
+        println("after delay");
+    }
+
+    public static func Main() -> void
+    {
+        Task.Wait(DelayedHello());
+        println("done");
+    }
+}

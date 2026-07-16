@@ -1,0 +1,15 @@
+using stdio;
+
+namespace test_sync_if_bool;
+
+public class Program
+{
+    public static func Main() -> void
+    {
+        b := true;
+        if (b)
+            println("yes");
+        else
+            println("no");
+    }
+}

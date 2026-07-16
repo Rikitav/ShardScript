@@ -1,0 +1,16 @@
+using stdio;
+
+namespace test_return;
+
+public class Program
+{
+    public static func GetInt() -> int
+    {
+        return 42;
+    }
+
+    public static func Main() -> void
+    {
+        println(GetInt());
+    }
+}

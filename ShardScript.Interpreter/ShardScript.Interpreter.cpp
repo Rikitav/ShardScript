@@ -1,13 +1,9 @@
 #include <algorithm>
 #include <iostream>
-#include <fstream>
-#include <iomanip>
-#include <sstream>
 #include <memory>
 #include <string>
 #include <stdexcept>
 #include <exception>
-#include <unordered_map>
 #include <clocale>
 #include <csignal>
 #include <cstdlib>
@@ -18,6 +14,9 @@
 #include <ShardScript.hpp>
 #include <InteractiveConsole.hpp>
 #include <utilities/InterpreterUtilities.hpp>
+#include <utilities/Console.hpp>
+#include <utilities/Diagnostics.hpp>
+#include <utilities/Exceptions.hpp>
 
 // Platform-specific headers
 #if defined(_WIN32)
@@ -34,36 +33,40 @@
 using namespace shard;
 namespace fs = std::filesystem;
 
-// ANSI color escape sequences
-static const wchar_t* CReset   = L"\x1B[0m";
-static const wchar_t* CBold    = L"\x1B[1m";
-static const wchar_t* CRed     = L"\x1B[91m";
-static const wchar_t* CYellow  = L"\x1B[93m";
-static const wchar_t* CBlue    = L"\x1B[94m";
-static const wchar_t* CCyan    = L"\x1B[96m";
-static const wchar_t* CGray    = L"\x1B[90m";
-static const wchar_t* CWhite   = L"\x1B[97m";
-
-static void EnableTerminalColors()
+namespace
 {
-#if defined(_WIN32)
-	auto enableFor = [](DWORD handle)
+	fs::path ExecutableDirectory()
 	{
-		HANDLE h = GetStdHandle(handle);
-		if (h == INVALID_HANDLE_VALUE)
-			return;
+#if defined(_WIN32)
+		WCHAR pathBuffer[MAX_PATH];
+		GetModuleFileNameW(NULL, pathBuffer, static_cast<DWORD>(MAX_PATH));
+		return fs::path(pathBuffer).parent_path();
 
-		DWORD mode = 0;
-		if (!GetConsoleMode(h, &mode))
-			return;
+#elif defined(__linux__)
+		char pathBuffer[PATH_MAX];
+		ssize_t len = readlink("/proc/self/exe", pathBuffer, sizeof(pathBuffer) - 1);
+		if (len == -1)
+			return fs::path();
+		pathBuffer[len] = '\0';
+		return fs::path(pathBuffer).parent_path();
 
-		mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-		SetConsoleMode(h, mode);
-	};
-
-	enableFor(STD_OUTPUT_HANDLE);
-	enableFor(STD_ERROR_HANDLE);
+#else
+		return fs::path(); // Unsupported OS
 #endif
+	}
+
+	fs::path WorkingDirectory()
+	{
+		return fs::current_path();
+	}
+
+	static CompilationUnitSyntax* GetCompilationUnit(SyntaxNode* node)
+	{
+		while (node != nullptr && node->Kind != SyntaxKind::CompilationUnit)
+			node = node->Parent;
+
+		return static_cast<CompilationUnitSyntax*>(node);
+	}
 }
 
 static void SigIntHandler(int signal)
@@ -88,293 +91,44 @@ static bool CheckFilesExisting()
 
 static void LoadLibrariesFromDirectoryPath(CompilationContext* compiler, fs::path path)
 {
-	for (const fs::directory_entry& entry : fs::directory_iterator(path))
-	{
-		if (!entry.is_regular_file())
-			continue;
+    std::vector<fs::path> libraryPaths;
+    for (const fs::directory_entry& entry : fs::directory_iterator(path))
+    {
+        if (!entry.is_regular_file())
+            continue;
 
-		const auto filename = entry.path().filename();
+        const auto filename = entry.path().filename();
 #if defined(_WIN32)
-		if (!filename.string().ends_with(".dll"))
+        if (!filename.string().ends_with(".dll"))
 #else
-		if (!filename.string().ends_with(".so"))
+        if (!filename.string().ends_with(".so"))
 #endif
-			continue;
+            continue;
 
-		try
-		{
-			compiler->AddLib(entry.path().wstring());
-		}
-		catch (std::runtime_error& err)
-		{
-			std::cout << err.what();
-		}
-	}
-}
+        libraryPaths.push_back(entry.path());
+    }
 
-static fs::path GetCurrentDirectoryPath()
-{
-#if defined(_WIN32)
-	// Windows implementation
-	WCHAR pathBuffer[MAX_PATH];
-	DWORD size = GetModuleFileNameW(NULL, pathBuffer, static_cast<DWORD>(MAX_PATH));
-	return fs::path(pathBuffer).parent_path();
-
-#elif defined(__linux__)
-	// Linux Implementation
-	char pathBuffer[PATH_MAX];
-	ssize_t len = readlink("/proc/self/exe", pathBuffer, sizeof(pathBuffer) - 1);
-	if (len == -1)
-		return "";
-	pathBuffer[len] = '\0';
-	return std::filesystem::path(pathBuffer).parent_path();
-
-#else
-	return ""; // Unsupported OS
-#endif
-}
-
-static fs::path GetWorkingDirectoryPath()
-{
-	return fs::current_path();
-}
-
-static std::wstring ReadSourceLine(const std::wstring& filePath, int targetLine)
-{
-	std::filesystem::path sourcePath(filePath);
-	std::wifstream in(sourcePath);
-	in.imbue(std::locale::classic());
-	if (!in.is_open())
-		return L"";
-
-	std::wstring line;
-	int currentLine = 1;
-	while (currentLine < targetLine && std::getline(in, line))
-		++currentLine;
-
-	if (!std::getline(in, line))
-		return L"";
-
-	if (!line.empty() && line.back() == L'\r')
-		line.pop_back();
-
-	return line;
-}
-
-static const wchar_t* SeverityText(shard::DiagnosticSeverity severity)
-{
-	switch (severity)
+	/*
+    // Load the async core module first so that later modules can resolve
+    // Task/ValueTask/CancellationToken types during their own registration.
+    std::stable_partition(libraryPaths.begin(), libraryPaths.end(), [](const fs::path& p)
 	{
-		case shard::DiagnosticSeverity::Warning: return L"warning";
-		case shard::DiagnosticSeverity::Info:    return L"info";
-		default:                                 return L"error";
-	}
-}
+        std::string name = p.filename().string();
+        return name.find("async.shard") != std::string::npos;
+    });
+	*/
 
-static const wchar_t* SeverityColor(shard::DiagnosticSeverity severity)
-{
-	switch (severity)
-	{
-		case shard::DiagnosticSeverity::Warning: return CYellow;
-		case shard::DiagnosticSeverity::Info:    return CBlue;
-		default:                                 return CRed;
-	}
-}
-
-static void PrintDiagnostics(DiagnosticsContext& diagnostics)
-{
-	for (const shard::Diagnostic& diag : diagnostics.Diagnostics)
-	{
-		const shard::TextLocation& loc = diag.Location;
-		const wchar_t* severityColor = SeverityColor(diag.Severity);
-
-		std::wcout << severityColor << SeverityText(diag.Severity) << CReset
-		           << L": " << diag.Description << std::endl;
-
-		std::wcout << CGray << L" --> " << CReset
-		           << CCyan << loc.FileName << CReset
-		           << CGray << L":" << loc.Line << L":" << loc.Offset << CReset << std::endl;
-
-		std::wcout << CGray << L"    |" << CReset << std::endl;
-
-		std::wstring sourceLine = ReadSourceLine(loc.FileName, loc.Line);
-		if (!sourceLine.empty())
-		{
-			constexpr int MaxVisibleLineLength = 160;
-			constexpr int CaretWindowRadius = 60;
-
-			int start = (std::max)(0, loc.Offset - 1);
-			int length = (std::max)(1, loc.Length);
-
-			if (start > static_cast<int>(sourceLine.length()))
-				start = static_cast<int>(sourceLine.length());
-
-			if (start + length > static_cast<int>(sourceLine.length()))
-				length = static_cast<int>(sourceLine.length()) - start;
-
-			// If the source line is extremely long, show only a window around the
-			// diagnostic so the output stays readable.
-			std::wstring displayedLine = sourceLine;
-			int lineOffset = 0;
-			bool trimmedPrefix = false;
-			bool trimmedSuffix = false;
-
-			if (static_cast<int>(sourceLine.length()) > MaxVisibleLineLength)
-			{
-				int windowStart = (std::max)(0, start - CaretWindowRadius);
-				int windowEnd = (std::min)(static_cast<int>(sourceLine.length()), start + length + CaretWindowRadius);
-
-				if (windowStart > 0)
-				{
-					trimmedPrefix = true;
-					windowStart = (std::max)(0, windowStart - 4);
-				}
-
-				if (windowEnd < static_cast<int>(sourceLine.length()))
-				{
-					trimmedSuffix = true;
-					windowEnd = (std::min)(static_cast<int>(sourceLine.length()), windowEnd + 4);
-				}
-
-				displayedLine = sourceLine.substr(windowStart, windowEnd - windowStart);
-				lineOffset = windowStart;
-			}
-
-			std::wcout << CGray << std::setw(3) << loc.Line << L" | " << CReset;
-			if (trimmedPrefix)
-				std::wcout << L"...";
-
-			std::wcout << displayedLine;
-			if (trimmedSuffix)
-				std::wcout << L"...";
-
-			std::wcout << std::endl;
-
-			int caretStart = start - lineOffset;
-			if (trimmedPrefix)
-				caretStart += 3;
-
-			std::wcout << CGray << L"    | " << CReset
-			           << std::wstring(caretStart, L' ')
-			           << severityColor << std::wstring(length, L'^') << CReset << std::endl;
-		}
-	}
-}
-
-static void PrintPrettyUnhandledException(
-	ObjectInstance* exception,
-	const std::wstring& message,
-	const std::wstring& stackTrace,
-	SymbolTable* table)
-{
-	std::wstring exceptionType = (exception != nullptr && exception->getInfo() != nullptr)
-		? exception->getInfo()->Name
-		: L"UnknownException";
-
-	std::wcerr << std::endl;
-	std::wcerr << CRed << CBold << L"Unhandled exception." << CReset;
-	std::wcerr << L" " << CCyan << exceptionType << CReset;
-	std::wcerr << CRed << L":" << CReset;
-	std::wcerr << L" " << CRed << message << CReset;
-	std::wcerr << std::endl;
-
-	std::wcerr << std::endl;
-	std::wcerr << CWhite << L"Stack trace:" << CReset << std::endl;
-
-	std::unordered_map<std::wstring, MethodSymbol*> methodMap;
-	if (table != nullptr)
-	{
-		for (MethodSymbol* method : table->GetMethodSymbols())
-		{
-			if (method != nullptr)
-				methodMap[method->FullName] = method;
-		}
-	}
-
-	std::wistringstream traceReader(stackTrace);
-	std::wstring frameName;
-	bool anyFrame = false;
-
-	while (std::getline(traceReader, frameName))
-	{
-		if (frameName.empty())
-			continue;
-
-		anyFrame = true;
-
-		std::wcerr << std::endl;
-		std::wcerr << CGray << L"   at " << CReset
-		           << CCyan << frameName << CReset;
-
-		MethodSymbol* method = nullptr;
-		auto it = methodMap.find(frameName);
-		if (it != methodMap.end())
-			method = it->second;
-
-		if (method != nullptr && table != nullptr)
-		{
-			MethodDeclarationSyntax* methodNode = static_cast<MethodDeclarationSyntax*>(
-				table->LookupNode(method).value_or(nullptr));
-
-			if (methodNode != nullptr)
-			{
-				const shard::TextLocation& loc = methodNode->IdentifierToken.Location;
-				if (!loc.FileName.empty())
-				{
-					std::wcerr << CGray << L" in " << CReset
-					           << CBlue << loc.FileName << CReset
-					           << CGray << L":line " << CReset
-					           << CWhite << loc.Line << CReset;
-
-					/*
-					std::wstring sourceLine = ReadSourceLine(loc.FileName, loc.Line);
-					if (!sourceLine.empty())
-					{
-						std::wcerr << std::endl;
-						std::wcerr << CGray << L"      " << std::setw(4) << loc.Line << L" | " << CReset
-						           << sourceLine << std::endl;
-
-						int start = (std::max)(0, loc.Offset - 1);
-						int length = (std::max)(1, loc.Length);
-
-						if (start > static_cast<int>(sourceLine.length()))
-							start = static_cast<int>(sourceLine.length());
-
-						if (start + length > static_cast<int>(sourceLine.length()))
-							length = static_cast<int>(sourceLine.length()) - start;
-
-						std::wcerr << CGray << std::wstring(11, L' ') << L"| " << CReset
-						           << std::wstring(start, L' ')
-						           << CRed << std::wstring(length, L'^') << CReset;
-					}
-					*/
-				}
-			}
-		}
-	}
-
-	if (!anyFrame)
-	{
-		std::wcerr << CGray << L"   <no stack trace available>" << CReset << std::endl;
-	}
-
-	std::wcerr << std::endl;
-}
-
-static void PrintCriticalError(const char* message)
-{
-	std::wcerr << std::endl;
-	std::wcerr << CRed << CBold << L"Critical error:" << CReset
-	           << L" " << CWhite << message << CReset << std::endl;
-	std::wcerr << std::endl;
-}
-
-static CompilationUnitSyntax* GetCompilationUnit(SyntaxNode* node)
-{
-	while (node != nullptr && node->Kind != SyntaxKind::CompilationUnit)
-		node = node->Parent;
-
-	return static_cast<CompilationUnitSyntax*>(node);
+    for (const fs::path& libPath : libraryPaths)
+    {
+        try
+        {
+            compiler->AddLib(libPath.wstring());
+        }
+        catch (std::runtime_error& err)
+        {
+            std::cout << err.what();
+        }
+    }
 }
 
 int wmain(int argc, wchar_t* argv[])
@@ -384,7 +138,7 @@ int wmain(int argc, wchar_t* argv[])
 	try
 	{
 		setlocale(LC_ALL, "");
-		EnableTerminalColors();
+		console::EnableColors();
 		signal(SIGINT, SigIntHandler);
 		ShardUtilities::ParseArguments(argc, argv);
 
@@ -407,7 +161,7 @@ int wmain(int argc, wchar_t* argv[])
 
 		if (!ConsoleArguments::ExcludeStd)
 		{
-			fs::path currentDirectory = GetCurrentDirectoryPath() / L"system";
+			fs::path currentDirectory = ExecutableDirectory() / L"system";
 			LoadLibrariesFromDirectoryPath(&compiler, currentDirectory);
 		}
 
@@ -416,7 +170,7 @@ int wmain(int argc, wchar_t* argv[])
 			compiler.AddLib(file);
 		}
 
-		fs::path workingDirectory = GetWorkingDirectoryPath();
+		fs::path workingDirectory = WorkingDirectory();
 		if (!fs::exists(workingDirectory))
 		{
 			std::wcout << L"Could not resolve current working directory!" << std::endl;
@@ -460,19 +214,24 @@ int wmain(int argc, wchar_t* argv[])
 				MethodDeclarationSyntax* methodNode = static_cast<MethodDeclarationSyntax*>(table->LookupNode(method).value_or(nullptr));
 				if (methodNode == nullptr)
 				{
-					std::cout << "Failed to resolve methods node" << std::endl;
-					continue;
+					if (method->FullName.find(L"k__AsyncStateMachine_") == std::wstring::npos)
+					{
+						std::cout << "Failed to resolve methods node" << std::endl;
+						continue;
+					}
 				}
-
-				CompilationUnitSyntax* unit = GetCompilationUnit(methodNode);
-				if (unit == nullptr)
+				else
 				{
-					std::wcout << L"Failed to resolve " << methodNode->IdentifierToken.Word << L" methods unit" << std::endl;
-					continue;
-				}
+					CompilationUnitSyntax* unit = GetCompilationUnit(methodNode);
+					if (unit == nullptr)
+					{
+						std::wcout << L"Failed to resolve " << methodNode->IdentifierToken.Word << L" methods unit" << std::endl;
+						continue;
+					}
 
-				if (unit->Origin != CompilationUnitOrigin::SourceFile)
-					continue;
+					if (unit->Origin != CompilationUnitOrigin::SourceFile)
+						continue;
+				}
 
 				disassembler.Disassemble(std::wcout, method);
 			}
@@ -488,7 +247,8 @@ int wmain(int argc, wchar_t* argv[])
 			ObjectInstance* unhandledException = virtualMachine.GetUnhandledException();
 			if (unhandledException != nullptr)
 			{
-				PrintPrettyUnhandledException(
+				exceptions::PrintUnhandled(
+					std::wcerr,
 					unhandledException,
 					virtualMachine.GetUnhandledExceptionMessage(),
 					virtualMachine.GetUnhandledExceptionStackTrace(),
@@ -503,22 +263,22 @@ int wmain(int argc, wchar_t* argv[])
 		DiagnosticsContext& diagnostics = compiler.GetDiagnosticsContext();
 		if (diagnostics.AnyError)
 		{
-			PrintDiagnostics(diagnostics);
+			diagnostics::Print(std::wcout, diagnostics);
 			return 1;
 		}
 	}
 	catch (const std::runtime_error& err)
 	{
-		PrintCriticalError(err.what());
+		exceptions::PrintCritical(std::wcerr, err.what());
 	}
 	catch (const std::exception& err)
 	{
-		PrintCriticalError(err.what());
+		exceptions::PrintCritical(std::wcerr, err.what());
 		return 3;
 	}
 	catch (...)
 	{
-		PrintCriticalError("unknown exception");
+		exceptions::PrintCritical(std::wcerr, "unknown exception");
 		return 3;
 	}
 
@@ -533,7 +293,7 @@ int main(int argc, char* argv[])
 	std::vector<std::wstring> wideArgs;
 	wideArgs.reserve(argc);
 	for (int i = 0; i < argc; ++i)
-		wideArgs.push_back(std::filesystem::path(argv[i]).wstring());
+		wideArgs.push_back(fs::path(argv[i]).wstring());
 
 	std::vector<wchar_t*> wideArgv;
 	wideArgv.reserve(argc + 1);

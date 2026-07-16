@@ -1,0 +1,44 @@
+using stdio;
+using async;
+
+namespace test_custom_awaitable;
+
+public class MyAwaiter : IAwaiter
+{
+    public func IsCompleted() -> bool
+    {
+        return true;
+    }
+
+    public func OnCompleted(continuation: IAsyncState) -> void
+    {
+    }
+
+    public func GetResult() -> auto
+    {
+        return 123;
+    }
+}
+
+public class MyAwaitable : IAwaitable
+{
+    public func GetAwaiter() -> MyAwaiter
+    {
+        return new MyAwaiter();
+    }
+}
+
+public class Program
+{
+    public static async func Test() -> Task
+    {
+        a := new MyAwaitable();
+        x := await a;
+        println(x);
+    }
+
+    public static func Main() -> void
+    {
+        Task.Wait(Test());
+    }
+}

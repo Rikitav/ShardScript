@@ -1,0 +1,31 @@
+using stdio;
+using async;
+
+namespace test_async_if_await_condition;
+
+public class Program
+{
+    public static async func GetBoolAsync() -> ValueTask<bool>
+    {
+        await Task.Delay(10);
+        return true;
+    }
+
+    public static func Main() -> void
+    {
+        task := DoItAsync();
+        ValueTask.Wait(task);
+    }
+
+    public static async func DoItAsync() -> Task
+    {
+        if (await GetBoolAsync())
+        {
+            println("yes");
+        }
+        else
+        {
+            println("no");
+        }
+    }
+}

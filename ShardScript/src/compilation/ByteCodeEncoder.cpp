@@ -121,20 +121,54 @@ void ByteCodeEncoder::EmitLoadConstString(std::vector<std::byte>& code, std::vec
     AppendDataT(code, dataOrigin);
 }
 
+void ByteCodeEncoder::EmitDefaultValue(std::vector<std::byte>& code, TypeSymbol* elementType)
+{
+    if (elementType == SymbolTable::Primitives::Integer)
+    {
+        EmitLoadConstInt64(code, 0);
+    }
+    else if (elementType == SymbolTable::Primitives::Byte)
+    {
+        EmitLoadConstInt64(code, 0);
+        EmitCastPrimitive(code, SymbolTable::Primitives::NativeInteger);
+    }
+    else if (elementType == SymbolTable::Primitives::Byte)
+    {
+        EmitLoadConstInt64(code, 0);
+        EmitCastPrimitive(code, SymbolTable::Primitives::Byte);
+    }
+    else if (elementType == SymbolTable::Primitives::Char)
+    {
+        EmitLoadConstChar16(code, '\0');
+    }
+    else if (elementType == SymbolTable::Primitives::Boolean)
+    {
+        EmitLoadConstBool(code, false);
+    }
+    else if (elementType == SymbolTable::Primitives::Double)
+    {
+        EmitLoadConstDouble64(code, 0.0);
+    }
+    else
+    {
+        EmitLoadConstNull(code);
+    }
+}
+
 void ByteCodeEncoder::EmitDuplicate(std::vector<std::byte>& code)
 {
-    AppendDataT(code, OpCode::CREATEDUPLICATE);
+    AppendDataT(code, OpCode::CREATE_DUPLICATE);
 }
 
 void ByteCodeEncoder::EmitLoadVarible(std::vector<std::byte>& code, std::uint16_t index)
 {
-    AppendDataT(code, OpCode::LOADVARIABLE);
+    AppendDataT(code, OpCode::LOAD_VARIABLE);
     AppendDataT(code, index);
 }
 
 void ByteCodeEncoder::EmitStoreVarible(std::vector<std::byte>& code, std::uint16_t index)
 {
-    AppendDataT(code, OpCode::STOREVARIABLE);
+    AppendDataT(code, OpCode::STORE_VARIABLE);
     AppendDataT(code, index);
 }
 

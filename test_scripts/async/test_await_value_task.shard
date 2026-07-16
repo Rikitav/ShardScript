@@ -1,0 +1,28 @@
+using stdio;
+using async;
+
+namespace test_await_value_task;
+
+public class Program
+{
+    public static async func GetNumberAsync() -> ValueTask<int>
+    {
+        return 42;
+    }
+
+    public static async func UseIt() -> ValueTask<int>
+    {
+        println("before await");
+        return await GetNumberAsync();
+    }
+
+    public static func Main() -> void
+    {
+        println("main start");
+        task := UseIt();
+        println("after useit");
+        ValueTask.Wait(task);
+        println("after wait");
+        println(task.Result);
+    }
+}
