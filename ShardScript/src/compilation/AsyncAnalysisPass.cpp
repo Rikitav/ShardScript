@@ -61,6 +61,24 @@ namespace
 
             SyntaxVisitor::VisitVariableStatement(node);
         }
+
+        void VisitForEachStatement(ForEachStatementSyntax* node) override
+        {
+            auto symbolOpt = LookupSymbol<VariableSymbol>(node);
+            if (symbolOpt.has_value())
+                Variables.push_back(symbolOpt.value());
+
+            SyntaxVisitor::VisitForEachStatement(node);
+        }
+
+        void VisitForInStatement(ForInStatementSyntax* node) override
+        {
+            auto symbolOpt = LookupSymbol<VariableSymbol>(node);
+            if (symbolOpt.has_value())
+                Variables.push_back(symbolOpt.value());
+
+            SyntaxVisitor::VisitForInStatement(node);
+        }
     };
 
     // ========================================================================
@@ -189,9 +207,7 @@ namespace
             if (node->StatementsBlock == nullptr)
                 return;
 
-            std::size_t before = Info.AwaitSites.size();
             VisitStatementsBlock(node->StatementsBlock.get());
-            Supported = (Info.AwaitSites.size() == before);
             if (!Supported)
                 return;
 
@@ -204,9 +220,7 @@ namespace
             if (node->StatementsBlock == nullptr)
                 return;
 
-            std::size_t before = Info.AwaitSites.size();
             VisitStatementsBlock(node->StatementsBlock.get());
-            Supported = (Info.AwaitSites.size() == before);
             if (!Supported)
                 return;
 
@@ -219,9 +233,7 @@ namespace
             if (node->StatementsBlock == nullptr)
                 return;
 
-            std::size_t before = Info.AwaitSites.size();
             VisitStatementsBlock(node->StatementsBlock.get());
-            Supported = (Info.AwaitSites.size() == before);
         }
 
         void VisitWhileStatement(WhileStatementSyntax* node) override
@@ -231,7 +243,7 @@ namespace
 
             std::size_t before = Info.AwaitSites.size();
             VisitStatementsBlock(node->StatementsBlock.get());
-            Supported = (Info.AwaitSites.size() == before);
+            Supported = Supported && (Info.AwaitSites.size() == before);
         }
 
         void VisitUntilStatement(UntilStatementSyntax* node) override
@@ -241,7 +253,7 @@ namespace
 
             std::size_t before = Info.AwaitSites.size();
             VisitStatementsBlock(node->StatementsBlock.get());
-            Supported = (Info.AwaitSites.size() == before);
+            Supported = Supported && (Info.AwaitSites.size() == before);
         }
 
         void VisitForStatement(ForStatementSyntax* node) override
@@ -251,16 +263,39 @@ namespace
 
             std::size_t before = Info.AwaitSites.size();
             VisitStatementsBlock(node->StatementsBlock.get());
-            Supported = (Info.AwaitSites.size() == before);
+            Supported = Supported && (Info.AwaitSites.size() == before);
+        }
+
+        void VisitForEachStatement(ForEachStatementSyntax* node) override
+        {
+            if (!Supported)
+                return;
+
+            if (node->RangeExpression != nullptr)
+                VisitExpression(node->RangeExpression.get());
+
+            std::size_t before = Info.AwaitSites.size();
+            if (Supported && node->StatementsBlock != nullptr)
+                VisitStatementsBlock(node->StatementsBlock.get());
+            Supported = Supported && (Info.AwaitSites.size() == before);
+        }
+
+        void VisitForInStatement(ForInStatementSyntax* node) override
+        {
+            if (!Supported)
+                return;
+
+            if (node->RangeExpression != nullptr)
+                VisitExpression(node->RangeExpression.get());
+
+            std::size_t before = Info.AwaitSites.size();
+            if (Supported && node->StatementsBlock != nullptr)
+                VisitStatementsBlock(node->StatementsBlock.get());
+            Supported = Supported && (Info.AwaitSites.size() == before);
         }
 
         // Statements the lowering cannot yet suspend across.
-        void VisitThrowStatement(ThrowStatementSyntax* /*node*/) override { Supported = false; }
-        void VisitBreakStatement(BreakStatementSyntax* /*node*/) override { Supported = false; }
-        void VisitContinueStatement(ContinueStatementSyntax* /*node*/) override { Supported = false; }
         void VisitDeferStatement(DeferStatementSyntax* /*node*/) override { Supported = false; }
-        void VisitForEachStatement(ForEachStatementSyntax* /*node*/) override { Supported = false; }
-        void VisitForInStatement(ForInStatementSyntax* /*node*/) override { Supported = false; }
 
     private:
         StatementSyntax* CurrentNextStatement = nullptr;

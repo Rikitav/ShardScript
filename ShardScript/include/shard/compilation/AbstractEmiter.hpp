@@ -161,5 +161,6 @@ namespace shard
 
 private:
         void EmitMethodCall(MethodSymbol* method);
+        void EmitEnumerationLoop(ExpressionSyntax* range, VariableSymbol* loopVariable, StatementsBlockSyntax* body);
 	};
 }

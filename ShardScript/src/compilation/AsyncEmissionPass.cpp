@@ -1,12 +1,5 @@
 #include <shard/compilation/AsyncEmissionPass.hpp>
 
-#include <cstddef>
-#include <cstdint>
-#include <limits>
-#include <optional>
-#include <unordered_map>
-#include <vector>
-
 #include <shard/compilation/ByteCodeEncoder.hpp>
 #include <shard/compilation/OperationCode.hpp>
 #include <shard/compilation/AbstractEmiter.hpp>
@@ -25,6 +18,7 @@
 #include <shard/parsing/nodes/MemberDeclarations/MethodDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/Statements/ExpressionStatementSyntax.hpp>
 #include <shard/parsing/nodes/Statements/ReturnStatementSyntax.hpp>
+#include <shard/parsing/nodes/Statements/ConditionalClauseSyntax.hpp>
 #include <shard/parsing/nodes/Statements/ThrowStatementSyntax.hpp>
 #include <shard/parsing/nodes/Statements/TryStatementSyntax.hpp>
 #include <shard/parsing/nodes/Statements/VariableStatementSyntax.hpp>
@@ -32,6 +26,15 @@
 #include <shard/parsing/nodes/StatementSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/AwaitExpressionSyntax.hpp>
 #include <shard/parsing/nodes/ExpressionSyntax.hpp>
+
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <limits>
+#include <optional>
+#include <unordered_map>
+#include <vector>
 
 using namespace shard;
 
@@ -233,6 +236,8 @@ namespace
         std::unordered_map<TryStatementSyntax*, ExceptionRegion>& Regions;
     };
 
+    using Continuation = std::function<bool()>;
+
     static std::size_t IndexInBlock(const std::vector<std::unique_ptr<StatementSyntax>>& block, StatementSyntax* statement);
     static void ConsumePreviousAwaiter(MoveNextEmitter& ctx, std::size_t previousAwaitIndex);
     static void EmitStatementInto(MoveNextEmitter& ctx, MethodSymbol* target, StatementSyntax* statement);
@@ -240,9 +245,15 @@ namespace
     static void EmitAwaitSuspension(MoveNextEmitter& ctx, std::size_t awaitIndex, std::vector<std::size_t>& nextResumeBacktracks);
     static void EmitTaskComplete(MoveNextEmitter& ctx);
     static bool EmitBlock(MoveNextEmitter& ctx, StatementsBlockSyntax* block, std::size_t startIndex, const std::vector<TryStatementSyntax*>& activeStack, bool leaveActiveTries);
+    static bool EmitStatementSequence(MoveNextEmitter& ctx, StatementsBlockSyntax* block, std::size_t startIndex, const std::vector<TryStatementSyntax*>& activeStack, bool leaveActiveTries, Continuation after);
+    static bool EmitStatement(MoveNextEmitter& ctx, StatementSyntax* statement, const std::vector<TryStatementSyntax*>& activeStack, bool leaveActiveTries, Continuation after);
+    static bool EmitConditionalChain(MoveNextEmitter& ctx, ConditionalClauseBaseSyntax* clause, const std::vector<TryStatementSyntax*>& activeStack, bool leaveActiveTries, Continuation outerAfter);
+    static bool EmitConditionalChainImpl(MoveNextEmitter& ctx, ConditionalClauseBaseSyntax* clause, const std::vector<TryStatementSyntax*>& activeStack, bool leaveActiveTries, std::vector<std::size_t>& afterJumpBacktracks, Continuation chainAfter);
+    static bool EmitConditionalChainBody(MoveNextEmitter& ctx, ConditionalClauseBaseSyntax* clause, StatementsBlockSyntax* body, std::size_t startIndex, const std::vector<TryStatementSyntax*>& activeStack, bool leaveActiveTries, std::vector<std::size_t>& afterJumpBacktracks, Continuation chainAfter);
+    static bool EmitStatementContinuation(MoveNextEmitter& ctx, StatementSyntax* statement, const std::vector<TryStatementSyntax*>& activeStack, bool leaveActiveTries, Continuation after);
     static void EmitCatchClauses(MoveNextEmitter& ctx, TryStatementSyntax* tryStmt, const std::vector<TryStatementSyntax*>& activeStack, bool leaveActiveTries, std::vector<std::size_t>& outClauseStarts, std::vector<std::size_t>& outBodyEndBacktracks, std::vector<std::optional<std::size_t>>& outFilterFailBacktracks);
-    static bool EmitAfterTry(MoveNextEmitter& ctx, TryStatementSyntax* tryStmt, const std::vector<TryStatementSyntax*>& activeStack, bool leaveActiveTries);
-    static bool EmitTryStatement(MoveNextEmitter& ctx, TryStatementSyntax* tryStmt, const std::vector<TryStatementSyntax*>& activeStack, bool leaveActiveTries);
+    static bool EmitAfterTry(MoveNextEmitter& ctx, TryStatementSyntax* tryStmt, const std::vector<TryStatementSyntax*>& activeStack, bool leaveActiveTries, Continuation after);
+    static bool EmitTryStatement(MoveNextEmitter& ctx, TryStatementSyntax* tryStmt, const std::vector<TryStatementSyntax*>& activeStack, bool leaveActiveTries, Continuation after);
 
     static std::size_t IndexInBlock(const std::vector<std::unique_ptr<StatementSyntax>>& block, StatementSyntax* statement)
     {
@@ -269,6 +280,15 @@ namespace
         emiter.SetGeneratingTarget(target);
         emiter.SetPopExpressionStatement(false);
         emiter.VisitExpression(expression);
+    }
+
+    static void EmitConditionExpression(MoveNextEmitter& ctx, StatementSyntax* conditionStatement)
+    {
+        if (conditionStatement != nullptr && conditionStatement->Kind == SyntaxKind::ExpressionStatement)
+        {
+            ExpressionStatementSyntax* exprStmt = static_cast<ExpressionStatementSyntax*>(conditionStatement);
+            EmitExpressionInto(ctx, ctx.Info.MoveNext, exprStmt->Expression.get());
+        }
     }
 
     static void EmitTaskComplete(MoveNextEmitter& ctx)
@@ -466,7 +486,7 @@ namespace
         }
     }
 
-    static bool EmitAfterTry(MoveNextEmitter& ctx, TryStatementSyntax* tryStmt, const std::vector<TryStatementSyntax*>& activeStack, bool leaveActiveTries)
+    static bool EmitAfterTry(MoveNextEmitter& ctx, TryStatementSyntax* tryStmt, const std::vector<TryStatementSyntax*>& activeStack, bool leaveActiveTries, Continuation after)
     {
         std::vector<std::byte>& code = ctx.Code;
         ByteCodeEncoder& encoder = ctx.Encoder;
@@ -486,13 +506,13 @@ namespace
         if (parentBlock != nullptr)
         {
             std::size_t idx = IndexInBlock(parentBlock->Statements, tryStmt) + 1;
-            return EmitBlock(ctx, parentBlock, idx, activeStack, leaveActiveTries);
+            return EmitStatementSequence(ctx, parentBlock, idx, activeStack, leaveActiveTries, after);
         }
 
-        return true;
+        return after();
     }
 
-    static bool EmitTryStatement(MoveNextEmitter& ctx, TryStatementSyntax* tryStmt, const std::vector<TryStatementSyntax*>& activeStack, bool leaveActiveTries)
+    static bool EmitTryStatement(MoveNextEmitter& ctx, TryStatementSyntax* tryStmt, const std::vector<TryStatementSyntax*>& activeStack, bool leaveActiveTries, Continuation after)
     {
         std::vector<std::byte>& code = ctx.Code;
         ByteCodeEncoder& encoder = ctx.Encoder;
@@ -506,18 +526,11 @@ namespace
         std::vector<TryStatementSyntax*> innerStack = activeStack;
         innerStack.push_back(tryStmt);
 
-        // On the initial (segment 0) path the try statement itself is responsible
-        // for leaving the region and emitting the catch handler.  On resume paths
-        // EmitBlock will leave active try bodies when it reaches their end.
-        bool bodyFellThrough = EmitBlock(ctx, tryStmt->TryBlock.get(), 0, innerStack, false);
+        Continuation bodyAfter = [&]() -> bool {
+            return EmitAfterTry(ctx, tryStmt, activeStack, leaveActiveTries, after);
+        };
 
-        std::size_t tryEndJumpBacktrack = 0;
-        if (bodyFellThrough)
-        {
-            encoder.EmitLeaveTry(code);
-            tryEndJumpBacktrack = code.size();
-            encoder.EmitJump(code, 0);
-        }
+        bool bodyFellThrough = EmitStatementSequence(ctx, tryStmt->TryBlock.get(), 0, innerStack, false, bodyAfter);
 
         std::size_t handlerStart = code.size();
         regions[tryStmt].HandlerAddress = handlerStart;
@@ -537,9 +550,6 @@ namespace
         for (std::size_t pending : regions[tryStmt].AfterTryBacktracks)
             PatchJumpTarget(code, pending, endLabel);
 
-        if (bodyFellThrough)
-            PatchJumpTarget(code, tryEndJumpBacktrack, endLabel);
-
         for (std::size_t i = 0; i < tryStmt->CatchClauses.size(); ++i)
         {
             if (filterFailBacktracks[i].has_value())
@@ -554,29 +564,19 @@ namespace
         for (std::size_t backtrack : bodyEndBacktracks)
             PatchJumpTarget(code, backtrack, endLabel);
 
-        StatementsBlockSyntax* parentBlock = dynamic_cast<StatementsBlockSyntax*>(tryStmt->Parent);
-        if (parentBlock != nullptr)
-        {
-            std::size_t idx = IndexInBlock(parentBlock->Statements, tryStmt) + 1;
-            return EmitBlock(ctx, parentBlock, idx, activeStack, leaveActiveTries);
-        }
-
-        return true;
+        return after();
     }
 
     static bool EmitBlock(MoveNextEmitter& ctx, StatementsBlockSyntax* block, std::size_t startIndex, const std::vector<TryStatementSyntax*>& activeStack, bool leaveActiveTries)
     {
-        const AsyncMethodInfo& info = ctx.Info;
-        std::vector<std::byte>& code = ctx.Code;
-        ByteCodeEncoder& encoder = ctx.Encoder;
-        std::unordered_map<AwaitExpressionSyntax*, std::size_t>& awaitIndexMap = ctx.AwaitIndexMap;
+        return EmitStatementSequence(ctx, block, startIndex, activeStack, leaveActiveTries, []() -> bool { return true; });
+    }
 
+    static bool EmitStatementSequence(MoveNextEmitter& ctx, StatementsBlockSyntax* block, std::size_t startIndex, const std::vector<TryStatementSyntax*>& activeStack, bool leaveActiveTries, Continuation after)
+    {
         if (block == nullptr)
-            return true;
+            return after();
 
-        // Determine whether this block is the protected body of a try region
-        // that is currently active (i.e., we are emitting a resume path that
-        // starts inside it).
         bool isActiveTryBody = false;
         TryStatementSyntax* containingTry = nullptr;
         std::vector<TryStatementSyntax*> outerStack;
@@ -592,107 +592,106 @@ namespace
         }
 
         const auto& statements = block->Statements;
-        for (std::size_t i = startIndex; i < statements.size(); ++i)
+        if (startIndex >= statements.size())
         {
-            StatementSyntax* statement = statements[i].get();
+            if (isActiveTryBody && leaveActiveTries)
+                return EmitAfterTry(ctx, containingTry, outerStack, leaveActiveTries, after);
 
-            if (statement->Kind == SyntaxKind::TryStatement)
-                return EmitTryStatement(ctx, static_cast<TryStatementSyntax*>(statement), activeStack, leaveActiveTries);
+            return after();
+        }
 
-            if (statement->Kind == SyntaxKind::ExpressionStatement ||
-                statement->Kind == SyntaxKind::VariableStatement)
+        Continuation rest = [&, startIndex, after]() -> bool {
+            return EmitStatementSequence(ctx, block, startIndex + 1, activeStack, leaveActiveTries, after);
+        };
+
+        return EmitStatement(ctx, statements[startIndex].get(), activeStack, leaveActiveTries, rest);
+    }
+
+    static bool EmitStatement(MoveNextEmitter& ctx, StatementSyntax* statement, const std::vector<TryStatementSyntax*>& activeStack, bool leaveActiveTries, Continuation after)
+    {
+        const AsyncMethodInfo& info = ctx.Info;
+        std::vector<std::byte>& code = ctx.Code;
+        ByteCodeEncoder& encoder = ctx.Encoder;
+        std::unordered_map<AwaitExpressionSyntax*, std::size_t>& awaitIndexMap = ctx.AwaitIndexMap;
+
+        if (statement->Kind == SyntaxKind::ExpressionStatement ||
+            statement->Kind == SyntaxKind::VariableStatement)
+        {
+            ExpressionSyntax* expr = nullptr;
+            if (statement->Kind == SyntaxKind::ExpressionStatement)
+                expr = static_cast<ExpressionStatementSyntax*>(statement)->Expression.get();
+            else
+                expr = static_cast<VariableStatementSyntax*>(statement)->Expression.get();
+
+            if (expr != nullptr && expr->Kind == SyntaxKind::AwaitExpression)
             {
-                ExpressionSyntax* expr = nullptr;
-                if (statement->Kind == SyntaxKind::ExpressionStatement)
+                AwaitExpressionSyntax* awaitExpr = static_cast<AwaitExpressionSyntax*>(expr);
+                auto it = awaitIndexMap.find(awaitExpr);
+                if (it != awaitIndexMap.end())
                 {
-                    expr = static_cast<ExpressionStatementSyntax*>(statement)->Expression.get();
+                    std::size_t awaitIndex = it->second;
+
+                    SaveLiftedParametersAndLocals(info, code, encoder);
+
+                    std::vector<std::size_t> syncResumeBacktracks;
+                    EmitAwaitSuspension(ctx, awaitIndex, syncResumeBacktracks);
+
+                    std::size_t consumeLabel = code.size();
+                    if (!syncResumeBacktracks.empty())
+                        PatchJumpTarget(code, syncResumeBacktracks[0], consumeLabel);
+
+                    ConsumePreviousAwaiter(ctx, awaitIndex);
+                    return after();
                 }
-                else if (statement->Kind == SyntaxKind::VariableStatement)
-                {
-                    expr = static_cast<VariableStatementSyntax*>(statement)->Expression.get();
-                }
-
-                if (expr != nullptr && expr->Kind == SyntaxKind::AwaitExpression)
-                {
-                    AwaitExpressionSyntax* awaitExpr = static_cast<AwaitExpressionSyntax*>(expr);
-                    auto it = awaitIndexMap.find(awaitExpr);
-                    if (it != awaitIndexMap.end())
-                    {
-                        std::size_t awaitIndex = it->second;
-
-                        SaveLiftedParametersAndLocals(info, code, encoder);
-
-                        std::vector<std::size_t> syncResumeBacktracks;
-                        EmitAwaitSuspension(ctx, awaitIndex, syncResumeBacktracks);
-
-                        // Synchronous completion path: skip the set-state/OnCompleted/return
-                        // and fall through to consume the result inline.
-                        std::size_t consumeLabel = code.size();
-                        if (!syncResumeBacktracks.empty())
-                            PatchJumpTarget(code, syncResumeBacktracks[0], consumeLabel);
-
-                        ConsumePreviousAwaiter(ctx, awaitIndex);
-                        continue;
-                    }
-                }
-
-                EmitStatementInto(ctx, info.MoveNext, statement);
-                continue;
             }
 
-            if (statement->Kind == SyntaxKind::ThrowStatement)
+            EmitStatementInto(ctx, info.MoveNext, statement);
+            return after();
+        }
+
+        if (statement->Kind == SyntaxKind::ThrowStatement)
+        {
+            EmitStatementInto(ctx, info.MoveNext, statement);
+            return false;
+        }
+
+        if (statement->Kind == SyntaxKind::ReturnStatement)
+        {
+            ReturnStatementSyntax* retStmt = static_cast<ReturnStatementSyntax*>(statement);
+            if (retStmt->Expression != nullptr && retStmt->Expression->Kind == SyntaxKind::AwaitExpression)
             {
-                EmitStatementInto(ctx, info.MoveNext, statement);
-                return false;
+                AwaitExpressionSyntax* awaitExpr = static_cast<AwaitExpressionSyntax*>(retStmt->Expression.get());
+                auto it = awaitIndexMap.find(awaitExpr);
+                if (it != awaitIndexMap.end())
+                {
+                    std::size_t awaitIndex = it->second;
+
+                    SaveLiftedParametersAndLocals(info, code, encoder);
+
+                    std::vector<std::size_t> syncResumeBacktracks;
+                    EmitAwaitSuspension(ctx, awaitIndex, syncResumeBacktracks);
+
+                    std::size_t consumeLabel = code.size();
+                    if (!syncResumeBacktracks.empty())
+                        PatchJumpTarget(code, syncResumeBacktracks[0], consumeLabel);
+
+                    ConsumePreviousAwaiter(ctx, awaitIndex);
+                    return after();
+                }
             }
 
-            if (statement->Kind == SyntaxKind::ReturnStatement)
+            if (retStmt->Expression != nullptr)
             {
-                ReturnStatementSyntax* retStmt = static_cast<ReturnStatementSyntax*>(statement);
-                if (retStmt->Expression != nullptr && retStmt->Expression->Kind == SyntaxKind::AwaitExpression)
+                EmitExpressionInto(ctx, info.MoveNext, retStmt->Expression.get());
+
+                if (IsValueTaskReturnType(info.Method->ReturnType))
                 {
-                    AwaitExpressionSyntax* awaitExpr = static_cast<AwaitExpressionSyntax*>(retStmt->Expression.get());
-                    auto it = awaitIndexMap.find(awaitExpr);
-                    if (it != awaitIndexMap.end())
+                    MethodSymbol* setResultMethod = FindSetResultMethod(info.Method->ReturnType);
+                    if (setResultMethod != nullptr)
                     {
-                        std::size_t awaitIndex = it->second;
-
-                        SaveLiftedParametersAndLocals(info, code, encoder);
-
-                        std::vector<std::size_t> syncResumeBacktracks;
-                        EmitAwaitSuspension(ctx, awaitIndex, syncResumeBacktracks);
-
-                        // Synchronous completion path: skip the set-state/OnCompleted/return
-                        // and fall through to consume the result inline.
-                        std::size_t consumeLabel = code.size();
-                        if (!syncResumeBacktracks.empty())
-                            PatchJumpTarget(code, syncResumeBacktracks[0], consumeLabel);
-
-                        ConsumePreviousAwaiter(ctx, awaitIndex);
-                        continue;
-                    }
-                }
-
-                if (retStmt->Expression != nullptr)
-                {
-                    EmitExpressionInto(ctx, info.MoveNext, retStmt->Expression.get());
-
-                    if (IsValueTaskReturnType(info.Method->ReturnType))
-                    {
-                        MethodSymbol* setResultMethod = FindSetResultMethod(info.Method->ReturnType);
-                        if (setResultMethod != nullptr)
-                        {
-                            encoder.EmitLoadVarible(code, 0);                // this
-                            encoder.EmitLoadField(code, info.TaskField->SlotIndex); // task
-                            // value already on stack; reorder: task, value
-                            // (EmitCallMethodSymbol consumes receiver + args left-to-right)
-                            encoder.EmitCallMethodSymbol(code, setResultMethod);
-                        }
-                        else
-                        {
-                            encoder.EmitPop(code);
-                            EmitTaskComplete(ctx);
-                        }
+                        encoder.EmitLoadVarible(code, 0);
+                        encoder.EmitLoadField(code, info.TaskField->SlotIndex);
+                        encoder.EmitCallMethodSymbol(code, setResultMethod);
                     }
                     else
                     {
@@ -702,35 +701,198 @@ namespace
                 }
                 else
                 {
+                    encoder.EmitPop(code);
                     EmitTaskComplete(ctx);
                 }
-
-                encoder.EmitReturn(code);
-                return false;
             }
-
-            // Control-flow statements that have no await sites inside them (ScanAsyncStatement
-            // rejects those) can be emitted as a single unit by the regular emitter.
-            if (statement->Kind == SyntaxKind::IfStatement ||
-                statement->Kind == SyntaxKind::UnlessStatement ||
-                statement->Kind == SyntaxKind::ElseStatement ||
-                statement->Kind == SyntaxKind::WhileStatement ||
-                statement->Kind == SyntaxKind::UntilStatement ||
-                statement->Kind == SyntaxKind::ForStatement ||
-                statement->Kind == SyntaxKind::ForEachStatement ||
-                statement->Kind == SyntaxKind::ForInStatement ||
-                statement->Kind == SyntaxKind::BreakStatement ||
-                statement->Kind == SyntaxKind::ContinueStatement)
+            else
             {
-                EmitStatementInto(ctx, info.MoveNext, statement);
-                continue;
+                EmitTaskComplete(ctx);
             }
+
+            encoder.EmitReturn(code);
+            return false;
         }
 
-        if (isActiveTryBody && leaveActiveTries)
-            return EmitAfterTry(ctx, containingTry, outerStack, leaveActiveTries);
+        if (statement->Kind == SyntaxKind::TryStatement)
+        {
+            return EmitTryStatement(ctx, static_cast<TryStatementSyntax*>(statement), activeStack, leaveActiveTries, after);
+        }
 
-        return true;
+        if (statement->Kind == SyntaxKind::IfStatement ||
+            statement->Kind == SyntaxKind::UnlessStatement ||
+            statement->Kind == SyntaxKind::ElseStatement)
+        {
+            return EmitConditionalChain(ctx, static_cast<ConditionalClauseBaseSyntax*>(statement), activeStack, leaveActiveTries, after);
+        }
+
+        // Control-flow statements that have no await sites inside them can be
+        // emitted as a single unit by the regular emitter.  Awaits in loops and
+        // defer/foreach/forin are still rejected by AsyncAnalysisPass.
+        EmitStatementInto(ctx, info.MoveNext, statement);
+        return after();
+    }
+
+    static bool EmitConditionalChain(MoveNextEmitter& ctx, ConditionalClauseBaseSyntax* clause, const std::vector<TryStatementSyntax*>& activeStack, bool leaveActiveTries, Continuation outerAfter)
+    {
+        std::vector<std::size_t> afterJumpBacktracks;
+        Continuation chainAfter = [&, outerAfter]() -> bool {
+            std::size_t afterAddress = ctx.Code.size();
+            for (std::size_t bt : afterJumpBacktracks)
+                PatchJumpTarget(ctx.Code, bt, afterAddress);
+            return outerAfter();
+        };
+
+        return EmitConditionalChainImpl(ctx, clause, activeStack, leaveActiveTries, afterJumpBacktracks, chainAfter);
+    }
+
+    static bool EmitConditionalChainImpl(MoveNextEmitter& ctx, ConditionalClauseBaseSyntax* clause, const std::vector<TryStatementSyntax*>& activeStack, bool leaveActiveTries, std::vector<std::size_t>& afterJumpBacktracks, Continuation chainAfter)
+    {
+        if (clause->Kind == SyntaxKind::ElseStatement)
+        {
+            auto* elseStmt = static_cast<ElseStatementSyntax*>(clause);
+            return EmitConditionalChainBody(ctx, elseStmt, elseStmt->StatementsBlock.get(), 0, activeStack, leaveActiveTries, afterJumpBacktracks, chainAfter);
+        }
+
+        auto* condClause = static_cast<ConditionalClauseSyntax*>(clause);
+        EmitConditionExpression(ctx, condClause->ConditionExpression.get());
+        std::size_t conditionJumpBacktrack = ctx.Code.size();
+
+        if (clause->Kind == SyntaxKind::UnlessStatement)
+        {
+            ctx.Encoder.EmitJumpTrue(ctx.Code, 0);
+        }
+        else
+        {
+            ctx.Encoder.EmitJumpFalse(ctx.Code, 0);
+        }
+
+        Continuation afterBody = [&, condClause, chainAfter, conditionJumpBacktrack]() -> bool
+        {
+            std::vector<std::byte>& code = ctx.Code;
+            ByteCodeEncoder& encoder = ctx.Encoder;
+
+            std::size_t afterJumpBacktrack = code.size();
+            encoder.EmitJump(code, 0);
+            afterJumpBacktracks.push_back(afterJumpBacktrack);
+
+            std::size_t nextAddress = code.size();
+            PatchJumpTarget(code, conditionJumpBacktrack, nextAddress);
+
+            if (condClause->NextStatement != nullptr)
+                return EmitConditionalChainImpl(ctx, condClause->NextStatement.get(), activeStack, leaveActiveTries, afterJumpBacktracks, chainAfter);
+
+            return chainAfter();
+        };
+
+        return EmitStatementSequence(ctx, condClause->StatementsBlock.get(), 0, activeStack, leaveActiveTries, afterBody);
+    }
+
+    static bool EmitConditionalChainBody(MoveNextEmitter& ctx, ConditionalClauseBaseSyntax* clause, StatementsBlockSyntax* body, std::size_t startIndex, const std::vector<TryStatementSyntax*>& activeStack, bool leaveActiveTries, std::vector<std::size_t>& afterJumpBacktracks, Continuation chainAfter)
+    {
+        Continuation afterBody = [&, clause, chainAfter]() -> bool
+        {
+            std::vector<std::byte>& code = ctx.Code;
+            ByteCodeEncoder& encoder = ctx.Encoder;
+
+            std::size_t afterJumpBacktrack = code.size();
+            encoder.EmitJump(code, 0);
+            afterJumpBacktracks.push_back(afterJumpBacktrack);
+
+            if (clause->NextStatement != nullptr)
+                return EmitConditionalChainImpl(ctx, clause->NextStatement.get(), activeStack, leaveActiveTries, afterJumpBacktracks, chainAfter);
+
+            return chainAfter();
+        };
+
+        return EmitStatementSequence(ctx, body, startIndex, activeStack, leaveActiveTries, afterBody);
+    }
+
+    static bool EmitStatementContinuation(MoveNextEmitter& ctx, StatementSyntax* statement, const std::vector<TryStatementSyntax*>& activeStack, bool leaveActiveTries, Continuation after)
+    {
+        if (statement == nullptr)
+            return after();
+
+        StatementsBlockSyntax* parentBlock = dynamic_cast<StatementsBlockSyntax*>(statement->Parent);
+        if (parentBlock == nullptr)
+            return after();
+
+        SyntaxNode* owner = parentBlock->Parent;
+        std::size_t idx = IndexInBlock(parentBlock->Statements, statement);
+
+        if (owner == nullptr)
+        {
+            return EmitStatementSequence(ctx, parentBlock, idx, activeStack, leaveActiveTries, after);
+        }
+
+        if (owner->Kind == SyntaxKind::IfStatement || owner->Kind == SyntaxKind::UnlessStatement)
+        {
+            auto* clause = static_cast<ConditionalClauseSyntax*>(owner);
+            Continuation outerAfter = [&, after, clause]() -> bool
+            {
+                StatementsBlockSyntax* outerBlock = dynamic_cast<StatementsBlockSyntax*>(clause->Parent);
+                if (outerBlock == nullptr)
+                    return after();
+
+                std::size_t outerIdx = IndexInBlock(outerBlock->Statements, clause) + 1;
+                return EmitStatementSequence(ctx, outerBlock, outerIdx, activeStack, leaveActiveTries, after);
+            };
+
+            std::vector<std::size_t> afterJumpBacktracks;
+            Continuation chainAfter = [&, outerAfter]() -> bool
+            {
+                std::size_t afterAddress = ctx.Code.size();
+                for (std::size_t bt : afterJumpBacktracks)
+                    PatchJumpTarget(ctx.Code, bt, afterAddress);
+                
+                return outerAfter();
+            };
+
+            return EmitConditionalChainBody(ctx, clause, parentBlock, idx, activeStack, leaveActiveTries, afterJumpBacktracks, chainAfter);
+        }
+
+        if (owner->Kind == SyntaxKind::ElseStatement)
+        {
+            auto* clause = static_cast<ElseStatementSyntax*>(owner);
+            Continuation outerAfter = [&, after, clause]() -> bool
+            {
+                StatementsBlockSyntax* outerBlock = dynamic_cast<StatementsBlockSyntax*>(clause->Parent);
+                if (outerBlock == nullptr)
+                    return after();
+
+                std::size_t outerIdx = IndexInBlock(outerBlock->Statements, clause) + 1;
+                return EmitStatementSequence(ctx, outerBlock, outerIdx, activeStack, leaveActiveTries, after);
+            };
+
+            std::vector<std::size_t> afterJumpBacktracks;
+            Continuation chainAfter = [&, outerAfter]() -> bool
+            {
+                std::size_t afterAddress = ctx.Code.size();
+                for (std::size_t bt : afterJumpBacktracks)
+                    PatchJumpTarget(ctx.Code, bt, afterAddress);
+
+                return outerAfter();
+            };
+
+            return EmitConditionalChainBody(ctx, clause, parentBlock, idx, activeStack, leaveActiveTries, afterJumpBacktracks, chainAfter);
+        }
+
+        if (owner->Kind == SyntaxKind::TryStatement)
+        {
+            auto* tryStmt = static_cast<TryStatementSyntax*>(owner);
+            std::vector<TryStatementSyntax*> innerStack = activeStack;
+            if (std::find(innerStack.begin(), innerStack.end(), tryStmt) == innerStack.end())
+                innerStack.push_back(tryStmt);
+
+            Continuation outerAfter = [&, after, tryStmt, leaveActiveTries]() -> bool
+            {
+                return EmitAfterTry(ctx, tryStmt, activeStack, leaveActiveTries, after);
+            };
+
+            return EmitStatementSequence(ctx, parentBlock, idx, innerStack, false, outerAfter);
+        }
+
+        return EmitStatementSequence(ctx, parentBlock, idx, activeStack, leaveActiveTries, after);
     }
 }
 
@@ -957,21 +1119,12 @@ void AsyncEmissionPass::EmitMoveNextBodyWithRegions(const AsyncMethodInfo& info,
                 // The await was the last statement in an active try body.
                 // Leave the innermost try and continue from the code that
                 // follows it in segment 0.
-                segmentFellThrough = EmitAfterTry(ctx, activeStack.back(), std::vector<TryStatementSyntax*>(activeStack.begin(), activeStack.end() - 1), true);
+                segmentFellThrough = EmitAfterTry(ctx, activeStack.back(), std::vector<TryStatementSyntax*>(activeStack.begin(), activeStack.end() - 1), true, []() -> bool { return true; });
             }
         }
         else
         {
-            StatementsBlockSyntax* parentBlock = dynamic_cast<StatementsBlockSyntax*>(nextStmt->Parent);
-            if (parentBlock == nullptr)
-            {
-                segmentFellThrough = true;
-            }
-            else
-            {
-                std::size_t idx = IndexInBlock(parentBlock->Statements, nextStmt);
-                segmentFellThrough = EmitBlock(ctx, parentBlock, idx, activeStack, true);
-            }
+            segmentFellThrough = EmitStatementContinuation(ctx, nextStmt, activeStack, true, []() -> bool { return true; });
         }
 
         if (segmentFellThrough)
