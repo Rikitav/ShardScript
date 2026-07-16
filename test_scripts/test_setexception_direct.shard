@@ -1,0 +1,12 @@
+using async;
+
+namespace test_setexception_direct;
+
+public class Program
+{
+    public static func Main() -> void
+    {
+        t := new Task();
+        t.SetException(new RuntimeException());
+    }
+}

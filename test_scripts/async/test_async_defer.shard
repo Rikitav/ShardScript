@@ -1,0 +1,21 @@
+using stdio;
+using async;
+
+namespace test_async_defer;
+
+public class Program
+{
+    public static func Main() -> void
+    {
+        task := DoItAsync();
+        ValueTask.Wait(task);
+    }
+
+    public static async func DoItAsync() -> Task
+    {
+        defer println("deferred");
+        println("before");
+        await Task.Delay(10);
+        println("after");
+    }
+}

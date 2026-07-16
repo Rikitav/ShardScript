@@ -24,6 +24,7 @@
 #include <shard/parsing/nodes/Expressions/LiteralExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/ObjectExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/UnaryExpressionSyntax.hpp>
+#include <shard/parsing/nodes/Expressions/AwaitExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/CollectionExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/RangeExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/LambdaExpressionSyntax.hpp>
@@ -102,6 +103,7 @@ namespace shard
 		shard::TypeSymbol* ResolveTypeExpression(shard::TypeSyntax* type);
 		bool TryInferTypeArgument(shard::TypeSymbol* pattern, shard::TypeSymbol* concrete, shard::MethodSymbol* method, shard::GenericTypeSymbol* genericType, std::vector<TypeSymbol*>& outMethodTypeArgs);
 		bool InferMethodTypeArguments(shard::MethodSymbol* method, const std::vector<TypeSymbol*>& argTypes, shard::GenericTypeSymbol* genericType, std::vector<TypeSymbol*>& outMethodTypeArgs);
+		bool InferClassTypeArguments(shard::TypeSymbol* classDef, shard::MethodSymbol* method, const std::vector<TypeSymbol*>& argTypes, std::vector<TypeSymbol*>& outClassTypeArgs);
 		bool MatchGenericMethodArguments(shard::MethodSymbol* method, const std::vector<TypeSymbol*>& argTypes, shard::GenericTypeSymbol* genericType, const std::vector<TypeSymbol*>& methodTypeArgs);
 
 		void ImportNamespace(shard::UsingDirectiveSyntax* node, shard::NamespaceNode* nsNode);
@@ -153,6 +155,7 @@ namespace shard
 		void VisitLiteralExpression(shard::LiteralExpressionSyntax* node) override;
 		void VisitBinaryExpression(shard::BinaryExpressionSyntax* node) override;
 		void VisitUnaryExpression(shard::UnaryExpressionSyntax* node) override;
+		void VisitAwaitExpression(shard::AwaitExpressionSyntax* node) override;
 		void VisitObjectCreationExpression(shard::ObjectExpressionSyntax* node) override;
 		void VisitCollectionExpression(shard::CollectionExpressionSyntax* node) override;
 		void VisitRangeExpression(shard::RangeExpressionSyntax* node) override;

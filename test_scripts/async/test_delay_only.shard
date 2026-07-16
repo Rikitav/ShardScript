@@ -1,0 +1,14 @@
+using stdio;
+using async;
+
+namespace test_delay_only;
+
+public class Program
+{
+    public static func Main() -> void
+    {
+        t := Task.Delay(50);
+        Task.Wait(t);
+        println("done");
+    }
+}

@@ -1,9 +1,8 @@
-#include <shard/semantic/SymbolTable.hpp>
-#include <shard/semantic/PrimitiveOperators.hpp>
-
-#include <shard/semantic/SymbolFactory.hpp>
 #include <shard/parsing/SyntaxFacts.hpp>
 #include <shard/lexical/TokenType.hpp>
+
+#include <shard/semantic/SymbolTable.hpp>
+#include <shard/semantic/SymbolFactory.hpp>
 
 #include <shard/semantic/symbols/TypeSymbol.hpp>
 #include <shard/semantic/symbols/MethodSymbol.hpp>
@@ -768,8 +767,10 @@ static void RegisterByteOperators(SymbolFactory& factory)
 	RegisterOperator(type, retByte, L"op_DecrementOperator", &byte_op_DecrementOperator, { type }, factory);
 }
 
-void shard::RegisterPrimitiveOperators(SymbolFactory& factory)
+void SymbolTable::ResolvePrimitiveOperators(SymbolTable* globalTable)
 {
+	SymbolFactory factory(globalTable);
+
 	RegisterIntegerOperators(factory);
 	RegisterBooleanOperators(factory);
 	RegisterCharOperators(factory);

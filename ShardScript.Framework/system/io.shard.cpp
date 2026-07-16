@@ -1,14 +1,27 @@
 #include <shard/ShardScriptLIB.hpp>
 #include <shard/CompilationContext.hpp>
 #include <shard/semantic/SymbolBuilder.hpp>
+#include <shard/semantic/SymbolFactory.hpp>
 #include <shard/semantic/SymbolTable.hpp>
+#include <shard/semantic/symbols/GenericTypeSymbol.hpp>
+#include <shard/semantic/symbols/TypeParameterSymbol.hpp>
 #include <shard/runtime/MethodCallState.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
+#include <shard/runtime/EventLoop.hpp>
+#include <shard/runtime/VirtualMachine.hpp>
+#include <utilities/Strings.hpp>
+
+#include <uv.h>
+
+#include <fcntl.h>
+#include <sys/stat.h>
 
 #include <filesystem>
 #include <fstream>
 #include <stdexcept>
 #include <string>
+#include <vector>
+#include <array>
 
 namespace fs = std::filesystem;
 using namespace shard;
@@ -18,6 +31,15 @@ FieldSymbol* shard_FileInfo_FullNameBackingField = nullptr;
 
 TypeSymbol* shard_DirectoryInfo = nullptr;
 FieldSymbol* shard_DirectoryInfo_FullNameBackingField = nullptr;
+
+// Async type caches (looked up at module load because StandardTypes statics are
+// not shared reliably across framework DLLs).
+TypeSymbol* g_AsyncTask = nullptr;
+TypeSymbol* g_AsyncValueTask = nullptr;
+TypeParameterSymbol* g_AsyncValueTask_T = nullptr;
+ClassSymbol* g_RuntimeException = nullptr;
+FieldSymbol* g_RuntimeExceptionMessageField = nullptr;
+FieldSymbol* g_RuntimeExceptionStackTraceField = nullptr;
 
 static std::wstring pathJoin(std::span<std::wstring> args)
 {
@@ -168,6 +190,335 @@ static ObjectInstance* shard_file_AppendAllText(const CallState& context) noexce
 
     fileStream << content;
     return nullptr; // void
+}
+
+// ============================================================================
+// Async symbol lookup helpers
+// ============================================================================
+
+static TypeSymbol* FindTypeByName(SymbolTable* table, const std::wstring& fullName)
+{
+    for (TypeSymbol* type : table->GetTypeSymbols())
+    {
+        if (type->FullName == fullName || type->Name == fullName)
+            return type;
+    }
+    return nullptr;
+}
+
+static FieldSymbol* FindFieldByName(TypeSymbol* type, const std::wstring& name)
+{
+    for (FieldSymbol* field : type->Fields)
+    {
+        if (field->Name == name)
+            return field;
+    }
+    return nullptr;
+}
+
+// ============================================================================
+// Async file helpers
+// ============================================================================
+
+static void InvokeExternalMethod(MethodSymbol* method, std::initializer_list<ObjectInstance*> args,
+                                 ApplicationDomain& domain, GarbageCollector& gc)
+{
+    std::vector<ObjectInstance*> argVec(args);
+    ArgumentsSpan span(argVec);
+    CallState context
+    {
+        domain,
+        domain.GetVirtualMachine().GetProgram(),
+        domain.GetVirtualMachine(),
+        gc,
+        nullptr,
+        method,
+        span
+    };
+
+    method->FunctionPointer(context);
+}
+
+static MethodSymbol* FindTypeMethod(TypeSymbol* type, const wchar_t* name,
+                                    const std::vector<TypeSymbol*>& parameterTypes)
+{
+    std::wstring methodName(name);
+    return type->FindMethod(methodName, parameterTypes);
+}
+
+static void CompleteTask(ObjectInstance* task, ApplicationDomain& domain, GarbageCollector& gc)
+{
+    static MethodSymbol* completeMethod = nullptr;
+    if (completeMethod == nullptr)
+    {
+        std::vector<TypeSymbol*> noArgs;
+        completeMethod = FindTypeMethod(g_AsyncTask, L"Complete", noArgs);
+    }
+
+    if (completeMethod != nullptr)
+    {
+        InvokeExternalMethod(completeMethod, { task }, domain, gc);
+    }
+}
+
+static void FaultTask(ObjectInstance* task, ObjectInstance* exception,
+                      ApplicationDomain& domain, GarbageCollector& gc)
+{
+    MethodSymbol* setExceptionMethod = FindTypeMethod(const_cast<TypeSymbol*>(task->getInfo()),
+                                                       L"SetException",
+                                                       { SymbolTable::Primitives::Any });
+    if (setExceptionMethod != nullptr)
+    {
+        InvokeExternalMethod(setExceptionMethod, { task, exception }, domain, gc);
+    }
+}
+
+static void SetValueTaskResult(ObjectInstance* task, ObjectInstance* result,
+                               ApplicationDomain& domain, GarbageCollector& gc)
+{
+    TypeSymbol* taskType = const_cast<TypeSymbol*>(task->getInfo());
+
+    // The instance's info is the generic class definition (e.g. async.ValueTask);
+    // the concrete type argument lives on the shape.  Locate SetResult by name
+    // and parameter count rather than by exact type match, because the parameter
+    // type is the class's own type parameter T.
+    MethodSymbol* setResultMethod = nullptr;
+    if (taskType != nullptr)
+    {
+        for (MethodSymbol* method : taskType->Methods)
+        {
+            if (method->Name == L"SetResult" && method->Parameters.size() == 1)
+            {
+                setResultMethod = method;
+                break;
+            }
+        }
+    }
+
+    if (setResultMethod != nullptr)
+    {
+        InvokeExternalMethod(setResultMethod, { task, result }, domain, gc);
+    }
+}
+
+static ObjectInstance* CreateRuntimeExceptionMessage(const std::string& message,
+                                                     GarbageCollector& gc)
+{
+    ObjectInstance* exception = gc.AllocateInstance(g_RuntimeException);
+    exception->SetField(g_RuntimeExceptionMessageField->SlotIndex,
+                        gc.FromValue(strings::Utf8ToWide(message)));
+    exception->SetField(g_RuntimeExceptionStackTraceField->SlotIndex,
+                        GarbageCollector::NullInstance);
+    return exception;
+}
+
+static void FaultTaskWithMessage(ObjectInstance* task, const std::string& message,
+                                 ApplicationDomain& domain, GarbageCollector& gc)
+{
+    ObjectInstance* exception = CreateRuntimeExceptionMessage(message, gc);
+    FaultTask(task, exception, domain, gc);
+}
+
+// ----------------------------------------------------------------------------
+// ReadAllTextAsync
+// ----------------------------------------------------------------------------
+
+struct FsReadTextState
+{
+    ApplicationDomain* Domain = nullptr;
+    ObjectInstance* Task = nullptr;
+    uv_fs_t req{};
+    uv_file fd = -1;
+    std::string content;
+    std::vector<char> buffer;
+};
+
+static void FsReadTextCleanup(FsReadTextState* state)
+{
+    state->Domain->GetEventLoop().UnrootTask(state->Task);
+    delete state;
+}
+
+static void FsReadTextComplete(FsReadTextState* state)
+{
+    std::wstring wideContent = strings::Utf8ToWide(state->content);
+    ObjectInstance* result = state->Domain->GetGarbageCollector().FromValue(wideContent);
+    SetValueTaskResult(state->Task, result, *state->Domain, state->Domain->GetGarbageCollector());
+    FsReadTextCleanup(state);
+}
+
+static void FsReadTextOnClose(uv_fs_t* req)
+{
+    FsReadTextState* state = static_cast<FsReadTextState*>(req->data);
+    uv_fs_req_cleanup(req);
+
+    if (state->fd < 0)
+    {
+        // Already faulted before close.
+        FsReadTextCleanup(state);
+        return;
+    }
+
+    FsReadTextComplete(state);
+}
+
+static void FsReadTextOnRead(uv_fs_t* req)
+{
+    FsReadTextState* state = static_cast<FsReadTextState*>(req->data);
+    ssize_t n = req->result;
+    uv_fs_req_cleanup(req);
+
+    if (n < 0)
+    {
+        FaultTaskWithMessage(state->Task, uv_strerror(static_cast<int>(n)),
+                             *state->Domain, state->Domain->GetGarbageCollector());
+        state->fd = -1;
+        uv_fs_close(req->loop, &state->req, state->fd, FsReadTextOnClose);
+        return;
+    }
+
+    if (n == 0)
+    {
+        uv_fs_close(req->loop, &state->req, state->fd, FsReadTextOnClose);
+        return;
+    }
+
+    state->content.append(state->buffer.data(), static_cast<std::size_t>(n));
+
+    uv_buf_t buf = uv_buf_init(state->buffer.data(), static_cast<unsigned int>(state->buffer.size()));
+    uv_fs_read(req->loop, &state->req, state->fd, &buf, 1, -1, FsReadTextOnRead);
+}
+
+static void FsReadTextOnOpen(uv_fs_t* req)
+{
+    FsReadTextState* state = static_cast<FsReadTextState*>(req->data);
+    ssize_t result = req->result;
+    uv_fs_req_cleanup(req);
+
+    if (result < 0)
+    {
+        FaultTaskWithMessage(state->Task, uv_strerror(static_cast<int>(result)),
+                             *state->Domain, state->Domain->GetGarbageCollector());
+        FsReadTextCleanup(state);
+        return;
+    }
+
+    state->fd = static_cast<uv_file>(result);
+    state->buffer.resize(4096);
+
+    uv_buf_t buf = uv_buf_init(state->buffer.data(), static_cast<unsigned int>(state->buffer.size()));
+    uv_fs_read(req->loop, &state->req, state->fd, &buf, 1, -1, FsReadTextOnRead);
+}
+
+static ObjectInstance* shard_file_ReadAllTextAsync(const CallState& context) noexcept
+{
+    std::wstring fileName = context.Args[0]->AsString();
+
+    ObjectInstance* task = context.Collector.AllocateGeneric(
+        g_AsyncValueTask, { SymbolTable::Primitives::String });
+
+    context.Domain.GetEventLoop().RootTask(task);
+
+    FsReadTextState* state = new FsReadTextState();
+    state->Domain = &context.Domain;
+    state->Task = task;
+    state->req.data = state;
+
+    std::string pathUtf8 = strings::WideToUtf8(fileName);
+    uv_fs_open(context.Domain.GetEventLoop().GetLoop(), &state->req, pathUtf8.c_str(),
+               O_RDONLY, 0, FsReadTextOnOpen);
+
+    return task;
+}
+
+// ----------------------------------------------------------------------------
+// WriteAllTextAsync
+// ----------------------------------------------------------------------------
+
+struct FsWriteTextState
+{
+    ApplicationDomain* Domain = nullptr;
+    ObjectInstance* Task = nullptr;
+    uv_fs_t req{};
+    uv_file fd = -1;
+    std::string content;
+    bool faulted = false;
+};
+
+static void FsWriteTextCleanup(FsWriteTextState* state)
+{
+    state->Domain->GetEventLoop().UnrootTask(state->Task);
+    delete state;
+}
+
+static void FsWriteTextOnClose(uv_fs_t* req)
+{
+    FsWriteTextState* state = static_cast<FsWriteTextState*>(req->data);
+    uv_fs_req_cleanup(req);
+
+    if (!state->faulted)
+        CompleteTask(state->Task, *state->Domain, state->Domain->GetGarbageCollector());
+
+    FsWriteTextCleanup(state);
+}
+
+static void FsWriteTextOnWrite(uv_fs_t* req)
+{
+    FsWriteTextState* state = static_cast<FsWriteTextState*>(req->data);
+    ssize_t n = req->result;
+    uv_fs_req_cleanup(req);
+
+    if (n < 0)
+    {
+        state->faulted = true;
+        FaultTaskWithMessage(state->Task, uv_strerror(static_cast<int>(n)),
+                             *state->Domain, state->Domain->GetGarbageCollector());
+        uv_fs_close(req->loop, &state->req, state->fd, FsWriteTextOnClose);
+        return;
+    }
+
+    uv_fs_close(req->loop, &state->req, state->fd, FsWriteTextOnClose);
+}
+
+static void FsWriteTextOnOpen(uv_fs_t* req)
+{
+    FsWriteTextState* state = static_cast<FsWriteTextState*>(req->data);
+    ssize_t result = req->result;
+    uv_fs_req_cleanup(req);
+
+    if (result < 0)
+    {
+        FaultTaskWithMessage(state->Task, uv_strerror(static_cast<int>(result)),
+                             *state->Domain, state->Domain->GetGarbageCollector());
+        FsWriteTextCleanup(state);
+        return;
+    }
+
+    state->fd = static_cast<uv_file>(result);
+
+    uv_buf_t buf = uv_buf_init(state->content.data(), static_cast<unsigned int>(state->content.size()));
+    uv_fs_write(req->loop, &state->req, state->fd, &buf, 1, 0, FsWriteTextOnWrite);
+}
+
+static ObjectInstance* shard_file_WriteAllTextAsync(const CallState& context) noexcept
+{
+    std::wstring fileName = context.Args[0]->AsString();
+    std::wstring content = context.Args[1]->AsString();
+
+    ObjectInstance* task = context.Collector.AllocateInstance(g_AsyncTask);
+    context.Domain.GetEventLoop().RootTask(task);
+
+    FsWriteTextState* state = new FsWriteTextState();
+    state->Domain = &context.Domain;
+    state->Task = task;
+    state->req.data = state;
+    state->content = strings::WideToUtf8(content);
+
+    std::string pathUtf8 = strings::WideToUtf8(fileName);
+    uv_fs_open(context.Domain.GetEventLoop().GetLoop(), &state->req, pathUtf8.c_str(),
+               O_WRONLY | O_CREAT | O_TRUNC, 0644, FsWriteTextOnOpen);
+
+    return task;
 }
 
 static ObjectInstance* shard_file_Exists(const CallState& context) noexcept(false)
@@ -464,6 +815,30 @@ SHARDLIB_ENTRYPOINT
 {
     SymbolBuilder<NamespaceSymbol> fsNamespace(context, L"filesystem");
 
+    // Core async and runtime exception symbols are now owned by the standard
+    // symbol table so they are available before any system library is loaded.
+    g_AsyncTask = SymbolTable::StandardTypes::Task;
+    g_AsyncValueTask = SymbolTable::StandardTypes::ValueTask;
+
+    // Make sure we have the generic class definition, not the open generic
+    // instance (ValueTask<T>) that can appear in the type table.
+    if (g_AsyncValueTask != nullptr && g_AsyncValueTask->Kind == SyntaxKind::GenericType)
+    {
+        GenericTypeSymbol* generic = static_cast<GenericTypeSymbol*>(g_AsyncValueTask);
+        if (generic->UnderlayingType != nullptr)
+            g_AsyncValueTask = generic->UnderlayingType;
+    }
+
+    if (g_AsyncValueTask != nullptr && !g_AsyncValueTask->TypeParameters.empty())
+        g_AsyncValueTask_T = g_AsyncValueTask->TypeParameters[0];
+
+    g_RuntimeException = SymbolTable::StandardTypes::RuntimeException;
+    if (g_RuntimeException != nullptr)
+    {
+        g_RuntimeExceptionMessageField = SymbolTable::StandardTypes::RuntimeExceptionMessageField;
+        g_RuntimeExceptionStackTraceField = SymbolTable::StandardTypes::RuntimeExceptionStackTraceField;
+    }
+
     // --- class DirectoryInfo ---
     SymbolBuilder<ClassSymbol> dirInfoClass = fsNamespace.AddClass(L"DirectoryInfo");
     shard_DirectoryInfo = dirInfoClass;
@@ -571,6 +946,22 @@ SHARDLIB_ENTRYPOINT
         .AddParameter(L"fileName", TYPE_STRING)
         .AddParameter(L"content", TYPE_STRING)
         .SetCallback(&shard_file_WriteAllText);
+
+    GenericTypeSymbol* valueTaskOfString = nullptr;
+    {
+        SymbolFactory factory(context.GetSemanticModel().Table.get());
+        valueTaskOfString = factory.GenericType(g_AsyncValueTask,
+                                                { { L"T", SymbolTable::Primitives::String } });
+    }
+
+    fileClass.AddMethod(L"ReadAllTextAsync", valueTaskOfString, LINK_STATIC)
+        .AddParameter(L"fileName", TYPE_STRING)
+        .SetCallback(&shard_file_ReadAllTextAsync);
+
+    fileClass.AddMethod(L"WriteAllTextAsync", g_AsyncTask, LINK_STATIC)
+        .AddParameter(L"fileName", TYPE_STRING)
+        .AddParameter(L"content", TYPE_STRING)
+        .SetCallback(&shard_file_WriteAllTextAsync);
 
     fileClass.AddMethod(L"AppendAllText", TYPE_VOID, LINK_STATIC)
         .AddParameter(L"fileName", TYPE_STRING)

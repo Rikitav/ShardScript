@@ -1,0 +1,20 @@
+using stdio;
+
+namespace test_sync_if_true2;
+
+public class Program
+{
+    public static func Main() -> void
+    {
+        println("before");
+        if (true)
+        {
+            println("yes");
+        }
+        else
+        {
+            println("no");
+        }
+        println("after");
+    }
+}

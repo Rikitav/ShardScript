@@ -59,6 +59,7 @@
 #include <shard/parsing/nodes/Expressions/LiteralExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/BinaryExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/UnaryExpressionSyntax.hpp>
+#include <shard/parsing/nodes/Expressions/AwaitExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/ObjectExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/LinkedExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/CollectionExpressionSyntax.hpp>
@@ -560,6 +561,16 @@ std::unique_ptr<ConstructorDeclarationSyntax> SourceParser::ReadConstructorDecla
 std::unique_ptr<MethodDeclarationSyntax> SourceParser::ReadMethodDeclaration(SourceProvider& reader, MemberDeclarationInfo& info, SyntaxNode* parent)
 {
 	auto syntax = std::make_unique<MethodDeclarationSyntax>(info, parent);
+
+	for (const SyntaxToken& modifier : info.Modifiers)
+	{
+		if (modifier.Type == TokenType::AsyncKeyword)
+		{
+			syntax->AsyncModifierToken = modifier;
+			break;
+		}
+	}
+
 	syntax->ParametersList = ReadParametersList(reader, syntax.get());
 
 	SyntaxToken current = reader.Current();
@@ -1157,6 +1168,7 @@ std::vector<SyntaxToken> SourceParser::ReadMemberModifiers(SourceProvider& reade
 		TokenType::InternalKeyword,
 		TokenType::ExportKeyword,
 		TokenType::StaticKeyword,
+		TokenType::AsyncKeyword,
 		TokenType::ExternKeyword,
 		/*
 		TokenType::AbstractKeyword,
@@ -2365,6 +2377,20 @@ std::unique_ptr<ExpressionSyntax> SourceParser::ReadNullDenotation(SourceProvide
 		case TokenType::FieldKeyword:
 			return std::move(ReadLinkedExpressionNode(reader, parent, nullptr, true));
 
+		case TokenType::AsyncKeyword:
+		{
+			SyntaxToken asyncToken = reader.Current();
+			if (reader.Peek(0).Type == TokenType::LambdaKeyword)
+			{
+				reader.Consume();
+				return std::move(ReadLambdaExpression(reader, parent, asyncToken));
+			}
+
+			Diagnostics.ReportError(asyncToken, L"Unexpected 'async' keyword");
+			reader.Consume();
+			return std::make_unique<LiteralExpressionSyntax>(SyntaxToken(TokenType::NullLiteral, L"null", asyncToken.Location, true), parent);
+		}
+
 		case TokenType::LambdaKeyword:
 			return std::move(ReadLambdaExpression(reader, parent));
 
@@ -2376,6 +2402,15 @@ std::unique_ptr<ExpressionSyntax> SourceParser::ReadNullDenotation(SourceProvide
 			SyntaxToken throwToken = reader.Current();
 			reader.Consume();
 			auto syntax = std::make_unique<UnaryExpressionSyntax>(throwToken, false, parent);
+			syntax->Expression = std::move(ReadNullDenotation(reader, syntax.get()));
+			return syntax;
+		}
+
+		case TokenType::AwaitKeyword:
+		{
+			SyntaxToken awaitToken = reader.Current();
+			reader.Consume();
+			auto syntax = std::make_unique<AwaitExpressionSyntax>(awaitToken, parent);
 			syntax->Expression = std::move(ReadNullDenotation(reader, syntax.get()));
 			return syntax;
 		}
@@ -2581,9 +2616,10 @@ std::unique_ptr<ExpressionSyntax> SourceParser::ReadCollectionExpression(SourceP
 	return syntax;
 }
 
-std::unique_ptr<LambdaExpressionSyntax> SourceParser::ReadLambdaExpression(SourceProvider& reader, SyntaxNode* parent)
+std::unique_ptr<LambdaExpressionSyntax> SourceParser::ReadLambdaExpression(SourceProvider& reader, SyntaxNode* parent, SyntaxToken asyncModifier)
 {
 	auto syntax = std::make_unique<LambdaExpressionSyntax>(parent);
+	syntax->AsyncModifierToken = asyncModifier;
 	syntax->LambdaToken = Expect(reader, TokenType::LambdaKeyword, L"Expected 'lambda' keyword");
 	syntax->ParametersList = ReadParametersList(reader, syntax.get());
 

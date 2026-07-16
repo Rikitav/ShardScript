@@ -36,6 +36,7 @@
 #include <shard/parsing/nodes/Expressions/LiteralExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/ObjectExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/UnaryExpressionSyntax.hpp>
+#include <shard/parsing/nodes/Expressions/AwaitExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/CollectionExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/LambdaExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/IfExpressionSyntax.hpp>
@@ -836,6 +837,13 @@ void SyntaxVisitor::VisitExpression(ExpressionSyntax* node)
 			return;
 		}
 
+		case SyntaxKind::AwaitExpression:
+		{
+			AwaitExpressionSyntax* expression = static_cast<AwaitExpressionSyntax*>(node);
+			VisitAwaitExpression(expression);
+			return;
+		}
+
 		case SyntaxKind::MemberAccessExpression:
 		{
 			MemberAccessExpressionSyntax* expression = static_cast<MemberAccessExpressionSyntax*>(node);
@@ -951,6 +959,15 @@ void SyntaxVisitor::VisitBinaryExpression(BinaryExpressionSyntax* node)
 }
 
 void SyntaxVisitor::VisitUnaryExpression(UnaryExpressionSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (node->Expression != nullptr)
+		VisitExpression(node->Expression.get());
+}
+
+void SyntaxVisitor::VisitAwaitExpression(AwaitExpressionSyntax* node)
 {
 	if (node == nullptr)
 		return;

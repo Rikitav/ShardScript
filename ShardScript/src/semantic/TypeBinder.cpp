@@ -77,6 +77,26 @@
 
 using namespace shard;
 
+static bool IsAsyncTaskReturnType(TypeSymbol* type)
+{
+	return type != nullptr && type->FullName == L"async.Task";
+}
+
+static bool IsAsyncValueTaskReturnType(TypeSymbol* type)
+{
+	if (type == nullptr || type->Kind != SyntaxKind::GenericType)
+		return false;
+
+	GenericTypeSymbol* genericType = static_cast<GenericTypeSymbol*>(type);
+	TypeSymbol* underlying = genericType->UnderlayingType;
+	return underlying != nullptr && underlying->FullName == L"async.ValueTask";
+}
+
+static bool IsValidAsyncReturnType(TypeSymbol* type)
+{
+	return IsAsyncTaskReturnType(type) || IsAsyncValueTaskReturnType(type);
+}
+
 static void BindParametersList(ParametersListSyntax* node, std::vector<ParameterSymbol*>& symbols)
 {
 	if (node == nullptr)
@@ -588,6 +608,16 @@ void TypeBinder::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 	{
 		VisitType(node->ReturnType.get());
 		symbol->ReturnType = node->ReturnType->Symbol;
+	}
+
+	if (symbol->IsAsync)
+	{
+		if (!IsValidAsyncReturnType(symbol->ReturnType))
+		{
+			Diagnostics.ReportError(
+				node->IdentifierToken,
+				L"Async method must return 'Task' or 'ValueTask<T>'");
+		}
 	}
 
 	if (node->ParametersList != nullptr)

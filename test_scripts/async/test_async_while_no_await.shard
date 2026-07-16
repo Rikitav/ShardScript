@@ -1,0 +1,23 @@
+using stdio;
+using async;
+
+namespace test_async_while_no_await;
+
+public class Program
+{
+    public static func Main() -> void
+    {
+        task := DoItAsync();
+        ValueTask.Wait(task);
+    }
+
+    public static async func DoItAsync() -> Task
+    {
+        i := 0;
+        while (i < 3)
+        {
+            println(i);
+            i = i + 1;
+        }
+    }
+}

@@ -72,9 +72,21 @@ TypeShapeCache& GarbageCollector::GetTypeShapeCache() const
 ObjectInstance* GarbageCollector::FromValue(bool value)
 {
 	TypeShape* shape = GetTypeShapeCache().GetOrCreateShape(SymbolTable::Primitives::Boolean);
-	ObjectInstance* instance = GarbageCollector::AllocateInstance(shape);
-	instance->WriteBoolean(value);
-	return instance;
+
+	static ObjectInstance* trueSingleton = nullptr;
+	static ObjectInstance* falseSingleton = nullptr;
+
+	ObjectInstance** singletonSlot = value ? &trueSingleton : &falseSingleton;
+	if (*singletonSlot == nullptr)
+	{
+		ObjectInstance* singleton = GarbageCollector::AllocateInstance(shape);
+		singleton->WriteBoolean(value);
+		singleton->IncrementReference();
+		singleton->IsSingleton = true;
+		*singletonSlot = singleton;
+	}
+
+	return *singletonSlot;
 }
 
 ObjectInstance* GarbageCollector::FromValue(std::int64_t value)
@@ -319,7 +331,7 @@ ObjectInstance* GarbageCollector::CopyInstance(ObjectInstance* instance)
 
 	if (shape->IsReferenceType())
 	{
-		instance->IncrementReference();
+		//instance->IncrementReference();
 		return instance;
 	}
 
@@ -377,6 +389,9 @@ void GarbageCollector::TerminateInstance(ObjectInstance* instance)
 		throw std::runtime_error("requested terminating nullptr");
 
 	if (instance == NullInstance)
+		return;
+
+	if (instance->IsSingleton)
 		return;
 
 	if (instance->Terminated)

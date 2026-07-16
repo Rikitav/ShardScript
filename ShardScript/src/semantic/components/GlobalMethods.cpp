@@ -1,9 +1,9 @@
-#include <shard/semantic/SymbolTable.hpp>
-#include <shard/semantic/PrimitiveOperators.hpp>
-
-#include <shard/semantic/SymbolFactory.hpp>
 #include <shard/parsing/SyntaxFacts.hpp>
+
 #include <shard/lexical/TokenType.hpp>
+
+#include <shard/semantic/SymbolTable.hpp>
+#include <shard/semantic/SymbolFactory.hpp>
 
 #include <shard/semantic/symbols/TypeSymbol.hpp>
 #include <shard/semantic/symbols/MethodSymbol.hpp>
@@ -19,8 +19,12 @@
 #include <stdexcept>
 #include <string>
 
-void shard::RegisterGlobalMethods(SymbolFactory& factory)
+using namespace shard;
+
+void SymbolTable::ResolveGlobalMethods(SymbolTable* globalTable)
 {
+	SymbolFactory factory(globalTable);
+
 	MethodSymbol* haltMethod = factory.Method(ACS_PUBLIC, LINK_STATIC, TYPE_VOID, L"Halt", [](const CallState& context) -> ObjectInstance*
 	{
 		context.Runtimer.Abort();

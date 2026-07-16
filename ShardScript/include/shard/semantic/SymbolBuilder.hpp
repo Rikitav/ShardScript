@@ -227,6 +227,8 @@ namespace shard
 
         SymbolBuilder<TypeParameterSymbol> AddTypeParameter(
             const std::wstring& name);
+
+        SymbolBuilder<MethodSymbol>& DeclareGlobal();
     };
 
     template<>

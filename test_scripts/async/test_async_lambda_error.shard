@@ -1,0 +1,17 @@
+using stdio;
+using async;
+
+namespace test_async_lambda_error;
+
+public class Program
+{
+    public static func Main() -> void
+    {
+        f := async lambda ()
+        {
+            await Task.Delay(100);
+        };
+
+        Task.Wait(f());
+    }
+}

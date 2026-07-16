@@ -57,7 +57,6 @@
 // --- Semantic / Parsing Infrastructure ---
 #include <shard/semantic/NamespaceTree.hpp>
 #include <shard/semantic/SemanticScope.hpp>
-#include <shard/semantic/PrimitiveOperators.hpp>
 #include <shard/semantic/SymbolTable.hpp>
 #include <shard/semantic/SemanticModel.hpp>
 #include <shard/semantic/SyntaxSymbol.hpp>
@@ -146,6 +145,7 @@
 #include <shard/parsing/nodes/Expressions/SwitchExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/LiteralExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/UnaryExpressionSyntax.hpp>
+#include <shard/parsing/nodes/Expressions/AwaitExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/BinaryExpressionSyntax.hpp>
 
 // --- Syntax / Types ---

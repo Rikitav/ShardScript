@@ -1,0 +1,15 @@
+using stdio;
+using async;
+
+namespace test_async_lambda_expr;
+
+public class Program
+{
+    public static func Main() -> void
+    {
+        async lambda () -> Task
+        {
+            println("hi");
+        };
+    }
+}

@@ -28,7 +28,6 @@ namespace shard
 		{
 			FullName = Name;
 			Inlining = UnderlayingType->Inlining;
-			//Inlining = TypeInlining::ByReference;
 		}
 
 		inline GenericTypeSymbol(const GenericTypeSymbol& other) = delete;
@@ -39,7 +38,6 @@ namespace shard
 		}
 
 		void AddTypeParameter(TypeParameterSymbol* typeParam, TypeSymbol* constraintType);
-		void RebuildDisplayName();
 		TypeSymbol* SubstituteTypeParameters(TypeParameterSymbol* typeParam);
 
 		std::unordered_map<FieldSymbol*, std::size_t> FieldOffsets;

@@ -1,0 +1,42 @@
+using stdio;
+using async;
+
+namespace test_async_nested_try_catch;
+
+public class Program
+{
+    public static async func FaultyDelay() -> Task
+    {
+        await Task.Delay(10);
+        throw new RuntimeException();
+    }
+
+    public static async func NestedCatch() -> Task
+    {
+        try
+        {
+            try
+            {
+                await FaultyDelay();
+                println("after await");
+            }
+            catch (ex: RuntimeException)
+            {
+                println("inner caught");
+            }
+
+            println("after inner");
+        }
+        catch (ex: RuntimeException)
+        {
+            println("outer caught");
+        }
+
+        println("done");
+    }
+
+    public static func Main() -> void
+    {
+        Task.Wait(NestedCatch());
+    }
+}

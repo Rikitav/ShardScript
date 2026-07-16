@@ -509,6 +509,9 @@ void DeclarationCollector::VisitMethodDeclaration(MethodDeclarationSyntax* node)
         ApplyMethodAttributes(symbol, node->Attributes);
     }
 
+    if (node->AsyncModifierToken.Type == TokenType::AsyncKeyword)
+        symbol->IsAsync = true;
+
     PushScope(symbol);
 
     if (symbol->AnalysisState == SymbolAnalysisState::JustCreated)

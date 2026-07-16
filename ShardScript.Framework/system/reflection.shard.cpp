@@ -105,6 +105,11 @@ static TypeSymbol* FindTypeByName(const std::wstring& name)
 	if (matches(SymbolTable::StandardTypes::ArrayEnumerator)) return SymbolTable::StandardTypes::ArrayEnumerator;
 	if (matches(SymbolTable::StandardTypes::Runtime)) return SymbolTable::StandardTypes::Runtime;
 	if (matches(SymbolTable::StandardTypes::RuntimeException)) return SymbolTable::StandardTypes::RuntimeException;
+	if (matches(SymbolTable::StandardTypes::IAsyncState)) return SymbolTable::StandardTypes::IAsyncState;
+	if (matches(SymbolTable::StandardTypes::IAwaiter)) return SymbolTable::StandardTypes::IAwaiter;
+	if (matches(SymbolTable::StandardTypes::IAwaitable)) return SymbolTable::StandardTypes::IAwaitable;
+	if (matches(SymbolTable::StandardTypes::Task)) return SymbolTable::StandardTypes::Task;
+	if (matches(SymbolTable::StandardTypes::ValueTask)) return SymbolTable::StandardTypes::ValueTask;
 
 	if (g_symbolTable != nullptr)
 	{

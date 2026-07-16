@@ -18,31 +18,9 @@
 
 using namespace shard;
 
-void GenericTypeSymbol::RebuildDisplayName()
-{
-	if (UnderlayingType == nullptr)
-		return;
-
-	std::wstring displayName = UnderlayingType->Name + L"<";
-	for (std::size_t i = 0; i < UnderlayingType->TypeParameters.size(); ++i)
-	{
-		if (i > 0)
-			displayName += L", ";
-
-		TypeParameterSymbol* typeParam = UnderlayingType->TypeParameters[i];
-		TypeSymbol* arg = SubstituteTypeParameters(typeParam);
-		displayName += SemanticModel::GetTypeDisplayName(arg != nullptr ? arg : typeParam);
-	}
-	displayName += L">";
-
-	Name = displayName;
-	FullName = displayName;
-}
-
 void GenericTypeSymbol::AddTypeParameter(TypeParameterSymbol* typeParam, TypeSymbol* constraintType)
 {
 	_typeParametersMap[typeParam] = constraintType;
-	RebuildDisplayName();
 }
 
 TypeSymbol* GenericTypeSymbol::SubstituteTypeParameters(TypeParameterSymbol* typeParam)

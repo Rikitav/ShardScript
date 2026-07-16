@@ -1,0 +1,32 @@
+using stdio;
+using async;
+
+namespace test_async_try_catch_await;
+
+public class Program
+{
+    public static async func FaultyDelay() -> Task
+    {
+        await Task.Delay(10);
+        throw new RuntimeException();
+    }
+
+    public static async func CaughtAwait() -> Task
+    {
+        try
+        {
+            await FaultyDelay();
+            println("after await");
+        }
+        catch (ex: RuntimeException)
+        {
+            println("caught inside async");
+        }
+    }
+
+    public static func Main() -> void
+    {
+        Task.Wait(CaughtAwait());
+        println("done");
+    }
+}

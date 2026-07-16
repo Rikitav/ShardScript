@@ -5,13 +5,13 @@
 
 #include <shard/parsing/SyntaxKind.hpp>
 
-#include <shard/semantic/SymbolTable.hpp>
-
 #include <shard/semantic/symbols/FieldSymbol.hpp>
 #include <shard/semantic/symbols/ArrayTypeSymbol.hpp>
 #include <shard/semantic/symbols/GenericTypeSymbol.hpp>
 #include <shard/semantic/symbols/TypeSymbol.hpp>
 #include <shard/semantic/symbols/TypeParameterSymbol.hpp>
+
+#include <shard/semantic/SymbolTable.hpp>
 #include <shard/semantic/SemanticModel.hpp>
 
 #include <cstring>
@@ -151,7 +151,10 @@ void ObjectInstance::SetField(std::uint32_t slot, ObjectInstance* instance)
 		throw std::runtime_error("Cannot write field on an instance without a type shape");
 
 	if (slot >= m_shape->Slots.size())
-		throw std::runtime_error("Field slot index is out of range");
+	{
+		std::wstring typeName = m_info != nullptr ? m_info->FullName : L"?";
+		throw std::runtime_error("Field slot index is out of range on " + std::string(typeName.begin(), typeName.end()) + " slot=" + std::to_string(slot) + " slots=" + std::to_string(m_shape->Slots.size()));
+	}
 
 	if (instance == nullptr)
 		throw std::runtime_error("Tried to set nullptr ObjectInstance as field value.");
@@ -166,7 +169,9 @@ void ObjectInstance::SetField(std::uint32_t slot, ObjectInstance* instance)
 			oldValue->DecrementReference();
 
 		if (instance != GarbageCollector::NullInstance)
+		{
 			instance->IncrementReference();
+		}
 
 		WriteMemory(fieldOffset, sizeof(ObjectInstance*), &instance);
 	}
@@ -300,6 +305,9 @@ ArgumentsSpan ObjectInstance::ArrayAsSpan()
 
 void ObjectInstance::IncrementReference()
 {
+	if (IsSingleton)
+		return;
+
 	if (m_eeferencesCounter == (std::size_t)(-1))
 		return;
 
@@ -308,6 +316,9 @@ void ObjectInstance::IncrementReference()
 
 void ObjectInstance::DecrementReference()
 {
+	if (IsSingleton)
+		return;
+
 	if (m_eeferencesCounter == 0)
 		return;
 

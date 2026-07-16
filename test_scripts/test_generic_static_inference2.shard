@@ -1,0 +1,13 @@
+using stdio;
+using async;
+
+namespace test_generic_static_inference2;
+
+public class Program
+{
+    public static func Main() -> void
+    {
+        task := ValueTask.FromResult("hi");
+        println("type check done");
+    }
+}

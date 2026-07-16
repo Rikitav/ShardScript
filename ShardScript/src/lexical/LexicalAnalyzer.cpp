@@ -1125,33 +1125,11 @@ bool LexicalAnalyzer::IsModifier(std::wstring& word, TokenType& type)
 		type = TokenType::StaticKeyword;
 		return true;
 	}
-	/*
-	else if (word == L"abstract")
+	else if (word == L"async")
 	{
-		type = TokenType::AbstractKeyword;
+		type = TokenType::AsyncKeyword;
 		return true;
 	}
-	else if (word == L"sealed")
-	{
-		type = TokenType::SealedKeyword;
-		return true;
-	}
-	else if (word == L"partial")
-	{
-		type = TokenType::PartialKeyword;
-		return true;
-	}
-	else if (word == L"override")
-	{
-		type = TokenType::OverrideKeyword;
-		return true;
-	}
-	else if (word == L"virtual")
-	{
-		type = TokenType::VirtualKeyword;
-		return true;
-	}
-	*/
 	else if (word == L"extern")
 	{
 		type = TokenType::ExternKeyword;
@@ -1468,6 +1446,11 @@ bool LexicalAnalyzer::IsFunctionalKeyword(std::wstring& word, TokenType& type)
 	else if (word == L"catch")
 	{
 		type = TokenType::CatchKeyword;
+		return true;
+	}
+	else if (word == L"await")
+	{
+		type = TokenType::AwaitKeyword;
 		return true;
 	}
 	else

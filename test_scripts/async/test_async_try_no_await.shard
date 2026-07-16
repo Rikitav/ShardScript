@@ -1,0 +1,27 @@
+using stdio;
+using async;
+
+namespace test_async_try_no_await;
+
+public class Program
+{
+    public static async func NoAwaitTry() -> Task
+    {
+        try
+        {
+            println("in try");
+        }
+        catch (ex: RuntimeException)
+        {
+            println("caught");
+        }
+
+        println("after try");
+    }
+
+    public static func Main() -> void
+    {
+        Task.Wait(NoAwaitTry());
+        println("done");
+    }
+}

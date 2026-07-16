@@ -1,0 +1,21 @@
+using stdio;
+using async;
+
+namespace test_async_exception_after_await2;
+
+public class Program
+{
+    public static async func ThrowAfterAwait() -> Task
+    {
+        println("before await");
+        await Task.Delay(500);
+        println("after await");
+        throw new RuntimeException();
+    }
+
+    public static func Main() -> void
+    {
+        Task.Wait(ThrowAfterAwait());
+        println("unreachable");
+    }
+}

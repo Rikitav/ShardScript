@@ -33,6 +33,7 @@ namespace shard
 		void EmitLoadConstDouble64(std::vector<std::byte>& code, double value);
 		void EmitLoadConstChar16(std::vector<std::byte>& code, wchar_t value);
 		void EmitLoadConstString(std::vector<std::byte>& code, std::vector<std::byte>& data, const wchar_t* value);
+		void EmitDefaultValue(std::vector<std::byte>& code, TypeSymbol* elementType);
 		void EmitDuplicate(std::vector<std::byte>& code);
 
 		void EmitLoadVarible(std::vector<std::byte>& code, std::uint16_t index);

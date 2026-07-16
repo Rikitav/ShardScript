@@ -1,0 +1,18 @@
+using stdio;
+using async;
+
+namespace test_async_no_await;
+
+public class Program
+{
+    public static async func NoAwait() -> Task
+    {
+        println("hello");
+    }
+
+    public static func Main() -> void
+    {
+        Task.Wait(NoAwait());
+        println("done");
+    }
+}

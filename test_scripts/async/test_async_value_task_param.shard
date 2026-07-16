@@ -1,0 +1,19 @@
+using stdio;
+using async;
+
+namespace test_async_value_task_param;
+
+public class Program
+{
+    public static async func AddAsync(baseValue: int) -> ValueTask<int>
+    {
+        return baseValue + 1;
+    }
+
+    public static func Main() -> void
+    {
+        task := AddAsync(5);
+        ValueTask.Wait(task);
+        println(task.Result);
+    }
+}

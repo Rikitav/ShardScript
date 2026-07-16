@@ -1,0 +1,31 @@
+using stdio;
+using async;
+
+namespace test_async_break_continue;
+
+public class Program
+{
+    public static func Main() -> void
+    {
+        task := DoItAsync();
+        ValueTask.Wait(task);
+    }
+
+    public static async func DoItAsync() -> Task
+    {
+        i: int = 0;
+        while (true)
+        {
+            if (i >= 3)
+                break;
+            if (i == 1)
+            {
+                i = i + 1;
+                continue;
+            }
+            println(i);
+            i = i + 1;
+        }
+        println("done");
+    }
+}

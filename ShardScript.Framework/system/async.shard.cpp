@@ -1,0 +1,211 @@
+#include <ShardScript.hpp>
+
+#include <shard/runtime/EventLoop.hpp>
+#include <shard/runtime/VirtualMachine.hpp>
+#include <shard/runtime/GarbageCollector.hpp>
+
+using namespace shard;
+
+namespace
+{
+    // ------------------------------------------------------------------------
+    // Registered symbols
+    // ------------------------------------------------------------------------
+    TypeSymbol* shard_TaskCompletionSource = nullptr;
+    TypeParameterSymbol* shard_TaskCompletionSource_T = nullptr;
+    FieldSymbol* shard_TaskCcompletetionSource_TaskField = nullptr;
+
+    TypeSymbol* shard_CancellationTokenSource = nullptr;
+    FieldSymbol* shard_CancellationTokenSource_CanceledField = nullptr;
+    FieldSymbol* shard_CancellationTokenSource_TokenField = nullptr;
+
+    TypeSymbol* shard_CancellationToken = nullptr;
+    FieldSymbol* shard_CancellationToken_SourceField = nullptr;
+
+    // ------------------------------------------------------------------------
+    // TaskCompletionSource<T>
+    // ------------------------------------------------------------------------
+    static ObjectInstance* shard_async_TaskCompletionSource_Init(const CallState& context) noexcept
+    {
+        ObjectInstance* instance = context.Args[0];
+
+        TypeSymbol* tArg = SymbolTable::Primitives::Any;
+        if (TypeShape* shape = instance->getShape(); shape != nullptr && !shape->GenericArguments.empty())
+            tArg = shape->GenericArguments[0];
+
+        ObjectInstance* task = context.Collector.AllocateGeneric(CLASS_VALUETASK, { tArg });
+        SetTaskState(task, CLASS_VALUETASK_StateField, AsyncState::PENDING, context.Collector);
+        instance->SetField(shard_TaskCcompletetionSource_TaskField->SlotIndex, task);
+
+        return instance;
+    }
+
+    static ObjectInstance* shard_async_TaskCompletionSource_Task_get(const CallState& context) noexcept
+    {
+        return context.Args[0]->GetField(shard_TaskCcompletetionSource_TaskField->SlotIndex);
+    }
+
+    static ObjectInstance* shard_async_TaskCompletionSource_SetResult(const CallState& context) noexcept
+    {
+        ObjectInstance* instance = context.Args[0];
+        ObjectInstance* result = context.Args[1];
+        ObjectInstance* task = instance->GetField(shard_TaskCcompletetionSource_TaskField->SlotIndex);
+
+        SetTaskState(task, CLASS_VALUETASK_StateField, AsyncState::COMPLETED, context.Collector);
+        task->SetField(CLASS_VALUETASK_ResultField->SlotIndex, result);
+        ResumeContinuation(task, CLASS_VALUETASK_ContinuationField, TRAIT_ASYNCSTATE_MoveNext, context.Domain);
+
+        return nullptr;
+    }
+
+    static ObjectInstance* shard_async_TaskCompletionSource_SetException(const CallState& context) noexcept
+    {
+        ObjectInstance* instance = context.Args[0];
+        ObjectInstance* exception = context.Args[1];
+        ObjectInstance* task = instance->GetField(shard_TaskCcompletetionSource_TaskField->SlotIndex);
+
+        SetTaskState(task, CLASS_VALUETASK_StateField, AsyncState::FAULTED, context.Collector);
+        task->SetField(CLASS_VALUETASK_ExceptionField->SlotIndex, exception);
+        ResumeContinuation(task, CLASS_VALUETASK_ContinuationField, TRAIT_ASYNCSTATE_MoveNext, context.Domain);
+
+        return nullptr;
+    }
+
+    // ------------------------------------------------------------------------
+    // CancellationToken / CancellationTokenSource
+    // ------------------------------------------------------------------------
+    static ObjectInstance* shard_async_CancellationTokenSource_Init(const CallState& context) noexcept
+    {
+        ObjectInstance* source = context.Args[0];
+
+        ObjectInstance* token = context.Collector.AllocateInstance(
+            static_cast<ClassSymbol*>(shard_CancellationToken));
+
+        token->SetField(shard_CancellationToken_SourceField->SlotIndex, source);
+        source->SetField(shard_CancellationTokenSource_TokenField->SlotIndex, token);
+        source->SetField(shard_CancellationTokenSource_CanceledField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(0)));
+
+        return source;
+    }
+
+    static ObjectInstance* shard_async_CancellationTokenSource_Cancel(const CallState& context) noexcept
+    {
+        ObjectInstance* source = context.Args[0];
+        source->SetField(shard_CancellationTokenSource_CanceledField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(1)));
+        return nullptr;
+    }
+
+    static ObjectInstance* shard_async_CancellationTokenSource_Token_get(const CallState& context) noexcept
+    {
+        ObjectInstance* source = context.Args[0];
+        return source->GetField(shard_CancellationTokenSource_TokenField->SlotIndex);
+    }
+
+    static ObjectInstance* shard_async_CT_IsCancellationRequested_get(const CallState& context) noexcept
+    {
+        ObjectInstance* token = context.Args[0];
+        ObjectInstance* source = token->GetField(shard_CancellationToken_SourceField->SlotIndex);
+        if (source == nullptr || source == GarbageCollector::NullInstance)
+            return context.Collector.FromValue(false);
+
+        if (source->getInfo() != shard_CancellationTokenSource)
+            return context.Collector.FromValue(false);
+
+        ObjectInstance* canceledObj = source->GetField(shard_CancellationTokenSource_CanceledField->SlotIndex);
+        if (canceledObj == nullptr || canceledObj == GarbageCollector::NullInstance)
+            return context.Collector.FromValue(false);
+
+        return context.Collector.FromValue(canceledObj->AsInteger() != 0);
+    }
+
+    static ObjectInstance* shard_async_CT_CanBeCanceled_get(const CallState& context) noexcept
+    {
+        ObjectInstance* token = context.Args[0];
+        ObjectInstance* source = token->GetField(shard_CancellationToken_SourceField->SlotIndex);
+        return context.Collector.FromValue(source != nullptr && source != GarbageCollector::NullInstance);
+    }
+}
+
+// =============================================================================
+// Entry point
+// =============================================================================
+
+SHARDLIB_ENTRYPOINT
+{
+    SymbolFactory factory(context.GetSemanticModel().Table.get());
+    SymbolBuilder<NamespaceSymbol> asyncNamespace(context, L"async");
+
+    // -------------------------------------------------------------------------
+    // class TaskCompletionSource<T>
+    // -------------------------------------------------------------------------
+    SymbolBuilder<ClassSymbol> tcsClass = asyncNamespace.AddClass(L"TaskCompletionSource");
+    shard_TaskCompletionSource = tcsClass;
+
+    shard_TaskCompletionSource_T = tcsClass.AddTypeParameter(L"T");
+
+    GenericTypeSymbol* valueTaskOfT = factory.GenericType(CLASS_VALUETASK, { { L"T", shard_TaskCompletionSource_T } });
+
+    shard_TaskCcompletetionSource_TaskField = tcsClass
+        .AddField(L"_task", valueTaskOfT, LINK_INSTANCE, ACS_PRIVATE);
+
+    tcsClass.AddInit()
+        .SetCallback(&shard_async_TaskCompletionSource_Init);
+
+    tcsClass.AddProperty(L"Task", valueTaskOfT, LINK_INSTANCE)
+        .AddGetter()
+        .SetCallback(&shard_async_TaskCompletionSource_Task_get);
+
+    tcsClass.AddMethod(L"SetResult", TYPE_VOID, LINK_INSTANCE)
+        .AddParameter(L"result", shard_TaskCompletionSource_T)
+        .SetCallback(&shard_async_TaskCompletionSource_SetResult);
+
+    tcsClass.AddMethod(L"SetException", TYPE_VOID, LINK_INSTANCE)
+        .AddParameter(L"exception", TYPE_ANY)
+        .SetCallback(&shard_async_TaskCompletionSource_SetException);
+
+    tcsClass.DeclareGlobal();
+
+    // -------------------------------------------------------------------------
+    // class CancellationToken
+    // -------------------------------------------------------------------------
+    SymbolBuilder<ClassSymbol> ctsClass = asyncNamespace.AddClass(L"CancellationTokenSource");
+    SymbolBuilder<ClassSymbol> ctClass = asyncNamespace.AddClass(L"CancellationToken");
+
+    shard_CancellationToken = ctClass;
+    shard_CancellationTokenSource = ctsClass;
+
+    shard_CancellationToken_SourceField = ctClass
+        .AddField(L"_source", shard_CancellationTokenSource, LINK_INSTANCE, ACS_PRIVATE);
+
+    ctClass.AddProperty(L"IsCancellationRequested", TYPE_BOOL, LINK_INSTANCE)
+        .AddGetter()
+        .SetCallback(&shard_async_CT_IsCancellationRequested_get);
+
+    ctClass.AddProperty(L"CanBeCanceled", TYPE_BOOL, LINK_INSTANCE)
+        .AddGetter()
+        .SetCallback(&shard_async_CT_CanBeCanceled_get);
+
+    ctClass.DeclareGlobal();
+
+    // -------------------------------------------------------------------------
+    // class CancellationTokenSource
+    // -------------------------------------------------------------------------
+
+    shard_CancellationTokenSource_CanceledField = ctsClass
+        .AddField(L"_canceled", TYPE_INT, LINK_INSTANCE, ACS_PRIVATE);
+
+    shard_CancellationTokenSource_TokenField = ctsClass
+        .AddField(L"_token", shard_CancellationToken, LINK_INSTANCE, ACS_PRIVATE);
+
+    ctsClass.AddInit()
+        .SetCallback(&shard_async_CancellationTokenSource_Init);
+
+    ctsClass.AddMethod(L"Cancel", TYPE_VOID, LINK_INSTANCE)
+        .SetCallback(&shard_async_CancellationTokenSource_Cancel);
+
+    ctsClass.AddProperty(L"Token", shard_CancellationToken, LINK_INSTANCE)
+        .AddGetter()
+        .SetCallback(&shard_async_CancellationTokenSource_Token_get);
+
+    ctsClass.DeclareGlobal();
+}

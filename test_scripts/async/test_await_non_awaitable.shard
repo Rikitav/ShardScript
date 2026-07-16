@@ -1,0 +1,13 @@
+using stdio;
+using async;
+
+namespace test_await_non_awaitable;
+
+public class Program
+{
+    public static async func Main() -> Task
+    {
+        x := 5;
+        await x;
+    }
+}

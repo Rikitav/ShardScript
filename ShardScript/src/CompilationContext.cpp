@@ -37,6 +37,7 @@
 #include <shard/parsing/nodes/MemberDeclarations/IndexatorDeclarationSyntax.hpp>
 
 #include <shard/compilation/AbstractEmiter.hpp>
+#include <shard/compilation/AsyncStateMachineLowering.hpp>
 #include <shard/compilation/ProgramVirtualImage.hpp>
 
 #include <string>
@@ -47,7 +48,9 @@
 
 // Platform-specific headers
 #if defined(_WIN32)
-	#define WIN32_LEAN_AND_MEAN
+	#ifndef WIN32_LEAN_AND_MEAN
+		#define WIN32_LEAN_AND_MEAN
+	#endif
 	#include <windows.h>
 #elif defined(__linux__)
 	#include <unistd.h>
@@ -439,6 +442,9 @@ std::unique_ptr<ApplicationDomain> CompilationContext::Compile()
 	if (ReAnalyze)
 		AnalyzeTree();
 
+	AsyncStateMachineLowering lowering(*this, Model, Tree, Diagnostics);
+	lowering.Prepare();
+
 	Layouter.Generate(Model);
 	if (Diagnostics.AnyError)
 		throw diagnostics_exception("Model layout generation ended with errors.");
@@ -447,6 +453,8 @@ std::unique_ptr<ApplicationDomain> CompilationContext::Compile()
 
 	auto program = std::make_unique<ProgramVirtualImage>();
 	program->TypeShapes = std::move(Model.TypeShapes);
+	lowering.Emit(*program);
+
 	AbstractEmiter emiter(*program, Model, Diagnostics);
 	if (!PopExpressionStatement)
 		emiter.SetPopExpressionStatement(false);

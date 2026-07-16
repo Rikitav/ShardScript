@@ -154,7 +154,7 @@ namespace shard
 		std::unique_ptr<IfExpressionSyntax> ReadIfExpression(SourceProvider& reader, SyntaxNode* parent);
 		std::unique_ptr<SwitchExpressionSyntax> ReadSwitchExpression(SourceProvider& reader, SyntaxNode* parent);
 
-		std::unique_ptr<LambdaExpressionSyntax> ReadLambdaExpression(SourceProvider& reader, SyntaxNode* parent);
+		std::unique_ptr<LambdaExpressionSyntax> ReadLambdaExpression(SourceProvider& reader, SyntaxNode* parent, SyntaxToken asyncModifier = SyntaxToken());
 		std::unique_ptr<LinkedExpressionNode> ReadLinkedExpressionNode(SourceProvider& reader, SyntaxNode* parent, std::unique_ptr<ExpressionSyntax> lastNode, bool isFirst);
 		std::unique_ptr<IndexatorExpressionSyntax> ReadIndexatorExpressionNode(SourceProvider& reader, SyntaxNode* parent, std::unique_ptr<ExpressionSyntax> lastNode, bool isFirst);
 

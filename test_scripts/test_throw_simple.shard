@@ -1,0 +1,11 @@
+using stdio;
+
+namespace test_throw_simple;
+
+public class Program
+{
+    public static func Main() -> void
+    {
+        throw new RuntimeException();
+    }
+}

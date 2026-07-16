@@ -1,0 +1,28 @@
+using stdio;
+using async;
+
+namespace test_async_phase3;
+
+public class Program
+{
+    public static async func GetNumberAsync() -> ValueTask<int>
+    {
+        return 42;
+    }
+
+    public static async func ComputeAsync(baseValue: int) -> ValueTask<int>
+    {
+        local: int = baseValue + 1;
+        fetched: int = await GetNumberAsync();
+        combined: int = local + fetched;
+        await Task.Delay(10);
+        return combined;
+    }
+
+    public static func Main() -> void
+    {
+        task := ComputeAsync(5);
+        ValueTask.Wait(task);
+        println(task.Result);
+    }
+}

@@ -23,7 +23,8 @@ namespace shard
         if (interfaceMethod->Parameters.size() != classMethod->Parameters.size())
             return false;
 
-        if (!SemanticModel::AreTypesEqual(interfaceMethod->ReturnType, classMethod->ReturnType))
+        // Allow return-type covariance: the implementation may return a more derived type.
+        if (!SemanticModel::IsAssignableTo(interfaceMethod->ReturnType, classMethod->ReturnType))
             return false;
 
         for (std::size_t i = 0; i < interfaceMethod->Parameters.size(); i++)

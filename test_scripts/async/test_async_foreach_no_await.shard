@@ -1,0 +1,22 @@
+using stdio;
+using async;
+
+namespace test_async_foreach_no_await;
+
+public class Program
+{
+    public static func Main() -> void
+    {
+        task := DoItAsync();
+        ValueTask.Wait(task);
+    }
+
+    public static async func DoItAsync() -> Task
+    {
+        arr := [1, 2, 3];
+        foreach (x in arr)
+        {
+            println(x);
+        }
+    }
+}

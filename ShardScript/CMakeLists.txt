@@ -1,5 +1,7 @@
 project(ShardScript)
 
+include(CMake/libuv.cmake)
+
 file(GLOB_RECURSE SHARDSCRIPT_SOURCES "src/*.cpp")
 file(GLOB_RECURSE SHARDSCRIPT_HEADERS "include/*.hpp")
 file(GLOB_RECURSE SHARDSCRIPT_OTHER "cpp.hint" "*.md")
@@ -8,6 +10,7 @@ add_library(${PROJECT_NAME} SHARED
     ${SHARDSCRIPT_SOURCES}
     ${SHARDSCRIPT_HEADERS}
     ${SHARDSCRIPT_OTHER}
+    ${LIBUV_SOURCES}
 )
 
 if(ENABLE_ASAN)
@@ -20,8 +23,24 @@ if(ENABLE_ASAN)
   endif()
 endif()
 
-target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_include_directories(${PROJECT_NAME} PUBLIC
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libuv/include"
+)
+
+target_include_directories(${PROJECT_NAME} PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libuv/src"
+)
+
 target_compile_definitions(${PROJECT_NAME} PRIVATE "SHARD_API_EXPORT;UNICODE;_UNICODE")
+
+if(LIBUV_DEFINES)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE ${LIBUV_DEFINES})
+endif()
+
+if(LIBUV_LIBRARIES)
+    target_link_libraries(ShardScript PRIVATE ${LIBUV_LIBRARIES})
+endif()
 
 if(NOT WIN32)
   target_link_libraries(ShardScript PRIVATE ${CMAKE_DL_LIBS})

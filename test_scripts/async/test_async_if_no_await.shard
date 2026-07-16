@@ -1,0 +1,27 @@
+using stdio;
+using async;
+
+namespace test_async_if_no_await;
+
+public class Program
+{
+    public static func Main() -> void
+    {
+        task := DoItAsync();
+        ValueTask.Wait(task);
+    }
+
+    public static async func DoItAsync() -> Task
+    {
+        println("start");
+        if (false)
+        {
+            println("async-yes");
+        }
+        else
+        {
+            println("async-no");
+        }
+        println("end");
+    }
+}

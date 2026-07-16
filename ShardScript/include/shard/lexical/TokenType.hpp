@@ -97,6 +97,7 @@ namespace shard
 		ProtectedKeyword,	  // protected
 		InternalKeyword,	  // internal
 		StaticKeyword,		  // static
+		AsyncKeyword,		  // async
 		ExternKeyword,		  // extern
 		ExportKeyword,		  // export
 
@@ -161,6 +162,7 @@ namespace shard
 		TryKeyword,           // try
 		CatchKeyword,         // catch
 		DeferKeyword,         // defer
-		WhereKeyword          // where
+		WhereKeyword,         // where
+		AwaitKeyword          // await
 	};
 }
