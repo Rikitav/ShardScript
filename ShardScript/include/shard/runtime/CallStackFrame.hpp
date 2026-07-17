@@ -35,7 +35,20 @@ namespace shard
 		ObjectInstance* InterruptionRegister = nullptr;
 		ObjectInstance* CurrentException = nullptr;
 
-		std::vector<std::size_t> ExceptionHandlers;
+		struct ExceptionHandlerFrame
+		{
+			std::size_t HandlerOffset;
+			std::size_t DeferStackBase;
+		};
+		std::vector<ExceptionHandlerFrame> ExceptionHandlers;
+
+		// Defer machinery. DEFER pushes target IPs here; DEFER_DRAIN jumps into them
+		// and uses DeferDrainStack to return to the drain loop after DEFER_BREAK.
+		std::vector<std::size_t> DeferStack;
+
+		// Synchronous DEFER_DRAIN executes deferred expressions inline. This counter
+		// lets DEFER_BREAK verify it is only reached while draining.
+		std::size_t DeferDrainDepth = 0;
 
 		inline CallStackFrame(const VirtualMachine* host, CallStackFrame* previousFrame, MethodSymbol* method)
 			: Host(host), Method(method), PreviousFrame(previousFrame) { }

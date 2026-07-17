@@ -42,6 +42,34 @@
 
 using namespace shard;
 
+static void ExecuteDeferExpression(VirtualMachine* vm, CallStackFrame* frame, ByteCodeDecoder& decoder, std::size_t target)
+{
+    std::size_t savedIP = decoder.Index();
+    decoder.SetCursor(target);
+
+    while (true)
+    {
+        if (decoder.IsEOF())
+            throw std::runtime_error("Deferred expression ran past end of bytecode");
+
+        OpCode op = decoder.AbsorbOpCode();
+        vm->ProcessCode(frame, decoder, op);
+
+        if (frame->interrupted())
+        {
+            // An interruption (exception, return, etc.) occurred inside the
+            // deferred expression. Leave the decoder at the interruption point
+            // and let the main execution loop handle it.
+            return;
+        }
+
+        if (op == OpCode::DEFER_BREAK)
+            break;
+    }
+
+    decoder.SetCursor(savedIP);
+}
+
 void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder, const OpCode opCode)
 {
 	auto executeBinary = [&](TokenType token) -> void
@@ -723,7 +751,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		case OpCode::ENTER_TRY:
 		{
 			std::size_t handlerOffset = decoder.AbsorbJump();
-			frame->ExceptionHandlers.push_back(handlerOffset);
+			frame->ExceptionHandlers.push_back({handlerOffset, frame->DeferStack.size()});
 			break;
 		}
 
@@ -764,6 +792,57 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			if (exception != nullptr)
 				exception->IncrementReference();
 
+			break;
+		}
+
+		case OpCode::DEFER:
+		{
+			std::size_t target = decoder.AbsorbJump();
+			frame->DeferStack.push_back(target);
+			break;
+		}
+
+		case OpCode::DEFER_BREAK:
+		{
+			if (frame->DeferDrainDepth == 0)
+				throw std::runtime_error("DEFER_BREAK reached outside of a deferred expression drain");
+
+			break;
+		}
+
+		case OpCode::DEFER_DRAIN:
+		{
+			std::size_t count = decoder.AbsorbJump();
+			std::size_t savedIP = decoder.Index();
+
+			frame->DeferDrainDepth++;
+			try
+			{
+				for (std::size_t i = 0; i < count; ++i)
+				{
+					if (frame->DeferStack.empty())
+						throw std::runtime_error("DEFER_DRAIN: not enough registered defers");
+
+					std::size_t target = frame->DeferStack.back();
+					frame->DeferStack.pop_back();
+					ExecuteDeferExpression(this, frame, decoder, target);
+
+					if (frame->interrupted())
+					{
+						// The deferred expression raised an interruption. Do not
+						// restore the saved IP; let the main loop handle it.
+						return;
+					}
+				}
+			}
+			catch (...)
+			{
+				frame->DeferDrainDepth--;
+				throw;
+			}
+			frame->DeferDrainDepth--;
+
+			decoder.SetCursor(savedIP);
 			break;
 		}
 
@@ -829,7 +908,33 @@ ObjectInstance* VirtualMachine::CreateRuntimeException(const std::exception& err
 	return instance;
 }
 
-static bool HandleExceptionInFrame(CallStackFrame* frame, ByteCodeDecoder& decoder, GarbageCollector& gc)
+static bool DrainDefersTo(VirtualMachine* vm, CallStackFrame* frame, ByteCodeDecoder& decoder, std::size_t targetSize, GarbageCollector& gc)
+{
+	while (frame->DeferStack.size() > targetSize)
+	{
+		std::size_t target = frame->DeferStack.back();
+		frame->DeferStack.pop_back();
+
+		frame->DeferDrainDepth++;
+		try
+		{
+			ExecuteDeferExpression(vm, frame, decoder, target);
+		}
+		catch (...)
+		{
+			frame->DeferDrainDepth--;
+			throw;
+		}
+		frame->DeferDrainDepth--;
+
+		if (frame->interrupted())
+			return false;
+	}
+
+	return true;
+}
+
+static bool HandleExceptionInFrame(VirtualMachine* vm, CallStackFrame* frame, ByteCodeDecoder& decoder, GarbageCollector& gc)
 {
 	ObjectInstance* exception = frame->InterruptionRegister;
 	if (exception == nullptr)
@@ -853,12 +958,20 @@ static bool HandleExceptionInFrame(CallStackFrame* frame, ByteCodeDecoder& decod
 	if (frame->EvalStack.size() < preservedSlots)
 		frame->EvalStack.resize(preservedSlots, nullptr);
 
+	// Defer expressions run with the original interruption cleared; if they
+	// raise a new interruption we will let the main loop re-enter handling.
+	frame->InterruptionReason = FrameInterruptionReason::None;
+	frame->InterruptionRegister = nullptr;
+
 	while (!frame->ExceptionHandlers.empty())
 	{
-		std::size_t handlerOffset = frame->ExceptionHandlers.back();
+		CallStackFrame::ExceptionHandlerFrame handler = frame->ExceptionHandlers.back();
 		frame->ExceptionHandlers.pop_back();
 
-		decoder.SetCursor(handlerOffset);
+		if (!DrainDefersTo(vm, frame, decoder, handler.DeferStackBase, gc))
+			return true;
+
+		decoder.SetCursor(handler.HandlerOffset);
 		frame->EvalStack.push_back(exception);
 		exception->IncrementReference();
 
@@ -868,6 +981,14 @@ static bool HandleExceptionInFrame(CallStackFrame* frame, ByteCodeDecoder& decod
 		return true;
 	}
 
+	// No handler in this frame. Run any pending defers before propagating.
+	if (!DrainDefersTo(vm, frame, decoder, 0, gc))
+		return true;
+
+	// Restore the original exception so it propagates to the caller.
+	frame->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
+	frame->InterruptionRegister = exception;
+	exception->IncrementReference();
 	return false;
 }
 
@@ -919,7 +1040,7 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 
 				if (currentFrame->InterruptionReason == FrameInterruptionReason::ExceptionRaised)
 				{
-					if (!HandleExceptionInFrame(currentFrame, decoder, garbageCollector))
+					if (!HandleExceptionInFrame(this, currentFrame, decoder, garbageCollector))
 						break;
 
 					continue;

@@ -76,7 +76,7 @@ namespace shard
 
         struct DeferScope
         {
-            std::vector<DeferStatementSyntax*> Defers;
+            std::size_t Count = 0;
             bool IsLoop = false;
         };
 

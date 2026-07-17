@@ -19,6 +19,7 @@
 #include <shard/parsing/nodes/Statements/ExpressionStatementSyntax.hpp>
 #include <shard/parsing/nodes/Statements/ReturnStatementSyntax.hpp>
 #include <shard/parsing/nodes/Statements/ConditionalClauseSyntax.hpp>
+#include <shard/parsing/nodes/Statements/DeferStatementSyntax.hpp>
 #include <shard/parsing/nodes/Statements/ThrowStatementSyntax.hpp>
 #include <shard/parsing/nodes/Statements/TryStatementSyntax.hpp>
 #include <shard/parsing/nodes/Statements/VariableStatementSyntax.hpp>
@@ -280,6 +281,191 @@ namespace
         }
 
         return block.size();
+    }
+
+    static void EmitStatementInto(MoveNextEmitter& ctx, MethodSymbol* target, StatementSyntax* statement);
+    static void EmitMethodCall(MoveNextEmitter& ctx, MethodSymbol* method);
+
+    // ========================================================================
+    // Defer emission.
+    // ========================================================================
+    // Active defers are derived from the AST position rather than from a
+    // mutable emission-time stack. This matters for async lowering because a
+    // single lexical block can have its exit point emitted in several segments
+    // (the synchronous path after an await and each resume path), and a mutable
+    // scope stack consumed while emitting one path would corrupt the others.
+    static bool IsLoopBlockParentKind(SyntaxKind kind)
+    {
+        return kind == SyntaxKind::WhileStatement || kind == SyntaxKind::UntilStatement ||
+               kind == SyntaxKind::ForStatement || kind == SyntaxKind::ForEachStatement ||
+               kind == SyntaxKind::ForInStatement;
+    }
+
+    static void CollectDefersBefore(StatementsBlockSyntax* block, std::size_t beforeIndex, std::vector<DeferStatementSyntax*>& out)
+    {
+        if (block == nullptr)
+            return;
+
+        for (std::size_t i = block->Statements.size(); i-- > 0;)
+        {
+            if (i >= beforeIndex)
+                continue;
+
+            StatementSyntax* stmt = block->Statements[i].get();
+            if (stmt->Kind == SyntaxKind::DeferStatement)
+                out.push_back(static_cast<DeferStatementSyntax*>(stmt));
+        }
+    }
+
+    // Walks from `node` to the method root collecting defers, innermost block
+    // first and, within each block, most recently declared first.
+    static std::vector<DeferStatementSyntax*> CollectDefersUpward(SyntaxNode* node, bool stopAtLoopBlock)
+    {
+        std::vector<DeferStatementSyntax*> result;
+        SyntaxNode* current = node;
+        while (current != nullptr)
+        {
+            SyntaxNode* parent = current->Parent;
+            StatementsBlockSyntax* block = dynamic_cast<StatementsBlockSyntax*>(parent);
+            if (block == nullptr)
+            {
+                current = parent;
+                continue;
+            }
+
+            StatementSyntax* currentStatement = dynamic_cast<StatementSyntax*>(current);
+            std::size_t idx = (currentStatement != nullptr)
+                ? IndexInBlock(block->Statements, currentStatement)
+                : block->Statements.size();
+
+            CollectDefersBefore(block, idx, result);
+
+            bool isLoopBlock = block->Parent != nullptr && IsLoopBlockParentKind(block->Parent->Kind);
+            current = block;
+            if (stopAtLoopBlock && isLoopBlock)
+                break;
+        }
+
+        return result;
+    }
+
+    static void EmitDefer(MoveNextEmitter& ctx, DeferStatementSyntax* defer)
+    {
+        if (defer == nullptr)
+            return;
+
+        std::vector<std::byte>& code = ctx.Code;
+        ByteCodeEncoder& encoder = ctx.Encoder;
+
+        std::size_t deferOffset = code.size();
+        encoder.EmitDefer(code, 0);
+
+        std::size_t jumpOverBacktrack = code.size();
+        encoder.EmitJump(code, 0);
+
+        std::size_t expressionStart = code.size();
+        if (defer->IsResourceDefer)
+        {
+            if (defer->Variable != nullptr)
+                encoder.EmitLoadVarible(code, defer->Variable->SlotIndex);
+
+            if (defer->DisposeMethod != nullptr)
+                EmitMethodCall(ctx, defer->DisposeMethod);
+        }
+        else if (defer->Statement != nullptr)
+        {
+            EmitStatementInto(ctx, ctx.Info.MoveNext, defer->Statement.get());
+        }
+
+        encoder.EmitDeferBreak(code);
+        std::size_t afterExpression = code.size();
+
+        ByteCodeEncoder::PasteData(code, deferOffset + sizeof(OpCode), &expressionStart, sizeof(std::size_t));
+        ByteCodeEncoder::PasteData(code, jumpOverBacktrack + sizeof(OpCode), &afterExpression, sizeof(std::size_t));
+    }
+
+    static void EmitDeferDrain(MoveNextEmitter& ctx, std::size_t count)
+    {
+        if (count > 0)
+            ctx.Encoder.EmitDeferDrain(ctx.Code, count);
+    }
+
+    static void EmitDefers(MoveNextEmitter& ctx, const std::vector<DeferStatementSyntax*>& defers)
+    {
+        if (!defers.empty())
+            EmitDeferDrain(ctx, defers.size());
+    }
+
+    static void EmitBlockEndDefers(MoveNextEmitter& ctx, StatementsBlockSyntax* block)
+    {
+        std::vector<DeferStatementSyntax*> defers;
+        CollectDefersBefore(block, (block != nullptr) ? block->Statements.size() : 0, defers);
+        if (!defers.empty())
+            EmitDeferDrain(ctx, defers.size());
+    }
+
+    static bool IsDescendantOf(SyntaxNode* node, SyntaxNode* ancestor)
+    {
+        SyntaxNode* current = node;
+        while (current != nullptr)
+        {
+            if (current == ancestor)
+                return true;
+            current = current->Parent;
+        }
+        return false;
+    }
+
+    // Replays the defer registrations and ENTER_TRY instructions that were
+    // active at an await expression so that resuming MoveNext restores the
+    // same runtime state. Defers are registered outermost-first so that nested
+    // scopes drain their defers before outer scopes.
+    static void EmitResumeDefersAndEnterTries(MoveNextEmitter& ctx, const AwaitSite& previousSite)
+    {
+        std::vector<DeferStatementSyntax*> allDefers = CollectDefersUpward(previousSite.Expression, false);
+        if (allDefers.empty() && previousSite.ActiveTryStack.empty())
+            return;
+
+        std::reverse(allDefers.begin(), allDefers.end());
+
+        const std::vector<TryStatementSyntax*>& activeTries = previousSite.ActiveTryStack;
+        std::unordered_map<std::size_t, std::vector<DeferStatementSyntax*>> defersByTry;
+        std::vector<DeferStatementSyntax*> outerDefers;
+
+        for (DeferStatementSyntax* defer : allDefers)
+        {
+            std::size_t containingTry = static_cast<std::size_t>(-1);
+            for (std::size_t i = activeTries.size(); i-- > 0;)
+            {
+                if (IsDescendantOf(defer, activeTries[i]->TryBlock.get()))
+                {
+                    containingTry = i;
+                    break;
+                }
+            }
+
+            if (containingTry == static_cast<std::size_t>(-1))
+                outerDefers.push_back(defer);
+            else
+                defersByTry[containingTry].push_back(defer);
+        }
+
+        for (DeferStatementSyntax* defer : outerDefers)
+            EmitDefer(ctx, defer);
+
+        for (std::size_t i = 0; i < activeTries.size(); ++i)
+        {
+            std::size_t enterBacktrack = ctx.Code.size();
+            ctx.Encoder.EmitEnterTry(ctx.Code, 0);
+            ctx.Regions[activeTries[i]].EnterBacktracks.push_back(enterBacktrack);
+
+            auto it = defersByTry.find(i);
+            if (it != defersByTry.end())
+            {
+                for (DeferStatementSyntax* defer : it->second)
+                    EmitDefer(ctx, defer);
+            }
+        }
     }
 
     static void EmitStatementInto(MoveNextEmitter& ctx, MethodSymbol* target, StatementSyntax* statement)
@@ -791,10 +977,12 @@ namespace
         return after();
     }
 
-    static bool EmitBreakStatement(MoveNextEmitter& ctx, BreakStatementSyntax* /*node*/)
+    static bool EmitBreakStatement(MoveNextEmitter& ctx, BreakStatementSyntax* node)
     {
         if (ctx.LoopStack.empty())
             return false;
+
+        EmitDefers(ctx, CollectDefersUpward(node, true));
 
         std::size_t backtrack = ctx.Code.size();
         ctx.Encoder.EmitJump(ctx.Code, 0);
@@ -802,10 +990,12 @@ namespace
         return false;
     }
 
-    static bool EmitContinueStatement(MoveNextEmitter& ctx, ContinueStatementSyntax* /*node*/)
+    static bool EmitContinueStatement(MoveNextEmitter& ctx, ContinueStatementSyntax* node)
     {
         if (ctx.LoopStack.empty())
             return false;
+
+        EmitDefers(ctx, CollectDefersUpward(node, true));
 
         std::size_t backtrack = ctx.Code.size();
         ctx.Encoder.EmitJump(ctx.Code, 0);
@@ -840,6 +1030,8 @@ namespace
         const auto& statements = block->Statements;
         if (startIndex >= statements.size())
         {
+            EmitBlockEndDefers(ctx, block);
+
             if (isActiveTryBody && leaveActiveTries)
                 return EmitAfterTry(ctx, containingTry, outerStack, leaveActiveTries, after);
 
@@ -895,9 +1087,25 @@ namespace
             return after();
         }
 
+        if (statement->Kind == SyntaxKind::DeferStatement)
+        {
+            DeferStatementSyntax* defer = static_cast<DeferStatementSyntax*>(statement);
+            if (defer->IsResourceDefer && defer->Statement != nullptr)
+                EmitStatementInto(ctx, info.MoveNext, defer->Statement.get());
+
+            EmitDefer(ctx, defer);
+            return after();
+        }
+
         if (statement->Kind == SyntaxKind::ThrowStatement)
         {
-            EmitStatementInto(ctx, info.MoveNext, statement);
+            ThrowStatementSyntax* throwStmt = static_cast<ThrowStatementSyntax*>(statement);
+            if (throwStmt->Expression != nullptr)
+                EmitExpressionInto(ctx, info.MoveNext, throwStmt->Expression.get());
+
+            // The VM's exception dispatch drains the defers that belong to the
+            // scopes being unwound; do not emit DEFER_DRAIN here.
+            encoder.EmitThrow(code);
             return false;
         }
 
@@ -929,6 +1137,7 @@ namespace
             if (retStmt->Expression != nullptr)
             {
                 EmitExpressionInto(ctx, info.MoveNext, retStmt->Expression.get());
+                EmitDefers(ctx, CollectDefersUpward(statement, false));
 
                 if (IsValueTaskReturnType(info.Method->ReturnType))
                 {
@@ -953,6 +1162,7 @@ namespace
             }
             else
             {
+                EmitDefers(ctx, CollectDefersUpward(statement, false));
                 EmitTaskComplete(ctx);
             }
 
@@ -1500,20 +1710,17 @@ void AsyncEmissionPass::EmitMoveNextBodyWithRegions(const AsyncMethodInfo& info,
         // executing any user code that may reference them.
         RestoreLiftedParametersAndLocals(info, code, encoder);
 
-        // Re-establish the active try regions before consuming the previous
-        // awaiter; GetResult may throw, and that throw must be caught.
-        for (TryStatementSyntax* tryStmt : activeStack)
-        {
-            std::size_t enterBacktrack = code.size();
-            encoder.EmitEnterTry(code, 0);
-            regions[tryStmt].EnterBacktracks.push_back(enterBacktrack);
-        }
-
         if (segment > 0)
         {
+            // Re-establish the active try regions and any defers that were in
+            // scope at the await site before consuming the previous awaiter;
+            // GetResult may throw, and that throw must be caught.
+            const AwaitSite& previousSite = info.AwaitSites[segment - 1];
+            EmitResumeDefersAndEnterTries(ctx, previousSite);
+
             ConsumePreviousAwaiter(ctx, segment - 1);
 
-            const AwaitSite& previousSite = info.AwaitSites[segment - 1];
+
             if (info.CurrentExceptionField != nullptr && previousSite.EnclosingCatch != nullptr)
             {
                 CatchClauseSyntax* clause = previousSite.EnclosingCatch;

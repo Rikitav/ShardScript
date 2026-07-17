@@ -1,0 +1,29 @@
+using stdio;
+using async;
+
+namespace test_async_defer_resource;
+
+public class Resource : IDisposable
+{
+    public func Dispose() -> void
+    {
+        println("disposed");
+    }
+}
+
+public class Program
+{
+    public static async func WorkAsync() -> Task
+    {
+        defer r: Resource = new Resource();
+        println("before await");
+        await Task.Delay(10);
+        println("after await");
+    }
+
+    public static func Main() -> void
+    {
+        Task.Wait(WorkAsync());
+        println("done");
+    }
+}

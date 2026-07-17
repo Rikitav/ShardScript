@@ -420,8 +420,19 @@ namespace
                 EnumeratorLoops.push_back(node);
         }
 
-        // Statements the lowering cannot yet suspend across.
-        void VisitDeferStatement(DeferStatementSyntax* /*node*/) override { Supported = false; }
+        // defer is supported as long as the deferred statement itself does not
+        // suspend; an await inside a defer body would have to run on scope exit
+        // after the enclosing await already completed, which is not supported.
+        void VisitDeferStatement(DeferStatementSyntax* node) override
+        {
+            if (node->Statement != nullptr)
+            {
+                std::size_t before = Info.AwaitSites.size();
+                VisitStatement(node->Statement.get());
+                if (Info.AwaitSites.size() != before)
+                    Supported = false;
+            }
+        }
 
         std::vector<StatementSyntax*> EnumeratorLoops;
 

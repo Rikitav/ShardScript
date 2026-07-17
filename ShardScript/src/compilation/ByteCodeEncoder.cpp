@@ -231,6 +231,23 @@ void shard::ByteCodeEncoder::EmitStoreCurrentException(std::vector<std::byte>& c
     AppendDataT(code, OpCode::STORE_CURRENT_EXCEPTION);
 }
 
+void shard::ByteCodeEncoder::EmitDefer(std::vector<std::byte>& code, std::size_t target)
+{
+    AppendDataT(code, OpCode::DEFER);
+    AppendDataT(code, target);
+}
+
+void shard::ByteCodeEncoder::EmitDeferBreak(std::vector<std::byte>& code)
+{
+    AppendDataT(code, OpCode::DEFER_BREAK);
+}
+
+void shard::ByteCodeEncoder::EmitDeferDrain(std::vector<std::byte>& code, std::size_t count)
+{
+    AppendDataT(code, OpCode::DEFER_DRAIN);
+    AppendDataT(code, count);
+}
+
 void ByteCodeEncoder::EmitMathAdd(std::vector<std::byte>& code)
 {
     AppendDataT(code, OpCode::MATH_ADDITION);
