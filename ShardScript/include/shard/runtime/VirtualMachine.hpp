@@ -40,8 +40,10 @@ namespace shard
 		std::wstring UnhandledExceptionMessage;
 		std::wstring UnhandledExceptionStackTrace;
 
-		void ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder, const OpCode opCode);
 		void InvokeMethodInternal(MethodSymbol* method, CallStackFrame* currentFrame);
+
+	public:
+		void ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder, const OpCode opCode);
 		ObjectInstance* InstantiateObject(TypeSymbol* type, ConstructorSymbol* ctor);
 		ObjectInstance* InstantiateDelegate(DelegateTypeSymbol* type);
 		ObjectInstance* CreateRuntimeException(const std::exception& err);

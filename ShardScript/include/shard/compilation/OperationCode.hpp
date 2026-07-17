@@ -393,6 +393,29 @@ namespace shard
 		STORE_CURRENT_EXCEPTION,
 
 		/// <summary>
+		/// Registers a deferred expression. Pushes the target instruction pointer onto
+		/// the frame's DeferStack; the expression is executed later by DEFER_DRAIN.
+		/// <para>Includes 1 parameter :</para>
+		/// <para>> std::size_t Target - absolute bytecode offset of the deferred expression.</para>
+		/// </summary>
+		DEFER,
+
+		/// <summary>
+		/// Returns from a deferred expression back to the DEFER_DRAIN loop that invoked it.
+		/// Pops a return address pushed by DEFER_DRAIN.
+		/// <para>Includes no additional parameters.</para>
+		/// </summary>
+		DEFER_BREAK,
+
+		/// <summary>
+		/// Drains the top N registered defers from DeferStack and executes them LIFO.
+		/// Each deferred expression must end with DEFER_BREAK.
+		/// <para>Includes 1 parameter :</para>
+		/// <para>> std::size_t Count - number of defers to drain.</para>
+		/// </summary>
+		DEFER_DRAIN,
+
+		/// <summary>
 		/// Creates a new integer array from a range. Pops upper bound, lower bound and
 		/// an inclusive flag, then pushes the populated array.
 		/// <para>Includes 1 parameter :</para>

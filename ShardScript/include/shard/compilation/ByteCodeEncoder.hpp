@@ -51,6 +51,10 @@ namespace shard
 		void EmitLoadCurrentException(std::vector<std::byte>& code);
 		void EmitStoreCurrentException(std::vector<std::byte>& code);
 
+		void EmitDefer(std::vector<std::byte>& code, std::size_t target);
+		void EmitDeferBreak(std::vector<std::byte>& code);
+		void EmitDeferDrain(std::vector<std::byte>& code, std::size_t count);
+
 		void EmitMathAdd(std::vector<std::byte>& code);
 		void EmitMathSub(std::vector<std::byte>& code);
 		void EmitMathMult(std::vector<std::byte>& code);

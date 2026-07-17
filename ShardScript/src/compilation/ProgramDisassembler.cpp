@@ -557,6 +557,25 @@ void ProgramDisassembler::Disassemble(std::wostream& out, MethodSymbol* method)
                 opcode = L"store_current_exception";
                 break;
 
+            case OpCode::DEFER:
+            {
+                opcode = L"defer";
+                args << L"SS_";
+                WriteHexTarget(args, decoder.AbsorbJump());
+                break;
+            }
+
+            case OpCode::DEFER_BREAK:
+                opcode = L"defer_break";
+                break;
+
+            case OpCode::DEFER_DRAIN:
+            {
+                opcode = L"defer_drain";
+                args << decoder.AbsorbJump();
+                break;
+            }
+
             default:
             {
                 opcode = L"unknown";

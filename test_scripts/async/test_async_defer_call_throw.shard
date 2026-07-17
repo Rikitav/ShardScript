@@ -1,0 +1,39 @@
+using stdio;
+using async;
+
+namespace test_async_defer_call_throw;
+
+public class Program
+{
+    public static async func FaultyAsync() -> Task
+    {
+        await Task.Delay(10);
+        throw new RuntimeException();
+    }
+
+    public static async func WithDeferAsync() -> Task
+    {
+        defer println("deferred");
+        println("before await");
+        await FaultyAsync();
+        println("after await");
+    }
+
+    public static async func CatcherAsync() -> Task
+    {
+        try
+        {
+            await WithDeferAsync();
+        }
+        catch (e: RuntimeException)
+        {
+            println("caught");
+        }
+    }
+
+    public static func Main() -> void
+    {
+        Task.Wait(CatcherAsync());
+        println("done");
+    }
+}

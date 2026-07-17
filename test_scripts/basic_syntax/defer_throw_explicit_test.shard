@@ -1,0 +1,19 @@
+using stdio;
+
+namespace defer_throw_explicit_test;
+
+public static func Main() -> void
+{
+    try
+    {
+        defer println("deferred");
+        println("before throw");
+        throw new RuntimeException();
+    }
+    catch (e: RuntimeException)
+    {
+        println("caught");
+    }
+
+    println("done");
+}

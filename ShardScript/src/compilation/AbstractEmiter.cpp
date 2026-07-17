@@ -353,6 +353,8 @@ void AbstractEmiter::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 		VisitStatementsBlock(node->Body.get());
 	}
 
+	Encoder.EmitReturn(GeneratingFor->ExecutableByteCode);
+
 	if (GeneratingFor->Name == L"Main")
 	{
 		EntryPointCandidates.push_back(GeneratingFor);
@@ -397,6 +399,8 @@ void AbstractEmiter::VisitOperatorDeclaration(OperatorDeclarationSyntax* node)
 		VisitStatementsBlock(node->Body.get());
 	}
 
+	Encoder.EmitReturn(GeneratingFor->ExecutableByteCode);
+
 	GeneratingFor->ExecutableByteCode.shrink_to_fit();
 	GeneratingFor = nullptr;
 }
@@ -418,6 +422,8 @@ void AbstractEmiter::VisitConstructorDeclaration(ConstructorDeclarationSyntax* n
 		GeneratingFor->ExecutableByteCode.reserve(reserve);
 		VisitStatementsBlock(node->Body.get());
 	}
+
+	Encoder.EmitReturn(GeneratingFor->ExecutableByteCode);
 
 	GeneratingFor->ExecutableByteCode.shrink_to_fit();
 	GeneratingFor = nullptr;
@@ -460,6 +466,8 @@ void AbstractEmiter::VisitAccessorDeclaration(AccessorDeclarationSyntax* node)
 			throw std::runtime_error("property backing field not found");
 		}
 	}
+
+	Encoder.EmitReturn(GeneratingFor->ExecutableByteCode);
 
 	GeneratingFor->ExecutableByteCode.shrink_to_fit();
 	GeneratingFor = nullptr;
@@ -980,6 +988,7 @@ void AbstractEmiter::VisitLambdaExpression(LambdaExpressionSyntax* node)
 	std::size_t reserve = node->Body->Statements.size() * 20;
 	GeneratingFor->ExecutableByteCode.reserve(reserve);
 	VisitStatementsBlock(node->Body.get());
+	Encoder.EmitReturn(GeneratingFor->ExecutableByteCode);
 
 	GeneratingFor->ExecutableByteCode.shrink_to_fit();
 
@@ -1346,10 +1355,19 @@ void AbstractEmiter::EmitDefer(DeferStatementSyntax* defer)
 	if (defer == nullptr)
 		return;
 
+	std::vector<std::byte>& code = GeneratingFor->ExecutableByteCode;
+
+	std::size_t deferOffset = code.size();
+	Encoder.EmitDefer(code, 0);
+
+	std::size_t jumpOverBacktrack = code.size();
+	Encoder.EmitJump(code, 0);
+
+	std::size_t expressionStart = code.size();
 	if (defer->IsResourceDefer)
 	{
 		if (defer->Variable != nullptr)
-			Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, defer->Variable->SlotIndex);
+			Encoder.EmitLoadVarible(code, defer->Variable->SlotIndex);
 
 		if (defer->DisposeMethod != nullptr)
 			EmitMethodCall(defer->DisposeMethod);
@@ -1358,6 +1376,12 @@ void AbstractEmiter::EmitDefer(DeferStatementSyntax* defer)
 	{
 		VisitStatement(defer->Statement.get());
 	}
+
+	Encoder.EmitDeferBreak(code);
+	std::size_t afterExpression = code.size();
+
+	ByteCodeEncoder::PasteData(code, deferOffset + sizeof(OpCode), &expressionStart, sizeof(std::size_t));
+	ByteCodeEncoder::PasteData(code, jumpOverBacktrack + sizeof(OpCode), &afterExpression, sizeof(std::size_t));
 }
 
 void AbstractEmiter::EmitCurrentScopeDefers()
@@ -1366,35 +1390,39 @@ void AbstractEmiter::EmitCurrentScopeDefers()
 		return;
 
 	DeferScope& scope = DeferScopes.back();
-	for (auto it = scope.Defers.rbegin(); it != scope.Defers.rend(); ++it)
-		EmitDefer(*it);
+	if (scope.Count > 0)
+		Encoder.EmitDeferDrain(GeneratingFor->ExecutableByteCode, scope.Count);
 
-	scope.Defers.clear();
+	scope.Count = 0;
 }
 
 void AbstractEmiter::EmitDefersUntilLoop()
 {
+	std::size_t drainCount = 0;
 	for (auto it = DeferScopes.rbegin(); it != DeferScopes.rend(); ++it)
 	{
-		for (auto deferIt = it->Defers.rbegin(); deferIt != it->Defers.rend(); ++deferIt)
-			EmitDefer(*deferIt);
-
-		it->Defers.clear();
+		drainCount += it->Count;
+		it->Count = 0;
 
 		if (it->IsLoop)
 			break;
 	}
+
+	if (drainCount > 0)
+		Encoder.EmitDeferDrain(GeneratingFor->ExecutableByteCode, drainCount);
 }
 
 void AbstractEmiter::EmitAllDefers()
 {
+	std::size_t drainCount = 0;
 	for (auto it = DeferScopes.rbegin(); it != DeferScopes.rend(); ++it)
 	{
-		for (auto deferIt = it->Defers.rbegin(); deferIt != it->Defers.rend(); ++deferIt)
-			EmitDefer(*deferIt);
-
-		it->Defers.clear();
+		drainCount += it->Count;
+		it->Count = 0;
 	}
+
+	if (drainCount > 0)
+		Encoder.EmitDeferDrain(GeneratingFor->ExecutableByteCode, drainCount);
 }
 
 void AbstractEmiter::VisitStatementsBlock(StatementsBlockSyntax* node)
@@ -1408,7 +1436,7 @@ void AbstractEmiter::VisitStatementsBlock(StatementsBlockSyntax* node)
 		node->Parent->Kind == SyntaxKind::ForStatement ||
 		node->Parent->Kind == SyntaxKind::ForEachStatement);
 
-	DeferScopes.push_back({ {}, isLoop });
+	DeferScopes.push_back({ 0, isLoop });
 
 	for (const auto& statement : node->Statements)
 		VisitStatement(statement.get());
@@ -1431,7 +1459,8 @@ void AbstractEmiter::VisitDeferStatement(DeferStatementSyntax* node)
 	if (node->IsResourceDefer && node->Statement != nullptr)
 		VisitStatement(node->Statement.get());
 
-	DeferScopes.back().Defers.push_back(node);
+	DeferScopes.back().Count++;
+	EmitDefer(node);
 }
 
 void AbstractEmiter::VisitReturnStatement(ReturnStatementSyntax* node)
@@ -1463,7 +1492,9 @@ void AbstractEmiter::VisitThrowStatement(ThrowStatementSyntax* node)
 	if (node->Expression != nullptr)
 		VisitExpression(node->Expression.get());
 
-	EmitAllDefers();
+	// Do not emit DEFER_DRAIN here. The VM's exception dispatch drains the
+	// defers that belong to the scopes being unwound, and any remaining defers
+	// are drained before the frame returns with an unhandled exception.
 
 	if (node->Expression != nullptr)
 		Encoder.EmitThrow(GeneratingFor->ExecutableByteCode);

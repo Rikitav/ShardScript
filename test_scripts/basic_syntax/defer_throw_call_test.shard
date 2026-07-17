@@ -1,0 +1,24 @@
+using stdio;
+
+namespace defer_throw_call_test;
+
+public static func Thrower() -> void
+{
+    throw new RuntimeException();
+}
+
+public static func Main() -> void
+{
+    try
+    {
+        defer println("deferred");
+        println("before call");
+        Thrower();
+    }
+    catch (e: RuntimeException)
+    {
+        println("caught");
+    }
+
+    println("done");
+}
