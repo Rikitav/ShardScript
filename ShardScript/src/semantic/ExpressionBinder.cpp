@@ -1650,10 +1650,7 @@ bool ExpressionBinder::MatchMethodArguments(SyntaxToken blameToken, std::vector<
 			return false;
 		}
 
-		if (paramType->Kind == SyntaxKind::TypeParameter)
-		{
-			paramType = SubstituteTypeParameters(paramType, genericType);
-		}
+		paramType = SubstituteTypeParameters(paramType, genericType, nullptr, {});
 
 		if (paramType == SymbolTable::Primitives::Any)
 		{
@@ -2617,7 +2614,7 @@ bool ExpressionBinder::TryMatchMethod(
 
 		for (std::size_t i = 0; i < method->Parameters.size(); ++i)
 		{
-			TypeSymbol* paramType = SubstituteTypeParameters(method->Parameters[i]->Type, genericType);
+			TypeSymbol* paramType = SubstituteTypeParameters(method->Parameters[i]->Type, genericType, nullptr, {});
 			if (paramType == SymbolTable::Primitives::Any)
 				continue;
 

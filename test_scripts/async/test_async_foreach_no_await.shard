@@ -8,7 +8,7 @@ public class Program
     public static func Main() -> void
     {
         task := DoItAsync();
-        ValueTask.Wait(task);
+        Task.Wait(task);
     }
 
     public static async func DoItAsync() -> Task
