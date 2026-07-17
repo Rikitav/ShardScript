@@ -457,6 +457,13 @@ void SymbolTable::ResolveAsyncTypes(SymbolTable* globalTable)
 		SymbolTable::StandardTypes::Task_Delay = builder.AddMethod(L"Delay", SymbolTable::StandardTypes::Task, LINK_STATIC)
 			.AddParameter(L"milliseconds", TYPE_INT)
 			.SetCallback(&shard_async_Task_Delay);
+
+		SymbolTable::StandardTypes::Wait_Task = builder.AddMethod(L"Wait", TYPE_VOID, LINK_STATIC)
+			.AddParameter(L"task", SymbolTable::StandardTypes::Task)
+			.SetCallback(&shard_async_Task_Wait);
+
+		builder.AddMethod(L"Wait", TYPE_VOID, LINK_INSTANCE)
+			.SetCallback(&shard_async_Task_Wait);
 	}
 
 	// -------------------------------------------------------------------------
@@ -530,15 +537,12 @@ void SymbolTable::ResolveAsyncTypes(SymbolTable* globalTable)
 		SymbolTable::StandardTypes::ValueTask_SetException = builder.AddMethod(L"SetException", TYPE_VOID, LINK_INSTANCE)
 			.AddParameter(L"exception", TRAIT_THROWABLE)
 			.SetCallback(&shard_async_ValueTask_SetException);
+
+		SymbolTable::StandardTypes::Wait_ValueTask = builder.AddMethod(L"Wait", TYPE_VOID, LINK_STATIC)
+			.AddParameter(L"task", valueTaskOfT)
+			.SetCallback(&shard_async_ValueTask_Wait);
+
+		builder.AddMethod(L"Wait", TYPE_VOID, LINK_INSTANCE)
+			.SetCallback(&shard_async_ValueTask_Wait);
 	}
-
-	SymbolTable::StandardTypes::Wait_Task = asyncNs.AddMethod(L"Wait", TYPE_VOID, LINK_STATIC)
-		.AddParameter(L"task", SymbolTable::StandardTypes::Task)
-		.SetCallback(&shard_async_Task_Wait)
-		.DeclareGlobal();
-
-	SymbolTable::StandardTypes::Wait_ValueTask = asyncNs.AddMethod(L"Wait", TYPE_VOID, LINK_STATIC)
-		.AddParameter(L"task", TYPE_ANY)
-		.SetCallback(&shard_async_ValueTask_Wait)
-		.DeclareGlobal();
 }
