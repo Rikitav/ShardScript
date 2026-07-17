@@ -292,18 +292,6 @@ namespace
             if (!Supported)
                 return;
 
-            // Await is not allowed in the loop condition because it is re-evaluated.
-            if (node->ConditionExpression != nullptr)
-            {
-                std::size_t before = Info.AwaitSites.size();
-                VisitExpression(node->ConditionExpression.get());
-                if (Info.AwaitSites.size() != before)
-                {
-                    Supported = false;
-                    return;
-                }
-            }
-
             if (node->StatementsBlock != nullptr)
                 VisitStatementsBlock(node->StatementsBlock.get());
         }
@@ -312,17 +300,6 @@ namespace
         {
             if (!Supported)
                 return;
-
-            if (node->ConditionExpression != nullptr)
-            {
-                std::size_t before = Info.AwaitSites.size();
-                VisitExpression(node->ConditionExpression.get());
-                if (Info.AwaitSites.size() != before)
-                {
-                    Supported = false;
-                    return;
-                }
-            }
 
             if (node->StatementsBlock != nullptr)
                 VisitStatementsBlock(node->StatementsBlock.get());
@@ -333,40 +310,23 @@ namespace
             if (!Supported)
                 return;
 
-            // Await is not allowed in initializer, condition, or after-repeat because
-            // those parts are executed repeatedly and would need their own state.
             if (node->InitializerStatement != nullptr)
-            {
-                std::size_t before = Info.AwaitSites.size();
                 VisitStatement(node->InitializerStatement.get());
-                if (Info.AwaitSites.size() != before)
-                {
-                    Supported = false;
-                    return;
-                }
-            }
+            
+            if (!Supported)
+                return;
 
             if (node->ConditionExpression != nullptr)
-            {
-                std::size_t before = Info.AwaitSites.size();
                 VisitExpression(node->ConditionExpression.get());
-                if (Info.AwaitSites.size() != before)
-                {
-                    Supported = false;
-                    return;
-                }
-            }
+            
+            if (!Supported)
+                return;
 
             if (node->AfterRepeatStatement != nullptr)
-            {
-                std::size_t before = Info.AwaitSites.size();
                 VisitStatement(node->AfterRepeatStatement.get());
-                if (Info.AwaitSites.size() != before)
-                {
-                    Supported = false;
-                    return;
-                }
-            }
+            
+            if (!Supported)
+                return;
 
             if (node->StatementsBlock != nullptr)
                 VisitStatementsBlock(node->StatementsBlock.get());
@@ -378,15 +338,10 @@ namespace
                 return;
 
             if (node->RangeExpression != nullptr)
-            {
-                std::size_t before = Info.AwaitSites.size();
                 VisitExpression(node->RangeExpression.get());
-                if (Info.AwaitSites.size() != before)
-                {
-                    Supported = false;
-                    return;
-                }
-            }
+            
+            if (!Supported)
+                return;
 
             std::size_t before = Info.AwaitSites.size();
             if (node->StatementsBlock != nullptr)
@@ -402,15 +357,10 @@ namespace
                 return;
 
             if (node->RangeExpression != nullptr)
-            {
-                std::size_t before = Info.AwaitSites.size();
                 VisitExpression(node->RangeExpression.get());
-                if (Info.AwaitSites.size() != before)
-                {
-                    Supported = false;
-                    return;
-                }
-            }
+            
+            if (!Supported)
+                return;
 
             std::size_t before = Info.AwaitSites.size();
             if (node->StatementsBlock != nullptr)
