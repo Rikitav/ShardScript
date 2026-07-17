@@ -898,6 +898,7 @@ namespace
                 PatchJumpTarget(code, backtrack, loopEnd);
 
             labels.BlockEnd = blockEnd;
+            labels.LoopEnd = loopEnd;
             ctx.LoopLabelsByStatement[loop] = labels;
             return after();
         }
@@ -968,10 +969,12 @@ namespace
         std::size_t loopEnd = code.size();
         if (hasCondition)
             PatchJumpTarget(code, condJumpBacktrack, loopEnd);
+
         for (std::size_t backtrack : bodyLabels.BreakBacktracks)
             PatchJumpTarget(code, backtrack, loopEnd);
 
         labels.BlockEnd = blockEnd;
+        labels.LoopEnd = loopEnd;
         ctx.LoopLabelsByStatement[loop] = labels;
 
         return after();
@@ -984,9 +987,19 @@ namespace
 
         EmitDefers(ctx, CollectDefersUpward(node, true));
 
-        std::size_t backtrack = ctx.Code.size();
-        ctx.Encoder.EmitJump(ctx.Code, 0);
-        ctx.LoopStack.back().BreakBacktracks.push_back(backtrack);
+        LoopLabels& labels = ctx.LoopStack.back();
+        if (labels.LoopEnd != 0)
+        {
+            // The loop was emitted in an earlier segment; jump straight to its end.
+            ctx.Encoder.EmitJump(ctx.Code, labels.LoopEnd);
+        }
+        else
+        {
+            std::size_t backtrack = ctx.Code.size();
+            ctx.Encoder.EmitJump(ctx.Code, 0);
+            labels.BreakBacktracks.push_back(backtrack);
+        }
+
         return false;
     }
 
@@ -997,9 +1010,19 @@ namespace
 
         EmitDefers(ctx, CollectDefersUpward(node, true));
 
-        std::size_t backtrack = ctx.Code.size();
-        ctx.Encoder.EmitJump(ctx.Code, 0);
-        ctx.LoopStack.back().ContinueBacktracks.push_back(backtrack);
+        LoopLabels& labels = ctx.LoopStack.back();
+        if (labels.BlockEnd != 0)
+        {
+            // The loop was emitted in an earlier segment; jump straight to its tail.
+            ctx.Encoder.EmitJump(ctx.Code, labels.BlockEnd);
+        }
+        else
+        {
+            std::size_t backtrack = ctx.Code.size();
+            ctx.Encoder.EmitJump(ctx.Code, 0);
+            labels.ContinueBacktracks.push_back(backtrack);
+        }
+
         return false;
     }
 
@@ -1308,6 +1331,24 @@ namespace
                kind == SyntaxKind::ForInStatement;
     }
 
+    struct LoopStackScope
+    {
+        MoveNextEmitter& ctx;
+        bool Pushed = false;
+
+        LoopStackScope(MoveNextEmitter& ctx, const LoopLabels& labels)
+            : ctx(ctx), Pushed(true)
+        {
+            ctx.LoopStack.push_back(labels);
+        }
+
+        ~LoopStackScope()
+        {
+            if (Pushed)
+                ctx.LoopStack.pop_back();
+        }
+    };
+
     static StatementSyntax* FindEnclosingLoopWithLabels(MoveNextEmitter& ctx, StatementSyntax* statement, std::size_t& outBlockEnd)
     {
         SyntaxNode* current = statement->Parent;
@@ -1372,12 +1413,19 @@ namespace
 
         // For statements nested inside a loop (e.g., inside an if/try in the loop
         // body), the natural continuation must still return to the loop header once
-        // the remainder of the loop body has finished executing.
+        // the remainder of the loop body has finished executing. Restore the
+        // loop label stack so that break/continue statements in the resumed
+        // segment are handled correctly.
         std::size_t loopBlockEnd = 0;
         StatementSyntax* enclosingLoop = FindEnclosingLoopWithLabels(ctx, statement, loopBlockEnd);
+        std::optional<LoopStackScope> loopScope;
         Continuation loopWrappedAfter = after;
         if (enclosingLoop != nullptr)
         {
+            auto it = ctx.LoopLabelsByStatement.find(enclosingLoop);
+            if (it != ctx.LoopLabelsByStatement.end())
+                loopScope.emplace(ctx, it->second);
+
             loopWrappedAfter = [&, after, loopBlockEnd]() -> bool
             {
                 bool result = after();
