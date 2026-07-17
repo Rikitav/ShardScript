@@ -744,6 +744,29 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
+		case OpCode::LOAD_CURRENT_EXCEPTION:
+		{
+			frame->PushStack(frame->CurrentException);
+			break;
+		}
+
+		case OpCode::STORE_CURRENT_EXCEPTION:
+		{
+			ObjectInstance* exception = frame->PopStack();
+
+			if (frame->CurrentException != nullptr && frame->CurrentException != exception)
+			{
+				frame->CurrentException->DecrementReference();
+				garbageCollector.CollectInstance(frame->CurrentException);
+			}
+
+			frame->CurrentException = exception;
+			if (exception != nullptr)
+				exception->IncrementReference();
+
+			break;
+		}
+
 		default:
 			throw std::runtime_error("CRITICAL SHIT! UNKNOWN OPCODE");
 	}

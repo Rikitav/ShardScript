@@ -379,6 +379,20 @@ namespace shard
 		END_CATCH,
 
 		/// <summary>
+		/// Pushes the exception currently being handled by this frame onto the evaluation stack.
+		/// <para>Includes no additional parameters.</para>
+		/// </summary>
+		LOAD_CURRENT_EXCEPTION,
+
+		/// <summary>
+		/// Pops an exception object from the evaluation stack and makes it the frame's
+		/// current exception. Used to restore the exception context after resuming from
+		/// an await inside a catch clause.
+		/// <para>Includes no additional parameters.</para>
+		/// </summary>
+		STORE_CURRENT_EXCEPTION,
+
+		/// <summary>
 		/// Creates a new integer array from a range. Pops upper bound, lower bound and
 		/// an inclusive flag, then pushes the populated array.
 		/// <para>Includes 1 parameter :</para>

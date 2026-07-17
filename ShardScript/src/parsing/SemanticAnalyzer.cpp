@@ -40,6 +40,6 @@ void SemanticAnalyzer::Analyze(SyntaxTree& syntaxTree, SemanticModel& semanticMo
 	expressionBinder.VisitSyntaxTree(syntaxTree);
 
 	// Final cross-symbol validation pass. This also catches interface
-	// implementation mistakes in symbols created by native libraries.
+	// implementation mistakes in native libraries.
 	SemanticValidator::ValidateAllInterfaceImplementations(semanticModel, Diagnostics);
 }

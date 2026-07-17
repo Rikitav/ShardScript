@@ -800,19 +800,26 @@ void AbstractEmiter::VisitIfStatement(IfStatementSyntax* node)
 	VisitStatement(node->ConditionExpression.get());
 	SetPopExpressionStatement(tmpPopExpressionStatement);
 
-	std::size_t jumpAddress = GeneratingFor->ExecutableByteCode.size();
+	std::size_t conditionalJumpAddress = GeneratingFor->ExecutableByteCode.size();
 	Encoder.EmitJumpFalse(GeneratingFor->ExecutableByteCode, 0);
-	scope.ClauseEndBacktracks.push_back(jumpAddress);
 
 	VisitStatementsBlock(node->StatementsBlock.get());
 
 	if (node->NextStatement != nullptr)
 	{
-		jumpAddress = GeneratingFor->ExecutableByteCode.size();
+		std::size_t endJumpAddress = GeneratingFor->ExecutableByteCode.size();
 		Encoder.EmitJump(GeneratingFor->ExecutableByteCode, 0);
-		scope.ClauseEndBacktracks.push_back(jumpAddress);
+		scope.ClauseEndBacktracks.push_back(endJumpAddress);
+
+		std::size_t nextClauseStart = GeneratingFor->ExecutableByteCode.size();
+		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, conditionalJumpAddress + sizeof(OpCode), &nextClauseStart, sizeof(std::size_t));
 
 		VisitConditionalClause(node->NextStatement.get());
+	}
+	else
+	{
+		std::size_t clauseEnd = GeneratingFor->ExecutableByteCode.size();
+		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, conditionalJumpAddress + sizeof(OpCode), &clauseEnd, sizeof(std::size_t));
 	}
 
 	if (isFirst)
@@ -840,19 +847,26 @@ void AbstractEmiter::VisitUnlessStatement(UnlessStatementSyntax* node)
 	VisitStatement(node->ConditionExpression.get());
 	SetPopExpressionStatement(tmpPopExpressionStatement);
 
-	std::size_t jumpAddress = GeneratingFor->ExecutableByteCode.size();
+	std::size_t conditionalJumpAddress = GeneratingFor->ExecutableByteCode.size();
 	Encoder.EmitJumpTrue(GeneratingFor->ExecutableByteCode, 0);
-	scope.ClauseEndBacktracks.push_back(jumpAddress);
 
 	VisitStatementsBlock(node->StatementsBlock.get());
 
 	if (node->NextStatement != nullptr)
 	{
-		jumpAddress = GeneratingFor->ExecutableByteCode.size();
+		std::size_t endJumpAddress = GeneratingFor->ExecutableByteCode.size();
 		Encoder.EmitJump(GeneratingFor->ExecutableByteCode, 0);
-		scope.ClauseEndBacktracks.push_back(jumpAddress);
+		scope.ClauseEndBacktracks.push_back(endJumpAddress);
+
+		std::size_t nextClauseStart = GeneratingFor->ExecutableByteCode.size();
+		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, conditionalJumpAddress + sizeof(OpCode), &nextClauseStart, sizeof(std::size_t));
 
 		VisitConditionalClause(node->NextStatement.get());
+	}
+	else
+	{
+		std::size_t clauseEnd = GeneratingFor->ExecutableByteCode.size();
+		ByteCodeEncoder::PasteData(GeneratingFor->ExecutableByteCode, conditionalJumpAddress + sizeof(OpCode), &clauseEnd, sizeof(std::size_t));
 	}
 
 	if (isFirst)

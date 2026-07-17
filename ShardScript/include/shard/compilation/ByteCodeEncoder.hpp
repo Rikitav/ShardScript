@@ -48,6 +48,8 @@ namespace shard
 		void EmitLeaveTry(std::vector<std::byte>& code);
 		void EmitRethrow(std::vector<std::byte>& code);
 		void EmitEndCatch(std::vector<std::byte>& code);
+		void EmitLoadCurrentException(std::vector<std::byte>& code);
+		void EmitStoreCurrentException(std::vector<std::byte>& code);
 
 		void EmitMathAdd(std::vector<std::byte>& code);
 		void EmitMathSub(std::vector<std::byte>& code);

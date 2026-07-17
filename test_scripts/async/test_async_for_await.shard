@@ -1,0 +1,24 @@
+using stdio;
+using async;
+
+namespace test_async_for_await;
+
+public class Program
+{
+    public static func Main() -> void
+    {
+        task := DoItAsync();
+        Task.Wait(task);
+    }
+
+    public static async func DoItAsync() -> Task
+    {
+        for (i := 0; i < 3; i = i + 1)
+        {
+            println(i);
+            await Task.Delay(100);
+        }
+
+        println("done");
+    }
+}

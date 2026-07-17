@@ -1079,7 +1079,7 @@ void DeclarationCollector::VisitTryStatement(TryStatementSyntax* node)
         if (clause->IdentifierToken.Type == TokenType::Unknown)
             continue;
 
-        VariableSymbol* symbol = clause->Symbol = symbol = LookupSymbol<VariableSymbol>(clause.get()).value_or(nullptr);
+        VariableSymbol* symbol = LookupSymbol<VariableSymbol>(clause.get()).value_or(nullptr);
         if (symbol == nullptr)
         {
             symbol = Factory.Variable(clause->IdentifierToken.Word, SymbolTable::Primitives::Any);
@@ -1087,15 +1087,17 @@ void DeclarationCollector::VisitTryStatement(TryStatementSyntax* node)
 
             MethodSymbol* hostMethod = FindHostMethodSymbol().value_or(nullptr);
             symbol->SlotIndex = hostMethod->GetEvalStackArgumentsCount() + hostMethod->AddVariableCount();
-            symbol->AdvanceAnalysisState(SymbolAnalysisState::Collected);
         }
 
+        clause->Symbol = symbol;
         PushScope(symbol);
 
         if (symbol->AnalysisState == SymbolAnalysisState::JustCreated)
         {
             if (clause->Body != nullptr)
                 VisitStatementsBlock(clause->Body.get());
+
+            symbol->AdvanceAnalysisState(SymbolAnalysisState::Collected);
         }
 
         PopScope();

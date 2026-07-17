@@ -732,6 +732,7 @@ namespace
                         return statement;
 
                     MovePrefix(prefix, nextPrefix);
+                    rewrittenNext->Parent = node;
                     node->NextStatement.reset(static_cast<ConditionalClauseBaseSyntax*>(rewrittenNext.release()));
                 }
 
@@ -758,6 +759,7 @@ namespace
                         return statement;
 
                     MovePrefix(prefix, nextPrefix);
+                    rewrittenNext->Parent = node;
                     node->NextStatement.reset(static_cast<ConditionalClauseBaseSyntax*>(rewrittenNext.release()));
                 }
 
@@ -867,15 +869,55 @@ namespace
             }
 
             case SyntaxKind::ForEachStatement:
+            {
+                auto* node = static_cast<ForEachStatementSyntax*>(statement.get());
+
+                if (node->RangeExpression != nullptr)
+                {
+                    HoistResult range = HoistSubExpression(std::move(node->RangeExpression), true, method, node, model, diagnostics);
+                    supported = range.Supported;
+
+                    if (!supported)
+                        return statement;
+
+                    node->RangeExpression = std::move(range.Expression);
+                    MovePrefix(prefix, range.Prefix);
+                }
+
+                if (node->StatementsBlock != nullptr)
+                    HoistStatements(node->StatementsBlock->Statements, method, node->StatementsBlock.get(), model, diagnostics, supported);
+
+                supported = true;
+                return statement;
+            }
+
             case SyntaxKind::ForInStatement:
+            {
+                auto* node = static_cast<ForInStatementSyntax*>(statement.get());
+
+                if (node->RangeExpression != nullptr)
+                {
+                    HoistResult range = HoistSubExpression(std::move(node->RangeExpression), true, method, node, model, diagnostics);
+                    supported = range.Supported;
+
+                    if (!supported)
+                        return statement;
+
+                    node->RangeExpression = std::move(range.Expression);
+                    MovePrefix(prefix, range.Prefix);
+                }
+
+                if (node->StatementsBlock != nullptr)
+                    HoistStatements(node->StatementsBlock->Statements, method, node->StatementsBlock.get(), model, diagnostics, supported);
+
+                supported = true;
+                return statement;
+            }
+
             case SyntaxKind::DeferStatement:
             {
-                // These statements are not yet supported with awaits inside them.
-                // Defer in particular needs proper finally lowering.
-                // For now leave them untouched;
-
-                // ScanAsyncStatements will reject them if they
-                // contain await sites.
+                // Defer needs proper finally lowering. Leave it untouched for now;
+                // AsyncAnalysisPass will reject async methods that contain defer.
                 supported = true;
                 return statement;
             }
@@ -893,5 +935,6 @@ bool AsyncHoistingPass::Rewrite(StatementsBlockSyntax* body, MethodSymbol* metho
 
     bool supported = true;
     HoistStatements(body->Statements, method, body, Model, Diagnostics, supported);
+
     return supported;
 }
