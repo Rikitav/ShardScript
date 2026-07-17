@@ -82,13 +82,72 @@ namespace
     };
 
     // ========================================================================
+    static bool IsLoopStatement(SyntaxNode* node)
+    {
+        return node != nullptr && (
+            node->Kind == SyntaxKind::WhileStatement ||
+            node->Kind == SyntaxKind::UntilStatement ||
+            node->Kind == SyntaxKind::ForStatement ||
+            node->Kind == SyntaxKind::ForEachStatement ||
+            node->Kind == SyntaxKind::ForInStatement);
+    }
+
+    static std::size_t IndexInBlock(const std::vector<std::unique_ptr<StatementSyntax>>& block, StatementSyntax* statement)
+    {
+        for (std::size_t i = 0; i < block.size(); ++i)
+        {
+            if (block[i].get() == statement)
+                return i;
+        }
+
+        return block.size();
+    }
+
+    // Finds the statement that should execute after 'statement' completes normally.
+    // When 'statement' is the last statement in a loop body, the loop itself is
+    // returned so the emitter can run the loop epilogue. When it is inside a nested
+    // control structure (if/else/try), the search walks out to the next statement
+    // in the enclosing block.
+    static StatementSyntax* FindResumeStatement(StatementSyntax* statement)
+    {
+        StatementsBlockSyntax* block = dynamic_cast<StatementsBlockSyntax*>(statement->Parent);
+        if (block == nullptr)
+            return nullptr;
+
+        SyntaxNode* owner = block->Parent;
+        while (owner != nullptr)
+        {
+            std::size_t idx = IndexInBlock(block->Statements, statement);
+            if (idx + 1 < block->Statements.size())
+                return block->Statements[idx + 1].get();
+
+            // 'statement' is the last statement in 'block'; continue from the owner.
+            if (IsLoopStatement(owner))
+                return static_cast<StatementSyntax*>(owner);
+
+            StatementsBlockSyntax* outerBlock = dynamic_cast<StatementsBlockSyntax*>(owner->Parent);
+            if (outerBlock != nullptr)
+            {
+                statement = static_cast<StatementSyntax*>(owner);
+                block = outerBlock;
+                owner = block->Parent;
+                continue;
+            }
+
+            // The owner is not directly inside a block (e.g., an else-clause whose
+            // parent is the preceding if-clause). Walk up the clause chain until we
+            // reach the statement that actually sits in the enclosing block.
+            owner = owner->Parent;
+        }
+
+        return nullptr;
+    }
+
     // Await-site scanning (read-only visitor).
     // ========================================================================
     // Replaces the hand-written ScanAsyncStatements/ScanAsyncStatement recursion.
     // Each await that survives hoisting as a top-level Expression/Variable/Return
-    // statement becomes a suspension site; the lowering cannot yet suspend across
-    // loops, conditionals, try/catch internals, defer, or break/continue/throw, so
-    // those branches are rejected exactly as the original scan did.
+    // statement becomes a suspension site.
     class AwaitScanVisitor : public SyntaxVisitor
     {
     public:
@@ -102,21 +161,6 @@ namespace
         {
             if (body != nullptr)
                 VisitStatementsBlock(body);
-        }
-
-        void VisitStatementsBlock(StatementsBlockSyntax* node) override
-        {
-            if (node == nullptr)
-                return;
-
-            const auto& statements = node->Statements;
-            for (std::size_t i = 0; i < statements.size() && Supported; ++i)
-            {
-                // Track the statement that follows this one; it becomes the resume
-                // target recorded on any await site discovered here.
-                CurrentNextStatement = (i + 1 < statements.size()) ? statements[i + 1].get() : nullptr;
-                VisitStatement(statements[i].get());
-            }
         }
 
         void VisitExpressionStatement(ExpressionStatementSyntax* node) override
@@ -133,8 +177,9 @@ namespace
 
             AwaitSite site;
             site.Expression = awaitExpr;
-            site.NextStatement = CurrentNextStatement;
+            site.NextStatement = FindResumeStatement(node);
             site.ActiveTryStack = ActiveTryStack;
+            site.EnclosingCatch = CurrentCatch;
             Info.AwaitSites.push_back(site);
         }
 
@@ -150,8 +195,9 @@ namespace
 
             AwaitSite site;
             site.Expression = awaitExpr;
-            site.NextStatement = CurrentNextStatement;
+            site.NextStatement = FindResumeStatement(node);
             site.ActiveTryStack = ActiveTryStack;
+            site.EnclosingCatch = CurrentCatch;
 
             auto symbolOpt = LookupSymbol<VariableSymbol>(node);
             if (symbolOpt.has_value())
@@ -172,9 +218,10 @@ namespace
 
             AwaitSite site;
             site.Expression = awaitExpr;
-            site.NextStatement = CurrentNextStatement;
+            site.NextStatement = nullptr;
             site.ActiveTryStack = ActiveTryStack;
             site.IsReturnAwait = true;
+            site.EnclosingCatch = CurrentCatch;
             Info.AwaitSites.push_back(site);
         }
 
@@ -196,7 +243,11 @@ namespace
                 if (clause->Body == nullptr)
                     continue;
 
+                CatchClauseSyntax* previousCatch = CurrentCatch;
+                CurrentCatch = clause.get();
                 VisitStatementsBlock(clause->Body.get());
+                CurrentCatch = previousCatch;
+
                 if (!Supported)
                     return;
             }
@@ -238,32 +289,87 @@ namespace
 
         void VisitWhileStatement(WhileStatementSyntax* node) override
         {
-            if (node->StatementsBlock == nullptr)
+            if (!Supported)
                 return;
 
-            std::size_t before = Info.AwaitSites.size();
-            VisitStatementsBlock(node->StatementsBlock.get());
-            Supported = Supported && (Info.AwaitSites.size() == before);
+            // Await is not allowed in the loop condition because it is re-evaluated.
+            if (node->ConditionExpression != nullptr)
+            {
+                std::size_t before = Info.AwaitSites.size();
+                VisitExpression(node->ConditionExpression.get());
+                if (Info.AwaitSites.size() != before)
+                {
+                    Supported = false;
+                    return;
+                }
+            }
+
+            if (node->StatementsBlock != nullptr)
+                VisitStatementsBlock(node->StatementsBlock.get());
         }
 
         void VisitUntilStatement(UntilStatementSyntax* node) override
         {
-            if (node->StatementsBlock == nullptr)
+            if (!Supported)
                 return;
 
-            std::size_t before = Info.AwaitSites.size();
-            VisitStatementsBlock(node->StatementsBlock.get());
-            Supported = Supported && (Info.AwaitSites.size() == before);
+            if (node->ConditionExpression != nullptr)
+            {
+                std::size_t before = Info.AwaitSites.size();
+                VisitExpression(node->ConditionExpression.get());
+                if (Info.AwaitSites.size() != before)
+                {
+                    Supported = false;
+                    return;
+                }
+            }
+
+            if (node->StatementsBlock != nullptr)
+                VisitStatementsBlock(node->StatementsBlock.get());
         }
 
         void VisitForStatement(ForStatementSyntax* node) override
         {
-            if (node->StatementsBlock == nullptr)
+            if (!Supported)
                 return;
 
-            std::size_t before = Info.AwaitSites.size();
-            VisitStatementsBlock(node->StatementsBlock.get());
-            Supported = Supported && (Info.AwaitSites.size() == before);
+            // Await is not allowed in initializer, condition, or after-repeat because
+            // those parts are executed repeatedly and would need their own state.
+            if (node->InitializerStatement != nullptr)
+            {
+                std::size_t before = Info.AwaitSites.size();
+                VisitStatement(node->InitializerStatement.get());
+                if (Info.AwaitSites.size() != before)
+                {
+                    Supported = false;
+                    return;
+                }
+            }
+
+            if (node->ConditionExpression != nullptr)
+            {
+                std::size_t before = Info.AwaitSites.size();
+                VisitExpression(node->ConditionExpression.get());
+                if (Info.AwaitSites.size() != before)
+                {
+                    Supported = false;
+                    return;
+                }
+            }
+
+            if (node->AfterRepeatStatement != nullptr)
+            {
+                std::size_t before = Info.AwaitSites.size();
+                VisitStatement(node->AfterRepeatStatement.get());
+                if (Info.AwaitSites.size() != before)
+                {
+                    Supported = false;
+                    return;
+                }
+            }
+
+            if (node->StatementsBlock != nullptr)
+                VisitStatementsBlock(node->StatementsBlock.get());
         }
 
         void VisitForEachStatement(ForEachStatementSyntax* node) override
@@ -272,12 +378,22 @@ namespace
                 return;
 
             if (node->RangeExpression != nullptr)
+            {
+                std::size_t before = Info.AwaitSites.size();
                 VisitExpression(node->RangeExpression.get());
+                if (Info.AwaitSites.size() != before)
+                {
+                    Supported = false;
+                    return;
+                }
+            }
 
             std::size_t before = Info.AwaitSites.size();
-            if (Supported && node->StatementsBlock != nullptr)
+            if (node->StatementsBlock != nullptr)
                 VisitStatementsBlock(node->StatementsBlock.get());
-            Supported = Supported && (Info.AwaitSites.size() == before);
+
+            if (Info.AwaitSites.size() != before)
+                EnumeratorLoops.push_back(node);
         }
 
         void VisitForInStatement(ForInStatementSyntax* node) override
@@ -286,19 +402,31 @@ namespace
                 return;
 
             if (node->RangeExpression != nullptr)
+            {
+                std::size_t before = Info.AwaitSites.size();
                 VisitExpression(node->RangeExpression.get());
+                if (Info.AwaitSites.size() != before)
+                {
+                    Supported = false;
+                    return;
+                }
+            }
 
             std::size_t before = Info.AwaitSites.size();
-            if (Supported && node->StatementsBlock != nullptr)
+            if (node->StatementsBlock != nullptr)
                 VisitStatementsBlock(node->StatementsBlock.get());
-            Supported = Supported && (Info.AwaitSites.size() == before);
+
+            if (Info.AwaitSites.size() != before)
+                EnumeratorLoops.push_back(node);
         }
 
         // Statements the lowering cannot yet suspend across.
         void VisitDeferStatement(DeferStatementSyntax* /*node*/) override { Supported = false; }
 
+        std::vector<StatementSyntax*> EnumeratorLoops;
+
     private:
-        StatementSyntax* CurrentNextStatement = nullptr;
+        CatchClauseSyntax* CurrentCatch = nullptr;
         std::vector<TryStatementSyntax*> ActiveTryStack;
     };
 
@@ -367,6 +495,28 @@ std::optional<AsyncMethodInfo> AsyncAnalysisPass::Run(MethodSymbol* method, Meth
 
     info.TaskField = clsBuilder
         .AddField(L"_task", method->ReturnType, LINK_INSTANCE, ACS_PRIVATE);
+
+    for (std::size_t i = 0; i < scan.EnumeratorLoops.size(); ++i)
+    {
+        std::wstring fieldName = L"<e>" + std::to_wstring(i);
+        FieldSymbol* field = clsBuilder
+            .AddField(fieldName, SymbolTable::StandardTypes::IEnumerator, LINK_INSTANCE, ACS_PRIVATE);
+
+        info.EnumeratorFields[scan.EnumeratorLoops[i]] = field;
+    }
+
+    for (const AwaitSite& site : info.AwaitSites)
+    {
+        if (site.EnclosingCatch != nullptr)
+        {
+            TypeSymbol* exceptionFieldType = SymbolTable::StandardTypes::RuntimeException != nullptr
+                ? SymbolTable::StandardTypes::RuntimeException
+                : SymbolTable::Primitives::Any;
+            info.CurrentExceptionField = clsBuilder
+                .AddField(L"_currentException", exceptionFieldType, LINK_INSTANCE, ACS_PRIVATE);
+            break;
+        }
+    }
 
     if (method->Linking == LINK_INSTANCE && method->Parent != nullptr && method->Parent->IsType())
     {
@@ -442,7 +592,7 @@ std::optional<AsyncMethodInfo> AsyncAnalysisPass::Run(MethodSymbol* method, Meth
     for (CatchClauseSyntax* clause : catchClauses)
     {
         if (clause->Symbol != nullptr)
-            clause->Symbol->SlotIndex = info.MoveNext->AddVariableCount();
+            clause->Symbol->SlotIndex = info.MoveNext->GetEvalStackArgumentsCount() + info.MoveNext->AddVariableCount();
     }
 
     method->AsyncStateMachineClass = info.StateMachineClass;

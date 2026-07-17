@@ -221,6 +221,16 @@ void shard::ByteCodeEncoder::EmitEndCatch(std::vector<std::byte>& code)
     AppendDataT(code, OpCode::END_CATCH);
 }
 
+void shard::ByteCodeEncoder::EmitLoadCurrentException(std::vector<std::byte>& code)
+{
+    AppendDataT(code, OpCode::LOAD_CURRENT_EXCEPTION);
+}
+
+void shard::ByteCodeEncoder::EmitStoreCurrentException(std::vector<std::byte>& code)
+{
+    AppendDataT(code, OpCode::STORE_CURRENT_EXCEPTION);
+}
+
 void ByteCodeEncoder::EmitMathAdd(std::vector<std::byte>& code)
 {
     AppendDataT(code, OpCode::MATH_ADDITION);

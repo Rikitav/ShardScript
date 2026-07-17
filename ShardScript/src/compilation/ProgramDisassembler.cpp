@@ -549,6 +549,14 @@ void ProgramDisassembler::Disassemble(std::wostream& out, MethodSymbol* method)
                 opcode = L"end_catch";
                 break;
 
+            case OpCode::LOAD_CURRENT_EXCEPTION:
+                opcode = L"load_current_exception";
+                break;
+
+            case OpCode::STORE_CURRENT_EXCEPTION:
+                opcode = L"store_current_exception";
+                break;
+
             default:
             {
                 opcode = L"unknown";

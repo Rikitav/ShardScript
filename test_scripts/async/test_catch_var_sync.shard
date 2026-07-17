@@ -1,0 +1,19 @@
+using stdio;
+
+namespace test_catch_var_sync;
+
+public class Program
+{
+    public static func Main() -> void
+    {
+        try
+        {
+            throw new RuntimeException();
+        }
+        catch (ex: RuntimeException)
+        {
+            ignored := ex;
+            println("ok");
+        }
+    }
+}

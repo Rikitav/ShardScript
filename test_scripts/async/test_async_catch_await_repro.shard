@@ -1,0 +1,37 @@
+using stdio;
+using async;
+
+namespace test_async_catch_await_repro;
+
+public class Program
+{
+    public static async func FaultyDelay() -> Task
+    {
+        await Task.Delay(10);
+        throw new RuntimeException();
+    }
+
+    public static async func CaughtAwait() -> Task
+    {
+        try
+        {
+            await FaultyDelay();
+        }
+        catch (ex: RuntimeException)
+        {
+            println("before await");
+            await Task.Delay(10);
+            println("after await");
+            println(ex.message); // crashes here after resume
+            println("ok");
+        }
+
+        println("after catch");
+    }
+
+    public static func Main() -> void
+    {
+        Task.Wait(CaughtAwait());
+        println("done");
+    }
+}

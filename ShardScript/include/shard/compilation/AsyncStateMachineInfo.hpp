@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <unordered_map>
 #include <vector>
 
 namespace shard
@@ -9,6 +10,7 @@ namespace shard
     // Forward declarations keep this shared header light; the three async
     // lowering passes and the orchestrator all reference these types by pointer.
     class AwaitExpressionSyntax;
+    class CatchClauseSyntax;
     class FieldSymbol;
     class StatementSyntax;
     class TryStatementSyntax;
@@ -39,6 +41,10 @@ namespace shard
         // True if the await is the expression of a return statement; on resume
         // the awaiter result is used to complete the returned task.
         bool IsReturnAwait = false;
+
+        // If the await appears inside a catch clause, the caught exception must be
+        // preserved across the suspension so the catch handler can resume correctly.
+        CatchClauseSyntax* EnclosingCatch = nullptr;
     };
 
     /// <summary>
@@ -83,8 +89,17 @@ namespace shard
         std::vector<LiftedParameter> LiftedParameters;
         std::vector<LiftedLocal> LiftedLocals;
 
+        // foreach/for-in loops that contain awaits need their enumerator stored in a
+        // state-machine field so it survives across suspensions.
+        std::unordered_map<StatementSyntax*, FieldSymbol*> EnumeratorFields;
+
         // True if the method contains user try/catch blocks that must be preserved
         // across await suspensions.
         bool HasTryStatements = false;
+
+        // Field that holds the exception currently being handled when an await is
+        // suspended inside a catch clause.  It is used to restore CurrentException
+        // (and the catch variable) on resume.
+        FieldSymbol* CurrentExceptionField = nullptr;
     };
 }

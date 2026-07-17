@@ -2050,7 +2050,9 @@ std::unique_ptr<ConditionalClauseBaseSyntax> SourceParser::ReadConditionalClause
 			case TokenType::ElseKeyword:
 			{
 				SyntaxToken elseKeyword = current;
-				current = reader.Consume();
+				reader.Consume();
+				current = reader.Current();
+
 				switch (current.Type)
 				{
 					case TokenType::IfKeyword:

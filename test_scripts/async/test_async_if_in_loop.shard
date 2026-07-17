@@ -1,0 +1,31 @@
+using stdio;
+using async;
+
+namespace test_async_if_in_loop;
+
+public class Program
+{
+    public static func Main() -> void
+    {
+        task := DoItAsync();
+        Task.Wait(task);
+    }
+
+    public static async func DoItAsync() -> Task
+    {
+        i := 0;
+        while (i < 3)
+        {
+            if (i % 2 == 0)
+            {
+                println("before await");
+                await Task.Delay(1);
+                println("after await");
+            }
+
+            i = i + 1;
+        }
+
+        println("done");
+    }
+}
