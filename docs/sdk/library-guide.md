@@ -1053,38 +1053,146 @@ The engine searches for the library:
 
 ---
 
-## 13. Debugging and Common Errors
+## 13. Declaring Library Dependencies
 
-### 13.1. `Symbol 'Foo' not found in current scope`
+A native library can declare dependencies on other ShardScript libraries. The engine resolves and loads them automatically before the dependent library's entry point is called, so symbols from dependencies are available during registration.
+
+### 13.1. Dependency Metadata
+
+In `SHARDLIB_GETMETADATA`, fill `lib.Dependencies` with an array of `ShardLibDependencyInfo` and set `lib.DependenciesLength` to the number of entries:
+
+```cpp
+SHARDLIB_GETMETADATA
+{
+    static const shard::ShardLibDependencyInfo deps[] =
+    {
+        { L"shard.collections", L"^0.3.0" },
+        { L"shard.io",           L">=1.0.0 <2.0.0" }
+    };
+
+    lib.Name        = L"shard.subprocess";
+    lib.Description = L"Process spawning library";
+    lib.Version     = L"1.0.0";
+    lib.Dependencies      = deps;
+    lib.DependenciesLength = sizeof(deps) / sizeof(deps[0]);
+}
+```
+
+Each dependency has:
+
+- `Name` — the library name as declared in its own `ShardLibMetadata::Name`.
+- `VersionExpression` — a semantic-versioning constraint (see Section 13.2).
+
+> **Important:** do not null-terminate the `Dependencies` array. Always provide the exact length via `DependenciesLength`.
+
+### 13.2. Version Expressions
+
+Version expressions use SemVer 2.0.0 versions (`MAJOR.MINOR.PATCH` with optional prerelease) and the following operators:
+
+| Expression | Meaning |
+|------------|---------|
+| `1.2.3` | Exact version `1.2.3`. |
+| `=1.2.3` | Same as `1.2.3`. |
+| `>1.2.3` | Greater than `1.2.3`. |
+| `>=1.2.3` | Greater than or equal to `1.2.3`. |
+| `<1.2.3` | Less than `1.2.3`. |
+| `<=1.2.3` | Less than or equal to `1.2.3`. |
+| `^1.2.3` | Compatible with `1.2.3`: `>=1.2.3` and `<2.0.0`. |
+| `~1.2.3` | Approximately `1.2.3`: `>=1.2.3` and `<1.3.0`. |
+| `>=1.0.0 <2.0.0` | Range: both conditions must hold. |
+
+If a loaded library's version does not satisfy the constraint, the engine reports a dependency-resolution error.
+
+### 13.3. How Dependencies Are Resolved
+
+When you call `AddLibraries` (or `AddLibrary`) with a list of paths, the engine:
+
+1. Reads metadata from every candidate library.
+2. Builds a dependency graph from `Dependencies` / `DependenciesLength`.
+3. Detects missing dependencies and circular references.
+4. Sorts the libraries in dependency order (topological sort).
+5. Calls each `ShardLib_EntryPoint` in that order, so a library's dependencies are already registered.
+
+Libraries loaded as a batch are resolved together, even if they are passed in reverse dependency order.
+
+### 13.4. Dependency Errors
+
+The engine reports diagnostics for the following situations:
+
+- **Missing dependency** — a library requires a name that is not present in the loaded set.
+- **Version mismatch** — a dependency is present but its version does not satisfy the expression.
+- **Circular dependency** — two or more libraries depend on each other directly or transitively.
+
+Example of a missing-dependency diagnostic:
+
+```text
+error: Dependency 'shard.missing' required by 'shard.subprocess' (^1.0.0) was not found
+```
+
+### 13.5. Loading Dependencies from the C# Wrapper
+
+Pass all library paths at once; the resolver handles ordering internally:
+
+```csharp
+using ShardScript.NET;
+
+using CompilationContext context = new CompilationContext();
+context.AddLibraries([
+    @"C:\path\to\shard.collections.dll",
+    @"C:\path\to\shard.io.dll",
+    @"C:\path\to\shard.subprocess.dll"   // depends on the two above
+]);
+```
+
+Even if `shard.subprocess.dll` appears first in the list, it will still load after its dependencies.
+
+### 13.6. Loading Dependencies from the Native Interpreter
+
+Use multiple `-l` / `--library` options. Order does not matter for dependency resolution:
+
+```bash
+ShardScript.Interpreter.exe \
+    -l shard.collections.dll \
+    -l shard.io.dll \
+    -l shard.subprocess.dll \
+    script.ss
+```
+
+---
+
+## 14. Debugging and Common Errors
+
+### 14.1. `Symbol 'Foo' not found in current scope`
 
 - Make sure the script has `using mynamespace;` or that you use the fully qualified name.
 
-### 13.2. Method resolution errors
+### 14.2. Method resolution errors
 
 - `No method named 'Add' exists in the current context` — no accessible method with that name was found.
 - `Method 'Add' does not have an overload that accepts the supplied arguments (...)` — a method with that name exists, but none of its overloads match the supplied arguments.
 
 In both cases, make sure parameters are added to `method->Parameters` and check the order and types of parameters.
 
-### 13.3. Segfault Inside a Callback
+### 14.3. Segfault Inside a Callback
 
 - Check `ctx.Args.size()` before accessing `ctx.Args[i]`.
 - Make sure you do not write to an `ObjectInstance` that is `NullInstance`.
 - For instance methods, remember that `ctx.Args[0]` is `this`.
 
-### 13.4. Callback Is Not Called
+### 14.4. Callback Is Not Called
 
 - Check that `FunctionPointer` is not `nullptr`.
 - `SymbolBuilder<MethodSymbol>::SetCallback` already sets `HandleType = External`.
 
-### 13.5. Library Does Not Load
+### 14.5. Library Does Not Load
 
 - Check that `ShardLib_EntryPoint` and `ShardLib_GetMetadata` are exported (use `dumpbin /exports MyLib.dll` or `nm -D libMyLib.so`).
-- Check dependencies via `ldd libMyLib.so` (Linux) or Dependencies (Windows).
+- Check native dependencies via `ldd libMyLib.so` (Linux) or Dependencies (Windows).
+- If the library declares ShardScript dependencies, verify that all dependent libraries are loaded and that their versions satisfy the constraints.
 
 ---
 
-## 14. Complete Working Example: `StringLib`
+## 15. Complete Working Example: `StringLib`
 
 ```cpp
 #include <ShardScript.hpp>
@@ -1158,7 +1266,7 @@ public static func Main() -> void
 
 ---
 
-## 15. Recommendations
+## 16. Recommendations
 
 1. **Use `SymbolBuilder<T>` for namespace/class/method/field.** It automatically sets `Parent`, `FullName`, `Accesibility`, registers the symbol in the `NamespaceTree`, and calls `OnSymbolDeclared`.
 2. **Prefer `SymbolBuilder<T>` over raw `SymbolFactory`.** `SymbolBuilder` sets `Parent`, `FullName`, `Accesibility`, registers the symbol in the `NamespaceTree`, and calls `OnSymbolDeclared` automatically. Only fall back to `SymbolFactory` when the builder does not expose the symbol you need.
@@ -1170,7 +1278,7 @@ public static func Main() -> void
 
 ---
 
-## 16. Conclusion
+## 17. Conclusion
 
 Creating a native library for ShardScript boils down to a few steps:
 
