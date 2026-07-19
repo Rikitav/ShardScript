@@ -108,27 +108,7 @@ static void LoadLibrariesFromDirectoryPath(CompilationContext* compiler, fs::pat
         libraryPaths.push_back(entry.path());
     }
 
-	/*
-    // Load the async core module first so that later modules can resolve
-    // Task/ValueTask/CancellationToken types during their own registration.
-    std::stable_partition(libraryPaths.begin(), libraryPaths.end(), [](const fs::path& p)
-	{
-        std::string name = p.filename().string();
-        return name.find("async.shard") != std::string::npos;
-    });
-	*/
-
-    for (const fs::path& libPath : libraryPaths)
-    {
-        try
-        {
-            compiler->AddLib(libPath.wstring());
-        }
-        catch (std::runtime_error& err)
-        {
-            std::cout << err.what();
-        }
-    }
+    compiler->AddLibraries(libraryPaths);
 }
 
 int wmain(int argc, wchar_t* argv[])

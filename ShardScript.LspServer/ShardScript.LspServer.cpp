@@ -43,11 +43,7 @@ static void LogException(const char* context, const std::exception& e)
 
 thread_local bool g_running = false;
 std::recursive_mutex g_compiler_mutex;
-
-// Кэш документов, открытых в редакторе (URI -> исходный код в UTF-16/wchar_t)
 std::unordered_map<std::string, std::wstring> g_open_documents;
-
-// Пути к нативным библиотекам ShardScript (system/third-party)
 std::vector<std::filesystem::path> g_library_paths;
 
 #ifdef _WIN32
@@ -100,21 +96,7 @@ static void InitializeLibraries()
 
 static void LoadLibrariesIntoContext(shard::CompilationContext* context)
 {
-    for (const auto& path : g_library_paths)
-    {
-        try
-        {
-            context->AddLib(path);
-        }
-        catch (const std::exception& e)
-        {
-            LogMessage(std::string("AddLib failed: ") + e.what());
-        }
-        catch (...)
-        {
-            LogMessage("AddLib failed: unknown exception");
-        }
-    }
+    context->AddLibraries(g_library_paths);
 }
 
 static std::wstring ApplyContentChange(const std::wstring& text, const lsp::TextDocumentContentChangeEvent_Range_Text& change)
@@ -151,13 +133,10 @@ static lsp::DiagnosticSeverity ToLspSeverity(shard::DiagnosticSeverity severity)
 {
     switch (severity)
     {
-        case shard::DiagnosticSeverity::Warning:
-            return lsp::DiagnosticSeverity::Warning;
-        case shard::DiagnosticSeverity::Info:
-            return lsp::DiagnosticSeverity::Information;
+        case shard::DiagnosticSeverity::Warning:  return lsp::DiagnosticSeverity::Warning;
+            case shard::DiagnosticSeverity::Info: return lsp::DiagnosticSeverity::Information;
         case shard::DiagnosticSeverity::Error:
-        default:
-            return lsp::DiagnosticSeverity::Error;
+        default:                                  return lsp::DiagnosticSeverity::Error;
     }
 }
 

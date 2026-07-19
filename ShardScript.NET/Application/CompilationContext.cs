@@ -1,6 +1,7 @@
-﻿using ShardScript.Syntax;
+using ShardScript.Syntax;
 using ShardScript.Syntax.Nodes;
 using ShardScript.Syntax.Symbols;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -36,6 +37,36 @@ public sealed class CompilationContext : IDisposable
     {
         int result = NativeMethods.Shard_AddLibrary(_handle, path);
         ShardEngineException.ThrowIfError(result);
+    }
+
+    public void AddLibraries(IEnumerable<string> paths)
+    {
+        string[] array = paths.ToArray();
+        IntPtr[] nativePaths = new IntPtr[array.Length];
+        IntPtr arrayPointer = IntPtr.Zero;
+
+        try
+        {
+            for (int i = 0; i < array.Length; i++)
+                nativePaths[i] = Marshal.StringToHGlobalUni(array[i]);
+
+            arrayPointer = Marshal.AllocHGlobal(IntPtr.Size * nativePaths.Length);
+            Marshal.Copy(nativePaths, 0, arrayPointer, nativePaths.Length);
+
+            int result = NativeMethods.Shard_AddLibraries(_handle, arrayPointer, (UIntPtr)array.Length);
+            ShardEngineException.ThrowIfError(result);
+        }
+        finally
+        {
+            if (arrayPointer != IntPtr.Zero)
+                Marshal.FreeHGlobal(arrayPointer);
+
+            for (int i = 0; i < nativePaths.Length; i++)
+            {
+                if (nativePaths[i] != IntPtr.Zero)
+                    Marshal.FreeHGlobal(nativePaths[i]);
+            }
+        }
     }
 
     public void AddSource(string name, string code, CompilationUnitOrigin origin = CompilationUnitOrigin.SourceFile)
@@ -149,6 +180,11 @@ public sealed class CompilationContext : IDisposable
 
         [DllImport(ShardScriptAPI.LibraryName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
         public static extern int Shard_AddLibrary(IntPtr ctx, [MarshalAs(UnmanagedType.LPWStr)] string path);
+
+        [DllImport(ShardScriptAPI.LibraryName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        public static extern int Shard_AddLibraries(IntPtr ctx,
+            IntPtr paths,
+            UIntPtr count);
 
         [DllImport(ShardScriptAPI.LibraryName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
         public static extern int Shard_AddSource(IntPtr ctx,

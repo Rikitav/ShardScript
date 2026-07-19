@@ -1,0 +1,15 @@
+using stdio;
+using process;
+
+namespace dependency_loading;
+
+public class Program
+{
+    public static func Main() -> void
+    {
+        p := Process.Start("cmd", "/c echo dependency_ok");
+        p.WaitForExit();
+        output := p.ReadToEnd();
+        println(output);
+    }
+}

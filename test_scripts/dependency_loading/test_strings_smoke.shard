@@ -1,0 +1,13 @@
+using stdio;
+using strings;
+
+namespace smoke;
+
+public class Program
+{
+    public static func Main() -> void
+    {
+        text: string = "hi";
+        println(text.ToUpper());
+    }
+}
