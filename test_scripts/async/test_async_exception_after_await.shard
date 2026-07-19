@@ -15,7 +15,15 @@ public class Program
 
     public static func Main() -> void
     {
-        Task.Wait(ThrowAfterAwait());
-        println("unreachable");
+        try
+        {
+            Task.Wait(ThrowAfterAwait());
+            println("unreachable");
+        }
+        catch (ex: RuntimeException)
+        {
+            println("caught");
+        }
+        println("done");
     }
 }

@@ -58,6 +58,8 @@ namespace shard
 
 		void AddLib(const std::filesystem::path& path);
 		void AddLib(const LibraryHandle& handle);
+		void AddLibraries(const std::vector<std::filesystem::path>& paths);
+
 		void ProvideSource(shard::SourceTextProvider* source);
 
 		void EnrichTree(SourceProvider& sourceProvider, CompilationUnitOrigin origin);

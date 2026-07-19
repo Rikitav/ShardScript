@@ -557,9 +557,16 @@ static ObjectInstance* shard_Process_Dispose(const CallState& context) noexcept(
 
 SHARDLIB_GETMETADATA
 {
+    static const shard::ShardLibDependencyInfo deps[] =
+    {
+        { L"shard.collections", L"^0.3.0" }
+    };
+
     lib.Name = L"shard.subprocess";
     lib.Description = L"ShardScript process spawning library";
     lib.Version = L"1.0.0";
+    lib.Dependencies = deps;
+    lib.DependenciesLength = sizeof(deps) / sizeof(deps[0]);
 }
 
 SHARDLIB_ENTRYPOINT

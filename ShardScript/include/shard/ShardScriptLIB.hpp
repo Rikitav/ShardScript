@@ -7,14 +7,25 @@
 #include <shard/semantic/symbols/AccessorSymbol.hpp>
 #include <shard/semantic/symbols/ConstructorSymbol.hpp>
 
+#include <cstddef>
+
 namespace shard
 {
+	struct SHARD_API ShardLibDependencyInfo
+	{
+	public:
+		const wchar_t* Name = nullptr;
+		const wchar_t* VersionExpression = nullptr;
+	};
+
 	struct SHARD_API ShardLibMetadata
 	{
 	public:
 		const wchar_t* Name = nullptr;
 		const wchar_t* Description = nullptr;
 		const wchar_t* Version = nullptr;
+		const ShardLibDependencyInfo* Dependencies = nullptr;
+		std::size_t DependenciesLength = 0;
 	};
 }
 

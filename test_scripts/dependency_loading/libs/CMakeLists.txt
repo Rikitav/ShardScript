@@ -1,0 +1,23 @@
+file(GLOB TEST_LIB_SOURCES CONFIGURE_DEPENDS "*.shard.cpp")
+
+foreach(SOURCE_FILE IN LISTS TEST_LIB_SOURCES)
+    get_filename_component(TARGET_NAME "${SOURCE_FILE}" NAME_WLE)
+    add_library("${TARGET_NAME}" SHARED "${SOURCE_FILE}")
+
+    set_target_properties("${TARGET_NAME}" PROPERTIES
+        WINDOWS_EXPORT_ALL_SYMBOLS ON
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/test_libs"
+        RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/bin/test_libs"
+        RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/bin/test_libs"
+        RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_BINARY_DIR}/bin/test_libs"
+        RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL "${CMAKE_BINARY_DIR}/bin/test_libs"
+        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/test_libs"
+        LIBRARY_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/bin/test_libs"
+        LIBRARY_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/bin/test_libs"
+        LIBRARY_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_BINARY_DIR}/bin/test_libs"
+        LIBRARY_OUTPUT_DIRECTORY_MINSIZEREL "${CMAKE_BINARY_DIR}/bin/test_libs"
+    )
+
+    target_include_directories("${TARGET_NAME}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../../../ShardScript/include")
+    target_link_libraries("${TARGET_NAME}" PRIVATE ShardScript)
+endforeach()

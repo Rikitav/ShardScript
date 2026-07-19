@@ -1,4 +1,4 @@
-﻿using ShardScript.Application;
+using ShardScript.Application;
 using ShardScript.Runtime;
 using ShardScript.Scripting;
 using ShardScript.Syntax;
@@ -26,6 +26,8 @@ public sealed class ProgrammaticalTests
         tests.RunReflectionBinderExample();
         tests.RunScopedAstBuilderExample();
         tests.RunEnumExample();
+
+        DependencyLoadingTests.RunAll();
     }
 
     // [TestMethod]

@@ -240,6 +240,45 @@ extern "C"
         }
     }
 
+    SHARD_API int Shard_AddLibraries(CompilationContext* ctx, const wchar_t* const* paths, std::size_t count)
+    {
+        try
+        {
+            if (ctx == nullptr)
+            {
+                SetLastShardWError(L"compilation context is null");
+                return -1;
+            }
+
+            if (paths == nullptr && count > 0)
+            {
+                SetLastShardWError(L"library paths array is null");
+                return -1;
+            }
+
+            std::vector<std::filesystem::path> libraryPaths;
+            libraryPaths.reserve(count);
+
+            for (std::size_t i = 0; i < count; ++i)
+            {
+                if (paths[i] == nullptr)
+                {
+                    SetLastShardWError(L"library path is null");
+                    return -1;
+                }
+                libraryPaths.emplace_back(paths[i]);
+            }
+
+            ctx->AddLibraries(libraryPaths);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
     SHARD_API int Shard_AddSource(CompilationContext* ctx, const wchar_t* sourceName, const wchar_t* code, CompilationUnitOrigin origin)
     {
         try

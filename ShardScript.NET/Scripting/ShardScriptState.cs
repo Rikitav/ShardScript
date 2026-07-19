@@ -416,23 +416,17 @@ public sealed class ShardScriptState : IDisposable
             Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "out", "build", "x64-debug", "bin", "system"))
         };
 
+        List<string> libraryPaths = new();
         foreach (string frameworkDir in frameworkDirs)
         {
             if (!Directory.Exists(frameworkDir))
                 continue;
 
             foreach (string libraryPath in Directory.EnumerateFiles(frameworkDir, "*.dll"))
-            {
-                try
-                {
-                    _context.AddLibrary(libraryPath);
-                }
-                catch
-                {
-                    // Standard libraries are best-effort.
-                }
-            }
+                libraryPaths.Add(libraryPath);
         }
+
+        _context.AddLibraries(libraryPaths);
     }
 
     private void InitializeGlobals()
