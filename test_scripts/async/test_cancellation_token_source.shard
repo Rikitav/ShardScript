@@ -1,0 +1,47 @@
+using stdio;
+using async;
+
+namespace test_cancellation_token_source;
+
+public class Program
+{
+    public static async func PollUntilCanceled(token: CancellationToken) -> Task
+    {
+        iterations := 0;
+        while (!token.IsCancellationRequested)
+        {
+            iterations = iterations + 1;
+            println("poll " + iterations);
+            await Task.Delay(50);
+        }
+
+        println("canceled after " + iterations);
+    }
+
+    public static func Main() -> void
+    {
+        // Basic cancellation propagation
+        cts := new CancellationTokenSource();
+        token1 := cts.Token;
+        token2 := cts.Token;
+
+        println(token1.IsCancellationRequested);
+        println(token1.CanBeCanceled);
+        println(token2.IsCancellationRequested);
+
+        cts.Cancel();
+
+        println(token1.IsCancellationRequested);
+        println(token2.IsCancellationRequested);
+
+        // Cooperative cancellation inside an async operation
+        cts2 := new CancellationTokenSource();
+        work := PollUntilCanceled(cts2.Token);
+
+        Wait(Task.Delay(150));
+        cts2.Cancel();
+        Task.Wait(work);
+
+        println("done");
+    }
+}

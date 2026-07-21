@@ -19,6 +19,7 @@
 #include <wchar.h>
 #include <cstdint>
 #include <string>
+#include <numeric>
 
 using namespace shard;
 
@@ -55,10 +56,29 @@ namespace
 }
 
 ObjectInstance* GarbageCollector::NullInstance = new ObjectInstance(nullptr, nullptr, nullptr, true);
+ObjectInstance* GarbageCollector::SmallInts = nullptr;
+std::int64_t* GarbageCollector::SmallIntsVals = nullptr;
 
 GarbageCollector::GarbageCollector(ApplicationDomain* domain) : applicationDomain(domain)
 {
+	static bool smallIntsCacheInitialized = false;
 
+	if (!smallIntsCacheInitialized)
+	{
+		SmallInts = static_cast<ObjectInstance*>(malloc(SMALL_INTS_CACHE_SIZE * sizeof(ObjectInstance)));
+		SmallIntsVals = static_cast<std::int64_t*>(malloc(SMALL_INTS_CACHE_SIZE * sizeof(std::int64_t)));
+
+		std::iota(SmallIntsVals, SmallIntsVals + SMALL_INTS_CACHE_SIZE, SMALL_INTS_CACHE_MIN);
+		TypeShape* shape = GetTypeShapeCache().GetOrCreateShape(SymbolTable::Primitives::Integer);
+
+		for (int i = 0; i < SMALL_INTS_CACHE_SIZE; ++i)
+		{
+			ObjectInstance* cachedInt = new (&SmallInts[i]) ObjectInstance(TYPE_INT, shape, &SmallIntsVals[i], true);
+			cachedInt->IsSingleton = true;
+		}
+
+		smallIntsCacheInitialized = true;
+	}
 }
 
 TypeShapeCache& GarbageCollector::GetTypeShapeCache() const
@@ -91,6 +111,9 @@ ObjectInstance* GarbageCollector::FromValue(bool value)
 
 ObjectInstance* GarbageCollector::FromValue(std::int64_t value)
 {
+	if (value >= SMALL_INTS_CACHE_MIN && value <= SMALL_INTS_CACHE_MAX)
+		return &(SmallInts[value - SMALL_INTS_CACHE_MIN]);
+
 	TypeShape* shape = GetTypeShapeCache().GetOrCreateShape(SymbolTable::Primitives::Integer);
 	ObjectInstance* instance = GarbageCollector::AllocateInstance(shape);
 	instance->WriteInteger(value);

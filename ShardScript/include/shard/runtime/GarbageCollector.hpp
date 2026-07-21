@@ -17,6 +17,10 @@
 
 namespace shard
 {
+    constexpr std::size_t SMALL_INTS_CACHE_MIN = -5;
+    constexpr std::size_t SMALL_INTS_CACHE_MAX = 256;
+    constexpr std::size_t SMALL_INTS_CACHE_SIZE = SMALL_INTS_CACHE_MAX - SMALL_INTS_CACHE_MIN;
+
     class ApplicationDomain;
 
 	class SHARD_API InstancesHeap
@@ -95,6 +99,9 @@ namespace shard
 
 	class SHARD_API GarbageCollector
 	{
+        static ObjectInstance* SmallInts;
+        static std::int64_t* SmallIntsVals;
+
 		ApplicationDomain* applicationDomain;
 		std::uint64_t objectsCounter = 0;
         std::unordered_map<FieldSymbol*, ObjectInstance*> staticFields;
@@ -105,6 +112,7 @@ namespace shard
 
     public:
         static ObjectInstance* NullInstance;
+
         InstancesHeap Heap;
 
         GarbageCollector(ApplicationDomain* domain);
