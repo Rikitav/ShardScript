@@ -1,0 +1,21 @@
+using stdio;
+using async;
+
+namespace test_frame_bound_task;
+
+public class Program
+{
+    public static async func Background() -> Task
+    {
+        println("background start");
+        await Task.Delay(100);
+        println("background end");
+    }
+
+    public static func Main() -> void
+    {
+        t := Background();
+        Task.Wait(t);
+        println("main end");
+    }
+}

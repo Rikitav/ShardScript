@@ -4,6 +4,8 @@
 #include <shard/runtime/CallStackFrame.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
 #include <shard/runtime/GarbageCollector.hpp>
+#include <shard/runtime/EventLoop.hpp>
+#include <shard/runtime/NativeAsync.hpp>
 #include <shard/compilation/ProgramDisassembler.hpp>
 
 #include <shard/compilation/ByteCodeDecoder.hpp>
@@ -992,6 +994,40 @@ static bool HandleExceptionInFrame(VirtualMachine* vm, CallStackFrame* frame, By
 	return false;
 }
 
+static bool IsPendingTask(ObjectInstance* task)
+{
+	if (task == nullptr || !task->IsTaskLike)
+		return false;
+
+	const TypeSymbol* info = task->getInfo();
+	FieldSymbol* stateField = nullptr;
+	if (info->Name == L"Task")
+		stateField = SymbolTable::StandardTypes::Task_StateField;
+	else if (info->Name == L"ValueTask")
+		stateField = SymbolTable::StandardTypes::ValueTask_StateField;
+
+	if (stateField == nullptr)
+		return false;
+
+	return GetTaskState(task, stateField) == AsyncState::PENDING;
+}
+
+static void BindTaskToFrame(ObjectInstance* task, CallStackFrame* frame)
+{
+	if (task == nullptr || !task->IsTaskLike || frame == nullptr)
+		return;
+
+	if (task->FrameOwner.get() == frame)
+		return;
+
+	task->ReleaseFrameOwner();
+
+	if (!IsPendingTask(task))
+		return;
+
+	task->BindToFrame(frame->shared_from_this());
+}
+
 void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* currentFrame)
 {
 	if (AbortFlag)
@@ -1083,6 +1119,7 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 						throw std::runtime_error("method returned nullptr (void), when expected instance");
 
 					callingFrame->PushStack(retReg);
+					BindTaskToFrame(retReg, callingFrame);
 				}
 			}
 			catch (const std::exception& err)
@@ -1124,6 +1161,7 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 					returnedValue->IncrementReference();
 
 				callingFrame->PushStack(returnedValue);
+				BindTaskToFrame(returnedValue, callingFrame);
 			}
 		}
 
@@ -1267,7 +1305,7 @@ CallStackFrame* VirtualMachine::CurrentFrame() const
 
 CallStackFrame* VirtualMachine::PushFrame(MethodSymbol* methodSymbol)
 {
-	auto frame = std::make_unique<CallStackFrame>(this, CurrentFrame(), methodSymbol);
+	auto frame = std::make_shared<CallStackFrame>(this, CurrentFrame(), methodSymbol);
 	frame->TypeArguments = std::move(PendingTypeArguments);
 	PendingTypeArguments.clear();
 
@@ -1281,7 +1319,14 @@ void VirtualMachine::PopFrame()
 	if (CallStack.empty())
 		return;
 
+	auto frame = std::move(CallStack.back());
 	CallStack.pop_back();
+
+	// If this frame still has pending async tasks, detach it from the active
+	// call stack so tasks can keep the frame object alive without leaving a
+	// dangling PreviousFrame pointer.
+	if (frame->PendingTaskCount > 0)
+		frame->PreviousFrame = nullptr;
 }
 
 void VirtualMachine::InvokeMethod(MethodSymbol* method) const
@@ -1391,6 +1436,52 @@ static std::wstring GetThrowablePropertyValue(VirtualMachine& vm, ObjectInstance
 	return value;
 }
 
+static void HaltTaskObject(ObjectInstance* task, GarbageCollector& gc)
+{
+	if (task == nullptr || !task->IsTaskLike)
+		return;
+
+	const TypeSymbol* info = task->getInfo();
+	ObjectInstance* exception = CreateRuntimeException(gc,
+		L"Task halted because the virtual machine has stopped");
+
+	if (info->Name == L"Task")
+	{
+		SetTaskState(task, SymbolTable::StandardTypes::Task_StateField, AsyncState::FAULTED, gc);
+		task->SetField(SymbolTable::StandardTypes::Task_ExceptionField->SlotIndex, exception);
+	}
+	else if (info->Name == L"ValueTask")
+	{
+		SetTaskState(task, SymbolTable::StandardTypes::ValueTask_StateField, AsyncState::FAULTED, gc);
+		task->SetField(SymbolTable::StandardTypes::ValueTask_ExceptionField->SlotIndex, exception);
+	}
+
+	task->ReleaseFrameOwner();
+}
+
+void VirtualMachine::HaltFireAndForgetTasks()
+{
+	EventLoop& loop = domain->GetEventLoop();
+	const std::vector<ObjectInstance*>& rooted = loop.GetRootedTasks();
+	std::vector<ObjectInstance*> toHalt(rooted.begin(), rooted.end());
+
+	for (ObjectInstance* task : toHalt)
+	{
+		if (task == nullptr || !task->IsFireAndForget)
+			continue;
+
+		if (task->AsyncNativeState != nullptr)
+		{
+			static_cast<detail::AsyncScopeState*>(task->AsyncNativeState)->Halt();
+		}
+		else
+		{
+			HaltTaskObject(task, garbageCollector);
+			loop.UnrootTask(task);
+		}
+	}
+}
+
 void VirtualMachine::Run()
 {
 	if (program.EntryPoint == nullptr)
@@ -1408,6 +1499,8 @@ void VirtualMachine::Run()
 	AbortFlag = false;
 	CallStackFrame* entryFrame = PushFrame(program.EntryPoint);
 	InvokeMethodInternal(program.EntryPoint, entryFrame);
+
+	HaltFireAndForgetTasks();
 
 	if (entryFrame->InterruptionReason == FrameInterruptionReason::ExceptionRaised)
 	{

@@ -1,0 +1,19 @@
+using stdio;
+using async;
+
+namespace test_native_async_await;
+
+public class Program
+{
+    public static async func Awaited() -> Task
+    {
+        println("before");
+        await NativeAsyncTests.Await(Task.Delay(50));
+        println("after");
+    }
+
+    public static func Main() -> void
+    {
+        Task.Wait(Awaited());
+    }
+}

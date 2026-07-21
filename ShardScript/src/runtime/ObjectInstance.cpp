@@ -119,6 +119,29 @@ std::int64_t ObjectInstance::getReferencesCounter() const
 	return m_eeferencesCounter;
 }
 
+ObjectInstance::~ObjectInstance() = default;
+
+void ObjectInstance::BindToFrame(std::shared_ptr<CallStackFrame> frame)
+{
+	if (frame == nullptr || FrameOwner == frame)
+		return;
+
+	ReleaseFrameOwner();
+	FrameOwner = std::move(frame);
+	FrameOwner->PendingTaskCount++;
+}
+
+void ObjectInstance::ReleaseFrameOwner()
+{
+	if (FrameOwner == nullptr)
+		return;
+
+	if (FrameOwner->PendingTaskCount > 0)
+		FrameOwner->PendingTaskCount--;
+
+	FrameOwner.reset();
+}
+
 ObjectInstance* ObjectInstance::GetField(std::uint32_t slot)
 {
 	if (m_shape == nullptr)

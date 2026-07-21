@@ -86,6 +86,8 @@ namespace shard
             inline static SHARD_API MethodSymbol* Task_SetException = nullptr;
             inline static SHARD_API MethodSymbol* Task_InternalRoot = nullptr;
             inline static SHARD_API MethodSymbol* Task_Delay = nullptr;
+            inline static SHARD_API MethodSymbol* Task_Shoot = nullptr;
+            inline static SHARD_API MethodSymbol* Task_ShootGeneric = nullptr;
             inline static SHARD_API MethodSymbol* Task_Wait = nullptr;
 
             inline static SHARD_API ClassSymbol* ValueTask = nullptr;
@@ -104,6 +106,7 @@ namespace shard
             inline static SHARD_API MethodSymbol* ValueTask_FromResult = nullptr;
             inline static SHARD_API MethodSymbol* ValueTask_SetResult = nullptr;
             inline static SHARD_API MethodSymbol* ValueTask_SetException = nullptr;
+            inline static SHARD_API MethodSymbol* ValueTask_Shoot = nullptr;
             
             inline static SHARD_API MethodSymbol* Wait_Task = nullptr;
             inline static SHARD_API MethodSymbol* Wait_ValueTask = nullptr;
@@ -137,6 +140,9 @@ namespace shard
             inline static SHARD_API ClassSymbol* RuntimeException = nullptr;
             inline static SHARD_API FieldSymbol* RuntimeExceptionMessageField = nullptr;
             inline static SHARD_API FieldSymbol* RuntimeExceptionStackTraceField = nullptr;
+
+            inline static SHARD_API ClassSymbol* NativeContinuation = nullptr;
+            inline static SHARD_API MethodSymbol* NativeContinuation_MoveNext = nullptr;
         };
 
         SymbolTable();
@@ -214,6 +220,7 @@ namespace shard
     inline FieldSymbol*& CLASS_TASK_StateField = shard::SymbolTable::StandardTypes::Task_StateField;
     inline FieldSymbol*& CLASS_TASK_ContinuationField = shard::SymbolTable::StandardTypes::Task_ContinuationField;
     inline FieldSymbol*& CLASS_TASK_ExceptionField = shard::SymbolTable::StandardTypes::Task_ExceptionField;
+    inline MethodSymbol*& CLASS_TASK_Shoot = shard::SymbolTable::StandardTypes::Task_Shoot;
 
     inline ClassSymbol*& CLASS_VALUETASK = shard::SymbolTable::StandardTypes::ValueTask;
     inline TypeParameterSymbol*& CLASS_VALUETASK_T = shard::SymbolTable::StandardTypes::ValueTask_T;
@@ -221,6 +228,7 @@ namespace shard
     inline FieldSymbol*& CLASS_VALUETASK_ResultField = shard::SymbolTable::StandardTypes::ValueTask_ResultField;
     inline FieldSymbol*& CLASS_VALUETASK_ContinuationField = shard::SymbolTable::StandardTypes::ValueTask_ContinuationField;
     inline FieldSymbol*& CLASS_VALUETASK_ExceptionField = shard::SymbolTable::StandardTypes::ValueTask_ExceptionField;
+    inline MethodSymbol*& CLASS_VALUETASK_Shoot = shard::SymbolTable::StandardTypes::ValueTask_Shoot;
 
     inline InterfaceSymbol*& TRAIT_DISPOSABLE = shard::SymbolTable::StandardTypes::IDisposable;
     inline MethodSymbol*& TRAIT_DISPOSABLE_Dispose = shard::SymbolTable::StandardTypes::IDisposable_Dispose;

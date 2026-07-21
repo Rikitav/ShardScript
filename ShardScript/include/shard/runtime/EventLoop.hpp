@@ -81,6 +81,8 @@ namespace shard
         /// </summary>
         void UnrootTask(ObjectInstance* task);
 
+        [[nodiscard]] const std::vector<ObjectInstance*>& GetRootedTasks() const noexcept { return m_rootedTasks; }
+
         /// <summary>
         /// Returns true when the loop has no pending work and all rooted tasks are complete.
         /// </summary>

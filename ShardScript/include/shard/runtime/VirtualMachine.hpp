@@ -32,9 +32,11 @@ namespace shard
 		GarbageCollector& garbageCollector;
 		PrimitiveMathModule primitiveMath;
 
-		std::vector<std::unique_ptr<CallStackFrame>> CallStack;
+		std::vector<std::shared_ptr<CallStackFrame>> CallStack;
 		std::atomic<bool> AbortFlag;
 		std::vector<TypeSymbol*> PendingTypeArguments;
+
+		void HaltFireAndForgetTasks();
 
 		ObjectInstance* UnhandledException = nullptr;
 		std::wstring UnhandledExceptionMessage;

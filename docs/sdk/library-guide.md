@@ -1160,39 +1160,145 @@ ShardScript.Interpreter.exe \
 
 ---
 
-## 14. Debugging and Common Errors
+## 14. Native Async Methods
 
-### 14.1. `Symbol 'Foo' not found in current scope`
+Native callbacks can produce `async.Task` and `async.ValueTask<T>` results and await other ShardScript awaitables without manually managing libuv handles, task rooting, or continuation fields. Include `<shard/runtime/NativeAsync.hpp>` and use the helpers described below.
+
+### 14.1. Returning a Task
+
+```cpp
+#include <ShardScript.hpp>
+#include <shard/runtime/NativeAsync.hpp>
+
+static ObjectInstance* NativeDelay(const CallState& ctx) noexcept
+{
+    std::int64_t ms = ctx.Args[0]->AsInteger();
+    return shard::DoAsync(ctx, [ms](shard::AsyncScope& async)
+    {
+        async.Delay(ms, [async]() mutable { async.Complete(); });
+    });
+}
+```
+
+Register it like any other static method returning `async.Task`:
+
+```cpp
+myClass.AddMethod(L"Delay", CLASS_TASK, LINK_STATIC)
+    .AddParameter(L"milliseconds", TYPE_INT)
+    .SetCallback(&NativeDelay);
+```
+
+> **Important:** capture the `AsyncScope` by value inside async callbacks. The scope object is just a handle to a heap-allocated state; capturing by reference will leave a dangling reference when the original lambda returns.
+
+### 14.2. Returning a ValueTask<T>
+
+```cpp
+static ObjectInstance* NativeFetchInt(const CallState& ctx) noexcept
+{
+    return shard::DoValueTask<std::int64_t>(ctx, [](shard::AsyncValueScope<std::int64_t>& async)
+    {
+        async.Delay(100, [async]() mutable { async.Complete(42); });
+    });
+}
+```
+
+Supported result types: `std::int64_t`, `std::uint8_t`, `double`, `bool`, `wchar_t`, `std::wstring`, `const wchar_t*`, and `ObjectInstance*`.
+
+### 14.3. Faulting an Operation
+
+```cpp
+static ObjectInstance* NativeFault(const CallState& ctx) noexcept
+{
+    return shard::FaultedTask(ctx, L"something went wrong");
+}
+```
+
+### 14.4. Awaiting Another Awaitable
+
+```cpp
+static ObjectInstance* NativeChain(const CallState& ctx) noexcept
+{
+    ObjectInstance* innerTask = ctx.Args[0];
+    return shard::DoAsync(ctx, [innerTask](shard::AsyncScope& async)
+    {
+        async.Await(innerTask, [async]() mutable { async.Complete(); });
+    });
+}
+```
+
+`AsyncScope::AwaitResult` is also available when you need the boxed result:
+
+```cpp
+async.AwaitResult(innerTask, [async](ObjectInstance* result) mutable
+{
+    // use result...
+    async.Complete();
+});
+```
+
+### 14.5. Offloading Work to a Thread Pool
+
+```cpp
+static ObjectInstance* NativeWork(const CallState& ctx) noexcept
+{
+    return shard::DoAsync(ctx, [](shard::AsyncScope& async)
+    {
+        async.RunOnThreadPool(
+            []() { /* runs on a worker thread */ },
+            [async]() mutable { async.Complete(); });
+    });
+}
+```
+
+The worker callback runs on a background thread; the completion callback is marshalled back onto the domain's libuv event loop.
+
+### 14.6. How It Works
+
+`DoAsync` / `DoValueTask<T>`:
+
+1. Allocate a pending `Task` / `ValueTask<T>`.
+2. Root the task in the event loop so it survives GC while suspended.
+3. Invoke the work lambda immediately.
+4. When the lambda (or a callback it schedules) calls `Complete()` / `Fail(...)`, update the task state, resume the managed awaiter, and unroot the task.
+
+You do not need to call `EventLoop::RootTask`, `SetTaskState`, `ResumeContinuation`, or deal with libuv handles directly.
+
+---
+
+## 15. Debugging and Common Errors
+
+### 15.1. `Symbol 'Foo' not found in current scope`
 
 - Make sure the script has `using mynamespace;` or that you use the fully qualified name.
 
-### 14.2. Method resolution errors
+### 15.2. Method resolution errors
 
 - `No method named 'Add' exists in the current context` — no accessible method with that name was found.
 - `Method 'Add' does not have an overload that accepts the supplied arguments (...)` — a method with that name exists, but none of its overloads match the supplied arguments.
 
 In both cases, make sure parameters are added to `method->Parameters` and check the order and types of parameters.
 
-### 14.3. Segfault Inside a Callback
+### 15.3. Segfault Inside a Callback
 
 - Check `ctx.Args.size()` before accessing `ctx.Args[i]`.
 - Make sure you do not write to an `ObjectInstance` that is `NullInstance`.
 - For instance methods, remember that `ctx.Args[0]` is `this`.
 
-### 14.4. Callback Is Not Called
+### 15.4. Callback Is Not Called
 
 - Check that `FunctionPointer` is not `nullptr`.
 - `SymbolBuilder<MethodSymbol>::SetCallback` already sets `HandleType = External`.
 
-### 14.5. Library Does Not Load
+### 15.5. Library Does Not Load
 
 - Check that `ShardLib_EntryPoint` and `ShardLib_GetMetadata` are exported (use `dumpbin /exports MyLib.dll` or `nm -D libMyLib.so`).
 - Check native dependencies via `ldd libMyLib.so` (Linux) or Dependencies (Windows).
 - If the library declares ShardScript dependencies, verify that all dependent libraries are loaded and that their versions satisfy the constraints.
+- For native async methods, verify that callbacks capture the `AsyncScope` by value, not by reference.
 
 ---
 
-## 15. Complete Working Example: `StringLib`
+## 16. Complete Working Example: `StringLib`
 
 ```cpp
 #include <ShardScript.hpp>
@@ -1266,7 +1372,7 @@ public static func Main() -> void
 
 ---
 
-## 16. Recommendations
+## 17. Recommendations
 
 1. **Use `SymbolBuilder<T>` for namespace/class/method/field.** It automatically sets `Parent`, `FullName`, `Accesibility`, registers the symbol in the `NamespaceTree`, and calls `OnSymbolDeclared`.
 2. **Prefer `SymbolBuilder<T>` over raw `SymbolFactory`.** `SymbolBuilder` sets `Parent`, `FullName`, `Accesibility`, registers the symbol in the `NamespaceTree`, and calls `OnSymbolDeclared` automatically. Only fall back to `SymbolFactory` when the builder does not expose the symbol you need.
@@ -1278,7 +1384,7 @@ public static func Main() -> void
 
 ---
 
-## 17. Conclusion
+## 18. Conclusion
 
 Creating a native library for ShardScript boils down to a few steps:
 
