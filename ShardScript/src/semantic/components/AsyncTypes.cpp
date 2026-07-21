@@ -11,6 +11,7 @@
 #include <shard/runtime/VirtualMachine.hpp>
 #include <shard/runtime/MethodCallState.hpp>
 #include <shard/runtime/EventLoop.hpp>
+#include <shard/runtime/NativeAsync.hpp>
 
 #include <cstdint>
 #include <unordered_map>
@@ -31,6 +32,15 @@ namespace
 		field->MemoryBytesOffset = parent->MemoryBytesSize;
 		parent->MemoryBytesSize += field->ReturnType->GetInlineSize();
 	}
+}
+
+// ------------------------------------------------------------------------
+// Internal native continuation used by NativeAsync Await helpers
+// ------------------------------------------------------------------------
+static ObjectInstance* shard_async_NativeContinuation_MoveNext(const CallState& context) noexcept
+{
+	shard::detail::InvokeNativeContinuationCallback(context.Args[0]);
+	return nullptr;
 }
 
 // ------------------------------------------------------------------------
@@ -92,6 +102,7 @@ static ObjectInstance* shard_async_Task_OnCompleted(const CallState& context) no
 static ObjectInstance* shard_async_Task_InternalRoot(const CallState& context) noexcept
 {
 	ObjectInstance* task = context.Args[0];
+	task->IsTaskLike = true;
 	context.Domain.GetEventLoop().RootTask(task);
 	return nullptr;
 }
@@ -101,6 +112,7 @@ static ObjectInstance* shard_async_Task_Complete(const CallState& context) noexc
 	ObjectInstance* task = context.Args[0];
 
 	SetTaskState(task, CLASS_TASK_StateField, AsyncState::COMPLETED, context.Collector);
+	task->ReleaseFrameOwner();
 	ResumeContinuation(task, CLASS_TASK_ContinuationField, TRAIT_ASYNCSTATE_MoveNext, context.Domain);
 
 	// Release the factory root. Tasks created by Task.Delay carry a second
@@ -114,45 +126,10 @@ static ObjectInstance* shard_async_Task_Delay(const CallState& context) noexcept
 {
 	std::int64_t milliseconds = context.Args[0]->AsInteger();
 
-	ObjectInstance* task = context.Collector.AllocateInstance(CLASS_TASK);
-	SetTaskState(task, CLASS_TASK_StateField, AsyncState::PENDING, context.Collector);
-
-	context.Domain.GetEventLoop().RootTask(task);
-
-	uv_timer_t* timer = new uv_timer_t;
-	uv_timer_init(context.Domain.GetEventLoop().GetLoop(), timer);
-
-	DelayState* state = new DelayState
+	return shard::DoAsync(context, [milliseconds](shard::AsyncScope& async)
 	{
-		&context.Domain,
-		task,
-		CLASS_TASK_StateField,
-		CLASS_TASK_ContinuationField,
-		TRAIT_ASYNCSTATE_MoveNext
-	};
-
-	timer->data = state;
-
-	uv_timer_start(timer, [](uv_timer_t* handle)
-	{
-		DelayState* state = static_cast<DelayState*>(handle->data);
-		ObjectInstance* task = state->Task;
-		ApplicationDomain* domain = state->Domain;
-
-		SetTaskState(task, state->StateField, AsyncState::COMPLETED, domain->GetGarbageCollector());
-
-		uv_close(reinterpret_cast<uv_handle_t*>(handle), [](uv_handle_t* closed)
-		{
-			delete reinterpret_cast<uv_timer_t*>(closed);
-		});
-
-		ResumeContinuation(task, state->ContinuationField, state->MoveNextMethod, *domain);
-
-		domain->GetEventLoop().UnrootTask(task);
-		delete state;
-	}, static_cast<std::uint64_t>(milliseconds), 0);
-
-	return task;
+		async.Delay(milliseconds, [async]() mutable { async.Complete(); });
+	});
 }
 
 static ObjectInstance* shard_async_Task_SetException(const CallState& context) noexcept
@@ -162,6 +139,7 @@ static ObjectInstance* shard_async_Task_SetException(const CallState& context) n
 
 	SetTaskState(task, CLASS_TASK_StateField, AsyncState::FAULTED, context.Collector);
 	task->SetField(CLASS_TASK_ExceptionField->SlotIndex, exception);
+	task->ReleaseFrameOwner();
 
 	ResumeContinuation(task, CLASS_TASK_ContinuationField, TRAIT_ASYNCSTATE_MoveNext, context.Domain);
 
@@ -198,6 +176,17 @@ static ObjectInstance* shard_async_Task_Wait(const CallState& context)
 		throw std::runtime_error("Task faulted");
 	}
 
+	return nullptr;
+}
+
+static ObjectInstance* shard_async_Task_Shoot(const CallState& context) noexcept
+{
+	ObjectInstance* task = context.Args[0];
+	if (task != nullptr && task != GarbageCollector::NullInstance)
+	{
+		task->IsFireAndForget = true;
+		task->ReleaseFrameOwner();
+	}
 	return nullptr;
 }
 
@@ -269,12 +258,7 @@ static ObjectInstance* shard_async_ValueTask_GetAwaiter(const CallState& context
 static ObjectInstance* shard_async_ValueTask_FromResult(const CallState& context) noexcept
 {
 	ObjectInstance* result = context.Args[0];
-	ObjectInstance* task = context.Collector.AllocateGeneric(CLASS_VALUETASK, { const_cast<TypeSymbol*>(result->getInfo()) });
-
-	SetTaskState(task, CLASS_VALUETASK_StateField, AsyncState::COMPLETED, context.Collector);
-	task->SetField(CLASS_VALUETASK_ResultField->SlotIndex, result);
-
-	return task;
+	return shard::CompletedValueTask(context, result);
 }
 
 static ObjectInstance* shard_async_ValueTask_SetException(const CallState& context) noexcept
@@ -284,6 +268,7 @@ static ObjectInstance* shard_async_ValueTask_SetException(const CallState& conte
 
 	SetTaskState(task, CLASS_VALUETASK_StateField, AsyncState::FAULTED, context.Collector);
 	task->SetField(CLASS_VALUETASK_ExceptionField->SlotIndex, exception);
+	task->ReleaseFrameOwner();
 
 	ResumeContinuation(task, CLASS_VALUETASK_ContinuationField, TRAIT_ASYNCSTATE_MoveNext, context.Domain);
 
@@ -299,6 +284,7 @@ static ObjectInstance* shard_async_ValueTask_SetResult(const CallState& context)
 
 	SetTaskState(task, CLASS_VALUETASK_StateField, AsyncState::COMPLETED, context.Collector);
 	task->SetField(CLASS_VALUETASK_ResultField->SlotIndex, result);
+	task->ReleaseFrameOwner();
 
 	ResumeContinuation(task, CLASS_VALUETASK_ContinuationField, TRAIT_ASYNCSTATE_MoveNext, context.Domain);
 
@@ -310,6 +296,7 @@ static ObjectInstance* shard_async_ValueTask_SetResult(const CallState& context)
 static ObjectInstance* shard_async_ValueTask_InternalRoot(const CallState& context) noexcept
 {
 	ObjectInstance* task = context.Args[0];
+	task->IsTaskLike = true;
 	context.Domain.GetEventLoop().RootTask(task);
 	return nullptr;
 }
@@ -458,6 +445,10 @@ void SymbolTable::ResolveAsyncTypes(SymbolTable* globalTable)
 			.AddParameter(L"milliseconds", TYPE_INT)
 			.SetCallback(&shard_async_Task_Delay);
 
+		SymbolTable::StandardTypes::Task_Shoot = builder.AddMethod(L"Shoot", TYPE_VOID, LINK_STATIC)
+			.AddParameter(L"task", SymbolTable::StandardTypes::Task)
+			.SetCallback(&shard_async_Task_Shoot);
+
 		SymbolTable::StandardTypes::Wait_Task = builder.AddMethod(L"Wait", TYPE_VOID, LINK_STATIC)
 			.AddParameter(L"task", SymbolTable::StandardTypes::Task)
 			.SetCallback(&shard_async_Task_Wait);
@@ -538,11 +529,49 @@ void SymbolTable::ResolveAsyncTypes(SymbolTable* globalTable)
 			.AddParameter(L"exception", TRAIT_THROWABLE)
 			.SetCallback(&shard_async_ValueTask_SetException);
 
+		SymbolTable::StandardTypes::ValueTask_Shoot = builder.AddMethod(L"Shoot", TYPE_VOID, LINK_STATIC)
+			.AddParameter(L"task", valueTaskOfT)
+			.SetCallback(&shard_async_Task_Shoot)
+			.Get();
+
 		SymbolTable::StandardTypes::Wait_ValueTask = builder.AddMethod(L"Wait", TYPE_VOID, LINK_STATIC)
 			.AddParameter(L"task", valueTaskOfT)
 			.SetCallback(&shard_async_ValueTask_Wait);
 
 		builder.AddMethod(L"Wait", TYPE_VOID, LINK_INSTANCE)
 			.SetCallback(&shard_async_ValueTask_Wait);
+	}
+
+	// -------------------------------------------------------------------------
+	// Generic Task.Shoot<T>(ValueTask<T>) overload
+	// -------------------------------------------------------------------------
+	{
+		SymbolBuilder<ClassSymbol> taskBuilder(globalTable, SymbolTable::StandardTypes::Task);
+		SymbolBuilder<MethodSymbol> shootBuilder = taskBuilder.AddMethod(L"Shoot", TYPE_VOID, LINK_STATIC);
+		TypeParameterSymbol* methodT = shootBuilder.AddTypeParameter(L"T").Get();
+
+		GenericTypeSymbol* valueTaskOfT = factory.GenericType(
+			SymbolTable::StandardTypes::ValueTask, { { L"T", methodT } });
+
+		SymbolTable::StandardTypes::Task_ShootGeneric = shootBuilder
+			.AddParameter(L"task", valueTaskOfT)
+			.SetCallback(&shard_async_Task_Shoot)
+			.Get();
+	}
+
+	// -------------------------------------------------------------------------
+	// class __NativeContinuation (internal, used by NativeAsync Await helpers)
+	// -------------------------------------------------------------------------
+	{
+		SymbolBuilder<ClassSymbol> builder(globalTable, L"__NativeContinuation", asyncNs);
+		SymbolTable::StandardTypes::NativeContinuation = builder
+			.Implements(SymbolTable::StandardTypes::IAsyncState)
+			.DeclareGlobal();
+
+		SymbolTable::StandardTypes::NativeContinuation->LayoutingState = TypeLayoutingState::Visited;
+
+		SymbolTable::StandardTypes::NativeContinuation_MoveNext = builder.AddMethod(L"MoveNext", TYPE_VOID, LINK_INSTANCE)
+			.IsImplementationOf(SymbolTable::StandardTypes::IAsyncState_MoveNext)
+			.SetCallback(&shard_async_NativeContinuation_MoveNext);
 	}
 }

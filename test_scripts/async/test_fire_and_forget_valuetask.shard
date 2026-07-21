@@ -1,0 +1,21 @@
+using stdio;
+using async;
+
+namespace test_fire_and_forget_valuetask;
+
+public class Program
+{
+    public static async func Background() -> ValueTask<int>
+    {
+        println("background start");
+        await Task.Delay(1000);
+        println("background end");
+        return 42;
+    }
+
+    public static func Main() -> void
+    {
+        Task.Shoot<int>(Background());
+        println("main end");
+    }
+}

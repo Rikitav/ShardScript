@@ -1,0 +1,20 @@
+using stdio;
+using async;
+
+namespace test_fire_and_forget;
+
+public class Program
+{
+    public static async func Background() -> Task
+    {
+        println("background start");
+        await Task.Delay(100);
+        println("background end");
+    }
+
+    public static func Main() -> void
+    {
+        Background();
+        println("main end");
+    }
+}

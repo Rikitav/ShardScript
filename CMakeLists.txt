@@ -23,9 +23,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE "${OUTPUT_DIR}")
 project(ShardScript VERSION 0.5.0 LANGUAGES C CXX) 
 
 if(MSVC)
-    set(CMAKE_CXX_FLAGS "")
     set(CMAKE_CXX_FLAGS_DEBUG "/Zi /Od")
-    set(CMAKE_CXX_FLAGS_RELEASE "")
 endif()
 
 if(MSVC)

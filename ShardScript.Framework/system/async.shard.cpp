@@ -3,6 +3,7 @@
 #include <shard/runtime/EventLoop.hpp>
 #include <shard/runtime/VirtualMachine.hpp>
 #include <shard/runtime/GarbageCollector.hpp>
+#include <shard/runtime/NativeAsync.hpp>
 
 using namespace shard;
 
@@ -137,6 +138,54 @@ SHARDLIB_GETMETADATA
     lib.Version = L"1.0.0";
 }
 
+// ------------------------------------------------------------------------
+// Internal native-async API regression helpers
+// ------------------------------------------------------------------------
+static ObjectInstance* shard_async_NativeAsyncTests_Delay(const CallState& context) noexcept
+{
+    std::int64_t ms = context.Args[0]->AsInteger();
+
+    return shard::DoAsync(context, [ms](shard::AsyncScope& async)
+    {
+        async.Delay(ms, [async]() mutable
+        {
+            async.Complete();
+        });
+    });
+}
+
+static ObjectInstance* shard_async_NativeAsyncTests_ValueTask(const CallState& context) noexcept
+{
+    std::int64_t value = context.Args[0]->AsInteger();
+    std::int64_t ms = context.Args[1]->AsInteger();
+
+    return shard::DoValueTask<std::int64_t>(context, [value, ms](shard::AsyncValueScope<std::int64_t>& async)
+    {
+        async.Delay(ms, [async, value]() mutable
+        {
+            async.Complete(value);
+        });
+    });
+}
+
+static ObjectInstance* shard_async_NativeAsyncTests_Fault(const CallState& context) noexcept
+{
+    (void)context;
+    return shard::FaultedTask(context, L"native async fault");
+}
+
+static ObjectInstance* shard_async_NativeAsyncTests_Await(const CallState& context) noexcept
+{
+    ObjectInstance* inner = context.Args[0];
+    return shard::DoAsync(context, [inner](shard::AsyncScope& async)
+    {
+        async.Await(inner, [async]() mutable
+        {
+            async.Complete();
+        });
+    });
+}
+
 // =============================================================================
 // Entry point
 // =============================================================================
@@ -219,4 +268,29 @@ SHARDLIB_ENTRYPOINT
         .SetCallback(&shard_async_CancellationTokenSource_Token_get);
 
     ctsClass.DeclareGlobal();
+
+    // -------------------------------------------------------------------------
+    // class NativeAsyncTests (internal regression surface for NativeAsync API)
+    // -------------------------------------------------------------------------
+    SymbolBuilder<ClassSymbol> testClass = asyncNamespace.AddClass(L"NativeAsyncTests");
+
+    testClass.AddMethod(L"Delay", CLASS_TASK, LINK_STATIC)
+        .AddParameter(L"milliseconds", TYPE_INT)
+        .SetCallback(&shard_async_NativeAsyncTests_Delay);
+
+    GenericTypeSymbol* valueTaskOfInt = factory.GenericType(CLASS_VALUETASK, { { L"T", TYPE_INT } });
+
+    testClass.AddMethod(L"ValueTask", valueTaskOfInt, LINK_STATIC)
+        .AddParameter(L"value", TYPE_INT)
+        .AddParameter(L"milliseconds", TYPE_INT)
+        .SetCallback(&shard_async_NativeAsyncTests_ValueTask);
+
+    testClass.AddMethod(L"Fault", CLASS_TASK, LINK_STATIC)
+        .SetCallback(&shard_async_NativeAsyncTests_Fault);
+
+    testClass.AddMethod(L"Await", CLASS_TASK, LINK_STATIC)
+        .AddParameter(L"task", CLASS_TASK)
+        .SetCallback(&shard_async_NativeAsyncTests_Await);
+
+    testClass.DeclareGlobal();
 }

@@ -1,0 +1,19 @@
+using stdio;
+using async;
+
+namespace test_native_async_valuetask;
+
+public class Program
+{
+    public static async func GetValue() -> ValueTask<int>
+    {
+        return await NativeAsyncTests.ValueTask(42, 50);
+    }
+
+    public static func Main() -> void
+    {
+        task := GetValue();
+        ValueTask.Wait(task);
+        println(task.Result);
+    }
+}

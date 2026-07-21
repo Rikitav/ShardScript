@@ -1,0 +1,24 @@
+using stdio;
+using async;
+
+namespace test_native_async_fault;
+
+public class Program
+{
+    public static async func Faulty() -> Task
+    {
+        await NativeAsyncTests.Fault();
+    }
+
+    public static func Main() -> void
+    {
+        try
+        {
+            Task.Wait(Faulty());
+        }
+        catch (ex)
+        {
+            println("caught");
+        }
+    }
+}

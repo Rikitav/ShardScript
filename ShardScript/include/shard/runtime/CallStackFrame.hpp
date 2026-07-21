@@ -7,6 +7,7 @@
 #include <shard/semantic/symbols/MethodSymbol.hpp>
 
 #include <vector>
+#include <memory>
 
 namespace shard
 {
@@ -21,7 +22,7 @@ namespace shard
 		LoopContinue,
 	};
 
-	class SHARD_API CallStackFrame
+	class SHARD_API CallStackFrame : public std::enable_shared_from_this<CallStackFrame>
 	{
 	public:
 		const VirtualMachine* Host;
@@ -49,6 +50,11 @@ namespace shard
 		// Synchronous DEFER_DRAIN executes deferred expressions inline. This counter
 		// lets DEFER_BREAK verify it is only reached while draining.
 		std::size_t DeferDrainDepth = 0;
+
+		// Number of pending async tasks that were started by this frame and are still
+		// keeping it alive. The frame object is kept alive via shared_ptr until this
+		// counter reaches zero.
+		std::size_t PendingTaskCount = 0;
 
 		inline CallStackFrame(const VirtualMachine* host, CallStackFrame* previousFrame, MethodSymbol* method)
 			: Host(host), Method(method), PreviousFrame(previousFrame) { }

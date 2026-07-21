@@ -8,6 +8,7 @@
 #include <string>
 #include <cstdint>
 #include <span>
+#include <memory>
 
 namespace shard
 {
@@ -30,11 +31,20 @@ namespace shard
 		bool Terminated = false;
 		bool IsSingleton = false;
 
+		// Async task lifetime tracking.
+		bool IsTaskLike = false;
+		bool IsFireAndForget = false;
+		std::shared_ptr<CallStackFrame> FrameOwner;
+		void* AsyncNativeState = nullptr;
+
 	public:
 		inline ObjectInstance(const TypeSymbol* info, TypeShape* shape, void* memory, bool isTransient)
 			: m_info(info), m_shape(shape), m_rawMemoryPtr(memory), m_isTransient(isTransient), m_eeferencesCounter(0) { }
 		
-		inline ~ObjectInstance() = default;
+		~ObjectInstance();
+
+		void BindToFrame(std::shared_ptr<CallStackFrame> frame);
+		void ReleaseFrameOwner();
 
 		[[nodiscard]] const TypeSymbol* getInfo() const;
 		[[nodiscard]] TypeShape* getShape() const;
