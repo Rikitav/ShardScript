@@ -3,7 +3,6 @@
 #if defined(_WIN32)
     #define WIN32_LEAN_AND_MEAN
     #include <windows.h>
-#endif
 
 static void enableFor(DWORD handleId)
 {
@@ -18,6 +17,7 @@ static void enableFor(DWORD handleId)
 	mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
 	SetConsoleMode(handle, mode);
 }
+#endif
 
 void shard::console::EnableColors()
 {
