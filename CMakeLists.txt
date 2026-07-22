@@ -51,7 +51,10 @@ add_subdirectory(ShardScript)
 add_subdirectory(test_scripts/dependency_loading/libs)
 add_subdirectory(ShardScript.Framework)
 add_subdirectory(ShardScript.Interpreter)
-add_subdirectory(ShardScript.LspServer)
+
+if(WIN32)
+    add_subdirectory(ShardScript.LspServer)
+endif()
 
 foreach(CONFIG ${CMAKE_CONFIGURATION_TYPES} )
     string(TOUPPER ${CONFIG} CONFIG_UPPER )
