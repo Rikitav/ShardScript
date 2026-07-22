@@ -162,6 +162,11 @@ namespace shard
         return *m_state->collector;
     }
 
+    std::shared_ptr<detail::AsyncScopeState> AsyncScope::ShareState() const noexcept
+    {
+        return m_state;
+    }
+
     void AsyncScope::Complete()
     {
         if (!m_state || m_state->completed)
@@ -378,7 +383,7 @@ namespace shard
         detail::InvokeOnCompleted(vm, awaiter, continuation);
     }
 
-    ObjectInstance* DoAsync(const CallState& ctx, std::function<void(AsyncScope&)> work)
+    ObjectInstance* DoAsync(const CallState& ctx, std::function<void(AsyncScope)> work)
     {
         auto state = detail::CreateAsyncScopeState(ctx, nullptr);
         ObjectInstance* task = state->task;

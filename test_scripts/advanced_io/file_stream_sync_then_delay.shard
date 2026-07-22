@@ -1,0 +1,31 @@
+using stdio;
+using async;
+using filesystem;
+
+namespace file_stream_sync_then_delay_test;
+
+public class Program
+{
+    public static async func Run() -> Task
+    {
+        path := "D:/temp/shard_file_stream_sync_delay.bin";
+        if (File.Exists(path))
+            File.Delete(path);
+
+        fs := new FileStream(path, FileMode.CreateNew, FileAccess.Write);
+        input: byte[] = [1 as byte, 2 as byte, 3 as byte];
+        fs.Write(input, 0, 3);
+        fs.Flush();
+        fs.Dispose();
+
+        await Task.Delay(10);
+
+        println("sync then delay ok");
+    }
+
+    public static func Main() -> void
+    {
+        task := Run();
+        Task.Wait(task);
+    }
+}

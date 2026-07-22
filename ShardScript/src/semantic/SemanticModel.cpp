@@ -28,6 +28,7 @@
 #include <stdexcept>
 #include <memory>
 #include <algorithm>
+#include <unordered_set>
 
 using namespace shard;
 
@@ -135,6 +136,32 @@ bool SemanticModel::AreTypesEqual(const TypeSymbol* left, const TypeSymbol* righ
 	}
 }
 
+static void CollectAllInterfaces(const TypeSymbol* type, std::vector<TypeSymbol*>& out, std::unordered_set<TypeSymbol*>& visited)
+{
+	if (type == nullptr)
+		return;
+
+	for (TypeSymbol* iface : type->Interfaces)
+	{
+		if (iface == nullptr)
+			continue;
+
+		if (visited.insert(iface).second)
+		{
+			out.push_back(iface);
+			CollectAllInterfaces(iface, out, visited);
+		}
+	}
+}
+
+static std::vector<TypeSymbol*> GetAllInterfaces(const TypeSymbol* type)
+{
+	std::vector<TypeSymbol*> result;
+	std::unordered_set<TypeSymbol*> visited;
+	CollectAllInterfaces(type, result, visited);
+	return result;
+}
+
 static bool IsConstructedInterfaceImplemented(GenericTypeSymbol* targetInterface, TypeSymbol* sourceType)
 {
 	TypeSymbol* underlying = targetInterface->UnderlayingType;
@@ -160,18 +187,9 @@ static bool IsConstructedInterfaceImplemented(GenericTypeSymbol* targetInterface
 		return true;
 	};
 
-	for (TypeSymbol* iface : sourceType->Interfaces)
+	auto checkTypeInterfaces = [&](const TypeSymbol* type) -> bool
 	{
-		if (iface->Kind != SyntaxKind::GenericType)
-			continue;
-
-		if (matchesInterface(static_cast<GenericTypeSymbol*>(iface)))
-			return true;
-	}
-
-	if (sourceType->Kind == SyntaxKind::GenericType)
-	{
-		for (TypeSymbol* iface : static_cast<GenericTypeSymbol*>(sourceType)->UnderlayingType->Interfaces)
+		for (TypeSymbol* iface : GetAllInterfaces(type))
 		{
 			if (iface->Kind != SyntaxKind::GenericType)
 				continue;
@@ -179,18 +197,23 @@ static bool IsConstructedInterfaceImplemented(GenericTypeSymbol* targetInterface
 			if (matchesInterface(static_cast<GenericTypeSymbol*>(iface)))
 				return true;
 		}
+
+		return false;
+	};
+
+	if (checkTypeInterfaces(sourceType))
+		return true;
+
+	if (sourceType->Kind == SyntaxKind::GenericType)
+	{
+		if (checkTypeInterfaces(static_cast<GenericTypeSymbol*>(sourceType)->UnderlayingType))
+			return true;
 	}
 
 	if (sourceType->Kind == SyntaxKind::ArrayType)
 	{
-		for (TypeSymbol* iface : SymbolTable::Primitives::Array->Interfaces)
-		{
-			if (iface->Kind != SyntaxKind::GenericType)
-				continue;
-
-			if (matchesInterface(static_cast<GenericTypeSymbol*>(iface)))
-				return true;
-		}
+		if (checkTypeInterfaces(SymbolTable::Primitives::Array))
+			return true;
 
 		if (underlying == SymbolTable::StandardTypes::IEnumerable && underlying->TypeParameters.size() == 1)
 		{
@@ -220,7 +243,7 @@ bool SemanticModel::IsAssignableTo(const TypeSymbol* target, const TypeSymbol* s
 
 	if (target->Kind == SyntaxKind::InterfaceDeclaration)
 	{
-		for (TypeSymbol* iface : source->Interfaces)
+		for (TypeSymbol* iface : GetAllInterfaces(source))
 		{
 			if (AreTypesEqual(target, iface))
 				return true;
@@ -228,7 +251,7 @@ bool SemanticModel::IsAssignableTo(const TypeSymbol* target, const TypeSymbol* s
 
 		if (source->Kind == SyntaxKind::ArrayType)
 		{
-			for (TypeSymbol* iface : SymbolTable::Primitives::Array->Interfaces)
+			for (TypeSymbol* iface : GetAllInterfaces(SymbolTable::Primitives::Array))
 			{
 				if (AreTypesEqual(target, iface))
 					return true;
@@ -504,4 +527,36 @@ bool SemanticModel::TryResolveGenericArguments(TypeSymbol* type, const TypeParam
 	}
 
 	return false;
+}
+
+// =========================================================================
+//  Symbol lookup helpers
+// =========================================================================
+
+TypeSymbol* SemanticModel::FindTypeByName(SymbolTable* table, const std::wstring& fullName)
+{
+	if (table == nullptr)
+		return nullptr;
+
+	for (TypeSymbol* type : table->GetTypeSymbols())
+	{
+		if (type->FullName == fullName || type->Name == fullName)
+			return type;
+	}
+
+	return nullptr;
+}
+
+FieldSymbol* SemanticModel::FindFieldByName(TypeSymbol* type, const std::wstring& name)
+{
+	if (type == nullptr)
+		return nullptr;
+
+	for (FieldSymbol* field : type->Fields)
+	{
+		if (field->Name == name)
+			return field;
+	}
+
+	return nullptr;
 }

@@ -13,6 +13,8 @@
 #include <shard/analysis/TextLocation.hpp>
 #include <shard/lexical/TokenType.hpp>
 
+#include <unordered_set>
+
 namespace shard
 {
     static bool IsInterfaceImplementationMatching(MethodSymbol* interfaceMethod, MethodSymbol* classMethod)
@@ -53,12 +55,48 @@ namespace shard
         return true;
     }
 
-    void SemanticValidator::ValidateInterfaceImplementation(
+    static void CollectAllInterfaces(const TypeSymbol* type, std::vector<TypeSymbol*>& out, std::unordered_set<TypeSymbol*>& visited)
+    {
+        if (type == nullptr)
+            return;
+
+        for (TypeSymbol* iface : type->Interfaces)
+        {
+            if (iface == nullptr)
+                continue;
+
+            if (visited.insert(iface).second)
+            {
+                out.push_back(iface);
+                CollectAllInterfaces(iface, out, visited);
+            }
+        }
+    }
+
+    static std::vector<TypeSymbol*> GetAllInterfaces(const TypeSymbol* type)
+    {
+        std::vector<TypeSymbol*> result;
+        std::unordered_set<TypeSymbol*> visited;
+        CollectAllInterfaces(type, result, visited);
+        return result;
+    }
+
+    static void ValidateInterfaceImplementationInternal(
         TypeSymbol* typeSymbol,
         InterfaceSymbol* interfaceSymbol,
         DiagnosticsContext& diagnostics,
-        SyntaxToken errorToken)
+        SyntaxToken errorToken,
+        std::unordered_set<InterfaceSymbol*>& visited)
     {
+        if (interfaceSymbol == nullptr || !visited.insert(interfaceSymbol).second)
+            return;
+
+        for (TypeSymbol* baseInterfaceType : interfaceSymbol->Interfaces)
+        {
+            if (baseInterfaceType != nullptr && baseInterfaceType->Kind == SyntaxKind::InterfaceDeclaration)
+                ValidateInterfaceImplementationInternal(typeSymbol, static_cast<InterfaceSymbol*>(baseInterfaceType), diagnostics, errorToken, visited);
+        }
+
         for (MethodSymbol* interfaceMethod : interfaceSymbol->Methods)
         {
             MethodSymbol* matchedMethod = nullptr;
@@ -110,6 +148,16 @@ namespace shard
                     typeSymbol->InterfaceMethodMap[interfaceProperty->Setter] = matchedProperty->Setter;
             }
         }
+    }
+
+    void SemanticValidator::ValidateInterfaceImplementation(
+        TypeSymbol* typeSymbol,
+        InterfaceSymbol* interfaceSymbol,
+        DiagnosticsContext& diagnostics,
+        SyntaxToken errorToken)
+    {
+        std::unordered_set<InterfaceSymbol*> visited;
+        ValidateInterfaceImplementationInternal(typeSymbol, interfaceSymbol, diagnostics, errorToken, visited);
     }
 
     void SemanticValidator::ValidateExplicitInterfaceImplementations(
@@ -185,6 +233,12 @@ namespace shard
             if (typeSymbol->Interfaces.empty())
                 continue;
 
+            // Interfaces declare contracts; only classes/structs must supply
+            // implementations. Skip interfaces so that inherited interface
+            // methods are not treated as missing implementations.
+            if (typeSymbol->Kind == SyntaxKind::InterfaceDeclaration)
+                continue;
+
             // Source symbols are already validated by TypeBinder with precise
             // source locations. Native-library symbols are validated once when
             // the library is loaded (AddLib). We only re-validate symbols that
@@ -197,13 +251,13 @@ namespace shard
 
             SyntaxToken errorToken(TokenType::Unknown, typeSymbol->Name, TextLocation(), false);
 
-            for (TypeSymbol* interfaceType : typeSymbol->Interfaces)
+            for (TypeSymbol* interfaceType : GetAllInterfaces(typeSymbol))
             {
                 if (interfaceType == nullptr || interfaceType->Kind != SyntaxKind::InterfaceDeclaration)
                     continue;
 
                 InterfaceSymbol* interfaceSymbol = static_cast<InterfaceSymbol*>(interfaceType);
-                ValidateExplicitInterfaceImplementations(typeSymbol, interfaceSymbol, diagnostics, errorToken);
+                ValidateInterfaceImplementation(typeSymbol, interfaceSymbol, diagnostics, errorToken);
             }
         }
     }

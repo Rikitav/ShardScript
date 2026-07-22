@@ -54,6 +54,12 @@ namespace shard
 		static TypeSymbol* GetConstructorReturnType(ConstructorSymbol* constructor, GenericTypeSymbol* within = nullptr);
 
 		// =========================================================================
+		//  Symbol lookup helpers
+		// =========================================================================
+		static TypeSymbol* FindTypeByName(SymbolTable* table, const std::wstring& fullName);
+		static FieldSymbol* FindFieldByName(TypeSymbol* type, const std::wstring& name);
+
+		// =========================================================================
 		//  Runtime generic argument resolution
 		// =========================================================================
 		using TypeParameterResolver = std::function<TypeSymbol*(TypeParameterSymbol*)>;

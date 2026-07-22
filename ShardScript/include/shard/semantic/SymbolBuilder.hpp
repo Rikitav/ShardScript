@@ -138,6 +138,9 @@ namespace shard
 
         SymbolBuilder<InterfaceSymbol>& DeclareGlobal();
         SymbolBuilder<InterfaceSymbol>& SetFullName(const std::wstring& fullName);
+
+        SymbolBuilder<InterfaceSymbol>& Implements(InterfaceSymbol* interface);
+        SymbolBuilder<InterfaceSymbol>& Implements(GenericTypeSymbol* interface);
     };
 
     template<>

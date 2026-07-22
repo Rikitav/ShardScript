@@ -399,6 +399,13 @@ bool ExpressionBinder::GetIsStaticContext(const ExpressionSyntax* expression)
 		return true;
 	}
 
+	// A method call result is always a value, so any member/index access on it is
+	// an instance context even if the call itself was a static-context invocation.
+	if (expression->Kind == SyntaxKind::InvokationExpression)
+	{
+		return false;
+	}
+
 	if (IsLinkedExpressionNode(expression->Kind))
 	{
 		const LinkedExpressionNode* asNode = static_cast<const LinkedExpressionNode*>(expression);

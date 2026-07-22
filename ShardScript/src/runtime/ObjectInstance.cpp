@@ -348,6 +348,11 @@ void ObjectInstance::DecrementReference()
 	m_eeferencesCounter -= 1;
 }
 
+bool ObjectInstance::IsNullInstance() const
+{
+	return this == GarbageCollector::NullInstance;
+}
+
 void* ObjectInstance::OffsetMemory(const std::size_t offset, const std::size_t size) const
 {
 	if (size == 0)

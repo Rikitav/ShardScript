@@ -7,6 +7,7 @@
 #include <shard/semantic/symbols/ConstructorSymbol.hpp>
 #include <shard/semantic/symbols/OperatorSymbol.hpp>
 #include <shard/semantic/symbols/TypeParameterSymbol.hpp>
+#include <shard/semantic/symbols/InterfaceSymbol.hpp>
 
 #include <shard/semantic/SyntaxSymbol.hpp>
 #include <shard/parsing/SyntaxKind.hpp>
@@ -215,5 +216,18 @@ PropertySymbol* TypeSymbol::FindProperty(std::wstring& name)
 MethodSymbol* TypeSymbol::FindInterfaceImplementation(MethodSymbol* interfaceMethod)
 {
 	auto it = InterfaceMethodMap.find(interfaceMethod);
-	return it == InterfaceMethodMap.end() ? nullptr : it->second;
+	if (it != InterfaceMethodMap.end())
+		return it->second;
+
+	for (TypeSymbol* iface : Interfaces)
+	{
+		if (iface == nullptr || iface->Kind != SyntaxKind::InterfaceDeclaration)
+			continue;
+
+		MethodSymbol* baseImplementation = iface->FindInterfaceImplementation(interfaceMethod);
+		if (baseImplementation != nullptr)
+			return baseImplementation;
+	}
+
+	return nullptr;
 }

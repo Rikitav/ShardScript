@@ -201,6 +201,11 @@
 #include <shard/runtime/VirtualMachine.hpp>
 #include <shard/runtime/ConsoleHelper.hpp>
 #include <shard/runtime/MethodCallState.hpp>
+// transitivelly includes Windows.h
+/*
+#include <shard/runtime/EventLoop.hpp>
+#include <shard/runtime/NativeAsync.hpp> 
+*/
 
 // --- Application / Context ---
 #include <shard/ApplicationDomain.hpp>
