@@ -1,0 +1,27 @@
+using stdio;
+using async;
+using filesystem;
+
+namespace file_stream_flush_only_test;
+
+public class Program
+{
+    public static async func Run() -> Task
+    {
+        path := "D:/temp/shard_file_stream_flush_only.bin";
+        if (File.Exists(path))
+            File.Delete(path);
+
+        fs := new FileStream(path, FileMode.CreateNew, FileAccess.Write);
+        await fs.FlushAsync();
+        fs.Dispose();
+
+        println("flush only ok");
+    }
+
+    public static func Main() -> void
+    {
+        task := Run();
+        Task.Wait(task);
+    }
+}

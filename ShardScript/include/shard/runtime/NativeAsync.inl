@@ -125,7 +125,7 @@ namespace shard
     }
 
     template <typename T>
-    ObjectInstance* DoValueTask(const CallState& ctx, std::function<void(AsyncValueScope<T>&)> work)
+    ObjectInstance* DoValueTask(const CallState& ctx, std::function<void(AsyncValueScope<T>)> work)
     {
         TypeSymbol* resultType = detail::AsyncValueTypeHelper<T>::Get(T{});
         auto state = detail::CreateAsyncScopeState(ctx, resultType);

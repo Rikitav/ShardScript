@@ -1012,3 +1012,15 @@ SymbolBuilder<InterfaceSymbol>& SymbolBuilder<InterfaceSymbol>::SetFullName(cons
     Symbol->FullName = fullName;
     return *this;
 }
+
+SymbolBuilder<InterfaceSymbol>& SymbolBuilder<InterfaceSymbol>::Implements(InterfaceSymbol* interface)
+{
+    Symbol->Interfaces.push_back(interface);
+    return *this;
+}
+
+SymbolBuilder<InterfaceSymbol>& SymbolBuilder<InterfaceSymbol>::Implements(GenericTypeSymbol* interface)
+{
+    Symbol->Interfaces.push_back(interface);
+    return *this;
+}

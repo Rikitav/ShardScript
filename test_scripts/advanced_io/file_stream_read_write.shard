@@ -1,0 +1,82 @@
+using stdio;
+using async;
+using filesystem;
+
+namespace file_stream_read_write_test;
+
+public class Program
+{
+    public static async func Run() -> Task
+    {
+        path := "D:/temp/shard_file_stream_test.bin";
+
+        // Clean up any leftover file.
+        if (File.Exists(path))
+            File.Delete(path);
+
+        // Write through FileStream.
+        fsWrite := new FileStream(path, FileMode.CreateNew, FileAccess.Write);
+        input: byte[] = [1 as byte, 2 as byte, 3 as byte, 4 as byte, 5 as byte];
+        fsWrite.Write(input, 0, 5);
+        fsWrite.Flush();
+        fsWrite.Dispose();
+
+        // Read back through FileStream.
+        fsRead := new FileStream(path, FileMode.Open, FileAccess.Read);
+        buffer: byte[] = [0 as byte, 0 as byte, 0 as byte, 0 as byte, 0 as byte];
+        read := fsRead.Read(buffer, 0, 5);
+        fsRead.Dispose();
+
+        if (read != 5)
+        {
+            println("Expected 5 bytes, got " + read);
+            throw new RuntimeException();
+        }
+
+        for (i := 0; i < 5; i = i + 1)
+        {
+            if (buffer[i] != (i + 1))
+            {
+                println("Byte mismatch at " + i);
+                throw new RuntimeException();
+            }
+        }
+
+        // Async read/write.
+        path2 := "D:/temp/shard_file_stream_test_async.bin";
+        if (File.Exists(path2))
+            File.Delete(path2);
+
+        fsAsyncWrite := new FileStream(path2, FileMode.CreateNew, FileAccess.Write);
+        await fsAsyncWrite.WriteAsync(input, 0, 5);
+        await fsAsyncWrite.FlushAsync();
+        fsAsyncWrite.Dispose();
+
+        fsAsyncRead := new FileStream(path2, FileMode.Open, FileAccess.Read);
+        buffer2: byte[] = [0 as byte, 0 as byte, 0 as byte, 0 as byte, 0 as byte];
+        readAsync := await fsAsyncRead.ReadAsync(buffer2, 0, 5);
+        fsAsyncRead.Dispose();
+
+        if (readAsync != 5)
+        {
+            println("ReadAsync returned wrong count");
+            throw new RuntimeException();
+        }
+
+        for (i := 0; i < 5; i = i + 1)
+        {
+            if (buffer2[i] != (i + 1))
+            {
+                println("Async byte mismatch at " + i);
+                throw new RuntimeException();
+            }
+        }
+
+        println("file stream read/write ok");
+    }
+
+    public static func Main() -> void
+    {
+        Run().Wait();
+    }
+}

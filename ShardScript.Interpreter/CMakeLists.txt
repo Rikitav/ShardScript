@@ -3,9 +3,14 @@ project(ShardScript.Interpreter)
 file(GLOB_RECURSE INTERPRETER_SOURCES "*.cpp")
 file(GLOB_RECURSE INTERPRETER_HEADERS "*.hpp")
 
+if(WIN32)
+    set(INTERPRETER_RESOURCES "${CMAKE_CURRENT_SOURCE_DIR}/res/resources.rc")
+endif()
+
 add_executable(ShardScript.Interpreter
     ${INTERPRETER_SOURCES}
     ${INTERPRETER_HEADERS}
+    ${INTERPRETER_RESOURCES}
 )
 
 set_target_properties(ShardScript.Interpreter PROPERTIES OUTPUT_NAME "shard")

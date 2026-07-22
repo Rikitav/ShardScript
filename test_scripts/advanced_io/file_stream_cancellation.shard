@@ -1,0 +1,50 @@
+using stdio;
+using async;
+using filesystem;
+
+namespace file_stream_cancellation_test;
+
+public class Program
+{
+    public static async func Run() -> Task
+    {
+        path := "D:/temp/shard_file_stream_cancel.bin";
+        if (File.Exists(path))
+            File.Delete(path);
+
+        // Create a file with some content.
+        fsWrite := new FileStream(path, FileMode.CreateNew, FileAccess.Write);
+        input: byte[] = [10 as byte, 20 as byte, 30 as byte];
+        fsWrite.Write(input, 0, 3);
+        fsWrite.Dispose();
+
+        cts := new CancellationTokenSource();
+        token := cts.Token;
+
+        // Cancel before the async read starts.
+        cts.Cancel();
+
+        fsRead := new FileStream(path, FileMode.Open, FileAccess.Read);
+        buffer: byte[] = [0 as byte, 0 as byte, 0 as byte];
+
+        try
+        {
+            await fsRead.ReadAsync(buffer, 0, 3, token);
+            println("Expected cancellation exception");
+            throw new RuntimeException();
+        }
+        catch (ex: RuntimeException)
+        {
+            println("canceled read threw: " + ex.message);
+        }
+
+        fsRead.Dispose();
+        println("file stream cancellation ok");
+    }
+
+    public static func Main() -> void
+    {
+        task := Run();
+        Task.Wait(task);
+    }
+}

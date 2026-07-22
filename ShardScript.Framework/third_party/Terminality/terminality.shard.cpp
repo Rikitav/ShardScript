@@ -59,19 +59,10 @@ struct ControlHolder
 	}
 };
 
-static FieldSymbol* FindFieldByName(TypeSymbol* type, const std::wstring& name)
-{
-	for (FieldSymbol* field : type->Fields)
-		if (field->Name == name)
-			return field;
-
-	return nullptr;
-}
-
 static ControlHolder* GetHolder(ObjectInstance* instance)
 {
 	TypeSymbol* type = const_cast<TypeSymbol*>(instance->getInfo());
-	FieldSymbol* ptrField = FindFieldByName(type, L"_ptr");
+	FieldSymbol* ptrField = SemanticModel::FindFieldByName(type, L"_ptr");
 	if (ptrField == nullptr)
 		throw std::runtime_error("Terminality wrapper is missing the `_ptr` field");
 
@@ -109,7 +100,7 @@ static ControlBase* ReleaseControlPtr(ObjectInstance* instance)
 static void RegisterControlPtr(const CallState& context, ObjectInstance* instance, ControlBase* native)
 {
 	TypeSymbol* type = const_cast<TypeSymbol*>(instance->getInfo());
-	FieldSymbol* ptrField = FindFieldByName(type, L"_ptr");
+	FieldSymbol* ptrField = SemanticModel::FindFieldByName(type, L"_ptr");
 	if (ptrField == nullptr)
 		throw std::runtime_error("Terminality wrapper is missing the `_ptr` field");
 

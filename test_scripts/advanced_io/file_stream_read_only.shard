@@ -1,0 +1,39 @@
+using stdio;
+using async;
+using filesystem;
+
+namespace file_stream_read_only_test;
+
+public class Program
+{
+    public static async func Run() -> Task
+    {
+        path := "D:/temp/shard_file_stream_read_only.bin";
+        if (File.Exists(path))
+            File.Delete(path);
+
+        fsWrite := new FileStream(path, FileMode.CreateNew, FileAccess.Write);
+        input: byte[] = [1 as byte, 2 as byte, 3 as byte];
+        fsWrite.Write(input, 0, 3);
+        fsWrite.Dispose();
+
+        fsRead := new FileStream(path, FileMode.Open, FileAccess.Read);
+        buffer: byte[] = [0 as byte, 0 as byte, 0 as byte];
+        read := await fsRead.ReadAsync(buffer, 0, 3);
+        fsRead.Dispose();
+
+        if (read != 3)
+        {
+            println("Expected 3, got " + read);
+            throw new RuntimeException();
+        }
+
+        println("read only ok");
+    }
+
+    public static func Main() -> void
+    {
+        task := Run();
+        Task.Wait(task);
+    }
+}

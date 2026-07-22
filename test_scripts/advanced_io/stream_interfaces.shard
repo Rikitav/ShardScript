@@ -1,0 +1,60 @@
+using stdio;
+using io;
+using filesystem;
+using net;
+using async;
+
+namespace stream_interfaces_test;
+
+public class Program
+{
+    public static async func Run() -> Task
+    {
+        // MemoryStream can be assigned to all stream abstractions and IDisposable.
+        ms := new MemoryStream();
+        disposable: IDisposable = ms;
+        stream: IStream = ms;
+        readable: IReadableStream = ms;
+        writable: IWritableStream = ms;
+
+        buffer: byte[] = [0 as byte, 0 as byte, 0 as byte];
+        read := readable.Read(buffer, 0, 3);
+        if (read != 0)
+        {
+            println("Empty MemoryStream should return 0");
+            throw new RuntimeException();
+        }
+
+        writable.Write([1 as byte, 2 as byte], 0, 2);
+        disposable.Dispose();
+
+        // FileStream can be assigned to stream abstractions.
+        path := "D:/temp/shard_interface_test.bin";
+        if (File.Exists(path))
+            File.Delete(path);
+
+        fs := new FileStream(path, FileMode.CreateNew, FileAccess.ReadWrite);
+        fsStream: IStream = fs;
+        fsReadable: IReadableStream = fs;
+        fsWritable: IWritableStream = fs;
+        await fsWritable.WriteAsync([1 as byte, 2 as byte, 3 as byte], 0, 3);
+        fs.Dispose();
+
+        // SocketStream can be assigned to stream abstractions.
+        socket := new Socket();
+        ss := new SocketStream(socket);
+        ssStream: IStream = ss;
+        ssReadable: IReadableStream = ss;
+        ssWritable: IWritableStream = ss;
+        ss.Dispose();
+        socket.Dispose();
+
+        println("stream interfaces ok");
+    }
+
+    public static func Main() -> void
+    {
+        task := Run();
+        Task.Wait(task);
+    }
+}

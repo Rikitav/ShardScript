@@ -145,7 +145,7 @@ static ObjectInstance* shard_async_NativeAsyncTests_Delay(const CallState& conte
 {
     std::int64_t ms = context.Args[0]->AsInteger();
 
-    return shard::DoAsync(context, [ms](shard::AsyncScope& async)
+    return shard::DoAsync(context, [ms](shard::AsyncScope async)
     {
         async.Delay(ms, [async]() mutable
         {
@@ -159,7 +159,7 @@ static ObjectInstance* shard_async_NativeAsyncTests_ValueTask(const CallState& c
     std::int64_t value = context.Args[0]->AsInteger();
     std::int64_t ms = context.Args[1]->AsInteger();
 
-    return shard::DoValueTask<std::int64_t>(context, [value, ms](shard::AsyncValueScope<std::int64_t>& async)
+    return shard::DoValueTask<std::int64_t>(context, [value, ms](shard::AsyncValueScope<std::int64_t> async)
     {
         async.Delay(ms, [async, value]() mutable
         {
@@ -177,7 +177,7 @@ static ObjectInstance* shard_async_NativeAsyncTests_Fault(const CallState& conte
 static ObjectInstance* shard_async_NativeAsyncTests_Await(const CallState& context) noexcept
 {
     ObjectInstance* inner = context.Args[0];
-    return shard::DoAsync(context, [inner](shard::AsyncScope& async)
+    return shard::DoAsync(context, [inner](shard::AsyncScope async)
     {
         async.Await(inner, [async]() mutable
         {
@@ -268,29 +268,4 @@ SHARDLIB_ENTRYPOINT
         .SetCallback(&shard_async_CancellationTokenSource_Token_get);
 
     ctsClass.DeclareGlobal();
-
-    // -------------------------------------------------------------------------
-    // class NativeAsyncTests (internal regression surface for NativeAsync API)
-    // -------------------------------------------------------------------------
-    SymbolBuilder<ClassSymbol> testClass = asyncNamespace.AddClass(L"NativeAsyncTests");
-
-    testClass.AddMethod(L"Delay", CLASS_TASK, LINK_STATIC)
-        .AddParameter(L"milliseconds", TYPE_INT)
-        .SetCallback(&shard_async_NativeAsyncTests_Delay);
-
-    GenericTypeSymbol* valueTaskOfInt = factory.GenericType(CLASS_VALUETASK, { { L"T", TYPE_INT } });
-
-    testClass.AddMethod(L"ValueTask", valueTaskOfInt, LINK_STATIC)
-        .AddParameter(L"value", TYPE_INT)
-        .AddParameter(L"milliseconds", TYPE_INT)
-        .SetCallback(&shard_async_NativeAsyncTests_ValueTask);
-
-    testClass.AddMethod(L"Fault", CLASS_TASK, LINK_STATIC)
-        .SetCallback(&shard_async_NativeAsyncTests_Fault);
-
-    testClass.AddMethod(L"Await", CLASS_TASK, LINK_STATIC)
-        .AddParameter(L"task", CLASS_TASK)
-        .SetCallback(&shard_async_NativeAsyncTests_Await);
-
-    testClass.DeclareGlobal();
 }

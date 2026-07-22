@@ -66,17 +66,6 @@ static ClassSymbol* FindDictionaryClass(CompilationContext& context)
     return nullptr;
 }
 
-static FieldSymbol* FindFieldByName(TypeSymbol* type, const std::wstring& name)
-{
-    if (type == nullptr) return nullptr;
-    for (FieldSymbol* field : type->Fields)
-    {
-        if (field->Name == name)
-            return field;
-    }
-    return nullptr;
-}
-
 static bool IsNullInstance(ObjectInstance* instance)
 {
     return instance == nullptr || instance == GarbageCollector::NullInstance;
@@ -578,10 +567,10 @@ SHARDLIB_ENTRYPOINT
     dictionaryClass_raw = FindDictionaryClass(context);
     if (dictionaryClass_raw != nullptr)
     {
-        dict_keysField   = FindFieldByName(dictionaryClass_raw, L"_keys");
-        dict_valuesField = FindFieldByName(dictionaryClass_raw, L"_values");
-        dict_statesField = FindFieldByName(dictionaryClass_raw, L"_states");
-        dict_countField  = FindFieldByName(dictionaryClass_raw, L"_count");
+        dict_keysField   = SemanticModel::FindFieldByName(dictionaryClass_raw, L"_keys");
+        dict_valuesField = SemanticModel::FindFieldByName(dictionaryClass_raw, L"_values");
+        dict_statesField = SemanticModel::FindFieldByName(dictionaryClass_raw, L"_states");
+        dict_countField  = SemanticModel::FindFieldByName(dictionaryClass_raw, L"_count");
     }
 
     // ------------------------------------------------------------------------

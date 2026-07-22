@@ -65,6 +65,9 @@ namespace shard
         [[nodiscard]] ApplicationDomain& Domain() const noexcept;
         [[nodiscard]] GarbageCollector& Collector() const noexcept;
 
+        /// <summary>Return a shared pointer to the internal scope state.</summary>
+        [[nodiscard]] std::shared_ptr<detail::AsyncScopeState> ShareState() const noexcept;
+
         /// <summary>Mark the underlying Task as completed and resume awaiters.</summary>
         void Complete();
 
@@ -106,11 +109,11 @@ namespace shard
     };
 
     /// <summary>Start an async operation that returns async.Task.</summary>
-    SHARD_API ObjectInstance* DoAsync(const CallState& ctx, std::function<void(AsyncScope&)> work);
+    SHARD_API ObjectInstance* DoAsync(const CallState& ctx, std::function<void(AsyncScope)> work);
 
     /// <summary>Start an async operation that returns async.ValueTask&lt;T&gt;.</summary>
     template <typename T>
-    ObjectInstance* DoValueTask(const CallState& ctx, std::function<void(AsyncValueScope<T>&)> work);
+    ObjectInstance* DoValueTask(const CallState& ctx, std::function<void(AsyncValueScope<T>)> work);
 
     /// <summary>Return an already-completed async.Task.</summary>
     SHARD_API ObjectInstance* CompletedTask(const CallState& ctx);

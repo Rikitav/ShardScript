@@ -1,0 +1,79 @@
+using stdio;
+using io;
+using async;
+
+namespace memory_stream_test;
+
+public class Program
+{
+    public static async func Run() -> Task
+    {
+        // Write and read back through a MemoryStream.
+        ms := new MemoryStream();
+
+        input: byte[] = [72 as byte, 101 as byte, 108 as byte, 108 as byte, 111 as byte];
+        ms.Write(input, 0, 5);
+
+        if (ms.Length != 5)
+        {
+            println("Expected length 5, got " + ms.Length);
+            throw new RuntimeException();
+        }
+
+        ms.Position = 0;
+        buffer: byte[] = [0 as byte, 0 as byte, 0 as byte, 0 as byte, 0 as byte];
+        read := ms.Read(buffer, 0, 5);
+
+        if (read != 5)
+        {
+            println("Expected to read 5 bytes, got " + read);
+            throw new RuntimeException();
+        }
+
+        if (buffer[0] != 72 || buffer[1] != 101 || buffer[2] != 108 || buffer[3] != 108 || buffer[4] != 111)
+        {
+            println("MemoryStream content mismatch");
+            throw new RuntimeException();
+        }
+
+        // Seek to middle and overwrite.
+        ms.Seek(1, SeekOrigin.Begin);
+        ms.Write([65 as byte, 66 as byte], 0, 2);
+
+        ms.Position = 0;
+        read = ms.Read(buffer, 0, 5);
+        if (buffer[0] != 72 || buffer[1] != 65 || buffer[2] != 66 || buffer[3] != 108 || buffer[4] != 111)
+        {
+            println("MemoryStream seek/write mismatch");
+            throw new RuntimeException();
+        }
+
+        // ToArray round-trip.
+        snapshot := ms.ToArray();
+        if (snapshot.Length != 5)
+        {
+            println("ToArray length mismatch");
+            throw new RuntimeException();
+        }
+
+        // Async read/write.
+        ms2 := new MemoryStream();
+        await ms2.WriteAsync(input, 0, 5);
+        ms2.Position = 0;
+        buffer2: byte[] = [0 as byte, 0 as byte, 0 as byte, 0 as byte, 0 as byte];
+        readAsync := await ms2.ReadAsync(buffer2, 0, 5);
+        if (readAsync != 5)
+        {
+            println("ReadAsync returned wrong count");
+            throw new RuntimeException();
+        }
+
+        println("memory stream ok");
+    }
+
+    public static func Main() -> void
+    {
+        task := Run();
+        Task.Wait(task);
+    }
+}
