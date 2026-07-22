@@ -48,7 +48,7 @@ include(CMake/GlobalSettingsInclude.cmake OPTIONAL)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 add_subdirectory(ShardScript)
-add_subdirectory(test_scripts/dependency_loading/libs)
+#add_subdirectory(test_scripts/dependency_loading/libs)
 add_subdirectory(ShardScript.Framework)
 add_subdirectory(ShardScript.Interpreter)
 
