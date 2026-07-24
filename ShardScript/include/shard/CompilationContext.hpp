@@ -13,6 +13,8 @@
 #include <shard/semantic/SemanticAnalyzer.hpp>
 #include <shard/compilation/LayoutGenerator.hpp>
 
+#include <utilities/LibraryLoader.hpp>
+
 #include <filesystem>
 #include <memory>
 
@@ -20,7 +22,7 @@ namespace shard
 {
 	class SHARD_API CompilationContext
 	{
-		std::vector<LibraryHandle> LibHandles;
+		std::vector<utilities::SharedLibrary> Libraries;
 		std::vector<CompilationUnitSyntax*> PendingSources;
 
 		SyntaxTree Tree;
@@ -59,6 +61,8 @@ namespace shard
 		void AddLib(const std::filesystem::path& path);
 		void AddLib(const LibraryHandle& handle);
 		void AddLibraries(const std::vector<std::filesystem::path>& paths);
+
+		void AddLib(utilities::SharedLibrary library);
 
 		void ProvideSource(shard::SourceTextProvider* source);
 
