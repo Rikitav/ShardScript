@@ -41,6 +41,8 @@
 #include <shard/compilation/ProgramVirtualImage.hpp>
 
 #include <utilities/SemanticVersion.hpp>
+#include <utilities/LibraryLoader.hpp>
+#include <utilities/Strings.hpp>
 
 #include <string>
 #include <vector>
@@ -53,21 +55,6 @@
 #include <unordered_map>
 #include <unordered_set>
 
-// Platform-specific headers
-#if defined(_WIN32)
-	#ifndef WIN32_LEAN_AND_MEAN
-		#define WIN32_LEAN_AND_MEAN
-	#endif
-	#include <windows.h>
-#elif defined(__linux__)
-	#include <unistd.h>
-	#include <limits.h>
-	#include <dlfcn.h>
-#elif defined(__APPLE__)
-	#include <mach-o/dyld.h>
-	#include <climits>
-#endif
-
 #define SHARD_STRINGIFY_IMPL(x) #x
 #define SHARD_STRINGIFY(x) SHARD_STRINGIFY_IMPL(x)
 
@@ -78,83 +65,6 @@ typedef void (*EntryPointFunction)(CompilationContext& context);
 
 namespace
 {
-	// ========================================================================
-	// Library loading
-	// ========================================================================
-	static LibraryHandle LoadLibraryHandle(const std::filesystem::path& path)
-	{
-#ifdef _WIN32
-		HMODULE hModule = LoadLibraryW(path.c_str());
-		return hModule;
-#else
-		void* handle = dlopen(path.c_str(), RTLD_NOW);
-		if (!handle)
-			throw std::runtime_error(std::string("Failed to load library: ") + dlerror());
-		return handle;
-#endif
-	}
-
-	static void FreeLibraryHandle(LibraryHandle handle)
-	{
-#ifdef _WIN32
-		FreeLibrary((HMODULE)handle);
-#else
-		dlclose(handle);
-#endif
-	}
-
-	static void* GetLibFunction(LibraryHandle handle, const char* procName)
-	{
-#ifdef _WIN32
-		return (void*)GetProcAddress((HMODULE)handle, procName);
-#else
-		void* func = dlsym(handle, procName);
-		if (!func)
-			throw std::runtime_error(std::string("Failed to resolve symbol: ") + dlerror());
-		return func;
-#endif
-	}
-
-	static std::string WStringToUtf8(const std::wstring& wstr)
-	{
-#ifdef _WIN32
-		if (wstr.empty())
-			return {};
-
-		int size_needed = WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), (int)wstr.size(), nullptr, 0, nullptr, nullptr);
-		std::string str(size_needed, 0);
-		WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), (int)wstr.size(), &str[0], size_needed, nullptr, nullptr);
-		return str;
-#else
-		// naive fallback
-		return std::string(wstr.begin(), wstr.end());
-#endif
-	}
-
-	static std::wstring GetLastErrorAsString()
-	{
-#ifdef _WIN32
-		DWORD errorMessageID = GetLastError();
-		if (errorMessageID == 0)
-			return std::wstring();
-
-		LPWSTR messageBuffer = nullptr;
-		std::size_t size = FormatMessageW(
-			FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-			NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR)&messageBuffer, 0, NULL);
-
-		std::wstring message(messageBuffer, size);
-		LocalFree(messageBuffer);
-		return message;
-#else
-		const char* err = dlerror();
-		if (!err)
-			return std::wstring();
-		std::string errStr(err);
-		return std::wstring(errStr.begin(), errStr.end());
-#endif
-	}
-
 	// ========================================================================
 	// Library dependency resolution
 	// ========================================================================
@@ -182,16 +92,19 @@ namespace
 
     static bool TryReadLibraryMetadata(const std::filesystem::path& path, ResolvedLibrary& outLibrary)
     {
-        LibraryHandle handle = LoadLibraryHandle(path);
-        if (handle == nullptr)
-            return false;
-
-        GetMetadataFunction getMetadata = reinterpret_cast<GetMetadataFunction>(GetLibFunction(handle, SHARD_STRINGIFY(SHARDLIB_GETMETADATA_FUNCNAME)));
-        if (getMetadata == nullptr)
+        utilities::SharedLibrary library;
+        try
         {
-            FreeLibraryHandle(handle);
+            library.Load(path);
+        }
+        catch (...)
+        {
             return false;
         }
+
+        GetMetadataFunction getMetadata = library.GetFunction<GetMetadataFunction>(SHARD_STRINGIFY(SHARDLIB_GETMETADATA_FUNCNAME));
+        if (getMetadata == nullptr)
+            return false;
 
         ShardLibMetadata metadata;
         getMetadata(metadata);
@@ -215,7 +128,6 @@ namespace
             }
         }
 
-        FreeLibraryHandle(handle);
         return true;
     }
 
@@ -579,8 +491,7 @@ CompilationContext::CompilationContext()
 
 CompilationContext::~CompilationContext()
 {
-	for (LibraryHandle hLib : LibHandles)
-		FreeLibraryHandle(hLib);
+	// Libraries are unloaded automatically by the SharedLibrary destructors.
 }
 
 SyntaxTree& CompilationContext::GetSyntaxTree()
@@ -615,11 +526,7 @@ LayoutGenerator& CompilationContext::GetLayoutGenerator()
 
 void CompilationContext::AddLib(const std::filesystem::path& path)
 {
-	LibraryHandle hLib = LoadLibraryHandle(path);
-	if (hLib == nullptr)
-		throw std::runtime_error("could not load library: " + WStringToUtf8(path.wstring()));
-
-	AddLib(hLib);
+	AddLib(utilities::SharedLibrary(path));
 }
 
 void CompilationContext::AddLib(const LibraryHandle& handle)
@@ -627,20 +534,23 @@ void CompilationContext::AddLib(const LibraryHandle& handle)
 	if (handle == nullptr)
 		throw std::runtime_error("library handle is null");
 
-	LibHandles.push_back(handle);
-	EntryPointFunction entryPoint = reinterpret_cast<EntryPointFunction>(GetLibFunction(handle, "ShardLib_EntryPoint"));
+	AddLib(utilities::SharedLibrary(handle));
+}
+
+void CompilationContext::AddLib(utilities::SharedLibrary library)
+{
+	if (!library.IsLoaded())
+		throw std::runtime_error("library is not loaded");
+
+	EntryPointFunction entryPoint = library.GetFunction<EntryPointFunction>("ShardLib_EntryPoint");
 
 	if (entryPoint == nullptr)
 	{
-#ifdef _WIN32
-		char dllPath[MAX_PATH];
-		if (GetModuleFileNameA(static_cast<HMODULE>(handle), dllPath, MAX_PATH) > 0)
-		{
-			throw std::runtime_error("library \"" + std::string(dllPath) + "\" does not export ShardLib_EntryPoint");
-		}
-#endif
+		std::filesystem::path path = library.GetPath();
+		if (path.empty())
+			throw std::runtime_error("library \"<UNKNOWN>\" does not export ShardLib_EntryPoint");
 
-		throw std::runtime_error("library \"<UNKNOWN>\" does not export ShardLib_EntryPoint");
+		throw std::runtime_error("library \"" + strings::WideToUtf8(path.wstring()) + "\" does not export ShardLib_EntryPoint");
 	}
 
 	try
@@ -667,6 +577,7 @@ void CompilationContext::AddLib(const LibraryHandle& handle)
 		*/
 
 		PendingSources.clear();
+		Libraries.push_back(std::move(library));
 		ReAnalyze = false;
 	}
 	catch (const std::exception&)
