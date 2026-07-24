@@ -1,9 +1,13 @@
 #include <ShardScript.hpp>
 #include <shard/runtime/EventLoop.hpp>
-#include <shard/runtime/NativeAsync.hpp> 
+#include <shard/runtime/NativeAsync.hpp>
+#include <shard/runtime/ObjectInstance.hpp>
+
+#include <utilities/Strings.hpp>
 
 #include <algorithm>
 #include <cstdint>
+#include <cstring>
 #include <iostream>
 #include <stdexcept>
 #include <string>
@@ -36,6 +40,28 @@ static FieldSymbol* g_MemoryStream_Length = nullptr;
 static FieldSymbol* g_MemoryStream_Capacity = nullptr;
 static FieldSymbol* g_MemoryStream_Writable = nullptr;
 static FieldSymbol* g_MemoryStream_IsOpen = nullptr;
+
+// ============================================================================
+// Reader/Writer field symbols
+// ============================================================================
+
+static TypeSymbol* g_ByteArrayType = nullptr;
+
+static ClassSymbol* g_StreamReader = nullptr;
+static FieldSymbol* g_StreamReader_Stream = nullptr;
+static FieldSymbol* g_StreamReader_Disposed = nullptr;
+
+static ClassSymbol* g_StreamWriter = nullptr;
+static FieldSymbol* g_StreamWriter_Stream = nullptr;
+static FieldSymbol* g_StreamWriter_Disposed = nullptr;
+
+static ClassSymbol* g_BinaryReader = nullptr;
+static FieldSymbol* g_BinaryReader_Stream = nullptr;
+static FieldSymbol* g_BinaryReader_Disposed = nullptr;
+
+static ClassSymbol* g_BinaryWriter = nullptr;
+static FieldSymbol* g_BinaryWriter_Stream = nullptr;
+static FieldSymbol* g_BinaryWriter_Disposed = nullptr;
 
 // ============================================================================
 // Helpers
@@ -170,6 +196,201 @@ static void EnsureCapacity(ObjectInstance* instance, std::int64_t required, Garb
 
     SetBuffer(instance, newBuffer);
     SetCapacity(instance, newCapacity, gc);
+}
+
+// ============================================================================
+// Generic stream method invocation helpers
+// ============================================================================
+
+static MethodSymbol* FindMethodBySignature(TypeSymbol* type, const std::wstring& name, const std::vector<TypeSymbol*>& paramTypes)
+{
+    if (type == nullptr)
+        return nullptr;
+
+    for (MethodSymbol* method : type->Methods)
+    {
+        if (method == nullptr || method->Name != name || method->Linking != LINK_INSTANCE)
+            continue;
+        if (method->Parameters.size() != paramTypes.size())
+            continue;
+
+        bool match = true;
+        for (std::size_t i = 0; i < paramTypes.size(); ++i)
+        {
+            if (method->Parameters[i]->Type != paramTypes[i])
+            {
+                match = false;
+                break;
+            }
+        }
+        if (match)
+            return method;
+    }
+    return nullptr;
+}
+
+static MethodSymbol* FindStreamMethod(ObjectInstance* stream, const std::wstring& name, const std::vector<TypeSymbol*>& paramTypes)
+{
+    return FindMethodBySignature(const_cast<TypeSymbol*>(stream->getInfo()), name, paramTypes);
+}
+
+static std::int64_t StreamReadRaw(const CallState& context, ObjectInstance* stream, ObjectInstance* buffer, std::int64_t offset, std::int64_t count)
+{
+    MethodSymbol* method = FindStreamMethod(stream, L"Read", { g_ByteArrayType, TYPE_INT, TYPE_INT });
+    if (method == nullptr)
+        throw std::runtime_error("Stream does not support Read.");
+
+    ObjectRef s(stream);
+    ObjectRef b(buffer);
+    ObjectRef off(context.Collector.FromValue(offset));
+    ObjectRef cnt(context.Collector.FromValue(count));
+    ObjectInstance* args[] = { cnt, off, b, s };
+
+    ObjectRef result(context.Runtimer.InvokeMethod(method, args, 4));
+    return result->AsInteger();
+}
+
+static void StreamWriteRaw(const CallState& context, ObjectInstance* stream, ObjectInstance* buffer, std::int64_t offset, std::int64_t count)
+{
+    MethodSymbol* method = FindStreamMethod(stream, L"Write", { g_ByteArrayType, TYPE_INT, TYPE_INT });
+    if (method == nullptr)
+        throw std::runtime_error("Stream does not support Write.");
+
+    ObjectRef s(stream);
+    ObjectRef b(buffer);
+    ObjectRef off(context.Collector.FromValue(offset));
+    ObjectRef cnt(context.Collector.FromValue(count));
+    ObjectInstance* args[] = { cnt, off, b, s };
+
+    context.Runtimer.InvokeMethod(method, args, 4);
+}
+
+static void StreamFlushRaw(const CallState& context, ObjectInstance* stream)
+{
+    MethodSymbol* method = FindStreamMethod(stream, L"Flush", {});
+    if (method == nullptr)
+        return;
+
+    ObjectRef s(stream);
+    ObjectInstance* args[] = { s };
+    context.Runtimer.InvokeMethod(method, args, 1);
+}
+
+static void StreamDisposeRaw(const CallState& context, ObjectInstance* stream)
+{
+    MethodSymbol* method = FindStreamMethod(stream, L"Dispose", {});
+    if (method == nullptr)
+        return;
+
+    ObjectRef s(stream);
+    ObjectInstance* args[] = { s };
+    context.Runtimer.InvokeMethod(method, args, 1);
+}
+
+static void ReadBytesExact(const CallState& context, ObjectInstance* stream, ObjectInstance* buffer, std::int64_t offset, std::int64_t count)
+{
+    if (count <= 0)
+        return;
+
+    std::int64_t totalRead = 0;
+    while (totalRead < count)
+    {
+        std::int64_t read = StreamReadRaw(context, stream, buffer, offset + totalRead, count - totalRead);
+        if (read <= 0)
+            throw std::runtime_error("Unexpected end of stream.");
+        totalRead += read;
+    }
+}
+
+static void ReadBytesExact(const CallState& context, ObjectInstance* stream, ObjectInstance* buffer, std::int64_t count)
+{
+    ReadBytesExact(context, stream, buffer, 0, count);
+}
+
+static ObjectInstance* ReadBytesExact(const CallState& context, ObjectInstance* stream, std::int64_t count)
+{
+    if (count < 0)
+        throw std::runtime_error("Count cannot be negative.");
+
+    ObjectRef buffer(context.Collector.AllocateArray(TYPE_BYTE, static_cast<std::size_t>(count)));
+    ReadBytesExact(context, stream, buffer, count);
+    return buffer.Instance;
+}
+
+static void WriteBytesRaw(const CallState& context, ObjectInstance* stream, const std::uint8_t* data, std::int64_t count)
+{
+    if (count <= 0)
+        return;
+
+    ObjectRef buffer(context.Collector.AllocateArray(TYPE_BYTE, static_cast<std::size_t>(count)));
+    for (std::int64_t i = 0; i < count; ++i)
+        buffer->SetElement(static_cast<std::size_t>(i), context.Collector.FromValue(data[i]));
+
+    StreamWriteRaw(context, stream, buffer, 0, count);
+}
+
+static void WriteInt32Raw(const CallState& context, ObjectInstance* stream, std::int32_t value)
+{
+    std::uint8_t bytes[4];
+    bytes[0] = static_cast<std::uint8_t>(value & 0xFF);
+    bytes[1] = static_cast<std::uint8_t>((value >> 8) & 0xFF);
+    bytes[2] = static_cast<std::uint8_t>((value >> 16) & 0xFF);
+    bytes[3] = static_cast<std::uint8_t>((value >> 24) & 0xFF);
+    WriteBytesRaw(context, stream, bytes, 4);
+}
+
+static void WriteInt64Raw(const CallState& context, ObjectInstance* stream, std::int64_t value)
+{
+    std::uint8_t bytes[8];
+    for (int i = 0; i < 8; ++i)
+        bytes[i] = static_cast<std::uint8_t>((value >> (i * 8)) & 0xFF);
+    WriteBytesRaw(context, stream, bytes, 8);
+}
+
+static void WriteDoubleRaw(const CallState& context, ObjectInstance* stream, double value)
+{
+    std::uint8_t bytes[8];
+    std::memcpy(bytes, &value, sizeof(double));
+    WriteBytesRaw(context, stream, bytes, 8);
+}
+
+static std::int32_t ReadInt32Raw(const CallState& context, ObjectInstance* stream)
+{
+    std::uint8_t bytes[4];
+    ObjectRef buffer(context.Collector.AllocateArray(TYPE_BYTE, 4));
+    ReadBytesExact(context, stream, buffer, 4);
+    for (int i = 0; i < 4; ++i)
+        bytes[i] = buffer->GetElement(static_cast<std::size_t>(i))->AsByte();
+
+    return static_cast<std::int32_t>(bytes[0])
+        | (static_cast<std::int32_t>(bytes[1]) << 8)
+        | (static_cast<std::int32_t>(bytes[2]) << 16)
+        | (static_cast<std::int32_t>(bytes[3]) << 24);
+}
+
+static std::int64_t ReadInt64Raw(const CallState& context, ObjectInstance* stream)
+{
+    ObjectRef buffer(context.Collector.AllocateArray(TYPE_BYTE, 8));
+    ReadBytesExact(context, stream, buffer, 8);
+
+    std::int64_t value = 0;
+    for (int i = 0; i < 8; ++i)
+        value |= static_cast<std::int64_t>(buffer->GetElement(static_cast<std::size_t>(i))->AsByte()) << (i * 8);
+    return value;
+}
+
+static double ReadDoubleRaw(const CallState& context, ObjectInstance* stream)
+{
+    ObjectRef buffer(context.Collector.AllocateArray(TYPE_BYTE, 8));
+    ReadBytesExact(context, stream, buffer, 8);
+
+    std::uint8_t bytes[8];
+    for (int i = 0; i < 8; ++i)
+        bytes[i] = buffer->GetElement(static_cast<std::size_t>(i))->AsByte();
+
+    double value = 0.0;
+    std::memcpy(&value, bytes, sizeof(double));
+    return value;
 }
 
 // ============================================================================
@@ -521,6 +742,479 @@ static ObjectInstance* shard_memoryStream_FlushAsync_Cancel(const CallState& con
 }
 
 // ============================================================================
+// StreamReader / StreamWriter / BinaryReader / BinaryWriter helpers
+// ============================================================================
+
+static ObjectInstance* GetReaderStream(ObjectInstance* instance)
+{
+    return instance->GetField(g_StreamReader_Stream->SlotIndex);
+}
+
+static ObjectInstance* GetWriterStream(ObjectInstance* instance)
+{
+    return instance->GetField(g_StreamWriter_Stream->SlotIndex);
+}
+
+static ObjectInstance* GetBinaryReaderStream(ObjectInstance* instance)
+{
+    return instance->GetField(g_BinaryReader_Stream->SlotIndex);
+}
+
+static ObjectInstance* GetBinaryWriterStream(ObjectInstance* instance)
+{
+    return instance->GetField(g_BinaryWriter_Stream->SlotIndex);
+}
+
+static void EnsureReaderNotDisposed(ObjectInstance* instance)
+{
+    ObjectInstance* disposed = instance->GetField(g_StreamReader_Disposed->SlotIndex);
+    if (disposed != nullptr && disposed->AsBoolean())
+        throw std::runtime_error("Cannot access a disposed StreamReader.");
+}
+
+static void EnsureWriterNotDisposed(ObjectInstance* instance)
+{
+    ObjectInstance* disposed = instance->GetField(g_StreamWriter_Disposed->SlotIndex);
+    if (disposed != nullptr && disposed->AsBoolean())
+        throw std::runtime_error("Cannot access a disposed StreamWriter.");
+}
+
+static void EnsureBinaryReaderNotDisposed(ObjectInstance* instance)
+{
+    ObjectInstance* disposed = instance->GetField(g_BinaryReader_Disposed->SlotIndex);
+    if (disposed != nullptr && disposed->AsBoolean())
+        throw std::runtime_error("Cannot access a disposed BinaryReader.");
+}
+
+static void EnsureBinaryWriterNotDisposed(ObjectInstance* instance)
+{
+    ObjectInstance* disposed = instance->GetField(g_BinaryWriter_Disposed->SlotIndex);
+    if (disposed != nullptr && disposed->AsBoolean())
+        throw std::runtime_error("Cannot access a disposed BinaryWriter.");
+}
+
+// ============================================================================
+// StreamReader
+// ============================================================================
+
+static ObjectInstance* shard_streamReader_Init(const CallState& context) noexcept(false)
+{
+    ObjectInstance* instance = context.Args[0];
+    ObjectInstance* stream = context.Args[1];
+
+    instance->SetField(g_StreamReader_Stream->SlotIndex, stream);
+    instance->SetField(g_StreamReader_Disposed->SlotIndex, context.Collector.FromValue(false));
+    return instance;
+}
+
+static ObjectInstance* shard_streamReader_ReadLine(const CallState& context) noexcept(false)
+{
+    ObjectInstance* instance = context.Args[0];
+    EnsureReaderNotDisposed(instance);
+
+    ObjectInstance* stream = GetReaderStream(instance);
+    std::vector<std::uint8_t> accumulator;
+
+    ObjectRef byteBuffer(context.Collector.AllocateArray(TYPE_BYTE, 1));
+    while (true)
+    {
+        std::int64_t read = StreamReadRaw(context, stream, byteBuffer, 0, 1);
+        if (read == 0)
+            break;
+
+        std::uint8_t byte = byteBuffer->GetElement(0)->AsByte();
+        if (byte == '\n')
+            break;
+
+        accumulator.push_back(byte);
+    }
+
+    if (accumulator.empty())
+        return context.Collector.FromValue(std::wstring());
+
+    std::string utf8(reinterpret_cast<const char*>(accumulator.data()), accumulator.size());
+    return context.Collector.FromValue(shard::strings::Utf8ToWide(utf8));
+}
+
+static ObjectInstance* shard_streamReader_ReadToEnd(const CallState& context) noexcept(false)
+{
+    ObjectInstance* instance = context.Args[0];
+    EnsureReaderNotDisposed(instance);
+
+    ObjectInstance* stream = GetReaderStream(instance);
+    std::vector<std::uint8_t> accumulator;
+    std::uint8_t chunk[256];
+
+    while (true)
+    {
+        ObjectRef buffer(context.Collector.AllocateArray(TYPE_BYTE, 256));
+        std::int64_t read = StreamReadRaw(context, stream, buffer, 0, 256);
+        if (read <= 0)
+            break;
+
+        for (std::int64_t i = 0; i < read; ++i)
+            accumulator.push_back(buffer->GetElement(static_cast<std::size_t>(i))->AsByte());
+    }
+
+    if (accumulator.empty())
+        return context.Collector.FromValue(std::wstring());
+
+    std::string utf8(reinterpret_cast<const char*>(accumulator.data()), accumulator.size());
+    return context.Collector.FromValue(shard::strings::Utf8ToWide(utf8));
+}
+
+static ObjectInstance* shard_streamReader_Read(const CallState& context) noexcept(false)
+{
+    ObjectInstance* instance = context.Args[0];
+    EnsureReaderNotDisposed(instance);
+
+    ObjectInstance* stream = GetReaderStream(instance);
+    ObjectRef byteBuffer(context.Collector.AllocateArray(TYPE_BYTE, 4));
+
+    std::int64_t firstRead = StreamReadRaw(context, stream, byteBuffer, 0, 1);
+    if (firstRead == 0)
+        return context.Collector.FromValue(static_cast<std::int64_t>(-1));
+
+    std::uint8_t first = byteBuffer->GetElement(0)->AsByte();
+    int extraBytes = 0;
+    if ((first & 0x80) == 0)
+        extraBytes = 0;
+    else if ((first & 0xE0) == 0xC0)
+        extraBytes = 1;
+    else if ((first & 0xF0) == 0xE0)
+        extraBytes = 2;
+    else if ((first & 0xF8) == 0xF0)
+        extraBytes = 3;
+    else
+        throw std::runtime_error("Invalid UTF-8 sequence.");
+
+    if (extraBytes > 0)
+        ReadBytesExact(context, stream, byteBuffer, 1, extraBytes);
+
+
+    std::uint8_t bytes[4] = { first, 0, 0, 0 };
+    for (int i = 0; i < extraBytes; ++i)
+        bytes[i + 1] = byteBuffer->GetElement(static_cast<std::size_t>(i + 1))->AsByte();
+
+    std::string utf8(reinterpret_cast<const char*>(bytes), extraBytes + 1);
+    std::wstring wide = shard::strings::Utf8ToWide(utf8);
+    if (wide.empty())
+        return context.Collector.FromValue(static_cast<std::int64_t>(-1));
+
+    return context.Collector.FromValue(static_cast<std::int64_t>(wide[0]));
+}
+
+static ObjectInstance* shard_streamReader_Close(const CallState& context) noexcept(false)
+{
+    ObjectInstance* instance = context.Args[0];
+    EnsureReaderNotDisposed(instance);
+
+    ObjectInstance* stream = GetReaderStream(instance);
+    StreamDisposeRaw(context, stream);
+    instance->SetField(g_StreamReader_Disposed->SlotIndex, context.Collector.FromValue(true));
+    return nullptr;
+}
+
+static ObjectInstance* shard_streamReader_Dispose(const CallState& context) noexcept(false)
+{
+    return shard_streamReader_Close(context);
+}
+
+// ============================================================================
+// StreamWriter
+// ============================================================================
+
+static ObjectInstance* shard_streamWriter_Init(const CallState& context) noexcept(false)
+{
+    ObjectInstance* instance = context.Args[0];
+    ObjectInstance* stream = context.Args[1];
+
+    instance->SetField(g_StreamWriter_Stream->SlotIndex, stream);
+    instance->SetField(g_StreamWriter_Disposed->SlotIndex, context.Collector.FromValue(false));
+    return instance;
+}
+
+static ObjectInstance* shard_streamWriter_Write(const CallState& context) noexcept(false)
+{
+    ObjectInstance* instance = context.Args[0];
+    EnsureWriterNotDisposed(instance);
+
+    ObjectInstance* stream = GetWriterStream(instance);
+    const wchar_t* str = context.Args[1]->AsString();
+    if (str == nullptr)
+        return nullptr;
+
+    std::string utf8 = shard::strings::WideToUtf8(str);
+    if (!utf8.empty())
+        WriteBytesRaw(context, stream, reinterpret_cast<const std::uint8_t*>(utf8.data()), static_cast<std::int64_t>(utf8.size()));
+
+    return nullptr;
+}
+
+static ObjectInstance* shard_streamWriter_WriteLine(const CallState& context) noexcept(false)
+{
+    ObjectInstance* instance = context.Args[0];
+    shard_streamWriter_Write(context);
+
+    ObjectInstance* stream = GetWriterStream(instance);
+    static const std::uint8_t newline = '\n';
+    WriteBytesRaw(context, stream, &newline, 1);
+    return nullptr;
+}
+
+static ObjectInstance* shard_streamWriter_Flush(const CallState& context) noexcept(false)
+{
+    ObjectInstance* instance = context.Args[0];
+    EnsureWriterNotDisposed(instance);
+
+    StreamFlushRaw(context, GetWriterStream(instance));
+    return nullptr;
+}
+
+static ObjectInstance* shard_streamWriter_Close(const CallState& context) noexcept(false)
+{
+    ObjectInstance* instance = context.Args[0];
+    EnsureWriterNotDisposed(instance);
+
+    ObjectInstance* stream = GetWriterStream(instance);
+    StreamFlushRaw(context, stream);
+    StreamDisposeRaw(context, stream);
+    instance->SetField(g_StreamWriter_Disposed->SlotIndex, context.Collector.FromValue(true));
+    return nullptr;
+}
+
+static ObjectInstance* shard_streamWriter_Dispose(const CallState& context) noexcept(false)
+{
+    return shard_streamWriter_Close(context);
+}
+
+// ============================================================================
+// BinaryReader
+// ============================================================================
+
+static ObjectInstance* shard_binaryReader_Init(const CallState& context) noexcept(false)
+{
+    ObjectInstance* instance = context.Args[0];
+    ObjectInstance* stream = context.Args[1];
+
+    instance->SetField(g_BinaryReader_Stream->SlotIndex, stream);
+    instance->SetField(g_BinaryReader_Disposed->SlotIndex, context.Collector.FromValue(false));
+    return instance;
+}
+
+static ObjectInstance* shard_binaryReader_ReadBoolean(const CallState& context) noexcept(false)
+{
+    ObjectInstance* instance = context.Args[0];
+    EnsureBinaryReaderNotDisposed(instance);
+
+    ObjectRef buffer(context.Collector.AllocateArray(TYPE_BYTE, 1));
+    ReadBytesExact(context, GetBinaryReaderStream(instance), buffer, 1);
+    return context.Collector.FromValue(buffer->GetElement(0)->AsByte() != 0);
+}
+
+static ObjectInstance* shard_binaryReader_ReadByte(const CallState& context) noexcept(false)
+{
+    ObjectInstance* instance = context.Args[0];
+    EnsureBinaryReaderNotDisposed(instance);
+
+    ObjectRef buffer(context.Collector.AllocateArray(TYPE_BYTE, 1));
+    ReadBytesExact(context, GetBinaryReaderStream(instance), buffer, 1);
+    return context.Collector.FromValue(buffer->GetElement(0)->AsByte());
+}
+
+static ObjectInstance* shard_binaryReader_ReadInt32(const CallState& context) noexcept(false)
+{
+    ObjectInstance* instance = context.Args[0];
+    EnsureBinaryReaderNotDisposed(instance);
+    return context.Collector.FromValue(static_cast<std::int64_t>(ReadInt32Raw(context, GetBinaryReaderStream(instance))));
+}
+
+static ObjectInstance* shard_binaryReader_ReadInt64(const CallState& context) noexcept(false)
+{
+    ObjectInstance* instance = context.Args[0];
+    EnsureBinaryReaderNotDisposed(instance);
+    return context.Collector.FromValue(ReadInt64Raw(context, GetBinaryReaderStream(instance)));
+}
+
+static ObjectInstance* shard_binaryReader_ReadDouble(const CallState& context) noexcept(false)
+{
+    ObjectInstance* instance = context.Args[0];
+    EnsureBinaryReaderNotDisposed(instance);
+    return context.Collector.FromValue(ReadDoubleRaw(context, GetBinaryReaderStream(instance)));
+}
+
+static ObjectInstance* shard_binaryReader_ReadString(const CallState& context) noexcept(false)
+{
+    ObjectInstance* instance = context.Args[0];
+    EnsureBinaryReaderNotDisposed(instance);
+
+    ObjectInstance* stream = GetBinaryReaderStream(instance);
+    std::int32_t length = ReadInt32Raw(context, stream);
+    if (length < 0)
+        throw std::runtime_error("Invalid string length in binary stream.");
+    if (length == 0)
+        return context.Collector.FromValue(std::wstring());
+
+    ObjectRef bytes(ReadBytesExact(context, stream, length));
+    std::string utf8;
+    utf8.reserve(length);
+    for (std::int32_t i = 0; i < length; ++i)
+        utf8.push_back(static_cast<char>(bytes->GetElement(static_cast<std::size_t>(i))->AsByte()));
+
+    return context.Collector.FromValue(shard::strings::Utf8ToWide(utf8));
+}
+
+static ObjectInstance* shard_binaryReader_ReadBytes(const CallState& context) noexcept(false)
+{
+    ObjectInstance* instance = context.Args[0];
+    EnsureBinaryReaderNotDisposed(instance);
+
+    std::int64_t count = context.Args[1]->AsInteger();
+    return ReadBytesExact(context, GetBinaryReaderStream(instance), count);
+}
+
+static ObjectInstance* shard_binaryReader_Close(const CallState& context) noexcept(false)
+{
+    ObjectInstance* instance = context.Args[0];
+    EnsureBinaryReaderNotDisposed(instance);
+
+    ObjectInstance* stream = GetBinaryReaderStream(instance);
+    StreamDisposeRaw(context, stream);
+    instance->SetField(g_BinaryReader_Disposed->SlotIndex, context.Collector.FromValue(true));
+    return nullptr;
+}
+
+static ObjectInstance* shard_binaryReader_Dispose(const CallState& context) noexcept(false)
+{
+    return shard_binaryReader_Close(context);
+}
+
+// ============================================================================
+// BinaryWriter
+// ============================================================================
+
+static ObjectInstance* shard_binaryWriter_Init(const CallState& context) noexcept(false)
+{
+    ObjectInstance* instance = context.Args[0];
+    ObjectInstance* stream = context.Args[1];
+
+    instance->SetField(g_BinaryWriter_Stream->SlotIndex, stream);
+    instance->SetField(g_BinaryWriter_Disposed->SlotIndex, context.Collector.FromValue(false));
+    return instance;
+}
+
+static ObjectInstance* shard_binaryWriter_WriteBoolean(const CallState& context) noexcept(false)
+{
+    ObjectInstance* instance = context.Args[0];
+    EnsureBinaryWriterNotDisposed(instance);
+
+    bool value = context.Args[1]->AsBoolean();
+    std::uint8_t byte = value ? 1 : 0;
+    WriteBytesRaw(context, GetBinaryWriterStream(instance), &byte, 1);
+    return nullptr;
+}
+
+static ObjectInstance* shard_binaryWriter_WriteByte(const CallState& context) noexcept(false)
+{
+    ObjectInstance* instance = context.Args[0];
+    EnsureBinaryWriterNotDisposed(instance);
+
+    std::uint8_t value = static_cast<std::uint8_t>(context.Args[1]->AsByte());
+    WriteBytesRaw(context, GetBinaryWriterStream(instance), &value, 1);
+    return nullptr;
+}
+
+static ObjectInstance* shard_binaryWriter_WriteInt32(const CallState& context) noexcept(false)
+{
+    ObjectInstance* instance = context.Args[0];
+    EnsureBinaryWriterNotDisposed(instance);
+
+    std::int32_t value = static_cast<std::int32_t>(context.Args[1]->AsInteger());
+    WriteInt32Raw(context, GetBinaryWriterStream(instance), value);
+    return nullptr;
+}
+
+static ObjectInstance* shard_binaryWriter_WriteInt64(const CallState& context) noexcept(false)
+{
+    ObjectInstance* instance = context.Args[0];
+    EnsureBinaryWriterNotDisposed(instance);
+
+    std::int64_t value = context.Args[1]->AsInteger();
+    WriteInt64Raw(context, GetBinaryWriterStream(instance), value);
+    return nullptr;
+}
+
+static ObjectInstance* shard_binaryWriter_WriteDouble(const CallState& context) noexcept(false)
+{
+    ObjectInstance* instance = context.Args[0];
+    EnsureBinaryWriterNotDisposed(instance);
+
+    double value = context.Args[1]->AsDouble();
+    WriteDoubleRaw(context, GetBinaryWriterStream(instance), value);
+    return nullptr;
+}
+
+static ObjectInstance* shard_binaryWriter_WriteString(const CallState& context) noexcept(false)
+{
+    ObjectInstance* instance = context.Args[0];
+    EnsureBinaryWriterNotDisposed(instance);
+
+    ObjectInstance* stream = GetBinaryWriterStream(instance);
+    const wchar_t* str = context.Args[1]->AsString();
+    if (str == nullptr)
+    {
+        WriteInt32Raw(context, stream, 0);
+        return nullptr;
+    }
+
+    std::string utf8 = shard::strings::WideToUtf8(str);
+    std::int32_t length = static_cast<std::int32_t>(utf8.size());
+    WriteInt32Raw(context, stream, length);
+    if (length > 0)
+        WriteBytesRaw(context, stream, reinterpret_cast<const std::uint8_t*>(utf8.data()), length);
+
+    return nullptr;
+}
+
+static ObjectInstance* shard_binaryWriter_WriteBytes(const CallState& context) noexcept(false)
+{
+    ObjectInstance* instance = context.Args[0];
+    EnsureBinaryWriterNotDisposed(instance);
+
+    ObjectInstance* stream = GetBinaryWriterStream(instance);
+    ObjectInstance* bytes = context.Args[1];
+    std::int64_t length = static_cast<std::int64_t>(bytes->GetArrayLength());
+    StreamWriteRaw(context, stream, bytes, 0, length);
+    return nullptr;
+}
+
+static ObjectInstance* shard_binaryWriter_Flush(const CallState& context) noexcept(false)
+{
+    ObjectInstance* instance = context.Args[0];
+    EnsureBinaryWriterNotDisposed(instance);
+
+    StreamFlushRaw(context, GetBinaryWriterStream(instance));
+    return nullptr;
+}
+
+static ObjectInstance* shard_binaryWriter_Close(const CallState& context) noexcept(false)
+{
+    ObjectInstance* instance = context.Args[0];
+    EnsureBinaryWriterNotDisposed(instance);
+
+    ObjectInstance* stream = GetBinaryWriterStream(instance);
+    StreamFlushRaw(context, stream);
+    StreamDisposeRaw(context, stream);
+    instance->SetField(g_BinaryWriter_Disposed->SlotIndex, context.Collector.FromValue(true));
+    return nullptr;
+}
+
+static ObjectInstance* shard_binaryWriter_Dispose(const CallState& context) noexcept(false)
+{
+    return shard_binaryWriter_Close(context);
+}
+
+// ============================================================================
 // Library metadata
 // ============================================================================
 
@@ -549,6 +1243,7 @@ SHARDLIB_ENTRYPOINT
 
     SymbolFactory factory(context.GetSemanticModel().Table.get());
     TypeSymbol* byteArrayType = factory.Array(TYPE_BYTE);
+    g_ByteArrayType = byteArrayType;
 
     GenericTypeSymbol* valueTaskOfInt = factory.GenericType(CLASS_VALUETASK, { { L"T", TYPE_INT } });
 
@@ -784,5 +1479,190 @@ SHARDLIB_ENTRYPOINT
             .SetCallback(&shard_memoryStream_Capacity_set);
 
         memoryStreamClass.DeclareGlobal();
+    }
+
+    // ------------------------------------------------------------------------
+    // class StreamReader
+    // ------------------------------------------------------------------------
+    {
+        SymbolBuilder<ClassSymbol> streamReaderClass = ioNamespace.AddClass(L"StreamReader");
+        g_StreamReader = streamReaderClass;
+        streamReaderClass.Implements(TRAIT_DISPOSABLE);
+
+        g_StreamReader_Stream = streamReaderClass
+            .AddField(L"_stream", g_IReadableStream, LINK_INSTANCE, ACS_PRIVATE);
+
+        g_StreamReader_Disposed = streamReaderClass
+            .AddField(L"_disposed", TYPE_BOOL, LINK_INSTANCE, ACS_PRIVATE);
+
+        streamReaderClass.AddInit()
+            .AddParameter(L"stream", g_IReadableStream)
+            .SetCallback(&shard_streamReader_Init);
+
+        streamReaderClass.AddMethod(L"ReadLine", TYPE_STRING, LINK_INSTANCE)
+            .SetCallback(&shard_streamReader_ReadLine);
+
+        streamReaderClass.AddMethod(L"ReadToEnd", TYPE_STRING, LINK_INSTANCE)
+            .SetCallback(&shard_streamReader_ReadToEnd);
+
+        streamReaderClass.AddMethod(L"Read", TYPE_INT, LINK_INSTANCE)
+            .SetCallback(&shard_streamReader_Read);
+
+        streamReaderClass.AddMethod(L"Close", TYPE_VOID, LINK_INSTANCE)
+            .SetCallback(&shard_streamReader_Close);
+
+        streamReaderClass.AddMethod(L"Dispose", TYPE_VOID, LINK_INSTANCE)
+            .SetCallback(&shard_streamReader_Dispose);
+
+        streamReaderClass.DeclareGlobal();
+    }
+
+    // ------------------------------------------------------------------------
+    // class StreamWriter
+    // ------------------------------------------------------------------------
+    {
+        SymbolBuilder<ClassSymbol> streamWriterClass = ioNamespace.AddClass(L"StreamWriter");
+        g_StreamWriter = streamWriterClass;
+        streamWriterClass.Implements(TRAIT_DISPOSABLE);
+
+        g_StreamWriter_Stream = streamWriterClass
+            .AddField(L"_stream", g_IWritableStream, LINK_INSTANCE, ACS_PRIVATE);
+
+        g_StreamWriter_Disposed = streamWriterClass
+            .AddField(L"_disposed", TYPE_BOOL, LINK_INSTANCE, ACS_PRIVATE);
+
+        streamWriterClass.AddInit()
+            .AddParameter(L"stream", g_IWritableStream)
+            .SetCallback(&shard_streamWriter_Init);
+
+        streamWriterClass.AddMethod(L"Write", TYPE_VOID, LINK_INSTANCE)
+            .AddParameter(L"value", TYPE_STRING)
+            .SetCallback(&shard_streamWriter_Write);
+
+        streamWriterClass.AddMethod(L"WriteLine", TYPE_VOID, LINK_INSTANCE)
+            .AddParameter(L"value", TYPE_STRING)
+            .SetCallback(&shard_streamWriter_WriteLine);
+
+        streamWriterClass.AddMethod(L"Flush", TYPE_VOID, LINK_INSTANCE)
+            .SetCallback(&shard_streamWriter_Flush);
+
+        streamWriterClass.AddMethod(L"Close", TYPE_VOID, LINK_INSTANCE)
+            .SetCallback(&shard_streamWriter_Close);
+
+        streamWriterClass.AddMethod(L"Dispose", TYPE_VOID, LINK_INSTANCE)
+            .SetCallback(&shard_streamWriter_Dispose);
+
+        streamWriterClass.DeclareGlobal();
+    }
+
+    // ------------------------------------------------------------------------
+    // class BinaryReader
+    // ------------------------------------------------------------------------
+    {
+        SymbolBuilder<ClassSymbol> binaryReaderClass = ioNamespace.AddClass(L"BinaryReader");
+        g_BinaryReader = binaryReaderClass;
+        binaryReaderClass.Implements(TRAIT_DISPOSABLE);
+
+        g_BinaryReader_Stream = binaryReaderClass
+            .AddField(L"_stream", g_IReadableStream, LINK_INSTANCE, ACS_PRIVATE);
+
+        g_BinaryReader_Disposed = binaryReaderClass
+            .AddField(L"_disposed", TYPE_BOOL, LINK_INSTANCE, ACS_PRIVATE);
+
+        binaryReaderClass.AddInit()
+            .AddParameter(L"stream", g_IReadableStream)
+            .SetCallback(&shard_binaryReader_Init);
+
+        binaryReaderClass.AddMethod(L"ReadBoolean", TYPE_BOOL, LINK_INSTANCE)
+            .SetCallback(&shard_binaryReader_ReadBoolean);
+
+        binaryReaderClass.AddMethod(L"ReadByte", TYPE_BYTE, LINK_INSTANCE)
+            .SetCallback(&shard_binaryReader_ReadByte);
+
+        binaryReaderClass.AddMethod(L"ReadInt32", TYPE_INT, LINK_INSTANCE)
+            .SetCallback(&shard_binaryReader_ReadInt32);
+
+        binaryReaderClass.AddMethod(L"ReadInt64", TYPE_INT, LINK_INSTANCE)
+            .SetCallback(&shard_binaryReader_ReadInt64);
+
+        binaryReaderClass.AddMethod(L"ReadDouble", TYPE_DOUBLE, LINK_INSTANCE)
+            .SetCallback(&shard_binaryReader_ReadDouble);
+
+        binaryReaderClass.AddMethod(L"ReadString", TYPE_STRING, LINK_INSTANCE)
+            .SetCallback(&shard_binaryReader_ReadString);
+
+        binaryReaderClass.AddMethod(L"ReadBytes", byteArrayType, LINK_INSTANCE)
+            .AddParameter(L"count", TYPE_INT)
+            .SetCallback(&shard_binaryReader_ReadBytes);
+
+        binaryReaderClass.AddMethod(L"Close", TYPE_VOID, LINK_INSTANCE)
+            .SetCallback(&shard_binaryReader_Close);
+
+        binaryReaderClass.AddMethod(L"Dispose", TYPE_VOID, LINK_INSTANCE)
+            .SetCallback(&shard_binaryReader_Dispose);
+
+        binaryReaderClass.DeclareGlobal();
+    }
+
+    // ------------------------------------------------------------------------
+    // class BinaryWriter
+    // ------------------------------------------------------------------------
+    {
+        SymbolBuilder<ClassSymbol> binaryWriterClass = ioNamespace.AddClass(L"BinaryWriter");
+        g_BinaryWriter = binaryWriterClass;
+        binaryWriterClass.Implements(TRAIT_DISPOSABLE);
+
+        g_BinaryWriter_Stream = binaryWriterClass
+            .AddField(L"_stream", g_IWritableStream, LINK_INSTANCE, ACS_PRIVATE);
+
+        g_BinaryWriter_Disposed = binaryWriterClass
+            .AddField(L"_disposed", TYPE_BOOL, LINK_INSTANCE, ACS_PRIVATE);
+
+        binaryWriterClass.AddInit()
+            .AddParameter(L"stream", g_IWritableStream)
+            .SetCallback(&shard_binaryWriter_Init);
+
+        binaryWriterClass.AddMethod(L"Write", TYPE_VOID, LINK_INSTANCE)
+            .AddParameter(L"value", TYPE_BOOL)
+            .SetCallback(&shard_binaryWriter_WriteBoolean);
+
+        binaryWriterClass.AddMethod(L"Write", TYPE_VOID, LINK_INSTANCE)
+            .AddParameter(L"value", TYPE_BYTE)
+            .SetCallback(&shard_binaryWriter_WriteByte);
+
+        binaryWriterClass.AddMethod(L"Write", TYPE_VOID, LINK_INSTANCE)
+            .AddParameter(L"value", TYPE_INT)
+            .SetCallback(&shard_binaryWriter_WriteInt64);
+
+        binaryWriterClass.AddMethod(L"WriteInt32", TYPE_VOID, LINK_INSTANCE)
+            .AddParameter(L"value", TYPE_INT)
+            .SetCallback(&shard_binaryWriter_WriteInt32);
+
+        binaryWriterClass.AddMethod(L"WriteInt64", TYPE_VOID, LINK_INSTANCE)
+            .AddParameter(L"value", TYPE_INT)
+            .SetCallback(&shard_binaryWriter_WriteInt64);
+
+        binaryWriterClass.AddMethod(L"Write", TYPE_VOID, LINK_INSTANCE)
+            .AddParameter(L"value", TYPE_DOUBLE)
+            .SetCallback(&shard_binaryWriter_WriteDouble);
+
+        binaryWriterClass.AddMethod(L"Write", TYPE_VOID, LINK_INSTANCE)
+            .AddParameter(L"value", TYPE_STRING)
+            .SetCallback(&shard_binaryWriter_WriteString);
+
+        binaryWriterClass.AddMethod(L"Write", TYPE_VOID, LINK_INSTANCE)
+            .AddParameter(L"value", byteArrayType)
+            .SetCallback(&shard_binaryWriter_WriteBytes);
+
+        binaryWriterClass.AddMethod(L"Flush", TYPE_VOID, LINK_INSTANCE)
+            .SetCallback(&shard_binaryWriter_Flush);
+
+        binaryWriterClass.AddMethod(L"Close", TYPE_VOID, LINK_INSTANCE)
+            .SetCallback(&shard_binaryWriter_Close);
+
+        binaryWriterClass.AddMethod(L"Dispose", TYPE_VOID, LINK_INSTANCE)
+            .SetCallback(&shard_binaryWriter_Dispose);
+
+        binaryWriterClass.DeclareGlobal();
     }
 }

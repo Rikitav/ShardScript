@@ -1,0 +1,151 @@
+using stdio;
+using io;
+using async;
+
+namespace reader_writer_test;
+
+public class Program
+{
+    public static async func Run() -> Task
+    {
+        // ------------------------------------------------------------------
+        // StreamReader / StreamWriter over MemoryStream
+        // ------------------------------------------------------------------
+        ms := new MemoryStream();
+        writer := new StreamWriter(ms);
+        writer.WriteLine("hello");
+        writer.WriteLine("world");
+        writer.Flush();
+
+        ms.Position = 0;
+        reader := new StreamReader(ms);
+        line1 := reader.ReadLine();
+        line2 := reader.ReadLine();
+        rest := reader.ReadLine();
+
+        if (line1 != "hello")
+        {
+            println("Expected 'hello', got '" + line1 + "'");
+            throw new RuntimeException();
+        }
+        if (line2 != "world")
+        {
+            println("Expected 'world', got '" + line2 + "'");
+            throw new RuntimeException();
+        }
+        if (rest != "")
+        {
+            println("Expected empty string at EOF, got '" + rest + "'");
+            throw new RuntimeException();
+        }
+
+        // ReadToEnd on a fresh MemoryStream.
+        ms2 := new MemoryStream();
+        writer2 := new StreamWriter(ms2);
+        writer2.Write("alpha");
+        writer2.WriteLine(" beta");
+        writer2.Flush();
+        ms2.Position = 0;
+        reader2 := new StreamReader(ms2);
+        all := reader2.ReadToEnd();
+        if (all != "alpha beta\n")
+        {
+            println("ReadToEnd mismatch: '" + all + "'");
+            throw new RuntimeException();
+        }
+
+        // Read single UTF-8 codepoint.
+        ms3 := new MemoryStream();
+        writer3 := new StreamWriter(ms3);
+        writer3.Write("A");
+        writer3.Flush();
+        ms3.Position = 0;
+        reader3 := new StreamReader(ms3);
+        cp := reader3.Read();
+        if (cp != 65)
+        {
+            println("Expected codepoint 65, got " + cp);
+            throw new RuntimeException();
+        }
+        eof := reader3.Read();
+        if (eof != -1)
+        {
+            println("Expected EOF -1, got " + eof);
+            throw new RuntimeException();
+        }
+
+        // ------------------------------------------------------------------
+        // BinaryReader / BinaryWriter over MemoryStream
+        // ------------------------------------------------------------------
+        binMs := new MemoryStream();
+        bw := new BinaryWriter(binMs);
+        bw.Write(true);
+        bw.Write(42 as byte);
+        bw.WriteInt32(12345);
+        bw.Write(9876543210);
+        bw.Write(3.14159);
+        bw.Write("shard");
+        payload: byte[] = [10 as byte, 20 as byte, 30 as byte];
+        bw.Write(payload);
+        bw.Flush();
+
+        binMs.Position = 0;
+        br := new BinaryReader(binMs);
+        if (br.ReadBoolean() != true)
+        {
+            println("Boolean mismatch");
+            throw new RuntimeException();
+        }
+        if (br.ReadByte() != (42 as byte))
+        {
+            println("Byte mismatch");
+            throw new RuntimeException();
+        }
+        if (br.ReadInt32() != 12345)
+        {
+            println("Int32 mismatch");
+            throw new RuntimeException();
+        }
+        if (br.ReadInt64() != 9876543210)
+        {
+            println("Int64 mismatch");
+            throw new RuntimeException();
+        }
+        d := br.ReadDouble();
+        if (d < 3.14158 || d > 3.14160)
+        {
+            println("Double mismatch: " + d);
+            throw new RuntimeException();
+        }
+        s := br.ReadString();
+        if (s != "shard")
+        {
+            println("String mismatch: '" + s + "'");
+            throw new RuntimeException();
+        }
+        readBytes := br.ReadBytes(3);
+        if (readBytes.Length != 3 || readBytes[0] != (10 as byte) || readBytes[1] != (20 as byte) || readBytes[2] != (30 as byte))
+        {
+            println("Byte[] mismatch");
+            throw new RuntimeException();
+        }
+
+        // Dispose wrappers and verify streams are closed.
+        reader.Dispose();
+        writer.Dispose();
+        reader2.Dispose();
+        writer2.Dispose();
+        reader3.Dispose();
+        writer3.Dispose();
+        br.Dispose();
+        bw.Dispose();
+
+        println("reader/writer ok");
+    }
+
+    public static func Main() -> void
+    {
+        task := Run();
+        Task.Wait(task);
+    }
+}
