@@ -4,7 +4,7 @@
 **ShardScript** is an embeddable, scripting, compiled, programming language with strict static typing, developed in C++. The project features a custom lexer/parser, semantic analyzer, bytecode compiler, stack virtual machine, and a standard library framework.
 
 ## Check out my Website!
-[ShardScript.ru](https://ShardScript.ru)
+[ShardScript-Info](https://shardscript-lang.github.io/shardscript-info)
 
 ## 📋 Specifications
 
