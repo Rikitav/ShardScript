@@ -367,12 +367,24 @@ namespace
 // class FileInfo
 // ============================================================================
 
-static ObjectInstance* shard_fileInfo_Init(const CallState& context) noexcept(false)
+static ObjectInstance* shard_fileInfo_Init_path(const CallState& context) noexcept(false)
 {
     ObjectInstance* instance = context.Args[0];
     ObjectInstance* fullPath = context.Args[1];
 
     instance->SetField(shard_FileInfo_FullNameBackingField->SlotIndex, fullPath);
+    return instance;
+}
+
+static ObjectInstance* shard_fileInfo_Init_directory_name(const CallState& context) noexcept(false)
+{
+    ObjectInstance* instance = context.Args[0];
+    ObjectInstance* directory = context.Args[1];
+    ObjectInstance* name = context.Args[2];
+
+    ObjectInstance* fullName = instance->GetField(shard_DirectoryInfo_FullNameBackingField->SlotIndex);
+    std::wstring args[] = { fullName->AsString(), name->AsString() };
+    instance->SetField(shard_FileInfo_FullNameBackingField->SlotIndex, context.Collector.FromValue(pathJoin(args)));
     return instance;
 }
 
@@ -1463,6 +1475,16 @@ SHARDLIB_ENTRYPOINT
         .AddGetter()
             .SetCallback(&shard_directoryinfo_Exists_get);
 
+    dirInfoClass.AddOperator(TokenType::DivOperator, shard_DirectoryInfo, LINK_STATIC)
+        .AddParameter(L"left", shard_DirectoryInfo)
+        .AddParameter(L"right", TYPE_STRING)
+        .SetCallback(&shard_string_op_div_directoryinfo_string);
+
+    dirInfoClass.AddOperator(TokenType::DivOperator, shard_FileInfo, LINK_STATIC)
+        .AddParameter(L"left", shard_DirectoryInfo)
+        .AddParameter(L"right", TYPE_STRING)
+        .SetCallback(&shard_directoryinfo_op_div_directoryinfo_fileinfo);
+
     // --- class FileInfo ---
     SymbolBuilder<ClassSymbol> fileInfoClass = fsNamespace.AddClass(L"FileInfo");
     shard_FileInfo = fileInfoClass;
@@ -1479,7 +1501,12 @@ SHARDLIB_ENTRYPOINT
 
     fileInfoClass.AddInit()
         .AddParameter(L"path", TYPE_STRING)
-        .SetCallback(&shard_fileInfo_Init);
+        .SetCallback(&shard_fileInfo_Init_path);
+
+    fileInfoClass.AddInit()
+        .AddParameter(L"directory", dirInfoClass)
+        .AddParameter(L"name", TYPE_STRING)
+        .SetCallback(&shard_fileInfo_Init_directory_name);
 
     fileInfoClass
         .AddProperty(L"Name", TYPE_STRING, LINK_INSTANCE, ACS_PUBLIC)
@@ -1494,16 +1521,6 @@ SHARDLIB_ENTRYPOINT
     fileInfoClass
         .AddMethod(L"Delete", TYPE_VOID, LINK_INSTANCE)
         .SetCallback(&shard_fileinfo_Delete);
-
-    dirInfoClass.AddOperator(TokenType::DivOperator, shard_DirectoryInfo, LINK_STATIC)
-        .AddParameter(L"left", shard_DirectoryInfo)
-        .AddParameter(L"right", TYPE_STRING)
-        .SetCallback(&shard_string_op_div_directoryinfo_string);
-
-    dirInfoClass.AddOperator(TokenType::DivOperator, shard_FileInfo, LINK_STATIC)
-        .AddParameter(L"left", shard_DirectoryInfo)
-        .AddParameter(L"right", TYPE_STRING)
-        .SetCallback(&shard_directoryinfo_op_div_directoryinfo_fileinfo);
 
     // --- class Directory ---
     SymbolBuilder<ClassSymbol> directoryClass = fsNamespace.AddClass(L"Directory", LINK_STATIC);

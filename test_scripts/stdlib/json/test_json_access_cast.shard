@@ -1,0 +1,23 @@
+using stdio;
+using json;
+
+namespace json_indexer_cast_test;
+
+public static func Main() -> void
+{
+    node: JsonNode = JsonNode.Parse("{\"Name\":\"Ada\",\"Age\":36,\"Height\":1.68,\"Active\":true,\"Missing\":null}");
+
+    println("== access operator ==");
+    print("Name = "); println(node.Name as string);
+    print("Age  = "); println(node.Age as int);
+    print("Height = "); println(node.Height as double);
+    print("Active = "); println(node.Active as bool);
+
+    print("Missing is null = "); println(node.Missing.IsNull());
+    print("Missing cast int = "); println(node.Missing as int);
+
+    arr: JsonNode = JsonNode.Parse("[10,20,30]");
+    print("arr[1] = "); println(arr.At(1).AsInt());
+
+    print("Age as byte = "); println(node.Age as byte);
+}

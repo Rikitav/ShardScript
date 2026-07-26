@@ -79,7 +79,7 @@ namespace shard
 
         virtual ConstructorSymbol* FindConstructor(const std::vector<TypeSymbol*>& parameterTypes);
         virtual MethodSymbol* FindMethod(std::wstring& name, const std::vector<TypeSymbol*>& parameterTypes);
-        virtual OperatorSymbol* FindOperator(TokenType opToken, const std::vector<TypeSymbol*>& parameterTypes);
+        virtual OperatorSymbol* FindOperator(TokenType opToken, const std::vector<TypeSymbol*>& parameterTypes, TypeSymbol* expectedReturnType = nullptr);
         virtual IndexatorSymbol* FindIndexator(const std::vector<TypeSymbol*>& parameterTypes);
         virtual FieldSymbol* FindField(std::wstring& name);
         virtual PropertySymbol* FindProperty(std::wstring& name);

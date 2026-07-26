@@ -152,7 +152,7 @@ MethodSymbol* TypeSymbol::FindMethod(std::wstring& name, const std::vector<TypeS
 	return nullptr;
 }
 
-OperatorSymbol* TypeSymbol::FindOperator(TokenType opToken, const std::vector<TypeSymbol*>& parameterTypes)
+OperatorSymbol* TypeSymbol::FindOperator(TokenType opToken, const std::vector<TypeSymbol*>& parameterTypes, TypeSymbol* expectedReturnType)
 {
 	std::wstring opName = GetOperatorMethodName(opToken);
 	if (opName.empty())
@@ -164,6 +164,9 @@ OperatorSymbol* TypeSymbol::FindOperator(TokenType opToken, const std::vector<Ty
 			continue;
 
 		if (symbol->Parameters.size() != parameterTypes.size())
+			continue;
+
+		if (expectedReturnType != nullptr && symbol->ReturnType != expectedReturnType)
 			continue;
 
 		if (std::equal(symbol->Parameters.begin(), symbol->Parameters.end(), parameterTypes.begin(), paramPredicate))
