@@ -1786,6 +1786,7 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 					if (accessOp != nullptr)
 					{
 						node->ToOperator = accessOp;
+						node->IsStaticContext = false;
 						return accessOp->ReturnType;
 					}
 
@@ -4282,12 +4283,12 @@ static OperatorSymbol* FindConversionOperator(TypeSymbol* ownerType, TypeSymbol*
 	if (ownerType == nullptr || sourceType == nullptr || targetType == nullptr)
 		return nullptr;
 
-	OperatorSymbol* op = ownerType->FindOperator(TokenType::AsOperator, { sourceType });
-	if (op != nullptr && op->ReturnType == targetType)
+	OperatorSymbol* op = ownerType->FindOperator(TokenType::AsOperator, { sourceType }, targetType);
+	if (op != nullptr)
 		return op;
 
-	op = ownerType->FindOperator(TokenType::AsOperator, {});
-	if (op != nullptr && op->ReturnType == targetType)
+	op = ownerType->FindOperator(TokenType::AsOperator, {}, targetType);
+	if (op != nullptr)
 		return op;
 
 	return nullptr;

@@ -1697,6 +1697,79 @@ namespace
         return WrapDom(dom->elements[static_cast<std::size_t>(index)], context);
     }
 
+    ObjectInstance* cb_JsonNode_Access(const CallState& context)
+    {
+        ObjectInstance* wrapper = nullptr;
+        const wchar_t* key = nullptr;
+        std::int64_t keyLength = 0;
+
+        if (context.Args.size() == 1)
+        {
+            key = context.Args[0]->AsString();
+            keyLength = context.Args[0]->AsStringLength();
+        }
+        else
+        {
+            wrapper = context.Args[0];
+            key = context.Args[1]->AsString();
+            keyLength = context.Args[1]->AsStringLength();
+        }
+
+        JsonDom* dom = UnwrapDom(wrapper);
+
+        if (dom == nullptr || dom->kind != JsonKind::Object)
+        {
+            return GarbageCollector::NullInstance;
+        }
+
+        std::wstring keyStr(key, static_cast<std::size_t>(keyLength));
+
+        for (auto& pair : dom->members)
+        {
+            if (pair.first == keyStr)
+            {
+                return WrapDom(pair.second, context);
+            }
+        }
+
+        return GarbageCollector::NullInstance;
+    }
+
+    ObjectInstance* cb_JsonNode_CastInt(const CallState& context)
+    {
+        return context.Collector.FromValue(DomAsInt(UnwrapDom(context.Args[0])));
+    }
+
+    ObjectInstance* cb_JsonNode_CastDouble(const CallState& context)
+    {
+        return context.Collector.FromValue(DomAsDouble(UnwrapDom(context.Args[0])));
+    }
+
+    ObjectInstance* cb_JsonNode_CastBool(const CallState& context)
+    {
+        JsonDom* dom = UnwrapDom(context.Args[0]);
+        bool booleanValue = false;
+
+        if (dom != nullptr)
+        {
+            booleanValue = (dom->kind == JsonKind::Boolean)
+                ? dom->boolean
+                : (DomAsInt(dom) != 0);
+        }
+
+        return context.Collector.FromValue(booleanValue);
+    }
+
+    ObjectInstance* cb_JsonNode_CastString(const CallState& context)
+    {
+        return cb_JsonNode_AsString(context);
+    }
+
+    ObjectInstance* cb_JsonNode_CastByte(const CallState& context)
+    {
+        return context.Collector.FromValue(static_cast<std::uint8_t>(DomAsInt(UnwrapDom(context.Args[0]))));
+    }
+
     ObjectInstance* cb_JsonNode_Add(const CallState& context)
     {
         JsonDom* dom = UnwrapDom(context.Args[0]);
@@ -1818,4 +1891,28 @@ SHARDLIB_ENTRYPOINT
     jsonNodeClass.AddMethod(L"Add", TYPE_VOID, LINK_INSTANCE)
         .AddParameter(L"value", nodeType)
         .SetCallback(&cb_JsonNode_Add);
+
+    jsonNodeClass.AddOperator(TokenType::Delimeter, nodeType, LINK_INSTANCE)
+        .AddParameter(L"name", TYPE_STRING)
+        .SetCallback(&cb_JsonNode_Access);
+
+    jsonNodeClass.AddOperator(TokenType::AsOperator, TYPE_INT, LINK_STATIC)
+        .AddParameter(L"value", nodeType)
+        .SetCallback(&cb_JsonNode_CastInt);
+
+    jsonNodeClass.AddOperator(TokenType::AsOperator, TYPE_DOUBLE, LINK_STATIC)
+        .AddParameter(L"value", nodeType)
+        .SetCallback(&cb_JsonNode_CastDouble);
+
+    jsonNodeClass.AddOperator(TokenType::AsOperator, TYPE_BOOL, LINK_STATIC)
+        .AddParameter(L"value", nodeType)
+        .SetCallback(&cb_JsonNode_CastBool);
+
+    jsonNodeClass.AddOperator(TokenType::AsOperator, TYPE_STRING, LINK_STATIC)
+        .AddParameter(L"value", nodeType)
+        .SetCallback(&cb_JsonNode_CastString);
+
+    jsonNodeClass.AddOperator(TokenType::AsOperator, TYPE_BYTE, LINK_STATIC)
+        .AddParameter(L"value", nodeType)
+        .SetCallback(&cb_JsonNode_CastByte);
 }

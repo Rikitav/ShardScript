@@ -197,17 +197,6 @@ static ObjectInstance* cinterop_NativeLibrary_Free(const CallState& context) noe
 //  Marshal — native memory management
 // ============================================================================
 
-static ObjectInstance* cinterop_Marshal_Alloc(const CallState& context) noexcept(false)
-{
-    std::size_t size = static_cast<std::size_t>(context.Args[0]->AsInteger());
-    void* block = std::malloc(size);
-    
-    if (block == nullptr && size != 0)
-        throw std::runtime_error("interop.Marshal.Alloc: out of memory");
-
-    return context.Collector.FromNint(block, false);
-}
-
 static ObjectInstance* cinterop_Marshal_AllocZeroed(const CallState& context) noexcept(false)
 {
     std::size_t count = static_cast<std::size_t>(context.Args[0]->AsInteger());
@@ -215,7 +204,7 @@ static ObjectInstance* cinterop_Marshal_AllocZeroed(const CallState& context) no
     void* block = std::calloc(count == 0 ? 1 : count, size == 0 ? 1 : size);
 
     if (block == nullptr && (count != 0 && size != 0))
-        throw std::runtime_error("interop.Marshal.AllocZeroed: out of memory");
+        throw std::runtime_error("interop.Marshal.Alloc: out of memory");
 
     return context.Collector.FromNint(block, false);
 }
@@ -866,11 +855,6 @@ SHARDLIB_ENTRYPOINT
     SymbolBuilder<ClassSymbol> marshalClass = interopNamespace.AddClass(L"Marshal", LINK_STATIC);
 
     marshalClass.AddMethod(L"Alloc", TYPE_NINT, LINK_STATIC)
-        .AddParameter(L"size", TYPE_INT)
-        .SetCallback(&cinterop_Marshal_Alloc);
-
-    marshalClass.AddMethod(L"AllocZeroed", TYPE_NINT, LINK_STATIC)
-        .AddParameter(L"count", TYPE_INT)
         .AddParameter(L"size", TYPE_INT)
         .SetCallback(&cinterop_Marshal_AllocZeroed);
 
