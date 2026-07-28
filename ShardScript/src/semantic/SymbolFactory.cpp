@@ -1,7 +1,8 @@
+#include <shard/lexical/TokenType.hpp>
+
 #include <shard/parsing/SyntaxKind.hpp>
 #include <shard/parsing/SyntaxFacts.hpp>
 #include <shard/parsing/SyntaxToken.hpp>
-#include <shard/lexical/TokenType.hpp>
 
 #include <shard/semantic/SymbolTable.hpp>
 #include <shard/semantic/SymbolFactory.hpp>
@@ -27,11 +28,64 @@
 #include <shard/semantic/symbols/PropertySymbol.hpp>
 #include <shard/semantic/symbols/MethodSymbol.hpp>
 
+#include <shard/runtime/MethodCallState.hpp>
+
 #include <memory>
 #include <sstream>
 #include <algorithm>
 
 using namespace shard;
+
+namespace
+{
+	static bool has_flag(std::int64_t value, std::int64_t flag)
+	{
+		return (value & flag) == flag;
+	}
+
+	static ObjectInstance* primitive_enum_to_string(const CallState& context)
+	{
+		ObjectInstance* instance = context.Args[0];
+		const EnumSymbol* enumType = static_cast<const EnumSymbol*>(instance->getInfo());
+		std::int64_t value = instance->AsInteger();
+
+		if (enumType->IsFlags)
+		{
+			std::wstring result;
+
+			for (FieldSymbol* field : enumType->Fields)
+			{
+				if (field == nullptr || !field->IsEnumValue)
+					continue;
+
+				std::int64_t fieldValue = field->EnumValue;
+				if (fieldValue == 0)
+					continue;
+
+				if (has_flag(value, fieldValue))
+				{
+					if (!result.empty())
+						result += L" | ";
+
+					result += field->Name;
+				}
+			}
+
+			if (result.empty())
+				return context.Collector.FromValue(std::to_wstring(value));
+
+			return context.Collector.FromValue(result);
+		}
+
+		for (FieldSymbol* field : enumType->Fields)
+		{
+			if (field != nullptr && field->IsEnumValue && field->EnumValue == value)
+				return context.Collector.FromValue(field->Name);
+		}
+
+		return context.Collector.FromValue(std::to_wstring(value));
+	}
+}
 
 void SymbolFactory::SetAccesibility(std::vector<SyntaxToken> modifiers, SymbolAccesibility& accesibility, SymbolLinking& linking)
 {
@@ -78,11 +132,11 @@ ClassSymbol* SymbolFactory::Class(ClassDeclarationSyntax* node)
 	return static_cast<ClassSymbol*>(Table->BindSymbol(node, std::move(symbol)));
 }
 
-
 ClassSymbol* SymbolFactory::Class(const std::wstring& name)
 {
 	auto symbol = std::make_unique<ClassSymbol>(name);
 	symbol->Accesibility = SymbolAccesibility::Private;
+	
 	return static_cast<ClassSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
@@ -90,6 +144,7 @@ ClassSymbol* SymbolFactory::Class(const wchar_t* name)
 {
 	auto symbol = std::make_unique<ClassSymbol>(name);
 	symbol->Accesibility = SymbolAccesibility::Private;
+
 	return static_cast<ClassSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
@@ -100,6 +155,11 @@ EnumSymbol* SymbolFactory::Enum(EnumDeclarationSyntax* node, bool isFlags)
 	symbol->IsFlags = isFlags;
 	SetAccesibility(node->Modifiers, symbol.get()->Accesibility, symbol.get()->Linking);
 
+	static MethodSymbol* enumToStringMethod = Method(ACS_PUBLIC, LINK_INSTANCE, TYPE_STRING, L"ToString", &primitive_enum_to_string);
+	symbol->Interfaces.push_back(TRAIT_PRINTABLE);
+	symbol->InterfaceMethodMap[TRAIT_PRINTABLE_ToString] = enumToStringMethod;
+	symbol->Methods.push_back(enumToStringMethod);
+
 	return static_cast<EnumSymbol*>(Table->BindSymbol(node, std::move(symbol)));
 }
 
@@ -108,6 +168,12 @@ EnumSymbol* SymbolFactory::Enum(const std::wstring& name, bool isFlags)
 	auto symbol = std::make_unique<EnumSymbol>(name);
 	symbol->IsFlags = isFlags;
 	symbol->Accesibility = SymbolAccesibility::Private;
+
+	static MethodSymbol* enumToStringMethod = Method(ACS_PUBLIC, LINK_INSTANCE, TYPE_STRING, L"ToString", &primitive_enum_to_string);
+	symbol->Interfaces.push_back(TRAIT_PRINTABLE);
+	symbol->InterfaceMethodMap[TRAIT_PRINTABLE_ToString] = enumToStringMethod;
+	symbol->Methods.push_back(enumToStringMethod);
+
 	return static_cast<EnumSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
@@ -116,6 +182,12 @@ EnumSymbol* SymbolFactory::Enum(const wchar_t* name, bool isFlags)
 	auto symbol = std::make_unique<EnumSymbol>(name);
 	symbol->IsFlags = isFlags;
 	symbol->Accesibility = SymbolAccesibility::Private;
+
+	static MethodSymbol* enumToStringMethod = Method(ACS_PUBLIC, LINK_INSTANCE, TYPE_STRING, L"ToString", &primitive_enum_to_string);
+	symbol->Interfaces.push_back(TRAIT_PRINTABLE);
+	symbol->InterfaceMethodMap[TRAIT_PRINTABLE_ToString] = enumToStringMethod;
+	symbol->Methods.push_back(enumToStringMethod);
+
 	return static_cast<EnumSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
@@ -123,6 +195,7 @@ StructSymbol* SymbolFactory::Struct(const std::wstring& name)
 {
 	auto symbol = std::make_unique<StructSymbol>(name);
 	symbol->Accesibility = SymbolAccesibility::Private;
+	
 	return static_cast<StructSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
@@ -130,6 +203,7 @@ StructSymbol* SymbolFactory::Struct(const wchar_t* name)
 {
 	auto symbol = std::make_unique<StructSymbol>(name);
 	symbol->Accesibility = SymbolAccesibility::Private;
+
 	return static_cast<StructSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
@@ -148,6 +222,7 @@ InterfaceSymbol* SymbolFactory::Interface(const std::wstring& name, SymbolAccesi
 	symbol->Accesibility = accesibility;
 	symbol->Parent = parent;
 	symbol->Inlining = TypeInlining::ByReference;
+
 	return static_cast<InterfaceSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
@@ -157,6 +232,7 @@ InterfaceSymbol* SymbolFactory::Interface(const wchar_t* name, SymbolAccesibilit
 	symbol->Accesibility = accesibility;
 	symbol->Parent = parent;
 	symbol->Inlining = TypeInlining::ByReference;
+
 	return static_cast<InterfaceSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 

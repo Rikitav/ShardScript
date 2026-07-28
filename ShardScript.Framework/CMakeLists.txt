@@ -77,6 +77,14 @@ endif()
     endif()
   endif()
 
+  # Win32 API wrapper target
+  string(FIND "${SHARD_TARGET_NAME}" "win32" IS_WIN32_TARGET)
+  if(NOT IS_WIN32_TARGET EQUAL -1)
+    if(WIN32)
+        target_link_libraries("${SHARD_TARGET_NAME}" PRIVATE kernel32 user32 advapi32)
+    endif()
+  endif()
+
   target_include_directories("${SHARD_TARGET_NAME}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
   target_include_directories("${SHARD_TARGET_NAME}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../ShardScript/include")
   target_link_libraries("${SHARD_TARGET_NAME}" PRIVATE ShardScript)

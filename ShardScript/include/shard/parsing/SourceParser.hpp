@@ -169,12 +169,12 @@ namespace shard
 		// 9. Other
 		std::vector<std::unique_ptr<TypeSyntax>> ReadBaseInterfacesList(SourceProvider& reader, SyntaxNode* parent);
 
-		std::unique_ptr<TypeSyntax> ReadType(SourceProvider& reader, SyntaxNode* parent);
-		std::unique_ptr<TypeSyntax> ReadIdentifierNameType(SourceProvider& reader, SyntaxNode* parent);
-		std::unique_ptr<TypeSyntax> ReadDelegateType(SourceProvider& reader, SyntaxNode* parent);
-		std::unique_ptr<TypeSyntax> ReadModifiedType(SourceProvider& reader, TypeSyntax* type, SyntaxNode* parent);
-		std::unique_ptr<TypeSyntax> ReadArrayType(SourceProvider& reader, TypeSyntax* type, SyntaxNode* parent);
-		std::unique_ptr<TypeSyntax> ReadGenericType(SourceProvider& reader, TypeSyntax* previous, SyntaxNode* parent);
+		std::unique_ptr<TypeSyntax> ReadType(SourceProvider& reader, SyntaxNode* parent, bool allowArraySyntax = true);
+		std::unique_ptr<TypeSyntax> ReadIdentifierNameType(SourceProvider& reader, SyntaxNode* parent, bool allowArraySyntax = true);
+		std::unique_ptr<TypeSyntax> ReadDelegateType(SourceProvider& reader, SyntaxNode* parent, bool allowArraySyntax = true);
+		std::unique_ptr<TypeSyntax> ReadModifiedType(SourceProvider& reader, TypeSyntax* type, SyntaxNode* parent, bool allowArraySyntax = true);
+		std::unique_ptr<TypeSyntax> ReadArrayType(SourceProvider& reader, TypeSyntax* type, SyntaxNode* parent, bool allowArraySyntax = true);
+		std::unique_ptr<TypeSyntax> ReadGenericType(SourceProvider& reader, TypeSyntax* previous, SyntaxNode* parent, bool allowArraySyntax = true);
 
 	private:
 		// 10. Helpers

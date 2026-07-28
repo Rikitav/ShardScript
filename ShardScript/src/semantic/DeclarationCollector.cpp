@@ -409,6 +409,12 @@ void DeclarationCollector::VisitEnumDeclaration(EnumDeclarationSyntax* node)
 
             if (fieldNode->InitializerExpression != nullptr)
             {
+                if (symbol->IsFlags)
+                {
+                    Diagnostics.ReportError(node->Fields[i]->IdentifierToken, L"Flags enum fields cannot have initializers.");
+                    continue;
+                }
+
                 auto valueOpt = ReadEnumFieldValue(fieldNode->InitializerExpression.get());
                 if (!valueOpt.has_value())
                 {
@@ -419,15 +425,12 @@ void DeclarationCollector::VisitEnumDeclaration(EnumDeclarationSyntax* node)
             }
             else if (symbol->IsFlags)
             {
-                value = 1LL << static_cast<std::int64_t>(i);
+                value = static_cast<std::int64_t>(1) << static_cast<std::int64_t>(i);
                 previousValue = value;
             }
             else
             {
-                if (i == 0)
-                    value = 0;
-                else
-                    value = previousValue + 1;
+                value = i == 0 ? 0 : previousValue + 1;
                 previousValue = value;
             }
 

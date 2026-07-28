@@ -1,0 +1,23 @@
+using stdio;
+
+namespace test_new_array;
+
+public static func Main() -> void
+{
+    buffer := new byte[64];
+    println(buffer.Length);
+
+    ints := new int[10];
+    println(ints.Length);
+
+    ints[0] = 42;
+    ints[9] = 99;
+    println(ints[0]);
+    println(ints[9]);
+
+    size := 5;
+    dynamic := new bool[size];
+    println(dynamic.Length);
+
+    println("done");
+}

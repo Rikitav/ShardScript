@@ -943,6 +943,16 @@ void AbstractEmiter::VisitLiteralExpression(LiteralExpressionSyntax* node)
 
 void AbstractEmiter::VisitObjectCreationExpression(ObjectExpressionSyntax* node)
 {
+	if (node->IsArrayCreation)
+	{
+		if (node->ArraySize != nullptr)
+			VisitExpression(node->ArraySize.get());
+
+		TypeSymbol* elementType = node->Type != nullptr ? node->Type->Symbol : nullptr;
+		Encoder.EmitNewDynamicArray(GeneratingFor->ExecutableByteCode, elementType);
+		return;
+	}
+
 	if (node->Symbol != nullptr && node->Symbol->Kind == SyntaxKind::GenericType)
 	{
 		GenericTypeSymbol* genericType = static_cast<GenericTypeSymbol*>(node->Symbol);

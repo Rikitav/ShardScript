@@ -1108,6 +1108,7 @@ TypeSymbol* ExpressionBinder::AnalyzeBinaryExpression(BinaryExpressionSyntax* no
 				|| (leftType == SymbolTable::Primitives::String && rightType == SymbolTable::Primitives::String)
 				|| (isNumericPrimitive(leftType) && isNumericPrimitive(rightType))
 				|| (leftType == SymbolTable::Primitives::Boolean && rightType == SymbolTable::Primitives::Boolean)
+				|| (leftType->Kind == SyntaxKind::EnumDeclaration && rightType->Kind == SyntaxKind::EnumDeclaration && leftType == rightType)
 				|| bothTypeParameters;
 
 			if (!comparable)
@@ -1375,6 +1376,35 @@ TypeSymbol* ExpressionBinder::AnalyzeObjectExpression(ObjectExpressionSyntax* no
 void ExpressionBinder::VisitObjectCreationExpression(ObjectExpressionSyntax* node)
 {
 	VisitType(node->Type.get());
+
+	if (node->IsArrayCreation)
+	{
+		if (node->ArraySize != nullptr)
+			VisitExpression(node->ArraySize.get());
+
+		TypeSymbol* elementType = node->Type != nullptr ? node->Type->Symbol : nullptr;
+		if (elementType == nullptr)
+		{
+			SetExpressionType(node, SymbolTable::Primitives::Any);
+			return;
+		}
+
+		if (node->ArraySize != nullptr)
+		{
+			TypeSymbol* sizeType = GetExpressionType(node->ArraySize.get());
+			if (sizeType != SymbolTable::Primitives::Integer)
+			{
+				Diagnostics.ReportError(node->NewToken,
+					L"Array size must be an integer");
+			}
+		}
+
+		ArrayTypeSymbol* arrayType = Factory.Array(elementType);
+		node->Symbol = arrayType;
+		SetExpressionType(node, arrayType);
+		return;
+	}
+
 	VisitArgumentsList(node->ArgumentsList.get());
 
 	TypeSymbol* type = AnalyzeObjectExpression(node);

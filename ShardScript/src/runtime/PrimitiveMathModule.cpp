@@ -508,6 +508,9 @@ ObjectInstance* PrimitiveMathModule::ExecuteCompareEqual(ObjectInstance* left, O
 	if (lt->Inlining == TypeInlining::ByReference && rt->Inlining == TypeInlining::ByReference)
 		return FromBoolean(left == right);
 
+	if (lt->Kind == SyntaxKind::EnumDeclaration && rt->Kind == SyntaxKind::EnumDeclaration && lt == rt)
+		return FromBoolean(AsInteger(left) == AsInteger(right));
+
 	if (!IsNumericType(lt) || !IsNumericType(rt))
 		return nullptr;
 

@@ -1,0 +1,19 @@
+using stdio;
+using collections;
+
+namespace test_new_array_generic;
+
+public static func Main() -> void
+{
+    lists := new List<int>[2];
+    lists[0] = new List<int>();
+    lists[0].Add(42);
+    lists[1] = new List<int>();
+    lists[1].Add(99);
+
+    println(lists[0].Length);
+    println(lists[1].Length);
+    println(lists[0][0]);
+    println(lists[1][0]);
+    println("done");
+}

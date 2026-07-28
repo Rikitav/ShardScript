@@ -1,7 +1,7 @@
 using stdio;
 using json;
 
-namespace json_indexer_cast_test;
+namespace json_access_cast_test;
 
 public static func Main() -> void
 {
@@ -13,11 +13,21 @@ public static func Main() -> void
     print("Height = "); println(node.Height as double);
     print("Active = "); println(node.Active as bool);
 
-    print("Missing is null = "); println(node.Missing.IsNull());
+    print("Missing is null = "); println(node.Missing.IsNull);
     print("Missing cast int = "); println(node.Missing as int);
 
     arr: JsonNode = JsonNode.Parse("[10,20,30]");
     print("arr[1] = "); println(arr.At(1).AsInt());
 
     print("Age as byte = "); println(node.Age as byte);
+
+    println("");
+    println("== Kind enum ==");
+    print("node.Kind = "); println(node.Kind);
+    print("node is object = "); println(node.Kind == JsonNodeKind.Object);
+    print("arr.Kind = "); println(arr.Kind);
+    print("arr is array = "); println(arr.Kind == JsonNodeKind.Array);
+    print("node.Missing.Kind = "); println(node.Missing.Kind);
+    print("missing is null = "); println(node.Missing.Kind == JsonNodeKind.Null);
+    print("node.Kind != Object = "); println(node.Kind != JsonNodeKind.Object);
 }

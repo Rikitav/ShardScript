@@ -29,6 +29,10 @@
 
 using namespace shard;
 
+EnumSymbol* g_jsonNodeKindEnum = nullptr;
+ClassSymbol* g_jsonNodeClass = nullptr;
+FieldSymbol* g_jsonNodeHandleField = nullptr;
+
 namespace
 {
     enum class JsonKind
@@ -98,19 +102,6 @@ namespace
         return ParseDoubleClassic(Narrow(wideText));
     }
 
-    inline std::int64_t DomToHandle(JsonDom* dom)
-    {
-        return static_cast<std::int64_t>(reinterpret_cast<std::uintptr_t>(dom));
-    }
-
-    inline JsonDom* HandleToDom(std::int64_t handle)
-    {
-        return reinterpret_cast<JsonDom*>(static_cast<std::uintptr_t>(handle));
-    }
-
-    ClassSymbol* g_jsonNodeClass = nullptr;
-    FieldSymbol* g_jsonNodeHandleField = nullptr;
-
     inline ObjectInstance* WrapDom(JsonDom* dom, const CallState& context)
     {
         if (dom == nullptr)
@@ -121,7 +112,7 @@ namespace
         ObjectInstance* wrapper = context.Collector.AllocateInstance(g_jsonNodeClass);
         wrapper->SetField(
             g_jsonNodeHandleField->SlotIndex,
-            context.Collector.FromValue(DomToHandle(dom)));
+            context.Collector.FromNint(dom, true));
 
         return wrapper;
     }
@@ -133,13 +124,13 @@ namespace
             return nullptr;
         }
 
-        std::int64_t handle = wrapper->GetField(g_jsonNodeHandleField->SlotIndex)->AsInteger();
+        void* handle = wrapper->GetField(g_jsonNodeHandleField->SlotIndex)->AsNint();
         if (handle == 0)
         {
             return nullptr;
         }
 
-        return HandleToDom(handle);
+        return reinterpret_cast<JsonDom*>(handle);
     }
 
     inline TypeSymbol* EffectiveType(TypeSymbol* type)
@@ -1487,20 +1478,14 @@ namespace
 
     ObjectInstance* cb_JsonNode_Kind(const CallState& context)
     {
-#if JSON_DEBUG
-        std::fprintf(stderr, "[DBG cb_Kind] entered, args=%zu\n", context.Args.size());
-#endif
-
         JsonDom* dom = UnwrapDom(context.Args[0]);
 
-#if JSON_DEBUG
-        std::fprintf(stderr,
-            "[DBG cb_Kind] dom=%p kind=%d\n",
-            (void*)dom,
-            dom ? (int)dom->kind : -1);
-#endif
+        ObjectInstance* result = context.Collector.AllocateInstance(g_jsonNodeKindEnum);
+        result->WriteInteger(dom != nullptr
+            ? static_cast<std::int64_t>(dom->kind)
+            : static_cast<std::int64_t>(JsonKind::Null));
 
-        return context.Collector.FromValue(std::wstring(dom ? KindName(dom->kind) : L"null"));
+        return result;
     }
 
     ObjectInstance* cb_JsonNode_IsNull(const CallState& context)
@@ -1824,11 +1809,21 @@ SHARDLIB_ENTRYPOINT
         deserialize.AddParameter(L"text", TYPE_STRING).SetCallback(&cb_JsonDeserialize);
     }
 
+    SymbolBuilder<EnumSymbol> kindEnum = jsonNamespace.AddEnum(L"JsonNodeKind", false, ACS_PUBLIC);
+    g_jsonNodeKindEnum = kindEnum;
+    kindEnum
+        .AddValue(L"Null", static_cast<std::int64_t>(JsonKind::Null))
+        .AddValue(L"Boolean", static_cast<std::int64_t>(JsonKind::Boolean))
+        .AddValue(L"Number", static_cast<std::int64_t>(JsonKind::Number))
+        .AddValue(L"String", static_cast<std::int64_t>(JsonKind::String))
+        .AddValue(L"Array", static_cast<std::int64_t>(JsonKind::Array))
+        .AddValue(L"Object", static_cast<std::int64_t>(JsonKind::Object));
+
     SymbolBuilder<ClassSymbol> jsonNodeClass = jsonNamespace.AddClass(L"JsonNode");
     g_jsonNodeClass = jsonNodeClass.Implements(TRAIT_PRINTABLE);
 
     g_jsonNodeHandleField = jsonNodeClass
-        .AddField(L"_handle", TYPE_INT, LINK_INSTANCE, ACS_PRIVATE);
+        .AddField(L"_handle", TYPE_NINT, LINK_INSTANCE, ACS_PRIVATE);
 
     ClassSymbol* nodeType = jsonNodeClass.Get();
     ArrayTypeSymbol* stringArrayType = factory.Array(TYPE_STRING);
@@ -1841,17 +1836,21 @@ SHARDLIB_ENTRYPOINT
         .SetCallback(&cb_JsonNode_Stringify)
         .IsImplementationOf(TRAIT_PRINTABLE_ToString);
 
-    jsonNodeClass.AddMethod(L"Kind", TYPE_STRING, LINK_INSTANCE)
-        .SetCallback(&cb_JsonNode_Kind);
+    jsonNodeClass.AddProperty(L"Kind", g_jsonNodeKindEnum, LINK_INSTANCE, ACS_PUBLIC)
+        .AddGetter()
+            .SetCallback(&cb_JsonNode_Kind);
 
-    jsonNodeClass.AddMethod(L"IsNull", TYPE_BOOL, LINK_INSTANCE)
-        .SetCallback(&cb_JsonNode_IsNull);
+    jsonNodeClass.AddProperty(L"IsNull", TYPE_BOOL, LINK_INSTANCE, ACS_PUBLIC)
+        .AddGetter()
+            .SetCallback(&cb_JsonNode_IsNull);
 
-    jsonNodeClass.AddMethod(L"IsObject", TYPE_BOOL, LINK_INSTANCE)
-        .SetCallback(&cb_JsonNode_IsObject);
+    jsonNodeClass.AddProperty(L"IsObject", TYPE_BOOL, LINK_INSTANCE, ACS_PUBLIC)
+        .AddGetter()
+            .SetCallback(&cb_JsonNode_IsObject);
 
-    jsonNodeClass.AddMethod(L"IsArray", TYPE_BOOL, LINK_INSTANCE)
-        .SetCallback(&cb_JsonNode_IsArray);
+    jsonNodeClass.AddProperty(L"IsArray", TYPE_BOOL, LINK_INSTANCE, ACS_PUBLIC)
+        .AddGetter()
+            .SetCallback(&cb_JsonNode_IsArray);
 
     jsonNodeClass.AddMethod(L"AsInt", TYPE_INT, LINK_INSTANCE)
         .SetCallback(&cb_JsonNode_AsInt);
