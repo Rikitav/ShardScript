@@ -880,6 +880,10 @@ void TypeBinder::VisitObjectCreationExpression(ObjectExpressionSyntax* node)
 		return;
 
 	VisitType(node->Type.get());
+
+	if (node->ArraySize != nullptr)
+		VisitExpression(node->ArraySize.get());
+
 	VisitArgumentsList(node->ArgumentsList.get());
 	node->Symbol = node->Type->Symbol;
 }

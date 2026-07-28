@@ -22,9 +22,11 @@ namespace shard
 
 		std::unique_ptr<ArgumentsListSyntax> ArgumentsList = nullptr;
 		std::unique_ptr<TypeSyntax> Type = nullptr;
-		
+		std::unique_ptr<ExpressionSyntax> ArraySize = nullptr;
+
 		ConstructorSymbol* CtorSymbol = nullptr;
 		TypeSymbol* Symbol = nullptr;
+		bool IsArrayCreation = false;
 
 		inline ObjectExpressionSyntax(SyntaxNode* parent)
 			: ExpressionSyntax(SyntaxKind::ObjectExpression, parent) { }

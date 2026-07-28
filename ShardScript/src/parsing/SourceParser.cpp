@@ -2553,8 +2553,20 @@ std::unique_ptr<ObjectExpressionSyntax> SourceParser::ReadObjectExpression(Sourc
 {
 	auto syntax = std::make_unique<ObjectExpressionSyntax>(parent);
 	syntax->NewToken = Expect(reader, TokenType::NewKeyword, L"Expected 'new' keyword");
-	syntax->Type = ReadType(reader, syntax.get());
-	syntax->ArgumentsList = ReadArgumentsList(reader, syntax.get());
+	syntax->Type = ReadType(reader, syntax.get(), false);
+
+	if (reader.CanConsume() && reader.Current().Type == TokenType::OpenSquare)
+	{
+		syntax->IsArrayCreation = true;
+		SyntaxToken openToken = Expect(reader, TokenType::OpenSquare, L"Expected '['");
+		syntax->ArraySize = ReadExpression(reader, syntax.get(), 0, true);
+		Expect(reader, TokenType::CloseSquare, L"Expected ']'");
+	}
+	else
+	{
+		syntax->ArgumentsList = ReadArgumentsList(reader, syntax.get());
+	}
+
 	return syntax;
 }
 
@@ -2997,7 +3009,7 @@ std::unique_ptr<IndexatorListSyntax> SourceParser::ReadIndexatorList(SourceProvi
 	return arguments;
 }
 
-std::unique_ptr<TypeSyntax> SourceParser::ReadType(SourceProvider& reader, SyntaxNode* parent)
+std::unique_ptr<TypeSyntax> SourceParser::ReadType(SourceProvider& reader, SyntaxNode* parent, bool allowArraySyntax)
 {
 	SyntaxToken current = reader.Current();
 
@@ -3005,24 +3017,24 @@ std::unique_ptr<TypeSyntax> SourceParser::ReadType(SourceProvider& reader, Synta
 	{
 		reader.Consume();
 		auto predefinedType = std::make_unique<PredefinedTypeSyntax>(current, parent);
-		return ReadModifiedType(reader, predefinedType.release(), parent);
+		return ReadModifiedType(reader, predefinedType.release(), parent, allowArraySyntax);
 	}
 
 	if (current.Type == TokenType::DelegateKeyword)
 	{
-		return ReadDelegateType(reader, parent);
+		return ReadDelegateType(reader, parent, allowArraySyntax);
 	}
 
 	if (current.Type == TokenType::Identifier)
 	{
-		return ReadIdentifierNameType(reader, parent);
+		return ReadIdentifierNameType(reader, parent, allowArraySyntax);
 	}
 
 	Diagnostics.ReportError(current, L"Unexpected token in type syntax");
 	return nullptr;
 }
 
-std::unique_ptr<TypeSyntax> SourceParser::ReadModifiedType(SourceProvider& reader, TypeSyntax* type, SyntaxNode* parent)
+std::unique_ptr<TypeSyntax> SourceParser::ReadModifiedType(SourceProvider& reader, TypeSyntax* type, SyntaxNode* parent, bool allowArraySyntax)
 {
 	if (!reader.CanConsume())
 		return std::unique_ptr<TypeSyntax>(type);
@@ -3042,12 +3054,15 @@ std::unique_ptr<TypeSyntax> SourceParser::ReadModifiedType(SourceProvider& reade
 
 		case TokenType::OpenSquare:
 		{
-			return ReadArrayType(reader, type, parent);
+			if (allowArraySyntax)
+				return ReadArrayType(reader, type, parent, allowArraySyntax);
+
+			return std::unique_ptr<TypeSyntax>(type);
 		}
 
 		case TokenType::LessOperator:
 		{
-			return ReadGenericType(reader, type, parent);
+			return ReadGenericType(reader, type, parent, allowArraySyntax);
 		}
 
 		case TokenType::Delimeter:
@@ -3056,7 +3071,7 @@ std::unique_ptr<TypeSyntax> SourceParser::ReadModifiedType(SourceProvider& reade
 			SyntaxToken identifier = Expect(reader, TokenType::Identifier, L"Expected identifier");
 			auto qualified = std::make_unique<QualifiedNameTypeSyntax>(std::unique_ptr<TypeSyntax>(type), parent);
 			qualified->Identifier = identifier;
-			return ReadModifiedType(reader, qualified.release(), parent);
+			return ReadModifiedType(reader, qualified.release(), parent, allowArraySyntax);
 		}
 
 		default:
@@ -3064,39 +3079,39 @@ std::unique_ptr<TypeSyntax> SourceParser::ReadModifiedType(SourceProvider& reade
 	}
 }
 
-std::unique_ptr<TypeSyntax> SourceParser::ReadIdentifierNameType(SourceProvider& reader, SyntaxNode* parent)
+std::unique_ptr<TypeSyntax> SourceParser::ReadIdentifierNameType(SourceProvider& reader, SyntaxNode* parent, bool allowArraySyntax)
 {
 	auto identifier = std::make_unique<IdentifierNameTypeSyntax>(parent);
 	identifier->Identifier = Expect(reader, TokenType::Identifier, L"Expected identifier");
 
-	return ReadModifiedType(reader, identifier.release(), parent);
+	return ReadModifiedType(reader, identifier.release(), parent, allowArraySyntax);
 }
 
-std::unique_ptr<TypeSyntax> SourceParser::ReadDelegateType(SourceProvider& reader, SyntaxNode* parent)
+std::unique_ptr<TypeSyntax> SourceParser::ReadDelegateType(SourceProvider& reader, SyntaxNode* parent, bool allowArraySyntax)
 {
 	auto delegate = std::make_unique<DelegateTypeSyntax>(parent);
 	delegate->DelegateToken = Expect(reader, TokenType::DelegateKeyword, L"Expected 'delegate' keyword");
-	delegate->ReturnType = ReadType(reader, delegate.get());
+	delegate->ReturnType = ReadType(reader, delegate.get(), allowArraySyntax);
 	delegate->Params = ReadDelegateParametersList(reader, delegate.get());
 
-	return ReadModifiedType(reader, delegate.release(), parent);
+	return ReadModifiedType(reader, delegate.release(), parent, allowArraySyntax);
 }
 
-std::unique_ptr<TypeSyntax> SourceParser::ReadArrayType(SourceProvider& reader, TypeSyntax* previous, SyntaxNode* parent)
+std::unique_ptr<TypeSyntax> SourceParser::ReadArrayType(SourceProvider& reader, TypeSyntax* previous, SyntaxNode* parent, bool allowArraySyntax)
 {
 	auto array = std::make_unique<ArrayTypeSyntax>(std::unique_ptr<TypeSyntax>(previous), parent);
 	array->OpenSquareToken = Expect(reader, TokenType::OpenSquare, L"Expected '['");
 	array->CloseSquareToken = Expect(reader, TokenType::CloseSquare, L"Expected ']'");
 	array->Rank = 1;
 
-	return ReadModifiedType(reader, array.release(), parent);
+	return ReadModifiedType(reader, array.release(), parent, allowArraySyntax);
 }
 
-std::unique_ptr<TypeSyntax> SourceParser::ReadGenericType(SourceProvider& reader, TypeSyntax* previous, SyntaxNode* parent)
+std::unique_ptr<TypeSyntax> SourceParser::ReadGenericType(SourceProvider& reader, TypeSyntax* previous, SyntaxNode* parent, bool allowArraySyntax)
 {
 	auto generic = std::make_unique<GenericTypeSyntax>(std::unique_ptr<TypeSyntax>(previous), parent);
 	generic->Arguments = ReadTypeArgumentsList(reader, generic.get());
-	return ReadModifiedType(reader, generic.release(), parent);
+	return ReadModifiedType(reader, generic.release(), parent, allowArraySyntax);
 }
 
 // Smart error recovery with synchronization tokens

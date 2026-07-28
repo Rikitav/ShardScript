@@ -678,6 +678,16 @@ namespace
                 HoistResult result;
                 result.Expression = std::move(expr);
 
+                if (node->ArraySize != nullptr)
+                {
+                    HoistResult item = HoistExpression(std::move(node->ArraySize), false, conditional, method, node, model, diagnostics);
+                    if (!item.Supported)
+                        return HR_INVALID;
+
+                    node->ArraySize = std::move(item.Expression);
+                    MovePrefix(result.Prefix, item.Prefix);
+                }
+
                 if (node->ArgumentsList != nullptr)
                 {
                     for (auto& arg : node->ArgumentsList->Arguments)

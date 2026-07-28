@@ -1044,6 +1044,9 @@ void SyntaxVisitor::VisitObjectCreationExpression(ObjectExpressionSyntax* node)
 	if (node->Type != nullptr)
 		VisitType(node->Type.get());
 
+	if (node->ArraySize != nullptr)
+		VisitExpression(node->ArraySize.get());
+
 	if (node->ArgumentsList != nullptr)
 		VisitArgumentsList(node->ArgumentsList.get());
 }

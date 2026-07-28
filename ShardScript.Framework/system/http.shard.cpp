@@ -380,18 +380,17 @@ static ObjectInstance* shard_http_Server_Listen(const CallState& context) noexce
 
     // Schedule context destruction; the close callback runs when the loop
     // processes the handle close.
-    instance->SetField(shard_HttpServer_ClientPtrField->SlotIndex,
-                       GarbageCollector::NullInstance);
-    uv_close(reinterpret_cast<uv_handle_t*>(&ctx->WakeHandle),
-             [](uv_handle_t* handle)
-             {
-                 HttpServerContext* ctx = static_cast<HttpServerContext*>(handle->data);
-                 if (ctx != nullptr)
-                 {
-                     delete ctx->Server;
-                     delete ctx;
-                 }
-             });
+    instance->SetField(shard_HttpServer_ClientPtrField->SlotIndex, GarbageCollector::NullInstance);
+
+    uv_close(reinterpret_cast<uv_handle_t*>(&ctx->WakeHandle), [](uv_handle_t* handle)
+    {
+        HttpServerContext* ctx = static_cast<HttpServerContext*>(handle->data);
+        if (ctx != nullptr)
+        {
+            delete ctx->Server;
+            delete ctx;
+        }
+    });
 
     return nullptr;
 }
@@ -417,8 +416,8 @@ static ObjectInstance* shard_http_Server_Dispose(const CallState& context) noexc
             uv_close(reinterpret_cast<uv_handle_t*>(&ctx->WakeHandle), nullptr);
             delete ctx->Server;
             delete ctx;
-            instance->SetField(shard_HttpServer_ClientPtrField->SlotIndex,
-                               GarbageCollector::NullInstance);
+
+            instance->SetField(shard_HttpServer_ClientPtrField->SlotIndex, GarbageCollector::NullInstance);
         }
     }
 

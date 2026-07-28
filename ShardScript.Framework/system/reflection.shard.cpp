@@ -494,7 +494,7 @@ SHARDLIB_ENTRYPOINT
 	typeClass_raw = typeClass.Get();
 
 	type_handleField = typeClass
-		.AddField(L"_handle", TYPE_INT, LINK_INSTANCE, ACS_PRIVATE).Get();
+		.AddField(L"_handle", TYPE_NINT, LINK_INSTANCE, ACS_PRIVATE).Get();
 
 	typeClass.AddMethod(L"Of", typeClass.Get(), LINK_STATIC)
 		.AddParameter(L"object", TYPE_ANY)
@@ -549,7 +549,7 @@ SHARDLIB_ENTRYPOINT
 	parameterInfoClass_raw = parameterInfoClass.Get();
 
 	parameterInfo_handleField = parameterInfoClass
-		.AddField(L"_handle", TYPE_INT, LINK_INSTANCE, ACS_PRIVATE).Get();
+		.AddField(L"_handle", TYPE_NINT, LINK_INSTANCE, ACS_PRIVATE).Get();
 
 	parameterInfoClass.AddProperty(L"Name", TYPE_STRING, LINK_INSTANCE)
 		.AddGetter().SetCallback(&shard_parameterinfo_Name_get);
@@ -562,7 +562,7 @@ SHARDLIB_ENTRYPOINT
 	methodInfoClass_raw = methodInfoClass.Get();
 
 	methodInfo_handleField = methodInfoClass
-		.AddField(L"_handle", TYPE_INT, LINK_INSTANCE, ACS_PRIVATE).Get();
+		.AddField(L"_handle", TYPE_NINT, LINK_INSTANCE, ACS_PRIVATE).Get();
 
 	methodInfoClass.AddProperty(L"Name", TYPE_STRING, LINK_INSTANCE)
 		.AddGetter().SetCallback(&shard_methodinfo_Name_get);
@@ -581,7 +581,7 @@ SHARDLIB_ENTRYPOINT
 	fieldInfoClass_raw = fieldInfoClass.Get();
 
 	fieldInfo_handleField = fieldInfoClass
-		.AddField(L"_handle", TYPE_INT, LINK_INSTANCE, ACS_PRIVATE).Get();
+		.AddField(L"_handle", TYPE_NINT, LINK_INSTANCE, ACS_PRIVATE).Get();
 
 	fieldInfoClass.AddProperty(L"Name", TYPE_STRING, LINK_INSTANCE)
 		.AddGetter().SetCallback(&shard_fieldinfo_Name_get);
@@ -597,7 +597,7 @@ SHARDLIB_ENTRYPOINT
 	propertyInfoClass_raw = propertyInfoClass.Get();
 
 	propertyInfo_handleField = propertyInfoClass
-		.AddField(L"_handle", TYPE_INT, LINK_INSTANCE, ACS_PRIVATE).Get();
+		.AddField(L"_handle", TYPE_NINT, LINK_INSTANCE, ACS_PRIVATE).Get();
 
 	propertyInfoClass.AddProperty(L"Name", TYPE_STRING, LINK_INSTANCE)
 		.AddGetter().SetCallback(&shard_propertyinfo_Name_get);

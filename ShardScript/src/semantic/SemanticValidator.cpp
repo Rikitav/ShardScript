@@ -111,8 +111,7 @@ namespace shard
 
             if (matchedMethod == nullptr)
             {
-                diagnostics.ReportError(
-                    errorToken,
+                diagnostics.ReportError(errorToken,
                     L"Type '" + typeSymbol->Name + L"' does not implement interface method '" + interfaceMethod->Name + L"' from '" + interfaceSymbol->Name + L"'");
             }
             else
