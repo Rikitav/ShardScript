@@ -10,8 +10,8 @@
 
 #include <shard/semantic/SymbolTable.hpp>
 
-#include <shard/ApplicationDomain.hpp>
 #include <shard/compilation/ProgramVirtualImage.hpp>
+#include <shard/ApplicationDomain.hpp>
 
 #include <malloc.h>
 #include <stdexcept>
