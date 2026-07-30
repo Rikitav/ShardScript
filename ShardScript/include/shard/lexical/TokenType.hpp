@@ -163,6 +163,9 @@ namespace shard
 		CatchKeyword,         // catch
 		DeferKeyword,         // defer
 		WhereKeyword,         // where
-		AwaitKeyword          // await
+		AwaitKeyword,         // await
+
+		// Other
+		FakeSemicolon,  // U+037E
 	};
 }

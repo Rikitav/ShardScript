@@ -680,8 +680,16 @@ bool LexicalAnalyzer::IsPunctuation(std::wstring& word, TokenType& type)
 					return true;
 				}
 			}
+
 			type = TokenType::Question;
 			word = L"?";
+			return true;
+		}
+
+		case L'\u037E': // greek question mark, looks exactly like semicolon
+		{
+			type = TokenType::Semicolon;
+			word = L";";
 			return true;
 		}
 

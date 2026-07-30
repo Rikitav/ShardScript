@@ -46,18 +46,18 @@ namespace shard
 
         struct Primitives
         {
-            inline static SHARD_API TypeSymbol* Void;
-            inline static SHARD_API TypeSymbol* Null;
-            inline static SHARD_API TypeSymbol* Any;
+            inline static SHARD_API TypeSymbol* Void = nullptr;
+            inline static SHARD_API TypeSymbol* Null = nullptr;
+            inline static SHARD_API TypeSymbol* Any = nullptr;
 
-            inline static SHARD_API TypeSymbol* Boolean;
-            inline static SHARD_API TypeSymbol* Integer;
-            inline static SHARD_API TypeSymbol* Double;
-            inline static SHARD_API TypeSymbol* Char;
-            inline static SHARD_API TypeSymbol* String;
-            inline static SHARD_API TypeSymbol* Array;
-            inline static SHARD_API TypeSymbol* NativeInteger;
-            inline static SHARD_API TypeSymbol* Byte;
+            inline static SHARD_API TypeSymbol* Boolean = nullptr;
+            inline static SHARD_API TypeSymbol* Integer = nullptr;
+            inline static SHARD_API TypeSymbol* Double = nullptr;
+            inline static SHARD_API TypeSymbol* Char = nullptr;
+            inline static SHARD_API TypeSymbol* String = nullptr;
+            inline static SHARD_API TypeSymbol* Array = nullptr;
+            inline static SHARD_API TypeSymbol* NativeInteger = nullptr;
+            inline static SHARD_API TypeSymbol* Byte = nullptr;
         };
 
         struct StandardTypes

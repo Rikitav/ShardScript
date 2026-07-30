@@ -1,6 +1,13 @@
 #pragma once
-#ifndef SHARDSCRIPT_SINGLE_HEADER_H
-#define SHARDSCRIPT_SINGLE_HEADER_H
+#ifndef _SHARDSCRIPT_
+#define _SHARDSCRIPT_
+
+#ifdef _WINDOWS_
+  #ifndef _SHARDSCRIPT_EMMITED_WINDOWS_ERROR
+    #define _TERMINALITY_EMMITED_WINDOWS_ERROR
+    #error Never include Windows.h before ShardScript.hpp
+  #endif // #ifndef _SHARDSCRIPT_EMMITED_WINDOWS_ERROR
+#endif // #ifdef _WINDOWS_
 
 /*
 *                                  .:::::::.
@@ -212,7 +219,10 @@
 #include <shard/CompilationContext.hpp>
 #include <shard/ShardScriptLIB.hpp>
 
+#include <shard/runtime/EventLoop.hpp>
+#include <shard/runtime/NativeAsync.hpp> 
+
 // --- Public C/C++ API ---
 #include <shard/ShardScriptExtern.hpp>
 
-#endif // SHARDSCRIPT_SINGLE_HEADER_H
+#endif // _SHARDSCRIPT_
