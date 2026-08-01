@@ -1,136 +1,9 @@
 #include <cmath>
 
 #include <ShardScript.hpp>
+#include <shard/runtime/NativeHelpers.hpp>
 
 using namespace shard;
-
-static ObjectInstance* shard_math_Sin(const CallState& context) noexcept
-{
-    double val = context.Args[0]->AsDouble();
-    return context.Collector.FromValue(std::sin(val));
-}
-
-static ObjectInstance* shard_math_Cos(const CallState& context) noexcept
-{
-    double val = context.Args[0]->AsDouble();
-    return context.Collector.FromValue(std::cos(val));
-}
-
-static ObjectInstance* shard_math_Tan(const CallState& context) noexcept
-{
-    double val = context.Args[0]->AsDouble();
-    return context.Collector.FromValue(std::tan(val));
-}
-
-static ObjectInstance* shard_math_Asin(const CallState& context) noexcept
-{
-    double val = context.Args[0]->AsDouble();
-    return context.Collector.FromValue(std::asin(val));
-}
-
-static ObjectInstance* shard_math_Acos(const CallState& context) noexcept
-{
-    double val = context.Args[0]->AsDouble();
-    return context.Collector.FromValue(std::acos(val));
-}
-
-static ObjectInstance* shard_math_Atan(const CallState& context) noexcept
-{
-    double val = context.Args[0]->AsDouble();
-    return context.Collector.FromValue(std::atan(val));
-}
-
-static ObjectInstance* shard_math_Atan2(const CallState& context) noexcept
-{
-    double y = context.Args[0]->AsDouble();
-    double x = context.Args[1]->AsDouble();
-    return context.Collector.FromValue(std::atan2(y, x));
-}
-
-static ObjectInstance* shard_math_Pow(const CallState& context) noexcept
-{
-    double base = context.Args[0]->AsDouble();
-    double exp = context.Args[1]->AsDouble();
-    return context.Collector.FromValue(std::pow(base, exp));
-}
-
-static ObjectInstance* shard_math_Sqrt(const CallState& context) noexcept
-{
-    double val = context.Args[0]->AsDouble();
-    return context.Collector.FromValue(std::sqrt(val));
-}
-
-static ObjectInstance* shard_math_Cbrt(const CallState& context) noexcept
-{
-    double val = context.Args[0]->AsDouble();
-    return context.Collector.FromValue(std::cbrt(val));
-}
-
-static ObjectInstance* shard_math_Exp(const CallState& context) noexcept
-{
-    double val = context.Args[0]->AsDouble();
-    return context.Collector.FromValue(std::exp(val));
-}
-
-static ObjectInstance* shard_math_Log(const CallState& context) noexcept
-{
-    double val = context.Args[0]->AsDouble();
-    return context.Collector.FromValue(std::log(val));
-}
-
-static ObjectInstance* shard_math_Log10(const CallState& context) noexcept
-{
-    double val = context.Args[0]->AsDouble();
-    return context.Collector.FromValue(std::log10(val));
-}
-
-static ObjectInstance* shard_math_Abs(const CallState& context) noexcept
-{
-    double val = context.Args[0]->AsDouble();
-    return context.Collector.FromValue(std::abs(val));
-}
-
-static ObjectInstance* shard_math_Ceil(const CallState& context) noexcept
-{
-    double val = context.Args[0]->AsDouble();
-    return context.Collector.FromValue(std::ceil(val));
-}
-
-static ObjectInstance* shard_math_Floor(const CallState& context) noexcept
-{
-    double val = context.Args[0]->AsDouble();
-    return context.Collector.FromValue(std::floor(val));
-}
-
-static ObjectInstance* shard_math_Round(const CallState& context) noexcept
-{
-    double val = context.Args[0]->AsDouble();
-    return context.Collector.FromValue(std::round(val));
-}
-
-static ObjectInstance* shard_math_Min(const CallState& context) noexcept
-{
-    double a = context.Args[0]->AsDouble();
-    double b = context.Args[1]->AsDouble();
-    return context.Collector.FromValue(std::fmin(a, b));
-}
-
-static ObjectInstance* shard_math_Max(const CallState& context) noexcept
-{
-    double a = context.Args[0]->AsDouble();
-    double b = context.Args[1]->AsDouble();
-    return context.Collector.FromValue(std::fmax(a, b));
-}
-
-static ObjectInstance* shard_math_PI_get(const CallState& context) noexcept
-{
-    return context.Collector.FromValue(3.14159265358979323846);
-}
-
-static ObjectInstance* shard_math_E_get(const CallState& context) noexcept
-{
-    return context.Collector.FromValue(2.71828182845904523536);
-}
 
 SHARDLIB_GETMETADATA
 {
@@ -143,72 +16,174 @@ SHARDLIB_ENTRYPOINT
 {
     SymbolBuilder<NamespaceSymbol> mathNamespace(context, L"math");
 
-    SymbolBuilder<ClassSymbol> mathClass = mathNamespace.AddClass(L"Math", LINK_STATIC);
+    mathNamespace.AddClass(L"Math", ACS_PUBLIC, LINK_STATIC, [](SymbolBuilder<ClassSymbol> math)
+    {
+        math.AddProperty(L"PI", TYPE_DOUBLE, LINK_STATIC, ACS_PUBLIC)
+            .AddGetter().SetCallback([](const CallState& context)
+			{
+                return context.Collector.FromValue(3.14159265358979323846);
+            });
 
-    mathClass.AddProperty(L"PI", TYPE_DOUBLE, LINK_STATIC, ACS_PUBLIC)
-        .AddGetter().SetCallback(&shard_math_PI_get);
+        math.AddProperty(L"E", TYPE_DOUBLE, LINK_STATIC, ACS_PUBLIC)
+            .AddGetter().SetCallback([](const CallState& context)
+			{
+                return context.Collector.FromValue(2.71828182845904523536);
+            });
 
-    mathClass.AddProperty(L"E", TYPE_DOUBLE, LINK_STATIC, ACS_PUBLIC)
-        .AddGetter().SetCallback(&shard_math_E_get);
+        math.AddMethod(L"Sin", TYPE_DOUBLE, LINK_STATIC, ACS_PUBLIC)
+            .AddParameter(L"value", TYPE_DOUBLE)
+            .SetCallback([](const CallState& context)
+			{
+                auto [value] = GetArgs<double>(context);
+                return context.Collector.FromValue(std::sin(value));
+            });
 
-    mathClass.AddMethod(L"Sin", TYPE_DOUBLE, LINK_STATIC)
-        .AddParameter(L"value", TYPE_DOUBLE).SetCallback(&shard_math_Sin);
+        math.AddMethod(L"Cos", TYPE_DOUBLE, LINK_STATIC, ACS_PUBLIC)
+            .AddParameter(L"value", TYPE_DOUBLE)
+            .SetCallback([](const CallState& context)
+			{
+                auto [value] = GetArgs<double>(context);
+                return context.Collector.FromValue(std::cos(value));
+            });
 
-    mathClass.AddMethod(L"Cos", TYPE_DOUBLE, LINK_STATIC)
-        .AddParameter(L"value", TYPE_DOUBLE).SetCallback(&shard_math_Cos);
+        math.AddMethod(L"Tan", TYPE_DOUBLE, LINK_STATIC, ACS_PUBLIC)
+            .AddParameter(L"value", TYPE_DOUBLE)
+            .SetCallback([](const CallState& context)
+			{
+                auto [value] = GetArgs<double>(context);
+                return context.Collector.FromValue(std::tan(value));
+            });
 
-    mathClass.AddMethod(L"Tan", TYPE_DOUBLE, LINK_STATIC)
-        .AddParameter(L"value", TYPE_DOUBLE).SetCallback(&shard_math_Tan);
+        math.AddMethod(L"Asin", TYPE_DOUBLE, LINK_STATIC, ACS_PUBLIC)
+            .AddParameter(L"value", TYPE_DOUBLE)
+            .SetCallback([](const CallState& context)
+			{
+                auto [value] = GetArgs<double>(context);
+                return context.Collector.FromValue(std::asin(value));
+            });
 
-    mathClass.AddMethod(L"Asin", TYPE_DOUBLE, LINK_STATIC)
-        .AddParameter(L"value", TYPE_DOUBLE).SetCallback(&shard_math_Asin);
+        math.AddMethod(L"Acos", TYPE_DOUBLE, LINK_STATIC, ACS_PUBLIC)
+            .AddParameter(L"value", TYPE_DOUBLE)
+            .SetCallback([](const CallState& context)
+			{
+                auto [value] = GetArgs<double>(context);
+                return context.Collector.FromValue(std::acos(value));
+            });
 
-    mathClass.AddMethod(L"Acos", TYPE_DOUBLE, LINK_STATIC)
-        .AddParameter(L"value", TYPE_DOUBLE).SetCallback(&shard_math_Acos);
+        math.AddMethod(L"Atan", TYPE_DOUBLE, LINK_STATIC, ACS_PUBLIC)
+            .AddParameter(L"value", TYPE_DOUBLE)
+            .SetCallback([](const CallState& context)
+			{
+                auto [value] = GetArgs<double>(context);
+                return context.Collector.FromValue(std::atan(value));
+            });
 
-    mathClass.AddMethod(L"Atan", TYPE_DOUBLE, LINK_STATIC)
-        .AddParameter(L"value", TYPE_DOUBLE).SetCallback(&shard_math_Atan);
+        math.AddMethod(L"Atan2", TYPE_DOUBLE, LINK_STATIC, ACS_PUBLIC)
+            .AddParameter(L"y", TYPE_DOUBLE)
+            .AddParameter(L"x", TYPE_DOUBLE)
+            .SetCallback([](const CallState& context)
+			{
+                auto [y, x] = GetArgs<double, double>(context);
+                return context.Collector.FromValue(std::atan2(y, x));
+            });
 
-    mathClass.AddMethod(L"Atan2", TYPE_DOUBLE, LINK_STATIC)
-        .AddParameter(L"y", TYPE_DOUBLE)
-        .AddParameter(L"x", TYPE_DOUBLE).SetCallback(&shard_math_Atan2);
+        math.AddMethod(L"Pow", TYPE_DOUBLE, LINK_STATIC, ACS_PUBLIC)
+            .AddParameter(L"base", TYPE_DOUBLE)
+            .AddParameter(L"exponent", TYPE_DOUBLE)
+            .SetCallback([](const CallState& context)
+			{
+                auto [base, exponent] = GetArgs<double, double>(context);
+                return context.Collector.FromValue(std::pow(base, exponent));
+            });
 
-    mathClass.AddMethod(L"Pow", TYPE_DOUBLE, LINK_STATIC)
-        .AddParameter(L"base", TYPE_DOUBLE)
-        .AddParameter(L"exponent", TYPE_DOUBLE).SetCallback(&shard_math_Pow);
+        math.AddMethod(L"Sqrt", TYPE_DOUBLE, LINK_STATIC, ACS_PUBLIC)
+            .AddParameter(L"value", TYPE_DOUBLE)
+            .SetCallback([](const CallState& context)
+			{
+                auto [value] = GetArgs<double>(context);
+                return context.Collector.FromValue(std::sqrt(value));
+            });
 
-    mathClass.AddMethod(L"Sqrt", TYPE_DOUBLE, LINK_STATIC)
-        .AddParameter(L"value", TYPE_DOUBLE).SetCallback(&shard_math_Sqrt);
+        math.AddMethod(L"Cbrt", TYPE_DOUBLE, LINK_STATIC, ACS_PUBLIC)
+            .AddParameter(L"value", TYPE_DOUBLE)
+            .SetCallback([](const CallState& context)
+			{
+                auto [value] = GetArgs<double>(context);
+                return context.Collector.FromValue(std::cbrt(value));
+            });
 
-    mathClass.AddMethod(L"Cbrt", TYPE_DOUBLE, LINK_STATIC)
-        .AddParameter(L"value", TYPE_DOUBLE).SetCallback(&shard_math_Cbrt);
+        math.AddMethod(L"Exp", TYPE_DOUBLE, LINK_STATIC, ACS_PUBLIC)
+            .AddParameter(L"value", TYPE_DOUBLE)
+            .SetCallback([](const CallState& context)
+			{
+                auto [value] = GetArgs<double>(context);
+                return context.Collector.FromValue(std::exp(value));
+            });
 
-    mathClass.AddMethod(L"Exp", TYPE_DOUBLE, LINK_STATIC)
-        .AddParameter(L"value", TYPE_DOUBLE).SetCallback(&shard_math_Exp);
+        math.AddMethod(L"Log", TYPE_DOUBLE, LINK_STATIC, ACS_PUBLIC)
+            .AddParameter(L"value", TYPE_DOUBLE)
+            .SetCallback([](const CallState& context)
+			{
+                auto [value] = GetArgs<double>(context);
+                return context.Collector.FromValue(std::log(value));
+            });
 
-    mathClass.AddMethod(L"Log", TYPE_DOUBLE, LINK_STATIC)
-        .AddParameter(L"value", TYPE_DOUBLE).SetCallback(&shard_math_Log);
+        math.AddMethod(L"Log10", TYPE_DOUBLE, LINK_STATIC, ACS_PUBLIC)
+            .AddParameter(L"value", TYPE_DOUBLE)
+            .SetCallback([](const CallState& context)
+			{
+                auto [value] = GetArgs<double>(context);
+                return context.Collector.FromValue(std::log10(value));
+            });
 
-    mathClass.AddMethod(L"Log10", TYPE_DOUBLE, LINK_STATIC)
-        .AddParameter(L"value", TYPE_DOUBLE).SetCallback(&shard_math_Log10);
+        math.AddMethod(L"Abs", TYPE_DOUBLE, LINK_STATIC, ACS_PUBLIC)
+            .AddParameter(L"value", TYPE_DOUBLE)
+            .SetCallback([](const CallState& context)
+			{
+                auto [value] = GetArgs<double>(context);
+                return context.Collector.FromValue(std::abs(value));
+            });
 
-    mathClass.AddMethod(L"Abs", TYPE_DOUBLE, LINK_STATIC)
-        .AddParameter(L"value", TYPE_DOUBLE).SetCallback(&shard_math_Abs);
+        math.AddMethod(L"Ceil", TYPE_DOUBLE, LINK_STATIC, ACS_PUBLIC)
+            .AddParameter(L"value", TYPE_DOUBLE)
+            .SetCallback([](const CallState& context)
+			{
+                auto [value] = GetArgs<double>(context);
+                return context.Collector.FromValue(std::ceil(value));
+            });
 
-    mathClass.AddMethod(L"Ceil", TYPE_DOUBLE, LINK_STATIC)
-        .AddParameter(L"value", TYPE_DOUBLE).SetCallback(&shard_math_Ceil);
+        math.AddMethod(L"Floor", TYPE_DOUBLE, LINK_STATIC, ACS_PUBLIC)
+            .AddParameter(L"value", TYPE_DOUBLE)
+            .SetCallback([](const CallState& context)
+			{
+                auto [value] = GetArgs<double>(context);
+                return context.Collector.FromValue(std::floor(value));
+            });
 
-    mathClass.AddMethod(L"Floor", TYPE_DOUBLE, LINK_STATIC)
-        .AddParameter(L"value", TYPE_DOUBLE).SetCallback(&shard_math_Floor);
+        math.AddMethod(L"Round", TYPE_DOUBLE, LINK_STATIC, ACS_PUBLIC)
+            .AddParameter(L"value", TYPE_DOUBLE)
+            .SetCallback([](const CallState& context)
+			{
+                auto [value] = GetArgs<double>(context);
+                return context.Collector.FromValue(std::round(value));
+            });
 
-    mathClass.AddMethod(L"Round", TYPE_DOUBLE, LINK_STATIC)
-        .AddParameter(L"value", TYPE_DOUBLE).SetCallback(&shard_math_Round);
+        math.AddMethod(L"Min", TYPE_DOUBLE, LINK_STATIC, ACS_PUBLIC)
+            .AddParameter(L"a", TYPE_DOUBLE)
+            .AddParameter(L"b", TYPE_DOUBLE)
+            .SetCallback([](const CallState& context)
+			{
+                auto [a, b] = GetArgs<double, double>(context);
+                return context.Collector.FromValue(std::fmin(a, b));
+            });
 
-    mathClass.AddMethod(L"Min", TYPE_DOUBLE, LINK_STATIC)
-        .AddParameter(L"a", TYPE_DOUBLE)
-        .AddParameter(L"b", TYPE_DOUBLE).SetCallback(&shard_math_Min);
-
-    mathClass.AddMethod(L"Max", TYPE_DOUBLE, LINK_STATIC)
-        .AddParameter(L"a", TYPE_DOUBLE)
-        .AddParameter(L"b", TYPE_DOUBLE).SetCallback(&shard_math_Max);
+        math.AddMethod(L"Max", TYPE_DOUBLE, LINK_STATIC, ACS_PUBLIC)
+            .AddParameter(L"a", TYPE_DOUBLE)
+            .AddParameter(L"b", TYPE_DOUBLE)
+            .SetCallback([](const CallState& context)
+			{
+                auto [a, b] = GetArgs<double, double>(context);
+                return context.Collector.FromValue(std::fmax(a, b));
+            });
+    });
 }

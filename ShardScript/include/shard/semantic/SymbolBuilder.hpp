@@ -20,6 +20,7 @@
 
 #include <string>
 #include <type_traits>
+#include <utility>
 
 namespace shard
 {
@@ -99,6 +100,34 @@ namespace shard
         SymbolBuilder<InterfaceSymbol> AddInterface(
             const std::wstring& name,
             SymbolAccesibility access = ACS_PUBLIC);
+
+        // -------------------------------------------------------------------------
+        // Lambda/scoped builder helpers. The callback receives the builder as an
+        // rvalue (so it can be move-bound to by-value parameters or captured by
+        // forwarding/rvalue reference); the surrounding namespace builder is
+        // returned so chaining can continue.
+        // -------------------------------------------------------------------------
+        template<typename TCallback>
+        SymbolBuilder<NamespaceSymbol>& AddNamespace(
+            const std::wstring& name,
+            TCallback&& callback)
+        {
+            auto builder = AddNamespace(name);
+            std::forward<TCallback>(callback)(std::move(builder));
+            return *this;
+        }
+
+        template<typename TCallback>
+        SymbolBuilder<NamespaceSymbol>& AddClass(
+            const std::wstring& name,
+            SymbolAccesibility access,
+            SymbolLinking linking,
+            TCallback&& callback)
+        {
+            auto builder = AddClass(name, linking, access);
+            std::forward<TCallback>(callback)(std::move(builder));
+            return *this;
+        }
     };
 
     template<>
@@ -330,6 +359,19 @@ namespace shard
             TypeSymbol* returnType,
             SymbolLinking linking,
             SymbolAccesibility access = SymbolAccesibility::Public);
+
+        template<typename TCallback>
+        SymbolBuilder<ClassSymbol>& AddMethod(
+            const std::wstring& name,
+            TypeSymbol* returnType,
+            SymbolLinking linking,
+            SymbolAccesibility access,
+            TCallback&& callback)
+        {
+            auto builder = AddMethod(name, returnType, linking, access);
+            std::forward<TCallback>(callback)(std::move(builder));
+            return *this;
+        }
 
         SymbolBuilder<FieldSymbol> AddField(
             const std::wstring& name,

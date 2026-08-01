@@ -208,6 +208,8 @@
 #include <shard/runtime/VirtualMachine.hpp>
 #include <shard/runtime/ConsoleHelper.hpp>
 #include <shard/runtime/MethodCallState.hpp>
+#include <shard/runtime/NativeHelpers.hpp>
+
 // transitivelly includes Windows.h
 /*
 #include <shard/runtime/EventLoop.hpp>
