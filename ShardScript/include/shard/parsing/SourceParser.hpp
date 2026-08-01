@@ -79,7 +79,7 @@ namespace shard
 		int OperatorsInExpression = 0;
 		int BlockDepth = 0;
 		int LinkedExpressionDepth = 0;
-		static constexpr int MaxExpressionDepth = 128;
+		static constexpr int MaxExpressionDepth = 64;
 		static constexpr int MaxExpressionOperators = 64;
 		static constexpr int MaxBlockDepth = 64;
 		static constexpr int MaxLinkedExpressionDepth = 64;
