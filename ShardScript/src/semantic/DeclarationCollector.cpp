@@ -421,7 +421,8 @@ void DeclarationCollector::VisitEnumDeclaration(EnumDeclarationSyntax* node)
                     // TODO
                 }
 
-                previousValue = valueOpt.value_or(0);
+                value = valueOpt.value_or(0);
+                previousValue = value;
             }
             else if (symbol->IsFlags)
             {

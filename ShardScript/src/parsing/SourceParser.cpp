@@ -2069,15 +2069,10 @@ std::unique_ptr<ConditionalClauseBaseSyntax> SourceParser::ReadConditionalClause
 
 					default:
 					{
-						if (!reader.CanConsume())
-						{
-							Diagnostics.ReportError(elseKeyword, L"Unexpected end of file after 'else'");
-							return nullptr;
-						}
-
-						Diagnostics.ReportError(current, L"Expected 'if', 'unless', or '{' after 'else'");
-						reader.Consume();
-						continue;
+						auto syntax = std::make_unique<ElseStatementSyntax>(parent);
+						syntax->KeywordToken = elseKeyword;
+						syntax->StatementsBlock = ReadStatementsBlock(reader, syntax.get());
+						return syntax;
 					}
 				}
 			}
