@@ -19,7 +19,7 @@ namespace shard
 {
     constexpr std::int32_t SMALL_INTS_CACHE_MIN = -5;
     constexpr std::int32_t SMALL_INTS_CACHE_MAX = 256;
-    constexpr std::int32_t SMALL_INTS_CACHE_SIZE = SMALL_INTS_CACHE_MAX - SMALL_INTS_CACHE_MIN;
+    constexpr std::int32_t SMALL_INTS_CACHE_SIZE = SMALL_INTS_CACHE_MAX - SMALL_INTS_CACHE_MIN + 1;
 
     class ApplicationDomain;
 
