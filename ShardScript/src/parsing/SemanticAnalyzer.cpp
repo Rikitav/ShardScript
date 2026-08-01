@@ -41,5 +41,7 @@ void SemanticAnalyzer::Analyze(SyntaxTree& syntaxTree, SemanticModel& semanticMo
 
 	// Final cross-symbol validation pass. This also catches interface
 	// implementation mistakes in native libraries.
-	SemanticValidator::ValidateAllInterfaceImplementations(semanticModel, Diagnostics);
+	SemanticValidator validator(semanticModel, Diagnostics);
+	validator.PushScopeStack(TopScope);
+	validator.Validate(syntaxTree);
 }

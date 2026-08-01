@@ -559,7 +559,8 @@ void CompilationContext::AddLib(utilities::SharedLibrary library)
 
 		// Run cross-symbol checks (interface implementations, etc.) for
 		// symbols produced by the library entry point before marking them ready.
-		SemanticValidator::ValidateAllInterfaceImplementations(Model, Diagnostics);
+		SemanticValidator validator(Model, Diagnostics);
+		validator.ValidateAllSymbols();
 
 		// Native-library symbols are fully constructed by the entry point and do
 		// not go through the source-based analyzer passes.

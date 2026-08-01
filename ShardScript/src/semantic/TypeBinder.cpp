@@ -294,7 +294,7 @@ void TypeBinder::VisitClassDeclaration(ClassDeclarationSyntax* node)
 		VisitMemberDeclaration(member.get());
 
 	for (InterfaceSymbol* interfaceSymbol : baseInterfaces)
-		SemanticValidator::ValidateInterfaceImplementation(symbol, interfaceSymbol, Diagnostics, node->IdentifierToken);
+		SemanticValidator::BindInterfaceImplementations(symbol, interfaceSymbol);
 
 	symbol->AdvanceAnalysisState(SymbolAnalysisState::TypeResolved);
 	PopScope();
@@ -343,7 +343,7 @@ void TypeBinder::VisitStructDeclaration(StructDeclarationSyntax* node)
 		VisitMemberDeclaration(member.get());
 
 	for (InterfaceSymbol* interfaceSymbol : baseInterfaces)
-		SemanticValidator::ValidateInterfaceImplementation(symbol, interfaceSymbol, Diagnostics, node->IdentifierToken);
+		SemanticValidator::BindInterfaceImplementations(symbol, interfaceSymbol);
 
 	symbol->AdvanceAnalysisState(SymbolAnalysisState::TypeResolved);
 	PopScope();
