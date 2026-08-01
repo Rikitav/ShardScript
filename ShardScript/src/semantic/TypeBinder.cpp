@@ -855,7 +855,7 @@ void TypeBinder::VisitTryStatement(TryStatementSyntax* node)
 				exceptionType = clause->ExceptionType->Symbol;
 		}
 
-		if (exceptionType != SymbolTable::Primitives::Any)
+		if (clause->ExceptionType != nullptr)
 		{
 			TypeSymbol* throwable = TRAIT_THROWABLE;
 			if (throwable != nullptr && !SemanticModel::IsAssignableTo(throwable, exceptionType))

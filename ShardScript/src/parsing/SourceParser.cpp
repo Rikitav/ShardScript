@@ -2221,6 +2221,15 @@ std::unique_ptr<TryStatementSyntax> SourceParser::ReadTryStatement(SourceProvide
 		auto clause = std::make_unique<CatchClauseSyntax>(syntax.get());
 		clause->CatchKeywordToken = Expect(reader, TokenType::CatchKeyword, L"Expected 'catch' keyword");
 
+		if (reader.Current().Type == TokenType::OpenBrace)
+		{
+			Diagnostics.ReportError(clause->CatchKeywordToken,
+				L"Catch clause must declare an exception variable or type. Use parentheses for parameters, e.g., catch (ex: Type)");
+
+			ReadStatementsBlock(reader, clause.get());
+			continue;
+		}
+
 		bool hasParens = false;
 		if (reader.Current().Type == TokenType::OpenCurl)
 		{
