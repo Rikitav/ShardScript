@@ -1,7 +1,5 @@
-#include <cmath>
-
 #include <ShardScript.hpp>
-#include <shard/runtime/NativeHelpers.hpp>
+#include <cmath>
 
 using namespace shard;
 

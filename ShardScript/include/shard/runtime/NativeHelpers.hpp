@@ -61,10 +61,10 @@ namespace shard
             return UnwrapArg(value, tag);
         }
 
-        template<typename... Args, std::size_t... Indices>
-        inline std::tuple<Args...> GetArgsImpl(const CallState& context, std::index_sequence<Indices...>)
+        template<typename... TArgs, std::size_t... Indices>
+        inline std::tuple<TArgs...> GetArgsImpl(const CallState& context, std::index_sequence<Indices...>)
         {
-            return std::make_tuple(UnwrapArgAtIndex<Args>(context, Indices)...);
+            return std::make_tuple(UnwrapArgAtIndex<TArgs>(context, Indices)...);
         }
     }
 
@@ -73,16 +73,17 @@ namespace shard
     /// Supported types: bool, std::int64_t, double, wchar_t, std::uint8_t,
     /// const wchar_t*, std::wstring, ObjectInstance*, and any native pointer T*.
     /// </summary>
-    template<typename... Args>
-    inline std::tuple<Args...> GetArgs(const CallState& context)
+    template<typename... TArgs>
+    inline std::tuple<TArgs...> GetArgs(const CallState& context)
     {
-        if (context.Args.size() != sizeof...(Args))
+        constexpr std::size_t expectedCount = sizeof...(TArgs);
+        if (context.Args.size() != expectedCount)
         {
             throw std::runtime_error(
-                "Expected " + std::to_string(sizeof...(Args)) +
+                "Expected " + std::to_string(expectedCount) +
                 " arguments, got " + std::to_string(context.Args.size()));
         }
 
-        return detail::GetArgsImpl<Args...>(context, std::index_sequence_for<Args...>{});
+        return detail::GetArgsImpl<TArgs...>(context, std::index_sequence_for<TArgs...>{});
     }
 }
