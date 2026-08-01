@@ -1,0 +1,16 @@
+using stdio;
+using math;
+
+namespace math_test;
+
+public static func Main() -> void
+{
+    println(Math.PI);
+    println(Math.E);
+    println(Math.Sin(0.0));
+    println(Math.Cos(0.0));
+    println(Math.Sqrt(16.0));
+    println(Math.Pow(2.0, 10.0));
+    println(Math.Min(3.0, 7.0));
+    println(Math.Max(3.0, 7.0));
+}
