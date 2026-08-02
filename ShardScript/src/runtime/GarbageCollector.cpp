@@ -59,25 +59,21 @@ ObjectInstance* GarbageCollector::NullInstance = new ObjectInstance(nullptr, nul
 ObjectInstance* GarbageCollector::SmallInts = nullptr;
 std::int64_t* GarbageCollector::SmallIntsVals = nullptr;
 
+ObjectInstance* GarbageCollector::BoolTrueSingleton = nullptr;
+ObjectInstance* GarbageCollector::BoolFalseSingleton = nullptr;
+
 GarbageCollector::GarbageCollector(ApplicationDomain* domain) : applicationDomain(domain)
 {
-	static bool smallIntsCacheInitialized = false;
+	SmallInts = static_cast<ObjectInstance*>(malloc(SMALL_INTS_CACHE_SIZE * sizeof(ObjectInstance)));
+	SmallIntsVals = static_cast<std::int64_t*>(malloc(SMALL_INTS_CACHE_SIZE * sizeof(std::int64_t)));
 
-	if (!smallIntsCacheInitialized)
+	std::iota(SmallIntsVals, SmallIntsVals + SMALL_INTS_CACHE_SIZE, SMALL_INTS_CACHE_MIN);
+	TypeShape* shape = GetTypeShapeCache().GetOrCreateShape(SymbolTable::Primitives::Integer);
+
+	for (int i = 0; i < SMALL_INTS_CACHE_SIZE; ++i)
 	{
-		SmallInts = static_cast<ObjectInstance*>(malloc(SMALL_INTS_CACHE_SIZE * sizeof(ObjectInstance)));
-		SmallIntsVals = static_cast<std::int64_t*>(malloc(SMALL_INTS_CACHE_SIZE * sizeof(std::int64_t)));
-
-		std::iota(SmallIntsVals, SmallIntsVals + SMALL_INTS_CACHE_SIZE, SMALL_INTS_CACHE_MIN);
-		TypeShape* shape = GetTypeShapeCache().GetOrCreateShape(SymbolTable::Primitives::Integer);
-
-		for (int i = 0; i < SMALL_INTS_CACHE_SIZE; ++i)
-		{
-			ObjectInstance* cachedInt = new (&SmallInts[i]) ObjectInstance(TYPE_INT, shape, &SmallIntsVals[i], true);
-			cachedInt->IsSingleton = true;
-		}
-
-		smallIntsCacheInitialized = true;
+		ObjectInstance* cachedInt = new (&SmallInts[i]) ObjectInstance(TYPE_INT, shape, &SmallIntsVals[i], true);
+		cachedInt->IsSingleton = true;
 	}
 }
 
@@ -93,10 +89,7 @@ ObjectInstance* GarbageCollector::FromValue(bool value)
 {
 	TypeShape* shape = GetTypeShapeCache().GetOrCreateShape(SymbolTable::Primitives::Boolean);
 
-	static ObjectInstance* trueSingleton = nullptr;
-	static ObjectInstance* falseSingleton = nullptr;
-
-	ObjectInstance** singletonSlot = value ? &trueSingleton : &falseSingleton;
+	ObjectInstance** singletonSlot = value ? &BoolTrueSingleton : &BoolFalseSingleton;
 	if (*singletonSlot == nullptr)
 	{
 		ObjectInstance* singleton = GarbageCollector::AllocateInstance(shape);
@@ -166,7 +159,24 @@ ObjectInstance* GarbageCollector::FromValue(const wchar_t* value, bool isTransie
 
 	std::size_t length = wcslen(value);
 	instance->WriteMemory(0, sizeof(std::int64_t), static_cast<std::uint64_t*>(&length));
-	instance->WriteMemory(sizeof(std::int64_t), sizeof(wchar_t*), &value);
+
+	if (isTransient)
+	{
+		// The caller owns the buffer; just store the pointer.
+		instance->WriteMemory(sizeof(std::int64_t), sizeof(wchar_t*), &value);
+		return instance;
+	}
+
+	// Non-transient strings own their buffer, so copy the input.
+	std::size_t size = (length + 1) * sizeof(wchar_t);
+	wchar_t* copy = static_cast<wchar_t*>(malloc(size));
+	
+	if (copy == nullptr)
+		throw std::runtime_error("Failed to allocate string");
+	
+	std::memcpy(copy, value, size);
+	instance->WriteMemory(sizeof(std::int64_t), sizeof(wchar_t*), &copy);
+
 	return instance;
 }
 
@@ -465,10 +475,14 @@ void GarbageCollector::TerminateInstance(ObjectInstance* instance)
 
 void GarbageCollector::Terminate()
 {
-	// Destroy all static instances
+	// Destroy all static instances, removing each from the heap first so
+	// the later heap pass does not try to terminate them a second time.
 	for (const auto& choise : staticFields)
-		TerminateInstance(choise.second);
-
+	{
+		ObjectInstance* instance = choise.second;
+		Heap.erase(instance);
+		TerminateInstance(instance);
+	}
 
 	// Snapshot and clear heap before terminating to avoid iterator invalidation
 	std::vector<ObjectInstance*> snapshot;
@@ -483,4 +497,22 @@ void GarbageCollector::Terminate()
 
 	Heap.clear();
 	staticFields.clear();
+
+	if (SmallInts != nullptr)
+	{
+		for (int i = 0; i < SMALL_INTS_CACHE_SIZE; ++i)
+			SmallInts[i].~ObjectInstance();
+
+		free(SmallInts);
+		SmallInts = nullptr;
+	}
+
+	if (SmallIntsVals != nullptr)
+	{
+		free(SmallIntsVals);
+		SmallIntsVals = nullptr;
+	}
+
+	BoolTrueSingleton = nullptr;
+	BoolFalseSingleton = nullptr;
 }

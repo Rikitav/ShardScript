@@ -155,7 +155,9 @@ EnumSymbol* SymbolFactory::Enum(EnumDeclarationSyntax* node, bool isFlags)
 	symbol->IsFlags = isFlags;
 	SetAccesibility(node->Modifiers, symbol.get()->Accesibility, symbol.get()->Linking);
 
-	static MethodSymbol* enumToStringMethod = Method(ACS_PUBLIC, LINK_INSTANCE, TYPE_STRING, L"ToString", &primitive_enum_to_string);
+	MethodSymbol* enumToStringMethod = Method(ACS_PUBLIC, LINK_INSTANCE, TYPE_STRING, L"ToString", &primitive_enum_to_string);
+	enumToStringMethod->Parent = symbol.get();
+
 	symbol->Interfaces.push_back(TRAIT_PRINTABLE);
 	symbol->InterfaceMethodMap[TRAIT_PRINTABLE_ToString] = enumToStringMethod;
 	symbol->Methods.push_back(enumToStringMethod);
@@ -169,7 +171,9 @@ EnumSymbol* SymbolFactory::Enum(const std::wstring& name, bool isFlags)
 	symbol->IsFlags = isFlags;
 	symbol->Accesibility = SymbolAccesibility::Private;
 
-	static MethodSymbol* enumToStringMethod = Method(ACS_PUBLIC, LINK_INSTANCE, TYPE_STRING, L"ToString", &primitive_enum_to_string);
+	MethodSymbol* enumToStringMethod = Method(ACS_PUBLIC, LINK_INSTANCE, TYPE_STRING, L"ToString", &primitive_enum_to_string);
+	enumToStringMethod->Parent = symbol.get();
+
 	symbol->Interfaces.push_back(TRAIT_PRINTABLE);
 	symbol->InterfaceMethodMap[TRAIT_PRINTABLE_ToString] = enumToStringMethod;
 	symbol->Methods.push_back(enumToStringMethod);
@@ -183,7 +187,9 @@ EnumSymbol* SymbolFactory::Enum(const wchar_t* name, bool isFlags)
 	symbol->IsFlags = isFlags;
 	symbol->Accesibility = SymbolAccesibility::Private;
 
-	static MethodSymbol* enumToStringMethod = Method(ACS_PUBLIC, LINK_INSTANCE, TYPE_STRING, L"ToString", &primitive_enum_to_string);
+	MethodSymbol* enumToStringMethod = Method(ACS_PUBLIC, LINK_INSTANCE, TYPE_STRING, L"ToString", &primitive_enum_to_string);
+	enumToStringMethod->Parent = symbol.get();
+
 	symbol->Interfaces.push_back(TRAIT_PRINTABLE);
 	symbol->InterfaceMethodMap[TRAIT_PRINTABLE_ToString] = enumToStringMethod;
 	symbol->Methods.push_back(enumToStringMethod);

@@ -1,4 +1,6 @@
+#define SHARDSCRIPT_NO_WINDOWS
 #include <ShardScript.hpp>
+
 #include "include/raylib.h"
 
 #include <cstdint>

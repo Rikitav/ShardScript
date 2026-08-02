@@ -211,18 +211,15 @@
 #include <shard/runtime/NativeHelpers.hpp>
 
 // transitivelly includes Windows.h
-/*
+#ifndef SHARDSCRIPT_NO_WINDOWS
 #include <shard/runtime/EventLoop.hpp>
 #include <shard/runtime/NativeAsync.hpp> 
-*/
+#endif
 
 // --- Application / Context ---
 #include <shard/ApplicationDomain.hpp>
 #include <shard/CompilationContext.hpp>
 #include <shard/ShardScriptLIB.hpp>
-
-#include <shard/runtime/EventLoop.hpp>
-#include <shard/runtime/NativeAsync.hpp> 
 
 // --- Public C/C++ API ---
 #include <shard/ShardScriptExtern.hpp>

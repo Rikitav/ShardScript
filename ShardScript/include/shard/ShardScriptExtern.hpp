@@ -37,6 +37,11 @@ namespace shard
     class TypeSymbol;
     class TypeDeclarationSyntax;
     class InterfaceSymbol;
+    class StructSymbol;
+    class EnumSymbol;
+    class OperatorSymbol;
+    class TypeParameterSymbol;
+    class IndexatorSymbol;
     class MethodSymbol;
     class ParameterSymbol;
     class FieldSymbol;
@@ -101,6 +106,7 @@ extern "C"
     SHARD_API shard::CompilationContext* Shard_CreateCompilationContext();
     SHARD_API int Shard_DestroyCompilationContext(shard::CompilationContext* ctx);
     SHARD_API int Shard_AddLibrary(shard::CompilationContext* ctx, const wchar_t* path);
+    SHARD_API int Shard_AddLibraries(shard::CompilationContext* ctx, const wchar_t* const* paths, std::size_t count);
     SHARD_API int Shard_AddSource(shard::CompilationContext* ctx, const wchar_t* sourceName, const wchar_t* code, shard::CompilationUnitOrigin origin);
     SHARD_API int Shard_AddSourceFile(shard::CompilationContext* ctx, const wchar_t* filePath, shard::CompilationUnitOrigin origin);
     SHARD_API int Shard_Analyze(shard::CompilationContext* ctx);
@@ -334,11 +340,13 @@ extern "C"
     SHARD_API shard::NamespaceSymbol* Shard_CreateNamespaceSymbol(shard::CompilationContext* ctx, shard::NamespaceSymbol* parent, const wchar_t* name);
     SHARD_API shard::ClassSymbol* Shard_CreateClassSymbol(shard::CompilationContext* ctx, shard::NamespaceSymbol* parent, const wchar_t* name);
     SHARD_API shard::MethodSymbol* Shard_CreateMethodSymbol(shard::CompilationContext* ctx, shard::TypeSymbol* parentType, const wchar_t* name, shard::TypeSymbol* returnType, int isStatic, int accessibility);
+    SHARD_API shard::MethodSymbol* Shard_CreateNamespaceMethodSymbol(shard::CompilationContext* ctx, shard::NamespaceSymbol* parentNamespace, const wchar_t* name, shard::TypeSymbol* returnType, int isStatic, int accessibility);
     SHARD_API shard::ConstructorSymbol* Shard_CreateConstructorSymbol(shard::CompilationContext* ctx, shard::TypeSymbol* parentType, int accessibility);
     SHARD_API shard::ParameterSymbol* Shard_CreateParameterSymbol(shard::CompilationContext* ctx, const wchar_t* name, shard::TypeSymbol* type);
     SHARD_API int Shard_AddMethodParameter(shard::MethodSymbol* method, shard::ParameterSymbol* parameter);
     SHARD_API shard::FieldSymbol* Shard_CreateFieldSymbol(shard::CompilationContext* ctx, shard::TypeSymbol* parentType, const wchar_t* name, shard::TypeSymbol* type, int isStatic, int accessibility);
     SHARD_API int Shard_SetSymbolAccesibility(shard::SyntaxSymbol* symbol, int accessibility);
+    SHARD_API int Shard_SetSymbolLinking(shard::SyntaxSymbol* symbol, int linking);
 
     // =========================================================================
     // Native callback binding helpers (used by language bindings such as Rust)
@@ -347,6 +355,17 @@ extern "C"
     SHARD_API int Shard_SetMethodCallback(shard::MethodSymbol* method, shard::MethodSymbolDelegate callback);
     SHARD_API int Shard_SetConstructorCallback(shard::ConstructorSymbol* ctor, shard::MethodSymbolDelegate callback);
     SHARD_API int Shard_SetAccessorCallback(shard::AccessorSymbol* accessor, shard::MethodSymbolDelegate callback);
+
+    SHARD_API int Shard_SetMethodManagedCallStateCallback(shard::MethodSymbol* method, shard::ObjectInstance* (*callback)(const shard::CallState* state, void* userData), void* userData);
+
+    typedef shard::ObjectInstance* (*ShardManagedMethodCallback)(
+        shard::MethodSymbol* method,
+        shard::ObjectInstance** args,
+        int argsCount,
+        void* userData,
+        shard::GarbageCollector* collector);
+
+    SHARD_API int Shard_SetMethodManagedCallback(shard::MethodSymbol* method, ShardManagedMethodCallback callback, void* userData);
 
     SHARD_API shard::PropertySymbol* Shard_CreatePropertySymbol(
         shard::CompilationContext* ctx,
@@ -358,6 +377,17 @@ extern "C"
 
     SHARD_API shard::AccessorSymbol* Shard_PropertyAddGetter(shard::CompilationContext* ctx, shard::PropertySymbol* property);
     SHARD_API shard::AccessorSymbol* Shard_PropertyAddSetter(shard::CompilationContext* ctx, shard::PropertySymbol* property);
+
+    SHARD_API shard::InterfaceSymbol* Shard_CreateInterfaceSymbol(shard::CompilationContext* ctx, shard::NamespaceSymbol* parent, const wchar_t* name, int accessibility);
+    SHARD_API shard::StructSymbol* Shard_CreateStructSymbol(shard::CompilationContext* ctx, shard::NamespaceSymbol* parent, const wchar_t* name);
+    SHARD_API shard::EnumSymbol* Shard_CreateEnumSymbol(shard::CompilationContext* ctx, shard::NamespaceSymbol* parent, const wchar_t* name, int isFlags);
+    SHARD_API shard::FieldSymbol* Shard_AddEnumLiteral(shard::CompilationContext* ctx, shard::EnumSymbol* enumType, const wchar_t* name, std::int64_t value);
+    SHARD_API shard::OperatorSymbol* Shard_CreateOperatorSymbol(shard::CompilationContext* ctx, shard::TypeSymbol* parentType, const wchar_t* name, shard::TypeSymbol* returnType, int operatorTokenType, int accessibility);
+    SHARD_API shard::TypeParameterSymbol* Shard_CreateTypeParameterSymbol(shard::CompilationContext* ctx, shard::SyntaxSymbol* parent, const wchar_t* name);
+    SHARD_API shard::IndexatorSymbol* Shard_CreateIndexatorSymbol(shard::CompilationContext* ctx, shard::TypeSymbol* parentType, const wchar_t* name, shard::TypeSymbol* returnType, int accessibility);
+    SHARD_API int Shard_AddIndexatorParameter(shard::IndexatorSymbol* indexator, shard::ParameterSymbol* parameter);
+    SHARD_API shard::AccessorSymbol* Shard_IndexatorAddGetter(shard::CompilationContext* ctx, shard::IndexatorSymbol* indexator);
+    SHARD_API shard::AccessorSymbol* Shard_IndexatorAddSetter(shard::CompilationContext* ctx, shard::IndexatorSymbol* indexator);
 
     // =========================================================================
     // CallState / argument accessors
