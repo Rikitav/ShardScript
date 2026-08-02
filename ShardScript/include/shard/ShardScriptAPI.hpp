@@ -29,11 +29,9 @@
 #if defined(_MSC_VER)
 
 	using LibraryHandle = void*;
-	#ifndef WIN32_LEAN_AND_MEAN
-		#define WIN32_LEAN_AND_MEAN
-	#endif
-	//#include <Windows.h>
-	//using LibraryHandle = struct HINSTANCE__*;
+	#define WIN32_LEAN_AND_MEAN
+	#define NOMINMAX
+	#define NOGDI
 
 // GCC / Clang
 #elif defined(__GNUC__)

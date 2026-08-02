@@ -72,6 +72,11 @@
 #include <shard/parsing/nodes/Expressions/LinkedExpressionSyntax.hpp>
 
 #include <shard/semantic/symbols/InterfaceSymbol.hpp>
+#include <shard/semantic/symbols/StructSymbol.hpp>
+#include <shard/semantic/symbols/EnumSymbol.hpp>
+#include <shard/semantic/symbols/OperatorSymbol.hpp>
+#include <shard/semantic/symbols/TypeParameterSymbol.hpp>
+#include <shard/semantic/symbols/IndexatorSymbol.hpp>
 
 #include <shard/ShardScriptExtern.hpp>
 
@@ -160,6 +165,26 @@ namespace
             static_cast<int>(context.Args.size()),
             entry.UserData,
             &context.Collector);
+    }
+
+    using ShardManagedCallStateCallback = shard::ObjectInstance* (*)(const shard::CallState* state, void* userData);
+
+    struct ManagedCallStateCallbackEntry
+    {
+        ShardManagedCallStateCallback Callback;
+        void* UserData;
+    };
+
+    static std::unordered_map<shard::MethodSymbol*, ManagedCallStateCallbackEntry> ManagedCallStateCallbacks;
+
+    static shard::ObjectInstance* InvokeManagedCallStateCallback(const shard::CallState& context)
+    {
+        auto it = ManagedCallStateCallbacks.find(context.Method);
+        if (it == ManagedCallStateCallbacks.end())
+            return nullptr;
+
+        const ManagedCallStateCallbackEntry& entry = it->second;
+        return entry.Callback(&context, entry.UserData);
     }
 }
 
@@ -2446,6 +2471,35 @@ extern "C"
         }
     }
 
+    SHARD_API MethodSymbol* Shard_CreateNamespaceMethodSymbol(CompilationContext* ctx, NamespaceSymbol* parentNamespace, const wchar_t* name, TypeSymbol* returnType, int isStatic, int accessibility)
+    {
+        try
+        {
+            if (ctx == nullptr || name == nullptr || parentNamespace == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return nullptr;
+            }
+
+            SymbolFactory factory(ctx->GetSemanticModel().Table.get());
+            auto* symbol = factory.Method(name, returnType, isStatic ? LINK_STATIC : LINK_INSTANCE);
+            symbol->Parent = parentNamespace;
+            symbol->ReturnType = returnType;
+            symbol->Accesibility = static_cast<SymbolAccesibility>(accessibility);
+            symbol->HandleType = MethodHandleType::External;
+
+            parentNamespace->OnSymbolDeclared(symbol);
+            symbol->FullName = parentNamespace->FullName + L"." + symbol->Name;
+
+            return symbol;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
     SHARD_API ConstructorSymbol* Shard_CreateConstructorSymbol(CompilationContext* ctx, TypeSymbol* parentType, int accessibility)
     {
         try
@@ -2581,13 +2635,14 @@ extern "C"
                 return -1;
             }
 
-            if (!symbol->IsMember())
+            MemberSymbol* memberSymbol = dynamic_cast<MemberSymbol*>(symbol);
+            if (memberSymbol == nullptr)
             {
                 SetLastShardWError(L"symbol does not support linking");
                 return -1;
             }
 
-            static_cast<MemberSymbol*>(symbol)->Linking = static_cast<SymbolLinking>(linking);
+            memberSymbol->Linking = static_cast<SymbolLinking>(linking);
             return 0;
         }
         catch (const std::exception& e)
@@ -2609,6 +2664,28 @@ extern "C"
 
             ManagedMethodCallbacks[method] = { callback, userData };
             method->FunctionPointer = &InvokeManagedMethodCallback;
+            method->HandleType = MethodHandleType::External;
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_SetMethodManagedCallStateCallback(MethodSymbol* method, ShardManagedCallStateCallback callback, void* userData)
+    {
+        try
+        {
+            if (method == nullptr || callback == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return -1;
+            }
+
+            ManagedCallStateCallbacks[method] = { callback, userData };
+            method->FunctionPointer = &InvokeManagedCallStateCallback;
             method->HandleType = MethodHandleType::External;
             return 0;
         }
@@ -3551,6 +3628,302 @@ extern "C"
             SymbolFactory factory(ctx->GetSemanticModel().Table.get());
             AccessorSymbol* setter = factory.Setter(property);
             setter->HandleType = MethodHandleType::External;
+            return setter;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API InterfaceSymbol* Shard_CreateInterfaceSymbol(CompilationContext* ctx, NamespaceSymbol* parent, const wchar_t* name, int accessibility)
+    {
+        try
+        {
+            if (ctx == nullptr || name == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return nullptr;
+            }
+
+            SymbolFactory factory(ctx->GetSemanticModel().Table.get());
+            InterfaceSymbol* symbol = factory.Interface(name, static_cast<SymbolAccesibility>(accessibility), parent);
+            symbol->Accesibility = static_cast<SymbolAccesibility>(accessibility);
+
+            if (parent != nullptr)
+            {
+                parent->OnSymbolDeclared(symbol);
+            }
+            else
+            {
+                symbol->FullName = symbol->Name;
+            }
+
+            return symbol;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API StructSymbol* Shard_CreateStructSymbol(CompilationContext* ctx, NamespaceSymbol* parent, const wchar_t* name)
+    {
+        try
+        {
+            if (ctx == nullptr || name == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return nullptr;
+            }
+
+            SymbolFactory factory(ctx->GetSemanticModel().Table.get());
+            StructSymbol* symbol = factory.Struct(name);
+            symbol->Accesibility = SymbolAccesibility::Public;
+
+            if (parent != nullptr)
+            {
+                parent->OnSymbolDeclared(symbol);
+            }
+            else
+            {
+                symbol->FullName = symbol->Name;
+            }
+
+            return symbol;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API EnumSymbol* Shard_CreateEnumSymbol(CompilationContext* ctx, NamespaceSymbol* parent, const wchar_t* name, int isFlags)
+    {
+        try
+        {
+            if (ctx == nullptr || name == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return nullptr;
+            }
+
+            SymbolFactory factory(ctx->GetSemanticModel().Table.get());
+            EnumSymbol* symbol = factory.Enum(name, isFlags != 0);
+            symbol->Accesibility = SymbolAccesibility::Public;
+
+            if (parent != nullptr)
+            {
+                parent->OnSymbolDeclared(symbol);
+            }
+            else
+            {
+                symbol->FullName = symbol->Name;
+            }
+
+            return symbol;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API FieldSymbol* Shard_AddEnumLiteral(CompilationContext* ctx, EnumSymbol* enumType, const wchar_t* name, std::int64_t value)
+    {
+        try
+        {
+            if (ctx == nullptr || enumType == nullptr || name == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return nullptr;
+            }
+
+            SymbolFactory factory(ctx->GetSemanticModel().Table.get());
+            FieldSymbol* field = factory.EnumField(name, enumType, value);
+
+            enumType->OnSymbolDeclared(field);
+            return field;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API OperatorSymbol* Shard_CreateOperatorSymbol(CompilationContext* ctx, TypeSymbol* parentType, const wchar_t* name, TypeSymbol* returnType, int operatorTokenType, int accessibility)
+    {
+        try
+        {
+            if (ctx == nullptr || name == nullptr || parentType == nullptr || returnType == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return nullptr;
+            }
+
+            SymbolFactory factory(ctx->GetSemanticModel().Table.get());
+            OperatorSymbol* symbol = factory.Operator(
+                name,
+                static_cast<shard::TokenType>(operatorTokenType),
+                returnType,
+                nullptr,
+                {});
+
+            symbol->Accesibility = static_cast<SymbolAccesibility>(accessibility);
+            symbol->Linking = LINK_STATIC;
+            symbol->Parent = parentType;
+
+            parentType->OnSymbolDeclared(symbol);
+            return symbol;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API TypeParameterSymbol* Shard_CreateTypeParameterSymbol(CompilationContext* ctx, SyntaxSymbol* parent, const wchar_t* name)
+    {
+        try
+        {
+            if (ctx == nullptr || parent == nullptr || name == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return nullptr;
+            }
+
+            SymbolFactory factory(ctx->GetSemanticModel().Table.get());
+            TypeParameterSymbol* symbol = nullptr;
+
+            if (TypeSymbol* typeParent = dynamic_cast<TypeSymbol*>(parent))
+            {
+                symbol = factory.TypeParameter(name, typeParent);
+                typeParent->OnSymbolDeclared(symbol);
+            }
+            else if (MethodSymbol* methodParent = dynamic_cast<MethodSymbol*>(parent))
+            {
+                symbol = factory.TypeParameter(name, methodParent);
+                methodParent->OnSymbolDeclared(symbol);
+            }
+            else
+            {
+                SetLastShardWError(L"parent must be a type or method");
+                return nullptr;
+            }
+
+            return symbol;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API IndexatorSymbol* Shard_CreateIndexatorSymbol(CompilationContext* ctx, TypeSymbol* parentType, const wchar_t* name, TypeSymbol* returnType, int accessibility)
+    {
+        try
+        {
+            if (ctx == nullptr || name == nullptr || parentType == nullptr || returnType == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return nullptr;
+            }
+
+            SymbolFactory factory(ctx->GetSemanticModel().Table.get());
+            IndexatorSymbol* symbol = factory.Indexator(name, returnType);
+            symbol->Accesibility = static_cast<SymbolAccesibility>(accessibility);
+            symbol->Parent = parentType;
+            symbol->ReturnType = returnType;
+
+            parentType->OnSymbolDeclared(symbol);
+            return symbol;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API int Shard_AddIndexatorParameter(IndexatorSymbol* indexator, ParameterSymbol* parameter)
+    {
+        try
+        {
+            if (indexator == nullptr || parameter == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return -1;
+            }
+
+            indexator->OnSymbolDeclared(parameter);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    static void CopyIndexatorParametersToAccessor(IndexatorSymbol* indexator, AccessorSymbol* accessor)
+    {
+        for (ParameterSymbol* param : indexator->Parameters)
+            accessor->Parameters.push_back(param);
+    }
+
+    SHARD_API AccessorSymbol* Shard_IndexatorAddGetter(CompilationContext* ctx, IndexatorSymbol* indexator)
+    {
+        try
+        {
+            if (ctx == nullptr || indexator == nullptr)
+            {
+                SetLastShardWError(L"context or indexator is null");
+                return nullptr;
+            }
+
+            SymbolFactory factory(ctx->GetSemanticModel().Table.get());
+            AccessorSymbol* getter = factory.Accessor(L"get_" + indexator->Name, indexator, true);
+            getter->HandleType = MethodHandleType::External;
+            CopyIndexatorParametersToAccessor(indexator, getter);
+
+            return getter;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API AccessorSymbol* Shard_IndexatorAddSetter(CompilationContext* ctx, IndexatorSymbol* indexator)
+    {
+        try
+        {
+            if (ctx == nullptr || indexator == nullptr)
+            {
+                SetLastShardWError(L"context or indexator is null");
+                return nullptr;
+            }
+
+            SymbolFactory factory(ctx->GetSemanticModel().Table.get());
+            AccessorSymbol* setter = factory.Accessor(L"set_" + indexator->Name, indexator, false);
+            setter->HandleType = MethodHandleType::External;
+
+            ParameterSymbol* valueParam = setter->Parameters.empty() ? nullptr : setter->Parameters.back();
+            setter->Parameters.clear();
+
+            CopyIndexatorParametersToAccessor(indexator, setter);
+
+            if (valueParam != nullptr)
+                setter->Parameters.push_back(valueParam);
+
             return setter;
         }
         catch (const std::exception& e)

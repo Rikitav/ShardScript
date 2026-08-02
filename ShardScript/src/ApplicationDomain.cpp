@@ -9,7 +9,10 @@ ApplicationDomain::ApplicationDomain(std::unique_ptr<ProgramVirtualImage> progra
 
 }
 
-ApplicationDomain::~ApplicationDomain() = default;
+ApplicationDomain::~ApplicationDomain()
+{
+	garbageCollector.Terminate();
+}
 
 ProgramVirtualImage& ApplicationDomain::GetProgram()
 {

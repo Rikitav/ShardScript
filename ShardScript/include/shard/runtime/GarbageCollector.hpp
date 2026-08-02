@@ -102,6 +102,9 @@ namespace shard
         static ObjectInstance* SmallInts;
         static std::int64_t* SmallIntsVals;
 
+        static ObjectInstance* BoolTrueSingleton;
+        static ObjectInstance* BoolFalseSingleton;
+
 		ApplicationDomain* applicationDomain;
 		std::uint64_t objectsCounter = 0;
         std::unordered_map<FieldSymbol*, ObjectInstance*> staticFields;
