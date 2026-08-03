@@ -13,6 +13,7 @@
 #include <memory>
 #include <iterator>
 #include <algorithm>
+#include <span>
 #include <cstdint>
 
 namespace shard
@@ -142,6 +143,7 @@ namespace shard
 
 		ObjectInstance* AllocateInstance(TypeShape* shape, bool isTransient = false);
 		ObjectInstance* AllocateInstance(const TypeSymbol* objectInfo, bool isTransient = false);
+        ObjectInstance* AllocateGeneric(TypeSymbol* baseType, const std::span<TypeSymbol*> genericArgs, bool isTransient = false);
 		ObjectInstance* AllocateGeneric(TypeSymbol* baseType, const std::vector<TypeSymbol*>& genericArgs, bool isTransient = false);
 		ObjectInstance* AllocateArray(TypeSymbol* elementType, std::size_t length, bool isTransient = false);
         ObjectInstance* CopyInstance(ObjectInstance* instance);

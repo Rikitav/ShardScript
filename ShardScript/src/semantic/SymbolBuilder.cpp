@@ -973,6 +973,7 @@ SymbolBuilder<MethodSymbol> SymbolBuilder<InterfaceSymbol>::AddMethod(
     SymbolAccesibility access)
 {
     SymbolBuilder<MethodSymbol> builder(Table, name, returnType, linking, access, Symbol);
+    builder.Get()->IsAbstract = true;
     return builder;
 }
 
