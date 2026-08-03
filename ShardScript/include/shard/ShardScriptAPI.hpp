@@ -29,9 +29,15 @@
 #if defined(_MSC_VER)
 
 	using LibraryHandle = void*;
-	#define WIN32_LEAN_AND_MEAN
-	#define NOMINMAX
-	#define NOGDI
+	#ifndef WIN32_LEAN_AND_MEAN
+		#define WIN32_LEAN_AND_MEAN
+	#endif
+	#ifndef NOMINMAX
+		#define NOMINMAX
+	#endif
+	#ifndef NOGDI
+		#define NOGDI
+	#endif
 
 // GCC / Clang
 #elif defined(__GNUC__)

@@ -305,6 +305,15 @@ ObjectInstance* GarbageCollector::AllocateInstance(const TypeSymbol* objectInfo,
 	return AllocateInstance(shape, isTransient);
 }
 
+ObjectInstance* GarbageCollector::AllocateGeneric(TypeSymbol* baseType, const std::span<TypeSymbol*> genericArgs, bool isTransient)
+{
+	if (baseType == nullptr)
+		throw std::runtime_error("baseType is nullptr");
+
+	TypeShape* shape = GetTypeShapeCache().GetOrCreateShape(baseType, std::vector<TypeSymbol*>(genericArgs.begin(), genericArgs.end()));
+	return AllocateInstance(shape, isTransient);
+}
+
 ObjectInstance* GarbageCollector::AllocateGeneric(TypeSymbol* baseType, const std::vector<TypeSymbol*>& genericArgs, bool isTransient)
 {
 	if (baseType == nullptr)

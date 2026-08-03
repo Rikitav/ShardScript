@@ -86,12 +86,25 @@ namespace shard
 		std::int64_t& AsStringLength() const;
 		void* AsNint() const;
 
+		/// <summary>
+		/// Helper method to unwrap native object handle, saved as nint
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <returns></returns>
+		template<typename T>
+		T* AsNint() const
+		{
+			return reinterpret_cast<T*>(getMemory());
+		}
+
 		void* OffsetMemory(const std::size_t offset, const std::size_t size) const;
 		void ReadMemory(const std::size_t offset, const std::size_t size, void* dst) const;
 		void WriteMemory(const std::size_t offset, const std::size_t size, const void* src) const;
 	};
 
-	/// <summary>RAII wrapper that keeps an ObjectInstance alive across an async boundary.</summary>
+	/// <summary>
+	/// RAII wrapper that keeps an ObjectInstance alive across an async boundary.
+	/// </summary>
 	struct SHARD_API ObjectRef
 	{
 		ObjectInstance* Instance = nullptr;
