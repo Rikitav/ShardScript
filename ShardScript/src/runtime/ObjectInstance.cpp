@@ -167,6 +167,11 @@ ObjectInstance* ObjectInstance::GetField(std::uint32_t slot)
 	}
 }
 
+ObjectInstance* ObjectInstance::GetField(const FieldSymbol* field)
+{
+	return GetField(field->SlotIndex);
+}
+
 void ObjectInstance::SetField(std::uint32_t slot, ObjectInstance* instance)
 {
 
@@ -233,6 +238,11 @@ void ObjectInstance::SetField(std::uint32_t slot, ObjectInstance* instance)
 
 		WriteMemory(fieldOffset, fieldShape->Size, instance->getMemory());
 	}
+}
+
+void ObjectInstance::SetField(const FieldSymbol* field, ObjectInstance* instance)
+{
+	SetField(field->SlotIndex, instance);
 }
 
 std::size_t ObjectInstance::GetArrayLength() const

@@ -344,10 +344,8 @@ ConstructorSymbol* SymbolFactory::Constructor(ConstructorDeclarationSyntax* node
 	std::wstring methodName = node->IdentifierToken.Word;
 	auto symbol = std::make_unique<ConstructorSymbol>(methodName);
 	symbol->ReturnType = SymbolTable::Primitives::Void;
-
-	SetAccesibility(node->Modifiers, symbol.get()->Accesibility, symbol.get()->Linking);
 	symbol->HandleType = MethodHandleType::Body;
-
+	SetAccesibility(node->Modifiers, symbol.get()->Accesibility, symbol.get()->Linking);
 	return static_cast<ConstructorSymbol*>(Table->BindSymbol(node, std::move(symbol)));
 }
 

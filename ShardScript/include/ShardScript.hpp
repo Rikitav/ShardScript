@@ -222,6 +222,6 @@
 #include <shard/ShardScriptLIB.hpp>
 
 // --- Public C/C++ API ---
-#include <shard/ShardScriptExtern.hpp>
+//#include <shard/ShardScriptExtern.hpp>
 
 #endif // _SHARDSCRIPT_

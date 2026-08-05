@@ -1476,11 +1476,11 @@ void ExpressionBinder::VisitLambdaExpression(LambdaExpressionSyntax* node)
 	bool hasExplicitReturnType = false;
 	if (node->ReturnType != nullptr)
 	{
-		VisitType(node->ReturnType.get());
-		if (node->ReturnType->Symbol != nullptr)
+		TypeSymbol* returnType = ResolveTypeExpression(node->ReturnType.get());
+		if (returnType != nullptr)
 		{
-			anonymousMethod->ReturnType = node->ReturnType->Symbol;
-			delegate->ReturnType = node->ReturnType->Symbol;
+			anonymousMethod->ReturnType = returnType;
+			delegate->ReturnType = returnType;
 			hasExplicitReturnType = true;
 
 			if (isAsync && !IsValidAsyncReturnType(anonymousMethod->ReturnType))
@@ -1498,10 +1498,9 @@ void ExpressionBinder::VisitLambdaExpression(LambdaExpressionSyntax* node)
 
 	if (node->ParametersList != nullptr)
 	{
-		VisitParametersList(node->ParametersList.get());
 		for (const auto& parameter : node->ParametersList->Parameters)
 		{
-			TypeSymbol* paramType = parameter->Type != nullptr ? parameter->Type->Symbol : SymbolTable::Primitives::Any;
+			TypeSymbol* paramType = parameter->Type != nullptr ? ResolveTypeExpression(parameter->Type.get()) : SymbolTable::Primitives::Any;
 			ParameterSymbol* paramSymbol = Factory.Parameter(parameter->Identifier.Word, paramType);
 			delegate->Parameters.push_back(paramSymbol);
 		}

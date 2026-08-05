@@ -156,7 +156,6 @@ static ObjectInstance* shard_constream_println_enumerable(const CallState& conte
         throw std::runtime_error("Could not determine element type of IEnumerable<T>");
 
     enumerable->IncrementReference();
-    context.Runtimer.SetPendingTypeArguments({ elementType });
     ObjectInstance* enumerator = context.Runtimer.InvokeMethod(getEnumerator, &enumerable, 1);
     if (enumerator == nullptr)
         throw std::runtime_error("GetEnumerator returned null");
@@ -181,6 +180,8 @@ static ObjectInstance* shard_constream_println_enumerable(const CallState& conte
         ObjectInstance* current = context.Runtimer.InvokeMethod(currentGetter, &enumerator, 1);
 
         if (!first)
+            ConsoleHelper::Write(L"[");
+        else
             ConsoleHelper::Write(L" ");
         first = false;
 
@@ -190,7 +191,7 @@ static ObjectInstance* shard_constream_println_enumerable(const CallState& conte
     }
 
     context.Collector.CollectInstance(enumerator);
-    ConsoleHelper::WriteLine(L"");
+    ConsoleHelper::WriteLine(L"]");
     return nullptr;
 }
 
