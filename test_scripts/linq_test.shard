@@ -1,0 +1,46 @@
+using stdio;
+using linq;
+
+public func Main() -> void
+{
+    numbers := 1..&5;
+
+    // Select: square each number
+    squared := numbers.Select(lambda (x: int) -> int
+    {
+        return x * x;
+    });
+
+    print("Squared: ");
+    println(squared);
+
+    // Where: keep only even numbers
+    evens := numbers.Where(lambda (x: int) -> bool
+    {
+        return x % 2 == 0;
+    });
+
+    print("Evens: ");
+    println(evens);
+
+    // OrderBy: sort by descending using negated key
+    ordered := numbers.OrderBy(lambda (x: int) -> int
+    {
+        return -x;
+    });
+    
+    print("Ordered desc: ");
+    println(ordered);
+    
+    // Chained: Where then Select
+    chained := numbers.Where(lambda (x: int) -> bool
+    {
+        return x > 2;
+    }).Select(lambda (x: int) -> int
+    {
+        return x * 10;
+    });
+
+    print("Chained: ");
+    println(chained);
+}

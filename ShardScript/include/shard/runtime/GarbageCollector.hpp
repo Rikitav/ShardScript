@@ -150,7 +150,8 @@ namespace shard
 
         void CollectInstance(ObjectInstance* instance);
         void DestroyInstance(ObjectInstance* instance);
-        void TerminateInstance(ObjectInstance* instance);
+        void TerminateInstance(ObjectInstance* instance, bool deleteInstance = true);
+        void DeleteInstanceMemory(ObjectInstance* instance);
 		void Terminate();
 	};
 }

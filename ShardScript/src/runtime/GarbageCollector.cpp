@@ -417,6 +417,9 @@ void GarbageCollector::DestroyInstance(ObjectInstance* instance)
 	if (instance == NullInstance)
 		return;
 
+	if (instance->Terminated)
+		return;
+
 	instance->DecrementReference();
 	if (instance->getReferencesCounter() > 0)
 		return;
@@ -425,7 +428,33 @@ void GarbageCollector::DestroyInstance(ObjectInstance* instance)
 	TerminateInstance(instance);
 }
 
-void GarbageCollector::TerminateInstance(ObjectInstance* instance)
+void GarbageCollector::DeleteInstanceMemory(ObjectInstance* instance)
+{
+	if (instance == nullptr)
+		throw std::runtime_error("requested deleting nullptr");
+
+	if (instance == NullInstance)
+		return;
+
+	if (instance->IsSingleton)
+		return;
+
+	if (!instance->getIsTransient())
+	{
+		if (instance->getInfo() == SymbolTable::Primitives::String)
+		{
+			void* stringPtr = instance->OffsetMemory(sizeof(std::int64_t), sizeof(wchar_t*));
+			wchar_t* stringData = *static_cast<wchar_t**>(stringPtr);
+			free(stringData);
+		}
+
+		free(instance->getMemory());
+	}
+
+	delete instance;
+}
+
+void GarbageCollector::TerminateInstance(ObjectInstance* instance, bool deleteInstance)
 {
 	if (instance == nullptr)
 		throw std::runtime_error("requested terminating nullptr");
@@ -467,25 +496,25 @@ void GarbageCollector::TerminateInstance(ObjectInstance* instance)
 		}
 	}
 
-	if (!instance->getIsTransient())
-	{
-		if (instance->getInfo() == SymbolTable::Primitives::String)
-		{
-			void* stringPtr = instance->OffsetMemory(sizeof(std::int64_t), sizeof(wchar_t*));
-			wchar_t* stringData = *static_cast<wchar_t**>(stringPtr);
-			free(stringData);
-		}
-
-		free(instance->getMemory());
-	}
-
-	delete instance;
+	if (deleteInstance)
+		DeleteInstanceMemory(instance);
 }
 
 void GarbageCollector::Terminate()
 {
-	// Destroy all static instances, removing each from the heap first so
-	// the later heap pass does not try to terminate them a second time.
+	// Snapshot all regular instances and mark them as terminating up front.
+	// This prevents use-after-free when static instances or other regular instances reference each other and are destroyed in an arbitrary order.
+	std::vector<ObjectInstance*> snapshot;
+	snapshot.reserve(Heap.size());
+
+	for (ObjectInstance* instance : Heap)
+	{
+		instance->Terminated = true;
+		snapshot.push_back(instance);
+	}
+
+	// Destroy all static instances. They may reference regular instances, but
+	// those are already marked terminating, so DestroyInstance will skip them.
 	for (const auto& choise : staticFields)
 	{
 		ObjectInstance* instance = choise.second;
@@ -493,16 +522,18 @@ void GarbageCollector::Terminate()
 		TerminateInstance(instance);
 	}
 
-	// Snapshot and clear heap before terminating to avoid iterator invalidation
-	std::vector<ObjectInstance*> snapshot;
-	snapshot.reserve(Heap.size());
-	
-	for (ObjectInstance* instance : Heap)
-		snapshot.push_back(instance);
-	
-	// Destroy all regular instances
+	// Release references between regular instances without deleting any of them yet.
+	// Because every regular instance is already marked Terminated, nested
+	// DestroyInstance calls will not touch memory that is about to be freed.
 	for (ObjectInstance* instance : snapshot)
-		TerminateInstance(instance);
+		TerminateInstance(instance, false);
+
+	// Now that no regular instance holds a reference to another, delete them all.
+	for (ObjectInstance* instance : snapshot)
+	{
+		Heap.erase(instance);
+		DeleteInstanceMemory(instance);
+	}
 
 	Heap.clear();
 	staticFields.clear();

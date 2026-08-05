@@ -1240,10 +1240,21 @@ void AbstractEmiter::VisitInvocationExpression(InvokationExpressionSyntax* node)
 		return;
 	}
 
+	// Evaluate arguments and receiver first. This prevents nested generic calls
+	// inside arguments or the receiver from clobbering the pending type arguments
+	// for this invocation.
+	VisitArgumentsList(node->ArgumentsList.get());
+	if (node->PreviousExpression != nullptr)
+		VisitExpression(node->PreviousExpression.get());
+
 	bool hasTypeArguments = false;
 	std::size_t ownerParamCount = 0;
 
-	if (node->ReceiverType != nullptr && node->ReceiverType->Kind == SyntaxKind::GenericType)
+	// Extension methods are static methods in another namespace; their type
+	// arguments are just the method's own type parameters, not the receiver's
+	// class type parameters.
+	if (!node->IsExtensionMethodInvocation &&
+	    node->ReceiverType != nullptr && node->ReceiverType->Kind == SyntaxKind::GenericType)
 	{
 		GenericTypeSymbol* genericType = static_cast<GenericTypeSymbol*>(node->ReceiverType);
 		TypeSymbol* underlyingType = genericType->UnderlayingType;
@@ -1275,10 +1286,6 @@ void AbstractEmiter::VisitInvocationExpression(InvokationExpressionSyntax* node)
 			}
 		}
 	}
-
-	VisitArgumentsList(node->ArgumentsList.get());
-	if (node->PreviousExpression != nullptr)
-		VisitExpression(node->PreviousExpression.get());
 
 	if (node->IsDelegateInvocation)
 		Encoder.EmitCallDelegate(GeneratingFor->ExecutableByteCode);

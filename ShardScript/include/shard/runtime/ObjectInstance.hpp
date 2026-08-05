@@ -54,7 +54,9 @@ namespace shard
 
 		// Fields
 		ObjectInstance* GetField(std::uint32_t slot);
+		ObjectInstance* GetField(const FieldSymbol* field);
 		void SetField(std::uint32_t slot, ObjectInstance* instance);
+		void SetField(const FieldSymbol* field, ObjectInstance* instance);
 
 		// Arrays
 		std::size_t GetArrayLength() const;
