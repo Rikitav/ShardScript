@@ -129,13 +129,11 @@ namespace shard
     /// Constructs a new instance of the given type using the supplied constructor.
     /// The returned object has an owning reference (reference count is 1).
     /// </summary>
-    inline ObjectInstance* NewObject(const CallState& context,
-                                     TypeSymbol* type,
-                                     ConstructorSymbol* ctor,
-                                     std::initializer_list<ObjectInstance*> args = {})
+    inline ObjectInstance* NewObject(const CallState& context, TypeSymbol* type, ConstructorSymbol* ctor, std::initializer_list<ObjectInstance*> args = {})
     {
         if (type == nullptr)
             throw std::runtime_error("NewObject: type is null");
+
         if (ctor == nullptr)
             throw std::runtime_error("NewObject: constructor is null");
 
@@ -181,10 +179,7 @@ namespace shard
     /// Constructs a new instance of a generic class.
     /// The returned object has an owning reference (reference count is 1).
     /// </summary>
-    inline ObjectInstance* NewObject(const CallState& context,
-                                     ClassSymbol* cls,
-                                     const std::vector<TypeSymbol*>& typeArgs,
-                                     std::initializer_list<ObjectInstance*> args = {})
+    inline ObjectInstance* NewObject(const CallState& context, ClassSymbol* cls, const std::vector<TypeSymbol*>& typeArgs, std::initializer_list<ObjectInstance*> args = {})
     {
         if (cls == nullptr)
             throw std::runtime_error("NewObject: class is null");
@@ -229,9 +224,7 @@ namespace shard
     /// <summary>
     /// Invokes a static method.
     /// </summary>
-    inline ObjectInstance* CallMethod(const CallState& context,
-                                      MethodSymbol* method,
-                                      std::initializer_list<ObjectInstance*> args = {})
+    inline ObjectInstance* CallMethod(const CallState& context, MethodSymbol* method, std::initializer_list<ObjectInstance*> args = {})
     {
         if (method == nullptr)
             throw std::runtime_error("CallMethod: method is null");
@@ -243,10 +236,7 @@ namespace shard
     /// <summary>
     /// Invokes an instance method on the given receiver.
     /// </summary>
-    inline ObjectInstance* CallMethod(const CallState& context,
-                                      MethodSymbol* method,
-                                      ObjectInstance* receiver,
-                                      std::initializer_list<ObjectInstance*> args = {})
+    inline ObjectInstance* CallMethod(const CallState& context, MethodSymbol* method, ObjectInstance* receiver, std::initializer_list<ObjectInstance*> args = {})
     {
         if (method == nullptr)
             throw std::runtime_error("CallMethod: method is null");
@@ -266,6 +256,7 @@ namespace shard
     {
         if (obj == nullptr)
             throw std::runtime_error("GetField: object is null");
+
         if (field == nullptr)
             throw std::runtime_error("GetField: field is null");
 
@@ -279,6 +270,7 @@ namespace shard
     {
         if (obj == nullptr)
             throw std::runtime_error("SetField: object is null");
+
         if (field == nullptr)
             throw std::runtime_error("SetField: field is null");
 
@@ -292,8 +284,10 @@ namespace shard
     {
         if (obj == nullptr)
             throw std::runtime_error("GetProperty: object is null");
+        
         if (prop == nullptr)
             throw std::runtime_error("GetProperty: property is null");
+
         if (prop->Getter == nullptr)
             throw std::runtime_error("GetProperty: property has no getter");
 
@@ -303,15 +297,14 @@ namespace shard
     /// <summary>
     /// Invokes a property setter.
     /// </summary>
-    inline void SetProperty(const CallState& context,
-                            ObjectInstance* obj,
-                            PropertySymbol* prop,
-                            ObjectInstance* value)
+    inline void SetProperty(const CallState& context, ObjectInstance* obj, PropertySymbol* prop, ObjectInstance* value)
     {
         if (obj == nullptr)
             throw std::runtime_error("SetProperty: object is null");
+
         if (prop == nullptr)
             throw std::runtime_error("SetProperty: property is null");
+
         if (prop->Setter == nullptr)
             throw std::runtime_error("SetProperty: property has no setter");
 

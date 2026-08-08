@@ -146,6 +146,7 @@ namespace shard
 		GenericTypeSymbol* GenericType(GenericTypeSyntax* node);
 		GenericTypeSymbol* GenericType(TypeSymbol* underlayingType);
 		GenericTypeSymbol* GenericType(TypeSymbol* underlayingType, std::unordered_map<std::wstring, TypeSymbol*> typeArguments);
+		GenericTypeSymbol* GenericType(TypeSymbol* underlayingType, std::vector<TypeParameterSymbol*> typeArguments);
 
 		GenericTypeSymbol* EnumerableOf(TypeSymbol* elementType);
 	};
