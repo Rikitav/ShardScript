@@ -4,11 +4,19 @@
 #include <shard/runtime/MethodCallState.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
 
+#include <shard/semantic/symbols/ClassSymbol.hpp>
+#include <shard/semantic/symbols/ConstructorSymbol.hpp>
+#include <shard/semantic/symbols/FieldSymbol.hpp>
+#include <shard/semantic/symbols/GenericTypeSymbol.hpp>
+#include <shard/semantic/symbols/PropertySymbol.hpp>
+
 #include <cstdint>
+#include <initializer_list>
 #include <stdexcept>
 #include <string>
 #include <tuple>
 #include <type_traits>
+#include <vector>
 
 namespace shard
 {
@@ -66,6 +74,32 @@ namespace shard
         {
             return std::make_tuple(UnwrapArgAtIndex<TArgs>(context, Indices)...);
         }
+
+        inline TypeSymbol* GetConstructedTypeDefinition(TypeSymbol* type)
+        {
+            if (type == nullptr)
+                return nullptr;
+
+            if (type->Kind == SyntaxKind::GenericType)
+                return static_cast<GenericTypeSymbol*>(type)->UnderlayingType;
+
+            return type;
+        }
+
+        inline ConstructorSymbol* FindParameterlessConstructor(TypeSymbol* type)
+        {
+            TypeSymbol* definition = GetConstructedTypeDefinition(type);
+            if (definition == nullptr)
+                return nullptr;
+
+            for (ConstructorSymbol* ctor : definition->Constructors)
+            {
+                if (ctor->Parameters.empty())
+                    return ctor;
+            }
+
+            return nullptr;
+        }
     }
 
     /// <summary>
@@ -85,5 +119,202 @@ namespace shard
         }
 
         return detail::GetArgsImpl<TArgs...>(context, std::index_sequence_for<TArgs...>{});
+    }
+
+    // -------------------------------------------------------------------------
+    // High-level object construction / field / property / method helpers.
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Constructs a new instance of the given type using the supplied constructor.
+    /// The returned object has an owning reference (reference count is 1).
+    /// </summary>
+    inline ObjectInstance* NewObject(const CallState& context,
+                                     TypeSymbol* type,
+                                     ConstructorSymbol* ctor,
+                                     std::initializer_list<ObjectInstance*> args = {})
+    {
+        if (type == nullptr)
+            throw std::runtime_error("NewObject: type is null");
+        if (ctor == nullptr)
+            throw std::runtime_error("NewObject: constructor is null");
+
+        ObjectInstance* instance = context.Collector.AllocateInstance(type);
+        if (instance == nullptr)
+            throw std::runtime_error("NewObject: allocation failed");
+
+        // Keep the object alive through the constructor call.
+        instance->IncrementReference();
+
+        try
+        {
+            std::vector<ObjectInstance*> callArgs;
+            callArgs.reserve(1 + args.size());
+            callArgs.push_back(instance);
+            callArgs.insert(callArgs.end(), args.begin(), args.end());
+
+            context.Runtimer.InvokeMethod(ctor, callArgs.data(), callArgs.size());
+        }
+        catch (...)
+        {
+            instance->DecrementReference();
+            throw;
+        }
+
+        return instance;
+    }
+
+    /// <summary>
+    /// Constructs a new instance of the given type using its parameterless constructor.
+    /// The returned object has an owning reference (reference count is 1).
+    /// </summary>
+    inline ObjectInstance* NewObject(const CallState& context, TypeSymbol* type)
+    {
+        ConstructorSymbol* ctor = detail::FindParameterlessConstructor(type);
+        if (ctor == nullptr)
+            throw std::runtime_error("Type has no parameterless constructor");
+
+        return NewObject(context, type, ctor, {});
+    }
+
+    /// <summary>
+    /// Constructs a new instance of a generic class.
+    /// The returned object has an owning reference (reference count is 1).
+    /// </summary>
+    inline ObjectInstance* NewObject(const CallState& context,
+                                     ClassSymbol* cls,
+                                     const std::vector<TypeSymbol*>& typeArgs,
+                                     std::initializer_list<ObjectInstance*> args = {})
+    {
+        if (cls == nullptr)
+            throw std::runtime_error("NewObject: class is null");
+
+        ObjectInstance* instance = context.Collector.AllocateGeneric(cls, typeArgs);
+        if (instance == nullptr)
+            throw std::runtime_error("NewObject: allocation failed");
+
+        ConstructorSymbol* ctor = nullptr;
+        for (ConstructorSymbol* candidate : cls->Constructors)
+        {
+            if (candidate->Parameters.size() == args.size())
+            {
+                ctor = candidate;
+                break;
+            }
+        }
+
+        if (ctor == nullptr)
+            throw std::runtime_error("NewObject: no constructor with matching parameter count");
+
+        instance->IncrementReference();
+
+        try
+        {
+            std::vector<ObjectInstance*> callArgs;
+            callArgs.reserve(1 + args.size());
+            callArgs.push_back(instance);
+            callArgs.insert(callArgs.end(), args.begin(), args.end());
+
+            context.Runtimer.InvokeMethod(ctor, callArgs.data(), callArgs.size());
+        }
+        catch (...)
+        {
+            instance->DecrementReference();
+            throw;
+        }
+
+        return instance;
+    }
+
+    /// <summary>
+    /// Invokes a static method.
+    /// </summary>
+    inline ObjectInstance* CallMethod(const CallState& context,
+                                      MethodSymbol* method,
+                                      std::initializer_list<ObjectInstance*> args = {})
+    {
+        if (method == nullptr)
+            throw std::runtime_error("CallMethod: method is null");
+
+        std::vector<ObjectInstance*> callArgs(args);
+        return context.Runtimer.InvokeMethod(method, callArgs.data(), callArgs.size());
+    }
+
+    /// <summary>
+    /// Invokes an instance method on the given receiver.
+    /// </summary>
+    inline ObjectInstance* CallMethod(const CallState& context,
+                                      MethodSymbol* method,
+                                      ObjectInstance* receiver,
+                                      std::initializer_list<ObjectInstance*> args = {})
+    {
+        if (method == nullptr)
+            throw std::runtime_error("CallMethod: method is null");
+
+        std::vector<ObjectInstance*> callArgs;
+        callArgs.reserve(1 + args.size());
+        callArgs.push_back(receiver);
+        callArgs.insert(callArgs.end(), args.begin(), args.end());
+
+        return context.Runtimer.InvokeMethod(method, callArgs.data(), callArgs.size());
+    }
+
+    /// <summary>
+    /// Reads a field value.
+    /// </summary>
+    inline ObjectInstance* GetField(ObjectInstance* obj, FieldSymbol* field)
+    {
+        if (obj == nullptr)
+            throw std::runtime_error("GetField: object is null");
+        if (field == nullptr)
+            throw std::runtime_error("GetField: field is null");
+
+        return obj->GetField(field);
+    }
+
+    /// <summary>
+    /// Writes a field value.
+    /// </summary>
+    inline void SetField(ObjectInstance* obj, FieldSymbol* field, ObjectInstance* value)
+    {
+        if (obj == nullptr)
+            throw std::runtime_error("SetField: object is null");
+        if (field == nullptr)
+            throw std::runtime_error("SetField: field is null");
+
+        obj->SetField(field, value);
+    }
+
+    /// <summary>
+    /// Invokes a property getter.
+    /// </summary>
+    inline ObjectInstance* GetProperty(const CallState& context, ObjectInstance* obj, PropertySymbol* prop)
+    {
+        if (obj == nullptr)
+            throw std::runtime_error("GetProperty: object is null");
+        if (prop == nullptr)
+            throw std::runtime_error("GetProperty: property is null");
+        if (prop->Getter == nullptr)
+            throw std::runtime_error("GetProperty: property has no getter");
+
+        return CallMethod(context, prop->Getter, obj, {});
+    }
+
+    /// <summary>
+    /// Invokes a property setter.
+    /// </summary>
+    inline void SetProperty(const CallState& context,
+                            ObjectInstance* obj,
+                            PropertySymbol* prop,
+                            ObjectInstance* value)
+    {
+        if (obj == nullptr)
+            throw std::runtime_error("SetProperty: object is null");
+        if (prop == nullptr)
+            throw std::runtime_error("SetProperty: property is null");
+        if (prop->Setter == nullptr)
+            throw std::runtime_error("SetProperty: property has no setter");
+
+        CallMethod(context, prop->Setter, obj, { value });
     }
 }

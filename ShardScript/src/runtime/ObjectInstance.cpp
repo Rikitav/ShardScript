@@ -323,6 +323,7 @@ bool ObjectInstance::IsInBounds(std::size_t index)
 	return index >= 0 && index < GetArrayLength();
 }
 
+/*
 ArgumentsSpan ObjectInstance::ArrayAsSpan()
 {
 	if (m_info->Kind != SyntaxKind::ArrayType)
@@ -335,6 +336,7 @@ ArgumentsSpan ObjectInstance::ArrayAsSpan()
 	ObjectInstance* first = GetElement(0);
 	return ArgumentsSpan{ &first, length };
 }
+*/
 
 void ObjectInstance::IncrementReference()
 {

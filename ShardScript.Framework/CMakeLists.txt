@@ -21,6 +21,9 @@ if(ENABLE_ASAN)
 endif()
 
   set_target_properties("${SHARD_TARGET_NAME}" PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+  target_include_directories("${SHARD_TARGET_NAME}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+  target_include_directories("${SHARD_TARGET_NAME}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../ShardScript/include")
+  target_link_libraries("${SHARD_TARGET_NAME}" PRIVATE ShardScript)
 
   string(FIND "${CPP_FILE}" "/system/" IS_SYSTEM)
   if(NOT IS_SYSTEM EQUAL -1)
@@ -84,8 +87,4 @@ endif()
         target_link_libraries("${SHARD_TARGET_NAME}" PRIVATE kernel32 user32 advapi32)
     endif()
   endif()
-
-  target_include_directories("${SHARD_TARGET_NAME}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
-  target_include_directories("${SHARD_TARGET_NAME}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../ShardScript/include")
-  target_link_libraries("${SHARD_TARGET_NAME}" PRIVATE ShardScript)
 endforeach()

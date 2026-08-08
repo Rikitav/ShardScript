@@ -12,8 +12,12 @@
 #include <shard/ApplicationDomain.hpp>
 #include <shard/ShardScriptAPI.hpp>
 
+#include <span>
+
 namespace shard
 {
+    typedef std::span<ObjectInstance*> ArgumentsSpan;
+
     struct CallState
     {
         /*

@@ -67,70 +67,6 @@ namespace shard
     };
 
     template<>
-    class SHARD_API SymbolBuilder<NamespaceSymbol> : public SymbolBuilderBase<NamespaceSymbol>
-    {
-    public:
-        SymbolBuilder(CompilationContext& ctx, const std::wstring& name, NamespaceSymbol* parent = nullptr);
-        SymbolBuilder(SymbolTable* table, const std::wstring& name, NamespaceSymbol* parent = nullptr);
-
-        SymbolBuilder<MethodSymbol> AddMethod(
-            const std::wstring& name,
-            TypeSymbol* returnType,
-            SymbolLinking linking,
-            SymbolAccesibility access = SymbolAccesibility::Public);
-
-        SymbolBuilder<ClassSymbol> AddClass(
-            const std::wstring& name,
-            SymbolLinking linking = LINK_INSTANCE,
-            SymbolAccesibility access = ACS_PUBLIC);
-
-        SymbolBuilder<StructSymbol> AddStruct(
-            const std::wstring& name,
-            SymbolLinking linking = LINK_INSTANCE,
-            SymbolAccesibility access = ACS_PUBLIC);
-
-        SymbolBuilder<EnumSymbol> AddEnum(
-            const std::wstring& name,
-            bool isFlags = false,
-            SymbolAccesibility access = SymbolAccesibility::Public);
-
-        SymbolBuilder<NamespaceSymbol> AddNamespace(
-            const std::wstring& name);
-
-        SymbolBuilder<InterfaceSymbol> AddInterface(
-            const std::wstring& name,
-            SymbolAccesibility access = ACS_PUBLIC);
-
-        // -------------------------------------------------------------------------
-        // Lambda/scoped builder helpers. The callback receives the builder as an
-        // rvalue (so it can be move-bound to by-value parameters or captured by
-        // forwarding/rvalue reference); the surrounding namespace builder is
-        // returned so chaining can continue.
-        // -------------------------------------------------------------------------
-        template<typename TCallback>
-        SymbolBuilder<NamespaceSymbol>& AddNamespace(
-            const std::wstring& name,
-            TCallback&& callback)
-        {
-            auto builder = AddNamespace(name);
-            std::forward<TCallback>(callback)(std::move(builder));
-            return *this;
-        }
-
-        template<typename TCallback>
-        SymbolBuilder<NamespaceSymbol>& AddClass(
-            const std::wstring& name,
-            SymbolAccesibility access,
-            SymbolLinking linking,
-            TCallback&& callback)
-        {
-            auto builder = AddClass(name, linking, access);
-            std::forward<TCallback>(callback)(std::move(builder));
-            return *this;
-        }
-    };
-
-    template<>
     class SHARD_API SymbolBuilder<TypeParameterSymbol> : public SymbolBuilderBase<TypeParameterSymbol>
     {
     public:
@@ -518,5 +454,63 @@ namespace shard
 
         SymbolBuilder<OperatorSymbol>& SetCallback(
             MethodSymbolDelegate callback);
+    };
+
+    template<>
+    class SHARD_API SymbolBuilder<NamespaceSymbol> : public SymbolBuilderBase<NamespaceSymbol>
+    {
+    public:
+        SymbolBuilder(CompilationContext& ctx, const std::wstring& name, NamespaceSymbol* parent = nullptr);
+        SymbolBuilder(SymbolTable* table, const std::wstring& name, NamespaceSymbol* parent = nullptr);
+
+        SymbolBuilder<MethodSymbol> AddMethod(
+            const std::wstring& name,
+            TypeSymbol* returnType,
+            SymbolLinking linking,
+            SymbolAccesibility access = SymbolAccesibility::Public);
+
+        SymbolBuilder<ClassSymbol> AddClass(
+            const std::wstring& name,
+            SymbolLinking linking = LINK_INSTANCE,
+            SymbolAccesibility access = ACS_PUBLIC);
+
+        SymbolBuilder<StructSymbol> AddStruct(
+            const std::wstring& name,
+            SymbolLinking linking = LINK_INSTANCE,
+            SymbolAccesibility access = ACS_PUBLIC);
+
+        SymbolBuilder<EnumSymbol> AddEnum(
+            const std::wstring& name,
+            bool isFlags = false,
+            SymbolAccesibility access = SymbolAccesibility::Public);
+
+        SymbolBuilder<NamespaceSymbol> AddNamespace(
+            const std::wstring& name);
+
+        SymbolBuilder<InterfaceSymbol> AddInterface(
+            const std::wstring& name,
+            SymbolAccesibility access = ACS_PUBLIC);
+
+        template<typename TCallback>
+        SymbolBuilder<NamespaceSymbol>& AddNamespace(
+            const std::wstring& name,
+            TCallback&& callback)
+        {
+            auto builder = AddNamespace(name);
+            std::forward<TCallback>(callback)(std::move(builder));
+            return *this;
+        }
+
+        template<typename TCallback>
+        SymbolBuilder<NamespaceSymbol>& AddClass(
+            const std::wstring& name,
+            SymbolAccesibility access,
+            SymbolLinking linking,
+            TCallback&& callback)
+        {
+            SymbolBuilder<ClassSymbol> builder = AddClass(name, linking, access);
+            std::forward<TCallback>(callback)(std::move(builder));
+            return *this;
+        }
     };
 }
