@@ -34,7 +34,10 @@ namespace shard
         Lambda,
     };
 
-    typedef shard::ObjectInstance* (*MethodSymbolDelegate)(const CallState& context);
+    using MethodSymbolDelegate         = shard::ObjectInstance* (*)(const CallState& context);
+    using NativeMethodCallback         = shard::ObjectInstance* (*)(const CallState& context);
+    using NativeInstanceMethodCallback = shard::ObjectInstance* (*)(ObjectInstance* self, const CallState& context);
+    using NativeConstructorCallback    = shard::ObjectInstance* (*)(const CallState& context);
 
     class SHARD_API MethodSymbol : public MemberSymbol
     {

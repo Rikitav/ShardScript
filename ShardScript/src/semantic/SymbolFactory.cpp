@@ -110,6 +110,9 @@ void SymbolFactory::SetAccesibility(std::vector<SyntaxToken> modifiers, SymbolAc
 				linking = LINK_STATIC;
 				break;
 			}
+
+			default:
+				break;
 		}
 	}
 }
@@ -294,6 +297,9 @@ AccessorSymbol* SymbolFactory::Accessor(AccessorDeclarationSyntax* node, Propert
 				propertySymbol->Setter = symbol.get();
 			break;
 		}
+
+		default:
+			break;
 	}
 
 	return static_cast<AccessorSymbol*>(Table->BindSymbol(node, std::move(symbol)));
@@ -741,6 +747,11 @@ GenericTypeSymbol* SymbolFactory::GenericType(TypeSymbol* underlayingType, std::
 	}
 	
 	return static_cast<GenericTypeSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
+}
+
+GenericTypeSymbol* SymbolFactory::EnumerableOf(TypeSymbol* elementType)
+{
+	return GenericType(SymbolTable::StandardTypes::IEnumerable, { { L"T", elementType } });
 }
 
 std::wstring SymbolFactory::FormatFullName(SyntaxSymbol* symbol)

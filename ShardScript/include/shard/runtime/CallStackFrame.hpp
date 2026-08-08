@@ -13,7 +13,7 @@ namespace shard
 {
 	class VirtualMachine;
 
-	enum class SHARD_API FrameInterruptionReason
+	enum class FrameInterruptionReason
 	{
 		None,
 		ValueReturned,
@@ -25,36 +25,27 @@ namespace shard
 	class SHARD_API CallStackFrame : public std::enable_shared_from_this<CallStackFrame>
 	{
 	public:
+		struct ExceptionHandlerFrame
+		{
+			std::size_t HandlerOffset;
+			std::size_t DeferStackBase;
+		};
+
 		const VirtualMachine* Host;
 		CallStackFrame* PreviousFrame;
 		MethodSymbol* Method;
 
 		std::vector<ObjectInstance*> EvalStack;
 		std::vector<TypeSymbol*> TypeArguments;
+		std::vector<ExceptionHandlerFrame> ExceptionHandlers;
+		std::size_t PendingTaskCount = 0;
 
 		FrameInterruptionReason InterruptionReason = FrameInterruptionReason::None;
 		ObjectInstance* InterruptionRegister = nullptr;
 		ObjectInstance* CurrentException = nullptr;
 
-		struct ExceptionHandlerFrame
-		{
-			std::size_t HandlerOffset;
-			std::size_t DeferStackBase;
-		};
-		std::vector<ExceptionHandlerFrame> ExceptionHandlers;
-
-		// Defer machinery. DEFER pushes target IPs here; DEFER_DRAIN jumps into them
-		// and uses DeferDrainStack to return to the drain loop after DEFER_BREAK.
 		std::vector<std::size_t> DeferStack;
-
-		// Synchronous DEFER_DRAIN executes deferred expressions inline. This counter
-		// lets DEFER_BREAK verify it is only reached while draining.
 		std::size_t DeferDrainDepth = 0;
-
-		// Number of pending async tasks that were started by this frame and are still
-		// keeping it alive. The frame object is kept alive via shared_ptr until this
-		// counter reaches zero.
-		std::size_t PendingTaskCount = 0;
 
 		inline CallStackFrame(const VirtualMachine* host, CallStackFrame* previousFrame, MethodSymbol* method)
 			: Host(host), Method(method), PreviousFrame(previousFrame) { }

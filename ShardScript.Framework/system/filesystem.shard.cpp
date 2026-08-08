@@ -108,6 +108,37 @@ namespace
         return final_buffer;
     }
 
+    static std::wstring pathJoin(ObjectInstance* stringArray)
+    {
+        //const ArrayTypeSymbol* arrayType = static_cast<const ArrayTypeSymbol*>(stringArray->getInfo());
+        const std::size_t length = stringArray->GetArrayLength();
+     
+        if (length == 0)
+            return L"";
+
+        std::size_t total_reserve_size = 0;
+        for (std::size_t i = 0; i < length; ++i)
+        {
+            if (auto* element = stringArray->GetElement(i))
+                total_reserve_size += wcslen(element->AsString()) + 1;
+        }
+
+        std::wstring final_buffer;
+        final_buffer.reserve(total_reserve_size);
+        final_buffer = stringArray->GetElement(0)->AsString();
+
+        for (std::size_t i = 1; i < length; ++i)
+        {
+            std::wstring next_part = stringArray->GetElement(i)->AsString();
+            fs::path p(std::move(final_buffer));
+
+            p /= next_part;
+            final_buffer = p.wstring();
+        }
+
+        return final_buffer;
+    }
+
     static void EnsureStreamSymbols(SymbolTable* table)
     {
         if (g_Stream_IStream != nullptr)
@@ -849,7 +880,7 @@ static ObjectInstance* shard_path_join(const CallState& context) noexcept(false)
     if (length == 0)
         return context.Collector.FromValue(L"");
 
-    std::wstring final_buffer = pathJoin(pathsArray->ArrayAsSpan());
+    std::wstring final_buffer = pathJoin(pathsArray);
     return context.Collector.FromValue(final_buffer);
 }
 
