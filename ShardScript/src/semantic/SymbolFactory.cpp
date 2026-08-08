@@ -749,6 +749,21 @@ GenericTypeSymbol* SymbolFactory::GenericType(TypeSymbol* underlayingType, std::
 	return static_cast<GenericTypeSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
 }
 
+GenericTypeSymbol* SymbolFactory::GenericType(TypeSymbol* underlayingType, std::vector<TypeSymbol*> typeArguments)
+{
+	auto symbol = std::make_unique<GenericTypeSymbol>(underlayingType);
+
+	for (std::size_t i = 0; i < underlayingType->TypeParameters.size(); i++)
+	{
+		TypeParameterSymbol* typeParam = underlayingType->TypeParameters[i];
+		TypeSymbol* typeArg = typeArguments[i];
+
+		symbol->AddTypeParameter(typeParam, typeArg);
+	}
+
+	return static_cast<GenericTypeSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
+}
+
 GenericTypeSymbol* SymbolFactory::EnumerableOf(TypeSymbol* elementType)
 {
 	return GenericType(SymbolTable::StandardTypes::IEnumerable, { { L"T", elementType } });
