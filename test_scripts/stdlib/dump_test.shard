@@ -1,0 +1,52 @@
+using stdio;
+
+namespace dump_test;
+
+public class Point
+{
+    public X: int;
+    public Y: int;
+
+    public init(x: int, y: int)
+    {
+        this.X = x;
+        this.Y = y;
+    }
+}
+
+public class Person
+{
+    public Name: string;
+    public Age: int;
+    public Location: Point;
+
+    public init(name: string, age: int)
+    {
+        this.Name = name;
+        this.Age = age;
+        this.Location = new Point(10, 20);
+    }
+}
+
+public static func Main() -> void
+{
+    person: Person = new Person("Alice", 30);
+
+    println("=== default Dump ===");
+    Dump(person);
+
+    println("=== Dump with depth=1, no colors ===");
+    Dump(person, 1, false);
+
+    println("=== Dump primitives ===");
+    Dump(null);
+    Dump(true);
+    Dump(42);
+    Dump(3.14);
+    Dump('A');
+    Dump("hello world");
+
+    println("=== Dump array ===");
+    values: int[] = [1, 2, 3];
+    Dump(values);
+}
