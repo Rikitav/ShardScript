@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 #include <array>
+#include <random>
 
 namespace fs = std::filesystem;
 using namespace shard;
@@ -884,9 +885,47 @@ static ObjectInstance* shard_path_join(const CallState& context) noexcept(false)
     return context.Collector.FromValue(final_buffer);
 }
 
+static std::wstring generateRandomSuffix(std::size_t length = 16)
+{
+    static const wchar_t chars[] = L"abcdefghijklmnopqrstuvwxyz0123456789";
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    static std::uniform_int_distribution<std::size_t> dis(0, 35);
+
+    std::wstring result;
+    result.reserve(length);
+    for (std::size_t i = 0; i < length; ++i)
+        result += chars[dis(gen)];
+
+    return result;
+}
+
 // ============================================================================
 // class Path
 // ============================================================================
+
+static ObjectInstance* shard_path_GetTempPath(const CallState& context) noexcept(false)
+{
+    return context.Collector.FromValue(fs::temp_directory_path().wstring());
+}
+
+static ObjectInstance* shard_path_CreateTempFile(const CallState& context) noexcept(false)
+{
+    fs::path base = fs::temp_directory_path();
+    fs::path candidate;
+
+    do
+    {
+        candidate = base / (std::wstring(L"shard_") + generateRandomSuffix(16) + L".tmp");
+    } while (fs::exists(candidate));
+
+    std::ofstream file(candidate);
+    if (!file.is_open())
+        throw std::runtime_error("Failed to create temporary file.");
+
+    file.close();
+    return context.Collector.FromValue(candidate.wstring());
+}
 
 static ObjectInstance* shard_path_GetExtension(const CallState& context) noexcept(false)
 {
@@ -1800,6 +1839,12 @@ SHARDLIB_ENTRYPOINT
     pathClass.AddMethod(L"GetFullPath", TYPE_STRING, LINK_STATIC)
         .AddParameter(L"path", TYPE_STRING)
         .SetCallback(&shard_path_GetFullPath);
+
+    pathClass.AddMethod(L"GetTempPath", TYPE_STRING, LINK_STATIC)
+        .SetCallback(&shard_path_GetTempPath);
+
+    pathClass.AddMethod(L"CreateTempFile", TYPE_STRING, LINK_STATIC)
+        .SetCallback(&shard_path_CreateTempFile);
 
     pathClass.AddProperty(L"DirectorySeparatorChar", TYPE_STRING, LINK_STATIC, ACS_PUBLIC)
         .AddGetter()
