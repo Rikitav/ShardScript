@@ -55,8 +55,6 @@ namespace shard
                 throw std::runtime_error("Argument is null");
             }
 
-            // ObjectInstance* is allowed to be NullInstance (represents script 'null'),
-            // but value types and native pointers cannot be unwrapped from null.
             if constexpr (!std::is_same_v<T, ObjectInstance*> && !std::is_pointer_v<T>)
             {
                 if (value == GarbageCollector::NullInstance)
@@ -120,10 +118,6 @@ namespace shard
 
         return detail::GetArgsImpl<TArgs...>(context, std::index_sequence_for<TArgs...>{});
     }
-
-    // -------------------------------------------------------------------------
-    // High-level object construction / field / property / method helpers.
-    // -------------------------------------------------------------------------
 
     /// <summary>
     /// Constructs a new instance of the given type using the supplied constructor.

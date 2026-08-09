@@ -1,0 +1,100 @@
+using stdio;
+using time;
+
+namespace time_test;
+
+public static func Main() -> void
+{
+    // TimeSpan factories and properties
+    span: TimeSpan = TimeSpan.FromSeconds(90.0);
+    println("FromSeconds 90:");
+    println("  TotalSeconds = " + span.TotalSeconds);
+    println("  Minutes = " + span.Minutes);
+    println("  Seconds = " + span.Seconds);
+
+    daySpan: TimeSpan = TimeSpan.FromDays(2.5);
+    println("FromDays 2.5:");
+    println("  TotalDays = " + daySpan.TotalDays);
+    println("  Days = " + daySpan.Days);
+    println("  Hours = " + daySpan.Hours);
+
+    // TimeSpan arithmetic
+    a: TimeSpan = TimeSpan.FromMinutes(10.0);
+    b: TimeSpan = TimeSpan.FromMinutes(5.0);
+    sum: TimeSpan = a + b;
+    diff: TimeSpan = a - b;
+    println("10min + 5min TotalMinutes = " + sum.TotalMinutes);
+    println("10min - 5min TotalMinutes = " + diff.TotalMinutes);
+
+    scaled: TimeSpan = a * 2.0;
+    println("10min * 2 TotalMinutes = " + scaled.TotalMinutes);
+
+    ratio: double = a / b;
+    println("10min / 5min = " + ratio);
+
+    neg: TimeSpan = -a;
+    println("-10min TotalMinutes = " + neg.TotalMinutes);
+
+    dur: TimeSpan = neg.Duration();
+    println("Duration(-10min) TotalMinutes = " + dur.TotalMinutes);
+
+    // DateTime factories and properties
+    utc: DateTime = DateTime.UtcNow;
+    println("UtcNow UnixTimestamp = " + utc.UnixTimestamp);
+    println("UtcNow Kind = " + utc.Kind);
+
+    local: DateTime = DateTime.Now;
+    println("Now Year = " + local.Year);
+    println("Now Month = " + local.Month);
+    println("Now Day = " + local.Day);
+    println("Now DayOfWeek = " + local.DayOfWeek);
+    println("Now Hour = " + local.Hour);
+    println("Now Minute = " + local.Minute);
+    println("Now Second = " + local.Second);
+    println("Now Kind = " + local.Kind);
+
+    epoch: DateTime = DateTime.FromUnixTimeSeconds(0);
+    println("Epoch Year = " + epoch.Year);
+    println("Epoch Month = " + epoch.Month);
+    println("Epoch Day = " + epoch.Day);
+
+    epochMs: DateTime = DateTime.FromUnixTimeMilliseconds(0);
+    println("EpochMs Year = " + epochMs.Year);
+
+    // DateTime arithmetic
+    oneDay: TimeSpan = TimeSpan.FromDays(1.0);
+    tomorrow: DateTime = local + oneDay;
+    println("Tomorrow Day = " + tomorrow.Day);
+
+    yesterday: DateTime = local - oneDay;
+    println("Yesterday Day = " + yesterday.Day);
+
+    diffDate: TimeSpan = tomorrow - yesterday;
+    println("Tomorrow - Yesterday TotalDays = " + diffDate.TotalDays);
+
+    // Conversions
+    utcAgain: DateTime = local.ToUniversalTime();
+    localAgain: DateTime = utcAgain.ToLocalTime();
+    println("Roundtrip local->utc->local Year = " + localAgain.Year);
+
+    // Date property
+    dateOnly: DateTime = local.Date;
+    println("Date Hour = " + dateOnly.Hour);
+    println("Date Minute = " + dateOnly.Minute);
+    println("Date Second = " + dateOnly.Second);
+
+    // Formatting
+    println("Default ToString: " + local.ToString());
+    formatted: string = local.ToString("yyyy/MM/dd HH:mm:ss");
+    println("Custom ToString: " + formatted);
+
+    // DateTime comparison
+    println("utc == epoch: " + (utc == epoch));
+    println("utc != epoch: " + (utc != epoch));
+    println("utc > epoch: " + (utc > epoch));
+
+    // DateTimeKind enum
+    println("DateTimeKind.Utc = " + DateTimeKind.Utc);
+    println("DateTimeKind.Local = " + DateTimeKind.Local);
+    println("DateTimeKind.Unspecified = " + DateTimeKind.Unspecified);
+}
