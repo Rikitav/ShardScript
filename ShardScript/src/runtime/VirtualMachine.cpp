@@ -44,32 +44,72 @@
 
 using namespace shard;
 
-static void ExecuteDeferExpression(VirtualMachine* vm, CallStackFrame* frame, ByteCodeDecoder& decoder, std::size_t target)
+namespace 
 {
-    std::size_t savedIP = decoder.Index();
-    decoder.SetCursor(target);
+	static void ExecuteDeferExpression(VirtualMachine* vm, CallStackFrame* frame, ByteCodeDecoder& decoder, std::size_t target)
+	{
+		std::size_t savedIP = decoder.Index();
+		decoder.SetCursor(target);
 
-    while (true)
-    {
-        if (decoder.IsEOF())
-            throw std::runtime_error("Deferred expression ran past end of bytecode");
+		while (true)
+		{
+			if (decoder.IsEOF())
+				throw std::runtime_error("Deferred expression ran past end of bytecode");
 
-        OpCode op = decoder.AbsorbOpCode();
-        vm->ProcessCode(frame, decoder, op);
+			OpCode op = decoder.AbsorbOpCode();
+			vm->ProcessCode(frame, decoder, op);
 
-        if (frame->interrupted())
-        {
-            // An interruption (exception, return, etc.) occurred inside the
-            // deferred expression. Leave the decoder at the interruption point
-            // and let the main execution loop handle it.
-            return;
-        }
+			if (frame->interrupted())
+			{
+				// An interruption (exception, return, etc.) occurred inside the deferred expression.
+				// Leave the decoder at the interruption point and let the main execution loop handle it.
+				return;
+			}
 
-        if (op == OpCode::DEFER_BREAK)
-            break;
-    }
+			if (op == OpCode::DEFER_BREAK)
+				break;
+		}
 
-    decoder.SetCursor(savedIP);
+		decoder.SetCursor(savedIP);
+	}
+
+	static ClassSymbol* GetExceptionClassDefinition(TypeSymbol* type)
+	{
+		if (type == nullptr)
+			return nullptr;
+
+		if (type->Kind == SyntaxKind::GenericType)
+			return static_cast<ClassSymbol*>(static_cast<GenericTypeSymbol*>(type)->UnderlayingType);
+
+		if (type->Kind == SyntaxKind::ClassDeclaration)
+			return static_cast<ClassSymbol*>(type);
+
+		return nullptr;
+	}
+
+	static FieldSymbol* FindThrowableBackingField(TypeSymbol* type, MethodSymbol* interfaceGetter)
+	{
+		if (type == nullptr || interfaceGetter == nullptr)
+			return nullptr;
+
+		ClassSymbol* definition = GetExceptionClassDefinition(type);
+		if (definition == nullptr)
+			return nullptr;
+
+		auto it = definition->InterfaceMethodMap.find(interfaceGetter);
+		if (it == definition->InterfaceMethodMap.end())
+			return nullptr;
+
+		MethodSymbol* implementation = it->second;
+		if (implementation == nullptr || implementation->Parent == nullptr)
+			return nullptr;
+
+		if (implementation->Parent->Kind != SyntaxKind::PropertyDeclaration)
+			return nullptr;
+
+		PropertySymbol* property = static_cast<PropertySymbol*>(implementation->Parent);
+		return property->BackingField;
+	}
 }
 
 void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder, const OpCode opCode)
@@ -731,6 +771,24 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			if (exception == nullptr || exception == garbageCollector.NullInstance)
 				throw std::runtime_error("Cannot throw null exception");
 
+			TypeSymbol* exceptionType = const_cast<TypeSymbol*>(exception->getInfo());
+			FieldSymbol* stackTraceField = FindThrowableBackingField(exceptionType, TRAIT_THROWABLE_getStackTrace);
+
+			if (stackTraceField != nullptr)
+			{
+				ObjectInstance* currentTrace = exception->GetField(stackTraceField->SlotIndex);
+				bool needsTrace = currentTrace == nullptr || currentTrace == garbageCollector.NullInstance;
+
+				if (!needsTrace && currentTrace->AsStringLength() == 0)
+					needsTrace = true;
+
+				if (needsTrace)
+				{
+					ObjectInstance* traceInstance = garbageCollector.FromValue(GetStackTrace());
+					exception->SetField(stackTraceField->SlotIndex, traceInstance);
+				}
+			}
+
 			exception->IncrementReference();
 			frame->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
 			frame->InterruptionRegister = exception;
@@ -871,14 +929,17 @@ std::wstring VirtualMachine::GetStackTrace() const
 	return result;
 }
 
-ObjectInstance* VirtualMachine::CreateRuntimeException(const std::exception& err)
+ObjectInstance* VirtualMachine::CreateRuntimeException(TypeSymbol* type, const std::wstring& message, const std::wstring& stackTrace)
 {
-	ClassSymbol* runtimeExceptionType = SymbolTable::StandardTypes::RuntimeException;
-	if (runtimeExceptionType == nullptr)
-		throw std::runtime_error("RuntimeException type was not initialized");
+	if (type == nullptr)
+		throw std::runtime_error("CreateRuntimeException: type is null");
+
+	ClassSymbol* classDef = GetExceptionClassDefinition(type);
+	if (classDef == nullptr)
+		throw std::runtime_error("CreateRuntimeException: type is not a class");
 
 	ConstructorSymbol* ctor = nullptr;
-	for (ConstructorSymbol* candidate : runtimeExceptionType->Constructors)
+	for (ConstructorSymbol* candidate : classDef->Constructors)
 	{
 		if (candidate->Parameters.empty())
 		{
@@ -888,26 +949,49 @@ ObjectInstance* VirtualMachine::CreateRuntimeException(const std::exception& err
 	}
 
 	if (ctor == nullptr)
-		throw std::runtime_error("RuntimeException has no parameterless constructor");
+		throw std::runtime_error("CreateRuntimeException: exception type has no parameterless constructor");
 
-	ObjectInstance* instance = InstantiateObject(runtimeExceptionType, ctor);
+	ObjectInstance* instance = InstantiateObject(type, ctor);
 
-	if (SymbolTable::StandardTypes::RuntimeExceptionMessageField != nullptr)
+	FieldSymbol* messageField = FindThrowableBackingField(type, TRAIT_THROWABLE_getMessage);
+	if (messageField != nullptr)
 	{
-		const char* what = err.what();
-		std::wstring msg(what, what + std::strlen(what));
-		ObjectInstance* msgInstance = garbageCollector.FromValue(msg);
-		instance->SetField(SymbolTable::StandardTypes::RuntimeExceptionMessageField->SlotIndex, msgInstance);
+		ObjectInstance* msgInstance = garbageCollector.FromValue(message);
+		instance->SetField(messageField->SlotIndex, msgInstance);
 	}
 
-	if (SymbolTable::StandardTypes::RuntimeExceptionStackTraceField != nullptr)
+	FieldSymbol* stackTraceField = FindThrowableBackingField(type, TRAIT_THROWABLE_getStackTrace);
+	if (stackTraceField != nullptr)
 	{
-		std::wstring trace = GetStackTrace();
-		ObjectInstance* traceInstance = garbageCollector.FromValue(trace);
-		instance->SetField(SymbolTable::StandardTypes::RuntimeExceptionStackTraceField->SlotIndex, traceInstance);
+		ObjectInstance* traceInstance = garbageCollector.FromValue(stackTrace);
+		instance->SetField(stackTraceField->SlotIndex, traceInstance);
 	}
 
 	return instance;
+}
+
+ObjectInstance* VirtualMachine::CreateRuntimeException(const std::exception& err)
+{
+	const runtime_exception* typed = dynamic_cast<const runtime_exception*>(&err);
+	if (typed != nullptr)
+	{
+		TypeSymbol* type = typed->exception_type();
+		if (type == nullptr)
+			type = SymbolTable::StandardTypes::RuntimeException;
+
+		std::wstring stackTrace = typed->stack_trace();
+		if (stackTrace.empty())
+			stackTrace = GetStackTrace();
+
+		return CreateRuntimeException(type, typed->message(), stackTrace);
+	}
+
+	std::wstring message;
+	const char* what = err.what();
+	if (what != nullptr)
+		message = std::wstring(what, what + std::strlen(what));
+
+	return CreateRuntimeException(SymbolTable::StandardTypes::RuntimeException, message, GetStackTrace());
 }
 
 static bool DrainDefersTo(VirtualMachine* vm, CallStackFrame* frame, ByteCodeDecoder& decoder, std::size_t targetSize, GarbageCollector& gc)

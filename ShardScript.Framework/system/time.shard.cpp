@@ -749,7 +749,6 @@ namespace
         auto [a, b] = GetArgs<ObjectInstance*, ObjectInstance*>(context);
         return context.Collector.FromValue(GetDateTimeTicks(a) >= GetDateTimeTicks(b));
     }
-
 }
 
 // =============================================================================
@@ -774,9 +773,9 @@ SHARDLIB_ENTRYPOINT
         g_dateTimeKindEnum = kindEnum.Get();
 
         kindEnum
-            .AddValue(L"Utc", 0)
-            .AddValue(L"Local", 1)
-            .AddValue(L"Unspecified", 2);
+            .AddValue(L"Utc", KindUtc)
+            .AddValue(L"Local", KindLocal)
+            .AddValue(L"Unspecified", KindUnspecified);
     }
 
     // -------------------------------------------------------------------------

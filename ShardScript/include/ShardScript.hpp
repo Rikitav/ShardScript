@@ -209,6 +209,7 @@
 #include <shard/runtime/ConsoleHelper.hpp>
 #include <shard/runtime/MethodCallState.hpp>
 #include <shard/runtime/NativeHelpers.hpp>
+#include <shard/runtime/RuntimeException.hpp>
 
 // transitivelly includes Windows.h
 #ifndef SHARDSCRIPT_NO_WINDOWS

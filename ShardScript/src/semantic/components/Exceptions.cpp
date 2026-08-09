@@ -65,7 +65,7 @@ void SymbolTable::ResolveExceptions(SymbolTable* table)
 			.IsImplementationOf(TRAIT_THROWABLE_getMessage)
 			.SetCallback([](const CallState& context) { return context.Args[0]->GetField(SymbolTable::StandardTypes::RuntimeExceptionMessageField->SlotIndex); });
 
-		SymbolBuilder<PropertySymbol> stackTraceProp = builder.AddProperty(L"message", SymbolTable::Primitives::String, LINK_INSTANCE);
+		SymbolBuilder<PropertySymbol> stackTraceProp = builder.AddProperty(L"stack_trace", SymbolTable::Primitives::String, LINK_INSTANCE);
 		SymbolTable::StandardTypes::RuntimeExceptionStackTraceField = stackTraceProp
 			.AddBackingField();
 

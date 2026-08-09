@@ -8,6 +8,7 @@
 #include <shard/runtime/CallStackFrame.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
 #include <shard/runtime/PrimitiveMathModule.hpp>
+#include <shard/runtime/RuntimeException.hpp>
 
 #include <shard/semantic/symbols/MethodSymbol.hpp>
 #include <shard/semantic/symbols/ConstructorSymbol.hpp>
@@ -48,10 +49,12 @@ namespace shard
 		void ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder, const OpCode opCode);
 		ObjectInstance* InstantiateObject(TypeSymbol* type, ConstructorSymbol* ctor);
 		ObjectInstance* InstantiateDelegate(DelegateTypeSymbol* type);
-		ObjectInstance* CreateRuntimeException(const std::exception& err);
 
 		ObjectInstance* InvokeOperatorMethod(ObjectInstance* leftInstance, TokenType opToken, ObjectInstance* rightInstance);
 		ObjectInstance* InvokeOperatorMethod(ObjectInstance* sourceInstance, TokenType opToken);
+
+		ObjectInstance* CreateRuntimeException(const std::exception& err);
+		ObjectInstance* CreateRuntimeException(TypeSymbol* type, const std::wstring& message, const std::wstring& stackTrace);
 
 	public:
 		VirtualMachine(ApplicationDomain* appDomain);
