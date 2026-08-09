@@ -1,0 +1,20 @@
+using stdio;
+using filesystem;
+
+namespace filesystem_temp_test;
+
+public static func Main() -> void
+{
+    tmpDir: string = Path.GetTempPath();
+    println("Temp path: " + tmpDir);
+
+    tmpFile: string = Path.CreateTempFile();
+    println("Temp file: " + tmpFile);
+
+    File.WriteAllText(tmpFile, "hello temp");
+    content: string = File.ReadAllText(tmpFile);
+    println("Read back: " + content);
+
+    File.Delete(tmpFile);
+    println("Deleted: " + (File.Exists(tmpFile) == false));
+}
