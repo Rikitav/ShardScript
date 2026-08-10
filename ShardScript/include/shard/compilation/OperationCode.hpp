@@ -45,11 +45,25 @@ namespace shard
 		LOADCONST_BOOLEAN,
 
 		/// <summary>
+		/// Loads `signed 8-bit integer number` and pushes its ObjectInstance to stack.
+		/// <para>Includes 1 parameter :</para>
+		/// <para>> byte Value - long stored to load.</para>
+		/// </summary>
+		LOADCONST_INTEGER8,
+
+		/// <summary>
 		/// Loads `signed 64-bit integer number` and pushes its ObjectInstance to stack.
 		/// <para>Includes 1 parameter :</para>
 		/// <para>> long Value - long stored to load.</para>
 		/// </summary>
 		LOADCONST_INTEGER64,
+
+		/// <summary>
+		/// Loads `signed platform word-sized integer number` and pushes its ObjectInstance to stack.
+		/// <para>Includes 1 parameter :</para>
+		/// <para>> intptr_t Value - long stored to load.</para>
+		/// </summary>
+		LOADCONST_NATIVE_INTEGER,
 
 		/// <summary>
 		/// Loads `signed 64-bit floating point integer`, and pushes its ObjectInstance to stack.

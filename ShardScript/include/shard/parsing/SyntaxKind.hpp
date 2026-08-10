@@ -60,6 +60,8 @@ namespace shard
 		TryStatement,
 		CatchClause,
 		DeferStatement,
+		SwitchStatement,
+		SwitchCaseClause,
 
 		// Expressions
 		ObjectExpression,

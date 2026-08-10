@@ -540,6 +540,13 @@ void SyntaxVisitor::VisitStatement(StatementSyntax* node)
 			return;
 		}
 
+		case SyntaxKind::SwitchStatement:
+		{
+			SwitchStatementSyntax* statement = dynamic_cast<SwitchStatementSyntax*>(node);
+			VisitSwitchStatement(statement);
+			return;
+		}
+
 		case SyntaxKind::DeferStatement:
 		{
 			DeferStatementSyntax* statement = dynamic_cast<DeferStatementSyntax*>(node);
@@ -772,6 +779,30 @@ void SyntaxVisitor::VisitTryStatement(TryStatementSyntax* node)
 		if (clause->Body != nullptr)
 			VisitStatementsBlock(clause->Body.get());
 	}
+}
+
+void SyntaxVisitor::VisitSwitchStatement(SwitchStatementSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (node->Expression != nullptr)
+		VisitExpression(node->Expression.get());
+
+	for (const auto& clause : node->Clauses)
+		VisitSwitchCaseClause(clause.get());
+}
+
+void SyntaxVisitor::VisitSwitchCaseClause(SwitchCaseClauseSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (node->Pattern != nullptr)
+		VisitExpression(node->Pattern.get());
+
+	if (node->Body != nullptr)
+		VisitStatementsBlock(node->Body.get());
 }
 
 void SyntaxVisitor::VisitIfExpression(IfExpressionSyntax* node)

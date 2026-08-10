@@ -199,6 +199,16 @@ ObjectInstance* GarbageCollector::FromValue(const std::wstring& value)
 	return instance;
 }
 
+ObjectInstance* GarbageCollector::FromNint(std::intptr_t rawMemory, bool isTransient)
+{
+	return FromNint(reinterpret_cast<void*>(rawMemory), isTransient);
+}
+
+ObjectInstance* GarbageCollector::FromNint(std::uintptr_t rawMemory, bool isTransient)
+{
+	return FromNint(reinterpret_cast<void*>(rawMemory), isTransient);
+}
+
 ObjectInstance* GarbageCollector::FromNint(void* rawMemory, bool isTransient)
 {
 	TypeSymbol* objectInfo = SymbolTable::Primitives::NativeInteger;
@@ -295,6 +305,7 @@ ObjectInstance* GarbageCollector::AllocateInstance(const TypeSymbol* objectInfo,
 		GenericTypeSymbol* generic = const_cast<GenericTypeSymbol*>(static_cast<const GenericTypeSymbol*>(objectInfo));
 		std::vector<TypeSymbol*> genericArgs;
 		genericArgs.reserve(generic->UnderlayingType->TypeParameters.size());
+
 		for (TypeParameterSymbol* parameter : generic->UnderlayingType->TypeParameters)
 			genericArgs.push_back(generic->SubstituteTypeParameters(parameter));
 

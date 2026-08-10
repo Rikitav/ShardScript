@@ -1,0 +1,133 @@
+using stdio;
+
+namespace switch_statement_values;
+
+public static func Describe(n: int) -> string
+{
+    switch (n)
+    {
+        case 1: { return "one"; }
+        case 2: { return "two"; }
+        case 3: { return "three"; }
+        default: { return "many"; }
+    }
+}
+
+public static func Grade(score: int) -> string
+{
+    switch (score)
+    {
+        case 90: { return "A"; }
+        case 80: { return "B"; }
+        case 70: { return "C"; }
+        default: { return "F"; }
+    }
+}
+
+public static func Greet(name: string) -> string
+{
+    switch (name)
+    {
+        case "Alice": { return "Hello, Alice!"; }
+        case "Bob":   { return "Hey, Bob!"; }
+        default:      { return "Who are you?"; }
+    }
+}
+
+public static func Counter(n: int) -> int
+{
+    count := 0;
+    switch (n)
+    {
+        case 1:
+        {
+            count = count + 1;
+            break;
+        }
+        
+        case 2:
+        {
+            count = count + 2;
+            break;
+        }
+
+        default:
+        {
+            count = count + 100;
+            break;
+        }
+    }
+
+    return count;
+}
+
+public static func Main() -> void
+{
+    if (Describe(1) != "one")
+    {
+        println("fail 1");
+        throw new RuntimeException();
+    }
+    
+    if (Describe(2) != "two")
+    {
+        println("fail 2");
+        throw new RuntimeException();
+    }
+    
+    if (Describe(3) != "three")
+    {
+        println("fail 3");
+        throw new RuntimeException();
+    }
+    
+    if (Describe(10) != "many")
+    {
+        println("fail many");
+        throw new RuntimeException();
+    }
+
+    if (Grade(90) != "A")
+    {
+        println("fail A");
+        throw new RuntimeException();
+    }
+
+    if (Grade(55) != "F")
+    {
+        println("fail F");
+        throw new RuntimeException();
+    }
+
+    if (Greet("Alice") != "Hello, Alice!")
+    {
+        println("fail Alice");
+        throw new RuntimeException();
+    }
+
+    if (Greet("Eve") != "Who are you?")
+    {
+        println("fail Eve");
+        throw new RuntimeException();
+    }
+
+    if (Counter(1) != 1)
+    {
+        println("fail counter 1");
+        throw new RuntimeException();
+    }
+    
+    if (Counter(2) != 2)
+    {
+        println("fail counter 2");
+        throw new RuntimeException();
+    }
+    
+    if (Counter(99) != 100)
+    {
+        println("fail counter default");
+        throw new RuntimeException();
+    }
+
+    println("switch statement values ok");
+}
