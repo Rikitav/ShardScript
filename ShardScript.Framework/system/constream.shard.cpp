@@ -460,6 +460,19 @@ static ObjectInstance* shard_constream_input(const CallState& context)
     return context.Collector.FromValue(L"");
 }
 
+static ObjectInstance* shard_constream_input_prompt(const CallState& context)
+{
+    const wchar_t* prompt = context.Args[0]->AsString();
+    if (prompt != nullptr)
+        std::wcout << prompt << std::flush;
+
+    std::wstring input;
+    if (std::getline(std::wcin, input))
+        return context.Collector.FromValue(input);
+
+    return context.Collector.FromValue(L"");
+}
+
 static ObjectInstance* shard_constream_Clear(const CallState& context) noexcept
 {
     std::wcout << L"\x1b[2J\x1b[H" << std::flush;
@@ -567,6 +580,10 @@ SHARDLIB_ENTRYPOINT
 
     stdio.AddMethod(L"input", TYPE_STRING, LINK_STATIC, ACS_PUBLIC)
          .SetCallback(&shard_constream_input);
+
+    stdio.AddMethod(L"input", TYPE_STRING, LINK_STATIC, ACS_PUBLIC)
+         .AddParameter(L"prompt", SymbolTable::Primitives::String)
+         .SetCallback(&shard_constream_input_prompt);
 
     stdio.AddMethod(L"clear", TYPE_VOID, LINK_STATIC, ACS_PUBLIC)
         .SetCallback(&shard_constream_Clear);
