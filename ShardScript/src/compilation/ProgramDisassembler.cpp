@@ -246,31 +246,26 @@ void ProgramDisassembler::Disassemble(std::wostream& out, MethodSymbol* method)
         {
             case OpCode::NOP:                       opcode = L"nop"; break;
             case OpCode::HALT:                      opcode = L"halt"; break;
-            case OpCode::POPSTACK:                  opcode = L"pop"; break;
-            case OpCode::POPSTACK_N:
-                opcode = L"pop.n";
-                args << static_cast<int>(decoder.AbsorbUInt8());
-                break;
+            case OpCode::POP:                       opcode = L"pop"; break;
             case OpCode::LOADCONST_NULL:            opcode = L"ldnull"; break;
             case OpCode::RETURN:                    opcode = L"ret"; break;
 
             case OpCode::MATH_ADDITION:             opcode = L"add"; break;
-            case OpCode::MATH_SUBSTRACTION:         opcode = L"sub"; break;
-            case OpCode::MATH_MULTIPLICATION:       opcode = L"mul"; break;
+            case OpCode::MATH_SUBTRACT:             opcode = L"sub"; break;
+            case OpCode::MATH_MULTIPLY:             opcode = L"mul"; break;
             case OpCode::MATH_DIVISION:             opcode = L"div"; break;
-            case OpCode::MATH_MODULE:               opcode = L"mod"; break;
+            case OpCode::MATH_MODULO:               opcode = L"mod"; break;
             case OpCode::MATH_POWER:                opcode = L"pow"; break;
             case OpCode::MATH_NEGATIVE:             opcode = L"neg"; break;
-            case OpCode::MATH_POSITIVE:             opcode = L"pos"; break;
-            case OpCode::MATH_LEFTSHIFT:            opcode = L"shl"; break;
-            case OpCode::MATH_RIGHTSHIFT:           opcode = L"shr"; break;
+            case OpCode::MATH_SHL:                  opcode = L"shl"; break;
+            case OpCode::MATH_SHR:                  opcode = L"shr"; break;
 
             case OpCode::COMPARE_EQUAL:             opcode = L"cmp_eq"; break;
             case OpCode::COMPARE_NOTEQUAL:          opcode = L"cmp_neq"; break;
             case OpCode::COMPARE_LESS:              opcode = L"cmp_l"; break;
-            case OpCode::COMPARE_LESSOREQUAL:       opcode = L"cmp_le"; break;
+            case OpCode::COMPARE_LESS_OR_EQUAL:     opcode = L"cmp_le"; break;
             case OpCode::COMPARE_GREATER:           opcode = L"cmp_gt"; break;
-            case OpCode::COMPARE_GREATEROREQUAL:    opcode = L"cmp_ge"; break;
+            case OpCode::COMPARE_GREATER_OR_EQUAL:  opcode = L"cmp_ge"; break;
 
             case OpCode::LOGICAL_NOT:               opcode = L"not"; break;
             case OpCode::LOGICAL_AND:               opcode = L"and"; break;
@@ -279,7 +274,7 @@ void ProgramDisassembler::Disassemble(std::wostream& out, MethodSymbol* method)
             case OpCode::LOADARRAYELEMENT:          opcode = L"ldelem"; break;
             case OpCode::STOREARRAYELEMENT:         opcode = L"stelem"; break;
 
-            case OpCode::CREATE_DUPLICATE:           opcode = L"dup"; break;
+            case OpCode::DUP:                       opcode = L"dup"; break;
 
             case OpCode::LOADCONST_BOOLEAN:
                 opcode = L"ldc.bool";
@@ -312,13 +307,23 @@ void ProgramDisassembler::Disassemble(std::wostream& out, MethodSymbol* method)
                 break;
             }
 
-            case OpCode::LOAD_VARIABLE:
+            case OpCode::LOAD_LOCAL:
                 opcode = L"ldloc";
                 args << decoder.AbsorbVariableSlot();
                 break;
 
-            case OpCode::STORE_VARIABLE:
+            case OpCode::STORE_LOCAL:
                 opcode = L"stloc";
+                args << decoder.AbsorbVariableSlot();
+                break;
+
+            case OpCode::LOAD_ARG:
+                opcode = L"ldarg";
+                args << decoder.AbsorbVariableSlot();
+                break;
+
+            case OpCode::STORE_ARG:
+                opcode = L"starg";
                 args << decoder.AbsorbVariableSlot();
                 break;
 
@@ -346,21 +351,35 @@ void ProgramDisassembler::Disassemble(std::wostream& out, MethodSymbol* method)
                 break;
             }
 
+            case OpCode::BR_NULL:
+            {
+                opcode = L"brnull";
+                args << L"SS_";
+                WriteHexTarget(args, decoder.AbsorbJump());
+                break;
+            }
+
+            case OpCode::JUMP_TABLE:
+            {
+                std::uint32_t count = decoder.AbsorbUInt32();
+                opcode = L"jmptable";
+                args << count << L" [";
+                for (std::uint32_t i = 0; i < count; ++i)
+                {
+                    if (i > 0)
+                        args << L", ";
+                    args << L"SS_";
+                    WriteHexTarget(args, decoder.AbsorbJump());
+                }
+
+                args << L"]";
+                break;
+            }
+
             case OpCode::CALLMETHODSYMBOL:
             {
                 auto* sym = decoder.AbsorbMethodSymbol();
                 opcode = L"call";
-                if (sym == nullptr)
-                    args << L"null";
-                else
-                    args << (sym->FullName.empty() ? sym->Name : sym->FullName);
-                break;
-            }
-
-            case OpCode::CALLGENERICMETHOD:
-            {
-                auto* sym = decoder.AbsorbMethodSymbol();
-                opcode = L"callgeneric";
                 if (sym == nullptr)
                     args << L"null";
                 else
@@ -455,7 +474,7 @@ void ProgramDisassembler::Disassemble(std::wostream& out, MethodSymbol* method)
                 break;
             }
 
-            case OpCode::NEWDYNAMICARRAY:
+            case OpCode::NEWARRAY_DYNAMIC:
             {
                 auto* sym = decoder.AbsorbTypeSymbol();
                 opcode = L"newdynarr";
@@ -514,7 +533,7 @@ void ProgramDisassembler::Disassemble(std::wostream& out, MethodSymbol* method)
                 break;
             }
 
-            case OpCode::CASTINTERFACE:
+            case OpCode::CAST_AS:
             {
                 auto* sym = decoder.AbsorbTypeSymbol();
                 opcode = L"castinterface";

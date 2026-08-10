@@ -22,14 +22,7 @@ namespace shard
 		/// Pops current top value of stack.
 		/// <para>Includes no additional parameters.</para>
 		/// </summary>
-		POPSTACK,
-
-		/// <summary>
-		/// Pops N values from stack. Used for stack cleanup
-		/// <para>Includes 1 parameter :</para>
-		/// <para>> uin8_t Value - How mush values to pop.</para>
-		/// </summary>
-		POPSTACK_N,
+		POP,
 
 		/// <summary>
 		/// Loads `null` and pushes its ObjectInstance to stack.
@@ -61,7 +54,7 @@ namespace shard
 		/// <summary>
 		/// Loads `signed platform word-sized integer number` and pushes its ObjectInstance to stack.
 		/// <para>Includes 1 parameter :</para>
-		/// <para>> intptr_t Value - long stored to load.</para>
+		/// <para>> intptr_t Value - intptr_t stored to load.</para>
 		/// </summary>
 		LOADCONST_NATIVE_INTEGER,
 
@@ -90,28 +83,35 @@ namespace shard
 		/// Pops 1 instance from stack and creates duplicate of it.
 		/// <para>Includes no additional parameters.</para>
 		/// </summary>
-		CREATE_DUPLICATE,
+		DUP,
 
 		/// <summary>
-		/// Pops an ObjectInstance* from stack and stores it to variable slot at given index.
+		/// Pops an ObjectInstance* from stack and stores it to local variable slot at given index.
 		/// <para>Includes 1 parameter :</para>
-		/// <para>> std::uint16_t Value - Zero-based index of variable, where instance will be written to.</para>
+		/// <para>> std::uint16_t Value - Zero-based index of local variable, where instance will be written to.</para>
 		/// </summary>
-		STORE_VARIABLE,
+		STORE_LOCAL,
 
 		/// <summary>
-		/// Peeks an ObjectInstance* from stack and stores it to variable slot at given index.
+		/// Pops an ObjectInstance* from stack and stores it to argument slot at given index.
 		/// <para>Includes 1 parameter :</para>
-		/// <para>> std::uint16_t Value - Zero-based index of variable, where instance will be written to.</para>
+		/// <para>> std::uint16_t Value - Zero-based index of argument, where instance will be written to.</para>
 		/// </summary>
-		PEEK_STORE_VARIABLE,
+		STORE_ARG,
 
 		/// <summary>
-		/// Pushes copy of ObjectInstance* from variable slot on given index to stack top.
+		/// Pushes copy of ObjectInstance* from local variable slot on given index to stack top.
 		/// <para>Includes 1 parameter :</para>
-		/// <para>> std::uint16_t Value - Zero-based index of variable, where instance will be readed from.</para>
+		/// <para>> std::uint16_t Value - Zero-based index of local variable, where instance will be readed from.</para>
 		/// </summary>
-		LOAD_VARIABLE,
+		LOAD_LOCAL,
+
+		/// <summary>
+		/// Pushes copy of ObjectInstance* from argument slot on given index to stack top.
+		/// <para>Includes 1 parameter :</para>
+		/// <para>> std::uint16_t Value - Zero-based index of argument, where instance will be readed from.</para>
+		/// </summary>
+		LOAD_ARG,
 
 		/// <summary>
 		/// Unconditional jump to an absolute offset.
@@ -135,6 +135,22 @@ namespace shard
 		JUMP_FALSE,
 
 		/// <summary>
+		/// Conditional jump to an absolute offset if stack top contains null.
+		/// <para>Includes 1 parameter :</para>
+		/// <para>> std::size_t Offset - Relative offset in bytes from current instruction pointer.</para>
+		/// </summary>
+		BR_NULL,
+
+		/// <summary>
+		/// Multi-way jump table for dense switch statements.
+		/// Pops an integer index from the stack and jumps to the corresponding target.
+		/// <para>Includes 2 parameters :</para>
+		/// <para>> std::uint32_t Count - number of jump targets.</para>
+		/// <para>> std::size_t Targets[Count] - absolute bytecode offsets of each target.</para>
+		/// </summary>
+		JUMP_TABLE,
+
+		/// <summary>
 		/// Returns from the current method call, destroying the current CallStackFrame.
 		/// If the method is non-void, the top of the stack is treated as the return value.
 		/// <para>Includes no additional parameters.</para>
@@ -148,15 +164,14 @@ namespace shard
 		THROW,
 
 		MATH_ADDITION,
-		MATH_SUBSTRACTION,
-		MATH_MULTIPLICATION,
+		MATH_SUBTRACT,
+		MATH_MULTIPLY,
 		MATH_DIVISION,
-		MATH_MODULE,
+		MATH_MODULO,
 		MATH_POWER,
 		MATH_NEGATIVE,
-		MATH_POSITIVE,
-		MATH_LEFTSHIFT,
-		MATH_RIGHTSHIFT,
+		MATH_SHL,
+		MATH_SHR,
 
 		/// <summary>
 		/// Pops two values, compares them for equality, pushes boolean result.
@@ -180,7 +195,7 @@ namespace shard
 		/// Pops two values, checks if value B is greater or equal to value A (B >= A), pushes boolean result.
 		/// <para>Includes no additional parameters.</para>
 		/// </summary>
-		COMPARE_GREATEROREQUAL,
+		COMPARE_GREATER_OR_EQUAL,
 
 		/// <summary>
 		/// Pops two values, checks if value B is less than value A (B < A), pushes boolean result.
@@ -192,7 +207,7 @@ namespace shard
 		/// Pops two values, checks if value B is less or equal to value A (B <= A), pushes boolean result.
 		/// <para>Includes no additional parameters.</para>
 		/// </summary>
-		COMPARE_LESSOREQUAL,
+		COMPARE_LESS_OR_EQUAL,
 
 		/// <summary>
 		/// Logical NOT operation. Pops boolean/integer, pushes inverted value.
@@ -273,7 +288,7 @@ namespace shard
         /// <para>Includes 1 parameter :</para>
         /// <para>> TypeSymbol* pElementType - Type of array elements.</para>
         /// </summary>
-        NEWDYNAMICARRAY,
+        NEWARRAY_DYNAMIC,
 	
         /// <summary>
         /// Loads a static field value.
@@ -298,18 +313,12 @@ namespace shard
 
 		/// <summary>
 		/// Invokes MethodSymbol with creation of new CallStackFrame.
+		/// If pending type arguments were loaded beforehand with LOAD_TYPEARGUMENT,
+		/// they are consumed and bound to the new frame.
 		/// <para>Includes 1 parameter :</para>
 		/// <para>> MethodSymbol* pValue - pointer to MethodSymbol to invoke.</para>
 		/// </summary>
 		CALLMETHODSYMBOL,
-
-		/// <summary>
-		/// Invokes a generic MethodSymbol with creation of new CallStackFrame.
-		/// Type arguments must be loaded beforehand with LOAD_TYPEARGUMENT.
-		/// <para>Includes 1 parameter :</para>
-		/// <para>> MethodSymbol* pValue - pointer to MethodSymbol to invoke.</para>
-		/// </summary>
-		CALLGENERICMETHOD,
 
 		/// <summary>
 		/// Invokes the target method stored in a delegate instance.
@@ -347,7 +356,7 @@ namespace shard
 		/// <para>Includes 1 parameter :</para>
 		/// <para>> TypeSymbol* pType - The type to cast to.</para>
 		/// </summary>
-		CASTINTERFACE,
+		CAST_AS,
 
 		/// <summary>
 		/// Pops an object instance and a target type. Throws an exception if the

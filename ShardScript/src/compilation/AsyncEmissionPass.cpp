@@ -177,16 +177,16 @@ namespace
     {
         for (const auto& lifted : info.LiftedParameters)
         {
-            encoder.EmitLoadVarible(code, 0);                     // this
+            encoder.EmitLoadLocal(code, 0);                     // this
             encoder.EmitLoadField(code, lifted.Field->SlotIndex); // field value
-            encoder.EmitStoreVarible(code, lifted.MoveNextSlot);  // local slot
+            encoder.EmitStoreLocal(code, lifted.MoveNextSlot);  // local slot
         }
 
         for (const auto& lifted : info.LiftedLocals)
         {
-            encoder.EmitLoadVarible(code, 0);
+            encoder.EmitLoadLocal(code, 0);
             encoder.EmitLoadField(code, lifted.Field->SlotIndex);
-            encoder.EmitStoreVarible(code, lifted.MoveNextSlot);
+            encoder.EmitStoreLocal(code, lifted.MoveNextSlot);
         }
     }
 
@@ -194,15 +194,15 @@ namespace
     {
         for (const auto& lifted : info.LiftedParameters)
         {
-            encoder.EmitLoadVarible(code, 0);                      // this
-            encoder.EmitLoadVarible(code, lifted.MoveNextSlot);    // value
+            encoder.EmitLoadLocal(code, 0);                      // this
+            encoder.EmitLoadLocal(code, lifted.MoveNextSlot);    // value
             encoder.EmitStoreField(code, lifted.Field->SlotIndex);
         }
 
         for (const auto& lifted : info.LiftedLocals)
         {
-            encoder.EmitLoadVarible(code, 0);                      // this
-            encoder.EmitLoadVarible(code, lifted.MoveNextSlot);    // value
+            encoder.EmitLoadLocal(code, 0);                      // this
+            encoder.EmitLoadLocal(code, lifted.MoveNextSlot);    // value
             encoder.EmitStoreField(code, lifted.Field->SlotIndex);
         }
     }
@@ -367,7 +367,7 @@ namespace
         if (defer->IsResourceDefer)
         {
             if (defer->Variable != nullptr)
-                encoder.EmitLoadVarible(code, defer->Variable->SlotIndex);
+                encoder.EmitLoadLocal(code, defer->Variable->SlotIndex);
 
             if (defer->DisposeMethod != nullptr)
                 EmitMethodCall(ctx, defer->DisposeMethod);
@@ -537,7 +537,7 @@ namespace
             if (completeMethod == nullptr)
                 return;
 
-            encoder.EmitLoadVarible(code, 0); // this state machine
+            encoder.EmitLoadLocal(code, 0); // this state machine
             encoder.EmitLoadField(code, info.TaskField->SlotIndex);
             encoder.EmitCallMethodSymbol(code, completeMethod);
         }
@@ -549,7 +549,7 @@ namespace
 
             TypeSymbol* elementType = GetValueTaskElementType(returnType);
 
-            encoder.EmitLoadVarible(code, 0); // this state machine
+            encoder.EmitLoadLocal(code, 0); // this state machine
             encoder.EmitLoadField(code, info.TaskField->SlotIndex);
 
             encoder.EmitDefaultValue(code, elementType);
@@ -573,32 +573,32 @@ namespace
         EmitExpressionInto(ctx, info.MoveNext, awaitExpr->Expression.get());
 
         // Anchor the awaitable in a temporary local before calling GetAwaiter.
-        encoder.EmitStoreVarible(code, tempAwaitableSlot);
+        encoder.EmitStoreLocal(code, tempAwaitableSlot);
 
         if (awaitExpr->GetAwaiterMethod != nullptr)
         {
-            encoder.EmitLoadVarible(code, tempAwaitableSlot);
+            encoder.EmitLoadLocal(code, tempAwaitableSlot);
             encoder.EmitCallMethodSymbol(code, awaitExpr->GetAwaiterMethod);
-            encoder.EmitStoreVarible(code, tempAwaiterSlot);
+            encoder.EmitStoreLocal(code, tempAwaiterSlot);
         }
         else
         {
             // Self-awaiter: the awaitable is the awaiter.
-            encoder.EmitLoadVarible(code, tempAwaitableSlot);
-            encoder.EmitStoreVarible(code, tempAwaiterSlot);
+            encoder.EmitLoadLocal(code, tempAwaitableSlot);
+            encoder.EmitStoreLocal(code, tempAwaiterSlot);
         }
 
         // Release the temporary anchor now that the awaiter is stored in the field.
         encoder.EmitLoadConstNull(code);
-        encoder.EmitStoreVarible(code, tempAwaitableSlot);
+        encoder.EmitStoreLocal(code, tempAwaitableSlot);
 
         // this._awaiterN = awaiter;
-        encoder.EmitLoadVarible(code, 0);              // this
-        encoder.EmitLoadVarible(code, tempAwaiterSlot); // awaiter
+        encoder.EmitLoadLocal(code, 0);              // this
+        encoder.EmitLoadLocal(code, tempAwaiterSlot); // awaiter
         encoder.EmitStoreField(code, site.AwaiterField->SlotIndex);
 
         // if (this._awaiterN.IsCompleted) goto next resume label;
-        encoder.EmitLoadVarible(code, 0);
+        encoder.EmitLoadLocal(code, 0);
         encoder.EmitLoadField(code, site.AwaiterField->SlotIndex);
         encoder.EmitCallMethodSymbol(code, awaitExpr->IsCompletedMethod);
         nextResumeBacktracks.push_back(code.size());
@@ -608,19 +608,19 @@ namespace
         // handled so it can be restored when MoveNext resumes.
         if (ctx.Info.CurrentExceptionField != nullptr && site.EnclosingCatch != nullptr)
         {
-            encoder.EmitLoadVarible(code, 0);
+            encoder.EmitLoadLocal(code, 0);
             encoder.EmitLoadCurrentException(code);
             encoder.EmitStoreField(code, ctx.Info.CurrentExceptionField->SlotIndex);
         }
 
         // this._state = awaitIndex + 1;
-        encoder.EmitLoadVarible(code, 0);
+        encoder.EmitLoadLocal(code, 0);
         encoder.EmitLoadConstInt64(code, static_cast<std::int64_t>(awaitIndex + 1));
         encoder.EmitStoreField(code, info.StateField->SlotIndex);
 
         // this._awaiterN.OnCompleted(this);
-        encoder.EmitLoadVarible(code, 0);              // this (becomes parameter)
-        encoder.EmitLoadVarible(code, 0);              // this (becomes receiver placeholder)
+        encoder.EmitLoadLocal(code, 0);              // this (becomes parameter)
+        encoder.EmitLoadLocal(code, 0);              // this (becomes receiver placeholder)
         encoder.EmitLoadField(code, site.AwaiterField->SlotIndex); // replace top with awaiter
         encoder.EmitCallMethodSymbol(code, awaitExpr->OnCompletedMethod);
 
@@ -635,7 +635,7 @@ namespace
         ByteCodeEncoder& encoder = ctx.Encoder;
 
         const AwaitSite& site = info.AwaitSites[previousAwaitIndex];
-        encoder.EmitLoadVarible(code, 0);
+        encoder.EmitLoadLocal(code, 0);
         encoder.EmitLoadField(code, site.AwaiterField->SlotIndex);
 
         if (site.Expression->GetResultMethod != nullptr)
@@ -645,7 +645,7 @@ namespace
 
         if (site.ResultVariable != nullptr)
         {
-            encoder.EmitStoreVarible(code, site.ResultVariable->SlotIndex);
+            encoder.EmitStoreLocal(code, site.ResultVariable->SlotIndex);
         }
         else if (site.IsReturnAwait)
         {
@@ -653,10 +653,10 @@ namespace
             if (IsValueTaskReturnType(returnType))
             {
                 std::uint16_t tempSlot = static_cast<std::uint16_t>(info.MoveNext->GetEvalStackArgumentsCount() + info.MoveNext->AddVariableCount());
-                encoder.EmitStoreVarible(code, tempSlot);
+                encoder.EmitStoreLocal(code, tempSlot);
 
-                encoder.EmitLoadVarible(code, tempSlot);
-                encoder.EmitLoadVarible(code, 0);
+                encoder.EmitLoadLocal(code, tempSlot);
+                encoder.EmitLoadLocal(code, 0);
                 encoder.EmitLoadField(code, info.TaskField->SlotIndex);
 
                 MethodSymbol* setResultMethod = FindSetResultMethod(returnType);
@@ -671,7 +671,7 @@ namespace
                     encoder.EmitPop(code);
                 }
 
-                encoder.EmitLoadVarible(code, 0);
+                encoder.EmitLoadLocal(code, 0);
                 encoder.EmitLoadField(code, info.TaskField->SlotIndex);
 
                 MethodSymbol* completeMethod = FindCompleteMethod(returnType);
@@ -714,7 +714,7 @@ namespace
 
             if (clause->Symbol != nullptr)
             {
-                encoder.EmitStoreVarible(code, clause->Symbol->SlotIndex);
+                encoder.EmitStoreLocal(code, clause->Symbol->SlotIndex);
             }
             else
                 encoder.EmitPop(code);
@@ -858,7 +858,7 @@ namespace
             }
 
             // enumerator := range.GetEnumerator();
-            encoder.EmitLoadVarible(code, 0);                                     // this
+            encoder.EmitLoadLocal(code, 0);                                     // this
             EmitExpressionInto(ctx, ctx.Info.MoveNext, range);                    // this, range
             EmitMethodCall(ctx, TRAIT_ENUMERABLE_GETENUMERATOR);             // this, enumerator
             encoder.EmitStoreField(code, enumeratorField->SlotIndex);             // --
@@ -866,18 +866,18 @@ namespace
             labels.LoopStart = code.size();
 
             // while (enumerator.MoveNext())
-            encoder.EmitLoadVarible(code, 0);
+            encoder.EmitLoadLocal(code, 0);
             encoder.EmitLoadField(code, enumeratorField->SlotIndex);
             EmitMethodCall(ctx, TRAIT_ENUMERATOR_MOVENEXT);
             std::size_t condJumpBacktrack = code.size();
             encoder.EmitJumpFalse(code, 0);
 
             // loopVariable := enumerator.Current;
-            encoder.EmitLoadVarible(code, 0);
+            encoder.EmitLoadLocal(code, 0);
             encoder.EmitLoadField(code, enumeratorField->SlotIndex);
             EmitMethodCall(ctx, TRAIT_ENUMERATOR_CURRENT_GET);
             if (loopVariable != nullptr)
-                encoder.EmitStoreVarible(code, loopVariable->SlotIndex);
+                encoder.EmitStoreLocal(code, loopVariable->SlotIndex);
             else
                 encoder.EmitPop(code);
 
@@ -1167,7 +1167,7 @@ namespace
                     MethodSymbol* setResultMethod = FindSetResultMethod(info.Method->ReturnType);
                     if (setResultMethod != nullptr)
                     {
-                        encoder.EmitLoadVarible(code, 0);
+                        encoder.EmitLoadLocal(code, 0);
                         encoder.EmitLoadField(code, info.TaskField->SlotIndex);
                         encoder.EmitCallMethodSymbol(code, setResultMethod);
                     }
@@ -1638,19 +1638,19 @@ void AsyncEmissionPass::EmitFactoryBody(const AsyncMethodInfo& info, std::vector
     {
         tempSlotOuterThis = static_cast<std::uint16_t>(info.Method->GetEvalStackArgumentsCount() + info.Method->AddVariableCount());
 
-        encoder.EmitLoadVarible(code, 0);              // original 'this'
-        encoder.EmitStoreVarible(code, tempSlotOuterThis);
+        encoder.EmitLoadLocal(code, 0);              // original 'this'
+        encoder.EmitStoreLocal(code, tempSlotOuterThis);
     }
 
     // stateMachine = new StateMachine();
     encoder.EmitNewObject(code, info.StateMachineClass, info.StateMachineCtor);
-    encoder.EmitStoreVarible(code, tempSlotStateMachine);
+    encoder.EmitStoreLocal(code, tempSlotStateMachine);
 
     // stateMachine._outerThis = this;   (for instance methods)
     if (hasOuterThis)
     {
-        encoder.EmitLoadVarible(code, tempSlotStateMachine); // stateMachine
-        encoder.EmitLoadVarible(code, tempSlotOuterThis);    // original 'this'
+        encoder.EmitLoadLocal(code, tempSlotStateMachine); // stateMachine
+        encoder.EmitLoadLocal(code, tempSlotOuterThis);    // original 'this'
         encoder.EmitStoreField(code, info.OuterThisField->SlotIndex);
     }
 
@@ -1658,33 +1658,33 @@ void AsyncEmissionPass::EmitFactoryBody(const AsyncMethodInfo& info, std::vector
     // after resuming from an await.
     for (const auto& lifted : info.LiftedParameters)
     {
-        encoder.EmitLoadVarible(code, tempSlotStateMachine);
-        encoder.EmitLoadVarible(code, lifted.OriginalSlot);
+        encoder.EmitLoadLocal(code, tempSlotStateMachine);
+        encoder.EmitLoadLocal(code, lifted.OriginalSlot);
         encoder.EmitStoreField(code, lifted.Field->SlotIndex);
     }
 
     // stateMachine._task = new Task();
     encoder.EmitNewObject(code, taskType, taskCtor);
-    encoder.EmitStoreVarible(code, tempSlotTask);
+    encoder.EmitStoreLocal(code, tempSlotTask);
 
-    encoder.EmitLoadVarible(code, tempSlotStateMachine);
-    encoder.EmitLoadVarible(code, tempSlotTask);
+    encoder.EmitLoadLocal(code, tempSlotStateMachine);
+    encoder.EmitLoadLocal(code, tempSlotTask);
     encoder.EmitStoreField(code, info.TaskField->SlotIndex);
 
     // Root the returned task so it survives until it is completed/faulted.
     if (internalRootMethod != nullptr)
     {
-        encoder.EmitLoadVarible(code, tempSlotStateMachine);
+        encoder.EmitLoadLocal(code, tempSlotStateMachine);
         encoder.EmitLoadField(code, info.TaskField->SlotIndex);
         encoder.EmitCallMethodSymbol(code, internalRootMethod);
     }
 
     // stateMachine.MoveNext();
-    encoder.EmitLoadVarible(code, tempSlotStateMachine);
+    encoder.EmitLoadLocal(code, tempSlotStateMachine);
     encoder.EmitCallMethodSymbol(code, info.MoveNext);
 
     // return stateMachine._task;
-    encoder.EmitLoadVarible(code, tempSlotStateMachine);
+    encoder.EmitLoadLocal(code, tempSlotStateMachine);
     encoder.EmitLoadField(code, info.TaskField->SlotIndex);
     encoder.EmitReturn(code);
 }
@@ -1726,7 +1726,7 @@ void AsyncEmissionPass::EmitMoveNextBodyWithRegions(const AsyncMethodInfo& info,
     // -------------------------------------------------------------------------
     for (std::size_t i = 0; i <= awaitCount; ++i)
     {
-        encoder.EmitLoadVarible(code, 0); // this
+        encoder.EmitLoadLocal(code, 0); // this
         encoder.EmitLoadField(code, info.StateField->SlotIndex);
         encoder.EmitLoadConstInt64(code, static_cast<std::int64_t>(i));
         encoder.EmitCompareEqual(code);
@@ -1773,13 +1773,13 @@ void AsyncEmissionPass::EmitMoveNextBodyWithRegions(const AsyncMethodInfo& info,
             {
                 CatchClauseSyntax* clause = previousSite.EnclosingCatch;
 
-                encoder.EmitLoadVarible(code, 0);
+                encoder.EmitLoadLocal(code, 0);
                 encoder.EmitLoadField(code, info.CurrentExceptionField->SlotIndex);
 
                 if (clause->Symbol != nullptr)
                 {
-                    encoder.EmitStoreVarible(code, static_cast<std::uint16_t>(clause->Symbol->SlotIndex));
-                    encoder.EmitLoadVarible(code, static_cast<std::uint16_t>(clause->Symbol->SlotIndex));
+                    encoder.EmitStoreLocal(code, static_cast<std::uint16_t>(clause->Symbol->SlotIndex));
+                    encoder.EmitLoadLocal(code, static_cast<std::uint16_t>(clause->Symbol->SlotIndex));
                 }
 
                 encoder.EmitStoreCurrentException(code);
@@ -1835,9 +1835,9 @@ void AsyncEmissionPass::EmitMoveNextBodyWithRegions(const AsyncMethodInfo& info,
     {
         std::uint16_t exceptionSlot = static_cast<std::uint16_t>(info.MoveNext->GetEvalStackArgumentsCount() + info.MoveNext->AddVariableCount());
 
-        encoder.EmitStoreVarible(code, exceptionSlot);
-        encoder.EmitLoadVarible(code, exceptionSlot);
-        encoder.EmitLoadVarible(code, 0);
+        encoder.EmitStoreLocal(code, exceptionSlot);
+        encoder.EmitLoadLocal(code, exceptionSlot);
+        encoder.EmitLoadLocal(code, 0);
         encoder.EmitLoadField(code, info.TaskField->SlotIndex);
         encoder.EmitCallMethodSymbol(code, setExceptionMethod);
     }

@@ -56,6 +56,21 @@ void ByteCodeDecoder::Return()
     _ip = _code.size();
 }
 
+std::size_t ByteCodeDecoder::GetCursor() const
+{
+    return _ip;
+}
+
+std::size_t ByteCodeDecoder::PeekJumpAt(std::size_t offset) const
+{
+    if (offset + sizeof(std::size_t) > _code.size())
+        throw std::out_of_range("Tried to read jump target out of code boundaries");
+
+    std::size_t value{};
+    std::memcpy(&value, &_code[offset], sizeof(std::size_t));
+    return value;
+}
+
 OpCode ByteCodeDecoder::AbsorbOpCode()
 {
     OpCode value{};
@@ -122,6 +137,13 @@ std::uint16_t ByteCodeDecoder::AbsorbVariableSlot()
 std::uint16_t ByteCodeDecoder::AbsorbUInt16()
 {
     std::uint16_t value{};
+    ReadUnaligned(_code, _ip, value);
+    return value;
+}
+
+std::uint32_t ByteCodeDecoder::AbsorbUInt32()
+{
+    std::uint32_t value{};
     ReadUnaligned(_code, _ip, value);
     return value;
 }
