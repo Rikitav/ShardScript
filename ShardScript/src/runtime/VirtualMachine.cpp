@@ -333,10 +333,26 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
+		case OpCode::LOADCONST_INTEGER8:
+		{
+			std::uint8_t value = decoder.AbsorbUInt8();
+			ObjectInstance* instance = garbageCollector.FromValue(value);
+			frame->PushStack(instance);
+			break;
+		}
+
 		case OpCode::LOADCONST_INTEGER64:
 		{
 			std::int64_t value = decoder.AbsorbInt64();
 			ObjectInstance* instance = garbageCollector.FromValue(value);
+			frame->PushStack(instance);
+			break;
+		}
+
+		case OpCode::LOADCONST_NATIVE_INTEGER:
+		{
+			std::intptr_t value = decoder.AbsorbIntPtr();
+			ObjectInstance* instance = garbageCollector.FromNint(reinterpret_cast<void*>(value), false);
 			frame->PushStack(instance);
 			break;
 		}

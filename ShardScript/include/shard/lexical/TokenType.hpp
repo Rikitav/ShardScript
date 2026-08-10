@@ -153,6 +153,8 @@ namespace shard
 		UnlessKeyword,		// unless
 		ElseKeyword,		// else
 		SwitchKeyword,		// switch
+		CaseKeyword,		// case
+		DefaultKeyword,		// default
 
 		// Functional keywords
 		ReturnKeyword,		  // return

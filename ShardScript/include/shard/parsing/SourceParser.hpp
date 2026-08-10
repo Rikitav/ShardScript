@@ -33,6 +33,7 @@
 #include <shard/parsing/nodes/Statements/BreakStatementSyntax.hpp>
 #include <shard/parsing/nodes/Statements/ContinueStatementSyntax.hpp>
 #include <shard/parsing/nodes/Statements/TryStatementSyntax.hpp>
+#include <shard/parsing/nodes/Statements/SwitchStatementSyntax.hpp>
 
 #include <shard/parsing/nodes/MemberDeclarations/NamespaceDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/MemberDeclarations/DelegateDeclarationSyntax.hpp>
@@ -58,6 +59,7 @@
 #include <shard/parsing/nodes/Expressions/TernaryExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/IfExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/SwitchExpressionSyntax.hpp>
+#include <shard/parsing/nodes/Expressions/IsPatternSyntax.hpp>
 
 #include <shard/parsing/nodes/Loops/ForStatementSyntax.hpp>
 #include <shard/parsing/nodes/Loops/ForEachStatementSyntax.hpp>
@@ -142,6 +144,7 @@ namespace shard
 		std::unique_ptr<ForEachStatementSyntax> ReadForEachStatement(SourceProvider& reader, SyntaxNode* parent);
 		std::unique_ptr<ForInStatementSyntax> ReadForInStatement(SourceProvider& reader, SyntaxNode* parent);
 		std::unique_ptr<TryStatementSyntax> ReadTryStatement(SourceProvider& reader, SyntaxNode* parent);
+		std::unique_ptr<SwitchStatementSyntax> ReadSwitchStatement(SourceProvider& reader, SyntaxNode* parent);
 
 		// 7. Expression
 		std::unique_ptr<ExpressionSyntax> ReadExpression(SourceProvider& reader, SyntaxNode* parent, int bindingPower, bool resetOperatorCount = false);

@@ -36,6 +36,7 @@
 #include <shard/parsing/nodes/Expressions/IsExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/IsPatternSyntax.hpp>
 #include <shard/parsing/nodes/Statements/TryStatementSyntax.hpp>
+#include <shard/parsing/nodes/Statements/SwitchStatementSyntax.hpp>
 
 #include <shard/parsing/nodes/Loops/ForStatementSyntax.hpp>
 #include <shard/parsing/nodes/Loops/ForEachStatementSyntax.hpp>
@@ -166,6 +167,7 @@ namespace shard
 		void VisitIfExpression(shard::IfExpressionSyntax* node) override;
 		void VisitSwitchExpression(shard::SwitchExpressionSyntax* node) override;
 		void VisitTryStatement(shard::TryStatementSyntax* node) override;
+		void VisitSwitchStatement(shard::SwitchStatementSyntax* node) override;
 
 		void VisitMemberAccessExpression(shard::MemberAccessExpressionSyntax* node) override;
 		void VisitInvocationExpression(shard::InvokationExpressionSyntax* node) override;

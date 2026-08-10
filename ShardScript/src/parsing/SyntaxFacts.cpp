@@ -395,6 +395,7 @@ bool IsConditionalKeyword(shard::TokenType type)
 		case TokenType::IfKeyword:
 		case TokenType::UnlessKeyword:
 		case TokenType::ElseKeyword:
+		case TokenType::SwitchKeyword:
 			return true;
 
 		default:

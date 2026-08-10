@@ -55,6 +55,9 @@
 #include <shard/parsing/nodes/Statements/ExpressionStatementSyntax.hpp>
 #include <shard/parsing/nodes/Statements/BreakStatementSyntax.hpp>
 #include <shard/parsing/nodes/Statements/ContinueStatementSyntax.hpp>
+#include <shard/parsing/nodes/Statements/TryStatementSyntax.hpp>
+#include <shard/parsing/nodes/Statements/SwitchStatementSyntax.hpp>
+#include <shard/parsing/nodes/Statements/SwitchCaseClauseSyntax.hpp>
 
 #include <shard/parsing/nodes/Expressions/LiteralExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/BinaryExpressionSyntax.hpp>
@@ -1926,6 +1929,9 @@ std::unique_ptr<KeywordStatementSyntax> SourceParser::ReadKeywordStatement(Sourc
 		case TokenType::TryKeyword:
 			return ReadTryStatement(reader, parent);
 
+		case TokenType::SwitchKeyword:
+			return ReadSwitchStatement(reader, parent);
+
 		case TokenType::DeferKeyword:
 			return ReadDeferStatement(reader, parent);
 
@@ -2267,6 +2273,68 @@ std::unique_ptr<TryStatementSyntax> SourceParser::ReadTryStatement(SourceProvide
 	if (syntax->CatchClauses.empty())
 		Diagnostics.ReportError(syntax->TryKeywordToken, L"'try' statement must have at least one 'catch' clause");
 
+	return syntax;
+}
+
+std::unique_ptr<SwitchStatementSyntax> SourceParser::ReadSwitchStatement(SourceProvider& reader, SyntaxNode* parent)
+{
+	auto syntax = std::make_unique<SwitchStatementSyntax>(parent);
+	syntax->SwitchKeywordToken = Expect(reader, TokenType::SwitchKeyword, L"Expected 'switch' keyword");
+	syntax->OpenParenToken = Expect(reader, TokenType::OpenCurl, L"Expected '(' after 'switch'");
+
+	if (reader.Current().Type != TokenType::CloseCurl)
+		syntax->Expression = std::move(ReadExpression(reader, syntax.get(), 0, true));
+
+	syntax->CloseParenToken = Expect(reader, TokenType::CloseCurl, L"Expected ')' after switch expression");
+	syntax->OpenBraceToken = Expect(reader, TokenType::OpenBrace, L"Expected '{' after switch expression");
+
+	while (reader.CanConsume() && reader.Current().Type != TokenType::CloseBrace)
+	{
+		auto clause = std::make_unique<SwitchCaseClauseSyntax>(syntax.get());
+		SyntaxToken current = reader.Current();
+
+		if (current.Type == TokenType::DefaultKeyword)
+		{
+			clause->KeywordToken = current;
+			reader.Consume();
+		}
+		else if (current.Type == TokenType::CaseKeyword)
+		{
+			clause->KeywordToken = current;
+			reader.Consume();
+
+			if (reader.Current().Type == TokenType::IsOperator)
+			{
+				auto pattern = std::make_unique<IsPatternSyntax>(reader.Current(), clause.get());
+				reader.Consume();
+				pattern->TargetType = std::move(ReadType(reader, pattern.get(), true));
+
+				if (reader.Current().Type == TokenType::Identifier)
+				{
+					pattern->IdentifierToken = reader.Current();
+					reader.Consume();
+				}
+
+				clause->Pattern = std::move(pattern);
+			}
+			else
+			{
+				clause->Pattern = std::move(ReadExpression(reader, clause.get(), 0, true));
+			}
+		}
+		else
+		{
+			Diagnostics.ReportError(current, L"Expected 'case' or 'default' in switch statement");
+			reader.Consume();
+			continue;
+		}
+
+		clause->ColonToken = Expect(reader, TokenType::Colon, L"Expected ':' after case pattern");
+		clause->Body = ReadStatementsBlock(reader, clause.get());
+		syntax->Clauses.push_back(std::move(clause));
+	}
+
+	syntax->CloseBraceToken = Expect(reader, TokenType::CloseBrace, L"Expected '}' after switch cases");
 	return syntax;
 }
 

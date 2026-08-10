@@ -214,24 +214,24 @@ ObjectInstance* PrimitiveMathModule::ExecuteBinary(TokenType opToken, ObjectInst
 {
 	switch (opToken)
 	{
-		case TokenType::AddOperator: return ExecuteMathAddition(left, right);
-		case TokenType::SubOperator: return ExecuteMathSubtraction(left, right);
-		case TokenType::MultOperator: return ExecuteMathMultiplication(left, right);
-		case TokenType::DivOperator: return ExecuteMathDivision(left, right);
-		case TokenType::ModOperator: return ExecuteMathModulo(left, right);
-		case TokenType::PowOperator: return ExecuteMathPower(left, right);
+		case TokenType::AddOperator:				return ExecuteMathAddition(left, right);
+		case TokenType::SubOperator:				return ExecuteMathSubtraction(left, right);
+		case TokenType::MultOperator:				return ExecuteMathMultiplication(left, right);
+		case TokenType::DivOperator:				return ExecuteMathDivision(left, right);
+		case TokenType::ModOperator:				return ExecuteMathModulo(left, right);
+		case TokenType::PowOperator:				return ExecuteMathPower(left, right);
 
-		case TokenType::OrOperator: return ExecuteBitwiseOr(left, right);
-		case TokenType::AndOperator: return ExecuteBitwiseAnd(left, right);
-		case TokenType::LeftShiftOperator: return ExecuteShiftLeft(left, right);
-		case TokenType::RightShiftOperator: return ExecuteShiftRight(left, right);
+		case TokenType::OrOperator:					return ExecuteBitwiseOr(left, right);
+		case TokenType::AndOperator:				return ExecuteBitwiseAnd(left, right);
+		case TokenType::LeftShiftOperator:			return ExecuteShiftLeft(left, right);
+		case TokenType::RightShiftOperator:			return ExecuteShiftRight(left, right);
 
-		case TokenType::EqualsOperator: return ExecuteCompareEqual(left, right);
-		case TokenType::NotEqualsOperator: return ExecuteCompareNotEqual(left, right);
-		case TokenType::LessOperator: return ExecuteCompareLess(left, right);
-		case TokenType::LessOrEqualsOperator: return ExecuteCompareLessOrEqual(left, right);
-		case TokenType::GreaterOperator: return ExecuteCompareGreater(left, right);
-		case TokenType::GreaterOrEqualsOperator: return ExecuteCompareGreaterOrEqual(left, right);
+		case TokenType::EqualsOperator:				return ExecuteCompareEqual(left, right);
+		case TokenType::NotEqualsOperator:			return ExecuteCompareNotEqual(left, right);
+		case TokenType::LessOperator:				return ExecuteCompareLess(left, right);
+		case TokenType::LessOrEqualsOperator:		return ExecuteCompareLessOrEqual(left, right);
+		case TokenType::GreaterOperator:			return ExecuteCompareGreater(left, right);
+		case TokenType::GreaterOrEqualsOperator:	return ExecuteCompareGreaterOrEqual(left, right);
 
 		default: return nullptr;
 	}

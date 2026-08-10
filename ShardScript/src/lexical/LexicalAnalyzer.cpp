@@ -1386,6 +1386,16 @@ bool LexicalAnalyzer::IsConditionalKeyword(std::wstring& word, TokenType& type)
 		type = TokenType::SwitchKeyword;
 		return true;
 	}
+	else if (word == L"case")
+	{
+		type = TokenType::CaseKeyword;
+		return true;
+	}
+	else if (word == L"default")
+	{
+		type = TokenType::DefaultKeyword;
+		return true;
+	}
 	else
 	{
 		return false;

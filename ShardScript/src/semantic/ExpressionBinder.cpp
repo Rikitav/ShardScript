@@ -1705,6 +1705,85 @@ void ExpressionBinder::VisitSwitchExpression(SwitchExpressionSyntax* node)
 	SetExpressionType(node, armType);
 }
 
+void ExpressionBinder::VisitSwitchStatement(SwitchStatementSyntax* node)
+{
+	TypeSymbol* switchType = nullptr;
+	if (node->Expression != nullptr)
+	{
+		VisitExpression(node->Expression.get());
+		switchType = GetExpressionType(node->Expression.get());
+	}
+
+	for (const auto& clause : node->Clauses)
+	{
+		if (clause == nullptr || clause->Body == nullptr)
+			continue;
+
+		ExpressionSyntax* pattern = clause->Pattern.get();
+
+		if (pattern == nullptr)
+		{
+			// default clause
+			VisitStatementsBlock(clause->Body.get());
+		}
+		else if (pattern->Kind == SyntaxKind::IsPattern)
+		{
+			IsPatternSyntax* isPattern = static_cast<IsPatternSyntax*>(pattern);
+
+			if (isPattern->TargetType != nullptr)
+				VisitType(isPattern->TargetType.get());
+
+			TypeSymbol* targetType = (isPattern->TargetType != nullptr)
+				? isPattern->TargetType->Symbol
+				: nullptr;
+
+			if (targetType != nullptr && !targetType->IsReferenceType())
+			{
+				Diagnostics.ReportError(
+					isPattern->OperatorToken,
+					L"Type pattern can only be used with reference types");
+			}
+
+			bool bindsVariable = isPattern->IdentifierToken.Type == TokenType::Identifier
+				&& !isPattern->IdentifierToken.Word.empty();
+
+			if (bindsVariable)
+			{
+				if (targetType == nullptr)
+					targetType = SymbolTable::Primitives::Any;
+
+				VariableSymbol* variable = Factory.Variable(isPattern->IdentifierToken.Word, targetType);
+				variable->Declaration = isPattern;
+				isPattern->Symbol = variable;
+
+				PushScope(nullptr);
+				Declare(variable);
+				VisitStatementsBlock(clause->Body.get());
+				PopScope();
+			}
+			else
+			{
+				VisitStatementsBlock(clause->Body.get());
+			}
+		}
+		else
+		{
+			VisitExpression(pattern);
+
+			TypeSymbol* patternType = GetExpressionType(pattern);
+			if (switchType != nullptr && patternType != nullptr &&
+			    SemanticModel::AreTypesEqual(switchType, patternType) &&
+			    !SemanticModel::IsPrimitiveType(switchType))
+			{
+				std::vector<TypeSymbol*> paramTypes = { switchType, patternType };
+				clause->EqualityOperator = ResolveOperatorMethod(switchType, TokenType::EqualsOperator, paramTypes);
+			}
+
+			VisitStatementsBlock(clause->Body.get());
+		}
+	}
+}
+
 void ExpressionBinder::VisitTryStatement(TryStatementSyntax* node)
 {
 	if (node->TryBlock != nullptr)

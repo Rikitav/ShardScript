@@ -77,6 +77,13 @@ std::int64_t ByteCodeDecoder::AbsorbInt64()
     return value;
 }
 
+std::intptr_t ByteCodeDecoder::AbsorbIntPtr()
+{
+    std::intptr_t value{};
+    ReadUnaligned(_code, _ip, value);
+    return value;
+}
+
 double ByteCodeDecoder::AbsorbDouble64()
 {
     double value{};

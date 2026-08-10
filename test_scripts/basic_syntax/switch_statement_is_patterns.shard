@@ -1,0 +1,73 @@
+using stdio;
+
+namespace switch_statement_is_patterns;
+
+public interface Animal
+{
+    func Name() -> string;
+}
+
+public class Cat : Animal
+{
+    public func Name() -> string { return "cat"; }
+    public func Meow() -> string { return "meow"; }
+}
+
+public class Dog : Animal
+{
+    public func Name() -> string { return "dog"; }
+    public func Bark() -> string { return "woof"; }
+}
+
+public class Program
+{
+    public static func MakeSound(a: Animal) -> string
+    {
+        switch (a)
+        {
+            case is Cat c: { return c.Meow(); }
+            case is Dog d: { return d.Bark(); }
+            case is Animal: { return "some animal"; }
+            default: { return "unknown"; }
+        }
+    }
+
+    public static func Describe(a: Animal) -> string
+    {
+        result := "";
+        switch (a)
+        {
+            case is Cat c:
+            {
+                result = "cat says " + c.Meow();
+                break;
+            }
+            case is Dog d:
+            {
+                result = "dog says " + d.Bark();
+                break;
+            }
+            default:
+            {
+                result = "unknown";
+                break;
+            }
+        }
+        return result;
+    }
+
+    public static func Main() -> void
+    {
+        cat: Animal = new Cat();
+        dog: Animal = new Dog();
+
+        if (MakeSound(cat) != "meow") { println("fail cat sound"); throw new RuntimeException(); }
+        if (MakeSound(dog) != "woof") { println("fail dog sound"); throw new RuntimeException(); }
+        if (MakeSound(null) != "unknown") { println("fail null sound"); throw new RuntimeException(); }
+
+        if (Describe(cat) != "cat says meow") { println("fail describe cat"); throw new RuntimeException(); }
+        if (Describe(dog) != "dog says woof") { println("fail describe dog"); throw new RuntimeException(); }
+
+        println("switch statement is patterns ok");
+    }
+}

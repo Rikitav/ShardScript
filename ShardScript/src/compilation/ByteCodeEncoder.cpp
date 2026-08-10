@@ -94,9 +94,21 @@ void ByteCodeEncoder::EmitLoadConstBool(std::vector<std::byte>& code, bool value
     AppendDataT(code, value);
 }
 
+void ByteCodeEncoder::EmitLoadConstInt8(std::vector<std::byte>& code, std::int8_t value)
+{
+    AppendDataT(code, OpCode::LOADCONST_INTEGER8);
+    AppendDataT(code, value);
+}
+
 void ByteCodeEncoder::EmitLoadConstInt64(std::vector<std::byte>& code, std::int64_t value)
 {
     AppendDataT(code, OpCode::LOADCONST_INTEGER64);
+    AppendDataT(code, value);
+}
+
+void ByteCodeEncoder::EmitLoadConstNativeInt(std::vector<std::byte>& code, std::intptr_t value)
+{
+    AppendDataT(code, OpCode::LOADCONST_NATIVE_INTEGER);
     AppendDataT(code, value);
 }
 
@@ -125,17 +137,15 @@ void ByteCodeEncoder::EmitDefaultValue(std::vector<std::byte>& code, TypeSymbol*
 {
     if (elementType == SymbolTable::Primitives::Integer)
     {
-        EmitLoadConstInt64(code, 0);
+        EmitLoadConstInt8(code, 0);
     }
     else if (elementType == SymbolTable::Primitives::Byte)
     {
         EmitLoadConstInt64(code, 0);
-        EmitCastPrimitive(code, SymbolTable::Primitives::NativeInteger);
     }
     else if (elementType == SymbolTable::Primitives::Byte)
     {
-        EmitLoadConstInt64(code, 0);
-        EmitCastPrimitive(code, SymbolTable::Primitives::Byte);
+        EmitLoadConstNativeInt(code, 0);
     }
     else if (elementType == SymbolTable::Primitives::Char)
     {

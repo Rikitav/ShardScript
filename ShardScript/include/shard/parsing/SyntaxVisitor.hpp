@@ -48,6 +48,8 @@
 #include <shard/parsing/nodes/Statements/BreakStatementSyntax.hpp>
 #include <shard/parsing/nodes/Statements/ContinueStatementSyntax.hpp>
 #include <shard/parsing/nodes/Statements/TryStatementSyntax.hpp>
+#include <shard/parsing/nodes/Statements/SwitchStatementSyntax.hpp>
+#include <shard/parsing/nodes/Statements/SwitchCaseClauseSyntax.hpp>
 
 #include <shard/parsing/nodes/Loops/WhileStatementSyntax.hpp>
 #include <shard/parsing/nodes/Loops/ForStatementSyntax.hpp>
@@ -146,6 +148,8 @@ namespace shard
         virtual void VisitUnlessStatement(UnlessStatementSyntax* node);
         virtual void VisitElseStatement(ElseStatementSyntax* node);
         virtual void VisitTryStatement(TryStatementSyntax* node);
+        virtual void VisitSwitchStatement(SwitchStatementSyntax* node);
+        virtual void VisitSwitchCaseClause(SwitchCaseClauseSyntax* node);
 
         virtual void VisitExpression(ExpressionSyntax* node);
         virtual void VisitLiteralExpression(LiteralExpressionSyntax* node);

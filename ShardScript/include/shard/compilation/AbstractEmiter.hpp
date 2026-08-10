@@ -46,6 +46,7 @@
 #include <shard/parsing/nodes/Statements/ReturnStatementSyntax.hpp>
 #include <shard/parsing/nodes/Statements/ThrowStatementSyntax.hpp>
 #include <shard/parsing/nodes/Statements/TryStatementSyntax.hpp>
+#include <shard/parsing/nodes/Statements/SwitchStatementSyntax.hpp>
 #include <shard/parsing/nodes/Statements/VariableStatementSyntax.hpp>
 
 #include <shard/semantic/symbols/MethodSymbol.hpp>
@@ -124,6 +125,7 @@ namespace shard
         void VisitReturnStatement(ReturnStatementSyntax* node) override;
         void VisitThrowStatement(ThrowStatementSyntax* node) override;
         void VisitTryStatement(TryStatementSyntax* node) override;
+        void VisitSwitchStatement(SwitchStatementSyntax* node) override;
         void VisitBreakStatement(BreakStatementSyntax* node) override;
         void VisitContinueStatement(ContinueStatementSyntax* node) override;
         void VisitDeferStatement(DeferStatementSyntax* node) override;

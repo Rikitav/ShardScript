@@ -1,0 +1,49 @@
+using stdio;
+
+namespace switch_operator_overload;
+
+public class Point
+{
+    public X: int;
+    public Y: int;
+
+    public init(x: int, y: int)
+    {
+        this.X = x;
+        this.Y = y;
+    }
+
+    public static operator ==(a: Point, b: Point) -> bool
+    {
+        return a.X == b.X;
+    }
+}
+
+public class Program
+{
+    public static func Match(p: Point) -> string
+    {
+        origin := new Point(0, 99);
+        one := new Point(1, 99);
+
+        switch (p)
+        {
+            case origin: { return "origin"; }
+            case one: { return "one"; }
+            default: { return "other"; }
+        }
+    }
+
+    public static func Main() -> void
+    {
+        a := new Point(0, 123);
+        b := new Point(1, 456);
+        c := new Point(2, 789);
+
+        if (Match(a) != "origin") { println("fail origin"); throw new RuntimeException(); }
+        if (Match(b) != "one") { println("fail one"); throw new RuntimeException(); }
+        if (Match(c) != "other") { println("fail other"); throw new RuntimeException(); }
+
+        println("switch operator overload ok");
+    }
+}

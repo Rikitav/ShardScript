@@ -36,6 +36,7 @@
 #include <shard/parsing/nodes/Statements/ReturnStatementSyntax.hpp>
 #include <shard/parsing/nodes/Statements/ThrowStatementSyntax.hpp>
 #include <shard/parsing/nodes/Statements/TryStatementSyntax.hpp>
+#include <shard/parsing/nodes/Statements/SwitchStatementSyntax.hpp>
 #include <shard/parsing/nodes/Statements/VariableStatementSyntax.hpp>
 
 #include <shard/parsing/SyntaxToken.hpp>
@@ -1451,7 +1452,8 @@ void AbstractEmiter::VisitStatementsBlock(StatementsBlockSyntax* node)
 		node->Parent->Kind == SyntaxKind::WhileStatement ||
 		node->Parent->Kind == SyntaxKind::UntilStatement ||
 		node->Parent->Kind == SyntaxKind::ForStatement ||
-		node->Parent->Kind == SyntaxKind::ForEachStatement);
+		node->Parent->Kind == SyntaxKind::ForEachStatement ||
+		node->Parent->Kind == SyntaxKind::SwitchStatement);
 
 	DeferScopes.push_back({ 0, isLoop });
 
@@ -1493,7 +1495,7 @@ void AbstractEmiter::VisitBreakStatement(BreakStatementSyntax* node)
 {
 	if (Loops.empty())
 	{
-		Diagnostics.ReportError(node->KeywordToken, L"'break' must be inside a loop");
+		Diagnostics.ReportError(node->KeywordToken, L"'break' must be inside a loop or switch");
 		return;
 	}
 
@@ -1710,4 +1712,147 @@ void AbstractEmiter::VisitSwitchExpression(SwitchExpressionSyntax* node)
             &endOffset,
             sizeof(std::size_t));
     }
+}
+
+void AbstractEmiter::VisitSwitchStatement(SwitchStatementSyntax* node)
+{
+    if (node->Expression == nullptr || node->Clauses.empty())
+        return;
+
+    VisitExpression(node->Expression.get());
+
+    std::uint16_t base = GeneratingFor->GetEvalStackArgumentsCount();
+    std::uint16_t switchSlot = base + GeneratingFor->AddVariableCount();
+    Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, switchSlot);
+
+    Loops.emplace();
+    LoopScope& scope = Loops.top();
+
+    std::optional<std::size_t> pendingTestFailBacktrack;
+    std::vector<std::size_t> endBacktracks;
+
+    for (std::size_t i = 0; i < node->Clauses.size(); ++i)
+    {
+        if (pendingTestFailBacktrack.has_value())
+        {
+            std::size_t nextClauseStart = GeneratingFor->ExecutableByteCode.size();
+            ByteCodeEncoder::PasteData(
+                GeneratingFor->ExecutableByteCode,
+                pendingTestFailBacktrack.value() + sizeof(OpCode),
+                &nextClauseStart,
+                sizeof(std::size_t));
+            pendingTestFailBacktrack.reset();
+        }
+
+        SwitchCaseClauseSyntax* clause = node->Clauses[i].get();
+        if (clause == nullptr || clause->Body == nullptr)
+            continue;
+
+        ExpressionSyntax* pattern = clause->Pattern.get();
+
+        if (pattern == nullptr)
+        {
+            // default clause
+            VisitStatementsBlock(clause->Body.get());
+
+            std::size_t jumpEnd = GeneratingFor->ExecutableByteCode.size();
+            endBacktracks.push_back(jumpEnd);
+            Encoder.EmitJump(GeneratingFor->ExecutableByteCode, 0);
+            continue;
+        }
+
+        if (pattern->Kind == SyntaxKind::IsPattern)
+        {
+            IsPatternSyntax* isPattern = static_cast<IsPatternSyntax*>(pattern);
+            TypeSymbol* targetType = (isPattern->TargetType != nullptr)
+                ? isPattern->TargetType->Symbol
+                : nullptr;
+
+            if (targetType == nullptr)
+                continue;
+
+            Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, switchSlot);
+            Encoder.EmitIsInstance(GeneratingFor->ExecutableByteCode, targetType);
+
+            std::size_t jumpFalse = GeneratingFor->ExecutableByteCode.size();
+            pendingTestFailBacktrack = jumpFalse;
+            Encoder.EmitJumpFalse(GeneratingFor->ExecutableByteCode, 0);
+
+            Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, switchSlot);
+            if (isPattern->Symbol != nullptr)
+            {
+                std::uint16_t patternSlot = base + GeneratingFor->AddVariableCount();
+                isPattern->Symbol->SlotIndex = patternSlot;
+                Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, patternSlot);
+            }
+            else
+            {
+                Encoder.EmitPop(GeneratingFor->ExecutableByteCode);
+            }
+
+            VisitStatementsBlock(clause->Body.get());
+
+            std::size_t jumpEnd = GeneratingFor->ExecutableByteCode.size();
+            endBacktracks.push_back(jumpEnd);
+            Encoder.EmitJump(GeneratingFor->ExecutableByteCode, 0);
+
+            continue;
+        }
+
+        // Value pattern: compare switch value to pattern value.
+        if (clause->EqualityOperator != nullptr)
+        {
+            VisitExpression(pattern);
+            Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, switchSlot);
+            EmitMethodCall(clause->EqualityOperator);
+        }
+        else
+        {
+            Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, switchSlot);
+            VisitExpression(pattern);
+            Encoder.EmitCompareEqual(GeneratingFor->ExecutableByteCode);
+        }
+
+        std::size_t jumpFalse = GeneratingFor->ExecutableByteCode.size();
+        pendingTestFailBacktrack = jumpFalse;
+        Encoder.EmitJumpFalse(GeneratingFor->ExecutableByteCode, 0);
+
+        VisitStatementsBlock(clause->Body.get());
+
+        std::size_t jumpEnd = GeneratingFor->ExecutableByteCode.size();
+        endBacktracks.push_back(jumpEnd);
+        Encoder.EmitJump(GeneratingFor->ExecutableByteCode, 0);
+    }
+
+    std::size_t endOffset = GeneratingFor->ExecutableByteCode.size();
+
+    if (pendingTestFailBacktrack.has_value())
+    {
+        ByteCodeEncoder::PasteData(
+            GeneratingFor->ExecutableByteCode,
+            pendingTestFailBacktrack.value() + sizeof(OpCode),
+            &endOffset,
+            sizeof(std::size_t));
+    }
+
+    for (std::size_t backtrack : endBacktracks)
+    {
+        ByteCodeEncoder::PasteData(
+            GeneratingFor->ExecutableByteCode,
+            backtrack + sizeof(OpCode),
+            &endOffset,
+            sizeof(std::size_t));
+    }
+
+    for (std::size_t backtrack : scope.LoopEndBacktracks)
+    {
+        ByteCodeEncoder::PasteData(
+            GeneratingFor->ExecutableByteCode,
+            backtrack + sizeof(OpCode),
+            &endOffset,
+            sizeof(std::size_t));
+    }
+
+    scope.LoopEnd = endOffset;
+    Loops.pop();
 }
