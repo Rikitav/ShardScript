@@ -41,6 +41,7 @@
 #include <shard/parsing/nodes/Expressions/LambdaExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/IfExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/SwitchExpressionSyntax.hpp>
+#include <shard/parsing/nodes/Expressions/IsPatternSyntax.hpp>
 
 #include <shard/parsing/nodes/Loops/ForStatementSyntax.hpp>
 #include <shard/parsing/nodes/Loops/UntilStatementSyntax.hpp>
@@ -934,6 +935,13 @@ void SyntaxVisitor::VisitExpression(ExpressionSyntax* node)
 			VisitIsExpression(expression);
 			return;
 		}
+
+		case SyntaxKind::IsPattern:
+		{
+			IsPatternSyntax* expression = static_cast<IsPatternSyntax*>(node);
+			VisitIsPattern(expression);
+			return;
+		}
 	}
 }
 
@@ -1289,6 +1297,15 @@ void SyntaxVisitor::VisitIsExpression(IsExpressionSyntax* node)
 
 	if (node->Expression != nullptr)
 		VisitExpression(node->Expression.get());
+
+	if (node->TargetType != nullptr)
+		VisitType(node->TargetType.get());
+}
+
+void SyntaxVisitor::VisitIsPattern(IsPatternSyntax* node)
+{
+	if (node == nullptr)
+		return;
 
 	if (node->TargetType != nullptr)
 		VisitType(node->TargetType.get());

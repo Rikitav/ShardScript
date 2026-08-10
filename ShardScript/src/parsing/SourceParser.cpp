@@ -68,6 +68,7 @@
 #include <shard/parsing/nodes/Expressions/TernaryExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/CastExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/IsExpressionSyntax.hpp>
+#include <shard/parsing/nodes/Expressions/IsPatternSyntax.hpp>
 
 #include <shard/parsing/nodes/Types/ArrayTypeSyntax.hpp>
 #include <shard/parsing/nodes/Types/IdentifierNameTypeSyntax.hpp>
@@ -1124,7 +1125,8 @@ std::unique_ptr<AccessorDeclarationSyntax> SourceParser::ReadAccessorDeclaration
 		return syntax;
 
 	syntax->KeywordToken = reader.Current();
-	current = reader.Consume();
+	reader.Consume();
+	current = reader.Current();
 
 	if (!TryMatch(reader, { TokenType::Semicolon, TokenType::OpenBrace }, L"Expected ';' or '{' after accessor keyword"))
 		return syntax;
@@ -2690,6 +2692,20 @@ std::unique_ptr<SwitchExpressionSyntax> SourceParser::ReadSwitchExpression(Sourc
 		{
 			arm->Pattern = std::make_unique<LiteralExpressionSyntax>(SyntaxToken(TokenType::Identifier, L"_", reader.Current().Location, false), arm.get());
 			reader.Consume();
+		}
+		else if (reader.Current().Type == TokenType::IsOperator)
+		{
+			auto pattern = std::make_unique<IsPatternSyntax>(reader.Current(), arm.get());
+			reader.Consume();
+			pattern->TargetType = std::move(ReadType(reader, pattern.get(), true));
+
+			if (reader.Current().Type == TokenType::Identifier)
+			{
+				pattern->IdentifierToken = reader.Current();
+				reader.Consume();
+			}
+
+			arm->Pattern = std::move(pattern);
 		}
 		else
 		{

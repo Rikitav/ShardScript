@@ -1578,3 +1578,136 @@ void AbstractEmiter::VisitIsExpression(IsExpressionSyntax* node)
     if (node->TargetType != nullptr && node->TargetType->Symbol != nullptr)
         Encoder.EmitIsInstance(GeneratingFor->ExecutableByteCode, node->TargetType->Symbol);
 }
+
+void AbstractEmiter::VisitIsPattern(IsPatternSyntax* node)
+{
+    // Patterns are emitted as part of VisitSwitchExpression; this node itself
+    // produces no standalone bytecode.
+}
+
+static bool isDefaultPattern(ExpressionSyntax* pattern)
+{
+	if (pattern == nullptr || pattern->Kind != SyntaxKind::LiteralExpression)
+		return false;
+
+	LiteralExpressionSyntax* literal = static_cast<LiteralExpressionSyntax*>(pattern);
+	return literal->LiteralToken.Type == TokenType::Identifier && literal->LiteralToken.Word == L"_";
+}
+
+void AbstractEmiter::VisitSwitchExpression(SwitchExpressionSyntax* node)
+{
+    if (node->Expression == nullptr || node->Arms.empty())
+    {
+        Encoder.EmitLoadConstNull(GeneratingFor->ExecutableByteCode);
+        return;
+    }
+
+    VisitExpression(node->Expression.get());
+
+    std::uint16_t base = GeneratingFor->GetEvalStackArgumentsCount();
+    std::uint16_t switchSlot = base + GeneratingFor->AddVariableCount();
+    Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, switchSlot);
+
+    std::vector<std::size_t> endBacktracks;
+    std::optional<std::size_t> pendingTestFailBacktrack;
+
+    for (std::size_t i = 0; i < node->Arms.size(); ++i)
+    {
+        if (pendingTestFailBacktrack.has_value())
+        {
+            std::size_t nextArmStart = GeneratingFor->ExecutableByteCode.size();
+            ByteCodeEncoder::PasteData(
+                GeneratingFor->ExecutableByteCode,
+                pendingTestFailBacktrack.value() + sizeof(OpCode),
+                &nextArmStart,
+                sizeof(std::size_t));
+            pendingTestFailBacktrack.reset();
+        }
+
+        SwitchArmSyntax* arm = node->Arms[i].get();
+        if (arm == nullptr || arm->Pattern == nullptr || arm->Expression == nullptr)
+            continue;
+
+        ExpressionSyntax* pattern = arm->Pattern.get();
+
+        if (isDefaultPattern(pattern))
+        {
+            VisitExpression(arm->Expression.get());
+
+            std::size_t jumpEnd = GeneratingFor->ExecutableByteCode.size();
+            endBacktracks.push_back(jumpEnd);
+            Encoder.EmitJump(GeneratingFor->ExecutableByteCode, 0);
+            continue;
+        }
+
+        if (pattern->Kind == SyntaxKind::IsPattern)
+        {
+            IsPatternSyntax* isPattern = static_cast<IsPatternSyntax*>(pattern);
+            TypeSymbol* targetType = (isPattern->TargetType != nullptr)
+                ? isPattern->TargetType->Symbol
+                : nullptr;
+
+            if (targetType == nullptr)
+            {
+                // No type to test; skip this arm.
+                continue;
+            }
+
+            Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, switchSlot);
+            Encoder.EmitIsInstance(GeneratingFor->ExecutableByteCode, targetType);
+
+            std::size_t jumpFalse = GeneratingFor->ExecutableByteCode.size();
+            pendingTestFailBacktrack = jumpFalse;
+            Encoder.EmitJumpFalse(GeneratingFor->ExecutableByteCode, 0);
+
+            // Pattern matched. Load the value again to bind or discard.
+            Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, switchSlot);
+            if (isPattern->Symbol != nullptr)
+            {
+                std::uint16_t patternSlot = base + GeneratingFor->AddVariableCount();
+                isPattern->Symbol->SlotIndex = patternSlot;
+                Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, patternSlot);
+            }
+            else
+            {
+                Encoder.EmitPop(GeneratingFor->ExecutableByteCode);
+            }
+
+            VisitExpression(arm->Expression.get());
+
+            std::size_t jumpEnd = GeneratingFor->ExecutableByteCode.size();
+            endBacktracks.push_back(jumpEnd);
+            Encoder.EmitJump(GeneratingFor->ExecutableByteCode, 0);
+
+            continue;
+        }
+
+        // Value patterns are not yet supported.
+        Diagnostics.ReportError(arm->ArrowToken,
+            L"Only 'is Type name' and '_' patterns are supported in switch expressions");
+    }
+
+    // If no arm matched, leave null on the stack as the result.
+    std::size_t nullLoadOffset = GeneratingFor->ExecutableByteCode.size();
+    Encoder.EmitLoadConstNull(GeneratingFor->ExecutableByteCode);
+
+    std::size_t endOffset = GeneratingFor->ExecutableByteCode.size();
+
+    if (pendingTestFailBacktrack.has_value())
+    {
+        ByteCodeEncoder::PasteData(
+            GeneratingFor->ExecutableByteCode,
+            pendingTestFailBacktrack.value() + sizeof(OpCode),
+            &nullLoadOffset,
+            sizeof(std::size_t));
+    }
+
+    for (std::size_t backtrack : endBacktracks)
+    {
+        ByteCodeEncoder::PasteData(
+            GeneratingFor->ExecutableByteCode,
+            backtrack + sizeof(OpCode),
+            &endOffset,
+            sizeof(std::size_t));
+    }
+}

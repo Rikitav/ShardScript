@@ -27,7 +27,7 @@ namespace shard
 
     class SHARD_API SymbolTable
     {
-        inline static const std::wstring GlobalTypeName = L"__GLOBAL__";
+        inline static constexpr const wchar_t* GlobalTypeName = L"__GLOBAL__";
 
         std::unordered_map<SyntaxNode*, SyntaxSymbol*> nodeToSymbolMap;
         std::unordered_map<SyntaxSymbol*, SyntaxNode*> symbolToNodeMap;

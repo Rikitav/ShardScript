@@ -8,6 +8,16 @@ file(GLOB_RECURSE CPP_FILES CONFIGURE_DEPENDS
 
 foreach(CPP_FILE IN LISTS CPP_FILES)
   get_filename_component(SHARD_TARGET_NAME "${CPP_FILE}" NAME_WLE)
+
+  # Prebuilt third-party static libraries are compiler-specific.
+  # The bundled raylib/sqlite .a files are Linux binaries and cannot be linked by MinGW on Windows.
+  if(WIN32 AND NOT MSVC)
+      if("${SHARD_TARGET_NAME}" STREQUAL "raylib.shard" OR "${SHARD_TARGET_NAME}" STREQUAL "sqlite.shard")
+          message(STATUS "Skipping ${SHARD_TARGET_NAME} on MinGW (prebuilt static library is not compatible)")
+          continue()
+      endif()
+  endif()
+
   add_library("${SHARD_TARGET_NAME}" SHARED "${CPP_FILE}")
   
 if(ENABLE_ASAN)
@@ -26,6 +36,27 @@ endif()
   target_link_libraries("${SHARD_TARGET_NAME}" PRIVATE ShardScript)
 
   string(FIND "${CPP_FILE}" "/system/" IS_SYSTEM)
+
+  if(WIN32)
+      target_compile_definitions("${SHARD_TARGET_NAME}" PRIVATE
+          WIN32_LEAN_AND_MEAN
+          NOMINMAX
+          _WIN32_WINNT=0x0A00
+          UNICODE
+          _UNICODE
+      )
+
+      # System libraries are needed by most system wrappers, but third-party
+      # static libraries (e.g. raylib) may define their own versions of these
+      # Win32 APIs, so avoid adding them to third-party targets.
+      if(NOT IS_SYSTEM EQUAL -1)
+          target_link_libraries("${SHARD_TARGET_NAME}" PRIVATE
+              ws2_32 winmm gdi32 shell32 user32 advapi32
+              iphlpapi userenv dbghelp ole32 psapi
+          )
+      endif()
+  endif()
+
   if(NOT IS_SYSTEM EQUAL -1)
     set(TARGET_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin/system")
   else()
@@ -60,9 +91,11 @@ endif()
   string(FIND "${SHARD_TARGET_NAME}" "raylib" IS_RAYLIB_TARGET)
   if(NOT IS_RAYLIB_TARGET EQUAL -1)
     target_include_directories("${SHARD_TARGET_NAME}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/third_party/include")
-    
-    if(WIN32)
+
+    if(MSVC)
         target_link_libraries("${SHARD_TARGET_NAME}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/third_party/RayLib/lib/raylib.lib" winmm gdi32 shell32 user32)
+    elseif(WIN32)
+        target_link_libraries("${SHARD_TARGET_NAME}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/third_party/RayLib/lib/libraylib.a" opengl32 winmm gdi32 shell32 user32)
     else()
         target_link_libraries("${SHARD_TARGET_NAME}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/third_party/RayLib/lib/libraylib.a" GL m pthread dl rt X11)
     endif()

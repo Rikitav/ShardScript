@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <vector>
 #include <memory>
+#include <cstring>
 
 #ifdef _WIN32
     #ifndef WIN32_LEAN_AND_MEAN
@@ -509,6 +510,7 @@ static ObjectInstance* shard_socketStream_ReadAsync_Impl(const CallState& contex
         std::int64_t Count = 0;
         std::int64_t Result = 0;
         bool Canceled = false;
+        std::vector<std::uint8_t> Bytes;
     };
 
     auto state = std::make_shared<State>();
@@ -520,50 +522,52 @@ static ObjectInstance* shard_socketStream_ReadAsync_Impl(const CallState& contex
 
     return shard::DoValueTask<std::int64_t>(context, [state](shard::AsyncValueScope<std::int64_t> async)
     {
-        shard::GarbageCollector* collector = &async.Collector();
-        async.RunOnThreadPool(
-            [state, collector]()
+        async.RunOnThreadPool([state]()
+        {
+            if (IsStreamCancellationRequested(state->Token))
             {
-                if (IsStreamCancellationRequested(state->Token))
-                {
-                    state->Canceled = true;
-                    return;
-                }
+                state->Canceled = true;
+                return;
+            }
 
-                socket_t socket_handle = GetSocketStreamHandle(state->InstanceRef.Instance);
-                if (socket_handle == INVALID_SOCKET_VAL)
-                {
-                    state->Canceled = true;
-                    return;
-                }
-
-                std::vector<char> temp(static_cast<std::size_t>(state->Count));
-                int bytesReceived = recv(socket_handle, temp.data(), static_cast<int>(state->Count), 0);
-                if (bytesReceived < 0)
-                {
-                    state->Canceled = true;
-                    return;
-                }
-
-                state->Result = static_cast<std::int64_t>(bytesReceived);
-                for (std::int64_t i = 0; i < state->Result; ++i)
-                {
-                    state->BufferRef.Instance->SetElement(static_cast<std::size_t>(state->Offset + i),
-                        collector->FromValue(static_cast<std::uint8_t>(temp[static_cast<std::size_t>(i)])));
-                }
-            },
-            [stateScope = async.ShareState(), state]() mutable
+            socket_t socket_handle = GetSocketStreamHandle(state->InstanceRef.Instance);
+            if (socket_handle == INVALID_SOCKET_VAL)
             {
-                shard::AsyncValueScope<std::int64_t> async(stateScope);
+                state->Canceled = true;
+                return;
+            }
 
-                if (state->Canceled || IsStreamCancellationRequested(state->Token))
-                {
-                    async.Fail(L"Operation canceled.");
-                    return;
-                }
+            std::vector<char> temp(static_cast<std::size_t>(state->Count));
+            int bytesReceived = recv(socket_handle, temp.data(), static_cast<int>(state->Count), 0);
+            if (bytesReceived < 0)
+            {
+                state->Canceled = true;
+                return;
+            }
 
-                async.Complete(state->Result);
-            });
+            state->Result = static_cast<std::int64_t>(bytesReceived);
+            state->Bytes.resize(static_cast<std::size_t>(bytesReceived));
+            if (bytesReceived > 0)
+                std::memcpy(state->Bytes.data(), temp.data(), static_cast<std::size_t>(bytesReceived));
+        },
+        [stateScope = async.ShareState(), state]() mutable
+        {
+            shard::AsyncValueScope<std::int64_t> async(stateScope);
+
+            if (state->Canceled || IsStreamCancellationRequested(state->Token))
+            {
+                async.Fail(L"Operation canceled.");
+                return;
+            }
+
+            for (std::int64_t i = 0; i < state->Result; ++i)
+            {
+                state->BufferRef.Instance->SetElement(static_cast<std::size_t>(state->Offset + i),
+                    async.Collector().FromValue(state->Bytes[static_cast<std::size_t>(i)]));
+            }
+
+            async.Complete(state->Result);
+        });
     });
 }
 

@@ -46,6 +46,18 @@ if(NOT WIN32)
   target_link_libraries(ShardScript PRIVATE ${CMAKE_DL_LIBS})
 endif()
 
+# MinGW does not auto-export C++ symbols the way MSVC's /EXPORTALL does.
+# Force the linker to export every symbol so Framework libraries can link to helpers like
+# shard::SetTaskState, shard::ResumeContinuation, shard::CreateRuntimeException, etc.
+if(WIN32 AND (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"))
+    target_link_options(ShardScript PRIVATE "-Wl,--export-all-symbols")
+endif()
+
+# GCC/Clang (including MinGW) are stricter than MSVC about some libuv Windows C code.
+if(CMAKE_C_COMPILER_ID STREQUAL "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
+    target_compile_options(ShardScript PRIVATE $<$<COMPILE_LANGUAGE:C>:-Wno-incompatible-pointer-types -Wno-discarded-qualifiers>)
+endif()
+
 use_props(ShardScript "${CMAKE_CONFIGURATION_TYPES}" "${DEFAULT_CXX_PROPS}")
 set(TARGET_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin")
 set_target_properties(ShardScript PROPERTIES

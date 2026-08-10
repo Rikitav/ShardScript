@@ -472,6 +472,12 @@ static ObjectInstance* shard_memoryStream_Read(const CallState& context) noexcep
     std::int64_t toRead = (std::min)(count, available);
     ObjectInstance* source = GetBuffer(instance);
 
+    if (static_cast<std::int64_t>(buffer->GetArrayLength()) < offset + toRead)
+        throw std::runtime_error("Destination buffer is too small for the requested read.");
+    
+    if (static_cast<std::int64_t>(source->GetArrayLength()) < position + toRead)
+        throw std::runtime_error("Internal stream buffer is too small for the requested read.");
+
     for (std::int64_t i = 0; i < toRead; ++i)
     {
         ObjectInstance* value = source->GetElement(static_cast<std::size_t>(position + i));
@@ -496,10 +502,16 @@ static ObjectInstance* shard_memoryStream_Write(const CallState& context) noexce
     if (offset < 0 || count < 0)
         throw std::runtime_error("Offset and count must be non-negative.");
 
+    if (static_cast<std::int64_t>(buffer->GetArrayLength()) < offset + count)
+        throw std::runtime_error("Source buffer is too small for the requested write.");
+
     std::int64_t position = GetPosition(instance);
     EnsureCapacity(instance, position + count, context.Collector);
 
     ObjectInstance* target = GetBuffer(instance);
+    if (static_cast<std::int64_t>(target->GetArrayLength()) < position + count)
+        throw std::runtime_error("Internal stream buffer is too small for the requested write.");
+
     for (std::int64_t i = 0; i < count; ++i)
     {
         ObjectInstance* value = buffer->GetElement(static_cast<std::size_t>(offset + i));
