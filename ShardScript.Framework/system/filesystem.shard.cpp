@@ -12,6 +12,7 @@
 #include <vector>
 #include <array>
 #include <random>
+#include <cstring>
 
 namespace fs = std::filesystem;
 using namespace shard;
@@ -1253,6 +1254,7 @@ static ObjectInstance* shard_fileStream_ReadAsync_Impl(const CallState& context,
         std::int64_t Count = 0;
         std::int64_t Result = 0;
         bool Canceled = false;
+        std::vector<std::uint8_t> Bytes;
     };
 
     auto state = std::make_shared<State>();
@@ -1264,8 +1266,7 @@ static ObjectInstance* shard_fileStream_ReadAsync_Impl(const CallState& context,
 
     return shard::DoValueTask<std::int64_t>(context, [state](shard::AsyncValueScope<std::int64_t> async)
     {
-        shard::GarbageCollector* collector = &async.Collector();
-        async.RunOnThreadPool([state, collector]()
+        async.RunOnThreadPool([state]()
         {
             if (IsStreamCancellationRequested(state->Token))
             {
@@ -1284,10 +1285,9 @@ static ObjectInstance* shard_fileStream_ReadAsync_Impl(const CallState& context,
             file->read(temp.data(), static_cast<std::streamsize>(state->Count));
             state->Result = static_cast<std::int64_t>(file->gcount());
 
-            for (std::int64_t i = 0; i < state->Result; ++i)
-            {
-                state->BufferRef.Instance->SetElement(static_cast<std::size_t>(state->Offset + i), collector->FromValue(static_cast<std::uint8_t>(temp[static_cast<std::size_t>(i)])));
-            }
+            state->Bytes.resize(static_cast<std::size_t>(state->Result));
+            if (state->Result > 0)
+                std::memcpy(state->Bytes.data(), temp.data(), static_cast<std::size_t>(state->Result));
         }, [stateScope = async.ShareState(), state]() mutable
         {
             shard::AsyncValueScope<std::int64_t> async(stateScope);
@@ -1296,6 +1296,12 @@ static ObjectInstance* shard_fileStream_ReadAsync_Impl(const CallState& context,
             {
                 async.Fail(L"Operation canceled.");
                 return;
+            }
+
+            for (std::int64_t i = 0; i < state->Result; ++i)
+            {
+                state->BufferRef.Instance->SetElement(static_cast<std::size_t>(state->Offset + i),
+                    async.Collector().FromValue(state->Bytes[static_cast<std::size_t>(i)]));
             }
 
             async.Complete(state->Result);

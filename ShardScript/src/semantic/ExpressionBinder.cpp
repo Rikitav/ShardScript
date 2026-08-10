@@ -52,6 +52,7 @@
 #include <shard/parsing/nodes/Expressions/TernaryExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/IfExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/SwitchExpressionSyntax.hpp>
+#include <shard/parsing/nodes/Expressions/IsPatternSyntax.hpp>
 #include <shard/parsing/nodes/Statements/TryStatementSyntax.hpp>
 
 #include <shard/parsing/nodes/MemberDeclarations/MethodDeclarationSyntax.hpp>
@@ -1603,20 +1604,102 @@ void ExpressionBinder::VisitIfExpression(IfExpressionSyntax* node)
 	}
 }
 
+static bool isDefaultPattern(ExpressionSyntax* pattern)
+{
+	if (pattern == nullptr || pattern->Kind != SyntaxKind::LiteralExpression)
+		return false;
+
+	LiteralExpressionSyntax* literal = static_cast<LiteralExpressionSyntax*>(pattern);
+	return literal->LiteralToken.Type == TokenType::Identifier && literal->LiteralToken.Word == L"_";
+}
+
 void ExpressionBinder::VisitSwitchExpression(SwitchExpressionSyntax* node)
 {
-	VisitExpression(node->Expression.get());
+	if (node->Expression != nullptr)
+		VisitExpression(node->Expression.get());
+
 	TypeSymbol* exprType = GetExpressionType(node->Expression.get());
 
 	TypeSymbol* armType = nullptr;
+	bool hasDefault = false;
+
 	for (const auto& arm : node->Arms)
 	{
-		VisitExpression(arm->Pattern.get());
-		VisitExpression(arm->Expression.get());
+		if (arm->Pattern == nullptr || arm->Expression == nullptr)
+			continue;
+
+		ExpressionSyntax* pattern = arm->Pattern.get();
+
+		if (isDefaultPattern(pattern))
+		{
+			hasDefault = true;
+			VisitExpression(arm->Expression.get());
+		}
+		else if (pattern->Kind == SyntaxKind::IsPattern)
+		{
+			IsPatternSyntax* isPattern = static_cast<IsPatternSyntax*>(pattern);
+
+			if (isPattern->TargetType != nullptr)
+				VisitType(isPattern->TargetType.get());
+
+			TypeSymbol* targetType = (isPattern->TargetType != nullptr)
+				? isPattern->TargetType->Symbol
+				: nullptr;
+
+			if (targetType != nullptr && !targetType->IsReferenceType())
+			{
+				Diagnostics.ReportError(
+					isPattern->OperatorToken,
+					L"Type pattern can only be used with reference types");
+			}
+
+			bool bindsVariable = isPattern->IdentifierToken.Type == TokenType::Identifier
+				&& !isPattern->IdentifierToken.Word.empty();
+
+			if (bindsVariable)
+			{
+				if (targetType == nullptr)
+					targetType = SymbolTable::Primitives::Any;
+
+				VariableSymbol* variable = Factory.Variable(isPattern->IdentifierToken.Word, targetType);
+				variable->Declaration = isPattern;
+				isPattern->Symbol = variable;
+
+				PushScope(nullptr);
+				Declare(variable);
+				VisitExpression(arm->Expression.get());
+				PopScope();
+			}
+			else
+			{
+				VisitExpression(arm->Expression.get());
+			}
+		}
+		else
+		{
+			VisitExpression(pattern);
+			VisitExpression(arm->Expression.get());
+		}
 
 		TypeSymbol* currentArmType = GetExpressionType(arm->Expression.get());
+		if (currentArmType == nullptr)
+			continue;
+
 		if (armType == nullptr)
+		{
 			armType = currentArmType;
+		}
+		else if (!SemanticModel::AreTypesEqual(armType, currentArmType))
+		{
+			if (!SemanticModel::IsAssignableTo(armType, currentArmType) &&
+				!SemanticModel::IsAssignableTo(currentArmType, armType))
+			{
+				Diagnostics.ReportError(
+					arm->ArrowToken,
+					L"Switch arm expression type '" + SemanticModel::GetTypeDisplayName(currentArmType) +
+					L"' is not compatible with previous arm type '" + SemanticModel::GetTypeDisplayName(armType) + L"'");
+			}
+		}
 	}
 
 	SetExpressionType(node, armType);

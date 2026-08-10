@@ -64,10 +64,11 @@ SyntaxToken LexicalAnalyzer::Consume()
 		case 0: // no tokens
 			break;
 
-		case 1: // no need to read peeks
+		case 1: // consume the single buffered token
 		{
+			SyntaxToken token = ReadBuffer.front();
 			ReadBuffer.pop_front();
-			break;
+			return SyntaxToken(token);
 		}
 
 		default: // read peeks
@@ -1378,6 +1379,11 @@ bool LexicalAnalyzer::IsConditionalKeyword(std::wstring& word, TokenType& type)
 	else if (word == L"else")
 	{
 		type = TokenType::ElseKeyword;
+		return true;
+	}
+	else if (word == L"switch")
+	{
+		type = TokenType::SwitchKeyword;
 		return true;
 	}
 	else

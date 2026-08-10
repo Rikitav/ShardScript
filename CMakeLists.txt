@@ -6,7 +6,11 @@ set(CMAKE_SYSTEM_VERSION 10.0 CACHE STRING "" FORCE)
 
 option(ENABLE_ASAN "Enable AddressSanitizer" OFF)
 
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+# ASAN is enabled by default in Debug, but allow the caller to explicitly disable it
+# (e.g. when the toolchain does not provide libasan).
+if(CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT ENABLE_ASAN)
+    # keep caller override
+elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(ENABLE_ASAN ON CACHE BOOL "Enable AddressSanitizer" FORCE)
 endif()
 

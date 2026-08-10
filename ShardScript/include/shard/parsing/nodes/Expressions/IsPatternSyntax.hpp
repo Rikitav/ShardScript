@@ -1,0 +1,31 @@
+#pragma once
+#include <shard/ShardScriptAPI.hpp>
+
+#include <shard/parsing/nodes/ExpressionSyntax.hpp>
+#include <shard/parsing/nodes/TypeSyntax.hpp>
+#include <shard/parsing/SyntaxKind.hpp>
+#include <shard/parsing/SyntaxToken.hpp>
+#include <shard/parsing/SyntaxNode.hpp>
+
+#include <memory>
+
+namespace shard
+{
+	class VariableSymbol;
+
+	class SHARD_API IsPatternSyntax : public ExpressionSyntax
+	{
+	public:
+		const SyntaxToken OperatorToken;
+		std::unique_ptr<TypeSyntax> TargetType = nullptr;
+		SyntaxToken IdentifierToken;
+		VariableSymbol* Symbol = nullptr;
+
+		inline IsPatternSyntax(const SyntaxToken operatorToken, SyntaxNode* parent)
+			: ExpressionSyntax(SyntaxKind::IsPattern, parent), OperatorToken(operatorToken) {}
+
+		inline IsPatternSyntax(const IsPatternSyntax&) = delete;
+
+		inline virtual ~IsPatternSyntax() = default;
+	};
+}

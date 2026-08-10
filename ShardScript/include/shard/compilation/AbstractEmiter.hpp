@@ -24,6 +24,7 @@
 #include <shard/parsing/nodes/Expressions/UnaryExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/CastExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/IsExpressionSyntax.hpp>
+#include <shard/parsing/nodes/Expressions/IsPatternSyntax.hpp>
 
 #include <shard/parsing/nodes/Loops/ForStatementSyntax.hpp>
 #include <shard/parsing/nodes/Loops/ForEachStatementSyntax.hpp>
@@ -156,8 +157,10 @@ namespace shard
         void VisitIndexatorExpression(IndexatorExpressionSyntax* node) override;
         void VisitMemberAccessExpression(MemberAccessExpressionSyntax* node) override;
 
+        void VisitSwitchExpression(SwitchExpressionSyntax* node) override;
         void VisitCastExpression(CastExpressionSyntax* node) override;
         void VisitIsExpression(IsExpressionSyntax* node) override;
+        void VisitIsPattern(IsPatternSyntax* node) override;
 
 private:
         void EmitMethodCall(MethodSymbol* method);

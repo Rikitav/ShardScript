@@ -143,8 +143,12 @@ SyntaxToken LexicalBuffer::Current()
 
 SyntaxToken LexicalBuffer::Consume()
 {
+	if (CurrentIndex >= Sequence.size())
+		return SyntaxToken(TokenType::EndOfFile, L"", TextLocation());
+
+	SyntaxToken token = Sequence[CurrentIndex];
 	CurrentIndex += 1;
-	return Current();
+	return token;
 }
 
 SyntaxToken LexicalBuffer::Peek(int index)

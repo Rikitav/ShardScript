@@ -70,6 +70,7 @@
 #include <shard/parsing/nodes/Expressions/SwitchExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/CastExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/IsExpressionSyntax.hpp>
+#include <shard/parsing/nodes/Expressions/IsPatternSyntax.hpp>
 
 #include <shard/parsing/nodes/Types/PredefinedTypeSyntax.hpp>
 #include <shard/parsing/nodes/Types/GenericTypeSyntax.hpp>
@@ -166,6 +167,7 @@ namespace shard
 
         virtual void VisitCastExpression(CastExpressionSyntax* node);
         virtual void VisitIsExpression(IsExpressionSyntax* node);
+        virtual void VisitIsPattern(IsPatternSyntax* node);
 
         virtual void VisitArgumentsList(ArgumentsListSyntax* node);
         virtual void VisitArgument(ArgumentSyntax* node);

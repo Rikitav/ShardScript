@@ -1,0 +1,56 @@
+using stdio;
+
+namespace switch_is_patterns;
+
+public interface Animal
+{
+    func Name() -> string;
+}
+
+public class Cat : Animal
+{
+    public func Name() -> string
+    {
+        return "cat";
+    }
+
+    public func Meow() -> string
+    {
+        return "meow";
+    }
+}
+
+public class Dog : Animal
+{
+    public func Name() -> string
+    {
+        return "dog";
+    }
+
+    public func Bark() -> string
+    {
+        return "woof";
+    }
+}
+
+public static func MakeSound(a: Animal) -> string
+{
+    return switch a {
+        is Cat c => c.Meow(),
+        is Dog d => d.Bark(),
+        is Animal => "some animal",
+        _ => "unknown"
+    };
+}
+
+public static func Main() -> void
+{
+    cat: Animal = new Cat();
+    dog: Animal = new Dog();
+    animal: Animal = cat;
+
+    println(MakeSound(cat));
+    println(MakeSound(dog));
+    println(MakeSound(animal));
+    println(MakeSound(null));
+}
