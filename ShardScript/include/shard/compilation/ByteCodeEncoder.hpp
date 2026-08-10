@@ -38,12 +38,17 @@ namespace shard
 		void EmitDefaultValue(std::vector<std::byte>& code, TypeSymbol* elementType);
 		void EmitDuplicate(std::vector<std::byte>& code);
 
-		void EmitLoadVarible(std::vector<std::byte>& code, std::uint16_t index);
-		void EmitStoreVarible(std::vector<std::byte>& code, std::uint16_t index);
+		void EmitLoadLocal(std::vector<std::byte>& code, std::uint16_t index);
+		void EmitStoreLocal(std::vector<std::byte>& code, std::uint16_t index);
+		void EmitLoadArg(std::vector<std::byte>& code, std::uint16_t index);
+		void EmitStoreArg(std::vector<std::byte>& code, std::uint16_t index);
 
 		void EmitJump(std::vector<std::byte>& code, std::size_t jump);
 		void EmitJumpTrue(std::vector<std::byte>& code, std::size_t jump);
 		void EmitJumpFalse(std::vector<std::byte>& code, std::size_t jump);
+		void EmitBranchNull(std::vector<std::byte>& code, std::size_t jump);
+		void EmitJumpTable(std::vector<std::byte>& code, const std::vector<std::size_t>& targets);
+
 		void EmitReturn(std::vector<std::byte>& code);
 		void EmitThrow(std::vector<std::byte>& code);
 		void EmitEnterTry(std::vector<std::byte>& code, std::size_t handlerOffset);
@@ -64,9 +69,8 @@ namespace shard
 		void EmitMathMod(std::vector<std::byte>& code);
 		void EmitMathPow(std::vector<std::byte>& code);
 		void EmitMathNegative(std::vector<std::byte>& code);
-		void EmitMathPositive(std::vector<std::byte>& code);
-		void EmitMathLeftShift(std::vector<std::byte>& code);
-		void EmitMathRightShift(std::vector<std::byte>& code);
+		void EmitMathShl(std::vector<std::byte>& code);
+		void EmitMathShr(std::vector<std::byte>& code);
 
 		void EmitCompareEqual(std::vector<std::byte>& code);
 		void EmitCompareNotEqual(std::vector<std::byte>& code);
@@ -85,7 +89,7 @@ namespace shard
 		void EmitStoreField(std::vector<std::byte>& code, std::uint32_t slot);
 
 		void EmitNewArray(std::vector<std::byte>& code, ArrayTypeSymbol* type);
-		void EmitNewDynamicArray(std::vector<std::byte>& code, TypeSymbol* elementType);
+		void EmitNewArrayDynamic(std::vector<std::byte>& code, TypeSymbol* elementType);
 		void EmitCreateRange(std::vector<std::byte>& code, TypeSymbol* elementType);
 		void EmitLoadArrayElement(std::vector<std::byte>& code);
 		void EmitStoreArrayElement(std::vector<std::byte>& code);
@@ -97,11 +101,10 @@ namespace shard
 
 		void EmitLoadTypeArgument(std::vector<std::byte>& code, std::uint16_t index, TypeSymbol* type);
 		void EmitCallMethodSymbol(std::vector<std::byte>& code, MethodSymbol* method);
-		void EmitCallGenericMethod(std::vector<std::byte>& code, MethodSymbol* method);
 		void EmitCallDelegate(std::vector<std::byte>& code);
 		void EmitCallInterface(std::vector<std::byte>& code, MethodSymbol* interfaceMethod);
 		void EmitIsInstance(std::vector<std::byte>& code, TypeSymbol* type);
-		void EmitCastInterface(std::vector<std::byte>& code, TypeSymbol* type);
+		void EmitCastAs(std::vector<std::byte>& code, TypeSymbol* type);
 		void EmitCast(std::vector<std::byte>& code, TypeSymbol* type);
 		void EmitCastPrimitive(std::vector<std::byte>& code, TypeSymbol* type);
 		//void EmitCallFunction(std::vector<std::byte>& code, MethodSymbolDelegate* func);

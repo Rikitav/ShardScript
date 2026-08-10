@@ -101,7 +101,7 @@ static void EmitUnaryOperation(shard::TokenType type, ByteCodeEncoder& encoder, 
 
 		case TokenType::AddOperator:
 		{
-			encoder.EmitMathPositive(code);
+			// Unary plus is a no-op.
 			break;
 		}
 
@@ -261,13 +261,13 @@ static void EmitBinaryOperation(shard::TokenType type, ByteCodeEncoder& encoder,
 
 		case TokenType::LeftShiftOperator:
 		{
-			encoder.EmitMathLeftShift(code);
+			encoder.EmitMathShl(code);
 			break;
 		}
 
 		case TokenType::RightShiftOperator:
 		{
-			encoder.EmitMathRightShift(code);
+			encoder.EmitMathShr(code);
 			break;
 		}
 
@@ -452,13 +452,13 @@ void AbstractEmiter::VisitAccessorDeclaration(AccessorDeclarationSyntax* node)
 		{
 			if (node->KeywordToken.Type == TokenType::GetKeyword)
 			{
-				Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, 0);
+				Encoder.EmitLoadLocal(GeneratingFor->ExecutableByteCode, 0);
 				Encoder.EmitLoadField(GeneratingFor->ExecutableByteCode, property->BackingField->SlotIndex);
 			}
 			else if (node->KeywordToken.Type == TokenType::SetKeyword)
 			{
-				Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, 0);
-				Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, 1);
+				Encoder.EmitLoadLocal(GeneratingFor->ExecutableByteCode, 0);
+				Encoder.EmitLoadLocal(GeneratingFor->ExecutableByteCode, 1);
 				Encoder.EmitStoreField(GeneratingFor->ExecutableByteCode, property->BackingField->SlotIndex);
 			}
 		}
@@ -500,7 +500,7 @@ void AbstractEmiter::VisitVariableStatement(VariableStatementSyntax* node)
 {
 	VariableSymbol* var = LookupSymbol<VariableSymbol>(node).value_or(nullptr);
 	VisitExpression(node->Expression.get());
-	Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, var->SlotIndex);
+	Encoder.EmitStoreLocal(GeneratingFor->ExecutableByteCode, var->SlotIndex);
 }
 
 void AbstractEmiter::VisitTryStatement(TryStatementSyntax* node)
@@ -553,7 +553,7 @@ void AbstractEmiter::VisitTryStatement(TryStatementSyntax* node)
 
 		VariableSymbol* catchVariable = clause->Symbol;
 		if (catchVariable != nullptr)
-			Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, catchVariable->SlotIndex);
+			Encoder.EmitStoreLocal(GeneratingFor->ExecutableByteCode, catchVariable->SlotIndex);
 		else
 			Encoder.EmitPop(GeneratingFor->ExecutableByteCode);
 
@@ -739,21 +739,21 @@ void AbstractEmiter::EmitEnumerationLoop(ExpressionSyntax* range, VariableSymbol
 
 	VisitExpression(range);
 	EmitMethodCall(TRAIT_ENUMERABLE_GETENUMERATOR);
-	Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, enumeratorSlot);
+	Encoder.EmitStoreLocal(GeneratingFor->ExecutableByteCode, enumeratorSlot);
 
 	scope.LoopStart = GeneratingFor->ExecutableByteCode.size();
 
-	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, enumeratorSlot);
+	Encoder.EmitLoadLocal(GeneratingFor->ExecutableByteCode, enumeratorSlot);
 	EmitMethodCall(TRAIT_ENUMERATOR_MOVENEXT);
 
 	scope.LoopEndBacktracks.push_back(GeneratingFor->ExecutableByteCode.size());
 	Encoder.EmitJumpFalse(GeneratingFor->ExecutableByteCode, 0);
 
-	Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, enumeratorSlot);
+	Encoder.EmitLoadLocal(GeneratingFor->ExecutableByteCode, enumeratorSlot);
 	EmitMethodCall(TRAIT_ENUMERATOR_CURRENT_GET);
 
 	if (loopVariable != nullptr)
-		Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, loopVariable->SlotIndex);
+		Encoder.EmitStoreLocal(GeneratingFor->ExecutableByteCode, loopVariable->SlotIndex);
 	else
 		Encoder.EmitPop(GeneratingFor->ExecutableByteCode);
 
@@ -950,7 +950,7 @@ void AbstractEmiter::VisitObjectCreationExpression(ObjectExpressionSyntax* node)
 			VisitExpression(node->ArraySize.get());
 
 		TypeSymbol* elementType = node->Type != nullptr ? node->Type->Symbol : nullptr;
-		Encoder.EmitNewDynamicArray(GeneratingFor->ExecutableByteCode, elementType);
+		Encoder.EmitNewArrayDynamic(GeneratingFor->ExecutableByteCode, elementType);
 		return;
 	}
 
@@ -1059,17 +1059,17 @@ void AbstractEmiter::VisitUnaryAssignExpression(UnaryExpressionSyntax* node)
 
 	if (memberExpression->ToParameter != nullptr)
 	{
-		Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, memberExpression->ToParameter->SlotIndex);
+		Encoder.EmitLoadLocal(GeneratingFor->ExecutableByteCode, memberExpression->ToParameter->SlotIndex);
 		EmitUnaryOperation(node->OperatorToken.Type, Encoder, GeneratingFor->ExecutableByteCode, node->IsRightDetermined);
-		Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, memberExpression->ToParameter->SlotIndex);
+		Encoder.EmitStoreLocal(GeneratingFor->ExecutableByteCode, memberExpression->ToParameter->SlotIndex);
 		return;
 	}
 
 	if (memberExpression->ToVariable != nullptr)
 	{
-		Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, memberExpression->ToVariable->SlotIndex);
+		Encoder.EmitLoadLocal(GeneratingFor->ExecutableByteCode, memberExpression->ToVariable->SlotIndex);
 		EmitUnaryOperation(node->OperatorToken.Type, Encoder, GeneratingFor->ExecutableByteCode, node->IsRightDetermined);
-		Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, memberExpression->ToVariable->SlotIndex);
+		Encoder.EmitStoreLocal(GeneratingFor->ExecutableByteCode, memberExpression->ToVariable->SlotIndex);
 		return;
 	}
 
@@ -1133,15 +1133,15 @@ void AbstractEmiter::VisitUnaryAssignExpression(UnaryExpressionSyntax* node)
 
 			// Preserve the new value and the receiver in temporary slots so we can
 			// reorder the stack for the setter call ([args..., value, this]).
-			Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, tempValueSlot);
-			Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, tempThisSlot);
+			Encoder.EmitStoreLocal(GeneratingFor->ExecutableByteCode, tempValueSlot);
+			Encoder.EmitStoreLocal(GeneratingFor->ExecutableByteCode, tempThisSlot);
 
 			// Push setter arguments
 			if (indexatorExpr != nullptr && indexatorExpr->IndexatorList != nullptr)
 				EmitIndexatorArguments(this, indexatorExpr->IndexatorList.get());
 
-			Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, tempValueSlot);
-			Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, tempThisSlot);
+			Encoder.EmitLoadLocal(GeneratingFor->ExecutableByteCode, tempValueSlot);
+			Encoder.EmitLoadLocal(GeneratingFor->ExecutableByteCode, tempThisSlot);
 
 			EmitMethodCall(setter);
 		}
@@ -1177,14 +1177,14 @@ void AbstractEmiter::VisitBinaryAssignExpression(BinaryExpressionSyntax* node)
 	if (memberExpression->ToParameter)
 	{
 		VisitExpression(node->Right.get());
-		Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, memberExpression->ToParameter->SlotIndex);
+		Encoder.EmitStoreLocal(GeneratingFor->ExecutableByteCode, memberExpression->ToParameter->SlotIndex);
 		return;
 	}
 
 	if (memberExpression->ToVariable != nullptr)
 	{
 		VisitExpression(node->Right.get());
-		Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, memberExpression->ToVariable->SlotIndex);
+		Encoder.EmitStoreLocal(GeneratingFor->ExecutableByteCode, memberExpression->ToVariable->SlotIndex);
 		return;
 	}
 
@@ -1291,7 +1291,7 @@ void AbstractEmiter::VisitInvocationExpression(InvokationExpressionSyntax* node)
 	if (node->IsDelegateInvocation)
 		Encoder.EmitCallDelegate(GeneratingFor->ExecutableByteCode);
 	else if (hasTypeArguments)
-		Encoder.EmitCallGenericMethod(GeneratingFor->ExecutableByteCode, node->Symbol);
+		Encoder.EmitCallMethodSymbol(GeneratingFor->ExecutableByteCode, node->Symbol);
 	else
 		EmitMethodCall(node->Symbol);
 }
@@ -1314,13 +1314,13 @@ void AbstractEmiter::VisitMemberAccessExpression(MemberAccessExpressionSyntax* n
 {
 	if (node->ToParameter != nullptr)
 	{
-		Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, node->ToParameter->SlotIndex);
+		Encoder.EmitLoadLocal(GeneratingFor->ExecutableByteCode, node->ToParameter->SlotIndex);
 		return;
 	}
 
 	if (node->ToVariable != nullptr)
 	{
-		Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, node->ToVariable->SlotIndex);
+		Encoder.EmitLoadLocal(GeneratingFor->ExecutableByteCode, node->ToVariable->SlotIndex);
 		return;
 	}
 
@@ -1385,7 +1385,7 @@ void AbstractEmiter::EmitDefer(DeferStatementSyntax* defer)
 	if (defer->IsResourceDefer)
 	{
 		if (defer->Variable != nullptr)
-			Encoder.EmitLoadVarible(code, defer->Variable->SlotIndex);
+			Encoder.EmitLoadLocal(code, defer->Variable->SlotIndex);
 
 		if (defer->DisposeMethod != nullptr)
 			EmitMethodCall(defer->DisposeMethod);
@@ -1608,7 +1608,7 @@ void AbstractEmiter::VisitSwitchExpression(SwitchExpressionSyntax* node)
 
     std::uint16_t base = GeneratingFor->GetEvalStackArgumentsCount();
     std::uint16_t switchSlot = base + GeneratingFor->AddVariableCount();
-    Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, switchSlot);
+    Encoder.EmitStoreLocal(GeneratingFor->ExecutableByteCode, switchSlot);
 
     std::vector<std::size_t> endBacktracks;
     std::optional<std::size_t> pendingTestFailBacktrack;
@@ -1655,7 +1655,7 @@ void AbstractEmiter::VisitSwitchExpression(SwitchExpressionSyntax* node)
                 continue;
             }
 
-            Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, switchSlot);
+            Encoder.EmitLoadLocal(GeneratingFor->ExecutableByteCode, switchSlot);
             Encoder.EmitIsInstance(GeneratingFor->ExecutableByteCode, targetType);
 
             std::size_t jumpFalse = GeneratingFor->ExecutableByteCode.size();
@@ -1663,12 +1663,12 @@ void AbstractEmiter::VisitSwitchExpression(SwitchExpressionSyntax* node)
             Encoder.EmitJumpFalse(GeneratingFor->ExecutableByteCode, 0);
 
             // Pattern matched. Load the value again to bind or discard.
-            Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, switchSlot);
+            Encoder.EmitLoadLocal(GeneratingFor->ExecutableByteCode, switchSlot);
             if (isPattern->Symbol != nullptr)
             {
                 std::uint16_t patternSlot = base + GeneratingFor->AddVariableCount();
                 isPattern->Symbol->SlotIndex = patternSlot;
-                Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, patternSlot);
+                Encoder.EmitStoreLocal(GeneratingFor->ExecutableByteCode, patternSlot);
             }
             else
             {
@@ -1723,7 +1723,7 @@ void AbstractEmiter::VisitSwitchStatement(SwitchStatementSyntax* node)
 
     std::uint16_t base = GeneratingFor->GetEvalStackArgumentsCount();
     std::uint16_t switchSlot = base + GeneratingFor->AddVariableCount();
-    Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, switchSlot);
+    Encoder.EmitStoreLocal(GeneratingFor->ExecutableByteCode, switchSlot);
 
     Loops.emplace();
     LoopScope& scope = Loops.top();
@@ -1771,19 +1771,19 @@ void AbstractEmiter::VisitSwitchStatement(SwitchStatementSyntax* node)
             if (targetType == nullptr)
                 continue;
 
-            Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, switchSlot);
+            Encoder.EmitLoadLocal(GeneratingFor->ExecutableByteCode, switchSlot);
             Encoder.EmitIsInstance(GeneratingFor->ExecutableByteCode, targetType);
 
             std::size_t jumpFalse = GeneratingFor->ExecutableByteCode.size();
             pendingTestFailBacktrack = jumpFalse;
             Encoder.EmitJumpFalse(GeneratingFor->ExecutableByteCode, 0);
 
-            Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, switchSlot);
+            Encoder.EmitLoadLocal(GeneratingFor->ExecutableByteCode, switchSlot);
             if (isPattern->Symbol != nullptr)
             {
                 std::uint16_t patternSlot = base + GeneratingFor->AddVariableCount();
                 isPattern->Symbol->SlotIndex = patternSlot;
-                Encoder.EmitStoreVarible(GeneratingFor->ExecutableByteCode, patternSlot);
+                Encoder.EmitStoreLocal(GeneratingFor->ExecutableByteCode, patternSlot);
             }
             else
             {
@@ -1803,12 +1803,12 @@ void AbstractEmiter::VisitSwitchStatement(SwitchStatementSyntax* node)
         if (clause->EqualityOperator != nullptr)
         {
             VisitExpression(pattern);
-            Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, switchSlot);
+            Encoder.EmitLoadLocal(GeneratingFor->ExecutableByteCode, switchSlot);
             EmitMethodCall(clause->EqualityOperator);
         }
         else
         {
-            Encoder.EmitLoadVarible(GeneratingFor->ExecutableByteCode, switchSlot);
+            Encoder.EmitLoadLocal(GeneratingFor->ExecutableByteCode, switchSlot);
             VisitExpression(pattern);
             Encoder.EmitCompareEqual(GeneratingFor->ExecutableByteCode);
         }

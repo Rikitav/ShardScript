@@ -80,7 +80,7 @@ void ByteCodeEncoder::EmitHalt(std::vector<std::byte>& code)
 
 void ByteCodeEncoder::EmitPop(std::vector<std::byte>& code)
 {
-    AppendDataT(code, OpCode::POPSTACK);
+    AppendDataT(code, OpCode::POP);
 }
 
 void ByteCodeEncoder::EmitLoadConstNull(std::vector<std::byte>& code)
@@ -167,18 +167,30 @@ void ByteCodeEncoder::EmitDefaultValue(std::vector<std::byte>& code, TypeSymbol*
 
 void ByteCodeEncoder::EmitDuplicate(std::vector<std::byte>& code)
 {
-    AppendDataT(code, OpCode::CREATE_DUPLICATE);
+    AppendDataT(code, OpCode::DUP);
 }
 
-void ByteCodeEncoder::EmitLoadVarible(std::vector<std::byte>& code, std::uint16_t index)
+void ByteCodeEncoder::EmitLoadLocal(std::vector<std::byte>& code, std::uint16_t index)
 {
-    AppendDataT(code, OpCode::LOAD_VARIABLE);
+    AppendDataT(code, OpCode::LOAD_LOCAL);
     AppendDataT(code, index);
 }
 
-void ByteCodeEncoder::EmitStoreVarible(std::vector<std::byte>& code, std::uint16_t index)
+void ByteCodeEncoder::EmitStoreLocal(std::vector<std::byte>& code, std::uint16_t index)
 {
-    AppendDataT(code, OpCode::STORE_VARIABLE);
+    AppendDataT(code, OpCode::STORE_LOCAL);
+    AppendDataT(code, index);
+}
+
+void ByteCodeEncoder::EmitLoadArg(std::vector<std::byte>& code, std::uint16_t index)
+{
+    AppendDataT(code, OpCode::LOAD_ARG);
+    AppendDataT(code, index);
+}
+
+void ByteCodeEncoder::EmitStoreArg(std::vector<std::byte>& code, std::uint16_t index)
+{
+    AppendDataT(code, OpCode::STORE_ARG);
     AppendDataT(code, index);
 }
 
@@ -198,6 +210,20 @@ void ByteCodeEncoder::EmitJumpFalse(std::vector<std::byte>& code, std::size_t ju
 {
     AppendDataT(code, OpCode::JUMP_FALSE);
     AppendDataT(code, jump);
+}
+
+void ByteCodeEncoder::EmitBranchNull(std::vector<std::byte>& code, std::size_t jump)
+{
+    AppendDataT(code, OpCode::BR_NULL);
+    AppendDataT(code, jump);
+}
+
+void ByteCodeEncoder::EmitJumpTable(std::vector<std::byte>& code, const std::vector<std::size_t>& targets)
+{
+    AppendDataT(code, OpCode::JUMP_TABLE);
+    AppendDataT(code, static_cast<std::uint32_t>(targets.size()));
+    for (std::size_t target : targets)
+        AppendDataT(code, target);
 }
 
 void ByteCodeEncoder::EmitReturn(std::vector<std::byte>& code)
@@ -265,12 +291,12 @@ void ByteCodeEncoder::EmitMathAdd(std::vector<std::byte>& code)
 
 void ByteCodeEncoder::EmitMathSub(std::vector<std::byte>& code)
 {
-    AppendDataT(code, OpCode::MATH_SUBSTRACTION);
+    AppendDataT(code, OpCode::MATH_SUBTRACT);
 }
 
 void ByteCodeEncoder::EmitMathMult(std::vector<std::byte>& code)
 {
-    AppendDataT(code, OpCode::MATH_MULTIPLICATION);
+    AppendDataT(code, OpCode::MATH_MULTIPLY);
 }
 
 void ByteCodeEncoder::EmitMathDiv(std::vector<std::byte>& code)
@@ -280,7 +306,7 @@ void ByteCodeEncoder::EmitMathDiv(std::vector<std::byte>& code)
 
 void ByteCodeEncoder::EmitMathMod(std::vector<std::byte>& code)
 {
-    AppendDataT(code, OpCode::MATH_MODULE);
+    AppendDataT(code, OpCode::MATH_MODULO);
 }
 
 void ByteCodeEncoder::EmitMathPow(std::vector<std::byte>& code)
@@ -293,19 +319,14 @@ void ByteCodeEncoder::EmitMathNegative(std::vector<std::byte>& code)
     AppendDataT(code, OpCode::MATH_NEGATIVE);
 }
 
-void ByteCodeEncoder::EmitMathPositive(std::vector<std::byte>& code)
+void ByteCodeEncoder::EmitMathShl(std::vector<std::byte>& code)
 {
-    AppendDataT(code, OpCode::MATH_POSITIVE);
+    AppendDataT(code, OpCode::MATH_SHL);
 }
 
-void ByteCodeEncoder::EmitMathLeftShift(std::vector<std::byte>& code)
+void ByteCodeEncoder::EmitMathShr(std::vector<std::byte>& code)
 {
-    AppendDataT(code, OpCode::MATH_LEFTSHIFT);
-}
-
-void ByteCodeEncoder::EmitMathRightShift(std::vector<std::byte>& code)
-{
-    AppendDataT(code, OpCode::MATH_RIGHTSHIFT);
+    AppendDataT(code, OpCode::MATH_SHR);
 }
 
 void ByteCodeEncoder::EmitCompareEqual(std::vector<std::byte>& code)
@@ -325,7 +346,7 @@ void ByteCodeEncoder::EmitCompareGreater(std::vector<std::byte>& code)
 
 void ByteCodeEncoder::EmitCompareGreaterOrEqual(std::vector<std::byte>& code)
 {
-    AppendDataT(code, OpCode::COMPARE_GREATEROREQUAL);
+    AppendDataT(code, OpCode::COMPARE_GREATER_OR_EQUAL);
 }
 
 void ByteCodeEncoder::EmitCompareLess(std::vector<std::byte>& code)
@@ -335,7 +356,7 @@ void ByteCodeEncoder::EmitCompareLess(std::vector<std::byte>& code)
 
 void ByteCodeEncoder::EmitCompareLessOrEqual(std::vector<std::byte>& code)
 {
-    AppendDataT(code, OpCode::COMPARE_LESSOREQUAL);
+    AppendDataT(code, OpCode::COMPARE_LESS_OR_EQUAL);
 }
 
 void ByteCodeEncoder::EmitLogicalNot(std::vector<std::byte>& code)
@@ -391,9 +412,9 @@ void ByteCodeEncoder::EmitNewArray(std::vector<std::byte>& code, ArrayTypeSymbol
     AppendData(code, &type, sizeof(type));
 }
 
-void ByteCodeEncoder::EmitNewDynamicArray(std::vector<std::byte>& code, TypeSymbol* elementType)
+void ByteCodeEncoder::EmitNewArrayDynamic(std::vector<std::byte>& code, TypeSymbol* elementType)
 {
-    AppendDataT(code, OpCode::NEWDYNAMICARRAY);
+    AppendDataT(code, OpCode::NEWARRAY_DYNAMIC);
     AppendData(code, &elementType, sizeof(elementType));
 }
 
@@ -442,12 +463,6 @@ void ByteCodeEncoder::EmitCallMethodSymbol(std::vector<std::byte>& code, MethodS
     AppendData(code, &method, sizeof(method));
 }
 
-void ByteCodeEncoder::EmitCallGenericMethod(std::vector<std::byte>& code, MethodSymbol* method)
-{
-    AppendDataT(code, OpCode::CALLGENERICMETHOD);
-    AppendData(code, &method, sizeof(method));
-}
-
 void ByteCodeEncoder::EmitCallDelegate(std::vector<std::byte>& code)
 {
     AppendDataT(code, OpCode::CALLDELEGATE);
@@ -465,9 +480,9 @@ void ByteCodeEncoder::EmitIsInstance(std::vector<std::byte>& code, TypeSymbol* t
     AppendData(code, &type, sizeof(type));
 }
 
-void ByteCodeEncoder::EmitCastInterface(std::vector<std::byte>& code, TypeSymbol* type)
+void ByteCodeEncoder::EmitCastAs(std::vector<std::byte>& code, TypeSymbol* type)
 {
-    AppendDataT(code, OpCode::CASTINTERFACE);
+    AppendDataT(code, OpCode::CAST_AS);
     AppendData(code, &type, sizeof(type));
 }
 

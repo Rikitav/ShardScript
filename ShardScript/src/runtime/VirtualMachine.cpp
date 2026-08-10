@@ -170,7 +170,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::POPSTACK:
+		case OpCode::POP:
 		{
 			ObjectInstance* pop = frame->PopStack();
 			garbageCollector.CollectInstance(pop);
@@ -178,14 +178,6 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		}
 
 		case OpCode::CALLMETHODSYMBOL:
-		{
-			MethodSymbol* methodSymbol = decoder.AbsorbMethodSymbol();
-			PendingTypeArguments.clear();
-			InvokeMethod(methodSymbol);
-			break;
-		}
-
-		case OpCode::CALLGENERICMETHOD:
 		{
 			MethodSymbol* methodSymbol = decoder.AbsorbMethodSymbol();
 			InvokeMethod(methodSymbol);
@@ -241,7 +233,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::CASTINTERFACE:
+		case OpCode::CAST_AS:
 		{
 			TypeSymbol* targetType = decoder.AbsorbTypeSymbol();
 			targetType = frame->ResolveType(targetType);
@@ -383,7 +375,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::LOAD_VARIABLE:
+		case OpCode::LOAD_LOCAL:
 		{
 			std::uint16_t slot = decoder.AbsorbVariableSlot();
 			ObjectInstance* instance = frame->EvalStack[slot];
@@ -391,7 +383,37 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::STORE_VARIABLE:
+		case OpCode::STORE_LOCAL:
+		{
+			std::uint16_t slot = decoder.AbsorbVariableSlot();
+			ObjectInstance* instance = frame->PopStack();
+
+			if (slot >= frame->EvalStack.size())
+			{
+				frame->EvalStack.resize(slot + 1, nullptr);
+			}
+
+			ObjectInstance* oldVar = frame->EvalStack[slot];
+			if (oldVar != nullptr)
+			{
+				oldVar->DecrementReference();
+				garbageCollector.CollectInstance(oldVar);
+			}
+
+			instance->IncrementReference();
+			frame->EvalStack[slot] = instance;
+			break;
+		}
+
+		case OpCode::LOAD_ARG:
+		{
+			std::uint16_t slot = decoder.AbsorbVariableSlot();
+			ObjectInstance* instance = frame->EvalStack[slot];
+			frame->PushStack(instance);
+			break;
+		}
+
+		case OpCode::STORE_ARG:
 		{
 			std::uint16_t slot = decoder.AbsorbVariableSlot();
 			ObjectInstance* instance = frame->PopStack();
@@ -526,7 +548,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::NEWDYNAMICARRAY:
+		case OpCode::NEWARRAY_DYNAMIC:
 		{
 			TypeSymbol* elementType = decoder.AbsorbTypeSymbol();
 			elementType = frame->ResolveType(elementType);
@@ -617,7 +639,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::CREATE_DUPLICATE:
+		case OpCode::DUP:
 		{
 			ObjectInstance* instance = frame->PeekStack();
 			ObjectInstance* duplicate = garbageCollector.CopyInstance(instance);
@@ -632,13 +654,13 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::MATH_SUBSTRACTION:
+		case OpCode::MATH_SUBTRACT:
 		{
 			executeBinary(TokenType::SubOperator);
 			break;
 		}
 
-		case OpCode::MATH_MULTIPLICATION:
+		case OpCode::MATH_MULTIPLY:
 		{
 			executeBinary(TokenType::MultOperator);
 			break;
@@ -650,7 +672,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::MATH_MODULE:
+		case OpCode::MATH_MODULO:
 		{
 			executeBinary(TokenType::ModOperator);
 			break;
@@ -668,19 +690,13 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::MATH_POSITIVE:
-		{
-			executeUnary(TokenType::AddOperator);
-			break;
-		}
-
-		case OpCode::MATH_LEFTSHIFT:
+		case OpCode::MATH_SHL:
 		{
 			executeBinary(TokenType::LeftShiftOperator);
 			break;
 		}
 
-		case OpCode::MATH_RIGHTSHIFT:
+		case OpCode::MATH_SHR:
 		{
 			executeBinary(TokenType::RightShiftOperator);
 			break;
@@ -704,7 +720,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::COMPARE_LESSOREQUAL:
+		case OpCode::COMPARE_LESS_OR_EQUAL:
 		{
 			executeBinary(TokenType::LessOrEqualsOperator);
 			break;
@@ -716,7 +732,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			break;
 		}
 
-		case OpCode::COMPARE_GREATEROREQUAL:
+		case OpCode::COMPARE_GREATER_OR_EQUAL:
 		{
 			executeBinary(TokenType::GreaterOrEqualsOperator);
 			break;
@@ -771,6 +787,43 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 
 			if (asBool)
 				decoder.SetCursor(jump);
+
+			break;
+		}
+
+		case OpCode::BR_NULL:
+		{
+			std::size_t jump = decoder.AbsorbJump();
+			ObjectInstance* value = frame->PopStack();
+
+			bool isNull = (value == nullptr || value == garbageCollector.NullInstance);
+			if (!isNull)
+				garbageCollector.CollectInstance(value);
+
+			if (isNull)
+				decoder.SetCursor(jump);
+
+			break;
+		}
+
+		case OpCode::JUMP_TABLE:
+		{
+			std::uint32_t count = decoder.AbsorbUInt32();
+			std::size_t base = decoder.GetCursor();
+			ObjectInstance* value = frame->PopStack();
+
+			std::int64_t index = value->AsInteger();
+			garbageCollector.CollectInstance(value);
+
+			if (index < 0 || static_cast<std::uint64_t>(index) >= count)
+			{
+				decoder.SetCursor(base + count * sizeof(std::size_t));
+			}
+			else
+			{
+				std::size_t target = decoder.PeekJumpAt(base + static_cast<std::size_t>(index) * sizeof(std::size_t));
+				decoder.SetCursor(target);
+			}
 
 			break;
 		}
@@ -1649,7 +1702,7 @@ ObjectInstance* VirtualMachine::RunInteractive(std::size_t& pointer)
 			throw std::runtime_error("Execution aborted by host.");
 
 		OpCode opCode = decoder.AbsorbOpCode();
-		if (opCode == OpCode::POPSTACK && decoder.IsEOF())
+		if (opCode == OpCode::POP && decoder.IsEOF())
 			continue;
 
 		ProcessCode(currentFrame, decoder, opCode);

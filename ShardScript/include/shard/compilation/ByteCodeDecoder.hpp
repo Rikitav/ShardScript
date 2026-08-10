@@ -29,6 +29,8 @@ namespace shard
 		std::size_t Index() const;
 		void SetCursor(std::int64_t amount);
 		void Return();
+		std::size_t GetCursor() const;
+		std::size_t PeekJumpAt(std::size_t offset) const;
 
 		OpCode AbsorbOpCode();
 
@@ -42,6 +44,7 @@ namespace shard
 		std::uint8_t AbsorbUInt8();
 		std::uint16_t AbsorbVariableSlot();
 		std::uint16_t AbsorbUInt16();
+		std::uint32_t AbsorbUInt32();
 		std::size_t AbsorbJump();
 		
 		TypeSymbol* AbsorbTypeSymbol();
