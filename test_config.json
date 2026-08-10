@@ -1,0 +1,23 @@
+{
+  "expected_failures": [
+    "test_scripts/async/test_async_lambda_error.shard",
+    "test_scripts/async/test_await_non_awaitable.shard",
+    "test_scripts/async/test_await_outside_async.shard",
+    "test_scripts/test_throw_simple.shard",
+    "test_scripts/test_try_catch_any.shard",
+    "test_scripts/test_try_catch_empty.shard",
+    "test_scripts/test_try_catch_minimal.shard"
+  ],
+  "expected_timeouts": [
+    "test_scripts/stdlib/http/httpserver_test.shard",
+    "test_scripts/stdlib/socket/socket_server_test.shard",
+    "test_scripts/test_http_server_async.shard"
+  ],
+  "test_arguments": [
+    {
+      "_comment": "Example: add per-test -l flags here. Path is relative to the repository root; library paths in -l are resolved from the interpreter's bin directory.",
+      "path": "test_scripts/example.shard",
+      "args": ["-l", "system/libcollections.shard.dll"]
+    }
+  ]
+}
