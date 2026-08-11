@@ -95,6 +95,8 @@ jobs:
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
+        env:
+          NODE_OPTIONS: "--use-system-ca"
         with:
           files: |
             shardscript-${{ github.ref_name }}-windows.zip
@@ -102,52 +104,7 @@ jobs:
             shardscript-${{ github.ref_name }}-linux.tar.gz
             shardscript-thirdparty-${{ github.ref_name }}-linux.tar.gz
           name: Release ${{ github.ref_name }}
-          tag_name: ${{ github.ref }}
+          tag_name: ${{ github.ref_name }}
           draft: false
           prerelease: false
           generate_release_notes: true
-
-  publish-nuget:
-    name: Pack and Publish NuGet
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: "10.0.x"
-      - name: Download Windows Native Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: windows-latest-main
-          path: ShardScript.NET/src_native/windows/
-
-      - name: Download Linux Native Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: ubuntu-latest-main
-          path: ShardScript.NET/src_native/linux/
-
-      - name: Restore Dependencies
-        run: dotnet restore ShardScript.NET/ShardScript.NET.csproj
-
-      - name: Build Managed Project
-        run: |
-          dotnet build ShardScript.NET/ShardScript.NET.csproj --no-restore -c Release /p:Version=${{ github.ref_name }}
-
-      - name: Pack NuGet Package
-        run: |
-          dotnet pack ShardScript.NET/ShardScript.NET.csproj -c Release -o out --no-build /p:Version=${{ github.ref_name }}
-
-      - name: Upload Collected NuGet Artifact for Verification
-        uses: actions/upload-artifact@v4
-        with:
-          name: compiled-nuget-package
-          path: out/*.nupkg
-
-      - name: Push to NuGet.org
-        run: |
-          dotnet nuget push out/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
