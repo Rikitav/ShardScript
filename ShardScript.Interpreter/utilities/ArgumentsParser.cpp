@@ -63,6 +63,9 @@ static std::vector<std::wstring> ExpandGlob(const std::wstring& pattern)
 void shard::ShardUtilities::ParseArguments(int argc, wchar_t* argv[])
 {
     ConsoleArguments::RunProgram = false;
+    ConsoleArguments::UseInteractive = false;
+    ConsoleArguments::ShowHelp = false;
+    ConsoleArguments::ShowDecompile = false;
 
     for (int i = 1; i < argc; ++i)
     {
