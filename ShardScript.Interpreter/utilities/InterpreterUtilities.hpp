@@ -6,11 +6,11 @@ namespace shard
 {
     struct ConsoleArguments
     {
-        static inline bool UseInteractive = false;
+        static inline bool UseInteractive = true;
         static inline bool ShowHelp = false;
         static inline bool ExcludeStd = false;
         static inline bool ShowDecompile = false;
-        static inline bool RunProgram = true;
+        static inline bool RunProgram = false;
 
         static inline std::vector<std::wstring> LibsToLoad;
         static inline std::vector<std::wstring> FilesToCompile;

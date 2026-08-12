@@ -93,7 +93,7 @@ namespace shard
 		template<typename T>
 		T* AsNint() const
 		{
-			return reinterpret_cast<T*>(getMemory());
+			return static_cast<T*>(AsNint());
 		}
 
 		void* OffsetMemory(const std::size_t offset, const std::size_t size) const;

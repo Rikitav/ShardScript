@@ -31,7 +31,7 @@ namespace shard
 		shard::SyntaxTree& Tree;
 		std::unique_ptr<shard::SymbolTable> Table;
 		std::unique_ptr<shard::NamespaceTree> Namespaces;
-		std::unique_ptr<shard::TypeShapeCache> TypeShapes;
+		std::shared_ptr<shard::TypeShapeCache> TypeShapes;
 
 		SemanticModel(shard::SyntaxTree& tree);
 		~SemanticModel();

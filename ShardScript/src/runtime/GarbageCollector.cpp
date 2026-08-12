@@ -384,7 +384,7 @@ ObjectInstance* GarbageCollector::CopyInstance(ObjectInstance* instance)
 
 	if (shape->IsReferenceType())
 	{
-		//instance->IncrementReference();
+		instance->IncrementReference();
 		return instance;
 	}
 

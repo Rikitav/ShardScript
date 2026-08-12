@@ -15,7 +15,7 @@ namespace shard
 	public:
 		MethodSymbol* EntryPoint = nullptr;
 		std::vector<std::byte> DataSection;
-		std::unique_ptr<TypeShapeCache> TypeShapes;
+		std::shared_ptr<TypeShapeCache> TypeShapes;
 
 		inline ProgramVirtualImage() : TypeShapes(std::make_unique<TypeShapeCache>()) { }
 		inline ProgramVirtualImage(const ProgramVirtualImage& other) = delete;

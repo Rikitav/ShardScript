@@ -3065,6 +3065,10 @@ extern "C"
                 case 1: return TRAIT_DISPOSABLE;
                 case 2: return TRAIT_ENUMERABLE;
                 case 3: return TRAIT_THROWABLE;
+                case 4: return TRAIT_ASYNCSTATE;
+                case 5: return TRAIT_AWAITABLE;
+                case 6: return TRAIT_AWAITER;
+                case 7: return TRAIT_ENUMERATOR;
                 default:
                     SetLastShardWError(L"invalid standard interface kind");
                     return nullptr;

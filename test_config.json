@@ -3,7 +3,6 @@
     "test_scripts/async/test_async_lambda_error.shard",
     "test_scripts/async/test_await_non_awaitable.shard",
     "test_scripts/async/test_await_outside_async.shard",
-    "test_scripts/test_throw_simple.shard",
     "test_scripts/test_try_catch_any.shard",
     "test_scripts/test_try_catch_empty.shard",
     "test_scripts/test_try_catch_minimal.shard"

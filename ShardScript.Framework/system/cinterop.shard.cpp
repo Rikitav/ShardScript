@@ -4,6 +4,7 @@
 #include <shard/semantic/SymbolTable.hpp>
 #include <shard/runtime/MethodCallState.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
+#include <utilities/Strings.hpp>
 
 #include <cstdlib>
 #include <cstring>
@@ -34,17 +35,14 @@ namespace
         return static_cast<std::byte*>(base) + offset;
     }
 
-    // Narrow an ASCII string (C symbol name / library path) for GetProcAddress,
-    // dlopen and dlsym, which all expect char-based strings.
+    // Narrow a Unicode string (C symbol name / library path) for dlopen/dlsym,
+    // which expect char-based strings. Windows uses the native wide APIs directly.
     inline std::string ToNarrow(const wchar_t* wide)
     {
         if (wide == nullptr)
             return {};
 
-        std::string narrow;
-        for (const wchar_t* p = wide; *p != L'\0'; ++p)
-            narrow.push_back(static_cast<char>(static_cast<unsigned char>(*p & 0xFF)));
-        return narrow;
+        return strings::WideToUtf8(wide);
     }
 
     inline void* LibLoad(const wchar_t* path)

@@ -171,7 +171,7 @@ std::unique_ptr<CompilationUnitSyntax> SourceParser::ReadCompilationUnit(SourceP
 		if (++loopGuard > 10000)
 		{
 			Diagnostics.ReportError(reader.Current(), L"Parser loop detected - aborting compilation unit");
-			throw std::runtime_error("parser loop detected");
+			return unit;
 		}
 
 		SyntaxToken token = reader.Current();
@@ -2838,6 +2838,15 @@ static bool IsGenericInvocation(SourceProvider& reader)
 		else if (token.Type == TokenType::GreaterOperator)
 		{
 			depth--;
+			if (depth == 0)
+			{
+				SyntaxToken next = reader.Peek(static_cast<int>(index + 1));
+				return next.Type == TokenType::OpenCurl;
+			}
+		}
+		else if (token.Type == TokenType::RightShiftOperator)
+		{
+			depth -= 2;
 			if (depth == 0)
 			{
 				SyntaxToken next = reader.Peek(static_cast<int>(index + 1));

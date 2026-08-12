@@ -537,6 +537,9 @@ SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::AddParameter(
 
 SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::SetCallback(MethodSymbolDelegate callback)
 {
+    if (callback == nullptr)
+        throw std::invalid_argument("Method callback cannot be null");
+
     Symbol->FunctionPointer = callback;
     Symbol->HandleType = MethodHandleType::External;
     return *this;
