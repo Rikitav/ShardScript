@@ -677,7 +677,7 @@ std::unique_ptr<ApplicationDomain> CompilationContext::Compile()
 	Model.Table->MarkAllSymbolsReady();
 
 	auto program = std::make_unique<ProgramVirtualImage>();
-	program->TypeShapes = std::move(Model.TypeShapes);
+	program->TypeShapes = Model.TypeShapes;
 	lowering.Emit(*program);
 
 	AbstractEmiter emiter(*program, Model, Diagnostics);

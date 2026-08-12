@@ -144,11 +144,20 @@ void ObjectInstance::ReleaseFrameOwner()
 
 ObjectInstance* ObjectInstance::GetField(std::uint32_t slot)
 {
+	if (IsNullInstance())
+	{
+		std::string typeName = m_info != nullptr ? std::string(m_info->FullName.begin(), m_info->FullName.end()) : "null";
+		throw std::runtime_error("Cannot read field on null instance of type " + typeName);
+	}
+
 	if (m_shape == nullptr)
 		throw std::runtime_error("Cannot read field from an instance without a type shape");
 
 	if (slot >= m_shape->Slots.size())
-		throw std::runtime_error("Field slot index is out of range");
+	{
+		std::string typeName = m_info != nullptr ? std::string(m_info->FullName.begin(), m_info->FullName.end()) : "null";
+		throw std::runtime_error("Field slot index is out of range on " + typeName + " slot=" + std::to_string(slot) + " slots=" + std::to_string(m_shape->Slots.size()));
+	}
 
 	TypeShape* fieldShape = m_shape->GetFieldShape(slot);
 	std::size_t fieldOffset = m_shape->GetOffset(slot);
@@ -174,6 +183,11 @@ ObjectInstance* ObjectInstance::GetField(const FieldSymbol* field)
 
 void ObjectInstance::SetField(std::uint32_t slot, ObjectInstance* instance)
 {
+	if (IsNullInstance())
+	{
+		std::string typeName = m_info != nullptr ? std::string(m_info->FullName.begin(), m_info->FullName.end()) : "null";
+		throw std::runtime_error("Cannot write field on null instance of type " + typeName);
+	}
 
 	if (m_shape == nullptr)
 		throw std::runtime_error("Cannot write field on an instance without a type shape");
@@ -256,11 +270,17 @@ std::size_t ObjectInstance::GetArrayLength() const
 
 ObjectInstance* ObjectInstance::GetElement(std::size_t index, CallStackFrame* frame)
 {
+	if (IsNullInstance())
+		throw std::runtime_error("Cannot access array element on null instance");
+
 	if (m_info->Kind != SyntaxKind::ArrayType)
 		throw std::runtime_error("Tried to get element from non array instance");
 
 	const ArrayTypeSymbol* info = static_cast<const ArrayTypeSymbol*>(m_info);
 	TypeSymbol* type = info->UnderlayingType;
+
+	if (index >= GetArrayLength())
+		throw std::runtime_error("Array index is out of range: index=" + std::to_string(index) + " length=" + std::to_string(GetArrayLength()));
 
 	if (frame != nullptr)
 		type = frame->ResolveType(type);
@@ -282,6 +302,9 @@ ObjectInstance* ObjectInstance::GetElement(std::size_t index, CallStackFrame* fr
 
 void ObjectInstance::SetElement(std::size_t index, ObjectInstance* instance, CallStackFrame* frame)
 {
+	if (IsNullInstance())
+		throw std::runtime_error("Cannot access array element on null instance");
+
 	if (m_info->Kind != SyntaxKind::ArrayType)
 		throw std::runtime_error("Tried to set element in non array instance");
 
@@ -290,6 +313,9 @@ void ObjectInstance::SetElement(std::size_t index, ObjectInstance* instance, Cal
 
 	const ArrayTypeSymbol* info = static_cast<const ArrayTypeSymbol*>(m_info);
 	TypeSymbol* type = info->UnderlayingType;
+
+	if (index >= GetArrayLength())
+		throw std::runtime_error("Array index is out of range: index=" + std::to_string(index) + " length=" + std::to_string(GetArrayLength()));
 
 	if (frame != nullptr)
 		type = frame->ResolveType(type);

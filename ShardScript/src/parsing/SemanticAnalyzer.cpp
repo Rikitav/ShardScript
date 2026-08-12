@@ -30,14 +30,20 @@ void SemanticAnalyzer::Analyze(SyntaxTree& syntaxTree, SemanticModel& semanticMo
 	DeclarationCollector collector(semanticModel, Diagnostics);
 	collector.PushScopeStack(TopScope);
 	collector.VisitSyntaxTree(syntaxTree);
+	if (Diagnostics.AnyError)
+		return;
 
 	TypeBinder typeBinder(semanticModel, Diagnostics);
 	typeBinder.PushScopeStack(TopScope);
 	typeBinder.VisitSyntaxTree(syntaxTree);
+	if (Diagnostics.AnyError)
+		return;
 
 	ExpressionBinder expressionBinder(semanticModel, Diagnostics);
 	expressionBinder.PushScopeStack(TopScope);
 	expressionBinder.VisitSyntaxTree(syntaxTree);
+	if (Diagnostics.AnyError)
+		return;
 
 	// Final cross-symbol validation pass. This also catches interface
 	// implementation mistakes in native libraries.

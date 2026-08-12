@@ -38,6 +38,9 @@ namespace shard
         template<typename T>
         inline T* UnwrapArg(ObjectInstance* value, T**)
         {
+            if (value->IsNullInstance())
+                return nullptr;
+
             return static_cast<T*>(value->AsNint());
         }
 

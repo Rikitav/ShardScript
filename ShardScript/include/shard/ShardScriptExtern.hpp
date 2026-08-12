@@ -197,6 +197,18 @@ extern "C"
     SHARD_API shard::TypeSymbol* Shard_FindType(shard::CompilationContext* ctx, const wchar_t* name);
     SHARD_API shard::MethodSymbol* Shard_FindMethodInType(shard::TypeSymbol* type, const wchar_t* name, int parameterCount);
 
+    enum class ShardStandardInterfaceKind : int
+    {
+        Printable = 0,
+        Disposable = 1,
+        Enumerable = 2,
+        Throwable = 3,
+        AsyncState = 4,
+        Awaitable = 5,
+        Awaiter = 6,
+        Enumerator = 7
+    };
+
     SHARD_API shard::InterfaceSymbol* Shard_GetStandardInterface(shard::CompilationContext* ctx, int kind);
     SHARD_API int Shard_IsTypeAssignableFrom(shard::TypeSymbol* target, shard::TypeSymbol* source);
 

@@ -36,7 +36,7 @@ SemanticModel::SemanticModel(shard::SyntaxTree& tree) : Tree(tree)
 {
 	Table = std::make_unique<SymbolTable>();
 	Namespaces = std::make_unique<NamespaceTree>();
-	TypeShapes = std::make_unique<TypeShapeCache>();
+	TypeShapes = std::make_shared<TypeShapeCache>();
 	//Namespaces->Root = SymbolTable::Global::Namespace->Node;
 }
 

@@ -180,11 +180,7 @@ static std::wstring ReadLine(const std::wstring& prompt = L">>> ")
 	std::wstring line;
 	std::wcout << prompt;
 	if (!std::getline(std::wcin, line))
-	{
-		std::wcin.clear();
-		std::wcin.ignore((std::numeric_limits<std::streamsize>::max)(), L'\n');
 		return L"exit";
-	}
 
 	return line;
 }
@@ -213,7 +209,6 @@ static void ReadMultilineInput(LexicalBuffer& sequenceReader, bool isExpression 
 	
 	// Read continuation lines
 	std::wstring continuationPrompt = L"... ";
-	std::wstring line;
 	
 	int maxLines = 100; // Safety limit
 	int lineCount = 0;
@@ -280,10 +275,18 @@ MemberDeclarationSyntax* InteractiveConsole::ReadMember(LexicalBuffer& sequenceR
 		return nullptr;
 
 	ReadMultilineInput(sequenceReader, false);
-	MemberDeclarationSyntax* member = Parser.ReadMemberDeclaration(sequenceReader, InteractiveClass).release();
+	auto memberPtr = Parser.ReadMemberDeclaration(sequenceReader, InteractiveClass);
+	if (memberPtr == nullptr)
+		return nullptr;
+
+	MemberDeclarationSyntax* member = memberPtr.release();
 
 	if (member->Kind != SyntaxKind::MethodDeclaration)
-		Diagnostics.ReportError(member->DeclareToken, L"Only methods compilation supported");
+	{
+		Diagnostics.ReportError(member->DeclareToken, L"Only method compilation is supported in interactive mode");
+		delete member;
+		return nullptr;
+	}
 
 	return member;
 }
@@ -291,14 +294,26 @@ MemberDeclarationSyntax* InteractiveConsole::ReadMember(LexicalBuffer& sequenceR
 void InteractiveConsole::EvaluateUsing(LexicalBuffer& buffer)
 {
 	auto directive = Parser.ReadUsingDirective(buffer, nullptr);
+	if (directive == nullptr || directive->TokensList.empty())
+	{
+		std::wcerr << L"### Failed to parse using directive." << std::endl;
+		return;
+	}
+
 	NamespaceNode* node = ParentSemanticModel.Namespaces->Root;
 
 	for (SyntaxToken token : directive->TokensList)
 	{
+		if (token.Word.empty())
+		{
+			std::wcerr << L"### Invalid token in using directive." << std::endl;
+			return;
+		}
+
 		node = node->Lookup(token.Word);
 		if (node == nullptr)
 		{
-			std::wcerr << L"### Namespace '" << token.Word << "' not found on namespace." << std::endl;
+			std::wcerr << L"### Namespace '" << token.Word << L"' not found in namespace tree." << std::endl;
 			return;
 		}
 	}
@@ -328,8 +343,17 @@ InteractiveConsole::InteractiveConsole(shard::CompilationContext* context, shard
 	Program(domain->GetProgram())
 {
 	InteractiveUnit = InitImplicitCompilationUnit();
+	if (InteractiveUnit->Members.empty())
+		throw std::runtime_error("InteractiveConsole: implicit compilation unit has no members");
+
 	InteractiveClass = static_cast<ClassDeclarationSyntax*>(InteractiveUnit->Members.at(0).get());
+	if (InteractiveClass == nullptr || InteractiveClass->Members.empty())
+		throw std::runtime_error("InteractiveConsole: implicit interactive class has no members");
+
 	InteractiveMethod = static_cast<MethodDeclarationSyntax*>(InteractiveClass->Members.at(0).get());
+	if (InteractiveMethod == nullptr)
+		throw std::runtime_error("InteractiveConsole: implicit interactive method is missing");
+
 	ParentSyntaxTree.CompilationUnits.push_back(std::unique_ptr<CompilationUnitSyntax>(InteractiveUnit));
 	
 	//InteractiveEntryPoint = new MethodSymbol(InteractiveMethod->IdentifierToken.Word);
@@ -426,7 +450,6 @@ void InteractiveConsole::Run()
 				Diagnostics.Reset();
 
 				InteractiveMethod->Body->Statements.pop_back();
-				delete statement;
 				continue;
 			}
 
@@ -445,7 +468,7 @@ void InteractiveConsole::Run()
 			ObjectInstance* result = Runtimer.RunInteractive(Breakpoint);
 			if (result != nullptr)
 			{
-				ConsoleHelper::Write(result);
+				ConsoleHelper::WriteLine(result);
 				applicationDomain->GetGarbageCollector().CollectInstance(result);
 			}
 
