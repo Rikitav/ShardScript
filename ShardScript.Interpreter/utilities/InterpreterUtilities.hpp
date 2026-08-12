@@ -6,7 +6,7 @@ namespace shard
 {
     struct ConsoleArguments
     {
-        static inline bool UseInteractive = true;
+        static inline bool UseInteractive = false;
         static inline bool ShowHelp = false;
         static inline bool ExcludeStd = false;
         static inline bool ShowDecompile = false;
