@@ -407,10 +407,7 @@ ObjectInstance* GarbageCollector::CopyInstance(ObjectInstance* instance)
 
 void GarbageCollector::CollectInstance(ObjectInstance* instance)
 {
-	if (instance == nullptr)
-		throw std::runtime_error("requested destroying nullptr");
-
-	if (instance == NullInstance)
+	if (instance == nullptr || instance == NullInstance)
 		return;
 
 	if (instance->getReferencesCounter() > 0)
@@ -422,10 +419,7 @@ void GarbageCollector::CollectInstance(ObjectInstance* instance)
 
 void GarbageCollector::DestroyInstance(ObjectInstance* instance)
 {
-	if (instance == nullptr)
-		throw std::runtime_error("requested destroying nullptr");
-
-	if (instance == NullInstance)
+	if (instance == nullptr || instance == NullInstance)
 		return;
 
 	if (instance->Terminated)

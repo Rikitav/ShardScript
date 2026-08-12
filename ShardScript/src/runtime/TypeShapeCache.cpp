@@ -161,7 +161,7 @@ void TypeShapeCache::BuildShape(TypeShape* shape, TypeSymbol* baseType, const st
 		if (concreteFieldType == nullptr)
 			concreteFieldType = fieldType;
 
-		TypeShape::SlotInfo slot;
+		TypeShape::SlotInfo slot{};
 		slot.Offset = offset;
 
 		if (concreteFieldType->Kind == SyntaxKind::ArrayType)

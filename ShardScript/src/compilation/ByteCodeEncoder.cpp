@@ -21,6 +21,33 @@
 
 using namespace shard;
 
+namespace
+{
+    static void AppendDataS(std::vector<std::byte>& code, const wchar_t* string)
+    {
+        ByteCodeEncoder::AppendData(code, string, wcslen(string) * sizeof(wchar_t) + sizeof(wchar_t));
+    }
+
+    static void AppendDataS(std::vector<std::byte>& code, std::wstring& string)
+    {
+        ByteCodeEncoder::AppendData(code, string.data(), string.size() * sizeof(wchar_t) + sizeof(wchar_t));
+    }
+
+    template <typename T>
+    static void AppendDataT(std::vector<std::byte>& code, const T& value)
+    {
+        static_assert(std::is_trivially_copyable_v<T>, "Type must be trivially copyable");
+        ByteCodeEncoder::AppendData(code, &value, sizeof(T));
+    }
+
+    template <typename T>
+    static void PasteData(std::vector<std::byte>& code, std::size_t at, const T& value)
+    {
+        static_assert(std::is_trivially_copyable_v<T>, "Type must be trivially copyable");
+        ByteCodeEncoder::PasteData(code, at, &value, sizeof(T));
+    }
+}
+
 void ByteCodeEncoder::PasteData(std::vector<std::byte>& code, std::size_t at, const void* data, std::size_t size)
 {
     if (at + size > code.size())
@@ -42,30 +69,6 @@ void ByteCodeEncoder::AppendData(std::vector<std::byte>& code, const void* data,
 
     code.resize(needed_capacity);
     std::memcpy(code.data() + current_size, data, size);
-}
-
-static void AppendDataS(std::vector<std::byte>& code, const wchar_t* string)
-{
-    ByteCodeEncoder::AppendData(code, string, wcslen(string) * sizeof(wchar_t) + sizeof(wchar_t));
-}
-
-static void AppendDataS(std::vector<std::byte>& code, std::wstring& string)
-{
-    ByteCodeEncoder::AppendData(code, string.data(), string.size() * sizeof(wchar_t) + sizeof(wchar_t));
-}
-
-template <typename T>
-static void AppendDataT(std::vector<std::byte>& code, const T& value)
-{
-    static_assert(std::is_trivially_copyable_v<T>, "Type must be trivially copyable");
-    ByteCodeEncoder::AppendData(code, &value, sizeof(T));
-}
-
-template <typename T>
-static void PasteData(std::vector<std::byte>& code, std::size_t at, const T& value)
-{
-    static_assert(std::is_trivially_copyable_v<T>, "Type must be trivially copyable");
-    ByteCodeEncoder::PasteData(code, at, &value, sizeof(T));
 }
 
 void ByteCodeEncoder::EmitNop(std::vector<std::byte>& code)
@@ -143,7 +146,7 @@ void ByteCodeEncoder::EmitDefaultValue(std::vector<std::byte>& code, TypeSymbol*
     {
         EmitLoadConstInt64(code, 0);
     }
-    else if (elementType == SymbolTable::Primitives::Byte)
+    else if (elementType == SymbolTable::Primitives::NativeInteger)
     {
         EmitLoadConstNativeInt(code, 0);
     }

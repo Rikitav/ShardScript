@@ -202,6 +202,9 @@ namespace shard
         if (!m_state)
             return;
 
+        if (milliseconds < 0)
+            milliseconds = 0;
+
         struct DelayData
         {
             std::shared_ptr<detail::AsyncScopeState> scope;

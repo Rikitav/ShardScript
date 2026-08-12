@@ -110,6 +110,18 @@ namespace
 		PropertySymbol* property = static_cast<PropertySymbol*>(implementation->Parent);
 		return property->BackingField;
 	}
+
+	static void VerifyInstanceNotNull(ObjectInstance* instance, const char* operation)
+	{
+		if (instance == nullptr || instance == GarbageCollector::NullInstance)
+		{
+			std::string typeName = "null";
+			if (instance != nullptr && instance->getInfo() != nullptr)
+				typeName = std::string(instance->getInfo()->FullName.begin(), instance->getInfo()->FullName.end());
+
+			throw std::runtime_error(std::string("Cannot access ") + operation + " on null instance of type " + typeName);
+		}
+	}
 }
 
 void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder, const OpCode opCode)
@@ -127,6 +139,16 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance* result = garbageCollector.FromValue(right == left);
 			frame->PushStack(result);
 			return;
+		}
+
+		if ((token == TokenType::DivOperator || token == TokenType::ModOperator))
+		{
+			const TypeSymbol* rightType = right->getInfo();
+			if (rightType != nullptr && (rightType == TYPE_INT || rightType == TYPE_CHAR || rightType == TYPE_BYTE || rightType == TYPE_NINT || rightType->Kind == SyntaxKind::EnumDeclaration))
+			{
+				if (right->AsInteger() == 0)
+					throw std::runtime_error("DivideByZeroException");
+			}
 		}
 
 		ObjectInstance* result = primitiveMath.ExecuteBinary(token, left, right);
@@ -473,6 +495,8 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		{
 			std::uint32_t slot = decoder.AbsorbFieldSlot();
 			ObjectInstance* instance = frame->PopStack();
+			VerifyInstanceNotNull(instance, "member");
+
 			ObjectInstance* fieldValue = instance->GetField(slot);
 
 			frame->PushStack(fieldValue);
@@ -485,6 +509,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			std::uint32_t slot = decoder.AbsorbFieldSlot();
 			ObjectInstance* fieldValue = frame->PopStack();
 			ObjectInstance* instance = frame->PopStack();
+			VerifyInstanceNotNull(instance, "member");
 
 			instance->SetField(slot, fieldValue);
 			garbageCollector.CollectInstance(fieldValue);
@@ -606,8 +631,13 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		{
 			ObjectInstance* indexInstance = frame->PopStack();
 			ObjectInstance* arrayInstance = frame->PopStack();
+			VerifyInstanceNotNull(arrayInstance, "indexer");
 
 			std::int64_t index = indexInstance->AsInteger();
+			std::size_t length = arrayInstance->GetArrayLength();
+			if (index < 0 || static_cast<std::size_t>(index) >= length)
+				throw std::runtime_error("Array index out of range");
+
 			ObjectInstance* element = arrayInstance->GetElement(static_cast<std::size_t>(index));
 
 			frame->PushStack(element);
@@ -621,8 +651,13 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance* valueInstance = frame->PopStack();
 			ObjectInstance* indexInstance = frame->PopStack();
 			ObjectInstance* arrayInstance = frame->PopStack();
+			VerifyInstanceNotNull(arrayInstance, "indexer");
 
 			std::int64_t index = indexInstance->AsInteger();
+			std::size_t length = arrayInstance->GetArrayLength();
+			if (index < 0 || static_cast<std::size_t>(index) >= length)
+				throw std::runtime_error("Array index out of range");
+
 			arrayInstance->SetElement(static_cast<std::size_t>(index), valueInstance);
 
 			garbageCollector.CollectInstance(valueInstance);
@@ -633,6 +668,8 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		case OpCode::ARRAYLENGTH:
 		{
 			ObjectInstance* arrayInstance = frame->PopStack();
+			VerifyInstanceNotNull(arrayInstance, "indexer");
+
 			std::int64_t length = static_cast<std::int64_t>(arrayInstance->GetArrayLength());
 			frame->PushStack(garbageCollector.FromValue(length));
 			garbageCollector.CollectInstance(arrayInstance);
@@ -1250,7 +1287,10 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 			try
 			{
 				if (method->FunctionPointer == nullptr)
-					throw std::runtime_error("extern method body not resolved");
+				{
+					std::string methodName(method->FullName.begin(), method->FullName.end());
+					throw std::runtime_error("extern method body not resolved: " + methodName);
+				}
 
 				ArgumentsSpan args(currentFrame->EvalStack.data(), argsCount);
 				CallState context
@@ -1269,7 +1309,17 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 				if (method->ReturnType != nullptr && method->ReturnType != SymbolTable::Primitives::Void)
 				{
 					if (retReg == nullptr)
-						throw std::runtime_error("method returned nullptr (void), when expected instance");
+					{
+						std::string methodName(method->FullName.begin(), method->FullName.end());
+						if (method->ReturnType->IsReferenceType())
+						{
+							retReg = garbageCollector.NullInstance;
+						}
+						else
+						{
+							throw std::runtime_error("extern method '" + methodName + "' returned nullptr for value type");
+						}
+					}
 
 					callingFrame->PushStack(retReg);
 					BindTaskToFrame(retReg, callingFrame);

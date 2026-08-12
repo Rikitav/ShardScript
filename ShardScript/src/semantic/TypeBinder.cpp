@@ -1077,7 +1077,7 @@ void TypeBinder::VisitNullableType(NullableTypeSyntax* node)
 
 	if (underlayingType->IsNullable)
 	{
-		//Diagnostics.ReportError();
+		Diagnostics.ReportError(node->QuestionToken, L"Nested nullable types are not supported");
 	}
 
 	//underlayingType->IsNullable = true;

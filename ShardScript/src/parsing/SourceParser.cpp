@@ -89,18 +89,16 @@
 
 using namespace shard;
 
-static bool IsTypeStartToken(const shard::TokenType type);
-
 static bool CanStartCompilationUnit(const SyntaxToken& token)
 {
 	return token.Type == TokenType::UsingKeyword
-	    || token.Type == TokenType::NamespaceKeyword
+		|| token.Type == TokenType::NamespaceKeyword
+		|| token.Type == TokenType::FunctionKeyword
+		|| token.Type == TokenType::InitKeyword
+		|| token.Type == TokenType::OpenSquare
 	    || IsModifier(token.Type)
 	    || IsMemberKeyword(token.Type)
-	    || IsTypeKeyword(token.Type)
-	    || token.Type == TokenType::FunctionKeyword
-	    || token.Type == TokenType::InitKeyword
-	    || token.Type == TokenType::OpenSquare;
+	    || IsTypeKeyword(token.Type);
 }
 
 static void SynchronizeToNextTopLevel(SourceProvider& reader)
@@ -111,26 +109,39 @@ static void SynchronizeToNextTopLevel(SourceProvider& reader)
 	while (reader.CanConsume())
 	{
 		SyntaxToken token = reader.Current();
-
 		if (braceDepth == 0 && parenDepth == 0 && CanStartCompilationUnit(token))
 			return;
 
 		switch (token.Type)
 		{
 			case TokenType::OpenBrace:
+			{
 				++braceDepth;
 				break;
+			}
+
 			case TokenType::CloseBrace:
+			{
 				if (braceDepth > 0)
 					--braceDepth;
+			
 				break;
+			}
+
 			case TokenType::OpenCurl:
+			{
 				++parenDepth;
 				break;
+			}
+
 			case TokenType::CloseCurl:
+			{
 				if (parenDepth > 0)
 					--parenDepth;
+			
 				break;
+			}
+
 			default:
 				break;
 		}
@@ -551,6 +562,19 @@ std::unique_ptr<ConstructorDeclarationSyntax> SourceParser::ReadConstructorDecla
 	syntax->ParametersList = ReadParametersList(reader, syntax.get());
 
 	SyntaxToken current = reader.Current();
+	if (current.Type == TokenType::ArrowOperator)
+	{
+		Diagnostics.ReportError(current, L"Constructors cannot declare a return type");
+		reader.Consume(); // ->
+
+		current = reader.Current();
+		if (current.Type != TokenType::OpenBrace && current.Type != TokenType::Semicolon)
+		{
+			ReadType(reader, syntax.get());
+		}
+	}
+
+	current = reader.Current();
 	if (current.Type == TokenType::Semicolon)
 	{
 		syntax->Semicolon = current;
@@ -1478,6 +1502,7 @@ std::unique_ptr<TypeParametersListSyntax> SourceParser::ReadTypeParametersList(S
 	SyntaxToken checkCloser = reader.Current();
 	if (checkCloser.Type == TokenType::GreaterOperator)
 	{
+		Diagnostics.ReportError(checkCloser, L"Generic list cannot be empty");
 		syntax->CloseToken = checkCloser;
 		reader.Consume();
 		return syntax;
@@ -1515,6 +1540,7 @@ std::unique_ptr<TypeArgumentsListSyntax> SourceParser::ReadTypeArgumentsList(Sou
 	SyntaxToken checkCloser = reader.Current();
 	if (checkCloser.Type == TokenType::GreaterOperator)
 	{
+		Diagnostics.ReportError(checkCloser, L"Generic list cannot be empty");
 		syntax->CloseToken = checkCloser;
 		reader.Consume();
 		return syntax;
@@ -2696,7 +2722,7 @@ std::unique_ptr<ExpressionSyntax> SourceParser::ReadCollectionExpression(SourceP
 	// e.g. [1..10] produces the same value as 1..10 rather than a single-element array of ranges.
 	if (syntax->ValuesExpressions.size() == 1 && syntax->ValuesExpressions[0]->Kind == SyntaxKind::RangeExpression)
 	{
-		auto rangeExpr = std::move(syntax->ValuesExpressions[0]);
+		std::unique_ptr<ExpressionSyntax> rangeExpr = std::move(syntax->ValuesExpressions[0]);
 		rangeExpr->Parent = parent;
 		return rangeExpr;
 	}
