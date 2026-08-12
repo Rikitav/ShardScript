@@ -676,11 +676,13 @@ std::unique_ptr<ApplicationDomain> CompilationContext::Compile()
 
 	Model.Table->MarkAllSymbolsReady();
 
-	auto program = std::make_unique<ProgramVirtualImage>();
-	program->TypeShapes = Model.TypeShapes;
-	lowering.Emit(*program);
+	std::unique_ptr<ProgramVirtualImage> programPtr = std::make_unique<ProgramVirtualImage>();
+    programPtr->TypeShapes = Model.TypeShapes;
+    
+    ProgramVirtualImage& program = *programPtr;
+	lowering.Emit(program);
 
-	AbstractEmiter emiter(*program, Model, Diagnostics);
+	AbstractEmiter emiter(program, Model, Diagnostics);
 	if (!PopExpressionStatement)
 		emiter.SetPopExpressionStatement(false);
 
@@ -691,5 +693,5 @@ std::unique_ptr<ApplicationDomain> CompilationContext::Compile()
 	if (Diagnostics.AnyError)
 		throw diagnostics_exception("Code Compilation ended with errors.");
 
-	return std::make_unique<ApplicationDomain>(std::move(program));
+	return std::make_unique<ApplicationDomain>(std::move(programPtr));
 }
