@@ -719,7 +719,7 @@ void ExpressionBinder::VisitPropertyDeclaration(PropertyDeclarationSyntax* node)
 		VisitAccessorDeclaration(node->Getter.get());
 
 	if (node->Setter != nullptr)
-		VisitAccessorDeclaration(node->Getter.get());
+		VisitAccessorDeclaration(node->Setter.get());
 
 	PopScope();
 
@@ -746,7 +746,7 @@ void ExpressionBinder::VisitIndexatorDeclaration(IndexatorDeclarationSyntax* nod
 		VisitAccessorDeclaration(node->Getter.get());
 
 	if (node->Setter != nullptr)
-		VisitAccessorDeclaration(node->Getter.get());
+		VisitAccessorDeclaration(node->Setter.get());
 
 	PopScope();
 
@@ -4101,7 +4101,7 @@ void ExpressionBinder::VisitIfStatement(IfStatementSyntax* node)
 	{
 		if (node->ConditionExpression->Kind != SyntaxKind::ExpressionStatement)
 		{
-			Diagnostics.ReportError(node->KeywordToken, L"");
+			Diagnostics.ReportError(node->KeywordToken, L"If condition must be an expression statement");
 		}
 		else
 		{
@@ -4354,7 +4354,7 @@ void ExpressionBinder::VisitReturnStatement(ReturnStatementSyntax* node)
 
 	if (node->Expression == nullptr)
 	{
-		Diagnostics.ReportError(SyntaxToken(), L"Return statement must return a value of type '" + returnType->Name + L"'");
+		Diagnostics.ReportError(node->KeywordToken, L"Return statement must return a value of type '" + returnType->Name + L"'");
 		return;
 	}
 

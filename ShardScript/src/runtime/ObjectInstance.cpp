@@ -446,6 +446,12 @@ void ObjectInstance::WriteByte(const std::uint8_t& value) const
 
 void ObjectInstance::WriteString(const wchar_t* value) const
 {
+	if (value == nullptr)
+	{
+		WriteString(L"");
+		return;
+	}
+
 	std::size_t size = wcslen(value);
 	WriteString(value, size);
 }

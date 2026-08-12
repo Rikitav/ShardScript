@@ -418,10 +418,11 @@ void DeclarationCollector::VisitEnumDeclaration(EnumDeclarationSyntax* node)
                 auto valueOpt = ReadEnumFieldValue(fieldNode->InitializerExpression.get());
                 if (!valueOpt.has_value())
                 {
-                    // TODO
+                    Diagnostics.ReportError(fieldNode->IdentifierToken, L"Enum field initializer must be a constant integer literal");
+                    continue;
                 }
 
-                value = valueOpt.value_or(0);
+                value = valueOpt.value();
                 previousValue = value;
             }
             else if (symbol->IsFlags)

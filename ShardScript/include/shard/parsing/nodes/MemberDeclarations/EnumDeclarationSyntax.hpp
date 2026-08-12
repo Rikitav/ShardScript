@@ -1,13 +1,14 @@
 #pragma once
 #include <shard/ShardScriptAPI.hpp>
 
-#include <shard/ShardScriptAPI.hpp>
-#include <shard/parsing/MemberDeclarationInfo.hpp>
-#include <shard/parsing/nodes/BodyDeclarationSyntax.hpp>
-#include <shard/parsing/nodes/MemberDeclarations/EnumFieldDeclarationSyntax.hpp>
 #include <shard/parsing/SyntaxKind.hpp>
 #include <shard/parsing/SyntaxNode.hpp>
 #include <shard/parsing/SyntaxToken.hpp>
+
+#include <shard/parsing/MemberDeclarationInfo.hpp>
+
+#include <shard/parsing/nodes/BodyDeclarationSyntax.hpp>
+#include <shard/parsing/nodes/MemberDeclarations/EnumFieldDeclarationSyntax.hpp>
 
 #include <memory>
 #include <vector>

@@ -25,6 +25,9 @@ void CallStackFrame::PushStack(ObjectInstance* value)
 
 ObjectInstance* CallStackFrame::PopStack()
 {
+	if (EvalStack.empty())
+		throw std::runtime_error("Evaluation stack underflow");
+
 	ObjectInstance* value = EvalStack.back();
 	EvalStack.pop_back();
 	return value;
@@ -32,5 +35,8 @@ ObjectInstance* CallStackFrame::PopStack()
 
 ObjectInstance* CallStackFrame::PeekStack()
 {
+	if (EvalStack.empty())
+		throw std::runtime_error("Evaluation stack underflow");
+
 	return EvalStack.back();
 }

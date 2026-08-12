@@ -8,14 +8,13 @@
 #include <wchar.h>
 #include <cstdint>
 
-#if defined(_WIN32)
+#ifdef _WIN32
 #include <windows.h>
-#define USEWIN 1
 #endif
 
 using namespace shard;
 
-#if USEWIN
+#ifdef _WIN32
 static const HANDLE stdOut = GetStdHandle(STD_OUTPUT_HANDLE);
 #endif
 
@@ -91,7 +90,7 @@ void ConsoleHelper::Write(double data)
 
 void ConsoleHelper::Write(wchar_t data)
 {
-#if USEWIN
+#ifdef _WIN32
 	DWORD charsWritten;
 	if (FALSE == WriteConsoleW(stdOut, &data, 1, &charsWritten, NULL))
 	{
@@ -105,7 +104,7 @@ void ConsoleHelper::Write(wchar_t data)
 
 void ConsoleHelper::Write(const wchar_t* data)
 {
-#if USEWIN
+#ifdef _WIN32
 	DWORD charsWritten;
 	if (FALSE == WriteConsoleW(stdOut, data, static_cast<DWORD>(wcslen(data)), &charsWritten, NULL))
 	{

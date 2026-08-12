@@ -386,7 +386,7 @@ ObjectInstance* PrimitiveMathModule::ExecuteMathDivision(ObjectInstance* left, O
 
 	std::int64_t divisor = AsInteger(right);
 	if (divisor == 0)
-		throw std::runtime_error("Division by zero");
+		throw std::runtime_error("DivideByZeroException");
 
 	return FromInteger(AsInteger(left) / divisor);
 }
@@ -410,7 +410,7 @@ ObjectInstance* PrimitiveMathModule::ExecuteMathModulo(ObjectInstance* left, Obj
 
 	std::int64_t divisor = AsInteger(right);
 	if (divisor == 0)
-		throw std::runtime_error("Modulo by zero");
+		throw std::runtime_error("DivideByZeroException");
 	return FromInteger(AsInteger(left) % divisor);
 }
 
