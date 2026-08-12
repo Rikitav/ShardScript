@@ -134,4 +134,7 @@ void shard::ShardUtilities::ParseArguments(int argc, wchar_t* argv[])
             }
         }
     }
+
+    if (!ConsoleArguments::RunProgram && !ConsoleArguments::ShowHelp && !ConsoleArguments::ShowDecompile)
+        ConsoleArguments::UseInteractive = true;
 }
