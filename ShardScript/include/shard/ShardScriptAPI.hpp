@@ -62,4 +62,4 @@
 	}
 #endif
 
-constexpr const wchar_t* SHARDSCRIPT_VERSION = L"0.3.0";;
+constexpr const wchar_t* SHARDSCRIPT_VERSION = L"0.5.1";;
