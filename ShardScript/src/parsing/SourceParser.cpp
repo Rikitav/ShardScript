@@ -1824,6 +1824,7 @@ std::unique_ptr<StatementsBlockSyntax> SourceParser::ReadMethodBody(SourceProvid
 		reader.Consume(); // =>
 
 		auto syntax = std::make_unique<StatementsBlockSyntax>(parent);
+		syntax->IsExpressionBody = true;
 		auto returnStatement = std::make_unique<ReturnStatementSyntax>(syntax.get());
 		returnStatement->KeywordToken = SyntaxToken(TokenType::ReturnKeyword, L"return", lambdaOperator.Location, false);
 		returnStatement->Expression = std::move(ReadExpression(reader, syntax.get(), 0, true));

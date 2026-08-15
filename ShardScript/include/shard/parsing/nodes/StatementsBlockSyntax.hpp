@@ -16,6 +16,7 @@ namespace shard
 	{
 	public:
 		std::vector<std::unique_ptr<StatementSyntax>> Statements;
+		bool IsExpressionBody = false;
 
 		inline StatementsBlockSyntax(SyntaxNode* parent)
 			: BodyDeclarationSyntax(SyntaxKind::StatementsBlock, parent) { }

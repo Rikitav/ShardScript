@@ -1,0 +1,12 @@
+namespace hello;
+public class Program
+{
+    public Value: int
+    {
+        get => "text";
+    }
+
+    public static func Main() -> void
+    {
+    }
+}

@@ -1,0 +1,22 @@
+using stdio;
+
+namespace test_method_body_forms;
+
+public class Program
+{
+    public static func BlockSquare(x: int) -> int
+    {
+        return x * x;
+    }
+
+    public static func ExprSquare(x: int) -> int => x * x;
+
+    public static func PrintTen() -> void => println(10);
+
+    public static func Main() -> void
+    {
+        println(BlockSquare(4));
+        println(ExprSquare(5));
+        PrintTen();
+    }
+}

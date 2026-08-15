@@ -35,5 +35,7 @@ namespace shard
         inline PropertySymbol(const PropertySymbol& other) = delete;
 
         inline virtual ~PropertySymbol() = default;
+
+        void OnSymbolDeclared(SyntaxSymbol* symbol) override;
     };
 }

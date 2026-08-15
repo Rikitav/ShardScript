@@ -1,0 +1,8 @@
+namespace hello;
+public class Program
+{
+    public static func Main() -> void
+    {
+        f := lambda () -> int => "text";
+    }
+}
