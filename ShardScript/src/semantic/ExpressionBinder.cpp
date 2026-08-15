@@ -4372,6 +4372,55 @@ void ExpressionBinder::VisitReturnStatement(ReturnStatementSyntax* node)
 	}
 }
 
+void ExpressionBinder::VisitStatementsBlock(StatementsBlockSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	// Expression-bodied members unwrap `=> expr` into `{ return expr; }`.
+	// The binder must decide whether expr is a returned value or a statement expression.
+	if (node->IsExpressionBody && node->Statements.size() == 1)
+	{
+		StatementSyntax* statement = node->Statements[0].get();
+		if (statement->Kind == SyntaxKind::ReturnStatement)
+		{
+			ReturnStatementSyntax* returnStatement = static_cast<ReturnStatementSyntax*>(statement);
+
+			SemanticScope* searchingScope = nullptr;
+			TypeSymbol* returnType = FindTargetReturnType(searchingScope);
+
+			bool isStatementExpression = false;
+			if (returnType == SymbolTable::Primitives::Void)
+			{
+				isStatementExpression = true;
+			}
+			else if (searchingScope != nullptr && searchingScope->Owner != nullptr && searchingScope->Owner->Kind == SyntaxKind::MethodDeclaration)
+			{
+				MethodSymbol* method = const_cast<MethodSymbol*>(static_cast<const MethodSymbol*>(searchingScope->Owner));
+				if (method->IsAsync)
+				{
+					TypeSymbol* elementType = GetAsyncMethodElementType(method);
+					if (elementType == SymbolTable::Primitives::Void)
+						isStatementExpression = true;
+				}
+			}
+
+			if (isStatementExpression)
+			{
+				if (returnStatement->Expression != nullptr)
+					VisitExpression(returnStatement->Expression.get());
+
+				if (searchingScope != nullptr)
+					searchingScope->ReturnFound = true;
+
+				return;
+			}
+		}
+	}
+
+	SyntaxVisitor::VisitStatementsBlock(node);
+}
+
 void ExpressionBinder::VisitDeferStatement(DeferStatementSyntax* node)
 {
 	if (node->Statement == nullptr)

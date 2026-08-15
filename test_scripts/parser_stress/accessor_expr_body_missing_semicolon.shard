@@ -1,0 +1,8 @@
+namespace hello;
+public class Program
+{
+    public Value: int
+    {
+        get => 1
+    }
+}

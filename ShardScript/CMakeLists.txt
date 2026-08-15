@@ -11,7 +11,7 @@ add_library(${PROJECT_NAME} SHARED
     ${SHARDSCRIPT_HEADERS}
     ${SHARDSCRIPT_OTHER}
     ${LIBUV_SOURCES}
-)
+ "src/semantic/symbols/PropertySymbol.cpp")
 
 if(ENABLE_ASAN)
   if(MSVC)

@@ -1,0 +1,35 @@
+using stdio;
+
+namespace test_operator_body_forms;
+
+public class Vector
+{
+    public X: int;
+
+    public init(x: int)
+    {
+        this.X = x;
+    }
+
+    public static operator +(a: Vector, b: Vector) -> Vector
+    {
+        return new Vector(a.X + b.X);
+    }
+
+    public static operator -(a: Vector, b: Vector) -> Vector => new Vector(a.X - b.X);
+}
+
+public class Program
+{
+    public static func Main() -> void
+    {
+        a := new Vector(5);
+        b := new Vector(3);
+
+        blockSum := a + b;
+        exprDiff := a - b;
+
+        println(blockSum.X);
+        println(exprDiff.X);
+    }
+}

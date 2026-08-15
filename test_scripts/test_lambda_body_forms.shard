@@ -1,0 +1,28 @@
+using stdio;
+
+namespace test_lambda_body_forms;
+
+public class Program
+{
+    public static func Main() -> void
+    {
+        blockInc := lambda (x: int) -> int { return x + 1; };
+        exprInc := lambda (x: int) -> int => x + 1;
+
+        println(blockInc(10));
+        println(exprInc(20));
+
+        // Expression-bodied lambda passed directly
+        result := Apply(lambda (x: int) -> int => x * 2, 7);
+        println(result);
+
+        // Void expression-bodied lambda
+        printIt := lambda (x: int) -> void => println(x);
+        printIt(42);
+    }
+
+    public static func Apply(f: delegate int(int), n: int) -> int
+    {
+        return f(n);
+    }
+}

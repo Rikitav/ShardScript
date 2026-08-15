@@ -5,6 +5,8 @@ using namespace shard;
 
 void IndexatorSymbol::OnSymbolDeclared(SyntaxSymbol* symbol)
 {
+	PropertySymbol::OnSymbolDeclared(symbol);
+
 	switch (symbol->Kind)
 	{
 		case SyntaxKind::Parameter:

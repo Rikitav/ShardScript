@@ -1,0 +1,35 @@
+using stdio;
+
+namespace test_property_accessor_body_forms;
+
+public class Widget
+{
+    private _blockValue: int;
+    private _exprValue: int;
+
+    public init(blockValue: int, exprValue: int)
+    {
+        this._blockValue = blockValue;
+        this._exprValue = exprValue;
+    }
+
+    public BlockValue: int
+    {
+        get { return this._blockValue; }
+    }
+
+    public ExprValue: int
+    {
+        get => this._exprValue;
+    }
+}
+
+public class Program
+{
+    public static func Main() -> void
+    {
+        w := new Widget(7, 13);
+        println(w.BlockValue);
+        println(w.ExprValue);
+    }
+}
