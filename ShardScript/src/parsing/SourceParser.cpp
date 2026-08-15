@@ -582,7 +582,12 @@ std::unique_ptr<ConstructorDeclarationSyntax> SourceParser::ReadConstructorDecla
 		return syntax;
 	}
 
-	syntax->Body = ReadStatementsBlock(reader, syntax.get());
+	syntax->Body = ReadMethodBody(reader, syntax.get());
+
+	// Expression-bodied constructors require a trailing semicolon
+	if (syntax->Body != nullptr && syntax->Body->OpenBraceToken.Type != TokenType::OpenBrace)
+		syntax->Semicolon = Expect(reader, TokenType::Semicolon, L"Missing ';' token");
+
 	return syntax;
 }
 
@@ -632,7 +637,12 @@ std::unique_ptr<MethodDeclarationSyntax> SourceParser::ReadMethodDeclaration(Sou
 		return syntax;
 	}
 
-	syntax->Body = ReadStatementsBlock(reader, syntax.get());
+	syntax->Body = ReadMethodBody(reader, syntax.get());
+
+	// Expression-bodied methods require a trailing semicolon
+	if (syntax->Body != nullptr && syntax->Body->OpenBraceToken.Type != TokenType::OpenBrace)
+		syntax->Semicolon = Expect(reader, TokenType::Semicolon, L"Missing ';' token");
+
 	return syntax;
 }
 
@@ -686,7 +696,12 @@ std::unique_ptr<OperatorDeclarationSyntax> SourceParser::ReadOperatorDeclaration
 		return syntax;
 	}
 
-	syntax->Body = ReadStatementsBlock(reader, syntax.get());
+	syntax->Body = ReadMethodBody(reader, syntax.get());
+
+	// Expression-bodied operators require a trailing semicolon
+	if (syntax->Body != nullptr && syntax->Body->OpenBraceToken.Type != TokenType::OpenBrace)
+		syntax->Semicolon = Expect(reader, TokenType::Semicolon, L"Missing ';' token");
+
 	return syntax;
 }
 
@@ -1155,7 +1170,7 @@ std::unique_ptr<AccessorDeclarationSyntax> SourceParser::ReadAccessorDeclaration
 	reader.Consume();
 	current = reader.Current();
 
-	if (!TryMatch(reader, { TokenType::Semicolon, TokenType::OpenBrace }, L"Expected ';' or '{' after accessor keyword"))
+	if (!TryMatch(reader, { TokenType::Semicolon, TokenType::OpenBrace, TokenType::LambdaOperator }, L"Expected ';', '{' or '=>' after accessor keyword"))
 		return syntax;
 
 	switch (current.Type)
@@ -1169,13 +1184,20 @@ std::unique_ptr<AccessorDeclarationSyntax> SourceParser::ReadAccessorDeclaration
 
 		case TokenType::OpenBrace:
 		{
-			syntax->Body = ReadStatementsBlock(reader, syntax.get());
+			syntax->Body = ReadMethodBody(reader, syntax.get());
+			break;
+		}
+
+		case TokenType::LambdaOperator:
+		{
+			syntax->Body = ReadMethodBody(reader, syntax.get());
+			syntax->SemicolonToken = Expect(reader, TokenType::Semicolon, L"Missing ';' token");
 			break;
 		}
 
 		default:
 		{
-			Diagnostics.ReportError(current, L"Expected ';' or '{' after accessor keyword");
+			Diagnostics.ReportError(current, L"Expected ';', '{' or '=>' after accessor keyword");
 			reader.Consume();
 		}
 	}
@@ -1666,11 +1688,14 @@ std::unique_ptr<StatementsBlockSyntax> SourceParser::ReadStatementsBlock(SourceP
 	if (BlockDepth > MaxBlockDepth)
 	{
 		Diagnostics.ReportError(reader.Current(), L"Statement nesting is too deep");
+		
 		// Skip the rest of this block to avoid stack overflow.
 		while (reader.CanConsume() && reader.Current().Type != TokenType::CloseBrace)
 			reader.Consume();
+
 		if (reader.CanConsume())
 			reader.Consume();
+
 		auto syntax = std::make_unique<StatementsBlockSyntax>(parent);
 		return syntax;
 	}
@@ -1752,11 +1777,11 @@ std::unique_ptr<StatementsBlockSyntax> SourceParser::ReadStatementsBlock(SourceP
 			}
 		}
 
-			if (syntax->CloseBraceToken.Type != TokenType::CloseBrace)
-			{
-				TextLocation location = reader.CanConsume() ? reader.Current().Location : syntax->OpenBraceToken.Location;
-				Diagnostics.ReportError(SyntaxToken(TokenType::EndOfFile, L"", location), L"Statement block opened here was not closed - expected '}'");
-			}
+		if (syntax->CloseBraceToken.Type != TokenType::CloseBrace)
+		{
+			TextLocation location = reader.CanConsume() ? reader.Current().Location : syntax->OpenBraceToken.Location;
+			Diagnostics.ReportError(SyntaxToken(TokenType::EndOfFile, L"", location), L"Statement block opened here was not closed - expected '}'");
+		}
 	}
 	else
 	{
@@ -1779,6 +1804,42 @@ std::unique_ptr<StatementsBlockSyntax> SourceParser::ReadStatementsBlock(SourceP
 	}
 
 	return syntax;
+}
+
+std::unique_ptr<StatementsBlockSyntax> SourceParser::ReadMethodBody(SourceProvider& reader, SyntaxNode* parent)
+{
+	if (!reader.CanConsume())
+	{
+		auto syntax = std::make_unique<StatementsBlockSyntax>(parent);
+		Diagnostics.ReportError(SyntaxToken(TokenType::EndOfFile, L"", TextLocation()), L"Unexpected end of file - expected method body");
+		return syntax;
+	}
+
+	SyntaxToken current = reader.Current();
+
+	// Expression-bodied method/lambda: `=> expr;` unwraps into `{ return expr; }`
+	if (current.Type == TokenType::LambdaOperator)
+	{
+		SyntaxToken lambdaOperator = current;
+		reader.Consume(); // =>
+
+		auto syntax = std::make_unique<StatementsBlockSyntax>(parent);
+		auto returnStatement = std::make_unique<ReturnStatementSyntax>(syntax.get());
+		returnStatement->KeywordToken = SyntaxToken(TokenType::ReturnKeyword, L"return", lambdaOperator.Location, false);
+		returnStatement->Expression = std::move(ReadExpression(reader, syntax.get(), 0, true));
+		returnStatement->SemicolonToken = SyntaxToken(TokenType::Semicolon, L";", reader.CanConsume() ? reader.Current().Location : lambdaOperator.Location, false);
+		syntax->Statements.push_back(std::move(returnStatement));
+		return syntax;
+	}
+
+	if (current.Type != TokenType::OpenBrace && current.Type != TokenType::Semicolon)
+	{
+		auto syntax = std::make_unique<StatementsBlockSyntax>(parent);
+		Diagnostics.ReportError(current, L"Expected '{' or ';' to begin method body");
+		return syntax;
+	}
+
+	return ReadStatementsBlock(reader, parent);
 }
 
 std::unique_ptr<StatementSyntax> SourceParser::ReadStatement(SourceProvider& reader, SyntaxNode* parent)
@@ -2743,12 +2804,16 @@ std::unique_ptr<LambdaExpressionSyntax> SourceParser::ReadLambdaExpression(Sourc
 		reader.Consume();
 		syntax->ReturnType = ReadType(reader, syntax.get());
 	}
+	else if (reader.Current().Type == TokenType::LambdaOperator)
+	{
+		syntax->LambdaOperatorToken = reader.Current();
+	}
 	else
 	{
 		syntax->LambdaOperatorToken = Expect(reader, TokenType::LambdaOperator, L"Expected '=>' or '->' operator");
 	}
 
-	syntax->Body = ReadStatementsBlock(reader, syntax.get());
+	syntax->Body = ReadMethodBody(reader, syntax.get());
 	return syntax;
 }
 

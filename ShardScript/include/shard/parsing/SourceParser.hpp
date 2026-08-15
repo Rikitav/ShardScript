@@ -125,6 +125,7 @@ namespace shard
 		std::unique_ptr<AccessorDeclarationSyntax> ReadAccessorDeclaration(SourceProvider& reader, SyntaxNode* parent);
 
 		// 4. Code blocks
+		std::unique_ptr<StatementsBlockSyntax> ReadMethodBody(SourceProvider& reader, SyntaxNode* parent);
 		std::unique_ptr<StatementsBlockSyntax> ReadStatementsBlock(SourceProvider& reader, SyntaxNode* parent);
 		std::unique_ptr<StatementSyntax> ReadStatement(SourceProvider& reader, SyntaxNode* parent);
 
