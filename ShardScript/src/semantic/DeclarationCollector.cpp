@@ -47,7 +47,6 @@
 #include <shard/semantic/symbols/VariableSymbol.hpp>
 #include <shard/semantic/symbols/AccessorSymbol.hpp>
 #include <shard/semantic/symbols/DelegateTypeSymbol.hpp>
-#include <shard/semantic/symbols/TypeParameterSymbol.hpp>
 #include <shard/semantic/symbols/InterfaceSymbol.hpp>
 #include <shard/semantic/symbols/CompilationUnit.hpp>
 
