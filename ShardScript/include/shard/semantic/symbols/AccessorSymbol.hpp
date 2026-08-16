@@ -12,7 +12,7 @@ namespace shard
     class SHARD_API AccessorSymbol : public MethodSymbol
     {
     public:
-        inline AccessorSymbol(std::wstring name) : MethodSymbol(name)
+        inline AccessorSymbol(std::wstring name) : MethodSymbol(name, SyntaxKind::AccessorDeclaration)
         {
             Accesibility = SymbolAccesibility::Public;
         }
