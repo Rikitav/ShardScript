@@ -1,0 +1,59 @@
+using terminality;
+
+namespace terminality_custom_widget;
+
+// A simple user-defined widget that draws a border around its content area.
+public class BorderWidget : IWidget
+{
+    public func Measure(availableSize: Size) -> Size
+    {
+        return Size.Create(10, 10);
+    }
+
+    public func Arrange(contentRect: Rect) -> void
+    {
+    }
+
+    public func Render(context: IRenderContext) -> void
+    {
+        rect: Rect = context.ContextRect();
+        context.RenderRectangle(Point.Create(0, 0), Size.Create(rect.Width, rect.Height), Color.White, Color.Black);
+        context.RenderText(Point.Create(1, 1), "Custom widget!", Color.Yellow, Color.Black);
+    }
+
+    public func OnKeyDown(input: InputEvent) -> bool
+    {
+        return false;
+    }
+
+    public func OnKeyUp(input: InputEvent) -> bool
+    {
+        return false;
+    }
+}
+
+public static func Main() -> void
+{
+    HostApplication.EnterTerminal();
+
+    root: StackPanel = new StackPanel();
+    root.ContentOrientation = Orientation.Vertical;
+    root.HorizontalContentAlignment = HorizontalAlignment.Center;
+    root.VerticalContentAlignment = VerticalAlignment.Center;
+
+    label: Label = new Label();
+    label.Text = "Hello, custom widgets!";
+    root.AddChild(label);
+
+    custom: Control = ControlFactory.FromWidget(new BorderWidget());
+    root.AddChild(custom);
+
+    exitBtn: Button = new Button();
+    exitBtn.Text = "Exit";
+    root.AddChild(exitBtn);
+
+    HostApplication.RequestStopAfter(1000);
+    HostApplication.RunUILoop(root);
+    HostApplication.ExitTerminal();
+}
+

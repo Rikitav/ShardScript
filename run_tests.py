@@ -10,6 +10,7 @@ failures can be listed in test_config.json next to this script.
 import argparse
 import json
 import os
+import platform
 import subprocess
 import sys
 import time
@@ -59,7 +60,7 @@ DEFAULT_EXPECTED_TIMEOUTS = {
 
 def load_config():
     if not CONFIG_PATH.exists():
-        return {"expected_failures": [], "expected_timeouts": []}
+        return {"expected_failures": [], "expected_timeouts": [], "test_arguments": [], "skip_on_os": {}}
     with CONFIG_PATH.open("r", encoding="utf-8") as f:
         return json.load(f)
 
@@ -74,6 +75,18 @@ def is_expected_timeout(rel_path, expected_set):
 
 def get_test_arguments(rel_path, arguments_map):
     return arguments_map.get(rel_path.as_posix(), [])
+
+
+def get_skipped_tests(skip_on_os):
+    """Return the set of tests that should be skipped on the current OS."""
+    current = platform.system().lower()
+    skipped = set()
+    if isinstance(skip_on_os, dict):
+        for os_name, tests in skip_on_os.items():
+            if os_name.lower() == current:
+                for path in tests:
+                    skipped.add(path.replace("\\", "/"))
+    return skipped
 
 
 def discover_tests():
@@ -196,7 +209,9 @@ def main():
 
     interpreter = args.build_dir / "bin" / "shard.exe"
     if not interpreter.exists():
-        print(f"Interpreter not found: {interpreter}", file=sys.stderr)
+        interpreter = args.build_dir / "bin" / "shard"
+    if not interpreter.exists():
+        print(f"Interpreter not found: {args.build_dir / 'bin' / 'shard.exe'} or {interpreter}", file=sys.stderr)
         return 1
 
     config_path = args.expected_failures or CONFIG_PATH
@@ -204,7 +219,7 @@ def main():
         with config_path.open("r", encoding="utf-8") as f:
             config = json.load(f)
     else:
-        config = {"expected_failures": []}
+        config = {"expected_failures": [], "expected_timeouts": [], "test_arguments": [], "skip_on_os": {}}
 
     expected_failures = set(DEFAULT_EXPECTED_FAILURES)
     for entry in config.get("expected_failures", []):
@@ -214,6 +229,10 @@ def main():
     for entry in config.get("expected_timeouts", []):
         expected_timeouts.add(entry.replace("\\", "/"))
 
+    allowed_unexpected_passes = set()
+    for entry in config.get("allowed_unexpected_passes", []):
+        allowed_unexpected_passes.add(entry.replace("\\", "/"))
+
     arguments_map = {}
     for entry in config.get("test_arguments", []):
         path = entry.get("path", "").replace("\\", "/")
@@ -221,7 +240,19 @@ def main():
         if path:
             arguments_map[path] = test_args
 
+    skipped_tests = get_skipped_tests(config.get("skip_on_os", {}))
+
     tests = discover_tests()
+    skipped_count = 0
+    if skipped_tests:
+        filtered = []
+        for t in tests:
+            if t.as_posix() in skipped_tests:
+                skipped_count += 1
+            else:
+                filtered.append(t)
+        tests = filtered
+
     if args.filter:
         tests = [t for t in tests if args.filter in str(t)]
 
@@ -244,6 +275,8 @@ def main():
     start = time.perf_counter()
 
     print(f"Running {total} tests from {TEST_DIR} using {interpreter}")
+    if skipped_count:
+        print(f"Skipped: {skipped_count}")
     print(f"Parallel workers: {jobs}")
     print()
 
@@ -299,10 +332,11 @@ def main():
 
     print()
     print("=" * 40)
-    print(f"Total:   {total}")
+    print(f"Total:   {total + skipped_count}")
     print(f"Passed:  {colorize(total_pass, Colors.GREEN)}")
     print(f"Failed:  {colorize(total_unexpected_fail, Colors.RED)}")
     print(f"Unexpected passes: {colorize(total_unexpected_pass, Colors.YELLOW)}")
+    print(f"Skipped: {skipped_count}")
     print(f"Time:    {elapsed:.2f}s")
 
     if unexpected_failures or unexpected_passes:

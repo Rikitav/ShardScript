@@ -307,4 +307,68 @@ namespace shard
 
         CallMethod(context, prop->Setter, obj, { value });
     }
+
+    /// <summary>
+    /// Callable RAII container that holds an ObjectRef to a delegate ObjectInstance.
+    /// </summary>
+    class SHARD_API DelegateRef
+    {
+        VirtualMachine* m_runtime = nullptr;
+        ObjectRef m_delegate;
+
+    public:
+        DelegateRef() = default;
+
+        DelegateRef(VirtualMachine& runtime, ObjectInstance* delegate)
+            : m_runtime(&runtime), m_delegate(delegate) { }
+
+        DelegateRef(const DelegateRef&) = delete;
+        DelegateRef& operator=(const DelegateRef&) = delete;
+
+        DelegateRef(DelegateRef&&) = default;
+        DelegateRef& operator=(DelegateRef&&) = default;
+
+        [[nodiscard]] bool IsValid() const noexcept
+        {
+            return m_runtime != nullptr && m_delegate.Instance != nullptr;
+        }
+
+        [[nodiscard]] ObjectInstance* Instance() const noexcept
+        {
+            return m_delegate.Instance;
+        }
+
+        /// <summary>
+        /// Invokes the delegate with the supplied arguments and returns its result.
+        /// </summary>
+        ObjectInstance* operator()(std::initializer_list<ObjectInstance*> args = {}) const
+        {
+            if (!IsValid())
+                throw std::runtime_error("DelegateRef is not valid");
+
+            MethodSymbol* target = m_delegate.Instance->DelegateTarget;
+            if (target == nullptr)
+                throw std::runtime_error("Delegate has no target method");
+
+            std::vector<ObjectInstance*> callArgs(args);
+            return m_runtime->InvokeMethod(target, callArgs.data(), callArgs.size());
+        }
+
+        operator ObjectInstance*() const { return m_delegate.Instance; }
+        ObjectInstance* operator->() const { return m_delegate.Instance; }
+    };
+
+    /// <summary>
+    /// Wraps an ObjectInstance of delegate type into a callable RAII DelegateRef.
+    /// </summary>
+    inline DelegateRef WrapDelegate(const CallState& context, ObjectInstance* delegate)
+    {
+        if (delegate == nullptr)
+            throw std::runtime_error("WrapDelegate: delegate is null");
+
+        if (delegate->getInfo()->Kind != SyntaxKind::DelegateType)
+            throw std::runtime_error("WrapDelegate: object is not a delegate");
+
+        return DelegateRef(context.Runtimer, delegate);
+    }
 }
