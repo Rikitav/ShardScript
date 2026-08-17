@@ -24,7 +24,7 @@ public static class Program
         button.HorizontalAlignment = HorizontalAlignment.Stretch;
         button.VerticalAlignment = VerticalAlignment.Center;
 
-        HostApplication.RunUILoop(root);
+        HostApplication.RunUILoop(panel);
         HostApplication.ExitTerminal();
     }
 }

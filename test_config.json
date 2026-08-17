@@ -5,18 +5,68 @@
     "test_scripts/async/test_await_outside_async.shard",
     "test_scripts/test_try_catch_any.shard",
     "test_scripts/test_try_catch_empty.shard",
-    "test_scripts/test_try_catch_minimal.shard"
+    "test_scripts/test_try_catch_minimal.shard",
+    "test_scripts/interface_missing_test.shard",
+    "test_scripts/test_throw_simple.shard",
+    "test_scripts/stdlib/socket/socket_client_test.shard",
+    "test_scripts/test_http_client.shard"
   ],
   "expected_timeouts": [
     "test_scripts/stdlib/http/httpserver_test.shard",
     "test_scripts/stdlib/socket/socket_server_test.shard",
-    "test_scripts/test_http_server_async.shard"
+    "test_scripts/test_http_server_async.shard",
+    "test_scripts/third_party/terminality/terminality_test.shard",
+    "test_scripts/third_party/terminality/terminality_enum_test.shard"
   ],
   "test_arguments": [
     {
       "_comment": "Example: add per-test -l flags here. Path is relative to the repository root; library paths in -l are resolved from the interpreter's bin directory.",
       "path": "test_scripts/example.shard",
       "args": ["-l", "system/libcollections.shard.dll"]
+    },
+    {
+      "_comment": "Terminality TUI framework tests need the native library loaded.",
+      "path": "test_scripts/third_party/terminality/terminality_test.shard",
+      "args": ["-l", "third-party/libterminality.shard.so"]
+    },
+    {
+      "path": "test_scripts/third_party/terminality/terminality_enum_test.shard",
+      "args": ["-l", "third-party/libterminality.shard.so"]
+    },
+    {
+      "path": "test_scripts/third_party/terminality/terminality_custom_widget.shard",
+      "args": ["-l", "third-party/libterminality.shard.so"]
+    },
+    {
+      "_comment": "Third-party native libraries.",
+      "path": "test_scripts/third_party/raylib/raylib_maze_3d.shard",
+      "args": ["-l", "third-party/libraylib.shard.so"]
+    },
+    {
+      "path": "test_scripts/third_party/raylib/raylib_test.shard",
+      "args": ["-l", "third-party/libraylib.shard.so"]
+    },
+    {
+      "path": "test_scripts/third_party/sqlite/sqlite_test.shard",
+      "args": ["-l", "third-party/libsqlite.shard.so"]
     }
-  ]
+  ],
+  "skip_on_os": {
+    "linux": [
+      "test_scripts/advanced_io/file_stream_cancellation.shard",
+      "test_scripts/advanced_io/file_stream_flush_only.shard",
+      "test_scripts/advanced_io/file_stream_read_only.shard",
+      "test_scripts/advanced_io/file_stream_read_write.shard",
+      "test_scripts/advanced_io/file_stream_sync_then_delay.shard",
+      "test_scripts/advanced_io/file_stream_write_only.shard",
+      "test_scripts/advanced_io/stream_interfaces.shard",
+      "test_scripts/async/test_async_io.shard",
+      "test_scripts/dependency_loading/test_subprocess_dependency.shard",
+      "test_scripts/dependency_loading/test_subprocess_unqualified.shard",
+      "test_scripts/stdlib/cinterop/messagebox.shard",
+      "test_scripts/stdlib/subprocess/subprocess_minimal.shard",
+      "test_scripts/stdlib/subprocess/subprocess_test.shard",
+      "test_scripts/third_party/sqlite/sqlite_test.shard"
+    ]
+  }
 }
