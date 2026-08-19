@@ -93,255 +93,271 @@
 
 using namespace shard;
 
-static bool IsTaskType(TypeSymbol* type)
+namespace
 {
-	return type != nullptr && type->FullName == L"async.Task";
-}
+	static bool IsTaskType(TypeSymbol* type)
+	{
+		return type != nullptr && type->FullName == L"async.Task";
+	}
 
-static bool IsValueTaskType(TypeSymbol* type, TypeSymbol*& outValue)
-{
-	if (type == nullptr || type->Kind != SyntaxKind::GenericType)
-		return false;
+	static bool IsValueTaskType(TypeSymbol* type, TypeSymbol*& outValue)
+	{
+		if (type == nullptr || type->Kind != SyntaxKind::GenericType)
+			return false;
 
-	GenericTypeSymbol* genericType = static_cast<GenericTypeSymbol*>(type);
-	TypeSymbol* underlying = genericType->UnderlayingType;
-	if (underlying == nullptr || underlying->FullName != L"async.ValueTask")
-		return false;
+		GenericTypeSymbol* genericType = static_cast<GenericTypeSymbol*>(type);
+		TypeSymbol* underlying = genericType->UnderlayingType;
+		if (underlying == nullptr || underlying->FullName != L"async.ValueTask")
+			return false;
 
-	if (!underlying->TypeParameters.empty())
-		outValue = genericType->SubstituteTypeParameters(underlying->TypeParameters[0]);
+		if (!underlying->TypeParameters.empty())
+			outValue = genericType->SubstituteTypeParameters(underlying->TypeParameters[0]);
 
-	return true;
-}
-
-static bool IsValidAsyncReturnType(TypeSymbol* type)
-{
-	if (type == nullptr)
-		return false;
-
-	if (IsTaskType(type))
 		return true;
-
-	TypeSymbol* valueType = nullptr;
-	return IsValueTaskType(type, valueType);
-}
-
-static TypeSymbol* GetAsyncMethodElementType(MethodSymbol* method)
-{
-	if (method == nullptr || method->ReturnType == nullptr)
-		return nullptr;
-
-	if (IsTaskType(method->ReturnType))
-		return SymbolTable::Primitives::Void;
-
-	TypeSymbol* valueType = nullptr;
-	if (IsValueTaskType(method->ReturnType, valueType))
-		return valueType;
-
-	return nullptr;
-}
-
-static GenericTypeSymbol* AsGenericInstance(TypeSymbol* type)
-{
-	if (type != nullptr && type->Kind == SyntaxKind::GenericType)
-		return static_cast<GenericTypeSymbol*>(type);
-
-	return nullptr;
-}
-
-static TypeSymbol* SubstituteAwaiterTypeArgument(TypeSymbol* type, GenericTypeSymbol* genericInstance)
-{
-	if (type == nullptr || genericInstance == nullptr)
-		return type;
-
-	if (type->Kind == SyntaxKind::TypeParameter)
-	{
-		TypeParameterSymbol* typeParam = static_cast<TypeParameterSymbol*>(type);
-		TypeSymbol* substituted = genericInstance->SubstituteTypeParameters(typeParam);
-		if (substituted != nullptr)
-			return substituted;
 	}
 
-	return type;
-}
-
-static const std::vector<MethodSymbol*>& GetMethodTable(TypeSymbol* type)
-{
-	if (type != nullptr && type->Kind == SyntaxKind::GenericType)
-		return static_cast<GenericTypeSymbol*>(type)->UnderlayingType->Methods;
-
-	if (type != nullptr)
-		return type->Methods;
-
-	static const std::vector<MethodSymbol*> empty;
-	return empty;
-}
-
-static const std::vector<TypeSymbol*>& GetInterfaceTable(TypeSymbol* type)
-{
-	if (type != nullptr && type->Kind == SyntaxKind::GenericType)
-		return static_cast<GenericTypeSymbol*>(type)->UnderlayingType->Interfaces;
-
-	if (type != nullptr)
-		return type->Interfaces;
-
-	static const std::vector<TypeSymbol*> empty;
-	return empty;
-}
-
-static bool TypeImplementsInterface(TypeSymbol* type, InterfaceSymbol* interfaceSymbol)
-{
-	if (type == nullptr || interfaceSymbol == nullptr)
-		return false;
-
-	const std::vector<TypeSymbol*>& interfaces = GetInterfaceTable(type);
-	for (TypeSymbol* iface : interfaces)
+	static bool IsValidAsyncReturnType(TypeSymbol* type)
 	{
-		if (iface == interfaceSymbol)
+		if (type == nullptr)
+			return false;
+
+		if (IsTaskType(type))
 			return true;
 
-		if (iface->Kind == SyntaxKind::GenericType &&
-			static_cast<GenericTypeSymbol*>(iface)->UnderlayingType == interfaceSymbol)
-		{
-			return true;
-		}
-	}
-
-	return false;
-}
-
-static TypeSymbol* ResolveAwaitablePattern(AwaitExpressionSyntax* node, TypeSymbol* awaitedType, DiagnosticsContext& diagnostics)
-{
-	GenericTypeSymbol* awaitedGeneric = AsGenericInstance(awaitedType);
-
-	// 1. Resolve the awaiter type. A type is awaitable if it implements IAwaitable
-	// or, as a self-awaiter, directly implements IAwaiter.
-	TypeSymbol* awaiterType = nullptr;
-	InterfaceSymbol* iawaitable = SymbolTable::StandardTypes::IAwaitable;
-	MethodSymbol* iawaitableGetAwaiter = SymbolTable::StandardTypes::IAwaitable_GetAwaiter;
-	InterfaceSymbol* iawaiter = SymbolTable::StandardTypes::IAwaiter;
-
-	if (iawaitable != nullptr && iawaitableGetAwaiter != nullptr &&
-		TypeImplementsInterface(awaitedType, iawaitable))
-	{
-		MethodSymbol* getAwaiter = awaitedType->FindInterfaceImplementation(iawaitableGetAwaiter);
-		if (getAwaiter != nullptr && getAwaiter->ReturnType != nullptr && getAwaiter->ReturnType != TYPE_VOID)
-		{
-			node->GetAwaiterMethod = getAwaiter;
-			awaiterType = SubstituteAwaiterTypeArgument(getAwaiter->ReturnType, awaitedGeneric);
-		}
-	}
-
-	if (awaiterType == nullptr && iawaiter != nullptr && TypeImplementsInterface(awaitedType, iawaiter))
-	{
-		awaiterType = awaitedType;
-	}
-
-	if (awaiterType == nullptr)
-	{
-		diagnostics.ReportError(node->AwaitKeywordToken,
-			L"Type '" + (awaitedType != nullptr ? awaitedType->Name : L"?") +
-			L"' is not awaitable; it must implement 'IAwaitable' or 'IAwaiter'");
-		return nullptr;
-	}
-
-	// Built-ins implement IAwaitable but are their own typed awaiters; keep the concrete type for codegen.
-	if (IsTaskType(awaitedType) || IsValueTaskType(awaitedType, awaiterType))
-		awaiterType = awaitedType;
-
-	node->AwaiterType = awaiterType;
-	GenericTypeSymbol* awaiterGeneric = AsGenericInstance(awaiterType);
-
-	// 2. Resolve the result type. Built-ins are special-cased; otherwise use GetResult's return type.
-	TypeSymbol* resultType = nullptr;
-
-	if (IsTaskType(awaitedType))
-	{
-		resultType = TYPE_VOID;
-	}
-	else
-	{
 		TypeSymbol* valueType = nullptr;
-		if (IsValueTaskType(awaitedType, valueType))
-			resultType = valueType;
+		return IsValueTaskType(type, valueType);
 	}
 
-	// 3. Validate the awaiter members through the IAwaiter interface contract.
-	bool hasIsCompleted = false;
-	bool hasOnCompleted = false;
-	bool hasGetResult = false;
-
-	MethodSymbol* iawaiterIsCompleted = SymbolTable::StandardTypes::IAwaiter_IsCompleted;
-	MethodSymbol* iawaiterOnCompleted = SymbolTable::StandardTypes::IAwaiter_OnCompleted;
-	MethodSymbol* iawaiterGetResult = SymbolTable::StandardTypes::IAwaiter_GetResult;
-
-	if (iawaiter != nullptr && TypeImplementsInterface(awaiterType, iawaiter))
+	static TypeSymbol* GetAsyncMethodElementType(MethodSymbol* method)
 	{
-		if (iawaiterIsCompleted != nullptr)
-		{
-			MethodSymbol* impl = awaiterType->FindInterfaceImplementation(iawaiterIsCompleted);
-			if (impl != nullptr)
-			{
-				hasIsCompleted = true;
-				node->IsCompletedMethod = impl;
-			}
-		}
+		if (method == nullptr || method->ReturnType == nullptr)
+			return nullptr;
 
-		if (iawaiterOnCompleted != nullptr)
-		{
-			MethodSymbol* impl = awaiterType->FindInterfaceImplementation(iawaiterOnCompleted);
-			if (impl != nullptr)
-			{
-				hasOnCompleted = true;
-				node->OnCompletedMethod = impl;
-			}
-		}
+		if (IsTaskType(method->ReturnType))
+			return SymbolTable::Primitives::Void;
 
-		if (iawaiterGetResult != nullptr)
-		{
-			MethodSymbol* impl = awaiterType->FindInterfaceImplementation(iawaiterGetResult);
-			if (impl != nullptr)
-			{
-				hasGetResult = true;
-				node->GetResultMethod = impl;
-				if (resultType == nullptr)
-					resultType = SubstituteAwaiterTypeArgument(impl->ReturnType, awaiterGeneric);
-			}
-		}
-	}
+		TypeSymbol* valueType = nullptr;
+		if (IsValueTaskType(method->ReturnType, valueType))
+			return valueType;
 
-	if (!hasIsCompleted || !hasOnCompleted || !hasGetResult)
-	{
-		diagnostics.ReportError(node->AwaitKeywordToken,
-			L"Type '" + (awaitedType != nullptr ? awaitedType->Name : L"?") +
-			L"' is not awaitable; awaiter must implement 'IAwaiter'");
 		return nullptr;
 	}
 
-	return resultType;
-}
-
-static void GeneratePropertyBackingField(SymbolFactory& factory, PropertySymbol* symbol)
-{
-	FieldSymbol* backingField = factory.Field(L"<" + symbol->Name + L">k__BackingField", symbol->ReturnType, symbol->Linking);
-	backingField->Accesibility = SymbolAccesibility::Private;
-	backingField->DefaultValueExpression = symbol->DefaultValueExpression;
-
-	symbol->BackingField = backingField;
-}
-
-static OperatorSymbol* ResolveOperatorMethod(TypeSymbol* ownerType, shard::TokenType opToken, const std::vector<TypeSymbol*>& paramTypes)
-{
-	if (ownerType == nullptr || !IsOverloadableOperator(opToken))
-		return nullptr;
-
-	return ownerType->FindOperator(opToken, paramTypes);
-}
-
-static bool IsAssignmentOperator(shard::TokenType type)
-{
-	switch (type)
+	static GenericTypeSymbol* AsGenericInstance(TypeSymbol* type)
 	{
+		if (type != nullptr && type->Kind == SyntaxKind::GenericType)
+			return static_cast<GenericTypeSymbol*>(type);
+
+		return nullptr;
+	}
+
+	static TypeSymbol* SubstituteAwaiterTypeArgument(TypeSymbol* type, GenericTypeSymbol* genericInstance)
+	{
+		if (type == nullptr || genericInstance == nullptr)
+			return type;
+
+		if (type->Kind == SyntaxKind::TypeParameter)
+		{
+			TypeParameterSymbol* typeParam = static_cast<TypeParameterSymbol*>(type);
+			TypeSymbol* substituted = genericInstance->SubstituteTypeParameters(typeParam);
+			if (substituted != nullptr)
+				return substituted;
+		}
+
+		return type;
+	}
+
+	static const std::vector<MethodSymbol*>& GetMethodTable(TypeSymbol* type)
+	{
+		if (type != nullptr && type->Kind == SyntaxKind::GenericType)
+			return static_cast<GenericTypeSymbol*>(type)->UnderlayingType->Methods;
+
+		if (type != nullptr)
+			return type->Methods;
+
+		static const std::vector<MethodSymbol*> empty;
+		return empty;
+	}
+
+	static const std::vector<TypeSymbol*>& GetInterfaceTable(TypeSymbol* type)
+	{
+		if (type != nullptr && type->Kind == SyntaxKind::GenericType)
+			return static_cast<GenericTypeSymbol*>(type)->UnderlayingType->Interfaces;
+
+		if (type != nullptr)
+			return type->Interfaces;
+
+		static const std::vector<TypeSymbol*> empty;
+		return empty;
+	}
+
+	static bool TypeImplementsInterface(TypeSymbol* type, InterfaceSymbol* interfaceSymbol)
+	{
+		if (type == nullptr || interfaceSymbol == nullptr)
+			return false;
+
+		const std::vector<TypeSymbol*>& interfaces = GetInterfaceTable(type);
+		for (TypeSymbol* iface : interfaces)
+		{
+			if (iface == interfaceSymbol)
+				return true;
+
+			if (iface->Kind == SyntaxKind::GenericType &&
+				static_cast<GenericTypeSymbol*>(iface)->UnderlayingType == interfaceSymbol)
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	static bool TypeSatisfiesConstraint(TypeSymbol* typeArg, TypeSymbol* constraint)
+	{
+		if (typeArg == nullptr || constraint == nullptr)
+			return false;
+
+		if (constraint->Kind == SyntaxKind::InterfaceDeclaration)
+			return TypeImplementsInterface(typeArg, static_cast<InterfaceSymbol*>(constraint));
+
+		if (constraint->IsType())
+			return SemanticModel::IsAssignableTo(constraint, typeArg);
+
+		return false;
+	}
+
+	static TypeSymbol* ResolveAwaitablePattern(AwaitExpressionSyntax* node, TypeSymbol* awaitedType, DiagnosticsContext& diagnostics)
+	{
+		GenericTypeSymbol* awaitedGeneric = AsGenericInstance(awaitedType);
+
+		// 1. Resolve the awaiter type. A type is awaitable if it implements IAwaitable
+		// or, as a self-awaiter, directly implements IAwaiter.
+		TypeSymbol* awaiterType = nullptr;
+		InterfaceSymbol* iawaitable = SymbolTable::StandardTypes::IAwaitable;
+		MethodSymbol* iawaitableGetAwaiter = SymbolTable::StandardTypes::IAwaitable_GetAwaiter;
+		InterfaceSymbol* iawaiter = SymbolTable::StandardTypes::IAwaiter;
+
+		if (iawaitable != nullptr && iawaitableGetAwaiter != nullptr &&
+			TypeImplementsInterface(awaitedType, iawaitable))
+		{
+			MethodSymbol* getAwaiter = awaitedType->FindInterfaceImplementation(iawaitableGetAwaiter);
+			if (getAwaiter != nullptr && getAwaiter->ReturnType != nullptr && getAwaiter->ReturnType != TYPE_VOID)
+			{
+				node->GetAwaiterMethod = getAwaiter;
+				awaiterType = SubstituteAwaiterTypeArgument(getAwaiter->ReturnType, awaitedGeneric);
+			}
+		}
+
+		if (awaiterType == nullptr && iawaiter != nullptr && TypeImplementsInterface(awaitedType, iawaiter))
+		{
+			awaiterType = awaitedType;
+		}
+
+		if (awaiterType == nullptr)
+		{
+			diagnostics.ReportError(node->AwaitKeywordToken,
+				L"Type '" + (awaitedType != nullptr ? awaitedType->Name : L"?") +
+				L"' is not awaitable; it must implement 'IAwaitable' or 'IAwaiter'");
+			return nullptr;
+		}
+
+		// Built-ins implement IAwaitable but are their own typed awaiters; keep the concrete type for codegen.
+		if (IsTaskType(awaitedType) || IsValueTaskType(awaitedType, awaiterType))
+			awaiterType = awaitedType;
+
+		node->AwaiterType = awaiterType;
+		GenericTypeSymbol* awaiterGeneric = AsGenericInstance(awaiterType);
+
+		// 2. Resolve the result type. Built-ins are special-cased; otherwise use GetResult's return type.
+		TypeSymbol* resultType = nullptr;
+
+		if (IsTaskType(awaitedType))
+		{
+			resultType = TYPE_VOID;
+		}
+		else
+		{
+			TypeSymbol* valueType = nullptr;
+			if (IsValueTaskType(awaitedType, valueType))
+				resultType = valueType;
+		}
+
+		// 3. Validate the awaiter members through the IAwaiter interface contract.
+		bool hasIsCompleted = false;
+		bool hasOnCompleted = false;
+		bool hasGetResult = false;
+
+		MethodSymbol* iawaiterIsCompleted = SymbolTable::StandardTypes::IAwaiter_IsCompleted;
+		MethodSymbol* iawaiterOnCompleted = SymbolTable::StandardTypes::IAwaiter_OnCompleted;
+		MethodSymbol* iawaiterGetResult = SymbolTable::StandardTypes::IAwaiter_GetResult;
+
+		if (iawaiter != nullptr && TypeImplementsInterface(awaiterType, iawaiter))
+		{
+			if (iawaiterIsCompleted != nullptr)
+			{
+				MethodSymbol* impl = awaiterType->FindInterfaceImplementation(iawaiterIsCompleted);
+				if (impl != nullptr)
+				{
+					hasIsCompleted = true;
+					node->IsCompletedMethod = impl;
+				}
+			}
+
+			if (iawaiterOnCompleted != nullptr)
+			{
+				MethodSymbol* impl = awaiterType->FindInterfaceImplementation(iawaiterOnCompleted);
+				if (impl != nullptr)
+				{
+					hasOnCompleted = true;
+					node->OnCompletedMethod = impl;
+				}
+			}
+
+			if (iawaiterGetResult != nullptr)
+			{
+				MethodSymbol* impl = awaiterType->FindInterfaceImplementation(iawaiterGetResult);
+				if (impl != nullptr)
+				{
+					hasGetResult = true;
+					node->GetResultMethod = impl;
+					if (resultType == nullptr)
+						resultType = SubstituteAwaiterTypeArgument(impl->ReturnType, awaiterGeneric);
+				}
+			}
+		}
+
+		if (!hasIsCompleted || !hasOnCompleted || !hasGetResult)
+		{
+			diagnostics.ReportError(node->AwaitKeywordToken,
+				L"Type '" + (awaitedType != nullptr ? awaitedType->Name : L"?") +
+				L"' is not awaitable; awaiter must implement 'IAwaiter'");
+			return nullptr;
+		}
+
+		return resultType;
+	}
+
+	static void GeneratePropertyBackingField(SymbolFactory& factory, PropertySymbol* symbol)
+	{
+		FieldSymbol* backingField = factory.Field(L"<" + symbol->Name + L">k__BackingField", symbol->ReturnType, symbol->Linking);
+		backingField->Accesibility = SymbolAccesibility::Private;
+		backingField->DefaultValueExpression = symbol->DefaultValueExpression;
+
+		symbol->BackingField = backingField;
+	}
+
+	static OperatorSymbol* ResolveOperatorMethod(TypeSymbol* ownerType, shard::TokenType opToken, const std::vector<TypeSymbol*>& paramTypes)
+	{
+		if (ownerType == nullptr || !IsOverloadableOperator(opToken))
+			return nullptr;
+
+		return ownerType->FindOperator(opToken, paramTypes);
+	}
+
+	static bool IsAssignmentOperator(shard::TokenType type)
+	{
+		switch (type)
+		{
 		case TokenType::AssignOperator:
 		case TokenType::AddAssignOperator:
 		case TokenType::SubAssignOperator:
@@ -352,40 +368,138 @@ static bool IsAssignmentOperator(shard::TokenType type)
 			return true;
 		default:
 			return false;
+		}
 	}
-}
 
-static bool IsAssignmentContext(const MemberAccessExpressionSyntax* expression)
-{
-	if (expression->Parent == nullptr)
-		return false;
+	static bool IsAssignmentContext(const MemberAccessExpressionSyntax* expression)
+	{
+		if (expression->Parent == nullptr)
+			return false;
 
-	if (expression->Parent->Kind != SyntaxKind::BinaryExpression)
-		return false;
+		if (expression->Parent->Kind != SyntaxKind::BinaryExpression)
+			return false;
 
-	BinaryExpressionSyntax* binaryExpr = static_cast<BinaryExpressionSyntax*>(expression->Parent);
-	if (binaryExpr->OperatorToken.Type != TokenType::AssignOperator)
-		return false;
+		BinaryExpressionSyntax* binaryExpr = static_cast<BinaryExpressionSyntax*>(expression->Parent);
+		if (binaryExpr->OperatorToken.Type != TokenType::AssignOperator)
+			return false;
 
-	return true;
-}
+		return true;
+	}
 
-static bool IsAssignmentContext(const IndexatorExpressionSyntax* expression)
-{
-	if (expression->Parent == nullptr)
-		return false;
+	static bool IsAssignmentContext(const IndexatorExpressionSyntax* expression)
+	{
+		if (expression->Parent == nullptr)
+			return false;
 
-	if (expression->Parent->Kind != SyntaxKind::BinaryExpression)
-		return false;
+		if (expression->Parent->Kind != SyntaxKind::BinaryExpression)
+			return false;
 
-	BinaryExpressionSyntax* binaryExpr = static_cast<BinaryExpressionSyntax*>(expression->Parent);
-	if (!IsAssignmentOperator(binaryExpr->OperatorToken.Type))
-		return false;
+		BinaryExpressionSyntax* binaryExpr = static_cast<BinaryExpressionSyntax*>(expression->Parent);
+		if (!IsAssignmentOperator(binaryExpr->OperatorToken.Type))
+			return false;
 
-	if (binaryExpr->Left.get() != expression)
-		return false;
+		if (binaryExpr->Left.get() != expression)
+			return false;
 
-	return true;
+		return true;
+	}
+
+	static bool isDefaultPattern(ExpressionSyntax* pattern)
+	{
+		if (pattern == nullptr || pattern->Kind != SyntaxKind::LiteralExpression)
+			return false;
+
+		LiteralExpressionSyntax* literal = static_cast<LiteralExpressionSyntax*>(pattern);
+		return literal->LiteralToken.Type == TokenType::Identifier && literal->LiteralToken.Word == L"_";
+	}
+
+	static bool IsExtensionMethodCandidate(MethodSymbol* method, TypeSymbol* receiverType, const std::vector<TypeSymbol*>& argTypes)
+	{
+		if (method == nullptr || method->Linking != LINK_STATIC)
+			return false;
+
+		if (method->Parameters.empty())
+			return false;
+
+		if (receiverType == nullptr)
+			return false;
+
+		if (!SemanticModel::IsAssignableTo(method->Parameters[0]->Type, receiverType))
+			return false;
+
+		if (method->Parameters.size() != argTypes.size() + 1)
+			return false;
+
+		for (std::size_t i = 1; i < method->Parameters.size(); ++i)
+		{
+			TypeSymbol* paramType = method->Parameters[i]->Type;
+			TypeSymbol* argType = argTypes[i - 1];
+			if (paramType == nullptr || argType == nullptr)
+				return false;
+
+			if (!SemanticModel::IsAssignableTo(paramType, argType))
+				return false;
+		}
+
+		return true;
+	}
+
+	static DelegateTypeSymbol* GetDelegateType(const TypeSymbol* type)
+	{
+		if (type == nullptr)
+			return nullptr;
+
+		if (type->Kind == SyntaxKind::DelegateType)
+			return const_cast<DelegateTypeSymbol*>(static_cast<const DelegateTypeSymbol*>(type));
+
+		if (type->Kind == SyntaxKind::GenericType)
+		{
+			const GenericTypeSymbol* generic = static_cast<const GenericTypeSymbol*>(type);
+			TypeSymbol* underlying = generic->UnderlayingType;
+			if (underlying != nullptr && underlying->Kind == SyntaxKind::DelegateType)
+				return const_cast<DelegateTypeSymbol*>(static_cast<const DelegateTypeSymbol*>(underlying));
+		}
+
+		return nullptr;
+	}
+
+	static std::wstring FormatArgumentList(const std::vector<TypeSymbol*>& argTypes)
+	{
+		std::wstringstream diag;
+		switch (argTypes.size())
+		{
+			case 0:
+			{
+				diag << L"no arguments";
+				break;
+			}
+
+			case 1:
+			{
+				TypeSymbol* type = argTypes.at(0);
+				std::wstring typeName = type == nullptr ? L"<error>" : type->Name;
+				diag << L"argument (" << typeName << L")";
+				break;
+			}
+
+			default:
+			{
+				TypeSymbol* type = argTypes.at(0);
+				diag << L"arguments (" << type->Name;
+
+				for (std::size_t i = 1; i < argTypes.size(); i++)
+				{
+					type = argTypes.at(i);
+					diag << L", " << type->Name;
+				}
+
+				diag << L")";
+				break;
+			}
+		}
+
+		return diag.str();
+	}
 }
 
 bool ExpressionBinder::GetIsStaticContext(const ExpressionSyntax* expression)
@@ -1604,15 +1718,6 @@ void ExpressionBinder::VisitIfExpression(IfExpressionSyntax* node)
 	}
 }
 
-static bool isDefaultPattern(ExpressionSyntax* pattern)
-{
-	if (pattern == nullptr || pattern->Kind != SyntaxKind::LiteralExpression)
-		return false;
-
-	LiteralExpressionSyntax* literal = static_cast<LiteralExpressionSyntax*>(pattern);
-	return literal->LiteralToken.Type == TokenType::Identifier && literal->LiteralToken.Word == L"_";
-}
-
 void ExpressionBinder::VisitSwitchExpression(SwitchExpressionSyntax* node)
 {
 	if (node->Expression != nullptr)
@@ -1959,33 +2064,66 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 			return nullptr;
 		}
 
-		// First check for property (properties take precedence over fields)
-		symbol = currentType->FindProperty(memberName);
-		if (symbol == nullptr)
+		if (currentType->Kind == SyntaxKind::TypeParameter)
 		{
-			// Check for field
-			symbol = currentType->FindField(memberName);
-			if (symbol == nullptr)
+			TypeParameterSymbol* typeParam = static_cast<TypeParameterSymbol*>(currentType);
+			for (TypeSymbol* constraint : typeParam->Constraints)
 			{
-				auto methodIt = std::find_if(
-					currentType->Methods.begin(), currentType->Methods.end(),
-					[memberName](const MethodSymbol* method) { return method->Name == memberName; });
+				if (constraint == nullptr || constraint->Kind != SyntaxKind::InterfaceDeclaration)
+					continue;
 
-				if (methodIt == currentType->Methods.end())
+				symbol = constraint->FindProperty(memberName);
+				if (symbol == nullptr)
+					symbol = constraint->FindField(memberName);
+
+				if (symbol == nullptr)
 				{
-					OperatorSymbol* accessOp = currentType->FindOperator(TokenType::Delimeter, { SymbolTable::Primitives::String });
-					if (accessOp != nullptr)
-					{
-						node->ToOperator = accessOp;
-						node->IsStaticContext = false;
-						return accessOp->ReturnType;
-					}
+					auto methodIt = std::find_if(
+						constraint->Methods.begin(), constraint->Methods.end(),
+						[memberName](const MethodSymbol* method) { return method->Name == memberName; });
 
-					Diagnostics.ReportError(node->IdentifierToken, L"Member '" + memberName + L"' not found in type '" + currentType->Name + L"'");
-					return nullptr;
+					if (methodIt != constraint->Methods.end())
+						symbol = *methodIt;
 				}
 
-				symbol = *methodIt;
+				if (symbol != nullptr)
+				{
+					currentType = constraint;
+					break;
+				}
+			}
+		}
+
+		if (symbol == nullptr)
+		{
+			// First check for property (properties take precedence over fields)
+			symbol = currentType->FindProperty(memberName);
+			if (symbol == nullptr)
+			{
+				// Check for field
+				symbol = currentType->FindField(memberName);
+				if (symbol == nullptr)
+				{
+					auto methodIt = std::find_if(
+						currentType->Methods.begin(), currentType->Methods.end(),
+						[memberName](const MethodSymbol* method) { return method->Name == memberName; });
+
+					if (methodIt == currentType->Methods.end())
+					{
+						OperatorSymbol* accessOp = currentType->FindOperator(TokenType::Delimeter, { SymbolTable::Primitives::String });
+						if (accessOp != nullptr)
+						{
+							node->ToOperator = accessOp;
+							node->IsStaticContext = false;
+							return accessOp->ReturnType;
+						}
+
+						Diagnostics.ReportError(node->IdentifierToken, L"Member '" + memberName + L"' not found in type '" + currentType->Name + L"'");
+						return nullptr;
+					}
+
+					symbol = *methodIt;
+				}
 			}
 		}
 	}
@@ -2258,6 +2396,7 @@ static std::wstring BuildQualifiedName(const shard::ExpressionSyntax* qualifier,
 	{
 		if (!result.empty())
 			result += L".";
+
 		result += part;
 	}
 
@@ -2265,6 +2404,7 @@ static std::wstring BuildQualifiedName(const shard::ExpressionSyntax* qualifier,
 	{
 		if (!result.empty())
 			result += L".";
+
 		result += memberName;
 	}
 
@@ -2433,7 +2573,7 @@ MethodSymbol* ExpressionBinder::ResolveQualifiedMethod(
 		if (method->Linking != LINK_STATIC)
 			continue;
 
-		if (TryMatchMethod(method, methodName, argTypes, nullptr, explicitTypeArgs, outMethodTypeArgs))
+		if (TryMatchMethod(method, methodName, argTypes, nullptr, explicitTypeArgs, outMethodTypeArgs, node->IdentifierToken))
 			return method;
 	}
 
@@ -2578,94 +2718,6 @@ ConstructorSymbol* ExpressionBinder::ResolveConstructor(ObjectExpressionSyntax* 
 	return method;
 }
 
-static bool IsExtensionMethodCandidate(MethodSymbol* method, TypeSymbol* receiverType, const std::vector<TypeSymbol*>& argTypes)
-{
-	if (method == nullptr || method->Linking != LINK_STATIC)
-		return false;
-
-	if (method->Parameters.empty())
-		return false;
-
-	if (receiverType == nullptr)
-		return false;
-
-	if (!SemanticModel::IsAssignableTo(method->Parameters[0]->Type, receiverType))
-		return false;
-
-	if (method->Parameters.size() != argTypes.size() + 1)
-		return false;
-
-	for (std::size_t i = 1; i < method->Parameters.size(); ++i)
-	{
-		TypeSymbol* paramType = method->Parameters[i]->Type;
-		TypeSymbol* argType = argTypes[i - 1];
-		if (paramType == nullptr || argType == nullptr)
-			return false;
-
-		if (!SemanticModel::IsAssignableTo(paramType, argType))
-			return false;
-	}
-
-	return true;
-}
-
-static DelegateTypeSymbol* GetDelegateType(const TypeSymbol* type)
-{
-	if (type == nullptr)
-		return nullptr;
-
-	if (type->Kind == SyntaxKind::DelegateType)
-		return const_cast<DelegateTypeSymbol*>(static_cast<const DelegateTypeSymbol*>(type));
-
-	if (type->Kind == SyntaxKind::GenericType)
-	{
-		const GenericTypeSymbol* generic = static_cast<const GenericTypeSymbol*>(type);
-		TypeSymbol* underlying = generic->UnderlayingType;
-		if (underlying != nullptr && underlying->Kind == SyntaxKind::DelegateType)
-			return const_cast<DelegateTypeSymbol*>(static_cast<const DelegateTypeSymbol*>(underlying));
-	}
-
-	return nullptr;
-}
-
-static std::wstring FormatArgumentList(const std::vector<TypeSymbol*>& argTypes)
-{
-	std::wstringstream diag;
-	switch (argTypes.size())
-	{
-		case 0:
-		{
-			diag << L"no arguments";
-			break;
-		}
-
-		case 1:
-		{
-			TypeSymbol* type = argTypes.at(0);
-			std::wstring typeName = type == nullptr ? L"<error>" : type->Name;
-			diag << L"argument (" << typeName << L")";
-			break;
-		}
-
-		default:
-		{
-			TypeSymbol* type = argTypes.at(0);
-			diag << L"arguments (" << type->Name;
-
-			for (std::size_t i = 1; i < argTypes.size(); i++)
-			{
-				type = argTypes.at(i);
-				diag << L", " << type->Name;
-			}
-
-			diag << L")";
-			break;
-		}
-	}
-
-	return diag.str();
-}
-
 bool ExpressionBinder::CollectArgumentTypes(InvokationExpressionSyntax* node, std::vector<TypeSymbol*>& outArgTypes)
 {
 	if (node->ArgumentsList == nullptr)
@@ -2775,10 +2827,28 @@ bool ExpressionBinder::HasAnyMethodNamed(const std::wstring& name, TypeSymbol* c
 		if (searchType->Kind == SyntaxKind::GenericType)
 			searchType = static_cast<GenericTypeSymbol*>(searchType)->UnderlayingType;
 
-		for (MethodSymbol* method : searchType->Methods)
+		if (searchType->Kind == SyntaxKind::TypeParameter)
 		{
-			if (method != nullptr && method->Name == name)
-				return true;
+			TypeParameterSymbol* typeParam = static_cast<TypeParameterSymbol*>(searchType);
+			for (TypeSymbol* constraint : typeParam->Constraints)
+			{
+				if (constraint == nullptr || constraint->Kind != SyntaxKind::InterfaceDeclaration)
+					continue;
+
+				for (MethodSymbol* method : constraint->Methods)
+				{
+					if (method != nullptr && method->Name == name)
+						return true;
+				}
+			}
+		}
+		else
+		{
+			for (MethodSymbol* method : searchType->Methods)
+			{
+				if (method != nullptr && method->Name == name)
+					return true;
+			}
 		}
 	}
 
@@ -2801,7 +2871,8 @@ bool ExpressionBinder::TryMatchMethod(
 	const std::vector<TypeSymbol*>& argTypes,
 	GenericTypeSymbol* genericType,
 	const std::vector<TypeSymbol*>& explicitTypeArgs,
-	std::vector<TypeSymbol*>& outMethodTypeArgs)
+	std::vector<TypeSymbol*>& outMethodTypeArgs,
+	SyntaxToken blameToken)
 {
 	if (method == nullptr || method->Name != expectedName)
 		return false;
@@ -2835,6 +2906,28 @@ bool ExpressionBinder::TryMatchMethod(
 	if (methodTypeArgs.size() != method->TypeParameters.size())
 		return false;
 
+	for (std::size_t i = 0; i < method->TypeParameters.size(); ++i)
+	{
+		TypeParameterSymbol* typeParam = method->TypeParameters[i];
+		TypeSymbol* typeArg = methodTypeArgs[i];
+		if (typeParam == nullptr || typeArg == nullptr)
+			continue;
+
+		for (TypeSymbol* constraint : typeParam->Constraints)
+		{
+			if (constraint == nullptr)
+				continue;
+
+			if (!TypeSatisfiesConstraint(typeArg, constraint))
+			{
+				Diagnostics.ReportError(blameToken,
+					L"Type argument '" + typeArg->Name + L"' does not satisfy the constraint '" + constraint->Name + L"' on type parameter '" + typeParam->Name + L"'");
+				
+				return false;
+			}
+		}
+	}
+
 	if (!MatchGenericMethodArguments(method, argTypes, genericType, methodTypeArgs))
 		return false;
 
@@ -2848,11 +2941,12 @@ MethodSymbol* ExpressionBinder::FindMethodOverload(
 	const std::vector<TypeSymbol*>& argTypes,
 	GenericTypeSymbol* genericType,
 	const std::vector<TypeSymbol*>& explicitTypeArgs,
-	std::vector<TypeSymbol*>& outMethodTypeArgs)
+	std::vector<TypeSymbol*>& outMethodTypeArgs,
+	SyntaxToken blameToken)
 {
 	for (MethodSymbol* method : candidates)
 	{
-		if (TryMatchMethod(method, name, argTypes, genericType, explicitTypeArgs, outMethodTypeArgs))
+		if (TryMatchMethod(method, name, argTypes, genericType, explicitTypeArgs, outMethodTypeArgs, blameToken))
 			return method;
 	}
 
@@ -2915,13 +3009,35 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node, 
 	if (currentType != nullptr)
 	{
 		TypeSymbol* searchType = currentType;
+
+		// For type parameters constrained to interfaces, search the interface constraints
+		// for an instance method with the requested name.
+		if (searchType->Kind == SyntaxKind::TypeParameter)
+		{
+			TypeParameterSymbol* typeParam = static_cast<TypeParameterSymbol*>(searchType);
+			for (TypeSymbol* constraint : typeParam->Constraints)
+			{
+				if (constraint == nullptr || constraint->Kind != SyntaxKind::InterfaceDeclaration)
+					continue;
+
+				InterfaceSymbol* interfaceSymbol = static_cast<InterfaceSymbol*>(constraint);
+				symbol = FindMethodOverload(interfaceSymbol->Methods, methodName, argTypes, genericType, explicitMethodTypeArgs, selectedMethodTypeArgs, node->IdentifierToken);
+				if (symbol != nullptr)
+				{
+					currentType = constraint;
+					searchType = constraint;
+					break;
+				}
+			}
+		}
+
 		if (searchType->Kind == SyntaxKind::GenericType)
 		{
 			genericType = static_cast<GenericTypeSymbol*>(searchType);
 			searchType = genericType->UnderlayingType;
 		}
 
-		if (searchType != nullptr && !searchType->TypeParameters.empty() && genericType == nullptr)
+		if (symbol == nullptr && searchType != nullptr && !searchType->TypeParameters.empty() && genericType == nullptr)
 		{
 			for (MethodSymbol* method : searchType->Methods)
 			{
@@ -2936,7 +3052,7 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node, 
 						typeArgMap[searchType->TypeParameters[i]->Name] = classTypeArgs[i];
 
 					GenericTypeSymbol* constructed = Factory.GenericType(searchType, typeArgMap);
-					if (TryMatchMethod(method, methodName, argTypes, constructed, explicitMethodTypeArgs, methodTypeArgs))
+					if (TryMatchMethod(method, methodName, argTypes, constructed, explicitMethodTypeArgs, methodTypeArgs, node->IdentifierToken))
 					{
 						symbol = method;
 						genericType = constructed;
@@ -2949,7 +3065,7 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node, 
 					// Static methods on a generic class that do not use the class's
 					// type parameters (e.g. ValueTask.Wait) can be invoked from the
 					// open generic type name without explicit type arguments.
-					if (TryMatchMethod(method, methodName, argTypes, nullptr, explicitMethodTypeArgs, methodTypeArgs))
+					if (TryMatchMethod(method, methodName, argTypes, nullptr, explicitMethodTypeArgs, methodTypeArgs, node->IdentifierToken))
 					{
 						symbol = method;
 						genericType = nullptr;
@@ -2961,7 +3077,7 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node, 
 		}
 		else
 		{
-			symbol = FindMethodOverload(searchType->Methods, methodName, argTypes, genericType, explicitMethodTypeArgs, selectedMethodTypeArgs);
+			symbol = FindMethodOverload(searchType->Methods, methodName, argTypes, genericType, explicitMethodTypeArgs, selectedMethodTypeArgs, node->IdentifierToken);
 		}
 	}
 
@@ -2976,7 +3092,7 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node, 
 			if (method->Linking != LINK_STATIC)
 				continue;
 
-			if (TryMatchMethod(method, methodName, candidateArgs, genericType, explicitMethodTypeArgs, selectedMethodTypeArgs))
+			if (TryMatchMethod(method, methodName, candidateArgs, genericType, explicitMethodTypeArgs, selectedMethodTypeArgs, node->IdentifierToken))
 			{
 				symbol = method;
 				if (matchingAsExtension)
@@ -2998,7 +3114,7 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node, 
 				bool matchingAsExtension = !isStaticContext;
 
 				MethodSymbol* localMethod = static_cast<MethodSymbol*>(lookupMethod);
-				if (TryMatchMethod(localMethod, methodName, candidateArgs, genericType, explicitMethodTypeArgs, selectedMethodTypeArgs))
+				if (TryMatchMethod(localMethod, methodName, candidateArgs, genericType, explicitMethodTypeArgs, selectedMethodTypeArgs, node->IdentifierToken))
 				{
 					symbol = localMethod;
 					if (matchingAsExtension)
@@ -3340,6 +3456,7 @@ bool ExpressionBinder::TryInferTypeArgument(TypeSymbol* pattern, TypeSymbol* con
 						return false;
 				}
 			}
+
 			return true;
 		}
 
@@ -3371,6 +3488,7 @@ bool ExpressionBinder::TryInferTypeArgument(TypeSymbol* pattern, TypeSymbol* con
 				{
 					TypeSymbol* patternArg = patternGeneric->SubstituteTypeParameters(param);
 					TypeSymbol* concreteArg = ifaceGeneric->SubstituteTypeParameters(param);
+
 					if (concreteArg != nullptr && concreteArg->Kind == SyntaxKind::TypeParameter && concreteGeneric != nullptr)
 					{
 						TypeSymbol* resolved = concreteGeneric->SubstituteTypeParameters(static_cast<TypeParameterSymbol*>(concreteArg));
@@ -3489,6 +3607,7 @@ static bool TryInferClassTypeArgument(TypeSymbol* pattern, TypeSymbol* concrete,
 			if (!TryInferClassTypeArgument(patternArg, concreteArg, classDef, outArgs))
 				return false;
 		}
+
 		return true;
 	}
 
@@ -3510,8 +3629,10 @@ bool ExpressionBinder::InferClassTypeArguments(TypeSymbol* classDef, MethodSymbo
 	}
 
 	for (TypeSymbol* type : outClassTypeArgs)
+	{
 		if (type == nullptr)
 			return false;
+	}
 
 	return true;
 }

@@ -39,6 +39,7 @@ namespace shard
 		IndexatorList,
 		StatementsBlock,
 		MethodBody,
+		WhereClause,
 
 		// Statements
 		ExpressionStatement,

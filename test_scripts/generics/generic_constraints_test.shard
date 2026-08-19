@@ -1,0 +1,77 @@
+using stdio;
+
+namespace generic_constraints_test;
+
+public interface INameable
+{
+    func GetName() -> string;
+}
+
+public interface ICountable
+{
+    func GetCount() -> int;
+}
+
+public class Person : INameable
+{
+    public Name: string;
+
+    public func GetName() -> string
+    {
+        return this.Name;
+    }
+}
+
+public class Counter : INameable, ICountable
+{
+    public Count: int;
+
+    public func GetName() -> string
+    {
+        return "counter";
+    }
+
+    public func GetCount() -> int
+    {
+        return this.Count;
+    }
+}
+
+public static func PrintName<T>(item: T) -> void where T : INameable
+{
+    println(item.GetName());
+}
+
+public static func SumCounts<T>(a: T, b: T) -> int where T : ICountable
+{
+    return a.GetCount() + b.GetCount();
+}
+
+public class Repository<T> where T : INameable
+{
+    public Item: T;
+
+    public func Describe() -> string
+    {
+        return this.Item.GetName();
+    }
+}
+
+public static func Main() -> void
+{
+    person: Person = new Person();
+    person.Name = "alice";
+    PrintName<Person>(person);
+
+    counter: Counter = new Counter();
+    counter.Count = 5;
+    PrintName<Counter>(counter);
+
+    another: Counter = new Counter();
+    another.Count = 7;
+    println(SumCounts<Counter>(counter, another));
+
+    repo: Repository<Person> = new Repository<Person>();
+    repo.Item = person;
+    println(repo.Describe());
+}

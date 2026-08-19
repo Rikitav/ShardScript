@@ -1,125 +1,8 @@
 #if !defined(SHARDSCRIPT_STATIC)
 
-#include <shard/ShardScriptAPI.hpp>
-#include <shard/CompilationContext.hpp>
-#include <shard/ApplicationDomain.hpp>
-#include <shard/parsing/SyntaxTree.hpp>
-
-#include <shard/lexical/LexicalAnalyzer.hpp>
-#include <shard/lexical/StringStreamReader.hpp>
-#include <shard/lexical/FileReader.hpp>
-
-#include <shard/runtime/VirtualMachine.hpp>
-#include <shard/runtime/EventLoop.hpp>
-#include <shard/runtime/GarbageCollector.hpp>
-#include <shard/runtime/ObjectInstance.hpp>
-
-#include <shard/semantic/SyntaxSymbol.hpp>
-#include <shard/semantic/symbols/TypeSymbol.hpp>
-#include <shard/semantic/symbols/MemberSymbol.hpp>
-#include <shard/semantic/symbols/MethodSymbol.hpp>
-#include <shard/semantic/symbols/ParameterSymbol.hpp>
-#include <shard/semantic/symbols/NamespaceSymbol.hpp>
-#include <shard/semantic/symbols/ClassSymbol.hpp>
-#include <shard/semantic/symbols/FieldSymbol.hpp>
-#include <shard/semantic/symbols/PropertySymbol.hpp>
-
-#include <shard/semantic/SymbolFactory.hpp>
-#include <shard/semantic/SymbolTable.hpp>
-#include <shard/semantic/SemanticModel.hpp>
-#include <shard/runtime/MethodCallState.hpp>
-
-#include <shard/parsing/nodes/CompilationUnitSyntax.hpp>
-#include <shard/parsing/nodes/MemberDeclarationSyntax.hpp>
-#include <shard/parsing/nodes/MemberDeclarations/NamespaceDeclarationSyntax.hpp>
-#include <shard/parsing/SyntaxToken.hpp>
-#include <shard/lexical/TokenType.hpp>
-#include <shard/analysis/TextLocation.hpp>
-
-#include <shard/parsing/nodes/BodyDeclarationSyntax.hpp>
-#include <shard/parsing/nodes/TypeDeclarationSyntax.hpp>
-#include <shard/parsing/nodes/StatementsBlockSyntax.hpp>
-#include <shard/parsing/nodes/ArgumentsListSyntax.hpp>
-#include <shard/parsing/nodes/ParametersListSyntax.hpp>
-
-#include <shard/parsing/nodes/MemberDeclarations/ClassDeclarationSyntax.hpp>
-#include <shard/parsing/nodes/MemberDeclarations/StructDeclarationSyntax.hpp>
-#include <shard/parsing/nodes/MemberDeclarations/ConstructorDeclarationSyntax.hpp>
-#include <shard/parsing/nodes/MemberDeclarations/FieldDeclarationSyntax.hpp>
-#include <shard/parsing/nodes/MemberDeclarations/MethodDeclarationSyntax.hpp>
-#include <shard/parsing/nodes/MemberDeclarations/PropertyDeclarationSyntax.hpp>
-#include <shard/parsing/nodes/MemberDeclarations/AccessorDeclarationSyntax.hpp>
-#include <shard/parsing/nodes/MemberDeclarations/InterfaceDeclarationSyntax.hpp>
-#include <shard/parsing/nodes/MemberDeclarations/EnumDeclarationSyntax.hpp>
-#include <shard/parsing/nodes/MemberDeclarations/EnumFieldDeclarationSyntax.hpp>
-#include <shard/parsing/nodes/MemberDeclarations/OperatorDeclarationSyntax.hpp>
-#include <shard/parsing/nodes/MemberDeclarations/IndexatorDeclarationSyntax.hpp>
-#include <shard/parsing/nodes/MemberDeclarations/DelegateDeclarationSyntax.hpp>
-
-#include <shard/parsing/nodes/StatementSyntax.hpp>
-#include <shard/parsing/nodes/Statements/ExpressionStatementSyntax.hpp>
-#include <shard/parsing/nodes/Statements/ReturnStatementSyntax.hpp>
-#include <shard/parsing/nodes/Statements/VariableStatementSyntax.hpp>
-#include <shard/parsing/nodes/Statements/DeferStatementSyntax.hpp>
-#include <shard/parsing/nodes/Statements/BreakStatementSyntax.hpp>
-#include <shard/parsing/nodes/Statements/ContinueStatementSyntax.hpp>
-#include <shard/parsing/nodes/Statements/ThrowStatementSyntax.hpp>
-#include <shard/parsing/nodes/Statements/TryStatementSyntax.hpp>
-
-#include <shard/parsing/nodes/Loops/ForEachStatementSyntax.hpp>
-#include <shard/parsing/nodes/Loops/WhileStatementSyntax.hpp>
-#include <shard/parsing/nodes/Loops/ForStatementSyntax.hpp>
-#include <shard/parsing/nodes/Loops/ForInStatementSyntax.hpp>
-#include <shard/parsing/nodes/Loops/UntilStatementSyntax.hpp>
-
-#include <shard/parsing/nodes/Statements/ConditionalClauseSyntax.hpp>
-#include <shard/parsing/nodes/Statements/SwitchStatementSyntax.hpp>
-#include <shard/parsing/nodes/Statements/SwitchCaseClauseSyntax.hpp>
-
-#include <shard/parsing/nodes/ExpressionSyntax.hpp>
-#include <shard/parsing/nodes/Expressions/LiteralExpressionSyntax.hpp>
-#include <shard/parsing/nodes/Expressions/BinaryExpressionSyntax.hpp>
-#include <shard/parsing/nodes/Expressions/UnaryExpressionSyntax.hpp>
-#include <shard/parsing/nodes/Expressions/LinkedExpressionSyntax.hpp>
-#include <shard/parsing/nodes/Expressions/ObjectExpressionSyntax.hpp>
-#include <shard/parsing/nodes/Expressions/RangeExpressionSyntax.hpp>
-#include <shard/parsing/nodes/Expressions/CollectionExpressionSyntax.hpp>
-#include <shard/parsing/nodes/Expressions/LinkedExpressionSyntax.hpp>
-#include <shard/parsing/nodes/Expressions/TernaryExpressionSyntax.hpp>
-#include <shard/parsing/nodes/Expressions/IfExpressionSyntax.hpp>
-#include <shard/parsing/nodes/Expressions/SwitchExpressionSyntax.hpp>
-#include <shard/parsing/nodes/Expressions/CastExpressionSyntax.hpp>
-#include <shard/parsing/nodes/Expressions/IsExpressionSyntax.hpp>
-#include <shard/parsing/nodes/Expressions/IsPatternSyntax.hpp>
-#include <shard/parsing/nodes/Expressions/LambdaExpressionSyntax.hpp>
-#include <shard/parsing/nodes/Expressions/AwaitExpressionSyntax.hpp>
-#include <shard/parsing/nodes/Expressions/TypeExpressionSyntax.hpp>
-
-#include <shard/semantic/symbols/InterfaceSymbol.hpp>
-#include <shard/semantic/symbols/StructSymbol.hpp>
-#include <shard/semantic/symbols/EnumSymbol.hpp>
-#include <shard/semantic/symbols/OperatorSymbol.hpp>
-#include <shard/semantic/symbols/TypeParameterSymbol.hpp>
-#include <shard/semantic/symbols/IndexatorSymbol.hpp>
-
+#include <ShardScript.hpp>
 #include <shard/ShardScriptExtern.hpp>
-#include <shard/ShardScriptLIB.hpp>
 #include <utilities/LibraryLoader.hpp>
-
-#include <shard/parsing/nodes/Types/PredefinedTypeSyntax.hpp>
-#include <shard/parsing/nodes/Types/IdentifierNameTypeSyntax.hpp>
-#include <shard/parsing/nodes/Types/ArrayTypeSyntax.hpp>
-#include <shard/parsing/nodes/Types/NullableTypeSyntax.hpp>
-#include <shard/parsing/nodes/Types/GenericTypeSyntax.hpp>
-#include <shard/parsing/nodes/Types/QualifiedNameTypeSyntax.hpp>
-#include <shard/parsing/nodes/Types/DelegateTypeSyntax.hpp>
-#include <shard/parsing/nodes/TypeArgumentsListSyntax.hpp>
-
-#include <shard/parsing/nodes/AttributeSyntax.hpp>
-#include <shard/parsing/nodes/TypeParametersListSyntax.hpp>
-#include <shard/parsing/nodes/Directives/UsingDirectiveSyntax.hpp>
-
-#include <shard/compilation/ProgramVirtualImage.hpp>
 
 #include <sstream>
 #include <filesystem>
@@ -3502,6 +3385,69 @@ extern "C"
         }
     }
 
+    SHARD_API WhereClauseSyntax* Shard_CreateWhereClause(SyntaxNode* parent, const wchar_t* typeParameterName)
+    {
+        try
+        {
+            if (typeParameterName == nullptr)
+            {
+                SetLastShardWError(L"type parameter name is null");
+                return nullptr;
+            }
+
+            WhereClauseSyntax* whereClause = new WhereClauseSyntax(parent);
+            whereClause->WhereKeywordToken = MakeToken(shard::TokenType::WhereKeyword);
+            whereClause->TypeParameterToken = MakeToken(shard::TokenType::Identifier, typeParameterName);
+            whereClause->ColonToken = MakeToken(shard::TokenType::Colon);
+            return whereClause;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API int Shard_AddWhereClauseConstraint(WhereClauseSyntax* whereClause, TypeSyntax* constraintType)
+    {
+        try
+        {
+            if (whereClause == nullptr || constraintType == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return -1;
+            }
+
+            whereClause->ConstraintTypes.push_back(std::unique_ptr<TypeSyntax>(constraintType));
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_AddMemberWhereClause(MemberDeclarationSyntax* member, WhereClauseSyntax* whereClause)
+    {
+        try
+        {
+            if (member == nullptr || whereClause == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return -1;
+            }
+
+            member->WhereClauses.push_back(std::unique_ptr<WhereClauseSyntax>(whereClause));
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
     SHARD_API ParametersListSyntax* Shard_CreateParametersList(SyntaxNode* parent)
     {
         try
@@ -6779,6 +6725,35 @@ extern "C"
             SetLastErrorFromException(e);
             return nullptr;
         }
+    }
+
+    SHARD_API int Shard_AddTypeParameterConstraint(TypeParameterSymbol* typeParam, TypeSymbol* constraint)
+    {
+        try
+        {
+            if (typeParam == nullptr || constraint == nullptr)
+                return -1;
+            typeParam->Constraints.push_back(constraint);
+            return 0;
+        }
+        catch (...)
+        {
+            return -1;
+        }
+    }
+
+    SHARD_API std::size_t Shard_GetTypeParameterConstraintCount(TypeParameterSymbol* typeParam)
+    {
+        if (typeParam == nullptr)
+            return 0;
+        return typeParam->Constraints.size();
+    }
+
+    SHARD_API TypeSymbol* Shard_GetTypeParameterConstraint(TypeParameterSymbol* typeParam, std::size_t index)
+    {
+        if (typeParam == nullptr || index >= typeParam->Constraints.size())
+            return nullptr;
+        return typeParam->Constraints[index];
     }
 
     SHARD_API IndexatorSymbol* Shard_CreateIndexatorSymbol(CompilationContext* ctx, TypeSymbol* parentType, const wchar_t* name, TypeSymbol* returnType, int accessibility)

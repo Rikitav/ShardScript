@@ -1,0 +1,19 @@
+using stdio;
+
+namespace method_expr_body_test;
+
+public class Program
+{
+    public static func Add(a: int, b: int) -> int => a + b;
+
+    public static func Greet(name: string) -> string => "hello, " + name;
+
+    public static func printTen() -> void => println(10);
+
+    public static func Main() -> void
+    {
+        println(Add(2, 3));
+        println(Greet("world"));
+        printTen();
+    }
+}

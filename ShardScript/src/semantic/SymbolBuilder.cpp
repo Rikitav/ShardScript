@@ -128,8 +128,14 @@ SymbolBuilder<TypeParameterSymbol>::SymbolBuilder(SymbolTable* table,
 SymbolBuilder<TypeParameterSymbol>::SymbolBuilder(CompilationContext& ctx,
     const std::wstring& name,
     SyntaxSymbol* parent)
-    : SymbolBuilder(ctx.GetSemanticModel().Table.get(), name, parent)
+    : SymbolBuilder(ctx.GetSemanticModel().Table.get(), name, parent) { }
+
+SymbolBuilder<TypeParameterSymbol>& SymbolBuilder<TypeParameterSymbol>::AddConstraint(TypeSymbol* constraint)
 {
+    if (Symbol != nullptr && constraint != nullptr)
+        Symbol->Constraints.push_back(constraint);
+
+    return *this;
 }
 
 // =========================================================================

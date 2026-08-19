@@ -1,0 +1,7 @@
+using stdio;
+
+namespace generic_where_missing_constraint_test;
+
+public static func Foo<T>() -> void where T :
+{
+}
