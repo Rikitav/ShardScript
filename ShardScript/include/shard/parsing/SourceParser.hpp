@@ -18,6 +18,7 @@
 #include <shard/parsing/nodes/ParametersListSyntax.hpp>
 #include <shard/parsing/nodes/TypeParametersListSyntax.hpp>
 #include <shard/parsing/nodes/TypeArgumentsListSyntax.hpp>
+#include <shard/parsing/nodes/WhereClauseSyntax.hpp>
 #include <shard/parsing/nodes/CompilationUnitSyntax.hpp>
 #include <shard/parsing/nodes/StatementSyntax.hpp>
 #include <shard/parsing/nodes/StatementsBlockSyntax.hpp>
@@ -169,6 +170,7 @@ namespace shard
 		std::unique_ptr<ParametersListSyntax> ReadDelegateParametersList(SourceProvider& reader, SyntaxNode* parent);
 		std::unique_ptr<TypeParametersListSyntax> ReadTypeParametersList(SourceProvider& reader, SyntaxNode* parent);
 		std::unique_ptr<TypeArgumentsListSyntax> ReadTypeArgumentsList(SourceProvider& reader, SyntaxNode* parent);
+		std::unique_ptr<WhereClauseSyntax> ReadWhereClause(SourceProvider& reader, SyntaxNode* parent);
 
 		// 9. Other
 		std::vector<std::unique_ptr<TypeSyntax>> ReadBaseInterfacesList(SourceProvider& reader, SyntaxNode* parent);

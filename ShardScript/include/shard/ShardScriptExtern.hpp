@@ -11,134 +11,11 @@
 // header directly if you only need the flat C-style entry points.
 // ============================================================================
 
+#include <ShardScript.hpp>
+#include <shard/ShardScriptLIB.hpp>
+
 #include <cstddef>
 #include <cstdint>
-
-#include <shard/ShardScriptAPI.hpp>
-#include <shard/semantic/symbols/MethodSymbol.hpp>          // ShardManagedMethodCallback
-#include <shard/semantic/symbols/ConstructorSymbol.hpp>
-#include <shard/semantic/symbols/PropertySymbol.hpp>
-#include <shard/semantic/symbols/AccessorSymbol.hpp>
-#include <shard/parsing/nodes/CompilationUnitSyntax.hpp>   // CompilationUnitOrigin
-#include <shard/ShardScriptLIB.hpp>                        // ShardLibMetadata
-
-namespace shard
-{
-    // Core
-    class CompilationContext;
-    class ApplicationDomain;
-    class VirtualMachine;
-    class CallStackFrame;
-    class GarbageCollector;
-    class ProgramVirtualImage;
-    class ObjectInstance;
-
-    // Semantic / symbols
-    class SymbolTable;
-    class SyntaxSymbol;
-    class TypeSymbol;
-    class TypeDeclarationSyntax;
-    class InterfaceSymbol;
-    class StructSymbol;
-    class EnumSymbol;
-    class OperatorSymbol;
-    class TypeParameterSymbol;
-    class IndexatorSymbol;
-    class MethodSymbol;
-    class ParameterSymbol;
-    class FieldSymbol;
-    class NamespaceSymbol;
-    class ClassSymbol;
-    class MemberSymbol;
-    class PropertySymbol;
-
-    // Syntax / nodes
-    class SyntaxNode;
-    class CompilationUnitSyntax;
-    class NamespaceDeclarationSyntax;
-    class MemberDeclarationSyntax;
-    class ClassDeclarationSyntax;
-    class StructDeclarationSyntax;
-    class FieldDeclarationSyntax;
-    class MethodDeclarationSyntax;
-    class ConstructorDeclarationSyntax;
-    class ParametersListSyntax;
-    class StatementsBlockSyntax;
-    class StatementSyntax;
-    class ExpressionSyntax;
-    class TypeSyntax;
-    class PredefinedTypeSyntax;
-    class IdentifierNameTypeSyntax;
-    class ArrayTypeSyntax;
-    class NullableTypeSyntax;
-    class GenericTypeSyntax;
-    class TypeArgumentsListSyntax;
-    class VariableStatementSyntax;
-    class ExpressionStatementSyntax;
-    class ReturnStatementSyntax;
-    class ForEachStatementSyntax;
-    class WhileStatementSyntax;
-    class LiteralExpressionSyntax;
-    class MemberAccessExpressionSyntax;
-    class BinaryExpressionSyntax;
-    class UnaryExpressionSyntax;
-    class InvokationExpressionSyntax;
-    class ObjectExpressionSyntax;
-    class RangeExpressionSyntax;
-    class CollectionExpressionSyntax;
-    class ArgumentsListSyntax;
-    class DeferStatementSyntax;
-    class BreakStatementSyntax;
-    class ContinueStatementSyntax;
-    class ThrowStatementSyntax;
-    class TryStatementSyntax;
-    class CatchClauseSyntax;
-
-    // Member declarations
-    class PropertyDeclarationSyntax;
-    class AccessorDeclarationSyntax;
-    class InterfaceDeclarationSyntax;
-    class EnumDeclarationSyntax;
-    class EnumFieldDeclarationSyntax;
-    class OperatorDeclarationSyntax;
-    class IndexatorDeclarationSyntax;
-    class DelegateDeclarationSyntax;
-
-    // Attributes / generics
-    class AttributeSyntax;
-    class TypeParametersListSyntax;
-
-    // Statements
-    class ForStatementSyntax;
-    class ForInStatementSyntax;
-    class UntilStatementSyntax;
-    class IfStatementSyntax;
-    class UnlessStatementSyntax;
-    class ElseStatementSyntax;
-    class SwitchStatementSyntax;
-    class SwitchCaseClauseSyntax;
-    class ConditionalClauseSyntax;
-
-    // Expressions
-    class TernaryExpressionSyntax;
-    class IfExpressionSyntax;
-    class SwitchExpressionSyntax;
-    class SwitchArmSyntax;
-    class CastExpressionSyntax;
-    class IsExpressionSyntax;
-    class IsPatternSyntax;
-    class IndexatorExpressionSyntax;
-    class LambdaExpressionSyntax;
-    class AwaitExpressionSyntax;
-    class TypeExpressionSyntax;
-
-    // Types
-    class QualifiedNameTypeSyntax;
-    class DelegateTypeSyntax;
-
-    // Directives
-    class UsingDirectiveSyntax;
-}
 
 extern "C"
 {
@@ -512,6 +389,10 @@ extern "C"
     SHARD_API int Shard_SetMethodTypeParametersList(shard::MethodDeclarationSyntax* method, shard::TypeParametersListSyntax* list);
     SHARD_API int Shard_SetClassTypeParametersList(shard::ClassDeclarationSyntax* cls, shard::TypeParametersListSyntax* list);
 
+    SHARD_API shard::WhereClauseSyntax* Shard_CreateWhereClause(shard::SyntaxNode* parent, const wchar_t* typeParameterName);
+    SHARD_API int Shard_AddWhereClauseConstraint(shard::WhereClauseSyntax* whereClause, shard::TypeSyntax* constraintType);
+    SHARD_API int Shard_AddMemberWhereClause(shard::MemberDeclarationSyntax* member, shard::WhereClauseSyntax* whereClause);
+
     SHARD_API shard::ParametersListSyntax* Shard_CreateParametersList(shard::SyntaxNode* parent);
     SHARD_API int Shard_AddParameter(shard::ParametersListSyntax* list, const wchar_t* name, shard::TypeSyntax* type);
 
@@ -645,6 +526,9 @@ extern "C"
     SHARD_API shard::FieldSymbol* Shard_AddEnumLiteral(shard::CompilationContext* ctx, shard::EnumSymbol* enumType, const wchar_t* name, std::int64_t value);
     SHARD_API shard::OperatorSymbol* Shard_CreateOperatorSymbol(shard::CompilationContext* ctx, shard::TypeSymbol* parentType, const wchar_t* name, shard::TypeSymbol* returnType, int operatorTokenType, int accessibility);
     SHARD_API shard::TypeParameterSymbol* Shard_CreateTypeParameterSymbol(shard::CompilationContext* ctx, shard::SyntaxSymbol* parent, const wchar_t* name);
+    SHARD_API int Shard_AddTypeParameterConstraint(shard::TypeParameterSymbol* typeParam, shard::TypeSymbol* constraint);
+    SHARD_API std::size_t Shard_GetTypeParameterConstraintCount(shard::TypeParameterSymbol* typeParam);
+    SHARD_API shard::TypeSymbol* Shard_GetTypeParameterConstraint(shard::TypeParameterSymbol* typeParam, std::size_t index);
     SHARD_API shard::IndexatorSymbol* Shard_CreateIndexatorSymbol(shard::CompilationContext* ctx, shard::TypeSymbol* parentType, const wchar_t* name, shard::TypeSymbol* returnType, int accessibility);
     SHARD_API int Shard_AddIndexatorParameter(shard::IndexatorSymbol* indexator, shard::ParameterSymbol* parameter);
     SHARD_API shard::AccessorSymbol* Shard_IndexatorAddGetter(shard::CompilationContext* ctx, shard::IndexatorSymbol* indexator);

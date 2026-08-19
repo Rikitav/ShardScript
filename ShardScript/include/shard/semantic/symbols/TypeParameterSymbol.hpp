@@ -19,7 +19,7 @@ namespace shard
 	class SHARD_API TypeParameterSymbol : public TypeSymbol
 	{
 	public:
-		//TypeSymbol* ConstraintType = nullptr;
+		std::vector<TypeSymbol*> Constraints;
 
 		std::uint16_t TypeArgumentIndex = 0;
 

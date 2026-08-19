@@ -264,6 +264,8 @@ void TypeBinder::VisitClassDeclaration(ClassDeclarationSyntax* node)
 	for (const auto& typeParam : symbol->TypeParameters)
 		CurrentScope()->DeclareSymbol(typeParam);
 
+	BindWhereClauses(node, symbol->TypeParameters);
+
 	std::vector<InterfaceSymbol*> baseInterfaces;
 	for (const auto& baseInterface : node->BaseInterfaces)
 	{
@@ -313,6 +315,8 @@ void TypeBinder::VisitStructDeclaration(StructDeclarationSyntax* node)
 	for (const auto& typeParam : symbol->TypeParameters)
 		CurrentScope()->DeclareSymbol(typeParam);
 
+	BindWhereClauses(node, symbol->TypeParameters);
+
 	std::vector<InterfaceSymbol*> baseInterfaces;
 	for (const auto& baseInterface : node->BaseInterfaces)
 	{
@@ -361,6 +365,8 @@ void TypeBinder::VisitInterfaceDeclaration(InterfaceDeclarationSyntax* node)
     PushScope(symbol);
     for (const auto& typeParam : symbol->TypeParameters)
         CurrentScope()->DeclareSymbol(typeParam);
+
+    BindWhereClauses(node, symbol->TypeParameters);
 
     for (const auto& member : node->Members)
     {
@@ -604,6 +610,8 @@ void TypeBinder::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 	for (TypeParameterSymbol* typeParam : symbol->TypeParameters)
 		CurrentScope()->DeclareSymbol(typeParam);
 
+	BindWhereClauses(node, symbol->TypeParameters);
+
 	if (node->ReturnType != nullptr)
 	{
 		VisitType(node->ReturnType.get());
@@ -643,6 +651,12 @@ void TypeBinder::VisitOperatorDeclaration(OperatorDeclarationSyntax* node)
 		return;
 
 	PushScope(symbol);
+
+	for (TypeParameterSymbol* typeParam : symbol->TypeParameters)
+		CurrentScope()->DeclareSymbol(typeParam);
+
+	BindWhereClauses(node, symbol->TypeParameters);
+
 	if (node->ReturnType != nullptr)
 	{
 		VisitType(node->ReturnType.get());
@@ -1130,6 +1144,115 @@ void TypeBinder::VisitGenericType(GenericTypeSyntax* node)
 		{
 			Diagnostics.ReportError(node->Arguments->OpenToken, L"Type argument " + std::to_wstring(i + 1) + L" could not be resolved");
 			continue;
+		}
+
+		for (TypeSymbol* constraint : typeParam->Constraints)
+		{
+			if (constraint == nullptr)
+				continue;
+
+			if (!TypeSatisfiesConstraint(typeArgSymbol, constraint))
+			{
+				Diagnostics.ReportError(node->Arguments->OpenToken,
+					L"Type argument '" + typeArgSymbol->Name + L"' does not satisfy the constraint '" + constraint->Name + L"' on type parameter '" + typeParam->Name + L"'");
+			}
+		}
+	}
+}
+
+static const std::vector<TypeSymbol*>& GetConstraintInterfaceTable(TypeSymbol* type)
+{
+	if (type != nullptr && type->Kind == SyntaxKind::GenericType)
+		return static_cast<GenericTypeSymbol*>(type)->UnderlayingType->Interfaces;
+
+	if (type != nullptr)
+		return type->Interfaces;
+
+	static const std::vector<TypeSymbol*> empty;
+	return empty;
+}
+
+bool TypeBinder::TypeImplementsInterface(TypeSymbol* typeArg, InterfaceSymbol* interfaceSymbol)
+{
+	if (typeArg == nullptr || interfaceSymbol == nullptr)
+		return false;
+
+	const std::vector<TypeSymbol*>& interfaces = GetConstraintInterfaceTable(typeArg);
+	for (TypeSymbol* iface : interfaces)
+	{
+		if (iface == interfaceSymbol)
+			return true;
+
+		if (iface != nullptr && iface->Kind == SyntaxKind::GenericType &&
+			static_cast<GenericTypeSymbol*>(iface)->UnderlayingType == interfaceSymbol)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool TypeBinder::TypeSatisfiesConstraint(TypeSymbol* typeArg, TypeSymbol* constraint)
+{
+	if (typeArg == nullptr || constraint == nullptr)
+		return false;
+
+	if (constraint->Kind == SyntaxKind::InterfaceDeclaration)
+	{
+		return TypeImplementsInterface(typeArg, static_cast<InterfaceSymbol*>(constraint));
+	}
+
+	if (constraint->IsType())
+	{
+		return SemanticModel::IsAssignableTo(constraint, typeArg);
+	}
+
+	return false;
+}
+
+void TypeBinder::BindWhereClauses(MemberDeclarationSyntax* node, const std::vector<TypeParameterSymbol*>& typeParams)
+{
+	if (node == nullptr)
+		return;
+
+	for (const auto& whereClause : node->WhereClauses)
+	{
+		if (whereClause == nullptr)
+			continue;
+
+		TypeParameterSymbol* typeParam = nullptr;
+		for (TypeParameterSymbol* candidate : typeParams)
+		{
+			if (candidate != nullptr && candidate->Name == whereClause->TypeParameterToken.Word)
+			{
+				typeParam = candidate;
+				break;
+			}
+		}
+
+		if (typeParam == nullptr)
+		{
+			Diagnostics.ReportError(whereClause->TypeParameterToken,
+				L"Type parameter '" + whereClause->TypeParameterToken.Word + L"' not found");
+			continue;
+		}
+
+		for (const auto& constraintType : whereClause->ConstraintTypes)
+		{
+			if (constraintType == nullptr)
+				continue;
+
+			VisitType(constraintType.get());
+			TypeSymbol* constraintSymbol = constraintType->Symbol;
+			if (constraintSymbol == nullptr)
+			{
+				Diagnostics.ReportError(whereClause->TypeParameterToken,
+					L"Could not resolve constraint type for type parameter '" + whereClause->TypeParameterToken.Word + L"'");
+				continue;
+			}
+
+			typeParam->Constraints.push_back(constraintSymbol);
 		}
 	}
 }

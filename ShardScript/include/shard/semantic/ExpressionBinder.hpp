@@ -116,8 +116,8 @@ namespace shard
 		bool HasAnyMethodNamed(const std::wstring& name, shard::TypeSymbol* currentType);
 		bool IsAmbiguousName(const std::wstring& name);
 		shard::NamespaceNode* FindNamespaceByName(const std::wstring& name);
-		bool TryMatchMethod(shard::MethodSymbol* method, const std::wstring& expectedName, const std::vector<shard::TypeSymbol*>& argTypes, shard::GenericTypeSymbol* genericType, const std::vector<shard::TypeSymbol*>& explicitTypeArgs, std::vector<shard::TypeSymbol*>& outMethodTypeArgs);
-		shard::MethodSymbol* FindMethodOverload(const std::vector<shard::MethodSymbol*>& candidates, const std::wstring& name, const std::vector<shard::TypeSymbol*>& argTypes, shard::GenericTypeSymbol* genericType, const std::vector<shard::TypeSymbol*>& explicitTypeArgs, std::vector<shard::TypeSymbol*>& outMethodTypeArgs);
+		bool TryMatchMethod(shard::MethodSymbol* method, const std::wstring& expectedName, const std::vector<shard::TypeSymbol*>& argTypes, shard::GenericTypeSymbol* genericType, const std::vector<shard::TypeSymbol*>& explicitTypeArgs, std::vector<shard::TypeSymbol*>& outMethodTypeArgs, shard::SyntaxToken blameToken);
+		shard::MethodSymbol* FindMethodOverload(const std::vector<shard::MethodSymbol*>& candidates, const std::wstring& name, const std::vector<shard::TypeSymbol*>& argTypes, shard::GenericTypeSymbol* genericType, const std::vector<shard::TypeSymbol*>& explicitTypeArgs, std::vector<shard::TypeSymbol*>& outMethodTypeArgs, shard::SyntaxToken blameToken);
 		void ReportNoMatchingMethod(const std::wstring& methodName, shard::SyntaxToken blameToken);
 		void ReportNoMatchingOverload(const std::wstring& methodName, const std::vector<shard::TypeSymbol*>& argTypes, shard::SyntaxToken blameToken);
 

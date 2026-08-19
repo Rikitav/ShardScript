@@ -1,0 +1,22 @@
+using stdio;
+
+namespace generic_where_constraint_violation_test;
+
+public interface INameable
+{
+    func GetName() -> string;
+}
+
+public class Plain
+{
+}
+
+public static func PrintName<T>(value: T) -> void where T : INameable
+{
+}
+
+public static func Main() -> void
+{
+    p: Plain = new Plain();
+    PrintName<Plain>(p);
+}

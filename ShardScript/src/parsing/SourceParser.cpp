@@ -26,6 +26,7 @@
 
 #include <shard/parsing/nodes/TypeArgumentsListSyntax.hpp>
 #include <shard/parsing/nodes/TypeParametersListSyntax.hpp>
+#include <shard/parsing/nodes/WhereClauseSyntax.hpp>
 
 #include <shard/parsing/nodes/Loops/ForStatementSyntax.hpp>
 #include <shard/parsing/nodes/Loops/WhileStatementSyntax.hpp>
@@ -498,6 +499,13 @@ std::unique_ptr<ClassDeclarationSyntax> SourceParser::ReadClassDeclaration(Sourc
 		syntax->TypeParameters = ReadTypeParametersList(reader, syntax.get());
 	}
 
+	while (reader.CanConsume() && reader.Current().Type == TokenType::WhereKeyword)
+	{
+		auto whereClause = ReadWhereClause(reader, syntax.get());
+		if (whereClause != nullptr)
+			syntax->WhereClauses.push_back(std::move(whereClause));
+	}
+
 	current = reader.Current();
 	if (current.Type == TokenType::Colon)
 	{
@@ -535,6 +543,13 @@ std::unique_ptr<StructDeclarationSyntax> SourceParser::ReadStructDeclaration(Sou
 	if (current.Type == TokenType::LessOperator)
 	{
 		syntax->TypeParameters = ReadTypeParametersList(reader, syntax.get());
+	}
+
+	while (reader.CanConsume() && reader.Current().Type == TokenType::WhereKeyword)
+	{
+		auto whereClause = ReadWhereClause(reader, syntax.get());
+		if (whereClause != nullptr)
+			syntax->WhereClauses.push_back(std::move(whereClause));
 	}
 
 	current = reader.Current();
@@ -629,6 +644,13 @@ std::unique_ptr<MethodDeclarationSyntax> SourceParser::ReadMethodDeclaration(Sou
 		}
 	}
 
+	while (reader.CanConsume() && reader.Current().Type == TokenType::WhereKeyword)
+	{
+		auto whereClause = ReadWhereClause(reader, syntax.get());
+		if (whereClause != nullptr)
+			syntax->WhereClauses.push_back(std::move(whereClause));
+	}
+
 	current = reader.Current();
 	if (current.Type == TokenType::Semicolon)
 	{
@@ -664,6 +686,7 @@ std::unique_ptr<OperatorDeclarationSyntax> SourceParser::ReadOperatorDeclaration
 	reader.Consume();
 
 	auto syntax = std::make_unique<OperatorDeclarationSyntax>(info, operatorToken, parent);
+
 	syntax->ParametersList = ReadParametersList(reader, syntax.get());
 
 	SyntaxToken current = reader.Current();
@@ -686,6 +709,13 @@ std::unique_ptr<OperatorDeclarationSyntax> SourceParser::ReadOperatorDeclaration
 		{
 			Diagnostics.ReportError(current, L"Operator must have a return type.");
 		}
+	}
+
+	while (reader.CanConsume() && reader.Current().Type == TokenType::WhereKeyword)
+	{
+		auto whereClause = ReadWhereClause(reader, syntax.get());
+		if (whereClause != nullptr)
+			syntax->WhereClauses.push_back(std::move(whereClause));
 	}
 
 	current = reader.Current();
@@ -798,6 +828,13 @@ std::unique_ptr<InterfaceDeclarationSyntax> SourceParser::ReadInterfaceDeclarati
 		syntax->TypeParameters = ReadTypeParametersList(reader, syntax.get());
 	}
 
+	while (reader.CanConsume() && reader.Current().Type == TokenType::WhereKeyword)
+	{
+		auto whereClause = ReadWhereClause(reader, syntax.get());
+		if (whereClause != nullptr)
+			syntax->WhereClauses.push_back(std::move(whereClause));
+	}
+
 	if (TryMatch(reader, { TokenType::OpenBrace, TokenType::Semicolon }, L"Expected interface body '{' or semicolon ';'", 5))
 	{
 		current = reader.Current();
@@ -828,6 +865,13 @@ std::unique_ptr<DelegateDeclarationSyntax> SourceParser::ReadDelegateDeclaration
 	if (current.Type == TokenType::LessOperator)
 	{
 		syntax->TypeParameters = ReadTypeParametersList(reader, syntax.get());
+	}
+
+	while (reader.CanConsume() && reader.Current().Type == TokenType::WhereKeyword)
+	{
+		auto whereClause = ReadWhereClause(reader, syntax.get());
+		if (whereClause != nullptr)
+			syntax->WhereClauses.push_back(std::move(whereClause));
 	}
 
 	syntax->ParametersList = ReadParametersList(reader, syntax.get());
@@ -1516,6 +1560,48 @@ std::unique_ptr<ParametersListSyntax> SourceParser::ReadDelegateParametersList(S
 	return syntax;
 }
 
+std::unique_ptr<WhereClauseSyntax> SourceParser::ReadWhereClause(SourceProvider& reader, SyntaxNode* parent)
+{
+	auto syntax = std::make_unique<WhereClauseSyntax>(parent);
+	syntax->WhereKeywordToken = Expect(reader, TokenType::WhereKeyword, L"Expected 'where' keyword");
+	syntax->TypeParameterToken = Expect(reader, TokenType::Identifier, L"Expected type parameter identifier");
+	syntax->ColonToken = Expect(reader, TokenType::Colon, L"Expected ':' after type parameter");
+
+	while (reader.CanConsume())
+	{
+		SyntaxToken current = reader.Current();
+		if (current.Type != TokenType::Identifier
+		    && !IsPredefinedType(current.Type)
+		    && current.Type != TokenType::DelegateKeyword)
+		{
+			break;
+		}
+
+		auto constraint = ReadType(reader, syntax.get());
+		if (constraint != nullptr)
+			syntax->ConstraintTypes.push_back(std::move(constraint));
+
+		current = reader.Current();
+		if (current.Type == TokenType::Comma)
+		{
+			reader.Consume();
+			continue;
+		}
+
+		break;
+	}
+
+	if (syntax->ConstraintTypes.empty())
+	{
+		if (reader.CanConsume())
+			Diagnostics.ReportError(reader.Current(), L"Expected at least one constraint type after ':'");
+		else
+			Diagnostics.ReportError(SyntaxToken(TokenType::EndOfFile, L"", TextLocation()), L"Expected at least one constraint type after ':'");
+	}
+
+	return syntax;
+}
+
 std::unique_ptr<TypeParametersListSyntax> SourceParser::ReadTypeParametersList(SourceProvider& reader, SyntaxNode* parent)
 {
 	auto syntax = std::make_unique<TypeParametersListSyntax>(parent);
@@ -1824,7 +1910,9 @@ std::unique_ptr<StatementsBlockSyntax> SourceParser::ReadMethodBody(SourceProvid
 		reader.Consume(); // =>
 
 		auto syntax = std::make_unique<StatementsBlockSyntax>(parent);
+		syntax->ExpressionBodyArrowToken = current;
 		syntax->IsExpressionBody = true;
+
 		auto returnStatement = std::make_unique<ReturnStatementSyntax>(syntax.get());
 		returnStatement->KeywordToken = SyntaxToken(TokenType::ReturnKeyword, L"return", lambdaOperator.Location, false);
 		returnStatement->Expression = std::move(ReadExpression(reader, syntax.get(), 0, true));
@@ -2539,6 +2627,7 @@ std::unique_ptr<ExpressionSyntax> SourceParser::ReadNullDenotation(SourceProvide
 		case TokenType::DoubleKeyword:
 		case TokenType::Identifier:
 		case TokenType::FieldKeyword:
+		case TokenType::ValueKeyword:
 			return std::move(ReadLinkedExpressionNode(reader, parent, nullptr, true));
 
 		case TokenType::AsyncKeyword:
@@ -2956,7 +3045,7 @@ std::unique_ptr<LinkedExpressionNode> SourceParser::ReadLinkedExpressionNode(Sou
 	{
 		delimeter = SyntaxToken(TokenType::Delimeter, L"", TextLocation(), false);
 		identifier = reader.Current();
-		if (!Matches(reader, { TokenType::FieldKeyword, TokenType::Identifier, TokenType::StringKeyword, TokenType::CharKeyword, TokenType::NativeIntegerKeyword, TokenType::IntegerKeyword, TokenType::BooleanKeyword, TokenType::ByteKeyword, TokenType::DoubleKeyword }))
+		if (!Matches(reader, { TokenType::FieldKeyword, TokenType::Identifier, TokenType::ValueKeyword, TokenType::StringKeyword, TokenType::CharKeyword, TokenType::NativeIntegerKeyword, TokenType::IntegerKeyword, TokenType::BooleanKeyword, TokenType::ByteKeyword, TokenType::DoubleKeyword }))
 			Diagnostics.ReportError(identifier, L"Expected identifier, primitive name or 'field' keyword");
 
 		reader.Consume();

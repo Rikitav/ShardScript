@@ -2,16 +2,24 @@
 #include <shard/ShardScriptAPI.hpp>
 
 #include <shard/parsing/SyntaxVisitor.hpp>
-#include <shard/semantic/ScopeVisitor.hpp>
+
 #include <shard/analysis/DiagnosticsContext.hpp>
+
+#include <shard/semantic/ScopeVisitor.hpp>
 #include <shard/semantic/SemanticModel.hpp>
-
 #include <shard/semantic/SymbolFactory.hpp>
-#include <shard/semantic/symbols/EnumSymbol.hpp>
-#include <shard/semantic/symbols/TypeSymbol.hpp>
 
+#include <shard/semantic/symbols/EnumSymbol.hpp>
+#include <shard/semantic/symbols/InterfaceSymbol.hpp>
+#include <shard/semantic/symbols/TypeSymbol.hpp>
+#include <shard/semantic/symbols/TypeParameterSymbol.hpp>
+
+#include <shard/parsing/nodes/MemberDeclarationSyntax.hpp>
+#include <shard/parsing/nodes/WhereClauseSyntax.hpp>
 #include <shard/parsing/nodes/CompilationUnitSyntax.hpp>
 #include <shard/parsing/nodes/TypeSyntax.hpp>
+#include <shard/parsing/nodes/ParametersListSyntax.hpp>
+
 #include <shard/parsing/nodes/Directives/UsingDirectiveSyntax.hpp>
 
 #include <shard/parsing/nodes/Expressions/ObjectExpressionSyntax.hpp>
@@ -33,7 +41,6 @@
 #include <shard/parsing/nodes/MemberDeclarations/InterfaceDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/MemberDeclarations/ConstructorDeclarationSyntax.hpp>
 
-#include <shard/parsing/nodes/ParametersListSyntax.hpp>
 #include <shard/parsing/nodes/Types/ArrayTypeSyntax.hpp>
 #include <shard/parsing/nodes/Types/GenericTypeSyntax.hpp>
 #include <shard/parsing/nodes/Types/IdentifierNameTypeSyntax.hpp>
@@ -59,6 +66,10 @@ namespace shard
 		void ImportNamespace(shard::UsingDirectiveSyntax* node, shard::NamespaceNode* nsNode);
 		bool IsAmbiguousName(const std::wstring& name);
 		shard::NamespaceNode* ResolveNamespaceType(shard::TypeSyntax* type);
+
+		bool TypeSatisfiesConstraint(shard::TypeSymbol* typeArg, shard::TypeSymbol* constraint);
+		bool TypeImplementsInterface(shard::TypeSymbol* typeArg, shard::InterfaceSymbol* interfaceSymbol);
+		void BindWhereClauses(shard::MemberDeclarationSyntax* node, const std::vector<shard::TypeParameterSymbol*>& typeParams);
 
 	public:
 

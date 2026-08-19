@@ -1,0 +1,27 @@
+using stdio;
+
+namespace property_accessor_expr_body_test;
+
+public class Program
+{
+    private _value: int;
+
+    public init()
+    {
+        this._value = 42;
+    }
+
+    public Value: int
+    {
+        get => this._value;
+        set => this._value = value;
+    }
+
+    public static func Main() -> void
+    {
+        p: Program = new Program();
+        println(p.Value);
+        p.Value = 100;
+        println(p.Value);
+    }
+}

@@ -630,6 +630,20 @@ void DeclarationCollector::VisitOperatorDeclaration(OperatorDeclarationSyntax* n
         if (symbol->Parent != nullptr && symbol->Parent->IsType())
             ownerType = static_cast<TypeSymbol*>(symbol->Parent);
 
+        if (node->TypeParameters != nullptr && !node->TypeParameters->Types.empty())
+        {
+            std::uint16_t ownerParamOffset = 0;
+            if (ownerType != nullptr)
+                ownerParamOffset = ownerType->TypeParameters.size();
+
+            for (const auto& typeParamToken : node->TypeParameters->Types)
+            {
+                TypeParameterSymbol* typeParam = Factory.TypeParameter(typeParamToken.Word, symbol);
+                typeParam->TypeArgumentIndex = ownerParamOffset + typeParam->TypeArgumentIndex;
+                Declare(typeParam);
+            }
+        }
+
         std::uint16_t baseIndex = symbol->Linking == LINK_STATIC ? 0 : 1;
         for (const auto& parameter : node->ParametersList->Parameters)
         {

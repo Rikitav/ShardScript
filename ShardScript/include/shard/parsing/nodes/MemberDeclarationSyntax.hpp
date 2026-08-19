@@ -5,6 +5,7 @@
 #include <shard/parsing/SyntaxToken.hpp>
 #include <shard/parsing/SyntaxKind.hpp>
 #include <shard/parsing/nodes/TypeParametersListSyntax.hpp>
+#include <shard/parsing/nodes/WhereClauseSyntax.hpp>
 #include <shard/parsing/nodes/AttributeSyntax.hpp>
 
 #include <vector>
@@ -21,6 +22,7 @@ namespace shard
 
 		std::vector<std::unique_ptr<AttributeSyntax>> Attributes;
 		std::unique_ptr<TypeParametersListSyntax> TypeParameters = nullptr;
+		std::vector<std::unique_ptr<WhereClauseSyntax>> WhereClauses;
 
 		inline MemberDeclarationSyntax(const SyntaxKind kind, SyntaxNode* parent)
 			: SyntaxNode(kind, parent) { }

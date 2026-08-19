@@ -1,0 +1,17 @@
+using stdio;
+
+namespace lambda_expr_body_test;
+
+public class Program
+{
+    public static func Main() -> void
+    {
+        add := lambda (a: int, b: int) -> int => a + b;
+        greet := lambda (name: string) -> string => "hi, " + name;
+        action := lambda () -> void => println("action");
+
+        println(add(1, 2));
+        println(greet("lambda"));
+        action();
+    }
+}

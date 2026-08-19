@@ -72,6 +72,8 @@ namespace shard
     public:
         SymbolBuilder(CompilationContext& ctx, const std::wstring& name, SyntaxSymbol* parent);
         SymbolBuilder(SymbolTable* table, const std::wstring& name, SyntaxSymbol* parent);
+
+        SymbolBuilder<TypeParameterSymbol>& AddConstraint(TypeSymbol* constraint);
     };
 
     template<>
