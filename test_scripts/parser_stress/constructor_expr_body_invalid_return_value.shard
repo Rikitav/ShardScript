@@ -1,0 +1,6 @@
+namespace hello;
+
+public class Program
+{
+    public init(x: int) => x;
+}

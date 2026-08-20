@@ -1,0 +1,32 @@
+using stdio;
+
+namespace generic_extension_constraint;
+
+public interface INameable
+{
+    func GetName() -> string;
+}
+
+public class Person : INameable
+{
+    public Name: string;
+
+    public func GetName() -> string
+    {
+        return this.Name;
+    }
+}
+
+public static func GetNameOrDefault<T>(value: T) -> string where T : INameable
+{
+    return value.GetName();
+}
+
+public static func Main() -> void
+{
+    person: Person = new Person();
+    person.Name = "bob";
+
+    println(person.GetNameOrDefault());
+    println(person.GetNameOrDefault<Person>());
+}

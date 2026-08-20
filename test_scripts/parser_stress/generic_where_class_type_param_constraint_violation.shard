@@ -1,0 +1,22 @@
+using stdio;
+
+namespace generic_where_class_type_param_constraint_violation_test;
+
+public interface INameable
+{
+    func GetName() -> string;
+}
+
+public class Plain
+{
+}
+
+public class Box<T> where T : INameable
+{
+    public Item: T;
+}
+
+public static func Main() -> void
+{
+    box: Box<Plain> = new Box<Plain>();
+}

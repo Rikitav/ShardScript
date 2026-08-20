@@ -1,6 +1,8 @@
 #include <shard/parsing/SourceParser.hpp>
 #include <shard/lexical/SourceProvider.hpp>
 #include <shard/parsing/MemberDeclarationInfo.hpp>
+
+#include <string>
 #include <shard/parsing/SyntaxTree.hpp>
 
 #include <shard/analysis/TextLocation.hpp>
@@ -1892,25 +1894,25 @@ std::unique_ptr<StatementsBlockSyntax> SourceParser::ReadStatementsBlock(SourceP
 	return syntax;
 }
 
-std::unique_ptr<StatementsBlockSyntax> SourceParser::ReadMethodBody(SourceProvider& reader, SyntaxNode* parent)
+std::unique_ptr<StatementsBlockSyntax> SourceParser::ReadExpressionBodyOrBlock(SourceProvider& reader, SyntaxNode* parent, const wchar_t* bodyKind)
 {
 	if (!reader.CanConsume())
 	{
 		auto syntax = std::make_unique<StatementsBlockSyntax>(parent);
-		Diagnostics.ReportError(SyntaxToken(TokenType::EndOfFile, L"", TextLocation()), L"Unexpected end of file - expected method body");
+		Diagnostics.ReportError(SyntaxToken(TokenType::EndOfFile, L"", TextLocation()), std::wstring(L"Unexpected end of file - expected ") + bodyKind + L" body");
 		return syntax;
 	}
 
 	SyntaxToken current = reader.Current();
 
-	// Expression-bodied method/lambda: `=> expr;` unwraps into `{ return expr; }`
+	// Expression body: `=> expr` unwraps into `{ return expr; }`
 	if (current.Type == TokenType::LambdaOperator)
 	{
 		SyntaxToken lambdaOperator = current;
 		reader.Consume(); // =>
 
 		auto syntax = std::make_unique<StatementsBlockSyntax>(parent);
-		syntax->ExpressionBodyArrowToken = current;
+		syntax->ExpressionBodyArrowToken = lambdaOperator;
 		syntax->IsExpressionBody = true;
 
 		auto returnStatement = std::make_unique<ReturnStatementSyntax>(syntax.get());
@@ -1924,11 +1926,21 @@ std::unique_ptr<StatementsBlockSyntax> SourceParser::ReadMethodBody(SourceProvid
 	if (current.Type != TokenType::OpenBrace && current.Type != TokenType::Semicolon)
 	{
 		auto syntax = std::make_unique<StatementsBlockSyntax>(parent);
-		Diagnostics.ReportError(current, L"Expected '{' or ';' to begin method body");
+		Diagnostics.ReportError(current, std::wstring(L"Expected '{' or ';' to begin ") + bodyKind + L" body");
 		return syntax;
 	}
 
 	return ReadStatementsBlock(reader, parent);
+}
+
+std::unique_ptr<StatementsBlockSyntax> SourceParser::ReadMethodBody(SourceProvider& reader, SyntaxNode* parent)
+{
+	return ReadExpressionBodyOrBlock(reader, parent, L"method");
+}
+
+std::unique_ptr<StatementsBlockSyntax> SourceParser::ReadLambdaBody(SourceProvider& reader, SyntaxNode* parent)
+{
+	return ReadExpressionBodyOrBlock(reader, parent, L"lambda");
 }
 
 std::unique_ptr<StatementSyntax> SourceParser::ReadStatement(SourceProvider& reader, SyntaxNode* parent)
@@ -2888,22 +2900,30 @@ std::unique_ptr<LambdaExpressionSyntax> SourceParser::ReadLambdaExpression(Sourc
 	syntax->LambdaToken = Expect(reader, TokenType::LambdaKeyword, L"Expected 'lambda' keyword");
 	syntax->ParametersList = ReadParametersList(reader, syntax.get());
 
+	bool hasReturnType = false;
 	if (reader.Current().Type == TokenType::ArrowOperator)
 	{
 		syntax->ReturnTypeArrowToken = reader.Current();
 		reader.Consume();
 		syntax->ReturnType = ReadType(reader, syntax.get());
+		hasReturnType = true;
 	}
-	else if (reader.Current().Type == TokenType::LambdaOperator)
+
+	SyntaxToken bodyStart = reader.Current();
+	if (bodyStart.Type == TokenType::LambdaOperator)
 	{
-		syntax->LambdaOperatorToken = reader.Current();
+		syntax->LambdaOperatorToken = bodyStart;
+	}
+	else if (hasReturnType && bodyStart.Type == TokenType::OpenBrace)
+	{
+		// Block-bodied lambda with an explicit return type needs no '=>'.
 	}
 	else
 	{
 		syntax->LambdaOperatorToken = Expect(reader, TokenType::LambdaOperator, L"Expected '=>' or '->' operator");
 	}
 
-	syntax->Body = ReadMethodBody(reader, syntax.get());
+	syntax->Body = ReadLambdaBody(reader, syntax.get());
 	return syntax;
 }
 

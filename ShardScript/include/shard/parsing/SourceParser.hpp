@@ -127,6 +127,7 @@ namespace shard
 
 		// 4. Code blocks
 		std::unique_ptr<StatementsBlockSyntax> ReadMethodBody(SourceProvider& reader, SyntaxNode* parent);
+		std::unique_ptr<StatementsBlockSyntax> ReadLambdaBody(SourceProvider& reader, SyntaxNode* parent);
 		std::unique_ptr<StatementsBlockSyntax> ReadStatementsBlock(SourceProvider& reader, SyntaxNode* parent);
 		std::unique_ptr<StatementSyntax> ReadStatement(SourceProvider& reader, SyntaxNode* parent);
 
@@ -184,6 +185,7 @@ namespace shard
 
 	private:
 		// 10. Helpers
+		std::unique_ptr<StatementsBlockSyntax> ReadExpressionBodyOrBlock(SourceProvider& reader, SyntaxNode* parent, const wchar_t* bodyKind);
 		SyntaxToken Expect(SourceProvider& reader, TokenType kind, const wchar_t* message);
 		bool Matches(SourceProvider& reader, std::initializer_list<TokenType> types);
 		bool TryMatch(SourceProvider& reader, std::initializer_list<TokenType> types, const wchar_t* errorMessage, int maxSkips = 5);

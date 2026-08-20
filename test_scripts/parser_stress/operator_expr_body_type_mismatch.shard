@@ -1,0 +1,11 @@
+namespace hello;
+
+public class Box
+{
+    public Value: int;
+}
+
+public class Program
+{
+    public static operator +(a: Box, b: Box) -> int => "text";
+}

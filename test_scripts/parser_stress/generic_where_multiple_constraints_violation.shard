@@ -1,0 +1,31 @@
+using stdio;
+
+namespace generic_where_multiple_constraints_violation_test;
+
+public interface INameable
+{
+    func GetName() -> string;
+}
+
+public interface ICountable
+{
+    func GetCount() -> int;
+}
+
+public class Named : INameable
+{
+    public func GetName() -> string
+    {
+        return "named";
+    }
+}
+
+public static func Describe<T>(item: T) -> void where T : INameable, ICountable
+{
+}
+
+public static func Main() -> void
+{
+    n: Named = new Named();
+    Describe<Named>(n);
+}

@@ -1,0 +1,31 @@
+using stdio;
+
+namespace generic_inferred_constraints;
+
+public interface INameable
+{
+    func GetName() -> string;
+}
+
+public class Person : INameable
+{
+    public Name: string;
+
+    public func GetName() -> string
+    {
+        return this.Name;
+    }
+}
+
+public static func PrintName<T>(item: T) -> void where T : INameable
+{
+    println(item.GetName());
+}
+
+public static func Main() -> void
+{
+    person: Person = new Person();
+    person.Name = "alice";
+
+    PrintName(person);
+}

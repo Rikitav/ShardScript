@@ -1,0 +1,6 @@
+namespace hello;
+
+public class Program
+{
+    public static operator +(a: int, b: int) -> int => ;
+}

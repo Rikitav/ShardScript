@@ -7,6 +7,7 @@
 #include <shard/semantic/TypeBinder.hpp>
 #include <shard/semantic/ExpressionBinder.hpp>
 #include <shard/semantic/SemanticValidator.hpp>
+#include <shard/semantic/FlowAnalyzer.hpp>
 
 using namespace shard;
 
@@ -42,6 +43,15 @@ void SemanticAnalyzer::Analyze(SyntaxTree& syntaxTree, SemanticModel& semanticMo
 	ExpressionBinder expressionBinder(semanticModel, Diagnostics);
 	expressionBinder.PushScopeStack(TopScope);
 	expressionBinder.VisitSyntaxTree(syntaxTree);
+	if (Diagnostics.AnyError)
+		return;
+
+	// Control- and data-flow analysis pass.  This verifies that non-void
+	// member bodies return on every code path, that break/continue appear
+	// inside loops, and performs definite-assignment checking.
+	FlowAnalyzer flowAnalyzer(semanticModel, Diagnostics);
+	flowAnalyzer.PushScopeStack(TopScope);
+	flowAnalyzer.Analyze(syntaxTree);
 	if (Diagnostics.AnyError)
 		return;
 
