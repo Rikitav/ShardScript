@@ -40,6 +40,7 @@ extern "C"
     SHARD_API shard::ApplicationDomain* Shard_CompileAndRun(shard::CompilationContext* ctx);
     SHARD_API int Shard_SetEntryPoint(shard::CompilationContext* ctx, int value);
     SHARD_API int Shard_GetEntryPoint(shard::CompilationContext* ctx);
+    SHARD_API int Shard_SetPopExpressionStatement(shard::CompilationContext* ctx, int value);
 
     // =========================================================================
     // Diagnostics API
@@ -73,6 +74,8 @@ extern "C"
     SHARD_API shard::GarbageCollector* Shard_GetGarbageCollector(shard::ApplicationDomain* domain);
     SHARD_API shard::ProgramVirtualImage* Shard_GetProgram(shard::ApplicationDomain* domain);
     SHARD_API shard::MethodSymbol* Shard_GetEntryPointMethod(shard::ApplicationDomain* domain);
+    SHARD_API std::size_t Shard_GetProgramDataSectionSize(shard::ProgramVirtualImage* program);
+    SHARD_API int Shard_GetProgramDataSectionByte(shard::ProgramVirtualImage* program, std::size_t index);
 
     // =========================================================================
     // Virtual Machine API
@@ -89,6 +92,11 @@ extern "C"
     SHARD_API int Shard_VMGetStackTrace(shard::VirtualMachine* vm, wchar_t* buffer, int bufferLen);
     SHARD_API shard::CallStackFrame* Shard_VMGetCurrentFrame(shard::VirtualMachine* vm);
     SHARD_API int Shard_VMRunInteractive(shard::VirtualMachine* vm, std::size_t* pointer);
+    SHARD_API shard::CallStackFrame* Shard_VMPushFrame(shard::VirtualMachine* vm, shard::MethodSymbol* method);
+    SHARD_API int Shard_VMPopFrame(shard::VirtualMachine* vm);
+    SHARD_API int Shard_VMRaiseException(shard::VirtualMachine* vm, shard::ObjectInstance* exception);
+    SHARD_API shard::ObjectInstance* Shard_VMInstantiateObject(shard::VirtualMachine* vm, shard::TypeSymbol* type, shard::ConstructorSymbol* ctor);
+    SHARD_API shard::ObjectInstance* Shard_VMInstantiateDelegate(shard::VirtualMachine* vm, shard::DelegateTypeSymbol* type);
 
     // =========================================================================
     // Call Stack Frame API
@@ -115,6 +123,8 @@ extern "C"
 
     SHARD_API int Shard_GetTaskState(shard::ObjectInstance* task, shard::FieldSymbol* stateField, int* state);
     SHARD_API int Shard_ResumeContinuation(shard::ApplicationDomain* domain, shard::ObjectInstance* task, shard::FieldSymbol* continuationField, shard::MethodSymbol* moveNextMethod);
+    SHARD_API std::size_t Shard_EventLoopGetRootedTaskCount(shard::ApplicationDomain* domain);
+    SHARD_API shard::ObjectInstance* Shard_EventLoopGetRootedTask(shard::ApplicationDomain* domain, std::size_t index);
 
     // =========================================================================
     // Garbage Collector / Value API
@@ -139,6 +149,11 @@ extern "C"
     SHARD_API shard::ObjectInstance* Shard_GCCopyInstance(shard::GarbageCollector* gc, shard::ObjectInstance* instance);
     SHARD_API int Shard_GCTerminateInstance(shard::GarbageCollector* gc, shard::ObjectInstance* instance);
     SHARD_API shard::ObjectInstance* Shard_GCNullInstance(shard::GarbageCollector* gc);
+    SHARD_API int Shard_GCCollectInstance(shard::GarbageCollector* gc, shard::ObjectInstance* instance);
+    SHARD_API int Shard_GCDestroyInstance(shard::GarbageCollector* gc, shard::ObjectInstance* instance);
+    SHARD_API int Shard_GCTerminate(shard::GarbageCollector* gc);
+    SHARD_API std::size_t Shard_GCGetHeapSize(shard::GarbageCollector* gc);
+    SHARD_API shard::ObjectInstance* Shard_GCFromNintPointer(shard::GarbageCollector* gc, void* value);
 
     SHARD_API std::int64_t Shard_ReadInteger(shard::ObjectInstance* instance);
     SHARD_API double Shard_ReadDouble(shard::ObjectInstance* instance);
@@ -161,6 +176,34 @@ extern "C"
     SHARD_API int Shard_ObjectAsByte(shard::ObjectInstance* instance, std::uint8_t* out);
     SHARD_API int Shard_ObjectAsChar(shard::ObjectInstance* instance, wchar_t* out);
     SHARD_API int Shard_ObjectAsNint(shard::ObjectInstance* instance, std::int64_t* out);
+    SHARD_API int Shard_ObjectIncrementReference(shard::ObjectInstance* instance);
+    SHARD_API int Shard_ObjectDecrementReference(shard::ObjectInstance* instance);
+    SHARD_API std::int64_t Shard_ObjectGetReferenceCount(shard::ObjectInstance* instance);
+    SHARD_API int Shard_ObjectGetIsTransient(shard::ObjectInstance* instance);
+    SHARD_API void* Shard_ObjectGetMemory(shard::ObjectInstance* instance);
+    SHARD_API shard::TypeShape* Shard_ObjectGetShape(shard::ObjectInstance* instance);
+    SHARD_API int Shard_ObjectReadMemory(shard::ObjectInstance* instance, std::size_t offset, std::size_t size, void* dst);
+    SHARD_API int Shard_ObjectWriteMemory(shard::ObjectInstance* instance, std::size_t offset, std::size_t size, const void* src);
+    SHARD_API void* Shard_ObjectOffsetMemory(shard::ObjectInstance* instance, std::size_t offset, std::size_t size);
+    SHARD_API int Shard_ObjectWriteInteger(shard::ObjectInstance* instance, std::int64_t value);
+    SHARD_API int Shard_ObjectWriteDouble(shard::ObjectInstance* instance, double value);
+    SHARD_API int Shard_ObjectWriteBool(shard::ObjectInstance* instance, int value);
+    SHARD_API int Shard_ObjectWriteString(shard::ObjectInstance* instance, const wchar_t* value);
+
+    // =========================================================================
+    // TypeShape API
+    // =========================================================================
+
+    SHARD_API shard::TypeSymbol* Shard_GetTypeShapeBaseType(shard::TypeShape* shape);
+    SHARD_API std::size_t Shard_GetTypeShapeSize(shard::TypeShape* shape);
+    SHARD_API std::size_t Shard_GetTypeShapeSlotCount(shard::TypeShape* shape);
+    SHARD_API std::size_t Shard_GetTypeShapeSlotOffset(shard::TypeShape* shape, std::uint32_t slot);
+    SHARD_API shard::TypeShape* Shard_GetTypeShapeSlotFieldShape(shard::TypeShape* shape, std::uint32_t slot);
+    SHARD_API int Shard_GetTypeShapeIsReferenceType(shard::TypeShape* shape);
+    SHARD_API int Shard_GetTypeShapeHasGenericArguments(shard::TypeShape* shape);
+    SHARD_API std::size_t Shard_GetTypeShapeGenericArgumentCount(shard::TypeShape* shape);
+    SHARD_API shard::TypeSymbol* Shard_GetTypeShapeGenericArgument(shard::TypeShape* shape, std::size_t index);
+    SHARD_API shard::TypeShape* Shard_GetObjectTypeShape(shard::ObjectInstance* instance);
 
     // =========================================================================
     // Symbol Inspection API
@@ -201,6 +244,11 @@ extern "C"
     SHARD_API int Shard_GetTypeDisplayName(shard::TypeSymbol* type, wchar_t* buffer, int bufferLen);
     SHARD_API int Shard_GetSymbolTableNamespaceCount(shard::CompilationContext* ctx);
     SHARD_API shard::NamespaceSymbol* Shard_GetSymbolTableNamespace(shard::CompilationContext* ctx, int index);
+    SHARD_API int Shard_GetSymbolTableMethodCount(shard::CompilationContext* ctx);
+    SHARD_API shard::MethodSymbol* Shard_GetSymbolTableMethod(shard::CompilationContext* ctx, int index);
+    SHARD_API shard::SyntaxSymbol* Shard_LookupSymbol(shard::CompilationContext* ctx, shard::SyntaxNode* node);
+    SHARD_API shard::SyntaxNode* Shard_LookupNode(shard::CompilationContext* ctx, shard::SyntaxSymbol* symbol);
+    SHARD_API int Shard_MarkAllSymbolsReady(shard::CompilationContext* ctx);
 
     enum class ShardStandardInterfaceKind : int
     {

@@ -1,0 +1,24 @@
+using stdio;
+
+namespace generic_where_class_constraint_violation_test;
+
+public class Logger
+{
+    public func Log(message: string) -> void
+    {
+    }
+}
+
+public class Other
+{
+}
+
+public static func WriteLog<T>(logger: T) -> void where T : Logger
+{
+}
+
+public static func Main() -> void
+{
+    o: Other = new Other();
+    WriteLog<Other>(o);
+}

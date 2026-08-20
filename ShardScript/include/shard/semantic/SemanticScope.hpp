@@ -22,9 +22,6 @@ namespace shard
 		std::unordered_set<NamespaceNode*> ImportedNamespaces;
 		std::unordered_set<std::wstring> AmbiguousNames;
 
-		bool ReturnFound = false;
-		bool ReturnsAnything = false;
-
 		inline SemanticScope(SyntaxSymbol* owner, SemanticScope* parent)
 			: Owner(owner), Parent(parent) { }
 

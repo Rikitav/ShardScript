@@ -1,0 +1,55 @@
+using stdio;
+
+namespace generic_multiple_constraints;
+
+public interface INameable
+{
+    func GetName() -> string;
+}
+
+public interface ICountable
+{
+    func GetCount() -> int;
+}
+
+public class Counter : INameable, ICountable
+{
+    public Count: int;
+
+    public func GetName() -> string
+    {
+        return "counter";
+    }
+
+    public func GetCount() -> int
+    {
+        return this.Count;
+    }
+}
+
+public static func Describe<T>(item: T) -> string where T : INameable, ICountable
+{
+    return item.GetName() + ":" + item.GetCount().ToString();
+}
+
+public class Box<T> where T : INameable, ICountable
+{
+    public Item: T;
+
+    public func Describe() -> string
+    {
+        return this.Item.GetName() + ":" + this.Item.GetCount().ToString();
+    }
+}
+
+public static func Main() -> void
+{
+    c: Counter = new Counter();
+    c.Count = 7;
+
+    println(Describe<Counter>(c));
+
+    box: Box<Counter> = new Box<Counter>();
+    box.Item = c;
+    println(box.Describe());
+}

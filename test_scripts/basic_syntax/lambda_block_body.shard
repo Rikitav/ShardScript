@@ -1,0 +1,12 @@
+using stdio;
+
+namespace lambda_block_body_test;
+
+public class Program
+{
+    public static func Main() -> void
+    {
+        mul := lambda (a: int, b: int) -> int { return a * b; };
+        println(mul(3, 4));
+    }
+}

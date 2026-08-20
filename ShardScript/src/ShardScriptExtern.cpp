@@ -384,6 +384,26 @@ extern "C"
         }
     }
 
+    SHARD_API int Shard_SetPopExpressionStatement(CompilationContext* ctx, int value)
+    {
+        try
+        {
+            if (ctx == nullptr)
+            {
+                SetLastShardWError(L"compilation context is null");
+                return -1;
+            }
+
+            ctx->SetPopExpressionStatement(value != 0);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
     SHARD_API int Shard_HasErrors(CompilationContext* ctx)
     {
         try
@@ -582,6 +602,41 @@ extern "C"
         {
             SetLastErrorFromException(e);
             return nullptr;
+        }
+    }
+
+    SHARD_API std::size_t Shard_GetProgramDataSectionSize(ProgramVirtualImage* program)
+    {
+        try
+        {
+            if (program == nullptr)
+                return 0;
+
+            return program->DataSection.size();
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return 0;
+        }
+    }
+
+    SHARD_API int Shard_GetProgramDataSectionByte(ProgramVirtualImage* program, std::size_t index)
+    {
+        try
+        {
+            if (program == nullptr)
+                return -1;
+
+            if (index >= program->DataSection.size())
+                return -1;
+
+            return static_cast<int>(program->DataSection[index]);
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
         }
     }
 
@@ -789,6 +844,115 @@ extern "C"
         {
             SetLastErrorFromException(e);
             return -1;
+        }
+    }
+
+    SHARD_API CallStackFrame* Shard_VMPushFrame(VirtualMachine* vm, MethodSymbol* method)
+    {
+        try
+        {
+            if (vm == nullptr)
+            {
+                SetLastShardWError(L"virtual machine is null");
+                return nullptr;
+            }
+
+            return vm->PushFrame(method);
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API int Shard_VMPopFrame(VirtualMachine* vm)
+    {
+        try
+        {
+            if (vm == nullptr)
+            {
+                SetLastShardWError(L"virtual machine is null");
+                return -1;
+            }
+
+            vm->PopFrame();
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_VMRaiseException(VirtualMachine* vm, ObjectInstance* exception)
+    {
+        try
+        {
+            if (vm == nullptr)
+            {
+                SetLastShardWError(L"virtual machine is null");
+                return -1;
+            }
+
+            vm->RaiseException(exception);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API ObjectInstance* Shard_VMInstantiateObject(VirtualMachine* vm, TypeSymbol* type, ConstructorSymbol* ctor)
+    {
+        try
+        {
+            if (vm == nullptr)
+            {
+                SetLastShardWError(L"virtual machine is null");
+                return nullptr;
+            }
+
+            if (type == nullptr || ctor == nullptr)
+            {
+                SetLastShardWError(L"type or constructor is null");
+                return nullptr;
+            }
+
+            return vm->InstantiateObject(type, ctor);
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API ObjectInstance* Shard_VMInstantiateDelegate(VirtualMachine* vm, DelegateTypeSymbol* type)
+    {
+        try
+        {
+            if (vm == nullptr)
+            {
+                SetLastShardWError(L"virtual machine is null");
+                return nullptr;
+            }
+
+            if (type == nullptr)
+            {
+                SetLastShardWError(L"delegate type is null");
+                return nullptr;
+            }
+
+            return vm->InstantiateDelegate(type);
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
         }
     }
 
@@ -1097,6 +1261,42 @@ extern "C"
         {
             SetLastErrorFromException(e);
             return -1;
+        }
+    }
+
+    SHARD_API std::size_t Shard_EventLoopGetRootedTaskCount(ApplicationDomain* domain)
+    {
+        try
+        {
+            if (domain == nullptr)
+                return 0;
+
+            return domain->GetEventLoop().GetRootedTasks().size();
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return 0;
+        }
+    }
+
+    SHARD_API ObjectInstance* Shard_EventLoopGetRootedTask(ApplicationDomain* domain, std::size_t index)
+    {
+        try
+        {
+            if (domain == nullptr)
+                return nullptr;
+
+            const auto& tasks = domain->GetEventLoop().GetRootedTasks();
+            if (index >= tasks.size())
+                return nullptr;
+
+            return tasks[index];
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
         }
     }
 
@@ -1455,6 +1655,101 @@ extern "C"
         }
     }
 
+    SHARD_API int Shard_GCCollectInstance(GarbageCollector* gc, ObjectInstance* instance)
+    {
+        try
+        {
+            if (gc == nullptr)
+            {
+                SetLastShardWError(L"garbage collector is null");
+                return -1;
+            }
+
+            gc->CollectInstance(instance);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_GCDestroyInstance(GarbageCollector* gc, ObjectInstance* instance)
+    {
+        try
+        {
+            if (gc == nullptr)
+            {
+                SetLastShardWError(L"garbage collector is null");
+                return -1;
+            }
+
+            gc->DestroyInstance(instance);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_GCTerminate(GarbageCollector* gc)
+    {
+        try
+        {
+            if (gc == nullptr)
+            {
+                SetLastShardWError(L"garbage collector is null");
+                return -1;
+            }
+
+            gc->Terminate();
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API std::size_t Shard_GCGetHeapSize(GarbageCollector* gc)
+    {
+        try
+        {
+            if (gc == nullptr)
+                return 0;
+
+            return gc->Heap.size();
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return 0;
+        }
+    }
+
+    SHARD_API ObjectInstance* Shard_GCFromNintPointer(GarbageCollector* gc, void* value)
+    {
+        try
+        {
+            if (gc == nullptr)
+            {
+                SetLastShardWError(L"garbage collector is null");
+                return nullptr;
+            }
+
+            return gc->FromNint(value, false);
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
     SHARD_API std::int64_t Shard_ReadInteger(ObjectInstance* instance)
     {
         try
@@ -1741,6 +2036,413 @@ extern "C"
         {
             SetLastErrorFromException(e);
             return -1;
+        }
+    }
+
+    SHARD_API int Shard_ObjectIncrementReference(ObjectInstance* instance)
+    {
+        try
+        {
+            if (instance == nullptr)
+            {
+                SetLastShardWError(L"instance is null");
+                return -1;
+            }
+
+            instance->IncrementReference();
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_ObjectDecrementReference(ObjectInstance* instance)
+    {
+        try
+        {
+            if (instance == nullptr)
+            {
+                SetLastShardWError(L"instance is null");
+                return -1;
+            }
+
+            instance->DecrementReference();
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API std::int64_t Shard_ObjectGetReferenceCount(ObjectInstance* instance)
+    {
+        try
+        {
+            if (instance == nullptr)
+                return 0;
+
+            return instance->getReferencesCounter();
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return 0;
+        }
+    }
+
+    SHARD_API int Shard_ObjectGetIsTransient(ObjectInstance* instance)
+    {
+        try
+        {
+            if (instance == nullptr)
+                return 0;
+
+            return instance->getIsTransient() ? 1 : 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return 0;
+        }
+    }
+
+    SHARD_API void* Shard_ObjectGetMemory(ObjectInstance* instance)
+    {
+        try
+        {
+            if (instance == nullptr)
+                return nullptr;
+
+            return instance->getMemory();
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API TypeShape* Shard_ObjectGetShape(ObjectInstance* instance)
+    {
+        try
+        {
+            if (instance == nullptr)
+                return nullptr;
+
+            return instance->getShape();
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API int Shard_ObjectReadMemory(ObjectInstance* instance, std::size_t offset, std::size_t size, void* dst)
+    {
+        try
+        {
+            if (instance == nullptr || dst == nullptr)
+            {
+                SetLastShardWError(L"instance or destination pointer is null");
+                return -1;
+            }
+
+            instance->ReadMemory(offset, size, dst);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_ObjectWriteMemory(ObjectInstance* instance, std::size_t offset, std::size_t size, const void* src)
+    {
+        try
+        {
+            if (instance == nullptr || src == nullptr)
+            {
+                SetLastShardWError(L"instance or source pointer is null");
+                return -1;
+            }
+
+            instance->WriteMemory(offset, size, src);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API void* Shard_ObjectOffsetMemory(ObjectInstance* instance, std::size_t offset, std::size_t size)
+    {
+        try
+        {
+            if (instance == nullptr)
+            {
+                SetLastShardWError(L"instance is null");
+                return nullptr;
+            }
+
+            return instance->OffsetMemory(offset, size);
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API int Shard_ObjectWriteInteger(ObjectInstance* instance, std::int64_t value)
+    {
+        try
+        {
+            if (instance == nullptr)
+            {
+                SetLastShardWError(L"instance is null");
+                return -1;
+            }
+
+            instance->WriteInteger(value);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_ObjectWriteDouble(ObjectInstance* instance, double value)
+    {
+        try
+        {
+            if (instance == nullptr)
+            {
+                SetLastShardWError(L"instance is null");
+                return -1;
+            }
+
+            instance->WriteDouble(value);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_ObjectWriteBool(ObjectInstance* instance, int value)
+    {
+        try
+        {
+            if (instance == nullptr)
+            {
+                SetLastShardWError(L"instance is null");
+                return -1;
+            }
+
+            instance->WriteBoolean(value != 0);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_ObjectWriteString(ObjectInstance* instance, const wchar_t* value)
+    {
+        try
+        {
+            if (instance == nullptr || value == nullptr)
+            {
+                SetLastShardWError(L"instance or value is null");
+                return -1;
+            }
+
+            instance->WriteString(value);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    // =========================================================================
+    // TypeShape API
+    // =========================================================================
+
+    SHARD_API TypeSymbol* Shard_GetTypeShapeBaseType(TypeShape* shape)
+    {
+        try
+        {
+            if (shape == nullptr)
+                return nullptr;
+
+            return shape->BaseType;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API std::size_t Shard_GetTypeShapeSize(TypeShape* shape)
+    {
+        try
+        {
+            if (shape == nullptr)
+                return 0;
+
+            return shape->Size;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return 0;
+        }
+    }
+
+    SHARD_API std::size_t Shard_GetTypeShapeSlotCount(TypeShape* shape)
+    {
+        try
+        {
+            if (shape == nullptr)
+                return 0;
+
+            return shape->Slots.size();
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return 0;
+        }
+    }
+
+    SHARD_API std::size_t Shard_GetTypeShapeSlotOffset(TypeShape* shape, std::uint32_t slot)
+    {
+        try
+        {
+            if (shape == nullptr)
+                return 0;
+
+            return shape->GetOffset(slot);
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return 0;
+        }
+    }
+
+    SHARD_API TypeShape* Shard_GetTypeShapeSlotFieldShape(TypeShape* shape, std::uint32_t slot)
+    {
+        try
+        {
+            if (shape == nullptr)
+                return nullptr;
+
+            return shape->GetFieldShape(slot);
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API int Shard_GetTypeShapeIsReferenceType(TypeShape* shape)
+    {
+        try
+        {
+            if (shape == nullptr)
+                return 0;
+
+            return shape->IsReferenceType() ? 1 : 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return 0;
+        }
+    }
+
+    SHARD_API int Shard_GetTypeShapeHasGenericArguments(TypeShape* shape)
+    {
+        try
+        {
+            if (shape == nullptr)
+                return 0;
+
+            return shape->HasGenericArguments() ? 1 : 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return 0;
+        }
+    }
+
+    SHARD_API std::size_t Shard_GetTypeShapeGenericArgumentCount(TypeShape* shape)
+    {
+        try
+        {
+            if (shape == nullptr)
+                return 0;
+
+            return shape->GenericArguments.size();
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return 0;
+        }
+    }
+
+    SHARD_API TypeSymbol* Shard_GetTypeShapeGenericArgument(TypeShape* shape, std::size_t index)
+    {
+        try
+        {
+            if (shape == nullptr || index >= shape->GenericArguments.size())
+                return nullptr;
+
+            return shape->GenericArguments[index];
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API TypeShape* Shard_GetObjectTypeShape(ObjectInstance* instance)
+    {
+        try
+        {
+            if (instance == nullptr)
+                return nullptr;
+
+            return instance->getShape();
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
         }
     }
 
@@ -2182,6 +2884,96 @@ extern "C"
         {
             SetLastErrorFromException(e);
             return nullptr;
+        }
+    }
+
+    SHARD_API int Shard_GetSymbolTableMethodCount(CompilationContext* ctx)
+    {
+        try
+        {
+            if (ctx == nullptr)
+                return 0;
+
+            return static_cast<int>(ctx->GetSemanticModel().Table->GetMethodSymbols().size());
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return 0;
+        }
+    }
+
+    SHARD_API MethodSymbol* Shard_GetSymbolTableMethod(CompilationContext* ctx, int index)
+    {
+        try
+        {
+            if (ctx == nullptr)
+                return nullptr;
+
+            auto methods = ctx->GetSemanticModel().Table->GetMethodSymbols();
+            if (index < 0 || index >= static_cast<int>(methods.size()))
+                return nullptr;
+
+            return methods[index];
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API SyntaxSymbol* Shard_LookupSymbol(CompilationContext* ctx, SyntaxNode* node)
+    {
+        try
+        {
+            if (ctx == nullptr || node == nullptr)
+                return nullptr;
+
+            auto result = ctx->GetSemanticModel().Table->LookupSymbol(node);
+            return result.has_value() ? result.value() : nullptr;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API SyntaxNode* Shard_LookupNode(CompilationContext* ctx, SyntaxSymbol* symbol)
+    {
+        try
+        {
+            if (ctx == nullptr || symbol == nullptr)
+                return nullptr;
+
+            auto result = ctx->GetSemanticModel().Table->LookupNode(symbol);
+            return result.has_value() ? result.value() : nullptr;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API int Shard_MarkAllSymbolsReady(CompilationContext* ctx)
+    {
+        try
+        {
+            if (ctx == nullptr)
+            {
+                SetLastShardWError(L"compilation context is null");
+                return -1;
+            }
+
+            ctx->GetSemanticModel().Table->MarkAllSymbolsReady();
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
         }
     }
 

@@ -1,0 +1,36 @@
+using stdio;
+
+namespace generic_class_constraint;
+
+public class Logger
+{
+    public func Log(message: string) -> void
+    {
+        println(message);
+    }
+}
+
+public static func WriteLog<T>(logger: T, message: string) -> void where T : Logger
+{
+    logger.Log(message);
+}
+
+public class Holder<T> where T : Logger
+{
+    public Item: T;
+
+    public func Use() -> void
+    {
+        this.Item.Log("held");
+    }
+}
+
+public static func Main() -> void
+{
+    logger: Logger = new Logger();
+    WriteLog<Logger>(logger, "direct");
+
+    holder: Holder<Logger> = new Holder<Logger>();
+    holder.Item = logger;
+    holder.Use();
+}

@@ -1,0 +1,23 @@
+using stdio;
+
+namespace generic_where_extension_constraint_violation_test;
+
+public interface INameable
+{
+    func GetName() -> string;
+}
+
+public class Plain
+{
+}
+
+public static func GetNameOrDefault<T>(value: T) -> string where T : INameable
+{
+    return value.GetName();
+}
+
+public static func Main() -> void
+{
+    p: Plain = new Plain();
+    p.GetNameOrDefault<Plain>();
+}

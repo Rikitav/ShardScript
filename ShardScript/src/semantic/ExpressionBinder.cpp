@@ -226,6 +226,16 @@ namespace
 		return false;
 	}
 
+	static bool IsConstraintType(TypeSymbol* constraint)
+	{
+		if (constraint == nullptr)
+			return false;
+
+		return constraint->Kind == SyntaxKind::InterfaceDeclaration
+			|| constraint->Kind == SyntaxKind::ClassDeclaration
+			|| constraint->Kind == SyntaxKind::StructDeclaration;
+	}
+
 	static TypeSymbol* ResolveAwaitablePattern(AwaitExpressionSyntax* node, TypeSymbol* awaitedType, DiagnosticsContext& diagnostics)
 	{
 		GenericTypeSymbol* awaitedGeneric = AsGenericInstance(awaitedType);
@@ -697,7 +707,6 @@ void ExpressionBinder::VisitConstructorDeclaration(ConstructorDeclarationSyntax*
 			CurrentScope()->DeclareSymbol(parameter);
 		}
 
-		CurrentScope()->ReturnFound = false;
 		VisitStatementsBlock(node->Body.get());
 		
 		PopScope();
@@ -742,19 +751,7 @@ void ExpressionBinder::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 	}
 
 	if (node->Body != nullptr)
-	{
-		CurrentScope()->ReturnFound = false;
 		VisitStatementsBlock(node->Body.get());
-
-		if (!symbol->IsAsync && symbol->ReturnType != nullptr)
-		{
-			if (symbol->ReturnType->Name != L"Void")
-			{
-				if (!CurrentScope()->ReturnFound)
-					Diagnostics.ReportError(node->IdentifierToken, L"Method must return a value of type '" + symbol->ReturnType->Name + L"'");
-			}
-		}
-	}
 
 	PopScope();
 
@@ -788,19 +785,7 @@ void ExpressionBinder::VisitOperatorDeclaration(OperatorDeclarationSyntax* node)
 	}
 
 	if (node->Body != nullptr)
-	{
-		CurrentScope()->ReturnFound = false;
 		VisitStatementsBlock(node->Body.get());
-
-		if (symbol->ReturnType != nullptr)
-		{
-			if (symbol->ReturnType->Name != L"Void")
-			{
-				if (!CurrentScope()->ReturnFound)
-					Diagnostics.ReportError(node->OperatorToken, L"Operator must return a value of type '" + symbol->ReturnType->Name + L"'");
-			}
-		}
-	}
 
 	if (node->OperatorToken.Type == TokenType::Delimeter)
 	{
@@ -899,20 +884,7 @@ void ExpressionBinder::VisitAccessorDeclaration(AccessorDeclarationSyntax* node)
 		}
 
 		if (node->Body != nullptr)
-		{
-			SemanticScope* scope = CurrentScope();
-			scope->ReturnFound = false;
-
 			VisitStatementsBlock(node->Body.get());
-
-			if (!scope->ReturnFound)
-			{
-				if (symbol->ReturnType != nullptr)
-					Diagnostics.ReportError(node->KeywordToken, L"Accessor must return a value of type '" + symbol->ReturnType->Name + L"'");
-				else
-					Diagnostics.ReportError(node->KeywordToken, L"Accessor must return a value");
-			}
-		}
 
 		PopScope();
 		symbol->AdvanceAnalysisState(SymbolAnalysisState::Verified);
@@ -941,14 +913,7 @@ void ExpressionBinder::VisitAccessorDeclaration(AccessorDeclarationSyntax* node)
 		}
 
 		if (node->Body != nullptr)
-		{
-			SemanticScope* scope = CurrentScope();
-			scope->ReturnsAnything = false;
 			VisitStatementsBlock(node->Body.get());
-
-			if (scope->ReturnsAnything)
-				Diagnostics.ReportError(node->KeywordToken, L"Setter method of '" + node->IdentifierToken.Word + L"' should not return any values");
-		}
 
 		PopScope();
 		symbol->AdvanceAnalysisState(SymbolAnalysisState::Verified);
@@ -1625,7 +1590,6 @@ void ExpressionBinder::VisitLambdaExpression(LambdaExpressionSyntax* node)
 	for (const auto& parameter : delegate->Parameters)
 		Declare(parameter);
 
-	CurrentScope()->ReturnFound = false;
 	VisitStatementsBlock(node->Body.get());
 	PopScope();
 
@@ -2069,7 +2033,7 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 			TypeParameterSymbol* typeParam = static_cast<TypeParameterSymbol*>(currentType);
 			for (TypeSymbol* constraint : typeParam->Constraints)
 			{
-				if (constraint == nullptr || constraint->Kind != SyntaxKind::InterfaceDeclaration)
+				if (!IsConstraintType(constraint))
 					continue;
 
 				symbol = constraint->FindProperty(memberName);
@@ -2832,7 +2796,7 @@ bool ExpressionBinder::HasAnyMethodNamed(const std::wstring& name, TypeSymbol* c
 			TypeParameterSymbol* typeParam = static_cast<TypeParameterSymbol*>(searchType);
 			for (TypeSymbol* constraint : typeParam->Constraints)
 			{
-				if (constraint == nullptr || constraint->Kind != SyntaxKind::InterfaceDeclaration)
+				if (!IsConstraintType(constraint))
 					continue;
 
 				for (MethodSymbol* method : constraint->Methods)
@@ -3010,18 +2974,23 @@ MethodSymbol* ExpressionBinder::ResolveMethod(InvokationExpressionSyntax* node, 
 	{
 		TypeSymbol* searchType = currentType;
 
-		// For type parameters constrained to interfaces, search the interface constraints
-		// for an instance method with the requested name.
+		// For type parameters constrained to interfaces or classes, search the constraint
+		// types for an instance method with the requested name.
 		if (searchType->Kind == SyntaxKind::TypeParameter)
 		{
 			TypeParameterSymbol* typeParam = static_cast<TypeParameterSymbol*>(searchType);
 			for (TypeSymbol* constraint : typeParam->Constraints)
 			{
-				if (constraint == nullptr || constraint->Kind != SyntaxKind::InterfaceDeclaration)
+				if (!IsConstraintType(constraint))
 					continue;
 
-				InterfaceSymbol* interfaceSymbol = static_cast<InterfaceSymbol*>(constraint);
-				symbol = FindMethodOverload(interfaceSymbol->Methods, methodName, argTypes, genericType, explicitMethodTypeArgs, selectedMethodTypeArgs, node->IdentifierToken);
+				const std::vector<MethodSymbol*>* methods = nullptr;
+				if (constraint->Kind == SyntaxKind::InterfaceDeclaration)
+					methods = &static_cast<InterfaceSymbol*>(constraint)->Methods;
+				else
+					methods = &constraint->Methods;
+
+				symbol = FindMethodOverload(*methods, methodName, argTypes, genericType, explicitMethodTypeArgs, selectedMethodTypeArgs, node->IdentifierToken);
 				if (symbol != nullptr)
 				{
 					currentType = constraint;
@@ -4394,8 +4363,6 @@ void ExpressionBinder::VisitReturnStatement(ReturnStatementSyntax* node)
 		return;
 	}
 
-	searchingScope->ReturnFound = true;
-
 	if (searchingScope->Owner != nullptr && searchingScope->Owner->Kind == SyntaxKind::MethodDeclaration)
 	{
 		MethodSymbol* method = const_cast<MethodSymbol*>(static_cast<const MethodSymbol*>(searchingScope->Owner));
@@ -4458,7 +4425,6 @@ void ExpressionBinder::VisitReturnStatement(ReturnStatementSyntax* node)
 	{
 		if (node->Expression != nullptr)
 		{
-			searchingScope->ReturnsAnything = true;
 			VisitExpression(node->Expression.get());
 
 			Diagnostics.ReportError(node->KeywordToken, L"Void method cannot return a value");
@@ -4479,7 +4445,6 @@ void ExpressionBinder::VisitReturnStatement(ReturnStatementSyntax* node)
 		return;
 	}
 
-	searchingScope->ReturnsAnything = true;
 	VisitExpression(node->Expression.get());
 	TypeSymbol* returnExprType = GetExpressionType(node->Expression.get());
 
@@ -4530,9 +4495,6 @@ void ExpressionBinder::VisitStatementsBlock(StatementsBlockSyntax* node)
 			{
 				if (returnStatement->Expression != nullptr)
 					VisitExpression(returnStatement->Expression.get());
-
-				if (searchingScope != nullptr)
-					searchingScope->ReturnFound = true;
 
 				return;
 			}
