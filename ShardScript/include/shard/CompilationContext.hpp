@@ -52,6 +52,7 @@ namespace shard
 
 		SyntaxTree& GetSyntaxTree();
 		SemanticModel& GetSemanticModel();
+		const SemanticModel& GetSemanticModel() const;
 		DiagnosticsContext& GetDiagnosticsContext();
 
 		SourceParser& GetParser();

@@ -5,6 +5,7 @@
 #include <shard/analysis/TextLocation.hpp>
 
 #include <fstream>
+#include <filesystem>
 #include <string>
 
 namespace shard
@@ -15,6 +16,7 @@ namespace shard
 		std::wfstream InputStream;
 
 	public:
+		FileReader(const std::string& fileName);
 		FileReader(const std::wstring& fileName);
 		virtual ~FileReader();
 

@@ -246,7 +246,13 @@ void FlowAnalyzer::AnalyzeMemberBody(SyntaxSymbol* symbol, StatementsBlockSyntax
 
 	MethodSymbol* method = dynamic_cast<MethodSymbol*>(symbol);
 
+	bool wasAsync = _currentMethodIsAsync;
+	if (method != nullptr)
+		_currentMethodIsAsync = method->IsAsync;
+
 	FlowState bodyState = AnalyzeStatementsBlock(body);
+
+	_currentMethodIsAsync = wasAsync;
 
 	if (method == nullptr)
 		return;
@@ -259,13 +265,11 @@ void FlowAnalyzer::AnalyzeMemberBody(SyntaxSymbol* symbol, StatementsBlockSyntax
 		return;
 
 	bool alwaysTerminates = !HasFlag(bodyState, FlowState::Normal);
-	bool onlyReturnOrThrow = !HasFlag(bodyState, FlowState::Breaks)
-		&& !HasFlag(bodyState, FlowState::Continues);
+	bool onlyReturnOrThrow = !HasFlag(bodyState, FlowState::Breaks) && !HasFlag(bodyState, FlowState::Continues);
 
 	if (!alwaysTerminates || !onlyReturnOrThrow)
 	{
-		// Point the diagnostic at the end of the body (closing brace or
-		// trailing semicolon) rather than the member name.
+		// Point the diagnostic at the end of the body (closing brace or trailing semicolon) rather than the member name.
 		SyntaxToken locationToken = errorToken;
 		if (body->CloseBraceToken.Type == TokenType::CloseBrace)
 			locationToken = body->CloseBraceToken;
@@ -298,9 +302,9 @@ FlowAnalyzer::FlowState FlowAnalyzer::WithoutBreaksAndContinues(FlowState state)
 	FlowState result = state & ~(FlowState::Breaks | FlowState::Continues);
 	// A break/continue consumed by its enclosing loop or switch leaves
 	// Normal flow behind unless the body also returns or throws.
-	if (!HasFlag(result, FlowState::Normal)
-		&& !HasFlag(result, FlowState::Returns)
-		&& !HasFlag(result, FlowState::Throws))
+	if (!HasFlag(result, FlowState::Normal) &&
+		!HasFlag(result, FlowState::Returns) &&
+		!HasFlag(result, FlowState::Throws))
 	{
 		result = FlowState::Normal;
 	}
@@ -443,7 +447,8 @@ FlowAnalyzer::FlowState FlowAnalyzer::AnalyzeStatementsBlock(StatementsBlockSynt
 	{
 		if (IsTerminal(combined))
 		{
-			Diagnostics.ReportError(statement->SemicolonToken, L"Unreachable code detected");
+			if (!_currentMethodIsAsync)
+				Diagnostics.ReportError(statement->SemicolonToken, L"Unreachable code detected");
 			break;
 		}
 

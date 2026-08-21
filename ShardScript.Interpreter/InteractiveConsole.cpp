@@ -5,7 +5,6 @@
 
 #include <ShardScript.hpp>
 #include <InteractiveConsole.hpp>
-#include <utilities/InterpreterUtilities.hpp>
 
 #if _WIN32
 #include <windows.h>
@@ -364,9 +363,9 @@ InteractiveConsole::InteractiveConsole(shard::CompilationContext* context, shard
 
 void InteractiveConsole::Run()
 {
-	ConsoleHelper::WriteLine(L"ShardScript Interactive Console v" + std::wstring(SHARDSCRIPT_VERSION));
-	ConsoleHelper::WriteLine(L"Type 'exit' or 'quit' to exit");
-	ConsoleHelper::WriteLine();
+	std::cout << "ShardScript Interactive Console v" << SHARDSCRIPT_VERSION;
+	std::cout << "Type 'exit' or 'quit' to exit";
+	std::cout << std::endl;
 	bool pushedFrame = false;
 
 	while (true)

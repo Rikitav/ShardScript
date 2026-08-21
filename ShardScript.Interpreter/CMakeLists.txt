@@ -46,7 +46,3 @@ set_target_properties(ShardScript.Interpreter PROPERTIES
 target_link_libraries(ShardScript.Interpreter PRIVATE
     ShardScript
 )
-
-if(MINGW)
-    target_link_options(ShardScript.Interpreter PRIVATE -municode)
-endif()
