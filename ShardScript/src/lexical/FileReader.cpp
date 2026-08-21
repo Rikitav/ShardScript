@@ -3,16 +3,27 @@
 #include <shard/analysis/TextLocation.hpp>
 
 #include <fstream>
+#include <iostream>
 #include <stdexcept>
 #include <string>
 #include <filesystem>
 
 using namespace shard;
 
+FileReader::FileReader(const std::string& fileName) : SourceTextProvider()
+{
+	Filename = std::filesystem::path(fileName);
+	InputStream = std::wfstream(Filename.c_str(), std::ios::in);
+	InputStream.imbue(std::locale::classic());
+
+	if (!InputStream)
+		throw std::runtime_error("Cannot open file");
+}
+
 FileReader::FileReader(const std::wstring& fileName) : SourceTextProvider()
 {
-	Filename = fileName;
-	InputStream = std::wfstream(std::filesystem::path(fileName), std::ios::in);
+	Filename = std::filesystem::path(fileName);
+	InputStream = std::wfstream(Filename.c_str(), std::ios::in);
 	InputStream.imbue(std::locale::classic());
 
 	if (!InputStream)

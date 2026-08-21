@@ -3101,7 +3101,7 @@ extern "C"
 
     SHARD_API const wchar_t* Shard_GetVersion()
     {
-        return SHARDSCRIPT_VERSION;
+        return SHARDSCRIPT_WVERSION;
     }
 
     SHARD_API int Shard_DestroySyntaxNode(SyntaxNode* node)

@@ -49,7 +49,7 @@ namespace
         }
     };
 
-    static std::wstring FormatAccess(MethodSymbol* method)
+    static std::wstring FormatAccess(const MethodSymbol* method)
     {
         std::wstring result;
         if (method->Accesibility == SymbolAccesibility::Public)
@@ -72,7 +72,7 @@ namespace
         return type->FullName.empty() ? type->Name : type->FullName;
     }
 
-    static std::wstring FormatParameters(MethodSymbol* method)
+    static std::wstring FormatParameters(const MethodSymbol* method)
     {
         if (method->Parameters.empty())
             return L"()";
@@ -110,7 +110,7 @@ namespace
         }
     }
 
-    static std::wstring FormatParent(MethodSymbol* method)
+    static std::wstring FormatParent(const MethodSymbol* method)
     {
         if (method->Parent == nullptr)
             return L"<global>";
@@ -135,7 +135,7 @@ namespace
         out.flags(oldFlags);
     }
 
-    static void WriteMethodHeader(std::wostream& out, MethodSymbol* method, const Colorizer& color)
+    static void WriteMethodHeader(std::wostream& out, const MethodSymbol* method, const Colorizer& color)
     {
         color.apply(out, color.bold);
         color.apply(out, color.cyan);
@@ -182,7 +182,48 @@ namespace
     }
 }
 
-void ProgramDisassembler::Disassemble(std::wostream& out, ProgramVirtualImage& program)
+void ProgramDisassembler::Disassemble(std::wostream& out, const CompilationContext& compiler)
+{
+    SymbolTable* table = compiler.GetSemanticModel().Table.get();
+    const std::vector<MethodSymbol*>& methods = table->GetMethodSymbols();
+
+    for (const auto& method : methods)
+    {
+        if (method->HandleType != MethodHandleType::Body)
+            continue;
+
+        MethodDeclarationSyntax* methodNode = static_cast<MethodDeclarationSyntax*>(table->LookupNode(method).value_or(nullptr));
+        if (methodNode == nullptr)
+        {
+            if (method->FullName.find(L"k__AsyncStateMachine_") == std::wstring::npos)
+            {
+                std::cout << "Failed to resolve methods node" << std::endl;
+                continue;
+            }
+        }
+        else
+        {
+            SyntaxNode* methodParentNode = methodNode;
+            while (methodParentNode != nullptr && methodParentNode->Kind != SyntaxKind::CompilationUnit)
+                methodParentNode = methodParentNode->Parent;
+
+            CompilationUnitSyntax* unit = static_cast<CompilationUnitSyntax*>(methodParentNode);
+
+            if (unit == nullptr)
+            {
+                std::wcout << L"Failed to resolve " << methodNode->IdentifierToken.Word << L" methods unit" << std::endl;
+                continue;
+            }
+
+            if (unit->Origin != CompilationUnitOrigin::SourceFile)
+                continue;
+        }
+
+        Disassemble(std::wcout, method);
+    }
+}
+
+void ProgramDisassembler::Disassemble(std::wostream& out, const ProgramVirtualImage& program)
 {
     if (!program.EntryPoint)
     {
@@ -193,7 +234,7 @@ void ProgramDisassembler::Disassemble(std::wostream& out, ProgramVirtualImage& p
     Disassemble(out, program.EntryPoint);
 }
 
-void ProgramDisassembler::Disassemble(std::wostream& out, MethodSymbol* method)
+void ProgramDisassembler::Disassemble(std::wostream& out, const MethodSymbol* method)
 {
     Colorizer color(out);
 

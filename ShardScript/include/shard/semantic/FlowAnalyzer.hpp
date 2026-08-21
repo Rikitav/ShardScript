@@ -58,6 +58,7 @@ namespace shard
 		AssignmentSet _assignedVariables;
 		int _loopDepth = 0;
 		int _switchDepth = 0;
+		bool _currentMethodIsAsync = false;
 
 	public:
 		FlowAnalyzer(SemanticModel& model, DiagnosticsContext& diagnostics);

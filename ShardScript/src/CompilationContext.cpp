@@ -504,6 +504,11 @@ SemanticModel& CompilationContext::GetSemanticModel()
 	return Model;
 }
 
+const SemanticModel& CompilationContext::GetSemanticModel() const
+{
+	return Model;
+}
+
 DiagnosticsContext& CompilationContext::GetDiagnosticsContext()
 {
 	return Diagnostics;
