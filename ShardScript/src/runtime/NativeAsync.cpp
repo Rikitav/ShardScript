@@ -199,39 +199,80 @@ namespace shard
 
     void AsyncScope::Delay(std::int64_t milliseconds, std::function<void()> onComplete)
     {
+        Delay(milliseconds, nullptr, std::move(onComplete));
+    }
+
+    void AsyncScope::Delay(std::int64_t milliseconds, std::function<bool()> isCancelled, std::function<void()> onComplete)
+    {
         if (!m_state)
             return;
 
         if (milliseconds < 0)
             milliseconds = 0;
 
+        if (isCancelled && isCancelled())
+        {
+            onComplete();
+            return;
+        }
+
+        if (milliseconds == 0)
+        {
+            onComplete();
+            return;
+        }
+
         struct DelayData
         {
             std::shared_ptr<detail::AsyncScopeState> scope;
+            std::function<bool()> isCancelled;
             std::function<void()> callback;
             uv_timer_t* timer;
+            std::uint64_t delayMs;
+            std::uint64_t startTime;
         };
 
+        uv_loop_t* loop = m_state->domain->GetEventLoop().GetLoop();
+
         auto* timer = new uv_timer_t;
-        uv_timer_init(m_state->domain->GetEventLoop().GetLoop(), timer);
+        uv_timer_init(loop, timer);
         m_state->ActiveHandle = reinterpret_cast<uv_handle_t*>(timer);
 
-        auto* data = new DelayData{ m_state, std::move(onComplete), timer };
+        std::uint64_t delayMs = static_cast<std::uint64_t>(milliseconds);
+        std::uint64_t period = delayMs <= 50 ? delayMs : 50;
+
+        auto* data = new DelayData{
+            m_state,
+            std::move(isCancelled),
+            std::move(onComplete),
+            timer,
+            delayMs,
+            uv_now(loop)
+        };
         timer->data = data;
 
         uv_timer_start(timer, [](uv_timer_t* handle)
         {
             DelayData* data = static_cast<DelayData*>(handle->data);
-            data->scope->ActiveHandle = nullptr;
-            data->callback();
+            if (data->scope->completed)
+                return;
 
-            uv_close(reinterpret_cast<uv_handle_t*>(handle), [](uv_handle_t* closed)
+            bool cancelled = data->isCancelled && data->isCancelled();
+            bool elapsed = static_cast<std::uint64_t>(uv_now(handle->loop) - data->startTime) >= data->delayMs;
+
+            if (cancelled || elapsed)
             {
-                delete reinterpret_cast<uv_timer_t*>(closed);
-            });
+                data->scope->ActiveHandle = nullptr;
+                data->callback();
 
-            delete data;
-        }, static_cast<std::uint64_t>(milliseconds), 0);
+                uv_close(reinterpret_cast<uv_handle_t*>(handle), [](uv_handle_t* closed)
+                {
+                    delete reinterpret_cast<uv_timer_t*>(closed);
+                });
+
+                delete data;
+            }
+        }, period, period);
     }
 
     void AsyncScope::RunOnThreadPool(std::function<void()> work, std::function<void()> onComplete)
