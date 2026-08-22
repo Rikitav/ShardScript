@@ -1,0 +1,49 @@
+using stdio;
+using async;
+using time;
+
+namespace test_task_delay_overloads;
+
+public class Program
+{
+    public static func Main() -> void
+    {
+        Task.Wait(RunAll());
+    }
+
+    public static async func RunAll() -> Task
+    {
+        // Delay(int)
+        await Task.Delay(10);
+        println("int ok");
+
+        // Delay(TimeSpan)
+        await Task.Delay(TimeSpan.FromMilliseconds(20.0));
+        println("timespan ok");
+
+        // Delay(int, CancellationToken) - normal completion
+        cts1: CancellationTokenSource = new CancellationTokenSource();
+        await Task.Delay(10, cts1.Token);
+        println("int+token ok");
+
+        // Delay(int, CancellationToken) - already cancelled returns early, no exception
+        cts2: CancellationTokenSource = new CancellationTokenSource();
+        cts2.Cancel();
+        await Task.Delay(10000, cts2.Token);
+        println("int+token cancelled ok");
+
+        // Delay(TimeSpan, CancellationToken) - already cancelled returns early, no exception
+        cts3: CancellationTokenSource = new CancellationTokenSource();
+        cts3.Cancel();
+        await Task.Delay(TimeSpan.FromSeconds(10.0), cts3.Token);
+        println("timespan+token cancelled ok");
+
+        // Delay(int, CancellationToken) - cancelled while pending returns early, no exception
+        cts4: CancellationTokenSource = new CancellationTokenSource();
+        pending: Task = Task.Delay(10000, cts4.Token);
+        await Task.Delay(50);
+        cts4.Cancel();
+        await pending;
+        println("int+token late cancel ok");
+    }
+}

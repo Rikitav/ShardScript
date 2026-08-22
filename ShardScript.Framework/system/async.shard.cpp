@@ -1,4 +1,5 @@
 #include <ShardScript.hpp>
+#include <shard/semantic/SemanticModel.hpp>
 
 #include <shard/runtime/EventLoop.hpp>
 #include <shard/runtime/VirtualMachine.hpp>
@@ -22,6 +23,92 @@ namespace
 
     TypeSymbol* shard_CancellationToken = nullptr;
     FieldSymbol* shard_CancellationToken_SourceField = nullptr;
+
+    TypeSymbol* shard_TimeSpan = nullptr;
+    FieldSymbol* shard_TimeSpan_TicksField = nullptr;
+
+    static std::int64_t GetTimeSpanTotalMilliseconds(ObjectInstance* timeSpan)
+    {
+        if (timeSpan == nullptr || timeSpan == GarbageCollector::NullInstance)
+            return 0;
+
+        if (shard_TimeSpan == nullptr || timeSpan->getInfo() != shard_TimeSpan)
+            return 0;
+
+        const std::int64_t TicksPerMillisecond = 10000;
+        ObjectInstance* ticks = timeSpan->GetField(shard_TimeSpan_TicksField->SlotIndex);
+        if (ticks == nullptr || ticks == GarbageCollector::NullInstance)
+            return 0;
+
+        return ticks->AsInteger() / TicksPerMillisecond;
+    }
+
+    static bool IsCancellationRequested(ObjectInstance* token)
+    {
+        if (token == nullptr || token == GarbageCollector::NullInstance)
+            return false;
+
+        if (shard_CancellationToken == nullptr || token->getInfo() != shard_CancellationToken)
+            return false;
+
+        ObjectInstance* source = token->GetField(shard_CancellationToken_SourceField->SlotIndex);
+        if (source == nullptr || source == GarbageCollector::NullInstance)
+            return false;
+
+        if (source->getInfo() != shard_CancellationTokenSource)
+            return false;
+
+        ObjectInstance* canceled = source->GetField(shard_CancellationTokenSource_CanceledField->SlotIndex);
+        if (canceled == nullptr || canceled == GarbageCollector::NullInstance)
+            return false;
+
+        return canceled->AsInteger() != 0;
+    }
+
+    // ------------------------------------------------------------------------
+    // Task.Delay overloads with TimeSpan and CancellationToken
+    // ------------------------------------------------------------------------
+    static ObjectInstance* shard_async_Task_Delay_Timespan(const CallState& context) noexcept
+    {
+        std::int64_t milliseconds = GetTimeSpanTotalMilliseconds(context.Args[0]);
+
+        return shard::DoAsync(context, [milliseconds](shard::AsyncScope async)
+        {
+            async.Delay(milliseconds, [async]() mutable { async.Complete(); });
+        });
+    }
+
+    static ObjectInstance* shard_async_Task_Delay_CancellationToken(const CallState& context) noexcept
+    {
+        std::int64_t milliseconds = context.Args[0]->AsInteger();
+        ObjectInstance* token = context.Args[1];
+
+        if (IsCancellationRequested(token))
+            return shard::CompletedTask(context);
+
+        return shard::DoAsync(context, [milliseconds, token](shard::AsyncScope async)
+        {
+            async.Delay(milliseconds,
+                [token]() { return IsCancellationRequested(token); },
+                [async]() mutable { async.Complete(); });
+        });
+    }
+
+    static ObjectInstance* shard_async_Task_Delay_Timespan_CancellationToken(const CallState& context) noexcept
+    {
+        std::int64_t milliseconds = GetTimeSpanTotalMilliseconds(context.Args[0]);
+        ObjectInstance* token = context.Args[1];
+
+        if (IsCancellationRequested(token))
+            return shard::CompletedTask(context);
+
+        return shard::DoAsync(context, [milliseconds, token](shard::AsyncScope async)
+        {
+            async.Delay(milliseconds,
+                [token]() { return IsCancellationRequested(token); },
+                [async]() mutable { async.Complete(); });
+        });
+    }
 
     // ------------------------------------------------------------------------
     // TaskCompletionSource<T>
@@ -131,11 +218,19 @@ namespace
 // Library metadata
 // =============================================================================
 
+static const shard::ShardLibDependencyInfo async_Dependencies[] =
+{
+    { L"shard.time", L"1.0.0" }
+};
+
 SHARDLIB_GETMETADATA
 {
     lib.Name = L"shard.async";
     lib.Description = L"Async/await support primitives";
     lib.Version = L"1.0.0";
+
+    lib.Dependencies = async_Dependencies;
+    lib.DependenciesLength = sizeof(async_Dependencies) / sizeof(async_Dependencies[0]);
 }
 
 // ------------------------------------------------------------------------
@@ -268,4 +363,29 @@ SHARDLIB_ENTRYPOINT
         .SetCallback(&shard_async_CancellationTokenSource_Token_get);
 
     ctsClass.DeclareGlobal();
+
+    // -------------------------------------------------------------------------
+    // Task.Delay overloads (depend on TimeSpan from time.shard)
+    // -------------------------------------------------------------------------
+    shard_TimeSpan = SemanticModel::FindTypeByName(context.GetSemanticModel().Table.get(), L"time.TimeSpan");
+    shard_TimeSpan_TicksField = SemanticModel::FindFieldByName(shard_TimeSpan, L"_ticks");
+
+    SymbolBuilder<ClassSymbol> taskBuilder(context.GetSemanticModel().Table.get(), CLASS_TASK);
+
+    taskBuilder.AddMethod(L"Delay", CLASS_TASK, LINK_STATIC, ACS_PUBLIC)
+        .AddParameter(L"delay", shard_TimeSpan)
+        .SetCallback(&shard_async_Task_Delay_Timespan)
+        .DeclareGlobal();
+
+    taskBuilder.AddMethod(L"Delay", CLASS_TASK, LINK_STATIC, ACS_PUBLIC)
+        .AddParameter(L"milliseconds", TYPE_INT)
+        .AddParameter(L"cancellationToken", shard_CancellationToken)
+        .SetCallback(&shard_async_Task_Delay_CancellationToken)
+        .DeclareGlobal();
+
+    taskBuilder.AddMethod(L"Delay", CLASS_TASK, LINK_STATIC, ACS_PUBLIC)
+        .AddParameter(L"delay", shard_TimeSpan)
+        .AddParameter(L"cancellationToken", shard_CancellationToken)
+        .SetCallback(&shard_async_Task_Delay_Timespan_CancellationToken)
+        .DeclareGlobal();
 }

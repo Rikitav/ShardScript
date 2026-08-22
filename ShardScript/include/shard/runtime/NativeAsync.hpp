@@ -80,6 +80,9 @@ namespace shard
         /// <summary>Schedule a callback after the given delay in milliseconds.</summary>
         void Delay(std::int64_t milliseconds, std::function<void()> onComplete);
 
+        /// <summary>Schedule a callback after the given delay, completing early if isCancelled returns true.</summary>
+        void Delay(std::int64_t milliseconds, std::function<bool()> isCancelled, std::function<void()> onComplete);
+
         /// <summary>Run work on a thread-pool thread and call onComplete on the loop thread.</summary>
         void RunOnThreadPool(std::function<void()> work, std::function<void()> onComplete);
 
