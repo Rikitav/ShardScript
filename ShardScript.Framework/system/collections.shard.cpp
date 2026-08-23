@@ -272,6 +272,20 @@ static TypeParameterSymbol* dictEnumerator_typeParam_V = nullptr;
 static FieldSymbol* dictEnumerator_sourceField = nullptr;
 static FieldSymbol* dictEnumerator_indexField = nullptr;
 
+static ClassSymbol* entryClass_raw = nullptr;
+static TypeParameterSymbol* entry_typeParam_K = nullptr;
+static TypeParameterSymbol* entry_typeParam_V = nullptr;
+static FieldSymbol* entry_dictField = nullptr;
+static FieldSymbol* entry_keyField = nullptr;
+static FieldSymbol* entry_occupiedField = nullptr;
+static FieldSymbol* entry_slotField = nullptr;
+
+static DelegateTypeSymbol* factoryDelegate_raw = nullptr;
+static TypeParameterSymbol* factoryDelegate_T = nullptr;
+
+static DelegateTypeSymbol* modifierDelegate_raw = nullptr;
+static TypeParameterSymbol* modifierDelegate_T = nullptr;
+
 // =========================================================================
 //  Queue<T>
 // =========================================================================
@@ -750,6 +764,162 @@ static ObjectInstance* shard_dictionaryenumerator_Current_get(const CallState& c
 	pair->SetField(kvp_keyField->SlotIndex, keys->GetElement(static_cast<std::size_t>(index), context.Frame));
 	pair->SetField(kvp_valueField->SlotIndex, values->GetElement(static_cast<std::size_t>(index), context.Frame));
 	return pair;
+}
+
+// =========================================================================
+//  Entry API helpers
+// =========================================================================
+static ObjectInstance* InvokeFactory(const CallState& context, ObjectInstance* delegateObj, TypeSymbol* typeArg)
+{
+	if (delegateObj == nullptr || delegateObj->DelegateTarget == nullptr)
+		throw std::runtime_error("Invalid delegate");
+
+	MethodSymbol* method = delegateObj->DelegateTarget;
+	context.Runtimer.SetPendingTypeArguments({ typeArg });
+	return context.Runtimer.InvokeMethod(method, nullptr, 0);
+}
+
+static ObjectInstance* InvokeModifier(const CallState& context, ObjectInstance* delegateObj, ObjectInstance* arg, TypeSymbol* typeArg)
+{
+	if (delegateObj == nullptr || delegateObj->DelegateTarget == nullptr)
+		throw std::runtime_error("Invalid delegate");
+
+	MethodSymbol* method = delegateObj->DelegateTarget;
+	ObjectInstance* args[] = { arg };
+	context.Runtimer.SetPendingTypeArguments({ typeArg });
+	return context.Runtimer.InvokeMethod(method, args, 1);
+}
+
+static ObjectInstance* CreateDefaultValue(const CallState& context, TypeSymbol* valueType)
+{
+	if (valueType->IsReferenceType())
+		return GarbageCollector::NullInstance;
+
+	if (valueType == SymbolTable::Primitives::Integer
+		|| valueType == SymbolTable::Primitives::Boolean
+		|| valueType == SymbolTable::Primitives::Char)
+	{
+		return context.Collector.FromValue(static_cast<std::int64_t>(0));
+	}
+
+	if (valueType == SymbolTable::Primitives::Double)
+		return context.Collector.FromValue(0.0);
+
+	return context.Collector.AllocateInstance(valueType);
+}
+
+static ObjectInstance* shard_dict_Entry(const CallState& context) noexcept(false)
+{
+	ObjectInstance* dict = context.Args[0];
+	ObjectInstance* key = context.Args[1];
+	TypeSymbol* keyType = context.Frame->TypeArguments[0];
+	TypeSymbol* valueType = context.Frame->TypeArguments[1];
+
+	dictionary_EnsureCapacity(dict, keyType, valueType, context.Collector);
+
+	bool found = false;
+	std::size_t slot = dictionary_FindSlot(dict, key, found, context.Frame);
+
+	ObjectInstance* entry = context.Collector.AllocateGeneric(entryClass_raw, std::vector<TypeSymbol*>{ keyType, valueType });
+	entry->SetField(entry_dictField->SlotIndex, dict);
+	entry->SetField(entry_keyField->SlotIndex, key);
+	entry->SetField(entry_occupiedField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(found ? 1 : 0)));
+	entry->SetField(entry_slotField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(slot)));
+	return entry;
+}
+
+static ObjectInstance* shard_entry_GetValueAtSlot(ObjectInstance* entry)
+{
+	ObjectInstance* dict = entry->GetField(entry_dictField->SlotIndex);
+	std::int64_t slot = entry->GetField(entry_slotField->SlotIndex)->AsInteger();
+	ObjectInstance* values = dict->GetField(dict_valuesField->SlotIndex);
+	return values->GetElement(static_cast<std::size_t>(slot));
+}
+
+static void shard_entry_InsertValueAtSlot(ObjectInstance* entry, ObjectInstance* value, GarbageCollector& collector)
+{
+	ObjectInstance* dict = entry->GetField(entry_dictField->SlotIndex);
+	ObjectInstance* key = entry->GetField(entry_keyField->SlotIndex);
+	std::int64_t slot = entry->GetField(entry_slotField->SlotIndex)->AsInteger();
+
+	ObjectInstance* keys = dict->GetField(dict_keysField->SlotIndex);
+	ObjectInstance* values = dict->GetField(dict_valuesField->SlotIndex);
+	ObjectInstance* hashes = dict->GetField(dict_hashesField->SlotIndex);
+	ObjectInstance* states = dict->GetField(dict_statesField->SlotIndex);
+
+	hashes->SetElement(static_cast<std::size_t>(slot), collector.FromValue(GetObjectHash(key)));
+	states->SetElement(static_cast<std::size_t>(slot), collector.FromValue(static_cast<std::int64_t>(1)));
+	keys->SetElement(static_cast<std::size_t>(slot), key);
+	values->SetElement(static_cast<std::size_t>(slot), value);
+
+	std::int64_t count = dict->GetField(dict_countField->SlotIndex)->AsInteger();
+	dict->SetField(dict_countField->SlotIndex, collector.FromValue(count + 1));
+	entry->SetField(entry_occupiedField->SlotIndex, collector.FromValue(static_cast<std::int64_t>(1)));
+}
+
+static ObjectInstance* shard_entry_OrInsert(const CallState& context) noexcept(false)
+{
+	ObjectInstance* entry = context.Args[0];
+	ObjectInstance* value = context.Args[1];
+
+	bool occupied = entry->GetField(entry_occupiedField->SlotIndex)->AsInteger() != 0;
+	if (occupied)
+		return shard_entry_GetValueAtSlot(entry);
+
+	shard_entry_InsertValueAtSlot(entry, value, context.Collector);
+	return value;
+}
+
+static ObjectInstance* shard_entry_OrInsertWith(const CallState& context) noexcept(false)
+{
+	ObjectInstance* entry = context.Args[0];
+	ObjectInstance* factory = context.Args[1];
+	TypeSymbol* valueType = context.Frame->TypeArguments[1];
+
+	bool occupied = entry->GetField(entry_occupiedField->SlotIndex)->AsInteger() != 0;
+	if (occupied)
+		return shard_entry_GetValueAtSlot(entry);
+
+	ObjectInstance* value = InvokeFactory(context, factory, valueType);
+	shard_entry_InsertValueAtSlot(entry, value, context.Collector);
+	return value;
+}
+
+static ObjectInstance* shard_entry_OrDefault(const CallState& context) noexcept(false)
+{
+	ObjectInstance* entry = context.Args[0];
+	TypeSymbol* valueType = context.Frame->TypeArguments[1];
+
+	bool occupied = entry->GetField(entry_occupiedField->SlotIndex)->AsInteger() != 0;
+	if (occupied)
+		return shard_entry_GetValueAtSlot(entry);
+
+	ObjectInstance* value = CreateDefaultValue(context, valueType);
+	shard_entry_InsertValueAtSlot(entry, value, context.Collector);
+	return value;
+}
+
+static ObjectInstance* shard_entry_AndModify(const CallState& context) noexcept(false)
+{
+	ObjectInstance* entry = context.Args[0];
+	ObjectInstance* modifier = context.Args[1];
+	TypeSymbol* keyType = context.Frame->TypeArguments[0];
+	TypeSymbol* valueType = context.Frame->TypeArguments[1];
+
+	bool occupied = entry->GetField(entry_occupiedField->SlotIndex)->AsInteger() != 0;
+	if (occupied)
+	{
+		ObjectInstance* current = shard_entry_GetValueAtSlot(entry);
+		ObjectInstance* modified = InvokeModifier(context, modifier, current, valueType);
+		shard_entry_InsertValueAtSlot(entry, modified, context.Collector);
+	}
+
+	ObjectInstance* result = context.Collector.AllocateGeneric(entryClass_raw, std::vector<TypeSymbol*>{ keyType, valueType });
+	result->SetField(entry_dictField->SlotIndex, entry->GetField(entry_dictField->SlotIndex));
+	result->SetField(entry_keyField->SlotIndex, entry->GetField(entry_keyField->SlotIndex));
+	result->SetField(entry_occupiedField->SlotIndex, entry->GetField(entry_occupiedField->SlotIndex));
+	result->SetField(entry_slotField->SlotIndex, entry->GetField(entry_slotField->SlotIndex));
+	return result;
 }
 
 // =========================================================================
@@ -1256,6 +1426,119 @@ SHARDLIB_ENTRYPOINT
 	dictGetEnumeratorMethod
 		.IsImplementationOf(TRAIT_ENUMERABLE_GETENUMERATOR)
 		.SetCallback(&shard_dict_GetEnumerator);
+
+	// --- delegate Factory<T> ---
+	{
+		auto factoryDelegateSymbol = std::make_unique<DelegateTypeSymbol>(L"Factory");
+		DelegateTypeSymbol* factoryDelegate = factoryDelegateSymbol.get();
+		context.GetSemanticModel().Table->ImplicitSymbol(std::move(factoryDelegateSymbol));
+
+		factoryDelegate->Parent = collectionsNs.Get();
+		factoryDelegate->FullName = collectionsNs.Get()->FullName + L".Factory";
+		factoryDelegate->Accesibility = SymbolAccesibility::Public;
+		collectionsNs.Get()->OnSymbolDeclared(factoryDelegate);
+
+		TypeParameterSymbol* factory_T = factory.TypeParameter(L"T", factoryDelegate);
+		factory_T->FullName = factoryDelegate->FullName + L".T";
+		factoryDelegate->TypeParameters.push_back(factory_T);
+
+		auto anonymousMethod = std::make_unique<MethodSymbol>(L"");
+		anonymousMethod->HandleType = MethodHandleType::Lambda;
+		anonymousMethod->Accesibility = SymbolAccesibility::Public;
+		anonymousMethod->ReturnType = factory_T;
+		anonymousMethod->Linking = LINK_STATIC;
+
+		factoryDelegate->ReturnType = factory_T;
+		factoryDelegate->AnonymousSymbol = anonymousMethod.get();
+
+		context.GetSemanticModel().Table->ImplicitSymbol(std::move(anonymousMethod));
+
+		factoryDelegate_raw = factoryDelegate;
+		factoryDelegate_T = factory_T;
+	}
+
+	// --- delegate Modifier<T> ---
+	{
+		auto modifierDelegateSymbol = std::make_unique<DelegateTypeSymbol>(L"Modifier");
+		DelegateTypeSymbol* modifierDelegate = modifierDelegateSymbol.get();
+		context.GetSemanticModel().Table->ImplicitSymbol(std::move(modifierDelegateSymbol));
+
+		modifierDelegate->Parent = collectionsNs.Get();
+		modifierDelegate->FullName = collectionsNs.Get()->FullName + L".Modifier";
+		modifierDelegate->Accesibility = SymbolAccesibility::Public;
+		collectionsNs.Get()->OnSymbolDeclared(modifierDelegate);
+
+		TypeParameterSymbol* modifier_T = factory.TypeParameter(L"T", modifierDelegate);
+		modifier_T->FullName = modifierDelegate->FullName + L".T";
+		modifierDelegate->TypeParameters.push_back(modifier_T);
+
+		ParameterSymbol* modifierParam = factory.Parameter(L"value", modifier_T);
+
+		auto anonymousMethod = std::make_unique<MethodSymbol>(L"");
+		anonymousMethod->HandleType = MethodHandleType::Lambda;
+		anonymousMethod->Accesibility = SymbolAccesibility::Public;
+		anonymousMethod->ReturnType = modifier_T;
+		anonymousMethod->Linking = LINK_STATIC;
+		anonymousMethod->Parameters.push_back(modifierParam);
+
+		modifierDelegate->ReturnType = modifier_T;
+		modifierDelegate->Parameters.push_back(modifierParam);
+		modifierDelegate->AnonymousSymbol = anonymousMethod.get();
+
+		context.GetSemanticModel().Table->ImplicitSymbol(std::move(anonymousMethod));
+
+		modifierDelegate_raw = modifierDelegate;
+		modifierDelegate_T = modifier_T;
+	}
+
+	// --- class Entry<K, V> ---
+	SymbolBuilder<ClassSymbol> entryClass = collectionsNs.AddClass(L"Entry");
+
+	TypeParameterSymbol* entry_typeParam_K_local = entryClass.AddTypeParameter(L"K");
+	TypeParameterSymbol* entry_typeParam_V_local = entryClass.AddTypeParameter(L"V");
+
+	entryClass_raw = entryClass.Get();
+	entry_typeParam_K = entry_typeParam_K_local;
+	entry_typeParam_V = entry_typeParam_V_local;
+
+	entry_dictField = entryClass
+		.AddField(L"_dict", factory.GenericType(dictionaryClass_raw, { { L"K", entry_typeParam_K_local }, { L"V", entry_typeParam_V_local } }), LINK_INSTANCE, ACS_PRIVATE).Get();
+
+	entry_keyField = entryClass
+		.AddField(L"_key", entry_typeParam_K_local, LINK_INSTANCE, ACS_PRIVATE).Get();
+
+	entry_occupiedField = entryClass
+		.AddField(L"_occupied", SymbolTable::Primitives::Integer, LINK_INSTANCE, ACS_PRIVATE).Get();
+
+	entry_slotField = entryClass
+		.AddField(L"_slot", SymbolTable::Primitives::Integer, LINK_INSTANCE, ACS_PRIVATE).Get();
+
+	entryClass.AddMethod(L"OrInsert", entry_typeParam_V_local, LINK_INSTANCE)
+		.AddParameter(L"value", entry_typeParam_V_local)
+		.SetCallback(&shard_entry_OrInsert);
+
+	entryClass.AddMethod(L"OrInsertWith", entry_typeParam_V_local, LINK_INSTANCE)
+		.AddParameter(L"factory", factory.GenericType(factoryDelegate_raw, { { L"T", entry_typeParam_V_local } }))
+		.SetCallback(&shard_entry_OrInsertWith);
+
+	entryClass.AddMethod(L"OrDefault", entry_typeParam_V_local, LINK_INSTANCE)
+		.SetCallback(&shard_entry_OrDefault);
+
+	TypeSymbol* entryGeneric = factory.GenericType(entryClass_raw,
+		{ { L"K", entry_typeParam_K_local }, { L"V", entry_typeParam_V_local } });
+
+	entryClass.AddMethod(L"AndModify", entryGeneric, LINK_INSTANCE)
+		.AddParameter(L"modifier", factory.GenericType(modifierDelegate_raw, { { L"T", entry_typeParam_V_local } }))
+		.SetCallback(&shard_entry_AndModify);
+
+	// --- Dictionary<K, V>.Entry(key) ---
+	TypeSymbol* dictEntryReturn = factory.GenericType(entryClass_raw,
+		{ { L"K", dict_typeParam_K }, { L"V", dict_typeParam_V } });
+
+	SymbolBuilder<MethodSymbol> dictEntryMethod = dictClass.AddMethod(L"Entry", dictEntryReturn, LINK_INSTANCE);
+	dictEntryMethod
+		.AddParameter(L"key", dict_typeParam_K)
+		.SetCallback(&shard_dict_Entry);
 
 	// --- struct DictionaryEnumerator<K, V> ---
 	SymbolBuilder<StructSymbol> dictEnumClass = collectionsNs.AddStruct(L"DictionaryEnumerator");

@@ -1,0 +1,52 @@
+using stdio;
+using collections;
+
+namespace dictionary_entry_test;
+
+public static func Main() -> void
+{
+    dict := new Dictionary<int, string>();
+
+    // OrInsert on vacant key
+    v1 := dict.Entry(1).OrInsert("one");
+    println(v1);
+    println(dict[1]);
+
+    // OrInsert on occupied key returns existing value
+    v2 := dict.Entry(1).OrInsert("ONE");
+    println(v2);
+    println(dict[1]);
+
+    // OrInsertWith on vacant key
+    v3 := dict.Entry(2).OrInsertWith(lambda () -> string => "two");
+    println(v3);
+    println(dict[2]);
+
+    // OrInsertWith on occupied key does not call factory
+    v4 := dict.Entry(2).OrInsertWith(lambda () -> string => "TWO");
+    println(v4);
+    println(dict[2]);
+
+    // AndModify on occupied key
+    v5 := dict.Entry(1).AndModify(lambda (s: string) -> string => s + "!").OrInsert("x");
+    println(v5);
+    println(dict[1]);
+
+    // AndModify on vacant key is no-op, then OrInsert fills
+    v6 := dict.Entry(3).AndModify(lambda (s: string) -> string => s + "?").OrInsert("three");
+    println(v6);
+    println(dict[3]);
+
+    // OrDefault on value type dictionary
+    intDict := new Dictionary<int, int>();
+    dv1 := intDict.Entry(10).OrDefault();
+    println(dv1);
+    println(intDict[10]);
+
+    dv2 := intDict.Entry(10).OrDefault();
+    println(dv2);
+
+    // Verify count
+    println(dict.Count);
+    println(intDict.Count);
+}

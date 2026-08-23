@@ -5,6 +5,16 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
+#ifdef _WIN32
+#include <windows.h>
+#include <shlobj.h>
+#include <objbase.h>
+#else
+#include <unistd.h>
+#include <pwd.h>
+#include <cstdlib>
+#endif
+
 #include <filesystem>
 #include <fstream>
 #include <stdexcept>
@@ -1020,6 +1030,187 @@ static ObjectInstance* shard_path_PathSeparator_get(const CallState& context) no
 }
 
 // ============================================================================
+// SpecialDirectories
+// ============================================================================
+
+#ifdef _WIN32
+static std::wstring GetKnownFolderPath(const GUID& folderId)
+{
+    PWSTR path = nullptr;
+    if (SUCCEEDED(SHGetKnownFolderPath(folderId, 0, nullptr, &path)) && path != nullptr)
+    {
+        std::wstring result(path);
+        CoTaskMemFree(path);
+        return result;
+    }
+    return L"";
+}
+#endif
+
+static std::wstring GetHomeDirectoryPath()
+{
+#ifdef _WIN32
+    std::wstring result = GetKnownFolderPath(FOLDERID_Profile);
+    if (!result.empty())
+        return result;
+
+    const wchar_t* userProfile = _wgetenv(L"USERPROFILE");
+    if (userProfile != nullptr)
+        return std::wstring(userProfile);
+#else
+    const char* home = getenv("HOME");
+    if (home != nullptr)
+        return strings::Utf8ToWide(home);
+
+    struct passwd* pw = getpwuid(getuid());
+    if (pw != nullptr && pw->pw_dir != nullptr)
+        return strings::Utf8ToWide(pw->pw_dir);
+#endif
+    return L"";
+}
+
+static std::wstring GetCurrentWorkingDirectoryPath()
+{
+#ifdef _WIN32
+    DWORD length = GetCurrentDirectoryW(0, nullptr);
+    if (length > 0)
+    {
+        std::wstring result(length, L'\0');
+        DWORD actual = GetCurrentDirectoryW(length, result.data());
+        if (actual > 0 && actual < length)
+        {
+            result.resize(actual);
+            return result;
+        }
+    }
+#else
+    std::vector<char> buffer(4096);
+    while (true)
+    {
+        if (getcwd(buffer.data(), buffer.size()) != nullptr)
+            return strings::Utf8ToWide(buffer.data());
+
+        if (errno != ERANGE)
+            break;
+
+        buffer.resize(buffer.size() * 2);
+    }
+#endif
+    return L"";
+}
+
+static std::wstring GetApplicationDataDirectoryPath()
+{
+#ifdef _WIN32
+    return GetKnownFolderPath(FOLDERID_RoamingAppData);
+#else
+    const char* xdgConfig = getenv("XDG_CONFIG_HOME");
+    if (xdgConfig != nullptr)
+        return strings::Utf8ToWide(xdgConfig);
+
+    std::wstring home = GetHomeDirectoryPath();
+    if (!home.empty())
+        return (fs::path(home) / ".config").wstring();
+#endif
+    return L"";
+}
+
+static std::wstring GetLocalApplicationDataDirectoryPath()
+{
+#ifdef _WIN32
+    return GetKnownFolderPath(FOLDERID_LocalAppData);
+#else
+    const char* xdgData = getenv("XDG_DATA_HOME");
+    if (xdgData != nullptr)
+        return strings::Utf8ToWide(xdgData);
+
+    std::wstring home = GetHomeDirectoryPath();
+    if (!home.empty())
+        return (fs::path(home) / ".local" / "share").wstring();
+#endif
+    return L"";
+}
+
+static std::wstring GetCommonApplicationDataDirectoryPath()
+{
+#ifdef _WIN32
+    return GetKnownFolderPath(FOLDERID_ProgramData);
+#else
+    const char* xdgDataDirs = getenv("XDG_DATA_DIRS");
+    if (xdgDataDirs != nullptr)
+    {
+        std::string dirs(xdgDataDirs);
+        std::size_t colon = dirs.find(':');
+        if (colon != std::string::npos)
+            dirs = dirs.substr(0, colon);
+        if (!dirs.empty())
+            return strings::Utf8ToWide(dirs);
+    }
+
+    return L"/usr/local/share";
+#endif
+}
+
+static std::wstring GetDocumentsDirectoryPath()
+{
+#ifdef _WIN32
+    return GetKnownFolderPath(FOLDERID_Documents);
+#else
+    std::wstring home = GetHomeDirectoryPath();
+    if (!home.empty())
+        return (fs::path(home) / "Documents").wstring();
+#endif
+    return L"";
+}
+
+static std::wstring GetDesktopDirectoryPath()
+{
+#ifdef _WIN32
+    return GetKnownFolderPath(FOLDERID_Desktop);
+#else
+    std::wstring home = GetHomeDirectoryPath();
+    if (!home.empty())
+        return (fs::path(home) / "Desktop").wstring();
+#endif
+    return L"";
+}
+
+static ObjectInstance* shard_specialdirs_Home_get(const CallState& context) noexcept(false)
+{
+    return context.Collector.FromValue(GetHomeDirectoryPath());
+}
+
+static ObjectInstance* shard_specialdirs_CurrentDirectory_get(const CallState& context) noexcept(false)
+{
+    return context.Collector.FromValue(GetCurrentWorkingDirectoryPath());
+}
+
+static ObjectInstance* shard_specialdirs_ApplicationData_get(const CallState& context) noexcept(false)
+{
+    return context.Collector.FromValue(GetApplicationDataDirectoryPath());
+}
+
+static ObjectInstance* shard_specialdirs_LocalApplicationData_get(const CallState& context) noexcept(false)
+{
+    return context.Collector.FromValue(GetLocalApplicationDataDirectoryPath());
+}
+
+static ObjectInstance* shard_specialdirs_CommonApplicationData_get(const CallState& context) noexcept(false)
+{
+    return context.Collector.FromValue(GetCommonApplicationDataDirectoryPath());
+}
+
+static ObjectInstance* shard_specialdirs_MyDocuments_get(const CallState& context) noexcept(false)
+{
+    return context.Collector.FromValue(GetDocumentsDirectoryPath());
+}
+
+static ObjectInstance* shard_specialdirs_Desktop_get(const CallState& context) noexcept(false)
+{
+    return context.Collector.FromValue(GetDesktopDirectoryPath());
+}
+
+// ============================================================================
 // FileStream
 // ============================================================================
 
@@ -1863,6 +2054,37 @@ SHARDLIB_ENTRYPOINT
     pathClass.AddProperty(L"PathSeparator", TYPE_STRING, LINK_STATIC, ACS_PUBLIC)
         .AddGetter()
         .SetCallback(&shard_path_PathSeparator_get);
+
+    // --- class SpecialDirectories ---
+    SymbolBuilder<ClassSymbol> specialDirsClass = fsNamespace.AddClass(L"SpecialDirectories", LINK_STATIC);
+
+    specialDirsClass.AddProperty(L"Home", TYPE_STRING, LINK_STATIC, ACS_PUBLIC)
+        .AddGetter()
+        .SetCallback(&shard_specialdirs_Home_get);
+
+    specialDirsClass.AddProperty(L"CurrentDirectory", TYPE_STRING, LINK_STATIC, ACS_PUBLIC)
+        .AddGetter()
+        .SetCallback(&shard_specialdirs_CurrentDirectory_get);
+
+    specialDirsClass.AddProperty(L"ApplicationData", TYPE_STRING, LINK_STATIC, ACS_PUBLIC)
+        .AddGetter()
+        .SetCallback(&shard_specialdirs_ApplicationData_get);
+
+    specialDirsClass.AddProperty(L"LocalApplicationData", TYPE_STRING, LINK_STATIC, ACS_PUBLIC)
+        .AddGetter()
+        .SetCallback(&shard_specialdirs_LocalApplicationData_get);
+
+    specialDirsClass.AddProperty(L"CommonApplicationData", TYPE_STRING, LINK_STATIC, ACS_PUBLIC)
+        .AddGetter()
+        .SetCallback(&shard_specialdirs_CommonApplicationData_get);
+
+    specialDirsClass.AddProperty(L"MyDocuments", TYPE_STRING, LINK_STATIC, ACS_PUBLIC)
+        .AddGetter()
+        .SetCallback(&shard_specialdirs_MyDocuments_get);
+
+    specialDirsClass.AddProperty(L"Desktop", TYPE_STRING, LINK_STATIC, ACS_PUBLIC)
+        .AddGetter()
+        .SetCallback(&shard_specialdirs_Desktop_get);
 
     // --- string extensions ---
     SymbolBuilder<ClassSymbol> stringClass = SymbolBuilder<ClassSymbol>(context, static_cast<ClassSymbol*>(TYPE_STRING));
