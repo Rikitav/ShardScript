@@ -1,0 +1,38 @@
+using stdio;
+using filesystem;
+
+namespace filesystem_special_directories_test;
+
+public static func Main() -> void
+{
+    home := SpecialDirectories.Home;
+    println("Home: " + home);
+    println("Home not empty: " + (home != ""));
+
+    current := SpecialDirectories.CurrentDirectory;
+    println("CurrentDirectory: " + current);
+    println("CurrentDirectory not empty: " + (current != ""));
+
+    appData := SpecialDirectories.ApplicationData;
+    println("ApplicationData: " + appData);
+    println("ApplicationData not empty: " + (appData != ""));
+
+    localAppData := SpecialDirectories.LocalApplicationData;
+    println("LocalApplicationData: " + localAppData);
+    println("LocalApplicationData not empty: " + (localAppData != ""));
+
+    commonAppData := SpecialDirectories.CommonApplicationData;
+    println("CommonApplicationData: " + commonAppData);
+    println("CommonApplicationData not empty: " + (commonAppData != ""));
+
+    documents := SpecialDirectories.MyDocuments;
+    println("MyDocuments: " + documents);
+    println("MyDocuments not empty: " + (documents != ""));
+
+    desktop := SpecialDirectories.Desktop;
+    println("Desktop: " + desktop);
+    println("Desktop not empty: " + (desktop != ""));
+
+    // Verify paths are not empty and differ where expected
+    println("Paths differ: " + (home != current));
+}
