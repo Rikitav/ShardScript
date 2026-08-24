@@ -3667,7 +3667,7 @@ namespace
 		}
 	}
 
-	bool TryParseVolumeSuffix(const std::wstring& word, std::size_t& multiplier, std::size_t& suffixLength)
+	bool TryParseVolumeSuffix(const std::wstring& word, std::uint64_t& multiplier, std::size_t& suffixLength)
 	{
 		multiplier = 1;
 		suffixLength = 0;
@@ -3708,6 +3708,8 @@ namespace
 #ifdef _WIN32
 		static _locale_t c_locale = _create_locale(LC_NUMERIC, "C");
 		value = _wcstod_l(start, &endptr, c_locale);
+#elif defined(__EMSCRIPTEN__)
+		value = std::wcstod(start, &endptr);
 #else
 		static locale_t c_locale = newlocale(LC_NUMERIC_MASK, "C", nullptr);
 		value = wcstod_l(start, &endptr, c_locale);
@@ -3738,7 +3740,7 @@ namespace
 		TryParseBasePrefix(word, base, prefixLength);
 
 		std::size_t numLength = word.size() - prefixLength;
-		std::size_t multiplier = 1;
+		std::uint64_t multiplier = 1;
 		std::size_t suffixLength = 0;
 
 		if (TryParseVolumeSuffix(word.substr(prefixLength), multiplier, suffixLength))
@@ -3788,7 +3790,7 @@ namespace
 		if (TryParseBasePrefix(word, base, prefixLength))
 			return { false, L"Floating point number cannot have base prefix" };
 
-		std::size_t multiplier;
+		std::uint64_t multiplier;
 		std::size_t suffixLength;
 		if (TryParseVolumeSuffix(word, multiplier, suffixLength))
 			return { false, L"Floating point number cannot have suffix" };

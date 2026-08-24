@@ -1,0 +1,34 @@
+using stdio;
+
+namespace side_effect_throw_propagation;
+
+public class Helper
+{
+    public func Thrower() -> void
+    {
+        throw new RuntimeException();
+    }
+
+    public func Caller() -> void
+    {
+        this.Thrower();
+    }
+
+    public func Catcher() -> void
+    {
+        try
+        {
+            this.Thrower();
+        }
+        catch (e: RuntimeException)
+        {
+        }
+    }
+}
+
+public static func Main() -> void
+{
+    helper: Helper = new Helper();
+    helper.Catcher();
+    println("ok");
+}

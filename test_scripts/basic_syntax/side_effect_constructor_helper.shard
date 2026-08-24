@@ -1,0 +1,27 @@
+using stdio;
+
+namespace side_effect_constructor_helper;
+
+public class Foo
+{
+    public X: int;
+
+    public init()
+    {
+        this.InitX();
+    }
+
+    private func InitX() -> void
+    {
+        this.X = 42;
+    }
+}
+
+public static func Main() -> void
+{
+    foo: Foo = new Foo();
+    if (foo.X == 42)
+        println("ok");
+    else
+        println("fail");
+}

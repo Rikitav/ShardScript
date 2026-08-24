@@ -7,6 +7,8 @@
 #if defined(_WIN32)
     #define WIN32_LEAN_AND_MEAN
     #include <windows.h>
+#elif defined(__EMSCRIPTEN__)
+    // WebAssembly does not support native dynamic library loading.
 #elif defined(__linux__)
     #include <dlfcn.h>
 #elif defined(__APPLE__)
@@ -99,6 +101,8 @@ namespace shard::utilities
         Handle = static_cast<LibraryHandle>(::LoadLibraryW(path.c_str()));
         if (Handle == nullptr)
             throw std::runtime_error(BuildLoadError(path, GetLastErrorMessage()));
+#elif defined(__EMSCRIPTEN__)
+        throw std::runtime_error(BuildLoadError(path, "native library loading is not supported in WebAssembly"));
 #else
         Handle = ::dlopen(path.c_str(), RTLD_NOW);
         if (Handle == nullptr)
@@ -113,7 +117,7 @@ namespace shard::utilities
 
 #if defined(_WIN32)
         ::FreeLibrary(static_cast<HMODULE>(Handle));
-#else
+#elif !defined(__EMSCRIPTEN__)
         ::dlclose(Handle);
 #endif
         Handle = nullptr;
@@ -137,6 +141,8 @@ namespace shard::utilities
 
 #if defined(_WIN32)
         return reinterpret_cast<void*>(::GetProcAddress(static_cast<HMODULE>(Handle), name));
+#elif defined(__EMSCRIPTEN__)
+        return nullptr;
 #else
         return ::dlsym(Handle, name);
 #endif

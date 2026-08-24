@@ -158,7 +158,8 @@ ObjectInstance* GarbageCollector::FromValue(const wchar_t* value, bool isTransie
 	ObjectInstance* instance = GarbageCollector::AllocateInstance(shape, isTransient);
 
 	std::size_t length = wcslen(value);
-	instance->WriteMemory(0, sizeof(std::int64_t), static_cast<std::uint64_t*>(&length));
+	std::uint64_t length64 = static_cast<std::uint64_t>(length);
+	instance->WriteMemory(0, sizeof(std::int64_t), &length64);
 
 	if (isTransient)
 	{
@@ -194,7 +195,8 @@ ObjectInstance* GarbageCollector::FromValue(const std::wstring& value)
 
 	std::memcpy(copy, value.c_str(), size);
 
-	instance->WriteMemory(0, sizeof(std::int64_t), static_cast<std::uint64_t*>(&length));
+	std::uint64_t length64 = static_cast<std::uint64_t>(length);
+	instance->WriteMemory(0, sizeof(std::int64_t), &length64);
 	instance->WriteMemory(sizeof(std::int64_t), sizeof(wchar_t*), &copy);
 	return instance;
 }

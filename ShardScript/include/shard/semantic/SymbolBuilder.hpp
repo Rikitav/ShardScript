@@ -162,6 +162,12 @@ namespace shard
 
         SymbolBuilder<TypeParameterSymbol> AddTypeParameter(
             const std::wstring& name);
+
+        SymbolBuilder<ConstructorSymbol>& SetMayThrow(bool value = true);
+        SymbolBuilder<ConstructorSymbol>& SetMutatesInstance(bool value = true);
+        SymbolBuilder<ConstructorSymbol>& SetMutatesStatic(bool value = true);
+        SymbolBuilder<ConstructorSymbol>& SetMutatesArguments(bool value = true);
+        SymbolBuilder<ConstructorSymbol>& SetHasUnknownSideEffects(bool value = true);
     };
 
     template<>
@@ -199,6 +205,12 @@ namespace shard
             const std::wstring& name);
 
         SymbolBuilder<MethodSymbol>& DeclareGlobal();
+
+        SymbolBuilder<MethodSymbol>& SetMayThrow(bool value = true);
+        SymbolBuilder<MethodSymbol>& SetMutatesInstance(bool value = true);
+        SymbolBuilder<MethodSymbol>& SetMutatesStatic(bool value = true);
+        SymbolBuilder<MethodSymbol>& SetMutatesArguments(bool value = true);
+        SymbolBuilder<MethodSymbol>& SetHasUnknownSideEffects(bool value = true);
     };
 
     template<>
@@ -220,6 +232,12 @@ namespace shard
 
         SymbolBuilder<AccessorSymbol>& IsImplementationOf(
             MethodSymbol* abstractMethod);
+
+        SymbolBuilder<AccessorSymbol>& SetMayThrow(bool value = true);
+        SymbolBuilder<AccessorSymbol>& SetMutatesInstance(bool value = true);
+        SymbolBuilder<AccessorSymbol>& SetMutatesStatic(bool value = true);
+        SymbolBuilder<AccessorSymbol>& SetMutatesArguments(bool value = true);
+        SymbolBuilder<AccessorSymbol>& SetHasUnknownSideEffects(bool value = true);
     };
 
     template<>
@@ -456,6 +474,12 @@ namespace shard
 
         SymbolBuilder<OperatorSymbol>& SetCallback(
             MethodSymbolDelegate callback);
+
+        SymbolBuilder<OperatorSymbol>& SetMayThrow(bool value = true);
+        SymbolBuilder<OperatorSymbol>& SetMutatesInstance(bool value = true);
+        SymbolBuilder<OperatorSymbol>& SetMutatesStatic(bool value = true);
+        SymbolBuilder<OperatorSymbol>& SetMutatesArguments(bool value = true);
+        SymbolBuilder<OperatorSymbol>& SetHasUnknownSideEffects(bool value = true);
     };
 
     template<>

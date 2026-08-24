@@ -10,52 +10,55 @@
 
 using namespace shard;
 
+#ifndef __EMSCRIPTEN__
 FileReader::FileReader(const std::string& fileName) : SourceTextProvider()
 {
-	Filename = std::filesystem::path(fileName);
-	InputStream = std::wfstream(Filename.c_str(), std::ios::in);
-	InputStream.imbue(std::locale::classic());
+    Filename = std::filesystem::path(fileName);
+    InputStream = std::wfstream(Filename.c_str(), std::ios::in);
+    InputStream.imbue(std::locale::classic());
 
-	if (!InputStream)
-		throw std::runtime_error("Cannot open file");
+    if (!InputStream)
+        throw std::runtime_error("Cannot open file");
 }
 
 FileReader::FileReader(const std::wstring& fileName) : SourceTextProvider()
 {
-	Filename = std::filesystem::path(fileName);
-	InputStream = std::wfstream(Filename.c_str(), std::ios::in);
-	InputStream.imbue(std::locale::classic());
+    Filename = std::filesystem::path(fileName);
+    InputStream = std::wfstream(Filename.c_str(), std::ios::in);
+    InputStream.imbue(std::locale::classic());
 
-	if (!InputStream)
-		throw std::runtime_error("Cannot open file");
+    if (!InputStream)
+        throw std::runtime_error("Cannot open file");
 }
 
 FileReader::~FileReader()
 {
-	InputStream.close();
+    InputStream.close();
 }
 
 bool FileReader::ReadNext(wchar_t& ch)
 {
-	wchar_t PeekSymbol = InputStream.peek();
-	if (PeekSymbol == WEOF)
-		return false;
+    wchar_t PeekSymbol = InputStream.peek();
+    if (PeekSymbol == WEOF)
+        return false;
 
-	ch = WEOF;
-	InputStream.get(ch);
-	if (ch == WEOF)
-		return false;
+    ch = WEOF;
+    InputStream.get(ch);
+    if (ch == WEOF)
+        return false;
 
-	return true;
+    return true;
 }
 
 bool FileReader::PeekNext(wchar_t& ch)
 {
-	ch = InputStream.peek();
-	return ch != WEOF;
+    ch = InputStream.peek();
+    return ch != WEOF;
 }
 
 std::wstring& FileReader::GetName()
 {
-	return Filename;
+    return Filename;
 }
+
+#endif // __EMSCRIPTEN__

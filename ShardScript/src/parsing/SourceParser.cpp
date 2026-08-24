@@ -79,7 +79,7 @@
 #include <shard/parsing/nodes/Types/ArrayTypeSyntax.hpp>
 #include <shard/parsing/nodes/Types/IdentifierNameTypeSyntax.hpp>
 #include <shard/parsing/nodes/Types/QualifiedNameTypeSyntax.hpp>
-//#include <shard/parsing/nodes/Types/NullableTypeSyntax.hpp>
+#include <shard/parsing/nodes/Types/NullableTypeSyntax.hpp>
 #include <shard/parsing/nodes/Types/PredefinedTypeSyntax.hpp>
 #include <shard/parsing/nodes/Types/GenericTypeSyntax.hpp>
 #include <shard/parsing/nodes/Types/DelegateTypeSyntax.hpp>
@@ -3340,7 +3340,6 @@ std::unique_ptr<TypeSyntax> SourceParser::ReadModifiedType(SourceProvider& reade
 	SyntaxToken current = reader.Current();
 	switch (current.Type)
 	{
-		/*
 		case TokenType::Question:
 		{
 			reader.Consume();
@@ -3348,7 +3347,6 @@ std::unique_ptr<TypeSyntax> SourceParser::ReadModifiedType(SourceProvider& reade
 			nullable->QuestionToken = current;
 			return nullable;
 		}
-		*/
 
 		case TokenType::OpenSquare:
 		{
