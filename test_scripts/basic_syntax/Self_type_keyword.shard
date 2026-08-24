@@ -1,0 +1,75 @@
+using stdio;
+
+namespace Self_type_keyword;
+
+public interface IClonable<T>
+{
+    public func Clone() -> T;
+}
+
+public interface IComparable<T>
+{
+    public func CompareTo(other: T) -> int;
+}
+
+public class Foo : IClonable<Self>
+{
+    public Value: int;
+
+    public func Clone() -> Self
+    {
+        result: Self = new Foo();
+        result.Value = this.Value;
+        return result;
+    }
+}
+
+public class Bar : IComparable<Self>
+{
+    public Value: int;
+
+    public func CompareTo(other: Self) -> int
+    {
+        return this.Value - other.Value;
+    }
+
+    public func GetSelf() -> Self
+    {
+        return this;
+    }
+}
+
+public class ShapeShifter<T>
+    : IClonable<Self>
+{
+    public Value: T;
+
+    public func Clone() -> Self
+    {
+        result: Self = new ShapeShifter<T>();
+        result.Value = this.Value;
+        return result;
+    }
+}
+
+public static func Main() -> void
+{
+    foo: Foo = new Foo();
+    foo.Value = 42;
+    foo2: Foo = foo.Clone();
+    println(foo2.Value);
+
+    bar1: Bar = new Bar();
+    bar1.Value = 10;
+    bar2: Bar = new Bar();
+    bar2.Value = 5;
+    println(bar1.CompareTo(bar2));
+
+    selfRef: Bar = bar1.GetSelf();
+    println(selfRef.Value);
+
+    shifter: ShapeShifter<int> = new ShapeShifter<int>();
+    shifter.Value = 7;
+    shifter2: ShapeShifter<int> = shifter.Clone();
+    println(shifter2.Value);
+}
