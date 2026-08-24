@@ -1,0 +1,8 @@
+using stdio;
+
+namespace Self_outside_type;
+
+public static func Main() -> void
+{
+    x: Self;
+}

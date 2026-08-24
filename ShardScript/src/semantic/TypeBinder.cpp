@@ -266,7 +266,7 @@ void TypeBinder::VisitClassDeclaration(ClassDeclarationSyntax* node)
 
 	BindWhereClauses(node, symbol->TypeParameters);
 
-	std::vector<InterfaceSymbol*> baseInterfaces;
+	std::vector<TypeSymbol*> baseInterfaces;
 	for (const auto& baseInterface : node->BaseInterfaces)
 	{
 		VisitType(baseInterface.get());
@@ -274,15 +274,28 @@ void TypeBinder::VisitClassDeclaration(ClassDeclarationSyntax* node)
 		if (baseSymbol == nullptr)
 			continue;
 
-		if (baseSymbol->Kind != SyntaxKind::InterfaceDeclaration)
+		if (baseSymbol->Kind == SyntaxKind::InterfaceDeclaration)
+		{
+			symbol->Interfaces.push_back(baseSymbol);
+			baseInterfaces.push_back(baseSymbol);
+		}
+		else if (baseSymbol->Kind == SyntaxKind::GenericType)
+		{
+			TypeSymbol* underlying = static_cast<GenericTypeSymbol*>(baseSymbol)->UnderlayingType;
+			if (underlying != nullptr && underlying->Kind == SyntaxKind::InterfaceDeclaration)
+			{
+				symbol->Interfaces.push_back(baseSymbol);
+				baseInterfaces.push_back(baseSymbol);
+			}
+			else
+			{
+				Diagnostics.ReportError(node->IdentifierToken, L"Base type must be an interface");
+			}
+		}
+		else
 		{
 			Diagnostics.ReportError(node->IdentifierToken, L"Base type must be an interface");
-			continue;
 		}
-
-		InterfaceSymbol* interfaceSymbol = static_cast<InterfaceSymbol*>(baseSymbol);
-		symbol->Interfaces.push_back(interfaceSymbol);
-		baseInterfaces.push_back(interfaceSymbol);
 	}
 
 	for (const auto& member : node->Members)
@@ -295,8 +308,8 @@ void TypeBinder::VisitClassDeclaration(ClassDeclarationSyntax* node)
 	for (const auto& member : node->Members)
 		VisitMemberDeclaration(member.get());
 
-	for (InterfaceSymbol* interfaceSymbol : baseInterfaces)
-		SemanticValidator::BindInterfaceImplementations(symbol, interfaceSymbol);
+	for (TypeSymbol* interfaceType : baseInterfaces)
+		SemanticValidator::BindInterfaceImplementations(symbol, interfaceType);
 
 	symbol->AdvanceAnalysisState(SymbolAnalysisState::TypeResolved);
 	PopScope();
@@ -317,7 +330,7 @@ void TypeBinder::VisitStructDeclaration(StructDeclarationSyntax* node)
 
 	BindWhereClauses(node, symbol->TypeParameters);
 
-	std::vector<InterfaceSymbol*> baseInterfaces;
+	std::vector<TypeSymbol*> baseInterfaces;
 	for (const auto& baseInterface : node->BaseInterfaces)
 	{
 		VisitType(baseInterface.get());
@@ -325,15 +338,28 @@ void TypeBinder::VisitStructDeclaration(StructDeclarationSyntax* node)
 		if (baseSymbol == nullptr)
 			continue;
 
-		if (baseSymbol->Kind != SyntaxKind::InterfaceDeclaration)
+		if (baseSymbol->Kind == SyntaxKind::InterfaceDeclaration)
+		{
+			symbol->Interfaces.push_back(baseSymbol);
+			baseInterfaces.push_back(baseSymbol);
+		}
+		else if (baseSymbol->Kind == SyntaxKind::GenericType)
+		{
+			TypeSymbol* underlying = static_cast<GenericTypeSymbol*>(baseSymbol)->UnderlayingType;
+			if (underlying != nullptr && underlying->Kind == SyntaxKind::InterfaceDeclaration)
+			{
+				symbol->Interfaces.push_back(baseSymbol);
+				baseInterfaces.push_back(baseSymbol);
+			}
+			else
+			{
+				Diagnostics.ReportError(node->IdentifierToken, L"Base type must be an interface");
+			}
+		}
+		else
 		{
 			Diagnostics.ReportError(node->IdentifierToken, L"Base type must be an interface");
-			continue;
 		}
-
-		InterfaceSymbol* interfaceSymbol = static_cast<InterfaceSymbol*>(baseSymbol);
-		symbol->Interfaces.push_back(interfaceSymbol);
-		baseInterfaces.push_back(interfaceSymbol);
 	}
 
 	for (const auto& member : node->Members)
@@ -346,8 +372,8 @@ void TypeBinder::VisitStructDeclaration(StructDeclarationSyntax* node)
 	for (const auto& member : node->Members)
 		VisitMemberDeclaration(member.get());
 
-	for (InterfaceSymbol* interfaceSymbol : baseInterfaces)
-		SemanticValidator::BindInterfaceImplementations(symbol, interfaceSymbol);
+	for (TypeSymbol* interfaceType : baseInterfaces)
+		SemanticValidator::BindInterfaceImplementations(symbol, interfaceType);
 
 	symbol->AdvanceAnalysisState(SymbolAnalysisState::TypeResolved);
 	PopScope();
@@ -1014,14 +1040,44 @@ void TypeBinder::VisitPredefinedType(PredefinedTypeSyntax* node)
 void TypeBinder::VisitIdentifierNameType(IdentifierNameTypeSyntax* node)
 {
 	std::wstring name = node->Identifier.Word;
-	SemanticScope* currentScope = CurrentScope();
-	SyntaxSymbol* symbol = currentScope->Lookup(name).value_or(nullptr);
 
 	if (name == L"auto")
 	{
 		node->Symbol = SymbolTable::Primitives::Any;
 		return;
 	}
+
+	if (name == L"Self")
+	{
+		auto ownerTypeOpt = OwnerType();
+		if (!ownerTypeOpt.has_value())
+		{
+			Diagnostics.ReportError(node->Identifier, L"'Self' can only be used inside a class or struct declaration");
+			return;
+		}
+
+		TypeSymbol* ownerType = ownerTypeOpt.value();
+		if (ownerType->Kind != SyntaxKind::ClassDeclaration && ownerType->Kind != SyntaxKind::StructDeclaration)
+		{
+			Diagnostics.ReportError(node->Identifier, L"'Self' can only be used inside a class or struct declaration");
+			return;
+		}
+
+		if (ownerType->TypeParameters.empty())
+		{
+			node->Symbol = ownerType;
+		}
+		else
+		{
+			std::vector<TypeSymbol*> typeArgs(ownerType->TypeParameters.begin(), ownerType->TypeParameters.end());
+			node->Symbol = Factory.GenericType(ownerType, typeArgs);
+		}
+
+		return;
+	}
+
+	SemanticScope* currentScope = CurrentScope();
+	SyntaxSymbol* symbol = currentScope->Lookup(name).value_or(nullptr);
 
 	if (symbol == nullptr)
 	{

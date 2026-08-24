@@ -20,13 +20,71 @@
 #include <shard/semantic/symbols/EnumSymbol.hpp>
 #include <shard/semantic/symbols/ParameterSymbol.hpp>
 #include <shard/semantic/symbols/AccessorSymbol.hpp>
+#include <shard/semantic/symbols/GenericTypeSymbol.hpp>
+#include <shard/semantic/symbols/ArrayTypeSymbol.hpp>
+#include <shard/semantic/symbols/TypeParameterSymbol.hpp>
 
 #include <unordered_set>
 #include <unordered_map>
 
 namespace
 {
-    bool IsInterfaceImplementationMatching(shard::MethodSymbol* interfaceMethod, shard::MethodSymbol* classMethod)
+    shard::TypeSymbol* SubstituteInterfaceType(shard::TypeSymbol* type, shard::GenericTypeSymbol* genericInterface)
+    {
+        if (type == nullptr || genericInterface == nullptr)
+            return type;
+
+        if (type->Kind == shard::SyntaxKind::TypeParameter)
+        {
+            shard::TypeSymbol* substituted = genericInterface->SubstituteTypeParameters(static_cast<shard::TypeParameterSymbol*>(type));
+            return substituted != nullptr ? substituted : type;
+        }
+
+        if (type->Kind == shard::SyntaxKind::GenericType)
+        {
+            shard::GenericTypeSymbol* generic = static_cast<shard::GenericTypeSymbol*>(type);
+            shard::TypeSymbol* underlying = generic->UnderlayingType;
+
+            if (underlying == nullptr)
+                return type;
+
+            bool changed = false;
+            std::vector<shard::TypeSymbol*> newArgs;
+            newArgs.reserve(underlying->TypeParameters.size());
+
+            for (shard::TypeParameterSymbol* param : underlying->TypeParameters)
+            {
+                shard::TypeSymbol* arg = generic->SubstituteTypeParameters(param);
+                shard::TypeSymbol* newArg = SubstituteInterfaceType(arg, genericInterface);
+                if (newArg != arg)
+                    changed = true;
+                newArgs.push_back(newArg != nullptr ? newArg : arg);
+            }
+
+            if (!changed)
+                return type;
+
+            shard::GenericTypeSymbol* result = new shard::GenericTypeSymbol(underlying);
+            for (std::size_t i = 0; i < newArgs.size(); ++i)
+                result->AddTypeParameter(underlying->TypeParameters[i], newArgs[i]);
+
+            return result;
+        }
+
+        if (type->Kind == shard::SyntaxKind::ArrayType)
+        {
+            shard::ArrayTypeSymbol* array = static_cast<shard::ArrayTypeSymbol*>(type);
+            shard::TypeSymbol* newElement = SubstituteInterfaceType(array->UnderlayingType, genericInterface);
+            if (newElement == array->UnderlayingType)
+                return type;
+
+            return new shard::ArrayTypeSymbol(newElement);
+        }
+
+        return type;
+    }
+
+    bool IsInterfaceImplementationMatching(shard::MethodSymbol* interfaceMethod, shard::MethodSymbol* classMethod, shard::GenericTypeSymbol* genericInterface = nullptr)
     {
         if (interfaceMethod == nullptr || classMethod == nullptr)
             return false;
@@ -38,7 +96,8 @@ namespace
             return false;
 
         // Allow return-type covariance: the implementation may return a more derived type.
-        if (!shard::SemanticModel::IsAssignableTo(interfaceMethod->ReturnType, classMethod->ReturnType))
+        shard::TypeSymbol* expectedReturn = SubstituteInterfaceType(interfaceMethod->ReturnType, genericInterface);
+        if (!shard::SemanticModel::IsAssignableTo(expectedReturn, classMethod->ReturnType))
             return false;
 
         for (std::size_t i = 0; i < interfaceMethod->Parameters.size(); i++)
@@ -48,14 +107,15 @@ namespace
             if (a == nullptr || b == nullptr)
                 return false;
 
-            if (!shard::SemanticModel::AreTypesEqual(a->Type, b->Type))
+            shard::TypeSymbol* expectedType = SubstituteInterfaceType(a->Type, genericInterface);
+            if (!shard::SemanticModel::AreTypesEqual(expectedType, b->Type))
                 return false;
         }
 
         return true;
     }
 
-    bool IsInterfaceImplementationMatching(shard::PropertySymbol* interfaceProperty, shard::PropertySymbol* classProperty)
+    bool IsInterfaceImplementationMatching(shard::PropertySymbol* interfaceProperty, shard::PropertySymbol* classProperty, shard::GenericTypeSymbol* genericInterface = nullptr)
     {
         if (interfaceProperty == nullptr || classProperty == nullptr)
             return false;
@@ -63,7 +123,8 @@ namespace
         if (interfaceProperty->Name != classProperty->Name)
             return false;
 
-        if (!shard::SemanticModel::AreTypesEqual(interfaceProperty->ReturnType, classProperty->ReturnType))
+        shard::TypeSymbol* expectedReturn = SubstituteInterfaceType(interfaceProperty->ReturnType, genericInterface);
+        if (!shard::SemanticModel::AreTypesEqual(expectedReturn, classProperty->ReturnType))
             return false;
 
         if (interfaceProperty->Getter != nullptr && classProperty->Getter == nullptr)
@@ -157,15 +218,35 @@ namespace shard
     static void BindInterfaceImplementationsInternal(
         TypeSymbol* typeSymbol,
         InterfaceSymbol* interfaceSymbol,
-        std::unordered_set<InterfaceSymbol*>& visited)
+        GenericTypeSymbol* genericInterface,
+        std::unordered_set<TypeSymbol*>& visited)
     {
-        if (interfaceSymbol == nullptr || !visited.insert(interfaceSymbol).second)
+        if (interfaceSymbol == nullptr)
+            return;
+
+        TypeSymbol* visitedKey = genericInterface != nullptr ? static_cast<TypeSymbol*>(genericInterface) : static_cast<TypeSymbol*>(interfaceSymbol);
+        if (!visited.insert(visitedKey).second)
             return;
 
         for (TypeSymbol* baseInterfaceType : interfaceSymbol->Interfaces)
         {
-            if (baseInterfaceType != nullptr && baseInterfaceType->Kind == SyntaxKind::InterfaceDeclaration)
-                BindInterfaceImplementationsInternal(typeSymbol, static_cast<InterfaceSymbol*>(baseInterfaceType), visited);
+            if (baseInterfaceType == nullptr)
+                continue;
+
+            TypeSymbol* effectiveBase = baseInterfaceType;
+            if (baseInterfaceType->Kind == SyntaxKind::GenericType && genericInterface != nullptr)
+                effectiveBase = SubstituteInterfaceType(baseInterfaceType, genericInterface);
+
+            if (effectiveBase->Kind == SyntaxKind::InterfaceDeclaration)
+            {
+                BindInterfaceImplementationsInternal(typeSymbol, static_cast<InterfaceSymbol*>(effectiveBase), nullptr, visited);
+            }
+            else if (effectiveBase->Kind == SyntaxKind::GenericType)
+            {
+                GenericTypeSymbol* baseGeneric = static_cast<GenericTypeSymbol*>(effectiveBase);
+                if (baseGeneric->UnderlayingType != nullptr && baseGeneric->UnderlayingType->Kind == SyntaxKind::InterfaceDeclaration)
+                    BindInterfaceImplementationsInternal(typeSymbol, static_cast<InterfaceSymbol*>(baseGeneric->UnderlayingType), baseGeneric, visited);
+            }
         }
 
         for (MethodSymbol* interfaceMethod : interfaceSymbol->Methods)
@@ -176,7 +257,7 @@ namespace shard
 
             for (MethodSymbol* classMethod : typeSymbol->Methods)
             {
-                if (IsInterfaceImplementationMatching(interfaceMethod, classMethod))
+                if (IsInterfaceImplementationMatching(interfaceMethod, classMethod, genericInterface))
                 {
                     typeSymbol->InterfaceMethodMap[interfaceMethod] = classMethod;
                     break;
@@ -214,7 +295,7 @@ namespace shard
             {
                 for (PropertySymbol* classProperty : typeSymbol->Properties)
                 {
-                    if (IsInterfaceImplementationMatching(interfaceProperty, classProperty))
+                    if (IsInterfaceImplementationMatching(interfaceProperty, classProperty, genericInterface))
                     {
                         matchedProperty = classProperty;
                         break;
@@ -233,10 +314,20 @@ namespace shard
         }
     }
 
-    void SemanticValidator::BindInterfaceImplementations(TypeSymbol* typeSymbol, InterfaceSymbol* interfaceSymbol)
+    void SemanticValidator::BindInterfaceImplementations(TypeSymbol* typeSymbol, TypeSymbol* interfaceType)
     {
-        std::unordered_set<InterfaceSymbol*> visited;
-        BindInterfaceImplementationsInternal(typeSymbol, interfaceSymbol, visited);
+        std::unordered_set<TypeSymbol*> visited;
+
+        if (interfaceType->Kind == SyntaxKind::InterfaceDeclaration)
+        {
+            BindInterfaceImplementationsInternal(typeSymbol, static_cast<InterfaceSymbol*>(interfaceType), nullptr, visited);
+        }
+        else if (interfaceType->Kind == SyntaxKind::GenericType)
+        {
+            GenericTypeSymbol* genericInterface = static_cast<GenericTypeSymbol*>(interfaceType);
+            if (genericInterface->UnderlayingType != nullptr && genericInterface->UnderlayingType->Kind == SyntaxKind::InterfaceDeclaration)
+                BindInterfaceImplementationsInternal(typeSymbol, static_cast<InterfaceSymbol*>(genericInterface->UnderlayingType), genericInterface, visited);
+        }
     }
 
     // =====================================================================
@@ -252,10 +343,24 @@ namespace shard
 
         for (TypeSymbol* interfaceType : GetAllInterfaces(typeSymbol))
         {
-            if (interfaceType == nullptr || interfaceType->Kind != SyntaxKind::InterfaceDeclaration)
+            if (interfaceType == nullptr)
                 continue;
 
-            InterfaceSymbol* interfaceSymbol = static_cast<InterfaceSymbol*>(interfaceType);
+            InterfaceSymbol* interfaceSymbol = nullptr;
+            GenericTypeSymbol* genericInterface = nullptr;
+            if (interfaceType->Kind == SyntaxKind::InterfaceDeclaration)
+            {
+                interfaceSymbol = static_cast<InterfaceSymbol*>(interfaceType);
+            }
+            else if (interfaceType->Kind == SyntaxKind::GenericType)
+            {
+                genericInterface = static_cast<GenericTypeSymbol*>(interfaceType);
+                if (genericInterface->UnderlayingType != nullptr && genericInterface->UnderlayingType->Kind == SyntaxKind::InterfaceDeclaration)
+                    interfaceSymbol = static_cast<InterfaceSymbol*>(genericInterface->UnderlayingType);
+            }
+
+            if (interfaceSymbol == nullptr)
+                continue;
 
             for (MethodSymbol* interfaceMethod : interfaceSymbol->Methods)
             {
@@ -269,7 +374,7 @@ namespace shard
                 {
                     for (MethodSymbol* classMethod : typeSymbol->Methods)
                     {
-                        if (IsInterfaceImplementationMatching(interfaceMethod, classMethod))
+                        if (IsInterfaceImplementationMatching(interfaceMethod, classMethod, genericInterface))
                         {
                             matchedMethod = classMethod;
                             break;
@@ -282,7 +387,7 @@ namespace shard
                     Diagnostics.ReportError(errorToken,
                         L"Type '" + typeSymbol->Name + L"' does not implement interface method '" + interfaceMethod->Name + L"' from '" + interfaceSymbol->Name + L"'");
                 }
-                else if (!IsInterfaceImplementationMatching(interfaceMethod, matchedMethod))
+                else if (!IsInterfaceImplementationMatching(interfaceMethod, matchedMethod, genericInterface))
                 {
                     Diagnostics.ReportError(errorToken,
                         L"Implementation of interface method '" + interfaceMethod->Name + L"' from '" + interfaceSymbol->Name + L"' on type '" + typeSymbol->Name + L"' has an incompatible signature");
@@ -323,7 +428,7 @@ namespace shard
                 {
                     for (PropertySymbol* classProperty : typeSymbol->Properties)
                     {
-                        if (IsInterfaceImplementationMatching(interfaceProperty, classProperty))
+                        if (IsInterfaceImplementationMatching(interfaceProperty, classProperty, genericInterface))
                         {
                             matchedProperty = classProperty;
                             break;
@@ -336,7 +441,7 @@ namespace shard
                     Diagnostics.ReportError(errorToken,
                         L"Type '" + typeSymbol->Name + L"' does not implement interface property '" + interfaceProperty->Name + L"' from '" + interfaceSymbol->Name + L"'");
                 }
-                else if (!IsInterfaceImplementationMatching(interfaceProperty, matchedProperty))
+                else if (!IsInterfaceImplementationMatching(interfaceProperty, matchedProperty, genericInterface))
                 {
                     Diagnostics.ReportError(errorToken,
                         L"Implementation of interface property '" + interfaceProperty->Name + L"' from '" + interfaceSymbol->Name + L"' on type '" + typeSymbol->Name + L"' has an incompatible signature");

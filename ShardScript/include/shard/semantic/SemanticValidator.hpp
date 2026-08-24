@@ -43,7 +43,7 @@ namespace shard
         // Binds interface implementation methods into InterfaceMethodMap without
         // emitting diagnostics. TypeBinder uses this so later phases can resolve
         // interface members before the final validation pass runs.
-        static void BindInterfaceImplementations(TypeSymbol* typeSymbol, InterfaceSymbol* interfaceSymbol);
+        static void BindInterfaceImplementations(TypeSymbol* typeSymbol, TypeSymbol* interfaceType);
 
     private:
         void ValidateType(TypeSymbol* typeSymbol);
