@@ -588,6 +588,41 @@ SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::DeclareGlobal()
     return *this;
 }
 
+SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::SetMayThrow(bool value)
+{
+    if (Symbol != nullptr)
+        Symbol->EffectSummary.MayThrow = value;
+    return *this;
+}
+
+SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::SetMutatesInstance(bool value)
+{
+    if (Symbol != nullptr)
+        Symbol->EffectSummary.MutatesInstance = value;
+    return *this;
+}
+
+SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::SetMutatesStatic(bool value)
+{
+    if (Symbol != nullptr)
+        Symbol->EffectSummary.MutatesStatic = value;
+    return *this;
+}
+
+SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::SetMutatesArguments(bool value)
+{
+    if (Symbol != nullptr)
+        Symbol->EffectSummary.MutatesArguments = value;
+    return *this;
+}
+
+SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::SetHasUnknownSideEffects(bool value)
+{
+    if (Symbol != nullptr)
+        Symbol->EffectSummary.HasUnknownSideEffects = value;
+    return *this;
+}
+
 // =========================================================================
 // OperatorSymbol
 // =========================================================================
@@ -644,6 +679,41 @@ SymbolBuilder<OperatorSymbol>& SymbolBuilder<OperatorSymbol>::SetCallback(Method
     return *this;
 }
 
+SymbolBuilder<OperatorSymbol>& SymbolBuilder<OperatorSymbol>::SetMayThrow(bool value)
+{
+    if (Symbol != nullptr)
+        Symbol->EffectSummary.MayThrow = value;
+    return *this;
+}
+
+SymbolBuilder<OperatorSymbol>& SymbolBuilder<OperatorSymbol>::SetMutatesInstance(bool value)
+{
+    if (Symbol != nullptr)
+        Symbol->EffectSummary.MutatesInstance = value;
+    return *this;
+}
+
+SymbolBuilder<OperatorSymbol>& SymbolBuilder<OperatorSymbol>::SetMutatesStatic(bool value)
+{
+    if (Symbol != nullptr)
+        Symbol->EffectSummary.MutatesStatic = value;
+    return *this;
+}
+
+SymbolBuilder<OperatorSymbol>& SymbolBuilder<OperatorSymbol>::SetMutatesArguments(bool value)
+{
+    if (Symbol != nullptr)
+        Symbol->EffectSummary.MutatesArguments = value;
+    return *this;
+}
+
+SymbolBuilder<OperatorSymbol>& SymbolBuilder<OperatorSymbol>::SetHasUnknownSideEffects(bool value)
+{
+    if (Symbol != nullptr)
+        Symbol->EffectSummary.HasUnknownSideEffects = value;
+    return *this;
+}
+
 // =========================================================================
 // AccessorSymbol
 // =========================================================================
@@ -697,6 +767,41 @@ SymbolBuilder<AccessorSymbol>& SymbolBuilder<AccessorSymbol>::IsImplementationOf
 
     TypeSymbol* parentType = static_cast<TypeSymbol*>(parent);
     parentType->InterfaceMethodMap[abstractMethod] = Symbol;
+    return *this;
+}
+
+SymbolBuilder<AccessorSymbol>& SymbolBuilder<AccessorSymbol>::SetMayThrow(bool value)
+{
+    if (Symbol != nullptr)
+        Symbol->EffectSummary.MayThrow = value;
+    return *this;
+}
+
+SymbolBuilder<AccessorSymbol>& SymbolBuilder<AccessorSymbol>::SetMutatesInstance(bool value)
+{
+    if (Symbol != nullptr)
+        Symbol->EffectSummary.MutatesInstance = value;
+    return *this;
+}
+
+SymbolBuilder<AccessorSymbol>& SymbolBuilder<AccessorSymbol>::SetMutatesStatic(bool value)
+{
+    if (Symbol != nullptr)
+        Symbol->EffectSummary.MutatesStatic = value;
+    return *this;
+}
+
+SymbolBuilder<AccessorSymbol>& SymbolBuilder<AccessorSymbol>::SetMutatesArguments(bool value)
+{
+    if (Symbol != nullptr)
+        Symbol->EffectSummary.MutatesArguments = value;
+    return *this;
+}
+
+SymbolBuilder<AccessorSymbol>& SymbolBuilder<AccessorSymbol>::SetHasUnknownSideEffects(bool value)
+{
+    if (Symbol != nullptr)
+        Symbol->EffectSummary.HasUnknownSideEffects = value;
     return *this;
 }
 
@@ -941,6 +1046,41 @@ SymbolBuilder<ConstructorSymbol>& SymbolBuilder<ConstructorSymbol>::SetCallback(
 {
     Symbol->FunctionPointer = callback;
     Symbol->HandleType = MethodHandleType::External;
+    return *this;
+}
+
+SymbolBuilder<ConstructorSymbol>& SymbolBuilder<ConstructorSymbol>::SetMayThrow(bool value)
+{
+    if (Symbol != nullptr)
+        Symbol->EffectSummary.MayThrow = value;
+    return *this;
+}
+
+SymbolBuilder<ConstructorSymbol>& SymbolBuilder<ConstructorSymbol>::SetMutatesInstance(bool value)
+{
+    if (Symbol != nullptr)
+        Symbol->EffectSummary.MutatesInstance = value;
+    return *this;
+}
+
+SymbolBuilder<ConstructorSymbol>& SymbolBuilder<ConstructorSymbol>::SetMutatesStatic(bool value)
+{
+    if (Symbol != nullptr)
+        Symbol->EffectSummary.MutatesStatic = value;
+    return *this;
+}
+
+SymbolBuilder<ConstructorSymbol>& SymbolBuilder<ConstructorSymbol>::SetMutatesArguments(bool value)
+{
+    if (Symbol != nullptr)
+        Symbol->EffectSummary.MutatesArguments = value;
+    return *this;
+}
+
+SymbolBuilder<ConstructorSymbol>& SymbolBuilder<ConstructorSymbol>::SetHasUnknownSideEffects(bool value)
+{
+    if (Symbol != nullptr)
+        Symbol->EffectSummary.HasUnknownSideEffects = value;
     return *this;
 }
 

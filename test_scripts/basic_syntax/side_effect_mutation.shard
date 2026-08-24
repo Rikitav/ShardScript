@@ -1,0 +1,30 @@
+using stdio;
+
+namespace side_effect_mutation;
+
+public class Counter
+{
+    public Value: int;
+
+    public func Inc() -> void
+    {
+        this.Value += 1;
+    }
+
+    public func Set(v: int) -> void
+    {
+        this.Value = v;
+    }
+}
+
+public static func Main() -> void
+{
+    c: Counter = new Counter();
+    c.Set(10);
+    c.Inc();
+
+    if (c.Value == 11)
+        println("ok");
+    else
+        println("fail");
+}

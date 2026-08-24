@@ -1,0 +1,19 @@
+using stdio;
+
+namespace side_effect_lambda;
+
+public class State
+{
+    public static Value: int;
+}
+
+public static func Main() -> void
+{
+    mutator := lambda () -> void => State.Value = 7;
+    mutator();
+
+    if (State.Value == 7)
+        println("ok");
+    else
+        println("fail");
+}

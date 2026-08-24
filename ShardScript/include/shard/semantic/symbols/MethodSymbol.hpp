@@ -4,6 +4,7 @@
 #include <shard/parsing/SyntaxKind.hpp>
 #include <shard/semantic/SyntaxSymbol.hpp>
 #include <shard/semantic/symbols/MemberSymbol.hpp>
+#include <shard/semantic/MethodEffectSummary.hpp>
 
 #include <shard/semantic/symbols/TypeSymbol.hpp>
 #include <shard/semantic/symbols/ParameterSymbol.hpp>
@@ -58,6 +59,10 @@ namespace shard
         // Populated by async state-machine lowering.
         ClassSymbol* AsyncStateMachineClass = nullptr;
         MethodSymbol* AsyncStateMachineMoveNext = nullptr;
+
+        // Side-effect / mutation summary computed by FlowAnalyzer.
+        MethodEffectSummary EffectSummary;
+        bool EffectsComputed = false;
 
     protected:
         inline MethodSymbol(const std::wstring& name, const SyntaxKind kind)

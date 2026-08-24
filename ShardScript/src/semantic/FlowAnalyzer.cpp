@@ -62,6 +62,7 @@ FlowAnalyzer::FlowAnalyzer(SemanticModel& model, DiagnosticsContext& diagnostics
 void FlowAnalyzer::Analyze(SyntaxTree& syntaxTree)
 {
 	VisitSyntaxTree(syntaxTree);
+	PropagateEffects();
 }
 
 // =====================================================================
@@ -77,6 +78,7 @@ void FlowAnalyzer::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 	if (symbol == nullptr)
 		return;
 
+	EnterMemberBody(symbol);
 	PushScope(symbol);
 
 	for (TypeParameterSymbol* typeParam : symbol->TypeParameters)
@@ -101,6 +103,7 @@ void FlowAnalyzer::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 	AnalyzeMemberBody(symbol, node->Body.get(), node->IdentifierToken);
 
 	PopScope();
+	LeaveMemberBody(symbol);
 }
 
 void FlowAnalyzer::VisitOperatorDeclaration(OperatorDeclarationSyntax* node)
@@ -112,6 +115,7 @@ void FlowAnalyzer::VisitOperatorDeclaration(OperatorDeclarationSyntax* node)
 	if (symbol == nullptr)
 		return;
 
+	EnterMemberBody(symbol);
 	PushScope(symbol);
 
 	if (symbol->Linking == LINK_INSTANCE)
@@ -132,6 +136,7 @@ void FlowAnalyzer::VisitOperatorDeclaration(OperatorDeclarationSyntax* node)
 
 	AnalyzeMemberBody(symbol, node->Body.get(), node->OperatorToken);
 	PopScope();
+	LeaveMemberBody(symbol);
 }
 
 void FlowAnalyzer::VisitAccessorDeclaration(AccessorDeclarationSyntax* node)
@@ -143,6 +148,7 @@ void FlowAnalyzer::VisitAccessorDeclaration(AccessorDeclarationSyntax* node)
 	if (symbol == nullptr)
 		return;
 
+	EnterMemberBody(symbol);
 	PushScope(symbol);
 
 	PropertySymbol* propertySymbol = symbol->Parent != nullptr && symbol->Parent->Kind == SyntaxKind::PropertyDeclaration
@@ -181,6 +187,7 @@ void FlowAnalyzer::VisitAccessorDeclaration(AccessorDeclarationSyntax* node)
 	}
 
 	PopScope();
+	LeaveMemberBody(symbol);
 }
 
 void FlowAnalyzer::VisitConstructorDeclaration(ConstructorDeclarationSyntax* node)
@@ -192,6 +199,7 @@ void FlowAnalyzer::VisitConstructorDeclaration(ConstructorDeclarationSyntax* nod
 	if (symbol == nullptr)
 		return;
 
+	EnterMemberBody(symbol);
 	PushScope(symbol);
 
 	TypeSymbol* ownerType = symbol->Parent != nullptr && symbol->Parent->IsType()
@@ -210,6 +218,7 @@ void FlowAnalyzer::VisitConstructorDeclaration(ConstructorDeclarationSyntax* nod
 	AnalyzeStatementsBlock(node->Body.get());
 
 	PopScope();
+	LeaveMemberBody(symbol);
 }
 
 void FlowAnalyzer::VisitLambdaExpression(LambdaExpressionSyntax* node)
@@ -221,6 +230,7 @@ void FlowAnalyzer::VisitLambdaExpression(LambdaExpressionSyntax* node)
 	if (symbol == nullptr)
 		return;
 
+	EnterMemberBody(symbol);
 	PushScope(symbol);
 
 	for (ParameterSymbol* parameter : symbol->Parameters)
@@ -233,6 +243,7 @@ void FlowAnalyzer::VisitLambdaExpression(LambdaExpressionSyntax* node)
 	AnalyzeMemberBody(symbol, node->Body.get(), node->LambdaToken);
 
 	PopScope();
+	LeaveMemberBody(symbol);
 }
 
 // =====================================================================
@@ -426,10 +437,24 @@ FlowAnalyzer::FlowState FlowAnalyzer::AnalyzeStatement(StatementSyntax* node)
 			return AnalyzeTryStatement(static_cast<TryStatementSyntax*>(node));
 
 		case SyntaxKind::ReturnStatement:
+		{
+			ReturnStatementSyntax* statement = static_cast<ReturnStatementSyntax*>(node);
+			if (statement->Expression != nullptr)
+				ScanExpression(statement->Expression.get());
 			return FlowState::Returns;
+		}
 
 		case SyntaxKind::ThrowStatement:
+		{
+			ThrowStatementSyntax* statement = static_cast<ThrowStatementSyntax*>(node);
+			if (statement->Expression != nullptr)
+				ScanExpression(statement->Expression.get());
+
+			if (_currentMethod != nullptr && _tryCatchDepth == 0)
+				_currentMethod->EffectSummary.MayThrow = true;
+
 			return FlowState::Throws;
+		}
 
 		default:
 			return FlowState::Normal;
@@ -501,6 +526,9 @@ FlowAnalyzer::FlowState FlowAnalyzer::AnalyzeConditionalChain(ConditionalClauseB
 	}
 
 	ConditionalClauseSyntax* clause = static_cast<ConditionalClauseSyntax*>(node);
+	if (clause->ConditionExpression != nullptr)
+		ScanStatement(clause->ConditionExpression.get());
+
 	FlowState thenState = clause->StatementsBlock != nullptr
 		? AnalyzeStatementsBlock(clause->StatementsBlock.get())
 		: FlowState::Normal;
@@ -526,6 +554,9 @@ FlowAnalyzer::FlowState FlowAnalyzer::AnalyzeSwitchStatement(SwitchStatementSynt
 	if (node == nullptr)
 		return FlowState::Normal;
 
+	if (node->Expression != nullptr)
+		ScanExpression(node->Expression.get());
+
 	++_switchDepth;
 	AssignmentSet savedAssignments = _assignedVariables;
 
@@ -536,6 +567,9 @@ FlowAnalyzer::FlowState FlowAnalyzer::AnalyzeSwitchStatement(SwitchStatementSynt
 	{
 		if (clause == nullptr || clause->Body == nullptr)
 			continue;
+
+		if (clause->Pattern != nullptr)
+			ScanExpression(clause->Pattern.get());
 
 		FlowState caseState = WithoutBreaksAndContinues(AnalyzeStatementsBlock(clause->Body.get()));
 
@@ -575,11 +609,18 @@ FlowAnalyzer::FlowState FlowAnalyzer::AnalyzeTryStatement(TryStatementSyntax* no
 	if (node == nullptr)
 		return FlowState::Normal;
 
+	bool hasCatch = !node->CatchClauses.empty();
+	if (hasCatch && node->TryBlock != nullptr)
+		++_tryCatchDepth;
+
 	FlowState tryState = node->TryBlock != nullptr
 		? AnalyzeStatementsBlock(node->TryBlock.get())
 		: FlowState::Normal;
 
-	if (node->CatchClauses.empty())
+	if (hasCatch && node->TryBlock != nullptr)
+		--_tryCatchDepth;
+
+	if (!hasCatch)
 		return tryState;
 
 	// Break/continue inside try/catch propagate to the enclosing loop/switch,
@@ -636,6 +677,9 @@ void FlowAnalyzer::VisitWhileStatement(WhileStatementSyntax* node)
 	if (node == nullptr || node->StatementsBlock == nullptr)
 		return;
 
+	if (node->ConditionExpression != nullptr)
+		ScanExpression(node->ConditionExpression.get());
+
 	AnalyzeLoopBody(node->StatementsBlock.get());
 }
 
@@ -643,6 +687,9 @@ void FlowAnalyzer::VisitUntilStatement(UntilStatementSyntax* node)
 {
 	if (node == nullptr || node->StatementsBlock == nullptr)
 		return;
+
+	if (node->ConditionExpression != nullptr)
+		ScanExpression(node->ConditionExpression.get());
 
 	AnalyzeLoopBody(node->StatementsBlock.get());
 }
@@ -655,6 +702,9 @@ void FlowAnalyzer::VisitForStatement(ForStatementSyntax* node)
 	if (node->InitializerStatement != nullptr)
 		AnalyzeStatement(node->InitializerStatement.get());
 
+	if (node->ConditionExpression != nullptr)
+		ScanExpression(node->ConditionExpression.get());
+
 	AnalyzeLoopBody(node->StatementsBlock.get());
 
 	if (node->AfterRepeatStatement != nullptr)
@@ -666,6 +716,9 @@ void FlowAnalyzer::VisitForEachStatement(ForEachStatementSyntax* node)
 	if (node == nullptr || node->StatementsBlock == nullptr)
 		return;
 
+	if (node->RangeExpression != nullptr)
+		ScanExpression(node->RangeExpression.get());
+
 	AnalyzeLoopBody(node->StatementsBlock.get());
 }
 
@@ -673,6 +726,9 @@ void FlowAnalyzer::VisitForInStatement(ForInStatementSyntax* node)
 {
 	if (node == nullptr || node->StatementsBlock == nullptr)
 		return;
+
+	if (node->RangeExpression != nullptr)
+		ScanExpression(node->RangeExpression.get());
 
 	AnalyzeLoopBody(node->StatementsBlock.get());
 }
@@ -773,4 +829,308 @@ void FlowAnalyzer::VisitVariableStatement(VariableStatementSyntax* node)
 		AnalyzeExpressionForUse(node->Expression.get());
 		MarkAssigned(variable);
 	}
+}
+
+// =====================================================================
+//  Side-effect / mutation scanning
+// =====================================================================
+
+void FlowAnalyzer::EnterMemberBody(MethodSymbol* method)
+{
+	_currentMethod = method;
+	if (method != nullptr)
+		method->EffectsComputed = false;
+}
+
+void FlowAnalyzer::LeaveMemberBody(MethodSymbol* method)
+{
+	if (method != nullptr)
+		method->EffectsComputed = true;
+
+	_currentMethod = nullptr;
+}
+
+void FlowAnalyzer::ScanExpression(ExpressionSyntax* expression)
+{
+	if (expression == nullptr)
+		return;
+
+	SyntaxVisitor::VisitExpression(expression);
+}
+
+void FlowAnalyzer::ScanStatement(StatementSyntax* statement)
+{
+	if (statement == nullptr)
+		return;
+
+	SyntaxVisitor::VisitStatement(statement);
+}
+
+bool FlowAnalyzer::IsAssignmentOperator(TokenType type)
+{
+	switch (type)
+	{
+		case TokenType::AssignOperator:
+		case TokenType::AddAssignOperator:
+		case TokenType::SubAssignOperator:
+		case TokenType::MultAssignOperator:
+		case TokenType::DivAssignOperator:
+		case TokenType::ModAssignOperator:
+		case TokenType::PowAssignOperator:
+		case TokenType::OrAssignOperator:
+		case TokenType::AndAssignOperator:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
+bool FlowAnalyzer::IsIncrementDecrementOperator(TokenType type)
+{
+	return type == TokenType::IncrementOperator || type == TokenType::DecrementOperator;
+}
+
+bool FlowAnalyzer::IsThisExpression(ExpressionSyntax* expression)
+{
+	if (expression == nullptr)
+		return false;
+
+	if (expression->Kind != SyntaxKind::MemberAccessExpression)
+		return false;
+
+	MemberAccessExpressionSyntax* memberAccess = static_cast<MemberAccessExpressionSyntax*>(expression);
+	if (memberAccess->PreviousExpression != nullptr)
+		return false;
+
+	ParameterSymbol* param = memberAccess->ToParameter;
+	return param != nullptr && param->Name == L"this";
+}
+
+void FlowAnalyzer::RecordFieldOrPropertyWrite(MemberAccessExpressionSyntax* node)
+{
+	if (node == nullptr || _currentMethod == nullptr)
+		return;
+
+	bool isStaticContext = node->IsStaticContext;
+	bool isThisReceiver = !isStaticContext && (node->PreviousExpression == nullptr || IsThisExpression(node->PreviousExpression.get()));
+
+	if (node->ToField != nullptr)
+	{
+		FieldSymbol* field = node->ToField;
+		if (isStaticContext)
+		{
+			_currentMethod->EffectSummary.MutatesStatic = true;
+			_currentMethod->EffectSummary.MayAssignStaticFields.insert(field);
+		}
+		else if (isThisReceiver)
+		{
+			_currentMethod->EffectSummary.MutatesInstance = true;
+			_currentMethod->EffectSummary.MayAssignInstanceFields.insert(field);
+		}
+	}
+	else if (node->ToProperty != nullptr)
+	{
+		// A property write is a call to the setter accessor; for now record the
+		// mutation and, if the setter body is available, merge its effects too.
+		PropertySymbol* property = node->ToProperty;
+		if (isStaticContext)
+		{
+			_currentMethod->EffectSummary.MutatesStatic = true;
+		}
+		else if (isThisReceiver)
+		{
+			_currentMethod->EffectSummary.MutatesInstance = true;
+		}
+
+		if (property->Setter != nullptr)
+			RecordCalleeEffects(property->Setter, _tryCatchDepth > 0);
+	}
+}
+
+void FlowAnalyzer::RecordIndexatorWrite(IndexatorExpressionSyntax* node)
+{
+	if (node == nullptr || _currentMethod == nullptr)
+		return;
+
+	bool isStaticContext = node->IsStaticContext;
+	bool isThisReceiver = !isStaticContext && (node->PreviousExpression == nullptr || IsThisExpression(node->PreviousExpression.get()));
+
+	if (isStaticContext)
+		_currentMethod->EffectSummary.MutatesStatic = true;
+	else if (isThisReceiver)
+		_currentMethod->EffectSummary.MutatesInstance = true;
+
+	// Merge setter effects if the indexer symbol is known.
+	if (node->ToProperty != nullptr)
+	{
+		PropertySymbol* property = node->ToProperty;
+		if (property->Setter != nullptr)
+			RecordCalleeEffects(property->Setter, _tryCatchDepth > 0);
+	}
+}
+
+void FlowAnalyzer::RecordCalleeEffects(MethodSymbol* callee, bool inTryCatch)
+{
+	if (callee == nullptr || _currentMethod == nullptr)
+		return;
+
+	_callGraph[_currentMethod].push_back(std::make_pair(callee, inTryCatch));
+
+	if (callee->EffectsComputed)
+		_currentMethod->EffectSummary.Merge(callee->EffectSummary);
+}
+
+void FlowAnalyzer::PropagateEffects()
+{
+	bool changed = true;
+	while (changed)
+	{
+		changed = false;
+
+		for (auto& pair : _callGraph)
+		{
+			MethodSymbol* caller = pair.first;
+			if (caller == nullptr)
+				continue;
+
+			MethodEffectSummary previous = caller->EffectSummary;
+
+			for (const auto& edge : pair.second)
+			{
+				MethodSymbol* callee = edge.first;
+				if (callee != nullptr)
+					caller->EffectSummary.Merge(callee->EffectSummary);
+			}
+
+			if (previous != caller->EffectSummary)
+				changed = true;
+		}
+	}
+
+	for (auto& pair : _callGraph)
+	{
+		if (pair.first != nullptr)
+			pair.first->EffectsComputed = true;
+	}
+
+	ReportEffectDiagnostics();
+}
+
+void FlowAnalyzer::ReportEffectDiagnostics()
+{
+	for (const auto& pair : _callGraph)
+	{
+		MethodSymbol* caller = pair.first;
+		if (caller == nullptr)
+			continue;
+
+		for (const auto& edge : pair.second)
+		{
+			MethodSymbol* callee = edge.first;
+			bool inTryCatch = edge.second;
+			if (callee == nullptr)
+				continue;
+
+			if (callee->EffectSummary.MayThrow && !inTryCatch)
+			{
+				Diagnostics.ReportWarning(
+					SyntaxToken(),
+					L"Call to '" + callee->Name + L"' may throw an exception");
+			}
+		}
+	}
+}
+
+void FlowAnalyzer::VisitBinaryExpression(BinaryExpressionSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (_currentMethod != nullptr && IsAssignmentOperator(node->OperatorToken.Type) && node->Left != nullptr)
+	{
+		ExpressionSyntax* left = node->Left.get();
+		if (left->Kind == SyntaxKind::MemberAccessExpression)
+		{
+			RecordFieldOrPropertyWrite(static_cast<MemberAccessExpressionSyntax*>(left));
+		}
+		else if (left->Kind == SyntaxKind::IndexatorExpression)
+		{
+			RecordIndexatorWrite(static_cast<IndexatorExpressionSyntax*>(left));
+		}
+	}
+
+	SyntaxVisitor::VisitBinaryExpression(node);
+}
+
+void FlowAnalyzer::VisitUnaryExpression(UnaryExpressionSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (_currentMethod != nullptr && IsIncrementDecrementOperator(node->OperatorToken.Type) && node->Expression != nullptr)
+	{
+		ExpressionSyntax* operand = node->Expression.get();
+		if (operand->Kind == SyntaxKind::MemberAccessExpression)
+		{
+			RecordFieldOrPropertyWrite(static_cast<MemberAccessExpressionSyntax*>(operand));
+		}
+		else if (operand->Kind == SyntaxKind::IndexatorExpression)
+		{
+			RecordIndexatorWrite(static_cast<IndexatorExpressionSyntax*>(operand));
+		}
+	}
+
+	SyntaxVisitor::VisitUnaryExpression(node);
+}
+
+void FlowAnalyzer::VisitInvocationExpression(InvokationExpressionSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (_currentMethod != nullptr)
+	{
+		MethodSymbol* callee = node->Symbol;
+		if (callee != nullptr && !node->IsDelegateInvocation)
+		{
+			bool inTryCatch = _tryCatchDepth > 0;
+			RecordCalleeEffects(callee, inTryCatch);
+
+			// A throw from a callee only propagates to the caller if the call is
+			// not guarded by a catch block. Mutations always propagate.
+			if (!inTryCatch)
+				_currentMethod->EffectSummary.MayThrow = _currentMethod->EffectSummary.MayThrow || callee->EffectSummary.MayThrow;
+		}
+		else
+		{
+			_currentMethod->EffectSummary.HasUnknownSideEffects = true;
+		}
+	}
+
+	SyntaxVisitor::VisitInvocationExpression(node);
+}
+
+void FlowAnalyzer::VisitObjectCreationExpression(ObjectExpressionSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (_currentMethod != nullptr && node->CtorSymbol != nullptr)
+	{
+		bool inTryCatch = _tryCatchDepth > 0;
+		RecordCalleeEffects(node->CtorSymbol, inTryCatch);
+
+		if (!inTryCatch)
+			_currentMethod->EffectSummary.MayThrow = _currentMethod->EffectSummary.MayThrow || node->CtorSymbol->EffectSummary.MayThrow;
+	}
+
+	SyntaxVisitor::VisitObjectCreationExpression(node);
+}
+
+void FlowAnalyzer::VisitIndexatorExpression(IndexatorExpressionSyntax* node)
+{
+	// Reads through indexers are handled by the base visitor; writes are
+	// detected from the parent assignment in VisitBinaryExpression.
+	SyntaxVisitor::VisitIndexatorExpression(node);
 }

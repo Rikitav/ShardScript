@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <string>
 
+#ifndef __EMSCRIPTEN__
 namespace shard
 {
 	class SHARD_API FileReader : public SourceTextProvider
@@ -25,3 +26,4 @@ namespace shard
 		std::wstring& GetName() override;
 	};
 }
+#endif // __EMSCRIPTEN__

@@ -10,6 +10,12 @@
 #include <shard/semantic/symbols/TypeSymbol.hpp>
 #include <shard/semantic/symbols/MethodSymbol.hpp>
 #include <shard/semantic/symbols/VariableSymbol.hpp>
+#include <shard/semantic/symbols/FieldSymbol.hpp>
+
+#include <shard/parsing/nodes/Expressions/LinkedExpressionSyntax.hpp>
+#include <shard/parsing/nodes/Expressions/ObjectExpressionSyntax.hpp>
+#include <shard/parsing/nodes/Expressions/BinaryExpressionSyntax.hpp>
+#include <shard/parsing/nodes/Expressions/UnaryExpressionSyntax.hpp>
 
 #include <unordered_set>
 #include <unordered_map>
@@ -60,6 +66,28 @@ namespace shard
 		int _switchDepth = 0;
 		bool _currentMethodIsAsync = false;
 
+		// Side-effect scanning state
+		MethodSymbol* _currentMethod = nullptr;
+		int _tryCatchDepth = 0;
+		std::unordered_map<MethodSymbol*, std::vector<std::pair<MethodSymbol*, bool>>> _callGraph;
+
+		void EnterMemberBody(MethodSymbol* method);
+		void LeaveMemberBody(MethodSymbol* method);
+
+		void ScanExpression(ExpressionSyntax* expression);
+		void ScanStatement(StatementSyntax* statement);
+
+		static bool IsAssignmentOperator(TokenType type);
+		static bool IsIncrementDecrementOperator(TokenType type);
+		static bool IsThisExpression(ExpressionSyntax* expression);
+
+		void RecordFieldOrPropertyWrite(MemberAccessExpressionSyntax* node);
+		void RecordIndexatorWrite(IndexatorExpressionSyntax* node);
+		void RecordCalleeEffects(MethodSymbol* callee, bool inTryCatch);
+
+		void PropagateEffects();
+		void ReportEffectDiagnostics();
+
 	public:
 		FlowAnalyzer(SemanticModel& model, DiagnosticsContext& diagnostics);
 
@@ -89,6 +117,12 @@ namespace shard
 		void VisitForStatement(ForStatementSyntax* node) override;
 		void VisitForEachStatement(ForEachStatementSyntax* node) override;
 		void VisitForInStatement(ForInStatementSyntax* node) override;
+
+		void VisitBinaryExpression(BinaryExpressionSyntax* node) override;
+		void VisitUnaryExpression(UnaryExpressionSyntax* node) override;
+		void VisitInvocationExpression(InvokationExpressionSyntax* node) override;
+		void VisitObjectCreationExpression(ObjectExpressionSyntax* node) override;
+		void VisitIndexatorExpression(IndexatorExpressionSyntax* node) override;
 
 	private:
 		static FlowState MergeBranches(FlowState a, FlowState b);
