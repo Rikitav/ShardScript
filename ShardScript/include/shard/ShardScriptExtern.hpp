@@ -74,6 +74,11 @@ extern "C"
     SHARD_API shard::GarbageCollector* Shard_GetGarbageCollector(shard::ApplicationDomain* domain);
     SHARD_API shard::ProgramVirtualImage* Shard_GetProgram(shard::ApplicationDomain* domain);
     SHARD_API shard::MethodSymbol* Shard_GetEntryPointMethod(shard::ApplicationDomain* domain);
+
+    SHARD_API int Shard_SetScriptArguments(shard::ApplicationDomain* domain, const wchar_t* const* args, std::size_t count);
+    SHARD_API std::size_t Shard_GetScriptArgumentCount(shard::ApplicationDomain* domain);
+    SHARD_API int Shard_GetScriptArgument(shard::ApplicationDomain* domain, std::size_t index, wchar_t* buffer, int bufferLen);
+
     SHARD_API std::size_t Shard_GetProgramDataSectionSize(shard::ProgramVirtualImage* program);
     SHARD_API int Shard_GetProgramDataSectionByte(shard::ProgramVirtualImage* program, std::size_t index);
 

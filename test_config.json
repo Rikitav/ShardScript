@@ -51,6 +51,13 @@
       "args": ["-l", "third-party/libsqlite.shard.so"]
     }
   ],
+  "script_arguments": [
+    {
+      "_comment": "Verify that arguments after '--' are forwarded to the script and not parsed by the host.",
+      "path": "test_scripts/basic_syntax/script_args_marker.shard",
+      "args": ["--bad-flag"]
+    }
+  ],
   "skip_on_os": {
     "linux": [
       "test_scripts/advanced_io/file_stream_cancellation.shard",

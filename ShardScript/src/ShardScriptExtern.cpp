@@ -605,6 +605,73 @@ extern "C"
         }
     }
 
+    SHARD_API int Shard_SetScriptArguments(ApplicationDomain* domain, const wchar_t* const* args, std::size_t count)
+    {
+        try
+        {
+            if (domain == nullptr)
+            {
+                SetLastShardWError(L"domain is null");
+                return -1;
+            }
+
+            std::vector<std::wstring> arguments;
+            arguments.reserve(count);
+            for (std::size_t i = 0; i < count; ++i)
+                arguments.emplace_back(args[i] != nullptr ? args[i] : L"");
+
+            domain->SetScriptArguments(std::move(arguments));
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API std::size_t Shard_GetScriptArgumentCount(ApplicationDomain* domain)
+    {
+        try
+        {
+            if (domain == nullptr)
+                return 0;
+
+            return domain->GetScriptArguments().size();
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return 0;
+        }
+    }
+
+    SHARD_API int Shard_GetScriptArgument(ApplicationDomain* domain, std::size_t index, wchar_t* buffer, int bufferLen)
+    {
+        try
+        {
+            if (domain == nullptr)
+            {
+                SetLastShardWError(L"domain is null");
+                return -1;
+            }
+
+            const std::vector<std::wstring>& arguments = domain->GetScriptArguments();
+            if (index >= arguments.size())
+            {
+                SetLastShardWError(L"script argument index out of range");
+                return -1;
+            }
+
+            return CopyWString(arguments[index], buffer, bufferLen);
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
     SHARD_API std::size_t Shard_GetProgramDataSectionSize(ProgramVirtualImage* program)
     {
         try

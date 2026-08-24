@@ -77,6 +77,10 @@ def get_test_arguments(rel_path, arguments_map):
     return arguments_map.get(rel_path.as_posix(), [])
 
 
+def get_script_arguments(rel_path, arguments_map):
+    return arguments_map.get(rel_path.as_posix(), [])
+
+
 def get_skipped_tests(skip_on_os):
     """Return the set of tests that should be skipped on the current OS."""
     current = platform.system().lower()
@@ -97,9 +101,12 @@ def discover_tests():
     return tests
 
 
-def run_test(test_path, interpreter, expected_failures, expected_timeouts, arguments_map, verbose, timeout=30.0):
+def run_test(test_path, interpreter, expected_failures, expected_timeouts, arguments_map, script_arguments_map, verbose, timeout=30.0):
     extra_args = get_test_arguments(test_path, arguments_map)
+    script_args = get_script_arguments(test_path, script_arguments_map)
     cmd = [str(interpreter)] + extra_args + [str(ROOT / test_path)]
+    if script_args:
+        cmd += ["--"] + script_args
     start = time.perf_counter()
 
     try:
@@ -219,7 +226,7 @@ def main():
         with config_path.open("r", encoding="utf-8") as f:
             config = json.load(f)
     else:
-        config = {"expected_failures": [], "expected_timeouts": [], "test_arguments": [], "skip_on_os": {}}
+        config = {"expected_failures": [], "expected_timeouts": [], "test_arguments": [], "script_arguments": [], "skip_on_os": {}}
 
     expected_failures = set(DEFAULT_EXPECTED_FAILURES)
     for entry in config.get("expected_failures", []):
@@ -239,6 +246,13 @@ def main():
         test_args = entry.get("args", [])
         if path:
             arguments_map[path] = test_args
+
+    script_arguments_map = {}
+    for entry in config.get("script_arguments", []):
+        path = entry.get("path", "").replace("\\", "/")
+        script_args = entry.get("args", [])
+        if path:
+            script_arguments_map[path] = script_args
 
     skipped_tests = get_skipped_tests(config.get("skip_on_os", {}))
 
@@ -265,6 +279,8 @@ def main():
                 markers.append("expected timeout")
             if get_test_arguments(t, arguments_map):
                 markers.append("has args")
+            if get_script_arguments(t, script_arguments_map):
+                markers.append("has script args")
             marker = f" [{', '.join(markers)}]" if markers else ""
             print(f"{t}{marker}")
         return 0
@@ -282,7 +298,7 @@ def main():
 
     with ThreadPoolExecutor(max_workers=jobs) as executor:
         futures = {
-            executor.submit(run_test, t, interpreter, expected_failures, expected_timeouts, arguments_map, args.verbose, 30.0): t
+            executor.submit(run_test, t, interpreter, expected_failures, expected_timeouts, arguments_map, script_arguments_map, args.verbose, 30.0): t
             for t in tests
         }
         for future in as_completed(futures):
