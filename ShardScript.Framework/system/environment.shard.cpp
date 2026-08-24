@@ -125,6 +125,17 @@ static ObjectInstance* shard_Environment_SetEnvVar(const CallState& context)
     return nullptr;
 }
 
+static ObjectInstance* shard_Environment_ScriptArguments_get(const CallState& context)
+{
+    const std::vector<std::wstring>& args = context.Domain.GetScriptArguments();
+    ObjectInstance* array = context.Collector.AllocateArray(TYPE_STRING, args.size());
+
+    for (std::size_t i = 0; i < args.size(); ++i)
+        array->SetElement(i, context.Collector.FromValue(args[i]));
+
+    return array;
+}
+
 SHARDLIB_GETMETADATA
 {
     lib.Name        = L"environment";
@@ -147,5 +158,10 @@ SHARDLIB_ENTRYPOINT
 
     envClass.AddMethod(L"SetVariable", TYPE_STRING, LINK_STATIC)
         .AddParameter(L"name", SymbolTable::Primitives::String)
+        .AddParameter(L"value", SymbolTable::Primitives::String)
         .SetCallback(&shard_Environment_SetEnvVar);
+
+    envClass.AddProperty(L"Args", envClass.GetFactory().Array(TYPE_STRING), LINK_STATIC, ACS_PUBLIC)
+        .AddGetter()
+        .SetCallback(&shard_Environment_ScriptArguments_get);
 }
