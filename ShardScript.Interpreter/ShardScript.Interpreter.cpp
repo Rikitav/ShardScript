@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cstring>
 #include <iostream>
 #include <memory>
 #include <optional>
@@ -17,6 +18,7 @@
 #include <utilities/Console.hpp>
 #include <utilities/Diagnostics.hpp>
 #include <utilities/Exceptions.hpp>
+#include <utilities/Strings.hpp>
 
 #include "utilities/flag.h"
 #include "utilities/whereami.h"
@@ -92,6 +94,23 @@ int main(int argc, char* argv[])
 	bool Arg_LintOnly = false;
 	Flag_List_Mut Args_Libraries{};
 
+	char** argvInterpreter = argv;
+	int argcInterpreter = argc;
+
+	char** argvScripts = nullptr;
+	int argcScrips = 0;
+
+	for (int i = 1; i < argc; ++i)
+	{
+		if (std::strcmp(argv[i], "--") == 0)
+		{
+			argvScripts = argvInterpreter + i + 1;
+			argcScrips = argc - i - 1;
+			argcInterpreter = argc - argcScrips - 1;
+			break;
+		}
+	}
+
 	try
 	{
 		setlocale(LC_ALL, "");
@@ -117,7 +136,7 @@ int main(int argc, char* argv[])
 		flag_c_list_mut_var(flagCtx, &Args_Libraries, "library", "Load a native library (can be repeated)");
 		flag_c_set_short_name_by_name(flagCtx, "library", "l");
 
-		if (!flag_c_parse(flagCtx, argc, argv))
+		if (!flag_c_parse(flagCtx, argcInterpreter, argv))
 		{
 			flag_c_print_error(flagCtx, stderr);
 			flag_c_free(flagCtx);
@@ -192,6 +211,17 @@ int main(int argc, char* argv[])
 		std::unique_ptr<ApplicationDomain> domain = compiler.Compile();
 		if (diagnostics.AnyError)
 			throw diagnostics_exception("Compilation ended with errors.");
+
+		if (domain != nullptr && argcScrips != 0)
+		{
+			std::vector<std::wstring> wideScriptArguments;
+			wideScriptArguments.reserve(argcScrips);
+
+			for (int i = 0; i < argcScrips; i++)
+				wideScriptArguments.push_back(strings::Utf8ToWide(argvScripts[i]));
+
+			domain->SetScriptArguments(std::move(wideScriptArguments));
+		}
 
 		if (RunInteractive)
 		{

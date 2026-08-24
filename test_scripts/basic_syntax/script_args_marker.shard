@@ -1,0 +1,11 @@
+using stdio;
+
+namespace script_args_marker;
+
+public class Program
+{
+    public static func Main() -> void
+    {
+        println("ok");
+    }
+}

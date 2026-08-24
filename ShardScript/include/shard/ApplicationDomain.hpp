@@ -4,6 +4,8 @@
 #include <shard/runtime/VirtualMachine.hpp>
 
 #include <memory>
+#include <string>
+#include <vector>
 
 namespace shard
 {
@@ -15,6 +17,7 @@ namespace shard
 		GarbageCollector garbageCollector;
 		std::unique_ptr<EventLoop> eventLoop;
 		VirtualMachine virtualMachine;
+		std::vector<std::wstring> scriptArguments;
 
 	public:
 		ApplicationDomain(std::unique_ptr<ProgramVirtualImage> program);
@@ -27,5 +30,9 @@ namespace shard
 		EventLoop& GetEventLoop();
 		GarbageCollector& GetGarbageCollector();
 		VirtualMachine& GetVirtualMachine();
+
+		inline void SetScriptArguments(const std::vector<std::wstring>& args) { scriptArguments = args; }
+		inline void SetScriptArguments(std::vector<std::wstring>&& args) { scriptArguments = std::move(args); }
+		inline const std::vector<std::wstring>& GetScriptArguments() const { return scriptArguments; }
 	};
 }
