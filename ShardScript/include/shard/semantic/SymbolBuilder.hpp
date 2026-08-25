@@ -164,6 +164,7 @@ namespace shard
             const std::wstring& name);
 
         SymbolBuilder<ConstructorSymbol>& SetMayThrow(bool value = true);
+        SymbolBuilder<ConstructorSymbol>& SetThrowsType(TypeSymbol* type);
         SymbolBuilder<ConstructorSymbol>& SetMutatesInstance(bool value = true);
         SymbolBuilder<ConstructorSymbol>& SetMutatesStatic(bool value = true);
         SymbolBuilder<ConstructorSymbol>& SetMutatesArguments(bool value = true);
@@ -478,6 +479,7 @@ namespace shard
             MethodSymbolDelegate callback);
 
         SymbolBuilder<OperatorSymbol>& SetMayThrow(bool value = true);
+        SymbolBuilder<OperatorSymbol>& SetThrowsType(TypeSymbol* type);
         SymbolBuilder<OperatorSymbol>& SetMutatesInstance(bool value = true);
         SymbolBuilder<OperatorSymbol>& SetMutatesStatic(bool value = true);
         SymbolBuilder<OperatorSymbol>& SetMutatesArguments(bool value = true);

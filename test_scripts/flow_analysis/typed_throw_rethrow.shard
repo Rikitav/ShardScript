@@ -1,0 +1,35 @@
+using stdio;
+
+namespace typed_throw_rethrow;
+
+public class Program
+{
+    public static func Rethrower() -> void
+    {
+        try
+        {
+            throw new RuntimeException();
+        }
+        catch (ex: RuntimeException)
+        {
+            throw;
+        }
+    }
+
+    public static func Caller() -> void
+    {
+        Rethrower();
+    }
+
+    public static func Main() -> void
+    {
+        try
+        {
+            Caller();
+        }
+        catch (ex: RuntimeException)
+        {
+            println("caught");
+        }
+    }
+}

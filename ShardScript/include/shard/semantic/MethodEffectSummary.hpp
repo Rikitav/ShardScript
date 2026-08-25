@@ -17,6 +17,7 @@ namespace shard
         bool HasUnknownSideEffects = false;
 
         std::unordered_set<TypeSymbol*> ThrownTypes;
+        std::unordered_set<TypeSymbol*> AsyncThrownTypes;
         std::unordered_set<FieldSymbol*> MayAssignInstanceFields;
         std::unordered_set<FieldSymbol*> MayAssignStaticFields;
         std::unordered_set<FieldSymbol*> DefinitelyAssignsInstanceFields;
@@ -32,6 +33,9 @@ namespace shard
 
             for (TypeSymbol* type : other.ThrownTypes)
                 ThrownTypes.insert(type);
+
+            for (TypeSymbol* type : other.AsyncThrownTypes)
+                AsyncThrownTypes.insert(type);
 
             for (FieldSymbol* field : other.MayAssignInstanceFields)
                 MayAssignInstanceFields.insert(field);
@@ -54,6 +58,7 @@ namespace shard
                 && MutatesArguments == other.MutatesArguments
                 && HasUnknownSideEffects == other.HasUnknownSideEffects
                 && ThrownTypes == other.ThrownTypes
+                && AsyncThrownTypes == other.AsyncThrownTypes
                 && MayAssignInstanceFields == other.MayAssignInstanceFields
                 && MayAssignStaticFields == other.MayAssignStaticFields
                 && DefinitelyAssignsInstanceFields == other.DefinitelyAssignsInstanceFields

@@ -63,6 +63,21 @@ TEST_CASES = [
         "description": "nested try/catch suppresses the warning",
         "expected_warning": None,
     },
+    {
+        "file": "typed_throw_rethrow.shard",
+        "description": "precise rethrow (throw;) preserves the caught exception type",
+        "expected_warning": "Call to 'Rethrower' may throw 'RuntimeException'",
+    },
+    {
+        "file": "typed_throw_async_await.shard",
+        "description": "await on an async method propagates its thrown type",
+        "expected_warning": "Await on 'ThrowerAsync' may throw 'RuntimeException'",
+    },
+    {
+        "file": "typed_throw_async_await_caught.shard",
+        "description": "catch inside the async awaiter suppresses the await warning",
+        "expected_warning": None,
+    },
 ]
 
 

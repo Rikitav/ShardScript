@@ -1,0 +1,29 @@
+using stdio;
+using async;
+
+namespace typed_throw_async_await_caught;
+
+public class Program
+{
+    public static async func ThrowerAsync() -> Task
+    {
+        throw new RuntimeException();
+    }
+
+    public static async func AwaiterAsync() -> Task
+    {
+        try
+        {
+            await ThrowerAsync();
+        }
+        catch (ex: RuntimeException)
+        {
+            println("caught inside awaiter");
+        }
+    }
+
+    public static func Main() -> void
+    {
+        Task.Wait(AwaiterAsync());
+    }
+}

@@ -11,6 +11,7 @@
 #include <shard/semantic/symbols/MethodSymbol.hpp>
 #include <shard/semantic/symbols/VariableSymbol.hpp>
 #include <shard/semantic/symbols/FieldSymbol.hpp>
+#include <shard/semantic/symbols/GenericTypeSymbol.hpp>
 
 #include <shard/parsing/nodes/Expressions/LinkedExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/ObjectExpressionSyntax.hpp>
@@ -27,6 +28,23 @@ namespace shard
 	class SHARD_API FlowAnalyzer : public SyntaxVisitor, public ScopeVisitor
 	{
 		using AssignmentSet = std::unordered_set<VariableSymbol*>;
+
+		struct CallEdge
+		{
+			MethodSymbol* Callee = nullptr;
+			SyntaxToken CallSite;
+			std::unordered_set<TypeSymbol*> CaughtTypes;
+			bool CatchesAll = false;
+			bool IsAwaited = false;
+
+			bool Catches(TypeSymbol* thrownType) const;
+		};
+
+		struct TryCatchFrame
+		{
+			std::unordered_set<TypeSymbol*> CaughtTypes;
+			bool CatchesAll = false;
+		};
 
 		enum class FlowState : unsigned int
 		{
@@ -71,13 +89,8 @@ namespace shard
 		// Side-effect scanning state
 		MethodSymbol* _currentMethod = nullptr;
 
-		struct TryCatchFrame
-		{
-			std::unordered_set<TypeSymbol*> CaughtTypes;
-			bool CatchesAll = false;
-		};
-
 		std::vector<TryCatchFrame> _tryCatchStack;
+		std::vector<TypeSymbol*> _catchExceptionStack;
 		std::unordered_set<TypeSymbol*> _effectiveCaughtTypes;
 		int _catchAllDepth = 0;
 
@@ -86,15 +99,9 @@ namespace shard
 		bool IsCaughtByActiveTry(TypeSymbol* thrownType) const;
 		void RebuildEffectiveCaughtTypes();
 
-		struct CallEdge
-		{
-			MethodSymbol* Callee = nullptr;
-			SyntaxToken CallSite;
-			std::unordered_set<TypeSymbol*> CaughtTypes;
-			bool CatchesAll = false;
-
-			bool Catches(TypeSymbol* thrownType) const;
-		};
+		void PushCatchException(TypeSymbol* type);
+		void PopCatchException();
+		TypeSymbol* CurrentCatchExceptionType() const;
 
 		std::unordered_map<MethodSymbol*, std::vector<CallEdge>> _callGraph;
 
@@ -110,7 +117,9 @@ namespace shard
 
 		void RecordFieldOrPropertyWrite(MemberAccessExpressionSyntax* node);
 		void RecordIndexatorWrite(IndexatorExpressionSyntax* node);
-		void RecordCalleeEffects(MethodSymbol* callee, const SyntaxToken& callSite);
+		void RecordCalleeEffects(MethodSymbol* callee, const SyntaxToken& callSite, bool isAwaited = false);
+
+		static bool IsTaskOrTaskLike(TypeSymbol* type);
 
 		void PropagateEffects();
 		void ReportEffectDiagnostics();
@@ -150,6 +159,7 @@ namespace shard
 		void VisitInvocationExpression(InvokationExpressionSyntax* node) override;
 		void VisitObjectCreationExpression(ObjectExpressionSyntax* node) override;
 		void VisitIndexatorExpression(IndexatorExpressionSyntax* node) override;
+		void VisitAwaitExpression(AwaitExpressionSyntax* node) override;
 
 	private:
 		static FlowState MergeBranches(FlowState a, FlowState b);
