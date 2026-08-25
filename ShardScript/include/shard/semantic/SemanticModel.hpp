@@ -12,6 +12,7 @@
 
 #include <memory>
 #include <functional>
+#include <unordered_map>
 
 namespace shard
 {
@@ -33,11 +34,17 @@ namespace shard
 		std::unique_ptr<shard::NamespaceTree> Namespaces;
 		std::shared_ptr<shard::TypeShapeCache> TypeShapes;
 
+		// Bound expression types populated by ExpressionBinder and consumed by later passes.
+		std::unordered_map<shard::ExpressionSyntax*, shard::TypeSymbol*> ExpressionTypes;
+
 		SemanticModel(shard::SyntaxTree& tree);
 		~SemanticModel();
 
 		SemanticModel(const SemanticModel&) = delete;
 		SemanticModel& operator=(const SemanticModel&) = delete;
+
+		TypeSymbol* GetExpressionType(shard::ExpressionSyntax* expression) const;
+		void SetExpressionType(shard::ExpressionSyntax* expression, shard::TypeSymbol* type);
 
 		// =========================================================================
 		//  Type system utilities

@@ -450,8 +450,20 @@ FlowAnalyzer::FlowState FlowAnalyzer::AnalyzeStatement(StatementSyntax* node)
 			if (statement->Expression != nullptr)
 				ScanExpression(statement->Expression.get());
 
-			if (_currentMethod != nullptr && _tryCatchDepth == 0)
+			if (_currentMethod != nullptr)
+			{
 				_currentMethod->EffectSummary.MayThrow = true;
+
+				TypeSymbol* thrownType = SymbolTable::Primitives::Any;
+				if (Model != nullptr && statement->Expression != nullptr)
+					thrownType = Model->GetExpressionType(statement->Expression.get());
+
+				if (thrownType == nullptr)
+					thrownType = SymbolTable::Primitives::Any;
+
+				if (!IsCaughtByActiveTry(thrownType))
+					_currentMethod->EffectSummary.ThrownTypes.insert(thrownType);
+			}
 
 			return FlowState::Throws;
 		}
@@ -611,14 +623,14 @@ FlowAnalyzer::FlowState FlowAnalyzer::AnalyzeTryStatement(TryStatementSyntax* no
 
 	bool hasCatch = !node->CatchClauses.empty();
 	if (hasCatch && node->TryBlock != nullptr)
-		++_tryCatchDepth;
+		PushTryCatch(node->CatchClauses);
 
 	FlowState tryState = node->TryBlock != nullptr
 		? AnalyzeStatementsBlock(node->TryBlock.get())
 		: FlowState::Normal;
 
 	if (hasCatch && node->TryBlock != nullptr)
-		--_tryCatchDepth;
+		PopTryCatch();
 
 	if (!hasCatch)
 		return tryState;
@@ -650,6 +662,95 @@ FlowAnalyzer::FlowState FlowAnalyzer::AnalyzeTryStatement(TryStatementSyntax* no
 	}
 
 	return MergeBranches(tryState, catchState);
+}
+
+// =====================================================================
+//  Try / catch context helpers
+// =====================================================================
+
+void FlowAnalyzer::PushTryCatch(const std::vector<std::unique_ptr<CatchClauseSyntax>>& clauses)
+{
+	TryCatchFrame frame;
+	for (const auto& clause : clauses)
+	{
+		if (clause == nullptr)
+			continue;
+
+		if (clause->ExceptionType == nullptr)
+		{
+			frame.CatchesAll = true;
+			break;
+		}
+
+		TypeSymbol* catchType = clause->ExceptionType->Symbol;
+		if (catchType != nullptr)
+			frame.CaughtTypes.insert(catchType);
+	}
+
+	_tryCatchStack.push_back(std::move(frame));
+	RebuildEffectiveCaughtTypes();
+}
+
+void FlowAnalyzer::PopTryCatch()
+{
+	if (!_tryCatchStack.empty())
+	{
+		_tryCatchStack.pop_back();
+		RebuildEffectiveCaughtTypes();
+	}
+}
+
+void FlowAnalyzer::RebuildEffectiveCaughtTypes()
+{
+	_effectiveCaughtTypes.clear();
+	_catchAllDepth = 0;
+
+	for (const TryCatchFrame& frame : _tryCatchStack)
+	{
+		if (frame.CatchesAll)
+		{
+			++_catchAllDepth;
+		}
+		else
+		{
+			for (TypeSymbol* type : frame.CaughtTypes)
+				_effectiveCaughtTypes.insert(type);
+		}
+	}
+}
+
+bool FlowAnalyzer::IsCaughtByActiveTry(TypeSymbol* thrownType) const
+{
+	if (thrownType == nullptr)
+		return false;
+
+	if (_catchAllDepth > 0)
+		return true;
+
+	for (TypeSymbol* catchType : _effectiveCaughtTypes)
+	{
+		if (SemanticModel::IsAssignableTo(catchType, thrownType))
+			return true;
+	}
+
+	return false;
+}
+
+bool FlowAnalyzer::CallEdge::Catches(TypeSymbol* thrownType) const
+{
+	if (thrownType == nullptr)
+		return false;
+
+	if (CatchesAll)
+		return true;
+
+	for (TypeSymbol* catchType : CaughtTypes)
+	{
+		if (SemanticModel::IsAssignableTo(catchType, thrownType))
+			return true;
+	}
+
+	return false;
 }
 
 // =====================================================================
@@ -931,8 +1032,7 @@ void FlowAnalyzer::RecordFieldOrPropertyWrite(MemberAccessExpressionSyntax* node
 	}
 	else if (node->ToProperty != nullptr)
 	{
-		// A property write is a call to the setter accessor; for now record the
-		// mutation and, if the setter body is available, merge its effects too.
+		// A property write is a call to the setter accessor; record its effects.
 		PropertySymbol* property = node->ToProperty;
 		if (isStaticContext)
 		{
@@ -944,7 +1044,7 @@ void FlowAnalyzer::RecordFieldOrPropertyWrite(MemberAccessExpressionSyntax* node
 		}
 
 		if (property->Setter != nullptr)
-			RecordCalleeEffects(property->Setter, _tryCatchDepth > 0);
+			RecordCalleeEffects(property->Setter, node->IdentifierToken);
 	}
 }
 
@@ -966,19 +1066,22 @@ void FlowAnalyzer::RecordIndexatorWrite(IndexatorExpressionSyntax* node)
 	{
 		PropertySymbol* property = node->ToProperty;
 		if (property->Setter != nullptr)
-			RecordCalleeEffects(property->Setter, _tryCatchDepth > 0);
+			RecordCalleeEffects(property->Setter, node->IdentifierToken);
 	}
 }
 
-void FlowAnalyzer::RecordCalleeEffects(MethodSymbol* callee, bool inTryCatch)
+void FlowAnalyzer::RecordCalleeEffects(MethodSymbol* callee, const SyntaxToken& callSite)
 {
 	if (callee == nullptr || _currentMethod == nullptr)
 		return;
 
-	_callGraph[_currentMethod].push_back(std::make_pair(callee, inTryCatch));
+	CallEdge edge;
+	edge.Callee = callee;
+	edge.CallSite = callSite;
+	edge.CaughtTypes = _effectiveCaughtTypes;
+	edge.CatchesAll = _catchAllDepth > 0;
 
-	if (callee->EffectsComputed)
-		_currentMethod->EffectSummary.Merge(callee->EffectSummary);
+	_callGraph[_currentMethod].push_back(std::move(edge));
 }
 
 void FlowAnalyzer::PropagateEffects()
@@ -996,11 +1099,25 @@ void FlowAnalyzer::PropagateEffects()
 
 			MethodEffectSummary previous = caller->EffectSummary;
 
-			for (const auto& edge : pair.second)
+			for (const CallEdge& edge : pair.second)
 			{
-				MethodSymbol* callee = edge.first;
-				if (callee != nullptr)
-					caller->EffectSummary.Merge(callee->EffectSummary);
+				MethodSymbol* callee = edge.Callee;
+				if (callee == nullptr)
+					continue;
+
+				// Mutations always propagate regardless of catch context.
+				caller->EffectSummary.MayThrow = caller->EffectSummary.MayThrow || callee->EffectSummary.MayThrow;
+				caller->EffectSummary.MutatesInstance = caller->EffectSummary.MutatesInstance || callee->EffectSummary.MutatesInstance;
+				caller->EffectSummary.MutatesStatic = caller->EffectSummary.MutatesStatic || callee->EffectSummary.MutatesStatic;
+				caller->EffectSummary.MutatesArguments = caller->EffectSummary.MutatesArguments || callee->EffectSummary.MutatesArguments;
+				caller->EffectSummary.HasUnknownSideEffects = caller->EffectSummary.HasUnknownSideEffects || callee->EffectSummary.HasUnknownSideEffects;
+
+				// Only exception types that are not caught at the call site propagate.
+				for (TypeSymbol* thrownType : callee->EffectSummary.ThrownTypes)
+				{
+					if (!edge.Catches(thrownType))
+						caller->EffectSummary.ThrownTypes.insert(thrownType);
+				}
 			}
 
 			if (previous != caller->EffectSummary)
@@ -1025,17 +1142,27 @@ void FlowAnalyzer::ReportEffectDiagnostics()
 		if (caller == nullptr)
 			continue;
 
-		for (const auto& edge : pair.second)
+		for (const CallEdge& edge : pair.second)
 		{
-			MethodSymbol* callee = edge.first;
-			bool inTryCatch = edge.second;
+			MethodSymbol* callee = edge.Callee;
 			if (callee == nullptr)
 				continue;
 
-			if (callee->EffectSummary.MayThrow && !inTryCatch)
+			for (TypeSymbol* thrownType : callee->EffectSummary.ThrownTypes)
+			{
+				if (!edge.Catches(thrownType))
+				{
+					std::wstring typeName = thrownType != nullptr ? thrownType->Name : L"unknown";
+					Diagnostics.ReportWarning(
+						edge.CallSite,
+						L"Call to '" + callee->Name + L"' may throw '" + typeName + L"'");
+				}
+			}
+
+			if (callee->EffectSummary.MayThrow && callee->EffectSummary.ThrownTypes.empty())
 			{
 				Diagnostics.ReportWarning(
-					SyntaxToken(),
+					edge.CallSite,
 					L"Call to '" + callee->Name + L"' may throw an exception");
 			}
 		}
@@ -1094,13 +1221,7 @@ void FlowAnalyzer::VisitInvocationExpression(InvokationExpressionSyntax* node)
 		MethodSymbol* callee = node->Symbol;
 		if (callee != nullptr && !node->IsDelegateInvocation)
 		{
-			bool inTryCatch = _tryCatchDepth > 0;
-			RecordCalleeEffects(callee, inTryCatch);
-
-			// A throw from a callee only propagates to the caller if the call is
-			// not guarded by a catch block. Mutations always propagate.
-			if (!inTryCatch)
-				_currentMethod->EffectSummary.MayThrow = _currentMethod->EffectSummary.MayThrow || callee->EffectSummary.MayThrow;
+			RecordCalleeEffects(callee, node->IdentifierToken);
 		}
 		else
 		{
@@ -1118,11 +1239,7 @@ void FlowAnalyzer::VisitObjectCreationExpression(ObjectExpressionSyntax* node)
 
 	if (_currentMethod != nullptr && node->CtorSymbol != nullptr)
 	{
-		bool inTryCatch = _tryCatchDepth > 0;
-		RecordCalleeEffects(node->CtorSymbol, inTryCatch);
-
-		if (!inTryCatch)
-			_currentMethod->EffectSummary.MayThrow = _currentMethod->EffectSummary.MayThrow || node->CtorSymbol->EffectSummary.MayThrow;
+		RecordCalleeEffects(node->CtorSymbol, node->NewToken);
 	}
 
 	SyntaxVisitor::VisitObjectCreationExpression(node);

@@ -6,28 +6,17 @@
 namespace shard
 {
     class FieldSymbol;
+    class TypeSymbol;
 
-    // =====================================================================
-    //  Side-effect / mutation summary for methods, constructors,
-    //  operators, accessors and lambdas.
-    // =====================================================================
     struct SHARD_API MethodEffectSummary
     {
-        // -----------------------------------------------------------------
-        //  Diagnostics-relevant bits
-        // -----------------------------------------------------------------
-        bool MayThrow = false;              // body contains throw or calls something that may throw
-        bool MutatesInstance = false;       // writes an instance field/property/indexer of 'this'
-        bool MutatesStatic = false;         // writes a static field/property of the enclosing type
-        bool MutatesArguments = false;      // writes through by-ref/out parameters (reserved)
-        bool HasUnknownSideEffects = false; // calls delegate, virtual/interface target or unannotated extern
+        bool MayThrow = false;
+        bool MutatesInstance = false;
+        bool MutatesStatic = false;
+        bool MutatesArguments = false;
+        bool HasUnknownSideEffects = false;
 
-        // -----------------------------------------------------------------
-        //  Entry points for nullable analysis and constructor late-init
-        //  proofs. These sets are intentionally conservative: a field is only
-        //  considered "definitely assigned" if it is written on every code
-        //  path that returns normally.
-        // -----------------------------------------------------------------
+        std::unordered_set<TypeSymbol*> ThrownTypes;
         std::unordered_set<FieldSymbol*> MayAssignInstanceFields;
         std::unordered_set<FieldSymbol*> MayAssignStaticFields;
         std::unordered_set<FieldSymbol*> DefinitelyAssignsInstanceFields;
@@ -41,12 +30,18 @@ namespace shard
             MutatesArguments      = MutatesArguments      || other.MutatesArguments;
             HasUnknownSideEffects = HasUnknownSideEffects || other.HasUnknownSideEffects;
 
+            for (TypeSymbol* type : other.ThrownTypes)
+                ThrownTypes.insert(type);
+
             for (FieldSymbol* field : other.MayAssignInstanceFields)
                 MayAssignInstanceFields.insert(field);
+
             for (FieldSymbol* field : other.MayAssignStaticFields)
                 MayAssignStaticFields.insert(field);
+
             for (FieldSymbol* field : other.DefinitelyAssignsInstanceFields)
                 DefinitelyAssignsInstanceFields.insert(field);
+
             for (FieldSymbol* field : other.DefinitelyAssignsStaticFields)
                 DefinitelyAssignsStaticFields.insert(field);
         }
@@ -58,6 +53,7 @@ namespace shard
                 && MutatesStatic == other.MutatesStatic
                 && MutatesArguments == other.MutatesArguments
                 && HasUnknownSideEffects == other.HasUnknownSideEffects
+                && ThrownTypes == other.ThrownTypes
                 && MayAssignInstanceFields == other.MayAssignInstanceFields
                 && MayAssignStaticFields == other.MayAssignStaticFields
                 && DefinitelyAssignsInstanceFields == other.DefinitelyAssignsInstanceFields

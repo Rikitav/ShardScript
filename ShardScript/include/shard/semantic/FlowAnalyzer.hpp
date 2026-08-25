@@ -16,9 +16,11 @@
 #include <shard/parsing/nodes/Expressions/ObjectExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/BinaryExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/UnaryExpressionSyntax.hpp>
+#include <shard/parsing/nodes/Statements/TryStatementSyntax.hpp>
 
 #include <unordered_set>
 #include <unordered_map>
+#include <vector>
 
 namespace shard
 {
@@ -68,8 +70,33 @@ namespace shard
 
 		// Side-effect scanning state
 		MethodSymbol* _currentMethod = nullptr;
-		int _tryCatchDepth = 0;
-		std::unordered_map<MethodSymbol*, std::vector<std::pair<MethodSymbol*, bool>>> _callGraph;
+
+		struct TryCatchFrame
+		{
+			std::unordered_set<TypeSymbol*> CaughtTypes;
+			bool CatchesAll = false;
+		};
+
+		std::vector<TryCatchFrame> _tryCatchStack;
+		std::unordered_set<TypeSymbol*> _effectiveCaughtTypes;
+		int _catchAllDepth = 0;
+
+		void PushTryCatch(const std::vector<std::unique_ptr<CatchClauseSyntax>>& clauses);
+		void PopTryCatch();
+		bool IsCaughtByActiveTry(TypeSymbol* thrownType) const;
+		void RebuildEffectiveCaughtTypes();
+
+		struct CallEdge
+		{
+			MethodSymbol* Callee = nullptr;
+			SyntaxToken CallSite;
+			std::unordered_set<TypeSymbol*> CaughtTypes;
+			bool CatchesAll = false;
+
+			bool Catches(TypeSymbol* thrownType) const;
+		};
+
+		std::unordered_map<MethodSymbol*, std::vector<CallEdge>> _callGraph;
 
 		void EnterMemberBody(MethodSymbol* method);
 		void LeaveMemberBody(MethodSymbol* method);
@@ -83,7 +110,7 @@ namespace shard
 
 		void RecordFieldOrPropertyWrite(MemberAccessExpressionSyntax* node);
 		void RecordIndexatorWrite(IndexatorExpressionSyntax* node);
-		void RecordCalleeEffects(MethodSymbol* callee, bool inTryCatch);
+		void RecordCalleeEffects(MethodSymbol* callee, const SyntaxToken& callSite);
 
 		void PropagateEffects();
 		void ReportEffectDiagnostics();

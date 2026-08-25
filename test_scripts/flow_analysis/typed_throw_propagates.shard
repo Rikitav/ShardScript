@@ -1,0 +1,28 @@
+using stdio;
+
+namespace typed_throw_propagates;
+
+public class Program
+{
+    public static func Thrower() -> void
+    {
+        throw new RuntimeException();
+    }
+
+    public static func Caller() -> void
+    {
+        Thrower();
+    }
+
+    public static func Main() -> void
+    {
+        try
+        {
+            Caller();
+        }
+        catch (ex: RuntimeException)
+        {
+            println("caught");
+        }
+    }
+}
