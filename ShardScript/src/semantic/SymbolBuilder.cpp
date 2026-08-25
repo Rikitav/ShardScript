@@ -696,6 +696,17 @@ SymbolBuilder<OperatorSymbol>& SymbolBuilder<OperatorSymbol>::SetMayThrow(bool v
     return *this;
 }
 
+SymbolBuilder<OperatorSymbol>& SymbolBuilder<OperatorSymbol>::SetThrowsType(TypeSymbol* type)
+{
+    if (Symbol != nullptr && type != nullptr)
+    {
+        Symbol->EffectSummary.MayThrow = true;
+        Symbol->EffectSummary.ThrownTypes.insert(type);
+    }
+
+    return *this;
+}
+
 SymbolBuilder<OperatorSymbol>& SymbolBuilder<OperatorSymbol>::SetMutatesInstance(bool value)
 {
     if (Symbol != nullptr)
@@ -1073,6 +1084,16 @@ SymbolBuilder<ConstructorSymbol>& SymbolBuilder<ConstructorSymbol>::SetMayThrow(
 {
     if (Symbol != nullptr)
         Symbol->EffectSummary.MayThrow = value;
+    return *this;
+}
+
+SymbolBuilder<ConstructorSymbol>& SymbolBuilder<ConstructorSymbol>::SetThrowsType(TypeSymbol* type)
+{
+    if (Symbol != nullptr && type != nullptr)
+    {
+        Symbol->EffectSummary.MayThrow = true;
+        Symbol->EffectSummary.ThrownTypes.insert(type);
+    }
     return *this;
 }
 

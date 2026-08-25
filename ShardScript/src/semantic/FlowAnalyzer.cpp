@@ -454,15 +454,28 @@ FlowAnalyzer::FlowState FlowAnalyzer::AnalyzeStatement(StatementSyntax* node)
 			{
 				_currentMethod->EffectSummary.MayThrow = true;
 
-				TypeSymbol* thrownType = SymbolTable::Primitives::Any;
-				if (Model != nullptr && statement->Expression != nullptr)
-					thrownType = Model->GetExpressionType(statement->Expression.get());
+				TypeSymbol* thrownType = nullptr;
+				if (statement->Expression != nullptr)
+				{
+					if (Model != nullptr)
+						thrownType = Model->GetExpressionType(statement->Expression.get());
+				}
+				else
+				{
+					// Bare 'throw;' rethrows the exception currently being handled.
+					thrownType = CurrentCatchExceptionType();
+				}
 
 				if (thrownType == nullptr)
 					thrownType = SymbolTable::Primitives::Any;
 
 				if (!IsCaughtByActiveTry(thrownType))
-					_currentMethod->EffectSummary.ThrownTypes.insert(thrownType);
+				{
+					if (_currentMethodIsAsync)
+						_currentMethod->EffectSummary.AsyncThrownTypes.insert(thrownType);
+					else
+						_currentMethod->EffectSummary.ThrownTypes.insert(thrownType);
+				}
 			}
 
 			return FlowState::Throws;
@@ -650,14 +663,22 @@ FlowAnalyzer::FlowState FlowAnalyzer::AnalyzeTryStatement(TryStatementSyntax* no
 		if (catchClause->Symbol != nullptr)
 			MarkAssigned(catchClause->Symbol);
 
+		TypeSymbol* catchType = SymbolTable::Primitives::Any;
+		if (catchClause->ExceptionType != nullptr && catchClause->ExceptionType->Symbol != nullptr)
+			catchType = catchClause->ExceptionType->Symbol;
+		PushCatchException(catchType);
+
+		FlowState clauseState = AnalyzeStatementsBlock(catchClause->Body.get());
+		PopCatchException();
+
 		if (firstCatch)
 		{
-			catchState = AnalyzeStatementsBlock(catchClause->Body.get());
+			catchState = clauseState;
 			firstCatch = false;
 		}
 		else
 		{
-			catchState = MergeBranches(catchState, AnalyzeStatementsBlock(catchClause->Body.get()));
+			catchState = MergeBranches(catchState, clauseState);
 		}
 	}
 
@@ -751,6 +772,24 @@ bool FlowAnalyzer::CallEdge::Catches(TypeSymbol* thrownType) const
 	}
 
 	return false;
+}
+
+void FlowAnalyzer::PushCatchException(TypeSymbol* type)
+{
+	_catchExceptionStack.push_back(type != nullptr ? type : SymbolTable::Primitives::Any);
+}
+
+void FlowAnalyzer::PopCatchException()
+{
+	if (!_catchExceptionStack.empty())
+		_catchExceptionStack.pop_back();
+}
+
+TypeSymbol* FlowAnalyzer::CurrentCatchExceptionType() const
+{
+	if (_catchExceptionStack.empty())
+		return nullptr;
+	return _catchExceptionStack.back();
 }
 
 // =====================================================================
@@ -1070,7 +1109,7 @@ void FlowAnalyzer::RecordIndexatorWrite(IndexatorExpressionSyntax* node)
 	}
 }
 
-void FlowAnalyzer::RecordCalleeEffects(MethodSymbol* callee, const SyntaxToken& callSite)
+void FlowAnalyzer::RecordCalleeEffects(MethodSymbol* callee, const SyntaxToken& callSite, bool isAwaited)
 {
 	if (callee == nullptr || _currentMethod == nullptr)
 		return;
@@ -1080,6 +1119,7 @@ void FlowAnalyzer::RecordCalleeEffects(MethodSymbol* callee, const SyntaxToken& 
 	edge.CallSite = callSite;
 	edge.CaughtTypes = _effectiveCaughtTypes;
 	edge.CatchesAll = _catchAllDepth > 0;
+	edge.IsAwaited = isAwaited;
 
 	_callGraph[_currentMethod].push_back(std::move(edge));
 }
@@ -1106,17 +1146,42 @@ void FlowAnalyzer::PropagateEffects()
 					continue;
 
 				// Mutations always propagate regardless of catch context.
-				caller->EffectSummary.MayThrow = caller->EffectSummary.MayThrow || callee->EffectSummary.MayThrow;
 				caller->EffectSummary.MutatesInstance = caller->EffectSummary.MutatesInstance || callee->EffectSummary.MutatesInstance;
 				caller->EffectSummary.MutatesStatic = caller->EffectSummary.MutatesStatic || callee->EffectSummary.MutatesStatic;
 				caller->EffectSummary.MutatesArguments = caller->EffectSummary.MutatesArguments || callee->EffectSummary.MutatesArguments;
 				caller->EffectSummary.HasUnknownSideEffects = caller->EffectSummary.HasUnknownSideEffects || callee->EffectSummary.HasUnknownSideEffects;
 
-				// Only exception types that are not caught at the call site propagate.
-				for (TypeSymbol* thrownType : callee->EffectSummary.ThrownTypes)
+				std::unordered_set<TypeSymbol*>* targetThrownSet = caller->IsAsync
+					? &caller->EffectSummary.AsyncThrownTypes
+					: &caller->EffectSummary.ThrownTypes;
+
+				if (callee->IsAsync)
 				{
-					if (!edge.Catches(thrownType))
-						caller->EffectSummary.ThrownTypes.insert(thrownType);
+					// Awaiting an async method surfaces the exceptions captured in its Task.
+					if (edge.IsAwaited)
+					{
+						for (TypeSymbol* thrownType : callee->EffectSummary.AsyncThrownTypes)
+						{
+							if (!edge.Catches(thrownType))
+							{
+								targetThrownSet->insert(thrownType);
+								caller->EffectSummary.MayThrow = true;
+							}
+						}
+					}
+					// Non-awaited async calls return a Task; exceptions are deferred.
+				}
+				else
+				{
+					// Only exception types that are not caught at the call site propagate.
+					for (TypeSymbol* thrownType : callee->EffectSummary.ThrownTypes)
+					{
+						if (!edge.Catches(thrownType))
+						{
+							targetThrownSet->insert(thrownType);
+							caller->EffectSummary.MayThrow = true;
+						}
+					}
 				}
 			}
 
@@ -1148,22 +1213,48 @@ void FlowAnalyzer::ReportEffectDiagnostics()
 			if (callee == nullptr)
 				continue;
 
-			for (TypeSymbol* thrownType : callee->EffectSummary.ThrownTypes)
+			std::unordered_set<TypeSymbol*> reportedTypes;
+
+			if (callee->IsAsync)
 			{
-				if (!edge.Catches(thrownType))
+				if (edge.IsAwaited)
 				{
-					std::wstring typeName = thrownType != nullptr ? thrownType->Name : L"unknown";
-					Diagnostics.ReportWarning(
-						edge.CallSite,
-						L"Call to '" + callee->Name + L"' may throw '" + typeName + L"'");
+					for (TypeSymbol* thrownType : callee->EffectSummary.AsyncThrownTypes)
+					{
+						if (!edge.Catches(thrownType) && reportedTypes.insert(thrownType).second)
+						{
+							std::wstring typeName = thrownType != nullptr ? thrownType->Name : L"unknown";
+							Diagnostics.ReportWarning(
+								edge.CallSite,
+								L"Await on '" + callee->Name + L"' may throw '" + typeName + L"'");
+						}
+					}
+				}
+			}
+			else
+			{
+				for (TypeSymbol* thrownType : callee->EffectSummary.ThrownTypes)
+				{
+					if (!edge.Catches(thrownType) && reportedTypes.insert(thrownType).second)
+					{
+						std::wstring typeName = thrownType != nullptr ? thrownType->Name : L"unknown";
+						Diagnostics.ReportWarning(
+							edge.CallSite,
+							L"Call to '" + callee->Name + L"' may throw '" + typeName + L"'");
+					}
 				}
 			}
 
-			if (callee->EffectSummary.MayThrow && callee->EffectSummary.ThrownTypes.empty())
+			bool hasKnownThrownTypes = callee->IsAsync
+				? !callee->EffectSummary.AsyncThrownTypes.empty()
+				: !callee->EffectSummary.ThrownTypes.empty();
+
+			if (callee->EffectSummary.MayThrow && !hasKnownThrownTypes)
 			{
-				Diagnostics.ReportWarning(
-					edge.CallSite,
-					L"Call to '" + callee->Name + L"' may throw an exception");
+				std::wstring message = callee->IsAsync && edge.IsAwaited
+					? L"Await on '" + callee->Name + L"' may throw an exception"
+					: L"Call to '" + callee->Name + L"' may throw an exception";
+				Diagnostics.ReportWarning(edge.CallSite, message);
 			}
 		}
 	}
@@ -1221,7 +1312,10 @@ void FlowAnalyzer::VisitInvocationExpression(InvokationExpressionSyntax* node)
 		MethodSymbol* callee = node->Symbol;
 		if (callee != nullptr && !node->IsDelegateInvocation)
 		{
-			RecordCalleeEffects(callee, node->IdentifierToken);
+			// Async callees defer exceptions into the returned Task.  Those are
+			// surfaced only when the call is awaited (handled in VisitAwaitExpression).
+			if (!callee->IsAsync)
+				RecordCalleeEffects(callee, node->IdentifierToken);
 		}
 		else
 		{
@@ -1230,6 +1324,56 @@ void FlowAnalyzer::VisitInvocationExpression(InvokationExpressionSyntax* node)
 	}
 
 	SyntaxVisitor::VisitInvocationExpression(node);
+}
+
+void FlowAnalyzer::VisitAwaitExpression(AwaitExpressionSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (_currentMethod != nullptr && node->Expression != nullptr)
+	{
+		ExpressionSyntax* awaited = node->Expression.get();
+
+		// Direct await of an async method call: record the await edge so the
+		// async callee's captured exceptions can propagate to this method.
+		if (awaited->Kind == SyntaxKind::InvokationExpression)
+		{
+			InvokationExpressionSyntax* invocation = static_cast<InvokationExpressionSyntax*>(awaited);
+			MethodSymbol* callee = invocation->Symbol;
+			if (callee != nullptr && callee->IsAsync)
+				RecordCalleeEffects(callee, invocation->IdentifierToken, true);
+		}
+
+		// Awaiting an unknown or non-async expression that could hold a faulted Task
+		// is treated conservatively as a potential throw.
+		TypeSymbol* awaitedType = Model != nullptr ? Model->GetExpressionType(awaited) : nullptr;
+		if (awaitedType != nullptr && IsTaskOrTaskLike(awaitedType))
+		{
+			if (awaited->Kind != SyntaxKind::InvokationExpression)
+				_currentMethod->EffectSummary.MayThrow = true;
+		}
+	}
+
+	SyntaxVisitor::VisitAwaitExpression(node);
+}
+
+bool FlowAnalyzer::IsTaskOrTaskLike(TypeSymbol* type)
+{
+	if (type == nullptr)
+		return false;
+
+	if (type->FullName == L"async.Task")
+		return true;
+
+	if (type->Kind == SyntaxKind::GenericType)
+	{
+		GenericTypeSymbol* generic = static_cast<GenericTypeSymbol*>(type);
+		if (generic->UnderlayingType != nullptr && generic->UnderlayingType->FullName == L"async.ValueTask")
+			return true;
+	}
+
+	return false;
 }
 
 void FlowAnalyzer::VisitObjectCreationExpression(ObjectExpressionSyntax* node)
