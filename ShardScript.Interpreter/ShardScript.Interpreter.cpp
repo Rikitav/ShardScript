@@ -199,18 +199,30 @@ int main(int argc, char* argv[])
 			compiler.EnrichTree(lexer, CompilationUnitOrigin::SourceFile);
 		}
 
+		auto printWarnings = [&diagnostics]()
+		{
+			for (const Diagnostic& diag : diagnostics.Diagnostics)
+			{
+				if (diag.Severity == DiagnosticSeverity::Warning)
+					diagnostics::Print(std::wcout, diag);
+			}
+		};
+
 		if (Arg_LintOnly)
 		{
 			compiler.AnalyzeTree();
 			if (diagnostics.AnyError)
 				throw diagnostics_exception("Lint ended with errors.");
 
+			printWarnings();
 			return 0;
 		}
 
 		std::unique_ptr<ApplicationDomain> domain = compiler.Compile();
 		if (diagnostics.AnyError)
 			throw diagnostics_exception("Compilation ended with errors.");
+
+		printWarnings();
 
 		if (domain != nullptr && argcScrips != 0)
 		{

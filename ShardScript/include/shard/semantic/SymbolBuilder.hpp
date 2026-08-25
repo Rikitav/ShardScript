@@ -207,6 +207,7 @@ namespace shard
         SymbolBuilder<MethodSymbol>& DeclareGlobal();
 
         SymbolBuilder<MethodSymbol>& SetMayThrow(bool value = true);
+        SymbolBuilder<MethodSymbol>& SetThrowsType(TypeSymbol* type);
         SymbolBuilder<MethodSymbol>& SetMutatesInstance(bool value = true);
         SymbolBuilder<MethodSymbol>& SetMutatesStatic(bool value = true);
         SymbolBuilder<MethodSymbol>& SetMutatesArguments(bool value = true);
@@ -234,6 +235,7 @@ namespace shard
             MethodSymbol* abstractMethod);
 
         SymbolBuilder<AccessorSymbol>& SetMayThrow(bool value = true);
+        SymbolBuilder<AccessorSymbol>& SetThrowsType(TypeSymbol* type);
         SymbolBuilder<AccessorSymbol>& SetMutatesInstance(bool value = true);
         SymbolBuilder<AccessorSymbol>& SetMutatesStatic(bool value = true);
         SymbolBuilder<AccessorSymbol>& SetMutatesArguments(bool value = true);

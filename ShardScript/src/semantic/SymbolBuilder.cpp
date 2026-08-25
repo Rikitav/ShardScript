@@ -595,6 +595,16 @@ SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::SetMayThrow(bool value
     return *this;
 }
 
+SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::SetThrowsType(TypeSymbol* type)
+{
+    if (Symbol != nullptr && type != nullptr)
+    {
+        Symbol->EffectSummary.MayThrow = true;
+        Symbol->EffectSummary.ThrownTypes.insert(type);
+    }
+    return *this;
+}
+
 SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::SetMutatesInstance(bool value)
 {
     if (Symbol != nullptr)
@@ -774,6 +784,16 @@ SymbolBuilder<AccessorSymbol>& SymbolBuilder<AccessorSymbol>::SetMayThrow(bool v
 {
     if (Symbol != nullptr)
         Symbol->EffectSummary.MayThrow = value;
+    return *this;
+}
+
+SymbolBuilder<AccessorSymbol>& SymbolBuilder<AccessorSymbol>::SetThrowsType(TypeSymbol* type)
+{
+    if (Symbol != nullptr && type != nullptr)
+    {
+        Symbol->EffectSummary.MayThrow = true;
+        Symbol->EffectSummary.ThrownTypes.insert(type);
+    }
     return *this;
 }
 

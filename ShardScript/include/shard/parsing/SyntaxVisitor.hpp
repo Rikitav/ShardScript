@@ -90,9 +90,10 @@ namespace shard
         SymbolTable* Table;
         NamespaceTree* Namespaces;
         DiagnosticsContext& Diagnostics;
+        SemanticModel* Model = nullptr;
 
         inline SyntaxVisitor(SemanticModel& model, DiagnosticsContext& diagnostics)
-            : Table(model.Table.get()), Namespaces(model.Namespaces.get()), Diagnostics(diagnostics) { }
+            : Table(model.Table.get()), Namespaces(model.Namespaces.get()), Diagnostics(diagnostics), Model(&model) { }
 
         template<typename T>
         inline std::optional<T*> LookupSymbol(SyntaxNode* node)

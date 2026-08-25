@@ -543,7 +543,11 @@ bool ExpressionBinder::GetIsStaticContext(const ExpressionSyntax* expression)
 void ExpressionBinder::SetExpressionType(ExpressionSyntax* expression, TypeSymbol* type)
 {
 	if (expression != nullptr)
+	{
 		expressionTypes[expression] = type;
+		if (Model != nullptr)
+			Model->SetExpressionType(expression, type);
+	}
 }
 
 TypeSymbol* ExpressionBinder::GetExpressionType(ExpressionSyntax* expression)

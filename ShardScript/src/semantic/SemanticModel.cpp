@@ -44,6 +44,21 @@ SemanticModel::~SemanticModel()
 {
 }
 
+TypeSymbol* SemanticModel::GetExpressionType(shard::ExpressionSyntax* expression) const
+{
+	if (expression == nullptr)
+		return nullptr;
+
+	auto it = ExpressionTypes.find(expression);
+	return it != ExpressionTypes.end() ? it->second : nullptr;
+}
+
+void SemanticModel::SetExpressionType(shard::ExpressionSyntax* expression, shard::TypeSymbol* type)
+{
+	if (expression != nullptr)
+		ExpressionTypes[expression] = type;
+}
+
 // =========================================================================
 //  Type system utilities
 // =========================================================================

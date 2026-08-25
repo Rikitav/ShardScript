@@ -1,0 +1,30 @@
+using stdio;
+
+namespace typed_throw_nested_catch;
+
+public class Program
+{
+    public static func Thrower() -> void
+    {
+        throw new RuntimeException();
+    }
+
+    public static func Main() -> void
+    {
+        try
+        {
+            try
+            {
+                Thrower();
+            }
+            catch (ex: RuntimeException)
+            {
+                println("inner caught");
+            }
+        }
+        catch (ex: IThrowable)
+        {
+            println("outer caught");
+        }
+    }
+}

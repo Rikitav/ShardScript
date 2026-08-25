@@ -1,0 +1,23 @@
+using stdio;
+
+namespace typed_throw_catch_base;
+
+public class Program
+{
+    public static func Thrower() -> void
+    {
+        throw new RuntimeException();
+    }
+
+    public static func Main() -> void
+    {
+        try
+        {
+            Thrower();
+        }
+        catch (ex: IThrowable)
+        {
+            println("caught");
+        }
+    }
+}
