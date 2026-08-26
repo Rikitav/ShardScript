@@ -1,0 +1,12 @@
+using stdio;
+
+namespace lambda_simple_test;
+
+public class Program
+{
+    public static func Main() -> void
+    {
+        f := lambda () -> int { return 42; };
+        println(f());
+    }
+}

@@ -33,6 +33,8 @@
 #include <shard/parsing/nodes/MemberDeclarations/IndexatorDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/MemberDeclarations/InterfaceDeclarationSyntax.hpp>
 
+#include <shard/parsing/nodes/Expressions/LambdaExpressionSyntax.hpp>
+
 #include <shard/semantic/symbols/TypeSymbol.hpp>
 #include <shard/semantic/symbols/TypeParameterSymbol.hpp>
 #include <shard/semantic/symbols/StructSymbol.hpp>
@@ -1120,6 +1122,38 @@ void DeclarationCollector::VisitTryStatement(TryStatementSyntax* node)
 
         PopScope();
     }
+}
+
+void DeclarationCollector::VisitLambdaExpression(LambdaExpressionSyntax* node)
+{
+    if (node == nullptr)
+        return;
+
+    // Creating anonymous method and delegate symbols
+    MethodSymbol* anonymousMethod = Factory.CreateAnonymousMethod(L"Lambda", SymbolTable::Primitives::Any);
+    anonymousMethod->IsAsync = node->AsyncModifierToken.Type != TokenType::Unknown;
+
+    PushScope(anonymousMethod);
+
+    if (node->ParametersList != nullptr)
+    {
+        std::uint16_t baseIndex = 0;
+        for (const auto& parameter : node->ParametersList->Parameters)
+        {
+            ParameterSymbol* paramSymbol = Factory.Parameter(parameter->Identifier.Word, SymbolTable::Primitives::Any);
+            paramSymbol->SlotIndex = baseIndex++;
+            Declare(paramSymbol);
+        }
+    }
+
+    // Create delegate after parameters have been declared on the anonymous method
+    DelegateTypeSymbol* delegate = Factory.Delegate(anonymousMethod);
+    node->Symbol = delegate;
+
+    if (node->Body != nullptr)
+        VisitStatementsBlock(node->Body.get());
+
+    PopScope();
 }
 
 void DeclarationCollector::ApplyMethodAttributes(MethodSymbol* symbol, const std::vector<std::unique_ptr<AttributeSyntax>>& attributes)

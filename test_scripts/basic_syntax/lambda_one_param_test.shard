@@ -1,0 +1,11 @@
+using stdio;
+
+namespace lambda_one_param_test;
+
+public class Program
+{
+    public static func Main() -> void
+    {
+        println((lambda (a: int) => a)(42));
+    }
+}
