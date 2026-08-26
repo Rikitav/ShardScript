@@ -1548,14 +1548,19 @@ void ExpressionBinder::VisitRangeExpression(RangeExpressionSyntax* node)
 
 void ExpressionBinder::VisitLambdaExpression(LambdaExpressionSyntax* node)
 {
-	MethodSymbol* anonymousMethod = Factory.CreateAnonymousMethod(L"Lambda", SymbolTable::Primitives::Any);
+	DelegateTypeSymbol* delegate = node->Symbol;
+	MethodSymbol* anonymousMethod = delegate != nullptr ? delegate->AnonymousSymbol : nullptr;
 
-	DelegateTypeSymbol* delegate = Factory.Delegate(anonymousMethod);
-	node->Symbol = delegate;
+	if (delegate == nullptr || anonymousMethod == nullptr)
+	{
+		// Fallback for when symbols were not collected (should not happen in normal pipeline)
+		anonymousMethod = Factory.CreateAnonymousMethod(L"Lambda", SymbolTable::Primitives::Any);
+		delegate = Factory.Delegate(anonymousMethod);
+		node->Symbol = delegate;
+	}
 
 	bool isAsync = node->AsyncModifierToken.Type != TokenType::Unknown;
-	if (isAsync)
-		anonymousMethod->IsAsync = true;
+	anonymousMethod->IsAsync = isAsync;
 
 	bool hasExplicitReturnType = false;
 	if (node->ReturnType != nullptr)
@@ -1582,17 +1587,22 @@ void ExpressionBinder::VisitLambdaExpression(LambdaExpressionSyntax* node)
 
 	if (node->ParametersList != nullptr)
 	{
-		for (const auto& parameter : node->ParametersList->Parameters)
+		std::size_t paramCount = node->ParametersList->Parameters.size();
+		if (paramCount == anonymousMethod->Parameters.size())
 		{
-			TypeSymbol* paramType = parameter->Type != nullptr ? ResolveTypeExpression(parameter->Type.get()) : SymbolTable::Primitives::Any;
-			ParameterSymbol* paramSymbol = Factory.Parameter(parameter->Identifier.Word, paramType);
-			delegate->Parameters.push_back(paramSymbol);
+			for (std::size_t i = 0; i < paramCount; ++i)
+			{
+				ParameterSyntax* parameter = node->ParametersList->Parameters[i].get();
+				TypeSymbol* paramType = parameter->Type != nullptr ? ResolveTypeExpression(parameter->Type.get()) : SymbolTable::Primitives::Any;
+				anonymousMethod->Parameters[i]->Type = paramType;
+			}
 		}
+		// Note: delegate->Parameters shares the same ParameterSymbol pointers
 	}
 
 	PushScope(anonymousMethod);
-	for (const auto& parameter : delegate->Parameters)
-		Declare(parameter);
+	for (const auto& parameter : anonymousMethod->Parameters)
+		CurrentScope()->DeclareSymbol(parameter);
 
 	VisitStatementsBlock(node->Body.get());
 	PopScope();
