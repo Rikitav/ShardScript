@@ -2716,6 +2716,13 @@ std::unique_ptr<ExpressionSyntax> SourceParser::ReadLeftDenotation(SourceProvide
 	SyntaxToken current = reader.Current();
 	switch (current.Type)
 	{
+		case TokenType::OpenCurl:
+		{
+			auto invokation = std::make_unique<InvokationExpressionSyntax>(SyntaxToken(TokenType::Unknown, L"", TextLocation(), true), std::move(leftExpr), parent);
+			invokation->ArgumentsList = ReadArgumentsList(reader, invokation.get());
+			return std::move(invokation);
+		}
+
 		case TokenType::Delimeter:
 		{
 			return std::move(ReadLinkedExpressionNode(reader, parent, std::move(leftExpr), false));

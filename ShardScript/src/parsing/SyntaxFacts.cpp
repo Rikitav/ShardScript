@@ -8,6 +8,9 @@ int GetOperatorPrecendence(shard::TokenType type)
 {
 	switch (type)
 	{
+		case TokenType::OpenCurl:
+			return 12;
+
 		case TokenType::IncrementOperator:
 		case TokenType::DecrementOperator:
 		case TokenType::AwaitKeyword:
