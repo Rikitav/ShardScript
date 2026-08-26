@@ -34,6 +34,7 @@
 #include <shard/parsing/nodes/MemberDeclarations/InterfaceDeclarationSyntax.hpp>
 
 #include <shard/parsing/nodes/Expressions/LambdaExpressionSyntax.hpp>
+#include <shard/parsing/nodes/Expressions/LinkedExpressionSyntax.hpp>
 
 #include <shard/semantic/symbols/TypeSymbol.hpp>
 #include <shard/semantic/symbols/TypeParameterSymbol.hpp>
@@ -1129,7 +1130,7 @@ void DeclarationCollector::VisitLambdaExpression(LambdaExpressionSyntax* node)
     if (node == nullptr)
         return;
 
-    // Creating anonymous method and delegate symbols
+    // Creating anonymous method symbol
     MethodSymbol* anonymousMethod = Factory.CreateAnonymousMethod(L"Lambda", SymbolTable::Primitives::Any);
     anonymousMethod->IsAsync = node->AsyncModifierToken.Type != TokenType::Unknown;
 
@@ -1150,10 +1151,33 @@ void DeclarationCollector::VisitLambdaExpression(LambdaExpressionSyntax* node)
     DelegateTypeSymbol* delegate = Factory.Delegate(anonymousMethod);
     node->Symbol = delegate;
 
-    if (node->Body != nullptr)
-        VisitStatementsBlock(node->Body.get());
+    // Body is bound by ExpressionBinder; visiting it here can corrupt the
+    // parameter scope for lambdas passed directly as method arguments.
 
     PopScope();
+}
+
+void DeclarationCollector::VisitMemberAccessExpression(MemberAccessExpressionSyntax* node)
+{
+    if (node == nullptr)
+        return;
+
+    // Base visitor does not walk into PreviousExpression, but lambdas nested
+    // inside chained member accesses must still be collected.
+    if (node->PreviousExpression != nullptr)
+        VisitExpression(node->PreviousExpression.get());
+}
+
+void DeclarationCollector::VisitInvocationExpression(InvokationExpressionSyntax* node)
+{
+    if (node == nullptr)
+        return;
+
+    // Walk the receiver chain so lambdas in arguments of chained calls are collected.
+    if (node->PreviousExpression != nullptr)
+        VisitExpression(node->PreviousExpression.get());
+
+    SyntaxVisitor::VisitInvocationExpression(node);
 }
 
 void DeclarationCollector::ApplyMethodAttributes(MethodSymbol* symbol, const std::vector<std::unique_ptr<AttributeSyntax>>& attributes)
