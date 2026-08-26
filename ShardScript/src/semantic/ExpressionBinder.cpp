@@ -3969,6 +3969,40 @@ void ExpressionBinder::VisitInvocationExpression(InvokationExpressionSyntax* nod
 {
 	ExpressionSyntax* previous = const_cast<ExpressionSyntax*>(node->PreviousExpression.get());
 
+	if (node->IdentifierToken.Type == TokenType::Unknown && previous != nullptr)
+	{
+		VisitExpression(previous);
+
+		TypeSymbol* calleeType = GetExpressionType(previous);
+		if (DelegateTypeSymbol* delegate = GetDelegateType(calleeType))
+		{
+			MethodSymbol* anonymousMethod = delegate->AnonymousSymbol;
+			if (node->ArgumentsList != nullptr && anonymousMethod != nullptr)
+			{
+				for (const auto& arg : node->ArgumentsList->Arguments)
+				{
+					if (arg != nullptr && arg->Expression != nullptr)
+						VisitExpression(arg->Expression.get());
+				}
+
+				std::vector<ParameterSymbol*> parameters(anonymousMethod->Parameters.begin(), anonymousMethod->Parameters.end());
+				MatchMethodArguments(node->IdentifierToken, parameters, node->ArgumentsList->Arguments, nullptr, 0);
+			}
+
+			node->Symbol = anonymousMethod;
+			node->IsDelegateInvocation = true;
+			node->ReceiverType = calleeType;
+			SetExpressionType(node, anonymousMethod != nullptr ? anonymousMethod->ReturnType : nullptr);
+		}
+		else
+		{
+			Diagnostics.ReportError(node->IdentifierToken, L"Cannot invoke expression of type '" + (calleeType != nullptr ? calleeType->Name : L"unknown") + L"'");
+			SetExpressionType(node, nullptr);
+		}
+
+		return;
+	}
+
 	// Namespace-qualified invocation: e.g. a.Foo() where 'a' is a namespace.
 	// Resolve the qualifier chain without visiting the intermediate member-access
 	// nodes, since namespaces are not expression values.
