@@ -32,6 +32,7 @@
 #include <shard/parsing/nodes/Loops/ForEachStatementSyntax.hpp>
 #include <shard/parsing/nodes/Loops/ForInStatementSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/LambdaExpressionSyntax.hpp>
+#include <shard/parsing/nodes/Expressions/LinkedExpressionSyntax.hpp>
 
 namespace shard
 {
@@ -66,6 +67,9 @@ namespace shard
 		void VisitForInStatement(shard::ForInStatementSyntax* node) override;
 		void VisitTryStatement(shard::TryStatementSyntax* node) override;
 		void VisitLambdaExpression(shard::LambdaExpressionSyntax* node) override;
+
+		void VisitMemberAccessExpression(shard::MemberAccessExpressionSyntax* node) override;
+		void VisitInvocationExpression(shard::InvokationExpressionSyntax* node) override;
 
 	private:
 		void ApplyMethodAttributes(shard::MethodSymbol* symbol, const std::vector<std::unique_ptr<shard::AttributeSyntax>>& attributes);
