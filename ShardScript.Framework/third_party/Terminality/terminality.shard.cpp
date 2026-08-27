@@ -319,10 +319,10 @@ static ObjectInstance* shard_RenderContext_ContextRect(const CallState& context)
 	{
 		return NewObject(context, g_RectStruct, g_RectStruct_init,
 		{
-			context.Collector.FromValue(0ll),
-			context.Collector.FromValue(0ll),
-			context.Collector.FromValue(0ll),
-			context.Collector.FromValue(0ll)
+			context.Collector.FromValue(static_cast<std::int64_t>(0)),
+			context.Collector.FromValue(static_cast<std::int64_t>(0)),
+			context.Collector.FromValue(static_cast<std::int64_t>(0)),
+			context.Collector.FromValue(static_cast<std::int64_t>(0))
 		});
 	}
 

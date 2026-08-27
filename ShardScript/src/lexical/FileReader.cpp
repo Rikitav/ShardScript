@@ -13,8 +13,9 @@ using namespace shard;
 #ifndef __EMSCRIPTEN__
 FileReader::FileReader(const std::string& fileName) : SourceTextProvider()
 {
-    Filename = std::filesystem::path(fileName);
-    InputStream = std::wfstream(Filename.c_str(), std::ios::in);
+    std::filesystem::path path(fileName);
+    Filename = path.wstring();
+    InputStream = std::wfstream(path, std::ios::in);
     InputStream.imbue(std::locale::classic());
 
     if (!InputStream)
@@ -23,8 +24,9 @@ FileReader::FileReader(const std::string& fileName) : SourceTextProvider()
 
 FileReader::FileReader(const std::wstring& fileName) : SourceTextProvider()
 {
-    Filename = std::filesystem::path(fileName);
-    InputStream = std::wfstream(Filename.c_str(), std::ios::in);
+    std::filesystem::path path(fileName);
+    Filename = path.wstring();
+    InputStream = std::wfstream(path, std::ios::in);
     InputStream.imbue(std::locale::classic());
 
     if (!InputStream)
