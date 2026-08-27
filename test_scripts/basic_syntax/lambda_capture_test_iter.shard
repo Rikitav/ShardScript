@@ -1,0 +1,14 @@
+using stdio;
+using collections;
+
+delegate Func() -> int;
+
+public static func Main() -> void
+{
+	list := new List<Func>();
+	for (i in 0..10)
+		list.Add(lambda() => i);
+
+	foreach (lamb in list)
+		println(lamb());
+}

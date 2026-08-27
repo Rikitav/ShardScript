@@ -512,6 +512,206 @@ namespace
 	}
 }
 
+class LambdaCaptureCollector : public SyntaxVisitor
+{
+	ExpressionBinder& binder;
+	LambdaExpressionSyntax* lambda;
+	std::vector<std::unordered_set<std::wstring>> scopes;
+	std::unordered_set<std::wstring> lambdaParams;
+	std::unordered_set<SyntaxSymbol*> captures;
+	ParameterSymbol* outerThis = nullptr;
+
+	bool IsLocal(const std::wstring& name) const
+	{
+		if (lambdaParams.count(name))
+			return true;
+		
+		for (const auto& scope : scopes)
+		{
+			if (scope.count(name))
+				return true;
+		}
+
+		return false;
+	}
+
+	void PushScope() { scopes.emplace_back(); }
+	void PopScope() { scopes.pop_back(); }
+
+public:
+	LambdaCaptureCollector(ExpressionBinder& b, SemanticModel& model, DiagnosticsContext& diagnostics, LambdaExpressionSyntax* l)
+		: SyntaxVisitor(model, diagnostics), binder(b), lambda(l)
+	{
+		if (l->ParametersList != nullptr)
+		{
+			for (const auto& parameter : l->ParametersList->Parameters)
+				lambdaParams.insert(parameter->Identifier.Word);
+		}
+
+		PushScope();
+	}
+
+	const std::unordered_set<SyntaxSymbol*>& GetCaptures() const
+	{
+		return captures;
+	}
+
+	ParameterSymbol* GetOuterThis() const
+	{
+		return outerThis;
+	}
+
+	void VisitStatementsBlock(StatementsBlockSyntax* node) override
+	{
+		if (node == nullptr)
+			return;
+
+		PushScope();
+		for (const auto& statement : node->Statements)
+		{
+			VisitStatement(statement.get());
+			if (statement->Kind == SyntaxKind::VariableStatement)
+			{
+				VariableStatementSyntax* variable = static_cast<VariableStatementSyntax*>(statement.get());
+				scopes.back().insert(variable->IdentifierToken.Word);
+			}
+		}
+
+		PopScope();
+	}
+
+	void VisitForEachStatement(ForEachStatementSyntax* node) override
+	{
+		if (node == nullptr)
+			return;
+
+		PushScope();
+		if (node->RangeExpression != nullptr)
+			VisitExpression(node->RangeExpression.get());
+		
+		scopes.back().insert(node->IdentifierToken.Word);
+		if (node->StatementsBlock != nullptr)
+			VisitStatementsBlock(node->StatementsBlock.get());
+		
+		PopScope();
+	}
+
+	void VisitForInStatement(ForInStatementSyntax* node) override
+	{
+		if (node == nullptr)
+			return;
+
+		PushScope();
+		if (node->RangeExpression != nullptr)
+			VisitExpression(node->RangeExpression.get());
+		
+		scopes.back().insert(node->IdentifierToken.Word);
+		if (node->StatementsBlock != nullptr)
+			VisitStatementsBlock(node->StatementsBlock.get());
+		
+		PopScope();
+	}
+
+	void VisitTryStatement(TryStatementSyntax* node) override
+	{
+		if (node == nullptr)
+			return;
+
+		if (node->TryBlock != nullptr)
+			VisitStatementsBlock(node->TryBlock.get());
+
+		for (const auto& clause : node->CatchClauses)
+		{
+			if (clause->IdentifierToken.Type == TokenType::Unknown)
+				continue;
+
+			PushScope();
+			scopes.back().insert(clause->IdentifierToken.Word);
+			
+			if (clause->Body != nullptr)
+				VisitStatementsBlock(clause->Body.get());
+			
+			PopScope();
+		}
+	}
+
+	void VisitSwitchExpression(SwitchExpressionSyntax* node) override
+	{
+		if (node == nullptr)
+			return;
+
+		if (node->Expression != nullptr)
+			VisitExpression(node->Expression.get());
+
+		for (const auto& arm : node->Arms)
+		{
+			if (arm == nullptr || arm->Pattern == nullptr || arm->Expression == nullptr)
+				continue;
+
+			PushScope();
+			if (arm->Pattern->Kind == SyntaxKind::IsPattern)
+			{
+				IsPatternSyntax* pattern = static_cast<IsPatternSyntax*>(arm->Pattern.get());
+				if (pattern->IdentifierToken.Type == TokenType::Identifier && !pattern->IdentifierToken.Word.empty())
+					scopes.back().insert(pattern->IdentifierToken.Word);
+			}
+
+			VisitExpression(arm->Expression.get());
+			PopScope();
+		}
+	}
+
+	void VisitLambdaExpression(LambdaExpressionSyntax* node) override
+	{
+		// Stop at nested lambdas; they perform their own capture analysis.
+		(void)node;
+	}
+
+	void VisitMemberAccessExpression(MemberAccessExpressionSyntax* node) override
+	{
+		if (node == nullptr)
+			return;
+
+		if (node->PreviousExpression != nullptr)
+		{
+			SyntaxVisitor::VisitMemberAccessExpression(node);
+			return;
+		}
+
+		std::wstring name = node->IdentifierToken.Word;
+		if (IsLocal(name))
+			return;
+
+		auto symbolOpt = binder.CurrentScope()->Lookup(name);
+		if (!symbolOpt.has_value())
+			return;
+
+		SyntaxSymbol* symbol = symbolOpt.value();
+		if (symbol == nullptr)
+			return;
+
+		if (name == L"this")
+		{
+			if (symbol->Kind == SyntaxKind::Parameter)
+				outerThis = static_cast<ParameterSymbol*>(symbol);
+
+			return;
+		}
+
+		if (symbol->Kind == SyntaxKind::VariableStatement || symbol->Kind == SyntaxKind::Parameter)
+		{
+			captures.insert(symbol);
+		}
+	}
+};
+
+std::unique_ptr<MemberAccessExpressionSyntax> ExpressionBinder::CreateSyntheticClosureThisReference(ParameterSymbol* closureThisParam, SyntaxNode* parent)
+{
+	auto node = std::make_unique<MemberAccessExpressionSyntax>(SyntaxToken(), nullptr, parent);
+	node->ToParameter = closureThisParam;
+	return node;
+}
+
 bool ExpressionBinder::GetIsStaticContext(const ExpressionSyntax* expression)
 {
 	if (expression == nullptr)
@@ -1597,18 +1797,147 @@ void ExpressionBinder::VisitLambdaExpression(LambdaExpressionSyntax* node)
 				anonymousMethod->Parameters[i]->Type = paramType;
 			}
 		}
+
 		// Note: delegate->Parameters shares the same ParameterSymbol pointers
 	}
 
-	PushScope(anonymousMethod);
-	for (const auto& parameter : anonymousMethod->Parameters)
+	// Collect captured variables/parameters/this before the body is bound.
+	LambdaCaptureCollector collector(*this, *Model, Diagnostics, node);
+	collector.VisitStatementsBlock(node->Body.get());
+
+	bool hasCaptures = !collector.GetCaptures().empty() || collector.GetOuterThis() != nullptr;
+	MethodSymbol* bodyMethod = anonymousMethod;
+
+	if (hasCaptures && !isAsync)
+	{
+		SyntaxSymbol* parentSymbol = OwnerSymbol().value_or(CurrentScope()->Owner);
+		if (parentSymbol != nullptr && parentSymbol->IsMethod())
+			parentSymbol = parentSymbol->Parent;
+		
+		if (parentSymbol == nullptr)
+			parentSymbol = CurrentScope()->Owner;
+
+		// Build a synthetic closure class for this lambda.
+		std::wstringstream closurBoxName;
+		closurBoxName << L"<";
+		closurBoxName << parentSymbol->FullName;
+		closurBoxName << ">k__ClosureBox__";
+		closurBoxName << _closureId++;
+
+		ClassSymbol* closureClass = Factory.Class(closurBoxName.str());
+		node->ClosureClass = closureClass;
+
+		closureClass->Parent = parentSymbol;
+		if (parentSymbol != nullptr)
+			closureClass->FullName = parentSymbol->FullName + L"." + closureClass->Name;
+		
+		closureClass->Accesibility = SymbolAccesibility::Private;
+		closureClass->AdvanceAnalysisState(SymbolAnalysisState::TypeResolved);
+
+		// Capture fields.
+		PushScope(closureClass);
+		if (collector.GetOuterThis() != nullptr)
+		{
+			TypeSymbol* thisType = collector.GetOuterThis()->Type;
+			if (thisType == nullptr)
+				thisType = SymbolTable::Primitives::Any;
+
+			FieldSymbol* field = Factory.Field(L"<>this", thisType, LINK_INSTANCE);
+			field->Accesibility = SymbolAccesibility::Public;
+			Declare(field);
+
+			node->ThisCaptureField = field;
+			node->CaptureFields[collector.GetOuterThis()] = field;
+		}
+		for (SyntaxSymbol* captured : collector.GetCaptures())
+		{
+			TypeSymbol* fieldType = nullptr;
+			std::wstring fieldName;
+			if (captured->Kind == SyntaxKind::VariableStatement)
+			{
+				VariableSymbol* variable = static_cast<VariableSymbol*>(captured);
+				fieldType = const_cast<TypeSymbol*>(variable->Type);
+				fieldName = variable->Name;
+			}
+			else if (captured->Kind == SyntaxKind::Parameter)
+			{
+				ParameterSymbol* parameter = static_cast<ParameterSymbol*>(captured);
+				fieldType = parameter->Type;
+				fieldName = parameter->Name;
+			}
+
+			if (fieldType == nullptr)
+				fieldType = SymbolTable::Primitives::Any;
+
+			if (fieldName.empty())
+				fieldName = L"<>capture";
+
+			FieldSymbol* field = Factory.Field(fieldName, fieldType, LINK_INSTANCE);
+			field->Accesibility = SymbolAccesibility::Public;
+			Declare(field);
+			node->CaptureFields[captured] = field;
+		}
+
+		PopScope();
+
+		// Create the instance closure method.
+		MethodSymbol* closureMethod = Factory.Method(L"Invoke", anonymousMethod->ReturnType, LINK_INSTANCE);
+		closureMethod->Accesibility = SymbolAccesibility::Public;
+		closureMethod->HandleType = MethodHandleType::Body;
+		node->ClosureMethod = closureMethod;
+
+		PushScope(closureClass);
+		Declare(closureMethod);
+		PopScope();
+
+		// Synthetic slot-0 parameter representing the closure instance.
+		node->ClosureThisParameter = Factory.Parameter(L"<>closure_this", closureClass);
+		node->ClosureThisParameter->SlotIndex = 0;
+
+		// Clone lambda parameters with slots shifted by one.
+		std::uint16_t slot = 1;
+		for (ParameterSymbol* oldParameter : anonymousMethod->Parameters)
+		{
+			ParameterSymbol* parameter = Factory.Parameter(oldParameter->Name, oldParameter->Type);
+			parameter->SlotIndex = slot++;
+			closureMethod->Parameters.push_back(parameter);
+		}
+
+		// Parameterless constructor for runtime allocation.
+		ConstructorSymbol* closureCtor = Factory.Constructor(closureClass, SymbolAccesibility::Public);
+		node->ClosureConstructor = closureCtor;
+		PushScope(closureClass);
+		Declare(closureCtor);
+		PopScope();
+
+		// Repoint the delegate at the instance method.
+		delegate->AnonymousSymbol = closureMethod;
+		delegate->Parameters = closureMethod->Parameters;
+		delegate->ReturnType = closureMethod->ReturnType;
+
+		bodyMethod = closureMethod;
+	}
+
+	// Bind the lambda body against the method that will actually execute it.
+	PushScope(bodyMethod);
+	if (node->ClosureThisParameter != nullptr)
+		CurrentScope()->DeclareSymbol(node->ClosureThisParameter);
+
+	for (const auto& parameter : bodyMethod->Parameters)
 		CurrentScope()->DeclareSymbol(parameter);
 
+	if (node->ClosureClass != nullptr)
+		_closureStack.push_back(node);
+
 	VisitStatementsBlock(node->Body.get());
+
+	if (node->ClosureClass != nullptr)
+		_closureStack.pop_back();
+
 	PopScope();
 
 	if (!hasExplicitReturnType)
-		delegate->ReturnType = anonymousMethod->ReturnType;
+		delegate->ReturnType = bodyMethod->ReturnType;
 
 	SetExpressionType(node, delegate);
 }
@@ -2009,6 +2338,29 @@ TypeSymbol* ExpressionBinder::AnalyzeMemberAccessExpression(MemberAccessExpressi
 			{
 				Diagnostics.ReportError(node->IdentifierToken, L"Symbol '" + memberName + L"' not found in current scope");
 				return nullptr;
+			}
+		}
+
+		// Closure capture redirect: a bare reference to a captured outer variable
+		// or parameter is lowered to this.<captureField> inside the closure method.
+		if (!_closureStack.empty() && symbol != nullptr)
+		{
+			LambdaExpressionSyntax* closure = _closureStack.back();
+			auto captureIt = closure->CaptureFields.find(symbol);
+			if (captureIt != closure->CaptureFields.end())
+			{
+				FieldSymbol* field = captureIt->second;
+				TypeSymbol* fieldType = field->ReturnType;
+				if (fieldType == nullptr)
+				{
+					Diagnostics.ReportError(node->IdentifierToken, L"Capture field type for '" + memberName + L"' could not be determined");
+					return nullptr;
+				}
+
+				node->IsStaticContext = false;
+				node->ToField = field;
+				node->PreviousExpression = CreateSyntheticClosureThisReference(closure->ClosureThisParameter, node);
+				return fieldType;
 			}
 		}
 

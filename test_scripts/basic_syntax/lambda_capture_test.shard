@@ -1,0 +1,17 @@
+using stdio;
+
+public static func Main() -> void
+{
+    x := 10;
+    add := lambda (y: int) -> int => x + y;
+    println(add(5));
+
+    multiplier := 3;
+    scale := lambda (n: int) -> int => n * multiplier;
+    println(scale(7));
+
+    // Captures are by value at the moment the lambda is created,
+    // so later changes to the original local do not affect the closure.
+    multiplier = 10;
+    println(scale(7));
+}

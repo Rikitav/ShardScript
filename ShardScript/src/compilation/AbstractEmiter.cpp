@@ -46,6 +46,7 @@
 #include <shard/semantic/symbols/LiteralSymbol.hpp>
 #include <shard/semantic/symbols/AccessorSymbol.hpp>
 #include <shard/semantic/symbols/ConstructorSymbol.hpp>
+#include <shard/semantic/symbols/ClassSymbol.hpp>
 #include <shard/semantic/symbols/GenericTypeSymbol.hpp>
 #include <shard/semantic/symbols/FieldSymbol.hpp>
 #include <shard/semantic/symbols/MethodSymbol.hpp>
@@ -991,7 +992,10 @@ void AbstractEmiter::VisitRangeExpression(RangeExpressionSyntax* node)
 void AbstractEmiter::VisitLambdaExpression(LambdaExpressionSyntax* node)
 {
 	MethodSymbol* previous = GeneratingFor;
-	GeneratingFor = node->Symbol->AnonymousSymbol;
+	MethodSymbol* bodyMethod = node->ClosureMethod != nullptr
+		? node->ClosureMethod
+		: node->Symbol->AnonymousSymbol;
+	GeneratingFor = bodyMethod;
 
 	std::vector<DeferScope> previousDefers = std::move(DeferScopes);
 	DeferScopes = std::vector<DeferScope>();
@@ -1006,7 +1010,39 @@ void AbstractEmiter::VisitLambdaExpression(LambdaExpressionSyntax* node)
 	DeferScopes = std::move(previousDefers);
 	GeneratingFor = previous;
 
-	Encoder.EmitNewDelegate(GeneratingFor->ExecutableByteCode, node->Symbol);
+	if (node->ClosureClass != nullptr)
+	{
+		// Allocate the closure box.
+		Encoder.EmitNewObject(GeneratingFor->ExecutableByteCode, static_cast<TypeSymbol*>(node->ClosureClass), node->ClosureConstructor);
+
+		// Store each captured value into the matching field.
+		for (const auto& pair : node->CaptureFields)
+		{
+			SyntaxSymbol* captured = pair.first;
+			FieldSymbol* field = pair.second;
+
+			Encoder.EmitDuplicate(GeneratingFor->ExecutableByteCode);
+			if (captured->Kind == SyntaxKind::Parameter)
+			{
+				Encoder.EmitLoadLocal(GeneratingFor->ExecutableByteCode,
+					static_cast<ParameterSymbol*>(captured)->SlotIndex);
+			}
+			else if (captured->Kind == SyntaxKind::VariableStatement)
+			{
+				Encoder.EmitLoadLocal(GeneratingFor->ExecutableByteCode,
+					static_cast<VariableSymbol*>(captured)->SlotIndex);
+			}
+
+			Encoder.EmitStoreField(GeneratingFor->ExecutableByteCode, field->SlotIndex);
+		}
+
+		// The closure object itself becomes the delegate instance.
+		Encoder.EmitNewDelegate(GeneratingFor->ExecutableByteCode, node->Symbol);
+	}
+	else
+	{
+		Encoder.EmitNewDelegate(GeneratingFor->ExecutableByteCode, node->Symbol);
+	}
 }
 
 void AbstractEmiter::VisitTypeExpression(TypeExpressionSyntax* node)
