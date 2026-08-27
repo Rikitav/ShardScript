@@ -11,6 +11,16 @@
 #include <shard/semantic/symbols/DelegateTypeSymbol.hpp>
 
 #include <memory>
+#include <unordered_map>
+
+namespace shard
+{
+    class ClassSymbol;
+    class FieldSymbol;
+    class ParameterSymbol;
+    class ConstructorSymbol;
+    class SyntaxSymbol;
+}
 
 namespace shard
 {
@@ -26,6 +36,14 @@ namespace shard
         std::unique_ptr<TypeSyntax> ReturnType = nullptr;
         std::unique_ptr<StatementsBlockSyntax> Body = nullptr;
         DelegateTypeSymbol* Symbol = nullptr;
+
+        // Closure lowering data, populated by ExpressionBinder for capturing lambdas.
+        ClassSymbol* ClosureClass = nullptr;
+        MethodSymbol* ClosureMethod = nullptr;
+        ConstructorSymbol* ClosureConstructor = nullptr;
+        ParameterSymbol* ClosureThisParameter = nullptr;
+        FieldSymbol* ThisCaptureField = nullptr;
+        std::unordered_map<SyntaxSymbol*, FieldSymbol*> CaptureFields;
 
         inline LambdaExpressionSyntax(SyntaxNode* parent)
             : ExpressionSyntax(SyntaxKind::LambdaExpression, parent) { }

@@ -67,6 +67,10 @@ namespace shard
 	{
 		SymbolFactory Factory;
 		std::unordered_map<shard::ExpressionSyntax*, shard::TypeSymbol*> expressionTypes;
+		std::vector<LambdaExpressionSyntax*> _closureStack;
+		std::size_t _closureId = 0;
+
+		std::unique_ptr<MemberAccessExpressionSyntax> CreateSyntheticClosureThisReference(ParameterSymbol* closureThisParam, SyntaxNode* parent);
 
 		bool GetIsStaticContext(const shard::ExpressionSyntax* expression);
 		void SetExpressionType(shard::ExpressionSyntax* expression, shard::TypeSymbol* type);

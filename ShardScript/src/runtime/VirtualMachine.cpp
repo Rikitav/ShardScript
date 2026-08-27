@@ -216,6 +216,9 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			if (target == nullptr)
 				throw std::runtime_error("Delegate has no target method");
 
+			if (target->Linking == LINK_INSTANCE)
+				frame->PushStack(delegateInstance);   // becomes 'this' for the closure method
+
 			InvokeMethod(target);
 			break;
 		}
@@ -471,10 +474,23 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		case OpCode::NEWDELEGATE:
 		{
 			DelegateTypeSymbol* type = decoder.AbsordDelegateTypeSymbol();
+			MethodSymbol* target = type->AnonymousSymbol;
 
-			ObjectInstance* instance = InstantiateDelegate(type);
+			ObjectInstance* instance;
+			if (target != nullptr && target->Linking == LINK_INSTANCE)
+			{
+				// The closure box has already been allocated and initialized by the emitter.
+				instance = frame->PopStack();
+				if (instance == nullptr || instance == garbageCollector.NullInstance)
+					throw std::runtime_error("Cannot create delegate with null receiver");
+			}
+			else
+			{
+				instance = InstantiateDelegate(type);
+			}
+
 			if (instance != nullptr)
-				instance->DelegateTarget = type->AnonymousSymbol;
+				instance->DelegateTarget = target;
 
 			frame->PushStack(instance);
 			break;
