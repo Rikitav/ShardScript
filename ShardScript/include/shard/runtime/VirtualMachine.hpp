@@ -12,6 +12,7 @@
 
 #include <shard/semantic/symbols/MethodSymbol.hpp>
 #include <shard/semantic/symbols/ConstructorSymbol.hpp>
+#include <shard/semantic/symbols/AccessorSymbol.hpp>
 #include <shard/semantic/symbols/TypeSymbol.hpp>
 #include <shard/semantic/symbols/DelegateTypeSymbol.hpp>
 
@@ -78,6 +79,7 @@ namespace shard
 		void RaiseException(ObjectInstance* exceptionReg) const;
 
 		std::wstring GetStackTrace() const;
+		std::wstring GetThrowablePropertyValue(ObjectInstance* exception, AccessorSymbol* interfacePropertyAccessor) const;
 
 		void Run();
 		void Abort() const;

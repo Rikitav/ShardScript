@@ -973,6 +973,71 @@ extern "C"
         }
     }
 
+    SHARD_API ObjectInstance* Shard_VMCreateRuntimeException(VirtualMachine* vm, const wchar_t* message, TypeSymbol* type)
+    {
+        try
+        {
+            if (vm == nullptr)
+            {
+                SetLastShardWError(L"virtual machine is null");
+                return nullptr;
+            }
+
+            if (type == nullptr)
+                type = SymbolTable::StandardTypes::RuntimeException;
+
+            if (type == nullptr)
+            {
+                SetLastShardWError(L"RuntimeException type is not available");
+                return nullptr;
+            }
+
+            std::wstring messageStr = message != nullptr ? message : L"";
+            return vm->CreateRuntimeException(type, messageStr, vm->GetStackTrace());
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API const wchar_t* Shard_GetExceptionMessage(VirtualMachine* vm, ObjectInstance* exception)
+    {
+        try
+        {
+            if (vm == nullptr || exception == nullptr)
+                return nullptr;
+
+            static thread_local std::wstring buffer;
+            buffer = vm->GetThrowablePropertyValue(exception, TRAIT_THROWABLE_getMessage);
+            return buffer.c_str();
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API const wchar_t* Shard_GetExceptionStackTrace(VirtualMachine* vm, ObjectInstance* exception)
+    {
+        try
+        {
+            if (vm == nullptr || exception == nullptr)
+                return nullptr;
+
+            static thread_local std::wstring buffer;
+            buffer = vm->GetThrowablePropertyValue(exception, TRAIT_THROWABLE_getStackTrace);
+            return buffer.c_str();
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
     SHARD_API ObjectInstance* Shard_VMInstantiateObject(VirtualMachine* vm, TypeSymbol* type, ConstructorSymbol* ctor)
     {
         try

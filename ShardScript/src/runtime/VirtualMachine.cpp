@@ -122,6 +122,154 @@ namespace
 			throw std::runtime_error(std::string("Cannot access ") + operation + " on null instance of type " + typeName);
 		}
 	}
+
+	static bool DrainDefersTo(VirtualMachine* vm, CallStackFrame* frame, ByteCodeDecoder& decoder, std::size_t targetSize, GarbageCollector& gc)
+	{
+		while (frame->DeferStack.size() > targetSize)
+		{
+			std::size_t target = frame->DeferStack.back();
+			frame->DeferStack.pop_back();
+
+			frame->DeferDrainDepth++;
+			try
+			{
+				ExecuteDeferExpression(vm, frame, decoder, target);
+			}
+			catch (...)
+			{
+				frame->DeferDrainDepth--;
+				throw;
+			}
+			frame->DeferDrainDepth--;
+
+			if (frame->interrupted())
+				return false;
+		}
+
+		return true;
+	}
+
+	static bool HandleExceptionInFrame(VirtualMachine* vm, CallStackFrame* frame, ByteCodeDecoder& decoder, GarbageCollector& gc)
+	{
+		ObjectInstance* exception = frame->InterruptionRegister;
+		if (exception == nullptr)
+			throw std::runtime_error("Exception was raised without an exception object");
+
+		// Preserve the fixed local-variable slots (arguments + locals);
+		// Draining locals would destroy the async state-machine instance and other live variables that catch/finally handlers still need to access.
+		std::size_t preservedSlots = 0;
+		if (frame->Method != nullptr)
+			preservedSlots = frame->Method->GetEvalStackLocalsCount();
+
+		while (frame->EvalStack.size() > preservedSlots)
+		{
+			ObjectInstance* top = frame->PopStack();
+			if (top != nullptr && top != GarbageCollector::NullInstance)
+				gc.DestroyInstance(top);
+		}
+
+		if (frame->EvalStack.size() < preservedSlots)
+			frame->EvalStack.resize(preservedSlots, nullptr);
+
+		frame->InterruptionReason = FrameInterruptionReason::None;
+		frame->InterruptionRegister = nullptr;
+
+		while (!frame->ExceptionHandlers.empty())
+		{
+			CallStackFrame::ExceptionHandlerFrame handler = frame->ExceptionHandlers.back();
+			frame->ExceptionHandlers.pop_back();
+
+			if (!DrainDefersTo(vm, frame, decoder, handler.DeferStackBase, gc))
+				return true;
+
+			decoder.SetCursor(handler.HandlerOffset);
+			frame->EvalStack.push_back(exception);
+			exception->IncrementReference();
+
+			frame->CurrentException = exception;
+			frame->InterruptionReason = FrameInterruptionReason::None;
+			frame->InterruptionRegister = nullptr;
+			return true;
+		}
+
+		// No handler in this frame. Run any pending defers before propagating.
+		if (!DrainDefersTo(vm, frame, decoder, 0, gc))
+			return true;
+
+		// Restore the original exception so it propagates to the caller.
+		frame->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
+		frame->InterruptionRegister = exception;
+		exception->IncrementReference();
+		return false;
+	}
+
+	static bool IsPendingTask(ObjectInstance* task)
+	{
+		if (task == nullptr || !task->IsTaskLike)
+			return false;
+
+		const TypeSymbol* info = task->getInfo();
+		FieldSymbol* stateField = nullptr;
+		if (info->Name == L"Task")
+			stateField = SymbolTable::StandardTypes::Task_StateField;
+		else if (info->Name == L"ValueTask")
+			stateField = SymbolTable::StandardTypes::ValueTask_StateField;
+
+		if (stateField == nullptr)
+			return false;
+
+		return GetTaskState(task, stateField) == AsyncState::PENDING;
+	}
+
+	static void BindTaskToFrame(ObjectInstance* task, CallStackFrame* frame)
+	{
+		if (task == nullptr || !task->IsTaskLike || frame == nullptr)
+			return;
+
+		if (task->FrameOwner.get() == frame)
+			return;
+
+		task->ReleaseFrameOwner();
+
+		if (!IsPendingTask(task))
+			return;
+
+		task->BindToFrame(frame->shared_from_this());
+	}
+
+	static SemanticModel::TypeParameterResolver MakeFrameResolver(CallStackFrame* frame)
+	{
+		return [frame](TypeParameterSymbol* param) -> TypeSymbol*
+			{
+				if (frame == nullptr || param == nullptr)
+					return nullptr;
+
+				return frame->ResolveType(param);
+			};
+	}
+
+	static void HaltTaskObject(ObjectInstance* task, GarbageCollector& gc)
+	{
+		if (task == nullptr || !task->IsTaskLike)
+			return;
+
+		const TypeSymbol* info = task->getInfo();
+		ObjectInstance* exception = CreateRuntimeException(gc,
+			L"Task halted because the virtual machine has stopped");
+
+		if (info->Name == L"Task")
+		{
+			SetTaskState(task, SymbolTable::StandardTypes::Task_StateField, AsyncState::FAULTED, gc);
+			task->SetField(SymbolTable::StandardTypes::Task_ExceptionField->SlotIndex, exception);
+		}
+		else if (info->Name == L"ValueTask")
+		{
+			SetTaskState(task, SymbolTable::StandardTypes::ValueTask_StateField, AsyncState::FAULTED, gc);
+			task->SetField(SymbolTable::StandardTypes::ValueTask_ExceptionField->SlotIndex, exception);
+		}
+
+		task->ReleaseFrameOwner();
+	}
 }
 
 void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder, const OpCode opCode)
@@ -1116,124 +1264,6 @@ ObjectInstance* VirtualMachine::CreateRuntimeException(const std::exception& err
 	return CreateRuntimeException(SymbolTable::StandardTypes::RuntimeException, message, GetStackTrace());
 }
 
-static bool DrainDefersTo(VirtualMachine* vm, CallStackFrame* frame, ByteCodeDecoder& decoder, std::size_t targetSize, GarbageCollector& gc)
-{
-	while (frame->DeferStack.size() > targetSize)
-	{
-		std::size_t target = frame->DeferStack.back();
-		frame->DeferStack.pop_back();
-
-		frame->DeferDrainDepth++;
-		try
-		{
-			ExecuteDeferExpression(vm, frame, decoder, target);
-		}
-		catch (...)
-		{
-			frame->DeferDrainDepth--;
-			throw;
-		}
-		frame->DeferDrainDepth--;
-
-		if (frame->interrupted())
-			return false;
-	}
-
-	return true;
-}
-
-static bool HandleExceptionInFrame(VirtualMachine* vm, CallStackFrame* frame, ByteCodeDecoder& decoder, GarbageCollector& gc)
-{
-	ObjectInstance* exception = frame->InterruptionRegister;
-	if (exception == nullptr)
-		throw std::runtime_error("Exception was raised without an exception object");
-
-	// Preserve the fixed local-variable slots (arguments + locals); only drain
-	// the temporary evaluation-stack portion above them. Draining locals would
-	// destroy the async state-machine instance and other live variables that
-	// catch/finally handlers still need to access.
-	std::size_t preservedSlots = 0;
-	if (frame->Method != nullptr)
-		preservedSlots = frame->Method->GetEvalStackLocalsCount();
-
-	while (frame->EvalStack.size() > preservedSlots)
-	{
-		ObjectInstance* top = frame->PopStack();
-		if (top != nullptr && top != GarbageCollector::NullInstance)
-			gc.DestroyInstance(top);
-	}
-
-	if (frame->EvalStack.size() < preservedSlots)
-		frame->EvalStack.resize(preservedSlots, nullptr);
-
-	// Defer expressions run with the original interruption cleared; if they
-	// raise a new interruption we will let the main loop re-enter handling.
-	frame->InterruptionReason = FrameInterruptionReason::None;
-	frame->InterruptionRegister = nullptr;
-
-	while (!frame->ExceptionHandlers.empty())
-	{
-		CallStackFrame::ExceptionHandlerFrame handler = frame->ExceptionHandlers.back();
-		frame->ExceptionHandlers.pop_back();
-
-		if (!DrainDefersTo(vm, frame, decoder, handler.DeferStackBase, gc))
-			return true;
-
-		decoder.SetCursor(handler.HandlerOffset);
-		frame->EvalStack.push_back(exception);
-		exception->IncrementReference();
-
-		frame->CurrentException = exception;
-		frame->InterruptionReason = FrameInterruptionReason::None;
-		frame->InterruptionRegister = nullptr;
-		return true;
-	}
-
-	// No handler in this frame. Run any pending defers before propagating.
-	if (!DrainDefersTo(vm, frame, decoder, 0, gc))
-		return true;
-
-	// Restore the original exception so it propagates to the caller.
-	frame->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
-	frame->InterruptionRegister = exception;
-	exception->IncrementReference();
-	return false;
-}
-
-static bool IsPendingTask(ObjectInstance* task)
-{
-	if (task == nullptr || !task->IsTaskLike)
-		return false;
-
-	const TypeSymbol* info = task->getInfo();
-	FieldSymbol* stateField = nullptr;
-	if (info->Name == L"Task")
-		stateField = SymbolTable::StandardTypes::Task_StateField;
-	else if (info->Name == L"ValueTask")
-		stateField = SymbolTable::StandardTypes::ValueTask_StateField;
-
-	if (stateField == nullptr)
-		return false;
-
-	return GetTaskState(task, stateField) == AsyncState::PENDING;
-}
-
-static void BindTaskToFrame(ObjectInstance* task, CallStackFrame* frame)
-{
-	if (task == nullptr || !task->IsTaskLike || frame == nullptr)
-		return;
-
-	if (task->FrameOwner.get() == frame)
-		return;
-
-	task->ReleaseFrameOwner();
-
-	if (!IsPendingTask(task))
-		return;
-
-	task->BindToFrame(frame->shared_from_this());
-}
-
 void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* currentFrame)
 {
 	if (AbortFlag)
@@ -1400,17 +1430,6 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 			garbageCollector.DestroyInstance(top);
 		}
 	}
-}
-
-static SemanticModel::TypeParameterResolver MakeFrameResolver(CallStackFrame* frame)
-{
-	return [frame](TypeParameterSymbol* param) -> TypeSymbol*
-	{
-		if (frame == nullptr || param == nullptr)
-			return nullptr;
-
-		return frame->ResolveType(param);
-	};
 }
 
 ObjectInstance* VirtualMachine::InstantiateObject(TypeSymbol* type, ConstructorSymbol* ctor)
@@ -1617,10 +1636,18 @@ void VirtualMachine::SetPendingTypeArguments(std::initializer_list<TypeSymbol*> 
 
 void VirtualMachine::RaiseException(ObjectInstance* exceptionReg) const
 {
-	// TODO: implement method
+	VirtualMachine* vm = const_cast<VirtualMachine*>(this);
+	CallStackFrame* frame = vm->CurrentFrame();
+	if (frame == nullptr || exceptionReg == nullptr)
+		return;
+
+	exceptionReg->IncrementReference();
+	frame->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
+	frame->InterruptionRegister = exceptionReg;
+	frame->CurrentException = exceptionReg;
 }
 
-static std::wstring GetThrowablePropertyValue(VirtualMachine& vm, ObjectInstance* exception, AccessorSymbol* interfacePropertyAccessor)
+std::wstring VirtualMachine::GetThrowablePropertyValue(ObjectInstance* exception, AccessorSymbol* interfacePropertyAccessor) const
 {
 	if (exception == nullptr || interfacePropertyAccessor == nullptr)
 		return L"";
@@ -1633,9 +1660,10 @@ static std::wstring GetThrowablePropertyValue(VirtualMachine& vm, ObjectInstance
 	if (implementation == nullptr)
 		return L"";
 
-	vm.InvokeMethod(implementation, { exception });
+	VirtualMachine* vm = const_cast<VirtualMachine*>(this);
+	vm->InvokeMethod(implementation, { exception });
 
-	CallStackFrame* frame = vm.CurrentFrame();
+	CallStackFrame* frame = vm->CurrentFrame();
 	if (frame == nullptr || frame->EvalStack.empty())
 		return L"";
 
@@ -1653,29 +1681,6 @@ static std::wstring GetThrowablePropertyValue(VirtualMachine& vm, ObjectInstance
 		result->DecrementReference();
 
 	return value;
-}
-
-static void HaltTaskObject(ObjectInstance* task, GarbageCollector& gc)
-{
-	if (task == nullptr || !task->IsTaskLike)
-		return;
-
-	const TypeSymbol* info = task->getInfo();
-	ObjectInstance* exception = CreateRuntimeException(gc,
-		L"Task halted because the virtual machine has stopped");
-
-	if (info->Name == L"Task")
-	{
-		SetTaskState(task, SymbolTable::StandardTypes::Task_StateField, AsyncState::FAULTED, gc);
-		task->SetField(SymbolTable::StandardTypes::Task_ExceptionField->SlotIndex, exception);
-	}
-	else if (info->Name == L"ValueTask")
-	{
-		SetTaskState(task, SymbolTable::StandardTypes::ValueTask_StateField, AsyncState::FAULTED, gc);
-		task->SetField(SymbolTable::StandardTypes::ValueTask_ExceptionField->SlotIndex, exception);
-	}
-
-	task->ReleaseFrameOwner();
 }
 
 void VirtualMachine::HaltFireAndForgetTasks()
@@ -1731,8 +1736,8 @@ void VirtualMachine::Run()
 
 			if (SemanticModel::IsAssignableTo(TRAIT_THROWABLE, exception->getInfo()))
 			{
-				UnhandledExceptionMessage = GetThrowablePropertyValue(*this, exception, TRAIT_THROWABLE_getMessage);
-				UnhandledExceptionStackTrace = GetThrowablePropertyValue(*this, exception, TRAIT_THROWABLE_getStackTrace);
+				UnhandledExceptionMessage = GetThrowablePropertyValue(exception, TRAIT_THROWABLE_getMessage);
+				UnhandledExceptionStackTrace = GetThrowablePropertyValue(exception, TRAIT_THROWABLE_getStackTrace);
 			}
 
 			if (UnhandledExceptionStackTrace.empty())

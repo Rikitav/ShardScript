@@ -1,8 +1,0 @@
-using stdio;
-
-namespace tmp_lambda_invoke;
-
-public static func Main() -> void
-{
-    println((lambda (a: int) => a)(42));
-}
