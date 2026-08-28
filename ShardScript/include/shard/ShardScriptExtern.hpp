@@ -100,6 +100,9 @@ extern "C"
     SHARD_API shard::CallStackFrame* Shard_VMPushFrame(shard::VirtualMachine* vm, shard::MethodSymbol* method);
     SHARD_API int Shard_VMPopFrame(shard::VirtualMachine* vm);
     SHARD_API int Shard_VMRaiseException(shard::VirtualMachine* vm, shard::ObjectInstance* exception);
+    SHARD_API shard::ObjectInstance* Shard_VMCreateRuntimeException(shard::VirtualMachine* vm, const wchar_t* message, shard::TypeSymbol* type);
+    SHARD_API const wchar_t* Shard_GetExceptionMessage(shard::VirtualMachine* vm, shard::ObjectInstance* exception);
+    SHARD_API const wchar_t* Shard_GetExceptionStackTrace(shard::VirtualMachine* vm, shard::ObjectInstance* exception);
     SHARD_API shard::ObjectInstance* Shard_VMInstantiateObject(shard::VirtualMachine* vm, shard::TypeSymbol* type, shard::ConstructorSymbol* ctor);
     SHARD_API shard::ObjectInstance* Shard_VMInstantiateDelegate(shard::VirtualMachine* vm, shard::DelegateTypeSymbol* type);
 

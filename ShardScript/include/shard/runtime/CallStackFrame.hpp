@@ -18,8 +18,6 @@ namespace shard
 		None,
 		ValueReturned,
 		ExceptionRaised,
-		LoopBreak,
-		LoopContinue,
 	};
 
 	class SHARD_API CallStackFrame : public std::enable_shared_from_this<CallStackFrame>
