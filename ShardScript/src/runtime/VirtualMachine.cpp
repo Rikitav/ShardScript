@@ -1634,6 +1634,12 @@ void VirtualMachine::SetPendingTypeArguments(std::initializer_list<TypeSymbol*> 
 		vm->PendingTypeArguments.push_back(arg);
 }
 
+void VirtualMachine::SetPendingTypeArguments(const std::vector<TypeSymbol*>& args) const
+{
+	VirtualMachine* vm = const_cast<VirtualMachine*>(this);
+	vm->PendingTypeArguments = args;
+}
+
 void VirtualMachine::RaiseException(ObjectInstance* exceptionReg) const
 {
 	VirtualMachine* vm = const_cast<VirtualMachine*>(this);

@@ -794,6 +794,30 @@ extern "C"
         }
     }
 
+    SHARD_API int Shard_VMSetPendingTypeArguments(VirtualMachine* vm, TypeSymbol** typeArgs, std::size_t count)
+    {
+        try
+        {
+            if (vm == nullptr)
+            {
+                SetLastShardWError(L"virtual machine is null");
+                return -1;
+            }
+
+            std::vector<TypeSymbol*> args;
+            if (typeArgs != nullptr && count > 0)
+                args.assign(typeArgs, typeArgs + count);
+
+            vm->SetPendingTypeArguments(args);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
     SHARD_API int Shard_VMGetUnhandledException(VirtualMachine* vm, ObjectInstance** outException)
     {
         try
@@ -7575,6 +7599,46 @@ extern "C"
         {
             SetLastErrorFromException(e);
             return nullptr;
+        }
+    }
+
+    SHARD_API int Shard_ClassAddInterface(ClassSymbol* classType, InterfaceSymbol* interfaceType)
+    {
+        try
+        {
+            if (classType == nullptr || interfaceType == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return -1;
+            }
+
+            classType->Interfaces.push_back(interfaceType);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_ClassSetInterfaceMethodImplementation(ClassSymbol* classType, MethodSymbol* interfaceMethod, MethodSymbol* implementationMethod)
+    {
+        try
+        {
+            if (classType == nullptr || interfaceMethod == nullptr || implementationMethod == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return -1;
+            }
+
+            classType->InterfaceMethodMap[interfaceMethod] = implementationMethod;
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
         }
     }
 
