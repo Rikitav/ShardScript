@@ -7680,6 +7680,26 @@ extern "C"
         return typeParam->Constraints[index];
     }
 
+    SHARD_API ArrayTypeSymbol* Shard_CreateArrayTypeSymbol(CompilationContext* ctx, TypeSymbol* elementType)
+    {
+        try
+        {
+            if (ctx == nullptr || elementType == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return nullptr;
+            }
+
+            SymbolFactory factory(ctx->GetSemanticModel().Table.get());
+            return factory.Array(elementType);
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
     SHARD_API IndexatorSymbol* Shard_CreateIndexatorSymbol(CompilationContext* ctx, TypeSymbol* parentType, const wchar_t* name, TypeSymbol* returnType, int accessibility)
     {
         try
