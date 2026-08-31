@@ -585,6 +585,7 @@ extern "C"
     SHARD_API int Shard_AddTypeParameterConstraint(shard::TypeParameterSymbol* typeParam, shard::TypeSymbol* constraint);
     SHARD_API std::size_t Shard_GetTypeParameterConstraintCount(shard::TypeParameterSymbol* typeParam);
     SHARD_API shard::TypeSymbol* Shard_GetTypeParameterConstraint(shard::TypeParameterSymbol* typeParam, std::size_t index);
+    SHARD_API shard::ArrayTypeSymbol* Shard_CreateArrayTypeSymbol(shard::CompilationContext* ctx, shard::TypeSymbol* elementType);
     SHARD_API shard::IndexatorSymbol* Shard_CreateIndexatorSymbol(shard::CompilationContext* ctx, shard::TypeSymbol* parentType, const wchar_t* name, shard::TypeSymbol* returnType, int accessibility);
     SHARD_API int Shard_AddIndexatorParameter(shard::IndexatorSymbol* indexator, shard::ParameterSymbol* parameter);
     SHARD_API shard::AccessorSymbol* Shard_IndexatorAddGetter(shard::CompilationContext* ctx, shard::IndexatorSymbol* indexator);
