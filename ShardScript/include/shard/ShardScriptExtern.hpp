@@ -212,6 +212,8 @@ extern "C"
     SHARD_API std::size_t Shard_GetTypeShapeGenericArgumentCount(shard::TypeShape* shape);
     SHARD_API shard::TypeSymbol* Shard_GetTypeShapeGenericArgument(shard::TypeShape* shape, std::size_t index);
     SHARD_API shard::TypeShape* Shard_GetObjectTypeShape(shard::ObjectInstance* instance);
+    SHARD_API shard::TypeShape* Shard_GetOrCreateTypeShape(shard::CompilationContext* ctx, shard::TypeSymbol* baseType, shard::TypeSymbol** genericArgs, std::size_t genericArgCount);
+    SHARD_API shard::TypeShape* Shard_GetTypeShapeForType(shard::CompilationContext* ctx, shard::TypeSymbol* type);
 
     // =========================================================================
     // Symbol Inspection API
@@ -344,6 +346,8 @@ extern "C"
 
     SHARD_API shard::ObjectInstance* Shard_GCAllocateInstance(shard::GarbageCollector* gc, shard::TypeSymbol* type);
     SHARD_API shard::ObjectInstance* Shard_GCAllocateArray(shard::GarbageCollector* gc, shard::TypeSymbol* elementType, std::size_t length);
+    SHARD_API shard::ObjectInstance* Shard_GCAllocateInstanceFromShape(shard::GarbageCollector* gc, shard::TypeShape* shape);
+    SHARD_API shard::ObjectInstance* Shard_GCAllocateGeneric(shard::GarbageCollector* gc, shard::TypeSymbol* baseType, shard::TypeSymbol** genericArgs, std::size_t genericArgCount);
 
     // =========================================================================
     // Runtime Instance Field / Element Access API
@@ -586,6 +590,7 @@ extern "C"
     SHARD_API std::size_t Shard_GetTypeParameterConstraintCount(shard::TypeParameterSymbol* typeParam);
     SHARD_API shard::TypeSymbol* Shard_GetTypeParameterConstraint(shard::TypeParameterSymbol* typeParam, std::size_t index);
     SHARD_API shard::ArrayTypeSymbol* Shard_CreateArrayTypeSymbol(shard::CompilationContext* ctx, shard::TypeSymbol* elementType);
+    SHARD_API shard::GenericTypeSymbol* Shard_CreateGenericTypeSymbol(shard::CompilationContext* ctx, shard::TypeSymbol* underlyingType, shard::TypeSymbol** typeArgs, std::size_t typeArgCount);
     SHARD_API shard::IndexatorSymbol* Shard_CreateIndexatorSymbol(shard::CompilationContext* ctx, shard::TypeSymbol* parentType, const wchar_t* name, shard::TypeSymbol* returnType, int accessibility);
     SHARD_API int Shard_AddIndexatorParameter(shard::IndexatorSymbol* indexator, shard::ParameterSymbol* parameter);
     SHARD_API shard::AccessorSymbol* Shard_IndexatorAddGetter(shard::CompilationContext* ctx, shard::IndexatorSymbol* indexator);

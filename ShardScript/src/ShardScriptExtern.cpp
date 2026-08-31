@@ -2578,6 +2578,48 @@ extern "C"
         }
     }
 
+    SHARD_API TypeShape* Shard_GetOrCreateTypeShape(CompilationContext* ctx, TypeSymbol* baseType, TypeSymbol** genericArgs, std::size_t genericArgCount)
+    {
+        try
+        {
+            if (ctx == nullptr || baseType == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return nullptr;
+            }
+
+            std::vector<TypeSymbol*> args;
+            if (genericArgs != nullptr && genericArgCount > 0)
+                args.assign(genericArgs, genericArgs + genericArgCount);
+
+            return ctx->GetSemanticModel().TypeShapes->GetOrCreateShape(baseType, args);
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API TypeShape* Shard_GetTypeShapeForType(CompilationContext* ctx, TypeSymbol* type)
+    {
+        try
+        {
+            if (ctx == nullptr || type == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return nullptr;
+            }
+
+            return ctx->GetSemanticModel().TypeShapes->GetOrCreateShape(type);
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
     // =========================================================================
     // Symbol Inspection API
     // =========================================================================
@@ -7061,6 +7103,48 @@ extern "C"
         }
     }
 
+    SHARD_API ObjectInstance* Shard_GCAllocateInstanceFromShape(GarbageCollector* gc, TypeShape* shape)
+    {
+        try
+        {
+            if (gc == nullptr || shape == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return nullptr;
+            }
+
+            return gc->AllocateInstance(shape);
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API ObjectInstance* Shard_GCAllocateGeneric(GarbageCollector* gc, TypeSymbol* baseType, TypeSymbol** genericArgs, std::size_t genericArgCount)
+    {
+        try
+        {
+            if (gc == nullptr || baseType == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return nullptr;
+            }
+
+            std::vector<TypeSymbol*> args;
+            if (genericArgs != nullptr && genericArgCount > 0)
+                args.assign(genericArgs, genericArgs + genericArgCount);
+
+            return gc->AllocateGeneric(baseType, args);
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
     // =========================================================================
     // Runtime Instance Field / Element Access API
     // =========================================================================
@@ -7692,6 +7776,31 @@ extern "C"
 
             SymbolFactory factory(ctx->GetSemanticModel().Table.get());
             return factory.Array(elementType);
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API GenericTypeSymbol* Shard_CreateGenericTypeSymbol(CompilationContext* ctx, TypeSymbol* underlyingType, TypeSymbol** typeArgs, std::size_t typeArgCount)
+    {
+        try
+        {
+            if (ctx == nullptr || underlyingType == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return nullptr;
+            }
+
+            SymbolFactory factory(ctx->GetSemanticModel().Table.get());
+
+            if (typeArgs == nullptr || typeArgCount == 0)
+                return factory.GenericType(underlyingType);
+
+            std::vector<TypeSymbol*> args(typeArgs, typeArgs + typeArgCount);
+            return factory.GenericType(underlyingType, args);
         }
         catch (const std::exception& e)
         {
