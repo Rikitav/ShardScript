@@ -582,7 +582,8 @@ extern "C"
     SHARD_API shard::AccessorSymbol* Shard_PropertyAddSetter(shard::CompilationContext* ctx, shard::PropertySymbol* property);
 
     SHARD_API shard::InterfaceSymbol* Shard_CreateInterfaceSymbol(shard::CompilationContext* ctx, shard::NamespaceSymbol* parent, const wchar_t* name, int accessibility);
-    SHARD_API int Shard_ClassAddInterface(shard::ClassSymbol* classType, shard::InterfaceSymbol* interfaceType);
+    SHARD_API int Shard_TypeAddInterface(shard::TypeSymbol* type, shard::InterfaceSymbol* interfaceType);
+    SHARD_API int Shard_TypeAddGenericInterface(shard::TypeSymbol* type, shard::GenericTypeSymbol* interfaceType);
     SHARD_API int Shard_ClassSetInterfaceMethodImplementation(shard::ClassSymbol* classType, shard::MethodSymbol* interfaceMethod, shard::MethodSymbol* implementationMethod);
     SHARD_API shard::StructSymbol* Shard_CreateStructSymbol(shard::CompilationContext* ctx, shard::NamespaceSymbol* parent, const wchar_t* name);
     SHARD_API shard::EnumSymbol* Shard_CreateEnumSymbol(shard::CompilationContext* ctx, shard::NamespaceSymbol* parent, const wchar_t* name, int isFlags);
