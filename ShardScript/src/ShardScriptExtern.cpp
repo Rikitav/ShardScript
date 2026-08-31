@@ -7602,17 +7602,37 @@ extern "C"
         }
     }
 
-    SHARD_API int Shard_ClassAddInterface(ClassSymbol* classType, InterfaceSymbol* interfaceType)
+    SHARD_API int Shard_TypeAddInterface(TypeSymbol* type, InterfaceSymbol* interfaceType)
     {
         try
         {
-            if (classType == nullptr || interfaceType == nullptr)
+            if (type == nullptr || interfaceType == nullptr)
             {
                 SetLastShardWError(L"invalid argument");
                 return -1;
             }
 
-            classType->Interfaces.push_back(interfaceType);
+            type->Interfaces.push_back(interfaceType);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_TypeAddGenericInterface(TypeSymbol* type, GenericTypeSymbol* interfaceType)
+    {
+        try
+        {
+            if (type == nullptr || interfaceType == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return -1;
+            }
+
+            type->Interfaces.push_back(interfaceType);
             return 0;
         }
         catch (const std::exception& e)
