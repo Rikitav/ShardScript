@@ -90,6 +90,7 @@ extern "C"
     SHARD_API int Shard_VMAbort(shard::VirtualMachine* vm);
     SHARD_API int Shard_VMTerminateCallStack(shard::VirtualMachine* vm);
     SHARD_API shard::ObjectInstance* Shard_VMInvokeMethod(shard::VirtualMachine* vm, shard::MethodSymbol* method, shard::ObjectInstance** args, int argCount);
+    SHARD_API int Shard_VMSetPendingTypeArguments(shard::VirtualMachine* vm, shard::TypeSymbol** typeArgs, std::size_t count);
 
     SHARD_API int Shard_VMGetUnhandledException(shard::VirtualMachine* vm, shard::ObjectInstance** outException);
     SHARD_API int Shard_VMGetUnhandledExceptionMessage(shard::VirtualMachine* vm, wchar_t* buffer, int bufferLen);
@@ -581,6 +582,8 @@ extern "C"
     SHARD_API shard::AccessorSymbol* Shard_PropertyAddSetter(shard::CompilationContext* ctx, shard::PropertySymbol* property);
 
     SHARD_API shard::InterfaceSymbol* Shard_CreateInterfaceSymbol(shard::CompilationContext* ctx, shard::NamespaceSymbol* parent, const wchar_t* name, int accessibility);
+    SHARD_API int Shard_ClassAddInterface(shard::ClassSymbol* classType, shard::InterfaceSymbol* interfaceType);
+    SHARD_API int Shard_ClassSetInterfaceMethodImplementation(shard::ClassSymbol* classType, shard::MethodSymbol* interfaceMethod, shard::MethodSymbol* implementationMethod);
     SHARD_API shard::StructSymbol* Shard_CreateStructSymbol(shard::CompilationContext* ctx, shard::NamespaceSymbol* parent, const wchar_t* name);
     SHARD_API shard::EnumSymbol* Shard_CreateEnumSymbol(shard::CompilationContext* ctx, shard::NamespaceSymbol* parent, const wchar_t* name, int isFlags);
     SHARD_API shard::FieldSymbol* Shard_AddEnumLiteral(shard::CompilationContext* ctx, shard::EnumSymbol* enumType, const wchar_t* name, std::int64_t value);

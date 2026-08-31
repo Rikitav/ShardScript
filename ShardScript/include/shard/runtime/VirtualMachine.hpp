@@ -76,6 +76,7 @@ namespace shard
 		void InvokeMethod(MethodSymbol* method, std::initializer_list<ObjectInstance*> args) const;
 		ObjectInstance* InvokeMethod(MethodSymbol* method, ObjectInstance** args, std::size_t count) const;
 		void SetPendingTypeArguments(std::initializer_list<TypeSymbol*> args) const;
+		void SetPendingTypeArguments(const std::vector<TypeSymbol*>& args) const;
 		void RaiseException(ObjectInstance* exceptionReg) const;
 
 		std::wstring GetStackTrace() const;
