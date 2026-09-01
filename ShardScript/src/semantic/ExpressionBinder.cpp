@@ -1,14 +1,15 @@
 #include <shard/semantic/ExpressionBinder.hpp>
 #include <shard/semantic/SymbolTable.hpp>
 #include <shard/semantic/SemanticScope.hpp>
-
 #include <shard/semantic/SyntaxSymbol.hpp>
+#include <shard/semantic/SymbolFactory.hpp>
+
 #include <shard/parsing/SyntaxNode.hpp>
 #include <shard/parsing/SyntaxKind.hpp>
 #include <shard/parsing/SyntaxFacts.hpp>
 #include <shard/parsing/SyntaxToken.hpp>
+
 #include <shard/lexical/TokenType.hpp>
-#include <shard/semantic/SymbolFactory.hpp>
 
 #include <shard/semantic/symbols/LeftDenotationSymbol.hpp>
 #include <shard/semantic/symbols/LiteralSymbol.hpp>
@@ -53,7 +54,6 @@
 #include <shard/parsing/nodes/Expressions/IfExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/SwitchExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/IsPatternSyntax.hpp>
-#include <shard/parsing/nodes/Statements/TryStatementSyntax.hpp>
 
 #include <shard/parsing/nodes/MemberDeclarations/MethodDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/MemberDeclarations/OperatorDeclarationSyntax.hpp>
@@ -70,9 +70,8 @@
 #include <shard/parsing/nodes/Statements/DeferStatementSyntax.hpp>
 #include <shard/parsing/nodes/Statements/ReturnStatementSyntax.hpp>
 #include <shard/parsing/nodes/Statements/ConditionalClauseSyntax.hpp>
-
-#include <iostream>
 #include <shard/parsing/nodes/Statements/ExpressionStatementSyntax.hpp>
+#include <shard/parsing/nodes/Statements/TryStatementSyntax.hpp>
 
 #include <shard/parsing/nodes/Loops/WhileStatementSyntax.hpp>
 #include <shard/parsing/nodes/Loops/UntilStatementSyntax.hpp>
@@ -107,7 +106,7 @@ namespace
 
 		GenericTypeSymbol* genericType = static_cast<GenericTypeSymbol*>(type);
 		TypeSymbol* underlying = genericType->UnderlayingType;
-		if (underlying == nullptr || underlying->FullName != L"async.ValueTask")
+		if (underlying == nullptr || underlying != SymbolTable::StandardTypes::ValueTask)
 			return false;
 
 		if (!underlying->TypeParameters.empty())

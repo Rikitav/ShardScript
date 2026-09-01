@@ -3381,14 +3381,7 @@ extern "C"
             if (ctx == nullptr || name == nullptr)
                 return nullptr;
 
-            auto types = ctx->GetSemanticModel().Table->GetTypeSymbols();
-            for (TypeSymbol* type : types)
-            {
-                if (type != nullptr && type->Name == name)
-                    return type;
-            }
-
-            return nullptr;
+            return SemanticModel::FindTypeByName(&ctx->GetSemanticModel(), std::wstring(name));
         }
         catch (const std::exception& e)
         {
@@ -3429,7 +3422,7 @@ extern "C"
             if (ctx == nullptr || name == nullptr)
                 return nullptr;
 
-            return SemanticModel::FindTypeByName(ctx->GetSemanticModel().Table.get(), std::wstring(name));
+            return SemanticModel::FindTypeByName(&ctx->GetSemanticModel(), std::wstring(name));
         }
         catch (const std::exception& e)
         {
@@ -8380,6 +8373,25 @@ extern "C"
 
             std::vector<TypeSymbol*> args(typeArgs, typeArgs + typeArgCount);
             return factory.GenericType(underlyingType, args);
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    shard::TypeSymbol* Shard_GetGenericTypeUnderlyingType(shard::GenericTypeSymbol* generic)
+    {
+        try
+        {
+            if (generic == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return nullptr;
+            }
+
+            return generic->UnderlayingType;
         }
         catch (const std::exception& e)
         {
