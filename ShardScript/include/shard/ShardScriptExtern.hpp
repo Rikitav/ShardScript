@@ -136,6 +136,36 @@ extern "C"
     SHARD_API shard::ObjectInstance* Shard_EventLoopGetRootedTask(shard::ApplicationDomain* domain, std::size_t index);
 
     // =========================================================================
+    // Async Task API (C bindings for NativeAsync.hpp helpers)
+    // =========================================================================
+
+    typedef shard::ObjectInstance* Shard_AsyncScopeHandle;
+    typedef void (*Shard_AsyncWorkCallback)(Shard_AsyncScopeHandle task, void* userData);
+    typedef void (*Shard_AsyncCallback)(void* userData);
+    typedef void (*Shard_AsyncResultCallback)(shard::ObjectInstance* result, void* userData);
+
+    SHARD_API shard::ObjectInstance* Shard_DoAsync(const shard::CallState* ctx, Shard_AsyncWorkCallback callback, void* userData);
+    SHARD_API shard::ObjectInstance* Shard_DoValueTask(const shard::CallState* ctx, shard::TypeSymbol* resultType, Shard_AsyncWorkCallback callback, void* userData);
+
+    SHARD_API shard::ObjectInstance* Shard_CompletedTask(const shard::CallState* ctx);
+    SHARD_API shard::ObjectInstance* Shard_FaultedTask(const shard::CallState* ctx, shard::ObjectInstance* exception);
+    SHARD_API shard::ObjectInstance* Shard_FaultedTaskWithMessage(const shard::CallState* ctx, const wchar_t* message);
+
+    SHARD_API int Shard_TaskComplete(Shard_AsyncScopeHandle task);
+    SHARD_API int Shard_TaskFail(Shard_AsyncScopeHandle task, shard::ObjectInstance* exception);
+    SHARD_API int Shard_TaskFailWithMessage(Shard_AsyncScopeHandle task, const wchar_t* message);
+    SHARD_API int Shard_TaskSetValueTaskResult(Shard_AsyncScopeHandle task, shard::ObjectInstance* result);
+
+    SHARD_API int Shard_TaskDelay(Shard_AsyncScopeHandle task, std::int64_t milliseconds, Shard_AsyncCallback callback, void* userData);
+    SHARD_API int Shard_TaskRunOnThreadPool(Shard_AsyncScopeHandle task, Shard_AsyncCallback workCallback, void* workUserData, Shard_AsyncCallback completeCallback, void* completeUserData);
+    SHARD_API int Shard_TaskAwait(Shard_AsyncScopeHandle task, shard::ObjectInstance* awaitable, Shard_AsyncCallback callback, void* userData);
+    SHARD_API int Shard_TaskAwaitResult(Shard_AsyncScopeHandle task, shard::ObjectInstance* awaitable, Shard_AsyncResultCallback callback, void* userData);
+
+    SHARD_API shard::ObjectInstance* Shard_CreateNativeContinuation(Shard_AsyncScopeHandle task, Shard_AsyncCallback callback, void* userData);
+    SHARD_API int Shard_InvokeNativeContinuationCallback(shard::ObjectInstance* continuation);
+    SHARD_API int Shard_SetTaskState(shard::ObjectInstance* task, shard::FieldSymbol* stateField, int state, shard::GarbageCollector* gc);
+
+    // =========================================================================
     // Garbage Collector / Value API
     // =========================================================================
 
@@ -315,6 +345,7 @@ extern "C"
 
     SHARD_API int Shard_IsMethodAbstract(shard::MethodSymbol* method);
     SHARD_API int Shard_IsMethodAsync(shard::MethodSymbol* method);
+    SHARD_API int Shard_SetMethodAsync(shard::MethodSymbol* method, int isAsync);
     SHARD_API int Shard_GetMethodTypeParameterCount(shard::MethodSymbol* method);
     SHARD_API shard::TypeParameterSymbol* Shard_GetMethodTypeParameter(shard::MethodSymbol* method, int index);
     SHARD_API int Shard_GetMethodEvalStackArgumentsCount(shard::MethodSymbol* method);
