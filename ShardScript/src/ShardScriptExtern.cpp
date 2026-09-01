@@ -2,6 +2,7 @@
 
 #include <ShardScript.hpp>
 #include <shard/ShardScriptExtern.hpp>
+#include <shard/runtime/NativeAsync.hpp>
 #include <utilities/LibraryLoader.hpp>
 
 #include <sstream>
@@ -11,6 +12,7 @@
 #include <string>
 #include <unordered_map>
 #include <cstdint>
+#include <mutex>
 
 using namespace shard;
 
@@ -59,6 +61,55 @@ namespace
     static SyntaxToken MakeToken(shard::TokenType type, const wchar_t* word = nullptr)
     {
         return SyntaxToken(type, word != nullptr ? std::wstring(word) : std::wstring(), TextLocation(), false);
+    }
+
+    // =========================================================================
+    // Async task state registry
+    // =========================================================================
+    // C async callbacks receive the task ObjectInstance* as their handle.  The
+    // internal AsyncScopeState is kept alive here so callbacks can complete,
+    // fault, delay, await, etc. without holding a dangling raw pointer.
+
+    std::mutex g_asyncStateMutex;
+    std::unordered_map<ObjectInstance*, std::shared_ptr<detail::AsyncScopeState>> g_asyncStateRegistry;
+
+    static std::shared_ptr<detail::AsyncScopeState> GetAsyncState(ObjectInstance* task)
+    {
+        std::lock_guard<std::mutex> lock(g_asyncStateMutex);
+        auto it = g_asyncStateRegistry.find(task);
+        if (it == g_asyncStateRegistry.end())
+            return nullptr;
+        return it->second;
+    }
+
+    static void RegisterAsyncState(ObjectInstance* task, std::shared_ptr<detail::AsyncScopeState> state)
+    {
+        std::lock_guard<std::mutex> lock(g_asyncStateMutex);
+        g_asyncStateRegistry[task] = std::move(state);
+    }
+
+    static void UnregisterAsyncState(ObjectInstance* task)
+    {
+        std::lock_guard<std::mutex> lock(g_asyncStateMutex);
+        g_asyncStateRegistry.erase(task);
+    }
+
+    static std::shared_ptr<detail::AsyncScopeState> GetAsyncStateChecked(ObjectInstance* task)
+    {
+        if (task == nullptr)
+        {
+            SetLastShardWError(L"task is null");
+            return nullptr;
+        }
+
+        auto state = GetAsyncState(task);
+        if (state == nullptr)
+        {
+            SetLastShardWError(L"async state not found for task");
+            return nullptr;
+        }
+
+        return state;
     }
 
     // =========================================================================
@@ -1411,6 +1462,430 @@ extern "C"
             }
 
             ResumeContinuation(task, continuationField, moveNextMethod, *domain);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    // =========================================================================
+    // Async Task API (C bindings for NativeAsync.hpp helpers)
+    // =========================================================================
+
+    SHARD_API ObjectInstance* Shard_DoAsync(const CallState* ctx, Shard_AsyncWorkCallback callback, void* userData)
+    {
+        try
+        {
+            if (ctx == nullptr || callback == nullptr)
+            {
+                SetLastShardWError(L"context or callback is null");
+                return nullptr;
+            }
+
+            auto state = detail::CreateAsyncScopeState(*ctx, nullptr);
+            ObjectInstance* task = state->task;
+            RegisterAsyncState(task, state);
+
+            AsyncScope scope(state);
+            callback(task, userData);
+
+            if (state->completed)
+                UnregisterAsyncState(task);
+
+            return task;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API ObjectInstance* Shard_DoValueTask(const CallState* ctx, TypeSymbol* resultType, Shard_AsyncWorkCallback callback, void* userData)
+    {
+        try
+        {
+            if (ctx == nullptr || callback == nullptr)
+            {
+                SetLastShardWError(L"context or callback is null");
+                return nullptr;
+            }
+
+            auto state = detail::CreateAsyncScopeState(*ctx, resultType);
+            ObjectInstance* task = state->task;
+            RegisterAsyncState(task, state);
+
+            AsyncScope scope(state);
+            callback(task, userData);
+
+            if (state->completed)
+                UnregisterAsyncState(task);
+
+            return task;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API ObjectInstance* Shard_CompletedTask(const CallState* ctx)
+    {
+        try
+        {
+            if (ctx == nullptr)
+            {
+                SetLastShardWError(L"context is null");
+                return nullptr;
+            }
+
+            return shard::CompletedTask(*ctx);
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API ObjectInstance* Shard_FaultedTask(const CallState* ctx, ObjectInstance* exception)
+    {
+        try
+        {
+            if (ctx == nullptr)
+            {
+                SetLastShardWError(L"context is null");
+                return nullptr;
+            }
+
+            return shard::FaultedTask(*ctx, exception);
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API ObjectInstance* Shard_FaultedTaskWithMessage(const CallState* ctx, const wchar_t* message)
+    {
+        try
+        {
+            if (ctx == nullptr)
+            {
+                SetLastShardWError(L"context is null");
+                return nullptr;
+            }
+
+            return shard::FaultedTask(*ctx, message != nullptr ? std::wstring(message) : std::wstring());
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API int Shard_TaskComplete(Shard_AsyncScopeHandle task)
+    {
+        try
+        {
+            auto state = GetAsyncStateChecked(task);
+            if (state == nullptr)
+                return -1;
+
+            if (!state->completed)
+            {
+                if (state->isValueTask)
+                    state->SetValueTaskResult(GarbageCollector::NullInstance);
+                else
+                    state->CompleteTask();
+            }
+
+            UnregisterAsyncState(task);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_TaskFail(Shard_AsyncScopeHandle task, ObjectInstance* exception)
+    {
+        try
+        {
+            auto state = GetAsyncStateChecked(task);
+            if (state == nullptr)
+                return -1;
+
+            if (!state->completed)
+            {
+                if (exception == nullptr)
+                    exception = GarbageCollector::NullInstance;
+
+                if (state->isValueTask)
+                    state->FailValueTask(exception);
+                else
+                    state->FailTask(exception);
+            }
+
+            UnregisterAsyncState(task);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_TaskFailWithMessage(Shard_AsyncScopeHandle task, const wchar_t* message)
+    {
+        try
+        {
+            auto state = GetAsyncStateChecked(task);
+            if (state == nullptr)
+                return -1;
+
+            if (!state->completed)
+            {
+                ObjectInstance* exception = CreateRuntimeException(
+                    *state->collector,
+                    message != nullptr ? std::wstring(message) : std::wstring());
+
+                if (state->isValueTask)
+                    state->FailValueTask(exception);
+                else
+                    state->FailTask(exception);
+            }
+
+            UnregisterAsyncState(task);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_TaskSetValueTaskResult(Shard_AsyncScopeHandle task, ObjectInstance* result)
+    {
+        try
+        {
+            auto state = GetAsyncStateChecked(task);
+            if (state == nullptr)
+                return -1;
+
+            if (!state->completed)
+            {
+                if (result == nullptr)
+                    result = GarbageCollector::NullInstance;
+
+                state->SetValueTaskResult(result);
+            }
+
+            UnregisterAsyncState(task);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_TaskDelay(Shard_AsyncScopeHandle task, std::int64_t milliseconds, Shard_AsyncCallback callback, void* userData)
+    {
+        try
+        {
+            if (callback == nullptr)
+            {
+                SetLastShardWError(L"callback is null");
+                return -1;
+            }
+
+            auto state = GetAsyncStateChecked(task);
+            if (state == nullptr)
+                return -1;
+
+            AsyncScope scope(state);
+            scope.Delay(milliseconds, [callback, userData]() { callback(userData); });
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_TaskRunOnThreadPool(Shard_AsyncScopeHandle task, Shard_AsyncCallback workCallback, void* workUserData, Shard_AsyncCallback completeCallback, void* completeUserData)
+    {
+        try
+        {
+            if (workCallback == nullptr || completeCallback == nullptr)
+            {
+                SetLastShardWError(L"work or complete callback is null");
+                return -1;
+            }
+
+            auto state = GetAsyncStateChecked(task);
+            if (state == nullptr)
+                return -1;
+
+            AsyncScope scope(state);
+            scope.RunOnThreadPool(
+                [workCallback, workUserData]() { workCallback(workUserData); },
+                [completeCallback, completeUserData]() { completeCallback(completeUserData); });
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_TaskAwait(Shard_AsyncScopeHandle task, ObjectInstance* awaitable, Shard_AsyncCallback callback, void* userData)
+    {
+        try
+        {
+            if (callback == nullptr)
+            {
+                SetLastShardWError(L"callback is null");
+                return -1;
+            }
+
+            auto state = GetAsyncStateChecked(task);
+            if (state == nullptr)
+                return -1;
+
+            AsyncScope scope(state);
+            scope.Await(awaitable, [callback, userData]() { callback(userData); });
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_TaskAwaitResult(Shard_AsyncScopeHandle task, ObjectInstance* awaitable, Shard_AsyncResultCallback callback, void* userData)
+    {
+        try
+        {
+            if (callback == nullptr)
+            {
+                SetLastShardWError(L"callback is null");
+                return -1;
+            }
+
+            auto state = GetAsyncStateChecked(task);
+            if (state == nullptr)
+                return -1;
+
+            AsyncScope scope(state);
+            scope.AwaitResult(awaitable, [callback, userData](ObjectInstance* result) { callback(result, userData); });
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API ObjectInstance* Shard_CreateNativeContinuation(Shard_AsyncScopeHandle task, Shard_AsyncCallback callback, void* userData)
+    {
+        try
+        {
+            if (callback == nullptr)
+            {
+                SetLastShardWError(L"callback is null");
+                return nullptr;
+            }
+
+            auto state = GetAsyncStateChecked(task);
+            if (state == nullptr)
+                return nullptr;
+
+            return detail::CreateNativeContinuation(*state, [callback, userData]() { callback(userData); });
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API int Shard_InvokeNativeContinuationCallback(ObjectInstance* continuation)
+    {
+        try
+        {
+            if (continuation == nullptr)
+            {
+                SetLastShardWError(L"continuation is null");
+                return -1;
+            }
+
+            detail::InvokeNativeContinuationCallback(continuation);
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
+        }
+    }
+
+    SHARD_API int Shard_SetTaskState(ObjectInstance* task, FieldSymbol* stateField, int state, GarbageCollector* gc)
+    {
+        try
+        {
+            if (task == nullptr || stateField == nullptr)
+            {
+                SetLastShardWError(L"task or state field is null");
+                return -1;
+            }
+
+            AsyncState asyncState;
+            switch (state)
+            {
+                case 0:
+                    asyncState = AsyncState::PENDING;
+                    break;
+                case 1:
+                    asyncState = AsyncState::COMPLETED;
+                    break;
+                case 2:
+                    asyncState = AsyncState::FAULTED;
+                    break;
+                default:
+                    SetLastShardWError(L"invalid async state");
+                    return -1;
+            }
+
+            GarbageCollector* collector = gc;
+            if (collector == nullptr)
+            {
+                auto asyncStatePtr = GetAsyncState(task);
+                if (asyncStatePtr == nullptr)
+                {
+                    SetLastShardWError(L"collector is null and task is not registered");
+                    return -1;
+                }
+                collector = asyncStatePtr->collector;
+            }
+
+            shard::SetTaskState(task, stateField, asyncState, *collector);
             return 0;
         }
         catch (const std::exception& e)
@@ -6767,6 +7242,26 @@ extern "C"
         {
             SetLastErrorFromException(e);
             return 0;
+        }
+    }
+
+    SHARD_API int Shard_SetMethodAsync(MethodSymbol* method, int isAsync)
+    {
+        try
+        {
+            if (method == nullptr)
+            {
+                SetLastShardWError(L"method is null");
+                return -1;
+            }
+
+            method->IsAsync = isAsync != 0;
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return -1;
         }
     }
 
