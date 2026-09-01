@@ -63,7 +63,7 @@ namespace shard
 		// =========================================================================
 		//  Symbol lookup helpers
 		// =========================================================================
-		static TypeSymbol* FindTypeByName(SymbolTable* table, const std::wstring& fullName);
+		static TypeSymbol* FindTypeByName(SemanticModel* model, const std::wstring& fullName);
 		static FieldSymbol* FindFieldByName(TypeSymbol* type, const std::wstring& name);
 
 		// =========================================================================

@@ -12,6 +12,7 @@
 #include <shard/semantic/SymbolTable.hpp>
 
 #include <shard/semantic/symbols/ArrayTypeSymbol.hpp>
+#include <shard/semantic/symbols/ClassSymbol.hpp>
 #include <shard/semantic/symbols/ConstructorSymbol.hpp>
 #include <shard/semantic/symbols/DelegateTypeSymbol.hpp>
 #include <shard/semantic/symbols/FieldSymbol.hpp>
@@ -548,15 +549,96 @@ bool SemanticModel::TryResolveGenericArguments(TypeSymbol* type, const TypeParam
 //  Symbol lookup helpers
 // =========================================================================
 
-TypeSymbol* SemanticModel::FindTypeByName(SymbolTable* table, const std::wstring& fullName)
+TypeSymbol* SemanticModel::FindTypeByName(SemanticModel* model, const std::wstring& fullName)
 {
-	if (table == nullptr)
-		return nullptr;
+	static TypeSymbol* primitives[] = {
+		SymbolTable::Primitives::Void,
+		SymbolTable::Primitives::Null,
+		SymbolTable::Primitives::Any,
+		SymbolTable::Primitives::Boolean,
+		SymbolTable::Primitives::Integer,
+		SymbolTable::Primitives::Double,
+		SymbolTable::Primitives::Char,
+		SymbolTable::Primitives::String,
+		SymbolTable::Primitives::Array,
+		SymbolTable::Primitives::NativeInteger,
+		SymbolTable::Primitives::Byte,
+	};
 
-	for (TypeSymbol* type : table->GetTypeSymbols())
+	static TypeSymbol* standardTypes[] = {
+		SymbolTable::StandardTypes::IAsyncState,
+		SymbolTable::StandardTypes::IAwaitable,
+		SymbolTable::StandardTypes::IAwaiter,
+		SymbolTable::StandardTypes::Task,
+		SymbolTable::StandardTypes::ValueTask,
+		SymbolTable::StandardTypes::IThrowable,
+		SymbolTable::StandardTypes::IDisposable,
+		SymbolTable::StandardTypes::IPrintable,
+		SymbolTable::StandardTypes::IEnumerable,
+		SymbolTable::StandardTypes::IEnumerator,
+		SymbolTable::StandardTypes::ArrayEnumerator,
+		SymbolTable::StandardTypes::Runtime,
+		SymbolTable::StandardTypes::RuntimeException,
+		SymbolTable::StandardTypes::NativeContinuation,
+	};
+
+	// Simple name: primitive, standard type, or anonymous user type.
+	std::size_t dotPos = fullName.find(L'.');
+	if (dotPos == std::wstring::npos)
 	{
-		if (type->FullName == fullName || type->Name == fullName)
-			return type;
+		for (TypeSymbol* type : primitives)
+		{
+			if (type != nullptr && type->Name == fullName)
+				return type;
+		}
+
+		for (TypeSymbol* type : standardTypes)
+		{
+			if (type != nullptr && type->Name == fullName)
+				return type;
+		}
+
+		if (model == nullptr || model->Table == nullptr)
+			return nullptr;
+
+		SymbolTable* table = model->Table.get();
+		for (TypeSymbol* type : table->GetTypeSymbols())
+		{
+			if (type != nullptr && type->Name == fullName)
+				return type;
+		}
+
+		return nullptr;
+	}
+
+	// Qualified name: walk the namespace tree and look for the type in the final namespace node's members.
+	if (model->Namespaces != nullptr && model->Namespaces->Root != nullptr)
+	{
+		NamespaceNode* node = model->Namespaces->Root;
+		std::wstring_view nameView{ fullName };
+		std::size_t start = 0;
+		std::size_t end = nameView.find(L'.');
+
+		while (node != nullptr && end != std::wstring_view::npos)
+		{
+			node = node->Lookup(nameView.substr(start, end - start));
+			start = end + 1;
+			end = nameView.find(L'.', start);
+		}
+
+		if (node != nullptr)
+		{
+			const std::wstring_view typeName = nameView.substr(start);
+			for (SyntaxSymbol* member : node->Members)
+			{
+				if (member == nullptr || member->Name != typeName)
+					continue;
+
+				TypeSymbol* type = dynamic_cast<TypeSymbol*>(member);
+				if (type != nullptr)
+					return type;
+			}
+		}
 	}
 
 	return nullptr;

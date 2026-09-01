@@ -367,7 +367,7 @@ SHARDLIB_ENTRYPOINT
     // -------------------------------------------------------------------------
     // Task.Delay overloads (depend on TimeSpan from time.shard)
     // -------------------------------------------------------------------------
-    shard_TimeSpan = SemanticModel::FindTypeByName(context.GetSemanticModel().Table.get(), L"time.TimeSpan");
+    shard_TimeSpan = SemanticModel::FindTypeByName(&context.GetSemanticModel(), L"time.TimeSpan");
     shard_TimeSpan_TicksField = SemanticModel::FindFieldByName(shard_TimeSpan, L"_ticks");
 
     SymbolBuilder<ClassSymbol> taskBuilder(context.GetSemanticModel().Table.get(), CLASS_TASK);

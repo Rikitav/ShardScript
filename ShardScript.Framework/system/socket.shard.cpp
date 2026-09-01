@@ -287,20 +287,20 @@ static ObjectInstance* shard_socket_Dispose(const CallState& context) noexcept
 // Stream symbol lookup helpers
 // ============================================================================
 
-static void EnsureStreamSymbols(SymbolTable* table)
+static void EnsureStreamSymbols(SemanticModel* model)
 {
     if (g_Stream_IStream != nullptr)
         return;
 
-    g_Stream_IStream = SemanticModel::FindTypeByName(table, L"io.IStream");
-    g_Stream_IReadableStream = SemanticModel::FindTypeByName(table, L"io.IReadableStream");
-    g_Stream_IWritableStream = SemanticModel::FindTypeByName(table, L"io.IWritableStream");
+    g_Stream_IStream = SemanticModel::FindTypeByName(model, L"io.IStream");
+    g_Stream_IReadableStream = SemanticModel::FindTypeByName(model, L"io.IReadableStream");
+    g_Stream_IWritableStream = SemanticModel::FindTypeByName(model, L"io.IWritableStream");
 
-    g_Stream_CancellationToken = SemanticModel::FindTypeByName(table, L"async.CancellationToken");
+    g_Stream_CancellationToken = SemanticModel::FindTypeByName(model, L"async.CancellationToken");
     if (g_Stream_CancellationToken != nullptr)
         g_Stream_CancellationToken_SourceField = SemanticModel::FindFieldByName(g_Stream_CancellationToken, L"_source");
 
-    TypeSymbol* sourceType = SemanticModel::FindTypeByName(table, L"async.CancellationTokenSource");
+    TypeSymbol* sourceType = SemanticModel::FindTypeByName(model, L"async.CancellationTokenSource");
     if (sourceType != nullptr)
         g_Stream_CancellationTokenSource_CanceledField = SemanticModel::FindFieldByName(sourceType, L"_canceled");
 }
@@ -750,7 +750,7 @@ SHARDLIB_ENTRYPOINT
         .IsImplementationOf(TRAIT_DISPOSABLE_Dispose);
 
     // --- stream symbols ---
-    EnsureStreamSymbols(context.GetSemanticModel().Table.get());
+    EnsureStreamSymbols(&context.GetSemanticModel());
 
     SymbolFactory factory(context.GetSemanticModel().Table.get());
     GenericTypeSymbol* valueTaskOfInt = factory.GenericType(CLASS_VALUETASK, { { L"T", TYPE_INT } });

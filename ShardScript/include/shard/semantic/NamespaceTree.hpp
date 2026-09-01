@@ -4,6 +4,7 @@
 #include <shard/semantic/symbols/TypeSymbol.hpp>
 
 #include <unordered_map>
+#include <string_view>
 #include <vector>
 #include <string>
 
@@ -36,6 +37,7 @@ namespace shard
 		NamespaceNode& operator=(const NamespaceNode&) = delete;
 
 		NamespaceNode* Lookup(std::wstring name);
+		NamespaceNode* Lookup(std::wstring_view name);
 		NamespaceNode* LookupOrCreate(std::wstring name, NamespaceSymbol* current);
 	};
 

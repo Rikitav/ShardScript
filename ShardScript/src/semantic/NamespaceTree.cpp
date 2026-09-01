@@ -1,6 +1,7 @@
 #include <shard/semantic/NamespaceTree.hpp>
-#include <string>
 #include <shard/semantic/symbols/NamespaceSymbol.hpp>
+
+#include <string>
 
 using namespace shard;
 
@@ -8,6 +9,17 @@ NamespaceNode* NamespaceNode::Lookup(std::wstring name)
 {
 	auto lookup = Nodes.find(name);
 	return lookup == Nodes.end() ? nullptr : lookup->second;
+}
+
+NamespaceNode* NamespaceNode::Lookup(std::wstring_view name)
+{
+	for (const auto& node : Nodes)
+	{
+		if (node.first == name)
+			return node.second;
+	}
+
+	return nullptr;
 }
 
 NamespaceNode* NamespaceNode::LookupOrCreate(std::wstring name, NamespaceSymbol* current)

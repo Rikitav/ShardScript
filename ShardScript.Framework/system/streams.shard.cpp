@@ -83,18 +83,18 @@ static bool IsCancellationRequested(ObjectInstance* token)
     return canceled->AsInteger() != 0;
 }
 
-static void EnsureTokenSymbols(SymbolTable* table)
+static void EnsureTokenSymbols(SemanticModel* model)
 {
     if (g_CancellationToken != nullptr)
         return;
 
-    g_CancellationToken = SemanticModel::FindTypeByName(table, L"async.CancellationToken");
+    g_CancellationToken = SemanticModel::FindTypeByName(model, L"async.CancellationToken");
     if (g_CancellationToken != nullptr)
     {
         g_CancellationToken_SourceField = SemanticModel::FindFieldByName(g_CancellationToken, L"_source");
     }
 
-    TypeSymbol* sourceType = SemanticModel::FindTypeByName(table, L"async.CancellationTokenSource");
+    TypeSymbol* sourceType = SemanticModel::FindTypeByName(model, L"async.CancellationTokenSource");
     if (sourceType != nullptr)
     {
         g_CancellationTokenSource_CanceledField = SemanticModel::FindFieldByName(sourceType, L"_canceled");
@@ -1251,7 +1251,7 @@ SHARDLIB_GETMETADATA
 
 SHARDLIB_ENTRYPOINT
 {
-    EnsureTokenSymbols(context.GetSemanticModel().Table.get());
+    EnsureTokenSymbols(&context.GetSemanticModel());
 
     SymbolFactory factory(context.GetSemanticModel().Table.get());
     TypeSymbol* byteArrayType = factory.Array(TYPE_BYTE);
