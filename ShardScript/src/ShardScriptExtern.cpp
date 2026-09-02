@@ -8356,6 +8356,44 @@ extern "C"
         }
     }
 
+    SHARD_API TypeSymbol* Shard_GetArrayTypeUnderlyingType(ArrayTypeSymbol* array)
+    {
+        try
+        {
+            if (array == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return nullptr;
+            }
+
+            return array->UnderlayingType;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return nullptr;
+        }
+    }
+
+    SHARD_API std::size_t Shard_GetArrayTypeLength(ArrayTypeSymbol* array)
+    {
+        try
+        {
+            if (array == nullptr)
+            {
+                SetLastShardWError(L"invalid argument");
+                return 0;
+            }
+
+            return array->Length;
+        }
+        catch (const std::exception& e)
+        {
+            SetLastErrorFromException(e);
+            return 0;
+        }
+    }
+
     SHARD_API GenericTypeSymbol* Shard_CreateGenericTypeSymbol(CompilationContext* ctx, TypeSymbol* underlyingType, TypeSymbol** typeArgs, std::size_t typeArgCount)
     {
         try
