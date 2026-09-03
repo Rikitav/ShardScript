@@ -295,9 +295,12 @@ ObjectInstance* GarbageCollector::AllocateInstance(TypeShape* shape, bool isTran
 	void* rawMemory = nullptr;
 	if (shape->Size > 0)
 	{
-		rawMemory = AllocateZeroedBytes(shape->Size);
-		if (rawMemory == nullptr)
+		ObjectInstance::GcHeader* header = static_cast<ObjectInstance::GcHeader*>(AllocateZeroedBytes(sizeof(ObjectInstance::GcHeader) + shape->Size));
+		if (header == nullptr)
 			throw std::runtime_error("cannot allocate memory for new instance");
+
+		header->Magic = ObjectInstance::GcHeader::MAGIC;
+		rawMemory = header + 1;
 	}
 
 	ObjectInstance* instance = new ObjectInstance(shape->BaseType, shape, rawMemory, isTransient);
@@ -362,9 +365,12 @@ ObjectInstance* GarbageCollector::AllocateArray(TypeSymbol* elementType, std::si
 	void* rawMemory = nullptr;
 	if (totalSize > 0)
 	{
-		rawMemory = AllocateZeroedBytes(totalSize);
-		if (rawMemory == nullptr)
+		ObjectInstance::GcHeader* header = static_cast<ObjectInstance::GcHeader*>(AllocateZeroedBytes(sizeof(ObjectInstance::GcHeader) + totalSize));
+		if (header == nullptr)
 			throw std::runtime_error("cannot allocate memory for dynamic array");
+
+		header->Magic = ObjectInstance::GcHeader::MAGIC;
+		rawMemory = header + 1;
 	}
 
 	ArrayTypeSymbol* arrayType = new ArrayTypeSymbol(elementType);
@@ -465,7 +471,8 @@ void GarbageCollector::DeleteInstanceMemory(ObjectInstance* instance)
 			FreeBytes(stringData);
 		}
 
-		FreeBytes(instance->getMemory());
+		if (ObjectInstance::GcHeader* header = instance->getGcHeader(); header != nullptr)
+			FreeBytes(header);
 	}
 
 	delete instance;
