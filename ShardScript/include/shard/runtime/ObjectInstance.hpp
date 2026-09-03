@@ -28,6 +28,9 @@ namespace shard
 		MethodSymbol* DelegateTarget = nullptr;
 		bool Terminated = false;
 		bool IsSingleton = false;
+		// Static fields hold one permanent root reference: DecrementReference
+		// floors at 1 while this is set, so user drops can never free a static.
+		bool IsStaticRoot = false;
 
 		// Async task lifetime tracking.
 		bool IsTaskLike = false;
