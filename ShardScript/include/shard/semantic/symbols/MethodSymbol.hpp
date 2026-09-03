@@ -40,6 +40,24 @@ namespace shard
     using NativeInstanceMethodCallback = shard::ObjectInstance* (*)(ObjectInstance* self, const CallState& context);
     using NativeConstructorCallback    = shard::ObjectInstance* (*)(const CallState& context);
 
+    struct SHARD_API FrameSlotRecipe
+    {
+        TypeSymbol* ConcreteType = nullptr; // nullptr => TypeParameterIndex, or unknown
+        std::int16_t TypeParameterIndex = -1;
+    };
+
+    struct SHARD_API FrameLayout
+    {
+        static constexpr std::size_t EntryHeaderSize = sizeof(void*);
+        std::vector<FrameSlotRecipe> VariableSlots;
+
+        std::uint32_t MaxEvalDepth = 0;
+        std::size_t EvalSlotPayload = 0;
+
+        static std::size_t ResolveTypePayload(TypeSymbol* type);
+        std::size_t ComputeLocalsBytes(const MethodSymbol& method) const;
+    };
+
     class SHARD_API MethodSymbol : public MemberSymbol
     {
         std::uint16_t EvalStackVariablesCount = 0;
@@ -64,6 +82,9 @@ namespace shard
         MethodEffectSummary EffectSummary;
         bool EffectsComputed = false;
 
+        // Frame memory requirements for the stack-allocated frame.
+        FrameLayout Layout;
+
     protected:
         inline MethodSymbol(const std::wstring& name, const SyntaxKind kind)
             : MemberSymbol(name, kind), HandleType(MethodHandleType::None) { }
@@ -85,6 +106,11 @@ namespace shard
         std::uint16_t GetEvalStackArgumentsCount() const;
         std::uint16_t GetEvalStackVariablesCount() const;
         std::uint16_t GetEvalStackLocalsCount() const;
-        std::uint16_t AddVariableCount();
+        std::uint16_t AddVariableCount(TypeSymbol* type = nullptr);
+
+        // Fills a variable slot recipe that was allocated before its type was
+        // known (e.g. DeclarationCollector). No-op if the slot already has a
+        // type or the index is out of range.
+        void SealVariableSlot(std::uint16_t slotIndex, TypeSymbol* type);
     };
 }
