@@ -804,9 +804,29 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 
 			ObjectInstance* element = arrayInstance->GetElement(static_cast<std::size_t>(index));
 
+			if (element->getIsTransient())
+			{
+				// Value-type element: GetElement returns a view into the array's own
+				// memory, which would dangle once the array is collected below —
+				// copy the payload out and drop the view header.
+				const TypeSymbol* elementType = element->getInfo();
+				ObjectInstance* owned = garbageCollector.AllocateInstance(elementType);
+				if (elementType->MemoryBytesSize > 0)
+					owned->WriteMemory(0, elementType->MemoryBytesSize, element->getMemory());
+				delete element;
+				element = owned;
+			}
+			else
+			{
+				// Reference-type element: the eval stack takes over one reference,
+				// so collecting the array cannot destroy the element under it.
+				element->IncrementReference();
+			}
+
 			frame->PushStack(element);
 
 			garbageCollector.CollectInstance(indexInstance);
+			garbageCollector.CollectInstance(arrayInstance);
 			break;
 		}
 
