@@ -15,21 +15,40 @@ namespace shard
 	class CallStackFrame;
 	class MethodSymbol;
 	class ObjectInstance;
+	class GarbageCollector;
 
 	class SHARD_API ObjectInstance
 	{
+	public:
+		struct GcHeader
+		{
+			static constexpr std::uint64_t MAGIC = 0x5348415244474348ULL; // "SHARDGCH"
+			std::uint64_t Magic;
+			std::int64_t ReferencesCounter;
+		};
+
+	private:
 		const TypeSymbol* m_info;
 		TypeShape* m_shape;
 		const bool m_isTransient;
 		std::int64_t m_eeferencesCounter;
 		void* m_rawMemoryPtr;
 
+		[[nodiscard]] inline GcHeader* getGcHeader() const
+		{
+			if (m_isTransient || m_rawMemoryPtr == nullptr)
+				return nullptr;
+
+			GcHeader* header = reinterpret_cast<GcHeader*>(m_rawMemoryPtr) - 1;
+			return header->Magic == GcHeader::MAGIC ? header : nullptr;
+		}
+
+		friend class GarbageCollector;
+
 	public:
 		MethodSymbol* DelegateTarget = nullptr;
 		bool Terminated = false;
 		bool IsSingleton = false;
-		// Static fields hold one permanent root reference: DecrementReference
-		// floors at 1 while this is set, so user drops can never free a static.
 		bool IsStaticRoot = false;
 
 		// Async task lifetime tracking.

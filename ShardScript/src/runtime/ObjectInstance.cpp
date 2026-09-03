@@ -116,6 +116,9 @@ void* ObjectInstance::getMemory() const
 
 std::int64_t ObjectInstance::getReferencesCounter() const
 {
+	if (GcHeader* header = getGcHeader(); header != nullptr)
+		return header->ReferencesCounter;
+
 	return m_eeferencesCounter;
 }
 
@@ -369,6 +372,12 @@ void ObjectInstance::IncrementReference()
 	if (IsSingleton)
 		return;
 
+	if (GcHeader* header = getGcHeader(); header != nullptr)
+	{
+		header->ReferencesCounter += 1;
+		return;
+	}
+
 	if (m_eeferencesCounter == (std::size_t)(-1))
 		return;
 
@@ -380,11 +389,23 @@ void ObjectInstance::DecrementReference()
 	if (IsSingleton)
 		return;
 
+	if (GcHeader* header = getGcHeader(); header != nullptr)
+	{
+		// A static root always holds one permanent reference; dropping a user
+		// reference must never bring it to zero (staticFields would dangle).
+		if (IsStaticRoot && header->ReferencesCounter <= 1)
+			return;
+
+		if (header->ReferencesCounter > 0)
+			header->ReferencesCounter -= 1;
+
+		return;
+	}
+
 	if (m_eeferencesCounter == 0)
 		return;
 
-	// A static root always holds one permanent reference; dropping a user
-	// reference must never bring it to zero (staticFields would dangle).
+	// Static-root floor for non-GC-backed instances (see IsStaticRoot).
 	if (IsStaticRoot && m_eeferencesCounter == 1)
 		return;
 
