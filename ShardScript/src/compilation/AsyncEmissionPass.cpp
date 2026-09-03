@@ -1629,14 +1629,14 @@ void AsyncEmissionPass::EmitFactoryBody(const AsyncMethodInfo& info, std::vector
         return;
     }
 
-    std::uint16_t tempSlotStateMachine = static_cast<std::uint16_t>(info.Method->GetEvalStackArgumentsCount() + info.Method->AddVariableCount());
-    std::uint16_t tempSlotTask = static_cast<std::uint16_t>(info.Method->GetEvalStackArgumentsCount() + info.Method->AddVariableCount());
+    std::uint16_t tempSlotStateMachine = static_cast<std::uint16_t>(info.Method->GetEvalStackArgumentsCount() + info.Method->AddVariableCount(info.StateMachineClass));
+    std::uint16_t tempSlotTask = static_cast<std::uint16_t>(info.Method->GetEvalStackArgumentsCount() + info.Method->AddVariableCount(taskType));
 
     std::uint16_t tempSlotOuterThis = 0;
     bool hasOuterThis = info.OuterThisField != nullptr;
     if (hasOuterThis)
     {
-        tempSlotOuterThis = static_cast<std::uint16_t>(info.Method->GetEvalStackArgumentsCount() + info.Method->AddVariableCount());
+        tempSlotOuterThis = static_cast<std::uint16_t>(info.Method->GetEvalStackArgumentsCount() + info.Method->AddVariableCount(info.OuterThisField->ReturnType));
 
         encoder.EmitLoadLocal(code, 0);              // original 'this'
         encoder.EmitStoreLocal(code, tempSlotOuterThis);
