@@ -1,6 +1,7 @@
 #include <shard/runtime/GarbageCollector.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
 #include <shard/runtime/Allocator.hpp>
+#include <shard/TypeLayout.hpp>
 
 #include <shard/parsing/SyntaxKind.hpp>
 
@@ -372,6 +373,7 @@ ObjectInstance* GarbageCollector::AllocateArray(TypeSymbol* elementType, std::si
 	dynamicArrayTypes.emplace_back(arrayType);
 
 	TypeShape* arrayShape = new TypeShape(arrayType, std::vector<TypeSymbol*>{ elementType });
+	arrayShape->Alignment = GetTypeAlignment(elementType);
 	arrayShape->Size = totalSize;
 	dynamicArrayShapes.emplace_back(arrayShape);
 

@@ -1,3 +1,4 @@
+#include <shard/TypeLayout.hpp>
 #include <shard/semantic/SymbolTable.hpp>
 #include <shard/semantic/SymbolFactory.hpp>
 #include <shard/semantic/SymbolBuilder.hpp>
@@ -18,6 +19,7 @@ namespace
 		if (field->SlotIndex == std::numeric_limits<std::uint32_t>::max())
 			field->SlotIndex = parent->NextSlotIndex++;
 
+		parent->MemoryBytesSize = AlignUp(parent->MemoryBytesSize, GetTypeAlignment(field->ReturnType));
 		field->MemoryBytesOffset = parent->MemoryBytesSize;
 		parent->MemoryBytesSize += field->ReturnType->GetInlineSize();
 	}
