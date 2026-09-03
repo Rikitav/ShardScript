@@ -1,6 +1,7 @@
 #include <shard/compilation/LayoutGenerator.hpp>
 #include <shard/semantic/SemanticModel.hpp>
 #include <shard/semantic/SymbolTable.hpp>
+#include <shard/TypeLayout.hpp>
 
 #include <shard/parsing/SyntaxToken.hpp>
 #include <shard/parsing/SyntaxKind.hpp>
@@ -81,6 +82,7 @@ void LayoutGenerator::FixObjectLayout(SemanticModel& semanticModel, TypeSymbol* 
 			if (field->SlotIndex == std::numeric_limits<std::uint32_t>::max())
 				field->SlotIndex = layoutOwner->NextSlotIndex++;
 
+			objectInfo->MemoryBytesSize = AlignUp(objectInfo->MemoryBytesSize, GetTypeAlignment(returnType));
 			field->MemoryBytesOffset = objectInfo->MemoryBytesSize;
 			objectInfo->MemoryBytesSize += returnType->GetInlineSize();
 		}
@@ -122,13 +124,15 @@ void LayoutGenerator::FixObjectLayout(SemanticModel& semanticModel, TypeSymbol* 
 			if (fieldType->LayoutingState == TypeLayoutingState::Unvisited)
 				FixObjectLayout(semanticModel, fieldType);
 
+			offset = AlignUp(offset, GetTypeAlignment(fieldType));
 			genericInfo->FieldOffsets[field] = offset;
 			offset += fieldType->GetInlineSize();
 		}
 
-		objectInfo->MemoryBytesSize = offset;
+		objectInfo->MemoryBytesSize = AlignUp(offset, GetTypeAlignment(objectInfo));
 	}
 
+	objectInfo->MemoryBytesSize = AlignUp(objectInfo->MemoryBytesSize, GetTypeAlignment(objectInfo));
 	objectInfo->LayoutingState = TypeLayoutingState::Visited;
 	return;
 }

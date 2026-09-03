@@ -24,6 +24,7 @@ namespace shard
 		};
 
 		std::size_t Size;
+		std::size_t Alignment = 1;
 		std::vector<SlotInfo> Slots;
 
 		inline TypeShape(TypeSymbol* baseType, std::vector<TypeSymbol*> genericArguments)

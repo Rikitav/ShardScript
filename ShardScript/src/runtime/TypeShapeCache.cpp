@@ -1,4 +1,5 @@
 #include <shard/runtime/TypeShapeCache.hpp>
+#include <shard/TypeLayout.hpp>
 
 #include <shard/semantic/symbols/FieldSymbol.hpp>
 #include <shard/semantic/symbols/ArrayTypeSymbol.hpp>
@@ -112,6 +113,7 @@ void TypeShapeCache::BuildShape(TypeShape* shape, TypeSymbol* baseType, const st
 	{
 		ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(baseType);
 		TypeShape* elementShape = GetOrCreateShape(arrayType->UnderlayingType);
+		shape->Alignment = GetShapeAlignment(elementShape);
 		shape->Size = SymbolTable::Primitives::Array->MemoryBytesSize + elementShape->Size * arrayType->Length;
 		return;
 	}
@@ -145,6 +147,7 @@ void TypeShapeCache::BuildShape(TypeShape* shape, TypeSymbol* baseType, const st
 		shape->Slots.resize(static_cast<std::size_t>(maxSlotIndex) + 1);
 
 	std::size_t offset = 0;
+	std::size_t alignment = 1;
 	for (FieldSymbol* field : baseType->Fields)
 	{
 		if (field->Linking == LINK_STATIC)
@@ -162,29 +165,41 @@ void TypeShapeCache::BuildShape(TypeShape* shape, TypeSymbol* baseType, const st
 			concreteFieldType = fieldType;
 
 		TypeShape::SlotInfo slot{};
-		slot.Offset = offset;
+		slot.FieldShape = GetOrCreateShape(concreteFieldType);
 
+		std::size_t fieldSize;
+		std::size_t fieldAlign;
 		if (concreteFieldType->Kind == SyntaxKind::ArrayType)
 		{
-			slot.FieldShape = GetOrCreateShape(concreteFieldType);
-			offset += slot.FieldShape->Size;
+			fieldSize = slot.FieldShape->Size;
+			fieldAlign = GetShapeAlignment(slot.FieldShape);
 		}
 		else if (concreteFieldType->Inlining == TypeInlining::ByReference)
 		{
-			slot.FieldShape = GetOrCreateShape(concreteFieldType);
-			offset += sizeof(void*);
+			fieldSize = sizeof(void*);
+			fieldAlign = sizeof(void*);
 		}
 		else
 		{
-			slot.FieldShape = GetOrCreateShape(concreteFieldType);
-			offset += slot.FieldShape->Size;
+			fieldSize = slot.FieldShape->Size;
+			fieldAlign = GetShapeAlignment(slot.FieldShape);
 		}
+
+		slot.Offset = AlignUp(offset, fieldAlign);
+		offset = slot.Offset + fieldSize;
+		alignment = std::max(alignment, fieldAlign);
 
 		shape->Slots[field->SlotIndex] = slot;
 	}
 
 	if (offset == 0 && baseType->MemoryBytesSize > 0)
+	{
 		shape->Size = baseType->MemoryBytesSize;
+		shape->Alignment = std::min<std::size_t>(std::max<std::size_t>(baseType->MemoryBytesSize, 1), sizeof(void*));
+	}
 	else
-		shape->Size = offset;
+	{
+		shape->Size = AlignUp(offset, alignment);
+		shape->Alignment = alignment;
+	}
 }
