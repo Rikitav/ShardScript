@@ -256,6 +256,11 @@ ObjectInstance* GarbageCollector::GetStaticField(FieldSymbol* field)
 		staticFieldInstance = NullInstance;
 	}
 
+	// Static field values are permanent roots: take the root reference up front
+	// so eval-stack drains can never collect them out from under staticFields.
+	staticFieldInstance->IncrementReference();
+	staticFieldInstance->IsStaticRoot = true;
+
 	staticFields[field] = staticFieldInstance;
 	return staticFieldInstance;
 }
@@ -267,11 +272,18 @@ void GarbageCollector::SetStaticField(FieldSymbol* field, ObjectInstance* instan
 
 	if (auto find = staticFields.find(field); find != staticFields.end())
 	{
-		ObjectInstance* oldValue = GetStaticField(field);
-		GarbageCollector::CollectInstance(oldValue);
+		// Unroot the old value, then release the static's reference to it.
+		// (The old code called CollectInstance, which can never free a value
+		// the static still references — leaking every replaced static.)
+		ObjectInstance* oldValue = find->second;
+		oldValue->IsStaticRoot = false;
+		DestroyInstance(oldValue);
 	}
 
-	staticFields[field] = CopyInstance(instance);
+	ObjectInstance* stored = CopyInstance(instance);
+	stored->IncrementReference();
+	stored->IsStaticRoot = true;
+	staticFields[field] = stored;
 }
 
 ObjectInstance* GarbageCollector::AllocateInstance(TypeShape* shape, bool isTransient)

@@ -383,6 +383,11 @@ void ObjectInstance::DecrementReference()
 	if (m_eeferencesCounter == 0)
 		return;
 
+	// A static root always holds one permanent reference; dropping a user
+	// reference must never bring it to zero (staticFields would dangle).
+	if (IsStaticRoot && m_eeferencesCounter == 1)
+		return;
+
 	m_eeferencesCounter -= 1;
 }
 
