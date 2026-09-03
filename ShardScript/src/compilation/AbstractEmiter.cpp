@@ -736,7 +736,7 @@ void AbstractEmiter::EmitEnumerationLoop(ExpressionSyntax* range, VariableSymbol
 	LoopScope& scope = Loops.top();
 
 	std::uint16_t base = GeneratingFor->GetEvalStackArgumentsCount();
-	std::uint16_t enumeratorSlot = base + GeneratingFor->AddVariableCount();
+	std::uint16_t enumeratorSlot = base + GeneratingFor->AddVariableCount(TRAIT_ENUMERABLE_GETENUMERATOR->ReturnType);
 
 	VisitExpression(range);
 	EmitMethodCall(TRAIT_ENUMERABLE_GETENUMERATOR);
@@ -1702,7 +1702,7 @@ void AbstractEmiter::VisitSwitchExpression(SwitchExpressionSyntax* node)
             Encoder.EmitLoadLocal(GeneratingFor->ExecutableByteCode, switchSlot);
             if (isPattern->Symbol != nullptr)
             {
-                std::uint16_t patternSlot = base + GeneratingFor->AddVariableCount();
+                std::uint16_t patternSlot = base + GeneratingFor->AddVariableCount(const_cast<TypeSymbol*>(isPattern->Symbol->Type));
                 isPattern->Symbol->SlotIndex = patternSlot;
                 Encoder.EmitStoreLocal(GeneratingFor->ExecutableByteCode, patternSlot);
             }
@@ -1817,7 +1817,7 @@ void AbstractEmiter::VisitSwitchStatement(SwitchStatementSyntax* node)
             Encoder.EmitLoadLocal(GeneratingFor->ExecutableByteCode, switchSlot);
             if (isPattern->Symbol != nullptr)
             {
-                std::uint16_t patternSlot = base + GeneratingFor->AddVariableCount();
+                std::uint16_t patternSlot = base + GeneratingFor->AddVariableCount(const_cast<TypeSymbol*>(isPattern->Symbol->Type));
                 isPattern->Symbol->SlotIndex = patternSlot;
                 Encoder.EmitStoreLocal(GeneratingFor->ExecutableByteCode, patternSlot);
             }

@@ -1195,6 +1195,8 @@ void ExpressionBinder::VisitVariableStatement(VariableStatementSyntax* node)
 	if (symbol->Type == SymbolTable::Primitives::Any)
 	{
 		symbol->Type = expressionType;
+		if (auto hostMethod = FindHostMethodSymbol(); hostMethod.has_value())
+			hostMethod.value()->SealVariableSlot(symbol->SlotIndex, const_cast<TypeSymbol*>(symbol->Type));
 		return;
 	}
 
@@ -1203,6 +1205,9 @@ void ExpressionBinder::VisitVariableStatement(VariableStatementSyntax* node)
 		Diagnostics.ReportError(node->IdentifierToken, L"Type mismatch: expected '" + symbol->Type->Name + L"' but got '" + expressionType->Name + L"'");
 		return;
 	}
+
+	if (auto hostMethod = FindHostMethodSymbol(); hostMethod.has_value())
+		hostMethod.value()->SealVariableSlot(symbol->SlotIndex, const_cast<TypeSymbol*>(symbol->Type));
 
 	symbol->AdvanceAnalysisState(SymbolAnalysisState::Verified);
 }
@@ -2207,6 +2212,9 @@ void ExpressionBinder::VisitTryStatement(TryStatementSyntax* node)
 		{
 			PushScope(catchVariable);
 			Declare(catchVariable);
+
+			if (auto hostMethod = FindHostMethodSymbol(); hostMethod.has_value())
+				hostMethod.value()->SealVariableSlot(catchVariable->SlotIndex, const_cast<TypeSymbol*>(catchVariable->Type));
 		}
 
 		if (clause->Body != nullptr)
@@ -4523,7 +4531,11 @@ void ExpressionBinder::VisitForEachStatement(ForEachStatementSyntax* node)
 		{
 			node->IsArrayRange = false;
 			if (variable != nullptr)
+			{
 				variable->Type = elementType;
+				if (auto hostMethod = FindHostMethodSymbol(); hostMethod.has_value())
+					hostMethod.value()->SealVariableSlot(variable->SlotIndex, const_cast<TypeSymbol*>(variable->Type));
+			}
 		}
 		else
 		{
@@ -4565,6 +4577,8 @@ void ExpressionBinder::VisitForInStatement(ForInStatementSyntax* node)
 			else if (variable != nullptr)
 			{
 				variable->Type = elementType;
+				if (auto hostMethod = FindHostMethodSymbol(); hostMethod.has_value())
+					hostMethod.value()->SealVariableSlot(variable->SlotIndex, const_cast<TypeSymbol*>(variable->Type));
 			}
 		}
 		else

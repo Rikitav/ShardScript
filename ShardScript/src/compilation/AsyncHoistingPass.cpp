@@ -155,7 +155,7 @@ namespace
 
         auto symbol = std::make_unique<VariableSymbol>(name, type);
         VariableSymbol* result = model.Table->BindSymbolEx<VariableSymbol>(syntax, std::move(symbol));
-        result->SlotIndex = static_cast<std::uint16_t>(method->GetEvalStackArgumentsCount() + method->AddVariableCount());
+        result->SlotIndex = static_cast<std::uint16_t>(method->GetEvalStackArgumentsCount() + method->AddVariableCount(type));
         result->Parent = method;
         result->FullName = method->FullName + L"." + name;
         return result;
@@ -507,7 +507,7 @@ namespace
             std::unique_ptr<VariableStatementSyntax> varStmt = std::make_unique<VariableStatementSyntax>(nullptr, nameToken, assignToken, std::move(expr), parent);
             VariableSymbol* varSymbol = model.Table->BindSymbolEx<VariableSymbol>(varStmt.get(), std::make_unique<VariableSymbol>(varName, resultType));
 
-            varSymbol->SlotIndex = static_cast<std::uint16_t>(method->GetEvalStackArgumentsCount() + method->AddVariableCount());
+            varSymbol->SlotIndex = static_cast<std::uint16_t>(method->GetEvalStackArgumentsCount() + method->AddVariableCount(resultType));
             varSymbol->Parent = method;
             varSymbol->FullName = method->FullName + L"." + varName;
 
