@@ -9,6 +9,7 @@
 #include <shard/semantic/symbols/ArrayTypeSymbol.hpp>
 
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include <memory>
 #include <iterator>
@@ -27,7 +28,7 @@ namespace shard
 	class SHARD_API InstancesHeap
 	{
     private:
-        std::vector<std::unique_ptr<ObjectInstance>> Instances;
+        std::unordered_set<ObjectInstance*> Instances;
 
     public:
         InstancesHeap() = default;
@@ -38,57 +39,24 @@ namespace shard
         InstancesHeap& operator=(const InstancesHeap&) = delete;
         InstancesHeap& operator=(InstancesHeap&&) = default;
 
-        class iterator
-        {
-        public:
-            using iterator_category = std::forward_iterator_tag;
-            using value_type = ObjectInstance*;
-            using difference_type = std::ptrdiff_t;
-            using pointer = ObjectInstance**;
-            using reference = ObjectInstance*&;
-
-            iterator(std::vector<std::unique_ptr<ObjectInstance>>::iterator it) : it(it) {}
-
-            ObjectInstance* operator*() const { return it->get(); }
-            ObjectInstance* operator->() const { return it->get(); }
-
-            iterator& operator++() { ++it; return *this; }
-            iterator operator++(int) { iterator tmp = *this; ++it; return tmp; }
-
-            bool operator==(const iterator& other) const { return it == other.it; }
-            bool operator!=(const iterator& other) const { return it != other.it; }
-
-        private:
-            std::vector<std::unique_ptr<ObjectInstance>>::iterator it;
-        };
-
+        using iterator = std::unordered_set<ObjectInstance*>::iterator;
         using const_iterator = iterator;
 
-        inline iterator begin() { return iterator(Instances.begin()); }
-        inline iterator end() { return iterator(Instances.end()); }
+        inline iterator begin() { return Instances.begin(); }
+        inline iterator end() { return Instances.end(); }
 
         inline void add(ObjectInstance* instance)
         {
-            Instances.emplace_back(instance);
+            Instances.insert(instance);
         }
 
         inline void erase(ObjectInstance* instance)
         {
-            auto it = std::find_if(Instances.begin(), Instances.end(),
-                [instance](const std::unique_ptr<ObjectInstance>& entry) { return entry.get() == instance; });
-
-            if (it != Instances.end())
-            {
-                it->release();
-                Instances.erase(it);
-            }
+            Instances.erase(instance);
         }
 
         inline void clear()
         {
-            for (auto& entry : Instances)
-                entry.release();
-
             Instances.clear();
         }
 
@@ -132,7 +100,6 @@ namespace shard
         ObjectInstance* FromValue(double value);
         ObjectInstance* FromValue(bool value);
         ObjectInstance* FromValue(wchar_t value);
-        //ObjectInstance* FromValue(const char* value);
         ObjectInstance* FromValue(const wchar_t* value, bool isTransient);
         ObjectInstance* FromValue(const std::wstring& value);
 
