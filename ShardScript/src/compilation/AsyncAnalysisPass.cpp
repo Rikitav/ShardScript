@@ -512,7 +512,7 @@ std::optional<AsyncMethodInfo> AsyncAnalysisPass::Run(MethodSymbol* method, Meth
         lifted.Symbol = parameter;
         lifted.Field = field;
         lifted.OriginalSlot = parameter->SlotIndex;
-        lifted.MoveNextSlot = static_cast<std::uint16_t>(info.MoveNext->GetEvalStackArgumentsCount() + info.MoveNext->AddVariableCount());
+        lifted.MoveNextSlot = static_cast<std::uint16_t>(info.MoveNext->GetEvalStackArgumentsCount() + info.MoveNext->AddVariableCount(parameter->Type));
         info.LiftedParameters.push_back(lifted);
     }
 
@@ -534,7 +534,7 @@ std::optional<AsyncMethodInfo> AsyncAnalysisPass::Run(MethodSymbol* method, Meth
                 .Symbol = variable,
                 .Field = field,
                 .OriginalSlot = variable->SlotIndex,
-                .MoveNextSlot = static_cast<std::uint16_t>(info.MoveNext->GetEvalStackArgumentsCount() + info.MoveNext->AddVariableCount())
+                .MoveNextSlot = static_cast<std::uint16_t>(info.MoveNext->GetEvalStackArgumentsCount() + info.MoveNext->AddVariableCount(const_cast<TypeSymbol*>(variable->Type)))
             };
 
             // The original method body is replaced by the factory, so it is safe to permanently retarget local variable slots at MoveNext.
@@ -553,7 +553,7 @@ std::optional<AsyncMethodInfo> AsyncAnalysisPass::Run(MethodSymbol* method, Meth
     for (CatchClauseSyntax* clause : catchClauses)
     {
         if (clause->Symbol != nullptr)
-            clause->Symbol->SlotIndex = info.MoveNext->GetEvalStackArgumentsCount() + info.MoveNext->AddVariableCount();
+            clause->Symbol->SlotIndex = info.MoveNext->GetEvalStackArgumentsCount() + info.MoveNext->AddVariableCount(const_cast<TypeSymbol*>(clause->Symbol->Type));
     }
 
     method->AsyncStateMachineClass = info.StateMachineClass;
