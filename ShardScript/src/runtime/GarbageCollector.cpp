@@ -1,5 +1,6 @@
 #include <shard/runtime/GarbageCollector.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
+#include <shard/runtime/Allocator.hpp>
 
 #include <shard/parsing/SyntaxKind.hpp>
 
@@ -13,7 +14,6 @@
 #include <shard/compilation/ProgramVirtualImage.hpp>
 #include <shard/ApplicationDomain.hpp>
 
-#include <malloc.h>
 #include <stdexcept>
 #include <cstring>
 #include <wchar.h>
@@ -64,8 +64,8 @@ ObjectInstance* GarbageCollector::BoolFalseSingleton = nullptr;
 
 GarbageCollector::GarbageCollector(ApplicationDomain* domain) : applicationDomain(domain)
 {
-	SmallInts = static_cast<ObjectInstance*>(malloc(SMALL_INTS_CACHE_SIZE * sizeof(ObjectInstance)));
-	SmallIntsVals = static_cast<std::int64_t*>(malloc(SMALL_INTS_CACHE_SIZE * sizeof(std::int64_t)));
+	SmallInts = static_cast<ObjectInstance*>(AllocateBytes(SMALL_INTS_CACHE_SIZE * sizeof(ObjectInstance)));
+	SmallIntsVals = static_cast<std::int64_t*>(AllocateBytes(SMALL_INTS_CACHE_SIZE * sizeof(std::int64_t)));
 
 	std::iota(SmallIntsVals, SmallIntsVals + SMALL_INTS_CACHE_SIZE, SMALL_INTS_CACHE_MIN);
 	TypeShape* shape = GetTypeShapeCache().GetOrCreateShape(SymbolTable::Primitives::Integer);
@@ -170,7 +170,7 @@ ObjectInstance* GarbageCollector::FromValue(const wchar_t* value, bool isTransie
 
 	// Non-transient strings own their buffer, so copy the input.
 	std::size_t size = (length + 1) * sizeof(wchar_t);
-	wchar_t* copy = static_cast<wchar_t*>(malloc(size));
+	wchar_t* copy = static_cast<wchar_t*>(AllocateBytes(size));
 	
 	if (copy == nullptr)
 		throw std::runtime_error("Failed to allocate string");
@@ -189,7 +189,7 @@ ObjectInstance* GarbageCollector::FromValue(const std::wstring& value)
 	std::size_t length = value.size();
 	std::size_t size = (length + 1) * sizeof(wchar_t);
 
-	wchar_t* copy = static_cast<wchar_t*>(malloc(size));
+	wchar_t* copy = static_cast<wchar_t*>(AllocateBytes(size));
 	if (copy == nullptr)
 		throw std::runtime_error("Failed to allocate string");
 
@@ -282,11 +282,9 @@ ObjectInstance* GarbageCollector::AllocateInstance(TypeShape* shape, bool isTran
 	void* rawMemory = nullptr;
 	if (shape->Size > 0)
 	{
-		rawMemory = malloc(shape->Size);
+		rawMemory = AllocateZeroedBytes(shape->Size);
 		if (rawMemory == nullptr)
 			throw std::runtime_error("cannot allocate memory for new instance");
-
-		std::memset(rawMemory, 0, shape->Size);
 	}
 
 	ObjectInstance* instance = new ObjectInstance(shape->BaseType, shape, rawMemory, isTransient);
@@ -351,11 +349,9 @@ ObjectInstance* GarbageCollector::AllocateArray(TypeSymbol* elementType, std::si
 	void* rawMemory = nullptr;
 	if (totalSize > 0)
 	{
-		rawMemory = malloc(totalSize);
+		rawMemory = AllocateZeroedBytes(totalSize);
 		if (rawMemory == nullptr)
 			throw std::runtime_error("cannot allocate memory for dynamic array");
-
-		std::memset(rawMemory, 0, totalSize);
 	}
 
 	ArrayTypeSymbol* arrayType = new ArrayTypeSymbol(elementType);
@@ -452,10 +448,10 @@ void GarbageCollector::DeleteInstanceMemory(ObjectInstance* instance)
 		{
 			void* stringPtr = instance->OffsetMemory(sizeof(std::int64_t), sizeof(wchar_t*));
 			wchar_t* stringData = *static_cast<wchar_t**>(stringPtr);
-			free(stringData);
+			FreeBytes(stringData);
 		}
 
-		free(instance->getMemory());
+		FreeBytes(instance->getMemory());
 	}
 
 	delete instance;
@@ -550,13 +546,13 @@ void GarbageCollector::Terminate()
 		for (int i = 0; i < SMALL_INTS_CACHE_SIZE; ++i)
 			SmallInts[i].~ObjectInstance();
 
-		free(SmallInts);
+		FreeBytes(SmallInts);
 		SmallInts = nullptr;
 	}
 
 	if (SmallIntsVals != nullptr)
 	{
-		free(SmallIntsVals);
+		FreeBytes(SmallIntsVals);
 		SmallIntsVals = nullptr;
 	}
 

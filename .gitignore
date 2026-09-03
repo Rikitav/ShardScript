@@ -367,5 +367,8 @@ RCa*
 /build
 /build-vs
 /.idea
+
+# documentation Artifacts
+/docs
 diff.txt
 log.txt
