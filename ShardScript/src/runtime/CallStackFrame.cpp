@@ -31,8 +31,8 @@ std::shared_ptr<CallStackFrame> CallStackFrame::Create(const VirtualMachine* hos
 	const std::size_t evalCapacity = method->Layout.IsComplete
 		? std::max<std::size_t>(method->Layout.MaxEvalDepth, 8) : 64;
 
-	// One extra pointer slot reserved at the base for the method's return value;
-	const std::size_t arenaBytes = (1 + localsCount + evalCapacity) * sizeof(ObjectInstance*);
+	// One extra entry reserved at the base for the method's return value;
+	const std::size_t arenaBytes = (1 + localsCount + evalCapacity) * CallStackFrame::SlotStride;
 
 	void* block = mi_malloc(sizeof(CallStackFrame) + arenaBytes);
 	if (block == nullptr)
@@ -61,16 +61,16 @@ void CallStackFrame::InitializeArena(std::size_t localsCount, std::size_t evalCa
 
 	// The arena trails the frame object inside the single Create() allocation.
 	Arena = reinterpret_cast<std::byte*>(this) + sizeof(CallStackFrame);
-	ArenaBytes = (1 + LocalCapacity + EvalCapacity) * sizeof(ObjectInstance*);
+	ArenaBytes = (1 + LocalCapacity + EvalCapacity) * SlotStride;
 	ArenaIsTrailing = true;
 
-	ReturnSlotStorage = reinterpret_cast<ObjectInstance**>(Arena);
-	ReturnSlotStorage[0] = nullptr;
+	ReturnSlot = Arena;
+	std::memset(ReturnSlot, 0, SlotStride);
 
-	LocalSlots = ReturnSlotStorage + 1;
-	std::fill(LocalSlots, LocalSlots + LocalCapacity, nullptr);
+	LocalEntries = ReturnSlot + SlotStride;
+	std::memset(LocalEntries, 0, LocalCapacity * SlotStride);
 
-	EvalSlots = LocalSlots + LocalCapacity;
+	EvalEntries = LocalEntries + LocalCapacity * SlotStride;
 }
 
 void CallStackFrame::GrowArena(std::size_t newLocalCapacity, std::size_t newEvalCapacity)
@@ -80,58 +80,59 @@ void CallStackFrame::GrowArena(std::size_t newLocalCapacity, std::size_t newEval
 
 	if (newLocalCapacity < LocalCapacity)
 		newLocalCapacity = LocalCapacity;
+
 	if (newEvalCapacity < EvalCapacity)
 		newEvalCapacity = EvalCapacity;
 
 	if (ArenaIsTrailing)
 	{
 		// Migrate the arena to a side allocation instead; the frame stays put.
-		std::size_t sideBytes = (1 + newLocalCapacity + newEvalCapacity) * sizeof(ObjectInstance*);
+		std::size_t sideBytes = (1 + newLocalCapacity + newEvalCapacity) * SlotStride;
 		std::byte* sideArena = static_cast<std::byte*>(mi_malloc(sideBytes));
 		if (sideArena == nullptr)
 			throw std::runtime_error("Failed to grow call stack frame arena");
 
-		ObjectInstance** newReturnSlot = reinterpret_cast<ObjectInstance**>(sideArena);
-		ObjectInstance** newLocals = newReturnSlot + 1;
-		ObjectInstance** newEval = newLocals + newLocalCapacity;
+		std::byte* newReturnSlot = sideArena;
+		std::byte* newLocals = newReturnSlot + SlotStride;
+		std::byte* newEval = newLocals + newLocalCapacity * SlotStride;
 
-		newReturnSlot[0] = ReturnSlotStorage[0];
-		std::fill(newLocals, newLocals + newLocalCapacity, nullptr);
-		std::memcpy(newLocals, LocalSlots, LocalCapacity * sizeof(ObjectInstance*));
-		std::memcpy(newEval, EvalSlots, EvalSize * sizeof(ObjectInstance*));
+		std::memcpy(newReturnSlot, ReturnSlot, SlotStride);
+		std::memset(newLocals, 0, newLocalCapacity * SlotStride);
+		std::memcpy(newLocals, LocalEntries, LocalCapacity * SlotStride);
+		std::memcpy(newEval, EvalEntries, EvalSize * SlotStride);
 
 		Arena = sideArena;
 		ArenaBytes = sideBytes;
 		ArenaIsTrailing = false;
-		ReturnSlotStorage = newReturnSlot;
-		LocalSlots = newLocals;
+		ReturnSlot = newReturnSlot;
+		LocalEntries = newLocals;
 		LocalCapacity = newLocalCapacity;
-		EvalSlots = newEval;
+		EvalEntries = newEval;
 		EvalCapacity = newEvalCapacity;
 		return;
 	}
 
 	const std::size_t oldEvalSize = EvalSize;
-	std::size_t newBytes = (1 + newLocalCapacity + newEvalCapacity) * sizeof(ObjectInstance*);
+	std::size_t newBytes = (1 + newLocalCapacity + newEvalCapacity) * SlotStride;
 	std::byte* newArena = static_cast<std::byte*>(mi_realloc(Arena, newBytes));
 	if (newArena == nullptr)
 		throw std::runtime_error("Failed to grow call stack frame arena");
 
-	ObjectInstance** newReturnSlot = reinterpret_cast<ObjectInstance**>(newArena);
-	ObjectInstance** newLocals = newReturnSlot + 1;
-	ObjectInstance** newEval = newLocals + newLocalCapacity;
+	std::byte* newReturnSlot = newArena;
+	std::byte* newLocals = newReturnSlot + SlotStride;
+	std::byte* newEval = newLocals + newLocalCapacity * SlotStride;
 
 	// The old interior pointers must not be touched after realloc — the old block may have moved.
-	std::fill(newLocals + LocalCapacity, newLocals + newLocalCapacity, nullptr);
-	ObjectInstance** oldEval = newLocals + LocalCapacity;
-	std::memmove(newEval, oldEval, oldEvalSize * sizeof(ObjectInstance*));
+	std::memset(newLocals + LocalCapacity * SlotStride, 0, (newLocalCapacity - LocalCapacity) * SlotStride);
+	std::byte* oldEval = newLocals + LocalCapacity * SlotStride;
+	std::memmove(newEval, oldEval, oldEvalSize * SlotStride);
 
 	Arena = newArena;
 	ArenaBytes = newBytes;
-	ReturnSlotStorage = newReturnSlot;
-	LocalSlots = newLocals;
+	ReturnSlot = newReturnSlot;
+	LocalEntries = newLocals;
 	LocalCapacity = newLocalCapacity;
-	EvalSlots = newEval;
+	EvalEntries = newEval;
 	EvalCapacity = newEvalCapacity;
 }
 
@@ -140,7 +141,10 @@ void CallStackFrame::PushStack(ObjectInstance* value)
 	if (EvalSize >= EvalCapacity)
 		GrowArena(LocalCapacity, EvalCapacity != 0 ? EvalCapacity * 2 : 8);
 
-	EvalSlots[EvalSize++] = value;
+	std::byte* entry = EvalEntries + EvalSize * SlotStride;
+	*reinterpret_cast<TypeShape**>(entry) = value != nullptr ? value->getShape() : nullptr;
+	PayloadRef(entry) = value;
+	EvalSize++;
 }
 
 ObjectInstance* CallStackFrame::PopStack()
@@ -148,7 +152,8 @@ ObjectInstance* CallStackFrame::PopStack()
 	if (EvalSize == 0)
 		throw std::runtime_error("Evaluation stack underflow");
 
-	return EvalSlots[--EvalSize];
+	EvalSize--;
+	return PayloadRead(EvalEntries + EvalSize * SlotStride);
 }
 
 ObjectInstance* CallStackFrame::PeekStack()
@@ -156,7 +161,7 @@ ObjectInstance* CallStackFrame::PeekStack()
 	if (EvalSize == 0)
 		throw std::runtime_error("Evaluation stack underflow");
 
-	return EvalSlots[EvalSize - 1];
+	return PayloadRead(EvalEntries + (EvalSize - 1) * SlotStride);
 }
 
 ObjectInstance* CallStackFrame::GetLocal(std::uint16_t slot) const
@@ -164,7 +169,7 @@ ObjectInstance* CallStackFrame::GetLocal(std::uint16_t slot) const
 	if (static_cast<std::size_t>(slot) >= LocalCapacity)
 		return nullptr;
 
-	return LocalSlots[slot];
+	return PayloadRead(LocalEntries + static_cast<std::size_t>(slot) * SlotStride);
 }
 
 ObjectInstance*& CallStackFrame::LocalRef(std::uint16_t slot)
@@ -172,7 +177,16 @@ ObjectInstance*& CallStackFrame::LocalRef(std::uint16_t slot)
 	if (static_cast<std::size_t>(slot) >= LocalCapacity)
 		GrowArena(static_cast<std::size_t>(slot) + 1, EvalCapacity);
 
-	return LocalSlots[slot];
+	return PayloadRef(LocalEntries + static_cast<std::size_t>(slot) * SlotStride);
+}
+
+void CallStackFrame::CopyArgumentPayloads(ObjectInstance** dst, std::size_t count) const
+{
+	if (count > LocalCapacity)
+		count = LocalCapacity;
+
+	for (std::size_t i = 0; i < count; i++)
+		dst[i] = PayloadRead(LocalEntries + i * SlotStride);
 }
 
 CallStackFrame::~CallStackFrame()
@@ -181,9 +195,9 @@ CallStackFrame::~CallStackFrame()
 		mi_free(Arena);
 
 	Arena = nullptr;
-	ReturnSlotStorage = nullptr;
-	LocalSlots = nullptr;
-	EvalSlots = nullptr;
+	ReturnSlot = nullptr;
+	LocalEntries = nullptr;
+	EvalEntries = nullptr;
 	LocalCapacity = 0;
 	EvalCapacity = 0;
 	EvalSize = 0;
