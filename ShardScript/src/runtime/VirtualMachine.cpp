@@ -733,7 +733,12 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance* instance = targetView.Instance;
 			VerifyInstanceNotNull(instance, "member");
 
-			instance->SetField(slot, fieldView.Instance);
+			ObjectInstance* stored = fieldView.Instance;
+			TypeShape* targetShape = instance->getShape();
+			if (targetShape == nullptr || targetShape->GetFieldShape(slot) == nullptr || targetShape->GetFieldShape(slot)->IsReferenceType())
+				stored = garbageCollector.Materialize(stored);
+
+			instance->SetField(slot, stored);
 
 			CallStackFrame::DiscardValue(fieldValue, garbageCollector);
 			CallStackFrame::DiscardValue(target, garbageCollector);
@@ -784,10 +789,14 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 				elements.push_back(frame->PopValue());
 
 			ObjectInstance* instance = garbageCollector.AllocateInstance(type);
+			bool referenceElements = arrayType->UnderlayingType->IsReferenceType();
 			for (std::size_t i = 0; i < length; ++i)
 			{
 				ScopedOperandView elementView(frame, elements[i]);
-				instance->SetElement(i, elementView.Instance);
+				ObjectInstance* element = referenceElements
+					? garbageCollector.Materialize(elementView.Instance)
+					: elementView.Instance;
+				instance->SetElement(i, element);
 				CallStackFrame::DiscardValue(elements[i], garbageCollector);
 			}
 
@@ -897,7 +906,12 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 				throw std::runtime_error("Array index out of range");
 
 			ScopedOperandView valueView(frame, valueValue);
-			arrayInstance->SetElement(static_cast<std::size_t>(index), valueView.Instance);
+			ObjectInstance* stored = valueView.Instance;
+			const ArrayTypeSymbol* arrayInfo = static_cast<const ArrayTypeSymbol*>(arrayInstance->getInfo());
+			if (arrayInfo->UnderlayingType->IsReferenceType())
+				stored = garbageCollector.Materialize(stored);
+
+			arrayInstance->SetElement(static_cast<std::size_t>(index), stored);
 
 			CallStackFrame::DiscardValue(valueValue, garbageCollector);
 			CallStackFrame::DiscardValue(indexValue, garbageCollector);

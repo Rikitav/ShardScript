@@ -184,6 +184,9 @@ void ObjectInstance::SetField(std::uint32_t slot, ObjectInstance* instance)
 
 	if (fieldShape == nullptr || fieldShape->IsReferenceType())
 	{
+		if (instance != GarbageCollector::NullInstance && instance->IsView)
+			throw std::runtime_error("cannot store an ephemeral view into a reference field");
+
 		ObjectInstance* oldValue = GetField(slot);
 		if (oldValue != nullptr && oldValue != GarbageCollector::NullInstance)
 			oldValue->DecrementReference();
@@ -302,6 +305,9 @@ void ObjectInstance::SetElement(std::size_t index, ObjectInstance* instance, Cal
 	std::size_t memoryOffset = SymbolTable::Primitives::Array->MemoryBytesSize + type->GetInlineSize() * index;
 	if (type->IsReferenceType())
 	{
+		if (instance != GarbageCollector::NullInstance && instance->IsView)
+			throw std::runtime_error("cannot store an ephemeral view into a reference element");
+
 		ObjectInstance* oldValue = GetElement(index, frame);
 		if (oldValue != nullptr && oldValue != GarbageCollector::NullInstance)
 			oldValue->DecrementReference();
