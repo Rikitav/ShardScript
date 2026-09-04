@@ -36,6 +36,7 @@
 #include <cstring>
 #include <vector>
 #include <map>
+#include <algorithm>
 #include <stdexcept>
 #include <cstdint>
 #include <initializer_list>
@@ -155,21 +156,13 @@ namespace
 		if (exception == nullptr)
 			throw std::runtime_error("Exception was raised without an exception object");
 
-		// Preserve the fixed local-variable slots (arguments + locals);
-		// Draining locals would destroy the async state-machine instance and other live variables that catch/finally handlers still need to access.
-		std::size_t preservedSlots = 0;
-		if (frame->Method != nullptr)
-			preservedSlots = frame->Method->GetEvalStackLocalsCount();
-
-		while (frame->EvalStack.size() > preservedSlots)
+		// The locals region (arguments + locals) is preserved on its own
+		while (frame->EvalCount() > 0)
 		{
 			ObjectInstance* top = frame->PopStack();
 			if (top != nullptr && top != GarbageCollector::NullInstance)
 				gc.DestroyInstance(top);
 		}
-
-		if (frame->EvalStack.size() < preservedSlots)
-			frame->EvalStack.resize(preservedSlots, nullptr);
 
 		frame->InterruptionReason = FrameInterruptionReason::None;
 		frame->InterruptionRegister = nullptr;
@@ -183,7 +176,7 @@ namespace
 				return true;
 
 			decoder.SetCursor(handler.HandlerOffset);
-			frame->EvalStack.push_back(exception);
+			frame->PushStack(exception);
 			exception->IncrementReference();
 
 			frame->CurrentException = exception;
@@ -552,7 +545,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		case OpCode::LOAD_LOCAL:
 		{
 			std::uint16_t slot = decoder.AbsorbVariableSlot();
-			ObjectInstance* instance = frame->EvalStack[slot];
+			ObjectInstance* instance = frame->GetLocal(slot);
 			frame->PushStack(instance);
 			break;
 		}
@@ -562,12 +555,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			std::uint16_t slot = decoder.AbsorbVariableSlot();
 			ObjectInstance* instance = frame->PopStack();
 
-			if (slot >= frame->EvalStack.size())
-			{
-				frame->EvalStack.resize(slot + 1, nullptr);
-			}
-
-			ObjectInstance* oldVar = frame->EvalStack[slot];
+			ObjectInstance* oldVar = frame->GetLocal(slot);
 			if (oldVar != nullptr)
 			{
 				oldVar->DecrementReference();
@@ -575,14 +563,14 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			}
 
 			instance->IncrementReference();
-			frame->EvalStack[slot] = instance;
+			frame->LocalRef(slot) = instance;
 			break;
 		}
 
 		case OpCode::LOAD_ARG:
 		{
 			std::uint16_t slot = decoder.AbsorbVariableSlot();
-			ObjectInstance* instance = frame->EvalStack[slot];
+			ObjectInstance* instance = frame->GetLocal(slot);
 			frame->PushStack(instance);
 			break;
 		}
@@ -592,12 +580,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			std::uint16_t slot = decoder.AbsorbVariableSlot();
 			ObjectInstance* instance = frame->PopStack();
 
-			if (slot >= frame->EvalStack.size())
-			{
-				frame->EvalStack.resize(slot + 1, nullptr);
-			}
-
-			ObjectInstance* oldVar = frame->EvalStack[slot];
+			ObjectInstance* oldVar = frame->GetLocal(slot);
 			if (oldVar != nullptr)
 			{
 				oldVar->DecrementReference();
@@ -605,7 +588,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			}
 
 			instance->IncrementReference();
-			frame->EvalStack[slot] = instance;
+			frame->LocalRef(slot) = instance;
 			break;
 		}
 
@@ -1291,7 +1274,6 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 		throw std::runtime_error("Execution aborted by host.");
 
 	CallStackFrame* callingFrame = currentFrame->PreviousFrame;
-	currentFrame->EvalStack.reserve(static_cast<std::size_t>(method->GetEvalStackLocalsCount()));
 
 	std::size_t argsCount = method->GetEvalStackArgumentsCount();
 	ObjectInstance* thisInstance = nullptr;
@@ -1300,7 +1282,7 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 	{
 		ObjectInstance* argument = callingFrame->PopStack();
 		argument->IncrementReference();
-		currentFrame->PushStack(argument);
+		currentFrame->LocalRef(static_cast<std::uint16_t>(i)) = argument;
 
 		if (method->Linking == LINK_INSTANCE && i == 0)
 			thisInstance = argument;
@@ -1359,7 +1341,7 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 					throw std::runtime_error("extern method body not resolved: " + methodName);
 				}
 
-				ArgumentsSpan args(currentFrame->EvalStack.data(), argsCount);
+				ArgumentsSpan args(currentFrame->LocalsData(), argsCount);
 				CallState context
 				{
 					.Domain = *domain,
@@ -1424,7 +1406,7 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 			method->ReturnType != nullptr && method->ReturnType != SymbolTable::Primitives::Void &&
 			currentFrame->InterruptionReason != FrameInterruptionReason::ExceptionRaised)
 		{
-			if (!currentFrame->EvalStack.empty())
+			if (currentFrame->EvalCount() > 0)
 			{
 				returnedValue = currentFrame->PopStack();
 				if (returnedValue != nullptr && returnedValue != GarbageCollector::NullInstance)
@@ -1436,7 +1418,7 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 		}
 
 		bool skippedReturnedValue = false;
-		while (currentFrame->EvalStack.size() != 0)
+		while (currentFrame->EvalCount() != 0)
 		{
 			ObjectInstance* top = currentFrame->PopStack();
 			if (top == nullptr)
@@ -1449,6 +1431,16 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 			}
 
 			garbageCollector.DestroyInstance(top);
+		}
+
+		// The locals region (arguments + locals) is arena-backed now, so it is
+		// drained explicitly here; previously the shared vector teardown above
+		// destroyed those entries together with the eval leftovers.
+		for (std::size_t i = 0; i < method->GetEvalStackLocalsCount(); i++)
+		{
+			ObjectInstance* local = currentFrame->GetLocal(static_cast<std::uint16_t>(i));
+			if (local != nullptr)
+				garbageCollector.DestroyInstance(local);
 		}
 	}
 }
@@ -1564,7 +1556,7 @@ CallStackFrame* VirtualMachine::CurrentFrame() const
 
 CallStackFrame* VirtualMachine::PushFrame(MethodSymbol* methodSymbol)
 {
-	auto frame = std::make_shared<CallStackFrame>(this, CurrentFrame(), methodSymbol);
+	auto frame = CallStackFrame::Create(this, CurrentFrame(), methodSymbol);
 	frame->TypeArguments = std::move(PendingTypeArguments);
 	PendingTypeArguments.clear();
 
@@ -1634,7 +1626,7 @@ ObjectInstance* VirtualMachine::InvokeMethod(MethodSymbol* method, ObjectInstanc
 	vm->InvokeMethodInternal(method, currentFrame);
 
 	ObjectInstance* result = nullptr;
-	if (method->ReturnType != nullptr && method->ReturnType != SymbolTable::Primitives::Void && !callingFrame->EvalStack.empty())
+	if (method->ReturnType != nullptr && method->ReturnType != SymbolTable::Primitives::Void && callingFrame->EvalCount() > 0)
 		result = callingFrame->PopStack();
 
 	vm->PopFrame();
@@ -1691,7 +1683,7 @@ std::wstring VirtualMachine::GetThrowablePropertyValue(ObjectInstance* exception
 	vm->InvokeMethod(implementation, { exception });
 
 	CallStackFrame* frame = vm->CurrentFrame();
-	if (frame == nullptr || frame->EvalStack.empty())
+	if (frame == nullptr || frame->EvalCount() == 0)
 		return L"";
 
 	ObjectInstance* result = frame->PopStack();
@@ -1789,7 +1781,6 @@ ObjectInstance* VirtualMachine::RunInteractive(std::size_t& pointer)
 {
 	CallStackFrame* currentFrame = CurrentFrame();
 	MethodSymbol* method = currentFrame->Method;
-	currentFrame->EvalStack.reserve(static_cast<std::size_t>(method->GetEvalStackLocalsCount()) * 2);
 
 	ByteCodeDecoder decoder = ByteCodeDecoder(method->ExecutableByteCode);
 	decoder.SetCursor(pointer);
@@ -1807,7 +1798,7 @@ ObjectInstance* VirtualMachine::RunInteractive(std::size_t& pointer)
 	}
 
 	pointer = decoder.Index();
-	if (currentFrame->EvalStack.size() > method->GetEvalStackLocalsCount())
+	if (currentFrame->EvalCount() > 0)
 	{
 		ObjectInstance* retReg = currentFrame->PopStack();
 		return retReg;

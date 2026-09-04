@@ -1174,7 +1174,7 @@ extern "C"
             if (frame == nullptr)
                 return 0;
 
-            return frame->EvalStack.size();
+            return frame->EvalCount();
         }
         catch (const std::exception& e)
         {

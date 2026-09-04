@@ -50,6 +50,7 @@ namespace shard
 
         std::uint32_t MaxEvalDepth = 0;
         std::size_t EvalSlotPayload = 0;
+        bool IsComplete = false;
 
         static std::size_t ResolveTypePayload(TypeSymbol* type);
         std::size_t ComputeLocalsBytes(const MethodSymbol& method) const;

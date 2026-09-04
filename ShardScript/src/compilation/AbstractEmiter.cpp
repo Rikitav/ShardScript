@@ -412,6 +412,8 @@ void AbstractEmiter::PublishLayout(MethodSymbol* method, const EvalLayoutTracker
 	method->Layout.MaxEvalDepth = static_cast<std::uint32_t>(tracker.MaxDepth);
 	method->Layout.EvalSlotPayload = tracker.MaxDepth > 0
 		? (tracker.MaxPayload > 1 ? tracker.MaxPayload : 1) : 0;
+
+	method->Layout.IsComplete = true;
 }
 
 void AbstractEmiter::EvalPush(std::size_t payload)
