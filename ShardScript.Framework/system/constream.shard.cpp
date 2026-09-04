@@ -43,7 +43,7 @@ namespace
             throw std::runtime_error("Type '" + thinify(type->FullName.c_str()) + "' does not implement IPrintable");
 
         context.Runtimer.InvokeMethod(implementation, { instance });
-        ObjectInstance* result = context.Runtimer.CurrentFrame()->PopStack();
+        ObjectInstance* result = context.Runtimer.CurrentFrame()->PopBoxed(context.Collector);
 
         if (result == nullptr || result->getInfo() != SymbolTable::Primitives::String)
             throw std::runtime_error("ToString did not return a string");

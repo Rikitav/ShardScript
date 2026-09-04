@@ -51,6 +51,8 @@ namespace shard
 		bool IsSingleton = false;
 		bool IsStaticRoot = false;
 
+		bool IsView = false;
+
 		// Async task lifetime tracking.
 		bool IsTaskLike = false;
 		bool IsFireAndForget = false;

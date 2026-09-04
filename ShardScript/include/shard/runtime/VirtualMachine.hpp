@@ -48,7 +48,7 @@ namespace shard
 
 	public:
 		void ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder, const OpCode opCode);
-		ObjectInstance* InstantiateObject(TypeSymbol* type, ConstructorSymbol* ctor);
+		ObjectInstance* InstantiateObject(TypeSymbol* type, ConstructorSymbol* ctor, bool inPlace = false);
 		ObjectInstance* InstantiateDelegate(DelegateTypeSymbol* type);
 
 		ObjectInstance* InvokeOperatorMethod(ObjectInstance* leftInstance, TokenType opToken, ObjectInstance* rightInstance);
