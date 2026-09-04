@@ -1151,8 +1151,10 @@ void AbstractEmiter::VisitObjectCreationExpression(ObjectExpressionSyntax* node)
 		if (node->ArraySize != nullptr)
 			VisitExpression(node->ArraySize.get());
 
-		TypeSymbol* elementType = node->Type != nullptr ? node->Type->Symbol : nullptr;
-		Encoder.EmitNewArrayDynamic(GeneratingFor->ExecutableByteCode, elementType);
+		ArrayTypeSymbol* arrayType = node->Symbol != nullptr && node->Symbol->Kind == SyntaxKind::ArrayType
+			? static_cast<ArrayTypeSymbol*>(node->Symbol) : nullptr;
+
+		Encoder.EmitNewArrayDynamic(GeneratingFor->ExecutableByteCode, arrayType);
 		EvalPop();
 		EvalPush();
 		return;
@@ -1195,6 +1197,7 @@ void AbstractEmiter::VisitCollectionExpression(CollectionExpressionSyntax* node)
 		EvalPop(node->Symbol->Length);
 	else
 		EvalPop();
+
 	EvalPush();
 }
 
@@ -1205,7 +1208,7 @@ void AbstractEmiter::VisitRangeExpression(RangeExpressionSyntax* node)
 	VisitExpression(node->Right.get());
 	Encoder.EmitLoadConstBool(GeneratingFor->ExecutableByteCode, node->IsInclusive);
 	EvalPush(PrimitivePayload(SymbolTable::Primitives::Boolean));
-	Encoder.EmitCreateRange(GeneratingFor->ExecutableByteCode, SymbolTable::Primitives::Integer);
+	Encoder.EmitCreateRange(GeneratingFor->ExecutableByteCode, Model->Table->GetOrCreateArrayType(SymbolTable::Primitives::Integer));
 	EvalPop(3);
 	EvalPush();
 }

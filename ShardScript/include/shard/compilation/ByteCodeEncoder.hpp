@@ -89,8 +89,8 @@ namespace shard
 		void EmitStoreField(std::vector<std::byte>& code, std::uint32_t slot);
 
 		void EmitNewArray(std::vector<std::byte>& code, ArrayTypeSymbol* type);
-		void EmitNewArrayDynamic(std::vector<std::byte>& code, TypeSymbol* elementType);
-		void EmitCreateRange(std::vector<std::byte>& code, TypeSymbol* elementType);
+		void EmitNewArrayDynamic(std::vector<std::byte>& code, ArrayTypeSymbol* type);
+		void EmitCreateRange(std::vector<std::byte>& code, ArrayTypeSymbol* type);
 		void EmitLoadArrayElement(std::vector<std::byte>& code);
 		void EmitStoreArrayElement(std::vector<std::byte>& code);
 		void EmitArrayLength(std::vector<std::byte>& code);

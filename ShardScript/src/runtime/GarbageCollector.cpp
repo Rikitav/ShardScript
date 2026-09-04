@@ -313,8 +313,11 @@ ObjectInstance* GarbageCollector::AllocateGeneric(TypeSymbol* baseType, const st
 	return AllocateInstance(shape);
 }
 
-ObjectInstance* GarbageCollector::AllocateArray(TypeSymbol* elementType, std::size_t length)
+ObjectInstance* GarbageCollector::AllocateArray(ArrayTypeSymbol* arrayType, TypeSymbol* elementType, std::size_t length)
 {
+	if (arrayType == nullptr)
+		throw std::runtime_error("arrayType is nullptr");
+
 	if (elementType == nullptr)
 		throw std::runtime_error("elementType is nullptr");
 
@@ -334,15 +337,9 @@ ObjectInstance* GarbageCollector::AllocateArray(TypeSymbol* elementType, std::si
 	auto* blockBytes = static_cast<std::byte*>(static_cast<void*>(header));
 	void* rawMemory = blockBytes + prefixSize;
 
-	ArrayTypeSymbol* arrayType = new ArrayTypeSymbol(elementType);
-	arrayType->Length = length;
-	arrayType->MemoryBytesSize = totalSize;
-	dynamicArrayTypes.emplace_back(arrayType);
-
-	TypeShape* arrayShape = new TypeShape(arrayType, std::vector<TypeSymbol*>{ elementType });
-	arrayShape->Alignment = GetTypeAlignment(elementType);
-	arrayShape->Size = totalSize;
-	dynamicArrayShapes.emplace_back(arrayShape);
+	TypeShape* arrayShape = GetTypeShapeCache().GetOrCreateShape(arrayType);
+	std::uint64_t payloadLength = static_cast<std::uint64_t>(length);
+	std::memcpy(rawMemory, &payloadLength, sizeof(payloadLength));
 
 	ObjectInstance* instance = new (blockBytes + sizeof(ObjectInstance::GcHeader)) ObjectInstance(arrayType, arrayShape, rawMemory);
 	Heap.add(instance);
@@ -482,8 +479,7 @@ void GarbageCollector::TerminateInstance(ObjectInstance* instance, bool deleteIn
 
 	if (instance->getInfo()->Kind == SyntaxKind::ArrayType)
 	{
-		const ArrayTypeSymbol* array = static_cast<const ArrayTypeSymbol*>(instance->getInfo());
-		for (std::size_t i = 0; i < array->Length; i++)
+		for (std::size_t i = 0; i < instance->GetArrayLength(); i++)
 		{
 			ObjectInstance element = instance->GetElement(i);
 			if (!element.IsNullInstance() && element.heapSource() != NullInstance)

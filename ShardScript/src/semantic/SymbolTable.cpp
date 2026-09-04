@@ -142,6 +142,15 @@ SyntaxSymbol* SymbolTable::ImplicitSymbol(std::unique_ptr<SyntaxSymbol> symbol)
 	return raw;
 }
 
+ArrayTypeSymbol* SymbolTable::GetOrCreateArrayType(TypeSymbol* elementType)
+{
+	auto [it, inserted] = implicitArrayTypes.try_emplace(elementType, nullptr);
+	if (inserted)
+		it->second = std::make_unique<ArrayTypeSymbol>(elementType);
+
+	return it->second.get();
+}
+
 void SymbolTable::MarkAllSymbolsReady()
 {
 	for (const auto& symbol : namespacesList)

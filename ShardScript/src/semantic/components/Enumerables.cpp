@@ -64,7 +64,7 @@ static void primitive_array_get_enumerator(const CallState& context)
 	ObjectInstance* enumerator = context.Collector.AllocateGeneric(CLASS_ARRAYENUMERATOR, std::vector<TypeSymbol*>{ concreteT });
 	enumerator->SetField(CLASS_ARRAYENUMERATOR_SourceField->SlotIndex, array);
 	enumerator->SetField(CLASS_ARRAYENUMERATOR_IndexField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(-1)));
-	enumerator->SetField(CLASS_ARRAYENUMERATOR_LengthField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(arrayType->Length)));
+	enumerator->SetField(CLASS_ARRAYENUMERATOR_LengthField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(array->GetArrayLength())));
 
 	context.PlaceReturned(enumerator);
 	return;
