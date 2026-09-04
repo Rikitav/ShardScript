@@ -19,10 +19,6 @@
 
 namespace shard
 {
-    constexpr std::int32_t SMALL_INTS_CACHE_MIN = -5;
-    constexpr std::int32_t SMALL_INTS_CACHE_MAX = 256;
-    constexpr std::int32_t SMALL_INTS_CACHE_SIZE = SMALL_INTS_CACHE_MAX - SMALL_INTS_CACHE_MIN + 1;
-
     class ApplicationDomain;
     class CallStackFrame;
 
@@ -69,11 +65,6 @@ namespace shard
 
 	class SHARD_API GarbageCollector
 	{
-        static ObjectInstance* SmallInts;
-        static std::int64_t* SmallIntsVals;
-
-        static ObjectInstance* BoolTrueSingleton;
-        static ObjectInstance* BoolFalseSingleton;
 
 		ApplicationDomain* applicationDomain;
 		std::uint64_t objectsCounter = 0;
