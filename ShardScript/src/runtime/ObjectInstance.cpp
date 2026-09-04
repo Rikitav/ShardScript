@@ -119,7 +119,7 @@ std::int64_t ObjectInstance::getReferencesCounter() const
 
 ObjectInstance::~ObjectInstance() = default;
 
-ObjectInstance* ObjectInstance::GetField(std::uint32_t slot)
+ObjectInstance* ObjectInstance::GetField(std::uint32_t slot, ObjectInstance& storage)
 {
 	if (IsNullInstance())
 	{
@@ -145,13 +145,22 @@ ObjectInstance* ObjectInstance::GetField(std::uint32_t slot)
 		ObjectInstance* valuePtr = *static_cast<ObjectInstance**>(offset);
 		return valuePtr == nullptr ? GarbageCollector::NullInstance : valuePtr;
 	}
-	else
-	{
-		void* offset = OffsetMemory(fieldOffset, fieldShape->Size);
-		ObjectInstance* instance = new ObjectInstance(fieldShape->BaseType, fieldShape, offset);
-		instance->IsView = true;
-		return instance;
-	}
+
+	void* offset = OffsetMemory(fieldOffset, fieldShape->Size);
+	storage = ObjectInstance(fieldShape->BaseType, fieldShape, offset);
+	storage.IsView = true;
+	return &storage;
+}
+
+ObjectInstance* ObjectInstance::GetField(const FieldSymbol* field, ObjectInstance& storage)
+{
+	return GetField(field->SlotIndex, storage);
+}
+
+ObjectInstance* ObjectInstance::GetField(std::uint32_t slot)
+{
+	thread_local ObjectInstance storage(nullptr, nullptr, nullptr);
+	return GetField(slot, storage);
 }
 
 ObjectInstance* ObjectInstance::GetField(const FieldSymbol* field)
@@ -249,7 +258,7 @@ std::size_t ObjectInstance::GetArrayLength() const
 	return info->Length;
 }
 
-ObjectInstance* ObjectInstance::GetElement(std::size_t index, CallStackFrame* frame)
+ObjectInstance* ObjectInstance::GetElement(std::size_t index, ObjectInstance& storage, CallStackFrame* frame)
 {
 	if (IsNullInstance())
 		throw std::runtime_error("Cannot access array element on null instance");
@@ -273,13 +282,17 @@ ObjectInstance* ObjectInstance::GetElement(std::size_t index, CallStackFrame* fr
 		ObjectInstance* valuePtr = *static_cast<ObjectInstance**>(offset);
 		return valuePtr == nullptr ? GarbageCollector::NullInstance : valuePtr;
 	}
-	else
-	{
-		void* offset = OffsetMemory(memoryOffset, type->MemoryBytesSize);
-		ObjectInstance* instance = new ObjectInstance(type, nullptr, offset);
-		instance->IsView = true;
-		return instance;
-	}
+
+	void* offset = OffsetMemory(memoryOffset, type->MemoryBytesSize);
+	storage = ObjectInstance(type, nullptr, offset);
+	storage.IsView = true;
+	return &storage;
+}
+
+ObjectInstance* ObjectInstance::GetElement(std::size_t index, CallStackFrame* frame)
+{
+	thread_local ObjectInstance storage(nullptr, nullptr, nullptr);
+	return GetElement(index, storage, frame);
 }
 
 void ObjectInstance::SetElement(std::size_t index, ObjectInstance* instance, CallStackFrame* frame)

@@ -66,13 +66,21 @@ namespace shard
 		[[nodiscard]] std::int64_t getReferencesCounter() const;
 
 		// Fields
+		// The storage overloads fill `storage` with a borrow view for value-type
+		// fields and return &storage; for reference-type fields they return the
+		// stored heap pointer (storage untouched, null fields yield NullInstance).
+		// The pointer-only overloads are transitional wrappers over a thread_local
+		// storage slot — valid until the next such call on that thread.
+		ObjectInstance* GetField(std::uint32_t slot, ObjectInstance& storage);
+		ObjectInstance* GetField(const FieldSymbol* field, ObjectInstance& storage);
 		ObjectInstance* GetField(std::uint32_t slot);
 		ObjectInstance* GetField(const FieldSymbol* field);
 		void SetField(std::uint32_t slot, ObjectInstance* instance);
 		void SetField(const FieldSymbol* field, ObjectInstance* instance);
 
-		// Arrays
+		// Arrays — same storage contract as GetField.
 		std::size_t GetArrayLength() const;
+		ObjectInstance* GetElement(std::size_t index, ObjectInstance& storage, CallStackFrame* frame = nullptr);
 		ObjectInstance* GetElement(std::size_t index, CallStackFrame* frame = nullptr);
 		void SetElement(std::size_t index, ObjectInstance* instance, CallStackFrame* frame = nullptr);
 		bool IsInBounds(std::size_t index);

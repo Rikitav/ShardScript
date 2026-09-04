@@ -94,32 +94,21 @@
 //                   Push*/Pop* move a byte cursor over the region. Popping is
 //                   therefore safe for any mix of boxed and inline entries.
 //
-//   View arena    — a fixed-size bump region sitting between the locals and
-//                   the eval region where short-lived ObjectInstance VIEW
-//                   HEADERS are carved from (AllocateView): operand views for
-//                   legacy consumers, external-argument scratch views, the
-//                   ctor 'this' view for in-place NEWOBJECT. Views own nothing
-//                   and never escape a single opcode dispatch — the VM resets
-//                   the bump cursor at the top of every opcode — so the region
-//                   is never walked or freed entry by entry. An opcode needing
-//                   more views than fit overflows to heap headers that
-//                   ResetViewArena deletes on the next reset. Views that must
-//                   outlive their opcode (SetLocal wrapping an inline value
-//                   into a reference-kind local) are pinned: heap headers
-//                   deleted at frame teardown.
-//
 // External methods receive their arguments as an ArgumentsSpan of
 // ObjectInstance* — the VM copies argument payloads into a scratch buffer
 // per external call (reference payloads verbatim, inline payloads wrapped in
-// transient view instances over the arena bytes), so dependent libraries
-// keep the contiguous span ABI they were built against.
+// transient borrow-view ObjectInstance values placed in caller-provided
+// storage), so dependent libraries keep the contiguous span ABI they were
+// built against. No view header is ever allocated from the frame: an
+// ObjectInstance is a lightweight view struct, and wherever legacy code needs
+// one over frame bytes the caller supplies the (stack) storage.
 //
 // GROWTH NEVER MOVES THE FRAME OBJECT. Raw CallStackFrame* pointers are all
 // over the runtime — PreviousFrame chains, async task bindings, CurrentFrame
 // results — so realloc'ing the single block in place is forbidden. The locals
 // region never grows (slot indices are emission-assigned and exact). If the
-// eval region outgrows its initial capacity, GrowArena migrates the arena to
-// a separate side block (copying the fixed prefix and live eval bytes,
+// eval region outgrows its initial capacity, GrowEvalRegion migrates the arena
+// to a separate side block (copying the fixed prefix and live eval bytes,
 // flipping ArenaIsTrailing) and the frame object stays where it was. The
 // destructor frees the arena only when it is such a side allocation; a
 // trailing arena is freed together with the object by the Create() deleter.
@@ -254,10 +243,6 @@ namespace shard
 		inline void PushStack(ObjectInstance* value) { PushReference(value); }
 		std::byte* PushInlineUninitialized(TypeShape* shape);
 
-		ObjectInstance* AllocateView(TypeShape* shape, std::byte* payload);
-		ObjectInstance* AllocatePinnedView(TypeShape* shape, std::byte* payload);
-		void ResetViewArena();
-
 		ObjectInstance* PopStack();
 		ObjectInstance* PeekStack();
 		ObjectInstance* PopBoxed(GarbageCollector& gc);
@@ -272,14 +257,19 @@ namespace shard
 
 		inline std::size_t EvalCount() const { return EvalSize; }
 
-		ObjectInstance* GetLocal(std::uint16_t slot);
+		// Inline locals have no ObjectInstance of their own — the storage
+		// overload fills caller-provided memory with a borrow view (same
+		// contract as ObjectInstance::GetField).
+		ObjectInstance* GetLocal(std::uint16_t slot, ObjectInstance& storage);
 		StackValue GetLocalValue(std::uint16_t slot);
 		ObjectInstance*& LocalRef(std::uint16_t slot);
 		void SetLocal(std::uint16_t slot, const StackValue& value, GarbageCollector& gc);
 
 		inline std::size_t LocalCount() const { return LocalSlots.size(); }
 
-		void CopyArgumentPayloads(ObjectInstance** dst, std::size_t count);
+		// `storage` must have room for `count` ObjectInstance values; inline
+		// argument payloads are placement-new'd into it as borrow views.
+		void CopyArgumentPayloads(ObjectInstance** dst, ObjectInstance* storage, std::size_t count);
 
 		void DrainReferences(GarbageCollector& gc);
 		void DrainEvalReferences(GarbageCollector& gc);
@@ -318,13 +308,6 @@ namespace shard
 			std::memcpy(&payload, entry + SlotHeaderBytes, sizeof(payload));
 			return payload;
 		}
-
-		std::byte* ViewArena = nullptr;
-		std::size_t ViewCursorBytes = 0;
-		std::vector<ObjectInstance*> ViewOverflow;
-		std::vector<ObjectInstance*> ViewPinned;
-
-		static constexpr std::size_t ViewArenaBytes = 2048;
 
 		void GrowEvalRegion(std::size_t newCapacityBytes);
 	};
