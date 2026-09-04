@@ -36,9 +36,6 @@ namespace shard
     };
 
     using MethodSymbolDelegate         = shard::ObjectInstance* (*)(const CallState& context);
-    using NativeMethodCallback         = shard::ObjectInstance* (*)(const CallState& context);
-    using NativeInstanceMethodCallback = shard::ObjectInstance* (*)(ObjectInstance* self, const CallState& context);
-    using NativeConstructorCallback    = shard::ObjectInstance* (*)(const CallState& context);
 
     struct SHARD_API FrameSlotRecipe
     {

@@ -38,6 +38,7 @@
 
 #include <shard/compilation/AbstractEmiter.hpp>
 #include <shard/compilation/AsyncStateMachineLowering.hpp>
+#include <shard/compilation/FrameLayoutPass.hpp>
 #include <shard/compilation/ProgramVirtualImage.hpp>
 
 #include <utilities/SemanticVersion.hpp>
@@ -697,6 +698,20 @@ std::unique_ptr<ApplicationDomain> CompilationContext::Compile()
 
 	if (Diagnostics.AnyError)
 		throw diagnostics_exception("Code Compilation ended with errors.");
+
+	for (MethodSymbol* method : Model.Table->GetMethodSymbols())
+	{
+		if (method == nullptr)
+			continue;
+
+		if (method->HandleType != MethodHandleType::Body && method->HandleType != MethodHandleType::Lambda)
+			continue;
+
+		if (method->ExecutableByteCode.empty())
+			continue;
+
+		FrameLayoutPass::Run(*method);
+	}
 
 	return std::make_unique<ApplicationDomain>(std::move(programPtr));
 }

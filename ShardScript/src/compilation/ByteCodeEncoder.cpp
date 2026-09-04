@@ -466,9 +466,10 @@ void ByteCodeEncoder::EmitCallMethodSymbol(std::vector<std::byte>& code, MethodS
     AppendData(code, &method, sizeof(method));
 }
 
-void ByteCodeEncoder::EmitCallDelegate(std::vector<std::byte>& code)
+void ByteCodeEncoder::EmitCallDelegate(std::vector<std::byte>& code, DelegateTypeSymbol* type)
 {
     AppendDataT(code, OpCode::CALLDELEGATE);
+    AppendData(code, &type, sizeof(type));
 }
 
 void ByteCodeEncoder::EmitCallInterface(std::vector<std::byte>& code, MethodSymbol* interfaceMethod)

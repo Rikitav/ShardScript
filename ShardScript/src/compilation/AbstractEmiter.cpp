@@ -1325,7 +1325,14 @@ void AbstractEmiter::VisitInvocationExpression(InvokationExpressionSyntax* node)
 	}
 
 	if (node->IsDelegateInvocation)
-		Encoder.EmitCallDelegate(GeneratingFor->ExecutableByteCode);
+	{
+		DelegateTypeSymbol* delegateType = nullptr;
+		if (node->Symbol != nullptr && node->Symbol->Parent != nullptr && node->Symbol->Parent->Kind == SyntaxKind::DelegateDeclaration)
+			delegateType = static_cast<DelegateTypeSymbol*>(node->Symbol->Parent);
+
+		Encoder.EmitCallDelegate(GeneratingFor->ExecutableByteCode, delegateType);
+	}
+
 	else if (hasTypeArguments)
 		Encoder.EmitCallMethodSymbol(GeneratingFor->ExecutableByteCode, node->Symbol);
 	else
