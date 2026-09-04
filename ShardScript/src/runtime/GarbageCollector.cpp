@@ -379,7 +379,8 @@ ObjectInstance* GarbageCollector::CopyInstance(ObjectInstance* instance)
 		TypeShape* fieldShape = newShape->GetFieldShape(slot);
 		if (fieldShape != nullptr && fieldShape->IsReferenceType())
 		{
-			ObjectInstance* fieldValue = newInstance->GetField(slot);
+			ObjectInstance fieldStorage(nullptr, nullptr, nullptr);
+			ObjectInstance* fieldValue = newInstance->GetField(slot, fieldStorage);
 			if (fieldValue != nullptr && fieldValue != NullInstance)
 				fieldValue->IncrementReference();
 		}

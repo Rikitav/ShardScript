@@ -169,9 +169,9 @@ std::shared_ptr<CallStackFrame> CallStackFrame::Create(const VirtualMachine* hos
 	const std::size_t evalEntryStride = SlotHeaderBytes + Align(evalMaxPayload);
 	const std::size_t evalEntries = method->Layout.IsComplete
 		? std::max<std::size_t>(method->Layout.MaxEvalDepth, 8) : 64;
-	const std::size_t evalCapacityBytes = evalEntries * (method->Layout.IsComplete ? evalEntryStride : BoxedEntryStride);
 
-	const std::size_t arenaBytes = BoxedEntryStride + localsBytes + ViewArenaBytes + evalCapacityBytes;
+	const std::size_t evalCapacityBytes = evalEntries * (method->Layout.IsComplete ? evalEntryStride : BoxedEntryStride);
+	const std::size_t arenaBytes = BoxedEntryStride + localsBytes + evalCapacityBytes;
 
 	void* block = mi_malloc(sizeof(CallStackFrame) + arenaBytes);
 	if (block == nullptr)
@@ -192,8 +192,7 @@ std::shared_ptr<CallStackFrame> CallStackFrame::Create(const VirtualMachine* hos
 	frame->ReturnSlot = frame->Arena;
 	frame->LocalSlots = std::move(slotDescs);
 	frame->LocalRegionEnd = frame->Arena + BoxedEntryStride + localsBytes;
-	frame->ViewArena = frame->LocalRegionEnd;
-	frame->EvalEntries = frame->ViewArena + ViewArenaBytes;
+	frame->EvalEntries = frame->LocalRegionEnd;
 	frame->EvalCapacityBytes = evalCapacityBytes;
 	frame->EvalMaxEntryStride = method->Layout.IsComplete ? evalEntryStride : BoxedEntryStride;
 	frame->EvalOffsets.reserve(evalEntries);
@@ -202,46 +201,13 @@ std::shared_ptr<CallStackFrame> CallStackFrame::Create(const VirtualMachine* hos
 	return result;
 }
 
-ObjectInstance* CallStackFrame::AllocateView(TypeShape* shape, std::byte* payload)
-{
-	if (ViewCursorBytes + sizeof(ObjectInstance) <= ViewArenaBytes)
-	{
-		ObjectInstance* view = new (ViewArena + ViewCursorBytes) ObjectInstance(shape->BaseType, shape, payload);
-		ViewCursorBytes += sizeof(ObjectInstance);
-		view->IsView = true;
-		return view;
-	}
-
-	ObjectInstance* view = new ObjectInstance(shape->BaseType, shape, payload);
-	view->IsView = true;
-	ViewOverflow.push_back(view);
-	return view;
-}
-
-ObjectInstance* CallStackFrame::AllocatePinnedView(TypeShape* shape, std::byte* payload)
-{
-	ObjectInstance* view = new ObjectInstance(shape->BaseType, shape, payload);
-	view->IsView = true;
-	ViewPinned.push_back(view);
-	return view;
-}
-
-void CallStackFrame::ResetViewArena()
-{
-	for (ObjectInstance* view : ViewOverflow)
-		delete view;
-
-	ViewOverflow.clear();
-	ViewCursorBytes = 0;
-}
-
 void CallStackFrame::GrowEvalRegion(std::size_t newCapacityBytes)
 {
 	if (newCapacityBytes <= EvalCapacityBytes)
 		return;
 
 	const std::size_t localsBytes = static_cast<std::size_t>(LocalRegionEnd - Arena);
-	const std::size_t prefixBytes = localsBytes + ViewArenaBytes + EvalCursorBytes;
+	const std::size_t prefixBytes = localsBytes + EvalCursorBytes;
 
 	if (ArenaIsTrailing)
 	{
@@ -267,8 +233,7 @@ void CallStackFrame::GrowEvalRegion(std::size_t newCapacityBytes)
 
 	ReturnSlot = Arena;
 	LocalRegionEnd = Arena + localsBytes;
-	ViewArena = LocalRegionEnd;
-	EvalEntries = ViewArena + ViewArenaBytes;
+	EvalEntries = LocalRegionEnd;
 	EvalCapacityBytes = newCapacityBytes;
 }
 
@@ -386,13 +351,17 @@ ObjectInstance* CallStackFrame::PopBoxed(GarbageCollector& gc)
 	return box;
 }
 
-ObjectInstance* CallStackFrame::GetLocal(std::uint16_t slot)
+ObjectInstance* CallStackFrame::GetLocal(std::uint16_t slot, ObjectInstance& storage)
 {
 	const LocalSlotDesc& desc = LocalSlots.at(slot);
 	std::byte* entry = Arena + desc.Offset;
 
 	if (desc.Inline)
-		return AllocateView(desc.Shape, entry + SlotHeaderBytes);
+	{
+		storage = ObjectInstance(desc.Shape->BaseType, desc.Shape, entry + SlotHeaderBytes);
+		storage.IsView = true;
+		return &storage;
+	}
 
 	return PayloadRead(entry);
 }
@@ -449,7 +418,25 @@ void CallStackFrame::SetLocal(std::uint16_t slot, const StackValue& value, Garba
 		return;
 	}
 
-	ObjectInstance* adopted = value.IsInline ? AllocatePinnedView(value.Shape, value.Data) : value.AsObject();
+	ObjectInstance* adopted;
+	if (value.IsInline)
+	{
+		if (value.Shape != nullptr)
+		{
+			ObjectInstance view(value.Shape->BaseType, value.Shape, value.Data);
+			view.IsView = true;
+			adopted = gc.CopyInstance(&view);
+		}
+		else
+		{
+			adopted = nullptr;
+		}
+	}
+	else
+	{
+		adopted = value.AsObject();
+	}
+
 	if (adopted != nullptr)
 		adopted->IncrementReference();
 
@@ -460,7 +447,7 @@ void CallStackFrame::SetLocal(std::uint16_t slot, const StackValue& value, Garba
 		gc.DestroyInstance(old);
 }
 
-void CallStackFrame::CopyArgumentPayloads(ObjectInstance** dst, std::size_t count)
+void CallStackFrame::CopyArgumentPayloads(ObjectInstance** dst, ObjectInstance* storage, std::size_t count)
 {
 	if (count > LocalSlots.size())
 		count = LocalSlots.size();
@@ -469,7 +456,16 @@ void CallStackFrame::CopyArgumentPayloads(ObjectInstance** dst, std::size_t coun
 	{
 		const LocalSlotDesc& desc = LocalSlots[i];
 		std::byte* entry = Arena + desc.Offset;
-		dst[i] = desc.Inline ? AllocateView(desc.Shape, entry + SlotHeaderBytes) : PayloadRead(entry);
+		if (desc.Inline)
+		{
+			ObjectInstance* view = new (&storage[i]) ObjectInstance(desc.Shape->BaseType, desc.Shape, entry + SlotHeaderBytes);
+			view->IsView = true;
+			dst[i] = view;
+		}
+		else
+		{
+			dst[i] = PayloadRead(entry);
+		}
 	}
 }
 
@@ -508,12 +504,6 @@ void CallStackFrame::DrainReferences(GarbageCollector& gc)
 
 CallStackFrame::~CallStackFrame()
 {
-	for (ObjectInstance* view : ViewOverflow)
-		delete view;
-
-	for (ObjectInstance* view : ViewPinned)
-		delete view;
-
 	if (!ArenaIsTrailing && Arena != nullptr)
 		mi_free(Arena);
 
@@ -521,8 +511,6 @@ CallStackFrame::~CallStackFrame()
 	ArenaBytes = 0;
 	ReturnSlot = nullptr;
 	LocalRegionEnd = nullptr;
-	ViewArena = nullptr;
-	ViewCursorBytes = 0;
 	EvalEntries = nullptr;
 	EvalCapacityBytes = 0;
 	EvalCursorBytes = 0;
