@@ -710,8 +710,7 @@ ArrayTypeSymbol* SymbolFactory::Array(ArrayTypeSyntax* node)
 
 ArrayTypeSymbol* SymbolFactory::Array(TypeSymbol* underlayingType)
 {
-	auto symbol = std::make_unique<ArrayTypeSymbol>(underlayingType);
-	return static_cast<ArrayTypeSymbol*>(Table->ImplicitSymbol(std::move(symbol)));
+	return Table->GetOrCreateArrayType(underlayingType);
 }
 
 ArrayTypeSymbol* SymbolFactory::Array(TypeSymbol* underlayingType, std::size_t size)

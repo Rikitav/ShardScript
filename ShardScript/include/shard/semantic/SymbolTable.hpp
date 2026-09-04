@@ -24,6 +24,7 @@ namespace shard
     class AccessorSymbol;
     class NamespaceSymbol;
     class TypeParameterSymbol;
+    class ArrayTypeSymbol;
 
     class SHARD_API SymbolTable
     {
@@ -37,7 +38,13 @@ namespace shard
         std::vector<std::unique_ptr<MemberSymbol>> membersList;
         std::vector<std::unique_ptr<SyntaxSymbol>> triviasList;
 
+        // Runtime-length ("dynamic") array types, one per element type —
+        // emitted into NEWARRAY_DYNAMIC/CREATERANGE bytecode; shapes live in
+        // TypeShapeCache like every other array shape.
+        std::unordered_map<TypeSymbol*, std::unique_ptr<ArrayTypeSymbol>> implicitArrayTypes;
+
     public:
+        ArrayTypeSymbol* GetOrCreateArrayType(TypeSymbol* elementType);
         struct Global
         {
             static SHARD_API NamespaceSymbol* Namespace;

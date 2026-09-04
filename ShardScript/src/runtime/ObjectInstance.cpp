@@ -243,8 +243,9 @@ std::size_t ObjectInstance::GetArrayLength() const
 	if (m_info->Kind != SyntaxKind::ArrayType)
 		throw std::runtime_error("Tried to get element from non array instance");
 
-	const ArrayTypeSymbol* info = static_cast<const ArrayTypeSymbol*>(m_info);
-	return info->Length;
+	std::int64_t payloadLength;
+	std::memcpy(&payloadLength, getMemory(), sizeof(payloadLength));
+	return static_cast<std::size_t>(payloadLength);
 }
 
 ObjectInstance ObjectInstance::GetElement(std::size_t index, CallStackFrame* frame)
@@ -388,6 +389,11 @@ void* ObjectInstance::OffsetMemory(const std::size_t offset, const std::size_t s
 		throw std::out_of_range("Cannot read 0 bytes");
 
 	std::size_t instanceSize = m_shape != nullptr ? m_shape->Size : (m_info != nullptr ? m_info->MemoryBytesSize : 0);
+	if (m_info != nullptr && m_info->Kind == SyntaxKind::ArrayType)
+	{
+		const ArrayTypeSymbol* arrayInfo = static_cast<const ArrayTypeSymbol*>(m_info);
+		instanceSize = SymbolTable::Primitives::Array->MemoryBytesSize + arrayInfo->UnderlayingType->GetInlineSize() * GetArrayLength();
+	}
 	if (offset + size > instanceSize)
 		throw std::out_of_range("offset (" + std::to_string(offset) + ") + size (" + std::to_string(size) + ") is out of instance's memory range (" + std::to_string(instanceSize) + ").");
 
@@ -459,29 +465,6 @@ void ObjectInstance::WriteByte(const std::uint8_t& value) const
 	const void* ptr = &value;
 	std::size_t size = m_shape != nullptr ? m_shape->Size : (m_info != nullptr ? m_info->MemoryBytesSize : 0);
 	WriteMemory(0, size, ptr);
-}
-
-void ObjectInstance::WriteString(const wchar_t* value) const
-{
-	if (value == nullptr)
-	{
-		WriteString(L"");
-		return;
-	}
-
-	std::size_t size = wcslen(value);
-	WriteString(value, size);
-}
-
-void ObjectInstance::WriteString(const wchar_t* value, std::size_t size) const
-{
-	WriteMemory(0, sizeof(std::int64_t), &size);
-	WriteMemory(sizeof(std::int64_t), sizeof(wchar_t) * size, value);
-}
-
-void ObjectInstance::WriteString(const std::wstring& value) const
-{
-	WriteString(value.data(), value.size());
 }
 
 bool& ObjectInstance::AsBoolean() const

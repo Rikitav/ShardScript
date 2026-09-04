@@ -69,8 +69,6 @@ namespace shard
 		ApplicationDomain* applicationDomain;
 		std::uint64_t objectsCounter = 0;
         std::unordered_map<FieldSymbol*, ObjectInstance*> staticFields;
-		std::vector<std::unique_ptr<ArrayTypeSymbol>> dynamicArrayTypes;
-		std::vector<std::unique_ptr<TypeShape>> dynamicArrayShapes;
         std::unordered_map<const wchar_t*, ObjectInstance*> internedStrings;
 
         struct AsyncRecord
@@ -117,7 +115,7 @@ namespace shard
 		ObjectInstance* AllocateInstance(const TypeSymbol* objectInfo);
         ObjectInstance* AllocateGeneric(TypeSymbol* baseType, const std::span<TypeSymbol*> genericArgs);
 		ObjectInstance* AllocateGeneric(TypeSymbol* baseType, const std::vector<TypeSymbol*>& genericArgs);
-		ObjectInstance* AllocateArray(TypeSymbol* elementType, std::size_t length);
+		ObjectInstance* AllocateArray(ArrayTypeSymbol* arrayType, TypeSymbol* elementType, std::size_t length);
         ObjectInstance* CopyInstance(ObjectInstance* instance);
 
         ObjectInstance* CreateView(const TypeSymbol* info, TypeShape* shape);

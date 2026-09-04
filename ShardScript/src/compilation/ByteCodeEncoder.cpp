@@ -415,16 +415,16 @@ void ByteCodeEncoder::EmitNewArray(std::vector<std::byte>& code, ArrayTypeSymbol
     AppendData(code, &type, sizeof(type));
 }
 
-void ByteCodeEncoder::EmitNewArrayDynamic(std::vector<std::byte>& code, TypeSymbol* elementType)
+void ByteCodeEncoder::EmitNewArrayDynamic(std::vector<std::byte>& code, ArrayTypeSymbol* type)
 {
     AppendDataT(code, OpCode::NEWARRAY_DYNAMIC);
-    AppendData(code, &elementType, sizeof(elementType));
+    AppendData(code, &type, sizeof(type));
 }
 
-void ByteCodeEncoder::EmitCreateRange(std::vector<std::byte>& code, TypeSymbol* elementType)
+void ByteCodeEncoder::EmitCreateRange(std::vector<std::byte>& code, ArrayTypeSymbol* type)
 {
     AppendDataT(code, OpCode::CREATERANGE);
-    AppendData(code, &elementType, sizeof(elementType));
+    AppendData(code, &type, sizeof(type));
 }
 
 void ByteCodeEncoder::EmitLoadArrayElement(std::vector<std::byte>& code)

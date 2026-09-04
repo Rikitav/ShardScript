@@ -99,7 +99,7 @@ static void primitive_array_to_string(const CallState& context)
 
 	ObjectInstance* instance = context.Args[0]; // this
 	const ArrayTypeSymbol* array = static_cast<const ArrayTypeSymbol*>(instance->getInfo());
-	size_t size = array->Length;
+	size_t size = instance->GetArrayLength();
 
 	if (size == 0)
 	{

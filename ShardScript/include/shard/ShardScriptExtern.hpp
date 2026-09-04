@@ -227,7 +227,6 @@ extern "C"
     SHARD_API int Shard_ObjectWriteInteger(shard::ObjectInstance* instance, std::int64_t value);
     SHARD_API int Shard_ObjectWriteDouble(shard::ObjectInstance* instance, double value);
     SHARD_API int Shard_ObjectWriteBool(shard::ObjectInstance* instance, int value);
-    SHARD_API int Shard_ObjectWriteString(shard::ObjectInstance* instance, const wchar_t* value);
 
     // =========================================================================
     // TypeShape API
@@ -377,7 +376,7 @@ extern "C"
     // =========================================================================
 
     SHARD_API shard::ObjectInstance* Shard_GCAllocateInstance(shard::GarbageCollector* gc, shard::TypeSymbol* type);
-    SHARD_API shard::ObjectInstance* Shard_GCAllocateArray(shard::GarbageCollector* gc, shard::TypeSymbol* elementType, std::size_t length);
+    SHARD_API shard::ObjectInstance* Shard_GCAllocateArray(shard::GarbageCollector* gc, shard::ArrayTypeSymbol* arrayType, shard::TypeSymbol* elementType, std::size_t length);
     SHARD_API shard::ObjectInstance* Shard_GCAllocateInstanceFromShape(shard::GarbageCollector* gc, shard::TypeShape* shape);
     SHARD_API shard::ObjectInstance* Shard_GCAllocateGeneric(shard::GarbageCollector* gc, shard::TypeSymbol* baseType, shard::TypeSymbol** genericArgs, std::size_t genericArgCount);
 

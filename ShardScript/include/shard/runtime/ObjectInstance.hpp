@@ -109,9 +109,6 @@ namespace shard
 		void WriteDouble(const double& value) const;
 		void WriteCharacter(const wchar_t& value) const;
 		void WriteByte(const std::uint8_t& value) const;
-		void WriteString(const wchar_t* value) const;
-		void WriteString(const wchar_t* value, std::size_t size) const;
-		void WriteString(const std::wstring& value) const;
 
 		bool& AsBoolean() const;
 		std::int64_t& AsInteger() const;

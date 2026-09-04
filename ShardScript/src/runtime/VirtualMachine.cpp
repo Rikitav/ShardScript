@@ -793,19 +793,25 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 
 			ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(type);
 			std::size_t length = arrayType->Length;
+
 			std::vector<StackValue> elements;
 			elements.reserve(length);
+
 			for (std::size_t i = 0; i < length; ++i)
 				elements.push_back(frame->PopValue());
 
 			ObjectInstance* instance = garbageCollector.AllocateInstance(type);
+			std::uint64_t payloadLength = static_cast<std::uint64_t>(length);
+			instance->WriteMemory(0, sizeof(std::int64_t), &payloadLength);
 			bool referenceElements = arrayType->UnderlayingType->IsReferenceType();
+
 			for (std::size_t i = 0; i < length; ++i)
 			{
 				ObjectInstance elementStorage(nullptr, nullptr, nullptr);
 				ObjectInstance* element = referenceElements
 					? garbageCollector.Materialize(operandInstance(elements[i], elementStorage))
 					: operandInstance(elements[i], elementStorage);
+
 				instance->SetElement(i, element);
 				CallStackFrame::DiscardValue(elements[i], garbageCollector);
 			}
@@ -816,22 +822,32 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 
 		case OpCode::NEWARRAY_DYNAMIC:
 		{
-			TypeSymbol* elementType = decoder.AbsorbTypeSymbol();
-			elementType = frame->ResolveType(elementType);
+			TypeSymbol* operand = decoder.AbsorbTypeSymbol();
+			TypeSymbol* resolved = frame->ResolveType(operand);
+			if (resolved == nullptr || resolved->Kind != SyntaxKind::ArrayType)
+				throw std::runtime_error("NEWARRAY_DYNAMIC expects an array type");
+
+			ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(resolved);
+			TypeSymbol* elementType = frame->ResolveType(arrayType->UnderlayingType);
 
 			StackValue sizeValue = frame->PopValue();
 			std::int64_t length = operandInt(sizeValue);
 			CallStackFrame::DiscardValue(sizeValue, garbageCollector);
 
-			ObjectInstance* instance = garbageCollector.AllocateArray(elementType, static_cast<std::size_t>(length));
+			ObjectInstance* instance = garbageCollector.AllocateArray(arrayType, elementType, static_cast<std::size_t>(length));
 			frame->PushReference(instance);
 			break;
 		}
 
 		case OpCode::CREATERANGE:
 		{
-			TypeSymbol* elementType = decoder.AbsorbTypeSymbol();
-			elementType = frame->ResolveType(elementType);
+			TypeSymbol* operand = decoder.AbsorbTypeSymbol();
+			TypeSymbol* resolved = frame->ResolveType(operand);
+			if (resolved == nullptr || resolved->Kind != SyntaxKind::ArrayType)
+				throw std::runtime_error("CREATERANGE expects an array type");
+
+			ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(resolved);
+			TypeSymbol* elementType = frame->ResolveType(arrayType->UnderlayingType);
 
 			StackValue inclusiveValue = frame->PopValue();
 			bool inclusive = operandBool(inclusiveValue);
@@ -856,7 +872,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 
 			std::int64_t step = (diff < 0) ? -1 : 1;
 
-			ObjectInstance* arrayInstance = garbageCollector.AllocateArray(elementType, static_cast<std::size_t>(length));
+			ObjectInstance* arrayInstance = garbageCollector.AllocateArray(arrayType, elementType, static_cast<std::size_t>(length));
 			for (std::int64_t i = 0; i < length; i++)
 			{
 				ObjectInstance* valueInstance = garbageCollector.FromValue(lower + step * i);

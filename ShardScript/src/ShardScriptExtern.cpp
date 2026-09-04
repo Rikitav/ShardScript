@@ -2895,25 +2895,6 @@ extern "C"
         }
     }
 
-    SHARD_API int Shard_ObjectWriteString(ObjectInstance* instance, const wchar_t* value)
-    {
-        try
-        {
-            if (instance == nullptr || value == nullptr)
-            {
-                SetLastShardWError(L"instance or value is null");
-                return -1;
-            }
-
-            instance->WriteString(value);
-            return 0;
-        }
-        catch (const std::exception& e)
-        {
-            SetLastErrorFromException(e);
-            return -1;
-        }
-    }
 
     // =========================================================================
     // TypeShape API
@@ -7598,17 +7579,17 @@ extern "C"
         }
     }
 
-    SHARD_API ObjectInstance* Shard_GCAllocateArray(GarbageCollector* gc, TypeSymbol* elementType, std::size_t length)
+    SHARD_API ObjectInstance* Shard_GCAllocateArray(GarbageCollector* gc, ArrayTypeSymbol* arrayType, TypeSymbol* elementType, std::size_t length)
     {
         try
         {
-            if (gc == nullptr || elementType == nullptr)
+            if (gc == nullptr || arrayType == nullptr || elementType == nullptr)
             {
                 SetLastShardWError(L"invalid argument");
                 return nullptr;
             }
 
-            return gc->AllocateArray(elementType, length);
+            return gc->AllocateArray(arrayType, elementType, length);
         }
         catch (const std::exception& e)
         {
