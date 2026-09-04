@@ -451,6 +451,19 @@ void GarbageCollector::DestroyInstance(ObjectInstance* instance)
 	TerminateInstance(instance);
 }
 
+void GarbageCollector::DeleteView(ObjectInstance* view)
+{
+	if (view == nullptr || view == NullInstance)
+		return;
+
+	if (view->Terminated)
+		return;
+
+	view->Terminated = true;
+	Heap.erase(view);
+	delete view;
+}
+
 void GarbageCollector::DeleteInstanceMemory(ObjectInstance* instance)
 {
 	if (instance == nullptr)

@@ -1213,7 +1213,7 @@ extern "C"
                 return nullptr;
             }
 
-            return frame->PopStack();
+            return frame->PopBoxed(frame->Host->GetGarbageCollector());
         }
         catch (const std::exception& e)
         {

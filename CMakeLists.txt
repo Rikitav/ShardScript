@@ -52,7 +52,7 @@ include(CMake/GlobalSettingsInclude.cmake OPTIONAL)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 add_subdirectory(ShardScript)
-add_subdirectory(ShardScript.Framework)
+#add_subdirectory(ShardScript.Framework)
 add_subdirectory(ShardScript.Interpreter)
 
 if(WIN32)
