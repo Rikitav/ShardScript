@@ -173,37 +173,71 @@ namespace
         ByteCodeEncoder::PasteData(code, jumpInstructionOffset + addressOffset, &targetAddress, sizeof(std::size_t));
     }
 
-    static void RestoreLiftedParametersAndLocals(const AsyncMethodInfo& info, std::vector<std::byte>& code, ByteCodeEncoder& encoder)
+    // ------------------------------------------------------------------------
+    // Eval-stack layout tracking. Mirrors AbstractEmiter's instrumentation so
+    // MoveNext/factory layouts are computed during emission. A desync poisons
+    // the tracker and nothing is published for that method.
+    // ------------------------------------------------------------------------
+    static void TrackPush(AbstractEmiter::EvalLayoutTracker& tracker, std::size_t payload = sizeof(void*))
+    {
+        AbstractEmiter::EvalPush(tracker, payload);
+    }
+
+    static void TrackPop(AbstractEmiter::EvalLayoutTracker& tracker, std::size_t count = 1)
+    {
+        AbstractEmiter::EvalPop(tracker, count);
+    }
+
+    static void TrackDrainDefers(AbstractEmiter::EvalLayoutTracker& tracker)
+    {
+        AbstractEmiter::EvalDrainDefers(tracker);
+    }
+
+    static void RestoreLiftedParametersAndLocals(const AsyncMethodInfo& info, std::vector<std::byte>& code, ByteCodeEncoder& encoder, AbstractEmiter::EvalLayoutTracker& tracker)
     {
         for (const auto& lifted : info.LiftedParameters)
         {
             encoder.EmitLoadLocal(code, 0);                     // this
+            TrackPush(tracker);
             encoder.EmitLoadField(code, lifted.Field->SlotIndex); // field value
+            TrackPop(tracker);
+            TrackPush(tracker, FrameLayout::ResolveTypePayload(lifted.Field->ReturnType));
             encoder.EmitStoreLocal(code, lifted.MoveNextSlot);  // local slot
+            TrackPop(tracker);
         }
 
         for (const auto& lifted : info.LiftedLocals)
         {
             encoder.EmitLoadLocal(code, 0);
+            TrackPush(tracker);
             encoder.EmitLoadField(code, lifted.Field->SlotIndex);
+            TrackPop(tracker);
+            TrackPush(tracker, FrameLayout::ResolveTypePayload(lifted.Field->ReturnType));
             encoder.EmitStoreLocal(code, lifted.MoveNextSlot);
+            TrackPop(tracker);
         }
     }
 
-    static void SaveLiftedParametersAndLocals(const AsyncMethodInfo& info, std::vector<std::byte>& code, ByteCodeEncoder& encoder)
+    static void SaveLiftedParametersAndLocals(const AsyncMethodInfo& info, std::vector<std::byte>& code, ByteCodeEncoder& encoder, AbstractEmiter::EvalLayoutTracker& tracker)
     {
         for (const auto& lifted : info.LiftedParameters)
         {
             encoder.EmitLoadLocal(code, 0);                      // this
+            TrackPush(tracker);
             encoder.EmitLoadLocal(code, lifted.MoveNextSlot);    // value
+            TrackPush(tracker, FrameLayout::SlotPayload(*info.MoveNext, lifted.MoveNextSlot));
             encoder.EmitStoreField(code, lifted.Field->SlotIndex);
+            TrackPop(tracker, 2);
         }
 
         for (const auto& lifted : info.LiftedLocals)
         {
             encoder.EmitLoadLocal(code, 0);                      // this
+            TrackPush(tracker);
             encoder.EmitLoadLocal(code, lifted.MoveNextSlot);    // value
+            TrackPush(tracker, FrameLayout::SlotPayload(*info.MoveNext, lifted.MoveNextSlot));
             encoder.EmitStoreField(code, lifted.Field->SlotIndex);
+            TrackPop(tracker, 2);
         }
     }
 
@@ -245,6 +279,7 @@ namespace
         ByteCodeEncoder& Encoder;
         std::unordered_map<AwaitExpressionSyntax*, std::size_t>& AwaitIndexMap;
         std::unordered_map<TryStatementSyntax*, ExceptionRegion>& Regions;
+        AbstractEmiter::EvalLayoutTracker& Tracker;
         std::vector<LoopLabels> LoopStack;
         std::unordered_map<StatementSyntax*, LoopLabels> LoopLabelsByStatement;
     };
@@ -363,11 +398,20 @@ namespace
         std::size_t jumpOverBacktrack = code.size();
         encoder.EmitJump(code, 0);
 
+        // The deferred body runs later, at the depth of whatever DEFER_DRAIN site
+        // drains it — not at the registration depth. Track it in isolation and
+        // remember its internal peak for the drain-site overlay.
+        AbstractEmiter::EvalLayoutTracker outerTracker = ctx.Tracker;
+        ctx.Tracker = AbstractEmiter::EvalLayoutTracker();
+
         std::size_t expressionStart = code.size();
         if (defer->IsResourceDefer)
         {
             if (defer->Variable != nullptr)
+            {
                 encoder.EmitLoadLocal(code, defer->Variable->SlotIndex);
+                TrackPush(ctx.Tracker, FrameLayout::SlotPayload(*ctx.Info.MoveNext, defer->Variable->SlotIndex));
+            }
 
             if (defer->DisposeMethod != nullptr)
                 EmitMethodCall(ctx, defer->DisposeMethod);
@@ -380,6 +424,21 @@ namespace
         encoder.EmitDeferBreak(code);
         std::size_t afterExpression = code.size();
 
+        if (!ctx.Tracker.Poisoned && ctx.Tracker.CurrentDepth == 0)
+        {
+            if (ctx.Tracker.MaxDepth > outerTracker.DeferBodyMax)
+                outerTracker.DeferBodyMax = ctx.Tracker.MaxDepth;
+        }
+        else
+        {
+            outerTracker.Poisoned = true;
+        }
+
+        if (ctx.Tracker.MaxPayload > outerTracker.MaxPayload)
+            outerTracker.MaxPayload = ctx.Tracker.MaxPayload;
+
+        ctx.Tracker = outerTracker;
+
         ByteCodeEncoder::PasteData(code, deferOffset + sizeof(OpCode), &expressionStart, sizeof(std::size_t));
         ByteCodeEncoder::PasteData(code, jumpOverBacktrack + sizeof(OpCode), &afterExpression, sizeof(std::size_t));
     }
@@ -387,7 +446,10 @@ namespace
     static void EmitDeferDrain(MoveNextEmitter& ctx, std::size_t count)
     {
         if (count > 0)
+        {
             ctx.Encoder.EmitDeferDrain(ctx.Code, count);
+            TrackDrainDefers(ctx.Tracker);
+        }
     }
 
     static void EmitDefers(MoveNextEmitter& ctx, const std::vector<DeferStatementSyntax*>& defers)
@@ -473,7 +535,9 @@ namespace
         AbstractEmiter emiter(ctx.Program, ctx.Model, ctx.Diagnostics);
         emiter.SetGeneratingTarget(target);
         emiter.SetPopExpressionStatement(true);
+        emiter.ImportTracker(ctx.Tracker);
         emiter.VisitStatement(statement);
+        ctx.Tracker = emiter.ExportTracker();
     }
 
     static void EmitExpressionInto(MoveNextEmitter& ctx, MethodSymbol* target, ExpressionSyntax* expression)
@@ -481,7 +545,9 @@ namespace
         AbstractEmiter emiter(ctx.Program, ctx.Model, ctx.Diagnostics);
         emiter.SetGeneratingTarget(target);
         emiter.SetPopExpressionStatement(false);
+        emiter.ImportTracker(ctx.Tracker);
         emiter.VisitExpression(expression);
+        ctx.Tracker = emiter.ExportTracker();
     }
 
     static bool IsInterfaceMember(MethodSymbol* method)
@@ -504,6 +570,16 @@ namespace
         return false;
     }
 
+    static void TrackMethodCall(AbstractEmiter::EvalLayoutTracker& tracker, MethodSymbol* method)
+    {
+        if (method == nullptr)
+            return;
+
+        TrackPop(tracker, method->GetEvalStackArgumentsCount());
+        if (method->ReturnType != nullptr && method->ReturnType != SymbolTable::Primitives::Void)
+            TrackPush(tracker, FrameLayout::ResolveTypePayload(method->ReturnType));
+    }
+
     static void EmitMethodCall(MoveNextEmitter& ctx, MethodSymbol* method)
     {
         if (method == nullptr)
@@ -513,6 +589,8 @@ namespace
             ctx.Encoder.EmitCallInterface(ctx.Code, method);
         else
             ctx.Encoder.EmitCallMethodSymbol(ctx.Code, method);
+
+        TrackMethodCall(ctx.Tracker, method);
     }
 
     static void EmitConditionExpression(MoveNextEmitter& ctx, StatementSyntax* conditionStatement)
@@ -529,6 +607,7 @@ namespace
         const AsyncMethodInfo& info = ctx.Info;
         std::vector<std::byte>& code = ctx.Code;
         ByteCodeEncoder& encoder = ctx.Encoder;
+        AbstractEmiter::EvalLayoutTracker& tracker = ctx.Tracker;
 
         TypeSymbol* returnType = info.Method->ReturnType;
         if (IsTaskReturnType(returnType))
@@ -538,8 +617,11 @@ namespace
                 return;
 
             encoder.EmitLoadLocal(code, 0); // this state machine
+            TrackPush(tracker);
             encoder.EmitLoadField(code, info.TaskField->SlotIndex);
-            encoder.EmitCallMethodSymbol(code, completeMethod);
+            TrackPop(tracker);
+            TrackPush(tracker, FrameLayout::ResolveTypePayload(info.TaskField->ReturnType));
+            EmitMethodCall(ctx, completeMethod);
         }
         else if (IsValueTaskReturnType(returnType))
         {
@@ -550,10 +632,14 @@ namespace
             TypeSymbol* elementType = GetValueTaskElementType(returnType);
 
             encoder.EmitLoadLocal(code, 0); // this state machine
+            TrackPush(tracker);
             encoder.EmitLoadField(code, info.TaskField->SlotIndex);
+            TrackPop(tracker);
+            TrackPush(tracker, FrameLayout::ResolveTypePayload(info.TaskField->ReturnType));
 
             encoder.EmitDefaultValue(code, elementType);
-            encoder.EmitCallMethodSymbol(code, setResultMethod);
+            TrackPush(tracker, FrameLayout::ResolveTypePayload(elementType));
+            EmitMethodCall(ctx, setResultMethod);
         }
     }
 
@@ -562,6 +648,7 @@ namespace
         const AsyncMethodInfo& info = ctx.Info;
         std::vector<std::byte>& code = ctx.Code;
         ByteCodeEncoder& encoder = ctx.Encoder;
+        AbstractEmiter::EvalLayoutTracker& tracker = ctx.Tracker;
 
         const AwaitSite& site = info.AwaitSites[awaitIndex];
         AwaitExpressionSyntax* awaitExpr = site.Expression;
@@ -574,55 +661,83 @@ namespace
 
         // Anchor the awaitable in a temporary local before calling GetAwaiter.
         encoder.EmitStoreLocal(code, tempAwaitableSlot);
+        TrackPop(tracker);
 
         if (awaitExpr->GetAwaiterMethod != nullptr)
         {
             encoder.EmitLoadLocal(code, tempAwaitableSlot);
-            encoder.EmitCallMethodSymbol(code, awaitExpr->GetAwaiterMethod);
+            TrackPush(tracker, FrameLayout::SlotPayload(*info.MoveNext, tempAwaitableSlot));
+            EmitMethodCall(ctx, awaitExpr->GetAwaiterMethod);
             encoder.EmitStoreLocal(code, tempAwaiterSlot);
+            TrackPop(tracker);
         }
         else
         {
             // Self-awaiter: the awaitable is the awaiter.
             encoder.EmitLoadLocal(code, tempAwaitableSlot);
+            TrackPush(tracker, FrameLayout::SlotPayload(*info.MoveNext, tempAwaitableSlot));
             encoder.EmitStoreLocal(code, tempAwaiterSlot);
+            TrackPop(tracker);
         }
 
         // Release the temporary anchor now that the awaiter is stored in the field.
         encoder.EmitLoadConstNull(code);
+        TrackPush(tracker);
         encoder.EmitStoreLocal(code, tempAwaitableSlot);
+        TrackPop(tracker);
 
         // this._awaiterN = awaiter;
         encoder.EmitLoadLocal(code, 0);              // this
+        TrackPush(tracker);
         encoder.EmitLoadLocal(code, tempAwaiterSlot); // awaiter
+        TrackPush(tracker, FrameLayout::SlotPayload(*info.MoveNext, tempAwaiterSlot));
         encoder.EmitStoreField(code, site.AwaiterField->SlotIndex);
+        TrackPop(tracker, 2);
 
         // if (this._awaiterN.IsCompleted) goto next resume label;
         encoder.EmitLoadLocal(code, 0);
+        TrackPush(tracker);
         encoder.EmitLoadField(code, site.AwaiterField->SlotIndex);
-        encoder.EmitCallMethodSymbol(code, awaitExpr->IsCompletedMethod);
+        TrackPop(tracker);
+        TrackPush(tracker, FrameLayout::ResolveTypePayload(site.AwaiterField->ReturnType));
+        EmitMethodCall(ctx, awaitExpr->IsCompletedMethod);
         nextResumeBacktracks.push_back(code.size());
         encoder.EmitJumpTrue(code, 0);
+        TrackPop(tracker);
 
         // If we are suspending inside a catch clause, preserve the exception being
         // handled so it can be restored when MoveNext resumes.
         if (ctx.Info.CurrentExceptionField != nullptr && site.EnclosingCatch != nullptr)
         {
             encoder.EmitLoadLocal(code, 0);
+            TrackPush(tracker);
             encoder.EmitLoadCurrentException(code);
+            TrackPush(tracker);
             encoder.EmitStoreField(code, ctx.Info.CurrentExceptionField->SlotIndex);
+            TrackPop(tracker, 2);
         }
 
         // this._state = awaitIndex + 1;
         encoder.EmitLoadLocal(code, 0);
+        TrackPush(tracker);
         encoder.EmitLoadConstInt64(code, static_cast<std::int64_t>(awaitIndex + 1));
+        TrackPush(tracker, FrameLayout::ResolveTypePayload(SymbolTable::Primitives::Integer));
         encoder.EmitStoreField(code, info.StateField->SlotIndex);
+        TrackPop(tracker, 2);
 
         // this._awaiterN.OnCompleted(this);
         encoder.EmitLoadLocal(code, 0);              // this (becomes parameter)
+        TrackPush(tracker);
         encoder.EmitLoadLocal(code, 0);              // this (becomes receiver placeholder)
+        TrackPush(tracker);
         encoder.EmitLoadField(code, site.AwaiterField->SlotIndex); // replace top with awaiter
-        encoder.EmitCallMethodSymbol(code, awaitExpr->OnCompletedMethod);
+        TrackPop(tracker);
+        TrackPush(tracker, FrameLayout::ResolveTypePayload(site.AwaiterField->ReturnType));
+        EmitMethodCall(ctx, awaitExpr->OnCompletedMethod);
+
+        // A suspension must leave the eval stack empty before 'return'.
+        if (tracker.CurrentDepth != 0)
+            tracker.Poisoned = true;
 
         // return;
         encoder.EmitReturn(code);
@@ -633,19 +748,33 @@ namespace
         const AsyncMethodInfo& info = ctx.Info;
         std::vector<std::byte>& code = ctx.Code;
         ByteCodeEncoder& encoder = ctx.Encoder;
+        AbstractEmiter::EvalLayoutTracker& tracker = ctx.Tracker;
 
         const AwaitSite& site = info.AwaitSites[previousAwaitIndex];
         encoder.EmitLoadLocal(code, 0);
+        TrackPush(tracker);
         encoder.EmitLoadField(code, site.AwaiterField->SlotIndex);
+        TrackPop(tracker);
+        TrackPush(tracker, FrameLayout::ResolveTypePayload(site.AwaiterField->ReturnType));
 
         if (site.Expression->GetResultMethod != nullptr)
+        {
             encoder.EmitCallMethodSymbol(code, site.Expression->GetResultMethod);
+            MethodSymbol* getResult = site.Expression->GetResultMethod;
+            TrackPop(tracker, getResult->GetEvalStackArgumentsCount());
+            if (getResult->ReturnType != nullptr && getResult->ReturnType != SymbolTable::Primitives::Void)
+                TrackPush(tracker, FrameLayout::ResolveTypePayload(getResult->ReturnType));
+        }
         else
+        {
             encoder.EmitPop(code);
+            TrackPop(tracker);
+        }
 
         if (site.ResultVariable != nullptr)
         {
             encoder.EmitStoreLocal(code, site.ResultVariable->SlotIndex);
+            TrackPop(tracker);
         }
         else if (site.IsReturnAwait)
         {
@@ -654,14 +783,19 @@ namespace
             {
                 std::uint16_t tempSlot = static_cast<std::uint16_t>(info.MoveNext->GetEvalStackArgumentsCount() + info.MoveNext->AddVariableCount());
                 encoder.EmitStoreLocal(code, tempSlot);
+                TrackPop(tracker);
 
                 encoder.EmitLoadLocal(code, tempSlot);
+                TrackPush(tracker, FrameLayout::SlotPayload(*info.MoveNext, tempSlot));
                 encoder.EmitLoadLocal(code, 0);
+                TrackPush(tracker);
                 encoder.EmitLoadField(code, info.TaskField->SlotIndex);
+                TrackPop(tracker);
+                TrackPush(tracker, FrameLayout::ResolveTypePayload(info.TaskField->ReturnType));
 
                 MethodSymbol* setResultMethod = FindSetResultMethod(returnType);
                 if (setResultMethod != nullptr)
-                    encoder.EmitCallMethodSymbol(code, setResultMethod);
+                    EmitMethodCall(ctx, setResultMethod);
             }
             else if (IsTaskReturnType(returnType))
             {
@@ -669,14 +803,18 @@ namespace
                     site.Expression->GetResultMethod->ReturnType != SymbolTable::Primitives::Void)
                 {
                     encoder.EmitPop(code);
+                    TrackPop(tracker);
                 }
 
                 encoder.EmitLoadLocal(code, 0);
+                TrackPush(tracker);
                 encoder.EmitLoadField(code, info.TaskField->SlotIndex);
+                TrackPop(tracker);
+                TrackPush(tracker, FrameLayout::ResolveTypePayload(info.TaskField->ReturnType));
 
                 MethodSymbol* completeMethod = FindCompleteMethod(returnType);
                 if (completeMethod != nullptr)
-                    encoder.EmitCallMethodSymbol(code, completeMethod);
+                    EmitMethodCall(ctx, completeMethod);
             }
 
             encoder.EmitReturn(code);
@@ -685,6 +823,7 @@ namespace
                  site.Expression->GetResultMethod->ReturnType != SymbolTable::Primitives::Void)
         {
             encoder.EmitPop(code);
+            TrackPop(tracker);
         }
     }
 
@@ -700,6 +839,9 @@ namespace
             outClauseStarts.push_back(code.size());
             outFilterFailBacktracks.emplace_back(std::nullopt);
 
+            // The handler entry always has the thrown exception on the eval stack.
+            ctx.Tracker.CurrentDepth = 1;
+
             TypeSymbol* catchType = SymbolTable::Primitives::Any;
             if (clause->ExceptionType != nullptr && clause->ExceptionType->Symbol != nullptr)
                 catchType = clause->ExceptionType->Symbol;
@@ -707,17 +849,25 @@ namespace
             if (catchType != SymbolTable::Primitives::Any)
             {
                 encoder.EmitDuplicate(code);
+                TrackPush(ctx.Tracker);
                 encoder.EmitIsInstance(code, catchType);
+                TrackPop(ctx.Tracker);
+                TrackPush(ctx.Tracker, FrameLayout::ResolveTypePayload(SymbolTable::Primitives::Boolean));
                 outFilterFailBacktracks.back() = code.size();
                 encoder.EmitJumpFalse(code, 0);
+                TrackPop(ctx.Tracker);
             }
 
             if (clause->Symbol != nullptr)
             {
                 encoder.EmitStoreLocal(code, clause->Symbol->SlotIndex);
+                TrackPop(ctx.Tracker);
             }
             else
+            {
                 encoder.EmitPop(code);
+                TrackPop(ctx.Tracker);
+            }
 
             bool bodyFellThrough = false;
             if (clause->Body != nullptr)
@@ -763,6 +913,7 @@ namespace
         ByteCodeEncoder& encoder = ctx.Encoder;
         std::unordered_map<TryStatementSyntax*, ExceptionRegion>& regions = ctx.Regions;
 
+        std::size_t tryBaseDepth = ctx.Tracker.CurrentDepth;
         std::size_t enterBacktrack = code.size();
         encoder.EmitEnterTry(code, 0);
         regions[tryStmt].Try = tryStmt;
@@ -778,6 +929,9 @@ namespace
         bool bodyFellThrough = EmitStatementSequence(ctx, tryStmt->TryBlock.get(), 0, innerStack, false, bodyAfter);
 
         std::size_t handlerStart = code.size();
+        // Handler entry: the runtime truncates the eval stack and pushes the
+        // exception, whatever the try body left behind.
+        ctx.Tracker.CurrentDepth = 1;
         regions[tryStmt].HandlerAddress = handlerStart;
 
         std::vector<std::size_t> clauseStarts;
@@ -786,9 +940,11 @@ namespace
 
         std::size_t fallbackStart = code.size();
         encoder.EmitThrow(code);
+        TrackPop(ctx.Tracker);
 
         std::size_t endLabel = code.size();
         encoder.EmitEndCatch(code);
+        ctx.Tracker.CurrentDepth = tryBaseDepth;
         regions[tryStmt].AfterTryAddress = endLabel;
 
         for (std::size_t pending : regions[tryStmt].AfterTryBacktracks)
@@ -859,27 +1015,42 @@ namespace
 
             // enumerator := range.GetEnumerator();
             encoder.EmitLoadLocal(code, 0);                                     // this
+            TrackPush(ctx.Tracker);
             EmitExpressionInto(ctx, ctx.Info.MoveNext, range);                    // this, range
             EmitMethodCall(ctx, TRAIT_ENUMERABLE_GETENUMERATOR);             // this, enumerator
             encoder.EmitStoreField(code, enumeratorField->SlotIndex);             // --
+            TrackPop(ctx.Tracker, 2);
 
             labels.LoopStart = code.size();
 
             // while (enumerator.MoveNext())
             encoder.EmitLoadLocal(code, 0);
+            TrackPush(ctx.Tracker);
             encoder.EmitLoadField(code, enumeratorField->SlotIndex);
+            TrackPop(ctx.Tracker);
+            TrackPush(ctx.Tracker, FrameLayout::ResolveTypePayload(enumeratorField->ReturnType));
             EmitMethodCall(ctx, TRAIT_ENUMERATOR_MOVENEXT);
             std::size_t condJumpBacktrack = code.size();
             encoder.EmitJumpFalse(code, 0);
+            TrackPop(ctx.Tracker);
 
             // loopVariable := enumerator.Current;
             encoder.EmitLoadLocal(code, 0);
+            TrackPush(ctx.Tracker);
             encoder.EmitLoadField(code, enumeratorField->SlotIndex);
+            TrackPop(ctx.Tracker);
+            TrackPush(ctx.Tracker, FrameLayout::ResolveTypePayload(enumeratorField->ReturnType));
             EmitMethodCall(ctx, TRAIT_ENUMERATOR_CURRENT_GET);
             if (loopVariable != nullptr)
+            {
                 encoder.EmitStoreLocal(code, loopVariable->SlotIndex);
+                TrackPop(ctx.Tracker);
+            }
             else
+            {
                 encoder.EmitPop(code);
+                TrackPop(ctx.Tracker);
+            }
 
             ctx.LoopStack.push_back(labels);
             EmitStatementSequence(ctx, body, 0, activeStack, leaveActiveTries, []() -> bool { return true; });
@@ -938,6 +1109,7 @@ namespace
                 encoder.EmitJumpFalse(code, 0);
             else
                 encoder.EmitJumpTrue(code, 0);
+            TrackPop(ctx.Tracker);
         }
 
         StatementsBlockSyntax* body = nullptr;
@@ -1092,7 +1264,7 @@ namespace
                 {
                     std::size_t awaitIndex = it->second;
 
-                    SaveLiftedParametersAndLocals(info, code, encoder);
+                    SaveLiftedParametersAndLocals(info, code, encoder, ctx.Tracker);
 
                     std::vector<std::size_t> syncResumeBacktracks;
                     EmitAwaitSuspension(ctx, awaitIndex, syncResumeBacktracks);
@@ -1129,6 +1301,8 @@ namespace
             // The VM's exception dispatch drains the defers that belong to the
             // scopes being unwound; do not emit DEFER_DRAIN here.
             encoder.EmitThrow(code);
+            TrackPop(ctx.Tracker);
+            ctx.Tracker.CurrentDepth = 0; // unreachable code after 'throw' is tracked from a clean base
             return false;
         }
 
@@ -1143,7 +1317,7 @@ namespace
                 {
                     std::size_t awaitIndex = it->second;
 
-                    SaveLiftedParametersAndLocals(info, code, encoder);
+                    SaveLiftedParametersAndLocals(info, code, encoder, ctx.Tracker);
 
                     std::vector<std::size_t> syncResumeBacktracks;
                     EmitAwaitSuspension(ctx, awaitIndex, syncResumeBacktracks);
@@ -1168,18 +1342,23 @@ namespace
                     if (setResultMethod != nullptr)
                     {
                         encoder.EmitLoadLocal(code, 0);
+                        TrackPush(ctx.Tracker);
                         encoder.EmitLoadField(code, info.TaskField->SlotIndex);
-                        encoder.EmitCallMethodSymbol(code, setResultMethod);
+                        TrackPop(ctx.Tracker);
+                        TrackPush(ctx.Tracker, FrameLayout::ResolveTypePayload(info.TaskField->ReturnType));
+                        EmitMethodCall(ctx, setResultMethod);
                     }
                     else
                     {
                         encoder.EmitPop(code);
+                        TrackPop(ctx.Tracker);
                         EmitTaskComplete(ctx);
                     }
                 }
                 else
                 {
                     encoder.EmitPop(code);
+                    TrackPop(ctx.Tracker);
                     EmitTaskComplete(ctx);
                 }
             }
@@ -1190,6 +1369,7 @@ namespace
             }
 
             encoder.EmitReturn(code);
+            ctx.Tracker.CurrentDepth = 0; // unreachable code after 'return' is tracked from a clean base
             return false;
         }
 
@@ -1272,6 +1452,7 @@ namespace
         {
             ctx.Encoder.EmitJumpFalse(ctx.Code, 0);
         }
+        TrackPop(ctx.Tracker);
 
         bool bodyFellThrough = EmitStatementSequence(ctx, condClause->StatementsBlock.get(), 0, activeStack, leaveActiveTries, []() -> bool { return true; });
 
@@ -1579,6 +1760,9 @@ void AsyncEmissionPass::Run(const AsyncMethodInfo& info, ProgramVirtualImage& pr
         auto& code = info.StateMachineCtor->ExecutableByteCode;
         code.clear();
         encoder.EmitReturn(code);
+
+        AbstractEmiter::EvalLayoutTracker ctorTracker;
+        AbstractEmiter::PublishLayout(info.StateMachineCtor, ctorTracker);
     }
 
     // -------------------------------------------------------------------------
@@ -1602,6 +1786,8 @@ void AsyncEmissionPass::Run(const AsyncMethodInfo& info, ProgramVirtualImage& pr
 
 void AsyncEmissionPass::EmitFactoryBody(const AsyncMethodInfo& info, std::vector<std::byte>& code, ByteCodeEncoder& encoder)
 {
+    AbstractEmiter::EvalLayoutTracker tracker;
+
     TypeSymbol* taskType = info.Method->ReturnType;
     if (!IsAsyncReturnType(taskType))
     {
@@ -1639,19 +1825,31 @@ void AsyncEmissionPass::EmitFactoryBody(const AsyncMethodInfo& info, std::vector
         tempSlotOuterThis = static_cast<std::uint16_t>(info.Method->GetEvalStackArgumentsCount() + info.Method->AddVariableCount(info.OuterThisField->ReturnType));
 
         encoder.EmitLoadLocal(code, 0);              // original 'this'
+        TrackPush(tracker);
         encoder.EmitStoreLocal(code, tempSlotOuterThis);
+        TrackPop(tracker);
     }
 
     // stateMachine = new StateMachine();
     encoder.EmitNewObject(code, info.StateMachineClass, info.StateMachineCtor);
+    TrackPush(tracker); // transient instance pushed for the ctor frame
+    if (info.StateMachineCtor != nullptr)
+        TrackPop(tracker, info.StateMachineCtor->GetEvalStackArgumentsCount());
+    else
+        TrackPop(tracker);
+    TrackPush(tracker, FrameLayout::ResolveTypePayload(info.StateMachineClass));
     encoder.EmitStoreLocal(code, tempSlotStateMachine);
+    TrackPop(tracker);
 
     // stateMachine._outerThis = this;   (for instance methods)
     if (hasOuterThis)
     {
         encoder.EmitLoadLocal(code, tempSlotStateMachine); // stateMachine
+        TrackPush(tracker, FrameLayout::SlotPayload(*info.Method, tempSlotStateMachine));
         encoder.EmitLoadLocal(code, tempSlotOuterThis);    // original 'this'
+        TrackPush(tracker, FrameLayout::SlotPayload(*info.Method, tempSlotOuterThis));
         encoder.EmitStoreField(code, info.OuterThisField->SlotIndex);
+        TrackPop(tracker, 2);
     }
 
     // Copy lifted parameters into the state machine so MoveNext can read them
@@ -1659,34 +1857,60 @@ void AsyncEmissionPass::EmitFactoryBody(const AsyncMethodInfo& info, std::vector
     for (const auto& lifted : info.LiftedParameters)
     {
         encoder.EmitLoadLocal(code, tempSlotStateMachine);
+        TrackPush(tracker, FrameLayout::SlotPayload(*info.Method, tempSlotStateMachine));
         encoder.EmitLoadLocal(code, lifted.OriginalSlot);
+        TrackPush(tracker, FrameLayout::SlotPayload(*info.Method, lifted.OriginalSlot));
         encoder.EmitStoreField(code, lifted.Field->SlotIndex);
+        TrackPop(tracker, 2);
     }
 
     // stateMachine._task = new Task();
     encoder.EmitNewObject(code, taskType, taskCtor);
+    TrackPush(tracker); // transient instance pushed for the ctor frame
+    if (taskCtor != nullptr)
+        TrackPop(tracker, taskCtor->GetEvalStackArgumentsCount());
+    else
+        TrackPop(tracker);
+    TrackPush(tracker, FrameLayout::ResolveTypePayload(taskType));
     encoder.EmitStoreLocal(code, tempSlotTask);
+    TrackPop(tracker);
 
     encoder.EmitLoadLocal(code, tempSlotStateMachine);
+    TrackPush(tracker, FrameLayout::SlotPayload(*info.Method, tempSlotStateMachine));
     encoder.EmitLoadLocal(code, tempSlotTask);
+    TrackPush(tracker, FrameLayout::SlotPayload(*info.Method, tempSlotTask));
     encoder.EmitStoreField(code, info.TaskField->SlotIndex);
+    TrackPop(tracker, 2);
 
     // Root the returned task so it survives until it is completed/faulted.
     if (internalRootMethod != nullptr)
     {
         encoder.EmitLoadLocal(code, tempSlotStateMachine);
+        TrackPush(tracker, FrameLayout::SlotPayload(*info.Method, tempSlotStateMachine));
         encoder.EmitLoadField(code, info.TaskField->SlotIndex);
+        TrackPop(tracker);
+        TrackPush(tracker, FrameLayout::ResolveTypePayload(info.TaskField->ReturnType));
         encoder.EmitCallMethodSymbol(code, internalRootMethod);
+        TrackMethodCall(tracker, internalRootMethod);
     }
 
     // stateMachine.MoveNext();
     encoder.EmitLoadLocal(code, tempSlotStateMachine);
+    TrackPush(tracker, FrameLayout::SlotPayload(*info.Method, tempSlotStateMachine));
     encoder.EmitCallMethodSymbol(code, info.MoveNext);
+    TrackMethodCall(tracker, info.MoveNext);
 
     // return stateMachine._task;
     encoder.EmitLoadLocal(code, tempSlotStateMachine);
+    TrackPush(tracker, FrameLayout::SlotPayload(*info.Method, tempSlotStateMachine));
     encoder.EmitLoadField(code, info.TaskField->SlotIndex);
+    TrackPop(tracker);
+    TrackPush(tracker, FrameLayout::ResolveTypePayload(info.TaskField->ReturnType));
     encoder.EmitReturn(code);
+    if (tracker.CurrentDepth != 1)
+        tracker.Poisoned = true;
+
+    AbstractEmiter::PublishLayout(info.Method, tracker);
 }
 
 void AsyncEmissionPass::EmitMoveNextBody(const AsyncMethodInfo& info, std::vector<std::byte>& code, ProgramVirtualImage& program, ByteCodeEncoder& encoder)
@@ -1711,7 +1935,8 @@ void AsyncEmissionPass::EmitMoveNextBodyWithRegions(const AsyncMethodInfo& info,
     std::vector<std::size_t> segmentAddresses(awaitCount + 1, std::numeric_limits<std::size_t>::max());
     std::vector<std::size_t> segmentFallThroughBacktracks;
 
-    MoveNextEmitter ctx{ Model, Diagnostics, info, code, program, encoder, awaitIndexMap, regions };
+    AbstractEmiter::EvalLayoutTracker tracker;
+    MoveNextEmitter ctx{ Model, Diagnostics, info, code, program, encoder, awaitIndexMap, regions, tracker };
 
     // -------------------------------------------------------------------------
     // Top-level exception guard: any unhandled exception thrown while running
@@ -1727,14 +1952,23 @@ void AsyncEmissionPass::EmitMoveNextBodyWithRegions(const AsyncMethodInfo& info,
     for (std::size_t i = 0; i <= awaitCount; ++i)
     {
         encoder.EmitLoadLocal(code, 0); // this
+        TrackPush(tracker);
         encoder.EmitLoadField(code, info.StateField->SlotIndex);
+        TrackPop(tracker);
+        TrackPush(tracker, FrameLayout::ResolveTypePayload(info.StateField->ReturnType));
         encoder.EmitLoadConstInt64(code, static_cast<std::int64_t>(i));
+        TrackPush(tracker, FrameLayout::ResolveTypePayload(SymbolTable::Primitives::Integer));
         encoder.EmitCompareEqual(code);
+        TrackPop(tracker, 2);
+        TrackPush(tracker, FrameLayout::ResolveTypePayload(SymbolTable::Primitives::Boolean));
         segmentBacktracks[i].push_back(code.size());
         encoder.EmitJumpTrue(code, 0);
+        TrackPop(tracker);
     }
 
     encoder.EmitReturn(code);
+    if (tracker.CurrentDepth != 0)
+        tracker.Poisoned = true;
 
     // -------------------------------------------------------------------------
     // Emit each segment of the method.  Segments are emitted sequentially so
@@ -1751,12 +1985,16 @@ void AsyncEmissionPass::EmitMoveNextBodyWithRegions(const AsyncMethodInfo& info,
         for (std::size_t backtrack : segmentBacktracks[segment])
             PatchJumpTarget(code, backtrack, segmentAddresses[segment]);
 
+        // Every segment is entered with an empty eval stack: either the initial
+        // call or a fresh dispatch after a suspension returned.
+        tracker.CurrentDepth = 0;
+
         const std::vector<TryStatementSyntax*>& activeStack =
             (segment == 0) ? std::vector<TryStatementSyntax*>() : info.AwaitSites[segment - 1].ActiveTryStack;
 
         // Restore lifted parameters and locals into their MoveNext slots before
         // executing any user code that may reference them.
-        RestoreLiftedParametersAndLocals(info, code, encoder);
+        RestoreLiftedParametersAndLocals(info, code, encoder, tracker);
 
         if (segment > 0)
         {
@@ -1774,15 +2012,21 @@ void AsyncEmissionPass::EmitMoveNextBodyWithRegions(const AsyncMethodInfo& info,
                 CatchClauseSyntax* clause = previousSite.EnclosingCatch;
 
                 encoder.EmitLoadLocal(code, 0);
+                TrackPush(tracker);
                 encoder.EmitLoadField(code, info.CurrentExceptionField->SlotIndex);
+                TrackPop(tracker);
+                TrackPush(tracker, FrameLayout::ResolveTypePayload(info.CurrentExceptionField->ReturnType));
 
                 if (clause->Symbol != nullptr)
                 {
                     encoder.EmitStoreLocal(code, static_cast<std::uint16_t>(clause->Symbol->SlotIndex));
+                    TrackPop(tracker);
                     encoder.EmitLoadLocal(code, static_cast<std::uint16_t>(clause->Symbol->SlotIndex));
+                    TrackPush(tracker, FrameLayout::SlotPayload(*info.MoveNext, static_cast<std::uint16_t>(clause->Symbol->SlotIndex)));
                 }
 
                 encoder.EmitStoreCurrentException(code);
+                TrackPop(tracker);
             }
         }
 
@@ -1830,27 +2074,38 @@ void AsyncEmissionPass::EmitMoveNextBodyWithRegions(const AsyncMethodInfo& info,
     }
 
     std::size_t topHandlerStart = code.size();
+    // Handler entry: the runtime pushes the unhandled exception.
+    tracker.CurrentDepth = 1;
     MethodSymbol* setExceptionMethod = FindSetExceptionMethod(info.Method->ReturnType);
     if (setExceptionMethod != nullptr)
     {
         std::uint16_t exceptionSlot = static_cast<std::uint16_t>(info.MoveNext->GetEvalStackArgumentsCount() + info.MoveNext->AddVariableCount());
 
         encoder.EmitStoreLocal(code, exceptionSlot);
+        TrackPop(tracker);
         encoder.EmitLoadLocal(code, exceptionSlot);
+        TrackPush(tracker, FrameLayout::SlotPayload(*info.MoveNext, exceptionSlot));
         encoder.EmitLoadLocal(code, 0);
+        TrackPush(tracker);
         encoder.EmitLoadField(code, info.TaskField->SlotIndex);
+        TrackPop(tracker);
+        TrackPush(tracker, FrameLayout::ResolveTypePayload(info.TaskField->ReturnType));
         encoder.EmitCallMethodSymbol(code, setExceptionMethod);
+        TrackMethodCall(tracker, setExceptionMethod);
     }
     else
     {
         encoder.EmitPop(code);
+        TrackPop(tracker);
     }
 
     encoder.EmitReturn(code);
+    tracker.CurrentDepth = 0;
 
     std::size_t normalExit = code.size();
     EmitTaskComplete(ctx);
     encoder.EmitReturn(code);
+    tracker.CurrentDepth = 0;
 
     PatchJumpTarget(code, topEnterTryBacktrack, topHandlerStart);
     if (moveNextFellThrough)
@@ -1869,4 +2124,6 @@ void AsyncEmissionPass::EmitMoveNextBodyWithRegions(const AsyncMethodInfo& info,
                 PatchJumpTarget(code, backtrack, region.HandlerAddress);
         }
     }
+
+    AbstractEmiter::PublishLayout(info.MoveNext, tracker);
 }
