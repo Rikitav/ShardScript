@@ -132,6 +132,9 @@ namespace shard
         ObjectInstance* CreateView(const TypeSymbol* info, TypeShape* shape, void* memory);
         ObjectInstance* InternString(const wchar_t* value);
 
+        [[nodiscard]] bool IsHeapBacked(ObjectInstance* instance);
+        ObjectInstance* Materialize(ObjectInstance* value);
+
         [[nodiscard]] bool IsTaskLike(ObjectInstance* instance);
         void MarkTaskLike(ObjectInstance* instance);
         [[nodiscard]] bool IsFireAndForget(ObjectInstance* instance);

@@ -73,10 +73,7 @@ GarbageCollector::GarbageCollector(ApplicationDomain* domain) : applicationDomai
 	TypeShape* shape = GetTypeShapeCache().GetOrCreateShape(SymbolTable::Primitives::Integer);
 
 	for (int i = 0; i < SMALL_INTS_CACHE_SIZE; ++i)
-	{
-		ObjectInstance* cachedInt = new (&SmallInts[i]) ObjectInstance(TYPE_INT, shape, &SmallIntsVals[i]);
-		cachedInt->IsView = true;
-	}
+		new (&SmallInts[i]) ObjectInstance(TYPE_INT, shape, &SmallIntsVals[i]);
 }
 
 TypeShapeCache& GarbageCollector::GetTypeShapeCache() const
@@ -384,24 +381,28 @@ ObjectInstance* GarbageCollector::CopyInstance(ObjectInstance* instance)
 		return instance;
 
 	TypeShape* shape = instance->getShape();
-	if (shape == nullptr)
-		throw std::runtime_error("cannot copy instance without a type shape");
-
-	if (shape->IsReferenceType())
+	if (!instance->isHeapBacked() && shape != nullptr && shape->IsReferenceType())
 	{
 		instance->IncrementReference();
 		return instance;
 	}
 
-	ObjectInstance* newInstance = GarbageCollector::AllocateInstance(shape);
-	newInstance->WriteMemory(0, shape->Size, instance->getMemory());
+	ObjectInstance* newInstance = shape != nullptr
+		? AllocateInstance(shape)
+		: AllocateInstance(instance->getInfo());
 
-	for (std::uint32_t slot = 0; slot < static_cast<std::uint32_t>(shape->Slots.size()); ++slot)
+	TypeShape* newShape = newInstance->getShape();
+	if (newShape == nullptr)
+		throw std::runtime_error("cannot copy instance without a type shape");
+
+	newInstance->WriteMemory(0, newShape->Size, instance->getMemory());
+
+	for (std::uint32_t slot = 0; slot < static_cast<std::uint32_t>(newShape->Slots.size()); ++slot)
 	{
-		TypeShape* fieldShape = shape->GetFieldShape(slot);
+		TypeShape* fieldShape = newShape->GetFieldShape(slot);
 		if (fieldShape != nullptr && fieldShape->IsReferenceType())
 		{
-			ObjectInstance* fieldValue = instance->GetField(slot);
+			ObjectInstance* fieldValue = newInstance->GetField(slot);
 			if (fieldValue != nullptr && fieldValue != NullInstance)
 				fieldValue->IncrementReference();
 		}
@@ -410,9 +411,22 @@ ObjectInstance* GarbageCollector::CopyInstance(ObjectInstance* instance)
 	return newInstance;
 }
 
+bool GarbageCollector::IsHeapBacked(ObjectInstance* instance)
+{
+	return instance != nullptr && instance->isHeapBacked();
+}
+
+ObjectInstance* GarbageCollector::Materialize(ObjectInstance* value)
+{
+	if (value == nullptr || value == NullInstance || !value->IsView)
+		return value;
+
+	return CopyInstance(value);
+}
+
 void GarbageCollector::CollectInstance(ObjectInstance* instance)
 {
-	if (instance == nullptr || instance == NullInstance || instance->IsView)
+	if (instance == nullptr || !instance->isHeapBacked())
 		return;
 
 	if (instance->getReferencesCounter() > 0)
@@ -424,11 +438,11 @@ void GarbageCollector::CollectInstance(ObjectInstance* instance)
 
 void GarbageCollector::DestroyInstance(ObjectInstance* instance)
 {
-	if (instance == nullptr || instance == NullInstance || instance->IsView)
+	if (instance == nullptr || !instance->isHeapBacked())
 		return;
 
 	ObjectInstance::GcHeader* header = instance->getGcHeader();
-	if (header != nullptr && header->Terminated)
+	if (header->Terminated)
 		return;
 
 	instance->DecrementReference();
@@ -444,7 +458,7 @@ void GarbageCollector::DeleteInstanceMemory(ObjectInstance* instance)
 	if (instance == nullptr)
 		throw std::runtime_error("requested deleting nullptr");
 
-	if (instance == NullInstance || instance->IsView)
+	if (!instance->isHeapBacked())
 		return;
 
 	if (instance->getInfo() == SymbolTable::Primitives::String)
@@ -465,17 +479,14 @@ void GarbageCollector::TerminateInstance(ObjectInstance* instance, bool deleteIn
 	if (instance == nullptr)
 		throw std::runtime_error("requested terminating nullptr");
 
-	if (instance == NullInstance || instance->IsView)
+	if (!instance->isHeapBacked())
 		return;
 
 	ObjectInstance::GcHeader* header = instance->getGcHeader();
-	if (header != nullptr)
-	{
-		if (header->Terminated)
-			return;
+	if (header->Terminated)
+		return;
 
-		header->Terminated = true;
-	}
+	header->Terminated = true;
 
 	asyncTable.erase(instance);
 
@@ -571,9 +582,7 @@ void GarbageCollector::Terminate()
 
 ObjectInstance* GarbageCollector::CreateView(const TypeSymbol* info, TypeShape* shape, void* memory)
 {
-	ObjectInstance* view = new ObjectInstance(info, shape, memory);
-	view->IsView = true;
-	return view;
+	return new ObjectInstance(info, shape, memory);
 }
 
 ObjectInstance* GarbageCollector::InternString(const wchar_t* value)

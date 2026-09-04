@@ -42,6 +42,11 @@ namespace shard
 			return header->Magic == GcHeader::MAGIC ? header : nullptr;
 		}
 
+		[[nodiscard]] inline bool isHeapBacked() const
+		{
+			return getGcHeader() != nullptr;
+		}
+
 		friend class GarbageCollector;
 
 	public:
