@@ -303,7 +303,7 @@ ObjectInstance* PrimitiveMathModule::ExecuteCast(TypeSymbol* targetType, ObjectI
 		return gc.FromValue(static_cast<std::uint8_t>(AsInteger(source)));
 
 	if (targetType == TYPE_NINT)
-		return gc.FromNint(reinterpret_cast<void*>(AsInteger(source)), false);
+		return gc.FromNint(reinterpret_cast<void*>(AsInteger(source)));
 
 	if (targetType->Kind == SyntaxKind::EnumDeclaration)
 	{

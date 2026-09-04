@@ -25,18 +25,17 @@ namespace shard
 			static constexpr std::uint64_t MAGIC = 0x5348415244474348ULL; // "SHARDGCH"
 			std::uint64_t Magic;
 			std::int64_t ReferencesCounter;
+			bool Terminated;
 		};
 
 	private:
 		const TypeSymbol* m_info;
 		TypeShape* m_shape;
-		const bool m_isTransient;
-		std::int64_t m_eeferencesCounter;
 		void* m_rawMemoryPtr;
 
 		[[nodiscard]] inline GcHeader* getGcHeader() const
 		{
-			if (m_isTransient || m_rawMemoryPtr == nullptr)
+			if (IsView || m_rawMemoryPtr == nullptr)
 				return nullptr;
 
 			GcHeader* header = reinterpret_cast<GcHeader*>(m_rawMemoryPtr) - 1;
@@ -47,31 +46,18 @@ namespace shard
 
 	public:
 		MethodSymbol* DelegateTarget = nullptr;
-		bool Terminated = false;
-		bool IsSingleton = false;
 		bool IsStaticRoot = false;
-
 		bool IsView = false;
 
-		// Async task lifetime tracking.
-		bool IsTaskLike = false;
-		bool IsFireAndForget = false;
-		std::shared_ptr<CallStackFrame> FrameOwner;
-		void* AsyncNativeState = nullptr;
-
 	public:
-		inline ObjectInstance(const TypeSymbol* info, TypeShape* shape, void* memory, bool isTransient)
-			: m_info(info), m_shape(shape), m_rawMemoryPtr(memory), m_isTransient(isTransient), m_eeferencesCounter(0) { }
-		
-		~ObjectInstance();
+		inline ObjectInstance(const TypeSymbol* info, TypeShape* shape, void* memory)
+			: m_info(info), m_shape(shape), m_rawMemoryPtr(memory) { }
 
-		void BindToFrame(std::shared_ptr<CallStackFrame> frame);
-		void ReleaseFrameOwner();
+		~ObjectInstance();
 
 		[[nodiscard]] const TypeSymbol* getInfo() const;
 		[[nodiscard]] TypeShape* getShape() const;
 		[[nodiscard]] void* getMemory() const;
-		[[nodiscard]] bool getIsTransient() const;
 		[[nodiscard]] std::int64_t getReferencesCounter() const;
 
 		// Fields

@@ -164,7 +164,7 @@ static ObjectInstance* cinterop_NativeLibrary_Load(const CallState& context) noe
 #endif
     }
 
-    return context.Collector.FromNint(handle, false);
+    return context.Collector.FromNint(handle);
 }
 
 static ObjectInstance* cinterop_NativeLibrary_GetFunction(const CallState& context) noexcept(false)
@@ -181,7 +181,7 @@ static ObjectInstance* cinterop_NativeLibrary_GetFunction(const CallState& conte
     // On POSIX a NULL symbol may legitimately be a real export; on Windows a
     // NULL result is a definitive "not found". Either way the caller gets the
     // raw pointer (possibly 0) and can decide how to react.
-    return context.Collector.FromNint(symbol, false);
+    return context.Collector.FromNint(symbol);
 }
 
 static ObjectInstance* cinterop_NativeLibrary_Free(const CallState& context) noexcept
@@ -204,7 +204,7 @@ static ObjectInstance* cinterop_Marshal_AllocZeroed(const CallState& context) no
     if (block == nullptr && (count != 0 && size != 0))
         throw std::runtime_error("interop.Marshal.Alloc: out of memory");
 
-    return context.Collector.FromNint(block, false);
+    return context.Collector.FromNint(block);
 }
 
 static ObjectInstance* cinterop_Marshal_Realloc(const CallState& context) noexcept(false)
@@ -216,7 +216,7 @@ static ObjectInstance* cinterop_Marshal_Realloc(const CallState& context) noexce
     if (block == nullptr && size != 0)
         throw std::runtime_error("interop.Marshal.Realloc: out of memory");
 
-    return context.Collector.FromNint(block, false);
+    return context.Collector.FromNint(block);
 }
 
 static ObjectInstance* cinterop_Marshal_Free(const CallState& context) noexcept
@@ -313,7 +313,7 @@ static ObjectInstance* cinterop_Marshal_ReadIntPtr(const CallState& context) noe
 
     void* value;
     std::memcpy(&value, PtrAt(ptr, offset), sizeof(value));
-    return context.Collector.FromNint(value, false);
+    return context.Collector.FromNint(value);
 }
 
 static ObjectInstance* cinterop_Marshal_ReadFloat(const CallState& context) noexcept(false)
@@ -460,7 +460,7 @@ static ObjectInstance* cinterop_Marshal_StringToAnsi(const CallState& context) n
         std::memcpy(block, narrow.data(), narrow.size());
     block[narrow.size()] = '\0';
 
-    return context.Collector.FromNint(block, false);
+    return context.Collector.FromNint(block);
 }
 
 static ObjectInstance* cinterop_Marshal_StringToUnicode(const CallState& context) noexcept(false)
@@ -477,7 +477,7 @@ static ObjectInstance* cinterop_Marshal_StringToUnicode(const CallState& context
         block[i] = static_cast<std::uint16_t>(value[i]);
     block[units] = 0;
 
-    return context.Collector.FromNint(block, false);
+    return context.Collector.FromNint(block);
 }
 
 // ----------------------------------------------------------------------------
@@ -488,7 +488,7 @@ static ObjectInstance* cinterop_Marshal_Add(const CallState& context) noexcept
 {
     void* ptr = context.Args[0]->AsNint();
     std::int64_t offset = context.Args[1]->AsInteger();
-    return context.Collector.FromNint(PtrAt(ptr, offset), false);
+    return context.Collector.FromNint(PtrAt(ptr, offset));
 }
 
 static ObjectInstance* cinterop_Marshal_IntPtrSize_get(const CallState& context) noexcept
@@ -650,7 +650,7 @@ static ObjectInstance* cinterop_NativeCall_CallN(const CallState& context) noexc
     if (fn == nullptr)
         throw std::runtime_error("interop.NativeCall.CallN: null function pointer");
 
-    return context.Collector.FromNint(cinterop_InvokeNative<void*>(fn), false);
+    return context.Collector.FromNint(cinterop_InvokeNative<void*>(fn));
 }
 
 static ObjectInstance* cinterop_NativeCall_CallN1(const CallState& context) noexcept(false)
@@ -660,7 +660,7 @@ static ObjectInstance* cinterop_NativeCall_CallN1(const CallState& context) noex
         throw std::runtime_error("interop.NativeCall.CallN: null function pointer");
 
     std::int64_t a = cinterop_ReadWord(context.Args[1]);
-    return context.Collector.FromNint(cinterop_InvokeNative<void*, std::int64_t>(fn, a), false);
+    return context.Collector.FromNint(cinterop_InvokeNative<void*, std::int64_t>(fn, a));
 }
 
 static ObjectInstance* cinterop_NativeCall_CallN2(const CallState& context) noexcept(false)
@@ -671,7 +671,7 @@ static ObjectInstance* cinterop_NativeCall_CallN2(const CallState& context) noex
 
     std::int64_t a = cinterop_ReadWord(context.Args[1]);
     std::int64_t b = cinterop_ReadWord(context.Args[2]);
-    return context.Collector.FromNint(cinterop_InvokeNative<void*, std::int64_t, std::int64_t>(fn, a, b), false);
+    return context.Collector.FromNint(cinterop_InvokeNative<void*, std::int64_t, std::int64_t>(fn, a, b));
 }
 
 static ObjectInstance* cinterop_NativeCall_CallN3(const CallState& context) noexcept(false)
@@ -683,7 +683,7 @@ static ObjectInstance* cinterop_NativeCall_CallN3(const CallState& context) noex
     std::int64_t a = cinterop_ReadWord(context.Args[1]);
     std::int64_t b = cinterop_ReadWord(context.Args[2]);
     std::int64_t c = cinterop_ReadWord(context.Args[3]);
-    return context.Collector.FromNint(cinterop_InvokeNative<void*, std::int64_t, std::int64_t, std::int64_t>(fn, a, b, c), false);
+    return context.Collector.FromNint(cinterop_InvokeNative<void*, std::int64_t, std::int64_t, std::int64_t>(fn, a, b, c));
 }
 
 static ObjectInstance* cinterop_NativeCall_CallN4(const CallState& context) noexcept(false)
@@ -696,7 +696,7 @@ static ObjectInstance* cinterop_NativeCall_CallN4(const CallState& context) noex
     std::int64_t b = cinterop_ReadWord(context.Args[2]);
     std::int64_t c = cinterop_ReadWord(context.Args[3]);
     std::int64_t d = cinterop_ReadWord(context.Args[4]);
-    return context.Collector.FromNint(cinterop_InvokeNative<void*, std::int64_t, std::int64_t, std::int64_t, std::int64_t>(fn, a, b, c, d), false);
+    return context.Collector.FromNint(cinterop_InvokeNative<void*, std::int64_t, std::int64_t, std::int64_t, std::int64_t>(fn, a, b, c, d));
 }
 
 static ObjectInstance* cinterop_NativeCall_CallVoid(const CallState& context) noexcept(false)

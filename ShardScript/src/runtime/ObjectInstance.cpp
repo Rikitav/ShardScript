@@ -104,11 +104,6 @@ TypeShape* ObjectInstance::getShape() const
 	return m_shape;
 }
 
-bool shard::ObjectInstance::getIsTransient() const
-{
-	return m_isTransient;
-}
-
 void* ObjectInstance::getMemory() const
 {
 	return m_rawMemoryPtr;
@@ -119,31 +114,10 @@ std::int64_t ObjectInstance::getReferencesCounter() const
 	if (GcHeader* header = getGcHeader(); header != nullptr)
 		return header->ReferencesCounter;
 
-	return m_eeferencesCounter;
+	return 0;
 }
 
 ObjectInstance::~ObjectInstance() = default;
-
-void ObjectInstance::BindToFrame(std::shared_ptr<CallStackFrame> frame)
-{
-	if (frame == nullptr || FrameOwner == frame)
-		return;
-
-	ReleaseFrameOwner();
-	FrameOwner = std::move(frame);
-	FrameOwner->PendingTaskCount++;
-}
-
-void ObjectInstance::ReleaseFrameOwner()
-{
-	if (FrameOwner == nullptr)
-		return;
-
-	if (FrameOwner->PendingTaskCount > 0)
-		FrameOwner->PendingTaskCount--;
-
-	FrameOwner.reset();
-}
 
 ObjectInstance* ObjectInstance::GetField(std::uint32_t slot)
 {
@@ -174,7 +148,8 @@ ObjectInstance* ObjectInstance::GetField(std::uint32_t slot)
 	else
 	{
 		void* offset = OffsetMemory(fieldOffset, fieldShape->Size);
-		ObjectInstance* instance = new ObjectInstance(fieldShape->BaseType, fieldShape, offset, true);
+		ObjectInstance* instance = new ObjectInstance(fieldShape->BaseType, fieldShape, offset);
+		instance->IsView = true;
 		return instance;
 	}
 }
@@ -298,7 +273,8 @@ ObjectInstance* ObjectInstance::GetElement(std::size_t index, CallStackFrame* fr
 	else
 	{
 		void* offset = OffsetMemory(memoryOffset, type->MemoryBytesSize);
-		ObjectInstance* instance = new ObjectInstance(type, nullptr, offset, true);
+		ObjectInstance* instance = new ObjectInstance(type, nullptr, offset);
+		instance->IsView = true;
 		return instance;
 	}
 }
@@ -369,26 +345,12 @@ ArgumentsSpan ObjectInstance::ArrayAsSpan()
 
 void ObjectInstance::IncrementReference()
 {
-	if (IsSingleton)
-		return;
-
 	if (GcHeader* header = getGcHeader(); header != nullptr)
-	{
 		header->ReferencesCounter += 1;
-		return;
-	}
-
-	if (m_eeferencesCounter == (std::size_t)(-1))
-		return;
-
-	m_eeferencesCounter += 1;
 }
 
 void ObjectInstance::DecrementReference()
 {
-	if (IsSingleton)
-		return;
-
 	if (GcHeader* header = getGcHeader(); header != nullptr)
 	{
 		// A static root always holds one permanent reference; dropping a user
@@ -398,18 +360,7 @@ void ObjectInstance::DecrementReference()
 
 		if (header->ReferencesCounter > 0)
 			header->ReferencesCounter -= 1;
-
-		return;
 	}
-
-	if (m_eeferencesCounter == 0)
-		return;
-
-	// Static-root floor for non-GC-backed instances (see IsStaticRoot).
-	if (IsStaticRoot && m_eeferencesCounter == 1)
-		return;
-
-	m_eeferencesCounter -= 1;
 }
 
 bool ObjectInstance::IsNullInstance() const

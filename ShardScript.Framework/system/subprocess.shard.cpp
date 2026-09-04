@@ -100,7 +100,7 @@ static subprocess_s* GetProcessHandle(ObjectInstance* instance)
 
 static void SetProcessHandle(ObjectInstance* instance, subprocess_s* proc, GarbageCollector& gc)
 {
-    instance->SetField(shard_Process_handle->SlotIndex, gc.FromNint(proc, false));
+    instance->SetField(shard_Process_handle->SlotIndex, gc.FromNint(proc));
 }
 
 static void SetExitCode(ObjectInstance* instance, std::int64_t code, GarbageCollector& gc)

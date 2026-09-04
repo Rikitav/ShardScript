@@ -104,7 +104,7 @@ static ObjectInstance* shard_async_Task_OnCompleted(const CallState& context) no
 static ObjectInstance* shard_async_Task_InternalRoot(const CallState& context) noexcept
 {
 	ObjectInstance* task = context.Args[0];
-	task->IsTaskLike = true;
+	context.Collector.MarkTaskLike(task);
 	context.Domain.GetEventLoop().RootTask(task);
 	return nullptr;
 }
@@ -114,7 +114,7 @@ static ObjectInstance* shard_async_Task_Complete(const CallState& context) noexc
 	ObjectInstance* task = context.Args[0];
 
 	SetTaskState(task, CLASS_TASK_StateField, AsyncState::COMPLETED, context.Collector);
-	task->ReleaseFrameOwner();
+	context.Collector.ReleaseFrameOwner(task);
 	ResumeContinuation(task, CLASS_TASK_ContinuationField, TRAIT_ASYNCSTATE_MoveNext, context.Domain);
 
 	// Release the factory root. Tasks created by Task.Delay carry a second
@@ -141,7 +141,7 @@ static ObjectInstance* shard_async_Task_SetException(const CallState& context) n
 
 	SetTaskState(task, CLASS_TASK_StateField, AsyncState::FAULTED, context.Collector);
 	task->SetField(CLASS_TASK_ExceptionField->SlotIndex, exception);
-	task->ReleaseFrameOwner();
+	context.Collector.ReleaseFrameOwner(task);
 
 	ResumeContinuation(task, CLASS_TASK_ContinuationField, TRAIT_ASYNCSTATE_MoveNext, context.Domain);
 
@@ -186,8 +186,8 @@ static ObjectInstance* shard_async_Task_Shoot(const CallState& context) noexcept
 	ObjectInstance* task = context.Args[0];
 	if (task != nullptr && task != GarbageCollector::NullInstance)
 	{
-		task->IsFireAndForget = true;
-		task->ReleaseFrameOwner();
+		context.Collector.MarkFireAndForget(task);
+		context.Collector.ReleaseFrameOwner(task);
 	}
 	return nullptr;
 }
@@ -270,7 +270,7 @@ static ObjectInstance* shard_async_ValueTask_SetException(const CallState& conte
 
 	SetTaskState(task, CLASS_VALUETASK_StateField, AsyncState::FAULTED, context.Collector);
 	task->SetField(CLASS_VALUETASK_ExceptionField->SlotIndex, exception);
-	task->ReleaseFrameOwner();
+	context.Collector.ReleaseFrameOwner(task);
 
 	ResumeContinuation(task, CLASS_VALUETASK_ContinuationField, TRAIT_ASYNCSTATE_MoveNext, context.Domain);
 
@@ -286,7 +286,7 @@ static ObjectInstance* shard_async_ValueTask_SetResult(const CallState& context)
 
 	SetTaskState(task, CLASS_VALUETASK_StateField, AsyncState::COMPLETED, context.Collector);
 	task->SetField(CLASS_VALUETASK_ResultField->SlotIndex, result);
-	task->ReleaseFrameOwner();
+	context.Collector.ReleaseFrameOwner(task);
 
 	ResumeContinuation(task, CLASS_VALUETASK_ContinuationField, TRAIT_ASYNCSTATE_MoveNext, context.Domain);
 
@@ -298,7 +298,7 @@ static ObjectInstance* shard_async_ValueTask_SetResult(const CallState& context)
 static ObjectInstance* shard_async_ValueTask_InternalRoot(const CallState& context) noexcept
 {
 	ObjectInstance* task = context.Args[0];
-	task->IsTaskLike = true;
+	context.Collector.MarkTaskLike(task);
 	context.Domain.GetEventLoop().RootTask(task);
 	return nullptr;
 }

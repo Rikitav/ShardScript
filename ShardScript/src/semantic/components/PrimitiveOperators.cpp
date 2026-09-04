@@ -334,7 +334,7 @@ static ObjectInstance* char_op_AddOperator(const CallState& context)
 	{
 		wchar_t right = context.Args[1]->AsCharacter();
 		wchar_t* result = new wchar_t[] { left, right, L'\0' };
-		return context.Collector.FromValue(result, false);
+		return context.Collector.FromValue(result);
 	}
 
 	if (rightType == SymbolTable::Primitives::Integer)
@@ -342,7 +342,7 @@ static ObjectInstance* char_op_AddOperator(const CallState& context)
 		std::int64_t right = context.Args[1]->AsInteger();
 		wchar_t temp[] = { left, L'\0' };
 		const wchar_t* result = concatStrings(temp, std::to_wstring(right).data());
-		return context.Collector.FromValue(result, false);
+		return context.Collector.FromValue(result);
 	}
 
 	if (rightType == SymbolTable::Primitives::String)
@@ -350,7 +350,7 @@ static ObjectInstance* char_op_AddOperator(const CallState& context)
 		const wchar_t* right = context.Args[1]->AsString();
 		wchar_t temp[] = { left, L'\0' };
 		const wchar_t* result = concatStrings(temp, right);
-		return context.Collector.FromValue(result, false);
+		return context.Collector.FromValue(result);
 	}
 
 	throw std::runtime_error("unsupported char add operation");
@@ -378,7 +378,7 @@ static ObjectInstance* char_op_MultOperator(const CallState& context)
 		std::memcpy(result + i, &left, sizeof(wchar_t));
 
 	result[right] = L'\0';
-	return context.Collector.FromValue(result, false);
+	return context.Collector.FromValue(result);
 }
 
 static ObjectInstance* char_op_EqualsOperator(const CallState& context)
@@ -420,14 +420,14 @@ static ObjectInstance* string_op_AddOperator(const CallState& context)
 	{
 		const wchar_t* right = context.Args[1]->AsString();
 		const wchar_t* result = concatStrings(left, right);
-		return context.Collector.FromValue(result, false);
+		return context.Collector.FromValue(result);
 	}
 
 	if (rightType == SymbolTable::Primitives::Integer)
 	{
 		std::int64_t right = context.Args[1]->AsInteger();
 		const wchar_t* result = concatStrings(left, std::to_wstring(right).data());
-		return context.Collector.FromValue(result, false);
+		return context.Collector.FromValue(result);
 	}
 
 	if (rightType == SymbolTable::Primitives::Boolean)
@@ -435,7 +435,7 @@ static ObjectInstance* string_op_AddOperator(const CallState& context)
 		bool right = context.Args[1]->AsBoolean();
 		const wchar_t* dataStr = right ? L"true" : L"false";
 		const wchar_t* result = concatStrings(left, dataStr);
-		return context.Collector.FromValue(result, false);
+		return context.Collector.FromValue(result);
 	}
 
 	if (rightType == SymbolTable::Primitives::Char)
@@ -443,7 +443,7 @@ static ObjectInstance* string_op_AddOperator(const CallState& context)
 		wchar_t right = context.Args[1]->AsCharacter();
 		wchar_t temp[] = { right, L'\0' };
 		const wchar_t* result = concatStrings(left, temp);
-		return context.Collector.FromValue(result, false);
+		return context.Collector.FromValue(result);
 	}
 
 	throw std::runtime_error("unsupported string add operation");
@@ -472,7 +472,7 @@ static ObjectInstance* string_op_MultOperator(const CallState& context)
 		std::memcpy(result + i * length, left, stringSize);
 
 	result[length * right] = L'\0';
-	return context.Collector.FromValue(result, false);
+	return context.Collector.FromValue(result);
 }
 
 static ObjectInstance* string_op_EqualsOperator(const CallState& context)
@@ -498,7 +498,7 @@ static ObjectInstance* integer_op_AddOperator_String(const CallState& context)
 	std::int64_t left = context.Args[0]->AsInteger();
 	const wchar_t* right = context.Args[1]->AsString();
 	const wchar_t* result = concatStrings(std::to_wstring(left).data(), right);
-	return context.Collector.FromValue(result, false);
+	return context.Collector.FromValue(result);
 }
 
 static ObjectInstance* integer_op_AddOperator_Char(const CallState& context)
@@ -507,7 +507,7 @@ static ObjectInstance* integer_op_AddOperator_Char(const CallState& context)
 	wchar_t right = context.Args[1]->AsCharacter();
 	wchar_t temp[] = { right, L'\0' };
 	const wchar_t* result = concatStrings(std::to_wstring(left).data(), temp);
-	return context.Collector.FromValue(result, false);
+	return context.Collector.FromValue(result);
 }
 
 static ObjectInstance* boolean_op_AddOperator_String(const CallState& context)
@@ -516,7 +516,7 @@ static ObjectInstance* boolean_op_AddOperator_String(const CallState& context)
 	const wchar_t* right = context.Args[1]->AsString();
 	const wchar_t* leftStr = left ? L"true" : L"false";
 	const wchar_t* result = concatStrings(leftStr, right);
-	return context.Collector.FromValue(result, false);
+	return context.Collector.FromValue(result);
 }
 
 static ObjectInstance* double_op_AddOperator_String(const CallState& context)
@@ -524,7 +524,7 @@ static ObjectInstance* double_op_AddOperator_String(const CallState& context)
 	double left = context.Args[0]->AsDouble();
 	const wchar_t* right = context.Args[1]->AsString();
 	const wchar_t* result = concatStrings(std::to_wstring(left).data(), right);
-	return context.Collector.FromValue(result, false);
+	return context.Collector.FromValue(result);
 }
 
 // -----------------------------------------------------------------------------

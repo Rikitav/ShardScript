@@ -204,7 +204,7 @@ static ObjectInstance* shard_http_Client_Init(const CallState& context) noexcept
     client->set_connection_timeout(std::chrono::seconds(5));
     client->set_read_timeout(std::chrono::seconds(5));
 
-    instance->SetField(shard_HttpClient_ClientPtrField->SlotIndex, context.Collector.FromNint(client, true));
+    instance->SetField(shard_HttpClient_ClientPtrField->SlotIndex, context.Collector.FromNint(client));
     return instance;
 }
 
@@ -276,7 +276,7 @@ static ObjectInstance* shard_http_Client_Dispose(const CallState& context) noexc
     if (client != nullptr)
     {
         delete client;
-        instance->SetField(shard_HttpClient_ClientPtrField->SlotIndex, context.Collector.FromNint(nullptr, false));
+        instance->SetField(shard_HttpClient_ClientPtrField->SlotIndex, context.Collector.FromNint(nullptr));
     }
     
     return nullptr;
@@ -298,7 +298,7 @@ static ObjectInstance* shard_http_Server_Init(const CallState& context) noexcept
     uv_async_init(loop, &ctx->WakeHandle, ServerWakeCallback);
     ctx->WakeHandle.data = ctx;
 
-    instance->SetField(shard_HttpServer_ClientPtrField->SlotIndex, context.Collector.FromNint(ctx, true));
+    instance->SetField(shard_HttpServer_ClientPtrField->SlotIndex, context.Collector.FromNint(ctx));
     return instance;
 }
 

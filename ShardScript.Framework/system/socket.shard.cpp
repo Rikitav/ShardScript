@@ -494,7 +494,7 @@ static ObjectInstance* shard_socketStream_ReadAsync_Impl(const CallState& contex
     if (IsStreamCancellationRequested(token))
     {
         ObjectInstance* task = context.Collector.AllocateGeneric(CLASS_VALUETASK, std::vector<TypeSymbol*>{ TYPE_INT });
-        task->IsTaskLike = true;
+        context.Collector.MarkTaskLike(task);
         SetTaskState(task, CLASS_VALUETASK_StateField, AsyncState::FAULTED, context.Collector);
         task->SetField(CLASS_VALUETASK_ExceptionField->SlotIndex,
             shard::CreateRuntimeException(context.Collector, L"Operation canceled."));
