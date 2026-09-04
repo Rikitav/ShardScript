@@ -356,6 +356,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 
 		case OpCode::CALLDELEGATE:
 		{
+			decoder.AbsordDelegateTypeSymbol();
 			ObjectInstance* delegateInstance = frame->PopStack();
 			if (delegateInstance == nullptr || delegateInstance == garbageCollector.NullInstance)
 				throw std::runtime_error("Cannot invoke a null delegate");
