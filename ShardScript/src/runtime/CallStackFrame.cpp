@@ -177,9 +177,6 @@ ObjectInstance*& CallStackFrame::LocalRef(std::uint16_t slot)
 
 CallStackFrame::~CallStackFrame()
 {
-	// A trailing arena lives inside the frame's own allocation and is freed by
-	// the deleter in Create() after this destructor runs; only a migrated
-	// (grown) arena is a separate block.
 	if (!ArenaIsTrailing && Arena != nullptr)
 		mi_free(Arena);
 
