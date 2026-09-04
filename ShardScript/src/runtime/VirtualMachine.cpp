@@ -883,9 +883,11 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance elementStorage(nullptr, nullptr, nullptr);
 			ObjectInstance* element = arrayInstance->GetElement(static_cast<std::size_t>(index), elementStorage);
 
-			if (element->IsView && element->getShape() != nullptr && !element->getShape()->IsReferenceType())
+			if (element->IsView)
 			{
-				frame->PushInline(element->getShape(), element->getMemory());
+				const ArrayTypeSymbol* arrayInfo = static_cast<const ArrayTypeSymbol*>(arrayInstance->getInfo());
+				TypeShape* elementShape = program.TypeShapes->GetOrCreateShape(frame->ResolveType(arrayInfo->UnderlayingType));
+				frame->PushInline(elementShape, element->getMemory());
 			}
 			else
 			{
@@ -1770,8 +1772,15 @@ void VirtualMachine::InvokeMethod(MethodSymbol* method, std::initializer_list<Ob
 	CallStackFrame* callingFrame = vm->CurrentFrame();
 	CallStackFrame* currentFrame = vm->PushFrame(method);
 
+	// Ephemeral borrow views must not outlive their C++ scope: a callee
+	// reference-kind slot would retain a pointer into the caller's stack.
 	for (ObjectInstance* argValue : args)
+	{
+		if (argValue != nullptr && argValue->IsView)
+			argValue = vm->garbageCollector.CopyInstance(argValue);
+
 		callingFrame->PushStack(argValue);
+	}
 
 	vm->InvokeMethodInternal(method, currentFrame);
 	vm->PopFrame();
@@ -1793,7 +1802,12 @@ ObjectInstance* VirtualMachine::InvokeMethod(MethodSymbol* method, ObjectInstanc
 	CallStackFrame* currentFrame = vm->PushFrame(method);
 
 	for (std::size_t i = 0; i < count; i++)
-		callingFrame->PushStack(args[i]);
+	{
+		ObjectInstance* argValue = args[i];
+		if (argValue != nullptr && argValue->IsView)
+			argValue = vm->garbageCollector.CopyInstance(argValue);
+		callingFrame->PushStack(argValue);
+	}
 
 	vm->InvokeMethodInternal(method, currentFrame);
 
