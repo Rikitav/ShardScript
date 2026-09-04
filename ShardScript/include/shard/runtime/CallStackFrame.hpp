@@ -71,9 +71,14 @@
 // ----------------------------------------------------------------------------
 // THE REGIONS
 //
-//   Return slot   — one reserved fixed-size entry at the arena base for the
-//                   method's return value. Unused until Stage 5 wires
-//                   foreign-function value returns through it.
+//   Return slot   — one reserved entry at the arena base for the method's
+//                   return value, laid out like any other slot entry: a
+//                   value-type return gets an inline entry sized from the
+//                   resolved return shape, a reference/void return keeps the
+//                   boxed pointer-sized stride. The VM pre-sets the entry
+//                   header before an external callback runs; foreign code
+//                   writes the payload (see CallState::WriteReturn /
+//                   PlaceReturned / ReturnView).
 //
 //   Locals region — argument slots followed by local-variable slots. Slots
 //                   have PER-SLOT strides: each slot's kind and shape are
@@ -271,6 +276,12 @@ namespace shard
 		// argument payloads are placement-new'd into it as borrow views.
 		void CopyArgumentPayloads(ObjectInstance** dst, ObjectInstance* storage, std::size_t count);
 
+		// Resolved once at Create from the method's return type: non-null shape
+		// means the return slot is an inline entry of Align(shape->Size) payload
+		// bytes; null means a boxed (pointer-sized) entry.
+		inline TypeShape* ReturnShape() const { return ReturnSlotShape; }
+		inline std::byte* ReturnSlotMemory() const { return ReturnSlot; }
+
 		void DrainReferences(GarbageCollector& gc);
 		void DrainEvalReferences(GarbageCollector& gc);
 		void DrainLocalReferences(GarbageCollector& gc);
@@ -286,6 +297,7 @@ namespace shard
 		};
 
 		std::byte* ReturnSlot = nullptr;
+		TypeShape* ReturnSlotShape = nullptr;
 		std::vector<LocalSlotDesc> LocalSlots;
 		std::byte* LocalRegionEnd = nullptr;
 

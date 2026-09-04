@@ -152,7 +152,10 @@ std::shared_ptr<CallStackFrame> CallStackFrame::Create(const VirtualMachine* hos
 	std::vector<LocalSlotDesc> slotDescs;
 	slotDescs.reserve(localsCount);
 
-	std::uint32_t offset = static_cast<std::uint32_t>(BoxedEntryStride);
+	TypeShape* returnShape = ResolveSlotShape(method->ReturnType, shapes);
+	const std::size_t returnStride = SlotHeaderBytes + (returnShape != nullptr ? Align(returnShape->Size) : ReferencePayloadBytes);
+
+	std::uint32_t offset = static_cast<std::uint32_t>(returnStride);
 	for (std::size_t slot = 0; slot < localsCount; slot++)
 	{
 		TypeShape* shape = ResolveSlotShape(ResolveSlotType(*method, static_cast<std::uint16_t>(slot), typeArguments), shapes);
@@ -163,7 +166,7 @@ std::shared_ptr<CallStackFrame> CallStackFrame::Create(const VirtualMachine* hos
 		offset += static_cast<std::uint32_t>(stride);
 	}
 
-	const std::size_t localsBytes = offset - BoxedEntryStride;
+	const std::size_t localsBytes = offset - returnStride;
 
 	const std::size_t evalMaxPayload = std::max<std::size_t>(ReferencePayloadBytes, method->Layout.EvalSlotPayload);
 	const std::size_t evalEntryStride = SlotHeaderBytes + Align(evalMaxPayload);
@@ -171,7 +174,7 @@ std::shared_ptr<CallStackFrame> CallStackFrame::Create(const VirtualMachine* hos
 		? std::max<std::size_t>(method->Layout.MaxEvalDepth, 8) : 64;
 
 	const std::size_t evalCapacityBytes = evalEntries * (method->Layout.IsComplete ? evalEntryStride : BoxedEntryStride);
-	const std::size_t arenaBytes = BoxedEntryStride + localsBytes + evalCapacityBytes;
+	const std::size_t arenaBytes = returnStride + localsBytes + evalCapacityBytes;
 
 	void* block = mi_malloc(sizeof(CallStackFrame) + arenaBytes);
 	if (block == nullptr)
@@ -190,14 +193,15 @@ std::shared_ptr<CallStackFrame> CallStackFrame::Create(const VirtualMachine* hos
 	frame->ArenaIsTrailing = true;
 
 	frame->ReturnSlot = frame->Arena;
+	frame->ReturnSlotShape = returnShape;
 	frame->LocalSlots = std::move(slotDescs);
-	frame->LocalRegionEnd = frame->Arena + BoxedEntryStride + localsBytes;
+	frame->LocalRegionEnd = frame->Arena + returnStride + localsBytes;
 	frame->EvalEntries = frame->LocalRegionEnd;
 	frame->EvalCapacityBytes = evalCapacityBytes;
 	frame->EvalMaxEntryStride = method->Layout.IsComplete ? evalEntryStride : BoxedEntryStride;
 	frame->EvalOffsets.reserve(evalEntries);
 
-	std::memset(frame->Arena, 0, BoxedEntryStride + localsBytes);
+	std::memset(frame->Arena, 0, returnStride + localsBytes);
 	return result;
 }
 

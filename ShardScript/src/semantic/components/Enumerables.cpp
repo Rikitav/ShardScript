@@ -30,7 +30,7 @@ namespace
 	}
 }
 
-static ObjectInstance* array_enumerator_MoveNext(const CallState& context)
+static void array_enumerator_MoveNext(const CallState& context)
 {
 	ObjectInstance* self = context.Args[0];
 	std::int64_t index = self->GetField(CLASS_ARRAYENUMERATOR_IndexField->SlotIndex).AsInteger();
@@ -38,21 +38,24 @@ static ObjectInstance* array_enumerator_MoveNext(const CallState& context)
 
 	index++;
 	self->SetField(CLASS_ARRAYENUMERATOR_IndexField->SlotIndex, context.Collector.FromValue(index));
-	return context.Collector.FromValue(index < length);
+	context.WriteReturn(index < length);
+	return;
 }
 
-static ObjectInstance* array_enumerator_Current_get(const CallState& context)
+static void array_enumerator_Current_get(const CallState& context)
 {
 	ObjectInstance* self = context.Args[0];
 	std::int64_t index = self->GetField(CLASS_ARRAYENUMERATOR_IndexField->SlotIndex).AsInteger();
 	ObjectInstance source = self->GetField(CLASS_ARRAYENUMERATOR_SourceField->SlotIndex);
 	ObjectInstance element = source.GetElement(static_cast<std::size_t>(index));
 	if (element.IsView)
-		return context.Collector.CopyInstance(&element);
-	return element.IsNullInstance() ? GarbageCollector::NullInstance : element.heapSource();
+		context.WriteReturn(element);
+	else
+		context.PlaceReturned(element.IsNullInstance() ? GarbageCollector::NullInstance : element.heapSource());
+	return;
 }
 
-static ObjectInstance* primitive_array_get_enumerator(const CallState& context)
+static void primitive_array_get_enumerator(const CallState& context)
 {
 	ObjectInstance* array = context.Args[0];
 	const ArrayTypeSymbol* arrayType = static_cast<const ArrayTypeSymbol*>(array->getInfo());
@@ -63,32 +66,36 @@ static ObjectInstance* primitive_array_get_enumerator(const CallState& context)
 	enumerator->SetField(CLASS_ARRAYENUMERATOR_IndexField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(-1)));
 	enumerator->SetField(CLASS_ARRAYENUMERATOR_LengthField->SlotIndex, context.Collector.FromValue(static_cast<std::int64_t>(arrayType->Length)));
 
-	return enumerator;
+	context.PlaceReturned(enumerator);
+	return;
 }
 
-static ObjectInstance* primitive_array_Length_get(const CallState& context)
+static void primitive_array_Length_get(const CallState& context)
 {
 	ObjectInstance* array = context.Args[0];
-	return context.Collector.FromValue(static_cast<std::int64_t>(array->GetArrayLength()));
+	context.WriteReturn(static_cast<std::int64_t>(array->GetArrayLength()));
+	return;
 }
 
-static ObjectInstance* primitive_array_GetElement(const CallState& context)
+static void primitive_array_GetElement(const CallState& context)
 {
 	ObjectInstance* array = context.Args[0];
 	std::int64_t index = context.Args[1]->AsInteger();
 	ObjectInstance element = array->GetElement(static_cast<std::size_t>(index), context.Frame);
 	if (element.IsView)
-		return context.Collector.CopyInstance(&element);
-	return element.IsNullInstance() ? GarbageCollector::NullInstance : element.heapSource();
+		context.WriteReturn(element);
+	else
+		context.PlaceReturned(element.IsNullInstance() ? GarbageCollector::NullInstance : element.heapSource());
+	return;
 }
 
-static ObjectInstance* primitive_array_SetElement(const CallState& context)
+static void primitive_array_SetElement(const CallState& context)
 {
 	ObjectInstance* array = context.Args[0];
 	std::int64_t index = context.Args[1]->AsInteger();
 	ObjectInstance* value = context.Args[2];
 	array->SetElement(static_cast<std::size_t>(index), value, context.Frame);
-	return nullptr;
+	return;
 }
 
 void SymbolTable::ResolveEnumerables(SymbolTable* globalTable)

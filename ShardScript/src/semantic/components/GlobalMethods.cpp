@@ -25,10 +25,9 @@ void SymbolTable::ResolveGlobalMethods(SymbolTable* globalTable)
 {
 	SymbolFactory factory(globalTable);
 
-	MethodSymbol* haltMethod = factory.Method(ACS_PUBLIC, LINK_STATIC, TYPE_VOID, L"Halt", [](const CallState& context) -> ObjectInstance*
+	MethodSymbol* haltMethod = factory.Method(ACS_PUBLIC, LINK_STATIC, TYPE_VOID, L"Halt", [](const CallState& context)
 	{
 		context.Runtimer.Abort();
-		return nullptr;
 	});
 
 	SymbolTable::Global::Namespace->OnSymbolDeclared(haltMethod);

@@ -440,54 +440,50 @@ void TypeBinder::VisitDelegateDeclaration(DelegateDeclarationSyntax* node)
 	PopScope();
 }
 
-static ObjectInstance* AllocateEnumValue(GarbageCollector& collector, TypeSymbol* enumType, std::int64_t value)
-{
-	ObjectInstance* instance = collector.AllocateInstance(enumType);
-	instance->WriteInteger(value);
-	return instance;
-}
-
-static ObjectInstance* enum_operator_or(const CallState& context)
+static void enum_operator_or(const CallState& context)
 {
 	std::int64_t left = context.Args[0]->AsInteger();
 	std::int64_t right = context.Args[1]->AsInteger();
-	return AllocateEnumValue(context.Collector, static_cast<TypeSymbol*>(context.Method->Parent), left | right);
+	context.WriteReturn(left | right);
 }
 
-static ObjectInstance* enum_operator_and(const CallState& context)
+static void enum_operator_and(const CallState& context)
 {
 	std::int64_t left = context.Args[0]->AsInteger();
 	std::int64_t right = context.Args[1]->AsInteger();
-	return AllocateEnumValue(context.Collector, static_cast<TypeSymbol*>(context.Method->Parent), left & right);
+	context.WriteReturn(left & right);
 }
 
-static ObjectInstance* enum_operator_equals(const CallState& context)
+static void enum_operator_equals(const CallState& context)
 {
 	std::int64_t left = context.Args[0]->AsInteger();
 	std::int64_t right = context.Args[1]->AsInteger();
-	return context.Collector.FromValue(left == right);
+	context.WriteReturn(left == right);
 }
 
-static ObjectInstance* enum_operator_not_equals(const CallState& context)
+static void enum_operator_not_equals(const CallState& context)
 {
 	std::int64_t left = context.Args[0]->AsInteger();
 	std::int64_t right = context.Args[1]->AsInteger();
-	return context.Collector.FromValue(left != right);
+	context.WriteReturn(left != right);
 }
 
-static ObjectInstance* enum_has_flag(const CallState& context)
+static void enum_has_flag(const CallState& context)
 {
 	std::int64_t self = context.Args[0]->AsInteger();
 	std::int64_t flag = context.Args[1]->AsInteger();
 	bool result = (self & flag) == flag;
-	return context.Collector.FromValue(result);
+	context.WriteReturn(result);
 }
 
-static ObjectInstance* enum_to_string(const CallState& context)
+static void enum_to_string(const CallState& context)
 {
 	TypeSymbol* enumType = static_cast<TypeSymbol*>(context.Method->Parent);
 	if (enumType == nullptr)
-		return context.Collector.FromValue(std::wstring());
+	{
+		context.PlaceReturned(context.Collector.FromValue(std::wstring()));
+		return;
+	}
 
 	std::int64_t value = context.Args[0]->AsInteger();
 
@@ -498,7 +494,10 @@ static ObjectInstance* enum_to_string(const CallState& context)
 	if (enumSymbol != nullptr && enumSymbol->IsFlags)
 	{
 		if (value == 0)
-			return context.Collector.FromValue(std::to_wstring(value));
+		{
+			context.PlaceReturned(context.Collector.FromValue(std::to_wstring(value)));
+			return;
+		}
 
 		std::wostringstream result;
 		bool first = true;
@@ -522,19 +521,27 @@ static ObjectInstance* enum_to_string(const CallState& context)
 		}
 
 		if (first)
-			return context.Collector.FromValue(std::to_wstring(value));
+		{
+			context.PlaceReturned(context.Collector.FromValue(std::to_wstring(value)));
+			return;
+		}
 
-		return context.Collector.FromValue(result.str());
+		context.PlaceReturned(context.Collector.FromValue(result.str()));
+		return;
 	}
 	else
 	{
 		for (FieldSymbol* field : enumType->Fields)
 		{
 			if (field != nullptr && field->IsEnumValue && field->EnumValue == value)
-				return context.Collector.FromValue(field->Name);
+			{
+				context.PlaceReturned(context.Collector.FromValue(field->Name));
+				return;
+			}
 		}
 
-		return context.Collector.FromValue(std::to_wstring(value));
+		context.PlaceReturned(context.Collector.FromValue(std::to_wstring(value)));
+		return;
 	}
 }
 

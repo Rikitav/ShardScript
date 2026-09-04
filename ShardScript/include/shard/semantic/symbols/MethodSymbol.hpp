@@ -35,7 +35,7 @@ namespace shard
         Lambda,
     };
 
-    using MethodSymbolDelegate         = shard::ObjectInstance* (*)(const CallState& context);
+    using MethodSymbolDelegate         = void (*)(const CallState& context);
 
     struct SHARD_API FrameSlotRecipe
     {
