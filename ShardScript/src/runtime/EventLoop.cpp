@@ -82,12 +82,14 @@ bool EventLoop::IsEmptyOrAllTasksCompleted() const
 
 void shard::ResumeContinuation(ObjectInstance* task, FieldSymbol* continuationField, MethodSymbol* moveNextMethod, ApplicationDomain& domain)
 {
-    ObjectInstance* continuation = task->GetField(continuationField->SlotIndex);
-    if (continuation == nullptr || continuation == GarbageCollector::NullInstance)
+    ObjectInstance continuationValue = task->GetField(continuationField->SlotIndex);
+    if (continuationValue.IsNullInstance() || continuationValue.heapSource() == GarbageCollector::NullInstance)
         return;
 
     if (moveNextMethod == nullptr)
         return;
+
+    ObjectInstance* continuation = continuationValue.heapSource();
 
     MethodSymbol* implementation = const_cast<TypeSymbol*>(continuation->getInfo())->FindInterfaceImplementation(moveNextMethod);
     if (implementation == nullptr)
@@ -124,11 +126,11 @@ void shard::ResumeContinuation(ObjectInstance* task, FieldSymbol* continuationFi
 
 AsyncState shard::GetTaskState(ObjectInstance* task, FieldSymbol* stateField)
 {
-    ObjectInstance* stateObj = task->GetField(stateField->SlotIndex);
-    if (stateObj == nullptr || stateObj == GarbageCollector::NullInstance)
+    ObjectInstance stateValue = task->GetField(stateField->SlotIndex);
+    if (stateValue.IsNullInstance() || stateValue.heapSource() == GarbageCollector::NullInstance)
         return AsyncState::PENDING;
 
-    return static_cast<AsyncState>(stateObj->AsInteger());
+    return static_cast<AsyncState>(stateValue.AsInteger());
 }
 
 void shard::SetTaskState(ObjectInstance* task, FieldSymbol* stateField, AsyncState state, GarbageCollector& gc)

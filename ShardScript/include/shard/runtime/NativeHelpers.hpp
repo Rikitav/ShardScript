@@ -257,7 +257,7 @@ namespace shard
         if (field == nullptr)
             throw std::runtime_error("GetField: field is null");
 
-        return obj->GetField(field);
+        return StableRef(obj->GetField(field));
     }
 
     /// <summary>

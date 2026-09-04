@@ -2522,7 +2522,7 @@ extern "C"
             if (instance == nullptr)
                 return nullptr;
 
-            return instance->GetField(slot);
+            return StableRef(instance->GetField(slot));
         }
         catch (const std::exception& e)
         {
@@ -7673,7 +7673,7 @@ extern "C"
                 return nullptr;
             }
 
-            return instance->GetField(field->SlotIndex);
+            return StableRef(instance->GetField(field->SlotIndex));
         }
         catch (const std::exception& e)
         {
@@ -7712,7 +7712,7 @@ extern "C"
                 return nullptr;
             }
 
-            return array->GetElement(index);
+            return StableRef(array->GetElement(index));
         }
         catch (const std::exception& e)
         {

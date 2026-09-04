@@ -67,7 +67,8 @@ static ObjectInstance* shard_async_Task_GetResult(const CallState& context) noex
 	ObjectInstance* task = context.Args[0];
 	if (GetTaskState(task, CLASS_TASK_StateField) == AsyncState::FAULTED)
 	{
-		ObjectInstance* exception = task->GetField(CLASS_TASK_ExceptionField->SlotIndex);
+		ObjectInstance exceptionValue = task->GetField(CLASS_TASK_ExceptionField->SlotIndex);
+		ObjectInstance* exception = exceptionValue.IsNullInstance() ? nullptr : exceptionValue.heapSource();
 		if (exception != nullptr && exception != GarbageCollector::NullInstance)
 		{
 			if (context.Frame != nullptr)
@@ -161,7 +162,8 @@ static ObjectInstance* shard_async_Task_Wait(const CallState& context)
 
 	if (GetTaskState(task, CLASS_TASK_StateField) == AsyncState::FAULTED)
 	{
-		ObjectInstance* exception = task->GetField(CLASS_TASK_ExceptionField->SlotIndex);
+		ObjectInstance exceptionValue = task->GetField(CLASS_TASK_ExceptionField->SlotIndex);
+		ObjectInstance* exception = exceptionValue.IsNullInstance() ? nullptr : exceptionValue.heapSource();
 		if (exception != nullptr && exception != GarbageCollector::NullInstance)
 		{
 			CallStackFrame* caller = context.Frame != nullptr ? context.Frame->PreviousFrame : nullptr;
@@ -219,7 +221,8 @@ static ObjectInstance* shard_async_ValueTask_GetResult(const CallState& context)
 	ObjectInstance* task = context.Args[0];
 	if (GetTaskState(task, CLASS_VALUETASK_StateField) == AsyncState::FAULTED)
 	{
-		ObjectInstance* exception = task->GetField(CLASS_VALUETASK_ExceptionField->SlotIndex);
+		ObjectInstance exceptionValue = task->GetField(CLASS_VALUETASK_ExceptionField->SlotIndex);
+		ObjectInstance* exception = exceptionValue.IsNullInstance() ? nullptr : exceptionValue.heapSource();
 		if (exception != nullptr && exception != GarbageCollector::NullInstance)
 		{
 			if (context.Frame != nullptr)
@@ -233,7 +236,10 @@ static ObjectInstance* shard_async_ValueTask_GetResult(const CallState& context)
 		}
 	}
 
-	return task->GetField(CLASS_VALUETASK_ResultField->SlotIndex);
+	ObjectInstance result = task->GetField(CLASS_VALUETASK_ResultField->SlotIndex);
+	if (result.IsView)
+		return context.Collector.CopyInstance(&result);
+	return result.IsNullInstance() ? GarbageCollector::NullInstance : result.heapSource();
 }
 
 static ObjectInstance* shard_async_ValueTask_OnCompleted(const CallState& context) noexcept
@@ -313,7 +319,8 @@ static ObjectInstance* shard_async_ValueTask_Wait(const CallState& context)
 
 	if (GetTaskState(task, CLASS_VALUETASK_StateField) == AsyncState::FAULTED)
 	{
-		ObjectInstance* exception = task->GetField(CLASS_VALUETASK_ExceptionField->SlotIndex);
+		ObjectInstance exceptionValue = task->GetField(CLASS_VALUETASK_ExceptionField->SlotIndex);
+		ObjectInstance* exception = exceptionValue.IsNullInstance() ? nullptr : exceptionValue.heapSource();
 		if (exception != nullptr && exception != GarbageCollector::NullInstance)
 		{
 			CallStackFrame* caller = context.Frame != nullptr ? context.Frame->PreviousFrame : nullptr;
