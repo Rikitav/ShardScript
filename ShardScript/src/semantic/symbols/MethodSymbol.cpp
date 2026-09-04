@@ -110,6 +110,40 @@ std::size_t FrameLayout::ResolveTypePayload(TypeSymbol* type)
 	return type->GetInlineSize();
 }
 
+std::size_t FrameLayout::SlotPayload(const MethodSymbol& method, std::uint16_t slot)
+{
+	const std::uint16_t argsCount = method.GetEvalStackArgumentsCount();
+
+	if (slot < argsCount)
+	{
+		std::size_t paramIndex = slot;
+		if (method.Linking == LINK_INSTANCE)
+		{
+			if (slot == 0)
+				return sizeof(void*); // implicit 'this' is a reference
+
+			--paramIndex;
+		}
+
+		if (paramIndex < method.Parameters.size() && method.Parameters[paramIndex] != nullptr)
+			return ResolveTypePayload(const_cast<TypeSymbol*>(method.Parameters[paramIndex]->Type));
+
+		return sizeof(void*);
+	}
+
+	const std::size_t variableIndex = static_cast<std::size_t>(slot) - argsCount;
+	if (variableIndex < method.Layout.VariableSlots.size())
+	{
+		const FrameSlotRecipe& recipe = method.Layout.VariableSlots[variableIndex];
+		if (recipe.TypeParameterIndex >= 0)
+			return sizeof(void*); // unresolved generic parameter: reference-sized
+
+		return ResolveTypePayload(recipe.ConcreteType);
+	}
+
+	return sizeof(void*); // slot outside recorded layout: reference-sized
+}
+
 std::size_t FrameLayout::ComputeLocalsBytes(const MethodSymbol& method) const
 {
 	std::size_t bytes = 0;

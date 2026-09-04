@@ -90,13 +90,22 @@ static bool IsAssignExpression(shard::TokenType type)
 	}
 }
 
-static void EmitUnaryOperation(shard::TokenType type, ByteCodeEncoder& encoder, std::vector<std::byte>& code, bool isRightDetermined)
+// Byte-size a primitive-typed eval entry occupies on the frame, derived from
+// the primitive's symbol instead of hardcoded literals.
+static std::size_t PrimitivePayload(const TypeSymbol* primitive)
+{
+	return FrameLayout::ResolveTypePayload(const_cast<TypeSymbol*>(primitive));
+}
+
+void AbstractEmiter::EmitUnaryOperation(shard::TokenType type, ByteCodeEncoder& encoder, std::vector<std::byte>& code, bool isRightDetermined)
 {
 	switch (type)
 	{
 		case TokenType::SubOperator:
 		{
 			encoder.EmitMathNegative(code);
+			EvalPop();
+			EvalPush(PrimitivePayload(SymbolTable::Primitives::Integer));
 			break;
 		}
 
@@ -109,6 +118,8 @@ static void EmitUnaryOperation(shard::TokenType type, ByteCodeEncoder& encoder, 
 		case TokenType::NotOperator:
 		{
 			encoder.EmitLogicalNot(code);
+			EvalPop();
+			EvalPush(PrimitivePayload(SymbolTable::Primitives::Boolean));
 			break;
 		}
 
@@ -117,15 +128,23 @@ static void EmitUnaryOperation(shard::TokenType type, ByteCodeEncoder& encoder, 
 			if (isRightDetermined)
 			{
 				encoder.EmitLoadConstInt64(code, 1);
+				EvalPush(PrimitivePayload(SymbolTable::Primitives::Integer));
 				encoder.EmitMathAdd(code);
+				EvalPop(2);
+				EvalPush(PrimitivePayload(SymbolTable::Primitives::Integer));
 				encoder.EmitDuplicate(code);
+				EvalPush(PrimitivePayload(SymbolTable::Primitives::Integer));
 				break;
 			}
 			else
 			{
 				encoder.EmitDuplicate(code);
+				EvalPush(PrimitivePayload(SymbolTable::Primitives::Integer));
 				encoder.EmitLoadConstInt64(code, 1);
+				EvalPush(PrimitivePayload(SymbolTable::Primitives::Integer));
 				encoder.EmitMathAdd(code);
+				EvalPop(2);
+				EvalPush(PrimitivePayload(SymbolTable::Primitives::Integer));
 				break;
 			}
 
@@ -137,15 +156,23 @@ static void EmitUnaryOperation(shard::TokenType type, ByteCodeEncoder& encoder, 
 			if (isRightDetermined)
 			{
 				encoder.EmitLoadConstInt64(code, 1);
+				EvalPush(PrimitivePayload(SymbolTable::Primitives::Integer));
 				encoder.EmitMathSub(code);
+				EvalPop(2);
+				EvalPush(PrimitivePayload(SymbolTable::Primitives::Integer));
 				encoder.EmitDuplicate(code);
+				EvalPush(PrimitivePayload(SymbolTable::Primitives::Integer));
 				break;
 			}
 			else
 			{
 				encoder.EmitDuplicate(code);
+				EvalPush(PrimitivePayload(SymbolTable::Primitives::Integer));
 				encoder.EmitLoadConstInt64(code, 1);
+				EvalPush(PrimitivePayload(SymbolTable::Primitives::Integer));
 				encoder.EmitMathSub(code);
+				EvalPop(2);
+				EvalPush(PrimitivePayload(SymbolTable::Primitives::Integer));
 				break;
 			}
 		}
@@ -155,7 +182,26 @@ static void EmitUnaryOperation(shard::TokenType type, ByteCodeEncoder& encoder, 
 	}
 }
 
-static void EmitBinaryOperation(shard::TokenType type, ByteCodeEncoder& encoder, std::vector<std::byte>& code)
+static bool IsLogicalComparisonToken(shard::TokenType type)
+{
+	switch (type)
+	{
+		case TokenType::EqualsOperator:
+		case TokenType::NotEqualsOperator:
+		case TokenType::GreaterOperator:
+		case TokenType::GreaterOrEqualsOperator:
+		case TokenType::LessOperator:
+		case TokenType::LessOrEqualsOperator:
+		case TokenType::OrOperator:
+		case TokenType::AndOperator:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
+void AbstractEmiter::EmitBinaryOperation(shard::TokenType type, ByteCodeEncoder& encoder, std::vector<std::byte>& code)
 {
 	switch (type)
 	{
@@ -275,6 +321,22 @@ static void EmitBinaryOperation(shard::TokenType type, ByteCodeEncoder& encoder,
 		default:
 			throw std::runtime_error("unknown operator");
 	}
+
+	if (type != TokenType::AssignOperator)
+	{
+		if (type == TokenType::NotOperator)
+		{
+			EvalPop();
+			EvalPush(PrimitivePayload(SymbolTable::Primitives::Boolean));
+		}
+		else
+		{
+			EvalPop(2);
+			EvalPush(IsLogicalComparisonToken(type)
+				? PrimitivePayload(SymbolTable::Primitives::Boolean)
+				: PrimitivePayload(SymbolTable::Primitives::Integer));
+		}
+	}
 }
 
 void AbstractEmiter::SetEntryPoint()
@@ -304,6 +366,73 @@ void AbstractEmiter::SetEntryPoint()
 void AbstractEmiter::SetGeneratingTarget(MethodSymbol* method)
 {
 	GeneratingFor = method;
+	EvalTracker = EvalLayoutTracker();
+}
+
+void AbstractEmiter::EvalPush(EvalLayoutTracker& tracker, std::size_t payload)
+{
+	tracker.CurrentDepth += 1;
+	if (tracker.CurrentDepth > tracker.MaxDepth)
+		tracker.MaxDepth = tracker.CurrentDepth;
+	if (payload > tracker.MaxPayload)
+		tracker.MaxPayload = payload;
+}
+
+void AbstractEmiter::EvalPop(EvalLayoutTracker& tracker, std::size_t count)
+{
+	if (tracker.CurrentDepth < count)
+	{
+		// Tracking desynced (missed emission site or unusual bytecode shape):
+		// poison the tracker so no layout is published for this method instead
+		// of shipping a potentially under-sized frame.
+		tracker.Poisoned = true;
+		tracker.CurrentDepth = 0;
+		return;
+	}
+
+	tracker.CurrentDepth -= count;
+}
+
+void AbstractEmiter::EvalDrainDefers(EvalLayoutTracker& tracker)
+{
+	// A drained defer body executes at the drain site's current depth, which
+	// can differ from the depth it was emitted at (e.g. a return statement
+	// drains with its value still on the stack). Overlay the deepest body
+	// onto the deepest drain site.
+	std::size_t overlay = tracker.CurrentDepth + tracker.DeferBodyMax;
+	if (overlay > tracker.MaxDepth)
+		tracker.MaxDepth = overlay;
+}
+
+void AbstractEmiter::PublishLayout(MethodSymbol* method, const EvalLayoutTracker& tracker)
+{
+	if (method == nullptr || tracker.Poisoned)
+		return;
+
+	method->Layout.MaxEvalDepth = static_cast<std::uint32_t>(tracker.MaxDepth);
+	method->Layout.EvalSlotPayload = tracker.MaxDepth > 0
+		? (tracker.MaxPayload > 1 ? tracker.MaxPayload : 1) : 0;
+}
+
+void AbstractEmiter::EvalPush(std::size_t payload)
+{
+	EvalPush(EvalTracker, payload);
+}
+
+void AbstractEmiter::EvalPop(std::size_t count)
+{
+	EvalPop(EvalTracker, count);
+}
+
+void AbstractEmiter::EvalDrainDefers()
+{
+	EvalDrainDefers(EvalTracker);
+}
+
+void AbstractEmiter::EvalFinalizeTarget()
+{
+	PublishLayout(GeneratingFor, EvalTracker);
+	EvalTracker = EvalLayoutTracker(); // the next method starts from a clean tracker
 }
 
 void AbstractEmiter::VisitSyntaxTree(SyntaxTree& tree)
@@ -355,7 +484,11 @@ void AbstractEmiter::VisitMethodDeclaration(MethodDeclarationSyntax* node)
 		VisitStatementsBlock(node->Body.get());
 	}
 
+	if (EvalTracker.CurrentDepth != 0)
+		EvalTracker.Poisoned = true;
+
 	Encoder.EmitReturn(GeneratingFor->ExecutableByteCode);
+	EvalFinalizeTarget();
 
 	if (GeneratingFor->Name == L"Main")
 	{
@@ -401,7 +534,11 @@ void AbstractEmiter::VisitOperatorDeclaration(OperatorDeclarationSyntax* node)
 		VisitStatementsBlock(node->Body.get());
 	}
 
+	if (EvalTracker.CurrentDepth != 0)
+		EvalTracker.Poisoned = true;
+
 	Encoder.EmitReturn(GeneratingFor->ExecutableByteCode);
+	EvalFinalizeTarget();
 
 	GeneratingFor->ExecutableByteCode.shrink_to_fit();
 	GeneratingFor = nullptr;
@@ -425,7 +562,11 @@ void AbstractEmiter::VisitConstructorDeclaration(ConstructorDeclarationSyntax* n
 		VisitStatementsBlock(node->Body.get());
 	}
 
+	if (EvalTracker.CurrentDepth != 0)
+		EvalTracker.Poisoned = true;
+
 	Encoder.EmitReturn(GeneratingFor->ExecutableByteCode);
+	EvalFinalizeTarget();
 
 	GeneratingFor->ExecutableByteCode.shrink_to_fit();
 	GeneratingFor = nullptr;
@@ -454,13 +595,19 @@ void AbstractEmiter::VisitAccessorDeclaration(AccessorDeclarationSyntax* node)
 			if (node->KeywordToken.Type == TokenType::GetKeyword)
 			{
 				Encoder.EmitLoadLocal(GeneratingFor->ExecutableByteCode, 0);
+				EvalPush(FrameLayout::SlotPayload(*GeneratingFor, 0));
 				Encoder.EmitLoadField(GeneratingFor->ExecutableByteCode, property->BackingField->SlotIndex);
+				EvalPop();
+				EvalPush(FrameLayout::ResolveTypePayload(property->BackingField->ReturnType));
 			}
 			else if (node->KeywordToken.Type == TokenType::SetKeyword)
 			{
 				Encoder.EmitLoadLocal(GeneratingFor->ExecutableByteCode, 0);
+				EvalPush(FrameLayout::SlotPayload(*GeneratingFor, 0));
 				Encoder.EmitLoadLocal(GeneratingFor->ExecutableByteCode, 1);
+				EvalPush(FrameLayout::SlotPayload(*GeneratingFor, 1));
 				Encoder.EmitStoreField(GeneratingFor->ExecutableByteCode, property->BackingField->SlotIndex);
+				EvalPop(2);
 			}
 		}
 		else
@@ -469,7 +616,11 @@ void AbstractEmiter::VisitAccessorDeclaration(AccessorDeclarationSyntax* node)
 		}
 	}
 
+	if (EvalTracker.CurrentDepth != 0)
+		EvalTracker.Poisoned = true;
+
 	Encoder.EmitReturn(GeneratingFor->ExecutableByteCode);
+	EvalFinalizeTarget();
 
 	GeneratingFor->ExecutableByteCode.shrink_to_fit();
 	GeneratingFor = nullptr;
@@ -490,7 +641,10 @@ void AbstractEmiter::VisitExpressionStatement(ExpressionStatementSyntax* node)
 		{
 			InvokationExpressionSyntax* invokation = static_cast<InvokationExpressionSyntax*>(node->Expression.get());
 			if (invokation->Symbol->ReturnType != SymbolTable::Primitives::Void && PopExpressionStatement)
+			{
 				Encoder.EmitPop(GeneratingFor->ExecutableByteCode);
+				EvalPop();
+			}
 
 			break;
 		}
@@ -502,6 +656,7 @@ void AbstractEmiter::VisitVariableStatement(VariableStatementSyntax* node)
 	VariableSymbol* var = LookupSymbol<VariableSymbol>(node).value_or(nullptr);
 	VisitExpression(node->Expression.get());
 	Encoder.EmitStoreLocal(GeneratingFor->ExecutableByteCode, var->SlotIndex);
+	EvalPop();
 }
 
 void AbstractEmiter::VisitTryStatement(TryStatementSyntax* node)
@@ -512,6 +667,8 @@ void AbstractEmiter::VisitTryStatement(TryStatementSyntax* node)
 			VisitStatementsBlock(node->TryBlock.get());
 		return;
 	}
+
+	std::size_t tryBaseDepth = EvalTracker.CurrentDepth;
 
 	std::size_t enterTryBacktrack = GeneratingFor->ExecutableByteCode.size();
 	Encoder.EmitEnterTry(GeneratingFor->ExecutableByteCode, 0);
@@ -530,6 +687,10 @@ void AbstractEmiter::VisitTryStatement(TryStatementSyntax* node)
 		&handlerStart,
 		sizeof(std::size_t));
 
+	// The VM enters a catch handler with the eval stack truncated to the locals
+	// region and the exception pushed: handler-relative depth starts at 1.
+	EvalTracker.CurrentDepth = 1;
+
 	std::vector<std::size_t> clauseStarts;
 	std::vector<std::size_t> bodyEndBacktracks;
 	std::vector<std::optional<std::size_t>> filterFailBacktracks;
@@ -547,16 +708,26 @@ void AbstractEmiter::VisitTryStatement(TryStatementSyntax* node)
 		if (catchType != SymbolTable::Primitives::Any)
 		{
 			Encoder.EmitDuplicate(GeneratingFor->ExecutableByteCode);
+			EvalPush();
 			Encoder.EmitIsInstance(GeneratingFor->ExecutableByteCode, catchType);
+			EvalPop();
+			EvalPush(PrimitivePayload(SymbolTable::Primitives::Boolean));
 			filterFailBacktracks.back() = GeneratingFor->ExecutableByteCode.size();
 			Encoder.EmitJumpFalse(GeneratingFor->ExecutableByteCode, 0);
+			EvalPop();
 		}
 
 		VariableSymbol* catchVariable = clause->Symbol;
 		if (catchVariable != nullptr)
+		{
 			Encoder.EmitStoreLocal(GeneratingFor->ExecutableByteCode, catchVariable->SlotIndex);
+			EvalPop();
+		}
 		else
+		{
 			Encoder.EmitPop(GeneratingFor->ExecutableByteCode);
+			EvalPop();
+		}
 
 		if (clause->Body != nullptr)
 			VisitStatementsBlock(clause->Body.get());
@@ -567,9 +738,11 @@ void AbstractEmiter::VisitTryStatement(TryStatementSyntax* node)
 
 	std::size_t fallbackStart = GeneratingFor->ExecutableByteCode.size();
 	Encoder.EmitThrow(GeneratingFor->ExecutableByteCode);
+	EvalPop();
 
 	std::size_t endLabel = GeneratingFor->ExecutableByteCode.size();
 	Encoder.EmitEndCatch(GeneratingFor->ExecutableByteCode);
+	EvalTracker.CurrentDepth = tryBaseDepth;
 
 	for (std::size_t i = 0; i < node->CatchClauses.size(); ++i)
 	{
@@ -578,6 +751,7 @@ void AbstractEmiter::VisitTryStatement(TryStatementSyntax* node)
 			std::size_t target = (i + 1 < clauseStarts.size())
 				? clauseStarts[i + 1]
 				: fallbackStart;
+
 			ByteCodeEncoder::PasteData(
 				GeneratingFor->ExecutableByteCode,
 				filterFailBacktracks[i].value() + sizeof(OpCode),
@@ -630,6 +804,7 @@ void AbstractEmiter::VisitWhileStatement(WhileStatementSyntax* node)
 	// Emiting jump to loop end if condition is false
 	scope.LoopEndBacktracks.push_back(GeneratingFor->ExecutableByteCode.size());
 	Encoder.EmitJumpFalse(GeneratingFor->ExecutableByteCode, 0);
+	EvalPop();
 
 	// Emiting loop body
 	VisitStatementsBlock(node->StatementsBlock.get());
@@ -667,6 +842,7 @@ void AbstractEmiter::VisitUntilStatement(UntilStatementSyntax* node)
 	// Emiting jump to loop end if condition is false
 	scope.LoopEndBacktracks.push_back(GeneratingFor->ExecutableByteCode.size());
 	Encoder.EmitJumpTrue(GeneratingFor->ExecutableByteCode, 0);
+	EvalPop();
 
 	// Emiting loop body
 	VisitStatementsBlock(node->StatementsBlock.get());
@@ -707,6 +883,7 @@ void AbstractEmiter::VisitForStatement(ForStatementSyntax* node)
 	// Emiting jump to loop end if condition is false
 	scope.LoopEndBacktracks.push_back(GeneratingFor->ExecutableByteCode.size());
 	Encoder.EmitJumpFalse(GeneratingFor->ExecutableByteCode, 0);
+	EvalPop();
 
 	// Emiting loop body
 	VisitStatementsBlock(node->StatementsBlock.get());
@@ -741,22 +918,32 @@ void AbstractEmiter::EmitEnumerationLoop(ExpressionSyntax* range, VariableSymbol
 	VisitExpression(range);
 	EmitMethodCall(TRAIT_ENUMERABLE_GETENUMERATOR);
 	Encoder.EmitStoreLocal(GeneratingFor->ExecutableByteCode, enumeratorSlot);
+	EvalPop();
 
 	scope.LoopStart = GeneratingFor->ExecutableByteCode.size();
 
 	Encoder.EmitLoadLocal(GeneratingFor->ExecutableByteCode, enumeratorSlot);
+	EvalPush(FrameLayout::SlotPayload(*GeneratingFor, enumeratorSlot));
 	EmitMethodCall(TRAIT_ENUMERATOR_MOVENEXT);
 
 	scope.LoopEndBacktracks.push_back(GeneratingFor->ExecutableByteCode.size());
 	Encoder.EmitJumpFalse(GeneratingFor->ExecutableByteCode, 0);
+	EvalPop();
 
 	Encoder.EmitLoadLocal(GeneratingFor->ExecutableByteCode, enumeratorSlot);
+	EvalPush(FrameLayout::SlotPayload(*GeneratingFor, enumeratorSlot));
 	EmitMethodCall(TRAIT_ENUMERATOR_CURRENT_GET);
 
 	if (loopVariable != nullptr)
+	{
 		Encoder.EmitStoreLocal(GeneratingFor->ExecutableByteCode, loopVariable->SlotIndex);
+		EvalPop();
+	}
 	else
+	{
 		Encoder.EmitPop(GeneratingFor->ExecutableByteCode);
+		EvalPop();
+	}
 
 	VisitStatementsBlock(body);
 
@@ -812,6 +999,7 @@ void AbstractEmiter::VisitIfStatement(IfStatementSyntax* node)
 
 	std::size_t conditionalJumpAddress = GeneratingFor->ExecutableByteCode.size();
 	Encoder.EmitJumpFalse(GeneratingFor->ExecutableByteCode, 0);
+	EvalPop();
 
 	VisitStatementsBlock(node->StatementsBlock.get());
 
@@ -859,6 +1047,7 @@ void AbstractEmiter::VisitUnlessStatement(UnlessStatementSyntax* node)
 
 	std::size_t conditionalJumpAddress = GeneratingFor->ExecutableByteCode.size();
 	Encoder.EmitJumpTrue(GeneratingFor->ExecutableByteCode, 0);
+	EvalPop();
 
 	VisitStatementsBlock(node->StatementsBlock.get());
 
@@ -902,26 +1091,34 @@ void AbstractEmiter::VisitLiteralExpression(LiteralExpressionSyntax* node)
 		case TokenType::NullLiteral:
 		{
 			Encoder.EmitLoadConstNull(GeneratingFor->ExecutableByteCode);
+			EvalPush();
 			break;
 		}
 
 		case TokenType::CharLiteral:
 		{
 			Encoder.EmitLoadConstChar16(GeneratingFor->ExecutableByteCode, node->LiteralToken.Word[0]);
+			EvalPush(PrimitivePayload(SymbolTable::Primitives::Char));
 			break;
 		}
 
 		case TokenType::StringLiteral:
 		{
 			Encoder.EmitLoadConstString(GeneratingFor->ExecutableByteCode, Program.DataSection, node->LiteralToken.Word.data());
+			EvalPush();
 			break;
 		}
 
 		case TokenType::NumberLiteral:
 		{
 			Encoder.EmitLoadConstInt64(GeneratingFor->ExecutableByteCode, symbol->AsIntegerValue);
+			EvalPush(PrimitivePayload(SymbolTable::Primitives::Integer));
 			if (symbol->BoundType != nullptr && symbol->BoundType != SymbolTable::Primitives::Integer)
+			{
 				Encoder.EmitCastPrimitive(GeneratingFor->ExecutableByteCode, symbol->BoundType);
+				EvalPop();
+				EvalPush(FrameLayout::ResolveTypePayload(symbol->BoundType));
+			}
 
 			break;
 		}
@@ -929,12 +1126,14 @@ void AbstractEmiter::VisitLiteralExpression(LiteralExpressionSyntax* node)
 		case TokenType::DoubleLiteral:
 		{
 			Encoder.EmitLoadConstDouble64(GeneratingFor->ExecutableByteCode, symbol->AsDoubleValue);
+			EvalPush(PrimitivePayload(SymbolTable::Primitives::Double));
 			break;
 		}
 
 		case TokenType::BooleanLiteral:
 		{
 			Encoder.EmitLoadConstBool(GeneratingFor->ExecutableByteCode, symbol->AsBooleanValue);
+			EvalPush(PrimitivePayload(SymbolTable::Primitives::Boolean));
 			break;
 		}
 
@@ -952,6 +1151,8 @@ void AbstractEmiter::VisitObjectCreationExpression(ObjectExpressionSyntax* node)
 
 		TypeSymbol* elementType = node->Type != nullptr ? node->Type->Symbol : nullptr;
 		Encoder.EmitNewArrayDynamic(GeneratingFor->ExecutableByteCode, elementType);
+		EvalPop();
+		EvalPush();
 		return;
 	}
 
@@ -970,6 +1171,16 @@ void AbstractEmiter::VisitObjectCreationExpression(ObjectExpressionSyntax* node)
 
 	VisitArgumentsList(node->ArgumentsList.get());
 	Encoder.EmitNewObject(GeneratingFor->ExecutableByteCode, node->Symbol, node->CtorSymbol);
+
+	// InstantiateObject pushes the fresh instance for the ctor frame before the
+	// frame pops it together with the arguments; the constructed instance is
+	// then pushed as the result.
+	EvalPush();
+	if (node->CtorSymbol != nullptr)
+		EvalPop(node->CtorSymbol->GetEvalStackArgumentsCount());
+	else
+		EvalPop();
+	EvalPush(FrameLayout::ResolveTypePayload(node->Symbol));
 }
 
 void AbstractEmiter::VisitCollectionExpression(CollectionExpressionSyntax* node)
@@ -978,6 +1189,11 @@ void AbstractEmiter::VisitCollectionExpression(CollectionExpressionSyntax* node)
 		VisitExpression((*riter).get());
 
 	Encoder.EmitNewArray(GeneratingFor->ExecutableByteCode, node->Symbol);
+	if (node->Symbol != nullptr)
+		EvalPop(node->Symbol->Length);
+	else
+		EvalPop();
+	EvalPush();
 }
 
 void AbstractEmiter::VisitRangeExpression(RangeExpressionSyntax* node)
@@ -986,7 +1202,10 @@ void AbstractEmiter::VisitRangeExpression(RangeExpressionSyntax* node)
 	VisitExpression(node->Left.get());
 	VisitExpression(node->Right.get());
 	Encoder.EmitLoadConstBool(GeneratingFor->ExecutableByteCode, node->IsInclusive);
+	EvalPush(PrimitivePayload(SymbolTable::Primitives::Boolean));
 	Encoder.EmitCreateRange(GeneratingFor->ExecutableByteCode, SymbolTable::Primitives::Integer);
+	EvalPop(3);
+	EvalPush();
 }
 
 void AbstractEmiter::VisitLambdaExpression(LambdaExpressionSyntax* node)
@@ -1000,13 +1219,24 @@ void AbstractEmiter::VisitLambdaExpression(LambdaExpressionSyntax* node)
 	std::vector<DeferScope> previousDefers = std::move(DeferScopes);
 	DeferScopes = std::vector<DeferScope>();
 
+	// The closure body is a separate method with its own frame layout; track it
+	// with a fresh tracker and restore the outer one afterwards.
+	EvalLayoutTracker outerTracker = EvalTracker;
+	EvalTracker = EvalLayoutTracker();
+
 	std::size_t reserve = node->Body->Statements.size() * 20;
 	GeneratingFor->ExecutableByteCode.reserve(reserve);
 	VisitStatementsBlock(node->Body.get());
+
+	if (EvalTracker.CurrentDepth != 0)
+		EvalTracker.Poisoned = true;
+
 	Encoder.EmitReturn(GeneratingFor->ExecutableByteCode);
+	EvalFinalizeTarget();
 
 	GeneratingFor->ExecutableByteCode.shrink_to_fit();
 
+	EvalTracker = outerTracker;
 	DeferScopes = std::move(previousDefers);
 	GeneratingFor = previous;
 
@@ -1014,6 +1244,11 @@ void AbstractEmiter::VisitLambdaExpression(LambdaExpressionSyntax* node)
 	{
 		// Allocate the closure box.
 		Encoder.EmitNewObject(GeneratingFor->ExecutableByteCode, static_cast<TypeSymbol*>(node->ClosureClass), node->ClosureConstructor);
+		EvalPush();
+		if (node->ClosureConstructor != nullptr)
+			EvalPop(node->ClosureConstructor->GetEvalStackArgumentsCount());
+		else
+			EvalPop();
 
 		// Store each captured value into the matching field.
 		for (const auto& pair : node->CaptureFields)
@@ -1022,26 +1257,37 @@ void AbstractEmiter::VisitLambdaExpression(LambdaExpressionSyntax* node)
 			FieldSymbol* field = pair.second;
 
 			Encoder.EmitDuplicate(GeneratingFor->ExecutableByteCode);
+			EvalPush();
 			if (captured->Kind == SyntaxKind::Parameter)
 			{
 				Encoder.EmitLoadLocal(GeneratingFor->ExecutableByteCode,
 					static_cast<ParameterSymbol*>(captured)->SlotIndex);
+				EvalPush(FrameLayout::SlotPayload(*GeneratingFor,
+					static_cast<ParameterSymbol*>(captured)->SlotIndex));
 			}
 			else if (captured->Kind == SyntaxKind::VariableStatement)
 			{
 				Encoder.EmitLoadLocal(GeneratingFor->ExecutableByteCode,
 					static_cast<VariableSymbol*>(captured)->SlotIndex);
+				EvalPush(FrameLayout::SlotPayload(*GeneratingFor,
+					static_cast<VariableSymbol*>(captured)->SlotIndex));
 			}
 
 			Encoder.EmitStoreField(GeneratingFor->ExecutableByteCode, field->SlotIndex);
+			EvalPop(2);
 		}
 
 		// The closure object itself becomes the delegate instance.
 		Encoder.EmitNewDelegate(GeneratingFor->ExecutableByteCode, node->Symbol);
+		if (node->Symbol != nullptr && node->Symbol->AnonymousSymbol != nullptr &&
+			node->Symbol->AnonymousSymbol->Linking == LINK_INSTANCE)
+			EvalPop();
+		EvalPush();
 	}
 	else
 	{
 		Encoder.EmitNewDelegate(GeneratingFor->ExecutableByteCode, node->Symbol);
+		EvalPush();
 	}
 }
 
@@ -1057,10 +1303,16 @@ void AbstractEmiter::VisitTernaryExpression(TernaryExpressionSyntax* node)
 
 	std::size_t jumpFalseAddress = GeneratingFor->ExecutableByteCode.size();
 	Encoder.EmitJumpFalse(GeneratingFor->ExecutableByteCode, 0);
+	EvalPop();
 
+	std::size_t armBaseDepth = EvalTracker.CurrentDepth;
 	VisitExpression(node->Left.get());
 	std::size_t jumpEndAddress = GeneratingFor->ExecutableByteCode.size();
 	Encoder.EmitJump(GeneratingFor->ExecutableByteCode, 0);
+
+	// The right arm starts from the pre-arm depth at runtime (control arrived
+	// via the conditional jump, past the left arm's result).
+	EvalTracker.CurrentDepth = armBaseDepth;
 
 	std::size_t rightAddress = GeneratingFor->ExecutableByteCode.size();
 	VisitExpression(node->Right.get());
@@ -1096,16 +1348,20 @@ void AbstractEmiter::VisitUnaryAssignExpression(UnaryExpressionSyntax* node)
 	if (memberExpression->ToParameter != nullptr)
 	{
 		Encoder.EmitLoadLocal(GeneratingFor->ExecutableByteCode, memberExpression->ToParameter->SlotIndex);
+		EvalPush(FrameLayout::SlotPayload(*GeneratingFor, memberExpression->ToParameter->SlotIndex));
 		EmitUnaryOperation(node->OperatorToken.Type, Encoder, GeneratingFor->ExecutableByteCode, node->IsRightDetermined);
 		Encoder.EmitStoreLocal(GeneratingFor->ExecutableByteCode, memberExpression->ToParameter->SlotIndex);
+		EvalPop();
 		return;
 	}
 
 	if (memberExpression->ToVariable != nullptr)
 	{
 		Encoder.EmitLoadLocal(GeneratingFor->ExecutableByteCode, memberExpression->ToVariable->SlotIndex);
+		EvalPush(FrameLayout::SlotPayload(*GeneratingFor, memberExpression->ToVariable->SlotIndex));
 		EmitUnaryOperation(node->OperatorToken.Type, Encoder, GeneratingFor->ExecutableByteCode, node->IsRightDetermined);
 		Encoder.EmitStoreLocal(GeneratingFor->ExecutableByteCode, memberExpression->ToVariable->SlotIndex);
+		EvalPop();
 		return;
 	}
 
@@ -1114,16 +1370,22 @@ void AbstractEmiter::VisitUnaryAssignExpression(UnaryExpressionSyntax* node)
 		if (memberExpression->ToField->Linking == LINK_STATIC)
 		{
 			Encoder.EmitLoadStaticField(GeneratingFor->ExecutableByteCode, memberExpression->ToField);
+			EvalPush();
 			EmitUnaryOperation(node->OperatorToken.Type, Encoder, GeneratingFor->ExecutableByteCode, node->IsRightDetermined);
 			Encoder.EmitStoreStaticField(GeneratingFor->ExecutableByteCode, memberExpression->ToField);
+			EvalPop();
 			return;
 		}
 
 		VisitExpression(memberExpression->PreviousExpression.get());
 		Encoder.EmitDuplicate(GeneratingFor->ExecutableByteCode);
+		EvalPush();
 		Encoder.EmitLoadField(GeneratingFor->ExecutableByteCode, memberExpression->ToField->SlotIndex);
+		EvalPop();
+		EvalPush(FrameLayout::ResolveTypePayload(memberExpression->ToField->ReturnType));
 		EmitUnaryOperation(node->OperatorToken.Type, Encoder, GeneratingFor->ExecutableByteCode, node->IsRightDetermined);
 		Encoder.EmitStoreField(GeneratingFor->ExecutableByteCode, memberExpression->ToField->SlotIndex);
+		EvalPop(2);
 		return;
 	}
 
@@ -1155,6 +1417,7 @@ void AbstractEmiter::VisitUnaryAssignExpression(UnaryExpressionSyntax* node)
 			// Load receiver
 			VisitExpression(memberExpression->PreviousExpression.get());
 			Encoder.EmitDuplicate(GeneratingFor->ExecutableByteCode);
+			EvalPush();
 
 			// Load index arguments for indexers
 			if (indexatorExpr != nullptr && indexatorExpr->IndexatorList != nullptr)
@@ -1170,14 +1433,18 @@ void AbstractEmiter::VisitUnaryAssignExpression(UnaryExpressionSyntax* node)
 			// Preserve the new value and the receiver in temporary slots so we can
 			// reorder the stack for the setter call ([args..., value, this]).
 			Encoder.EmitStoreLocal(GeneratingFor->ExecutableByteCode, tempValueSlot);
+			EvalPop();
 			Encoder.EmitStoreLocal(GeneratingFor->ExecutableByteCode, tempThisSlot);
+			EvalPop();
 
 			// Push setter arguments
 			if (indexatorExpr != nullptr && indexatorExpr->IndexatorList != nullptr)
 				EmitIndexatorArguments(this, indexatorExpr->IndexatorList.get());
 
 			Encoder.EmitLoadLocal(GeneratingFor->ExecutableByteCode, tempValueSlot);
+			EvalPush(FrameLayout::SlotPayload(*GeneratingFor, tempValueSlot));
 			Encoder.EmitLoadLocal(GeneratingFor->ExecutableByteCode, tempThisSlot);
+			EvalPush(FrameLayout::SlotPayload(*GeneratingFor, tempThisSlot));
 
 			EmitMethodCall(setter);
 		}
@@ -1214,6 +1481,7 @@ void AbstractEmiter::VisitBinaryAssignExpression(BinaryExpressionSyntax* node)
 	{
 		VisitExpression(node->Right.get());
 		Encoder.EmitStoreLocal(GeneratingFor->ExecutableByteCode, memberExpression->ToParameter->SlotIndex);
+		EvalPop();
 		return;
 	}
 
@@ -1221,6 +1489,7 @@ void AbstractEmiter::VisitBinaryAssignExpression(BinaryExpressionSyntax* node)
 	{
 		VisitExpression(node->Right.get());
 		Encoder.EmitStoreLocal(GeneratingFor->ExecutableByteCode, memberExpression->ToVariable->SlotIndex);
+		EvalPop();
 		return;
 	}
 
@@ -1255,12 +1524,14 @@ void AbstractEmiter::VisitBinaryAssignExpression(BinaryExpressionSyntax* node)
 		if (memberExpression->ToField->Linking == LINK_STATIC)
 		{
 			Encoder.EmitStoreStaticField(GeneratingFor->ExecutableByteCode, memberExpression->ToField);
+			EvalPop();
 			return;
 		}
 
 		VisitExpression(memberExpression->PreviousExpression.get());
 		VisitExpression(node->Right.get());
 		Encoder.EmitStoreField(GeneratingFor->ExecutableByteCode, memberExpression->ToField->SlotIndex);
+		EvalPop(2);
 		return;
 	}
 }
@@ -1331,10 +1602,42 @@ void AbstractEmiter::VisitInvocationExpression(InvokationExpressionSyntax* node)
 			delegateType = static_cast<DelegateTypeSymbol*>(node->Symbol->Parent);
 
 		Encoder.EmitCallDelegate(GeneratingFor->ExecutableByteCode, delegateType);
+
+		// VirtualMachine pops the delegate instance; closure targets get it back
+		// as 'this' before the target pops its arguments.
+		EvalPop();
+		MethodSymbol* anon = delegateType != nullptr ? delegateType->AnonymousSymbol : nullptr;
+		if (anon != nullptr)
+		{
+			if (anon->Linking == LINK_INSTANCE)
+				EvalPush(); // pushed back as 'this'
+			EvalPop(anon->GetEvalStackArgumentsCount());
+			if (anon->ReturnType != nullptr && anon->ReturnType != SymbolTable::Primitives::Void)
+				EvalPush(FrameLayout::ResolveTypePayload(anon->ReturnType));
+		}
+		else
+		{
+			// Unresolvable target: under-model pops, reference-sized push.
+			EvalPop();
+			EvalPush();
+		}
 	}
 
 	else if (hasTypeArguments)
+	{
 		Encoder.EmitCallMethodSymbol(GeneratingFor->ExecutableByteCode, node->Symbol);
+		if (node->Symbol != nullptr)
+		{
+			EvalPop(node->Symbol->GetEvalStackArgumentsCount());
+			if (node->Symbol->ReturnType != nullptr && node->Symbol->ReturnType != SymbolTable::Primitives::Void)
+				EvalPush(FrameLayout::ResolveTypePayload(node->Symbol->ReturnType));
+		}
+		else
+		{
+			EvalPop();
+			EvalPush();
+		}
+	}
 	else
 		EmitMethodCall(node->Symbol);
 }
@@ -1358,12 +1661,14 @@ void AbstractEmiter::VisitMemberAccessExpression(MemberAccessExpressionSyntax* n
 	if (node->ToParameter != nullptr)
 	{
 		Encoder.EmitLoadLocal(GeneratingFor->ExecutableByteCode, node->ToParameter->SlotIndex);
+		EvalPush(FrameLayout::SlotPayload(*GeneratingFor, node->ToParameter->SlotIndex));
 		return;
 	}
 
 	if (node->ToVariable != nullptr)
 	{
 		Encoder.EmitLoadLocal(GeneratingFor->ExecutableByteCode, node->ToVariable->SlotIndex);
+		EvalPush(FrameLayout::SlotPayload(*GeneratingFor, node->ToVariable->SlotIndex));
 		return;
 	}
 
@@ -1372,17 +1677,21 @@ void AbstractEmiter::VisitMemberAccessExpression(MemberAccessExpressionSyntax* n
 		if (node->ToField->IsEnumValue)
 		{
 			Encoder.EmitLoadEnumField(GeneratingFor->ExecutableByteCode, node->ToField);
+			EvalPush(FrameLayout::ResolveTypePayload(node->ToField->ReturnType));
 			return;
 		}
 
 		if (node->ToField->Linking == LINK_STATIC)
 		{
 			Encoder.EmitLoadStaticField(GeneratingFor->ExecutableByteCode, node->ToField);
+			EvalPush();
 			return;
 		}
 
 		VisitExpression(node->PreviousExpression.get());
 		Encoder.EmitLoadField(GeneratingFor->ExecutableByteCode, node->ToField->SlotIndex);
+		EvalPop();
+		EvalPush(FrameLayout::ResolveTypePayload(node->ToField->ReturnType));
 		return;
 	}
 
@@ -1399,12 +1708,16 @@ void AbstractEmiter::VisitMemberAccessExpression(MemberAccessExpressionSyntax* n
 	if (node->ToDelegate != nullptr)
 	{
 		Encoder.EmitNewDelegate(GeneratingFor->ExecutableByteCode, node->ToDelegate);
+		if (node->ToDelegate->AnonymousSymbol != nullptr && node->ToDelegate->AnonymousSymbol->Linking == LINK_INSTANCE)
+			EvalPop();
+		EvalPush();
 		return;
 	}
 
 	if (node->ToOperator != nullptr)
 	{
 		Encoder.EmitLoadConstString(GeneratingFor->ExecutableByteCode, Program.DataSection, node->IdentifierToken.Word.data());
+		EvalPush();
 		VisitExpression(node->PreviousExpression.get());
 		EmitMethodCall(node->ToOperator);
 		return;
@@ -1424,11 +1737,20 @@ void AbstractEmiter::EmitDefer(DeferStatementSyntax* defer)
 	std::size_t jumpOverBacktrack = code.size();
 	Encoder.EmitJump(code, 0);
 
+	// The deferred body runs later, at the depth of whatever DEFER_DRAIN site
+	// drains it — not at the registration depth. Track it in isolation and
+	// remember its internal peak for EvalDrainDefers.
+	EvalLayoutTracker outerTracker = EvalTracker;
+	EvalTracker = EvalLayoutTracker();
+
 	std::size_t expressionStart = code.size();
 	if (defer->IsResourceDefer)
 	{
 		if (defer->Variable != nullptr)
+		{
 			Encoder.EmitLoadLocal(code, defer->Variable->SlotIndex);
+			EvalPush(FrameLayout::SlotPayload(*GeneratingFor, defer->Variable->SlotIndex));
+		}
 
 		if (defer->DisposeMethod != nullptr)
 			EmitMethodCall(defer->DisposeMethod);
@@ -1441,6 +1763,21 @@ void AbstractEmiter::EmitDefer(DeferStatementSyntax* defer)
 	Encoder.EmitDeferBreak(code);
 	std::size_t afterExpression = code.size();
 
+	if (!EvalTracker.Poisoned && EvalTracker.CurrentDepth == 0)
+	{
+		if (EvalTracker.MaxDepth > outerTracker.DeferBodyMax)
+			outerTracker.DeferBodyMax = EvalTracker.MaxDepth;
+	}
+	else
+	{
+		outerTracker.Poisoned = true;
+	}
+
+	if (EvalTracker.MaxPayload > outerTracker.MaxPayload)
+		outerTracker.MaxPayload = EvalTracker.MaxPayload;
+
+	EvalTracker = outerTracker;
+
 	ByteCodeEncoder::PasteData(code, deferOffset + sizeof(OpCode), &expressionStart, sizeof(std::size_t));
 	ByteCodeEncoder::PasteData(code, jumpOverBacktrack + sizeof(OpCode), &afterExpression, sizeof(std::size_t));
 }
@@ -1452,7 +1789,10 @@ void AbstractEmiter::EmitCurrentScopeDefers()
 
 	DeferScope& scope = DeferScopes.back();
 	if (scope.Count > 0)
+	{
 		Encoder.EmitDeferDrain(GeneratingFor->ExecutableByteCode, scope.Count);
+		EvalDrainDefers();
+	}
 
 	scope.Count = 0;
 }
@@ -1470,7 +1810,10 @@ void AbstractEmiter::EmitDefersUntilLoop()
 	}
 
 	if (drainCount > 0)
+	{
 		Encoder.EmitDeferDrain(GeneratingFor->ExecutableByteCode, drainCount);
+		EvalDrainDefers();
+	}
 }
 
 void AbstractEmiter::EmitAllDefers()
@@ -1483,7 +1826,10 @@ void AbstractEmiter::EmitAllDefers()
 	}
 
 	if (drainCount > 0)
+	{
 		Encoder.EmitDeferDrain(GeneratingFor->ExecutableByteCode, drainCount);
+		EvalDrainDefers();
+	}
 }
 
 void AbstractEmiter::VisitStatementsBlock(StatementsBlockSyntax* node)
@@ -1531,7 +1877,13 @@ void AbstractEmiter::VisitReturnStatement(ReturnStatementSyntax* node)
 		VisitExpression(node->Expression.get());
 
 	EmitAllDefers();
+
+	std::size_t expectedDepth = node->Expression != nullptr ? 1 : 0;
+	if (EvalTracker.CurrentDepth != expectedDepth)
+		EvalTracker.Poisoned = true;
+
 	Encoder.EmitReturn(GeneratingFor->ExecutableByteCode);
+	EvalTracker.CurrentDepth = 0; // unreachable code after 'return' is tracked from a clean base
 }
 
 void AbstractEmiter::VisitBreakStatement(BreakStatementSyntax* node)
@@ -1559,9 +1911,16 @@ void AbstractEmiter::VisitThrowStatement(ThrowStatementSyntax* node)
 	// are drained before the frame returns with an unhandled exception.
 
 	if (node->Expression != nullptr)
+	{
 		Encoder.EmitThrow(GeneratingFor->ExecutableByteCode);
+		EvalPop();
+	}
 	else
+	{
 		Encoder.EmitRethrow(GeneratingFor->ExecutableByteCode);
+	}
+
+	EvalTracker.CurrentDepth = 0; // unreachable code after 'throw' is tracked from a clean base
 }
 
 static bool IsInterfaceMember(MethodSymbol* method)
@@ -1590,6 +1949,10 @@ void AbstractEmiter::EmitMethodCall(MethodSymbol* method)
         Encoder.EmitCallInterface(GeneratingFor->ExecutableByteCode, method);
     else
         Encoder.EmitCallMethodSymbol(GeneratingFor->ExecutableByteCode, method);
+
+    EvalPop(method->GetEvalStackArgumentsCount());
+    if (method->ReturnType != nullptr && method->ReturnType != SymbolTable::Primitives::Void)
+        EvalPush(FrameLayout::ResolveTypePayload(method->ReturnType));
 }
 
 void AbstractEmiter::VisitCastExpression(CastExpressionSyntax* node)
@@ -1609,10 +1972,14 @@ void AbstractEmiter::VisitCastExpression(CastExpressionSyntax* node)
     if (node->IsPrimitiveCast)
     {
         Encoder.EmitCastPrimitive(GeneratingFor->ExecutableByteCode, node->TargetType->Symbol);
+        EvalPop();
+        EvalPush(FrameLayout::ResolveTypePayload(node->TargetType->Symbol));
         return;
     }
 
     Encoder.EmitCast(GeneratingFor->ExecutableByteCode, node->TargetType->Symbol);
+    EvalPop();
+    EvalPush();
 }
 
 void AbstractEmiter::VisitIsExpression(IsExpressionSyntax* node)
@@ -1621,7 +1988,11 @@ void AbstractEmiter::VisitIsExpression(IsExpressionSyntax* node)
         VisitExpression(node->Expression.get());
 
     if (node->TargetType != nullptr && node->TargetType->Symbol != nullptr)
+    {
         Encoder.EmitIsInstance(GeneratingFor->ExecutableByteCode, node->TargetType->Symbol);
+        EvalPop();
+        EvalPush(PrimitivePayload(SymbolTable::Primitives::Boolean));
+    }
 }
 
 void AbstractEmiter::VisitIsPattern(IsPatternSyntax* node)
@@ -1644,6 +2015,7 @@ void AbstractEmiter::VisitSwitchExpression(SwitchExpressionSyntax* node)
     if (node->Expression == nullptr || node->Arms.empty())
     {
         Encoder.EmitLoadConstNull(GeneratingFor->ExecutableByteCode);
+        EvalPush();
         return;
     }
 
@@ -1652,9 +2024,13 @@ void AbstractEmiter::VisitSwitchExpression(SwitchExpressionSyntax* node)
     std::uint16_t base = GeneratingFor->GetEvalStackArgumentsCount();
     std::uint16_t switchSlot = base + GeneratingFor->AddVariableCount();
     Encoder.EmitStoreLocal(GeneratingFor->ExecutableByteCode, switchSlot);
+    EvalPop();
 
     std::vector<std::size_t> endBacktracks;
     std::optional<std::size_t> pendingTestFailBacktrack;
+
+    // Arms are reached via jump, always with the eval stack at the base depth.
+    std::size_t armBaseDepth = EvalTracker.CurrentDepth;
 
     for (std::size_t i = 0; i < node->Arms.size(); ++i)
     {
@@ -1668,6 +2044,8 @@ void AbstractEmiter::VisitSwitchExpression(SwitchExpressionSyntax* node)
                 sizeof(std::size_t));
             pendingTestFailBacktrack.reset();
         }
+
+        EvalTracker.CurrentDepth = armBaseDepth;
 
         SwitchArmSyntax* arm = node->Arms[i].get();
         if (arm == nullptr || arm->Pattern == nullptr || arm->Expression == nullptr)
@@ -1699,23 +2077,30 @@ void AbstractEmiter::VisitSwitchExpression(SwitchExpressionSyntax* node)
             }
 
             Encoder.EmitLoadLocal(GeneratingFor->ExecutableByteCode, switchSlot);
+            EvalPush(FrameLayout::SlotPayload(*GeneratingFor, switchSlot));
             Encoder.EmitIsInstance(GeneratingFor->ExecutableByteCode, targetType);
+            EvalPop();
+            EvalPush(PrimitivePayload(SymbolTable::Primitives::Boolean));
 
             std::size_t jumpFalse = GeneratingFor->ExecutableByteCode.size();
             pendingTestFailBacktrack = jumpFalse;
             Encoder.EmitJumpFalse(GeneratingFor->ExecutableByteCode, 0);
+            EvalPop();
 
             // Pattern matched. Load the value again to bind or discard.
             Encoder.EmitLoadLocal(GeneratingFor->ExecutableByteCode, switchSlot);
+            EvalPush(FrameLayout::SlotPayload(*GeneratingFor, switchSlot));
             if (isPattern->Symbol != nullptr)
             {
                 std::uint16_t patternSlot = base + GeneratingFor->AddVariableCount(const_cast<TypeSymbol*>(isPattern->Symbol->Type));
                 isPattern->Symbol->SlotIndex = patternSlot;
                 Encoder.EmitStoreLocal(GeneratingFor->ExecutableByteCode, patternSlot);
+                EvalPop();
             }
             else
             {
                 Encoder.EmitPop(GeneratingFor->ExecutableByteCode);
+                EvalPop();
             }
 
             VisitExpression(arm->Expression.get());
@@ -1733,8 +2118,10 @@ void AbstractEmiter::VisitSwitchExpression(SwitchExpressionSyntax* node)
     }
 
     // If no arm matched, leave null on the stack as the result.
+    EvalTracker.CurrentDepth = armBaseDepth;
     std::size_t nullLoadOffset = GeneratingFor->ExecutableByteCode.size();
     Encoder.EmitLoadConstNull(GeneratingFor->ExecutableByteCode);
+    EvalPush();
 
     std::size_t endOffset = GeneratingFor->ExecutableByteCode.size();
 
@@ -1767,6 +2154,9 @@ void AbstractEmiter::VisitSwitchStatement(SwitchStatementSyntax* node)
     std::uint16_t base = GeneratingFor->GetEvalStackArgumentsCount();
     std::uint16_t switchSlot = base + GeneratingFor->AddVariableCount();
     Encoder.EmitStoreLocal(GeneratingFor->ExecutableByteCode, switchSlot);
+    EvalPop();
+
+    const std::size_t clauseBaseDepth = EvalTracker.CurrentDepth;
 
     Loops.emplace();
     LoopScope& scope = Loops.top();
@@ -1786,6 +2176,10 @@ void AbstractEmiter::VisitSwitchStatement(SwitchStatementSyntax* node)
                 sizeof(std::size_t));
             pendingTestFailBacktrack.reset();
         }
+
+        // Each clause starts from a clean eval depth; statement bodies are balanced,
+        // but resetting here keeps a stray imbalance in one clause from poisoning the rest.
+        EvalTracker.CurrentDepth = clauseBaseDepth;
 
         SwitchCaseClauseSyntax* clause = node->Clauses[i].get();
         if (clause == nullptr || clause->Body == nullptr)
@@ -1815,22 +2209,29 @@ void AbstractEmiter::VisitSwitchStatement(SwitchStatementSyntax* node)
                 continue;
 
             Encoder.EmitLoadLocal(GeneratingFor->ExecutableByteCode, switchSlot);
+            EvalPush(FrameLayout::SlotPayload(*GeneratingFor, switchSlot));
             Encoder.EmitIsInstance(GeneratingFor->ExecutableByteCode, targetType);
+            EvalPop();
+            EvalPush(PrimitivePayload(SymbolTable::Primitives::Boolean));
 
             std::size_t jumpFalse = GeneratingFor->ExecutableByteCode.size();
             pendingTestFailBacktrack = jumpFalse;
             Encoder.EmitJumpFalse(GeneratingFor->ExecutableByteCode, 0);
+            EvalPop();
 
             Encoder.EmitLoadLocal(GeneratingFor->ExecutableByteCode, switchSlot);
+            EvalPush(FrameLayout::SlotPayload(*GeneratingFor, switchSlot));
             if (isPattern->Symbol != nullptr)
             {
                 std::uint16_t patternSlot = base + GeneratingFor->AddVariableCount(const_cast<TypeSymbol*>(isPattern->Symbol->Type));
                 isPattern->Symbol->SlotIndex = patternSlot;
                 Encoder.EmitStoreLocal(GeneratingFor->ExecutableByteCode, patternSlot);
+                EvalPop();
             }
             else
             {
                 Encoder.EmitPop(GeneratingFor->ExecutableByteCode);
+                EvalPop();
             }
 
             VisitStatementsBlock(clause->Body.get());
@@ -1852,13 +2253,17 @@ void AbstractEmiter::VisitSwitchStatement(SwitchStatementSyntax* node)
         else
         {
             Encoder.EmitLoadLocal(GeneratingFor->ExecutableByteCode, switchSlot);
+            EvalPush(FrameLayout::SlotPayload(*GeneratingFor, switchSlot));
             VisitExpression(pattern);
             Encoder.EmitCompareEqual(GeneratingFor->ExecutableByteCode);
+            EvalPop(2);
+            EvalPush(PrimitivePayload(SymbolTable::Primitives::Boolean));
         }
 
         std::size_t jumpFalse = GeneratingFor->ExecutableByteCode.size();
         pendingTestFailBacktrack = jumpFalse;
         Encoder.EmitJumpFalse(GeneratingFor->ExecutableByteCode, 0);
+        EvalPop();
 
         VisitStatementsBlock(clause->Body.get());
 
@@ -1866,6 +2271,10 @@ void AbstractEmiter::VisitSwitchStatement(SwitchStatementSyntax* node)
         endBacktracks.push_back(jumpEnd);
         Encoder.EmitJump(GeneratingFor->ExecutableByteCode, 0);
     }
+
+    // All clause paths converge at the saved base depth (fall-through, jumps and clause
+    // bodies are balanced, so any residual depth here is an emission bug we want to surface).
+    EvalTracker.CurrentDepth = clauseBaseDepth;
 
     std::size_t endOffset = GeneratingFor->ExecutableByteCode.size();
 

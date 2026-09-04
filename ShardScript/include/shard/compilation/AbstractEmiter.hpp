@@ -82,30 +82,63 @@ namespace shard
             bool IsLoop = false;
         };
 
-        ByteCodeEncoder Encoder;
-        MethodSymbol* GeneratingFor = nullptr;
-		ProgramVirtualImage& Program;
-		std::vector<MethodSymbol*> EntryPointCandidates;
+    public:
+        struct EvalLayoutTracker
+        {
+            std::size_t CurrentDepth = 0; // eval entries above the locals region
+            std::size_t MaxDepth = 0;     // peak of CurrentDepth
+            std::size_t MaxPayload = 0;   // largest inline payload pushed
+            std::size_t DeferBodyMax = 0; // largest internal peak of any defer body
+            bool Poisoned = false;        // tracking desynced: do not publish
+        };
 
-		bool PopExpressionStatement = true;
+    private:
+        ByteCodeEncoder Encoder;
+        EvalLayoutTracker EvalTracker;
+
+        MethodSymbol* GeneratingFor = nullptr;
+        ProgramVirtualImage& Program;
+        std::vector<MethodSymbol*> EntryPointCandidates;
+
+        bool PopExpressionStatement = true;
         std::stack<LoopScope> Loops;
         std::stack<ClauseScope> Clauses;
 
         std::vector<DeferScope> DeferScopes;
         bool PendingDeferScopeIsLoop = false;
 
+        void EvalPush(std::size_t payload = sizeof(void*));
+        void EvalPop(std::size_t count = 1);
+        void EvalDrainDefers();
+        void EvalFinalizeTarget();
+
+        void EmitUnaryOperation(shard::TokenType type, ByteCodeEncoder& encoder, std::vector<std::byte>& code, bool isRightDetermined);
+        void EmitBinaryOperation(shard::TokenType type, ByteCodeEncoder& encoder, std::vector<std::byte>& code);
+
         void EmitDefer(DeferStatementSyntax* defer);
         void EmitCurrentScopeDefers();
         void EmitDefersUntilLoop();
         void EmitAllDefers();
 
+        void EmitMethodCall(MethodSymbol* method);
+        void EmitEnumerationLoop(ExpressionSyntax* range, VariableSymbol* loopVariable, StatementsBlockSyntax* body);
+
 	public:
 		inline AbstractEmiter(ProgramVirtualImage& program, SemanticModel& model, DiagnosticsContext& diagnostics)
             : SyntaxVisitor(model, diagnostics), Program(program), Encoder() { }
-        
+
+        static void EvalPush(EvalLayoutTracker& tracker, std::size_t payload = sizeof(void*));
+        static void EvalPop(EvalLayoutTracker& tracker, std::size_t count = 1);
+        static void EvalDrainDefers(EvalLayoutTracker& tracker);
+        static void PublishLayout(MethodSymbol* method, const EvalLayoutTracker& tracker);
+
         void SetEntryPoint();
         void SetGeneratingTarget(MethodSymbol* method);
-		void SetPopExpressionStatement(bool pop)
+
+        void ImportTracker(const EvalLayoutTracker& tracker) { EvalTracker = tracker; }
+        const EvalLayoutTracker& ExportTracker() const { return EvalTracker; }
+		
+        void SetPopExpressionStatement(bool pop)
 		{
 			PopExpressionStatement = pop;
 		}
@@ -163,9 +196,5 @@ namespace shard
         void VisitCastExpression(CastExpressionSyntax* node) override;
         void VisitIsExpression(IsExpressionSyntax* node) override;
         void VisitIsPattern(IsPatternSyntax* node) override;
-
-private:
-        void EmitMethodCall(MethodSymbol* method);
-        void EmitEnumerationLoop(ExpressionSyntax* range, VariableSymbol* loopVariable, StatementsBlockSyntax* body);
 	};
 }

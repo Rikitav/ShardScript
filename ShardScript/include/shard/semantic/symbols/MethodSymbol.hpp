@@ -53,6 +53,7 @@ namespace shard
 
         static std::size_t ResolveTypePayload(TypeSymbol* type);
         std::size_t ComputeLocalsBytes(const MethodSymbol& method) const;
+        static std::size_t SlotPayload(const MethodSymbol& method, std::uint16_t slot);
     };
 
     class SHARD_API MethodSymbol : public MemberSymbol
