@@ -65,7 +65,7 @@ static ObjectInstance* MakeType(TypeSymbol* type, const CallState& context)
 
 	ObjectInstance* obj = context.Collector.AllocateInstance(typeClass_raw);
 	obj->SetField(type_handleField->SlotIndex,
-		context.Collector.FromNint(type, true));
+		context.Collector.FromNint(type));
 
 	return obj;
 }
@@ -256,7 +256,7 @@ static ObjectInstance* MakeParameterInfo(ParameterSymbol* param, const CallState
 
 	ObjectInstance* obj = context.Collector.AllocateInstance(parameterInfoClass_raw);
 	obj->SetField(parameterInfo_handleField->SlotIndex,
-		context.Collector.FromNint(param, true));
+		context.Collector.FromNint(param));
 
 	return obj;
 }
@@ -290,7 +290,7 @@ static ObjectInstance* MakeMethodInfo(MethodSymbol* method, const CallState& con
 
 	ObjectInstance* obj = context.Collector.AllocateInstance(methodInfoClass_raw);
 	obj->SetField(methodInfo_handleField->SlotIndex,
-		context.Collector.FromNint(method, true));
+		context.Collector.FromNint(method));
 
 	return obj;
 }
@@ -344,7 +344,7 @@ static ObjectInstance* MakeFieldInfo(FieldSymbol* field, const CallState& contex
 
 	ObjectInstance* obj = context.Collector.AllocateInstance(fieldInfoClass_raw);
 	obj->SetField(fieldInfo_handleField->SlotIndex,
-		context.Collector.FromNint(field, true));
+		context.Collector.FromNint(field));
 
 	return obj;
 }
@@ -384,7 +384,7 @@ static ObjectInstance* MakePropertyInfo(PropertySymbol* property, const CallStat
 
 	ObjectInstance* obj = context.Collector.AllocateInstance(propertyInfoClass_raw);
 	obj->SetField(propertyInfo_handleField->SlotIndex,
-		context.Collector.FromNint(property, true));
+		context.Collector.FromNint(property));
 
 	return obj;
 }

@@ -30,7 +30,7 @@
 // shared_ptr whose deleter runs the destructor and mi_frees the block. The
 // arena trails the object:
 //
-//     [CallStackFrame object][return slot][locals region][eval region]
+//     [CallStackFrame object][return slot][locals region][view arena][eval region]
 //     ^-- this               ^-- Arena = this + sizeof(CallStackFrame)
 //
 // `sizeof` covers the complete object including tail padding, so the arena
@@ -93,6 +93,20 @@
 //                   (EvalOffsets, one uint32 byte-offset per live entry) and
 //                   Push*/Pop* move a byte cursor over the region. Popping is
 //                   therefore safe for any mix of boxed and inline entries.
+//
+//   View arena    — a fixed-size bump region sitting between the locals and
+//                   the eval region where short-lived ObjectInstance VIEW
+//                   HEADERS are carved from (AllocateView): operand views for
+//                   legacy consumers, external-argument scratch views, the
+//                   ctor 'this' view for in-place NEWOBJECT. Views own nothing
+//                   and never escape a single opcode dispatch — the VM resets
+//                   the bump cursor at the top of every opcode — so the region
+//                   is never walked or freed entry by entry. An opcode needing
+//                   more views than fit overflows to heap headers that
+//                   ResetViewArena deletes on the next reset. Views that must
+//                   outlive their opcode (SetLocal wrapping an inline value
+//                   into a reference-kind local) are pinned: heap headers
+//                   deleted at frame teardown.
 //
 // External methods receive their arguments as an ArgumentsSpan of
 // ObjectInstance* — the VM copies argument payloads into a scratch buffer
@@ -240,6 +254,10 @@ namespace shard
 		inline void PushStack(ObjectInstance* value) { PushReference(value); }
 		std::byte* PushInlineUninitialized(TypeShape* shape);
 
+		ObjectInstance* AllocateView(TypeShape* shape, std::byte* payload);
+		ObjectInstance* AllocatePinnedView(TypeShape* shape, std::byte* payload);
+		void ResetViewArena();
+
 		ObjectInstance* PopStack();
 		ObjectInstance* PeekStack();
 		ObjectInstance* PopBoxed(GarbageCollector& gc);
@@ -301,7 +319,12 @@ namespace shard
 			return payload;
 		}
 
-		static ObjectInstance* WrapPayload(TypeShape* shape, std::byte* payload);
+		std::byte* ViewArena = nullptr;
+		std::size_t ViewCursorBytes = 0;
+		std::vector<ObjectInstance*> ViewOverflow;
+		std::vector<ObjectInstance*> ViewPinned;
+
+		static constexpr std::size_t ViewArenaBytes = 2048;
 
 		void GrowEvalRegion(std::size_t newCapacityBytes);
 	};

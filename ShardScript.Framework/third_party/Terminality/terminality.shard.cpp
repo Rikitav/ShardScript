@@ -276,7 +276,7 @@ namespace
 			throw std::runtime_error("Terminality wrapper is missing the `_ptr` field");
 
 		ControlHolder* holder = new ControlHolder{ native, true };
-		ObjectInstance* wrapper = context.Collector.FromNint(holder, false);
+		ObjectInstance* wrapper = context.Collector.FromNint(holder);
 		instance->SetField(ptrField->SlotIndex, wrapper);
 	}
 
@@ -305,7 +305,7 @@ namespace
 	static ObjectInstance* CreateRenderContextObject(GarbageCollector& collector, RenderContext* native)
 	{
 		ObjectInstance* instance = collector.AllocateInstance(g_RenderContextClass);
-		instance->SetField(g_RenderContext_PtrField->SlotIndex, collector.FromNint(native, false));
+		instance->SetField(g_RenderContext_PtrField->SlotIndex, collector.FromNint(native));
 		return instance;
 	}
 }

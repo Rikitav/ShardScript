@@ -40,7 +40,7 @@ namespace shard
         {
             EnsureCompletedOnce();
             SetTaskState(task, CLASS_TASK_StateField, AsyncState::COMPLETED, *collector);
-            task->ReleaseFrameOwner();
+            collector->ReleaseFrameOwner(task);
 
             ResumeContinuation(task, CLASS_TASK_ContinuationField, TRAIT_ASYNCSTATE_MoveNext, *domain);
             domain->GetEventLoop().UnrootTask(task);
@@ -51,7 +51,7 @@ namespace shard
             EnsureCompletedOnce();
             SetTaskState(task, CLASS_TASK_StateField, AsyncState::FAULTED, *collector);
             task->SetField(CLASS_TASK_ExceptionField->SlotIndex, exception);
-            task->ReleaseFrameOwner();
+            collector->ReleaseFrameOwner(task);
 
             ResumeContinuation(task, CLASS_TASK_ContinuationField, TRAIT_ASYNCSTATE_MoveNext, *domain);
             domain->GetEventLoop().UnrootTask(task);
@@ -62,7 +62,7 @@ namespace shard
             EnsureCompletedOnce();
             SetTaskState(task, CLASS_VALUETASK_StateField, AsyncState::COMPLETED, *collector);
             task->SetField(CLASS_VALUETASK_ResultField->SlotIndex, result);
-            task->ReleaseFrameOwner();
+            collector->ReleaseFrameOwner(task);
 
             ResumeContinuation(task, CLASS_VALUETASK_ContinuationField, TRAIT_ASYNCSTATE_MoveNext, *domain);
             domain->GetEventLoop().UnrootTask(task);
@@ -73,7 +73,7 @@ namespace shard
             EnsureCompletedOnce();
             SetTaskState(task, CLASS_VALUETASK_StateField, AsyncState::FAULTED, *collector);
             task->SetField(CLASS_VALUETASK_ExceptionField->SlotIndex, exception);
-            task->ReleaseFrameOwner();
+            collector->ReleaseFrameOwner(task);
 
             ResumeContinuation(task, CLASS_VALUETASK_ContinuationField, TRAIT_ASYNCSTATE_MoveNext, *domain);
             domain->GetEventLoop().UnrootTask(task);
@@ -109,7 +109,7 @@ namespace shard
                 task->SetField(CLASS_TASK_ExceptionField->SlotIndex, exception);
             }
 
-            task->ReleaseFrameOwner();
+            collector->ReleaseFrameOwner(task);
             domain->GetEventLoop().UnrootTask(task);
         }
 
@@ -132,8 +132,8 @@ namespace shard
                 SetTaskState(state->task, CLASS_VALUETASK_StateField, AsyncState::PENDING, ctx.Collector);
             }
 
-            state->task->IsTaskLike = true;
-            state->task->AsyncNativeState = state.get();
+            state->collector->MarkTaskLike(state->task);
+            state->collector->SetAsyncNativeState(state->task, state.get());
             ctx.Domain.GetEventLoop().RootTask(state->task);
             return state;
         }
@@ -441,7 +441,7 @@ namespace shard
     ObjectInstance* CompletedTask(const CallState& ctx)
     {
         ObjectInstance* task = ctx.Collector.AllocateInstance(CLASS_TASK);
-        task->IsTaskLike = true;
+        ctx.Collector.MarkTaskLike(task);
 
         SetTaskState(task, CLASS_TASK_StateField, AsyncState::COMPLETED, ctx.Collector);
         return task;
@@ -450,7 +450,7 @@ namespace shard
     ObjectInstance* FaultedTask(const CallState& ctx, const std::wstring& message)
     {
         ObjectInstance* task = ctx.Collector.AllocateInstance(CLASS_TASK);
-        task->IsTaskLike = true;
+        ctx.Collector.MarkTaskLike(task);
 
         SetTaskState(task, CLASS_TASK_StateField, AsyncState::FAULTED, ctx.Collector);
         task->SetField(CLASS_TASK_ExceptionField->SlotIndex, CreateRuntimeException(ctx.Collector, message));
@@ -460,7 +460,7 @@ namespace shard
     ObjectInstance* FaultedTask(const CallState& ctx, ObjectInstance* exception)
     {
         ObjectInstance* task = ctx.Collector.AllocateInstance(CLASS_TASK);
-        task->IsTaskLike = true;
+        ctx.Collector.MarkTaskLike(task);
 
         SetTaskState(task, CLASS_TASK_StateField, AsyncState::FAULTED, ctx.Collector);
         task->SetField(CLASS_TASK_ExceptionField->SlotIndex, exception != nullptr ? exception : GarbageCollector::NullInstance);

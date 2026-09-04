@@ -2002,7 +2002,7 @@ extern "C"
                 return nullptr;
             }
 
-            return gc->FromValue(value, false);
+            return gc->FromValue(value);
         }
         catch (const std::exception& e)
         {
@@ -2059,7 +2059,7 @@ extern "C"
                 return nullptr;
             }
 
-            return gc->FromNint(static_cast<std::intptr_t>(value), false);
+            return gc->FromNint(static_cast<std::intptr_t>(value));
         }
         catch (const std::exception& e)
         {
@@ -2078,7 +2078,8 @@ extern "C"
                 return nullptr;
             }
 
-            return gc->FromValue(value, isTransient != 0);
+            (void)isTransient;
+            return gc->FromValue(value);
         }
         catch (const std::exception& e)
         {
@@ -2207,7 +2208,8 @@ extern "C"
                 return nullptr;
             }
 
-            return gc->FromNint(static_cast<std::intptr_t>(value), isTransient != 0);
+            (void)isTransient;
+            return gc->FromNint(static_cast<std::intptr_t>(value));
         }
         catch (const std::exception& e)
         {
@@ -2372,7 +2374,7 @@ extern "C"
                 return nullptr;
             }
 
-            return gc->FromNint(value, false);
+            return gc->FromNint(value);
         }
         catch (const std::exception& e)
         {
@@ -2733,7 +2735,7 @@ extern "C"
             if (instance == nullptr)
                 return 0;
 
-            return instance->getIsTransient() ? 1 : 0;
+            return instance->IsView ? 1 : 0;
         }
         catch (const std::exception& e)
         {
@@ -7754,7 +7756,8 @@ extern "C"
             }
 
             TypeShape* fieldShape = instance->getShape() != nullptr ? instance->getShape()->GetFieldShape(field->SlotIndex) : nullptr;
-            ObjectInstance temporary(field->ReturnType, fieldShape, &value, true);
+            ObjectInstance temporary(field->ReturnType, fieldShape, &value);
+            temporary.IsView = true;
             instance->SetField(field->SlotIndex, &temporary);
             return 0;
         }
@@ -7776,7 +7779,8 @@ extern "C"
             }
 
             TypeShape* fieldShape = instance->getShape() != nullptr ? instance->getShape()->GetFieldShape(field->SlotIndex) : nullptr;
-            ObjectInstance temporary(field->ReturnType, fieldShape, &value, true);
+            ObjectInstance temporary(field->ReturnType, fieldShape, &value);
+            temporary.IsView = true;
             instance->SetField(field->SlotIndex, &temporary);
             return 0;
         }
@@ -7799,7 +7803,8 @@ extern "C"
 
             bool converted = value != 0;
             TypeShape* fieldShape = instance->getShape() != nullptr ? instance->getShape()->GetFieldShape(field->SlotIndex) : nullptr;
-            ObjectInstance temporary(field->ReturnType, fieldShape, &converted, true);
+            ObjectInstance temporary(field->ReturnType, fieldShape, &converted);
+            temporary.IsView = true;
             instance->SetField(field->SlotIndex, &temporary);
             return 0;
         }
@@ -7821,7 +7826,8 @@ extern "C"
             }
 
             TypeShape* fieldShape = instance->getShape() != nullptr ? instance->getShape()->GetFieldShape(field->SlotIndex) : nullptr;
-            ObjectInstance temporary(field->ReturnType, fieldShape, &value, true);
+            ObjectInstance temporary(field->ReturnType, fieldShape, &value);
+            temporary.IsView = true;
             instance->SetField(field->SlotIndex, &temporary);
             return 0;
         }

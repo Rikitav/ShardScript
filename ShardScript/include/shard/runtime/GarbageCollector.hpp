@@ -24,6 +24,7 @@ namespace shard
     constexpr std::int32_t SMALL_INTS_CACHE_SIZE = SMALL_INTS_CACHE_MAX - SMALL_INTS_CACHE_MIN + 1;
 
     class ApplicationDomain;
+    class CallStackFrame;
 
 	class SHARD_API InstancesHeap
 	{
@@ -79,6 +80,17 @@ namespace shard
         std::unordered_map<FieldSymbol*, ObjectInstance*> staticFields;
 		std::vector<std::unique_ptr<ArrayTypeSymbol>> dynamicArrayTypes;
 		std::vector<std::unique_ptr<TypeShape>> dynamicArrayShapes;
+        std::unordered_map<const wchar_t*, ObjectInstance*> internedStrings;
+
+        struct AsyncRecord
+        {
+            bool IsTaskLike = false;
+            bool IsFireAndForget = false;
+            std::shared_ptr<CallStackFrame> FrameOwner;
+            void* NativeState = nullptr;
+        };
+
+        std::unordered_map<ObjectInstance*, AsyncRecord> asyncTable;
 
 		TypeShapeCache& GetTypeShapeCache() const;
 
@@ -100,26 +112,38 @@ namespace shard
         ObjectInstance* FromValue(double value);
         ObjectInstance* FromValue(bool value);
         ObjectInstance* FromValue(wchar_t value);
-        ObjectInstance* FromValue(const wchar_t* value, bool isTransient);
+        ObjectInstance* FromValue(const wchar_t* value);
         ObjectInstance* FromValue(const std::wstring& value);
 
-        ObjectInstance* FromNint(std::intptr_t rawMemory, bool isTransient);
-        ObjectInstance* FromNint(std::uintptr_t rawMemory, bool isTransient);
-        ObjectInstance* FromNint(void* rawMemory, bool isTransient);
+        ObjectInstance* FromNint(std::intptr_t rawMemory);
+        ObjectInstance* FromNint(std::uintptr_t rawMemory);
+        ObjectInstance* FromNint(void* rawMemory);
 
         ObjectInstance* GetStaticField(FieldSymbol* field);
         void SetStaticField(FieldSymbol* field, ObjectInstance* instance);
 
-		ObjectInstance* AllocateInstance(TypeShape* shape, bool isTransient = false);
-		ObjectInstance* AllocateInstance(const TypeSymbol* objectInfo, bool isTransient = false);
-        ObjectInstance* AllocateGeneric(TypeSymbol* baseType, const std::span<TypeSymbol*> genericArgs, bool isTransient = false);
-		ObjectInstance* AllocateGeneric(TypeSymbol* baseType, const std::vector<TypeSymbol*>& genericArgs, bool isTransient = false);
-		ObjectInstance* AllocateArray(TypeSymbol* elementType, std::size_t length, bool isTransient = false);
+		ObjectInstance* AllocateInstance(TypeShape* shape);
+		ObjectInstance* AllocateInstance(const TypeSymbol* objectInfo);
+        ObjectInstance* AllocateGeneric(TypeSymbol* baseType, const std::span<TypeSymbol*> genericArgs);
+		ObjectInstance* AllocateGeneric(TypeSymbol* baseType, const std::vector<TypeSymbol*>& genericArgs);
+		ObjectInstance* AllocateArray(TypeSymbol* elementType, std::size_t length);
         ObjectInstance* CopyInstance(ObjectInstance* instance);
+
+        ObjectInstance* CreateView(const TypeSymbol* info, TypeShape* shape, void* memory);
+        ObjectInstance* InternString(const wchar_t* value);
+
+        [[nodiscard]] bool IsTaskLike(ObjectInstance* instance);
+        void MarkTaskLike(ObjectInstance* instance);
+        [[nodiscard]] bool IsFireAndForget(ObjectInstance* instance);
+        void MarkFireAndForget(ObjectInstance* instance);
+        [[nodiscard]] void* GetAsyncNativeState(ObjectInstance* instance);
+        void SetAsyncNativeState(ObjectInstance* instance, void* state);
+        [[nodiscard]] std::shared_ptr<CallStackFrame> GetFrameOwner(ObjectInstance* instance);
+        void BindToFrame(ObjectInstance* instance, std::shared_ptr<CallStackFrame> frame);
+        void ReleaseFrameOwner(ObjectInstance* instance);
 
         void CollectInstance(ObjectInstance* instance);
         void DestroyInstance(ObjectInstance* instance);
-        void DeleteView(ObjectInstance* view);
         void TerminateInstance(ObjectInstance* instance, bool deleteInstance = true);
         void DeleteInstanceMemory(ObjectInstance* instance);
 		void Terminate();

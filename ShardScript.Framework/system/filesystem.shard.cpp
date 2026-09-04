@@ -205,7 +205,7 @@ namespace
                 delete static_cast<std::fstream*>(ptr);
         }
 
-        instance->SetField(g_FileStream_Handle->SlotIndex, gc.FromNint(nullptr, false));
+        instance->SetField(g_FileStream_Handle->SlotIndex, gc.FromNint(nullptr));
         instance->SetField(g_FileStream_IsOpen->SlotIndex, gc.FromValue(false));
         instance->SetField(g_FileStream_CanRead->SlotIndex, gc.FromValue(false));
         instance->SetField(g_FileStream_CanWrite->SlotIndex, gc.FromValue(false));
@@ -314,7 +314,7 @@ namespace
         }
 
         instance->SetField(g_FileStream_Path->SlotIndex, gc.FromValue(path));
-        instance->SetField(g_FileStream_Handle->SlotIndex, gc.FromNint(file, false));
+        instance->SetField(g_FileStream_Handle->SlotIndex, gc.FromNint(file));
         instance->SetField(g_FileStream_IsOpen->SlotIndex, gc.FromValue(true));
         instance->SetField(g_FileStream_CanRead->SlotIndex, gc.FromValue(canRead));
         instance->SetField(g_FileStream_CanWrite->SlotIndex, gc.FromValue(canWrite));
@@ -1430,7 +1430,7 @@ static ObjectInstance* shard_fileStream_ReadAsync_Impl(const CallState& context,
     if (IsStreamCancellationRequested(token))
     {
         ObjectInstance* task = context.Collector.AllocateGeneric(CLASS_VALUETASK, std::vector<TypeSymbol*>{ TYPE_INT });
-        task->IsTaskLike = true;
+        context.Collector.MarkTaskLike(task);
         SetTaskState(task, CLASS_VALUETASK_StateField, AsyncState::FAULTED, context.Collector);
         task->SetField(CLASS_VALUETASK_ExceptionField->SlotIndex, shard::CreateRuntimeException(context.Collector, L"Operation canceled."));
         return task;

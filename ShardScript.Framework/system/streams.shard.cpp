@@ -104,7 +104,7 @@ static void EnsureTokenSymbols(SemanticModel* model)
 static ObjectInstance* CanceledTask(const CallState& context)
 {
     ObjectInstance* task = context.Collector.AllocateInstance(CLASS_TASK);
-    task->IsTaskLike = true;
+    context.Collector.MarkTaskLike(task);
     SetTaskState(task, CLASS_TASK_StateField, AsyncState::FAULTED, context.Collector);
     task->SetField(CLASS_TASK_ExceptionField->SlotIndex, shard::CreateRuntimeException(context.Collector, L"Operation canceled."));
     return task;
@@ -113,7 +113,7 @@ static ObjectInstance* CanceledTask(const CallState& context)
 static ObjectInstance* CanceledValueTaskInt(const CallState& context)
 {
     ObjectInstance* task = context.Collector.AllocateGeneric(CLASS_VALUETASK, std::vector<TypeSymbol*>{ TYPE_INT });
-    task->IsTaskLike = true;
+    context.Collector.MarkTaskLike(task);
     
     SetTaskState(task, CLASS_VALUETASK_StateField, AsyncState::FAULTED, context.Collector);
     task->SetField(CLASS_VALUETASK_ExceptionField->SlotIndex, shard::CreateRuntimeException(context.Collector, L"Operation canceled."));

@@ -145,7 +145,7 @@ namespace shard
             SymbolTable::StandardTypes::ValueTask,
             { resultType });
 
-        task->IsTaskLike = true;
+        ctx.Collector.MarkTaskLike(task);
         SetTaskState(task, SymbolTable::StandardTypes::ValueTask_StateField, AsyncState::COMPLETED, ctx.Collector);
         task->SetField(SymbolTable::StandardTypes::ValueTask_ResultField->SlotIndex, detail::BoxValue(ctx.Collector, value));
         return task;
@@ -159,7 +159,7 @@ namespace shard
             SymbolTable::StandardTypes::ValueTask,
             { resultType });
 
-        task->IsTaskLike = true;
+        ctx.Collector.MarkTaskLike(task);
         SetTaskState(task, SymbolTable::StandardTypes::ValueTask_StateField, AsyncState::FAULTED, ctx.Collector);
         task->SetField(SymbolTable::StandardTypes::ValueTask_ExceptionField->SlotIndex,
                        CreateRuntimeException(ctx.Collector, message));

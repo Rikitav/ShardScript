@@ -112,7 +112,7 @@ namespace
         ObjectInstance* wrapper = context.Collector.AllocateInstance(g_jsonNodeClass);
         wrapper->SetField(
             g_jsonNodeHandleField->SlotIndex,
-            context.Collector.FromNint(dom, true));
+            context.Collector.FromNint(dom));
 
         return wrapper;
     }
