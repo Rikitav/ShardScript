@@ -35,10 +35,10 @@ namespace shard
 
 		[[nodiscard]] inline GcHeader* getGcHeader() const
 		{
-			if (IsView || m_rawMemoryPtr == nullptr)
+			if (IsView)
 				return nullptr;
 
-			GcHeader* header = reinterpret_cast<GcHeader*>(m_rawMemoryPtr) - 1;
+			GcHeader* header = reinterpret_cast<GcHeader*>(const_cast<ObjectInstance*>(this)) - 1;
 			return header->Magic == GcHeader::MAGIC ? header : nullptr;
 		}
 

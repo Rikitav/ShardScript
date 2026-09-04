@@ -21,7 +21,6 @@
 #include <wchar.h>
 #include <cstdint>
 #include <string>
-#include <numeric>
 
 using namespace shard;
 
@@ -57,23 +56,11 @@ namespace
     }
 }
 
-ObjectInstance* GarbageCollector::NullInstance = new ObjectInstance(nullptr, nullptr, nullptr);
-ObjectInstance* GarbageCollector::SmallInts = nullptr;
-std::int64_t* GarbageCollector::SmallIntsVals = nullptr;
-
-ObjectInstance* GarbageCollector::BoolTrueSingleton = nullptr;
-ObjectInstance* GarbageCollector::BoolFalseSingleton = nullptr;
+alignas(std::uint64_t) static std::byte NullInstanceStorage[sizeof(ObjectInstance::GcHeader) + sizeof(ObjectInstance)] = {};
+ObjectInstance* GarbageCollector::NullInstance = new (NullInstanceStorage + sizeof(ObjectInstance::GcHeader)) ObjectInstance(nullptr, nullptr, nullptr);
 
 GarbageCollector::GarbageCollector(ApplicationDomain* domain) : applicationDomain(domain)
 {
-	SmallInts = static_cast<ObjectInstance*>(AllocateBytes(SMALL_INTS_CACHE_SIZE * sizeof(ObjectInstance)));
-	SmallIntsVals = static_cast<std::int64_t*>(AllocateBytes(SMALL_INTS_CACHE_SIZE * sizeof(std::int64_t)));
-
-	std::iota(SmallIntsVals, SmallIntsVals + SMALL_INTS_CACHE_SIZE, SMALL_INTS_CACHE_MIN);
-	TypeShape* shape = GetTypeShapeCache().GetOrCreateShape(SymbolTable::Primitives::Integer);
-
-	for (int i = 0; i < SMALL_INTS_CACHE_SIZE; ++i)
-		new (&SmallInts[i]) ObjectInstance(TYPE_INT, shape, &SmallIntsVals[i]);
 }
 
 TypeShapeCache& GarbageCollector::GetTypeShapeCache() const
@@ -86,24 +73,14 @@ TypeShapeCache& GarbageCollector::GetTypeShapeCache() const
 
 ObjectInstance* GarbageCollector::FromValue(bool value)
 {
-	ObjectInstance** singletonSlot = value ? &BoolTrueSingleton : &BoolFalseSingleton;
-	if (*singletonSlot == nullptr)
-	{
-		TypeShape* shape = GetTypeShapeCache().GetOrCreateShape(SymbolTable::Primitives::Boolean);
-		void* payload = AllocateZeroedBytes(shape->Size > 0 ? shape->Size : 1);
-		ObjectInstance* singleton = CreateView(shape->BaseType, shape, payload);
-		singleton->WriteBoolean(value);
-		*singletonSlot = singleton;
-	}
-
-	return *singletonSlot;
+	TypeShape* shape = GetTypeShapeCache().GetOrCreateShape(SymbolTable::Primitives::Boolean);
+	ObjectInstance* instance = GarbageCollector::AllocateInstance(shape);
+	instance->WriteBoolean(value);
+	return instance;
 }
 
 ObjectInstance* GarbageCollector::FromValue(std::int64_t value)
 {
-	if (value >= SMALL_INTS_CACHE_MIN && value <= SMALL_INTS_CACHE_MAX)
-		return &(SmallInts[value - SMALL_INTS_CACHE_MIN]);
-
 	TypeShape* shape = GetTypeShapeCache().GetOrCreateShape(SymbolTable::Primitives::Integer);
 	ObjectInstance* instance = GarbageCollector::AllocateInstance(shape);
 	instance->WriteInteger(value);
@@ -280,14 +257,16 @@ ObjectInstance* GarbageCollector::AllocateInstance(TypeShape* shape)
 	if (shape == nullptr)
 		throw std::runtime_error("shape is nullptr");
 
-	ObjectInstance::GcHeader* header = static_cast<ObjectInstance::GcHeader*>(AllocateZeroedBytes(sizeof(ObjectInstance::GcHeader) + shape->Size));
+	constexpr std::size_t prefixSize = sizeof(ObjectInstance::GcHeader) + sizeof(ObjectInstance);
+	ObjectInstance::GcHeader* header = static_cast<ObjectInstance::GcHeader*>(AllocateZeroedBytes(prefixSize + shape->Size));
 	if (header == nullptr)
 		throw std::runtime_error("cannot allocate memory for new instance");
 
 	header->Magic = ObjectInstance::GcHeader::MAGIC;
-	void* rawMemory = header + 1;
+	auto* blockBytes = static_cast<std::byte*>(static_cast<void*>(header));
+	void* rawMemory = blockBytes + prefixSize;
 
-	ObjectInstance* instance = new ObjectInstance(shape->BaseType, shape, rawMemory);
+	ObjectInstance* instance = new (blockBytes + sizeof(ObjectInstance::GcHeader)) ObjectInstance(shape->BaseType, shape, rawMemory);
 	Heap.add(instance);
 	return instance;
 }
@@ -346,16 +325,14 @@ ObjectInstance* GarbageCollector::AllocateArray(TypeSymbol* elementType, std::si
 	std::size_t elementSize = elementType->GetInlineSize();
 	std::size_t totalSize = headerSize + elementSize * length;
 
-	void* rawMemory = nullptr;
-	if (totalSize > 0)
-	{
-		ObjectInstance::GcHeader* header = static_cast<ObjectInstance::GcHeader*>(AllocateZeroedBytes(sizeof(ObjectInstance::GcHeader) + totalSize));
-		if (header == nullptr)
-			throw std::runtime_error("cannot allocate memory for dynamic array");
+	constexpr std::size_t prefixSize = sizeof(ObjectInstance::GcHeader) + sizeof(ObjectInstance);
+	ObjectInstance::GcHeader* header = static_cast<ObjectInstance::GcHeader*>(AllocateZeroedBytes(prefixSize + totalSize));
+	if (header == nullptr)
+		throw std::runtime_error("cannot allocate memory for dynamic array");
 
-		header->Magic = ObjectInstance::GcHeader::MAGIC;
-		rawMemory = header + 1;
-	}
+	header->Magic = ObjectInstance::GcHeader::MAGIC;
+	auto* blockBytes = static_cast<std::byte*>(static_cast<void*>(header));
+	void* rawMemory = blockBytes + prefixSize;
 
 	ArrayTypeSymbol* arrayType = new ArrayTypeSymbol(elementType);
 	arrayType->Length = length;
@@ -367,7 +344,7 @@ ObjectInstance* GarbageCollector::AllocateArray(TypeSymbol* elementType, std::si
 	arrayShape->Size = totalSize;
 	dynamicArrayShapes.emplace_back(arrayShape);
 
-	ObjectInstance* instance = new ObjectInstance(arrayType, arrayShape, rawMemory);
+	ObjectInstance* instance = new (blockBytes + sizeof(ObjectInstance::GcHeader)) ObjectInstance(arrayType, arrayShape, rawMemory);
 	Heap.add(instance);
 	return instance;
 }
@@ -470,8 +447,6 @@ void GarbageCollector::DeleteInstanceMemory(ObjectInstance* instance)
 
 	if (ObjectInstance::GcHeader* header = instance->getGcHeader(); header != nullptr)
 		FreeBytes(header);
-
-	delete instance;
 }
 
 void GarbageCollector::TerminateInstance(ObjectInstance* instance, bool deleteInstance)
@@ -560,29 +535,12 @@ void GarbageCollector::Terminate()
 	Heap.clear();
 	staticFields.clear();
 	asyncTable.clear();
-
-	if (SmallInts != nullptr)
-	{
-		for (int i = 0; i < SMALL_INTS_CACHE_SIZE; ++i)
-			SmallInts[i].~ObjectInstance();
-
-		FreeBytes(SmallInts);
-		SmallInts = nullptr;
-	}
-
-	if (SmallIntsVals != nullptr)
-	{
-		FreeBytes(SmallIntsVals);
-		SmallIntsVals = nullptr;
-	}
-
-	BoolTrueSingleton = nullptr;
-	BoolFalseSingleton = nullptr;
 }
 
 ObjectInstance* GarbageCollector::CreateView(const TypeSymbol* info, TypeShape* shape, void* memory)
 {
-	return new ObjectInstance(info, shape, memory);
+	ObjectInstance::GcHeader* header = static_cast<ObjectInstance::GcHeader*>(AllocateZeroedBytes(sizeof(ObjectInstance::GcHeader) + sizeof(ObjectInstance)));
+	return new (reinterpret_cast<std::byte*>(header) + sizeof(ObjectInstance::GcHeader)) ObjectInstance(info, shape, memory);
 }
 
 ObjectInstance* GarbageCollector::InternString(const wchar_t* value)
