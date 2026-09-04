@@ -101,15 +101,15 @@ static ObjectInstance* primitive_array_to_string(const CallState& context)
 	std::wostringstream result;
 	result << L"[";
 
-	ObjectInstance* element = instance->GetElement(0);
-	AppendAsString(result, element);
+	ObjectInstance element = instance->GetElement(0);
+	AppendAsString(result, &element);
 	// context.Collector.CollectInstance(element);  // GetElement returns array-owned element, do not collect
 
 	for (size_t i = 1; i < size; ++i)
 	{
 		result << L", ";
-		ObjectInstance* element = instance->GetElement(i);
-		AppendAsString(result, element);
+		ObjectInstance element = instance->GetElement(i);
+		AppendAsString(result, &element);
 		// context.Collector.CollectInstance(element);  // GetElement returns array-owned element, do not collect
 	}
 

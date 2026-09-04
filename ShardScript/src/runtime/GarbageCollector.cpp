@@ -379,10 +379,9 @@ ObjectInstance* GarbageCollector::CopyInstance(ObjectInstance* instance)
 		TypeShape* fieldShape = newShape->GetFieldShape(slot);
 		if (fieldShape != nullptr && fieldShape->IsReferenceType())
 		{
-			ObjectInstance fieldStorage(nullptr, nullptr, nullptr);
-			ObjectInstance* fieldValue = newInstance->GetField(slot, fieldStorage);
-			if (fieldValue != nullptr && fieldValue != NullInstance)
-				fieldValue->IncrementReference();
+			ObjectInstance fieldValue = newInstance->GetField(slot);
+			if (!fieldValue.IsNullInstance() && fieldValue.heapSource() != NullInstance)
+				fieldValue.IncrementReference();
 		}
 	}
 
@@ -474,9 +473,9 @@ void GarbageCollector::TerminateInstance(ObjectInstance* instance, bool deleteIn
 			TypeShape* fieldShape = shape->GetFieldShape(slot);
 			if (fieldShape != nullptr && fieldShape->IsReferenceType())
 			{
-				ObjectInstance* fieldValue = instance->GetField(slot);
-				if (fieldValue != nullptr && fieldValue != NullInstance)
-					DestroyInstance(fieldValue);
+				ObjectInstance fieldValue = instance->GetField(slot);
+				if (!fieldValue.IsNullInstance() && fieldValue.heapSource() != NullInstance)
+					DestroyInstance(fieldValue.heapSource());
 			}
 		}
 	}
@@ -486,9 +485,9 @@ void GarbageCollector::TerminateInstance(ObjectInstance* instance, bool deleteIn
 		const ArrayTypeSymbol* array = static_cast<const ArrayTypeSymbol*>(instance->getInfo());
 		for (std::size_t i = 0; i < array->Length; i++)
 		{
-			ObjectInstance* element = instance->GetElement(i);
-			if (element != nullptr && element != NullInstance)
-				DestroyInstance(element);
+			ObjectInstance element = instance->GetElement(i);
+			if (!element.IsNullInstance() && element.heapSource() != NullInstance)
+				DestroyInstance(element.heapSource());
 		}
 	}
 
@@ -538,10 +537,16 @@ void GarbageCollector::Terminate()
 	asyncTable.clear();
 }
 
-ObjectInstance* GarbageCollector::CreateView(const TypeSymbol* info, TypeShape* shape, void* memory)
+// Immortal instance: [GcHeader(0)][ObjectInstance][payload] in one block —
+// the payload is always struct-adjacent so by-value copies resolve
+// heapSource() just like heap instances. Refcount/GC ops stay no-ops via
+// the missing magic.
+ObjectInstance* GarbageCollector::CreateView(const TypeSymbol* info, TypeShape* shape)
 {
-	ObjectInstance::GcHeader* header = static_cast<ObjectInstance::GcHeader*>(AllocateZeroedBytes(sizeof(ObjectInstance::GcHeader) + sizeof(ObjectInstance)));
-	return new (reinterpret_cast<std::byte*>(header) + sizeof(ObjectInstance::GcHeader)) ObjectInstance(info, shape, memory);
+	const std::size_t payloadBytes = shape != nullptr && shape->Size > 0 ? shape->Size : 1;
+	ObjectInstance::GcHeader* header = static_cast<ObjectInstance::GcHeader*>(AllocateZeroedBytes(sizeof(ObjectInstance::GcHeader) + sizeof(ObjectInstance) + payloadBytes));
+	auto* blockBytes = reinterpret_cast<std::byte*>(header);
+	return new (blockBytes + sizeof(ObjectInstance::GcHeader)) ObjectInstance(info, shape, blockBytes + sizeof(ObjectInstance::GcHeader) + sizeof(ObjectInstance));
 }
 
 ObjectInstance* GarbageCollector::InternString(const wchar_t* value)
@@ -550,7 +555,7 @@ ObjectInstance* GarbageCollector::InternString(const wchar_t* value)
 		return find->second;
 
 	TypeShape* shape = GetTypeShapeCache().GetOrCreateShape(SymbolTable::Primitives::String);
-	ObjectInstance* view = CreateView(shape->BaseType, shape, nullptr);
+	ObjectInstance* view = CreateView(shape->BaseType, shape);
 
 	std::size_t length = wcslen(value);
 	std::uint64_t length64 = static_cast<std::uint64_t>(length);

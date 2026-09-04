@@ -120,7 +120,7 @@ namespace shard
 		ObjectInstance* AllocateArray(TypeSymbol* elementType, std::size_t length);
         ObjectInstance* CopyInstance(ObjectInstance* instance);
 
-        ObjectInstance* CreateView(const TypeSymbol* info, TypeShape* shape, void* memory);
+        ObjectInstance* CreateView(const TypeSymbol* info, TypeShape* shape);
         ObjectInstance* InternString(const wchar_t* value);
 
         [[nodiscard]] bool IsHeapBacked(ObjectInstance* instance);

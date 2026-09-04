@@ -716,17 +716,16 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ObjectInstance* instance = operandInstance(target, targetStorage);
 			VerifyInstanceNotNull(instance, "member");
 
-			ObjectInstance fieldStorage(nullptr, nullptr, nullptr);
-			ObjectInstance* fieldValue = instance->GetField(slot, fieldStorage);
+			ObjectInstance fieldValue = instance->GetField(slot);
 
-			if (fieldValue->IsView &&
-				fieldValue->getShape() != nullptr && !fieldValue->getShape()->IsReferenceType())
+			if (fieldValue.IsView &&
+				fieldValue.getShape() != nullptr && !fieldValue.getShape()->IsReferenceType())
 			{
-				frame->PushInline(fieldValue->getShape(), fieldValue->getMemory());
+				frame->PushInline(fieldValue.getShape(), fieldValue.getMemory());
 			}
 			else
 			{
-				frame->PushReference(fieldValue);
+				frame->PushReference(fieldValue.IsNullInstance() ? garbageCollector.NullInstance : fieldValue.heapSource());
 			}
 
 			CallStackFrame::DiscardValue(target, garbageCollector);
@@ -880,19 +879,18 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			if (index < 0 || static_cast<std::size_t>(index) >= length)
 				throw std::runtime_error("Array index out of range");
 
-			ObjectInstance elementStorage(nullptr, nullptr, nullptr);
-			ObjectInstance* element = arrayInstance->GetElement(static_cast<std::size_t>(index), elementStorage);
+			ObjectInstance element = arrayInstance->GetElement(static_cast<std::size_t>(index));
 
-			if (element->IsView)
+			if (element.IsView)
 			{
 				const ArrayTypeSymbol* arrayInfo = static_cast<const ArrayTypeSymbol*>(arrayInstance->getInfo());
 				TypeShape* elementShape = program.TypeShapes->GetOrCreateShape(frame->ResolveType(arrayInfo->UnderlayingType));
-				frame->PushInline(elementShape, element->getMemory());
+				frame->PushInline(elementShape, element.getMemory());
 			}
 			else
 			{
-				element->IncrementReference();
-				frame->PushReference(element);
+				element.IncrementReference();
+				frame->PushReference(element.IsNullInstance() ? garbageCollector.NullInstance : element.heapSource());
 			}
 
 			CallStackFrame::DiscardValue(indexValue, garbageCollector);
@@ -1170,9 +1168,9 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 					if (fieldShape == nullptr || !fieldShape->IsReferenceType())
 						continue;
 
-					ObjectInstance* fieldValue = exception->GetField(slot);
-					if (fieldValue != nullptr && fieldValue != garbageCollector.NullInstance)
-						fieldValue->IncrementReference();
+					ObjectInstance fieldValue = exception->GetField(slot);
+					if (!fieldValue.IsNullInstance() && fieldValue.heapSource() != garbageCollector.NullInstance)
+						fieldValue.IncrementReference();
 				}
 			}
 			else
@@ -1188,10 +1186,10 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 
 			if (stackTraceField != nullptr)
 			{
-				ObjectInstance* currentTrace = exception->GetField(stackTraceField->SlotIndex);
-				bool needsTrace = currentTrace == nullptr || currentTrace == garbageCollector.NullInstance;
+				ObjectInstance currentTrace = exception->GetField(stackTraceField->SlotIndex);
+				bool needsTrace = currentTrace.IsNullInstance() || currentTrace.heapSource() == garbageCollector.NullInstance;
 
-				if (!needsTrace && currentTrace->AsStringLength() == 0)
+				if (!needsTrace && currentTrace.AsStringLength() == 0)
 					needsTrace = true;
 
 				if (needsTrace)

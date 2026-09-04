@@ -33,12 +33,18 @@ namespace shard
 		TypeShape* m_shape;
 		void* m_rawMemoryPtr;
 
+		// The header is derived from the PAYLOAD pointer, not the struct address:
+		// every non-view instance's payload sits immediately after the struct
+		// inside its block ([GcHeader][ObjectInstance][payload]), so a by-value
+		// copy of the struct still resolves to the shared header and refcount
+		// ops on copies work. The magic distinguishes heap blocks (set) from
+		// immortal blocks (zeroed) — see heapSource() for the canonical pointer.
 		[[nodiscard]] inline GcHeader* getGcHeader() const
 		{
-			if (IsView)
+			if (IsView || m_rawMemoryPtr == nullptr)
 				return nullptr;
 
-			GcHeader* header = reinterpret_cast<GcHeader*>(const_cast<ObjectInstance*>(this)) - 1;
+			GcHeader* header = reinterpret_cast<GcHeader*>(static_cast<std::byte*>(m_rawMemoryPtr) - sizeof(ObjectInstance));
 			return header->Magic == GcHeader::MAGIC ? header : nullptr;
 		}
 
@@ -60,28 +66,36 @@ namespace shard
 
 		~ObjectInstance();
 
+		// Canonical pointer to the instance this value was copied from: valid
+		// for heap instances and immortals (payload is always struct-adjacent);
+		// nullptr for views and NullInstance. Use when the pointer must outlive
+		// the local copy (eval-stack entries, FFI returns, field stores).
+		[[nodiscard]] inline ObjectInstance* heapSource() const
+		{
+			if (IsView || m_rawMemoryPtr == nullptr)
+				return nullptr;
+
+			return reinterpret_cast<ObjectInstance*>(static_cast<std::byte*>(m_rawMemoryPtr) - sizeof(ObjectInstance));
+		}
+
 		[[nodiscard]] const TypeSymbol* getInfo() const;
 		[[nodiscard]] TypeShape* getShape() const;
 		[[nodiscard]] void* getMemory() const;
 		[[nodiscard]] std::int64_t getReferencesCounter() const;
 
-		// Fields
-		// The storage overloads fill `storage` with a borrow view for value-type
-		// fields and return &storage; for reference-type fields they return the
-		// stored heap pointer (storage untouched, null fields yield NullInstance).
-		// The pointer-only overloads are transitional wrappers over a thread_local
-		// storage slot — valid until the next such call on that thread.
-		ObjectInstance* GetField(std::uint32_t slot, ObjectInstance& storage);
-		ObjectInstance* GetField(const FieldSymbol* field, ObjectInstance& storage);
-		ObjectInstance* GetField(std::uint32_t slot);
-		ObjectInstance* GetField(const FieldSymbol* field);
+		// Fields. By-value return: value-type fields yield a borrow view
+		// (IsView), reference-type fields yield a copy of the stored struct —
+		// refcount ops work on the copy (payload-derived header), and
+		// heapSource() recovers the canonical pointer when the identity must
+		// outlive the local.
+		ObjectInstance GetField(std::uint32_t slot);
+		ObjectInstance GetField(const FieldSymbol* field);
 		void SetField(std::uint32_t slot, ObjectInstance* instance);
 		void SetField(const FieldSymbol* field, ObjectInstance* instance);
 
-		// Arrays — same storage contract as GetField.
+		// Arrays — same contract as GetField.
 		std::size_t GetArrayLength() const;
-		ObjectInstance* GetElement(std::size_t index, ObjectInstance& storage, CallStackFrame* frame = nullptr);
-		ObjectInstance* GetElement(std::size_t index, CallStackFrame* frame = nullptr);
+		ObjectInstance GetElement(std::size_t index, CallStackFrame* frame = nullptr);
 		void SetElement(std::size_t index, ObjectInstance* instance, CallStackFrame* frame = nullptr);
 		bool IsInBounds(std::size_t index);
 
@@ -167,4 +181,9 @@ namespace shard
 		operator ObjectInstance*() const { return Instance; }
 		ObjectInstance* operator->() const { return Instance; }
 	};
+
+	// Bridges a by-value read into a pointer that outlives the call: views land
+	// in a thread_local slot, heap/immortal copies resolve to heapSource(),
+	// null yields NullInstance. Transitional until FFI returns stop boxing (S5-I6).
+	SHARD_API ObjectInstance* StableRef(ObjectInstance value);
 }

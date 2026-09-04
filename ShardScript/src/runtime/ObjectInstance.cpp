@@ -119,7 +119,7 @@ std::int64_t ObjectInstance::getReferencesCounter() const
 
 ObjectInstance::~ObjectInstance() = default;
 
-ObjectInstance* ObjectInstance::GetField(std::uint32_t slot, ObjectInstance& storage)
+ObjectInstance ObjectInstance::GetField(std::uint32_t slot)
 {
 	if (IsNullInstance())
 	{
@@ -143,27 +143,16 @@ ObjectInstance* ObjectInstance::GetField(std::uint32_t slot, ObjectInstance& sto
 	{
 		void* offset = OffsetMemory(fieldOffset, sizeof(ObjectInstance*));
 		ObjectInstance* valuePtr = *static_cast<ObjectInstance**>(offset);
-		return valuePtr == nullptr ? GarbageCollector::NullInstance : valuePtr;
+		return valuePtr != nullptr ? *valuePtr : *GarbageCollector::NullInstance;
 	}
 
 	void* offset = OffsetMemory(fieldOffset, fieldShape->Size);
-	storage = ObjectInstance(fieldShape->BaseType, fieldShape, offset);
-	storage.IsView = true;
-	return &storage;
+	ObjectInstance view(fieldShape->BaseType, fieldShape, offset);
+	view.IsView = true;
+	return view;
 }
 
-ObjectInstance* ObjectInstance::GetField(const FieldSymbol* field, ObjectInstance& storage)
-{
-	return GetField(field->SlotIndex, storage);
-}
-
-ObjectInstance* ObjectInstance::GetField(std::uint32_t slot)
-{
-	thread_local ObjectInstance storage(nullptr, nullptr, nullptr);
-	return GetField(slot, storage);
-}
-
-ObjectInstance* ObjectInstance::GetField(const FieldSymbol* field)
+ObjectInstance ObjectInstance::GetField(const FieldSymbol* field)
 {
 	return GetField(field->SlotIndex);
 }
@@ -196,9 +185,9 @@ void ObjectInstance::SetField(std::uint32_t slot, ObjectInstance* instance)
 		if (instance != GarbageCollector::NullInstance && instance->IsView)
 			throw std::runtime_error("cannot store an ephemeral view into a reference field");
 
-		ObjectInstance* oldValue = GetField(slot);
-		if (oldValue != nullptr && oldValue != GarbageCollector::NullInstance)
-			oldValue->DecrementReference();
+		ObjectInstance oldValue = GetField(slot);
+		if (!oldValue.IsNullInstance())
+			oldValue.DecrementReference();
 
 		if (instance != GarbageCollector::NullInstance)
 		{
@@ -258,7 +247,7 @@ std::size_t ObjectInstance::GetArrayLength() const
 	return info->Length;
 }
 
-ObjectInstance* ObjectInstance::GetElement(std::size_t index, ObjectInstance& storage, CallStackFrame* frame)
+ObjectInstance ObjectInstance::GetElement(std::size_t index, CallStackFrame* frame)
 {
 	if (IsNullInstance())
 		throw std::runtime_error("Cannot access array element on null instance");
@@ -280,19 +269,13 @@ ObjectInstance* ObjectInstance::GetElement(std::size_t index, ObjectInstance& st
 	{
 		void* offset = OffsetMemory(memoryOffset, sizeof(ObjectInstance*));
 		ObjectInstance* valuePtr = *static_cast<ObjectInstance**>(offset);
-		return valuePtr == nullptr ? GarbageCollector::NullInstance : valuePtr;
+		return valuePtr != nullptr ? *valuePtr : *GarbageCollector::NullInstance;
 	}
 
 	void* offset = OffsetMemory(memoryOffset, type->MemoryBytesSize);
-	storage = ObjectInstance(type, nullptr, offset);
-	storage.IsView = true;
-	return &storage;
-}
-
-ObjectInstance* ObjectInstance::GetElement(std::size_t index, CallStackFrame* frame)
-{
-	thread_local ObjectInstance storage(nullptr, nullptr, nullptr);
-	return GetElement(index, storage, frame);
+	ObjectInstance view(type, nullptr, offset);
+	view.IsView = true;
+	return view;
 }
 
 void ObjectInstance::SetElement(std::size_t index, ObjectInstance* instance, CallStackFrame* frame)
@@ -321,9 +304,9 @@ void ObjectInstance::SetElement(std::size_t index, ObjectInstance* instance, Cal
 		if (instance != GarbageCollector::NullInstance && instance->IsView)
 			throw std::runtime_error("cannot store an ephemeral view into a reference element");
 
-		ObjectInstance* oldValue = GetElement(index, frame);
-		if (oldValue != nullptr && oldValue != GarbageCollector::NullInstance)
-			oldValue->DecrementReference();
+		ObjectInstance oldValue = GetElement(index, frame);
+		if (!oldValue.IsNullInstance() && oldValue.heapSource() != GarbageCollector::NullInstance)
+			oldValue.DecrementReference();
 
 		if (instance != GarbageCollector::NullInstance)
 			instance->IncrementReference();
@@ -384,7 +367,19 @@ void ObjectInstance::DecrementReference()
 
 bool ObjectInstance::IsNullInstance() const
 {
-	return this == GarbageCollector::NullInstance;
+	return m_info == nullptr;
+}
+
+ObjectInstance* shard::StableRef(ObjectInstance value)
+{
+	if (value.IsView)
+	{
+		static thread_local ObjectInstance viewSlot(nullptr, nullptr, nullptr);
+		viewSlot = value;
+		return &viewSlot;
+	}
+
+	return value.IsNullInstance() ? GarbageCollector::NullInstance : value.heapSource();
 }
 
 void* ObjectInstance::OffsetMemory(const std::size_t offset, const std::size_t size) const

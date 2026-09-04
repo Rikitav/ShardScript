@@ -33,8 +33,8 @@ namespace
 static ObjectInstance* array_enumerator_MoveNext(const CallState& context)
 {
 	ObjectInstance* self = context.Args[0];
-	std::int64_t index = self->GetField(CLASS_ARRAYENUMERATOR_IndexField->SlotIndex)->AsInteger();
-	std::int64_t length = self->GetField(CLASS_ARRAYENUMERATOR_LengthField->SlotIndex)->AsInteger();
+	std::int64_t index = self->GetField(CLASS_ARRAYENUMERATOR_IndexField->SlotIndex).AsInteger();
+	std::int64_t length = self->GetField(CLASS_ARRAYENUMERATOR_LengthField->SlotIndex).AsInteger();
 
 	index++;
 	self->SetField(CLASS_ARRAYENUMERATOR_IndexField->SlotIndex, context.Collector.FromValue(index));
@@ -44,9 +44,12 @@ static ObjectInstance* array_enumerator_MoveNext(const CallState& context)
 static ObjectInstance* array_enumerator_Current_get(const CallState& context)
 {
 	ObjectInstance* self = context.Args[0];
-	std::int64_t index = self->GetField(CLASS_ARRAYENUMERATOR_IndexField->SlotIndex)->AsInteger();
-	ObjectInstance* source = self->GetField(CLASS_ARRAYENUMERATOR_SourceField->SlotIndex);
-	return source->GetElement(static_cast<std::size_t>(index));
+	std::int64_t index = self->GetField(CLASS_ARRAYENUMERATOR_IndexField->SlotIndex).AsInteger();
+	ObjectInstance source = self->GetField(CLASS_ARRAYENUMERATOR_SourceField->SlotIndex);
+	ObjectInstance element = source.GetElement(static_cast<std::size_t>(index));
+	if (element.IsView)
+		return context.Collector.CopyInstance(&element);
+	return element.IsNullInstance() ? GarbageCollector::NullInstance : element.heapSource();
 }
 
 static ObjectInstance* primitive_array_get_enumerator(const CallState& context)
@@ -73,7 +76,10 @@ static ObjectInstance* primitive_array_GetElement(const CallState& context)
 {
 	ObjectInstance* array = context.Args[0];
 	std::int64_t index = context.Args[1]->AsInteger();
-	return array->GetElement(static_cast<std::size_t>(index), context.Frame);
+	ObjectInstance element = array->GetElement(static_cast<std::size_t>(index), context.Frame);
+	if (element.IsView)
+		return context.Collector.CopyInstance(&element);
+	return element.IsNullInstance() ? GarbageCollector::NullInstance : element.heapSource();
 }
 
 static ObjectInstance* primitive_array_SetElement(const CallState& context)

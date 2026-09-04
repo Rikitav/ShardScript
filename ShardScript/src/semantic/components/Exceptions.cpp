@@ -65,7 +65,10 @@ void SymbolTable::ResolveExceptions(SymbolTable* table)
 
 		messageProp.AddGetter()
 			.IsImplementationOf(TRAIT_THROWABLE_getMessage)
-			.SetCallback([](const CallState& context) { return context.Args[0]->GetField(SymbolTable::StandardTypes::RuntimeExceptionMessageField->SlotIndex); });
+			.SetCallback([](const CallState& context) {
+				ObjectInstance value = context.Args[0]->GetField(SymbolTable::StandardTypes::RuntimeExceptionMessageField->SlotIndex);
+				return value.IsNullInstance() ? GarbageCollector::NullInstance : value.heapSource();
+			});
 
 		SymbolBuilder<PropertySymbol> stackTraceProp = builder.AddProperty(L"stack_trace", SymbolTable::Primitives::String, LINK_INSTANCE);
 		SymbolTable::StandardTypes::RuntimeExceptionStackTraceField = stackTraceProp
@@ -73,7 +76,10 @@ void SymbolTable::ResolveExceptions(SymbolTable* table)
 
 		stackTraceProp.AddGetter()
 			.IsImplementationOf(TRAIT_THROWABLE_getStackTrace)
-			.SetCallback([](const CallState& context) { return context.Args[0]->GetField(SymbolTable::StandardTypes::RuntimeExceptionStackTraceField->SlotIndex); });
+			.SetCallback([](const CallState& context) {
+				ObjectInstance value = context.Args[0]->GetField(SymbolTable::StandardTypes::RuntimeExceptionStackTraceField->SlotIndex);
+				return value.IsNullInstance() ? GarbageCollector::NullInstance : value.heapSource();
+			});
 
 		// RuntimeException is created implicitly and does not go through normal
 		// layout generation; lay it out manually so the runtime can instantiate it.
