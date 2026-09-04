@@ -43,7 +43,7 @@ namespace
 		return (value & flag) == flag;
 	}
 
-	static ObjectInstance* primitive_enum_to_string(const CallState& context)
+	static void primitive_enum_to_string(const CallState& context)
 	{
 		ObjectInstance* instance = context.Args[0];
 		const EnumSymbol* enumType = static_cast<const EnumSymbol*>(instance->getInfo());
@@ -72,18 +72,26 @@ namespace
 			}
 
 			if (result.empty())
-				return context.Collector.FromValue(std::to_wstring(value));
+			{
+				context.PlaceReturned(context.Collector.FromValue(std::to_wstring(value)));
+				return;
+			}
 
-			return context.Collector.FromValue(result);
+			context.PlaceReturned(context.Collector.FromValue(result));
+			return;
 		}
 
 		for (FieldSymbol* field : enumType->Fields)
 		{
 			if (field != nullptr && field->IsEnumValue && field->EnumValue == value)
-				return context.Collector.FromValue(field->Name);
+			{
+				context.PlaceReturned(context.Collector.FromValue(field->Name));
+				return;
+			}
 		}
 
-		return context.Collector.FromValue(std::to_wstring(value));
+		context.PlaceReturned(context.Collector.FromValue(std::to_wstring(value)));
+		return;
 	}
 }
 

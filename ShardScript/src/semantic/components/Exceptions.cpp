@@ -25,10 +25,11 @@ namespace
 	}
 }
 
-static ObjectInstance* runtime_capture_stack_trace(const CallState& context)
+static void runtime_capture_stack_trace(const CallState& context)
 {
 	std::wstring trace = context.Runtimer.GetStackTrace();
-	return context.Collector.FromValue(trace);
+	context.PlaceReturned(context.Collector.FromValue(trace));
+	return;
 }
 
 void SymbolTable::ResolveExceptions(SymbolTable* table)
@@ -67,7 +68,8 @@ void SymbolTable::ResolveExceptions(SymbolTable* table)
 			.IsImplementationOf(TRAIT_THROWABLE_getMessage)
 			.SetCallback([](const CallState& context) {
 				ObjectInstance value = context.Args[0]->GetField(SymbolTable::StandardTypes::RuntimeExceptionMessageField->SlotIndex);
-				return value.IsNullInstance() ? GarbageCollector::NullInstance : value.heapSource();
+				context.PlaceReturned(value.IsNullInstance() ? GarbageCollector::NullInstance : value.heapSource());
+				return;
 			});
 
 		SymbolBuilder<PropertySymbol> stackTraceProp = builder.AddProperty(L"stack_trace", SymbolTable::Primitives::String, LINK_INSTANCE);
@@ -78,7 +80,8 @@ void SymbolTable::ResolveExceptions(SymbolTable* table)
 			.IsImplementationOf(TRAIT_THROWABLE_getStackTrace)
 			.SetCallback([](const CallState& context) {
 				ObjectInstance value = context.Args[0]->GetField(SymbolTable::StandardTypes::RuntimeExceptionStackTraceField->SlotIndex);
-				return value.IsNullInstance() ? GarbageCollector::NullInstance : value.heapSource();
+				context.PlaceReturned(value.IsNullInstance() ? GarbageCollector::NullInstance : value.heapSource());
+				return;
 			});
 
 		// RuntimeException is created implicitly and does not go through normal

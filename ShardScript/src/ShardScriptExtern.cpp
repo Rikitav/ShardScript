@@ -131,19 +131,19 @@ namespace
 
     static std::unordered_map<shard::MethodSymbol*, ManagedMethodCallbackEntry> ManagedMethodCallbacks;
 
-    static shard::ObjectInstance* InvokeManagedMethodCallback(const shard::CallState& context)
+    static void InvokeManagedMethodCallback(const shard::CallState& context)
     {
         auto it = ManagedMethodCallbacks.find(context.Method);
         if (it == ManagedMethodCallbacks.end())
-            return nullptr;
+            return;
 
         const ManagedMethodCallbackEntry& entry = it->second;
-        return entry.Callback(
+        context.PlaceReturned(entry.Callback(
             context.Method,
             context.Args.data(),
             static_cast<int>(context.Args.size()),
             entry.UserData,
-            &context.Collector);
+            &context.Collector));
     }
 
     using ShardManagedCallStateCallback = shard::ObjectInstance* (*)(const shard::CallState* state, void* userData);
@@ -156,14 +156,14 @@ namespace
 
     static std::unordered_map<shard::MethodSymbol*, ManagedCallStateCallbackEntry> ManagedCallStateCallbacks;
 
-    static shard::ObjectInstance* InvokeManagedCallStateCallback(const shard::CallState& context)
+    static void InvokeManagedCallStateCallback(const shard::CallState& context)
     {
         auto it = ManagedCallStateCallbacks.find(context.Method);
         if (it == ManagedCallStateCallbacks.end())
-            return nullptr;
+            return;
 
         const ManagedCallStateCallbackEntry& entry = it->second;
-        return entry.Callback(&context, entry.UserData);
+        context.PlaceReturned(entry.Callback(&context, entry.UserData));
     }
 }
 

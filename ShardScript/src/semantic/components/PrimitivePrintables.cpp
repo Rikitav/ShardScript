@@ -24,43 +24,49 @@ namespace
 	}
 }
 
-static ObjectInstance* primitive_boolean_to_string(const CallState& context)
+static void primitive_boolean_to_string(const CallState& context)
 {
 	bool value = context.Args[0]->AsBoolean();
-	return context.Collector.FromValue(std::wstring(value ? L"true" : L"false"));
+	context.PlaceReturned(context.Collector.FromValue(std::wstring(value ? L"true" : L"false")));
+	return;
 }
 
-static ObjectInstance* primitive_integer_to_string(const CallState& context)
+static void primitive_integer_to_string(const CallState& context)
 {
 	std::int64_t value = context.Args[0]->AsInteger();
-	return context.Collector.FromValue(std::to_wstring(value));
+	context.PlaceReturned(context.Collector.FromValue(std::to_wstring(value)));
+	return;
 }
 
-static ObjectInstance* primitive_double_to_string(const CallState& context)
+static void primitive_double_to_string(const CallState& context)
 {
 	double value = context.Args[0]->AsDouble();
-	return context.Collector.FromValue(std::to_wstring(value));
+	context.PlaceReturned(context.Collector.FromValue(std::to_wstring(value)));
+	return;
 }
 
-static ObjectInstance* primitive_char_to_string(const CallState& context)
+static void primitive_char_to_string(const CallState& context)
 {
 	wchar_t value = context.Args[0]->AsCharacter();
-	return context.Collector.FromValue(std::wstring(1, value));
+	context.PlaceReturned(context.Collector.FromValue(std::wstring(1, value)));
+	return;
 }
 
-static ObjectInstance* primitive_byte_to_string(const CallState& context)
+static void primitive_byte_to_string(const CallState& context)
 {
 	std::uint8_t value = context.Args[0]->AsByte();
-	return context.Collector.FromValue(std::to_wstring(static_cast<int>(value)));
+	context.PlaceReturned(context.Collector.FromValue(std::to_wstring(static_cast<int>(value))));
+	return;
 }
 
-static ObjectInstance* primitive_string_to_string(const CallState& context)
+static void primitive_string_to_string(const CallState& context)
 {
 	ObjectInstance* self = context.Args[0];
-	return self;
+	context.PlaceReturned(self);
+	return;
 }
 
-static ObjectInstance* primitive_array_to_string(const CallState& context)
+static void primitive_array_to_string(const CallState& context)
 {
 	auto InvokeToString = [&](ObjectInstance* instance) -> ObjectInstance*
 	{
@@ -96,7 +102,10 @@ static ObjectInstance* primitive_array_to_string(const CallState& context)
 	size_t size = array->Length;
 
 	if (size == 0)
-		return context.Collector.FromValue(L"[]");
+	{
+		context.PlaceReturned(context.Collector.FromValue(L"[]"));
+		return;
+	}
 
 	std::wostringstream result;
 	result << L"[";
@@ -114,13 +123,15 @@ static ObjectInstance* primitive_array_to_string(const CallState& context)
 	}
 
 	result << L"]";
-	return context.Collector.FromValue(result.str());
+	context.PlaceReturned(context.Collector.FromValue(result.str()));
+	return;
 }
 
-static ObjectInstance* primitive_nint_to_string(const CallState& context)
+static void primitive_nint_to_string(const CallState& context)
 {
 	std::size_t self = reinterpret_cast<std::size_t>(context.Args[0]->AsNint());
-	return context.Collector.FromValue(std::to_wstring(self));
+	context.PlaceReturned(context.Collector.FromValue(std::to_wstring(self)));
+	return;
 }
 
 void SymbolTable::ResolvePrimitivePrintables(SymbolTable* globalTable)

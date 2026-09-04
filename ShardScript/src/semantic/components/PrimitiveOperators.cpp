@@ -47,285 +47,324 @@ static const wchar_t* concatStrings(const wchar_t* left, const wchar_t* right)
 // Integer operators
 // -----------------------------------------------------------------------------
 
-static ObjectInstance* integer_op_AddOperator(const CallState& context)
+static void integer_op_AddOperator(const CallState& context)
 {
 	std::int64_t left = context.Args[0]->AsInteger();
 	std::int64_t right = context.Args[1]->AsInteger();
-	return context.Collector.FromValue(left + right);
+	context.WriteReturn(left + right);
+	return;
 }
 
-static ObjectInstance* integer_op_SubOperator(const CallState& context)
+static void integer_op_SubOperator(const CallState& context)
 {
 	std::int64_t left = context.Args[0]->AsInteger();
 	std::int64_t right = context.Args[1]->AsInteger();
-	return context.Collector.FromValue(left - right);
+	context.WriteReturn(left - right);
+	return;
 }
 
-static ObjectInstance* integer_op_MultOperator(const CallState& context)
+static void integer_op_MultOperator(const CallState& context)
 {
 	std::int64_t left = context.Args[0]->AsInteger();
 	std::int64_t right = context.Args[1]->AsInteger();
-	return context.Collector.FromValue(left * right);
+	context.WriteReturn(left * right);
+	return;
 }
 
-static ObjectInstance* integer_op_DivOperator(const CallState& context)
+static void integer_op_DivOperator(const CallState& context)
 {
 	std::int64_t left = context.Args[0]->AsInteger();
 	std::int64_t right = context.Args[1]->AsInteger();
-	return context.Collector.FromValue(left / right);
+	context.WriteReturn(left / right);
+	return;
 }
 
-static ObjectInstance* integer_op_ModOperator(const CallState& context)
+static void integer_op_ModOperator(const CallState& context)
 {
 	std::int64_t left = context.Args[0]->AsInteger();
 	std::int64_t right = context.Args[1]->AsInteger();
-	return context.Collector.FromValue(left % right);
+	context.WriteReturn(left % right);
+	return;
 }
 
-static ObjectInstance* integer_op_PowOperator(const CallState& context)
+static void integer_op_PowOperator(const CallState& context)
 {
 	std::int64_t left = context.Args[0]->AsInteger();
 	std::int64_t right = context.Args[1]->AsInteger();
-	return context.Collector.FromValue(static_cast<std::int64_t>(pow(left, right)));
+	context.WriteReturn(static_cast<std::int64_t>(pow(left, right)));
+	return;
 }
 
-static ObjectInstance* integer_op_OrOperator(const CallState& context)
+static void integer_op_OrOperator(const CallState& context)
 {
 	std::int64_t left = context.Args[0]->AsInteger();
 	std::int64_t right = context.Args[1]->AsInteger();
-	return context.Collector.FromValue(left | right);
+	context.WriteReturn(left | right);
+	return;
 }
 
-static ObjectInstance* integer_op_AndOperator(const CallState& context)
+static void integer_op_AndOperator(const CallState& context)
 {
 	std::int64_t left = context.Args[0]->AsInteger();
 	std::int64_t right = context.Args[1]->AsInteger();
-	return context.Collector.FromValue(left & right);
+	context.WriteReturn(left & right);
+	return;
 }
 
-static ObjectInstance* integer_op_LeftShiftOperator(const CallState& context)
+static void integer_op_LeftShiftOperator(const CallState& context)
 {
 	std::int64_t left = context.Args[0]->AsInteger();
 	std::int64_t right = context.Args[1]->AsInteger();
-	return context.Collector.FromValue(left << right);
+	context.WriteReturn(left << right);
+	return;
 }
 
-static ObjectInstance* integer_op_RightShiftOperator(const CallState& context)
+static void integer_op_RightShiftOperator(const CallState& context)
 {
 	std::int64_t left = context.Args[0]->AsInteger();
 	std::int64_t right = context.Args[1]->AsInteger();
-	return context.Collector.FromValue(left >> right);
+	context.WriteReturn(left >> right);
+	return;
 }
 
-static ObjectInstance* integer_op_EqualsOperator(const CallState& context)
+static void integer_op_EqualsOperator(const CallState& context)
 {
 	std::int64_t left = context.Args[0]->AsInteger();
 	std::int64_t right = context.Args[1]->AsInteger();
-	return context.Collector.FromValue(left == right);
+	context.WriteReturn(left == right);
+	return;
 }
 
-static ObjectInstance* integer_op_NotEqualsOperator(const CallState& context)
+static void integer_op_NotEqualsOperator(const CallState& context)
 {
 	std::int64_t left = context.Args[0]->AsInteger();
 	std::int64_t right = context.Args[1]->AsInteger();
-	return context.Collector.FromValue(left != right);
+	context.WriteReturn(left != right);
+	return;
 }
 
-static ObjectInstance* integer_op_LessOperator(const CallState& context)
+static void integer_op_LessOperator(const CallState& context)
 {
 	std::int64_t left = context.Args[0]->AsInteger();
 	std::int64_t right = context.Args[1]->AsInteger();
-	return context.Collector.FromValue(left < right);
+	context.WriteReturn(left < right);
+	return;
 }
 
-static ObjectInstance* integer_op_LessOrEqualsOperator(const CallState& context)
+static void integer_op_LessOrEqualsOperator(const CallState& context)
 {
 	std::int64_t left = context.Args[0]->AsInteger();
 	std::int64_t right = context.Args[1]->AsInteger();
-	return context.Collector.FromValue(left <= right);
+	context.WriteReturn(left <= right);
+	return;
 }
 
-static ObjectInstance* integer_op_GreaterOperator(const CallState& context)
+static void integer_op_GreaterOperator(const CallState& context)
 {
 	std::int64_t left = context.Args[0]->AsInteger();
 	std::int64_t right = context.Args[1]->AsInteger();
-	return context.Collector.FromValue(left > right);
+	context.WriteReturn(left > right);
+	return;
 }
 
-static ObjectInstance* integer_op_GreaterOrEqualsOperator(const CallState& context)
+static void integer_op_GreaterOrEqualsOperator(const CallState& context)
 {
 	std::int64_t left = context.Args[0]->AsInteger();
 	std::int64_t right = context.Args[1]->AsInteger();
-	return context.Collector.FromValue(left >= right);
+	context.WriteReturn(left >= right);
+	return;
 }
 
-static ObjectInstance* integer_op_IncrementOperator(const CallState& context)
+static void integer_op_IncrementOperator(const CallState& context)
 {
 	std::int64_t value = context.Args[0]->AsInteger();
-	return context.Collector.FromValue(value + 1);
+	context.WriteReturn(value + 1);
+	return;
 }
 
-static ObjectInstance* integer_op_DecrementOperator(const CallState& context)
+static void integer_op_DecrementOperator(const CallState& context)
 {
 	std::int64_t value = context.Args[0]->AsInteger();
-	return context.Collector.FromValue(value - 1);
+	context.WriteReturn(value - 1);
+	return;
 }
 
-static ObjectInstance* integer_op_UnaryNegation(const CallState& context)
+static void integer_op_UnaryNegation(const CallState& context)
 {
 	std::int64_t value = context.Args[0]->AsInteger();
-	return context.Collector.FromValue(-value);
+	context.WriteReturn(-value);
+	return;
 }
 
-static ObjectInstance* integer_op_UnaryPositive(const CallState& context)
+static void integer_op_UnaryPositive(const CallState& context)
 {
 	std::int64_t value = context.Args[0]->AsInteger();
-	return context.Collector.FromValue(value);
+	context.WriteReturn(value);
+	return;
 }
 
 // -----------------------------------------------------------------------------
 // Double operators
 // -----------------------------------------------------------------------------
 
-static ObjectInstance* double_op_AddOperator(const CallState& context)
+static void double_op_AddOperator(const CallState& context)
 {
 	double left = context.Args[0]->AsDouble();
 	double right = context.Args[1]->AsDouble();
-	return context.Collector.FromValue(left + right);
+	context.WriteReturn(left + right);
+	return;
 }
 
-static ObjectInstance* double_op_SubOperator(const CallState& context)
+static void double_op_SubOperator(const CallState& context)
 {
 	double left = context.Args[0]->AsDouble();
 	double right = context.Args[1]->AsDouble();
-	return context.Collector.FromValue(left - right);
+	context.WriteReturn(left - right);
+	return;
 }
 
-static ObjectInstance* double_op_MultOperator(const CallState& context)
+static void double_op_MultOperator(const CallState& context)
 {
 	double left = context.Args[0]->AsDouble();
 	double right = context.Args[1]->AsDouble();
-	return context.Collector.FromValue(left * right);
+	context.WriteReturn(left * right);
+	return;
 }
 
-static ObjectInstance* double_op_DivOperator(const CallState& context)
+static void double_op_DivOperator(const CallState& context)
 {
 	double left = context.Args[0]->AsDouble();
 	double right = context.Args[1]->AsDouble();
-	return context.Collector.FromValue(left / right);
+	context.WriteReturn(left / right);
+	return;
 }
 
-static ObjectInstance* double_op_ModOperator(const CallState& context)
+static void double_op_ModOperator(const CallState& context)
 {
 	double left = context.Args[0]->AsDouble();
 	double right = context.Args[1]->AsDouble();
-	return context.Collector.FromValue(std::fmod(left, right));
+	context.WriteReturn(std::fmod(left, right));
+	return;
 }
 
-static ObjectInstance* double_op_PowOperator(const CallState& context)
+static void double_op_PowOperator(const CallState& context)
 {
 	double left = context.Args[0]->AsDouble();
 	double right = context.Args[1]->AsDouble();
-	return context.Collector.FromValue(std::pow(left, right));
+	context.WriteReturn(std::pow(left, right));
+	return;
 }
 
-static ObjectInstance* double_op_EqualsOperator(const CallState& context)
+static void double_op_EqualsOperator(const CallState& context)
 {
 	double left = context.Args[0]->AsDouble();
 	double right = context.Args[1]->AsDouble();
-	return context.Collector.FromValue(left == right);
+	context.WriteReturn(left == right);
+	return;
 }
 
-static ObjectInstance* double_op_NotEqualsOperator(const CallState& context)
+static void double_op_NotEqualsOperator(const CallState& context)
 {
 	double left = context.Args[0]->AsDouble();
 	double right = context.Args[1]->AsDouble();
-	return context.Collector.FromValue(left != right);
+	context.WriteReturn(left != right);
+	return;
 }
 
-static ObjectInstance* double_op_LessOperator(const CallState& context)
+static void double_op_LessOperator(const CallState& context)
 {
 	double left = context.Args[0]->AsDouble();
 	double right = context.Args[1]->AsDouble();
-	return context.Collector.FromValue(left < right);
+	context.WriteReturn(left < right);
+	return;
 }
 
-static ObjectInstance* double_op_LessOrEqualsOperator(const CallState& context)
+static void double_op_LessOrEqualsOperator(const CallState& context)
 {
 	double left = context.Args[0]->AsDouble();
 	double right = context.Args[1]->AsDouble();
-	return context.Collector.FromValue(left <= right);
+	context.WriteReturn(left <= right);
+	return;
 }
 
-static ObjectInstance* double_op_GreaterOperator(const CallState& context)
+static void double_op_GreaterOperator(const CallState& context)
 {
 	double left = context.Args[0]->AsDouble();
 	double right = context.Args[1]->AsDouble();
-	return context.Collector.FromValue(left > right);
+	context.WriteReturn(left > right);
+	return;
 }
 
-static ObjectInstance* double_op_GreaterOrEqualsOperator(const CallState& context)
+static void double_op_GreaterOrEqualsOperator(const CallState& context)
 {
 	double left = context.Args[0]->AsDouble();
 	double right = context.Args[1]->AsDouble();
-	return context.Collector.FromValue(left >= right);
+	context.WriteReturn(left >= right);
+	return;
 }
 
-static ObjectInstance* double_op_UnaryNegation(const CallState& context)
+static void double_op_UnaryNegation(const CallState& context)
 {
 	double value = context.Args[0]->AsDouble();
-	return context.Collector.FromValue(-value);
+	context.WriteReturn(-value);
+	return;
 }
 
-static ObjectInstance* double_op_UnaryPositive(const CallState& context)
+static void double_op_UnaryPositive(const CallState& context)
 {
 	double value = context.Args[0]->AsDouble();
-	return context.Collector.FromValue(value);
+	context.WriteReturn(value);
+	return;
 }
 
 // -----------------------------------------------------------------------------
 // Boolean operators
 // -----------------------------------------------------------------------------
 
-static ObjectInstance* boolean_op_EqualsOperator(const CallState& context)
+static void boolean_op_EqualsOperator(const CallState& context)
 {
 	bool left = context.Args[0]->AsBoolean();
 	bool right = context.Args[1]->AsBoolean();
-	return context.Collector.FromValue(left == right);
+	context.WriteReturn(left == right);
+	return;
 }
 
-static ObjectInstance* boolean_op_NotEqualsOperator(const CallState& context)
+static void boolean_op_NotEqualsOperator(const CallState& context)
 {
 	bool left = context.Args[0]->AsBoolean();
 	bool right = context.Args[1]->AsBoolean();
-	return context.Collector.FromValue(left != right);
+	context.WriteReturn(left != right);
+	return;
 }
 
-static ObjectInstance* boolean_op_OrOperator(const CallState& context)
+static void boolean_op_OrOperator(const CallState& context)
 {
 	bool left = context.Args[0]->AsBoolean();
 	bool right = context.Args[1]->AsBoolean();
-	return context.Collector.FromValue(left || right);
+	context.WriteReturn(left || right);
+	return;
 }
 
-static ObjectInstance* boolean_op_AndOperator(const CallState& context)
+static void boolean_op_AndOperator(const CallState& context)
 {
 	bool left = context.Args[0]->AsBoolean();
 	bool right = context.Args[1]->AsBoolean();
-	return context.Collector.FromValue(left && right);
+	context.WriteReturn(left && right);
+	return;
 }
 
-static ObjectInstance* boolean_op_NotOperator(const CallState& context)
+static void boolean_op_NotOperator(const CallState& context)
 {
 	bool value = context.Args[0]->AsBoolean();
-	return context.Collector.FromValue(!value);
+	context.WriteReturn(!value);
+	return;
 }
 
 // -----------------------------------------------------------------------------
 // Char operators
 // -----------------------------------------------------------------------------
 
-static ObjectInstance* char_op_AddOperator(const CallState& context)
+static void char_op_AddOperator(const CallState& context)
 {
 	wchar_t left = context.Args[0]->AsCharacter();
 	TypeSymbol* rightType = const_cast<TypeSymbol*>(context.Args[1]->getInfo());
@@ -334,7 +373,8 @@ static ObjectInstance* char_op_AddOperator(const CallState& context)
 	{
 		wchar_t right = context.Args[1]->AsCharacter();
 		wchar_t* result = new wchar_t[] { left, right, L'\0' };
-		return context.Collector.FromValue(result);
+		context.PlaceReturned(context.Collector.FromValue(result));
+		return;
 	}
 
 	if (rightType == SymbolTable::Primitives::Integer)
@@ -342,7 +382,8 @@ static ObjectInstance* char_op_AddOperator(const CallState& context)
 		std::int64_t right = context.Args[1]->AsInteger();
 		wchar_t temp[] = { left, L'\0' };
 		const wchar_t* result = concatStrings(temp, std::to_wstring(right).data());
-		return context.Collector.FromValue(result);
+		context.PlaceReturned(context.Collector.FromValue(result));
+		return;
 	}
 
 	if (rightType == SymbolTable::Primitives::String)
@@ -350,22 +391,29 @@ static ObjectInstance* char_op_AddOperator(const CallState& context)
 		const wchar_t* right = context.Args[1]->AsString();
 		wchar_t temp[] = { left, L'\0' };
 		const wchar_t* result = concatStrings(temp, right);
-		return context.Collector.FromValue(result);
+		context.PlaceReturned(context.Collector.FromValue(result));
+		return;
 	}
 
 	throw std::runtime_error("unsupported char add operation");
 }
 
-static ObjectInstance* char_op_MultOperator(const CallState& context)
+static void char_op_MultOperator(const CallState& context)
 {
 	wchar_t left = context.Args[0]->AsCharacter();
 	std::int64_t right = context.Args[1]->AsInteger();
 
 	if (right <= 0)
-		return context.Collector.FromValue(L"");
+	{
+		context.PlaceReturned(context.Collector.FromValue(L""));
+		return;
+	}
 
 	if (right == 1)
-		return context.Collector.FromValue(left);
+	{
+		context.PlaceReturned(context.Collector.FromValue(left));
+		return;
+	}
 
 	std::size_t stringSize = sizeof(wchar_t);
 	std::size_t totalSize = stringSize * right + sizeof(wchar_t);
@@ -378,40 +426,45 @@ static ObjectInstance* char_op_MultOperator(const CallState& context)
 		std::memcpy(result + i, &left, sizeof(wchar_t));
 
 	result[right] = L'\0';
-	return context.Collector.FromValue(result);
+	context.PlaceReturned(context.Collector.FromValue(result));
+	return;
 }
 
-static ObjectInstance* char_op_EqualsOperator(const CallState& context)
+static void char_op_EqualsOperator(const CallState& context)
 {
 	wchar_t left = context.Args[0]->AsCharacter();
 	wchar_t right = context.Args[1]->AsCharacter();
-	return context.Collector.FromValue(left == right);
+	context.WriteReturn(left == right);
+	return;
 }
 
-static ObjectInstance* char_op_NotEqualsOperator(const CallState& context)
+static void char_op_NotEqualsOperator(const CallState& context)
 {
 	wchar_t left = context.Args[0]->AsCharacter();
 	wchar_t right = context.Args[1]->AsCharacter();
-	return context.Collector.FromValue(left != right);
+	context.WriteReturn(left != right);
+	return;
 }
 
-static ObjectInstance* char_op_IncrementOperator(const CallState& context)
+static void char_op_IncrementOperator(const CallState& context)
 {
 	wchar_t value = context.Args[0]->AsCharacter();
-	return context.Collector.FromValue(static_cast<wchar_t>(value + 1));
+	context.WriteReturn(static_cast<wchar_t>(value + 1));
+	return;
 }
 
-static ObjectInstance* char_op_DecrementOperator(const CallState& context)
+static void char_op_DecrementOperator(const CallState& context)
 {
 	wchar_t value = context.Args[0]->AsCharacter();
-	return context.Collector.FromValue(static_cast<wchar_t>(value - 1));
+	context.WriteReturn(static_cast<wchar_t>(value - 1));
+	return;
 }
 
 // -----------------------------------------------------------------------------
 // String operators
 // -----------------------------------------------------------------------------
 
-static ObjectInstance* string_op_AddOperator(const CallState& context)
+static void string_op_AddOperator(const CallState& context)
 {
 	const wchar_t* left = context.Args[0]->AsString();
 	TypeSymbol* rightType = const_cast<TypeSymbol*>(context.Args[1]->getInfo());
@@ -420,14 +473,16 @@ static ObjectInstance* string_op_AddOperator(const CallState& context)
 	{
 		const wchar_t* right = context.Args[1]->AsString();
 		const wchar_t* result = concatStrings(left, right);
-		return context.Collector.FromValue(result);
+		context.PlaceReturned(context.Collector.FromValue(result));
+		return;
 	}
 
 	if (rightType == SymbolTable::Primitives::Integer)
 	{
 		std::int64_t right = context.Args[1]->AsInteger();
 		const wchar_t* result = concatStrings(left, std::to_wstring(right).data());
-		return context.Collector.FromValue(result);
+		context.PlaceReturned(context.Collector.FromValue(result));
+		return;
 	}
 
 	if (rightType == SymbolTable::Primitives::Boolean)
@@ -435,7 +490,8 @@ static ObjectInstance* string_op_AddOperator(const CallState& context)
 		bool right = context.Args[1]->AsBoolean();
 		const wchar_t* dataStr = right ? L"true" : L"false";
 		const wchar_t* result = concatStrings(left, dataStr);
-		return context.Collector.FromValue(result);
+		context.PlaceReturned(context.Collector.FromValue(result));
+		return;
 	}
 
 	if (rightType == SymbolTable::Primitives::Char)
@@ -443,22 +499,29 @@ static ObjectInstance* string_op_AddOperator(const CallState& context)
 		wchar_t right = context.Args[1]->AsCharacter();
 		wchar_t temp[] = { right, L'\0' };
 		const wchar_t* result = concatStrings(left, temp);
-		return context.Collector.FromValue(result);
+		context.PlaceReturned(context.Collector.FromValue(result));
+		return;
 	}
 
 	throw std::runtime_error("unsupported string add operation");
 }
 
-static ObjectInstance* string_op_MultOperator(const CallState& context)
+static void string_op_MultOperator(const CallState& context)
 {
 	const wchar_t* left = context.Args[0]->AsString();
 	std::int64_t right = context.Args[1]->AsInteger();
 
 	if (right <= 0)
-		return context.Collector.FromValue(L"");
+	{
+		context.PlaceReturned(context.Collector.FromValue(L""));
+		return;
+	}
 
 	if (right == 1)
-		return context.Collector.FromValue(left);
+	{
+		context.PlaceReturned(context.Collector.FromValue(left));
+		return;
+	}
 
 	std::size_t length = wcslen(left);
 	std::size_t stringSize = length * sizeof(wchar_t);
@@ -472,59 +535,66 @@ static ObjectInstance* string_op_MultOperator(const CallState& context)
 		std::memcpy(result + i * length, left, stringSize);
 
 	result[length * right] = L'\0';
-	return context.Collector.FromValue(result);
+	context.PlaceReturned(context.Collector.FromValue(result));
+	return;
 }
 
-static ObjectInstance* string_op_EqualsOperator(const CallState& context)
+static void string_op_EqualsOperator(const CallState& context)
 {
 	const wchar_t* left = context.Args[0]->AsString();
 	const wchar_t* right = context.Args[1]->AsString();
-	return context.Collector.FromValue(left == right);
+	context.WriteReturn(left == right);
+	return;
 }
 
-static ObjectInstance* string_op_NotEqualsOperator(const CallState& context)
+static void string_op_NotEqualsOperator(const CallState& context)
 {
 	const wchar_t* left = context.Args[0]->AsString();
 	const wchar_t* right = context.Args[1]->AsString();
-	return context.Collector.FromValue(left != right);
+	context.WriteReturn(left != right);
+	return;
 }
 
 // -----------------------------------------------------------------------------
 // Mixed-type operators (left operand decides owner type)
 // -----------------------------------------------------------------------------
 
-static ObjectInstance* integer_op_AddOperator_String(const CallState& context)
+static void integer_op_AddOperator_String(const CallState& context)
 {
 	std::int64_t left = context.Args[0]->AsInteger();
 	const wchar_t* right = context.Args[1]->AsString();
 	const wchar_t* result = concatStrings(std::to_wstring(left).data(), right);
-	return context.Collector.FromValue(result);
+	context.PlaceReturned(context.Collector.FromValue(result));
+	return;
 }
 
-static ObjectInstance* integer_op_AddOperator_Char(const CallState& context)
+static void integer_op_AddOperator_Char(const CallState& context)
 {
 	std::int64_t left = context.Args[0]->AsInteger();
 	wchar_t right = context.Args[1]->AsCharacter();
 	wchar_t temp[] = { right, L'\0' };
 	const wchar_t* result = concatStrings(std::to_wstring(left).data(), temp);
-	return context.Collector.FromValue(result);
+	context.PlaceReturned(context.Collector.FromValue(result));
+	return;
 }
 
-static ObjectInstance* boolean_op_AddOperator_String(const CallState& context)
+static void boolean_op_AddOperator_String(const CallState& context)
 {
 	bool left = context.Args[0]->AsBoolean();
 	const wchar_t* right = context.Args[1]->AsString();
 	const wchar_t* leftStr = left ? L"true" : L"false";
 	const wchar_t* result = concatStrings(leftStr, right);
-	return context.Collector.FromValue(result);
+	context.PlaceReturned(context.Collector.FromValue(result));
+	return;
 }
 
-static ObjectInstance* double_op_AddOperator_String(const CallState& context)
+static void double_op_AddOperator_String(const CallState& context)
 {
 	double left = context.Args[0]->AsDouble();
 	const wchar_t* right = context.Args[1]->AsString();
 	const wchar_t* result = concatStrings(std::to_wstring(left).data(), right);
-	return context.Collector.FromValue(result);
+	context.PlaceReturned(context.Collector.FromValue(result));
+	return;
 }
 
 // -----------------------------------------------------------------------------
@@ -655,93 +725,106 @@ static void RegisterDoubleOperators(SymbolFactory& factory)
 // Byte operators
 // -----------------------------------------------------------------------------
 
-static ObjectInstance* byte_op_AddOperator(const CallState& context)
+static void byte_op_AddOperator(const CallState& context)
 {
 	std::uint8_t left = context.Args[0]->AsByte();
 	std::uint8_t right = context.Args[1]->AsByte();
-	return context.Collector.FromValue(static_cast<std::uint8_t>(left + right));
+	context.WriteReturn(static_cast<std::uint8_t>(left + right));
+	return;
 }
 
-static ObjectInstance* byte_op_SubOperator(const CallState& context)
+static void byte_op_SubOperator(const CallState& context)
 {
 	std::uint8_t left = context.Args[0]->AsByte();
 	std::uint8_t right = context.Args[1]->AsByte();
-	return context.Collector.FromValue(static_cast<std::uint8_t>(left - right));
+	context.WriteReturn(static_cast<std::uint8_t>(left - right));
+	return;
 }
 
-static ObjectInstance* byte_op_MultOperator(const CallState& context)
+static void byte_op_MultOperator(const CallState& context)
 {
 	std::uint8_t left = context.Args[0]->AsByte();
 	std::uint8_t right = context.Args[1]->AsByte();
-	return context.Collector.FromValue(static_cast<std::uint8_t>(left * right));
+	context.WriteReturn(static_cast<std::uint8_t>(left * right));
+	return;
 }
 
-static ObjectInstance* byte_op_DivOperator(const CallState& context)
+static void byte_op_DivOperator(const CallState& context)
 {
 	std::uint8_t left = context.Args[0]->AsByte();
 	std::uint8_t right = context.Args[1]->AsByte();
-	return context.Collector.FromValue(static_cast<std::uint8_t>(left / right));
+	context.WriteReturn(static_cast<std::uint8_t>(left / right));
+	return;
 }
 
-static ObjectInstance* byte_op_ModOperator(const CallState& context)
+static void byte_op_ModOperator(const CallState& context)
 {
 	std::uint8_t left = context.Args[0]->AsByte();
 	std::uint8_t right = context.Args[1]->AsByte();
-	return context.Collector.FromValue(static_cast<std::uint8_t>(left % right));
+	context.WriteReturn(static_cast<std::uint8_t>(left % right));
+	return;
 }
 
-static ObjectInstance* byte_op_EqualsOperator(const CallState& context)
+static void byte_op_EqualsOperator(const CallState& context)
 {
 	std::uint8_t left = context.Args[0]->AsByte();
 	std::uint8_t right = context.Args[1]->AsByte();
-	return context.Collector.FromValue(left == right);
+	context.WriteReturn(left == right);
+	return;
 }
 
-static ObjectInstance* byte_op_NotEqualsOperator(const CallState& context)
+static void byte_op_NotEqualsOperator(const CallState& context)
 {
 	std::uint8_t left = context.Args[0]->AsByte();
 	std::uint8_t right = context.Args[1]->AsByte();
-	return context.Collector.FromValue(left != right);
+	context.WriteReturn(left != right);
+	return;
 }
 
-static ObjectInstance* byte_op_LessOperator(const CallState& context)
+static void byte_op_LessOperator(const CallState& context)
 {
 	std::uint8_t left = context.Args[0]->AsByte();
 	std::uint8_t right = context.Args[1]->AsByte();
-	return context.Collector.FromValue(left < right);
+	context.WriteReturn(left < right);
+	return;
 }
 
-static ObjectInstance* byte_op_LessOrEqualsOperator(const CallState& context)
+static void byte_op_LessOrEqualsOperator(const CallState& context)
 {
 	std::uint8_t left = context.Args[0]->AsByte();
 	std::uint8_t right = context.Args[1]->AsByte();
-	return context.Collector.FromValue(left <= right);
+	context.WriteReturn(left <= right);
+	return;
 }
 
-static ObjectInstance* byte_op_GreaterOperator(const CallState& context)
+static void byte_op_GreaterOperator(const CallState& context)
 {
 	std::uint8_t left = context.Args[0]->AsByte();
 	std::uint8_t right = context.Args[1]->AsByte();
-	return context.Collector.FromValue(left > right);
+	context.WriteReturn(left > right);
+	return;
 }
 
-static ObjectInstance* byte_op_GreaterOrEqualsOperator(const CallState& context)
+static void byte_op_GreaterOrEqualsOperator(const CallState& context)
 {
 	std::uint8_t left = context.Args[0]->AsByte();
 	std::uint8_t right = context.Args[1]->AsByte();
-	return context.Collector.FromValue(left >= right);
+	context.WriteReturn(left >= right);
+	return;
 }
 
-static ObjectInstance* byte_op_IncrementOperator(const CallState& context)
+static void byte_op_IncrementOperator(const CallState& context)
 {
 	std::uint8_t value = context.Args[0]->AsByte();
-	return context.Collector.FromValue(static_cast<std::uint8_t>(value + 1));
+	context.WriteReturn(static_cast<std::uint8_t>(value + 1));
+	return;
 }
 
-static ObjectInstance* byte_op_DecrementOperator(const CallState& context)
+static void byte_op_DecrementOperator(const CallState& context)
 {
 	std::uint8_t value = context.Args[0]->AsByte();
-	return context.Collector.FromValue(static_cast<std::uint8_t>(value - 1));
+	context.WriteReturn(static_cast<std::uint8_t>(value - 1));
+	return;
 }
 
 static void RegisterByteOperators(SymbolFactory& factory)

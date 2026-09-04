@@ -39,30 +39,31 @@ namespace
 // ------------------------------------------------------------------------
 // Internal native continuation used by NativeAsync Await helpers
 // ------------------------------------------------------------------------
-static ObjectInstance* shard_async_NativeContinuation_MoveNext(const CallState& context) noexcept
+static void shard_async_NativeContinuation_MoveNext(const CallState& context) noexcept
 {
 	shard::detail::InvokeNativeContinuationCallback(context.Args[0]);
-	return nullptr;
+	return;
 }
 
 // ------------------------------------------------------------------------
 // Task (non-generic)
 // ------------------------------------------------------------------------
-static ObjectInstance* shard_async_Task_MoveNext(const CallState& context) noexcept
+static void shard_async_Task_MoveNext(const CallState& context) noexcept
 {
 	ObjectInstance* task = context.Args[0];
 	ResumeContinuation(task, CLASS_TASK_ContinuationField, TRAIT_ASYNCSTATE_MoveNext, context.Domain);
-	return nullptr;
+	return;
 }
 
-static ObjectInstance* shard_async_Task_IsCompleted_get(const CallState& context) noexcept
+static void shard_async_Task_IsCompleted_get(const CallState& context) noexcept
 {
 	ObjectInstance* task = context.Args[0];
 	AsyncState state = GetTaskState(task, CLASS_TASK_StateField);
-	return context.Collector.FromValue(state != AsyncState::PENDING);
+	context.WriteReturn(state != AsyncState::PENDING);
+	return;
 }
 
-static ObjectInstance* shard_async_Task_GetResult(const CallState& context) noexcept
+static void shard_async_Task_GetResult(const CallState& context) noexcept
 {
 	ObjectInstance* task = context.Args[0];
 	if (GetTaskState(task, CLASS_TASK_StateField) == AsyncState::FAULTED)
@@ -77,16 +78,17 @@ static ObjectInstance* shard_async_Task_GetResult(const CallState& context) noex
 				context.Frame->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
 				context.Frame->InterruptionRegister = exception;
 				context.Frame->CurrentException = exception;
-				return GarbageCollector::NullInstance;
+				return;
 			}
 		}
 	}
 
 	// Non-generic Task has no result.
-	return GarbageCollector::NullInstance;
+	context.PlaceReturned(GarbageCollector::NullInstance);
+	return;
 }
 
-static ObjectInstance* shard_async_Task_OnCompleted(const CallState& context) noexcept
+static void shard_async_Task_OnCompleted(const CallState& context) noexcept
 {
 	ObjectInstance* task = context.Args[0];
 	ObjectInstance* continuation = context.Args[1];
@@ -99,18 +101,18 @@ static ObjectInstance* shard_async_Task_OnCompleted(const CallState& context) no
 		ResumeContinuation(task, CLASS_TASK_ContinuationField, TRAIT_ASYNCSTATE_MoveNext, context.Domain);
 	}
 
-	return nullptr;
+	return;
 }
 
-static ObjectInstance* shard_async_Task_InternalRoot(const CallState& context) noexcept
+static void shard_async_Task_InternalRoot(const CallState& context) noexcept
 {
 	ObjectInstance* task = context.Args[0];
 	context.Collector.MarkTaskLike(task);
 	context.Domain.GetEventLoop().RootTask(task);
-	return nullptr;
+	return;
 }
 
-static ObjectInstance* shard_async_Task_Complete(const CallState& context) noexcept
+static void shard_async_Task_Complete(const CallState& context) noexcept
 {
 	ObjectInstance* task = context.Args[0];
 
@@ -122,20 +124,21 @@ static ObjectInstance* shard_async_Task_Complete(const CallState& context) noexc
 	// root that is released by the timer callback.
 	context.Domain.GetEventLoop().UnrootTask(task);
 
-	return nullptr;
+	return;
 }
 
-static ObjectInstance* shard_async_Task_Delay(const CallState& context) noexcept
+static void shard_async_Task_Delay(const CallState& context) noexcept
 {
 	std::int64_t milliseconds = context.Args[0]->AsInteger();
 
-	return shard::DoAsync(context, [milliseconds](shard::AsyncScope async)
+	context.PlaceReturned(shard::DoAsync(context, [milliseconds](shard::AsyncScope async)
 	{
 		async.Delay(milliseconds, [async]() mutable { async.Complete(); });
-	});
+	}));
+	return;
 }
 
-static ObjectInstance* shard_async_Task_SetException(const CallState& context) noexcept
+static void shard_async_Task_SetException(const CallState& context) noexcept
 {
 	ObjectInstance* task = context.Args[0];
 	ObjectInstance* exception = context.Args[1];
@@ -149,10 +152,10 @@ static ObjectInstance* shard_async_Task_SetException(const CallState& context) n
 	// Release the factory root.
 	context.Domain.GetEventLoop().UnrootTask(task);
 
-	return nullptr;
+	return;
 }
 
-static ObjectInstance* shard_async_Task_Wait(const CallState& context)
+static void shard_async_Task_Wait(const CallState& context)
 {
 	ObjectInstance* task = context.Args[0];
 	EventLoop& loop = context.Domain.GetEventLoop();
@@ -173,17 +176,17 @@ static ObjectInstance* shard_async_Task_Wait(const CallState& context)
 				caller->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
 				caller->InterruptionRegister = exception;
 				caller->CurrentException = exception;
-				return nullptr;
+				return;
 			}
 		}
 
 		throw std::runtime_error("Task faulted");
 	}
 
-	return nullptr;
+	return;
 }
 
-static ObjectInstance* shard_async_Task_Shoot(const CallState& context) noexcept
+static void shard_async_Task_Shoot(const CallState& context) noexcept
 {
 	ObjectInstance* task = context.Args[0];
 	if (task != nullptr && task != GarbageCollector::NullInstance)
@@ -191,32 +194,34 @@ static ObjectInstance* shard_async_Task_Shoot(const CallState& context) noexcept
 		context.Collector.MarkFireAndForget(task);
 		context.Collector.ReleaseFrameOwner(task);
 	}
-	return nullptr;
+	return;
 }
 
-static ObjectInstance* shard_async_Task_GetAwaiter(const CallState& context) noexcept
+static void shard_async_Task_GetAwaiter(const CallState& context) noexcept
 {
-	return context.Args[0];
+	context.PlaceReturned(context.Args[0]);
+	return;
 }
 
 // ------------------------------------------------------------------------
 // Task<T>
 // ------------------------------------------------------------------------
-static ObjectInstance* shard_async_ValueTask_MoveNext(const CallState& context) noexcept
+static void shard_async_ValueTask_MoveNext(const CallState& context) noexcept
 {
 	ObjectInstance* task = context.Args[0];
 	ResumeContinuation(task, CLASS_VALUETASK_ContinuationField, TRAIT_ASYNCSTATE_MoveNext, context.Domain);
-	return nullptr;
+	return;
 }
 
-static ObjectInstance* shard_async_ValueTask_IsCompleted_get(const CallState& context) noexcept
+static void shard_async_ValueTask_IsCompleted_get(const CallState& context) noexcept
 {
 	ObjectInstance* task = context.Args[0];
 	AsyncState state = GetTaskState(task, CLASS_VALUETASK_StateField);
-	return context.Collector.FromValue(state != AsyncState::PENDING);
+	context.WriteReturn(state != AsyncState::PENDING);
+	return;
 }
 
-static ObjectInstance* shard_async_ValueTask_GetResult(const CallState& context) noexcept
+static void shard_async_ValueTask_GetResult(const CallState& context) noexcept
 {
 	ObjectInstance* task = context.Args[0];
 	if (GetTaskState(task, CLASS_VALUETASK_StateField) == AsyncState::FAULTED)
@@ -231,18 +236,20 @@ static ObjectInstance* shard_async_ValueTask_GetResult(const CallState& context)
 				context.Frame->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
 				context.Frame->InterruptionRegister = exception;
 				context.Frame->CurrentException = exception;
-				return GarbageCollector::NullInstance;
+				return;
 			}
 		}
 	}
 
 	ObjectInstance result = task->GetField(CLASS_VALUETASK_ResultField->SlotIndex);
 	if (result.IsView)
-		return context.Collector.CopyInstance(&result);
-	return result.IsNullInstance() ? GarbageCollector::NullInstance : result.heapSource();
+		context.WriteReturn(result);
+	else
+		context.PlaceReturned(result.IsNullInstance() ? GarbageCollector::NullInstance : result.heapSource());
+	return;
 }
 
-static ObjectInstance* shard_async_ValueTask_OnCompleted(const CallState& context) noexcept
+static void shard_async_ValueTask_OnCompleted(const CallState& context) noexcept
 {
 	ObjectInstance* task = context.Args[0];
 	ObjectInstance* continuation = context.Args[1];
@@ -255,21 +262,23 @@ static ObjectInstance* shard_async_ValueTask_OnCompleted(const CallState& contex
 		ResumeContinuation(task, CLASS_VALUETASK_ContinuationField, TRAIT_ASYNCSTATE_MoveNext, context.Domain);
 	}
 
-	return nullptr;
+	return;
 }
 
-static ObjectInstance* shard_async_ValueTask_GetAwaiter(const CallState& context) noexcept
+static void shard_async_ValueTask_GetAwaiter(const CallState& context) noexcept
 {
-	return context.Args[0];
+	context.PlaceReturned(context.Args[0]);
+	return;
 }
 
-static ObjectInstance* shard_async_ValueTask_FromResult(const CallState& context) noexcept
+static void shard_async_ValueTask_FromResult(const CallState& context) noexcept
 {
 	ObjectInstance* result = context.Args[0];
-	return shard::CompletedValueTask(context, result);
+	context.PlaceReturned(shard::CompletedValueTask(context, result));
+	return;
 }
 
-static ObjectInstance* shard_async_ValueTask_SetException(const CallState& context) noexcept
+static void shard_async_ValueTask_SetException(const CallState& context) noexcept
 {
 	ObjectInstance* task = context.Args[0];
 	ObjectInstance* exception = context.Args[1];
@@ -282,10 +291,10 @@ static ObjectInstance* shard_async_ValueTask_SetException(const CallState& conte
 
 	context.Domain.GetEventLoop().UnrootTask(task);
 
-	return nullptr;
+	return;
 }
 
-static ObjectInstance* shard_async_ValueTask_SetResult(const CallState& context) noexcept
+static void shard_async_ValueTask_SetResult(const CallState& context) noexcept
 {
 	ObjectInstance* task = context.Args[0];
 	ObjectInstance* result = context.Args[1];
@@ -298,18 +307,18 @@ static ObjectInstance* shard_async_ValueTask_SetResult(const CallState& context)
 
 	context.Domain.GetEventLoop().UnrootTask(task);
 
-	return nullptr;
+	return;
 }
 
-static ObjectInstance* shard_async_ValueTask_InternalRoot(const CallState& context) noexcept
+static void shard_async_ValueTask_InternalRoot(const CallState& context) noexcept
 {
 	ObjectInstance* task = context.Args[0];
 	context.Collector.MarkTaskLike(task);
 	context.Domain.GetEventLoop().RootTask(task);
-	return nullptr;
+	return;
 }
 
-static ObjectInstance* shard_async_ValueTask_Wait(const CallState& context)
+static void shard_async_ValueTask_Wait(const CallState& context)
 {
 	ObjectInstance* task = context.Args[0];
 	EventLoop& loop = context.Domain.GetEventLoop();
@@ -330,13 +339,13 @@ static ObjectInstance* shard_async_ValueTask_Wait(const CallState& context)
 				caller->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
 				caller->InterruptionRegister = exception;
 				caller->CurrentException = exception;
-				return nullptr;
+				return;
 			}
 		}
 		throw std::runtime_error("ValueTask faulted");
 	}
 
-	return nullptr;
+	return;
 }
 
 void SymbolTable::ResolveAsyncTypes(SymbolTable* globalTable)

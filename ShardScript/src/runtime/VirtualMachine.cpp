@@ -1478,12 +1478,25 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 
 				std::vector<ObjectInstance*> argumentScratch(argsCount);
 				std::vector<std::byte> argumentViewBytes(argsCount * sizeof(ObjectInstance) + alignof(ObjectInstance));
+				
 				const std::uintptr_t rawStorage = reinterpret_cast<std::uintptr_t>(argumentViewBytes.data());
 				const std::uintptr_t alignedStorage = (rawStorage + alignof(ObjectInstance) - 1) & ~(static_cast<std::uintptr_t>(alignof(ObjectInstance)) - 1);
 				auto* argumentViews = reinterpret_cast<ObjectInstance*>(alignedStorage);
+				
 				currentFrame->CopyArgumentPayloads(argumentScratch.data(), argumentViews, argsCount);
 				ArgumentsSpan args(argumentScratch.data(), argsCount);
 				
+				TypeShape* returnShape = currentFrame->ReturnShape();
+				const bool returnsValue = returnShape != nullptr;
+				const bool returnsReference = method->ReturnType != nullptr &&
+					method->ReturnType != SymbolTable::Primitives::Void && !returnsValue;
+
+				std::uintptr_t slotHeader = returnsValue
+					? reinterpret_cast<std::uintptr_t>(returnShape)
+					: CallStackFrame::BoxedTag;
+
+				std::memcpy(currentFrame->ReturnSlotMemory(), &slotHeader, sizeof(slotHeader));
+
 				CallState context
 				{
 					.Domain = *domain,
@@ -1493,28 +1506,27 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 
 					.Frame = currentFrame,
 					.Method = method,
-					.Args = args
+					.Args = args,
+
+					.ReturnTarget = { currentFrame->ReturnSlotMemory() + CallStackFrame::SlotHeaderBytes, returnShape }
 				};
 
-				ObjectInstance* retReg = method->FunctionPointer(context);
+				method->FunctionPointer(context);
 
-				if (method->ReturnType != nullptr && method->ReturnType != SymbolTable::Primitives::Void)
+				if (returnsReference)
 				{
+					ObjectInstance* retReg;
+					std::memcpy(&retReg, currentFrame->ReturnSlotMemory() + CallStackFrame::SlotHeaderBytes, sizeof(retReg));
 					if (retReg == nullptr)
-					{
-						std::string methodName(method->FullName.begin(), method->FullName.end());
-						if (method->ReturnType->IsReferenceType())
-						{
-							retReg = garbageCollector.NullInstance;
-						}
-						else
-						{
-							throw std::runtime_error("extern method '" + methodName + "' returned nullptr for value type");
-						}
-					}
+						retReg = garbageCollector.NullInstance;
 
-					callingFrame->PushStack(retReg);
+					callingFrame->PushReference(retReg);
 					BindTaskToFrame(retReg, callingFrame, garbageCollector);
+				}
+				else if (returnsValue)
+				{
+					std::byte* payload = callingFrame->PushInlineUninitialized(returnShape);
+					std::memcpy(payload, currentFrame->ReturnSlotMemory() + CallStackFrame::SlotHeaderBytes, returnShape->Size);
 				}
 			}
 			catch (const std::exception& err)
