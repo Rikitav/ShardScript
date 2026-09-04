@@ -1341,7 +1341,10 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 					throw std::runtime_error("extern method body not resolved: " + methodName);
 				}
 
-				ArgumentsSpan args(currentFrame->LocalsData(), argsCount);
+				std::vector<ObjectInstance*> argumentScratch(argsCount);
+				currentFrame->CopyArgumentPayloads(argumentScratch.data(), argsCount);
+				ArgumentsSpan args(argumentScratch.data(), argsCount);
+				
 				CallState context
 				{
 					.Domain = *domain,

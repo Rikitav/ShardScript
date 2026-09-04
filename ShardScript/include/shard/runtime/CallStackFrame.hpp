@@ -8,6 +8,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <memory>
 #include <vector>
 
@@ -37,21 +38,46 @@
 // the shared_ptr dies (normally at PopFrame; async frames with pending tasks
 // survive via PendingTaskCount until the tasks release them).
 //
-// The three regions are arrays of ObjectInstance* slots (pointer-sized
-// entries) today. Stage 4 item 2 replaces the slot element with a tagged
-// header-driven byte entry ([TypeShape*][payload]) inside the same arena;
-// the region structure below is the stable part.
+// Every slot in the three regions is a TAGGED, HEADER-DRIVEN byte entry:
 //
-//   Return slot   — one reserved slot at the arena base, sized for the
+//     [TypeShape* shape][payload ...]
+//
+// The header points at the slot value's concrete TypeShape (the
+// per-instantiation layout metadata — see TypeShape/TypeShapeCache), so any
+// slot can be interpreted without touching the value itself: field offsets,
+// size, generic arguments. The payload layout is decided by the shape's
+// storage kind:
+//
+//   reference-kind   payload = ObjectInstance* (one heap pointer)
+//   value-kind       payload = byte[shape->Size] stored inline
+//                    (Stage 4 items 3/4 — nothing produces inline payloads
+//                    yet; every slot today is reference-kind)
+//
+// With all slots reference-kind the entry stride is uniform:
+//
+//     SlotStride = sizeof(TypeShape*) + sizeof(ObjectInstance*)
+//
+// A zeroed entry ({nullptr, nullptr}) reads as a null value, which keeps the
+// pre-zeroed regions meaningful. Uniform stride also means frame creation
+// does NOT need the method's type arguments yet — every slot costs the same.
+// Once value-kind payloads land, the stride becomes per-slot
+// (sizeof(TypeShape*) + max(sizeof(ObjectInstance*), shape->Size)) and
+// Create() must receive the resolved type arguments BEFORE allocation,
+// because generic instantiations change slot sizes.
+//
+//   Return slot   — one reserved entry at the arena base, sized for the
 //                   method's return value. Unused until Stage 5 wires
 //                   foreign-function value returns through it.
 //   Locals region — argument slots followed by local-variable slots,
 //                   pre-zeroed. Argument transfer on invocation writes
-//                   directly into the front of this region, and external
-//                   methods receive an ArgumentsSpan over it.
+//                   directly into the front of this region; external
+//                   methods receive their arguments as an ArgumentsSpan of
+//                   ObjectInstance* — the VM copies the argument payloads
+//                   into a scratch buffer per external call, so dependent
+//                   libraries keep the contiguous span ABI.
 //   Eval region   — the stack bytecode operands live on. PushStack/PopStack
-//                   move an EvalSize cursor over it; values above the locals
-//                   live and die here.
+//                   move an EvalSize cursor (in entries) over it; values
+//                   above the locals live and die here.
 //
 // GROWTH NEVER MOVES THE FRAME OBJECT. Raw CallStackFrame* pointers are all
 // over the runtime — PreviousFrame chains, async task bindings, CurrentFrame
@@ -67,7 +93,8 @@
 //
 // The arena is sized exactly at frame creation from metadata computed
 // during bytecode emission (see MethodSymbol::FrameLayout and the
-// EvalLayoutTracker instrumentation in AbstractEmiter / AsyncEmissionPass):
+// EvalLayoutTracker instrumentation in AbstractEmiter / AsyncEmissionPass).
+// Capacities are ENTRY counts; the byte size is entries * SlotStride:
 //
 //   locals capacity = MethodSymbol::GetEvalStackLocalsCount()
 //       Argument and variable slots are assigned once, during semantic
@@ -139,6 +166,10 @@ namespace shard
 
 		static std::shared_ptr<CallStackFrame> Create(const VirtualMachine* host, CallStackFrame* previousFrame, MethodSymbol* method);
 
+		static constexpr std::size_t SlotHeaderBytes = sizeof(TypeShape*);
+		static constexpr std::size_t SlotPayloadBytes = sizeof(ObjectInstance*);
+		static constexpr std::size_t SlotStride = SlotHeaderBytes + SlotPayloadBytes;
+
 		void PushStack(ObjectInstance* value);
 		ObjectInstance* PopStack();
 		ObjectInstance* PeekStack();
@@ -149,18 +180,30 @@ namespace shard
 		inline std::size_t EvalCount() const { return EvalSize; }
 		inline std::size_t LocalCount() const { return LocalCapacity; }
 
-		ObjectInstance** LocalsData() { return LocalSlots; }
+		void CopyArgumentPayloads(ObjectInstance** dst, std::size_t count) const;
 
 		~CallStackFrame();
 
 	private:
-		ObjectInstance** ReturnSlotStorage = nullptr;
-		ObjectInstance** LocalSlots = nullptr;
+		std::byte* ReturnSlot = nullptr;
+		std::byte* LocalEntries = nullptr;
 		std::size_t LocalCapacity = 0;
-		ObjectInstance** EvalSlots = nullptr;
+		std::byte* EvalEntries = nullptr;
 		std::size_t EvalCapacity = 0;
 		std::size_t EvalSize = 0;
 		bool ArenaIsTrailing = false;
+
+		static inline ObjectInstance*& PayloadRef(std::byte* entry)
+		{
+			return *reinterpret_cast<ObjectInstance**>(entry + SlotHeaderBytes);
+		}
+
+		static inline ObjectInstance* PayloadRead(const std::byte* entry)
+		{
+			ObjectInstance* payload;
+			std::memcpy(&payload, entry + SlotHeaderBytes, sizeof(payload));
+			return payload;
+		}
 
 		void InitializeArena(std::size_t localsCount, std::size_t evalCapacity);
 		void GrowArena(std::size_t newLocalCapacity, std::size_t newEvalCapacity);
