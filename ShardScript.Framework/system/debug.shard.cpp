@@ -48,7 +48,7 @@ static ObjectInstance* shard_debug_PrintStackFrameInfo(const CallState& context)
 	CallStackFrame* frame = context.Runtimer.CurrentFrame()->PreviousFrame;
 	for (int i = 0; i < context.Method->GetEvalStackLocalsCount(); i++)
 	{
-		ObjectInstance* reg = frame->EvalStack[i];
+		ObjectInstance* reg = frame->GetLocal(static_cast<std::uint16_t>(i));
 		std::wcout
 			<< L" * PTR : " << reg->getMemory()
 			<< L" | TYPE : '" << reg->getInfo()->Name << "'"
