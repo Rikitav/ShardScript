@@ -45,9 +45,9 @@ namespace
 
 	static void primitive_enum_to_string(const CallState& context)
 	{
-		ObjectInstance* instance = context.Args[0];
-		const EnumSymbol* enumType = static_cast<const EnumSymbol*>(instance->getInfo());
-		std::int64_t value = instance->AsInteger();
+		ObjectInstance instance = context.Args[0];
+		const EnumSymbol* enumType = static_cast<const EnumSymbol*>(instance.getInfo());
+		std::int64_t value = instance.AsInteger();
 
 		if (enumType->IsFlags)
 		{
@@ -73,11 +73,11 @@ namespace
 
 			if (result.empty())
 			{
-				context.PlaceReturned(context.Collector.FromValue(std::to_wstring(value)));
+				context.PlaceReturned(context.Collector.FromString(std::to_wstring(value)));
 				return;
 			}
 
-			context.PlaceReturned(context.Collector.FromValue(result));
+			context.PlaceReturned(context.Collector.FromString(result));
 			return;
 		}
 
@@ -85,12 +85,12 @@ namespace
 		{
 			if (field != nullptr && field->IsEnumValue && field->EnumValue == value)
 			{
-				context.PlaceReturned(context.Collector.FromValue(field->Name));
+				context.PlaceReturned(context.Collector.FromString(field->Name));
 				return;
 			}
 		}
 
-		context.PlaceReturned(context.Collector.FromValue(std::to_wstring(value)));
+		context.PlaceReturned(context.Collector.FromString(std::to_wstring(value)));
 		return;
 	}
 }

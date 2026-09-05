@@ -25,22 +25,22 @@ namespace shard
         {
             ApplicationDomain* domain = nullptr;
             GarbageCollector* collector = nullptr;
-            ObjectInstance* task = nullptr;
+            ObjectInstance task; // rooted task object; the payload pointer is stable while rooted
             uv_handle_t* ActiveHandle = nullptr;
             bool completed = false;
             bool isValueTask = false;
 
             void EnsureCompletedOnce();
             void CompleteTask();
-            void FailTask(ObjectInstance* exception);
-            void SetValueTaskResult(ObjectInstance* result);
-            void FailValueTask(ObjectInstance* exception);
+            void FailTask(ObjectInstance exception);
+            void SetValueTaskResult(ObjectInstance result);
+            void FailValueTask(ObjectInstance exception);
             void Halt();
         };
 
         SHARD_API std::shared_ptr<AsyncScopeState> CreateAsyncScopeState(const CallState& ctx, TypeSymbol* resultType);
-        SHARD_API ObjectInstance* CreateNativeContinuation(AsyncScopeState& state, std::function<void()> callback);
-        SHARD_API void InvokeNativeContinuationCallback(ObjectInstance* continuation);
+        SHARD_API ObjectInstance CreateNativeContinuation(AsyncScopeState& state, std::function<void()> callback);
+        SHARD_API void InvokeNativeContinuationCallback(ObjectInstance continuation);
     }
 
     /// <summary>
@@ -60,7 +60,7 @@ namespace shard
         AsyncScope& operator=(AsyncScope&&) = default;
 
         [[nodiscard]] bool IsValid() const noexcept;
-        [[nodiscard]] ObjectInstance* TaskObject() const noexcept;
+        [[nodiscard]] ObjectInstance TaskObject() const noexcept;
 
         [[nodiscard]] ApplicationDomain& Domain() const noexcept;
         [[nodiscard]] GarbageCollector& Collector() const noexcept;
@@ -72,7 +72,7 @@ namespace shard
         void Complete();
 
         /// <summary>Mark the underlying Task as faulted and resume awaiters.</summary>
-        void Fail(ObjectInstance* exception);
+        void Fail(ObjectInstance exception);
 
         /// <summary>Mark the underlying Task as faulted with a RuntimeException.</summary>
         void Fail(const std::wstring& message);
@@ -87,10 +87,10 @@ namespace shard
         void RunOnThreadPool(std::function<void()> work, std::function<void()> onComplete);
 
         /// <summary>Await an existing ShardScript awaitable and call onComplete when it completes.</summary>
-        void Await(ObjectInstance* awaitable, std::function<void()> onComplete);
+        void Await(ObjectInstance awaitable, std::function<void()> onComplete);
 
         /// <summary>Await an existing ShardScript awaitable and receive its boxed result.</summary>
-        void AwaitResult(ObjectInstance* awaitable, std::function<void(ObjectInstance* result)> onComplete);
+        void AwaitResult(ObjectInstance awaitable, std::function<void(ObjectInstance result)> onComplete);
 
     protected:
         std::shared_ptr<detail::AsyncScopeState> m_state;
@@ -112,31 +112,31 @@ namespace shard
     };
 
     /// <summary>Start an async operation that returns async.Task.</summary>
-    SHARD_API ObjectInstance* DoAsync(const CallState& ctx, std::function<void(AsyncScope)> work);
+    SHARD_API ObjectInstance DoAsync(const CallState& ctx, std::function<void(AsyncScope)> work);
 
     /// <summary>Start an async operation that returns async.ValueTask&lt;T&gt;.</summary>
     template <typename T>
-    ObjectInstance* DoValueTask(const CallState& ctx, std::function<void(AsyncValueScope<T>)> work);
+    ObjectInstance DoValueTask(const CallState& ctx, std::function<void(AsyncValueScope<T>)> work);
 
     /// <summary>Return an already-completed async.Task.</summary>
-    SHARD_API ObjectInstance* CompletedTask(const CallState& ctx);
+    SHARD_API ObjectInstance CompletedTask(const CallState& ctx);
 
     /// <summary>Return a faulted async.Task.</summary>
-    SHARD_API ObjectInstance* FaultedTask(const CallState& ctx, const std::wstring& message);
+    SHARD_API ObjectInstance FaultedTask(const CallState& ctx, const std::wstring& message);
 
     /// <summary>Return a faulted async.Task.</summary>
-    SHARD_API ObjectInstance* FaultedTask(const CallState& ctx, ObjectInstance* exception);
+    SHARD_API ObjectInstance FaultedTask(const CallState& ctx, ObjectInstance exception);
 
     /// <summary>Return an already-completed async.ValueTask&lt;T&gt;.</summary>
     template <typename T>
-    ObjectInstance* CompletedValueTask(const CallState& ctx, T value);
+    ObjectInstance CompletedValueTask(const CallState& ctx, T value);
 
     /// <summary>Return a faulted async.ValueTask&lt;T&gt;.</summary>
     template <typename T>
-    ObjectInstance* FaultedValueTask(const CallState& ctx, const std::wstring& message);
+    ObjectInstance FaultedValueTask(const CallState& ctx, const std::wstring& message);
 
     /// <summary>Construct a RuntimeException instance with the given message.</summary>
-    SHARD_API ObjectInstance* CreateRuntimeException(GarbageCollector& collector, const std::wstring& message);
+    SHARD_API ObjectInstance CreateRuntimeException(GarbageCollector& collector, const std::wstring& message);
 }
 
 #include <shard/runtime/NativeAsync.inl>

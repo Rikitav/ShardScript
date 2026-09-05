@@ -148,6 +148,10 @@ namespace shard
             inline static SHARD_API FieldSymbol* RuntimeExceptionMessageField = nullptr;
             inline static SHARD_API FieldSymbol* RuntimeExceptionStackTraceField = nullptr;
 
+            inline static SHARD_API ClassSymbol* UndefinedBehaviour = nullptr;
+            inline static SHARD_API FieldSymbol* UndefinedBehaviourMessageField = nullptr;
+            inline static SHARD_API FieldSymbol* UndefinedBehaviourStackTraceField = nullptr;
+
             inline static SHARD_API ClassSymbol* NativeContinuation = nullptr;
             inline static SHARD_API MethodSymbol* NativeContinuation_MoveNext = nullptr;
         };

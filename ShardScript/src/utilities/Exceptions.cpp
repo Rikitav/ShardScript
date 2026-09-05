@@ -13,12 +13,12 @@
 
 namespace shard::exceptions
 {
-    void PrintUnhandled(std::wostream& out, ObjectInstance* exception,
+    void PrintUnhandled(std::wostream& out, ObjectInstance exception,
                         const std::wstring& message, const std::wstring& stackTrace,
                         SymbolTable* table)
     {
-        std::wstring exceptionType = (exception != nullptr && exception->getInfo() != nullptr)
-            ? exception->getInfo()->Name
+        std::wstring exceptionType = (!exception.IsNullInstance() && exception.getInfo() != nullptr)
+            ? exception.getInfo()->Name
             : L"UnknownException";
 
         out << std::endl;

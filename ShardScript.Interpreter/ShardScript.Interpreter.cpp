@@ -257,8 +257,8 @@ int main(int argc, char* argv[])
 			virtualMachine.Run();
 			ConsoleHelper::Write(L"\n");
 
-			ObjectInstance* unhandledException = virtualMachine.GetUnhandledException();
-			if (unhandledException != nullptr)
+			ObjectInstance unhandledException = virtualMachine.GetUnhandledException();
+			if (!unhandledException.IsNullInstance())
 			{
 				exceptions::PrintUnhandled(
 					std::wcerr,

@@ -18,52 +18,52 @@ using namespace shard;
 static const HANDLE stdOut = GetStdHandle(STD_OUTPUT_HANDLE);
 #endif
 
-void ConsoleHelper::Write(ObjectInstance* instance)
+void ConsoleHelper::Write(ObjectInstance instance)
 {
-	if (instance->getInfo() == SymbolTable::Primitives::Boolean)
+	if (instance.getInfo() == SymbolTable::Primitives::Boolean)
 	{
-		bool data = instance->AsBoolean();
+		bool data = instance.AsBoolean();
 		Write(data);
 		return;
 	}
 
-	if (instance->getInfo() == SymbolTable::Primitives::Integer)
+	if (instance.getInfo() == SymbolTable::Primitives::Integer)
 	{
-		std::int64_t data = instance->AsInteger();
+		std::int64_t data = instance.AsInteger();
 		Write(data);
 		return;
 	}
 
-	if (instance->getInfo() == SymbolTable::Primitives::Double)
+	if (instance.getInfo() == SymbolTable::Primitives::Double)
 	{
-		double data = instance->AsDouble();
+		double data = instance.AsDouble();
 		Write(data);
 		return;
 	}
 
-	if (instance->getInfo() == SymbolTable::Primitives::Char)
+	if (instance.getInfo() == SymbolTable::Primitives::Char)
 	{
-		wchar_t data = instance->AsCharacter();
+		wchar_t data = instance.AsCharacter();
 		Write(data);
 		return;
 	}
 
-	if (instance->getInfo() == SymbolTable::Primitives::String)
+	if (instance.getInfo() == SymbolTable::Primitives::String)
 	{
-		std::wstring data = instance->AsString();
+		std::wstring data = instance.AsString();
 		Write(data);
 		return;
 	}
 
-	if (instance->getInfo()->FullName.capacity() > 0)
+	if (instance.getInfo()->FullName.capacity() > 0)
 	{
-		Write(instance->getInfo()->FullName);
+		Write(instance.getInfo()->FullName);
 		return;
 	}
 
-	if (instance->getInfo()->Name.capacity() > 0)
+	if (instance.getInfo()->Name.capacity() > 0)
 	{
-		Write(instance->getInfo()->Name);
+		Write(instance.getInfo()->Name);
 		return;
 	}
 
@@ -132,7 +132,7 @@ void ConsoleHelper::Write(const std::wstring& data)
 #endif
 }
 
-void ConsoleHelper::WriteLine(ObjectInstance* instance)
+void ConsoleHelper::WriteLine(ObjectInstance instance)
 {
 	Write(instance);
 	WriteLine();

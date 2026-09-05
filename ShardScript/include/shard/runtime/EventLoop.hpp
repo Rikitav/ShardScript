@@ -27,7 +27,7 @@ namespace shard
     struct DelayState
     {
         ApplicationDomain* Domain;
-        ObjectInstance* Task;
+        ObjectInstance Task; // identity stored through the uv handle data pointer
         FieldSymbol* StateField;
         FieldSymbol* ContinuationField;
         MethodSymbol* MoveNextMethod;
@@ -40,7 +40,7 @@ namespace shard
     class SHARD_API EventLoop
     {
         uv_loop_t m_loop;
-        std::vector<ObjectInstance*> m_rootedTasks;
+        std::vector<ObjectInstance> m_rootedTasks;
 
     public:
         EventLoop();
@@ -74,14 +74,14 @@ namespace shard
         /// <summary>
         /// Keep a Task / state-machine object alive while it is suspended in libuv.
         /// </summary>
-        void RootTask(ObjectInstance* task);
+        void RootTask(ObjectInstance task);
 
         /// <summary>
         /// Release the strong reference acquired by RootTask.
         /// </summary>
-        void UnrootTask(ObjectInstance* task);
+        void UnrootTask(ObjectInstance task);
 
-        [[nodiscard]] const std::vector<ObjectInstance*>& GetRootedTasks() const noexcept { return m_rootedTasks; }
+        [[nodiscard]] const std::vector<ObjectInstance>& GetRootedTasks() const noexcept { return m_rootedTasks; }
 
         /// <summary>
         /// Returns true when the loop has no pending work and all rooted tasks are complete.
@@ -89,7 +89,7 @@ namespace shard
         [[nodiscard]] bool IsEmptyOrAllTasksCompleted() const;
     };
 
-    AsyncState GetTaskState(ObjectInstance* task, FieldSymbol* stateField);
-    void SetTaskState(ObjectInstance* task, FieldSymbol* stateField, AsyncState state, GarbageCollector& gc);
-    void ResumeContinuation(ObjectInstance* task, FieldSymbol* continuationField, MethodSymbol* moveNextMethod, ApplicationDomain& domain);
+    AsyncState GetTaskState(ObjectInstance task, FieldSymbol* stateField);
+    void SetTaskState(ObjectInstance task, FieldSymbol* stateField, AsyncState state, GarbageCollector& gc);
+    void ResumeContinuation(ObjectInstance task, FieldSymbol* continuationField, MethodSymbol* moveNextMethod, ApplicationDomain& domain);
 }

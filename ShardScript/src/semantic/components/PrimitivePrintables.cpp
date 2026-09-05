@@ -26,111 +26,111 @@ namespace
 
 static void primitive_boolean_to_string(const CallState& context)
 {
-	bool value = context.Args[0]->AsBoolean();
-	context.PlaceReturned(context.Collector.FromValue(std::wstring(value ? L"true" : L"false")));
+	bool value = context.Args[0].AsBoolean();
+	context.PlaceReturned(context.Collector.FromString(std::wstring(value ? L"true" : L"false")));
 	return;
 }
 
 static void primitive_integer_to_string(const CallState& context)
 {
-	std::int64_t value = context.Args[0]->AsInteger();
-	context.PlaceReturned(context.Collector.FromValue(std::to_wstring(value)));
+	std::int64_t value = context.Args[0].AsInteger();
+	context.PlaceReturned(context.Collector.FromString(std::to_wstring(value)));
 	return;
 }
 
 static void primitive_double_to_string(const CallState& context)
 {
-	double value = context.Args[0]->AsDouble();
-	context.PlaceReturned(context.Collector.FromValue(std::to_wstring(value)));
+	double value = context.Args[0].AsDouble();
+	context.PlaceReturned(context.Collector.FromString(std::to_wstring(value)));
 	return;
 }
 
 static void primitive_char_to_string(const CallState& context)
 {
-	wchar_t value = context.Args[0]->AsCharacter();
-	context.PlaceReturned(context.Collector.FromValue(std::wstring(1, value)));
+	wchar_t value = context.Args[0].AsCharacter();
+	context.PlaceReturned(context.Collector.FromString(std::wstring(1, value)));
 	return;
 }
 
 static void primitive_byte_to_string(const CallState& context)
 {
-	std::uint8_t value = context.Args[0]->AsByte();
-	context.PlaceReturned(context.Collector.FromValue(std::to_wstring(static_cast<int>(value))));
+	std::uint8_t value = context.Args[0].AsByte();
+	context.PlaceReturned(context.Collector.FromString(std::to_wstring(static_cast<int>(value))));
 	return;
 }
 
 static void primitive_string_to_string(const CallState& context)
 {
-	ObjectInstance* self = context.Args[0];
+	ObjectInstance self = context.Args[0];
 	context.PlaceReturned(self);
 	return;
 }
 
 static void primitive_array_to_string(const CallState& context)
 {
-	auto InvokeToString = [&](ObjectInstance* instance) -> ObjectInstance*
+	auto InvokeToString = [&](ObjectInstance instance) -> ObjectInstance
 	{
-		TypeSymbol* type = const_cast<TypeSymbol*>(instance->getInfo());
+		TypeSymbol* type = const_cast<TypeSymbol*>(instance.getInfo());
 		MethodSymbol* implementation = type->FindInterfaceImplementation(TRAIT_PRINTABLE_ToString);
 
 		if (implementation == nullptr)
-			return nullptr;
+			return ObjectInstance();
 
 		context.Runtimer.InvokeMethod(implementation, { instance });
-		ObjectInstance* result = context.Runtimer.CurrentFrame()->PopBoxed(context.Collector);
-		if (result == nullptr || result->getInfo() != SymbolTable::Primitives::String)
+		ObjectInstance result = context.Runtimer.CurrentFrame()->PopValue();
+		if (result.IsNullInstance() || result.getInfo() != SymbolTable::Primitives::String)
 			throw std::runtime_error("ToString did not return a string");
 
 		return result;
 	};
 
-	auto AppendAsString = [&](std::wostringstream& result, ObjectInstance* instance) -> void
+	auto AppendAsString = [&](std::wostringstream& result, ObjectInstance instance) -> void
 	{
-		ObjectInstance* asString = InvokeToString(instance);
-		if (asString == nullptr)
+		ObjectInstance asString = InvokeToString(instance);
+		if (asString.IsNullInstance())
 		{
-			result << instance->getInfo()->FullName;
+			result << instance.getInfo()->FullName;
 			return;
 		}
 
-		result << asString->AsString();
+		result << asString.AsString();
 		context.Collector.CollectInstance(asString);
 	};
 
-	ObjectInstance* instance = context.Args[0]; // this
-	const ArrayTypeSymbol* array = static_cast<const ArrayTypeSymbol*>(instance->getInfo());
-	size_t size = instance->GetArrayLength();
+	ObjectInstance instance = context.Args[0]; // this
+	const ArrayTypeSymbol* array = static_cast<const ArrayTypeSymbol*>(instance.getInfo());
+	size_t size = instance.GetArrayLength();
 
 	if (size == 0)
 	{
-		context.PlaceReturned(context.Collector.FromValue(L"[]"));
+		context.PlaceReturned(context.Collector.FromString(L"[]"));
 		return;
 	}
 
 	std::wostringstream result;
 	result << L"[";
 
-	ObjectInstance element = instance->GetElement(0);
-	AppendAsString(result, &element);
+	ObjectInstance element = instance.GetElement(0);
+	AppendAsString(result, element);
 	// context.Collector.CollectInstance(element);  // GetElement returns array-owned element, do not collect
 
 	for (size_t i = 1; i < size; ++i)
 	{
 		result << L", ";
-		ObjectInstance element = instance->GetElement(i);
-		AppendAsString(result, &element);
+		ObjectInstance element = instance.GetElement(i);
+		AppendAsString(result, element);
 		// context.Collector.CollectInstance(element);  // GetElement returns array-owned element, do not collect
 	}
 
 	result << L"]";
-	context.PlaceReturned(context.Collector.FromValue(result.str()));
+	context.PlaceReturned(context.Collector.FromString(result.str()));
 	return;
 }
 
 static void primitive_nint_to_string(const CallState& context)
 {
-	std::size_t self = reinterpret_cast<std::size_t>(context.Args[0]->AsNint());
-	context.PlaceReturned(context.Collector.FromValue(std::to_wstring(self)));
+	std::size_t self = reinterpret_cast<std::size_t>(context.Args[0].AsNint());
+	context.PlaceReturned(context.Collector.FromString(std::to_wstring(self)));
 	return;
 }
 

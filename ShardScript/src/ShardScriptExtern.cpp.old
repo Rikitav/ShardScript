@@ -66,35 +66,36 @@ namespace
     // =========================================================================
     // Async task state registry
     // =========================================================================
-    // C async callbacks receive the task ObjectInstance* as their handle.  The
+    // C async callbacks receive the task ObjectInstance as their handle.  The
     // internal AsyncScopeState is kept alive here so callbacks can complete,
     // fault, delay, await, etc. without holding a dangling raw pointer.
 
     std::mutex g_asyncStateMutex;
-    std::unordered_map<ObjectInstance*, std::shared_ptr<detail::AsyncScopeState>> g_asyncStateRegistry;
+    std::unordered_map<ObjectInstance, std::shared_ptr<detail::AsyncScopeState>> g_asyncStateRegistry;
 
-    static std::shared_ptr<detail::AsyncScopeState> GetAsyncState(ObjectInstance* task)
+    static std::shared_ptr<detail::AsyncScopeState> GetAsyncState(ObjectInstance task)
     {
         std::lock_guard<std::mutex> lock(g_asyncStateMutex);
         auto it = g_asyncStateRegistry.find(task);
         if (it == g_asyncStateRegistry.end())
             return nullptr;
+
         return it->second;
     }
 
-    static void RegisterAsyncState(ObjectInstance* task, std::shared_ptr<detail::AsyncScopeState> state)
+    static void RegisterAsyncState(ObjectInstance task, std::shared_ptr<detail::AsyncScopeState> state)
     {
         std::lock_guard<std::mutex> lock(g_asyncStateMutex);
         g_asyncStateRegistry[task] = std::move(state);
     }
 
-    static void UnregisterAsyncState(ObjectInstance* task)
+    static void UnregisterAsyncState(ObjectInstance task)
     {
         std::lock_guard<std::mutex> lock(g_asyncStateMutex);
         g_asyncStateRegistry.erase(task);
     }
 
-    static std::shared_ptr<detail::AsyncScopeState> GetAsyncStateChecked(ObjectInstance* task)
+    static std::shared_ptr<detail::AsyncScopeState> GetAsyncStateChecked(ObjectInstance task)
     {
         if (task == nullptr)
         {
@@ -116,9 +117,9 @@ namespace
     // Managed callbacks from host languages (e.g. C#)
     // =========================================================================
 
-    typedef shard::ObjectInstance* (*ShardManagedMethodCallback)(
+    typedef shard::ObjectInstance (*ShardManagedMethodCallback)(
         shard::MethodSymbol* method,
-        shard::ObjectInstance** args,
+        shard::ObjectInstance* args,
         int argsCount,
         void* userData,
         shard::GarbageCollector* collector);
@@ -146,7 +147,7 @@ namespace
             &context.Collector));
     }
 
-    using ShardManagedCallStateCallback = shard::ObjectInstance* (*)(const shard::CallState* state, void* userData);
+    using ShardManagedCallStateCallback = shard::ObjectInstance (*)(const shard::CallState* state, void* userData);
 
     struct ManagedCallStateCallbackEntry
     {
@@ -820,7 +821,7 @@ extern "C"
         }
     }
 
-    SHARD_API ObjectInstance* Shard_VMInvokeMethod(VirtualMachine* vm, MethodSymbol* method, ObjectInstance** args, int argCount)
+    SHARD_API ObjectInstance Shard_VMInvokeMethod(VirtualMachine* vm, MethodSymbol* method, ObjectInstance* args, int argCount)
     {
         try
         {
@@ -869,7 +870,7 @@ extern "C"
         }
     }
 
-    SHARD_API int Shard_VMGetUnhandledException(VirtualMachine* vm, ObjectInstance** outException)
+    SHARD_API int Shard_VMGetUnhandledException(VirtualMachine* vm, ObjectInstance* outException)
     {
         try
         {
@@ -879,7 +880,7 @@ extern "C"
                 return -1;
             }
 
-            ObjectInstance* exception = vm->GetUnhandledException();
+            ObjectInstance exception = vm->GetUnhandledException();
             if (exception == nullptr)
                 return -1;
 
@@ -1028,7 +1029,7 @@ extern "C"
         }
     }
 
-    SHARD_API int Shard_VMRaiseException(VirtualMachine* vm, ObjectInstance* exception)
+    SHARD_API int Shard_VMRaiseException(VirtualMachine* vm, ObjectInstance exception)
     {
         try
         {
@@ -1048,7 +1049,7 @@ extern "C"
         }
     }
 
-    SHARD_API ObjectInstance* Shard_VMCreateRuntimeException(VirtualMachine* vm, const wchar_t* message, TypeSymbol* type)
+    SHARD_API ObjectInstance Shard_VMCreateRuntimeException(VirtualMachine* vm, const wchar_t* message, TypeSymbol* type)
     {
         try
         {
@@ -1077,7 +1078,7 @@ extern "C"
         }
     }
 
-    SHARD_API const wchar_t* Shard_GetExceptionMessage(VirtualMachine* vm, ObjectInstance* exception)
+    SHARD_API const wchar_t* Shard_GetExceptionMessage(VirtualMachine* vm, ObjectInstance exception)
     {
         try
         {
@@ -1095,7 +1096,7 @@ extern "C"
         }
     }
 
-    SHARD_API const wchar_t* Shard_GetExceptionStackTrace(VirtualMachine* vm, ObjectInstance* exception)
+    SHARD_API const wchar_t* Shard_GetExceptionStackTrace(VirtualMachine* vm, ObjectInstance exception)
     {
         try
         {
@@ -1113,7 +1114,7 @@ extern "C"
         }
     }
 
-    SHARD_API ObjectInstance* Shard_VMInstantiateObject(VirtualMachine* vm, TypeSymbol* type, ConstructorSymbol* ctor)
+    SHARD_API ObjectInstance Shard_VMInstantiateObject(VirtualMachine* vm, TypeSymbol* type, ConstructorSymbol* ctor)
     {
         try
         {
@@ -1138,7 +1139,7 @@ extern "C"
         }
     }
 
-    SHARD_API ObjectInstance* Shard_VMInstantiateDelegate(VirtualMachine* vm, DelegateTypeSymbol* type)
+    SHARD_API ObjectInstance Shard_VMInstantiateDelegate(VirtualMachine* vm, DelegateTypeSymbol* type)
     {
         try
         {
@@ -1183,7 +1184,7 @@ extern "C"
         }
     }
 
-    SHARD_API int Shard_FramePushStack(CallStackFrame* frame, ObjectInstance* value)
+    SHARD_API int Shard_FramePushStack(CallStackFrame* frame, ObjectInstance value)
     {
         try
         {
@@ -1203,7 +1204,7 @@ extern "C"
         }
     }
 
-    SHARD_API ObjectInstance* Shard_FramePopStack(CallStackFrame* frame)
+    SHARD_API ObjectInstance Shard_FramePopStack(CallStackFrame* frame)
     {
         try
         {
@@ -1222,7 +1223,7 @@ extern "C"
         }
     }
 
-    SHARD_API ObjectInstance* Shard_FramePeekStack(CallStackFrame* frame)
+    SHARD_API ObjectInstance Shard_FramePeekStack(CallStackFrame* frame)
     {
         try
         {
@@ -1241,7 +1242,7 @@ extern "C"
         }
     }
 
-    SHARD_API ObjectInstance* Shard_FrameGetException(CallStackFrame* frame)
+    SHARD_API ObjectInstance Shard_FrameGetException(CallStackFrame* frame)
     {
         try
         {
@@ -1359,7 +1360,7 @@ extern "C"
         }
     }
 
-    SHARD_API int Shard_EventLoopRootTask(ApplicationDomain* domain, ObjectInstance* task)
+    SHARD_API int Shard_EventLoopRootTask(ApplicationDomain* domain, ObjectInstance task)
     {
         try
         {
@@ -1379,7 +1380,7 @@ extern "C"
         }
     }
 
-    SHARD_API int Shard_EventLoopUnrootTask(ApplicationDomain* domain, ObjectInstance* task)
+    SHARD_API int Shard_EventLoopUnrootTask(ApplicationDomain* domain, ObjectInstance task)
     {
         try
         {
@@ -1415,7 +1416,7 @@ extern "C"
         }
     }
 
-    SHARD_API int Shard_GetTaskState(ObjectInstance* task, FieldSymbol* stateField, int* state)
+    SHARD_API int Shard_GetTaskState(ObjectInstance task, FieldSymbol* stateField, int* state)
     {
         try
         {
@@ -1451,7 +1452,7 @@ extern "C"
         }
     }
 
-    SHARD_API int Shard_ResumeContinuation(ApplicationDomain* domain, ObjectInstance* task, FieldSymbol* continuationField, MethodSymbol* moveNextMethod)
+    SHARD_API int Shard_ResumeContinuation(ApplicationDomain* domain, ObjectInstance task, FieldSymbol* continuationField, MethodSymbol* moveNextMethod)
     {
         try
         {
@@ -1475,7 +1476,7 @@ extern "C"
     // Async Task API (C bindings for NativeAsync.hpp helpers)
     // =========================================================================
 
-    SHARD_API ObjectInstance* Shard_DoAsync(const CallState* ctx, Shard_AsyncWorkCallback callback, void* userData)
+    SHARD_API ObjectInstance Shard_DoAsync(const CallState* ctx, Shard_AsyncWorkCallback callback, void* userData)
     {
         try
         {
@@ -1486,7 +1487,7 @@ extern "C"
             }
 
             auto state = detail::CreateAsyncScopeState(*ctx, nullptr);
-            ObjectInstance* task = state->task;
+            ObjectInstance task = state->task;
             RegisterAsyncState(task, state);
 
             AsyncScope scope(state);
@@ -1504,7 +1505,7 @@ extern "C"
         }
     }
 
-    SHARD_API ObjectInstance* Shard_DoValueTask(const CallState* ctx, TypeSymbol* resultType, Shard_AsyncWorkCallback callback, void* userData)
+    SHARD_API ObjectInstance Shard_DoValueTask(const CallState* ctx, TypeSymbol* resultType, Shard_AsyncWorkCallback callback, void* userData)
     {
         try
         {
@@ -1515,7 +1516,7 @@ extern "C"
             }
 
             auto state = detail::CreateAsyncScopeState(*ctx, resultType);
-            ObjectInstance* task = state->task;
+            ObjectInstance task = state->task;
             RegisterAsyncState(task, state);
 
             AsyncScope scope(state);
@@ -1533,7 +1534,7 @@ extern "C"
         }
     }
 
-    SHARD_API ObjectInstance* Shard_CompletedTask(const CallState* ctx)
+    SHARD_API ObjectInstance Shard_CompletedTask(const CallState* ctx)
     {
         try
         {
@@ -1552,7 +1553,7 @@ extern "C"
         }
     }
 
-    SHARD_API ObjectInstance* Shard_FaultedTask(const CallState* ctx, ObjectInstance* exception)
+    SHARD_API ObjectInstance Shard_FaultedTask(const CallState* ctx, ObjectInstance exception)
     {
         try
         {
@@ -1571,7 +1572,7 @@ extern "C"
         }
     }
 
-    SHARD_API ObjectInstance* Shard_FaultedTaskWithMessage(const CallState* ctx, const wchar_t* message)
+    SHARD_API ObjectInstance Shard_FaultedTaskWithMessage(const CallState* ctx, const wchar_t* message)
     {
         try
         {
@@ -1601,7 +1602,7 @@ extern "C"
             if (!state->completed)
             {
                 if (state->isValueTask)
-                    state->SetValueTaskResult(GarbageCollector::NullInstance);
+                    state->SetValueTaskResult(*GarbageCollector::NullInstance);
                 else
                     state->CompleteTask();
             }
@@ -1616,7 +1617,7 @@ extern "C"
         }
     }
 
-    SHARD_API int Shard_TaskFail(Shard_AsyncScopeHandle task, ObjectInstance* exception)
+    SHARD_API int Shard_TaskFail(Shard_AsyncScopeHandle task, ObjectInstance exception)
     {
         try
         {
@@ -1627,7 +1628,7 @@ extern "C"
             if (!state->completed)
             {
                 if (exception == nullptr)
-                    exception = GarbageCollector::NullInstance;
+                    exception = *GarbageCollector::NullInstance;
 
                 if (state->isValueTask)
                     state->FailValueTask(exception);
@@ -1655,7 +1656,7 @@ extern "C"
 
             if (!state->completed)
             {
-                ObjectInstance* exception = CreateRuntimeException(
+                ObjectInstance exception = CreateRuntimeException(
                     *state->collector,
                     message != nullptr ? std::wstring(message) : std::wstring());
 
@@ -1675,7 +1676,7 @@ extern "C"
         }
     }
 
-    SHARD_API int Shard_TaskSetValueTaskResult(Shard_AsyncScopeHandle task, ObjectInstance* result)
+    SHARD_API int Shard_TaskSetValueTaskResult(Shard_AsyncScopeHandle task, ObjectInstance result)
     {
         try
         {
@@ -1686,7 +1687,7 @@ extern "C"
             if (!state->completed)
             {
                 if (result == nullptr)
-                    result = GarbageCollector::NullInstance;
+                    result = *GarbageCollector::NullInstance;
 
                 state->SetValueTaskResult(result);
             }
@@ -1753,7 +1754,7 @@ extern "C"
         }
     }
 
-    SHARD_API int Shard_TaskAwait(Shard_AsyncScopeHandle task, ObjectInstance* awaitable, Shard_AsyncCallback callback, void* userData)
+    SHARD_API int Shard_TaskAwait(Shard_AsyncScopeHandle task, ObjectInstance awaitable, Shard_AsyncCallback callback, void* userData)
     {
         try
         {
@@ -1778,7 +1779,7 @@ extern "C"
         }
     }
 
-    SHARD_API int Shard_TaskAwaitResult(Shard_AsyncScopeHandle task, ObjectInstance* awaitable, Shard_AsyncResultCallback callback, void* userData)
+    SHARD_API int Shard_TaskAwaitResult(Shard_AsyncScopeHandle task, ObjectInstance awaitable, Shard_AsyncResultCallback callback, void* userData)
     {
         try
         {
@@ -1793,7 +1794,7 @@ extern "C"
                 return -1;
 
             AsyncScope scope(state);
-            scope.AwaitResult(awaitable, [callback, userData](ObjectInstance* result) { callback(result, userData); });
+            scope.AwaitResult(awaitable, [callback, userData](ObjectInstance result) { callback(result, userData); });
             return 0;
         }
         catch (const std::exception& e)
@@ -1803,7 +1804,7 @@ extern "C"
         }
     }
 
-    SHARD_API ObjectInstance* Shard_CreateNativeContinuation(Shard_AsyncScopeHandle task, Shard_AsyncCallback callback, void* userData)
+    SHARD_API ObjectInstance Shard_CreateNativeContinuation(Shard_AsyncScopeHandle task, Shard_AsyncCallback callback, void* userData)
     {
         try
         {
@@ -1826,7 +1827,7 @@ extern "C"
         }
     }
 
-    SHARD_API int Shard_InvokeNativeContinuationCallback(ObjectInstance* continuation)
+    SHARD_API int Shard_InvokeNativeContinuationCallback(ObjectInstance continuation)
     {
         try
         {
@@ -1846,7 +1847,7 @@ extern "C"
         }
     }
 
-    SHARD_API int Shard_SetTaskState(ObjectInstance* task, FieldSymbol* stateField, int state, GarbageCollector* gc)
+    SHARD_API int Shard_SetTaskState(ObjectInstance task, FieldSymbol* stateField, int state, GarbageCollector* gc)
     {
         try
         {
@@ -1911,7 +1912,7 @@ extern "C"
         }
     }
 
-    SHARD_API ObjectInstance* Shard_EventLoopGetRootedTask(ApplicationDomain* domain, std::size_t index)
+    SHARD_API ObjectInstance Shard_EventLoopGetRootedTask(ApplicationDomain* domain, std::size_t index)
     {
         try
         {
@@ -1935,7 +1936,7 @@ extern "C"
     // Garbage Collector / Value API
     // =========================================================================
 
-    SHARD_API ObjectInstance* Shard_GCFromInteger(GarbageCollector* gc, std::int64_t value)
+    SHARD_API ObjectInstance Shard_GCFromInteger(GarbageCollector* gc, std::int64_t value)
     {
         try
         {
@@ -1954,7 +1955,7 @@ extern "C"
         }
     }
 
-    SHARD_API ObjectInstance* Shard_GCFromDouble(GarbageCollector* gc, double value)
+    SHARD_API ObjectInstance Shard_GCFromDouble(GarbageCollector* gc, double value)
     {
         try
         {
@@ -1973,7 +1974,7 @@ extern "C"
         }
     }
 
-    SHARD_API ObjectInstance* Shard_GCFromBool(GarbageCollector* gc, int value)
+    SHARD_API ObjectInstance Shard_GCFromBool(GarbageCollector* gc, int value)
     {
         try
         {
@@ -1992,7 +1993,7 @@ extern "C"
         }
     }
 
-    SHARD_API ObjectInstance* Shard_GCFromString(GarbageCollector* gc, const wchar_t* value)
+    SHARD_API ObjectInstance Shard_GCFromString(GarbageCollector* gc, const wchar_t* value)
     {
         try
         {
@@ -2011,7 +2012,7 @@ extern "C"
         }
     }
 
-    SHARD_API ObjectInstance* Shard_GCFromByte(GarbageCollector* gc, std::uint8_t value)
+    SHARD_API ObjectInstance Shard_GCFromByte(GarbageCollector* gc, std::uint8_t value)
     {
         try
         {
@@ -2030,7 +2031,7 @@ extern "C"
         }
     }
 
-    SHARD_API ObjectInstance* Shard_GCFromChar(GarbageCollector* gc, wchar_t value)
+    SHARD_API ObjectInstance Shard_GCFromChar(GarbageCollector* gc, wchar_t value)
     {
         try
         {
@@ -2049,7 +2050,7 @@ extern "C"
         }
     }
 
-    SHARD_API ObjectInstance* Shard_GCFromNint(GarbageCollector* gc, std::int64_t value)
+    SHARD_API ObjectInstance Shard_GCFromNint(GarbageCollector* gc, std::int64_t value)
     {
         try
         {
@@ -2068,7 +2069,7 @@ extern "C"
         }
     }
 
-    SHARD_API ObjectInstance* Shard_GCFromStringWithTransient(GarbageCollector* gc, const wchar_t* value, int isTransient)
+    SHARD_API ObjectInstance Shard_GCFromStringWithTransient(GarbageCollector* gc, const wchar_t* value, int isTransient)
     {
         try
         {
@@ -2088,7 +2089,7 @@ extern "C"
         }
     }
 
-    SHARD_API ObjectInstance* Shard_GCFromIntegerWithTransient(GarbageCollector* gc, std::int64_t value, int isTransient)
+    SHARD_API ObjectInstance Shard_GCFromIntegerWithTransient(GarbageCollector* gc, std::int64_t value, int isTransient)
     {
         try
         {
@@ -2110,7 +2111,7 @@ extern "C"
         }
     }
 
-    SHARD_API ObjectInstance* Shard_GCFromDoubleWithTransient(GarbageCollector* gc, double value, int isTransient)
+    SHARD_API ObjectInstance Shard_GCFromDoubleWithTransient(GarbageCollector* gc, double value, int isTransient)
     {
         try
         {
@@ -2132,7 +2133,7 @@ extern "C"
         }
     }
 
-    SHARD_API ObjectInstance* Shard_GCFromBoolWithTransient(GarbageCollector* gc, int value, int isTransient)
+    SHARD_API ObjectInstance Shard_GCFromBoolWithTransient(GarbageCollector* gc, int value, int isTransient)
     {
         try
         {
@@ -2154,7 +2155,7 @@ extern "C"
         }
     }
 
-    SHARD_API ObjectInstance* Shard_GCFromByteWithTransient(GarbageCollector* gc, std::uint8_t value, int isTransient)
+    SHARD_API ObjectInstance Shard_GCFromByteWithTransient(GarbageCollector* gc, std::uint8_t value, int isTransient)
     {
         try
         {
@@ -2176,7 +2177,7 @@ extern "C"
         }
     }
 
-    SHARD_API ObjectInstance* Shard_GCFromCharWithTransient(GarbageCollector* gc, wchar_t value, int isTransient)
+    SHARD_API ObjectInstance Shard_GCFromCharWithTransient(GarbageCollector* gc, wchar_t value, int isTransient)
     {
         try
         {
@@ -2198,7 +2199,7 @@ extern "C"
         }
     }
 
-    SHARD_API ObjectInstance* Shard_GCFromNintWithTransient(GarbageCollector* gc, std::int64_t value, int isTransient)
+    SHARD_API ObjectInstance Shard_GCFromNintWithTransient(GarbageCollector* gc, std::int64_t value, int isTransient)
     {
         try
         {
@@ -2218,7 +2219,7 @@ extern "C"
         }
     }
 
-    SHARD_API ObjectInstance* Shard_GCCopyInstance(GarbageCollector* gc, ObjectInstance* instance)
+    SHARD_API ObjectInstance Shard_GCCopyInstance(GarbageCollector* gc, ObjectInstance instance)
     {
         try
         {
@@ -2243,7 +2244,7 @@ extern "C"
         }
     }
 
-    SHARD_API int Shard_GCTerminateInstance(GarbageCollector* gc, ObjectInstance* instance)
+    SHARD_API int Shard_GCTerminateInstance(GarbageCollector* gc, ObjectInstance instance)
     {
         try
         {
@@ -2269,26 +2270,26 @@ extern "C"
         }
     }
 
-    SHARD_API ObjectInstance* Shard_GCNullInstance(GarbageCollector* gc)
+    SHARD_API ObjectInstance Shard_GCNullInstance(GarbageCollector* gc)
     {
         try
         {
             if (gc == nullptr)
             {
                 SetLastShardWError(L"garbage collector is null");
-                return GarbageCollector::NullInstance;
+                return *GarbageCollector::NullInstance;
             }
 
-            return GarbageCollector::NullInstance;
+            return *GarbageCollector::NullInstance;
         }
         catch (const std::exception& e)
         {
             SetLastErrorFromException(e);
-            return GarbageCollector::NullInstance;
+            return *GarbageCollector::NullInstance;
         }
     }
 
-    SHARD_API int Shard_GCCollectInstance(GarbageCollector* gc, ObjectInstance* instance)
+    SHARD_API int Shard_GCCollectInstance(GarbageCollector* gc, ObjectInstance instance)
     {
         try
         {
@@ -2308,7 +2309,7 @@ extern "C"
         }
     }
 
-    SHARD_API int Shard_GCDestroyInstance(GarbageCollector* gc, ObjectInstance* instance)
+    SHARD_API int Shard_GCDestroyInstance(GarbageCollector* gc, ObjectInstance instance)
     {
         try
         {
@@ -2364,7 +2365,7 @@ extern "C"
         }
     }
 
-    SHARD_API ObjectInstance* Shard_GCFromNintPointer(GarbageCollector* gc, void* value)
+    SHARD_API ObjectInstance Shard_GCFromNintPointer(GarbageCollector* gc, void* value)
     {
         try
         {
@@ -2383,7 +2384,7 @@ extern "C"
         }
     }
 
-    SHARD_API std::int64_t Shard_ReadInteger(ObjectInstance* instance)
+    SHARD_API std::int64_t Shard_ReadInteger(ObjectInstance instance)
     {
         try
         {
@@ -2399,7 +2400,7 @@ extern "C"
         }
     }
 
-    SHARD_API double Shard_ReadDouble(ObjectInstance* instance)
+    SHARD_API double Shard_ReadDouble(ObjectInstance instance)
     {
         try
         {
@@ -2415,7 +2416,7 @@ extern "C"
         }
     }
 
-    SHARD_API int Shard_ReadBool(ObjectInstance* instance)
+    SHARD_API int Shard_ReadBool(ObjectInstance instance)
     {
         try
         {
@@ -2431,7 +2432,7 @@ extern "C"
         }
     }
 
-    SHARD_API const wchar_t* Shard_ReadString(ObjectInstance* instance)
+    SHARD_API const wchar_t* Shard_ReadString(ObjectInstance instance)
     {
         try
         {
@@ -2451,7 +2452,7 @@ extern "C"
     // Object Instance API
     // =========================================================================
 
-    SHARD_API TypeSymbol* Shard_GetObjectType(ObjectInstance* instance)
+    SHARD_API TypeSymbol* Shard_GetObjectType(ObjectInstance instance)
     {
         try
         {
@@ -2467,7 +2468,7 @@ extern "C"
         }
     }
 
-    SHARD_API std::size_t Shard_GetObjectArrayLength(ObjectInstance* instance)
+    SHARD_API std::size_t Shard_GetObjectArrayLength(ObjectInstance instance)
     {
         try
         {
@@ -2483,7 +2484,7 @@ extern "C"
         }
     }
 
-    SHARD_API int Shard_IsNullInstance(ObjectInstance* instance)
+    SHARD_API int Shard_IsNullInstance(ObjectInstance instance)
     {
         try
         {
@@ -2499,7 +2500,7 @@ extern "C"
         }
     }
 
-    SHARD_API int Shard_IsObjectInBounds(ObjectInstance* instance, std::size_t index)
+    SHARD_API int Shard_IsObjectInBounds(ObjectInstance instance, std::size_t index)
     {
         try
         {
@@ -2515,7 +2516,7 @@ extern "C"
         }
     }
 
-    SHARD_API ObjectInstance* Shard_GetObjectFieldBySlot(ObjectInstance* instance, std::uint32_t slot)
+    SHARD_API ObjectInstance Shard_GetObjectFieldBySlot(ObjectInstance instance, std::uint32_t slot)
     {
         try
         {
@@ -2531,7 +2532,7 @@ extern "C"
         }
     }
 
-    SHARD_API int Shard_SetObjectFieldBySlot(ObjectInstance* instance, std::uint32_t slot, ObjectInstance* value)
+    SHARD_API int Shard_SetObjectFieldBySlot(ObjectInstance instance, std::uint32_t slot, ObjectInstance value)
     {
         try
         {
@@ -2551,7 +2552,7 @@ extern "C"
         }
     }
 
-    SHARD_API int Shard_ObjectWriteByte(ObjectInstance* instance, std::uint8_t value)
+    SHARD_API int Shard_ObjectWriteByte(ObjectInstance instance, std::uint8_t value)
     {
         try
         {
@@ -2571,7 +2572,7 @@ extern "C"
         }
     }
 
-    SHARD_API int Shard_ObjectWriteChar(ObjectInstance* instance, wchar_t value)
+    SHARD_API int Shard_ObjectWriteChar(ObjectInstance instance, wchar_t value)
     {
         try
         {
@@ -2591,7 +2592,7 @@ extern "C"
         }
     }
 
-    SHARD_API int Shard_ObjectWriteNint(ObjectInstance* instance, std::int64_t value)
+    SHARD_API int Shard_ObjectWriteNint(ObjectInstance instance, std::int64_t value)
     {
         try
         {
@@ -2612,7 +2613,7 @@ extern "C"
         }
     }
 
-    SHARD_API int Shard_ObjectAsByte(ObjectInstance* instance, std::uint8_t* out)
+    SHARD_API int Shard_ObjectAsByte(ObjectInstance instance, std::uint8_t* out)
     {
         try
         {
@@ -2632,7 +2633,7 @@ extern "C"
         }
     }
 
-    SHARD_API int Shard_ObjectAsChar(ObjectInstance* instance, wchar_t* out)
+    SHARD_API int Shard_ObjectAsChar(ObjectInstance instance, wchar_t* out)
     {
         try
         {
@@ -2652,7 +2653,7 @@ extern "C"
         }
     }
 
-    SHARD_API int Shard_ObjectAsNint(ObjectInstance* instance, std::int64_t* out)
+    SHARD_API int Shard_ObjectAsNint(ObjectInstance instance, std::int64_t* out)
     {
         try
         {
@@ -2672,7 +2673,7 @@ extern "C"
         }
     }
 
-    SHARD_API int Shard_ObjectIncrementReference(ObjectInstance* instance)
+    SHARD_API int Shard_ObjectIncrementReference(ObjectInstance instance)
     {
         try
         {
@@ -2692,7 +2693,7 @@ extern "C"
         }
     }
 
-    SHARD_API int Shard_ObjectDecrementReference(ObjectInstance* instance)
+    SHARD_API int Shard_ObjectDecrementReference(ObjectInstance instance)
     {
         try
         {
@@ -2712,7 +2713,7 @@ extern "C"
         }
     }
 
-    SHARD_API std::int64_t Shard_ObjectGetReferenceCount(ObjectInstance* instance)
+    SHARD_API std::int64_t Shard_ObjectGetReferenceCount(ObjectInstance instance)
     {
         try
         {
@@ -2728,7 +2729,7 @@ extern "C"
         }
     }
 
-    SHARD_API int Shard_ObjectGetIsTransient(ObjectInstance* instance)
+    SHARD_API int Shard_ObjectGetIsTransient(ObjectInstance instance)
     {
         try
         {
@@ -2744,7 +2745,7 @@ extern "C"
         }
     }
 
-    SHARD_API void* Shard_ObjectGetMemory(ObjectInstance* instance)
+    SHARD_API void* Shard_ObjectGetMemory(ObjectInstance instance)
     {
         try
         {
@@ -2760,7 +2761,7 @@ extern "C"
         }
     }
 
-    SHARD_API TypeShape* Shard_ObjectGetShape(ObjectInstance* instance)
+    SHARD_API TypeShape* Shard_ObjectGetShape(ObjectInstance instance)
     {
         try
         {
@@ -2776,7 +2777,7 @@ extern "C"
         }
     }
 
-    SHARD_API int Shard_ObjectReadMemory(ObjectInstance* instance, std::size_t offset, std::size_t size, void* dst)
+    SHARD_API int Shard_ObjectReadMemory(ObjectInstance instance, std::size_t offset, std::size_t size, void* dst)
     {
         try
         {
@@ -2796,7 +2797,7 @@ extern "C"
         }
     }
 
-    SHARD_API int Shard_ObjectWriteMemory(ObjectInstance* instance, std::size_t offset, std::size_t size, const void* src)
+    SHARD_API int Shard_ObjectWriteMemory(ObjectInstance instance, std::size_t offset, std::size_t size, const void* src)
     {
         try
         {
@@ -2816,7 +2817,7 @@ extern "C"
         }
     }
 
-    SHARD_API void* Shard_ObjectOffsetMemory(ObjectInstance* instance, std::size_t offset, std::size_t size)
+    SHARD_API void* Shard_ObjectOffsetMemory(ObjectInstance instance, std::size_t offset, std::size_t size)
     {
         try
         {
@@ -2835,7 +2836,7 @@ extern "C"
         }
     }
 
-    SHARD_API int Shard_ObjectWriteInteger(ObjectInstance* instance, std::int64_t value)
+    SHARD_API int Shard_ObjectWriteInteger(ObjectInstance instance, std::int64_t value)
     {
         try
         {
@@ -2855,7 +2856,7 @@ extern "C"
         }
     }
 
-    SHARD_API int Shard_ObjectWriteDouble(ObjectInstance* instance, double value)
+    SHARD_API int Shard_ObjectWriteDouble(ObjectInstance instance, double value)
     {
         try
         {
@@ -2875,7 +2876,7 @@ extern "C"
         }
     }
 
-    SHARD_API int Shard_ObjectWriteBool(ObjectInstance* instance, int value)
+    SHARD_API int Shard_ObjectWriteBool(ObjectInstance instance, int value)
     {
         try
         {
@@ -3044,7 +3045,7 @@ extern "C"
         }
     }
 
-    SHARD_API TypeShape* Shard_GetObjectTypeShape(ObjectInstance* instance)
+    SHARD_API TypeShape* Shard_GetObjectTypeShape(ObjectInstance instance)
     {
         try
         {
@@ -7523,7 +7524,7 @@ extern "C"
     // Runtime Field Access API
     // =========================================================================
 
-    SHARD_API ObjectInstance* Shard_GCGetStaticField(GarbageCollector* gc, FieldSymbol* field)
+    SHARD_API ObjectInstance Shard_GCGetStaticField(GarbageCollector* gc, FieldSymbol* field)
     {
         try
         {
@@ -7539,7 +7540,7 @@ extern "C"
         }
     }
 
-    SHARD_API int Shard_GCSetStaticField(GarbageCollector* gc, FieldSymbol* field, ObjectInstance* value)
+    SHARD_API int Shard_GCSetStaticField(GarbageCollector* gc, FieldSymbol* field, ObjectInstance value)
     {
         try
         {
@@ -7560,7 +7561,7 @@ extern "C"
     // Runtime Object Allocation API
     // =========================================================================
 
-    SHARD_API ObjectInstance* Shard_GCAllocateInstance(GarbageCollector* gc, TypeSymbol* type)
+    SHARD_API ObjectInstance Shard_GCAllocateInstance(GarbageCollector* gc, TypeSymbol* type)
     {
         try
         {
@@ -7579,7 +7580,7 @@ extern "C"
         }
     }
 
-    SHARD_API ObjectInstance* Shard_GCAllocateArray(GarbageCollector* gc, ArrayTypeSymbol* arrayType, TypeSymbol* elementType, std::size_t length)
+    SHARD_API ObjectInstance Shard_GCAllocateArray(GarbageCollector* gc, ArrayTypeSymbol* arrayType, TypeSymbol* elementType, std::size_t length)
     {
         try
         {
@@ -7598,7 +7599,7 @@ extern "C"
         }
     }
 
-    SHARD_API ObjectInstance* Shard_GCAllocateInstanceFromShape(GarbageCollector* gc, TypeShape* shape)
+    SHARD_API ObjectInstance Shard_GCAllocateInstanceFromShape(GarbageCollector* gc, TypeShape* shape)
     {
         try
         {
@@ -7617,7 +7618,7 @@ extern "C"
         }
     }
 
-    SHARD_API ObjectInstance* Shard_GCAllocateGeneric(GarbageCollector* gc, TypeSymbol* baseType, TypeSymbol** genericArgs, std::size_t genericArgCount)
+    SHARD_API ObjectInstance Shard_GCAllocateGeneric(GarbageCollector* gc, TypeSymbol* baseType, TypeSymbol** genericArgs, std::size_t genericArgCount)
     {
         try
         {
@@ -7644,7 +7645,7 @@ extern "C"
     // Runtime Instance Field / Element Access API
     // =========================================================================
 
-    SHARD_API ObjectInstance* Shard_GetInstanceField(ObjectInstance* instance, FieldSymbol* field)
+    SHARD_API ObjectInstance Shard_GetInstanceField(ObjectInstance instance, FieldSymbol* field)
     {
         try
         {
@@ -7663,7 +7664,7 @@ extern "C"
         }
     }
 
-    SHARD_API int Shard_SetInstanceField(ObjectInstance* instance, FieldSymbol* field, ObjectInstance* value)
+    SHARD_API int Shard_SetInstanceField(ObjectInstance instance, FieldSymbol* field, ObjectInstance value)
     {
         try
         {
@@ -7683,7 +7684,7 @@ extern "C"
         }
     }
 
-    SHARD_API ObjectInstance* Shard_GetArrayElement(ObjectInstance* array, std::size_t index)
+    SHARD_API ObjectInstance Shard_GetArrayElement(ObjectInstance array, std::size_t index)
     {
         try
         {
@@ -7702,7 +7703,7 @@ extern "C"
         }
     }
 
-    SHARD_API int Shard_SetArrayElement(ObjectInstance* array, std::size_t index, ObjectInstance* value)
+    SHARD_API int Shard_SetArrayElement(ObjectInstance array, std::size_t index, ObjectInstance value)
     {
         try
         {
@@ -7726,7 +7727,7 @@ extern "C"
     // GC-less Typed Primitive Field Setters
     // =========================================================================
 
-    SHARD_API int Shard_SetInstanceFieldInteger(ObjectInstance* instance, FieldSymbol* field, std::int64_t value)
+    SHARD_API int Shard_SetInstanceFieldInteger(ObjectInstance instance, FieldSymbol* field, std::int64_t value)
     {
         try
         {
@@ -7749,7 +7750,7 @@ extern "C"
         }
     }
 
-    SHARD_API int Shard_SetInstanceFieldDouble(ObjectInstance* instance, FieldSymbol* field, double value)
+    SHARD_API int Shard_SetInstanceFieldDouble(ObjectInstance instance, FieldSymbol* field, double value)
     {
         try
         {
@@ -7772,7 +7773,7 @@ extern "C"
         }
     }
 
-    SHARD_API int Shard_SetInstanceFieldBool(ObjectInstance* instance, FieldSymbol* field, int value)
+    SHARD_API int Shard_SetInstanceFieldBool(ObjectInstance instance, FieldSymbol* field, int value)
     {
         try
         {
@@ -7796,7 +7797,7 @@ extern "C"
         }
     }
 
-    SHARD_API int Shard_SetInstanceFieldChar(ObjectInstance* instance, FieldSymbol* field, wchar_t value)
+    SHARD_API int Shard_SetInstanceFieldChar(ObjectInstance instance, FieldSymbol* field, wchar_t value)
     {
         try
         {
@@ -8551,7 +8552,7 @@ extern "C"
         }
     }
 
-    SHARD_API ObjectInstance* Shard_CallStateArg(const CallState* state, std::size_t index)
+    SHARD_API ObjectInstance Shard_CallStateArg(const CallState* state, std::size_t index)
     {
         try
         {
@@ -8615,7 +8616,7 @@ extern "C"
     // String length helper
     // =========================================================================
 
-    SHARD_API std::int64_t Shard_ReadStringLength(ObjectInstance* instance)
+    SHARD_API std::int64_t Shard_ReadStringLength(ObjectInstance instance)
     {
         try
         {

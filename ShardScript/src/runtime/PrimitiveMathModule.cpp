@@ -18,20 +18,17 @@ using namespace shard;
 
 namespace
 {
-	static TypeSymbol* TypeOf(ObjectInstance* instance)
+	static TypeSymbol* TypeOf(ObjectInstance instance)
 	{
-		if (instance == nullptr)
+		if (instance.IsNullInstance())
 			return nullptr;
 
-		return const_cast<TypeSymbol*>(instance->getInfo());
+		return const_cast<TypeSymbol*>(instance.getInfo());
 	}
 
-	static bool IsNullInstance(ObjectInstance* instance)
+	static bool IsNullInstance(ObjectInstance instance)
 	{
-		if (instance == nullptr)
-			return true;
-
-		if (instance == GarbageCollector::NullInstance)
+		if (instance.IsNullInstance())
 			return true;
 
 		TypeSymbol* type = TypeOf(instance);
@@ -107,138 +104,138 @@ bool PrimitiveMathModule::IsPrimitiveType(TypeSymbol* type)
 		|| type == TYPE_NINT;
 }
 
-std::int64_t PrimitiveMathModule::AsInteger(ObjectInstance* instance)
+std::int64_t PrimitiveMathModule::AsInteger(ObjectInstance instance)
 {
 	TypeSymbol* type = TypeOf(instance);
 	if (type == TYPE_INT || type->Kind == SyntaxKind::EnumDeclaration)
-		return instance->AsInteger();
+		return instance.AsInteger();
 
 	if (type == TYPE_DOUBLE)
-		return static_cast<std::int64_t>(instance->AsDouble());
+		return static_cast<std::int64_t>(instance.AsDouble());
 
 	if (type == TYPE_BOOL)
-		return instance->AsBoolean() ? 1 : 0;
+		return instance.AsBoolean() ? 1 : 0;
 
 	if (type == TYPE_CHAR)
-		return static_cast<std::int64_t>(instance->AsCharacter());
+		return static_cast<std::int64_t>(instance.AsCharacter());
 
 	if (type == TYPE_BYTE)
-		return static_cast<std::int64_t>(instance->AsByte());
+		return static_cast<std::int64_t>(instance.AsByte());
 
 	if (type == TYPE_NINT)
-		return reinterpret_cast<std::intptr_t>(instance->AsNint());
+		return reinterpret_cast<std::intptr_t>(instance.AsNint());
 
 	return 0;
 }
 
-double PrimitiveMathModule::AsDouble(ObjectInstance* instance)
+double PrimitiveMathModule::AsDouble(ObjectInstance instance)
 {
 	TypeSymbol* type = TypeOf(instance);
 	if (type == TYPE_DOUBLE)
-		return instance->AsDouble();
+		return instance.AsDouble();
 
 	if (type == TYPE_INT || type->Kind == SyntaxKind::EnumDeclaration)
-		return static_cast<double>(instance->AsInteger());
+		return static_cast<double>(instance.AsInteger());
 
 	if (type == TYPE_BOOL)
-		return instance->AsBoolean() ? 1.0 : 0.0;
+		return instance.AsBoolean() ? 1.0 : 0.0;
 
 	if (type == TYPE_CHAR)
-		return static_cast<double>(instance->AsCharacter());
+		return static_cast<double>(instance.AsCharacter());
 
 	if (type == TYPE_BYTE)
-		return static_cast<double>(instance->AsByte());
+		return static_cast<double>(instance.AsByte());
 
 	if (type == TYPE_NINT)
-		return static_cast<double>(reinterpret_cast<std::intptr_t>(instance->AsNint()));
+		return static_cast<double>(reinterpret_cast<std::intptr_t>(instance.AsNint()));
 
 	return 0.0;
 }
 
-bool PrimitiveMathModule::AsBoolean(ObjectInstance* instance)
+bool PrimitiveMathModule::AsBoolean(ObjectInstance instance)
 {
 	TypeSymbol* type = TypeOf(instance);
 	if (type == TYPE_BOOL)
-		return instance->AsBoolean();
+		return instance.AsBoolean();
 
 	if (type == TYPE_INT || type->Kind == SyntaxKind::EnumDeclaration)
-		return instance->AsInteger() != 0;
+		return instance.AsInteger() != 0;
 
 	if (type == TYPE_DOUBLE)
-		return instance->AsDouble() != 0.0;
+		return instance.AsDouble() != 0.0;
 
 	if (type == TYPE_CHAR)
-		return instance->AsCharacter() != L'\0';
+		return instance.AsCharacter() != L'\0';
 
 	if (type == TYPE_BYTE)
-		return instance->AsByte() != 0;
+		return instance.AsByte() != 0;
 
 	if (type == TYPE_NINT)
-		return instance->AsNint() != nullptr;
+		return instance.AsNint() != nullptr;
 
 	return false;
 }
 
-wchar_t PrimitiveMathModule::AsCharacter(ObjectInstance* instance)
+wchar_t PrimitiveMathModule::AsCharacter(ObjectInstance instance)
 {
 	TypeSymbol* type = TypeOf(instance);
 	if (type == TYPE_CHAR)
-		return instance->AsCharacter();
+		return instance.AsCharacter();
 
 	if (type == TYPE_INT || type->Kind == SyntaxKind::EnumDeclaration)
-		return static_cast<wchar_t>(instance->AsInteger());
+		return static_cast<wchar_t>(instance.AsInteger());
 
 	if (type == TYPE_DOUBLE)
-		return static_cast<wchar_t>(static_cast<std::int64_t>(instance->AsDouble()));
+		return static_cast<wchar_t>(static_cast<std::int64_t>(instance.AsDouble()));
 
 	if (type == TYPE_BOOL)
-		return instance->AsBoolean() ? L'1' : L'\0';
+		return instance.AsBoolean() ? L'1' : L'\0';
 
 	return L'\0';
 }
 
-ObjectInstance* PrimitiveMathModule::FromInteger(std::int64_t value) const
+ObjectInstance PrimitiveMathModule::FromInteger(std::int64_t value) const
 {
-	return gc.FromValue(value);
+	return gc.FromInteger(value);
 }
 
-ObjectInstance* PrimitiveMathModule::FromDouble(double value) const
+ObjectInstance PrimitiveMathModule::FromDouble(double value) const
 {
-	return gc.FromValue(value);
+	return gc.FromDouble(value);
 }
 
-ObjectInstance* PrimitiveMathModule::FromBoolean(bool value) const
+ObjectInstance PrimitiveMathModule::FromBoolean(bool value) const
 {
-	return gc.FromValue(value);
+	return gc.FromBoolean(value);
 }
 
-ObjectInstance* PrimitiveMathModule::FromCharacter(wchar_t value) const
+ObjectInstance PrimitiveMathModule::FromCharacter(wchar_t value) const
 {
-	return gc.FromValue(value);
+	return gc.FromChar(value);
 }
 
 // Two-pass: pass nullptr/0 to measure, then write into dst. Formatting matches
 // std::to_wstring (%lld for integers, %f for doubles).
-std::size_t PrimitiveMathModule::FormatString(ObjectInstance* instance, wchar_t* dst, std::size_t capacity)
+std::size_t PrimitiveMathModule::FormatString(ObjectInstance instance, wchar_t* dst, std::size_t capacity)
 {
 	TypeSymbol* type = TypeOf(instance);
 	if (type == TYPE_STRING)
 	{
-		std::size_t length = instance->AsStringLength();
+		std::size_t length = instance.AsStringLength();
 		if (dst != nullptr)
-			std::memcpy(dst, instance->AsString(), length * sizeof(wchar_t));
+			std::memcpy(dst, instance.AsString(), length * sizeof(wchar_t));
 		return length;
 	}
 
 	if (type == TYPE_INT || type->Kind == SyntaxKind::EnumDeclaration)
-		return static_cast<std::size_t>(std::swprintf(dst, capacity, L"%lld", instance->AsInteger()));
+		return static_cast<std::size_t>(std::swprintf(dst, capacity, L"%lld", instance.AsInteger()));
 
 	if (type == TYPE_DOUBLE)
-		return static_cast<std::size_t>(std::swprintf(dst, capacity, L"%f", instance->AsDouble()));
+		return static_cast<std::size_t>(std::swprintf(dst, capacity, L"%f", instance.AsDouble()));
 
 	if (type == TYPE_BOOL)
 	{
-		const wchar_t* text = instance->AsBoolean() ? L"true" : L"false";
+		const wchar_t* text = instance.AsBoolean() ? L"true" : L"false";
 		std::size_t length = std::wcslen(text);
 		if (dst != nullptr)
 			std::memcpy(dst, text, length * sizeof(wchar_t));
@@ -248,20 +245,20 @@ std::size_t PrimitiveMathModule::FormatString(ObjectInstance* instance, wchar_t*
 	if (type == TYPE_CHAR)
 	{
 		if (dst != nullptr)
-			dst[0] = instance->AsCharacter();
+			dst[0] = instance.AsCharacter();
 		return 1;
 	}
 
 	if (type == TYPE_BYTE)
-		return static_cast<std::size_t>(std::swprintf(dst, capacity, L"%d", static_cast<int>(instance->AsByte())));
+		return static_cast<std::size_t>(std::swprintf(dst, capacity, L"%d", static_cast<int>(instance.AsByte())));
 
 	if (type == TYPE_NINT)
-		return static_cast<std::size_t>(std::swprintf(dst, capacity, L"%lld", reinterpret_cast<std::intptr_t>(instance->AsNint())));
+		return static_cast<std::size_t>(std::swprintf(dst, capacity, L"%lld", reinterpret_cast<std::intptr_t>(instance.AsNint())));
 
 	return 0;
 }
 
-ObjectInstance* PrimitiveMathModule::ExecuteBinary(TokenType opToken, ObjectInstance* left, ObjectInstance* right) const
+ObjectInstance PrimitiveMathModule::ExecuteBinary(TokenType opToken, ObjectInstance left, ObjectInstance right) const
 {
 	switch (opToken)
 	{
@@ -284,11 +281,11 @@ ObjectInstance* PrimitiveMathModule::ExecuteBinary(TokenType opToken, ObjectInst
 		case TokenType::GreaterOperator:			return ExecuteCompareGreater(left, right);
 		case TokenType::GreaterOrEqualsOperator:	return ExecuteCompareGreaterOrEqual(left, right);
 
-		default: return nullptr;
+		default: return ObjectInstance();
 	}
 }
 
-ObjectInstance* PrimitiveMathModule::ExecuteUnary(TokenType opToken, ObjectInstance* operand) const
+ObjectInstance PrimitiveMathModule::ExecuteUnary(TokenType opToken, ObjectInstance operand) const
 {
 	TypeSymbol* type = TypeOf(operand);
 	if (!IsNumericType(type))
@@ -296,7 +293,7 @@ ObjectInstance* PrimitiveMathModule::ExecuteUnary(TokenType opToken, ObjectInsta
 		if (opToken == TokenType::NotOperator)
 			return ExecuteLogicalNot(operand);
 
-		return nullptr;
+		return ObjectInstance();
 	}
 
 	switch (opToken)
@@ -320,14 +317,14 @@ ObjectInstance* PrimitiveMathModule::ExecuteUnary(TokenType opToken, ObjectInsta
 			return FromInteger(+AsInteger(operand));
 		}
 
-		default: return nullptr;
+		default: return ObjectInstance();
 	}
 }
 
-ObjectInstance* PrimitiveMathModule::ExecuteCast(TypeSymbol* targetType, ObjectInstance* source) const
+ObjectInstance PrimitiveMathModule::ExecuteCast(TypeSymbol* targetType, ObjectInstance source) const
 {
-	if (targetType == nullptr || source == nullptr)
-		return nullptr;
+	if (targetType == nullptr || source.IsNullInstance())
+		return ObjectInstance();
 
 	if (targetType == TYPE_ANY)
 		return source;
@@ -336,7 +333,7 @@ ObjectInstance* PrimitiveMathModule::ExecuteCast(TypeSymbol* targetType, ObjectI
 
 	// Reference casts are intentionally left to the VM.
 	if (targetType->Inlining == TypeInlining::ByReference || sourceType->Inlining == TypeInlining::ByReference)
-		return nullptr;
+		return ObjectInstance();
 
 	if (targetType == TYPE_INT)
 		return FromInteger(AsInteger(source));
@@ -351,26 +348,26 @@ ObjectInstance* PrimitiveMathModule::ExecuteCast(TypeSymbol* targetType, ObjectI
 		return FromCharacter(AsCharacter(source));
 
 	if (targetType == TYPE_BYTE)
-		return gc.FromValue(static_cast<std::uint8_t>(AsInteger(source)));
+		return gc.FromByte(static_cast<std::uint8_t>(AsInteger(source)));
 
 	if (targetType == TYPE_NINT)
 		return gc.FromNint(reinterpret_cast<void*>(AsInteger(source)));
 
 	if (targetType->Kind == SyntaxKind::EnumDeclaration)
 	{
-		ObjectInstance* result = gc.AllocateInstance(targetType);
-		result->WriteInteger(AsInteger(source));
+		ObjectInstance result = gc.AllocateInstance(targetType);
+		result.WriteInteger(AsInteger(source));
 		return result;
 	}
 
-	return nullptr;
+	return ObjectInstance();
 }
 
 // ---------------------------------------------------------------------------
 // Arithmetic
 // ---------------------------------------------------------------------------
 
-ObjectInstance* PrimitiveMathModule::ExecuteMathAddition(ObjectInstance* left, ObjectInstance* right) const
+ObjectInstance PrimitiveMathModule::ExecuteMathAddition(ObjectInstance left, ObjectInstance right) const
 {
 	TypeSymbol* lt = TypeOf(left);
 	TypeSymbol* rt = TypeOf(right);
@@ -389,11 +386,11 @@ ObjectInstance* PrimitiveMathModule::ExecuteMathAddition(ObjectInstance* left, O
 		FormatString(right, buffer + leftLength, rightLength + 1);
 		buffer[leftLength + rightLength] = L'\0';
 
-		return gc.FromValue(static_cast<const wchar_t*>(buffer));
+		return gc.FromString(static_cast<const wchar_t*>(buffer));
 	}
 
 	if (!IsNumericType(lt) || !IsNumericType(rt))
-		return nullptr;
+		return ObjectInstance();
 
 	if (lt == TYPE_DOUBLE || rt == TYPE_DOUBLE)
 		return FromDouble(AsDouble(left) + AsDouble(right));
@@ -401,13 +398,13 @@ ObjectInstance* PrimitiveMathModule::ExecuteMathAddition(ObjectInstance* left, O
 	return FromInteger(AsInteger(left) + AsInteger(right));
 }
 
-ObjectInstance* PrimitiveMathModule::ExecuteMathSubtraction(ObjectInstance* left, ObjectInstance* right) const
+ObjectInstance PrimitiveMathModule::ExecuteMathSubtraction(ObjectInstance left, ObjectInstance right) const
 {
 	TypeSymbol* lt = TypeOf(left);
 	TypeSymbol* rt = TypeOf(right);
 
 	if (!IsNumericType(lt) || !IsNumericType(rt))
-		return nullptr;
+		return ObjectInstance();
 
 	if (lt == TYPE_DOUBLE || rt == TYPE_DOUBLE)
 		return FromDouble(AsDouble(left) - AsDouble(right));
@@ -415,13 +412,13 @@ ObjectInstance* PrimitiveMathModule::ExecuteMathSubtraction(ObjectInstance* left
 	return FromInteger(AsInteger(left) - AsInteger(right));
 }
 
-ObjectInstance* PrimitiveMathModule::ExecuteMathMultiplication(ObjectInstance* left, ObjectInstance* right) const
+ObjectInstance PrimitiveMathModule::ExecuteMathMultiplication(ObjectInstance left, ObjectInstance right) const
 {
 	TypeSymbol* lt = TypeOf(left);
 	TypeSymbol* rt = TypeOf(right);
 
 	if (!IsNumericType(lt) || !IsNumericType(rt))
-		return nullptr;
+		return ObjectInstance();
 
 	if (lt == TYPE_DOUBLE || rt == TYPE_DOUBLE)
 		return FromDouble(AsDouble(left) * AsDouble(right));
@@ -429,13 +426,13 @@ ObjectInstance* PrimitiveMathModule::ExecuteMathMultiplication(ObjectInstance* l
 	return FromInteger(AsInteger(left) * AsInteger(right));
 }
 
-ObjectInstance* PrimitiveMathModule::ExecuteMathDivision(ObjectInstance* left, ObjectInstance* right) const
+ObjectInstance PrimitiveMathModule::ExecuteMathDivision(ObjectInstance left, ObjectInstance right) const
 {
 	TypeSymbol* lt = TypeOf(left);
 	TypeSymbol* rt = TypeOf(right);
 
 	if (!IsNumericType(lt) || !IsNumericType(rt))
-		return nullptr;
+		return ObjectInstance();
 
 	if (lt == TYPE_DOUBLE || rt == TYPE_DOUBLE)
 	{
@@ -453,13 +450,13 @@ ObjectInstance* PrimitiveMathModule::ExecuteMathDivision(ObjectInstance* left, O
 	return FromInteger(AsInteger(left) / divisor);
 }
 
-ObjectInstance* PrimitiveMathModule::ExecuteMathModulo(ObjectInstance* left, ObjectInstance* right) const
+ObjectInstance PrimitiveMathModule::ExecuteMathModulo(ObjectInstance left, ObjectInstance right) const
 {
 	TypeSymbol* lt = TypeOf(left);
 	TypeSymbol* rt = TypeOf(right);
 
 	if (!IsNumericType(lt) || !IsNumericType(rt))
-		return nullptr;
+		return ObjectInstance();
 
 	if (lt == TYPE_DOUBLE || rt == TYPE_DOUBLE)
 	{
@@ -476,13 +473,13 @@ ObjectInstance* PrimitiveMathModule::ExecuteMathModulo(ObjectInstance* left, Obj
 	return FromInteger(AsInteger(left) % divisor);
 }
 
-ObjectInstance* PrimitiveMathModule::ExecuteMathPower(ObjectInstance* left, ObjectInstance* right) const
+ObjectInstance PrimitiveMathModule::ExecuteMathPower(ObjectInstance left, ObjectInstance right) const
 {
 	TypeSymbol* lt = TypeOf(left);
 	TypeSymbol* rt = TypeOf(right);
 
 	if (!IsNumericType(lt) || !IsNumericType(rt))
-		return nullptr;
+		return ObjectInstance();
 
 	double result = std::pow(AsDouble(left), AsDouble(right));
 	if (lt == TYPE_DOUBLE || rt == TYPE_DOUBLE)
@@ -495,7 +492,7 @@ ObjectInstance* PrimitiveMathModule::ExecuteMathPower(ObjectInstance* left, Obje
 // Bitwise / shift
 // ---------------------------------------------------------------------------
 
-ObjectInstance* PrimitiveMathModule::ExecuteBitwiseOr(ObjectInstance* left, ObjectInstance* right) const
+ObjectInstance PrimitiveMathModule::ExecuteBitwiseOr(ObjectInstance left, ObjectInstance right) const
 {
 	TypeSymbol* lt = TypeOf(left);
 	TypeSymbol* rt = TypeOf(right);
@@ -504,12 +501,12 @@ ObjectInstance* PrimitiveMathModule::ExecuteBitwiseOr(ObjectInstance* left, Obje
 		return FromBoolean(AsBoolean(left) || AsBoolean(right));
 
 	if (!IsIntegralType(lt) || !IsIntegralType(rt))
-		return nullptr;
+		return ObjectInstance();
 
 	return FromInteger(AsInteger(left) | AsInteger(right));
 }
 
-ObjectInstance* PrimitiveMathModule::ExecuteBitwiseAnd(ObjectInstance* left, ObjectInstance* right) const
+ObjectInstance PrimitiveMathModule::ExecuteBitwiseAnd(ObjectInstance left, ObjectInstance right) const
 {
 	TypeSymbol* lt = TypeOf(left);
 	TypeSymbol* rt = TypeOf(right);
@@ -518,29 +515,29 @@ ObjectInstance* PrimitiveMathModule::ExecuteBitwiseAnd(ObjectInstance* left, Obj
 		return FromBoolean(AsBoolean(left) && AsBoolean(right));
 
 	if (!IsIntegralType(lt) || !IsIntegralType(rt))
-		return nullptr;
+		return ObjectInstance();
 
 	return FromInteger(AsInteger(left) & AsInteger(right));
 }
 
-ObjectInstance* PrimitiveMathModule::ExecuteShiftLeft(ObjectInstance* left, ObjectInstance* right) const
+ObjectInstance PrimitiveMathModule::ExecuteShiftLeft(ObjectInstance left, ObjectInstance right) const
 {
 	TypeSymbol* lt = TypeOf(left);
 	TypeSymbol* rt = TypeOf(right);
 
 	if (!IsIntegralType(lt) || !IsIntegralType(rt))
-		return nullptr;
+		return ObjectInstance();
 
 	return FromInteger(AsInteger(left) << AsInteger(right));
 }
 
-ObjectInstance* PrimitiveMathModule::ExecuteShiftRight(ObjectInstance* left, ObjectInstance* right) const
+ObjectInstance PrimitiveMathModule::ExecuteShiftRight(ObjectInstance left, ObjectInstance right) const
 {
 	TypeSymbol* lt = TypeOf(left);
 	TypeSymbol* rt = TypeOf(right);
 
 	if (!IsIntegralType(lt) || !IsIntegralType(rt))
-		return nullptr;
+		return ObjectInstance();
 
 	return FromInteger(AsInteger(left) >> AsInteger(right));
 }
@@ -549,7 +546,7 @@ ObjectInstance* PrimitiveMathModule::ExecuteShiftRight(ObjectInstance* left, Obj
 // Comparison
 // ---------------------------------------------------------------------------
 
-ObjectInstance* PrimitiveMathModule::ExecuteCompareEqual(ObjectInstance* left, ObjectInstance* right) const
+ObjectInstance PrimitiveMathModule::ExecuteCompareEqual(ObjectInstance left, ObjectInstance right) const
 {
 	TypeSymbol* lt = TypeOf(left);
 	TypeSymbol* rt = TypeOf(right);
@@ -559,12 +556,12 @@ ObjectInstance* PrimitiveMathModule::ExecuteCompareEqual(ObjectInstance* left, O
 
 	if (lt == TYPE_STRING && rt == TYPE_STRING)
 	{
-		std::size_t leftLength = *reinterpret_cast<const std::int64_t*>(left->getMemory());
-		std::size_t rightLength = *reinterpret_cast<const std::int64_t*>(right->getMemory());
+		std::size_t leftLength = *reinterpret_cast<const std::int64_t*>(left.getMemory());
+		std::size_t rightLength = *reinterpret_cast<const std::int64_t*>(right.getMemory());
 		if (leftLength != rightLength)
 			return FromBoolean(false);
 
-		return FromBoolean(std::wmemcmp(left->AsString(), right->AsString(), leftLength) == 0);
+		return FromBoolean(std::wmemcmp(left.AsString(), right.AsString(), leftLength) == 0);
 	}
 
 	if (lt->Inlining == TypeInlining::ByReference && rt->Inlining == TypeInlining::ByReference)
@@ -574,7 +571,7 @@ ObjectInstance* PrimitiveMathModule::ExecuteCompareEqual(ObjectInstance* left, O
 		return FromBoolean(AsInteger(left) == AsInteger(right));
 
 	if (!IsNumericType(lt) || !IsNumericType(rt))
-		return nullptr;
+		return ObjectInstance();
 
 	if (lt == TYPE_DOUBLE || rt == TYPE_DOUBLE)
 		return FromBoolean(AsDouble(left) == AsDouble(right));
@@ -582,28 +579,28 @@ ObjectInstance* PrimitiveMathModule::ExecuteCompareEqual(ObjectInstance* left, O
 	return FromBoolean(AsInteger(left) == AsInteger(right));
 }
 
-ObjectInstance* PrimitiveMathModule::ExecuteCompareNotEqual(ObjectInstance* left, ObjectInstance* right) const
+ObjectInstance PrimitiveMathModule::ExecuteCompareNotEqual(ObjectInstance left, ObjectInstance right) const
 {
-	ObjectInstance* result = ExecuteCompareEqual(left, right);
-	if (result == nullptr)
-		return nullptr;
+	ObjectInstance result = ExecuteCompareEqual(left, right);
+	if (result.IsNullInstance())
+		return result;
 
-	return FromBoolean(!result->AsBoolean());
+	return FromBoolean(!result.AsBoolean());
 }
 
-ObjectInstance* PrimitiveMathModule::ExecuteCompareLess(ObjectInstance* left, ObjectInstance* right) const
+ObjectInstance PrimitiveMathModule::ExecuteCompareLess(ObjectInstance left, ObjectInstance right) const
 {
 	TypeSymbol* lt = TypeOf(left);
 	TypeSymbol* rt = TypeOf(right);
 
 	if (IsNullInstance(left) || IsNullInstance(right))
-		return nullptr;
+		return ObjectInstance();
 
 	if (lt == TYPE_STRING && rt == TYPE_STRING)
-		return FromBoolean(std::wcscmp(left->AsString(), right->AsString()) < 0);
+		return FromBoolean(std::wcscmp(left.AsString(), right.AsString()) < 0);
 
 	if (!IsNumericType(lt) || !IsNumericType(rt))
-		return nullptr;
+		return ObjectInstance();
 
 	if (lt == TYPE_DOUBLE || rt == TYPE_DOUBLE)
 		return FromBoolean(AsDouble(left) < AsDouble(right));
@@ -611,28 +608,28 @@ ObjectInstance* PrimitiveMathModule::ExecuteCompareLess(ObjectInstance* left, Ob
 	return FromBoolean(AsInteger(left) < AsInteger(right));
 }
 
-ObjectInstance* PrimitiveMathModule::ExecuteCompareLessOrEqual(ObjectInstance* left, ObjectInstance* right) const
+ObjectInstance PrimitiveMathModule::ExecuteCompareLessOrEqual(ObjectInstance left, ObjectInstance right) const
 {
-	ObjectInstance* less = ExecuteCompareLess(left, right);
-	if (less != nullptr && less->AsBoolean())
+	ObjectInstance less = ExecuteCompareLess(left, right);
+	if (!less.IsNullInstance() && less.AsBoolean())
 		return less;
 
 	return ExecuteCompareEqual(left, right);
 }
 
-ObjectInstance* PrimitiveMathModule::ExecuteCompareGreater(ObjectInstance* left, ObjectInstance* right) const
+ObjectInstance PrimitiveMathModule::ExecuteCompareGreater(ObjectInstance left, ObjectInstance right) const
 {
 	TypeSymbol* lt = TypeOf(left);
 	TypeSymbol* rt = TypeOf(right);
 
 	if (IsNullInstance(left) || IsNullInstance(right))
-		return nullptr;
+		return ObjectInstance();
 
 	if (lt == TYPE_STRING && rt == TYPE_STRING)
-		return FromBoolean(std::wcscmp(left->AsString(), right->AsString()) > 0);
+		return FromBoolean(std::wcscmp(left.AsString(), right.AsString()) > 0);
 
 	if (!IsNumericType(lt) || !IsNumericType(rt))
-		return nullptr;
+		return ObjectInstance();
 
 	if (lt == TYPE_DOUBLE || rt == TYPE_DOUBLE)
 		return FromBoolean(AsDouble(left) > AsDouble(right));
@@ -640,10 +637,10 @@ ObjectInstance* PrimitiveMathModule::ExecuteCompareGreater(ObjectInstance* left,
 	return FromBoolean(AsInteger(left) > AsInteger(right));
 }
 
-ObjectInstance* PrimitiveMathModule::ExecuteCompareGreaterOrEqual(ObjectInstance* left, ObjectInstance* right) const
+ObjectInstance PrimitiveMathModule::ExecuteCompareGreaterOrEqual(ObjectInstance left, ObjectInstance right) const
 {
-	ObjectInstance* greater = ExecuteCompareGreater(left, right);
-	if (greater != nullptr && greater->AsBoolean())
+	ObjectInstance greater = ExecuteCompareGreater(left, right);
+	if (!greater.IsNullInstance() && greater.AsBoolean())
 		return greater;
 
 	return ExecuteCompareEqual(left, right);
@@ -653,16 +650,16 @@ ObjectInstance* PrimitiveMathModule::ExecuteCompareGreaterOrEqual(ObjectInstance
 // Logical
 // ---------------------------------------------------------------------------
 
-ObjectInstance* PrimitiveMathModule::ExecuteLogicalNot(ObjectInstance* operand) const
+ObjectInstance PrimitiveMathModule::ExecuteLogicalNot(ObjectInstance operand) const
 {
 	TypeSymbol* type = TypeOf(operand);
 	if (type != TYPE_BOOL)
-		return nullptr;
+		return ObjectInstance();
 
 	return FromBoolean(!AsBoolean(operand));
 }
 
-ObjectInstance* PrimitiveMathModule::ExecuteLogicalOr(ObjectInstance* left, ObjectInstance* right) const
+ObjectInstance PrimitiveMathModule::ExecuteLogicalOr(ObjectInstance left, ObjectInstance right) const
 {
 	TypeSymbol* lt = TypeOf(left);
 	TypeSymbol* rt = TypeOf(right);
@@ -673,7 +670,7 @@ ObjectInstance* PrimitiveMathModule::ExecuteLogicalOr(ObjectInstance* left, Obje
 	return ExecuteBitwiseOr(left, right);
 }
 
-ObjectInstance* PrimitiveMathModule::ExecuteLogicalAnd(ObjectInstance* left, ObjectInstance* right) const
+ObjectInstance PrimitiveMathModule::ExecuteLogicalAnd(ObjectInstance left, ObjectInstance right) const
 {
 	TypeSymbol* lt = TypeOf(left);
 	TypeSymbol* rt = TypeOf(right);

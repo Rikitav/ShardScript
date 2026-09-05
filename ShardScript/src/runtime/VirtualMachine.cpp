@@ -62,8 +62,6 @@ namespace
 
 			if (frame->interrupted())
 			{
-				// An interruption (exception, return, etc.) occurred inside the deferred expression.
-				// Leave the decoder at the interruption point and let the main execution loop handle it.
 				return;
 			}
 
@@ -112,15 +110,11 @@ namespace
 		return property->BackingField;
 	}
 
-	static void VerifyInstanceNotNull(ObjectInstance* instance, const char* operation)
+	static void VerifyInstanceNotNull(ObjectInstance instance, const char* operation)
 	{
-		if (instance == nullptr || instance == GarbageCollector::NullInstance)
+		if (instance.IsNullInstance())
 		{
-			std::string typeName = "null";
-			if (instance != nullptr && instance->getInfo() != nullptr)
-				typeName = std::string(instance->getInfo()->FullName.begin(), instance->getInfo()->FullName.end());
-
-			throw std::runtime_error(std::string("Cannot access ") + operation + " on null instance of type " + typeName);
+			throw std::runtime_error("Cannot perform operation on null instance.");
 		}
 	}
 
@@ -141,8 +135,8 @@ namespace
 				frame->DeferDrainDepth--;
 				throw;
 			}
-			frame->DeferDrainDepth--;
 
+			frame->DeferDrainDepth--;
 			if (frame->interrupted())
 				return false;
 		}
@@ -152,14 +146,14 @@ namespace
 
 	static bool HandleExceptionInFrame(VirtualMachine* vm, CallStackFrame* frame, ByteCodeDecoder& decoder, GarbageCollector& gc)
 	{
-		ObjectInstance* exception = frame->InterruptionRegister;
-		if (exception == nullptr)
+		ObjectInstance exception = frame->InterruptionRegister;
+		if (exception.IsNullInstance())
 			throw std::runtime_error("Exception was raised without an exception object");
 
 		frame->DrainEvalReferences(gc);
 
 		frame->InterruptionReason = FrameInterruptionReason::None;
-		frame->InterruptionRegister = nullptr;
+		frame->InterruptionRegister = ObjectInstance();
 
 		while (!frame->ExceptionHandlers.empty())
 		{
@@ -170,32 +164,29 @@ namespace
 				return true;
 
 			decoder.SetCursor(handler.HandlerOffset);
-			frame->PushStack(exception);
-			exception->IncrementReference();
-
-			frame->CurrentException = exception;
+			frame->PushReference(exception);
+			exception.IncrementReference();
+			
 			frame->InterruptionReason = FrameInterruptionReason::None;
-			frame->InterruptionRegister = nullptr;
+			frame->InterruptionRegister = exception;
 			return true;
 		}
 
-		// No handler in this frame. Run any pending defers before propagating.
 		if (!DrainDefersTo(vm, frame, decoder, 0, gc))
 			return true;
 
-		// Restore the original exception so it propagates to the caller.
 		frame->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
 		frame->InterruptionRegister = exception;
-		exception->IncrementReference();
+		exception.IncrementReference();
 		return false;
 	}
 
-	static bool IsPendingTask(ObjectInstance* task, GarbageCollector& gc)
+	static bool IsPendingTask(ObjectInstance task, GarbageCollector& gc)
 	{
-		if (task == nullptr || !gc.IsTaskLike(task))
+		if (task.IsNullInstance() || !gc.IsTaskLike(task))
 			return false;
 
-		const TypeSymbol* info = task->getInfo();
+		const TypeSymbol* info = task.getInfo();
 		FieldSymbol* stateField = nullptr;
 		if (info->Name == L"Task")
 			stateField = SymbolTable::StandardTypes::Task_StateField;
@@ -208,16 +199,15 @@ namespace
 		return GetTaskState(task, stateField) == AsyncState::PENDING;
 	}
 
-	static void BindTaskToFrame(ObjectInstance* task, CallStackFrame* frame, GarbageCollector& gc)
+	static void BindTaskToFrame(ObjectInstance task, CallStackFrame* frame, GarbageCollector& gc)
 	{
-		if (task == nullptr || frame == nullptr || !gc.IsTaskLike(task))
+		if (task.IsNullInstance() || frame == nullptr || !gc.IsTaskLike(task))
 			return;
 
 		if (gc.GetFrameOwner(task).get() == frame)
 			return;
 
 		gc.ReleaseFrameOwner(task);
-
 		if (!IsPendingTask(task, gc))
 			return;
 
@@ -227,32 +217,32 @@ namespace
 	static SemanticModel::TypeParameterResolver MakeFrameResolver(CallStackFrame* frame)
 	{
 		return [frame](TypeParameterSymbol* param) -> TypeSymbol*
-			{
-				if (frame == nullptr || param == nullptr)
-					return nullptr;
+		{
+			if (frame == nullptr || param == nullptr)
+				return nullptr;
 
-				return frame->ResolveType(param);
-			};
+			return frame->ResolveType(param);
+		};
 	}
 
-	static void HaltTaskObject(ObjectInstance* task, GarbageCollector& gc)
+	static void HaltTaskObject(ObjectInstance task, GarbageCollector& gc)
 	{
-		if (task == nullptr || !gc.IsTaskLike(task))
+		if (task.IsNullInstance() || !gc.IsTaskLike(task))
 			return;
 
-		const TypeSymbol* info = task->getInfo();
-		ObjectInstance* exception = CreateRuntimeException(gc,
+		const TypeSymbol* info = task.getInfo();
+		ObjectInstance exception = CreateRuntimeException(gc,
 			L"Task halted because the virtual machine has stopped");
 
 		if (info->Name == L"Task")
 		{
 			SetTaskState(task, SymbolTable::StandardTypes::Task_StateField, AsyncState::FAULTED, gc);
-			task->SetField(SymbolTable::StandardTypes::Task_ExceptionField->SlotIndex, exception);
+			task.SetField(SymbolTable::StandardTypes::Task_ExceptionField->SlotIndex, exception);
 		}
 		else if (info->Name == L"ValueTask")
 		{
 			SetTaskState(task, SymbolTable::StandardTypes::ValueTask_StateField, AsyncState::FAULTED, gc);
-			task->SetField(SymbolTable::StandardTypes::ValueTask_ExceptionField->SlotIndex, exception);
+			task.SetField(SymbolTable::StandardTypes::ValueTask_ExceptionField->SlotIndex, exception);
 		}
 
 		gc.ReleaseFrameOwner(task);
@@ -266,48 +256,12 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		return program.TypeShapes->GetOrCreateShape(primitive);
 	};
 
-	// Borrows an inline operand's payload into caller-provided storage; boxed
-	// operands pass through. Never allocates.
-	auto operandInstance = [](const StackValue& value, ObjectInstance& storage) -> ObjectInstance*
+	auto pushPrimitiveResult = [&](ObjectInstance result) -> void
 	{
-		if (!value.IsInline)
-			return value.AsObject();
-		if (value.Shape == nullptr)
-			return nullptr;
-		storage = ObjectInstance(value.Shape->BaseType, value.Shape, value.Data);
-		storage.IsView = true;
-		return &storage;
-	};
-
-	auto operandInt = [](const StackValue& value) -> std::int64_t
-	{
-		if (value.IsInline)
+		if (!result.IsNullInstance() && result.getShape() != nullptr && !result.getShape()->IsReferenceType())
 		{
-			std::int64_t result;
-			std::memcpy(&result, value.Data, sizeof(result));
-			return result;
-		}
-		return value.AsObject()->AsInteger();
-	};
-
-	auto operandBool = [](const StackValue& value) -> bool
-	{
-		if (value.IsInline)
-		{
-			bool result;
-			std::memcpy(&result, value.Data, sizeof(result));
-			return result;
-		}
-		return value.AsObject()->AsBoolean();
-	};
-
-	auto pushPrimitiveResult = [&](ObjectInstance* result) -> void
-	{
-		if (result != nullptr && result != garbageCollector.NullInstance &&
-			result->getShape() != nullptr && !result->getShape()->IsReferenceType())
-		{
-			TypeShape* shape = result->getShape();
-			frame->PushInline(shape, result->getMemory());
+			TypeShape* shape = result.getShape();
+			frame->PushInline(shape, result.getMemory());
 			garbageCollector.DestroyInstance(result);
 			return;
 		}
@@ -317,37 +271,29 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 
 	auto executeBinary = [&](TokenType token) -> void
 	{
-		StackValue right = frame->PopValue();
-		StackValue left = frame->PopValue();
+		ObjectInstance right = frame->PopValue();
+		ObjectInstance left = frame->PopValue();
 
-		ObjectInstance leftStorage(nullptr, nullptr, nullptr);
-		ObjectInstance rightStorage(nullptr, nullptr, nullptr);
-		ObjectInstance* leftInst = operandInstance(left, leftStorage);
-		ObjectInstance* rightInst = operandInstance(right, rightStorage);
-
-		if (rightInst == nullptr || leftInst == nullptr)
-			throw std::runtime_error("Cannot perform operation on nullptr instance");
-
-		if (rightInst == GarbageCollector::NullInstance || leftInst == GarbageCollector::NullInstance)
+		if (right.IsNullInstance() || left.IsNullInstance())
 		{
-			bool equal = rightInst == leftInst;
+			bool equal = false;
 			frame->PushInline(primitiveShape(SymbolTable::Primitives::Boolean), &equal);
 			return;
 		}
 
-		if ((token == TokenType::DivOperator || token == TokenType::ModOperator))
+		if (token == TokenType::DivOperator || token == TokenType::ModOperator)
 		{
-			const TypeSymbol* rightType = rightInst->getInfo();
+			const TypeSymbol* rightType = right.getInfo();
 			if (rightType != nullptr && (rightType == TYPE_INT || rightType == TYPE_CHAR || rightType == TYPE_BYTE || rightType == TYPE_NINT || rightType->Kind == SyntaxKind::EnumDeclaration))
 			{
-				if (rightInst->AsInteger() == 0)
+				if (right.AsInteger() == 0)
 					throw std::runtime_error("DivideByZeroException");
 			}
 		}
 
-		ObjectInstance* result = primitiveMath.ExecuteBinary(token, leftInst, rightInst);
-		if (result == nullptr)
-			result = InvokeOperatorMethod(leftInst, token, rightInst);
+		ObjectInstance result = primitiveMath.ExecuteBinary(token, left, right);
+		if (result.IsNullInstance())
+			result = InvokeOperatorMethod(left, token, right);
 
 		pushPrimitiveResult(result);
 		CallStackFrame::DiscardValue(right, garbageCollector);
@@ -356,19 +302,14 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 
 	auto executeUnary = [&](TokenType token) -> void
 	{
-		StackValue operand = frame->PopValue();
-		ObjectInstance operandStorage(nullptr, nullptr, nullptr);
-		ObjectInstance* operandInst = operandInstance(operand, operandStorage);
+		ObjectInstance operand = frame->PopValue();
 
-		if (operandInst == nullptr)
-			throw std::runtime_error("Cannot perform operation on nullptr instance");
-
-		if (operandInst == GarbageCollector::NullInstance)
+		if (operand.IsNullInstance())
 			throw std::runtime_error("Cannot perform operation on null instance");
 
-		ObjectInstance* result = primitiveMath.ExecuteUnary(token, operandInst);
-		if (result == nullptr)
-			result = InvokeOperatorMethod(operandInst, token);
+		ObjectInstance result = primitiveMath.ExecuteUnary(token, operand);
+		if (result.IsNullInstance())
+			result = InvokeOperatorMethod(operand, token);
 
 		pushPrimitiveResult(result);
 		CallStackFrame::DiscardValue(operand, garbageCollector);
@@ -378,7 +319,6 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 	{
 		case OpCode::NOP:
 		{
-			// 0xBAD + 0xC0DE;
 			break;
 		}
 
@@ -390,7 +330,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 
 		case OpCode::POP:
 		{
-			StackValue value = frame->PopValue();
+			ObjectInstance value = frame->PopValue();
 			CallStackFrame::DiscardValue(value, garbageCollector);
 			break;
 		}
@@ -405,11 +345,11 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		case OpCode::CALLDELEGATE:
 		{
 			decoder.AbsordDelegateTypeSymbol();
-			ObjectInstance* delegateInstance = frame->PopStack();
-			if (delegateInstance == nullptr || delegateInstance == garbageCollector.NullInstance)
+			ObjectInstance delegateInstance = frame->PopStack();
+			if (delegateInstance.IsNullInstance())
 				throw std::runtime_error("Cannot invoke a null delegate");
 
-			MethodSymbol* target = delegateInstance->DelegateTarget;
+			MethodSymbol* target = delegateInstance.getInfo()->Methods.at(0);
 			if (target == nullptr)
 				throw std::runtime_error("Delegate has no target method");
 
@@ -423,12 +363,12 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		case OpCode::CALLINTERFACE:
 		{
 			MethodSymbol* interfaceMethod = decoder.AbsorbMethodSymbol();
-			ObjectInstance* thisInstance = frame->PeekStack();
+			ObjectInstance thisInstance = frame->PeekStack();
 
-			if (thisInstance == nullptr || thisInstance == garbageCollector.NullInstance)
+			if (thisInstance.IsNullInstance())
 				throw std::runtime_error("Cannot invoke interface method on a null reference");
 
-			TypeSymbol* concreteType = const_cast<TypeSymbol*>(thisInstance->getInfo());
+			TypeSymbol* concreteType = const_cast<TypeSymbol*>(thisInstance.getInfo());
 			MethodSymbol* implementation = concreteType->FindInterfaceImplementation(interfaceMethod);
 
 			if (implementation == nullptr)
@@ -441,21 +381,17 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		case OpCode::ISINSTANCE:
 		{
 			TypeSymbol* targetType = decoder.AbsorbTypeSymbol();
-			StackValue value = frame->PopValue();
+			ObjectInstance value = frame->PopValue();
 
 			bool result = false;
-			if (value.IsInline)
+			if (value.getInfo() != nullptr && !value.getInfo()->IsReferenceType())
 			{
-				result = value.Shape != nullptr && SemanticModel::IsAssignableTo(targetType, value.Shape->BaseType);
+				result = value.getShape() != nullptr && SemanticModel::IsAssignableTo(targetType, value.getShape()->BaseType);
 			}
-			else
+			else if (!value.IsNullInstance())
 			{
-				ObjectInstance* instance = value.AsObject();
-				if (instance != nullptr && instance != garbageCollector.NullInstance)
-				{
-					TypeSymbol* instanceType = const_cast<TypeSymbol*>(instance->getInfo());
-					result = SemanticModel::IsAssignableTo(targetType, instanceType);
-				}
+				TypeSymbol* instanceType = const_cast<TypeSymbol*>(value.getInfo());
+				result = SemanticModel::IsAssignableTo(targetType, instanceType);
 			}
 
 			CallStackFrame::DiscardValue(value, garbageCollector);
@@ -468,21 +404,17 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		{
 			TypeSymbol* targetType = decoder.AbsorbTypeSymbol();
 			targetType = frame->ResolveType(targetType);
-			StackValue value = frame->PopValue();
+			ObjectInstance value = frame->PopValue();
 
 			bool compatible = false;
-			if (value.IsInline)
+			if (value.getInfo() != nullptr && !value.getInfo()->IsReferenceType())
 			{
-				compatible = value.Shape != nullptr && SemanticModel::IsAssignableTo(targetType, value.Shape->BaseType);
+				compatible = value.getShape() != nullptr && SemanticModel::IsAssignableTo(targetType, value.getShape()->BaseType);
 			}
-			else
+			else if (!value.IsNullInstance())
 			{
-				ObjectInstance* instance = value.AsObject();
-				if (instance != nullptr && instance != garbageCollector.NullInstance)
-				{
-					TypeSymbol* instanceType = const_cast<TypeSymbol*>(instance->getInfo());
-					compatible = SemanticModel::IsAssignableTo(targetType, instanceType);
-				}
+				TypeSymbol* instanceType = const_cast<TypeSymbol*>(value.getInfo());
+				compatible = SemanticModel::IsAssignableTo(targetType, instanceType);
 			}
 
 			if (compatible)
@@ -491,7 +423,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			}
 			else
 			{
-				frame->PushReference(garbageCollector.NullInstance);
+				frame->PushReference(ObjectInstance());
 				CallStackFrame::DiscardValue(value, garbageCollector);
 			}
 
@@ -502,45 +434,43 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		{
 			TypeSymbol* targetType = decoder.AbsorbTypeSymbol();
 			targetType = frame->ResolveType(targetType);
-			StackValue value = frame->PopValue();
+			ObjectInstance value = frame->PopValue();
 
 			if (targetType == SymbolTable::Primitives::Any)
 			{
-				if (value.IsInline)
+				if (value.getInfo() != nullptr && !value.getInfo()->IsReferenceType())
 				{
 					frame->PushCopy(value);
 				}
 				else
 				{
-					ObjectInstance* instance = value.AsObject();
-					frame->PushReference(instance != nullptr ? instance : garbageCollector.NullInstance);
+					frame->PushReference(value.IsNullInstance() ? ObjectInstance() : value);
 				}
 				break;
 			}
 
-			if (value.IsInline)
+			if (value.getInfo() != nullptr && !value.getInfo()->IsReferenceType())
 			{
-				if (value.Shape == nullptr || !SemanticModel::IsAssignableTo(targetType, value.Shape->BaseType))
+				if (value.getShape() == nullptr || !SemanticModel::IsAssignableTo(targetType, value.getShape()->BaseType))
 					throw std::runtime_error("Invalid cast");
 
 				frame->PushCopy(value);
 				break;
 			}
 
-			ObjectInstance* instance = value.AsObject();
-			if (instance == nullptr || instance == garbageCollector.NullInstance)
+			if (value.IsNullInstance())
 			{
 				if (targetType->Inlining == TypeInlining::ByValue)
 					throw std::runtime_error("Cannot cast null to a value type");
 
-				frame->PushReference(garbageCollector.NullInstance);
+				frame->PushReference(ObjectInstance());
 				break;
 			}
 
-			TypeSymbol* instanceType = const_cast<TypeSymbol*>(instance->getInfo());
+			TypeSymbol* instanceType = const_cast<TypeSymbol*>(value.getInfo());
 			if (SemanticModel::IsAssignableTo(targetType, instanceType))
 			{
-				frame->PushReference(instance);
+				frame->PushReference(value);
 			}
 			else
 			{
@@ -554,16 +484,13 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		{
 			TypeSymbol* targetType = decoder.AbsorbTypeSymbol();
 			targetType = frame->ResolveType(targetType);
-			StackValue value = frame->PopValue();
+			ObjectInstance value = frame->PopValue();
 
-			ObjectInstance valueStorage(nullptr, nullptr, nullptr);
-			ObjectInstance* instance = operandInstance(value, valueStorage);
-
-			if (instance == nullptr || instance == garbageCollector.NullInstance)
+			if (value.IsNullInstance())
 				throw std::runtime_error("Cannot cast null to a primitive type");
 
-			ObjectInstance* result = primitiveMath.ExecuteCast(targetType, instance);
-			if (result == nullptr)
+			ObjectInstance result = primitiveMath.ExecuteCast(targetType, value);
+			if (result.IsNullInstance())
 				throw std::runtime_error("Unsupported primitive cast");
 
 			pushPrimitiveResult(result);
@@ -573,7 +500,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 
 		case OpCode::LOADCONST_NULL:
 		{
-			frame->PushStack(garbageCollector.NullInstance);
+			frame->PushReference(ObjectInstance());
 			break;
 		}
 
@@ -624,7 +551,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			std::size_t data = decoder.AbsorbString();
 			const wchar_t* str = reinterpret_cast<wchar_t*>(program.DataSection.data() + data);
 
-			ObjectInstance* instance = garbageCollector.InternString(str);
+			ObjectInstance instance = garbageCollector.InternString(str);
 			frame->PushStack(instance);
 			break;
 		}
@@ -632,14 +559,14 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		case OpCode::LOAD_LOCAL:
 		{
 			std::uint16_t slot = decoder.AbsorbVariableSlot();
-			frame->PushCopy(frame->GetLocalValue(slot));
+			frame->PushCopy(frame->GetLocal(slot));
 			break;
 		}
 
 		case OpCode::STORE_LOCAL:
 		{
 			std::uint16_t slot = decoder.AbsorbVariableSlot();
-			StackValue value = frame->PopValue();
+			ObjectInstance value = frame->PopValue();
 			frame->SetLocal(slot, value, garbageCollector);
 			break;
 		}
@@ -647,14 +574,14 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		case OpCode::LOAD_ARG:
 		{
 			std::uint16_t slot = decoder.AbsorbVariableSlot();
-			frame->PushCopy(frame->GetLocalValue(slot));
+			frame->PushCopy(frame->GetLocal(slot));
 			break;
 		}
 
 		case OpCode::STORE_ARG:
 		{
 			std::uint16_t slot = decoder.AbsorbVariableSlot();
-			StackValue value = frame->PopValue();
+			ObjectInstance value = frame->PopValue();
 			frame->SetLocal(slot, value, garbageCollector);
 			break;
 		}
@@ -665,8 +592,8 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			type = frame->ResolveType(type);
 			ConstructorSymbol* ctor = decoder.AbsorbConstructorSymbol();
 
-			ObjectInstance* instance = InstantiateObject(type, ctor, true);
-			if (instance != nullptr)
+			ObjectInstance instance = InstantiateObject(type, ctor, true);
+			if (!instance.IsNullInstance())
 				frame->PushStack(instance);
 			break;
 		}
@@ -676,21 +603,17 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			DelegateTypeSymbol* type = decoder.AbsordDelegateTypeSymbol();
 			MethodSymbol* target = type->AnonymousSymbol;
 
-			ObjectInstance* instance;
+			ObjectInstance instance;
 			if (target != nullptr && target->Linking == LINK_INSTANCE)
 			{
-				// The closure box has already been allocated and initialized by the emitter.
 				instance = frame->PopStack();
-				if (instance == nullptr || instance == garbageCollector.NullInstance)
+				if (instance.IsNullInstance())
 					throw std::runtime_error("Cannot create delegate with null receiver");
 			}
 			else
 			{
 				instance = InstantiateDelegate(type);
 			}
-
-			if (instance != nullptr)
-				instance->DelegateTarget = target;
 
 			frame->PushStack(instance);
 			break;
@@ -710,22 +633,19 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		case OpCode::LOADFIELD:
 		{
 			std::uint32_t slot = decoder.AbsorbFieldSlot();
-			StackValue target = frame->PopValue();
+			ObjectInstance target = frame->PopValue();
 
-			ObjectInstance targetStorage(nullptr, nullptr, nullptr);
-			ObjectInstance* instance = operandInstance(target, targetStorage);
-			VerifyInstanceNotNull(instance, "member");
+			VerifyInstanceNotNull(target, "member");
 
-			ObjectInstance fieldValue = instance->GetField(slot);
+			ObjectInstance fieldValue = target.GetField(slot);
 
-			if (fieldValue.IsView &&
-				fieldValue.getShape() != nullptr && !fieldValue.getShape()->IsReferenceType())
+			if (fieldValue.getInfo() != nullptr && !fieldValue.getInfo()->IsReferenceType())
 			{
 				frame->PushInline(fieldValue.getShape(), fieldValue.getMemory());
 			}
 			else
 			{
-				frame->PushReference(fieldValue.IsNullInstance() ? garbageCollector.NullInstance : fieldValue.heapSource());
+				frame->PushReference(fieldValue);
 			}
 
 			CallStackFrame::DiscardValue(target, garbageCollector);
@@ -735,20 +655,12 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		case OpCode::STOREFIELD:
 		{
 			std::uint32_t slot = decoder.AbsorbFieldSlot();
-			StackValue fieldValue = frame->PopValue();
-			StackValue target = frame->PopValue();
+			ObjectInstance fieldValue = frame->PopValue();
+			ObjectInstance target = frame->PopValue();
 
-			ObjectInstance targetStorage(nullptr, nullptr, nullptr);
-			ObjectInstance* instance = operandInstance(target, targetStorage);
-			VerifyInstanceNotNull(instance, "member");
+			VerifyInstanceNotNull(target, "member");
 
-			ObjectInstance fieldStorage(nullptr, nullptr, nullptr);
-			ObjectInstance* stored = operandInstance(fieldValue, fieldStorage);
-			TypeShape* targetShape = instance->getShape();
-			if (targetShape == nullptr || targetShape->GetFieldShape(slot) == nullptr || targetShape->GetFieldShape(slot)->IsReferenceType())
-				stored = garbageCollector.Materialize(stored);
-
-			instance->SetField(slot, stored);
+			target.SetField(slot, fieldValue);
 
 			CallStackFrame::DiscardValue(fieldValue, garbageCollector);
 			CallStackFrame::DiscardValue(target, garbageCollector);
@@ -758,7 +670,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		case OpCode::LOADSTATICFIELD:
 		{
 			FieldSymbol* field = decoder.AbsorbFieldSymbol();
-			ObjectInstance* fieldValue = garbageCollector.GetStaticField(field);
+			ObjectInstance fieldValue = garbageCollector.GetStaticField(field);
 
 			frame->PushStack(fieldValue);
 			break;
@@ -777,7 +689,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		case OpCode::STORESTATICFIELD:
 		{
 			FieldSymbol* field = decoder.AbsorbFieldSymbol();
-			ObjectInstance* fieldValue = frame->PopStack();
+			ObjectInstance fieldValue = frame->PopStack();
 
 			garbageCollector.SetStaticField(field, fieldValue);
 			garbageCollector.CollectInstance(fieldValue);
@@ -794,25 +706,19 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(type);
 			std::size_t length = arrayType->Length;
 
-			std::vector<StackValue> elements;
+			std::vector<ObjectInstance> elements;
 			elements.reserve(length);
 
 			for (std::size_t i = 0; i < length; ++i)
 				elements.push_back(frame->PopValue());
 
-			ObjectInstance* instance = garbageCollector.AllocateInstance(type);
+			ObjectInstance instance = garbageCollector.AllocateInstance(type);
 			std::uint64_t payloadLength = static_cast<std::uint64_t>(length);
-			instance->WriteMemory(0, sizeof(std::int64_t), &payloadLength);
-			bool referenceElements = arrayType->UnderlayingType->IsReferenceType();
+			instance.WriteMemory(0, sizeof(std::int64_t), &payloadLength);
 
 			for (std::size_t i = 0; i < length; ++i)
 			{
-				ObjectInstance elementStorage(nullptr, nullptr, nullptr);
-				ObjectInstance* element = referenceElements
-					? garbageCollector.Materialize(operandInstance(elements[i], elementStorage))
-					: operandInstance(elements[i], elementStorage);
-
-				instance->SetElement(i, element);
+				instance.SetElement(i, elements[i]);
 				CallStackFrame::DiscardValue(elements[i], garbageCollector);
 			}
 
@@ -830,11 +736,11 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(resolved);
 			TypeSymbol* elementType = frame->ResolveType(arrayType->UnderlayingType);
 
-			StackValue sizeValue = frame->PopValue();
-			std::int64_t length = operandInt(sizeValue);
+			ObjectInstance sizeValue = frame->PopValue();
+			std::int64_t length = sizeValue.AsInteger();
 			CallStackFrame::DiscardValue(sizeValue, garbageCollector);
 
-			ObjectInstance* instance = garbageCollector.AllocateArray(arrayType, elementType, static_cast<std::size_t>(length));
+			ObjectInstance instance = garbageCollector.AllocateArray(arrayType, elementType, static_cast<std::size_t>(length));
 			frame->PushReference(instance);
 			break;
 		}
@@ -849,16 +755,16 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(resolved);
 			TypeSymbol* elementType = frame->ResolveType(arrayType->UnderlayingType);
 
-			StackValue inclusiveValue = frame->PopValue();
-			bool inclusive = operandBool(inclusiveValue);
+			ObjectInstance inclusiveValue = frame->PopValue();
+			bool inclusive = inclusiveValue.AsBoolean();
 			CallStackFrame::DiscardValue(inclusiveValue, garbageCollector);
 
-			StackValue upperValue = frame->PopValue();
-			std::int64_t upper = operandInt(upperValue);
+			ObjectInstance upperValue = frame->PopValue();
+			std::int64_t upper = upperValue.AsInteger();
 			CallStackFrame::DiscardValue(upperValue, garbageCollector);
 
-			StackValue lowerValue = frame->PopValue();
-			std::int64_t lower = operandInt(lowerValue);
+			ObjectInstance lowerValue = frame->PopValue();
+			std::int64_t lower = lowerValue.AsInteger();
 			CallStackFrame::DiscardValue(lowerValue, garbageCollector);
 
 			std::int64_t diff = upper - lower;
@@ -872,12 +778,12 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 
 			std::int64_t step = (diff < 0) ? -1 : 1;
 
-			ObjectInstance* arrayInstance = garbageCollector.AllocateArray(arrayType, elementType, static_cast<std::size_t>(length));
+			ObjectInstance arrayInstance = garbageCollector.AllocateArray(arrayType, elementType, static_cast<std::size_t>(length));
 			for (std::int64_t i = 0; i < length; i++)
 			{
-				ObjectInstance* valueInstance = garbageCollector.FromValue(lower + step * i);
-				arrayInstance->SetElement(static_cast<std::size_t>(i), valueInstance);
-				valueInstance->DecrementReference();
+				ObjectInstance valueInstance = garbageCollector.FromInteger(lower + step * i);
+				arrayInstance.SetElement(static_cast<std::size_t>(i), valueInstance);
+				valueInstance.DecrementReference();
 			}
 
 			frame->PushStack(arrayInstance);
@@ -886,27 +792,27 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 
 		case OpCode::LOADARRAYELEMENT:
 		{
-			StackValue indexValue = frame->PopValue();
-			ObjectInstance* arrayInstance = frame->PopStack();
+			ObjectInstance indexValue = frame->PopValue();
+			ObjectInstance arrayInstance = frame->PopStack();
 			VerifyInstanceNotNull(arrayInstance, "indexer");
 
-			std::int64_t index = operandInt(indexValue);
-			std::size_t length = arrayInstance->GetArrayLength();
+			std::int64_t index = indexValue.AsInteger();
+			std::size_t length = arrayInstance.GetArrayLength();
 			if (index < 0 || static_cast<std::size_t>(index) >= length)
 				throw std::runtime_error("Array index out of range");
 
-			ObjectInstance element = arrayInstance->GetElement(static_cast<std::size_t>(index));
+			ObjectInstance element = arrayInstance.GetElement(static_cast<std::size_t>(index));
 
-			if (element.IsView)
+			if (element.getInfo() != nullptr && !element.getInfo()->IsReferenceType())
 			{
-				const ArrayTypeSymbol* arrayInfo = static_cast<const ArrayTypeSymbol*>(arrayInstance->getInfo());
+				const ArrayTypeSymbol* arrayInfo = static_cast<const ArrayTypeSymbol*>(arrayInstance.getInfo());
 				TypeShape* elementShape = program.TypeShapes->GetOrCreateShape(frame->ResolveType(arrayInfo->UnderlayingType));
 				frame->PushInline(elementShape, element.getMemory());
 			}
 			else
 			{
 				element.IncrementReference();
-				frame->PushReference(element.IsNullInstance() ? garbageCollector.NullInstance : element.heapSource());
+				frame->PushReference(element);
 			}
 
 			CallStackFrame::DiscardValue(indexValue, garbageCollector);
@@ -916,23 +822,19 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 
 		case OpCode::STOREARRAYELEMENT:
 		{
-			StackValue valueValue = frame->PopValue();
-			StackValue indexValue = frame->PopValue();
-			ObjectInstance* arrayInstance = frame->PopStack();
+			ObjectInstance valueValue = frame->PopValue();
+			ObjectInstance indexValue = frame->PopValue();
+
+			ObjectInstance arrayInstance = frame->PopStack();
 			VerifyInstanceNotNull(arrayInstance, "indexer");
 
-			std::int64_t index = operandInt(indexValue);
-			std::size_t length = arrayInstance->GetArrayLength();
+			std::int64_t index = indexValue.AsInteger();
+			std::size_t length = arrayInstance.GetArrayLength();
+
 			if (index < 0 || static_cast<std::size_t>(index) >= length)
 				throw std::runtime_error("Array index out of range");
 
-			ObjectInstance valueStorage(nullptr, nullptr, nullptr);
-			ObjectInstance* stored = operandInstance(valueValue, valueStorage);
-			const ArrayTypeSymbol* arrayInfo = static_cast<const ArrayTypeSymbol*>(arrayInstance->getInfo());
-			if (arrayInfo->UnderlayingType->IsReferenceType())
-				stored = garbageCollector.Materialize(stored);
-
-			arrayInstance->SetElement(static_cast<std::size_t>(index), stored);
+			arrayInstance.SetElement(static_cast<std::size_t>(index), valueValue);
 
 			CallStackFrame::DiscardValue(valueValue, garbageCollector);
 			CallStackFrame::DiscardValue(indexValue, garbageCollector);
@@ -941,10 +843,10 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 
 		case OpCode::ARRAYLENGTH:
 		{
-			ObjectInstance* arrayInstance = frame->PopStack();
+			ObjectInstance arrayInstance = frame->PopStack();
 			VerifyInstanceNotNull(arrayInstance, "indexer");
 
-			std::int64_t length = static_cast<std::int64_t>(arrayInstance->GetArrayLength());
+			std::int64_t length = static_cast<std::int64_t>(arrayInstance.GetArrayLength());
 			frame->PushInline(primitiveShape(SymbolTable::Primitives::Integer), &length);
 			garbageCollector.CollectInstance(arrayInstance);
 			break;
@@ -952,27 +854,17 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 
 		case OpCode::DUP:
 		{
-			StackValue value = frame->TopValue();
-			if (value.IsInline)
+			ObjectInstance value = frame->TopValue();
+			if (value.getInfo() != nullptr && !value.getInfo()->IsReferenceType())
 			{
-				frame->PushInline(value.Shape, value.Data);
+				frame->PushInline(value.getShape(), value.getMemory());
 				break;
 			}
 
-			ObjectInstance* instance = value.AsObject();
-			if (instance != nullptr && instance != garbageCollector.NullInstance &&
-				instance->getShape() != nullptr && !instance->getShape()->IsReferenceType())
-			{
-				ObjectInstance* duplicate = garbageCollector.CopyInstance(instance);
-				frame->PushReference(duplicate);
-			}
-			else
-			{
-				if (instance != nullptr)
-					instance->IncrementReference();
+			if (!value.IsNullInstance())
+				value.IncrementReference();
 
-				frame->PushReference(instance);
-			}
+			frame->PushReference(value);
 			break;
 		}
 
@@ -1094,9 +986,9 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		case OpCode::JUMP_FALSE:
 		{
 			std::size_t jump = decoder.AbsorbJump();
-			StackValue value = frame->PopValue();
+			ObjectInstance value = frame->PopValue();
 
-			bool asBool = operandBool(value);
+			bool asBool = value.AsBoolean();
 			CallStackFrame::DiscardValue(value, garbageCollector);
 
 			if (!asBool)
@@ -1108,9 +1000,9 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		case OpCode::JUMP_TRUE:
 		{
 			std::size_t jump = decoder.AbsorbJump();
-			StackValue value = frame->PopValue();
+			ObjectInstance value = frame->PopValue();
 
-			bool asBool = operandBool(value);
+			bool asBool = value.AsBoolean();
 			CallStackFrame::DiscardValue(value, garbageCollector);
 
 			if (asBool)
@@ -1122,18 +1014,17 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		case OpCode::BR_NULL:
 		{
 			std::size_t jump = decoder.AbsorbJump();
-			StackValue value = frame->PopValue();
+			ObjectInstance value = frame->PopValue();
 
-			if (value.IsInline)
+			if (value.getInfo() != nullptr && !value.getInfo()->IsReferenceType())
 			{
 				CallStackFrame::DiscardValue(value, garbageCollector);
 				break;
 			}
 
-			ObjectInstance* instance = value.AsObject();
-			bool isNull = (instance == nullptr || instance == garbageCollector.NullInstance);
+			bool isNull = value.IsNullInstance();
 			if (!isNull)
-				garbageCollector.CollectInstance(instance);
+				garbageCollector.CollectInstance(value);
 
 			if (isNull)
 				decoder.SetCursor(jump);
@@ -1145,9 +1036,9 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		{
 			std::uint32_t count = decoder.AbsorbUInt32();
 			std::size_t base = decoder.GetCursor();
-			StackValue value = frame->PopValue();
+			ObjectInstance value = frame->PopValue();
 
-			std::int64_t index = operandInt(value);
+			std::int64_t index = value.AsInteger();
 			CallStackFrame::DiscardValue(value, garbageCollector);
 
 			if (index < 0 || static_cast<std::uint64_t>(index) >= count)
@@ -1171,51 +1062,51 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 
 		case OpCode::THROW:
 		{
-			StackValue thrown = frame->PopValue();
+			ObjectInstance thrown = frame->PopValue();
 
-			ObjectInstance* exception;
-			if (thrown.IsInline)
+			ObjectInstance exception;
+			if (thrown.getInfo() != nullptr && !thrown.getInfo()->IsReferenceType())
 			{
-				exception = garbageCollector.AllocateInstance(thrown.Shape);
-				exception->WriteMemory(0, thrown.Shape->Size, thrown.Data);
-				for (std::uint32_t slot = 0; slot < static_cast<std::uint32_t>(thrown.Shape->Slots.size()); ++slot)
+				exception = garbageCollector.AllocateInstance(thrown.getShape());
+				exception.WriteMemory(0, thrown.getShape()->Size, thrown.getMemory());
+				for (std::uint32_t slot = 0; slot < static_cast<std::uint32_t>(thrown.getShape()->Slots.size()); ++slot)
 				{
-					TypeShape* fieldShape = thrown.Shape->GetFieldShape(slot);
+					TypeShape* fieldShape = thrown.getShape()->GetFieldShape(slot);
 					if (fieldShape == nullptr || !fieldShape->IsReferenceType())
 						continue;
 
-					ObjectInstance fieldValue = exception->GetField(slot);
-					if (!fieldValue.IsNullInstance() && fieldValue.heapSource() != garbageCollector.NullInstance)
+					ObjectInstance fieldValue = exception.GetField(slot);
+					if (!fieldValue.IsNullInstance())
 						fieldValue.IncrementReference();
 				}
 			}
 			else
 			{
-				exception = thrown.AsObject();
+				exception = thrown;
 			}
 
-			if (exception == nullptr || exception == garbageCollector.NullInstance)
+			if (exception.IsNullInstance())
 				throw std::runtime_error("Cannot throw null exception");
 
-			TypeSymbol* exceptionType = const_cast<TypeSymbol*>(exception->getInfo());
+			TypeSymbol* exceptionType = const_cast<TypeSymbol*>(exception.getInfo());
 			FieldSymbol* stackTraceField = FindThrowableBackingField(exceptionType, TRAIT_THROWABLE_getStackTrace);
 
 			if (stackTraceField != nullptr)
 			{
-				ObjectInstance currentTrace = exception->GetField(stackTraceField->SlotIndex);
-				bool needsTrace = currentTrace.IsNullInstance() || currentTrace.heapSource() == garbageCollector.NullInstance;
+				ObjectInstance currentTrace = exception.GetField(stackTraceField->SlotIndex);
+				bool needsTrace = currentTrace.IsNullInstance();
 
 				if (!needsTrace && currentTrace.AsStringLength() == 0)
 					needsTrace = true;
 
 				if (needsTrace)
 				{
-					ObjectInstance* traceInstance = garbageCollector.FromValue(GetStackTrace());
-					exception->SetField(stackTraceField->SlotIndex, traceInstance);
+					ObjectInstance traceInstance = garbageCollector.FromString(GetStackTrace());
+					exception.SetField(stackTraceField->SlotIndex, traceInstance);
 				}
 			}
 
-			exception->IncrementReference();
+			exception.IncrementReference();
 			frame->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
 			frame->InterruptionRegister = exception;
 			frame->CurrentException = exception;
@@ -1224,11 +1115,11 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 
 		case OpCode::RETHROW:
 		{
-			ObjectInstance* exception = frame->CurrentException;
-			if (exception == nullptr)
+			ObjectInstance exception = frame->CurrentException;
+			if (exception.IsNullInstance())
 				throw std::runtime_error("Cannot rethrow outside of catch block");
 
-			exception->IncrementReference();
+			exception.IncrementReference();
 			frame->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
 			frame->InterruptionRegister = exception;
 			break;
@@ -1250,10 +1141,10 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 
 		case OpCode::END_CATCH:
 		{
-			if (frame->CurrentException != nullptr)
+			if (!frame->CurrentException.IsNullInstance())
 			{
 				garbageCollector.CollectInstance(frame->CurrentException);
-				frame->CurrentException = nullptr;
+				frame->CurrentException = ObjectInstance();
 			}
 			break;
 		}
@@ -1266,17 +1157,18 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 
 		case OpCode::STORE_CURRENT_EXCEPTION:
 		{
-			ObjectInstance* exception = frame->PopStack();
+			ObjectInstance exception = frame->PopStack();
 
-			if (frame->CurrentException != nullptr && frame->CurrentException != exception)
+			if (!frame->CurrentException.IsNullInstance() && !exception.IsNullInstance() &&
+				frame->CurrentException.getMemory() != exception.getMemory())
 			{
-				frame->CurrentException->DecrementReference();
+				frame->CurrentException.DecrementReference();
 				garbageCollector.CollectInstance(frame->CurrentException);
 			}
 
 			frame->CurrentException = exception;
-			if (exception != nullptr)
-				exception->IncrementReference();
+			if (!exception.IsNullInstance())
+				exception.IncrementReference();
 
 			break;
 		}
@@ -1315,8 +1207,6 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 
 					if (frame->interrupted())
 					{
-						// The deferred expression raised an interruption. Do not
-						// restore the saved IP; let the main loop handle it.
 						return;
 					}
 				}
@@ -1355,7 +1245,7 @@ std::wstring VirtualMachine::GetStackTrace() const
 	return result;
 }
 
-ObjectInstance* VirtualMachine::CreateRuntimeException(TypeSymbol* type, const std::wstring& message, const std::wstring& stackTrace)
+ObjectInstance VirtualMachine::CreateRuntimeException(TypeSymbol* type, const std::wstring& message, const std::wstring& stackTrace)
 {
 	if (type == nullptr)
 		throw std::runtime_error("CreateRuntimeException: type is null");
@@ -1377,27 +1267,37 @@ ObjectInstance* VirtualMachine::CreateRuntimeException(TypeSymbol* type, const s
 	if (ctor == nullptr)
 		throw std::runtime_error("CreateRuntimeException: exception type has no parameterless constructor");
 
-	ObjectInstance* instance = InstantiateObject(type, ctor);
+	ObjectInstance instance = InstantiateObject(type, ctor);
 
 	FieldSymbol* messageField = FindThrowableBackingField(type, TRAIT_THROWABLE_getMessage);
 	if (messageField != nullptr)
 	{
-		ObjectInstance* msgInstance = garbageCollector.FromValue(message);
-		instance->SetField(messageField->SlotIndex, msgInstance);
+		ObjectInstance msgInstance = garbageCollector.FromString(message);
+		instance.SetField(messageField->SlotIndex, msgInstance);
 	}
 
 	FieldSymbol* stackTraceField = FindThrowableBackingField(type, TRAIT_THROWABLE_getStackTrace);
 	if (stackTraceField != nullptr)
 	{
-		ObjectInstance* traceInstance = garbageCollector.FromValue(stackTrace);
-		instance->SetField(stackTraceField->SlotIndex, traceInstance);
+		ObjectInstance traceInstance = garbageCollector.FromString(stackTrace);
+		instance.SetField(stackTraceField->SlotIndex, traceInstance);
 	}
 
 	return instance;
 }
 
-ObjectInstance* VirtualMachine::CreateRuntimeException(const std::exception& err)
+ObjectInstance VirtualMachine::CreateRuntimeException(const std::exception& err)
 {
+	const undefined_behaviour* contractViolation = dynamic_cast<const undefined_behaviour*>(&err);
+	if (contractViolation != nullptr)
+	{
+		std::wstring stackTrace = contractViolation->stack_trace();
+		if (stackTrace.empty())
+			stackTrace = GetStackTrace();
+
+		return CreateRuntimeException(SymbolTable::StandardTypes::UndefinedBehaviour, contractViolation->message(), stackTrace);
+	}
+
 	const runtime_exception* typed = dynamic_cast<const runtime_exception*>(&err);
 	if (typed != nullptr)
 	{
@@ -1428,20 +1328,20 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 	CallStackFrame* callingFrame = currentFrame->PreviousFrame;
 
 	std::size_t argsCount = method->GetEvalStackArgumentsCount();
-	ObjectInstance* thisInstance = nullptr;
+	ObjectInstance thisInstance;
 
 	for (std::size_t i = 0; i < argsCount; i++)
 	{
-		StackValue argument = callingFrame->PopValue();
+		ObjectInstance argument = callingFrame->PopValue();
 		currentFrame->SetLocal(static_cast<std::uint16_t>(i), argument, garbageCollector);
 
-		if (method->Linking == LINK_INSTANCE && i == 0 && !argument.IsInline)
-			thisInstance = argument.AsObject();
+		if (method->Linking == LINK_INSTANCE && i == 0 && argument.getInfo() != nullptr && argument.getInfo()->IsReferenceType())
+			thisInstance = argument;
 	}
 
-	if (thisInstance != nullptr)
+	if (!thisInstance.IsNullInstance())
 	{
-		TypeShape* thisShape = thisInstance->getShape();
+		TypeShape* thisShape = thisInstance.getShape();
 		if (currentFrame->TypeArguments.empty() && thisShape != nullptr && thisShape->HasGenericArguments())
 		{
 			currentFrame->TypeArguments = thisShape->GenericArguments;
@@ -1492,25 +1392,16 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 					throw std::runtime_error("extern method body not resolved: " + methodName);
 				}
 
-				std::vector<ObjectInstance*> argumentScratch(argsCount);
-				std::vector<std::byte> argumentViewBytes(argsCount * sizeof(ObjectInstance) + alignof(ObjectInstance));
-				
-				const std::uintptr_t rawStorage = reinterpret_cast<std::uintptr_t>(argumentViewBytes.data());
-				const std::uintptr_t alignedStorage = (rawStorage + alignof(ObjectInstance) - 1) & ~(static_cast<std::uintptr_t>(alignof(ObjectInstance)) - 1);
-				auto* argumentViews = reinterpret_cast<ObjectInstance*>(alignedStorage);
-				
-				currentFrame->CopyArgumentPayloads(argumentScratch.data(), argumentViews, argsCount);
-				ArgumentsSpan args(argumentScratch.data(), argsCount);
+				std::vector<ObjectInstance> argumentValues(argsCount);
+				currentFrame->CopyArgumentPayloads(argumentValues.data(), argsCount);
+				ArgumentsSpan args(argumentValues.data(), argsCount);
 				
 				TypeShape* returnShape = currentFrame->ReturnShape();
 				const bool returnsValue = returnShape != nullptr;
 				const bool returnsReference = method->ReturnType != nullptr &&
 					method->ReturnType != SymbolTable::Primitives::Void && !returnsValue;
 
-				std::uintptr_t slotHeader = returnsValue
-					? reinterpret_cast<std::uintptr_t>(returnShape)
-					: CallStackFrame::BoxedTag;
-
+				TypeShape* slotHeader = returnsValue ? returnShape : nullptr;
 				std::memcpy(currentFrame->ReturnSlotMemory(), &slotHeader, sizeof(slotHeader));
 
 				CallState context
@@ -1529,30 +1420,33 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 
 				method->FunctionPointer(context);
 
-				if (returnsReference)
+				if (currentFrame->InterruptionReason != FrameInterruptionReason::ExceptionRaised)
 				{
-					ObjectInstance* retReg;
-					std::memcpy(&retReg, currentFrame->ReturnSlotMemory() + CallStackFrame::SlotHeaderBytes, sizeof(retReg));
-					if (retReg == nullptr)
-						retReg = garbageCollector.NullInstance;
+					if (returnsReference)
+					{
+						ObjectInstance retReg;
+						std::memcpy(&retReg, currentFrame->ReturnSlotMemory() + CallStackFrame::SlotHeaderBytes, sizeof(retReg));
+						if (retReg.IsNullInstance())
+							retReg = ObjectInstance();
 
-					callingFrame->PushReference(retReg);
-					BindTaskToFrame(retReg, callingFrame, garbageCollector);
-				}
-				else if (returnsValue)
-				{
-					std::byte* payload = callingFrame->PushInlineUninitialized(returnShape);
-					std::memcpy(payload, currentFrame->ReturnSlotMemory() + CallStackFrame::SlotHeaderBytes, returnShape->Size);
+						callingFrame->PushReference(retReg);
+						BindTaskToFrame(retReg, callingFrame, garbageCollector);
+					}
+					else if (returnsValue)
+					{
+						ObjectInstance payload = callingFrame->PushInlineUninitialized(returnShape);
+						std::memcpy(payload.getMemory(), currentFrame->ReturnSlotMemory() + CallStackFrame::SlotHeaderBytes, returnShape->Size);
+					}
 				}
 			}
 			catch (const std::exception& err)
 			{
-				ObjectInstance* exception = CreateRuntimeException(err);
+				ObjectInstance exception = CreateRuntimeException(err);
 
 				currentFrame->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
 				currentFrame->InterruptionRegister = exception;
 				currentFrame->CurrentException = exception;
-				exception->IncrementReference();
+				exception.IncrementReference();
 			}
 
 			break;
@@ -1561,18 +1455,18 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 
 	if (currentFrame->InterruptionReason == FrameInterruptionReason::ExceptionRaised)
 	{
-		ObjectInstance* exception = currentFrame->InterruptionRegister;
-		if (callingFrame != nullptr && exception != nullptr)
+		ObjectInstance exception = currentFrame->InterruptionRegister;
+		if (callingFrame != nullptr && !exception.IsNullInstance())
 		{
 			callingFrame->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
 			callingFrame->InterruptionRegister = exception;
 			callingFrame->CurrentException = exception;
-			exception->IncrementReference();
+			exception.IncrementReference();
 		}
 	}
 	else
 	{
-		StackValue returnedValue;
+		ObjectInstance returnedValue;
 		bool hasReturnedValue = false;
 		if (method->HandleType != MethodHandleType::External &&
 			method->ReturnType != nullptr && method->ReturnType != SymbolTable::Primitives::Void &&
@@ -1583,19 +1477,18 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 				returnedValue = currentFrame->PopValue();
 				hasReturnedValue = true;
 
-				if (returnedValue.IsInline)
+				if (returnedValue.getInfo() != nullptr && !returnedValue.getInfo()->IsReferenceType())
 				{
-					std::byte* payload = callingFrame->PushInlineUninitialized(returnedValue.Shape);
-					std::memcpy(payload, returnedValue.Data, returnedValue.Shape->Size);
+					ObjectInstance payload = callingFrame->PushInlineUninitialized(returnedValue.getShape());
+					std::memcpy(payload.getMemory(), returnedValue.getMemory(), returnedValue.getShape()->Size);
 				}
 				else
 				{
-					ObjectInstance* returnedObject = returnedValue.AsObject();
-					if (returnedObject != nullptr && returnedObject != GarbageCollector::NullInstance)
-						returnedObject->IncrementReference();
+					if (!returnedValue.IsNullInstance())
+						returnedValue.IncrementReference();
 
-					callingFrame->PushReference(returnedObject);
-					BindTaskToFrame(returnedObject, callingFrame, garbageCollector);
+					callingFrame->PushReference(returnedValue);
+					BindTaskToFrame(returnedValue, callingFrame, garbageCollector);
 				}
 			}
 		}
@@ -1603,10 +1496,12 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 		bool skippedReturnedValue = false;
 		while (currentFrame->EvalCount() != 0)
 		{
-			StackValue top = currentFrame->PopValue();
+			ObjectInstance top = currentFrame->PopValue();
 
-			if (!skippedReturnedValue && hasReturnedValue && !returnedValue.IsInline &&
-				!top.IsInline && top.AsObject() == returnedValue.AsObject())
+			if (!skippedReturnedValue && hasReturnedValue &&
+				returnedValue.getInfo() != nullptr && returnedValue.getInfo()->IsReferenceType() &&
+				top.getInfo() != nullptr && top.getInfo()->IsReferenceType() &&
+				top.getMemory() == returnedValue.getMemory())
 			{
 				skippedReturnedValue = true;
 				continue;
@@ -1619,7 +1514,7 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 	}
 }
 
-ObjectInstance* VirtualMachine::InstantiateObject(TypeSymbol* type, ConstructorSymbol* ctor, bool inPlace)
+ObjectInstance VirtualMachine::InstantiateObject(TypeSymbol* type, ConstructorSymbol* ctor, bool inPlace)
 {
 	CallStackFrame* callingFrame = CurrentFrame();
 
@@ -1631,7 +1526,7 @@ ObjectInstance* VirtualMachine::InstantiateObject(TypeSymbol* type, ConstructorS
 
 	const bool constructInPlace = inPlace && baseType != nullptr && !baseType->IsReferenceType();
 
-	ObjectInstance* newInstance;
+	ObjectInstance newInstance;
 	std::byte* inlinePayload = nullptr;
 	TypeShape* inlineShape = nullptr;
 
@@ -1641,8 +1536,8 @@ ObjectInstance* VirtualMachine::InstantiateObject(TypeSymbol* type, ConstructorS
 			? program.TypeShapes->GetOrCreateShape(baseType, genericArgs)
 			: program.TypeShapes->GetOrCreateShape(SemanticModel::ResolveRuntimeTypeArgument(type, resolver));
 
-		inlinePayload = callingFrame->PushInlineUninitialized(inlineShape);
-		newInstance = nullptr;
+		ObjectInstance payload = callingFrame->PushInlineUninitialized(inlineShape);
+		inlinePayload = payload.getMemory();
 	}
 	else
 	{
@@ -1650,12 +1545,11 @@ ObjectInstance* VirtualMachine::InstantiateObject(TypeSymbol* type, ConstructorS
 			? garbageCollector.AllocateGeneric(baseType, genericArgs)
 			: garbageCollector.AllocateInstance(SemanticModel::ResolveRuntimeTypeArgument(type, resolver));
 
-		inlineShape = newInstance->getShape();
-		inlinePayload = static_cast<std::byte*>(newInstance->getMemory());
+		inlineShape = newInstance.getShape();
+		inlinePayload = newInstance.getMemory();
 		callingFrame->PushStack(newInstance);
 	}
 
-	// Zero-initialize all field slots using the type shape.
 	if (inlineShape != nullptr)
 	{
 		for (std::uint32_t slot = 0; slot < static_cast<std::uint32_t>(inlineShape->Slots.size()); ++slot)
@@ -1670,7 +1564,6 @@ ObjectInstance* VirtualMachine::InstantiateObject(TypeSymbol* type, ConstructorS
 		}
 	}
 
-	// Resolve pending type arguments for the constructor frame as well.
 	for (TypeSymbol*& pendingArg : PendingTypeArguments)
 		pendingArg = SemanticModel::ResolveRuntimeTypeArgument(pendingArg, resolver);
 
@@ -1679,25 +1572,25 @@ ObjectInstance* VirtualMachine::InstantiateObject(TypeSymbol* type, ConstructorS
 		currentFrame->TypeArguments = genericArgs;
 
 	if (!constructInPlace)
-		newInstance->IncrementReference();
+		newInstance.IncrementReference();
 
 	InvokeMethodInternal(ctor, currentFrame);
 	PopFrame();
 
 	if (constructInPlace)
 	{
-		std::byte* resultPayload = callingFrame->PushInlineUninitialized(inlineShape);
-		std::memmove(resultPayload, inlinePayload, inlineShape->Size);
-		return nullptr;
+		ObjectInstance resultPayload = callingFrame->PushInlineUninitialized(inlineShape);
+		std::memmove(resultPayload.getMemory(), inlinePayload, inlineShape->Size);
+		return ObjectInstance();
 	}
 
-	newInstance->DecrementReference();
+	newInstance.DecrementReference();
 	return newInstance;
 }
 
-ObjectInstance* VirtualMachine::InstantiateDelegate(DelegateTypeSymbol* type)
+ObjectInstance VirtualMachine::InstantiateDelegate(DelegateTypeSymbol* type)
 {
-	ObjectInstance* newInstance = garbageCollector.AllocateInstance(type);
+	ObjectInstance newInstance = garbageCollector.AllocateInstance(type);
 	return newInstance;
 }
 
@@ -1710,17 +1603,17 @@ VirtualMachine::VirtualMachine(ApplicationDomain* appDomain) :
 	AbortFlag = false;
 }
 
-ObjectInstance* VirtualMachine::InvokeOperatorMethod(ObjectInstance* leftInstance, TokenType opToken, ObjectInstance* rightInstance)
+ObjectInstance VirtualMachine::InvokeOperatorMethod(ObjectInstance leftInstance, TokenType opToken, ObjectInstance rightInstance)
 {
 	std::wstring opName = GetOperatorMethodName(opToken);
 	if (opName.empty())
 		throw std::runtime_error("operator is not overloadable");
 
-	TypeSymbol* ownerType = const_cast<TypeSymbol*>(leftInstance->getInfo());
+	TypeSymbol* ownerType = const_cast<TypeSymbol*>(leftInstance.getInfo());
 	std::vector<TypeSymbol*> paramTypes =
 	{
 		ownerType,
-		const_cast<TypeSymbol*>(rightInstance->getInfo())
+		const_cast<TypeSymbol*>(rightInstance.getInfo())
 	};
 
 	OperatorSymbol* method = ownerType->FindOperator(opToken, paramTypes);
@@ -1728,22 +1621,22 @@ ObjectInstance* VirtualMachine::InvokeOperatorMethod(ObjectInstance* leftInstanc
 		throw std::runtime_error("operator overload not found");
 
 	InvokeMethod(method, { rightInstance, leftInstance });
-	return CurrentFrame()->PopBoxed(garbageCollector);
+	return CurrentFrame()->PopValue();
 }
 
-ObjectInstance* VirtualMachine::InvokeOperatorMethod(ObjectInstance* sourceInstance, TokenType opToken)
+ObjectInstance VirtualMachine::InvokeOperatorMethod(ObjectInstance sourceInstance, TokenType opToken)
 {
 	std::wstring opName = GetOperatorMethodName(opToken);
 	if (opName.empty())
 		throw std::runtime_error("operator is not overloadable");
 
-	TypeSymbol* ownerType = const_cast<TypeSymbol*>(sourceInstance->getInfo());
+	TypeSymbol* ownerType = const_cast<TypeSymbol*>(sourceInstance.getInfo());
 	OperatorSymbol* method = ownerType->FindOperator(opToken, { ownerType });
 	if (method == nullptr)
 		throw std::runtime_error("operator overload not found");
 
 	InvokeMethod(method, { sourceInstance });
-	return CurrentFrame()->PopBoxed(garbageCollector);
+	return CurrentFrame()->PopValue();
 }
 
 CallStackFrame* VirtualMachine::CurrentFrame() const
@@ -1773,16 +1666,12 @@ void VirtualMachine::PopFrame()
 	auto frame = std::move(CallStack.back());
 	CallStack.pop_back();
 
-	// If this frame still has pending async tasks, detach it from the active
-	// call stack so tasks can keep the frame object alive without leaving a
-	// dangling PreviousFrame pointer.
 	if (frame->PendingTaskCount > 0)
 		frame->PreviousFrame = nullptr;
 }
 
 void VirtualMachine::InvokeMethod(MethodSymbol* method) const
 {
-	// hehe
 	VirtualMachine* vm = const_cast<VirtualMachine*>(this);
 
 	CallStackFrame* currentFrame = vm->PushFrame(method);
@@ -1790,29 +1679,21 @@ void VirtualMachine::InvokeMethod(MethodSymbol* method) const
 	vm->PopFrame();
 }
 
-void VirtualMachine::InvokeMethod(MethodSymbol* method, std::initializer_list<ObjectInstance*> args) const
+void VirtualMachine::InvokeMethod(MethodSymbol* method, std::initializer_list<ObjectInstance> args) const
 {
-	// hehe
 	VirtualMachine* vm = const_cast<VirtualMachine*>(this);
 
 	CallStackFrame* callingFrame = vm->CurrentFrame();
 	CallStackFrame* currentFrame = vm->PushFrame(method);
 
-	// Ephemeral borrow views must not outlive their C++ scope: a callee
-	// reference-kind slot would retain a pointer into the caller's stack.
-	for (ObjectInstance* argValue : args)
-	{
-		if (argValue != nullptr && argValue->IsView)
-			argValue = vm->garbageCollector.CopyInstance(argValue);
-
-		callingFrame->PushStack(argValue);
-	}
+	for (ObjectInstance argValue : args)
+		callingFrame->PushCopy(argValue);
 
 	vm->InvokeMethodInternal(method, currentFrame);
 	vm->PopFrame();
 }
 
-ObjectInstance* VirtualMachine::InvokeMethod(MethodSymbol* method, ObjectInstance** args, std::size_t count) const
+ObjectInstance VirtualMachine::InvokeMethod(MethodSymbol* method, ObjectInstance* args, std::size_t count) const
 {
 	VirtualMachine* vm = const_cast<VirtualMachine*>(this);
 
@@ -1828,18 +1709,13 @@ ObjectInstance* VirtualMachine::InvokeMethod(MethodSymbol* method, ObjectInstanc
 	CallStackFrame* currentFrame = vm->PushFrame(method);
 
 	for (std::size_t i = 0; i < count; i++)
-	{
-		ObjectInstance* argValue = args[i];
-		if (argValue != nullptr && argValue->IsView)
-			argValue = vm->garbageCollector.CopyInstance(argValue);
-		callingFrame->PushStack(argValue);
-	}
+		callingFrame->PushCopy(args[i]);
 
 	vm->InvokeMethodInternal(method, currentFrame);
 
-	ObjectInstance* result = nullptr;
+	ObjectInstance result;
 	if (method->ReturnType != nullptr && method->ReturnType != SymbolTable::Primitives::Void && callingFrame->EvalCount() > 0)
-		result = callingFrame->PopBoxed(vm->garbageCollector);
+		result = callingFrame->PopValue();
 
 	vm->PopFrame();
 
@@ -1865,25 +1741,25 @@ void VirtualMachine::SetPendingTypeArguments(const std::vector<TypeSymbol*>& arg
 	vm->PendingTypeArguments = args;
 }
 
-void VirtualMachine::RaiseException(ObjectInstance* exceptionReg) const
+void VirtualMachine::RaiseException(ObjectInstance exceptionReg) const
 {
 	VirtualMachine* vm = const_cast<VirtualMachine*>(this);
 	CallStackFrame* frame = vm->CurrentFrame();
-	if (frame == nullptr || exceptionReg == nullptr)
+	if (frame == nullptr || exceptionReg.IsNullInstance())
 		return;
 
-	exceptionReg->IncrementReference();
+	exceptionReg.IncrementReference();
 	frame->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
 	frame->InterruptionRegister = exceptionReg;
 	frame->CurrentException = exceptionReg;
 }
 
-std::wstring VirtualMachine::GetThrowablePropertyValue(ObjectInstance* exception, AccessorSymbol* interfacePropertyAccessor) const
+std::wstring VirtualMachine::GetThrowablePropertyValue(ObjectInstance exception, AccessorSymbol* interfacePropertyAccessor) const
 {
-	if (exception == nullptr || interfacePropertyAccessor == nullptr)
+	if (exception.IsNullInstance() || interfacePropertyAccessor == nullptr)
 		return L"";
 
-	TypeSymbol* exceptionType = const_cast<TypeSymbol*>(exception->getInfo());
+	TypeSymbol* exceptionType = const_cast<TypeSymbol*>(exception.getInfo());
 	if (exceptionType == nullptr)
 		return L"";
 
@@ -1898,18 +1774,17 @@ std::wstring VirtualMachine::GetThrowablePropertyValue(ObjectInstance* exception
 	if (frame == nullptr || frame->EvalCount() == 0)
 		return L"";
 
-	ObjectInstance* result = frame->PopBoxed(vm->garbageCollector);
-	if (result == nullptr)
+	ObjectInstance result = frame->PopValue();
+	if (result.IsNullInstance())
 		return L"";
 
-	if (result->getInfo() == nullptr || result->getInfo() != SymbolTable::Primitives::String)
+	if (result.getInfo() == nullptr || result.getInfo() != SymbolTable::Primitives::String)
 		return L"";
 
-	const wchar_t* data = result->AsString();
+	const wchar_t* data = result.AsString();
 	std::wstring value = data != nullptr ? std::wstring(data) : L"";
 
-	if (result != GarbageCollector::NullInstance)
-		result->DecrementReference();
+	result.DecrementReference();
 
 	return value;
 }
@@ -1917,12 +1792,12 @@ std::wstring VirtualMachine::GetThrowablePropertyValue(ObjectInstance* exception
 void VirtualMachine::HaltFireAndForgetTasks()
 {
 	EventLoop& loop = domain->GetEventLoop();
-	const std::vector<ObjectInstance*>& rooted = loop.GetRootedTasks();
-	std::vector<ObjectInstance*> toHalt(rooted.begin(), rooted.end());
+	const std::vector<ObjectInstance>& rooted = loop.GetRootedTasks();
+	std::vector<ObjectInstance> toHalt(rooted.begin(), rooted.end());
 
-	for (ObjectInstance* task : toHalt)
+	for (ObjectInstance task : toHalt)
 	{
-		if (task == nullptr || !garbageCollector.IsFireAndForget(task))
+		if (task.IsNullInstance() || !garbageCollector.IsFireAndForget(task))
 			continue;
 
 		void* nativeState = garbageCollector.GetAsyncNativeState(task);
@@ -1943,10 +1818,10 @@ void VirtualMachine::Run()
 	if (program.EntryPoint == nullptr)
 		throw std::runtime_error("entry point was null");
 
-	if (UnhandledException != nullptr)
+	if (!UnhandledException.IsNullInstance())
 	{
 		garbageCollector.CollectInstance(UnhandledException);
-		UnhandledException = nullptr;
+		UnhandledException = ObjectInstance();
 	}
 
 	UnhandledExceptionMessage.clear();
@@ -1960,13 +1835,13 @@ void VirtualMachine::Run()
 
 	if (entryFrame->InterruptionReason == FrameInterruptionReason::ExceptionRaised)
 	{
-		ObjectInstance* exception = entryFrame->InterruptionRegister;
-		if (exception != nullptr)
+		ObjectInstance exception = entryFrame->InterruptionRegister;
+		if (!exception.IsNullInstance())
 		{
-			exception->IncrementReference();
+			exception.IncrementReference();
 			UnhandledException = exception;
 
-			if (SemanticModel::IsAssignableTo(TRAIT_THROWABLE, exception->getInfo()))
+			if (SemanticModel::IsAssignableTo(TRAIT_THROWABLE, exception.getInfo()))
 			{
 				UnhandledExceptionMessage = GetThrowablePropertyValue(exception, TRAIT_THROWABLE_getMessage);
 				UnhandledExceptionStackTrace = GetThrowablePropertyValue(exception, TRAIT_THROWABLE_getStackTrace);
@@ -1985,12 +1860,11 @@ void VirtualMachine::Run()
 
 void VirtualMachine::Abort() const
 {
-	// hehe
 	VirtualMachine* vm = const_cast<VirtualMachine*>(this);
 	vm->AbortFlag = true;
 }
 
-ObjectInstance* VirtualMachine::RunInteractive(std::size_t& pointer)
+ObjectInstance VirtualMachine::RunInteractive(std::size_t& pointer)
 {
 	CallStackFrame* currentFrame = CurrentFrame();
 	MethodSymbol* method = currentFrame->Method;
@@ -2013,11 +1887,11 @@ ObjectInstance* VirtualMachine::RunInteractive(std::size_t& pointer)
 	pointer = decoder.Index();
 	if (currentFrame->EvalCount() > 0)
 	{
-		ObjectInstance* retReg = currentFrame->PopBoxed(garbageCollector);
+		ObjectInstance retReg = currentFrame->PopValue();
 		return retReg;
 	}
 
-	return nullptr;
+	return ObjectInstance();
 }
 
 void VirtualMachine::TerminateCallStack()

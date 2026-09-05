@@ -9,7 +9,7 @@ namespace shard
 	class SHARD_API ConsoleHelper
 	{
 	public:
-		static void Write(ObjectInstance* instance);
+		static void Write(ObjectInstance instance);
 		static void Write(bool data);
 		static void Write(std::int64_t data);
 		static void Write(double data);
@@ -17,7 +17,7 @@ namespace shard
 		static void Write(const wchar_t* data);
 		static void Write(const std::wstring& data);
 
-		static void WriteLine(ObjectInstance* instance);
+		static void WriteLine(ObjectInstance instance);
 		static void WriteLine();
 		static void WriteLine(bool data);
 		static void WriteLine(std::int64_t data);

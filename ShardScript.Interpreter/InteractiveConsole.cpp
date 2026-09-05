@@ -464,8 +464,8 @@ void InteractiveConsole::Run()
 			abstractEmiter.SetGeneratingTarget(InteractiveEntryPoint);
 			abstractEmiter.VisitStatement(statement);
 
-			ObjectInstance* result = Runtimer.RunInteractive(Breakpoint);
-			if (result != nullptr)
+			ObjectInstance result = Runtimer.RunInteractive(Breakpoint);
+			if (!result.IsNullInstance())
 			{
 				ConsoleHelper::WriteLine(result);
 				applicationDomain->GetGarbageCollector().CollectInstance(result);
