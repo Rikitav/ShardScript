@@ -34,9 +34,13 @@
 //     ^-- this               ^-- Arena = this + sizeof(CallStackFrame)
 //
 // `sizeof` covers the complete object including tail padding, so the arena
-// base does not depend on member declaration order. The frame is freed when
-// the shared_ptr dies (normally at PopFrame; async frames with pending tasks
-// survive via PendingTaskCount until the tasks release them).
+// base does not depend on member declaration order. The frame block is
+// recycled, not freed: Create/ReleaseToPool keep a freelist keyed by total
+// block size, which is safe because a frame's size is fixed per
+// (method, type-args) and Create rebuilds all layout state on reuse. The
+// frame is released when the shared_ptr dies (normally at PopFrame; async
+// frames with pending tasks survive via PendingTaskCount until the tasks
+// release them).
 //
 // Every slot in the regions is a TAGGED, HEADER-DRIVEN byte entry:
 //
@@ -322,5 +326,8 @@ namespace shard
 		}
 
 		void GrowEvalRegion(std::size_t newCapacityBytes);
+
+		static void* TakePooledBlock(std::size_t blockBytes);
+		static void ReleaseToPool(CallStackFrame* frame);
 	};
 }
