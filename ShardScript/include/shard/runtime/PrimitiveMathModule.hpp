@@ -5,6 +5,8 @@
 #include <shard/semantic/symbols/TypeSymbol.hpp>
 
 #include <cstdint>
+#include <cstddef>
+#include <vector>
 
 namespace shard
 {
@@ -28,7 +30,25 @@ namespace shard
 		ObjectInstance* ExecuteCast(TypeSymbol* targetType, ObjectInstance* source) const;
 
 	private:
+		struct StringScratchArena
+		{
+			struct Chunk
+			{
+				wchar_t* Data;
+				std::size_t Capacity;
+			};
+
+			std::vector<Chunk> Chunks;
+			wchar_t* Cursor = nullptr;
+			wchar_t* End = nullptr;
+
+			wchar_t* Acquire(std::size_t count);
+			void Reset();
+			~StringScratchArena();
+		};
+
 		GarbageCollector& gc;
+		mutable StringScratchArena stringScratch;
 
 		static bool IsNumericType(TypeSymbol* type);
 		static bool IsIntegralType(TypeSymbol* type);
@@ -44,7 +64,7 @@ namespace shard
 		ObjectInstance* FromBoolean(bool value) const;
 		ObjectInstance* FromCharacter(wchar_t value) const;
 
-		std::wstring ToString(ObjectInstance* instance) const;
+		static std::size_t FormatString(ObjectInstance* instance, wchar_t* dst, std::size_t capacity);
 
 		ObjectInstance* ExecuteMathAddition(ObjectInstance* left, ObjectInstance* right) const;
 		ObjectInstance* ExecuteMathSubtraction(ObjectInstance* left, ObjectInstance* right) const;

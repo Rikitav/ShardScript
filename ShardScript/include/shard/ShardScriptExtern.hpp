@@ -17,8 +17,10 @@
 #include <cstddef>
 #include <cstdint>
 
-extern "C"
-{
+#ifdef __cplusplus
+extern "C" {
+#endif
+
     // =========================================================================
     // Error Handling
     // =========================================================================
@@ -648,4 +650,7 @@ extern "C"
     // =========================================================================
 
     SHARD_API std::int64_t Shard_ReadStringLength(shard::ObjectInstance* instance);
+
+#ifdef __cplusplus
 }
+#endif

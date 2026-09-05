@@ -14,13 +14,27 @@
 
 #include <algorithm>
 #include <cstring>
+#include <mutex>
 #include <new>
 #include <stdexcept>
+#include <unordered_map>
 
 using namespace shard;
 
 namespace
 {
+	static std::mutex& FramePoolMutex()
+	{
+		static std::mutex mutex;
+		return mutex;
+	}
+
+	static std::unordered_map<std::size_t, std::vector<void*>>& FramePool()
+	{
+		static auto* pool = new std::unordered_map<std::size_t, std::vector<void*>>();
+		return *pool;
+	}
+
 	static void AdoptInlinePayload(TypeShape* shape, std::byte* payload)
 	{
 		if (shape == nullptr)
@@ -131,6 +145,30 @@ namespace
 	}
 }
 
+void* CallStackFrame::TakePooledBlock(std::size_t blockBytes)
+{
+	std::lock_guard<std::mutex> lock(FramePoolMutex());
+	std::vector<void*>& blocks = FramePool()[blockBytes];
+	if (!blocks.empty())
+	{
+		void* block = blocks.back();
+		blocks.pop_back();
+		return block;
+	}
+
+	return mi_malloc(blockBytes);
+}
+
+void CallStackFrame::ReleaseToPool(CallStackFrame* frame)
+{
+	// The destructor resets ArenaBytes, so the block size must be captured first.
+	const std::size_t blockBytes = sizeof(CallStackFrame) + frame->ArenaBytes;
+	frame->~CallStackFrame();
+
+	std::lock_guard<std::mutex> lock(FramePoolMutex());
+	FramePool()[blockBytes].push_back(frame);
+}
+
 TypeSymbol* CallStackFrame::ResolveType(TypeSymbol* type)
 {
 	if (type == nullptr || type->Kind != SyntaxKind::TypeParameter)
@@ -176,7 +214,7 @@ std::shared_ptr<CallStackFrame> CallStackFrame::Create(const VirtualMachine* hos
 	const std::size_t evalCapacityBytes = evalEntries * (method->Layout.IsComplete ? evalEntryStride : BoxedEntryStride);
 	const std::size_t arenaBytes = returnStride + localsBytes + evalCapacityBytes;
 
-	void* block = mi_malloc(sizeof(CallStackFrame) + arenaBytes);
+	void* block = TakePooledBlock(sizeof(CallStackFrame) + arenaBytes);
 	if (block == nullptr)
 		throw std::runtime_error("Failed to allocate call stack frame");
 
@@ -184,8 +222,7 @@ std::shared_ptr<CallStackFrame> CallStackFrame::Create(const VirtualMachine* hos
 
 	std::shared_ptr<CallStackFrame> result(frame, [](CallStackFrame* ptr)
 	{
-		ptr->~CallStackFrame();
-		mi_free(ptr);
+		ReleaseToPool(ptr);
 	});
 
 	frame->Arena = reinterpret_cast<std::byte*>(block) + sizeof(CallStackFrame);

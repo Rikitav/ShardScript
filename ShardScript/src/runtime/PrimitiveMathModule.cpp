@@ -7,9 +7,12 @@
 
 #include <cmath>
 #include <cwchar>
+#include <cstring>
 #include <string>
 #include <stdexcept>
 #include <cstdint>
+
+#include <mimalloc.h>
 
 using namespace shard;
 
@@ -39,6 +42,40 @@ namespace
 PrimitiveMathModule::PrimitiveMathModule(GarbageCollector& garbageCollector)
 	: gc(garbageCollector)
 {
+}
+
+PrimitiveMathModule::StringScratchArena::~StringScratchArena()
+{
+	for (const Chunk& chunk : Chunks)
+		mi_free(chunk.Data);
+}
+
+wchar_t* PrimitiveMathModule::StringScratchArena::Acquire(std::size_t count)
+{
+	if (static_cast<std::size_t>(End - Cursor) < count)
+	{
+		const std::size_t capacity = count < 4096 ? 4096 : count;
+		wchar_t* data = static_cast<wchar_t*>(mi_malloc(capacity * sizeof(wchar_t)));
+		if (data == nullptr)
+			throw std::runtime_error("Failed to allocate string scratch arena");
+
+		Chunks.push_back(Chunk{ data, capacity });
+		Cursor = data;
+		End = data + capacity;
+	}
+
+	wchar_t* result = Cursor;
+	Cursor += count;
+	return result;
+}
+
+void PrimitiveMathModule::StringScratchArena::Reset()
+{
+	if (Chunks.empty())
+		return;
+
+	Cursor = Chunks.front().Data;
+	End = Cursor + Chunks.front().Capacity;
 }
 
 bool PrimitiveMathModule::IsNumericType(TypeSymbol* type)
@@ -180,34 +217,48 @@ ObjectInstance* PrimitiveMathModule::FromCharacter(wchar_t value) const
 	return gc.FromValue(value);
 }
 
-std::wstring PrimitiveMathModule::ToString(ObjectInstance* instance) const
+// Two-pass: pass nullptr/0 to measure, then write into dst. Formatting matches
+// std::to_wstring (%lld for integers, %f for doubles).
+std::size_t PrimitiveMathModule::FormatString(ObjectInstance* instance, wchar_t* dst, std::size_t capacity)
 {
 	TypeSymbol* type = TypeOf(instance);
 	if (type == TYPE_STRING)
-		return instance->AsString();
+	{
+		std::size_t length = instance->AsStringLength();
+		if (dst != nullptr)
+			std::memcpy(dst, instance->AsString(), length * sizeof(wchar_t));
+		return length;
+	}
 
 	if (type == TYPE_INT || type->Kind == SyntaxKind::EnumDeclaration)
-		return std::to_wstring(instance->AsInteger());
+		return static_cast<std::size_t>(std::swprintf(dst, capacity, L"%lld", instance->AsInteger()));
 
 	if (type == TYPE_DOUBLE)
-		return std::to_wstring(instance->AsDouble());
+		return static_cast<std::size_t>(std::swprintf(dst, capacity, L"%f", instance->AsDouble()));
 
 	if (type == TYPE_BOOL)
-		return instance->AsBoolean() ? L"true" : L"false";
+	{
+		const wchar_t* text = instance->AsBoolean() ? L"true" : L"false";
+		std::size_t length = std::wcslen(text);
+		if (dst != nullptr)
+			std::memcpy(dst, text, length * sizeof(wchar_t));
+		return length;
+	}
 
 	if (type == TYPE_CHAR)
 	{
-		wchar_t ch = instance->AsCharacter();
-		return std::wstring(&ch, 1);
+		if (dst != nullptr)
+			dst[0] = instance->AsCharacter();
+		return 1;
 	}
 
 	if (type == TYPE_BYTE)
-		return std::to_wstring(static_cast<int>(instance->AsByte()));
+		return static_cast<std::size_t>(std::swprintf(dst, capacity, L"%d", static_cast<int>(instance->AsByte())));
 
 	if (type == TYPE_NINT)
-		return std::to_wstring(reinterpret_cast<std::intptr_t>(instance->AsNint()));
+		return static_cast<std::size_t>(std::swprintf(dst, capacity, L"%lld", reinterpret_cast<std::intptr_t>(instance->AsNint())));
 
-	return L"";
+	return 0;
 }
 
 ObjectInstance* PrimitiveMathModule::ExecuteBinary(TokenType opToken, ObjectInstance* left, ObjectInstance* right) const
@@ -326,8 +377,19 @@ ObjectInstance* PrimitiveMathModule::ExecuteMathAddition(ObjectInstance* left, O
 
 	if (lt == TYPE_STRING || rt == TYPE_STRING)
 	{
-		std::wstring result = ToString(left) + ToString(right);
-		return gc.FromValue(result);
+		// Reset is safe only because FormatString/FromValue can never re-enter
+		// ExecuteMathAddition while the acquired buffer is still in use.
+		stringScratch.Reset();
+
+		const std::size_t leftLength = FormatString(left, nullptr, 0);
+		const std::size_t rightLength = FormatString(right, nullptr, 0);
+
+		wchar_t* buffer = stringScratch.Acquire(leftLength + rightLength + 1);
+		FormatString(left, buffer, leftLength + 1);
+		FormatString(right, buffer + leftLength, rightLength + 1);
+		buffer[leftLength + rightLength] = L'\0';
+
+		return gc.FromValue(static_cast<const wchar_t*>(buffer));
 	}
 
 	if (!IsNumericType(lt) || !IsNumericType(rt))
