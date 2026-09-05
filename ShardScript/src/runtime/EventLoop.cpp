@@ -15,10 +15,10 @@ EventLoop::EventLoop()
 EventLoop::~EventLoop()
 {
     // Release any remaining rooted tasks before tearing down the loop.
-    for (ObjectInstance* task : m_rootedTasks)
+    for (ObjectInstance task : m_rootedTasks)
     {
-        if (task != nullptr && task != GarbageCollector::NullInstance)
-            task->DecrementReference();
+        if (!task.IsNullInstance())
+            task.DecrementReference();
     }
 
     m_rootedTasks.clear();
@@ -50,18 +50,18 @@ bool EventLoop::IsAlive() const
     return uv_loop_alive(&m_loop) != 0;
 }
 
-void EventLoop::RootTask(ObjectInstance* task)
+void EventLoop::RootTask(ObjectInstance task)
 {
-    if (task == nullptr || task == GarbageCollector::NullInstance)
+    if (task.IsNullInstance())
         return;
 
-    task->IncrementReference();
+    task.IncrementReference();
     m_rootedTasks.push_back(task);
 }
 
-void EventLoop::UnrootTask(ObjectInstance* task)
+void EventLoop::UnrootTask(ObjectInstance task)
 {
-    if (task == nullptr || task == GarbageCollector::NullInstance)
+    if (task.IsNullInstance())
         return;
 
     auto it = std::find(m_rootedTasks.begin(), m_rootedTasks.end(), task);
@@ -69,7 +69,7 @@ void EventLoop::UnrootTask(ObjectInstance* task)
         return;
 
     m_rootedTasks.erase(it);
-    task->DecrementReference();
+    task.DecrementReference();
 }
 
 bool EventLoop::IsEmptyOrAllTasksCompleted() const
@@ -80,24 +80,24 @@ bool EventLoop::IsEmptyOrAllTasksCompleted() const
     return uv_loop_alive(&m_loop) == 0;
 }
 
-void shard::ResumeContinuation(ObjectInstance* task, FieldSymbol* continuationField, MethodSymbol* moveNextMethod, ApplicationDomain& domain)
+void shard::ResumeContinuation(ObjectInstance task, FieldSymbol* continuationField, MethodSymbol* moveNextMethod, ApplicationDomain& domain)
 {
-    ObjectInstance continuationValue = task->GetField(continuationField->SlotIndex);
-    if (continuationValue.IsNullInstance() || continuationValue.heapSource() == GarbageCollector::NullInstance)
+    ObjectInstance continuationValue = task.GetField(continuationField->SlotIndex);
+    if (continuationValue.IsNullInstance())
         return;
 
     if (moveNextMethod == nullptr)
         return;
 
-    ObjectInstance* continuation = continuationValue.heapSource();
+    ObjectInstance continuation = continuationValue;
 
-    MethodSymbol* implementation = const_cast<TypeSymbol*>(continuation->getInfo())->FindInterfaceImplementation(moveNextMethod);
+    MethodSymbol* implementation = const_cast<TypeSymbol*>(continuation.getInfo())->FindInterfaceImplementation(moveNextMethod);
     if (implementation == nullptr)
         return;
 
     // Root the continuation before we clear it from the task's field.
-    continuation->IncrementReference();
-    task->SetField(continuationField->SlotIndex, GarbageCollector::NullInstance);
+    continuation.IncrementReference();
+    task.SetField(continuationField->SlotIndex, ObjectInstance());
 
     // We are invoked from a libuv callback that has no proper VM calling frame.
     VirtualMachine& vm = domain.GetVirtualMachine();
@@ -116,24 +116,24 @@ void shard::ResumeContinuation(ObjectInstance* task, FieldSymbol* continuationFi
             vm.PopFrame();
 
         vm.PopFrame();
-        continuation->DecrementReference();
+        continuation.DecrementReference();
         throw;
     }
 
     vm.PopFrame(); // synthetic root
-    continuation->DecrementReference();
+    continuation.DecrementReference();
 }
 
-AsyncState shard::GetTaskState(ObjectInstance* task, FieldSymbol* stateField)
+AsyncState shard::GetTaskState(ObjectInstance task, FieldSymbol* stateField)
 {
-    ObjectInstance stateValue = task->GetField(stateField->SlotIndex);
-    if (stateValue.IsNullInstance() || stateValue.heapSource() == GarbageCollector::NullInstance)
+    ObjectInstance stateValue = task.GetField(stateField->SlotIndex);
+    if (stateValue.IsNullInstance())
         return AsyncState::PENDING;
 
     return static_cast<AsyncState>(stateValue.AsInteger());
 }
 
-void shard::SetTaskState(ObjectInstance* task, FieldSymbol* stateField, AsyncState state, GarbageCollector& gc)
+void shard::SetTaskState(ObjectInstance task, FieldSymbol* stateField, AsyncState state, GarbageCollector& gc)
 {
-    task->SetField(stateField->SlotIndex, gc.FromValue(static_cast<std::int64_t>(state)));
+    task.SetField(stateField->SlotIndex, gc.FromInteger(static_cast<std::int64_t>(state)));
 }

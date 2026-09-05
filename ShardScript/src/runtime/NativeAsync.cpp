@@ -21,7 +21,7 @@ using namespace shard;
 
 namespace
 {
-    std::unordered_map<ObjectInstance*, std::function<void()>> g_nativeContinuationCallbacks;
+    std::unordered_map<std::byte*, std::function<void()>> g_nativeContinuationCallbacks;
 }
 
 namespace shard
@@ -46,33 +46,33 @@ namespace shard
             domain->GetEventLoop().UnrootTask(task);
         }
 
-        void AsyncScopeState::FailTask(ObjectInstance* exception)
+        void AsyncScopeState::FailTask(ObjectInstance exception)
         {
             EnsureCompletedOnce();
             SetTaskState(task, CLASS_TASK_StateField, AsyncState::FAULTED, *collector);
-            task->SetField(CLASS_TASK_ExceptionField->SlotIndex, exception);
+            task.SetField(CLASS_TASK_ExceptionField->SlotIndex, exception);
             collector->ReleaseFrameOwner(task);
 
             ResumeContinuation(task, CLASS_TASK_ContinuationField, TRAIT_ASYNCSTATE_MoveNext, *domain);
             domain->GetEventLoop().UnrootTask(task);
         }
 
-        void AsyncScopeState::SetValueTaskResult(ObjectInstance* result)
+        void AsyncScopeState::SetValueTaskResult(ObjectInstance result)
         {
             EnsureCompletedOnce();
             SetTaskState(task, CLASS_VALUETASK_StateField, AsyncState::COMPLETED, *collector);
-            task->SetField(CLASS_VALUETASK_ResultField->SlotIndex, result);
+            task.SetField(CLASS_VALUETASK_ResultField->SlotIndex, result);
             collector->ReleaseFrameOwner(task);
 
             ResumeContinuation(task, CLASS_VALUETASK_ContinuationField, TRAIT_ASYNCSTATE_MoveNext, *domain);
             domain->GetEventLoop().UnrootTask(task);
         }
 
-        void AsyncScopeState::FailValueTask(ObjectInstance* exception)
+        void AsyncScopeState::FailValueTask(ObjectInstance exception)
         {
             EnsureCompletedOnce();
             SetTaskState(task, CLASS_VALUETASK_StateField, AsyncState::FAULTED, *collector);
-            task->SetField(CLASS_VALUETASK_ExceptionField->SlotIndex, exception);
+            task.SetField(CLASS_VALUETASK_ExceptionField->SlotIndex, exception);
             collector->ReleaseFrameOwner(task);
 
             ResumeContinuation(task, CLASS_VALUETASK_ContinuationField, TRAIT_ASYNCSTATE_MoveNext, *domain);
@@ -95,18 +95,18 @@ namespace shard
                 ActiveHandle = nullptr;
             }
 
-            ObjectInstance* exception = CreateRuntimeException(*collector,
+            ObjectInstance exception = CreateRuntimeException(*collector,
                 L"Task halted because the virtual machine has stopped");
 
             if (isValueTask)
             {
                 SetTaskState(task, CLASS_VALUETASK_StateField, AsyncState::FAULTED, *collector);
-                task->SetField(CLASS_VALUETASK_ExceptionField->SlotIndex, exception);
+                task.SetField(CLASS_VALUETASK_ExceptionField->SlotIndex, exception);
             }
             else
             {
                 SetTaskState(task, CLASS_TASK_StateField, AsyncState::FAULTED, *collector);
-                task->SetField(CLASS_TASK_ExceptionField->SlotIndex, exception);
+                task.SetField(CLASS_TASK_ExceptionField->SlotIndex, exception);
             }
 
             collector->ReleaseFrameOwner(task);
@@ -147,9 +147,9 @@ namespace shard
         return m_state != nullptr;
     }
 
-    ObjectInstance* AsyncScope::TaskObject() const noexcept
+    ObjectInstance AsyncScope::TaskObject() const noexcept
     {
-        return m_state ? m_state->task : nullptr;
+        return m_state ? m_state->task : ObjectInstance();
     }
 
     ApplicationDomain& AsyncScope::Domain() const noexcept
@@ -173,18 +173,18 @@ namespace shard
             return;
 
         if (m_state->isValueTask)
-            m_state->SetValueTaskResult(GarbageCollector::NullInstance);
+            m_state->SetValueTaskResult(ObjectInstance());
         else
             m_state->CompleteTask();
     }
 
-    void AsyncScope::Fail(ObjectInstance* exception)
+    void AsyncScope::Fail(ObjectInstance exception)
     {
         if (!m_state || m_state->completed)
             return;
 
-        if (exception == nullptr)
-            exception = GarbageCollector::NullInstance;
+        if (exception.IsNullInstance())
+            exception = ObjectInstance();
 
         if (m_state->isValueTask)
             m_state->FailValueTask(exception);
@@ -317,18 +317,18 @@ namespace shard
 
     namespace detail
     {
-        static ObjectInstance* InvokeMethodWithResult(VirtualMachine& vm, MethodSymbol* method, std::initializer_list<ObjectInstance*> args)
+        static ObjectInstance InvokeMethodWithResult(VirtualMachine& vm, MethodSymbol* method, std::initializer_list<ObjectInstance> args)
         {
-            std::vector<ObjectInstance*> argVec(args);
+            std::vector<ObjectInstance> argVec(args.begin(), args.end());
             return vm.InvokeMethod(method, argVec.data(), argVec.size());
         }
 
-        static ObjectInstance* GetAwaiterObject(VirtualMachine& vm, ObjectInstance* awaitable)
+        static ObjectInstance GetAwaiterObject(VirtualMachine& vm, ObjectInstance awaitable)
         {
-            if (awaitable == nullptr || awaitable == GarbageCollector::NullInstance)
-                return GarbageCollector::NullInstance;
+            if (awaitable.IsNullInstance())
+                return ObjectInstance();
 
-            TypeSymbol* type = const_cast<TypeSymbol*>(awaitable->getInfo());
+            TypeSymbol* type = const_cast<TypeSymbol*>(awaitable.getInfo());
             MethodSymbol* getAwaiter = type->FindInterfaceImplementation(TRAIT_AWAITABLE_GetAwaiter);
 
             if (getAwaiter != nullptr)
@@ -337,24 +337,24 @@ namespace shard
             return awaitable;
         }
 
-        static bool InvokeIsCompleted(VirtualMachine& vm, ObjectInstance* awaiter)
+        static bool InvokeIsCompleted(VirtualMachine& vm, ObjectInstance awaiter)
         {
-            TypeSymbol* type = const_cast<TypeSymbol*>(awaiter->getInfo());
+            TypeSymbol* type = const_cast<TypeSymbol*>(awaiter.getInfo());
             MethodSymbol* impl = type->FindInterfaceImplementation(TRAIT_AWAITER_IsCompleted);
 
             if (impl == nullptr)
                 return true;
 
-            ObjectInstance* result = InvokeMethodWithResult(vm, impl, { awaiter });
-            if (result == nullptr || result == GarbageCollector::NullInstance)
+            ObjectInstance result = InvokeMethodWithResult(vm, impl, { awaiter });
+            if (result.IsNullInstance())
                 return false;
 
-            return result->AsBoolean();
+            return result.AsBoolean();
         }
 
-        static void InvokeOnCompleted(VirtualMachine& vm, ObjectInstance* awaiter, ObjectInstance* continuation)
+        static void InvokeOnCompleted(VirtualMachine& vm, ObjectInstance awaiter, ObjectInstance continuation)
         {
-            TypeSymbol* type = const_cast<TypeSymbol*>(awaiter->getInfo());
+            TypeSymbol* type = const_cast<TypeSymbol*>(awaiter.getInfo());
             MethodSymbol* impl = type->FindInterfaceImplementation(TRAIT_AWAITER_OnCompleted);
 
             if (impl == nullptr)
@@ -363,26 +363,26 @@ namespace shard
             InvokeMethodWithResult(vm, impl, { continuation, awaiter });
         }
 
-        static ObjectInstance* InvokeGetResult(VirtualMachine& vm, ObjectInstance* awaiter)
+        static ObjectInstance InvokeGetResult(VirtualMachine& vm, ObjectInstance awaiter)
         {
-            TypeSymbol* type = const_cast<TypeSymbol*>(awaiter->getInfo());
+            TypeSymbol* type = const_cast<TypeSymbol*>(awaiter.getInfo());
             MethodSymbol* impl = type->FindInterfaceImplementation(TRAIT_AWAITER_GetResult);
 
             if (impl == nullptr)
-                return GarbageCollector::NullInstance;
+                return ObjectInstance();
 
             return InvokeMethodWithResult(vm, impl, { awaiter });
         }
     }
 
-    void AsyncScope::Await(ObjectInstance* awaitable, std::function<void()> onComplete)
+    void AsyncScope::Await(ObjectInstance awaitable, std::function<void()> onComplete)
     {
         if (!m_state)
             return;
 
         VirtualMachine& vm = m_state->domain->GetVirtualMachine();
-        ObjectInstance* awaiter = detail::GetAwaiterObject(vm, awaitable);
-        if (awaiter == nullptr || awaiter == GarbageCollector::NullInstance)
+        ObjectInstance awaiter = detail::GetAwaiterObject(vm, awaitable);
+        if (awaiter.IsNullInstance())
         {
             onComplete();
             return;
@@ -394,26 +394,26 @@ namespace shard
             return;
         }
 
-        ObjectInstance* continuation = detail::CreateNativeContinuation(*m_state, std::move(onComplete));
+        ObjectInstance continuation = detail::CreateNativeContinuation(*m_state, std::move(onComplete));
         detail::InvokeOnCompleted(vm, awaiter, continuation);
     }
 
-    void AsyncScope::AwaitResult(ObjectInstance* awaitable, std::function<void(ObjectInstance* result)> onComplete)
+    void AsyncScope::AwaitResult(ObjectInstance awaitable, std::function<void(ObjectInstance result)> onComplete)
     {
         if (!m_state)
             return;
 
         VirtualMachine& vm = m_state->domain->GetVirtualMachine();
-        ObjectInstance* awaiter = detail::GetAwaiterObject(vm, awaitable);
-        if (awaiter == nullptr || awaiter == GarbageCollector::NullInstance)
+        ObjectInstance awaiter = detail::GetAwaiterObject(vm, awaitable);
+        if (awaiter.IsNullInstance())
         {
-            onComplete(GarbageCollector::NullInstance);
+            onComplete(ObjectInstance());
             return;
         }
 
         auto invokeResult = [&vm, awaiter, onComplete]() mutable
         {
-            ObjectInstance* result = detail::InvokeGetResult(vm, awaiter);
+            ObjectInstance result = detail::InvokeGetResult(vm, awaiter);
             onComplete(result);
         };
 
@@ -423,14 +423,14 @@ namespace shard
             return;
         }
 
-        ObjectInstance* continuation = detail::CreateNativeContinuation(*m_state, std::move(invokeResult));
+        ObjectInstance continuation = detail::CreateNativeContinuation(*m_state, std::move(invokeResult));
         detail::InvokeOnCompleted(vm, awaiter, continuation);
     }
 
-    ObjectInstance* DoAsync(const CallState& ctx, std::function<void(AsyncScope)> work)
+    ObjectInstance DoAsync(const CallState& ctx, std::function<void(AsyncScope)> work)
     {
         auto state = detail::CreateAsyncScopeState(ctx, nullptr);
-        ObjectInstance* task = state->task;
+        ObjectInstance task = state->task;
 
         AsyncScope scope(std::move(state));
         work(scope);
@@ -438,55 +438,56 @@ namespace shard
         return task;
     }
 
-    ObjectInstance* CompletedTask(const CallState& ctx)
+    ObjectInstance CompletedTask(const CallState& ctx)
     {
-        ObjectInstance* task = ctx.Collector.AllocateInstance(CLASS_TASK);
+        ObjectInstance task = ctx.Collector.AllocateInstance(CLASS_TASK);
         ctx.Collector.MarkTaskLike(task);
 
         SetTaskState(task, CLASS_TASK_StateField, AsyncState::COMPLETED, ctx.Collector);
         return task;
     }
 
-    ObjectInstance* FaultedTask(const CallState& ctx, const std::wstring& message)
+    ObjectInstance FaultedTask(const CallState& ctx, const std::wstring& message)
     {
-        ObjectInstance* task = ctx.Collector.AllocateInstance(CLASS_TASK);
+        ObjectInstance task = ctx.Collector.AllocateInstance(CLASS_TASK);
         ctx.Collector.MarkTaskLike(task);
 
         SetTaskState(task, CLASS_TASK_StateField, AsyncState::FAULTED, ctx.Collector);
-        task->SetField(CLASS_TASK_ExceptionField->SlotIndex, CreateRuntimeException(ctx.Collector, message));
+        task.SetField(CLASS_TASK_ExceptionField->SlotIndex, CreateRuntimeException(ctx.Collector, message));
         return task;
     }
 
-    ObjectInstance* FaultedTask(const CallState& ctx, ObjectInstance* exception)
+    ObjectInstance FaultedTask(const CallState& ctx, ObjectInstance exception)
     {
-        ObjectInstance* task = ctx.Collector.AllocateInstance(CLASS_TASK);
+        ObjectInstance task = ctx.Collector.AllocateInstance(CLASS_TASK);
         ctx.Collector.MarkTaskLike(task);
 
         SetTaskState(task, CLASS_TASK_StateField, AsyncState::FAULTED, ctx.Collector);
-        task->SetField(CLASS_TASK_ExceptionField->SlotIndex, exception != nullptr ? exception : GarbageCollector::NullInstance);
+        task.SetField(CLASS_TASK_ExceptionField->SlotIndex,
+                      exception.IsNullInstance() ? ObjectInstance() : exception);
         return task;
     }
 
-    ObjectInstance* CreateRuntimeException(GarbageCollector& collector, const std::wstring& message)
+    ObjectInstance CreateRuntimeException(GarbageCollector& collector, const std::wstring& message)
     {
-        ObjectInstance* ex = collector.AllocateInstance(SymbolTable::StandardTypes::RuntimeException);
-        ex->SetField(SymbolTable::StandardTypes::RuntimeExceptionMessageField->SlotIndex, collector.FromValue(message));
-        ex->SetField(SymbolTable::StandardTypes::RuntimeExceptionStackTraceField->SlotIndex, collector.FromValue(std::wstring()));
+        ObjectInstance ex = collector.AllocateInstance(SymbolTable::StandardTypes::RuntimeException);
+        ex.SetField(SymbolTable::StandardTypes::RuntimeExceptionMessageField->SlotIndex, collector.FromString(message));
+        ex.SetField(SymbolTable::StandardTypes::RuntimeExceptionStackTraceField->SlotIndex, collector.FromString(std::wstring()));
         return ex;
     }
 
     namespace detail
     {
-        ObjectInstance* CreateNativeContinuation(AsyncScopeState& state, std::function<void()> callback)
+        ObjectInstance CreateNativeContinuation(AsyncScopeState& state, std::function<void()> callback)
         {
-            ObjectInstance* continuation = state.collector->AllocateInstance(SymbolTable::StandardTypes::NativeContinuation);
-            g_nativeContinuationCallbacks[continuation] = std::move(callback);
+            ObjectInstance continuation = state.collector->AllocateInstance(SymbolTable::StandardTypes::NativeContinuation);
+            g_nativeContinuationCallbacks[continuation.getMemory()] = std::move(callback);
             return continuation;
         }
 
-        void InvokeNativeContinuationCallback(ObjectInstance* continuation)
+        void InvokeNativeContinuationCallback(ObjectInstance continuation)
         {
-            auto it = g_nativeContinuationCallbacks.find(continuation);
+            auto it = g_nativeContinuationCallbacks.find(continuation.getMemory());
             if (it == g_nativeContinuationCallbacks.end())
                 return;
 

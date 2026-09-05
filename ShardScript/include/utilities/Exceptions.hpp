@@ -1,11 +1,12 @@
 #pragma once
 
+#include <shard/runtime/ObjectInstance.hpp>
+
 #include <iosfwd>
 #include <string>
 
 namespace shard
 {
-    class ObjectInstance;
     class SymbolTable;
 }
 
@@ -17,7 +18,7 @@ namespace shard::exceptions
     /// annotating each frame with its declaring source file and line when the
     /// method can be located in <paramref name="table"/>.
     /// </summary>
-    void PrintUnhandled(std::wostream& out, ObjectInstance* exception,
+    void PrintUnhandled(std::wostream& out, ObjectInstance exception,
                         const std::wstring& message, const std::wstring& stackTrace,
                         SymbolTable* table);
 

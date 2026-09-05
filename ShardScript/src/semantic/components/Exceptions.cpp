@@ -28,7 +28,7 @@ namespace
 static void runtime_capture_stack_trace(const CallState& context)
 {
 	std::wstring trace = context.Runtimer.GetStackTrace();
-	context.PlaceReturned(context.Collector.FromValue(trace));
+	context.PlaceReturned(context.Collector.FromString(trace));
 	return;
 }
 
@@ -67,8 +67,8 @@ void SymbolTable::ResolveExceptions(SymbolTable* table)
 		messageProp.AddGetter()
 			.IsImplementationOf(TRAIT_THROWABLE_getMessage)
 			.SetCallback([](const CallState& context) {
-				ObjectInstance value = context.Args[0]->GetField(SymbolTable::StandardTypes::RuntimeExceptionMessageField->SlotIndex);
-				context.PlaceReturned(value.IsNullInstance() ? GarbageCollector::NullInstance : value.heapSource());
+				ObjectInstance value = context.Args[0].GetField(SymbolTable::StandardTypes::RuntimeExceptionMessageField->SlotIndex);
+				context.PlaceReturned(value);
 				return;
 			});
 
@@ -79,8 +79,8 @@ void SymbolTable::ResolveExceptions(SymbolTable* table)
 		stackTraceProp.AddGetter()
 			.IsImplementationOf(TRAIT_THROWABLE_getStackTrace)
 			.SetCallback([](const CallState& context) {
-				ObjectInstance value = context.Args[0]->GetField(SymbolTable::StandardTypes::RuntimeExceptionStackTraceField->SlotIndex);
-				context.PlaceReturned(value.IsNullInstance() ? GarbageCollector::NullInstance : value.heapSource());
+				ObjectInstance value = context.Args[0].GetField(SymbolTable::StandardTypes::RuntimeExceptionStackTraceField->SlotIndex);
+				context.PlaceReturned(value);
 				return;
 			});
 
@@ -91,6 +91,48 @@ void SymbolTable::ResolveExceptions(SymbolTable* table)
 
 		SymbolTable::StandardTypes::RuntimeException->AnalysisState = SymbolAnalysisState::Ready;
 		SymbolTable::StandardTypes::RuntimeException->LayoutingState = TypeLayoutingState::Visited;
+	}
+
+	// UndefinedBehaviour class — the managed face of native contract violations
+	// from foreign code (see undefined_behaviour in RuntimeException.hpp).
+	{
+		SymbolBuilder<ClassSymbol> builder = SymbolBuilder<ClassSymbol>(table, L"UndefinedBehaviour", SymbolTable::Global::Namespace);
+		SymbolTable::StandardTypes::UndefinedBehaviour = builder
+			.Implements(TRAIT_THROWABLE)
+			.DeclareGlobal();
+
+		builder
+			.AddInit();
+
+		SymbolBuilder<PropertySymbol> messageProp = builder.AddProperty(L"message", SymbolTable::Primitives::String, LINK_INSTANCE);
+		SymbolTable::StandardTypes::UndefinedBehaviourMessageField = messageProp
+			.AddBackingField();
+
+		messageProp.AddGetter()
+			.IsImplementationOf(TRAIT_THROWABLE_getMessage)
+			.SetCallback([](const CallState& context) {
+				ObjectInstance value = context.Args[0].GetField(SymbolTable::StandardTypes::UndefinedBehaviourMessageField->SlotIndex);
+				context.PlaceReturned(value);
+				return;
+			});
+
+		SymbolBuilder<PropertySymbol> stackTraceProp = builder.AddProperty(L"stack_trace", SymbolTable::Primitives::String, LINK_INSTANCE);
+		SymbolTable::StandardTypes::UndefinedBehaviourStackTraceField = stackTraceProp
+			.AddBackingField();
+
+		stackTraceProp.AddGetter()
+			.IsImplementationOf(TRAIT_THROWABLE_getStackTrace)
+			.SetCallback([](const CallState& context) {
+				ObjectInstance value = context.Args[0].GetField(SymbolTable::StandardTypes::UndefinedBehaviourStackTraceField->SlotIndex);
+				context.PlaceReturned(value);
+				return;
+			});
+
+		inherit_size(SymbolTable::StandardTypes::UndefinedBehaviourMessageField);
+		inherit_size(SymbolTable::StandardTypes::UndefinedBehaviourStackTraceField);
+
+		SymbolTable::StandardTypes::UndefinedBehaviour->AnalysisState = SymbolAnalysisState::Ready;
+		SymbolTable::StandardTypes::UndefinedBehaviour->LayoutingState = TypeLayoutingState::Visited;
 	}
 
 	resolved = true;

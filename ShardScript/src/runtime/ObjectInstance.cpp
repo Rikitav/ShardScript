@@ -1,18 +1,14 @@
 #include <shard/runtime/ObjectInstance.hpp>
 #include <shard/runtime/CallStackFrame.hpp>
-#include <shard/runtime/GarbageCollector.hpp>
-#include <shard/runtime/MethodCallState.hpp>
+#include <shard/runtime/RuntimeException.hpp>
 
 #include <shard/parsing/SyntaxKind.hpp>
 
 #include <shard/semantic/symbols/FieldSymbol.hpp>
 #include <shard/semantic/symbols/ArrayTypeSymbol.hpp>
-#include <shard/semantic/symbols/GenericTypeSymbol.hpp>
 #include <shard/semantic/symbols/TypeSymbol.hpp>
-#include <shard/semantic/symbols/TypeParameterSymbol.hpp>
 
 #include <shard/semantic/SymbolTable.hpp>
-#include <shard/semantic/SemanticModel.hpp>
 
 #include <cstring>
 #include <stdexcept>
@@ -20,79 +16,6 @@
 #include <cstdint>
 
 using namespace shard;
-
-static TypeSymbol* ResolveRuntimeType(TypeSymbol* type, CallStackFrame* frame, TypeShape* instanceShape)
-{
-    if (type == nullptr)
-        return nullptr;
-
-    if (type->Kind == SyntaxKind::TypeParameter)
-    {
-        if (frame != nullptr)
-        {
-            TypeSymbol* resolved = frame->ResolveType(type);
-            if (resolved != type)
-                return resolved;
-        }
-
-        if (instanceShape != nullptr && instanceShape->BaseType->TypeParameters.size() > 0)
-        {
-            TypeParameterSymbol* typeParameter = static_cast<TypeParameterSymbol*>(type);
-            for (std::size_t i = 0; i < instanceShape->BaseType->TypeParameters.size(); ++i)
-            {
-                if (instanceShape->BaseType->TypeParameters[i] == typeParameter)
-                    return i < instanceShape->GenericArguments.size() ? instanceShape->GenericArguments[i] : type;
-            }
-        }
-
-        return type;
-    }
-
-    if (type->Kind == SyntaxKind::ArrayType)
-    {
-        ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(type);
-        TypeSymbol* resolvedUnderlying = ResolveRuntimeType(arrayType->UnderlayingType, frame, instanceShape);
-        if (resolvedUnderlying == nullptr || resolvedUnderlying == arrayType->UnderlayingType)
-            return type;
-
-        ArrayTypeSymbol* resolvedArray = new ArrayTypeSymbol(resolvedUnderlying);
-        resolvedArray->Length = arrayType->Length;
-        resolvedArray->LayoutingState = arrayType->LayoutingState;
-        return resolvedArray;
-    }
-
-    return type;
-}
-
-static bool RuntimeTypeEquals(TypeSymbol* expected, TypeSymbol* actual, CallStackFrame* frame, TypeShape* instanceShape)
-{
-    if (expected == actual)
-        return true;
-    if (expected == nullptr || actual == nullptr)
-        return false;
-
-    if (expected->Kind == SyntaxKind::TypeParameter)
-    {
-        TypeSymbol* resolved = ResolveRuntimeType(expected, frame, instanceShape);
-        if (resolved == expected)
-            return SemanticModel::AreTypesEqual(expected, actual);
-
-        return RuntimeTypeEquals(resolved, actual, frame, instanceShape);
-    }
-
-    if (expected->Kind == SyntaxKind::ArrayType)
-    {
-        if (actual->Kind != SyntaxKind::ArrayType)
-            return false;
-
-        ArrayTypeSymbol* expectedArray = static_cast<ArrayTypeSymbol*>(expected);
-        ArrayTypeSymbol* actualArray = static_cast<ArrayTypeSymbol*>(actual);
-
-        return RuntimeTypeEquals(expectedArray->UnderlayingType, actualArray->UnderlayingType, frame, instanceShape);
-    }
-
-    return SemanticModel::AreTypesEqual(expected, actual);
-}
 
 const TypeSymbol* ObjectInstance::getInfo() const
 {
@@ -104,7 +27,7 @@ TypeShape* ObjectInstance::getShape() const
 	return m_shape;
 }
 
-void* ObjectInstance::getMemory() const
+std::byte* ObjectInstance::getMemory() const
 {
 	return m_rawMemoryPtr;
 }
@@ -117,39 +40,40 @@ std::int64_t ObjectInstance::getReferencesCounter() const
 	return 0;
 }
 
-ObjectInstance::~ObjectInstance() = default;
-
 ObjectInstance ObjectInstance::GetField(std::uint32_t slot)
 {
+	if (m_shape == nullptr)
+		throw shard::runtime_exception(L"Cannot read field from an instance without a type shape");
+
 	if (IsNullInstance())
 	{
-		std::string typeName = m_info != nullptr ? std::string(m_info->FullName.begin(), m_info->FullName.end()) : "null";
-		throw std::runtime_error("Cannot read field on null instance of type " + typeName);
+		std::wstring typeName = m_info != nullptr ? m_info->FullName : L"null";
+		throw shard::runtime_exception(L"Cannot read field on null instance of type : " + typeName);
 	}
-
-	if (m_shape == nullptr)
-		throw std::runtime_error("Cannot read field from an instance without a type shape");
 
 	if (slot >= m_shape->Slots.size())
 	{
-		std::string typeName = m_info != nullptr ? std::string(m_info->FullName.begin(), m_info->FullName.end()) : "null";
-		throw std::runtime_error("Field slot index is out of range on " + typeName + " slot=" + std::to_string(slot) + " slots=" + std::to_string(m_shape->Slots.size()));
+		std::wstring typeName = m_info != nullptr ? m_info->FullName : L"null";
+		throw shard::runtime_exception(L"Field slot index is out of range on : " + typeName);
 	}
 
 	TypeShape* fieldShape = m_shape->GetFieldShape(slot);
-	std::size_t fieldOffset = m_shape->GetOffset(slot);
-
-	if (fieldShape == nullptr || fieldShape->IsReferenceType())
+	if (fieldShape == nullptr)
 	{
-		void* offset = OffsetMemory(fieldOffset, sizeof(ObjectInstance*));
-		ObjectInstance* valuePtr = *static_cast<ObjectInstance**>(offset);
-		return valuePtr != nullptr ? *valuePtr : *GarbageCollector::NullInstance;
+		std::wstring typeName = m_info != nullptr ? m_info->FullName : L"null";
+		throw shard::runtime_exception(L"Cannot read instance from a field without a type shape");
 	}
 
-	void* offset = OffsetMemory(fieldOffset, fieldShape->Size);
-	ObjectInstance view(fieldShape->BaseType, fieldShape, offset);
-	view.IsView = true;
-	return view;
+	std::size_t fieldOffset = m_shape->GetOffset(slot);
+	if (fieldShape->IsReferenceType())
+	{
+		std::byte* stored = nullptr;
+		ReadMemory(fieldOffset, sizeof(void*), &stored);
+		return ObjectInstance(fieldShape->BaseType, fieldShape, stored);
+	}
+
+	std::byte* offset = OffsetMemory(fieldOffset, fieldShape->Size);
+	return ObjectInstance(fieldShape->BaseType, fieldShape, offset);
 }
 
 ObjectInstance ObjectInstance::GetField(const FieldSymbol* field)
@@ -157,83 +81,63 @@ ObjectInstance ObjectInstance::GetField(const FieldSymbol* field)
 	return GetField(field->SlotIndex);
 }
 
-void ObjectInstance::SetField(std::uint32_t slot, ObjectInstance* instance)
+void ObjectInstance::SetField(std::uint32_t slot, ObjectInstance instance)
 {
+	if (m_shape == nullptr)
+		throw shard::runtime_exception(L"Cannot write field on an instance without a type shape");
+
 	if (IsNullInstance())
 	{
-		std::string typeName = m_info != nullptr ? std::string(m_info->FullName.begin(), m_info->FullName.end()) : "null";
-		throw std::runtime_error("Cannot write field on null instance of type " + typeName);
+		std::wstring typeName = m_info != nullptr ? m_info->FullName : L"null";
+		throw shard::runtime_exception(L"Cannot write field on null instance of type " + typeName);
 	}
-
-	if (m_shape == nullptr)
-		throw std::runtime_error("Cannot write field on an instance without a type shape");
 
 	if (slot >= m_shape->Slots.size())
 	{
 		std::wstring typeName = m_info != nullptr ? m_info->FullName : L"?";
-		throw std::runtime_error("Field slot index is out of range on " + std::string(typeName.begin(), typeName.end()) + " slot=" + std::to_string(slot) + " slots=" + std::to_string(m_shape->Slots.size()));
+		throw shard::runtime_exception(L"Field slot index is out of range on " + typeName);
 	}
 
-	if (instance == nullptr)
-		throw std::runtime_error("Tried to set nullptr ObjectInstance as field value.");
-
 	TypeShape* fieldShape = m_shape->GetFieldShape(slot);
-	std::size_t fieldOffset = m_shape->GetOffset(slot);
-
-	if (fieldShape == nullptr || fieldShape->IsReferenceType())
+	if (fieldShape == nullptr)
 	{
-		if (instance != GarbageCollector::NullInstance && instance->IsView)
-			throw std::runtime_error("cannot store an ephemeral view into a reference field");
+		std::wstring typeName = m_info != nullptr ? m_info->FullName : L"null";
+		throw shard::runtime_exception(L"Cannot write instance to a field without a type shape");
+	}
 
+	std::size_t fieldOffset = m_shape->GetOffset(slot);
+	if (fieldShape->IsReferenceType())
+	{
 		ObjectInstance oldValue = GetField(slot);
 		if (!oldValue.IsNullInstance())
 			oldValue.DecrementReference();
 
-		if (instance != GarbageCollector::NullInstance)
-		{
-			instance->IncrementReference();
-		}
+		std::byte* stored = instance.getMemory();
+		if (!instance.IsNullInstance())
+			instance.IncrementReference();
 
-		WriteMemory(fieldOffset, sizeof(ObjectInstance*), &instance);
+		WriteMemory(fieldOffset, sizeof(void*), &stored);
 	}
 	else
 	{
-		if (instance == GarbageCollector::NullInstance)
-			throw std::runtime_error("cannot write null value to ValueType field");
+		if (instance.IsNullInstance())
+			throw shard::runtime_exception(L"cannot write null value to ValueType field");
 
-		TypeShape* instanceShape = instance->getShape();
-		const TypeSymbol* instanceType = instance->getInfo();
+		const TypeSymbol* instanceType = instance.getInfo();
 		const TypeSymbol* fieldBaseType = fieldShape->BaseType;
 
 		// Allow assigning a plain Integer value to an enum-typed field.
 		if (fieldBaseType != nullptr && fieldBaseType->Kind == SyntaxKind::EnumDeclaration && instanceType == TYPE_INT)
 		{
-			WriteMemory(fieldOffset, fieldShape->Size, instance->getMemory());
+			WriteMemory(fieldOffset, fieldShape->Size, instance.getMemory());
 			return;
 		}
 
-		if (instanceShape != nullptr && instanceShape != fieldShape)
-		{
-			std::string msg = "Tried to set incompatible ObjectInstance type as field value. Field base: ";
-			msg += fieldShape->BaseType != nullptr ? std::string(fieldShape->BaseType->Name.begin(), fieldShape->BaseType->Name.end()) : "null";
-			msg += ", instance base: ";
-			msg += instanceShape->BaseType != nullptr ? std::string(instanceShape->BaseType->Name.begin(), instanceShape->BaseType->Name.end()) : "null";
-			throw std::runtime_error(msg);
-		}
-
-		if (instanceShape == nullptr && instanceType != fieldShape->BaseType)
-		{
-			std::string msg = "Tried to set incompatible ObjectInstance type as field value. Field base: ";
-			msg += fieldShape->BaseType != nullptr ? std::string(fieldShape->BaseType->Name.begin(), fieldShape->BaseType->Name.end()) : "null";
-			msg += ", instance base: null";
-			throw std::runtime_error(msg);
-		}
-
-		WriteMemory(fieldOffset, fieldShape->Size, instance->getMemory());
+		WriteMemory(fieldOffset, fieldShape->Size, instance.getMemory());
 	}
 }
 
-void ObjectInstance::SetField(const FieldSymbol* field, ObjectInstance* instance)
+void ObjectInstance::SetField(const FieldSymbol* field, ObjectInstance instance)
 {
 	SetField(field->SlotIndex, instance);
 }
@@ -241,7 +145,7 @@ void ObjectInstance::SetField(const FieldSymbol* field, ObjectInstance* instance
 std::size_t ObjectInstance::GetArrayLength() const
 {
 	if (m_info->Kind != SyntaxKind::ArrayType)
-		throw std::runtime_error("Tried to get element from non array instance");
+		throw shard::runtime_exception(L"Tried to get element from non array instance");
 
 	std::int64_t payloadLength;
 	std::memcpy(&payloadLength, getMemory(), sizeof(payloadLength));
@@ -251,116 +155,91 @@ std::size_t ObjectInstance::GetArrayLength() const
 ObjectInstance ObjectInstance::GetElement(std::size_t index, CallStackFrame* frame)
 {
 	if (IsNullInstance())
-		throw std::runtime_error("Cannot access array element on null instance");
+		throw shard::runtime_exception(L"Cannot access array element on null instance");
 
 	if (m_info->Kind != SyntaxKind::ArrayType)
-		throw std::runtime_error("Tried to get element from non array instance");
+		throw shard::runtime_exception(L"Tried to get element from non array instance");
 
 	const ArrayTypeSymbol* info = static_cast<const ArrayTypeSymbol*>(m_info);
-	TypeSymbol* type = info->UnderlayingType;
+	TypeSymbol* underlayingType = info->UnderlayingType;
 
 	if (index >= GetArrayLength())
-		throw std::runtime_error("Array index is out of range: index=" + std::to_string(index) + " length=" + std::to_string(GetArrayLength()));
+		throw shard::runtime_exception(L"Array index is out of range: index=" + std::to_wstring(index) + L" length=" + std::to_wstring(GetArrayLength()));
 
 	if (frame != nullptr)
-		type = frame->ResolveType(type);
+		underlayingType = frame->ResolveType(underlayingType);
 
-	std::size_t memoryOffset = SymbolTable::Primitives::Array->MemoryBytesSize + type->GetInlineSize() * index;
-	if (type->IsReferenceType())
+	std::size_t memoryOffset = SymbolTable::Primitives::Array->MemoryBytesSize + underlayingType->GetInlineSize() * index;
+
+	if (underlayingType->IsReferenceType())
 	{
-		void* offset = OffsetMemory(memoryOffset, sizeof(ObjectInstance*));
-		ObjectInstance* valuePtr = *static_cast<ObjectInstance**>(offset);
-		return valuePtr != nullptr ? *valuePtr : *GarbageCollector::NullInstance;
+		std::byte* stored = nullptr;
+		ReadMemory(memoryOffset, sizeof(void*), &stored);
+		return ObjectInstance(underlayingType, nullptr, stored);
 	}
 
-	void* offset = OffsetMemory(memoryOffset, type->MemoryBytesSize);
-	ObjectInstance view(type, nullptr, offset);
-	view.IsView = true;
-	return view;
+	std::byte* offset = OffsetMemory(memoryOffset, underlayingType->GetInlineSize());
+	return ObjectInstance(underlayingType, nullptr, offset);
 }
 
-void ObjectInstance::SetElement(std::size_t index, ObjectInstance* instance, CallStackFrame* frame)
+void ObjectInstance::SetElement(std::size_t index, ObjectInstance instance, CallStackFrame* frame)
 {
 	if (IsNullInstance())
-		throw std::runtime_error("Cannot access array element on null instance");
+		throw shard::runtime_exception(L"Cannot access array element on null instance");
 
 	if (m_info->Kind != SyntaxKind::ArrayType)
-		throw std::runtime_error("Tried to set element in non array instance");
-
-	if (instance == nullptr)
-		throw std::runtime_error("got nullptr instance in SetElement");
+		throw shard::runtime_exception(L"Tried to set element in non array instance");
 
 	const ArrayTypeSymbol* info = static_cast<const ArrayTypeSymbol*>(m_info);
 	TypeSymbol* type = info->UnderlayingType;
 
 	if (index >= GetArrayLength())
-		throw std::runtime_error("Array index is out of range: index=" + std::to_string(index) + " length=" + std::to_string(GetArrayLength()));
+		throw shard::runtime_exception(L"Array index is out of range: index=" + std::to_wstring(index) + L" length=" + std::to_wstring(GetArrayLength()));
 
 	if (frame != nullptr)
 		type = frame->ResolveType(type);
 
 	std::size_t memoryOffset = SymbolTable::Primitives::Array->MemoryBytesSize + type->GetInlineSize() * index;
+
 	if (type->IsReferenceType())
 	{
-		if (instance != GarbageCollector::NullInstance && instance->IsView)
-			throw std::runtime_error("cannot store an ephemeral view into a reference element");
-
 		ObjectInstance oldValue = GetElement(index, frame);
-		if (!oldValue.IsNullInstance() && oldValue.heapSource() != GarbageCollector::NullInstance)
+		if (!oldValue.IsNullInstance())
 			oldValue.DecrementReference();
 
-		if (instance != GarbageCollector::NullInstance)
-			instance->IncrementReference();
+		std::byte* stored = instance.getMemory();
+		if (stored != nullptr)
+			instance.IncrementReference();
 
-		WriteMemory(memoryOffset, sizeof(ObjectInstance*), &instance);
+		WriteMemory(memoryOffset, sizeof(void*), &stored);
 	}
 	else
 	{
-		if (instance == GarbageCollector::NullInstance)
-			throw std::runtime_error("cannot write null value to ValueType field");
+		if (instance.IsNullInstance())
+			throw shard::runtime_exception(L"cannot write null value to by-value type field");
 
-		WriteMemory(memoryOffset, type->MemoryBytesSize, instance->getMemory());
+		WriteMemory(memoryOffset, type->MemoryBytesSize, instance.getMemory());
 	}
 }
 
 bool ObjectInstance::IsInBounds(std::size_t index)
 {
 	if (m_info->Kind != SyntaxKind::ArrayType)
-		throw std::runtime_error("Tried to get size of non array instance");
+		throw shard::runtime_exception(L"Tried to get size of non array instance");
 
-	return index >= 0 && index < GetArrayLength();
+	return index < GetArrayLength();
 }
 
-/*
-ArgumentsSpan ObjectInstance::ArrayAsSpan()
-{
-	if (m_info->Kind != SyntaxKind::ArrayType)
-		throw std::runtime_error("Tried to get args span of non array instance");
-
-	size_t length = GetArrayLength();
-	if (length == 0)
-		return ArgumentsSpan();
-
-	ObjectInstance* first = GetElement(0);
-	return ArgumentsSpan{ &first, length };
-}
-*/
-
-void ObjectInstance::IncrementReference()
+void ObjectInstance::IncrementReference() const
 {
 	if (GcHeader* header = getGcHeader(); header != nullptr)
 		header->ReferencesCounter += 1;
 }
 
-void ObjectInstance::DecrementReference()
+void ObjectInstance::DecrementReference() const
 {
 	if (GcHeader* header = getGcHeader(); header != nullptr)
 	{
-		// A static root always holds one permanent reference; dropping a user
-		// reference must never bring it to zero (staticFields would dangle).
-		if (IsStaticRoot && header->ReferencesCounter <= 1)
-			return;
-
 		if (header->ReferencesCounter > 0)
 			header->ReferencesCounter -= 1;
 	}
@@ -368,22 +247,10 @@ void ObjectInstance::DecrementReference()
 
 bool ObjectInstance::IsNullInstance() const
 {
-	return m_info == nullptr;
+	return m_rawMemoryPtr == nullptr;
 }
 
-ObjectInstance* shard::StableRef(ObjectInstance value)
-{
-	if (value.IsView)
-	{
-		static thread_local ObjectInstance viewSlot(nullptr, nullptr, nullptr);
-		viewSlot = value;
-		return &viewSlot;
-	}
-
-	return value.IsNullInstance() ? GarbageCollector::NullInstance : value.heapSource();
-}
-
-void* ObjectInstance::OffsetMemory(const std::size_t offset, const std::size_t size) const
+std::byte* ObjectInstance::OffsetMemory(const std::size_t offset, const std::size_t size) const
 {
 	if (size == 0)
 		throw std::out_of_range("Cannot read 0 bytes");
@@ -394,10 +261,11 @@ void* ObjectInstance::OffsetMemory(const std::size_t offset, const std::size_t s
 		const ArrayTypeSymbol* arrayInfo = static_cast<const ArrayTypeSymbol*>(m_info);
 		instanceSize = SymbolTable::Primitives::Array->MemoryBytesSize + arrayInfo->UnderlayingType->GetInlineSize() * GetArrayLength();
 	}
+
 	if (offset + size > instanceSize)
 		throw std::out_of_range("offset (" + std::to_string(offset) + ") + size (" + std::to_string(size) + ") is out of instance's memory range (" + std::to_string(instanceSize) + ").");
 
-	return static_cast<char*>(getMemory()) + offset;
+	return reinterpret_cast<std::byte*>(getMemory()) + offset;
 }
 
 void ObjectInstance::ReadMemory(const std::size_t offset, const std::size_t size, void* dst) const
@@ -409,10 +277,16 @@ void ObjectInstance::ReadMemory(const std::size_t offset, const std::size_t size
 		throw std::out_of_range("Cannot read 0 bytes");
 
 	std::size_t instanceSize = m_shape != nullptr ? m_shape->Size : (m_info != nullptr ? m_info->MemoryBytesSize : 0);
+	if (m_info != nullptr && m_info->Kind == SyntaxKind::ArrayType)
+	{
+		const ArrayTypeSymbol* arrayInfo = static_cast<const ArrayTypeSymbol*>(m_info);
+		instanceSize = SymbolTable::Primitives::Array->MemoryBytesSize + arrayInfo->UnderlayingType->GetInlineSize() * GetArrayLength();
+	}
+
 	if (offset + size > instanceSize)
 		throw std::out_of_range("offset (" + std::to_string(offset) + ") + size (" + std::to_string(size) + ") is out of instance's memory range (" + std::to_string(instanceSize) + ").");
 
-	const char* memOffset = static_cast<char*>(getMemory()) + offset;
+	const char* memOffset = reinterpret_cast<const char*>(getMemory()) + offset;
 	std::memcpy(dst, memOffset, size);
 }
 
@@ -425,52 +299,68 @@ void ObjectInstance::WriteMemory(const std::size_t offset, const std::size_t siz
 		throw std::out_of_range("Cannot read 0 bytes");
 
 	std::size_t instanceSize = m_shape != nullptr ? m_shape->Size : (m_info != nullptr ? m_info->MemoryBytesSize : 0);
+	if (m_info != nullptr && m_info->Kind == SyntaxKind::ArrayType)
+	{
+		const ArrayTypeSymbol* arrayInfo = static_cast<const ArrayTypeSymbol*>(m_info);
+		instanceSize = SymbolTable::Primitives::Array->MemoryBytesSize + arrayInfo->UnderlayingType->GetInlineSize() * GetArrayLength();
+	}
+
 	if (offset + size > instanceSize)
 		throw std::out_of_range("offset (" + std::to_string(offset) + ") + size (" + std::to_string(size) + ") is out of instance's memory range (" + std::to_string(instanceSize) + ").");
 
-	char* memOffset = static_cast<char*>(getMemory()) + offset;
+	char* memOffset = reinterpret_cast<char*>(getMemory()) + offset;
 	std::memcpy(memOffset, src, size);
 }
 
 void ObjectInstance::WriteBoolean(const bool& value) const
 {
-	const void* ptr = &value;
+	if (getInfo() != TYPE_BOOL)
+		throw shard::runtime_exception(L"Cannot interpret instance as Boolean");
+
 	std::size_t size = m_shape != nullptr ? m_shape->Size : (m_info != nullptr ? m_info->MemoryBytesSize : 0);
-	WriteMemory(0, size, ptr);
+	WriteMemory(0, size, &value);
 }
 
 void ObjectInstance::WriteInteger(const std::int64_t& value) const
 {
-	const void* ptr = &value;
+	if (getInfo() != TYPE_INT && getInfo()->Kind != SyntaxKind::EnumDeclaration)
+		throw shard::runtime_exception(L"Cannot interpret instance as Integer");
+
 	std::size_t size = m_shape != nullptr ? m_shape->Size : (m_info != nullptr ? m_info->MemoryBytesSize : 0);
-	WriteMemory(0, size, ptr);
+	WriteMemory(0, size, &value);
 }
 
 void ObjectInstance::WriteDouble(const double& value) const
 {
-	const void* ptr = &value;
+	if (getInfo() != TYPE_DOUBLE)
+		throw shard::runtime_exception(L"Cannot interpret instance as Double");
+
 	std::size_t size = m_shape != nullptr ? m_shape->Size : (m_info != nullptr ? m_info->MemoryBytesSize : 0);
-	WriteMemory(0, size, ptr);
+	WriteMemory(0, size, &value);
 }
 
 void ObjectInstance::WriteCharacter(const wchar_t& value) const
 {
-	const void* ptr = &value;
+	if (getInfo() != TYPE_CHAR)
+		throw shard::runtime_exception(L"Cannot interpret instance as Character");
+
 	std::size_t size = m_shape != nullptr ? m_shape->Size : (m_info != nullptr ? m_info->MemoryBytesSize : 0);
-	WriteMemory(0, size, ptr);
+	WriteMemory(0, size, &value);
 }
 
 void ObjectInstance::WriteByte(const std::uint8_t& value) const
 {
-	const void* ptr = &value;
+	if (getInfo() != TYPE_BYTE)
+		throw shard::runtime_exception(L"Cannot interpret instance as Byte");
+
 	std::size_t size = m_shape != nullptr ? m_shape->Size : (m_info != nullptr ? m_info->MemoryBytesSize : 0);
-	WriteMemory(0, size, ptr);
+	WriteMemory(0, size, &value);
 }
 
 bool& ObjectInstance::AsBoolean() const
 {
 	if (getInfo() != TYPE_BOOL)
-		throw std::runtime_error("Cannot interpret instance as Boolean");
+		throw shard::runtime_exception(L"Cannot interpret instance as Boolean");
 
 	return *reinterpret_cast<bool*>(getMemory());
 }
@@ -478,7 +368,7 @@ bool& ObjectInstance::AsBoolean() const
 std::int64_t& ObjectInstance::AsInteger() const
 {
 	if (getInfo() != TYPE_INT && getInfo()->Kind != SyntaxKind::EnumDeclaration)
-		throw std::runtime_error("Cannot interpret instance as Integer");
+		throw shard::runtime_exception(L"Cannot interpret instance as Integer");
 
 	return *reinterpret_cast<std::int64_t*>(getMemory());
 }
@@ -486,7 +376,7 @@ std::int64_t& ObjectInstance::AsInteger() const
 double& ObjectInstance::AsDouble() const
 {
 	if (getInfo() != TYPE_DOUBLE)
-		throw std::runtime_error("Cannot interpret instance as Double");
+		throw shard::runtime_exception(L"Cannot interpret instance as Double");
 
 	return *reinterpret_cast<double*>(getMemory());
 }
@@ -494,7 +384,7 @@ double& ObjectInstance::AsDouble() const
 wchar_t& ObjectInstance::AsCharacter() const
 {
 	if (getInfo() != TYPE_CHAR)
-		throw std::runtime_error("Cannot interpret instance as Character");
+		throw shard::runtime_exception(L"Cannot interpret instance as Character");
 
 	return *reinterpret_cast<wchar_t*>(getMemory());
 }
@@ -502,7 +392,7 @@ wchar_t& ObjectInstance::AsCharacter() const
 std::uint8_t& ObjectInstance::AsByte() const
 {
 	if (getInfo() != TYPE_BYTE)
-		throw std::runtime_error("Cannot interpret instance as Byte");
+		throw shard::runtime_exception(L"Cannot interpret instance as Byte");
 
 	return *reinterpret_cast<std::uint8_t*>(getMemory());
 }
@@ -510,7 +400,7 @@ std::uint8_t& ObjectInstance::AsByte() const
 std::int64_t& ObjectInstance::AsStringLength() const
 {
 	if (getInfo() != TYPE_STRING)
-		throw std::runtime_error("Cannot interpret instance as String");
+		throw shard::runtime_exception(L"Cannot interpret instance as String");
 
 	return *reinterpret_cast<std::int64_t*>(getMemory());
 }
@@ -518,7 +408,7 @@ std::int64_t& ObjectInstance::AsStringLength() const
 const wchar_t* ObjectInstance::AsString() const
 {
 	if (getInfo() != TYPE_STRING)
-		throw std::runtime_error("Cannot interpret instance as String");
+		throw shard::runtime_exception(L"Cannot interpret instance as String");
 
 	return *reinterpret_cast<const wchar_t**>(OffsetMemory(sizeof(std::int64_t), sizeof(wchar_t*)));
 }
@@ -526,7 +416,7 @@ const wchar_t* ObjectInstance::AsString() const
 void* ObjectInstance::AsNint() const
 {
 	if (getInfo() != TYPE_NINT)
-		throw std::runtime_error("Cannot interpret instance as Nint");
+		throw shard::runtime_exception(L"Cannot interpret instance as Nint");
 
 	return *reinterpret_cast<void**>(getMemory());
 }

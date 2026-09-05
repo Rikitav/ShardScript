@@ -50,14 +50,14 @@ static void shard_async_NativeContinuation_MoveNext(const CallState& context) no
 // ------------------------------------------------------------------------
 static void shard_async_Task_MoveNext(const CallState& context) noexcept
 {
-	ObjectInstance* task = context.Args[0];
+	ObjectInstance task = context.Args[0];
 	ResumeContinuation(task, CLASS_TASK_ContinuationField, TRAIT_ASYNCSTATE_MoveNext, context.Domain);
 	return;
 }
 
 static void shard_async_Task_IsCompleted_get(const CallState& context) noexcept
 {
-	ObjectInstance* task = context.Args[0];
+	ObjectInstance task = context.Args[0];
 	AsyncState state = GetTaskState(task, CLASS_TASK_StateField);
 	context.WriteReturn(state != AsyncState::PENDING);
 	return;
@@ -65,16 +65,16 @@ static void shard_async_Task_IsCompleted_get(const CallState& context) noexcept
 
 static void shard_async_Task_GetResult(const CallState& context) noexcept
 {
-	ObjectInstance* task = context.Args[0];
+	ObjectInstance task = context.Args[0];
 	if (GetTaskState(task, CLASS_TASK_StateField) == AsyncState::FAULTED)
 	{
-		ObjectInstance exceptionValue = task->GetField(CLASS_TASK_ExceptionField->SlotIndex);
-		ObjectInstance* exception = exceptionValue.IsNullInstance() ? nullptr : exceptionValue.heapSource();
-		if (exception != nullptr && exception != GarbageCollector::NullInstance)
+		ObjectInstance exceptionValue = task.GetField(CLASS_TASK_ExceptionField->SlotIndex);
+		ObjectInstance exception = exceptionValue;
+		if (!exception.IsNullInstance())
 		{
 			if (context.Frame != nullptr)
 			{
-				exception->IncrementReference();
+				exception.IncrementReference();
 				context.Frame->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
 				context.Frame->InterruptionRegister = exception;
 				context.Frame->CurrentException = exception;
@@ -84,16 +84,16 @@ static void shard_async_Task_GetResult(const CallState& context) noexcept
 	}
 
 	// Non-generic Task has no result.
-	context.PlaceReturned(GarbageCollector::NullInstance);
+	context.PlaceReturned(ObjectInstance());
 	return;
 }
 
 static void shard_async_Task_OnCompleted(const CallState& context) noexcept
 {
-	ObjectInstance* task = context.Args[0];
-	ObjectInstance* continuation = context.Args[1];
+	ObjectInstance task = context.Args[0];
+	ObjectInstance continuation = context.Args[1];
 
-	task->SetField(CLASS_TASK_ContinuationField->SlotIndex, continuation);
+	task.SetField(CLASS_TASK_ContinuationField->SlotIndex, continuation);
 
 	AsyncState state = GetTaskState(task, CLASS_TASK_StateField);
 	if (state != AsyncState::PENDING)
@@ -106,7 +106,7 @@ static void shard_async_Task_OnCompleted(const CallState& context) noexcept
 
 static void shard_async_Task_InternalRoot(const CallState& context) noexcept
 {
-	ObjectInstance* task = context.Args[0];
+	ObjectInstance task = context.Args[0];
 	context.Collector.MarkTaskLike(task);
 	context.Domain.GetEventLoop().RootTask(task);
 	return;
@@ -114,7 +114,7 @@ static void shard_async_Task_InternalRoot(const CallState& context) noexcept
 
 static void shard_async_Task_Complete(const CallState& context) noexcept
 {
-	ObjectInstance* task = context.Args[0];
+	ObjectInstance task = context.Args[0];
 
 	SetTaskState(task, CLASS_TASK_StateField, AsyncState::COMPLETED, context.Collector);
 	context.Collector.ReleaseFrameOwner(task);
@@ -129,7 +129,7 @@ static void shard_async_Task_Complete(const CallState& context) noexcept
 
 static void shard_async_Task_Delay(const CallState& context) noexcept
 {
-	std::int64_t milliseconds = context.Args[0]->AsInteger();
+	std::int64_t milliseconds = context.Args[0].AsInteger();
 
 	context.PlaceReturned(shard::DoAsync(context, [milliseconds](shard::AsyncScope async)
 	{
@@ -140,11 +140,11 @@ static void shard_async_Task_Delay(const CallState& context) noexcept
 
 static void shard_async_Task_SetException(const CallState& context) noexcept
 {
-	ObjectInstance* task = context.Args[0];
-	ObjectInstance* exception = context.Args[1];
+	ObjectInstance task = context.Args[0];
+	ObjectInstance exception = context.Args[1];
 
 	SetTaskState(task, CLASS_TASK_StateField, AsyncState::FAULTED, context.Collector);
-	task->SetField(CLASS_TASK_ExceptionField->SlotIndex, exception);
+	task.SetField(CLASS_TASK_ExceptionField->SlotIndex, exception);
 	context.Collector.ReleaseFrameOwner(task);
 
 	ResumeContinuation(task, CLASS_TASK_ContinuationField, TRAIT_ASYNCSTATE_MoveNext, context.Domain);
@@ -157,7 +157,7 @@ static void shard_async_Task_SetException(const CallState& context) noexcept
 
 static void shard_async_Task_Wait(const CallState& context)
 {
-	ObjectInstance* task = context.Args[0];
+	ObjectInstance task = context.Args[0];
 	EventLoop& loop = context.Domain.GetEventLoop();
 
 	while (GetTaskState(task, CLASS_TASK_StateField) == AsyncState::PENDING)
@@ -165,14 +165,14 @@ static void shard_async_Task_Wait(const CallState& context)
 
 	if (GetTaskState(task, CLASS_TASK_StateField) == AsyncState::FAULTED)
 	{
-		ObjectInstance exceptionValue = task->GetField(CLASS_TASK_ExceptionField->SlotIndex);
-		ObjectInstance* exception = exceptionValue.IsNullInstance() ? nullptr : exceptionValue.heapSource();
-		if (exception != nullptr && exception != GarbageCollector::NullInstance)
+		ObjectInstance exceptionValue = task.GetField(CLASS_TASK_ExceptionField->SlotIndex);
+		ObjectInstance exception = exceptionValue;
+		if (!exception.IsNullInstance())
 		{
 			CallStackFrame* caller = context.Frame != nullptr ? context.Frame->PreviousFrame : nullptr;
 			if (caller != nullptr)
 			{
-				exception->IncrementReference();
+				exception.IncrementReference();
 				caller->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
 				caller->InterruptionRegister = exception;
 				caller->CurrentException = exception;
@@ -188,8 +188,8 @@ static void shard_async_Task_Wait(const CallState& context)
 
 static void shard_async_Task_Shoot(const CallState& context) noexcept
 {
-	ObjectInstance* task = context.Args[0];
-	if (task != nullptr && task != GarbageCollector::NullInstance)
+	ObjectInstance task = context.Args[0];
+	if (!task.IsNullInstance())
 	{
 		context.Collector.MarkFireAndForget(task);
 		context.Collector.ReleaseFrameOwner(task);
@@ -208,14 +208,14 @@ static void shard_async_Task_GetAwaiter(const CallState& context) noexcept
 // ------------------------------------------------------------------------
 static void shard_async_ValueTask_MoveNext(const CallState& context) noexcept
 {
-	ObjectInstance* task = context.Args[0];
+	ObjectInstance task = context.Args[0];
 	ResumeContinuation(task, CLASS_VALUETASK_ContinuationField, TRAIT_ASYNCSTATE_MoveNext, context.Domain);
 	return;
 }
 
 static void shard_async_ValueTask_IsCompleted_get(const CallState& context) noexcept
 {
-	ObjectInstance* task = context.Args[0];
+	ObjectInstance task = context.Args[0];
 	AsyncState state = GetTaskState(task, CLASS_VALUETASK_StateField);
 	context.WriteReturn(state != AsyncState::PENDING);
 	return;
@@ -223,16 +223,16 @@ static void shard_async_ValueTask_IsCompleted_get(const CallState& context) noex
 
 static void shard_async_ValueTask_GetResult(const CallState& context) noexcept
 {
-	ObjectInstance* task = context.Args[0];
+	ObjectInstance task = context.Args[0];
 	if (GetTaskState(task, CLASS_VALUETASK_StateField) == AsyncState::FAULTED)
 	{
-		ObjectInstance exceptionValue = task->GetField(CLASS_VALUETASK_ExceptionField->SlotIndex);
-		ObjectInstance* exception = exceptionValue.IsNullInstance() ? nullptr : exceptionValue.heapSource();
-		if (exception != nullptr && exception != GarbageCollector::NullInstance)
+		ObjectInstance exceptionValue = task.GetField(CLASS_VALUETASK_ExceptionField->SlotIndex);
+		ObjectInstance exception = exceptionValue;
+		if (!exception.IsNullInstance())
 		{
 			if (context.Frame != nullptr)
 			{
-				exception->IncrementReference();
+				exception.IncrementReference();
 				context.Frame->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
 				context.Frame->InterruptionRegister = exception;
 				context.Frame->CurrentException = exception;
@@ -241,20 +241,20 @@ static void shard_async_ValueTask_GetResult(const CallState& context) noexcept
 		}
 	}
 
-	ObjectInstance result = task->GetField(CLASS_VALUETASK_ResultField->SlotIndex);
-	if (result.IsView)
+	ObjectInstance result = task.GetField(CLASS_VALUETASK_ResultField->SlotIndex);
+	if (result.getInfo() != nullptr && !result.getInfo()->IsReferenceType())
 		context.WriteReturn(result);
 	else
-		context.PlaceReturned(result.IsNullInstance() ? GarbageCollector::NullInstance : result.heapSource());
+		context.PlaceReturned(result);
 	return;
 }
 
 static void shard_async_ValueTask_OnCompleted(const CallState& context) noexcept
 {
-	ObjectInstance* task = context.Args[0];
-	ObjectInstance* continuation = context.Args[1];
+	ObjectInstance task = context.Args[0];
+	ObjectInstance continuation = context.Args[1];
 
-	task->SetField(CLASS_VALUETASK_ContinuationField->SlotIndex, continuation);
+	task.SetField(CLASS_VALUETASK_ContinuationField->SlotIndex, continuation);
 
 	AsyncState state = GetTaskState(task, CLASS_VALUETASK_StateField);
 	if (state != AsyncState::PENDING)
@@ -273,18 +273,18 @@ static void shard_async_ValueTask_GetAwaiter(const CallState& context) noexcept
 
 static void shard_async_ValueTask_FromResult(const CallState& context) noexcept
 {
-	ObjectInstance* result = context.Args[0];
+	ObjectInstance result = context.Args[0];
 	context.PlaceReturned(shard::CompletedValueTask(context, result));
 	return;
 }
 
 static void shard_async_ValueTask_SetException(const CallState& context) noexcept
 {
-	ObjectInstance* task = context.Args[0];
-	ObjectInstance* exception = context.Args[1];
+	ObjectInstance task = context.Args[0];
+	ObjectInstance exception = context.Args[1];
 
 	SetTaskState(task, CLASS_VALUETASK_StateField, AsyncState::FAULTED, context.Collector);
-	task->SetField(CLASS_VALUETASK_ExceptionField->SlotIndex, exception);
+	task.SetField(CLASS_VALUETASK_ExceptionField->SlotIndex, exception);
 	context.Collector.ReleaseFrameOwner(task);
 
 	ResumeContinuation(task, CLASS_VALUETASK_ContinuationField, TRAIT_ASYNCSTATE_MoveNext, context.Domain);
@@ -296,11 +296,11 @@ static void shard_async_ValueTask_SetException(const CallState& context) noexcep
 
 static void shard_async_ValueTask_SetResult(const CallState& context) noexcept
 {
-	ObjectInstance* task = context.Args[0];
-	ObjectInstance* result = context.Args[1];
+	ObjectInstance task = context.Args[0];
+	ObjectInstance result = context.Args[1];
 
 	SetTaskState(task, CLASS_VALUETASK_StateField, AsyncState::COMPLETED, context.Collector);
-	task->SetField(CLASS_VALUETASK_ResultField->SlotIndex, result);
+	task.SetField(CLASS_VALUETASK_ResultField->SlotIndex, result);
 	context.Collector.ReleaseFrameOwner(task);
 
 	ResumeContinuation(task, CLASS_VALUETASK_ContinuationField, TRAIT_ASYNCSTATE_MoveNext, context.Domain);
@@ -312,7 +312,7 @@ static void shard_async_ValueTask_SetResult(const CallState& context) noexcept
 
 static void shard_async_ValueTask_InternalRoot(const CallState& context) noexcept
 {
-	ObjectInstance* task = context.Args[0];
+	ObjectInstance task = context.Args[0];
 	context.Collector.MarkTaskLike(task);
 	context.Domain.GetEventLoop().RootTask(task);
 	return;
@@ -320,7 +320,7 @@ static void shard_async_ValueTask_InternalRoot(const CallState& context) noexcep
 
 static void shard_async_ValueTask_Wait(const CallState& context)
 {
-	ObjectInstance* task = context.Args[0];
+	ObjectInstance task = context.Args[0];
 	EventLoop& loop = context.Domain.GetEventLoop();
 
 	while (GetTaskState(task, CLASS_VALUETASK_StateField) == AsyncState::PENDING)
@@ -328,14 +328,14 @@ static void shard_async_ValueTask_Wait(const CallState& context)
 
 	if (GetTaskState(task, CLASS_VALUETASK_StateField) == AsyncState::FAULTED)
 	{
-		ObjectInstance exceptionValue = task->GetField(CLASS_VALUETASK_ExceptionField->SlotIndex);
-		ObjectInstance* exception = exceptionValue.IsNullInstance() ? nullptr : exceptionValue.heapSource();
-		if (exception != nullptr && exception != GarbageCollector::NullInstance)
+		ObjectInstance exceptionValue = task.GetField(CLASS_VALUETASK_ExceptionField->SlotIndex);
+		ObjectInstance exception = exceptionValue;
+		if (!exception.IsNullInstance())
 		{
 			CallStackFrame* caller = context.Frame != nullptr ? context.Frame->PreviousFrame : nullptr;
 			if (caller != nullptr)
 			{
-				exception->IncrementReference();
+				exception.IncrementReference();
 				caller->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
 				caller->InterruptionRegister = exception;
 				caller->CurrentException = exception;

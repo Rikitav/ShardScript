@@ -26,6 +26,7 @@ namespace shard
 {
 	class ApplicationDomain;
 	class GarbageCollector;
+	struct CallState;
 
 	class SHARD_API VirtualMachine
 	{
@@ -40,22 +41,24 @@ namespace shard
 
 		void HaltFireAndForgetTasks();
 
-		ObjectInstance* UnhandledException = nullptr;
+		ObjectInstance UnhandledException;
 		std::wstring UnhandledExceptionMessage;
 		std::wstring UnhandledExceptionStackTrace;
 
 		void InvokeMethodInternal(MethodSymbol* method, CallStackFrame* currentFrame);
 
+		friend struct CallState;
+
 	public:
 		void ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder, const OpCode opCode);
-		ObjectInstance* InstantiateObject(TypeSymbol* type, ConstructorSymbol* ctor, bool inPlace = false);
-		ObjectInstance* InstantiateDelegate(DelegateTypeSymbol* type);
+		ObjectInstance InstantiateObject(TypeSymbol* type, ConstructorSymbol* ctor, bool inPlace = false);
+		ObjectInstance InstantiateDelegate(DelegateTypeSymbol* type);
 
-		ObjectInstance* InvokeOperatorMethod(ObjectInstance* leftInstance, TokenType opToken, ObjectInstance* rightInstance);
-		ObjectInstance* InvokeOperatorMethod(ObjectInstance* sourceInstance, TokenType opToken);
+		ObjectInstance InvokeOperatorMethod(ObjectInstance leftInstance, TokenType opToken, ObjectInstance rightInstance);
+		ObjectInstance InvokeOperatorMethod(ObjectInstance sourceInstance, TokenType opToken);
 
-		ObjectInstance* CreateRuntimeException(const std::exception& err);
-		ObjectInstance* CreateRuntimeException(TypeSymbol* type, const std::wstring& message, const std::wstring& stackTrace);
+		ObjectInstance CreateRuntimeException(const std::exception& err);
+		ObjectInstance CreateRuntimeException(TypeSymbol* type, const std::wstring& message, const std::wstring& stackTrace);
 
 	public:
 		VirtualMachine(ApplicationDomain* appDomain);
@@ -73,23 +76,24 @@ namespace shard
 		void PopFrame();
 
 		void InvokeMethod(MethodSymbol* method) const;
-		void InvokeMethod(MethodSymbol* method, std::initializer_list<ObjectInstance*> args) const;
-		ObjectInstance* InvokeMethod(MethodSymbol* method, ObjectInstance** args, std::size_t count) const;
+		void InvokeMethod(MethodSymbol* method, std::initializer_list<ObjectInstance> args) const;
+		ObjectInstance InvokeMethod(MethodSymbol* method, ObjectInstance* args, std::size_t count) const;
+
 		void SetPendingTypeArguments(std::initializer_list<TypeSymbol*> args) const;
 		void SetPendingTypeArguments(const std::vector<TypeSymbol*>& args) const;
-		void RaiseException(ObjectInstance* exceptionReg) const;
+		void RaiseException(ObjectInstance exceptionReg) const;
 
 		std::wstring GetStackTrace() const;
-		std::wstring GetThrowablePropertyValue(ObjectInstance* exception, AccessorSymbol* interfacePropertyAccessor) const;
+		std::wstring GetThrowablePropertyValue(ObjectInstance exception, AccessorSymbol* interfacePropertyAccessor) const;
 
 		void Run();
 		void Abort() const;
 		void TerminateCallStack();
 
-		ObjectInstance* GetUnhandledException() const { return UnhandledException; }
+		ObjectInstance GetUnhandledException() const { return UnhandledException; }
 		const std::wstring& GetUnhandledExceptionMessage() const { return UnhandledExceptionMessage; }
 		const std::wstring& GetUnhandledExceptionStackTrace() const { return UnhandledExceptionStackTrace; }
 
-		ObjectInstance* RunInteractive(std::size_t& pointer);
+		ObjectInstance RunInteractive(std::size_t& pointer);
 	};
 }

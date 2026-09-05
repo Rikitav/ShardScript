@@ -14,141 +14,37 @@
 
 // ============================================================================
 // CallStackFrame — one invocation of a method on the virtual machine's call
-// stack. Holds the method's state for the duration of the call: argument and
-// local-variable slots, the evaluation stack the bytecode pushes to and pops
-// from, exception-handler and defer bookkeeping, and the resolved type
-// arguments for generic methods.
+// stack.
 //
-// ----------------------------------------------------------------------------
 // MEMORY LAYOUT
 //
-// A frame is ONE allocation. `CallStackFrame::Create` mi_mallocs
+// `CallStackFrame::Create` mi_mallocs ONE fixed-size block:
 //
-//     sizeof(CallStackFrame) + arenaBytes
+//     [CallStackFrame][return slot][args region][locals region][eval region]
 //
-// placement-news the object at the start of the block, and hands it to a
-// shared_ptr whose deleter runs the destructor and mi_frees the block. The
-// arena trails the object:
+// The `CallStackFrame` object is placement-new'd at the block head and the
+// arena (args/locals/eval + a single reserved return entry) trails it. The
+// block is sized once at creation from the bytecode-emission metadata
+// (MethodSymbol::Layout) and is never reallocated. The only runtime sizing is
+// for generic methods: when TypeArguments are supplied, substituted type
+// shapes are resolved before the mi_malloc and their exact inline sizes fold
+// into the arena size.
 //
-//     [CallStackFrame object][return slot][locals region][view arena][eval region]
-//     ^-- this               ^-- Arena = this + sizeof(CallStackFrame)
+// Every slot in args/locals/eval is a `{ TypeShape*, Payload }` entry:
+//   - by-value instance  -> inline payload of Align(shape->Size) bytes;
+//   - by-reference       -> payload holds a pointer to a GC-heap-allocated
+//                           instance ([GcHeader][payload]); null = null ptr.
 //
-// `sizeof` covers the complete object including tail padding, so the arena
-// base does not depend on member declaration order. The frame block is
-// recycled, not freed: Create/ReleaseToPool keep a freelist keyed by total
-// block size, which is safe because a frame's size is fixed per
-// (method, type-args) and Create rebuilds all layout state on reuse. The
-// frame is released when the shared_ptr dies (normally at PopFrame; async
-// frames with pending tasks survive via PendingTaskCount until the tasks
-// release them).
+// Region memory is never wiped or zeroed; slots are only (re)written when a
+// value is pushed/stored.
 //
-// Every slot in the regions is a TAGGED, HEADER-DRIVEN byte entry:
+// EVAL REGION
 //
-//     [TypeShape* header][payload ...]
-//
-// The header encodes BOTH the value's concrete TypeShape (the
-// per-instantiation layout metadata — see TypeShape/TypeShapeCache) and the
-// payload storage kind, in the pointer's low bit (shapes are at least
-// alignof(TypeShape*)-aligned, so the bit is free):
-//
-//     header & 1 == 1   BOXED reference — payload = ObjectInstance*
-//     header & 1 == 0   INLINE value    — payload = byte[AlignUp(shape->Size)]
-//
-// so EntryStride is derived from the header alone:
-//
-//     boxed (or shapeless null) -> sizeof(TypeShape*) + sizeof(ObjectInstance*)
-//     inline                    -> sizeof(TypeShape*) + AlignUp(shape->Size, 8)
-//
-// A null value is the boxed form with a null shape (header == BoxedTag).
-//
-// OWNERSHIP. A slot OWNS whatever references its payload points at:
-//   - boxed slot: owns ONE reference to the payload instance (adopt =
-//     IncrementReference, release = GarbageCollector::DestroyInstance);
-//   - inline slot: owns its REFERENCE FIELDS — the by-value payload bytes are
-//     raw data, but any ObjectInstance* stored inside them is co-owned
-//     (adopt/release walk the shape's reference slots). Inline payloads are
-//     never GC objects themselves: no box, no GcHeader, nothing to free.
-// SetLocal/DrainReferences implement exactly this protocol; eval entries and
-// locals share it, which is what lets the collect-after-opcode calls in the
-// interpreter disappear.
-//
-// ----------------------------------------------------------------------------
-// THE REGIONS
-//
-//   Return slot   — one reserved entry at the arena base for the method's
-//                   return value, laid out like any other slot entry: a
-//                   value-type return gets an inline entry sized from the
-//                   resolved return shape, a reference/void return keeps the
-//                   boxed pointer-sized stride. The VM pre-sets the entry
-//                   header before an external callback runs; foreign code
-//                   writes the payload (see CallState::WriteReturn /
-//                   PlaceReturned / ReturnView).
-//
-//   Locals region — argument slots followed by local-variable slots. Slots
-//                   have PER-SLOT strides: each slot's kind and shape are
-//                   resolved ONCE, at Create, from MethodSymbol::FrameLayout
-//                   (parameters' types + the FrameSlotRecipe table) and the
-//                   method's type arguments, so generic instantiations get
-//                   their exact inline layouts (a local of T = BigStruct is
-//                   stored inline; T resolved late or unknown stays a
-//                   reference slot holding a box). The resolved descriptor
-//                   table (shape, byte offset, inline flag) lives on the
-//                   frame; the region itself is pre-zeroed, a zeroed entry
-//                   reading as a null value / zero inline payload.
-//
-//   Eval region   — the stack bytecode operands live on. Entries are
-//                   VARIABLE-STRIDE: the emitter does not record a static type
-//                   per eval slot, so the frame keeps an offsets index
-//                   (EvalOffsets, one uint32 byte-offset per live entry) and
-//                   Push*/Pop* move a byte cursor over the region. Popping is
-//                   therefore safe for any mix of boxed and inline entries.
-//
-// External methods receive their arguments as an ArgumentsSpan of
-// ObjectInstance* — the VM copies argument payloads into a scratch buffer
-// per external call (reference payloads verbatim, inline payloads wrapped in
-// transient borrow-view ObjectInstance values placed in caller-provided
-// storage), so dependent libraries keep the contiguous span ABI they were
-// built against. No view header is ever allocated from the frame: an
-// ObjectInstance is a lightweight view struct, and wherever legacy code needs
-// one over frame bytes the caller supplies the (stack) storage.
-//
-// GROWTH NEVER MOVES THE FRAME OBJECT. Raw CallStackFrame* pointers are all
-// over the runtime — PreviousFrame chains, async task bindings, CurrentFrame
-// results — so realloc'ing the single block in place is forbidden. The locals
-// region never grows (slot indices are emission-assigned and exact). If the
-// eval region outgrows its initial capacity, GrowEvalRegion migrates the arena
-// to a separate side block (copying the fixed prefix and live eval bytes,
-// flipping ArenaIsTrailing) and the frame object stays where it was. The
-// destructor frees the arena only when it is such a side allocation; a
-// trailing arena is freed together with the object by the Create() deleter.
-//
-// ----------------------------------------------------------------------------
-// WHERE THE CAPACITY COMES FROM
-//
-// The arena is sized exactly at frame creation from metadata computed
-// during bytecode emission (see MethodSymbol::FrameLayout and the
-// EvalLayoutTracker instrumentation in AbstractEmiter / AsyncEmissionPass):
-//
-//   locals bytes — the sum of the resolved per-slot entry strides (see
-//       above). Slot indices are assigned once, during semantic analysis and
-//       emission, so the table is exact.
-//
-//   eval bytes   = max(FrameLayout::MaxEvalDepth, 8) * evalEntryStride
-//                = 64 * 16                                        otherwise
-//       where evalEntryStride = sizeof(TypeShape*) +
-//                               AlignUp(max(sizeof(void*),
-//                                         FrameLayout::EvalSlotPayload), 8).
-//       MaxEvalDepth is the peak number of eval entries the emitted
-//       bytecode can hold and EvalSlotPayload the largest inline payload any
-//       push carries, both tracked instruction-by-instruction at emission
-//       time; the product is an upper bound on the live eval bytes (an entry
-//       is charged for the largest payload even when it holds a pointer).
-//       The depth floor of 8 guarantees exception dispatch always has room
-//       to push the thrown exception. When the layout is unknown (tracker
-//       desync / poisoned, or an external stub with no bytecode) the frame
-//       starts with a default region and grows on demand — the only path
-//       that can trigger a side migration.
-//
+// The eval region grows/shrinks via a byte cursor. Push advances the cursor by
+// sizeof(TypeShape*) + Align(payload size); PopStack rewinds it by the same
+// amount and returns an ObjectInstance VIEW into the eval region. Popped
+// values are never cleared — they stay in place until the next push overwrites
+// them.
 // ============================================================================
 
 namespace shard
@@ -163,20 +59,29 @@ namespace shard
 		ExceptionRaised,
 	};
 
-	struct SHARD_API StackValue
-	{
-		TypeShape* Shape = nullptr;
-		bool IsInline = false;
-		std::byte* Data = nullptr;
-
-		inline ObjectInstance* AsObject() const
-		{
-			return IsInline ? nullptr : *reinterpret_cast<ObjectInstance**>(Data);
-		}
-	};
-
 	class SHARD_API CallStackFrame : public std::enable_shared_from_this<CallStackFrame>
 	{
+		friend class VirtualMachine;
+
+		struct LocalSlotDesc
+		{
+			TypeShape* Shape;       // resolved shape (value shape for inline, referenced object shape for references; null if unknown)
+			std::uint32_t Offset;   // byte offset into the arena
+			bool Inline;            // true => inline payload, false => pointer payload
+		};
+
+		std::byte* ReturnSlot = nullptr;
+		TypeShape* ReturnSlotShape = nullptr;
+
+		std::vector<LocalSlotDesc> LocalSlots;
+		std::byte* LocalRegionEnd = nullptr;
+
+		std::byte* EvalEntries = nullptr;
+		std::size_t EvalCapacityBytes = 0;
+		std::size_t EvalCursorBytes = 0;
+		std::size_t EvalSize = 0;
+		std::vector<std::uint32_t> EvalOffsets;
+
 	public:
 		struct ExceptionHandlerFrame
 		{
@@ -195,18 +100,24 @@ namespace shard
 		std::vector<ExceptionHandlerFrame> ExceptionHandlers;
 		std::size_t PendingTaskCount = 0;
 
-		FrameInterruptionReason InterruptionReason = FrameInterruptionReason::None;
-		ObjectInstance* InterruptionRegister = nullptr;
-		ObjectInstance* CurrentException = nullptr;
-
 		std::vector<std::size_t> DeferStack;
 		std::size_t DeferDrainDepth = 0;
+
+		FrameInterruptionReason InterruptionReason = FrameInterruptionReason::None;
+		ObjectInstance InterruptionRegister;
+		ObjectInstance CurrentException;
+
+		static constexpr std::size_t SlotHeaderBytes = sizeof(TypeShape*);
+		static constexpr std::size_t ReferencePayloadBytes = sizeof(void*);
+		static constexpr std::size_t BoxedEntryStride = SlotHeaderBytes + ReferencePayloadBytes;
 
 	private:
 		CallStackFrame(const VirtualMachine* host, CallStackFrame* previousFrame, MethodSymbol* method)
 			: Host(host), Method(method), PreviousFrame(previousFrame) { }
 
 	public:
+		~CallStackFrame();
+
 		inline bool interrupted() const
 		{
 			return InterruptionReason != FrameInterruptionReason::None;
@@ -216,25 +127,14 @@ namespace shard
 
 		static std::shared_ptr<CallStackFrame> Create(const VirtualMachine* host, CallStackFrame* previousFrame, MethodSymbol* method, const std::vector<TypeSymbol*>& typeArguments);
 
-		static constexpr std::uintptr_t BoxedTag = 1;
-		static constexpr std::size_t SlotHeaderBytes = sizeof(TypeShape*);
-		static constexpr std::size_t ReferencePayloadBytes = sizeof(ObjectInstance*);
-		static constexpr std::size_t BoxedEntryStride = SlotHeaderBytes + ReferencePayloadBytes;
-
-		static constexpr std::size_t Align(std::size_t value) { return (value + sizeof(void*) - 1) & ~(sizeof(void*) - 1); }
-
-		static inline bool EntryIsBoxed(const std::byte* entry)
+		static constexpr std::size_t Align(std::size_t value)
 		{
-			std::uintptr_t header;
-			std::memcpy(&header, entry, sizeof(header));
-			return (header & BoxedTag) != 0;
+			return (value + sizeof(void*) - 1) & ~(sizeof(void*) - 1);
 		}
 
 		static inline TypeShape* EntryShape(const std::byte* entry)
 		{
-			std::uintptr_t header;
-			std::memcpy(&header, entry, sizeof(header));
-			return reinterpret_cast<TypeShape*>(header & ~BoxedTag);
+			return *reinterpret_cast<TypeShape* const*>(entry);
 		}
 
 		static inline std::size_t EntryPayloadBytes(TypeShape* shape)
@@ -247,87 +147,51 @@ namespace shard
 			return SlotHeaderBytes + EntryPayloadBytes(EntryShape(entry));
 		}
 
-		void PushReference(ObjectInstance* value);
-		void PushInline(TypeShape* shape, const void* payloadBytes);
-		inline void PushStack(ObjectInstance* value) { PushReference(value); }
-		std::byte* PushInlineUninitialized(TypeShape* shape);
+		ObjectInstance PushCopy(const ObjectInstance& value);
+		ObjectInstance PushReference(ObjectInstance value);
+		ObjectInstance PushInline(TypeShape* shape, const void* payloadBytes);
+		ObjectInstance PushInlineUninitialized(TypeShape* shape);
+		ObjectInstance PushStack(ObjectInstance value);
 
-		ObjectInstance* PopStack();
-		ObjectInstance* PeekStack();
-		ObjectInstance* PopBoxed(GarbageCollector& gc);
+		ObjectInstance PopValue();
+		ObjectInstance TopValue();
 
-		StackValue TopValue();
-		StackValue PopValue();
+		ObjectInstance PopStack();
+		ObjectInstance PeekStack();
 
-		void PushCopy(const StackValue& value);
+		ObjectInstance GetLocal(std::uint16_t slot);
+		void SetLocal(std::uint16_t slot, const ObjectInstance& value, GarbageCollector& gc);
 
-		static void ReleaseValue(const StackValue& value, GarbageCollector& gc);
-		static void DiscardValue(const StackValue& value, GarbageCollector& gc);
+		inline std::size_t LocalCount() const
+		{
+			return LocalSlots.size();
+		}
 
-		inline std::size_t EvalCount() const { return EvalSize; }
+		inline std::size_t EvalCount() const
+		{
+			return EvalSize;
+		}
 
-		// Inline locals have no ObjectInstance of their own — the storage
-		// overload fills caller-provided memory with a borrow view (same
-		// contract as ObjectInstance::GetField).
-		ObjectInstance* GetLocal(std::uint16_t slot, ObjectInstance& storage);
-		StackValue GetLocalValue(std::uint16_t slot);
-		ObjectInstance*& LocalRef(std::uint16_t slot);
-		void SetLocal(std::uint16_t slot, const StackValue& value, GarbageCollector& gc);
+		// Writes `count` argument values (by-value self-contained wrappers) into
+		// `dst`. Inline argument payloads become borrow views into the frame;
+		// reference payloads wrap the stored heap pointer.
+		void CopyArgumentPayloads(ObjectInstance* dst, std::size_t count);
 
-		inline std::size_t LocalCount() const { return LocalSlots.size(); }
+		inline TypeShape* ReturnShape() const
+		{
+			return ReturnSlotShape;
+		}
 
-		// `storage` must have room for `count` ObjectInstance values; inline
-		// argument payloads are placement-new'd into it as borrow views.
-		void CopyArgumentPayloads(ObjectInstance** dst, ObjectInstance* storage, std::size_t count);
-
-		// Resolved once at Create from the method's return type: non-null shape
-		// means the return slot is an inline entry of Align(shape->Size) payload
-		// bytes; null means a boxed (pointer-sized) entry.
-		inline TypeShape* ReturnShape() const { return ReturnSlotShape; }
-		inline std::byte* ReturnSlotMemory() const { return ReturnSlot; }
+		inline std::byte* ReturnSlotMemory() const
+		{
+			return ReturnSlot;
+		}
 
 		void DrainReferences(GarbageCollector& gc);
 		void DrainEvalReferences(GarbageCollector& gc);
 		void DrainLocalReferences(GarbageCollector& gc);
 
-		~CallStackFrame();
-
-	private:
-		struct LocalSlotDesc
-		{
-			TypeShape* Shape;
-			std::uint32_t Offset;
-			bool Inline;
-		};
-
-		std::byte* ReturnSlot = nullptr;
-		TypeShape* ReturnSlotShape = nullptr;
-		std::vector<LocalSlotDesc> LocalSlots;
-		std::byte* LocalRegionEnd = nullptr;
-
-		std::byte* EvalEntries = nullptr;
-		std::size_t EvalCapacityBytes = 0;
-		std::size_t EvalCursorBytes = 0;
-		std::size_t EvalSize = 0;
-		std::size_t EvalMaxEntryStride = BoxedEntryStride;
-		std::vector<std::uint32_t> EvalOffsets;
-		bool ArenaIsTrailing = false;
-
-		static inline ObjectInstance*& PayloadRef(std::byte* entry)
-		{
-			return *reinterpret_cast<ObjectInstance**>(entry + SlotHeaderBytes);
-		}
-
-		static inline ObjectInstance* PayloadRead(const std::byte* entry)
-		{
-			ObjectInstance* payload;
-			std::memcpy(&payload, entry + SlotHeaderBytes, sizeof(payload));
-			return payload;
-		}
-
-		void GrowEvalRegion(std::size_t newCapacityBytes);
-
-		static void* TakePooledBlock(std::size_t blockBytes);
-		static void ReleaseToPool(CallStackFrame* frame);
+		static void ReleaseValue(const ObjectInstance& value, GarbageCollector& gc);
+		static void DiscardValue(const ObjectInstance& value, GarbageCollector& gc);
 	};
 }

@@ -97,4 +97,30 @@ namespace shard
         TypeSymbol* m_exceptionType = nullptr;
         mutable std::string m_narrowMessage;
     };
+
+    /// <summary>
+    /// Thrown by the FFI helper layer (CallState, argument unwrapping, view
+    /// contracts) when foreign code does something strange, undefined or
+    /// contract-violating. The VM maps it to the managed built-in
+    /// UndefinedBehaviour class (see VirtualMachine::CreateRuntimeException),
+    /// so scripts can catch it by type.
+    /// </summary>
+    class SHARD_API undefined_behaviour : public runtime_exception
+    {
+    public:
+        using runtime_exception::runtime_exception;
+
+        explicit undefined_behaviour(const std::string& message)
+            : runtime_exception(Widen(message)) { }
+
+    private:
+        static std::wstring Widen(const std::string& message)
+        {
+            std::wstring result;
+            result.reserve(message.size());
+            for (char c : message)
+                result.push_back(static_cast<unsigned char>(c) <= 0x7F ? static_cast<wchar_t>(c) : L'?');
+            return result;
+        }
+    };
 }
