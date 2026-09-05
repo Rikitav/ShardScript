@@ -32,6 +32,8 @@
 
 namespace shard
 {
+	typedef std::span<ObjectInstance> ArgumentsSpan;
+
 	namespace detail
 	{
 		inline bool               UnwrapArg(ObjectInstance value, bool*) { return value.AsBoolean(); }
@@ -79,9 +81,53 @@ namespace shard
 		}
 	}
 
-	typedef std::span<ObjectInstance> ArgumentsSpan;
+	/// <summary>
+	/// Callable RAII container that holds an ObjectRef to a delegate ObjectInstance.
+	/// </summary>
+	class SHARD_API DelegateRef
+	{
+		VirtualMachine* m_runtime = nullptr;
+		ObjectRef m_delegate;
 
-	class DelegateRef;
+	public:
+		DelegateRef() = default;
+
+		DelegateRef(VirtualMachine& runtime, ObjectInstance delegate)
+			: m_runtime(&runtime), m_delegate(delegate) {
+		}
+
+		DelegateRef(const DelegateRef&) = delete;
+		DelegateRef& operator=(const DelegateRef&) = delete;
+
+		DelegateRef(DelegateRef&&) = default;
+		DelegateRef& operator=(DelegateRef&&) = default;
+
+		[[nodiscard]] bool IsValid() const noexcept
+		{
+			return m_runtime != nullptr && !m_delegate.IsNull();
+		}
+
+		[[nodiscard]] ObjectInstance Instance() const noexcept
+		{
+			return m_delegate.Value;
+		}
+
+		/// <summary>
+		/// Invokes the delegate with the supplied arguments and returns its result.
+		/// </summary>
+		ObjectInstance operator()(std::initializer_list<ObjectInstance> args = {}) const
+		{
+			if (!IsValid())
+				throw undefined_behaviour("DelegateRef is not valid");
+
+			MethodSymbol* target = m_delegate.Value.getInfo()->Methods.at(0);
+			if (target == nullptr)
+				throw undefined_behaviour("Delegate has no target method");
+
+			std::vector<ObjectInstance> callArgs(args);
+			return m_runtime->InvokeMethod(target, callArgs.data(), callArgs.size());
+		}
+	};
 
 	struct ReturnTargetInfo
 	{
@@ -90,7 +136,7 @@ namespace shard
 	};
 
 	/// <summary>
-	/// 
+	/// TODO: Add summary
 	/// </summary>
 	class InvokeResult
 	{
@@ -170,6 +216,9 @@ namespace shard
 			if (ReturnPlaced)
 				throw undefined_behaviour("WriteReturn: return value already placed");
 
+			if (value.getInfo()->GetInlineSize() < ReturnTarget.Shape->Size)
+				throw undefined_behaviour("WriteReturn: value does not fit the return slot");
+
 			std::memcpy(ReturnTarget.Slot, value.getMemory(), ReturnTarget.Shape->Size);
 			ReturnPlaced = true;
 		}
@@ -201,15 +250,13 @@ namespace shard
 			ReturnPlaced = true;
 		}
 
-		// ------------------------------------------------------------------
-		// Observed invocation. Script exceptions come back as InvokeResult::Err
-		// (owning reference to the Throwable) instead of being dropped on the
-		// calling frame; native C++ exceptions (abort, engine errors) still
-		// propagate. See also Propagate.
-		// ------------------------------------------------------------------
 		InvokeResult TryInvokeMethod(MethodSymbol* method) const;
 		InvokeResult TryInvokeMethod(MethodSymbol* method, std::initializer_list<ObjectInstance> args) const;
 		InvokeResult TryInvokeMethod(MethodSymbol* method, ObjectInstance* args, std::size_t count) const;
+
+		InvokeResult TryInvokeMethod(MethodSymbol* method, const std::vector<TypeSymbol*>& typeArguments) const;
+		InvokeResult TryInvokeMethod(MethodSymbol* method, const std::vector<TypeSymbol*>& typeArguments, std::initializer_list<ObjectInstance> args) const;
+		InvokeResult TryInvokeMethod(MethodSymbol* method, ObjectInstance* args, std::size_t count, const std::vector<TypeSymbol*>& typeArguments) const;
 
 		/// <summary>
 		/// Re-raise on this callback's frame so unwinding continues when the callback returns.
@@ -220,17 +267,13 @@ namespace shard
 		template<typename... TArgs>
 		std::tuple<TArgs...> GetArgs() const;
 
-		ObjectInstance NewObject(TypeSymbol* type, ConstructorSymbol* ctor, std::initializer_list<ObjectInstance> args = {}) const;
-		ObjectInstance NewObject(TypeSymbol* type) const;
-		ObjectInstance NewObject(ClassSymbol* cls, const std::vector<TypeSymbol*>& typeArgs, std::initializer_list<ObjectInstance> args = {}) const;
+		InvokeResult NewObject(TypeSymbol* type) const;
+		InvokeResult NewObject(TypeSymbol* type, ConstructorSymbol* ctor, std::initializer_list<ObjectInstance> args) const;
+		InvokeResult NewObject(TypeSymbol* type, const std::vector<TypeSymbol*>& typeArgs) const;
+		InvokeResult NewObject(TypeSymbol* type, ConstructorSymbol* ctor, const std::vector<TypeSymbol*>& typeArgs, std::initializer_list<ObjectInstance> args) const;
 
-		// Throwing invocation flavor: std::runtime_error on Err, which the
-		// engine boundary converts into a script exception.
-		ObjectInstance CallMethod(MethodSymbol* method, std::initializer_list<ObjectInstance> args = {}) const;
-		ObjectInstance CallMethod(MethodSymbol* method, ObjectInstance receiver, std::initializer_list<ObjectInstance> args = {}) const;
-
-		ObjectInstance GetProperty(ObjectInstance obj, PropertySymbol* prop) const;
-		void SetProperty(ObjectInstance obj, PropertySymbol* prop, ObjectInstance value) const;
+		InvokeResult GetProperty(ObjectInstance obj, PropertySymbol* prop) const;
+		InvokeResult SetProperty(ObjectInstance obj, PropertySymbol* prop, ObjectInstance value) const;
 
 		DelegateRef WrapDelegate(ObjectInstance delegate) const;
 	};
@@ -277,21 +320,45 @@ namespace shard
 		return detail::GetArgsImpl<TArgs...>(*this, std::index_sequence_for<TArgs...>{});
 	}
 
-	inline InvokeResult CallState::TryInvokeMethod(MethodSymbol* method, ObjectInstance* args, std::size_t count) const
+	inline InvokeResult CallState::TryInvokeMethod(MethodSymbol* method, ObjectInstance* args, std::size_t count, const std::vector<TypeSymbol*>& typeArguments) const
 	{
 		if (method == nullptr)
 			throw undefined_behaviour("TryInvokeMethod: method is null");
+
+		MethodSymbol* targetMethod = method;
+		if (method->IsAbstract)
+		{
+			if (count == 0)
+				throw undefined_behaviour(L"Tried to call abstract method without 'this' argument");
+
+			if (args[0].IsNullInstance())
+				throw undefined_behaviour(L"Tried to call abstract method on a null instance");
+
+			TypeSymbol* receiverType = const_cast<TypeSymbol*>(args[0].getInfo());
+			if (receiverType != nullptr)
+			{
+				targetMethod = receiverType->FindInterfaceImplementation(method);
+				if (targetMethod == nullptr)
+					throw undefined_behaviour(L"Failed to resolve abstract method");
+			}
+		}
 
 		bool pushedRootFrame = false;
 		CallStackFrame* callingFrame = Runtimer.CurrentFrame();
 		if (callingFrame == nullptr)
 		{
-			MethodSymbol* rootMethod = Program.EntryPoint != nullptr ? Program.EntryPoint : method;
+			MethodSymbol* rootMethod = Program.EntryPoint != nullptr ? Program.EntryPoint : targetMethod;
 			callingFrame = Runtimer.PushFrame(rootMethod);
 			pushedRootFrame = true;
 		}
 
-		CallStackFrame* frame = Runtimer.PushFrame(method);
+		if (targetMethod->TypeParameters.size() != typeArguments.size())
+			throw undefined_behaviour(L"Method " + targetMethod->Name + L" expected " + std::to_wstring(targetMethod->TypeParameters.size()) + L" generic type arguments, but got " + std::to_wstring(typeArguments.size()));
+
+		if (!typeArguments.empty())
+			Runtimer.SetPendingTypeArguments(typeArguments);
+
+		CallStackFrame* frame = Runtimer.PushFrame(targetMethod);
 
 		for (std::size_t i = 0; i < count; i++)
 			callingFrame->PushCopy(args[i]);
@@ -299,7 +366,7 @@ namespace shard
 		InvokeResult result;
 		try
 		{
-			Runtimer.InvokeMethodInternal(method, frame);
+			Runtimer.InvokeMethodInternal(targetMethod, frame);
 		}
 		catch (...)
 		{
@@ -325,7 +392,7 @@ namespace shard
 			callingFrame->CurrentException = ObjectInstance();
 			result = InvokeResult(ObjectInstance(), exception);
 		}
-		else if (method->ReturnType != nullptr && method->ReturnType != SymbolTable::Primitives::Void && callingFrame->EvalCount() > 0)
+		else if (targetMethod->ReturnType != nullptr && targetMethod->ReturnType != SymbolTable::Primitives::Void && callingFrame->EvalCount() > 0)
 		{
 			result = InvokeResult(callingFrame->PopValue(), ObjectInstance());
 		}
@@ -337,6 +404,11 @@ namespace shard
 		return result;
 	}
 
+	inline InvokeResult CallState::TryInvokeMethod(MethodSymbol* method, ObjectInstance* args, std::size_t count) const
+	{
+		return TryInvokeMethod(method, args, count, {});
+	}
+
 	inline InvokeResult CallState::TryInvokeMethod(MethodSymbol* method) const
 	{
 		return TryInvokeMethod(method, nullptr, 0);
@@ -346,6 +418,17 @@ namespace shard
 	{
 		std::vector<ObjectInstance> storage(args.begin(), args.end());
 		return TryInvokeMethod(method, storage.data(), storage.size());
+	}
+
+	inline InvokeResult CallState::TryInvokeMethod(MethodSymbol* method, const std::vector<TypeSymbol*>& typeArguments) const
+	{
+		return TryInvokeMethod(method, nullptr, 0, typeArguments);
+	}
+
+	inline InvokeResult CallState::TryInvokeMethod(MethodSymbol* method, const std::vector<TypeSymbol*>& typeArguments, std::initializer_list<ObjectInstance> args) const
+	{
+		std::vector<ObjectInstance> storage(args.begin(), args.end());
+		return TryInvokeMethod(method, storage.data(), storage.size(), typeArguments);
 	}
 
 	inline void CallState::Propagate(ObjectInstance exception) const
@@ -362,7 +445,19 @@ namespace shard
 		Frame->CurrentException = exception;
 	}
 
-	inline ObjectInstance CallState::NewObject(TypeSymbol* type, ConstructorSymbol* ctor, std::initializer_list<ObjectInstance> args) const
+	inline InvokeResult CallState::NewObject(TypeSymbol* type) const
+	{
+		ConstructorSymbol* ctor = detail::FindParameterlessConstructor(type);
+		if (ctor == nullptr)
+			throw undefined_behaviour("Type has no parameterless constructor");
+
+		ObjectInstance instance = Collector.AllocateInstance(type);
+		instance.IncrementReference();
+
+		return TryInvokeMethod(ctor, {});
+	}
+
+	inline InvokeResult CallState::NewObject(TypeSymbol* type, ConstructorSymbol* ctor, std::initializer_list<ObjectInstance> args) const
 	{
 		if (type == nullptr)
 			throw undefined_behaviour("NewObject: type is null");
@@ -371,107 +466,41 @@ namespace shard
 			throw undefined_behaviour("NewObject: constructor is null");
 
 		ObjectInstance instance = Collector.AllocateInstance(type);
-
-		// Keep the object alive through the constructor call.
 		instance.IncrementReference();
 
-		std::vector<ObjectInstance> callArgs;
-		callArgs.reserve(1 + args.size());
-		callArgs.push_back(instance);
-		callArgs.insert(callArgs.end(), args.begin(), args.end());
-
-		try
-		{
-			Runtimer.InvokeMethod(ctor, callArgs.data(), callArgs.size());
-		}
-		catch (...)
-		{
-			instance.DecrementReference();
-			throw;
-		}
-
-		return instance;
+		return TryInvokeMethod(ctor, args);
 	}
 
-	inline ObjectInstance CallState::NewObject(TypeSymbol* type) const
+	inline InvokeResult CallState::NewObject(TypeSymbol* type, const std::vector<TypeSymbol*>& typeArgs) const
 	{
+		if (type == nullptr)
+			throw undefined_behaviour("NewObject: type is null");
+
 		ConstructorSymbol* ctor = detail::FindParameterlessConstructor(type);
 		if (ctor == nullptr)
 			throw undefined_behaviour("Type has no parameterless constructor");
 
-		return NewObject(type, ctor, {});
+		ObjectInstance instance = Collector.AllocateGeneric(type, typeArgs);
+		instance.IncrementReference();
+
+		return TryInvokeMethod(ctor, typeArgs, {});
 	}
 
-	inline ObjectInstance CallState::NewObject(ClassSymbol* cls, const std::vector<TypeSymbol*>& typeArgs, std::initializer_list<ObjectInstance> args) const
+	inline InvokeResult CallState::NewObject(TypeSymbol* type, ConstructorSymbol* ctor, const std::vector<TypeSymbol*>& typeArgs, std::initializer_list<ObjectInstance> args) const
 	{
-		if (cls == nullptr)
+		if (type == nullptr)
 			throw undefined_behaviour("NewObject: class is null");
-
-		ObjectInstance instance = Collector.AllocateGeneric(cls, typeArgs);
-
-		ConstructorSymbol* ctor = nullptr;
-		for (ConstructorSymbol* candidate : cls->Constructors)
-		{
-			if (candidate->Parameters.size() == args.size())
-			{
-				ctor = candidate;
-				break;
-			}
-		}
 
 		if (ctor == nullptr)
 			throw undefined_behaviour("NewObject: no constructor with matching parameter count");
 
+		ObjectInstance instance = Collector.AllocateGeneric(type, typeArgs);
 		instance.IncrementReference();
 
-		std::vector<ObjectInstance> callArgs;
-		callArgs.reserve(1 + args.size());
-		callArgs.push_back(instance);
-		callArgs.insert(callArgs.end(), args.begin(), args.end());
-
-		try
-		{
-			Runtimer.InvokeMethod(ctor, callArgs.data(), callArgs.size());
-		}
-		catch (...)
-		{
-			instance.DecrementReference();
-			throw;
-		}
-
-		return instance;
+		return TryInvokeMethod(ctor, typeArgs, args);
 	}
 
-	inline ObjectInstance CallState::CallMethod(MethodSymbol* method, std::initializer_list<ObjectInstance> args) const
-	{
-		if (method == nullptr)
-			throw undefined_behaviour("CallMethod: method is null");
-
-		InvokeResult result = TryInvokeMethod(method, args);
-		if (!result)
-			throw undefined_behaviour("CallMethod: invoked method raised an exception");
-
-		return result.Value();
-	}
-
-	inline ObjectInstance CallState::CallMethod(MethodSymbol* method, ObjectInstance receiver, std::initializer_list<ObjectInstance> args) const
-	{
-		if (method == nullptr)
-			throw undefined_behaviour("CallMethod: method is null");
-
-		std::vector<ObjectInstance> callArgs;
-		callArgs.reserve(1 + args.size());
-		callArgs.push_back(receiver);
-		callArgs.insert(callArgs.end(), args.begin(), args.end());
-
-		InvokeResult result = TryInvokeMethod(method, callArgs.data(), callArgs.size());
-		if (!result)
-			throw undefined_behaviour("CallMethod: invoked method raised an exception");
-
-		return result.Value();
-	}
-
-	inline ObjectInstance CallState::GetProperty(ObjectInstance obj, PropertySymbol* prop) const
+	inline InvokeResult CallState::GetProperty(ObjectInstance obj, PropertySymbol* prop) const
 	{
 		if (obj.IsNullInstance())
 			throw undefined_behaviour("GetProperty: object is null");
@@ -482,10 +511,10 @@ namespace shard
 		if (prop->Getter == nullptr)
 			throw undefined_behaviour("GetProperty: property has no getter");
 
-		return CallMethod(prop->Getter, { obj });
+		return TryInvokeMethod(prop->Getter, { obj });
 	}
 
-	inline void CallState::SetProperty(ObjectInstance obj, PropertySymbol* prop, ObjectInstance value) const
+	inline InvokeResult CallState::SetProperty(ObjectInstance obj, PropertySymbol* prop, ObjectInstance value) const
 	{
 		if (obj.IsNullInstance())
 			throw undefined_behaviour("SetProperty: object is null");
@@ -496,7 +525,7 @@ namespace shard
 		if (prop->Setter == nullptr)
 			throw undefined_behaviour("SetProperty: property has no setter");
 
-		CallMethod(prop->Setter, obj, { value });
+		return TryInvokeMethod(prop->Setter, { obj, value });
 	}
 
 	/// <summary>
@@ -526,53 +555,6 @@ namespace shard
 
 		obj.SetField(field, value);
 	}
-
-	/// <summary>
-	/// Callable RAII container that holds an ObjectRef to a delegate ObjectInstance.
-	/// </summary>
-	class SHARD_API DelegateRef
-	{
-		VirtualMachine* m_runtime = nullptr;
-		ObjectRef m_delegate;
-
-	public:
-		DelegateRef() = default;
-
-		DelegateRef(VirtualMachine& runtime, ObjectInstance delegate)
-			: m_runtime(&runtime), m_delegate(delegate) { }
-
-		DelegateRef(const DelegateRef&) = delete;
-		DelegateRef& operator=(const DelegateRef&) = delete;
-
-		DelegateRef(DelegateRef&&) = default;
-		DelegateRef& operator=(DelegateRef&&) = default;
-
-		[[nodiscard]] bool IsValid() const noexcept
-		{
-			return m_runtime != nullptr && !m_delegate.IsNull();
-		}
-
-		[[nodiscard]] ObjectInstance Instance() const noexcept
-		{
-			return m_delegate.Value;
-		}
-
-		/// <summary>
-		/// Invokes the delegate with the supplied arguments and returns its result.
-		/// </summary>
-		ObjectInstance operator()(std::initializer_list<ObjectInstance> args = {}) const
-		{
-			if (!IsValid())
-				throw undefined_behaviour("DelegateRef is not valid");
-
-			MethodSymbol* target = m_delegate.Value.getInfo()->Methods.at(0);
-			if (target == nullptr)
-				throw undefined_behaviour("Delegate has no target method");
-
-			std::vector<ObjectInstance> callArgs(args);
-			return m_runtime->InvokeMethod(target, callArgs.data(), callArgs.size());
-		}
-	};
 
 	/// <summary>
 	/// Wraps an ObjectInstance of delegate type into a callable RAII DelegateRef.

@@ -20,21 +20,6 @@ using namespace shard;
 
 namespace
 {
-    static inline std::string thinify(const wchar_t* wstr)
-    {
-        size_t length = wcslen(wstr) + 1;
-        std::string narrow(length, '\0');
-        size_t converted = 0;
-
-#ifdef _WIN32
-        wcstombs_s(&converted, narrow.data(), length, wstr, _TRUNCATE);
-#else
-        wcstombs(narrow.data(), wstr, length);
-#endif
-
-        return narrow;
-    }
-
     static ObjectInstance* InvokeToString(const CallState& context, ObjectInstance* instance)
     {
         TypeSymbol* type = const_cast<TypeSymbol*>(instance->getInfo());
