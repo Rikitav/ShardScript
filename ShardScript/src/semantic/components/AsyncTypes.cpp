@@ -59,7 +59,7 @@ static void shard_async_Task_IsCompleted_get(const CallState& context) noexcept
 {
 	ObjectInstance task = context.Args[0];
 	AsyncState state = GetTaskState(task, CLASS_TASK_StateField);
-	context.WriteReturn(state != AsyncState::PENDING);
+	context.ReturnBoolean(state != AsyncState::PENDING);
 	return;
 }
 
@@ -217,7 +217,7 @@ static void shard_async_ValueTask_IsCompleted_get(const CallState& context) noex
 {
 	ObjectInstance task = context.Args[0];
 	AsyncState state = GetTaskState(task, CLASS_VALUETASK_StateField);
-	context.WriteReturn(state != AsyncState::PENDING);
+	context.ReturnBoolean(state != AsyncState::PENDING);
 	return;
 }
 
@@ -242,10 +242,7 @@ static void shard_async_ValueTask_GetResult(const CallState& context) noexcept
 	}
 
 	ObjectInstance result = task.GetField(CLASS_VALUETASK_ResultField->SlotIndex);
-	if (result.getInfo() != nullptr && !result.getInfo()->IsReferenceType())
-		context.WriteReturn(result);
-	else
-		context.PlaceReturned(result);
+	context.PlaceReturned(result);
 	return;
 }
 

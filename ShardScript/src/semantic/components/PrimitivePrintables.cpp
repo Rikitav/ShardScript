@@ -77,7 +77,7 @@ static void primitive_array_to_string(const CallState& context)
 			return ObjectInstance();
 
 		context.Runtimer.InvokeMethod(implementation, { instance });
-		ObjectInstance result = context.Runtimer.CurrentFrame()->PopValue();
+		ObjectInstance result = context.Runtimer.CurrentFrame()->PopStack();
 		if (result.IsNullInstance() || result.getInfo() != SymbolTable::Primitives::String)
 			throw std::runtime_error("ToString did not return a string");
 

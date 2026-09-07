@@ -412,7 +412,8 @@ std::int64_t& ObjectInstance::AsStringLength() const
 	if (getInfo() != TYPE_STRING)
 		throw shard::runtime_exception(L"Cannot interpret instance as String");
 
-	return *reinterpret_cast<std::int64_t*>(getMemory());
+	StringLayout* string = reinterpret_cast<StringLayout*>(getMemory());
+	return string->Size;
 }
 
 const wchar_t* ObjectInstance::AsString() const
@@ -420,7 +421,8 @@ const wchar_t* ObjectInstance::AsString() const
 	if (getInfo() != TYPE_STRING)
 		throw shard::runtime_exception(L"Cannot interpret instance as String");
 
-	return *reinterpret_cast<const wchar_t**>(OffsetMemory(offsetof(StringLayout, Data), sizeof(wchar_t*)));
+	StringLayout* string = reinterpret_cast<StringLayout*>(getMemory());
+	return string->Data;
 }
 
 void* ObjectInstance::AsNint() const

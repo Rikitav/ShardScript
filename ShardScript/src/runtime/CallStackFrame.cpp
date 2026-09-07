@@ -21,6 +21,28 @@ using namespace shard;
 
 namespace
 {
+	static constexpr std::size_t Align(std::size_t value)
+	{
+		return (value + sizeof(void*) - 1) & ~(sizeof(void*) - 1);
+	}
+
+	static inline TypeShape* EntryShape(const std::byte* entry)
+	{
+		return *reinterpret_cast<TypeShape* const*>(entry);
+	}
+
+	static inline std::size_t EntryPayloadBytes(TypeShape* shape)
+	{
+		return shape != nullptr && !shape->IsReferenceType()
+			? Align(shape->Size)
+			: CallStackFrame::ReferencePayloadBytes;
+	}
+
+	static inline std::size_t EntryStride(const std::byte* entry)
+	{
+		return CallStackFrame::SlotHeaderBytes + EntryPayloadBytes(EntryShape(entry));
+	}
+
 	static void AdoptInlinePayload(const TypeShape* shape, std::byte* payload)
 	{
 		if (shape == nullptr)
@@ -96,8 +118,6 @@ namespace
 		return recipe.ConcreteType;
 	}
 
-	// Resolves the shape of the object the slot holds (both value and reference
-	// types); returns nullptr only when the type is unknown.
 	static TypeShape* ResolveObjectShape(TypeSymbol* type, TypeShapeCache& shapes)
 	{
 		if (type == nullptr)
@@ -119,15 +139,6 @@ namespace
 			return nullptr;
 
 		return shapes.GetOrCreateShape(baseType, genericArgs);
-	}
-
-	// Shape for an inline (by-value) slot; nullptr for references/void/unknown.
-	static TypeShape* ResolveInlineShape(TypeSymbol* type, TypeShapeCache& shapes)
-	{
-		if (type == nullptr || type->IsReferenceType())
-			return nullptr;
-
-		return ResolveObjectShape(type, shapes);
 	}
 }
 
@@ -155,18 +166,19 @@ std::shared_ptr<CallStackFrame> CallStackFrame::Create(const VirtualMachine* hos
 	std::vector<LocalSlotDesc> slotDescs;
 	slotDescs.reserve(localsCount);
 
-	TypeShape* returnShape = ResolveInlineShape(method->ReturnType, shapes);
-	const std::size_t returnStride = SlotHeaderBytes + (returnShape != nullptr ? Align(returnShape->Size) : ReferencePayloadBytes);
+	TypeShape* returnShape = ResolveObjectShape(method->ReturnType, shapes);
+	const std::size_t returnStride = SlotHeaderBytes + (returnShape->IsReferenceType() ? ReferencePayloadBytes : Align(returnShape->Size));
 
 	std::uint32_t offset = static_cast<std::uint32_t>(returnStride);
 	for (std::size_t slot = 0; slot < localsCount; slot++)
 	{
 		TypeSymbol* type = ResolveSlotType(*method, static_cast<std::uint16_t>(slot), typeArguments);
 		TypeShape* shape = ResolveObjectShape(type, shapes);
+
 		const bool isInline = (shape != nullptr && type != nullptr && !type->IsReferenceType());
 		const std::size_t stride = SlotHeaderBytes + (isInline ? Align(shape->Size) : ReferencePayloadBytes);
 
-		slotDescs.push_back(LocalSlotDesc{ shape, offset, isInline });
+		slotDescs.push_back(LocalSlotDesc{ shape, offset });
 		offset += static_cast<std::uint32_t>(stride);
 	}
 
@@ -174,13 +186,11 @@ std::shared_ptr<CallStackFrame> CallStackFrame::Create(const VirtualMachine* hos
 
 	const std::size_t evalMaxPayload = std::max<std::size_t>(ReferencePayloadBytes, method->Layout.EvalSlotPayload);
 	const std::size_t evalEntryStride = SlotHeaderBytes + Align(evalMaxPayload);
-	const std::size_t evalEntries = method->Layout.IsComplete
-		? std::max<std::size_t>(method->Layout.MaxEvalDepth, 8) : 64;
-
+	const std::size_t evalEntries = method->Layout.IsComplete ? std::max<std::size_t>(method->Layout.MaxEvalDepth, 8) : 64;
 	const std::size_t evalCapacityBytes = evalEntries * evalEntryStride;
 	const std::size_t arenaBytes = returnStride + localsBytes + evalCapacityBytes;
 
-	void* block = mi_malloc(sizeof(CallStackFrame) + arenaBytes);
+	void* block = mi_zalloc(sizeof(CallStackFrame) + arenaBytes);
 	if (block == nullptr)
 		throw std::runtime_error("Failed to allocate call stack frame");
 
@@ -211,16 +221,14 @@ ObjectInstance CallStackFrame::PushInlineUninitialized(const TypeShape* shape)
 	if (shape == nullptr)
 		throw std::runtime_error("Cannot push an inline value without a type shape");
 
-	const std::size_t stride = SlotHeaderBytes + Align(shape->Size);
-
 	std::byte* entry = EvalEntries + EvalCursorBytes;
+	std::byte* payload = entry + SlotHeaderBytes;
+
 	EvalOffsets.push_back(static_cast<std::uint32_t>(EvalCursorBytes));
-	EvalCursorBytes += stride;
-	EvalSize++;
+	EvalCursorBytes += SlotHeaderBytes + Align(shape->Size);
 
-	*reinterpret_cast<const TypeShape**>(entry) = shape;
-
-	return ObjectInstance(shape, entry + SlotHeaderBytes);
+	std::memcpy(entry, &shape, sizeof(shape));
+	return ObjectInstance(shape, payload);
 }
 
 ObjectInstance CallStackFrame::PushInline(const TypeShape* shape, const void* payloadBytes)
@@ -236,156 +244,184 @@ ObjectInstance CallStackFrame::PushInline(const TypeShape* shape, const void* pa
 ObjectInstance CallStackFrame::PushReference(ObjectInstance value)
 {
 	std::byte* entry = EvalEntries + EvalCursorBytes;
-	EvalOffsets.push_back(static_cast<std::uint32_t>(EvalCursorBytes));
+	std::byte* payload = entry + SlotHeaderBytes;
+
+	EvalOffsets.push_back(EvalCursorBytes);
 	EvalCursorBytes += BoxedEntryStride;
-	EvalSize++;
 
-	*reinterpret_cast<const TypeShape**>(entry) = value.getShape();
-
+	const TypeShape* header = value.getShape();
 	std::byte* stored = value.getMemory();
-	std::memcpy(entry + SlotHeaderBytes, &stored, sizeof(stored));
 
+	std::memcpy(entry, &header, sizeof(header));
+	std::memcpy(entry + SlotHeaderBytes, &stored, sizeof(stored));
 	return value;
 }
 
-ObjectInstance CallStackFrame::PushCopy(const ObjectInstance& value)
+ObjectInstance CallStackFrame::PushStack(ObjectInstance value)
 {
-	const TypeSymbol* info = value.getInfo();
+	const TypeShape* info = value.getShape();
 	if (info != nullptr && !info->IsReferenceType())
 		return PushInline(value.getShape(), value.getMemory());
 
 	return PushReference(value);
 }
 
-ObjectInstance CallStackFrame::PushStack(ObjectInstance value)
-{
-	return PushReference(value);
-}
-
-ObjectInstance CallStackFrame::PopValue()
-{
-	const std::uint32_t offset = EvalOffsets.back();
-	EvalOffsets.pop_back();
-	EvalSize--;
-
-	std::byte* entry = EvalEntries + offset;
-	EvalCursorBytes = offset;
-
-	TypeShape* shape = EntryShape(entry);
-	if (shape == nullptr || shape->IsReferenceType())
-	{
-		std::byte* stored = nullptr;
-		std::memcpy(&stored, entry + SlotHeaderBytes, sizeof(stored));
-		return shape != nullptr ? ObjectInstance(shape, stored) : ObjectInstance();
-	}
-
-	return ObjectInstance(shape, entry + SlotHeaderBytes);
-}
-
-ObjectInstance CallStackFrame::TopValue()
-{
-	const std::uint32_t offset = EvalOffsets.back();
-	std::byte* entry = EvalEntries + offset;
-
-	TypeShape* shape = EntryShape(entry);
-	if (shape == nullptr || shape->IsReferenceType())
-	{
-		std::byte* stored = nullptr;
-		std::memcpy(&stored, entry + SlotHeaderBytes, sizeof(stored));
-		return shape != nullptr ? ObjectInstance(shape, stored) : ObjectInstance();
-	}
-
-	return ObjectInstance(shape, entry + SlotHeaderBytes);
-}
-
 ObjectInstance CallStackFrame::PopStack()
 {
-	ObjectInstance value = PopValue();
-	if (value.getInfo() != nullptr && !value.getInfo()->IsReferenceType())
-		throw std::runtime_error("Popped an inline eval entry as a reference");
-
-	return value;
+	ObjectInstance result = PeekStack();
+	EvalOffsets.pop_back();
+	return result;
 }
 
 ObjectInstance CallStackFrame::PeekStack()
 {
-	ObjectInstance value = TopValue();
-	if (value.getInfo() != nullptr && !value.getInfo()->IsReferenceType())
-		throw std::runtime_error("Peeked an inline eval entry as a reference");
+	const std::uint32_t offset = EvalOffsets.back();
+	std::byte* entry = EvalEntries + offset;
+	std::byte* payload = entry + SlotHeaderBytes;
 
-	return value;
+	TypeShape* shape = EntryShape(entry);
+	if (shape == nullptr)
+		throw undefined_behaviour("EvalStack: TypeShape was null");
+
+	if (shape->IsReferenceType())
+		return ObjectInstance(shape, *reinterpret_cast<std::byte**>(payload));
+
+	return ObjectInstance(shape, payload);
 }
 
 ObjectInstance CallStackFrame::GetLocal(std::uint16_t slot)
 {
-	const LocalSlotDesc& desc = LocalSlots.at(slot);
-	std::byte* entry = Arena + desc.Offset;
+	LocalSlotDesc& desc = LocalSlots.at(slot);
 
-	if (desc.Inline)
-		return ObjectInstance(desc.Shape, entry + SlotHeaderBytes);
-
-	std::byte* stored = nullptr;
-	std::memcpy(&stored, entry + SlotHeaderBytes, sizeof(stored));
-	return ObjectInstance(desc.Shape, stored);
-}
-
-void CallStackFrame::SetLocal(std::uint16_t slot, const ObjectInstance& value, GarbageCollector& gc)
-{
-	const LocalSlotDesc& desc = LocalSlots.at(slot);
 	std::byte* entry = Arena + desc.Offset;
 	std::byte* payload = entry + SlotHeaderBytes;
 
-	if (desc.Inline)
-	{
-		*reinterpret_cast<TypeShape**>(entry) = desc.Shape;
+	TypeShape* shape = EntryShape(entry);
+	if (shape == nullptr)
+		throw undefined_behaviour("EvalStack: TypeShape was null");
 
-		ReleaseInlinePayload(desc.Shape, payload, gc);
-		std::memcpy(payload, value.getMemory(), desc.Shape->Size);
-		AdoptInlinePayload(desc.Shape, payload);
-		return;
-	}
+	if (shape->IsReferenceType())
+		return ObjectInstance(shape, *reinterpret_cast<std::byte**>(payload));
 
-	std::byte* old = nullptr;
-	std::memcpy(&old, payload, sizeof(old));
-	if (old != nullptr)
-		gc.DestroyInstance(ObjectInstance(desc.Shape, old));
-
-	std::byte* stored = value.getMemory();
-	if (stored != nullptr)
-		value.IncrementReference();
-
-	*reinterpret_cast<TypeShape**>(entry) = desc.Shape;
-	std::memcpy(payload, &stored, sizeof(stored));
+	return ObjectInstance(shape, payload);
 }
 
-void CallStackFrame::CopyArgumentPayloads(ObjectInstance* dst, std::size_t count)
+void CallStackFrame::SetLocal(std::uint16_t slot, const ObjectInstance& value)
 {
-	if (count > LocalSlots.size())
-		count = LocalSlots.size();
+	LocalSlotDesc& desc = LocalSlots.at(slot);
+	desc.Shape = value.getShape();
 
-	for (std::size_t i = 0; i < count; i++)
+	std::byte* entry = Arena + desc.Offset;
+	std::byte* payload = entry + SlotHeaderBytes;
+
+	if (value.getShape()->IsReferenceType())
 	{
-		const LocalSlotDesc& desc = LocalSlots[i];
-		std::byte* entry = Arena + desc.Offset;
+		std::byte* old = *reinterpret_cast<std::byte**>(payload);
+		if (old != nullptr)
+			Host->GetGarbageCollector().DestroyInstance(ObjectInstance(desc.Shape, old));
 
-		if (desc.Inline)
+		std::byte* stored = value.getMemory();
+		if (stored != nullptr)
+			value.IncrementReference();
+
+		std::memcpy(entry, &desc.Shape, sizeof(TypeShape*));
+		std::memcpy(payload, &stored, sizeof(std::byte*));
+	}
+	else
+	{
+		std::memcpy(entry, &desc.Shape, sizeof(TypeShape*));
+		ReleaseInlinePayload(desc.Shape, payload, Host->GetGarbageCollector());
+		AdoptInlinePayload(desc.Shape, payload);
+	}
+}
+
+void CallStackFrame::CopyArgumentPayloads()
+{
+	CallStackFrame* callingFrame = const_cast<CallStackFrame*>(PreviousFrame);
+	std::size_t argsCount = Method->GetEvalStackArgumentsCount();
+
+	for (std::size_t i = 0; i < argsCount; i++)
+	{
+		ObjectInstance argument = callingFrame->PopStack();
+		LocalSlotDesc& desc = LocalSlots.at(i);
+
+		std::byte* entry = Arena + desc.Offset;
+		std::byte* payload = entry + SlotHeaderBytes;
+
+		const TypeShape* shape = argument.getShape();
+		desc.Shape = shape;
+
+		std::memcpy(entry, &shape, SlotHeaderBytes);
+
+		if (shape->IsReferenceType())
 		{
-			dst[i] = ObjectInstance(desc.Shape, entry + SlotHeaderBytes);
+			std::byte* data = argument.getMemory();
+			std::memcpy(payload, &data, ReferencePayloadBytes);
 		}
 		else
 		{
-			std::byte* stored = nullptr;
-			std::memcpy(&stored, entry + SlotHeaderBytes, sizeof(stored));
-			dst[i] = ObjectInstance(desc.Shape, stored);
+			AdoptInlinePayload(desc.Shape, payload);
 		}
 	}
+}
+
+ObjectInstance CallStackFrame::ReturnView() const
+{
+	if (Method->ReturnType == SymbolTable::Primitives::Void)
+		throw undefined_behaviour("PlaceReturned: method returns void");
+
+	std::byte* entry = ReturnSlotMemory();
+	std::byte* payload = entry + SlotHeaderBytes;
+
+	const TypeShape* shape = ReturnShape();
+	if (shape->IsReferenceType())
+	{
+		return ObjectInstance(shape, *reinterpret_cast<std::byte**>(payload));
+	}
+	else
+	{
+		return ObjectInstance(shape, payload);
+	}
+}
+
+void CallStackFrame::PlaceReturned(ObjectInstance value)
+{
+	if (Method->ReturnType == SymbolTable::Primitives::Void)
+		throw undefined_behaviour("PlaceReturned: method returns void");
+
+	if (InterruptionReason == FrameInterruptionReason::ValueReturned)
+		throw undefined_behaviour("PlaceReturned: return value already placed");
+
+	const TypeShape* returnShape = ReturnShape();
+	const TypeShape* valueShape = value.getShape();
+
+	if (returnShape != valueShape)
+		throw undefined_behaviour("PlaceReturned: shapes mismatched");
+
+	std::byte* stored = value.getMemory();
+	std::byte* entry = ReturnSlotMemory();
+	std::byte* payload = entry + CallStackFrame::SlotHeaderBytes;
+
+	if (returnShape->IsReferenceType())
+	{
+		value.IncrementReference();
+		std::memcpy(entry, &returnShape, sizeof(TypeShape*));
+		std::memcpy(payload, &stored, sizeof(std::byte*));
+	}
+	else
+	{
+		std::memcpy(entry, &returnShape, sizeof(TypeShape*));
+		std::memcpy(payload, stored, returnShape->Size);
+	}
+
+	InterruptionReason = FrameInterruptionReason::ValueReturned;
 }
 
 void CallStackFrame::DrainEvalReferences(GarbageCollector& gc)
 {
-	while (EvalSize > 0)
+	while (EvalOffsets.size() > 0)
 	{
-		ObjectInstance value = PopValue();
+		ObjectInstance value = PopStack();
 		ReleaseValue(value, gc);
 	}
 }
@@ -396,7 +432,7 @@ void CallStackFrame::DrainLocalReferences(GarbageCollector& gc)
 	{
 		std::byte* entry = Arena + desc.Offset;
 
-		if (desc.Inline)
+		if (!desc.Shape->IsReferenceType())
 		{
 			ReleaseInlinePayload(desc.Shape, entry + SlotHeaderBytes, gc);
 		}
