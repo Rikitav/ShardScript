@@ -39,7 +39,7 @@ namespace shard
 	public:
 		struct GcHeader
 		{
-			static constexpr std::uint64_t MAGIC = 0x5348415244474348ULL; // "SHARDGCH"
+			static constexpr std::uint64_t MAGIC = 0x5348415244474348ULL; // "SHARDGCH
 			
 			const std::uint64_t Magic = MAGIC;
 			const TypeShape* Shape;
@@ -52,18 +52,13 @@ namespace shard
 		const TypeShape* m_shape;
 		std::byte* m_rawMemoryPtr;
 
-		[[nodiscard]] inline GcHeader* getGcHeader() const
+		inline GcHeader* getGcHeader() const
 		{
 			if (m_rawMemoryPtr == nullptr)
 				return nullptr;
 
 			GcHeader* header = reinterpret_cast<GcHeader*>(m_rawMemoryPtr - sizeof(GcHeader));
 			return header->Magic == GcHeader::MAGIC ? header : nullptr;
-		}
-
-		[[nodiscard]] inline bool isHeapBacked() const
-		{
-			return getGcHeader() != nullptr;
 		}
 
 	public:
@@ -75,10 +70,13 @@ namespace shard
 
 		~ObjectInstance() = default;
 
-		// Identity is the payload pointer (by-reference instances share a heap
-		// payload; null equals null).
 		inline bool operator==(const ObjectInstance& other) const { return m_rawMemoryPtr == other.m_rawMemoryPtr; }
 		inline bool operator!=(const ObjectInstance& other) const { return m_rawMemoryPtr != other.m_rawMemoryPtr; }
+
+		inline bool IsHeapBacked() const
+		{
+			return getGcHeader() != nullptr;
+		}
 
 		[[nodiscard]] const TypeSymbol* getInfo() const;
 		[[nodiscard]] const TypeShape* getShape() const;

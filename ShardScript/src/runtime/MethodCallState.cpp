@@ -6,49 +6,48 @@
 
 using namespace shard;
 
-void CallState::WriteReturned(const ObjectInstance& value) const
-{
-	if (Frame->ReturnShape() == nullptr)
-		throw undefined_behaviour("WriteReturn: method does not return a by-value type");
-
-	if (ReturnPlaced)
-		throw undefined_behaviour("WriteReturn: return value already placed");
-
-	if (value.getInfo()->GetInlineSize() < Frame->ReturnShape()->Size)
-		throw undefined_behaviour("WriteReturn: value does not fit the return slot");
-
-	std::memcpy(Frame->ReturnSlotMemory(), value.getMemory(), Frame->ReturnShape()->Size);
-	ReturnPlaced = true;
-}
-
 ObjectInstance CallState::ReturnView() const
 {
-	if (Frame->ReturnShape() == nullptr)
-		throw undefined_behaviour("ReturnView: method does not return a by-value type");
-
-	ObjectInstance view(Frame->ReturnShape(), Frame->ReturnSlotMemory());
-	ReturnPlaced = true;
-	return view;
+	return Frame->ReturnView();
 }
 
 void CallState::PlaceReturned(ObjectInstance value) const
 {
-	if (Frame->ReturnShape() != nullptr)
-		throw undefined_behaviour("PlaceReturned: library returned a value for a by-value method");
-
-	if (Method->ReturnType == nullptr || Method->ReturnType == SymbolTable::Primitives::Void)
-		throw undefined_behaviour("PlaceReturned: method returns void");
-
-	if (ReturnPlaced)
-		throw undefined_behaviour("PlaceReturned: return value already placed");
-
-	*reinterpret_cast<const TypeShape**>(Frame->ReturnSlotMemory() - CallStackFrame::SlotHeaderBytes) = value.getShape();
-	std::byte* stored = value.getMemory();
-	std::memcpy(Frame->ReturnSlotMemory(), &stored, sizeof(stored));
-	ReturnPlaced = true;
+	Frame->PlaceReturned(value);
 }
 
-int CallState::TryInvokeMethodImpl(const MethodSymbol* method, const ObjectInstance* argv, const std::size_t argc, const TypeSymbol* const* typev, const std::size_t typec, void* returnBuffer, const std::size_t returnBufferSize) const
+void CallState::ReturnInteger(std::int64_t value) const
+{
+	ObjectInstance retReg(Collector.ResolveShape(TYPE_INT), reinterpret_cast<std::byte*>(&value));
+	PlaceReturned(retReg);
+}
+
+void CallState::ReturnByte(std::uint8_t value) const
+{
+	ObjectInstance retReg(Collector.ResolveShape(TYPE_BYTE), reinterpret_cast<std::byte*>(&value));
+	PlaceReturned(retReg);
+}
+
+void CallState::ReturnDouble(double value) const
+{
+	ObjectInstance retReg(Collector.ResolveShape(TYPE_DOUBLE), reinterpret_cast<std::byte*>(&value));
+	PlaceReturned(retReg);
+}
+
+void CallState::ReturnBoolean(bool value) const
+{
+	ObjectInstance retReg(Collector.ResolveShape(TYPE_BOOL), reinterpret_cast<std::byte*>(&value));
+	PlaceReturned(retReg);
+}
+
+void CallState::ReturnChar(wchar_t value) const
+{
+	ObjectInstance retReg(Collector.ResolveShape(TYPE_CHAR), reinterpret_cast<std::byte*>(&value));
+	PlaceReturned(retReg);
+}
+
+
+int CallState::TryInvokeMethodImpl(const MethodSymbol* method, const ObjectInstance* argv, const std::size_t argc, const TypeSymbol* const* typev, const std::size_t typec, std::byte* returnBuffer, TypeShape* returnType) const
 {
 	if (method == nullptr)
 		throw undefined_behaviour("TryInvokeMethod: method is null");
@@ -71,14 +70,7 @@ int CallState::TryInvokeMethodImpl(const MethodSymbol* method, const ObjectInsta
 		}
 	}
 
-	bool pushedRootFrame = false;
 	CallStackFrame* callingFrame = Runtimer.CurrentFrame();
-	if (callingFrame == nullptr)
-	{
-		const MethodSymbol* rootMethod = Program.EntryPoint != nullptr ? Program.EntryPoint : targetMethod;
-		callingFrame = Runtimer.PushFrame(rootMethod);
-		pushedRootFrame = true;
-	}
 
 	if (targetMethod->TypeParameters.size() != typec)
 		throw undefined_behaviour(L"Method " + targetMethod->Name + L" expected " + std::to_wstring(targetMethod->TypeParameters.size()) + L" generic type arguments, but got " + std::to_wstring(typec));
@@ -89,29 +81,64 @@ int CallState::TryInvokeMethodImpl(const MethodSymbol* method, const ObjectInsta
 	try
 	{
 		CallStackFrame* frame = Runtimer.PushFrame(targetMethod);
-		for (std::size_t i = 0; i < argc; i++)
-			callingFrame->PushCopy(argv[i]);
+		if (frame->ReturnShape() != returnType)
+			throw undefined_behaviour(L"return TypeShape mismatch");
 
+		for (std::size_t i = 0; i < argc; i++)
+			frame->SetLocal(i, argv[i]);
+
+		frame->ReturnSlot = returnBuffer;
 		Runtimer.InvokeMethodInternal(targetMethod, frame);
-		if (callingFrame->InterruptionReason == FrameInterruptionReason::None &&
-			targetMethod->ReturnType != nullptr &&
-			targetMethod->ReturnType != SymbolTable::Primitives::Void)
+
+		if (callingFrame->InterruptionReason == FrameInterruptionReason::None)
 		{
+			if (targetMethod->ReturnType != SymbolTable::Primitives::Void)
+			{
+				ObjectInstance retReg = frame->ReturnView();
+				std::byte* memory = retReg.getMemory();
+				const TypeShape* returnShape = frame->ReturnShape();
+
+				//std::byte* entry = returnBuffer;
+				std::byte* payload = returnBuffer; //entry + CallStackFrame::SlotHeaderBytes;
+
+				if (returnShape->IsReferenceType())
+				{
+					//std::memcpy(entry, &returnShape, sizeof(TypeShape*));
+					std::memcpy(payload, &memory, sizeof(std::byte*));
+				}
+				else
+				{
+					//std::memcpy(entry, &returnShape, sizeof(TypeShape*));
+					std::memcpy(payload, memory, returnShape->Size);
+				}
+			}
+
+			/*
 			std::byte* returnSlot = frame->ReturnSlotMemory();
 			std::size_t returnSize = frame->ReturnShape()->Size;
 
-			if (returnSize > returnBufferSize)
-				throw undefined_behaviour(L"Insufficient return buffer size");
-
 			std::memcpy(returnBuffer, returnSlot, returnSize);
+
+			const TypeShape* returnShape = frame->ReturnShape();
+			std::byte* entry = frame->ReturnSlotMemory();
+			std::byte* payload = entry + CallStackFrame::SlotHeaderBytes;
+
+			if (returnShape->IsReferenceType())
+			{
+				std::memcpy(entry, &returnShape, sizeof(TypeShape*));
+				std::memcpy(payload, &stored, sizeof(std::byte*));
+			}
+			else
+			{
+				std::memcpy(entry, &returnShape, sizeof(TypeShape*));
+				std::memcpy(payload, stored, returnShape->Size);
+			}
+			*/
 		}
 	}
 	catch (...)
 	{
 		Runtimer.PopFrame();
-		if (pushedRootFrame)
-			Runtimer.PopFrame();
-
 		throw;
 	}
 
@@ -130,16 +157,15 @@ int CallState::TryInvokeMethodImpl(const MethodSymbol* method, const ObjectInsta
 	}
 
 	Runtimer.PopFrame();
-	if (pushedRootFrame)
-		Runtimer.PopFrame();
-
 	return 0;
 }
 
 InvokeResult CallState::TryInvokeMethod(MethodSymbol* method) const
 {
-	InvokeResult result(this, method, Frame->ReturnShape());
-	if (TryInvokeMethodImpl(method, nullptr, 0, nullptr, 0, &result.m_returned, result.m_retSize) != 0)
+	TypeShape* returnShape = Collector.ResolveShape(method->ReturnType, {});
+	InvokeResult result(this, method, returnShape);
+
+	if (TryInvokeMethodImpl(method, nullptr, 0, nullptr, 0, result.m_returned, returnShape) != 0)
 	{
 		// TODO: IMPLEMENT
 	}
@@ -149,8 +175,10 @@ InvokeResult CallState::TryInvokeMethod(MethodSymbol* method) const
 
 InvokeResult CallState::TryInvokeMethod(MethodSymbol* method, const std::span<ObjectInstance> args) const
 {
-	InvokeResult result(this, method, Frame->ReturnShape());
-	if (TryInvokeMethodImpl(method, args.data(), args.size(), nullptr, 0, &result.m_returned, result.m_retSize) != 0)
+	TypeShape* returnShape = Collector.ResolveShape(method->ReturnType, {});
+	InvokeResult result(this, method, returnShape);
+
+	if (TryInvokeMethodImpl(method, args.data(), args.size(), nullptr, 0, result.m_returned, returnShape) != 0)
 	{
 		// TODO: IMPLEMENT
 	}
@@ -160,8 +188,10 @@ InvokeResult CallState::TryInvokeMethod(MethodSymbol* method, const std::span<Ob
 
 InvokeResult CallState::TryInvokeMethod(MethodSymbol* method, const std::initializer_list<ObjectInstance> args) const
 {
-	InvokeResult result(this, method, Frame->ReturnShape());
-	if (TryInvokeMethodImpl(method, args.data(), args.size(), nullptr, 0, &result.m_returned, result.m_retSize) != 0)
+	TypeShape* returnShape = Collector.ResolveShape(method->ReturnType, {});
+	InvokeResult result(this, method, returnShape);
+
+	if (TryInvokeMethodImpl(method, args.data(), args.size(), nullptr, 0, result.m_returned, returnShape) != 0)
 	{
 		// TODO: IMPLEMENT
 	}
@@ -171,8 +201,10 @@ InvokeResult CallState::TryInvokeMethod(MethodSymbol* method, const std::initial
 
 InvokeResult CallState::TryInvokeMethod(MethodSymbol* method, const std::span<ObjectInstance> args, const std::span<TypeSymbol*> typeArguments) const
 {
-	InvokeResult result(this, method, Frame->ReturnShape());
-	if (TryInvokeMethodImpl(method, args.data(), args.size(), typeArguments.data(), typeArguments.size(), &result.m_returned, result.m_retSize) != 0)
+	TypeShape* returnShape = Collector.ResolveShape(method->ReturnType, typeArguments);
+	InvokeResult result(this, method, returnShape);
+
+	if (TryInvokeMethodImpl(method, args.data(), args.size(), typeArguments.data(), typeArguments.size(), result.m_returned, returnShape) != 0)
 	{
 		// TODO: IMPLEMENT
 	}
@@ -182,8 +214,10 @@ InvokeResult CallState::TryInvokeMethod(MethodSymbol* method, const std::span<Ob
 
 InvokeResult CallState::TryInvokeMethod(MethodSymbol* method, const std::initializer_list<ObjectInstance> args, const std::initializer_list<TypeSymbol*> typeArguments) const
 {
-	InvokeResult result(this, method, Frame->ReturnShape());
-	if (TryInvokeMethodImpl(method, args.data(), args.size(), typeArguments.data(), typeArguments.size(), &result.m_returned, result.m_retSize) != 0)
+	TypeShape* returnShape = Collector.ResolveShape(method->ReturnType, typeArguments);
+	InvokeResult result(this, method, returnShape);
+
+	if (TryInvokeMethodImpl(method, args.data(), args.size(), typeArguments.data(), typeArguments.size(), result.m_returned, returnShape) != 0)
 	{
 		// TODO: IMPLEMENT
 	}
@@ -349,11 +383,11 @@ InvokeResult::InvokeResult(const CallState* callState, const MethodSymbol* calli
 {
 	if (m_returnType != nullptr)
 	{
-		m_retSize = m_returnType->Size;
+		m_retSize = returnType->IsReferenceType() ? sizeof(std::byte*) : returnType->Size;
+		//m_retSize += CallStackFrame::SlotHeaderBytes;
+
 		if (m_retSize != 0)
-		{
 			m_returned = reinterpret_cast<std::byte*>(mi_malloc(m_retSize));
-		}
 	}
 }
 
@@ -378,7 +412,7 @@ ObjectInstance InvokeResult::Value() const
 	if (!IsOk())
 		throw undefined_behaviour("InvokeResult: Value() on a failed invocation");
 
-	return ObjectInstance(m_returnType, m_returned);
+	return ObjectInstance(m_returnType, m_returnType->IsReferenceType() ? *reinterpret_cast<std::byte**>(m_returned) : m_returned);
 }
 
 ObjectInstance InvokeResult::Exception() const

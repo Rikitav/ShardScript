@@ -444,28 +444,28 @@ static void enum_operator_or(const CallState& context)
 {
 	std::int64_t left = context.Args[0].AsInteger();
 	std::int64_t right = context.Args[1].AsInteger();
-	context.WriteReturn(left | right);
+	context.ReturnBoolean(left | right);
 }
 
 static void enum_operator_and(const CallState& context)
 {
 	std::int64_t left = context.Args[0].AsInteger();
 	std::int64_t right = context.Args[1].AsInteger();
-	context.WriteReturn(left & right);
+	context.ReturnBoolean(left & right);
 }
 
 static void enum_operator_equals(const CallState& context)
 {
 	std::int64_t left = context.Args[0].AsInteger();
 	std::int64_t right = context.Args[1].AsInteger();
-	context.WriteReturn(left == right);
+	context.ReturnBoolean(left == right);
 }
 
 static void enum_operator_not_equals(const CallState& context)
 {
 	std::int64_t left = context.Args[0].AsInteger();
 	std::int64_t right = context.Args[1].AsInteger();
-	context.WriteReturn(left != right);
+	context.ReturnBoolean(left != right);
 }
 
 static void enum_has_flag(const CallState& context)
@@ -473,7 +473,7 @@ static void enum_has_flag(const CallState& context)
 	std::int64_t self = context.Args[0].AsInteger();
 	std::int64_t flag = context.Args[1].AsInteger();
 	bool result = (self & flag) == flag;
-	context.WriteReturn(result);
+	context.ReturnBoolean(result);
 }
 
 static void enum_to_string(const CallState& context)

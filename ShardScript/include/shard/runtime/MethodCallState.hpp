@@ -160,14 +160,14 @@ namespace shard
 		MethodSymbol *const Method;
 		const std::span<ObjectInstance> Args;
 
-		mutable bool ReturnPlaced = false;
-
-		void WriteReturned(const ObjectInstance& value) const;
 		void PlaceReturned(ObjectInstance value) const;
 		ObjectInstance ReturnView() const;
 
-		template<typename T>
-		void WriteReturn(const T& value) const;
+		void ReturnInteger(std::int64_t value) const;
+		void ReturnByte(std::uint8_t value) const;
+		void ReturnDouble(double value) const;
+		void ReturnBoolean(bool value) const;
+		void ReturnChar(wchar_t value) const;
 
 		template<typename... TArgs>
 		std::tuple<TArgs...> GetArgs() const;
@@ -184,8 +184,8 @@ namespace shard
 			const std::size_t argc,
 			const TypeSymbol* const*,
 			const std::size_t typec,
-			void* returnBuffer,
-			const std::size_t returnBufferSize
+			std::byte* returnBuffer,
+			TypeShape* returnType
 		) const;
 
 		[[nodiscard]] InvokeResult TryInvokeMethod(MethodSymbol* method) const;
@@ -206,6 +206,8 @@ namespace shard
 		[[nodiscard]] DelegateRef WrapDelegate(ObjectInstance delegate) const;
 	};
 
+	//TODO: same wrapper as `GetArgs`
+	/*
 	template<typename T>
 	inline void CallState::WriteReturn(const T& value) const
 	{
@@ -221,8 +223,8 @@ namespace shard
 			throw undefined_behaviour("WriteReturn: return value already placed");
 
 		std::memcpy(Frame->ReturnSlotMemory(), &value, sizeof(T));
-		ReturnPlaced = true;
 	}
+	*/
 
 	namespace detail
 	{

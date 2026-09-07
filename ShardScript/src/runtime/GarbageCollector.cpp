@@ -240,6 +240,11 @@ void GarbageCollector::SetStaticField(const FieldSymbol* field, ObjectInstance i
 	staticFields[const_cast<FieldSymbol*>(field)] = stored.getMemory();
 }
 
+TypeShape* GarbageCollector::ResolveShape(const TypeSymbol* info)
+{
+	return GetTypeShapeCache().GetOrCreateShape(info, {});
+}
+
 TypeShape* GarbageCollector::ResolveShape(const TypeSymbol* info, const std::span<TypeSymbol*> genericArgs)
 {
 	std::vector<TypeSymbol*> typeArgs(genericArgs.data(), genericArgs.data() + genericArgs.size());
@@ -257,11 +262,12 @@ ObjectInstance GarbageCollector::AllocateInstance(const TypeShape* shape)
 	if (shape == nullptr)
 		throw std::runtime_error("shape is nullptr");
 
-	const std::size_t prefixSize = sizeof(ObjectInstance::GcHeader);
-	ObjectInstance::GcHeader* header = static_cast<ObjectInstance::GcHeader*>(AllocateZeroedBytes(prefixSize + shape->Size));
-	if (header == nullptr)
+	const std::size_t headerSize = sizeof(ObjectInstance::GcHeader);
+	void* memory = AllocateZeroedBytes(headerSize + shape->Size);
+	if (memory == nullptr)
 		throw std::runtime_error("cannot allocate memory for new instance");
 
+	ObjectInstance::GcHeader* header = new (memory) ObjectInstance::GcHeader();
 	header->Shape = shape;
 
 	std::byte* payload = reinterpret_cast<std::byte*>(header) + sizeof(ObjectInstance::GcHeader);
@@ -322,16 +328,18 @@ ObjectInstance GarbageCollector::AllocateArray(const ArrayTypeSymbol* arrayType,
 	if (!IsTypeReadyForAllocation(elementType))
 		throw std::runtime_error("Cannot allocate array of element type '" + WStringToUtf8(elementType->Name) + "': symbol is not ready for runtime");
 
+	TypeShape* arrayShape = GetTypeShapeCache().GetOrCreateShape(arrayType);
+
 	std::size_t headerSize = SymbolTable::Primitives::Array->MemoryBytesSize;
 	std::size_t elementSize = elementType->GetInlineSize();
 	std::size_t totalSize = headerSize + elementSize * length;
 
 	const std::size_t prefixSize = sizeof(ObjectInstance::GcHeader);
-	ObjectInstance::GcHeader* header = static_cast<ObjectInstance::GcHeader*>(AllocateZeroedBytes(prefixSize + totalSize));
-	if (header == nullptr)
+	void* memory = AllocateZeroedBytes(prefixSize + totalSize);
+	if (memory == nullptr)
 		throw std::runtime_error("cannot allocate memory for dynamic array");
 
-	TypeShape* arrayShape = GetTypeShapeCache().GetOrCreateShape(arrayType);
+	ObjectInstance::GcHeader* header = new (memory) ObjectInstance::GcHeader();
 	header->Shape = arrayShape;
 
 	std::byte* payload = reinterpret_cast<std::byte*>(header) + sizeof(ObjectInstance::GcHeader);
@@ -379,14 +387,12 @@ ObjectInstance GarbageCollector::CopyInstance(const ObjectInstance& instance)
 	return newInstance;
 }
 
-bool GarbageCollector::IsHeapBacked(ObjectInstance instance)
-{
-	return instance.isHeapBacked();
-}
-
 void GarbageCollector::CollectInstance(ObjectInstance instance)
 {
-	if (!instance.isHeapBacked())
+	if (instance.IsNullInstance())
+		return;
+
+	if (!instance.IsHeapBacked())
 		return;
 
 	if (instance.getReferencesCounter() > 0)
@@ -398,7 +404,10 @@ void GarbageCollector::CollectInstance(ObjectInstance instance)
 
 void GarbageCollector::DestroyInstance(ObjectInstance instance)
 {
-	if (!instance.isHeapBacked())
+	if (instance.IsNullInstance())
+		return;
+
+	if (!instance.IsHeapBacked())
 		return;
 
 	ObjectInstance::GcHeader* header = instance.getGcHeader();
@@ -415,14 +424,17 @@ void GarbageCollector::DestroyInstance(ObjectInstance instance)
 
 void GarbageCollector::DeleteInstanceMemory(ObjectInstance instance)
 {
-	if (!instance.isHeapBacked())
+	if (instance.IsNullInstance())
+		return;
+
+	if (!instance.IsHeapBacked())
 		return;
 
 	if (instance.getInfo() == SymbolTable::Primitives::String)
 	{
 		void* stringPtr = instance.OffsetMemory(sizeof(std::int64_t), sizeof(wchar_t*));
 		wchar_t* stringData = *static_cast<wchar_t**>(stringPtr);
-		FreeBytes(stringData);
+		//FreeBytes(stringData);
 	}
 
 	if (ObjectInstance::GcHeader* header = instance.getGcHeader(); header != nullptr)
@@ -431,7 +443,10 @@ void GarbageCollector::DeleteInstanceMemory(ObjectInstance instance)
 
 void GarbageCollector::TerminateInstance(ObjectInstance instance, bool deleteInstance)
 {
-	if (!instance.isHeapBacked())
+	if (instance.IsNullInstance())
+		return;
+
+	if (!instance.IsHeapBacked())
 		return;
 
 	ObjectInstance::GcHeader* header = instance.getGcHeader();
@@ -525,6 +540,7 @@ void GarbageCollector::Terminate()
 	asyncTable.clear();
 }
 
+/*
 // Immortal instance: [GcHeader(zeroed magic)][payload] in one block. The magic
 // is intentionally left unset so refcount/GC ops are no-ops, but the payload is
 // a valid non-null pointer (so the value is never treated as null).
@@ -536,6 +552,7 @@ ObjectInstance GarbageCollector::CreateView(const TypeSymbol* info, TypeShape* s
 	std::byte* payload = reinterpret_cast<std::byte*>(header) + sizeof(ObjectInstance::GcHeader);
 	return ObjectInstance(shape, payload);
 }
+*/
 
 ObjectInstance GarbageCollector::InternString(const wchar_t* value)
 {
@@ -543,12 +560,22 @@ ObjectInstance GarbageCollector::InternString(const wchar_t* value)
 		return RecoverInternedString(find->second);
 
 	TypeShape* shape = GetTypeShapeCache().GetOrCreateShape(SymbolTable::Primitives::String);
-	ObjectInstance view = CreateView(shape->BaseType, shape);
+	ObjectInstance view = AllocateInstance(shape);
+	
+	StringLayout string
+	{
+		.Size = static_cast<std::int64_t>(wcslen(value)),
+		.Data = value
+	};
 
+	view.WriteMemory(0, sizeof(StringLayout), &string);
+
+	/*
 	std::size_t length = wcslen(value);
 	std::uint64_t length64 = static_cast<std::uint64_t>(length);
 	view.WriteMemory(0, sizeof(std::int64_t), &length64);
 	view.WriteMemory(sizeof(std::int64_t), sizeof(wchar_t*), &value);
+	*/
 
 	internedStrings.emplace(value, view.getMemory());
 	return view;

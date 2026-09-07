@@ -55,6 +55,7 @@ namespace shard
 	enum class FrameInterruptionReason
 	{
 		None,
+		EndOfInstructions,
 		ValueReturned,
 		ExceptionRaised,
 	};
@@ -62,12 +63,12 @@ namespace shard
 	class SHARD_API CallStackFrame : public std::enable_shared_from_this<CallStackFrame>
 	{
 		friend class VirtualMachine;
+		friend class CallState;
 
 		struct LocalSlotDesc
 		{
-			TypeShape* Shape;       // resolved shape (value shape for inline, referenced object shape for references; null if unknown)
-			std::uint32_t Offset;   // byte offset into the arena
-			bool Inline;            // true => inline payload, false => pointer payload
+			const TypeShape* Shape;     // resolved shape (value shape for inline, referenced object shape for references; null if unknown)
+			std::uint32_t Offset;		// byte offset into the arena
 		};
 
 		std::byte* ReturnSlot = nullptr;
@@ -79,7 +80,6 @@ namespace shard
 		std::byte* EvalEntries = nullptr;
 		std::size_t EvalCapacityBytes = 0;
 		std::size_t EvalCursorBytes = 0;
-		std::size_t EvalSize = 0;
 		std::vector<std::uint32_t> EvalOffsets;
 
 	public:
@@ -88,6 +88,10 @@ namespace shard
 			std::size_t HandlerOffset;
 			std::size_t DeferStackBase;
 		};
+
+		static constexpr std::size_t SlotHeaderBytes = sizeof(TypeShape*);
+		static constexpr std::size_t ReferencePayloadBytes = sizeof(void*);
+		static constexpr std::size_t BoxedEntryStride = SlotHeaderBytes + ReferencePayloadBytes;
 
 		const VirtualMachine* Host;
 		const CallStackFrame* PreviousFrame;
@@ -106,10 +110,6 @@ namespace shard
 		FrameInterruptionReason InterruptionReason = FrameInterruptionReason::None;
 		ObjectInstance CurrentException;
 
-		static constexpr std::size_t SlotHeaderBytes = sizeof(TypeShape*);
-		static constexpr std::size_t ReferencePayloadBytes = sizeof(void*);
-		static constexpr std::size_t BoxedEntryStride = SlotHeaderBytes + ReferencePayloadBytes;
-
 	private:
 		CallStackFrame(const VirtualMachine* host, const CallStackFrame* previousFrame, const MethodSymbol* method)
 			: Host(host), Method(method), PreviousFrame(previousFrame) { }
@@ -117,49 +117,29 @@ namespace shard
 	public:
 		~CallStackFrame();
 
+		static std::shared_ptr<CallStackFrame> Create(
+			const VirtualMachine* host,
+			const CallStackFrame* previousFrame,
+			const MethodSymbol* method,
+			const std::vector<TypeSymbol*>& typeArguments);
+
+		void CopyArgumentPayloads();
+		TypeSymbol* ResolveType(TypeSymbol* type);
+
+		ObjectInstance GetLocal(std::uint16_t slot);
+		void SetLocal(std::uint16_t slot, const ObjectInstance& value);
+
+		ObjectInstance PushStack(ObjectInstance value);
+		ObjectInstance PopStack();
+		ObjectInstance PeekStack();
+
+		void PlaceReturned(ObjectInstance value);
+		ObjectInstance ReturnView() const;
+
 		inline bool interrupted() const
 		{
 			return InterruptionReason != FrameInterruptionReason::None;
 		}
-
-		TypeSymbol* ResolveType(TypeSymbol* type);
-
-		static std::shared_ptr<CallStackFrame> Create(const VirtualMachine* host, const CallStackFrame* previousFrame, const MethodSymbol* method, const std::vector<TypeSymbol*>& typeArguments);
-
-		static constexpr std::size_t Align(std::size_t value)
-		{
-			return (value + sizeof(void*) - 1) & ~(sizeof(void*) - 1);
-		}
-
-		static inline TypeShape* EntryShape(const std::byte* entry)
-		{
-			return *reinterpret_cast<TypeShape* const*>(entry);
-		}
-
-		static inline std::size_t EntryPayloadBytes(TypeShape* shape)
-		{
-			return shape != nullptr && !shape->IsReferenceType() ? Align(shape->Size) : ReferencePayloadBytes;
-		}
-
-		static inline std::size_t EntryStride(const std::byte* entry)
-		{
-			return SlotHeaderBytes + EntryPayloadBytes(EntryShape(entry));
-		}
-
-		ObjectInstance PushCopy(const ObjectInstance& value);
-		ObjectInstance PushReference(ObjectInstance value);
-		ObjectInstance PushInline(const TypeShape* shape, const void* payloadBytes);
-		ObjectInstance PushInlineUninitialized(const TypeShape* shape);
-		ObjectInstance PushStack(ObjectInstance value);
-
-		ObjectInstance PopValue();
-		ObjectInstance TopValue();
-
-		ObjectInstance PopStack();
-		ObjectInstance PeekStack();
-
-		ObjectInstance GetLocal(std::uint16_t slot);
-		void SetLocal(std::uint16_t slot, const ObjectInstance& value, GarbageCollector& gc);
 
 		inline std::size_t LocalCount() const
 		{
@@ -168,13 +148,8 @@ namespace shard
 
 		inline std::size_t EvalCount() const
 		{
-			return EvalSize;
+			return EvalOffsets.size();
 		}
-
-		// Writes `count` argument values (by-value self-contained wrappers) into
-		// `dst`. Inline argument payloads become borrow views into the frame;
-		// reference payloads wrap the stored heap pointer.
-		void CopyArgumentPayloads(ObjectInstance* dst, std::size_t count);
 
 		inline TypeShape* ReturnShape() const
 		{
@@ -185,6 +160,11 @@ namespace shard
 		{
 			return ReturnSlot;
 		}
+
+	private:
+		ObjectInstance PushReference(ObjectInstance value);
+		ObjectInstance PushInline(const TypeShape* shape, const void* payloadBytes);
+		ObjectInstance PushInlineUninitialized(const TypeShape* shape);
 
 		void DrainReferences(GarbageCollector& gc);
 		void DrainEvalReferences(GarbageCollector& gc);

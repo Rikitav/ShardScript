@@ -38,7 +38,8 @@ static void array_enumerator_MoveNext(const CallState& context)
 
 	index++;
 	self.SetField(CLASS_ARRAYENUMERATOR_IndexField->SlotIndex, context.Collector.FromInteger(index));
-	context.WriteReturn(index < length);
+
+	context.ReturnInteger(index < length);
 	return;
 }
 
@@ -48,10 +49,7 @@ static void array_enumerator_Current_get(const CallState& context)
 	std::int64_t index = self.GetField(CLASS_ARRAYENUMERATOR_IndexField->SlotIndex).AsInteger();
 	ObjectInstance source = self.GetField(CLASS_ARRAYENUMERATOR_SourceField->SlotIndex);
 	ObjectInstance element = source.GetElement(static_cast<std::size_t>(index));
-	if (element.getInfo() != nullptr && !element.getInfo()->IsReferenceType())
-		context.WriteReturn(element);
-	else
-		context.PlaceReturned(element);
+	context.PlaceReturned(element);
 	return;
 }
 
@@ -73,7 +71,7 @@ static void primitive_array_get_enumerator(const CallState& context)
 static void primitive_array_Length_get(const CallState& context)
 {
 	ObjectInstance array = context.Args[0];
-	context.WriteReturn(static_cast<std::int64_t>(array.GetArrayLength()));
+	context.ReturnInteger(array.GetArrayLength());
 	return;
 }
 
@@ -82,10 +80,7 @@ static void primitive_array_GetElement(const CallState& context)
 	ObjectInstance array = context.Args[0];
 	std::int64_t index = context.Args[1].AsInteger();
 	ObjectInstance element = array.GetElement(static_cast<std::size_t>(index), context.Frame);
-	if (element.getInfo() != nullptr && !element.getInfo()->IsReferenceType())
-		context.WriteReturn(element);
-	else
-		context.PlaceReturned(element);
+	context.PlaceReturned(element);
 	return;
 }
 

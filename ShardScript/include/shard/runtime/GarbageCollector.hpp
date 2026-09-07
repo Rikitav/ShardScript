@@ -116,6 +116,7 @@ namespace shard
         ObjectInstance GetStaticField(const FieldSymbol* field);
         void SetStaticField(const FieldSymbol* field, ObjectInstance instance);
 
+        TypeShape* ResolveShape(const TypeSymbol* info);
         TypeShape* ResolveShape(const TypeSymbol* info, const std::span<TypeSymbol*> genericArgs);
         TypeShape* ResolveShape(const TypeSymbol* info, const std::initializer_list<TypeSymbol*> genericArgs);
 
@@ -126,10 +127,8 @@ namespace shard
 		ObjectInstance AllocateArray(const ArrayTypeSymbol* arrayType, TypeSymbol* elementType, std::size_t length);
         ObjectInstance CopyInstance(const ObjectInstance& instance);
 
-        ObjectInstance CreateView(const TypeSymbol* info, TypeShape* shape);
+        //ObjectInstance CreateView(const TypeSymbol* info, TypeShape* shape);
         ObjectInstance InternString(const wchar_t* value);
-
-        [[nodiscard]] bool IsHeapBacked(ObjectInstance instance);
 
         [[nodiscard]] bool IsTaskLike(ObjectInstance instance);
         void MarkTaskLike(ObjectInstance instance);

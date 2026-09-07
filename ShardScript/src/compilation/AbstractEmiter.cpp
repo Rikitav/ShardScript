@@ -374,6 +374,7 @@ void AbstractEmiter::EvalPush(EvalLayoutTracker& tracker, std::size_t payload)
 	tracker.CurrentDepth += 1;
 	if (tracker.CurrentDepth > tracker.MaxDepth)
 		tracker.MaxDepth = tracker.CurrentDepth;
+
 	if (payload > tracker.MaxPayload)
 		tracker.MaxPayload = payload;
 }

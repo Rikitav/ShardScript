@@ -51,7 +51,7 @@ static void integer_op_AddOperator(const CallState& context)
 {
 	std::int64_t left = context.Args[0].AsInteger();
 	std::int64_t right = context.Args[1].AsInteger();
-	context.WriteReturn(left + right);
+	context.ReturnInteger(left + right);
 	return;
 }
 
@@ -59,7 +59,7 @@ static void integer_op_SubOperator(const CallState& context)
 {
 	std::int64_t left = context.Args[0].AsInteger();
 	std::int64_t right = context.Args[1].AsInteger();
-	context.WriteReturn(left - right);
+	context.ReturnInteger(left - right);
 	return;
 }
 
@@ -67,7 +67,7 @@ static void integer_op_MultOperator(const CallState& context)
 {
 	std::int64_t left = context.Args[0].AsInteger();
 	std::int64_t right = context.Args[1].AsInteger();
-	context.WriteReturn(left * right);
+	context.ReturnInteger(left * right);
 	return;
 }
 
@@ -75,7 +75,7 @@ static void integer_op_DivOperator(const CallState& context)
 {
 	std::int64_t left = context.Args[0].AsInteger();
 	std::int64_t right = context.Args[1].AsInteger();
-	context.WriteReturn(left / right);
+	context.ReturnInteger(left / right);
 	return;
 }
 
@@ -83,7 +83,7 @@ static void integer_op_ModOperator(const CallState& context)
 {
 	std::int64_t left = context.Args[0].AsInteger();
 	std::int64_t right = context.Args[1].AsInteger();
-	context.WriteReturn(left % right);
+	context.ReturnInteger(left % right);
 	return;
 }
 
@@ -91,7 +91,7 @@ static void integer_op_PowOperator(const CallState& context)
 {
 	std::int64_t left = context.Args[0].AsInteger();
 	std::int64_t right = context.Args[1].AsInteger();
-	context.WriteReturn(static_cast<std::int64_t>(pow(left, right)));
+	context.ReturnInteger(static_cast<std::int64_t>(pow(left, right)));
 	return;
 }
 
@@ -99,7 +99,7 @@ static void integer_op_OrOperator(const CallState& context)
 {
 	std::int64_t left = context.Args[0].AsInteger();
 	std::int64_t right = context.Args[1].AsInteger();
-	context.WriteReturn(left | right);
+	context.ReturnInteger(left | right);
 	return;
 }
 
@@ -107,7 +107,7 @@ static void integer_op_AndOperator(const CallState& context)
 {
 	std::int64_t left = context.Args[0].AsInteger();
 	std::int64_t right = context.Args[1].AsInteger();
-	context.WriteReturn(left & right);
+	context.ReturnInteger(left & right);
 	return;
 }
 
@@ -115,7 +115,7 @@ static void integer_op_LeftShiftOperator(const CallState& context)
 {
 	std::int64_t left = context.Args[0].AsInteger();
 	std::int64_t right = context.Args[1].AsInteger();
-	context.WriteReturn(left << right);
+	context.ReturnInteger(left << right);
 	return;
 }
 
@@ -123,7 +123,7 @@ static void integer_op_RightShiftOperator(const CallState& context)
 {
 	std::int64_t left = context.Args[0].AsInteger();
 	std::int64_t right = context.Args[1].AsInteger();
-	context.WriteReturn(left >> right);
+	context.ReturnInteger(left >> right);
 	return;
 }
 
@@ -131,7 +131,7 @@ static void integer_op_EqualsOperator(const CallState& context)
 {
 	std::int64_t left = context.Args[0].AsInteger();
 	std::int64_t right = context.Args[1].AsInteger();
-	context.WriteReturn(left == right);
+	context.ReturnBoolean(left == right);
 	return;
 }
 
@@ -139,7 +139,7 @@ static void integer_op_NotEqualsOperator(const CallState& context)
 {
 	std::int64_t left = context.Args[0].AsInteger();
 	std::int64_t right = context.Args[1].AsInteger();
-	context.WriteReturn(left != right);
+	context.ReturnBoolean(left != right);
 	return;
 }
 
@@ -147,7 +147,7 @@ static void integer_op_LessOperator(const CallState& context)
 {
 	std::int64_t left = context.Args[0].AsInteger();
 	std::int64_t right = context.Args[1].AsInteger();
-	context.WriteReturn(left < right);
+	context.ReturnInteger(left < right);
 	return;
 }
 
@@ -155,7 +155,7 @@ static void integer_op_LessOrEqualsOperator(const CallState& context)
 {
 	std::int64_t left = context.Args[0].AsInteger();
 	std::int64_t right = context.Args[1].AsInteger();
-	context.WriteReturn(left <= right);
+	context.ReturnInteger(left <= right);
 	return;
 }
 
@@ -163,7 +163,7 @@ static void integer_op_GreaterOperator(const CallState& context)
 {
 	std::int64_t left = context.Args[0].AsInteger();
 	std::int64_t right = context.Args[1].AsInteger();
-	context.WriteReturn(left > right);
+	context.ReturnInteger(left > right);
 	return;
 }
 
@@ -171,35 +171,35 @@ static void integer_op_GreaterOrEqualsOperator(const CallState& context)
 {
 	std::int64_t left = context.Args[0].AsInteger();
 	std::int64_t right = context.Args[1].AsInteger();
-	context.WriteReturn(left >= right);
+	context.ReturnInteger(left >= right);
 	return;
 }
 
 static void integer_op_IncrementOperator(const CallState& context)
 {
 	std::int64_t value = context.Args[0].AsInteger();
-	context.WriteReturn(value + 1);
+	context.ReturnInteger(value + 1);
 	return;
 }
 
 static void integer_op_DecrementOperator(const CallState& context)
 {
 	std::int64_t value = context.Args[0].AsInteger();
-	context.WriteReturn(value - 1);
+	context.ReturnInteger(value - 1);
 	return;
 }
 
 static void integer_op_UnaryNegation(const CallState& context)
 {
 	std::int64_t value = context.Args[0].AsInteger();
-	context.WriteReturn(-value);
+	context.ReturnInteger(-value);
 	return;
 }
 
 static void integer_op_UnaryPositive(const CallState& context)
 {
 	std::int64_t value = context.Args[0].AsInteger();
-	context.WriteReturn(value);
+	context.ReturnInteger(value);
 	return;
 }
 
@@ -211,7 +211,7 @@ static void double_op_AddOperator(const CallState& context)
 {
 	double left = context.Args[0].AsDouble();
 	double right = context.Args[1].AsDouble();
-	context.WriteReturn(left + right);
+	context.ReturnDouble(left + right);
 	return;
 }
 
@@ -219,7 +219,7 @@ static void double_op_SubOperator(const CallState& context)
 {
 	double left = context.Args[0].AsDouble();
 	double right = context.Args[1].AsDouble();
-	context.WriteReturn(left - right);
+	context.ReturnDouble(left - right);
 	return;
 }
 
@@ -227,7 +227,7 @@ static void double_op_MultOperator(const CallState& context)
 {
 	double left = context.Args[0].AsDouble();
 	double right = context.Args[1].AsDouble();
-	context.WriteReturn(left * right);
+	context.ReturnDouble(left * right);
 	return;
 }
 
@@ -235,7 +235,7 @@ static void double_op_DivOperator(const CallState& context)
 {
 	double left = context.Args[0].AsDouble();
 	double right = context.Args[1].AsDouble();
-	context.WriteReturn(left / right);
+	context.ReturnDouble(left / right);
 	return;
 }
 
@@ -243,7 +243,7 @@ static void double_op_ModOperator(const CallState& context)
 {
 	double left = context.Args[0].AsDouble();
 	double right = context.Args[1].AsDouble();
-	context.WriteReturn(std::fmod(left, right));
+	context.ReturnDouble(std::fmod(left, right));
 	return;
 }
 
@@ -251,7 +251,7 @@ static void double_op_PowOperator(const CallState& context)
 {
 	double left = context.Args[0].AsDouble();
 	double right = context.Args[1].AsDouble();
-	context.WriteReturn(std::pow(left, right));
+	context.ReturnDouble(std::pow(left, right));
 	return;
 }
 
@@ -259,7 +259,7 @@ static void double_op_EqualsOperator(const CallState& context)
 {
 	double left = context.Args[0].AsDouble();
 	double right = context.Args[1].AsDouble();
-	context.WriteReturn(left == right);
+	context.ReturnBoolean(left == right);
 	return;
 }
 
@@ -267,7 +267,7 @@ static void double_op_NotEqualsOperator(const CallState& context)
 {
 	double left = context.Args[0].AsDouble();
 	double right = context.Args[1].AsDouble();
-	context.WriteReturn(left != right);
+	context.ReturnBoolean(left != right);
 	return;
 }
 
@@ -275,7 +275,7 @@ static void double_op_LessOperator(const CallState& context)
 {
 	double left = context.Args[0].AsDouble();
 	double right = context.Args[1].AsDouble();
-	context.WriteReturn(left < right);
+	context.ReturnDouble(left < right);
 	return;
 }
 
@@ -283,7 +283,7 @@ static void double_op_LessOrEqualsOperator(const CallState& context)
 {
 	double left = context.Args[0].AsDouble();
 	double right = context.Args[1].AsDouble();
-	context.WriteReturn(left <= right);
+	context.ReturnDouble(left <= right);
 	return;
 }
 
@@ -291,7 +291,7 @@ static void double_op_GreaterOperator(const CallState& context)
 {
 	double left = context.Args[0].AsDouble();
 	double right = context.Args[1].AsDouble();
-	context.WriteReturn(left > right);
+	context.ReturnDouble(left > right);
 	return;
 }
 
@@ -299,21 +299,21 @@ static void double_op_GreaterOrEqualsOperator(const CallState& context)
 {
 	double left = context.Args[0].AsDouble();
 	double right = context.Args[1].AsDouble();
-	context.WriteReturn(left >= right);
+	context.ReturnDouble(left >= right);
 	return;
 }
 
 static void double_op_UnaryNegation(const CallState& context)
 {
 	double value = context.Args[0].AsDouble();
-	context.WriteReturn(-value);
+	context.ReturnDouble(-value);
 	return;
 }
 
 static void double_op_UnaryPositive(const CallState& context)
 {
 	double value = context.Args[0].AsDouble();
-	context.WriteReturn(value);
+	context.ReturnDouble(value);
 	return;
 }
 
@@ -325,7 +325,7 @@ static void boolean_op_EqualsOperator(const CallState& context)
 {
 	bool left = context.Args[0].AsBoolean();
 	bool right = context.Args[1].AsBoolean();
-	context.WriteReturn(left == right);
+	context.ReturnBoolean(left == right);
 	return;
 }
 
@@ -333,7 +333,7 @@ static void boolean_op_NotEqualsOperator(const CallState& context)
 {
 	bool left = context.Args[0].AsBoolean();
 	bool right = context.Args[1].AsBoolean();
-	context.WriteReturn(left != right);
+	context.ReturnBoolean(left != right);
 	return;
 }
 
@@ -341,7 +341,7 @@ static void boolean_op_OrOperator(const CallState& context)
 {
 	bool left = context.Args[0].AsBoolean();
 	bool right = context.Args[1].AsBoolean();
-	context.WriteReturn(left || right);
+	context.ReturnBoolean(left || right);
 	return;
 }
 
@@ -349,14 +349,14 @@ static void boolean_op_AndOperator(const CallState& context)
 {
 	bool left = context.Args[0].AsBoolean();
 	bool right = context.Args[1].AsBoolean();
-	context.WriteReturn(left && right);
+	context.ReturnBoolean(left && right);
 	return;
 }
 
 static void boolean_op_NotOperator(const CallState& context)
 {
 	bool value = context.Args[0].AsBoolean();
-	context.WriteReturn(!value);
+	context.ReturnBoolean(!value);
 	return;
 }
 
@@ -434,7 +434,7 @@ static void char_op_EqualsOperator(const CallState& context)
 {
 	wchar_t left = context.Args[0].AsCharacter();
 	wchar_t right = context.Args[1].AsCharacter();
-	context.WriteReturn(left == right);
+	context.ReturnBoolean(left == right);
 	return;
 }
 
@@ -442,21 +442,21 @@ static void char_op_NotEqualsOperator(const CallState& context)
 {
 	wchar_t left = context.Args[0].AsCharacter();
 	wchar_t right = context.Args[1].AsCharacter();
-	context.WriteReturn(left != right);
+	context.ReturnBoolean(left != right);
 	return;
 }
 
 static void char_op_IncrementOperator(const CallState& context)
 {
 	wchar_t value = context.Args[0].AsCharacter();
-	context.WriteReturn(static_cast<wchar_t>(value + 1));
+	context.ReturnChar(static_cast<wchar_t>(value + 1));
 	return;
 }
 
 static void char_op_DecrementOperator(const CallState& context)
 {
 	wchar_t value = context.Args[0].AsCharacter();
-	context.WriteReturn(static_cast<wchar_t>(value - 1));
+	context.ReturnChar(static_cast<wchar_t>(value - 1));
 	return;
 }
 
@@ -543,7 +543,7 @@ static void string_op_EqualsOperator(const CallState& context)
 {
 	const wchar_t* left = context.Args[0].AsString();
 	const wchar_t* right = context.Args[1].AsString();
-	context.WriteReturn(left == right);
+	context.ReturnBoolean(left == right);
 	return;
 }
 
@@ -551,7 +551,7 @@ static void string_op_NotEqualsOperator(const CallState& context)
 {
 	const wchar_t* left = context.Args[0].AsString();
 	const wchar_t* right = context.Args[1].AsString();
-	context.WriteReturn(left != right);
+	context.ReturnBoolean(left != right);
 	return;
 }
 
@@ -729,7 +729,7 @@ static void byte_op_AddOperator(const CallState& context)
 {
 	std::uint8_t left = context.Args[0].AsByte();
 	std::uint8_t right = context.Args[1].AsByte();
-	context.WriteReturn(static_cast<std::uint8_t>(left + right));
+	context.ReturnByte(static_cast<std::uint8_t>(left + right));
 	return;
 }
 
@@ -737,7 +737,7 @@ static void byte_op_SubOperator(const CallState& context)
 {
 	std::uint8_t left = context.Args[0].AsByte();
 	std::uint8_t right = context.Args[1].AsByte();
-	context.WriteReturn(static_cast<std::uint8_t>(left - right));
+	context.ReturnByte(static_cast<std::uint8_t>(left - right));
 	return;
 }
 
@@ -745,7 +745,7 @@ static void byte_op_MultOperator(const CallState& context)
 {
 	std::uint8_t left = context.Args[0].AsByte();
 	std::uint8_t right = context.Args[1].AsByte();
-	context.WriteReturn(static_cast<std::uint8_t>(left * right));
+	context.ReturnByte(static_cast<std::uint8_t>(left * right));
 	return;
 }
 
@@ -753,7 +753,7 @@ static void byte_op_DivOperator(const CallState& context)
 {
 	std::uint8_t left = context.Args[0].AsByte();
 	std::uint8_t right = context.Args[1].AsByte();
-	context.WriteReturn(static_cast<std::uint8_t>(left / right));
+	context.ReturnByte(static_cast<std::uint8_t>(left / right));
 	return;
 }
 
@@ -761,7 +761,7 @@ static void byte_op_ModOperator(const CallState& context)
 {
 	std::uint8_t left = context.Args[0].AsByte();
 	std::uint8_t right = context.Args[1].AsByte();
-	context.WriteReturn(static_cast<std::uint8_t>(left % right));
+	context.ReturnByte(static_cast<std::uint8_t>(left % right));
 	return;
 }
 
@@ -769,7 +769,7 @@ static void byte_op_EqualsOperator(const CallState& context)
 {
 	std::uint8_t left = context.Args[0].AsByte();
 	std::uint8_t right = context.Args[1].AsByte();
-	context.WriteReturn(left == right);
+	context.ReturnBoolean(left == right);
 	return;
 }
 
@@ -777,7 +777,7 @@ static void byte_op_NotEqualsOperator(const CallState& context)
 {
 	std::uint8_t left = context.Args[0].AsByte();
 	std::uint8_t right = context.Args[1].AsByte();
-	context.WriteReturn(left != right);
+	context.ReturnBoolean(left != right);
 	return;
 }
 
@@ -785,7 +785,7 @@ static void byte_op_LessOperator(const CallState& context)
 {
 	std::uint8_t left = context.Args[0].AsByte();
 	std::uint8_t right = context.Args[1].AsByte();
-	context.WriteReturn(left < right);
+	context.ReturnBoolean(left < right);
 	return;
 }
 
@@ -793,7 +793,7 @@ static void byte_op_LessOrEqualsOperator(const CallState& context)
 {
 	std::uint8_t left = context.Args[0].AsByte();
 	std::uint8_t right = context.Args[1].AsByte();
-	context.WriteReturn(left <= right);
+	context.ReturnBoolean(left <= right);
 	return;
 }
 
@@ -801,7 +801,7 @@ static void byte_op_GreaterOperator(const CallState& context)
 {
 	std::uint8_t left = context.Args[0].AsByte();
 	std::uint8_t right = context.Args[1].AsByte();
-	context.WriteReturn(left > right);
+	context.ReturnBoolean(left > right);
 	return;
 }
 
@@ -809,21 +809,21 @@ static void byte_op_GreaterOrEqualsOperator(const CallState& context)
 {
 	std::uint8_t left = context.Args[0].AsByte();
 	std::uint8_t right = context.Args[1].AsByte();
-	context.WriteReturn(left >= right);
+	context.ReturnBoolean(left >= right);
 	return;
 }
 
 static void byte_op_IncrementOperator(const CallState& context)
 {
 	std::uint8_t value = context.Args[0].AsByte();
-	context.WriteReturn(static_cast<std::uint8_t>(value + 1));
+	context.ReturnByte(static_cast<std::uint8_t>(value + 1));
 	return;
 }
 
 static void byte_op_DecrementOperator(const CallState& context)
 {
 	std::uint8_t value = context.Args[0].AsByte();
-	context.WriteReturn(static_cast<std::uint8_t>(value - 1));
+	context.ReturnByte(static_cast<std::uint8_t>(value - 1));
 	return;
 }
 
