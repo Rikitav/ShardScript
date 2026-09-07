@@ -1,32 +1,31 @@
 #include <shard/runtime/VirtualMachine.hpp>
 #include <shard/runtime/MethodCallState.hpp>
-
 #include <shard/runtime/CallStackFrame.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
 #include <shard/runtime/GarbageCollector.hpp>
 #include <shard/runtime/EventLoop.hpp>
 #include <shard/runtime/NativeAsync.hpp>
-#include <shard/compilation/ProgramDisassembler.hpp>
 
+#include <shard/compilation/ProgramDisassembler.hpp>
 #include <shard/compilation/ByteCodeDecoder.hpp>
 #include <shard/compilation/OperationCode.hpp>
 #include <shard/compilation/ProgramVirtualImage.hpp>
 
-#include <shard/semantic/SymbolTable.hpp>
-
-#include <shard/lexical/TokenType.hpp>
 #include <shard/parsing/SyntaxKind.hpp>
+#include <shard/parsing/SyntaxFacts.hpp>
 
+#include <shard/semantic/SymbolTable.hpp>
+#include <shard/lexical/TokenType.hpp>
+
+#include <shard/semantic/symbols/TypeSymbol.hpp>
 #include <shard/semantic/symbols/MethodSymbol.hpp>
 #include <shard/semantic/symbols/OperatorSymbol.hpp>
-#include <shard/parsing/SyntaxFacts.hpp>
 #include <shard/semantic/symbols/AccessorSymbol.hpp>
 #include <shard/semantic/symbols/PropertySymbol.hpp>
 #include <shard/semantic/symbols/InterfaceSymbol.hpp>
 #include <shard/semantic/symbols/ConstructorSymbol.hpp>
 #include <shard/semantic/symbols/ClassSymbol.hpp>
 #include <shard/semantic/symbols/FieldSymbol.hpp>
-#include <shard/semantic/symbols/TypeSymbol.hpp>
 #include <shard/semantic/symbols/GenericTypeSymbol.hpp>
 #include <shard/semantic/symbols/DelegateTypeSymbol.hpp>
 #include <shard/semantic/SemanticModel.hpp>
@@ -45,34 +44,9 @@
 
 using namespace shard;
 
-namespace 
+namespace
 {
-	static void ExecuteDeferExpression(VirtualMachine* vm, CallStackFrame* frame, ByteCodeDecoder& decoder, std::size_t target)
-	{
-		std::size_t savedIP = decoder.Index();
-		decoder.SetCursor(target);
-
-		while (true)
-		{
-			if (decoder.IsEOF())
-				throw std::runtime_error("Deferred expression ran past end of bytecode");
-
-			OpCode op = decoder.AbsorbOpCode();
-			vm->ProcessCode(frame, decoder, op);
-
-			if (frame->interrupted())
-			{
-				return;
-			}
-
-			if (op == OpCode::DEFER_BREAK)
-				break;
-		}
-
-		decoder.SetCursor(savedIP);
-	}
-
-	static ClassSymbol* GetExceptionClassDefinition(TypeSymbol* type)
+	static ClassSymbol* GetExceptionClassDefinition(shard::TypeSymbol* type)
 	{
 		if (type == nullptr)
 			return nullptr;
@@ -86,7 +60,7 @@ namespace
 		return nullptr;
 	}
 
-	static FieldSymbol* FindThrowableBackingField(TypeSymbol* type, MethodSymbol* interfaceGetter)
+	static FieldSymbol* FindThrowableBackingField(shard::TypeSymbol* type, MethodSymbol* interfaceGetter)
 	{
 		if (type == nullptr || interfaceGetter == nullptr)
 			return nullptr;
@@ -118,75 +92,13 @@ namespace
 		}
 	}
 
-	static bool DrainDefersTo(VirtualMachine* vm, CallStackFrame* frame, ByteCodeDecoder& decoder, std::size_t targetSize, GarbageCollector& gc)
-	{
-		while (frame->DeferStack.size() > targetSize)
-		{
-			std::size_t target = frame->DeferStack.back();
-			frame->DeferStack.pop_back();
-
-			frame->DeferDrainDepth++;
-			try
-			{
-				ExecuteDeferExpression(vm, frame, decoder, target);
-			}
-			catch (...)
-			{
-				frame->DeferDrainDepth--;
-				throw;
-			}
-
-			frame->DeferDrainDepth--;
-			if (frame->interrupted())
-				return false;
-		}
-
-		return true;
-	}
-
-	static bool HandleExceptionInFrame(VirtualMachine* vm, CallStackFrame* frame, ByteCodeDecoder& decoder, GarbageCollector& gc)
-	{
-		ObjectInstance exception = frame->InterruptionRegister;
-		if (exception.IsNullInstance())
-			throw std::runtime_error("Exception was raised without an exception object");
-
-		frame->DrainEvalReferences(gc);
-
-		frame->InterruptionReason = FrameInterruptionReason::None;
-		frame->InterruptionRegister = ObjectInstance();
-
-		while (!frame->ExceptionHandlers.empty())
-		{
-			CallStackFrame::ExceptionHandlerFrame handler = frame->ExceptionHandlers.back();
-			frame->ExceptionHandlers.pop_back();
-
-			if (!DrainDefersTo(vm, frame, decoder, handler.DeferStackBase, gc))
-				return true;
-
-			decoder.SetCursor(handler.HandlerOffset);
-			frame->PushReference(exception);
-			exception.IncrementReference();
-			
-			frame->InterruptionReason = FrameInterruptionReason::None;
-			frame->InterruptionRegister = exception;
-			return true;
-		}
-
-		if (!DrainDefersTo(vm, frame, decoder, 0, gc))
-			return true;
-
-		frame->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
-		frame->InterruptionRegister = exception;
-		exception.IncrementReference();
-		return false;
-	}
 
 	static bool IsPendingTask(ObjectInstance task, GarbageCollector& gc)
 	{
 		if (task.IsNullInstance() || !gc.IsTaskLike(task))
 			return false;
 
-		const TypeSymbol* info = task.getInfo();
+		const shard::TypeSymbol* info = task.getInfo();
 		FieldSymbol* stateField = nullptr;
 		if (info->Name == L"Task")
 			stateField = SymbolTable::StandardTypes::Task_StateField;
@@ -216,7 +128,7 @@ namespace
 
 	static SemanticModel::TypeParameterResolver MakeFrameResolver(CallStackFrame* frame)
 	{
-		return [frame](TypeParameterSymbol* param) -> TypeSymbol*
+		return [frame](TypeParameterSymbol* param) -> shard::TypeSymbol*
 		{
 			if (frame == nullptr || param == nullptr)
 				return nullptr;
@@ -230,7 +142,7 @@ namespace
 		if (task.IsNullInstance() || !gc.IsTaskLike(task))
 			return;
 
-		const TypeSymbol* info = task.getInfo();
+		const shard::TypeSymbol* info = task.getInfo();
 		ObjectInstance exception = CreateRuntimeException(gc,
 			L"Task halted because the virtual machine has stopped");
 
@@ -260,7 +172,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 	{
 		if (!result.IsNullInstance() && result.getShape() != nullptr && !result.getShape()->IsReferenceType())
 		{
-			TypeShape* shape = result.getShape();
+			const TypeShape* shape = result.getShape();
 			frame->PushInline(shape, result.getMemory());
 			garbageCollector.DestroyInstance(result);
 			return;
@@ -855,16 +767,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 		case OpCode::DUP:
 		{
 			ObjectInstance value = frame->TopValue();
-			if (value.getInfo() != nullptr && !value.getInfo()->IsReferenceType())
-			{
-				frame->PushInline(value.getShape(), value.getMemory());
-				break;
-			}
-
-			if (!value.IsNullInstance())
-				value.IncrementReference();
-
-			frame->PushReference(value);
+			frame->PushCopy(value);
 			break;
 		}
 
@@ -1108,7 +1011,6 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 
 			exception.IncrementReference();
 			frame->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
-			frame->InterruptionRegister = exception;
 			frame->CurrentException = exception;
 			break;
 		}
@@ -1121,7 +1023,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 
 			exception.IncrementReference();
 			frame->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
-			frame->InterruptionRegister = exception;
+			frame->CurrentException = exception;
 			break;
 		}
 
@@ -1203,7 +1105,7 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 
 					std::size_t target = frame->DeferStack.back();
 					frame->DeferStack.pop_back();
-					ExecuteDeferExpression(this, frame, decoder, target);
+					ExecuteDeferExpression(frame, decoder, target);
 
 					if (frame->interrupted())
 					{
@@ -1216,8 +1118,8 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 				frame->DeferDrainDepth--;
 				throw;
 			}
-			frame->DeferDrainDepth--;
 
+			frame->DeferDrainDepth--;
 			decoder.SetCursor(savedIP);
 			break;
 		}
@@ -1320,12 +1222,12 @@ ObjectInstance VirtualMachine::CreateRuntimeException(const std::exception& err)
 	return CreateRuntimeException(SymbolTable::StandardTypes::RuntimeException, message, GetStackTrace());
 }
 
-void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* currentFrame)
+void VirtualMachine::InvokeMethodInternal(const MethodSymbol* method, CallStackFrame* currentFrame)
 {
 	if (AbortFlag)
 		throw std::runtime_error("Execution aborted by host.");
 
-	CallStackFrame* callingFrame = currentFrame->PreviousFrame;
+	CallStackFrame* callingFrame = const_cast<CallStackFrame*>(currentFrame->PreviousFrame);
 
 	std::size_t argsCount = method->GetEvalStackArgumentsCount();
 	ObjectInstance thisInstance;
@@ -1335,13 +1237,13 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 		ObjectInstance argument = callingFrame->PopValue();
 		currentFrame->SetLocal(static_cast<std::uint16_t>(i), argument, garbageCollector);
 
-		if (method->Linking == LINK_INSTANCE && i == 0 && argument.getInfo() != nullptr && argument.getInfo()->IsReferenceType())
+		if (method->Linking == LINK_INSTANCE && i == 0 && argument.getInfo() != nullptr)
 			thisInstance = argument;
 	}
 
 	if (!thisInstance.IsNullInstance())
 	{
-		TypeShape* thisShape = thisInstance.getShape();
+		const TypeShape* thisShape = thisInstance.getShape();
 		if (currentFrame->TypeArguments.empty() && thisShape != nullptr && thisShape->HasGenericArguments())
 		{
 			currentFrame->TypeArguments = thisShape->GenericArguments;
@@ -1366,7 +1268,7 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 
 				if (currentFrame->InterruptionReason == FrameInterruptionReason::ExceptionRaised)
 				{
-					if (!HandleExceptionInFrame(this, currentFrame, decoder, garbageCollector))
+					if (!HandleExceptionInFrame(currentFrame, decoder))
 						break;
 
 					continue;
@@ -1388,20 +1290,19 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 			{
 				if (method->FunctionPointer == nullptr)
 				{
-					std::string methodName(method->FullName.begin(), method->FullName.end());
-					throw std::runtime_error("extern method body not resolved: " + methodName);
+					throw runtime_exception(L"extern method body not resolved: " + method->FullName);
 				}
 
 				std::vector<ObjectInstance> argumentValues(argsCount);
 				currentFrame->CopyArgumentPayloads(argumentValues.data(), argsCount);
-				ArgumentsSpan args(argumentValues.data(), argsCount);
+				std::span<ObjectInstance> args(argumentValues.data(), argsCount);
 				
-				TypeShape* returnShape = currentFrame->ReturnShape();
+				const TypeShape* returnShape = currentFrame->ReturnShape();
 				const bool returnsValue = returnShape != nullptr;
 				const bool returnsReference = method->ReturnType != nullptr &&
 					method->ReturnType != SymbolTable::Primitives::Void && !returnsValue;
 
-				TypeShape* slotHeader = returnsValue ? returnShape : nullptr;
+				const TypeShape* slotHeader = returnsValue ? returnShape : nullptr;
 				std::memcpy(currentFrame->ReturnSlotMemory(), &slotHeader, sizeof(slotHeader));
 
 				CallState context
@@ -1412,10 +1313,8 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 					.Collector = garbageCollector,
 
 					.Frame = currentFrame,
-					.Method = method,
-					.Args = args,
-
-					.ReturnTarget = { currentFrame->ReturnSlotMemory() + CallStackFrame::SlotHeaderBytes, returnShape }
+					.Method = const_cast<MethodSymbol*>(method),
+					.Args = args
 				};
 
 				method->FunctionPointer(context);
@@ -1444,7 +1343,6 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 				ObjectInstance exception = CreateRuntimeException(err);
 
 				currentFrame->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
-				currentFrame->InterruptionRegister = exception;
 				currentFrame->CurrentException = exception;
 				exception.IncrementReference();
 			}
@@ -1455,11 +1353,10 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 
 	if (currentFrame->InterruptionReason == FrameInterruptionReason::ExceptionRaised)
 	{
-		ObjectInstance exception = currentFrame->InterruptionRegister;
+		ObjectInstance exception = currentFrame->CurrentException;
 		if (callingFrame != nullptr && !exception.IsNullInstance())
 		{
 			callingFrame->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
-			callingFrame->InterruptionRegister = exception;
 			callingFrame->CurrentException = exception;
 			exception.IncrementReference();
 		}
@@ -1517,18 +1414,17 @@ void VirtualMachine::InvokeMethodInternal(MethodSymbol* method, CallStackFrame* 
 ObjectInstance VirtualMachine::InstantiateObject(TypeSymbol* type, ConstructorSymbol* ctor, bool inPlace)
 {
 	CallStackFrame* callingFrame = CurrentFrame();
-
 	auto resolver = MakeFrameResolver(callingFrame);
 
 	TypeSymbol* baseType = type;
 	std::vector<TypeSymbol*> genericArgs;
-	bool isGeneric = SemanticModel::TryResolveGenericArguments(type, resolver, baseType, genericArgs);
 
+	bool isGeneric = SemanticModel::TryResolveGenericArguments(type, resolver, baseType, genericArgs);
 	const bool constructInPlace = inPlace && baseType != nullptr && !baseType->IsReferenceType();
 
 	ObjectInstance newInstance;
 	std::byte* inlinePayload = nullptr;
-	TypeShape* inlineShape = nullptr;
+	const TypeShape* inlineShape = nullptr;
 
 	if (constructInPlace)
 	{
@@ -1647,7 +1543,7 @@ CallStackFrame* VirtualMachine::CurrentFrame() const
 	return CallStack.back().get();
 }
 
-CallStackFrame* VirtualMachine::PushFrame(MethodSymbol* methodSymbol)
+CallStackFrame* VirtualMachine::PushFrame(const MethodSymbol* methodSymbol)
 {
 	auto frame = CallStackFrame::Create(this, CurrentFrame(), methodSymbol, PendingTypeArguments);
 	frame->TypeArguments = std::move(PendingTypeArguments);
@@ -1670,44 +1566,39 @@ void VirtualMachine::PopFrame()
 		frame->PreviousFrame = nullptr;
 }
 
-void VirtualMachine::InvokeMethod(MethodSymbol* method) const
+ObjectInstance VirtualMachine::InvokeMethod(const MethodSymbol* method) const
 {
 	VirtualMachine* vm = const_cast<VirtualMachine*>(this);
-
-	CallStackFrame* currentFrame = vm->PushFrame(method);
-	vm->InvokeMethodInternal(method, currentFrame);
-	vm->PopFrame();
+	return vm->InvokeMethod(method, nullptr, 0);
 }
 
-void VirtualMachine::InvokeMethod(MethodSymbol* method, std::initializer_list<ObjectInstance> args) const
+ObjectInstance VirtualMachine::InvokeMethod(const MethodSymbol* method, const std::span<ObjectInstance> args) const
 {
 	VirtualMachine* vm = const_cast<VirtualMachine*>(this);
-
-	CallStackFrame* callingFrame = vm->CurrentFrame();
-	CallStackFrame* currentFrame = vm->PushFrame(method);
-
-	for (ObjectInstance argValue : args)
-		callingFrame->PushCopy(argValue);
-
-	vm->InvokeMethodInternal(method, currentFrame);
-	vm->PopFrame();
+	return vm->InvokeMethod(method, args.data(), args.size());
 }
 
-ObjectInstance VirtualMachine::InvokeMethod(MethodSymbol* method, ObjectInstance* args, std::size_t count) const
+ObjectInstance VirtualMachine::InvokeMethod(const MethodSymbol* method, const std::initializer_list<ObjectInstance> args) const
+{
+	VirtualMachine* vm = const_cast<VirtualMachine*>(this);
+	return vm->InvokeMethod(method, args.data(), args.size());
+}
+
+ObjectInstance VirtualMachine::InvokeMethod(const MethodSymbol* method, const ObjectInstance* args, std::size_t count) const
 {
 	VirtualMachine* vm = const_cast<VirtualMachine*>(this);
 
 	bool pushedRootFrame = false;
 	CallStackFrame* callingFrame = vm->CurrentFrame();
+
 	if (callingFrame == nullptr)
 	{
-		MethodSymbol* rootMethod = program.EntryPoint != nullptr ? program.EntryPoint : method;
+		const MethodSymbol* rootMethod = program.EntryPoint != nullptr ? program.EntryPoint : method;
 		callingFrame = vm->PushFrame(rootMethod);
 		pushedRootFrame = true;
 	}
 
 	CallStackFrame* currentFrame = vm->PushFrame(method);
-
 	for (std::size_t i = 0; i < count; i++)
 		callingFrame->PushCopy(args[i]);
 
@@ -1718,11 +1609,20 @@ ObjectInstance VirtualMachine::InvokeMethod(MethodSymbol* method, ObjectInstance
 		result = callingFrame->PopValue();
 
 	vm->PopFrame();
-
 	if (pushedRootFrame)
 		vm->PopFrame();
 
 	return result;
+}
+
+void VirtualMachine::SetPendingTypeArguments(std::span<TypeSymbol*> args) const
+{
+	VirtualMachine* vm = const_cast<VirtualMachine*>(this);
+	vm->PendingTypeArguments.clear();
+	vm->PendingTypeArguments.reserve(args.size());
+
+	for (TypeSymbol* arg : args)
+		vm->PendingTypeArguments.push_back(arg);
 }
 
 void VirtualMachine::SetPendingTypeArguments(std::initializer_list<TypeSymbol*> args) const
@@ -1750,7 +1650,6 @@ void VirtualMachine::RaiseException(ObjectInstance exceptionReg) const
 
 	exceptionReg.IncrementReference();
 	frame->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
-	frame->InterruptionRegister = exceptionReg;
 	frame->CurrentException = exceptionReg;
 }
 
@@ -1813,6 +1712,94 @@ void VirtualMachine::HaltFireAndForgetTasks()
 	}
 }
 
+void VirtualMachine::ExecuteDeferExpression(CallStackFrame* frame, ByteCodeDecoder& decoder, std::size_t target)
+{
+	std::size_t savedIP = decoder.Index();
+	decoder.SetCursor(target);
+
+	while (true)
+	{
+		if (decoder.IsEOF())
+			throw std::runtime_error("Deferred expression ran past end of bytecode");
+
+		OpCode op = decoder.AbsorbOpCode();
+		ProcessCode(frame, decoder, op);
+
+		if (frame->interrupted())
+		{
+			return;
+		}
+
+		if (op == OpCode::DEFER_BREAK)
+			break;
+	}
+
+	decoder.SetCursor(savedIP);
+}
+
+bool VirtualMachine::DrainDefersTo(CallStackFrame* frame, ByteCodeDecoder& decoder, std::size_t targetSize)
+{
+	while (frame->DeferStack.size() > targetSize)
+	{
+		std::size_t target = frame->DeferStack.back();
+		frame->DeferStack.pop_back();
+
+		frame->DeferDrainDepth++;
+		try
+		{
+			ExecuteDeferExpression(frame, decoder, target);
+		}
+		catch (...)
+		{
+			frame->DeferDrainDepth--;
+			throw;
+		}
+
+		frame->DeferDrainDepth--;
+		if (frame->interrupted())
+			return false;
+	}
+
+	return true;
+}
+
+bool VirtualMachine::HandleExceptionInFrame(CallStackFrame* frame, ByteCodeDecoder& decoder)
+{
+	ObjectInstance exception = frame->CurrentException;
+	if (exception.IsNullInstance())
+		throw std::runtime_error("Exception was raised without an exception object");
+
+	frame->DrainEvalReferences(garbageCollector);
+
+	frame->InterruptionReason = FrameInterruptionReason::None;
+	frame->CurrentException = ObjectInstance();
+
+	while (!frame->ExceptionHandlers.empty())
+	{
+		CallStackFrame::ExceptionHandlerFrame handler = frame->ExceptionHandlers.back();
+		frame->ExceptionHandlers.pop_back();
+
+		if (!DrainDefersTo(frame, decoder, handler.DeferStackBase))
+			return true;
+
+		decoder.SetCursor(handler.HandlerOffset);
+		frame->PushReference(exception);
+		exception.IncrementReference();
+
+		frame->InterruptionReason = FrameInterruptionReason::None;
+		frame->CurrentException = exception;
+		return true;
+	}
+
+	if (!DrainDefersTo(frame, decoder, 0))
+		return true;
+
+	frame->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
+	frame->CurrentException = exception;
+	exception.IncrementReference();
+	return false;
+}
+
 void VirtualMachine::Run()
 {
 	if (program.EntryPoint == nullptr)
@@ -1835,7 +1822,7 @@ void VirtualMachine::Run()
 
 	if (entryFrame->InterruptionReason == FrameInterruptionReason::ExceptionRaised)
 	{
-		ObjectInstance exception = entryFrame->InterruptionRegister;
+		ObjectInstance exception = entryFrame->CurrentException;
 		if (!exception.IsNullInstance())
 		{
 			exception.IncrementReference();
@@ -1867,7 +1854,7 @@ void VirtualMachine::Abort() const
 ObjectInstance VirtualMachine::RunInteractive(std::size_t& pointer)
 {
 	CallStackFrame* currentFrame = CurrentFrame();
-	MethodSymbol* method = currentFrame->Method;
+	const MethodSymbol* method = currentFrame->Method;
 
 	ByteCodeDecoder decoder = ByteCodeDecoder(method->ExecutableByteCode);
 	decoder.SetCursor(pointer);

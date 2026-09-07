@@ -210,6 +210,9 @@
 #include <shard/runtime/MethodCallState.hpp>
 #include <shard/runtime/RuntimeException.hpp>
 
+// --- Runtime / Adapters ---
+#include <shard/runtime/adapters/EnumerableAdapter.hpp>
+
 // transitivelly includes Windows.h
 #ifndef SHARDSCRIPT_NO_WINDOWS
 #include <shard/runtime/EventLoop.hpp>

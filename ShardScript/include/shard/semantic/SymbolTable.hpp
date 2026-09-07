@@ -26,6 +26,12 @@ namespace shard
     class TypeParameterSymbol;
     class ArrayTypeSymbol;
 
+    struct StringLayout
+    {
+        std::int64_t Size;
+        const wchar_t* Data;
+    };
+
     class SHARD_API SymbolTable
     {
         inline static constexpr const wchar_t* GlobalTypeName = L"__GLOBAL__";

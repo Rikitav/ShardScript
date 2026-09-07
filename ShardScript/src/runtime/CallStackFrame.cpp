@@ -21,7 +21,7 @@ using namespace shard;
 
 namespace
 {
-	static void AdoptInlinePayload(TypeShape* shape, std::byte* payload)
+	static void AdoptInlinePayload(const TypeShape* shape, std::byte* payload)
 	{
 		if (shape == nullptr)
 			return;
@@ -35,11 +35,14 @@ namespace
 			std::byte* fieldValue = nullptr;
 			std::memcpy(&fieldValue, payload + shape->GetOffset(slot), sizeof(fieldValue));
 			if (fieldValue != nullptr)
-				ObjectInstance(fieldShape->BaseType, fieldShape, fieldValue).IncrementReference();
+			{
+				ObjectInstance gcInstance(fieldShape, fieldValue);
+				gcInstance.IncrementReference();
+			}
 		}
 	}
 
-	static void ReleaseInlinePayload(TypeShape* shape, std::byte* payload, GarbageCollector& gc)
+	static void ReleaseInlinePayload(const TypeShape* shape, std::byte* payload, GarbageCollector& gc)
 	{
 		if (shape == nullptr)
 			return;
@@ -53,7 +56,7 @@ namespace
 			std::byte* fieldValue = nullptr;
 			std::memcpy(&fieldValue, payload + shape->GetOffset(slot), sizeof(fieldValue));
 			if (fieldValue != nullptr)
-				gc.DestroyInstance(ObjectInstance(fieldShape->BaseType, fieldShape, fieldValue));
+				gc.DestroyInstance(ObjectInstance(fieldShape, fieldValue));
 		}
 	}
 
@@ -144,7 +147,7 @@ TypeSymbol* CallStackFrame::ResolveType(TypeSymbol* type)
 	return type;
 }
 
-std::shared_ptr<CallStackFrame> CallStackFrame::Create(const VirtualMachine* host, CallStackFrame* previousFrame, MethodSymbol* method, const std::vector<TypeSymbol*>& typeArguments)
+std::shared_ptr<CallStackFrame> CallStackFrame::Create(const VirtualMachine* host, const CallStackFrame* previousFrame, const MethodSymbol* method, const std::vector<TypeSymbol*>& typeArguments)
 {
 	TypeShapeCache& shapes = *host->GetProgram().TypeShapes;
 
@@ -203,7 +206,7 @@ std::shared_ptr<CallStackFrame> CallStackFrame::Create(const VirtualMachine* hos
 	return result;
 }
 
-ObjectInstance CallStackFrame::PushInlineUninitialized(TypeShape* shape)
+ObjectInstance CallStackFrame::PushInlineUninitialized(const TypeShape* shape)
 {
 	if (shape == nullptr)
 		throw std::runtime_error("Cannot push an inline value without a type shape");
@@ -215,12 +218,12 @@ ObjectInstance CallStackFrame::PushInlineUninitialized(TypeShape* shape)
 	EvalCursorBytes += stride;
 	EvalSize++;
 
-	*reinterpret_cast<TypeShape**>(entry) = shape;
+	*reinterpret_cast<const TypeShape**>(entry) = shape;
 
-	return ObjectInstance(shape->BaseType, shape, entry + SlotHeaderBytes);
+	return ObjectInstance(shape, entry + SlotHeaderBytes);
 }
 
-ObjectInstance CallStackFrame::PushInline(TypeShape* shape, const void* payloadBytes)
+ObjectInstance CallStackFrame::PushInline(const TypeShape* shape, const void* payloadBytes)
 {
 	ObjectInstance payload = PushInlineUninitialized(shape);
 	if (payloadBytes != nullptr)
@@ -237,7 +240,7 @@ ObjectInstance CallStackFrame::PushReference(ObjectInstance value)
 	EvalCursorBytes += BoxedEntryStride;
 	EvalSize++;
 
-	*reinterpret_cast<TypeShape**>(entry) = value.getShape();
+	*reinterpret_cast<const TypeShape**>(entry) = value.getShape();
 
 	std::byte* stored = value.getMemory();
 	std::memcpy(entry + SlotHeaderBytes, &stored, sizeof(stored));
@@ -273,10 +276,10 @@ ObjectInstance CallStackFrame::PopValue()
 	{
 		std::byte* stored = nullptr;
 		std::memcpy(&stored, entry + SlotHeaderBytes, sizeof(stored));
-		return shape != nullptr ? ObjectInstance(shape->BaseType, shape, stored) : ObjectInstance();
+		return shape != nullptr ? ObjectInstance(shape, stored) : ObjectInstance();
 	}
 
-	return ObjectInstance(shape->BaseType, shape, entry + SlotHeaderBytes);
+	return ObjectInstance(shape, entry + SlotHeaderBytes);
 }
 
 ObjectInstance CallStackFrame::TopValue()
@@ -289,10 +292,10 @@ ObjectInstance CallStackFrame::TopValue()
 	{
 		std::byte* stored = nullptr;
 		std::memcpy(&stored, entry + SlotHeaderBytes, sizeof(stored));
-		return shape != nullptr ? ObjectInstance(shape->BaseType, shape, stored) : ObjectInstance();
+		return shape != nullptr ? ObjectInstance(shape, stored) : ObjectInstance();
 	}
 
-	return ObjectInstance(shape->BaseType, shape, entry + SlotHeaderBytes);
+	return ObjectInstance(shape, entry + SlotHeaderBytes);
 }
 
 ObjectInstance CallStackFrame::PopStack()
@@ -319,14 +322,11 @@ ObjectInstance CallStackFrame::GetLocal(std::uint16_t slot)
 	std::byte* entry = Arena + desc.Offset;
 
 	if (desc.Inline)
-		return ObjectInstance(desc.Shape->BaseType, desc.Shape, entry + SlotHeaderBytes);
+		return ObjectInstance(desc.Shape, entry + SlotHeaderBytes);
 
 	std::byte* stored = nullptr;
 	std::memcpy(&stored, entry + SlotHeaderBytes, sizeof(stored));
-	if (desc.Shape == nullptr)
-		return ObjectInstance(nullptr, nullptr, stored);
-
-	return ObjectInstance(desc.Shape->BaseType, desc.Shape, stored);
+	return ObjectInstance(desc.Shape, stored);
 }
 
 void CallStackFrame::SetLocal(std::uint16_t slot, const ObjectInstance& value, GarbageCollector& gc)
@@ -348,7 +348,7 @@ void CallStackFrame::SetLocal(std::uint16_t slot, const ObjectInstance& value, G
 	std::byte* old = nullptr;
 	std::memcpy(&old, payload, sizeof(old));
 	if (old != nullptr)
-		gc.DestroyInstance(ObjectInstance(desc.Shape != nullptr ? desc.Shape->BaseType : nullptr, desc.Shape, old));
+		gc.DestroyInstance(ObjectInstance(desc.Shape, old));
 
 	std::byte* stored = value.getMemory();
 	if (stored != nullptr)
@@ -370,15 +370,13 @@ void CallStackFrame::CopyArgumentPayloads(ObjectInstance* dst, std::size_t count
 
 		if (desc.Inline)
 		{
-			dst[i] = ObjectInstance(desc.Shape->BaseType, desc.Shape, entry + SlotHeaderBytes);
+			dst[i] = ObjectInstance(desc.Shape, entry + SlotHeaderBytes);
 		}
 		else
 		{
 			std::byte* stored = nullptr;
 			std::memcpy(&stored, entry + SlotHeaderBytes, sizeof(stored));
-			dst[i] = desc.Shape != nullptr
-				? ObjectInstance(desc.Shape->BaseType, desc.Shape, stored)
-				: ObjectInstance(nullptr, nullptr, stored);
+			dst[i] = ObjectInstance(desc.Shape, stored);
 		}
 	}
 }
@@ -407,7 +405,10 @@ void CallStackFrame::DrainLocalReferences(GarbageCollector& gc)
 			std::byte* stored = nullptr;
 			std::memcpy(&stored, entry + SlotHeaderBytes, sizeof(stored));
 			if (stored != nullptr)
-				gc.DestroyInstance(ObjectInstance(desc.Shape != nullptr ? desc.Shape->BaseType : nullptr, desc.Shape, stored));
+			{
+				ObjectInstance gcInstance(desc.Shape, stored);
+				gc.DestroyInstance(gcInstance);
+			}
 		}
 	}
 }

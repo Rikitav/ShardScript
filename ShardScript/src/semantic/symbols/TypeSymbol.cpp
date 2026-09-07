@@ -216,9 +216,9 @@ PropertySymbol* TypeSymbol::FindProperty(std::wstring& name)
 	return nullptr;
 }
 
-MethodSymbol* TypeSymbol::FindInterfaceImplementation(MethodSymbol* interfaceMethod)
+MethodSymbol* TypeSymbol::FindInterfaceImplementation(const MethodSymbol* interfaceMethod)
 {
-	auto it = InterfaceMethodMap.find(interfaceMethod);
+	auto it = InterfaceMethodMap.find(const_cast<MethodSymbol*>(interfaceMethod));
 	if (it != InterfaceMethodMap.end())
 		return it->second;
 
@@ -227,7 +227,7 @@ MethodSymbol* TypeSymbol::FindInterfaceImplementation(MethodSymbol* interfaceMet
 		if (iface == nullptr || iface->Kind != SyntaxKind::InterfaceDeclaration)
 			continue;
 
-		MethodSymbol* baseImplementation = iface->FindInterfaceImplementation(interfaceMethod);
+		MethodSymbol* baseImplementation = iface->FindInterfaceImplementation(const_cast<MethodSymbol*>(interfaceMethod));
 		if (baseImplementation != nullptr)
 			return baseImplementation;
 	}

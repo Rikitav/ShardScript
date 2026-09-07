@@ -76,18 +76,18 @@ TypeShapeCache& GarbageCollector::GetTypeShapeCache() const
 	return *applicationDomain->GetProgram().TypeShapes;
 }
 
-ObjectInstance GarbageCollector::RecoverStaticField(FieldSymbol* field, std::byte* payload)
+ObjectInstance GarbageCollector::RecoverStaticField(const FieldSymbol* field, std::byte* payload)
 {
 	TypeSymbol* type = field->ReturnType;
 	TypeShape* shape = GetTypeShapeCache().GetOrCreateShape(type);
-	return ObjectInstance(type, shape, payload);
+	return ObjectInstance(shape, payload);
 }
 
 ObjectInstance GarbageCollector::RecoverInternedString(std::byte* payload)
 {
 	TypeSymbol* type = SymbolTable::Primitives::String;
 	TypeShape* shape = GetTypeShapeCache().GetOrCreateShape(type);
-	return ObjectInstance(type, shape, payload);
+	return ObjectInstance(shape, payload);
 }
 
 ObjectInstance GarbageCollector::FromBoolean(bool value)
@@ -146,7 +146,7 @@ ObjectInstance GarbageCollector::FromString(const wchar_t* value)
 		throw std::runtime_error("Failed to allocate string");
 
 	std::memcpy(copy, value, size);
-	instance.WriteMemory(sizeof(std::int64_t), sizeof(wchar_t*), &copy);
+	instance.WriteMemory(offsetof(StringLayout, Data), sizeof(wchar_t*), &copy);
 
 	return instance;
 }
@@ -167,7 +167,7 @@ ObjectInstance GarbageCollector::FromString(const std::wstring& value)
 
 	std::uint64_t length64 = static_cast<std::uint64_t>(length);
 	instance.WriteMemory(0, sizeof(std::int64_t), &length64);
-	instance.WriteMemory(sizeof(std::int64_t), sizeof(wchar_t*), &copy);
+	instance.WriteMemory(offsetof(StringLayout, Data), sizeof(wchar_t*), &copy);
 	return instance;
 }
 
@@ -198,9 +198,9 @@ ObjectInstance GarbageCollector::FromNint(void* rawMemory)
 	return instance;
 }
 
-ObjectInstance GarbageCollector::GetStaticField(FieldSymbol* field)
+ObjectInstance GarbageCollector::GetStaticField(const FieldSymbol* field)
 {
-	if (auto find = staticFields.find(field); find != staticFields.end())
+	if (auto find = staticFields.find(const_cast<FieldSymbol*>(field)); find != staticFields.end())
 		return RecoverStaticField(field, find->second);
 
 	if (field->DefaultValueExpression != nullptr)
@@ -216,20 +216,20 @@ ObjectInstance GarbageCollector::GetStaticField(FieldSymbol* field)
 	{
 		ObjectInstance instance = AllocateInstance(shape);
 		instance.IncrementReference(); // permanent root
-		staticFields[field] = instance.getMemory();
+		staticFields[const_cast<FieldSymbol*>(field)] = instance.getMemory();
 		return instance;
 	}
 
-	staticFields[field] = nullptr;
-	return ObjectInstance(fieldType, shape, nullptr);
+	staticFields[const_cast<FieldSymbol*>(field)] = nullptr;
+	return ObjectInstance(shape, nullptr);
 }
 
-void GarbageCollector::SetStaticField(FieldSymbol* field, ObjectInstance instance)
+void GarbageCollector::SetStaticField(const FieldSymbol* field, ObjectInstance instance)
 {
 	if (instance.IsNullInstance())
 		throw std::runtime_error("requested setting static field to nullptr");
 
-	if (auto find = staticFields.find(field); find != staticFields.end())
+	if (auto find = staticFields.find(const_cast<FieldSymbol*>(field)); find != staticFields.end())
 	{
 		ObjectInstance oldValue = RecoverStaticField(field, find->second);
 		DestroyInstance(oldValue);
@@ -237,10 +237,22 @@ void GarbageCollector::SetStaticField(FieldSymbol* field, ObjectInstance instanc
 
 	ObjectInstance stored = CopyInstance(instance);
 	stored.IncrementReference();
-	staticFields[field] = stored.getMemory();
+	staticFields[const_cast<FieldSymbol*>(field)] = stored.getMemory();
 }
 
-ObjectInstance GarbageCollector::AllocateInstance(TypeShape* shape)
+TypeShape* GarbageCollector::ResolveShape(const TypeSymbol* info, const std::span<TypeSymbol*> genericArgs)
+{
+	std::vector<TypeSymbol*> typeArgs(genericArgs.data(), genericArgs.data() + genericArgs.size());
+	return GetTypeShapeCache().GetOrCreateShape(info, typeArgs);
+}
+
+TypeShape* GarbageCollector::ResolveShape(const TypeSymbol* info, const std::initializer_list<TypeSymbol*> genericArgs)
+{
+	std::vector<TypeSymbol*> typeArgs(genericArgs.data(), genericArgs.data() + genericArgs.size());
+	return GetTypeShapeCache().GetOrCreateShape(info, typeArgs);
+}
+
+ObjectInstance GarbageCollector::AllocateInstance(const TypeShape* shape)
 {
 	if (shape == nullptr)
 		throw std::runtime_error("shape is nullptr");
@@ -250,12 +262,11 @@ ObjectInstance GarbageCollector::AllocateInstance(TypeShape* shape)
 	if (header == nullptr)
 		throw std::runtime_error("cannot allocate memory for new instance");
 
-	header->Magic = ObjectInstance::GcHeader::MAGIC;
 	header->Shape = shape;
 
 	std::byte* payload = reinterpret_cast<std::byte*>(header) + sizeof(ObjectInstance::GcHeader);
 	Heap.add(payload);
-	return ObjectInstance(shape->BaseType, shape, payload);
+	return ObjectInstance(shape, payload);
 }
 
 ObjectInstance GarbageCollector::AllocateInstance(const TypeSymbol* objectInfo)
@@ -282,7 +293,7 @@ ObjectInstance GarbageCollector::AllocateInstance(const TypeSymbol* objectInfo)
 	return AllocateInstance(shape);
 }
 
-ObjectInstance GarbageCollector::AllocateGeneric(TypeSymbol* baseType, const std::span<TypeSymbol*> genericArgs)
+ObjectInstance GarbageCollector::AllocateGeneric(const TypeSymbol* baseType, const std::span<TypeSymbol*> genericArgs)
 {
 	if (baseType == nullptr)
 		throw std::runtime_error("baseType is nullptr");
@@ -291,7 +302,7 @@ ObjectInstance GarbageCollector::AllocateGeneric(TypeSymbol* baseType, const std
 	return AllocateInstance(shape);
 }
 
-ObjectInstance GarbageCollector::AllocateGeneric(TypeSymbol* baseType, const std::vector<TypeSymbol*>& genericArgs)
+ObjectInstance GarbageCollector::AllocateGeneric(const TypeSymbol* baseType, const std::vector<TypeSymbol*>& genericArgs)
 {
 	if (baseType == nullptr)
 		throw std::runtime_error("baseType is nullptr");
@@ -300,7 +311,7 @@ ObjectInstance GarbageCollector::AllocateGeneric(TypeSymbol* baseType, const std
 	return AllocateInstance(shape);
 }
 
-ObjectInstance GarbageCollector::AllocateArray(ArrayTypeSymbol* arrayType, TypeSymbol* elementType, std::size_t length)
+ObjectInstance GarbageCollector::AllocateArray(const ArrayTypeSymbol* arrayType, TypeSymbol* elementType, std::size_t length)
 {
 	if (arrayType == nullptr)
 		throw std::runtime_error("arrayType is nullptr");
@@ -320,7 +331,6 @@ ObjectInstance GarbageCollector::AllocateArray(ArrayTypeSymbol* arrayType, TypeS
 	if (header == nullptr)
 		throw std::runtime_error("cannot allocate memory for dynamic array");
 
-	header->Magic = ObjectInstance::GcHeader::MAGIC;
 	TypeShape* arrayShape = GetTypeShapeCache().GetOrCreateShape(arrayType);
 	header->Shape = arrayShape;
 
@@ -329,10 +339,10 @@ ObjectInstance GarbageCollector::AllocateArray(ArrayTypeSymbol* arrayType, TypeS
 	std::memcpy(payload, &payloadLength, sizeof(payloadLength));
 
 	Heap.add(payload);
-	return ObjectInstance(arrayType, arrayShape, payload);
+	return ObjectInstance(arrayShape, payload);
 }
 
-ObjectInstance GarbageCollector::CopyInstance(ObjectInstance instance)
+ObjectInstance GarbageCollector::CopyInstance(const ObjectInstance& instance)
 {
 	if (instance.IsNullInstance())
 		return instance;
@@ -344,12 +354,12 @@ ObjectInstance GarbageCollector::CopyInstance(ObjectInstance instance)
 		return instance;
 	}
 
-	TypeShape* shape = instance.getShape();
+	const TypeShape* shape = instance.getShape();
 	ObjectInstance newInstance = shape != nullptr
 		? AllocateInstance(shape)
 		: AllocateInstance(info);
 
-	TypeShape* newShape = newInstance.getShape();
+	const TypeShape* newShape = newInstance.getShape();
 	if (newShape == nullptr)
 		throw std::runtime_error("cannot copy instance without a type shape");
 
@@ -431,9 +441,8 @@ void GarbageCollector::TerminateInstance(ObjectInstance instance, bool deleteIns
 	header->Terminated = true;
 
 	asyncTable.erase(instance.getMemory());
-	delegateTargets.erase(instance.getMemory());
 
-	TypeShape* shape = instance.getShape();
+	const TypeShape* shape = instance.getShape();
 	if (shape != nullptr)
 	{
 		for (std::uint32_t slot = 0; slot < static_cast<std::uint32_t>(shape->Slots.size()); ++slot)
@@ -498,7 +507,7 @@ void GarbageCollector::Terminate()
 		if (header == nullptr || header->Shape == nullptr)
 			continue;
 
-		ObjectInstance instance(header->Shape->BaseType, header->Shape, payload);
+		ObjectInstance instance(header->Shape, payload);
 		TerminateInstance(instance, false);
 	}
 
@@ -514,7 +523,6 @@ void GarbageCollector::Terminate()
 	Heap.clear();
 	staticFields.clear();
 	asyncTable.clear();
-	delegateTargets.clear();
 }
 
 // Immortal instance: [GcHeader(zeroed magic)][payload] in one block. The magic
@@ -526,7 +534,7 @@ ObjectInstance GarbageCollector::CreateView(const TypeSymbol* info, TypeShape* s
 	ObjectInstance::GcHeader* header = static_cast<ObjectInstance::GcHeader*>(AllocateZeroedBytes(sizeof(ObjectInstance::GcHeader) + payloadBytes));
 
 	std::byte* payload = reinterpret_cast<std::byte*>(header) + sizeof(ObjectInstance::GcHeader);
-	return ObjectInstance(info, shape, payload);
+	return ObjectInstance(shape, payload);
 }
 
 ObjectInstance GarbageCollector::InternString(const wchar_t* value)

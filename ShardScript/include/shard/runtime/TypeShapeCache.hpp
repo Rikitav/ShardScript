@@ -29,18 +29,18 @@ namespace shard
 			const std::vector<TypeParameterSymbol*>& parameters,
 			const std::vector<TypeSymbol*>& arguments);
 
-		void BuildShape(TypeShape* shape, TypeSymbol* baseType, const std::vector<TypeSymbol*>& genericArgs);
+		void BuildShape(TypeShape* shape, const TypeSymbol* baseType, const std::vector<TypeSymbol*>& genericArgs);
 
 	public:
 		TypeShapeCache() = default;
 		TypeShapeCache(const TypeShapeCache&) = delete;
 		TypeShapeCache& operator=(const TypeShapeCache&) = delete;
 
-		[[nodiscard]] TypeShape* GetShape(TypeSymbol* baseType, const std::vector<TypeSymbol*>& genericArgs) const;
+		[[nodiscard]] TypeShape* GetShape(const TypeSymbol* baseType, const std::vector<TypeSymbol*>& genericArgs) const;
 
-		[[nodiscard]] TypeShape* GetOrCreateShape(TypeSymbol* baseType, const std::vector<TypeSymbol*>& genericArgs);
+		[[nodiscard]] TypeShape* GetOrCreateShape(const TypeSymbol* baseType, const std::vector<TypeSymbol*>& genericArgs);
 
-		[[nodiscard]] inline TypeShape* GetOrCreateShape(TypeSymbol* baseType)
+		[[nodiscard]] inline TypeShape* GetOrCreateShape(const TypeSymbol* baseType)
 		{
 			return GetOrCreateShape(baseType, std::vector<TypeSymbol*>());
 		}
