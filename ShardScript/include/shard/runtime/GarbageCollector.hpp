@@ -10,6 +10,7 @@
 
 #include <unordered_map>
 #include <unordered_set>
+#include <initializer_list>
 #include <vector>
 #include <memory>
 #include <iterator>
@@ -80,13 +81,12 @@ namespace shard
         std::unordered_map<FieldSymbol*, std::byte*> staticFields;
         std::unordered_map<const wchar_t*, std::byte*> internedStrings;
         std::unordered_map<std::byte*, AsyncRecord> asyncTable;
-        std::unordered_map<std::byte*, MethodSymbol*> delegateTargets;
 
 		TypeShapeCache& GetTypeShapeCache() const;
 
         // Reconstructs a wrapper for a payload pointer previously stored in an
         // internal table, resolving the shape from the field/type.
-        ObjectInstance RecoverStaticField(FieldSymbol* field, std::byte* payload);
+        ObjectInstance RecoverStaticField(const FieldSymbol* field, std::byte* payload);
         ObjectInstance RecoverInternedString(std::byte* payload);
 
     public:
@@ -113,15 +113,18 @@ namespace shard
         ObjectInstance FromNint(std::uintptr_t rawMemory);
         ObjectInstance FromNint(void* rawMemory);
 
-        ObjectInstance GetStaticField(FieldSymbol* field);
-        void SetStaticField(FieldSymbol* field, ObjectInstance instance);
+        ObjectInstance GetStaticField(const FieldSymbol* field);
+        void SetStaticField(const FieldSymbol* field, ObjectInstance instance);
 
-		ObjectInstance AllocateInstance(TypeShape* shape);
+        TypeShape* ResolveShape(const TypeSymbol* info, const std::span<TypeSymbol*> genericArgs);
+        TypeShape* ResolveShape(const TypeSymbol* info, const std::initializer_list<TypeSymbol*> genericArgs);
+
+		ObjectInstance AllocateInstance(const TypeShape* shape);
 		ObjectInstance AllocateInstance(const TypeSymbol* objectInfo);
-        ObjectInstance AllocateGeneric(TypeSymbol* baseType, const std::span<TypeSymbol*> genericArgs);
-		ObjectInstance AllocateGeneric(TypeSymbol* baseType, const std::vector<TypeSymbol*>& genericArgs);
-		ObjectInstance AllocateArray(ArrayTypeSymbol* arrayType, TypeSymbol* elementType, std::size_t length);
-        ObjectInstance CopyInstance(ObjectInstance instance);
+        ObjectInstance AllocateGeneric(const TypeSymbol* baseType, const std::span<TypeSymbol*> genericArgs);
+		ObjectInstance AllocateGeneric(const TypeSymbol* baseType, const std::vector<TypeSymbol*>& genericArgs);
+		ObjectInstance AllocateArray(const ArrayTypeSymbol* arrayType, TypeSymbol* elementType, std::size_t length);
+        ObjectInstance CopyInstance(const ObjectInstance& instance);
 
         ObjectInstance CreateView(const TypeSymbol* info, TypeShape* shape);
         ObjectInstance InternString(const wchar_t* value);
@@ -142,6 +145,7 @@ namespace shard
         void DestroyInstance(ObjectInstance instance);
         void TerminateInstance(ObjectInstance instance, bool deleteInstance = true);
         void DeleteInstanceMemory(ObjectInstance instance);
+
 		void Terminate();
 	};
 }

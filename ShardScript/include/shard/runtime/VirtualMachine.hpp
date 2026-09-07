@@ -39,18 +39,21 @@ namespace shard
 		std::atomic<bool> AbortFlag;
 		std::vector<TypeSymbol*> PendingTypeArguments;
 
-		void HaltFireAndForgetTasks();
-
 		ObjectInstance UnhandledException;
 		std::wstring UnhandledExceptionMessage;
 		std::wstring UnhandledExceptionStackTrace;
 
-		void InvokeMethodInternal(MethodSymbol* method, CallStackFrame* currentFrame);
-
 		friend struct CallState;
 
-	public:
+		void HaltFireAndForgetTasks();
+		void ExecuteDeferExpression(CallStackFrame* frame, ByteCodeDecoder& decoder, std::size_t target);
+		bool DrainDefersTo(CallStackFrame* frame, ByteCodeDecoder& decoder, std::size_t targetSize);
+		bool HandleExceptionInFrame(CallStackFrame* frame, ByteCodeDecoder& decoder);
+
 		void ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder, const OpCode opCode);
+		void InvokeMethodInternal(const MethodSymbol* method, CallStackFrame* currentFrame);
+
+	public:
 		ObjectInstance InstantiateObject(TypeSymbol* type, ConstructorSymbol* ctor, bool inPlace = false);
 		ObjectInstance InstantiateDelegate(DelegateTypeSymbol* type);
 
@@ -72,27 +75,30 @@ namespace shard
 		GarbageCollector& GetGarbageCollector() const { return garbageCollector; }
 
 		CallStackFrame* CurrentFrame() const;
-		CallStackFrame* PushFrame(MethodSymbol* methodSymbol);
+		CallStackFrame* PushFrame(const MethodSymbol* methodSymbol);
 		void PopFrame();
 
-		void InvokeMethod(MethodSymbol* method) const;
-		void InvokeMethod(MethodSymbol* method, std::initializer_list<ObjectInstance> args) const;
-		ObjectInstance InvokeMethod(MethodSymbol* method, ObjectInstance* args, std::size_t count) const;
+		ObjectInstance InvokeMethod(const MethodSymbol* method) const;
+		ObjectInstance InvokeMethod(const MethodSymbol* method, const std::span<ObjectInstance> args) const;
+		ObjectInstance InvokeMethod(const MethodSymbol* method, const std::initializer_list<ObjectInstance> args) const;
+		ObjectInstance InvokeMethod(const MethodSymbol* method, const ObjectInstance* args, std::size_t count) const;
 
+		void SetPendingTypeArguments(std::span<TypeSymbol*> args) const;
 		void SetPendingTypeArguments(std::initializer_list<TypeSymbol*> args) const;
 		void SetPendingTypeArguments(const std::vector<TypeSymbol*>& args) const;
+
 		void RaiseException(ObjectInstance exceptionReg) const;
 
 		std::wstring GetStackTrace() const;
 		std::wstring GetThrowablePropertyValue(ObjectInstance exception, AccessorSymbol* interfacePropertyAccessor) const;
 
-		void Run();
-		void Abort() const;
-		void TerminateCallStack();
-
 		ObjectInstance GetUnhandledException() const { return UnhandledException; }
 		const std::wstring& GetUnhandledExceptionMessage() const { return UnhandledExceptionMessage; }
 		const std::wstring& GetUnhandledExceptionStackTrace() const { return UnhandledExceptionStackTrace; }
+
+		void Run();
+		void Abort() const;
+		void TerminateCallStack();
 
 		ObjectInstance RunInteractive(std::size_t& pointer);
 	};

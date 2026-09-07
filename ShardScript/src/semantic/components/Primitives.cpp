@@ -35,6 +35,6 @@ void SymbolTable::ResolvePrimitives(SymbolTable* globalTable)
 	make_primitive<StructSymbol>(SymbolTable::Primitives::Double, L"Double", sizeof(double));
 	make_primitive<StructSymbol>(SymbolTable::Primitives::Char, L"Char", sizeof(wchar_t));
 	make_primitive<StructSymbol>(SymbolTable::Primitives::Byte, L"Byte", sizeof(std::uint8_t));
-	make_primitive<ClassSymbol>(SymbolTable::Primitives::String, L"String", sizeof(std::int64_t) + sizeof(wchar_t*));	// long _length + char[] _data
-	make_primitive<ClassSymbol>(SymbolTable::Primitives::Array, L"Array", sizeof(std::int64_t));						// long _length
+	make_primitive<ClassSymbol>(SymbolTable::Primitives::String, L"String", sizeof(StringLayout));
+	make_primitive<ClassSymbol>(SymbolTable::Primitives::Array, L"Array", sizeof(std::int64_t));
 }

@@ -90,8 +90,8 @@ namespace shard
 		};
 
 		const VirtualMachine* Host;
-		CallStackFrame* PreviousFrame;
-		MethodSymbol* Method;
+		const CallStackFrame* PreviousFrame;
+		const MethodSymbol* Method;
 
 		std::byte* Arena = nullptr;
 		std::size_t ArenaBytes = 0;
@@ -104,7 +104,6 @@ namespace shard
 		std::size_t DeferDrainDepth = 0;
 
 		FrameInterruptionReason InterruptionReason = FrameInterruptionReason::None;
-		ObjectInstance InterruptionRegister;
 		ObjectInstance CurrentException;
 
 		static constexpr std::size_t SlotHeaderBytes = sizeof(TypeShape*);
@@ -112,7 +111,7 @@ namespace shard
 		static constexpr std::size_t BoxedEntryStride = SlotHeaderBytes + ReferencePayloadBytes;
 
 	private:
-		CallStackFrame(const VirtualMachine* host, CallStackFrame* previousFrame, MethodSymbol* method)
+		CallStackFrame(const VirtualMachine* host, const CallStackFrame* previousFrame, const MethodSymbol* method)
 			: Host(host), Method(method), PreviousFrame(previousFrame) { }
 
 	public:
@@ -125,7 +124,7 @@ namespace shard
 
 		TypeSymbol* ResolveType(TypeSymbol* type);
 
-		static std::shared_ptr<CallStackFrame> Create(const VirtualMachine* host, CallStackFrame* previousFrame, MethodSymbol* method, const std::vector<TypeSymbol*>& typeArguments);
+		static std::shared_ptr<CallStackFrame> Create(const VirtualMachine* host, const CallStackFrame* previousFrame, const MethodSymbol* method, const std::vector<TypeSymbol*>& typeArguments);
 
 		static constexpr std::size_t Align(std::size_t value)
 		{
@@ -149,8 +148,8 @@ namespace shard
 
 		ObjectInstance PushCopy(const ObjectInstance& value);
 		ObjectInstance PushReference(ObjectInstance value);
-		ObjectInstance PushInline(TypeShape* shape, const void* payloadBytes);
-		ObjectInstance PushInlineUninitialized(TypeShape* shape);
+		ObjectInstance PushInline(const TypeShape* shape, const void* payloadBytes);
+		ObjectInstance PushInlineUninitialized(const TypeShape* shape);
 		ObjectInstance PushStack(ObjectInstance value);
 
 		ObjectInstance PopValue();

@@ -5,7 +5,7 @@
 
 namespace shard
 {
-	class Enumerable
+	class EnumerableAdapter
 	{
 		const CallState& m_context;
 		ObjectInstance m_enumerable;
@@ -13,18 +13,18 @@ namespace shard
 	public:
 		class iterator
 		{
-			const CallState* m_context = nullptr;
-			ObjectInstance m_enumerator;
-			ObjectInstance m_current;
-
 			MethodSymbol* moveNext = nullptr;
 			MethodSymbol* getCurrent = nullptr;
+
+			CallState* m_context;
+			ObjectInstance m_enumerator;
+			InvokeResult m_current;
 
 			void invalid();
 
 		public:
 			iterator() = default;
-			iterator(const CallState& context, ObjectInstance enumerator, ObjectInstance current);
+			iterator(CallState* context, ObjectInstance enumerator);
 
 			ObjectInstance operator*() const;
 			iterator& operator++();
@@ -33,7 +33,7 @@ namespace shard
 			bool operator!=(const iterator& other) const;
 		};
 
-		Enumerable(const CallState& context, ObjectInstance enumerable);
+		EnumerableAdapter(const CallState& context, ObjectInstance enumerable);
 		iterator begin();
 		iterator end();
 	};

@@ -14,23 +14,21 @@ namespace shard
 	class SHARD_API TypeShape
 	{
 	public:
-		TypeSymbol* BaseType;
-		std::vector<TypeSymbol*> GenericArguments;
-
 		struct SlotInfo
 		{
 			std::size_t Offset;
 			TypeShape* FieldShape;
 		};
 
+		const TypeSymbol* BaseType;
+		std::vector<TypeSymbol*> GenericArguments;
+
 		std::size_t Size;
 		std::size_t Alignment = 1;
 		std::vector<SlotInfo> Slots;
 
-		inline TypeShape(TypeSymbol* baseType, std::vector<TypeSymbol*> genericArguments)
-			: BaseType(baseType), GenericArguments(std::move(genericArguments)), Size(0)
-		{
-		}
+		inline TypeShape(const TypeSymbol* baseType, std::vector<TypeSymbol*> genericArguments)
+			: BaseType(baseType), GenericArguments(std::move(genericArguments)), Size(0) { }
 
 		TypeShape(const TypeShape&) = delete;
 		TypeShape& operator=(const TypeShape&) = delete;

@@ -79,9 +79,9 @@ TypeSymbol* TypeShapeCache::SubstituteTypeParameter(TypeSymbol* type,
 	return type;
 }
 
-TypeShape* TypeShapeCache::GetShape(TypeSymbol* baseType, const std::vector<TypeSymbol*>& genericArgs) const
+TypeShape* TypeShapeCache::GetShape(const TypeSymbol* baseType, const std::vector<TypeSymbol*>& genericArgs) const
 {
-	auto key = std::make_pair(baseType, genericArgs);
+	auto key = std::make_pair(const_cast<TypeSymbol*>(baseType), genericArgs);
 	auto it = _shapes.find(key);
 	if (it != _shapes.end())
 		return it->second.get();
@@ -89,9 +89,9 @@ TypeShape* TypeShapeCache::GetShape(TypeSymbol* baseType, const std::vector<Type
 	return nullptr;
 }
 
-TypeShape* TypeShapeCache::GetOrCreateShape(TypeSymbol* baseType, const std::vector<TypeSymbol*>& genericArgs)
+TypeShape* TypeShapeCache::GetOrCreateShape(const TypeSymbol* baseType, const std::vector<TypeSymbol*>& genericArgs)
 {
-	auto key = std::make_pair(baseType, genericArgs);
+	auto key = std::make_pair(const_cast<TypeSymbol*>(baseType), genericArgs);
 	auto it = _shapes.find(key);
 	if (it != _shapes.end())
 		return it->second.get();
@@ -104,14 +104,14 @@ TypeShape* TypeShapeCache::GetOrCreateShape(TypeSymbol* baseType, const std::vec
 	return shapePtr;
 }
 
-void TypeShapeCache::BuildShape(TypeShape* shape, TypeSymbol* baseType, const std::vector<TypeSymbol*>& genericArgs)
+void TypeShapeCache::BuildShape(TypeShape* shape, const TypeSymbol* baseType, const std::vector<TypeSymbol*>& genericArgs)
 {
 	if (baseType == nullptr)
 		throw std::runtime_error("Cannot build TypeShape for null base type");
 
 	if (baseType->Kind == SyntaxKind::ArrayType)
 	{
-		ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(baseType);
+		const ArrayTypeSymbol* arrayType = static_cast<const ArrayTypeSymbol*>(baseType);
 		TypeShape* elementShape = GetOrCreateShape(arrayType->UnderlayingType);
 		shape->Alignment = GetShapeAlignment(elementShape);
 		shape->Size = SymbolTable::Primitives::Array->MemoryBytesSize + elementShape->Size * arrayType->Length;

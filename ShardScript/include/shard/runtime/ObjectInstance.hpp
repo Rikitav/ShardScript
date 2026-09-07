@@ -40,15 +40,16 @@ namespace shard
 		struct GcHeader
 		{
 			static constexpr std::uint64_t MAGIC = 0x5348415244474348ULL; // "SHARDGCH"
-			std::uint64_t Magic;
+			
+			const std::uint64_t Magic = MAGIC;
+			const TypeShape* Shape;
+			
 			std::int64_t ReferencesCounter;
-			TypeShape* Shape;
 			bool Terminated;
 		};
 
 	private:
-		const TypeSymbol* m_info;
-		TypeShape* m_shape;
+		const TypeShape* m_shape;
 		std::byte* m_rawMemoryPtr;
 
 		[[nodiscard]] inline GcHeader* getGcHeader() const
@@ -67,13 +68,10 @@ namespace shard
 
 	public:
 		inline ObjectInstance()
-			: m_info(nullptr), m_shape(nullptr), m_rawMemoryPtr(nullptr) { }
+			: m_shape(nullptr), m_rawMemoryPtr(nullptr) { }
 
-		inline ObjectInstance(const TypeSymbol* info, TypeShape* shape, std::byte* memory)
-			: m_info(info), m_shape(shape), m_rawMemoryPtr(memory) { }
-
-		inline ObjectInstance(TypeShape* shape, std::byte* memory)
-			: m_info(shape != nullptr ? shape->BaseType : nullptr), m_shape(shape), m_rawMemoryPtr(memory) { }
+		inline ObjectInstance(const TypeShape* shape, std::byte* memory)
+			: m_shape(shape), m_rawMemoryPtr(memory) { }
 
 		~ObjectInstance() = default;
 
@@ -83,8 +81,9 @@ namespace shard
 		inline bool operator!=(const ObjectInstance& other) const { return m_rawMemoryPtr != other.m_rawMemoryPtr; }
 
 		[[nodiscard]] const TypeSymbol* getInfo() const;
-		[[nodiscard]] TypeShape* getShape() const;
+		[[nodiscard]] const TypeShape* getShape() const;
 		[[nodiscard]] std::byte* getMemory() const;
+		[[nodiscard]] std::size_t getMemorySize() const;
 		[[nodiscard]] std::int64_t getReferencesCounter() const;
 
 		// Fields. A by-reference field slot stores a raw payload pointer; a
@@ -137,6 +136,8 @@ namespace shard
 		void ReadMemory(const std::size_t offset, const std::size_t size, void* dst) const;
 		void WriteMemory(const std::size_t offset, const std::size_t size, const void* src) const;
 	};
+
+	static ObjectInstance null_instance = ObjectInstance();
 
 	/// <summary>
 	/// RAII wrapper that keeps an ObjectInstance alive across an async boundary.

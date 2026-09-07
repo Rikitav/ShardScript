@@ -84,6 +84,6 @@ namespace shard
         virtual FieldSymbol* FindField(std::wstring& name);
         virtual PropertySymbol* FindProperty(std::wstring& name);
 
-        virtual MethodSymbol* FindInterfaceImplementation(MethodSymbol* interfaceMethod);
+        virtual MethodSymbol* FindInterfaceImplementation(const MethodSymbol* interfaceMethod);
 	};
 }

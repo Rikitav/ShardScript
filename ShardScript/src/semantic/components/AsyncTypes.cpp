@@ -76,7 +76,6 @@ static void shard_async_Task_GetResult(const CallState& context) noexcept
 			{
 				exception.IncrementReference();
 				context.Frame->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
-				context.Frame->InterruptionRegister = exception;
 				context.Frame->CurrentException = exception;
 				return;
 			}
@@ -169,12 +168,13 @@ static void shard_async_Task_Wait(const CallState& context)
 		ObjectInstance exception = exceptionValue;
 		if (!exception.IsNullInstance())
 		{
-			CallStackFrame* caller = context.Frame != nullptr ? context.Frame->PreviousFrame : nullptr;
+			CallStackFrame* caller = context.Frame != nullptr
+				? const_cast<CallStackFrame*>(context.Frame->PreviousFrame) : nullptr;
+
 			if (caller != nullptr)
 			{
 				exception.IncrementReference();
 				caller->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
-				caller->InterruptionRegister = exception;
 				caller->CurrentException = exception;
 				return;
 			}
@@ -228,13 +228,13 @@ static void shard_async_ValueTask_GetResult(const CallState& context) noexcept
 	{
 		ObjectInstance exceptionValue = task.GetField(CLASS_VALUETASK_ExceptionField->SlotIndex);
 		ObjectInstance exception = exceptionValue;
+
 		if (!exception.IsNullInstance())
 		{
 			if (context.Frame != nullptr)
 			{
 				exception.IncrementReference();
 				context.Frame->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
-				context.Frame->InterruptionRegister = exception;
 				context.Frame->CurrentException = exception;
 				return;
 			}
@@ -332,16 +332,18 @@ static void shard_async_ValueTask_Wait(const CallState& context)
 		ObjectInstance exception = exceptionValue;
 		if (!exception.IsNullInstance())
 		{
-			CallStackFrame* caller = context.Frame != nullptr ? context.Frame->PreviousFrame : nullptr;
+			CallStackFrame* caller = context.Frame != nullptr
+				? const_cast<CallStackFrame*>(context.Frame->PreviousFrame) : nullptr;
+			
 			if (caller != nullptr)
 			{
 				exception.IncrementReference();
 				caller->InterruptionReason = FrameInterruptionReason::ExceptionRaised;
-				caller->InterruptionRegister = exception;
 				caller->CurrentException = exception;
 				return;
 			}
 		}
+
 		throw std::runtime_error("ValueTask faulted");
 	}
 
