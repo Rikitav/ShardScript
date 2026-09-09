@@ -387,7 +387,9 @@ InvokeResult::InvokeResult(const CallState* callState, const MethodSymbol* calli
 		//m_retSize += CallStackFrame::SlotHeaderBytes;
 
 		if (m_retSize != 0)
-			m_returned = reinterpret_cast<std::byte*>(mi_malloc(m_retSize));
+			// PlaceReturned writes a SlotHeaderBytes shape header before the payload,
+			// so reserve room for it to avoid a heap overflow.
+			m_returned = reinterpret_cast<std::byte*>(mi_malloc(m_retSize + CallStackFrame::SlotHeaderBytes));
 	}
 }
 

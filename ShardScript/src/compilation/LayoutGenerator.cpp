@@ -1,7 +1,8 @@
 #include <shard/compilation/LayoutGenerator.hpp>
+
 #include <shard/semantic/SemanticModel.hpp>
 #include <shard/semantic/SymbolTable.hpp>
-#include <shard/TypeLayout.hpp>
+#include <shard/semantic/TypeLayout.hpp>
 
 #include <shard/parsing/SyntaxToken.hpp>
 #include <shard/parsing/SyntaxKind.hpp>

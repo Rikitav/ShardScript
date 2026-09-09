@@ -253,8 +253,13 @@ namespace shard
 				throw undefined_behaviour("Argument index out of range");
 
 			ObjectInstance value = context.Args[index];
-			if (value.IsNullInstance())
-				throw undefined_behaviour("Argument is null");
+			/*
+			if constexpr (!std::is_same_v<T, ObjectInstance>)
+			{
+				if (value.IsNullInstance())
+					throw undefined_behaviour("Argument is null");
+			}
+			*/
 
 			T* tag = nullptr;
 			return UnwrapArg(value, tag);

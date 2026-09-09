@@ -1,10 +1,11 @@
 #include <shard/runtime/TypeShapeCache.hpp>
-#include <shard/TypeLayout.hpp>
 
 #include <shard/semantic/symbols/FieldSymbol.hpp>
 #include <shard/semantic/symbols/ArrayTypeSymbol.hpp>
 #include <shard/semantic/symbols/GenericTypeSymbol.hpp>
 #include <shard/semantic/symbols/TypeParameterSymbol.hpp>
+
+#include <shard/semantic/TypeLayout.hpp>
 #include <shard/semantic/SymbolTable.hpp>
 
 #include <stdexcept>

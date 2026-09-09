@@ -268,8 +268,10 @@ ObjectInstance CallStackFrame::PushStack(ObjectInstance value)
 
 ObjectInstance CallStackFrame::PopStack()
 {
+	const std::uint32_t offset = EvalOffsets.back();
 	ObjectInstance result = PeekStack();
 	EvalOffsets.pop_back();
+	EvalCursorBytes = offset; // rewind the cursor so the region can be reused
 	return result;
 }
 
@@ -281,7 +283,7 @@ ObjectInstance CallStackFrame::PeekStack()
 
 	TypeShape* shape = EntryShape(entry);
 	if (shape == nullptr)
-		throw undefined_behaviour("EvalStack: TypeShape was null");
+		return ObjectInstance();
 
 	if (shape->IsReferenceType())
 		return ObjectInstance(shape, *reinterpret_cast<std::byte**>(payload));
@@ -289,9 +291,9 @@ ObjectInstance CallStackFrame::PeekStack()
 	return ObjectInstance(shape, payload);
 }
 
-ObjectInstance CallStackFrame::GetLocal(std::uint16_t slot)
+ObjectInstance CallStackFrame::GetLocal(std::uint16_t slot) const
 {
-	LocalSlotDesc& desc = LocalSlots.at(slot);
+	const LocalSlotDesc& desc = LocalSlots.at(slot);
 
 	std::byte* entry = Arena + desc.Offset;
 	std::byte* payload = entry + SlotHeaderBytes;
@@ -309,28 +311,53 @@ ObjectInstance CallStackFrame::GetLocal(std::uint16_t slot)
 void CallStackFrame::SetLocal(std::uint16_t slot, const ObjectInstance& value)
 {
 	LocalSlotDesc& desc = LocalSlots.at(slot);
-	desc.Shape = value.getShape();
 
 	std::byte* entry = Arena + desc.Offset;
 	std::byte* payload = entry + SlotHeaderBytes;
 
-	if (value.getShape()->IsReferenceType())
+	const TypeShape* oldShape = desc.Shape;
+	const TypeShape* newShape = value.getShape() != nullptr ? value.getShape() : oldShape;
+	desc.Shape = newShape;
+
+	std::memcpy(entry, &desc.Shape, sizeof(TypeShape*));
+
+	if (value.IsNullInstance())
+	{
+		// Null by-reference value: release the previous content and store a null pointer.
+		if (oldShape != nullptr && oldShape->IsReferenceType())
+		{
+			std::byte* old = *reinterpret_cast<std::byte**>(payload);
+			if (old != nullptr)
+				Host->GetGarbageCollector().DestroyInstance(ObjectInstance(oldShape, old));
+		}
+		else if (oldShape != nullptr)
+		{
+			ReleaseInlinePayload(oldShape, payload, Host->GetGarbageCollector());
+		}
+
+		std::byte* stored = nullptr;
+		std::memcpy(payload, &stored, sizeof(std::byte*));
+		return;
+	}
+
+	if (newShape->IsReferenceType())
 	{
 		std::byte* old = *reinterpret_cast<std::byte**>(payload);
 		if (old != nullptr)
-			Host->GetGarbageCollector().DestroyInstance(ObjectInstance(desc.Shape, old));
+			Host->GetGarbageCollector().DestroyInstance(ObjectInstance(oldShape != nullptr ? oldShape : newShape, old));
 
 		std::byte* stored = value.getMemory();
 		if (stored != nullptr)
 			value.IncrementReference();
 
-		std::memcpy(entry, &desc.Shape, sizeof(TypeShape*));
 		std::memcpy(payload, &stored, sizeof(std::byte*));
 	}
 	else
 	{
-		std::memcpy(entry, &desc.Shape, sizeof(TypeShape*));
-		ReleaseInlinePayload(desc.Shape, payload, Host->GetGarbageCollector());
+		if (oldShape != nullptr)
+			ReleaseInlinePayload(oldShape, payload, Host->GetGarbageCollector());
+
+		std::memcpy(payload, value.getMemory(), Align(newShape->Size));
 		AdoptInlinePayload(desc.Shape, payload);
 	}
 }
@@ -349,9 +376,14 @@ void CallStackFrame::CopyArgumentPayloads()
 		std::byte* payload = entry + SlotHeaderBytes;
 
 		const TypeShape* shape = argument.getShape();
-		desc.Shape = shape;
+		if (shape == nullptr)
+			shape = desc.Shape; // null argument: keep the slot's resolved shape
 
+		desc.Shape = shape;
 		std::memcpy(entry, &shape, SlotHeaderBytes);
+
+		if (shape == nullptr)
+			continue;
 
 		if (shape->IsReferenceType())
 		{
@@ -360,9 +392,36 @@ void CallStackFrame::CopyArgumentPayloads()
 		}
 		else
 		{
+			std::memcpy(payload, argument.getMemory(), Align(shape->Size));
 			AdoptInlinePayload(desc.Shape, payload);
 		}
 	}
+}
+
+CallStackFrame::LocalSlotInfo CallStackFrame::GetLocalSlotInfo(std::size_t index) const
+{
+	const LocalSlotDesc& desc = LocalSlots.at(index);
+	const bool isArgument = index < static_cast<std::size_t>(Method->GetEvalStackArgumentsCount());
+	return LocalSlotInfo{ desc.Shape, desc.Offset, isArgument };
+}
+
+std::size_t CallStackFrame::GetReturnSlotStride() const
+{
+	if (!LocalSlots.empty())
+		return LocalSlots.front().Offset;
+
+	if (EvalEntries != nullptr)
+		return static_cast<std::size_t>(EvalEntries - Arena);
+
+	return ArenaBytes;
+}
+
+std::byte* CallStackFrame::GetLocalsRegionStart() const
+{
+	if (!LocalSlots.empty())
+		return Arena + LocalSlots.front().Offset;
+
+	return LocalRegionEnd;
 }
 
 ObjectInstance CallStackFrame::ReturnView() const
@@ -431,6 +490,8 @@ void CallStackFrame::DrainLocalReferences(GarbageCollector& gc)
 	for (const LocalSlotDesc& desc : LocalSlots)
 	{
 		std::byte* entry = Arena + desc.Offset;
+		if (desc.Shape == nullptr)
+			continue;
 
 		if (!desc.Shape->IsReferenceType())
 		{

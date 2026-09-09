@@ -1,10 +1,10 @@
-#include <shard/TypeLayout.hpp>
 #include <shard/semantic/symbols/TypeSymbol.hpp>
 #include <shard/semantic/symbols/FieldSymbol.hpp>
 
 #include <shard/parsing/SyntaxNode.hpp>
 #include <shard/parsing/SyntaxKind.hpp>
 
+#include <shard/semantic/TypeLayout.hpp>
 #include <shard/semantic/SymbolTable.hpp>
 #include <shard/semantic/SymbolFactory.hpp>
 #include <shard/semantic/SymbolBuilder.hpp>
