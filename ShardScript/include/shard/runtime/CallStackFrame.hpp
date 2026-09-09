@@ -83,6 +83,13 @@ namespace shard
 		std::vector<std::uint32_t> EvalOffsets;
 
 	public:
+		struct LocalSlotInfo
+		{
+			const TypeShape* Shape;  // resolved slot shape (null if unresolved)
+			std::uint32_t Offset;    // byte offset from Arena
+			bool IsArgument;         // true when the slot holds a method parameter (args region)
+		};
+
 		struct ExceptionHandlerFrame
 		{
 			std::size_t HandlerOffset;
@@ -126,7 +133,7 @@ namespace shard
 		void CopyArgumentPayloads();
 		TypeSymbol* ResolveType(TypeSymbol* type);
 
-		ObjectInstance GetLocal(std::uint16_t slot);
+		ObjectInstance GetLocal(std::uint16_t slot) const;
 		void SetLocal(std::uint16_t slot, const ObjectInstance& value);
 
 		ObjectInstance PushStack(ObjectInstance value);
@@ -159,6 +166,45 @@ namespace shard
 		inline std::byte* ReturnSlotMemory() const
 		{
 			return ReturnSlot;
+		}
+
+		[[nodiscard]] std::size_t GetLocalSlotCount() const
+		{
+			return LocalSlots.size();
+		}
+
+		[[nodiscard]] LocalSlotInfo GetLocalSlotInfo(std::size_t index) const;
+
+		[[nodiscard]] std::uint16_t GetArgumentSlotCount() const
+		{
+			return Method->GetEvalStackArgumentsCount();
+		}
+
+		/// Stride of the return slot entry: SlotHeaderBytes + aligned payload.
+		[[nodiscard]] std::size_t GetReturnSlotStride() const;
+
+		/// First byte of the args+locals region (== end of the return slot).
+		[[nodiscard]] std::byte* GetLocalsRegionStart() const;
+
+		[[nodiscard]] std::byte* GetEvalRegionStart() const
+		{
+			return EvalEntries;
+		}
+
+		[[nodiscard]] std::size_t GetEvalRegionCapacity() const
+		{
+			return EvalCapacityBytes;
+		}
+
+		[[nodiscard]] std::size_t GetEvalRegionUsedBytes() const
+		{
+			return EvalCursorBytes;
+		}
+
+		/// Byte offsets (relative to EvalEntries) of the live eval entries, bottom to top.
+		[[nodiscard]] const std::vector<std::uint32_t>& GetEvalOffsets() const
+		{
+			return EvalOffsets;
 		}
 
 	private:

@@ -1,6 +1,7 @@
 #include <shard/semantic/symbols/TypeParameterSymbol.hpp>
 #include <shard/semantic/symbols/MethodSymbol.hpp>
-#include <shard/TypeLayout.hpp>
+
+#include <shard/semantic/TypeLayout.hpp>
 
 using namespace shard;
 

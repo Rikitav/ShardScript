@@ -257,9 +257,8 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			for (std::size_t i = 0; i < argc; ++i)
 				args[i] = frame->PopStack();
 
-			ObjectInstance result = InvokeMethod(methodSymbol, args.data(), args.size());
-			if (methodSymbol->ReturnType != SymbolTable::Primitives::Void)
-				frame->PushStack(result);
+			// InvokeMethod pushes the result onto this frame's eval stack itself.
+			InvokeMethod(methodSymbol, args.data(), args.size());
 
 			break;
 		}
@@ -281,10 +280,9 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			*/
 
 			ObjectInstance args[1] = { delegateInstance }; // becomes 'this' for the closure method
-			
-			ObjectInstance result = InvokeMethod(target, args, 1);
-			if (target->ReturnType != SymbolTable::Primitives::Void)
-				frame->PushStack(result);
+
+			// InvokeMethod pushes the result onto this frame's eval stack itself.
+			InvokeMethod(target, args, 1);
 
 			break;
 		}
@@ -309,9 +307,8 @@ void VirtualMachine::ProcessCode(CallStackFrame* frame, ByteCodeDecoder& decoder
 			for (std::size_t i = 0; i < argc; ++i)
 				args[i] = frame->PopStack();
 
-			ObjectInstance result = InvokeMethod(implementation, args.data(), args.size());
-			if (implementation->ReturnType != SymbolTable::Primitives::Void)
-				frame->PushStack(result);
+			// InvokeMethod pushes the result onto this frame's eval stack itself.
+			InvokeMethod(implementation, args.data(), args.size());
 
 			break;
 		}
@@ -1464,6 +1461,10 @@ ObjectInstance VirtualMachine::InstantiateObject(TypeSymbol* type, ConstructorSy
 		newInstance.IncrementReference();
 
 	currentFrame->CopyArgumentPayloads();
+
+	if (!constructInPlace)
+		newInstance.IncrementReference();
+
 	InvokeMethodInternal(ctor, currentFrame);
 	PopFrame();
 
@@ -1594,7 +1595,13 @@ ObjectInstance VirtualMachine::InvokeMethod(const MethodSymbol* method, const Ob
 
 	ObjectInstance result = null_instance;
 	if (method->ReturnType != SymbolTable::Primitives::Void)
-		result = currentFrame->ReturnView();
+	{
+		ObjectInstance returned = currentFrame->ReturnView();
+		if (callingFrame != nullptr)
+			result = callingFrame->PushStack(returned);
+		else
+			result = returned;
+	}
 
 	vm->PopFrame();
 	return result;

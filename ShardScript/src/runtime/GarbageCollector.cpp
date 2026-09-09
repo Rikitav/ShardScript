@@ -2,7 +2,6 @@
 #include <shard/runtime/ObjectInstance.hpp>
 #include <shard/runtime/CallStackFrame.hpp>
 #include <shard/runtime/Allocator.hpp>
-#include <shard/TypeLayout.hpp>
 
 #include <shard/parsing/SyntaxKind.hpp>
 
@@ -11,6 +10,7 @@
 #include <shard/semantic/symbols/ArrayTypeSymbol.hpp>
 #include <shard/semantic/symbols/GenericTypeSymbol.hpp>
 
+#include <shard/semantic/TypeLayout.hpp>
 #include <shard/semantic/SymbolTable.hpp>
 
 #include <shard/compilation/ProgramVirtualImage.hpp>
