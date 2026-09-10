@@ -1,6 +1,0 @@
-namespace hello;
-
-public class Program
-{
-    public init() => ;
-}

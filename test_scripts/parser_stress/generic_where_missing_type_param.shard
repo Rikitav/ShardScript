@@ -1,7 +1,0 @@
-using stdio;
-
-namespace generic_where_missing_type_param_test;
-
-public static func Foo<T>() -> void where : IDisposable
-{
-}

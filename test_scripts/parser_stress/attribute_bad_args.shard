@@ -1,3 +1,0 @@
-namespace hello;
-[link(123)]
-public class Foo { }

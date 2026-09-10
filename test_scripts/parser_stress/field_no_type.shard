@@ -1,5 +1,0 @@
-namespace hello;
-public class Foo
-{
-    public x;
-}

@@ -1,9 +1,0 @@
-namespace hello;
-public class Program
-{
-    public static func Foo() -> int => "text";
-
-    public static func Main() -> void
-    {
-    }
-}
