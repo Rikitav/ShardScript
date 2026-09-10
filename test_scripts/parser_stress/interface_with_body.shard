@@ -1,5 +1,0 @@
-namespace hello;
-public interface IFoo
-{
-    func M() -> void { }
-}

@@ -1,6 +1,0 @@
-// Файлы указаний помогают среде IDE Visual Studio интерпретировать идентификаторы Visual C++
-// (например, имена функций и макросов).
-// Дополнительные сведения: https://go.microsoft.com/fwlink/?linkid=865984
-#define SHARD_API __declspec(dllexport)
-#define SHARD_API __declspec(dllimport)
-#define SHARD_EXPORT extern "C" __declspec(dllexport)

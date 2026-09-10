@@ -5,12 +5,7 @@ set(CMAKE_SYSTEM_VERSION 10.0 CACHE STRING "" FORCE)
 #set(CMAKE_GENERATOR_TOOLSET "host=x64")
 
 option(ENABLE_ASAN "Enable AddressSanitizer" OFF)
-
-# ASAN is enabled by default in Debug, but allow the caller to explicitly disable it
-# (e.g. when the toolchain does not provide libasan).
-if(CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT ENABLE_ASAN)
-    # keep caller override
-elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(ENABLE_ASAN ON CACHE BOOL "Enable AddressSanitizer" FORCE)
 endif()
 
@@ -24,14 +19,11 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE "${OUTPUT_DIR}")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE "${OUTPUT_DIR}")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE "${OUTPUT_DIR}")
 
-project(ShardScript VERSION 0.5.0 LANGUAGES C CXX) 
-
-if(MSVC)
-    set(CMAKE_CXX_FLAGS_DEBUG "/Zi /Od")
-endif()
+project(ShardScript VERSION 0.5.0 LANGUAGES C CXX)
 
 if(MSVC)
     add_compile_options(/EHsc)
+    set(CMAKE_CXX_FLAGS_DEBUG "/Zi /Od")
     set(CMAKE_EXE_LINKER_FLAGS "")
     set(CMAKE_MODULE_LINKER_FLAGS "")
     set(CMAKE_SHARED_LINKER_FLAGS "")
@@ -54,10 +46,6 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 add_subdirectory(ShardScript)
 add_subdirectory(ShardScript.Framework)
 add_subdirectory(ShardScript.Interpreter)
-
-if(WIN32)
-    add_subdirectory(ShardScript.LspServer)
-endif()
 
 foreach(CONFIG ${CMAKE_CONFIGURATION_TYPES} )
     string(TOUPPER ${CONFIG} CONFIG_UPPER )

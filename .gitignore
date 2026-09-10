@@ -369,6 +369,5 @@ RCa*
 /.idea
 
 # documentation Artifacts
-/docs
-diff.txt
-log.txt
+/.docs
+/*.txt
