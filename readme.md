@@ -1,6 +1,13 @@
 # ShardScript
 ![ShardScript Banner](https://github.com/Rikitav/ShardScript/blob/master/formalization/ShardScript-banner.png)
 
+> [!CAUTION]
+> At the moment, the project is undergoing a massive rewriting from scratch, so the release of version 0.7 has been postponed indefinitely.
+
+Rewrite progression :
+- [x] Wipe
+- [ ] ...
+
 **ShardScript** is an embeddable, scripting, compiled, programming language with strict static typing, developed in C++. The project features a custom lexer/parser, semantic analyzer, bytecode compiler, stack virtual machine, and a standard library framework.
 
 ## Check out my Website!
