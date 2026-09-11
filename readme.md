@@ -6,6 +6,7 @@
 
 Rewrite progression :
 - [x] Wipe
+- [x] Tokenization
 - [ ] ...
 
 **ShardScript** is an embeddable, scripting, compiled, programming language with strict static typing, developed in C++. The project features a custom lexer/parser, semantic analyzer, bytecode compiler, stack virtual machine, and a standard library framework.
