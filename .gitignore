@@ -370,4 +370,8 @@ RCa*
 
 # documentation Artifacts
 /.docs
-/*.txt
+
+# files ending in .txt can be ignored
+*.txt
+# but keep track of directories ending in .cache
+!CMakeLists.txt
