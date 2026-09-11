@@ -54,13 +54,13 @@ namespace shard
 
 		bool read_number_literal(std::wstring& word, TokenType& type);
 		bool read_char_literal(std::wstring& word, bool notEcran, bool& wasClosed);
-		bool read_string_literal(std::wstring& word, bool notEcran, bool& wasClosed);
+		bool read_string_tliteral(std::wstring& word, bool notEcran, bool& wasClosed);
 
 		bool is_null_literal(std::wstring& word, TokenType& type);
 		bool is_boolean_literal(std::wstring& word, TokenType& type);
 		bool is_number_literal(TokenType& type) const;
 		bool is_char_literal(TokenType& type, bool& dontEcran);
-		bool is_string_literal(TokenType& type, bool& dontEcran);
+		bool is_string_tliteral(TokenType& type, bool& dontEcran);
 
 		bool is_punctuation(std::wstring& word, TokenType& type);
 		bool is_operator(std::wstring& word, TokenType& type);

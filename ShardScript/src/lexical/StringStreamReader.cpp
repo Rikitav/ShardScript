@@ -34,7 +34,7 @@ StringStreamReader::StringStreamReader(
 
 StringStreamReader::StringStreamReader(
 	const std::wstring& name,
-	const wchar_t* source,
+	string_t source,
 	std::size_t count
 ) :
 	SourceTextProvider(),

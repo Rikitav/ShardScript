@@ -5,7 +5,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 project(ShardScript VERSION 0.7.0 LANGUAGES C CXX)
 
 include(CMake/GlobalSettingsInclude.cmake OPTIONAL)
-include(CMake/CompilerId.cmake)
 
 option(ENABLE_ASAN "Enable AddressSanitizer" OFF)
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")

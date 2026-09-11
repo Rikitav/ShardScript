@@ -8,16 +8,16 @@ namespace shard
 	struct SHARD_API ShardLibDependencyInfo
 	{
 	public:
-		const wchar_t* Name = nullptr;
-		const wchar_t* VersionExpression = nullptr;
+		string_t Name = nullptr;
+		string_t VersionExpression = nullptr;
 	};
 
 	struct SHARD_API ShardLibMetadata
 	{
 	public:
-		const wchar_t* Name = nullptr;
-		const wchar_t* Description = nullptr;
-		const wchar_t* Version = nullptr;
+		string_t Name = nullptr;
+		string_t Description = nullptr;
+		string_t Version = nullptr;
 		const ShardLibDependencyInfo* Dependencies = nullptr;
 		std::size_t DependenciesLength = 0;
 	};
@@ -30,12 +30,12 @@ namespace shard
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(__WIN32)
 	#define SHARDLIB_EXPORT __declspec(dllexport)
 	#define SHARDLIB_GETMETADATA extern "C" __declspec(dllexport) void SHARDLIB_GETMETADATA_FUNCNAME(ShardLibMetadata& lib)
-	#define SHARDLIB_ENTRYPOINT extern "C" __declspec(dllexport) void SHARDLIB_ENTRYPOINT_FUNCNAME(CompilationContext& context)
+	#define SHARDLIB_ENTRYPOINT extern "C" __declspec(dllexport) void SHARDLIB_ENTRYPOINT_FUNCNAME(SyntaxNode& context)
 
 //  GCC
 #elif defined(__GNUC__)
 	#define SHARDLIB_EXPORT __attribute__((visibility("default")))
 	#define SHARDLIB_GETMETADATA extern "C" __attribute__((visibility("default"))) void SHARDLIB_GETMETADATA_FUNCNAME(ShardLibMetadata& lib)
-	#define SHARDLIB_ENTRYPOINT extern "C" __attribute__((visibility("default"))) void SHARDLIB_ENTRYPOINT_FUNCNAME(CompilationContext& context)
+	#define SHARDLIB_ENTRYPOINT extern "C" __attribute__((visibility("default"))) void SHARDLIB_ENTRYPOINT_FUNCNAME(SyntaxNode& context)
 
 #endif
