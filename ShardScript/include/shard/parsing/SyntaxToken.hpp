@@ -33,12 +33,12 @@ namespace shard
 			m_isMissing(isMissing),
 			m_type(type),
 			m_location(location),
-			m_lexeme(std::move(lexeme))
+			m_lexeme(lexeme)
 		{ }
 			
-		inline bool get_is_missing() const { return m_isMissing; }
+		inline bool is_missing() const { return m_isMissing; }
 		inline TokenType get_type() const { return m_type; }
 		inline const TextLocation& get_location() const { return m_location; }
-		inline const wchar_t* get_lexeme() const { return m_lexeme.c_str(); }
+		inline string_t get_lexeme() const { return m_lexeme.c_str(); }
 	};
 }

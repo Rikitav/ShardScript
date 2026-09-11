@@ -1,35 +1,28 @@
 #pragma once
 #include <shard/Definitions.hpp>
 
+#include <cstdint>
 #include <string>
 
 namespace shard
 {
+	struct SyntaxToken;
+
 	struct SHARD_API TextLocation
 	{
 		std::wstring m_fileName;
-		int m_line;
-		int m_offset;
-		int m_length;
+		std::int32_t m_line;
+		std::int32_t m_offset;
+		std::int32_t m_length;
 
 	public:
-		inline TextLocation() :
-			m_fileName(L""),
-			m_line(0),
-			m_offset(0),
-			m_length(0)
-		{ }
+		TextLocation();
+		TextLocation(const SyntaxToken& left, const SyntaxToken& right);
+		TextLocation(const std::wstring& filename, std::int32_t line, std::int32_t offset, std::int32_t length);
 
-		inline TextLocation(std::wstring filename, int line, int offset, int length) :
-			m_fileName(filename),
-			m_line(line),
-			m_offset(offset),
-			m_length(length)
-		{ }
-
-		inline int get_line() const { return m_line; }
-		inline int get_offset() const { return m_offset; }
-		inline int get_length() const { return m_length; }
-		inline const wchar_t* get_filename() const { return m_fileName.c_str(); }
+		inline std::int32_t get_line() const { return m_line; }
+		inline std::int32_t get_offset() const { return m_offset; }
+		inline std::int32_t get_length() const { return m_length; }
+		inline string_t get_filename() const { return m_fileName.c_str(); }
 	};
 }

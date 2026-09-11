@@ -279,8 +279,8 @@ bool LexicalAnalyzer::read_next_word(std::wstring& word, TokenType& type)
 
 	bool wasClosed = false;
 	bool dontEcran = false;
-	if (is_string_literal(type, dontEcran))
-		return read_string_literal(word, dontEcran, wasClosed);
+	if (is_string_tliteral(type, dontEcran))
+		return read_string_tliteral(word, dontEcran, wasClosed);
 
 	if (is_char_literal(type, dontEcran))
 		return read_char_literal(word, dontEcran, wasClosed);
@@ -369,7 +369,7 @@ bool LexicalAnalyzer::read_char_literal(std::wstring& word, bool notEcran, bool&
 	return false;
 }
 
-bool LexicalAnalyzer::read_string_literal(std::wstring& word, bool dontEcran, bool& wasClosed)
+bool LexicalAnalyzer::read_string_tliteral(std::wstring& word, bool dontEcran, bool& wasClosed)
 {
 	bool ecran = false;
 	while (advance(m_symbol))
@@ -1078,7 +1078,7 @@ bool LexicalAnalyzer::is_char_literal(TokenType& type, bool& dontEcran)
 	}
 }
 
-bool LexicalAnalyzer::is_string_literal(TokenType& type, bool& dontEcran)
+bool LexicalAnalyzer::is_string_tliteral(TokenType& type, bool& dontEcran)
 {
 	switch (m_symbol)
 	{
@@ -1092,7 +1092,7 @@ bool LexicalAnalyzer::is_string_literal(TokenType& type, bool& dontEcran)
 
 			advance(m_peekSymbol);
 			dontEcran = true;
-			return is_string_literal(type, dontEcran);
+			return is_string_tliteral(type, dontEcran);
 		}
 
 		case L'"':
