@@ -1,0 +1,28 @@
+CheckOptions:
+  # Class naming rules: MyClass
+  - key: readability-identifier-naming.ClassCase
+    value: CamelCase
+
+  # Struct naming rules: MyStruct
+  - key: readability-identifier-naming.StructCase
+    value: CamelCase
+
+  # Function naming rules: calculate_total()
+  - key: readability-identifier-naming.FunctionCase
+    value: lower_case
+
+  # Local variable naming rules: item_count
+  - key: readability-identifier-naming.VariableCase
+    value: lower_case
+
+  # Private member variables: m_speed
+  - key: readability-identifier-naming.PrivateMemberCase
+    value: lower_case
+  - key: readability-identifier-naming.PrivateMemberPrefix
+    value: 'm_'
+
+  # Global constants: kMaxPlayers
+  - key: readability-identifier-naming.GlobalConstantCase
+    value: CamelCase
+  - key: readability-identifier-naming.GlobalConstantPrefix
+    value: 'k'
