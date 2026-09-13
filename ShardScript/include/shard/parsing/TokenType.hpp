@@ -96,8 +96,6 @@ namespace shard
 		InternalKeyword,	  // internal
 		StaticKeyword,		  // static
 		AsyncKeyword,		  // async
-		ExternKeyword,		  // extern
-		ExportKeyword,		  // export
 
 		// Property accessor keywords
 		GetKeyword,			  // get

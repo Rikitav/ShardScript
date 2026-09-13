@@ -3,32 +3,28 @@
 
 #include <shard/parsing/SyntaxNode.hpp>
 #include <shard/parsing/SyntaxToken.hpp>
+#include <gmt/Span.hpp>
 
 #include <string>
-#include <vector>
-#include <span>
 
 namespace shard
 {
 	class SHARD_API NamespaceDirectiveSyntax final : public SyntaxNode
 	{
-		std::vector<SyntaxToken> m_qualifier;
+		gmt::Span<SyntaxToken> m_qualifier;
 		SyntaxToken m_namespaceKeyword;
 		SyntaxToken m_semicolon;
 
-		std::wstring m_qualifierStringCache;
-		bool m_changed;
-
 	public:
-		NamespaceDirectiveSyntax(SyntaxNode* parent);
+		NamespaceDirectiveSyntax(gmt::Ref<SyntaxNode> parent);
 		virtual ~NamespaceDirectiveSyntax() = default;
 
-		std::span<const SyntaxToken> get_qualifier() const;
-		string_t get_qualifier_string() const;
+		gmt::Span<const SyntaxToken> get_qualifier() const;
+		std::wstring get_qualifier_string() const;
 		SyntaxToken get_semicolon() const;
 		SyntaxToken get_namespace_keyword() const;
 
-		void add_qulifier(const SyntaxToken& token);
+		void set_qualifier(gmt::Span<SyntaxToken> qualifier);
 		void set_namespace_keyword(const SyntaxToken& token);
 		void set_semicolon(const SyntaxToken& token);
 

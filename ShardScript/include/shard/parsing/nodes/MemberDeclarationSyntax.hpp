@@ -4,33 +4,32 @@
 #include <shard/parsing/SyntaxNode.hpp>
 #include <shard/parsing/SyntaxToken.hpp>
 #include <shard/parsing/SyntaxKind.hpp>
+#include <gmt/Ref.hpp>
+#include <gmt/Span.hpp>
 
 #include <shard/parsing/nodes/AttributeSyntax.hpp>
-
-// TODO:
-/*
-#include <shard/parsing/nodes/TypeParametersListSyntax.hpp>
-#include <shard/parsing/nodes/WhereClauseSyntax.hpp>
-*/
-
-#include <vector>
 
 namespace shard
 {
 	class SHARD_API MemberDeclarationSyntax : public SyntaxNode
 	{
-		std::vector<AttributeSyntax> m_attributes;
-		std::vector<SyntaxToken> m_modifiers;
-		SyntaxToken m_dentifierToken;
-
-		// TODO:
-		/*
-		TypeParametersListSyntax TypeParameters = nullptr;
-		std::vector<WhereClauseSyntax> WhereClauses;
-		*/
+		gmt::Span<gmt::Ref<AttributeSyntax>> m_attributes;
+		gmt::Span<SyntaxToken> m_modifiers;
+		SyntaxToken m_identifierToken;
 
 	public:
-		MemberDeclarationSyntax(const SyntaxKind kind, SyntaxNode* parent);
+		MemberDeclarationSyntax(const SyntaxKind kind, gmt::Ref<SyntaxNode> parent);
 		virtual ~MemberDeclarationSyntax() = default;
+
+		void set_attributes(gmt::Span<gmt::Ref<AttributeSyntax>> attributes);
+		void set_modifiers(gmt::Span<SyntaxToken> modifiers);
+		void set_identifier(const SyntaxToken& identifier);
+
+		gmt::Span<const gmt::Ref<AttributeSyntax>> get_attributes() const;
+		gmt::Span<const SyntaxToken> get_modifiers() const;
+		SyntaxToken get_identifier() const;
+
+		virtual TextLocation get_location() const override;
+		void accept(SyntaxVisitor& visitor) const override;
 	};
 }

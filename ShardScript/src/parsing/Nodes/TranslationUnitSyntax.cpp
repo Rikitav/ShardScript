@@ -4,41 +4,41 @@
 using namespace shard;
 
 TranslationUnitSyntax::TranslationUnitSyntax()
-	: SyntaxNode(SyntaxKind::CompilationUnit, nullptr) { }
+	: SyntaxNode(SyntaxKind::CompilationUnit, gmt::Ref<SyntaxNode>()) { }
 
 bool TranslationUnitSyntax::has_namespace() const
 {
-	return m_namespace.has_value();
+	return !m_namespace.is_null();
 }
 
-const NamespaceDirectiveSyntax& TranslationUnitSyntax::get_namespace() const
+gmt::Ref<const NamespaceDirectiveSyntax> TranslationUnitSyntax::get_namespace() const
 {
-	return *m_namespace;
+	return m_namespace;
 }
 
-std::span<const UsingDirectiveSyntax> TranslationUnitSyntax::get_usings() const
+gmt::Span<const gmt::Ref<UsingDirectiveSyntax>> TranslationUnitSyntax::get_usings() const
 {
-	return std::span<const UsingDirectiveSyntax>(m_usings.data(), m_usings.data() + m_usings.size());
+	return m_usings;
 }
 
-std::span<const std::unique_ptr<MemberDeclarationSyntax>> TranslationUnitSyntax::get_members() const
+gmt::Span<const gmt::Ref<MemberDeclarationSyntax>> TranslationUnitSyntax::get_members() const
 {
-	return std::span(m_members.data(), m_members.data() + m_members.size());
+	return m_members;
 }
 
-void TranslationUnitSyntax::add_using(UsingDirectiveSyntax& directive)
-{
-	m_usings.push_back(directive);
-}
-
-void shard::TranslationUnitSyntax::set_namespace(NamespaceDirectiveSyntax& directive)
+void shard::TranslationUnitSyntax::set_namespace(gmt::Ref<NamespaceDirectiveSyntax> directive)
 {
 	m_namespace = directive;
 }
 
-void shard::TranslationUnitSyntax::add_member(std::unique_ptr<MemberDeclarationSyntax> member)
+void shard::TranslationUnitSyntax::set_usings(gmt::Span<gmt::Ref<UsingDirectiveSyntax>> usings)
 {
-	m_members.push_back(member);
+	m_usings = usings;
+}
+
+void shard::TranslationUnitSyntax::set_members(gmt::Span<gmt::Ref<MemberDeclarationSyntax>> members)
+{
+	m_members = members;
 }
 
 TextLocation TranslationUnitSyntax::get_location() const

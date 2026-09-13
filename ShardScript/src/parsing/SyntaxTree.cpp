@@ -2,12 +2,12 @@
 
 using namespace shard;
 
-std::span<const TranslationUnitSyntax> SyntaxTree::get_units() const
+std::span<const gmt::Ref<TranslationUnitSyntax>> SyntaxTree::get_units() const
 {
-	return std::span<const TranslationUnitSyntax>(m_units.data(), m_units.data() + m_units.size());
+	return std::span(m_units.data(), m_units.data() + m_units.size());
 }
 
-void SyntaxTree::add_unit(TranslationUnitSyntax& unit)
+void SyntaxTree::add_unit(gmt::Ref<TranslationUnitSyntax> unit)
 {
 	m_units.push_back(unit);
 }
