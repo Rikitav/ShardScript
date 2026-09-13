@@ -4,6 +4,8 @@
 
 #include <shard/lexical/LexicalAnalyzer.hpp>
 
+#include <gmt/StringPool.hpp>
+
 #include <cctype>
 #include <cwctype>
 #include <string>
@@ -32,12 +34,16 @@ bool LexicalAnalyzer::advance(wchar_t& ch)
 LexicalAnalyzer::LexicalAnalyzer(SourceTextProvider& sourceText) :
 	m_ownsSourceTextProvider(false),
 	m_sourceText(&sourceText)
-{ }
+{
+	m_fileName = gmt::GlobalPool.intern(m_sourceText->get_name());
+}
 
 LexicalAnalyzer::LexicalAnalyzer(SourceTextProvider* sourceText, bool ownsProvider) :
 	m_ownsSourceTextProvider(ownsProvider),
 	m_sourceText(sourceText)
-{ }
+{
+	m_fileName = gmt::GlobalPool.intern(m_sourceText->get_name());
+}
 
 LexicalAnalyzer::~LexicalAnalyzer()
 {
@@ -68,18 +74,18 @@ SyntaxToken LexicalAnalyzer::consume()
 		{
 			SyntaxToken token = m_readBuffer.front();
 			m_readBuffer.pop_front();
-			return SyntaxToken(token);
+			return token;
 		}
 
 		default: // read peeks
 		{
 			SyntaxToken token = m_readBuffer.front();
 			m_readBuffer.pop_front();
-			return SyntaxToken(token);
+			return token;
 		}
 	}
 
-	SyntaxToken consumeBuffer = SyntaxToken();
+	SyntaxToken consumeBuffer{};
 	if (!read_next_token(consumeBuffer))
 	{
 		consumeBuffer = SyntaxToken(TokenType::EndOfFile, L"", TextLocation());
@@ -103,7 +109,7 @@ SyntaxToken LexicalAnalyzer::peek(int index)
 		int extendFor = index - bufferSize + 1;
 		for (int i = 0; i < extendFor; i++)
 		{
-			SyntaxToken peekToken = SyntaxToken();
+			SyntaxToken peekToken{};
 			if (read_next_token(peekToken))
 			{
 				m_readBuffer.push_back(peekToken);
@@ -112,14 +118,14 @@ SyntaxToken LexicalAnalyzer::peek(int index)
 
 			peekToken = SyntaxToken(TokenType::EndOfFile, L"", TextLocation());
 			m_readBuffer.push_back(peekToken);
-			return SyntaxToken(peekToken);
+			return peekToken;
 		}
 	}
 
 	if (index < 0 || index >= static_cast<int>(m_readBuffer.size()))
 		return SyntaxToken(TokenType::EndOfFile, L"", TextLocation());
 
-	return SyntaxToken(m_readBuffer.at(index));
+	return m_readBuffer.at(index);
 }
 
 void LexicalAnalyzer::put_back(SyntaxToken token)
@@ -145,7 +151,7 @@ bool LexicalAnalyzer::read_next_token(SyntaxToken& token)
 	if (!read_next_word(word, type))
 		return false;
 
-	token = SyntaxToken(type, word, get_current_location(word));
+	token = SyntaxToken(type, gmt::GlobalPool.intern(word), get_current_location(word));
 	return true;
 }
 
@@ -220,10 +226,11 @@ TextLocation LexicalAnalyzer::get_current_location(std::wstring& word)
 {
 	int length = static_cast<int>(word.length());
 	int startOffset = m_offset - length + 1;
+
 	if (startOffset < 1)
 		startOffset = 1;
 
-	return TextLocation(m_sourceText->get_name(), m_line, startOffset, length);
+	return TextLocation(m_fileName, m_line, startOffset, length);
 }
 
 bool LexicalAnalyzer::read_next_word(std::wstring& word, TokenType& type)
@@ -279,8 +286,8 @@ bool LexicalAnalyzer::read_next_word(std::wstring& word, TokenType& type)
 
 	bool wasClosed = false;
 	bool dontEcran = false;
-	if (is_string_tliteral(type, dontEcran))
-		return read_string_tliteral(word, dontEcran, wasClosed);
+	if (is_string_literal(type, dontEcran))
+		return read_string_literal(word, dontEcran, wasClosed);
 
 	if (is_char_literal(type, dontEcran))
 		return read_char_literal(word, dontEcran, wasClosed);
@@ -369,7 +376,7 @@ bool LexicalAnalyzer::read_char_literal(std::wstring& word, bool notEcran, bool&
 	return false;
 }
 
-bool LexicalAnalyzer::read_string_tliteral(std::wstring& word, bool dontEcran, bool& wasClosed)
+bool LexicalAnalyzer::read_string_literal(std::wstring& word, bool dontEcran, bool& wasClosed)
 {
 	bool ecran = false;
 	while (advance(m_symbol))
@@ -1078,7 +1085,7 @@ bool LexicalAnalyzer::is_char_literal(TokenType& type, bool& dontEcran)
 	}
 }
 
-bool LexicalAnalyzer::is_string_tliteral(TokenType& type, bool& dontEcran)
+bool LexicalAnalyzer::is_string_literal(TokenType& type, bool& dontEcran)
 {
 	switch (m_symbol)
 	{
@@ -1092,7 +1099,7 @@ bool LexicalAnalyzer::is_string_tliteral(TokenType& type, bool& dontEcran)
 
 			advance(m_peekSymbol);
 			dontEcran = true;
-			return is_string_tliteral(type, dontEcran);
+			return is_string_literal(type, dontEcran);
 		}
 
 		case L'"':
@@ -1136,16 +1143,6 @@ bool LexicalAnalyzer::is_modifier(std::wstring& word, TokenType& type)
 	else if (word == L"async")
 	{
 		type = TokenType::AsyncKeyword;
-		return true;
-	}
-	else if (word == L"extern")
-	{
-		type = TokenType::ExternKeyword;
-		return true;
-	}
-	else if (word == L"export")
-	{
-		type = TokenType::ExportKeyword;
 		return true;
 	}
 	else

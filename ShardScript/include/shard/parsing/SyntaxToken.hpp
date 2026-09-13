@@ -4,7 +4,7 @@
 #include <shard/parsing/TokenType.hpp>
 #include <shard/parsing/TextLocation.hpp>
 
-#include <string>
+#include <string_view>
 
 namespace shard
 {
@@ -14,7 +14,7 @@ namespace shard
 		bool m_isMissing;
 		TokenType m_type;
 		TextLocation m_location;
-		std::wstring m_lexeme;
+		std::wstring_view m_lexeme;
 
 	public:
 		inline SyntaxToken() :
@@ -26,7 +26,7 @@ namespace shard
 
 		inline SyntaxToken(
 			const TokenType type,
-			const std::wstring& lexeme,
+			const std::wstring_view lexeme,
 			const TextLocation& location,
 			const bool isMissing = false
 		) :
@@ -35,10 +35,10 @@ namespace shard
 			m_location(location),
 			m_lexeme(lexeme)
 		{ }
-			
+
 		inline bool is_missing() const { return m_isMissing; }
 		inline TokenType get_type() const { return m_type; }
 		inline const TextLocation& get_location() const { return m_location; }
-		inline string_t get_lexeme() const { return m_lexeme.c_str(); }
+		inline string_t get_lexeme() const { return m_lexeme.empty() ? L"" : m_lexeme.data(); }
 	};
 }

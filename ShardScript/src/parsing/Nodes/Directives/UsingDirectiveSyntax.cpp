@@ -1,37 +1,31 @@
-#include <shard/parsing/nodes/Directives/UsingDirectiveSyntax.hpp>
+#include <shard/parsing/nodes/directives/UsingDirectiveSyntax.hpp>
+#include <gmt/Arena.hpp>
 #include <shard/parsing/SyntaxVisitor.hpp>
 
-#include <iostream>
 #include <sstream>
 
 using namespace shard;
 
-UsingDirectiveSyntax::UsingDirectiveSyntax(SyntaxNode* parent)
+UsingDirectiveSyntax::UsingDirectiveSyntax(gmt::Ref<SyntaxNode> parent)
 	: SyntaxNode(SyntaxKind::UsingDirective, parent) {}
 
-std::span<const SyntaxToken> UsingDirectiveSyntax::get_qualifier() const
+gmt::Span<const SyntaxToken> UsingDirectiveSyntax::get_qualifier() const
 {
-	return std::span<const SyntaxToken>(m_qualifier.data(), m_qualifier.data() + m_qualifier.size());
+	return m_qualifier;
 }
 
-string_t UsingDirectiveSyntax::get_qualifier_string() const
+std::wstring UsingDirectiveSyntax::get_qualifier_string() const
 {
-	UsingDirectiveSyntax* self = const_cast<UsingDirectiveSyntax*>(this);
-	if (!m_qualifierStringCache.empty() && !m_changed)
-		return m_qualifierStringCache.c_str();
-
-	if (m_qualifier.empty())
+	std::span<const SyntaxToken> qualifier = m_qualifier.get();
+	if (qualifier.empty())
 		return L"";
 
 	std::wstringstream qualifierString;
-	for (std::size_t i = 0; i < m_qualifier.size() - 1; ++i)
-		qualifierString << m_qualifier.at(i).get_lexeme() << L".";
+	for (std::size_t i = 0; i < qualifier.size() - 1; ++i)
+		qualifierString << qualifier[i].get_lexeme() << L".";
 
-	qualifierString << m_qualifier.back().get_lexeme();
-	self->m_qualifierStringCache = qualifierString.str();
-	self->m_changed = false;
-
-	return m_qualifierStringCache.c_str();
+	qualifierString << qualifier.back().get_lexeme();
+	return qualifierString.str();
 }
 
 SyntaxToken UsingDirectiveSyntax::get_using_keyword() const
@@ -44,10 +38,9 @@ SyntaxToken UsingDirectiveSyntax::get_semicolon() const
 	return m_semicolon;
 }
 
-void UsingDirectiveSyntax::add_qulifier(const SyntaxToken& token)
+void UsingDirectiveSyntax::set_qualifier(gmt::Span<SyntaxToken> qualifier)
 {
-	m_qualifier.push_back(token);
-	m_changed = true;
+	m_qualifier = qualifier;
 }
 
 void UsingDirectiveSyntax::set_using_keyword(const SyntaxToken& token)

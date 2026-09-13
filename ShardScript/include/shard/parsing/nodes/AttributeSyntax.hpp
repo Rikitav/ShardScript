@@ -4,8 +4,7 @@
 #include <shard/parsing/SyntaxKind.hpp>
 #include <shard/parsing/SyntaxToken.hpp>
 #include <shard/parsing/SyntaxNode.hpp>
-
-#include <vector>
+#include <gmt/Span.hpp>
 
 namespace shard
 {
@@ -16,11 +15,25 @@ namespace shard
 		SyntaxToken m_nameToken;
 		SyntaxToken m_openCurlToken;
 		SyntaxToken m_closeCurlToken;
-		std::vector<SyntaxToken> m_arguments;
+		gmt::Span<SyntaxToken> m_arguments;
 
 	public:
-		AttributeSyntax(SyntaxNode* parent);
+		AttributeSyntax(gmt::Ref<SyntaxNode> parent);
 		virtual ~AttributeSyntax() = default;
+
+		void set_open_bracket(const SyntaxToken& token);
+		void set_close_bracket(const SyntaxToken& token);
+		void set_name(const SyntaxToken& token);
+		void set_open_curl(const SyntaxToken& token);
+		void set_close_curl(const SyntaxToken& token);
+		void set_arguments(gmt::Span<SyntaxToken> arguments);
+
+		SyntaxToken get_open_bracket() const;
+		SyntaxToken get_close_bracket() const;
+		SyntaxToken get_name() const;
+		SyntaxToken get_open_curl() const;
+		SyntaxToken get_close_curl() const;
+		gmt::Span<const SyntaxToken> get_arguments() const;
 
 		virtual TextLocation get_location() const override;
 		void accept(SyntaxVisitor& visitor) const override;

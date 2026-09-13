@@ -51,6 +51,18 @@ void DiagnosticsContext::report_error(const SyntaxToken& token, string_t descrip
 	m_diagnostics.push_back(Diagnostic(token, DiagnosticSeverity::Error, description));
 }
 
+void DiagnosticsContext::report_error(const TextLocation& location, const std::wstring& description)
+{
+	m_anyError = true;
+	m_diagnostics.push_back(Diagnostic(location, DiagnosticSeverity::Error, description));
+}
+
+void DiagnosticsContext::report_error(const TextLocation& location, string_t description)
+{
+	m_anyError = true;
+	m_diagnostics.push_back(Diagnostic(location, DiagnosticSeverity::Error, description));
+}
+
 void DiagnosticsContext::report_warning(const SyntaxToken& token, const std::wstring& description)
 {
 	m_diagnostics.push_back(Diagnostic(token, DiagnosticSeverity::Warning, description));
@@ -59,6 +71,18 @@ void DiagnosticsContext::report_warning(const SyntaxToken& token, const std::wst
 void DiagnosticsContext::report_warning(const SyntaxToken& token, string_t description)
 {
 	m_diagnostics.push_back(Diagnostic(token, DiagnosticSeverity::Warning, description));
+}
+
+void DiagnosticsContext::report_warning(const TextLocation& location, const std::wstring& description)
+{
+	m_anyError = true;
+	m_diagnostics.push_back(Diagnostic(location, DiagnosticSeverity::Warning, description));
+}
+
+void DiagnosticsContext::report_warning(const TextLocation& location, string_t description)
+{
+	m_anyError = true;
+	m_diagnostics.push_back(Diagnostic(location, DiagnosticSeverity::Warning, description));
 }
 
 void DiagnosticsContext::report_info(const SyntaxToken& token, const std::wstring& description)
@@ -73,9 +97,21 @@ void DiagnosticsContext::report_info(const SyntaxToken& token, string_t descript
 	m_diagnostics.push_back(dgnstc);
 }
 
+void DiagnosticsContext::report_info(const TextLocation& location, const std::wstring& description)
+{
+	m_anyError = true;
+	m_diagnostics.push_back(Diagnostic(location, DiagnosticSeverity::Info, description));
+}
+
+void DiagnosticsContext::report_info(const TextLocation& location, string_t description)
+{
+	m_anyError = true;
+	m_diagnostics.push_back(Diagnostic(location, DiagnosticSeverity::Info, description));
+}
+
 std::span<const Diagnostic> DiagnosticsContext::get_diagnostics() const
 {
-	return std::span<const Diagnostic>(m_diagnostics.data(), m_diagnostics.data() + m_diagnostics.size());
+	return std::span(m_diagnostics.data(), m_diagnostics.data() + m_diagnostics.size());
 }
 
 void DiagnosticsContext::reset()
@@ -103,7 +139,7 @@ void DiagnosticsContext::write_diagnostics(std::wostream& out) const
 	out << std::flush;
 }
 
-string_t severity_to_wstring(const DiagnosticSeverity severity)
+string_t shard::severity_to_wstring(const DiagnosticSeverity severity)
 {
 	switch (severity)
 	{

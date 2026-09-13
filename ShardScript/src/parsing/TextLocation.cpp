@@ -17,7 +17,7 @@ TextLocation::TextLocation(const SyntaxToken& left, const SyntaxToken& right)
 	TextLocation from = left.get_location();
 	TextLocation to = right.get_location();
 
-	if (0 != wcscmp(from.m_fileName.c_str(), to.m_fileName.c_str()))
+	if (from.m_fileName != to.m_fileName)
 	{
 		m_fileName = L"<INVALID>";
 		m_line = -1;
@@ -42,7 +42,7 @@ TextLocation::TextLocation(const SyntaxToken& left, const SyntaxToken& right)
 }
 
 TextLocation::TextLocation(
-	const std::wstring& filename,
+	const std::wstring_view filename,
 	std::int32_t line,
 	std::int32_t offset,
 	std::int32_t length

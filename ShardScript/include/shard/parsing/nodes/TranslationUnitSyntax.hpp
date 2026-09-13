@@ -3,37 +3,36 @@
 
 #include <shard/parsing/SyntaxNode.hpp>
 #include <shard/parsing/SyntaxKind.hpp>
+#include <gmt/Ref.hpp>
+#include <gmt/Span.hpp>
 
 #include <shard/parsing/nodes/MemberDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/directives/UsingDirectiveSyntax.hpp>
 #include <shard/parsing/nodes/directives/NamespaceDirectiveSyntax.hpp>
 
-#include <vector>
-#include <optional>
-#include <memory>
-
 namespace shard
 {
 	class SHARD_API TranslationUnitSyntax : public SyntaxNode
 	{
-	public:
-		NamespaceDirectiveSyntax* m_namespace;
-		std::vector<UsingDirectiveSyntax*> m_usings;
-		std::vector<MemberDeclarationSyntax*> m_members;
+		gmt::Ref<NamespaceDirectiveSyntax> m_namespace;
+		gmt::Span<gmt::Ref<UsingDirectiveSyntax>> m_usings;
+		gmt::Span<gmt::Ref<MemberDeclarationSyntax>> m_members;
 
+	public:
 		TranslationUnitSyntax();
 		virtual ~TranslationUnitSyntax() = default;
 
 		TranslationUnitSyntax(const TranslationUnitSyntax&) = delete;
 		TranslationUnitSyntax& operator=(const TranslationUnitSyntax&) = delete;
 
-		const NamespaceDirectiveSyntax& get_namespace() const;
-		std::span<const UsingDirectiveSyntax*> get_usings() const;
-		std::span<const MemberDeclarationSyntax*> get_members() const;
+		bool has_namespace() const;
+		gmt::Ref<const NamespaceDirectiveSyntax> get_namespace() const;
+		gmt::Span<const gmt::Ref<UsingDirectiveSyntax>> get_usings() const;
+		gmt::Span<const gmt::Ref<MemberDeclarationSyntax>> get_members() const;
 
-		void add_using(UsingDirectiveSyntax* directive);
-		void set_namespace(NamespaceDirectiveSyntax* directive);
-		void add_member(MemberDeclarationSyntax* member);
+		void set_namespace(gmt::Ref<NamespaceDirectiveSyntax> directive);
+		void set_usings(gmt::Span<gmt::Ref<UsingDirectiveSyntax>> usings);
+		void set_members(gmt::Span<gmt::Ref<MemberDeclarationSyntax>> members);
 
 		virtual TextLocation get_location() const override;
 		void accept(SyntaxVisitor& visitor) const override;

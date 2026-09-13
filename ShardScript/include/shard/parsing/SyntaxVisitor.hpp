@@ -13,6 +13,7 @@
 
 #include <shard/parsing/nodes/TranslationUnitSyntax.hpp>
 #include <shard/parsing/nodes/MemberDeclarationSyntax.hpp>
+#include <shard/parsing/nodes/AttributeSyntax.hpp>
 
 /*
 #include <shard/parsing/nodes/ExpressionSyntax.hpp>
@@ -87,7 +88,9 @@
 #include <shard/parsing/nodes/Types/DelegateTypeSyntax.hpp>
 */
 
+/*
 #include <optional>
+*/
 
 namespace shard
 {
@@ -128,6 +131,7 @@ namespace shard
 
         virtual void visit_using_directive(const UsingDirectiveSyntax* node);
         virtual void visit_namespace_directive(const NamespaceDirectiveSyntax* node);
+        virtual void visit_attribute(const AttributeSyntax* node);
 
         /*
         virtual void VisitTypeDeclaration(MemberDeclarationSyntax* node);

@@ -25,8 +25,17 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
     "_CRT_SECURE_NO_WARNINGS"
 )
 
+if (WIN32)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE
+        "WIN32_LEAN_AND_MEAN"
+        "NOMINMAX"
+        "NOGDI"
+    )
+endif()
+
 target_include_directories(${PROJECT_NAME} PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/third-party"
 )
 
 target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE
@@ -40,9 +49,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 )
 
 if(NOT WIN32)
-    target_link_libraries(${PROJECT_NAME} PRIVATE
-        ${CMAKE_DL_LIBS}
-    )
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${CMAKE_DL_LIBS})
 endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU")

@@ -1,4 +1,7 @@
 #pragma once
+
+#include <string_view>
+
 #if defined(SHARDSCRIPT_STATIC)
 	#define SHARD_API
 #else
@@ -27,15 +30,6 @@
 #if defined(_MSC_VER)
 
 	using LibraryHandle = void*;
-	#ifndef WIN32_LEAN_AND_MEAN
-		#define WIN32_LEAN_AND_MEAN
-	#endif
-	#ifndef NOMINMAX
-		#define NOMINMAX
-	#endif
-	#ifndef NOGDI
-		#define NOGDI
-	#endif
 
 // GCC / Clang
 #elif defined(__GNUC__)

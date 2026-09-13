@@ -1,38 +1,31 @@
-#include <shard/parsing/nodes/Directives/NamespaceDirectiveSyntax.hpp>
+#include <shard/parsing/nodes/directives/NamespaceDirectiveSyntax.hpp>
+#include <gmt/Arena.hpp>
 #include <shard/parsing/SyntaxVisitor.hpp>
 
-#include <string>
 #include <sstream>
-#include <iostream>
 
 using namespace shard;
 
-NamespaceDirectiveSyntax::NamespaceDirectiveSyntax(SyntaxNode* parent)
+NamespaceDirectiveSyntax::NamespaceDirectiveSyntax(gmt::Ref<SyntaxNode> parent)
 	: SyntaxNode(SyntaxKind::NamespaceDeclaration, parent) { }
 
-std::span<const SyntaxToken> NamespaceDirectiveSyntax::get_qualifier() const
+gmt::Span<const SyntaxToken> NamespaceDirectiveSyntax::get_qualifier() const
 {
-	return std::span<const SyntaxToken>(m_qualifier.data(), m_qualifier.data() + m_qualifier.size());
+	return m_qualifier;
 }
 
-string_t NamespaceDirectiveSyntax::get_qualifier_string() const
+std::wstring NamespaceDirectiveSyntax::get_qualifier_string() const
 {
-	NamespaceDirectiveSyntax* self = const_cast<NamespaceDirectiveSyntax*>(this);
-	if (!m_qualifierStringCache.empty() && !m_changed)
-		return m_qualifierStringCache.c_str();
-
-	if (m_qualifier.empty())
+	std::span<const SyntaxToken> qualifier = m_qualifier.get();
+	if (qualifier.empty())
 		return L"";
 
 	std::wstringstream qualifierString;
-	for (std::size_t i = 0; i < m_qualifier.size() - 1; ++i)
-		qualifierString << self->m_qualifier.at(i).get_lexeme() << L".";
+	for (std::size_t i = 0; i < qualifier.size() - 1; ++i)
+		qualifierString << qualifier[i].get_lexeme() << L".";
 
-	qualifierString << m_qualifier.back().get_lexeme();
-	self->m_qualifierStringCache = qualifierString.str();
-	self->m_changed = false;
-
-	return m_qualifierStringCache.c_str();
+	qualifierString << qualifier.back().get_lexeme();
+	return qualifierString.str();
 }
 
 SyntaxToken NamespaceDirectiveSyntax::get_semicolon() const
@@ -45,10 +38,9 @@ SyntaxToken NamespaceDirectiveSyntax::get_namespace_keyword() const
 	return m_namespaceKeyword;
 }
 
-void NamespaceDirectiveSyntax::add_qulifier(const SyntaxToken& token)
+void NamespaceDirectiveSyntax::set_qualifier(gmt::Span<SyntaxToken> qualifier)
 {
-	m_qualifier.push_back(token);
-	m_changed = true;
+	m_qualifier = qualifier;
 }
 
 void NamespaceDirectiveSyntax::set_namespace_keyword(const SyntaxToken& token)
