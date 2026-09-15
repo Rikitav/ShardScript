@@ -31,7 +31,7 @@ void LinkedExpressionNode::set_delimeter_token(const SyntaxToken& token)
 TextLocation LinkedExpressionNode::get_location() const
 {
 	if (!m_previous.is_null())
-		return m_previous.get()->get_location();
+		return TextLocation(m_previous.get()->get_location(), m_delimeterToken);
 
 	return m_delimeterToken.get_location();
 }
@@ -47,6 +47,14 @@ SyntaxToken MemberAccessExpressionSyntax::get_identifier() const
 void MemberAccessExpressionSyntax::set_identifier(const SyntaxToken& token)
 {
 	m_identifierToken = token;
+}
+
+TextLocation MemberAccessExpressionSyntax::get_location() const
+{
+	if (!m_previous.is_null())
+		return TextLocation(m_previous.get()->get_location(), m_identifierToken);
+
+	return m_identifierToken.get_location();
 }
 
 void MemberAccessExpressionSyntax::accept(SyntaxVisitor& visitor) const
@@ -75,6 +83,22 @@ void InvokationExpressionSyntax::set_identifier(const SyntaxToken& token)
 void InvokationExpressionSyntax::set_arguments(gmt::Ref<ArgumentsListSyntax> arguments)
 {
 	m_arguments = arguments;
+}
+
+TextLocation InvokationExpressionSyntax::get_location() const
+{
+	if (!m_previous.is_null())
+	{
+		if (!m_arguments.is_null())
+			return TextLocation(m_previous.get()->get_location(), m_arguments.get()->get_close_token());
+
+		return TextLocation(m_previous.get()->get_location(), m_identifierToken);
+	}
+
+	if (!m_arguments.is_null())
+		return TextLocation(m_identifierToken, m_arguments.get()->get_location());
+
+	return m_identifierToken.get_location();
 }
 
 void InvokationExpressionSyntax::accept(SyntaxVisitor& visitor) const

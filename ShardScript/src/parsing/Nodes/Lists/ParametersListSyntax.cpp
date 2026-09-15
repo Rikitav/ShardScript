@@ -30,13 +30,10 @@ void ParameterSyntax::set_identifier(const SyntaxToken& token)
 
 TextLocation ParameterSyntax::get_location() const
 {
-	if (!m_identifierToken.is_missing())
-		return m_identifierToken.get_location();
-
 	if (!m_type.is_null())
-		return m_type.get()->get_location();
+		return TextLocation(m_identifierToken, m_type.get()->get_location());
 
-	return TextLocation();
+	return m_identifierToken.get_location();
 }
 
 void ParameterSyntax::accept(SyntaxVisitor& visitor) const
@@ -79,7 +76,7 @@ void ParametersListSyntax::set_close_token(const SyntaxToken& token)
 
 TextLocation ParametersListSyntax::get_location() const
 {
-	return m_openToken.get_location();
+	return TextLocation(m_openToken, m_closeToken);
 }
 
 void ParametersListSyntax::accept(SyntaxVisitor& visitor) const

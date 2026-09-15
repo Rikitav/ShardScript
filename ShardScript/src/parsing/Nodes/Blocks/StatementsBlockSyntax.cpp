@@ -40,7 +40,7 @@ void StatementsBlockSyntax::set_close_bracket(const SyntaxToken& token)
 
 TextLocation StatementsBlockSyntax::get_location() const
 {
-	return m_openBracketToken.get_location();
+	return TextLocation(m_openBracketToken, m_closeBracketToken);
 }
 
 void StatementsBlockSyntax::accept(SyntaxVisitor& visitor) const

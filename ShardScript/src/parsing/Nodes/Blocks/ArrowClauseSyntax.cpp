@@ -30,6 +30,9 @@ void ArrowClauseSyntax::set_arrow_token(const SyntaxToken& token)
 
 TextLocation ArrowClauseSyntax::get_location() const
 {
+	if (!m_expression.is_null())
+		return TextLocation(m_arrowToken, m_expression.get()->get_location());
+
 	return m_arrowToken.get_location();
 }
 

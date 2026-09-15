@@ -51,9 +51,9 @@ std::wstring QualifiedNameTypeSyntax::get_qualifier() const
 TextLocation QualifiedNameTypeSyntax::get_location() const
 {
 	if (!m_left.is_null())
-		return m_left.get()->get_location();
+		return TextLocation(m_left.get()->get_location(), m_identifierToken);
 
-	return m_qualifierToken.get_location();
+	return m_identifierToken.get_location();
 }
 
 void QualifiedNameTypeSyntax::accept(SyntaxVisitor& visitor) const

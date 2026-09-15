@@ -70,7 +70,7 @@ gmt::Span<const SyntaxToken> AttributeSyntax::get_arguments() const
 
 TextLocation AttributeSyntax::get_location() const
 {
-	return m_openBracketToken.get_location();
+	return TextLocation(m_openBracketToken, m_closeBracketToken);
 }
 
 void AttributeSyntax::accept(SyntaxVisitor& visitor) const
@@ -113,13 +113,13 @@ void AttributesListSyntax::set_close_token(const SyntaxToken& token)
 
 TextLocation AttributesListSyntax::get_location() const
 {
-	if (!m_openToken.is_missing())
-		return m_openToken.get_location();
-
 	if (!m_attributes.empty())
-		return m_attributes.get().front().get()->get_location();
+	{
+		std::span<const gmt::Ref<AttributeSyntax>> attributes = m_attributes.get();
+		return TextLocation(attributes.front().get()->get_location(), attributes.back().get()->get_location());
+	}
 
-	return TextLocation();
+	return m_openToken.get_location();
 }
 
 void AttributesListSyntax::accept(SyntaxVisitor& visitor) const

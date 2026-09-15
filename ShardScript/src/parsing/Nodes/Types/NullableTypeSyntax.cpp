@@ -41,7 +41,7 @@ std::wstring NullableTypeSyntax::get_qualifier() const
 TextLocation NullableTypeSyntax::get_location() const
 {
 	if (!m_underlayingType.is_null())
-		return m_underlayingType.get()->get_location();
+		return TextLocation(m_underlayingType.get()->get_location(), m_questionToken);
 
 	return m_questionToken.get_location();
 }

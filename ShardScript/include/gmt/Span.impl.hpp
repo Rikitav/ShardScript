@@ -12,6 +12,11 @@ namespace gmt
 	{ }
 
 	template<typename T>
+	inline Span<T>::Span(nullref_t) :
+		Span()
+	{ }
+
+	template<typename T>
 	Span<T>::Span(
 		Arena& arena,
 		std::uint32_t offset,

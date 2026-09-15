@@ -41,6 +41,7 @@ namespace shard
 		SyntaxToken get_identifier() const;
 		void set_identifier(const SyntaxToken& token);
 
+		TextLocation get_location() const override;
 		void accept(SyntaxVisitor& visitor) const override;
 	};
 
@@ -59,6 +60,7 @@ namespace shard
 		void set_identifier(const SyntaxToken& token);
 		void set_arguments(gmt::Ref<ArgumentsListSyntax> arguments);
 
+		TextLocation get_location() const override;
 		void accept(SyntaxVisitor& visitor) const override;
 	};
 }
