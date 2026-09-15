@@ -3,6 +3,7 @@
 
 #include <shard/parsing/SyntaxNode.hpp>
 #include <shard/parsing/SyntaxToken.hpp>
+
 #include <gmt/Span.hpp>
 
 #include <string>
@@ -28,7 +29,7 @@ namespace shard
 		void set_namespace_keyword(const SyntaxToken& token);
 		void set_semicolon(const SyntaxToken& token);
 
-		virtual TextLocation get_location() const override;
+		TextLocation get_location() const override;
 		void accept(SyntaxVisitor& visitor) const override;
 	};
 }

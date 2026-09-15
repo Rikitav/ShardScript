@@ -1,4 +1,5 @@
 #include <shard/parsing/nodes/MemberDeclarationSyntax.hpp>
+
 #include <gmt/Arena.hpp>
 
 using namespace shard;
@@ -6,7 +7,7 @@ using namespace shard;
 MemberDeclarationSyntax::MemberDeclarationSyntax(const SyntaxKind kind, gmt::Ref<SyntaxNode> parent)
 	: SyntaxNode(kind, parent) { }
 
-void MemberDeclarationSyntax::set_attributes(gmt::Span<gmt::Ref<AttributeSyntax>> attributes)
+void MemberDeclarationSyntax::set_attributes(gmt::Ref<AttributesListSyntax> attributes)
 {
 	m_attributes = attributes;
 }
@@ -21,7 +22,12 @@ void MemberDeclarationSyntax::set_identifier(const SyntaxToken& identifier)
 	m_identifierToken = identifier;
 }
 
-gmt::Span<const gmt::Ref<AttributeSyntax>> MemberDeclarationSyntax::get_attributes() const
+void MemberDeclarationSyntax::set_declare_token(const SyntaxToken& declare)
+{
+	m_declareToken = declare;
+}
+
+gmt::Ref<AttributesListSyntax> MemberDeclarationSyntax::get_attributes() const
 {
 	return m_attributes;
 }
@@ -36,11 +42,7 @@ SyntaxToken MemberDeclarationSyntax::get_identifier() const
 	return m_identifierToken;
 }
 
-TextLocation MemberDeclarationSyntax::get_location() const
+SyntaxToken MemberDeclarationSyntax::get_declare_token() const
 {
-	return m_identifierToken.get_location();
-}
-
-void MemberDeclarationSyntax::accept(SyntaxVisitor& visitor) const
-{
+	return m_declareToken;
 }

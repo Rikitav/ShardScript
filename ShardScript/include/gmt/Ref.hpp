@@ -22,7 +22,7 @@ namespace gmt
 
 		template<typename U> requires std::is_convertible_v<U*, T*>
 		Ref(const Ref<U>& other);
-
+		
 		Ref(const Ref&) = default;
 		Ref& operator=(const Ref&) = default;
 

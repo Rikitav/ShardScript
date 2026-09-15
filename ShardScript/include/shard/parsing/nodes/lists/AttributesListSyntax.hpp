@@ -35,7 +35,30 @@ namespace shard
 		SyntaxToken get_close_curl() const;
 		gmt::Span<const SyntaxToken> get_arguments() const;
 
-		virtual TextLocation get_location() const override;
+		TextLocation get_location() const override;
+		void accept(SyntaxVisitor& visitor) const override;
+	};
+
+	class SHARD_API AttributesListSyntax final : public SyntaxNode
+	{
+		gmt::Span<gmt::Ref<AttributeSyntax>> m_attributes;
+
+		SyntaxToken m_openToken;
+		SyntaxToken m_closeToken;
+
+	public:
+		AttributesListSyntax(gmt::Ref<SyntaxNode> parent);
+		virtual ~AttributesListSyntax() = default;
+
+		gmt::Span<const gmt::Ref<AttributeSyntax>> get_attributes() const;
+		SyntaxToken get_open_token() const;
+		SyntaxToken get_close_token() const;
+
+		void set_attributes(gmt::Span<gmt::Ref<AttributeSyntax>> attributes);
+		void set_open_token(const SyntaxToken& token);
+		void set_close_token(const SyntaxToken& token);
+
+		TextLocation get_location() const override;
 		void accept(SyntaxVisitor& visitor) const override;
 	};
 }

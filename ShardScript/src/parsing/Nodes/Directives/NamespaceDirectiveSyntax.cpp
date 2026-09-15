@@ -1,13 +1,14 @@
 #include <shard/parsing/nodes/directives/NamespaceDirectiveSyntax.hpp>
-#include <gmt/Arena.hpp>
 #include <shard/parsing/SyntaxVisitor.hpp>
+
+#include <gmt/Arena.hpp>
 
 #include <sstream>
 
 using namespace shard;
 
 NamespaceDirectiveSyntax::NamespaceDirectiveSyntax(gmt::Ref<SyntaxNode> parent)
-	: SyntaxNode(SyntaxKind::NamespaceDeclaration, parent) { }
+	: SyntaxNode(SyntaxKind::NamespaceDirective, parent) { }
 
 gmt::Span<const SyntaxToken> NamespaceDirectiveSyntax::get_qualifier() const
 {
