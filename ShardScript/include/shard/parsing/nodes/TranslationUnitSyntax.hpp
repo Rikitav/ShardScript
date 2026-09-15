@@ -3,16 +3,17 @@
 
 #include <shard/parsing/SyntaxNode.hpp>
 #include <shard/parsing/SyntaxKind.hpp>
-#include <gmt/Ref.hpp>
-#include <gmt/Span.hpp>
 
 #include <shard/parsing/nodes/MemberDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/directives/UsingDirectiveSyntax.hpp>
 #include <shard/parsing/nodes/directives/NamespaceDirectiveSyntax.hpp>
 
+#include <gmt/Ref.hpp>
+#include <gmt/Span.hpp>
+
 namespace shard
 {
-	class SHARD_API TranslationUnitSyntax : public SyntaxNode
+	class SHARD_API TranslationUnitSyntax final : public SyntaxNode
 	{
 		gmt::Ref<NamespaceDirectiveSyntax> m_namespace;
 		gmt::Span<gmt::Ref<UsingDirectiveSyntax>> m_usings;
@@ -34,7 +35,7 @@ namespace shard
 		void set_usings(gmt::Span<gmt::Ref<UsingDirectiveSyntax>> usings);
 		void set_members(gmt::Span<gmt::Ref<MemberDeclarationSyntax>> members);
 
-		virtual TextLocation get_location() const override;
+		TextLocation get_location() const override;
 		void accept(SyntaxVisitor& visitor) const override;
 	};
 }

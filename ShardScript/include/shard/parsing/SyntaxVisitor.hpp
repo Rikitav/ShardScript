@@ -13,17 +13,31 @@
 
 #include <shard/parsing/nodes/TranslationUnitSyntax.hpp>
 #include <shard/parsing/nodes/MemberDeclarationSyntax.hpp>
-#include <shard/parsing/nodes/AttributeSyntax.hpp>
+#include <shard/parsing/nodes/TypeDeclarationSyntax.hpp>
+
+#include <shard/parsing/nodes/lists/AttributesListSyntax.hpp>
+#include <shard/parsing/nodes/lists/ParametersListSyntax.hpp>
+#include <shard/parsing/nodes/lists/ArgumentsListSyntax.hpp>
+#include <shard/parsing/nodes/lists/TypeArgumentsListSyntax.hpp>
+#include <shard/parsing/nodes/lists/TypeParametersListSyntax.hpp>
+#include <shard/parsing/nodes/lists/BaseTypesListSyntax.hpp>
+#include <shard/parsing/nodes/lists/WhereClausesListSyntax.hpp>
+
+#include <shard/parsing/nodes/blocks/StatementsBlockSyntax.hpp>
+#include <shard/parsing/nodes/blocks/ArrowClauseSyntax.hpp>
+
+#include <shard/parsing/nodes/members/ClassDeclarationSyntax.hpp>
+#include <shard/parsing/nodes/members/FunctionDeclarationSyntax.hpp>
+
+#include <shard/parsing/nodes/statements/ExpressionStatementSyntax.hpp>
+
+#include <shard/parsing/nodes/expressions/LiteralExpressionsSyntax.hpp>
+
+#include <shard/parsing/nodes/types/PredefinedTypeSyntax.hpp>
 
 /*
 #include <shard/parsing/nodes/ExpressionSyntax.hpp>
-#include <shard/parsing/nodes/ParametersListSyntax.hpp>
 #include <shard/parsing/nodes/StatementSyntax.hpp>
-#include <shard/parsing/nodes/StatementsBlockSyntax.hpp>
-#include <shard/parsing/nodes/ArgumentsListSyntax.hpp>
-#include <shard/parsing/nodes/TypeSyntax.hpp>
-#include <shard/parsing/nodes/TypeArgumentsListSyntax.hpp>
-#include <shard/parsing/nodes/TypeParametersListSyntax.hpp>
 */
 
 #include <shard/parsing/nodes/Directives/UsingDirectiveSyntax.hpp>
@@ -131,7 +145,31 @@ namespace shard
 
         virtual void visit_using_directive(const UsingDirectiveSyntax* node);
         virtual void visit_namespace_directive(const NamespaceDirectiveSyntax* node);
+
+        virtual void visit_attributes_list(const AttributesListSyntax* node);
         virtual void visit_attribute(const AttributeSyntax* node);
+
+        virtual void visit_class_declaration(const ClassDeclarationSyntax* node);
+        virtual void visit_function_declaration(const FunctionDeclarationSyntax* node);
+
+        virtual void visit_statements_block(const StatementsBlockSyntax* node);
+        virtual void visit_arrow_clause(const ArrowClauseSyntax* node);
+
+        virtual void visit_expression_statement(const ExpressionStatementSyntax* node);
+        virtual void visit_literal_expression(const LiteralExpressionSyntax* node);
+
+        virtual void visit_parameter(const ParameterSyntax* node);
+        virtual void visit_parameters_list(const ParametersListSyntax* node);
+        virtual void visit_argument(const ArgumentSyntax* node);
+        virtual void visit_arguments_list(const ArgumentsListSyntax* node);
+        virtual void visit_type_arguments_list(const TypeArgumentsListSyntax* node);
+        virtual void visit_type_parameter(const TypeParameterSyntax* node);
+        virtual void visit_type_parameters_list(const TypeParametersListSyntax* node);
+        virtual void visit_base_types_list(const BaseTypesListSyntax* node);
+        virtual void visit_where_clause(const WhereClauseSyntax* node);
+        virtual void visit_where_clauses_list(const WhereClausesListSyntax* node);
+
+        virtual void visit_predefined_type(const PredefinedTypeSyntax* node);
 
         /*
         virtual void VisitTypeDeclaration(MemberDeclarationSyntax* node);

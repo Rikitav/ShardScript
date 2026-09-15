@@ -1,7 +1,10 @@
 #pragma once
 #include <shard/Definitions.hpp>
+
+#include <shard/parsing/TextLocation.hpp>
 #include <shard/parsing/SyntaxKind.hpp>
 #include <shard/parsing/SyntaxToken.hpp>
+
 #include <gmt/Ref.hpp>
 
 namespace shard

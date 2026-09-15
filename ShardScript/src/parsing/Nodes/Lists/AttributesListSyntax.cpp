@@ -1,6 +1,7 @@
-#include <shard/parsing/nodes/AttributeSyntax.hpp>
-#include <gmt/Arena.hpp>
+#include <shard/parsing/nodes/lists/AttributesListSyntax.hpp>
 #include <shard/parsing/SyntaxVisitor.hpp>
+
+#include <gmt/Arena.hpp>
 
 using namespace shard;
 
@@ -75,4 +76,53 @@ TextLocation AttributeSyntax::get_location() const
 void AttributeSyntax::accept(SyntaxVisitor& visitor) const
 {
 	visitor.visit_attribute(this);
+}
+
+AttributesListSyntax::AttributesListSyntax(gmt::Ref<SyntaxNode> parent)
+	: SyntaxNode(SyntaxKind::AttributesList, parent) { }
+
+gmt::Span<const gmt::Ref<AttributeSyntax>> AttributesListSyntax::get_attributes() const
+{
+	return m_attributes;
+}
+
+SyntaxToken AttributesListSyntax::get_open_token() const
+{
+	return m_openToken;
+}
+
+SyntaxToken AttributesListSyntax::get_close_token() const
+{
+	return m_closeToken;
+}
+
+void AttributesListSyntax::set_attributes(gmt::Span<gmt::Ref<AttributeSyntax>> attributes)
+{
+	m_attributes = attributes;
+}
+
+void AttributesListSyntax::set_open_token(const SyntaxToken& token)
+{
+	m_openToken = token;
+}
+
+void AttributesListSyntax::set_close_token(const SyntaxToken& token)
+{
+	m_closeToken = token;
+}
+
+TextLocation AttributesListSyntax::get_location() const
+{
+	if (!m_openToken.is_missing())
+		return m_openToken.get_location();
+
+	if (!m_attributes.empty())
+		return m_attributes.get().front().get()->get_location();
+
+	return TextLocation();
+}
+
+void AttributesListSyntax::accept(SyntaxVisitor& visitor) const
+{
+	visitor.visit_attributes_list(this);
 }

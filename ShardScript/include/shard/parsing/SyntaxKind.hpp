@@ -9,10 +9,9 @@ namespace shard
 		// Top-tier Units
 		CompilationUnit,
 		UsingDirective,
-		DllImportDirective,
+		NamespaceDirective,
 
 		// Types
-		NamespaceDeclaration,
 		ClassDeclaration,
 		StructDeclaration,
 		InterfaceDeclaration,
@@ -22,7 +21,7 @@ namespace shard
 
 		// Members
 		FieldDeclaration,
-		MethodDeclaration,
+		FunctionDeclaration,
 		OperatorDeclaration,
 		ConstructorDeclaration,
 		PropertyDeclaration,
@@ -35,10 +34,13 @@ namespace shard
 		TypeParameter,
 		Argument,
 		ArgumentsList,
-		IndexatorList,
+		TypeArgumentsList,
+		TypeParametersList,
+		BaseTypesList,
 		StatementsBlock,
-		MethodBody,
+		ArrowClause,
 		WhereClause,
+		WhereClausesList,
 
 		// Statements
 		ExpressionStatement,
@@ -89,6 +91,7 @@ namespace shard
 
 		// Attributes
 		Attribute,
+		AttributesList,
 
 		// Type identifiers
 		PredefinedType,

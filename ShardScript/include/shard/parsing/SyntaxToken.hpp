@@ -5,6 +5,7 @@
 #include <shard/parsing/TextLocation.hpp>
 
 #include <string_view>
+#include <optional>
 
 namespace shard
 {

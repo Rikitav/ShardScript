@@ -3,6 +3,7 @@
 
 #include <shard/parsing/SyntaxNode.hpp>
 #include <shard/parsing/SyntaxToken.hpp>
+
 #include <gmt/Span.hpp>
 
 #include <string>
@@ -19,9 +20,6 @@ namespace shard
 		UsingDirectiveSyntax(gmt::Ref<SyntaxNode> parent);
 		virtual ~UsingDirectiveSyntax() = default;
 
-		// note: qualifier resolution requires the owning arena, which is
-		// obtained through the parent reference - do not call on a node
-		// that has no parent assigned
 		gmt::Span<const SyntaxToken> get_qualifier() const;
 		std::wstring get_qualifier_string() const;
 		SyntaxToken get_semicolon() const;
@@ -31,7 +29,7 @@ namespace shard
 		void set_using_keyword(const SyntaxToken& token);
 		void set_semicolon(const SyntaxToken& token);
 
-		virtual TextLocation get_location() const override;
+		TextLocation get_location() const override;
 		void accept(SyntaxVisitor& visitor) const override;
 	};
 }

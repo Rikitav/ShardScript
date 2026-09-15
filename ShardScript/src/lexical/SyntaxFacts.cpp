@@ -23,8 +23,10 @@ bool shard::can_start_member_declaration(TokenType type)
 {
 	return type == TokenType::OpenSquare
 		|| type == TokenType::Identifier
+		|| type == TokenType::FunctionKeyword
 		|| is_modifier(type)
-		|| is_member_keyword(type);
+		|| is_member_keyword(type)
+		|| is_type_keyword(type);
 }
 
 bool shard::can_start_compilation_unit(TokenType type)
@@ -286,7 +288,13 @@ bool shard::is_member_keyword(shard::TokenType type)
 {
 	switch (type)
 	{
+		case TokenType::FunctionKeyword:
+		case TokenType::ClassKeyword:
+		case TokenType::StructKeyword:
+		case TokenType::DelegateKeyword:
 		case TokenType::IndexerKeyword:
+		case TokenType::EnumKeyword:
+		case TokenType::InitKeyword:
 			return true;
 
 		default:
@@ -365,13 +373,6 @@ bool shard::is_type_keyword(shard::TokenType type)
 {
 	switch (type)
 	{
-		case TokenType::ClassKeyword:
-		case TokenType::StructKeyword:
-		case TokenType::InterfaceKeyword:
-		case TokenType::DelegateKeyword:
-		case TokenType::EnumKeyword:
-			return true;
-
 		default:
 			return false;
 	}
@@ -387,13 +388,7 @@ bool shard::is_member_declaration(shard::TokenType currentType, shard::TokenType
 
 	if (is_type_keyword(currentType))
 		return true;
-
-	if (currentType == TokenType::FunctionKeyword)
-		return true;
-
-	if (currentType == TokenType::InitKeyword)
-		return true;
-
+	
 	if (currentType == TokenType::Identifier)
 		return peekType == TokenType::Colon;
 
@@ -508,8 +503,8 @@ bool shard::is_reserved_identifier(shard::TokenType type)
 	{
 		case TokenType::ValueKeyword:
 		case TokenType::FieldKeyword:
-		//case TokenType::ThisKeyword:
 		case TokenType::WhileKeyword:
+		//case TokenType::ThisKeyword:
 			return true;
 
 		default:
