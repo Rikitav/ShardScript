@@ -63,7 +63,7 @@ void TypeParametersListSyntax::set_close_token(const SyntaxToken& token)
 
 TextLocation TypeParametersListSyntax::get_location() const
 {
-	return m_openToken.get_location();
+	return TextLocation(m_openToken, m_closeToken);
 }
 
 void TypeParametersListSyntax::accept(SyntaxVisitor& visitor) const

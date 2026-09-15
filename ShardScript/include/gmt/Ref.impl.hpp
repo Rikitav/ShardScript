@@ -11,6 +11,11 @@ namespace gmt
 	{ }
 
 	template<typename T>
+	inline Ref<T>::Ref(nullref_t) :
+		Ref()
+	{ }
+
+	template<typename T>
 	Ref<T>::Ref(
 		Arena& arena,
 		std::size_t offset

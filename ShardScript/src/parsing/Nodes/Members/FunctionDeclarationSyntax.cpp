@@ -40,10 +40,18 @@ void FunctionDeclarationSyntax::set_parameters_list(gmt::Ref<ParametersListSynta
 
 TextLocation FunctionDeclarationSyntax::get_location() const
 {
-	if (!get_identifier().is_missing())
-		return get_identifier().get_location();
+	TextLocation location = get_declare_token().get_location();
 
-	return get_declare_token().get_location();
+	if (!get_body().is_null())
+		return TextLocation(location, get_body().get()->get_location());
+
+	if (!get_semicolon().is_missing())
+		return TextLocation(location, get_semicolon().get_location());
+
+	if (!get_identifier().is_missing())
+		return TextLocation(location, get_identifier().get_location());
+
+	return location;
 }
 
 void FunctionDeclarationSyntax::accept(SyntaxVisitor& visitor) const

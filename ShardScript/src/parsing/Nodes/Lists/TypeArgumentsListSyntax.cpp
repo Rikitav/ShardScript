@@ -40,7 +40,7 @@ void TypeArgumentsListSyntax::set_close_token(const SyntaxToken& token)
 
 TextLocation TypeArgumentsListSyntax::get_location() const
 {
-	return m_openToken.get_location();
+	return TextLocation(m_openToken, m_closeToken);
 }
 
 void TypeArgumentsListSyntax::accept(SyntaxVisitor& visitor) const

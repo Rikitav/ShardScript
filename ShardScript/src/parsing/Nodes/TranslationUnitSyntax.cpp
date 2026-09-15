@@ -43,7 +43,22 @@ void shard::TranslationUnitSyntax::set_members(gmt::Span<gmt::Ref<MemberDeclarat
 
 TextLocation TranslationUnitSyntax::get_location() const
 {
-	return TextLocation(L"", 0, 0, 0);
+	TextLocation location;
+
+	if (!m_usings.empty())
+		location = TextLocation(location, m_usings.get().front().get()->get_location());
+
+	if (has_namespace())
+		location = TextLocation(location, m_namespace.get()->get_location());
+
+	if (!m_members.empty())
+	{
+		std::span<const gmt::Ref<MemberDeclarationSyntax>> members = m_members.get();
+		location = TextLocation(location, members.front().get()->get_location());
+		location = TextLocation(location, members.back().get()->get_location());
+	}
+
+	return location;
 }
 
 void TranslationUnitSyntax::accept(SyntaxVisitor& visitor) const

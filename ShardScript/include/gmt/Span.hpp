@@ -1,5 +1,7 @@
 #pragma once
 
+#include <gmt/NullRef.hpp>
+
 #include <cstdint>
 #include <span>
 #include <type_traits>
@@ -21,6 +23,7 @@ namespace gmt
 	public:
 		Span();
 		Span(Arena& arena, std::uint32_t offset, std::uint32_t count);
+		Span(nullref_t);
 
 		template<typename U> requires std::is_convertible_v<U*, T*>
 		Span(const Span<U>& other);

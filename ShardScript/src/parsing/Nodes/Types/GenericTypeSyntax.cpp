@@ -54,7 +54,12 @@ std::wstring GenericTypeSyntax::get_qualifier() const
 TextLocation GenericTypeSyntax::get_location() const
 {
 	if (!m_underlayingType.is_null())
+	{
+		if (!m_typeArguments.is_null())
+			return TextLocation(m_underlayingType.get()->get_location(), m_typeArguments.get()->get_close_token());
+
 		return m_underlayingType.get()->get_location();
+	}
 
 	return TextLocation();
 }

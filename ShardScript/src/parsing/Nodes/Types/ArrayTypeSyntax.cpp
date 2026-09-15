@@ -51,7 +51,7 @@ std::wstring ArrayTypeSyntax::get_qualifier() const
 TextLocation ArrayTypeSyntax::get_location() const
 {
 	if (!m_underlayingType.is_null())
-		return m_underlayingType.get()->get_location();
+		return TextLocation(m_underlayingType.get()->get_location(), m_closeBracketToken);
 
 	return m_openBracketToken.get_location();
 }

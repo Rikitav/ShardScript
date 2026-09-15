@@ -408,7 +408,7 @@ gmt::Ref<MemberDeclarationSyntax> SourceParser::read_member_declaration(SourcePr
 	{
 		SyntaxToken eofToken(TokenType::EndOfFile, L"", TextLocation());
 		m_diagnostics.report_error(eofToken, L"Expected member declaration");
-		return gmt::Ref<MemberDeclarationSyntax>();
+		return gmt::nullref;
 	}
 
 	SyntaxToken current = reader.current();
@@ -434,7 +434,7 @@ gmt::Ref<MemberDeclarationSyntax> SourceParser::read_member_declaration(SourcePr
 
 			// error recovery: skip the remaining tokens of this declaration
 			detail::synchronize_to_next_top_level(reader);
-			return gmt::Ref<MemberDeclarationSyntax>();
+			return gmt::nullref;
 		}
 	}
 
@@ -568,7 +568,7 @@ gmt::Ref<FunctionDeclarationSyntax> SourceParser::read_function_declaration(Sour
 gmt::Ref<TypeSyntax> SourceParser::read_type(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
 {
 	if (!reader.can_consume())
-		return gmt::Ref<TypeSyntax>();
+		return gmt::nullref;
 
 	gmt::Ref<TypeSyntax> base;
 	SyntaxToken current = reader.current();
@@ -593,7 +593,7 @@ gmt::Ref<TypeSyntax> SourceParser::read_type(SourceProvider& reader, gmt::Ref<Sy
 	else
 	{
 		m_diagnostics.report_error(current, L"Unexpected token in type syntax");
-		return gmt::Ref<TypeSyntax>();
+		return gmt::nullref;
 	}
 
 	// array and nullable suffixes
@@ -1094,7 +1094,7 @@ gmt::Ref<BodySyntax> SourceParser::read_body(SourceProvider& reader, gmt::Ref<Sy
 	{
 		SyntaxToken eofToken(TokenType::EndOfFile, L"", TextLocation());
 		m_diagnostics.report_error(eofToken, L"Expected method body");
-		return gmt::Ref<BodySyntax>();
+		return gmt::nullref;
 	}
 
 	TokenType type = reader.current().get_type();
@@ -1105,7 +1105,7 @@ gmt::Ref<BodySyntax> SourceParser::read_body(SourceProvider& reader, gmt::Ref<Sy
 		return read_arrow_clause(reader, parent);
 
 	m_diagnostics.report_error(reader.current(), L"Expected method body");
-	return gmt::Ref<BodySyntax>();
+	return gmt::nullref;
 }
 
 gmt::Ref<StatementsBlockSyntax> SourceParser::read_statements_block(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
@@ -1174,7 +1174,7 @@ gmt::Ref<ArrowClauseSyntax> SourceParser::read_arrow_clause(SourceProvider& read
 gmt::Ref<StatementSyntax> SourceParser::read_statement(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
 {
 	if (!reader.can_consume())
-		return gmt::Ref<StatementSyntax>();
+		return gmt::nullref;
 
 	// keyword statement kinds (loops, branchings, ...) are dispatched here
 
@@ -1220,7 +1220,7 @@ gmt::Ref<ExpressionSyntax> SourceParser::read_expression(SourceProvider& reader,
 	{
 		m_diagnostics.report_error(reader.current(), L"Expression is too deeply nested");
 		--m_expressionDepth;
-		return gmt::Ref<ExpressionSyntax>();
+		return gmt::nullref;
 	}
 
 	gmt::Ref<ExpressionSyntax> left = read_operand(reader, parent);
@@ -1266,7 +1266,7 @@ gmt::Ref<ExpressionSyntax> SourceParser::read_operand(SourceProvider& reader, gm
 	{
 		SyntaxToken eofToken(TokenType::EndOfFile, L"", TextLocation());
 		m_diagnostics.report_error(eofToken, L"Expected expression");
-		return gmt::Ref<ExpressionSyntax>();
+		return gmt::nullref;
 	}
 
 	SyntaxToken current = reader.current();
@@ -1369,7 +1369,7 @@ gmt::Ref<ExpressionSyntax> SourceParser::read_operand(SourceProvider& reader, gm
 		default:
 		{
 			m_diagnostics.report_error(current, L"Expected expression");
-			return gmt::Ref<ExpressionSyntax>();
+			return gmt::nullref;
 		}
 	}
 }
@@ -1398,7 +1398,7 @@ gmt::Ref<LiteralExpressionSyntax> SourceParser::read_literal_expression(SourcePr
 
 gmt::Ref<ExpressionSyntax> shard::SourceParser::read_linked_expression(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
 {
-	return gmt::Ref<ExpressionSyntax>();
+	return gmt::nullref;
 }
 
 gmt::Ref<AttributeSyntax> SourceParser::read_attribute(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
@@ -1453,7 +1453,7 @@ gmt::Ref<AttributeSyntax> SourceParser::read_attribute(SourceProvider& reader, g
 gmt::Ref<AttributesListSyntax> SourceParser::read_attributes_list(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
 {
 	if (!reader.can_consume() || reader.current().get_type() != TokenType::OpenSquare)
-		return gmt::Ref<AttributesListSyntax>();
+		return gmt::nullref;
 
 	gmt::Arena& arena = m_syntaxTree.get_arena();
 	auto syntax = arena.emplace<AttributesListSyntax>(parent);

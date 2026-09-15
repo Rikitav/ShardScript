@@ -40,6 +40,9 @@ void BinaryExpressionSyntax::set_right(gmt::Ref<ExpressionSyntax> right)
 
 TextLocation BinaryExpressionSyntax::get_location() const
 {
+	if (!m_left.is_null() && !m_right.is_null())
+		return TextLocation(m_left.get()->get_location(), m_right.get()->get_location());
+
 	if (!m_left.is_null())
 		return m_left.get()->get_location();
 

@@ -18,6 +18,9 @@ namespace shard
 	public:
 		TextLocation();
 		TextLocation(const SyntaxToken& left, const SyntaxToken& right);
+		TextLocation(const TextLocation& left, const TextLocation& right);
+		TextLocation(const TextLocation& left, const SyntaxToken& right);
+		TextLocation(const SyntaxToken& left, const TextLocation& right);
 		TextLocation(const std::wstring_view filename, std::int32_t line, std::int32_t offset, std::int32_t length);
 
 		inline std::int32_t get_line() const { return m_line; }

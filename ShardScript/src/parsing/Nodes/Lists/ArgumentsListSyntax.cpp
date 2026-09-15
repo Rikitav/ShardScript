@@ -66,7 +66,7 @@ void ArgumentsListSyntax::set_close_token(const SyntaxToken& token)
 
 TextLocation ArgumentsListSyntax::get_location() const
 {
-	return m_openToken.get_location();
+	return TextLocation(m_openToken, m_closeToken);
 }
 
 void ArgumentsListSyntax::accept(SyntaxVisitor& visitor) const

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <gmt/NullRef.hpp>
+
 #include <cstddef>
 #include <type_traits>
 
@@ -19,6 +21,7 @@ namespace gmt
 	public:
 		Ref();
 		Ref(Arena& arena, std::size_t offset);
+		Ref(nullref_t);
 
 		template<typename U> requires std::is_convertible_v<U*, T*>
 		Ref(const Ref<U>& other);
