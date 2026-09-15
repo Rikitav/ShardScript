@@ -38,6 +38,7 @@ namespace shard
 	SHARD_API bool is_member_declaration(shard::TokenType currentType, shard::TokenType peekType);
 
 	SHARD_API bool is_predefined_type(shard::TokenType type);
+	SHARD_API bool is_valid_generic_type_token(shard::TokenType type);
 	SHARD_API bool is_type(shard::TokenType type, shard::TokenType peekType);
 
 	SHARD_API bool is_keyword(shard::TokenType type);

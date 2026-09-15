@@ -132,6 +132,39 @@ void SyntaxVisitor::visit_literal_expression(const LiteralExpressionSyntax* node
 		return;
 }
 
+void SyntaxVisitor::visit_binary_expression(const BinaryExpressionSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (!node->get_left().is_null())
+		node->get_left().get()->accept(*this);
+
+	if (!node->get_right().is_null())
+		node->get_right().get()->accept(*this);
+}
+
+void SyntaxVisitor::visit_member_access_expression(const MemberAccessExpressionSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (!node->get_previous().is_null())
+		node->get_previous().get()->accept(*this);
+}
+
+void SyntaxVisitor::visit_invokation_expression(const InvokationExpressionSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (!node->get_previous().is_null())
+		node->get_previous().get()->accept(*this);
+
+	if (!node->get_arguments().is_null())
+		visit_arguments_list(node->get_arguments().get());
+}
+
 void SyntaxVisitor::visit_parameter(const ParameterSyntax* node)
 {
 	if (node == nullptr)
@@ -223,4 +256,49 @@ void SyntaxVisitor::visit_predefined_type(const PredefinedTypeSyntax* node)
 {
 	if (node == nullptr)
 		return;
+}
+
+void SyntaxVisitor::visit_identifier_name_type(const IdentifierNameTypeSyntax* node)
+{
+	if (node == nullptr)
+		return;
+}
+
+void SyntaxVisitor::visit_qualified_name_type(const QualifiedNameTypeSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (!node->get_left().is_null())
+		node->get_left().get()->accept(*this);
+}
+
+void SyntaxVisitor::visit_generic_type(const GenericTypeSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (!node->get_underlaying_type().is_null())
+		node->get_underlaying_type().get()->accept(*this);
+
+	if (!node->get_type_arguments().is_null())
+		visit_type_arguments_list(node->get_type_arguments().get());
+}
+
+void SyntaxVisitor::visit_array_type(const ArrayTypeSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (!node->get_underlaying_type().is_null())
+		node->get_underlaying_type().get()->accept(*this);
+}
+
+void SyntaxVisitor::visit_nullable_type(const NullableTypeSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (!node->get_underlaying_type().is_null())
+		node->get_underlaying_type().get()->accept(*this);
 }

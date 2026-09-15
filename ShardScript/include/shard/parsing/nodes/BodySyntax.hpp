@@ -11,6 +11,6 @@ namespace shard
 	{
 	public:
 		BodySyntax(const SyntaxKind kind, gmt::Ref<SyntaxNode> parent);
-		virtual ~BodySyntax();
+		virtual ~BodySyntax() = default;
 	};
 }

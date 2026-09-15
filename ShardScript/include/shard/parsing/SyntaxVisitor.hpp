@@ -32,8 +32,15 @@
 #include <shard/parsing/nodes/statements/ExpressionStatementSyntax.hpp>
 
 #include <shard/parsing/nodes/expressions/LiteralExpressionsSyntax.hpp>
+#include <shard/parsing/nodes/expressions/BinaryExpressionSyntax.hpp>
+#include <shard/parsing/nodes/expressions/LinkedExpressionSyntax.hpp>
 
 #include <shard/parsing/nodes/types/PredefinedTypeSyntax.hpp>
+#include <shard/parsing/nodes/types/IdentifierNameTypeSyntax.hpp>
+#include <shard/parsing/nodes/types/QualifiedNameTypeSyntax.hpp>
+#include <shard/parsing/nodes/types/GenericTypeSyntax.hpp>
+#include <shard/parsing/nodes/types/ArrayTypeSyntax.hpp>
+#include <shard/parsing/nodes/types/NullableTypeSyntax.hpp>
 
 /*
 #include <shard/parsing/nodes/ExpressionSyntax.hpp>
@@ -157,6 +164,9 @@ namespace shard
 
         virtual void visit_expression_statement(const ExpressionStatementSyntax* node);
         virtual void visit_literal_expression(const LiteralExpressionSyntax* node);
+        virtual void visit_binary_expression(const BinaryExpressionSyntax* node);
+        virtual void visit_member_access_expression(const MemberAccessExpressionSyntax* node);
+        virtual void visit_invokation_expression(const InvokationExpressionSyntax* node);
 
         virtual void visit_parameter(const ParameterSyntax* node);
         virtual void visit_parameters_list(const ParametersListSyntax* node);
@@ -170,6 +180,11 @@ namespace shard
         virtual void visit_where_clauses_list(const WhereClausesListSyntax* node);
 
         virtual void visit_predefined_type(const PredefinedTypeSyntax* node);
+        virtual void visit_identifier_name_type(const IdentifierNameTypeSyntax* node);
+        virtual void visit_qualified_name_type(const QualifiedNameTypeSyntax* node);
+        virtual void visit_generic_type(const GenericTypeSyntax* node);
+        virtual void visit_array_type(const ArrayTypeSyntax* node);
+        virtual void visit_nullable_type(const NullableTypeSyntax* node);
 
         /*
         virtual void VisitTypeDeclaration(MemberDeclarationSyntax* node);

@@ -662,7 +662,16 @@ bool LexicalAnalyzer::is_punctuation(std::wstring& word, TokenType& type)
 					word = L":=";
 					return true;
 				}
+
+				if (m_peekSymbol == ':')
+				{
+					advance(m_peekSymbol);
+					type = TokenType::NamespaceQualifier;
+					word = L"::";
+					return true;
+				}
 			}
+
 			type = TokenType::Colon;
 			word = L":";
 			return true;
