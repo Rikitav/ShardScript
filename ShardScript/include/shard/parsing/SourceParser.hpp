@@ -36,8 +36,15 @@
 #include <shard/parsing/nodes/statements/ExpressionStatementSyntax.hpp>
 
 #include <shard/parsing/nodes/expressions/LiteralExpressionsSyntax.hpp>
+#include <shard/parsing/nodes/expressions/BinaryExpressionSyntax.hpp>
+#include <shard/parsing/nodes/expressions/LinkedExpressionSyntax.hpp>
 
 #include <shard/parsing/nodes/types/PredefinedTypeSyntax.hpp>
+#include <shard/parsing/nodes/types/IdentifierNameTypeSyntax.hpp>
+#include <shard/parsing/nodes/types/QualifiedNameTypeSyntax.hpp>
+#include <shard/parsing/nodes/types/GenericTypeSyntax.hpp>
+#include <shard/parsing/nodes/types/ArrayTypeSyntax.hpp>
+#include <shard/parsing/nodes/types/NullableTypeSyntax.hpp>
 
 #include <shard/parsing/nodes/Directives/UsingDirectiveSyntax.hpp>
 #include <shard/parsing/nodes/Directives/NamespaceDirectiveSyntax.hpp>
@@ -55,10 +62,12 @@ namespace shard
 	{
 		static constexpr int max_loop_iterations = 10000;
 		static constexpr int max_block_depth = 256;
+		static constexpr int max_expression_depth = 256;
 
 		SyntaxTree& m_syntaxTree;
 		DiagnosticsContext& m_diagnostics;
 		int m_blockDepth = 0;
+		int m_expressionDepth = 0;
 
 	public:
 		SourceParser(SyntaxTree& syntaxTree, DiagnosticsContext& diagnostics);
@@ -72,6 +81,7 @@ namespace shard
 		bool matches(SourceProvider& reader, std::initializer_list<TokenType> types);
 		bool try_match(SourceProvider& reader, std::initializer_list<TokenType> types, const wchar_t* errorMessage, int maxSkips = 5);
 		bool try_match_identifier(SourceProvider& reader, int maxSkips = 5);
+		bool scan_generic_type_arguments(SourceProvider& reader);
 
 		// Translation unit level
 		gmt::Ref<TranslationUnitSyntax> read_compilation_unit(SourceProvider& reader);
@@ -85,6 +95,8 @@ namespace shard
 
 		// Types
 		gmt::Ref<TypeSyntax> read_type(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
+		gmt::Ref<TypeSyntax> read_identifier_name_type(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
+		gmt::Ref<GenericTypeSyntax> read_generic_type(SourceProvider& reader, gmt::Ref<SyntaxNode> parent, gmt::Ref<TypeSyntax> underlayingType);
 
 		// Parameters & Lists
 		gmt::Ref<ParameterSyntax> read_parameter(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
@@ -109,8 +121,12 @@ namespace shard
 		gmt::Ref<StatementSyntax> read_statement(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 		gmt::Ref<ExpressionStatementSyntax> read_expression_statement(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 
-		gmt::Ref<ExpressionSyntax> read_expression(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
+		gmt::Ref<ExpressionSyntax> read_expression(SourceProvider& reader, gmt::Ref<SyntaxNode> parent, int parentPrecedence = 0);
+		gmt::Ref<ExpressionSyntax> read_operand(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
+
 		gmt::Ref<LiteralExpressionSyntax> read_literal_expression(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
+		gmt::Ref<ExpressionSyntax> read_linked_expression(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
+		gmt::Ref<InvokationExpressionSyntax> read_invokation_expression(SourceProvider& reader, gmt::Ref<SyntaxNode> parent, gmt::Ref<ExpressionSyntax> previous, const SyntaxToken& identifier, const SyntaxToken& delimeter);
 
 		gmt::Ref<AttributeSyntax> read_attribute(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 		gmt::Ref<AttributesListSyntax> read_attributes_list(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);

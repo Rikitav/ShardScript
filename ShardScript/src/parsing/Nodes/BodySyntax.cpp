@@ -6,5 +6,3 @@ using namespace shard;
 
 BodySyntax::BodySyntax(const SyntaxKind kind, gmt::Ref<SyntaxNode> parent)
 	: SyntaxNode(kind, parent) { }
-
-BodySyntax::~BodySyntax() { }

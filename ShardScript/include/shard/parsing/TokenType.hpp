@@ -78,6 +78,7 @@ namespace shard
 
 		// Punctuation
 		Colon,				  // :
+		NamespaceQualifier,   // ::
 		Semicolon,			  // ;
 		OpenBrace,			  // {
 		CloseBrace,  		  // }

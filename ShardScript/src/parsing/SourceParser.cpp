@@ -141,6 +141,32 @@ namespace detail
 		// try to synchronize to an identifier
 		return detail::try_synchronize(reader, { TokenType::Identifier }, maxSkips);
 	}
+
+	static bool can_follow_type(TokenType type) noexcept
+	{
+		switch (type)
+		{
+			case TokenType::Delimeter:			// member access
+			case TokenType::OpenCurl:			// invocation
+			case TokenType::CloseCurl:
+			case TokenType::CloseSquare:
+			case TokenType::CloseBrace:
+			case TokenType::Colon:
+			case TokenType::Semicolon:
+			case TokenType::Comma:
+			case TokenType::Question:
+			case TokenType::EqualsOperator:
+			case TokenType::NotEqualsOperator:
+			case TokenType::OrOperator:
+			case TokenType::AndOperator:
+			case TokenType::IsOperator:
+			case TokenType::AsOperator:
+				return true;
+
+			default:
+				return false;
+		}
+	}
 }
 
 SourceParser::SourceParser(SyntaxTree& syntaxTree, DiagnosticsContext& diagnostics) :
@@ -443,9 +469,7 @@ gmt::Ref<ClassDeclarationSyntax> SourceParser::read_class_declaration(SourceProv
 	{
 		syntax->set_base_type_colon(reader.current());
 		reader.consume();
-
-		if (reader.can_consume() && is_predefined_type(reader.current().get_type()))
-			syntax->set_base_types(read_base_types(reader, syntax));
+		syntax->set_base_types(read_base_types(reader, syntax));
 	}
 
 	if (try_match(reader, { TokenType::OpenBrace, TokenType::Semicolon }, L"Expected class body '{' or semicolon ';'", 5))
@@ -546,17 +570,151 @@ gmt::Ref<TypeSyntax> SourceParser::read_type(SourceProvider& reader, gmt::Ref<Sy
 	if (!reader.can_consume())
 		return gmt::Ref<TypeSyntax>();
 
+	gmt::Ref<TypeSyntax> base;
 	SyntaxToken current = reader.current();
+
 	if (is_predefined_type(current.get_type()))
 	{
-		auto syntax = m_syntaxTree.get_arena().emplace<PredefinedTypeSyntax>(parent);
-		syntax->set_type_token(current);
+		gmt::Arena& arena = m_syntaxTree.get_arena();
+		auto predefined = arena.emplace<PredefinedTypeSyntax>(parent);
+		predefined->set_type_token(current);
+
 		reader.consume();
-		return syntax;
+		base = predefined;
+	}
+	else if (current.get_type() == TokenType::Identifier)
+	{
+		base = read_identifier_name_type(reader, parent);
+
+		// type context: '<' after a name is always a generic argument list
+		if (reader.can_consume() && reader.current().get_type() == TokenType::LessOperator)
+			base = read_generic_type(reader, parent, base);
+	}
+	else
+	{
+		m_diagnostics.report_error(current, L"Unexpected token in type syntax");
+		return gmt::Ref<TypeSyntax>();
 	}
 
-	m_diagnostics.report_error(current, L"Unexpected token in type syntax");
-	return gmt::Ref<TypeSyntax>();
+	// array and nullable suffixes
+	while (reader.can_consume())
+	{
+		gmt::Arena& arena = m_syntaxTree.get_arena();
+
+		if (reader.current().get_type() == TokenType::OpenSquare && reader.peek().get_type() == TokenType::CloseSquare)
+		{
+			auto arrayType = arena.emplace<ArrayTypeSyntax>(parent);
+			arrayType->set_underlaying_type(base);
+			arrayType->set_open_bracket(reader.current());
+
+			reader.consume();
+			arrayType->set_close_bracket(reader.current());
+
+			reader.consume();
+			base = arrayType;
+		}
+		else if (reader.current().get_type() == TokenType::Question)
+		{
+			auto nullableType = arena.emplace<NullableTypeSyntax>(parent);
+			nullableType->set_underlaying_type(base);
+			nullableType->set_question_token(reader.current());
+
+			reader.consume();
+			base = nullableType;
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	return base;
+}
+
+gmt::Ref<TypeSyntax> SourceParser::read_identifier_name_type(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
+{
+	gmt::Arena& arena = m_syntaxTree.get_arena();
+
+	// current is expected to be the identifier token
+	auto name = arena.emplace<IdentifierNameTypeSyntax>(parent);
+	name->set_identifier(reader.current());
+	reader.consume();
+
+	gmt::Ref<TypeSyntax> identifier = name;
+
+	// namespace-qualified name: Foo::Bar::Baz
+	while (reader.can_consume() && reader.current().get_type() == TokenType::NamespaceQualifier)
+	{
+		auto qualified = arena.emplace<QualifiedNameTypeSyntax>(parent);
+		qualified->set_qualifier_token(reader.current());
+		qualified->set_left(identifier);
+		reader.consume();
+
+		if (detail::try_match_identifier(reader, m_diagnostics, 3))
+		{
+			qualified->set_identifier(reader.current());
+			reader.consume();
+		}
+		else
+		{
+			qualified->set_identifier(SyntaxToken(TokenType::Identifier, L"", TextLocation(), true));
+		}
+
+		identifier = qualified;
+	}
+
+	return identifier;
+}
+
+gmt::Ref<GenericTypeSyntax> SourceParser::read_generic_type(SourceProvider& reader, gmt::Ref<SyntaxNode> parent, gmt::Ref<TypeSyntax> underlayingType)
+{
+	gmt::Arena& arena = m_syntaxTree.get_arena();
+	auto generic = arena.emplace<GenericTypeSyntax>(parent);
+	
+	generic->set_underlaying_type(underlayingType);
+	generic->set_type_arguments(read_type_arguments_list(reader, generic));
+	return generic;
+}
+
+bool SourceParser::scan_generic_type_arguments(SourceProvider& reader)
+{
+	// current token is the opening '<'; peek(offset - 1) is the token right after it
+	int depth = 1;
+	int offset = 1;
+
+	while (offset < max_loop_iterations)
+	{
+		SyntaxToken token = reader.peek(offset - 1);
+		TokenType type = token.get_type();
+
+		if (type == TokenType::LessOperator)
+		{
+			++depth;
+			++offset;
+			continue;
+		}
+		
+		if (type == TokenType::GreaterOperator)
+		{
+			--depth;
+			if (depth == 0)
+				return detail::can_follow_type(reader.peek(offset).get_type());
+
+			++offset;
+			continue;
+		}
+		
+		if (is_valid_generic_type_token(type) || is_predefined_type(type))
+		{
+			// valid inside a type argument list
+			++offset;
+			continue;
+		}
+
+		return false;
+	}
+
+	return false;
 }
 
 gmt::Ref<ParameterSyntax> SourceParser::read_parameter(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
@@ -856,18 +1014,21 @@ gmt::Ref<BaseTypesListSyntax> SourceParser::read_base_types(SourceProvider& read
 	auto syntax = arena.emplace<BaseTypesListSyntax>(parent);
 
 	detail::inline_ref_vector<TypeSyntax, 4> baseTypes{};
-	while (reader.can_consume() && is_predefined_type(reader.current().get_type()))
+	while (reader.can_consume())
 	{
+		TokenType currentType = reader.current().get_type();
+		if (currentType != TokenType::Identifier && !is_predefined_type(currentType))
+			break;
+
 		gmt::Ref<TypeSyntax> baseType = read_type(reader, syntax);
 		if (baseType.is_null())
 			break;
 
 		baseTypes.push_back(baseType);
-
-		if (reader.can_consume() && reader.current().get_type() == TokenType::Comma)
-			reader.consume();
-		else
+		if (reader.can_consume() && reader.current().get_type() != TokenType::Comma)
 			break;
+
+		reader.consume();
 	}
 
 	syntax->set_types(baseTypes.commit_array(arena));
@@ -893,18 +1054,21 @@ gmt::Ref<WhereClauseSyntax> SourceParser::read_where_clause(SourceProvider& read
 	syntax->set_colon(expect(reader, TokenType::Colon, L"Expected ':' after type parameter"));
 
 	detail::inline_ref_vector<TypeSyntax, 4> constraintTypes{};
-	while (reader.can_consume() && is_predefined_type(reader.current().get_type()))
+	while (reader.can_consume())
 	{
+		TokenType currentType = reader.current().get_type();
+		if (currentType != TokenType::Identifier && !is_predefined_type(currentType))
+			break;
+
 		gmt::Ref<TypeSyntax> constraintType = read_type(reader, syntax);
 		if (constraintType.is_null())
 			break;
 
 		constraintTypes.push_back(constraintType);
-
-		if (reader.can_consume() && reader.current().get_type() == TokenType::Comma)
-			reader.consume();
-		else
+		if (reader.can_consume() && reader.current().get_type() != TokenType::Comma)
 			break;
+
+		reader.consume();
 	}
 
 	syntax->set_constraint_types(constraintTypes.commit_array(arena));
@@ -1047,12 +1211,66 @@ gmt::Ref<ExpressionStatementSyntax> SourceParser::read_expression_statement(Sour
 	return syntax;
 }
 
-gmt::Ref<ExpressionSyntax> SourceParser::read_expression(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
+gmt::Ref<ExpressionSyntax> SourceParser::read_expression(SourceProvider& reader, gmt::Ref<SyntaxNode> parent, int parentPrecedence)
 {
-	if (!reader.can_consume())
-		return gmt::Ref<ExpressionSyntax>();
+	gmt::Arena& arena = m_syntaxTree.get_arena();
 
-	switch (reader.current().get_type())
+	++m_expressionDepth;
+	if (m_expressionDepth > max_expression_depth)
+	{
+		m_diagnostics.report_error(reader.current(), L"Expression is too deeply nested");
+		--m_expressionDepth;
+		return gmt::Ref<ExpressionSyntax>();
+	}
+
+	gmt::Ref<ExpressionSyntax> left = read_operand(reader, parent);
+	while (!left.is_null() && reader.can_consume())
+	{
+		SyntaxToken operation = reader.current();
+		TokenType operationType = operation.get_type();
+
+		// type-testing operators take a type on the right - they get dedicated parsing later
+		if (operationType == TokenType::IsOperator || operationType == TokenType::AsOperator)
+			break;
+
+		if (!is_binary_operator(operationType))
+			break;
+
+		int precedence = get_operator_precendence(operationType);
+		if (precedence <= parentPrecedence)
+			break;
+
+		reader.consume();
+
+		gmt::Ref<ExpressionSyntax> right = read_expression(reader, parent, precedence);
+		if (right.is_null())
+			break;
+
+		auto binary = arena.emplace<BinaryExpressionSyntax>(parent);
+
+		binary->set_left(left);
+		binary->set_operator_token(operation);
+		binary->set_right(right);
+		left = binary;
+	}
+
+	--m_expressionDepth;
+	return left;
+}
+
+gmt::Ref<ExpressionSyntax> SourceParser::read_operand(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
+{
+	gmt::Arena& arena = m_syntaxTree.get_arena();
+
+	if (!reader.can_consume())
+	{
+		SyntaxToken eofToken(TokenType::EndOfFile, L"", TextLocation());
+		m_diagnostics.report_error(eofToken, L"Expected expression");
+		return gmt::Ref<ExpressionSyntax>();
+	}
+
+	SyntaxToken current = reader.current();
+	switch (current.get_type())
 	{
 		case TokenType::NullLiteral:
 		case TokenType::CharLiteral:
@@ -1063,10 +1281,108 @@ gmt::Ref<ExpressionSyntax> SourceParser::read_expression(SourceProvider& reader,
 		case TokenType::ByteLiteral:
 			return read_literal_expression(reader, parent);
 
+		case TokenType::Identifier:
+		{
+			// identifier-led operand: name, namespace-qualified name, generic
+			// instantiation, then member access / invocation chain
+			gmt::Ref<TypeSyntax> name = read_identifier_name_type(reader, parent);
+
+			// in expression context '<' is generic only when the scan confirms it
+			if (reader.can_consume() && reader.current().get_type() == TokenType::LessOperator && scan_generic_type_arguments(reader))
+				name = read_generic_type(reader, parent, name);
+
+			gmt::Ref<ExpressionSyntax> expression = name;
+
+			while (reader.can_consume())
+			{
+				switch (reader.current().get_type())
+				{
+					// member access '.'
+					case TokenType::Delimeter:
+					{
+
+					}
+				}
+
+				if (reader.current().get_type() == TokenType::Delimeter) 
+				{
+					SyntaxToken delimeter = reader.current();
+					reader.consume();
+
+					if (!reader.can_consume())
+					{
+						m_diagnostics.report_error(delimeter, L"Expected member name after '.'");
+						break;
+					}
+
+					SyntaxToken memberName = reader.current();
+					TokenType memberNameType = memberName.get_type();
+					if (memberNameType != TokenType::Identifier && memberNameType != TokenType::GetKeyword && memberNameType != TokenType::SetKeyword)
+					{
+						m_diagnostics.report_error(memberName, L"Expected member name after '.'");
+						break;
+					}
+
+					reader.consume();
+
+					if (reader.can_consume() && reader.current().get_type() == TokenType::OpenCurl)
+					{
+						// 'a.b(...)' - the invocation absorbs the member name
+						expression = read_invokation_expression(reader, parent, expression, memberName, delimeter);
+					}
+					else
+					{
+						auto memberAccess = arena.emplace<MemberAccessExpressionSyntax>(parent);
+						memberAccess->set_previous(expression);
+						memberAccess->set_delimeter_token(delimeter);
+						memberAccess->set_identifier(memberName);
+						expression = memberAccess;
+					}
+				}
+				else if (reader.current().get_type() == TokenType::OpenCurl) // invocation 'f(...)' on the leading name
+				{
+					SyntaxToken identifier(TokenType::Identifier, L"", TextLocation(), true);
+					gmt::Ref<ExpressionSyntax> receiver = expression;
+
+					ExpressionSyntax* raw = expression.get();
+					if (raw->get_kind() == SyntaxKind::IdentifierNameType)
+					{
+						identifier = static_cast<IdentifierNameTypeSyntax*>(raw)->get_identifier();
+						receiver = gmt::Ref<ExpressionSyntax>();
+					}
+					else if (raw->get_kind() == SyntaxKind::QualifiedNameType)
+					{
+						identifier = static_cast<QualifiedNameTypeSyntax*>(raw)->get_identifier();
+					}
+
+					expression = read_invokation_expression(reader, parent, receiver, identifier, SyntaxToken());
+				}
+				else
+				{
+					break;
+				}
+			}
+
+			return expression;
+		}
+
 		default:
-			m_diagnostics.report_error(reader.current(), L"Expected expression");
+		{
+			m_diagnostics.report_error(current, L"Expected expression");
 			return gmt::Ref<ExpressionSyntax>();
+		}
 	}
+}
+
+gmt::Ref<InvokationExpressionSyntax> SourceParser::read_invokation_expression(SourceProvider& reader, gmt::Ref<SyntaxNode> parent, gmt::Ref<ExpressionSyntax> previous, const SyntaxToken& identifier, const SyntaxToken& delimeter)
+{
+	gmt::Arena& arena = m_syntaxTree.get_arena();
+	auto invocation = arena.emplace<InvokationExpressionSyntax>(parent);
+	invocation->set_previous(previous);
+	invocation->set_identifier(identifier);
+	invocation->set_delimeter_token(delimeter);
+	invocation->set_arguments(read_arguments_list(reader, invocation));
+	return invocation;
 }
 
 gmt::Ref<LiteralExpressionSyntax> SourceParser::read_literal_expression(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
@@ -1078,6 +1394,11 @@ gmt::Ref<LiteralExpressionSyntax> SourceParser::read_literal_expression(SourcePr
 	reader.consume();
 
 	return syntax;
+}
+
+gmt::Ref<ExpressionSyntax> shard::SourceParser::read_linked_expression(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
+{
+	return gmt::Ref<ExpressionSyntax>();
 }
 
 gmt::Ref<AttributeSyntax> SourceParser::read_attribute(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)

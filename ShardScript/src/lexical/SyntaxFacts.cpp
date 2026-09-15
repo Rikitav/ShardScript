@@ -321,6 +321,23 @@ bool shard::is_predefined_type(shard::TokenType type)
 			return false;
 	}
 }
+bool shard::is_valid_generic_type_token(shard::TokenType type)
+{
+	switch (type)
+	{
+		case TokenType::Identifier:
+		case TokenType::Comma:
+		case TokenType::NamespaceQualifier:
+		case TokenType::OpenSquare:
+		case TokenType::CloseSquare:
+		case TokenType::Question:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
 
 bool shard::is_type(shard::TokenType type, shard::TokenType peekType)
 {
