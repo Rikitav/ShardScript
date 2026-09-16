@@ -6,7 +6,9 @@
 using namespace shard;
 
 UnaryExpressionSyntax::UnaryExpressionSyntax(gmt::Ref<SyntaxNode> parent)
-	: ExpressionSyntax(SyntaxKind::UnaryExpression, parent) { }
+	: ExpressionSyntax(SyntaxKind::UnaryExpression, parent),
+	m_isPostfix(false)
+{ }
 
 SyntaxToken UnaryExpressionSyntax::get_operator_token() const
 {
@@ -18,6 +20,11 @@ gmt::Ref<const ExpressionSyntax> UnaryExpressionSyntax::get_operand() const
 	return m_operand;
 }
 
+bool UnaryExpressionSyntax::get_is_postfix() const
+{
+	return m_isPostfix;
+}
+
 void UnaryExpressionSyntax::set_operator_token(const SyntaxToken& token)
 {
 	m_operatorToken = token;
@@ -26,6 +33,11 @@ void UnaryExpressionSyntax::set_operator_token(const SyntaxToken& token)
 void UnaryExpressionSyntax::set_operand(gmt::Ref<ExpressionSyntax> operand)
 {
 	m_operand = operand;
+}
+
+void UnaryExpressionSyntax::set_is_postfix(bool isPostfix)
+{
+	m_isPostfix = isPostfix;
 }
 
 TextLocation UnaryExpressionSyntax::get_location() const

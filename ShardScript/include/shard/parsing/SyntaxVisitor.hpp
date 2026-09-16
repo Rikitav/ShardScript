@@ -37,6 +37,11 @@
 #include <shard/parsing/nodes/expressions/InvokationExpressionSyntax.hpp>
 #include <shard/parsing/nodes/expressions/IndexatorExpressionSyntax.hpp>
 #include <shard/parsing/nodes/expressions/UnaryExpressionSyntax.hpp>
+#include <shard/parsing/nodes/expressions/IsExpressionSyntax.hpp>
+#include <shard/parsing/nodes/expressions/CastExpressionSyntax.hpp>
+#include <shard/parsing/nodes/expressions/IfExpressionSyntax.hpp>
+#include <shard/parsing/nodes/expressions/AwaitExpressionSyntax.hpp>
+#include <shard/parsing/nodes/expressions/RangeExpressionSyntax.hpp>
 
 #include <shard/parsing/nodes/types/PredefinedTypeSyntax.hpp>
 #include <shard/parsing/nodes/types/IdentifierNameTypeSyntax.hpp>
@@ -172,6 +177,11 @@ namespace shard
         virtual void visit_member_access_expression(const MemberAccessExpressionSyntax* node);
         virtual void visit_invokation_expression(const InvokationExpressionSyntax* node);
         virtual void visit_indexator_expression(const IndexatorExpressionSyntax* node);
+        virtual void visit_is_expression(const IsExpressionSyntax* node);
+        virtual void visit_cast_expression(const CastExpressionSyntax* node);
+        virtual void visit_if_expression(const IfExpressionSyntax* node);
+        virtual void visit_await_expression(const AwaitExpressionSyntax* node);
+        virtual void visit_range_expression(const RangeExpressionSyntax* node);
 
         virtual void visit_parameter(const ParameterSyntax* node);
         virtual void visit_parameters_list(const ParametersListSyntax* node);
