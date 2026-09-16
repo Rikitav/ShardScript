@@ -41,14 +41,16 @@ namespace shard
 		DecrementOperator,   // --
 
 		// Binary bitwise operators
-		OrOperator,				// |
-		AndOperator,			// &
+		OrOperator,				// or
+		AndOperator,			// and
+		PipeOperator,			// |
+		AmpersandOperator,		// &
 		RightShiftOperator,		// >>
 		LeftShiftOperator,		// <<
 
 		// Assigning binary bitwise operators
-		OrAssignOperator,			// |=
-		AndAssignOperator,			// &=
+		//OrAssignOperator,			// |=
+		//AndAssignOperator,		// &=
 		//RightShiftAssignOperator,	// >>=
 		//LeftShiftAssignOperator,	// <<=
 

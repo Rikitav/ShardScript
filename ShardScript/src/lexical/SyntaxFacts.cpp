@@ -99,8 +99,6 @@ int shard::get_operator_precendence(TokenType type)
 		case TokenType::DivAssignOperator:
 		case TokenType::ModAssignOperator:
 		case TokenType::PowAssignOperator:
-		case TokenType::OrAssignOperator:
-		case TokenType::AndAssignOperator:
 			return 1;
 
 		default:
@@ -556,8 +554,6 @@ std::wstring shard::get_operator_method_name(shard::TokenType type)
 
 		case TokenType::OrOperator: return L"op_OrOperator";
 		case TokenType::AndOperator: return L"op_AndOperator";
-		case TokenType::OrAssignOperator: return L"op_OrAssignOperator";
-		case TokenType::AndAssignOperator: return L"op_AndAssignOperator";
 		case TokenType::RightShiftOperator: return L"op_RightShiftOperator";
 		case TokenType::LeftShiftOperator: return L"op_LeftShiftOperator";
 
@@ -602,8 +598,6 @@ shard::TokenType shard::get_operator_type(const std::wstring& name)
 
 	if (name == L"OrOperator") return TokenType::OrOperator;
 	if (name == L"AndOperator") return TokenType::AndOperator;
-	if (name == L"OrAssignOperator") return TokenType::OrAssignOperator;
-	if (name == L"AndAssignOperator") return TokenType::AndAssignOperator;
 	if (name == L"RightShiftOperator") return TokenType::RightShiftOperator;
 	if (name == L"LeftShiftOperator") return TokenType::LeftShiftOperator;
 

@@ -246,6 +246,42 @@ void SyntaxVisitor::visit_range_expression(const RangeExpressionSyntax* node)
 		node->get_right().as_ptr()->accept(*this);
 }
 
+void SyntaxVisitor::visit_collection_expression(const CollectionExpressionSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	for (const gmt::Ref<ExpressionSyntax>& value : node->get_values().as_span())
+		value.as_ptr()->accept(*this);
+}
+
+void SyntaxVisitor::visit_object_creation_expression(const ObjectExpressionSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (!node->get_type().is_null())
+		node->get_type().as_ptr()->accept(*this);
+
+	if (!node->get_arguments().is_null())
+		visit_arguments_list(node->get_arguments().as_ptr());
+
+	if (!node->get_array_size().is_null())
+		node->get_array_size().as_ptr()->accept(*this);
+}
+
+void SyntaxVisitor::visit_lambda_expression(const LambdaExpressionSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (!node->get_parameters().is_null())
+		visit_parameters_list(node->get_parameters().as_ptr());
+
+	if (!node->get_body().is_null())
+		node->get_body().as_ptr()->accept(*this);
+}
+
 void SyntaxVisitor::visit_parameter(const ParameterSyntax* node)
 {
 	if (node == nullptr)
