@@ -14,6 +14,7 @@ namespace shard
 	{
 		SyntaxToken m_operatorToken;
 		gmt::Ref<ExpressionSyntax> m_operand;
+		bool m_isPostfix;
 
 	public:
 		UnaryExpressionSyntax(gmt::Ref<SyntaxNode> parent);
@@ -21,9 +22,11 @@ namespace shard
 
 		SyntaxToken get_operator_token() const;
 		gmt::Ref<const ExpressionSyntax> get_operand() const;
+		bool get_is_postfix() const;
 
 		void set_operator_token(const SyntaxToken& token);
 		void set_operand(gmt::Ref<ExpressionSyntax> operand);
+		void set_is_postfix(bool isPostfix);
 
 		TextLocation get_location() const override;
 		void accept(SyntaxVisitor& visitor) const override;

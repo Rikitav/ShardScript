@@ -186,6 +186,66 @@ void SyntaxVisitor::visit_indexator_expression(const IndexatorExpressionSyntax* 
 		visit_arguments_list(node->get_arguments().as_ptr());
 }
 
+void SyntaxVisitor::visit_is_expression(const IsExpressionSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (!node->get_expression().is_null())
+		node->get_expression().as_ptr()->accept(*this);
+
+	if (!node->get_target_type().is_null())
+		node->get_target_type().as_ptr()->accept(*this);
+}
+
+void SyntaxVisitor::visit_cast_expression(const CastExpressionSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (!node->get_expression().is_null())
+		node->get_expression().as_ptr()->accept(*this);
+
+	if (!node->get_target_type().is_null())
+		node->get_target_type().as_ptr()->accept(*this);
+}
+
+void SyntaxVisitor::visit_if_expression(const IfExpressionSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (!node->get_condition().is_null())
+		node->get_condition().as_ptr()->accept(*this);
+
+	if (!node->get_then_expression().is_null())
+		node->get_then_expression().as_ptr()->accept(*this);
+
+	if (!node->get_else_expression().is_null())
+		node->get_else_expression().as_ptr()->accept(*this);
+}
+
+void SyntaxVisitor::visit_await_expression(const AwaitExpressionSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (!node->get_expression().is_null())
+		node->get_expression().as_ptr()->accept(*this);
+}
+
+void SyntaxVisitor::visit_range_expression(const RangeExpressionSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (!node->get_left().is_null())
+		node->get_left().as_ptr()->accept(*this);
+
+	if (!node->get_right().is_null())
+		node->get_right().as_ptr()->accept(*this);
+}
+
 void SyntaxVisitor::visit_parameter(const ParameterSyntax* node)
 {
 	if (node == nullptr)

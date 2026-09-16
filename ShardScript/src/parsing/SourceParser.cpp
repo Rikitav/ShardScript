@@ -1229,9 +1229,38 @@ gmt::Ref<ExpressionSyntax> SourceParser::read_expression(SourceProvider& reader,
 		SyntaxToken operation = reader.current();
 		TokenType operationType = operation.get_type();
 
-		// type-testing operators take a type on the right - they get dedicated parsing later
+		// type-testing operators take a type on the right
 		if (operationType == TokenType::IsOperator || operationType == TokenType::AsOperator)
-			break;
+		{
+			int precedence = get_operator_precendence(operationType);
+			if (precedence <= parentPrecedence)
+				break;
+
+			reader.consume();
+
+			gmt::Ref<TypeSyntax> targetType = read_type(reader, parent);
+			if (targetType.is_null())
+				break;
+
+			if (operationType == TokenType::AsOperator)
+			{
+				auto cast = arena.emplace<CastExpressionSyntax>(parent);
+				cast->set_operator_token(operation);
+				cast->set_expression(left);
+				cast->set_target_type(targetType);
+				left = cast;
+			}
+			else
+			{
+				auto isExpression = arena.emplace<IsExpressionSyntax>(parent);
+				isExpression->set_operator_token(operation);
+				isExpression->set_expression(left);
+				isExpression->set_target_type(targetType);
+				left = isExpression;
+			}
+
+			continue;
+		}
 
 		if (!is_binary_operator(operationType))
 			break;
@@ -1246,8 +1275,18 @@ gmt::Ref<ExpressionSyntax> SourceParser::read_expression(SourceProvider& reader,
 		if (right.is_null())
 			break;
 
-		auto binary = arena.emplace<BinaryExpressionSyntax>(parent);
+		if (operationType == TokenType::RangeOperator || operationType == TokenType::RangeInclusiveOperator)
+		{
+			auto range = arena.emplace<RangeExpressionSyntax>(parent);
+			range->set_operator_token(operation);
+			range->set_left(left);
+			range->set_right(right);
 
+			left = range;
+			continue;
+		}
+
+		auto binary = arena.emplace<BinaryExpressionSyntax>(parent);
 		binary->set_left(left);
 		binary->set_operator_token(operation);
 		binary->set_right(right);
@@ -1291,6 +1330,12 @@ gmt::Ref<ExpressionSyntax> SourceParser::read_operand(SourceProvider& reader, gm
 			expect(reader, TokenType::CloseCurl, L"Expected ')'");
 			return inner;
 		}
+
+		case TokenType::AwaitKeyword:
+			return read_await_expression(reader, parent);
+
+		case TokenType::IfKeyword: // ternary if-expression 'if cond a else b'
+			return read_if_expression(reader, parent);
 
 		case TokenType::Identifier:
 		{
@@ -1343,6 +1388,41 @@ gmt::Ref<UnaryExpressionSyntax> SourceParser::read_unary_expression(SourceProvid
 
 	// operand binds the tightest: '-a * b' is '(-a) * b', '-a[i]' is '-(a[i])'
 	syntax->set_operand(read_operand(reader, parent));
+	return syntax;
+}
+
+gmt::Ref<AwaitExpressionSyntax> SourceParser::read_await_expression(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
+{
+	gmt::Arena& arena = m_syntaxTree.get_arena();
+	auto syntax = arena.emplace<AwaitExpressionSyntax>(parent);
+
+	syntax->set_await_keyword(reader.current());
+	reader.consume();
+
+	// operand binds the tightest: 'await x + y' is '(await x) + y'
+	syntax->set_expression(read_operand(reader, parent));
+	return syntax;
+}
+
+gmt::Ref<IfExpressionSyntax> SourceParser::read_if_expression(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
+{
+	gmt::Arena& arena = m_syntaxTree.get_arena();
+	auto syntax = arena.emplace<IfExpressionSyntax>(parent);
+
+	syntax->set_if_keyword(reader.current());
+	reader.consume(); // consume 'if'
+
+	syntax->set_condition(read_expression(reader, syntax, 0));
+	syntax->set_then_expression(read_expression(reader, syntax, 0));
+
+	if (reader.can_consume() && reader.current().get_type() == TokenType::ElseKeyword)
+	{
+		syntax->set_else_keyword(reader.current());
+		reader.consume();
+
+		syntax->set_else_expression(read_expression(reader, syntax, 0));
+	}
+
 	return syntax;
 }
 
@@ -1430,6 +1510,7 @@ gmt::Ref<ExpressionSyntax> SourceParser::read_linked_expression(SourceProvider& 
 				auto unary = arena.emplace<UnaryExpressionSyntax>(parent);
 				unary->set_operand(expression);
 				unary->set_operator_token(reader.current());
+				unary->set_is_postfix(true);
 
 				expression = unary;
 				reader.consume();
