@@ -1179,7 +1179,9 @@ gmt::Ref<StatementSyntax> SourceParser::read_statement(SourceProvider& reader, g
 	if (!reader.can_consume())
 		return gmt::nullref;
 
-	// keyword statement kinds (loops, branchings, ...) are dispatched here
+	// keyword statement kinds are dispatched here
+	if (reader.current().get_type() == TokenType::DeferKeyword)
+		return read_defer(reader, parent);
 
 	if (reader.current().get_type() == TokenType::Semicolon)
 	{
@@ -1245,6 +1247,61 @@ gmt::Ref<VariableStatementSyntax> SourceParser::read_variable_statement(SourcePr
 	}
 
 	syntax->set_semicolon(expect(reader, TokenType::Semicolon, L"Expected ';'"));
+	return syntax;
+}
+
+gmt::Ref<StatementSyntax> SourceParser::read_defer(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
+{
+	// current is 'defer'; classify the deferred body by looking past the keyword
+	TokenType nextType = reader.peek().get_type();
+
+	if (nextType == TokenType::OpenBrace)
+		return read_defer_block(reader, parent);
+
+	if (is_identifier_like(nextType))
+	{
+		TokenType afterName = reader.peek(1).get_type();
+		if (afterName == TokenType::Colon || afterName == TokenType::DeclareAssignOperator)
+			return read_defer_variable(reader, parent);
+	}
+
+	return read_defer_statement(reader, parent);
+}
+
+gmt::Ref<DeferStatementSyntax> SourceParser::read_defer_statement(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
+{
+	gmt::Arena& arena = m_syntaxTree.get_arena();
+	auto syntax = arena.emplace<DeferStatementSyntax>(parent);
+
+	// defer expression;
+	syntax->set_defer_keyword(expect(reader, TokenType::DeferKeyword, L"Expected 'defer' keyword"));
+	syntax->set_expression(read_expression(reader, syntax, 0));
+	syntax->set_semicolon(expect(reader, TokenType::Semicolon, L"Expected ';'"));
+
+	return syntax;
+}
+
+gmt::Ref<DeferBlockSyntax> SourceParser::read_defer_block(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
+{
+	gmt::Arena& arena = m_syntaxTree.get_arena();
+	auto syntax = arena.emplace<DeferBlockSyntax>(parent);
+
+	// defer { statement1; statement2; }
+	syntax->set_defer_keyword(expect(reader, TokenType::DeferKeyword, L"Expected 'defer' keyword"));
+	syntax->set_block(read_statements_block(reader, syntax));
+
+	return syntax;
+}
+
+gmt::Ref<DeferVariableSyntax> SourceParser::read_defer_variable(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
+{
+	gmt::Arena& arena = m_syntaxTree.get_arena();
+	auto syntax = arena.emplace<DeferVariableSyntax>(parent);
+
+	// defer disposable: DisposableService = GetDisposable(); / defer disposable := GetDisposable();
+	syntax->set_defer_keyword(expect(reader, TokenType::DeferKeyword, L"Expected 'defer' keyword"));
+	syntax->set_variable(read_variable_statement(reader, syntax));
+
 	return syntax;
 }
 
