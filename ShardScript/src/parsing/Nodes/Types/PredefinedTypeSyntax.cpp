@@ -20,7 +20,7 @@ void PredefinedTypeSyntax::set_type_token(const SyntaxToken& token)
 
 std::wstring PredefinedTypeSyntax::get_qualifier() const
 {
-	return m_typeToken.get_lexeme();
+	return std::wstring(m_typeToken.get_lexeme());
 }
 
 TextLocation PredefinedTypeSyntax::get_location() const

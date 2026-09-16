@@ -20,7 +20,7 @@ void IdentifierNameTypeSyntax::set_identifier(const SyntaxToken& token)
 
 std::wstring IdentifierNameTypeSyntax::get_qualifier() const
 {
-	return m_identifierToken.get_lexeme();
+	return std::wstring(m_identifierToken.get_lexeme());
 }
 
 TextLocation IdentifierNameTypeSyntax::get_location() const

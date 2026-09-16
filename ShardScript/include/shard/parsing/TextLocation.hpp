@@ -26,6 +26,6 @@ namespace shard
 		inline std::int32_t get_line() const { return m_line; }
 		inline std::int32_t get_offset() const { return m_offset; }
 		inline std::int32_t get_length() const { return m_length; }
-		inline string_t get_filename() const { return m_fileName.empty() ? L"" : m_fileName.data(); }
+		inline std::wstring_view get_filename() const { return m_fileName; }
 	};
 }

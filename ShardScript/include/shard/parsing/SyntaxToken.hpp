@@ -4,6 +4,8 @@
 #include <shard/parsing/TokenType.hpp>
 #include <shard/parsing/TextLocation.hpp>
 
+#include <gmt/Interner.hpp>
+
 #include <string_view>
 #include <optional>
 
@@ -15,7 +17,7 @@ namespace shard
 		bool m_isMissing;
 		TokenType m_type;
 		TextLocation m_location;
-		std::wstring_view m_lexeme;
+		rs::stringintern::StringReference m_lexeme;
 
 	public:
 		inline SyntaxToken() :
@@ -25,9 +27,19 @@ namespace shard
 			m_lexeme()
 		{ }
 
+		// interns the lexeme into the global interner
 		inline SyntaxToken(
 			const TokenType type,
 			const std::wstring_view lexeme,
+			const TextLocation& location,
+			const bool isMissing = false
+		) :
+			SyntaxToken(type, gmt::intern(lexeme), location, isMissing)
+		{ }
+
+		inline SyntaxToken(
+			const TokenType type,
+			const rs::stringintern::StringReference lexeme,
 			const TextLocation& location,
 			const bool isMissing = false
 		) :
@@ -40,6 +52,8 @@ namespace shard
 		inline bool is_missing() const { return m_isMissing; }
 		inline TokenType get_type() const { return m_type; }
 		inline const TextLocation& get_location() const { return m_location; }
-		inline string_t get_lexeme() const { return m_lexeme.empty() ? L"" : m_lexeme.data(); }
+
+		// zero-copy view into interned storage; empty for missing tokens
+		inline std::wstring_view get_lexeme() const { return gmt::resolve(m_lexeme); }
 	};
 }
