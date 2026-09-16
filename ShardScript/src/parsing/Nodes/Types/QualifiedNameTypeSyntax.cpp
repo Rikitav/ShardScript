@@ -45,13 +45,13 @@ std::wstring QualifiedNameTypeSyntax::get_qualifier() const
 	if (m_left.is_null())
 		return std::wstring(m_identifierToken.get_lexeme());
 
-	return std::format(L"{}::{}", m_left.get()->get_qualifier(), m_identifierToken.get_lexeme());
+	return std::format(L"{}::{}", m_left.as_ptr()->get_qualifier(), m_identifierToken.get_lexeme());
 }
 
 TextLocation QualifiedNameTypeSyntax::get_location() const
 {
 	if (!m_left.is_null())
-		return TextLocation(m_left.get()->get_location(), m_identifierToken);
+		return TextLocation(m_left.as_ptr()->get_location(), m_identifierToken);
 
 	return m_identifierToken.get_location();
 }

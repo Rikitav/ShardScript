@@ -41,7 +41,7 @@ void MemberAccessExpressionSyntax::set_identifier(const SyntaxToken& token)
 TextLocation MemberAccessExpressionSyntax::get_location() const
 {
 	if (!m_previous.is_null())
-		return TextLocation(m_previous.get()->get_location(), m_identifierToken);
+		return TextLocation(m_previous.as_ptr()->get_location(), m_identifierToken);
 
 	return m_identifierToken.get_location();
 }

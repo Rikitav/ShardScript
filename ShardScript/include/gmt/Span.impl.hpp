@@ -62,7 +62,7 @@ namespace gmt
 	}
 
 	template<typename T>
-	inline std::span<T> Span<T>::get()
+	inline std::span<T> Span<T>::as_span()
 	{
 		if (m_count == 0)
 			return std::span<T>();
@@ -71,7 +71,7 @@ namespace gmt
 	}
 
 	template<typename T>
-	inline std::span<const T> Span<T>::get() const
+	inline std::span<const T> Span<T>::as_span() const
 	{
 		if (m_count == 0)
 			return std::span<const T>();

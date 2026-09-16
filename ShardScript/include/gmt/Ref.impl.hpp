@@ -37,13 +37,13 @@ namespace gmt
 	template<typename T>
 	inline T& Ref<T>::operator*() const
 	{
-		return *get();
+		return *as_ptr();
 	}
 
 	template<typename T>
 	inline T* Ref<T>::operator->() const
 	{
-		return get();
+		return as_ptr();
 	}
 
 	template<typename T>
@@ -65,7 +65,7 @@ namespace gmt
 	}
 
 	template<typename T>
-	inline T* Ref<T>::get() const
+	inline T* Ref<T>::as_ptr() const
 	{
 		return reinterpret_cast<T*>(m_arena->get_buffer() + m_offset);
 	}

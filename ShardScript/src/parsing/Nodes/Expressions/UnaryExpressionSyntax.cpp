@@ -31,7 +31,7 @@ void UnaryExpressionSyntax::set_operand(gmt::Ref<ExpressionSyntax> operand)
 TextLocation UnaryExpressionSyntax::get_location() const
 {
 	if (!m_operand.is_null())
-		return TextLocation(m_operatorToken, m_operand.get()->get_location());
+		return TextLocation(m_operatorToken, m_operand.as_ptr()->get_location());
 
 	return m_operatorToken.get_location();
 }

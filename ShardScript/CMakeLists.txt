@@ -79,7 +79,8 @@ if(ENABLE_ASAN)
 
         if(WIN32)
             set_property(TARGET ${PROJECT_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
-            target_link_options(${PROJECT_NAME} PRIVATE 
+            target_link_options(${PROJECT_NAME} PRIVATE
+                "-fuse-ld=link"
                 "/wholearchive:clang_rt.asan_dynamic-x86_64.lib"
                 "/wholearchive:clang_rt.asan_dynamic_runtime_thunk-x86_64.lib"
             )

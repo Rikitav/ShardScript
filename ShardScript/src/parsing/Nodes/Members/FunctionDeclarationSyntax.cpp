@@ -43,7 +43,7 @@ TextLocation FunctionDeclarationSyntax::get_location() const
 	TextLocation location = get_declare_token().get_location();
 
 	if (!get_body().is_null())
-		return TextLocation(location, get_body().get()->get_location());
+		return TextLocation(location, get_body().as_ptr()->get_location());
 
 	if (!get_semicolon().is_missing())
 		return TextLocation(location, get_semicolon().get_location());

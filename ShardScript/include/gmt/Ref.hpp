@@ -37,6 +37,6 @@ namespace gmt
 		std::size_t get_offset() const;
 		Arena& get_arena() const;
 
-		T* get() const;
+		T* as_ptr() const;
 	};
 }

@@ -52,8 +52,8 @@ TextLocation WhereClauseSyntax::get_location() const
 {
 	if (!m_constraintTypes.empty())
 	{
-		std::span<const gmt::Ref<TypeSyntax>> constraints = m_constraintTypes.get();
-		return TextLocation(m_whereKeywordToken, constraints.back().get()->get_location());
+		std::span<const gmt::Ref<TypeSyntax>> constraints = m_constraintTypes.as_span();
+		return TextLocation(m_whereKeywordToken, constraints.back().as_ptr()->get_location());
 	}
 
 	return TextLocation(m_whereKeywordToken, m_identifierToken);
@@ -81,8 +81,8 @@ TextLocation WhereClausesListSyntax::get_location() const
 {
 	if (!m_clauses.empty())
 	{
-		std::span<const gmt::Ref<WhereClauseSyntax>> clauses = m_clauses.get();
-		return TextLocation(clauses.front().get()->get_location(), clauses.back().get()->get_location());
+		std::span<const gmt::Ref<WhereClauseSyntax>> clauses = m_clauses.as_span();
+		return TextLocation(clauses.front().as_ptr()->get_location(), clauses.back().as_ptr()->get_location());
 	}
 
 	return TextLocation();

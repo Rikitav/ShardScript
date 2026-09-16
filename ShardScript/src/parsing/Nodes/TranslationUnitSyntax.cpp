@@ -46,16 +46,16 @@ TextLocation TranslationUnitSyntax::get_location() const
 	TextLocation location;
 
 	if (!m_usings.empty())
-		location = TextLocation(location, m_usings.get().front().get()->get_location());
+		location = TextLocation(location, m_usings.as_span().front().as_ptr()->get_location());
 
 	if (has_namespace())
-		location = TextLocation(location, m_namespace.get()->get_location());
+		location = TextLocation(location, m_namespace.as_ptr()->get_location());
 
 	if (!m_members.empty())
 	{
-		std::span<const gmt::Ref<MemberDeclarationSyntax>> members = m_members.get();
-		location = TextLocation(location, members.front().get()->get_location());
-		location = TextLocation(location, members.back().get()->get_location());
+		std::span<const gmt::Ref<MemberDeclarationSyntax>> members = m_members.as_span();
+		location = TextLocation(location, members.front().as_ptr()->get_location());
+		location = TextLocation(location, members.back().as_ptr()->get_location());
 	}
 
 	return location;

@@ -7,9 +7,6 @@ project(ShardScript VERSION 0.7.0 LANGUAGES C CXX)
 include(CMake/GlobalSettingsInclude.cmake OPTIONAL)
 
 option(ENABLE_ASAN "Enable AddressSanitizer" OFF)
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(ENABLE_ASAN ON CACHE BOOL "Enable AddressSanitizer" FORCE)
-endif()
 
 if(MSVC)
     add_compile_options(/EHsc /W4)

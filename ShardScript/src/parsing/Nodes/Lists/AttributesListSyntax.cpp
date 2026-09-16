@@ -115,8 +115,8 @@ TextLocation AttributesListSyntax::get_location() const
 {
 	if (!m_attributes.empty())
 	{
-		std::span<const gmt::Ref<AttributeSyntax>> attributes = m_attributes.get();
-		return TextLocation(attributes.front().get()->get_location(), attributes.back().get()->get_location());
+		std::span<const gmt::Ref<AttributeSyntax>> attributes = m_attributes.as_span();
+		return TextLocation(attributes.front().as_ptr()->get_location(), attributes.back().as_ptr()->get_location());
 	}
 
 	return m_openToken.get_location();

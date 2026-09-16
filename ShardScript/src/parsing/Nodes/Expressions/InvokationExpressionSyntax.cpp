@@ -53,13 +53,13 @@ TextLocation InvokationExpressionSyntax::get_location() const
 	if (!m_previous.is_null())
 	{
 		if (!m_arguments.is_null())
-			return TextLocation(m_previous.get()->get_location(), m_arguments.get()->get_close_token());
+			return TextLocation(m_previous.as_ptr()->get_location(), m_arguments.as_ptr()->get_close_token());
 
-		return TextLocation(m_previous.get()->get_location(), m_identifierToken);
+		return TextLocation(m_previous.as_ptr()->get_location(), m_identifierToken);
 	}
 
 	if (!m_arguments.is_null())
-		return TextLocation(m_identifierToken, m_arguments.get()->get_location());
+		return TextLocation(m_identifierToken, m_arguments.as_ptr()->get_location());
 
 	return m_identifierToken.get_location();
 }
