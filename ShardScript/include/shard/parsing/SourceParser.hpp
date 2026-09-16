@@ -37,7 +37,10 @@
 
 #include <shard/parsing/nodes/expressions/LiteralExpressionsSyntax.hpp>
 #include <shard/parsing/nodes/expressions/BinaryExpressionSyntax.hpp>
-#include <shard/parsing/nodes/expressions/LinkedExpressionSyntax.hpp>
+#include <shard/parsing/nodes/expressions/MemberAccessExpressionSyntax.hpp>
+#include <shard/parsing/nodes/expressions/InvokationExpressionSyntax.hpp>
+#include <shard/parsing/nodes/expressions/IndexatorExpressionSyntax.hpp>
+#include <shard/parsing/nodes/expressions/UnaryExpressionSyntax.hpp>
 
 #include <shard/parsing/nodes/types/PredefinedTypeSyntax.hpp>
 #include <shard/parsing/nodes/types/IdentifierNameTypeSyntax.hpp>
@@ -125,7 +128,9 @@ namespace shard
 		gmt::Ref<ExpressionSyntax> read_operand(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 
 		gmt::Ref<LiteralExpressionSyntax> read_literal_expression(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
-		gmt::Ref<ExpressionSyntax> read_linked_expression(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
+		gmt::Ref<UnaryExpressionSyntax> read_unary_expression(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
+		gmt::Ref<ExpressionSyntax> read_linked_expression(SourceProvider& reader, gmt::Ref<SyntaxNode> parent, gmt::Ref<ExpressionSyntax> previous);
+		gmt::Ref<ArgumentsListSyntax> read_indexer_arguments_list(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 		gmt::Ref<InvokationExpressionSyntax> read_invokation_expression(SourceProvider& reader, gmt::Ref<SyntaxNode> parent, gmt::Ref<ExpressionSyntax> previous, const SyntaxToken& identifier, const SyntaxToken& delimeter);
 
 		gmt::Ref<AttributeSyntax> read_attribute(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);

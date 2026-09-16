@@ -1260,8 +1260,6 @@ gmt::Ref<ExpressionSyntax> SourceParser::read_expression(SourceProvider& reader,
 
 gmt::Ref<ExpressionSyntax> SourceParser::read_operand(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
 {
-	gmt::Arena& arena = m_syntaxTree.get_arena();
-
 	if (!reader.can_consume())
 	{
 		SyntaxToken eofToken(TokenType::EndOfFile, L"", TextLocation());
@@ -1270,6 +1268,11 @@ gmt::Ref<ExpressionSyntax> SourceParser::read_operand(SourceProvider& reader, gm
 	}
 
 	SyntaxToken current = reader.current();
+
+	// prefix unary operators bind the tightest: '-a * b' is '(-a) * b'
+	if (is_left_unary_operator(current.get_type()))
+		return read_unary_expression(reader, parent);
+
 	switch (current.get_type())
 	{
 		case TokenType::NullLiteral:
@@ -1281,96 +1284,29 @@ gmt::Ref<ExpressionSyntax> SourceParser::read_operand(SourceProvider& reader, gm
 		case TokenType::ByteLiteral:
 			return read_literal_expression(reader, parent);
 
+		case TokenType::OpenCurl: // parenthesized grouping
+		{
+			reader.consume();
+			gmt::Ref<ExpressionSyntax> inner = read_expression(reader, parent, 0);
+			expect(reader, TokenType::CloseCurl, L"Expected ')'");
+			return inner;
+		}
+
 		case TokenType::Identifier:
 		{
-			// identifier-led operand: name, namespace-qualified name, generic
-			// instantiation, then member access / invocation chain
+			// identifier-led operand: name, namespace-qualified name, generic instantiation, then the member access / invocation chain
 			gmt::Ref<TypeSyntax> name = read_identifier_name_type(reader, parent);
 
 			// in expression context '<' is generic only when the scan confirms it
 			if (reader.can_consume() && reader.current().get_type() == TokenType::LessOperator && scan_generic_type_arguments(reader))
 				name = read_generic_type(reader, parent, name);
 
-			gmt::Ref<ExpressionSyntax> expression = name;
-
-			while (reader.can_consume())
-			{
-				switch (reader.current().get_type())
-				{
-					// member access '.'
-					case TokenType::Delimeter:
-					{
-
-					}
-				}
-
-				if (reader.current().get_type() == TokenType::Delimeter) 
-				{
-					SyntaxToken delimeter = reader.current();
-					reader.consume();
-
-					if (!reader.can_consume())
-					{
-						m_diagnostics.report_error(delimeter, L"Expected member name after '.'");
-						break;
-					}
-
-					SyntaxToken memberName = reader.current();
-					TokenType memberNameType = memberName.get_type();
-					if (memberNameType != TokenType::Identifier && memberNameType != TokenType::GetKeyword && memberNameType != TokenType::SetKeyword)
-					{
-						m_diagnostics.report_error(memberName, L"Expected member name after '.'");
-						break;
-					}
-
-					reader.consume();
-
-					if (reader.can_consume() && reader.current().get_type() == TokenType::OpenCurl)
-					{
-						// 'a.b(...)' - the invocation absorbs the member name
-						expression = read_invokation_expression(reader, parent, expression, memberName, delimeter);
-					}
-					else
-					{
-						auto memberAccess = arena.emplace<MemberAccessExpressionSyntax>(parent);
-						memberAccess->set_previous(expression);
-						memberAccess->set_delimeter_token(delimeter);
-						memberAccess->set_identifier(memberName);
-						expression = memberAccess;
-					}
-				}
-				else if (reader.current().get_type() == TokenType::OpenCurl) // invocation 'f(...)' on the leading name
-				{
-					SyntaxToken identifier(TokenType::Identifier, L"", TextLocation(), true);
-					gmt::Ref<ExpressionSyntax> receiver = expression;
-
-					ExpressionSyntax* raw = expression.get();
-					if (raw->get_kind() == SyntaxKind::IdentifierNameType)
-					{
-						identifier = static_cast<IdentifierNameTypeSyntax*>(raw)->get_identifier();
-						receiver = gmt::Ref<ExpressionSyntax>();
-					}
-					else if (raw->get_kind() == SyntaxKind::QualifiedNameType)
-					{
-						identifier = static_cast<QualifiedNameTypeSyntax*>(raw)->get_identifier();
-					}
-
-					expression = read_invokation_expression(reader, parent, receiver, identifier, SyntaxToken());
-				}
-				else
-				{
-					break;
-				}
-			}
-
-			return expression;
+			return read_linked_expression(reader, parent, name);
 		}
 
 		default:
-		{
 			m_diagnostics.report_error(current, L"Expected expression");
 			return gmt::nullref;
-		}
 	}
 }
 
@@ -1378,6 +1314,7 @@ gmt::Ref<InvokationExpressionSyntax> SourceParser::read_invokation_expression(So
 {
 	gmt::Arena& arena = m_syntaxTree.get_arena();
 	auto invocation = arena.emplace<InvokationExpressionSyntax>(parent);
+
 	invocation->set_previous(previous);
 	invocation->set_identifier(identifier);
 	invocation->set_delimeter_token(delimeter);
@@ -1396,9 +1333,154 @@ gmt::Ref<LiteralExpressionSyntax> SourceParser::read_literal_expression(SourcePr
 	return syntax;
 }
 
-gmt::Ref<ExpressionSyntax> shard::SourceParser::read_linked_expression(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
+gmt::Ref<UnaryExpressionSyntax> SourceParser::read_unary_expression(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
 {
-	return gmt::nullref;
+	gmt::Arena& arena = m_syntaxTree.get_arena();
+	auto syntax = arena.emplace<UnaryExpressionSyntax>(parent);
+
+	syntax->set_operator_token(reader.current());
+	reader.consume();
+
+	// operand binds the tightest: '-a * b' is '(-a) * b', '-a[i]' is '-(a[i])'
+	syntax->set_operand(read_operand(reader, parent));
+	return syntax;
+}
+
+gmt::Ref<ExpressionSyntax> SourceParser::read_linked_expression(SourceProvider& reader, gmt::Ref<SyntaxNode> parent, gmt::Ref<ExpressionSyntax> previous)
+{
+	gmt::Arena& arena = m_syntaxTree.get_arena();
+	gmt::Ref<ExpressionSyntax> expression = previous;
+
+	while (reader.can_consume())
+	{
+		switch (reader.current().get_type())
+		{
+			case TokenType::Delimeter: // member access '.'
+			{
+				SyntaxToken delimeter = reader.current();
+				reader.consume();
+
+				if (!reader.can_consume())
+				{
+					m_diagnostics.report_error(delimeter, L"Expected member name after '.'");
+					return expression;
+				}
+
+				SyntaxToken memberName = reader.current();
+				TokenType memberNameType = memberName.get_type();
+				if (memberNameType != TokenType::Identifier && memberNameType != TokenType::GetKeyword && memberNameType != TokenType::SetKeyword)
+				{
+					m_diagnostics.report_error(memberName, L"Expected member name after '.'");
+					return expression;
+				}
+
+				reader.consume();
+
+				if (reader.can_consume() && reader.current().get_type() == TokenType::OpenCurl)
+				{
+					// 'a.b(...)' - the invocation absorbs the member name
+					expression = read_invokation_expression(reader, parent, expression, memberName, delimeter);
+				}
+				else
+				{
+					auto memberAccess = arena.emplace<MemberAccessExpressionSyntax>(parent);
+					memberAccess->set_previous(expression);
+					memberAccess->set_delimeter_token(delimeter);
+					memberAccess->set_identifier(memberName);
+					expression = memberAccess;
+				}
+
+				break;
+			}
+
+			case TokenType::OpenCurl: // invocation 'f(...)' or on a call result 'g()(...)'
+			{
+				SyntaxToken identifier(TokenType::Identifier, L"", TextLocation(), true);
+				gmt::Ref<ExpressionSyntax> receiver = expression;
+
+				ExpressionSyntax* raw = expression.get();
+				if (raw->get_kind() == SyntaxKind::IdentifierNameType)
+				{
+					identifier = static_cast<IdentifierNameTypeSyntax*>(raw)->get_identifier();
+					receiver = gmt::nullref;
+				}
+				else if (raw->get_kind() == SyntaxKind::QualifiedNameType)
+				{
+					identifier = static_cast<QualifiedNameTypeSyntax*>(raw)->get_identifier();
+				}
+
+				expression = read_invokation_expression(reader, parent, receiver, identifier, SyntaxToken());
+				break;
+			}
+
+			case TokenType::OpenSquare: // indexer access 'a[i]'
+			{
+				auto indexator = arena.emplace<IndexatorExpressionSyntax>(parent);
+				indexator->set_previous(expression);
+				indexator->set_delimeter_token(reader.current());
+				indexator->set_arguments(read_indexer_arguments_list(reader, indexator));
+				
+				expression = indexator;
+				break;
+			}
+
+			case TokenType::IncrementOperator:
+			case TokenType::DecrementOperator: // postfix 'a++' / 'a--'
+			{
+				auto unary = arena.emplace<UnaryExpressionSyntax>(parent);
+				unary->set_operand(expression);
+				unary->set_operator_token(reader.current());
+
+				expression = unary;
+				reader.consume();
+				break;
+			}
+
+			default:
+				return expression;
+		}
+	}
+
+	return expression;
+}
+
+gmt::Ref<ArgumentsListSyntax> SourceParser::read_indexer_arguments_list(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
+{
+	gmt::Arena& arena = m_syntaxTree.get_arena();
+	auto syntax = arena.emplace<ArgumentsListSyntax>(parent);
+	syntax->set_open_token(expect(reader, TokenType::OpenSquare, L"Expected '[' token"));
+
+	detail::inline_ref_vector<ArgumentSyntax, 4> arguments{};
+
+	if (reader.can_consume() && reader.current().get_type() == TokenType::CloseSquare)
+	{
+		syntax->set_close_token(reader.current());
+		reader.consume();
+	}
+	else
+	{
+		while (reader.can_consume())
+		{
+			gmt::Ref<ArgumentSyntax> argument = read_argument(reader, syntax);
+			if (!argument.is_null())
+				arguments.push_back(argument);
+
+			if (!try_match(reader, { TokenType::Comma, TokenType::CloseSquare }, L"Expected ',' or ']'", 3))
+				break;
+
+			SyntaxToken separatorToken = reader.current();
+			reader.consume();
+
+			if (separatorToken.get_type() == TokenType::CloseSquare)
+			{
+				syntax->set_close_token(separatorToken);
+				break;
+			}
+		}
+	}
+
+	syntax->set_arguments(arguments.commit_array(arena));
+	return syntax;
 }
 
 gmt::Ref<AttributeSyntax> SourceParser::read_attribute(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
@@ -1470,13 +1552,13 @@ static std::pair<int, uint32_t> get_modifier_meta(TokenType type) noexcept
 {
 	switch (type)
 	{
-	case TokenType::PublicKeyword:    return { 1, 1u << 0 };
-	case TokenType::PrivateKeyword:   return { 1, 1u << 1 };
-	case TokenType::ProtectedKeyword: return { 1, 1u << 2 };
-	case TokenType::InternalKeyword:  return { 1, 1u << 3 };
-	case TokenType::StaticKeyword:    return { 2, 1u << 4 };
-	case TokenType::AsyncKeyword:     return { 3, 1u << 5 };
-	default:                          return { 0, 0 };
+		case TokenType::PublicKeyword:    return { 1, 1u << 0 };
+		case TokenType::PrivateKeyword:   return { 1, 1u << 1 };
+		case TokenType::ProtectedKeyword: return { 1, 1u << 2 };
+		case TokenType::InternalKeyword:  return { 1, 1u << 3 };
+		case TokenType::StaticKeyword:    return { 2, 1u << 4 };
+		case TokenType::AsyncKeyword:     return { 3, 1u << 5 };
+		default:                          return { 0, 0 };
 	}
 };
 
