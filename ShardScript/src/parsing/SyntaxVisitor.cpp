@@ -153,6 +153,27 @@ void SyntaxVisitor::visit_defer_variable(const DeferVariableSyntax* node)
 		visit_variable_statement(node->get_variable().as_ptr());
 }
 
+void SyntaxVisitor::visit_return_statement(const ReturnStatementSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (!node->get_expression().is_null())
+		node->get_expression().as_ptr()->accept(*this);
+}
+
+void SyntaxVisitor::visit_break_statement(const BreakStatementSyntax* node)
+{
+	if (node == nullptr)
+		return;
+}
+
+void SyntaxVisitor::visit_continue_statement(const ContinueStatementSyntax* node)
+{
+	if (node == nullptr)
+		return;
+}
+
 void SyntaxVisitor::visit_variable_statement(const VariableStatementSyntax* node)
 {
 	if (node == nullptr)

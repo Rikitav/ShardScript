@@ -1183,6 +1183,15 @@ gmt::Ref<StatementSyntax> SourceParser::read_statement(SourceProvider& reader, g
 	if (reader.current().get_type() == TokenType::DeferKeyword)
 		return read_defer(reader, parent);
 
+	if (reader.current().get_type() == TokenType::ReturnKeyword)
+		return read_return_statement(reader, parent);
+
+	if (reader.current().get_type() == TokenType::BreakKeyword)
+		return read_break_statement(reader, parent);
+
+	if (reader.current().get_type() == TokenType::ContinueKeyword)
+		return read_continue_statement(reader, parent);
+
 	if (reader.current().get_type() == TokenType::Semicolon)
 	{
 		// empty statement
@@ -1305,6 +1314,57 @@ gmt::Ref<DeferVariableSyntax> SourceParser::read_defer_variable(SourceProvider& 
 	return syntax;
 }
 
+gmt::Ref<ReturnStatementSyntax> SourceParser::read_return_statement(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
+{
+	gmt::Arena& arena = m_syntaxTree.get_arena();
+	auto syntax = arena.emplace<ReturnStatementSyntax>(parent);
+
+	// return expr; / return;
+	syntax->set_return_keyword(expect(reader, TokenType::ReturnKeyword, L"Expected 'return' keyword"));
+
+	if (reader.can_consume() && reader.current().get_type() != TokenType::Semicolon)
+		syntax->set_expression(read_expression(reader, syntax, 0));
+
+	syntax->set_semicolon(expect(reader, TokenType::Semicolon, L"Expected ';'"));
+	return syntax;
+}
+
+gmt::Ref<BreakStatementSyntax> SourceParser::read_break_statement(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
+{
+	gmt::Arena& arena = m_syntaxTree.get_arena();
+	auto syntax = arena.emplace<BreakStatementSyntax>(parent);
+
+	// break; / break tag;
+	syntax->set_break_keyword(expect(reader, TokenType::BreakKeyword, L"Expected 'break' keyword"));
+
+	if (reader.can_consume() && is_identifier_like(reader.current().get_type()))
+	{
+		syntax->set_tag(reader.current());
+		reader.consume();
+	}
+
+	syntax->set_semicolon(expect(reader, TokenType::Semicolon, L"Expected ';'"));
+	return syntax;
+}
+
+gmt::Ref<ContinueStatementSyntax> SourceParser::read_continue_statement(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
+{
+	gmt::Arena& arena = m_syntaxTree.get_arena();
+	auto syntax = arena.emplace<ContinueStatementSyntax>(parent);
+
+	// continue; / continue tag;
+	syntax->set_continue_keyword(expect(reader, TokenType::ContinueKeyword, L"Expected 'continue' keyword"));
+
+	if (reader.can_consume() && is_identifier_like(reader.current().get_type()))
+	{
+		syntax->set_tag(reader.current());
+		reader.consume();
+	}
+
+	syntax->set_semicolon(expect(reader, TokenType::Semicolon, L"Expected ';'"));
+	return syntax;
+}
+
 gmt::Ref<ExpressionStatementSyntax> SourceParser::read_expression_statement(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
 {
 	gmt::Arena& arena = m_syntaxTree.get_arena();
@@ -1372,6 +1432,23 @@ gmt::Ref<ExpressionSyntax> SourceParser::read_expression(SourceProvider& reader,
 				left = isExpression;
 			}
 
+			continue;
+		}
+
+		// assignment operators bind the loosest and are right-associative
+		if (is_operator(operationType) && get_operator_precendence(operationType) == 1)
+		{
+			reader.consume();
+
+			gmt::Ref<ExpressionSyntax> right = read_expression(reader, parent, 0);
+			if (right.is_null())
+				break;
+
+			auto assignment = arena.emplace<BinaryExpressionSyntax>(parent);
+			assignment->set_left(left);
+			assignment->set_operator_token(operation);
+			assignment->set_right(right);
+			left = assignment;
 			continue;
 		}
 
