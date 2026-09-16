@@ -34,6 +34,7 @@
 #include <shard/parsing/nodes/members/FunctionDeclarationSyntax.hpp>
 
 #include <shard/parsing/nodes/statements/ExpressionStatementSyntax.hpp>
+#include <shard/parsing/nodes/statements/VariableStatementSyntax.hpp>
 
 #include <shard/parsing/nodes/expressions/LiteralExpressionsSyntax.hpp>
 #include <shard/parsing/nodes/expressions/BinaryExpressionSyntax.hpp>
@@ -131,6 +132,7 @@ namespace shard
 		gmt::Ref<ArrowClauseSyntax> read_arrow_clause(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 		gmt::Ref<StatementSyntax> read_statement(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 		gmt::Ref<ExpressionStatementSyntax> read_expression_statement(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
+		gmt::Ref<VariableStatementSyntax> read_variable_statement(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 
 		gmt::Ref<ExpressionSyntax> read_expression(SourceProvider& reader, gmt::Ref<SyntaxNode> parent, int parentPrecedence = 0);
 		gmt::Ref<ExpressionSyntax> read_operand(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);

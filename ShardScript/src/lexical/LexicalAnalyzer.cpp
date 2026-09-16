@@ -1304,6 +1304,16 @@ bool LexicalAnalyzer::is_keyword(std::wstring& word, TokenType& type)
 		type = TokenType::SetKeyword;
 		return true;
 	}
+	else if (word == L"this")
+	{
+		type = TokenType::ThisKeyword;
+		return true;
+	}
+	else if (word == L"self")
+	{
+		type = TokenType::SelfKeyword;
+		return true;
+	}
 	else if (word == L"field")
 	{
 		type = TokenType::FieldKeyword;

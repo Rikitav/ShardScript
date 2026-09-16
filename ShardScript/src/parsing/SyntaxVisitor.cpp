@@ -126,6 +126,18 @@ void SyntaxVisitor::visit_expression_statement(const ExpressionStatementSyntax* 
 		node->get_expression().as_ptr()->accept(*this);
 }
 
+void SyntaxVisitor::visit_variable_statement(const VariableStatementSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (!node->get_type().is_null())
+		node->get_type().as_ptr()->accept(*this);
+
+	if (!node->get_expression().is_null())
+		node->get_expression().as_ptr()->accept(*this);
+}
+
 void SyntaxVisitor::visit_literal_expression(const LiteralExpressionSyntax* node)
 {
 	if (node == nullptr)

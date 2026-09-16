@@ -129,7 +129,7 @@ namespace detail
 			return false;
 
 		SyntaxToken current = reader.current();
-		if (current.get_type() == TokenType::Identifier)
+		if (is_identifier_like(current.get_type()))
 			return true;
 
 		if (is_reserved_identifier(current.get_type()))
@@ -1191,8 +1191,61 @@ gmt::Ref<StatementSyntax> SourceParser::read_statement(SourceProvider& reader, g
 		return syntax;
 	}
 
+	// variable declarations 'name: Type = expr' / 'name := expr' - two-token lookahead
+	if (is_identifier_like(reader.current().get_type()) && reader.can_peek())
+	{
+		TokenType peekType = reader.peek().get_type();
+		if (peekType == TokenType::Colon || peekType == TokenType::DeclareAssignOperator)
+			return read_variable_statement(reader, parent);
+	}
+
 	// fall through to an expression statement when no other statement kind matched
 	return read_expression_statement(reader, parent);
+}
+
+gmt::Ref<VariableStatementSyntax> SourceParser::read_variable_statement(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
+{
+	gmt::Arena& arena = m_syntaxTree.get_arena();
+	auto syntax = arena.emplace<VariableStatementSyntax>(parent);
+
+	// current is the variable name, the caller confirmed ':' or ':=' via peek
+	syntax->set_identifier(reader.current());
+	reader.consume();
+
+	if (reader.current().get_type() == TokenType::Colon)
+	{
+		reader.consume(); // consume ':'
+		syntax->set_type(read_type(reader, syntax));
+
+		if (syntax->get_type().is_null())
+			m_diagnostics.report_error(reader.current(), L"Expected type after ':'");
+	}
+	else
+	{
+		// ':=' - the type is inferred by semantic analysis
+		syntax->set_assign_token(reader.current());
+		reader.consume();
+	}
+
+	if (syntax->get_assign_token().is_missing()
+		&& reader.can_consume()
+		&& reader.current().get_type() == TokenType::AssignOperator)
+	{
+		syntax->set_assign_token(reader.current());
+		reader.consume();
+	}
+
+	if (reader.can_consume() && reader.current().get_type() != TokenType::Semicolon)
+	{
+		syntax->set_expression(read_expression(reader, syntax, 0));
+	}
+	else
+	{
+		m_diagnostics.report_error(reader.current(), L"Variable declaration is missing an initializer");
+	}
+
+	syntax->set_semicolon(expect(reader, TokenType::Semicolon, L"Expected ';'"));
+	return syntax;
 }
 
 gmt::Ref<ExpressionStatementSyntax> SourceParser::read_expression_statement(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
@@ -1348,23 +1401,21 @@ gmt::Ref<ExpressionSyntax> SourceParser::read_operand(SourceProvider& reader, gm
 
 		case TokenType::PipeOperator: // lambda '|args| => expr' / '|args| { }' - at operand position '|' can only be a lambda parameter list
 			return read_lambda_expression(reader, parent);
-
-		case TokenType::Identifier:
-		{
-			// identifier-led operand: name, namespace-qualified name, generic instantiation, then the member access / invocation chain
-			gmt::Ref<TypeSyntax> name = read_identifier_name_type(reader, parent);
-
-			// in expression context '<' is generic only when the scan confirms it
-			if (reader.can_consume() && reader.current().get_type() == TokenType::LessOperator && scan_generic_type_arguments(reader))
-				name = read_generic_type(reader, parent, name);
-
-			return read_linked_expression(reader, parent, name);
-		}
-
-		default:
-			m_diagnostics.report_error(current, L"Expected expression");
-			return gmt::nullref;
 	}
+
+	if (is_identifier_like(current.get_type()))
+	{
+		// identifier-led operand: name, namespace-qualified name, generic instantiation, then the member access / invocation chain
+		gmt::Ref<TypeSyntax> name = read_identifier_name_type(reader, parent);
+
+		// in expression context '<' is generic only when the scan confirms it
+		if (reader.can_consume() && reader.current().get_type() == TokenType::LessOperator && scan_generic_type_arguments(reader))
+			name = read_generic_type(reader, parent, name);
+
+		return read_linked_expression(reader, parent, name);
+	}
+	m_diagnostics.report_error(current, L"Expected expression");
+	return gmt::nullref;
 }
 
 gmt::Ref<InvokationExpressionSyntax> SourceParser::read_invokation_expression(SourceProvider& reader, gmt::Ref<SyntaxNode> parent, gmt::Ref<ExpressionSyntax> previous, const SyntaxToken& identifier, const SyntaxToken& delimeter)
@@ -1551,7 +1602,7 @@ gmt::Ref<ExpressionSyntax> SourceParser::read_linked_expression(SourceProvider& 
 
 				SyntaxToken memberName = reader.current();
 				TokenType memberNameType = memberName.get_type();
-				if (memberNameType != TokenType::Identifier && memberNameType != TokenType::GetKeyword && memberNameType != TokenType::SetKeyword)
+				if (!is_identifier_like(memberNameType))
 				{
 					m_diagnostics.report_error(memberName, L"Expected member name after '.'");
 					return expression;

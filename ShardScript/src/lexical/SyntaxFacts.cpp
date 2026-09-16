@@ -519,6 +519,24 @@ bool shard::is_punctuation(shard::TokenType type)
 	}
 }
 
+bool shard::is_identifier_like(shard::TokenType type)
+{
+	switch (type)
+	{
+		case TokenType::Identifier:
+		case TokenType::GetKeyword:
+		case TokenType::SetKeyword:
+		case TokenType::ValueKeyword:
+		case TokenType::FieldKeyword:
+		case TokenType::ThisKeyword:
+		case TokenType::SelfKeyword:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
 bool shard::is_reserved_identifier(shard::TokenType type)
 {
 	switch (type)
@@ -526,7 +544,8 @@ bool shard::is_reserved_identifier(shard::TokenType type)
 		case TokenType::ValueKeyword:
 		case TokenType::FieldKeyword:
 		case TokenType::WhileKeyword:
-		//case TokenType::ThisKeyword:
+		case TokenType::ThisKeyword:
+		case TokenType::SelfKeyword:
 			return true;
 
 		default:
