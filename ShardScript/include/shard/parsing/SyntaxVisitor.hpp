@@ -33,7 +33,10 @@
 
 #include <shard/parsing/nodes/expressions/LiteralExpressionsSyntax.hpp>
 #include <shard/parsing/nodes/expressions/BinaryExpressionSyntax.hpp>
-#include <shard/parsing/nodes/expressions/LinkedExpressionSyntax.hpp>
+#include <shard/parsing/nodes/expressions/MemberAccessExpressionSyntax.hpp>
+#include <shard/parsing/nodes/expressions/InvokationExpressionSyntax.hpp>
+#include <shard/parsing/nodes/expressions/IndexatorExpressionSyntax.hpp>
+#include <shard/parsing/nodes/expressions/UnaryExpressionSyntax.hpp>
 
 #include <shard/parsing/nodes/types/PredefinedTypeSyntax.hpp>
 #include <shard/parsing/nodes/types/IdentifierNameTypeSyntax.hpp>
@@ -165,8 +168,10 @@ namespace shard
         virtual void visit_expression_statement(const ExpressionStatementSyntax* node);
         virtual void visit_literal_expression(const LiteralExpressionSyntax* node);
         virtual void visit_binary_expression(const BinaryExpressionSyntax* node);
+        virtual void visit_unary_expression(const UnaryExpressionSyntax* node);
         virtual void visit_member_access_expression(const MemberAccessExpressionSyntax* node);
         virtual void visit_invokation_expression(const InvokationExpressionSyntax* node);
+        virtual void visit_indexator_expression(const IndexatorExpressionSyntax* node);
 
         virtual void visit_parameter(const ParameterSyntax* node);
         virtual void visit_parameters_list(const ParametersListSyntax* node);

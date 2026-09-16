@@ -144,6 +144,15 @@ void SyntaxVisitor::visit_binary_expression(const BinaryExpressionSyntax* node)
 		node->get_right().get()->accept(*this);
 }
 
+void SyntaxVisitor::visit_unary_expression(const UnaryExpressionSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (!node->get_operand().is_null())
+		node->get_operand().get()->accept(*this);
+}
+
 void SyntaxVisitor::visit_member_access_expression(const MemberAccessExpressionSyntax* node)
 {
 	if (node == nullptr)
@@ -154,6 +163,18 @@ void SyntaxVisitor::visit_member_access_expression(const MemberAccessExpressionS
 }
 
 void SyntaxVisitor::visit_invokation_expression(const InvokationExpressionSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (!node->get_previous().is_null())
+		node->get_previous().get()->accept(*this);
+
+	if (!node->get_arguments().is_null())
+		visit_arguments_list(node->get_arguments().get());
+}
+
+void SyntaxVisitor::visit_indexator_expression(const IndexatorExpressionSyntax* node)
 {
 	if (node == nullptr)
 		return;

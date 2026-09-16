@@ -245,7 +245,14 @@ bool shard::is_left_unary_arithmetic_operator(shard::TokenType type)
 
 bool shard::is_left_unary_boolean_operator(shard::TokenType type)
 {
-	return false;
+	switch (type)
+	{
+		case TokenType::NotOperator:
+			return true;
+
+		default:
+			return false;
+	}
 }
 
 bool shard::is_unary_operator(shard::TokenType type)
