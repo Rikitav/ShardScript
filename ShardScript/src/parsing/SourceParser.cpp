@@ -159,6 +159,8 @@ namespace detail
 			case TokenType::NotEqualsOperator:
 			case TokenType::OrOperator:
 			case TokenType::AndOperator:
+			case TokenType::PipeOperator:
+			case TokenType::AmpersandOperator:
 			case TokenType::IsOperator:
 			case TokenType::AsOperator:
 				return true;
@@ -826,11 +828,12 @@ gmt::Ref<ParametersListSyntax> SourceParser::read_lambda_parameters(SourceProvid
 {
 	gmt::Arena& arena = m_syntaxTree.get_arena();
 	auto syntax = arena.emplace<ParametersListSyntax>(parent);
-	syntax->set_open_token(expect(reader, TokenType::OrOperator, L"Expected '|' token"));
+	SyntaxToken openToken = expect(reader, TokenType::PipeOperator, L"Expected '|' token");
+	syntax->set_open_token(openToken);
 
 	detail::inline_ref_vector<ParameterSyntax, 4> parameters{};
 
-	if (reader.can_consume() && reader.current().get_type() == TokenType::OrOperator)
+	if (reader.can_consume() && reader.current().get_type() == TokenType::PipeOperator)
 	{
 		syntax->set_close_token(reader.current());
 		reader.consume();
@@ -843,13 +846,13 @@ gmt::Ref<ParametersListSyntax> SourceParser::read_lambda_parameters(SourceProvid
 			if (!parameter.is_null())
 				parameters.push_back(parameter);
 
-			if (!try_match(reader, { TokenType::Comma, TokenType::OrOperator }, L"Expected ',' or '|'", 3))
+			if (!try_match(reader, { TokenType::Comma, TokenType::PipeOperator }, L"Expected ',' or '|'", 3))
 				break;
 
 			SyntaxToken separatorToken = reader.current();
 			reader.consume();
 
-			if (separatorToken.get_type() == TokenType::OrOperator)
+			if (separatorToken.get_type() == TokenType::PipeOperator)
 			{
 				syntax->set_close_token(separatorToken);
 				break;
@@ -1337,6 +1340,15 @@ gmt::Ref<ExpressionSyntax> SourceParser::read_operand(SourceProvider& reader, gm
 		case TokenType::IfKeyword: // ternary if-expression 'if cond a else b'
 			return read_if_expression(reader, parent);
 
+		case TokenType::OpenSquare: // collection expression '[1, 2, 3]'
+			return read_collection_expression(reader, parent);
+
+		case TokenType::NewKeyword: // object creation 'new T(args)'
+			return read_object_expression(reader, parent);
+
+		case TokenType::PipeOperator: // lambda '|args| => expr' / '|args| { }' - at operand position '|' can only be a lambda parameter list
+			return read_lambda_expression(reader, parent);
+
 		case TokenType::Identifier:
 		{
 			// identifier-led operand: name, namespace-qualified name, generic instantiation, then the member access / invocation chain
@@ -1421,6 +1433,97 @@ gmt::Ref<IfExpressionSyntax> SourceParser::read_if_expression(SourceProvider& re
 		reader.consume();
 
 		syntax->set_else_expression(read_expression(reader, syntax, 0));
+	}
+
+	return syntax;
+}
+
+gmt::Ref<CollectionExpressionSyntax> SourceParser::read_collection_expression(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
+{
+	gmt::Arena& arena = m_syntaxTree.get_arena();
+	auto syntax = arena.emplace<CollectionExpressionSyntax>(parent);
+	syntax->set_open_bracket(expect(reader, TokenType::OpenSquare, L"Expected '['"));
+
+	detail::inline_ref_vector<ExpressionSyntax, 8> values{};
+
+	if (reader.can_consume() && reader.current().get_type() == TokenType::CloseSquare)
+	{
+		syntax->set_close_bracket(reader.current());
+		reader.consume();
+	}
+	else
+	{
+		while (reader.can_consume())
+		{
+			gmt::Ref<ExpressionSyntax> value = read_expression(reader, syntax, 0);
+			if (!value.is_null())
+				values.push_back(value);
+
+			if (!try_match(reader, { TokenType::Comma, TokenType::CloseSquare }, L"Expected ',' or ']'", 3))
+				break;
+
+			SyntaxToken separatorToken = reader.current();
+			reader.consume();
+
+			if (separatorToken.get_type() == TokenType::CloseSquare)
+			{
+				syntax->set_close_bracket(separatorToken);
+				break;
+			}
+		}
+	}
+
+	syntax->set_values(values.commit_array(arena));
+	return syntax;
+}
+
+gmt::Ref<ObjectExpressionSyntax> SourceParser::read_object_expression(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
+{
+	gmt::Arena& arena = m_syntaxTree.get_arena();
+	auto syntax = arena.emplace<ObjectExpressionSyntax>(parent);
+
+	syntax->set_new_token(expect(reader, TokenType::NewKeyword, L"Expected 'new' keyword"));
+	syntax->set_type(read_type(reader, syntax));
+
+	if (syntax->get_type().is_null())
+	{
+		m_diagnostics.report_error(reader.current(), L"Expected type after 'new'");
+		return syntax;
+	}
+
+	if (reader.can_consume() && reader.current().get_type() == TokenType::OpenSquare)
+	{
+		// fixed-size array creation 'new Type[x]'
+		reader.consume(); // consume '['
+		syntax->set_array_size(read_expression(reader, syntax, 0));
+		expect(reader, TokenType::CloseSquare, L"Expected ']'");
+	}
+	else
+	{
+		syntax->set_arguments(read_arguments_list(reader, syntax));
+	}
+
+	return syntax;
+}
+
+gmt::Ref<LambdaExpressionSyntax> SourceParser::read_lambda_expression(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
+{
+	gmt::Arena& arena = m_syntaxTree.get_arena();
+	auto syntax = arena.emplace<LambdaExpressionSyntax>(parent);
+
+	syntax->set_parameters(read_lambda_parameters(reader, syntax));
+
+	if (reader.can_consume() && reader.current().get_type() == TokenType::LambdaOperator)
+	{
+		syntax->set_body(read_arrow_clause(reader, syntax));
+	}
+	else if (reader.can_consume() && reader.current().get_type() == TokenType::OpenBrace)
+	{
+		syntax->set_body(read_statements_block(reader, syntax));
+	}
+	else
+	{
+		m_diagnostics.report_error(reader.current(), L"Expected '=>' or '{' after lambda parameters");
 	}
 
 	return syntax;

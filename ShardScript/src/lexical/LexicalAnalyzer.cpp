@@ -975,6 +975,7 @@ bool LexicalAnalyzer::is_operator(std::wstring& word, TokenType& type)
 
 		case '&':
 		{
+			/*
 			if (m_sourceText->peek_next(m_peekSymbol))
 			{
 				if (m_peekSymbol == '=')
@@ -992,14 +993,16 @@ bool LexicalAnalyzer::is_operator(std::wstring& word, TokenType& type)
 					return true;
 				}
 			}
+			*/
 
 			word = L"&";
-			type = TokenType::AndOperator;
+			type = TokenType::AmpersandOperator;
 			return true;
 		}
 
 		case '|':
 		{
+			/*
 			if (m_sourceText->peek_next(m_peekSymbol))
 			{
 				if (m_peekSymbol == '=')
@@ -1017,9 +1020,10 @@ bool LexicalAnalyzer::is_operator(std::wstring& word, TokenType& type)
 					return true;
 				}
 			}
+			*/
 
 			word = L"|";
-			type = TokenType::OrOperator;
+			type = TokenType::PipeOperator;
 			return true;
 		}
 

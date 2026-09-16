@@ -42,6 +42,9 @@
 #include <shard/parsing/nodes/expressions/IfExpressionSyntax.hpp>
 #include <shard/parsing/nodes/expressions/AwaitExpressionSyntax.hpp>
 #include <shard/parsing/nodes/expressions/RangeExpressionSyntax.hpp>
+#include <shard/parsing/nodes/expressions/CollectionExpressionSyntax.hpp>
+#include <shard/parsing/nodes/expressions/ObjectExpressionSyntax.hpp>
+#include <shard/parsing/nodes/expressions/LambdaExpressionSyntax.hpp>
 
 #include <shard/parsing/nodes/types/PredefinedTypeSyntax.hpp>
 #include <shard/parsing/nodes/types/IdentifierNameTypeSyntax.hpp>
@@ -182,6 +185,9 @@ namespace shard
         virtual void visit_if_expression(const IfExpressionSyntax* node);
         virtual void visit_await_expression(const AwaitExpressionSyntax* node);
         virtual void visit_range_expression(const RangeExpressionSyntax* node);
+        virtual void visit_collection_expression(const CollectionExpressionSyntax* node);
+        virtual void visit_object_creation_expression(const ObjectExpressionSyntax* node);
+        virtual void visit_lambda_expression(const LambdaExpressionSyntax* node);
 
         virtual void visit_parameter(const ParameterSyntax* node);
         virtual void visit_parameters_list(const ParametersListSyntax* node);
