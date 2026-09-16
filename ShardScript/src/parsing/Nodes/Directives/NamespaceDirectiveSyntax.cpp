@@ -17,7 +17,7 @@ gmt::Span<const SyntaxToken> NamespaceDirectiveSyntax::get_qualifier() const
 
 std::wstring NamespaceDirectiveSyntax::get_qualifier_string() const
 {
-	std::span<const SyntaxToken> qualifier = m_qualifier.get();
+	std::span<const SyntaxToken> qualifier = m_qualifier.as_span();
 	if (qualifier.empty())
 		return L"";
 

@@ -21,7 +21,7 @@ void ArgumentSyntax::set_expression(gmt::Ref<ExpressionSyntax> expression)
 TextLocation ArgumentSyntax::get_location() const
 {
 	if (!m_expression.is_null())
-		return m_expression.get()->get_location();
+		return m_expression.as_ptr()->get_location();
 
 	return TextLocation();
 }

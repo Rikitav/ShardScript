@@ -559,7 +559,7 @@ gmt::Ref<FunctionDeclarationSyntax> SourceParser::read_function_declaration(Sour
 	}
 
 	syntax->set_body(read_body(reader, syntax));
-	if (!syntax->get_body().is_null() && syntax->get_body().get()->get_kind() == SyntaxKind::ArrowClause)
+	if (!syntax->get_body().is_null() && syntax->get_body().as_ptr()->get_kind() == SyntaxKind::ArrowClause)
 		syntax->set_semicolon(expect(reader, TokenType::Semicolon, L"Missing ';' token"));
 
 	return syntax;
@@ -1398,7 +1398,7 @@ gmt::Ref<ExpressionSyntax> SourceParser::read_linked_expression(SourceProvider& 
 				SyntaxToken identifier(TokenType::Identifier, L"", TextLocation(), true);
 				gmt::Ref<ExpressionSyntax> receiver = expression;
 
-				ExpressionSyntax* raw = expression.get();
+				ExpressionSyntax* raw = expression.as_ptr();
 				if (raw->get_kind() == SyntaxKind::IdentifierNameType)
 				{
 					identifier = static_cast<IdentifierNameTypeSyntax*>(raw)->get_identifier();

@@ -36,15 +36,15 @@ std::wstring GenericTypeSyntax::get_qualifier() const
 		return L"";
 
 	std::wstringstream qualifier;
-	qualifier << m_underlayingType.get()->get_qualifier() << L"<";
+	qualifier << m_underlayingType.as_ptr()->get_qualifier() << L"<";
 
-	std::span<const gmt::Ref<TypeSyntax>> arguments = m_typeArguments.get()->get_types().get();
+	std::span<const gmt::Ref<TypeSyntax>> arguments = m_typeArguments.as_ptr()->get_types().as_span();
 	if (!arguments.empty())
 	{
 		for (std::size_t i = 0; i < arguments.size() - 1; ++i)
-			qualifier << arguments[i].get()->get_qualifier() << L", ";
+			qualifier << arguments[i].as_ptr()->get_qualifier() << L", ";
 
-		qualifier << arguments.back().get()->get_qualifier();
+		qualifier << arguments.back().as_ptr()->get_qualifier();
 	}
 
 	qualifier << L">";
@@ -56,9 +56,9 @@ TextLocation GenericTypeSyntax::get_location() const
 	if (!m_underlayingType.is_null())
 	{
 		if (!m_typeArguments.is_null())
-			return TextLocation(m_underlayingType.get()->get_location(), m_typeArguments.get()->get_close_token());
+			return TextLocation(m_underlayingType.as_ptr()->get_location(), m_typeArguments.as_ptr()->get_close_token());
 
-		return m_underlayingType.get()->get_location();
+		return m_underlayingType.as_ptr()->get_location();
 	}
 
 	return TextLocation();

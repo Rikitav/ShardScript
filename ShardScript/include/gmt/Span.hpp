@@ -33,7 +33,7 @@ namespace gmt
 		bool empty() const;
 
 		T* data() const;
-		std::span<T> get();
-		std::span<const T> get() const;
+		std::span<T> as_span();
+		std::span<const T> as_span() const;
 	};
 }

@@ -45,13 +45,13 @@ std::wstring ArrayTypeSyntax::get_qualifier() const
 	if (m_underlayingType.is_null())
 		return L"";
 
-	return std::format(L"{}[]", m_underlayingType.get()->get_qualifier());
+	return std::format(L"{}[]", m_underlayingType.as_ptr()->get_qualifier());
 }
 
 TextLocation ArrayTypeSyntax::get_location() const
 {
 	if (!m_underlayingType.is_null())
-		return TextLocation(m_underlayingType.get()->get_location(), m_closeBracketToken);
+		return TextLocation(m_underlayingType.as_ptr()->get_location(), m_closeBracketToken);
 
 	return m_openBracketToken.get_location();
 }

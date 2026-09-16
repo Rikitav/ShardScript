@@ -43,13 +43,13 @@ TextLocation IndexatorExpressionSyntax::get_location() const
 	if (!m_previous.is_null())
 	{
 		if (!m_arguments.is_null())
-			return TextLocation(m_previous.get()->get_location(), m_arguments.get()->get_close_token());
+			return TextLocation(m_previous.as_ptr()->get_location(), m_arguments.as_ptr()->get_close_token());
 
-		return TextLocation(m_previous.get()->get_location(), m_delimeterToken);
+		return TextLocation(m_previous.as_ptr()->get_location(), m_delimeterToken);
 	}
 
 	if (!m_arguments.is_null())
-		return m_arguments.get()->get_location();
+		return m_arguments.as_ptr()->get_location();
 
 	return m_delimeterToken.get_location();
 }

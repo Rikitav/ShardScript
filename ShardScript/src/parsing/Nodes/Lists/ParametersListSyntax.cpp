@@ -31,7 +31,7 @@ void ParameterSyntax::set_identifier(const SyntaxToken& token)
 TextLocation ParameterSyntax::get_location() const
 {
 	if (!m_type.is_null())
-		return TextLocation(m_identifierToken, m_type.get()->get_location());
+		return TextLocation(m_identifierToken, m_type.as_ptr()->get_location());
 
 	return m_identifierToken.get_location();
 }
