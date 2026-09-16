@@ -62,6 +62,8 @@ namespace shard
 		TryStatement,
 		CatchClause,
 		DeferStatement,
+		DeferBlock,
+		DeferVariable,
 		SwitchStatement,
 		SwitchCaseClause,
 
