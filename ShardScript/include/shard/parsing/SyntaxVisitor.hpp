@@ -34,6 +34,9 @@
 #include <shard/parsing/nodes/statements/DeferStatementSyntax.hpp>
 #include <shard/parsing/nodes/statements/DeferBlockSyntax.hpp>
 #include <shard/parsing/nodes/statements/DeferVariableSyntax.hpp>
+#include <shard/parsing/nodes/statements/ReturnStatementSyntax.hpp>
+#include <shard/parsing/nodes/statements/BreakStatementSyntax.hpp>
+#include <shard/parsing/nodes/statements/ContinueStatementSyntax.hpp>
 
 #include <shard/parsing/nodes/expressions/LiteralExpressionsSyntax.hpp>
 #include <shard/parsing/nodes/expressions/BinaryExpressionSyntax.hpp>
@@ -182,6 +185,9 @@ namespace shard
         virtual void visit_defer_statement(const DeferStatementSyntax* node);
         virtual void visit_defer_block(const DeferBlockSyntax* node);
         virtual void visit_defer_variable(const DeferVariableSyntax* node);
+        virtual void visit_return_statement(const ReturnStatementSyntax* node);
+        virtual void visit_break_statement(const BreakStatementSyntax* node);
+        virtual void visit_continue_statement(const ContinueStatementSyntax* node);
         virtual void visit_literal_expression(const LiteralExpressionSyntax* node);
         virtual void visit_binary_expression(const BinaryExpressionSyntax* node);
         virtual void visit_unary_expression(const UnaryExpressionSyntax* node);

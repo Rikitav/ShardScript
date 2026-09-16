@@ -38,6 +38,9 @@
 #include <shard/parsing/nodes/statements/DeferStatementSyntax.hpp>
 #include <shard/parsing/nodes/statements/DeferBlockSyntax.hpp>
 #include <shard/parsing/nodes/statements/DeferVariableSyntax.hpp>
+#include <shard/parsing/nodes/statements/ReturnStatementSyntax.hpp>
+#include <shard/parsing/nodes/statements/BreakStatementSyntax.hpp>
+#include <shard/parsing/nodes/statements/ContinueStatementSyntax.hpp>
 
 #include <shard/parsing/nodes/expressions/LiteralExpressionsSyntax.hpp>
 #include <shard/parsing/nodes/expressions/BinaryExpressionSyntax.hpp>
@@ -140,6 +143,9 @@ namespace shard
 		gmt::Ref<DeferStatementSyntax> read_defer_statement(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 		gmt::Ref<DeferBlockSyntax> read_defer_block(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 		gmt::Ref<DeferVariableSyntax> read_defer_variable(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
+		gmt::Ref<ReturnStatementSyntax> read_return_statement(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
+		gmt::Ref<BreakStatementSyntax> read_break_statement(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
+		gmt::Ref<ContinueStatementSyntax> read_continue_statement(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 
 		gmt::Ref<ExpressionSyntax> read_expression(SourceProvider& reader, gmt::Ref<SyntaxNode> parent, int parentPrecedence = 0);
 		gmt::Ref<ExpressionSyntax> read_operand(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
