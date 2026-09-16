@@ -106,6 +106,10 @@ namespace shard
 		FieldKeyword,		  // field
 		IndexerKeyword,		  // indexer
 
+		// Instance reference keywords
+		ThisKeyword,		  // this
+		SelfKeyword,		  // self
+
 		// Built-in type keywords
 		VoidKeyword,		  // void
 		VarKeyword,			  // var

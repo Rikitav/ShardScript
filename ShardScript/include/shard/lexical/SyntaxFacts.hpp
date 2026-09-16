@@ -13,6 +13,7 @@ namespace shard
 	SHARD_API bool can_start_compilation_unit(TokenType type);
 
 	SHARD_API bool is_punctuation(shard::TokenType type);
+	SHARD_API bool is_identifier_like(shard::TokenType type);
 	SHARD_API bool is_reserved_identifier(shard::TokenType type);
 
 	SHARD_API int get_operator_precendence(shard::TokenType type);
