@@ -43,7 +43,7 @@ void QualifiedNameTypeSyntax::set_identifier(const SyntaxToken& token)
 std::wstring QualifiedNameTypeSyntax::get_qualifier() const
 {
 	if (m_left.is_null())
-		return m_identifierToken.get_lexeme();
+		return std::wstring(m_identifierToken.get_lexeme());
 
 	return std::format(L"{}::{}", m_left.get()->get_qualifier(), m_identifierToken.get_lexeme());
 }

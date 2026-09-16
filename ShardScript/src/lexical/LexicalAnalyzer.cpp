@@ -4,7 +4,7 @@
 
 #include <shard/lexical/LexicalAnalyzer.hpp>
 
-#include <gmt/StringPool.hpp>
+#include <gmt/Interner.hpp>
 
 #include <cctype>
 #include <cwctype>
@@ -35,14 +35,14 @@ LexicalAnalyzer::LexicalAnalyzer(SourceTextProvider& sourceText) :
 	m_ownsSourceTextProvider(false),
 	m_sourceText(&sourceText)
 {
-	m_fileName = gmt::GlobalPool.intern(m_sourceText->get_name());
+	m_fileName = gmt::resolve(gmt::intern(m_sourceText->get_name()));
 }
 
 LexicalAnalyzer::LexicalAnalyzer(SourceTextProvider* sourceText, bool ownsProvider) :
 	m_ownsSourceTextProvider(ownsProvider),
 	m_sourceText(sourceText)
 {
-	m_fileName = gmt::GlobalPool.intern(m_sourceText->get_name());
+	m_fileName = gmt::resolve(gmt::intern(m_sourceText->get_name()));
 }
 
 LexicalAnalyzer::~LexicalAnalyzer()
@@ -151,7 +151,7 @@ bool LexicalAnalyzer::read_next_token(SyntaxToken& token)
 	if (!read_next_word(word, type))
 		return false;
 
-	token = SyntaxToken(type, gmt::GlobalPool.intern(word), get_current_location(word));
+	token = SyntaxToken(type, gmt::intern(word), get_current_location(word));
 	return true;
 }
 

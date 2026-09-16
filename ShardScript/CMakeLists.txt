@@ -2,6 +2,7 @@ project(ShardScript)
 
 include(cmake/libuv.cmake)
 include(cmake/mimalloc.cmake)
+include(cmake/string-intern.cmake)
 
 file(GLOB_RECURSE SHARDSCRIPT_SOURCES "src/*.cpp")
 file(GLOB_RECURSE SHARDSCRIPT_HEADERS "include/*.hpp")
@@ -11,10 +12,12 @@ add_library(${PROJECT_NAME} SHARED
     ${SHARDSCRIPT_HEADERS}
     ${LIBUV_SOURCES}
     ${MIMALLOC_SOURCES}
+    ${STRING_INTERN_SOURCES}
 )
 
 set_source_files_properties(${LIBUV_SOURCES} PROPERTIES COMPILE_FLAGS "-w")
 set_source_files_properties(${MIMALLOC_SOURCES} PROPERTIES COMPILE_FLAGS "-w")
+set_source_files_properties(${STRING_INTERN_SOURCES} PROPERTIES COMPILE_FLAGS "-w")
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE
     ${LIBUV_DEFINES}
@@ -36,6 +39,7 @@ endif()
 target_include_directories(${PROJECT_NAME} PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/include"
     "${CMAKE_CURRENT_SOURCE_DIR}/third-party"
+    "${CMAKE_CURRENT_SOURCE_DIR}/third-party/string-intern"
 )
 
 target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE
