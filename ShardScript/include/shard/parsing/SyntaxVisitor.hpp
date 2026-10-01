@@ -42,6 +42,10 @@
 #include <shard/parsing/nodes/loops/UntilStatementSyntax.hpp>
 #include <shard/parsing/nodes/loops/ForInStatementSyntax.hpp>
 
+#include <shard/parsing/nodes/statements/IfStatementSyntax.hpp>
+#include <shard/parsing/nodes/statements/UnlessStatementSyntax.hpp>
+#include <shard/parsing/nodes/statements/ElseStatementSyntax.hpp>
+
 #include <shard/parsing/nodes/expressions/LiteralExpressionsSyntax.hpp>
 #include <shard/parsing/nodes/expressions/BinaryExpressionSyntax.hpp>
 #include <shard/parsing/nodes/expressions/MemberAccessExpressionSyntax.hpp>
@@ -196,6 +200,10 @@ namespace shard
         virtual void visit_while_statement(const WhileStatementSyntax* node);
         virtual void visit_until_statement(const UntilStatementSyntax* node);
         virtual void visit_for_in_statement(const ForInStatementSyntax* node);
+
+        virtual void visit_if_statement(const IfStatementSyntax* node);
+        virtual void visit_unless_statement(const UnlessStatementSyntax* node);
+        virtual void visit_else_statement(const ElseStatementSyntax* node);
 
         virtual void visit_literal_expression(const LiteralExpressionSyntax* node);
         virtual void visit_binary_expression(const BinaryExpressionSyntax* node);

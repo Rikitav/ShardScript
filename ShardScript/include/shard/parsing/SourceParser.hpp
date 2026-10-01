@@ -43,6 +43,11 @@
 #include <shard/parsing/nodes/statements/BreakStatementSyntax.hpp>
 #include <shard/parsing/nodes/statements/ContinueStatementSyntax.hpp>
 
+#include <shard/parsing/nodes/statements/ConditionalClauseBaseSyntax.hpp>
+#include <shard/parsing/nodes/statements/IfStatementSyntax.hpp>
+#include <shard/parsing/nodes/statements/UnlessStatementSyntax.hpp>
+#include <shard/parsing/nodes/statements/ElseStatementSyntax.hpp>
+
 #include <shard/parsing/nodes/loops/WhileStatementSyntax.hpp>
 #include <shard/parsing/nodes/loops/UntilStatementSyntax.hpp>
 #include <shard/parsing/nodes/loops/ForInStatementSyntax.hpp>
@@ -153,6 +158,7 @@ namespace shard
 		gmt::Ref<ReturnStatementSyntax> read_return_statement(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 		gmt::Ref<BreakStatementSyntax> read_break_statement(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 		gmt::Ref<ContinueStatementSyntax> read_continue_statement(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
+		gmt::Ref<ConditionalClauseBaseSyntax> read_conditional_clause(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 		gmt::Ref<WhileStatementSyntax> read_while_statement(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 		gmt::Ref<UntilStatementSyntax> read_until_statement(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 		gmt::Ref<ForInStatementSyntax> read_for_in_statement(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
