@@ -52,8 +52,6 @@ namespace shard
 		inline bool is_missing() const { return m_isMissing; }
 		inline TokenType get_type() const { return m_type; }
 		inline const TextLocation& get_location() const { return m_location; }
-
-		// zero-copy view into interned storage; empty for missing tokens
 		inline std::wstring_view get_lexeme() const { return gmt::resolve(m_lexeme); }
 	};
 }

@@ -1,13 +1,14 @@
 #pragma once
 #include <shard/Definitions.hpp>
 
+#include <gmt/Arena.hpp>
+#include <gmt/Ref.hpp>
+
+#include <shard/parsing/Diagnostics.hpp>
 #include <shard/parsing/SyntaxToken.hpp>
 #include <shard/parsing/TokenType.hpp>
 #include <shard/parsing/SyntaxNode.hpp>
 #include <shard/parsing/SyntaxTree.hpp>
-#include <gmt/Arena.hpp>
-#include <gmt/Ref.hpp>
-#include <shard/parsing/Diagnostics.hpp>
 
 #include <shard/lexical/SourceProvider.hpp>
 
@@ -42,6 +43,10 @@
 #include <shard/parsing/nodes/statements/BreakStatementSyntax.hpp>
 #include <shard/parsing/nodes/statements/ContinueStatementSyntax.hpp>
 
+#include <shard/parsing/nodes/loops/WhileStatementSyntax.hpp>
+#include <shard/parsing/nodes/loops/UntilStatementSyntax.hpp>
+#include <shard/parsing/nodes/loops/ForInStatementSyntax.hpp>
+
 #include <shard/parsing/nodes/expressions/LiteralExpressionsSyntax.hpp>
 #include <shard/parsing/nodes/expressions/BinaryExpressionSyntax.hpp>
 #include <shard/parsing/nodes/expressions/MemberAccessExpressionSyntax.hpp>
@@ -74,7 +79,9 @@
 
 namespace shard
 {
-	// Note that this parser is only capable of contextual parsing, and only should be used to parse full compulation units. DO NOT try to parse individual members or expression with this parser out of stream
+	// Note that this parser is only capable of contextual parsing,
+	// and only should be used to parse full compulation units.
+	// DO NOT try to parse individual members or expression with this parser out of stream.
 
 	class SHARD_API SourceParser
 	{
@@ -146,6 +153,9 @@ namespace shard
 		gmt::Ref<ReturnStatementSyntax> read_return_statement(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 		gmt::Ref<BreakStatementSyntax> read_break_statement(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 		gmt::Ref<ContinueStatementSyntax> read_continue_statement(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
+		gmt::Ref<WhileStatementSyntax> read_while_statement(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
+		gmt::Ref<UntilStatementSyntax> read_until_statement(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
+		gmt::Ref<ForInStatementSyntax> read_for_in_statement(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 
 		gmt::Ref<ExpressionSyntax> read_expression(SourceProvider& reader, gmt::Ref<SyntaxNode> parent, int parentPrecedence = 0);
 		gmt::Ref<ExpressionSyntax> read_operand(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
