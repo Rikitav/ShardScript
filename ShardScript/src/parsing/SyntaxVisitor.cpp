@@ -210,6 +210,48 @@ void SyntaxVisitor::visit_for_in_statement(const ForInStatementSyntax* node)
 		node->get_block().as_ptr()->accept(*this);
 }
 
+void SyntaxVisitor::visit_if_statement(const IfStatementSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (!node->get_condition().is_null())
+		node->get_condition().as_ptr()->accept(*this);
+
+	if (!node->get_block().is_null())
+		node->get_block().as_ptr()->accept(*this);
+
+	if (!node->get_next().is_null())
+		node->get_next().as_ptr()->accept(*this);
+}
+
+void SyntaxVisitor::visit_unless_statement(const UnlessStatementSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (!node->get_condition().is_null())
+		node->get_condition().as_ptr()->accept(*this);
+
+	if (!node->get_block().is_null())
+		node->get_block().as_ptr()->accept(*this);
+
+	if (!node->get_next().is_null())
+		node->get_next().as_ptr()->accept(*this);
+}
+
+void SyntaxVisitor::visit_else_statement(const ElseStatementSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (!node->get_block().is_null())
+		node->get_block().as_ptr()->accept(*this);
+
+	if (!node->get_next().is_null())
+		node->get_next().as_ptr()->accept(*this);
+}
+
 void SyntaxVisitor::visit_variable_statement(const VariableStatementSyntax* node)
 {
 	if (node == nullptr)

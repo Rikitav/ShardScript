@@ -1204,6 +1204,10 @@ gmt::Ref<StatementSyntax> SourceParser::read_statement(SourceProvider& reader, g
 		case TokenType::ContinueKeyword:
 			return read_continue_statement(reader, parent);
 
+		case TokenType::IfKeyword:
+		case TokenType::UnlessKeyword:
+			return read_conditional_clause(reader, parent);
+
 		case TokenType::WhileKeyword:
 			return read_while_statement(reader, parent);
 
@@ -1377,16 +1381,70 @@ gmt::Ref<ContinueStatementSyntax> SourceParser::read_continue_statement(SourcePr
 	return syntax;
 }
 
+gmt::Ref<ConditionalClauseBaseSyntax> SourceParser::read_conditional_clause(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
+{
+	gmt::Arena& arena = m_syntaxTree.get_arena();
+
+	if (!reader.can_consume())
+		return gmt::nullref;
+
+	TokenType type = reader.current().get_type();
+
+	// if condition { } / unless condition { }
+	if (type == TokenType::IfKeyword || type == TokenType::UnlessKeyword)
+	{
+		gmt::Ref<ConditionalClauseSyntax> clause;
+
+		if (type == TokenType::IfKeyword)
+		{
+			auto syntax = arena.emplace<IfStatementSyntax>(parent);
+			syntax->set_if_keyword(reader.current());
+			clause = syntax;
+		}
+		else
+		{
+			auto syntax = arena.emplace<UnlessStatementSyntax>(parent);
+			syntax->set_unless_keyword(reader.current());
+			clause = syntax;
+		}
+		reader.consume();
+
+		clause->set_condition(read_expression(reader, clause, 0));
+		clause->set_block(read_statements_block(reader, clause));
+
+		if (reader.can_consume() && reader.current().get_type() == TokenType::ElseKeyword)
+			clause->set_next(read_conditional_clause(reader, clause));
+
+		return clause;
+	}
+
+	// else { } / else if condition { } / else unless condition { }
+	if (type == TokenType::ElseKeyword)
+	{
+		SyntaxToken elseKeyword = reader.current();
+		reader.consume(); // consume 'else'
+
+		if (reader.current().get_type() == TokenType::IfKeyword || reader.current().get_type() == TokenType::UnlessKeyword)
+			return read_conditional_clause(reader, parent);
+
+		auto syntax = arena.emplace<ElseStatementSyntax>(parent);
+		syntax->set_else_keyword(elseKeyword);
+		syntax->set_block(read_statements_block(reader, syntax));
+		return syntax;
+	}
+
+	m_diagnostics.report_error(reader.current(), L"Expected 'if', 'unless' or 'else' keyword");
+	return gmt::nullref;
+}
+
 gmt::Ref<WhileStatementSyntax> SourceParser::read_while_statement(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
 {
 	gmt::Arena& arena = m_syntaxTree.get_arena();
 	auto syntax = arena.emplace<WhileStatementSyntax>(parent);
 
-	// while (condition) { }
+	// while condition { }
 	syntax->set_while_keyword(expect(reader, TokenType::WhileKeyword, L"Expected 'while' keyword"));
-	syntax->set_open_curl(expect(reader, TokenType::OpenCurl, L"Expected '('"));
 	syntax->set_condition(read_expression(reader, syntax, 0));
-	syntax->set_close_curl(expect(reader, TokenType::CloseCurl, L"Expected ')'"));
 	syntax->set_block(read_statements_block(reader, syntax));
 
 	return syntax;
@@ -1397,11 +1455,9 @@ gmt::Ref<UntilStatementSyntax> SourceParser::read_until_statement(SourceProvider
 	gmt::Arena& arena = m_syntaxTree.get_arena();
 	auto syntax = arena.emplace<UntilStatementSyntax>(parent);
 
-	// until (condition) { }
+	// until condition { }
 	syntax->set_until_keyword(expect(reader, TokenType::UntilKeyword, L"Expected 'until' keyword"));
-	syntax->set_open_curl(expect(reader, TokenType::OpenCurl, L"Expected '('"));
 	syntax->set_condition(read_expression(reader, syntax, 0));
-	syntax->set_close_curl(expect(reader, TokenType::CloseCurl, L"Expected ')'"));
 	syntax->set_block(read_statements_block(reader, syntax));
 
 	return syntax;
@@ -1412,12 +1468,8 @@ gmt::Ref<ForInStatementSyntax> SourceParser::read_for_in_statement(SourceProvide
 	gmt::Arena& arena = m_syntaxTree.get_arena();
 	auto syntax = arena.emplace<ForInStatementSyntax>(parent);
 
-	// for identifier in expression { } / for (identifier in expression) { }
+	// for identifier in expression { }
 	syntax->set_for_keyword(expect(reader, TokenType::ForKeyword, L"Expected 'for' keyword"));
-
-	bool hasParens = reader.current().get_type() == TokenType::OpenCurl;
-	if (hasParens)
-		reader.consume(); // consume '('
 
 	if (is_identifier_like(reader.current().get_type()))
 	{
@@ -1431,9 +1483,6 @@ gmt::Ref<ForInStatementSyntax> SourceParser::read_for_in_statement(SourceProvide
 
 	syntax->set_in_keyword(expect(reader, TokenType::InKeyword, L"Expected 'in' keyword"));
 	syntax->set_range_expression(read_expression(reader, syntax, 0));
-
-	if (hasParens)
-		expect(reader, TokenType::CloseCurl, L"Expected ')'");
 
 	syntax->set_block(read_statements_block(reader, syntax));
 	return syntax;
