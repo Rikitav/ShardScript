@@ -174,6 +174,42 @@ void SyntaxVisitor::visit_continue_statement(const ContinueStatementSyntax* node
 		return;
 }
 
+void SyntaxVisitor::visit_while_statement(const WhileStatementSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (!node->get_condition().is_null())
+		node->get_condition().as_ptr()->accept(*this);
+
+	if (!node->get_block().is_null())
+		node->get_block().as_ptr()->accept(*this);
+}
+
+void SyntaxVisitor::visit_until_statement(const UntilStatementSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (!node->get_condition().is_null())
+		node->get_condition().as_ptr()->accept(*this);
+
+	if (!node->get_block().is_null())
+		node->get_block().as_ptr()->accept(*this);
+}
+
+void SyntaxVisitor::visit_for_in_statement(const ForInStatementSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (!node->get_range_expression().is_null())
+		node->get_range_expression().as_ptr()->accept(*this);
+
+	if (!node->get_block().is_null())
+		node->get_block().as_ptr()->accept(*this);
+}
+
 void SyntaxVisitor::visit_variable_statement(const VariableStatementSyntax* node)
 {
 	if (node == nullptr)

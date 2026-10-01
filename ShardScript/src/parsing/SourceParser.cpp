@@ -1180,26 +1180,38 @@ gmt::Ref<StatementSyntax> SourceParser::read_statement(SourceProvider& reader, g
 		return gmt::nullref;
 
 	// keyword statement kinds are dispatched here
-	if (reader.current().get_type() == TokenType::DeferKeyword)
-		return read_defer(reader, parent);
-
-	if (reader.current().get_type() == TokenType::ReturnKeyword)
-		return read_return_statement(reader, parent);
-
-	if (reader.current().get_type() == TokenType::BreakKeyword)
-		return read_break_statement(reader, parent);
-
-	if (reader.current().get_type() == TokenType::ContinueKeyword)
-		return read_continue_statement(reader, parent);
-
-	if (reader.current().get_type() == TokenType::Semicolon)
+	switch (reader.current().get_type())
 	{
-		// empty statement
-		gmt::Arena& arena = m_syntaxTree.get_arena();
-		auto syntax = arena.emplace<ExpressionStatementSyntax>(parent);
-		syntax->set_semicolon(reader.current());
-		reader.consume();
-		return syntax;
+		case TokenType::Semicolon:
+		{
+			// empty statement
+			gmt::Arena& arena = m_syntaxTree.get_arena();
+			auto syntax = arena.emplace<ExpressionStatementSyntax>(parent);
+			syntax->set_semicolon(reader.current());
+			reader.consume();
+			return syntax;
+		}
+
+		case TokenType::DeferKeyword:
+			return read_defer(reader, parent);
+
+		case TokenType::ReturnKeyword:
+			return read_return_statement(reader, parent);
+
+		case TokenType::BreakKeyword:
+			return read_break_statement(reader, parent);
+
+		case TokenType::ContinueKeyword:
+			return read_continue_statement(reader, parent);
+
+		case TokenType::WhileKeyword:
+			return read_while_statement(reader, parent);
+
+		case TokenType::UntilKeyword:
+			return read_until_statement(reader, parent);
+
+		case TokenType::ForKeyword:
+			return read_for_in_statement(reader, parent);
 	}
 
 	// variable declarations 'name: Type = expr' / 'name := expr' - two-token lookahead
@@ -1362,6 +1374,68 @@ gmt::Ref<ContinueStatementSyntax> SourceParser::read_continue_statement(SourcePr
 	}
 
 	syntax->set_semicolon(expect(reader, TokenType::Semicolon, L"Expected ';'"));
+	return syntax;
+}
+
+gmt::Ref<WhileStatementSyntax> SourceParser::read_while_statement(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
+{
+	gmt::Arena& arena = m_syntaxTree.get_arena();
+	auto syntax = arena.emplace<WhileStatementSyntax>(parent);
+
+	// while (condition) { }
+	syntax->set_while_keyword(expect(reader, TokenType::WhileKeyword, L"Expected 'while' keyword"));
+	syntax->set_open_curl(expect(reader, TokenType::OpenCurl, L"Expected '('"));
+	syntax->set_condition(read_expression(reader, syntax, 0));
+	syntax->set_close_curl(expect(reader, TokenType::CloseCurl, L"Expected ')'"));
+	syntax->set_block(read_statements_block(reader, syntax));
+
+	return syntax;
+}
+
+gmt::Ref<UntilStatementSyntax> SourceParser::read_until_statement(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
+{
+	gmt::Arena& arena = m_syntaxTree.get_arena();
+	auto syntax = arena.emplace<UntilStatementSyntax>(parent);
+
+	// until (condition) { }
+	syntax->set_until_keyword(expect(reader, TokenType::UntilKeyword, L"Expected 'until' keyword"));
+	syntax->set_open_curl(expect(reader, TokenType::OpenCurl, L"Expected '('"));
+	syntax->set_condition(read_expression(reader, syntax, 0));
+	syntax->set_close_curl(expect(reader, TokenType::CloseCurl, L"Expected ')'"));
+	syntax->set_block(read_statements_block(reader, syntax));
+
+	return syntax;
+}
+
+gmt::Ref<ForInStatementSyntax> SourceParser::read_for_in_statement(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
+{
+	gmt::Arena& arena = m_syntaxTree.get_arena();
+	auto syntax = arena.emplace<ForInStatementSyntax>(parent);
+
+	// for identifier in expression { } / for (identifier in expression) { }
+	syntax->set_for_keyword(expect(reader, TokenType::ForKeyword, L"Expected 'for' keyword"));
+
+	bool hasParens = reader.current().get_type() == TokenType::OpenCurl;
+	if (hasParens)
+		reader.consume(); // consume '('
+
+	if (is_identifier_like(reader.current().get_type()))
+	{
+		syntax->set_identifier(reader.current());
+		reader.consume();
+	}
+	else
+	{
+		m_diagnostics.report_error(reader.current(), L"Expected identifier after 'for'");
+	}
+
+	syntax->set_in_keyword(expect(reader, TokenType::InKeyword, L"Expected 'in' keyword"));
+	syntax->set_range_expression(read_expression(reader, syntax, 0));
+
+	if (hasParens)
+		expect(reader, TokenType::CloseCurl, L"Expected ')'");
+
+	syntax->set_block(read_statements_block(reader, syntax));
 	return syntax;
 }
 
