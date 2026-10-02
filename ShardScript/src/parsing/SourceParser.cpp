@@ -1208,6 +1208,12 @@ gmt::Ref<StatementSyntax> SourceParser::read_statement(SourceProvider& reader, g
 		case TokenType::UnlessKeyword:
 			return read_conditional_clause(reader, parent);
 
+		case TokenType::ThrowKeyword:
+			return read_throw_statement(reader, parent);
+
+		case TokenType::TryKeyword:
+			return read_try_statement(reader, parent);
+
 		case TokenType::WhileKeyword:
 			return read_while_statement(reader, parent);
 
@@ -1435,6 +1441,81 @@ gmt::Ref<ConditionalClauseBaseSyntax> SourceParser::read_conditional_clause(Sour
 
 	m_diagnostics.report_error(reader.current(), L"Expected 'if', 'unless' or 'else' keyword");
 	return gmt::nullref;
+}
+
+gmt::Ref<ThrowStatementSyntax> SourceParser::read_throw_statement(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
+{
+	gmt::Arena& arena = m_syntaxTree.get_arena();
+	auto syntax = arena.emplace<ThrowStatementSyntax>(parent);
+
+	// throw expression; / throw;
+	syntax->set_throw_keyword(expect(reader, TokenType::ThrowKeyword, L"Expected 'throw' keyword"));
+
+	if (reader.can_consume() && reader.current().get_type() != TokenType::Semicolon)
+		syntax->set_expression(read_expression(reader, syntax, 0));
+
+	syntax->set_semicolon(expect(reader, TokenType::Semicolon, L"Expected ';'"));
+	return syntax;
+}
+
+gmt::Ref<TryStatementSyntax> SourceParser::read_try_statement(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
+{
+	gmt::Arena& arena = m_syntaxTree.get_arena();
+	auto syntax = arena.emplace<TryStatementSyntax>(parent);
+
+	// try { } catch ex: Type { } catch Type { } catch { }
+	syntax->set_try_keyword(expect(reader, TokenType::TryKeyword, L"Expected 'try' keyword"));
+	syntax->set_try_block(read_statements_block(reader, syntax));
+
+	detail::inline_ref_vector<CatchClauseSyntax, 2> clauses{};
+
+	while (reader.can_consume() && reader.current().get_type() == TokenType::CatchKeyword)
+	{
+		gmt::Ref<CatchClauseSyntax> clause = read_catch_clause(reader, syntax);
+		if (!clause.is_null())
+			clauses.push_back(clause);
+		else
+			reader.consume(); // error recovery: guarantee progress
+	}
+
+	syntax->set_catch_clauses(clauses.commit_array(arena));
+
+	if (clauses.get_vector().empty())
+		m_diagnostics.report_error(syntax->get_try_keyword(), L"'try' statement must have at least one 'catch' clause");
+
+	return syntax;
+}
+
+gmt::Ref<CatchClauseSyntax> SourceParser::read_catch_clause(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
+{
+	gmt::Arena& arena = m_syntaxTree.get_arena();
+	auto syntax = arena.emplace<CatchClauseSyntax>(parent);
+
+	// catch identifier: Type { } / catch Type { } / catch { }
+	syntax->set_catch_keyword(expect(reader, TokenType::CatchKeyword, L"Expected 'catch' keyword"));
+
+	bool declaresVariable = is_identifier_like(reader.current().get_type()) && reader.peek(0).get_type() == TokenType::Colon;
+	if (declaresVariable)
+	{
+		syntax->set_identifier(reader.current());
+		reader.consume();
+
+		syntax->set_colon(reader.current());
+		reader.consume(); // consume ':'
+
+		syntax->set_exception_type(read_type(reader, syntax));
+	}
+	else if (reader.current().get_type() == TokenType::Identifier || is_predefined_type(reader.current().get_type()))
+	{
+		syntax->set_exception_type(read_type(reader, syntax));
+	}
+	else if (reader.current().get_type() != TokenType::OpenBrace)
+	{
+		m_diagnostics.report_error(reader.current(), L"Catch clause must declare an exception variable or type");
+	}
+
+	syntax->set_body(read_statements_block(reader, syntax));
+	return syntax;
 }
 
 gmt::Ref<WhileStatementSyntax> SourceParser::read_while_statement(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
