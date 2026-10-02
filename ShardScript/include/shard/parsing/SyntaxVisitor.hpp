@@ -46,6 +46,10 @@
 #include <shard/parsing/nodes/statements/UnlessStatementSyntax.hpp>
 #include <shard/parsing/nodes/statements/ElseStatementSyntax.hpp>
 
+#include <shard/parsing/nodes/statements/ThrowStatementSyntax.hpp>
+#include <shard/parsing/nodes/statements/TryStatementSyntax.hpp>
+#include <shard/parsing/nodes/statements/CatchClauseSyntax.hpp>
+
 #include <shard/parsing/nodes/expressions/LiteralExpressionsSyntax.hpp>
 #include <shard/parsing/nodes/expressions/BinaryExpressionSyntax.hpp>
 #include <shard/parsing/nodes/expressions/MemberAccessExpressionSyntax.hpp>
@@ -204,6 +208,10 @@ namespace shard
         virtual void visit_if_statement(const IfStatementSyntax* node);
         virtual void visit_unless_statement(const UnlessStatementSyntax* node);
         virtual void visit_else_statement(const ElseStatementSyntax* node);
+
+        virtual void visit_throw_statement(const ThrowStatementSyntax* node);
+        virtual void visit_try_statement(const TryStatementSyntax* node);
+        virtual void visit_catch_clause(const CatchClauseSyntax* node);
 
         virtual void visit_literal_expression(const LiteralExpressionSyntax* node);
         virtual void visit_binary_expression(const BinaryExpressionSyntax* node);

@@ -252,6 +252,42 @@ void SyntaxVisitor::visit_else_statement(const ElseStatementSyntax* node)
 		node->get_next().as_ptr()->accept(*this);
 }
 
+void SyntaxVisitor::visit_throw_statement(const ThrowStatementSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (!node->get_expression().is_null())
+		node->get_expression().as_ptr()->accept(*this);
+}
+
+void SyntaxVisitor::visit_try_statement(const TryStatementSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (!node->get_try_block().is_null())
+		node->get_try_block().as_ptr()->accept(*this);
+
+	for (const gmt::Ref<CatchClauseSyntax>& clause : node->get_catch_clauses().as_span())
+	{
+		if (!clause.is_null())
+			clause.as_ptr()->accept(*this);
+	}
+}
+
+void SyntaxVisitor::visit_catch_clause(const CatchClauseSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (!node->get_exception_type().is_null())
+		node->get_exception_type().as_ptr()->accept(*this);
+
+	if (!node->get_body().is_null())
+		node->get_body().as_ptr()->accept(*this);
+}
+
 void SyntaxVisitor::visit_variable_statement(const VariableStatementSyntax* node)
 {
 	if (node == nullptr)
