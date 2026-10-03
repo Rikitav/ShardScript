@@ -424,10 +424,38 @@ gmt::Ref<MemberDeclarationSyntax> SourceParser::read_member_declaration(SourcePr
 			break;
 		}
 
+		case TokenType::StructKeyword:
+		{
+			member = read_struct_declaration(reader, parent);
+			break;
+		}
+
+		case TokenType::InterfaceKeyword:
+		{
+			member = read_interface_declaration(reader, parent);
+			break;
+		}
+
 		case TokenType::FunctionKeyword:
 		{
 			member = read_function_declaration(reader, parent);
 			break;
+		}
+
+		case TokenType::Identifier:
+		{
+			// 'name: Type' - field declaration, confirmed by two-token lookahead
+			if (reader.peek(0).get_type() == TokenType::Colon)
+			{
+				member = read_field_declaration(reader, parent);
+				break;
+			}
+
+			m_diagnostics.report_error(current, L"Expected member declaration");
+
+			// error recovery: skip the remaining tokens of this declaration
+			detail::synchronize_to_next_top_level(reader);
+			return gmt::nullref;
 		}
 
 		default:
@@ -517,6 +545,172 @@ gmt::Ref<ClassDeclarationSyntax> SourceParser::read_class_declaration(SourceProv
 		}
 	}
 
+	return syntax;
+}
+
+gmt::Ref<StructDeclarationSyntax> SourceParser::read_struct_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
+{
+	gmt::Arena& arena = m_syntaxTree.get_arena();
+	auto syntax = arena.emplace<StructDeclarationSyntax>(parent);
+	syntax->set_declare_token(expect(reader, TokenType::StructKeyword, L"Expected 'struct' keyword"));
+
+	if (detail::try_match_identifier(reader, m_diagnostics, 5))
+	{
+		syntax->set_identifier(reader.current());
+		reader.consume();
+	}
+	else
+	{
+		syntax->set_identifier(SyntaxToken(TokenType::Identifier, L"", TextLocation(), true));
+	}
+
+	if (reader.can_consume() && reader.current().get_type() == TokenType::LessOperator)
+		syntax->set_type_parameters(read_generic_type_parameters(reader, syntax));
+
+	if (reader.can_consume() && reader.current().get_type() == TokenType::WhereKeyword)
+		syntax->set_where_clauses(read_where_clauses(reader, syntax));
+
+	if (reader.can_consume() && reader.current().get_type() == TokenType::Colon)
+	{
+		syntax->set_base_type_colon(reader.current());
+		reader.consume();
+		syntax->set_base_types(read_base_types(reader, syntax));
+	}
+
+	if (try_match(reader, { TokenType::OpenBrace, TokenType::Semicolon }, L"Expected struct body '{' or semicolon ';'", 5))
+	{
+		if (reader.current().get_type() == TokenType::OpenBrace)
+		{
+			syntax->set_open_bracket(reader.current());
+			reader.consume();
+
+			detail::inline_ref_vector<MemberDeclarationSyntax, 10> members{};
+
+			int loopGuard = 0;
+			while (reader.can_consume())
+			{
+				if (++loopGuard > max_loop_iterations)
+				{
+					m_diagnostics.report_error(reader.current(), L"Parser loop detected - aborting struct body");
+					break;
+				}
+
+				if (reader.current().get_type() == TokenType::CloseBrace)
+					break;
+
+				if (!can_start_member_declaration(reader.current().get_type()))
+				{
+					m_diagnostics.report_error(reader.current(), L"Unexpected token in struct body");
+					reader.consume();
+					continue;
+				}
+
+				gmt::Ref<MemberDeclarationSyntax> member = read_member_declaration(reader, syntax);
+				if (!member.is_null())
+					members.push_back(member);
+			}
+
+			syntax->set_close_bracket(expect(reader, TokenType::CloseBrace, L"Expected '}'"));
+			syntax->set_members(members.commit_array(arena));
+		}
+		else
+		{
+			syntax->set_semicolon(reader.current());
+			reader.consume();
+		}
+	}
+
+	return syntax;
+}
+
+gmt::Ref<InterfaceDeclarationSyntax> SourceParser::read_interface_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
+{
+	gmt::Arena& arena = m_syntaxTree.get_arena();
+	auto syntax = arena.emplace<InterfaceDeclarationSyntax>(parent);
+	syntax->set_declare_token(expect(reader, TokenType::InterfaceKeyword, L"Expected 'interface' keyword"));
+
+	if (detail::try_match_identifier(reader, m_diagnostics, 5))
+	{
+		syntax->set_identifier(reader.current());
+		reader.consume();
+	}
+	else
+	{
+		syntax->set_identifier(SyntaxToken(TokenType::Identifier, L"", TextLocation(), true));
+	}
+
+	if (reader.can_consume() && reader.current().get_type() == TokenType::LessOperator)
+		syntax->set_type_parameters(read_generic_type_parameters(reader, syntax));
+
+	if (reader.can_consume() && reader.current().get_type() == TokenType::WhereKeyword)
+		syntax->set_where_clauses(read_where_clauses(reader, syntax));
+
+	if (try_match(reader, { TokenType::OpenBrace, TokenType::Semicolon }, L"Expected interface body '{' or semicolon ';'", 5))
+	{
+		if (reader.current().get_type() == TokenType::OpenBrace)
+		{
+			syntax->set_open_bracket(reader.current());
+			reader.consume();
+
+			detail::inline_ref_vector<MemberDeclarationSyntax, 10> members{};
+
+			int loopGuard = 0;
+			while (reader.can_consume())
+			{
+				if (++loopGuard > max_loop_iterations)
+				{
+					m_diagnostics.report_error(reader.current(), L"Parser loop detected - aborting interface body");
+					break;
+				}
+
+				if (reader.current().get_type() == TokenType::CloseBrace)
+					break;
+
+				if (!can_start_member_declaration(reader.current().get_type()))
+				{
+					m_diagnostics.report_error(reader.current(), L"Unexpected token in interface body");
+					reader.consume();
+					continue;
+				}
+
+				gmt::Ref<MemberDeclarationSyntax> member = read_member_declaration(reader, syntax);
+				if (!member.is_null())
+					members.push_back(member);
+			}
+
+			syntax->set_close_bracket(expect(reader, TokenType::CloseBrace, L"Expected '}'"));
+			syntax->set_members(members.commit_array(arena));
+		}
+		else
+		{
+			syntax->set_semicolon(reader.current());
+			reader.consume();
+		}
+	}
+
+	return syntax;
+}
+
+gmt::Ref<FieldDeclarationSyntax> SourceParser::read_field_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
+{
+	gmt::Arena& arena = m_syntaxTree.get_arena();
+	auto syntax = arena.emplace<FieldDeclarationSyntax>(parent);
+
+	// name: Type; / name: Type = expression;
+	syntax->set_identifier(reader.current());
+	reader.consume();
+
+	syntax->set_colon(expect(reader, TokenType::Colon, L"Expected ':'"));
+	syntax->set_type(read_type(reader, syntax));
+
+	if (reader.can_consume() && reader.current().get_type() == TokenType::AssignOperator)
+	{
+		syntax->set_assign_token(reader.current());
+		reader.consume();
+		syntax->set_expression(read_expression(reader, syntax, 0));
+	}
+
+	syntax->set_semicolon(expect(reader, TokenType::Semicolon, L"Expected ';'"));
 	return syntax;
 }
 

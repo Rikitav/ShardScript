@@ -296,6 +296,7 @@ bool shard::is_member_keyword(shard::TokenType type)
 		case TokenType::FunctionKeyword:
 		case TokenType::ClassKeyword:
 		case TokenType::StructKeyword:
+		case TokenType::InterfaceKeyword:
 		case TokenType::DelegateKeyword:
 		case TokenType::IndexerKeyword:
 		case TokenType::EnumKeyword:
