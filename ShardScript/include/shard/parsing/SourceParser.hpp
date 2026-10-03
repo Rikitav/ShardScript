@@ -40,6 +40,7 @@
 #include <shard/parsing/nodes/members/AccessorDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/members/ConstructorDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/members/OperatorDeclarationSyntax.hpp>
+#include <shard/parsing/nodes/members/DelegateDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/members/FunctionDeclarationSyntax.hpp>
 
 #include <shard/parsing/nodes/statements/ExpressionStatementSyntax.hpp>
@@ -90,29 +91,62 @@
 
 #include <algorithm>
 #include <initializer_list>
+#include <memory>
 #include <memory_resource>
 #include <vector>
 
 namespace shard
 {
 	// Note that this parser is only capable of contextual parsing,
-	// and only should be used to parse full compulation units.
-	// DO NOT try to parse individual members or expression with this parser out of stream.
+	// and only should be used to parse full translation units.
+	// It is recomended not try to parse individual members or expression with this parser out of stream.
 
 	class SHARD_API SourceParser
 	{
+		enum class ParseState : std::uint8_t
+		{
+			None
+		};
+
+		struct ParseFrame
+		{
+			SyntaxKind kind;
+			ParseState state;
+		};
+
+		struct RecoveryContext
+		{
+			class Guard
+			{
+				SourceParser& m_parser;
+
+			public:
+				Guard(SourceParser& parser, SyntaxKind kind, ParseState state = ParseState::None);
+				~Guard();
+
+				Guard(const Guard&) = delete;
+				Guard& operator=(const Guard&) = delete;
+
+				void set_state(ParseState state);
+			};
+
+			std::vector<ParseFrame> parseStack;
+		};
+
 		static constexpr int max_loop_iterations = 10000;
 		static constexpr int max_block_depth = 256;
 		static constexpr int max_expression_depth = 256;
 
+
 		SyntaxTree& m_syntaxTree;
 		DiagnosticsContext& m_diagnostics;
+		RecoveryContext m_recovery;
 		int m_blockDepth = 0;
 		int m_expressionDepth = 0;
 
 	public:
 		SourceParser(SyntaxTree& syntaxTree, DiagnosticsContext& diagnostics);
-		~SourceParser() = default;
+		~SourceParser();
 
 		void FromSourceProvider(SourceProvider& reader);
 
@@ -123,6 +157,9 @@ namespace shard
 		bool try_match(SourceProvider& reader, std::initializer_list<TokenType> types, const wchar_t* errorMessage, int maxSkips = 5);
 		bool try_match_identifier(SourceProvider& reader, int maxSkips = 5);
 		bool scan_generic_type_arguments(SourceProvider& reader);
+		void reject_generic_type_parameters(SourceProvider& reader, const wchar_t* message);
+		bool skip_towards(SourceProvider& reader, std::initializer_list<TokenType> expectedTokens, int maxSkips);
+		bool try_synchronize(SourceProvider& reader);
 
 		// Translation unit level
 		gmt::Ref<TranslationUnitSyntax> read_compilation_unit(SourceProvider& reader);
@@ -140,6 +177,7 @@ namespace shard
 		gmt::Ref<AccessorDeclarationSyntax> read_accessor_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 		gmt::Ref<ConstructorDeclarationSyntax> read_constructor_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 		gmt::Ref<OperatorDeclarationSyntax> read_operator_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
+		gmt::Ref<DelegateDeclarationSyntax> read_delegate_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 		gmt::Ref<FunctionDeclarationSyntax> read_function_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 
 		// Types

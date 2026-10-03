@@ -35,6 +35,7 @@
 #include <shard/parsing/nodes/members/AccessorDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/members/ConstructorDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/members/OperatorDeclarationSyntax.hpp>
+#include <shard/parsing/nodes/members/DelegateDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/members/FunctionDeclarationSyntax.hpp>
 
 #include <shard/parsing/nodes/statements/ExpressionStatementSyntax.hpp>
@@ -203,6 +204,7 @@ namespace shard
         virtual void visit_accessor_declaration(const AccessorDeclarationSyntax* node);
         virtual void visit_constructor_declaration(const ConstructorDeclarationSyntax* node);
         virtual void visit_operator_declaration(const OperatorDeclarationSyntax* node);
+        virtual void visit_delegate_declaration(const DelegateDeclarationSyntax* node);
         virtual void visit_function_declaration(const FunctionDeclarationSyntax* node);
 
         virtual void visit_statements_block(const StatementsBlockSyntax* node);

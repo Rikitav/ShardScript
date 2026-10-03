@@ -216,6 +216,27 @@ void SyntaxVisitor::visit_operator_declaration(const OperatorDeclarationSyntax* 
 		node->get_body().as_ptr()->accept(*this);
 }
 
+void SyntaxVisitor::visit_delegate_declaration(const DelegateDeclarationSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (!node->get_attributes().is_null())
+		visit_attributes_list(node->get_attributes().as_ptr());
+
+	if (!node->get_type_parameters().is_null())
+		visit_type_parameters_list(node->get_type_parameters().as_ptr());
+
+	if (!node->get_where_clauses().is_null())
+		visit_where_clauses_list(node->get_where_clauses().as_ptr());
+
+	if (!node->get_parameters_list().is_null())
+		visit_parameters_list(node->get_parameters_list().as_ptr());
+
+	if (!node->get_return_type().is_null())
+		node->get_return_type().as_ptr()->accept(*this);
+}
+
 void SyntaxVisitor::visit_function_declaration(const FunctionDeclarationSyntax* node)
 {
 	if (node == nullptr)
