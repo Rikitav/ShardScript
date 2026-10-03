@@ -444,10 +444,13 @@ gmt::Ref<MemberDeclarationSyntax> SourceParser::read_member_declaration(SourcePr
 
 		case TokenType::Identifier:
 		{
-			// 'name: Type' - field declaration, confirmed by two-token lookahead
+			// 'name: Type' - field or property declaration, confirmed by two-token lookahead
 			if (reader.peek(0).get_type() == TokenType::Colon)
 			{
-				member = read_field_declaration(reader, parent);
+				member = scan_property_declaration(reader)
+					? read_property_declaration(reader, parent)
+					: read_field_declaration(reader, parent);
+
 				break;
 			}
 
@@ -714,6 +717,102 @@ gmt::Ref<FieldDeclarationSyntax> SourceParser::read_field_declaration(SourceProv
 	return syntax;
 }
 
+gmt::Ref<PropertyDeclarationSyntax> SourceParser::read_property_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
+{
+	gmt::Arena& arena = m_syntaxTree.get_arena();
+	auto syntax = arena.emplace<PropertyDeclarationSyntax>(parent);
+
+	// name: Type { get; set; } [= expression;]
+	syntax->set_identifier(reader.current());
+	reader.consume();
+
+	syntax->set_colon(expect(reader, TokenType::Colon, L"Expected ':'"));
+	syntax->set_type(read_type(reader, syntax));
+
+	syntax->set_open_bracket(expect(reader, TokenType::OpenBrace, L"Expected '{' for property accessors"));
+
+	int loopGuard = 0;
+	while (reader.can_consume())
+	{
+		if (++loopGuard > max_loop_iterations)
+		{
+			m_diagnostics.report_error(reader.current(), L"Parser loop detected - aborting property accessors");
+			break;
+		}
+
+		TokenType type = reader.current().get_type();
+		if (type == TokenType::CloseBrace)
+		{
+			syntax->set_close_bracket(reader.current());
+			reader.consume();
+			break;
+		}
+
+		if (type == TokenType::GetKeyword || type == TokenType::SetKeyword)
+		{
+			gmt::Ref<AccessorDeclarationSyntax> accessor = read_accessor_declaration(reader, syntax);
+			if (type == TokenType::GetKeyword)
+			{
+				if (!syntax->get_getter().is_null())
+				{
+					m_diagnostics.report_error(reader.current(), L"Duplicate 'get' accessor");
+					continue;
+				}
+
+				syntax->set_getter(accessor);
+			}
+			else
+			{
+				if (!syntax->get_setter().is_null())
+				{
+					m_diagnostics.report_error(reader.current(), L"Duplicate 'set' accessor");
+					continue;
+				}
+
+				syntax->set_setter(accessor);
+			}
+
+			continue;
+		}
+
+		m_diagnostics.report_error(reader.current(), L"Expected 'get', 'set' or '}' in property accessors");
+		reader.consume(); // error recovery: guarantee progress
+	}
+
+	if (syntax->get_getter().is_null() && syntax->get_setter().is_null())
+		m_diagnostics.report_error(syntax->get_identifier(), L"Property must have at least one accessor (get or set)");
+
+	if (reader.can_consume() && reader.current().get_type() == TokenType::AssignOperator)
+	{
+		syntax->set_assign_token(reader.current());
+		reader.consume();
+		syntax->set_expression(read_expression(reader, syntax, 0));
+		syntax->set_semicolon(expect(reader, TokenType::Semicolon, L"Expected ';'"));
+	}
+
+	return syntax;
+}
+
+gmt::Ref<AccessorDeclarationSyntax> SourceParser::read_accessor_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
+{
+	gmt::Arena& arena = m_syntaxTree.get_arena();
+	auto syntax = arena.emplace<AccessorDeclarationSyntax>(parent);
+
+	// get; / set;
+	TokenType type = reader.current().get_type();
+	if (type != TokenType::GetKeyword && type != TokenType::SetKeyword)
+	{
+		m_diagnostics.report_error(reader.current(), L"Expected 'get' or 'set' accessor");
+		return syntax;
+	}
+
+	syntax->set_keyword(reader.current());
+	reader.consume();
+
+	syntax->set_semicolon(expect(reader, TokenType::Semicolon, L"Expected ';' after accessor keyword"));
+	return syntax;
+}
+
 gmt::Ref<FunctionDeclarationSyntax> SourceParser::read_function_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
 {
 	gmt::Arena& arena = m_syntaxTree.get_arena();
@@ -870,6 +969,88 @@ gmt::Ref<GenericTypeSyntax> SourceParser::read_generic_type(SourceProvider& read
 	generic->set_underlaying_type(underlayingType);
 	generic->set_type_arguments(read_type_arguments_list(reader, generic));
 	return generic;
+}
+
+bool SourceParser::scan_property_declaration(SourceProvider& reader)
+{
+	// current is the member name and peek(0) is ':'; scans 'name: Type' ahead and
+	// reports whether an accessor block '{' follows (property vs field declaration)
+	int offset = 1;
+
+	if (reader.peek(offset - 1).get_type() != TokenType::Colon)
+		return false;
+
+	++offset;
+
+	TokenType startType = reader.peek(offset - 1).get_type();
+	if (startType != TokenType::Identifier && !is_predefined_type(startType))
+		return false;
+
+	++offset;
+
+	while (offset < max_loop_iterations)
+	{
+		TokenType type = reader.peek(offset - 1).get_type();
+
+		if (type == TokenType::NamespaceQualifier)
+		{
+			++offset;
+			if (reader.peek(offset - 1).get_type() != TokenType::Identifier)
+				return false;
+
+			++offset;
+			continue;
+		}
+
+		if (type == TokenType::LessOperator)
+		{
+			// scan the generic argument list
+			int depth = 1;
+			++offset;
+
+			while (offset < max_loop_iterations)
+			{
+				TokenType argumentType = reader.peek(offset - 1).get_type();
+
+				if (argumentType == TokenType::LessOperator)
+				{
+					++depth;
+					++offset;
+					continue;
+				}
+
+				if (argumentType == TokenType::GreaterOperator)
+				{
+					--depth;
+					++offset;
+					if (depth == 0)
+						break;
+
+					continue;
+				}
+
+				if (is_valid_generic_type_token(argumentType) || is_predefined_type(argumentType))
+				{
+					++offset;
+					continue;
+				}
+
+				return false;
+			}
+
+			continue;
+		}
+
+		if (type == TokenType::Question || type == TokenType::OpenSquare || type == TokenType::CloseSquare)
+		{
+			++offset;
+			continue;
+		}
+
+		break;
+	}
+
+	return reader.peek(offset - 1).get_type() == TokenType::OpenBrace;
 }
 
 bool SourceParser::scan_generic_type_arguments(SourceProvider& reader)
