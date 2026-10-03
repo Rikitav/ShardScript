@@ -132,6 +132,36 @@ void SyntaxVisitor::visit_field_declaration(const FieldDeclarationSyntax* node)
 		node->get_expression().as_ptr()->accept(*this);
 }
 
+void SyntaxVisitor::visit_property_declaration(const PropertyDeclarationSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (!node->get_attributes().is_null())
+		visit_attributes_list(node->get_attributes().as_ptr());
+
+	if (!node->get_type().is_null())
+		node->get_type().as_ptr()->accept(*this);
+
+	if (!node->get_getter().is_null())
+		node->get_getter().as_ptr()->accept(*this);
+
+	if (!node->get_setter().is_null())
+		node->get_setter().as_ptr()->accept(*this);
+
+	if (!node->get_expression().is_null())
+		node->get_expression().as_ptr()->accept(*this);
+}
+
+void SyntaxVisitor::visit_accessor_declaration(const AccessorDeclarationSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (!node->get_attributes().is_null())
+		visit_attributes_list(node->get_attributes().as_ptr());
+}
+
 void SyntaxVisitor::visit_function_declaration(const FunctionDeclarationSyntax* node)
 {
 	if (node == nullptr)
