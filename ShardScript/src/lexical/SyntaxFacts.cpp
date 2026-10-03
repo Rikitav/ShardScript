@@ -300,6 +300,8 @@ bool shard::is_member_keyword(shard::TokenType type)
 		case TokenType::DelegateKeyword:
 		case TokenType::IndexerKeyword:
 		case TokenType::EnumKeyword:
+		case TokenType::NewKeyword:
+		case TokenType::OperatorKeyword:
 		case TokenType::InitKeyword:
 			return true;
 

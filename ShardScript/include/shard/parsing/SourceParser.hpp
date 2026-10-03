@@ -36,7 +36,10 @@
 #include <shard/parsing/nodes/members/InterfaceDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/members/FieldDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/members/PropertyDeclarationSyntax.hpp>
+#include <shard/parsing/nodes/members/IndexatorDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/members/AccessorDeclarationSyntax.hpp>
+#include <shard/parsing/nodes/members/ConstructorDeclarationSyntax.hpp>
+#include <shard/parsing/nodes/members/OperatorDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/members/FunctionDeclarationSyntax.hpp>
 
 #include <shard/parsing/nodes/statements/ExpressionStatementSyntax.hpp>
@@ -120,7 +123,6 @@ namespace shard
 		bool try_match(SourceProvider& reader, std::initializer_list<TokenType> types, const wchar_t* errorMessage, int maxSkips = 5);
 		bool try_match_identifier(SourceProvider& reader, int maxSkips = 5);
 		bool scan_generic_type_arguments(SourceProvider& reader);
-		bool scan_property_declaration(SourceProvider& reader);
 
 		// Translation unit level
 		gmt::Ref<TranslationUnitSyntax> read_compilation_unit(SourceProvider& reader);
@@ -134,7 +136,10 @@ namespace shard
 		gmt::Ref<InterfaceDeclarationSyntax> read_interface_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 		gmt::Ref<FieldDeclarationSyntax> read_field_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 		gmt::Ref<PropertyDeclarationSyntax> read_property_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
+		gmt::Ref<IndexatorDeclarationSyntax> read_indexator_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 		gmt::Ref<AccessorDeclarationSyntax> read_accessor_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
+		gmt::Ref<ConstructorDeclarationSyntax> read_constructor_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
+		gmt::Ref<OperatorDeclarationSyntax> read_operator_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 		gmt::Ref<FunctionDeclarationSyntax> read_function_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 
 		// Types

@@ -15,7 +15,7 @@ namespace shard
 {
 	class SHARD_API PropertyDeclarationSyntax final : public MemberDeclarationSyntax
 	{
-		SyntaxToken m_colonToken;
+		SyntaxToken m_arrowToken;
 		gmt::Ref<TypeSyntax> m_type;
 		SyntaxToken m_openBracketToken;
 		gmt::Ref<AccessorDeclarationSyntax> m_getter;
@@ -29,7 +29,7 @@ namespace shard
 		PropertyDeclarationSyntax(gmt::Ref<SyntaxNode> parent);
 		virtual ~PropertyDeclarationSyntax() = default;
 
-		SyntaxToken get_colon() const;
+		SyntaxToken get_arrow() const;
 		gmt::Ref<const TypeSyntax> get_type() const;
 		SyntaxToken get_open_bracket() const;
 		gmt::Ref<const AccessorDeclarationSyntax> get_getter() const;
@@ -39,7 +39,7 @@ namespace shard
 		gmt::Ref<const ExpressionSyntax> get_expression() const;
 		SyntaxToken get_semicolon() const;
 
-		void set_colon(const SyntaxToken& token);
+		void set_arrow(const SyntaxToken& token);
 		void set_type(gmt::Ref<TypeSyntax> type);
 		void set_open_bracket(const SyntaxToken& token);
 		void set_getter(gmt::Ref<AccessorDeclarationSyntax> getter);
