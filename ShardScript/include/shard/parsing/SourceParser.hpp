@@ -32,6 +32,9 @@
 #include <shard/parsing/nodes/blocks/ArrowClauseSyntax.hpp>
 
 #include <shard/parsing/nodes/members/ClassDeclarationSyntax.hpp>
+#include <shard/parsing/nodes/members/StructDeclarationSyntax.hpp>
+#include <shard/parsing/nodes/members/InterfaceDeclarationSyntax.hpp>
+#include <shard/parsing/nodes/members/FieldDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/members/FunctionDeclarationSyntax.hpp>
 
 #include <shard/parsing/nodes/statements/ExpressionStatementSyntax.hpp>
@@ -124,6 +127,9 @@ namespace shard
 		// Members
 		gmt::Ref<MemberDeclarationSyntax> read_member_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 		gmt::Ref<ClassDeclarationSyntax> read_class_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
+		gmt::Ref<StructDeclarationSyntax> read_struct_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
+		gmt::Ref<InterfaceDeclarationSyntax> read_interface_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
+		gmt::Ref<FieldDeclarationSyntax> read_field_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 		gmt::Ref<FunctionDeclarationSyntax> read_function_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 
 		// Types

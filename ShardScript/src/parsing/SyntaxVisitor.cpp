@@ -75,6 +75,63 @@ void SyntaxVisitor::visit_class_declaration(const ClassDeclarationSyntax* node)
 		member.as_ptr()->accept(*this);
 }
 
+void SyntaxVisitor::visit_struct_declaration(const StructDeclarationSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (!node->get_attributes().is_null())
+		visit_attributes_list(node->get_attributes().as_ptr());
+
+	if (!node->get_type_parameters().is_null())
+		visit_type_parameters_list(node->get_type_parameters().as_ptr());
+
+	if (!node->get_where_clauses().is_null())
+		visit_where_clauses_list(node->get_where_clauses().as_ptr());
+
+	if (!node->get_base_types().is_null())
+		visit_base_types_list(node->get_base_types().as_ptr());
+
+	for (const gmt::Ref<MemberDeclarationSyntax>& member : node->get_members().as_span())
+		member.as_ptr()->accept(*this);
+}
+
+void SyntaxVisitor::visit_interface_declaration(const InterfaceDeclarationSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (!node->get_attributes().is_null())
+		visit_attributes_list(node->get_attributes().as_ptr());
+
+	if (!node->get_type_parameters().is_null())
+		visit_type_parameters_list(node->get_type_parameters().as_ptr());
+
+	if (!node->get_where_clauses().is_null())
+		visit_where_clauses_list(node->get_where_clauses().as_ptr());
+
+	if (!node->get_base_types().is_null())
+		visit_base_types_list(node->get_base_types().as_ptr());
+
+	for (const gmt::Ref<MemberDeclarationSyntax>& member : node->get_members().as_span())
+		member.as_ptr()->accept(*this);
+}
+
+void SyntaxVisitor::visit_field_declaration(const FieldDeclarationSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (!node->get_attributes().is_null())
+		visit_attributes_list(node->get_attributes().as_ptr());
+
+	if (!node->get_type().is_null())
+		node->get_type().as_ptr()->accept(*this);
+
+	if (!node->get_expression().is_null())
+		node->get_expression().as_ptr()->accept(*this);
+}
+
 void SyntaxVisitor::visit_function_declaration(const FunctionDeclarationSyntax* node)
 {
 	if (node == nullptr)

@@ -27,6 +27,9 @@
 #include <shard/parsing/nodes/blocks/ArrowClauseSyntax.hpp>
 
 #include <shard/parsing/nodes/members/ClassDeclarationSyntax.hpp>
+#include <shard/parsing/nodes/members/StructDeclarationSyntax.hpp>
+#include <shard/parsing/nodes/members/InterfaceDeclarationSyntax.hpp>
+#include <shard/parsing/nodes/members/FieldDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/members/FunctionDeclarationSyntax.hpp>
 
 #include <shard/parsing/nodes/statements/ExpressionStatementSyntax.hpp>
@@ -187,6 +190,9 @@ namespace shard
         virtual void visit_attribute(const AttributeSyntax* node);
 
         virtual void visit_class_declaration(const ClassDeclarationSyntax* node);
+        virtual void visit_struct_declaration(const StructDeclarationSyntax* node);
+        virtual void visit_interface_declaration(const InterfaceDeclarationSyntax* node);
+        virtual void visit_field_declaration(const FieldDeclarationSyntax* node);
         virtual void visit_function_declaration(const FunctionDeclarationSyntax* node);
 
         virtual void visit_statements_block(const StatementsBlockSyntax* node);
