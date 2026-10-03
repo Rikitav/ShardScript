@@ -50,96 +50,32 @@ namespace detail
 	template<typename T, std::size_t Capacity>
 	using inline_ref_vector = inline_vector<gmt::Ref<T>, Capacity>;
 
-	static void synchronize_to_next_top_level(SourceProvider& reader)
-	{
-		int braceDepth = 0;
-		int parenDepth = 0;
 
-		while (reader.can_consume())
+	static bool try_consume_generic_closer(SourceProvider& reader, SyntaxToken& closerToken)
+	{		if (!reader.can_consume())
+			return false;
+
+		TokenType type = reader.current().get_type();
+		if (type == TokenType::GreaterOperator)
 		{
-			SyntaxToken token = reader.current();
-			if (braceDepth == 0 && parenDepth == 0 && can_start_compilation_unit(token.get_type()))
-				return;
-
-			switch (token.get_type())
-			{
-				case TokenType::OpenBrace:
-				{
-					++braceDepth;
-					break;
-				}
-
-				case TokenType::CloseBrace:
-				{
-					if (braceDepth > 0)
-						--braceDepth;
-
-					break;
-				}
-
-				case TokenType::OpenCurl:
-				{
-					++parenDepth;
-					break;
-				}
-
-				case TokenType::CloseCurl:
-				{
-					if (parenDepth > 0)
-						--parenDepth;
-
-					break;
-				}
-
-				default:
-					break;
-			}
-
+			closerToken = reader.current();
 			reader.consume();
+			return true;
 		}
-	}
 
-	static bool try_synchronize(SourceProvider& reader, std::initializer_list<TokenType> expectedTokens, int maxSkips)
-	{
-		// skip tokens until we find a synchronization point or expected token
-		int skipped = 0;
-		while (reader.can_consume() && skipped < maxSkips)
+		if (type == TokenType::RightShiftOperator)
 		{
-			SyntaxToken current = reader.current();
-
-			for (TokenType expected : expectedTokens)
-			{
-				if (current.get_type() == expected)
-					return true;
-			}
-
-			if (is_synchronization_token(current.get_type()))
-				return false;
-
+			// '>>' closes two levels at once
+			SyntaxToken shiftToken = reader.current();
 			reader.consume();
-			skipped++;
+
+			SyntaxToken syntheticGreater(TokenType::GreaterOperator, L">", shiftToken.get_location(), shiftToken.is_missing());
+			closerToken = syntheticGreater;
+			reader.put_back(syntheticGreater);
+			return true;
 		}
 
 		return false;
-	}
-
-	static bool try_match_identifier(SourceProvider& reader, DiagnosticsContext& diagnostics, int maxSkips)
-	{
-		if (!reader.can_consume())
-			return false;
-
-		SyntaxToken current = reader.current();
-		if (is_identifier_like(current.get_type()))
-			return true;
-
-		if (is_reserved_identifier(current.get_type()))
-		{
-			diagnostics.report_error(current, L"Identifier cannot be a reserved keyword.");
-			return false;
-		}
-
-		// try to synchronize to an identifier
-		return detail::try_synchronize(reader, { TokenType::Identifier }, maxSkips);
 	}
 
 	static bool can_follow_type(TokenType type) noexcept
@@ -171,10 +107,37 @@ namespace detail
 	}
 }
 
+SourceParser::RecoveryContext::Guard::Guard(
+	SourceParser& parser,
+	SyntaxKind kind,
+	ParseState state = ParseState::None
+) :
+	m_parser(parser)
+{
+	m_parser.m_recovery.parseStack.push_back(ParseFrame
+	{
+		.kind = kind,
+		.state = state
+	});
+}
+
+SourceParser::RecoveryContext::Guard::~Guard()
+{
+	m_parser.m_recovery.parseStack.pop_back();
+}
+
+void SourceParser::RecoveryContext::Guard::set_state(ParseState state)
+{
+	m_parser.m_recovery.parseStack.back().state = state;
+}
+
 SourceParser::SourceParser(SyntaxTree& syntaxTree, DiagnosticsContext& diagnostics) :
+	m_recovery(),
 	m_syntaxTree(syntaxTree),
 	m_diagnostics(diagnostics)
 { }
+
+SourceParser::~SourceParser() = default;
 
 SyntaxToken SourceParser::expect(SourceProvider& reader, TokenType type, const wchar_t* message)
 {
@@ -200,7 +163,7 @@ SyntaxToken SourceParser::expect(SourceProvider& reader, TokenType type, const w
 		m_diagnostics.report_error(current, message);
 
 	// try to synchronize - skip until we find the expected token or a sync point
-	if (detail::try_synchronize(reader, { type }, 5))
+	if (skip_towards(reader, { type }, 5))
 	{
 		current = reader.current();
 		reader.consume();
@@ -238,7 +201,51 @@ bool SourceParser::try_match(SourceProvider& reader, std::initializer_list<Token
 		m_diagnostics.report_error(reader.current(), errorMessage);
 
 	// try to synchronize to one of expected tokens
-	return detail::try_synchronize(reader, types, maxSkips);
+	return skip_towards(reader, types, maxSkips);
+}
+
+bool SourceParser::skip_towards(SourceProvider& reader, std::initializer_list<TokenType> expectedTokens, int maxSkips)
+{
+	// local recovery tier: skip a bounded run of foreign tokens looking for an
+	// expected one; structural recovery is try_synchronize's job
+	int skipped = 0;
+	while (reader.can_consume() && skipped < maxSkips)
+	{
+		SyntaxToken current = reader.current();
+
+		for (TokenType expected : expectedTokens)
+		{
+			if (current.get_type() == expected)
+				return true;
+		}
+
+		if (is_synchronization_token(current.get_type()))
+			return false;
+
+		reader.consume();
+		++skipped;
+	}
+
+	return false;
+}
+
+bool SourceParser::try_match_identifier(SourceProvider& reader, int maxSkips)
+{
+	if (!reader.can_consume())
+		return false;
+
+	SyntaxToken current = reader.current();
+	if (is_identifier_like(current.get_type()))
+		return true;
+
+	if (is_reserved_identifier(current.get_type()))
+	{
+		m_diagnostics.report_error(current, L"Identifier cannot be a reserved keyword.");
+		return false;
+	}
+
+	// skip a bounded run of foreign tokens looking for an identifier
+	return skip_towards(reader, { TokenType::Identifier }, maxSkips);
 }
 
 void SourceParser::FromSourceProvider(SourceProvider& reader)
@@ -332,7 +339,7 @@ gmt::Ref<UsingDirectiveSyntax> SourceParser::read_using_directive(SourceProvider
 	detail::inline_vector<SyntaxToken, 10> qualifier{};
 	while (reader.can_consume())
 	{
-		if (!detail::try_match_identifier(reader, m_diagnostics, 3))
+		if (!try_match_identifier(reader, 3))
 		{
 			if (try_match(reader, { TokenType::Semicolon }, nullptr, 10))
 			{
@@ -371,7 +378,7 @@ gmt::Ref<NamespaceDirectiveSyntax> SourceParser::read_namespace_directive(Source
 
 	detail::inline_vector<SyntaxToken, 10> qualifier{};
 
-	if (!detail::try_match_identifier(reader, m_diagnostics, 5))
+	if (!try_match_identifier(reader, 5))
 	{
 		// create missing identifier if we couldn't recover
 		qualifier.push_back(SyntaxToken(TokenType::Identifier, L"", TextLocation(), true));
@@ -385,7 +392,7 @@ gmt::Ref<NamespaceDirectiveSyntax> SourceParser::read_namespace_directive(Source
 	while (reader.can_consume() && reader.current().get_type() == TokenType::Delimeter)
 	{
 		reader.consume(); // consume '.'
-		if (!detail::try_match_identifier(reader, m_diagnostics, 5))
+		if (!try_match_identifier(reader, 5))
 			break; // error recovery: expected identifier after '.'
 
 		qualifier.push_back(reader.current());
@@ -454,10 +461,55 @@ gmt::Ref<MemberDeclarationSyntax> SourceParser::read_member_declaration(SourcePr
 			break;
 		}
 
+		case TokenType::DelegateKeyword:
+		{
+			member = read_delegate_declaration(reader, parent);
+			break;
+		}
+
 		case TokenType::Identifier:
 		{
-			// 'name: Type' - field, 'name -> Type' - property, 'name[params]' - indexer
 			TokenType nextType = reader.peek(0).get_type();
+			if (nextType == TokenType::LessOperator)
+			{
+				int offset = 0;
+				int depth = 0;
+
+				while (offset < max_loop_iterations)
+				{
+					TokenType scanType = reader.peek(offset).get_type();
+					switch (scanType)
+					{
+						case TokenType::LessOperator:
+						case TokenType::LeftShiftOperator:
+						{
+							depth += (scanType == TokenType::LeftShiftOperator) ? 2 : 1;
+							break;
+						}
+
+						case TokenType::GreaterOperator:
+						case TokenType::RightShiftOperator:
+						{
+							depth -= (scanType == TokenType::RightShiftOperator) ? 2 : 1;
+							break;
+						}
+					}
+
+					if (scanType != TokenType::Identifier &&
+						scanType != TokenType::Comma &&
+						!is_predefined_type(scanType))
+					{
+						break;
+					}
+
+					++offset;
+					if (depth <= 0)
+						break;
+				}
+
+				nextType = reader.peek(offset).get_type();
+			}
+
 			if (nextType == TokenType::Colon)
 			{
 				member = read_field_declaration(reader, parent);
@@ -478,8 +530,10 @@ gmt::Ref<MemberDeclarationSyntax> SourceParser::read_member_declaration(SourcePr
 
 			m_diagnostics.report_error(current, L"Expected member declaration");
 
-			// error recovery: skip the remaining tokens of this declaration
-			detail::synchronize_to_next_top_level(reader);
+			if (reader.can_consume())
+				reader.consume();
+
+			try_synchronize(reader);
 			return gmt::nullref;
 		}
 
@@ -487,8 +541,10 @@ gmt::Ref<MemberDeclarationSyntax> SourceParser::read_member_declaration(SourcePr
 		{
 			m_diagnostics.report_error(current, L"Expected member declaration");
 
-			// error recovery: skip the remaining tokens of this declaration
-			detail::synchronize_to_next_top_level(reader);
+			if (reader.can_consume())
+				reader.consume();
+
+			try_synchronize(reader);
 			return gmt::nullref;
 		}
 	}
@@ -502,9 +558,10 @@ gmt::Ref<ClassDeclarationSyntax> SourceParser::read_class_declaration(SourceProv
 {
 	gmt::Arena& arena = m_syntaxTree.get_arena();
 	auto syntax = arena.emplace<ClassDeclarationSyntax>(parent);
+	RecoveryContext::Guard parseContext(*this, SyntaxKind::ClassDeclaration);
 	syntax->set_declare_token(expect(reader, TokenType::ClassKeyword, L"Expected 'class' keyword"));
 
-	if (detail::try_match_identifier(reader, m_diagnostics, 5))
+	if (try_match_identifier(reader, 5))
 	{
 		syntax->set_identifier(reader.current());
 		reader.consume();
@@ -577,9 +634,10 @@ gmt::Ref<StructDeclarationSyntax> SourceParser::read_struct_declaration(SourcePr
 {
 	gmt::Arena& arena = m_syntaxTree.get_arena();
 	auto syntax = arena.emplace<StructDeclarationSyntax>(parent);
+	RecoveryContext::Guard parseContext(*this, SyntaxKind::StructDeclaration);
 	syntax->set_declare_token(expect(reader, TokenType::StructKeyword, L"Expected 'struct' keyword"));
 
-	if (detail::try_match_identifier(reader, m_diagnostics, 5))
+	if (try_match_identifier(reader, 5))
 	{
 		syntax->set_identifier(reader.current());
 		reader.consume();
@@ -652,9 +710,10 @@ gmt::Ref<InterfaceDeclarationSyntax> SourceParser::read_interface_declaration(So
 {
 	gmt::Arena& arena = m_syntaxTree.get_arena();
 	auto syntax = arena.emplace<InterfaceDeclarationSyntax>(parent);
+	RecoveryContext::Guard parseContext(*this, SyntaxKind::InterfaceDeclaration);
 	syntax->set_declare_token(expect(reader, TokenType::InterfaceKeyword, L"Expected 'interface' keyword"));
 
-	if (detail::try_match_identifier(reader, m_diagnostics, 5))
+	if (try_match_identifier(reader, 5))
 	{
 		syntax->set_identifier(reader.current());
 		reader.consume();
@@ -716,6 +775,126 @@ gmt::Ref<InterfaceDeclarationSyntax> SourceParser::read_interface_declaration(So
 	return syntax;
 }
 
+void SourceParser::reject_generic_type_parameters(SourceProvider& reader, const wchar_t* message)
+{
+	if (!reader.can_consume() || reader.current().get_type() != TokenType::LessOperator)
+		return;
+
+	m_diagnostics.report_error(reader.current(), message);
+	reader.consume(); // consume '<'
+
+	int depth = 1;
+	int loopGuard = 0;
+	while (reader.can_consume() && ++loopGuard <= max_loop_iterations)
+	{
+		TokenType type = reader.current().get_type();
+
+		if (type == TokenType::GreaterOperator || type == TokenType::RightShiftOperator)
+		{
+			// '>>' closes two levels at once
+			depth -= (type == TokenType::RightShiftOperator) ? 2 : 1;
+			reader.consume();
+
+			if (depth <= 0)
+				break;
+
+			continue;
+		}
+
+		if (type == TokenType::LessOperator || type == TokenType::LeftShiftOperator)
+		{
+			depth += (type == TokenType::LeftShiftOperator) ? 2 : 1;
+			reader.consume();
+			continue;
+		}
+
+		if (type == TokenType::Identifier || type == TokenType::Comma || is_predefined_type(type))
+		{
+			reader.consume();
+			continue;
+		}
+
+		break;
+	}
+}
+
+bool SourceParser::try_synchronize(SourceProvider& reader)
+{
+	for (int frame = static_cast<int>(m_recovery.parseStack.size()) - 1; frame >= 0; --frame)
+	{
+		ParseFrame context = m_recovery.parseStack[frame];
+
+		int offset = 0;
+		while (offset < max_loop_iterations)
+		{
+			TokenType type = reader.peek(offset).get_type();
+			if (type == TokenType::EndOfFile)
+				break;
+
+			bool isAnchor = false;
+			switch (context.kind)
+			{
+				case SyntaxKind::StatementsBlock:
+				{
+					isAnchor = type == TokenType::CloseBrace || type == TokenType::Semicolon;
+					break;
+				}
+
+				case SyntaxKind::ClassDeclaration:
+				case SyntaxKind::StructDeclaration:
+				case SyntaxKind::InterfaceDeclaration:
+				{
+					isAnchor = type == TokenType::CloseBrace || can_start_member_declaration(type);
+					break;
+				}
+
+				case SyntaxKind::ParametersList:
+				{
+					isAnchor = type == TokenType::CloseCurl || type == TokenType::Comma || type == TokenType::ArrowOperator;
+					break;
+				}
+
+				case SyntaxKind::TypeArgumentsList:
+				case SyntaxKind::TypeParametersList:
+				{
+					isAnchor = type == TokenType::GreaterOperator || type == TokenType::RightShiftOperator || type == TokenType::Comma;
+					break;
+				}
+
+				case SyntaxKind::ArgumentsList:
+				{
+					isAnchor = type == TokenType::CloseCurl || type == TokenType::Comma;
+					break;
+				}
+
+				default:
+				{
+					// member declarations and everything else: recover at the next declaration boundary
+					isAnchor = type == TokenType::Semicolon || type == TokenType::CloseBrace;
+					break;
+				}
+			}
+
+			if (isAnchor)
+			{
+				// consume the skipped span in one go, leaving the anchor as current
+				while (offset-- > 0)
+					reader.consume();
+
+				return true;
+			}
+
+			++offset;
+		}
+	}
+
+	// no anchor found anywhere: bail with a single guaranteed step of progress
+	if (reader.can_consume())
+		reader.consume();
+
+	return false;
+}
+
 gmt::Ref<FieldDeclarationSyntax> SourceParser::read_field_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
 {
 	gmt::Arena& arena = m_syntaxTree.get_arena();
@@ -724,6 +903,8 @@ gmt::Ref<FieldDeclarationSyntax> SourceParser::read_field_declaration(SourceProv
 	// name: Type; / name: Type = expression;
 	syntax->set_identifier(reader.current());
 	reader.consume();
+
+	reject_generic_type_parameters(reader, L"Fields cannot declare generic type parameters");
 
 	syntax->set_colon(expect(reader, TokenType::Colon, L"Expected ':'"));
 	syntax->set_type(read_type(reader, syntax));
@@ -747,6 +928,8 @@ gmt::Ref<PropertyDeclarationSyntax> SourceParser::read_property_declaration(Sour
 	// name -> Type { get; set; } [= expression;]
 	syntax->set_identifier(reader.current());
 	reader.consume();
+
+	reject_generic_type_parameters(reader, L"Properties cannot declare generic type parameters");
 
 	syntax->set_arrow(expect(reader, TokenType::ArrowOperator, L"Expected '->'"));
 	syntax->set_type(read_type(reader, syntax));
@@ -823,6 +1006,8 @@ gmt::Ref<IndexatorDeclarationSyntax> SourceParser::read_indexator_declaration(So
 	// name[params] -> Type { get; set; }
 	syntax->set_identifier(reader.current());
 	reader.consume();
+
+	reject_generic_type_parameters(reader, L"Indexers cannot declare generic type parameters");
 
 	syntax->set_parameters_list(read_indexer_parameters(reader, syntax));
 
@@ -901,6 +1086,8 @@ gmt::Ref<AccessorDeclarationSyntax> SourceParser::read_accessor_declaration(Sour
 	syntax->set_keyword(reader.current());
 	reader.consume();
 
+	reject_generic_type_parameters(reader, L"Accessors cannot declare generic type parameters");
+
 	syntax->set_semicolon(expect(reader, TokenType::Semicolon, L"Expected ';' after accessor keyword"));
 	return syntax;
 }
@@ -913,6 +1100,8 @@ gmt::Ref<ConstructorDeclarationSyntax> SourceParser::read_constructor_declaratio
 	// new(params); / new(params) { } / new(params) => expression;
 	syntax->set_declare_token(expect(reader, TokenType::NewKeyword, L"Expected 'new' keyword"));
 	syntax->set_identifier(syntax->get_declare_token());
+
+	reject_generic_type_parameters(reader, L"Constructors cannot declare generic type parameters");
 
 	syntax->set_parameters_list(read_method_parameters(reader, syntax));
 
@@ -970,6 +1159,8 @@ gmt::Ref<OperatorDeclarationSyntax> SourceParser::read_operator_declaration(Sour
 	syntax->set_operator_token(operatorToken);
 	syntax->set_identifier(operatorToken);
 
+	reject_generic_type_parameters(reader, L"Operators cannot declare generic type parameters");
+
 	syntax->set_parameters_list(read_method_parameters(reader, syntax));
 
 	if (reader.can_consume() && reader.current().get_type() == TokenType::ArrowOperator)
@@ -1005,13 +1196,51 @@ gmt::Ref<OperatorDeclarationSyntax> SourceParser::read_operator_declaration(Sour
 	return syntax;
 }
 
+gmt::Ref<DelegateDeclarationSyntax> SourceParser::read_delegate_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
+{
+	gmt::Arena& arena = m_syntaxTree.get_arena();
+	auto syntax = arena.emplace<DelegateDeclarationSyntax>(parent);
+	syntax->set_declare_token(expect(reader, TokenType::DelegateKeyword, L"Expected 'delegate' keyword"));
+
+	if (try_match_identifier(reader, 5))
+	{
+		syntax->set_identifier(reader.current());
+		reader.consume();
+	}
+	else
+	{
+		syntax->set_identifier(SyntaxToken(TokenType::Identifier, L"", TextLocation(), true));
+	}
+
+	if (reader.can_consume() && reader.current().get_type() == TokenType::LessOperator)
+		syntax->set_type_parameters(read_generic_type_parameters(reader, syntax));
+
+	syntax->set_parameters_list(read_method_parameters(reader, syntax));
+
+	if (reader.can_consume() && reader.current().get_type() == TokenType::ArrowOperator)
+	{
+		reader.consume(); // consume '->'
+		syntax->set_return_type(read_type(reader, syntax));
+	}
+	else
+	{
+		m_diagnostics.report_error(reader.current(), L"Delegate must have a return type");
+	}
+
+	if (reader.can_consume() && reader.current().get_type() == TokenType::WhereKeyword)
+		syntax->set_where_clauses(read_where_clauses(reader, syntax));
+
+	syntax->set_semicolon(expect(reader, TokenType::Semicolon, L"Expected ';'"));
+	return syntax;
+}
+
 gmt::Ref<FunctionDeclarationSyntax> SourceParser::read_function_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
 {
 	gmt::Arena& arena = m_syntaxTree.get_arena();
 	auto syntax = arena.emplace<FunctionDeclarationSyntax>(parent);
 	syntax->set_declare_token(expect(reader, TokenType::FunctionKeyword, L"Expected 'func' keyword"));
 
-	if (detail::try_match_identifier(reader, m_diagnostics, 5))
+	if (try_match_identifier(reader, 5))
 	{
 		syntax->set_identifier(reader.current());
 		reader.consume();
@@ -1137,7 +1366,7 @@ gmt::Ref<TypeSyntax> SourceParser::read_identifier_name_type(SourceProvider& rea
 		qualified->set_left(identifier);
 		reader.consume();
 
-		if (detail::try_match_identifier(reader, m_diagnostics, 3))
+		if (try_match_identifier(reader, 3))
 		{
 			qualified->set_identifier(reader.current());
 			reader.consume();
@@ -1181,10 +1410,11 @@ bool SourceParser::scan_generic_type_arguments(SourceProvider& reader)
 			continue;
 		}
 		
-		if (type == TokenType::GreaterOperator)
+		if (type == TokenType::GreaterOperator || type == TokenType::RightShiftOperator)
 		{
-			--depth;
-			if (depth == 0)
+			// '>>' closes two levels at once
+			depth -= (type == TokenType::RightShiftOperator) ? 2 : 1;
+			if (depth <= 0)
 				return detail::can_follow_type(reader.peek(offset).get_type());
 
 			++offset;
@@ -1209,7 +1439,7 @@ gmt::Ref<ParameterSyntax> SourceParser::read_parameter(SourceProvider& reader, g
 	gmt::Arena& arena = m_syntaxTree.get_arena();
 	auto syntax = arena.emplace<ParameterSyntax>(parent);
 
-	if (detail::try_match_identifier(reader, m_diagnostics, 3))
+	if (try_match_identifier(reader, 3))
 	{
 		syntax->set_identifier(reader.current());
 		reader.consume();
@@ -1354,7 +1584,7 @@ gmt::Ref<TypeParameterSyntax> SourceParser::read_type_parameter(SourceProvider& 
 	gmt::Arena& arena = m_syntaxTree.get_arena();
 	auto syntax = arena.emplace<TypeParameterSyntax>(parent);
 
-	if (detail::try_match_identifier(reader, m_diagnostics, 3))
+	if (try_match_identifier(reader, 3))
 	{
 		syntax->set_identifier(reader.current());
 		reader.consume();
@@ -1478,17 +1708,17 @@ gmt::Ref<TypeArgumentsListSyntax> SourceParser::read_type_arguments_list(SourceP
 			if (!type.is_null())
 				types.push_back(type);
 
-			if (!try_match(reader, { TokenType::Comma, TokenType::GreaterOperator }, L"Expected ',' or '>'", 3))
-				break;
-
-			SyntaxToken separatorToken = reader.current();
-			reader.consume();
-
-			if (separatorToken.get_type() == TokenType::GreaterOperator)
+			SyntaxToken closerToken{};
+			if (detail::try_consume_generic_closer(reader, closerToken))
 			{
-				syntax->set_close_token(separatorToken);
+				syntax->set_close_token(closerToken);
 				break;
 			}
+
+			if (!try_match(reader, { TokenType::Comma }, L"Expected ',' or '>'", 3))
+				break;
+
+			reader.consume(); // consume ','
 		}
 	}
 
@@ -1529,7 +1759,7 @@ gmt::Ref<WhereClauseSyntax> SourceParser::read_where_clause(SourceProvider& read
 	auto syntax = arena.emplace<WhereClauseSyntax>(parent);
 	syntax->set_where_keyword(expect(reader, TokenType::WhereKeyword, L"Expected 'where' keyword"));
 
-	if (detail::try_match_identifier(reader, m_diagnostics, 3))
+	if (try_match_identifier(reader, 3))
 	{
 		syntax->set_identifier(reader.current());
 		reader.consume();
@@ -1598,6 +1828,7 @@ gmt::Ref<BodySyntax> SourceParser::read_body(SourceProvider& reader, gmt::Ref<Sy
 
 gmt::Ref<StatementsBlockSyntax> SourceParser::read_statements_block(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
 {
+	RecoveryContext::Guard parseContext(*this, SyntaxKind::StatementsBlock);
 	gmt::Arena& arena = m_syntaxTree.get_arena();
 	auto syntax = arena.emplace<StatementsBlockSyntax>(parent);
 
@@ -1637,8 +1868,8 @@ gmt::Ref<StatementsBlockSyntax> SourceParser::read_statements_block(SourceProvid
 		gmt::Ref<StatementSyntax> statement = read_statement(reader, syntax);
 		if (!statement.is_null())
 			statements.push_back(statement);
-		else
-			reader.consume(); // error recovery: guarantee progress
+		else if (!try_synchronize(reader))
+			break; // no anchor anywhere; the block reader will resync at '}'
 	}
 
 	syntax->set_close_bracket(expect(reader, TokenType::CloseBrace, L"Expected '}'"));
