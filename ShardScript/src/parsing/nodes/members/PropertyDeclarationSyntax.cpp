@@ -8,9 +8,9 @@ using namespace shard;
 PropertyDeclarationSyntax::PropertyDeclarationSyntax(gmt::Ref<SyntaxNode> parent)
 	: MemberDeclarationSyntax(SyntaxKind::PropertyDeclaration, parent) { }
 
-SyntaxToken PropertyDeclarationSyntax::get_colon() const
+SyntaxToken PropertyDeclarationSyntax::get_arrow() const
 {
-	return m_colonToken;
+	return m_arrowToken;
 }
 
 gmt::Ref<const TypeSyntax> PropertyDeclarationSyntax::get_type() const
@@ -53,9 +53,9 @@ SyntaxToken PropertyDeclarationSyntax::get_semicolon() const
 	return m_semicolonToken;
 }
 
-void PropertyDeclarationSyntax::set_colon(const SyntaxToken& token)
+void PropertyDeclarationSyntax::set_arrow(const SyntaxToken& token)
 {
-	m_colonToken = token;
+	m_arrowToken = token;
 }
 
 void PropertyDeclarationSyntax::set_type(gmt::Ref<TypeSyntax> type)

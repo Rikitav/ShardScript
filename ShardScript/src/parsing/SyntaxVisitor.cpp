@@ -153,6 +153,27 @@ void SyntaxVisitor::visit_property_declaration(const PropertyDeclarationSyntax* 
 		node->get_expression().as_ptr()->accept(*this);
 }
 
+void SyntaxVisitor::visit_indexator_declaration(const IndexatorDeclarationSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (!node->get_attributes().is_null())
+		visit_attributes_list(node->get_attributes().as_ptr());
+
+	if (!node->get_parameters_list().is_null())
+		visit_parameters_list(node->get_parameters_list().as_ptr());
+
+	if (!node->get_type().is_null())
+		node->get_type().as_ptr()->accept(*this);
+
+	if (!node->get_getter().is_null())
+		node->get_getter().as_ptr()->accept(*this);
+
+	if (!node->get_setter().is_null())
+		node->get_setter().as_ptr()->accept(*this);
+}
+
 void SyntaxVisitor::visit_accessor_declaration(const AccessorDeclarationSyntax* node)
 {
 	if (node == nullptr)
@@ -160,6 +181,39 @@ void SyntaxVisitor::visit_accessor_declaration(const AccessorDeclarationSyntax* 
 
 	if (!node->get_attributes().is_null())
 		visit_attributes_list(node->get_attributes().as_ptr());
+}
+
+void SyntaxVisitor::visit_constructor_declaration(const ConstructorDeclarationSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (!node->get_attributes().is_null())
+		visit_attributes_list(node->get_attributes().as_ptr());
+
+	if (!node->get_parameters_list().is_null())
+		visit_parameters_list(node->get_parameters_list().as_ptr());
+
+	if (!node->get_body().is_null())
+		node->get_body().as_ptr()->accept(*this);
+}
+
+void SyntaxVisitor::visit_operator_declaration(const OperatorDeclarationSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (!node->get_attributes().is_null())
+		visit_attributes_list(node->get_attributes().as_ptr());
+
+	if (!node->get_parameters_list().is_null())
+		visit_parameters_list(node->get_parameters_list().as_ptr());
+
+	if (!node->get_return_type().is_null())
+		node->get_return_type().as_ptr()->accept(*this);
+
+	if (!node->get_body().is_null())
+		node->get_body().as_ptr()->accept(*this);
 }
 
 void SyntaxVisitor::visit_function_declaration(const FunctionDeclarationSyntax* node)

@@ -442,15 +442,37 @@ gmt::Ref<MemberDeclarationSyntax> SourceParser::read_member_declaration(SourcePr
 			break;
 		}
 
+		case TokenType::NewKeyword:
+		{
+			member = read_constructor_declaration(reader, parent);
+			break;
+		}
+
+		case TokenType::OperatorKeyword:
+		{
+			member = read_operator_declaration(reader, parent);
+			break;
+		}
+
 		case TokenType::Identifier:
 		{
-			// 'name: Type' - field or property declaration, confirmed by two-token lookahead
-			if (reader.peek(0).get_type() == TokenType::Colon)
+			// 'name: Type' - field, 'name -> Type' - property, 'name[params]' - indexer
+			TokenType nextType = reader.peek(0).get_type();
+			if (nextType == TokenType::Colon)
 			{
-				member = scan_property_declaration(reader)
-					? read_property_declaration(reader, parent)
-					: read_field_declaration(reader, parent);
+				member = read_field_declaration(reader, parent);
+				break;
+			}
 
+			if (nextType == TokenType::ArrowOperator)
+			{
+				member = read_property_declaration(reader, parent);
+				break;
+			}
+
+			if (nextType == TokenType::OpenSquare)
+			{
+				member = read_indexator_declaration(reader, parent);
 				break;
 			}
 
@@ -722,11 +744,11 @@ gmt::Ref<PropertyDeclarationSyntax> SourceParser::read_property_declaration(Sour
 	gmt::Arena& arena = m_syntaxTree.get_arena();
 	auto syntax = arena.emplace<PropertyDeclarationSyntax>(parent);
 
-	// name: Type { get; set; } [= expression;]
+	// name -> Type { get; set; } [= expression;]
 	syntax->set_identifier(reader.current());
 	reader.consume();
 
-	syntax->set_colon(expect(reader, TokenType::Colon, L"Expected ':'"));
+	syntax->set_arrow(expect(reader, TokenType::ArrowOperator, L"Expected '->'"));
 	syntax->set_type(read_type(reader, syntax));
 
 	syntax->set_open_bracket(expect(reader, TokenType::OpenBrace, L"Expected '{' for property accessors"));
@@ -793,6 +815,76 @@ gmt::Ref<PropertyDeclarationSyntax> SourceParser::read_property_declaration(Sour
 	return syntax;
 }
 
+gmt::Ref<IndexatorDeclarationSyntax> SourceParser::read_indexator_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
+{
+	gmt::Arena& arena = m_syntaxTree.get_arena();
+	auto syntax = arena.emplace<IndexatorDeclarationSyntax>(parent);
+
+	// name[params] -> Type { get; set; }
+	syntax->set_identifier(reader.current());
+	reader.consume();
+
+	syntax->set_parameters_list(read_indexer_parameters(reader, syntax));
+
+	syntax->set_arrow(expect(reader, TokenType::ArrowOperator, L"Expected '->'"));
+	syntax->set_type(read_type(reader, syntax));
+
+	syntax->set_open_bracket(expect(reader, TokenType::OpenBrace, L"Expected '{' for indexer accessors"));
+
+	int loopGuard = 0;
+	while (reader.can_consume())
+	{
+		if (++loopGuard > max_loop_iterations)
+		{
+			m_diagnostics.report_error(reader.current(), L"Parser loop detected - aborting indexer accessors");
+			break;
+		}
+
+		TokenType type = reader.current().get_type();
+		if (type == TokenType::CloseBrace)
+		{
+			syntax->set_close_bracket(reader.current());
+			reader.consume();
+			break;
+		}
+
+		if (type == TokenType::GetKeyword || type == TokenType::SetKeyword)
+		{
+			gmt::Ref<AccessorDeclarationSyntax> accessor = read_accessor_declaration(reader, syntax);
+			if (type == TokenType::GetKeyword)
+			{
+				if (!syntax->get_getter().is_null())
+				{
+					m_diagnostics.report_error(reader.current(), L"Duplicate 'get' accessor");
+					continue;
+				}
+
+				syntax->set_getter(accessor);
+			}
+			else
+			{
+				if (!syntax->get_setter().is_null())
+				{
+					m_diagnostics.report_error(reader.current(), L"Duplicate 'set' accessor");
+					continue;
+				}
+
+				syntax->set_setter(accessor);
+			}
+
+			continue;
+		}
+
+		m_diagnostics.report_error(reader.current(), L"Expected 'get', 'set' or '}' in indexer accessors");
+		reader.consume(); // error recovery: guarantee progress
+	}
+
+	if (syntax->get_getter().is_null() && syntax->get_setter().is_null())
+		m_diagnostics.report_error(syntax->get_identifier(), L"Indexer must have at least one accessor (get or set)");
+
+	return syntax;
+}
+
 gmt::Ref<AccessorDeclarationSyntax> SourceParser::read_accessor_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
 {
 	gmt::Arena& arena = m_syntaxTree.get_arena();
@@ -810,6 +902,106 @@ gmt::Ref<AccessorDeclarationSyntax> SourceParser::read_accessor_declaration(Sour
 	reader.consume();
 
 	syntax->set_semicolon(expect(reader, TokenType::Semicolon, L"Expected ';' after accessor keyword"));
+	return syntax;
+}
+
+gmt::Ref<ConstructorDeclarationSyntax> SourceParser::read_constructor_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
+{
+	gmt::Arena& arena = m_syntaxTree.get_arena();
+	auto syntax = arena.emplace<ConstructorDeclarationSyntax>(parent);
+
+	// new(params); / new(params) { } / new(params) => expression;
+	syntax->set_declare_token(expect(reader, TokenType::NewKeyword, L"Expected 'new' keyword"));
+	syntax->set_identifier(syntax->get_declare_token());
+
+	syntax->set_parameters_list(read_method_parameters(reader, syntax));
+
+	if (reader.can_consume() && reader.current().get_type() == TokenType::ArrowOperator)
+	{
+		m_diagnostics.report_error(reader.current(), L"Constructors cannot declare a return type");
+		reader.consume(); // consume '->'
+
+		if (reader.can_consume() && reader.current().get_type() != TokenType::OpenBrace && reader.current().get_type() != TokenType::Semicolon)
+			read_type(reader, syntax);
+	}
+
+	if (!reader.can_consume())
+	{
+		m_diagnostics.report_error(syntax->get_declare_token(), L"Expected constructor body or ';'");
+		return syntax;
+	}
+
+	if (reader.current().get_type() == TokenType::Semicolon)
+	{
+		// no body
+		syntax->set_semicolon(reader.current());
+		reader.consume();
+		return syntax;
+	}
+
+	syntax->set_body(read_body(reader, syntax));
+
+	// expression-bodied constructors require a trailing semicolon
+	if (!syntax->get_body().is_null() && syntax->get_body().as_ptr()->get_kind() == SyntaxKind::ArrowClause)
+		syntax->set_semicolon(expect(reader, TokenType::Semicolon, L"Expected ';'"));
+
+	return syntax;
+}
+
+gmt::Ref<OperatorDeclarationSyntax> SourceParser::read_operator_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
+{
+	gmt::Arena& arena = m_syntaxTree.get_arena();
+	auto syntax = arena.emplace<OperatorDeclarationSyntax>(parent);
+
+	// operator +(other: Vector) -> Vector [; | { } | => expression;]
+	syntax->set_declare_token(expect(reader, TokenType::OperatorKeyword, L"Expected 'operator' keyword"));
+
+	SyntaxToken operatorToken = reader.current();
+	if (!is_overloadable_operator(operatorToken.get_type()))
+	{
+		m_diagnostics.report_error(operatorToken, L"Expected overloadable operator token");
+		operatorToken = SyntaxToken(TokenType::Unknown, L"", TextLocation(), true);
+	}
+	else
+	{
+		reader.consume();
+	}
+
+	syntax->set_operator_token(operatorToken);
+	syntax->set_identifier(operatorToken);
+
+	syntax->set_parameters_list(read_method_parameters(reader, syntax));
+
+	if (reader.can_consume() && reader.current().get_type() == TokenType::ArrowOperator)
+	{
+		reader.consume(); // consume '->'
+		syntax->set_return_type(read_type(reader, syntax));
+	}
+	else
+	{
+		m_diagnostics.report_error(reader.current(), L"Operator must have a return type");
+	}
+
+	if (!reader.can_consume())
+	{
+		m_diagnostics.report_error(syntax->get_operator_token(), L"Expected operator body or ';'");
+		return syntax;
+	}
+
+	if (reader.current().get_type() == TokenType::Semicolon)
+	{
+		// no body
+		syntax->set_semicolon(reader.current());
+		reader.consume();
+		return syntax;
+	}
+
+	syntax->set_body(read_body(reader, syntax));
+
+	// expression-bodied operators require a trailing semicolon
+	if (!syntax->get_body().is_null() && syntax->get_body().as_ptr()->get_kind() == SyntaxKind::ArrowClause)
+		syntax->set_semicolon(expect(reader, TokenType::Semicolon, L"Expected ';'"));
+
 	return syntax;
 }
 
@@ -969,88 +1161,6 @@ gmt::Ref<GenericTypeSyntax> SourceParser::read_generic_type(SourceProvider& read
 	generic->set_underlaying_type(underlayingType);
 	generic->set_type_arguments(read_type_arguments_list(reader, generic));
 	return generic;
-}
-
-bool SourceParser::scan_property_declaration(SourceProvider& reader)
-{
-	// current is the member name and peek(0) is ':'; scans 'name: Type' ahead and
-	// reports whether an accessor block '{' follows (property vs field declaration)
-	int offset = 1;
-
-	if (reader.peek(offset - 1).get_type() != TokenType::Colon)
-		return false;
-
-	++offset;
-
-	TokenType startType = reader.peek(offset - 1).get_type();
-	if (startType != TokenType::Identifier && !is_predefined_type(startType))
-		return false;
-
-	++offset;
-
-	while (offset < max_loop_iterations)
-	{
-		TokenType type = reader.peek(offset - 1).get_type();
-
-		if (type == TokenType::NamespaceQualifier)
-		{
-			++offset;
-			if (reader.peek(offset - 1).get_type() != TokenType::Identifier)
-				return false;
-
-			++offset;
-			continue;
-		}
-
-		if (type == TokenType::LessOperator)
-		{
-			// scan the generic argument list
-			int depth = 1;
-			++offset;
-
-			while (offset < max_loop_iterations)
-			{
-				TokenType argumentType = reader.peek(offset - 1).get_type();
-
-				if (argumentType == TokenType::LessOperator)
-				{
-					++depth;
-					++offset;
-					continue;
-				}
-
-				if (argumentType == TokenType::GreaterOperator)
-				{
-					--depth;
-					++offset;
-					if (depth == 0)
-						break;
-
-					continue;
-				}
-
-				if (is_valid_generic_type_token(argumentType) || is_predefined_type(argumentType))
-				{
-					++offset;
-					continue;
-				}
-
-				return false;
-			}
-
-			continue;
-		}
-
-		if (type == TokenType::Question || type == TokenType::OpenSquare || type == TokenType::CloseSquare)
-		{
-			++offset;
-			continue;
-		}
-
-		break;
-	}
-
-	return reader.peek(offset - 1).get_type() == TokenType::OpenBrace;
 }
 
 bool SourceParser::scan_generic_type_arguments(SourceProvider& reader)
