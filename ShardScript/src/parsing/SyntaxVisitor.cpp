@@ -117,6 +117,27 @@ void SyntaxVisitor::visit_interface_declaration(const InterfaceDeclarationSyntax
 		member.as_ptr()->accept(*this);
 }
 
+void SyntaxVisitor::visit_enum_declaration(const EnumDeclarationSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (!node->get_attributes().is_null())
+		visit_attributes_list(node->get_attributes().as_ptr());
+
+	for (const gmt::Ref<EnumFieldDeclarationSyntax>& field : node->get_fields().as_span())
+		field.as_ptr()->accept(*this);
+}
+
+void SyntaxVisitor::visit_enum_field_declaration(const EnumFieldDeclarationSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (!node->get_expression().is_null())
+		node->get_expression().as_ptr()->accept(*this);
+}
+
 void SyntaxVisitor::visit_field_declaration(const FieldDeclarationSyntax* node)
 {
 	if (node == nullptr)

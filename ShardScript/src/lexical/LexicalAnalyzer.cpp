@@ -1171,6 +1171,11 @@ bool LexicalAnalyzer::is_directive_decl(std::wstring& word, TokenType& type)
 		type = TokenType::UsingKeyword;
 		return true;
 	}
+	else if (word == L"namespace")
+	{
+		type = TokenType::NamespaceKeyword;
+		return true;
+	}
 	else
 	{
 		return false;
@@ -1202,11 +1207,6 @@ bool LexicalAnalyzer::is_type_decl(std::wstring& word, TokenType& type)
 	else if (word == L"enum")
 	{
 		type = TokenType::EnumKeyword;
-		return true;
-	}
-	else if (word == L"namespace")
-	{
-		type = TokenType::NamespaceKeyword;
 		return true;
 	}
 	else
@@ -1270,6 +1270,11 @@ bool LexicalAnalyzer::is_type(std::wstring& word, TokenType& type)
 	else if (word == L"delegate")
 	{
 		type = TokenType::DelegateKeyword;
+		return true;
+	}
+	else if (word == L"flags")
+	{
+		type = TokenType::FlagsKeyword;
 		return true;
 	}
 	else

@@ -34,6 +34,8 @@
 #include <shard/parsing/nodes/members/ClassDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/members/StructDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/members/InterfaceDeclarationSyntax.hpp>
+#include <shard/parsing/nodes/members/EnumDeclarationSyntax.hpp>
+#include <shard/parsing/nodes/members/EnumFieldDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/members/FieldDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/members/PropertyDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/members/IndexatorDeclarationSyntax.hpp>
@@ -171,6 +173,8 @@ namespace shard
 		gmt::Ref<ClassDeclarationSyntax> read_class_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 		gmt::Ref<StructDeclarationSyntax> read_struct_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 		gmt::Ref<InterfaceDeclarationSyntax> read_interface_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
+		gmt::Ref<EnumDeclarationSyntax> read_enum_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
+		gmt::Ref<EnumFieldDeclarationSyntax> read_enum_field_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 		gmt::Ref<FieldDeclarationSyntax> read_field_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 		gmt::Ref<PropertyDeclarationSyntax> read_property_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 		gmt::Ref<IndexatorDeclarationSyntax> read_indexator_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);

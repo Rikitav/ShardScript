@@ -116,7 +116,7 @@ namespace shard
 		IntegerKeyword,		  // int
 		DoubleKeyword,		  // double
 		ShortKeyword,		  // short
-		LongKeyword,		  // long
+		FlagsKeyword,		  // flags
 		ByteKeyword,		  // byte
 		NativeIntegerKeyword, // nint
 		CharKeyword,		  // char
