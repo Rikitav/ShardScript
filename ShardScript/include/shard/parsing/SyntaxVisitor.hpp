@@ -29,6 +29,8 @@
 #include <shard/parsing/nodes/members/ClassDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/members/StructDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/members/InterfaceDeclarationSyntax.hpp>
+#include <shard/parsing/nodes/members/EnumDeclarationSyntax.hpp>
+#include <shard/parsing/nodes/members/EnumFieldDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/members/FieldDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/members/PropertyDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/members/IndexatorDeclarationSyntax.hpp>
@@ -198,6 +200,8 @@ namespace shard
         virtual void visit_class_declaration(const ClassDeclarationSyntax* node);
         virtual void visit_struct_declaration(const StructDeclarationSyntax* node);
         virtual void visit_interface_declaration(const InterfaceDeclarationSyntax* node);
+        virtual void visit_enum_declaration(const EnumDeclarationSyntax* node);
+        virtual void visit_enum_field_declaration(const EnumFieldDeclarationSyntax* node);
         virtual void visit_field_declaration(const FieldDeclarationSyntax* node);
         virtual void visit_property_declaration(const PropertyDeclarationSyntax* node);
         virtual void visit_indexator_declaration(const IndexatorDeclarationSyntax* node);

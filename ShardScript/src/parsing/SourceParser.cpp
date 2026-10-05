@@ -110,7 +110,7 @@ namespace detail
 SourceParser::RecoveryContext::Guard::Guard(
 	SourceParser& parser,
 	SyntaxKind kind,
-	ParseState state = ParseState::None
+	ParseState state
 ) :
 	m_parser(parser)
 {
@@ -443,6 +443,12 @@ gmt::Ref<MemberDeclarationSyntax> SourceParser::read_member_declaration(SourcePr
 			break;
 		}
 
+		case TokenType::EnumKeyword:
+		{
+			member = read_enum_declaration(reader, parent);
+			break;
+		}
+
 		case TokenType::FunctionKeyword:
 		{
 			member = read_function_declaration(reader, parent);
@@ -770,6 +776,149 @@ gmt::Ref<InterfaceDeclarationSyntax> SourceParser::read_interface_declaration(So
 			syntax->set_semicolon(reader.current());
 			reader.consume();
 		}
+	}
+
+	return syntax;
+}
+
+gmt::Ref<EnumDeclarationSyntax> SourceParser::read_enum_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
+{
+	gmt::Arena& arena = m_syntaxTree.get_arena();
+	auto syntax = arena.emplace<EnumDeclarationSyntax>(parent);
+	RecoveryContext::Guard parseContext(*this, SyntaxKind::EnumDeclaration);
+	syntax->set_declare_token(expect(reader, TokenType::EnumKeyword, L"Expected 'enum' keyword"));
+
+	if (try_match_identifier(reader, 5))
+	{
+		syntax->set_identifier(reader.current());
+		reader.consume();
+	}
+	else
+	{
+		syntax->set_identifier(SyntaxToken(TokenType::Identifier, L"", TextLocation(), true));
+	}
+
+	reject_generic_type_parameters(reader, L"Enums cannot declare generic type parameters");
+
+	if (reader.can_consume() && reader.current().get_type() == TokenType::Colon)
+	{
+		syntax->set_colon(reader.current());
+		reader.consume();
+
+		SyntaxToken next = reader.current();
+		if (next.get_type() == TokenType::FlagsKeyword)
+		{
+			syntax->set_is_flags(true);
+			syntax->set_underlying_type(next);
+			reader.consume();
+		}
+		else if (next.get_type() == TokenType::IntegerKeyword)
+		{
+			syntax->set_underlying_type(next);
+			reader.consume();
+		}
+		else
+		{
+			m_diagnostics.report_error(next, L"Expected 'flags' or 'int' after ':' in enum declaration");
+		}
+	}
+
+	if (try_match(reader, { TokenType::OpenBrace, TokenType::Semicolon }, L"Expected enum body '{' or semicolon ';'", 5))
+	{
+		if (reader.current().get_type() == TokenType::OpenBrace)
+		{
+			syntax->set_open_bracket(reader.current());
+			reader.consume();
+
+			detail::inline_ref_vector<EnumFieldDeclarationSyntax, 10> fields{};
+
+			int loopGuard = 0;
+			while (reader.can_consume())
+			{
+				if (++loopGuard > max_loop_iterations)
+				{
+					m_diagnostics.report_error(reader.current(), L"Parser loop detected - aborting enum body");
+					break;
+				}
+
+				SyntaxToken current = reader.current();
+				if (current.get_type() == TokenType::CloseBrace)
+					break;
+
+				if (current.get_type() == TokenType::EndOfFile)
+				{
+					m_diagnostics.report_error(current, L"Unexpected end of file in enum body - expected '}'");
+					break;
+				}
+
+				if (current.get_type() == TokenType::Identifier)
+				{
+					gmt::Ref<EnumFieldDeclarationSyntax> field = read_enum_field_declaration(reader, syntax);
+					if (!field.is_null())
+						fields.push_back(field);
+				}
+				else
+				{
+					m_diagnostics.report_error(current, L"Expected enum field identifier");
+					reader.consume();
+				}
+
+				current = reader.current();
+				if (current.get_type() == TokenType::Comma)
+				{
+					reader.consume();
+					continue;
+				}
+				else if (current.get_type() == TokenType::CloseBrace)
+				{
+					break;
+				}
+				else if (current.get_type() == TokenType::EndOfFile)
+				{
+					m_diagnostics.report_error(current, L"Unexpected end of file in enum body - expected '}'");
+					break;
+				}
+				else
+				{
+					m_diagnostics.report_error(current, L"Expected ',' or '}' after enum field");
+					break;
+				}
+			}
+
+			syntax->set_close_bracket(expect(reader, TokenType::CloseBrace, L"Expected '}'"));
+			syntax->set_fields(fields.commit_array(arena));
+		}
+		else
+		{
+			syntax->set_semicolon(reader.current());
+			reader.consume();
+		}
+	}
+
+	return syntax;
+}
+
+gmt::Ref<EnumFieldDeclarationSyntax> SourceParser::read_enum_field_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
+{
+	gmt::Arena& arena = m_syntaxTree.get_arena();
+	auto syntax = arena.emplace<EnumFieldDeclarationSyntax>(parent);
+	RecoveryContext::Guard parseContext(*this, SyntaxKind::EnumFieldDeclaration);
+
+	if (reader.can_consume() && reader.current().get_type() == TokenType::Identifier)
+	{
+		syntax->set_identifier(reader.current());
+		reader.consume();
+	}
+	else
+	{
+		syntax->set_identifier(SyntaxToken(TokenType::Identifier, L"", TextLocation(), true));
+	}
+
+	if (reader.can_consume() && reader.current().get_type() == TokenType::AssignOperator)
+	{
+		syntax->set_assign_token(reader.current());
+		reader.consume();
+		syntax->set_expression(read_expression(reader, syntax, 0));
 	}
 
 	return syntax;
