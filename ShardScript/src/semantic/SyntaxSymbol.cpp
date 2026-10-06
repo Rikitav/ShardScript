@@ -73,17 +73,10 @@ gmt::Ref<const SyntaxSymbol> SyntaxSymbol::get_parent() const
 	return m_parent;
 }
 
-SymbolAccesibility SyntaxSymbol::get_accesibility() const
+void SyntaxSymbol::on_symbol_declared(SyntaxSymbol* symbol)
 {
-	return m_accesibility;
+	// 0xDEADBEEF
 }
-
-void SyntaxSymbol::set_accesibility(SymbolAccesibility accesibility)
-{
-	m_accesibility = accesibility;
-}
-
-void SyntaxSymbol::on_symbol_declared(SyntaxSymbol* symbol) { }
 
 bool SyntaxSymbol::is_type() const
 {
