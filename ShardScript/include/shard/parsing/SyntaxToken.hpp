@@ -27,14 +27,16 @@ namespace shard
 			m_lexeme()
 		{ }
 
-		// interns the lexeme into the global interner
 		inline SyntaxToken(
 			const TokenType type,
 			const std::wstring_view lexeme,
 			const TextLocation& location,
 			const bool isMissing = false
 		) :
-			SyntaxToken(type, gmt::intern(lexeme), location, isMissing)
+			m_isMissing(isMissing),
+			m_type(type),
+			m_location(location),
+			m_lexeme(gmt::intern(lexeme))
 		{ }
 
 		inline SyntaxToken(

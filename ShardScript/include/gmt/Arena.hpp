@@ -79,6 +79,8 @@ namespace gmt
 		static_assert(!std::is_abstract_v<T>, "arena object must not be abstract");
 		static_assert(!std::is_copy_constructible_v<T>, "arena objects must not be copyable");
 		static_assert(!std::is_copy_assignable_v<T>, "arena objects must not be copyable");
+		static_assert(!std::is_move_constructible_v<T>, "arena objects must not be movable");
+		static_assert(!std::is_move_assignable_v<T>, "arena objects must not be movable");
 
 		std::size_t aligned = align_up(m_cursor, alignof(T));
 		if (aligned + sizeof(T) > m_capacity)
