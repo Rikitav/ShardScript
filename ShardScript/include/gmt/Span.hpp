@@ -6,6 +6,12 @@
 #include <span>
 #include <type_traits>
 
+namespace std
+{
+	template<typename>
+	struct hash;
+}
+
 namespace gmt
 {
 	class Arena;
@@ -15,6 +21,9 @@ namespace gmt
 	{
 		template<typename U>
 		friend class Span;
+
+		template<typename>
+		friend struct ::std::hash;
 
 		Arena* m_arena;
 		std::uint32_t m_offset;
@@ -31,6 +40,12 @@ namespace gmt
 		std::uint32_t offset() const;
 		std::uint32_t size() const;
 		bool empty() const;
+
+		template<typename U>
+		bool operator==(const Span<U>& other) const;
+
+		template<typename U>
+		bool operator!=(const Span<U>& other) const;
 
 		T* data() const;
 		std::span<T> as_span();

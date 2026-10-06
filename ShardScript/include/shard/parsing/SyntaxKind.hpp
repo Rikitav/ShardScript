@@ -80,7 +80,6 @@ namespace shard
 		PostfixIfExpression,
 		CastExpression,
 		IsExpression,
-		IsPattern,
 
 		// Linked expressions
 		LinkedExpression,

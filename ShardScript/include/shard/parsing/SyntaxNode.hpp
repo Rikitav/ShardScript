@@ -23,6 +23,9 @@ namespace shard
 		SyntaxNode(const SyntaxNode&) = delete;
 		SyntaxNode& operator=(const SyntaxNode&) = delete;
 
+		SyntaxNode(SyntaxNode&&) = delete;
+		SyntaxNode& operator=(SyntaxNode&&) = delete;
+
 		inline SyntaxKind get_kind() const { return m_kind; }
 		inline gmt::Ref<const SyntaxNode> get_parent() const { return m_parent; }
 

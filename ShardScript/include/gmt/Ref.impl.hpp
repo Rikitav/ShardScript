@@ -69,6 +69,32 @@ namespace gmt
 	{
 		return reinterpret_cast<T*>(m_arena->get_buffer() + m_offset);
 	}
+
+	template<typename T>
+	template<typename U>
+	inline bool Ref<T>::operator==(const Ref<U>& other) const
+	{
+		return m_arena == other.m_arena && m_offset == other.m_offset;
+	}
+
+	template<typename T>
+	template<typename U>
+	inline bool Ref<T>::operator!=(const Ref<U>& other) const
+	{
+		return !(*this == other);
+	}
+}
+
+namespace std
+{
+	template<typename T>
+	struct hash<gmt::Ref<T>>
+	{
+		std::size_t operator()(const gmt::Ref<T>& ref) const noexcept
+		{
+			return ref.m_offset ^ reinterpret_cast<std::size_t>(ref.m_arena);
+		}
+	};
 }
 
 #include <gmt/Ref.impl.hpp>

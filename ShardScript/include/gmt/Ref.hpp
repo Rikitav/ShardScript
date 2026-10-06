@@ -5,6 +5,12 @@
 #include <cstddef>
 #include <type_traits>
 
+namespace std
+{
+	template<typename>
+	struct hash;
+}
+
 namespace gmt
 {
 	class Arena;
@@ -14,6 +20,9 @@ namespace gmt
 	{
 		template<typename U>
 		friend class Ref;
+
+		template<typename>
+		friend struct ::std::hash;
 
 		Arena* m_arena;
 		std::size_t m_offset;
@@ -33,6 +42,12 @@ namespace gmt
 		T* operator->() const;
 
 		bool is_null() const;
+
+		template<typename U>
+		bool operator==(const Ref<U>& other) const;
+
+		template<typename U>
+		bool operator!=(const Ref<U>& other) const;
 
 		std::size_t get_offset() const;
 		Arena& get_arena() const;

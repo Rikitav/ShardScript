@@ -78,4 +78,34 @@ namespace gmt
 
 		return std::span<const T>(data(), m_count);
 	}
+
+	template<typename T>
+	template<typename U>
+	inline bool Span<T>::operator==(const Span<U>& other) const
+	{
+		return m_arena == other.m_arena
+			&& m_offset == other.m_offset
+			&& m_count == other.m_count;
+	}
+
+	template<typename T>
+	template<typename U>
+	inline bool Span<T>::operator!=(const Span<U>& other) const
+	{
+		return !(*this == other);
+	}
+}
+
+namespace std
+{
+	template<typename T>
+	struct hash<gmt::Span<T>>
+	{
+		std::size_t operator()(const gmt::Span<T>& span) const noexcept
+		{
+			return static_cast<std::size_t>(span.m_offset)
+				^ (static_cast<std::size_t>(span.m_count) << (sizeof(std::size_t) * 4))
+				^ reinterpret_cast<std::size_t>(span.m_arena);
+		}
+	};
 }
