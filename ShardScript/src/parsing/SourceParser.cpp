@@ -11,7 +11,7 @@ namespace detail
 	template<typename T>
 	gmt::Span<T> commit_array(gmt::Arena& arena, const std::pmr::vector<T>& list)
 	{
-		gmt::Span<T> span = arena.allocate_array<T>(list.size());
+		gmt::Span<T> span = arena.emplace_array<T>(list.size());
 		std::copy(list.begin(), list.end(), span.data());
 		return span;
 	}
@@ -276,7 +276,7 @@ gmt::Ref<TranslationUnitSyntax> SourceParser::read_compilation_unit(SourceProvid
 		{
 			case TokenType::UsingKeyword:
 			{
-				if (unit->has_namespace() || unit->get_members().size() != 0)
+				if (unit->has_namespace() || unit->get_members().length() != 0)
 					m_diagnostics.report_error(token, L"Using directive must be declared at the top of the compilation unit");
 
 				usings.push_back(read_using_directive(reader, unit));
@@ -285,7 +285,7 @@ gmt::Ref<TranslationUnitSyntax> SourceParser::read_compilation_unit(SourceProvid
 
 			case TokenType::NamespaceKeyword:
 			{
-				if (unit->get_members().size() != 0)
+				if (unit->get_members().length() != 0)
 					m_diagnostics.report_error(token, L"Namespace directive must be declared before any member declarations");
 
 				if (unit->has_namespace())
@@ -1955,7 +1955,7 @@ gmt::Ref<WhereClausesListSyntax> SourceParser::read_where_clauses(SourceProvider
 	return syntax;
 }
 
-gmt::Ref<BodySyntax> SourceParser::read_body(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
+gmt::Ref<BlockSyntax> SourceParser::read_body(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
 {
 	if (!reader.can_consume())
 	{

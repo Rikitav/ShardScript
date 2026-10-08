@@ -6,7 +6,7 @@
 using namespace shard;
 
 ArrowClauseSyntax::ArrowClauseSyntax(gmt::Ref<SyntaxNode> parent)
-	: BodySyntax(SyntaxKind::ArrowClause, parent) { }
+	: BlockSyntax(SyntaxKind::ArrowClause, parent) { }
 
 gmt::Ref<const ExpressionSyntax> ArrowClauseSyntax::get_expression() const
 {

@@ -9,8 +9,8 @@ namespace shard
 		static_assert(std::is_base_of_v<SyntaxSymbol, T>, "bound symbol must derive from SyntaxSymbol");
 
 		gmt::Ref<T> symbol = m_arena.emplace<T>(std::forward<Args>(args)...);
-		nodeToSymbolMap[node] = symbol;
-		symbolToNodeMap[symbol] = node;
+		m_nodeToSymbolMap[node] = symbol;
+		m_symbolToNodeMap[symbol] = node;
 		return symbol;
 	}
 
@@ -19,8 +19,8 @@ namespace shard
 	{
 		static_assert(std::is_base_of_v<SyntaxSymbol, T>, "bound symbol must derive from SyntaxSymbol");
 
-		nodeToSymbolMap[node] = symbol;
-		symbolToNodeMap[symbol] = node;
+		m_nodeToSymbolMap[node] = symbol;
+		m_symbolToNodeMap[symbol] = node;
 		return symbol;
 	}
 
@@ -31,8 +31,8 @@ namespace shard
 	}
 
 	template<typename T>
-	gmt::Span<T> SymbolTable::allocate_array(std::size_t count)
+	gmt::Span<T> SymbolTable::emplace_array(std::size_t count)
 	{
-		return m_arena.allocate_array<T>(count);
+		return m_arena.emplace_array<T>(count);
 	}
 }

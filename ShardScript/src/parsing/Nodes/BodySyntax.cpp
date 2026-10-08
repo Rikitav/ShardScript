@@ -1,8 +1,8 @@
-#include <shard/parsing/nodes/BodySyntax.hpp>
+#include <shard/parsing/nodes/BlockSyntax.hpp>
 
 #include <gmt/Arena.hpp>
 
 using namespace shard;
 
-BodySyntax::BodySyntax(const SyntaxKind kind, gmt::Ref<SyntaxNode> parent)
+BlockSyntax::BlockSyntax(const SyntaxKind kind, gmt::Ref<SyntaxNode> parent)
 	: SyntaxNode(kind, parent) { }

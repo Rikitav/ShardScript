@@ -13,7 +13,7 @@ gmt::Ref<const ParametersListSyntax> LambdaExpressionSyntax::get_parameters() co
 	return m_parameters;
 }
 
-gmt::Ref<const BodySyntax> LambdaExpressionSyntax::get_body() const
+gmt::Ref<const BlockSyntax> LambdaExpressionSyntax::get_body() const
 {
 	return m_body;
 }
@@ -23,7 +23,7 @@ void LambdaExpressionSyntax::set_parameters(gmt::Ref<ParametersListSyntax> param
 	m_parameters = parameters;
 }
 
-void LambdaExpressionSyntax::set_body(gmt::Ref<BodySyntax> body)
+void LambdaExpressionSyntax::set_body(gmt::Ref<BlockSyntax> body)
 {
 	m_body = body;
 }

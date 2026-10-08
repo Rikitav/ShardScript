@@ -59,7 +59,7 @@ namespace gmt
 		inline Ref<T> emplace(Args&&... args);
 
 		template<typename T>
-		inline Span<T> allocate_array(std::size_t count);
+		inline Span<T> emplace_array(std::size_t count);
 
 		template<typename T>
 		inline std::optional<Ref<T>> ref_from_ptr(T* ptr);
@@ -100,7 +100,7 @@ namespace gmt
 	}
 
 	template<typename T>
-	Span<T> Arena::allocate_array(std::size_t count)
+	Span<T> Arena::emplace_array(std::size_t count)
 	{
 		static_assert(std::is_trivially_destructible_v<T>, "arena array elements must be trivially destructible");
 		static_assert(std::is_trivially_copyable_v<T>, "arena array elements must be safe to relocate");

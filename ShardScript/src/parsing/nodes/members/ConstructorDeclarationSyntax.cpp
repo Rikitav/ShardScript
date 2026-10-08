@@ -13,7 +13,7 @@ gmt::Ref<const ParametersListSyntax> ConstructorDeclarationSyntax::get_parameter
 	return m_parametersList;
 }
 
-gmt::Ref<const BodySyntax> ConstructorDeclarationSyntax::get_body() const
+gmt::Ref<const BlockSyntax> ConstructorDeclarationSyntax::get_body() const
 {
 	return m_body;
 }
@@ -28,7 +28,7 @@ void ConstructorDeclarationSyntax::set_parameters_list(gmt::Ref<ParametersListSy
 	m_parametersList = parametersList;
 }
 
-void ConstructorDeclarationSyntax::set_body(gmt::Ref<BodySyntax> body)
+void ConstructorDeclarationSyntax::set_body(gmt::Ref<BlockSyntax> body)
 {
 	m_body = body;
 }
