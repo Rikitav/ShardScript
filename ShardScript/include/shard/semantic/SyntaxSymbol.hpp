@@ -18,6 +18,7 @@ namespace shard
 
 	public:
 		SyntaxSymbol(std::wstring_view name, const SyntaxKind kind, gmt::Ref<SyntaxSymbol> parent);
+		SyntaxSymbol(gmt::StringReference name, const SyntaxKind kind, gmt::Ref<SyntaxSymbol> parent);
 		virtual ~SyntaxSymbol() = default;
 
 		SyntaxSymbol(const SyntaxSymbol& other) = delete;

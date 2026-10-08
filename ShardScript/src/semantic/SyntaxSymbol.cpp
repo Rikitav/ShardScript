@@ -8,6 +8,9 @@ using namespace shard;
 SyntaxSymbol::SyntaxSymbol(std::wstring_view name, const SyntaxKind kind, gmt::Ref<SyntaxSymbol> parent)
 	: m_kind(kind), m_parent(parent), m_name(gmt::intern(name)) { }
 
+SyntaxSymbol::SyntaxSymbol(gmt::StringReference name, const SyntaxKind kind, gmt::Ref<SyntaxSymbol> parent)
+	: m_kind(kind), m_parent(parent), m_name(name) { }
+
 SyntaxKind SyntaxSymbol::get_kind() const
 {
 	return m_kind;
