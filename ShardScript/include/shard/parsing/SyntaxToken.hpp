@@ -17,7 +17,7 @@ namespace shard
 		bool m_isMissing;
 		TokenType m_type;
 		TextLocation m_location;
-		rs::stringintern::StringReference m_lexeme;
+		gmt::StringReference m_lexeme;
 
 	public:
 		inline SyntaxToken() :
@@ -41,7 +41,7 @@ namespace shard
 
 		inline SyntaxToken(
 			const TokenType type,
-			const rs::stringintern::StringReference lexeme,
+			const gmt::StringReference lexeme,
 			const TextLocation& location,
 			const bool isMissing = false
 		) :

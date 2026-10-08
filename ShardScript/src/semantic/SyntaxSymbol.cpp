@@ -5,18 +5,8 @@
 
 using namespace shard;
 
-namespace
-{
-	int g_definitionCounter = 0;
-}
-
-SyntaxSymbol::SyntaxSymbol(std::wstring_view name, const SyntaxKind kind)
-	: m_definitionIndex(g_definitionCounter++), m_kind(kind), m_name(gmt::intern(name)) { }
-
-int SyntaxSymbol::get_definition_index() const
-{
-	return m_definitionIndex;
-}
+SyntaxSymbol::SyntaxSymbol(std::wstring_view name, const SyntaxKind kind, gmt::Ref<SyntaxSymbol> parent)
+	: m_kind(kind), m_parent(parent), m_name(gmt::intern(name)) { }
 
 SyntaxKind SyntaxSymbol::get_kind() const
 {
@@ -58,7 +48,7 @@ std::wstring SyntaxSymbol::get_full_name() const
 			fullName += L'.';
 
 		fullName += (*it)->get_name();
-		first = false;
+		first = fullName.size() == 0;
 	}
 
 	if (!first)

@@ -12,13 +12,12 @@ namespace shard
 {
 	class SHARD_API SyntaxSymbol
 	{
-		int m_definitionIndex;
 		SyntaxKind m_kind;
 		gmt::Ref<SyntaxSymbol> m_parent;
-		rs::stringintern::StringReference m_name;
+		gmt::StringReference m_name;
 
 	public:
-		SyntaxSymbol(std::wstring_view name, const SyntaxKind kind);
+		SyntaxSymbol(std::wstring_view name, const SyntaxKind kind, gmt::Ref<SyntaxSymbol> parent);
 		virtual ~SyntaxSymbol() = default;
 
 		SyntaxSymbol(const SyntaxSymbol& other) = delete;
@@ -27,7 +26,6 @@ namespace shard
 		SyntaxSymbol(SyntaxSymbol&& other) = delete;
 		SyntaxSymbol& operator=(SyntaxSymbol&& other) = delete;
 
-		int get_definition_index() const;
 		SyntaxKind get_kind() const;
 
 		std::wstring_view get_name() const;

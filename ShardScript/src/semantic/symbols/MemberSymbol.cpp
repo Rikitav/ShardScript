@@ -2,8 +2,8 @@
 
 using namespace shard;
 
-MemberSymbol::MemberSymbol(std::wstring_view name, const SyntaxKind kind)
-	: SyntaxSymbol(name, kind) { }
+MemberSymbol::MemberSymbol(std::wstring_view name, const SyntaxKind kind, gmt::Ref<SyntaxSymbol> parent)
+	: SyntaxSymbol(name, kind, parent) { }
 
 SymbolLinking MemberSymbol::get_linking() const
 {
