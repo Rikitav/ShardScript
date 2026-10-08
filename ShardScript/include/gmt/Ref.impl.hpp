@@ -2,6 +2,9 @@
 #include <gmt/Ref.hpp>
 #include <gmt/Arena.hpp>
 
+#include <stdexcept>
+#include <cstdint>
+
 namespace gmt
 {
 	template<typename T>
@@ -37,7 +40,11 @@ namespace gmt
 	template<typename T>
 	inline T& Ref<T>::operator*() const
 	{
-		return *as_ptr();
+		T* ptr = as_ptr();
+		if (ptr == nullptr)
+			throw std::runtime_error("Null pointer dereference");
+
+		return *ptr;
 	}
 
 	template<typename T>
@@ -61,12 +68,18 @@ namespace gmt
 	template<typename T>
 	inline Arena& Ref<T>::get_arena() const
 	{
+		if (is_null())
+			throw std::runtime_error("Null pointer dereference");
+
 		return *m_arena;
 	}
 
 	template<typename T>
 	inline T* Ref<T>::as_ptr() const
 	{
+		if (is_null())
+			return nullptr;
+
 		return reinterpret_cast<T*>(m_arena->get_buffer() + m_offset);
 	}
 
@@ -74,6 +87,9 @@ namespace gmt
 	template<typename U>
 	inline bool Ref<T>::operator==(const Ref<U>& other) const
 	{
+		if (is_null() && other.is_null())
+			return true;
+
 		return m_arena == other.m_arena && m_offset == other.m_offset;
 	}
 

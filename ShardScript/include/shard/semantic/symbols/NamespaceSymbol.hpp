@@ -5,10 +5,10 @@
 #include <shard/semantic/SyntaxSymbol.hpp>
 
 #include <gmt/Arena.hpp>
+#include <gmt/FlatMap.hpp>
 #include <gmt/Interner.hpp>
 
 #include <string_view>
-#include <unordered_map>
 
 namespace shard
 {
@@ -16,10 +16,11 @@ namespace shard
 
 	class SHARD_API NamespaceSymbol : public SyntaxSymbol
 	{
-		std::unordered_map<gmt::StringReference, gmt::Ref<NamespaceSymbol>> m_children;
+		gmt::FlatMap<gmt::StringReference, gmt::Ref<NamespaceSymbol>> m_children;
 
 	public:
 		NamespaceSymbol(std::wstring_view name, gmt::Ref<NamespaceSymbol> parent);
+		NamespaceSymbol(gmt::StringReference name, gmt::Ref<NamespaceSymbol> parent);
 		virtual ~NamespaceSymbol() = default;
 
 		NamespaceSymbol(const NamespaceSymbol& other) = delete;
@@ -29,6 +30,8 @@ namespace shard
 		NamespaceSymbol& operator=(NamespaceSymbol&& other) = delete;
 
 		gmt::Ref<NamespaceSymbol> lookup(std::wstring_view name) const;
+		gmt::Ref<NamespaceSymbol> lookup(gmt::StringReference name) const;
 		gmt::Ref<NamespaceSymbol> lookup_or_create(std::wstring_view name, SymbolTable& table);
+		gmt::Ref<NamespaceSymbol> lookup_or_create(gmt::StringReference, SymbolTable& table);
 	};
 }
