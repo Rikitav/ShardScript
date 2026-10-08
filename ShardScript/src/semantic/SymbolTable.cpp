@@ -28,9 +28,18 @@ TypeSymbol*& shard::TYPE_STRING = shard::SymbolTable::Primitives::String;
 TypeSymbol*& shard::TYPE_ARRAY = shard::SymbolTable::Primitives::Array;
 TypeSymbol*& shard::TYPE_BYTE = shard::SymbolTable::Primitives::Byte;
 
+SymbolTable::SymbolTable()
+	: m_root_namespace(m_arena.emplace<NamespaceSymbol>(L"", gmt::nullref)) {
+}
+
 gmt::Arena& SymbolTable::get_arena()
 {
 	return m_arena;
+}
+
+gmt::Ref<NamespaceSymbol> SymbolTable::get_root_namespace() const
+{
+	return m_root_namespace;
 }
 
 std::optional<gmt::Ref<SyntaxSymbol>> SymbolTable::lookup_symbol(gmt::Ref<SyntaxNode> node)

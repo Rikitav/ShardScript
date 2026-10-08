@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <limits>
 #include <new>
+#include <optional>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
@@ -59,6 +60,9 @@ namespace gmt
 
 		template<typename T>
 		inline Span<T> allocate_array(std::size_t count);
+
+		template<typename T>
+		inline std::optional<Ref<T>> ref_from_ptr(T* ptr);
 
 		inline std::byte* get_buffer() const { return m_buffer; }
 		inline std::size_t get_cursor() const { return m_cursor; }
@@ -114,6 +118,19 @@ namespace gmt
 		Span<T> span(*this, static_cast<std::uint32_t>(aligned), static_cast<std::uint32_t>(count));
 		m_cursor = aligned + count * sizeof(T);
 		return span;
+	}
+
+	template<typename T>
+	std::optional<Ref<T>> Arena::ref_from_ptr(T* ptr)
+	{
+		if (ptr == nullptr)
+			return std::nullopt;
+
+		const std::byte* address = reinterpret_cast<const std::byte*>(ptr);
+		if (address < m_buffer || address >= m_buffer + m_cursor)
+			return std::nullopt;
+
+		return Ref<T>(*this, static_cast<std::size_t>(address - m_buffer));
 	}
 }
 

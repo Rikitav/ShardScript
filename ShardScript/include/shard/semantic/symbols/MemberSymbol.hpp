@@ -26,7 +26,7 @@ namespace shard
 		SymbolAccesibility m_accesibility = SymbolAccesibility::Private;
 
 	public:
-		MemberSymbol(std::wstring_view name, const SyntaxKind kind);
+		MemberSymbol(std::wstring_view name, const SyntaxKind kind, gmt::Ref<SyntaxSymbol> parent);
 		virtual ~MemberSymbol() = default;
 
 		MemberSymbol(const MemberSymbol& other) = delete;
