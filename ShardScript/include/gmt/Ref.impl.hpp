@@ -38,6 +38,16 @@ namespace gmt
 	}
 
 	template<typename T>
+	template<typename U> requires std::is_base_of_v<T, U>
+	inline Ref<U> Ref<T>::as() const
+	{
+		Ref<U> result;
+		result.m_arena = m_arena;
+		result.m_offset = m_offset;
+		return result;
+	}
+
+	template<typename T>
 	inline T& Ref<T>::operator*() const
 	{
 		T* ptr = as_ptr();

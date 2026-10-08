@@ -45,13 +45,13 @@ TextLocation TranslationUnitSyntax::get_location() const
 {
 	TextLocation location;
 
-	if (!m_usings.empty())
+	if (!m_usings.is_empty())
 		location = TextLocation(location, m_usings.as_span().front().as_ptr()->get_location());
 
 	if (has_namespace())
 		location = TextLocation(location, m_namespace.as_ptr()->get_location());
 
-	if (!m_members.empty())
+	if (!m_members.is_empty())
 	{
 		std::span<const gmt::Ref<MemberDeclarationSyntax>> members = m_members.as_span();
 		location = TextLocation(location, members.front().as_ptr()->get_location());

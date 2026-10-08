@@ -20,7 +20,7 @@ void BaseTypesListSyntax::set_types(gmt::Span<gmt::Ref<TypeSyntax>> types)
 
 TextLocation BaseTypesListSyntax::get_location() const
 {
-	if (!m_types.empty())
+	if (!m_types.is_empty())
 	{
 		std::span<const gmt::Ref<TypeSyntax>> types = m_types.as_span();
 		return TextLocation(types.front().as_ptr()->get_location(), types.back().as_ptr()->get_location());

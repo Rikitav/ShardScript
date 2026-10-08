@@ -5,7 +5,7 @@
 #include <shard/parsing/SyntaxToken.hpp>
 
 #include <shard/parsing/nodes/MemberDeclarationSyntax.hpp>
-#include <shard/parsing/nodes/BodySyntax.hpp>
+#include <shard/parsing/nodes/BlockSyntax.hpp>
 #include <shard/parsing/nodes/lists/ParametersListSyntax.hpp>
 
 #include <gmt/Ref.hpp>
@@ -15,7 +15,7 @@ namespace shard
 	class SHARD_API ConstructorDeclarationSyntax final : public MemberDeclarationSyntax
 	{
 		gmt::Ref<ParametersListSyntax> m_parametersList;
-		gmt::Ref<BodySyntax> m_body;
+		gmt::Ref<BlockSyntax> m_body;
 		SyntaxToken m_semicolonToken;
 
 	public:
@@ -23,11 +23,11 @@ namespace shard
 		virtual ~ConstructorDeclarationSyntax() = default;
 
 		gmt::Ref<const ParametersListSyntax> get_parameters_list() const;
-		gmt::Ref<const BodySyntax> get_body() const;
+		gmt::Ref<const BlockSyntax> get_body() const;
 		SyntaxToken get_semicolon() const;
 
 		void set_parameters_list(gmt::Ref<ParametersListSyntax> parametersList);
-		void set_body(gmt::Ref<BodySyntax> body);
+		void set_body(gmt::Ref<BlockSyntax> body);
 		void set_semicolon(const SyntaxToken& token);
 
 		TextLocation get_location() const override;

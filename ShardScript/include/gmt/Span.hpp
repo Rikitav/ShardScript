@@ -38,8 +38,8 @@ namespace gmt
 		Span(const Span<U>& other);
 
 		std::uint32_t offset() const;
-		std::uint32_t size() const;
-		bool empty() const;
+		std::uint32_t length() const;
+		bool is_empty() const;
 
 		template<typename U>
 		bool operator==(const Span<U>& other) const;

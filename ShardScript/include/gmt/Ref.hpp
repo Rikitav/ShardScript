@@ -35,6 +35,9 @@ namespace gmt
 		template<typename U> requires std::is_convertible_v<U*, T*>
 		Ref(const Ref<U>& other);
 		
+		template<typename U> requires std::is_base_of_v<T, U>
+		Ref<U> as() const;
+		
 		Ref(const Ref&) = default;
 		Ref& operator=(const Ref&) = default;
 

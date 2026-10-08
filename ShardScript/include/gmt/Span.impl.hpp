@@ -44,13 +44,13 @@ namespace gmt
 	}
 
 	template<typename T>
-	inline std::uint32_t Span<T>::size() const
+	inline std::uint32_t Span<T>::length() const
 	{
 		return m_count;
 	}
 
 	template<typename T>
-	inline bool Span<T>::empty() const
+	inline bool Span<T>::is_empty() const
 	{
 		return m_count == 0;
 	}

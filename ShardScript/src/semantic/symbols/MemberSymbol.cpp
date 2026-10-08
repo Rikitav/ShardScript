@@ -5,6 +5,9 @@ using namespace shard;
 MemberSymbol::MemberSymbol(std::wstring_view name, const SyntaxKind kind, gmt::Ref<SyntaxSymbol> parent)
 	: SyntaxSymbol(name, kind, parent) { }
 
+MemberSymbol::MemberSymbol(gmt::StringReference name, const SyntaxKind kind, gmt::Ref<SyntaxSymbol> parent)
+	: SyntaxSymbol(name, kind, parent) { }
+
 SymbolLinking MemberSymbol::get_linking() const
 {
 	return m_linking;

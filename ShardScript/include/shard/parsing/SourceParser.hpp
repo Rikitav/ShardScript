@@ -15,7 +15,7 @@
 #include <shard/parsing/nodes/TranslationUnitSyntax.hpp>
 #include <shard/parsing/nodes/MemberDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/TypeDeclarationSyntax.hpp>
-#include <shard/parsing/nodes/BodySyntax.hpp>
+#include <shard/parsing/nodes/BlockSyntax.hpp>
 #include <shard/parsing/nodes/StatementSyntax.hpp>
 #include <shard/parsing/nodes/ExpressionSyntax.hpp>
 #include <shard/parsing/nodes/TypeSyntax.hpp>
@@ -206,7 +206,7 @@ namespace shard
 		gmt::Ref<WhereClausesListSyntax> read_where_clauses(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 		gmt::Ref<BaseTypesListSyntax> read_base_types(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 
-		gmt::Ref<BodySyntax> read_body(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
+		gmt::Ref<BlockSyntax> read_body(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 		gmt::Ref<StatementsBlockSyntax> read_statements_block(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 		gmt::Ref<ArrowClauseSyntax> read_arrow_clause(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 		gmt::Ref<StatementSyntax> read_statement(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);

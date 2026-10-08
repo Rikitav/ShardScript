@@ -40,7 +40,7 @@ void TryStatementSyntax::set_catch_clauses(gmt::Span<gmt::Ref<CatchClauseSyntax>
 
 TextLocation TryStatementSyntax::get_location() const
 {
-	if (m_catchClauses.size() > 0 && !m_catchClauses.as_span().back().is_null())
+	if (m_catchClauses.length() > 0 && !m_catchClauses.as_span().back().is_null())
 		return TextLocation(m_tryKeywordToken, m_catchClauses.as_span().back().as_ptr()->get_location());
 
 	if (!m_tryBlock.is_null())

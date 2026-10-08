@@ -66,7 +66,7 @@ gmt::Ref<const SyntaxSymbol> SyntaxSymbol::get_parent() const
 	return m_parent;
 }
 
-void SyntaxSymbol::on_symbol_declared(SyntaxSymbol* symbol)
+void SyntaxSymbol::on_symbol_declared(gmt::Ref<SyntaxSymbol> symbol)
 {
 	// 0xDEADBEEF
 }

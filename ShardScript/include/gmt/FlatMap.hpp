@@ -32,8 +32,8 @@ namespace gmt
 		bool try_emplace(const K& key, V&& value);
 
 	private:
-		typename iterator locate(const K& key);
-		typename const_iterator locate(const K& key) const;
+		iterator locate(const K& key);
+		const_iterator locate(const K& key) const;
 	};
 }
 

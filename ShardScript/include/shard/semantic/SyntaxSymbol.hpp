@@ -35,7 +35,7 @@ namespace shard
 		std::wstring get_full_name() const;
 		gmt::Ref<const SyntaxSymbol> get_parent() const;
 
-		virtual void on_symbol_declared(SyntaxSymbol* symbol);
+		virtual void on_symbol_declared(gmt::Ref<SyntaxSymbol> symbol);
 		virtual bool is_type() const;
 		virtual bool is_member() const;
 		virtual bool is_method() const;

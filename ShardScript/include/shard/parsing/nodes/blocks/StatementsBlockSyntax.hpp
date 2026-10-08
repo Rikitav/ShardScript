@@ -4,7 +4,7 @@
 #include <shard/parsing/SyntaxKind.hpp>
 #include <shard/parsing/SyntaxToken.hpp>
 
-#include <shard/parsing/nodes/BodySyntax.hpp>
+#include <shard/parsing/nodes/BlockSyntax.hpp>
 #include <shard/parsing/nodes/StatementSyntax.hpp>
 
 #include <gmt/Ref.hpp>
@@ -12,7 +12,7 @@
 
 namespace shard
 {
-	class SHARD_API StatementsBlockSyntax final : public BodySyntax
+	class SHARD_API StatementsBlockSyntax final : public BlockSyntax
 	{
 		gmt::Span<gmt::Ref<StatementSyntax>> m_statements;
 		SyntaxToken m_openBracketToken;

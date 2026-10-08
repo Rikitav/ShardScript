@@ -17,10 +17,10 @@ namespace shard
 	class SHARD_API SymbolTable
 	{
 		gmt::Arena m_arena;
-		gmt::Ref<NamespaceSymbol> m_root_namespace;
+		gmt::Ref<NamespaceSymbol> m_rootNamespace;
 
-		std::unordered_map<gmt::Ref<SyntaxNode>, gmt::Ref<SyntaxSymbol>> nodeToSymbolMap;
-		std::unordered_map<gmt::Ref<SyntaxSymbol>, gmt::Ref<SyntaxNode>> symbolToNodeMap;
+		std::unordered_map<gmt::Ref<SyntaxNode>, gmt::Ref<SyntaxSymbol>> m_nodeToSymbolMap;
+		std::unordered_map<gmt::Ref<SyntaxSymbol>, gmt::Ref<SyntaxNode>> m_symbolToNodeMap;
 
 	public:
 		struct Primitives
@@ -52,7 +52,7 @@ namespace shard
 		gmt::Ref<T> emplace(Args&&... args);
 
 		template<typename T>
-		gmt::Span<T> allocate_array(std::size_t count);
+		gmt::Span<T> emplace_array(std::size_t count);
 
 		template<typename T, typename... Args>
 		gmt::Ref<T> bind_symbol(gmt::Ref<SyntaxNode> node, Args&&... args);

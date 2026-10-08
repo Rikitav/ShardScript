@@ -6,7 +6,7 @@
 using namespace shard;
 
 StatementsBlockSyntax::StatementsBlockSyntax(gmt::Ref<SyntaxNode> parent)
-	: BodySyntax(SyntaxKind::StatementsBlock, parent) { }
+	: BlockSyntax(SyntaxKind::StatementsBlock, parent) { }
 
 gmt::Span<const gmt::Ref<StatementSyntax>> StatementsBlockSyntax::get_statements() const
 {

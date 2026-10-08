@@ -113,7 +113,7 @@ void AttributesListSyntax::set_close_token(const SyntaxToken& token)
 
 TextLocation AttributesListSyntax::get_location() const
 {
-	if (!m_attributes.empty())
+	if (!m_attributes.is_empty())
 	{
 		std::span<const gmt::Ref<AttributeSyntax>> attributes = m_attributes.as_span();
 		return TextLocation(attributes.front().as_ptr()->get_location(), attributes.back().as_ptr()->get_location());

@@ -29,7 +29,7 @@ gmt::Ref<StructSymbol>& shard::TYPE_ARRAY = shard::SymbolTable::Primitives::Arra
 gmt::Ref<StructSymbol>& shard::TYPE_BYTE = shard::SymbolTable::Primitives::Byte;
 
 SymbolTable::SymbolTable()
-	: m_root_namespace(m_arena.emplace<NamespaceSymbol>(L"", gmt::nullref))
+	: m_rootNamespace(m_arena.emplace<NamespaceSymbol>(L"", gmt::nullref))
 { }
 
 gmt::Arena& SymbolTable::get_arena()
@@ -39,17 +39,23 @@ gmt::Arena& SymbolTable::get_arena()
 
 gmt::Ref<NamespaceSymbol> SymbolTable::get_root_namespace() const
 {
-	return m_root_namespace;
+	return m_rootNamespace;
 }
 
 std::optional<gmt::Ref<SyntaxSymbol>> SymbolTable::lookup_symbol(gmt::Ref<SyntaxNode> node)
 {
-	auto choice = nodeToSymbolMap.find(node);
-	return choice == nodeToSymbolMap.end() ? std::nullopt : std::optional<gmt::Ref<SyntaxSymbol>>(choice->second);
+	auto choice = m_nodeToSymbolMap.find(node);
+	if (choice == m_nodeToSymbolMap.end())
+		return std::nullopt;
+
+	return std::optional<gmt::Ref<SyntaxSymbol>>(choice->second);
 }
 
 std::optional<gmt::Ref<SyntaxNode>> SymbolTable::lookup_node(gmt::Ref<SyntaxSymbol> symbol)
 {
-	auto choice = symbolToNodeMap.find(symbol);
-	return choice == symbolToNodeMap.end() ? std::nullopt : std::optional<gmt::Ref<SyntaxNode>>(choice->second);
+	auto choice = m_symbolToNodeMap.find(symbol);
+	if (choice == m_symbolToNodeMap.end())
+		return std::nullopt;
+	
+	return std::optional<gmt::Ref<SyntaxNode>>(choice->second);
 }

@@ -23,7 +23,7 @@ gmt::Ref<const TypeSyntax> OperatorDeclarationSyntax::get_return_type() const
 	return m_returnType;
 }
 
-gmt::Ref<const BodySyntax> OperatorDeclarationSyntax::get_body() const
+gmt::Ref<const BlockSyntax> OperatorDeclarationSyntax::get_body() const
 {
 	return m_body;
 }
@@ -48,7 +48,7 @@ void OperatorDeclarationSyntax::set_return_type(gmt::Ref<TypeSyntax> returnType)
 	m_returnType = returnType;
 }
 
-void OperatorDeclarationSyntax::set_body(gmt::Ref<BodySyntax> body)
+void OperatorDeclarationSyntax::set_body(gmt::Ref<BlockSyntax> body)
 {
 	m_body = body;
 }

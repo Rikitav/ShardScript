@@ -8,7 +8,7 @@ using namespace shard;
 FunctionDeclarationSyntax::FunctionDeclarationSyntax(gmt::Ref<SyntaxNode> parent)
 	: TypeDeclarationSyntax(SyntaxKind::FunctionDeclaration, parent) { }
 
-gmt::Ref<const BodySyntax> FunctionDeclarationSyntax::get_body() const
+gmt::Ref<const BlockSyntax> FunctionDeclarationSyntax::get_body() const
 {
 	return m_body;
 }
@@ -23,7 +23,7 @@ gmt::Ref<const ParametersListSyntax> FunctionDeclarationSyntax::get_parameters_l
 	return m_parametersList;
 }
 
-void FunctionDeclarationSyntax::set_body(gmt::Ref<BodySyntax> body)
+void FunctionDeclarationSyntax::set_body(gmt::Ref<BlockSyntax> body)
 {
 	m_body = body;
 }
