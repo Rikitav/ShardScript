@@ -1,6 +1,7 @@
-#include <shard/semantic/SemanticVisitor.hpp>
-
 #include <shard/parsing/SyntaxKind.hpp>
+
+#include <shard/semantic/SemanticVisitor.hpp>
+#include <shard/semantic/SemanticModel.hpp>
 
 #include <stdexcept>
 
@@ -32,12 +33,30 @@ namespace
 	}
 }
 
+SemanticVisitor::SemanticVisitor(SemanticModel& model, DiagnosticsContext& diagnostics)
+	: SyntaxVisitor(), m_table(&model.get_table()), m_diagnostics(diagnostics), m_model(&model) { }
+
 SemanticVisitor::~SemanticVisitor()
 {
 	while (!m_scopeStack.empty())
 	{
 		m_scopeStack.pop();
 	}
+}
+
+SymbolTable& SemanticVisitor::get_symbol_table()
+{
+	return *m_table;
+}
+
+DiagnosticsContext& SemanticVisitor::get_diagnostics()
+{
+	return m_diagnostics;
+}
+
+SemanticModel& SemanticVisitor::get_model()
+{
+	return *m_model;
 }
 
 SemanticScope* SemanticVisitor::get_current_scope()
@@ -64,22 +83,28 @@ void SemanticVisitor::pop_scope()
 	m_scopeStack.pop();
 }
 
+// Top-level scopes carry a nullref owner (the compilation unit is not a symbol),
+// so child registration falls back to the scope's namespace: members of a unit
+// with a namespace directive populate that namespace, unnamespaced members
+// stay bound to their compilation unit and are registered nowhere.
 void SemanticVisitor::declare(gmt::Ref<SyntaxSymbol> symbol)
 {
 	SemanticScope* scope = get_current_scope();
 	scope->declare_symbol(symbol);
 
-	if (!scope->get_owner().is_null())
-		scope->get_owner()->on_symbol_declared(symbol);
+	gmt::Ref<SyntaxSymbol> owner = scope->get_owner();
+	if (owner.is_null())
+		owner = scope->get_namespace();
+
+	if (!owner.is_null())
+		owner->on_symbol_declared(symbol);
 }
 
 bool SemanticVisitor::check_name_declared(const std::wstring_view name)
 {
-	const gmt::StringReference key = gmt::intern(name);
-
 	for (SemanticScope* scope = get_current_scope(); scope != nullptr; scope = scope->get_parent())
 	{
-		if (!scope->find_local(key).is_null())
+		if (!scope->find_local(name).is_null())
 			return true;
 	}
 
