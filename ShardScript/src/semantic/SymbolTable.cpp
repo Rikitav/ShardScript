@@ -20,7 +20,7 @@ gmt::Ref<SyntaxSymbol> SymbolTable::lookup_symbol(gmt::Ref<const SyntaxNode> nod
 {
 	auto choice = m_nodeToSymbolMap.find(node);
 	if (choice == m_nodeToSymbolMap.end())
-		return gmt::nullref;
+		return gmt::nullref; // no symbol bound to this node
 
 	return choice->second;
 }
@@ -29,7 +29,7 @@ gmt::Ref<const SyntaxNode> SymbolTable::lookup_node(gmt::Ref<SyntaxSymbol> symbo
 {
 	auto choice = m_symbolToNodeMap.find(symbol);
 	if (choice == m_symbolToNodeMap.end())
-		return gmt::nullref;
+		return gmt::nullref; // no symbol bound to this node
 
 	return choice->second;
 }

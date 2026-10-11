@@ -158,7 +158,16 @@ gmt::Ref<FieldSymbol> SymbolFactory::create_enum_field(std::wstring_view name, g
 
 gmt::Ref<FieldSymbol> SymbolFactory::create_backing_field(gmt::Ref<PropertySymbol> property, gmt::Ref<SyntaxSymbol> parent)
 {
-	gmt::Ref<FieldSymbol> backing_field = create_field(concat(L"<", property->get_name()) + L">k__BackingField", parent, property->get_return_type(), property->get_linking());
+	static constexpr std::wstring_view suffix = L">k__BackingField";
+	const std::wstring_view property_name = property->get_name();
+
+	std::wstring backing_name;
+	backing_name.reserve(1 + property_name.size() + suffix.size());
+	backing_name.append(L"<");
+	backing_name.append(property_name);
+	backing_name.append(suffix);
+
+	gmt::Ref<FieldSymbol> backing_field = create_field(backing_name, parent, property->get_return_type(), property->get_linking());
 	property->set_backing_field(backing_field);
 	return backing_field;
 }
@@ -221,8 +230,14 @@ gmt::Ref<ConstructorSymbol> SymbolFactory::create_constructor(std::wstring_view 
 
 gmt::Ref<AccessorSymbol> SymbolFactory::create_accessor(gmt::Ref<const AccessorDeclarationSyntax> node, gmt::Ref<PropertySymbol> property)
 {
-	std::wstring accessor_name = concat(property->get_name(), L"_");
-	accessor_name.append(node->get_keyword().get_lexeme());
+	const std::wstring_view property_name = property->get_name();
+	const std::wstring_view keyword = node->get_keyword().get_lexeme();
+
+	std::wstring accessor_name;
+	accessor_name.reserve(property_name.size() + 1 + keyword.size());
+	accessor_name.append(property_name);
+	accessor_name.append(L"_");
+	accessor_name.append(keyword);
 
 	gmt::Ref<AccessorSymbol> symbol = m_table->emplace<AccessorSymbol>(accessor_name, property);
 	apply_modifiers(node->get_modifiers(), *symbol);
@@ -350,7 +365,6 @@ gmt::Ref<TypeParameterSymbol> SymbolFactory::create_type_parameter(std::wstring_
 {
 	gmt::Ref<TypeParameterSymbol> symbol = m_table->emplace<TypeParameterSymbol>(name, parent);
 	symbol->set_type_argument_index(static_cast<std::uint16_t>(parent->type_parameters.size()));
-	parent->on_symbol_declared(symbol);
 	return symbol;
 }
 
@@ -358,7 +372,6 @@ gmt::Ref<TypeParameterSymbol> SymbolFactory::create_type_parameter(std::wstring_
 {
 	gmt::Ref<TypeParameterSymbol> symbol = m_table->emplace<TypeParameterSymbol>(name, parent);
 	symbol->set_type_argument_index(static_cast<std::uint16_t>(parent->get_type_parameters().size()));
-	parent->on_symbol_declared(symbol);
 	return symbol;
 }
 
