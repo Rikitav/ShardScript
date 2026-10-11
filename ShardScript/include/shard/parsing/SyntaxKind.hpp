@@ -12,7 +12,6 @@ namespace shard
 		NamespaceDirective,
 
 		// Types
-		ClassDeclaration,
 		StructDeclaration,
 		InterfaceDeclaration,
 		DelegateDeclaration,

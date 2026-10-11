@@ -4,7 +4,7 @@
 namespace shard
 {
 	template<typename T, typename... Args>
-	gmt::Ref<T> SymbolTable::bind_symbol(gmt::Ref<SyntaxNode> node, Args&&... args)
+	gmt::Ref<T> SymbolTable::bind_symbol(gmt::Ref<const SyntaxNode> node, Args&&... args)
 	{
 		static_assert(std::is_base_of_v<SyntaxSymbol, T>, "bound symbol must derive from SyntaxSymbol");
 
@@ -15,7 +15,7 @@ namespace shard
 	}
 
 	template<typename T>
-	gmt::Ref<T> SymbolTable::bind_symbol(gmt::Ref<SyntaxNode> node, gmt::Ref<T> symbol)
+	gmt::Ref<T> SymbolTable::bind_symbol(gmt::Ref<const SyntaxNode> node, gmt::Ref<T> symbol)
 	{
 		static_assert(std::is_base_of_v<SyntaxSymbol, T>, "bound symbol must derive from SyntaxSymbol");
 

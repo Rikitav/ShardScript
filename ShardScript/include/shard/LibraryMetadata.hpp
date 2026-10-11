@@ -26,6 +26,9 @@ namespace shard
 #define SHARDLIB_GETMETADATA_FUNCNAME ShardLib_GetMetadata
 #define SHARDLIB_ENTRYPOINT_FUNCNAME ShardLib_EntryPoint
 
+#define SHARDLIB_GETMETADATA_FUNCNAME_STR L"ShardLib_GetMetadata"
+#define SHARDLIB_ENTRYPOINT_FUNCNAME_STR L"ShardLib_EntryPoint"
+
 // Microsoft / MinGW
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(__WIN32)
 	#define SHARDLIB_EXPORT __declspec(dllexport)
@@ -37,5 +40,8 @@ namespace shard
 	#define SHARDLIB_EXPORT __attribute__((visibility("default")))
 	#define SHARDLIB_GETMETADATA extern "C" __attribute__((visibility("default"))) void SHARDLIB_GETMETADATA_FUNCNAME(ShardLibMetadata& lib)
 	#define SHARDLIB_ENTRYPOINT extern "C" __attribute__((visibility("default"))) void SHARDLIB_ENTRYPOINT_FUNCNAME(SyntaxNode& context)
+
+#else
+	#error Unknown vendor, please define SHARDLIB_EXPORT, SHARDLIB_GETMETADATA, and SHARDLIB_ENTRYPOINT for your compiler.
 
 #endif

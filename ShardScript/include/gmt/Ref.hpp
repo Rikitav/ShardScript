@@ -2,6 +2,7 @@
 
 #include <gmt/NullRef.hpp>
 
+#include <memory>
 #include <cstddef>
 #include <type_traits>
 

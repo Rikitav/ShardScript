@@ -3,13 +3,6 @@
 
 #include <shard/parsing/SyntaxTree.hpp>
 #include <shard/parsing/Diagnostics.hpp>
-#include <shard/parsing/SyntaxNode.hpp>
-
-/*
-#include <shard/semantic/SymbolTable.hpp>
-#include <shard/semantic/SemanticModel.hpp>
-#include <shard/semantic/NamespaceTree.hpp>
-*/
 
 #include <shard/parsing/nodes/TranslationUnitSyntax.hpp>
 #include <shard/parsing/nodes/MemberDeclarationSyntax.hpp>
@@ -26,7 +19,6 @@
 #include <shard/parsing/nodes/blocks/StatementsBlockSyntax.hpp>
 #include <shard/parsing/nodes/blocks/ArrowClauseSyntax.hpp>
 
-#include <shard/parsing/nodes/members/ClassDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/members/StructDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/members/InterfaceDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/members/EnumDeclarationSyntax.hpp>
@@ -86,57 +78,17 @@
 #include <shard/parsing/nodes/Directives/UsingDirectiveSyntax.hpp>
 #include <shard/parsing/nodes/Directives/NamespaceDirectiveSyntax.hpp>
 
-/*
-#include <shard/parsing/nodes/MemberDeclarations/MethodDeclarationSyntax.hpp>
-
-#include <shard/parsing/nodes/Statements/ConditionalClauseSyntax.hpp>
+/*=
 #include <shard/parsing/nodes/Statements/SwitchStatementSyntax.hpp>
 #include <shard/parsing/nodes/Statements/SwitchCaseClauseSyntax.hpp>
 
-#include <shard/parsing/nodes/Loops/ForStatementSyntax.hpp>
-#include <shard/parsing/nodes/Loops/ForEachStatementSyntax.hpp>
-
-#include <shard/parsing/nodes/Expressions/LinkedExpressionSyntax.hpp>
-#include <shard/parsing/nodes/Expressions/TypeExpressionSyntax.hpp>
-#include <shard/parsing/nodes/Expressions/TernaryExpressionSyntax.hpp>
 #include <shard/parsing/nodes/Expressions/SwitchExpressionSyntax.hpp>
-
-#include <shard/parsing/nodes/Types/DelegateTypeSyntax.hpp>
 */
 
 namespace shard
 {
-    class SyntaxNode;
-
     class SHARD_API SyntaxVisitor
     {
-        /*
-        SymbolTable* Table;
-        NamespaceTree* Namespaces;
-        DiagnosticsContext& Diagnostics;
-        SemanticModel* Model = nullptr;
-        */
-
-    protected:
-        /*
-        inline SyntaxVisitor(SemanticModel& model, DiagnosticsContext& diagnostics)
-            : Table(model.Table.get()), Namespaces(model.Namespaces.get()), Diagnostics(diagnostics), Model(&model) {
-        }
-        */
-
-        // TODO: move to model
-        /*
-        template<typename T>
-        inline std::optional<T*> LookupSymbol(SyntaxNode* node)
-        {
-            auto symbol = Table->LookupSymbol(node);
-            if (!symbol.has_value())
-                return std::nullopt;
-
-            return static_cast<T*>(symbol.value());
-        }
-        */
-
     public:
         virtual void visit_syntax_tree(const SyntaxTree& tree);
         virtual void visit_translation_unit(const TranslationUnitSyntax* node);
@@ -147,7 +99,6 @@ namespace shard
         virtual void visit_attributes_list(const AttributesListSyntax* node);
         virtual void visit_attribute(const AttributeSyntax* node);
 
-        virtual void visit_class_declaration(const ClassDeclarationSyntax* node);
         virtual void visit_struct_declaration(const StructDeclarationSyntax* node);
         virtual void visit_interface_declaration(const InterfaceDeclarationSyntax* node);
         virtual void visit_enum_declaration(const EnumDeclarationSyntax* node);
@@ -219,29 +170,10 @@ namespace shard
         virtual void visit_nullable_type(const NullableTypeSyntax* node);
 
         /*
-        virtual void VisitTypeDeclaration(MemberDeclarationSyntax* node);
-
-        virtual void VisitMemberDeclaration(MemberDeclarationSyntax* node);
-        virtual void VisitMethodDeclaration(MethodDeclarationSyntax* node);
-
-        virtual void VisitStatement(StatementSyntax* node);
-
-        virtual void VisitForStatement(ForStatementSyntax* node);
-        virtual void VisitForEachStatement(ForEachStatementSyntax* node);
-
-        virtual void VisitConditionalClause(ConditionalClauseBaseSyntax* node);
         virtual void VisitSwitchStatement(SwitchStatementSyntax* node);
         virtual void VisitSwitchCaseClause(SwitchCaseClauseSyntax* node);
 
-        virtual void VisitExpression(ExpressionSyntax* node);
-        virtual void VisitTypeExpression(TypeExpressionSyntax* node);
-        virtual void VisitTernaryExpression(TernaryExpressionSyntax* node);
         virtual void VisitSwitchExpression(SwitchExpressionSyntax* node);
-
-        virtual void VisitIndexatorList(IndexatorListSyntax* node);
-
-        virtual void VisitType(TypeSyntax* node);
-        virtual void VisitDelegateType(DelegateTypeSyntax* node);
         */
     };
 }

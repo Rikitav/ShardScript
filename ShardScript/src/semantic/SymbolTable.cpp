@@ -2,32 +2,6 @@
 
 using namespace shard;
 
-gmt::Ref<StructSymbol> SymbolTable::Primitives::Void;
-gmt::Ref<StructSymbol> SymbolTable::Primitives::Null;
-gmt::Ref<StructSymbol> SymbolTable::Primitives::Any;
-
-gmt::Ref<StructSymbol> SymbolTable::Primitives::Boolean;
-gmt::Ref<StructSymbol> SymbolTable::Primitives::Integer;
-gmt::Ref<StructSymbol> SymbolTable::Primitives::Double;
-gmt::Ref<StructSymbol> SymbolTable::Primitives::Char;
-gmt::Ref<StructSymbol> SymbolTable::Primitives::String;
-gmt::Ref<StructSymbol> SymbolTable::Primitives::Array;
-gmt::Ref<StructSymbol> SymbolTable::Primitives::NativeInteger;
-gmt::Ref<StructSymbol> SymbolTable::Primitives::Byte;
-
-gmt::Ref<StructSymbol>& shard::TYPE_VOID = shard::SymbolTable::Primitives::Void;
-gmt::Ref<StructSymbol>& shard::TYPE_NULL = shard::SymbolTable::Primitives::Null;
-gmt::Ref<StructSymbol>& shard::TYPE_ANY = shard::SymbolTable::Primitives::Any;
-gmt::Ref<StructSymbol>& shard::TYPE_NINT = shard::SymbolTable::Primitives::NativeInteger;
-
-gmt::Ref<StructSymbol>& shard::TYPE_BOOL = shard::SymbolTable::Primitives::Boolean;
-gmt::Ref<StructSymbol>& shard::TYPE_INT = shard::SymbolTable::Primitives::Integer;
-gmt::Ref<StructSymbol>& shard::TYPE_DOUBLE = shard::SymbolTable::Primitives::Double;
-gmt::Ref<StructSymbol>& shard::TYPE_CHAR = shard::SymbolTable::Primitives::Char;
-gmt::Ref<StructSymbol>& shard::TYPE_STRING = shard::SymbolTable::Primitives::String;
-gmt::Ref<StructSymbol>& shard::TYPE_ARRAY = shard::SymbolTable::Primitives::Array;
-gmt::Ref<StructSymbol>& shard::TYPE_BYTE = shard::SymbolTable::Primitives::Byte;
-
 SymbolTable::SymbolTable()
 	: m_rootNamespace(m_arena.emplace<NamespaceSymbol>(L"", gmt::nullref))
 { }
@@ -42,20 +16,60 @@ gmt::Ref<NamespaceSymbol> SymbolTable::get_root_namespace() const
 	return m_rootNamespace;
 }
 
-std::optional<gmt::Ref<SyntaxSymbol>> SymbolTable::lookup_symbol(gmt::Ref<SyntaxNode> node)
+gmt::Ref<SyntaxSymbol> SymbolTable::lookup_symbol(gmt::Ref<const SyntaxNode> node)
 {
 	auto choice = m_nodeToSymbolMap.find(node);
 	if (choice == m_nodeToSymbolMap.end())
-		return std::nullopt;
+		return gmt::nullref;
 
-	return std::optional<gmt::Ref<SyntaxSymbol>>(choice->second);
+	return choice->second;
 }
 
-std::optional<gmt::Ref<SyntaxNode>> SymbolTable::lookup_node(gmt::Ref<SyntaxSymbol> symbol)
+gmt::Ref<const SyntaxNode> SymbolTable::lookup_node(gmt::Ref<SyntaxSymbol> symbol)
 {
 	auto choice = m_symbolToNodeMap.find(symbol);
 	if (choice == m_symbolToNodeMap.end())
-		return std::nullopt;
-	
-	return std::optional<gmt::Ref<SyntaxNode>>(choice->second);
+		return gmt::nullref;
+
+	return choice->second;
+}
+
+gmt::Ref<StructSymbol> SymbolTable::get_void_primitive()
+{
+	return m_void;
+}
+
+gmt::Ref<StructSymbol> SymbolTable::get_boolean_primitive()
+{
+	return m_boolean;
+}
+
+gmt::Ref<StructSymbol> SymbolTable::get_integer_primitive()
+{
+	return m_integer;
+}
+
+gmt::Ref<StructSymbol> SymbolTable::get_double_primitive()
+{
+	return m_double;
+}
+
+gmt::Ref<StructSymbol> SymbolTable::get_char_primitive()
+{
+	return m_char;
+}
+
+gmt::Ref<StructSymbol> SymbolTable::get_string_primitive()
+{
+	return m_string;
+}
+
+gmt::Ref<StructSymbol> SymbolTable::get_nint_primitive()
+{
+	return m_nativeInteger;
+}
+
+gmt::Ref<StructSymbol> SymbolTable::get_byte_primitive()
+{
+	return m_byte;
 }
