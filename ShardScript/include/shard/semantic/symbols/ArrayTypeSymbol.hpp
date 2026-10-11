@@ -1,0 +1,34 @@
+#pragma once
+#include <shard/Definitions.hpp>
+
+#include <shard/parsing/SyntaxKind.hpp>
+#include <shard/semantic/symbols/StructSymbol.hpp>
+
+#include <gmt/Arena.hpp>
+#include <gmt/Ref.hpp>
+
+#include <cstddef>
+
+namespace shard
+{
+	class SHARD_API ArrayTypeSymbol final : public StructSymbol
+	{
+		gmt::Ref<StructSymbol> m_underlayingType;
+		std::size_t m_length = 0;
+
+	public:
+		ArrayTypeSymbol(gmt::Ref<StructSymbol> underlaying_type, gmt::Ref<SyntaxSymbol> parent);
+		virtual ~ArrayTypeSymbol() = default;
+
+		ArrayTypeSymbol(const ArrayTypeSymbol& other) = delete;
+		ArrayTypeSymbol& operator=(const ArrayTypeSymbol& other) = delete;
+
+		ArrayTypeSymbol(ArrayTypeSymbol&& other) = delete;
+		ArrayTypeSymbol& operator=(ArrayTypeSymbol&& other) = delete;
+
+		gmt::Ref<StructSymbol> get_underlaying_type() const;
+
+		std::size_t get_length() const;
+		void set_length(std::size_t length);
+	};
+}
