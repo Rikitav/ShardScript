@@ -9,6 +9,7 @@
 #include <gmt/Interner.hpp>
 
 #include <string_view>
+#include <vector>
 
 namespace shard
 {
@@ -19,6 +20,8 @@ namespace shard
 		gmt::FlatMap<gmt::StringReference, gmt::Ref<NamespaceSymbol>> m_children;
 
 	public:
+		std::vector<gmt::Ref<SyntaxSymbol>> members;
+
 		NamespaceSymbol(std::wstring_view name, gmt::Ref<NamespaceSymbol> parent);
 		NamespaceSymbol(gmt::StringReference name, gmt::Ref<NamespaceSymbol> parent);
 		virtual ~NamespaceSymbol() = default;
@@ -28,6 +31,8 @@ namespace shard
 
 		NamespaceSymbol(NamespaceSymbol&& other) = delete;
 		NamespaceSymbol& operator=(NamespaceSymbol&& other) = delete;
+
+		void on_symbol_declared(gmt::Ref<SyntaxSymbol> symbol) override;
 
 		gmt::Ref<NamespaceSymbol> lookup(std::wstring_view name) const;
 		gmt::Ref<NamespaceSymbol> lookup(gmt::StringReference name) const;

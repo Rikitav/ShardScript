@@ -30,6 +30,7 @@ namespace shard
 		SyntaxKind get_kind() const;
 
 		std::wstring_view get_name() const;
+		gmt::StringReference get_name_reference() const;
 		void set_name(std::wstring_view name);
 
 		std::wstring get_full_name() const;
