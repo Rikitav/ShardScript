@@ -55,7 +55,8 @@ void SemanticVisitor::pop_scope_stack()
 
 void SemanticVisitor::push_scope(gmt::Ref<SyntaxSymbol> symbol)
 {
-	m_scopeStack.push(SemanticScope(symbol, get_current_scope()));
+	SemanticScope* parent = m_scopeStack.empty() ? nullptr : &m_scopeStack.top();
+	m_scopeStack.emplace(symbol, parent);
 }
 
 void SemanticVisitor::pop_scope()

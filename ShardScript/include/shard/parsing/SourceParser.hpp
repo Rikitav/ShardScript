@@ -31,7 +31,6 @@
 #include <shard/parsing/nodes/blocks/StatementsBlockSyntax.hpp>
 #include <shard/parsing/nodes/blocks/ArrowClauseSyntax.hpp>
 
-#include <shard/parsing/nodes/members/ClassDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/members/StructDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/members/InterfaceDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/members/EnumDeclarationSyntax.hpp>
@@ -170,7 +169,6 @@ namespace shard
 
 		// Members
 		gmt::Ref<MemberDeclarationSyntax> read_member_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
-		gmt::Ref<ClassDeclarationSyntax> read_class_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 		gmt::Ref<StructDeclarationSyntax> read_struct_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 		gmt::Ref<InterfaceDeclarationSyntax> read_interface_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 		gmt::Ref<EnumDeclarationSyntax> read_enum_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);

@@ -425,12 +425,6 @@ gmt::Ref<MemberDeclarationSyntax> SourceParser::read_member_declaration(SourcePr
 
 	switch (current.get_type())
 	{
-		case TokenType::ClassKeyword:
-		{
-			member = read_class_declaration(reader, parent);
-			break;
-		}
-
 		case TokenType::StructKeyword:
 		{
 			member = read_struct_declaration(reader, parent);
@@ -558,82 +552,6 @@ gmt::Ref<MemberDeclarationSyntax> SourceParser::read_member_declaration(SourcePr
 	member->set_attributes(attributes);
 	member->set_modifiers(modifiers.commit_array(arena));
 	return member;
-}
-
-gmt::Ref<ClassDeclarationSyntax> SourceParser::read_class_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
-{
-	gmt::Arena& arena = m_syntaxTree.get_arena();
-	auto syntax = arena.emplace<ClassDeclarationSyntax>(parent);
-	RecoveryContext::Guard parseContext(*this, SyntaxKind::ClassDeclaration);
-	syntax->set_declare_token(expect(reader, TokenType::ClassKeyword, L"Expected 'class' keyword"));
-
-	if (try_match_identifier(reader, 5))
-	{
-		syntax->set_identifier(reader.current());
-		reader.consume();
-	}
-	else
-	{
-		syntax->set_identifier(SyntaxToken(TokenType::Identifier, L"", TextLocation(), true));
-	}
-
-	if (reader.can_consume() && reader.current().get_type() == TokenType::LessOperator)
-		syntax->set_type_parameters(read_generic_type_parameters(reader, syntax));
-
-	if (reader.can_consume() && reader.current().get_type() == TokenType::WhereKeyword)
-		syntax->set_where_clauses(read_where_clauses(reader, syntax));
-
-	if (reader.can_consume() && reader.current().get_type() == TokenType::Colon)
-	{
-		syntax->set_base_type_colon(reader.current());
-		reader.consume();
-		syntax->set_base_types(read_base_types(reader, syntax));
-	}
-
-	if (try_match(reader, { TokenType::OpenBrace, TokenType::Semicolon }, L"Expected class body '{' or semicolon ';'", 5))
-	{
-		if (reader.current().get_type() == TokenType::OpenBrace)
-		{
-			syntax->set_open_bracket(reader.current());
-			reader.consume();
-
-			detail::inline_ref_vector<MemberDeclarationSyntax, 10> members{};
-
-			int loopGuard = 0;
-			while (reader.can_consume())
-			{
-				if (++loopGuard > max_loop_iterations)
-				{
-					m_diagnostics.report_error(reader.current(), L"Parser loop detected - aborting class body");
-					break;
-				}
-
-				if (reader.current().get_type() == TokenType::CloseBrace)
-					break;
-
-				if (!can_start_member_declaration(reader.current().get_type()))
-				{
-					m_diagnostics.report_error(reader.current(), L"Unexpected token in class body");
-					reader.consume();
-					continue;
-				}
-
-				gmt::Ref<MemberDeclarationSyntax> member = read_member_declaration(reader, syntax);
-				if (!member.is_null())
-					members.push_back(member);
-			}
-
-			syntax->set_close_bracket(expect(reader, TokenType::CloseBrace, L"Expected '}'"));
-			syntax->set_members(members.commit_array(arena));
-		}
-		else
-		{
-			syntax->set_semicolon(reader.current());
-			reader.consume();
-		}
-	}
-
-	return syntax;
 }
 
 gmt::Ref<StructDeclarationSyntax> SourceParser::read_struct_declaration(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
@@ -989,7 +907,6 @@ bool SourceParser::try_synchronize(SourceProvider& reader)
 					break;
 				}
 
-				case SyntaxKind::ClassDeclaration:
 				case SyntaxKind::StructDeclaration:
 				case SyntaxKind::InterfaceDeclaration:
 				{

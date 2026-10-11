@@ -6,25 +6,22 @@ using namespace shard;
 void SyntaxVisitor::visit_syntax_tree(const SyntaxTree& tree)
 {
 	for (const auto& unitReference : tree.get_units())
-	{
-		const TranslationUnitSyntax* unit = unitReference.as_ptr();
-		visit_translation_unit(unit);
-
-		for (const gmt::Ref<UsingDirectiveSyntax>& directive : unit->get_usings().as_span())
-			visit_using_directive(directive.as_ptr());
-
-		if (unit->has_namespace())
-			visit_namespace_directive(unit->get_namespace().as_ptr());
-
-		for (const gmt::Ref<MemberDeclarationSyntax>& member : unit->get_members().as_span())
-			member.as_ptr()->accept(*this);
-	}
+		visit_translation_unit(unitReference.as_ptr());
 }
 
 void SyntaxVisitor::visit_translation_unit(const TranslationUnitSyntax* node)
 {
 	if (node == nullptr)
 		return;
+
+	for (const gmt::Ref<UsingDirectiveSyntax>& directive : node->get_usings().as_span())
+		visit_using_directive(directive.as_ptr());
+
+	if (node->has_namespace())
+		visit_namespace_directive(node->get_namespace().as_ptr());
+
+	for (const gmt::Ref<MemberDeclarationSyntax>& member : node->get_members().as_span())
+		member.as_ptr()->accept(*this);
 }
 
 void SyntaxVisitor::visit_using_directive(const UsingDirectiveSyntax* node)
@@ -52,27 +49,6 @@ void SyntaxVisitor::visit_attributes_list(const AttributesListSyntax* node)
 
 	for (const gmt::Ref<AttributeSyntax>& attribute : node->get_attributes().as_span())
 		visit_attribute(attribute.as_ptr());
-}
-
-void SyntaxVisitor::visit_class_declaration(const ClassDeclarationSyntax* node)
-{
-	if (node == nullptr)
-		return;
-
-	if (!node->get_attributes().is_null())
-		visit_attributes_list(node->get_attributes().as_ptr());
-
-	if (!node->get_type_parameters().is_null())
-		visit_type_parameters_list(node->get_type_parameters().as_ptr());
-
-	if (!node->get_where_clauses().is_null())
-		visit_where_clauses_list(node->get_where_clauses().as_ptr());
-
-	if (!node->get_base_types().is_null())
-		visit_base_types_list(node->get_base_types().as_ptr());
-
-	for (const gmt::Ref<MemberDeclarationSyntax>& member : node->get_members().as_span())
-		member.as_ptr()->accept(*this);
 }
 
 void SyntaxVisitor::visit_struct_declaration(const StructDeclarationSyntax* node)

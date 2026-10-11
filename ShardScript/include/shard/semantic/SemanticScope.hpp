@@ -30,9 +30,6 @@ namespace shard
 		SemanticScope(const SemanticScope& other) = delete;
 		SemanticScope& operator=(const SemanticScope& other) = delete;
 
-		SemanticScope(SemanticScope&& other) = delete;
-		SemanticScope& operator=(SemanticScope&& other) = delete;
-
 		SemanticScope* get_parent() const;
 		gmt::Ref<SyntaxSymbol> get_owner() const;
 
