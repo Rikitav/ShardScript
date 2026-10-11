@@ -21,6 +21,11 @@ std::wstring_view SyntaxSymbol::get_name() const
 	return gmt::resolve(m_name);
 }
 
+gmt::StringReference SyntaxSymbol::get_name_reference() const
+{
+	return m_name;
+}
+
 void SyntaxSymbol::set_name(std::wstring_view name)
 {
 	m_name = gmt::intern(name);

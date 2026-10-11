@@ -12,6 +12,12 @@ NamespaceSymbol::NamespaceSymbol(std::wstring_view name, gmt::Ref<NamespaceSymbo
 NamespaceSymbol::NamespaceSymbol(gmt::StringReference name, gmt::Ref<NamespaceSymbol> parent)
 	: SyntaxSymbol(name, SyntaxKind::NamespaceDirective, parent) { }
 
+void NamespaceSymbol::on_symbol_declared(gmt::Ref<SyntaxSymbol> symbol)
+{
+	if (symbol->is_type() || symbol->is_member())
+		members.push_back(symbol);
+}
+
 gmt::Ref<NamespaceSymbol> NamespaceSymbol::lookup(gmt::StringReference name) const
 {
 	const gmt::Ref<NamespaceSymbol>* child = m_children.find(name);
