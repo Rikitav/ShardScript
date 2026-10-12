@@ -1,10 +1,22 @@
 #include <shard/semantic/SymbolTable.hpp>
 
+#include <shard/parsing/SyntaxKind.hpp>
+
 using namespace shard;
 
 SymbolTable::SymbolTable()
 	: m_rootNamespace(m_arena.emplace<NamespaceSymbol>(L"", gmt::nullref))
-{ }
+{
+	m_void = m_arena.emplace<StructSymbol>(L"void", SyntaxKind::StructDeclaration, m_rootNamespace);
+	m_boolean = m_arena.emplace<StructSymbol>(L"bool", SyntaxKind::StructDeclaration, m_rootNamespace);
+	m_integer = m_arena.emplace<StructSymbol>(L"int", SyntaxKind::StructDeclaration, m_rootNamespace);
+	m_double = m_arena.emplace<StructSymbol>(L"double", SyntaxKind::StructDeclaration, m_rootNamespace);
+	m_char = m_arena.emplace<StructSymbol>(L"char", SyntaxKind::StructDeclaration, m_rootNamespace);
+	m_string = m_arena.emplace<StructSymbol>(L"string", SyntaxKind::StructDeclaration, m_rootNamespace);
+	m_array = m_arena.emplace<StructSymbol>(L"Array", SyntaxKind::StructDeclaration, m_rootNamespace);
+	m_nativeInteger = m_arena.emplace<StructSymbol>(L"nint", SyntaxKind::StructDeclaration, m_rootNamespace);
+	m_byte = m_arena.emplace<StructSymbol>(L"byte", SyntaxKind::StructDeclaration, m_rootNamespace);
+}
 
 gmt::Arena& SymbolTable::get_arena()
 {
@@ -149,42 +161,47 @@ gmt::Ref<GenericTypeSymbol> SymbolTable::find_or_create_generic_type(gmt::Ref<St
 	return symbol;
 }
 
-gmt::Ref<StructSymbol> SymbolTable::get_void_primitive()
+gmt::Ref<StructSymbol> SymbolTable::get_void_primitive() const
 {
 	return m_void;
 }
 
-gmt::Ref<StructSymbol> SymbolTable::get_boolean_primitive()
+gmt::Ref<StructSymbol> SymbolTable::get_boolean_primitive() const
 {
 	return m_boolean;
 }
 
-gmt::Ref<StructSymbol> SymbolTable::get_integer_primitive()
+gmt::Ref<StructSymbol> SymbolTable::get_integer_primitive() const
 {
 	return m_integer;
 }
 
-gmt::Ref<StructSymbol> SymbolTable::get_double_primitive()
+gmt::Ref<StructSymbol> SymbolTable::get_double_primitive() const
 {
 	return m_double;
 }
 
-gmt::Ref<StructSymbol> SymbolTable::get_char_primitive()
+gmt::Ref<StructSymbol> SymbolTable::get_char_primitive() const
 {
 	return m_char;
 }
 
-gmt::Ref<StructSymbol> SymbolTable::get_string_primitive()
+gmt::Ref<StructSymbol> SymbolTable::get_string_primitive() const
 {
 	return m_string;
 }
 
-gmt::Ref<StructSymbol> SymbolTable::get_nint_primitive()
+gmt::Ref<StructSymbol> SymbolTable::get_array_primitive() const
+{
+	return m_array;
+}
+
+gmt::Ref<StructSymbol> SymbolTable::get_nint_primitive() const
 {
 	return m_nativeInteger;
 }
 
-gmt::Ref<StructSymbol> SymbolTable::get_byte_primitive()
+gmt::Ref<StructSymbol> SymbolTable::get_byte_primitive() const
 {
 	return m_byte;
 }

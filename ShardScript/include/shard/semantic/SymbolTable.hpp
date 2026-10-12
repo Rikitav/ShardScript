@@ -56,7 +56,7 @@ namespace shard
 		template<typename T>
 		gmt::Span<T> emplace_array(std::size_t count);
 
-		template<typename T, typename... Args>
+		template<typename T, typename... Args> requires std::is_constructible_v<T, Args&&...>
 		gmt::Ref<T> bind_symbol(gmt::Ref<const SyntaxNode> node, Args&&... args);
 
 		template<typename T>
@@ -73,14 +73,15 @@ namespace shard
 		gmt::Ref<ArrayTypeSymbol> find_or_create_array_type(gmt::Ref<StructSymbol> underlaying, std::size_t size);
 		gmt::Ref<GenericTypeSymbol> find_or_create_generic_type(gmt::Ref<StructSymbol> underlaying, const std::vector<gmt::Ref<StructSymbol>>& type_arguments);
 
-		gmt::Ref<StructSymbol> get_void_primitive();
-		gmt::Ref<StructSymbol> get_boolean_primitive();
-		gmt::Ref<StructSymbol> get_integer_primitive();
-		gmt::Ref<StructSymbol> get_double_primitive();
-		gmt::Ref<StructSymbol> get_char_primitive();
-		gmt::Ref<StructSymbol> get_string_primitive();
-		gmt::Ref<StructSymbol> get_nint_primitive();
-		gmt::Ref<StructSymbol> get_byte_primitive();
+		gmt::Ref<StructSymbol> get_void_primitive() const;
+		gmt::Ref<StructSymbol> get_boolean_primitive() const;
+		gmt::Ref<StructSymbol> get_integer_primitive() const;
+		gmt::Ref<StructSymbol> get_double_primitive() const;
+		gmt::Ref<StructSymbol> get_char_primitive() const;
+		gmt::Ref<StructSymbol> get_string_primitive() const;
+		gmt::Ref<StructSymbol> get_array_primitive() const;
+		gmt::Ref<StructSymbol> get_nint_primitive() const;
+		gmt::Ref<StructSymbol> get_byte_primitive() const;
 	};
 }
 

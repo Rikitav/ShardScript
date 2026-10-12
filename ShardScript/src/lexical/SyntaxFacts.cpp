@@ -223,6 +223,10 @@ bool shard::is_left_unary_operator(shard::TokenType type)
 	if (is_left_unary_boolean_operator(type))
 		return true;
 
+	// 'try <operand>' propagates errors from the operand expression
+	if (type == TokenType::TryKeyword)
+		return true;
+
 	return false;
 }
 

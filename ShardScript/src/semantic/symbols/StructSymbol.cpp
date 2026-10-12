@@ -66,5 +66,8 @@ void StructSymbol::on_symbol_declared(gmt::Ref<SyntaxSymbol> symbol)
 			type_parameters.push_back(symbol.as<TypeParameterSymbol>());
 			break;
 		}
+
+		default:
+			break;
 	}
 }

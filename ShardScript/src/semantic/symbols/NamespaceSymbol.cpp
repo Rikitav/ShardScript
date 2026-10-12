@@ -18,6 +18,11 @@ void NamespaceSymbol::on_symbol_declared(gmt::Ref<SyntaxSymbol> symbol)
 		members.push_back(symbol);
 }
 
+const gmt::FlatMap<gmt::StringReference, gmt::Ref<NamespaceSymbol>>& NamespaceSymbol::get_children() const
+{
+	return m_children;
+}
+
 gmt::Ref<NamespaceSymbol> NamespaceSymbol::lookup(gmt::StringReference name) const
 {
 	const gmt::Ref<NamespaceSymbol>* child = m_children.find(name);

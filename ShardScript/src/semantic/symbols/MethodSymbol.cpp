@@ -79,5 +79,8 @@ void MethodSymbol::on_symbol_declared(gmt::Ref<SyntaxSymbol> symbol)
 			m_parameters.push_back(symbol.as<ParameterSymbol>());
 			break;
 		}
+
+		default:
+			break;
 	}
 }

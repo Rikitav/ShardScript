@@ -3,7 +3,7 @@
 
 namespace shard
 {
-	template<typename T, typename... Args>
+	template<typename T, typename... Args> requires std::is_constructible_v<T, Args&&...>
 	gmt::Ref<T> SymbolTable::bind_symbol(gmt::Ref<const SyntaxNode> node, Args&&... args)
 	{
 		static_assert(std::is_base_of_v<SyntaxSymbol, T>, "bound symbol must derive from SyntaxSymbol");
