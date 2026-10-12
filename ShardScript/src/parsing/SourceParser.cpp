@@ -2521,6 +2521,9 @@ gmt::Ref<ExpressionSyntax> SourceParser::read_operand(SourceProvider& reader, gm
 
 		case TokenType::PipeOperator: // lambda '|args| => expr' / '|args| { }' - at operand position '|' can only be a lambda parameter list
 			return read_lambda_expression(reader, parent);
+
+		default:
+			break;
 	}
 
 	if (is_identifier_like(current.get_type()))
@@ -2534,6 +2537,7 @@ gmt::Ref<ExpressionSyntax> SourceParser::read_operand(SourceProvider& reader, gm
 
 		return read_linked_expression(reader, parent, name);
 	}
+
 	m_diagnostics.report_error(current, L"Expected expression");
 	return gmt::nullref;
 }

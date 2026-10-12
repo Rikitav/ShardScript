@@ -34,6 +34,8 @@ namespace shard
 
 		void on_symbol_declared(gmt::Ref<SyntaxSymbol> symbol) override;
 
+		const gmt::FlatMap<gmt::StringReference, gmt::Ref<NamespaceSymbol>>& get_children() const;
+
 		gmt::Ref<NamespaceSymbol> lookup(std::wstring_view name) const;
 		gmt::Ref<NamespaceSymbol> lookup(gmt::StringReference name) const;
 		gmt::Ref<NamespaceSymbol> lookup_or_create(std::wstring_view name, SymbolTable& table);

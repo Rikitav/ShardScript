@@ -59,5 +59,6 @@ namespace shard
 		void visit_for_in_statement(const ForInStatementSyntax* node) override;
 		void visit_try_statement(const TryStatementSyntax* node) override;
 		void visit_lambda_expression(const LambdaExpressionSyntax* node) override;
+		void visit_statements_block(const StatementsBlockSyntax* node) override;
 	};
 }

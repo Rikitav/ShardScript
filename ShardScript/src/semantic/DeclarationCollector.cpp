@@ -891,3 +891,18 @@ void DeclarationCollector::visit_lambda_expression(const LambdaExpressionSyntax*
 
 	pop_scope();
 }
+
+void DeclarationCollector::visit_statements_block(const StatementsBlockSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	// statement blocks introduce an anonymous scope
+	// so locals shadow outer bindings instead of colliding with them
+	push_scope(gmt::nullref);
+
+	for (const gmt::Ref<StatementSyntax>& statement : node->get_statements().as_span())
+		statement.as_ptr()->accept(*this);
+
+	pop_scope();
+}
