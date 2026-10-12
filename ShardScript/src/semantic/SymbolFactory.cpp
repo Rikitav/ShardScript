@@ -420,42 +420,34 @@ gmt::Ref<DelegateTypeSymbol> SymbolFactory::create_delegate(std::wstring_view na
 	return symbol;
 }
 
-gmt::Ref<ArrayTypeSymbol> SymbolFactory::create_array_type(gmt::Ref<const ArrayTypeSyntax> node, gmt::Ref<SyntaxSymbol> parent, gmt::Ref<StructSymbol> underlaying_type)
+gmt::Ref<ArrayTypeSymbol> SymbolFactory::create_array_type(gmt::Ref<const ArrayTypeSyntax> node, gmt::Ref<StructSymbol> underlaying_type)
 {
-	gmt::Ref<ArrayTypeSymbol> symbol = m_table->emplace<ArrayTypeSymbol>(underlaying_type, parent);
+	gmt::Ref<ArrayTypeSymbol> symbol = m_table->find_or_create_array_type(underlaying_type);
 	return m_table->bind_symbol<ArrayTypeSymbol>(node, symbol);
 }
 
-gmt::Ref<ArrayTypeSymbol> SymbolFactory::create_array_type(gmt::Ref<StructSymbol> underlaying_type, gmt::Ref<SyntaxSymbol> parent)
+gmt::Ref<ArrayTypeSymbol> SymbolFactory::create_array_type(gmt::Ref<StructSymbol> underlaying_type)
 {
-	return m_table->emplace<ArrayTypeSymbol>(underlaying_type, parent);
+	return m_table->find_or_create_array_type(underlaying_type);
 }
 
-gmt::Ref<ArrayTypeSymbol> SymbolFactory::create_array_type(gmt::Ref<StructSymbol> underlaying_type, gmt::Ref<SyntaxSymbol> parent, std::size_t size)
+gmt::Ref<ArrayTypeSymbol> SymbolFactory::create_array_type(gmt::Ref<StructSymbol> underlaying_type, std::size_t size)
 {
-	gmt::Ref<ArrayTypeSymbol> symbol = m_table->emplace<ArrayTypeSymbol>(underlaying_type, parent);
-	symbol->set_length(size);
-	return symbol;
+	return m_table->find_or_create_array_type(underlaying_type, size);
 }
 
-gmt::Ref<GenericTypeSymbol> SymbolFactory::create_generic_type(gmt::Ref<const GenericTypeSyntax> node, gmt::Ref<SyntaxSymbol> parent, gmt::Ref<StructSymbol> underlaying_type)
+gmt::Ref<GenericTypeSymbol> SymbolFactory::create_generic_type(gmt::Ref<const GenericTypeSyntax> node, gmt::Ref<StructSymbol> underlaying_type)
 {
-	gmt::Ref<GenericTypeSymbol> symbol = m_table->emplace<GenericTypeSymbol>(underlaying_type, parent);
+	gmt::Ref<GenericTypeSymbol> symbol = m_table->find_or_create_generic_type(underlaying_type, {});
 	return m_table->bind_symbol<GenericTypeSymbol>(node, symbol);
 }
 
-gmt::Ref<GenericTypeSymbol> SymbolFactory::create_generic_type(gmt::Ref<StructSymbol> underlaying_type, gmt::Ref<SyntaxSymbol> parent)
+gmt::Ref<GenericTypeSymbol> SymbolFactory::create_generic_type(gmt::Ref<StructSymbol> underlaying_type)
 {
-	return m_table->emplace<GenericTypeSymbol>(underlaying_type, parent);
+	return m_table->find_or_create_generic_type(underlaying_type, {});
 }
 
-gmt::Ref<GenericTypeSymbol> SymbolFactory::create_generic_type(gmt::Ref<StructSymbol> underlaying_type, gmt::Ref<SyntaxSymbol> parent, const std::vector<gmt::Ref<StructSymbol>>& type_arguments)
+gmt::Ref<GenericTypeSymbol> SymbolFactory::create_generic_type(gmt::Ref<StructSymbol> underlaying_type, const std::vector<gmt::Ref<StructSymbol>>& type_arguments)
 {
-	gmt::Ref<GenericTypeSymbol> symbol = m_table->emplace<GenericTypeSymbol>(underlaying_type, parent);
-
-	const std::vector<gmt::Ref<TypeParameterSymbol>>& type_parameters = underlaying_type->type_parameters;
-	for (std::size_t i = 0; i < type_parameters.size() && i < type_arguments.size(); ++i)
-		symbol->add_type_parameter(type_parameters[i], type_arguments[i]);
-
-	return symbol;
+	return m_table->find_or_create_generic_type(underlaying_type, type_arguments);
 }

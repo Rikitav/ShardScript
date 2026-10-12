@@ -2,6 +2,8 @@
 #include <shard/Definitions.hpp>
 
 #include <shard/semantic/SyntaxSymbol.hpp>
+#include <shard/semantic/symbols/ArrayTypeSymbol.hpp>
+#include <shard/semantic/symbols/GenericTypeSymbol.hpp>
 #include <shard/semantic/symbols/NamespaceSymbol.hpp>
 #include <shard/semantic/symbols/StructSymbol.hpp>
 #include <shard/parsing/SyntaxNode.hpp>
@@ -9,8 +11,10 @@
 #include <gmt/Arena.hpp>
 #include <gmt/Ref.hpp>
 
+#include <cstddef>
 #include <unordered_map>
 #include <optional>
+#include <vector>
 
 namespace shard
 {
@@ -31,6 +35,10 @@ namespace shard
 
 		std::unordered_map<gmt::Ref<const SyntaxNode>, gmt::Ref<SyntaxSymbol>> m_nodeToSymbolMap;
 		std::unordered_map<gmt::Ref<SyntaxSymbol>, gmt::Ref<const SyntaxNode>> m_symbolToNodeMap;
+
+		// hash -> candidates; collisions resolved by full structural comparison
+		std::unordered_map<std::size_t, std::vector<gmt::Ref<ArrayTypeSymbol>>> m_arrayTypes;
+		std::unordered_map<std::size_t, std::vector<gmt::Ref<GenericTypeSymbol>>> m_genericTypes;
 
 	public:
 		SymbolTable();
@@ -56,6 +64,14 @@ namespace shard
 
 		gmt::Ref<SyntaxSymbol> lookup_symbol(gmt::Ref<const SyntaxNode> node);
 		gmt::Ref<const SyntaxNode> lookup_node(gmt::Ref<SyntaxSymbol> symbol);
+
+		gmt::Ref<ArrayTypeSymbol> find_array_type(gmt::Ref<StructSymbol> underlaying) const;
+		gmt::Ref<ArrayTypeSymbol> find_array_type(gmt::Ref<StructSymbol> underlaying, std::size_t size) const;
+		gmt::Ref<GenericTypeSymbol> find_generic_type(gmt::Ref<StructSymbol> underlaying, const std::vector<gmt::Ref<StructSymbol>>& type_arguments) const;
+
+		gmt::Ref<ArrayTypeSymbol> find_or_create_array_type(gmt::Ref<StructSymbol> underlaying);
+		gmt::Ref<ArrayTypeSymbol> find_or_create_array_type(gmt::Ref<StructSymbol> underlaying, std::size_t size);
+		gmt::Ref<GenericTypeSymbol> find_or_create_generic_type(gmt::Ref<StructSymbol> underlaying, const std::vector<gmt::Ref<StructSymbol>>& type_arguments);
 
 		gmt::Ref<StructSymbol> get_void_primitive();
 		gmt::Ref<StructSymbol> get_boolean_primitive();

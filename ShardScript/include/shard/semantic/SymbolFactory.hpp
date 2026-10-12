@@ -111,12 +111,12 @@ namespace shard
 		gmt::Ref<DelegateTypeSymbol> create_delegate(gmt::Ref<MethodSymbol> method, gmt::Ref<SyntaxSymbol> parent);
 		gmt::Ref<DelegateTypeSymbol> create_delegate(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent, gmt::Ref<StructSymbol> return_type, std::vector<gmt::Ref<ParameterSymbol>> parameters);
 
-		gmt::Ref<ArrayTypeSymbol> create_array_type(gmt::Ref<const ArrayTypeSyntax> node, gmt::Ref<SyntaxSymbol> parent, gmt::Ref<StructSymbol> underlaying_type);
-		gmt::Ref<ArrayTypeSymbol> create_array_type(gmt::Ref<StructSymbol> underlaying_type, gmt::Ref<SyntaxSymbol> parent);
-		gmt::Ref<ArrayTypeSymbol> create_array_type(gmt::Ref<StructSymbol> underlaying_type, gmt::Ref<SyntaxSymbol> parent, std::size_t size);
+		gmt::Ref<ArrayTypeSymbol> create_array_type(gmt::Ref<const ArrayTypeSyntax> node, gmt::Ref<StructSymbol> underlaying_type);
+		gmt::Ref<ArrayTypeSymbol> create_array_type(gmt::Ref<StructSymbol> underlaying_type);
+		gmt::Ref<ArrayTypeSymbol> create_array_type(gmt::Ref<StructSymbol> underlaying_type, std::size_t size);
 
-		gmt::Ref<GenericTypeSymbol> create_generic_type(gmt::Ref<const GenericTypeSyntax> node, gmt::Ref<SyntaxSymbol> parent, gmt::Ref<StructSymbol> underlaying_type);
-		gmt::Ref<GenericTypeSymbol> create_generic_type(gmt::Ref<StructSymbol> underlaying_type, gmt::Ref<SyntaxSymbol> parent);
-		gmt::Ref<GenericTypeSymbol> create_generic_type(gmt::Ref<StructSymbol> underlaying_type, gmt::Ref<SyntaxSymbol> parent, const std::vector<gmt::Ref<StructSymbol>>& type_arguments);
+		gmt::Ref<GenericTypeSymbol> create_generic_type(gmt::Ref<const GenericTypeSyntax> node, gmt::Ref<StructSymbol> underlaying_type);
+		gmt::Ref<GenericTypeSymbol> create_generic_type(gmt::Ref<StructSymbol> underlaying_type);
+		gmt::Ref<GenericTypeSymbol> create_generic_type(gmt::Ref<StructSymbol> underlaying_type, const std::vector<gmt::Ref<StructSymbol>>& type_arguments);
 	};
 }
