@@ -4,22 +4,22 @@
 
 using namespace shard;
 
-GenericTypeSymbol::GenericTypeSymbol(gmt::Ref<StructSymbol> underlaying_type, gmt::Ref<SyntaxSymbol> parent)
-	: StructSymbol(gmt::intern(underlaying_type->get_name()), SyntaxKind::GenericType, parent), m_underlayingType(underlaying_type) { }
+GenericTypeSymbol::GenericTypeSymbol(gmt::Ref<StructSymbol> underlayingType, gmt::Ref<SyntaxSymbol> parent)
+	: StructSymbol(gmt::intern(underlayingType->get_name()), SyntaxKind::GenericType, parent), m_underlayingType(underlayingType) { }
 
 gmt::Ref<StructSymbol> GenericTypeSymbol::get_underlaying_type() const
 {
 	return m_underlayingType;
 }
 
-bool GenericTypeSymbol::add_type_parameter(gmt::Ref<TypeParameterSymbol> type_parameter, gmt::Ref<StructSymbol> argument_type)
+bool GenericTypeSymbol::add_type_parameter(gmt::Ref<TypeParameterSymbol> typeParameter, gmt::Ref<StructSymbol> argumentType)
 {
-	return m_typeArguments.try_emplace(gmt::intern(type_parameter->get_name()), argument_type);
+	return m_typeArguments.try_emplace(gmt::intern(typeParameter->get_name()), argumentType);
 }
 
-gmt::Ref<StructSymbol> GenericTypeSymbol::substitute_type_parameter(gmt::Ref<TypeParameterSymbol> type_parameter) const
+gmt::Ref<StructSymbol> GenericTypeSymbol::substitute_type_parameter(gmt::Ref<TypeParameterSymbol> typeParameter) const
 {
-	const gmt::Ref<StructSymbol>* argument = m_typeArguments.find(gmt::intern(type_parameter->get_name()));
+	const gmt::Ref<StructSymbol>* argument = m_typeArguments.find(gmt::intern(typeParameter->get_name()));
 	if (argument == nullptr)
 		return gmt::nullref;
 

@@ -19,14 +19,44 @@ MethodSymbol::MethodSymbol(std::wstring_view name, const SyntaxKind kind, gmt::R
 MethodSymbol::MethodSymbol(gmt::StringReference name, const SyntaxKind kind, gmt::Ref<SyntaxSymbol> parent)
 	: MemberSymbol(name, kind, parent) { }
 
+CallingConvention MethodSymbol::get_calling_convention() const
+{
+	return m_callingConvention;
+}
+
+void MethodSymbol::set_calling_convention(CallingConvention callingConvention)
+{
+	m_callingConvention = callingConvention;
+}
+
+const std::vector<std::byte>& MethodSymbol::get_executable_byte_code() const
+{
+	return m_executableByteCode;
+}
+
+std::vector<std::byte>& MethodSymbol::get_executable_byte_code()
+{
+	return m_executableByteCode;
+}
+
+void* MethodSymbol::get_function_pointer() const
+{
+	return m_functionPointer;
+}
+
+void MethodSymbol::set_function_pointer(void* functionPointer)
+{
+	m_functionPointer = functionPointer;
+}
+
 gmt::Ref<StructSymbol> MethodSymbol::get_return_type() const
 {
 	return m_returnType;
 }
 
-void MethodSymbol::set_return_type(gmt::Ref<StructSymbol> return_type)
+void MethodSymbol::set_return_type(gmt::Ref<StructSymbol> returnType)
 {
-	m_returnType = return_type;
+	m_returnType = returnType;
 }
 
 const std::vector<gmt::Ref<TypeParameterSymbol>>& MethodSymbol::get_type_parameters() const
@@ -44,9 +74,9 @@ bool MethodSymbol::get_is_abstract() const
 	return m_isAbstract;
 }
 
-void MethodSymbol::set_is_abstract(bool is_abstract)
+void MethodSymbol::set_is_abstract(bool isAbstract)
 {
-	m_isAbstract = is_abstract;
+	m_isAbstract = isAbstract;
 }
 
 bool MethodSymbol::get_is_async() const
@@ -54,9 +84,9 @@ bool MethodSymbol::get_is_async() const
 	return m_isAsync;
 }
 
-void MethodSymbol::set_is_async(bool is_async)
+void MethodSymbol::set_is_async(bool isAsync)
 {
-	m_isAsync = is_async;
+	m_isAsync = isAsync;
 }
 
 bool MethodSymbol::is_method() const

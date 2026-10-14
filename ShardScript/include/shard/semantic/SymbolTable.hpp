@@ -5,6 +5,7 @@
 #include <shard/semantic/symbols/ArrayTypeSymbol.hpp>
 #include <shard/semantic/symbols/GenericTypeSymbol.hpp>
 #include <shard/semantic/symbols/NamespaceSymbol.hpp>
+#include <shard/semantic/symbols/NullableTypeSymbol.hpp>
 #include <shard/semantic/symbols/StructSymbol.hpp>
 #include <shard/parsing/SyntaxNode.hpp>
 
@@ -39,6 +40,7 @@ namespace shard
 		// hash -> candidates; collisions resolved by full structural comparison
 		std::unordered_map<std::size_t, std::vector<gmt::Ref<ArrayTypeSymbol>>> m_arrayTypes;
 		std::unordered_map<std::size_t, std::vector<gmt::Ref<GenericTypeSymbol>>> m_genericTypes;
+		std::unordered_map<std::size_t, std::vector<gmt::Ref<NullableTypeSymbol>>> m_nullableTypes;
 
 	public:
 		SymbolTable();
@@ -67,11 +69,13 @@ namespace shard
 
 		gmt::Ref<ArrayTypeSymbol> find_array_type(gmt::Ref<StructSymbol> underlaying) const;
 		gmt::Ref<ArrayTypeSymbol> find_array_type(gmt::Ref<StructSymbol> underlaying, std::size_t size) const;
-		gmt::Ref<GenericTypeSymbol> find_generic_type(gmt::Ref<StructSymbol> underlaying, const std::vector<gmt::Ref<StructSymbol>>& type_arguments) const;
+		gmt::Ref<GenericTypeSymbol> find_generic_type(gmt::Ref<StructSymbol> underlaying, const std::vector<gmt::Ref<StructSymbol>>& typeArguments) const;
+		gmt::Ref<NullableTypeSymbol> find_nullable_type(gmt::Ref<StructSymbol> underlaying) const;
 
 		gmt::Ref<ArrayTypeSymbol> find_or_create_array_type(gmt::Ref<StructSymbol> underlaying);
 		gmt::Ref<ArrayTypeSymbol> find_or_create_array_type(gmt::Ref<StructSymbol> underlaying, std::size_t size);
-		gmt::Ref<GenericTypeSymbol> find_or_create_generic_type(gmt::Ref<StructSymbol> underlaying, const std::vector<gmt::Ref<StructSymbol>>& type_arguments);
+		gmt::Ref<GenericTypeSymbol> find_or_create_generic_type(gmt::Ref<StructSymbol> underlaying, const std::vector<gmt::Ref<StructSymbol>>& typeArguments);
+		gmt::Ref<NullableTypeSymbol> find_or_create_nullable_type(gmt::Ref<StructSymbol> underlaying);
 
 		gmt::Ref<StructSymbol> get_void_primitive() const;
 		gmt::Ref<StructSymbol> get_boolean_primitive() const;

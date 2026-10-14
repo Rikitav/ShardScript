@@ -40,7 +40,9 @@ namespace gmt
 	{
 		static constexpr std::size_t initial_capacity = 16 * 1024;
 
-		std::byte* m_buffer;
+		std::vector<std::byte*> m_chunks;
+		std::vector<std::size_t> m_chunkSizes;
+		std::vector<std::size_t> m_chunkBases;
 		std::size_t m_capacity;
 		std::size_t m_cursor;
 		std::vector<detail::destructor_entry> m_destructors;
@@ -64,9 +66,10 @@ namespace gmt
 		template<typename T>
 		inline std::optional<Ref<T>> ref_from_ptr(T* ptr);
 
-		inline std::byte* get_buffer() const { return m_buffer; }
 		inline std::size_t get_cursor() const { return m_cursor; }
 		inline std::size_t get_capacity() const { return m_capacity; }
+
+		void* resolve(std::size_t offset) const;
 
 	private:
 		void* allocate(std::size_t bytes);
@@ -90,7 +93,7 @@ namespace gmt
 		if (aligned + sizeof(T) > m_capacity)
 			grow(aligned + sizeof(T));
 
-		static_cast<void>(new (m_buffer + aligned) T(std::forward<Args>(args)...));
+		static_cast<void>(new (resolve(aligned)) T(std::forward<Args>(args)...));
 		m_cursor = aligned + sizeof(T);
 
 		if constexpr (!std::is_trivially_destructible_v<T>)
@@ -127,10 +130,16 @@ namespace gmt
 			return std::nullopt;
 
 		const std::byte* address = reinterpret_cast<const std::byte*>(ptr);
-		if (address < m_buffer || address >= m_buffer + m_cursor)
-			return std::nullopt;
+		for (std::size_t i = m_chunks.size(); i-- > 0; )
+		{
+			const std::byte* chunk = m_chunks[i];
+			if (address < chunk || address >= chunk + m_chunkSizes[i])
+				continue;
 
-		return Ref<T>(*this, static_cast<std::size_t>(address - m_buffer));
+			return Ref<T>(*this, m_chunkBases[i] + static_cast<std::size_t>(address - chunk));
+		}
+
+		return std::nullopt;
 	}
 }
 

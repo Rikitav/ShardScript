@@ -5,6 +5,11 @@
 
 namespace shard
 {
+	// TODO: replace with include, when runtime establishes
+	struct CallState;
+
+	typedef void (*MethodSymbolDelegate)(const CallState& context);
+
 	struct SHARD_API ShardLibDependencyInfo
 	{
 	public:

@@ -10,6 +10,7 @@
 #include <shard/semantic/symbols/GenericTypeSymbol.hpp>
 #include <shard/semantic/symbols/MethodSymbol.hpp>
 #include <shard/semantic/symbols/NamespaceSymbol.hpp>
+#include <shard/semantic/symbols/NullableTypeSymbol.hpp>
 #include <shard/semantic/symbols/ParameterSymbol.hpp>
 #include <shard/semantic/symbols/PropertySymbol.hpp>
 #include <shard/semantic/symbols/TypeParameterSymbol.hpp>
@@ -64,25 +65,25 @@ bool SemanticModel::are_types_equal(gmt::Ref<const StructSymbol> left, gmt::Ref<
 			if (right->get_kind() != SyntaxKind::GenericType)
 				return false;
 
-			gmt::Ref<const GenericTypeSymbol> left_generic = left.as<GenericTypeSymbol>();
-			gmt::Ref<const GenericTypeSymbol> right_generic = right.as<GenericTypeSymbol>();
+			gmt::Ref<const GenericTypeSymbol> leftGeneric = left.as<GenericTypeSymbol>();
+			gmt::Ref<const GenericTypeSymbol> rightGeneric = right.as<GenericTypeSymbol>();
 
-			gmt::Ref<const StructSymbol> left_underlaying = left_generic->get_underlaying_type();
-			gmt::Ref<const StructSymbol> right_underlaying = right_generic->get_underlaying_type();
+			gmt::Ref<const StructSymbol> leftUnderlaying = leftGeneric->get_underlaying_type();
+			gmt::Ref<const StructSymbol> rightUnderlaying = rightGeneric->get_underlaying_type();
 
-			if (!are_types_equal(left_underlaying, right_underlaying))
+			if (!are_types_equal(leftUnderlaying, rightUnderlaying))
 				return false;
 
-			std::size_t size = left_underlaying->type_parameters.size();
-			if (right_underlaying->type_parameters.size() != size)
+			std::size_t size = leftUnderlaying->type_parameters.size();
+			if (rightUnderlaying->type_parameters.size() != size)
 				return false;
 
 			for (std::size_t i = 0; i < size; i++)
 			{
-				gmt::Ref<StructSymbol> left_argument = left_generic->substitute_type_parameter(left_underlaying->type_parameters[i]);
-				gmt::Ref<StructSymbol> right_argument = right_generic->substitute_type_parameter(right_underlaying->type_parameters[i]);
+				gmt::Ref<StructSymbol> leftArgument = leftGeneric->substitute_type_parameter(leftUnderlaying->type_parameters[i]);
+				gmt::Ref<StructSymbol> rightArgument = rightGeneric->substitute_type_parameter(rightUnderlaying->type_parameters[i]);
 
-				if (!are_types_equal(left_argument, right_argument))
+				if (!are_types_equal(leftArgument, rightArgument))
 					return false;
 			}
 
@@ -94,22 +95,22 @@ bool SemanticModel::are_types_equal(gmt::Ref<const StructSymbol> left, gmt::Ref<
 			if (right->get_kind() != SyntaxKind::DelegateType)
 				return false;
 
-			gmt::Ref<const DelegateTypeSymbol> left_delegate = left.as<DelegateTypeSymbol>();
-			gmt::Ref<const DelegateTypeSymbol> right_delegate = right.as<DelegateTypeSymbol>();
+			gmt::Ref<const DelegateTypeSymbol> leftDelegate = left.as<DelegateTypeSymbol>();
+			gmt::Ref<const DelegateTypeSymbol> rightDelegate = right.as<DelegateTypeSymbol>();
 
-			if (left_delegate->get_return_type().is_null() || right_delegate->get_return_type().is_null())
+			if (leftDelegate->get_return_type().is_null() || rightDelegate->get_return_type().is_null())
 				return false;
 
-			if (!are_types_equal(left_delegate->get_return_type(), right_delegate->get_return_type()))
+			if (!are_types_equal(leftDelegate->get_return_type(), rightDelegate->get_return_type()))
 				return false;
 
-			std::size_t size = left_delegate->get_parameters().size();
-			if (right_delegate->get_parameters().size() != size)
+			std::size_t size = leftDelegate->get_parameters().size();
+			if (rightDelegate->get_parameters().size() != size)
 				return false;
 
 			for (std::size_t i = 0; i < size; i++)
 			{
-				if (!are_types_equal(left_delegate->get_parameters()[i]->get_type(), right_delegate->get_parameters()[i]->get_type()))
+				if (!are_types_equal(leftDelegate->get_parameters()[i]->get_type(), rightDelegate->get_parameters()[i]->get_type()))
 					return false;
 			}
 
@@ -121,13 +122,21 @@ bool SemanticModel::are_types_equal(gmt::Ref<const StructSymbol> left, gmt::Ref<
 			if (right->get_kind() != SyntaxKind::ArrayType)
 				return false;
 
-			gmt::Ref<const ArrayTypeSymbol> left_array = left.as<ArrayTypeSymbol>();
-			gmt::Ref<const ArrayTypeSymbol> right_array = right.as<ArrayTypeSymbol>();
+			gmt::Ref<const ArrayTypeSymbol> leftArray = left.as<ArrayTypeSymbol>();
+			gmt::Ref<const ArrayTypeSymbol> rightArray = right.as<ArrayTypeSymbol>();
 
-			if (left_array->get_underlaying_type().is_null() || right_array->get_underlaying_type().is_null())
+			if (leftArray->get_underlaying_type().is_null() || rightArray->get_underlaying_type().is_null())
 				return false;
 
-			return are_types_equal(left_array->get_underlaying_type(), right_array->get_underlaying_type());
+			return are_types_equal(leftArray->get_underlaying_type(), rightArray->get_underlaying_type());
+		}
+
+		case SyntaxKind::NullableType:
+		{
+			if (right->get_kind() != SyntaxKind::NullableType)
+				return false;
+
+			return are_types_equal(left.as<NullableTypeSymbol>()->get_underlaying_type(), right.as<NullableTypeSymbol>()->get_underlaying_type());
 		}
 	}
 }
@@ -142,11 +151,11 @@ static void collect_all_interfaces(gmt::Ref<const StructSymbol> type, std::vecto
 		if (interface.is_null())
 			continue;
 
-		gmt::Ref<const StructSymbol> const_interface = interface;
-		if (visited.insert(const_interface).second)
+		gmt::Ref<const StructSymbol> constInterface = interface;
+		if (visited.insert(constInterface).second)
 		{
-			out.push_back(const_interface);
-			collect_all_interfaces(const_interface, out, visited);
+			out.push_back(constInterface);
+			collect_all_interfaces(constInterface, out, visited);
 		}
 	}
 }
@@ -159,52 +168,52 @@ static std::vector<gmt::Ref<const StructSymbol>> get_all_interfaces(gmt::Ref<con
 	return result;
 }
 
-static bool is_constructed_interface_implemented(gmt::Ref<GenericTypeSymbol> target_interface, gmt::Ref<const StructSymbol> source_type)
+static bool is_constructed_interface_implemented(gmt::Ref<GenericTypeSymbol> targetInterface, gmt::Ref<const StructSymbol> sourceType)
 {
-	gmt::Ref<StructSymbol> underlaying = target_interface->get_underlaying_type();
+	gmt::Ref<StructSymbol> underlaying = targetInterface->get_underlaying_type();
 	if (underlaying->get_kind() != SyntaxKind::InterfaceDeclaration)
 		return false;
 
-	auto matches_interface = [&](gmt::Ref<GenericTypeSymbol> candidate_interface) -> bool
+	auto matchesInterface = [&](gmt::Ref<GenericTypeSymbol> candidateInterface) -> bool
 	{
-		if (candidate_interface->get_underlaying_type() != underlaying)
+		if (candidateInterface->get_underlaying_type() != underlaying)
 			return false;
 
 		for (gmt::Ref<TypeParameterSymbol> parameter : underlaying->type_parameters)
 		{
-			gmt::Ref<StructSymbol> target_argument = target_interface->substitute_type_parameter(parameter);
-			gmt::Ref<StructSymbol> source_argument = candidate_interface->substitute_type_parameter(parameter);
+			gmt::Ref<StructSymbol> targetArgument = targetInterface->substitute_type_parameter(parameter);
+			gmt::Ref<StructSymbol> sourceArgument = candidateInterface->substitute_type_parameter(parameter);
 
-			if (!source_argument.is_null() && source_argument->get_kind() == SyntaxKind::TypeParameter && !source_type.is_null() && source_type->get_kind() == SyntaxKind::GenericType)
-				source_argument = source_type.as<GenericTypeSymbol>()->substitute_type_parameter(source_argument.as<TypeParameterSymbol>());
+			if (!sourceArgument.is_null() && sourceArgument->get_kind() == SyntaxKind::TypeParameter && !sourceType.is_null() && sourceType->get_kind() == SyntaxKind::GenericType)
+				sourceArgument = sourceType.as<GenericTypeSymbol>()->substitute_type_parameter(sourceArgument.as<TypeParameterSymbol>());
 
-			if (!SemanticModel::are_types_equal(target_argument, source_argument))
+			if (!SemanticModel::are_types_equal(targetArgument, sourceArgument))
 				return false;
 		}
 
 		return true;
 	};
 
-	auto check_type_interfaces = [&](gmt::Ref<const StructSymbol> type) -> bool
+	auto checkTypeInterfaces = [&](gmt::Ref<const StructSymbol> type) -> bool
 	{
 		for (gmt::Ref<const StructSymbol> interface : get_all_interfaces(type))
 		{
 			if (interface->get_kind() != SyntaxKind::GenericType)
 				continue;
 
-			if (matches_interface(interface.as<GenericTypeSymbol>()))
+			if (matchesInterface(interface.as<GenericTypeSymbol>()))
 				return true;
 		}
 
 		return false;
 	};
 
-	if (check_type_interfaces(source_type))
+	if (checkTypeInterfaces(sourceType))
 		return true;
 
-	if (source_type->get_kind() == SyntaxKind::GenericType)
+	if (sourceType->get_kind() == SyntaxKind::GenericType)
 	{
-		if (check_type_interfaces(source_type.as<GenericTypeSymbol>()->get_underlaying_type()))
+		if (checkTypeInterfaces(sourceType.as<GenericTypeSymbol>()->get_underlaying_type()))
 			return true;
 	}
 
@@ -217,6 +226,30 @@ bool SemanticModel::is_assignable_to(gmt::Ref<const StructSymbol> target, gmt::R
 		return false;
 
 	if (are_types_equal(target, source))
+		return true;
+
+	// TODO: pragmatic analysis — flow-based null-state checks
+	if (source->get_kind() == SyntaxKind::NullableType && target->get_kind() != SyntaxKind::NullableType)
+		return is_assignable_to(target, source.as<NullableTypeSymbol>()->get_underlaying_type());
+
+	if (source->get_kind() != SyntaxKind::NullableType && target->get_kind() == SyntaxKind::NullableType)
+		return is_assignable_to(target.as<NullableTypeSymbol>()->get_underlaying_type(), source);
+
+	// numeric widening: byte/char/nint convert to int, anything numeric to double
+	bool sourceNumeric = source == m_table.get_double_primitive();
+	if (!sourceNumeric)
+		sourceNumeric = source == m_table.get_integer_primitive() || source == m_table.get_char_primitive();
+	if (!sourceNumeric)
+		sourceNumeric = source == m_table.get_byte_primitive() || source == m_table.get_nint_primitive();
+
+	if (target == m_table.get_double_primitive() && sourceNumeric)
+		return true;
+
+	bool sourceSmallerThanInt = source == m_table.get_char_primitive() || source == m_table.get_byte_primitive();
+	if (!sourceSmallerThanInt)
+		sourceSmallerThanInt = source == m_table.get_nint_primitive();
+
+	if (target == m_table.get_integer_primitive() && sourceSmallerThanInt)
 		return true;
 
 	if (target->get_kind() == SyntaxKind::InterfaceDeclaration)
@@ -239,43 +272,43 @@ bool SemanticModel::is_assignable_to(gmt::Ref<const StructSymbol> target, gmt::R
 
 	if (target->get_kind() == SyntaxKind::GenericType)
 	{
-		gmt::Ref<GenericTypeSymbol> target_generic = target.as<GenericTypeSymbol>();
-		if (is_constructed_interface_implemented(target_generic, source))
+		gmt::Ref<GenericTypeSymbol> targetGeneric = target.as<GenericTypeSymbol>();
+		if (is_constructed_interface_implemented(targetGeneric, source))
 			return true;
 
-		if (target_generic->get_underlaying_type()->get_kind() == SyntaxKind::DelegateType && source->get_kind() == SyntaxKind::DelegateType)
+		if (targetGeneric->get_underlaying_type()->get_kind() == SyntaxKind::DelegateType && source->get_kind() == SyntaxKind::DelegateType)
 		{
-			gmt::Ref<const DelegateTypeSymbol> target_delegate = target_generic->get_underlaying_type().as<DelegateTypeSymbol>();
-			gmt::Ref<const DelegateTypeSymbol> source_delegate = source.as<DelegateTypeSymbol>();
+			gmt::Ref<const DelegateTypeSymbol> targetDelegate = targetGeneric->get_underlaying_type().as<DelegateTypeSymbol>();
+			gmt::Ref<const DelegateTypeSymbol> sourceDelegate = source.as<DelegateTypeSymbol>();
 
-			if (target_delegate->get_return_type().is_null() || source_delegate->get_return_type().is_null())
+			if (targetDelegate->get_return_type().is_null() || sourceDelegate->get_return_type().is_null())
 				return false;
 
-			gmt::Ref<StructSymbol> target_return = target_delegate->get_return_type();
-			if (target_return->get_kind() == SyntaxKind::TypeParameter)
+			gmt::Ref<StructSymbol> targetReturn = targetDelegate->get_return_type();
+			if (targetReturn->get_kind() == SyntaxKind::TypeParameter)
 			{
-				gmt::Ref<StructSymbol> substituted = target_generic->substitute_type_parameter(target_return.as<TypeParameterSymbol>());
+				gmt::Ref<StructSymbol> substituted = targetGeneric->substitute_type_parameter(targetReturn.as<TypeParameterSymbol>());
 				if (!substituted.is_null())
-					target_return = substituted;
+					targetReturn = substituted;
 			}
 
-			if (!are_types_equal(target_return, source_delegate->get_return_type()))
+			if (!are_types_equal(targetReturn, sourceDelegate->get_return_type()))
 				return false;
 
-			if (target_delegate->get_parameters().size() != source_delegate->get_parameters().size())
+			if (targetDelegate->get_parameters().size() != sourceDelegate->get_parameters().size())
 				return false;
 
-			for (std::size_t i = 0; i < target_delegate->get_parameters().size(); ++i)
+			for (std::size_t i = 0; i < targetDelegate->get_parameters().size(); ++i)
 			{
-				gmt::Ref<StructSymbol> target_parameter = target_delegate->get_parameters()[i]->get_type();
-				if (target_parameter->get_kind() == SyntaxKind::TypeParameter)
+				gmt::Ref<StructSymbol> targetParameter = targetDelegate->get_parameters()[i]->get_type();
+				if (targetParameter->get_kind() == SyntaxKind::TypeParameter)
 				{
-					gmt::Ref<StructSymbol> substituted = target_generic->substitute_type_parameter(target_parameter.as<TypeParameterSymbol>());
+					gmt::Ref<StructSymbol> substituted = targetGeneric->substitute_type_parameter(targetParameter.as<TypeParameterSymbol>());
 					if (!substituted.is_null())
-						target_parameter = substituted;
+						targetParameter = substituted;
 				}
 
-				if (!are_types_equal(target_parameter, source_delegate->get_parameters()[i]->get_type()))
+				if (!are_types_equal(targetParameter, sourceDelegate->get_parameters()[i]->get_type()))
 					return false;
 			}
 
@@ -285,18 +318,18 @@ bool SemanticModel::is_assignable_to(gmt::Ref<const StructSymbol> target, gmt::R
 
 	if (target->get_kind() == SyntaxKind::DelegateType && source->get_kind() == SyntaxKind::DelegateType)
 	{
-		gmt::Ref<const DelegateTypeSymbol> target_delegate = target.as<DelegateTypeSymbol>();
-		gmt::Ref<const DelegateTypeSymbol> source_delegate = source.as<DelegateTypeSymbol>();
+		gmt::Ref<const DelegateTypeSymbol> targetDelegate = target.as<DelegateTypeSymbol>();
+		gmt::Ref<const DelegateTypeSymbol> sourceDelegate = source.as<DelegateTypeSymbol>();
 
-		if (!are_types_equal(target_delegate->get_return_type(), source_delegate->get_return_type()))
+		if (!are_types_equal(targetDelegate->get_return_type(), sourceDelegate->get_return_type()))
 			return false;
 
-		if (target_delegate->get_parameters().size() != source_delegate->get_parameters().size())
+		if (targetDelegate->get_parameters().size() != sourceDelegate->get_parameters().size())
 			return false;
 
-		for (std::size_t i = 0; i < target_delegate->get_parameters().size(); ++i)
+		for (std::size_t i = 0; i < targetDelegate->get_parameters().size(); ++i)
 		{
-			if (!are_types_equal(target_delegate->get_parameters()[i]->get_type(), source_delegate->get_parameters()[i]->get_type()))
+			if (!are_types_equal(targetDelegate->get_parameters()[i]->get_type(), sourceDelegate->get_parameters()[i]->get_type()))
 				return false;
 		}
 
@@ -343,6 +376,12 @@ std::wstring SemanticModel::get_type_display_name(gmt::Ref<const StructSymbol> t
 		return gmt::concat(get_type_display_name(array->get_underlaying_type()), L"[]");
 	}
 
+	if (type->get_kind() == SyntaxKind::NullableType)
+	{
+		gmt::Ref<const NullableTypeSymbol> nullable = type.as<NullableTypeSymbol>();
+		return gmt::concat(get_type_display_name(nullable->get_underlaying_type()), L"?");
+	}
+
 	return std::wstring(type->get_name());
 }
 
@@ -375,25 +414,25 @@ gmt::Ref<StructSymbol> SemanticModel::substitute_type(gmt::Ref<StructSymbol> typ
 
 		case SyntaxKind::ArrayType:
 		{
-			gmt::Ref<ArrayTypeSymbol> array_type = type.as<ArrayTypeSymbol>();
-			gmt::Ref<StructSymbol> underlaying_type = array_type->get_underlaying_type();
+			gmt::Ref<ArrayTypeSymbol> arrayType = type.as<ArrayTypeSymbol>();
+			gmt::Ref<StructSymbol> underlayingType = arrayType->get_underlaying_type();
 
-			if (underlaying_type.is_null())
+			if (underlayingType.is_null())
 				throw std::runtime_error("cannot resolve underlaying type of array");
 
-			if (underlaying_type->get_kind() == SyntaxKind::TypeParameter)
+			if (underlayingType->get_kind() == SyntaxKind::TypeParameter)
 			{
 				if (within.is_null())
 					return type;
 
-				underlaying_type = within->substitute_type_parameter(underlaying_type.as<TypeParameterSymbol>());
-				if (underlaying_type.is_null())
+				underlayingType = within->substitute_type_parameter(underlayingType.as<TypeParameterSymbol>());
+				if (underlayingType.is_null())
 					throw std::runtime_error("cannot resolve underlaying type of array");
 
-				return m_table.find_or_create_array_type(underlaying_type, array_type->get_length());
+				return m_table.find_or_create_array_type(underlayingType, arrayType->get_length());
 			}
 
-			return array_type;
+			return arrayType;
 		}
 
 		case SyntaxKind::TypeParameter:
@@ -401,8 +440,19 @@ gmt::Ref<StructSymbol> SemanticModel::substitute_type(gmt::Ref<StructSymbol> typ
 			if (within.is_null())
 				return type;
 
-			gmt::Ref<StructSymbol> resolved_type = within->substitute_type_parameter(type.as<TypeParameterSymbol>());
-			return !resolved_type.is_null() ? resolved_type : type;
+			gmt::Ref<StructSymbol> resolvedType = within->substitute_type_parameter(type.as<TypeParameterSymbol>());
+			return !resolvedType.is_null() ? resolvedType : type;
+		}
+
+		case SyntaxKind::NullableType:
+		{
+			gmt::Ref<NullableTypeSymbol> nullable = type.as<NullableTypeSymbol>();
+			gmt::Ref<StructSymbol> underlaying = substitute_type(nullable->get_underlaying_type(), within);
+
+			if (underlaying.is_null() || underlaying == nullable->get_underlaying_type())
+				return type;
+
+			return m_table.find_or_create_nullable_type(underlaying);
 		}
 	}
 }
@@ -460,7 +510,7 @@ static gmt::Ref<StructSymbol> find_type_in_namespace(gmt::Ref<NamespaceSymbol> s
 	return gmt::nullref;
 }
 
-gmt::Ref<StructSymbol> SemanticModel::find_type_by_name(std::wstring_view full_name)
+gmt::Ref<StructSymbol> SemanticModel::find_type_by_name(std::wstring_view fullName)
 {
 	gmt::Ref<StructSymbol> primitives[] = {
 		m_table.get_void_primitive(),
@@ -474,35 +524,35 @@ gmt::Ref<StructSymbol> SemanticModel::find_type_by_name(std::wstring_view full_n
 		m_table.get_byte_primitive(),
 	};
 
-	std::size_t dot = full_name.find(L'.');
+	std::size_t dot = fullName.find(L'.');
 	if (dot == std::wstring_view::npos)
 	{
 		for (gmt::Ref<StructSymbol> primitive : primitives)
 		{
-			if (!primitive.is_null() && primitive->get_name() == full_name)
+			if (!primitive.is_null() && primitive->get_name() == fullName)
 				return primitive;
 		}
 
-		return find_type_in_namespace(m_table.get_root_namespace(), full_name);
+		return find_type_in_namespace(m_table.get_root_namespace(), fullName);
 	}
 
 	gmt::Ref<NamespaceSymbol> node = m_table.get_root_namespace();
 	std::size_t start = 0;
-	std::size_t end = full_name.find(L'.');
+	std::size_t end = fullName.find(L'.');
 
 	while (!node.is_null() && end != std::wstring_view::npos)
 	{
-		node = node->lookup(full_name.substr(start, end - start));
+		node = node->lookup(fullName.substr(start, end - start));
 		start = end + 1;
-		end = full_name.find(L'.', start);
+		end = fullName.find(L'.', start);
 	}
 
 	if (!node.is_null())
 	{
-		std::wstring_view type_name = full_name.substr(start);
+		std::wstring_view typeName = fullName.substr(start);
 		for (gmt::Ref<SyntaxSymbol> member : node->members)
 		{
-			if (member.is_null() || !member->is_type() || member->get_name() != type_name)
+			if (member.is_null() || !member->is_type() || member->get_name() != typeName)
 				continue;
 
 			return member.as<StructSymbol>();
@@ -526,41 +576,41 @@ gmt::Ref<FieldSymbol> SemanticModel::find_field_by_name(gmt::Ref<StructSymbol> t
 	return gmt::nullref;
 }
 
-gmt::Ref<StructSymbol> SemanticModel::resolve_runtime_type_argument(gmt::Ref<StructSymbol> type, const TypeParameterResolver& resolve_parameter)
+gmt::Ref<StructSymbol> SemanticModel::resolve_runtime_type_argument(gmt::Ref<StructSymbol> type, const TypeParameterResolver& resolveParameter)
 {
 	if (type.is_null())
 		return type;
 
 	if (type->get_kind() == SyntaxKind::TypeParameter)
 	{
-		gmt::Ref<StructSymbol> resolved = resolve_parameter(type.as<TypeParameterSymbol>());
+		gmt::Ref<StructSymbol> resolved = resolveParameter(type.as<TypeParameterSymbol>());
 		return !resolved.is_null() ? resolved : type;
 	}
 
 	if (type->get_kind() == SyntaxKind::ArrayType)
 	{
-		gmt::Ref<ArrayTypeSymbol> array_type = type.as<ArrayTypeSymbol>();
-		gmt::Ref<StructSymbol> resolved_underlaying = resolve_runtime_type_argument(array_type->get_underlaying_type(), resolve_parameter);
+		gmt::Ref<ArrayTypeSymbol> arrayType = type.as<ArrayTypeSymbol>();
+		gmt::Ref<StructSymbol> resolvedUnderlaying = resolve_runtime_type_argument(arrayType->get_underlaying_type(), resolveParameter);
 
-		if (resolved_underlaying.is_null() || resolved_underlaying == array_type->get_underlaying_type())
+		if (resolvedUnderlaying.is_null() || resolvedUnderlaying == arrayType->get_underlaying_type())
 			return type;
 
-		return m_table.find_or_create_array_type(resolved_underlaying, array_type->get_length());
+		return m_table.find_or_create_array_type(resolvedUnderlaying, arrayType->get_length());
 	}
 
 	return type;
 }
 
-bool SemanticModel::try_resolve_generic_arguments(gmt::Ref<StructSymbol> type, const TypeParameterResolver& resolve_parameter, gmt::Ref<StructSymbol>& base_type, std::vector<gmt::Ref<StructSymbol>>& generic_args)
+bool SemanticModel::try_resolve_generic_arguments(gmt::Ref<StructSymbol> type, const TypeParameterResolver& resolveParameter, gmt::Ref<StructSymbol>& baseType, std::vector<gmt::Ref<StructSymbol>>& genericArgs)
 {
 	if (type.is_null())
 		return false;
 
 	if (type->get_kind() == SyntaxKind::TypeParameter)
 	{
-		gmt::Ref<StructSymbol> resolved = resolve_parameter(type.as<TypeParameterSymbol>());
+		gmt::Ref<StructSymbol> resolved = resolveParameter(type.as<TypeParameterSymbol>());
 		if (!resolved.is_null() && resolved != type)
-			return try_resolve_generic_arguments(resolved, resolve_parameter, base_type, generic_args);
+			return try_resolve_generic_arguments(resolved, resolveParameter, baseType, genericArgs);
 
 		return false;
 	}
@@ -568,15 +618,15 @@ bool SemanticModel::try_resolve_generic_arguments(gmt::Ref<StructSymbol> type, c
 	if (type->get_kind() == SyntaxKind::GenericType)
 	{
 		gmt::Ref<GenericTypeSymbol> generic = type.as<GenericTypeSymbol>();
-		base_type = generic->get_underlaying_type();
+		baseType = generic->get_underlaying_type();
 
-		generic_args.clear();
-		generic_args.reserve(base_type->type_parameters.size());
-		for (gmt::Ref<TypeParameterSymbol> parameter : base_type->type_parameters)
+		genericArgs.clear();
+		genericArgs.reserve(baseType->type_parameters.size());
+		for (gmt::Ref<TypeParameterSymbol> parameter : baseType->type_parameters)
 		{
 			gmt::Ref<StructSymbol> argument = generic->substitute_type_parameter(parameter);
-			gmt::Ref<StructSymbol> resolved_argument = resolve_runtime_type_argument(argument, resolve_parameter);
-			generic_args.push_back(!resolved_argument.is_null() ? resolved_argument : argument);
+			gmt::Ref<StructSymbol> resolvedArgument = resolve_runtime_type_argument(argument, resolveParameter);
+			genericArgs.push_back(!resolvedArgument.is_null() ? resolvedArgument : argument);
 		}
 
 		return true;

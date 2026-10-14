@@ -75,10 +75,10 @@
 #include <shard/parsing/nodes/types/ArrayTypeSyntax.hpp>
 #include <shard/parsing/nodes/types/NullableTypeSyntax.hpp>
 
-#include <shard/parsing/nodes/Directives/UsingDirectiveSyntax.hpp>
-#include <shard/parsing/nodes/Directives/NamespaceDirectiveSyntax.hpp>
+#include <shard/parsing/nodes/directives/UsingDirectiveSyntax.hpp>
+#include <shard/parsing/nodes/directives/NamespaceDirectiveSyntax.hpp>
 
-/*=
+/*
 #include <shard/parsing/nodes/Statements/SwitchStatementSyntax.hpp>
 #include <shard/parsing/nodes/Statements/SwitchCaseClauseSyntax.hpp>
 

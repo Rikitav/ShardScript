@@ -54,10 +54,10 @@ namespace shard
 		gmt::Ref<StructSymbol> get_property_type(gmt::Ref<PropertySymbol> property, gmt::Ref<GenericTypeSymbol> within = gmt::nullref);
 		gmt::Ref<StructSymbol> get_constructor_return_type(gmt::Ref<ConstructorSymbol> constructor, gmt::Ref<GenericTypeSymbol> within = gmt::nullref);
 
-		gmt::Ref<StructSymbol> find_type_by_name(std::wstring_view full_name);
+		gmt::Ref<StructSymbol> find_type_by_name(std::wstring_view fullName);
 		gmt::Ref<FieldSymbol> find_field_by_name(gmt::Ref<StructSymbol> type, std::wstring_view name) const;
 
-		gmt::Ref<StructSymbol> resolve_runtime_type_argument(gmt::Ref<StructSymbol> type, const TypeParameterResolver& resolve_parameter);
-		bool try_resolve_generic_arguments(gmt::Ref<StructSymbol> type, const TypeParameterResolver& resolve_parameter, gmt::Ref<StructSymbol>& base_type, std::vector<gmt::Ref<StructSymbol>>& generic_args);
+		gmt::Ref<StructSymbol> resolve_runtime_type_argument(gmt::Ref<StructSymbol> type, const TypeParameterResolver& resolveParameter);
+		bool try_resolve_generic_arguments(gmt::Ref<StructSymbol> type, const TypeParameterResolver& resolveParameter, gmt::Ref<StructSymbol>& baseType, std::vector<gmt::Ref<StructSymbol>>& genericArgs);
 	};
 }

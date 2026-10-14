@@ -15,9 +15,9 @@ gmt::Ref<FieldSymbol> PropertySymbol::get_backing_field() const
 	return m_backingField;
 }
 
-void PropertySymbol::set_backing_field(gmt::Ref<FieldSymbol> backing_field)
+void PropertySymbol::set_backing_field(gmt::Ref<FieldSymbol> backingField)
 {
-	m_backingField = backing_field;
+	m_backingField = backingField;
 }
 
 gmt::Ref<StructSymbol> PropertySymbol::get_return_type() const
@@ -25,9 +25,9 @@ gmt::Ref<StructSymbol> PropertySymbol::get_return_type() const
 	return m_returnType;
 }
 
-void PropertySymbol::set_return_type(gmt::Ref<StructSymbol> return_type)
+void PropertySymbol::set_return_type(gmt::Ref<StructSymbol> returnType)
 {
-	m_returnType = return_type;
+	m_returnType = returnType;
 }
 
 gmt::Ref<AccessorSymbol> PropertySymbol::get_getter() const

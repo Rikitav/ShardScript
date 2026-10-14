@@ -77,7 +77,7 @@ namespace
 		}
 
 		std::int64_t value = 0;
-		bool any_digit = false;
+		bool anyDigit = false;
 
 		for (; index < text.size(); ++index)
 		{
@@ -107,10 +107,10 @@ namespace
 				return std::nullopt;
 
 			value = value * base + digit;
-			any_digit = true;
+			anyDigit = true;
 		}
 
-		if (!any_digit)
+		if (!anyDigit)
 			return std::nullopt;
 
 		return value;
@@ -161,10 +161,10 @@ void DeclarationCollector::collect_type_parameters(gmt::Ref<StructSymbol> owner,
 	}
 	else
 	{
-		for (const gmt::Ref<TypeParameterSymbol>& type_parameter : owner->type_parameters)
+		for (const gmt::Ref<TypeParameterSymbol>& typeParameter : owner->type_parameters)
 		{
-			if (get_current_scope()->find_local(type_parameter->get_name_reference()).is_null())
-				get_current_scope()->declare_symbol(type_parameter);
+			if (get_current_scope()->find_local(typeParameter->get_name_reference()).is_null())
+				get_current_scope()->declare_symbol(typeParameter);
 		}
 	}
 }
@@ -185,18 +185,18 @@ void DeclarationCollector::collect_type_parameters(gmt::Ref<MethodSymbol> owner,
 	}
 	else
 	{
-		for (const gmt::Ref<TypeParameterSymbol>& type_parameter : owner->get_type_parameters())
+		for (const gmt::Ref<TypeParameterSymbol>& typeParameter : owner->get_type_parameters())
 		{
-			if (get_current_scope()->find_local(type_parameter->get_name_reference()).is_null())
-				get_current_scope()->declare_symbol(type_parameter);
+			if (get_current_scope()->find_local(typeParameter->get_name_reference()).is_null())
+				get_current_scope()->declare_symbol(typeParameter);
 		}
 	}
 }
 
 void DeclarationCollector::visit_translation_unit(const TranslationUnitSyntax* node)
 {
-	std::optional<gmt::Ref<const TranslationUnitSyntax>> node_ref = ref_from(node);
-	if (!node_ref.has_value())
+	std::optional<gmt::Ref<const TranslationUnitSyntax>> nodeRef = ref_from(node);
+	if (!nodeRef.has_value())
 		return;
 
 	// nullref owner by convention represents the compilation unit itself
@@ -204,16 +204,16 @@ void DeclarationCollector::visit_translation_unit(const TranslationUnitSyntax* n
 
 	if (node->has_namespace())
 	{
-		gmt::Ref<const NamespaceDirectiveSyntax> namespace_directive = node->get_namespace();
-		gmt::Ref<NamespaceSymbol> namespace_symbol = lookup_symbol<NamespaceSymbol>(namespace_directive);
+		gmt::Ref<const NamespaceDirectiveSyntax> namespaceDirective = node->get_namespace();
+		gmt::Ref<NamespaceSymbol> namespaceSymbol = lookup_symbol<NamespaceSymbol>(namespaceDirective);
 
-		if (namespace_symbol.is_null())
+		if (namespaceSymbol.is_null())
 		{
-			namespace_symbol = m_factory.create_namespace(namespace_directive);
-			get_symbol_table().bind_symbol<NamespaceSymbol>(namespace_directive, namespace_symbol);
+			namespaceSymbol = m_factory.create_namespace(namespaceDirective);
+			get_symbol_table().bind_symbol<NamespaceSymbol>(namespaceDirective, namespaceSymbol);
 		}
 
-		get_current_scope()->set_namespace(namespace_symbol);
+		get_current_scope()->set_namespace(namespaceSymbol);
 	}
 
 	for (const gmt::Ref<MemberDeclarationSyntax>& member : node->get_members().as_span())
@@ -224,16 +224,16 @@ void DeclarationCollector::visit_translation_unit(const TranslationUnitSyntax* n
 
 void DeclarationCollector::visit_struct_declaration(const StructDeclarationSyntax* node)
 {
-	std::optional<gmt::Ref<const StructDeclarationSyntax>> node_ref = ref_from(node);
-	if (!node_ref.has_value())
+	std::optional<gmt::Ref<const StructDeclarationSyntax>> nodeRef = ref_from(node);
+	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<StructSymbol> symbol = lookup_symbol<StructSymbol>(*node_ref);
-	const bool is_new_declaration = symbol.is_null();
+	gmt::Ref<StructSymbol> symbol = lookup_symbol<StructSymbol>(*nodeRef);
+	const bool isNewDeclaration = symbol.is_null();
 
-	if (is_new_declaration)
+	if (isNewDeclaration)
 	{
-		symbol = m_factory.create_struct(*node_ref, get_declaration_parent());
+		symbol = m_factory.create_struct(*nodeRef, get_declaration_parent());
 		declare(symbol);
 
 		gmt::Ref<const SyntaxSymbol> parent = symbol->get_parent();
@@ -249,7 +249,7 @@ void DeclarationCollector::visit_struct_declaration(const StructDeclarationSynta
 	for (const gmt::Ref<MemberDeclarationSyntax>& member : node->get_members().as_span())
 		member.as_ptr()->accept(*this);
 
-	if (is_new_declaration && symbol->get_linking() == LINK_INSTANCE && symbol->constructors.empty())
+	if (isNewDeclaration && symbol->get_linking() == LINK_INSTANCE && symbol->constructors.empty())
 		declare(m_factory.create_constructor(L"init", symbol, ACS_PUBLIC));
 
 	pop_scope();
@@ -257,14 +257,14 @@ void DeclarationCollector::visit_struct_declaration(const StructDeclarationSynta
 
 void DeclarationCollector::visit_interface_declaration(const InterfaceDeclarationSyntax* node)
 {
-	std::optional<gmt::Ref<const InterfaceDeclarationSyntax>> node_ref = ref_from(node);
-	if (!node_ref.has_value())
+	std::optional<gmt::Ref<const InterfaceDeclarationSyntax>> nodeRef = ref_from(node);
+	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<InterfaceSymbol> symbol = lookup_symbol<InterfaceSymbol>(*node_ref);
+	gmt::Ref<InterfaceSymbol> symbol = lookup_symbol<InterfaceSymbol>(*nodeRef);
 	if (symbol.is_null())
 	{
-		symbol = m_factory.create_interface(*node_ref, get_declaration_parent());
+		symbol = m_factory.create_interface(*nodeRef, get_declaration_parent());
 		declare(symbol);
 
 		gmt::Ref<const SyntaxSymbol> parent = symbol->get_parent();
@@ -282,15 +282,15 @@ void DeclarationCollector::visit_interface_declaration(const InterfaceDeclaratio
 
 	for (const gmt::Ref<MemberDeclarationSyntax>& member : node->get_members().as_span())
 	{
-		gmt::Ref<SyntaxSymbol> member_symbol = lookup_symbol<SyntaxSymbol>(member);
-		if (member_symbol.is_null())
+		gmt::Ref<SyntaxSymbol> memberSymbol = lookup_symbol<SyntaxSymbol>(member);
+		if (memberSymbol.is_null())
 			continue;
 
-		if (member_symbol->is_member())
-			member_symbol.as<MemberSymbol>()->set_accesibility(ACS_PUBLIC);
+		if (memberSymbol->is_member())
+			memberSymbol.as<MemberSymbol>()->set_accesibility(ACS_PUBLIC);
 
-		if (member_symbol->is_method())
-			member_symbol.as<MethodSymbol>()->set_is_abstract(true);
+		if (memberSymbol->is_method())
+			memberSymbol.as<MethodSymbol>()->set_is_abstract(true);
 	}
 
 	pop_scope();
@@ -298,14 +298,14 @@ void DeclarationCollector::visit_interface_declaration(const InterfaceDeclaratio
 
 void DeclarationCollector::visit_delegate_declaration(const DelegateDeclarationSyntax* node)
 {
-	std::optional<gmt::Ref<const DelegateDeclarationSyntax>> node_ref = ref_from(node);
-	if (!node_ref.has_value())
+	std::optional<gmt::Ref<const DelegateDeclarationSyntax>> nodeRef = ref_from(node);
+	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<DelegateTypeSymbol> symbol = lookup_symbol<DelegateTypeSymbol>(*node_ref);
+	gmt::Ref<DelegateTypeSymbol> symbol = lookup_symbol<DelegateTypeSymbol>(*nodeRef);
 	if (symbol.is_null())
 	{
-		symbol = m_factory.create_delegate(*node_ref, get_declaration_parent());
+		symbol = m_factory.create_delegate(*nodeRef, get_declaration_parent());
 		declare(symbol);
 
 		gmt::Ref<const SyntaxSymbol> parent = symbol->get_parent();
@@ -329,14 +329,14 @@ void DeclarationCollector::visit_delegate_declaration(const DelegateDeclarationS
 
 void DeclarationCollector::visit_enum_declaration(const EnumDeclarationSyntax* node)
 {
-	std::optional<gmt::Ref<const EnumDeclarationSyntax>> node_ref = ref_from(node);
-	if (!node_ref.has_value())
+	std::optional<gmt::Ref<const EnumDeclarationSyntax>> nodeRef = ref_from(node);
+	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<EnumSymbol> symbol = lookup_symbol<EnumSymbol>(*node_ref);
+	gmt::Ref<EnumSymbol> symbol = lookup_symbol<EnumSymbol>(*nodeRef);
 	if (symbol.is_null())
 	{
-		symbol = m_factory.create_enum(*node_ref, get_declaration_parent());
+		symbol = m_factory.create_enum(*nodeRef, get_declaration_parent());
 		declare(symbol);
 
 		gmt::Ref<const SyntaxSymbol> parent = symbol->get_parent();
@@ -349,44 +349,44 @@ void DeclarationCollector::visit_enum_declaration(const EnumDeclarationSyntax* n
 	push_scope(symbol);
 
 	const auto fields = node->get_fields().as_span();
-	std::int64_t previous_value = 0;
+	std::int64_t previousValue = 0;
 	for (std::size_t i = 0; i < fields.size(); ++i)
 	{
-		gmt::Ref<const EnumFieldDeclarationSyntax> field_node = fields[i];
+		gmt::Ref<const EnumFieldDeclarationSyntax> fieldNode = fields[i];
 		std::int64_t value = 0;
 
-		if (!field_node->get_expression().is_null())
+		if (!fieldNode->get_expression().is_null())
 		{
 			if (symbol->get_is_flags())
 			{
-				get_diagnostics().report_error(field_node->get_identifier(), L"Flags enum fields cannot have initializers.");
+				get_diagnostics().report_error(fieldNode->get_identifier(), L"Flags enum fields cannot have initializers.");
 				continue;
 			}
 
-			std::optional<std::int64_t> parsed = read_enum_field_value(field_node->get_expression().as_ptr());
+			std::optional<std::int64_t> parsed = read_enum_field_value(fieldNode->get_expression().as_ptr());
 			if (!parsed.has_value())
 			{
-				get_diagnostics().report_error(field_node->get_identifier(), L"Enum field initializer must be a constant integer literal");
+				get_diagnostics().report_error(fieldNode->get_identifier(), L"Enum field initializer must be a constant integer literal");
 				continue;
 			}
 
 			value = *parsed;
-			previous_value = value;
+			previousValue = value;
 		}
 		else if (symbol->get_is_flags())
 		{
 			value = static_cast<std::int64_t>(1) << static_cast<std::int64_t>(i);
-			previous_value = value;
+			previousValue = value;
 		}
 		else
 		{
-			value = i == 0 ? 0 : previous_value + 1;
-			previous_value = value;
+			value = i == 0 ? 0 : previousValue + 1;
+			previousValue = value;
 		}
 
-		gmt::Ref<FieldSymbol> field_symbol = m_factory.create_enum_field(field_node->get_identifier().get_lexeme(), symbol, symbol, value);
-		declare(field_symbol);
-		get_symbol_table().bind_symbol<FieldSymbol>(field_node, field_symbol);
+		gmt::Ref<FieldSymbol> fieldSymbol = m_factory.create_enum_field(fieldNode->get_identifier().get_lexeme(), symbol, symbol, value);
+		declare(fieldSymbol);
+		get_symbol_table().bind_symbol<FieldSymbol>(fieldNode, fieldSymbol);
 	}
 
 	pop_scope();
@@ -394,14 +394,14 @@ void DeclarationCollector::visit_enum_declaration(const EnumDeclarationSyntax* n
 
 void DeclarationCollector::visit_field_declaration(const FieldDeclarationSyntax* node)
 {
-	std::optional<gmt::Ref<const FieldDeclarationSyntax>> node_ref = ref_from(node);
-	if (!node_ref.has_value())
+	std::optional<gmt::Ref<const FieldDeclarationSyntax>> nodeRef = ref_from(node);
+	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<FieldSymbol> symbol = lookup_symbol<FieldSymbol>(*node_ref);
+	gmt::Ref<FieldSymbol> symbol = lookup_symbol<FieldSymbol>(*nodeRef);
 	if (symbol.is_null())
 	{
-		symbol = m_factory.create_field(*node_ref, get_declaration_parent());
+		symbol = m_factory.create_field(*nodeRef, get_declaration_parent());
 		declare(symbol);
 
 		gmt::Ref<const SyntaxSymbol> parent = symbol->get_parent();
@@ -415,12 +415,12 @@ void DeclarationCollector::visit_field_declaration(const FieldDeclarationSyntax*
 		}
 		else
 		{
-			gmt::Ref<StructSymbol> owner_type = parent.as<StructSymbol>();
+			gmt::Ref<StructSymbol> ownerType = parent.as<StructSymbol>();
 
-			if (symbol->get_linking() == LINK_INSTANCE && owner_type->get_linking() == LINK_STATIC)
+			if (symbol->get_linking() == LINK_INSTANCE && ownerType->get_linking() == LINK_STATIC)
 				get_diagnostics().report_error(node->get_location(), L"Cannot declare a non static Field in static Type");
 
-			if (has_access_operator(owner_type) && symbol->get_accesibility() == ACS_PUBLIC)
+			if (has_access_operator(ownerType) && symbol->get_accesibility() == ACS_PUBLIC)
 				get_diagnostics().report_error(node->get_location(), L"Type declaring access operator ('.') cannot have public fields");
 		}
 	}
@@ -438,14 +438,14 @@ void DeclarationCollector::visit_field_declaration(const FieldDeclarationSyntax*
 
 void DeclarationCollector::visit_function_declaration(const FunctionDeclarationSyntax* node)
 {
-	std::optional<gmt::Ref<const FunctionDeclarationSyntax>> node_ref = ref_from(node);
-	if (!node_ref.has_value())
+	std::optional<gmt::Ref<const FunctionDeclarationSyntax>> nodeRef = ref_from(node);
+	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<MethodSymbol> symbol = lookup_symbol<MethodSymbol>(*node_ref);
+	gmt::Ref<MethodSymbol> symbol = lookup_symbol<MethodSymbol>(*nodeRef);
 	if (symbol.is_null())
 	{
-		symbol = m_factory.create_method(*node_ref, get_declaration_parent());
+		symbol = m_factory.create_method(*nodeRef, get_declaration_parent());
 		declare(symbol);
 
 		for (const SyntaxToken& modifier : node->get_modifiers().as_span())
@@ -457,11 +457,11 @@ void DeclarationCollector::visit_function_declaration(const FunctionDeclarationS
 
 	push_scope(symbol);
 
-	std::uint16_t owner_parameter_offset = 0;
+	std::uint16_t ownerParameterOffset = 0;
 	if (!symbol->get_parent().is_null() && symbol->get_parent()->is_type())
-		owner_parameter_offset = static_cast<std::uint16_t>(symbol->get_parent().as<StructSymbol>()->type_parameters.size());
+		ownerParameterOffset = static_cast<std::uint16_t>(symbol->get_parent().as<StructSymbol>()->type_parameters.size());
 
-	collect_type_parameters(symbol, node->get_type_parameters(), owner_parameter_offset);
+	collect_type_parameters(symbol, node->get_type_parameters(), ownerParameterOffset);
 
 	if (!node->get_parameters_list().is_null())
 	{
@@ -478,8 +478,8 @@ void DeclarationCollector::visit_function_declaration(const FunctionDeclarationS
 	}
 	else if (parent->is_type())
 	{
-		gmt::Ref<StructSymbol> owner_type = parent.as<StructSymbol>();
-		if (symbol->get_linking() == LINK_INSTANCE && owner_type->get_linking() == LINK_STATIC)
+		gmt::Ref<StructSymbol> ownerType = parent.as<StructSymbol>();
+		if (symbol->get_linking() == LINK_INSTANCE && ownerType->get_linking() == LINK_STATIC)
 			get_diagnostics().report_error(node->get_location(), L"Cannot declare a non static Method in static Type");
 	}
 	else if (parent->is_member())
@@ -508,14 +508,14 @@ void DeclarationCollector::visit_function_declaration(const FunctionDeclarationS
 
 void DeclarationCollector::visit_operator_declaration(const OperatorDeclarationSyntax* node)
 {
-	std::optional<gmt::Ref<const OperatorDeclarationSyntax>> node_ref = ref_from(node);
-	if (!node_ref.has_value())
+	std::optional<gmt::Ref<const OperatorDeclarationSyntax>> nodeRef = ref_from(node);
+	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<OperatorSymbol> symbol = lookup_symbol<OperatorSymbol>(*node_ref);
+	gmt::Ref<OperatorSymbol> symbol = lookup_symbol<OperatorSymbol>(*nodeRef);
 	if (symbol.is_null())
 	{
-		symbol = m_factory.create_operator(*node_ref, get_declaration_parent());
+		symbol = m_factory.create_operator(*nodeRef, get_declaration_parent());
 		declare(symbol);
 
 		if (symbol->get_accesibility() != ACS_PUBLIC)
@@ -527,9 +527,9 @@ void DeclarationCollector::visit_operator_declaration(const OperatorDeclarationS
 
 	push_scope(symbol);
 
-	gmt::Ref<StructSymbol> owner_type = gmt::nullref;
+	gmt::Ref<StructSymbol> ownerType = gmt::nullref;
 	if (!symbol->get_parent().is_null() && symbol->get_parent()->is_type())
-		owner_type = symbol->get_parent().as<StructSymbol>();
+		ownerType = symbol->get_parent().as<StructSymbol>();
 
 	if (!node->get_parameters_list().is_null())
 	{
@@ -551,7 +551,7 @@ void DeclarationCollector::visit_operator_declaration(const OperatorDeclarationS
 		}
 		else
 		{
-			if (owner_type->get_linking() == LINK_STATIC && node->get_operator_token().get_type() != TokenType::Delimeter)
+			if (ownerType->get_linking() == LINK_STATIC && node->get_operator_token().get_type() != TokenType::Delimeter)
 				get_diagnostics().report_error(node->get_location(), L"Cannot declare an operator overload in a static Type");
 		}
 
@@ -565,22 +565,22 @@ void DeclarationCollector::visit_operator_declaration(const OperatorDeclarationS
 	if (!node->get_parameters_list().is_null())
 		node->get_parameters_list().as_ptr()->accept(*this);
 
-	if (!owner_type.is_null() && node->get_operator_token().get_type() == TokenType::Delimeter)
+	if (!ownerType.is_null() && node->get_operator_token().get_type() == TokenType::Delimeter)
 	{
-		std::size_t dot_count = 0;
-		for (const gmt::Ref<OperatorSymbol>& op : owner_type->operators)
+		std::size_t dotCount = 0;
+		for (const gmt::Ref<OperatorSymbol>& op : ownerType->operators)
 		{
 			if (op->get_operator_token() == TokenType::Delimeter)
-				++dot_count;
+				++dotCount;
 		}
 
-		if (dot_count > 1)
+		if (dotCount > 1)
 			get_diagnostics().report_error(node->get_location(), L"Type can only declare one access operator ('.') overload");
 
 		if (symbol->get_return_type() == get_symbol_table().get_void_primitive())
 			get_diagnostics().report_error(node->get_location(), L"Access operator ('.') cannot return 'void'");
 
-		for (const gmt::Ref<FieldSymbol>& field : owner_type->fields)
+		for (const gmt::Ref<FieldSymbol>& field : ownerType->fields)
 		{
 			if (field->get_accesibility() == ACS_PUBLIC)
 			{
@@ -601,14 +601,14 @@ void DeclarationCollector::visit_operator_declaration(const OperatorDeclarationS
 
 void DeclarationCollector::visit_constructor_declaration(const ConstructorDeclarationSyntax* node)
 {
-	std::optional<gmt::Ref<const ConstructorDeclarationSyntax>> node_ref = ref_from(node);
-	if (!node_ref.has_value())
+	std::optional<gmt::Ref<const ConstructorDeclarationSyntax>> nodeRef = ref_from(node);
+	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<ConstructorSymbol> symbol = lookup_symbol<ConstructorSymbol>(*node_ref);
+	gmt::Ref<ConstructorSymbol> symbol = lookup_symbol<ConstructorSymbol>(*nodeRef);
 	if (symbol.is_null())
 	{
-		symbol = m_factory.create_constructor(*node_ref, get_declaration_parent());
+		symbol = m_factory.create_constructor(*nodeRef, get_declaration_parent());
 		declare(symbol);
 	}
 
@@ -653,20 +653,20 @@ void DeclarationCollector::visit_constructor_declaration(const ConstructorDeclar
 
 void DeclarationCollector::visit_property_declaration(const PropertyDeclarationSyntax* node)
 {
-	std::optional<gmt::Ref<const PropertyDeclarationSyntax>> node_ref = ref_from(node);
-	if (!node_ref.has_value())
+	std::optional<gmt::Ref<const PropertyDeclarationSyntax>> nodeRef = ref_from(node);
+	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<PropertySymbol> symbol = lookup_symbol<PropertySymbol>(*node_ref);
+	gmt::Ref<PropertySymbol> symbol = lookup_symbol<PropertySymbol>(*nodeRef);
 	if (symbol.is_null())
 	{
-		symbol = m_factory.create_property(*node_ref, get_declaration_parent());
+		symbol = m_factory.create_property(*nodeRef, get_declaration_parent());
 		declare(symbol);
 
-		bool is_interface_property = !symbol->get_parent().is_null() && symbol->get_parent()->get_kind() == SyntaxKind::InterfaceDeclaration;
-		bool is_auto_property = !is_interface_property && (!node->get_getter().is_null() || !node->get_setter().is_null());
+		bool isInterfaceProperty = !symbol->get_parent().is_null() && symbol->get_parent()->get_kind() == SyntaxKind::InterfaceDeclaration;
+		bool isAutoProperty = !isInterfaceProperty && (!node->get_getter().is_null() || !node->get_setter().is_null());
 
-		if (is_auto_property)
+		if (isAutoProperty)
 			declare(m_factory.create_backing_field(symbol, symbol));
 
 		gmt::Ref<const SyntaxSymbol> parent = symbol->get_parent();
@@ -676,8 +676,8 @@ void DeclarationCollector::visit_property_declaration(const PropertyDeclarationS
 		}
 		else
 		{
-			gmt::Ref<StructSymbol> owner_type = parent.as<StructSymbol>();
-			if (symbol->get_linking() == LINK_INSTANCE && owner_type->get_linking() == LINK_STATIC)
+			gmt::Ref<StructSymbol> ownerType = parent.as<StructSymbol>();
+			if (symbol->get_linking() == LINK_INSTANCE && ownerType->get_linking() == LINK_STATIC)
 				get_diagnostics().report_error(node->get_location(), L"Cannot declare a non static Property in static Type");
 		}
 	}
@@ -698,14 +698,14 @@ void DeclarationCollector::visit_property_declaration(const PropertyDeclarationS
 
 void DeclarationCollector::visit_indexator_declaration(const IndexatorDeclarationSyntax* node)
 {
-	std::optional<gmt::Ref<const IndexatorDeclarationSyntax>> node_ref = ref_from(node);
-	if (!node_ref.has_value())
+	std::optional<gmt::Ref<const IndexatorDeclarationSyntax>> nodeRef = ref_from(node);
+	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<IndexatorSymbol> symbol = lookup_symbol<IndexatorSymbol>(*node_ref);
+	gmt::Ref<IndexatorSymbol> symbol = lookup_symbol<IndexatorSymbol>(*nodeRef);
 	if (symbol.is_null())
 	{
-		symbol = m_factory.create_indexator(*node_ref, get_declaration_parent());
+		symbol = m_factory.create_indexator(*nodeRef, get_declaration_parent());
 		declare(symbol);
 	}
 
@@ -729,8 +729,8 @@ void DeclarationCollector::visit_indexator_declaration(const IndexatorDeclaratio
 	}
 	else
 	{
-		gmt::Ref<StructSymbol> owner_type = parent.as<StructSymbol>();
-		if (symbol->get_linking() == LINK_INSTANCE && owner_type->get_linking() == LINK_STATIC)
+		gmt::Ref<StructSymbol> ownerType = parent.as<StructSymbol>();
+		if (symbol->get_linking() == LINK_INSTANCE && ownerType->get_linking() == LINK_STATIC)
 			get_diagnostics().report_error(node->get_location(), L"Cannot declare a non static Indexator in static Type");
 	}
 
@@ -751,36 +751,36 @@ void DeclarationCollector::visit_indexator_declaration(const IndexatorDeclaratio
 
 void DeclarationCollector::visit_accessor_declaration(const AccessorDeclarationSyntax* node)
 {
-	std::optional<gmt::Ref<const AccessorDeclarationSyntax>> node_ref = ref_from(node);
-	if (!node_ref.has_value())
+	std::optional<gmt::Ref<const AccessorDeclarationSyntax>> nodeRef = ref_from(node);
+	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<const SyntaxNode> parent_node = node->get_parent();
-	if (parent_node->get_kind() != SyntaxKind::PropertyDeclaration && parent_node->get_kind() != SyntaxKind::IndexatorDeclaration)
+	gmt::Ref<const SyntaxNode> parentNode = node->get_parent();
+	if (parentNode->get_kind() != SyntaxKind::PropertyDeclaration && parentNode->get_kind() != SyntaxKind::IndexatorDeclaration)
 	{
 		get_diagnostics().report_error(node->get_location(), L"Accessors cannot be declared outside of Properties or Indexers");
 		return;
 	}
 
-	gmt::Ref<PropertySymbol> property_symbol = gmt::nullref;
-	if (parent_node->get_kind() == SyntaxKind::PropertyDeclaration)
+	gmt::Ref<PropertySymbol> propertySymbol = gmt::nullref;
+	if (parentNode->get_kind() == SyntaxKind::PropertyDeclaration)
 	{
-		property_symbol = lookup_symbol<PropertySymbol>(parent_node);
+		propertySymbol = lookup_symbol<PropertySymbol>(parentNode);
 	}
 	else
 	{
-		gmt::Ref<IndexatorSymbol> indexator = lookup_symbol<IndexatorSymbol>(parent_node);
+		gmt::Ref<IndexatorSymbol> indexator = lookup_symbol<IndexatorSymbol>(parentNode);
 		if (!indexator.is_null())
-			property_symbol = indexator;
+			propertySymbol = indexator;
 	}
 
-	if (property_symbol.is_null())
+	if (propertySymbol.is_null())
 		return;
 
-	gmt::Ref<AccessorSymbol> symbol = lookup_symbol<AccessorSymbol>(*node_ref);
+	gmt::Ref<AccessorSymbol> symbol = lookup_symbol<AccessorSymbol>(*nodeRef);
 	if (symbol.is_null())
 	{
-		symbol = m_factory.create_accessor(*node_ref, property_symbol);
+		symbol = m_factory.create_accessor(*nodeRef, propertySymbol);
 		declare(symbol);
 
 		if (symbol->get_parent().is_null())
@@ -790,14 +790,14 @@ void DeclarationCollector::visit_accessor_declaration(const AccessorDeclarationS
 
 void DeclarationCollector::visit_variable_statement(const VariableStatementSyntax* node)
 {
-	std::optional<gmt::Ref<const VariableStatementSyntax>> node_ref = ref_from(node);
-	if (!node_ref.has_value())
+	std::optional<gmt::Ref<const VariableStatementSyntax>> nodeRef = ref_from(node);
+	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<VariableSymbol> symbol = lookup_symbol<VariableSymbol>(*node_ref);
+	gmt::Ref<VariableSymbol> symbol = lookup_symbol<VariableSymbol>(*nodeRef);
 	if (symbol.is_null())
 	{
-		symbol = m_factory.create_variable(*node_ref, get_owner_symbol());
+		symbol = m_factory.create_variable(*nodeRef, get_owner_symbol());
 		declare(symbol);
 	}
 
@@ -811,14 +811,14 @@ void DeclarationCollector::visit_variable_statement(const VariableStatementSynta
 
 void DeclarationCollector::visit_for_in_statement(const ForInStatementSyntax* node)
 {
-	std::optional<gmt::Ref<const ForInStatementSyntax>> node_ref = ref_from(node);
-	if (!node_ref.has_value())
+	std::optional<gmt::Ref<const ForInStatementSyntax>> nodeRef = ref_from(node);
+	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<VariableSymbol> symbol = lookup_symbol<VariableSymbol>(*node_ref);
+	gmt::Ref<VariableSymbol> symbol = lookup_symbol<VariableSymbol>(*nodeRef);
 	if (symbol.is_null())
 	{
-		symbol = m_factory.create_variable(*node_ref, get_owner_symbol());
+		symbol = m_factory.create_variable(*nodeRef, get_owner_symbol());
 		declare(symbol);
 	}
 
@@ -870,24 +870,30 @@ void DeclarationCollector::visit_try_statement(const TryStatementSyntax* node)
 
 void DeclarationCollector::visit_lambda_expression(const LambdaExpressionSyntax* node)
 {
-	std::optional<gmt::Ref<const LambdaExpressionSyntax>> node_ref = ref_from(node);
-	if (!node_ref.has_value())
+	std::optional<gmt::Ref<const LambdaExpressionSyntax>> nodeRef = ref_from(node);
+	if (!nodeRef.has_value())
 		return;
 
 	gmt::Ref<SyntaxSymbol> owner = get_owner_symbol();
-	gmt::Ref<MethodSymbol> anonymous_method = m_factory.create_method(L"Lambda", owner, gmt::nullref, LINK_STATIC);
+	gmt::Ref<MethodSymbol> anonymousMethod = m_factory.create_method(L"Lambda", owner, gmt::nullref, LINK_STATIC);
 
-	push_scope(anonymous_method);
+	push_scope(anonymousMethod);
 
 	if (!node->get_parameters().is_null())
 	{
 		const auto parameters = node->get_parameters()->get_parameters().as_span();
 		for (const gmt::Ref<ParameterSyntax>& parameter : parameters)
-			declare(m_factory.create_parameter(parameter, anonymous_method));
+			declare(m_factory.create_parameter(parameter, anonymousMethod));
 	}
 
-	gmt::Ref<DelegateTypeSymbol> delegate_type = m_factory.create_delegate(anonymous_method, owner);
-	get_symbol_table().bind_symbol<DelegateTypeSymbol>(*node_ref, delegate_type);
+	gmt::Ref<DelegateTypeSymbol> delegateType = m_factory.create_delegate(anonymousMethod, owner);
+	get_symbol_table().bind_symbol<DelegateTypeSymbol>(*nodeRef, delegateType);
+
+	// the delegate signature mirrors the anonymous method; the method itself
+	// is bound to the parameters list node, so the expression binder can
+	// recover it when binding the body
+	if (!node->get_parameters().is_null())
+		get_symbol_table().bind_symbol<MethodSymbol>(node->get_parameters(), anonymousMethod);
 
 	pop_scope();
 }

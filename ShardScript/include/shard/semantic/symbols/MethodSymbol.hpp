@@ -7,6 +7,7 @@
 #include <gmt/Arena.hpp>
 #include <gmt/Ref.hpp>
 
+#include <cstddef>
 #include <string_view>
 #include <vector>
 
@@ -16,8 +17,20 @@ namespace shard
 	class TypeParameterSymbol;
 	class ParameterSymbol;
 
+	enum class CallingConvention
+	{
+		None,
+		Managed,
+		LibFunc,
+		StdCall
+	};
+
 	class SHARD_API MethodSymbol : public MemberSymbol
 	{
+		CallingConvention m_callingConvention = CallingConvention::None;
+		std::vector<std::byte> m_executableByteCode;
+		void* m_functionPointer = nullptr;
+
 		gmt::Ref<StructSymbol> m_returnType;
 		std::vector<gmt::Ref<TypeParameterSymbol>> m_typeParameters;
 		std::vector<gmt::Ref<ParameterSymbol>> m_parameters;
@@ -34,6 +47,15 @@ namespace shard
 
 		MethodSymbol(MethodSymbol&& other) = delete;
 		MethodSymbol& operator=(MethodSymbol&& other) = delete;
+
+		CallingConvention get_calling_convention() const;
+		void set_calling_convention(CallingConvention calling_convention);
+
+		const std::vector<std::byte>& get_executable_byte_code() const;
+		std::vector<std::byte>& get_executable_byte_code();
+
+		void* get_function_pointer() const;
+		void set_function_pointer(void* function_pointer);
 
 		gmt::Ref<StructSymbol> get_return_type() const;
 		void set_return_type(gmt::Ref<StructSymbol> return_type);

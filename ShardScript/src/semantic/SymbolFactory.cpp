@@ -64,21 +64,21 @@ gmt::Ref<NamespaceSymbol> shard::SymbolFactory::create_namespace(gmt::Ref<const 
 	return current;
 }
 
-gmt::Ref<NamespaceSymbol> SymbolFactory::create_namespace(std::wstring_view qualified_name)
+gmt::Ref<NamespaceSymbol> SymbolFactory::create_namespace(std::wstring_view qualifiedName)
 {
 	gmt::Ref<NamespaceSymbol> current = m_table->get_root_namespace();
 
 	std::size_t start = 0;
 	while (true)
 	{
-		const std::size_t dot = qualified_name.find(L'.', start);
+		const std::size_t dot = qualifiedName.find(L'.', start);
 		if (dot == std::wstring_view::npos)
 		{
-			current = current->lookup_or_create(qualified_name.substr(start), *m_table);
+			current = current->lookup_or_create(qualifiedName.substr(start), *m_table);
 			break;
 		}
 
-		current = current->lookup_or_create(qualified_name.substr(start, dot - start), *m_table);
+		current = current->lookup_or_create(qualifiedName.substr(start, dot - start), *m_table);
 		start = dot + 1;
 	}
 
@@ -121,10 +121,10 @@ gmt::Ref<EnumSymbol> SymbolFactory::create_enum(gmt::Ref<const EnumDeclarationSy
 	return m_table->bind_symbol<EnumSymbol>(node, symbol);
 }
 
-gmt::Ref<EnumSymbol> SymbolFactory::create_enum(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent, bool is_flags)
+gmt::Ref<EnumSymbol> SymbolFactory::create_enum(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent, bool isFlags)
 {
 	gmt::Ref<EnumSymbol> symbol = m_table->emplace<EnumSymbol>(name, parent);
-	symbol->set_is_flags(is_flags);
+	symbol->set_is_flags(isFlags);
 	symbol->set_accesibility(ACS_PRIVATE);
 	return symbol;
 }
@@ -145,10 +145,10 @@ gmt::Ref<FieldSymbol> SymbolFactory::create_field(std::wstring_view name, gmt::R
 	return symbol;
 }
 
-gmt::Ref<FieldSymbol> SymbolFactory::create_enum_field(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent, gmt::Ref<StructSymbol> enum_type, std::int64_t value)
+gmt::Ref<FieldSymbol> SymbolFactory::create_enum_field(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent, gmt::Ref<StructSymbol> enumType, std::int64_t value)
 {
 	gmt::Ref<FieldSymbol> symbol = m_table->emplace<FieldSymbol>(name, parent);
-	symbol->set_return_type(enum_type);
+	symbol->set_return_type(enumType);
 	symbol->set_linking(LINK_STATIC);
 	symbol->set_accesibility(ACS_PUBLIC);
 	symbol->set_is_enum_value(true);
@@ -159,17 +159,17 @@ gmt::Ref<FieldSymbol> SymbolFactory::create_enum_field(std::wstring_view name, g
 gmt::Ref<FieldSymbol> SymbolFactory::create_backing_field(gmt::Ref<PropertySymbol> property, gmt::Ref<SyntaxSymbol> parent)
 {
 	static constexpr std::wstring_view suffix = L">k__BackingField";
-	const std::wstring_view property_name = property->get_name();
+	const std::wstring_view propertyName = property->get_name();
 
-	std::wstring backing_name;
-	backing_name.reserve(1 + property_name.size() + suffix.size());
-	backing_name.append(L"<");
-	backing_name.append(property_name);
-	backing_name.append(suffix);
+	std::wstring backingName;
+	backingName.reserve(1 + propertyName.size() + suffix.size());
+	backingName.append(L"<");
+	backingName.append(propertyName);
+	backingName.append(suffix);
 
-	gmt::Ref<FieldSymbol> backing_field = create_field(backing_name, parent, property->get_return_type(), property->get_linking());
-	property->set_backing_field(backing_field);
-	return backing_field;
+	gmt::Ref<FieldSymbol> backingField = create_field(backingName, parent, property->get_return_type(), property->get_linking());
+	property->set_backing_field(backingField);
+	return backingField;
 }
 
 gmt::Ref<PropertySymbol> SymbolFactory::create_property(gmt::Ref<const PropertyDeclarationSyntax> node, gmt::Ref<SyntaxSymbol> parent)
@@ -179,10 +179,10 @@ gmt::Ref<PropertySymbol> SymbolFactory::create_property(gmt::Ref<const PropertyD
 	return m_table->bind_symbol<PropertySymbol>(node, symbol);
 }
 
-gmt::Ref<PropertySymbol> SymbolFactory::create_property(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent, gmt::Ref<StructSymbol> return_type, SymbolLinking linking)
+gmt::Ref<PropertySymbol> SymbolFactory::create_property(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent, gmt::Ref<StructSymbol> returnType, SymbolLinking linking)
 {
 	gmt::Ref<PropertySymbol> symbol = m_table->emplace<PropertySymbol>(name, SyntaxKind::PropertyDeclaration, parent);
-	symbol->set_return_type(return_type);
+	symbol->set_return_type(returnType);
 	symbol->set_linking(linking);
 	symbol->set_accesibility(ACS_PRIVATE);
 	return symbol;
@@ -195,10 +195,10 @@ gmt::Ref<MethodSymbol> SymbolFactory::create_method(gmt::Ref<const FunctionDecla
 	return m_table->bind_symbol<MethodSymbol>(node, symbol);
 }
 
-gmt::Ref<MethodSymbol> SymbolFactory::create_method(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent, gmt::Ref<StructSymbol> return_type, SymbolLinking linking)
+gmt::Ref<MethodSymbol> SymbolFactory::create_method(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent, gmt::Ref<StructSymbol> returnType, SymbolLinking linking)
 {
 	gmt::Ref<MethodSymbol> symbol = m_table->emplace<MethodSymbol>(name, parent);
-	symbol->set_return_type(return_type);
+	symbol->set_return_type(returnType);
 	symbol->set_linking(linking);
 	symbol->set_accesibility(ACS_PRIVATE);
 	return symbol;
@@ -206,8 +206,8 @@ gmt::Ref<MethodSymbol> SymbolFactory::create_method(std::wstring_view name, gmt:
 
 gmt::Ref<OperatorSymbol> SymbolFactory::create_operator(gmt::Ref<const OperatorDeclarationSyntax> node, gmt::Ref<SyntaxSymbol> parent)
 {
-	const TokenType operator_token = node->get_operator_token().get_type();
-	gmt::Ref<OperatorSymbol> symbol = m_table->emplace<OperatorSymbol>(get_operator_method_name(operator_token), operator_token, parent);
+	const TokenType operatorToken = node->get_operator_token().get_type();
+	gmt::Ref<OperatorSymbol> symbol = m_table->emplace<OperatorSymbol>(get_operator_method_name(operatorToken), operatorToken, parent);
 	apply_modifiers(node->get_modifiers(), *symbol);
 	return m_table->bind_symbol<OperatorSymbol>(node, symbol);
 }
@@ -230,16 +230,16 @@ gmt::Ref<ConstructorSymbol> SymbolFactory::create_constructor(std::wstring_view 
 
 gmt::Ref<AccessorSymbol> SymbolFactory::create_accessor(gmt::Ref<const AccessorDeclarationSyntax> node, gmt::Ref<PropertySymbol> property)
 {
-	const std::wstring_view property_name = property->get_name();
+	const std::wstring_view propertyName = property->get_name();
 	const std::wstring_view keyword = node->get_keyword().get_lexeme();
 
-	std::wstring accessor_name;
-	accessor_name.reserve(property_name.size() + 1 + keyword.size());
-	accessor_name.append(property_name);
-	accessor_name.append(L"_");
-	accessor_name.append(keyword);
+	std::wstring accessorName;
+	accessorName.reserve(propertyName.size() + 1 + keyword.size());
+	accessorName.append(propertyName);
+	accessorName.append(L"_");
+	accessorName.append(keyword);
 
-	gmt::Ref<AccessorSymbol> symbol = m_table->emplace<AccessorSymbol>(accessor_name, property);
+	gmt::Ref<AccessorSymbol> symbol = m_table->emplace<AccessorSymbol>(accessorName, property);
 	apply_modifiers(node->get_modifiers(), *symbol);
 	symbol->set_linking(property->get_linking());
 
@@ -254,8 +254,8 @@ gmt::Ref<AccessorSymbol> SymbolFactory::create_accessor(gmt::Ref<const AccessorD
 
 		case TokenType::SetKeyword:
 		{
-			gmt::Ref<ParameterSymbol> value_param = create_parameter(L"value", symbol, property->get_return_type());
-			symbol->on_symbol_declared(value_param);
+			gmt::Ref<ParameterSymbol> valueParam = create_parameter(L"value", symbol, property->get_return_type());
+			symbol->on_symbol_declared(valueParam);
 			
 			symbol->set_return_type(m_table->get_void_primitive());
 			property->set_setter(symbol);
@@ -287,8 +287,8 @@ gmt::Ref<AccessorSymbol> SymbolFactory::create_setter(gmt::Ref<PropertySymbol> p
 	symbol->set_linking(property->get_linking());
 	symbol->set_return_type(m_table->get_void_primitive());
 
-	gmt::Ref<ParameterSymbol> value_param = create_parameter(L"value", symbol, property->get_return_type());
-	symbol->on_symbol_declared(value_param);
+	gmt::Ref<ParameterSymbol> valueParam = create_parameter(L"value", symbol, property->get_return_type());
+	symbol->on_symbol_declared(valueParam);
 
 	property->set_setter(symbol);
 	return symbol;
@@ -301,18 +301,18 @@ gmt::Ref<IndexatorSymbol> SymbolFactory::create_indexator(gmt::Ref<const Indexat
 	return m_table->bind_symbol<IndexatorSymbol>(node, symbol);
 }
 
-gmt::Ref<IndexatorSymbol> SymbolFactory::create_indexator(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent, gmt::Ref<StructSymbol> return_type)
+gmt::Ref<IndexatorSymbol> SymbolFactory::create_indexator(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent, gmt::Ref<StructSymbol> returnType)
 {
 	gmt::Ref<IndexatorSymbol> symbol = m_table->emplace<IndexatorSymbol>(name, parent);
-	symbol->set_return_type(return_type);
+	symbol->set_return_type(returnType);
 	symbol->set_accesibility(ACS_PUBLIC);
 	symbol->set_linking(LINK_INSTANCE);
 	return symbol;
 }
 
-gmt::Ref<IndexatorSymbol> SymbolFactory::create_indexator(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent, gmt::Ref<StructSymbol> return_type, std::vector<gmt::Ref<ParameterSymbol>> parameters)
+gmt::Ref<IndexatorSymbol> SymbolFactory::create_indexator(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent, gmt::Ref<StructSymbol> returnType, std::vector<gmt::Ref<ParameterSymbol>> parameters)
 {
-	gmt::Ref<IndexatorSymbol> symbol = create_indexator(name, parent, return_type);
+	gmt::Ref<IndexatorSymbol> symbol = create_indexator(name, parent, returnType);
 	for (const gmt::Ref<ParameterSymbol>& parameter : parameters)
 		symbol->on_symbol_declared(parameter);
 
@@ -386,8 +386,8 @@ gmt::Ref<DelegateTypeSymbol> SymbolFactory::create_delegate(gmt::Ref<const Deleg
 		auto& parameters = const_cast<std::vector<gmt::Ref<ParameterSymbol>>&>(symbol->get_parameters());
 		for (const gmt::Ref<ParameterSyntax>& parameter : node->get_parameters_list()->get_parameters().as_span())
 		{
-			gmt::Ref<ParameterSymbol> parameter_symbol = create_parameter(parameter->get_identifier().get_lexeme(), symbol);
-			parameters.push_back(parameter_symbol);
+			gmt::Ref<ParameterSymbol> parameterSymbol = create_parameter(parameter->get_identifier().get_lexeme(), symbol);
+			parameters.push_back(parameterSymbol);
 		}
 	}
 
@@ -405,49 +405,60 @@ gmt::Ref<DelegateTypeSymbol> SymbolFactory::create_delegate(gmt::Ref<MethodSymbo
 	for (const gmt::Ref<ParameterSymbol>& parameter : method->get_parameters())
 		symbol->on_symbol_declared(parameter);
 
-	for (const gmt::Ref<TypeParameterSymbol>& type_parameter : method->get_type_parameters())
-		symbol->on_symbol_declared(type_parameter);
+	for (const gmt::Ref<TypeParameterSymbol>& typeParameter : method->get_type_parameters())
+		symbol->on_symbol_declared(typeParameter);
 
 	return symbol;
 }
 
-gmt::Ref<DelegateTypeSymbol> SymbolFactory::create_delegate(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent, gmt::Ref<StructSymbol> return_type, std::vector<gmt::Ref<ParameterSymbol>> parameters)
+gmt::Ref<DelegateTypeSymbol> SymbolFactory::create_delegate(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent, gmt::Ref<StructSymbol> returnType, std::vector<gmt::Ref<ParameterSymbol>> parameters)
 {
 	gmt::Ref<DelegateTypeSymbol> symbol = m_table->emplace<DelegateTypeSymbol>(name, parent);
 	symbol->set_accesibility(ACS_PUBLIC);
-	symbol->set_return_type(return_type);
+	symbol->set_return_type(returnType);
 	symbol->set_parameters(parameters);
 	return symbol;
 }
 
-gmt::Ref<ArrayTypeSymbol> SymbolFactory::create_array_type(gmt::Ref<const ArrayTypeSyntax> node, gmt::Ref<StructSymbol> underlaying_type)
+gmt::Ref<ArrayTypeSymbol> SymbolFactory::create_array_type(gmt::Ref<const ArrayTypeSyntax> node, gmt::Ref<StructSymbol> underlayingType)
 {
-	gmt::Ref<ArrayTypeSymbol> symbol = m_table->find_or_create_array_type(underlaying_type);
+	gmt::Ref<ArrayTypeSymbol> symbol = m_table->find_or_create_array_type(underlayingType);
 	return m_table->bind_symbol<ArrayTypeSymbol>(node, symbol);
 }
 
-gmt::Ref<ArrayTypeSymbol> SymbolFactory::create_array_type(gmt::Ref<StructSymbol> underlaying_type)
+gmt::Ref<ArrayTypeSymbol> SymbolFactory::create_array_type(gmt::Ref<StructSymbol> underlayingType)
 {
-	return m_table->find_or_create_array_type(underlaying_type);
+	return m_table->find_or_create_array_type(underlayingType);
 }
 
-gmt::Ref<ArrayTypeSymbol> SymbolFactory::create_array_type(gmt::Ref<StructSymbol> underlaying_type, std::size_t size)
+gmt::Ref<ArrayTypeSymbol> SymbolFactory::create_array_type(gmt::Ref<StructSymbol> underlayingType, std::size_t size)
 {
-	return m_table->find_or_create_array_type(underlaying_type, size);
+	return m_table->find_or_create_array_type(underlayingType, size);
 }
 
-gmt::Ref<GenericTypeSymbol> SymbolFactory::create_generic_type(gmt::Ref<const GenericTypeSyntax> node, gmt::Ref<StructSymbol> underlaying_type)
+gmt::Ref<NullableTypeSymbol> SymbolFactory::create_nullable_type(gmt::Ref<const NullableTypeSyntax> node, gmt::Ref<StructSymbol> underlayingType)
 {
-	gmt::Ref<GenericTypeSymbol> symbol = m_table->find_or_create_generic_type(underlaying_type, {});
+	gmt::Ref<NullableTypeSymbol> symbol = m_table->find_or_create_nullable_type(underlayingType);
+	return m_table->bind_symbol<NullableTypeSymbol>(node, symbol);
+}
+
+gmt::Ref<NullableTypeSymbol> SymbolFactory::create_nullable_type(gmt::Ref<StructSymbol> underlayingType)
+{
+	return m_table->find_or_create_nullable_type(underlayingType);
+}
+
+gmt::Ref<GenericTypeSymbol> SymbolFactory::create_generic_type(gmt::Ref<const GenericTypeSyntax> node, gmt::Ref<StructSymbol> underlayingType)
+{
+	gmt::Ref<GenericTypeSymbol> symbol = m_table->find_or_create_generic_type(underlayingType, {});
 	return m_table->bind_symbol<GenericTypeSymbol>(node, symbol);
 }
 
-gmt::Ref<GenericTypeSymbol> SymbolFactory::create_generic_type(gmt::Ref<StructSymbol> underlaying_type)
+gmt::Ref<GenericTypeSymbol> SymbolFactory::create_generic_type(gmt::Ref<StructSymbol> underlayingType)
 {
-	return m_table->find_or_create_generic_type(underlaying_type, {});
+	return m_table->find_or_create_generic_type(underlayingType, {});
 }
 
-gmt::Ref<GenericTypeSymbol> SymbolFactory::create_generic_type(gmt::Ref<StructSymbol> underlaying_type, const std::vector<gmt::Ref<StructSymbol>>& type_arguments)
+gmt::Ref<GenericTypeSymbol> SymbolFactory::create_generic_type(gmt::Ref<StructSymbol> underlayingType, const std::vector<gmt::Ref<StructSymbol>>& typeArguments)
 {
-	return m_table->find_or_create_generic_type(underlaying_type, type_arguments);
+	return m_table->find_or_create_generic_type(underlayingType, typeArguments);
 }

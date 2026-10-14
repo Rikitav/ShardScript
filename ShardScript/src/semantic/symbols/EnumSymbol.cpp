@@ -15,7 +15,7 @@ bool EnumSymbol::get_is_flags() const
 	return m_isFlags;
 }
 
-void EnumSymbol::set_is_flags(bool is_flags)
+void EnumSymbol::set_is_flags(bool isFlags)
 {
-	m_isFlags = is_flags;
+	m_isFlags = isFlags;
 }
