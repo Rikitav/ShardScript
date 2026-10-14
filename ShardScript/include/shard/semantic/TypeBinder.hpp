@@ -10,7 +10,7 @@
 #include <shard/parsing/nodes/MemberDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/TypeSyntax.hpp>
 
-#include <shard/parsing/nodes/Directives/UsingDirectiveSyntax.hpp>
+#include <shard/parsing/nodes/directives/UsingDirectiveSyntax.hpp>
 
 #include <shard/parsing/nodes/lists/ParametersListSyntax.hpp>
 #include <shard/parsing/nodes/lists/ArgumentsListSyntax.hpp>
@@ -69,14 +69,14 @@ namespace shard
 		gmt::Ref<NamespaceSymbol> resolve_namespace_type(gmt::Ref<const TypeSyntax> type);
 		gmt::Ref<StructSymbol> resolve_type(gmt::Ref<const TypeSyntax> node);
 
-		bool type_satisfies_constraint(gmt::Ref<StructSymbol> type_argument, gmt::Ref<StructSymbol> constraint);
-		bool type_implements_interface(gmt::Ref<StructSymbol> type_argument, gmt::Ref<InterfaceSymbol> interface_symbol);
+		bool type_satisfies_constraint(gmt::Ref<StructSymbol> typeArgument, gmt::Ref<StructSymbol> constraint);
+		bool type_implements_interface(gmt::Ref<StructSymbol> typeArgument, gmt::Ref<InterfaceSymbol> interfaceSymbol);
 
 		void bind_expression(gmt::Ref<const ExpressionSyntax> expression);
 		void bind_arguments(gmt::Ref<const ArgumentsListSyntax> arguments);
 
-		void bind_where_clauses(gmt::Ref<const WhereClausesListSyntax> clauses, const std::vector<gmt::Ref<TypeParameterSymbol>>& type_parameters);
-		void bind_base_types(gmt::Ref<StructSymbol> symbol, gmt::Ref<const BaseTypesListSyntax> base_types);
+		void bind_where_clauses(gmt::Ref<const WhereClausesListSyntax> clauses, const std::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters);
+		void bind_base_types(gmt::Ref<StructSymbol> symbol, gmt::Ref<const BaseTypesListSyntax> baseTypes);
 
 	public:
 		TypeBinder(SemanticModel& model, DiagnosticsContext& diagnostics);

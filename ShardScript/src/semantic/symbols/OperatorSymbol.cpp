@@ -4,18 +4,18 @@
 
 using namespace shard;
 
-OperatorSymbol::OperatorSymbol(std::wstring_view name, const TokenType operator_token, gmt::Ref<SyntaxSymbol> parent)
-	: OperatorSymbol(gmt::intern(name), operator_token, parent) { }
+OperatorSymbol::OperatorSymbol(std::wstring_view name, const TokenType operatorToken, gmt::Ref<SyntaxSymbol> parent)
+	: OperatorSymbol(gmt::intern(name), operatorToken, parent) { }
 
-OperatorSymbol::OperatorSymbol(gmt::StringReference name, const TokenType operator_token, gmt::Ref<SyntaxSymbol> parent)
-	: MethodSymbol(name, SyntaxKind::OperatorDeclaration, parent), m_operatorToken(operator_token) { }
+OperatorSymbol::OperatorSymbol(gmt::StringReference name, const TokenType operatorToken, gmt::Ref<SyntaxSymbol> parent)
+	: MethodSymbol(name, SyntaxKind::OperatorDeclaration, parent), m_operatorToken(operatorToken) { }
 
 TokenType OperatorSymbol::get_operator_token() const
 {
 	return m_operatorToken;
 }
 
-void OperatorSymbol::set_operator_token(const TokenType operator_token)
+void OperatorSymbol::set_operator_token(const TokenType operatorToken)
 {
-	m_operatorToken = operator_token;
+	m_operatorToken = operatorToken;
 }

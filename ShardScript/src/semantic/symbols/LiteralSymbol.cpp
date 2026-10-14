@@ -4,8 +4,8 @@
 
 using namespace shard;
 
-LiteralSymbol::LiteralSymbol(const TokenType literal_type, gmt::Ref<SyntaxSymbol> parent)
-	: SyntaxSymbol(gmt::intern(L"Literal"), SyntaxKind::LiteralExpression, parent), m_literalType(literal_type) { }
+LiteralSymbol::LiteralSymbol(const TokenType literalType, gmt::Ref<SyntaxSymbol> parent)
+	: SyntaxSymbol(gmt::intern(L"Literal"), SyntaxKind::LiteralExpression, parent), m_literalType(literalType) { }
 
 TokenType LiteralSymbol::get_literal_type() const
 {
@@ -67,7 +67,7 @@ gmt::Ref<StructSymbol> LiteralSymbol::get_bound_type() const
 	return m_boundType;
 }
 
-void LiteralSymbol::set_bound_type(gmt::Ref<StructSymbol> bound_type)
+void LiteralSymbol::set_bound_type(gmt::Ref<StructSymbol> boundType)
 {
-	m_boundType = bound_type;
+	m_boundType = boundType;
 }

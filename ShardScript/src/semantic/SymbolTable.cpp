@@ -59,10 +59,10 @@ namespace
 		return hash_combine(hash, size);
 	}
 
-	std::size_t hash_generic_key(gmt::Ref<StructSymbol> underlaying, const std::vector<gmt::Ref<StructSymbol>>& type_arguments)
+	std::size_t hash_generic_key(gmt::Ref<StructSymbol> underlaying, const std::vector<gmt::Ref<StructSymbol>>& typeArguments)
 	{
 		std::size_t hash = hash_combine(0, underlaying.get_offset());
-		for (const gmt::Ref<StructSymbol>& argument : type_arguments)
+		for (const gmt::Ref<StructSymbol>& argument : typeArguments)
 			hash = hash_combine(hash, argument.get_offset());
 
 		return hash;
@@ -73,22 +73,32 @@ namespace
 		return symbol->get_underlaying_type() == underlaying && symbol->get_length() == size;
 	}
 
-	bool same_generic_shape(gmt::Ref<GenericTypeSymbol> symbol, gmt::Ref<StructSymbol> underlaying, const std::vector<gmt::Ref<StructSymbol>>& type_arguments)
+	bool same_generic_shape(gmt::Ref<GenericTypeSymbol> symbol, gmt::Ref<StructSymbol> underlaying, const std::vector<gmt::Ref<StructSymbol>>& typeArguments)
 	{
 		if (symbol->get_underlaying_type() != underlaying)
 			return false;
 
-		const std::vector<gmt::Ref<TypeParameterSymbol>>& type_parameters = underlaying->type_parameters;
-		if (type_parameters.size() != type_arguments.size())
+		const std::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters = underlaying->type_parameters;
+		if (typeParameters.size() != typeArguments.size())
 			return false;
 
-		for (std::size_t i = 0; i < type_parameters.size(); ++i)
+		for (std::size_t i = 0; i < typeParameters.size(); ++i)
 		{
-			if (symbol->substitute_type_parameter(type_parameters[i]) != type_arguments[i])
+			if (symbol->substitute_type_parameter(typeParameters[i]) != typeArguments[i])
 				return false;
 		}
 
 		return true;
+	}
+
+	std::size_t hash_nullable_key(gmt::Ref<StructSymbol> underlaying)
+	{
+		return hash_combine(0, underlaying.get_offset());
+	}
+
+	bool same_nullable_shape(gmt::Ref<NullableTypeSymbol> symbol, gmt::Ref<StructSymbol> underlaying)
+	{
+		return symbol->get_underlaying_type() == underlaying;
 	}
 }
 
@@ -112,15 +122,15 @@ gmt::Ref<ArrayTypeSymbol> SymbolTable::find_array_type(gmt::Ref<StructSymbol> un
 	return gmt::nullref;
 }
 
-gmt::Ref<GenericTypeSymbol> SymbolTable::find_generic_type(gmt::Ref<StructSymbol> underlaying, const std::vector<gmt::Ref<StructSymbol>>& type_arguments) const
+gmt::Ref<GenericTypeSymbol> SymbolTable::find_generic_type(gmt::Ref<StructSymbol> underlaying, const std::vector<gmt::Ref<StructSymbol>>& typeArguments) const
 {
-	const auto bucket = m_genericTypes.find(hash_generic_key(underlaying, type_arguments));
+	const auto bucket = m_genericTypes.find(hash_generic_key(underlaying, typeArguments));
 	if (bucket == m_genericTypes.end())
 		return gmt::nullref;
 
 	for (const gmt::Ref<GenericTypeSymbol>& candidate : bucket->second)
 	{
-		if (same_generic_shape(candidate, underlaying, type_arguments))
+		if (same_generic_shape(candidate, underlaying, typeArguments))
 			return candidate;
 	}
 
@@ -145,19 +155,44 @@ gmt::Ref<ArrayTypeSymbol> SymbolTable::find_or_create_array_type(gmt::Ref<Struct
 	return symbol;
 }
 
-gmt::Ref<GenericTypeSymbol> SymbolTable::find_or_create_generic_type(gmt::Ref<StructSymbol> underlaying, const std::vector<gmt::Ref<StructSymbol>>& type_arguments)
+gmt::Ref<GenericTypeSymbol> SymbolTable::find_or_create_generic_type(gmt::Ref<StructSymbol> underlaying, const std::vector<gmt::Ref<StructSymbol>>& typeArguments)
 {
-	gmt::Ref<GenericTypeSymbol> existing = find_generic_type(underlaying, type_arguments);
+	gmt::Ref<GenericTypeSymbol> existing = find_generic_type(underlaying, typeArguments);
 	if (!existing.is_null())
 		return existing;
 
 	gmt::Ref<GenericTypeSymbol> symbol = m_arena.emplace<GenericTypeSymbol>(underlaying, m_rootNamespace);
 
-	const std::vector<gmt::Ref<TypeParameterSymbol>>& type_parameters = underlaying->type_parameters;
-	for (std::size_t i = 0; i < type_parameters.size() && i < type_arguments.size(); ++i)
-		symbol->add_type_parameter(type_parameters[i], type_arguments[i]);
+	const std::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters = underlaying->type_parameters;
+	for (std::size_t i = 0; i < typeParameters.size() && i < typeArguments.size(); ++i)
+		symbol->add_type_parameter(typeParameters[i], typeArguments[i]);
+	m_genericTypes[hash_generic_key(underlaying, typeArguments)].push_back(symbol);
+	return symbol;
+}
 
-	m_genericTypes[hash_generic_key(underlaying, type_arguments)].push_back(symbol);
+gmt::Ref<NullableTypeSymbol> SymbolTable::find_nullable_type(gmt::Ref<StructSymbol> underlaying) const
+{
+	const auto bucket = m_nullableTypes.find(hash_nullable_key(underlaying));
+	if (bucket == m_nullableTypes.end())
+		return gmt::nullref;
+
+	for (const gmt::Ref<NullableTypeSymbol>& candidate : bucket->second)
+	{
+		if (same_nullable_shape(candidate, underlaying))
+			return candidate;
+	}
+
+	return gmt::nullref;
+}
+
+gmt::Ref<NullableTypeSymbol> SymbolTable::find_or_create_nullable_type(gmt::Ref<StructSymbol> underlaying)
+{
+	gmt::Ref<NullableTypeSymbol> existing = find_nullable_type(underlaying);
+	if (!existing.is_null())
+		return existing;
+
+	gmt::Ref<NullableTypeSymbol> symbol = m_arena.emplace<NullableTypeSymbol>(underlaying, m_rootNamespace);
+	m_nullableTypes[hash_nullable_key(underlaying)].push_back(symbol);
 	return symbol;
 }
 

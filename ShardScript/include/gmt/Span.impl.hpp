@@ -58,7 +58,10 @@ namespace gmt
 	template<typename T>
 	inline T* Span<T>::data() const
 	{
-		return reinterpret_cast<T*>(m_arena->get_buffer() + m_offset);
+		if (m_arena == nullptr)
+			return nullptr;
+
+		return reinterpret_cast<T*>(m_arena->resolve(m_offset));
 	}
 
 	template<typename T>

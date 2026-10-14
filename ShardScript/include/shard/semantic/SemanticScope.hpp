@@ -8,14 +8,17 @@
 #include <gmt/Ref.hpp>
 
 #include <string_view>
+#include <span>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 namespace shard
 {
 	class SHARD_API SemanticScope
 	{
 		std::unordered_map<std::wstring_view, gmt::Ref<SyntaxSymbol>> m_symbols;
+		std::unordered_map<std::wstring_view, std::vector<gmt::Ref<SyntaxSymbol>>> m_overloads;
 
 		SemanticScope* m_parent;
 		gmt::Ref<SyntaxSymbol> m_owner;
@@ -46,6 +49,10 @@ namespace shard
 		gmt::Ref<SyntaxSymbol> find_local(std::wstring_view name) const;
 		gmt::Ref<SyntaxSymbol> lookup(gmt::StringReference name) const;
 		gmt::Ref<SyntaxSymbol> lookup(std::wstring_view name) const;
+
+		// overloads declared in the same scope as the symbol that owns the
+		// name; empty when the name resolves to a single symbol
+		std::span<const gmt::Ref<SyntaxSymbol>> find_overloads(std::wstring_view name) const;
 
 		void declare_symbol(gmt::Ref<SyntaxSymbol> symbol);
 	};

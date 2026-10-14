@@ -174,7 +174,7 @@ bool TypeBinder::is_ambiguous_name(std::wstring_view name)
 	return m_ambiguousNames.count(name) != 0;
 }
 
-void TypeBinder::bind_where_clauses(gmt::Ref<const WhereClausesListSyntax> clauses, const std::vector<gmt::Ref<TypeParameterSymbol>>& type_parameters)
+void TypeBinder::bind_where_clauses(gmt::Ref<const WhereClausesListSyntax> clauses, const std::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters)
 {
 	if (clauses.is_null())
 		return;
@@ -184,66 +184,66 @@ void TypeBinder::bind_where_clauses(gmt::Ref<const WhereClausesListSyntax> claus
 		if (clause.is_null())
 			continue;
 
-		const std::wstring_view parameter_name = clause->get_identifier().get_lexeme();
+		const std::wstring_view parameterName = clause->get_identifier().get_lexeme();
 
-		gmt::Ref<TypeParameterSymbol> type_parameter = gmt::nullref;
-		for (const gmt::Ref<TypeParameterSymbol>& candidate : type_parameters)
+		gmt::Ref<TypeParameterSymbol> typeParameter = gmt::nullref;
+		for (const gmt::Ref<TypeParameterSymbol>& candidate : typeParameters)
 		{
-			if (!candidate.is_null() && candidate->get_name() == parameter_name)
+			if (!candidate.is_null() && candidate->get_name() == parameterName)
 			{
-				type_parameter = candidate;
+				typeParameter = candidate;
 				break;
 			}
 		}
 
-		if (type_parameter.is_null())
+		if (typeParameter.is_null())
 		{
-			get_diagnostics().report_error(clause->get_location(), L"Type parameter '" + std::wstring(parameter_name) + L"' not found");
+			get_diagnostics().report_error(clause->get_location(), L"Type parameter '" + std::wstring(parameterName) + L"' not found");
 			continue;
 		}
 
-		for (const gmt::Ref<TypeSyntax>& constraint_type : clause->get_constraint_types().as_span())
+		for (const gmt::Ref<TypeSyntax>& constraintType : clause->get_constraint_types().as_span())
 		{
-			gmt::Ref<StructSymbol> constraint = resolve_type(constraint_type);
+			gmt::Ref<StructSymbol> constraint = resolve_type(constraintType);
 			if (constraint.is_null())
 			{
-				get_diagnostics().report_error(clause->get_location(), L"Could not resolve constraint type for type parameter '" + std::wstring(parameter_name) + L"'");
+				get_diagnostics().report_error(clause->get_location(), L"Could not resolve constraint type for type parameter '" + std::wstring(parameterName) + L"'");
 				continue;
 			}
 
-			type_parameter->add_constraint(constraint);
+			typeParameter->add_constraint(constraint);
 		}
 	}
 }
 
-void TypeBinder::bind_base_types(gmt::Ref<StructSymbol> symbol, gmt::Ref<const BaseTypesListSyntax> base_types)
+void TypeBinder::bind_base_types(gmt::Ref<StructSymbol> symbol, gmt::Ref<const BaseTypesListSyntax> baseTypes)
 {
-	if (base_types.is_null())
+	if (baseTypes.is_null())
 		return;
 
-	for (const gmt::Ref<TypeSyntax>& base_type : base_types->get_types().as_span())
+	for (const gmt::Ref<TypeSyntax>& baseType : baseTypes->get_types().as_span())
 	{
-		gmt::Ref<StructSymbol> base_symbol = resolve_type(base_type);
-		if (base_symbol.is_null())
+		gmt::Ref<StructSymbol> baseSymbol = resolve_type(baseType);
+		if (baseSymbol.is_null())
 			continue;
 
-		if (base_symbol->get_kind() == SyntaxKind::InterfaceDeclaration)
+		if (baseSymbol->get_kind() == SyntaxKind::InterfaceDeclaration)
 		{
-			symbol->interfaces.push_back(base_symbol);
+			symbol->interfaces.push_back(baseSymbol);
 			continue;
 		}
 
-		if (base_symbol->get_kind() == SyntaxKind::GenericType)
+		if (baseSymbol->get_kind() == SyntaxKind::GenericType)
 		{
-			gmt::Ref<StructSymbol> underlaying = base_symbol.as<GenericTypeSymbol>()->get_underlaying_type();
+			gmt::Ref<StructSymbol> underlaying = baseSymbol.as<GenericTypeSymbol>()->get_underlaying_type();
 			if (!underlaying.is_null() && underlaying->get_kind() == SyntaxKind::InterfaceDeclaration)
 			{
-				symbol->interfaces.push_back(base_symbol);
+				symbol->interfaces.push_back(baseSymbol);
 				continue;
 			}
 		}
 
-		get_diagnostics().report_error(base_type->get_location(), L"Base type must be an interface");
+		get_diagnostics().report_error(baseType->get_location(), L"Base type must be an interface");
 	}
 }
 
@@ -257,12 +257,12 @@ void TypeBinder::visit_translation_unit(const TranslationUnitSyntax* node)
 	if (node->has_namespace())
 	{
 		gmt::Ref<const NamespaceDirectiveSyntax> directive = node->get_namespace();
-		gmt::Ref<NamespaceSymbol> namespace_symbol = lookup_symbol<NamespaceSymbol>(directive);
+		gmt::Ref<NamespaceSymbol> namespaceSymbol = lookup_symbol<NamespaceSymbol>(directive);
 
-		if (namespace_symbol.is_null())
+		if (namespaceSymbol.is_null())
 			throw std::runtime_error("namespace symbol not found");
 
-		push_scope(namespace_symbol);
+		push_scope(namespaceSymbol);
 	}
 
 	// declare member symbols upfront so members can reference each other
@@ -272,9 +272,9 @@ void TypeBinder::visit_translation_unit(const TranslationUnitSyntax* node)
 	// collection
 	for (const gmt::Ref<MemberDeclarationSyntax>& member : node->get_members().as_span())
 	{
-		gmt::Ref<SyntaxSymbol> member_symbol = lookup_symbol<SyntaxSymbol>(member);
-		if (!member_symbol.is_null())
-			get_current_scope()->declare_symbol(member_symbol);
+		gmt::Ref<SyntaxSymbol> memberSymbol = lookup_symbol<SyntaxSymbol>(member);
+		if (!memberSymbol.is_null())
+			get_current_scope()->declare_symbol(memberSymbol);
 	}
 
 	for (const gmt::Ref<MemberDeclarationSyntax>& member : node->get_members().as_span())
@@ -288,8 +288,8 @@ void TypeBinder::visit_translation_unit(const TranslationUnitSyntax* node)
 
 void TypeBinder::visit_using_directive(const UsingDirectiveSyntax* node)
 {
-	std::optional<gmt::Ref<const UsingDirectiveSyntax>> node_ref = ref_from(node);
-	if (!node_ref.has_value())
+	std::optional<gmt::Ref<const UsingDirectiveSyntax>> nodeRef = ref_from(node);
+	if (!nodeRef.has_value())
 		return;
 
 	gmt::Ref<NamespaceSymbol> current = get_symbol_table().get_root_namespace();
@@ -305,35 +305,35 @@ void TypeBinder::visit_using_directive(const UsingDirectiveSyntax* node)
 		current = next;
 	}
 
-	if (node_ref.has_value())
-		get_symbol_table().bind_symbol<NamespaceSymbol>(*node_ref, current);
+	if (nodeRef.has_value())
+		get_symbol_table().bind_symbol<NamespaceSymbol>(*nodeRef, current);
 
-	import_namespace(*node_ref, current);
+	import_namespace(*nodeRef, current);
 }
 
 void TypeBinder::visit_struct_declaration(const StructDeclarationSyntax* node)
 {
-	std::optional<gmt::Ref<const StructDeclarationSyntax>> node_ref = ref_from(node);
-	if (!node_ref.has_value())
+	std::optional<gmt::Ref<const StructDeclarationSyntax>> nodeRef = ref_from(node);
+	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<StructSymbol> symbol = lookup_symbol<StructSymbol>(*node_ref);
+	gmt::Ref<StructSymbol> symbol = lookup_symbol<StructSymbol>(*nodeRef);
 	if (symbol.is_null())
 		throw std::runtime_error("struct symbol not found");
 
 	push_scope(symbol);
 
-	for (const gmt::Ref<TypeParameterSymbol>& type_parameter : symbol->type_parameters)
-		get_current_scope()->declare_symbol(type_parameter);
+	for (const gmt::Ref<TypeParameterSymbol>& typeParameter : symbol->type_parameters)
+		get_current_scope()->declare_symbol(typeParameter);
 
 	bind_where_clauses(node->get_where_clauses(), symbol->type_parameters);
 	bind_base_types(symbol, node->get_base_types());
 
 	for (const gmt::Ref<MemberDeclarationSyntax>& member : node->get_members().as_span())
 	{
-		gmt::Ref<SyntaxSymbol> member_symbol = lookup_symbol<SyntaxSymbol>(member);
-		if (!member_symbol.is_null())
-			get_current_scope()->declare_symbol(member_symbol);
+		gmt::Ref<SyntaxSymbol> memberSymbol = lookup_symbol<SyntaxSymbol>(member);
+		if (!memberSymbol.is_null())
+			get_current_scope()->declare_symbol(memberSymbol);
 	}
 
 	for (const gmt::Ref<MemberDeclarationSyntax>& member : node->get_members().as_span())
@@ -344,26 +344,26 @@ void TypeBinder::visit_struct_declaration(const StructDeclarationSyntax* node)
 
 void TypeBinder::visit_interface_declaration(const InterfaceDeclarationSyntax* node)
 {
-	std::optional<gmt::Ref<const InterfaceDeclarationSyntax>> node_ref = ref_from(node);
-	if (!node_ref.has_value())
+	std::optional<gmt::Ref<const InterfaceDeclarationSyntax>> nodeRef = ref_from(node);
+	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<InterfaceSymbol> symbol = lookup_symbol<InterfaceSymbol>(*node_ref);
+	gmt::Ref<InterfaceSymbol> symbol = lookup_symbol<InterfaceSymbol>(*nodeRef);
 	if (symbol.is_null())
 		throw std::runtime_error("interface symbol not found");
 
 	push_scope(symbol);
 
-	for (const gmt::Ref<TypeParameterSymbol>& type_parameter : symbol->type_parameters)
-		get_current_scope()->declare_symbol(type_parameter);
+	for (const gmt::Ref<TypeParameterSymbol>& typeParameter : symbol->type_parameters)
+		get_current_scope()->declare_symbol(typeParameter);
 
 	bind_where_clauses(node->get_where_clauses(), symbol->type_parameters);
 
 	for (const gmt::Ref<MemberDeclarationSyntax>& member : node->get_members().as_span())
 	{
-		gmt::Ref<SyntaxSymbol> member_symbol = lookup_symbol<SyntaxSymbol>(member);
-		if (!member_symbol.is_null())
-			get_current_scope()->declare_symbol(member_symbol);
+		gmt::Ref<SyntaxSymbol> memberSymbol = lookup_symbol<SyntaxSymbol>(member);
+		if (!memberSymbol.is_null())
+			get_current_scope()->declare_symbol(memberSymbol);
 	}
 
 	for (const gmt::Ref<MemberDeclarationSyntax>& member : node->get_members().as_span())
@@ -374,18 +374,18 @@ void TypeBinder::visit_interface_declaration(const InterfaceDeclarationSyntax* n
 
 void TypeBinder::visit_delegate_declaration(const DelegateDeclarationSyntax* node)
 {
-	std::optional<gmt::Ref<const DelegateDeclarationSyntax>> node_ref = ref_from(node);
-	if (!node_ref.has_value())
+	std::optional<gmt::Ref<const DelegateDeclarationSyntax>> nodeRef = ref_from(node);
+	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<DelegateTypeSymbol> symbol = lookup_symbol<DelegateTypeSymbol>(*node_ref);
+	gmt::Ref<DelegateTypeSymbol> symbol = lookup_symbol<DelegateTypeSymbol>(*nodeRef);
 	if (symbol.is_null())
 		throw std::runtime_error("delegate symbol not found");
 
 	push_scope(symbol);
 
-	for (const gmt::Ref<TypeParameterSymbol>& type_parameter : symbol->get_type_parameters())
-		get_current_scope()->declare_symbol(type_parameter);
+	for (const gmt::Ref<TypeParameterSymbol>& typeParameter : symbol->get_type_parameters())
+		get_current_scope()->declare_symbol(typeParameter);
 
 	if (!node->get_return_type().is_null())
 		symbol->set_return_type(resolve_type(node->get_return_type()));
@@ -398,11 +398,11 @@ void TypeBinder::visit_delegate_declaration(const DelegateDeclarationSyntax* nod
 
 void TypeBinder::visit_enum_declaration(const EnumDeclarationSyntax* node)
 {
-	std::optional<gmt::Ref<const EnumDeclarationSyntax>> node_ref = ref_from(node);
-	if (!node_ref.has_value())
+	std::optional<gmt::Ref<const EnumDeclarationSyntax>> nodeRef = ref_from(node);
+	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<EnumSymbol> symbol = lookup_symbol<EnumSymbol>(*node_ref);
+	gmt::Ref<EnumSymbol> symbol = lookup_symbol<EnumSymbol>(*nodeRef);
 	if (symbol.is_null())
 		throw std::runtime_error("enum symbol not found");
 
@@ -416,11 +416,11 @@ void TypeBinder::visit_enum_declaration(const EnumDeclarationSyntax* node)
 
 void TypeBinder::visit_constructor_declaration(const ConstructorDeclarationSyntax* node)
 {
-	std::optional<gmt::Ref<const ConstructorDeclarationSyntax>> node_ref = ref_from(node);
-	if (!node_ref.has_value())
+	std::optional<gmt::Ref<const ConstructorDeclarationSyntax>> nodeRef = ref_from(node);
+	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<ConstructorSymbol> symbol = lookup_symbol<ConstructorSymbol>(*node_ref);
+	gmt::Ref<ConstructorSymbol> symbol = lookup_symbol<ConstructorSymbol>(*nodeRef);
 	if (symbol.is_null())
 		throw std::runtime_error("constructor symbol not found");
 
@@ -437,18 +437,18 @@ void TypeBinder::visit_constructor_declaration(const ConstructorDeclarationSynta
 
 void TypeBinder::visit_function_declaration(const FunctionDeclarationSyntax* node)
 {
-	std::optional<gmt::Ref<const FunctionDeclarationSyntax>> node_ref = ref_from(node);
-	if (!node_ref.has_value())
+	std::optional<gmt::Ref<const FunctionDeclarationSyntax>> nodeRef = ref_from(node);
+	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<MethodSymbol> symbol = lookup_symbol<MethodSymbol>(*node_ref);
+	gmt::Ref<MethodSymbol> symbol = lookup_symbol<MethodSymbol>(*nodeRef);
 	if (symbol.is_null())
 		throw std::runtime_error("method symbol not found");
 
 	push_scope(symbol);
 
-	for (const gmt::Ref<TypeParameterSymbol>& type_parameter : symbol->get_type_parameters())
-		get_current_scope()->declare_symbol(type_parameter);
+	for (const gmt::Ref<TypeParameterSymbol>& typeParameter : symbol->get_type_parameters())
+		get_current_scope()->declare_symbol(typeParameter);
 
 	bind_where_clauses(node->get_where_clauses(), symbol->get_type_parameters());
 
@@ -466,11 +466,11 @@ void TypeBinder::visit_function_declaration(const FunctionDeclarationSyntax* nod
 
 void TypeBinder::visit_operator_declaration(const OperatorDeclarationSyntax* node)
 {
-	std::optional<gmt::Ref<const OperatorDeclarationSyntax>> node_ref = ref_from(node);
-	if (!node_ref.has_value())
+	std::optional<gmt::Ref<const OperatorDeclarationSyntax>> nodeRef = ref_from(node);
+	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<OperatorSymbol> symbol = lookup_symbol<OperatorSymbol>(*node_ref);
+	gmt::Ref<OperatorSymbol> symbol = lookup_symbol<OperatorSymbol>(*nodeRef);
 	if (symbol.is_null())
 		throw std::runtime_error("operator symbol not found");
 
@@ -499,11 +499,11 @@ void TypeBinder::visit_operator_declaration(const OperatorDeclarationSyntax* nod
 
 void TypeBinder::visit_field_declaration(const FieldDeclarationSyntax* node)
 {
-	std::optional<gmt::Ref<const FieldDeclarationSyntax>> node_ref = ref_from(node);
-	if (!node_ref.has_value())
+	std::optional<gmt::Ref<const FieldDeclarationSyntax>> nodeRef = ref_from(node);
+	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<FieldSymbol> symbol = lookup_symbol<FieldSymbol>(*node_ref);
+	gmt::Ref<FieldSymbol> symbol = lookup_symbol<FieldSymbol>(*nodeRef);
 	if (symbol.is_null())
 		throw std::runtime_error("field symbol not found");
 
@@ -515,11 +515,11 @@ void TypeBinder::visit_field_declaration(const FieldDeclarationSyntax* node)
 
 void TypeBinder::visit_property_declaration(const PropertyDeclarationSyntax* node)
 {
-	std::optional<gmt::Ref<const PropertyDeclarationSyntax>> node_ref = ref_from(node);
-	if (!node_ref.has_value())
+	std::optional<gmt::Ref<const PropertyDeclarationSyntax>> nodeRef = ref_from(node);
+	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<PropertySymbol> symbol = lookup_symbol<PropertySymbol>(*node_ref);
+	gmt::Ref<PropertySymbol> symbol = lookup_symbol<PropertySymbol>(*nodeRef);
 	if (symbol.is_null())
 		throw std::runtime_error("property symbol not found");
 
@@ -528,20 +528,20 @@ void TypeBinder::visit_property_declaration(const PropertyDeclarationSyntax* nod
 
 	push_scope(symbol);
 
-	gmt::Ref<StructSymbol> property_type = resolve_type(node->get_type());
-	symbol->set_return_type(property_type);
+	gmt::Ref<StructSymbol> propertyType = resolve_type(node->get_type());
+	symbol->set_return_type(propertyType);
 
-	gmt::Ref<FieldSymbol> backing_field = symbol->get_backing_field();
-	if (!backing_field.is_null())
-		backing_field->set_return_type(property_type);
+	gmt::Ref<FieldSymbol> backingField = symbol->get_backing_field();
+	if (!backingField.is_null())
+		backingField->set_return_type(propertyType);
 
 	gmt::Ref<AccessorSymbol> getter = symbol->get_getter();
 	if (!getter.is_null())
-		getter->set_return_type(property_type);
+		getter->set_return_type(propertyType);
 
 	gmt::Ref<AccessorSymbol> setter = symbol->get_setter();
 	if (!setter.is_null() && !setter->get_parameters().empty())
-		setter->get_parameters()[0]->set_type(property_type);
+		setter->get_parameters()[0]->set_type(propertyType);
 
 	bind_expression(node->get_expression());
 
@@ -556,11 +556,11 @@ void TypeBinder::visit_property_declaration(const PropertyDeclarationSyntax* nod
 
 void TypeBinder::visit_indexator_declaration(const IndexatorDeclarationSyntax* node)
 {
-	std::optional<gmt::Ref<const IndexatorDeclarationSyntax>> node_ref = ref_from(node);
-	if (!node_ref.has_value())
+	std::optional<gmt::Ref<const IndexatorDeclarationSyntax>> nodeRef = ref_from(node);
+	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<IndexatorSymbol> symbol = lookup_symbol<IndexatorSymbol>(*node_ref);
+	gmt::Ref<IndexatorSymbol> symbol = lookup_symbol<IndexatorSymbol>(*nodeRef);
 	if (symbol.is_null())
 		throw std::runtime_error("indexator symbol not found");
 
@@ -568,16 +568,16 @@ void TypeBinder::visit_indexator_declaration(const IndexatorDeclarationSyntax* n
 
 	if (!node->get_type().is_null())
 	{
-		gmt::Ref<StructSymbol> property_type = resolve_type(node->get_type());
-		symbol->set_return_type(property_type);
+		gmt::Ref<StructSymbol> propertyType = resolve_type(node->get_type());
+		symbol->set_return_type(propertyType);
 
 		gmt::Ref<AccessorSymbol> getter = symbol->get_getter();
 		if (!getter.is_null())
-			getter->set_return_type(property_type);
+			getter->set_return_type(propertyType);
 
 		gmt::Ref<AccessorSymbol> setter = symbol->get_setter();
 		if (!setter.is_null() && !setter->get_parameters().empty())
-			setter->get_parameters()[0]->set_type(property_type);
+			setter->get_parameters()[0]->set_type(propertyType);
 	}
 
 	if (!node->get_parameters_list().is_null())
@@ -594,30 +594,30 @@ void TypeBinder::visit_indexator_declaration(const IndexatorDeclarationSyntax* n
 
 void TypeBinder::visit_accessor_declaration(const AccessorDeclarationSyntax* node)
 {
-	std::optional<gmt::Ref<const AccessorDeclarationSyntax>> node_ref = ref_from(node);
-	if (!node_ref.has_value())
+	std::optional<gmt::Ref<const AccessorDeclarationSyntax>> nodeRef = ref_from(node);
+	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<AccessorSymbol> symbol = lookup_symbol<AccessorSymbol>(*node_ref);
+	gmt::Ref<AccessorSymbol> symbol = lookup_symbol<AccessorSymbol>(*nodeRef);
 	if (symbol.is_null())
 		throw std::runtime_error("accessor symbol not found");
 
-	gmt::Ref<const SyntaxNode> parent_node = node->get_parent();
+	gmt::Ref<const SyntaxNode> parentNode = node->get_parent();
 
-	if (parent_node->get_kind() == SyntaxKind::IndexatorDeclaration)
+	if (parentNode->get_kind() == SyntaxKind::IndexatorDeclaration)
 	{
 		// index parameters join each accessor's own parameter list; the
 		// implicit setter 'value' parameter keeps the leading slot
-		gmt::Ref<IndexatorSymbol> indexator = lookup_symbol<IndexatorSymbol>(parent_node);
+		gmt::Ref<IndexatorSymbol> indexator = lookup_symbol<IndexatorSymbol>(parentNode);
 		if (!indexator.is_null())
 		{
-			for (const gmt::Ref<ParameterSymbol>& index_parameter : indexator->get_parameters())
-				symbol->on_symbol_declared(index_parameter);
+			for (const gmt::Ref<ParameterSymbol>& indexParameter : indexator->get_parameters())
+				symbol->on_symbol_declared(indexParameter);
 		}
 	}
 	else
 	{
-		gmt::Ref<PropertySymbol> property = lookup_symbol<PropertySymbol>(parent_node);
+		gmt::Ref<PropertySymbol> property = lookup_symbol<PropertySymbol>(parentNode);
 		if (!property.is_null() && node->get_keyword().get_type() == TokenType::GetKeyword)
 			symbol->set_return_type(property->get_return_type());
 	}
@@ -625,11 +625,11 @@ void TypeBinder::visit_accessor_declaration(const AccessorDeclarationSyntax* nod
 
 void TypeBinder::visit_variable_statement(const VariableStatementSyntax* node)
 {
-	std::optional<gmt::Ref<const VariableStatementSyntax>> node_ref = ref_from(node);
-	if (!node_ref.has_value())
+	std::optional<gmt::Ref<const VariableStatementSyntax>> nodeRef = ref_from(node);
+	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<VariableSymbol> symbol = lookup_symbol<VariableSymbol>(*node_ref);
+	gmt::Ref<VariableSymbol> symbol = lookup_symbol<VariableSymbol>(*nodeRef);
 	if (symbol.is_null())
 		throw std::runtime_error("variable symbol not found");
 
@@ -649,12 +649,12 @@ void TypeBinder::visit_try_statement(const TryStatementSyntax* node)
 
 	for (const gmt::Ref<CatchClauseSyntax>& clause : node->get_catch_clauses().as_span())
 	{
-		gmt::Ref<StructSymbol> exception_type = gmt::nullref;		if (!clause->get_exception_type().is_null())
-			exception_type = resolve_type(clause->get_exception_type());
+		gmt::Ref<StructSymbol> exceptionType = gmt::nullref;		if (!clause->get_exception_type().is_null())
+			exceptionType = resolve_type(clause->get_exception_type());
 
-		gmt::Ref<VariableSymbol> catch_variable = lookup_symbol<VariableSymbol>(clause);
-		if (!catch_variable.is_null())
-			catch_variable->set_type(exception_type);
+		gmt::Ref<VariableSymbol> catchVariable = lookup_symbol<VariableSymbol>(clause);
+		if (!catchVariable.is_null())
+			catchVariable->set_type(exceptionType);
 
 		if (!clause->get_body().is_null())
 			clause->get_body().as_ptr()->accept(*this);
@@ -663,8 +663,8 @@ void TypeBinder::visit_try_statement(const TryStatementSyntax* node)
 
 void TypeBinder::visit_lambda_expression(const LambdaExpressionSyntax* node)
 {
-	std::optional<gmt::Ref<const LambdaExpressionSyntax>> node_ref = ref_from(node);
-	if (!node_ref.has_value())
+	std::optional<gmt::Ref<const LambdaExpressionSyntax>> nodeRef = ref_from(node);
+	if (!nodeRef.has_value())
 		return;
 
 	// only the signature is bound here; the body belongs to the expression
@@ -685,28 +685,28 @@ void TypeBinder::visit_lambda_expression(const LambdaExpressionSyntax* node)
 
 void TypeBinder::visit_object_creation_expression(const ObjectExpressionSyntax* node)
 {
-	std::optional<gmt::Ref<const ObjectExpressionSyntax>> node_ref = ref_from(node);
-	if (!node_ref.has_value())
+	std::optional<gmt::Ref<const ObjectExpressionSyntax>> nodeRef = ref_from(node);
+	if (!nodeRef.has_value())
 		return;
 
 	if (node->get_type().is_null())
 		return;
 
-	gmt::Ref<StructSymbol> created_type = resolve_type(node->get_type());
+	gmt::Ref<StructSymbol> createdType = resolve_type(node->get_type());
 
 	bind_expression(node->get_array_size());
 	bind_arguments(node->get_arguments());
 
-	get_symbol_table().bind_symbol<StructSymbol>(*node_ref, created_type);
+	get_symbol_table().bind_symbol<StructSymbol>(*nodeRef, createdType);
 }
 
 void TypeBinder::visit_parameter(const ParameterSyntax* node)
 {
-	std::optional<gmt::Ref<const ParameterSyntax>> node_ref = ref_from(node);
-	if (!node_ref.has_value())
+	std::optional<gmt::Ref<const ParameterSyntax>> nodeRef = ref_from(node);
+	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<ParameterSymbol> symbol = lookup_symbol<ParameterSymbol>(*node_ref);
+	gmt::Ref<ParameterSymbol> symbol = lookup_symbol<ParameterSymbol>(*nodeRef);
 	if (symbol.is_null())
 		throw std::runtime_error("parameter symbol not found");
 
@@ -716,8 +716,8 @@ void TypeBinder::visit_parameter(const ParameterSyntax* node)
 
 void TypeBinder::visit_predefined_type(const PredefinedTypeSyntax* node)
 {
-	std::optional<gmt::Ref<const PredefinedTypeSyntax>> node_ref = ref_from(node);
-	if (!node_ref.has_value())
+	std::optional<gmt::Ref<const PredefinedTypeSyntax>> nodeRef = ref_from(node);
+	if (!nodeRef.has_value())
 		return;
 
 	SymbolTable& table = get_symbol_table();
@@ -753,35 +753,35 @@ void TypeBinder::visit_predefined_type(const PredefinedTypeSyntax* node)
 		return;
 	}
 
-	get_symbol_table().bind_symbol<StructSymbol>(*node_ref, symbol);
+	get_symbol_table().bind_symbol<StructSymbol>(*nodeRef, symbol);
 }
 
 void TypeBinder::visit_identifier_name_type(const IdentifierNameTypeSyntax* node)
 {
-	std::optional<gmt::Ref<const IdentifierNameTypeSyntax>> node_ref = ref_from(node);
-	if (!node_ref.has_value())
+	std::optional<gmt::Ref<const IdentifierNameTypeSyntax>> nodeRef = ref_from(node);
+	if (!nodeRef.has_value())
 		return;
 
 	const std::wstring_view name = node->get_identifier().get_lexeme();
 
 	if (name == L"Self")
 	{
-		gmt::Ref<StructSymbol> owner_type = get_owner_type();
-		if (owner_type.is_null() || owner_type->get_kind() != SyntaxKind::StructDeclaration)
+		gmt::Ref<StructSymbol> ownerType = get_owner_type();
+		if (ownerType.is_null() || ownerType->get_kind() != SyntaxKind::StructDeclaration)
 		{
 			get_diagnostics().report_error(node->get_location(), L"'Self' can only be used inside a struct declaration");
 			return;
 		}
 
-		if (owner_type->type_parameters.empty())
+		if (ownerType->type_parameters.empty())
 		{
-			get_symbol_table().bind_symbol<StructSymbol>(*node_ref, owner_type);
+			get_symbol_table().bind_symbol<StructSymbol>(*nodeRef, ownerType);
 			return;
 		}
 
-		std::vector<gmt::Ref<StructSymbol>> arguments(owner_type->type_parameters.begin(), owner_type->type_parameters.end());
-		gmt::Ref<GenericTypeSymbol> self_type = get_symbol_table().find_or_create_generic_type(owner_type, arguments);
-		get_symbol_table().bind_symbol<StructSymbol>(*node_ref, self_type);
+		std::vector<gmt::Ref<StructSymbol>> arguments(ownerType->type_parameters.begin(), ownerType->type_parameters.end());
+		gmt::Ref<GenericTypeSymbol> selfType = get_symbol_table().find_or_create_generic_type(ownerType, arguments);
+		get_symbol_table().bind_symbol<StructSymbol>(*nodeRef, selfType);
 		return;
 	}
 
@@ -801,10 +801,10 @@ void TypeBinder::visit_identifier_name_type(const IdentifierNameTypeSyntax* node
 
 	if (symbol->get_kind() == SyntaxKind::TypeParameter)
 	{
-		gmt::Ref<TypeParameterSymbol> type_parameter = symbol.as<TypeParameterSymbol>();
-		get_symbol_table().bind_symbol<StructSymbol>(*node_ref, type_parameter);
+		gmt::Ref<TypeParameterSymbol> typeParameter = symbol.as<TypeParameterSymbol>();
+		get_symbol_table().bind_symbol<StructSymbol>(*nodeRef, typeParameter);
 
-		if (!is_symbol_accessible(type_parameter, get_symbol_table().lookup_node(type_parameter), *node_ref))
+		if (!is_symbol_accessible(typeParameter, get_symbol_table().lookup_node(typeParameter), *nodeRef))
 			get_diagnostics().report_error(node->get_location(), L"Symbol inaccessible");
 
 		return;
@@ -816,10 +816,10 @@ void TypeBinder::visit_identifier_name_type(const IdentifierNameTypeSyntax* node
 		return;
 	}
 
-	gmt::Ref<StructSymbol> type_symbol = symbol.as<StructSymbol>();
-	get_symbol_table().bind_symbol<StructSymbol>(*node_ref, type_symbol);
+	gmt::Ref<StructSymbol> typeSymbol = symbol.as<StructSymbol>();
+	get_symbol_table().bind_symbol<StructSymbol>(*nodeRef, typeSymbol);
 
-	if (!is_symbol_accessible(type_symbol, get_symbol_table().lookup_node(type_symbol), *node_ref))
+	if (!is_symbol_accessible(typeSymbol, get_symbol_table().lookup_node(typeSymbol), *nodeRef))
 		get_diagnostics().report_error(node->get_location(), L"Symbol inaccessible");
 }
 
@@ -837,11 +837,11 @@ gmt::Ref<NamespaceSymbol> TypeBinder::resolve_namespace_type(gmt::Ref<const Type
 	if (type->get_kind() == SyntaxKind::QualifiedNameType)
 	{
 		gmt::Ref<const QualifiedNameTypeSyntax> qualified = type.as<QualifiedNameTypeSyntax>();
-		gmt::Ref<NamespaceSymbol> parent_namespace = resolve_namespace_type(qualified->get_left());
-		if (parent_namespace.is_null())
+		gmt::Ref<NamespaceSymbol> parentNamespace = resolve_namespace_type(qualified->get_left());
+		if (parentNamespace.is_null())
 			return gmt::nullref;
 
-		return parent_namespace->lookup(qualified->get_identifier().get_lexeme());
+		return parentNamespace->lookup(qualified->get_identifier().get_lexeme());
 	}
 
 	return gmt::nullref;
@@ -849,18 +849,18 @@ gmt::Ref<NamespaceSymbol> TypeBinder::resolve_namespace_type(gmt::Ref<const Type
 
 void TypeBinder::visit_qualified_name_type(const QualifiedNameTypeSyntax* node)
 {
-	std::optional<gmt::Ref<const QualifiedNameTypeSyntax>> node_ref = ref_from(node);
-	if (!node_ref.has_value())
+	std::optional<gmt::Ref<const QualifiedNameTypeSyntax>> nodeRef = ref_from(node);
+	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<NamespaceSymbol> namespace_symbol = resolve_namespace_type(node->get_left());
-	if (namespace_symbol.is_null())
+	gmt::Ref<NamespaceSymbol> namespaceSymbol = resolve_namespace_type(node->get_left());
+	if (namespaceSymbol.is_null())
 	{
 		get_diagnostics().report_error(node->get_location(), L"Left side of qualified type name must be a namespace");
 		return;
 	}
 
-	for (const gmt::Ref<SyntaxSymbol>& member : namespace_symbol->members)
+	for (const gmt::Ref<SyntaxSymbol>& member : namespaceSymbol->members)
 	{
 		if (member.is_null() || member->get_name() != node->get_identifier().get_lexeme())
 			continue;
@@ -868,7 +868,7 @@ void TypeBinder::visit_qualified_name_type(const QualifiedNameTypeSyntax* node)
 		if (!member->is_type())
 			continue;
 
-		get_symbol_table().bind_symbol<StructSymbol>(*node_ref, member.as<StructSymbol>());
+		get_symbol_table().bind_symbol<StructSymbol>(*nodeRef, member.as<StructSymbol>());
 		return;
 	}
 
@@ -877,8 +877,8 @@ void TypeBinder::visit_qualified_name_type(const QualifiedNameTypeSyntax* node)
 
 void TypeBinder::visit_array_type(const ArrayTypeSyntax* node)
 {
-	std::optional<gmt::Ref<const ArrayTypeSyntax>> node_ref = ref_from(node);
-	if (!node_ref.has_value())
+	std::optional<gmt::Ref<const ArrayTypeSyntax>> nodeRef = ref_from(node);
+	if (!nodeRef.has_value())
 		return;
 
 	gmt::Ref<StructSymbol> underlaying = resolve_type(node->get_underlaying_type());
@@ -886,36 +886,35 @@ void TypeBinder::visit_array_type(const ArrayTypeSyntax* node)
 		return;
 
 	// the registry makes every reoccurring 'int[]' share one symbol
-	m_factory.create_array_type(*node_ref, underlaying);
+	m_factory.create_array_type(*nodeRef, underlaying);
 }
 
 void TypeBinder::visit_nullable_type(const NullableTypeSyntax* node)
 {
-	std::optional<gmt::Ref<const NullableTypeSyntax>> node_ref = ref_from(node);
-	if (!node_ref.has_value())
+	std::optional<gmt::Ref<const NullableTypeSyntax>> nodeRef = ref_from(node);
+	if (!nodeRef.has_value())
 		return;
 
-	// TODO : there is no nullable type symbol yet
 	gmt::Ref<StructSymbol> underlaying = resolve_type(node->get_underlaying_type());
 	if (!underlaying.is_null())
-		get_symbol_table().bind_symbol<StructSymbol>(*node_ref, underlaying);
+		m_factory.create_nullable_type(*nodeRef, underlaying);
 }
 
-bool TypeBinder::type_implements_interface(gmt::Ref<StructSymbol> type_argument, gmt::Ref<InterfaceSymbol> interface_symbol)
+bool TypeBinder::type_implements_interface(gmt::Ref<StructSymbol> typeArgument, gmt::Ref<InterfaceSymbol> interfaceSymbol)
 {
-	if (type_argument.is_null() || interface_symbol.is_null())
+	if (typeArgument.is_null() || interfaceSymbol.is_null())
 		return false;
 
-	for (const gmt::Ref<StructSymbol>& interface_type : type_argument->interfaces)
+	for (const gmt::Ref<StructSymbol>& interfaceType : typeArgument->interfaces)
 	{
-		if (interface_type.is_null())
+		if (interfaceType.is_null())
 			continue;
 
-		if (interface_type == interface_symbol)
+		if (interfaceType == interfaceSymbol)
 			return true;
 
-		if (interface_type->get_kind() == SyntaxKind::GenericType &&
-			interface_type.as<GenericTypeSymbol>()->get_underlaying_type() == interface_symbol)
+		if (interfaceType->get_kind() == SyntaxKind::GenericType &&
+			interfaceType.as<GenericTypeSymbol>()->get_underlaying_type() == interfaceSymbol)
 		{
 			return true;
 		}
@@ -924,24 +923,24 @@ bool TypeBinder::type_implements_interface(gmt::Ref<StructSymbol> type_argument,
 	return false;
 }
 
-bool TypeBinder::type_satisfies_constraint(gmt::Ref<StructSymbol> type_argument, gmt::Ref<StructSymbol> constraint)
+bool TypeBinder::type_satisfies_constraint(gmt::Ref<StructSymbol> typeArgument, gmt::Ref<StructSymbol> constraint)
 {
-	if (type_argument.is_null() || constraint.is_null())
+	if (typeArgument.is_null() || constraint.is_null())
 		return false;
 
 	if (constraint->get_kind() == SyntaxKind::InterfaceDeclaration)
-		return type_implements_interface(type_argument, constraint.as<InterfaceSymbol>());
+		return type_implements_interface(typeArgument, constraint.as<InterfaceSymbol>());
 
 	if (constraint->is_type())
-		return type_argument == constraint;
+		return typeArgument == constraint;
 
 	return false;
 }
 
 void TypeBinder::visit_generic_type(const GenericTypeSyntax* node)
 {
-	std::optional<gmt::Ref<const GenericTypeSyntax>> node_ref = ref_from(node);
-	if (!node_ref.has_value())
+	std::optional<gmt::Ref<const GenericTypeSyntax>> nodeRef = ref_from(node);
+	if (!nodeRef.has_value())
 		return;
 
 	gmt::Ref<StructSymbol> underlaying = resolve_type(node->get_underlaying_type());
@@ -954,26 +953,26 @@ void TypeBinder::visit_generic_type(const GenericTypeSyntax* node)
 		return;
 	}
 
-	const auto argument_nodes = node->get_type_arguments()->get_types().as_span();
-	const std::size_t argument_count = argument_nodes.size();
-	const std::size_t parameter_count = underlaying->type_parameters.size();
+	const auto argumentNodes = node->get_type_arguments()->get_types().as_span();
+	const std::size_t argumentCount = argumentNodes.size();
+	const std::size_t parameterCount = underlaying->type_parameters.size();
 
-	if (argument_count != parameter_count)
+	if (argumentCount != parameterCount)
 	{
-		get_diagnostics().report_error(node->get_location(), L"Type requires " + std::to_wstring(parameter_count) + L" type arguments, but got " + std::to_wstring(argument_count));
+		get_diagnostics().report_error(node->get_location(), L"Type requires " + std::to_wstring(parameterCount) + L" type arguments, but got " + std::to_wstring(argumentCount));
 		return;
 	}
 
-	std::vector<gmt::Ref<StructSymbol>> arguments(argument_count, gmt::nullref);
-	for (std::size_t i = 0; i < argument_count; ++i)
-		arguments[i] = resolve_type(argument_nodes[i]);
+	std::vector<gmt::Ref<StructSymbol>> arguments(argumentCount, gmt::nullref);
+	for (std::size_t i = 0; i < argumentCount; ++i)
+		arguments[i] = resolve_type(argumentNodes[i]);
 
 	// Resolve fully before creation so the registry never sees partially substituted symbols.
 	// Refs are shared, so mutating one would corrupt every occurrence of the same shape.
 	gmt::Ref<GenericTypeSymbol> symbol = get_symbol_table().find_or_create_generic_type(underlaying, arguments);
-	get_symbol_table().bind_symbol<StructSymbol>(*node_ref, symbol);
+	get_symbol_table().bind_symbol<StructSymbol>(*nodeRef, symbol);
 
-	for (std::size_t i = 0; i < argument_count; ++i)
+	for (std::size_t i = 0; i < argumentCount; ++i)
 	{
 		gmt::Ref<StructSymbol> argument = arguments[i];
 		if (argument.is_null())
@@ -982,15 +981,15 @@ void TypeBinder::visit_generic_type(const GenericTypeSyntax* node)
 			continue;
 		}
 
-		gmt::Ref<TypeParameterSymbol> type_parameter = underlaying->type_parameters[i];
-		for (const gmt::Ref<StructSymbol>& constraint : type_parameter->get_constraints())
+		gmt::Ref<TypeParameterSymbol> typeParameter = underlaying->type_parameters[i];
+		for (const gmt::Ref<StructSymbol>& constraint : typeParameter->get_constraints())
 		{
 			if (constraint.is_null())
 				continue;
 
 			if (!type_satisfies_constraint(argument, constraint))
 			{
-				get_diagnostics().report_error(node->get_location(), L"Type argument '" + std::wstring(argument->get_name()) + L"' does not satisfy the constraint '" + std::wstring(constraint->get_name()) + L"' on type parameter '" + std::wstring(type_parameter->get_name()) + L"'");
+				get_diagnostics().report_error(node->get_location(), L"Type argument '" + std::wstring(argument->get_name()) + L"' does not satisfy the constraint '" + std::wstring(constraint->get_name()) + L"' on type parameter '" + std::wstring(typeParameter->get_name()) + L"'");
 			}
 		}
 	}

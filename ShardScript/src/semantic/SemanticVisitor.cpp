@@ -83,17 +83,13 @@ void SemanticVisitor::pop_scope()
 	m_scopeStack.pop();
 }
 
-// Top-level scopes carry a nullref owner (the compilation unit is not a symbol),
-// so child registration falls back to the scope's namespace: members of a unit
-// with a namespace directive populate that namespace, unnamespaced members
-// stay bound to their compilation unit and are registered nowhere.
 void SemanticVisitor::declare(gmt::Ref<SyntaxSymbol> symbol)
 {
 	SemanticScope* scope = get_current_scope();
 	scope->declare_symbol(symbol);
 
 	gmt::Ref<SyntaxSymbol> owner = scope->get_owner();
-	if (owner.is_null())
+	if (owner.is_null()) // Top-level scopes carry a nullref owner (the compilation unit is not a symbol)
 		owner = scope->get_namespace();
 
 	if (!owner.is_null())
@@ -184,7 +180,10 @@ bool SemanticVisitor::is_symbol_accessible(gmt::Ref<SyntaxSymbol> symbol, gmt::R
 
 	gmt::Ref<const SyntaxSymbol> parent = symbol->get_parent();
 	if (parent.is_null())
-		throw std::runtime_error("cannot resolve symbol without parent");
+	{
+		// unit-level symbols are only reachable from within the same unit
+		return true;
+	}
 
 	if (parent->get_kind() == SyntaxKind::NamespaceDirective || parent->get_kind() == SyntaxKind::CompilationUnit)
 	{

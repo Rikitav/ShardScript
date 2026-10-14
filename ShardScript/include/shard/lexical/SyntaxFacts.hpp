@@ -50,6 +50,6 @@ namespace shard
 	SHARD_API bool is_linked_expression_node(shard::SyntaxKind kind);
 
 	SHARD_API bool is_overloadable_operator(shard::TokenType type);
-	SHARD_API std::wstring get_operator_method_name(shard::TokenType type);
-	SHARD_API shard::TokenType get_operator_type(const std::wstring& name);
+	SHARD_API std::wstring_view get_operator_method_name(shard::TokenType type);
+	SHARD_API shard::TokenType get_operator_type(const std::wstring_view name);
 }

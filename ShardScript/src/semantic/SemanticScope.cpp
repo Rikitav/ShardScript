@@ -1,8 +1,28 @@
 #include <shard/semantic/SemanticScope.hpp>
 
+#include <shard/parsing/SyntaxKind.hpp>
+
 #include <stdexcept>
 
 using namespace shard;
+
+namespace
+{
+	bool is_overloadable_kind(const SyntaxKind kind)
+	{
+		switch (kind)
+		{
+			case SyntaxKind::FunctionDeclaration:
+			case SyntaxKind::ConstructorDeclaration:
+			case SyntaxKind::AccessorDeclaration:
+			case SyntaxKind::OperatorDeclaration:
+				return true;
+
+			default:
+				return false;
+		}
+	}
+}
 
 SemanticScope::SemanticScope(gmt::Ref<SyntaxSymbol> owner, SemanticScope* parent)
 	: m_parent(parent), m_owner(owner)
@@ -74,6 +94,24 @@ gmt::Ref<SyntaxSymbol> SemanticScope::lookup(std::wstring_view name) const
 	return gmt::nullref;
 }
 
+std::span<const gmt::Ref<SyntaxSymbol>> SemanticScope::find_overloads(std::wstring_view name) const
+{
+	for (const SemanticScope* scope = this; scope != nullptr; scope = scope->m_parent)
+	{
+		const auto symbol = scope->m_symbols.find(name);
+		if (symbol == scope->m_symbols.end())
+			continue;
+
+		const auto overloads = scope->m_overloads.find(name);
+		if (overloads == scope->m_overloads.end())
+			return {};
+
+		return overloads->second;
+	}
+
+	return {};
+}
+
 void SemanticScope::declare_symbol(gmt::Ref<SyntaxSymbol> symbol)
 {
 	if (symbol.is_null())
@@ -82,8 +120,24 @@ void SemanticScope::declare_symbol(gmt::Ref<SyntaxSymbol> symbol)
 	const std::wstring_view name = symbol->get_name();
 	const auto find = m_symbols.find(name);
 
-	if (find != m_symbols.end() && find->second != symbol)
-		throw std::runtime_error("symbol already defined: " + std::string(name.begin(), name.end()));
+	if (find == m_symbols.end())
+	{
+		m_symbols.emplace(name, symbol);
+		return;
+	}
 
-	m_symbols.emplace(name, symbol);
+	if (find->second == symbol)
+		return;
+
+	// functions, constructors, operators and accessors may overload each
+	// other within the same scope; the name keeps resolving to the first
+	// declared symbol and the rest are reachable through find_overloads
+	bool bothOverloadable = is_overloadable_kind(find->second->get_kind()) && is_overloadable_kind(symbol->get_kind());
+	if (bothOverloadable)
+	{
+		m_overloads[name].push_back(symbol);
+		return;
+	}
+
+	throw std::runtime_error("symbol already defined: " + std::string(name.begin(), name.end()));
 }

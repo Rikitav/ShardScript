@@ -560,7 +560,7 @@ bool shard::is_reserved_identifier(shard::TokenType type)
 	}
 }
 
-std::wstring shard::get_operator_method_name(shard::TokenType type)
+std::wstring_view shard::get_operator_method_name(shard::TokenType type)
 {
 	switch (type)
 	{
@@ -606,7 +606,7 @@ bool shard::is_overloadable_operator(shard::TokenType type)
 	return !get_operator_method_name(type).empty();
 }
 
-shard::TokenType shard::get_operator_type(const std::wstring& name)
+shard::TokenType shard::get_operator_type(const std::wstring_view name)
 {
 	if (name == L"AddOperator") return TokenType::AddOperator;
 	if (name == L"SubOperator") return TokenType::SubOperator;
