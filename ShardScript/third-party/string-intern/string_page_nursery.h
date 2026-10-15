@@ -43,22 +43,47 @@ public:
     
     class Iterator final {
     public:        
-        Iterator(const Iterator& rhs) noexcept : cols_(rhs.cols_), row_(rhs.row_), start_(rhs.start_), pos_(rhs.pos_) {}
-        Iterator& operator=(const Iterator& rhs) noexcept { cols_ = rhs.cols_; row_ = rhs.row_; start_ = rhs.start_; pos_ = rhs.pos_; return *this; }
+        Iterator(const Iterator& rhs) noexcept :
+            cols_(rhs.cols_),
+            row_(rhs.row_),
+            start_(rhs.start_),
+            pos_(rhs.pos_)
+        { }
+
+        Iterator& operator=(const Iterator& rhs) noexcept
+        {
+            cols_ = rhs.cols_;
+            row_ = rhs.row_;
+            start_ = rhs.start_;
+            pos_ = rhs.pos_;
+            return *this;
+        }
         
-        bool operator!() const noexcept { return pos_ >= (start_ + cols_); }
+        bool operator!() const noexcept
+        {
+            return pos_ >= (start_ + cols_);
+        }
         
     private:
         friend StringPageNursery;
         
         Iterator() noexcept : Iterator(0, 0, 0) {}
-        Iterator(colcount_t cols, rowcount_t row, colcount_t start) noexcept : cols_(cols), row_(row), start_(start), pos_(start) {}
-        rowcount_t operator++(int) noexcept { return pos_++; }        
+        Iterator(colcount_t cols, rowcount_t row, colcount_t start) noexcept :
+            cols_(cols),
+            row_(row),
+            start_(start),
+            pos_(start)
+        { }
+
+        rowcount_t operator++(int) noexcept
+        {
+            return pos_++;
+        }        
         
+        colcount_t cols_;
+        rowcount_t row_;
         colcount_t start_;
         colcount_t pos_;
-        rowcount_t row_;
-        colcount_t cols_;
     };
     
     using NewPageFunc = std::function<StringPagePtr(rowcount_t, StringPage::entrycount_t, StringPage::entrysize_t)>;

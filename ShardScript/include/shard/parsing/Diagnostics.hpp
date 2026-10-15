@@ -7,9 +7,13 @@
 #include <vector>
 #include <string>
 #include <span>
+#include <fstream>
+#include <unordered_map>
 
 namespace shard
 {
+	using SourceFileCache = std::unordered_map<std::wstring_view, std::wifstream>;
+
 	enum class DiagnosticSeverity
 	{
 		Info,
@@ -40,6 +44,9 @@ namespace shard
 	{
 		std::vector<Diagnostic> m_diagnostics;
 		bool m_anyError;
+		bool m_anyWarns;
+
+		void write_diagnostic_pretty(std::wostream& out, const Diagnostic& diagnostic, SourceFileCache& sourceFiles) const;
 
 	public:
 		DiagnosticsContext() = default;
@@ -61,7 +68,12 @@ namespace shard
 		
 		std::span<const Diagnostic> get_diagnostics() const;
 
+		bool has_errors() const;
+		bool has_warns() const;
+
 		void write_diagnostics(std::wostream& out) const;
+		void write_diagnostics_pretty(std::wostream& out) const;
+		void write_diagnostic_pretty(std::wostream& out, const Diagnostic& diagnostic) const;
 		void reset();
 	};
 

@@ -1,0 +1,4 @@
+#define SHARD_API
+#define SHARD_API __declspec(dllexport)
+#define SHARD_API __declspec(dllimport)
+#define SHARD_API __attribute__((visibility("default")))

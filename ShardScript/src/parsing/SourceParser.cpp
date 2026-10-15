@@ -132,9 +132,9 @@ void SourceParser::RecoveryContext::Guard::set_state(ParseState state)
 }
 
 SourceParser::SourceParser(SyntaxTree& syntaxTree, DiagnosticsContext& diagnostics) :
-	m_recovery(),
 	m_syntaxTree(syntaxTree),
-	m_diagnostics(diagnostics)
+	m_diagnostics(diagnostics),
+	m_recovery()
 { }
 
 SourceParser::~SourceParser() = default;
@@ -493,6 +493,9 @@ gmt::Ref<MemberDeclarationSyntax> SourceParser::read_member_declaration(SourcePr
 							depth -= (scanType == TokenType::RightShiftOperator) ? 2 : 1;
 							break;
 						}
+
+						default:
+							break;
 					}
 
 					if (scanType != TokenType::Identifier &&
@@ -2004,6 +2007,9 @@ gmt::Ref<StatementSyntax> SourceParser::read_statement(SourceProvider& reader, g
 
 		case TokenType::ForKeyword:
 			return read_for_in_statement(reader, parent);
+
+		default:
+			break;
 	}
 
 	// variable declarations 'name: Type = expr' / 'name := expr' - two-token lookahead

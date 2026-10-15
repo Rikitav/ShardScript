@@ -376,6 +376,9 @@ bool shard::is_type(shard::TokenType type, shard::TokenType peekType)
 
 		case TokenType::DelegateKeyword:
 			return true;
+
+		default:
+			break;
 	}
 
 	return false;
