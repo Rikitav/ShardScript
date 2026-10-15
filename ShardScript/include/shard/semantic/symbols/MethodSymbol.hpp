@@ -2,6 +2,7 @@
 #include <shard/Definitions.hpp>
 
 #include <shard/parsing/SyntaxKind.hpp>
+#include <shard/semantic/MethodEffectSummary.hpp>
 #include <shard/semantic/symbols/MemberSymbol.hpp>
 
 #include <gmt/Arena.hpp>
@@ -37,6 +38,9 @@ namespace shard
 		bool m_isAbstract = false;
 		bool m_isAsync = false;
 
+		MethodEffectSummary m_effectSummary;
+		bool m_effectsComputed = false;
+
 	public:
 		MethodSymbol(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent);
 		MethodSymbol(gmt::StringReference name, gmt::Ref<SyntaxSymbol> parent);
@@ -68,6 +72,12 @@ namespace shard
 
 		bool get_is_async() const;
 		void set_is_async(bool is_async);
+
+		MethodEffectSummary& get_effect_summary();
+		const MethodEffectSummary& get_effect_summary() const;
+
+		bool get_effects_computed() const;
+		void set_effects_computed(bool effects_computed);
 
 		bool is_method() const override;
 		void on_symbol_declared(gmt::Ref<SyntaxSymbol> symbol) override;

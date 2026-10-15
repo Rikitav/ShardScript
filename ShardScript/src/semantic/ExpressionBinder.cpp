@@ -472,7 +472,7 @@ void ExpressionBinder::visit_variable_statement(const VariableStatementSyntax* n
 		get_diagnostics().report_error(node->get_location(), gmt::concat(L"Type mismatch: expected '", model.get_type_display_name(symbolType), L"' but got '", model.get_type_display_name(expressionType), L"'"));
 }
 
-gmt::Ref<StructSymbol> ExpressionBinder::find_target_return_type()
+gmt::Ref<SyntaxSymbol> ExpressionBinder::find_target_return_owner()
 {
 	for (SemanticScope* scope = get_current_scope(); scope != nullptr; scope = scope->get_parent())
 	{
@@ -486,20 +486,10 @@ gmt::Ref<StructSymbol> ExpressionBinder::find_target_return_type()
 			case SyntaxKind::OperatorDeclaration:
 			case SyntaxKind::ConstructorDeclaration:
 			case SyntaxKind::AccessorDeclaration:
-			{
-				return owner.as<MethodSymbol>()->get_return_type();
-			}
-
 			case SyntaxKind::FieldDeclaration:
-			{
-				return owner.as<FieldSymbol>()->get_return_type();
-			}
-
 			case SyntaxKind::PropertyDeclaration:
 			case SyntaxKind::IndexatorDeclaration:
-			{
-				return owner.as<PropertySymbol>()->get_return_type();
-			}
+				return owner;
 
 			default:
 				break;
@@ -507,6 +497,57 @@ gmt::Ref<StructSymbol> ExpressionBinder::find_target_return_type()
 	}
 
 	return gmt::nullref;
+}
+
+void ExpressionBinder::apply_inferred_return_type(gmt::Ref<SyntaxSymbol> owner, gmt::Ref<StructSymbol> type)
+{
+	switch (owner->get_kind())
+	{
+		case SyntaxKind::FunctionDeclaration:
+		case SyntaxKind::OperatorDeclaration:
+		case SyntaxKind::ConstructorDeclaration:
+		case SyntaxKind::AccessorDeclaration:
+			owner.as<MethodSymbol>()->set_return_type(type);
+			break;
+
+		case SyntaxKind::FieldDeclaration:
+			owner.as<FieldSymbol>()->set_return_type(type);
+			break;
+
+		case SyntaxKind::PropertyDeclaration:
+		case SyntaxKind::IndexatorDeclaration:
+			owner.as<PropertySymbol>()->set_return_type(type);
+			break;
+
+		default:
+			break;
+	}
+}
+
+gmt::Ref<StructSymbol> ExpressionBinder::find_target_return_type()
+{
+	gmt::Ref<SyntaxSymbol> owner = find_target_return_owner();
+	if (owner.is_null())
+		return gmt::nullref;
+
+	switch (owner->get_kind())
+	{
+		case SyntaxKind::FunctionDeclaration:
+		case SyntaxKind::OperatorDeclaration:
+		case SyntaxKind::ConstructorDeclaration:
+		case SyntaxKind::AccessorDeclaration:
+			return owner.as<MethodSymbol>()->get_return_type();
+
+		case SyntaxKind::FieldDeclaration:
+			return owner.as<FieldSymbol>()->get_return_type();
+
+		case SyntaxKind::PropertyDeclaration:
+		case SyntaxKind::IndexatorDeclaration:
+			return owner.as<PropertySymbol>()->get_return_type();
+
+		default:
+			return gmt::nullref;
+	}
 }
 
 gmt::Ref<StructSymbol> ExpressionBinder::resolve_left_denotation()
@@ -758,11 +799,27 @@ void ExpressionBinder::visit_statements_block(const StatementsBlockSyntax* node)
 void ExpressionBinder::visit_arrow_clause(const ArrowClauseSyntax* node)
 {
 	gmt::Ref<StructSymbol> returnType = find_target_return_type();
-	if (returnType.is_null())
-		return;
 
 	visit_expression(node->get_expression());
 
+	// arrow bodies without an explicit return type infer it from the expression
+	if (returnType.is_null())
+	{
+		gmt::Ref<StructSymbol> inferredType = get_expression_type(node->get_expression());
+		if (inferredType.is_null())
+		{
+			get_diagnostics().report_error(node->get_location(), L"Expression body return type could not be determined");
+			return;
+		}
+
+		gmt::Ref<SyntaxSymbol> owner = find_target_return_owner();
+		if (!owner.is_null())
+			apply_inferred_return_type(owner, inferredType);
+
+		return;
+	}
+
+	// a void-returning arrow body silently drops the expression value
 	if (returnType == get_symbol_table().get_void_primitive())
 		return;
 

@@ -89,6 +89,26 @@ void MethodSymbol::set_is_async(bool isAsync)
 	m_isAsync = isAsync;
 }
 
+MethodEffectSummary& MethodSymbol::get_effect_summary()
+{
+	return m_effectSummary;
+}
+
+const MethodEffectSummary& MethodSymbol::get_effect_summary() const
+{
+	return m_effectSummary;
+}
+
+bool MethodSymbol::get_effects_computed() const
+{
+	return m_effectsComputed;
+}
+
+void MethodSymbol::set_effects_computed(bool effectsComputed)
+{
+	m_effectsComputed = effectsComputed;
+}
+
 bool MethodSymbol::is_method() const
 {
 	return true;
