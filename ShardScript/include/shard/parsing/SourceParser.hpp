@@ -138,7 +138,6 @@ namespace shard
 		static constexpr int max_block_depth = 256;
 		static constexpr int max_expression_depth = 256;
 
-
 		SyntaxTree& m_syntaxTree;
 		DiagnosticsContext& m_diagnostics;
 		RecoveryContext m_recovery;
