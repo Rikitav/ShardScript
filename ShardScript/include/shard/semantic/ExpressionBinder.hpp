@@ -87,6 +87,8 @@ namespace shard
 		void set_expression_type(gmt::Ref<const ExpressionSyntax> expression, gmt::Ref<StructSymbol> type);
 		gmt::Ref<StructSymbol> get_expression_type(gmt::Ref<const ExpressionSyntax> expression);
 		gmt::Ref<StructSymbol> find_target_return_type();
+		gmt::Ref<SyntaxSymbol> find_target_return_owner();
+		void apply_inferred_return_type(gmt::Ref<SyntaxSymbol> owner, gmt::Ref<StructSymbol> type);
 		gmt::Ref<StructSymbol> resolve_left_denotation();
 		bool get_is_static_context(gmt::Ref<const ExpressionSyntax> expression) const;
 
