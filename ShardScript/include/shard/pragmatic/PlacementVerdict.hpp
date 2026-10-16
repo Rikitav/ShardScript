@@ -5,10 +5,11 @@
 
 namespace shard
 {
-	// StackReturn / Scalar / Promote / Error are reserved by the spec (§1.4) for later tiers
 	enum class PlacementVerdict
 	{
 		Stack,
+		StackReturn, // STACK* : fresh concrete value returned to a caller frame slot
+		Scalar,      // NoEscape + identity-free, dematerialized into locals
 		Heap
 	};
 

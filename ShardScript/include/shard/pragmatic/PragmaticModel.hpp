@@ -2,6 +2,7 @@
 #include <shard/Definitions.hpp>
 
 #include <shard/pragmatic/EscapeChannels.hpp>
+#include <shard/pragmatic/EscapeSummary.hpp>
 #include <shard/pragmatic/PlacementVerdict.hpp>
 
 #include <shard/semantic/SyntaxSymbol.hpp>
@@ -20,6 +21,7 @@ namespace shard
 	class SHARD_API PragmaticModel
 	{
 		// FrameLayout is the intended consumer of the per-method local levels
+		std::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary> m_summaries;
 		std::unordered_map<gmt::Ref<MethodSymbol>, std::unordered_map<gmt::Ref<SyntaxSymbol>, EscapeLevel>> m_methodLocals;
 		std::unordered_map<gmt::Ref<const ExpressionSyntax>, AllocationSiteVerdict> m_allocationSites;
 
@@ -37,5 +39,10 @@ namespace shard
 
 		void set_local_level(gmt::Ref<MethodSymbol> method, gmt::Ref<SyntaxSymbol> local, EscapeLevel level);
 		EscapeLevel get_local_level(gmt::Ref<MethodSymbol> method, gmt::Ref<SyntaxSymbol> local) const;
+
+		void set_summary(gmt::Ref<MethodSymbol> method, const EscapeSummary& summary);
+		EscapeSummary get_summary(gmt::Ref<MethodSymbol> method) const;
+
+		const std::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& get_summaries() const;
 	};
 }
