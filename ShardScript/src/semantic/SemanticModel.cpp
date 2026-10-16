@@ -13,6 +13,7 @@
 #include <shard/semantic/symbols/NullableTypeSymbol.hpp>
 #include <shard/semantic/symbols/ParameterSymbol.hpp>
 #include <shard/semantic/symbols/PropertySymbol.hpp>
+#include <shard/semantic/symbols/StructSymbol.hpp>
 #include <shard/semantic/symbols/TypeParameterSymbol.hpp>
 
 #include <gmt/Concat.hpp>
@@ -394,6 +395,25 @@ bool SemanticModel::is_primitive_type(gmt::Ref<const StructSymbol> type) const
 		|| type == m_table.get_string_primitive()
 		|| type == m_table.get_array_primitive()
 		|| type == m_table.get_nint_primitive();
+}
+
+bool SemanticModel::is_task_or_task_like(gmt::Ref<StructSymbol> type)
+{
+	if (type.is_null())
+		return false;
+
+	if (type->get_full_name() == L"async.Task")
+		return true;
+
+	gmt::Ref<GenericTypeSymbol> generic;
+	if (type->get_kind() == SyntaxKind::GenericType)
+		generic = type.as<GenericTypeSymbol>();
+
+	if (generic.is_null())
+		return false;
+
+	gmt::Ref<StructSymbol> underlaying = generic->get_underlaying_type();
+	return !underlaying.is_null() && underlaying->get_full_name() == L"async.ValueTask";
 }
 
 gmt::Ref<StructSymbol> SemanticModel::substitute_type(gmt::Ref<StructSymbol> type, gmt::Ref<GenericTypeSymbol> within)
