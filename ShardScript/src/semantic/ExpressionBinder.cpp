@@ -151,7 +151,7 @@ void ExpressionBinder::visit_type_declaration(gmt::Ref<const TypeDeclarationSynt
 	{
 		gmt::Ref<SyntaxSymbol> memberSymbol = get_symbol_table().lookup_symbol(member);
 		if (!memberSymbol.is_null())
-			declare(memberSymbol);
+			get_current_scope()->declare_symbol(memberSymbol);
 	}
 
 	for (const gmt::Ref<MemberDeclarationSyntax>& member : node->get_members().as_span())
@@ -190,7 +190,7 @@ void ExpressionBinder::visit_enum_declaration(const EnumDeclarationSyntax* node)
 	{
 		gmt::Ref<SyntaxSymbol> fieldSymbol = get_symbol_table().lookup_symbol(field);
 		if (!fieldSymbol.is_null())
-			declare(fieldSymbol);
+			get_current_scope()->declare_symbol(fieldSymbol);
 	}
 
 	pop_scope();
@@ -262,7 +262,10 @@ void ExpressionBinder::visit_function_declaration(const FunctionDeclarationSynta
 	for (gmt::Ref<ParameterSymbol> parameter : symbol->get_parameters())
 		scope->declare_symbol(parameter);
 
-	node->get_body().as_ptr()->accept(*this);
+	// bodyless members (interface methods) have nothing to bind
+	if (!node->get_body().is_null())
+		node->get_body().as_ptr()->accept(*this);
+
 	pop_scope();
 }
 
@@ -295,6 +298,12 @@ void ExpressionBinder::visit_operator_declaration(const OperatorDeclarationSynta
 
 	for (gmt::Ref<ParameterSymbol> parameter : parameters)
 		get_current_scope()->declare_symbol(parameter);
+
+	if (node->get_body().is_null())
+	{
+		pop_scope();
+		return;
+	}
 
 	node->get_body().as_ptr()->accept(*this);
 

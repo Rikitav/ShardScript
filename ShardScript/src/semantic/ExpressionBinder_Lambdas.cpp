@@ -68,17 +68,18 @@ void ExpressionBinder::visit_lambda_expression(const LambdaExpressionSyntax* nod
 	// infer the return type from the bound body: arrow clauses carry the
 	// value directly, statement bodies return through return statements
 	gmt::Ref<StructSymbol> returnType = gmt::nullref;
-	if (node->get_body()->get_kind() == SyntaxKind::ArrowClause)
+	gmt::Ref<const BlockSyntax> body = node->get_body();
+	if (!body.is_null() && body->get_kind() == SyntaxKind::ArrowClause)
 	{
-		gmt::Ref<const ExpressionSyntax> arrowExpression = node->get_body().as<ArrowClauseSyntax>()->get_expression();
+		gmt::Ref<const ExpressionSyntax> arrowExpression = body.as<ArrowClauseSyntax>()->get_expression();
 		if (!arrowExpression.is_null())
 			returnType = get_expression_type(arrowExpression);
 	}
-	else
+	else if (!body.is_null())
 	{
 		std::vector<gmt::Ref<const ExpressionSyntax>> returns;
 		return_expression_collector collector(returns);
-		node->get_body().as_ptr()->accept(collector);
+		body.as_ptr()->accept(collector);
 
 		for (gmt::Ref<const ExpressionSyntax> expression : returns)
 		{
