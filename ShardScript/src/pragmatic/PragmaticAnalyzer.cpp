@@ -14,6 +14,10 @@ PragmaticAnalyzer::PragmaticAnalyzer(DiagnosticsContext& diagnostics)
 
 void PragmaticAnalyzer::analyze(SyntaxTree& tree, SemanticModel& model, PragmaticModel& pragmatic)
 {
+	// TODO: port AsyncHoistingPass + AsyncAnalysisPass here (before escape
+	// analysis, so it sees awaits normalized to statement level); emission
+	// stays with the future translation layer
+
 	EscapeAnalyzer escapeAnalyzer(model, pragmatic, m_diagnostics);
 	escapeAnalyzer.analyze(tree);
 }

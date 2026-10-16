@@ -2,6 +2,7 @@
 #include <shard/Definitions.hpp>
 
 #include <shard/semantic/SyntaxSymbol.hpp>
+#include <shard/semantic/StandardTypes.hpp>
 #include <shard/semantic/symbols/ArrayTypeSymbol.hpp>
 #include <shard/semantic/symbols/GenericTypeSymbol.hpp>
 #include <shard/semantic/symbols/NamespaceSymbol.hpp>
@@ -13,6 +14,7 @@
 #include <gmt/Ref.hpp>
 
 #include <cstddef>
+#include <array>
 #include <unordered_map>
 #include <optional>
 #include <vector>
@@ -41,6 +43,10 @@ namespace shard
 		std::unordered_map<std::size_t, std::vector<gmt::Ref<ArrayTypeSymbol>>> m_arrayTypes;
 		std::unordered_map<std::size_t, std::vector<gmt::Ref<GenericTypeSymbol>>> m_genericTypes;
 		std::unordered_map<std::size_t, std::vector<gmt::Ref<NullableTypeSymbol>>> m_nullableTypes;
+
+		// well-known standard library slots; filled with identity stubs until
+		// the real symbols are registered through set_standard_type
+		std::array<gmt::Ref<SyntaxSymbol>, static_cast<std::size_t>(StandardTypes::Count)> m_standardTypes;
 
 	public:
 		SymbolTable();
@@ -86,6 +92,9 @@ namespace shard
 		gmt::Ref<StructSymbol> get_array_primitive() const;
 		gmt::Ref<StructSymbol> get_nint_primitive() const;
 		gmt::Ref<StructSymbol> get_byte_primitive() const;
+
+		gmt::Ref<SyntaxSymbol> get_standard_type(StandardTypes type);
+		void set_standard_type(StandardTypes type, gmt::Ref<SyntaxSymbol> symbol);
 	};
 }
 

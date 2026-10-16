@@ -894,7 +894,8 @@ gmt::Ref<StructSymbol> ExpressionBinder::analyze_qualified_invokation_expression
 		return gmt::nullref;
 	}
 
-	return substitute_type_parameters(best->get_return_type(), gmt::nullref, best, bestTypeArgs);
+	gmt::Ref<StructSymbol> type = substitute_type_parameters(best->get_return_type(), gmt::nullref, best, bestTypeArgs);
+	return wrap_async_return_type(best, type);
 }
 
 gmt::Ref<StructSymbol> ExpressionBinder::analyze_invokation_expression(const InvokationExpressionSyntax* node, gmt::Ref<StructSymbol> currentType)
@@ -943,7 +944,30 @@ gmt::Ref<StructSymbol> ExpressionBinder::analyze_invokation_expression(const Inv
 		return gmt::nullref;
 	}
 
-	return substitute_type_parameters(method->get_return_type(), genericType, method, methodTypeArgs);
+	gmt::Ref<StructSymbol> type = substitute_type_parameters(method->get_return_type(), genericType, method, methodTypeArgs);
+	return wrap_async_return_type(method, type);
+}
+
+gmt::Ref<StructSymbol> ExpressionBinder::wrap_async_return_type(gmt::Ref<MethodSymbol> method, gmt::Ref<StructSymbol> type)
+{
+	if (method.is_null() || !method->get_is_async() || type.is_null())
+		return type;
+
+	SymbolTable& table = get_symbol_table();
+
+	// async methods declare their plain result type; the Task wrapper is
+	// implied for invokations and materialized by the hoisting pass
+	if (type == table.get_void_primitive())
+	{
+		gmt::Ref<SyntaxSymbol> task = table.get_standard_type(StandardTypes::Task);
+		return task->get_kind() == SyntaxKind::StructDeclaration ? task.as<StructSymbol>() : type;
+	}
+
+	gmt::Ref<SyntaxSymbol> valueTask = table.get_standard_type(StandardTypes::ValueTask);
+	if (valueTask->get_kind() != SyntaxKind::StructDeclaration)
+		return type;
+
+	return table.find_or_create_generic_type(valueTask.as<StructSymbol>(), { type });
 }
 
 void ExpressionBinder::visit_invokation_expression(const InvokationExpressionSyntax* node)

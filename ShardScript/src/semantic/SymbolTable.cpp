@@ -240,3 +240,18 @@ gmt::Ref<StructSymbol> SymbolTable::get_byte_primitive() const
 {
 	return m_byte;
 }
+
+gmt::Ref<SyntaxSymbol> SymbolTable::get_standard_type(StandardTypes type)
+{
+	gmt::Ref<SyntaxSymbol>& slot = m_standardTypes[static_cast<std::size_t>(type)];
+
+	if (slot.is_null())
+		slot = m_arena.emplace<StructSymbol>(L"", SyntaxKind::StructDeclaration, m_rootNamespace);
+
+	return slot;
+}
+
+void SymbolTable::set_standard_type(StandardTypes type, gmt::Ref<SyntaxSymbol> symbol)
+{
+	m_standardTypes[static_cast<std::size_t>(type)] = symbol;
+}

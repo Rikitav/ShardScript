@@ -1362,7 +1362,7 @@ void ControlFlowAnalyzer::visit_await_expression(const AwaitExpressionSyntax* no
 		// awaiting an unknown or non-async expression that could hold a faulted task
 		// is treated conservatively as a potential throw
 		gmt::Ref<StructSymbol> awaitedType = get_model().get_expression_type(awaited);
-		if (!awaitedType.is_null() && SemanticModel::is_task_or_task_like(awaitedType))
+		if (!awaitedType.is_null() && get_model().is_task_or_task_like(awaitedType))
 		{
 			if (awaited->get_kind() != SyntaxKind::InvokationExpression)
 				m_currentMethod->get_effect_summary().mayThrow = true;

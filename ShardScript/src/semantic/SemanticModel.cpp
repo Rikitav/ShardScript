@@ -402,18 +402,14 @@ bool SemanticModel::is_task_or_task_like(gmt::Ref<StructSymbol> type)
 	if (type.is_null())
 		return false;
 
-	if (type->get_full_name() == L"async.Task")
+	if (type == m_table.get_standard_type(StandardTypes::Task))
 		return true;
 
-	gmt::Ref<GenericTypeSymbol> generic;
-	if (type->get_kind() == SyntaxKind::GenericType)
-		generic = type.as<GenericTypeSymbol>();
-
-	if (generic.is_null())
+	if (type->get_kind() != SyntaxKind::GenericType)
 		return false;
 
-	gmt::Ref<StructSymbol> underlaying = generic->get_underlaying_type();
-	return !underlaying.is_null() && underlaying->get_full_name() == L"async.ValueTask";
+	gmt::Ref<StructSymbol> underlaying = type.as<GenericTypeSymbol>()->get_underlaying_type();
+	return underlaying == m_table.get_standard_type(StandardTypes::ValueTask);
 }
 
 gmt::Ref<StructSymbol> SemanticModel::substitute_type(gmt::Ref<StructSymbol> type, gmt::Ref<GenericTypeSymbol> within)
