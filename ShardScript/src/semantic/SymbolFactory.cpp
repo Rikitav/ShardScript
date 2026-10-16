@@ -214,7 +214,7 @@ gmt::Ref<OperatorSymbol> SymbolFactory::create_operator(gmt::Ref<const OperatorD
 
 gmt::Ref<ConstructorSymbol> SymbolFactory::create_constructor(gmt::Ref<const ConstructorDeclarationSyntax> node, gmt::Ref<SyntaxSymbol> parent)
 {
-	gmt::Ref<ConstructorSymbol> symbol = m_table->emplace<ConstructorSymbol>(L"init", parent);
+	gmt::Ref<ConstructorSymbol> symbol = m_table->emplace<ConstructorSymbol>(parent);
 	symbol->set_return_type(m_table->get_void_primitive());
 	apply_modifiers(node->get_modifiers(), *symbol);
 	return m_table->bind_symbol<ConstructorSymbol>(node, symbol);

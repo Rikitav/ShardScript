@@ -514,12 +514,18 @@ void DeclarationCollector::visit_function_declaration(const FunctionDeclarationS
 
 	if (node->get_body().is_null())
 	{
-		if (parent.is_null() || parent->get_kind() != SyntaxKind::InterfaceDeclaration)
+		bool parentIsInterface = !parent.is_null();
+		parentIsInterface = parentIsInterface && parent->get_kind() == SyntaxKind::InterfaceDeclaration;
+
+		if (!parentIsInterface)
 			get_diagnostics().report_error(node->get_location(), L"Method should have a Body, as it's not marked as 'abstract'");
 	}
 	else
 	{
-		if (parent.is_null() || parent->get_kind() == SyntaxKind::InterfaceDeclaration)
+		bool parentIsInterface = !parent.is_null();
+		parentIsInterface = parentIsInterface && parent->get_kind() == SyntaxKind::InterfaceDeclaration;
+
+		if (parentIsInterface)
 			get_diagnostics().report_error(node->get_location(), L"Method should not have a Body, as it's declared inside interface");
 	}
 

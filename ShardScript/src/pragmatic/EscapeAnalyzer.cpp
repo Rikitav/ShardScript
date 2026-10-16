@@ -21,6 +21,8 @@
 #include <shard/parsing/nodes/expressions/IndexatorExpressionSyntax.hpp>
 #include <shard/parsing/nodes/expressions/ObjectExpressionSyntax.hpp>
 #include <shard/parsing/nodes/expressions/CollectionExpressionSyntax.hpp>
+#include <shard/parsing/nodes/expressions/IsExpressionSyntax.hpp>
+#include <shard/parsing/nodes/expressions/CastExpressionSyntax.hpp>
 #include <shard/parsing/nodes/expressions/LambdaExpressionSyntax.hpp>
 
 #include <shard/parsing/nodes/lists/ArgumentsListSyntax.hpp>
@@ -152,10 +154,14 @@ EscapeAnalyzer::EscapeAnalyzer(SemanticModel& model, PragmaticModel& pragmatic, 
 {
 }
 
-void EscapeAnalyzer::analyze(SyntaxTree& tree)
+void EscapeAnalyzer::clear_graph()
 {
-	visit_syntax_tree(tree);
-	finalize_graph();
+	m_graph = Graph();
+	m_frameStack.clear();
+	m_walked.clear();
+	m_scalarCache.clear();
+	m_nextLoopId = 0;
+	m_inDefer = 0;
 }
 
 int EscapeAnalyzer::ensure_local_id(gmt::Ref<SyntaxSymbol> symbol)
@@ -168,6 +174,7 @@ int EscapeAnalyzer::ensure_local_id(gmt::Ref<SyntaxSymbol> symbol)
 	m_graph.localIds[symbol] = id;
 	m_graph.levels.push_back(EscapeLevel::NoEscape);
 	m_graph.channelSets.push_back(EscapeChannel::None);
+	m_graph.identityExposed.push_back(false);
 	m_graph.idOwners.push_back(in_frame() ? current_frame().method : gmt::Ref<MethodSymbol>());
 
 	return id;
@@ -183,6 +190,7 @@ int EscapeAnalyzer::ensure_site_id(gmt::Ref<const ExpressionSyntax> site)
 	m_graph.siteIds[site] = id;
 	m_graph.levels.push_back(EscapeLevel::NoEscape);
 	m_graph.channelSets.push_back(EscapeChannel::None);
+	m_graph.identityExposed.push_back(false);
 	m_graph.idOwners.push_back(in_frame() ? current_frame().method : gmt::Ref<MethodSymbol>());
 
 	return id;
@@ -228,8 +236,19 @@ void EscapeAnalyzer::enter_frame(gmt::Ref<MethodSymbol> method, gmt::Ref<const E
 
 void EscapeAnalyzer::leave_frame()
 {
-	if (!m_frameStack.empty())
-		m_frameStack.pop_back();
+	if (m_frameStack.empty())
+		return;
+
+	Frame frame = std::move(m_frameStack.back());
+	m_frameStack.pop_back();
+
+	if (!frame.method.is_null())
+	{
+		WalkedMethod walked;
+		walked.method = frame.method;
+		walked.returnedExpressions = std::move(frame.returnedExpressions);
+		m_walked.push_back(std::move(walked));
+	}
 }
 
 bool EscapeAnalyzer::in_frame() const
@@ -286,6 +305,59 @@ void EscapeAnalyzer::expose_expression(gmt::Ref<const ExpressionSyntax> expressi
 		add_event(ensure_site_id(site), level, channel);
 }
 
+bool EscapeAnalyzer::is_fresh_invokation(gmt::Ref<const ExpressionSyntax> expression)
+{
+	if (expression.is_null() || expression->get_kind() != SyntaxKind::InvokationExpression)
+		return false;
+
+	gmt::Ref<MethodSymbol> callee;
+	auto nodeRef = ref_from(expression.as_ptr());
+	if (nodeRef.has_value())
+	{
+		gmt::Ref<SyntaxSymbol> bound = get_symbol_table().lookup_symbol(*nodeRef);
+		if (!bound.is_null() && bound->is_method())
+			callee = bound.as<MethodSymbol>();
+	}
+
+	if (callee.is_null())
+		return false;
+
+	// a Fresh-summary callee returns a value it created: its arguments do
+	// not flow into the caller's return slot (2.1e chaining)
+	EscapeSummary summary = m_pragmatic.get_summary(callee);
+	return summary.computed && summary.returnDisposition == ReturnDisposition::Fresh;
+}
+
+void EscapeAnalyzer::mark_identity(gmt::Ref<const ExpressionSyntax> expression, bool includeReceivers)
+{
+	if (expression.is_null())
+		return;
+
+	ExpressionRefs refs;
+	collect_expression_refs(expression, refs, includeReceivers);
+
+	for (gmt::Ref<SyntaxSymbol> local : refs.locals)
+		m_graph.identityExposed[ensure_local_id(local)] = true;
+
+	for (gmt::Ref<const ExpressionSyntax> site : refs.sites)
+		m_graph.identityExposed[ensure_site_id(site)] = true;
+}
+
+void EscapeAnalyzer::record_call_exposure(gmt::Ref<const ExpressionSyntax> expression, gmt::Ref<MethodSymbol> callee, std::uint16_t parameterIndex, bool receiver)
+{
+	if (expression.is_null() || callee.is_null())
+		return;
+
+	ExpressionRefs refs;
+	collect_expression_refs(expression, refs, receiver);
+
+	for (gmt::Ref<SyntaxSymbol> local : refs.locals)
+		m_graph.callExposures.push_back({ ensure_local_id(local), callee, parameterIndex, receiver });
+
+	for (gmt::Ref<const ExpressionSyntax> site : refs.sites)
+		m_graph.callExposures.push_back({ ensure_site_id(site), callee, parameterIndex, receiver });
+}
+
 void EscapeAnalyzer::alias_into(gmt::Ref<SyntaxSymbol> target, gmt::Ref<const ExpressionSyntax> sourceExpression)
 {
 	if (target.is_null() || sourceExpression.is_null())
@@ -337,7 +409,7 @@ void EscapeAnalyzer::analyze_member_body(gmt::Ref<MethodSymbol> method, gmt::Ref
 	leave_frame();
 }
 
-void EscapeAnalyzer::finalize_graph()
+void EscapeAnalyzer::run_graph_fixpoint()
 {
 	bool changed = true;
 	while (changed)
@@ -345,24 +417,21 @@ void EscapeAnalyzer::finalize_graph()
 		changed = false;
 
 		for (const std::pair<int, int>& edge : m_graph.edges)
+		{
 			changed |= join_node(edge.second, m_graph.levels[edge.first], m_graph.channelSets[edge.first]);
+
+			// identity is shared along alias edges: a copy of an
+			// identity-exposed value is identity-exposed itself
+			if (m_graph.identityExposed[edge.first] && !m_graph.identityExposed[edge.second])
+			{
+				m_graph.identityExposed[edge.second] = true;
+				changed = true;
+			}
+		}
 
 		for (const std::tuple<int, EscapeLevel, EscapeChannel>& event : m_graph.events)
 			changed |= join_node(std::get<0>(event), std::get<1>(event), std::get<2>(event));
 	}
-
-	for (const auto& pair : m_graph.siteIds)
-	{
-		AllocationSiteVerdict verdict;
-		verdict.level = m_graph.levels[pair.second];
-		verdict.channels = m_graph.channelSets[pair.second];
-		verdict.verdict = verdict.level == EscapeLevel::NoEscape ? PlacementVerdict::Stack : PlacementVerdict::Heap;
-
-		m_pragmatic.set_allocation_site_verdict(pair.first, verdict);
-	}
-
-	for (const auto& pair : m_graph.localIds)
-		m_pragmatic.set_local_level(m_graph.idOwners[pair.second], pair.first, m_graph.levels[pair.second]);
 }
 
 void EscapeAnalyzer::visit_function_declaration(const FunctionDeclarationSyntax* node)
@@ -439,8 +508,14 @@ void EscapeAnalyzer::visit_return_statement(const ReturnStatementSyntax* node)
 	if (node == nullptr)
 		return;
 
-	if (!node->get_expression().is_null())
-		expose_expression(node->get_expression(), EscapeLevel::GlobalEscape, EscapeChannel::Return);
+	if (m_inDefer == 0 && !node->get_expression().is_null())
+	{
+		if (!is_fresh_invokation(node->get_expression()))
+			expose_expression(node->get_expression(), EscapeLevel::GlobalEscape, EscapeChannel::Return);
+
+		if (in_frame())
+			current_frame().returnedExpressions.push_back(node->get_expression());
+	}
 
 	SyntaxVisitor::visit_return_statement(node);
 }
@@ -463,8 +538,14 @@ void EscapeAnalyzer::visit_arrow_clause(const ArrowClauseSyntax* node)
 
 	SyntaxVisitor::visit_arrow_clause(node);
 
-	if (!node->get_expression().is_null())
-		expose_expression(node->get_expression(), EscapeLevel::GlobalEscape, EscapeChannel::Return);
+	if (m_inDefer == 0 && !node->get_expression().is_null())
+	{
+		if (!is_fresh_invokation(node->get_expression()))
+			expose_expression(node->get_expression(), EscapeLevel::GlobalEscape, EscapeChannel::Return);
+
+		if (in_frame())
+			current_frame().returnedExpressions.push_back(node->get_expression());
+	}
 }
 
 void EscapeAnalyzer::visit_binary_expression(const BinaryExpressionSyntax* node)
@@ -526,19 +607,35 @@ void EscapeAnalyzer::visit_invokation_expression(const InvokationExpressionSynta
 				callee = bound.as<MethodSymbol>();
 		}
 
-		// a statically known, concrete callee only exposes its arguments downward (ArgEscape); anything else is an unknown callee (E5)
+		// a statically known, concrete callee only exposes its arguments downward (ArgEscape);
+		// anything dispatched or unknown is an identity use escaping upward (E5)
 		bool calleeIsInterfaceMember = false;
 		if (!callee.is_null() && !callee->get_parent().is_null())
 			calleeIsInterfaceMember = callee->get_parent()->get_kind() == SyntaxKind::InterfaceDeclaration;
 
-		EscapeLevel argumentLevel = EscapeLevel::ArgEscape;
-		if (callee.is_null() || callee->get_is_abstract() || calleeIsInterfaceMember)
-			argumentLevel = EscapeLevel::GlobalEscape;
+		bool knownConcrete = !callee.is_null();
+		knownConcrete = knownConcrete && !callee->get_is_virtual();
+		knownConcrete = knownConcrete && !calleeIsInterfaceMember;
+
+		EscapeLevel argumentLevel = knownConcrete ? EscapeLevel::ArgEscape : EscapeLevel::GlobalEscape;
+
+		bool instanceCallee = !callee.is_null();
+		instanceCallee = instanceCallee && callee->get_linking() == LINK_INSTANCE;
 
 		gmt::Ref<const ExpressionSyntax> receiver = node->get_previous();
 		if (!receiver.is_null())
 		{
 			expose_expression(receiver, argumentLevel, EscapeChannel::UnknownCallee, true);
+
+			if (knownConcrete)
+			{
+				if (instanceCallee)
+					record_call_exposure(receiver, callee, 0, true);
+			}
+			else
+			{
+				mark_identity(receiver, true);
+			}
 		}
 		else
 		{
@@ -546,16 +643,33 @@ void EscapeAnalyzer::visit_invokation_expression(const InvokationExpressionSynta
 			// the identifier is a token, not a receiver expression
 			gmt::Ref<SyntaxSymbol> local = find_declared_local(node->get_identifier().get_lexeme());
 			if (!local.is_null())
+			{
 				add_event(ensure_local_id(local), argumentLevel, EscapeChannel::UnknownCallee);
+
+				if (!knownConcrete)
+					m_graph.identityExposed[ensure_local_id(local)] = true;
+			}
 		}
 
 		gmt::Ref<const ArgumentsListSyntax> arguments = node->get_arguments();
 		if (!arguments.is_null())
 		{
-			for (const gmt::Ref<ArgumentSyntax>& argument : arguments->get_arguments().as_span())
+			const std::uint16_t parameterOffset = instanceCallee ? 1 : 0;
+			const auto argumentNodes = arguments->get_arguments().as_span();
+
+			for (std::size_t i = 0; i < argumentNodes.size(); ++i)
 			{
-				if (!argument.is_null())
-					expose_expression(argument->get_expression(), argumentLevel, EscapeChannel::UnknownCallee);
+				const gmt::Ref<ArgumentSyntax>& argument = argumentNodes[i];
+				if (argument.is_null())
+					continue;
+
+				gmt::Ref<const ExpressionSyntax> argumentExpression = argument->get_expression();
+				expose_expression(argumentExpression, argumentLevel, EscapeChannel::UnknownCallee);
+
+				if (knownConcrete)
+					record_call_exposure(argumentExpression, callee, parameterOffset + static_cast<std::uint16_t>(i), false);
+				else
+					mark_identity(argumentExpression, false);
 			}
 		}
 	}
@@ -595,8 +709,13 @@ void EscapeAnalyzer::visit_object_creation_expression(const ObjectExpressionSynt
 		{
 			int siteId = isSite && nodeRef.has_value() ? ensure_site_id(*nodeRef) : -1;
 
-			for (const gmt::Ref<ArgumentSyntax>& argument : arguments->get_arguments().as_span())
+			const bool instanceConstructor = hasKnownConstructor && constructor->get_linking() == LINK_INSTANCE;
+			const std::uint16_t parameterOffset = instanceConstructor ? 1 : 0;
+			const auto argumentNodes = arguments->get_arguments().as_span();
+
+			for (std::size_t i = 0; i < argumentNodes.size(); ++i)
 			{
+				const gmt::Ref<ArgumentSyntax>& argument = argumentNodes[i];
 				if (argument.is_null())
 					continue;
 
@@ -617,6 +736,9 @@ void EscapeAnalyzer::visit_object_creation_expression(const ObjectExpressionSynt
 
 				EscapeLevel argumentLevel = hasKnownConstructor ? EscapeLevel::ArgEscape : EscapeLevel::GlobalEscape;
 				expose_expression(argumentExpression, argumentLevel, EscapeChannel::UnknownCallee);
+
+				if (hasKnownConstructor)
+					record_call_exposure(argumentExpression, constructor, parameterOffset + static_cast<std::uint16_t>(i), false);
 			}
 		}
 	}
@@ -685,4 +807,27 @@ void EscapeAnalyzer::visit_defer_variable(const DeferVariableSyntax* node)
 	++m_inDefer;
 	SyntaxVisitor::visit_defer_variable(node);
 	--m_inDefer;
+}
+
+void EscapeAnalyzer::visit_is_expression(const IsExpressionSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	// a type test observes the operand's identity without escaping it
+	if (m_inDefer == 0)
+		mark_identity(node->get_expression(), false);
+
+	SyntaxVisitor::visit_is_expression(node);
+}
+
+void EscapeAnalyzer::visit_cast_expression(const CastExpressionSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	if (m_inDefer == 0)
+		mark_identity(node->get_expression(), false);
+
+	SyntaxVisitor::visit_cast_expression(node);
 }

@@ -38,3 +38,22 @@ EscapeLevel PragmaticModel::get_local_level(gmt::Ref<MethodSymbol> method, gmt::
 
 	return localIt->second;
 }
+
+void PragmaticModel::set_summary(gmt::Ref<MethodSymbol> method, const EscapeSummary& summary)
+{
+	m_summaries[method] = summary;
+}
+
+EscapeSummary PragmaticModel::get_summary(gmt::Ref<MethodSymbol> method) const
+{
+	auto it = m_summaries.find(method);
+	if (it == m_summaries.end())
+		return EscapeSummary();
+
+	return it->second;
+}
+
+const std::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& PragmaticModel::get_summaries() const
+{
+	return m_summaries;
+}

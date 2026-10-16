@@ -5,11 +5,13 @@
 #include <shard/semantic/SemanticVisitor.hpp>
 
 #include <shard/pragmatic/EscapeChannels.hpp>
+#include <shard/pragmatic/EscapeSummary.hpp>
 #include <shard/pragmatic/PlacementVerdict.hpp>
 #include <shard/pragmatic/PragmaticModel.hpp>
 
 #include <gmt/Ref.hpp>
 
+#include <cstdint>
 #include <tuple>
 #include <unordered_map>
 #include <unordered_set>
@@ -33,13 +35,14 @@ namespace shard
 			gmt::Ref<MethodSymbol> method;
 			gmt::Ref<const ExpressionSyntax> closureSite; // null for member bodies
 			std::unordered_set<gmt::Ref<SyntaxSymbol>> declared;
+			std::vector<gmt::Ref<const ExpressionSyntax>> returnedExpressions;
 			bool seenAwait = false;
 			std::vector<int> loopStack;
 			std::unordered_set<int> loopsWithAwait;
 		};
 
-		// constraint graph over the locals and allocation sites of the whole
-		// walk; member bodies never share edges, so a single graph suffices
+		// constraint graph over the locals and allocation sites of the whole walk;
+		// member bodies never share edges, so a single graph suffices
 		struct Graph
 		{
 			int nextId = 0;
@@ -47,15 +50,36 @@ namespace shard
 			std::unordered_map<gmt::Ref<const ExpressionSyntax>, int> siteIds;
 			std::vector<EscapeLevel> levels;
 			std::vector<EscapeChannel> channelSets;
+			std::vector<bool> identityExposed;
 			std::vector<gmt::Ref<MethodSymbol>> idOwners;
 			std::vector<std::pair<int, int>> edges; // level[b] >= level[a]
 			std::vector<std::tuple<int, EscapeLevel, EscapeChannel>> events;
+
+			struct CallExposure
+			{
+				int nodeId;
+				gmt::Ref<MethodSymbol> callee;
+				std::uint16_t parameterIndex; // 0-based into the callee summary (0 = receiver of an instance method)
+				bool receiver;
+			};
+
+			std::vector<CallExposure> callExposures;
+		};
+
+		struct WalkedMethod
+		{
+			gmt::Ref<MethodSymbol> method;
+			std::vector<gmt::Ref<const ExpressionSyntax>> returnedExpressions;
 		};
 
 		PragmaticModel& m_pragmatic;
 
 		Graph m_graph;
 		std::vector<Frame> m_frameStack;
+		std::vector<WalkedMethod> m_walked;
+		std::unordered_map<gmt::Ref<StructSymbol>, bool> m_scalarCache;
+		std::vector<EscapeLevel> m_previousLevels;
+		std::vector<EscapeChannel> m_previousChannels;
 		int m_nextLoopId = 0;
 		int m_inDefer = 0;
 
@@ -64,6 +88,7 @@ namespace shard
 		void add_edge(int from, int to);
 		void add_event(int id, EscapeLevel level, EscapeChannel channel);
 		bool join_node(int id, EscapeLevel level, EscapeChannel channel);
+		void clear_graph();
 
 		void enter_frame(gmt::Ref<MethodSymbol> method, gmt::Ref<const ExpressionSyntax> closureSite);
 		void leave_frame();
@@ -79,6 +104,9 @@ namespace shard
 
 		void collect_expression_refs(gmt::Ref<const ExpressionSyntax> expression, ExpressionRefs& refs, bool includeReceivers);
 		void expose_expression(gmt::Ref<const ExpressionSyntax> expression, EscapeLevel level, EscapeChannel channel, bool includeReceivers = false);
+		bool is_fresh_invokation(gmt::Ref<const ExpressionSyntax> expression);
+		void mark_identity(gmt::Ref<const ExpressionSyntax> expression, bool includeReceivers);
+		void record_call_exposure(gmt::Ref<const ExpressionSyntax> expression, gmt::Ref<MethodSymbol> callee, std::uint16_t parameterIndex, bool receiver);
 		void alias_into(gmt::Ref<SyntaxSymbol> target, gmt::Ref<const ExpressionSyntax> sourceExpression);
 
 		void register_allocation_site(const ExpressionSyntax* site);
@@ -86,7 +114,21 @@ namespace shard
 		void declare_parameters(gmt::Ref<MethodSymbol> method);
 		void analyze_member_body(gmt::Ref<MethodSymbol> method, gmt::Ref<const BlockSyntax> body);
 
-		void finalize_graph();
+		void run_graph_fixpoint();
+		std::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary> derive_summaries();
+		void apply_call_exposures(const std::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries);
+		bool commit_summaries(const std::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries);
+		void assign_verdicts(const std::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries);
+
+		ParameterEscapeSummary derive_parameter_summary(gmt::Ref<MethodSymbol> method, gmt::Ref<ParameterSymbol> parameter, bool isReceiver);
+		ReturnDisposition classify_returns(const WalkedMethod& walked, const std::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries);
+		int classify_return_expression(gmt::Ref<MethodSymbol> method, gmt::Ref<const ExpressionSyntax> expression, const std::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries);
+		int classify_local_roots(gmt::Ref<MethodSymbol> method, gmt::Ref<SyntaxSymbol> local);
+
+		bool is_caller_placeable(gmt::Ref<MethodSymbol> owner) const;
+		bool cone_closed(int id, const std::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries) const;
+		bool is_scalar_eligible(gmt::Ref<StructSymbol> type);
+		bool participates_in_reference_cycle(gmt::Ref<StructSymbol> type);
 
 	public:
 		EscapeAnalyzer(SemanticModel& model, PragmaticModel& pragmatic, DiagnosticsContext& diagnostics);
@@ -119,6 +161,8 @@ namespace shard
 		void visit_invokation_expression(const InvokationExpressionSyntax* node) override;
 		void visit_object_creation_expression(const ObjectExpressionSyntax* node) override;
 		void visit_collection_expression(const CollectionExpressionSyntax* node) override;
+		void visit_is_expression(const IsExpressionSyntax* node) override;
+		void visit_cast_expression(const CastExpressionSyntax* node) override;
 		void visit_await_expression(const AwaitExpressionSyntax* node) override;
 		void visit_identifier_name_type(const IdentifierNameTypeSyntax* node) override;
 	};
