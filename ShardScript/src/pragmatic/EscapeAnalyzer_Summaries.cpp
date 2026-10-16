@@ -29,10 +29,12 @@ void EscapeAnalyzer::analyze(SyntaxTree& tree)
 
 		bool changed = m_previousLevels != m_graph.levels;
 		changed = changed || m_previousChannels != m_graph.channelSets;
+		changed = changed || m_previousColdChannels != m_graph.coldChannels;
 		changed = changed || commit_summaries(summaries);
 
 		m_previousLevels = m_graph.levels;
 		m_previousChannels = m_graph.channelSets;
+		m_previousColdChannels = m_graph.coldChannels;
 
 		assign_verdicts(summaries);
 
@@ -78,6 +80,7 @@ ParameterEscapeSummary EscapeAnalyzer::derive_parameter_summary(gmt::Ref<MethodS
 		return summary;
 
 	summary.channels = m_graph.channelSets[id];
+	summary.coldChannels = m_graph.coldChannels[id];
 
 	const EscapeChannel upward = EscapeChannel::Return | EscapeChannel::Store | EscapeChannel::Capture | EscapeChannel::Exception;
 	bool hasUpwardChannel = (summary.channels & upward) != EscapeChannel::None;
@@ -131,7 +134,7 @@ void EscapeAnalyzer::apply_call_exposures(const std::unordered_map<gmt::Ref<Meth
 		// (libfunc, bodyless member): the trusted conservative default
 		if (it == summaries.end() || !it->second.computed)
 		{
-			add_event(exposure.nodeId, EscapeLevel::GlobalEscape, EscapeChannel::UnknownCallee);
+			add_event(exposure.nodeId, EscapeLevel::GlobalEscape, EscapeChannel::UnknownCallee, exposure.cold);
 			continue;
 		}
 
@@ -139,13 +142,17 @@ void EscapeAnalyzer::apply_call_exposures(const std::unordered_map<gmt::Ref<Meth
 		if (exposure.parameterIndex >= summary.parameters.size())
 		{
 			// arity mismatch: the binder resolved an overload the summary does not cover
-			add_event(exposure.nodeId, EscapeLevel::GlobalEscape, EscapeChannel::UnknownCallee);
+			add_event(exposure.nodeId, EscapeLevel::GlobalEscape, EscapeChannel::UnknownCallee, exposure.cold);
 			continue;
 		}
 
 		const ParameterEscapeSummary& parameter = summary.parameters[exposure.parameterIndex];
 		if (parameter.escapes)
-			add_event(exposure.nodeId, EscapeLevel::GlobalEscape, parameter.channels);
+			add_event(exposure.nodeId, EscapeLevel::GlobalEscape, parameter.channels, exposure.cold);
+
+		// a cold flow inside the callee stays cold at the caller's call site
+		if (parameter.coldChannels != EscapeChannel::None)
+			add_event(exposure.nodeId, EscapeLevel::GlobalEscape, parameter.coldChannels, true);
 	}
 }
 
@@ -167,6 +174,7 @@ bool EscapeAnalyzer::commit_summaries(const std::unordered_map<gmt::Ref<MethodSy
 			for (std::size_t i = 0; i < pair.second.parameters.size(); ++i)
 			{
 				same = same && previous.parameters[i].channels == pair.second.parameters[i].channels;
+				same = same && previous.parameters[i].coldChannels == pair.second.parameters[i].coldChannels;
 				same = same && previous.parameters[i].escapes == pair.second.parameters[i].escapes;
 			}
 		}
@@ -437,7 +445,23 @@ void EscapeAnalyzer::assign_verdicts(const std::unordered_map<gmt::Ref<MethodSym
 		}
 		else if (verdict.level == EscapeLevel::ArgEscape)
 		{
-			verdict.verdict = cone_closed(id, summaries) ? PlacementVerdict::Stack : PlacementVerdict::Heap;
+			bool closed = cone_closed(id, summaries);
+			bool hasCold = m_graph.coldChannels[id] != EscapeChannel::None;
+
+			// cone-closed ArgEscape with cold channels: the cone adds no hot
+			// escape, so the site is born on the stack and migrates on the
+			// cold path like any other Promote
+			if (closed && hasCold)
+				verdict.verdict = PlacementVerdict::Promote;
+			else
+				verdict.verdict = closed ? PlacementVerdict::Stack : PlacementVerdict::Heap;
+		}
+		else if (m_graph.coldChannels[id] != EscapeChannel::None)
+		{
+			// hot NoEscape with cold-only upward flows: born on the stack,
+			// migrated at the cold escape point (materialization-on-merge
+			// would be needed for Scalar, so Promote is the stand-in)
+			verdict.verdict = PlacementVerdict::Promote;
 		}
 		else if (m_graph.identityExposed[id])
 		{
@@ -457,4 +481,6 @@ void EscapeAnalyzer::assign_verdicts(const std::unordered_map<gmt::Ref<MethodSym
 
 	for (const auto& pair : m_graph.localIds)
 		m_pragmatic.set_local_level(m_graph.idOwners[pair.second], pair.first, m_graph.levels[pair.second]);
+
+	commit_promotion_points();
 }
