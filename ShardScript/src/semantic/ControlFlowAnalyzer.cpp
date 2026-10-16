@@ -44,7 +44,6 @@
 #include <shard/semantic/SymbolTable.hpp>
 #include <shard/semantic/symbols/AccessorSymbol.hpp>
 #include <shard/semantic/symbols/ConstructorSymbol.hpp>
-#include <shard/semantic/symbols/GenericTypeSymbol.hpp>
 #include <shard/semantic/symbols/ParameterSymbol.hpp>
 #include <shard/semantic/symbols/PropertySymbol.hpp>
 #include <shard/semantic/symbols/StructSymbol.hpp>
@@ -725,8 +724,7 @@ ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_loop_body(gmt::Ref<c
 	m_assignedVariables = std::move(savedAssignments);
 	--m_loopDepth;
 
-	// break/continue are consumed by the loop, and the loop itself may or may
-	// not execute, so it always yields normal flow to the caller
+	// break/continue are consumed by the loop, and the loop itself may or may not execute, so it always yields normal flow to the caller
 	return FlowState::Normal;
 }
 
@@ -1064,22 +1062,6 @@ bool ControlFlowAnalyzer::call_edge_catches(const CallEdge& edge, gmt::Ref<Struc
 	return false;
 }
 
-bool ControlFlowAnalyzer::is_task_or_task_like(gmt::Ref<StructSymbol> type)
-{
-	if (type.is_null())
-		return false;
-
-	if (type->get_full_name() == L"async.Task")
-		return true;
-
-	gmt::Ref<GenericTypeSymbol> generic = type.as<GenericTypeSymbol>();
-	if (generic.is_null())
-		return false;
-
-	gmt::Ref<StructSymbol> underlaying = generic->get_underlaying_type();
-	return !underlaying.is_null() && underlaying->get_full_name() == L"async.ValueTask";
-}
-
 void ControlFlowAnalyzer::propagate_effects()
 {
 	bool changed = true;
@@ -1380,7 +1362,7 @@ void ControlFlowAnalyzer::visit_await_expression(const AwaitExpressionSyntax* no
 		// awaiting an unknown or non-async expression that could hold a faulted task
 		// is treated conservatively as a potential throw
 		gmt::Ref<StructSymbol> awaitedType = get_model().get_expression_type(awaited);
-		if (!awaitedType.is_null() && is_task_or_task_like(awaitedType))
+		if (!awaitedType.is_null() && SemanticModel::is_task_or_task_like(awaitedType))
 		{
 			if (awaited->get_kind() != SyntaxKind::InvokationExpression)
 				m_currentMethod->get_effect_summary().mayThrow = true;

@@ -90,7 +90,6 @@ namespace shard
 
 		void scan_expression(gmt::Ref<const ExpressionSyntax> expression);
 
-		static bool is_assignment_operator(TokenType type);
 		static bool is_increment_decrement_operator(TokenType type);
 		bool is_this_expression(gmt::Ref<const ExpressionSyntax> expression);
 
@@ -101,7 +100,6 @@ namespace shard
 		bool is_try_wrapped(gmt::Ref<const ExpressionSyntax> expression) const;
 		void add_thrown_type(std::unordered_set<gmt::Ref<StructSymbol>>& thrownTypes, gmt::Ref<StructSymbol> type);
 		bool call_edge_catches(const CallEdge& edge, gmt::Ref<StructSymbol> thrownType);
-		static bool is_task_or_task_like(gmt::Ref<StructSymbol> type);
 
 		void propagate_effects();
 		void report_effect_diagnostics();
@@ -122,6 +120,10 @@ namespace shard
 		static FlowState without_breaks_and_continues(FlowState state);
 		static FlowState without_throws(FlowState state);
 
+	public:
+		static bool is_assignment_operator(TokenType type);
+
+	private:
 		FlowState analyze_statement(gmt::Ref<const StatementSyntax> node);
 		FlowState analyze_statements_block(gmt::Ref<const StatementsBlockSyntax> node);
 		FlowState analyze_body(gmt::Ref<const BlockSyntax> body);
