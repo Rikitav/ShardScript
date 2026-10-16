@@ -106,6 +106,7 @@ namespace shard
 		gmt::Ref<StructSymbol> analyze_field_keyword_expression(const SyntaxNode* node);
 		gmt::Ref<StructSymbol> analyze_invokation_expression(const InvokationExpressionSyntax* node, gmt::Ref<StructSymbol> currentType);
 		gmt::Ref<StructSymbol> analyze_qualified_invokation_expression(const InvokationExpressionSyntax* node, gmt::Ref<NamespaceSymbol> namespaceSymbol);
+		gmt::Ref<StructSymbol> wrap_async_return_type(gmt::Ref<MethodSymbol> method, gmt::Ref<StructSymbol> type);
 		gmt::Ref<StructSymbol> analyze_indexator_expression(const IndexatorExpressionSyntax* node, gmt::Ref<StructSymbol> currentType);
 
 		gmt::Ref<ConstructorSymbol> resolve_constructor(const ObjectExpressionSyntax* node);

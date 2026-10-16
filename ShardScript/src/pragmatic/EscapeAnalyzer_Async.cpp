@@ -75,7 +75,7 @@ void EscapeAnalyzer::visit_expression_statement(const ExpressionStatementSyntax*
 
 			bool isTaskLike = false;
 			if (expressionRef.has_value())
-				isTaskLike = SemanticModel::is_task_or_task_like(get_model().get_expression_type(*expressionRef));
+				isTaskLike = get_model().is_task_or_task_like(get_model().get_expression_type(*expressionRef));
 
 			if (isTaskLike)
 			{
