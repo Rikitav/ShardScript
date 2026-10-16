@@ -12,7 +12,6 @@
 #include <gmt/Ref.hpp>
 
 #include <cstdint>
-#include <tuple>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -45,15 +44,13 @@ namespace shard
 		// member bodies never share edges, so a single graph suffices
 		struct Graph
 		{
-			int nextId = 0;
-			std::unordered_map<gmt::Ref<SyntaxSymbol>, int> localIds;
-			std::unordered_map<gmt::Ref<const ExpressionSyntax>, int> siteIds;
-			std::vector<EscapeLevel> levels;
-			std::vector<EscapeChannel> channelSets;
-			std::vector<bool> identityExposed;
-			std::vector<gmt::Ref<MethodSymbol>> idOwners;
-			std::vector<std::pair<int, int>> edges; // level[b] >= level[a]
-			std::vector<std::tuple<int, EscapeLevel, EscapeChannel>> events;
+			struct Event
+			{
+				int id;
+				EscapeLevel level;
+				EscapeChannel channel;
+				bool cold; // the flow originates on an exceptional path (spec 4.6)
+			};
 
 			struct CallExposure
 			{
@@ -61,7 +58,19 @@ namespace shard
 				gmt::Ref<MethodSymbol> callee;
 				std::uint16_t parameterIndex; // 0-based into the callee summary (0 = receiver of an instance method)
 				bool receiver;
+				bool cold;
 			};
+
+			int nextId = 0;
+			std::unordered_map<gmt::Ref<SyntaxSymbol>, int> localIds;
+			std::unordered_map<gmt::Ref<const ExpressionSyntax>, int> siteIds;
+			std::vector<EscapeLevel> levels;
+			std::vector<EscapeChannel> channelSets;
+			std::vector<EscapeChannel> coldChannels; // cold upward flows only; parallel to levels
+			std::vector<bool> identityExposed;
+			std::vector<gmt::Ref<MethodSymbol>> idOwners;
+			std::vector<std::pair<int, int>> edges; // level[b] >= level[a]
+			std::vector<Event> events;
 
 			std::vector<CallExposure> callExposures;
 		};
@@ -80,14 +89,18 @@ namespace shard
 		std::unordered_map<gmt::Ref<StructSymbol>, bool> m_scalarCache;
 		std::vector<EscapeLevel> m_previousLevels;
 		std::vector<EscapeChannel> m_previousChannels;
+		std::vector<EscapeChannel> m_previousColdChannels;
+		std::vector<std::pair<int, gmt::Ref<const ExpressionSyntax>>> m_coldPoints;
 		int m_nextLoopId = 0;
 		int m_inDefer = 0;
+		int m_coldDepth = 0;
 
 		int ensure_local_id(gmt::Ref<SyntaxSymbol> symbol);
 		int ensure_site_id(gmt::Ref<const ExpressionSyntax> site);
 		void add_edge(int from, int to);
-		void add_event(int id, EscapeLevel level, EscapeChannel channel);
+		void add_event(int id, EscapeLevel level, EscapeChannel channel, bool cold = false);
 		bool join_node(int id, EscapeLevel level, EscapeChannel channel);
+		bool join_cold(int id, EscapeChannel channel);
 		void clear_graph();
 
 		void enter_frame(gmt::Ref<MethodSymbol> method, gmt::Ref<const ExpressionSyntax> closureSite);
@@ -129,6 +142,10 @@ namespace shard
 		bool cone_closed(int id, const std::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries) const;
 		bool is_scalar_eligible(gmt::Ref<StructSymbol> type);
 		bool participates_in_reference_cycle(gmt::Ref<StructSymbol> type);
+
+		void record_cold_point(int id, gmt::Ref<const ExpressionSyntax> expression);
+		bool reaches_site(int from, int to) const;
+		void commit_promotion_points();
 
 	public:
 		EscapeAnalyzer(SemanticModel& model, PragmaticModel& pragmatic, DiagnosticsContext& diagnostics);

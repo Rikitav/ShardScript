@@ -186,5 +186,10 @@ void EscapeAnalyzer::visit_catch_clause(const CatchClauseSyntax* node)
 	if (nodeRef.has_value())
 		declare_local(lookup_symbol<VariableSymbol>(*nodeRef));
 
+	// upward flows out of an exceptional path are cold (spec 4.6); the
+	// exception variable declaration itself is not an exposure, so it
+	// stays outside the cold region
+	++m_coldDepth;
 	SyntaxVisitor::visit_catch_clause(node);
+	--m_coldDepth;
 }

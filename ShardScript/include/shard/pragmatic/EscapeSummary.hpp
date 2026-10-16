@@ -13,8 +13,9 @@ namespace shard
 
 	struct SHARD_API ParameterEscapeSummary
 	{
-		EscapeChannel channels = EscapeChannel::None;	// strongest flows observed for this parameter
-		bool escapes = false;							// any upward flow (E1/E2/E3/E7 or unknown-callee E5)
+		EscapeChannel channels = EscapeChannel::None;		// strongest hot flows observed for this parameter
+		EscapeChannel coldChannels = EscapeChannel::None;	// upward flows observed only on cold (exceptional) paths
+		bool escapes = false;								// any hot upward flow (E1/E2/E3/E7 or unknown-callee E5)
 	};
 
 	enum class ReturnDisposition

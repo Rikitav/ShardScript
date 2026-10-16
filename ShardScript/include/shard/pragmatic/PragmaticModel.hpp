@@ -12,6 +12,7 @@
 
 #include <optional>
 #include <unordered_map>
+#include <vector>
 
 namespace shard
 {
@@ -24,6 +25,7 @@ namespace shard
 		std::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary> m_summaries;
 		std::unordered_map<gmt::Ref<MethodSymbol>, std::unordered_map<gmt::Ref<SyntaxSymbol>, EscapeLevel>> m_methodLocals;
 		std::unordered_map<gmt::Ref<const ExpressionSyntax>, AllocationSiteVerdict> m_allocationSites;
+		std::unordered_map<gmt::Ref<const ExpressionSyntax>, std::vector<gmt::Ref<const ExpressionSyntax>>> m_promotionPoints;
 
 	public:
 		PragmaticModel() = default;
@@ -36,6 +38,10 @@ namespace shard
 		std::optional<AllocationSiteVerdict> get_allocation_site_verdict(gmt::Ref<const ExpressionSyntax> site) const;
 
 		const std::unordered_map<gmt::Ref<const ExpressionSyntax>, AllocationSiteVerdict>& get_allocation_sites() const;
+
+		void set_promotion_points(gmt::Ref<const ExpressionSyntax> site, std::vector<gmt::Ref<const ExpressionSyntax>> points);
+		// nullptr when the site is not promoted: no migration points recorded
+		const std::vector<gmt::Ref<const ExpressionSyntax>>* get_promotion_points(gmt::Ref<const ExpressionSyntax> site) const;
 
 		void set_local_level(gmt::Ref<MethodSymbol> method, gmt::Ref<SyntaxSymbol> local, EscapeLevel level);
 		EscapeLevel get_local_level(gmt::Ref<MethodSymbol> method, gmt::Ref<SyntaxSymbol> local) const;

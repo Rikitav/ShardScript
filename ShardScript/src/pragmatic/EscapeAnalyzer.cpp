@@ -160,8 +160,10 @@ void EscapeAnalyzer::clear_graph()
 	m_frameStack.clear();
 	m_walked.clear();
 	m_scalarCache.clear();
+	m_coldPoints.clear();
 	m_nextLoopId = 0;
 	m_inDefer = 0;
+	m_coldDepth = 0;
 }
 
 int EscapeAnalyzer::ensure_local_id(gmt::Ref<SyntaxSymbol> symbol)
@@ -174,6 +176,7 @@ int EscapeAnalyzer::ensure_local_id(gmt::Ref<SyntaxSymbol> symbol)
 	m_graph.localIds[symbol] = id;
 	m_graph.levels.push_back(EscapeLevel::NoEscape);
 	m_graph.channelSets.push_back(EscapeChannel::None);
+	m_graph.coldChannels.push_back(EscapeChannel::None);
 	m_graph.identityExposed.push_back(false);
 	m_graph.idOwners.push_back(in_frame() ? current_frame().method : gmt::Ref<MethodSymbol>());
 
@@ -190,6 +193,7 @@ int EscapeAnalyzer::ensure_site_id(gmt::Ref<const ExpressionSyntax> site)
 	m_graph.siteIds[site] = id;
 	m_graph.levels.push_back(EscapeLevel::NoEscape);
 	m_graph.channelSets.push_back(EscapeChannel::None);
+	m_graph.coldChannels.push_back(EscapeChannel::None);
 	m_graph.identityExposed.push_back(false);
 	m_graph.idOwners.push_back(in_frame() ? current_frame().method : gmt::Ref<MethodSymbol>());
 
@@ -201,9 +205,9 @@ void EscapeAnalyzer::add_edge(int from, int to)
 	m_graph.edges.emplace_back(from, to);
 }
 
-void EscapeAnalyzer::add_event(int id, EscapeLevel level, EscapeChannel channel)
+void EscapeAnalyzer::add_event(int id, EscapeLevel level, EscapeChannel channel, bool cold)
 {
-	m_graph.events.emplace_back(id, level, channel);
+	m_graph.events.push_back({ id, level, channel, cold || m_coldDepth > 0 });
 }
 
 bool EscapeAnalyzer::join_node(int id, EscapeLevel level, EscapeChannel channel)
@@ -224,6 +228,16 @@ bool EscapeAnalyzer::join_node(int id, EscapeLevel level, EscapeChannel channel)
 	}
 
 	return changed;
+}
+
+bool EscapeAnalyzer::join_cold(int id, EscapeChannel channel)
+{
+	EscapeChannel merged = m_graph.coldChannels[id] | channel;
+	if (merged == m_graph.coldChannels[id])
+		return false;
+
+	m_graph.coldChannels[id] = merged;
+	return true;
 }
 
 void EscapeAnalyzer::enter_frame(gmt::Ref<MethodSymbol> method, gmt::Ref<const ExpressionSyntax> closureSite)
@@ -298,11 +312,25 @@ void EscapeAnalyzer::expose_expression(gmt::Ref<const ExpressionSyntax> expressi
 	ExpressionRefs refs;
 	collect_expression_refs(expression, refs, includeReceivers);
 
+	bool isCold = m_coldDepth > 0;
+
 	for (gmt::Ref<SyntaxSymbol> local : refs.locals)
-		add_event(ensure_local_id(local), level, channel);
+	{
+		int id = ensure_local_id(local);
+		add_event(id, level, channel);
+
+		if (isCold)
+			record_cold_point(id, expression);
+	}
 
 	for (gmt::Ref<const ExpressionSyntax> site : refs.sites)
-		add_event(ensure_site_id(site), level, channel);
+	{
+		int id = ensure_site_id(site);
+		add_event(id, level, channel);
+
+		if (isCold)
+			record_cold_point(id, expression);
+	}
 }
 
 bool EscapeAnalyzer::is_fresh_invokation(gmt::Ref<const ExpressionSyntax> expression)
@@ -351,11 +379,13 @@ void EscapeAnalyzer::record_call_exposure(gmt::Ref<const ExpressionSyntax> expre
 	ExpressionRefs refs;
 	collect_expression_refs(expression, refs, receiver);
 
+	bool cold = m_coldDepth > 0;
+
 	for (gmt::Ref<SyntaxSymbol> local : refs.locals)
-		m_graph.callExposures.push_back({ ensure_local_id(local), callee, parameterIndex, receiver });
+		m_graph.callExposures.push_back({ ensure_local_id(local), callee, parameterIndex, receiver, cold });
 
 	for (gmt::Ref<const ExpressionSyntax> site : refs.sites)
-		m_graph.callExposures.push_back({ ensure_site_id(site), callee, parameterIndex, receiver });
+		m_graph.callExposures.push_back({ ensure_site_id(site), callee, parameterIndex, receiver, cold });
 }
 
 void EscapeAnalyzer::alias_into(gmt::Ref<SyntaxSymbol> target, gmt::Ref<const ExpressionSyntax> sourceExpression)
@@ -427,10 +457,19 @@ void EscapeAnalyzer::run_graph_fixpoint()
 				m_graph.identityExposed[edge.second] = true;
 				changed = true;
 			}
+
+			// cold channels propagate the same way: an escaping alias takes
+			// the cold flows of whatever it names along
+			changed |= join_cold(edge.second, m_graph.coldChannels[edge.first]);
 		}
 
-		for (const std::tuple<int, EscapeLevel, EscapeChannel>& event : m_graph.events)
-			changed |= join_node(std::get<0>(event), std::get<1>(event), std::get<2>(event));
+		for (const Graph::Event& event : m_graph.events)
+		{
+			if (event.cold)
+				changed |= join_cold(event.id, event.channel);
+			else
+				changed |= join_node(event.id, event.level, event.channel);
+		}
 	}
 }
 
