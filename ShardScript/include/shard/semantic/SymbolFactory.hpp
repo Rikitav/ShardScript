@@ -87,7 +87,7 @@ namespace shard
 		gmt::Ref<OperatorSymbol> create_operator(gmt::Ref<const OperatorDeclarationSyntax> node, gmt::Ref<SyntaxSymbol> parent);
 
 		gmt::Ref<ConstructorSymbol> create_constructor(gmt::Ref<const ConstructorDeclarationSyntax> node, gmt::Ref<SyntaxSymbol> parent);
-		gmt::Ref<ConstructorSymbol> create_constructor(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent, SymbolAccesibility accesibility);
+		gmt::Ref<ConstructorSymbol> create_constructor(gmt::Ref<SyntaxSymbol> parent, SymbolAccesibility accesibility);
 
 		gmt::Ref<AccessorSymbol> create_accessor(gmt::Ref<const AccessorDeclarationSyntax> node, gmt::Ref<PropertySymbol> property);
 		gmt::Ref<AccessorSymbol> create_getter(gmt::Ref<PropertySymbol> property);

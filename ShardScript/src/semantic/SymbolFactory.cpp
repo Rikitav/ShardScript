@@ -220,9 +220,9 @@ gmt::Ref<ConstructorSymbol> SymbolFactory::create_constructor(gmt::Ref<const Con
 	return m_table->bind_symbol<ConstructorSymbol>(node, symbol);
 }
 
-gmt::Ref<ConstructorSymbol> SymbolFactory::create_constructor(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent, SymbolAccesibility accesibility)
+gmt::Ref<ConstructorSymbol> SymbolFactory::create_constructor(gmt::Ref<SyntaxSymbol> parent, SymbolAccesibility accesibility)
 {
-	gmt::Ref<ConstructorSymbol> symbol = m_table->emplace<ConstructorSymbol>(name, parent);
+	gmt::Ref<ConstructorSymbol> symbol = m_table->emplace<ConstructorSymbol>(parent);
 	symbol->set_return_type(m_table->get_void_primitive());
 	symbol->set_accesibility(accesibility);
 	return symbol;
@@ -385,10 +385,7 @@ gmt::Ref<DelegateTypeSymbol> SymbolFactory::create_delegate(gmt::Ref<const Deleg
 	{
 		auto& parameters = const_cast<std::vector<gmt::Ref<ParameterSymbol>>&>(symbol->get_parameters());
 		for (const gmt::Ref<ParameterSyntax>& parameter : node->get_parameters_list()->get_parameters().as_span())
-		{
-			gmt::Ref<ParameterSymbol> parameterSymbol = create_parameter(parameter->get_identifier().get_lexeme(), symbol);
-			parameters.push_back(parameterSymbol);
-		}
+			parameters.push_back(create_parameter(parameter, symbol));
 	}
 
 	return m_table->bind_symbol<DelegateTypeSymbol>(node, symbol);

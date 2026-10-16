@@ -35,7 +35,8 @@ namespace shard
 		gmt::Ref<StructSymbol> m_returnType;
 		std::vector<gmt::Ref<TypeParameterSymbol>> m_typeParameters;
 		std::vector<gmt::Ref<ParameterSymbol>> m_parameters;
-		bool m_isAbstract = false;
+
+		bool m_isVirtual = false;
 		bool m_isAsync = false;
 
 		MethodEffectSummary m_effectSummary;
@@ -67,8 +68,8 @@ namespace shard
 		const std::vector<gmt::Ref<TypeParameterSymbol>>& get_type_parameters() const;
 		const std::vector<gmt::Ref<ParameterSymbol>>& get_parameters() const;
 
-		bool get_is_abstract() const;
-		void set_is_abstract(bool is_abstract);
+		bool get_is_virtual() const;
+		void set_is_virtual(bool is_virtual);
 
 		bool get_is_async() const;
 		void set_is_async(bool is_async);

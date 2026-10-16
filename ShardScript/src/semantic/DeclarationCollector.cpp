@@ -3,9 +3,11 @@
 #include <shard/parsing/SyntaxKind.hpp>
 #include <shard/parsing/TokenType.hpp>
 #include <shard/semantic/SymbolTable.hpp>
+#include <shard/semantic/symbols/AccessorSymbol.hpp>
 #include <shard/semantic/symbols/EnumSymbol.hpp>
 #include <shard/semantic/symbols/MethodSymbol.hpp>
 #include <shard/semantic/symbols/NamespaceSymbol.hpp>
+#include <shard/semantic/symbols/PropertySymbol.hpp>
 #include <shard/semantic/symbols/VariableSymbol.hpp>
 
 #include <shard/parsing/nodes/expressions/LiteralExpressionsSyntax.hpp>
@@ -239,7 +241,7 @@ void DeclarationCollector::visit_struct_declaration(const StructDeclarationSynta
 		gmt::Ref<const SyntaxSymbol> parent = symbol->get_parent();
 		if (!parent.is_null() && !is_namespace_scope(parent))
 		{
-			get_diagnostics().report_error(node->get_location(), L"Structs can only be declared inside Namespace or CompilationUnit");
+			get_diagnostics().report_error(node->get_location(), L"Structs can only be declared inside Namespace");
 		}
 	}
 
@@ -250,7 +252,7 @@ void DeclarationCollector::visit_struct_declaration(const StructDeclarationSynta
 		member.as_ptr()->accept(*this);
 
 	if (isNewDeclaration && symbol->get_linking() == LINK_INSTANCE && symbol->constructors.empty())
-		declare(m_factory.create_constructor(L"init", symbol, ACS_PUBLIC));
+		declare(m_factory.create_constructor(symbol, ACS_PUBLIC));
 
 	pop_scope();
 }
@@ -270,7 +272,7 @@ void DeclarationCollector::visit_interface_declaration(const InterfaceDeclaratio
 		gmt::Ref<const SyntaxSymbol> parent = symbol->get_parent();
 		if (!parent.is_null() && !is_namespace_scope(parent))
 		{
-			get_diagnostics().report_error(node->get_location(), L"Interfaces can only be declared inside Namespace or CompilationUnit");
+			get_diagnostics().report_error(node->get_location(), L"Interfaces can only be declared inside Namespace");
 		}
 	}
 
@@ -290,7 +292,26 @@ void DeclarationCollector::visit_interface_declaration(const InterfaceDeclaratio
 			memberSymbol.as<MemberSymbol>()->set_accesibility(ACS_PUBLIC);
 
 		if (memberSymbol->is_method())
-			memberSymbol.as<MethodSymbol>()->set_is_abstract(true);
+		{
+			gmt::Ref<MethodSymbol> method = memberSymbol.as<MethodSymbol>();
+			method->set_is_virtual(true);
+		}
+
+		// properties and indexers on an interface expose virtual accessors
+		bool isProperty = memberSymbol->get_kind() == SyntaxKind::PropertyDeclaration;
+		bool isIndexator = memberSymbol->get_kind() == SyntaxKind::IndexatorDeclaration;
+		if (isProperty || isIndexator)
+		{
+			gmt::Ref<PropertySymbol> property = memberSymbol.as<PropertySymbol>();
+
+			gmt::Ref<AccessorSymbol> getter = property->get_getter();
+			if (!getter.is_null())
+				getter->set_is_virtual(true);
+
+			gmt::Ref<AccessorSymbol> setter = property->get_setter();
+			if (!setter.is_null())
+				setter->set_is_virtual(true);
+		}
 	}
 
 	pop_scope();
@@ -311,7 +332,7 @@ void DeclarationCollector::visit_delegate_declaration(const DelegateDeclarationS
 		gmt::Ref<const SyntaxSymbol> parent = symbol->get_parent();
 		if (!parent.is_null() && !is_namespace_scope(parent))
 		{
-			get_diagnostics().report_error(node->get_location(), L"Delegates can only be declared inside Namespace or CompilationUnit");
+			get_diagnostics().report_error(node->get_location(), L"Delegates can only be declared inside Namespace");
 		}
 	}
 
@@ -342,7 +363,7 @@ void DeclarationCollector::visit_enum_declaration(const EnumDeclarationSyntax* n
 		gmt::Ref<const SyntaxSymbol> parent = symbol->get_parent();
 		if (!parent.is_null() && !is_namespace_scope(parent))
 		{
-			get_diagnostics().report_error(node->get_location(), L"Enums can only be declared inside Namespace or CompilationUnit");
+			get_diagnostics().report_error(node->get_location(), L"Enums can only be declared inside Namespace");
 		}
 	}
 
@@ -491,8 +512,16 @@ void DeclarationCollector::visit_function_declaration(const FunctionDeclarationS
 		get_diagnostics().report_error(node->get_location(), L"Methods cannot be declared inside of UNKNOWN");
 	}
 
-	if (node->get_body().is_null() && (parent.is_null() || parent->get_kind() != SyntaxKind::InterfaceDeclaration))
-		get_diagnostics().report_error(node->get_location(), L"Method should have a Body, as it's not marked as 'abstract'");
+	if (node->get_body().is_null())
+	{
+		if (parent.is_null() || parent->get_kind() != SyntaxKind::InterfaceDeclaration)
+			get_diagnostics().report_error(node->get_location(), L"Method should have a Body, as it's not marked as 'abstract'");
+	}
+	else
+	{
+		if (parent.is_null() || parent->get_kind() == SyntaxKind::InterfaceDeclaration)
+			get_diagnostics().report_error(node->get_location(), L"Method should not have a Body, as it's declared inside interface");
+	}
 
 	if (!node->get_return_type().is_null())
 		node->get_return_type().as_ptr()->accept(*this);
@@ -786,6 +815,14 @@ void DeclarationCollector::visit_accessor_declaration(const AccessorDeclarationS
 		if (symbol->get_parent().is_null())
 			get_diagnostics().report_error(node->get_location(), L"Cannot resolve Accessors' owner Type");
 	}
+
+	/* TODO
+	if (propertySymbol->get_parent().is_null() || propertySymbol->get_parent()->get_kind() != SyntaxKind::InterfaceDeclaration)
+	{
+		if (!node->get_body().is_null())
+			get_diagnostics().report_error(node->get_location(), L"Method should not have a Body, as it's declared inside interface");
+	}
+	*/
 }
 
 void DeclarationCollector::visit_variable_statement(const VariableStatementSyntax* node)

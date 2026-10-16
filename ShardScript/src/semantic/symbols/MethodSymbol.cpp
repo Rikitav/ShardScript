@@ -69,14 +69,14 @@ const std::vector<gmt::Ref<ParameterSymbol>>& MethodSymbol::get_parameters() con
 	return m_parameters;
 }
 
-bool MethodSymbol::get_is_abstract() const
+bool MethodSymbol::get_is_virtual() const
 {
-	return m_isAbstract;
+	return m_isVirtual;
 }
 
-void MethodSymbol::set_is_abstract(bool isAbstract)
+void MethodSymbol::set_is_virtual(bool isVirtual)
 {
-	m_isAbstract = isAbstract;
+	m_isVirtual = isVirtual;
 }
 
 bool MethodSymbol::get_is_async() const
