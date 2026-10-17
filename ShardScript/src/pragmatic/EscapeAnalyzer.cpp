@@ -258,6 +258,8 @@ void EscapeAnalyzer::leave_frame()
 
 	if (!frame.method.is_null())
 	{
+		m_pragmatic.set_local_order(frame.method, frame.orderedLocals);
+
 		WalkedMethod walked;
 		walked.method = frame.method;
 		walked.returnedExpressions = std::move(frame.returnedExpressions);
@@ -280,7 +282,9 @@ void EscapeAnalyzer::declare_local(gmt::Ref<SyntaxSymbol> symbol)
 	if (symbol.is_null() || !in_frame())
 		return;
 
-	current_frame().declared.insert(symbol);
+	if (current_frame().declared.insert(symbol).second)
+		current_frame().orderedLocals.push_back(symbol);
+
 	ensure_local_id(symbol);
 }
 
@@ -339,10 +343,9 @@ bool EscapeAnalyzer::is_fresh_invokation(gmt::Ref<const ExpressionSyntax> expres
 		return false;
 
 	gmt::Ref<MethodSymbol> callee;
-	auto nodeRef = ref_from(expression.as_ptr());
-	if (nodeRef.has_value())
+	if (!expression.is_null())
 	{
-		gmt::Ref<SyntaxSymbol> bound = get_symbol_table().lookup_symbol(*nodeRef);
+		gmt::Ref<SyntaxSymbol> bound = get_symbol_table().lookup_symbol(expression);
 		if (!bound.is_null() && bound->is_method())
 			callee = bound.as<MethodSymbol>();
 	}
@@ -600,21 +603,17 @@ void EscapeAnalyzer::visit_binary_expression(const BinaryExpressionSyntax* node)
 	{
 		if (left->get_kind() == SyntaxKind::IdentifierNameType)
 		{
-			auto leftRef = ref_from(left.as_ptr());
-			if (leftRef.has_value())
-			{
-				gmt::Ref<SyntaxSymbol> symbol = get_symbol_table().lookup_symbol(*leftRef);
+			gmt::Ref<SyntaxSymbol> symbol = get_symbol_table().lookup_symbol(left);
 
-				bool isLocal = !symbol.is_null();
-				isLocal = isLocal && symbol->get_kind() == SyntaxKind::VariableStatement;
-				bool isParameter = !symbol.is_null();
-				isParameter = isParameter && symbol->get_kind() == SyntaxKind::Parameter;
+			bool isLocal = !symbol.is_null();
+			isLocal = isLocal && symbol->get_kind() == SyntaxKind::VariableStatement;
+			bool isParameter = !symbol.is_null();
+			isParameter = isParameter && symbol->get_kind() == SyntaxKind::Parameter;
 
-				if (isLocal || isParameter)
-					alias_into(symbol, right);
-				else
-					expose_expression(right, EscapeLevel::GlobalEscape, EscapeChannel::Store);
-			}
+			if (isLocal || isParameter)
+				alias_into(symbol, right);
+			else
+				expose_expression(right, EscapeLevel::GlobalEscape, EscapeChannel::Store);
 		}
 		else
 		{

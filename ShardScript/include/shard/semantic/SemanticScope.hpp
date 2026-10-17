@@ -24,7 +24,6 @@ namespace shard
 		gmt::Ref<SyntaxSymbol> m_owner;
 		gmt::Ref<NamespaceSymbol> m_namespace;
 
-		// TODO: move to expression binder
 		std::unordered_set<gmt::Ref<NamespaceSymbol>> m_importedNamespaces;
 
 	public:
@@ -39,10 +38,7 @@ namespace shard
 		gmt::Ref<NamespaceSymbol> get_namespace() const;
 		void set_namespace(gmt::Ref<NamespaceSymbol> namespaceSymbol);
 
-		// TODO: move to expression binder
 		const std::unordered_set<gmt::Ref<NamespaceSymbol>>& get_imported_namespaces() const;
-
-		// TODO: move to expression binder
 		void add_imported_namespace(gmt::Ref<NamespaceSymbol> namespaceSymbol);
 
 		gmt::Ref<SyntaxSymbol> find_local(gmt::StringReference name) const;

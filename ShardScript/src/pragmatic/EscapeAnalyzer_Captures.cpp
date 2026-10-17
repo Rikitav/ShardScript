@@ -114,13 +114,9 @@ void EscapeAnalyzer::visit_lambda_expression(const LambdaExpressionSyntax* node)
 	gmt::Ref<MethodSymbol> symbol;
 	if (!node->get_parameters().is_null())
 	{
-		auto paramsRef = ref_from(node->get_parameters().as_ptr());
-		if (paramsRef.has_value())
-		{
-			gmt::Ref<SyntaxSymbol> bound = get_symbol_table().lookup_symbol(*paramsRef);
-			if (!bound.is_null() && bound->is_method())
-				symbol = bound.as<MethodSymbol>();
-		}
+		gmt::Ref<SyntaxSymbol> bound = get_symbol_table().lookup_symbol(node->get_parameters());
+		if (!bound.is_null() && bound->is_method())
+			symbol = bound.as<MethodSymbol>();
 	}
 
 	gmt::Ref<const ExpressionSyntax> closureSite;

@@ -7,6 +7,7 @@
 
 #include <shard/semantic/symbols/FieldSymbol.hpp>
 #include <shard/semantic/symbols/ParameterSymbol.hpp>
+#include <shard/semantic/symbols/VariableSymbol.hpp>
 
 #include <stdexcept>
 
@@ -289,10 +290,9 @@ int EscapeAnalyzer::classify_return_expression(gmt::Ref<MethodSymbol> method, gm
 		// transitive return-slot chaining (2.1e): a call to a Fresh-summary
 		// callee hands the caller a caller-placeable value without a local site
 		gmt::Ref<MethodSymbol> callee;
-		auto nodeRef = ref_from(expression.as_ptr());
-		if (nodeRef.has_value())
+		if (!expression.is_null())
 		{
-			gmt::Ref<SyntaxSymbol> bound = get_symbol_table().lookup_symbol(*nodeRef);
+			gmt::Ref<SyntaxSymbol> bound = get_symbol_table().lookup_symbol(expression);
 			if (!bound.is_null() && bound->is_method())
 				callee = bound.as<MethodSymbol>();
 		}
@@ -428,59 +428,74 @@ bool EscapeAnalyzer::is_scalar_eligible(gmt::Ref<StructSymbol> type)
 	return eligible;
 }
 
+AllocationSiteVerdict EscapeAnalyzer::classify_node(int id, gmt::Ref<StructSymbol> nodeType, const std::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries)
+{
+	AllocationSiteVerdict verdict;
+	verdict.level = m_graph.levels[id];
+	verdict.channels = m_graph.channelSets[id];
+
+	if (verdict.level == EscapeLevel::GlobalEscape)
+	{
+		bool returnOnly = verdict.channels == EscapeChannel::Return;
+		verdict.verdict = returnOnly && is_caller_placeable(m_graph.idOwners[id]) ? PlacementVerdict::StackReturn : PlacementVerdict::Heap;
+	}
+	else if (verdict.level == EscapeLevel::ArgEscape)
+	{
+		bool closed = cone_closed(id, summaries);
+		bool hasCold = m_graph.coldChannels[id] != EscapeChannel::None;
+
+		// cone-closed ArgEscape with cold channels: the cone adds no hot
+		// escape, so the site is born on the stack and migrates on the
+		// cold path like any other Promote
+		if (closed && hasCold)
+			verdict.verdict = PlacementVerdict::Promote;
+		else
+			verdict.verdict = closed ? PlacementVerdict::Stack : PlacementVerdict::Heap;
+	}
+	else if (m_graph.coldChannels[id] != EscapeChannel::None)
+	{
+		// hot NoEscape with cold-only upward flows: born on the stack,
+		// migrated at the cold escape point (materialization-on-merge
+		// would be needed for Scalar, so Promote is the stand-in)
+		verdict.verdict = PlacementVerdict::Promote;
+	}
+	else if (m_graph.identityExposed[id])
+	{
+		verdict.verdict = PlacementVerdict::Stack;
+	}
+	else if (is_scalar_eligible(nodeType))
+	{
+		verdict.verdict = PlacementVerdict::Scalar;
+	}
+	else
+	{
+		verdict.verdict = PlacementVerdict::Stack;
+	}
+
+	return verdict;
+}
+
 void EscapeAnalyzer::assign_verdicts(const std::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries)
 {
 	for (const auto& pair : m_graph.siteIds)
 	{
-		int id = pair.second;
-
-		AllocationSiteVerdict verdict;
-		verdict.level = m_graph.levels[id];
-		verdict.channels = m_graph.channelSets[id];
-
-		if (verdict.level == EscapeLevel::GlobalEscape)
-		{
-			bool returnOnly = verdict.channels == EscapeChannel::Return;
-			verdict.verdict = returnOnly && is_caller_placeable(m_graph.idOwners[id]) ? PlacementVerdict::StackReturn : PlacementVerdict::Heap;
-		}
-		else if (verdict.level == EscapeLevel::ArgEscape)
-		{
-			bool closed = cone_closed(id, summaries);
-			bool hasCold = m_graph.coldChannels[id] != EscapeChannel::None;
-
-			// cone-closed ArgEscape with cold channels: the cone adds no hot
-			// escape, so the site is born on the stack and migrates on the
-			// cold path like any other Promote
-			if (closed && hasCold)
-				verdict.verdict = PlacementVerdict::Promote;
-			else
-				verdict.verdict = closed ? PlacementVerdict::Stack : PlacementVerdict::Heap;
-		}
-		else if (m_graph.coldChannels[id] != EscapeChannel::None)
-		{
-			// hot NoEscape with cold-only upward flows: born on the stack,
-			// migrated at the cold escape point (materialization-on-merge
-			// would be needed for Scalar, so Promote is the stand-in)
-			verdict.verdict = PlacementVerdict::Promote;
-		}
-		else if (m_graph.identityExposed[id])
-		{
-			verdict.verdict = PlacementVerdict::Stack;
-		}
-		else if (is_scalar_eligible(get_model().get_expression_type(pair.first)))
-		{
-			verdict.verdict = PlacementVerdict::Scalar;
-		}
-		else
-		{
-			verdict.verdict = PlacementVerdict::Stack;
-		}
-
-		m_pragmatic.set_allocation_site_verdict(pair.first, verdict);
+		gmt::Ref<StructSymbol> siteType = get_model().get_expression_type(pair.first);
+		m_pragmatic.set_allocation_site_verdict(pair.first, classify_node(pair.second, siteType, summaries));
 	}
 
 	for (const auto& pair : m_graph.localIds)
-		m_pragmatic.set_local_level(m_graph.idOwners[pair.second], pair.first, m_graph.levels[pair.second]);
+	{
+		int id = pair.second;
+
+		gmt::Ref<StructSymbol> localType;
+		SyntaxKind localKind = pair.first->get_kind();
+		if (localKind == SyntaxKind::VariableStatement)
+			localType = pair.first.as<VariableSymbol>()->get_type();
+		else if (localKind == SyntaxKind::Parameter)
+			localType = pair.first.as<ParameterSymbol>()->get_type();
+
+		m_pragmatic.set_local_verdict(m_graph.idOwners[id], pair.first, classify_node(id, localType, summaries));
+	}
 
 	commit_promotion_points();
 }

@@ -34,6 +34,7 @@ namespace shard
 			gmt::Ref<MethodSymbol> method;
 			gmt::Ref<const ExpressionSyntax> closureSite; // null for member bodies
 			std::unordered_set<gmt::Ref<SyntaxSymbol>> declared;
+			std::vector<gmt::Ref<SyntaxSymbol>> orderedLocals; // declaration order, persisted for the frame layout pass
 			std::vector<gmt::Ref<const ExpressionSyntax>> returnedExpressions;
 			bool seenAwait = false;
 			std::vector<int> loopStack;
@@ -142,6 +143,8 @@ namespace shard
 		bool cone_closed(int id, const std::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries) const;
 		bool is_scalar_eligible(gmt::Ref<StructSymbol> type);
 		bool participates_in_reference_cycle(gmt::Ref<StructSymbol> type);
+
+		AllocationSiteVerdict classify_node(int id, gmt::Ref<StructSymbol> nodeType, const std::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries);
 
 		void record_cold_point(int id, gmt::Ref<const ExpressionSyntax> expression);
 		bool reaches_site(int from, int to) const;

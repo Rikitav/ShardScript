@@ -155,11 +155,7 @@ void ControlFlowAnalyzer::visit_lambda_expression(const LambdaExpressionSyntax* 
 	// the anonymous method symbol is bound to the lambda's parameters list node
 	gmt::Ref<MethodSymbol> symbol;
 	if (!node->get_parameters().is_null())
-	{
-		auto paramsRef = ref_from(node->get_parameters().as_ptr());
-		if (paramsRef.has_value())
-			symbol = lookup_symbol<MethodSymbol>(*paramsRef);
-	}
+		symbol = lookup_symbol<MethodSymbol>(node->get_parameters());
 
 	if (symbol.is_null())
 		return;
@@ -405,9 +401,7 @@ ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_statement(gmt::Ref<c
 				scan_expression(statement->get_range_expression());
 
 			// the loop variable is assigned by the enumeration itself
-			auto nodeRef = ref_from(node.as_ptr());
-			if (nodeRef.has_value())
-				mark_assigned(lookup_symbol<VariableSymbol>(*nodeRef));
+			mark_assigned(lookup_symbol<VariableSymbol>(node));
 
 			analyze_loop_body(statement->get_block());
 			return FlowState::Normal;
@@ -545,9 +539,7 @@ ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_try_statement(gmt::R
 			continue;
 
 		// the catch variable is assigned by the runtime before the body runs
-		auto clauseRef = ref_from(clause.as_ptr());
-		if (clauseRef.has_value())
-			mark_assigned(lookup_symbol<VariableSymbol>(*clauseRef));
+		mark_assigned(lookup_symbol<VariableSymbol>(clause));
 
 		push_catch_exception(lookup_catch_type(clause));
 
@@ -706,11 +698,7 @@ gmt::Ref<StructSymbol> ControlFlowAnalyzer::lookup_catch_type(gmt::Ref<const Cat
 	if (exceptionType.is_null())
 		return gmt::Ref<StructSymbol>();
 
-	auto typeRef = ref_from(exceptionType.as_ptr());
-	if (!typeRef.has_value())
-		return gmt::Ref<StructSymbol>();
-
-	return lookup_symbol<StructSymbol>(*typeRef);
+	return lookup_symbol<StructSymbol>(exceptionType);
 }
 
 ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_loop_body(gmt::Ref<const StatementsBlockSyntax> body)
@@ -760,11 +748,7 @@ void ControlFlowAnalyzer::analyze_expression_for_assignment(gmt::Ref<const Expre
 	if (left.is_null() || left->get_kind() != SyntaxKind::IdentifierNameType)
 		return;
 
-	auto leftRef = ref_from(left.as_ptr());
-	if (!leftRef.has_value())
-		return;
-
-	gmt::Ref<SyntaxSymbol> symbol = get_symbol_table().lookup_symbol(*leftRef);
+	gmt::Ref<SyntaxSymbol> symbol = get_symbol_table().lookup_symbol(left);
 	if (symbol.is_null())
 		return;
 
@@ -785,11 +769,7 @@ void ControlFlowAnalyzer::analyze_expression_for_use(gmt::Ref<const ExpressionSy
 		{
 			gmt::Ref<const IdentifierNameTypeSyntax> identifier = expression.as<const IdentifierNameTypeSyntax>();
 
-			auto identifierRef = ref_from(identifier.as_ptr());
-			if (!identifierRef.has_value())
-				break;
-
-			gmt::Ref<SyntaxSymbol> symbol = get_symbol_table().lookup_symbol(*identifierRef);
+			gmt::Ref<SyntaxSymbol> symbol = get_symbol_table().lookup_symbol(identifier);
 			if (symbol.is_null())
 				break;
 
@@ -826,11 +806,7 @@ void ControlFlowAnalyzer::analyze_variable_statement(gmt::Ref<const VariableStat
 	if (node.is_null())
 		return;
 
-	auto nodeRef = ref_from(node.as_ptr());
-	if (!nodeRef.has_value())
-		return;
-
-	gmt::Ref<VariableSymbol> variable = lookup_symbol<VariableSymbol>(*nodeRef);
+	gmt::Ref<VariableSymbol> variable = lookup_symbol<VariableSymbol>(node);
 	if (variable.is_null())
 		return;
 
@@ -907,11 +883,10 @@ bool ControlFlowAnalyzer::is_this_expression(gmt::Ref<const ExpressionSyntax> ex
 		return false;
 	}
 
-	auto expressionRef = ref_from(expression.as_ptr());
-	if (!expressionRef.has_value())
+	if (expression.is_null())
 		return false;
 
-	gmt::Ref<ParameterSymbol> parameter = lookup_symbol<ParameterSymbol>(*expressionRef);
+	gmt::Ref<ParameterSymbol> parameter = lookup_symbol<ParameterSymbol>(expression);
 	return !parameter.is_null() && parameter->get_name() == L"this";
 }
 
@@ -920,11 +895,7 @@ void ControlFlowAnalyzer::record_field_or_property_write(gmt::Ref<const MemberAc
 	if (node.is_null() || m_currentMethod.is_null())
 		return;
 
-	auto nodeRef = ref_from(node.as_ptr());
-	if (!nodeRef.has_value())
-		return;
-
-	gmt::Ref<SyntaxSymbol> bound = get_symbol_table().lookup_symbol(*nodeRef);
+	gmt::Ref<SyntaxSymbol> bound = get_symbol_table().lookup_symbol(node);
 	if (bound.is_null())
 		return;
 
@@ -974,11 +945,7 @@ void ControlFlowAnalyzer::record_indexator_write(gmt::Ref<const IndexatorExpress
 	if (node.is_null() || m_currentMethod.is_null())
 		return;
 
-	auto nodeRef = ref_from(node.as_ptr());
-	if (!nodeRef.has_value())
-		return;
-
-	gmt::Ref<SyntaxSymbol> bound = get_symbol_table().lookup_symbol(*nodeRef);
+	gmt::Ref<SyntaxSymbol> bound = get_symbol_table().lookup_symbol(node);
 	gmt::Ref<PropertySymbol> property = bound.as<PropertySymbol>();
 
 	bool isStatic = !property.is_null();
@@ -1247,11 +1214,7 @@ void ControlFlowAnalyzer::visit_unary_expression(const UnaryExpressionSyntax* no
 	// 'try <invokation>' explicitly allows the callee's exceptions to unwind
 	// further; mark the operand so the invokation visit can recognize it
 	if (node->get_operator_token().get_type() == TokenType::TryKeyword && !node->get_operand().is_null())
-	{
-		auto operandRef = ref_from(node->get_operand().as_ptr());
-		if (operandRef.has_value())
-			m_tryWrappedExpressions.insert(*operandRef);
-	}
+		m_tryWrappedExpressions.insert(node->get_operand());
 
 	bool isIncrement = is_increment_decrement_operator(node->get_operator_token().get_type());
 	if (!m_currentMethod.is_null() && isIncrement && !node->get_operand().is_null())
@@ -1344,15 +1307,8 @@ void ControlFlowAnalyzer::visit_await_expression(const AwaitExpressionSyntax* no
 		{
 			gmt::Ref<const InvokationExpressionSyntax> invocation = awaited.as<const InvokationExpressionSyntax>();
 
-			gmt::Ref<MethodSymbol> callee;
-			bool isTryWrapped = false;
-
-			auto invocationRef = ref_from(invocation.as_ptr());
-			if (invocationRef.has_value())
-			{
-				callee = lookup_symbol<MethodSymbol>(*invocationRef);
-				isTryWrapped = is_try_wrapped(*invocationRef);
-			}
+			gmt::Ref<MethodSymbol> callee = lookup_symbol<MethodSymbol>(invocation);
+			bool isTryWrapped = is_try_wrapped(invocation);
 
 			bool isAsyncCallee = !callee.is_null() && callee->get_is_async();
 			if (isAsyncCallee)

@@ -27,7 +27,8 @@ namespace shard
 	{
 		// FrameLayout is the intended consumer of the per-method local levels
 		std::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary> m_summaries;
-		std::unordered_map<gmt::Ref<MethodSymbol>, std::unordered_map<gmt::Ref<SyntaxSymbol>, EscapeLevel>> m_methodLocals;
+		std::unordered_map<gmt::Ref<MethodSymbol>, std::unordered_map<gmt::Ref<SyntaxSymbol>, AllocationSiteVerdict>> m_methodLocals;
+		std::unordered_map<gmt::Ref<MethodSymbol>, std::vector<gmt::Ref<SyntaxSymbol>>> m_methodLocalOrder; // declaration order, for frame slot indexing
 		std::unordered_map<gmt::Ref<const ExpressionSyntax>, AllocationSiteVerdict> m_allocationSites;
 		std::unordered_map<gmt::Ref<const ExpressionSyntax>, std::vector<gmt::Ref<const ExpressionSyntax>>> m_promotionPoints;
 
@@ -53,8 +54,11 @@ namespace shard
 		// nullptr when the site is not promoted: no migration points recorded
 		const std::vector<gmt::Ref<const ExpressionSyntax>>* get_promotion_points(gmt::Ref<const ExpressionSyntax> site) const;
 
-		void set_local_level(gmt::Ref<MethodSymbol> method, gmt::Ref<SyntaxSymbol> local, EscapeLevel level);
-		EscapeLevel get_local_level(gmt::Ref<MethodSymbol> method, gmt::Ref<SyntaxSymbol> local) const;
+		void set_local_verdict(gmt::Ref<MethodSymbol> method, gmt::Ref<SyntaxSymbol> local, const AllocationSiteVerdict& verdict);
+		AllocationSiteVerdict get_local_verdict(gmt::Ref<MethodSymbol> method, gmt::Ref<SyntaxSymbol> local) const;
+
+		void set_local_order(gmt::Ref<MethodSymbol> method, std::vector<gmt::Ref<SyntaxSymbol>> locals);
+		const std::vector<gmt::Ref<SyntaxSymbol>>* get_local_order(gmt::Ref<MethodSymbol> method) const;
 
 		void set_summary(gmt::Ref<MethodSymbol> method, const EscapeSummary& summary);
 		EscapeSummary get_summary(gmt::Ref<MethodSymbol> method) const;
