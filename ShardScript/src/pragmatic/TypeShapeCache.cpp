@@ -84,13 +84,16 @@ TypeShape* TypeShapeCache::find_or_create_type_shape(SemanticModel& model, gmt::
 	TypeShape& shape = choice->second;
 
 	if (inserted)
-		build(&shape, model, keyType, genericArgs);
+		build(&shape, model);
 
 	return &shape;
 }
 
-void TypeShapeCache::build(TypeShape* shape, SemanticModel& model, gmt::Ref<StructSymbol> baseType, const std::vector<gmt::Ref<StructSymbol>>& genericArgs)
+void TypeShapeCache::build(TypeShape* shape, SemanticModel& model)
 {
+	gmt::Ref<StructSymbol> baseType = shape->m_baseType;
+	const std::vector<gmt::Ref<StructSymbol>>& genericArgs = shape->m_genericArguments;
+
 	if (baseType.is_null())
 		throw std::runtime_error("cannot build a type shape for a null base type");
 
@@ -149,7 +152,7 @@ void TypeShapeCache::build(TypeShape* shape, SemanticModel& model, gmt::Ref<Stru
 		if (fieldType.is_null())
 			continue;
 
-		TypeShape::SlotInfo slot;
+		TypeShape::SlotInfo slot{};
 		slot.offset = offset;
 		slot.fieldShape = find_or_create_type_shape(model, fieldType);
 

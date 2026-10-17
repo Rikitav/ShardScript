@@ -71,11 +71,8 @@ void EscapeAnalyzer::visit_expression_statement(const ExpressionStatementSyntax*
 
 		if (isInvokation)
 		{
-			auto expressionRef = ref_from(expression.as_ptr());
-
-			bool isTaskLike = false;
-			if (expressionRef.has_value())
-				isTaskLike = get_model().is_task_or_task_like(get_model().get_expression_type(*expressionRef));
+			gmt::Ref<StructSymbol> expressionType = get_model().get_expression_type(expression);
+			bool isTaskLike = get_model().is_task_or_task_like(expressionType);
 
 			if (isTaskLike)
 			{

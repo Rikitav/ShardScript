@@ -18,7 +18,7 @@ namespace shard
 	{
 		std::unordered_map<std::uint64_t, TypeShape> m_shapes;
 
-		void build(TypeShape* shape, SemanticModel& model, gmt::Ref<StructSymbol> baseType, const std::vector<gmt::Ref<StructSymbol>>& genericArgs);
+		void build(TypeShape* shape, SemanticModel& model);
 
 	public:
 		TypeShapeCache() = default;

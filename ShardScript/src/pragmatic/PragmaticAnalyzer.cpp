@@ -4,6 +4,7 @@
 
 #include <shard/semantic/SemanticModel.hpp>
 #include <shard/pragmatic/EscapeAnalyzer.hpp>
+#include <shard/pragmatic/LayoutGenerator.hpp>
 #include <shard/pragmatic/PragmaticModel.hpp>
 
 using namespace shard;
@@ -20,4 +21,7 @@ void PragmaticAnalyzer::analyze(SyntaxTree& tree, SemanticModel& model, Pragmati
 
 	EscapeAnalyzer escapeAnalyzer(model, pragmatic, m_diagnostics);
 	escapeAnalyzer.analyze(tree);
+
+	LayoutGenerator layoutGenerator(model, pragmatic, m_diagnostics);
+	layoutGenerator.analyze(tree);
 }

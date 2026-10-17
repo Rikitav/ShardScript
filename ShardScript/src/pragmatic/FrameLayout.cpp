@@ -66,6 +66,16 @@ void FrameLayout::set_argument_count(std::uint16_t count)
 	m_argumentCount = count;
 }
 
+void FrameLayout::add_argument(gmt::Ref<StructSymbol> type)
+{
+	m_argumentTypes.push_back(type);
+}
+
+const std::vector<gmt::Ref<StructSymbol>>& FrameLayout::get_argument_types() const
+{
+	return m_argumentTypes;
+}
+
 std::uint16_t FrameLayout::get_argument_count() const
 {
 	return m_argumentCount;
@@ -84,6 +94,16 @@ std::uint16_t FrameLayout::get_local_count() const
 const std::vector<FrameSlotRecipe>& FrameLayout::get_variable_slots() const
 {
 	return m_variableSlots;
+}
+
+void FrameLayout::set_locals_bytes(std::size_t bytes)
+{
+	m_localsBytes = bytes;
+}
+
+std::size_t FrameLayout::get_locals_bytes() const
+{
+	return m_localsBytes;
 }
 
 void FrameLayout::publish_eval_layout(std::uint32_t maxDepth, std::size_t maxPayload, bool poisoned)

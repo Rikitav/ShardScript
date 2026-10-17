@@ -25,10 +25,12 @@ namespace shard
 	class SHARD_API FrameLayout
 	{
 		std::vector<FrameSlotRecipe> m_variableSlots;
+		std::vector<gmt::Ref<StructSymbol>> m_argumentTypes; // receiver first for instance methods, then parameters in order
 		std::uint16_t m_argumentCount = 0; // eval-stack arguments, including the implicit 'this'
 		std::uint16_t m_variableCount = 0; // locals and compiler-generated temporaries
 		std::uint32_t m_maxEvalDepth = 0;
 		std::size_t m_evalSlotPayload = 0;
+		std::size_t m_localsBytes = 0; // total frame bytes for arguments and locals; computed by the layout pass
 		bool m_isComplete = false;
 
 		static FrameSlotRecipe make_recipe(gmt::Ref<StructSymbol> type, const std::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters);
@@ -46,11 +48,16 @@ namespace shard
 		bool set_variable_verdict(std::uint16_t variableIndex, PlacementVerdict verdict);
 
 		void set_argument_count(std::uint16_t count);
+		void add_argument(gmt::Ref<StructSymbol> type);
+		const std::vector<gmt::Ref<StructSymbol>>& get_argument_types() const;
 		std::uint16_t get_argument_count() const;
 		std::uint16_t get_variable_count() const;
 		std::uint16_t get_local_count() const;
 
 		const std::vector<FrameSlotRecipe>& get_variable_slots() const;
+
+		void set_locals_bytes(std::size_t bytes);
+		std::size_t get_locals_bytes() const;
 
 		void publish_eval_layout(std::uint32_t maxDepth, std::size_t maxPayload, bool poisoned);
 		std::uint32_t get_max_eval_depth() const;

@@ -37,22 +37,39 @@ const std::vector<gmt::Ref<const ExpressionSyntax>>* PragmaticModel::get_promoti
 	return &it->second;
 }
 
-void PragmaticModel::set_local_level(gmt::Ref<MethodSymbol> method, gmt::Ref<SyntaxSymbol> local, EscapeLevel level)
+void PragmaticModel::set_local_verdict(gmt::Ref<MethodSymbol> method, gmt::Ref<SyntaxSymbol> local, const AllocationSiteVerdict& verdict)
 {
-	m_methodLocals[method][local] = level;
+	m_methodLocals[method][local] = verdict;
 }
 
-EscapeLevel PragmaticModel::get_local_level(gmt::Ref<MethodSymbol> method, gmt::Ref<SyntaxSymbol> local) const
+AllocationSiteVerdict PragmaticModel::get_local_verdict(gmt::Ref<MethodSymbol> method, gmt::Ref<SyntaxSymbol> local) const
 {
+	AllocationSiteVerdict fallback;
+	fallback.verdict = PlacementVerdict::Heap; // conservative default for locals the escape pass did not see
+
 	auto methodIt = m_methodLocals.find(method);
 	if (methodIt == m_methodLocals.end())
-		return EscapeLevel::NoEscape;
+		return fallback;
 
 	auto localIt = methodIt->second.find(local);
 	if (localIt == methodIt->second.end())
-		return EscapeLevel::NoEscape;
+		return fallback;
 
 	return localIt->second;
+}
+
+void PragmaticModel::set_local_order(gmt::Ref<MethodSymbol> method, std::vector<gmt::Ref<SyntaxSymbol>> locals)
+{
+	m_methodLocalOrder[method] = std::move(locals);
+}
+
+const std::vector<gmt::Ref<SyntaxSymbol>>* PragmaticModel::get_local_order(gmt::Ref<MethodSymbol> method) const
+{
+	auto it = m_methodLocalOrder.find(method);
+	if (it == m_methodLocalOrder.end())
+		return nullptr;
+
+	return &it->second;
 }
 
 void PragmaticModel::set_summary(gmt::Ref<MethodSymbol> method, const EscapeSummary& summary)
