@@ -48,57 +48,31 @@ gmt::Ref<const SyntaxNode> SymbolTable::lookup_node(gmt::Ref<SyntaxSymbol> symbo
 
 namespace
 {
-	inline std::size_t hash_combine(std::size_t seed, std::size_t value)
+	// word-key layout: family tag, base type offset, then argument offsets
+	// (generics) or length (sized arrays); the interner copies keys into its
+	// own chunk storage, so stack-built keys are safe to pass
+	constexpr std::uint64_t ArrayFamilyTag = static_cast<std::uint64_t>(SyntaxKind::ArrayType);
+	constexpr std::uint64_t GenericFamilyTag = static_cast<std::uint64_t>(SyntaxKind::GenericType);
+	constexpr std::uint64_t NullableFamilyTag = static_cast<std::uint64_t>(SyntaxKind::NullableType);
+	constexpr std::size_t InlineKeyWords = 8;
+
+	std::uint64_t* make_generic_key(std::uint64_t* inlineKey, std::vector<std::uint64_t>& spilledKey, gmt::Ref<StructSymbol> underlaying, const std::vector<gmt::Ref<StructSymbol>>& typeArguments)
 	{
-		return seed ^ (value + 0x9e3779b9u + (seed << 6) + (seed >> 2));
-	}
+		const std::size_t count = 2 + typeArguments.size();
+		std::uint64_t* key = inlineKey;
 
-	std::size_t hash_array_key(gmt::Ref<StructSymbol> underlaying, std::size_t size)
-	{
-		std::size_t hash = hash_combine(0, underlaying.get_offset());
-		return hash_combine(hash, size);
-	}
-
-	std::size_t hash_generic_key(gmt::Ref<StructSymbol> underlaying, const std::vector<gmt::Ref<StructSymbol>>& typeArguments)
-	{
-		std::size_t hash = hash_combine(0, underlaying.get_offset());
-		for (const gmt::Ref<StructSymbol>& argument : typeArguments)
-			hash = hash_combine(hash, argument.get_offset());
-
-		return hash;
-	}
-
-	bool same_array_shape(gmt::Ref<ArrayTypeSymbol> symbol, gmt::Ref<StructSymbol> underlaying, std::size_t size)
-	{
-		return symbol->get_underlaying_type() == underlaying && symbol->get_length() == size;
-	}
-
-	bool same_generic_shape(gmt::Ref<GenericTypeSymbol> symbol, gmt::Ref<StructSymbol> underlaying, const std::vector<gmt::Ref<StructSymbol>>& typeArguments)
-	{
-		if (symbol->get_underlaying_type() != underlaying)
-			return false;
-
-		const std::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters = underlaying->type_parameters;
-		if (typeParameters.size() != typeArguments.size())
-			return false;
-
-		for (std::size_t i = 0; i < typeParameters.size(); ++i)
+		if (count > InlineKeyWords)
 		{
-			if (symbol->substitute_type_parameter(typeParameters[i]) != typeArguments[i])
-				return false;
+			spilledKey.resize(count);
+			key = spilledKey.data();
 		}
 
-		return true;
-	}
+		key[0] = GenericFamilyTag;
+		key[1] = underlaying.get_offset();
+		for (std::size_t i = 0; i < typeArguments.size(); ++i)
+			key[2 + i] = typeArguments[i].get_offset();
 
-	std::size_t hash_nullable_key(gmt::Ref<StructSymbol> underlaying)
-	{
-		return hash_combine(0, underlaying.get_offset());
-	}
-
-	bool same_nullable_shape(gmt::Ref<NullableTypeSymbol> symbol, gmt::Ref<StructSymbol> underlaying)
-	{
-		return symbol->get_underlaying_type() == underlaying;
+		return key;
 	}
 }
 
@@ -109,32 +83,26 @@ gmt::Ref<ArrayTypeSymbol> SymbolTable::find_array_type(gmt::Ref<StructSymbol> un
 
 gmt::Ref<ArrayTypeSymbol> SymbolTable::find_array_type(gmt::Ref<StructSymbol> underlaying, std::size_t size) const
 {
-	const auto bucket = m_arrayTypes.find(hash_array_key(underlaying, size));
-	if (bucket == m_arrayTypes.end())
+	const std::uint64_t key[3] = { ArrayFamilyTag, underlaying.get_offset(), size };
+	gmt::Ref<SyntaxSymbol> symbol = m_interner.find(key, 3);
+
+	if (symbol.is_null() || symbol->get_kind() != SyntaxKind::ArrayType)
 		return gmt::nullref;
 
-	for (const gmt::Ref<ArrayTypeSymbol>& candidate : bucket->second)
-	{
-		if (same_array_shape(candidate, underlaying, size))
-			return candidate;
-	}
-
-	return gmt::nullref;
+	return symbol.as<ArrayTypeSymbol>();
 }
 
 gmt::Ref<GenericTypeSymbol> SymbolTable::find_generic_type(gmt::Ref<StructSymbol> underlaying, const std::vector<gmt::Ref<StructSymbol>>& typeArguments) const
 {
-	const auto bucket = m_genericTypes.find(hash_generic_key(underlaying, typeArguments));
-	if (bucket == m_genericTypes.end())
+	std::uint64_t inlineKey[InlineKeyWords];
+	std::vector<std::uint64_t> spilledKey;
+	const std::uint64_t* key = make_generic_key(inlineKey, spilledKey, underlaying, typeArguments);
+
+	gmt::Ref<SyntaxSymbol> symbol = m_interner.find(key, static_cast<std::uint16_t>(2 + typeArguments.size()));
+	if (symbol.is_null() || symbol->get_kind() != SyntaxKind::GenericType)
 		return gmt::nullref;
 
-	for (const gmt::Ref<GenericTypeSymbol>& candidate : bucket->second)
-	{
-		if (same_generic_shape(candidate, underlaying, typeArguments))
-			return candidate;
-	}
-
-	return gmt::nullref;
+	return symbol.as<GenericTypeSymbol>();
 }
 
 gmt::Ref<ArrayTypeSymbol> SymbolTable::find_or_create_array_type(gmt::Ref<StructSymbol> underlaying)
@@ -151,7 +119,8 @@ gmt::Ref<ArrayTypeSymbol> SymbolTable::find_or_create_array_type(gmt::Ref<Struct
 	gmt::Ref<ArrayTypeSymbol> symbol = m_arena.emplace<ArrayTypeSymbol>(underlaying, m_rootNamespace);
 	symbol->set_length(size);
 
-	m_arrayTypes[hash_array_key(underlaying, size)].push_back(symbol);
+	const std::uint64_t key[3] = { ArrayFamilyTag, underlaying.get_offset(), size };
+	m_interner.insert(key, 3, symbol);
 	return symbol;
 }
 
@@ -166,23 +135,24 @@ gmt::Ref<GenericTypeSymbol> SymbolTable::find_or_create_generic_type(gmt::Ref<St
 	const std::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters = underlaying->type_parameters;
 	for (std::size_t i = 0; i < typeParameters.size() && i < typeArguments.size(); ++i)
 		symbol->add_type_parameter(typeParameters[i], typeArguments[i]);
-	m_genericTypes[hash_generic_key(underlaying, typeArguments)].push_back(symbol);
+
+	std::uint64_t inlineKey[InlineKeyWords];
+	std::vector<std::uint64_t> spilledKey;
+	const std::uint64_t* key = make_generic_key(inlineKey, spilledKey, underlaying, typeArguments);
+
+	m_interner.insert(key, static_cast<std::uint16_t>(2 + typeArguments.size()), symbol);
 	return symbol;
 }
 
 gmt::Ref<NullableTypeSymbol> SymbolTable::find_nullable_type(gmt::Ref<StructSymbol> underlaying) const
 {
-	const auto bucket = m_nullableTypes.find(hash_nullable_key(underlaying));
-	if (bucket == m_nullableTypes.end())
+	const std::uint64_t key[2] = { NullableFamilyTag, underlaying.get_offset() };
+	gmt::Ref<SyntaxSymbol> symbol = m_interner.find(key, 2);
+
+	if (symbol.is_null() || symbol->get_kind() != SyntaxKind::NullableType)
 		return gmt::nullref;
 
-	for (const gmt::Ref<NullableTypeSymbol>& candidate : bucket->second)
-	{
-		if (same_nullable_shape(candidate, underlaying))
-			return candidate;
-	}
-
-	return gmt::nullref;
+	return symbol.as<NullableTypeSymbol>();
 }
 
 gmt::Ref<NullableTypeSymbol> SymbolTable::find_or_create_nullable_type(gmt::Ref<StructSymbol> underlaying)
@@ -192,7 +162,9 @@ gmt::Ref<NullableTypeSymbol> SymbolTable::find_or_create_nullable_type(gmt::Ref<
 		return existing;
 
 	gmt::Ref<NullableTypeSymbol> symbol = m_arena.emplace<NullableTypeSymbol>(underlaying, m_rootNamespace);
-	m_nullableTypes[hash_nullable_key(underlaying)].push_back(symbol);
+
+	const std::uint64_t key[2] = { NullableFamilyTag, underlaying.get_offset() };
+	m_interner.insert(key, 2, symbol);
 	return symbol;
 }
 

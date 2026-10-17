@@ -1,5 +1,7 @@
 #include <shard/pragmatic/PragmaticModel.hpp>
 
+#include <shard/semantic/SemanticModel.hpp>
+
 using namespace shard;
 
 void PragmaticModel::set_allocation_site_verdict(gmt::Ref<const ExpressionSyntax> site, const AllocationSiteVerdict& verdict)
@@ -70,4 +72,33 @@ EscapeSummary PragmaticModel::get_summary(gmt::Ref<MethodSymbol> method) const
 const std::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& PragmaticModel::get_summaries() const
 {
 	return m_summaries;
+}
+
+TypeShapeCache& PragmaticModel::get_type_shape_cache()
+{
+	return m_typeShapeCache;
+}
+
+TypeShape* PragmaticModel::find_type_shape(SemanticModel& model, gmt::Ref<StructSymbol> baseType, const std::vector<gmt::Ref<StructSymbol>>& genericArgs) const
+{
+	return m_typeShapeCache.find_type_shape(model, baseType, genericArgs);
+}
+
+TypeShape* PragmaticModel::find_or_create_type_shape(SemanticModel& model, gmt::Ref<StructSymbol> baseType, const std::vector<gmt::Ref<StructSymbol>>& genericArgs)
+{
+	return m_typeShapeCache.find_or_create_type_shape(model, baseType, genericArgs);
+}
+
+FrameLayout* PragmaticModel::find_frame_layout(gmt::Ref<MethodSymbol> method) const
+{
+	auto choice = m_frameLayouts.find(method);
+	if (choice == m_frameLayouts.end())
+		return nullptr;
+
+	return const_cast<FrameLayout*>(&choice->second);
+}
+
+FrameLayout& PragmaticModel::get_or_create_frame_layout(gmt::Ref<MethodSymbol> method)
+{
+	return m_frameLayouts[method];
 }

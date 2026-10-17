@@ -3,6 +3,7 @@
 
 #include <shard/semantic/SyntaxSymbol.hpp>
 #include <shard/semantic/StandardTypes.hpp>
+#include <shard/semantic/SymbolInterner.hpp>
 #include <shard/semantic/symbols/ArrayTypeSymbol.hpp>
 #include <shard/semantic/symbols/GenericTypeSymbol.hpp>
 #include <shard/semantic/symbols/NamespaceSymbol.hpp>
@@ -39,10 +40,8 @@ namespace shard
 		std::unordered_map<gmt::Ref<const SyntaxNode>, gmt::Ref<SyntaxSymbol>> m_nodeToSymbolMap;
 		std::unordered_map<gmt::Ref<SyntaxSymbol>, gmt::Ref<const SyntaxNode>> m_symbolToNodeMap;
 
-		// hash -> candidates; collisions resolved by full structural comparison
-		std::unordered_map<std::size_t, std::vector<gmt::Ref<ArrayTypeSymbol>>> m_arrayTypes;
-		std::unordered_map<std::size_t, std::vector<gmt::Ref<GenericTypeSymbol>>> m_genericTypes;
-		std::unordered_map<std::size_t, std::vector<gmt::Ref<NullableTypeSymbol>>> m_nullableTypes;
+		// composite symbols registry
+		SymbolInterner m_interner;
 
 		// well-known standard library slots; filled with identity stubs until
 		// the real symbols are registered through set_standard_type
