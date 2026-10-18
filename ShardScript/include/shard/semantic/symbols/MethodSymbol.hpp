@@ -29,7 +29,6 @@ namespace shard
 	class SHARD_API MethodSymbol : public MemberSymbol
 	{
 		CallingConvention m_callingConvention = CallingConvention::None;
-		std::vector<std::byte> m_executableByteCode;
 		void* m_functionPointer = nullptr;
 
 		gmt::Ref<StructSymbol> m_returnType;
@@ -55,9 +54,6 @@ namespace shard
 
 		CallingConvention get_calling_convention() const;
 		void set_calling_convention(CallingConvention calling_convention);
-
-		const std::vector<std::byte>& get_executable_byte_code() const;
-		std::vector<std::byte>& get_executable_byte_code();
 
 		void* get_function_pointer() const;
 		void set_function_pointer(void* function_pointer);
