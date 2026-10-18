@@ -938,6 +938,9 @@ void DeclarationCollector::visit_lambda_expression(const LambdaExpressionSyntax*
 	if (!node->get_parameters().is_null())
 		get_symbol_table().bind_symbol<MethodSymbol>(node->get_parameters(), anonymousMethod);
 
+	if (!node->get_body().is_null())
+		node->get_body().as_ptr()->accept(*this);
+
 	pop_scope();
 }
 

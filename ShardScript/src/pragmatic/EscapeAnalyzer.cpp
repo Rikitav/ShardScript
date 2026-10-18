@@ -91,7 +91,7 @@ public:
 
 		SyntaxKind kind = symbol->get_kind();
 		if (kind == SyntaxKind::VariableStatement || kind == SyntaxKind::Parameter)
-			m_refs.locals.push_back(symbol);
+			m_refs.locals.get_vector().push_back(symbol);
 	}
 
 	void visit_member_access_expression(const MemberAccessExpressionSyntax* node) override
@@ -124,7 +124,7 @@ public:
 
 		auto nodeRef = m_arena.ref_from_ptr(node);
 		if (nodeRef.has_value())
-			m_refs.sites.push_back(*nodeRef);
+			m_refs.sites.get_vector().push_back(*nodeRef);
 	}
 
 	void visit_collection_expression(const CollectionExpressionSyntax* node) override
@@ -134,7 +134,7 @@ public:
 
 		auto nodeRef = m_arena.ref_from_ptr(node);
 		if (nodeRef.has_value())
-			m_refs.sites.push_back(*nodeRef);
+			m_refs.sites.get_vector().push_back(*nodeRef);
 	}
 
 	void visit_lambda_expression(const LambdaExpressionSyntax* node) override
@@ -144,7 +144,7 @@ public:
 
 		auto nodeRef = m_arena.ref_from_ptr(node);
 		if (nodeRef.has_value())
-			m_refs.sites.push_back(*nodeRef);
+			m_refs.sites.get_vector().push_back(*nodeRef);
 	}
 };
 
@@ -318,7 +318,7 @@ void EscapeAnalyzer::expose_expression(gmt::Ref<const ExpressionSyntax> expressi
 
 	bool isCold = m_coldDepth > 0;
 
-	for (gmt::Ref<SyntaxSymbol> local : refs.locals)
+	for (gmt::Ref<SyntaxSymbol> local : refs.locals.get_vector())
 	{
 		int id = ensure_local_id(local);
 		add_event(id, level, channel);
@@ -327,7 +327,7 @@ void EscapeAnalyzer::expose_expression(gmt::Ref<const ExpressionSyntax> expressi
 			record_cold_point(id, expression);
 	}
 
-	for (gmt::Ref<const ExpressionSyntax> site : refs.sites)
+	for (gmt::Ref<const ExpressionSyntax> site : refs.sites.get_vector())
 	{
 		int id = ensure_site_id(site);
 		add_event(id, level, channel);
@@ -367,10 +367,10 @@ void EscapeAnalyzer::mark_identity(gmt::Ref<const ExpressionSyntax> expression, 
 	ExpressionRefs refs;
 	collect_expression_refs(expression, refs, includeReceivers);
 
-	for (gmt::Ref<SyntaxSymbol> local : refs.locals)
+	for (gmt::Ref<SyntaxSymbol> local : refs.locals.get_vector())
 		m_graph.identityExposed[ensure_local_id(local)] = true;
 
-	for (gmt::Ref<const ExpressionSyntax> site : refs.sites)
+	for (gmt::Ref<const ExpressionSyntax> site : refs.sites.get_vector())
 		m_graph.identityExposed[ensure_site_id(site)] = true;
 }
 
@@ -384,10 +384,10 @@ void EscapeAnalyzer::record_call_exposure(gmt::Ref<const ExpressionSyntax> expre
 
 	bool cold = m_coldDepth > 0;
 
-	for (gmt::Ref<SyntaxSymbol> local : refs.locals)
+	for (gmt::Ref<SyntaxSymbol> local : refs.locals.get_vector())
 		m_graph.callExposures.push_back({ ensure_local_id(local), callee, parameterIndex, receiver, cold });
 
-	for (gmt::Ref<const ExpressionSyntax> site : refs.sites)
+	for (gmt::Ref<const ExpressionSyntax> site : refs.sites.get_vector())
 		m_graph.callExposures.push_back({ ensure_site_id(site), callee, parameterIndex, receiver, cold });
 }
 
@@ -401,12 +401,12 @@ void EscapeAnalyzer::alias_into(gmt::Ref<SyntaxSymbol> target, gmt::Ref<const Ex
 
 	int targetId = ensure_local_id(target);
 
-	for (gmt::Ref<SyntaxSymbol> local : refs.locals)
+	for (gmt::Ref<SyntaxSymbol> local : refs.locals.get_vector())
 		add_edge(ensure_local_id(local), targetId);
 
 	// the target names every allocation site of the source expression:
 	// an escaping target takes the site with it
-	for (gmt::Ref<const ExpressionSyntax> site : refs.sites)
+	for (gmt::Ref<const ExpressionSyntax> site : refs.sites.get_vector())
 		add_edge(targetId, ensure_site_id(site));
 }
 
@@ -765,10 +765,10 @@ void EscapeAnalyzer::visit_object_creation_expression(const ObjectExpressionSynt
 					ExpressionRefs refs;
 					collect_expression_refs(argumentExpression, refs, false);
 
-					for (gmt::Ref<SyntaxSymbol> local : refs.locals)
+					for (gmt::Ref<SyntaxSymbol> local : refs.locals.get_vector())
 						add_edge(siteId, ensure_local_id(local));
 
-					for (gmt::Ref<const ExpressionSyntax> argumentSite : refs.sites)
+					for (gmt::Ref<const ExpressionSyntax> argumentSite : refs.sites.get_vector())
 						add_edge(siteId, ensure_site_id(argumentSite));
 				}
 
@@ -805,10 +805,10 @@ void EscapeAnalyzer::visit_collection_expression(const CollectionExpressionSynta
 			ExpressionRefs refs;
 			collect_expression_refs(value, refs, false);
 
-			for (gmt::Ref<SyntaxSymbol> local : refs.locals)
+			for (gmt::Ref<SyntaxSymbol> local : refs.locals.get_vector())
 				add_edge(siteId, ensure_local_id(local));
 
-			for (gmt::Ref<const ExpressionSyntax> elementSite : refs.sites)
+			for (gmt::Ref<const ExpressionSyntax> elementSite : refs.sites.get_vector())
 				add_edge(siteId, ensure_site_id(elementSite));
 		}
 	}

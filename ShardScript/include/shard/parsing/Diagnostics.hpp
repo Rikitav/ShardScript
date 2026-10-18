@@ -43,8 +43,8 @@ namespace shard
 	class SHARD_API DiagnosticsContext
 	{
 		std::vector<Diagnostic> m_diagnostics;
-		bool m_anyError;
-		bool m_anyWarns;
+		bool m_anyError = false;
+		bool m_anyWarns = false;
 
 		void write_diagnostic_pretty(std::wostream& out, const Diagnostic& diagnostic, SourceFileCache& sourceFiles) const;
 

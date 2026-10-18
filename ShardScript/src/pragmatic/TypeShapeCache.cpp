@@ -20,7 +20,7 @@ namespace
 {
 	constexpr std::size_t NotAPrimitive = std::numeric_limits<std::size_t>::max();
 
-	gmt::Ref<StructSymbol> resolve_shape_key(SymbolTable& table, gmt::Ref<StructSymbol> baseType, const std::vector<gmt::Ref<StructSymbol>>& genericArgs, bool create)
+	gmt::Ref<StructSymbol> resolve_shape_key(SymbolTable& table, gmt::Ref<StructSymbol> baseType, std::span<const gmt::Ref<StructSymbol>> genericArgs, bool create)
 	{
 		if (baseType.is_null())
 			return gmt::nullref;
@@ -61,7 +61,7 @@ namespace
 	}
 }
 
-TypeShape* TypeShapeCache::find_type_shape(SemanticModel& model, gmt::Ref<StructSymbol> baseType, const std::vector<gmt::Ref<StructSymbol>>& genericArgs) const
+TypeShape* TypeShapeCache::find_type_shape(SemanticModel& model, gmt::Ref<StructSymbol> baseType, std::span<const gmt::Ref<StructSymbol>> genericArgs) const
 {
 	gmt::Ref<StructSymbol> keyType = resolve_shape_key(model.get_table(), baseType, genericArgs, false);
 	if (keyType.is_null())
@@ -74,7 +74,7 @@ TypeShape* TypeShapeCache::find_type_shape(SemanticModel& model, gmt::Ref<Struct
 	return const_cast<TypeShape*>(&choice->second);
 }
 
-TypeShape* TypeShapeCache::find_or_create_type_shape(SemanticModel& model, gmt::Ref<StructSymbol> baseType, const std::vector<gmt::Ref<StructSymbol>>& genericArgs)
+TypeShape* TypeShapeCache::find_or_create_type_shape(SemanticModel& model, gmt::Ref<StructSymbol> baseType, std::span<const gmt::Ref<StructSymbol>> genericArgs)
 {
 	gmt::Ref<StructSymbol> keyType = resolve_shape_key(model.get_table(), baseType, genericArgs, true);
 	if (keyType.is_null())

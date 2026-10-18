@@ -5,6 +5,8 @@
 
 #include <shard/pragmatic/PragmaticModel.hpp>
 
+#include <memory_resource>
+
 namespace shard
 {
 	class ConstructorDeclarationSyntax;
@@ -20,7 +22,7 @@ namespace shard
 		PragmaticModel& m_pragmatic;
 
 		void build_frame(gmt::Ref<MethodSymbol> method);
-		void expand_scalar_local(FrameLayout& layout, gmt::Ref<StructSymbol> type, const std::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters, std::vector<const TypeShape*>& variableShapes);
+		void expand_scalar_local(FrameLayout& layout, gmt::Ref<StructSymbol> type, const std::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters, std::pmr::vector<const TypeShape*>& variableShapes);
 		gmt::Ref<StructSymbol> local_type(gmt::Ref<SyntaxSymbol> local) const;
 
 	public:

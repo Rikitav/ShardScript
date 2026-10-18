@@ -2,6 +2,8 @@
 
 #include <shard/pragmatic/PragmaticModel.hpp>
 
+#include <gmt/InlineVector.hpp>
+
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -16,12 +18,13 @@ void EscapeAnalyzer::record_cold_point(int id, gmt::Ref<const ExpressionSyntax> 
 bool EscapeAnalyzer::reaches_site(int from, int to) const
 {
 	std::unordered_set<int> visited;
-	std::vector<int> stack = { from };
+	gmt::inline_vector<int, 16> stack;
+	stack.push_back(from);
 
-	while (!stack.empty())
+	while (!stack.get_vector().empty())
 	{
-		int id = stack.back();
-		stack.pop_back();
+		int id = stack.get_vector().back();
+		stack.get_vector().pop_back();
 
 		if (id == to)
 			return true;

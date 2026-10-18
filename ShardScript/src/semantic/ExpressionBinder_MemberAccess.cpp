@@ -21,6 +21,8 @@
 
 #include <gmt/Concat.hpp>
 
+#include <gmt/InlineVector.hpp>
+
 using namespace shard;
 
 bool ExpressionBinder::get_is_static_context(gmt::Ref<const ExpressionSyntax> expression) const
@@ -558,7 +560,7 @@ gmt::Ref<IndexatorSymbol> ExpressionBinder::resolve_indexator(const IndexatorExp
 	TextLocation location = node->get_location();
 	DiagnosticsContext& diagnostics = get_diagnostics();
 
-	std::vector<gmt::Ref<StructSymbol>> argumentTypes;
+	gmt::inline_vector<gmt::Ref<StructSymbol>, 4> argumentTypes;
 	if (!node->get_arguments().is_null())
 	{
 		for (const gmt::Ref<ArgumentSyntax>& argument : node->get_arguments()->get_arguments().as_span())
@@ -582,7 +584,7 @@ gmt::Ref<IndexatorSymbol> ExpressionBinder::resolve_indexator(const IndexatorExp
 			continue;
 
 		const std::vector<gmt::Ref<ParameterSymbol>>& parameters = candidate->get_parameters();
-		if (parameters.size() != argumentTypes.size())
+		if (parameters.size() != argumentTypes.get_vector().size())
 			continue;
 
 		gmt::Ref<GenericTypeSymbol> genericType = gmt::nullref;
@@ -594,7 +596,7 @@ gmt::Ref<IndexatorSymbol> ExpressionBinder::resolve_indexator(const IndexatorExp
 		for (std::size_t i = 0; i < parameters.size(); i++)
 		{
 			gmt::Ref<StructSymbol> parameterType = substitute_type_parameters(parameters[i]->get_type(), genericType);
-			int score = conversion_score(parameterType, argumentTypes[i]);
+			int score = conversion_score(parameterType, argumentTypes.get_vector()[i]);
 			if (score < 0)
 			{
 				convertible = false;

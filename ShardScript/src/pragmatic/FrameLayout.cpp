@@ -151,7 +151,7 @@ std::size_t FrameLayout::entry_bytes(std::size_t payload)
 	return EntryHeaderSize + gmt::align_up(payload, sizeof(void*));
 }
 
-std::size_t FrameLayout::compute_locals_bytes(const std::vector<const TypeShape*>& argumentShapes, const std::vector<const TypeShape*>& variableShapes) const
+std::size_t FrameLayout::compute_locals_bytes(std::span<const TypeShape*> argumentShapes, std::span<const TypeShape*> variableShapes) const
 {
 	std::size_t bytes = 0;
 

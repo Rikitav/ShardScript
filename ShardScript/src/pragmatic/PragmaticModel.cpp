@@ -96,12 +96,12 @@ TypeShapeCache& PragmaticModel::get_type_shape_cache()
 	return m_typeShapeCache;
 }
 
-TypeShape* PragmaticModel::find_type_shape(SemanticModel& model, gmt::Ref<StructSymbol> baseType, const std::vector<gmt::Ref<StructSymbol>>& genericArgs) const
+TypeShape* PragmaticModel::find_type_shape(SemanticModel& model, gmt::Ref<StructSymbol> baseType, std::span<const gmt::Ref<StructSymbol>> genericArgs) const
 {
 	return m_typeShapeCache.find_type_shape(model, baseType, genericArgs);
 }
 
-TypeShape* PragmaticModel::find_or_create_type_shape(SemanticModel& model, gmt::Ref<StructSymbol> baseType, const std::vector<gmt::Ref<StructSymbol>>& genericArgs)
+TypeShape* PragmaticModel::find_or_create_type_shape(SemanticModel& model, gmt::Ref<StructSymbol> baseType, std::span<const gmt::Ref<StructSymbol>> genericArgs)
 {
 	return m_typeShapeCache.find_or_create_type_shape(model, baseType, genericArgs);
 }

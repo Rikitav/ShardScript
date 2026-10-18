@@ -5,6 +5,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <span>
 #include <vector>
 
 namespace shard
@@ -30,7 +31,7 @@ namespace shard
 		std::vector<SlotInfo> m_slots;
 
 	public:
-		TypeShape(gmt::Ref<StructSymbol> baseType, std::vector<gmt::Ref<StructSymbol>> genericArguments);
+		TypeShape(gmt::Ref<StructSymbol> baseType, std::span<const gmt::Ref<StructSymbol>> genericArguments);
 
 		TypeShape(const TypeShape&) = delete;
 		TypeShape& operator=(const TypeShape&) = delete;

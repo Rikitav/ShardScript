@@ -455,7 +455,7 @@ gmt::Ref<GenericTypeSymbol> SymbolFactory::create_generic_type(gmt::Ref<StructSy
 	return m_table->find_or_create_generic_type(underlayingType, {});
 }
 
-gmt::Ref<GenericTypeSymbol> SymbolFactory::create_generic_type(gmt::Ref<StructSymbol> underlayingType, const std::vector<gmt::Ref<StructSymbol>>& typeArguments)
+gmt::Ref<GenericTypeSymbol> SymbolFactory::create_generic_type(gmt::Ref<StructSymbol> underlayingType, std::span<const gmt::Ref<StructSymbol>> typeArguments)
 {
 	return m_table->find_or_create_generic_type(underlayingType, typeArguments);
 }

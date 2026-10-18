@@ -9,6 +9,7 @@
 #include <shard/parsing/nodes/TranslationUnitSyntax.hpp>
 #include <shard/parsing/nodes/MemberDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/TypeSyntax.hpp>
+#include <shard/parsing/nodes/BlockSyntax.hpp>
 
 #include <shard/parsing/nodes/directives/UsingDirectiveSyntax.hpp>
 
@@ -66,6 +67,7 @@
 #include <shard/parsing/nodes/types/PredefinedTypeSyntax.hpp>
 #include <shard/parsing/nodes/types/QualifiedNameTypeSyntax.hpp>
 
+#include <memory_resource>
 #include <span>
 #include <string>
 #include <string_view>
@@ -82,7 +84,13 @@ namespace shard
 		std::unordered_set<std::wstring_view> m_ambiguousNames;
 		std::unordered_set<gmt::Ref<const ExpressionSyntax>> m_staticContextExpressions;
 
+		// collects value-returning expressions of a bound body so a return
+		// type can be inferred for declarations that omit one
+		class return_expression_collector;
+
 		void visit_expression(gmt::Ref<const ExpressionSyntax> expression);
+
+		gmt::Ref<StructSymbol> infer_return_type_from_body(gmt::Ref<const BlockSyntax> body);
 
 		void set_expression_type(gmt::Ref<const ExpressionSyntax> expression, gmt::Ref<StructSymbol> type);
 		gmt::Ref<StructSymbol> get_expression_type(gmt::Ref<const ExpressionSyntax> expression);
@@ -110,7 +118,7 @@ namespace shard
 		gmt::Ref<StructSymbol> analyze_indexator_expression(const IndexatorExpressionSyntax* node, gmt::Ref<StructSymbol> currentType);
 
 		gmt::Ref<ConstructorSymbol> resolve_constructor(const ObjectExpressionSyntax* node);
-		gmt::Ref<MethodSymbol> resolve_method(const InvokationExpressionSyntax* node, gmt::Ref<StructSymbol> currentType, std::vector<gmt::Ref<StructSymbol>>& outMethodTypeArgs, gmt::Ref<GenericTypeSymbol>& outGenericType);
+		gmt::Ref<MethodSymbol> resolve_method(const InvokationExpressionSyntax* node, gmt::Ref<StructSymbol> currentType, std::pmr::vector<gmt::Ref<StructSymbol>>& outMethodTypeArgs, gmt::Ref<GenericTypeSymbol>& outGenericType);
 		gmt::Ref<NamespaceSymbol> resolve_namespace_qualifier(gmt::Ref<const ExpressionSyntax> expression);
 		gmt::Ref<IndexatorSymbol> resolve_indexator(const IndexatorExpressionSyntax* node, gmt::Ref<StructSymbol> currentType);
 		gmt::Ref<DelegateTypeSymbol> try_resolve_delegate_invocation(const InvokationExpressionSyntax* node, gmt::Ref<SyntaxSymbol> lookup);
@@ -120,19 +128,19 @@ namespace shard
 		gmt::Ref<StructSymbol> substitute_type_parameters(gmt::Ref<StructSymbol> type, gmt::Ref<GenericTypeSymbol> genericType, gmt::Ref<MethodSymbol> method, std::span<const gmt::Ref<StructSymbol>> methodTypeArgs);
 		gmt::Ref<StructSymbol> substitute_method_type_parameter(gmt::Ref<StructSymbol> type, gmt::Ref<MethodSymbol> method, std::span<const gmt::Ref<StructSymbol>> methodTypeArgs);
 
-		bool try_infer_type_argument(gmt::Ref<StructSymbol> pattern, gmt::Ref<StructSymbol> concrete, gmt::Ref<MethodSymbol> method, gmt::Ref<GenericTypeSymbol> genericType, std::vector<gmt::Ref<StructSymbol>>& outMethodTypeArgs);
-		bool infer_method_type_arguments(gmt::Ref<MethodSymbol> method, std::span<const gmt::Ref<StructSymbol>> argTypes, gmt::Ref<GenericTypeSymbol> genericType, std::vector<gmt::Ref<StructSymbol>>& outMethodTypeArgs);
+		bool try_infer_type_argument(gmt::Ref<StructSymbol> pattern, gmt::Ref<StructSymbol> concrete, gmt::Ref<MethodSymbol> method, gmt::Ref<GenericTypeSymbol> genericType, std::pmr::vector<gmt::Ref<StructSymbol>>& outMethodTypeArgs);
+		bool infer_method_type_arguments(gmt::Ref<MethodSymbol> method, std::span<const gmt::Ref<StructSymbol>> argTypes, gmt::Ref<GenericTypeSymbol> genericType, std::pmr::vector<gmt::Ref<StructSymbol>>& outMethodTypeArgs);
 		bool infer_class_type_arguments(gmt::Ref<StructSymbol> classDef, gmt::Ref<MethodSymbol> method, std::span<const gmt::Ref<StructSymbol>> argTypes, std::vector<gmt::Ref<StructSymbol>>& outClassTypeArgs);
 
 		int conversion_score(gmt::Ref<const StructSymbol> parameter, gmt::Ref<const StructSymbol> argument);
-		int score_method_match(gmt::Ref<MethodSymbol> method, std::span<const gmt::Ref<StructSymbol>> argTypes, gmt::Ref<GenericTypeSymbol> genericType, std::vector<gmt::Ref<StructSymbol>>& outMethodTypeArgs);
+		int score_method_match(gmt::Ref<MethodSymbol> method, std::span<const gmt::Ref<StructSymbol>> argTypes, gmt::Ref<GenericTypeSymbol> genericType, std::pmr::vector<gmt::Ref<StructSymbol>>& outMethodTypeArgs);
 		gmt::Ref<OperatorSymbol> resolve_operator_method(gmt::Ref<StructSymbol> ownerType, TokenType operatorToken, std::span<const gmt::Ref<StructSymbol>> parameterTypes);
 		
 		static bool is_assignment_operator(TokenType type);
 		static bool is_assignment_context(const IndexatorExpressionSyntax* expression);
 		
 		bool match_method_arguments(SyntaxToken blameToken, std::span<const gmt::Ref<ParameterSymbol>> parameters, gmt::Span<const gmt::Ref<ArgumentSyntax>> arguments, gmt::Ref<GenericTypeSymbol> genericType, std::size_t parameterOffset = 0);
-		bool collect_argument_types(const InvokationExpressionSyntax* node, std::vector<gmt::Ref<StructSymbol>>& outArgTypes);
+		bool collect_argument_types(const InvokationExpressionSyntax* node, std::pmr::vector<gmt::Ref<StructSymbol>>& outArgTypes);
 
 		void import_namespace(gmt::Ref<const UsingDirectiveSyntax> node, gmt::Ref<NamespaceSymbol> namespaceSymbol);
 		void visit_type_declaration(gmt::Ref<const TypeDeclarationSyntax> node);

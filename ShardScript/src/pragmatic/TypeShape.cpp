@@ -6,10 +6,10 @@
 
 using namespace shard;
 
-TypeShape::TypeShape(gmt::Ref<StructSymbol> baseType, std::vector<gmt::Ref<StructSymbol>> genericArguments)
+TypeShape::TypeShape(gmt::Ref<StructSymbol> baseType, std::span<const gmt::Ref<StructSymbol>> genericArguments)
 	: m_baseType(baseType)
-	, m_genericArguments(std::move(genericArguments))
 {
+	m_genericArguments.assign(genericArguments.begin(), genericArguments.end());
 }
 
 gmt::Ref<StructSymbol> TypeShape::get_base_type() const

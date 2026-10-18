@@ -1,6 +1,8 @@
 #include <shard/lexical/SyntaxFacts.hpp>
 #include <shard/parsing/SourceParser.hpp>
 
+#include <gmt/InlineVector.hpp>
+
 #include <iterator>
 #include <unordered_set>
 
@@ -16,43 +18,9 @@ namespace detail
 		return span;
 	}
 
-	template<typename T, std::size_t Capacity>
-	struct inline_vector
-	{
-	private:
-		alignas(T) std::byte m_buffer[Capacity * sizeof(T)];
-
-		std::pmr::monotonic_buffer_resource m_pool;
-		std::pmr::vector<T> m_list;
-
-	public:
-		inline_vector() :
-			m_pool(m_buffer, sizeof(m_buffer)),
-			m_list(&m_pool)
-		{ }
-
-		inline std::pmr::vector<T>& get_vector()
-		{
-			return m_list;
-		}
-
-		inline void push_back(const T& val)
-		{
-			m_list.push_back(val);
-		}
-
-		inline gmt::Span<T> commit_array(gmt::Arena& arena)
-		{
-			return detail::commit_array(arena, m_list);
-		}
-	};
-
-	template<typename T, std::size_t Capacity>
-	using inline_ref_vector = inline_vector<gmt::Ref<T>, Capacity>;
-
-
 	static bool try_consume_generic_closer(SourceProvider& reader, SyntaxToken& closerToken)
-	{		if (!reader.can_consume())
+	{
+		if (!reader.can_consume())
 			return false;
 
 		TokenType type = reader.current().get_type();
@@ -259,8 +227,8 @@ gmt::Ref<TranslationUnitSyntax> SourceParser::read_compilation_unit(SourceProvid
 	gmt::Arena& arena = m_syntaxTree.get_arena();
 	auto unit = arena.emplace<TranslationUnitSyntax>();
 
-	detail::inline_ref_vector<UsingDirectiveSyntax, 10> usings{};
-	detail::inline_ref_vector<MemberDeclarationSyntax, 10> members{};
+	gmt::inline_ref_vector<UsingDirectiveSyntax, 10> usings{};
+	gmt::inline_ref_vector<MemberDeclarationSyntax, 10> members{};
 
 	int loopGuard = 0;
 	while (reader.can_consume())
@@ -336,7 +304,7 @@ gmt::Ref<UsingDirectiveSyntax> SourceParser::read_using_directive(SourceProvider
 	auto syntax = arena.emplace<UsingDirectiveSyntax>(parent);
 	syntax->set_using_keyword(expect(reader, TokenType::UsingKeyword, L"Expected 'using' keyword"));
 
-	detail::inline_vector<SyntaxToken, 10> qualifier{};
+	gmt::inline_vector<SyntaxToken, 10> qualifier{};
 	while (reader.can_consume())
 	{
 		if (!try_match_identifier(reader, 3))
@@ -376,7 +344,7 @@ gmt::Ref<NamespaceDirectiveSyntax> SourceParser::read_namespace_directive(Source
 	auto syntax = arena.emplace<NamespaceDirectiveSyntax>(parent);
 	syntax->set_namespace_keyword(expect(reader, TokenType::NamespaceKeyword, L"Expected 'namespace' keyword"));
 
-	detail::inline_vector<SyntaxToken, 10> qualifier{};
+	gmt::inline_vector<SyntaxToken, 10> qualifier{};
 
 	if (!try_match_identifier(reader, 5))
 	{
@@ -410,7 +378,7 @@ gmt::Ref<MemberDeclarationSyntax> SourceParser::read_member_declaration(SourcePr
 
 	gmt::Ref<AttributesListSyntax> attributes = read_attributes_list(reader, parent);
 
-	detail::inline_vector<SyntaxToken, 10> modifiers{};
+	gmt::inline_vector<SyntaxToken, 10> modifiers{};
 	read_member_modifiers(reader, modifiers.get_vector());
 
 	if (!reader.can_consume())
@@ -594,7 +562,7 @@ gmt::Ref<StructDeclarationSyntax> SourceParser::read_struct_declaration(SourcePr
 			syntax->set_open_bracket(reader.current());
 			reader.consume();
 
-			detail::inline_ref_vector<MemberDeclarationSyntax, 10> members{};
+			gmt::inline_ref_vector<MemberDeclarationSyntax, 10> members{};
 
 			int loopGuard = 0;
 			while (reader.can_consume())
@@ -663,7 +631,7 @@ gmt::Ref<InterfaceDeclarationSyntax> SourceParser::read_interface_declaration(So
 			syntax->set_open_bracket(reader.current());
 			reader.consume();
 
-			detail::inline_ref_vector<MemberDeclarationSyntax, 10> members{};
+			gmt::inline_ref_vector<MemberDeclarationSyntax, 10> members{};
 
 			int loopGuard = 0;
 			while (reader.can_consume())
@@ -751,7 +719,7 @@ gmt::Ref<EnumDeclarationSyntax> SourceParser::read_enum_declaration(SourceProvid
 			syntax->set_open_bracket(reader.current());
 			reader.consume();
 
-			detail::inline_ref_vector<EnumFieldDeclarationSyntax, 10> fields{};
+			gmt::inline_ref_vector<EnumFieldDeclarationSyntax, 10> fields{};
 
 			int loopGuard = 0;
 			while (reader.can_consume())
@@ -1536,7 +1504,7 @@ gmt::Ref<ParametersListSyntax> SourceParser::read_method_parameters(SourceProvid
 	auto syntax = arena.emplace<ParametersListSyntax>(parent);
 	syntax->set_open_token(expect(reader, TokenType::OpenCurl, L"Expected '(' token"));
 
-	detail::inline_ref_vector<ParameterSyntax, 4> parameters{};
+	gmt::inline_ref_vector<ParameterSyntax, 4> parameters{};
 
 	if (reader.can_consume() && reader.current().get_type() == TokenType::CloseCurl)
 	{
@@ -1575,7 +1543,7 @@ gmt::Ref<ParametersListSyntax> SourceParser::read_indexer_parameters(SourceProvi
 	auto syntax = arena.emplace<ParametersListSyntax>(parent);
 	syntax->set_open_token(expect(reader, TokenType::OpenSquare, L"Expected '[' token"));
 
-	detail::inline_ref_vector<ParameterSyntax, 4> parameters{};
+	gmt::inline_ref_vector<ParameterSyntax, 4> parameters{};
 
 	if (reader.can_consume() && reader.current().get_type() == TokenType::CloseSquare)
 	{
@@ -1615,7 +1583,7 @@ gmt::Ref<ParametersListSyntax> SourceParser::read_lambda_parameters(SourceProvid
 	SyntaxToken openToken = expect(reader, TokenType::PipeOperator, L"Expected '|' token");
 	syntax->set_open_token(openToken);
 
-	detail::inline_ref_vector<ParameterSyntax, 4> parameters{};
+	gmt::inline_ref_vector<ParameterSyntax, 4> parameters{};
 
 	if (reader.can_consume() && reader.current().get_type() == TokenType::PipeOperator)
 	{
@@ -1672,7 +1640,7 @@ gmt::Ref<TypeParametersListSyntax> SourceParser::read_generic_type_parameters(So
 	auto syntax = arena.emplace<TypeParametersListSyntax>(parent);
 	syntax->set_open_token(expect(reader, TokenType::LessOperator, L"Expected '<' token"));
 
-	detail::inline_ref_vector<TypeParameterSyntax, 4> typeParameters{};
+	gmt::inline_ref_vector<TypeParameterSyntax, 4> typeParameters{};
 
 	if (reader.can_consume() && reader.current().get_type() == TokenType::GreaterOperator)
 	{
@@ -1723,7 +1691,7 @@ gmt::Ref<ArgumentsListSyntax> SourceParser::read_arguments_list(SourceProvider& 
 	auto syntax = arena.emplace<ArgumentsListSyntax>(parent);
 	syntax->set_open_token(expect(reader, TokenType::OpenCurl, L"Expected '(' token"));
 
-	detail::inline_ref_vector<ArgumentSyntax, 4> arguments{};
+	gmt::inline_ref_vector<ArgumentSyntax, 4> arguments{};
 
 	if (reader.can_consume() && reader.current().get_type() == TokenType::CloseCurl)
 	{
@@ -1762,7 +1730,7 @@ gmt::Ref<TypeArgumentsListSyntax> SourceParser::read_type_arguments_list(SourceP
 	auto syntax = arena.emplace<TypeArgumentsListSyntax>(parent);
 	syntax->set_open_token(expect(reader, TokenType::LessOperator, L"Expected '<' token"));
 
-	detail::inline_ref_vector<TypeSyntax, 4> types{};
+	gmt::inline_ref_vector<TypeSyntax, 4> types{};
 
 	if (reader.can_consume() && reader.current().get_type() == TokenType::GreaterOperator)
 	{
@@ -1800,7 +1768,7 @@ gmt::Ref<BaseTypesListSyntax> SourceParser::read_base_types(SourceProvider& read
 	gmt::Arena& arena = m_syntaxTree.get_arena();
 	auto syntax = arena.emplace<BaseTypesListSyntax>(parent);
 
-	detail::inline_ref_vector<TypeSyntax, 4> baseTypes{};
+	gmt::inline_ref_vector<TypeSyntax, 4> baseTypes{};
 	while (reader.can_consume())
 	{
 		TokenType currentType = reader.current().get_type();
@@ -1840,7 +1808,7 @@ gmt::Ref<WhereClauseSyntax> SourceParser::read_where_clause(SourceProvider& read
 
 	syntax->set_colon(expect(reader, TokenType::Colon, L"Expected ':' after type parameter"));
 
-	detail::inline_ref_vector<TypeSyntax, 4> constraintTypes{};
+	gmt::inline_ref_vector<TypeSyntax, 4> constraintTypes{};
 	while (reader.can_consume())
 	{
 		TokenType currentType = reader.current().get_type();
@@ -1867,7 +1835,7 @@ gmt::Ref<WhereClausesListSyntax> SourceParser::read_where_clauses(SourceProvider
 	gmt::Arena& arena = m_syntaxTree.get_arena();
 	auto syntax = arena.emplace<WhereClausesListSyntax>(parent);
 
-	detail::inline_ref_vector<WhereClauseSyntax, 2> clauses{};
+	gmt::inline_ref_vector<WhereClauseSyntax, 2> clauses{};
 	while (reader.can_consume() && reader.current().get_type() == TokenType::WhereKeyword)
 		clauses.push_back(read_where_clause(reader, syntax));
 
@@ -1920,7 +1888,7 @@ gmt::Ref<StatementsBlockSyntax> SourceParser::read_statements_block(SourceProvid
 
 	syntax->set_open_bracket(expect(reader, TokenType::OpenBrace, L"Expected '{'"));
 
-	detail::inline_ref_vector<StatementSyntax, 10> statements{};
+	gmt::inline_ref_vector<StatementSyntax, 10> statements{};
 
 	int loopGuard = 0;
 	while (reader.can_consume())
@@ -2255,7 +2223,7 @@ gmt::Ref<TryStatementSyntax> SourceParser::read_try_statement(SourceProvider& re
 	syntax->set_try_keyword(expect(reader, TokenType::TryKeyword, L"Expected 'try' keyword"));
 	syntax->set_try_block(read_statements_block(reader, syntax));
 
-	detail::inline_ref_vector<CatchClauseSyntax, 2> clauses{};
+	gmt::inline_ref_vector<CatchClauseSyntax, 2> clauses{};
 
 	while (reader.can_consume() && reader.current().get_type() == TokenType::CatchKeyword)
 	{
@@ -2625,7 +2593,7 @@ gmt::Ref<CollectionExpressionSyntax> SourceParser::read_collection_expression(So
 	auto syntax = arena.emplace<CollectionExpressionSyntax>(parent);
 	syntax->set_open_bracket(expect(reader, TokenType::OpenSquare, L"Expected '['"));
 
-	detail::inline_ref_vector<ExpressionSyntax, 8> values{};
+	gmt::inline_ref_vector<ExpressionSyntax, 8> values{};
 
 	if (reader.can_consume() && reader.current().get_type() == TokenType::CloseSquare)
 	{
@@ -2815,7 +2783,7 @@ gmt::Ref<ArgumentsListSyntax> SourceParser::read_indexer_arguments_list(SourcePr
 	auto syntax = arena.emplace<ArgumentsListSyntax>(parent);
 	syntax->set_open_token(expect(reader, TokenType::OpenSquare, L"Expected '[' token"));
 
-	detail::inline_ref_vector<ArgumentSyntax, 4> arguments{};
+	gmt::inline_ref_vector<ArgumentSyntax, 4> arguments{};
 
 	if (reader.can_consume() && reader.current().get_type() == TokenType::CloseSquare)
 	{
@@ -2905,7 +2873,7 @@ gmt::Ref<AttributesListSyntax> SourceParser::read_attributes_list(SourceProvider
 	gmt::Arena& arena = m_syntaxTree.get_arena();
 	auto syntax = arena.emplace<AttributesListSyntax>(parent);
 
-	detail::inline_ref_vector<AttributeSyntax, 5> attributes{};
+	gmt::inline_ref_vector<AttributeSyntax, 5> attributes{};
 	while (reader.can_consume() && reader.current().get_type() == TokenType::OpenSquare)
 		attributes.push_back(read_attribute(reader, syntax));
 

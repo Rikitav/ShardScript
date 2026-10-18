@@ -47,6 +47,7 @@
 
 #include <cstdint>
 #include <string_view>
+#include <span>
 #include <vector>
 
 namespace shard
@@ -122,6 +123,6 @@ namespace shard
 
 		gmt::Ref<GenericTypeSymbol> create_generic_type(gmt::Ref<const GenericTypeSyntax> node, gmt::Ref<StructSymbol> underlayingType);
 		gmt::Ref<GenericTypeSymbol> create_generic_type(gmt::Ref<StructSymbol> underlayingType);
-		gmt::Ref<GenericTypeSymbol> create_generic_type(gmt::Ref<StructSymbol> underlayingType, const std::vector<gmt::Ref<StructSymbol>>& typeArguments);
+		gmt::Ref<GenericTypeSymbol> create_generic_type(gmt::Ref<StructSymbol> underlayingType, std::span<const gmt::Ref<StructSymbol>> typeArguments);
 	};
 }

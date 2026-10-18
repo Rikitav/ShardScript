@@ -104,6 +104,7 @@ namespace shard
 
 		void visit_expression_statement(const ExpressionStatementSyntax* node) override;
 		void visit_return_statement(const ReturnStatementSyntax* node) override;
+		void visit_arrow_clause(const ArrowClauseSyntax* node) override;
 		void visit_throw_statement(const ThrowStatementSyntax* node) override;
 		void visit_defer_statement(const DeferStatementSyntax* node) override;
 		void visit_if_statement(const IfStatementSyntax* node) override;
