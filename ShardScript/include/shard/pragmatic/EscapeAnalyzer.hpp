@@ -9,6 +9,7 @@
 #include <shard/pragmatic/PlacementVerdict.hpp>
 #include <shard/pragmatic/PragmaticModel.hpp>
 
+#include <gmt/InlineVector.hpp>
 #include <gmt/Ref.hpp>
 
 #include <cstdint>
@@ -23,8 +24,8 @@ namespace shard
 	{
 		struct ExpressionRefs
 		{
-			std::vector<gmt::Ref<SyntaxSymbol>> locals;
-			std::vector<gmt::Ref<const ExpressionSyntax>> sites;
+			gmt::inline_vector<gmt::Ref<SyntaxSymbol>, 4> locals;
+			gmt::inline_vector<gmt::Ref<const ExpressionSyntax>, 4> sites;
 		};
 
 		class reference_collector;

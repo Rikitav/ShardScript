@@ -2,6 +2,8 @@
 
 #include <shard/parsing/SyntaxKind.hpp>
 
+#include <gmt/InlineVector.hpp>
+
 using namespace shard;
 
 SymbolTable::SymbolTable()
@@ -56,7 +58,7 @@ namespace
 	constexpr std::uint64_t NullableFamilyTag = static_cast<std::uint64_t>(SyntaxKind::NullableType);
 	constexpr std::size_t InlineKeyWords = 8;
 
-	std::uint64_t* make_generic_key(std::uint64_t* inlineKey, std::vector<std::uint64_t>& spilledKey, gmt::Ref<StructSymbol> underlaying, const std::vector<gmt::Ref<StructSymbol>>& typeArguments)
+	std::uint64_t* make_generic_key(std::uint64_t* inlineKey, std::pmr::vector<std::uint64_t>& spilledKey, gmt::Ref<StructSymbol> underlaying, std::span<const gmt::Ref<StructSymbol>> typeArguments)
 	{
 		const std::size_t count = 2 + typeArguments.size();
 		std::uint64_t* key = inlineKey;
@@ -92,11 +94,11 @@ gmt::Ref<ArrayTypeSymbol> SymbolTable::find_array_type(gmt::Ref<StructSymbol> un
 	return symbol.as<ArrayTypeSymbol>();
 }
 
-gmt::Ref<GenericTypeSymbol> SymbolTable::find_generic_type(gmt::Ref<StructSymbol> underlaying, const std::vector<gmt::Ref<StructSymbol>>& typeArguments) const
+gmt::Ref<GenericTypeSymbol> SymbolTable::find_generic_type(gmt::Ref<StructSymbol> underlaying, std::span<const gmt::Ref<StructSymbol>> typeArguments) const
 {
 	std::uint64_t inlineKey[InlineKeyWords];
-	std::vector<std::uint64_t> spilledKey;
-	const std::uint64_t* key = make_generic_key(inlineKey, spilledKey, underlaying, typeArguments);
+	gmt::inline_vector<std::uint64_t, 8> spilledKey;
+	const std::uint64_t* key = make_generic_key(inlineKey, spilledKey.get_vector(), underlaying, typeArguments);
 
 	gmt::Ref<SyntaxSymbol> symbol = m_interner.find(key, static_cast<std::uint16_t>(2 + typeArguments.size()));
 	if (symbol.is_null() || symbol->get_kind() != SyntaxKind::GenericType)
@@ -124,7 +126,7 @@ gmt::Ref<ArrayTypeSymbol> SymbolTable::find_or_create_array_type(gmt::Ref<Struct
 	return symbol;
 }
 
-gmt::Ref<GenericTypeSymbol> SymbolTable::find_or_create_generic_type(gmt::Ref<StructSymbol> underlaying, const std::vector<gmt::Ref<StructSymbol>>& typeArguments)
+gmt::Ref<GenericTypeSymbol> SymbolTable::find_or_create_generic_type(gmt::Ref<StructSymbol> underlaying, std::span<const gmt::Ref<StructSymbol>> typeArguments)
 {
 	gmt::Ref<GenericTypeSymbol> existing = find_generic_type(underlaying, typeArguments);
 	if (!existing.is_null())
@@ -137,8 +139,8 @@ gmt::Ref<GenericTypeSymbol> SymbolTable::find_or_create_generic_type(gmt::Ref<St
 		symbol->add_type_parameter(typeParameters[i], typeArguments[i]);
 
 	std::uint64_t inlineKey[InlineKeyWords];
-	std::vector<std::uint64_t> spilledKey;
-	const std::uint64_t* key = make_generic_key(inlineKey, spilledKey, underlaying, typeArguments);
+	gmt::inline_vector<std::uint64_t, 8> spilledKey;
+	const std::uint64_t* key = make_generic_key(inlineKey, spilledKey.get_vector(), underlaying, typeArguments);
 
 	m_interner.insert(key, static_cast<std::uint16_t>(2 + typeArguments.size()), symbol);
 	return symbol;

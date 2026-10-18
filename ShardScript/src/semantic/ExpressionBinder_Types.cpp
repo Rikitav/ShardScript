@@ -14,6 +14,7 @@
 #include <shard/semantic/symbols/TypeParameterSymbol.hpp>
 
 #include <gmt/Concat.hpp>
+#include <gmt/InlineVector.hpp>
 
 #include <vector>
 
@@ -144,8 +145,8 @@ gmt::Ref<StructSymbol> ExpressionBinder::substitute_type_parameters(gmt::Ref<Str
 		gmt::Ref<StructSymbol> underlaying = generic->get_underlaying_type();
 
 		bool changed = false;
-		std::vector<gmt::Ref<StructSymbol>> newArguments;
-		newArguments.reserve(underlaying->type_parameters.size());
+		gmt::inline_vector<gmt::Ref<StructSymbol>, 4> newArguments;
+		newArguments.get_vector().reserve(underlaying->type_parameters.size());
 		for (gmt::Ref<TypeParameterSymbol> parameter : underlaying->type_parameters)
 		{
 			gmt::Ref<StructSymbol> argument = generic->substitute_type_parameter(parameter);
@@ -159,7 +160,7 @@ gmt::Ref<StructSymbol> ExpressionBinder::substitute_type_parameters(gmt::Ref<Str
 		if (!changed)
 			return type;
 
-		return m_factory.create_generic_type(underlaying, newArguments);
+		return m_factory.create_generic_type(underlaying, newArguments.get_vector());
 	}
 
 	if (type->get_kind() == SyntaxKind::ArrayType)

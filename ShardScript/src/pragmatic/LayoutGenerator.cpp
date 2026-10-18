@@ -16,6 +16,8 @@
 #include <shard/semantic/symbols/StructSymbol.hpp>
 #include <shard/semantic/symbols/VariableSymbol.hpp>
 
+#include <gmt/InlineVector.hpp>
+
 using namespace shard;
 
 LayoutGenerator::LayoutGenerator(SemanticModel& model, PragmaticModel& pragmatic, DiagnosticsContext& diagnostics)
@@ -41,7 +43,7 @@ gmt::Ref<StructSymbol> LayoutGenerator::local_type(gmt::Ref<SyntaxSymbol> local)
 	return gmt::nullref;
 }
 
-void LayoutGenerator::expand_scalar_local(FrameLayout& layout, gmt::Ref<StructSymbol> type, const std::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters, std::vector<const TypeShape*>& variableShapes)
+void LayoutGenerator::expand_scalar_local(FrameLayout& layout, gmt::Ref<StructSymbol> type, const std::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters, std::pmr::vector<const TypeShape*>& variableShapes)
 {
 	SemanticModel& model = get_model();
 
@@ -70,7 +72,7 @@ void LayoutGenerator::build_frame(gmt::Ref<MethodSymbol> method)
 	SemanticModel& model = get_model();
 	FrameLayout& layout = m_pragmatic.get_or_create_frame_layout(method);
 
-	std::vector<gmt::Ref<StructSymbol>> argumentTypes;
+	gmt::inline_vector<gmt::Ref<StructSymbol>, 4> argumentTypes;
 	if (method->get_linking() == LINK_INSTANCE)
 	{
 		// the receiver slot carries the owning type; top-level functions own no type and pass a null receiver
@@ -85,15 +87,15 @@ void LayoutGenerator::build_frame(gmt::Ref<MethodSymbol> method)
 	for (gmt::Ref<ParameterSymbol> parameter : method->get_parameters())
 		argumentTypes.push_back(parameter->get_type());
 
-	for (gmt::Ref<StructSymbol> argumentType : argumentTypes)
+	for (gmt::Ref<StructSymbol> argumentType : argumentTypes.get_vector())
 		layout.add_argument(argumentType);
 
-	layout.set_argument_count(static_cast<std::uint16_t>(argumentTypes.size()));
+	layout.set_argument_count(static_cast<std::uint16_t>(argumentTypes.get_vector().size()));
 
 	const std::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters = method->get_type_parameters();
 
-	std::vector<const TypeShape*> argumentShapes;
-	for (gmt::Ref<StructSymbol> argumentType : argumentTypes)
+	gmt::inline_vector<const TypeShape*, 8> argumentShapes;
+	for (gmt::Ref<StructSymbol> argumentType : argumentTypes.get_vector())
 	{
 		if (argumentType.is_null())
 		{
@@ -105,12 +107,12 @@ void LayoutGenerator::build_frame(gmt::Ref<MethodSymbol> method)
 		argumentShapes.push_back(shape);
 	}
 
-	std::vector<const TypeShape*> variableShapes;
+	gmt::inline_vector<const TypeShape*, 8> variableShapes;
 
 	const std::vector<gmt::Ref<SyntaxSymbol>>* order = m_pragmatic.get_local_order(method);
 	if (order == nullptr)
 	{
-		layout.set_locals_bytes(layout.compute_locals_bytes(argumentShapes, variableShapes));
+		layout.set_locals_bytes(layout.compute_locals_bytes(argumentShapes.get_vector(), variableShapes.get_vector()));
 		return;
 	}
 
@@ -131,7 +133,7 @@ void LayoutGenerator::build_frame(gmt::Ref<MethodSymbol> method)
 		scalarLocal = scalarLocal && localType->get_kind() == SyntaxKind::StructDeclaration;
 		if (scalarLocal)
 		{
-			expand_scalar_local(layout, localType, typeParameters, variableShapes);
+			expand_scalar_local(layout, localType, typeParameters, variableShapes.get_vector());
 			continue;
 		}
 
@@ -144,7 +146,7 @@ void LayoutGenerator::build_frame(gmt::Ref<MethodSymbol> method)
 		variableShapes.push_back(shape);
 	}
 
-	layout.set_locals_bytes(layout.compute_locals_bytes(argumentShapes, variableShapes));
+	layout.set_locals_bytes(layout.compute_locals_bytes(argumentShapes.get_vector(), variableShapes.get_vector()));
 }
 
 void LayoutGenerator::visit_function_declaration(const FunctionDeclarationSyntax* node)

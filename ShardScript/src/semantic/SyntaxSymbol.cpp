@@ -1,5 +1,7 @@
 #include <shard/semantic/SyntaxSymbol.hpp>
 
+#include <gmt/InlineVector.hpp>
+
 #include <string>
 #include <vector>
 
@@ -33,7 +35,7 @@ void SyntaxSymbol::set_name(std::wstring_view name)
 
 std::wstring SyntaxSymbol::get_full_name() const
 {
-	std::vector<gmt::Ref<const SyntaxSymbol>> chain;
+	gmt::inline_vector<gmt::Ref<const SyntaxSymbol>, 8> chain;
 	gmt::Ref<const SyntaxSymbol> current = m_parent;
 
 	while (!current.is_null())
@@ -42,15 +44,16 @@ std::wstring SyntaxSymbol::get_full_name() const
 		current = current->get_parent();
 	}
 
-	std::size_t length = get_name().size() + chain.size();
-	for (const gmt::Ref<const SyntaxSymbol>& symbol : chain)
+	const std::pmr::vector<gmt::Ref<const SyntaxSymbol>>& chainVector = chain.get_vector();
+	std::size_t length = get_name().size() + chainVector.size();
+	for (const gmt::Ref<const SyntaxSymbol>& symbol : chainVector)
 		length += symbol->get_name().size();
 
 	std::wstring fullName;
 	fullName.reserve(length);
 
 	bool first = true;
-	for (auto it = chain.rbegin(); it != chain.rend(); ++it)
+	for (auto it = chainVector.rbegin(); it != chainVector.rend(); ++it)
 	{
 		if (!first)
 			fullName += L'.';

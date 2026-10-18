@@ -14,6 +14,7 @@
 
 #include <optional>
 #include <unordered_map>
+#include <span>
 #include <vector>
 
 namespace shard
@@ -67,8 +68,8 @@ namespace shard
 
 		TypeShapeCache& get_type_shape_cache();
 
-		TypeShape* find_type_shape(SemanticModel& model, gmt::Ref<StructSymbol> baseType, const std::vector<gmt::Ref<StructSymbol>>& genericArgs = {}) const;
-		TypeShape* find_or_create_type_shape(SemanticModel& model, gmt::Ref<StructSymbol> baseType, const std::vector<gmt::Ref<StructSymbol>>& genericArgs = {});
+		TypeShape* find_type_shape(SemanticModel& model, gmt::Ref<StructSymbol> baseType, std::span<const gmt::Ref<StructSymbol>> genericArgs = {}) const;
+		TypeShape* find_or_create_type_shape(SemanticModel& model, gmt::Ref<StructSymbol> baseType, std::span<const gmt::Ref<StructSymbol>> genericArgs = {});
 
 		FrameLayout* find_frame_layout(gmt::Ref<MethodSymbol> method) const;
 		FrameLayout& get_or_create_frame_layout(gmt::Ref<MethodSymbol> method);

@@ -8,6 +8,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <span>
 #include <vector>
 
 namespace shard
@@ -67,6 +68,6 @@ namespace shard
 		static std::size_t resolve_payload(const TypeShape* shape, PlacementVerdict verdict);
 		static std::size_t entry_bytes(std::size_t payload);
 
-		std::size_t compute_locals_bytes(const std::vector<const TypeShape*>& argumentShapes, const std::vector<const TypeShape*>& variableShapes) const;
+		std::size_t compute_locals_bytes(std::span<const TypeShape*> argumentShapes, std::span<const TypeShape*> variableShapes) const;
 	};
 }

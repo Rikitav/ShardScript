@@ -1,5 +1,7 @@
 #include <shard/semantic/TypeBinder.hpp>
 
+#include <gmt/InlineVector.hpp>
+
 #include <shard/parsing/SyntaxKind.hpp>
 #include <shard/parsing/TokenType.hpp>
 #include <shard/semantic/SymbolTable.hpp>
@@ -667,8 +669,6 @@ void TypeBinder::visit_lambda_expression(const LambdaExpressionSyntax* node)
 	if (!nodeRef.has_value())
 		return;
 
-	// only the signature is bound here; the body belongs to the expression
-	// binder, same split the declaration collector makes
 	if (node->get_parameters().is_null())
 		return;
 
@@ -681,6 +681,22 @@ void TypeBinder::visit_lambda_expression(const LambdaExpressionSyntax* node)
 		if (!parameter->get_type().is_null())
 			symbol->set_type(resolve_type(parameter->get_type()));
 	}
+
+	// the body belongs to the expression binder for values, but type syntaxes
+	// inside it (and signatures of nested lambdas) are bound here
+	gmt::Ref<MethodSymbol> anonymousMethod = lookup_symbol<MethodSymbol>(node->get_parameters());
+	if (anonymousMethod.is_null())
+		return;
+
+	push_scope(anonymousMethod);
+
+	for (const gmt::Ref<ParameterSymbol>& parameter : anonymousMethod->get_parameters())
+		get_current_scope()->declare_symbol(parameter);
+
+	if (!node->get_body().is_null())
+		node->get_body().as_ptr()->accept(*this);
+
+	pop_scope();
 }
 
 void TypeBinder::visit_object_creation_expression(const ObjectExpressionSyntax* node)
@@ -779,8 +795,11 @@ void TypeBinder::visit_identifier_name_type(const IdentifierNameTypeSyntax* node
 			return;
 		}
 
-		std::vector<gmt::Ref<StructSymbol>> arguments(ownerType->type_parameters.begin(), ownerType->type_parameters.end());
-		gmt::Ref<GenericTypeSymbol> selfType = get_symbol_table().find_or_create_generic_type(ownerType, arguments);
+		gmt::inline_vector<gmt::Ref<StructSymbol>, 4> arguments;
+		for (gmt::Ref<TypeParameterSymbol> typeParameter : ownerType->type_parameters)
+			arguments.push_back(typeParameter);
+
+		gmt::Ref<GenericTypeSymbol> selfType = get_symbol_table().find_or_create_generic_type(ownerType, arguments.get_vector());
 		get_symbol_table().bind_symbol<StructSymbol>(*nodeRef, selfType);
 		return;
 	}
@@ -963,18 +982,19 @@ void TypeBinder::visit_generic_type(const GenericTypeSyntax* node)
 		return;
 	}
 
-	std::vector<gmt::Ref<StructSymbol>> arguments(argumentCount, gmt::nullref);
+	gmt::inline_vector<gmt::Ref<StructSymbol>, 4> arguments;
+	arguments.get_vector().resize(argumentCount, gmt::nullref);
 	for (std::size_t i = 0; i < argumentCount; ++i)
-		arguments[i] = resolve_type(argumentNodes[i]);
+		arguments.get_vector()[i] = resolve_type(argumentNodes[i]);
 
 	// Resolve fully before creation so the registry never sees partially substituted symbols.
 	// Refs are shared, so mutating one would corrupt every occurrence of the same shape.
-	gmt::Ref<GenericTypeSymbol> symbol = get_symbol_table().find_or_create_generic_type(underlaying, arguments);
+	gmt::Ref<GenericTypeSymbol> symbol = get_symbol_table().find_or_create_generic_type(underlaying, arguments.get_vector());
 	get_symbol_table().bind_symbol<StructSymbol>(*nodeRef, symbol);
 
 	for (std::size_t i = 0; i < argumentCount; ++i)
 	{
-		gmt::Ref<StructSymbol> argument = arguments[i];
+		gmt::Ref<StructSymbol> argument = arguments.get_vector()[i];
 		if (argument.is_null())
 		{
 			get_diagnostics().report_error(node->get_location(), L"Type argument " + std::to_wstring(i + 1) + L" could not be resolved");
@@ -1004,6 +1024,14 @@ void TypeBinder::visit_expression_statement(const ExpressionStatementSyntax* nod
 }
 
 void TypeBinder::visit_return_statement(const ReturnStatementSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	bind_expression(node->get_expression());
+}
+
+void TypeBinder::visit_arrow_clause(const ArrowClauseSyntax* node)
 {
 	if (node == nullptr)
 		return;

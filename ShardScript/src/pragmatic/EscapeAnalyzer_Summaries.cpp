@@ -9,6 +9,8 @@
 #include <shard/semantic/symbols/ParameterSymbol.hpp>
 #include <shard/semantic/symbols/VariableSymbol.hpp>
 
+#include <gmt/InlineVector.hpp>
+
 #include <stdexcept>
 
 using namespace shard;
@@ -200,12 +202,13 @@ int EscapeAnalyzer::classify_local_roots(gmt::Ref<MethodSymbol> method, gmt::Ref
 
 	int mark = 0;
 	std::unordered_set<int> visited;
-	std::vector<int> stack = { startIt->second };
+	gmt::inline_vector<int, 16> stack;
+	stack.push_back(startIt->second);
 
-	while (!stack.empty())
+	while (!stack.get_vector().empty())
 	{
-		int id = stack.back();
-		stack.pop_back();
+		int id = stack.get_vector().back();
+		stack.get_vector().pop_back();
 
 		// an alias cycle never resolves to a clean fresh/parameter root
 		if (visited.find(id) != visited.end())
@@ -264,7 +267,7 @@ int EscapeAnalyzer::classify_return_expression(gmt::Ref<MethodSymbol> method, gm
 
 	int mark = 0;
 
-	for (gmt::Ref<const ExpressionSyntax> site : refs.sites)
+	for (gmt::Ref<const ExpressionSyntax> site : refs.sites.get_vector())
 	{
 		auto it = m_graph.siteIds.find(site);
 		if (it == m_graph.siteIds.end())
@@ -276,7 +279,7 @@ int EscapeAnalyzer::classify_return_expression(gmt::Ref<MethodSymbol> method, gm
 		mark |= 1;
 	}
 
-	for (gmt::Ref<SyntaxSymbol> local : refs.locals)
+	for (gmt::Ref<SyntaxSymbol> local : refs.locals.get_vector())
 	{
 		int localMark = classify_local_roots(method, local);
 		if (localMark == 0)
@@ -370,12 +373,13 @@ bool EscapeAnalyzer::cone_closed(int id, const std::unordered_map<gmt::Ref<Metho
 bool EscapeAnalyzer::participates_in_reference_cycle(gmt::Ref<StructSymbol> type)
 {
 	std::unordered_set<gmt::Ref<StructSymbol>> visited;
-	std::vector<gmt::Ref<StructSymbol>> stack = { type };
+	gmt::inline_vector<gmt::Ref<StructSymbol>, 8> stack;
+	stack.push_back(type);
 
-	while (!stack.empty())
+	while (!stack.get_vector().empty())
 	{
-		gmt::Ref<StructSymbol> current = stack.back();
-		stack.pop_back();
+		gmt::Ref<StructSymbol> current = stack.get_vector().back();
+		stack.get_vector().pop_back();
 
 		for (gmt::Ref<FieldSymbol> field : current->fields)
 		{

@@ -20,7 +20,29 @@
 
 #include <gmt/Concat.hpp>
 
+#include <gmt/InlineVector.hpp>
+
 using namespace shard;
+
+// walks a bound body and gathers the expressions of its value-returning
+// return statements, without side effects
+class ExpressionBinder::return_expression_collector final : public SyntaxVisitor
+{
+	std::pmr::vector<gmt::Ref<const ExpressionSyntax>>& m_expressions;
+
+public:
+	explicit return_expression_collector(std::pmr::vector<gmt::Ref<const ExpressionSyntax>>& expressions)
+		: m_expressions(expressions)
+	{ }
+
+	void visit_return_statement(const ReturnStatementSyntax* node) override
+	{
+		if (!node->get_expression().is_null())
+			m_expressions.push_back(node->get_expression());
+
+		SyntaxVisitor::visit_return_statement(node);
+	}
+};
 
 ExpressionBinder::ExpressionBinder(SemanticModel& model, DiagnosticsContext& diagnostics)
 	: SemanticVisitor(model, diagnostics), m_factory(&model.get_table()) { }
@@ -264,7 +286,12 @@ void ExpressionBinder::visit_function_declaration(const FunctionDeclarationSynta
 
 	// bodyless members (interface methods) have nothing to bind
 	if (!node->get_body().is_null())
+	{
 		node->get_body().as_ptr()->accept(*this);
+
+		if (symbol->get_return_type().is_null() && node->get_body()->get_kind() == SyntaxKind::StatementsBlock)
+			symbol->set_return_type(infer_return_type_from_body(node->get_body()));
+	}
 
 	pop_scope();
 }
@@ -481,6 +508,22 @@ void ExpressionBinder::visit_variable_statement(const VariableStatementSyntax* n
 		get_diagnostics().report_error(node->get_location(), gmt::concat(L"Type mismatch: expected '", model.get_type_display_name(symbolType), L"' but got '", model.get_type_display_name(expressionType), L"'"));
 }
 
+gmt::Ref<StructSymbol> ExpressionBinder::infer_return_type_from_body(gmt::Ref<const BlockSyntax> body)
+{
+	gmt::inline_vector<gmt::Ref<const ExpressionSyntax>, 4> returns;
+	return_expression_collector collector(returns.get_vector());
+	body.as_ptr()->accept(collector);
+
+	for (gmt::Ref<const ExpressionSyntax> expression : returns.get_vector())
+	{
+		gmt::Ref<StructSymbol> expressionType = get_expression_type(expression);
+		if (!expressionType.is_null())
+			return expressionType;
+	}
+
+	return gmt::nullref;
+}
+
 gmt::Ref<SyntaxSymbol> ExpressionBinder::find_target_return_owner()
 {
 	for (SemanticScope* scope = get_current_scope(); scope != nullptr; scope = scope->get_parent())
@@ -580,10 +623,24 @@ void ExpressionBinder::visit_return_statement(const ReturnStatementSyntax* node)
 	gmt::Ref<const ExpressionSyntax> expression = node->get_expression();
 	SemanticModel& model = get_model();
 
+	gmt::Ref<SyntaxSymbol> returnOwner = find_target_return_owner();
 	gmt::Ref<StructSymbol> returnType = find_target_return_type();
 	if (returnType.is_null())
 	{
-		get_diagnostics().report_error(location, L"Couldn't find scope to return within");
+		// a function or lambda without a declared return type infers it from
+		// its returns after the body is bound: bind the expression so the
+		// inference can see its type, and check nothing yet
+		bool pendingInference = !returnOwner.is_null();
+		pendingInference = pendingInference && returnOwner->get_kind() == SyntaxKind::FunctionDeclaration;
+		if (!pendingInference)
+		{
+			get_diagnostics().report_error(location, L"Couldn't find scope to return within");
+			return;
+		}
+
+		if (!expression.is_null())
+			visit_expression(expression);
+
 		return;
 	}
 

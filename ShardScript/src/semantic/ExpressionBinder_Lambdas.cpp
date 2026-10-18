@@ -8,31 +8,7 @@
 #include <shard/semantic/symbols/MethodSymbol.hpp>
 #include <shard/semantic/symbols/ParameterSymbol.hpp>
 
-#include <vector>
-
 using namespace shard;
-
-namespace
-{
-	// walks the bound body without side effects, so the lambda return type
-	// can be inferred from the value-returning statements
-	class return_expression_collector final : public SyntaxVisitor
-	{
-		std::vector<gmt::Ref<const ExpressionSyntax>>& m_expressions;
-
-	public:
-		explicit return_expression_collector(std::vector<gmt::Ref<const ExpressionSyntax>>& expressions)
-			: m_expressions(expressions) { }
-
-		void visit_return_statement(const ReturnStatementSyntax* node) override
-		{
-			if (!node->get_expression().is_null())
-				m_expressions.push_back(node->get_expression());
-
-			SyntaxVisitor::visit_return_statement(node);
-		}
-	};
-}
 
 void ExpressionBinder::visit_lambda_expression(const LambdaExpressionSyntax* node)
 {
@@ -76,21 +52,7 @@ void ExpressionBinder::visit_lambda_expression(const LambdaExpressionSyntax* nod
 			returnType = get_expression_type(arrowExpression);
 	}
 	else if (!body.is_null())
-	{
-		std::vector<gmt::Ref<const ExpressionSyntax>> returns;
-		return_expression_collector collector(returns);
-		body.as_ptr()->accept(collector);
-
-		for (gmt::Ref<const ExpressionSyntax> expression : returns)
-		{
-			gmt::Ref<StructSymbol> expressionType = get_expression_type(expression);
-			if (!expressionType.is_null())
-			{
-				returnType = expressionType;
-				break;
-			}
-		}
-	}
+		returnType = infer_return_type_from_body(body);
 
 	if (returnType.is_null())
 		returnType = get_symbol_table().get_void_primitive();

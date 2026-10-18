@@ -148,13 +148,13 @@ void DiagnosticsContext::report_warning(const SyntaxToken& token, string_t descr
 
 void DiagnosticsContext::report_warning(const TextLocation& location, const std::wstring& description)
 {
-	m_anyError = true;
+	m_anyWarns = true;
 	m_diagnostics.push_back(Diagnostic(location, DiagnosticSeverity::Warning, description));
 }
 
 void DiagnosticsContext::report_warning(const TextLocation& location, string_t description)
 {
-	m_anyError = true;
+	m_anyWarns = true;
 	m_diagnostics.push_back(Diagnostic(location, DiagnosticSeverity::Warning, description));
 }
 
@@ -172,13 +172,11 @@ void DiagnosticsContext::report_info(const SyntaxToken& token, string_t descript
 
 void DiagnosticsContext::report_info(const TextLocation& location, const std::wstring& description)
 {
-	m_anyError = true;
 	m_diagnostics.push_back(Diagnostic(location, DiagnosticSeverity::Info, description));
 }
 
 void DiagnosticsContext::report_info(const TextLocation& location, string_t description)
 {
-	m_anyError = true;
 	m_diagnostics.push_back(Diagnostic(location, DiagnosticSeverity::Info, description));
 }
 

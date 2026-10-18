@@ -16,6 +16,7 @@
 
 #include <cstddef>
 #include <array>
+#include <span>
 #include <unordered_map>
 #include <optional>
 #include <vector>
@@ -74,12 +75,12 @@ namespace shard
 
 		gmt::Ref<ArrayTypeSymbol> find_array_type(gmt::Ref<StructSymbol> underlaying) const;
 		gmt::Ref<ArrayTypeSymbol> find_array_type(gmt::Ref<StructSymbol> underlaying, std::size_t size) const;
-		gmt::Ref<GenericTypeSymbol> find_generic_type(gmt::Ref<StructSymbol> underlaying, const std::vector<gmt::Ref<StructSymbol>>& typeArguments) const;
+		gmt::Ref<GenericTypeSymbol> find_generic_type(gmt::Ref<StructSymbol> underlaying, std::span<const gmt::Ref<StructSymbol>> typeArguments) const;
 		gmt::Ref<NullableTypeSymbol> find_nullable_type(gmt::Ref<StructSymbol> underlaying) const;
 
 		gmt::Ref<ArrayTypeSymbol> find_or_create_array_type(gmt::Ref<StructSymbol> underlaying);
 		gmt::Ref<ArrayTypeSymbol> find_or_create_array_type(gmt::Ref<StructSymbol> underlaying, std::size_t size);
-		gmt::Ref<GenericTypeSymbol> find_or_create_generic_type(gmt::Ref<StructSymbol> underlaying, const std::vector<gmt::Ref<StructSymbol>>& typeArguments);
+		gmt::Ref<GenericTypeSymbol> find_or_create_generic_type(gmt::Ref<StructSymbol> underlaying, std::span<const gmt::Ref<StructSymbol>> typeArguments);
 		gmt::Ref<NullableTypeSymbol> find_or_create_nullable_type(gmt::Ref<StructSymbol> underlaying);
 
 		gmt::Ref<StructSymbol> get_void_primitive() const;

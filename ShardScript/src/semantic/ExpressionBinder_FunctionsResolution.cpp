@@ -1,5 +1,7 @@
 #include <shard/semantic/ExpressionBinder.hpp>
 
+#include <gmt/InlineVector.hpp>
+
 #include <shard/parsing/SyntaxKind.hpp>
 #include <shard/lexical/SyntaxFacts.hpp>
 
@@ -156,7 +158,7 @@ void ExpressionBinder::report_no_matching_overload(std::wstring_view methodName,
 	get_diagnostics().report_error(blameToken, gmt::concat(L"Method '", methodName, L"' does not have an overload that accepts the supplied arguments (", format_argument_list(argTypes, get_model()), L")"));
 }
 
-bool ExpressionBinder::collect_argument_types(const InvokationExpressionSyntax* node, std::vector<gmt::Ref<StructSymbol>>& outArgTypes)
+bool ExpressionBinder::collect_argument_types(const InvokationExpressionSyntax* node, std::pmr::vector<gmt::Ref<StructSymbol>>& outArgTypes)
 {
 	if (node->get_arguments().is_null())
 		return false;
@@ -214,7 +216,7 @@ bool ExpressionBinder::match_method_arguments(SyntaxToken blameToken, std::span<
 	return true;
 }
 
-bool ExpressionBinder::try_infer_type_argument(gmt::Ref<StructSymbol> pattern, gmt::Ref<StructSymbol> concrete, gmt::Ref<MethodSymbol> method, gmt::Ref<GenericTypeSymbol> genericType, std::vector<gmt::Ref<StructSymbol>>& outMethodTypeArgs)
+bool ExpressionBinder::try_infer_type_argument(gmt::Ref<StructSymbol> pattern, gmt::Ref<StructSymbol> concrete, gmt::Ref<MethodSymbol> method, gmt::Ref<GenericTypeSymbol> genericType, std::pmr::vector<gmt::Ref<StructSymbol>>& outMethodTypeArgs)
 {
 	if (pattern.is_null() || concrete.is_null())
 		return true;
@@ -327,7 +329,7 @@ bool ExpressionBinder::try_infer_type_argument(gmt::Ref<StructSymbol> pattern, g
 	return true;
 }
 
-bool ExpressionBinder::infer_method_type_arguments(gmt::Ref<MethodSymbol> method, std::span<const gmt::Ref<StructSymbol>> argTypes, gmt::Ref<GenericTypeSymbol> genericType, std::vector<gmt::Ref<StructSymbol>>& outMethodTypeArgs)
+bool ExpressionBinder::infer_method_type_arguments(gmt::Ref<MethodSymbol> method, std::span<const gmt::Ref<StructSymbol>> argTypes, gmt::Ref<GenericTypeSymbol> genericType, std::pmr::vector<gmt::Ref<StructSymbol>>& outMethodTypeArgs)
 {
 	outMethodTypeArgs.assign(method->get_type_parameters().size(), gmt::nullref);
 
@@ -428,7 +430,7 @@ bool ExpressionBinder::infer_class_type_arguments(gmt::Ref<StructSymbol> classDe
 }
 
 
-int ExpressionBinder::score_method_match(gmt::Ref<MethodSymbol> method, std::span<const gmt::Ref<StructSymbol>> argTypes, gmt::Ref<GenericTypeSymbol> genericType, std::vector<gmt::Ref<StructSymbol>>& outMethodTypeArgs)
+int ExpressionBinder::score_method_match(gmt::Ref<MethodSymbol> method, std::span<const gmt::Ref<StructSymbol>> argTypes, gmt::Ref<GenericTypeSymbol> genericType, std::pmr::vector<gmt::Ref<StructSymbol>>& outMethodTypeArgs)
 {
 	const std::vector<gmt::Ref<ParameterSymbol>>& parameters = method->get_parameters();
 	bool generic = !method->get_type_parameters().empty();
@@ -489,7 +491,7 @@ gmt::Ref<DelegateTypeSymbol> ExpressionBinder::try_resolve_delegate_invocation(c
 	return get_delegate_type(delegateHolderType);
 }
 
-gmt::Ref<MethodSymbol> ExpressionBinder::resolve_method(const InvokationExpressionSyntax* node, gmt::Ref<StructSymbol> currentType, std::vector<gmt::Ref<StructSymbol>>& outMethodTypeArgs, gmt::Ref<GenericTypeSymbol>& outGenericType)
+gmt::Ref<MethodSymbol> ExpressionBinder::resolve_method(const InvokationExpressionSyntax* node, gmt::Ref<StructSymbol> currentType, std::pmr::vector<gmt::Ref<StructSymbol>>& outMethodTypeArgs, gmt::Ref<GenericTypeSymbol>& outGenericType)
 {
 	std::wstring_view methodName = node->get_identifier().get_lexeme();
 
@@ -499,8 +501,8 @@ gmt::Ref<MethodSymbol> ExpressionBinder::resolve_method(const InvokationExpressi
 		return gmt::nullref;
 	}
 
-	std::vector<gmt::Ref<StructSymbol>> argTypes;
-	if (!collect_argument_types(node, argTypes))
+	gmt::inline_vector<gmt::Ref<StructSymbol>, 8> argTypes;
+	if (!collect_argument_types(node, argTypes.get_vector()))
 		return gmt::nullref;
 
 	bool staticContext = get_is_static_context(node->get_previous());
@@ -516,12 +518,12 @@ gmt::Ref<MethodSymbol> ExpressionBinder::resolve_method(const InvokationExpressi
 	outGenericType = gmt::nullref;
 
 	// extension shape carries the receiver type as the first argument
-	std::vector<gmt::Ref<StructSymbol>> extensionArgs;
+	gmt::inline_vector<gmt::Ref<StructSymbol>, 8> extensionArgs;
 	if (!currentType.is_null() && !staticContext)
 	{
-		extensionArgs.reserve(argTypes.size() + 1);
+		extensionArgs.get_vector().reserve(argTypes.get_vector().size() + 1);
 		extensionArgs.push_back(currentType);
-		extensionArgs.insert(extensionArgs.end(), argTypes.begin(), argTypes.end());
+		extensionArgs.get_vector().insert(extensionArgs.get_vector().end(), argTypes.get_vector().begin(), argTypes.get_vector().end());
 	}
 
 	struct candidate
@@ -530,10 +532,10 @@ gmt::Ref<MethodSymbol> ExpressionBinder::resolve_method(const InvokationExpressi
 		bool as_extension;
 	};
 
-	std::vector<candidate> candidates;
+	gmt::inline_vector<candidate, 8> candidates;
 	auto addCandidate = [&candidates](gmt::Ref<MethodSymbol> method, bool asExtension)
 	{
-		for (const candidate& existing : candidates)
+		for (const candidate& existing : candidates.get_vector())
 		{
 			if (existing.method == method)
 				return;
@@ -587,19 +589,19 @@ gmt::Ref<MethodSymbol> ExpressionBinder::resolve_method(const InvokationExpressi
 	}
 
 	gmt::Ref<MethodSymbol> best = gmt::nullref;
-	std::vector<gmt::Ref<StructSymbol>> bestTypeArgs;
+	std::pmr::vector<gmt::Ref<StructSymbol>> bestTypeArgs;
 	bool bestExtension = false;
 	int bestScore = -1;
 	bool ambiguous = false;
 
-	for (const candidate& item : candidates)
+	for (const candidate& item : candidates.get_vector())
 	{
 		std::span<const gmt::Ref<StructSymbol>> candidateArgs = item.as_extension
-			? std::span<const gmt::Ref<StructSymbol>>(extensionArgs)
-			: std::span<const gmt::Ref<StructSymbol>>(argTypes);
+			? std::span<const gmt::Ref<StructSymbol>>(extensionArgs.get_vector())
+			: std::span<const gmt::Ref<StructSymbol>>(argTypes.get_vector());
 
-		std::vector<gmt::Ref<StructSymbol>> candidateTypeArgs;
-		int score = score_method_match(item.method, candidateArgs, genericType, candidateTypeArgs);
+		gmt::inline_vector<gmt::Ref<StructSymbol>, 4> candidateTypeArgs;
+		int score = score_method_match(item.method, candidateArgs, genericType, candidateTypeArgs.get_vector());
 		if (score < 0)
 			continue;
 
@@ -607,7 +609,7 @@ gmt::Ref<MethodSymbol> ExpressionBinder::resolve_method(const InvokationExpressi
 		{
 			best = item.method;
 			bestScore = score;
-			bestTypeArgs = std::move(candidateTypeArgs);
+			bestTypeArgs = std::move(candidateTypeArgs.get_vector());
 			bestExtension = item.as_extension;
 			ambiguous = false;
 		}
@@ -622,10 +624,10 @@ gmt::Ref<MethodSymbol> ExpressionBinder::resolve_method(const InvokationExpressi
 		gmt::Ref<SyntaxSymbol> lookup = get_current_scope()->lookup(methodName);
 		if (try_resolve_delegate_invocation(node, lookup).is_null())
 		{
-			if (candidates.empty())
+			if (candidates.get_vector().empty())
 				report_no_matching_method(methodName, node->get_identifier());
 			else
-				report_no_matching_overload(methodName, argTypes, node->get_identifier());
+				report_no_matching_overload(methodName, argTypes.get_vector(), node->get_identifier());
 		}
 
 		return gmt::nullref;
@@ -668,7 +670,7 @@ gmt::Ref<ConstructorSymbol> ExpressionBinder::resolve_constructor(const ObjectEx
 	if (node->get_arguments().is_null())
 		return gmt::nullref;
 
-	std::vector<gmt::Ref<StructSymbol>> argTypes;
+	gmt::inline_vector<gmt::Ref<StructSymbol>, 8> argTypes;
 	for (const gmt::Ref<ArgumentSyntax>& argument : node->get_arguments()->get_arguments().as_span())
 	{
 		if (argument.is_null() || argument->get_expression().is_null())
@@ -691,14 +693,14 @@ gmt::Ref<ConstructorSymbol> ExpressionBinder::resolve_constructor(const ObjectEx
 			continue;
 
 		const std::vector<gmt::Ref<ParameterSymbol>>& parameters = constructor->get_parameters();
-		if (parameters.size() != argTypes.size())
+		if (parameters.size() != argTypes.get_vector().size())
 			continue;
 
 		int total = 0;
 		bool matches = true;
 		for (std::size_t i = 0; i < parameters.size(); i++)
 		{
-			int score = conversion_score(parameters[i]->get_type(), argTypes[i]);
+			int score = conversion_score(parameters[i]->get_type(), argTypes.get_vector()[i]);
 			if (score < 0)
 			{
 				matches = false;
@@ -720,7 +722,7 @@ gmt::Ref<ConstructorSymbol> ExpressionBinder::resolve_constructor(const ObjectEx
 
 	if (best.is_null())
 	{
-		get_diagnostics().report_error(node->get_new_token(), gmt::concat(L"No constructor of '", get_model().get_type_display_name(createdType), L"' accepts the supplied arguments (", format_argument_list(argTypes, get_model()), L")"));
+		get_diagnostics().report_error(node->get_new_token(), gmt::concat(L"No constructor of '", get_model().get_type_display_name(createdType), L"' accepts the supplied arguments (", format_argument_list(argTypes.get_vector(), get_model()), L")"));
 		return gmt::nullref;
 	}
 
@@ -821,12 +823,12 @@ gmt::Ref<StructSymbol> ExpressionBinder::analyze_qualified_invokation_expression
 		return gmt::nullref;
 	}
 
-	std::vector<gmt::Ref<StructSymbol>> argTypes;
-	if (!collect_argument_types(node, argTypes))
+	gmt::inline_vector<gmt::Ref<StructSymbol>, 8> argTypes;
+	if (!collect_argument_types(node, argTypes.get_vector()))
 		return gmt::nullref;
 
 	gmt::Ref<MethodSymbol> best = gmt::nullref;
-	std::vector<gmt::Ref<StructSymbol>> bestTypeArgs;
+	std::pmr::vector<gmt::Ref<StructSymbol>> bestTypeArgs;
 	int bestScore = -1;
 
 	for (gmt::Ref<SyntaxSymbol> member : namespaceSymbol->members)
@@ -841,8 +843,8 @@ gmt::Ref<StructSymbol> ExpressionBinder::analyze_qualified_invokation_expression
 		if (method->get_linking() != LINK_STATIC)
 			continue;
 
-		std::vector<gmt::Ref<StructSymbol>> candidateTypeArgs;
-		int score = score_method_match(method, argTypes, gmt::nullref, candidateTypeArgs);
+		gmt::inline_vector<gmt::Ref<StructSymbol>, 4> candidateTypeArgs;
+		int score = score_method_match(method, argTypes.get_vector(), gmt::nullref, candidateTypeArgs.get_vector());
 		if (score < 0)
 			continue;
 
@@ -850,7 +852,7 @@ gmt::Ref<StructSymbol> ExpressionBinder::analyze_qualified_invokation_expression
 		{
 			best = method;
 			bestScore = score;
-			bestTypeArgs = std::move(candidateTypeArgs);
+			bestTypeArgs = std::move(candidateTypeArgs.get_vector());
 		}
 	}
 
@@ -901,9 +903,9 @@ gmt::Ref<StructSymbol> ExpressionBinder::analyze_qualified_invokation_expression
 gmt::Ref<StructSymbol> ExpressionBinder::analyze_invokation_expression(const InvokationExpressionSyntax* node, gmt::Ref<StructSymbol> currentType)
 {
 	std::wstring_view methodName = node->get_identifier().get_lexeme();
-	std::vector<gmt::Ref<StructSymbol>> methodTypeArgs;
+	gmt::inline_vector<gmt::Ref<StructSymbol>, 4> methodTypeArgs;
 	gmt::Ref<GenericTypeSymbol> genericType = gmt::nullref;
-	gmt::Ref<MethodSymbol> method = resolve_method(node, currentType, methodTypeArgs, genericType);
+	gmt::Ref<MethodSymbol> method = resolve_method(node, currentType, methodTypeArgs.get_vector(), genericType);
 	std::optional<gmt::Ref<const InvokationExpressionSyntax>> nodeRef = ref_from(node);
 
 	if (method.is_null())
@@ -944,7 +946,7 @@ gmt::Ref<StructSymbol> ExpressionBinder::analyze_invokation_expression(const Inv
 		return gmt::nullref;
 	}
 
-	gmt::Ref<StructSymbol> type = substitute_type_parameters(method->get_return_type(), genericType, method, methodTypeArgs);
+	gmt::Ref<StructSymbol> type = substitute_type_parameters(method->get_return_type(), genericType, method, methodTypeArgs.get_vector());
 	return wrap_async_return_type(method, type);
 }
 
@@ -967,7 +969,8 @@ gmt::Ref<StructSymbol> ExpressionBinder::wrap_async_return_type(gmt::Ref<MethodS
 	if (valueTask->get_kind() != SyntaxKind::StructDeclaration)
 		return type;
 
-	return table.find_or_create_generic_type(valueTask.as<StructSymbol>(), { type });
+	const gmt::Ref<StructSymbol> valueTaskArgs[] = { type };
+	return table.find_or_create_generic_type(valueTask.as<StructSymbol>(), std::span(valueTaskArgs));
 }
 
 void ExpressionBinder::visit_invokation_expression(const InvokationExpressionSyntax* node)
