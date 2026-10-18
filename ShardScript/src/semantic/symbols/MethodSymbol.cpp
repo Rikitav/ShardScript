@@ -29,16 +29,6 @@ void MethodSymbol::set_calling_convention(CallingConvention callingConvention)
 	m_callingConvention = callingConvention;
 }
 
-const std::vector<std::byte>& MethodSymbol::get_executable_byte_code() const
-{
-	return m_executableByteCode;
-}
-
-std::vector<std::byte>& MethodSymbol::get_executable_byte_code()
-{
-	return m_executableByteCode;
-}
-
 void* MethodSymbol::get_function_pointer() const
 {
 	return m_functionPointer;
