@@ -1,5 +1,6 @@
 #include <shard/runtime/MethodCallState.hpp>
 
+#include <shard/runtime/GarbageCollector.hpp>
 #include <shard/runtime/VirtualMachine.hpp>
 
 #include <shard/pragmatic/PragmaticModel.hpp>
@@ -7,11 +8,143 @@
 
 #include <shard/semantic/SemanticModel.hpp>
 #include <shard/semantic/SymbolTable.hpp>
+#include <shard/semantic/symbols/AccessorSymbol.hpp>
+#include <shard/semantic/symbols/ConstructorSymbol.hpp>
+#include <shard/semantic/symbols/GenericTypeSymbol.hpp>
+#include <shard/semantic/symbols/MethodSymbol.hpp>
+#include <shard/semantic/symbols/PropertySymbol.hpp>
+#include <shard/semantic/symbols/StructSymbol.hpp>
+
+#include <gmt/InlineVector.hpp>
 
 #include <cstring>
 #include <stdexcept>
+#include <utility>
 
 using namespace shard;
+
+namespace
+{
+	gmt::Ref<StructSymbol> constructed_definition(gmt::Ref<StructSymbol> type)
+	{
+		if (!type.is_null() && type->get_kind() == SyntaxKind::GenericType)
+			return type.as<GenericTypeSymbol>()->get_underlaying_type();
+
+		return type;
+	}
+
+	gmt::Ref<ConstructorSymbol> find_parameterless_constructor(gmt::Ref<StructSymbol> type)
+	{
+		gmt::Ref<StructSymbol> definition = constructed_definition(type);
+		if (definition.is_null())
+			return gmt::nullref;
+
+		for (gmt::Ref<ConstructorSymbol> ctor : definition->constructors)
+		{
+			if (ctor->get_parameters().empty())
+				return ctor;
+		}
+
+		return gmt::nullref;
+	}
+}
+
+InvokeResult::InvokeResult(ObjectInstance value, ObjectInstance exception)
+	: m_value(value)
+	, m_exception(exception)
+{
+}
+
+ObjectInstance InvokeResult::get_value() const
+{
+	return m_value;
+}
+
+ObjectInstance InvokeResult::get_exception() const
+{
+	return m_exception;
+}
+
+DelegateRef::DelegateRef(VirtualMachine& vm, ObjectInstance delegate)
+	: m_vm(&vm)
+	, m_delegate(delegate)
+{
+	if (!m_delegate.is_null())
+	{
+		m_vm->get_collector().pin(m_delegate);
+		m_pinned = true;
+	}
+}
+
+DelegateRef::~DelegateRef()
+{
+	if (m_pinned && m_vm != nullptr)
+		m_vm->get_collector().unpin(1);
+}
+
+DelegateRef::DelegateRef(DelegateRef&& other) noexcept
+	: m_vm(other.m_vm)
+	, m_delegate(other.m_delegate)
+	, m_pinned(other.m_pinned)
+{
+	other.m_vm = nullptr;
+	other.m_delegate = ObjectInstance::null();
+	other.m_pinned = false;
+}
+
+DelegateRef& DelegateRef::operator=(DelegateRef&& other) noexcept
+{
+	if (this == &other)
+		return *this;
+
+	if (m_pinned && m_vm != nullptr)
+		m_vm->get_collector().unpin(1);
+
+	m_vm = other.m_vm;
+	m_delegate = other.m_delegate;
+	m_pinned = other.m_pinned;
+
+	other.m_vm = nullptr;
+	other.m_delegate = ObjectInstance::null();
+	other.m_pinned = false;
+	return *this;
+}
+
+bool DelegateRef::is_valid() const
+{
+	return m_vm != nullptr && !m_delegate.is_null();
+}
+
+ObjectInstance DelegateRef::get_instance() const
+{
+	return m_delegate;
+}
+
+ObjectInstance DelegateRef::operator()(std::initializer_list<ObjectInstance> args) const
+{
+	if (!is_valid())
+		throw std::runtime_error("DelegateRef is not valid");
+
+	// a delegate value is a capture box instance: its single method is the
+	// lambda body, invoked with the box itself as the receiver. the true box
+	// type comes from the object's header when it is heap-backed
+	const TypeShape* boxShape = m_delegate.get_shape();
+	if (GarbageCollector::is_heap_pointer(m_delegate.get_memory()))
+		boxShape = GarbageCollector::get_header(m_delegate.get_memory())->shape;
+
+	gmt::Ref<StructSymbol> boxType = boxShape->get_base_type();
+	if (boxType.is_null() || boxType->methods.empty())
+		throw std::runtime_error("delegate target is not callable");
+
+	gmt::Ref<MethodSymbol> target = boxType->methods.front();
+
+	gmt::inline_vector<ObjectInstance, 8> fullArgs;
+	fullArgs.push_back(m_delegate);
+	for (const ObjectInstance& arg : args)
+		fullArgs.push_back(arg);
+
+	return m_vm->invoke_method(target, fullArgs.get_vector());
+}
 
 MethodCallState::MethodCallState(VirtualMachine& vm, CallStackFrame* frame, std::span<const ObjectInstance> arguments)
 	: m_vm(vm)
@@ -111,7 +244,99 @@ void MethodCallState::set_return_char(wchar_t value)
 	m_returnValue = ObjectInstance(shape, m_returnBuffer);
 }
 
+void MethodCallState::set_return_byte(std::uint8_t value)
+{
+	SymbolTable& table = m_vm.get_model().get_table();
+	const TypeShape* shape = m_vm.get_pragmatic().find_or_create_type_shape(m_vm.get_model(), table.get_byte_primitive());
+	std::memcpy(m_returnBuffer, &value, sizeof(std::uint8_t));
+	m_returnValue = ObjectInstance(shape, m_returnBuffer);
+}
+
+void MethodCallState::set_return_string(std::wstring_view value)
+{
+	m_returnValue = m_vm.create_string(value);
+}
+
 ObjectInstance MethodCallState::get_return_value() const
 {
 	return m_returnValue;
+}
+
+void MethodCallState::propagate(ObjectInstance exception)
+{
+	m_vm.raise_exception(exception);
+}
+
+InvokeResult MethodCallState::try_invoke_method(gmt::Ref<MethodSymbol> method, std::span<const ObjectInstance> args)
+{
+	ObjectInstance exception = ObjectInstance::null();
+	ObjectInstance result = m_vm.try_invoke_method(method, args, exception);
+	return InvokeResult(result, exception);
+}
+
+InvokeResult MethodCallState::try_invoke_method(gmt::Ref<MethodSymbol> method, std::initializer_list<ObjectInstance> args)
+{
+	return try_invoke_method(method, std::span<const ObjectInstance>(args.begin(), args.size()));
+}
+
+InvokeResult MethodCallState::new_object(gmt::Ref<StructSymbol> type)
+{
+	gmt::Ref<ConstructorSymbol> ctor = find_parameterless_constructor(type);
+	if (ctor.is_null())
+	{
+		const TypeShape* shape = m_vm.get_pragmatic().find_or_create_type_shape(m_vm.get_model(), type);
+		ObjectInstance instance = m_vm.get_collector().allocate_instance(shape);
+		return InvokeResult(instance, ObjectInstance::null());
+	}
+
+	return new_object(type, ctor, {});
+}
+
+InvokeResult MethodCallState::new_object(gmt::Ref<StructSymbol> type, gmt::Ref<ConstructorSymbol> ctor, std::span<const ObjectInstance> args)
+{
+	const TypeShape* shape = m_vm.get_pragmatic().find_or_create_type_shape(m_vm.get_model(), type);
+	ObjectInstance instance = m_vm.get_collector().allocate_instance(shape);
+
+	gmt::inline_vector<ObjectInstance, 8> fullArgs;
+	fullArgs.push_back(instance);
+	for (const ObjectInstance& arg : args)
+		fullArgs.push_back(arg);
+
+	ObjectInstance exception = ObjectInstance::null();
+	m_vm.try_invoke_method(ctor, fullArgs.get_vector(), exception);
+
+	if (!exception.is_null())
+		return InvokeResult(ObjectInstance::null(), exception);
+
+	return InvokeResult(instance, ObjectInstance::null());
+}
+
+InvokeResult MethodCallState::new_object(gmt::Ref<StructSymbol> type, gmt::Ref<ConstructorSymbol> ctor, std::initializer_list<ObjectInstance> args)
+{
+	return new_object(type, ctor, std::span<const ObjectInstance>(args.begin(), args.size()));
+}
+
+InvokeResult MethodCallState::get_property(ObjectInstance obj, gmt::Ref<PropertySymbol> property)
+{
+	gmt::Ref<AccessorSymbol> getter = property->get_getter();
+	if (getter.is_null())
+		throw std::invalid_argument("property has no getter");
+
+	const ObjectInstance args[1] = { obj };
+	return try_invoke_method(getter, std::span<const ObjectInstance>(args, 1));
+}
+
+InvokeResult MethodCallState::set_property(ObjectInstance obj, gmt::Ref<PropertySymbol> property, ObjectInstance value)
+{
+	gmt::Ref<AccessorSymbol> setter = property->get_setter();
+	if (setter.is_null())
+		throw std::invalid_argument("property has no setter");
+
+	const ObjectInstance args[2] = { obj, value };
+	return try_invoke_method(setter, std::span<const ObjectInstance>(args, 2));
+}
+
+DelegateRef MethodCallState::wrap_delegate(ObjectInstance delegate)
+{
+	return DelegateRef(m_vm, delegate);
 }
