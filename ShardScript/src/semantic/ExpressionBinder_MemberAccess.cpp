@@ -47,17 +47,24 @@ static gmt::Ref<StructSymbol> unwrap_nullable(gmt::Ref<StructSymbol> type)
 	return type;
 }
 
-static gmt::Ref<StructSymbol> search_type_of(gmt::Ref<StructSymbol> type)
+static gmt::Ref<StructSymbol> search_type_of(SymbolTable& table, gmt::Ref<StructSymbol> type)
 {
-	if (!type.is_null() && type->get_kind() == SyntaxKind::GenericType)
+	if (type.is_null())
+		return type;
+
+	if (type->get_kind() == SyntaxKind::GenericType)
 		return type.as<GenericTypeSymbol>()->get_underlaying_type();
+
+	// array instances expose the members of the array primitive (Length, ...)
+	if (type->get_kind() == SyntaxKind::ArrayType)
+		return table.get_array_primitive();
 
 	return type;
 }
 
-static gmt::Ref<PropertySymbol> find_property_on(gmt::Ref<StructSymbol> type, std::wstring_view name)
+static gmt::Ref<PropertySymbol> find_property_on(SymbolTable& table, gmt::Ref<StructSymbol> type, std::wstring_view name)
 {
-	for (gmt::Ref<PropertySymbol> property : search_type_of(type)->properties)
+	for (gmt::Ref<PropertySymbol> property : search_type_of(table, type)->properties)
 	{
 		if (!property.is_null() && property->get_name() == name)
 			return property;
@@ -66,9 +73,9 @@ static gmt::Ref<PropertySymbol> find_property_on(gmt::Ref<StructSymbol> type, st
 	return gmt::nullref;
 }
 
-static gmt::Ref<FieldSymbol> find_field_on(gmt::Ref<StructSymbol> type, std::wstring_view name)
+static gmt::Ref<FieldSymbol> find_field_on(SymbolTable& table, gmt::Ref<StructSymbol> type, std::wstring_view name)
 {
-	for (gmt::Ref<FieldSymbol> field : search_type_of(type)->fields)
+	for (gmt::Ref<FieldSymbol> field : search_type_of(table, type)->fields)
 	{
 		if (!field.is_null() && field->get_name() == name)
 			return field;
@@ -77,9 +84,9 @@ static gmt::Ref<FieldSymbol> find_field_on(gmt::Ref<StructSymbol> type, std::wst
 	return gmt::nullref;
 }
 
-static gmt::Ref<MethodSymbol> find_method_on(gmt::Ref<StructSymbol> type, std::wstring_view name)
+static gmt::Ref<MethodSymbol> find_method_on(SymbolTable& table, gmt::Ref<StructSymbol> type, std::wstring_view name)
 {
-	for (gmt::Ref<MethodSymbol> method : search_type_of(type)->methods)
+	for (gmt::Ref<MethodSymbol> method : search_type_of(table, type)->methods)
 	{
 		if (!method.is_null() && method->get_name() == name)
 			return method;
@@ -127,11 +134,11 @@ gmt::Ref<StructSymbol> ExpressionBinder::analyze_member_access_expression(const 
 			if (constraint.is_null())
 				continue;
 
-			symbol = find_property_on(constraint, memberName);
+			symbol = find_property_on(table, constraint, memberName);
 			if (symbol.is_null())
-				symbol = find_field_on(constraint, memberName);
+				symbol = find_field_on(table, constraint, memberName);
 			if (symbol.is_null())
-				symbol = find_method_on(constraint, memberName);
+				symbol = find_method_on(table, constraint, memberName);
 
 			if (!symbol.is_null())
 			{
@@ -143,11 +150,11 @@ gmt::Ref<StructSymbol> ExpressionBinder::analyze_member_access_expression(const 
 
 	if (symbol.is_null())
 	{
-		symbol = find_property_on(currentType, memberName);
+		symbol = find_property_on(table, currentType, memberName);
 		if (symbol.is_null())
-			symbol = find_field_on(currentType, memberName);
+			symbol = find_field_on(table, currentType, memberName);
 		if (symbol.is_null())
-			symbol = find_method_on(currentType, memberName);
+			symbol = find_method_on(table, currentType, memberName);
 
 		if (symbol.is_null())
 		{
@@ -574,7 +581,7 @@ gmt::Ref<IndexatorSymbol> ExpressionBinder::resolve_indexator(const IndexatorExp
 		}
 	}
 
-	gmt::Ref<StructSymbol> searchType = search_type_of(currentType);
+	gmt::Ref<StructSymbol> searchType = search_type_of(get_symbol_table(), currentType);
 	gmt::Ref<IndexatorSymbol> selected = gmt::nullref;
 	int selectedScore = 0;
 

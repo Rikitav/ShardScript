@@ -26,6 +26,24 @@
 
 using namespace shard;
 
+namespace
+{
+	bool is_overloadable_declaration(SyntaxKind kind)
+	{
+		switch (kind)
+		{
+			case SyntaxKind::FunctionDeclaration:
+			case SyntaxKind::ConstructorDeclaration:
+			case SyntaxKind::AccessorDeclaration:
+			case SyntaxKind::OperatorDeclaration:
+				return true;
+
+			default:
+				return false;
+		}
+	}
+}
+
 TypeBinder::TypeBinder(SemanticModel& model, DiagnosticsContext& diagnostics)
 	: SemanticVisitor(model, diagnostics), m_factory(&model.get_table()) { }
 
@@ -162,7 +180,13 @@ void TypeBinder::import_namespace(gmt::Ref<const UsingDirectiveSyntax> node, gmt
 		if (!existing.is_null())
 		{
 			if (existing != member)
-				m_ambiguousNames.insert(member->get_name());
+			{
+				bool overloadablePair = is_overloadable_declaration(existing->get_kind()) && is_overloadable_declaration(member->get_kind());
+				if (overloadablePair)
+					current->declare_symbol(member);
+				else
+					m_ambiguousNames.insert(member->get_name());
+			}
 
 			continue;
 		}

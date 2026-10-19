@@ -10,7 +10,7 @@ namespace shard
 
 		gmt::Ref<T> symbol = m_arena.emplace<T>(std::forward<Args>(args)...);
 		m_nodeToSymbolMap[node] = symbol;
-		m_symbolToNodeMap[symbol] = node;
+		m_symbolToNodeMap.try_emplace(symbol, node);
 		return symbol;
 	}
 
@@ -20,7 +20,7 @@ namespace shard
 		static_assert(std::is_base_of_v<SyntaxSymbol, T>, "bound symbol must derive from SyntaxSymbol");
 
 		m_nodeToSymbolMap[node] = symbol;
-		m_symbolToNodeMap[symbol] = node;
+		m_symbolToNodeMap.try_emplace(symbol, node);
 		return symbol;
 	}
 
