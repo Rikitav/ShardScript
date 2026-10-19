@@ -5,6 +5,7 @@
 
 #include <shard/parsing/nodes/blocks/StatementsBlockSyntax.hpp>
 #include <shard/parsing/nodes/expressions/ObjectExpressionSyntax.hpp>
+#include <shard/parsing/nodes/expressions/RangeExpressionSyntax.hpp>
 #include <shard/parsing/nodes/lists/ArgumentsListSyntax.hpp>
 #include <shard/parsing/nodes/loops/ForInStatementSyntax.hpp>
 #include <shard/parsing/nodes/loops/UntilStatementSyntax.hpp>
@@ -31,6 +32,7 @@
 
 #include <shard/semantic/SemanticModel.hpp>
 #include <shard/semantic/SymbolTable.hpp>
+#include <shard/semantic/symbols/FieldSymbol.hpp>
 #include <shard/semantic/symbols/MethodSymbol.hpp>
 #include <shard/semantic/symbols/StructSymbol.hpp>
 #include <shard/semantic/symbols/VariableSymbol.hpp>
@@ -169,6 +171,12 @@ void ByteCodeEmitter::visit_variable_statement(const VariableStatementSyntax* no
 	if (verdict == PlacementVerdict::Stack && initializer->get_kind() == SyntaxKind::ObjectExpression)
 	{
 		emit_object_construction(initializer.as<ObjectExpressionSyntax>().as_ptr(), *slot);
+		return;
+	}
+
+	if (verdict == PlacementVerdict::Stack && initializer->get_kind() == SyntaxKind::RangeExpression)
+	{
+		emit_range_cursor(initializer.as_ptr(), *slot);
 		return;
 	}
 
@@ -328,6 +336,70 @@ void ByteCodeEmitter::visit_until_statement(const UntilStatementSyntax* node)
 	m_loops.pop_back();
 }
 
+void ByteCodeEmitter::emit_range_cursor(const ExpressionSyntax* rangeExpression, std::uint16_t slot)
+{
+	if (rangeExpression->get_kind() != SyntaxKind::RangeExpression)
+	{
+		// iterate a private copy so the loop never mutates the source value
+		rangeExpression->accept(*this);
+		m_encoder.emit_store_local(slot);
+		eval_pop();
+		return;
+	}
+
+	SymbolTable& table = get_symbol_table();
+	const RangeExpressionSyntax* literal = static_cast<const RangeExpressionSyntax*>(rangeExpression);
+
+	std::uint32_t fromField = field_slot_index(table.get_standard_type(StandardTypes::RangeEnumerable_FromField).as<FieldSymbol>());
+	std::uint32_t toField = field_slot_index(table.get_standard_type(StandardTypes::RangeEnumerable_ToField).as<FieldSymbol>());
+	std::uint32_t currentField = field_slot_index(table.get_standard_type(StandardTypes::RangeEnumerable_CurrentField).as<FieldSymbol>());
+
+	literal->get_left().as_ptr()->accept(*this);
+	std::uint16_t lowerSlot = allocate_temporary(table.get_integer_primitive(), PlacementVerdict::Stack);
+	m_encoder.emit_store_local(lowerSlot);
+	eval_pop();
+
+	literal->get_right().as_ptr()->accept(*this);
+	std::uint16_t upperSlot = allocate_temporary(table.get_integer_primitive(), PlacementVerdict::Stack);
+	m_encoder.emit_store_local(upperSlot);
+	eval_pop();
+
+	m_encoder.emit_load_slot_addr(slot);
+	eval_push(sizeof(void*));
+	m_encoder.emit_load_local(lowerSlot);
+	eval_push(sizeof(std::int64_t));
+	m_encoder.emit_store_field(fromField);
+	eval_pop(2);
+
+	m_encoder.emit_load_slot_addr(slot);
+	eval_push(sizeof(void*));
+	m_encoder.emit_load_local(upperSlot);
+	eval_push(sizeof(std::int64_t));
+
+	bool inclusive = literal->get_operator_token().get_type() == TokenType::RangeInclusiveOperator;
+	if (inclusive)
+	{
+		m_encoder.emit_load_const_int8(1);
+		eval_push(sizeof(std::int64_t));
+		m_encoder.emit_math_add();
+		eval_pop();
+	}
+
+	m_encoder.emit_store_field(toField);
+	eval_pop(2);
+
+	m_encoder.emit_load_slot_addr(slot);
+	eval_push(sizeof(void*));
+	m_encoder.emit_load_local(lowerSlot);
+	eval_push(sizeof(std::int64_t));
+	m_encoder.emit_load_const_int8(1);
+	eval_push(sizeof(std::int64_t));
+	m_encoder.emit_math_sub();
+	eval_pop();
+	m_encoder.emit_store_field(currentField);
+	eval_pop(2);
+}
+
 void ByteCodeEmitter::visit_for_in_statement(const ForInStatementSyntax* node)
 {
 	if (node == nullptr)
@@ -353,38 +425,106 @@ void ByteCodeEmitter::visit_for_in_statement(const ForInStatementSyntax* node)
 	std::optional<gmt::Ref<const ExpressionSyntax>> rangeRef = ref_from(node->get_range_expression().as_ptr());
 	gmt::Ref<StructSymbol> rangeType = rangeRef.has_value() ? get_model().get_expression_type(*rangeRef) : gmt::nullref;
 
-	node->get_range_expression().as_ptr()->accept(*this);
-
-	std::uint16_t arraySlot = allocate_temporary(rangeType, PlacementVerdict::Heap);
-	m_encoder.emit_store_local(arraySlot);
-	eval_pop();
-
 	SymbolTable& table = get_symbol_table();
-	std::uint16_t indexSlot = allocate_temporary(table.get_integer_primitive(), PlacementVerdict::Stack);
+	bool isLazyRange = !rangeType.is_null() && rangeType == table.get_standard_type(StandardTypes::RangeEnumerable);
+
+	std::uint32_t currentField = 0;
+	std::uint32_t toField = 0;
+	if (isLazyRange)
+	{
+		currentField = field_slot_index(table.get_standard_type(StandardTypes::RangeEnumerable_CurrentField).as<FieldSymbol>());
+		toField = field_slot_index(table.get_standard_type(StandardTypes::RangeEnumerable_ToField).as<FieldSymbol>());
+	}
+
+	std::uint16_t rangeSlot = 0;
+	std::uint16_t indexSlot = 0;
+
+	if (isLazyRange)
+	{
+		// the cursor never escapes the loop, so it lives inline in the frame
+		rangeSlot = allocate_temporary(rangeType, PlacementVerdict::Stack);
+		emit_range_cursor(node->get_range_expression().as_ptr(), rangeSlot);
+	}
+	else
+	{
+		node->get_range_expression().as_ptr()->accept(*this);
+
+		rangeSlot = allocate_temporary(rangeType, PlacementVerdict::Heap);
+		m_encoder.emit_store_local(rangeSlot);
+		eval_pop();
+
+		indexSlot = allocate_temporary(table.get_integer_primitive(), PlacementVerdict::Stack);
+	}
 
 	loop_scope scope;
 	scope.deferScopeDepth = m_deferScopes.size();
 	scope.loopStart = mark_position();
 
-	m_encoder.emit_load_local(indexSlot);
-	eval_push(sizeof(std::int64_t));
-	m_encoder.emit_load_local(arraySlot);
-	eval_push(sizeof(void*));
-	m_encoder.emit_array_length();
-	eval_pop();
-	m_encoder.emit_compare_less();
-	eval_pop();
+	if (isLazyRange)
+	{
+		// the cursor starts at (lower - 1), so the increment lives at the loop
+		// head ahead of the bounds check, mirroring MoveNext semantics
+		m_encoder.emit_load_local(rangeSlot);
+		eval_push(sizeof(void*));
+		m_encoder.emit_load_local(rangeSlot);
+		eval_push(sizeof(void*));
+		m_encoder.emit_load_field(currentField);
+		eval_push(sizeof(std::int64_t));
+		eval_pop();
+		m_encoder.emit_load_const_int8(1);
+		eval_push(sizeof(std::int64_t));
+		m_encoder.emit_math_add();
+		eval_pop();
+		m_encoder.emit_store_field(currentField);
+		eval_pop(2);
+
+		m_encoder.emit_load_local(rangeSlot);
+		eval_push(sizeof(void*));
+		m_encoder.emit_load_field(currentField);
+		eval_push(sizeof(std::int64_t));
+		eval_pop();
+		m_encoder.emit_load_local(rangeSlot);
+		eval_push(sizeof(void*));
+		m_encoder.emit_load_field(toField);
+		eval_push(sizeof(std::int64_t));
+		eval_pop();
+		m_encoder.emit_compare_less();
+		eval_pop();
+	}
+	else
+	{
+		m_encoder.emit_load_local(indexSlot);
+		eval_push(sizeof(std::int64_t));
+		m_encoder.emit_load_local(rangeSlot);
+		eval_push(sizeof(void*));
+		m_encoder.emit_array_length();
+		eval_pop();
+		m_encoder.emit_compare_less();
+		eval_pop();
+	}
 
 	std::size_t exitAt = mark_position();
 	m_encoder.emit_jump_false(0);
 	scope.loopEndBacktracks.push_back(exitAt);
 
-	m_encoder.emit_load_local(arraySlot);
-	eval_push(sizeof(void*));
-	m_encoder.emit_load_local(indexSlot);
-	eval_push(sizeof(std::int64_t));
-	m_encoder.emit_load_array_element();
-	eval_pop();
+	if (isLazyRange)
+	{
+		m_encoder.emit_load_local(rangeSlot);
+		eval_push(sizeof(void*));
+		m_encoder.emit_load_field(currentField);
+		eval_push(sizeof(std::int64_t));
+		eval_pop();
+	}
+	else
+	{
+		m_encoder.emit_load_local(rangeSlot);
+		eval_push(sizeof(void*));
+		m_encoder.emit_load_local(indexSlot);
+		eval_push(sizeof(std::int64_t));
+		m_encoder.emit_load_array_element();
+		eval_pop();
+	}
+
 	m_encoder.emit_store_local(*loopSlot);
 	eval_pop();
 
@@ -395,14 +535,17 @@ void ByteCodeEmitter::visit_for_in_statement(const ForInStatementSyntax* node)
 	loop_scope& active = m_loops.back();
 	std::size_t blockEnd = mark_position();
 
-	m_encoder.emit_load_local(indexSlot);
-	eval_push(sizeof(std::int64_t));
-	m_encoder.emit_load_const_int8(1);
-	eval_push(sizeof(std::int64_t));
-	m_encoder.emit_math_add();
-	eval_pop();
-	m_encoder.emit_store_local(indexSlot);
-	eval_pop();
+	if (!isLazyRange)
+	{
+		m_encoder.emit_load_local(indexSlot);
+		eval_push(sizeof(std::int64_t));
+		m_encoder.emit_load_const_int8(1);
+		eval_push(sizeof(std::int64_t));
+		m_encoder.emit_math_add();
+		eval_pop();
+		m_encoder.emit_store_local(indexSlot);
+		eval_pop();
+	}
 
 	m_encoder.emit_jump(active.loopStart);
 	std::size_t loopEnd = mark_position();

@@ -410,7 +410,7 @@ void ByteCodeEncoder::emit_new_array_dynamic(gmt::Ref<ArrayTypeSymbol> type)
 	append_data_value(m_image.get_text_section(), m_image.intern_symbol(type));
 }
 
-void ByteCodeEncoder::emit_create_range(gmt::Ref<ArrayTypeSymbol> type)
+void ByteCodeEncoder::emit_create_range(gmt::Ref<StructSymbol> type)
 {
 	append_data_value(m_image.get_text_section(), OpCode::CREATERANGE);
 	append_data_value(m_image.get_text_section(), m_image.intern_symbol(type));

@@ -899,8 +899,8 @@ void ByteCodeEmitter::visit_range_expression(const RangeExpressionSyntax* node)
 	m_encoder.emit_load_const_bool(inclusive);
 	eval_push(sizeof(bool));
 
-	gmt::Ref<ArrayTypeSymbol> arrayType = get_symbol_table().find_or_create_array_type(get_symbol_table().get_integer_primitive());
-	m_encoder.emit_create_range(arrayType);
+	gmt::Ref<StructSymbol> rangeType = get_symbol_table().get_standard_type(StandardTypes::RangeEnumerable).as<StructSymbol>();
+	m_encoder.emit_create_range(rangeType);
 	eval_pop(3);
 	eval_push(sizeof(void*));
 }

@@ -97,7 +97,7 @@ namespace shard
 
 		void emit_new_array(gmt::Ref<ArrayTypeSymbol> type);
 		void emit_new_array_dynamic(gmt::Ref<ArrayTypeSymbol> type);
-		void emit_create_range(gmt::Ref<ArrayTypeSymbol> type);
+		void emit_create_range(gmt::Ref<StructSymbol> type);
 		void emit_load_array_element();
 		void emit_store_array_element();
 		void emit_array_length();
