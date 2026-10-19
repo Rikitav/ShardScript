@@ -18,6 +18,7 @@ namespace shard
 	class ConstructorSymbol;
 	class FieldSymbol;
 	class GenericTypeSymbol;
+	class IndexatorSymbol;
 	class MethodSymbol;
 	class PropertySymbol;
 	class TypeParameterSymbol;
@@ -57,6 +58,9 @@ namespace shard
 
 		gmt::Ref<StructSymbol> find_type_by_name(std::wstring_view fullName);
 		gmt::Ref<FieldSymbol> find_field_by_name(gmt::Ref<StructSymbol> type, std::wstring_view name) const;
+		bool resolve_indexable(gmt::Ref<StructSymbol> type, gmt::Ref<PropertySymbol>& outCount, gmt::Ref<IndexatorSymbol>& outIndexator);
+		gmt::Ref<PropertySymbol> resolve_virtual_property(gmt::Ref<StructSymbol> type, gmt::Ref<PropertySymbol> interfaceMember, gmt::Ref<GenericTypeSymbol> within);
+		gmt::Ref<IndexatorSymbol> resolve_virtual_indexator(gmt::Ref<StructSymbol> type, gmt::Ref<IndexatorSymbol> interfaceMember, gmt::Ref<GenericTypeSymbol> within);
 
 		gmt::Ref<StructSymbol> resolve_runtime_type_argument(gmt::Ref<StructSymbol> type, const TypeParameterResolver& resolveParameter);
 		bool try_resolve_generic_arguments(gmt::Ref<StructSymbol> type, const TypeParameterResolver& resolveParameter, gmt::Ref<StructSymbol>& baseType, std::vector<gmt::Ref<StructSymbol>>& genericArgs);

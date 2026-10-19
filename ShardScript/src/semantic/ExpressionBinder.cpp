@@ -813,6 +813,20 @@ void ExpressionBinder::visit_for_in_statement(const ForInStatementSyntax* node)
 				elementType = rangeType.as<ArrayTypeSymbol>()->get_underlaying_type();
 			else if (rangeType == table.get_standard_type(StandardTypes::RangeEnumerable))
 				elementType = table.get_integer_primitive();
+			else
+			{
+				gmt::Ref<PropertySymbol> countProperty = gmt::nullref;
+				gmt::Ref<IndexatorSymbol> indexator = gmt::nullref;
+
+				if (get_model().resolve_indexable(rangeType, countProperty, indexator))
+				{
+					gmt::Ref<GenericTypeSymbol> genericType = gmt::nullref;
+					if (rangeType->get_kind() == SyntaxKind::GenericType)
+						genericType = rangeType.as<GenericTypeSymbol>();
+
+					elementType = get_model().substitute_type(indexator->get_return_type(), genericType);
+				}
+			}
 		}
 
 		if (!elementType.is_null())
@@ -822,7 +836,7 @@ void ExpressionBinder::visit_for_in_statement(const ForInStatementSyntax* node)
 		}
 		else
 		{
-			get_diagnostics().report_error(node->get_location(), L"'for-in' expression must be an array or a range");
+			get_diagnostics().report_error(node->get_location(), L"'for-in' expression must be an array, a range or an indexable collection");
 		}
 	}
 

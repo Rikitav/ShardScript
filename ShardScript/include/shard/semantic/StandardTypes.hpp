@@ -74,6 +74,8 @@ namespace shard
 		IEnumerator_MoveNext,
 		IEnumerator_Current_get,
 
+		IIndexable,
+
 		ArrayEnumerator,
 		ArrayEnumerator_T,
 		ArrayEnumerator_SourceField,

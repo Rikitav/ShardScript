@@ -32,8 +32,11 @@
 
 #include <shard/semantic/SemanticModel.hpp>
 #include <shard/semantic/SymbolTable.hpp>
+#include <shard/semantic/symbols/AccessorSymbol.hpp>
 #include <shard/semantic/symbols/FieldSymbol.hpp>
+#include <shard/semantic/symbols/IndexatorSymbol.hpp>
 #include <shard/semantic/symbols/MethodSymbol.hpp>
+#include <shard/semantic/symbols/PropertySymbol.hpp>
 #include <shard/semantic/symbols/StructSymbol.hpp>
 #include <shard/semantic/symbols/VariableSymbol.hpp>
 
@@ -427,6 +430,13 @@ void ByteCodeEmitter::visit_for_in_statement(const ForInStatementSyntax* node)
 
 	SymbolTable& table = get_symbol_table();
 	bool isLazyRange = !rangeType.is_null() && rangeType == table.get_standard_type(StandardTypes::RangeEnumerable);
+	bool isArray = !rangeType.is_null() && rangeType->get_kind() == SyntaxKind::ArrayType;
+
+	gmt::Ref<PropertySymbol> countProperty = gmt::nullref;
+	gmt::Ref<IndexatorSymbol> indexator = gmt::nullref;
+	bool isIndexable = false;
+	if (!isLazyRange && !isArray)
+		isIndexable = get_model().resolve_indexable(rangeType, countProperty, indexator);
 
 	std::uint32_t currentField = 0;
 	std::uint32_t toField = 0;
@@ -491,6 +501,18 @@ void ByteCodeEmitter::visit_for_in_statement(const ForInStatementSyntax* node)
 		m_encoder.emit_compare_less();
 		eval_pop();
 	}
+	else if (isIndexable)
+	{
+		m_encoder.emit_load_local(indexSlot);
+		eval_push(sizeof(std::int64_t));
+		m_encoder.emit_load_local(rangeSlot);
+		eval_push(sizeof(void*));
+		m_encoder.emit_call_method_symbol(countProperty->get_getter());
+		eval_pop();
+		eval_push(sizeof(std::int64_t));
+		m_encoder.emit_compare_less();
+		eval_pop();
+	}
 	else
 	{
 		m_encoder.emit_load_local(indexSlot);
@@ -514,6 +536,16 @@ void ByteCodeEmitter::visit_for_in_statement(const ForInStatementSyntax* node)
 		m_encoder.emit_load_field(currentField);
 		eval_push(sizeof(std::int64_t));
 		eval_pop();
+	}
+	else if (isIndexable)
+	{
+		m_encoder.emit_load_local(indexSlot);
+		eval_push(sizeof(std::int64_t));
+		m_encoder.emit_load_local(rangeSlot);
+		eval_push(sizeof(void*));
+		m_encoder.emit_call_method_symbol(indexator->get_getter());
+		eval_pop(2);
+		eval_push_type(loopVariableType);
 	}
 	else
 	{

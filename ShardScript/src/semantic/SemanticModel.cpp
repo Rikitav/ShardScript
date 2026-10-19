@@ -8,6 +8,7 @@
 #include <shard/semantic/symbols/DelegateTypeSymbol.hpp>
 #include <shard/semantic/symbols/FieldSymbol.hpp>
 #include <shard/semantic/symbols/GenericTypeSymbol.hpp>
+#include <shard/semantic/symbols/IndexatorSymbol.hpp>
 #include <shard/semantic/symbols/MethodSymbol.hpp>
 #include <shard/semantic/symbols/NamespaceSymbol.hpp>
 #include <shard/semantic/symbols/NullableTypeSymbol.hpp>
@@ -587,6 +588,104 @@ gmt::Ref<FieldSymbol> SemanticModel::find_field_by_name(gmt::Ref<StructSymbol> t
 	{
 		if (field->get_name() == name)
 			return field;
+	}
+
+	return gmt::nullref;
+}
+
+bool SemanticModel::resolve_indexable(gmt::Ref<StructSymbol> type, gmt::Ref<PropertySymbol>& outCount, gmt::Ref<IndexatorSymbol>& outIndexator)
+{
+	outCount = gmt::nullref;
+	outIndexator = gmt::nullref;
+
+	if (type.is_null())
+		return false;
+
+	gmt::Ref<StructSymbol> indexableTrait = m_table.get_standard_type(StandardTypes::IIndexable).as<StructSymbol>();
+	if (indexableTrait.is_null())
+		return false;
+
+	gmt::Ref<StructSymbol> searchType = type;
+	gmt::Ref<GenericTypeSymbol> within = gmt::nullref;
+	if (searchType->get_kind() == SyntaxKind::GenericType)
+	{
+		within = searchType.as<GenericTypeSymbol>();
+		searchType = within->get_underlaying_type();
+	}
+
+	// structural conformance: every abstract interface member must resolve to
+	// a concrete member on the type, explicitly implemented or not
+	for (gmt::Ref<PropertySymbol> property : indexableTrait->properties)
+	{
+		outCount = resolve_virtual_property(searchType, property, within);
+		if (outCount.is_null())
+			return false;
+	}
+
+	for (gmt::Ref<IndexatorSymbol> indexator : indexableTrait->indexators)
+	{
+		outIndexator = resolve_virtual_indexator(searchType, indexator, within);
+		if (outIndexator.is_null())
+			return false;
+	}
+
+	return true;
+}
+
+gmt::Ref<PropertySymbol> SemanticModel::resolve_virtual_property(gmt::Ref<StructSymbol> type, gmt::Ref<PropertySymbol> interfaceMember, gmt::Ref<GenericTypeSymbol> within)
+{
+	if (type.is_null() || interfaceMember.is_null())
+		return gmt::nullref;
+
+	gmt::Ref<StructSymbol> expectedType = substitute_type(interfaceMember->get_return_type(), within);
+	for (gmt::Ref<PropertySymbol> candidate : type->properties)
+	{
+		if (candidate->get_name() != interfaceMember->get_name())
+			continue;
+
+		bool getterOk = interfaceMember->get_getter().is_null() || !candidate->get_getter().is_null();
+		bool setterOk = interfaceMember->get_setter().is_null() || !candidate->get_setter().is_null();
+		if (!getterOk || !setterOk)
+			continue;
+
+		gmt::Ref<StructSymbol> candidateType = substitute_type(candidate->get_return_type(), within);
+		if (are_types_equal(expectedType, candidateType))
+			return candidate;
+	}
+
+	return gmt::nullref;
+}
+
+gmt::Ref<IndexatorSymbol> SemanticModel::resolve_virtual_indexator(gmt::Ref<StructSymbol> type, gmt::Ref<IndexatorSymbol> interfaceMember, gmt::Ref<GenericTypeSymbol> within)
+{
+	if (type.is_null() || interfaceMember.is_null())
+		return gmt::nullref;
+
+	const std::vector<gmt::Ref<ParameterSymbol>>& expectedParams = interfaceMember->get_parameters();
+	for (gmt::Ref<IndexatorSymbol> candidate : type->indexators)
+	{
+		const std::vector<gmt::Ref<ParameterSymbol>>& candidateParams = candidate->get_parameters();
+		if (candidateParams.size() != expectedParams.size())
+			continue;
+
+		bool getterOk = interfaceMember->get_getter().is_null() || !candidate->get_getter().is_null();
+		bool setterOk = interfaceMember->get_setter().is_null() || !candidate->get_setter().is_null();
+		if (!getterOk || !setterOk)
+			continue;
+
+		bool paramsMatch = true;
+		for (std::size_t i = 0; i < expectedParams.size(); ++i)
+		{
+			gmt::Ref<StructSymbol> candidateType = substitute_type(candidateParams[i]->get_type(), within);
+			if (!are_types_equal(expectedParams[i]->get_type(), candidateType))
+			{
+				paramsMatch = false;
+				break;
+			}
+		}
+
+		if (paramsMatch)
+			return candidate;
 	}
 
 	return gmt::nullref;
