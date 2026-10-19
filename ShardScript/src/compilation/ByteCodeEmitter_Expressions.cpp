@@ -32,6 +32,7 @@
 #include <shard/semantic/symbols/DelegateTypeSymbol.hpp>
 #include <shard/semantic/symbols/FieldSymbol.hpp>
 #include <shard/semantic/symbols/IndexatorSymbol.hpp>
+#include <shard/semantic/symbols/LiteralSymbol.hpp>
 #include <shard/semantic/symbols/MethodSymbol.hpp>
 #include <shard/semantic/symbols/OperatorSymbol.hpp>
 #include <shard/semantic/symbols/ParameterSymbol.hpp>
@@ -199,7 +200,18 @@ void ByteCodeEmitter::visit_literal_expression(const LiteralExpressionSyntax* no
 
 		case TokenType::DoubleLiteral:
 		{
-			m_encoder.emit_load_const_double64(parse_double(literal.get_lexeme()));
+			// the binder already parsed and validated the value locale-independently;
+			// re-parsing the lexeme here would be sensitive to the process locale
+			double value = 0.0;
+			std::optional<gmt::Ref<const LiteralExpressionSyntax>> nodeRef = ref_from(node);
+			gmt::Ref<LiteralSymbol> symbol = nodeRef.has_value() ? lookup_symbol<LiteralSymbol>(*nodeRef) : gmt::nullref;
+
+			if (!symbol.is_null())
+				value = symbol->get_double_value();
+			else
+				value = parse_double(literal.get_lexeme());
+
+			m_encoder.emit_load_const_double64(value);
 			eval_push(sizeof(double));
 			return;
 		}
