@@ -55,6 +55,10 @@ namespace shard
 		std::size_t m_allocatedSinceCollection = 0;
 		std::size_t m_collectionThreshold = 256 * 1024;
 
+		std::size_t m_totalAllocations = 0;
+		std::size_t m_totalAllocatedBytes = 0;
+		std::size_t m_totalCollections = 0;
+
 		ObjectInstance allocate_block(const TypeShape* shape, std::size_t payloadBytes);
 		void mark_object(std::byte* payload);
 		void trace_pointer(std::byte* pointer);
@@ -87,6 +91,9 @@ namespace shard
 		void terminate();
 
 		std::size_t get_instance_count() const;
+		std::size_t get_total_allocations() const;
+		std::size_t get_total_allocated_bytes() const;
+		std::size_t get_total_collections() const;
 		bool is_heap_backed(std::byte* payload) const;
 
 		static GcHeader* get_header(std::byte* payload);

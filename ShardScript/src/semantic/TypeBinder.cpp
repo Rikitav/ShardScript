@@ -830,6 +830,20 @@ void TypeBinder::visit_identifier_name_type(const IdentifierNameTypeSyntax* node
 
 	gmt::Ref<SyntaxSymbol> symbol = get_current_scope()->lookup(name);
 
+	// types declared in the global namespace are always visible, like C#'s
+	// global:: scope; locals and imports shadow them by resolving first
+	if (symbol.is_null())
+	{
+		for (gmt::Ref<SyntaxSymbol> member : get_symbol_table().get_root_namespace()->members)
+		{
+			if (!member.is_null() && member->is_type() && member->get_name() == name)
+			{
+				symbol = member;
+				break;
+			}
+		}
+	}
+
 	if (symbol.is_null())
 	{
 		if (is_ambiguous_name(name))

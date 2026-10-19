@@ -684,6 +684,11 @@ gmt::Ref<ConstructorSymbol> ExpressionBinder::resolve_constructor(const ObjectEx
 		argTypes.push_back(argumentType);
 	}
 
+	// a type without declared constructors value-initializes when no
+	// arguments are supplied
+	if (searchType->constructors.empty() && argTypes.get_vector().empty())
+		return gmt::nullref;
+
 	gmt::Ref<ConstructorSymbol> best = gmt::nullref;
 	int bestScore = -1;
 
