@@ -217,11 +217,21 @@ void VirtualMachine::throw_value(CallStackFrame* frame, ObjectInstance value)
 void VirtualMachine::raise_runtime_exception(std::wstring_view message)
 {
 	ObjectInstance exception = create_string(message);
+	raise_exception(exception);
+}
+
+void VirtualMachine::raise_exception(ObjectInstance exception)
+{
+	if (m_exceptionCapture != nullptr)
+	{
+		*m_exceptionCapture = exception;
+		return;
+	}
+
 	if (m_currentFrame == nullptr)
 	{
 		m_hasUnhandledException = true;
 		m_unhandledException = exception;
-		m_unhandledMessage = std::wstring(message);
 		return;
 	}
 
@@ -316,7 +326,6 @@ void VirtualMachine::invoke_into(gmt::Ref<MethodSymbol> method, std::span<const 
 	{
 		m_hasUnhandledException = true;
 		m_unhandledException = exception;
-		m_unhandledMessage = PrimitiveMath::to_display_string(exception);
 		return;
 	}
 
@@ -356,11 +365,16 @@ ObjectInstance VirtualMachine::invoke_managed(gmt::Ref<MethodSymbol> method, std
 
 	if (raised)
 	{
+		if (m_exceptionCapture != nullptr)
+		{
+			*m_exceptionCapture = exception;
+			return ObjectInstance::null();
+		}
+
 		if (m_currentFrame == nullptr)
 		{
 			m_hasUnhandledException = true;
 			m_unhandledException = exception;
-			m_unhandledMessage = PrimitiveMath::to_display_string(exception);
 			return ObjectInstance::null();
 		}
 
@@ -419,6 +433,25 @@ ObjectInstance VirtualMachine::invoke_method(gmt::Ref<MethodSymbol> method, std:
 	}
 
 	throw std::runtime_error("Method calling convention was 'None'");
+}
+
+ObjectInstance VirtualMachine::try_invoke_method(gmt::Ref<MethodSymbol> method, std::span<const ObjectInstance> arguments, ObjectInstance& outException)
+{
+	ObjectInstance capture = ObjectInstance::null();
+	ObjectInstance* previousCapture = m_exceptionCapture;
+	m_exceptionCapture = &capture;
+
+	ObjectInstance result = invoke_method(method, arguments);
+
+	m_exceptionCapture = previousCapture;
+	if (!capture.is_null())
+	{
+		outException = capture;
+		return ObjectInstance::null();
+	}
+
+	outException = ObjectInstance::null();
+	return result;
 }
 
 bool VirtualMachine::handle_exception_in_frame(CallStackFrame* frame, ByteCodeDecoder& decoder)
@@ -543,9 +576,12 @@ ObjectInstance VirtualMachine::get_unhandled_exception() const
 	return m_unhandledException;
 }
 
-const std::wstring& VirtualMachine::get_unhandled_message() const
+std::wstring VirtualMachine::get_unhandled_message() const
 {
-	return m_unhandledMessage;
+	if (!m_hasUnhandledException)
+		return std::wstring();
+
+	return PrimitiveMath::to_display_string(m_unhandledException);
 }
 
 namespace

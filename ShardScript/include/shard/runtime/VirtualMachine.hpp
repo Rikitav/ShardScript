@@ -36,8 +36,8 @@ namespace shard
 
 		CallStackFrame* m_currentFrame = nullptr;
 		ObjectInstance m_unhandledException;
-		std::wstring m_unhandledMessage;
 		bool m_hasUnhandledException = false;
+		ObjectInstance* m_exceptionCapture = nullptr;
 		alignas(8) std::byte m_returnScratch[8] = {};
 
 		const TypeShape* resolve_shape(gmt::Ref<StructSymbol> type);
@@ -73,6 +73,7 @@ namespace shard
 
 		void run();
 		ObjectInstance invoke_method(gmt::Ref<MethodSymbol> method, std::span<const ObjectInstance> arguments);
+		ObjectInstance try_invoke_method(gmt::Ref<MethodSymbol> method, std::span<const ObjectInstance> arguments, ObjectInstance& outException);
 
 		VirtualProgramImage& get_program() const;
 		SemanticModel& get_model() const;
@@ -83,9 +84,10 @@ namespace shard
 		CallStackFrame* get_current_frame() const;
 		ObjectInstance create_string(std::wstring_view value);
 		void raise_runtime_exception(std::wstring_view message);
+		void raise_exception(ObjectInstance exception);
 
 		bool get_has_unhandled_exception() const;
 		ObjectInstance get_unhandled_exception() const;
-		const std::wstring& get_unhandled_message() const;
+		std::wstring get_unhandled_message() const;
 	};
 }
