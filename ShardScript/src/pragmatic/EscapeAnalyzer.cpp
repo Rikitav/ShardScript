@@ -735,12 +735,15 @@ void EscapeAnalyzer::visit_object_creation_expression(const ObjectExpressionSynt
 
 	if (m_inDefer == 0)
 	{
-		bool hasKnownConstructor = false;
-		gmt::Ref<ConstructorSymbol> constructor;
+		gmt::Ref<ConstructorSymbol> constructor = gmt::nullref;
 		if (nodeRef.has_value())
-			constructor = lookup_symbol<ConstructorSymbol>(*nodeRef);
+		{
+			gmt::Ref<SyntaxSymbol> boundSymbol = get_symbol_table().lookup_symbol(*nodeRef);
+			if (!boundSymbol.is_null() && boundSymbol->get_kind() == SyntaxKind::ConstructorDeclaration)
+				constructor = boundSymbol.as<ConstructorSymbol>();
+		}
 
-		hasKnownConstructor = !constructor.is_null();
+		bool hasKnownConstructor = !constructor.is_null();
 
 		gmt::Ref<const ArgumentsListSyntax> arguments = node->get_arguments();
 		if (!arguments.is_null())

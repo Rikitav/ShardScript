@@ -966,7 +966,10 @@ void ByteCodeEmitter::emit_object_construction(const ObjectExpressionSyntax* nod
 	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<ConstructorSymbol> constructor = lookup_symbol<ConstructorSymbol>(*nodeRef);
+	gmt::Ref<SyntaxSymbol> boundSymbol = get_symbol_table().lookup_symbol(*nodeRef);
+	gmt::Ref<ConstructorSymbol> constructor = gmt::nullref;
+	if (!boundSymbol.is_null() && boundSymbol->get_kind() == SyntaxKind::ConstructorDeclaration)
+		constructor = boundSymbol.as<ConstructorSymbol>();
 
 	gmt::Ref<StructSymbol> type = get_model().get_expression_type(*nodeRef);
 	if (type.is_null() && !constructor.is_null())
@@ -978,9 +981,12 @@ void ByteCodeEmitter::emit_object_construction(const ObjectExpressionSyntax* nod
 		return;
 	}
 
-	if (type->get_kind() == SyntaxKind::GenericType)
+	// generic construction is limited to constructor-less native types: a
+	// managed constructor would need its frame laid out against the open
+	// type parameters, which the layout pass cannot do yet
+	if (type->get_kind() == SyntaxKind::GenericType && !constructor.is_null())
 	{
-		unsupported(*nodeRef, L"construction of generic types");
+		unsupported(*nodeRef, L"construction of generic types with managed constructors");
 		return;
 	}
 

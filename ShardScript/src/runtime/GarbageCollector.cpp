@@ -65,6 +65,9 @@ ObjectInstance GarbageCollector::allocate_block(const TypeShape* shape, std::siz
 	m_heap.insert(payload);
 	m_allocatedSinceCollection += sizeof(GcHeader) + payloadBytes;
 
+	++m_totalAllocations;
+	m_totalAllocatedBytes += sizeof(GcHeader) + payloadBytes;
+
 	return ObjectInstance(shape, payload);
 }
 
@@ -274,6 +277,8 @@ void GarbageCollector::sweep()
 
 void GarbageCollector::collect()
 {
+	++m_totalCollections;
+
 	for (CallStackFrame* frame : m_frames)
 		trace_frame(frame);
 
@@ -322,4 +327,19 @@ void GarbageCollector::terminate()
 std::size_t GarbageCollector::get_instance_count() const
 {
 	return m_heap.size();
+}
+
+std::size_t GarbageCollector::get_total_allocations() const
+{
+	return m_totalAllocations;
+}
+
+std::size_t GarbageCollector::get_total_allocated_bytes() const
+{
+	return m_totalAllocatedBytes;
+}
+
+std::size_t GarbageCollector::get_total_collections() const
+{
+	return m_totalCollections;
 }
