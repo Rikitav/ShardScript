@@ -91,7 +91,7 @@ namespace shard
 		void emit_logical_and();
 
 		void emit_alloc_heap(gmt::Ref<StructSymbol> type);
-		void emit_new_delegate(gmt::Ref<DelegateTypeSymbol> type);
+		void emit_new_delegate(gmt::Ref<DelegateTypeSymbol> type, gmt::Ref<MethodSymbol> method);
 		void emit_load_field(std::uint32_t slot);
 		void emit_store_field(std::uint32_t slot);
 

@@ -265,6 +265,8 @@ namespace
 			{
 				opcode = L"newdelegate";
 				write_symbol_name(args, decoder.absorb_delegate_type_symbol());
+				args << L" ";
+				write_symbol_name(args, decoder.absorb_method_symbol());
 				break;
 			}
 

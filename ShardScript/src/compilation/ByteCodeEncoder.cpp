@@ -379,10 +379,11 @@ void ByteCodeEncoder::emit_alloc_heap(gmt::Ref<StructSymbol> type)
 	append_data_value(m_image.get_text_section(), m_image.intern_symbol(type));
 }
 
-void ByteCodeEncoder::emit_new_delegate(gmt::Ref<DelegateTypeSymbol> type)
+void ByteCodeEncoder::emit_new_delegate(gmt::Ref<DelegateTypeSymbol> type, gmt::Ref<MethodSymbol> method)
 {
 	append_data_value(m_image.get_text_section(), OpCode::NEWDELEGATE);
 	append_data_value(m_image.get_text_section(), m_image.intern_symbol(type));
+	append_data_value(m_image.get_text_section(), m_image.intern_symbol(method));
 }
 
 void ByteCodeEncoder::emit_load_field(std::uint32_t slot)

@@ -52,3 +52,13 @@ const std::vector<VirtualProgramImage::MethodEntry>& VirtualProgramImage::get_me
 {
 	return m_methodEntries;
 }
+
+void VirtualProgramImage::set_entry_point(gmt::Ref<MethodSymbol> method)
+{
+	m_entryPoint = method;
+}
+
+gmt::Ref<MethodSymbol> VirtualProgramImage::get_entry_point() const
+{
+	return m_entryPoint;
+}
