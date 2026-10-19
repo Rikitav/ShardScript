@@ -171,16 +171,31 @@ void ByteCodeEmitter::visit_variable_statement(const VariableStatementSyntax* no
 		return;
 	}
 
-	if (verdict == PlacementVerdict::Stack && initializer->get_kind() == SyntaxKind::ObjectExpression)
+	bool stackPlaced = verdict == PlacementVerdict::Stack || verdict == PlacementVerdict::StackReturn;
+
+	if (stackPlaced && initializer->get_kind() == SyntaxKind::ObjectExpression)
 	{
 		emit_object_construction(initializer.as<ObjectExpressionSyntax>().as_ptr(), *slot);
 		return;
 	}
 
-	if (verdict == PlacementVerdict::Stack && initializer->get_kind() == SyntaxKind::RangeExpression)
+	if (stackPlaced && initializer->get_kind() == SyntaxKind::RangeExpression)
 	{
 		emit_range_cursor(initializer.as_ptr(), *slot);
 		return;
+	}
+
+	// composite-returning calls write straight into the local's slot through
+	// the chained return storage instead of bouncing a pointer off the heap
+	if (stackPlaced && initializer->get_kind() == SyntaxKind::InvokationExpression)
+	{
+		gmt::Ref<MethodSymbol> intoMethod = into_call_method(initializer);
+		if (!intoMethod.is_null())
+		{
+			const InvokationExpressionSyntax* invokation = static_cast<const InvokationExpressionSyntax*>(initializer.as_ptr());
+			emit_method_call_into(intoMethod, invokation->get_previous(), invokation->get_arguments().as_ptr(), *slot);
+			return;
+		}
 	}
 
 	initializer.as_ptr()->accept(*this);
@@ -193,13 +208,28 @@ void ByteCodeEmitter::visit_return_statement(const ReturnStatementSyntax* node)
 	if (node == nullptr)
 		return;
 
-	if (!node->get_expression().is_null())
-		node->get_expression().as_ptr()->accept(*this);
+	gmt::Ref<const ExpressionSyntax> expression = node->get_expression();
+
+	// tail calls forward the current frame's return slot: the callee writes
+	// its result straight into the caller's chained return storage
+	gmt::Ref<MethodSymbol> intoMethod = into_call_method(expression);
+	if (!expression.is_null() && !intoMethod.is_null())
+	{
+		const InvokationExpressionSyntax* invokation = static_cast<const InvokationExpressionSyntax*>(expression.as_ptr());
+		emit_method_call_into(intoMethod, invokation->get_previous(), invokation->get_arguments().as_ptr(), ReturnSlotSentinel);
+
+		emit_all_defers();
+		m_encoder.emit_return_placed();
+		return;
+	}
+
+	if (!expression.is_null())
+		expression.as_ptr()->accept(*this);
 
 	emit_all_defers();
 	m_encoder.emit_return();
 
-	if (!node->get_expression().is_null())
+	if (!expression.is_null())
 		eval_pop();
 }
 
@@ -457,11 +487,22 @@ void ByteCodeEmitter::visit_for_in_statement(const ForInStatementSyntax* node)
 	}
 	else
 	{
-		node->get_range_expression().as_ptr()->accept(*this);
+		gmt::Ref<MethodSymbol> intoMethod = into_call_method(node->get_range_expression());
+		if (isIndexable && !intoMethod.is_null())
+		{
+			// the collection constructs straight into the loop's stack temp
+			rangeSlot = allocate_temporary(rangeType, PlacementVerdict::Stack);
+			const InvokationExpressionSyntax* invokation = static_cast<const InvokationExpressionSyntax*>(node->get_range_expression().as_ptr());
+			emit_method_call_into(intoMethod, invokation->get_previous(), invokation->get_arguments().as_ptr(), rangeSlot);
+		}
+		else
+		{
+			node->get_range_expression().as_ptr()->accept(*this);
 
-		rangeSlot = allocate_temporary(rangeType, PlacementVerdict::Heap);
-		m_encoder.emit_store_local(rangeSlot);
-		eval_pop();
+			rangeSlot = allocate_temporary(rangeType, PlacementVerdict::Heap);
+			m_encoder.emit_store_local(rangeSlot);
+			eval_pop();
+		}
 
 		indexSlot = allocate_temporary(table.get_integer_primitive(), PlacementVerdict::Stack);
 	}

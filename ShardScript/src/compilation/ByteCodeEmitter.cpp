@@ -220,8 +220,12 @@ PlacementVerdict ByteCodeEmitter::site_verdict(gmt::Ref<const ExpressionSyntax> 
 	if (!verdict.has_value())
 		return PlacementVerdict::Heap;
 
-	if (verdict->verdict == PlacementVerdict::Promote || verdict->verdict == PlacementVerdict::StackReturn)
+	if (verdict->verdict == PlacementVerdict::Promote)
 		return PlacementVerdict::Heap;
+
+	// return-chained sites construct into the caller-provided return storage
+	if (verdict->verdict == PlacementVerdict::StackReturn)
+		return PlacementVerdict::Stack;
 
 	// scalar sites are identity-free and escape-free: plain stack placement
 	if (verdict->verdict == PlacementVerdict::Scalar)
