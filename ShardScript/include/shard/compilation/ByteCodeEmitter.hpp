@@ -109,6 +109,8 @@ namespace shard
 		void emit_instance_field_load(gmt::Ref<FieldSymbol> field, gmt::Ref<const ExpressionSyntax> previous);
 		gmt::Ref<FieldSymbol> capture_field_of(gmt::Ref<SyntaxSymbol> bound) const;
 		void emit_method_call(gmt::Ref<MethodSymbol> method, gmt::Ref<const ExpressionSyntax> receiver, const ArgumentsListSyntax* arguments, bool receiverFirst);
+		void emit_method_call_into(gmt::Ref<MethodSymbol> method, gmt::Ref<const ExpressionSyntax> receiver, const ArgumentsListSyntax* arguments, std::uint16_t slot);
+		gmt::Ref<MethodSymbol> into_call_method(gmt::Ref<const ExpressionSyntax> expression);
 		void emit_arguments_reversed(const ArgumentsListSyntax* arguments);
 		void emit_object_construction(const ObjectExpressionSyntax* node, std::optional<std::uint16_t> directSlot = std::nullopt);
 		void emit_range_cursor(const ExpressionSyntax* rangeExpression, std::uint16_t slot);

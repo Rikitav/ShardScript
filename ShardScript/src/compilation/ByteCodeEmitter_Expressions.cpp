@@ -644,6 +644,63 @@ void ByteCodeEmitter::emit_method_call(gmt::Ref<MethodSymbol> method, gmt::Ref<c
 		eval_push_type(method->get_return_type());
 }
 
+void ByteCodeEmitter::emit_method_call_into(gmt::Ref<MethodSymbol> method, gmt::Ref<const ExpressionSyntax> receiver, const ArgumentsListSyntax* arguments, std::uint16_t slot)
+{
+	bool isStatic = method->get_linking() == LINK_STATIC;
+
+	emit_arguments_reversed(arguments);
+
+	std::size_t receiverEval = 0;
+	if (!isStatic)
+	{
+		if (!receiver.is_null())
+			receiver.as_ptr()->accept(*this);
+		else
+		{
+			m_encoder.emit_load_local(0);
+			eval_push(sizeof(void*));
+		}
+
+		receiverEval = 1;
+	}
+
+	m_encoder.emit_call_method_into(method, slot);
+	eval_pop(method->get_parameters().size() + receiverEval);
+}
+
+gmt::Ref<MethodSymbol> ByteCodeEmitter::into_call_method(gmt::Ref<const ExpressionSyntax> expression)
+{
+	if (expression.is_null() || expression->get_kind() != SyntaxKind::InvokationExpression)
+		return gmt::nullref;
+
+	const InvokationExpressionSyntax* invokation = static_cast<const InvokationExpressionSyntax*>(expression.as_ptr());
+	std::optional<gmt::Ref<const InvokationExpressionSyntax>> invokationRef = ref_from(invokation);
+	if (!invokationRef.has_value())
+		return gmt::nullref;
+
+	gmt::Ref<SyntaxSymbol> bound = get_symbol_table().lookup_symbol(*invokationRef);
+	if (bound.is_null() || !bound->is_method())
+		return gmt::nullref;
+
+	gmt::Ref<MethodSymbol> method = bound.as<MethodSymbol>();
+	if (!method->get_type_parameters().empty())
+		return gmt::nullref;
+
+	gmt::Ref<const SyntaxSymbol> parent = method->get_parent();
+	if (!parent.is_null() && parent->get_kind() == SyntaxKind::InterfaceDeclaration)
+		return gmt::nullref;
+
+	gmt::Ref<StructSymbol> returnType = method->get_return_type();
+	if (returnType.is_null())
+		return gmt::nullref;
+
+	SyntaxKind returnKind = returnType->get_kind();
+	if (returnKind != SyntaxKind::StructDeclaration && returnKind != SyntaxKind::GenericType)
+		return gmt::nullref;
+
+	return method;
+}
+
 void ByteCodeEmitter::visit_invokation_expression(const InvokationExpressionSyntax* node)
 {
 	if (node == nullptr)
