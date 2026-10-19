@@ -6,7 +6,7 @@
 
 namespace shard
 {
-	typedef void (*MethodSymbolDelegate)(const MethodCallState& context);
+	typedef void (*MethodSymbolDelegate)(MethodCallState& context);
 
 	struct SHARD_API ShardLibDependencyInfo
 	{
