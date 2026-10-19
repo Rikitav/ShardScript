@@ -38,6 +38,15 @@ std::uint16_t FrameLayout::add_variable(gmt::Ref<StructSymbol> type, const std::
 	return m_variableCount++;
 }
 
+std::uint16_t FrameLayout::add_temporary(gmt::Ref<StructSymbol> type, const TypeShape* shape, PlacementVerdict verdict)
+{
+	static const std::vector<gmt::Ref<TypeParameterSymbol>> noTypeParameters = {};
+
+	std::uint16_t variableIndex = add_variable(type, noTypeParameters, verdict);
+	m_localsBytes += entry_bytes(resolve_payload(shape, verdict));
+	return variableIndex;
+}
+
 bool FrameLayout::seal_variable(std::uint16_t variableIndex, gmt::Ref<StructSymbol> type, const std::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters, PlacementVerdict verdict)
 {
 	if (variableIndex >= m_variableSlots.size())
@@ -137,7 +146,14 @@ bool FrameLayout::is_complete() const
 
 std::size_t FrameLayout::resolve_payload(const TypeShape* shape, PlacementVerdict verdict)
 {
-	if (shape == nullptr || verdict == PlacementVerdict::Heap)
+	if (shape == nullptr)
+		return sizeof(void*);
+
+	// primitives bypass the placement machinery: always inline storage
+	if (!shape->is_reference())
+		return shape->get_size();
+
+	if (verdict == PlacementVerdict::Heap)
 		return sizeof(void*);
 
 	if (verdict == PlacementVerdict::Scalar)

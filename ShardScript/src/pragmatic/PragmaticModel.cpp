@@ -119,3 +119,21 @@ FrameLayout& PragmaticModel::get_or_create_frame_layout(gmt::Ref<MethodSymbol> m
 {
 	return m_frameLayouts[method];
 }
+
+void PragmaticModel::set_local_slot(gmt::Ref<MethodSymbol> method, gmt::Ref<SyntaxSymbol> local, std::uint16_t slot)
+{
+	m_localSlots[method][local] = slot;
+}
+
+std::optional<std::uint16_t> PragmaticModel::get_local_slot(gmt::Ref<MethodSymbol> method, gmt::Ref<SyntaxSymbol> local) const
+{
+	auto methodChoice = m_localSlots.find(method);
+	if (methodChoice == m_localSlots.end())
+		return std::nullopt;
+
+	auto slotChoice = methodChoice->second.find(local);
+	if (slotChoice == methodChoice->second.end())
+		return std::nullopt;
+
+	return slotChoice->second;
+}
