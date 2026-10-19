@@ -43,14 +43,9 @@ gmt::Ref<SyntaxSymbol> VirtualProgramImage::resolve_symbol(std::uint32_t handle)
 	return m_symbols[handle];
 }
 
-void VirtualProgramImage::register_method(gmt::Ref<MethodSymbol> method, std::size_t start, std::size_t length)
+const std::vector<gmt::Ref<SyntaxSymbol>>& VirtualProgramImage::get_symbols() const
 {
-	m_methodEntries.push_back(MethodEntry { method, start, length });
-}
-
-const std::vector<VirtualProgramImage::MethodEntry>& VirtualProgramImage::get_method_entries() const
-{
-	return m_methodEntries;
+	return m_symbols;
 }
 
 void VirtualProgramImage::set_entry_point(gmt::Ref<MethodSymbol> method)

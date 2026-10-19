@@ -51,6 +51,17 @@ ByteCodeDecoder::ByteCodeDecoder(const VirtualProgramImage& image)
 	  m_ip(0)
 { }
 
+ByteCodeDecoder::ByteCodeDecoder(const VirtualProgramImage& image, std::size_t start)
+	: m_image(image),
+	  m_code(image.get_text_section()),
+	  m_base(start),
+	  m_end(m_code.size()),
+	  m_ip(start)
+{
+	if (m_base > m_end)
+		throw std::out_of_range("ByteCodeDecoder: Method range out of code boundaries");
+}
+
 ByteCodeDecoder::ByteCodeDecoder(const VirtualProgramImage& image, std::size_t start, std::size_t length)
 	: m_image(image),
 	  m_code(image.get_text_section()),

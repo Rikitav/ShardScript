@@ -59,8 +59,6 @@ namespace shard
 		void propagate_exception(CallStackFrame* into, ObjectInstance exception);
 
 		void push_scalar(CallStackFrame* frame, const ScalarResult& result);
-		std::size_t get_method_start(gmt::Ref<MethodSymbol> method) const;
-		std::size_t get_method_length(gmt::Ref<MethodSymbol> method) const;
 		bool is_void_method(gmt::Ref<MethodSymbol> method) const;
 		bool is_instance_of(const TypeShape* objectShape, gmt::Ref<StructSymbol> targetType) const;
 

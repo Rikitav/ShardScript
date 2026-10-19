@@ -10,9 +10,13 @@
 #include <shard/semantic/symbols/MethodSymbol.hpp>
 #include <shard/semantic/symbols/StructSymbol.hpp>
 
+#include <gmt/InlineVector.hpp>
+
+#include <algorithm>
 #include <cstdint>
 #include <iomanip>
 #include <sstream>
+#include <utility>
 #include <vector>
 
 using namespace shard;
@@ -405,23 +409,48 @@ namespace
 
 void ProgramDisassembler::disassemble(std::wostream& out, const VirtualProgramImage& program)
 {
-	const std::vector<VirtualProgramImage::MethodEntry>& entries = program.get_method_entries();
-	for (const VirtualProgramImage::MethodEntry& entry : entries)
+	// managed methods carry their text-section offset in the function pointer,
+	// so native callbacks fall outside the section and are skipped; method
+	// ranges are recovered from the sorted starts of their neighbours
+	gmt::inline_vector<std::pair<std::size_t, gmt::Ref<MethodSymbol>>, 16> methods;
+	if (!program.get_entry_point().is_null())
 	{
+		gmt::Ref<MethodSymbol> method = program.get_entry_point();
+		std::size_t start = reinterpret_cast<std::size_t>(method->get_function_pointer());
+		methods.push_back({ start, method });
+	}
+
+	for (gmt::Ref<SyntaxSymbol> symbol : program.get_symbols())
+	{
+		if (symbol.is_null() || !symbol->is_method())
+			continue;
+
+		gmt::Ref<MethodSymbol> method = symbol.as<MethodSymbol>();
+		std::size_t start = reinterpret_cast<std::size_t>(method->get_function_pointer());
+		if (start >= program.get_text_section().size())
+			continue;
+
+		methods.push_back({ start, method });
+	}
+
+	std::pmr::vector<std::pair<std::size_t, gmt::Ref<MethodSymbol>>>& entries = methods.get_vector();
+	std::sort(entries.begin(), entries.end(), [](const auto& left, const auto& right) { return left.first < right.first; });
+	entries.erase(std::unique(entries.begin(), entries.end(), [](const auto& left, const auto& right) { return left.first == right.first; }), entries.end());
+
+	for (std::size_t i = 0; i < entries.size(); ++i)
+	{
+		std::size_t start = entries[i].first;
+		std::size_t end = i + 1 < entries.size() ? entries[i + 1].first : program.get_text_section().size();
+
 		out << L"; ============================================================\n";
 		out << L";  DISASSEMBLY: ";
-
-		if (entry.method.is_null())
-			out << L"<unknown>";
-		else
-			out << entry.method->get_name();
-
+		out << entries[i].second->get_name();
 		out << L"\n";
 		out << L"; ============================================================\n";
 		out << L"; Offset           Opcode Arguments\n";
 		out << L"; -------- -------------- -----------------------------------------\n";
 
-		ByteCodeDecoder decoder(program, entry.start, entry.length);
+		ByteCodeDecoder decoder(program, start, end - start);
 		while (!decoder.is_eof())
 			disassemble_instruction(out, decoder);
 
