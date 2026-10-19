@@ -167,6 +167,11 @@ void LayoutGenerator::build_frame(gmt::Ref<MethodSymbol> method)
 				verdict.verdict = PlacementVerdict::Heap;
 		}
 
+		// primitives bypass placement machinery entirely: dematerialization is
+		// composite-only, so a dead primitive local still gets a plain stack slot
+		if (verdict.verdict == PlacementVerdict::Scalar && !localType.is_null() && model.is_primitive_type(localType))
+			verdict.verdict = PlacementVerdict::Stack;
+
 		bool scalarLocal = verdict.verdict == PlacementVerdict::Scalar;
 		scalarLocal = scalarLocal && !localType.is_null();
 		scalarLocal = scalarLocal && localType->get_kind() == SyntaxKind::StructDeclaration;
