@@ -39,10 +39,15 @@ bool CallStackFrame::unpack_is_reference(std::uintptr_t header)
 
 std::byte* CallStackFrame::local_entry(std::uint16_t slot) const
 {
-	return m_localsRegion + m_localOffsets[slot];
+	return m_localAddresses[slot];
 }
 
 FrameEntryView CallStackFrame::entry_view(std::byte* entry) const
+{
+	return peek_entry(entry);
+}
+
+FrameEntryView CallStackFrame::peek_entry(std::byte* entry)
 {
 	std::uintptr_t header;
 	std::memcpy(&header, entry, EntryHeaderSize);
@@ -54,7 +59,7 @@ FrameEntryView CallStackFrame::entry_view(std::byte* entry) const
 	return view;
 }
 
-CallStackFrame* CallStackFrame::create(gmt::Ref<MethodSymbol> method, const FrameLayout* layout, SemanticModel& model, PragmaticModel& pragmatic, CallStackFrame* previous)
+CallStackFrame* CallStackFrame::create(gmt::Ref<MethodSymbol> method, const FrameLayout* layout, SemanticModel& model, PragmaticModel& pragmatic, CallStackFrame* previous, std::byte* externalReturnEntry, std::size_t externalReturnPayload)
 {
 	const TypeShape* returnShape = nullptr;
 	if (!method.is_null() && !method->get_return_type().is_null())
@@ -70,12 +75,12 @@ CallStackFrame* CallStackFrame::create(gmt::Ref<MethodSymbol> method, const Fram
 	std::uint16_t argumentCount = layout != nullptr ? layout->get_argument_count() : 0;
 	std::uint16_t variableCount = layout != nullptr ? layout->get_variable_count() : 0;
 
-	std::vector<std::size_t> localOffsets;
+	std::vector<std::byte*> localAddresses;
 	std::vector<std::size_t> localPayloads;
 	std::vector<const TypeShape*> localShapes;
 	std::vector<bool> localReferences;
 
-	localOffsets.reserve(argumentCount + variableCount);
+	localAddresses.reserve(argumentCount + variableCount);
 	localPayloads.reserve(argumentCount + variableCount);
 	localShapes.reserve(argumentCount + variableCount);
 	localReferences.reserve(argumentCount + variableCount);
@@ -89,7 +94,7 @@ CallStackFrame* CallStackFrame::create(gmt::Ref<MethodSymbol> method, const Fram
 			if (!argumentType.is_null())
 				shape = pragmatic.find_or_create_type_shape(model, argumentType);
 
-			localOffsets.push_back(cursor);
+			localAddresses.push_back(nullptr);
 			localPayloads.push_back(sizeof(void*));
 			localShapes.push_back(shape);
 			localReferences.push_back(shape == nullptr || shape->is_reference());
@@ -112,7 +117,7 @@ CallStackFrame* CallStackFrame::create(gmt::Ref<MethodSymbol> method, const Fram
 			if (!reference && shape != nullptr)
 				payload = shape->get_size();
 
-			localOffsets.push_back(cursor);
+			localAddresses.push_back(nullptr);
 			localPayloads.push_back(payload);
 			localShapes.push_back(shape);
 			localReferences.push_back(reference);
@@ -138,26 +143,61 @@ CallStackFrame* CallStackFrame::create(gmt::Ref<MethodSymbol> method, const Fram
 	frame->m_argumentCount = argumentCount;
 	frame->m_variableCount = variableCount;
 
-	frame->m_returnSlot = block + objectBytes;
-	frame->m_returnPayloadBytes = returnPayload;
-
-	frame->m_localsRegion = frame->m_returnSlot + returnEntryBytes;
-	frame->m_localOffsets = std::move(localOffsets);
+	frame->m_localsRegion = block + objectBytes + returnEntryBytes;
 	frame->m_localPayloads = std::move(localPayloads);
 
 	frame->m_evalRegion = frame->m_localsRegion + cursor;
 	frame->m_evalStride = evalStride;
 	frame->m_evalCapacity = evalCapacity;
 
-	for (std::size_t i = 0; i < frame->m_localOffsets.size(); ++i)
+	// when the caller chains its return storage in, StackReturn-verdict locals
+	// map straight into it: the callee constructs the return value directly
+	// in the caller's frame with no copy at all
+	bool chained = externalReturnEntry != nullptr;
+	if (chained)
 	{
-		std::uintptr_t header = pack_header(localShapes[i], localReferences[i]);
-		std::memcpy(frame->m_localsRegion + frame->m_localOffsets[i], &header, EntryHeaderSize);
+		frame->m_returnSlot = externalReturnEntry;
+		frame->m_returnPayloadBytes = externalReturnPayload;
+		frame->m_hasExternalReturnSlot = true;
+	}
+	else
+	{
+		frame->m_returnSlot = block + objectBytes;
+		frame->m_returnPayloadBytes = returnPayload;
 	}
 
-	std::uintptr_t returnHeader = pack_header(returnShape, returnReference);
-	std::memcpy(frame->m_returnSlot, &returnHeader, EntryHeaderSize);
+	cursor = 0;
+	std::size_t recipeIndex = 0;
+	for (std::size_t i = 0; i < localShapes.size(); ++i)
+	{
+		bool mappable = chained && i >= argumentCount;
+		if (mappable)
+		{
+			const FrameSlotRecipe& recipe = layout->get_variable_slots()[recipeIndex++];
+			mappable = recipe.verdict == PlacementVerdict::StackReturn && localShapes[i] != nullptr && localShapes[i]->is_reference();
+		}
 
+		if (mappable)
+			localAddresses[i] = frame->m_returnSlot;
+		else
+			localAddresses[i] = frame->m_localsRegion + cursor;
+
+		cursor += EntryHeaderSize + gmt::align_up(frame->m_localPayloads[i], sizeof(void*));
+
+		if (mappable)
+			continue;
+
+		std::uintptr_t header = pack_header(localShapes[i], localReferences[i]);
+		std::memcpy(localAddresses[i], &header, EntryHeaderSize);
+	}
+
+	if (!chained)
+	{
+		std::uintptr_t returnHeader = pack_header(returnShape, returnReference);
+		std::memcpy(frame->m_returnSlot, &returnHeader, EntryHeaderSize);
+	}
+
+	frame->m_localAddresses = std::move(localAddresses);
 	return frame;
 }
 
@@ -361,18 +401,19 @@ ObjectInstance CallStackFrame::get_local_address(std::uint16_t slot) const
 	return ObjectInstance(view.shape, view.payloadAddress);
 }
 
-void CallStackFrame::place_returned(ObjectInstance value)
+FrameEntryView CallStackFrame::get_local_view(std::uint16_t slot) const
 {
-	FrameEntryView view = entry_view(m_returnSlot);
-	if (view.isReferenceStorage)
-	{
-		std::byte* pointer = value.get_memory();
-		std::memcpy(view.payloadAddress, &pointer, sizeof(std::byte*));
-		return;
-	}
+	return entry_view(local_entry(slot));
+}
 
-	if (m_returnPayloadBytes > 0)
-		std::memcpy(view.payloadAddress, value.get_memory(), m_returnPayloadBytes);
+std::byte* CallStackFrame::get_local_entry(std::uint16_t slot) const
+{
+	return local_entry(slot);
+}
+
+FrameEntryView CallStackFrame::get_return_view() const
+{
+	return entry_view(m_returnSlot);
 }
 
 ObjectInstance CallStackFrame::get_return_slot() const
@@ -388,15 +429,30 @@ ObjectInstance CallStackFrame::get_return_slot() const
 	return ObjectInstance(view.shape, view.payloadAddress);
 }
 
+std::byte* CallStackFrame::get_return_entry() const
+{
+	return m_returnSlot;
+}
+
+std::size_t CallStackFrame::get_return_payload_bytes() const
+{
+	return m_returnPayloadBytes;
+}
+
+bool CallStackFrame::has_external_return_slot() const
+{
+	return m_hasExternalReturnSlot;
+}
+
 void CallStackFrame::for_each_live_entry(const std::function<void(const FrameEntryView&)>& visitor)
 {
 	FrameEntryView returnView = entry_view(m_returnSlot);
 	if (returnView.shape != nullptr)
 		visitor(returnView);
 
-	for (std::size_t i = 0; i < m_localOffsets.size(); ++i)
+	for (std::size_t i = 0; i < m_localAddresses.size(); ++i)
 	{
-		FrameEntryView view = entry_view(m_localsRegion + m_localOffsets[i]);
+		FrameEntryView view = entry_view(m_localAddresses[i]);
 		if (view.shape != nullptr)
 			visitor(view);
 	}

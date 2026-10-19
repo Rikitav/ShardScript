@@ -43,7 +43,7 @@ namespace shard
 		const TypeShape* resolve_shape(gmt::Ref<StructSymbol> type);
 		const TypeShape* resolve_operand_shape(gmt::Ref<SyntaxSymbol> symbol);
 
-		CallStackFrame* push_frame(gmt::Ref<MethodSymbol> method);
+		CallStackFrame* push_frame(gmt::Ref<MethodSymbol> method, std::byte* externalReturnEntry = nullptr, std::size_t externalReturnPayload = 0);
 		void pop_frame();
 
 		void execute_frame(CallStackFrame* frame);
@@ -54,6 +54,8 @@ namespace shard
 
 		ObjectInstance invoke_managed(gmt::Ref<MethodSymbol> method, std::span<const ObjectInstance> arguments);
 		ObjectInstance invoke_native(gmt::Ref<MethodSymbol> method, std::span<const ObjectInstance> arguments);
+		void invoke_into(gmt::Ref<MethodSymbol> method, std::span<const ObjectInstance> arguments, std::byte* destinationEntry);
+		void write_entry_value(const FrameEntryView& view, std::size_t payloadBytes, ObjectInstance value);
 
 		void throw_value(CallStackFrame* frame, ObjectInstance value);
 		void propagate_exception(CallStackFrame* into, ObjectInstance exception);
