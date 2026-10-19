@@ -21,6 +21,12 @@ Rewrite progression :
 - [x] NEW: TypeShape and Layout generation
 - [x] HUGE MILESTONE: Pragmatic analysis
 - [x] OpCodes
+- [x] Bytecode emittion and inspection
+- [x] Bytecode image compiler
+- [x] HUGE MILESTONE: Compilation
+- [x] Instance creation and Garbage collection
+- [x] Primitive math
+- [x] Virtual machine and method invokation
 - [ ] ...
 
 **ShardScript** is an embeddable, scripting, compiled, programming language with strict static typing, developed in C++. The project features a custom lexer/parser, semantic analyzer, bytecode compiler, stack virtual machine, and a standard library framework.
