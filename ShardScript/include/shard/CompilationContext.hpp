@@ -1,5 +1,10 @@
 #pragma once
 #include <shard/Definitions.hpp>
+#include <shard/ApplicationDomain.hpp>
+
+#include <shard/compilation/VirtualProgramImage.hpp>
+
+#include <shard/lexical/SourceProvider.hpp>
 
 #include <shard/parsing/Diagnostics.hpp>
 #include <shard/parsing/SyntaxTree.hpp>
@@ -14,10 +19,6 @@
 
 namespace shard
 {
-	class ApplicationDomain;
-	class VirtualProgramImage;
-	class SourceProvider;
-
 	// Owns the whole compilation pipeline state (tree, diagnostics, models,
 	// program image) and drives the phases in order. The context must outlive
 	// any ApplicationDomain produced by compile(), since the domain borrows
