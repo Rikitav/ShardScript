@@ -45,6 +45,7 @@
 // --- Core / Platform ---
 #include <shard/Definitions.hpp>
 #include <shard/LibraryMetadata.hpp>
+#include <shard/CompilationContext.hpp>
 
 // --- Public flat API ---
 //#include <shard/ShardScriptExtern.hpp>
