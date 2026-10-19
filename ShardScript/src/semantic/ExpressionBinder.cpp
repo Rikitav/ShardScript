@@ -24,6 +24,24 @@
 
 using namespace shard;
 
+namespace
+{
+	bool is_overloadable_declaration(SyntaxKind kind)
+	{
+		switch (kind)
+		{
+			case SyntaxKind::FunctionDeclaration:
+			case SyntaxKind::ConstructorDeclaration:
+			case SyntaxKind::AccessorDeclaration:
+			case SyntaxKind::OperatorDeclaration:
+				return true;
+
+			default:
+				return false;
+		}
+	}
+}
+
 // walks a bound body and gathers the expressions of its value-returning
 // return statements, without side effects
 class ExpressionBinder::return_expression_collector final : public SyntaxVisitor
@@ -129,6 +147,13 @@ void ExpressionBinder::import_namespace(gmt::Ref<const UsingDirectiveSyntax> nod
 		gmt::Ref<SyntaxSymbol> existing = scope->find_local(member->get_name_reference());
 		if (!existing.is_null() && existing != member)
 		{
+			bool overloadablePair = is_overloadable_declaration(existing->get_kind()) && is_overloadable_declaration(member->get_kind());
+			if (overloadablePair)
+			{
+				scope->declare_symbol(member);
+				continue;
+			}
+
 			bool isVariable = existing->get_kind() == SyntaxKind::VariableStatement;
 			bool isParameter = existing->get_kind() == SyntaxKind::Parameter;
 			if (!isVariable && !isParameter)

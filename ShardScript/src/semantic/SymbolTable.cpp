@@ -2,6 +2,9 @@
 
 #include <shard/parsing/SyntaxKind.hpp>
 
+#include <shard/semantic/symbols/AccessorSymbol.hpp>
+#include <shard/semantic/symbols/PropertySymbol.hpp>
+
 #include <gmt/InlineVector.hpp>
 
 using namespace shard;
@@ -18,6 +21,22 @@ SymbolTable::SymbolTable()
 	m_array = m_arena.emplace<StructSymbol>(L"Array", SyntaxKind::StructDeclaration, m_rootNamespace);
 	m_nativeInteger = m_arena.emplace<StructSymbol>(L"nint", SyntaxKind::StructDeclaration, m_rootNamespace);
 	m_byte = m_arena.emplace<StructSymbol>(L"byte", SyntaxKind::StructDeclaration, m_rootNamespace);
+
+	// the runtime wires the getter's function pointer when a virtual machine exists
+	gmt::Ref<PropertySymbol> arrayLength = m_arena.emplace<PropertySymbol>(L"Length", SyntaxKind::PropertyDeclaration, m_array);
+	arrayLength->set_return_type(m_integer);
+	arrayLength->set_accesibility(ACS_PUBLIC);
+	arrayLength->set_linking(LINK_INSTANCE);
+
+	gmt::Ref<AccessorSymbol> arrayLengthGetter = m_arena.emplace<AccessorSymbol>(L"get", arrayLength);
+	arrayLengthGetter->set_return_type(m_integer);
+	arrayLengthGetter->set_linking(LINK_INSTANCE);
+	arrayLengthGetter->set_accesibility(ACS_PUBLIC);
+	arrayLengthGetter->set_calling_convention(CallingConvention::LibFunc);
+	arrayLengthGetter->set_effects_computed(true);
+
+	arrayLength->set_getter(arrayLengthGetter);
+	m_array->properties.push_back(arrayLength);
 }
 
 gmt::Arena& SymbolTable::get_arena()

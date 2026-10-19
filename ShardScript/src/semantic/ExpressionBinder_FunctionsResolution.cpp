@@ -921,7 +921,7 @@ gmt::Ref<StructSymbol> ExpressionBinder::analyze_invokation_expression(const Inv
 
 		if (nodeRef.has_value())
 		{
-			get_symbol_table().bind_symbol<DelegateTypeSymbol>(*nodeRef, delegate);
+			get_symbol_table().bind_symbol(*nodeRef, lookup);
 			set_expression_type(*nodeRef, delegate->get_return_type());
 		}
 

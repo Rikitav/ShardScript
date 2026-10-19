@@ -1242,7 +1242,12 @@ void ControlFlowAnalyzer::visit_invokation_expression(const InvokationExpression
 		auto nodeRef = ref_from(node);
 		if (nodeRef.has_value())
 		{
-			callee = lookup_symbol<MethodSymbol>(*nodeRef);
+			// delegate invokations bind the callee variable or field rather
+			// than a method; those flow through the unknown-callee path below
+			gmt::Ref<SyntaxSymbol> bound = get_symbol_table().lookup_symbol(*nodeRef);
+			if (!bound.is_null() && bound->is_method())
+				callee = bound.as<MethodSymbol>();
+
 			isTryWrapped = is_try_wrapped(*nodeRef);
 		}
 
