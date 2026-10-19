@@ -76,6 +76,13 @@ namespace shard
 		DEFER,
 		DEFER_BREAK,
 		DEFER_DRAIN,
-		CREATERANGE
+		CREATERANGE,
+		CALL_METHOD_INTO,
+		RETURN_PLACED
 	};
+
+	// CALL_METHOD_INTO destination slot meaning "the current frame's own
+	// return slot", used to forward a tail call's result into the caller's
+	// chained return storage
+	inline constexpr std::uint16_t ReturnSlotSentinel = 0xFFFF;
 }

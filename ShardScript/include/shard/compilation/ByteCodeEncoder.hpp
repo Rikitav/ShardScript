@@ -108,8 +108,10 @@ namespace shard
 
 		void emit_load_type_argument(std::uint16_t index, gmt::Ref<StructSymbol> type);
 		void emit_call_method_symbol(gmt::Ref<MethodSymbol> method);
+		void emit_call_method_into(gmt::Ref<MethodSymbol> method, std::uint16_t slot);
 		void emit_call_delegate(gmt::Ref<DelegateTypeSymbol> type);
 		void emit_call_interface(gmt::Ref<MethodSymbol> interfaceMethod);
+		void emit_return_placed();
 		void emit_is_instance(gmt::Ref<StructSymbol> type);
 		void emit_cast_as(gmt::Ref<StructSymbol> type);
 		void emit_cast(gmt::Ref<StructSymbol> type);

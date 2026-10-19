@@ -462,6 +462,18 @@ void ByteCodeEncoder::emit_call_method_symbol(gmt::Ref<MethodSymbol> method)
 	append_data_value(m_image.get_text_section(), m_image.intern_symbol(method));
 }
 
+void ByteCodeEncoder::emit_call_method_into(gmt::Ref<MethodSymbol> method, std::uint16_t slot)
+{
+	append_data_value(m_image.get_text_section(), OpCode::CALL_METHOD_INTO);
+	append_data_value(m_image.get_text_section(), m_image.intern_symbol(method));
+	append_data_value(m_image.get_text_section(), slot);
+}
+
+void ByteCodeEncoder::emit_return_placed()
+{
+	append_data_value(m_image.get_text_section(), OpCode::RETURN_PLACED);
+}
+
 void ByteCodeEncoder::emit_call_delegate(gmt::Ref<DelegateTypeSymbol> type)
 {
 	append_data_value(m_image.get_text_section(), OpCode::CALLDELEGATE);

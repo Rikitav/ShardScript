@@ -347,6 +347,16 @@ namespace
 				break;
 			}
 
+			case OpCode::CALL_METHOD_INTO:
+			{
+				opcode = L"call.into";
+				write_symbol_name(args, decoder.absorb_method_symbol());
+				args << L" " << decoder.absorb_uint16();
+				break;
+			}
+
+			case OpCode::RETURN_PLACED:             opcode = L"ret.placed"; break;
+
 			case OpCode::CALLDELEGATE:
 			{
 				opcode = L"calldelegate";

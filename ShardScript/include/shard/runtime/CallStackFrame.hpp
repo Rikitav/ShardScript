@@ -59,9 +59,10 @@ namespace shard
 
 		std::byte* m_returnSlot = nullptr;
 		std::size_t m_returnPayloadBytes = 0;
+		bool m_hasExternalReturnSlot = false;
 
 		std::byte* m_localsRegion = nullptr;
-		std::vector<std::size_t> m_localOffsets;
+		std::vector<std::byte*> m_localAddresses;
 		std::vector<std::size_t> m_localPayloads;
 
 		std::byte* m_evalRegion = nullptr;
@@ -79,7 +80,8 @@ namespace shard
 		FrameEntryView entry_view(std::byte* entry) const;
 
 	public:
-		static CallStackFrame* create(gmt::Ref<MethodSymbol> method, const FrameLayout* layout, SemanticModel& model, PragmaticModel& pragmatic, CallStackFrame* previous);
+		static FrameEntryView peek_entry(std::byte* entry);
+		static CallStackFrame* create(gmt::Ref<MethodSymbol> method, const FrameLayout* layout, SemanticModel& model, PragmaticModel& pragmatic, CallStackFrame* previous, std::byte* externalReturnEntry = nullptr, std::size_t externalReturnPayload = 0);
 		static void destroy(CallStackFrame* frame);
 
 		CallStackFrame(const CallStackFrame&) = delete;
@@ -114,9 +116,15 @@ namespace shard
 		void set_local(std::uint16_t slot, ObjectInstance value);
 		void push_local(std::uint16_t slot);
 		ObjectInstance get_local_address(std::uint16_t slot) const;
+		FrameEntryView get_local_view(std::uint16_t slot) const;
+		std::byte* get_local_entry(std::uint16_t slot) const;
 
 		void place_returned(ObjectInstance value);
 		ObjectInstance get_return_slot() const;
+		FrameEntryView get_return_view() const;
+		std::byte* get_return_entry() const;
+		std::size_t get_return_payload_bytes() const;
+		bool has_external_return_slot() const;
 
 		void for_each_live_entry(const std::function<void(const FrameEntryView&)>& visitor);
 	};

@@ -128,10 +128,10 @@ const TypeShape* VirtualMachine::resolve_operand_shape(gmt::Ref<SyntaxSymbol> sy
 	return resolve_shape(symbol.as<StructSymbol>());
 }
 
-CallStackFrame* VirtualMachine::push_frame(gmt::Ref<MethodSymbol> method)
+CallStackFrame* VirtualMachine::push_frame(gmt::Ref<MethodSymbol> method, std::byte* externalReturnEntry, std::size_t externalReturnPayload)
 {
 	FrameLayout* layout = m_pragmatic.find_frame_layout(method);
-	CallStackFrame* frame = CallStackFrame::create(method, layout, m_model, m_pragmatic, m_currentFrame);
+	CallStackFrame* frame = CallStackFrame::create(method, layout, m_model, m_pragmatic, m_currentFrame, externalReturnEntry, externalReturnPayload);
 	m_collector.register_frame(frame);
 	m_currentFrame = frame;
 	return frame;
@@ -259,6 +259,68 @@ void VirtualMachine::execute_frame(CallStackFrame* frame)
 		OpCode opcode = decoder.absorb_opcode();
 		process_code(frame, decoder, opcode);
 	}
+}
+
+void VirtualMachine::write_entry_value(const FrameEntryView& view, std::size_t payloadBytes, ObjectInstance value)
+{
+	if (view.payloadAddress == value.get_memory())
+		return;
+
+	if (!view.isReferenceStorage)
+	{
+		std::memcpy(view.payloadAddress, value.get_memory(), payloadBytes);
+		return;
+	}
+
+	// reference-storage entries pass heap instances through by pointer, but a
+	// frame-local payload would dangle once its frame dies: box it first
+	bool valueIsComposite = value.get_shape() != nullptr && value.get_shape()->is_reference();
+	if (valueIsComposite && !m_collector.is_heap_backed(value.get_memory()))
+	{
+		ObjectInstance boxed = m_collector.allocate_instance(value.get_shape());
+		std::memcpy(boxed.get_memory(), value.get_memory(), value.get_shape()->get_size());
+		value = boxed;
+	}
+
+	std::byte* pointer = value.get_memory();
+	std::memcpy(view.payloadAddress, &pointer, sizeof(std::byte*));
+}
+
+void VirtualMachine::invoke_into(gmt::Ref<MethodSymbol> method, std::span<const ObjectInstance> arguments, std::byte* destinationEntry)
+{
+	const TypeShape* returnShape = resolve_shape(method->get_return_type());
+	std::size_t returnPayload = returnShape != nullptr ? returnShape->get_size() : 0;
+
+	if (method->get_calling_convention() == CallingConvention::ShardDecl)
+	{
+		ObjectInstance result = invoke_native(method, arguments);
+		FrameEntryView view = CallStackFrame::peek_entry(destinationEntry);
+		write_entry_value(view, returnPayload, result);
+		return;
+	}
+
+	CallStackFrame* frame = push_frame(method, destinationEntry, returnPayload);
+	for (std::size_t i = 0; i < arguments.size(); ++i)
+		frame->set_local(static_cast<std::uint16_t>(i), arguments[i]);
+
+	execute_frame(frame);
+
+	bool raised = frame->get_interruption() == InterruptionReason::ExceptionRaised;
+	ObjectInstance exception = frame->get_current_exception();
+	pop_frame();
+
+	if (!raised)
+		return;
+
+	if (m_currentFrame == nullptr)
+	{
+		m_hasUnhandledException = true;
+		m_unhandledException = exception;
+		m_unhandledMessage = PrimitiveMath::to_display_string(exception);
+		return;
+	}
+
+	propagate_exception(m_currentFrame, exception);
 }
 
 ObjectInstance VirtualMachine::invoke_managed(gmt::Ref<MethodSymbol> method, std::span<const ObjectInstance> arguments)
@@ -661,8 +723,17 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 		case OpCode::RETURN:
 		{
 			if (!is_void_method(frame->get_method()))
-				frame->place_returned(frame->pop_entry());
+			{
+				ObjectInstance value = frame->pop_entry();
+				write_entry_value(frame->get_return_view(), frame->get_return_payload_bytes(), value);
+			}
 
+			frame->set_interruption(InterruptionReason::ValueReturned);
+			break;
+		}
+
+		case OpCode::RETURN_PLACED:
+		{
 			frame->set_interruption(InterruptionReason::ValueReturned);
 			break;
 		}
@@ -1052,6 +1123,32 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 			if (!is_void_method(method))
 				push_instance(frame, result);
 
+			break;
+		}
+
+		case OpCode::CALL_METHOD_INTO:
+		{
+			gmt::Ref<MethodSymbol> method = decoder.absorb_method_symbol();
+			std::uint16_t slot = decoder.absorb_uint16();
+
+			std::size_t argumentCount;
+			FrameLayout* layout = m_pragmatic.find_frame_layout(method);
+			if (layout != nullptr)
+				argumentCount = layout->get_argument_count();
+			else
+				argumentCount = native_argument_count(method);
+
+			gmt::inline_vector<ObjectInstance, 8> arguments;
+			for (std::size_t i = 0; i < argumentCount; ++i)
+				arguments.push_back(frame->pop_entry());
+
+			// a real caller slot, or the caller's own return slot when a tail
+			// call forwards its result into the chained return storage
+			std::byte* destinationEntry = slot == ReturnSlotSentinel
+				? frame->get_return_entry()
+				: frame->get_local_entry(slot);
+
+			invoke_into(method, arguments.get_vector(), destinationEntry);
 			break;
 		}
 
