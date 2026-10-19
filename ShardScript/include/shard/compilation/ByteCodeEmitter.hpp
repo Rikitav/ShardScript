@@ -106,6 +106,8 @@ namespace shard
 		void emit_compound_assignment(const BinaryExpressionSyntax* node, TokenType arithmetic);
 		void emit_identifier_load(gmt::Ref<const SyntaxNode> node, gmt::Ref<const ExpressionSyntax> previous);
 		static bool is_identifier_target(const ExpressionSyntax* expression);
+		void emit_instance_field_load(gmt::Ref<FieldSymbol> field, gmt::Ref<const ExpressionSyntax> previous);
+		gmt::Ref<FieldSymbol> capture_field_of(gmt::Ref<SyntaxSymbol> bound) const;
 		void emit_method_call(gmt::Ref<MethodSymbol> method, gmt::Ref<const ExpressionSyntax> receiver, const ArgumentsListSyntax* arguments, bool receiverFirst);
 		void emit_arguments_reversed(const ArgumentsListSyntax* arguments);
 		void emit_object_construction(const ObjectExpressionSyntax* node, std::optional<std::uint16_t> directSlot = std::nullopt);

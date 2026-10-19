@@ -918,7 +918,14 @@ void DeclarationCollector::visit_lambda_expression(const LambdaExpressionSyntax*
 		return;
 
 	gmt::Ref<SyntaxSymbol> owner = get_owner_symbol();
-	gmt::Ref<MethodSymbol> anonymousMethod = m_factory.create_method(L"Lambda", owner, gmt::nullref, LINK_STATIC);
+
+	// the lambda becomes a synthetic capture box: its body is the box's single
+	// instance method and captured variables materialize as the box's fields
+	gmt::Ref<StructSymbol> captureBox = get_symbol_table().emplace<StructSymbol>(L"CaptureBox", SyntaxKind::StructDeclaration, owner);
+	captureBox->set_accesibility(ACS_PRIVATE);
+
+	gmt::Ref<MethodSymbol> anonymousMethod = m_factory.create_method(L"Invoke", captureBox, gmt::nullref, LINK_INSTANCE);
+	captureBox->on_symbol_declared(anonymousMethod);
 
 	push_scope(anonymousMethod);
 

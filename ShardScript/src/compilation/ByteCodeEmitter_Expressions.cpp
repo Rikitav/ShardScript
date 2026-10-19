@@ -49,13 +49,36 @@ namespace
 {
 	class lambda_capture_checker final : public SemanticVisitor
 	{
-		gmt::Ref<MethodSymbol> m_owner;
+		gmt::Ref<StructSymbol> m_captureBox;
 		bool m_captured = false;
 
+		void check_bound(gmt::Ref<const SyntaxNode> node, gmt::Ref<const ExpressionSyntax> previous)
+		{
+			// variable and parameter captures resolve to capture box fields at
+			// emission. Only implicit-'this' members are unsupported: anything
+			// with an explicit receiver expression stays legal
+			if (!previous.is_null())
+				return;
+
+			gmt::Ref<SyntaxSymbol> bound = get_symbol_table().lookup_symbol(node);
+			if (bound.is_null() || !bound->is_member())
+				return;
+
+			if (bound.as<MemberSymbol>()->get_linking() == LINK_STATIC)
+				return;
+
+			gmt::Ref<const SyntaxSymbol> parent = bound->get_parent();
+			if (parent.is_null() || !parent->is_type())
+				return;
+
+			if (parent != m_captureBox)
+				m_captured = true;
+		}
+
 	public:
-		lambda_capture_checker(SemanticModel& model, DiagnosticsContext& diagnostics, gmt::Ref<MethodSymbol> owner)
+		lambda_capture_checker(SemanticModel& model, DiagnosticsContext& diagnostics, gmt::Ref<StructSymbol> captureBox)
 			: SemanticVisitor(model, diagnostics)
-			, m_owner(owner)
+			, m_captureBox(captureBox)
 		{ }
 
 		bool get_captured() const
@@ -67,29 +90,27 @@ namespace
 		{
 			std::optional<gmt::Ref<const MemberAccessExpressionSyntax>> nodeRef = ref_from(node);
 			if (nodeRef.has_value())
-			{
-				gmt::Ref<SyntaxSymbol> bound = get_symbol_table().lookup_symbol(*nodeRef);
-				SyntaxKind kind = bound.is_null() ? SyntaxKind::Unknown : bound->get_kind();
-
-				if (kind == SyntaxKind::VariableStatement || kind == SyntaxKind::Parameter)
-				{
-					gmt::Ref<const SyntaxSymbol> current = bound;
-					while (!current.is_null())
-					{
-						if (current->is_method())
-						{
-							if (current != m_owner)
-								m_captured = true;
-
-							break;
-						}
-
-						current = current->get_parent();
-					}
-				}
-			}
+				check_bound(*nodeRef, node->get_previous());
 
 			SyntaxVisitor::visit_member_access_expression(node);
+		}
+
+		void visit_identifier_name_type(const IdentifierNameTypeSyntax* node) override
+		{
+			std::optional<gmt::Ref<const IdentifierNameTypeSyntax>> nodeRef = ref_from(node);
+			if (nodeRef.has_value())
+				check_bound(*nodeRef, gmt::nullref);
+
+			SyntaxVisitor::visit_identifier_name_type(node);
+		}
+
+		void visit_invokation_expression(const InvokationExpressionSyntax* node) override
+		{
+			std::optional<gmt::Ref<const InvokationExpressionSyntax>> nodeRef = ref_from(node);
+			if (nodeRef.has_value())
+				check_bound(*nodeRef, node->get_previous());
+
+			SyntaxVisitor::visit_invokation_expression(node);
 		}
 	};
 
@@ -448,8 +469,19 @@ void ByteCodeEmitter::emit_identifier_load(gmt::Ref<const SyntaxNode> node, gmt:
 			{
 				m_encoder.emit_load_local(*slot);
 				eval_push(sizeof(void*));
+				return;
 			}
 
+			// the slot is absent from this method's frame: the reference
+			// belongs to an enclosing method and resolves to a capture box field
+			gmt::Ref<FieldSymbol> captureField = capture_field_of(bound);
+			if (!captureField.is_null())
+			{
+				emit_instance_field_load(captureField, gmt::nullref);
+				return;
+			}
+
+			unsupported(node, L"lambda captures");
 			return;
 		}
 
@@ -470,33 +502,7 @@ void ByteCodeEmitter::emit_identifier_load(gmt::Ref<const SyntaxNode> node, gmt:
 				return;
 			}
 
-			// scalar locals are dematerialized: the field is a frame slot of its own
-			if (!previous.is_null() && is_identifier_target(previous.as_ptr()))
-			{
-				gmt::Ref<SyntaxSymbol> previousBound = get_symbol_table().lookup_symbol(previous);
-				if (!previousBound.is_null() && local_verdict(previousBound) == PlacementVerdict::Scalar)
-				{
-					std::optional<std::uint16_t> scalarSlot = scalar_field_slot(previousBound, field);
-					if (scalarSlot.has_value())
-					{
-						m_encoder.emit_load_local(*scalarSlot);
-						eval_push(payload_of(field->get_return_type()));
-						return;
-					}
-				}
-			}
-
-			if (!previous.is_null())
-				previous.as_ptr()->accept(*this);
-			else
-			{
-				m_encoder.emit_load_local(0);
-				eval_push(sizeof(void*));
-			}
-
-			m_encoder.emit_load_field(field_slot_index(field));
-			eval_push(payload_of(field->get_return_type()));
-			eval_pop();
+			emit_instance_field_load(field, previous);
 			return;
 		}
 
@@ -531,6 +537,60 @@ void ByteCodeEmitter::emit_identifier_load(gmt::Ref<const SyntaxNode> node, gmt:
 			return;
 		}
 	}
+}
+
+void ByteCodeEmitter::emit_instance_field_load(gmt::Ref<FieldSymbol> field, gmt::Ref<const ExpressionSyntax> previous)
+{
+	// scalar locals are dematerialized: the field is a frame slot of its own
+	if (!previous.is_null() && is_identifier_target(previous.as_ptr()))
+	{
+		gmt::Ref<SyntaxSymbol> previousBound = get_symbol_table().lookup_symbol(previous);
+		if (!previousBound.is_null() && local_verdict(previousBound) == PlacementVerdict::Scalar)
+		{
+			std::optional<std::uint16_t> scalarSlot = scalar_field_slot(previousBound, field);
+			if (scalarSlot.has_value())
+			{
+				m_encoder.emit_load_local(*scalarSlot);
+				eval_push(payload_of(field->get_return_type()));
+				return;
+			}
+		}
+	}
+
+	if (!previous.is_null())
+		previous.as_ptr()->accept(*this);
+	else
+	{
+		m_encoder.emit_load_local(0);
+		eval_push(sizeof(void*));
+	}
+
+	m_encoder.emit_load_field(field_slot_index(field));
+	eval_push(payload_of(field->get_return_type()));
+	eval_pop();
+}
+
+gmt::Ref<FieldSymbol> ByteCodeEmitter::capture_field_of(gmt::Ref<SyntaxSymbol> bound) const
+{
+	if (m_generatingFor.is_null())
+		return gmt::nullref;
+
+	const std::vector<gmt::Ref<SyntaxSymbol>>* captures = m_pragmatic.get_lambda_captures(m_generatingFor);
+	if (captures == nullptr)
+		return gmt::nullref;
+
+	gmt::Ref<const SyntaxSymbol> parent = m_generatingFor->get_parent();
+	if (parent.is_null() || !parent->is_type())
+		return gmt::nullref;
+
+	gmt::Ref<StructSymbol> captureBox = parent.as<StructSymbol>();
+	for (std::size_t i = 0; i < captures->size() && i < captureBox->fields.size(); ++i)
+	{
+		if ((*captures)[i] == bound)
+			return captureBox->fields[i];
+	}
+
+	return gmt::nullref;
 }
 
 void ByteCodeEmitter::emit_arguments_reversed(const ArgumentsListSyntax* arguments)
@@ -993,18 +1053,98 @@ void ByteCodeEmitter::visit_lambda_expression(const LambdaExpressionSyntax* node
 	if (anonymousMethod.is_null())
 		return;
 
-	lambda_capture_checker checker(get_model(), get_diagnostics(), anonymousMethod);
+	gmt::Ref<const SyntaxSymbol> parent = anonymousMethod->get_parent();
+	gmt::Ref<StructSymbol> captureBox = parent.is_null() || !parent->is_type() ? gmt::nullref : parent.as<StructSymbol>();
+	if (captureBox.is_null())
+		return;
+
+	lambda_capture_checker checker(get_model(), get_diagnostics(), captureBox);
 	if (!node->get_body().is_null())
 		node->get_body().as_ptr()->accept(checker);
 
 	if (checker.get_captured())
 	{
-		unsupported(*nodeRef, L"lambda captures");
+		unsupported(*nodeRef, L"capturing instance members");
 		return;
 	}
 
 	m_pendingLambdaBodies.emplace_back(*nodeRef, anonymousMethod);
 
-	m_encoder.emit_new_delegate(delegateType, anonymousMethod);
+	// construct the capture box and store the captured values into its fields
+	const std::vector<gmt::Ref<SyntaxSymbol>>* captures = m_pragmatic.get_lambda_captures(anonymousMethod);
+
+	PlacementVerdict verdict = site_verdict(*nodeRef);
+	std::uint16_t boxSlot = allocate_temporary(captureBox, verdict);
+	bool stackBorn = verdict == PlacementVerdict::Stack;
+
+	if (stackBorn)
+	{
+		m_encoder.emit_load_slot_addr(boxSlot);
+		eval_push(sizeof(void*));
+	}
+	else
+	{
+		m_encoder.emit_alloc_heap(captureBox);
+		eval_push(sizeof(void*));
+		m_encoder.emit_store_local(boxSlot);
+		eval_pop();
+	}
+
+	if (captures != nullptr)
+	{
+		for (std::size_t i = 0; i < captures->size() && i < captureBox->fields.size(); ++i)
+		{
+			gmt::Ref<FieldSymbol> field = captureBox->fields[i];
+			gmt::Ref<SyntaxSymbol> captured = (*captures)[i];
+
+			std::optional<std::uint16_t> capturedSlot = slot_of(captured);
+			gmt::Ref<FieldSymbol> outerField = capturedSlot.has_value() ? gmt::nullref : capture_field_of(captured);
+
+			if (!capturedSlot.has_value() && outerField.is_null())
+			{
+				unsupported(*nodeRef, L"unresolvable lambda capture");
+				return;
+			}
+
+			if (stackBorn)
+			{
+				m_encoder.emit_load_slot_addr(boxSlot);
+				eval_push(sizeof(void*));
+			}
+			else
+			{
+				m_encoder.emit_load_local(boxSlot);
+				eval_push(sizeof(void*));
+			}
+
+			// nested lambdas read transitively captured values through the
+			// enclosing box's own capture fields
+			if (capturedSlot.has_value())
+			{
+				m_encoder.emit_load_local(*capturedSlot);
+				eval_push(payload_of(field->get_return_type()));
+			}
+			else
+			{
+				m_encoder.emit_load_local(0);
+				eval_push(sizeof(void*));
+				m_encoder.emit_load_field(field_slot_index(outerField));
+				eval_push(payload_of(outerField->get_return_type()));
+				eval_pop();
+			}
+
+			m_encoder.emit_store_field(field_slot_index(field));
+			eval_pop(2);
+		}
+	}
+
+	if (stackBorn)
+	{
+		m_encoder.emit_load_slot_addr(boxSlot);
+		eval_push(sizeof(void*));
+		return;
+	}
+
+	m_encoder.emit_load_local(boxSlot);
 	eval_push(sizeof(void*));
 }

@@ -10,9 +10,13 @@
 #include <shard/parsing/nodes/expressions/LambdaExpressionSyntax.hpp>
 #include <shard/parsing/nodes/types/IdentifierNameTypeSyntax.hpp>
 
+#include <shard/semantic/symbols/FieldSymbol.hpp>
 #include <shard/semantic/symbols/MethodSymbol.hpp>
 #include <shard/semantic/symbols/ParameterSymbol.hpp>
+#include <shard/semantic/symbols/StructSymbol.hpp>
 #include <shard/semantic/symbols/VariableSymbol.hpp>
+
+#include <algorithm>
 
 using namespace shard;
 
@@ -79,6 +83,7 @@ void EscapeAnalyzer::record_capture(gmt::Ref<SyntaxSymbol> symbol)
 			continue;
 
 		add_edge(ensure_site_id(closureSite), ensure_local_id(symbol));
+		materialize_capture(closureSite, symbol);
 	}
 
 	// the capture is a use of the capturing closure at its creation point,
@@ -101,6 +106,46 @@ void EscapeAnalyzer::record_capture(gmt::Ref<SyntaxSymbol> symbol)
 		return;
 
 	add_event(ensure_site_id(frame.closureSite), EscapeLevel::GlobalEscape, EscapeChannel::Suspension);
+}
+
+void EscapeAnalyzer::materialize_capture(gmt::Ref<const ExpressionSyntax> closureSite, gmt::Ref<SyntaxSymbol> symbol)
+{
+	if (closureSite.is_null() || closureSite->get_kind() != SyntaxKind::LambdaExpression)
+		return;
+
+	const LambdaExpressionSyntax* lambda = static_cast<const LambdaExpressionSyntax*>(closureSite.as_ptr());
+	if (lambda->get_parameters().is_null())
+		return;
+
+	gmt::Ref<SyntaxSymbol> bound = get_symbol_table().lookup_symbol(lambda->get_parameters());
+	if (bound.is_null() || !bound->is_method())
+		return;
+
+	gmt::Ref<MethodSymbol> anonymousMethod = bound.as<MethodSymbol>();
+	gmt::Ref<const SyntaxSymbol> parent = anonymousMethod->get_parent();
+	if (parent.is_null() || !parent->is_type())
+		return;
+
+	gmt::Ref<StructSymbol> captureBox = parent.as<StructSymbol>();
+
+	std::vector<gmt::Ref<SyntaxSymbol>>& captures = m_pragmatic.lambda_captures_for(anonymousMethod);
+	if (std::find(captures.begin(), captures.end(), symbol) != captures.end())
+		return;
+
+	captures.push_back(symbol);
+
+	gmt::Ref<StructSymbol> captureType;
+	SyntaxKind symbolKind = symbol->get_kind();
+	if (symbolKind == SyntaxKind::VariableStatement)
+		captureType = symbol.as<VariableSymbol>()->get_type();
+	else if (symbolKind == SyntaxKind::Parameter)
+		captureType = symbol.as<ParameterSymbol>()->get_type();
+
+	// primitives are snapshotted inline into the box; composites keep a
+	// reference slot, which is what shallow capture means for objects
+	gmt::Ref<FieldSymbol> field = get_symbol_table().emplace<FieldSymbol>(symbol->get_name(), captureBox);
+	field->set_return_type(captureType);
+	captureBox->on_symbol_declared(field);
 }
 
 void EscapeAnalyzer::visit_lambda_expression(const LambdaExpressionSyntax* node)
