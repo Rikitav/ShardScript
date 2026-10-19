@@ -214,7 +214,7 @@ gmt::Ref<MethodSymbol> ByteCodeDecoder::absorb_method_symbol()
 	if (symbol.is_null())
 		return gmt::nullref;
 
-	if (symbol->get_kind() == SyntaxKind::ConstructorDeclaration)
+	if (!symbol->is_method())
 		return gmt::nullref;
 
 	return symbol.as<MethodSymbol>();
