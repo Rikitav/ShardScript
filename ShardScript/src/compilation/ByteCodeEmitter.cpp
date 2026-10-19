@@ -249,9 +249,6 @@ void ByteCodeEmitter::begin_method(gmt::Ref<MethodSymbol> method)
 void ByteCodeEmitter::end_method()
 {
 	m_encoder.emit_return();
-
-	std::size_t length = mark_position() - m_methodStart;
-	m_image.register_method(m_generatingFor, m_methodStart, length);
 	m_generatingFor->set_calling_convention(CallingConvention::Managed);
 	m_generatingFor->set_function_pointer(reinterpret_cast<void*>(m_methodStart));
 

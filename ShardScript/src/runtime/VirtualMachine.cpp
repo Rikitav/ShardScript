@@ -1,7 +1,6 @@
 #include <shard/LibraryMetadata.hpp>
 
 #include <shard/runtime/VirtualMachine.hpp>
-
 #include <shard/runtime/MethodCallState.hpp>
 
 #include <shard/compilation/ByteCodeDecoder.hpp>
@@ -146,28 +145,6 @@ void VirtualMachine::pop_frame()
 	CallStackFrame::destroy(frame);
 }
 
-std::size_t VirtualMachine::get_method_start(gmt::Ref<MethodSymbol> method) const
-{
-	for (const VirtualProgramImage::MethodEntry& entry : m_program.get_method_entries())
-	{
-		if (entry.method == method)
-			return entry.start;
-	}
-
-	throw std::runtime_error("method has no emitted bytecode");
-}
-
-std::size_t VirtualMachine::get_method_length(gmt::Ref<MethodSymbol> method) const
-{
-	for (const VirtualProgramImage::MethodEntry& entry : m_program.get_method_entries())
-	{
-		if (entry.method == method)
-			return entry.length;
-	}
-
-	throw std::runtime_error("method has no emitted bytecode");
-}
-
 bool VirtualMachine::is_void_method(gmt::Ref<MethodSymbol> method) const
 {
 	if (method->get_return_type().is_null())
@@ -259,7 +236,8 @@ ObjectInstance VirtualMachine::create_string(std::wstring_view value)
 void VirtualMachine::execute_frame(CallStackFrame* frame)
 {
 	gmt::Ref<MethodSymbol> method = frame->get_method();
-	ByteCodeDecoder decoder(m_program, get_method_start(method), get_method_length(method));
+	std::size_t start = reinterpret_cast<std::size_t>(method->get_function_pointer());
+	ByteCodeDecoder decoder(m_program, start);
 
 	while (true)
 	{

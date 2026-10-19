@@ -18,21 +18,11 @@ namespace shard
 
 	class SHARD_API VirtualProgramImage
 	{
-	public:
-		struct MethodEntry
-		{
-			gmt::Ref<MethodSymbol> method;
-			std::size_t start;
-			std::size_t length;
-		};
-
-	private:
 		DataSection m_dataSection;
 		BytecodeSection m_textSection;
 
 		std::vector<gmt::Ref<SyntaxSymbol>> m_symbols;
 		std::unordered_map<std::size_t, std::uint32_t> m_symbolHandles;
-		std::vector<MethodEntry> m_methodEntries;
 		gmt::Ref<MethodSymbol> m_entryPoint;
 
 	public:
@@ -48,9 +38,7 @@ namespace shard
 
 		std::uint32_t intern_symbol(gmt::Ref<SyntaxSymbol> symbol);
 		gmt::Ref<SyntaxSymbol> resolve_symbol(std::uint32_t handle) const;
-
-		void register_method(gmt::Ref<MethodSymbol> method, std::size_t start, std::size_t length);
-		const std::vector<MethodEntry>& get_method_entries() const;
+		const std::vector<gmt::Ref<SyntaxSymbol>>& get_symbols() const;
 
 		void set_entry_point(gmt::Ref<MethodSymbol> method);
 		gmt::Ref<MethodSymbol> get_entry_point() const;

@@ -31,6 +31,7 @@ namespace shard
 
 	public:
 		ByteCodeDecoder(const VirtualProgramImage& image);
+		ByteCodeDecoder(const VirtualProgramImage& image, std::size_t start);
 		ByteCodeDecoder(const VirtualProgramImage& image, std::size_t start, std::size_t length);
 
 		bool is_eof() const;
