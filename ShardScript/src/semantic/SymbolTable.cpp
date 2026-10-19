@@ -4,7 +4,11 @@
 
 #include <shard/semantic/symbols/AccessorSymbol.hpp>
 #include <shard/semantic/symbols/FieldSymbol.hpp>
+#include <shard/semantic/symbols/IndexatorSymbol.hpp>
+#include <shard/semantic/symbols/InterfaceSymbol.hpp>
+#include <shard/semantic/symbols/ParameterSymbol.hpp>
 #include <shard/semantic/symbols/PropertySymbol.hpp>
+#include <shard/semantic/symbols/TypeParameterSymbol.hpp>
 
 #include <gmt/InlineVector.hpp>
 
@@ -92,6 +96,50 @@ SymbolTable::SymbolTable()
 	set_standard_type(StandardTypes::RangeEnumerable_CurrentField, rangeCurrentField);
 	set_standard_type(StandardTypes::RangeEnumerable_MoveNext, rangeMoveNext);
 	set_standard_type(StandardTypes::RangeEnumerable_Current_get, rangeCurrentGetter);
+
+	// the for-in iteration contract for index-based collections; conformance
+	// is structural: a type satisfies it by declaring matching members, with
+	// no explicit implementation required
+	gmt::Ref<InterfaceSymbol> indexable = m_arena.emplace<InterfaceSymbol>(L"IIndexable", m_rootNamespace);
+
+	gmt::Ref<TypeParameterSymbol> indexableT = m_arena.emplace<TypeParameterSymbol>(L"T", indexable);
+	indexable->type_parameters.push_back(indexableT);
+
+	gmt::Ref<PropertySymbol> indexableCount = m_arena.emplace<PropertySymbol>(L"Count", SyntaxKind::PropertyDeclaration, indexable);
+	indexableCount->set_return_type(m_integer);
+	indexableCount->set_accesibility(ACS_PUBLIC);
+	indexableCount->set_linking(LINK_INSTANCE);
+
+	gmt::Ref<AccessorSymbol> indexableCountGetter = m_arena.emplace<AccessorSymbol>(L"get", indexableCount);
+	indexableCountGetter->set_return_type(m_integer);
+	indexableCountGetter->set_linking(LINK_INSTANCE);
+	indexableCountGetter->set_accesibility(ACS_PUBLIC);
+	indexableCountGetter->set_is_virtual(true);
+
+	indexableCount->set_getter(indexableCountGetter);
+
+	gmt::Ref<IndexatorSymbol> indexableIndexator = m_arena.emplace<IndexatorSymbol>(L"index", indexable);
+	indexableIndexator->set_return_type(indexableT);
+	indexableIndexator->set_accesibility(ACS_PUBLIC);
+	indexableIndexator->set_linking(LINK_INSTANCE);
+
+	gmt::Ref<ParameterSymbol> indexableIndexParam = m_arena.emplace<ParameterSymbol>(L"index", indexableIndexator);
+	indexableIndexParam->set_type(m_integer);
+	indexableIndexator->on_symbol_declared(indexableIndexParam);
+
+	gmt::Ref<AccessorSymbol> indexableGetAccessor = m_arena.emplace<AccessorSymbol>(L"get", indexableIndexator);
+	indexableGetAccessor->set_return_type(indexableT);
+	indexableGetAccessor->set_linking(LINK_INSTANCE);
+	indexableGetAccessor->set_accesibility(ACS_PUBLIC);
+	indexableGetAccessor->set_is_virtual(true);
+
+	indexableIndexator->set_getter(indexableGetAccessor);
+
+	indexable->properties.push_back(indexableCount);
+	indexable->indexators.push_back(indexableIndexator);
+
+	m_rootNamespace->members.push_back(indexable);
+	set_standard_type(StandardTypes::IIndexable, indexable);
 }
 
 gmt::Arena& SymbolTable::get_arena()
