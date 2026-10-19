@@ -115,6 +115,7 @@ namespace shard
 
 		void record_use(gmt::Ref<SyntaxSymbol> symbol);
 		void record_capture(gmt::Ref<SyntaxSymbol> symbol);
+		void materialize_capture(gmt::Ref<const ExpressionSyntax> closureSite, gmt::Ref<SyntaxSymbol> symbol);
 		gmt::Ref<SyntaxSymbol> find_declared_local(std::wstring_view name) const;
 
 		void collect_expression_refs(gmt::Ref<const ExpressionSyntax> expression, ExpressionRefs& refs, bool includeReceivers);

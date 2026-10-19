@@ -1131,33 +1131,30 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 				break;
 			}
 
-			MethodSymbol* target = nullptr;
-			std::memcpy(&target, delegate.get_memory(), sizeof(void*));
+			// a delegate value is a capture box instance: its single method is
+			// the lambda body, invoked with the box itself as the receiver.
+			// the eval entry may carry the slot's delegate type, so the true
+			// box type comes from the object's own header when it is heap-backed
+			const TypeShape* boxShape = delegate.get_shape();
+			if (GarbageCollector::is_heap_pointer(delegate.get_memory()))
+				boxShape = GarbageCollector::get_header(delegate.get_memory())->shape;
 
-			std::byte* display = nullptr;
-			std::memcpy(&display, delegate.get_memory() + sizeof(void*), sizeof(void*));
-
-			std::optional<gmt::Ref<MethodSymbol>> methodRef = m_model.get_table().get_arena().ref_from_ptr(target);
-			if (!methodRef.has_value())
+			gmt::Ref<StructSymbol> boxType = boxShape->get_base_type();
+			if (boxType.is_null() || boxType->methods.empty())
 			{
 				raise_runtime_exception(L"delegate target is not callable");
 				break;
 			}
 
+			gmt::Ref<MethodSymbol> target = boxType->methods.front();
 			std::size_t parameterCount = delegateType->get_parameters().size();
+
 			gmt::inline_vector<ObjectInstance, 8> arguments;
-
-			if (display != nullptr)
-			{
-				gmt::Ref<const SyntaxSymbol> parent = (*methodRef)->get_parent();
-				gmt::Ref<StructSymbol> receiverType = parent.is_null() || !parent->is_type() ? gmt::nullref : parent.as<StructSymbol>();
-				arguments.push_back(ObjectInstance(resolve_shape(receiverType), display));
-			}
-
+			arguments.push_back(delegate);
 			for (std::size_t i = 0; i < parameterCount; ++i)
 				arguments.push_back(frame->pop_entry());
 
-			ObjectInstance result = invoke_method(*methodRef, arguments.get_vector());
+			ObjectInstance result = invoke_method(target, arguments.get_vector());
 			if (frame->get_interruption() == InterruptionReason::ExceptionRaised)
 				break;
 

@@ -107,14 +107,40 @@ void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 	if (kind == SyntaxKind::VariableStatement || kind == SyntaxKind::Parameter)
 	{
 		std::optional<std::uint16_t> slot = slot_of(bound);
-		if (!slot.has_value())
+		if (slot.has_value())
+		{
+			node->get_right().as_ptr()->accept(*this);
+			m_encoder.emit_duplicate();
+			eval_push(sizeof(void*));
+			m_encoder.emit_store_local(*slot);
+			eval_pop();
 			return;
+		}
 
-		node->get_right().as_ptr()->accept(*this);
-		m_encoder.emit_duplicate();
-		eval_push(sizeof(void*));
-		m_encoder.emit_store_local(*slot);
-		eval_pop();
+		gmt::Ref<FieldSymbol> captureField = capture_field_of(bound);
+		if (!captureField.is_null())
+		{
+			// the captured variable is a field of the box receiver (arg 0)
+			m_encoder.emit_load_local(0);
+			eval_push(sizeof(void*));
+
+			node->get_right().as_ptr()->accept(*this);
+
+			std::uint16_t temp = allocate_temporary(captureField->get_return_type(), PlacementVerdict::Heap);
+			m_encoder.emit_duplicate();
+			eval_push(sizeof(void*));
+			m_encoder.emit_store_local(temp);
+			eval_pop();
+
+			m_encoder.emit_store_field(field_slot_index(captureField));
+			eval_pop(2);
+
+			m_encoder.emit_load_local(temp);
+			eval_push(sizeof(void*));
+			return;
+		}
+
+		unsupported(*nodeRef, L"lambda captures");
 		return;
 	}
 
@@ -236,20 +262,53 @@ void ByteCodeEmitter::emit_compound_assignment(const BinaryExpressionSyntax* nod
 	if (kind == SyntaxKind::VariableStatement || kind == SyntaxKind::Parameter)
 	{
 		std::optional<std::uint16_t> slot = slot_of(bound);
-		if (!slot.has_value())
+		if (slot.has_value())
+		{
+			m_encoder.emit_load_local(*slot);
+			eval_push(sizeof(void*));
+
+			node->get_right().as_ptr()->accept(*this);
+			emit_arithmetic_op(arithmetic);
+			eval_pop();
+
+			m_encoder.emit_duplicate();
+			eval_push(sizeof(void*));
+			m_encoder.emit_store_local(*slot);
+			eval_pop();
 			return;
+		}
 
-		m_encoder.emit_load_local(*slot);
-		eval_push(sizeof(void*));
+		gmt::Ref<FieldSymbol> captureField = capture_field_of(bound);
+		if (!captureField.is_null())
+		{
+			m_encoder.emit_load_local(0);
+			eval_push(sizeof(void*));
+			m_encoder.emit_duplicate();
+			eval_push(sizeof(void*));
 
-		node->get_right().as_ptr()->accept(*this);
-		emit_arithmetic_op(arithmetic);
-		eval_pop();
+			m_encoder.emit_load_field(field_slot_index(captureField));
+			eval_push(payload_of(captureField->get_return_type()));
+			eval_pop();
 
-		m_encoder.emit_duplicate();
-		eval_push(sizeof(void*));
-		m_encoder.emit_store_local(*slot);
-		eval_pop();
+			node->get_right().as_ptr()->accept(*this);
+			emit_arithmetic_op(arithmetic);
+			eval_pop();
+
+			std::uint16_t temp = allocate_temporary(captureField->get_return_type(), PlacementVerdict::Heap);
+			m_encoder.emit_duplicate();
+			eval_push(sizeof(void*));
+			m_encoder.emit_store_local(temp);
+			eval_pop();
+
+			m_encoder.emit_store_field(field_slot_index(captureField));
+			eval_pop(2);
+
+			m_encoder.emit_load_local(temp);
+			eval_push(sizeof(void*));
+			return;
+		}
+
+		unsupported(*nodeRef, L"lambda captures");
 		return;
 	}
 

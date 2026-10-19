@@ -137,3 +137,17 @@ std::optional<std::uint16_t> PragmaticModel::get_local_slot(gmt::Ref<MethodSymbo
 
 	return slotChoice->second;
 }
+
+std::vector<gmt::Ref<SyntaxSymbol>>& PragmaticModel::lambda_captures_for(gmt::Ref<MethodSymbol> method)
+{
+	return m_lambdaCaptures[method];
+}
+
+const std::vector<gmt::Ref<SyntaxSymbol>>* PragmaticModel::get_lambda_captures(gmt::Ref<MethodSymbol> method) const
+{
+	auto choice = m_lambdaCaptures.find(method);
+	if (choice == m_lambdaCaptures.end())
+		return nullptr;
+
+	return &choice->second;
+}

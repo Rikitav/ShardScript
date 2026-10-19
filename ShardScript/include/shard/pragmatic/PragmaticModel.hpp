@@ -42,6 +42,10 @@ namespace shard
 		// absolute frame slot per local symbol (argument slots included in the numbering)
 		std::unordered_map<gmt::Ref<MethodSymbol>, std::unordered_map<gmt::Ref<SyntaxSymbol>, std::uint16_t>> m_localSlots;
 
+		// ordered symbols captured by each lambda method, matching its capture
+		// box field order; empty for non-capturing lambdas
+		std::unordered_map<gmt::Ref<MethodSymbol>, std::vector<gmt::Ref<SyntaxSymbol>>> m_lambdaCaptures;
+
 	public:
 		PragmaticModel() = default;
 		~PragmaticModel() = default;
@@ -79,5 +83,8 @@ namespace shard
 
 		void set_local_slot(gmt::Ref<MethodSymbol> method, gmt::Ref<SyntaxSymbol> local, std::uint16_t slot);
 		std::optional<std::uint16_t> get_local_slot(gmt::Ref<MethodSymbol> method, gmt::Ref<SyntaxSymbol> local) const;
+
+		std::vector<gmt::Ref<SyntaxSymbol>>& lambda_captures_for(gmt::Ref<MethodSymbol> method);
+		const std::vector<gmt::Ref<SyntaxSymbol>>* get_lambda_captures(gmt::Ref<MethodSymbol> method) const;
 	};
 }
