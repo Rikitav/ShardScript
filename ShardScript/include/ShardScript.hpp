@@ -46,6 +46,7 @@
 #include <shard/Definitions.hpp>
 #include <shard/LibraryMetadata.hpp>
 #include <shard/CompilationContext.hpp>
+#include <shard/semantic/SymbolBuilder.hpp>
 
 // --- Public flat API ---
 //#include <shard/ShardScriptExtern.hpp>
