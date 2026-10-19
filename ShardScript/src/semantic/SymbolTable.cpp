@@ -3,6 +3,7 @@
 #include <shard/parsing/SyntaxKind.hpp>
 
 #include <shard/semantic/symbols/AccessorSymbol.hpp>
+#include <shard/semantic/symbols/FieldSymbol.hpp>
 #include <shard/semantic/symbols/PropertySymbol.hpp>
 
 #include <gmt/InlineVector.hpp>
@@ -37,6 +38,60 @@ SymbolTable::SymbolTable()
 
 	arrayLength->set_getter(arrayLengthGetter);
 	m_array->properties.push_back(arrayLength);
+
+	// lazy integer range sequence, mirrors the upstream ArrayEnumerator layout;
+	// bounds are normalized at creation so inclusive ranges share one layout,
+	// and the runtime wires the native callbacks when a virtual machine exists
+	gmt::Ref<StructSymbol> rangeEnumerable = m_arena.emplace<StructSymbol>(L"RangeEnumerable", SyntaxKind::StructDeclaration, m_rootNamespace);
+
+	gmt::Ref<FieldSymbol> rangeFromField = m_arena.emplace<FieldSymbol>(L"_from", rangeEnumerable);
+	rangeFromField->set_return_type(m_integer);
+	rangeFromField->set_accesibility(ACS_PRIVATE);
+	rangeFromField->set_linking(LINK_INSTANCE);
+
+	gmt::Ref<FieldSymbol> rangeToField = m_arena.emplace<FieldSymbol>(L"_to", rangeEnumerable);
+	rangeToField->set_return_type(m_integer);
+	rangeToField->set_accesibility(ACS_PRIVATE);
+	rangeToField->set_linking(LINK_INSTANCE);
+
+	gmt::Ref<FieldSymbol> rangeCurrentField = m_arena.emplace<FieldSymbol>(L"_current", rangeEnumerable);
+	rangeCurrentField->set_return_type(m_integer);
+	rangeCurrentField->set_accesibility(ACS_PRIVATE);
+	rangeCurrentField->set_linking(LINK_INSTANCE);
+
+	gmt::Ref<MethodSymbol> rangeMoveNext = m_arena.emplace<MethodSymbol>(L"MoveNext", rangeEnumerable);
+	rangeMoveNext->set_return_type(m_boolean);
+	rangeMoveNext->set_accesibility(ACS_PUBLIC);
+	rangeMoveNext->set_linking(LINK_INSTANCE);
+	rangeMoveNext->set_calling_convention(CallingConvention::LibFunc);
+	rangeMoveNext->set_effects_computed(true);
+
+	gmt::Ref<PropertySymbol> rangeCurrent = m_arena.emplace<PropertySymbol>(L"Current", SyntaxKind::PropertyDeclaration, rangeEnumerable);
+	rangeCurrent->set_return_type(m_integer);
+	rangeCurrent->set_accesibility(ACS_PUBLIC);
+	rangeCurrent->set_linking(LINK_INSTANCE);
+
+	gmt::Ref<AccessorSymbol> rangeCurrentGetter = m_arena.emplace<AccessorSymbol>(L"get", rangeCurrent);
+	rangeCurrentGetter->set_return_type(m_integer);
+	rangeCurrentGetter->set_linking(LINK_INSTANCE);
+	rangeCurrentGetter->set_accesibility(ACS_PUBLIC);
+	rangeCurrentGetter->set_calling_convention(CallingConvention::LibFunc);
+	rangeCurrentGetter->set_effects_computed(true);
+
+	rangeCurrent->set_getter(rangeCurrentGetter);
+
+	rangeEnumerable->fields.push_back(rangeFromField);
+	rangeEnumerable->fields.push_back(rangeToField);
+	rangeEnumerable->fields.push_back(rangeCurrentField);
+	rangeEnumerable->methods.push_back(rangeMoveNext);
+	rangeEnumerable->properties.push_back(rangeCurrent);
+
+	set_standard_type(StandardTypes::RangeEnumerable, rangeEnumerable);
+	set_standard_type(StandardTypes::RangeEnumerable_FromField, rangeFromField);
+	set_standard_type(StandardTypes::RangeEnumerable_ToField, rangeToField);
+	set_standard_type(StandardTypes::RangeEnumerable_CurrentField, rangeCurrentField);
+	set_standard_type(StandardTypes::RangeEnumerable_MoveNext, rangeMoveNext);
+	set_standard_type(StandardTypes::RangeEnumerable_Current_get, rangeCurrentGetter);
 }
 
 gmt::Arena& SymbolTable::get_arena()

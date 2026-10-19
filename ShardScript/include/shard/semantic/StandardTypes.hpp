@@ -80,6 +80,13 @@ namespace shard
 		ArrayEnumerator_IndexField,
 		ArrayEnumerator_LengthField,
 
+		RangeEnumerable,
+		RangeEnumerable_FromField,
+		RangeEnumerable_ToField,
+		RangeEnumerable_CurrentField,
+		RangeEnumerable_MoveNext,
+		RangeEnumerable_Current_get,
+
 		Runtime,
 		Runtime_CaptureStackTrace,
 
