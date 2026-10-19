@@ -1,9 +1,5 @@
 #pragma once
-
-namespace shard
-{
-	class SemanticModel;
-}
+#include <shard/semantic/SemanticModel.hpp>
 
 namespace shard::interpreter
 {
