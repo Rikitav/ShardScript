@@ -351,8 +351,15 @@ bool EscapeAnalyzer::is_caller_placeable(gmt::Ref<MethodSymbol> owner) const
 		return false;
 
 	// concrete types only: interfaces (unknown size + vtable identity),
-	// nullables, generics, arrays and type parameters stay heap
-	return returnType->get_kind() == SyntaxKind::StructDeclaration;
+	// nullables, arrays and type parameters stay heap; a generic closed over
+	// concrete arguments has a fixed shape and chains like any struct
+	if (returnType->get_kind() == SyntaxKind::StructDeclaration)
+		return true;
+
+	if (returnType->get_kind() != SyntaxKind::GenericType)
+		return false;
+
+	return returnType.as<GenericTypeSymbol>()->get_underlaying_type()->get_kind() == SyntaxKind::StructDeclaration;
 }
 
 bool EscapeAnalyzer::cone_closed(int id, const std::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries) const
