@@ -379,8 +379,7 @@ void ExpressionBinder::visit_range_expression(const RangeExpressionSyntax* node)
 	if (!leftIsInteger || !rightIsInteger)
 		get_diagnostics().report_error(node->get_location(), L"Range bounds must be integers");
 
-	// TODO: optimize into an internal RangeEnumerable creation
 	std::optional<gmt::Ref<const RangeExpressionSyntax>> nodeRef = ref_from(node);
 	if (nodeRef.has_value())
-		set_expression_type(*nodeRef, m_factory.create_array_type(table.get_integer_primitive()));
+		set_expression_type(*nodeRef, table.get_standard_type(StandardTypes::RangeEnumerable).as<StructSymbol>());
 }

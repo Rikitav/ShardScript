@@ -1,5 +1,10 @@
 #include <shard/runtime/ObjectInstance.hpp>
 
+#include <shard/pragmatic/TypeShape.hpp>
+
+#include <shard/semantic/symbols/FieldSymbol.hpp>
+#include <shard/semantic/symbols/StructSymbol.hpp>
+
 #include <cstring>
 
 using namespace shard;
@@ -32,6 +37,61 @@ const TypeShape* ObjectInstance::get_shape() const
 std::byte* ObjectInstance::get_memory() const
 {
 	return m_memory;
+}
+
+std::uint32_t ObjectInstance::resolve_field_slot(gmt::Ref<FieldSymbol> field)
+{
+	gmt::Ref<StructSymbol> owner = field->get_parent().as<StructSymbol>();
+	if (owner.is_null())
+		return 0;
+
+	std::uint32_t ordinal = 0;
+	for (gmt::Ref<FieldSymbol> candidate : owner->fields)
+	{
+		if (candidate.is_null() || candidate->get_return_type().is_null())
+			continue;
+
+		if (candidate->get_linking() == LINK_STATIC)
+			continue;
+
+		if (candidate == field)
+			return ordinal;
+
+		++ordinal;
+	}
+
+	return 0;
+}
+
+ObjectInstance ObjectInstance::get_field(std::uint32_t slot) const
+{
+	const TypeShape::SlotInfo& info = m_shape->get_slot(slot);
+	return ObjectInstance(info.fieldShape, m_memory + info.offset);
+}
+
+ObjectInstance ObjectInstance::get_field(gmt::Ref<FieldSymbol> field) const
+{
+	return get_field(resolve_field_slot(field));
+}
+
+void ObjectInstance::set_field(std::uint32_t slot, const ObjectInstance& value)
+{
+	const TypeShape::SlotInfo& info = m_shape->get_slot(slot);
+	std::byte* fieldAddress = m_memory + info.offset;
+
+	if (info.fieldShape->is_reference())
+	{
+		std::byte* pointer = value.get_memory();
+		std::memcpy(fieldAddress, &pointer, sizeof(std::byte*));
+		return;
+	}
+
+	std::memcpy(fieldAddress, value.get_memory(), info.fieldShape->get_size());
+}
+
+void ObjectInstance::set_field(gmt::Ref<FieldSymbol> field, const ObjectInstance& value)
+{
+	set_field(resolve_field_slot(field), value);
 }
 
 bool ObjectInstance::as_boolean() const

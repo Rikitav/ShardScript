@@ -804,16 +804,25 @@ void ExpressionBinder::visit_for_in_statement(const ForInStatementSyntax* node)
 	{
 		visit_expression(rangeExpression);
 		gmt::Ref<StructSymbol> rangeType = get_expression_type(rangeExpression);
+		gmt::Ref<StructSymbol> elementType = gmt::nullref;
 
-		if (!rangeType.is_null() && rangeType->get_kind() == SyntaxKind::ArrayType)
+		if (!rangeType.is_null())
 		{
-			gmt::Ref<StructSymbol> elementType = rangeType.as<ArrayTypeSymbol>()->get_underlaying_type();
+			SymbolTable& table = get_symbol_table();
+			if (rangeType->get_kind() == SyntaxKind::ArrayType)
+				elementType = rangeType.as<ArrayTypeSymbol>()->get_underlaying_type();
+			else if (rangeType == table.get_standard_type(StandardTypes::RangeEnumerable))
+				elementType = table.get_integer_primitive();
+		}
+
+		if (!elementType.is_null())
+		{
 			if (!variable.is_null() && variable->get_type().is_null())
 				variable->set_type(elementType);
 		}
 		else
 		{
-			get_diagnostics().report_error(node->get_location(), L"'for-in' expression must be an array");
+			get_diagnostics().report_error(node->get_location(), L"'for-in' expression must be an array or a range");
 		}
 	}
 

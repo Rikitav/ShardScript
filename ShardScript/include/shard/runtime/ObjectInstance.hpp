@@ -1,17 +1,22 @@
 #pragma once
 #include <shard/Definitions.hpp>
 
+#include <gmt/Ref.hpp>
+
 #include <cstddef>
 #include <cstdint>
 
 namespace shard
 {
 	class TypeShape;
+	class FieldSymbol;
 
 	class SHARD_API ObjectInstance
 	{
 		const TypeShape* m_shape;
 		std::byte* m_memory;
+
+		static std::uint32_t resolve_field_slot(gmt::Ref<FieldSymbol> field);
 
 	public:
 		ObjectInstance();
@@ -22,6 +27,11 @@ namespace shard
 		bool is_null() const;
 		const TypeShape* get_shape() const;
 		std::byte* get_memory() const;
+
+		ObjectInstance get_field(std::uint32_t slot) const;
+		ObjectInstance get_field(gmt::Ref<FieldSymbol> field) const;
+		void set_field(std::uint32_t slot, const ObjectInstance& value);
+		void set_field(gmt::Ref<FieldSymbol> field, const ObjectInstance& value);
 
 		bool as_boolean() const;
 		std::int64_t as_integer() const;

@@ -111,6 +111,7 @@ namespace shard
 		void emit_method_call(gmt::Ref<MethodSymbol> method, gmt::Ref<const ExpressionSyntax> receiver, const ArgumentsListSyntax* arguments, bool receiverFirst);
 		void emit_arguments_reversed(const ArgumentsListSyntax* arguments);
 		void emit_object_construction(const ObjectExpressionSyntax* node, std::optional<std::uint16_t> directSlot = std::nullopt);
+		void emit_range_cursor(const ExpressionSyntax* rangeExpression, std::uint16_t slot);
 		bool emit_arithmetic_op(TokenType type);
 		void emit_field_initializers(gmt::Ref<StructSymbol> ownerType);
 

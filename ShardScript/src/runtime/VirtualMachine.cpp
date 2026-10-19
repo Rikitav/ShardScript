@@ -47,6 +47,29 @@ namespace
 	{
 		state.set_return_integer(state.get_argument(0).as_integer());
 	}
+
+	void native_range_move_next(MethodCallState& state)
+	{
+		ObjectInstance self = state.get_argument(0);
+		SymbolTable& table = state.get_vm().get_model().get_table();
+
+		gmt::Ref<FieldSymbol> currentField = table.get_standard_type(StandardTypes::RangeEnumerable_CurrentField).as<FieldSymbol>();
+		gmt::Ref<FieldSymbol> toField = table.get_standard_type(StandardTypes::RangeEnumerable_ToField).as<FieldSymbol>();
+
+		ObjectInstance current = self.get_field(currentField);
+		std::int64_t value = current.as_integer() + 1;
+		current.write_integer(value);
+
+		state.set_return_boolean(value < self.get_field(toField).as_integer());
+	}
+
+	void native_range_current_get(MethodCallState& state)
+	{
+		SymbolTable& table = state.get_vm().get_model().get_table();
+		gmt::Ref<FieldSymbol> currentField = table.get_standard_type(StandardTypes::RangeEnumerable_CurrentField).as<FieldSymbol>();
+
+		state.set_return_integer(state.get_argument(0).get_field(currentField).as_integer());
+	}
 }
 
 VirtualMachine::VirtualMachine(VirtualProgramImage& program, SemanticModel& model, PragmaticModel& pragmatic)
@@ -72,6 +95,14 @@ VirtualMachine::VirtualMachine(VirtualProgramImage& program, SemanticModel& mode
 		if (!property->get_getter().is_null())
 			property->get_getter()->set_function_pointer(reinterpret_cast<void*>(&native_array_length));
 	}
+
+	gmt::Ref<SyntaxSymbol> rangeMoveNext = table.get_standard_type(StandardTypes::RangeEnumerable_MoveNext);
+	if (!rangeMoveNext.is_null() && rangeMoveNext->is_method())
+		rangeMoveNext.as<MethodSymbol>()->set_function_pointer(reinterpret_cast<void*>(&native_range_move_next));
+
+	gmt::Ref<SyntaxSymbol> rangeCurrentGet = table.get_standard_type(StandardTypes::RangeEnumerable_Current_get);
+	if (!rangeCurrentGet.is_null() && rangeCurrentGet->is_method())
+		rangeCurrentGet.as<MethodSymbol>()->set_function_pointer(reinterpret_cast<void*>(&native_range_current_get));
 }
 
 VirtualMachine::~VirtualMachine()
@@ -784,18 +815,17 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 				break;
 			}
 
-			const TypeShape::SlotInfo& info = instance.get_shape()->get_slot(slot);
-			std::byte* fieldAddress = instance.get_memory() + info.offset;
+			ObjectInstance field = instance.get_field(slot);
+			const TypeShape* fieldShape = field.get_shape();
 
-			if (info.fieldShape->is_reference())
+			if (fieldShape->is_reference())
 			{
-				std::byte* pointer;
-				std::memcpy(&pointer, fieldAddress, sizeof(std::byte*));
-				frame->push_entry(info.fieldShape, true, &pointer, sizeof(std::byte*));
+				std::byte* pointer = field.as_pointer();
+				frame->push_entry(fieldShape, true, &pointer, sizeof(std::byte*));
 				break;
 			}
 
-			frame->push_entry(info.fieldShape, false, fieldAddress, info.fieldShape->get_size());
+			frame->push_entry(fieldShape, false, field.get_memory(), fieldShape->get_size());
 			break;
 		}
 
@@ -811,17 +841,7 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 				break;
 			}
 
-			const TypeShape::SlotInfo& info = instance.get_shape()->get_slot(slot);
-			std::byte* fieldAddress = instance.get_memory() + info.offset;
-
-			if (info.fieldShape->is_reference())
-			{
-				std::byte* pointer = value.get_memory();
-				std::memcpy(fieldAddress, &pointer, sizeof(std::byte*));
-				break;
-			}
-
-			std::memcpy(fieldAddress, value.get_memory(), info.fieldShape->get_size());
+			instance.set_field(slot, value);
 			break;
 		}
 
@@ -956,26 +976,22 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 
 		case OpCode::CREATERANGE:
 		{
-			gmt::Ref<ArrayTypeSymbol> arrayType = decoder.absorb_array_symbol();
-			const TypeShape* arrayShape = resolve_shape(arrayType);
-			const TypeShape* elementShape = resolve_shape(arrayType->get_underlaying_type());
+			gmt::Ref<StructSymbol> rangeType = decoder.absorb_type_symbol();
+			const TypeShape* rangeShape = resolve_shape(rangeType);
 
 			bool inclusive = frame->pop_entry().as_boolean();
 			std::int64_t upper = frame->pop_entry().as_integer();
 			std::int64_t lower = frame->pop_entry().as_integer();
 
-			std::int64_t count = upper - lower + (inclusive ? 1 : 0);
-			if (count < 0)
-				count = 0;
+			SymbolTable& table = m_model.get_table();
+			gmt::Ref<FieldSymbol> fromField = table.get_standard_type(StandardTypes::RangeEnumerable_FromField).as<FieldSymbol>();
+			gmt::Ref<FieldSymbol> toField = table.get_standard_type(StandardTypes::RangeEnumerable_ToField).as<FieldSymbol>();
+			gmt::Ref<FieldSymbol> currentField = table.get_standard_type(StandardTypes::RangeEnumerable_CurrentField).as<FieldSymbol>();
 
-			ObjectInstance instance = m_collector.allocate_array(arrayShape, elementShape, count);
-			std::byte* elements = instance.get_memory() + sizeof(std::int64_t);
-
-			for (std::int64_t i = 0; i < count; ++i)
-			{
-				std::int64_t value = lower + i;
-				std::memcpy(elements + static_cast<std::size_t>(i) * elementShape->get_size(), &value, elementShape->get_size());
-			}
+			ObjectInstance instance = m_collector.allocate_instance(rangeShape);
+			instance.get_field(fromField).write_integer(lower);
+			instance.get_field(toField).write_integer(upper + (inclusive ? 1 : 0));
+			instance.get_field(currentField).write_integer(lower - 1);
 
 			push_instance(frame, instance);
 			break;
