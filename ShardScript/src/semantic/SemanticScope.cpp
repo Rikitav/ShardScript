@@ -51,13 +51,11 @@ void SemanticScope::set_namespace(gmt::Ref<NamespaceSymbol> namespaceSymbol)
 	m_namespace = namespaceSymbol;
 }
 
-// TODO: move to expression binder
 const std::unordered_set<gmt::Ref<NamespaceSymbol>>& SemanticScope::get_imported_namespaces() const
 {
 	return m_importedNamespaces;
 }
 
-// TODO: move to expression binder
 void SemanticScope::add_imported_namespace(gmt::Ref<NamespaceSymbol> namespaceSymbol)
 {
 	m_importedNamespaces.insert(namespaceSymbol);

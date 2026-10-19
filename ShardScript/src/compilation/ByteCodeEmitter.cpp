@@ -252,6 +252,7 @@ void ByteCodeEmitter::end_method()
 
 	std::size_t length = mark_position() - m_methodStart;
 	m_image.register_method(m_generatingFor, m_methodStart, length);
+	m_generatingFor->set_calling_convention(CallingConvention::Managed);
 	m_generatingFor->set_function_pointer(reinterpret_cast<void*>(m_methodStart));
 
 	if (m_layout != nullptr)

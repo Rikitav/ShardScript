@@ -44,6 +44,4 @@ namespace shard
 
 		ObjectInstance get_return_value() const;
 	};
-
-	using NativeMethodDelegate = void(*)(MethodCallState&);
 }
