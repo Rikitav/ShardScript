@@ -33,7 +33,7 @@ SymbolTable::SymbolTable()
 	arrayLengthGetter->set_return_type(m_integer);
 	arrayLengthGetter->set_linking(LINK_INSTANCE);
 	arrayLengthGetter->set_accesibility(ACS_PUBLIC);
-	arrayLengthGetter->set_calling_convention(CallingConvention::LibFunc);
+	arrayLengthGetter->set_calling_convention(CallingConvention::ShardDecl);
 	arrayLengthGetter->set_effects_computed(true);
 
 	arrayLength->set_getter(arrayLengthGetter);
@@ -63,7 +63,7 @@ SymbolTable::SymbolTable()
 	rangeMoveNext->set_return_type(m_boolean);
 	rangeMoveNext->set_accesibility(ACS_PUBLIC);
 	rangeMoveNext->set_linking(LINK_INSTANCE);
-	rangeMoveNext->set_calling_convention(CallingConvention::LibFunc);
+	rangeMoveNext->set_calling_convention(CallingConvention::ShardDecl);
 	rangeMoveNext->set_effects_computed(true);
 
 	gmt::Ref<PropertySymbol> rangeCurrent = m_arena.emplace<PropertySymbol>(L"Current", SyntaxKind::PropertyDeclaration, rangeEnumerable);
@@ -75,7 +75,7 @@ SymbolTable::SymbolTable()
 	rangeCurrentGetter->set_return_type(m_integer);
 	rangeCurrentGetter->set_linking(LINK_INSTANCE);
 	rangeCurrentGetter->set_accesibility(ACS_PUBLIC);
-	rangeCurrentGetter->set_calling_convention(CallingConvention::LibFunc);
+	rangeCurrentGetter->set_calling_convention(CallingConvention::ShardDecl);
 	rangeCurrentGetter->set_effects_computed(true);
 
 	rangeCurrent->set_getter(rangeCurrentGetter);

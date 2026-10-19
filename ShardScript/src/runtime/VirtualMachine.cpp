@@ -1,3 +1,5 @@
+#include <shard/LibraryMetadata.hpp>
+
 #include <shard/runtime/VirtualMachine.hpp>
 
 #include <shard/runtime/MethodCallState.hpp>
@@ -334,7 +336,7 @@ ObjectInstance VirtualMachine::invoke_native(gmt::Ref<MethodSymbol> method, std:
 	for (const ObjectInstance& argument : arguments)
 		m_collector.pin(argument);
 
-	NativeMethodDelegate callback = reinterpret_cast<NativeMethodDelegate>(method->get_function_pointer());
+	MethodSymbolDelegate callback = reinterpret_cast<MethodSymbolDelegate>(method->get_function_pointer());
 	MethodCallState state(*this, m_currentFrame, arguments);
 
 	try
@@ -364,10 +366,19 @@ ObjectInstance VirtualMachine::invoke_native(gmt::Ref<MethodSymbol> method, std:
 ObjectInstance VirtualMachine::invoke_method(gmt::Ref<MethodSymbol> method, std::span<const ObjectInstance> arguments)
 {
 	CallingConvention convention = method->get_calling_convention();
-	if (convention == CallingConvention::LibFunc || convention == CallingConvention::StdCall)
-		return invoke_native(method, arguments);
+	switch (convention)
+	{
+		case CallingConvention::Managed:
+			return invoke_managed(method, arguments);
 
-	return invoke_managed(method, arguments);
+		case CallingConvention::ShardDecl:
+			return invoke_native(method, arguments);
+
+		default:
+			break;
+	}
+
+	throw std::runtime_error("Method calling convention was 'None'");
 }
 
 bool VirtualMachine::handle_exception_in_frame(CallStackFrame* frame, ByteCodeDecoder& decoder)

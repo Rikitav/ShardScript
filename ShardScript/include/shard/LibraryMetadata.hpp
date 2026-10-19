@@ -1,14 +1,12 @@
 #pragma once
 #include <shard/Definitions.hpp>
+#include <shard/runtime/MethodCallState.hpp>
 
 #include <cstddef>
 
 namespace shard
 {
-	// TODO: replace with include, when runtime establishes
-	struct CallState;
-
-	typedef void (*MethodSymbolDelegate)(const CallState& context);
+	typedef void (*MethodSymbolDelegate)(const MethodCallState& context);
 
 	struct SHARD_API ShardLibDependencyInfo
 	{

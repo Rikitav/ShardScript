@@ -20,10 +20,9 @@ namespace shard
 
 	enum class CallingConvention
 	{
-		None,
-		Managed,
-		LibFunc,
-		StdCall
+		None,		// Unknown or unresolved calling convention. VM treats that as panic and halts immidietly
+		Managed,	// Managed bytecode calling convention. VM expects symbol to contain offset of starting opcode for th program
+		ShardDecl	// Managed foreighn function calling convention. VM expects CDecl function with signature that accepts MethodCallState argument
 	};
 
 	class SHARD_API MethodSymbol : public MemberSymbol
