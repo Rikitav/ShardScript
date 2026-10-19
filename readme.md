@@ -16,11 +16,11 @@ Rewrite progression :
 - [x] Expression binding
 - [x] Control and Data flow analysis
 - [x] HUGE MILESTONE: Semantic analysis
-- [ ] NEW: Escape analysis
-- [ ] NEW: Scalar analysis
-- [ ] NEW: TypeShape and Layout generation
-- [ ] HUGE MILESTONE: Pragmatic analysis
-- [ ] OpCodes
+- [x] NEW: Escape analysis
+- [x] NEW: Scalar analysis
+- [x] NEW: TypeShape and Layout generation
+- [x] HUGE MILESTONE: Pragmatic analysis
+- [x] OpCodes
 - [ ] ...
 
 **ShardScript** is an embeddable, scripting, compiled, programming language with strict static typing, developed in C++. The project features a custom lexer/parser, semantic analyzer, bytecode compiler, stack virtual machine, and a standard library framework.
