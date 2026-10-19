@@ -7,6 +7,8 @@
 #include <shard/parsing/nodes/members/OperatorDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/members/ConstructorDeclarationSyntax.hpp>
 
+#include <shard/parsing/nodes/statements/VariableStatementSyntax.hpp>
+
 #include <shard/parsing/nodes/expressions/LambdaExpressionSyntax.hpp>
 
 #include <shard/semantic/symbols/ConstructorSymbol.hpp>
@@ -90,7 +92,8 @@ void LayoutGenerator::build_frame(gmt::Ref<MethodSymbol> method)
 	for (gmt::Ref<StructSymbol> argumentType : argumentTypes.get_vector())
 		layout.add_argument(argumentType);
 
-	layout.set_argument_count(static_cast<std::uint16_t>(argumentTypes.get_vector().size()));
+	const std::uint16_t argumentCount = static_cast<std::uint16_t>(argumentTypes.get_vector().size());
+	layout.set_argument_count(argumentCount);
 
 	const std::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters = method->get_type_parameters();
 
@@ -128,16 +131,51 @@ void LayoutGenerator::build_frame(gmt::Ref<MethodSymbol> method)
 		AllocationSiteVerdict verdict = m_pragmatic.get_local_verdict(method, local);
 		gmt::Ref<StructSymbol> localType = local_type(local);
 
+		// array slots cannot carry their elements inline: an unbounded array
+		// type has no fixed payload, so arrays always normalize to heap
+		if (!localType.is_null() && localType->get_kind() == SyntaxKind::ArrayType)
+			verdict.verdict = PlacementVerdict::Heap;
+
+		// demote unconstructible scalars: dematerialized locals cannot run
+		// constructors or alias references produced elsewhere. Object-creation
+		// initializers degrade to plain stack placement instead; locals
+		// assigned a reference keep heap storage like any other composite
+		if (verdict.verdict == PlacementVerdict::Scalar && !localType.is_null() && !model.is_primitive_type(localType))
+		{
+			gmt::Ref<const SyntaxNode> declaration = get_symbol_table().lookup_node(local);
+			bool keepScalar = false;
+
+			if (!declaration.is_null() && declaration->get_kind() == SyntaxKind::VariableStatement)
+			{
+				const VariableStatementSyntax* variableNode = declaration.as<VariableStatementSyntax>().as_ptr();
+				gmt::Ref<const ExpressionSyntax> initializer = variableNode->get_expression();
+
+				if (initializer.is_null())
+					keepScalar = true;
+				else if (initializer->get_kind() == SyntaxKind::ObjectExpression)
+					verdict.verdict = PlacementVerdict::Stack;
+				else
+					verdict.verdict = PlacementVerdict::Heap;
+			}
+
+			if (!keepScalar && verdict.verdict == PlacementVerdict::Scalar)
+				verdict.verdict = PlacementVerdict::Heap;
+		}
+
 		bool scalarLocal = verdict.verdict == PlacementVerdict::Scalar;
 		scalarLocal = scalarLocal && !localType.is_null();
 		scalarLocal = scalarLocal && localType->get_kind() == SyntaxKind::StructDeclaration;
+		// primitives bypass placement machinery entirely: never dematerialized
+		scalarLocal = scalarLocal && !model.is_primitive_type(localType);
 		if (scalarLocal)
 		{
+			m_pragmatic.set_local_slot(method, local, argumentCount + layout.get_variable_count());
 			expand_scalar_local(layout, localType, typeParameters, variableShapes.get_vector());
 			continue;
 		}
 
-		layout.add_variable(localType, typeParameters, verdict.verdict);
+		std::uint16_t variableIndex = layout.add_variable(localType, typeParameters, verdict.verdict);
+		m_pragmatic.set_local_slot(method, local, argumentCount + variableIndex);
 
 		TypeShape* shape = nullptr;
 		if (!localType.is_null())

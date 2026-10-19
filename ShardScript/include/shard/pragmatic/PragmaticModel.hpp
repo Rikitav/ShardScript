@@ -39,6 +39,9 @@ namespace shard
 		// per-method frame metadata
 		std::unordered_map<gmt::Ref<MethodSymbol>, FrameLayout> m_frameLayouts;
 
+		// absolute frame slot per local symbol (argument slots included in the numbering)
+		std::unordered_map<gmt::Ref<MethodSymbol>, std::unordered_map<gmt::Ref<SyntaxSymbol>, std::uint16_t>> m_localSlots;
+
 	public:
 		PragmaticModel() = default;
 		~PragmaticModel() = default;
@@ -73,5 +76,8 @@ namespace shard
 
 		FrameLayout* find_frame_layout(gmt::Ref<MethodSymbol> method) const;
 		FrameLayout& get_or_create_frame_layout(gmt::Ref<MethodSymbol> method);
+
+		void set_local_slot(gmt::Ref<MethodSymbol> method, gmt::Ref<SyntaxSymbol> local, std::uint16_t slot);
+		std::optional<std::uint16_t> get_local_slot(gmt::Ref<MethodSymbol> method, gmt::Ref<SyntaxSymbol> local) const;
 	};
 }

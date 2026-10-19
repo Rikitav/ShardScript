@@ -45,6 +45,7 @@ namespace shard
 		FrameLayout& operator=(const FrameLayout&) = delete;
 
 		std::uint16_t add_variable(gmt::Ref<StructSymbol> type, const std::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters, PlacementVerdict verdict = PlacementVerdict::Heap);
+		std::uint16_t add_temporary(gmt::Ref<StructSymbol> type, const TypeShape* shape, PlacementVerdict verdict);
 		bool seal_variable(std::uint16_t variableIndex, gmt::Ref<StructSymbol> type, const std::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters, PlacementVerdict verdict = PlacementVerdict::Heap);
 		bool set_variable_verdict(std::uint16_t variableIndex, PlacementVerdict verdict);
 
