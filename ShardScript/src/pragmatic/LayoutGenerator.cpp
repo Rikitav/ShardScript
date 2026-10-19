@@ -138,8 +138,9 @@ void LayoutGenerator::build_frame(gmt::Ref<MethodSymbol> method)
 
 		// demote unconstructible scalars: dematerialized locals cannot run
 		// constructors or alias references produced elsewhere. Object-creation
-		// initializers degrade to plain stack placement instead; locals
-		// assigned a reference keep heap storage like any other composite
+		// and range-literal initializers degrade to plain stack placement
+		// instead; locals assigned a reference keep heap storage like any
+		// other composite
 		if (verdict.verdict == PlacementVerdict::Scalar && !localType.is_null() && !model.is_primitive_type(localType))
 		{
 			gmt::Ref<const SyntaxNode> declaration = get_symbol_table().lookup_node(local);
@@ -153,6 +154,8 @@ void LayoutGenerator::build_frame(gmt::Ref<MethodSymbol> method)
 				if (initializer.is_null())
 					keepScalar = true;
 				else if (initializer->get_kind() == SyntaxKind::ObjectExpression)
+					verdict.verdict = PlacementVerdict::Stack;
+				else if (initializer->get_kind() == SyntaxKind::RangeExpression)
 					verdict.verdict = PlacementVerdict::Stack;
 				else
 					verdict.verdict = PlacementVerdict::Heap;
