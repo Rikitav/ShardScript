@@ -17,9 +17,11 @@ using namespace shard;
 
 void EscapeAnalyzer::analyze(SyntaxTree& tree)
 {
-	// deliberate simple design: the whole graph is rebuilt on every outer
-	// iteration; every update is a monotone join, so the loop terminates
-	// once summaries and levels stabilize
+	// the walk consults committed callee summaries (is_fresh_invokation), so
+	// the graph is rebuilt per iteration; every update is a monotone join and
+	// the loop terminates once committed summaries stabilize. The graph itself
+	// is a deterministic function of the tree and the committed summaries, so
+	// a stable commit implies a stable graph
 	for (int iteration = 0; iteration < 64; ++iteration)
 	{
 		clear_graph();
@@ -30,19 +32,11 @@ void EscapeAnalyzer::analyze(SyntaxTree& tree)
 		apply_call_exposures(summaries);
 		run_graph_fixpoint();
 
-		bool changed = m_previousLevels != m_graph.levels;
-		changed = changed || m_previousChannels != m_graph.channelSets;
-		changed = changed || m_previousColdChannels != m_graph.coldChannels;
-		changed = changed || commit_summaries(summaries);
-
-		m_previousLevels = m_graph.levels;
-		m_previousChannels = m_graph.channelSets;
-		m_previousColdChannels = m_graph.coldChannels;
-
-		assign_verdicts(summaries);
-
-		if (!changed)
+		if (!commit_summaries(summaries))
+		{
+			assign_verdicts(summaries);
 			return;
+		}
 	}
 
 	throw std::runtime_error("pragmatic escape analysis did not reach a stable fixpoint");

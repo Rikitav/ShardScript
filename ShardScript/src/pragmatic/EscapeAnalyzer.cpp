@@ -156,11 +156,26 @@ EscapeAnalyzer::EscapeAnalyzer(SemanticModel& model, PragmaticModel& pragmatic, 
 
 void EscapeAnalyzer::clear_graph()
 {
-	m_graph = Graph();
+	// member-wise clearing keeps each container's capacity and hash buckets,
+	// so the next iteration rebuilds into already-sized storage; the scalar
+	// cache and the expression refs cache survive on purpose: type structure
+	// and syntax-to-symbol binding do not change between iterations
+	m_graph.nextId = 0;
+	m_graph.localIds.clear();
+	m_graph.siteIds.clear();
+	m_graph.levels.clear();
+	m_graph.channelSets.clear();
+	m_graph.coldChannels.clear();
+	m_graph.identityExposed.clear();
+	m_graph.idOwners.clear();
+	m_graph.edges.clear();
+	m_graph.events.clear();
+	m_graph.callExposures.clear();
+
 	m_frameStack.clear();
 	m_walked.clear();
-	m_scalarCache.clear();
 	m_coldPoints.clear();
+
 	m_nextLoopId = 0;
 	m_inDefer = 0;
 	m_coldDepth = 0;
@@ -304,8 +319,35 @@ void EscapeAnalyzer::collect_expression_refs(gmt::Ref<const ExpressionSyntax> ex
 	if (expression.is_null())
 		return;
 
+	// the collector's result depends only on the syntax tree and the bound
+	// symbols, both stable across the outer fixpoint iterations, so each node
+	// is sub-walked once per receiver mode and replayed from the cache after
+	auto& cache = m_expressionRefs[includeReceivers ? 1 : 0];
+	auto it = cache.find(expression);
+	if (it != cache.end())
+	{
+		for (gmt::Ref<SyntaxSymbol> local : it->second.locals)
+			refs.locals.push_back(local);
+
+		for (gmt::Ref<const ExpressionSyntax> site : it->second.sites)
+			refs.sites.push_back(site);
+
+		return;
+	}
+
+	std::size_t localsStart = refs.locals.get_vector().size();
+	std::size_t sitesStart = refs.sites.get_vector().size();
+
 	reference_collector collector(get_symbol_table(), get_model().get_tree().get_arena(), refs, includeReceivers);
 	expression.as_ptr()->accept(collector);
+
+	const auto& locals = refs.locals.get_vector();
+	const auto& sites = refs.sites.get_vector();
+
+	CachedExpressionRefs cached;
+	cached.locals.assign(locals.begin() + static_cast<std::ptrdiff_t>(localsStart), locals.end());
+	cached.sites.assign(sites.begin() + static_cast<std::ptrdiff_t>(sitesStart), sites.end());
+	cache.emplace(expression, std::move(cached));
 }
 
 void EscapeAnalyzer::expose_expression(gmt::Ref<const ExpressionSyntax> expression, EscapeLevel level, EscapeChannel channel, bool includeReceivers)
