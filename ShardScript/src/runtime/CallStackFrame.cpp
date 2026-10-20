@@ -108,10 +108,16 @@ CallStackFrame* CallStackFrame::create(gmt::Ref<MethodSymbol> method, const Fram
 				shape = pragmatic.find_or_create_type_shape(model, recipe.concreteType);
 
 			// primitives are always stored inline, whatever the escape verdict;
-			// reference storage is meaningful for composites only
+			// reference storage is meaningful for composites only. A zero-size
+			// reference shape (string, delegates, interfaces) names a
+			// variable-size heap object that can never be inlined: it is
+			// pointer-stored whatever the verdict
 			bool reference = recipe.typeParameterIndex >= 0 || recipe.verdict == PlacementVerdict::Heap;
 			if (shape != nullptr && !shape->is_reference())
 				reference = false;
+
+			if (shape != nullptr && shape->is_reference() && shape->get_size() == 0)
+				reference = true;
 
 			std::size_t payload = sizeof(void*);
 			if (!reference && shape != nullptr)
