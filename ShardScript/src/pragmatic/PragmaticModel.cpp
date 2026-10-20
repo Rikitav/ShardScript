@@ -1,6 +1,9 @@
 #include <shard/pragmatic/PragmaticModel.hpp>
 
 #include <shard/semantic/SemanticModel.hpp>
+#include <shard/semantic/symbols/GenericMethodSymbol.hpp>
+
+#include <gmt/InlineVector.hpp>
 
 using namespace shard;
 
@@ -118,6 +121,54 @@ FrameLayout* PragmaticModel::find_frame_layout(gmt::Ref<MethodSymbol> method) co
 FrameLayout& PragmaticModel::get_or_create_frame_layout(gmt::Ref<MethodSymbol> method)
 {
 	return m_frameLayouts[method];
+}
+
+FrameLayout& PragmaticModel::get_or_create_frame_layout(SemanticModel& model, gmt::Ref<MethodSymbol> method)
+{
+	auto choice = m_frameLayouts.find(method);
+	if (choice != m_frameLayouts.end())
+		return choice->second;
+
+	if (!method->get_is_generic_instantiation())
+		return m_frameLayouts[method];
+
+	gmt::Ref<GenericMethodSymbol> instantiation = method.as<GenericMethodSymbol>();
+	FrameLayout* open = find_frame_layout(instantiation->get_underlaying_method());
+	if (open == nullptr)
+		return m_frameLayouts[method];
+
+	const std::vector<gmt::Ref<StructSymbol>>& arguments = instantiation->get_type_arguments();
+	FrameLayout& layout = m_frameLayouts[method];
+
+	layout.set_argument_count(open->get_argument_count());
+	for (gmt::Ref<StructSymbol> argumentType : open->get_argument_types())
+		layout.add_argument(model.substitute_type(argumentType, arguments));
+
+	gmt::inline_vector<const TypeShape*, 8> argumentShapes;
+	for (gmt::Ref<StructSymbol> argumentType : layout.get_argument_types())
+		argumentShapes.push_back(argumentType.is_null() ? nullptr : find_or_create_type_shape(model, argumentType));
+
+	gmt::inline_vector<const TypeShape*, 8> variableShapes;
+	for (const FrameSlotRecipe& recipe : open->get_variable_slots())
+	{
+		gmt::Ref<StructSymbol> slotType = recipe.concreteType;
+		if (recipe.typeParameterIndex >= 0)
+		{
+			const std::size_t index = static_cast<std::size_t>(recipe.typeParameterIndex);
+			if (index < arguments.size())
+				slotType = arguments[index];
+		}
+		else if (!slotType.is_null())
+		{
+			slotType = model.substitute_type(slotType, arguments);
+		}
+
+		layout.add_variable(slotType, recipe.verdict);
+		variableShapes.push_back(slotType.is_null() ? nullptr : find_or_create_type_shape(model, slotType));
+	}
+
+	layout.set_locals_bytes(layout.compute_locals_bytes(argumentShapes.get_vector(), variableShapes.get_vector()));
+	return layout;
 }
 
 void PragmaticModel::set_local_slot(gmt::Ref<MethodSymbol> method, gmt::Ref<SyntaxSymbol> local, std::uint16_t slot)

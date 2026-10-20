@@ -14,7 +14,6 @@
 namespace shard
 {
 	class StructSymbol;
-	class TypeParameterSymbol;
 
 	struct SHARD_API FrameSlotRecipe
 	{
@@ -34,7 +33,7 @@ namespace shard
 		std::size_t m_localsBytes = 0; // total frame bytes for arguments and locals; computed by the layout pass
 		bool m_isComplete = false;
 
-		static FrameSlotRecipe make_recipe(gmt::Ref<StructSymbol> type, const std::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters);
+		static FrameSlotRecipe make_recipe(gmt::Ref<StructSymbol> type);
 
 	public:
 		static constexpr std::size_t EntryHeaderSize = sizeof(void*);
@@ -44,9 +43,9 @@ namespace shard
 		FrameLayout(const FrameLayout&) = delete;
 		FrameLayout& operator=(const FrameLayout&) = delete;
 
-		std::uint16_t add_variable(gmt::Ref<StructSymbol> type, const std::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters, PlacementVerdict verdict = PlacementVerdict::Heap);
+		std::uint16_t add_variable(gmt::Ref<StructSymbol> type, PlacementVerdict verdict = PlacementVerdict::Heap);
 		std::uint16_t add_temporary(gmt::Ref<StructSymbol> type, const TypeShape* shape, PlacementVerdict verdict);
-		bool seal_variable(std::uint16_t variableIndex, gmt::Ref<StructSymbol> type, const std::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters, PlacementVerdict verdict = PlacementVerdict::Heap);
+		bool seal_variable(std::uint16_t variableIndex, gmt::Ref<StructSymbol> type, PlacementVerdict verdict = PlacementVerdict::Heap);
 		bool set_variable_verdict(std::uint16_t variableIndex, PlacementVerdict verdict);
 
 		void set_argument_count(std::uint16_t count);

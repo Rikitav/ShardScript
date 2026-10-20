@@ -80,6 +80,7 @@ namespace shard
 
 		FrameLayout* find_frame_layout(gmt::Ref<MethodSymbol> method) const;
 		FrameLayout& get_or_create_frame_layout(gmt::Ref<MethodSymbol> method);
+		FrameLayout& get_or_create_frame_layout(SemanticModel& model, gmt::Ref<MethodSymbol> method);
 
 		void set_local_slot(gmt::Ref<MethodSymbol> method, gmt::Ref<SyntaxSymbol> local, std::uint16_t slot);
 		std::optional<std::uint16_t> get_local_slot(gmt::Ref<MethodSymbol> method, gmt::Ref<SyntaxSymbol> local) const;

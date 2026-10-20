@@ -9,29 +9,26 @@
 
 using namespace shard;
 
-FrameSlotRecipe FrameLayout::make_recipe(gmt::Ref<StructSymbol> type, const std::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters)
+FrameSlotRecipe FrameLayout::make_recipe(gmt::Ref<StructSymbol> type)
 {
 	FrameSlotRecipe recipe;
 
+	// type parameters resolve through the instantiation's combined type
+	// arguments (owner arguments first, then the method's own) when a
+	// concrete frame is materialized for a generic method instantiation
 	if (!type.is_null() && type->get_kind() == SyntaxKind::TypeParameter)
 	{
-		for (std::size_t i = 0; i < typeParameters.size(); ++i)
-		{
-			if (typeParameters[i] == type)
-			{
-				recipe.typeParameterIndex = static_cast<std::int16_t>(i);
-				return recipe;
-			}
-		}
+		recipe.typeParameterIndex = static_cast<std::int16_t>(type.as<TypeParameterSymbol>()->get_type_argument_index());
+		return recipe;
 	}
 
 	recipe.concreteType = type;
 	return recipe;
 }
 
-std::uint16_t FrameLayout::add_variable(gmt::Ref<StructSymbol> type, const std::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters, PlacementVerdict verdict)
+std::uint16_t FrameLayout::add_variable(gmt::Ref<StructSymbol> type, PlacementVerdict verdict)
 {
-	FrameSlotRecipe recipe = make_recipe(type, typeParameters);
+	FrameSlotRecipe recipe = make_recipe(type);
 	recipe.verdict = verdict;
 
 	m_variableSlots.push_back(std::move(recipe));
@@ -40,14 +37,12 @@ std::uint16_t FrameLayout::add_variable(gmt::Ref<StructSymbol> type, const std::
 
 std::uint16_t FrameLayout::add_temporary(gmt::Ref<StructSymbol> type, const TypeShape* shape, PlacementVerdict verdict)
 {
-	static const std::vector<gmt::Ref<TypeParameterSymbol>> noTypeParameters = {};
-
-	std::uint16_t variableIndex = add_variable(type, noTypeParameters, verdict);
+	std::uint16_t variableIndex = add_variable(type, verdict);
 	m_localsBytes += entry_bytes(resolve_payload(shape, verdict));
 	return variableIndex;
 }
 
-bool FrameLayout::seal_variable(std::uint16_t variableIndex, gmt::Ref<StructSymbol> type, const std::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters, PlacementVerdict verdict)
+bool FrameLayout::seal_variable(std::uint16_t variableIndex, gmt::Ref<StructSymbol> type, PlacementVerdict verdict)
 {
 	if (variableIndex >= m_variableSlots.size())
 		return false;
@@ -56,7 +51,7 @@ bool FrameLayout::seal_variable(std::uint16_t variableIndex, gmt::Ref<StructSymb
 	if (!recipe.concreteType.is_null() || recipe.typeParameterIndex >= 0)
 		return false;
 
-	recipe = make_recipe(type, typeParameters);
+	recipe = make_recipe(type);
 	recipe.verdict = verdict;
 	return true;
 }

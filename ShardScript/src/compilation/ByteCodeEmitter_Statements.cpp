@@ -42,6 +42,20 @@
 
 using namespace shard;
 
+namespace
+{
+	// accessors belong to a property or indexator, so the declaring type sits
+	// one level above the accessor's direct parent
+	bool is_interface_accessor(gmt::Ref<MethodSymbol> accessor)
+	{
+		gmt::Ref<const SyntaxSymbol> owner = accessor->get_parent();
+		if (!owner.is_null() && (owner->get_kind() == SyntaxKind::PropertyDeclaration || owner->get_kind() == SyntaxKind::IndexatorDeclaration))
+			owner = owner->get_parent();
+
+		return !owner.is_null() && owner->get_kind() == SyntaxKind::InterfaceDeclaration;
+	}
+}
+
 void ByteCodeEmitter::emit_defer_drain(std::size_t count)
 {
 	if (count == 0)
@@ -544,11 +558,18 @@ void ByteCodeEmitter::visit_for_in_statement(const ForInStatementSyntax* node)
 	}
 	else if (isIndexable)
 	{
+		// an interface-typed range dispatches virtually: the abstract accessor
+		// carries no body, the runtime resolves the receiver's implementation
+		gmt::Ref<MethodSymbol> countGetter = countProperty->get_getter();
+
 		m_encoder.emit_load_local(indexSlot);
 		eval_push(sizeof(std::int64_t));
 		m_encoder.emit_load_local(rangeSlot);
 		eval_push(sizeof(void*));
-		m_encoder.emit_call_method_symbol(countProperty->get_getter());
+		if (is_interface_accessor(countGetter))
+			m_encoder.emit_call_interface(countGetter);
+		else
+			m_encoder.emit_call_method_symbol(countGetter);
 		eval_pop();
 		eval_push(sizeof(std::int64_t));
 		m_encoder.emit_compare_less();
@@ -580,11 +601,16 @@ void ByteCodeEmitter::visit_for_in_statement(const ForInStatementSyntax* node)
 	}
 	else if (isIndexable)
 	{
+		gmt::Ref<MethodSymbol> indexGetter = indexator->get_getter();
+
 		m_encoder.emit_load_local(indexSlot);
 		eval_push(sizeof(std::int64_t));
 		m_encoder.emit_load_local(rangeSlot);
 		eval_push(sizeof(void*));
-		m_encoder.emit_call_method_symbol(indexator->get_getter());
+		if (is_interface_accessor(indexGetter))
+			m_encoder.emit_call_interface(indexGetter);
+		else
+			m_encoder.emit_call_method_symbol(indexGetter);
 		eval_pop(2);
 		eval_push_type(loopVariableType);
 	}

@@ -106,12 +106,7 @@ namespace shard::detail
 
 namespace shard
 {
-	// Maps a cdecl function onto a MethodSymbolDelegate at compile time:
-	// arguments are unpacked through MethodCallState::get_arguments and the
-	// result is placed with the matching set_return_* overload.
-	// Allowed argument/return types: bool, std::int64_t, double, wchar_t,
-	// std::uint8_t, ObjectInstance, string types (wide zero-copy, narrow via
-	// utf-8 conversion), native pointers, and void returns.
+	// Maps a cdecl function onto a MethodSymbolDelegate at compile time
 	template<auto Func>
 	struct native_wrapper;
 

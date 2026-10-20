@@ -3,14 +3,17 @@
 #include <shard/parsing/SyntaxKind.hpp>
 #include <shard/parsing/SyntaxTree.hpp>
 
+#include <shard/parsing/nodes/members/AccessorDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/members/FunctionDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/members/OperatorDeclarationSyntax.hpp>
 #include <shard/parsing/nodes/members/ConstructorDeclarationSyntax.hpp>
+#include <shard/parsing/nodes/members/StructDeclarationSyntax.hpp>
 
 #include <shard/parsing/nodes/statements/VariableStatementSyntax.hpp>
 
 #include <shard/parsing/nodes/expressions/LambdaExpressionSyntax.hpp>
 
+#include <shard/semantic/symbols/AccessorSymbol.hpp>
 #include <shard/semantic/symbols/ConstructorSymbol.hpp>
 #include <shard/semantic/symbols/FieldSymbol.hpp>
 #include <shard/semantic/symbols/MethodSymbol.hpp>
@@ -45,7 +48,7 @@ gmt::Ref<StructSymbol> LayoutGenerator::local_type(gmt::Ref<SyntaxSymbol> local)
 	return gmt::nullref;
 }
 
-void LayoutGenerator::expand_scalar_local(FrameLayout& layout, gmt::Ref<StructSymbol> type, const std::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters, std::pmr::vector<const TypeShape*>& variableShapes)
+void LayoutGenerator::expand_scalar_local(FrameLayout& layout, gmt::Ref<StructSymbol> type, std::pmr::vector<const TypeShape*>& variableShapes)
 {
 	SemanticModel& model = get_model();
 
@@ -61,7 +64,7 @@ void LayoutGenerator::expand_scalar_local(FrameLayout& layout, gmt::Ref<StructSy
 		TypeShape* fieldShape = m_pragmatic.find_or_create_type_shape(model, fieldType);
 
 		PlacementVerdict fieldVerdict = fieldShape->is_reference() ? PlacementVerdict::Heap : PlacementVerdict::Stack;
-		layout.add_variable(fieldType, typeParameters, fieldVerdict);
+		layout.add_variable(fieldType, fieldVerdict);
 		variableShapes.push_back(fieldShape);
 	}
 }
@@ -77,11 +80,21 @@ void LayoutGenerator::build_frame(gmt::Ref<MethodSymbol> method)
 	gmt::inline_vector<gmt::Ref<StructSymbol>, 4> argumentTypes;
 	if (method->get_linking() == LINK_INSTANCE)
 	{
-		// the receiver slot carries the owning type; top-level functions own no type and pass a null receiver
+		// the receiver slot carries the owning type; accessors are parented to
+		// their property, so walk to the enclosing type. Top-level functions
+		// own no type and pass a null receiver
 		gmt::Ref<StructSymbol> receiverType;
 		gmt::Ref<const SyntaxSymbol> parent = method->get_parent();
-		if (!parent.is_null() && parent->is_type())
-			receiverType = parent.as<StructSymbol>();
+		while (!parent.is_null())
+		{
+			if (parent->is_type())
+			{
+				receiverType = parent.as<StructSymbol>();
+				break;
+			}
+
+			parent = parent->get_parent();
+		}
 
 		argumentTypes.push_back(receiverType);
 	}
@@ -94,8 +107,6 @@ void LayoutGenerator::build_frame(gmt::Ref<MethodSymbol> method)
 
 	const std::uint16_t argumentCount = static_cast<std::uint16_t>(argumentTypes.get_vector().size());
 	layout.set_argument_count(argumentCount);
-
-	const std::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters = method->get_type_parameters();
 
 	gmt::inline_vector<const TypeShape*, 8> argumentShapes;
 	for (gmt::Ref<StructSymbol> argumentType : argumentTypes.get_vector())
@@ -180,11 +191,11 @@ void LayoutGenerator::build_frame(gmt::Ref<MethodSymbol> method)
 		if (scalarLocal)
 		{
 			m_pragmatic.set_local_slot(method, local, argumentCount + layout.get_variable_count());
-			expand_scalar_local(layout, localType, typeParameters, variableShapes.get_vector());
+			expand_scalar_local(layout, localType, variableShapes.get_vector());
 			continue;
 		}
 
-		std::uint16_t variableIndex = layout.add_variable(localType, typeParameters, verdict.verdict);
+		std::uint16_t variableIndex = layout.add_variable(localType, verdict.verdict);
 		m_pragmatic.set_local_slot(method, local, argumentCount + variableIndex);
 
 		TypeShape* shape = nullptr;
@@ -268,4 +279,50 @@ void LayoutGenerator::visit_lambda_expression(const LambdaExpressionSyntax* node
 	build_frame(symbol);
 
 	SyntaxVisitor::visit_lambda_expression(node);
+}
+
+void LayoutGenerator::visit_accessor_declaration(const AccessorDeclarationSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	auto nodeRef = ref_from(node);
+	if (!nodeRef.has_value())
+		return;
+
+	gmt::Ref<AccessorSymbol> symbol = lookup_symbol<AccessorSymbol>(*nodeRef);
+	if (!symbol.is_null())
+		build_frame(symbol);
+}
+
+void LayoutGenerator::visit_struct_declaration(const StructDeclarationSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	SyntaxVisitor::visit_struct_declaration(node);
+
+	// synthesized constructors own no ConstructorDeclaration node, so no
+	// visitor ever reaches them; their frame is field initializers over the
+	// receiver only. The symbol-to-node map keeps the first binding, which
+	// for them is an arbitrary construction site, not a declaration
+	auto nodeRef = ref_from(node);
+	if (!nodeRef.has_value())
+		return;
+
+	gmt::Ref<StructSymbol> symbol = lookup_symbol<StructSymbol>(*nodeRef);
+	if (symbol.is_null())
+		return;
+
+	for (gmt::Ref<ConstructorSymbol> constructor : symbol->constructors)
+	{
+		if (constructor.is_null())
+			continue;
+
+		gmt::Ref<const SyntaxNode> declaration = get_symbol_table().lookup_node(constructor);
+		if (!declaration.is_null() && declaration->get_kind() == SyntaxKind::ConstructorDeclaration)
+			continue;
+
+		build_frame(constructor);
+	}
 }
