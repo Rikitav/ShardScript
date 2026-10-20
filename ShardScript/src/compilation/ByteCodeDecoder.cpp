@@ -1,5 +1,5 @@
 #include <shard/compilation/ByteCodeDecoder.hpp>
-#include <shard/compilation/VirtualProgramImage.hpp>
+#include <shard/compilation/OperationCode.hpp>
 
 #include <shard/parsing/SyntaxKind.hpp>
 #include <shard/semantic/SyntaxSymbol.hpp>
@@ -55,17 +55,17 @@ namespace
 	}
 }
 
-ByteCodeDecoder::ByteCodeDecoder(const VirtualProgramImage& image, const gmt::Arena& arena)
+ByteCodeDecoder::ByteCodeDecoder(const std::vector<std::byte>& code, const gmt::Arena& arena)
 	: m_arena(arena),
-	  m_code(image.get_text_section()),
+	  m_code(code),
 	  m_base(0),
 	  m_end(m_code.size()),
 	  m_ip(0)
 { }
 
-ByteCodeDecoder::ByteCodeDecoder(const VirtualProgramImage& image, const gmt::Arena& arena, std::size_t start)
+ByteCodeDecoder::ByteCodeDecoder(const std::vector<std::byte>& code, const gmt::Arena& arena, std::size_t start)
 	: m_arena(arena),
-	  m_code(image.get_text_section()),
+	  m_code(code),
 	  m_base(start),
 	  m_end(m_code.size()),
 	  m_ip(start)
@@ -74,9 +74,9 @@ ByteCodeDecoder::ByteCodeDecoder(const VirtualProgramImage& image, const gmt::Ar
 		throw std::out_of_range("ByteCodeDecoder: Method range out of code boundaries");
 }
 
-ByteCodeDecoder::ByteCodeDecoder(const VirtualProgramImage& image, const gmt::Arena& arena, std::size_t start, std::size_t length)
+ByteCodeDecoder::ByteCodeDecoder(const std::vector<std::byte>& code, const gmt::Arena& arena, std::size_t start, std::size_t length)
 	: m_arena(arena),
-	  m_code(image.get_text_section()),
+	  m_code(code),
 	  m_base(start),
 	  m_end(start + length),
 	  m_ip(start)

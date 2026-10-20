@@ -18,7 +18,6 @@ namespace gmt
 
 namespace shard
 {
-	class VirtualProgramImage;
 	class StructSymbol;
 	class FieldSymbol;
 	class MethodSymbol;
@@ -35,9 +34,9 @@ namespace shard
 		std::size_t m_ip = 0;
 
 	public:
-		ByteCodeDecoder(const VirtualProgramImage& image, const gmt::Arena& arena);
-		ByteCodeDecoder(const VirtualProgramImage& image, const gmt::Arena& arena, std::size_t start);
-		ByteCodeDecoder(const VirtualProgramImage& image, const gmt::Arena& arena, std::size_t start, std::size_t length);
+		ByteCodeDecoder(const std::vector<std::byte>& code, const gmt::Arena& arena);
+		ByteCodeDecoder(const std::vector<std::byte>& code, const gmt::Arena& arena, std::size_t start);
+		ByteCodeDecoder(const std::vector<std::byte>& code, const gmt::Arena& arena, std::size_t start, std::size_t length);
 
 		bool is_eof() const;
 		std::size_t index() const;

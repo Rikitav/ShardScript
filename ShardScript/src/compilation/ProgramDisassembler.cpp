@@ -3,6 +3,10 @@
 #include <shard/compilation/OperationCode.hpp>
 #include <shard/compilation/VirtualProgramImage.hpp>
 
+#include <shard/ApplicationDomain.hpp>
+
+#include <shard/semantic/SemanticModel.hpp>
+#include <shard/semantic/SymbolTable.hpp>
 #include <shard/semantic/SyntaxSymbol.hpp>
 #include <shard/semantic/symbols/ArrayTypeSymbol.hpp>
 #include <shard/semantic/symbols/DelegateTypeSymbol.hpp>
@@ -43,7 +47,7 @@ namespace
 		out << symbol->get_name();
 	}
 
-	void disassemble_instruction(std::wostream& out, ByteCodeDecoder& decoder)
+	void disassemble_instruction(std::wostream& out, OpCode op, ByteCodeDecoder& decoder)
 	{
 		const std::size_t currentOffset = decoder.index();
 
@@ -52,7 +56,6 @@ namespace
 		write_hex_offset(line, currentOffset);
 		line << L":";
 
-		const OpCode op = decoder.absorb_opcode();
 		std::wstring opcode;
 		std::wostringstream args;
 
@@ -355,7 +358,11 @@ namespace
 				break;
 			}
 
-			case OpCode::RETURN_PLACED:             opcode = L"ret.placed"; break;
+			case OpCode::RETURN_PLACED:
+			{
+				opcode = L"ret.placed";
+				break;
+			}
 
 			case OpCode::CALLDELEGATE:
 			{
@@ -417,52 +424,112 @@ namespace
 	}
 }
 
-void ProgramDisassembler::disassemble(std::wostream& out, const VirtualProgramImage& program, const gmt::Arena& arena)
+void ProgramDisassembler::disassemble_method(std::wostream& out, gmt::Ref<MethodSymbol> method)
 {
-	// managed methods carry their text-section offset in the function pointer,
-	// so native callbacks fall outside the section and are skipped; method
-	// ranges are recovered from the sorted starts of their neighbours
-	gmt::inline_vector<std::pair<std::size_t, gmt::Ref<MethodSymbol>>, 16> methods;
-	if (!program.get_entry_point().is_null())
+	const BytecodeSection& text = m_domain.get_program().get_text_section();
+	const gmt::Arena& arena = m_domain.get_semantic_model().get_table().get_arena();
+	const std::size_t start = reinterpret_cast<std::size_t>(method->get_function_pointer());
+
+	out << L"; ============================================================\n";
+	out << L";  DISASSEMBLY: " << method->get_name();
+	out << L"\n";
+	out << L"; ============================================================\n";
+	out << L"; Offset           Opcode Arguments\n";
+	out << L"; -------- -------------- -----------------------------------------\n";
+
+	ByteCodeDecoder decoder(text, arena, start);
+	while (!decoder.is_eof())
 	{
-		gmt::Ref<MethodSymbol> method = program.get_entry_point();
-		std::size_t start = reinterpret_cast<std::size_t>(method->get_function_pointer());
-		methods.push_back({ start, method });
+		const OpCode op = decoder.absorb_opcode();
+		disassemble_instruction(out, op, decoder);
+
+		if (op == OpCode::RETURN)
+			break;
 	}
 
-	for (gmt::Ref<MethodSymbol> method : program.get_methods())
+	out << L"; --- DISASSEMBLY END ---\n\n";
+}
+
+template<typename T>
+inline gmt::Ref<T> ProgramDisassembler::lookup_symbol(const SyntaxNode* node)
+{
+	std::optional<gmt::Ref<const SyntaxNode>> nodeRefOpt = m_domain.get_semantic_model().get_tree().get_arena().ref_from_ptr(node);
+	if (!nodeRefOpt.has_value())
+		return gmt::nullref;
+
+	return m_domain.get_semantic_model().get_table().lookup_symbol(nodeRefOpt.value()).as<T>();
+}
+
+void ProgramDisassembler::disassemble(std::wostream& out)
+{
+	if (m_foundMethods.empty())
+	{
+		m_foundMethods.clear();
+		for (gmt::Ref<const TranslationUnitSyntax> unit : m_domain.get_semantic_model().get_tree().get_units())
+			visit_translation_unit(unit.as_ptr());
+	}
+
+	gmt::Ref<MethodSymbol> entryPoint = m_domain.get_program().get_entry_point();
+	if (!entryPoint.is_null())
+	{
+		disassemble_method(out, entryPoint);
+	}
+
+	for (gmt::Ref<MethodSymbol> method : m_foundMethods)
 	{
 		if (method.is_null())
 			continue;
 
 		std::size_t start = reinterpret_cast<std::size_t>(method->get_function_pointer());
-		if (start >= program.get_text_section().size())
+		if (start >= m_domain.get_program().get_text_section().size())
 			continue;
 
-		methods.push_back({ start, method });
+		disassemble_method(out, method);
 	}
+}
 
-	std::pmr::vector<std::pair<std::size_t, gmt::Ref<MethodSymbol>>>& entries = methods.get_vector();
-	std::sort(entries.begin(), entries.end(), [](const auto& left, const auto& right) { return left.first < right.first; });
-	entries.erase(std::unique(entries.begin(), entries.end(), [](const auto& left, const auto& right) { return left.first == right.first; }), entries.end());
+ProgramDisassembler::ProgramDisassembler(const ApplicationDomain& domain)
+	: m_domain(domain), m_foundMethods()
+{
+}
 
-	for (std::size_t i = 0; i < entries.size(); ++i)
+void ProgramDisassembler::visit_function_declaration(const FunctionDeclarationSyntax* node)
+{
+	gmt::Ref<MethodSymbol> method = lookup_symbol<MethodSymbol>(node);
+	if (!method.is_null() && method != m_domain.get_program().get_entry_point())
 	{
-		std::size_t start = entries[i].first;
-		std::size_t end = i + 1 < entries.size() ? entries[i + 1].first : program.get_text_section().size();
+		std::size_t start = reinterpret_cast<std::size_t>(method->get_function_pointer());
+		auto it = std::lower_bound(
+			m_foundMethods.begin(), m_foundMethods.end(), start,
+			[&](gmt::Ref<MethodSymbol> methodF, std::size_t) -> bool
+			{
+				std::size_t startF = reinterpret_cast<std::size_t>(methodF->get_function_pointer());
+				return startF < start;
+			}
+		);
 
-		out << L"; ============================================================\n";
-		out << L";  DISASSEMBLY: ";
-		out << entries[i].second->get_name();
-		out << L"\n";
-		out << L"; ============================================================\n";
-		out << L"; Offset           Opcode Arguments\n";
-		out << L"; -------- -------------- -----------------------------------------\n";
-
-		ByteCodeDecoder decoder(program, arena, start, end - start);
-		while (!decoder.is_eof())
-			disassemble_instruction(out, decoder);
-
-		out << L"; --- DISASSEMBLY END ---\n\n";
+		m_foundMethods.insert(it, method);
 	}
+
+	SyntaxVisitor::visit_function_declaration(node);
+}
+
+void ProgramDisassembler::visit_accessor_declaration(const AccessorDeclarationSyntax* node)
+{
+	SyntaxVisitor::visit_accessor_declaration(node);
+}
+
+void ProgramDisassembler::visit_constructor_declaration(const ConstructorDeclarationSyntax* node)
+{
+	SyntaxVisitor::visit_constructor_declaration(node);
+}
+
+void ProgramDisassembler::visit_operator_declaration(const OperatorDeclarationSyntax* node)
+{
+	SyntaxVisitor::visit_operator_declaration(node);
+}
+
+void ProgramDisassembler::visit_lambda_expression(const LambdaExpressionSyntax* node)
+{
+	SyntaxVisitor::visit_lambda_expression(node);
 }

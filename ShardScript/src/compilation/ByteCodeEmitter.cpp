@@ -270,7 +270,6 @@ void ByteCodeEmitter::end_method()
 	m_encoder.emit_return();
 	m_generatingFor->set_calling_convention(CallingConvention::Managed);
 	m_generatingFor->set_function_pointer(reinterpret_cast<void*>(m_methodStart));
-	m_image.register_method(m_generatingFor);
 
 	if (m_layout != nullptr)
 		m_layout->publish_eval_layout(m_maxEvalDepth, m_maxEvalPayload, m_evalPoisoned);
