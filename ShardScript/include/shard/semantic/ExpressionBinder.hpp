@@ -84,6 +84,11 @@ namespace shard
 		std::unordered_set<std::wstring_view> m_ambiguousNames;
 		std::unordered_set<gmt::Ref<const ExpressionSyntax>> m_staticContextExpressions;
 
+		// lambdas whose parameter types could not be resolved yet; they bind
+		// once an expected delegate type appears (overload resolution picks a
+		// method, or a denotation channel supplies a target type)
+		std::unordered_set<gmt::Ref<const LambdaExpressionSyntax>> m_pendingLambdas;
+
 		// collects value-returning expressions of a bound body so a return
 		// type can be inferred for declarations that omit one
 		class return_expression_collector;
@@ -121,7 +126,7 @@ namespace shard
 		gmt::Ref<MethodSymbol> resolve_method(const InvokationExpressionSyntax* node, gmt::Ref<StructSymbol> currentType, std::pmr::vector<gmt::Ref<StructSymbol>>& outMethodTypeArgs, gmt::Ref<GenericTypeSymbol>& outGenericType);
 		gmt::Ref<NamespaceSymbol> resolve_namespace_qualifier(gmt::Ref<const ExpressionSyntax> expression);
 		gmt::Ref<IndexatorSymbol> resolve_indexator(const IndexatorExpressionSyntax* node, gmt::Ref<StructSymbol> currentType);
-		gmt::Ref<DelegateTypeSymbol> try_resolve_delegate_invocation(const InvokationExpressionSyntax* node, gmt::Ref<SyntaxSymbol> lookup);
+		gmt::Ref<DelegateTypeSymbol> try_resolve_delegate_invocation(const InvokationExpressionSyntax* node, gmt::Ref<SyntaxSymbol> lookup, gmt::Ref<GenericTypeSymbol>& outInstantiation);
 
 		gmt::Ref<StructSymbol> resolve_type_expression(gmt::Ref<const TypeSyntax> type);
 		gmt::Ref<StructSymbol> substitute_type_parameters(gmt::Ref<StructSymbol> type, gmt::Ref<GenericTypeSymbol> genericType);
@@ -133,7 +138,10 @@ namespace shard
 		bool infer_class_type_arguments(gmt::Ref<StructSymbol> classDef, gmt::Ref<MethodSymbol> method, std::span<const gmt::Ref<StructSymbol>> argTypes, std::vector<gmt::Ref<StructSymbol>>& outClassTypeArgs);
 
 		int conversion_score(gmt::Ref<const StructSymbol> parameter, gmt::Ref<const StructSymbol> argument);
-		int score_method_match(gmt::Ref<MethodSymbol> method, std::span<const gmt::Ref<StructSymbol>> argTypes, gmt::Ref<GenericTypeSymbol> genericType, std::pmr::vector<gmt::Ref<StructSymbol>>& outMethodTypeArgs);
+		int score_method_match(gmt::Ref<MethodSymbol> method, std::span<const gmt::Ref<StructSymbol>> argTypes, gmt::Ref<GenericTypeSymbol> genericType, std::pmr::vector<gmt::Ref<StructSymbol>>& outMethodTypeArgs, std::span<const gmt::Ref<StructSymbol>> explicitTypeArgs = {});
+		bool check_method_type_constraints(gmt::Ref<MethodSymbol> method, std::span<const gmt::Ref<StructSymbol>> methodTypeArgs, SyntaxToken blameToken);
+		bool collect_explicit_type_arguments(const InvokationExpressionSyntax* node, std::pmr::vector<gmt::Ref<StructSymbol>>& outTypeArgs);
+		void bind_invocation_type_arguments(gmt::Ref<const InvokationExpressionSyntax> node, gmt::Ref<MethodSymbol> method, gmt::Ref<GenericTypeSymbol> genericType, std::span<const gmt::Ref<StructSymbol>> methodTypeArgs);
 		gmt::Ref<OperatorSymbol> resolve_operator_method(gmt::Ref<StructSymbol> ownerType, TokenType operatorToken, std::span<const gmt::Ref<StructSymbol>> parameterTypes);
 		
 		static bool is_assignment_operator(TokenType type);
@@ -141,6 +149,11 @@ namespace shard
 		
 		bool match_method_arguments(SyntaxToken blameToken, std::span<const gmt::Ref<ParameterSymbol>> parameters, gmt::Span<const gmt::Ref<ArgumentSyntax>> arguments, gmt::Ref<GenericTypeSymbol> genericType, std::size_t parameterOffset = 0);
 		bool collect_argument_types(const InvokationExpressionSyntax* node, std::pmr::vector<gmt::Ref<StructSymbol>>& outArgTypes);
+
+		bool is_pending_lambda(gmt::Ref<const ExpressionSyntax> expression) const;
+		bool try_bind_pending_lambda(gmt::Ref<const LambdaExpressionSyntax> node, gmt::Ref<StructSymbol> expectedType);
+		void bind_pending_lambda_arguments(const InvokationExpressionSyntax* node, gmt::Ref<MethodSymbol> method, bool asExtension, gmt::Ref<GenericTypeSymbol> genericType, std::span<const gmt::Ref<StructSymbol>> argTypes, std::span<const gmt::Ref<StructSymbol>> explicitTypeArgs);
+		void bind_lambda_body(const LambdaExpressionSyntax* node, gmt::Ref<const LambdaExpressionSyntax> nodeRef, gmt::Ref<DelegateTypeSymbol> delegateType, gmt::Ref<MethodSymbol> anonymousMethod);
 
 		void import_namespace(gmt::Ref<const UsingDirectiveSyntax> node, gmt::Ref<NamespaceSymbol> namespaceSymbol);
 		void visit_type_declaration(gmt::Ref<const TypeDeclarationSyntax> node);

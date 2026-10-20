@@ -112,12 +112,6 @@ gmt::Ref<StructSymbol> ExpressionBinder::analyze_member_access_expression(const 
 	if (currentType.is_null())
 		return gmt::nullref;
 
-	visit_expression(previous);
-	currentType = get_expression_type(previous);
-
-	if (currentType.is_null())
-		return gmt::nullref;
-
 	currentType = unwrap_nullable(currentType);
 
 	if (!currentType->is_type())
@@ -506,12 +500,6 @@ gmt::Ref<StructSymbol> ExpressionBinder::analyze_indexator_expression(const Inde
 	gmt::Ref<const ArgumentsListSyntax> arguments = node->get_arguments();
 
 	if (currentType.is_null() || previous.is_null())
-		return gmt::nullref;
-
-	visit_expression(previous);
-	currentType = get_expression_type(previous);
-
-	if (currentType.is_null())
 		return gmt::nullref;
 
 	currentType = unwrap_nullable(currentType);

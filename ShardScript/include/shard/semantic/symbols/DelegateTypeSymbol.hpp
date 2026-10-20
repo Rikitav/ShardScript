@@ -19,7 +19,6 @@ namespace shard
 	{
 		gmt::Ref<StructSymbol> m_returnType;
 		std::vector<gmt::Ref<ParameterSymbol>> m_parameters;
-		std::vector<gmt::Ref<TypeParameterSymbol>> m_typeParameters;
 		bool m_isAsync = false;
 
 	public:

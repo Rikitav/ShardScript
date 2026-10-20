@@ -860,12 +860,12 @@ void DeclarationCollector::visit_for_in_statement(const ForInStatementSyntax* no
 
 	gmt::Ref<VariableSymbol> symbol = lookup_symbol<VariableSymbol>(*nodeRef);
 	if (symbol.is_null())
-	{
 		symbol = m_factory.create_variable(*nodeRef, get_owner_symbol());
-		declare(symbol);
-	}
 
+	// the loop variable is scoped to the loop itself, so sibling loops may
+	// reuse the same identifier
 	push_scope(symbol);
+	declare(symbol);
 
 	if (!node->get_range_expression().is_null())
 		node->get_range_expression().as_ptr()->accept(*this);
