@@ -14,6 +14,8 @@ namespace shard
 	class SHARD_API ApplicationDomain
 	{
 		std::unique_ptr<VirtualProgramImage> m_program;
+		SemanticModel& m_model;
+		PragmaticModel& m_pragmatic;
 		VirtualMachine m_machine;
 
 	public:
@@ -24,6 +26,8 @@ namespace shard
 		ApplicationDomain& operator=(const ApplicationDomain&) = delete;
 
 		VirtualProgramImage& get_program() const;
+		SemanticModel& get_semantic_model() const;
+		PragmaticModel& get_pragmatic_model() const;
 		VirtualMachine& get_virtual_machine();
 	};
 }

@@ -42,17 +42,22 @@ namespace shard
 		std::unordered_map<gmt::Ref<const SyntaxNode>, gmt::Ref<SyntaxSymbol>> m_nodeToSymbolMap;
 		std::unordered_map<gmt::Ref<SyntaxSymbol>, gmt::Ref<const SyntaxNode>> m_symbolToNodeMap;
 
-		// inferred or explicit call-site type arguments per invocation node, in
-		// the combined index space (receiver type arguments first, then the
-		// method's own); consumed by the emitter to build instantiations
+		// inferred or explicit call-site type arguments per invocation node.
+		// consumed by the emitter to build instantiations
 		std::unordered_map<gmt::Ref<const SyntaxNode>, std::vector<gmt::Ref<StructSymbol>>> m_nodeTypeArguments;
 
 		// composite symbols registry
 		SymbolInterner m_interner;
 
-		// well-known standard library slots; filled with identity stubs until
-		// the real symbols are registered through set_standard_type
+		// well-known standard library slots
 		std::array<gmt::Ref<SyntaxSymbol>, static_cast<std::size_t>(StandardTypes::Count)> m_standardTypes;
+
+		// standard components resolvers
+		void resolve_primitives();
+		void resolve_interfaces();
+		void resolve_primitive_printables();
+		void resolve_enumerables();
+		void resolve_exceptions();
 
 	public:
 		SymbolTable();

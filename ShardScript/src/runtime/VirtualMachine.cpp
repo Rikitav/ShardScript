@@ -217,7 +217,19 @@ void VirtualMachine::throw_value(CallStackFrame* frame, ObjectInstance value)
 
 void VirtualMachine::raise_runtime_exception(std::wstring_view message)
 {
-	ObjectInstance exception = create_string(message);
+	SymbolTable& table = m_model.get_table();
+	gmt::Ref<StructSymbol> exceptionType = table.get_standard_type(StandardTypes::RuntimeException).as<StructSymbol>();
+
+	const TypeShape* shape = m_pragmatic.find_or_create_type_shape(m_model, exceptionType);
+	ObjectInstance exception = m_collector.allocate_instance(shape);
+
+	gmt::Ref<FieldSymbol> messageField = table.get_standard_type(StandardTypes::RuntimeException_MessageField).as<FieldSymbol>();
+	gmt::Ref<FieldSymbol> stackTraceField = table.get_standard_type(StandardTypes::RuntimeException_StackTraceField).as<FieldSymbol>();
+
+	// TODO: capture the call stack into _stackTrace once the VM grows a trace API
+	exception.set_field(messageField, create_string(message));
+	exception.set_field(stackTraceField, create_string(L""));
+
 	raise_exception(exception);
 }
 
@@ -581,6 +593,25 @@ std::wstring VirtualMachine::get_unhandled_message() const
 {
 	if (!m_hasUnhandledException)
 		return std::wstring();
+
+	// VM-raised exceptions are RuntimeException instances: surface their message
+	SymbolTable& table = m_model.get_table();
+	const TypeShape* shape = m_unhandledException.get_shape();
+
+	bool isRuntimeException = shape != nullptr;
+	isRuntimeException = isRuntimeException && shape->get_base_type() == table.get_standard_type(StandardTypes::RuntimeException);
+
+	if (isRuntimeException)
+	{
+		gmt::Ref<FieldSymbol> messageField = table.get_standard_type(StandardTypes::RuntimeException_MessageField).as<FieldSymbol>();
+
+		// get_field returns a view onto the slot storage; dereference the
+		// reference payload before reading the string
+		ObjectInstance slot = m_unhandledException.get_field(messageField);
+		ObjectInstance message(slot.get_shape(), slot.as_pointer());
+		if (!message.is_null())
+			return PrimitiveMath::to_display_string(message);
+	}
 
 	return PrimitiveMath::to_display_string(m_unhandledException);
 }

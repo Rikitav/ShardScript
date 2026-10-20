@@ -191,6 +191,7 @@ namespace shard
 		void visit_for_in_statement(const ForInStatementSyntax* node) override;
 		void visit_try_statement(const TryStatementSyntax* node) override;
 		void visit_catch_clause(const CatchClauseSyntax* node) override;
+		void visit_throw_statement(const ThrowStatementSyntax* node) override;
 		void visit_defer_statement(const DeferStatementSyntax* node) override;
 		void visit_defer_block(const DeferBlockSyntax* node) override;
 		void visit_defer_variable(const DeferVariableSyntax* node) override;

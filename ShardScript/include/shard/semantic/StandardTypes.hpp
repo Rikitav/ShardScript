@@ -96,6 +96,10 @@ namespace shard
 		RuntimeException_MessageField,
 		RuntimeException_StackTraceField,
 
+		UndefinedBehaviour,
+		UndefinedBehaviour_MessageField,
+		UndefinedBehaviour_StackTraceField,
+
 		NativeContinuation,
 		NativeContinuation_MoveNext,
 
