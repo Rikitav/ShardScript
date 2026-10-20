@@ -8,7 +8,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <unordered_map>
 #include <vector>
 
 namespace shard
@@ -21,8 +20,9 @@ namespace shard
 		DataSection m_dataSection;
 		BytecodeSection m_textSection;
 
-		std::vector<gmt::Ref<SyntaxSymbol>> m_symbols;
-		std::unordered_map<std::size_t, std::uint32_t> m_symbolHandles;
+		// method directory for disassembly; bytecode operands reference symbols
+		// by raw arena offset instead, resolved against the SymbolTable arena
+		std::vector<gmt::Ref<MethodSymbol>> m_methods;
 		gmt::Ref<MethodSymbol> m_entryPoint;
 
 	public:
@@ -36,9 +36,8 @@ namespace shard
 		DataSection& get_data_section();
 		const DataSection& get_data_section() const;
 
-		std::uint32_t intern_symbol(gmt::Ref<SyntaxSymbol> symbol);
-		gmt::Ref<SyntaxSymbol> resolve_symbol(std::uint32_t handle) const;
-		const std::vector<gmt::Ref<SyntaxSymbol>>& get_symbols() const;
+		void register_method(gmt::Ref<MethodSymbol> method);
+		const std::vector<gmt::Ref<MethodSymbol>>& get_methods() const;
 
 		void set_entry_point(gmt::Ref<MethodSymbol> method);
 		gmt::Ref<MethodSymbol> get_entry_point() const;

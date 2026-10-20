@@ -417,7 +417,7 @@ namespace
 	}
 }
 
-void ProgramDisassembler::disassemble(std::wostream& out, const VirtualProgramImage& program)
+void ProgramDisassembler::disassemble(std::wostream& out, const VirtualProgramImage& program, const gmt::Arena& arena)
 {
 	// managed methods carry their text-section offset in the function pointer,
 	// so native callbacks fall outside the section and are skipped; method
@@ -430,12 +430,11 @@ void ProgramDisassembler::disassemble(std::wostream& out, const VirtualProgramIm
 		methods.push_back({ start, method });
 	}
 
-	for (gmt::Ref<SyntaxSymbol> symbol : program.get_symbols())
+	for (gmt::Ref<MethodSymbol> method : program.get_methods())
 	{
-		if (symbol.is_null() || !symbol->is_method())
+		if (method.is_null())
 			continue;
 
-		gmt::Ref<MethodSymbol> method = symbol.as<MethodSymbol>();
 		std::size_t start = reinterpret_cast<std::size_t>(method->get_function_pointer());
 		if (start >= program.get_text_section().size())
 			continue;
@@ -460,7 +459,7 @@ void ProgramDisassembler::disassemble(std::wostream& out, const VirtualProgramIm
 		out << L"; Offset           Opcode Arguments\n";
 		out << L"; -------- -------------- -----------------------------------------\n";
 
-		ByteCodeDecoder decoder(program, start, end - start);
+		ByteCodeDecoder decoder(program, arena, start, end - start);
 		while (!decoder.is_eof())
 			disassemble_instruction(out, decoder);
 

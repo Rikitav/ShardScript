@@ -11,6 +11,11 @@
 #include <cstdint>
 #include <vector>
 
+namespace gmt
+{
+	class Arena;
+}
+
 namespace shard
 {
 	class VirtualProgramImage;
@@ -23,16 +28,16 @@ namespace shard
 
 	class SHARD_API ByteCodeDecoder
 	{
-		const VirtualProgramImage& m_image;
+		const gmt::Arena& m_arena;
 		const std::vector<std::byte>& m_code;
 		std::size_t m_base;
 		std::size_t m_end;
 		std::size_t m_ip = 0;
 
 	public:
-		ByteCodeDecoder(const VirtualProgramImage& image);
-		ByteCodeDecoder(const VirtualProgramImage& image, std::size_t start);
-		ByteCodeDecoder(const VirtualProgramImage& image, std::size_t start, std::size_t length);
+		ByteCodeDecoder(const VirtualProgramImage& image, const gmt::Arena& arena);
+		ByteCodeDecoder(const VirtualProgramImage& image, const gmt::Arena& arena, std::size_t start);
+		ByteCodeDecoder(const VirtualProgramImage& image, const gmt::Arena& arena, std::size_t start, std::size_t length);
 
 		bool is_eof() const;
 		std::size_t index() const;

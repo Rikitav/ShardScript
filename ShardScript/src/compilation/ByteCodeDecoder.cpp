@@ -13,6 +13,8 @@
 #include <cstring>
 #include <stdexcept>
 
+#include <gmt/Arena.hpp>
+
 using namespace shard;
 
 namespace
@@ -29,10 +31,20 @@ namespace
 		return value;
 	}
 
-	template <typename T>
-	gmt::Ref<T> resolve_as(const VirtualProgramImage& image, std::uint32_t handle, SyntaxKind kind)
+	gmt::Ref<SyntaxSymbol> resolve_offset(const gmt::Arena& arena, std::size_t offset)
 	{
-		gmt::Ref<SyntaxSymbol> symbol = image.resolve_symbol(handle);
+		if (offset == null_symbol_operand)
+			return gmt::nullref;
+
+		// refs construct from a non-const arena handle; decoding only resolves
+		// symbol memory and never mutates the arena
+		return gmt::Ref<SyntaxSymbol>(const_cast<gmt::Arena&>(arena), offset);
+	}
+
+	template <typename T>
+	gmt::Ref<T> resolve_as(const gmt::Arena& arena, std::size_t offset, SyntaxKind kind)
+	{
+		gmt::Ref<SyntaxSymbol> symbol = resolve_offset(arena, offset);
 		if (symbol.is_null())
 			return gmt::nullref;
 
@@ -43,16 +55,16 @@ namespace
 	}
 }
 
-ByteCodeDecoder::ByteCodeDecoder(const VirtualProgramImage& image)
-	: m_image(image),
+ByteCodeDecoder::ByteCodeDecoder(const VirtualProgramImage& image, const gmt::Arena& arena)
+	: m_arena(arena),
 	  m_code(image.get_text_section()),
 	  m_base(0),
 	  m_end(m_code.size()),
 	  m_ip(0)
 { }
 
-ByteCodeDecoder::ByteCodeDecoder(const VirtualProgramImage& image, std::size_t start)
-	: m_image(image),
+ByteCodeDecoder::ByteCodeDecoder(const VirtualProgramImage& image, const gmt::Arena& arena, std::size_t start)
+	: m_arena(arena),
 	  m_code(image.get_text_section()),
 	  m_base(start),
 	  m_end(m_code.size()),
@@ -62,8 +74,8 @@ ByteCodeDecoder::ByteCodeDecoder(const VirtualProgramImage& image, std::size_t s
 		throw std::out_of_range("ByteCodeDecoder: Method range out of code boundaries");
 }
 
-ByteCodeDecoder::ByteCodeDecoder(const VirtualProgramImage& image, std::size_t start, std::size_t length)
-	: m_image(image),
+ByteCodeDecoder::ByteCodeDecoder(const VirtualProgramImage& image, const gmt::Arena& arena, std::size_t start, std::size_t length)
+	: m_arena(arena),
 	  m_code(image.get_text_section()),
 	  m_base(start),
 	  m_end(start + length),
@@ -181,15 +193,15 @@ std::size_t ByteCodeDecoder::absorb_jump()
 
 gmt::Ref<SyntaxSymbol> ByteCodeDecoder::absorb_symbol()
 {
-	const std::uint32_t handle = absorb_value<std::uint32_t>(m_code, m_ip, m_end);
-	return m_image.resolve_symbol(handle);
+	const std::size_t offset = absorb_value<std::size_t>(m_code, m_ip, m_end);
+	return resolve_offset(m_arena, offset);
 }
 
 gmt::Ref<StructSymbol> ByteCodeDecoder::absorb_type_symbol()
 {
-	const std::uint32_t handle = absorb_value<std::uint32_t>(m_code, m_ip, m_end);
+	const std::size_t offset = absorb_value<std::size_t>(m_code, m_ip, m_end);
 
-	gmt::Ref<SyntaxSymbol> symbol = m_image.resolve_symbol(handle);
+	gmt::Ref<SyntaxSymbol> symbol = resolve_offset(m_arena, offset);
 	if (symbol.is_null())
 		return gmt::nullref;
 
@@ -201,27 +213,27 @@ gmt::Ref<StructSymbol> ByteCodeDecoder::absorb_type_symbol()
 
 gmt::Ref<DelegateTypeSymbol> ByteCodeDecoder::absorb_delegate_type_symbol()
 {
-	const std::uint32_t handle = absorb_value<std::uint32_t>(m_code, m_ip, m_end);
-	return resolve_as<DelegateTypeSymbol>(m_image, handle, SyntaxKind::DelegateType);
+	const std::size_t offset = absorb_value<std::size_t>(m_code, m_ip, m_end);
+	return resolve_as<DelegateTypeSymbol>(m_arena, offset, SyntaxKind::DelegateType);
 }
 
 gmt::Ref<FieldSymbol> ByteCodeDecoder::absorb_field_symbol()
 {
-	const std::uint32_t handle = absorb_value<std::uint32_t>(m_code, m_ip, m_end);
-	return resolve_as<FieldSymbol>(m_image, handle, SyntaxKind::FieldDeclaration);
+	const std::size_t offset = absorb_value<std::size_t>(m_code, m_ip, m_end);
+	return resolve_as<FieldSymbol>(m_arena, offset, SyntaxKind::FieldDeclaration);
 }
 
 gmt::Ref<ArrayTypeSymbol> ByteCodeDecoder::absorb_array_symbol()
 {
-	const std::uint32_t handle = absorb_value<std::uint32_t>(m_code, m_ip, m_end);
-	return resolve_as<ArrayTypeSymbol>(m_image, handle, SyntaxKind::ArrayType);
+	const std::size_t offset = absorb_value<std::size_t>(m_code, m_ip, m_end);
+	return resolve_as<ArrayTypeSymbol>(m_arena, offset, SyntaxKind::ArrayType);
 }
 
 gmt::Ref<MethodSymbol> ByteCodeDecoder::absorb_method_symbol()
 {
-	const std::uint32_t handle = absorb_value<std::uint32_t>(m_code, m_ip, m_end);
+	const std::size_t offset = absorb_value<std::size_t>(m_code, m_ip, m_end);
 
-	gmt::Ref<SyntaxSymbol> symbol = m_image.resolve_symbol(handle);
+	gmt::Ref<SyntaxSymbol> symbol = resolve_offset(m_arena, offset);
 	if (symbol.is_null())
 		return gmt::nullref;
 
@@ -233,6 +245,6 @@ gmt::Ref<MethodSymbol> ByteCodeDecoder::absorb_method_symbol()
 
 gmt::Ref<ConstructorSymbol> ByteCodeDecoder::absorb_constructor_symbol()
 {
-	const std::uint32_t handle = absorb_value<std::uint32_t>(m_code, m_ip, m_end);
-	return resolve_as<ConstructorSymbol>(m_image, handle, SyntaxKind::ConstructorDeclaration);
+	const std::size_t offset = absorb_value<std::size_t>(m_code, m_ip, m_end);
+	return resolve_as<ConstructorSymbol>(m_arena, offset, SyntaxKind::ConstructorDeclaration);
 }

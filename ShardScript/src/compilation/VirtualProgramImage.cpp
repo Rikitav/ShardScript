@@ -2,50 +2,34 @@
 
 using namespace shard;
 
-std::vector<std::byte>& VirtualProgramImage::get_text_section()
+BytecodeSection& VirtualProgramImage::get_text_section()
 {
 	return m_textSection;
 }
 
-const std::vector<std::byte>& VirtualProgramImage::get_text_section() const
+const BytecodeSection& VirtualProgramImage::get_text_section() const
 {
 	return m_textSection;
 }
 
-std::vector<std::byte>& VirtualProgramImage::get_data_section()
+DataSection& VirtualProgramImage::get_data_section()
 {
 	return m_dataSection;
 }
 
-const std::vector<std::byte>& VirtualProgramImage::get_data_section() const
+const DataSection& VirtualProgramImage::get_data_section() const
 {
 	return m_dataSection;
 }
 
-std::uint32_t VirtualProgramImage::intern_symbol(gmt::Ref<SyntaxSymbol> symbol)
+void VirtualProgramImage::register_method(gmt::Ref<MethodSymbol> method)
 {
-	const std::size_t key = symbol.get_offset();
-	const auto existing = m_symbolHandles.find(key);
-	if (existing != m_symbolHandles.end())
-		return existing->second;
-
-	const std::uint32_t handle = static_cast<std::uint32_t>(m_symbols.size());
-	m_symbols.push_back(symbol);
-	m_symbolHandles.emplace(key, handle);
-	return handle;
+	m_methods.push_back(method);
 }
 
-gmt::Ref<SyntaxSymbol> VirtualProgramImage::resolve_symbol(std::uint32_t handle) const
+const std::vector<gmt::Ref<MethodSymbol>>& VirtualProgramImage::get_methods() const
 {
-	if (handle >= m_symbols.size())
-		return gmt::nullref;
-
-	return m_symbols[handle];
-}
-
-const std::vector<gmt::Ref<SyntaxSymbol>>& VirtualProgramImage::get_symbols() const
-{
-	return m_symbols;
+	return m_methods;
 }
 
 void VirtualProgramImage::set_entry_point(gmt::Ref<MethodSymbol> method)
