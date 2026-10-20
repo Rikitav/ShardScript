@@ -28,6 +28,14 @@ namespace shard
 			gmt::inline_vector<gmt::Ref<const ExpressionSyntax>, 4> sites;
 		};
 
+		// copyable snapshot of ExpressionRefs for the memoization cache
+		// (inline_vector is immovable, so the map cannot store it directly)
+		struct CachedExpressionRefs
+		{
+			std::vector<gmt::Ref<SyntaxSymbol>> locals;
+			std::vector<gmt::Ref<const ExpressionSyntax>> sites;
+		};
+
 		class reference_collector;
 
 		struct Frame
@@ -89,9 +97,7 @@ namespace shard
 		std::vector<Frame> m_frameStack;
 		std::vector<WalkedMethod> m_walked;
 		std::unordered_map<gmt::Ref<StructSymbol>, bool> m_scalarCache;
-		std::vector<EscapeLevel> m_previousLevels;
-		std::vector<EscapeChannel> m_previousChannels;
-		std::vector<EscapeChannel> m_previousColdChannels;
+		std::unordered_map<gmt::Ref<const ExpressionSyntax>, CachedExpressionRefs> m_expressionRefs[2];
 		std::vector<std::pair<int, gmt::Ref<const ExpressionSyntax>>> m_coldPoints;
 		int m_nextLoopId = 0;
 		int m_inDefer = 0;
