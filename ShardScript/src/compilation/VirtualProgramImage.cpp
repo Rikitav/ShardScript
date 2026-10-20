@@ -22,16 +22,6 @@ const DataSection& VirtualProgramImage::get_data_section() const
 	return m_dataSection;
 }
 
-void VirtualProgramImage::register_method(gmt::Ref<MethodSymbol> method)
-{
-	m_methods.push_back(method);
-}
-
-const std::vector<gmt::Ref<MethodSymbol>>& VirtualProgramImage::get_methods() const
-{
-	return m_methods;
-}
-
 void VirtualProgramImage::set_entry_point(gmt::Ref<MethodSymbol> method)
 {
 	m_entryPoint = method;

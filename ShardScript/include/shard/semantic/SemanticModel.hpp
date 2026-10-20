@@ -2,7 +2,17 @@
 #include <shard/Definitions.hpp>
 
 #include <shard/parsing/SyntaxTree.hpp>
+#include <shard/parsing/nodes/ExpressionSyntax.hpp>
+
 #include <shard/semantic/SymbolTable.hpp>
+#include <shard/semantic/symbols/ConstructorSymbol.hpp>
+#include <shard/semantic/symbols/FieldSymbol.hpp>
+#include <shard/semantic/symbols/GenericTypeSymbol.hpp>
+#include <shard/semantic/symbols/IndexatorSymbol.hpp>
+#include <shard/semantic/symbols/InterfaceSymbol.hpp>
+#include <shard/semantic/symbols/MethodSymbol.hpp>
+#include <shard/semantic/symbols/PropertySymbol.hpp>
+#include <shard/semantic/symbols/TypeParameterSymbol.hpp>
 
 #include <gmt/Ref.hpp>
 
@@ -15,16 +25,6 @@
 
 namespace shard
 {
-	class ExpressionSyntax;
-	class ConstructorSymbol;
-	class FieldSymbol;
-	class GenericTypeSymbol;
-	class IndexatorSymbol;
-	class InterfaceSymbol;
-	class MethodSymbol;
-	class PropertySymbol;
-	class TypeParameterSymbol;
-
 	class SHARD_API SemanticModel
 	{
 		shard::SyntaxTree& m_tree;

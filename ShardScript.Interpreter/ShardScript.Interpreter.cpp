@@ -197,17 +197,17 @@ int main(int argc, char* argv[])
 		if (!flush_diagnostics(diagnostics))
 			return 1;
 
-		if (argShowDecompile)
-		{
-			ProgramDisassembler disassembler;
-			disassembler.disassemble(std::wcout, context.get_program(), context.get_semantic_model().get_table().get_arena());
-			return 0;
-		}
-
-		if (argcScripts != 0)
+		if (argcScripts != 0 && !argShowDecompile)
 			std::wcout << L"warning: script arguments are not supported yet and will be ignored" << std::endl;
 
 		std::unique_ptr<ApplicationDomain> domain = context.compile();
+		if (argShowDecompile)
+		{
+			ProgramDisassembler disassembler(*domain);
+			disassembler.disassemble(std::wcout);
+			return 0;
+		}
+
 		VirtualMachine& machine = domain->get_virtual_machine();
 		machine.run();
 

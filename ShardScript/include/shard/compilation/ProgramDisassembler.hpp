@@ -1,20 +1,34 @@
 #pragma once
 #include <shard/Definitions.hpp>
+#include <shard/ApplicationDomain.hpp>
+
+#include <shard/parsing/SyntaxVisitor.hpp>
 
 #include <ostream>
-
-namespace gmt
-{
-	class Arena;
-}
+#include <vector>
 
 namespace shard
 {
-	class VirtualProgramImage;
-
-	class SHARD_API ProgramDisassembler
+	class SHARD_API ProgramDisassembler final : private SyntaxVisitor
 	{
+		const ApplicationDomain& m_domain;
+		std::vector<gmt::Ref<MethodSymbol>> m_foundMethods;
+
+		template<typename T>
+		gmt::Ref<T> lookup_symbol(const SyntaxNode* node);
+
+		void disassemble_method(std::wostream& out, gmt::Ref<MethodSymbol> method);
+
 	public:
-		void disassemble(std::wostream& out, const VirtualProgramImage& program, const gmt::Arena& arena);
+		ProgramDisassembler(const ApplicationDomain& domain);
+		~ProgramDisassembler() = default;
+
+		void disassemble(std::wostream& out);
+
+		void visit_accessor_declaration(const AccessorDeclarationSyntax* node) override;
+		void visit_constructor_declaration(const ConstructorDeclarationSyntax* node) override;
+		void visit_operator_declaration(const OperatorDeclarationSyntax* node) override;
+		void visit_function_declaration(const FunctionDeclarationSyntax* node) override;
+		void visit_lambda_expression(const LambdaExpressionSyntax* node) override;
 	};
 }
