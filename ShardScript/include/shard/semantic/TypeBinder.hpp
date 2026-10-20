@@ -69,9 +69,6 @@ namespace shard
 		gmt::Ref<NamespaceSymbol> resolve_namespace_type(gmt::Ref<const TypeSyntax> type);
 		gmt::Ref<StructSymbol> resolve_type(gmt::Ref<const TypeSyntax> node);
 
-		bool type_satisfies_constraint(gmt::Ref<StructSymbol> typeArgument, gmt::Ref<StructSymbol> constraint);
-		bool type_implements_interface(gmt::Ref<StructSymbol> typeArgument, gmt::Ref<InterfaceSymbol> interfaceSymbol);
-
 		void bind_expression(gmt::Ref<const ExpressionSyntax> expression);
 		void bind_arguments(gmt::Ref<const ArgumentsListSyntax> arguments);
 

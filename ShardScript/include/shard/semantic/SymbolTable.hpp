@@ -5,6 +5,7 @@
 #include <shard/semantic/StandardTypes.hpp>
 #include <shard/semantic/SymbolInterner.hpp>
 #include <shard/semantic/symbols/ArrayTypeSymbol.hpp>
+#include <shard/semantic/symbols/GenericMethodSymbol.hpp>
 #include <shard/semantic/symbols/GenericTypeSymbol.hpp>
 #include <shard/semantic/symbols/NamespaceSymbol.hpp>
 #include <shard/semantic/symbols/NullableTypeSymbol.hpp>
@@ -41,6 +42,11 @@ namespace shard
 		std::unordered_map<gmt::Ref<const SyntaxNode>, gmt::Ref<SyntaxSymbol>> m_nodeToSymbolMap;
 		std::unordered_map<gmt::Ref<SyntaxSymbol>, gmt::Ref<const SyntaxNode>> m_symbolToNodeMap;
 
+		// inferred or explicit call-site type arguments per invocation node, in
+		// the combined index space (receiver type arguments first, then the
+		// method's own); consumed by the emitter to build instantiations
+		std::unordered_map<gmt::Ref<const SyntaxNode>, std::vector<gmt::Ref<StructSymbol>>> m_nodeTypeArguments;
+
 		// composite symbols registry
 		SymbolInterner m_interner;
 
@@ -73,14 +79,19 @@ namespace shard
 		gmt::Ref<SyntaxSymbol> lookup_symbol(gmt::Ref<const SyntaxNode> node);
 		gmt::Ref<const SyntaxNode> lookup_node(gmt::Ref<SyntaxSymbol> symbol);
 
+		void bind_type_arguments(gmt::Ref<const SyntaxNode> node, std::span<const gmt::Ref<StructSymbol>> typeArguments);
+		std::span<const gmt::Ref<StructSymbol>> lookup_type_arguments(gmt::Ref<const SyntaxNode> node) const;
+
 		gmt::Ref<ArrayTypeSymbol> find_array_type(gmt::Ref<StructSymbol> underlaying) const;
 		gmt::Ref<ArrayTypeSymbol> find_array_type(gmt::Ref<StructSymbol> underlaying, std::size_t size) const;
 		gmt::Ref<GenericTypeSymbol> find_generic_type(gmt::Ref<StructSymbol> underlaying, std::span<const gmt::Ref<StructSymbol>> typeArguments) const;
+		gmt::Ref<GenericMethodSymbol> find_generic_method(gmt::Ref<MethodSymbol> underlaying, std::span<const gmt::Ref<StructSymbol>> typeArguments) const;
 		gmt::Ref<NullableTypeSymbol> find_nullable_type(gmt::Ref<StructSymbol> underlaying) const;
 
 		gmt::Ref<ArrayTypeSymbol> find_or_create_array_type(gmt::Ref<StructSymbol> underlaying);
 		gmt::Ref<ArrayTypeSymbol> find_or_create_array_type(gmt::Ref<StructSymbol> underlaying, std::size_t size);
 		gmt::Ref<GenericTypeSymbol> find_or_create_generic_type(gmt::Ref<StructSymbol> underlaying, std::span<const gmt::Ref<StructSymbol>> typeArguments);
+		gmt::Ref<GenericMethodSymbol> find_or_create_generic_method(gmt::Ref<MethodSymbol> underlaying, std::span<const gmt::Ref<StructSymbol>> typeArguments, gmt::Ref<StructSymbol> returnType);
 		gmt::Ref<NullableTypeSymbol> find_or_create_nullable_type(gmt::Ref<StructSymbol> underlaying);
 
 		gmt::Ref<StructSymbol> get_void_primitive() const;

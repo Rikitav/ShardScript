@@ -76,6 +76,7 @@ namespace shard
 		void set_effects_computed(bool effects_computed);
 
 		bool is_method() const override;
+		virtual bool get_is_generic_instantiation() const;
 		void on_symbol_declared(gmt::Ref<SyntaxSymbol> symbol) override;
 
 	protected:

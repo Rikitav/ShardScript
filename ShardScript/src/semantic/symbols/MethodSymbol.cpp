@@ -104,6 +104,11 @@ bool MethodSymbol::is_method() const
 	return true;
 }
 
+bool MethodSymbol::get_is_generic_instantiation() const
+{
+	return false;
+}
+
 void MethodSymbol::on_symbol_declared(gmt::Ref<SyntaxSymbol> symbol)
 {
 	switch (symbol->get_kind())
