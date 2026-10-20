@@ -126,6 +126,14 @@ std::optional<std::uint16_t> ByteCodeEmitter::slot_of(gmt::Ref<SyntaxSymbol> sym
 			++index;
 		}
 
+		// the implicit receiver parameter is scope-only and never appears in
+		// the method's parameter list; by convention it occupies slot 0
+		bool implicitThis = m_generatingFor->get_linking() == LINK_INSTANCE;
+		implicitThis = implicitThis && symbol->get_name() == L"this";
+		implicitThis = implicitThis && symbol->get_parent() == m_generatingFor;
+		if (implicitThis)
+			return static_cast<std::uint16_t>(0);
+
 		return std::nullopt;
 	}
 
