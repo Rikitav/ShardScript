@@ -1,8 +1,19 @@
 #pragma once
+#include <cstddef>
 #include <cstdint>
+#include <limits>
 
 namespace shard
 {
+	// symbol operands are encoded as raw arena offsets; nullref is a sentinel,
+	// since offset 0 is a valid allocation (the root namespace symbol)
+	inline constexpr std::size_t null_symbol_operand = (std::numeric_limits<std::size_t>::max)();
+
+	// CALL_METHOD_INTO destination slot meaning "the current frame's own
+	// return slot", used to forward a tail call's result into the caller's
+	// chained return storage
+	inline constexpr std::uint16_t ReturnSlotSentinel = 0xFFFF;
+
 	enum class OpCode : std::uint16_t
 	{
 		NOP = 1,
@@ -80,9 +91,4 @@ namespace shard
 		CALL_METHOD_INTO,
 		RETURN_PLACED
 	};
-
-	// CALL_METHOD_INTO destination slot meaning "the current frame's own
-	// return slot", used to forward a tail call's result into the caller's
-	// chained return storage
-	inline constexpr std::uint16_t ReturnSlotSentinel = 0xFFFF;
 }

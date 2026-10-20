@@ -260,7 +260,7 @@ void VirtualMachine::execute_frame(CallStackFrame* frame)
 {
 	gmt::Ref<MethodSymbol> method = frame->get_method();
 	std::size_t start = reinterpret_cast<std::size_t>(method->get_function_pointer());
-	ByteCodeDecoder decoder(m_program, start);
+	ByteCodeDecoder decoder(m_program, m_model.get_table().get_arena(), start);
 
 	while (true)
 	{

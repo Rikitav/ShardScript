@@ -3,6 +3,11 @@
 
 #include <ostream>
 
+namespace gmt
+{
+	class Arena;
+}
+
 namespace shard
 {
 	class VirtualProgramImage;
@@ -10,6 +15,6 @@ namespace shard
 	class SHARD_API ProgramDisassembler
 	{
 	public:
-		void disassemble(std::wostream& out, const VirtualProgramImage& program);
+		void disassemble(std::wostream& out, const VirtualProgramImage& program, const gmt::Arena& arena);
 	};
 }

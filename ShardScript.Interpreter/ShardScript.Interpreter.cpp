@@ -200,7 +200,7 @@ int main(int argc, char* argv[])
 		if (argShowDecompile)
 		{
 			ProgramDisassembler disassembler;
-			disassembler.disassemble(std::wcout, context.get_program());
+			disassembler.disassemble(std::wcout, context.get_program(), context.get_semantic_model().get_table().get_arena());
 			return 0;
 		}
 
