@@ -10,6 +10,7 @@
 
 #include <shard/pragmatic/PlacementVerdict.hpp>
 
+#include <shard/semantic/SemanticModel.hpp>
 #include <shard/semantic/SymbolTable.hpp>
 #include <shard/semantic/symbols/AccessorSymbol.hpp>
 #include <shard/semantic/symbols/ArrayTypeSymbol.hpp>
@@ -41,6 +42,11 @@ void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 				unsupported(*nodeRef, L"indexator without a setter");
 				return;
 			}
+
+			gmt::Ref<StructSymbol> receiverType = indexator->get_previous().is_null() ? gmt::nullref : get_model().get_expression_type(indexator->get_previous());
+			setter = resolve_call_target(*nodeRef, setter, receiverType);
+			if (setter.is_null())
+				return;
 
 			node->get_right().as_ptr()->accept(*this);
 			m_encoder.emit_duplicate();
@@ -211,6 +217,11 @@ void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 			unsupported(*nodeRef, L"property without a setter");
 			return;
 		}
+
+		gmt::Ref<StructSymbol> receiverType = previous.is_null() ? gmt::nullref : get_model().get_expression_type(previous);
+		setter = resolve_call_target(*nodeRef, setter, receiverType);
+		if (setter.is_null())
+			return;
 
 		node->get_right().as_ptr()->accept(*this);
 

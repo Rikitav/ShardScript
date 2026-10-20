@@ -1288,7 +1288,13 @@ void ControlFlowAnalyzer::visit_object_creation_expression(const ObjectExpressio
 		gmt::Ref<ConstructorSymbol> ctor;
 		auto nodeRef = ref_from(node);
 		if (nodeRef.has_value())
-			ctor = lookup_symbol<ConstructorSymbol>(*nodeRef);
+		{
+			// an unresolved constructor (value-initialization) leaves the created
+			// type bound to the node; only real constructors record a call edge
+			gmt::Ref<SyntaxSymbol> bound = get_symbol_table().lookup_symbol(*nodeRef);
+			if (!bound.is_null() && bound->is_method())
+				ctor = bound.as<ConstructorSymbol>();
+		}
 
 		if (!ctor.is_null())
 			record_callee_effects(ctor, node->get_new_token());

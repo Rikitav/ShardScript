@@ -19,6 +19,7 @@
 #include <shard/semantic/symbols/DelegateTypeSymbol.hpp>
 #include <shard/semantic/symbols/FieldSymbol.hpp>
 #include <shard/semantic/symbols/GenericTypeSymbol.hpp>
+#include <shard/semantic/symbols/IndexatorSymbol.hpp>
 #include <shard/semantic/symbols/MethodSymbol.hpp>
 #include <shard/semantic/symbols/NullableTypeSymbol.hpp>
 #include <shard/semantic/symbols/PropertySymbol.hpp>
@@ -432,7 +433,7 @@ ObjectInstance VirtualMachine::invoke_method(gmt::Ref<MethodSymbol> method, std:
 			break;
 	}
 
-	throw std::runtime_error("Method calling convention was 'None'");
+	throw std::runtime_error("Method calling convention was 'None': " + std::string(method->get_name().begin(), method->get_name().end()));
 }
 
 ObjectInstance VirtualMachine::try_invoke_method(gmt::Ref<MethodSymbol> method, std::span<const ObjectInstance> arguments, ObjectInstance& outException)
@@ -1210,18 +1211,69 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 				break;
 			}
 
-			gmt::Ref<StructSymbol> receiverType = receiver.get_shape()->get_base_type();
+			// the eval entry carries the static interface shape; the concrete
+			// type comes from the object's own header when it is heap-backed
+			const TypeShape* receiverShape = receiver.get_shape();
+			if (GarbageCollector::is_heap_pointer(receiver.get_memory()))
+				receiverShape = GarbageCollector::get_header(receiver.get_memory())->shape;
+
+			gmt::Ref<StructSymbol> receiverType = receiverShape->get_base_type();
+			if (!receiverType.is_null() && receiverType->get_kind() == SyntaxKind::GenericType)
+				receiverType = receiverType.as<GenericTypeSymbol>()->get_underlaying_type();
+
+			// the invoked implementation sees the receiver's concrete shape,
+			// not the static interface shape the eval entry was tagged with
+			if (receiverShape != receiver.get_shape())
+				arguments.get_vector()[0] = ObjectInstance(receiverShape, receiver.get_memory());
+
 			gmt::Ref<MethodSymbol> implementation = gmt::nullref;
-			for (gmt::Ref<MethodSymbol> candidate : receiverType->methods)
+
+			// accessors resolve through their owning member: the receiver's
+			// property or indexator that matches the interface member's owner
+			gmt::Ref<const SyntaxSymbol> interfaceOwner = interfaceMethod->get_parent();
+			SyntaxKind interfaceOwnerKind = interfaceOwner.is_null() ? SyntaxKind::Unknown : interfaceOwner->get_kind();
+
+			if (interfaceOwnerKind == SyntaxKind::PropertyDeclaration)
 			{
-				if (candidate.is_null() || candidate->get_name() != interfaceMethod->get_name())
-					continue;
+				gmt::Ref<const PropertySymbol> interfaceProperty = interfaceOwner.as<PropertySymbol>();
+				bool asGetter = interfaceProperty->get_getter() == interfaceMethod;
 
-				if (candidate->get_parameters().size() != interfaceMethod->get_parameters().size())
-					continue;
+				for (gmt::Ref<PropertySymbol> property : receiverType->properties)
+				{
+					if (property.is_null() || property->get_name() != interfaceProperty->get_name())
+						continue;
 
-				implementation = candidate;
-				break;
+					implementation = asGetter ? gmt::Ref<MethodSymbol>(property->get_getter()) : gmt::Ref<MethodSymbol>(property->get_setter());
+					break;
+				}
+			}
+			else if (interfaceOwnerKind == SyntaxKind::IndexatorDeclaration)
+			{
+				gmt::Ref<const IndexatorSymbol> interfaceIndexator = interfaceOwner.as<IndexatorSymbol>();
+				bool asGetter = interfaceIndexator->get_getter() == interfaceMethod;
+
+				for (gmt::Ref<IndexatorSymbol> indexator : receiverType->indexators)
+				{
+					if (indexator.is_null() || indexator->get_parameters().size() != interfaceIndexator->get_parameters().size())
+						continue;
+
+					implementation = asGetter ? gmt::Ref<MethodSymbol>(indexator->get_getter()) : gmt::Ref<MethodSymbol>(indexator->get_setter());
+					break;
+				}
+			}
+			else
+			{
+				for (gmt::Ref<MethodSymbol> candidate : receiverType->methods)
+				{
+					if (candidate.is_null() || candidate->get_name() != interfaceMethod->get_name())
+						continue;
+
+					if (candidate->get_parameters().size() != interfaceMethod->get_parameters().size())
+						continue;
+
+					implementation = candidate;
+					break;
+				}
 			}
 
 			if (implementation.is_null())

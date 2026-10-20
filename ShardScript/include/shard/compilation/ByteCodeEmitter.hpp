@@ -14,6 +14,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <unordered_set>
 #include <vector>
 
 namespace shard
@@ -24,12 +25,15 @@ namespace shard
 	class TypeShape;
 	class SyntaxTree;
 	class MethodSymbol;
+	class GenericMethodSymbol;
+	class AccessorSymbol;
 	class StructSymbol;
 	class FieldSymbol;
 	class VariableSymbol;
 	class ParameterSymbol;
 	class ExpressionSyntax;
 	class StatementSyntax;
+	class StructDeclarationSyntax;
 	class MemberAccessExpressionSyntax;
 	class IdentifierNameTypeSyntax;
 	class IndexatorExpressionSyntax;
@@ -70,6 +74,14 @@ namespace shard
 
 		std::vector<std::pair<gmt::Ref<const LambdaExpressionSyntax>, gmt::Ref<MethodSymbol>>> m_pendingLambdaBodies;
 
+		// generic instantiations are monomorphized: each (open method, concrete
+		// type arguments) pair gets its own emitted body and materialized layout
+		std::vector<gmt::Ref<GenericMethodSymbol>> m_pendingInstantiations;
+		std::unordered_set<std::size_t> m_enqueuedInstantiations;
+		gmt::Ref<GenericMethodSymbol> m_currentInstantiation;
+		std::size_t m_instantiationsCreated = 0;
+		bool m_instantiationLimitReported = false;
+
 		const TypeShape* shape_of(gmt::Ref<StructSymbol> type);
 		std::size_t payload_of(gmt::Ref<StructSymbol> type);
 
@@ -91,7 +103,16 @@ namespace shard
 		void begin_method(gmt::Ref<MethodSymbol> method);
 		void end_method();
 		void emit_body(gmt::Ref<const BlockSyntax> body);
+		void emit_accessor_body(gmt::Ref<AccessorSymbol> symbol);
 		bool method_supported(gmt::Ref<MethodSymbol> method, gmt::Ref<const SyntaxNode> blame);
+
+		gmt::Ref<StructSymbol> substitute_type(gmt::Ref<StructSymbol> type);
+		static gmt::Ref<StructSymbol> owner_type_of(gmt::Ref<MethodSymbol> method);
+		static bool is_generic_definition(gmt::Ref<MethodSymbol> method);
+		gmt::Ref<MethodSymbol> resolve_call_target(gmt::Ref<const SyntaxNode> node, gmt::Ref<MethodSymbol> method, gmt::Ref<StructSymbol> receiverType);
+		bool enqueue_instantiation(gmt::Ref<GenericMethodSymbol> instantiation);
+		void emit_pending_instantiations();
+		void emit_instantiation_body(gmt::Ref<GenericMethodSymbol> instantiation);
 
 		void emit_defer_drain(std::size_t count);
 		void emit_scope_defers();
@@ -110,6 +131,7 @@ namespace shard
 		gmt::Ref<FieldSymbol> capture_field_of(gmt::Ref<SyntaxSymbol> bound) const;
 		void emit_method_call(gmt::Ref<MethodSymbol> method, gmt::Ref<const ExpressionSyntax> receiver, const ArgumentsListSyntax* arguments, bool receiverFirst);
 		void emit_method_call_into(gmt::Ref<MethodSymbol> method, gmt::Ref<const ExpressionSyntax> receiver, const ArgumentsListSyntax* arguments, std::uint16_t slot);
+		bool is_extension_call(gmt::Ref<MethodSymbol> method, gmt::Ref<const ExpressionSyntax> receiver, const ArgumentsListSyntax* arguments);
 		gmt::Ref<MethodSymbol> into_call_method(gmt::Ref<const ExpressionSyntax> expression);
 		void emit_arguments_reversed(const ArgumentsListSyntax* arguments);
 		void emit_object_construction(const ObjectExpressionSyntax* node, std::optional<std::uint16_t> directSlot = std::nullopt);
@@ -131,6 +153,7 @@ namespace shard
 		void visit_operator_declaration(const OperatorDeclarationSyntax* node) override;
 		void visit_constructor_declaration(const ConstructorDeclarationSyntax* node) override;
 		void visit_accessor_declaration(const AccessorDeclarationSyntax* node) override;
+		void visit_struct_declaration(const StructDeclarationSyntax* node) override;
 		void visit_lambda_expression(const LambdaExpressionSyntax* node) override;
 
 		void visit_statements_block(const StatementsBlockSyntax* node) override;

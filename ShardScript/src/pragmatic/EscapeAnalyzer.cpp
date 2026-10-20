@@ -661,13 +661,28 @@ void EscapeAnalyzer::visit_invokation_expression(const InvokationExpressionSynta
 		instanceCallee = instanceCallee && callee->get_linking() == LINK_INSTANCE;
 
 		gmt::Ref<const ExpressionSyntax> receiver = node->get_previous();
+		gmt::Ref<const ArgumentsListSyntax> arguments = node->get_arguments();
+
+		// extension shape: a bound static callee with one more parameter than
+		// explicit arguments consumes the receiver as its first parameter
+		bool extensionCallee = !callee.is_null();
+		extensionCallee = extensionCallee && callee->get_linking() == LINK_STATIC;
+		extensionCallee = extensionCallee && !receiver.is_null();
+		if (extensionCallee)
+		{
+			gmt::Ref<StructSymbol> receiverType = get_model().get_expression_type(receiver);
+			std::size_t explicitArguments = arguments.is_null() ? 0 : arguments->get_arguments().as_span().size();
+			extensionCallee = !receiverType.is_null();
+			extensionCallee = extensionCallee && callee->get_parameters().size() == explicitArguments + 1;
+		}
+
 		if (!receiver.is_null())
 		{
 			expose_expression(receiver, argumentLevel, EscapeChannel::UnknownCallee, true);
 
 			if (knownConcrete)
 			{
-				if (instanceCallee)
+				if (instanceCallee || extensionCallee)
 					record_call_exposure(receiver, callee, 0, true);
 			}
 			else
@@ -689,10 +704,9 @@ void EscapeAnalyzer::visit_invokation_expression(const InvokationExpressionSynta
 			}
 		}
 
-		gmt::Ref<const ArgumentsListSyntax> arguments = node->get_arguments();
 		if (!arguments.is_null())
 		{
-			const std::uint16_t parameterOffset = instanceCallee ? 1 : 0;
+			const std::uint16_t parameterOffset = (instanceCallee || extensionCallee) ? 1 : 0;
 			const auto argumentNodes = arguments->get_arguments().as_span();
 
 			for (std::size_t i = 0; i < argumentNodes.size(); ++i)
