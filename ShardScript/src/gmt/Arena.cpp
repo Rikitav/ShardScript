@@ -1,6 +1,7 @@
 #include <gmt/Arena.hpp>
 
 #include <mimalloc.h>
+#include <cstdlib>
 
 using namespace gmt;
 
@@ -19,12 +20,22 @@ Arena::~Arena()
 		it->destroy(resolve(it->offset));
 
 	for (std::byte* chunk : m_chunks)
+	{
+#ifdef GMT_ARENA_NO_MIMALLOC
+		::free(chunk);
+#else
 		mi_free(chunk);
+#endif
+	}
 }
 
 void* Arena::allocate(std::size_t bytes)
 {
+#ifdef GMT_ARENA_NO_MIMALLOC
+	return ::malloc(bytes);
+#else
 	return mi_malloc(bytes);
+#endif
 }
 
 void Arena::grow(std::size_t required)
