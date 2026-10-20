@@ -17,7 +17,16 @@
 
 #include <algorithm>
 #include <cstring>
+#include <cstdlib>
 #include <stdexcept>
+
+#ifdef SHARD_GC_NO_MIMALLOC
+	#define gc_malloc ::malloc
+	#define gc_free ::free
+#else
+	#define gc_malloc mi_zalloc
+	#define gc_free mi_free
+#endif
 
 using namespace shard;
 
@@ -55,7 +64,7 @@ ObjectInstance GarbageCollector::allocate_block(const TypeShape* shape, std::siz
 	if (m_allocatedSinceCollection >= m_collectionThreshold)
 		collect();
 
-	GcHeader* header = static_cast<GcHeader*>(mi_zalloc(sizeof(GcHeader) + payloadBytes));
+	GcHeader* header = static_cast<GcHeader*>(gc_malloc(sizeof(GcHeader) + payloadBytes));
 	header->magic = Magic;
 	header->shape = shape;
 	header->marked = 0;
@@ -130,7 +139,7 @@ ObjectInstance GarbageCollector::get_static_storage(gmt::Ref<FieldSymbol> field)
 
 	StaticStorage storage;
 	storage.shape = shape;
-	storage.storage = static_cast<std::byte*>(mi_zalloc(bytes));
+	storage.storage = static_cast<std::byte*>(gc_malloc(bytes));
 	m_statics.emplace(key, storage);
 
 	return ObjectInstance(shape, storage.storage);
@@ -261,7 +270,7 @@ void GarbageCollector::sweep()
 		GcHeader* header = get_header(*choice);
 		if (header->marked == 0)
 		{
-			mi_free(header);
+			gc_free(header);
 			choice = m_heap.erase(choice);
 			continue;
 		}
@@ -313,12 +322,12 @@ void GarbageCollector::collect()
 void GarbageCollector::terminate()
 {
 	for (std::byte* payload : m_heap)
-		mi_free(get_header(payload));
+		gc_free(get_header(payload));
 
 	m_heap.clear();
 
 	for (auto& [key, storage] : m_statics)
-		mi_free(storage.storage);
+		gc_free(storage.storage);
 
 	m_statics.clear();
 	m_internedStrings.clear();

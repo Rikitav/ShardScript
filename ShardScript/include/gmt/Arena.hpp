@@ -91,7 +91,12 @@ namespace gmt
 
 		std::size_t aligned = align_up(m_cursor, alignof(T));
 		if (aligned + sizeof(T) > m_capacity)
-			grow(aligned + sizeof(T));
+		{
+			grow(m_capacity + sizeof(T));
+			// the object must not straddle a chunk boundary: the tail of the
+			// previous chunk stays unused and the object lands in the new chunk
+			aligned = align_up(m_chunkBases.back(), alignof(T));
+		}
 
 		static_cast<void>(new (resolve(aligned)) T(std::forward<Args>(args)...));
 		m_cursor = aligned + sizeof(T);
@@ -116,7 +121,11 @@ namespace gmt
 
 		std::size_t aligned = align_up(m_cursor, alignof(T));
 		if (aligned + count * sizeof(T) > m_capacity)
-			grow(aligned + count * sizeof(T));
+		{
+			grow(m_capacity + count * sizeof(T));
+			// see emplace: arrays must not straddle a chunk boundary either
+			aligned = align_up(m_chunkBases.back(), alignof(T));
+		}
 
 		Span<T> span(*this, static_cast<std::uint32_t>(aligned), static_cast<std::uint32_t>(count));
 		m_cursor = aligned + count * sizeof(T);

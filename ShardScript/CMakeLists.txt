@@ -98,5 +98,10 @@ if(ENABLE_ASAN)
     elseif(MSVC)
         target_compile_options(${PROJECT_NAME} PRIVATE /fsanitize=address)
     endif()
+
+    target_compile_definitions(${PROJECT_NAME} PRIVATE
+        "GMT_ARENA_NO_MIMALLOC"
+        "SHARD_GC_NO_MIMALLOC"
+    )
 endif()
 
