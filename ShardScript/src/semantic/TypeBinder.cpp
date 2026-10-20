@@ -130,8 +130,17 @@ void TypeBinder::bind_expression(gmt::Ref<const ExpressionSyntax> expression)
 
 		case SyntaxKind::InvokationExpression:
 		{
-			bind_expression(expression.as<InvokationExpressionSyntax>()->get_previous());
-			bind_arguments(expression.as<InvokationExpressionSyntax>()->get_arguments());
+			gmt::Ref<const InvokationExpressionSyntax> invocation = expression.as<InvokationExpressionSyntax>();
+			bind_expression(invocation->get_previous());
+
+			gmt::Ref<const TypeArgumentsListSyntax> typeArguments = invocation->get_type_arguments();
+			if (!typeArguments.is_null())
+			{
+				for (const gmt::Ref<TypeSyntax>& argument : typeArguments->get_types().as_span())
+					argument.as_ptr()->accept(*this);
+			}
+
+			bind_arguments(invocation->get_arguments());
 			break;
 		}
 
@@ -957,43 +966,6 @@ void TypeBinder::visit_nullable_type(const NullableTypeSyntax* node)
 		m_factory.create_nullable_type(*nodeRef, underlaying);
 }
 
-bool TypeBinder::type_implements_interface(gmt::Ref<StructSymbol> typeArgument, gmt::Ref<InterfaceSymbol> interfaceSymbol)
-{
-	if (typeArgument.is_null() || interfaceSymbol.is_null())
-		return false;
-
-	for (const gmt::Ref<StructSymbol>& interfaceType : typeArgument->interfaces)
-	{
-		if (interfaceType.is_null())
-			continue;
-
-		if (interfaceType == interfaceSymbol)
-			return true;
-
-		if (interfaceType->get_kind() == SyntaxKind::GenericType &&
-			interfaceType.as<GenericTypeSymbol>()->get_underlaying_type() == interfaceSymbol)
-		{
-			return true;
-		}
-	}
-
-	return false;
-}
-
-bool TypeBinder::type_satisfies_constraint(gmt::Ref<StructSymbol> typeArgument, gmt::Ref<StructSymbol> constraint)
-{
-	if (typeArgument.is_null() || constraint.is_null())
-		return false;
-
-	if (constraint->get_kind() == SyntaxKind::InterfaceDeclaration)
-		return type_implements_interface(typeArgument, constraint.as<InterfaceSymbol>());
-
-	if (constraint->is_type())
-		return typeArgument == constraint;
-
-	return false;
-}
-
 void TypeBinder::visit_generic_type(const GenericTypeSyntax* node)
 {
 	std::optional<gmt::Ref<const GenericTypeSyntax>> nodeRef = ref_from(node);
@@ -1045,7 +1017,7 @@ void TypeBinder::visit_generic_type(const GenericTypeSyntax* node)
 			if (constraint.is_null())
 				continue;
 
-			if (!type_satisfies_constraint(argument, constraint))
+			if (!get_model().type_satisfies_constraint(argument, constraint))
 			{
 				get_diagnostics().report_error(node->get_location(), L"Type argument '" + std::wstring(argument->get_name()) + L"' does not satisfy the constraint '" + std::wstring(constraint->get_name()) + L"' on type parameter '" + std::wstring(typeParameter->get_name()) + L"'");
 			}

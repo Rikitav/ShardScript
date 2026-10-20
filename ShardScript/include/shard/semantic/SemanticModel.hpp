@@ -7,6 +7,7 @@
 #include <gmt/Ref.hpp>
 
 #include <functional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -19,6 +20,7 @@ namespace shard
 	class FieldSymbol;
 	class GenericTypeSymbol;
 	class IndexatorSymbol;
+	class InterfaceSymbol;
 	class MethodSymbol;
 	class PropertySymbol;
 	class TypeParameterSymbol;
@@ -46,11 +48,14 @@ namespace shard
 
 		static bool are_types_equal(gmt::Ref<const StructSymbol> left, gmt::Ref<const StructSymbol> right);
 		bool is_assignable_to(gmt::Ref<const StructSymbol> target, gmt::Ref<const StructSymbol> source) const;
+		bool type_implements_interface(gmt::Ref<StructSymbol> type, gmt::Ref<InterfaceSymbol> interface) const;
+		bool type_satisfies_constraint(gmt::Ref<StructSymbol> typeArgument, gmt::Ref<StructSymbol> constraint) const;
 		bool is_primitive_type(gmt::Ref<const StructSymbol> type) const;
 		bool is_task_or_task_like(gmt::Ref<StructSymbol> type);
 		std::wstring get_type_display_name(gmt::Ref<const StructSymbol> type) const;
 
 		gmt::Ref<StructSymbol> substitute_type(gmt::Ref<StructSymbol> type, gmt::Ref<GenericTypeSymbol> within = gmt::nullref);
+		gmt::Ref<StructSymbol> substitute_type(gmt::Ref<StructSymbol> type, std::span<const gmt::Ref<StructSymbol>> typeArguments);
 		gmt::Ref<StructSymbol> get_field_type(gmt::Ref<FieldSymbol> field, gmt::Ref<GenericTypeSymbol> within = gmt::nullref);
 		gmt::Ref<StructSymbol> get_method_return_type(gmt::Ref<MethodSymbol> method, gmt::Ref<GenericTypeSymbol> within = gmt::nullref);
 		gmt::Ref<StructSymbol> get_property_type(gmt::Ref<PropertySymbol> property, gmt::Ref<GenericTypeSymbol> within = gmt::nullref);

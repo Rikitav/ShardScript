@@ -43,9 +43,7 @@ SymbolTable::SymbolTable()
 	arrayLength->set_getter(arrayLengthGetter);
 	m_array->properties.push_back(arrayLength);
 
-	// lazy integer range sequence, mirrors the upstream ArrayEnumerator layout;
-	// bounds are normalized at creation so inclusive ranges share one layout,
-	// and the runtime wires the native callbacks when a virtual machine exists
+	// lazy integer range sequence
 	gmt::Ref<StructSymbol> rangeEnumerable = m_arena.emplace<StructSymbol>(L"RangeEnumerable", SyntaxKind::StructDeclaration, m_rootNamespace);
 
 	gmt::Ref<FieldSymbol> rangeFromField = m_arena.emplace<FieldSymbol>(L"_from", rangeEnumerable);
@@ -97,9 +95,7 @@ SymbolTable::SymbolTable()
 	set_standard_type(StandardTypes::RangeEnumerable_MoveNext, rangeMoveNext);
 	set_standard_type(StandardTypes::RangeEnumerable_Current_get, rangeCurrentGetter);
 
-	// the for-in iteration contract for index-based collections; conformance
-	// is structural: a type satisfies it by declaring matching members, with
-	// no explicit implementation required
+	// the for-in iteration contract for index-based collections
 	gmt::Ref<InterfaceSymbol> indexable = m_arena.emplace<InterfaceSymbol>(L"IIndexable", m_rootNamespace);
 
 	gmt::Ref<TypeParameterSymbol> indexableT = m_arena.emplace<TypeParameterSymbol>(L"T", indexable);
@@ -110,7 +106,9 @@ SymbolTable::SymbolTable()
 	indexableCount->set_accesibility(ACS_PUBLIC);
 	indexableCount->set_linking(LINK_INSTANCE);
 
-	gmt::Ref<AccessorSymbol> indexableCountGetter = m_arena.emplace<AccessorSymbol>(L"get", indexableCount);
+	// accessor names follow the implementation convention ('get_Count' for
+	// properties, 'get' for indexators): interface dispatch resolves by name
+	gmt::Ref<AccessorSymbol> indexableCountGetter = m_arena.emplace<AccessorSymbol>(L"get_Count", indexableCount);
 	indexableCountGetter->set_return_type(m_integer);
 	indexableCountGetter->set_linking(LINK_INSTANCE);
 	indexableCountGetter->set_accesibility(ACS_PUBLIC);
@@ -132,6 +130,12 @@ SymbolTable::SymbolTable()
 	indexableGetAccessor->set_linking(LINK_INSTANCE);
 	indexableGetAccessor->set_accesibility(ACS_PUBLIC);
 	indexableGetAccessor->set_is_virtual(true);
+
+	// indexator accessors carry their own copy of the index parameters,
+	// mirroring SymbolBuilder<IndexatorSymbol>::add_getter
+	gmt::Ref<ParameterSymbol> indexableGetParam = m_arena.emplace<ParameterSymbol>(L"index", indexableGetAccessor);
+	indexableGetParam->set_type(m_integer);
+	indexableGetAccessor->on_symbol_declared(indexableGetParam);
 
 	indexableIndexator->set_getter(indexableGetAccessor);
 
@@ -170,17 +174,32 @@ gmt::Ref<const SyntaxNode> SymbolTable::lookup_node(gmt::Ref<SyntaxSymbol> symbo
 	return choice->second;
 }
 
+void SymbolTable::bind_type_arguments(gmt::Ref<const SyntaxNode> node, std::span<const gmt::Ref<StructSymbol>> typeArguments)
+{
+	m_nodeTypeArguments[node].assign(typeArguments.begin(), typeArguments.end());
+}
+
+std::span<const gmt::Ref<StructSymbol>> SymbolTable::lookup_type_arguments(gmt::Ref<const SyntaxNode> node) const
+{
+	auto choice = m_nodeTypeArguments.find(node);
+	if (choice == m_nodeTypeArguments.end())
+		return {};
+
+	return choice->second;
+}
+
 namespace
 {
-	// word-key layout: family tag, base type offset, then argument offsets
+	// word-key layout: family tag, base symbol offset, then argument offsets
 	// (generics) or length (sized arrays); the interner copies keys into its
 	// own chunk storage, so stack-built keys are safe to pass
 	constexpr std::uint64_t ArrayFamilyTag = static_cast<std::uint64_t>(SyntaxKind::ArrayType);
 	constexpr std::uint64_t GenericFamilyTag = static_cast<std::uint64_t>(SyntaxKind::GenericType);
 	constexpr std::uint64_t NullableFamilyTag = static_cast<std::uint64_t>(SyntaxKind::NullableType);
+	constexpr std::uint64_t GenericMethodFamilyTag = ~static_cast<std::uint64_t>(0);
 	constexpr std::size_t InlineKeyWords = 8;
 
-	std::uint64_t* make_generic_key(std::uint64_t* inlineKey, std::pmr::vector<std::uint64_t>& spilledKey, gmt::Ref<StructSymbol> underlaying, std::span<const gmt::Ref<StructSymbol>> typeArguments)
+	std::uint64_t* make_generic_key(std::uint64_t* inlineKey, std::pmr::vector<std::uint64_t>& spilledKey, std::uint64_t familyTag, std::size_t underlayingOffset, std::span<const gmt::Ref<StructSymbol>> typeArguments)
 	{
 		const std::size_t count = 2 + typeArguments.size();
 		std::uint64_t* key = inlineKey;
@@ -191,8 +210,8 @@ namespace
 			key = spilledKey.data();
 		}
 
-		key[0] = GenericFamilyTag;
-		key[1] = underlaying.get_offset();
+		key[0] = familyTag;
+		key[1] = underlayingOffset;
 		for (std::size_t i = 0; i < typeArguments.size(); ++i)
 			key[2 + i] = typeArguments[i].get_offset();
 
@@ -220,13 +239,26 @@ gmt::Ref<GenericTypeSymbol> SymbolTable::find_generic_type(gmt::Ref<StructSymbol
 {
 	std::uint64_t inlineKey[InlineKeyWords];
 	gmt::inline_vector<std::uint64_t, 8> spilledKey;
-	const std::uint64_t* key = make_generic_key(inlineKey, spilledKey.get_vector(), underlaying, typeArguments);
+	const std::uint64_t* key = make_generic_key(inlineKey, spilledKey.get_vector(), GenericFamilyTag, underlaying.get_offset(), typeArguments);
 
 	gmt::Ref<SyntaxSymbol> symbol = m_interner.find(key, static_cast<std::uint16_t>(2 + typeArguments.size()));
 	if (symbol.is_null() || symbol->get_kind() != SyntaxKind::GenericType)
 		return gmt::nullref;
 
 	return symbol.as<GenericTypeSymbol>();
+}
+
+gmt::Ref<GenericMethodSymbol> SymbolTable::find_generic_method(gmt::Ref<MethodSymbol> underlaying, std::span<const gmt::Ref<StructSymbol>> typeArguments) const
+{
+	std::uint64_t inlineKey[InlineKeyWords];
+	gmt::inline_vector<std::uint64_t, 8> spilledKey;
+	const std::uint64_t* key = make_generic_key(inlineKey, spilledKey.get_vector(), GenericMethodFamilyTag, underlaying.get_offset(), typeArguments);
+
+	gmt::Ref<SyntaxSymbol> symbol = m_interner.find(key, static_cast<std::uint16_t>(2 + typeArguments.size()));
+	if (symbol.is_null())
+		return gmt::nullref;
+
+	return symbol.as<GenericMethodSymbol>();
 }
 
 gmt::Ref<ArrayTypeSymbol> SymbolTable::find_or_create_array_type(gmt::Ref<StructSymbol> underlaying)
@@ -262,7 +294,35 @@ gmt::Ref<GenericTypeSymbol> SymbolTable::find_or_create_generic_type(gmt::Ref<St
 
 	std::uint64_t inlineKey[InlineKeyWords];
 	gmt::inline_vector<std::uint64_t, 8> spilledKey;
-	const std::uint64_t* key = make_generic_key(inlineKey, spilledKey.get_vector(), underlaying, typeArguments);
+	const std::uint64_t* key = make_generic_key(inlineKey, spilledKey.get_vector(), GenericFamilyTag, underlaying.get_offset(), typeArguments);
+
+	m_interner.insert(key, static_cast<std::uint16_t>(2 + typeArguments.size()), symbol);
+	return symbol;
+}
+
+gmt::Ref<GenericMethodSymbol> SymbolTable::find_or_create_generic_method(gmt::Ref<MethodSymbol> underlaying, std::span<const gmt::Ref<StructSymbol>> typeArguments, gmt::Ref<StructSymbol> returnType)
+{
+	gmt::Ref<GenericMethodSymbol> existing = find_generic_method(underlaying, typeArguments);
+	if (!existing.is_null())
+		return existing;
+
+	gmt::Ref<const SyntaxSymbol> parent = underlaying->get_parent();
+	gmt::Ref<GenericMethodSymbol> symbol = m_arena.emplace<GenericMethodSymbol>(underlaying, gmt::Ref<SyntaxSymbol>(m_arena, parent.get_offset()));
+	symbol->set_type_arguments(typeArguments);
+	symbol->set_return_type(returnType);
+	symbol->set_is_virtual(underlaying->get_is_virtual());
+	symbol->set_is_async(underlaying->get_is_async());
+	symbol->set_linking(underlaying->get_linking());
+	symbol->set_accesibility(underlaying->get_accesibility());
+
+	// parameter symbols stay shared with the open method: the call protocol
+	// only needs their count and order, types substitute per instantiation
+	for (gmt::Ref<ParameterSymbol> parameter : underlaying->get_parameters())
+		symbol->on_symbol_declared(parameter);
+
+	std::uint64_t inlineKey[InlineKeyWords];
+	gmt::inline_vector<std::uint64_t, 8> spilledKey;
+	const std::uint64_t* key = make_generic_key(inlineKey, spilledKey.get_vector(), GenericMethodFamilyTag, underlaying.get_offset(), typeArguments);
 
 	m_interner.insert(key, static_cast<std::uint16_t>(2 + typeArguments.size()), symbol);
 	return symbol;
