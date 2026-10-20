@@ -1429,9 +1429,11 @@ gmt::Ref<GenericTypeSyntax> SourceParser::read_generic_type(SourceProvider& read
 	return generic;
 }
 
-bool SourceParser::scan_generic_type_arguments(SourceProvider& reader)
+int SourceParser::scan_type_argument_list_end(SourceProvider& reader)
 {
-	// current token is the opening '<'; peek(offset - 1) is the token right after it
+	// current token is the opening '<'; returns the reader.peek offset of the
+	// token right after the matching '>', or -1 when the tokens ahead do not
+	// form a type argument list
 	int depth = 1;
 	int offset = 1;
 
@@ -1446,18 +1448,18 @@ bool SourceParser::scan_generic_type_arguments(SourceProvider& reader)
 			++offset;
 			continue;
 		}
-		
+
 		if (type == TokenType::GreaterOperator || type == TokenType::RightShiftOperator)
 		{
 			// '>>' closes two levels at once
 			depth -= (type == TokenType::RightShiftOperator) ? 2 : 1;
 			if (depth <= 0)
-				return detail::can_follow_type(reader.peek(offset).get_type());
+				return offset;
 
 			++offset;
 			continue;
 		}
-		
+
 		if (is_valid_generic_type_token(type) || is_predefined_type(type))
 		{
 			// valid inside a type argument list
@@ -1465,10 +1467,22 @@ bool SourceParser::scan_generic_type_arguments(SourceProvider& reader)
 			continue;
 		}
 
-		return false;
+		return -1;
 	}
 
-	return false;
+	return -1;
+}
+
+bool SourceParser::scan_generic_type_arguments(SourceProvider& reader)
+{
+	int end = scan_type_argument_list_end(reader);
+	return end > 0 && detail::can_follow_type(reader.peek(end).get_type());
+}
+
+bool SourceParser::scan_generic_invokation(SourceProvider& reader)
+{
+	int end = scan_type_argument_list_end(reader);
+	return end > 0 && reader.peek(end).get_type() == TokenType::OpenCurl;
 }
 
 gmt::Ref<ParameterSyntax> SourceParser::read_parameter(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
@@ -1576,6 +1590,35 @@ gmt::Ref<ParametersListSyntax> SourceParser::read_indexer_parameters(SourceProvi
 	return syntax;
 }
 
+gmt::Ref<ParameterSyntax> SourceParser::read_lambda_parameter(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
+{
+	gmt::Arena& arena = m_syntaxTree.get_arena();
+	auto syntax = arena.emplace<ParameterSyntax>(parent);
+
+	if (try_match_identifier(reader, 3))
+	{
+		syntax->set_identifier(reader.current());
+		reader.consume();
+	}
+	else
+	{
+		syntax->set_identifier(SyntaxToken(TokenType::Identifier, L"", TextLocation(), true));
+	}
+
+	// lambda parameters may omit the type clause: the expression binder
+	// infers it from the delegate type the lambda is bound against
+	if (!reader.can_consume() || reader.current().get_type() != TokenType::Colon)
+		return syntax;
+
+	reader.consume(); // consume ':'
+	syntax->set_type(read_type(reader, syntax));
+
+	if (syntax->get_type().is_null())
+		m_diagnostics.report_error(reader.current(), L"Expected type after ':'");
+
+	return syntax;
+}
+
 gmt::Ref<ParametersListSyntax> SourceParser::read_lambda_parameters(SourceProvider& reader, gmt::Ref<SyntaxNode> parent)
 {
 	gmt::Arena& arena = m_syntaxTree.get_arena();
@@ -1594,7 +1637,7 @@ gmt::Ref<ParametersListSyntax> SourceParser::read_lambda_parameters(SourceProvid
 	{
 		while (reader.can_consume())
 		{
-			gmt::Ref<ParameterSyntax> parameter = read_parameter(reader, syntax);
+			gmt::Ref<ParameterSyntax> parameter = read_lambda_parameter(reader, syntax);
 			if (!parameter.is_null())
 				parameters.push_back(parameter);
 
@@ -2471,14 +2514,14 @@ gmt::Ref<ExpressionSyntax> SourceParser::read_operand(SourceProvider& reader, gm
 		case TokenType::NumberLiteral:
 		case TokenType::DoubleLiteral:
 		case TokenType::ByteLiteral:
-			return read_literal_expression(reader, parent);
+			return read_linked_expression(reader, parent, read_literal_expression(reader, parent));
 
 		case TokenType::OpenCurl: // parenthesized grouping
 		{
 			reader.consume();
 			gmt::Ref<ExpressionSyntax> inner = read_expression(reader, parent, 0);
 			expect(reader, TokenType::CloseCurl, L"Expected ')'");
-			return inner;
+			return read_linked_expression(reader, parent, inner);
 		}
 
 		case TokenType::AwaitKeyword:
@@ -2488,10 +2531,10 @@ gmt::Ref<ExpressionSyntax> SourceParser::read_operand(SourceProvider& reader, gm
 			return read_if_expression(reader, parent);
 
 		case TokenType::OpenSquare: // collection expression '[1, 2, 3]'
-			return read_collection_expression(reader, parent);
+			return read_linked_expression(reader, parent, read_collection_expression(reader, parent));
 
 		case TokenType::NewKeyword: // object creation 'new T(args)'
-			return read_object_expression(reader, parent);
+			return read_linked_expression(reader, parent, read_object_expression(reader, parent));
 
 		case TokenType::PipeOperator: // lambda '|args| => expr' / '|args| { }' - at operand position '|' can only be a lambda parameter list
 			return read_lambda_expression(reader, parent);
@@ -2516,7 +2559,7 @@ gmt::Ref<ExpressionSyntax> SourceParser::read_operand(SourceProvider& reader, gm
 	return gmt::nullref;
 }
 
-gmt::Ref<InvokationExpressionSyntax> SourceParser::read_invokation_expression(SourceProvider& reader, gmt::Ref<SyntaxNode> parent, gmt::Ref<ExpressionSyntax> previous, const SyntaxToken& identifier, const SyntaxToken& delimeter)
+gmt::Ref<InvokationExpressionSyntax> SourceParser::read_invokation_expression(SourceProvider& reader, gmt::Ref<SyntaxNode> parent, gmt::Ref<ExpressionSyntax> previous, const SyntaxToken& identifier, const SyntaxToken& delimeter, gmt::Ref<TypeArgumentsListSyntax> typeArguments)
 {
 	gmt::Arena& arena = m_syntaxTree.get_arena();
 	auto invocation = arena.emplace<InvokationExpressionSyntax>(parent);
@@ -2524,6 +2567,7 @@ gmt::Ref<InvokationExpressionSyntax> SourceParser::read_invokation_expression(So
 	invocation->set_previous(previous);
 	invocation->set_identifier(identifier);
 	invocation->set_delimeter_token(delimeter);
+	invocation->set_type_arguments(typeArguments);
 	invocation->set_arguments(read_arguments_list(reader, invocation));
 	return invocation;
 }
@@ -2708,6 +2752,14 @@ gmt::Ref<ExpressionSyntax> SourceParser::read_linked_expression(SourceProvider& 
 
 				reader.consume();
 
+				if (reader.can_consume() && reader.current().get_type() == TokenType::LessOperator && scan_generic_invokation(reader))
+				{
+					// 'a.b<T>(...)' - explicit type arguments on the invocation
+					gmt::Ref<TypeArgumentsListSyntax> typeArguments = read_type_arguments_list(reader, parent);
+					expression = read_invokation_expression(reader, parent, expression, memberName, delimeter, typeArguments);
+					break;
+				}
+
 				if (reader.can_consume() && reader.current().get_type() == TokenType::OpenCurl)
 				{
 					// 'a.b(...)' - the invocation absorbs the member name
@@ -2729,6 +2781,7 @@ gmt::Ref<ExpressionSyntax> SourceParser::read_linked_expression(SourceProvider& 
 			{
 				SyntaxToken identifier(TokenType::Identifier, L"", TextLocation(), true);
 				gmt::Ref<ExpressionSyntax> receiver = expression;
+				gmt::Ref<TypeArgumentsListSyntax> typeArguments = gmt::nullref;
 
 				ExpressionSyntax* raw = expression.as_ptr();
 				if (raw->get_kind() == SyntaxKind::IdentifierNameType)
@@ -2740,8 +2793,28 @@ gmt::Ref<ExpressionSyntax> SourceParser::read_linked_expression(SourceProvider& 
 				{
 					identifier = static_cast<QualifiedNameTypeSyntax*>(raw)->get_identifier();
 				}
+				else if (raw->get_kind() == SyntaxKind::GenericType)
+				{
+					// 'foo<T>(...)' / 'ns::foo<T>(...)' - the operand scanned as a
+					// generic type; reinterpret it as an invocation with explicit
+					// type arguments
+					GenericTypeSyntax* generic = static_cast<GenericTypeSyntax*>(raw);
+					typeArguments = gmt::Ref<TypeArgumentsListSyntax>(arena, generic->get_type_arguments().get_offset());
 
-				expression = read_invokation_expression(reader, parent, receiver, identifier, SyntaxToken());
+					const TypeSyntax* underlaying = generic->get_underlaying_type().as_ptr();
+					if (underlaying->get_kind() == SyntaxKind::IdentifierNameType)
+					{
+						identifier = static_cast<const IdentifierNameTypeSyntax*>(underlaying)->get_identifier();
+						receiver = gmt::nullref;
+					}
+					else if (underlaying->get_kind() == SyntaxKind::QualifiedNameType)
+					{
+						identifier = static_cast<const QualifiedNameTypeSyntax*>(underlaying)->get_identifier();
+						receiver = gmt::Ref<ExpressionSyntax>(arena, generic->get_underlaying_type().get_offset());
+					}
+				}
+
+				expression = read_invokation_expression(reader, parent, receiver, identifier, SyntaxToken(), typeArguments);
 				break;
 			}
 

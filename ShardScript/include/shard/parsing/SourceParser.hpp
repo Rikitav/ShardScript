@@ -156,7 +156,9 @@ namespace shard
 		bool matches(SourceProvider& reader, std::initializer_list<TokenType> types);
 		bool try_match(SourceProvider& reader, std::initializer_list<TokenType> types, const wchar_t* errorMessage, int maxSkips = 5);
 		bool try_match_identifier(SourceProvider& reader, int maxSkips = 5);
+		int scan_type_argument_list_end(SourceProvider& reader);
 		bool scan_generic_type_arguments(SourceProvider& reader);
+		bool scan_generic_invokation(SourceProvider& reader);
 		void reject_generic_type_parameters(SourceProvider& reader, const wchar_t* message);
 		bool skip_towards(SourceProvider& reader, std::initializer_list<TokenType> expectedTokens, int maxSkips);
 		bool try_synchronize(SourceProvider& reader);
@@ -188,6 +190,7 @@ namespace shard
 
 		// Parameters & Lists
 		gmt::Ref<ParameterSyntax> read_parameter(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
+		gmt::Ref<ParameterSyntax> read_lambda_parameter(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 		gmt::Ref<ParametersListSyntax> read_method_parameters(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 		gmt::Ref<ParametersListSyntax> read_indexer_parameters(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 		gmt::Ref<ParametersListSyntax> read_lambda_parameters(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
@@ -236,7 +239,7 @@ namespace shard
 		gmt::Ref<LambdaExpressionSyntax> read_lambda_expression(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 		gmt::Ref<ExpressionSyntax> read_linked_expression(SourceProvider& reader, gmt::Ref<SyntaxNode> parent, gmt::Ref<ExpressionSyntax> previous);
 		gmt::Ref<ArgumentsListSyntax> read_indexer_arguments_list(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
-		gmt::Ref<InvokationExpressionSyntax> read_invokation_expression(SourceProvider& reader, gmt::Ref<SyntaxNode> parent, gmt::Ref<ExpressionSyntax> previous, const SyntaxToken& identifier, const SyntaxToken& delimeter);
+		gmt::Ref<InvokationExpressionSyntax> read_invokation_expression(SourceProvider& reader, gmt::Ref<SyntaxNode> parent, gmt::Ref<ExpressionSyntax> previous, const SyntaxToken& identifier, const SyntaxToken& delimeter, gmt::Ref<TypeArgumentsListSyntax> typeArguments = gmt::nullref);
 
 		gmt::Ref<AttributeSyntax> read_attribute(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);
 		gmt::Ref<AttributesListSyntax> read_attributes_list(SourceProvider& reader, gmt::Ref<SyntaxNode> parent);

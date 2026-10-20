@@ -539,9 +539,11 @@ bool LexicalAnalyzer::read_number_literal(std::wstring& word, TokenType& type)
 				break;
 
 			wchar_t afterDot;
-			if (!m_sourceText->peek_next(afterDot) || !IsNumberSymbol(afterDot))
+			if (!m_sourceText->peek_next(afterDot) || afterDot < L'0' || afterDot > L'9')
 			{
-				// The dot does not start a fractional part (e.g. range operator ".."), o put it back for the next token.
+				// The dot does not start a fractional part (a range operator
+				// '..' or member access '11.ToString'), so put it back for
+				// the next token.
 				m_hasPutbackSymbol = true;
 				m_putbackSymbol = L'.';
 				m_offset -= 1;

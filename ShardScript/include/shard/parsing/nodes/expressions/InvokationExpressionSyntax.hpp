@@ -6,6 +6,7 @@
 
 #include <shard/parsing/nodes/ExpressionSyntax.hpp>
 #include <shard/parsing/nodes/lists/ArgumentsListSyntax.hpp>
+#include <shard/parsing/nodes/lists/TypeArgumentsListSyntax.hpp>
 
 #include <gmt/Ref.hpp>
 
@@ -16,6 +17,7 @@ namespace shard
 		gmt::Ref<ExpressionSyntax> m_previous;
 		SyntaxToken m_delimeterToken;
 		SyntaxToken m_identifierToken;
+		gmt::Ref<TypeArgumentsListSyntax> m_typeArguments;
 		gmt::Ref<ArgumentsListSyntax> m_arguments;
 
 	public:
@@ -25,11 +27,13 @@ namespace shard
 		gmt::Ref<const ExpressionSyntax> get_previous() const;
 		SyntaxToken get_delimeter_token() const;
 		SyntaxToken get_identifier() const;
+		gmt::Ref<const TypeArgumentsListSyntax> get_type_arguments() const;
 		gmt::Ref<const ArgumentsListSyntax> get_arguments() const;
 
 		void set_previous(gmt::Ref<ExpressionSyntax> previous);
 		void set_delimeter_token(const SyntaxToken& token);
 		void set_identifier(const SyntaxToken& token);
+		void set_type_arguments(gmt::Ref<TypeArgumentsListSyntax> typeArguments);
 		void set_arguments(gmt::Ref<ArgumentsListSyntax> arguments);
 
 		TextLocation get_location() const override;

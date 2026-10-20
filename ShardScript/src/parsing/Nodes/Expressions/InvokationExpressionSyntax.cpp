@@ -28,6 +28,11 @@ gmt::Ref<const ArgumentsListSyntax> InvokationExpressionSyntax::get_arguments() 
 	return m_arguments;
 }
 
+gmt::Ref<const TypeArgumentsListSyntax> InvokationExpressionSyntax::get_type_arguments() const
+{
+	return m_typeArguments;
+}
+
 void InvokationExpressionSyntax::set_previous(gmt::Ref<ExpressionSyntax> previous)
 {
 	m_previous = previous;
@@ -41,6 +46,11 @@ void InvokationExpressionSyntax::set_delimeter_token(const SyntaxToken& token)
 void InvokationExpressionSyntax::set_identifier(const SyntaxToken& token)
 {
 	m_identifierToken = token;
+}
+
+void InvokationExpressionSyntax::set_type_arguments(gmt::Ref<TypeArgumentsListSyntax> typeArguments)
+{
+	m_typeArguments = typeArguments;
 }
 
 void InvokationExpressionSyntax::set_arguments(gmt::Ref<ArgumentsListSyntax> arguments)
