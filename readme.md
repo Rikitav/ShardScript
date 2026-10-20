@@ -15,6 +15,8 @@ Rewrite progression :
 - [x] Type binding
 - [x] Expression binding
 - [x] Control and Data flow analysis
+- [x] Generics inference
+- [x] Lambda args inference
 - [x] HUGE MILESTONE: Semantic analysis
 - [x] NEW: Escape analysis
 - [x] NEW: Scalar analysis
@@ -27,6 +29,8 @@ Rewrite progression :
 - [x] Instance creation and Garbage collection
 - [x] Primitive math
 - [x] Virtual machine and method invokation
+- [x] Symbol building
+- [x] CallState 
 - [ ] ...
 
 **ShardScript** is an embeddable, scripting, compiled, programming language with strict static typing, developed in C++. The project features a custom lexer/parser, semantic analyzer, bytecode compiler, stack virtual machine, and a standard library framework.
