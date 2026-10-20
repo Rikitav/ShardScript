@@ -154,6 +154,11 @@ std::size_t FrameLayout::resolve_payload(const TypeShape* shape, PlacementVerdic
 	if (verdict == PlacementVerdict::Scalar)
 		return 0; // dematerialized: the layout pass expands the fields into their own slots
 
+	// variable-size heap objects (string, delegates, interfaces) carry no
+	// inlinable payload even under a Stack verdict: pointer storage
+	if (shape->get_size() == 0)
+		return sizeof(void*);
+
 	return shape->get_size();
 }
 
