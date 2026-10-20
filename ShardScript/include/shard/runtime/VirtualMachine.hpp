@@ -1,12 +1,21 @@
 #pragma once
 #include <shard/Definitions.hpp>
 
+#include <shard/semantic/SemanticModel.hpp>
+#include <shard/semantic/SyntaxSymbol.hpp>
+#include <shard/semantic/symbols/MethodSymbol.hpp>
+#include <shard/semantic/symbols/StructSymbol.hpp>
+
+#include <shard/pragmatic/PragmaticModel.hpp>
+
 #include <shard/runtime/CallStackFrame.hpp>
 #include <shard/runtime/GarbageCollector.hpp>
 #include <shard/runtime/ObjectInstance.hpp>
 #include <shard/runtime/PrimitiveMath.hpp>
 
 #include <shard/compilation/OperationCode.hpp>
+#include <shard/compilation/ByteCodeDecoder.hpp>
+#include <shard/compilation/VirtualProgramImage.hpp>
 
 #include <gmt/Ref.hpp>
 
@@ -18,26 +27,20 @@
 
 namespace shard
 {
-	class VirtualProgramImage;
-	class SemanticModel;
-	class PragmaticModel;
-	class MethodSymbol;
-	class StructSymbol;
-	class SyntaxSymbol;
-	class ByteCodeDecoder;
-
 	class SHARD_API VirtualMachine
 	{
 		VirtualProgramImage& m_program;
 		SemanticModel& m_model;
 		PragmaticModel& m_pragmatic;
+
 		GarbageCollector m_collector;
 		PrimitiveShapes m_primitiveShapes;
 
-		CallStackFrame* m_currentFrame = nullptr;
-		ObjectInstance m_unhandledException;
 		bool m_hasUnhandledException = false;
+		ObjectInstance m_unhandledException;
 		ObjectInstance* m_exceptionCapture = nullptr;
+
+		CallStackFrame* m_currentFrame = nullptr;
 		alignas(8) std::byte m_returnScratch[8] = {};
 
 		const TypeShape* resolve_shape(gmt::Ref<StructSymbol> type);

@@ -687,6 +687,13 @@ void TypeBinder::visit_try_statement(const TryStatementSyntax* node)
 		gmt::Ref<StructSymbol> exceptionType = gmt::nullref;		if (!clause->get_exception_type().is_null())
 			exceptionType = resolve_type(clause->get_exception_type());
 
+		if (!exceptionType.is_null())
+		{
+			gmt::Ref<StructSymbol> throwable = get_symbol_table().get_standard_type(StandardTypes::IThrowable).as<StructSymbol>();
+			if (!get_model().is_assignable_to(throwable, exceptionType))
+				get_diagnostics().report_error(clause->get_exception_type()->get_location(), L"Catch type must implement IThrowable");
+		}
+
 		gmt::Ref<VariableSymbol> catchVariable = lookup_symbol<VariableSymbol>(clause);
 		if (!catchVariable.is_null())
 			catchVariable->set_type(exceptionType);

@@ -867,6 +867,28 @@ void ExpressionBinder::visit_try_statement(const TryStatementSyntax* node)
 		visit_catch_clause(clause.as_ptr());
 }
 
+void ExpressionBinder::visit_throw_statement(const ThrowStatementSyntax* node)
+{
+	if (node == nullptr)
+		return;
+
+	gmt::Ref<const ExpressionSyntax> expression = node->get_expression();
+
+	// bare 'throw;' rethrows the in-flight exception
+	if (expression.is_null())
+		return;
+
+	visit_expression(expression);
+
+	gmt::Ref<StructSymbol> thrownType = get_expression_type(expression);
+	if (thrownType.is_null())
+		return;
+
+	gmt::Ref<StructSymbol> throwable = get_symbol_table().get_standard_type(StandardTypes::IThrowable).as<StructSymbol>();
+	if (!get_model().is_assignable_to(throwable, thrownType))
+		get_diagnostics().report_error(expression->get_location(), L"Thrown expression must be assignable to IThrowable");
+}
+
 void ExpressionBinder::visit_catch_clause(const CatchClauseSyntax* node)
 {
 	std::optional<gmt::Ref<const CatchClauseSyntax>> clauseRef = ref_from(node);

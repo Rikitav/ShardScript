@@ -13,6 +13,8 @@
 #include <shard/semantic/symbols/FieldSymbol.hpp>
 #include <shard/semantic/symbols/StructSymbol.hpp>
 
+#include <cstring>
+
 #include <mimalloc.h>
 
 #include <algorithm>
@@ -72,6 +74,11 @@ ObjectInstance GarbageCollector::allocate_block(const TypeShape* shape, std::siz
 
 	std::byte* payload = reinterpret_cast<std::byte*>(header + 1);
 	m_heap.insert(payload);
+
+	// the instance is GC-visible from here on: zero the payload so marking
+	// never chases garbage pointers from not-yet-assigned reference slots
+	std::memset(payload, 0, payloadBytes);
+
 	m_allocatedSinceCollection += sizeof(GcHeader) + payloadBytes;
 
 	++m_totalAllocations;

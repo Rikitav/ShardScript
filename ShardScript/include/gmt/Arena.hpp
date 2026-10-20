@@ -92,9 +92,9 @@ namespace gmt
 		std::size_t aligned = align_up(m_cursor, alignof(T));
 		if (aligned + sizeof(T) > m_capacity)
 		{
-			grow(m_capacity + sizeof(T));
 			// the object must not straddle a chunk boundary: the tail of the
 			// previous chunk stays unused and the object lands in the new chunk
+			grow(m_capacity + sizeof(T));
 			aligned = align_up(m_chunkBases.back(), alignof(T));
 		}
 
