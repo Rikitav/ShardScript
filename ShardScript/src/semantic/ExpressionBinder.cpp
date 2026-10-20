@@ -108,6 +108,11 @@ void ExpressionBinder::visit_translation_unit(const TranslationUnitSyntax* node)
 	for (const gmt::Ref<MemberDeclarationSyntax>& member : node->get_members().as_span())
 		member->accept(*this);
 
+	// lambdas still pending at this point never met an inferring point:
+	// strict typing requires an explicit signature or a target delegate type
+	for (gmt::Ref<const LambdaExpressionSyntax> pending : m_pendingLambdas)
+		get_diagnostics().report_error(pending->get_location(), L"Cannot infer lambda parameter types: specify parameter types explicitly or provide a target delegate type");
+
 	if (node->has_namespace())
 		pop_scope();
 
@@ -842,8 +847,8 @@ void ExpressionBinder::visit_for_in_statement(const ForInStatementSyntax* node)
 
 	if (!variable.is_null())
 	{
-		get_current_scope()->declare_symbol(variable);
 		push_scope(variable);
+		get_current_scope()->declare_symbol(variable);
 	}
 
 	if (!node->get_block().is_null())

@@ -32,12 +32,12 @@ void DelegateTypeSymbol::set_parameters(const std::vector<gmt::Ref<ParameterSymb
 
 const std::vector<gmt::Ref<TypeParameterSymbol>>& DelegateTypeSymbol::get_type_parameters() const
 {
-	return m_typeParameters;
+	return type_parameters;
 }
 
 void DelegateTypeSymbol::set_type_parameters(const std::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters)
 {
-	m_typeParameters = typeParameters;
+	type_parameters = typeParameters;
 }
 
 bool DelegateTypeSymbol::get_is_async() const
