@@ -1,5 +1,6 @@
 #include <clocale>
 #include <cstring>
+#include <filesystem>
 #include <iostream>
 #include <memory>
 #include <optional>
@@ -82,6 +83,31 @@ namespace
 		return filesToCompile;
 	}
 
+	void load_libraries_from_directory(CompilationContext& context, const std::filesystem::path& path)
+	{
+		if (!std::filesystem::exists(path))
+			return;
+
+		std::vector<std::filesystem::path> libraryPaths;
+		for (const std::filesystem::directory_entry& entry : std::filesystem::directory_iterator(path))
+		{
+			if (!entry.is_regular_file())
+				continue;
+
+			const std::filesystem::path extension = entry.path().extension();
+#if defined(_WIN32)
+			if (extension != ".dll")
+#else
+			if (extension != ".so")
+#endif
+				continue;
+
+			libraryPaths.push_back(entry.path());
+		}
+
+		context.add_libraries(libraryPaths);
+	}
+
 	// Prints pending diagnostics; returns false when errors were reported.
 	// Warnings are flushed and forgotten, so later phases only print fresh ones.
 	bool flush_diagnostics(DiagnosticsContext& diagnostics)
@@ -135,6 +161,8 @@ int main(int argc, char* argv[])
 	bool argShowHelp = false;
 	bool argShowDecompile = false;
 	bool argLintOnly = false;
+	bool argExcludeStd = false;
+	Flag_List_Mut argsLibraries{};
 
 	flag_c_bool_var(flagCtx, &argShowHelp, "help", false, "Show this help screen");
 	flag_c_set_short_name_by_name(flagCtx, "help", "h");
@@ -143,6 +171,12 @@ int main(int argc, char* argv[])
 	flag_c_set_short_name_by_name(flagCtx, "decompiled", "d");
 
 	flag_c_bool_var(flagCtx, &argLintOnly, "lint", false, "Check source files for errors without running them");
+
+	flag_c_bool_var(flagCtx, &argExcludeStd, "no-std", false, "Prevent loading standard libraries from the system directory");
+	flag_c_bool_var(flagCtx, &argExcludeStd, "exclude-std", false, "Prevent loading standard libraries from the system directory");
+
+	flag_c_list_mut_var(flagCtx, &argsLibraries, "library", "Load a native ShardScript library (can be repeated)");
+	flag_c_set_short_name_by_name(flagCtx, "library", "l");
 
 	if (!flag_c_parse(flagCtx, argcInterpreter, argvInterpreter))
 	{
@@ -177,6 +211,18 @@ int main(int argc, char* argv[])
 
 		CompilationContext context;
 		DiagnosticsContext& diagnostics = context.get_diagnostics();
+
+		if (!argExcludeStd)
+		{
+			std::filesystem::path systemDirectory = std::filesystem::path(whereami::executable_dir()) / "system";
+			load_libraries_from_directory(context, systemDirectory);
+		}
+
+		for (std::size_t i = 0; i < argsLibraries.count; ++i)
+			context.add_lib(std::filesystem::path(argsLibraries.items[i]));
+
+		if (!flush_diagnostics(diagnostics))
+			return 1;
 
 		for (const std::string& file : filesToCompile)
 			context.parse_file(gmt::utf8_to_wide(file));

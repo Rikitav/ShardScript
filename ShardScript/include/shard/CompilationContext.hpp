@@ -13,20 +13,29 @@
 
 #include <shard/semantic/SemanticModel.hpp>
 
+#include <gmt/SharedLibrary.hpp>
+
 #include <filesystem>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace shard
 {
 	// Owns the whole compilation pipeline state (tree, diagnostics, models,
-	// program image) and drives the phases in order. The context must outlive
-	// any ApplicationDomain produced by compile(), since the domain borrows
-	// the semantic and pragmatic models.
-	// TODO: restore dynamic library loading (AddLib/AddLibraries with ShardLib
-	// entry points and dependency resolution) once a loader API lands.
+	// program image, loaded native libraries) and drives the phases in order.
+	// The context must outlive any ApplicationDomain produced by compile(),
+	// since the domain borrows the semantic and pragmatic models.
+	// Native libraries must be loaded before analyze_tree(), so their symbols
+	// participate in analysis.
 	class SHARD_API CompilationContext
 	{
+		// libraries must unload only after every arena is destroyed: symbols a
+		// library emplaces register destructor thunks instantiated inside the
+		// library binary, so the library code must stay loaded while the
+		// semantic model tears down
+		std::vector<gmt::SharedLibrary> m_libraries;
+
 		SyntaxTree m_tree;
 		DiagnosticsContext m_diagnostics;
 		SemanticModel m_model;
@@ -43,6 +52,11 @@ namespace shard
 		void enrich_tree(SourceProvider& provider);
 		void parse_file(const std::filesystem::path path);
 		void parse_source(const std::wstring& name, const std::wstring& source);
+
+		void add_lib(const std::filesystem::path& path);
+		void add_lib(LibraryHandle handle);
+		void add_lib(gmt::SharedLibrary library);
+		void add_libraries(const std::vector<std::filesystem::path>& paths);
 
 		bool analyze_tree();
 		bool emit_program();
