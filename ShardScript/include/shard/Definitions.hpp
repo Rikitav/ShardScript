@@ -51,3 +51,6 @@ constexpr const char* SHARDSCRIPT_VERSION = "0.7.0";
 constexpr const wchar_t* SHARDSCRIPT_WVERSION = L"0.7.0";
 
 typedef const wchar_t* string_t;
+
+#define SHARD_STRINGIFY_IMPL(x) #x
+#define SHARD_STRINGIFY(x) SHARD_STRINGIFY_IMPL(x)
