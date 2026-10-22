@@ -1,3 +1,5 @@
+#include <gmt/Containers.hpp>
+
 // (‑●‑●)> dual licensed under the WTFPL v2 and MIT licenses
 //   without any warranty.
 //   by Gregory Pakosz (@gpakosz)
@@ -69,14 +71,14 @@ extern "C" {
 #include <string>
 
 namespace whereami {
-	std::string executable_path();
-	std::string module_path();
+	gmt::string executable_path();
+	gmt::string module_path();
 
-	std::string executable_name();
-	std::string module_name();
+	gmt::string executable_name();
+	gmt::string module_name();
 
-	std::string executable_dir();
-	std::string module_dir();
+	gmt::string executable_dir();
+	gmt::string module_dir();
 }
 
 #endif // #ifndef WHEREAMI_H

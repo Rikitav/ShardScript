@@ -1,3 +1,5 @@
+#include <gmt/Containers.hpp>
+
 #ifndef GLOB_LIB_H
 #define GLOB_LIB_H
 
@@ -11,7 +13,7 @@ namespace glob {
     class glob final
     {
     public:
-        glob(const std::string& pattern);
+        glob(const gmt::string& pattern);
         ~glob();
 
         bool use_full_paths() const;
@@ -21,10 +23,10 @@ namespace glob {
             return is_valid();
         }
 
-        void open(const std::string& pattern);
+        void open(const gmt::string& pattern);
         void close();
 
-        std::string current_match() const;
+        gmt::string current_match() const;
         bool next();
         bool is_valid() const;
 

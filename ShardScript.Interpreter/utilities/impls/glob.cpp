@@ -1,3 +1,5 @@
+#include <gmt/Containers.hpp>
+
 //
 //   Copyright(c) 2013 szx
 //   
@@ -54,7 +56,7 @@ namespace glob {
         {
         }
 
-        std::string dir_path;
+        gmt::string dir_path;
         HANDLE find_handle;
         WIN32_FIND_DATAA find_data;
         bool has_next;
@@ -71,8 +73,8 @@ namespace glob {
         {
         }
 
-        std::string dir_path;
-        std::string file_pattern;
+        gmt::string dir_path;
+        gmt::string file_pattern;
         DIR* dir;
         struct dirent* dir_entry;
     };
@@ -81,20 +83,20 @@ namespace glob {
 
     namespace {
 
-        std::pair<std::string, std::string> split_path(const std::string& path)
+        std::pair<gmt::string, gmt::string> split_path(const gmt::string& path)
         {
-            std::string::size_type last_sep = path.find_last_of(GLOB_ALL_PATH_SEP);
-            if (last_sep != std::string::npos) {
+            gmt::string::size_type last_sep = path.find_last_of(GLOB_ALL_PATH_SEP);
+            if (last_sep != gmt::string::npos) {
                 return std::make_pair(
-                    std::string(path.begin(), path.begin() + last_sep),
-                    std::string(path.begin() + last_sep + 1, path.end()));
+                    gmt::string(path.begin(), path.begin() + last_sep),
+                    gmt::string(path.begin() + last_sep + 1, path.end()));
             }
             return std::make_pair(".", path);
         }
 
     } // anonymous namespace
 
-    glob::glob(const std::string& pattern) :
+    glob::glob(const gmt::string& pattern) :
         use_full_paths_(false),
         impl_(std::make_unique<glob_impl>())
     {
@@ -114,7 +116,7 @@ namespace glob {
         use_full_paths_ = use_full_paths;
     }
 
-    void glob::open(const std::string& pattern)
+    void glob::open(const gmt::string& pattern)
     {
         auto dir_and_file = split_path(pattern);
         impl_->dir_path = dir_and_file.first;
@@ -149,7 +151,7 @@ namespace glob {
 #endif
     }
 
-    std::string glob::current_match() const
+    gmt::string glob::current_match() const
     {
         const char* filename;
 #ifdef GLOB_WINDOWS
@@ -158,7 +160,7 @@ namespace glob {
         filename = impl_->dir_entry->d_name;
 #endif
         if (use_full_paths_) {
-            std::string path(impl_->dir_path);
+            gmt::string path(impl_->dir_path);
             path.append(GLOB_NATIVE_PATH_SEP);
             path.append(filename);
             return path;
