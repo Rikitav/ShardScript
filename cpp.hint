@@ -2,3 +2,24 @@
 #define SHARD_API __declspec(dllexport)
 #define SHARD_API __declspec(dllimport)
 #define SHARD_API __attribute__((visibility("default")))
+#define mi_decl_export
+#define mi_decl_export __declspec(dllexport)
+#define mi_decl_export __declspec(dllimport)
+#define mi_decl_export __attribute__((visibility("default")))
+#define _Atomic(tp)
+#define bool
+#define MI_STAT_VERSION
+#define mi_attr_noexcept
+#define mi_attr_noexcept throw()
+#define mi_decl_new_nothrow(n) mi_decl_nodiscard mi_decl_restrict _Ret_maybenull_ _Success_(return != NULL) _Post_writable_byte_size_(n)
+#define mi_decl_new_nothrow(n)
+#define MI_STAT_FIELDS() MI_STAT_COUNT(pages) MI_STAT_COUNT(reserved) MI_STAT_COUNT(committed) MI_STAT_COUNTER(reset) MI_STAT_COUNTER(purged) MI_STAT_COUNT(page_committed) MI_STAT_COUNT(pages_abandoned) MI_STAT_COUNT(threads) MI_STAT_COUNT(malloc_normal) MI_STAT_COUNT(malloc_huge) MI_STAT_COUNT(malloc_requested) MI_STAT_COUNTER(mmap_calls) MI_STAT_COUNTER(commit_calls) MI_STAT_COUNTER(reset_calls) MI_STAT_COUNTER(purge_calls) MI_STAT_COUNTER(arena_count) MI_STAT_COUNTER(malloc_normal_count) MI_STAT_COUNTER(malloc_huge_count) MI_STAT_COUNTER(malloc_guarded_count) MI_STAT_COUNTER(arena_rollback_count) MI_STAT_COUNTER(arena_purges) MI_STAT_COUNTER(pages_extended) MI_STAT_COUNTER(pages_retire) MI_STAT_COUNTER(page_searches) MI_STAT_COUNTER(page_searches_count) MI_STAT_COUNT(segments) MI_STAT_COUNT(segments_abandoned) MI_STAT_COUNT(segments_cache) MI_STAT_COUNT(_segments_reserved) MI_STAT_COUNT(heaps) MI_STAT_COUNT(theaps) MI_STAT_COUNTER(pages_reclaim_on_alloc) MI_STAT_COUNTER(pages_reclaim_on_free) MI_STAT_COUNTER(pages_reabandon_full) MI_STAT_COUNTER(pages_unabandon_busy_wait) MI_STAT_COUNTER(heaps_delete_wait)
+#define mi_decl_align(a) __declspec(align(a))
+#define mi_decl_align(a) __attribute__((aligned(a)))
+#define mi_decl_align(a) alignas(a)
+#define mi_decl_align(a) _Alignas(a)
+#define mi_decl_nodiscard [[nodiscard]]
+#define mi_decl_nodiscard __attribute__((warn_unused_result))
+#define mi_decl_nodiscard
+#define mi_decl_cold
+#define mi_decl_cold __attribute__((cold))

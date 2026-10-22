@@ -10,10 +10,10 @@
 #include <shard/semantic/symbols/MethodSymbol.hpp>
 #include <shard/semantic/symbols/StructSymbol.hpp>
 
-#include <cstring>
 #include <stdexcept>
 
 #include <gmt/Arena.hpp>
+#include <gmt/Allocator.hpp>
 
 using namespace shard;
 

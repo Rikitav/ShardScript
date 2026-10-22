@@ -13,22 +13,11 @@
 #include <shard/semantic/symbols/FieldSymbol.hpp>
 #include <shard/semantic/symbols/StructSymbol.hpp>
 
-#include <cstring>
-
-#include <mimalloc.h>
+#include <gmt/Allocator.hpp>
 
 #include <algorithm>
-#include <cstring>
 #include <cstdlib>
 #include <stdexcept>
-
-#ifdef SHARD_GC_NO_MIMALLOC
-	#define gc_malloc ::malloc
-	#define gc_free ::free
-#else
-	#define gc_malloc mi_zalloc
-	#define gc_free mi_free
-#endif
 
 using namespace shard;
 
@@ -66,7 +55,7 @@ ObjectInstance GarbageCollector::allocate_block(const TypeShape* shape, std::siz
 	if (m_allocatedSinceCollection >= m_collectionThreshold)
 		collect();
 
-	GcHeader* header = static_cast<GcHeader*>(gc_malloc(sizeof(GcHeader) + payloadBytes));
+	GcHeader* header = static_cast<GcHeader*>(gmt::mem_alloc(sizeof(GcHeader) + payloadBytes));
 	header->magic = Magic;
 	header->shape = shape;
 	header->marked = 0;
@@ -144,9 +133,9 @@ ObjectInstance GarbageCollector::get_static_storage(gmt::Ref<FieldSymbol> field)
 	const TypeShape* shape = m_pragmatic.find_or_create_type_shape(m_model, field->get_return_type());
 	std::size_t bytes = shape->is_reference() ? sizeof(void*) : shape->get_size();
 
-	StaticStorage storage;
+	StaticStorage storage{};
 	storage.shape = shape;
-	storage.storage = static_cast<std::byte*>(gc_malloc(bytes));
+	storage.storage = static_cast<std::byte*>(gmt::mem_alloc(bytes));
 	m_statics.emplace(key, storage);
 
 	return ObjectInstance(shape, storage.storage);
@@ -277,7 +266,7 @@ void GarbageCollector::sweep()
 		GcHeader* header = get_header(*choice);
 		if (header->marked == 0)
 		{
-			gc_free(header);
+			gmt::mem_free(header);
 			choice = m_heap.erase(choice);
 			continue;
 		}
@@ -329,12 +318,12 @@ void GarbageCollector::collect()
 void GarbageCollector::terminate()
 {
 	for (std::byte* payload : m_heap)
-		gc_free(get_header(payload));
+		gmt::mem_free(get_header(payload));
 
 	m_heap.clear();
 
 	for (auto& [key, storage] : m_statics)
-		gc_free(storage.storage);
+		gmt::mem_free(storage.storage);
 
 	m_statics.clear();
 	m_internedStrings.clear();

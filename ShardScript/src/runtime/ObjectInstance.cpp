@@ -5,7 +5,7 @@
 #include <shard/semantic/symbols/FieldSymbol.hpp>
 #include <shard/semantic/symbols/StructSymbol.hpp>
 
-#include <cstring>
+#include <gmt/Allocator.hpp>
 
 using namespace shard;
 

@@ -1,7 +1,5 @@
 #include <gmt/Arena.hpp>
-
-#include <mimalloc.h>
-#include <cstdlib>
+#include <gmt/Allocator.hpp>
 
 using namespace gmt;
 
@@ -20,22 +18,7 @@ Arena::~Arena()
 		it->destroy(resolve(it->offset));
 
 	for (std::byte* chunk : m_chunks)
-	{
-#ifdef GMT_ARENA_NO_MIMALLOC
-		::free(chunk);
-#else
-		mi_free(chunk);
-#endif
-	}
-}
-
-void* Arena::allocate(std::size_t bytes)
-{
-#ifdef GMT_ARENA_NO_MIMALLOC
-	return ::malloc(bytes);
-#else
-	return mi_malloc(bytes);
-#endif
+		gmt::mem_free(chunk);
 }
 
 void Arena::grow(std::size_t required)
@@ -45,7 +28,7 @@ void Arena::grow(std::size_t required)
 	while (m_capacity + chunkSize < required)
 		chunkSize *= 2;
 
-	m_chunks.push_back(static_cast<std::byte*>(allocate(chunkSize)));
+	m_chunks.push_back(static_cast<std::byte*>(gmt::mem_alloc(chunkSize)));
 	m_chunkSizes.push_back(chunkSize);
 	m_chunkBases.push_back(m_capacity);
 	m_capacity += chunkSize;

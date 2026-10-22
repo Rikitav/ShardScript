@@ -72,7 +72,6 @@ namespace gmt
 		void* resolve(std::size_t offset) const;
 
 	private:
-		void* allocate(std::size_t bytes);
 		void grow(std::size_t required);
 	};
 }
