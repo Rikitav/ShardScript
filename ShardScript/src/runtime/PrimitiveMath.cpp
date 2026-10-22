@@ -4,9 +4,10 @@
 
 #include <shard/semantic/symbols/StructSymbol.hpp>
 
+#include <gmt/Allocator.hpp>
+
 #include <cmath>
 #include <cstdio>
-#include <cstring>
 
 using namespace shard;
 

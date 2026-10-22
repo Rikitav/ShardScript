@@ -15,9 +15,9 @@
 #include <shard/semantic/symbols/PropertySymbol.hpp>
 #include <shard/semantic/symbols/StructSymbol.hpp>
 
+#include <gmt/Allocator.hpp>
 #include <gmt/InlineVector.hpp>
 
-#include <cstring>
 #include <stdexcept>
 #include <utility>
 

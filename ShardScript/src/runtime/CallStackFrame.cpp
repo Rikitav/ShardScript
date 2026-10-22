@@ -9,11 +9,9 @@
 #include <shard/semantic/symbols/StructSymbol.hpp>
 
 #include <gmt/Alignment.hpp>
-
-#include <mimalloc.h>
+#include <gmt/Allocator.hpp>
 
 #include <algorithm>
-#include <cstring>
 #include <stdexcept>
 
 using namespace shard;
@@ -52,7 +50,7 @@ FrameEntryView CallStackFrame::peek_entry(std::byte* entry)
 	std::uintptr_t header;
 	std::memcpy(&header, entry, EntryHeaderSize);
 
-	FrameEntryView view;
+	FrameEntryView view{};
 	view.shape = unpack_shape(header);
 	view.isReferenceStorage = unpack_is_reference(header);
 	view.payloadAddress = entry + EntryHeaderSize;
@@ -80,10 +78,10 @@ CallStackFrame* CallStackFrame::create(gmt::Ref<MethodSymbol> method, const Fram
 	std::vector<const TypeShape*> localShapes;
 	std::vector<bool> localReferences;
 
-	localAddresses.reserve(argumentCount + variableCount);
-	localPayloads.reserve(argumentCount + variableCount);
-	localShapes.reserve(argumentCount + variableCount);
-	localReferences.reserve(argumentCount + variableCount);
+	localAddresses.reserve(static_cast<std::size_t>(argumentCount) + variableCount);
+	localPayloads.reserve(static_cast<std::size_t>(argumentCount) + variableCount);
+	localShapes.reserve(static_cast<std::size_t>(argumentCount) + variableCount);
+	localReferences.reserve(static_cast<std::size_t>(argumentCount) + variableCount);
 
 	std::size_t cursor = 0;
 	if (layout != nullptr)
@@ -107,11 +105,9 @@ CallStackFrame* CallStackFrame::create(gmt::Ref<MethodSymbol> method, const Fram
 			if (!recipe.concreteType.is_null())
 				shape = pragmatic.find_or_create_type_shape(model, recipe.concreteType);
 
-			// primitives are always stored inline, whatever the escape verdict;
-			// reference storage is meaningful for composites only. A zero-size
-			// reference shape (string, delegates, interfaces) names a
-			// variable-size heap object that can never be inlined: it is
-			// pointer-stored whatever the verdict
+			// Primitives are always stored inline, whatever the escape verdict;
+			// Reference storage is meaningful for composites only.
+			// A zero-size reference shape (string, delegates, interfaces) names a variable-size heap object that can never be inlined: it is pointer-stored whatever the verdict
 			bool reference = recipe.typeParameterIndex >= 0 || recipe.verdict == PlacementVerdict::Heap;
 			if (shape != nullptr && !shape->is_reference())
 				reference = false;
@@ -141,7 +137,7 @@ CallStackFrame* CallStackFrame::create(gmt::Ref<MethodSymbol> method, const Fram
 	const std::size_t objectBytes = gmt::align_up(sizeof(CallStackFrame), sizeof(void*));
 	const std::size_t totalBytes = objectBytes + returnEntryBytes + cursor + evalStride * evalCapacity;
 
-	std::byte* block = static_cast<std::byte*>(mi_zalloc(totalBytes));
+	std::byte* block = static_cast<std::byte*>(gmt::mem_alloc(totalBytes));
 	CallStackFrame* frame = new (block) CallStackFrame();
 
 	frame->m_method = method;
@@ -213,7 +209,7 @@ void CallStackFrame::destroy(CallStackFrame* frame)
 		return;
 
 	frame->~CallStackFrame();
-	mi_free(frame);
+	gmt::mem_free(frame);
 }
 
 gmt::Ref<MethodSymbol> CallStackFrame::get_method() const
@@ -315,7 +311,7 @@ ObjectInstance CallStackFrame::peek_entry() const
 	if (m_evalDepth == 0)
 		throw std::underflow_error("eval stack underflow");
 
-	std::byte* entry = m_evalRegion + m_evalStride * (m_evalDepth - 1);
+	std::byte* entry = m_evalRegion + m_evalStride * (static_cast<std::size_t>(m_evalDepth) - 1);
 
 	FrameEntryView view = entry_view(entry);
 	if (view.isReferenceStorage)
@@ -343,7 +339,7 @@ ObjectInstance CallStackFrame::peek_entry_at(std::size_t depthFromTop) const
 	if (depthFromTop >= m_evalDepth)
 		throw std::underflow_error("eval stack underflow");
 
-	std::byte* entry = m_evalRegion + m_evalStride * (m_evalDepth - 1 - depthFromTop);
+	std::byte* entry = m_evalRegion + m_evalStride * (static_cast<std::size_t>(m_evalDepth) - 1 - depthFromTop);
 
 	FrameEntryView view = entry_view(entry);
 	if (view.isReferenceStorage)

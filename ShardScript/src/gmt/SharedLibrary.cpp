@@ -1,11 +1,11 @@
 #include <gmt/SharedLibrary.hpp>
 
 #include <gmt/Strings.hpp>
+#include <gmt/Concat.hpp>
 
 #include <stdexcept>
 
 #if defined(_WIN32)
-	#define WIN32_LEAN_AND_MEAN
 	#include <windows.h>
 #elif defined(__EMSCRIPTEN__)
 	// WebAssembly does not support native dynamic library loading
@@ -19,7 +19,7 @@ namespace
 {
 	std::string build_load_error(const std::filesystem::path& path, const std::string& systemMessage)
 	{
-		std::string message = "Failed to load library \"" + gmt::wide_to_utf8(path.wstring()) + "\"";
+		std::string message = gmt::wide_to_utf8(gmt::concat(L"Failed to load library \"", path.wstring(), L"\""));
 		if (!systemMessage.empty())
 			message += ": " + systemMessage;
 
@@ -45,6 +45,10 @@ namespace
 	}
 #endif
 }
+
+SharedLibrary::SharedLibrary(nullref_t)
+	: m_handle(nullptr)
+{ }
 
 SharedLibrary::SharedLibrary(const std::filesystem::path& path)
 {
@@ -94,8 +98,10 @@ void SharedLibrary::load(const std::filesystem::path& path)
 	m_handle = static_cast<LibraryHandle>(::LoadLibraryW(path.c_str()));
 	if (m_handle == nullptr)
 		throw std::runtime_error(build_load_error(path, get_last_error_message()));
+
 #elif defined(__EMSCRIPTEN__)
 	throw std::runtime_error(build_load_error(path, "native library loading is not supported in WebAssembly"));
+
 #else
 	m_handle = ::dlopen(path.c_str(), RTLD_NOW);
 	if (m_handle == nullptr)
@@ -113,8 +119,10 @@ void SharedLibrary::unload()
 
 #if defined(_WIN32)
 	::FreeLibrary(static_cast<HMODULE>(m_handle));
+
 #elif !defined(__EMSCRIPTEN__)
 	::dlclose(m_handle);
+
 #endif
 
 	m_handle = nullptr;

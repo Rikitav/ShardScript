@@ -10,11 +10,12 @@
 #include <shard/semantic/symbols/StructSymbol.hpp>
 
 #include <algorithm>
-#include <cstring>
 #include <cwchar>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
+
+#include <gmt/Allocator.hpp>
 
 using namespace shard;
 

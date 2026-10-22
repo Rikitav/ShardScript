@@ -11,7 +11,6 @@
 #include <charconv>
 #include <clocale>
 #include <cstdlib>
-#include <cstring>
 #include <limits>
 #include <span>
 #include <stdexcept>

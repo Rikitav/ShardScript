@@ -44,6 +44,7 @@
 
 // --- GMT (general memory toolkit) ---
 #include <gmt/Alignment.hpp>
+#include <gmt/Allocator.hpp>
 #include <gmt/NullRef.hpp>
 #include <gmt/Ref.hpp>
 #include <gmt/Span.hpp>

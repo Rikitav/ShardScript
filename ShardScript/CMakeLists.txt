@@ -100,8 +100,7 @@ if(ENABLE_ASAN)
     endif()
 
     target_compile_definitions(${PROJECT_NAME} PRIVATE
-        "GMT_ARENA_NO_MIMALLOC"
-        "SHARD_GC_NO_MIMALLOC"
+        "SHARD_NO_MIMALLOC"
     )
 endif()
 

@@ -90,6 +90,9 @@ namespace shard
     class SHARD_API SyntaxVisitor
     {
     public:
+        SyntaxVisitor() = default;
+        virtual ~SyntaxVisitor() = default;
+
         virtual void visit_syntax_tree(const SyntaxTree& tree);
         virtual void visit_translation_unit(const TranslationUnitSyntax* node);
 
