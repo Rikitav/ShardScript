@@ -5,6 +5,7 @@
 
 #include <shard/compilation/OperationCode.hpp>
 
+#include <gmt/Containers.hpp>
 #include <gmt/Ref.hpp>
 
 #include <cstdint>
@@ -53,6 +54,6 @@ namespace shard
 		static PrimitiveStatus negate(const PrimitiveShapes& shapes, ObjectInstance value, ScalarResult& result);
 		static PrimitiveStatus convert(const PrimitiveShapes& shapes, ObjectInstance value, gmt::Ref<StructSymbol> targetType, const TypeShape* targetShape, ScalarResult& result);
 
-		static std::wstring to_display_string(ObjectInstance value);
+		static gmt::wstring to_display_string(ObjectInstance value);
 	};
 }

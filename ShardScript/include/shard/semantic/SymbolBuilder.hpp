@@ -22,6 +22,7 @@
 #include <shard/semantic/symbols/StructSymbol.hpp>
 #include <shard/semantic/symbols/TypeParameterSymbol.hpp>
 
+#include <gmt/Containers.hpp>
 #include <gmt/Ref.hpp>
 
 #include <cstdint>
@@ -65,14 +66,14 @@ namespace shard
 	class SHARD_API SymbolBuilder<NamespaceSymbol> : public SymbolBuilderBase<NamespaceSymbol>
 	{
 	public:
-		SymbolBuilder(CompilationContext& context, const std::wstring& name, gmt::Ref<NamespaceSymbol> parent = gmt::nullref);
-		SymbolBuilder(SymbolTable& table, const std::wstring& name, gmt::Ref<NamespaceSymbol> parent = gmt::nullref);
+		SymbolBuilder(CompilationContext& context, const gmt::wstring& name, gmt::Ref<NamespaceSymbol> parent = gmt::nullref);
+		SymbolBuilder(SymbolTable& table, const gmt::wstring& name, gmt::Ref<NamespaceSymbol> parent = gmt::nullref);
 
-		SymbolBuilder<MethodSymbol> add_method(const std::wstring& name, gmt::Ref<StructSymbol> returnType, SymbolLinking linking, SymbolAccesibility access = ACS_PUBLIC);
-		SymbolBuilder<StructSymbol> add_struct(const std::wstring& name, SymbolLinking linking = LINK_INSTANCE, SymbolAccesibility access = ACS_PUBLIC);
-		SymbolBuilder<InterfaceSymbol> add_interface(const std::wstring& name, SymbolAccesibility access = ACS_PUBLIC);
-		SymbolBuilder<EnumSymbol> add_enum(const std::wstring& name, bool isFlags = false, SymbolAccesibility access = ACS_PUBLIC);
-		SymbolBuilder<NamespaceSymbol> add_namespace(const std::wstring& name);
+		SymbolBuilder<MethodSymbol> add_method(const gmt::wstring& name, gmt::Ref<StructSymbol> returnType, SymbolLinking linking, SymbolAccesibility access = ACS_PUBLIC);
+		SymbolBuilder<StructSymbol> add_struct(const gmt::wstring& name, SymbolLinking linking = LINK_INSTANCE, SymbolAccesibility access = ACS_PUBLIC);
+		SymbolBuilder<InterfaceSymbol> add_interface(const gmt::wstring& name, SymbolAccesibility access = ACS_PUBLIC);
+		SymbolBuilder<EnumSymbol> add_enum(const gmt::wstring& name, bool isFlags = false, SymbolAccesibility access = ACS_PUBLIC);
+		SymbolBuilder<NamespaceSymbol> add_namespace(const gmt::wstring& name);
 	};
 
 	template<>
@@ -80,17 +81,17 @@ namespace shard
 	{
 	public:
 		SymbolBuilder(CompilationContext& context, gmt::Ref<StructSymbol> symbol);
-		SymbolBuilder(CompilationContext& context, const std::wstring& name, gmt::Ref<SyntaxSymbol> parent);
+		SymbolBuilder(CompilationContext& context, const gmt::wstring& name, gmt::Ref<SyntaxSymbol> parent);
 		SymbolBuilder(SymbolTable& table, gmt::Ref<StructSymbol> symbol);
-		SymbolBuilder(SymbolTable& table, const std::wstring& name, gmt::Ref<SyntaxSymbol> parent);
+		SymbolBuilder(SymbolTable& table, const gmt::wstring& name, gmt::Ref<SyntaxSymbol> parent);
 
 		SymbolBuilder<ConstructorSymbol> add_init(SymbolAccesibility access = ACS_PUBLIC);
 
-		SymbolBuilder<MethodSymbol> add_method(const std::wstring& name, gmt::Ref<StructSymbol> returnType, SymbolLinking linking, SymbolAccesibility access = ACS_PUBLIC);
-		SymbolBuilder<FieldSymbol> add_field(const std::wstring& name, gmt::Ref<StructSymbol> type, SymbolLinking linking, SymbolAccesibility access = ACS_PUBLIC);
-		SymbolBuilder<PropertySymbol> add_property(const std::wstring& name, gmt::Ref<StructSymbol> type, SymbolLinking linking, SymbolAccesibility access = ACS_PUBLIC);
+		SymbolBuilder<MethodSymbol> add_method(const gmt::wstring& name, gmt::Ref<StructSymbol> returnType, SymbolLinking linking, SymbolAccesibility access = ACS_PUBLIC);
+		SymbolBuilder<FieldSymbol> add_field(const gmt::wstring& name, gmt::Ref<StructSymbol> type, SymbolLinking linking, SymbolAccesibility access = ACS_PUBLIC);
+		SymbolBuilder<PropertySymbol> add_property(const gmt::wstring& name, gmt::Ref<StructSymbol> type, SymbolLinking linking, SymbolAccesibility access = ACS_PUBLIC);
 		SymbolBuilder<IndexatorSymbol> add_indexator(gmt::Ref<StructSymbol> type, SymbolLinking linking, SymbolAccesibility access = ACS_PUBLIC);
-		SymbolBuilder<TypeParameterSymbol> add_type_parameter(const std::wstring& name);
+		SymbolBuilder<TypeParameterSymbol> add_type_parameter(const gmt::wstring& name);
 
 		SymbolBuilder<OperatorSymbol> add_operator(TokenType operatorToken, gmt::Ref<StructSymbol> returnType, SymbolLinking linking, SymbolAccesibility access = ACS_PUBLIC);
 		SymbolBuilder<OperatorSymbol> add_cast_operator(gmt::Ref<StructSymbol> targetType, SymbolLinking linking = LINK_STATIC, SymbolAccesibility access = ACS_PUBLIC);
@@ -103,13 +104,13 @@ namespace shard
 	class SHARD_API SymbolBuilder<InterfaceSymbol> : public SymbolBuilderBase<InterfaceSymbol>
 	{
 	public:
-		SymbolBuilder(CompilationContext& context, const std::wstring& name, gmt::Ref<SyntaxSymbol> parent);
-		SymbolBuilder(SymbolTable& table, const std::wstring& name, gmt::Ref<SyntaxSymbol> parent);
+		SymbolBuilder(CompilationContext& context, const gmt::wstring& name, gmt::Ref<SyntaxSymbol> parent);
+		SymbolBuilder(SymbolTable& table, const gmt::wstring& name, gmt::Ref<SyntaxSymbol> parent);
 
-		SymbolBuilder<MethodSymbol> add_method(const std::wstring& name, gmt::Ref<StructSymbol> returnType, SymbolLinking linking, SymbolAccesibility access = ACS_PUBLIC);
-		SymbolBuilder<PropertySymbol> add_property(const std::wstring& name, gmt::Ref<StructSymbol> type, SymbolLinking linking, SymbolAccesibility access = ACS_PUBLIC);
+		SymbolBuilder<MethodSymbol> add_method(const gmt::wstring& name, gmt::Ref<StructSymbol> returnType, SymbolLinking linking, SymbolAccesibility access = ACS_PUBLIC);
+		SymbolBuilder<PropertySymbol> add_property(const gmt::wstring& name, gmt::Ref<StructSymbol> type, SymbolLinking linking, SymbolAccesibility access = ACS_PUBLIC);
 		SymbolBuilder<IndexatorSymbol> add_indexator(gmt::Ref<StructSymbol> type, SymbolLinking linking, SymbolAccesibility access = ACS_PUBLIC);
-		SymbolBuilder<TypeParameterSymbol> add_type_parameter(const std::wstring& name);
+		SymbolBuilder<TypeParameterSymbol> add_type_parameter(const gmt::wstring& name);
 
 		SymbolBuilder<InterfaceSymbol>& implements(gmt::Ref<StructSymbol> interface);
 		SymbolBuilder<InterfaceSymbol>& declare_global();
@@ -119,11 +120,11 @@ namespace shard
 	class SHARD_API SymbolBuilder<EnumSymbol> : public SymbolBuilderBase<EnumSymbol>
 	{
 	public:
-		SymbolBuilder(CompilationContext& context, const std::wstring& name, bool isFlags, gmt::Ref<SyntaxSymbol> parent);
-		SymbolBuilder(SymbolTable& table, const std::wstring& name, bool isFlags, gmt::Ref<SyntaxSymbol> parent);
+		SymbolBuilder(CompilationContext& context, const gmt::wstring& name, bool isFlags, gmt::Ref<SyntaxSymbol> parent);
+		SymbolBuilder(SymbolTable& table, const gmt::wstring& name, bool isFlags, gmt::Ref<SyntaxSymbol> parent);
 
 		SymbolBuilder<EnumSymbol>& set_flags(bool value = true);
-		SymbolBuilder<EnumSymbol>& add_value(const std::wstring& name, std::int64_t value);
+		SymbolBuilder<EnumSymbol>& add_value(const gmt::wstring& name, std::int64_t value);
 	};
 
 	template<>
@@ -133,8 +134,8 @@ namespace shard
 		SymbolBuilder(CompilationContext& context, gmt::Ref<FieldSymbol> symbol);
 		SymbolBuilder(SymbolTable& table, gmt::Ref<FieldSymbol> symbol);
 
-		SymbolBuilder(CompilationContext& context, const std::wstring& name, gmt::Ref<StructSymbol> type, SymbolLinking linking, SymbolAccesibility access, gmt::Ref<SyntaxSymbol> parent);
-		SymbolBuilder(SymbolTable& table, const std::wstring& name, gmt::Ref<StructSymbol> type, SymbolLinking linking, SymbolAccesibility access, gmt::Ref<SyntaxSymbol> parent);
+		SymbolBuilder(CompilationContext& context, const gmt::wstring& name, gmt::Ref<StructSymbol> type, SymbolLinking linking, SymbolAccesibility access, gmt::Ref<SyntaxSymbol> parent);
+		SymbolBuilder(SymbolTable& table, const gmt::wstring& name, gmt::Ref<StructSymbol> type, SymbolLinking linking, SymbolAccesibility access, gmt::Ref<SyntaxSymbol> parent);
 	};
 
 	template<>
@@ -144,12 +145,12 @@ namespace shard
 		SymbolBuilder(CompilationContext& context, gmt::Ref<MethodSymbol> symbol);
 		SymbolBuilder(SymbolTable& table, gmt::Ref<MethodSymbol> symbol);
 
-		SymbolBuilder(CompilationContext& context, const std::wstring& name, gmt::Ref<StructSymbol> returnType, SymbolLinking linking, SymbolAccesibility access, gmt::Ref<SyntaxSymbol> parent);
-		SymbolBuilder(SymbolTable& table, const std::wstring& name, gmt::Ref<StructSymbol> returnType, SymbolLinking linking, SymbolAccesibility access, gmt::Ref<SyntaxSymbol> parent);
+		SymbolBuilder(CompilationContext& context, const gmt::wstring& name, gmt::Ref<StructSymbol> returnType, SymbolLinking linking, SymbolAccesibility access, gmt::Ref<SyntaxSymbol> parent);
+		SymbolBuilder(SymbolTable& table, const gmt::wstring& name, gmt::Ref<StructSymbol> returnType, SymbolLinking linking, SymbolAccesibility access, gmt::Ref<SyntaxSymbol> parent);
 
-		SymbolBuilder<MethodSymbol>& add_parameter(const std::wstring& name, gmt::Ref<StructSymbol> type);
+		SymbolBuilder<MethodSymbol>& add_parameter(const gmt::wstring& name, gmt::Ref<StructSymbol> type);
 		SymbolBuilder<MethodSymbol>& set_callback(MethodSymbolDelegate callback);
-		SymbolBuilder<TypeParameterSymbol> add_type_parameter(const std::wstring& name);
+		SymbolBuilder<TypeParameterSymbol> add_type_parameter(const gmt::wstring& name);
 		SymbolBuilder<MethodSymbol>& declare_global();
 
 		SymbolBuilder<MethodSymbol>& set_may_throw(bool value = true);
@@ -167,7 +168,7 @@ namespace shard
 		SymbolBuilder(CompilationContext& context, SymbolAccesibility access, gmt::Ref<SyntaxSymbol> parent);
 		SymbolBuilder(SymbolTable& table, SymbolAccesibility access, gmt::Ref<SyntaxSymbol> parent);
 
-		SymbolBuilder<ConstructorSymbol>& add_parameter(const std::wstring& name, gmt::Ref<StructSymbol> type);
+		SymbolBuilder<ConstructorSymbol>& add_parameter(const gmt::wstring& name, gmt::Ref<StructSymbol> type);
 		SymbolBuilder<ConstructorSymbol>& set_callback(MethodSymbolDelegate callback);
 
 		SymbolBuilder<ConstructorSymbol>& set_may_throw(bool value = true);
@@ -185,7 +186,7 @@ namespace shard
 		SymbolBuilder(CompilationContext& context, TokenType operatorToken, gmt::Ref<StructSymbol> returnType, SymbolLinking linking, SymbolAccesibility access, gmt::Ref<SyntaxSymbol> parent);
 		SymbolBuilder(SymbolTable& table, TokenType operatorToken, gmt::Ref<StructSymbol> returnType, SymbolLinking linking, SymbolAccesibility access, gmt::Ref<SyntaxSymbol> parent);
 
-		SymbolBuilder<OperatorSymbol>& add_parameter(const std::wstring& name, gmt::Ref<StructSymbol> type);
+		SymbolBuilder<OperatorSymbol>& add_parameter(const gmt::wstring& name, gmt::Ref<StructSymbol> type);
 		SymbolBuilder<OperatorSymbol>& set_callback(MethodSymbolDelegate callback);
 
 		SymbolBuilder<OperatorSymbol>& set_may_throw(bool value = true);
@@ -200,8 +201,8 @@ namespace shard
 	class SHARD_API SymbolBuilder<PropertySymbol> : public SymbolBuilderBase<PropertySymbol>
 	{
 	public:
-		SymbolBuilder(CompilationContext& context, const std::wstring& name, gmt::Ref<StructSymbol> type, SymbolLinking linking, SymbolAccesibility access, gmt::Ref<SyntaxSymbol> parent);
-		SymbolBuilder(SymbolTable& table, const std::wstring& name, gmt::Ref<StructSymbol> type, SymbolLinking linking, SymbolAccesibility access, gmt::Ref<SyntaxSymbol> parent);
+		SymbolBuilder(CompilationContext& context, const gmt::wstring& name, gmt::Ref<StructSymbol> type, SymbolLinking linking, SymbolAccesibility access, gmt::Ref<SyntaxSymbol> parent);
+		SymbolBuilder(SymbolTable& table, const gmt::wstring& name, gmt::Ref<StructSymbol> type, SymbolLinking linking, SymbolAccesibility access, gmt::Ref<SyntaxSymbol> parent);
 
 		SymbolBuilder<FieldSymbol> add_backing_field();
 		SymbolBuilder<AccessorSymbol> add_getter(SymbolAccesibility access = ACS_PUBLIC);
@@ -212,10 +213,10 @@ namespace shard
 	class SHARD_API SymbolBuilder<IndexatorSymbol> : public SymbolBuilderBase<IndexatorSymbol>
 	{
 	public:
-		SymbolBuilder(CompilationContext& context, const std::wstring& name, gmt::Ref<StructSymbol> type, SymbolLinking linking, SymbolAccesibility access, gmt::Ref<SyntaxSymbol> parent);
-		SymbolBuilder(SymbolTable& table, const std::wstring& name, gmt::Ref<StructSymbol> type, SymbolLinking linking, SymbolAccesibility access, gmt::Ref<SyntaxSymbol> parent);
+		SymbolBuilder(CompilationContext& context, const gmt::wstring& name, gmt::Ref<StructSymbol> type, SymbolLinking linking, SymbolAccesibility access, gmt::Ref<SyntaxSymbol> parent);
+		SymbolBuilder(SymbolTable& table, const gmt::wstring& name, gmt::Ref<StructSymbol> type, SymbolLinking linking, SymbolAccesibility access, gmt::Ref<SyntaxSymbol> parent);
 
-		SymbolBuilder<IndexatorSymbol>& add_parameter(const std::wstring& name, gmt::Ref<StructSymbol> type);
+		SymbolBuilder<IndexatorSymbol>& add_parameter(const gmt::wstring& name, gmt::Ref<StructSymbol> type);
 
 		SymbolBuilder<AccessorSymbol> add_getter(SymbolAccesibility access = ACS_PUBLIC);
 		SymbolBuilder<AccessorSymbol> add_setter(SymbolAccesibility access = ACS_PUBLIC);
@@ -231,7 +232,7 @@ namespace shard
 		SymbolBuilder(CompilationContext& context, bool isGetter, SymbolAccesibility access, gmt::Ref<PropertySymbol> property);
 		SymbolBuilder(SymbolTable& table, bool isGetter, SymbolAccesibility access, gmt::Ref<PropertySymbol> property);
 
-		SymbolBuilder<AccessorSymbol>& add_parameter(const std::wstring& name, gmt::Ref<StructSymbol> type);
+		SymbolBuilder<AccessorSymbol>& add_parameter(const gmt::wstring& name, gmt::Ref<StructSymbol> type);
 		SymbolBuilder<AccessorSymbol>& set_callback(MethodSymbolDelegate callback);
 
 		SymbolBuilder<AccessorSymbol>& set_may_throw(bool value = true);
@@ -246,8 +247,8 @@ namespace shard
 	class SHARD_API SymbolBuilder<TypeParameterSymbol> : public SymbolBuilderBase<TypeParameterSymbol>
 	{
 	public:
-		SymbolBuilder(CompilationContext& context, const std::wstring& name, gmt::Ref<SyntaxSymbol> parent);
-		SymbolBuilder(SymbolTable& table, const std::wstring& name, gmt::Ref<SyntaxSymbol> parent);
+		SymbolBuilder(CompilationContext& context, const gmt::wstring& name, gmt::Ref<SyntaxSymbol> parent);
+		SymbolBuilder(SymbolTable& table, const gmt::wstring& name, gmt::Ref<SyntaxSymbol> parent);
 
 		SymbolBuilder<TypeParameterSymbol>& add_constraint(gmt::Ref<StructSymbol> constraint);
 	};

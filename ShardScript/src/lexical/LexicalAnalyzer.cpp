@@ -4,6 +4,7 @@
 
 #include <shard/lexical/LexicalAnalyzer.hpp>
 
+#include <gmt/Containers.hpp>
 #include <gmt/Interner.hpp>
 
 #include <cctype>
@@ -145,7 +146,7 @@ bool LexicalAnalyzer::can_peek()
 
 bool LexicalAnalyzer::read_next_token(SyntaxToken& token)
 {
-	std::wstring word = L"";
+	gmt::wstring word = L"";
 	TokenType type = TokenType::Unknown;
 
 	if (!read_next_word(word, type))
@@ -207,7 +208,7 @@ bool LexicalAnalyzer::read_next_real()
 	return false;
 }
 
-bool LexicalAnalyzer::read_while_alpha(std::wstring& word)
+bool LexicalAnalyzer::read_while_alpha(gmt::wstring& word)
 {
 	word += m_symbol;
 	while (m_sourceText->peek_next(m_peekSymbol))
@@ -222,7 +223,7 @@ bool LexicalAnalyzer::read_while_alpha(std::wstring& word)
 	return true;
 }
 
-TextLocation LexicalAnalyzer::get_current_location(std::wstring& word)
+TextLocation LexicalAnalyzer::get_current_location(gmt::wstring& word)
 {
 	int length = static_cast<int>(word.length());
 	int startOffset = m_offset - length + 1;
@@ -233,7 +234,7 @@ TextLocation LexicalAnalyzer::get_current_location(std::wstring& word)
 	return TextLocation(m_fileName, m_line, startOffset, length);
 }
 
-bool LexicalAnalyzer::read_next_word(std::wstring& word, TokenType& type)
+bool LexicalAnalyzer::read_next_word(gmt::wstring& word, TokenType& type)
 {
 	type = TokenType::Unknown;
 	word = L"";
@@ -327,7 +328,7 @@ bool LexicalAnalyzer::read_next_word(std::wstring& word, TokenType& type)
 	return true;
 }
 
-bool LexicalAnalyzer::read_char_literal(std::wstring& word, bool notEcran, bool& wasClosed)
+bool LexicalAnalyzer::read_char_literal(gmt::wstring& word, bool notEcran, bool& wasClosed)
 {
 	bool ecran = false;
 
@@ -376,7 +377,7 @@ bool LexicalAnalyzer::read_char_literal(std::wstring& word, bool notEcran, bool&
 	return false;
 }
 
-bool LexicalAnalyzer::read_string_literal(std::wstring& word, bool dontEcran, bool& wasClosed)
+bool LexicalAnalyzer::read_string_literal(gmt::wstring& word, bool dontEcran, bool& wasClosed)
 {
 	bool ecran = false;
 	while (advance(m_symbol))
@@ -502,7 +503,7 @@ static bool IsBasePrefixLetter(wchar_t symbol)
 	}
 }
 
-bool LexicalAnalyzer::read_number_literal(std::wstring& word, TokenType& type)
+bool LexicalAnalyzer::read_number_literal(gmt::wstring& word, TokenType& type)
 {
 	if (IsNumberSymbol(m_symbol))
 		word += m_symbol;
@@ -574,7 +575,7 @@ bool LexicalAnalyzer::read_number_literal(std::wstring& word, TokenType& type)
 	return word.size() > 0;
 }
 
-bool LexicalAnalyzer::is_punctuation(std::wstring& word, TokenType& type)
+bool LexicalAnalyzer::is_punctuation(gmt::wstring& word, TokenType& type)
 {
 	switch (m_symbol)
 	{
@@ -718,7 +719,7 @@ bool LexicalAnalyzer::is_punctuation(std::wstring& word, TokenType& type)
 	}
 }
 
-bool LexicalAnalyzer::is_word_operator(std::wstring& word, TokenType& type)
+bool LexicalAnalyzer::is_word_operator(gmt::wstring& word, TokenType& type)
 {
 	// Just because my friend asked this
 	if (word == L"and")
@@ -742,7 +743,7 @@ bool LexicalAnalyzer::is_word_operator(std::wstring& word, TokenType& type)
 	}
 }
 
-bool LexicalAnalyzer::is_operator(std::wstring& word, TokenType& type)
+bool LexicalAnalyzer::is_operator(gmt::wstring& word, TokenType& type)
 {
 	switch (m_symbol)
 	{
@@ -1036,7 +1037,7 @@ bool LexicalAnalyzer::is_operator(std::wstring& word, TokenType& type)
 	}
 }
 
-bool LexicalAnalyzer::is_null_literal(std::wstring& word, TokenType& type)
+bool LexicalAnalyzer::is_null_literal(gmt::wstring& word, TokenType& type)
 {
 	if (word == L"null")
 	{
@@ -1054,7 +1055,7 @@ bool LexicalAnalyzer::is_null_literal(std::wstring& word, TokenType& type)
 	}
 }
 
-bool LexicalAnalyzer::is_boolean_literal(std::wstring& word, TokenType& type)
+bool LexicalAnalyzer::is_boolean_literal(gmt::wstring& word, TokenType& type)
 {
 	if (word == L"true")
 	{
@@ -1128,7 +1129,7 @@ bool LexicalAnalyzer::is_string_literal(TokenType& type, bool& dontEcran)
 	}
 }
 
-bool LexicalAnalyzer::is_modifier(std::wstring& word, TokenType& type)
+bool LexicalAnalyzer::is_modifier(gmt::wstring& word, TokenType& type)
 {
 	if (word == L"public")
 	{
@@ -1166,7 +1167,7 @@ bool LexicalAnalyzer::is_modifier(std::wstring& word, TokenType& type)
 	}
 }
 
-bool LexicalAnalyzer::is_directive_decl(std::wstring& word, TokenType& type)
+bool LexicalAnalyzer::is_directive_decl(gmt::wstring& word, TokenType& type)
 {
 	if (word == L"using")
 	{
@@ -1184,7 +1185,7 @@ bool LexicalAnalyzer::is_directive_decl(std::wstring& word, TokenType& type)
 	}
 }
 
-bool LexicalAnalyzer::is_type_decl(std::wstring& word, TokenType& type)
+bool LexicalAnalyzer::is_type_decl(gmt::wstring& word, TokenType& type)
 {
 	if (word == L"method")
 	{
@@ -1217,7 +1218,7 @@ bool LexicalAnalyzer::is_type_decl(std::wstring& word, TokenType& type)
 	}
 }
 
-bool LexicalAnalyzer::is_type(std::wstring& word, TokenType& type)
+bool LexicalAnalyzer::is_type(gmt::wstring& word, TokenType& type)
 {
 	if (word == L"void")
 	{
@@ -1285,7 +1286,7 @@ bool LexicalAnalyzer::is_type(std::wstring& word, TokenType& type)
 	}
 }
 
-bool LexicalAnalyzer::is_keyword(std::wstring& word, TokenType& type)
+bool LexicalAnalyzer::is_keyword(gmt::wstring& word, TokenType& type)
 {
 	if (is_conditional_keyword(word, type))
 		return true;
@@ -1390,7 +1391,7 @@ bool LexicalAnalyzer::is_keyword(std::wstring& word, TokenType& type)
 	return false;
 }
 
-bool LexicalAnalyzer::is_conditional_keyword(std::wstring& word, TokenType& type)
+bool LexicalAnalyzer::is_conditional_keyword(gmt::wstring& word, TokenType& type)
 {
 	if (word == L"if")
 	{
@@ -1428,7 +1429,7 @@ bool LexicalAnalyzer::is_conditional_keyword(std::wstring& word, TokenType& type
 	}
 }
 
-bool LexicalAnalyzer::is_loop_keyword(std::wstring& word, TokenType& type)
+bool LexicalAnalyzer::is_loop_keyword(gmt::wstring& word, TokenType& type)
 {
 	if (word == L"for")
 	{
@@ -1466,7 +1467,7 @@ bool LexicalAnalyzer::is_loop_keyword(std::wstring& word, TokenType& type)
 	}
 }
 
-bool LexicalAnalyzer::is_functional_keyword(std::wstring& word, TokenType& type)
+bool LexicalAnalyzer::is_functional_keyword(gmt::wstring& word, TokenType& type)
 {
 	if (word == L"return")
 	{

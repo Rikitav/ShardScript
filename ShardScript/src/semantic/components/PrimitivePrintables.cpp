@@ -5,6 +5,8 @@
 #include <shard/LibraryMetadata.hpp>
 #include <shard/runtime/MethodCallState.hpp>
 
+#include <gmt/Containers.hpp>
+
 #include <string>
 
 using namespace shard;
@@ -28,7 +30,7 @@ namespace
 
 	static void primitive_char_to_string(MethodCallState& context)
 	{
-		context.set_return_string(std::wstring(1, context.get_char_argument(0)));
+		context.set_return_string(gmt::wstring(1, context.get_char_argument(0)));
 	}
 
 	static void primitive_byte_to_string(MethodCallState& context)

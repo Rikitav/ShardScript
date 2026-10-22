@@ -2,6 +2,7 @@
 #include <shard/parsing/SyntaxVisitor.hpp>
 
 #include <gmt/Arena.hpp>
+#include <gmt/Containers.hpp>
 
 using namespace shard;
 
@@ -18,9 +19,9 @@ void IdentifierNameTypeSyntax::set_identifier(const SyntaxToken& token)
 	m_identifierToken = token;
 }
 
-std::wstring IdentifierNameTypeSyntax::get_qualifier() const
+gmt::wstring IdentifierNameTypeSyntax::get_qualifier() const
 {
-	return std::wstring(m_identifierToken.get_lexeme());
+	return gmt::wstring(m_identifierToken.get_lexeme());
 }
 
 TextLocation IdentifierNameTypeSyntax::get_location() const

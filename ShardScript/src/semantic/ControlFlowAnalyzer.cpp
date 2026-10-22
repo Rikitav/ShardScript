@@ -51,6 +51,7 @@
 #include <shard/semantic/symbols/VariableSymbol.hpp>
 
 #include <gmt/Concat.hpp>
+#include <gmt/Containers.hpp>
 
 using namespace shard;
 
@@ -993,7 +994,7 @@ bool ControlFlowAnalyzer::is_try_wrapped(gmt::Ref<const ExpressionSyntax> expres
 	return m_tryWrappedExpressions.find(expression) != m_tryWrappedExpressions.end();
 }
 
-void ControlFlowAnalyzer::add_thrown_type(std::unordered_set<gmt::Ref<StructSymbol>>& thrownTypes, gmt::Ref<StructSymbol> type)
+void ControlFlowAnalyzer::add_thrown_type(gmt::unordered_set<gmt::Ref<StructSymbol>>& thrownTypes, gmt::Ref<StructSymbol> type)
 {
 	if (type.is_null())
 		return;
@@ -1059,7 +1060,7 @@ void ControlFlowAnalyzer::propagate_effects()
 				callerEffects.mutatesArguments = callerEffects.mutatesArguments || calleeEffects.mutatesArguments;
 				callerEffects.hasUnknownSideEffects = callerEffects.hasUnknownSideEffects || calleeEffects.hasUnknownSideEffects;
 
-				std::unordered_set<gmt::Ref<StructSymbol>>* targetThrownSet = caller->get_is_async()
+				gmt::unordered_set<gmt::Ref<StructSymbol>>* targetThrownSet = caller->get_is_async()
 					? &callerEffects.asyncThrownTypes
 					: &callerEffects.thrownTypes;
 
@@ -1133,7 +1134,7 @@ void ControlFlowAnalyzer::report_edge_diagnostics(const CallEdge& edge)
 {
 	gmt::Ref<MethodSymbol> callee = edge.callee;
 	const MethodEffectSummary& calleeEffects = callee->get_effect_summary();
-	std::unordered_set<gmt::Ref<StructSymbol>> reportedTypes;
+	gmt::unordered_set<gmt::Ref<StructSymbol>> reportedTypes;
 
 	// the 'try' operator explicitly allows the callee's exceptions to unwind
 	// further; they are inherited as the caller's own effects, so no diagnostic
@@ -1180,7 +1181,7 @@ void ControlFlowAnalyzer::report_edge_diagnostics(const CallEdge& edge)
 	bool throwsUnknown = calleeEffects.mayThrow && !hasKnownThrownTypes;
 	if (!edge.isTryWrapped && throwsUnknown)
 	{
-		std::wstring message = callee->get_is_async() && edge.isAwaited
+		gmt::wstring message = callee->get_is_async() && edge.isAwaited
 			? gmt::concat(L"Await on '", callee->get_name(), L"' may throw an exception")
 			: gmt::concat(L"Call to '", callee->get_name(), L"' may throw an exception");
 

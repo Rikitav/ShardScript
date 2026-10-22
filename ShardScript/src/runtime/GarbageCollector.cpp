@@ -14,6 +14,7 @@
 #include <shard/semantic/symbols/StructSymbol.hpp>
 
 #include <gmt/Allocator.hpp>
+#include <gmt/Containers.hpp>
 
 #include <algorithm>
 #include <cstdlib>
@@ -119,7 +120,7 @@ ObjectInstance GarbageCollector::intern_string(std::wstring_view value)
 		return existing->second;
 
 	ObjectInstance instance = allocate_string(value);
-	m_internedStrings.emplace(std::wstring(value), instance);
+	m_internedStrings.emplace(gmt::wstring(value), instance);
 	return instance;
 }
 

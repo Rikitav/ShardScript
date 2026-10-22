@@ -1,5 +1,6 @@
 #include <shard/semantic/symbols/DelegateTypeSymbol.hpp>
 
+#include <gmt/Containers.hpp>
 #include <gmt/Interner.hpp>
 
 using namespace shard;
@@ -20,22 +21,22 @@ void DelegateTypeSymbol::set_return_type(gmt::Ref<StructSymbol> returnType)
 	m_returnType = returnType;
 }
 
-const std::vector<gmt::Ref<ParameterSymbol>>& DelegateTypeSymbol::get_parameters() const
+const gmt::vector<gmt::Ref<ParameterSymbol>>& DelegateTypeSymbol::get_parameters() const
 {
 	return m_parameters;
 }
 
-void DelegateTypeSymbol::set_parameters(const std::vector<gmt::Ref<ParameterSymbol>>& parameters)
+void DelegateTypeSymbol::set_parameters(const gmt::vector<gmt::Ref<ParameterSymbol>>& parameters)
 {
 	m_parameters = parameters;
 }
 
-const std::vector<gmt::Ref<TypeParameterSymbol>>& DelegateTypeSymbol::get_type_parameters() const
+const gmt::vector<gmt::Ref<TypeParameterSymbol>>& DelegateTypeSymbol::get_type_parameters() const
 {
 	return type_parameters;
 }
 
-void DelegateTypeSymbol::set_type_parameters(const std::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters)
+void DelegateTypeSymbol::set_type_parameters(const gmt::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters)
 {
 	type_parameters = typeParameters;
 }

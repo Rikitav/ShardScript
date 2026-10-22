@@ -1,5 +1,6 @@
 #include <shard/semantic/symbols/MethodSymbol.hpp>
 
+#include <gmt/Containers.hpp>
 #include <gmt/Interner.hpp>
 
 #include <shard/semantic/symbols/TypeParameterSymbol.hpp>
@@ -49,12 +50,12 @@ void MethodSymbol::set_return_type(gmt::Ref<StructSymbol> returnType)
 	m_returnType = returnType;
 }
 
-const std::vector<gmt::Ref<TypeParameterSymbol>>& MethodSymbol::get_type_parameters() const
+const gmt::vector<gmt::Ref<TypeParameterSymbol>>& MethodSymbol::get_type_parameters() const
 {
 	return m_typeParameters;
 }
 
-const std::vector<gmt::Ref<ParameterSymbol>>& MethodSymbol::get_parameters() const
+const gmt::vector<gmt::Ref<ParameterSymbol>>& MethodSymbol::get_parameters() const
 {
 	return m_parameters;
 }

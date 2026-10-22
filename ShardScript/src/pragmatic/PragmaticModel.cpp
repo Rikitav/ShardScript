@@ -3,6 +3,7 @@
 #include <shard/semantic/SemanticModel.hpp>
 #include <shard/semantic/symbols/GenericMethodSymbol.hpp>
 
+#include <gmt/Containers.hpp>
 #include <gmt/InlineVector.hpp>
 
 using namespace shard;
@@ -21,17 +22,17 @@ std::optional<AllocationSiteVerdict> PragmaticModel::get_allocation_site_verdict
 	return it->second;
 }
 
-const std::unordered_map<gmt::Ref<const ExpressionSyntax>, AllocationSiteVerdict>& PragmaticModel::get_allocation_sites() const
+const gmt::unordered_map<gmt::Ref<const ExpressionSyntax>, AllocationSiteVerdict>& PragmaticModel::get_allocation_sites() const
 {
 	return m_allocationSites;
 }
 
-void PragmaticModel::set_promotion_points(gmt::Ref<const ExpressionSyntax> site, std::vector<gmt::Ref<const ExpressionSyntax>> points)
+void PragmaticModel::set_promotion_points(gmt::Ref<const ExpressionSyntax> site, gmt::vector<gmt::Ref<const ExpressionSyntax>> points)
 {
 	m_promotionPoints[site] = std::move(points);
 }
 
-const std::vector<gmt::Ref<const ExpressionSyntax>>* PragmaticModel::get_promotion_points(gmt::Ref<const ExpressionSyntax> site) const
+const gmt::vector<gmt::Ref<const ExpressionSyntax>>* PragmaticModel::get_promotion_points(gmt::Ref<const ExpressionSyntax> site) const
 {
 	auto it = m_promotionPoints.find(site);
 	if (it == m_promotionPoints.end())
@@ -61,12 +62,12 @@ AllocationSiteVerdict PragmaticModel::get_local_verdict(gmt::Ref<MethodSymbol> m
 	return localIt->second;
 }
 
-void PragmaticModel::set_local_order(gmt::Ref<MethodSymbol> method, std::vector<gmt::Ref<SyntaxSymbol>> locals)
+void PragmaticModel::set_local_order(gmt::Ref<MethodSymbol> method, gmt::vector<gmt::Ref<SyntaxSymbol>> locals)
 {
 	m_methodLocalOrder[method] = std::move(locals);
 }
 
-const std::vector<gmt::Ref<SyntaxSymbol>>* PragmaticModel::get_local_order(gmt::Ref<MethodSymbol> method) const
+const gmt::vector<gmt::Ref<SyntaxSymbol>>* PragmaticModel::get_local_order(gmt::Ref<MethodSymbol> method) const
 {
 	auto it = m_methodLocalOrder.find(method);
 	if (it == m_methodLocalOrder.end())
@@ -89,7 +90,7 @@ EscapeSummary PragmaticModel::get_summary(gmt::Ref<MethodSymbol> method) const
 	return it->second;
 }
 
-const std::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& PragmaticModel::get_summaries() const
+const gmt::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& PragmaticModel::get_summaries() const
 {
 	return m_summaries;
 }
@@ -137,7 +138,7 @@ FrameLayout& PragmaticModel::get_or_create_frame_layout(SemanticModel& model, gm
 	if (open == nullptr)
 		return m_frameLayouts[method];
 
-	const std::vector<gmt::Ref<StructSymbol>>& arguments = instantiation->get_type_arguments();
+	const gmt::vector<gmt::Ref<StructSymbol>>& arguments = instantiation->get_type_arguments();
 	FrameLayout& layout = m_frameLayouts[method];
 
 	layout.set_argument_count(open->get_argument_count());
@@ -189,12 +190,12 @@ std::optional<std::uint16_t> PragmaticModel::get_local_slot(gmt::Ref<MethodSymbo
 	return slotChoice->second;
 }
 
-std::vector<gmt::Ref<SyntaxSymbol>>& PragmaticModel::lambda_captures_for(gmt::Ref<MethodSymbol> method)
+gmt::vector<gmt::Ref<SyntaxSymbol>>& PragmaticModel::lambda_captures_for(gmt::Ref<MethodSymbol> method)
 {
 	return m_lambdaCaptures[method];
 }
 
-const std::vector<gmt::Ref<SyntaxSymbol>>* PragmaticModel::get_lambda_captures(gmt::Ref<MethodSymbol> method) const
+const gmt::vector<gmt::Ref<SyntaxSymbol>>* PragmaticModel::get_lambda_captures(gmt::Ref<MethodSymbol> method) const
 {
 	auto choice = m_lambdaCaptures.find(method);
 	if (choice == m_lambdaCaptures.end())

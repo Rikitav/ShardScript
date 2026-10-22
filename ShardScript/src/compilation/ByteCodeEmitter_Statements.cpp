@@ -40,6 +40,8 @@
 #include <shard/semantic/symbols/StructSymbol.hpp>
 #include <shard/semantic/symbols/VariableSymbol.hpp>
 
+#include <gmt/Containers.hpp>
+
 using namespace shard;
 
 namespace
@@ -265,7 +267,7 @@ void ByteCodeEmitter::visit_unless_statement(const UnlessStatementSyntax* node)
 
 void ByteCodeEmitter::emit_conditional_chain(const ConditionalClauseBaseSyntax* head)
 {
-	std::vector<std::size_t> endBacktracks;
+	gmt::vector<std::size_t> endBacktracks;
 	const ConditionalClauseBaseSyntax* clause = head;
 
 	while (clause != nullptr)
@@ -733,7 +735,7 @@ void ByteCodeEmitter::visit_try_statement(const TryStatementSyntax* node)
 
 	m_encoder.emit_leave_try();
 
-	std::vector<std::size_t> endBacktracks;
+	gmt::vector<std::size_t> endBacktracks;
 	std::size_t endAt = mark_position();
 	m_encoder.emit_jump(0);
 	endBacktracks.push_back(endAt);

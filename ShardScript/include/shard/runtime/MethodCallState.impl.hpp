@@ -1,6 +1,7 @@
 #pragma once
 #include <shard/runtime/MethodCallState.hpp>
 
+#include <gmt/Containers.hpp>
 #include <gmt/Strings.hpp>
 
 #include <cstddef>
@@ -58,12 +59,12 @@ namespace shard::detail
 		return unwrap_string(value);
 	}
 
-	inline std::wstring unwrap_arg(ObjectInstance value, std::wstring*)
+	inline gmt::wstring unwrap_arg(ObjectInstance value, gmt::wstring*)
 	{
-		return std::wstring(unwrap_string(value));
+		return gmt::wstring(unwrap_string(value));
 	}
 
-	inline std::string unwrap_arg(ObjectInstance value, std::string*)
+	inline gmt::string unwrap_arg(ObjectInstance value, gmt::string*)
 	{
 		return gmt::wide_to_utf8(unwrap_string(value));
 	}
@@ -96,7 +97,7 @@ namespace shard
 {
 	// Extracts the method arguments into a typed tuple. Supported types: bool,
 	// std::int64_t, double, wchar_t, std::uint8_t, std::wstring_view,
-	// std::wstring, ObjectInstance, and any native pointer T*.
+	// gmt::wstring, ObjectInstance, and any native pointer T*.
 	template<typename... TArgs>
 	inline std::tuple<TArgs...> MethodCallState::get_arguments() const
 	{

@@ -2,6 +2,7 @@
 #include <shard/Definitions.hpp>
 
 #include <gmt/Arena.hpp>
+#include <gmt/Containers.hpp>
 #include <gmt/Ref.hpp>
 #include <shard/parsing/nodes/TranslationUnitSyntax.hpp>
 
@@ -13,7 +14,7 @@ namespace shard
 	class SHARD_API SyntaxTree final
 	{
 		gmt::Arena m_arena;
-		std::vector<gmt::Ref<TranslationUnitSyntax>> m_units;
+		gmt::vector<gmt::Ref<TranslationUnitSyntax>> m_units;
 
 	public:
 		SyntaxTree() = default;

@@ -1,5 +1,6 @@
 #include <shard/semantic/symbols/TypeParameterSymbol.hpp>
 
+#include <gmt/Containers.hpp>
 #include <gmt/Interner.hpp>
 
 using namespace shard;
@@ -13,7 +14,7 @@ TypeParameterSymbol::TypeParameterSymbol(gmt::StringReference name, gmt::Ref<Syn
 	set_accesibility(ACS_PUBLIC);
 }
 
-const std::vector<gmt::Ref<StructSymbol>>& TypeParameterSymbol::get_constraints() const
+const gmt::vector<gmt::Ref<StructSymbol>>& TypeParameterSymbol::get_constraints() const
 {
 	return m_constraints;
 }

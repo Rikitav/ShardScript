@@ -2,6 +2,7 @@
 #include <shard/Definitions.hpp>
 
 #include <gmt/Alignment.hpp>
+#include <gmt/Containers.hpp>
 #include <gmt/Ref.hpp>
 #include <gmt/Span.hpp>
 
@@ -40,12 +41,12 @@ namespace gmt
 	{
 		static constexpr std::size_t initial_capacity = 16 * 1024;
 
-		std::vector<std::byte*> m_chunks;
-		std::vector<std::size_t> m_chunkSizes;
-		std::vector<std::size_t> m_chunkBases;
+		gmt::vector<std::byte*> m_chunks;
+		gmt::vector<std::size_t> m_chunkSizes;
+		gmt::vector<std::size_t> m_chunkBases;
 		std::size_t m_capacity;
 		std::size_t m_cursor;
-		std::vector<detail::destructor_entry> m_destructors;
+		gmt::vector<detail::destructor_entry> m_destructors;
 
 	public:
 		Arena();

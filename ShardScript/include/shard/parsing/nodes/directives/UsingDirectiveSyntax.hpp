@@ -4,6 +4,7 @@
 #include <shard/parsing/SyntaxNode.hpp>
 #include <shard/parsing/SyntaxToken.hpp>
 
+#include <gmt/Containers.hpp>
 #include <gmt/Span.hpp>
 
 #include <string>
@@ -21,7 +22,7 @@ namespace shard
 		virtual ~UsingDirectiveSyntax() = default;
 
 		gmt::Span<const SyntaxToken> get_qualifier() const;
-		std::wstring get_qualifier_string() const;
+		gmt::wstring get_qualifier_string() const;
 		SyntaxToken get_semicolon() const;
 		SyntaxToken get_using_keyword() const;
 

@@ -4,6 +4,7 @@
 
 #include <shard/semantic/symbols/ParameterSymbol.hpp>
 
+#include <gmt/Containers.hpp>
 #include <gmt/InlineVector.hpp>
 
 using namespace shard;
@@ -163,7 +164,7 @@ gmt::Ref<GenericTypeSymbol> SymbolTable::find_or_create_generic_type(gmt::Ref<St
 
 	gmt::Ref<GenericTypeSymbol> symbol = m_arena.emplace<GenericTypeSymbol>(underlaying, m_rootNamespace);
 
-	const std::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters = underlaying->type_parameters;
+	const gmt::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters = underlaying->type_parameters;
 	for (std::size_t i = 0; i < typeParameters.size() && i < typeArguments.size(); ++i)
 		symbol->add_type_parameter(typeParameters[i], typeArguments[i]);
 

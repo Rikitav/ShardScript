@@ -14,6 +14,7 @@
 #include <shard/semantic/symbols/MethodSymbol.hpp>
 #include <shard/semantic/symbols/StructSymbol.hpp>
 
+#include <gmt/Containers.hpp>
 #include <gmt/InlineVector.hpp>
 
 #include <algorithm>
@@ -56,7 +57,7 @@ namespace
 		write_hex_offset(line, currentOffset);
 		line << L":";
 
-		std::wstring opcode;
+		gmt::wstring opcode;
 		std::wostringstream args;
 
 		switch (op)

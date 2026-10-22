@@ -3,6 +3,7 @@
 
 #include <shard/runtime/ObjectInstance.hpp>
 
+#include <gmt/Containers.hpp>
 #include <gmt/Ref.hpp>
 
 #include <cstddef>
@@ -46,11 +47,11 @@ namespace shard
 		SemanticModel& m_model;
 		PragmaticModel& m_pragmatic;
 
-		std::unordered_set<std::byte*> m_heap;
-		std::unordered_map<std::size_t, StaticStorage> m_statics;
-		std::map<std::wstring, ObjectInstance, std::less<>> m_internedStrings;
-		std::vector<CallStackFrame*> m_frames;
-		std::vector<ObjectInstance> m_pinned;
+		gmt::unordered_set<std::byte*> m_heap;
+		gmt::unordered_map<std::size_t, StaticStorage> m_statics;
+		gmt::map<gmt::wstring, ObjectInstance, std::less<>> m_internedStrings;
+		gmt::vector<CallStackFrame*> m_frames;
+		gmt::vector<ObjectInstance> m_pinned;
 
 		std::size_t m_allocatedSinceCollection = 0;
 		std::size_t m_collectionThreshold = 256 * 1024;

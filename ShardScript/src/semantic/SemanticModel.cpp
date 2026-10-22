@@ -19,6 +19,7 @@
 #include <shard/semantic/symbols/TypeParameterSymbol.hpp>
 
 #include <gmt/Concat.hpp>
+#include <gmt/Containers.hpp>
 
 #include <stdexcept>
 #include <unordered_set>
@@ -144,7 +145,7 @@ bool SemanticModel::are_types_equal(gmt::Ref<const StructSymbol> left, gmt::Ref<
 	}
 }
 
-static void collect_all_interfaces(gmt::Ref<const StructSymbol> type, std::vector<gmt::Ref<const StructSymbol>>& out, std::unordered_set<gmt::Ref<const StructSymbol>>& visited)
+static void collect_all_interfaces(gmt::Ref<const StructSymbol> type, gmt::vector<gmt::Ref<const StructSymbol>>& out, gmt::unordered_set<gmt::Ref<const StructSymbol>>& visited)
 {
 	if (type.is_null())
 		return;
@@ -163,10 +164,10 @@ static void collect_all_interfaces(gmt::Ref<const StructSymbol> type, std::vecto
 	}
 }
 
-static std::vector<gmt::Ref<const StructSymbol>> get_all_interfaces(gmt::Ref<const StructSymbol> type)
+static gmt::vector<gmt::Ref<const StructSymbol>> get_all_interfaces(gmt::Ref<const StructSymbol> type)
 {
-	std::vector<gmt::Ref<const StructSymbol>> result;
-	std::unordered_set<gmt::Ref<const StructSymbol>> visited;
+	gmt::vector<gmt::Ref<const StructSymbol>> result;
+	gmt::unordered_set<gmt::Ref<const StructSymbol>> visited;
 	collect_all_interfaces(type, result, visited);
 	return result;
 }
@@ -342,7 +343,7 @@ bool SemanticModel::is_assignable_to(gmt::Ref<const StructSymbol> target, gmt::R
 	return false;
 }
 
-std::wstring SemanticModel::get_type_display_name(gmt::Ref<const StructSymbol> type) const
+gmt::wstring SemanticModel::get_type_display_name(gmt::Ref<const StructSymbol> type) const
 {
 	if (type.is_null())
 		return L"<error>";
@@ -352,7 +353,7 @@ std::wstring SemanticModel::get_type_display_name(gmt::Ref<const StructSymbol> t
 		gmt::Ref<const GenericTypeSymbol> generic = type.as<GenericTypeSymbol>();
 		gmt::Ref<const StructSymbol> underlaying = generic->get_underlaying_type();
 
-		std::wstring result = underlaying.is_null() ? L"<error>" : std::wstring(underlaying->get_name());
+		gmt::wstring result = underlaying.is_null() ? L"<error>" : gmt::wstring(underlaying->get_name());
 		result += L'<';
 
 		if (!underlaying.is_null())
@@ -385,7 +386,7 @@ std::wstring SemanticModel::get_type_display_name(gmt::Ref<const StructSymbol> t
 		return gmt::concat(get_type_display_name(nullable->get_underlaying_type()), L"?");
 	}
 
-	return std::wstring(type->get_name());
+	return gmt::wstring(type->get_name());
 }
 
 bool SemanticModel::type_implements_interface(gmt::Ref<StructSymbol> type, gmt::Ref<InterfaceSymbol> interfaceSymbol) const
@@ -697,10 +698,10 @@ gmt::Ref<IndexatorSymbol> SemanticModel::resolve_virtual_indexator(gmt::Ref<Stru
 	if (type.is_null() || interfaceMember.is_null())
 		return gmt::nullref;
 
-	const std::vector<gmt::Ref<ParameterSymbol>>& expectedParams = interfaceMember->get_parameters();
+	const gmt::vector<gmt::Ref<ParameterSymbol>>& expectedParams = interfaceMember->get_parameters();
 	for (gmt::Ref<IndexatorSymbol> candidate : type->indexators)
 	{
-		const std::vector<gmt::Ref<ParameterSymbol>>& candidateParams = candidate->get_parameters();
+		const gmt::vector<gmt::Ref<ParameterSymbol>>& candidateParams = candidate->get_parameters();
 		if (candidateParams.size() != expectedParams.size())
 			continue;
 
@@ -752,14 +753,14 @@ gmt::Ref<StructSymbol> SemanticModel::resolve_runtime_type_argument(gmt::Ref<Str
 	if (type->get_kind() == SyntaxKind::GenericType)
 	{
 		gmt::Ref<StructSymbol> baseType;
-		std::vector<gmt::Ref<StructSymbol>> genericArgs;
+		gmt::vector<gmt::Ref<StructSymbol>> genericArgs;
 
 		if (!try_resolve_generic_arguments(type, resolveParameter, baseType, genericArgs))
 			return type;
 
 		bool changed = false;
 		gmt::Ref<GenericTypeSymbol> generic = type.as<GenericTypeSymbol>();
-		const std::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters = baseType->type_parameters;
+		const gmt::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters = baseType->type_parameters;
 		for (std::size_t i = 0; i < typeParameters.size() && i < genericArgs.size(); ++i)
 		{
 			if (genericArgs[i] != generic->substitute_type_parameter(typeParameters[i]))
@@ -806,7 +807,7 @@ gmt::Ref<StructSymbol> SemanticModel::substitute_type(gmt::Ref<StructSymbol> typ
 	return resolve_runtime_type_argument(type, resolver);
 }
 
-bool SemanticModel::try_resolve_generic_arguments(gmt::Ref<StructSymbol> type, const TypeParameterResolver& resolveParameter, gmt::Ref<StructSymbol>& baseType, std::vector<gmt::Ref<StructSymbol>>& genericArgs)
+bool SemanticModel::try_resolve_generic_arguments(gmt::Ref<StructSymbol> type, const TypeParameterResolver& resolveParameter, gmt::Ref<StructSymbol>& baseType, gmt::vector<gmt::Ref<StructSymbol>>& genericArgs)
 {
 	if (type.is_null())
 		return false;

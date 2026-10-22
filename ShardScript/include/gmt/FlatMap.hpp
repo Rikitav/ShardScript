@@ -1,5 +1,7 @@
 #pragma once
 
+#include <gmt/Containers.hpp>
+
 #include <cstddef>
 #include <utility>
 #include <vector>
@@ -9,11 +11,11 @@ namespace gmt
 	template<typename K, typename V>
 	class FlatMap
 	{
-		std::vector<std::pair<K, V>> m_entries;
+		gmt::vector<std::pair<K, V>> m_entries;
 
 	public:
-		using iterator = typename std::vector<std::pair<K, V>>::iterator;
-		using const_iterator = typename std::vector<std::pair<K, V>>::const_iterator;
+		using iterator = typename gmt::vector<std::pair<K, V>>::iterator;
+		using const_iterator = typename gmt::vector<std::pair<K, V>>::const_iterator;
 
 		FlatMap() = default;
 

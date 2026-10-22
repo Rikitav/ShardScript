@@ -20,6 +20,7 @@
 #include <shard/semantic/symbols/VariableSymbol.hpp>
 
 #include <gmt/Concat.hpp>
+#include <gmt/Containers.hpp>
 
 #include <gmt/InlineVector.hpp>
 
@@ -578,7 +579,7 @@ gmt::Ref<IndexatorSymbol> ExpressionBinder::resolve_indexator(const IndexatorExp
 		if (candidate.is_null())
 			continue;
 
-		const std::vector<gmt::Ref<ParameterSymbol>>& parameters = candidate->get_parameters();
+		const gmt::vector<gmt::Ref<ParameterSymbol>>& parameters = candidate->get_parameters();
 		if (parameters.size() != argumentTypes.get_vector().size())
 			continue;
 

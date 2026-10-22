@@ -34,6 +34,7 @@
 #include <shard/semantic/symbols/VariableSymbol.hpp>
 
 #include <gmt/Concat.hpp>
+#include <gmt/Containers.hpp>
 #include <gmt/InlineVector.hpp>
 
 using namespace shard;
@@ -215,7 +216,7 @@ PlacementVerdict ByteCodeEmitter::local_verdict(gmt::Ref<SyntaxSymbol> symbol) c
 		if (slot.has_value())
 		{
 			std::int32_t variableIndex = static_cast<std::int32_t>(*slot) - m_layout->get_argument_count();
-			const std::vector<FrameSlotRecipe>& recipes = m_layout->get_variable_slots();
+			const gmt::vector<FrameSlotRecipe>& recipes = m_layout->get_variable_slots();
 
 			if (variableIndex >= 0 && variableIndex < static_cast<std::int32_t>(recipes.size()))
 				return recipes[static_cast<std::size_t>(variableIndex)].verdict;

@@ -13,6 +13,7 @@
 #include <shard/parsing/SyntaxNode.hpp>
 
 #include <gmt/Arena.hpp>
+#include <gmt/Containers.hpp>
 #include <gmt/Ref.hpp>
 
 #include <cstddef>
@@ -39,12 +40,12 @@ namespace shard
 		gmt::Ref<StructSymbol> m_nativeInteger;
 		gmt::Ref<StructSymbol> m_byte;
 
-		std::unordered_map<gmt::Ref<const SyntaxNode>, gmt::Ref<SyntaxSymbol>> m_nodeToSymbolMap;
-		std::unordered_map<gmt::Ref<SyntaxSymbol>, gmt::Ref<const SyntaxNode>> m_symbolToNodeMap;
+		gmt::unordered_map<gmt::Ref<const SyntaxNode>, gmt::Ref<SyntaxSymbol>> m_nodeToSymbolMap;
+		gmt::unordered_map<gmt::Ref<SyntaxSymbol>, gmt::Ref<const SyntaxNode>> m_symbolToNodeMap;
 
 		// inferred or explicit call-site type arguments per invocation node.
 		// consumed by the emitter to build instantiations
-		std::unordered_map<gmt::Ref<const SyntaxNode>, std::vector<gmt::Ref<StructSymbol>>> m_nodeTypeArguments;
+		gmt::unordered_map<gmt::Ref<const SyntaxNode>, gmt::vector<gmt::Ref<StructSymbol>>> m_nodeTypeArguments;
 
 		// composite symbols registry
 		SymbolInterner m_interner;

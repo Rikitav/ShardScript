@@ -8,6 +8,8 @@
 #include <shard/lexical/SourceProvider.hpp>
 #include <shard/lexical/SourceTextProvider.hpp>
 
+#include <gmt/Containers.hpp>
+
 #include <locale>
 #include <string>
 #include <deque>
@@ -28,7 +30,7 @@ namespace shard
 		bool m_ownsSourceTextProvider;
 		SourceTextProvider* m_sourceText;
 		std::wstring_view m_fileName;
-		std::deque<SyntaxToken> m_readBuffer;
+		gmt::deque<SyntaxToken> m_readBuffer;
 
 	public:
 		LexicalAnalyzer(SourceTextProvider& sourceText);
@@ -46,33 +48,33 @@ namespace shard
 	protected:
 		bool advance(wchar_t& ch);
 
-		TextLocation get_current_location(std::wstring& word);
+		TextLocation get_current_location(gmt::wstring& word);
 		bool read_next_token(SyntaxToken& pToken);
 
 		bool read_next_real();
-		bool read_next_word(std::wstring& word, TokenType& type);
-		bool read_while_alpha(std::wstring& word);
+		bool read_next_word(gmt::wstring& word, TokenType& type);
+		bool read_while_alpha(gmt::wstring& word);
 
-		bool read_number_literal(std::wstring& word, TokenType& type);
-		bool read_char_literal(std::wstring& word, bool notEcran, bool& wasClosed);
-		bool read_string_literal(std::wstring& word, bool notEcran, bool& wasClosed);
+		bool read_number_literal(gmt::wstring& word, TokenType& type);
+		bool read_char_literal(gmt::wstring& word, bool notEcran, bool& wasClosed);
+		bool read_string_literal(gmt::wstring& word, bool notEcran, bool& wasClosed);
 
-		bool is_null_literal(std::wstring& word, TokenType& type);
-		bool is_boolean_literal(std::wstring& word, TokenType& type);
+		bool is_null_literal(gmt::wstring& word, TokenType& type);
+		bool is_boolean_literal(gmt::wstring& word, TokenType& type);
 		bool is_number_literal(TokenType& type) const;
 		bool is_char_literal(TokenType& type, bool& dontEcran);
 		bool is_string_literal(TokenType& type, bool& dontEcran);
 
-		bool is_punctuation(std::wstring& word, TokenType& type);
-		bool is_operator(std::wstring& word, TokenType& type);
-		bool is_word_operator(std::wstring& word, TokenType& type);
-		bool is_modifier(std::wstring& word, TokenType& type);
-		bool is_directive_decl(std::wstring& word, TokenType& type);
-		bool is_type_decl(std::wstring& word, TokenType& type);
-		bool is_type(std::wstring& word, TokenType& type);
-		bool is_keyword(std::wstring& word, TokenType& type);
-		bool is_loop_keyword(std::wstring& word, TokenType& type);
-		bool is_conditional_keyword(std::wstring& word, TokenType& type);
-		bool is_functional_keyword(std::wstring& word, TokenType& type);
+		bool is_punctuation(gmt::wstring& word, TokenType& type);
+		bool is_operator(gmt::wstring& word, TokenType& type);
+		bool is_word_operator(gmt::wstring& word, TokenType& type);
+		bool is_modifier(gmt::wstring& word, TokenType& type);
+		bool is_directive_decl(gmt::wstring& word, TokenType& type);
+		bool is_type_decl(gmt::wstring& word, TokenType& type);
+		bool is_type(gmt::wstring& word, TokenType& type);
+		bool is_keyword(gmt::wstring& word, TokenType& type);
+		bool is_loop_keyword(gmt::wstring& word, TokenType& type);
+		bool is_conditional_keyword(gmt::wstring& word, TokenType& type);
+		bool is_functional_keyword(gmt::wstring& word, TokenType& type);
 	};
 }

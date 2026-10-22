@@ -5,6 +5,7 @@
 #include <shard/semantic/symbols/PropertySymbol.hpp>
 
 #include <gmt/Arena.hpp>
+#include <gmt/Containers.hpp>
 
 #include <string_view>
 #include <vector>
@@ -15,7 +16,7 @@ namespace shard
 
 	class SHARD_API IndexatorSymbol final : public PropertySymbol
 	{
-		std::vector<gmt::Ref<ParameterSymbol>> m_parameters;
+		gmt::vector<gmt::Ref<ParameterSymbol>> m_parameters;
 
 	public:
 		IndexatorSymbol(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent);
@@ -28,7 +29,7 @@ namespace shard
 		IndexatorSymbol(IndexatorSymbol&& other) = delete;
 		IndexatorSymbol& operator=(IndexatorSymbol&& other) = delete;
 
-		const std::vector<gmt::Ref<ParameterSymbol>>& get_parameters() const;
+		const gmt::vector<gmt::Ref<ParameterSymbol>>& get_parameters() const;
 
 		void on_symbol_declared(gmt::Ref<SyntaxSymbol> symbol) override;
 	};

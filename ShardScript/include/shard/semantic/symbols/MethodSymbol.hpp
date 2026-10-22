@@ -6,6 +6,7 @@
 #include <shard/semantic/symbols/MemberSymbol.hpp>
 
 #include <gmt/Arena.hpp>
+#include <gmt/Containers.hpp>
 #include <gmt/Ref.hpp>
 
 #include <cstddef>
@@ -31,8 +32,8 @@ namespace shard
 		void* m_functionPointer = nullptr;
 
 		gmt::Ref<StructSymbol> m_returnType;
-		std::vector<gmt::Ref<TypeParameterSymbol>> m_typeParameters;
-		std::vector<gmt::Ref<ParameterSymbol>> m_parameters;
+		gmt::vector<gmt::Ref<TypeParameterSymbol>> m_typeParameters;
+		gmt::vector<gmt::Ref<ParameterSymbol>> m_parameters;
 
 		bool m_isVirtual = false;
 		bool m_isAsync = false;
@@ -60,8 +61,8 @@ namespace shard
 		gmt::Ref<StructSymbol> get_return_type() const;
 		void set_return_type(gmt::Ref<StructSymbol> return_type);
 
-		const std::vector<gmt::Ref<TypeParameterSymbol>>& get_type_parameters() const;
-		const std::vector<gmt::Ref<ParameterSymbol>>& get_parameters() const;
+		const gmt::vector<gmt::Ref<TypeParameterSymbol>>& get_type_parameters() const;
+		const gmt::vector<gmt::Ref<ParameterSymbol>>& get_parameters() const;
 
 		bool get_is_virtual() const;
 		void set_is_virtual(bool is_virtual);

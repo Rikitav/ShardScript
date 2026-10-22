@@ -1,5 +1,7 @@
 #include <shard/parsing/Diagnostics.hpp>
 
+#include <gmt/Containers.hpp>
+
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
@@ -54,7 +56,7 @@ namespace
 		return &in;
 	}
 
-	std::wstring read_source_line(SourceFileCache& cache, const std::wstring_view filePath, const std::int32_t targetLine)
+	gmt::wstring read_source_line(SourceFileCache& cache, const std::wstring_view filePath, const std::int32_t targetLine)
 	{
 		std::wifstream& in = *open_source_file(cache, filePath);
 		if (!in.is_open())
@@ -63,7 +65,7 @@ namespace
 		in.clear();
 		in.seekg(0);
 
-		std::wstring line;
+		gmt::wstring line;
 		std::int32_t currentLine = 1;
 		while (currentLine < targetLine && std::getline(in, line))
 			++currentLine;
@@ -81,7 +83,7 @@ namespace
 Diagnostic::Diagnostic(
 	const SyntaxToken& token,
 	DiagnosticSeverity severity,
-	const std::wstring& description
+	const gmt::wstring& description
 ) :
 	m_severity(severity),
 	m_description(description),
@@ -92,7 +94,7 @@ Diagnostic::Diagnostic(
 Diagnostic::Diagnostic(
 	TextLocation location,
 	DiagnosticSeverity severity,
-	const std::wstring& description
+	const gmt::wstring& description
 ) :
 	m_severity(severity),
 	m_description(description),
@@ -104,7 +106,7 @@ Diagnostic::Diagnostic(
 	TextLocation location,
 	const SyntaxToken& token,
 	DiagnosticSeverity severity,
-	const std::wstring& description
+	const gmt::wstring& description
 ) :
 	m_severity(severity),
 	m_description(description),
@@ -112,7 +114,7 @@ Diagnostic::Diagnostic(
 	m_location(location)
 { }
 
-void DiagnosticsContext::report_error(const SyntaxToken& token, const std::wstring& description)
+void DiagnosticsContext::report_error(const SyntaxToken& token, const gmt::wstring& description)
 {
 	m_anyError = true;
 	m_diagnostics.push_back(Diagnostic(token, DiagnosticSeverity::Error, description));
@@ -124,7 +126,7 @@ void DiagnosticsContext::report_error(const SyntaxToken& token, string_t descrip
 	m_diagnostics.push_back(Diagnostic(token, DiagnosticSeverity::Error, description));
 }
 
-void DiagnosticsContext::report_error(const TextLocation& location, const std::wstring& description)
+void DiagnosticsContext::report_error(const TextLocation& location, const gmt::wstring& description)
 {
 	m_anyError = true;
 	m_diagnostics.push_back(Diagnostic(location, DiagnosticSeverity::Error, description));
@@ -136,7 +138,7 @@ void DiagnosticsContext::report_error(const TextLocation& location, string_t des
 	m_diagnostics.push_back(Diagnostic(location, DiagnosticSeverity::Error, description));
 }
 
-void DiagnosticsContext::report_warning(const SyntaxToken& token, const std::wstring& description)
+void DiagnosticsContext::report_warning(const SyntaxToken& token, const gmt::wstring& description)
 {
 	m_diagnostics.push_back(Diagnostic(token, DiagnosticSeverity::Warning, description));
 }
@@ -146,7 +148,7 @@ void DiagnosticsContext::report_warning(const SyntaxToken& token, string_t descr
 	m_diagnostics.push_back(Diagnostic(token, DiagnosticSeverity::Warning, description));
 }
 
-void DiagnosticsContext::report_warning(const TextLocation& location, const std::wstring& description)
+void DiagnosticsContext::report_warning(const TextLocation& location, const gmt::wstring& description)
 {
 	m_anyWarns = true;
 	m_diagnostics.push_back(Diagnostic(location, DiagnosticSeverity::Warning, description));
@@ -158,7 +160,7 @@ void DiagnosticsContext::report_warning(const TextLocation& location, string_t d
 	m_diagnostics.push_back(Diagnostic(location, DiagnosticSeverity::Warning, description));
 }
 
-void DiagnosticsContext::report_info(const SyntaxToken& token, const std::wstring& description)
+void DiagnosticsContext::report_info(const SyntaxToken& token, const gmt::wstring& description)
 {
 	Diagnostic dgnstc = Diagnostic(token, DiagnosticSeverity::Info, description);
 	m_diagnostics.push_back(dgnstc);
@@ -170,7 +172,7 @@ void DiagnosticsContext::report_info(const SyntaxToken& token, string_t descript
 	m_diagnostics.push_back(dgnstc);
 }
 
-void DiagnosticsContext::report_info(const TextLocation& location, const std::wstring& description)
+void DiagnosticsContext::report_info(const TextLocation& location, const gmt::wstring& description)
 {
 	m_diagnostics.push_back(Diagnostic(location, DiagnosticSeverity::Info, description));
 }
@@ -249,7 +251,7 @@ void DiagnosticsContext::write_diagnostic_pretty(std::wostream& out, const Diagn
 
 	out << FG_LIGHT_GRAY << L"    |" << ST_RESET << std::endl;
 
-	std::wstring sourceLine = read_source_line(sourceFiles, location.get_filename(), location.get_line());
+	gmt::wstring sourceLine = read_source_line(sourceFiles, location.get_filename(), location.get_line());
 	if (sourceLine.empty())
 		return;
 
@@ -266,7 +268,7 @@ void DiagnosticsContext::write_diagnostic_pretty(std::wostream& out, const Diagn
 		length = static_cast<int>(sourceLine.length()) - start;
 
 	// if the source line is extremely long, show only a window around the diagnostic so the output stays readable
-	std::wstring displayedLine = sourceLine;
+	gmt::wstring displayedLine = sourceLine;
 	int lineOffset = 0;
 	bool trimmedPrefix = false;
 	bool trimmedSuffix = false;
@@ -307,8 +309,8 @@ void DiagnosticsContext::write_diagnostic_pretty(std::wostream& out, const Diagn
 		caretStart += 3;
 
 	out << FG_LIGHT_GRAY << L"    | " << ST_RESET
-		<< std::wstring(caretStart, L' ')
-		<< color << std::wstring(length, L'^') << ST_RESET << std::endl;
+		<< gmt::wstring(caretStart, L' ')
+		<< color << gmt::wstring(length, L'^') << ST_RESET << std::endl;
 }
 
 string_t shard::severity_to_wstring(const DiagnosticSeverity severity)

@@ -6,6 +6,7 @@
 #include <shard/semantic/symbols/MemberSymbol.hpp>
 
 #include <gmt/Arena.hpp>
+#include <gmt/Containers.hpp>
 #include <gmt/Ref.hpp>
 
 #include <string_view>
@@ -24,15 +25,15 @@ namespace shard
 	class SHARD_API StructSymbol : public MemberSymbol
 	{
 	public:
-		std::vector<gmt::Ref<StructSymbol>> interfaces;
-		std::vector<gmt::Ref<TypeParameterSymbol>> type_parameters;
+		gmt::vector<gmt::Ref<StructSymbol>> interfaces;
+		gmt::vector<gmt::Ref<TypeParameterSymbol>> type_parameters;
 
-		std::vector<gmt::Ref<FieldSymbol>> fields;
-		std::vector<gmt::Ref<PropertySymbol>> properties;
-		std::vector<gmt::Ref<IndexatorSymbol>> indexators;
-		std::vector<gmt::Ref<ConstructorSymbol>> constructors;
-		std::vector<gmt::Ref<OperatorSymbol>> operators;
-		std::vector<gmt::Ref<MethodSymbol>> methods;
+		gmt::vector<gmt::Ref<FieldSymbol>> fields;
+		gmt::vector<gmt::Ref<PropertySymbol>> properties;
+		gmt::vector<gmt::Ref<IndexatorSymbol>> indexators;
+		gmt::vector<gmt::Ref<ConstructorSymbol>> constructors;
+		gmt::vector<gmt::Ref<OperatorSymbol>> operators;
+		gmt::vector<gmt::Ref<MethodSymbol>> methods;
 
 		StructSymbol(std::wstring_view name, const SyntaxKind kind, gmt::Ref<SyntaxSymbol> parent);
 		StructSymbol(gmt::StringReference name, const SyntaxKind kind, gmt::Ref<SyntaxSymbol> parent);

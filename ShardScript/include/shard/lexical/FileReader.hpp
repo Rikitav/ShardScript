@@ -3,6 +3,8 @@
 #include <shard/lexical/SourceTextProvider.hpp>
 #include <shard/parsing/TextLocation.hpp>
 
+#include <gmt/Containers.hpp>
+
 #include <fstream>
 #include <filesystem>
 #include <string>
@@ -15,12 +17,12 @@ namespace shard
 		std::wfstream m_inputStream;
 
 	public:
-		FileReader(const std::string& fileName);
-		FileReader(const std::wstring& fileName);
+		FileReader(const gmt::string& fileName);
+		FileReader(const gmt::wstring& fileName);
 		virtual ~FileReader();
 
 		bool read_next(wchar_t& ch) override;
 		bool peek_next(wchar_t& ch) override;
-		std::wstring get_name() override;
+		gmt::wstring get_name() override;
 	};
 }

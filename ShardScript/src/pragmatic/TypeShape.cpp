@@ -2,6 +2,8 @@
 
 #include <shard/semantic/symbols/StructSymbol.hpp>
 
+#include <gmt/Containers.hpp>
+
 #include <stdexcept>
 
 using namespace shard;
@@ -17,7 +19,7 @@ gmt::Ref<StructSymbol> TypeShape::get_base_type() const
 	return m_baseType;
 }
 
-const std::vector<gmt::Ref<StructSymbol>>& TypeShape::get_generic_arguments() const
+const gmt::vector<gmt::Ref<StructSymbol>>& TypeShape::get_generic_arguments() const
 {
 	return m_genericArguments;
 }

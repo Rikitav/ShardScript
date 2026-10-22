@@ -9,6 +9,8 @@
 #include <shard/semantic/symbols/MethodSymbol.hpp>
 #include <shard/semantic/symbols/ParameterSymbol.hpp>
 
+#include <gmt/Containers.hpp>
+
 using namespace shard;
 
 namespace
@@ -100,8 +102,8 @@ bool ExpressionBinder::try_bind_pending_lambda(gmt::Ref<const LambdaExpressionSy
 	if (anonymousMethod.is_null())
 		return false;
 
-	const std::vector<gmt::Ref<ParameterSymbol>>& parameters = anonymousMethod->get_parameters();
-	const std::vector<gmt::Ref<ParameterSymbol>>& expectedParameters = expected->get_parameters();
+	const gmt::vector<gmt::Ref<ParameterSymbol>>& parameters = anonymousMethod->get_parameters();
+	const gmt::vector<gmt::Ref<ParameterSymbol>>& expectedParameters = expected->get_parameters();
 	if (parameters.size() != expectedParameters.size())
 		return false;
 

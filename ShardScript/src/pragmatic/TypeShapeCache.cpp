@@ -10,6 +10,8 @@
 #include <shard/semantic/symbols/StructSymbol.hpp>
 #include <shard/semantic/symbols/TypeParameterSymbol.hpp>
 
+#include <gmt/Containers.hpp>
+
 #include <cstdint>
 #include <limits>
 #include <stdexcept>
@@ -92,7 +94,7 @@ TypeShape* TypeShapeCache::find_or_create_type_shape(SemanticModel& model, gmt::
 void TypeShapeCache::build(TypeShape* shape, SemanticModel& model)
 {
 	gmt::Ref<StructSymbol> baseType = shape->m_baseType;
-	const std::vector<gmt::Ref<StructSymbol>>& genericArgs = shape->m_genericArguments;
+	const gmt::vector<gmt::Ref<StructSymbol>>& genericArgs = shape->m_genericArguments;
 
 	if (baseType.is_null())
 		throw std::runtime_error("cannot build a type shape for a null base type");

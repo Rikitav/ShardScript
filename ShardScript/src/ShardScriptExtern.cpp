@@ -1,6 +1,8 @@
 // Flat C API implementation. Every entry point maps one public C++ entity
 #include <ShardScriptExtern.hpp>
 
+#include <gmt/Containers.hpp>
+
 #include <exception>
 #include <new>
 #include <stdexcept>
@@ -878,7 +880,7 @@ extern "C"
 		}
 		try
 		{
-			self->add_libraries(*static_cast<const std::vector<std::filesystem::path>*>(p0));
+			self->add_libraries(*static_cast<const gmt::vector<std::filesystem::path>*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -1163,7 +1165,7 @@ extern "C"
 		}
 		try
 		{
-			self->parse_source(std::wstring(p0 ? p0 : L""), std::wstring(p1 ? p1 : L""));
+			self->parse_source(gmt::wstring(p0 ? p0 : L""), gmt::wstring(p1 ? p1 : L""));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -1320,7 +1322,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::FileReader>(std::string(p0 ? p0 : ""));
+			auto* value = shard_make_new<shard::FileReader>(gmt::string(p0 ? p0 : ""));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -1844,7 +1846,7 @@ extern "C"
 		try
 		{
 			auto result = self->begin();
-			auto* boxed = shard_box_value<std::vector<SyntaxToken>::iterator>(std::move(result));
+			auto* boxed = shard_box_value<gmt::vector<SyntaxToken>::iterator>(std::move(result));
 			if (!boxed)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -2059,7 +2061,7 @@ extern "C"
 		try
 		{
 			auto result = self->end();
-			auto* boxed = shard_box_value<std::vector<SyntaxToken>::iterator>(std::move(result));
+			auto* boxed = shard_box_value<gmt::vector<SyntaxToken>::iterator>(std::move(result));
 			if (!boxed)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -2454,7 +2456,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_sequence(*static_cast<const std::vector<shard::SyntaxToken>*>(p0));
+			self->set_sequence(*static_cast<const gmt::vector<shard::SyntaxToken>*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -2922,7 +2924,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::StringStreamReader>(std::wstring(p0 ? p0 : L""), *static_cast<std::basic_stringstream<wchar_t>*>(p1));
+			auto* value = shard_make_new<shard::StringStreamReader>(gmt::wstring(p0 ? p0 : L""), *static_cast<std::basic_stringstream<wchar_t>*>(p1));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -10993,7 +10995,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::Diagnostic>(*p0, static_cast<shard::DiagnosticSeverity>(p1), std::wstring(p2 ? p2 : L""));
+			auto* value = shard_make_new<shard::Diagnostic>(*p0, static_cast<shard::DiagnosticSeverity>(p1), gmt::wstring(p2 ? p2 : L""));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -11320,7 +11322,7 @@ extern "C"
 		}
 		try
 		{
-			self->report_error(*p0, std::wstring(p1 ? p1 : L""));
+			self->report_error(*p0, gmt::wstring(p1 ? p1 : L""));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -11357,7 +11359,7 @@ extern "C"
 		}
 		try
 		{
-			self->report_info(*p0, std::wstring(p1 ? p1 : L""));
+			self->report_info(*p0, gmt::wstring(p1 ? p1 : L""));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -11394,7 +11396,7 @@ extern "C"
 		}
 		try
 		{
-			self->report_warning(*p0, std::wstring(p1 ? p1 : L""));
+			self->report_warning(*p0, gmt::wstring(p1 ? p1 : L""));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -33610,7 +33612,7 @@ extern "C"
 		*out_value = nullptr;
 		try
 		{
-			auto result = shard::semver::VersionExpression::parse(std::wstring(p0 ? p0 : L""));
+			auto result = shard::semver::VersionExpression::parse(gmt::wstring(p0 ? p0 : L""));
 			auto* boxed = shard_box_value<std::optional<shard::semver::VersionExpression>>(std::move(result));
 			if (!boxed)
 			{
@@ -33666,7 +33668,7 @@ extern "C"
 	{
 		try
 		{
-			auto result = shard::semver::parse_version(std::wstring(p0 ? p0 : L""));
+			auto result = shard::semver::parse_version(gmt::wstring(p0 ? p0 : L""));
 			return static_cast<void*>(shard_box_value<std::optional<shard::semver::SemanticVersion>>(std::move(result)));
 		}
 		catch (...)
@@ -35032,7 +35034,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_parameters(*static_cast<const std::vector<gmt::Ref<shard::ParameterSymbol>>*>(p0));
+			self->set_parameters(*static_cast<const gmt::vector<gmt::Ref<shard::ParameterSymbol>>*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -35106,7 +35108,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_type_parameters(*static_cast<const std::vector<gmt::Ref<shard::TypeParameterSymbol>>*>(p0));
+			self->set_type_parameters(*static_cast<const gmt::vector<gmt::Ref<shard::TypeParameterSymbol>>*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -40435,7 +40437,7 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->try_resolve_generic_arguments(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0), *static_cast<const std::function<gmt::Ref<shard::StructSymbol>(gmt::Ref<shard::TypeParameterSymbol>)>*>(p1), *static_cast<gmt::Ref<shard::StructSymbol>*>(p2), *static_cast<std::vector<gmt::Ref<shard::StructSymbol>>*>(p3));
+			auto result = self->try_resolve_generic_arguments(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0), *static_cast<const std::function<gmt::Ref<shard::StructSymbol>(gmt::Ref<shard::TypeParameterSymbol>)>*>(p1), *static_cast<gmt::Ref<shard::StructSymbol>*>(p2), *static_cast<gmt::vector<gmt::Ref<shard::StructSymbol>>*>(p3));
 			return (result ? 1 : 0);
 		}
 		catch (...)
@@ -46187,7 +46189,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_local_order(*static_cast<const gmt::Ref<shard::MethodSymbol>*>(p0), *static_cast<const std::vector<gmt::Ref<shard::SyntaxSymbol>>*>(p1));
+			self->set_local_order(*static_cast<const gmt::Ref<shard::MethodSymbol>*>(p0), *static_cast<const gmt::vector<gmt::Ref<shard::SyntaxSymbol>>*>(p1));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -46298,7 +46300,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_promotion_points(*static_cast<const gmt::Ref<const shard::ExpressionSyntax>*>(p0), *static_cast<const std::vector<gmt::Ref<const shard::ExpressionSyntax>>*>(p1));
+			self->set_promotion_points(*static_cast<const gmt::Ref<const shard::ExpressionSyntax>*>(p0), *static_cast<const gmt::vector<gmt::Ref<const shard::ExpressionSyntax>>*>(p1));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -46744,7 +46746,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::ByteCodeDecoder>(*static_cast<const std::vector<std::byte>*>(p0), *p1);
+			auto* value = shard_make_new<shard::ByteCodeDecoder>(*static_cast<const gmt::vector<std::byte>*>(p0), *p1);
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -48847,7 +48849,7 @@ extern "C"
 	{
 		try
 		{
-			shard::ByteCodeEncoder::append_data(*static_cast<std::vector<std::byte>*>(p0), p1, static_cast<std::size_t>(p2));
+			shard::ByteCodeEncoder::append_data(*static_cast<gmt::vector<std::byte>*>(p0), p1, static_cast<std::size_t>(p2));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -49920,7 +49922,7 @@ extern "C"
 		}
 		try
 		{
-			self->emit_jump_table(*static_cast<const std::vector<unsigned long long>*>(p0));
+			self->emit_jump_table(*static_cast<const gmt::vector<unsigned long long>*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -51655,7 +51657,7 @@ extern "C"
 	{
 		try
 		{
-			shard::ByteCodeEncoder::paste_data(*static_cast<std::vector<std::byte>*>(p0), static_cast<std::size_t>(p1), p2, static_cast<std::size_t>(p3));
+			shard::ByteCodeEncoder::paste_data(*static_cast<gmt::vector<std::byte>*>(p0), static_cast<std::size_t>(p1), p2, static_cast<std::size_t>(p3));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -56749,6 +56751,6 @@ extern "C"
 
 	SHARD_API void shard_dispose_std_vector_syntaxtoken_iterator(void* value)
 	{
-		shard_release<std::vector<SyntaxToken>::iterator>(static_cast<std::vector<SyntaxToken>::iterator*>(value));
+		shard_release<gmt::vector<SyntaxToken>::iterator>(static_cast<gmt::vector<SyntaxToken>::iterator*>(value));
 	}
 }

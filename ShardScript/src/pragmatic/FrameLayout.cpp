@@ -1,6 +1,7 @@
 #include <shard/pragmatic/FrameLayout.hpp>
 
 #include <gmt/Alignment.hpp>
+#include <gmt/Containers.hpp>
 
 #include <shard/parsing/SyntaxKind.hpp>
 
@@ -75,7 +76,7 @@ void FrameLayout::add_argument(gmt::Ref<StructSymbol> type)
 	m_argumentTypes.push_back(type);
 }
 
-const std::vector<gmt::Ref<StructSymbol>>& FrameLayout::get_argument_types() const
+const gmt::vector<gmt::Ref<StructSymbol>>& FrameLayout::get_argument_types() const
 {
 	return m_argumentTypes;
 }
@@ -95,7 +96,7 @@ std::uint16_t FrameLayout::get_local_count() const
 	return m_argumentCount + m_variableCount;
 }
 
-const std::vector<FrameSlotRecipe>& FrameLayout::get_variable_slots() const
+const gmt::vector<FrameSlotRecipe>& FrameLayout::get_variable_slots() const
 {
 	return m_variableSlots;
 }

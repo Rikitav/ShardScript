@@ -10,6 +10,7 @@
 
 #include <shard/compilation/VirtualProgramImage.hpp>
 
+#include <gmt/Containers.hpp>
 #include <gmt/Ref.hpp>
 
 #include <cstddef>
@@ -25,8 +26,8 @@ namespace shard
 	public:
 		explicit ByteCodeEncoder(VirtualProgramImage& image);
 
-		static void append_data(std::vector<std::byte>& code, const void* data, std::size_t size);
-		static void paste_data(std::vector<std::byte>& code, std::size_t at, const void* data, std::size_t size);
+		static void append_data(gmt::vector<std::byte>& code, const void* data, std::size_t size);
+		static void paste_data(gmt::vector<std::byte>& code, std::size_t at, const void* data, std::size_t size);
 
 		void emit_nop();
 		void emit_halt();
@@ -54,7 +55,7 @@ namespace shard
 		void emit_jump_true(std::size_t jump);
 		void emit_jump_false(std::size_t jump);
 		void emit_branch_null(std::size_t jump);
-		void emit_jump_table(const std::vector<std::size_t>& targets);
+		void emit_jump_table(const gmt::vector<std::size_t>& targets);
 
 		void emit_return();
 		void emit_throw();

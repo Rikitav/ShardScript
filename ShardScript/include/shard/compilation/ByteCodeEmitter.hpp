@@ -9,6 +9,7 @@
 
 #include <shard/pragmatic/PlacementVerdict.hpp>
 
+#include <gmt/Containers.hpp>
 #include <gmt/Ref.hpp>
 
 #include <cstddef>
@@ -49,8 +50,8 @@ namespace shard
 		{
 			std::size_t loopStart;
 			std::size_t deferScopeDepth;
-			std::vector<std::size_t> blockEndBacktracks;
-			std::vector<std::size_t> loopEndBacktracks;
+			gmt::vector<std::size_t> blockEndBacktracks;
+			gmt::vector<std::size_t> loopEndBacktracks;
 		};
 
 		VirtualProgramImage& m_image;
@@ -61,23 +62,23 @@ namespace shard
 		FrameLayout* m_layout = nullptr;
 		std::size_t m_methodStart = 0;
 
-		std::vector<loop_scope> m_loops;
-		std::vector<std::vector<std::size_t>> m_clauseEndBacktracks;
-		std::vector<std::size_t> m_deferScopes;
+		gmt::vector<loop_scope> m_loops;
+		gmt::vector<gmt::vector<std::size_t>> m_clauseEndBacktracks;
+		gmt::vector<std::size_t> m_deferScopes;
 
 		std::int32_t m_evalDepth = 0;
 		std::uint32_t m_maxEvalDepth = 0;
 		std::size_t m_maxEvalPayload = 0;
 		bool m_evalPoisoned = false;
 
-		std::vector<gmt::Ref<MethodSymbol>> m_entryPointCandidates;
+		gmt::vector<gmt::Ref<MethodSymbol>> m_entryPointCandidates;
 
-		std::vector<std::pair<gmt::Ref<const LambdaExpressionSyntax>, gmt::Ref<MethodSymbol>>> m_pendingLambdaBodies;
+		gmt::vector<std::pair<gmt::Ref<const LambdaExpressionSyntax>, gmt::Ref<MethodSymbol>>> m_pendingLambdaBodies;
 
 		// generic instantiations are monomorphized: each (open method, concrete
 		// type arguments) pair gets its own emitted body and materialized layout
-		std::vector<gmt::Ref<GenericMethodSymbol>> m_pendingInstantiations;
-		std::unordered_set<std::size_t> m_enqueuedInstantiations;
+		gmt::vector<gmt::Ref<GenericMethodSymbol>> m_pendingInstantiations;
+		gmt::unordered_set<std::size_t> m_enqueuedInstantiations;
 		gmt::Ref<GenericMethodSymbol> m_currentInstantiation;
 		std::size_t m_instantiationsCreated = 0;
 		bool m_instantiationLimitReported = false;
