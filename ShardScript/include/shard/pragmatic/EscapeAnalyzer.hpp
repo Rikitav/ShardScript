@@ -9,6 +9,7 @@
 #include <shard/pragmatic/PlacementVerdict.hpp>
 #include <shard/pragmatic/PragmaticModel.hpp>
 
+#include <gmt/Containers.hpp>
 #include <gmt/InlineVector.hpp>
 #include <gmt/Ref.hpp>
 
@@ -32,8 +33,8 @@ namespace shard
 		// (inline_vector is immovable, so the map cannot store it directly)
 		struct CachedExpressionRefs
 		{
-			std::vector<gmt::Ref<SyntaxSymbol>> locals;
-			std::vector<gmt::Ref<const ExpressionSyntax>> sites;
+			gmt::vector<gmt::Ref<SyntaxSymbol>> locals;
+			gmt::vector<gmt::Ref<const ExpressionSyntax>> sites;
 		};
 
 		class reference_collector;
@@ -42,12 +43,12 @@ namespace shard
 		{
 			gmt::Ref<MethodSymbol> method;
 			gmt::Ref<const ExpressionSyntax> closureSite; // null for member bodies
-			std::unordered_set<gmt::Ref<SyntaxSymbol>> declared;
-			std::vector<gmt::Ref<SyntaxSymbol>> orderedLocals; // declaration order, persisted for the frame layout pass
-			std::vector<gmt::Ref<const ExpressionSyntax>> returnedExpressions;
+			gmt::unordered_set<gmt::Ref<SyntaxSymbol>> declared;
+			gmt::vector<gmt::Ref<SyntaxSymbol>> orderedLocals; // declaration order, persisted for the frame layout pass
+			gmt::vector<gmt::Ref<const ExpressionSyntax>> returnedExpressions;
 			bool seenAwait = false;
-			std::vector<int> loopStack;
-			std::unordered_set<int> loopsWithAwait;
+			gmt::vector<int> loopStack;
+			gmt::unordered_set<int> loopsWithAwait;
 		};
 
 		// constraint graph over the locals and allocation sites of the whole walk;
@@ -72,33 +73,33 @@ namespace shard
 			};
 
 			int nextId = 0;
-			std::unordered_map<gmt::Ref<SyntaxSymbol>, int> localIds;
-			std::unordered_map<gmt::Ref<const ExpressionSyntax>, int> siteIds;
-			std::vector<EscapeLevel> levels;
-			std::vector<EscapeChannel> channelSets;
-			std::vector<EscapeChannel> coldChannels; // cold upward flows only; parallel to levels
-			std::vector<bool> identityExposed;
-			std::vector<gmt::Ref<MethodSymbol>> idOwners;
-			std::vector<std::pair<int, int>> edges; // level[b] >= level[a]
-			std::vector<Event> events;
+			gmt::unordered_map<gmt::Ref<SyntaxSymbol>, int> localIds;
+			gmt::unordered_map<gmt::Ref<const ExpressionSyntax>, int> siteIds;
+			gmt::vector<EscapeLevel> levels;
+			gmt::vector<EscapeChannel> channelSets;
+			gmt::vector<EscapeChannel> coldChannels; // cold upward flows only; parallel to levels
+			gmt::vector<bool> identityExposed;
+			gmt::vector<gmt::Ref<MethodSymbol>> idOwners;
+			gmt::vector<std::pair<int, int>> edges; // level[b] >= level[a]
+			gmt::vector<Event> events;
 
-			std::vector<CallExposure> callExposures;
+			gmt::vector<CallExposure> callExposures;
 		};
 
 		struct WalkedMethod
 		{
 			gmt::Ref<MethodSymbol> method;
-			std::vector<gmt::Ref<const ExpressionSyntax>> returnedExpressions;
+			gmt::vector<gmt::Ref<const ExpressionSyntax>> returnedExpressions;
 		};
 
 		PragmaticModel& m_pragmatic;
 
 		Graph m_graph;
-		std::vector<Frame> m_frameStack;
-		std::vector<WalkedMethod> m_walked;
-		std::unordered_map<gmt::Ref<StructSymbol>, bool> m_scalarCache;
-		std::unordered_map<gmt::Ref<const ExpressionSyntax>, CachedExpressionRefs> m_expressionRefs[2];
-		std::vector<std::pair<int, gmt::Ref<const ExpressionSyntax>>> m_coldPoints;
+		gmt::vector<Frame> m_frameStack;
+		gmt::vector<WalkedMethod> m_walked;
+		gmt::unordered_map<gmt::Ref<StructSymbol>, bool> m_scalarCache;
+		gmt::unordered_map<gmt::Ref<const ExpressionSyntax>, CachedExpressionRefs> m_expressionRefs[2];
+		gmt::vector<std::pair<int, gmt::Ref<const ExpressionSyntax>>> m_coldPoints;
 		int m_nextLoopId = 0;
 		int m_inDefer = 0;
 		int m_coldDepth = 0;
@@ -137,22 +138,22 @@ namespace shard
 		void analyze_member_body(gmt::Ref<MethodSymbol> method, gmt::Ref<const BlockSyntax> body);
 
 		void run_graph_fixpoint();
-		std::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary> derive_summaries();
-		void apply_call_exposures(const std::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries);
-		bool commit_summaries(const std::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries);
-		void assign_verdicts(const std::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries);
+		gmt::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary> derive_summaries();
+		void apply_call_exposures(const gmt::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries);
+		bool commit_summaries(const gmt::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries);
+		void assign_verdicts(const gmt::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries);
 
 		ParameterEscapeSummary derive_parameter_summary(gmt::Ref<MethodSymbol> method, gmt::Ref<ParameterSymbol> parameter, bool isReceiver);
-		ReturnDisposition classify_returns(const WalkedMethod& walked, const std::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries);
-		int classify_return_expression(gmt::Ref<MethodSymbol> method, gmt::Ref<const ExpressionSyntax> expression, const std::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries);
+		ReturnDisposition classify_returns(const WalkedMethod& walked, const gmt::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries);
+		int classify_return_expression(gmt::Ref<MethodSymbol> method, gmt::Ref<const ExpressionSyntax> expression, const gmt::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries);
 		int classify_local_roots(gmt::Ref<MethodSymbol> method, gmt::Ref<SyntaxSymbol> local);
 
 		bool is_caller_placeable(gmt::Ref<MethodSymbol> owner) const;
-		bool cone_closed(int id, const std::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries) const;
+		bool cone_closed(int id, const gmt::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries) const;
 		bool is_scalar_eligible(gmt::Ref<StructSymbol> type);
 		bool participates_in_reference_cycle(gmt::Ref<StructSymbol> type);
 
-		AllocationSiteVerdict classify_node(int id, gmt::Ref<StructSymbol> nodeType, const std::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries);
+		AllocationSiteVerdict classify_node(int id, gmt::Ref<StructSymbol> nodeType, const gmt::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries);
 
 		void record_cold_point(int id, gmt::Ref<const ExpressionSyntax> expression);
 		bool reaches_site(int from, int to) const;

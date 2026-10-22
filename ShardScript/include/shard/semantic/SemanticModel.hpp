@@ -14,6 +14,7 @@
 #include <shard/semantic/symbols/PropertySymbol.hpp>
 #include <shard/semantic/symbols/TypeParameterSymbol.hpp>
 
+#include <gmt/Containers.hpp>
 #include <gmt/Ref.hpp>
 
 #include <functional>
@@ -30,7 +31,7 @@ namespace shard
 		shard::SyntaxTree& m_tree;
 		shard::SymbolTable m_table;
 
-		std::unordered_map<gmt::Ref<const ExpressionSyntax>, gmt::Ref<StructSymbol>> m_expressionTypes;
+		gmt::unordered_map<gmt::Ref<const ExpressionSyntax>, gmt::Ref<StructSymbol>> m_expressionTypes;
 
 	public:
 		using TypeParameterResolver = std::function<gmt::Ref<StructSymbol>(gmt::Ref<TypeParameterSymbol>)>;
@@ -52,7 +53,7 @@ namespace shard
 		bool type_satisfies_constraint(gmt::Ref<StructSymbol> typeArgument, gmt::Ref<StructSymbol> constraint) const;
 		bool is_primitive_type(gmt::Ref<const StructSymbol> type) const;
 		bool is_task_or_task_like(gmt::Ref<StructSymbol> type);
-		std::wstring get_type_display_name(gmt::Ref<const StructSymbol> type) const;
+		gmt::wstring get_type_display_name(gmt::Ref<const StructSymbol> type) const;
 
 		gmt::Ref<StructSymbol> substitute_type(gmt::Ref<StructSymbol> type, gmt::Ref<GenericTypeSymbol> within = gmt::nullref);
 		gmt::Ref<StructSymbol> substitute_type(gmt::Ref<StructSymbol> type, std::span<const gmt::Ref<StructSymbol>> typeArguments);
@@ -68,6 +69,6 @@ namespace shard
 		gmt::Ref<IndexatorSymbol> resolve_virtual_indexator(gmt::Ref<StructSymbol> type, gmt::Ref<IndexatorSymbol> interfaceMember, gmt::Ref<GenericTypeSymbol> within);
 
 		gmt::Ref<StructSymbol> resolve_runtime_type_argument(gmt::Ref<StructSymbol> type, const TypeParameterResolver& resolveParameter);
-		bool try_resolve_generic_arguments(gmt::Ref<StructSymbol> type, const TypeParameterResolver& resolveParameter, gmt::Ref<StructSymbol>& baseType, std::vector<gmt::Ref<StructSymbol>>& genericArgs);
+		bool try_resolve_generic_arguments(gmt::Ref<StructSymbol> type, const TypeParameterResolver& resolveParameter, gmt::Ref<StructSymbol>& baseType, gmt::vector<gmt::Ref<StructSymbol>>& genericArgs);
 	};
 }

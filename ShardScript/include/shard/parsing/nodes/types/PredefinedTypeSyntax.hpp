@@ -6,6 +6,8 @@
 
 #include <shard/parsing/nodes/TypeSyntax.hpp>
 
+#include <gmt/Containers.hpp>
+
 #include <string>
 
 namespace shard
@@ -21,7 +23,7 @@ namespace shard
 		SyntaxToken get_type_token() const;
 		void set_type_token(const SyntaxToken& token);
 
-		std::wstring get_qualifier() const override;
+		gmt::wstring get_qualifier() const override;
 
 		TextLocation get_location() const override;
 		void accept(SyntaxVisitor& visitor) const override;

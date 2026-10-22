@@ -14,6 +14,7 @@
 #include <shard/semantic/symbols/TypeParameterSymbol.hpp>
 
 #include <gmt/Concat.hpp>
+#include <gmt/Containers.hpp>
 #include <gmt/InlineVector.hpp>
 
 #include <vector>
@@ -78,7 +79,7 @@ namespace
 			if (candidate.is_null() || candidate->get_operator_token() != TokenType::AsOperator)
 				continue;
 
-			const std::vector<gmt::Ref<ParameterSymbol>>& parameters = candidate->get_parameters();
+			const gmt::vector<gmt::Ref<ParameterSymbol>>& parameters = candidate->get_parameters();
 			bool noParameter = parameters.empty();
 			bool sourceParameter = parameters.size() == 1 && SemanticModel::are_types_equal(parameters[0]->get_type(), sourceType);
 			if (!noParameter && !sourceParameter)
@@ -115,7 +116,7 @@ gmt::Ref<StructSymbol> ExpressionBinder::substitute_method_type_parameter(gmt::R
 	if (type.is_null() || method.is_null() || type->get_kind() != SyntaxKind::TypeParameter)
 		return type;
 
-	const std::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters = method->get_type_parameters();
+	const gmt::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters = method->get_type_parameters();
 	for (std::size_t i = 0; i < typeParameters.size() && i < methodTypeArgs.size(); i++)
 	{
 		if (typeParameters[i] == type)

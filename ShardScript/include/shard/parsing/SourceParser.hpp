@@ -2,6 +2,7 @@
 #include <shard/Definitions.hpp>
 
 #include <gmt/Arena.hpp>
+#include <gmt/Containers.hpp>
 #include <gmt/Ref.hpp>
 
 #include <shard/parsing/Diagnostics.hpp>
@@ -131,7 +132,7 @@ namespace shard
 				void set_state(ParseState state);
 			};
 
-			std::vector<ParseFrame> parseStack;
+			gmt::vector<ParseFrame> parseStack;
 		};
 
 		static constexpr int max_loop_iterations = 10000;

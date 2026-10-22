@@ -21,6 +21,7 @@
 #include <shard/semantic/symbols/StructSymbol.hpp>
 #include <shard/semantic/symbols/VariableSymbol.hpp>
 
+#include <gmt/Containers.hpp>
 #include <gmt/InlineVector.hpp>
 
 using namespace shard;
@@ -123,7 +124,7 @@ void LayoutGenerator::build_frame(gmt::Ref<MethodSymbol> method)
 
 	gmt::inline_vector<const TypeShape*, 8> variableShapes;
 
-	const std::vector<gmt::Ref<SyntaxSymbol>>* order = m_pragmatic.get_local_order(method);
+	const gmt::vector<gmt::Ref<SyntaxSymbol>>* order = m_pragmatic.get_local_order(method);
 	if (order == nullptr)
 	{
 		layout.set_locals_bytes(layout.compute_locals_bytes(argumentShapes.get_vector(), variableShapes.get_vector()));

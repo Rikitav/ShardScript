@@ -4,6 +4,7 @@
 #include <shard/pragmatic/PlacementVerdict.hpp>
 #include <shard/pragmatic/TypeShape.hpp>
 
+#include <gmt/Containers.hpp>
 #include <gmt/Ref.hpp>
 
 #include <cstddef>
@@ -24,8 +25,8 @@ namespace shard
 
 	class SHARD_API FrameLayout
 	{
-		std::vector<FrameSlotRecipe> m_variableSlots;
-		std::vector<gmt::Ref<StructSymbol>> m_argumentTypes; // receiver first for instance methods, then parameters in order
+		gmt::vector<FrameSlotRecipe> m_variableSlots;
+		gmt::vector<gmt::Ref<StructSymbol>> m_argumentTypes; // receiver first for instance methods, then parameters in order
 		std::uint16_t m_argumentCount = 0; // eval-stack arguments, including the implicit 'this'
 		std::uint16_t m_variableCount = 0; // locals and compiler-generated temporaries
 		std::uint32_t m_maxEvalDepth = 0;
@@ -50,12 +51,12 @@ namespace shard
 
 		void set_argument_count(std::uint16_t count);
 		void add_argument(gmt::Ref<StructSymbol> type);
-		const std::vector<gmt::Ref<StructSymbol>>& get_argument_types() const;
+		const gmt::vector<gmt::Ref<StructSymbol>>& get_argument_types() const;
 		std::uint16_t get_argument_count() const;
 		std::uint16_t get_variable_count() const;
 		std::uint16_t get_local_count() const;
 
-		const std::vector<FrameSlotRecipe>& get_variable_slots() const;
+		const gmt::vector<FrameSlotRecipe>& get_variable_slots() const;
 
 		void set_locals_bytes(std::size_t bytes);
 		std::size_t get_locals_bytes() const;

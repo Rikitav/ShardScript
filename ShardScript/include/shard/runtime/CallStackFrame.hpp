@@ -3,6 +3,7 @@
 
 #include <shard/runtime/ObjectInstance.hpp>
 
+#include <gmt/Containers.hpp>
 #include <gmt/Ref.hpp>
 
 #include <cstddef>
@@ -51,8 +52,8 @@ namespace shard
 		InterruptionReason m_interruption = InterruptionReason::None;
 		ObjectInstance m_currentException;
 
-		std::vector<std::size_t> m_deferStack;
-		std::vector<ExceptionHandlerRecord> m_exceptionHandlers;
+		gmt::vector<std::size_t> m_deferStack;
+		gmt::vector<ExceptionHandlerRecord> m_exceptionHandlers;
 
 		std::uint16_t m_argumentCount = 0;
 		std::uint16_t m_variableCount = 0;
@@ -62,8 +63,8 @@ namespace shard
 		bool m_hasExternalReturnSlot = false;
 
 		std::byte* m_localsRegion = nullptr;
-		std::vector<std::byte*> m_localAddresses;
-		std::vector<std::size_t> m_localPayloads;
+		gmt::vector<std::byte*> m_localAddresses;
+		gmt::vector<std::size_t> m_localPayloads;
 
 		std::byte* m_evalRegion = nullptr;
 		std::size_t m_evalStride = 0;
@@ -99,8 +100,8 @@ namespace shard
 		ObjectInstance get_current_exception() const;
 		void set_current_exception(ObjectInstance value);
 
-		std::vector<std::size_t>& get_defer_stack();
-		std::vector<ExceptionHandlerRecord>& get_exception_handlers();
+		gmt::vector<std::size_t>& get_defer_stack();
+		gmt::vector<ExceptionHandlerRecord>& get_exception_handlers();
 
 		std::uint16_t get_argument_count() const;
 		std::uint16_t get_variable_count() const;

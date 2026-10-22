@@ -52,6 +52,8 @@
 #include <shard/parsing/nodes/types/PredefinedTypeSyntax.hpp>
 #include <shard/parsing/nodes/types/QualifiedNameTypeSyntax.hpp>
 
+#include <gmt/Containers.hpp>
+
 #include <string_view>
 #include <unordered_set>
 #include <vector>
@@ -61,7 +63,7 @@ namespace shard
 	class SHARD_API TypeBinder final : public SemanticVisitor
 	{
 		SymbolFactory m_factory;
-		std::unordered_set<std::wstring_view> m_ambiguousNames;
+		gmt::unordered_set<std::wstring_view> m_ambiguousNames;
 
 		void import_namespace(gmt::Ref<const UsingDirectiveSyntax> node, gmt::Ref<NamespaceSymbol> namespaceSymbol);
 		bool is_ambiguous_name(std::wstring_view name);
@@ -72,7 +74,7 @@ namespace shard
 		void bind_expression(gmt::Ref<const ExpressionSyntax> expression);
 		void bind_arguments(gmt::Ref<const ArgumentsListSyntax> arguments);
 
-		void bind_where_clauses(gmt::Ref<const WhereClausesListSyntax> clauses, const std::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters);
+		void bind_where_clauses(gmt::Ref<const WhereClausesListSyntax> clauses, const gmt::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters);
 		void bind_base_types(gmt::Ref<StructSymbol> symbol, gmt::Ref<const BaseTypesListSyntax> baseTypes);
 
 	public:

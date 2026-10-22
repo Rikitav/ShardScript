@@ -6,6 +6,8 @@
 #include <shard/parsing/SyntaxKind.hpp>
 #include <shard/parsing/SyntaxNode.hpp>
 
+#include <gmt/Containers.hpp>
+
 #include <string>
 
 namespace shard
@@ -16,6 +18,6 @@ namespace shard
 		TypeSyntax(const SyntaxKind kind, gmt::Ref<SyntaxNode> parent);
 		virtual ~TypeSyntax() = default;
 
-		virtual std::wstring get_qualifier() const = 0;
+		virtual gmt::wstring get_qualifier() const = 0;
 	};
 }

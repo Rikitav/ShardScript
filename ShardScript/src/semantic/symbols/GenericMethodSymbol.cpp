@@ -2,6 +2,7 @@
 
 #include <shard/semantic/symbols/StructSymbol.hpp>
 
+#include <gmt/Containers.hpp>
 #include <gmt/Interner.hpp>
 
 using namespace shard;
@@ -19,7 +20,7 @@ bool GenericMethodSymbol::get_is_generic_instantiation() const
 	return true;
 }
 
-const std::vector<gmt::Ref<StructSymbol>>& GenericMethodSymbol::get_type_arguments() const
+const gmt::vector<gmt::Ref<StructSymbol>>& GenericMethodSymbol::get_type_arguments() const
 {
 	return m_typeArguments;
 }

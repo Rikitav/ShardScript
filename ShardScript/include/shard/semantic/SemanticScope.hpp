@@ -4,6 +4,7 @@
 #include <shard/semantic/SyntaxSymbol.hpp>
 #include <shard/semantic/symbols/NamespaceSymbol.hpp>
 
+#include <gmt/Containers.hpp>
 #include <gmt/Interner.hpp>
 #include <gmt/Ref.hpp>
 
@@ -17,14 +18,14 @@ namespace shard
 {
 	class SHARD_API SemanticScope
 	{
-		std::unordered_map<std::wstring_view, gmt::Ref<SyntaxSymbol>> m_symbols;
-		std::unordered_map<std::wstring_view, std::vector<gmt::Ref<SyntaxSymbol>>> m_overloads;
+		gmt::unordered_map<std::wstring_view, gmt::Ref<SyntaxSymbol>> m_symbols;
+		gmt::unordered_map<std::wstring_view, gmt::vector<gmt::Ref<SyntaxSymbol>>> m_overloads;
 
 		SemanticScope* m_parent;
 		gmt::Ref<SyntaxSymbol> m_owner;
 		gmt::Ref<NamespaceSymbol> m_namespace;
 
-		std::unordered_set<gmt::Ref<NamespaceSymbol>> m_importedNamespaces;
+		gmt::unordered_set<gmt::Ref<NamespaceSymbol>> m_importedNamespaces;
 
 	public:
 		SemanticScope(gmt::Ref<SyntaxSymbol> owner, SemanticScope* parent);
@@ -38,7 +39,7 @@ namespace shard
 		gmt::Ref<NamespaceSymbol> get_namespace() const;
 		void set_namespace(gmt::Ref<NamespaceSymbol> namespaceSymbol);
 
-		const std::unordered_set<gmt::Ref<NamespaceSymbol>>& get_imported_namespaces() const;
+		const gmt::unordered_set<gmt::Ref<NamespaceSymbol>>& get_imported_namespaces() const;
 		void add_imported_namespace(gmt::Ref<NamespaceSymbol> namespaceSymbol);
 
 		gmt::Ref<SyntaxSymbol> find_local(gmt::StringReference name) const;

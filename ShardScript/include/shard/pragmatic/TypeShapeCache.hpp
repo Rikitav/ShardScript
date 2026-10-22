@@ -3,6 +3,7 @@
 
 #include <shard/pragmatic/TypeShape.hpp>
 
+#include <gmt/Containers.hpp>
 #include <gmt/Ref.hpp>
 
 #include <cstddef>
@@ -17,7 +18,7 @@ namespace shard
 
 	class SHARD_API TypeShapeCache
 	{
-		std::unordered_map<std::uint64_t, TypeShape> m_shapes;
+		gmt::unordered_map<std::uint64_t, TypeShape> m_shapes;
 
 		void build(TypeShape* shape, SemanticModel& model);
 

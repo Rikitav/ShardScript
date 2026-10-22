@@ -4,6 +4,7 @@
 #include <shard/semantic/SyntaxSymbol.hpp>
 #include <shard/semantic/symbols/MethodSymbol.hpp>
 
+#include <gmt/Containers.hpp>
 #include <gmt/Ref.hpp>
 
 #include <cstddef>
@@ -12,8 +13,8 @@
 
 namespace shard
 {
-	using DataSection = std::vector<std::byte>;
-	using BytecodeSection = std::vector<std::byte>;
+	using DataSection = gmt::vector<std::byte>;
+	using BytecodeSection = gmt::vector<std::byte>;
 
 	class SHARD_API VirtualProgramImage
 	{

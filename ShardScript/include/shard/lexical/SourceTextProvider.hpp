@@ -1,6 +1,8 @@
 #pragma once
 #include <shard/Definitions.hpp>
 
+#include <gmt/Containers.hpp>
+
 #include <string>
 
 namespace shard
@@ -12,6 +14,6 @@ namespace shard
 
 		virtual bool read_next(wchar_t& ch) = 0;
 		virtual bool peek_next(wchar_t& ch) = 0;
-		virtual std::wstring get_name() = 0;
+		virtual gmt::wstring get_name() = 0;
 	};
 }

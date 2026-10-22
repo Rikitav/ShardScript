@@ -19,6 +19,7 @@
 #include <shard/semantic/symbols/VariableSymbol.hpp>
 
 #include <gmt/Concat.hpp>
+#include <gmt/Containers.hpp>
 
 #include <gmt/InlineVector.hpp>
 
@@ -343,7 +344,7 @@ void ExpressionBinder::visit_operator_declaration(const OperatorDeclarationSynta
 		return;
 	}
 
-	const std::vector<gmt::Ref<ParameterSymbol>>& parameters = symbol->get_parameters();
+	const gmt::vector<gmt::Ref<ParameterSymbol>>& parameters = symbol->get_parameters();
 
 	push_scope(symbol);
 

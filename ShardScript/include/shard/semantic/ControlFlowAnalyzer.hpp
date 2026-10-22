@@ -7,6 +7,8 @@
 #include <shard/semantic/symbols/FieldSymbol.hpp>
 #include <shard/semantic/symbols/MethodSymbol.hpp>
 
+#include <gmt/Containers.hpp>
+
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -18,11 +20,11 @@ namespace shard
 
 	class SHARD_API ControlFlowAnalyzer : public SemanticVisitor
 	{
-		using AssignmentSet = std::unordered_set<gmt::Ref<SyntaxSymbol>>;
+		using AssignmentSet = gmt::unordered_set<gmt::Ref<SyntaxSymbol>>;
 
 		struct TryCatchFrame
 		{
-			std::unordered_set<gmt::Ref<StructSymbol>> caughtTypes;
+			gmt::unordered_set<gmt::Ref<StructSymbol>> caughtTypes;
 			bool catchesAll = false;
 		};
 
@@ -30,7 +32,7 @@ namespace shard
 		{
 			gmt::Ref<MethodSymbol> callee;
 			SyntaxToken callSite;
-			std::unordered_set<gmt::Ref<StructSymbol>> caughtTypes;
+			gmt::unordered_set<gmt::Ref<StructSymbol>> caughtTypes;
 			bool catchesAll = false;
 			bool isAwaited = false;
 			bool isTryWrapped = false;
@@ -75,15 +77,15 @@ namespace shard
 		bool m_currentMethodIsAsync = false;
 
 		gmt::Ref<MethodSymbol> m_currentMethod;
-		std::vector<gmt::Ref<MethodSymbol>> m_methodStack;
+		gmt::vector<gmt::Ref<MethodSymbol>> m_methodStack;
 
-		std::vector<TryCatchFrame> m_tryCatchStack;
-		std::vector<gmt::Ref<StructSymbol>> m_catchExceptionStack;
-		std::unordered_set<gmt::Ref<StructSymbol>> m_effectiveCaughtTypes;
+		gmt::vector<TryCatchFrame> m_tryCatchStack;
+		gmt::vector<gmt::Ref<StructSymbol>> m_catchExceptionStack;
+		gmt::unordered_set<gmt::Ref<StructSymbol>> m_effectiveCaughtTypes;
 		int m_catchAllDepth = 0;
 
-		std::unordered_map<gmt::Ref<MethodSymbol>, std::vector<CallEdge>> m_callGraph;
-		std::unordered_set<gmt::Ref<const ExpressionSyntax>> m_tryWrappedExpressions;
+		gmt::unordered_map<gmt::Ref<MethodSymbol>, gmt::vector<CallEdge>> m_callGraph;
+		gmt::unordered_set<gmt::Ref<const ExpressionSyntax>> m_tryWrappedExpressions;
 
 		void enter_member_body(gmt::Ref<MethodSymbol> method);
 		void leave_member_body(gmt::Ref<MethodSymbol> method);
@@ -98,7 +100,7 @@ namespace shard
 		void record_callee_effects(gmt::Ref<MethodSymbol> callee, const SyntaxToken& callSite, bool isAwaited = false, bool isTryWrapped = false);
 
 		bool is_try_wrapped(gmt::Ref<const ExpressionSyntax> expression) const;
-		void add_thrown_type(std::unordered_set<gmt::Ref<StructSymbol>>& thrownTypes, gmt::Ref<StructSymbol> type);
+		void add_thrown_type(gmt::unordered_set<gmt::Ref<StructSymbol>>& thrownTypes, gmt::Ref<StructSymbol> type);
 		bool call_edge_catches(const CallEdge& edge, gmt::Ref<StructSymbol> thrownType);
 
 		void propagate_effects();

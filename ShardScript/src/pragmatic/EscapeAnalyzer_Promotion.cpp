@@ -2,6 +2,7 @@
 
 #include <shard/pragmatic/PragmaticModel.hpp>
 
+#include <gmt/Containers.hpp>
 #include <gmt/InlineVector.hpp>
 
 #include <unordered_set>
@@ -17,7 +18,7 @@ void EscapeAnalyzer::record_cold_point(int id, gmt::Ref<const ExpressionSyntax> 
 
 bool EscapeAnalyzer::reaches_site(int from, int to) const
 {
-	std::unordered_set<int> visited;
+	gmt::unordered_set<int> visited;
 	gmt::inline_vector<int, 16> stack;
 	stack.push_back(from);
 
@@ -50,7 +51,7 @@ void EscapeAnalyzer::commit_promotion_points()
 		if (!verdict.has_value() || verdict->verdict != PlacementVerdict::Promote)
 			continue;
 
-		std::vector<gmt::Ref<const ExpressionSyntax>> points;
+		gmt::vector<gmt::Ref<const ExpressionSyntax>> points;
 		for (const std::pair<int, gmt::Ref<const ExpressionSyntax>>& point : m_coldPoints)
 		{
 			// a cold exposure is recorded against the local it names; the

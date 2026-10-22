@@ -9,6 +9,7 @@
 #include <shard/semantic/symbols/ParameterSymbol.hpp>
 #include <shard/semantic/symbols/VariableSymbol.hpp>
 
+#include <gmt/Containers.hpp>
 #include <gmt/InlineVector.hpp>
 
 #include <stdexcept>
@@ -28,7 +29,7 @@ void EscapeAnalyzer::analyze(SyntaxTree& tree)
 		visit_syntax_tree(tree);
 		run_graph_fixpoint();
 
-		std::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary> summaries = derive_summaries();
+		gmt::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary> summaries = derive_summaries();
 		apply_call_exposures(summaries);
 		run_graph_fixpoint();
 
@@ -87,9 +88,9 @@ ParameterEscapeSummary EscapeAnalyzer::derive_parameter_summary(gmt::Ref<MethodS
 	return summary;
 }
 
-std::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary> EscapeAnalyzer::derive_summaries()
+gmt::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary> EscapeAnalyzer::derive_summaries()
 {
-	std::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary> result;
+	gmt::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary> result;
 
 	for (const WalkedMethod& walked : m_walked)
 	{
@@ -121,7 +122,7 @@ std::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary> EscapeAnalyzer::derive
 	return result;
 }
 
-void EscapeAnalyzer::apply_call_exposures(const std::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries)
+void EscapeAnalyzer::apply_call_exposures(const gmt::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries)
 {
 	for (const Graph::CallExposure& exposure : m_graph.callExposures)
 	{
@@ -153,7 +154,7 @@ void EscapeAnalyzer::apply_call_exposures(const std::unordered_map<gmt::Ref<Meth
 	}
 }
 
-bool EscapeAnalyzer::commit_summaries(const std::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries)
+bool EscapeAnalyzer::commit_summaries(const gmt::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries)
 {
 	bool changed = false;
 
@@ -195,7 +196,7 @@ int EscapeAnalyzer::classify_local_roots(gmt::Ref<MethodSymbol> method, gmt::Ref
 	const EscapeChannel taint = EscapeChannel::Store | EscapeChannel::Capture | EscapeChannel::Suspension | EscapeChannel::Exception;
 
 	int mark = 0;
-	std::unordered_set<int> visited;
+	gmt::unordered_set<int> visited;
 	gmt::inline_vector<int, 16> stack;
 	stack.push_back(startIt->second);
 
@@ -254,7 +255,7 @@ int EscapeAnalyzer::classify_local_roots(gmt::Ref<MethodSymbol> method, gmt::Ref
 	return mark;
 }
 
-int EscapeAnalyzer::classify_return_expression(gmt::Ref<MethodSymbol> method, gmt::Ref<const ExpressionSyntax> expression, const std::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries)
+int EscapeAnalyzer::classify_return_expression(gmt::Ref<MethodSymbol> method, gmt::Ref<const ExpressionSyntax> expression, const gmt::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries)
 {
 	ExpressionRefs refs;
 	collect_expression_refs(expression, refs, false);
@@ -305,7 +306,7 @@ int EscapeAnalyzer::classify_return_expression(gmt::Ref<MethodSymbol> method, gm
 	return mark;
 }
 
-ReturnDisposition EscapeAnalyzer::classify_returns(const WalkedMethod& walked, const std::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries)
+ReturnDisposition EscapeAnalyzer::classify_returns(const WalkedMethod& walked, const gmt::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries)
 {
 	if (walked.returnedExpressions.empty())
 		return ReturnDisposition::Unknown;
@@ -356,7 +357,7 @@ bool EscapeAnalyzer::is_caller_placeable(gmt::Ref<MethodSymbol> owner) const
 	return returnType.as<GenericTypeSymbol>()->get_underlaying_type()->get_kind() == SyntaxKind::StructDeclaration;
 }
 
-bool EscapeAnalyzer::cone_closed(int id, const std::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries) const
+bool EscapeAnalyzer::cone_closed(int id, const gmt::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries) const
 {
 	for (const Graph::CallExposure& exposure : m_graph.callExposures)
 	{
@@ -373,7 +374,7 @@ bool EscapeAnalyzer::cone_closed(int id, const std::unordered_map<gmt::Ref<Metho
 
 bool EscapeAnalyzer::participates_in_reference_cycle(gmt::Ref<StructSymbol> type)
 {
-	std::unordered_set<gmt::Ref<StructSymbol>> visited;
+	gmt::unordered_set<gmt::Ref<StructSymbol>> visited;
 	gmt::inline_vector<gmt::Ref<StructSymbol>, 8> stack;
 	stack.push_back(type);
 
@@ -433,7 +434,7 @@ bool EscapeAnalyzer::is_scalar_eligible(gmt::Ref<StructSymbol> type)
 	return eligible;
 }
 
-AllocationSiteVerdict EscapeAnalyzer::classify_node(int id, gmt::Ref<StructSymbol> nodeType, const std::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries)
+AllocationSiteVerdict EscapeAnalyzer::classify_node(int id, gmt::Ref<StructSymbol> nodeType, const gmt::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries)
 {
 	AllocationSiteVerdict verdict;
 	verdict.level = m_graph.levels[id];
@@ -480,7 +481,7 @@ AllocationSiteVerdict EscapeAnalyzer::classify_node(int id, gmt::Ref<StructSymbo
 	return verdict;
 }
 
-void EscapeAnalyzer::assign_verdicts(const std::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries)
+void EscapeAnalyzer::assign_verdicts(const gmt::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries)
 {
 	for (const auto& pair : m_graph.siteIds)
 	{

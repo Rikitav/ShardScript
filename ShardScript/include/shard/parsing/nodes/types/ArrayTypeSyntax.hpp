@@ -6,6 +6,7 @@
 
 #include <shard/parsing/nodes/TypeSyntax.hpp>
 
+#include <gmt/Containers.hpp>
 #include <gmt/Ref.hpp>
 
 #include <string>
@@ -30,7 +31,7 @@ namespace shard
 		void set_open_bracket(const SyntaxToken& token);
 		void set_close_bracket(const SyntaxToken& token);
 
-		std::wstring get_qualifier() const override;
+		gmt::wstring get_qualifier() const override;
 
 		TextLocation get_location() const override;
 		void accept(SyntaxVisitor& visitor) const override;

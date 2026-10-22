@@ -18,6 +18,7 @@
 
 #include <shard/runtime/VirtualMachine.hpp>
 
+#include <gmt/Containers.hpp>
 #include <gmt/Strings.hpp>
 
 #include "StandardLibrary.hpp"
@@ -53,9 +54,9 @@ namespace
 #endif
 	}
 
-	std::optional<std::vector<std::string>> get_files_to_compile(Flag_Context* flagCtx)
+	std::optional<gmt::vector<gmt::string>> get_files_to_compile(Flag_Context* flagCtx)
 	{
-		std::vector<std::string> filesToCompile;
+		gmt::vector<gmt::string> filesToCompile;
 
 		int restCount = flag_c_rest_argc(flagCtx);
 		char** restArgs = flag_c_rest_argv(flagCtx);
@@ -88,7 +89,7 @@ namespace
 		if (!std::filesystem::exists(path))
 			return;
 
-		std::vector<std::filesystem::path> libraryPaths;
+		gmt::vector<std::filesystem::path> libraryPaths;
 		for (const std::filesystem::directory_entry& entry : std::filesystem::directory_iterator(path))
 		{
 			if (!entry.is_regular_file())
@@ -125,7 +126,7 @@ namespace
 
 	void print_help(Flag_Context* flagCtx)
 	{
-		std::string filename = whereami::executable_name();
+		gmt::string filename = whereami::executable_name();
 
 		std::cout << std::endl;
 		std::cout << "ShardScript interpreter v" << SHARDSCRIPT_VERSION << std::endl;
@@ -192,13 +193,13 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 
-	std::optional<std::vector<std::string>> filesToCompileOpt = get_files_to_compile(flagCtx);
+	std::optional<gmt::vector<gmt::string>> filesToCompileOpt = get_files_to_compile(flagCtx);
 	flag_c_free(flagCtx);
 
 	if (!filesToCompileOpt.has_value())
 		return 1;
 
-	const std::vector<std::string> filesToCompile = std::move(filesToCompileOpt.value());
+	const gmt::vector<gmt::string> filesToCompile = std::move(filesToCompileOpt.value());
 	const bool hasFiles = !filesToCompile.empty();
 
 	try
@@ -224,7 +225,7 @@ int main(int argc, char* argv[])
 		if (!flush_diagnostics(diagnostics))
 			return 1;
 
-		for (const std::string& file : filesToCompile)
+		for (const gmt::string& file : filesToCompile)
 			context.parse_file(gmt::utf8_to_wide(file));
 
 		if (!flush_diagnostics(diagnostics))

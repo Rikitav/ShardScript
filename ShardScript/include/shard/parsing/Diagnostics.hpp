@@ -4,6 +4,8 @@
 #include <shard/parsing/TextLocation.hpp>
 #include <shard/parsing/SyntaxToken.hpp>
 
+#include <gmt/Containers.hpp>
+
 #include <vector>
 #include <string>
 #include <span>
@@ -12,7 +14,7 @@
 
 namespace shard
 {
-	using SourceFileCache = std::unordered_map<std::wstring_view, std::wifstream>;
+	using SourceFileCache = gmt::unordered_map<std::wstring_view, std::wifstream>;
 
 	enum class DiagnosticSeverity
 	{
@@ -25,14 +27,14 @@ namespace shard
 	{
 	private:
 		DiagnosticSeverity m_severity;
-		std::wstring m_description;
+		gmt::wstring m_description;
 		SyntaxToken m_blameToken;
 		TextLocation m_location;
 
 	public:
-		Diagnostic(const SyntaxToken& token, DiagnosticSeverity severity, const std::wstring& description);
-		Diagnostic(TextLocation location, DiagnosticSeverity severity, const std::wstring& description);
-		Diagnostic(TextLocation location, const SyntaxToken& token, DiagnosticSeverity severity, const std::wstring& description);
+		Diagnostic(const SyntaxToken& token, DiagnosticSeverity severity, const gmt::wstring& description);
+		Diagnostic(TextLocation location, DiagnosticSeverity severity, const gmt::wstring& description);
+		Diagnostic(TextLocation location, const SyntaxToken& token, DiagnosticSeverity severity, const gmt::wstring& description);
 
 		inline DiagnosticSeverity get_severity() const	{ return m_severity; }
 		inline string_t get_description() const			{ return m_description.c_str(); }
@@ -42,7 +44,7 @@ namespace shard
 
 	class SHARD_API DiagnosticsContext
 	{
-		std::vector<Diagnostic> m_diagnostics;
+		gmt::vector<Diagnostic> m_diagnostics;
 		bool m_anyError = false;
 		bool m_anyWarns = false;
 
@@ -51,19 +53,19 @@ namespace shard
 	public:
 		DiagnosticsContext() = default;
 
-		void report_error(const SyntaxToken& token, const std::wstring& description);
+		void report_error(const SyntaxToken& token, const gmt::wstring& description);
 		void report_error(const SyntaxToken& token, string_t description);
-		void report_error(const TextLocation& location, const std::wstring& description);
+		void report_error(const TextLocation& location, const gmt::wstring& description);
 		void report_error(const TextLocation& location, string_t description);
 
-		void report_warning(const SyntaxToken& token, const std::wstring& description);
+		void report_warning(const SyntaxToken& token, const gmt::wstring& description);
 		void report_warning(const SyntaxToken& token, string_t description);
-		void report_warning(const TextLocation& location, const std::wstring& description);
+		void report_warning(const TextLocation& location, const gmt::wstring& description);
 		void report_warning(const TextLocation& location, string_t description);
 		
-		void report_info(const SyntaxToken& token, const std::wstring& description);
+		void report_info(const SyntaxToken& token, const gmt::wstring& description);
 		void report_info(const SyntaxToken& token, string_t description);
-		void report_info(const TextLocation& location, const std::wstring& description);
+		void report_info(const TextLocation& location, const gmt::wstring& description);
 		void report_info(const TextLocation& location, string_t description);
 		
 		std::span<const Diagnostic> get_diagnostics() const;

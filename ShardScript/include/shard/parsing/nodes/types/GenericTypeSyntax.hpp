@@ -7,6 +7,7 @@
 #include <shard/parsing/nodes/TypeSyntax.hpp>
 #include <shard/parsing/nodes/lists/TypeArgumentsListSyntax.hpp>
 
+#include <gmt/Containers.hpp>
 #include <gmt/Ref.hpp>
 
 #include <string>
@@ -28,7 +29,7 @@ namespace shard
 		void set_underlaying_type(gmt::Ref<TypeSyntax> underlayingType);
 		void set_type_arguments(gmt::Ref<TypeArgumentsListSyntax> typeArguments);
 
-		std::wstring get_qualifier() const override;
+		gmt::wstring get_qualifier() const override;
 
 		TextLocation get_location() const override;
 		void accept(SyntaxVisitor& visitor) const override;

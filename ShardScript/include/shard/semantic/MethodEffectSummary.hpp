@@ -2,6 +2,7 @@
 #include <shard/Definitions.hpp>
 
 #include <gmt/Arena.hpp>
+#include <gmt/Containers.hpp>
 #include <gmt/Ref.hpp>
 
 #include <unordered_set>
@@ -19,12 +20,12 @@ namespace shard
 		bool mutatesArguments = false;
 		bool hasUnknownSideEffects = false;
 
-		std::unordered_set<gmt::Ref<StructSymbol>> thrownTypes;
-		std::unordered_set<gmt::Ref<StructSymbol>> asyncThrownTypes;
-		std::unordered_set<gmt::Ref<FieldSymbol>> mayAssignInstanceFields;
-		std::unordered_set<gmt::Ref<FieldSymbol>> mayAssignStaticFields;
-		std::unordered_set<gmt::Ref<FieldSymbol>> definitelyAssignsInstanceFields;
-		std::unordered_set<gmt::Ref<FieldSymbol>> definitelyAssignsStaticFields;
+		gmt::unordered_set<gmt::Ref<StructSymbol>> thrownTypes;
+		gmt::unordered_set<gmt::Ref<StructSymbol>> asyncThrownTypes;
+		gmt::unordered_set<gmt::Ref<FieldSymbol>> mayAssignInstanceFields;
+		gmt::unordered_set<gmt::Ref<FieldSymbol>> mayAssignStaticFields;
+		gmt::unordered_set<gmt::Ref<FieldSymbol>> definitelyAssignsInstanceFields;
+		gmt::unordered_set<gmt::Ref<FieldSymbol>> definitelyAssignsStaticFields;
 
 		void merge(const MethodEffectSummary& other);
 

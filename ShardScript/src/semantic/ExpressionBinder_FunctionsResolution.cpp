@@ -1,5 +1,6 @@
 #include <shard/semantic/ExpressionBinder.hpp>
 
+#include <gmt/Containers.hpp>
 #include <gmt/InlineVector.hpp>
 
 #include <shard/parsing/SyntaxKind.hpp>
@@ -83,7 +84,7 @@ namespace
 		return gmt::nullref;
 	}
 
-	std::wstring format_argument_list(std::span<const gmt::Ref<StructSymbol>> argTypes, SemanticModel& model)
+	gmt::wstring format_argument_list(std::span<const gmt::Ref<StructSymbol>> argTypes, SemanticModel& model)
 	{
 		switch (argTypes.size())
 		{
@@ -95,7 +96,7 @@ namespace
 
 			default:
 			{
-				std::wstring result = gmt::concat(L"arguments (", model.get_type_display_name(argTypes[0]));
+				gmt::wstring result = gmt::concat(L"arguments (", model.get_type_display_name(argTypes[0]));
 				for (std::size_t i = 1; i < argTypes.size(); i++)
 					result += gmt::concat(L", ", model.get_type_display_name(argTypes[i]));
 
@@ -196,7 +197,7 @@ void ExpressionBinder::bind_pending_lambda_arguments(const InvokationExpressionS
 	if (!hasPendingArgument)
 		return;
 
-	const std::vector<gmt::Ref<ParameterSymbol>>& parameters = method->get_parameters();
+	const gmt::vector<gmt::Ref<ParameterSymbol>>& parameters = method->get_parameters();
 
 	// partially infer method type arguments from the non-lambda arguments, so
 	// delegate parameter types that mention them can resolve to concrete types
@@ -456,7 +457,7 @@ bool ExpressionBinder::infer_method_type_arguments(gmt::Ref<MethodSymbol> method
 
 namespace
 {
-	bool try_infer_class_type_argument(gmt::Ref<StructSymbol> pattern, gmt::Ref<StructSymbol> concrete, gmt::Ref<StructSymbol> classDef, std::vector<gmt::Ref<StructSymbol>>& outArgs)
+	bool try_infer_class_type_argument(gmt::Ref<StructSymbol> pattern, gmt::Ref<StructSymbol> concrete, gmt::Ref<StructSymbol> classDef, gmt::vector<gmt::Ref<StructSymbol>>& outArgs)
 	{
 		if (pattern.is_null() || concrete.is_null())
 			return true;
@@ -509,7 +510,7 @@ namespace
 	}
 }
 
-bool ExpressionBinder::infer_class_type_arguments(gmt::Ref<StructSymbol> classDef, gmt::Ref<MethodSymbol> method, std::span<const gmt::Ref<StructSymbol>> argTypes, std::vector<gmt::Ref<StructSymbol>>& outClassTypeArgs)
+bool ExpressionBinder::infer_class_type_arguments(gmt::Ref<StructSymbol> classDef, gmt::Ref<MethodSymbol> method, std::span<const gmt::Ref<StructSymbol>> argTypes, gmt::vector<gmt::Ref<StructSymbol>>& outClassTypeArgs)
 {
 	outClassTypeArgs.assign(classDef->type_parameters.size(), gmt::nullref);
 
@@ -534,7 +535,7 @@ bool ExpressionBinder::infer_class_type_arguments(gmt::Ref<StructSymbol> classDe
 
 int ExpressionBinder::score_method_match(gmt::Ref<MethodSymbol> method, std::span<const gmt::Ref<StructSymbol>> argTypes, gmt::Ref<GenericTypeSymbol> genericType, std::pmr::vector<gmt::Ref<StructSymbol>>& outMethodTypeArgs, std::span<const gmt::Ref<StructSymbol>> explicitTypeArgs)
 {
-	const std::vector<gmt::Ref<ParameterSymbol>>& parameters = method->get_parameters();
+	const gmt::vector<gmt::Ref<ParameterSymbol>>& parameters = method->get_parameters();
 	bool generic = !method->get_type_parameters().empty();
 
 	if (generic)
@@ -582,7 +583,7 @@ int ExpressionBinder::score_method_match(gmt::Ref<MethodSymbol> method, std::spa
 
 bool ExpressionBinder::check_method_type_constraints(gmt::Ref<MethodSymbol> method, std::span<const gmt::Ref<StructSymbol>> methodTypeArgs, SyntaxToken blameToken)
 {
-	const std::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters = method->get_type_parameters();
+	const gmt::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters = method->get_type_parameters();
 	bool satisfied = true;
 
 	for (std::size_t i = 0; i < typeParameters.size() && i < methodTypeArgs.size(); ++i)
@@ -786,7 +787,7 @@ gmt::Ref<MethodSymbol> ExpressionBinder::resolve_method(const InvokationExpressi
 		bool arityAccepted = false;
 		for (const candidate& item : candidates.get_vector())
 		{
-			const std::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters = item.method->get_type_parameters();
+			const gmt::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters = item.method->get_type_parameters();
 			if (!typeParameters.empty() && typeParameters.size() == explicitTypeArgs.get_vector().size())
 			{
 				arityAccepted = true;
@@ -929,7 +930,7 @@ gmt::Ref<ConstructorSymbol> ExpressionBinder::resolve_constructor(const ObjectEx
 		if (constructor.is_null())
 			continue;
 
-		const std::vector<gmt::Ref<ParameterSymbol>>& parameters = constructor->get_parameters();
+		const gmt::vector<gmt::Ref<ParameterSymbol>>& parameters = constructor->get_parameters();
 		if (parameters.size() != argTypes.get_vector().size())
 			continue;
 
@@ -1248,7 +1249,7 @@ void ExpressionBinder::visit_invokation_expression(const InvokationExpressionSyn
 
 		if (delegate.is_null())
 		{
-			std::wstring calleeName = calleeType.is_null() ? L"<error>" : get_model().get_type_display_name(calleeType);
+			gmt::wstring calleeName = calleeType.is_null() ? L"<error>" : get_model().get_type_display_name(calleeType);
 			get_diagnostics().report_error(node->get_location(), gmt::concat(L"Cannot invoke expression of type '", calleeName, L"'"));
 
 			if (nodeRef.has_value())

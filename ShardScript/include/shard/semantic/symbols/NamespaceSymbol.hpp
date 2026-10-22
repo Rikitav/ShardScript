@@ -5,6 +5,7 @@
 #include <shard/semantic/SyntaxSymbol.hpp>
 
 #include <gmt/Arena.hpp>
+#include <gmt/Containers.hpp>
 #include <gmt/FlatMap.hpp>
 #include <gmt/Interner.hpp>
 
@@ -20,7 +21,7 @@ namespace shard
 		gmt::FlatMap<gmt::StringReference, gmt::Ref<NamespaceSymbol>> m_children;
 
 	public:
-		std::vector<gmt::Ref<SyntaxSymbol>> members;
+		gmt::vector<gmt::Ref<SyntaxSymbol>> members;
 
 		NamespaceSymbol(std::wstring_view name, gmt::Ref<NamespaceSymbol> parent);
 		NamespaceSymbol(gmt::StringReference name, gmt::Ref<NamespaceSymbol> parent);

@@ -42,6 +42,8 @@
 #include <shard/semantic/symbols/StructSymbol.hpp>
 #include <shard/semantic/symbols/VariableSymbol.hpp>
 
+#include <gmt/Containers.hpp>
+
 #include <cstdlib>
 #include <cwchar>
 #include <iostream>
@@ -137,12 +139,12 @@ namespace
 
 	std::int64_t parse_integer(std::wstring_view lexeme)
 	{
-		return std::wcstoll(std::wstring(lexeme).c_str(), nullptr, 0);
+		return std::wcstoll(gmt::wstring(lexeme).c_str(), nullptr, 0);
 	}
 
 	double parse_double(std::wstring_view lexeme)
 	{
-		return std::wcstod(std::wstring(lexeme).c_str(), nullptr);
+		return std::wcstod(gmt::wstring(lexeme).c_str(), nullptr);
 	}
 
 	wchar_t parse_char_literal(std::wstring_view lexeme)
@@ -245,7 +247,7 @@ void ByteCodeEmitter::visit_literal_expression(const LiteralExpressionSyntax* no
 
 		case TokenType::StringLiteral:
 		{
-			std::wstring text(literal.get_lexeme());
+			gmt::wstring text(literal.get_lexeme());
 			m_encoder.emit_load_const_string(text.c_str());
 			eval_push(sizeof(void*));
 			return;
@@ -621,7 +623,7 @@ gmt::Ref<FieldSymbol> ByteCodeEmitter::capture_field_of(gmt::Ref<SyntaxSymbol> b
 	if (m_generatingFor.is_null())
 		return gmt::nullref;
 
-	const std::vector<gmt::Ref<SyntaxSymbol>>* captures = m_pragmatic.get_lambda_captures(m_generatingFor);
+	const gmt::vector<gmt::Ref<SyntaxSymbol>>* captures = m_pragmatic.get_lambda_captures(m_generatingFor);
 	if (captures == nullptr)
 		return gmt::nullref;
 
@@ -1267,7 +1269,7 @@ void ByteCodeEmitter::visit_lambda_expression(const LambdaExpressionSyntax* node
 	m_pendingLambdaBodies.emplace_back(*nodeRef, anonymousMethod);
 
 	// construct the capture box and store the captured values into its fields
-	const std::vector<gmt::Ref<SyntaxSymbol>>* captures = m_pragmatic.get_lambda_captures(anonymousMethod);
+	const gmt::vector<gmt::Ref<SyntaxSymbol>>* captures = m_pragmatic.get_lambda_captures(anonymousMethod);
 
 	PlacementVerdict verdict = site_verdict(*nodeRef);
 	std::uint16_t boxSlot = allocate_temporary(captureBox, verdict);

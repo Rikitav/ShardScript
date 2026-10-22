@@ -10,6 +10,7 @@
 
 #include <gmt/Alignment.hpp>
 #include <gmt/Allocator.hpp>
+#include <gmt/Containers.hpp>
 
 #include <algorithm>
 #include <stdexcept>
@@ -73,10 +74,10 @@ CallStackFrame* CallStackFrame::create(gmt::Ref<MethodSymbol> method, const Fram
 	std::uint16_t argumentCount = layout != nullptr ? layout->get_argument_count() : 0;
 	std::uint16_t variableCount = layout != nullptr ? layout->get_variable_count() : 0;
 
-	std::vector<std::byte*> localAddresses;
-	std::vector<std::size_t> localPayloads;
-	std::vector<const TypeShape*> localShapes;
-	std::vector<bool> localReferences;
+	gmt::vector<std::byte*> localAddresses;
+	gmt::vector<std::size_t> localPayloads;
+	gmt::vector<const TypeShape*> localShapes;
+	gmt::vector<bool> localReferences;
 
 	localAddresses.reserve(static_cast<std::size_t>(argumentCount) + variableCount);
 	localPayloads.reserve(static_cast<std::size_t>(argumentCount) + variableCount);
@@ -252,12 +253,12 @@ void CallStackFrame::set_current_exception(ObjectInstance value)
 	m_currentException = value;
 }
 
-std::vector<std::size_t>& CallStackFrame::get_defer_stack()
+gmt::vector<std::size_t>& CallStackFrame::get_defer_stack()
 {
 	return m_deferStack;
 }
 
-std::vector<ExceptionHandlerRecord>& CallStackFrame::get_exception_handlers()
+gmt::vector<ExceptionHandlerRecord>& CallStackFrame::get_exception_handlers()
 {
 	return m_exceptionHandlers;
 }

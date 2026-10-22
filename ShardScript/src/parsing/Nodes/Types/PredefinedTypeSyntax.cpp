@@ -2,6 +2,7 @@
 #include <shard/parsing/SyntaxVisitor.hpp>
 
 #include <gmt/Arena.hpp>
+#include <gmt/Containers.hpp>
 
 using namespace shard;
 
@@ -18,9 +19,9 @@ void PredefinedTypeSyntax::set_type_token(const SyntaxToken& token)
 	m_typeToken = token;
 }
 
-std::wstring PredefinedTypeSyntax::get_qualifier() const
+gmt::wstring PredefinedTypeSyntax::get_qualifier() const
 {
-	return std::wstring(m_typeToken.get_lexeme());
+	return gmt::wstring(m_typeToken.get_lexeme());
 }
 
 TextLocation PredefinedTypeSyntax::get_location() const

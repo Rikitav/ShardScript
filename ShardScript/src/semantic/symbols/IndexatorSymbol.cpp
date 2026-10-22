@@ -1,5 +1,6 @@
 #include <shard/semantic/symbols/IndexatorSymbol.hpp>
 
+#include <gmt/Containers.hpp>
 #include <gmt/Interner.hpp>
 
 #include <shard/semantic/symbols/AccessorSymbol.hpp>
@@ -13,7 +14,7 @@ IndexatorSymbol::IndexatorSymbol(std::wstring_view name, gmt::Ref<SyntaxSymbol> 
 IndexatorSymbol::IndexatorSymbol(gmt::StringReference name, gmt::Ref<SyntaxSymbol> parent)
 	: PropertySymbol(name, SyntaxKind::IndexatorDeclaration, parent) { }
 
-const std::vector<gmt::Ref<ParameterSymbol>>& IndexatorSymbol::get_parameters() const
+const gmt::vector<gmt::Ref<ParameterSymbol>>& IndexatorSymbol::get_parameters() const
 {
 	return m_parameters;
 }

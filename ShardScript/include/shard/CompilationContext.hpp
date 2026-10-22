@@ -13,6 +13,7 @@
 
 #include <shard/semantic/SemanticModel.hpp>
 
+#include <gmt/Containers.hpp>
 #include <gmt/SharedLibrary.hpp>
 
 #include <filesystem>
@@ -34,7 +35,7 @@ namespace shard
 		// library emplaces register destructor thunks instantiated inside the
 		// library binary, so the library code must stay loaded while the
 		// semantic model tears down
-		std::vector<gmt::SharedLibrary> m_libraries;
+		gmt::vector<gmt::SharedLibrary> m_libraries;
 
 		SyntaxTree m_tree;
 		DiagnosticsContext m_diagnostics;
@@ -51,12 +52,12 @@ namespace shard
 
 		void enrich_tree(SourceProvider& provider);
 		void parse_file(const std::filesystem::path path);
-		void parse_source(const std::wstring& name, const std::wstring& source);
+		void parse_source(const gmt::wstring& name, const gmt::wstring& source);
 
 		void add_lib(const std::filesystem::path& path);
 		void add_lib(LibraryHandle handle);
 		void add_lib(gmt::SharedLibrary library);
-		void add_libraries(const std::vector<std::filesystem::path>& paths);
+		void add_libraries(const gmt::vector<std::filesystem::path>& paths);
 
 		bool analyze_tree();
 		bool emit_program();

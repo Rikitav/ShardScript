@@ -6,6 +6,8 @@
 #include <shard/parsing/SyntaxToken.hpp>
 #include <shard/parsing/TokenType.hpp>
 
+#include <gmt/Containers.hpp>
+
 #include <string>
 #include <vector>
 
@@ -29,7 +31,7 @@ LexicalBuffer LexicalBuffer::from(SourceTextProvider& reader)
 	return LexicalBuffer::from(lexer);
 }
 
-LexicalBuffer LexicalBuffer::from(std::vector<SyntaxToken> fromvector)
+LexicalBuffer LexicalBuffer::from(gmt::vector<SyntaxToken> fromvector)
 {
 	LexicalBuffer buffer;
 	buffer.set_sequence(fromvector);
@@ -55,7 +57,7 @@ void LexicalBuffer::populate_from(SourceTextProvider& reader)
 	}
 }
 
-void LexicalBuffer::populate_from(std::vector<SyntaxToken> fromvector)
+void LexicalBuffer::populate_from(gmt::vector<SyntaxToken> fromvector)
 {
 	for (const SyntaxToken& fromToken : fromvector)
 		push_back(fromToken);
@@ -71,7 +73,7 @@ bool LexicalBuffer::is_empty()
 	return m_sequence.empty();
 }
 
-void LexicalBuffer::set_sequence(std::vector<SyntaxToken> setvector)
+void LexicalBuffer::set_sequence(gmt::vector<SyntaxToken> setvector)
 {
 	clear();
 	m_sequence = setvector;
@@ -97,22 +99,22 @@ SyntaxToken LexicalBuffer::last()
 	return m_sequence.back();
 }
 
-std::vector<SyntaxToken>::iterator LexicalBuffer::begin()
+gmt::vector<SyntaxToken>::iterator LexicalBuffer::begin()
 {
 	return m_sequence.begin();
 }
 
-std::vector<SyntaxToken>::iterator LexicalBuffer::end()
+gmt::vector<SyntaxToken>::iterator LexicalBuffer::end()
 {
 	return m_sequence.end();
 }
 
-std::vector<SyntaxToken>::const_iterator LexicalBuffer::begin() const
+gmt::vector<SyntaxToken>::const_iterator LexicalBuffer::begin() const
 {
 	return m_sequence.begin();
 }
 
-std::vector<SyntaxToken>::const_iterator LexicalBuffer::end() const
+gmt::vector<SyntaxToken>::const_iterator LexicalBuffer::end() const
 {
 	return m_sequence.end();
 }

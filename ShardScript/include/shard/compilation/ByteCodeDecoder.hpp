@@ -5,6 +5,7 @@
 
 #include <shard/semantic/SyntaxSymbol.hpp>
 
+#include <gmt/Containers.hpp>
 #include <gmt/Ref.hpp>
 
 #include <cstddef>
@@ -28,15 +29,15 @@ namespace shard
 	class SHARD_API ByteCodeDecoder
 	{
 		const gmt::Arena& m_arena;
-		const std::vector<std::byte>& m_code;
+		const gmt::vector<std::byte>& m_code;
 		std::size_t m_base;
 		std::size_t m_end;
 		std::size_t m_ip = 0;
 
 	public:
-		ByteCodeDecoder(const std::vector<std::byte>& code, const gmt::Arena& arena);
-		ByteCodeDecoder(const std::vector<std::byte>& code, const gmt::Arena& arena, std::size_t start);
-		ByteCodeDecoder(const std::vector<std::byte>& code, const gmt::Arena& arena, std::size_t start, std::size_t length);
+		ByteCodeDecoder(const gmt::vector<std::byte>& code, const gmt::Arena& arena);
+		ByteCodeDecoder(const gmt::vector<std::byte>& code, const gmt::Arena& arena, std::size_t start);
+		ByteCodeDecoder(const gmt::vector<std::byte>& code, const gmt::Arena& arena, std::size_t start, std::size_t length);
 
 		bool is_eof() const;
 		std::size_t index() const;

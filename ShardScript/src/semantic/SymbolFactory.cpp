@@ -3,15 +3,17 @@
 #include <shard/lexical/SyntaxFacts.hpp>
 #include <shard/parsing/SyntaxKind.hpp>
 
+#include <gmt/Containers.hpp>
+
 #include <string>
 
 using namespace shard;
 
 namespace
 {
-	std::wstring concat(std::wstring_view left, std::wstring_view right)
+	gmt::wstring concat(std::wstring_view left, std::wstring_view right)
 	{
-		std::wstring result;
+		gmt::wstring result;
 		result.reserve(left.size() + right.size());
 		result.append(left);
 		result.append(right);
@@ -161,7 +163,7 @@ gmt::Ref<FieldSymbol> SymbolFactory::create_backing_field(gmt::Ref<PropertySymbo
 	static constexpr std::wstring_view suffix = L">k__BackingField";
 	const std::wstring_view propertyName = property->get_name();
 
-	std::wstring backingName;
+	gmt::wstring backingName;
 	backingName.reserve(1 + propertyName.size() + suffix.size());
 	backingName.append(L"<");
 	backingName.append(propertyName);
@@ -233,7 +235,7 @@ gmt::Ref<AccessorSymbol> SymbolFactory::create_accessor(gmt::Ref<const AccessorD
 	const std::wstring_view propertyName = property->get_name();
 	const std::wstring_view keyword = node->get_keyword().get_lexeme();
 
-	std::wstring accessorName;
+	gmt::wstring accessorName;
 	accessorName.reserve(propertyName.size() + 1 + keyword.size());
 	accessorName.append(propertyName);
 	accessorName.append(L"_");
@@ -310,7 +312,7 @@ gmt::Ref<IndexatorSymbol> SymbolFactory::create_indexator(std::wstring_view name
 	return symbol;
 }
 
-gmt::Ref<IndexatorSymbol> SymbolFactory::create_indexator(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent, gmt::Ref<StructSymbol> returnType, std::vector<gmt::Ref<ParameterSymbol>> parameters)
+gmt::Ref<IndexatorSymbol> SymbolFactory::create_indexator(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent, gmt::Ref<StructSymbol> returnType, gmt::vector<gmt::Ref<ParameterSymbol>> parameters)
 {
 	gmt::Ref<IndexatorSymbol> symbol = create_indexator(name, parent, returnType);
 	for (const gmt::Ref<ParameterSymbol>& parameter : parameters)
@@ -383,7 +385,7 @@ gmt::Ref<DelegateTypeSymbol> SymbolFactory::create_delegate(gmt::Ref<const Deleg
 
 	if (!node->get_parameters_list().is_null())
 	{
-		auto& parameters = const_cast<std::vector<gmt::Ref<ParameterSymbol>>&>(symbol->get_parameters());
+		auto& parameters = const_cast<gmt::vector<gmt::Ref<ParameterSymbol>>&>(symbol->get_parameters());
 		for (const gmt::Ref<ParameterSyntax>& parameter : node->get_parameters_list()->get_parameters().as_span())
 			parameters.push_back(create_parameter(parameter, symbol));
 	}
@@ -408,7 +410,7 @@ gmt::Ref<DelegateTypeSymbol> SymbolFactory::create_delegate(gmt::Ref<MethodSymbo
 	return symbol;
 }
 
-gmt::Ref<DelegateTypeSymbol> SymbolFactory::create_delegate(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent, gmt::Ref<StructSymbol> returnType, std::vector<gmt::Ref<ParameterSymbol>> parameters)
+gmt::Ref<DelegateTypeSymbol> SymbolFactory::create_delegate(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent, gmt::Ref<StructSymbol> returnType, gmt::vector<gmt::Ref<ParameterSymbol>> parameters)
 {
 	gmt::Ref<DelegateTypeSymbol> symbol = m_table->emplace<DelegateTypeSymbol>(name, parent);
 	symbol->set_accesibility(ACS_PUBLIC);

@@ -3,6 +3,7 @@
 
 #include <shard/pragmatic/EscapeChannels.hpp>
 
+#include <gmt/Containers.hpp>
 #include <gmt/Ref.hpp>
 
 #include <vector>
@@ -27,7 +28,7 @@ namespace shard
 
 	struct SHARD_API EscapeSummary
 	{
-		std::vector<ParameterEscapeSummary> parameters;
+		gmt::vector<ParameterEscapeSummary> parameters;
 		ReturnDisposition returnDisposition = ReturnDisposition::Unknown;
 		gmt::Ref<StructSymbol> returnType;   // nullref when Unknown
 		bool computed = false;               // false = conservative default (unknown callee)

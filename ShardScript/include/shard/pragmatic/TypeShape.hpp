@@ -1,6 +1,7 @@
 #pragma once
 #include <shard/Definitions.hpp>
 
+#include <gmt/Containers.hpp>
 #include <gmt/Ref.hpp>
 
 #include <cstddef>
@@ -25,10 +26,10 @@ namespace shard
 
 	private:
 		gmt::Ref<StructSymbol> m_baseType;
-		std::vector<gmt::Ref<StructSymbol>> m_genericArguments;
+		gmt::vector<gmt::Ref<StructSymbol>> m_genericArguments;
 		std::size_t m_size = 0;
 		bool m_isReference = false; // reference storage is the baseline (spec 1.7)
-		std::vector<SlotInfo> m_slots;
+		gmt::vector<SlotInfo> m_slots;
 
 	public:
 		TypeShape(gmt::Ref<StructSymbol> baseType, std::span<const gmt::Ref<StructSymbol>> genericArguments);
@@ -37,7 +38,7 @@ namespace shard
 		TypeShape& operator=(const TypeShape&) = delete;
 
 		gmt::Ref<StructSymbol> get_base_type() const;
-		const std::vector<gmt::Ref<StructSymbol>>& get_generic_arguments() const;
+		const gmt::vector<gmt::Ref<StructSymbol>>& get_generic_arguments() const;
 
 		std::size_t get_size() const;
 		bool is_reference() const;

@@ -5,6 +5,7 @@
 #include <shard/semantic/symbols/StructSymbol.hpp>
 
 #include <gmt/Arena.hpp>
+#include <gmt/Containers.hpp>
 
 #include <cstdint>
 #include <string_view>
@@ -14,7 +15,7 @@ namespace shard
 {
 	class SHARD_API TypeParameterSymbol final : public StructSymbol
 	{
-		std::vector<gmt::Ref<StructSymbol>> m_constraints;
+		gmt::vector<gmt::Ref<StructSymbol>> m_constraints;
 		std::uint16_t m_typeArgumentIndex = 0;
 
 	public:
@@ -28,7 +29,7 @@ namespace shard
 		TypeParameterSymbol(TypeParameterSymbol&& other) = delete;
 		TypeParameterSymbol& operator=(TypeParameterSymbol&& other) = delete;
 
-		const std::vector<gmt::Ref<StructSymbol>>& get_constraints() const;
+		const gmt::vector<gmt::Ref<StructSymbol>>& get_constraints() const;
 		void add_constraint(gmt::Ref<StructSymbol> constraint);
 
 		std::uint16_t get_type_argument_index() const;

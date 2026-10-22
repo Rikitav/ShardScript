@@ -1,3 +1,4 @@
+#include <gmt/Containers.hpp>
 #include <gmt/Strings.hpp>
 
 #include <cwchar>
@@ -10,7 +11,7 @@
 
 namespace gmt
 {
-	std::string wide_to_utf8(std::wstring_view wstr)
+	gmt::string wide_to_utf8(std::wstring_view wstr)
 	{
 		if (wstr.empty())
 			return { };
@@ -25,7 +26,7 @@ namespace gmt
 		if (size <= 0)
 			return { };
 
-		std::string result(static_cast<std::size_t>(size), '\0');
+		gmt::string result(static_cast<std::size_t>(size), '\0');
 		::WideCharToMultiByte(
 			CP_UTF8, 0,
 			wstr.data(), static_cast<int>(wstr.size()),
@@ -34,9 +35,9 @@ namespace gmt
 
 		return result;
 #else
-		const std::wstring terminated(wstr);
+		const gmt::wstring terminated(wstr);
 		const std::size_t buffer_size = wstr.size() * 4 + 1;
-		std::string result(buffer_size, '\0');
+		gmt::string result(buffer_size, '\0');
 
 		const std::size_t converted = std::wcstombs(result.data(), terminated.c_str(), buffer_size);
 		if (converted == static_cast<std::size_t>(-1))
@@ -47,7 +48,7 @@ namespace gmt
 #endif
 	}
 
-	std::string wide_to_utf8(const wchar_t* wstr)
+	gmt::string wide_to_utf8(const wchar_t* wstr)
 	{
 		if (wstr == nullptr)
 			return { };
@@ -55,7 +56,7 @@ namespace gmt
 		return wide_to_utf8(std::wstring_view(wstr));
 	}
 
-	std::wstring utf8_to_wide(std::string_view narrow)
+	gmt::wstring utf8_to_wide(std::string_view narrow)
 	{
 		if (narrow.empty())
 			return { };
@@ -69,7 +70,7 @@ namespace gmt
 		if (size <= 0)
 			return { };
 
-		std::wstring result(static_cast<std::size_t>(size), L'\0');
+		gmt::wstring result(static_cast<std::size_t>(size), L'\0');
 		::MultiByteToWideChar(
 			CP_UTF8, 0,
 			narrow.data(), static_cast<int>(narrow.size()),
@@ -77,9 +78,9 @@ namespace gmt
 
 		return result;
 #else
-		const std::string terminated(narrow);
+		const gmt::string terminated(narrow);
 		const std::size_t buffer_size = narrow.size() + 1;
-		std::wstring result(buffer_size, L'\0');
+		gmt::wstring result(buffer_size, L'\0');
 
 		const std::size_t converted = std::mbstowcs(result.data(), terminated.c_str(), buffer_size);
 		if (converted == static_cast<std::size_t>(-1))
@@ -90,7 +91,7 @@ namespace gmt
 #endif
 	}
 
-	std::wstring utf8_to_wide(const char* narrow)
+	gmt::wstring utf8_to_wide(const char* narrow)
 	{
 		if (narrow == nullptr)
 			return { };
@@ -98,7 +99,7 @@ namespace gmt
 		return utf8_to_wide(std::string_view(narrow));
 	}
 
-	std::string wide_to_ansi(std::wstring_view wstr)
+	gmt::string wide_to_ansi(std::wstring_view wstr)
 	{
 		if (wstr.empty())
 			return { };
@@ -113,7 +114,7 @@ namespace gmt
 		if (size <= 0)
 			return { };
 
-		std::string result(static_cast<std::size_t>(size), '\0');
+		gmt::string result(static_cast<std::size_t>(size), '\0');
 		::WideCharToMultiByte(
 			CP_ACP, 0,
 			wstr.data(), static_cast<int>(wstr.size()),
@@ -122,9 +123,9 @@ namespace gmt
 
 		return result;
 #else
-		const std::wstring terminated(wstr);
+		const gmt::wstring terminated(wstr);
 		const std::size_t buffer_size = wstr.size() * 4 + 1;
-		std::string result(buffer_size, '\0');
+		gmt::string result(buffer_size, '\0');
 
 		const std::size_t converted = std::wcstombs(result.data(), terminated.c_str(), buffer_size);
 		if (converted == static_cast<std::size_t>(-1))
@@ -135,7 +136,7 @@ namespace gmt
 #endif
 	}
 
-	std::string wide_to_ansi(const wchar_t* wstr)
+	gmt::string wide_to_ansi(const wchar_t* wstr)
 	{
 		if (wstr == nullptr)
 			return { };
@@ -143,7 +144,7 @@ namespace gmt
 		return wide_to_ansi(std::wstring_view(wstr));
 	}
 
-	std::wstring ansi_to_wide(std::string_view narrow)
+	gmt::wstring ansi_to_wide(std::string_view narrow)
 	{
 		if (narrow.empty())
 			return { };
@@ -157,7 +158,7 @@ namespace gmt
 		if (size <= 0)
 			return { };
 
-		std::wstring result(static_cast<std::size_t>(size), L'\0');
+		gmt::wstring result(static_cast<std::size_t>(size), L'\0');
 		::MultiByteToWideChar(
 			CP_ACP, 0,
 			narrow.data(), static_cast<int>(narrow.size()),
@@ -165,9 +166,9 @@ namespace gmt
 
 		return result;
 #else
-		const std::string terminated(narrow);
+		const gmt::string terminated(narrow);
 		const std::size_t buffer_size = narrow.size() + 1;
-		std::wstring result(buffer_size, L'\0');
+		gmt::wstring result(buffer_size, L'\0');
 
 		const std::size_t converted = std::mbstowcs(result.data(), terminated.c_str(), buffer_size);
 		if (converted == static_cast<std::size_t>(-1))
@@ -178,7 +179,7 @@ namespace gmt
 #endif
 	}
 
-	std::wstring ansi_to_wide(const char* narrow)
+	gmt::wstring ansi_to_wide(const char* narrow)
 	{
 		if (narrow == nullptr)
 			return { };
@@ -186,13 +187,13 @@ namespace gmt
 		return ansi_to_wide(std::string_view(narrow));
 	}
 
-	std::wstring utf16_to_wide(const void* ptr)
+	gmt::wstring utf16_to_wide(const void* ptr)
 	{
 		if (ptr == nullptr)
 			return { };
 
 		const auto* source = static_cast<const std::uint16_t*>(ptr);
-		std::wstring result;
+		gmt::wstring result;
 
 		while (*source != 0)
 		{
@@ -203,9 +204,9 @@ namespace gmt
 		return result;
 	}
 
-	std::string wide_to_narrow(std::wstring_view wstr)
+	gmt::string wide_to_narrow(std::wstring_view wstr)
 	{
-		std::string result;
+		gmt::string result;
 		result.reserve(wstr.size());
 
 		for (const wchar_t ch : wstr)
@@ -214,7 +215,7 @@ namespace gmt
 		return result;
 	}
 
-	std::string wide_to_narrow(const wchar_t* wstr)
+	gmt::string wide_to_narrow(const wchar_t* wstr)
 	{
 		if (wstr == nullptr)
 			return { };

@@ -1,5 +1,7 @@
 #include <shard/parsing/SemanticVersion.hpp>
 
+#include <gmt/Containers.hpp>
+
 #include <cwctype>
 
 using namespace shard::semver;
@@ -11,7 +13,7 @@ namespace
 		return std::iswspace(static_cast<wint_t>(chr)) != 0;
 	}
 
-	std::wstring trim(const std::wstring& text)
+	gmt::wstring trim(const gmt::wstring& text)
 	{
 		std::size_t start = 0;
 		while (start < text.size() && is_space(text[start]))
@@ -24,7 +26,7 @@ namespace
 		return text.substr(start, end - start);
 	}
 
-	std::optional<int> parse_int(const std::wstring& text, std::size_t& pos)
+	std::optional<int> parse_int(const gmt::wstring& text, std::size_t& pos)
 	{
 		if (pos >= text.size() || !std::iswdigit(static_cast<wint_t>(text[pos])))
 			return std::nullopt;
@@ -39,7 +41,7 @@ namespace
 		return value;
 	}
 
-	std::optional<VersionExpression::Constraint> parse_constraint(std::wstring text)
+	std::optional<VersionExpression::Constraint> parse_constraint(gmt::wstring text)
 	{
 		text = trim(text);
 		if (text.empty())
@@ -134,9 +136,9 @@ bool SemanticVersion::operator>=(const SemanticVersion& other) const
 	return !(*this < other);
 }
 
-std::optional<SemanticVersion> shard::semver::parse_version(const std::wstring& text)
+std::optional<SemanticVersion> shard::semver::parse_version(const gmt::wstring& text)
 {
-	std::wstring input = trim(text);
+	gmt::wstring input = trim(text);
 	if (input.empty())
 		return std::nullopt;
 
@@ -178,7 +180,7 @@ std::optional<SemanticVersion> shard::semver::parse_version(const std::wstring& 
 	return version;
 }
 
-std::optional<VersionExpression> VersionExpression::parse(const std::wstring& text)
+std::optional<VersionExpression> VersionExpression::parse(const gmt::wstring& text)
 {
 	VersionExpression expression;
 

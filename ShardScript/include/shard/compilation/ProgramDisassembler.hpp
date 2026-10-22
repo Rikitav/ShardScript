@@ -4,6 +4,8 @@
 
 #include <shard/parsing/SyntaxVisitor.hpp>
 
+#include <gmt/Containers.hpp>
+
 #include <ostream>
 #include <vector>
 
@@ -12,7 +14,7 @@ namespace shard
 	class SHARD_API ProgramDisassembler final : private SyntaxVisitor
 	{
 		const ApplicationDomain& m_domain;
-		std::vector<gmt::Ref<MethodSymbol>> m_foundMethods;
+		gmt::vector<gmt::Ref<MethodSymbol>> m_foundMethods;
 
 		template<typename T>
 		gmt::Ref<T> lookup_symbol(const SyntaxNode* node);

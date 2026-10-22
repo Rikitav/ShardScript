@@ -16,6 +16,8 @@
 #include <shard/semantic/symbols/StructSymbol.hpp>
 #include <shard/semantic/symbols/VariableSymbol.hpp>
 
+#include <gmt/Containers.hpp>
+
 #include <algorithm>
 
 using namespace shard;
@@ -128,7 +130,7 @@ void EscapeAnalyzer::materialize_capture(gmt::Ref<const ExpressionSyntax> closur
 
 	gmt::Ref<StructSymbol> captureBox = parent.as<StructSymbol>();
 
-	std::vector<gmt::Ref<SyntaxSymbol>>& captures = m_pragmatic.lambda_captures_for(anonymousMethod);
+	gmt::vector<gmt::Ref<SyntaxSymbol>>& captures = m_pragmatic.lambda_captures_for(anonymousMethod);
 	if (std::find(captures.begin(), captures.end(), symbol) != captures.end())
 		return;
 

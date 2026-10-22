@@ -42,6 +42,7 @@
 #include <shard/semantic/symbols/TypeParameterSymbol.hpp>
 #include <shard/semantic/symbols/VariableSymbol.hpp>
 
+#include <gmt/Containers.hpp>
 #include <gmt/Ref.hpp>
 #include <gmt/Span.hpp>
 
@@ -96,7 +97,7 @@ namespace shard
 
 		gmt::Ref<IndexatorSymbol> create_indexator(gmt::Ref<const IndexatorDeclarationSyntax> node, gmt::Ref<SyntaxSymbol> parent);
 		gmt::Ref<IndexatorSymbol> create_indexator(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent, gmt::Ref<StructSymbol> returnType = gmt::nullref);
-		gmt::Ref<IndexatorSymbol> create_indexator(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent, gmt::Ref<StructSymbol> returnType, std::vector<gmt::Ref<ParameterSymbol>> parameters);
+		gmt::Ref<IndexatorSymbol> create_indexator(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent, gmt::Ref<StructSymbol> returnType, gmt::vector<gmt::Ref<ParameterSymbol>> parameters);
 
 		gmt::Ref<ParameterSymbol> create_parameter(gmt::Ref<const ParameterSyntax> node, gmt::Ref<SyntaxSymbol> parent);
 		gmt::Ref<ParameterSymbol> create_parameter(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent);
@@ -112,7 +113,7 @@ namespace shard
 
 		gmt::Ref<DelegateTypeSymbol> create_delegate(gmt::Ref<const DelegateDeclarationSyntax> node, gmt::Ref<SyntaxSymbol> parent);
 		gmt::Ref<DelegateTypeSymbol> create_delegate(gmt::Ref<MethodSymbol> method, gmt::Ref<SyntaxSymbol> parent);
-		gmt::Ref<DelegateTypeSymbol> create_delegate(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent, gmt::Ref<StructSymbol> returnType, std::vector<gmt::Ref<ParameterSymbol>> parameters);
+		gmt::Ref<DelegateTypeSymbol> create_delegate(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent, gmt::Ref<StructSymbol> returnType, gmt::vector<gmt::Ref<ParameterSymbol>> parameters);
 
 		gmt::Ref<ArrayTypeSymbol> create_array_type(gmt::Ref<const ArrayTypeSyntax> node, gmt::Ref<StructSymbol> underlayingType);
 		gmt::Ref<ArrayTypeSymbol> create_array_type(gmt::Ref<StructSymbol> underlayingType);

@@ -17,6 +17,7 @@
 #include <shard/compilation/ByteCodeDecoder.hpp>
 #include <shard/compilation/VirtualProgramImage.hpp>
 
+#include <gmt/Containers.hpp>
 #include <gmt/Ref.hpp>
 
 #include <cstddef>
@@ -91,6 +92,6 @@ namespace shard
 
 		bool get_has_unhandled_exception() const;
 		ObjectInstance get_unhandled_exception() const;
-		std::wstring get_unhandled_message() const;
+		gmt::wstring get_unhandled_message() const;
 	};
 }

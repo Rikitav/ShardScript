@@ -1,6 +1,8 @@
 #pragma once
 #include <shard/Definitions.hpp>
 
+#include <gmt/Containers.hpp>
+
 #include <optional>
 #include <string>
 #include <vector>
@@ -14,7 +16,7 @@ namespace shard::semver
 		int major = 0;
 		int minor = 0;
 		int patch = 0;
-		std::wstring prerelease;
+		gmt::wstring prerelease;
 
 		bool operator==(const SemanticVersion& other) const;
 		bool operator!=(const SemanticVersion& other) const;
@@ -25,7 +27,7 @@ namespace shard::semver
 	};
 
 	// Parses "MAJOR.MINOR.PATCH" or "MAJOR.MINOR.PATCH-prerelease"
-	SHARD_API std::optional<SemanticVersion> parse_version(const std::wstring& text);
+	SHARD_API std::optional<SemanticVersion> parse_version(const gmt::wstring& text);
 
 	// A version range expression such as "1.2.3", "^1.2.3", ">=1.0.0 <2.0.0"
 	class SHARD_API VersionExpression
@@ -49,12 +51,12 @@ namespace shard::semver
 		};
 
 	private:
-		std::vector<Constraint> m_constraints;
+		gmt::vector<Constraint> m_constraints;
 
 		VersionExpression() = default;
 
 	public:
-		static std::optional<VersionExpression> parse(const std::wstring& text);
+		static std::optional<VersionExpression> parse(const gmt::wstring& text);
 		bool satisfies(const SemanticVersion& version) const;
 	};
 }

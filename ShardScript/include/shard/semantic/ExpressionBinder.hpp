@@ -67,6 +67,8 @@
 #include <shard/parsing/nodes/types/PredefinedTypeSyntax.hpp>
 #include <shard/parsing/nodes/types/QualifiedNameTypeSyntax.hpp>
 
+#include <gmt/Containers.hpp>
+
 #include <memory_resource>
 #include <span>
 #include <string>
@@ -81,13 +83,13 @@ namespace shard
 	class SHARD_API ExpressionBinder final : public SemanticVisitor
 	{
 		SymbolFactory m_factory;
-		std::unordered_set<std::wstring_view> m_ambiguousNames;
-		std::unordered_set<gmt::Ref<const ExpressionSyntax>> m_staticContextExpressions;
+		gmt::unordered_set<std::wstring_view> m_ambiguousNames;
+		gmt::unordered_set<gmt::Ref<const ExpressionSyntax>> m_staticContextExpressions;
 
 		// lambdas whose parameter types could not be resolved yet; they bind
 		// once an expected delegate type appears (overload resolution picks a
 		// method, or a denotation channel supplies a target type)
-		std::unordered_set<gmt::Ref<const LambdaExpressionSyntax>> m_pendingLambdas;
+		gmt::unordered_set<gmt::Ref<const LambdaExpressionSyntax>> m_pendingLambdas;
 
 		// collects value-returning expressions of a bound body so a return
 		// type can be inferred for declarations that omit one
@@ -135,7 +137,7 @@ namespace shard
 
 		bool try_infer_type_argument(gmt::Ref<StructSymbol> pattern, gmt::Ref<StructSymbol> concrete, gmt::Ref<MethodSymbol> method, gmt::Ref<GenericTypeSymbol> genericType, std::pmr::vector<gmt::Ref<StructSymbol>>& outMethodTypeArgs);
 		bool infer_method_type_arguments(gmt::Ref<MethodSymbol> method, std::span<const gmt::Ref<StructSymbol>> argTypes, gmt::Ref<GenericTypeSymbol> genericType, std::pmr::vector<gmt::Ref<StructSymbol>>& outMethodTypeArgs);
-		bool infer_class_type_arguments(gmt::Ref<StructSymbol> classDef, gmt::Ref<MethodSymbol> method, std::span<const gmt::Ref<StructSymbol>> argTypes, std::vector<gmt::Ref<StructSymbol>>& outClassTypeArgs);
+		bool infer_class_type_arguments(gmt::Ref<StructSymbol> classDef, gmt::Ref<MethodSymbol> method, std::span<const gmt::Ref<StructSymbol>> argTypes, gmt::vector<gmt::Ref<StructSymbol>>& outClassTypeArgs);
 
 		int conversion_score(gmt::Ref<const StructSymbol> parameter, gmt::Ref<const StructSymbol> argument);
 		int score_method_match(gmt::Ref<MethodSymbol> method, std::span<const gmt::Ref<StructSymbol>> argTypes, gmt::Ref<GenericTypeSymbol> genericType, std::pmr::vector<gmt::Ref<StructSymbol>>& outMethodTypeArgs, std::span<const gmt::Ref<StructSymbol>> explicitTypeArgs = {});

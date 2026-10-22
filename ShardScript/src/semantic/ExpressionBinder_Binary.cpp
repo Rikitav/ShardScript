@@ -13,6 +13,7 @@
 #include <shard/semantic/symbols/StructSymbol.hpp>
 
 #include <gmt/Concat.hpp>
+#include <gmt/Containers.hpp>
 
 #include <span>
 #include <vector>
@@ -31,7 +32,7 @@ namespace
 			if (candidate.is_null() || candidate->get_operator_token() != operatorToken)
 				continue;
 
-			const std::vector<gmt::Ref<ParameterSymbol>>& parameters = candidate->get_parameters();
+			const gmt::vector<gmt::Ref<ParameterSymbol>>& parameters = candidate->get_parameters();
 			if (parameters.size() != parameterTypes.size())
 				continue;
 
