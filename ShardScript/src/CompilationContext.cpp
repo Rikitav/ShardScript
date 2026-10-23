@@ -18,6 +18,8 @@
 
 #include <shard/parsing/SemanticVersion.hpp>
 
+#include <gmt/Containers.hpp>
+
 #include <gmt/Concat.hpp>
 #include <gmt/Strings.hpp>
 
@@ -38,23 +40,23 @@ namespace
 	struct ResolvedLibrary
 	{
 		std::filesystem::path path;
-		std::wstring name;
-		std::wstring description;
-		std::wstring version;
-		std::vector<std::pair<std::wstring, std::wstring>> dependencies;
+		gmt::wstring name;
+		gmt::wstring description;
+		gmt::wstring version;
+		gmt::vector<std::pair<gmt::wstring, gmt::wstring>> dependencies;
 	};
 
 	struct LibraryDependency
 	{
 		const ResolvedLibrary* source = nullptr;
-		std::wstring name;
-		std::wstring versionExpression;
+		gmt::wstring name;
+		gmt::wstring versionExpression;
 		const ResolvedLibrary* target = nullptr;
 	};
 
-	std::wstring copy_or_empty(const wchar_t* value)
+	gmt::wstring copy_or_empty(const wchar_t* value)
 	{
-		return value != nullptr ? std::wstring(value) : std::wstring();
+		return value != nullptr ? gmt::wstring(value) : gmt::wstring();
 	}
 
 	bool try_read_library_metadata(const std::filesystem::path& path, ResolvedLibrary& outLibrary)
@@ -96,13 +98,13 @@ namespace
 		return true;
 	}
 
-	std::wstring get_library_display_name(const ResolvedLibrary* lib)
+	gmt::wstring get_library_display_name(const ResolvedLibrary* lib)
 	{
 		if (lib == nullptr)
 			return L"<unknown>";
 
 		if (lib->name.empty())
-			return lib->path.wstring();
+			return gmt::wstring(lib->path.wstring());
 
 		if (lib->version.empty())
 			return lib->name;
@@ -111,27 +113,27 @@ namespace
 	}
 
 	bool resolve_library_dependencies(
-		const std::vector<ResolvedLibrary>& libraries,
+		const gmt::vector<ResolvedLibrary>& libraries,
 		DiagnosticsContext& diagnostics,
-		std::vector<const ResolvedLibrary*>& outLoadOrder)
+		gmt::vector<const ResolvedLibrary*>& outLoadOrder)
 	{
 		// name -> libraries multimap, so multiple versions can coexist
-		std::unordered_multimap<std::wstring, const ResolvedLibrary*> librariesByName;
+		gmt::unordered_multimap<gmt::wstring, const ResolvedLibrary*> librariesByName;
 		for (const ResolvedLibrary& lib : libraries)
 		{
 			if (!lib.name.empty())
 				librariesByName.emplace(lib.name, &lib);
 		}
 
-		std::vector<LibraryDependency> resolved;
+		gmt::vector<LibraryDependency> resolved;
 		resolved.reserve(libraries.size() * 2);
 
 		for (const ResolvedLibrary& lib : libraries)
 		{
 			for (const auto& dep : lib.dependencies)
 			{
-				const std::wstring& depName = dep.first;
-				std::wstring versionExpr = !dep.second.empty() ? dep.second : L"*";
+				const gmt::wstring& depName = dep.first;
+				gmt::wstring versionExpr = !dep.second.empty() ? dep.second : L"*";
 
 				auto range = librariesByName.equal_range(depName);
 				if (range.first == range.second)
@@ -165,7 +167,7 @@ namespace
 					const ResolvedLibrary* candidate = it->second;
 					if (expr.has_value())
 					{
-						const std::wstring& candidateText = !candidate->version.empty() ? candidate->version : L"0.0.0";
+						const gmt::wstring& candidateText = !candidate->version.empty() ? candidate->version : L"0.0.0";
 						std::optional<semver::SemanticVersion> candidateVersion = semver::parse_version(candidateText);
 						if (!candidateVersion.has_value())
 							continue;
@@ -180,8 +182,8 @@ namespace
 						continue;
 					}
 
-					const std::wstring& bestText = !bestMatch->version.empty() ? bestMatch->version : L"0.0.0";
-					const std::wstring& candidateText = !candidate->version.empty() ? candidate->version : L"0.0.0";
+					const gmt::wstring& bestText = !bestMatch->version.empty() ? bestMatch->version : L"0.0.0";
+					const gmt::wstring& candidateText = !candidate->version.empty() ? candidate->version : L"0.0.0";
 					std::optional<semver::SemanticVersion> bestVersion = semver::parse_version(bestText);
 					std::optional<semver::SemanticVersion> candidateVersion = semver::parse_version(candidateText);
 
@@ -203,8 +205,8 @@ namespace
 		}
 
 		// topological sort (Kahn's algorithm) over the resolved dependency graph
-		std::unordered_map<const ResolvedLibrary*, std::vector<const ResolvedLibrary*>> edges;
-		std::unordered_map<const ResolvedLibrary*, std::size_t> inDegree;
+		gmt::unordered_map<const ResolvedLibrary*, gmt::vector<const ResolvedLibrary*>> edges;
+		gmt::unordered_map<const ResolvedLibrary*, std::size_t> inDegree;
 
 		for (const ResolvedLibrary& lib : libraries)
 			inDegree[&lib] = 0;
@@ -222,7 +224,7 @@ namespace
 				queue.push(&lib);
 		}
 
-		std::vector<const ResolvedLibrary*> loadOrder;
+		gmt::vector<const ResolvedLibrary*> loadOrder;
 		loadOrder.reserve(libraries.size());
 
 		while (!queue.empty())
@@ -254,7 +256,7 @@ namespace
 				}
 			}
 
-			std::wstring cycleNodeName = get_library_display_name(cycleNode);
+			gmt::wstring cycleNodeName = get_library_display_name(cycleNode);
 			diagnostics.report_error(
 				SyntaxToken(),
 				gmt::concat(L"Circular library dependency detected involving '", cycleNodeName, L"'"));
@@ -285,12 +287,12 @@ void CompilationContext::enrich_tree(SourceProvider& provider)
 
 void CompilationContext::parse_file(const std::filesystem::path path)
 {
-	FileReader reader(path);
+	FileReader reader(gmt::wstring(path.wstring()));
 	LexicalAnalyzer lexer(reader);
 	enrich_tree(lexer);
 }
 
-void CompilationContext::parse_source(const std::wstring& name, const std::wstring& source)
+void CompilationContext::parse_source(const gmt::wstring& name, const gmt::wstring& source)
 {
 	StringStreamReader reader(name, source);
 	LexicalAnalyzer lexer(reader);
@@ -322,7 +324,7 @@ void CompilationContext::add_lib(gmt::SharedLibrary library)
 		if (path.empty())
 			throw std::runtime_error("library \"<UNKNOWN>\" does not export ShardLib_EntryPoint");
 
-		throw std::runtime_error("library \"" + gmt::wide_to_utf8(path.wstring()) + "\" does not export ShardLib_EntryPoint");
+		throw std::runtime_error(("library \"" + gmt::wide_to_utf8(path.wstring()) + "\" does not export ShardLib_EntryPoint").c_str());
 	}
 
 	// the entry point builds the library's symbols into the table and may
@@ -332,9 +334,9 @@ void CompilationContext::add_lib(gmt::SharedLibrary library)
 	m_libraries.push_back(std::move(library));
 }
 
-void CompilationContext::add_libraries(const std::vector<std::filesystem::path>& paths)
+void CompilationContext::add_libraries(const gmt::vector<std::filesystem::path>& paths)
 {
-	std::vector<ResolvedLibrary> libraries;
+	gmt::vector<ResolvedLibrary> libraries;
 	libraries.reserve(paths.size());
 
 	for (const std::filesystem::path& path : paths)
@@ -346,16 +348,16 @@ void CompilationContext::add_libraries(const std::vector<std::filesystem::path>&
 		libraries.push_back(std::move(lib));
 	}
 
-	std::vector<const ResolvedLibrary*> loadOrder;
+	gmt::vector<const ResolvedLibrary*> loadOrder;
 	if (!resolve_library_dependencies(libraries, m_diagnostics, loadOrder))
 		return;
 
 	// deduplicate by (name, version) while preserving topological order
-	std::set<std::pair<std::wstring, std::wstring>> loaded;
+	gmt::set<std::pair<gmt::wstring, gmt::wstring>> loaded;
 	for (const ResolvedLibrary* lib : loadOrder)
 	{
-		std::wstring name = !lib->name.empty() ? lib->name : lib->path.wstring();
-		std::pair<std::wstring, std::wstring> key = std::make_pair(name, lib->version);
+		gmt::wstring name = !lib->name.empty() ? lib->name : gmt::wstring(lib->path.wstring());
+		std::pair<gmt::wstring, gmt::wstring> key = std::make_pair(name, lib->version);
 		if (loaded.contains(key))
 			continue;
 
@@ -376,16 +378,16 @@ bool CompilationContext::analyze_tree()
 
 bool CompilationContext::emit_program()
 {
-	m_image = std::make_unique<VirtualProgramImage>();
+	m_image = gmt::make_unique<VirtualProgramImage>();
 
 	ByteCodeEmitter emitter(*m_image, m_model, m_pragmatic, m_diagnostics);
 	emitter.emit(m_tree);
 	return !m_diagnostics.has_errors();
 }
 
-std::unique_ptr<ApplicationDomain> CompilationContext::compile()
+gmt::unique_ptr<ApplicationDomain> CompilationContext::compile()
 {
-	return std::make_unique<ApplicationDomain>(std::move(m_image), m_model, m_pragmatic);
+	return gmt::make_unique<ApplicationDomain>(std::move(m_image), m_model, m_pragmatic);
 }
 
 SyntaxTree& CompilationContext::get_syntax_tree()

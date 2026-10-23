@@ -1,3 +1,4 @@
+#include <gmt/Containers.hpp>
 #include <gmt/SharedLibrary.hpp>
 
 #include <gmt/Strings.hpp>
@@ -17,9 +18,9 @@ using namespace gmt;
 
 namespace
 {
-	std::string build_load_error(const std::filesystem::path& path, const std::string& systemMessage)
+	gmt::string build_load_error(const std::filesystem::path& path, const gmt::string& systemMessage)
 	{
-		std::string message = gmt::wide_to_utf8(gmt::concat(L"Failed to load library \"", path.wstring(), L"\""));
+		gmt::string message = gmt::wide_to_utf8(gmt::concat(L"Failed to load library \"", path.wstring(), L"\""));
 		if (!systemMessage.empty())
 			message += ": " + systemMessage;
 
@@ -27,11 +28,11 @@ namespace
 	}
 
 #if defined(_WIN32)
-	std::string get_last_error_message()
+	gmt::string get_last_error_message()
 	{
 		DWORD errorMessageID = ::GetLastError();
 		if (errorMessageID == 0)
-			return std::string();
+			return gmt::string();
 
 		LPWSTR messageBuffer = nullptr;
 		std::size_t size = ::FormatMessageW(
@@ -39,7 +40,7 @@ namespace
 			nullptr, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
 			reinterpret_cast<LPWSTR>(&messageBuffer), 0, nullptr);
 
-		std::string message = gmt::wide_to_utf8(std::wstring_view(messageBuffer, size));
+		gmt::string message = gmt::wide_to_utf8(std::wstring_view(messageBuffer, size));
 		::LocalFree(messageBuffer);
 		return message;
 	}
@@ -97,17 +98,17 @@ void SharedLibrary::load(const std::filesystem::path& path)
 #if defined(_WIN32)
 	m_handle = static_cast<LibraryHandle>(::LoadLibraryW(path.c_str()));
 	if (m_handle == nullptr)
-		throw std::runtime_error(build_load_error(path, get_last_error_message()));
+		throw std::runtime_error(build_load_error(path, get_last_error_message()).c_str());
 
 #elif defined(__EMSCRIPTEN__)
-	throw std::runtime_error(build_load_error(path, "native library loading is not supported in WebAssembly"));
+	throw std::runtime_error(build_load_error(path, "native library loading is not supported in WebAssembly").c_str());
 
 #else
 	m_handle = ::dlopen(path.c_str(), RTLD_NOW);
 	if (m_handle == nullptr)
 	{
 		const char* error = ::dlerror();
-		throw std::runtime_error(build_load_error(path, error != nullptr ? error : ""));
+		throw std::runtime_error(build_load_error(path, error != nullptr ? error : "").c_str());
 	}
 #endif
 }

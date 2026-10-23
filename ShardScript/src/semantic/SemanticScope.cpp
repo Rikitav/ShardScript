@@ -2,6 +2,8 @@
 
 #include <shard/parsing/SyntaxKind.hpp>
 
+#include <gmt/Containers.hpp>
+
 #include <stdexcept>
 
 using namespace shard;
@@ -51,7 +53,7 @@ void SemanticScope::set_namespace(gmt::Ref<NamespaceSymbol> namespaceSymbol)
 	m_namespace = namespaceSymbol;
 }
 
-const std::unordered_set<gmt::Ref<NamespaceSymbol>>& SemanticScope::get_imported_namespaces() const
+const gmt::unordered_set<gmt::Ref<NamespaceSymbol>>& SemanticScope::get_imported_namespaces() const
 {
 	return m_importedNamespaces;
 }
@@ -137,5 +139,5 @@ void SemanticScope::declare_symbol(gmt::Ref<SyntaxSymbol> symbol)
 		return;
 	}
 
-	throw std::runtime_error("symbol already defined: " + std::string(name.begin(), name.end()));
+	throw std::runtime_error(("symbol already defined: " + gmt::string(name.begin(), name.end())).c_str());
 }

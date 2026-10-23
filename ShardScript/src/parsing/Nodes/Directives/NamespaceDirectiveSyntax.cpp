@@ -2,6 +2,7 @@
 #include <shard/parsing/SyntaxVisitor.hpp>
 
 #include <gmt/Arena.hpp>
+#include <gmt/Containers.hpp>
 
 #include <sstream>
 
@@ -15,7 +16,7 @@ gmt::Span<const SyntaxToken> NamespaceDirectiveSyntax::get_qualifier() const
 	return m_qualifier;
 }
 
-std::wstring NamespaceDirectiveSyntax::get_qualifier_string() const
+gmt::wstring NamespaceDirectiveSyntax::get_qualifier_string() const
 {
 	std::span<const SyntaxToken> qualifier = m_qualifier.as_span();
 	if (qualifier.empty())
@@ -26,7 +27,7 @@ std::wstring NamespaceDirectiveSyntax::get_qualifier_string() const
 		qualifierString << qualifier[i].get_lexeme() << L".";
 
 	qualifierString << qualifier.back().get_lexeme();
-	return qualifierString.str();
+	return gmt::wstring(qualifierString.str());
 }
 
 SyntaxToken NamespaceDirectiveSyntax::get_semicolon() const

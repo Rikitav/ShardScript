@@ -3,8 +3,9 @@
 
 #include <shard/parsing/SyntaxKind.hpp>
 
-#include <gmt/Interner.hpp>
 #include <gmt/Arena.hpp>
+#include <gmt/Containers.hpp>
+#include <gmt/Interner.hpp>
 
 #include <string_view>
 
@@ -33,7 +34,7 @@ namespace shard
 		gmt::StringReference get_name_reference() const;
 		void set_name(std::wstring_view name);
 
-		std::wstring get_full_name() const;
+		gmt::wstring get_full_name() const;
 		gmt::Ref<const SyntaxSymbol> get_parent() const;
 
 		virtual void on_symbol_declared(gmt::Ref<SyntaxSymbol> symbol);

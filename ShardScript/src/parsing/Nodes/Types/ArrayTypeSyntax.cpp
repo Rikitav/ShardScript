@@ -2,6 +2,7 @@
 #include <shard/parsing/SyntaxVisitor.hpp>
 
 #include <gmt/Arena.hpp>
+#include <gmt/Containers.hpp>
 
 #include <format>
 
@@ -40,12 +41,12 @@ void ArrayTypeSyntax::set_close_bracket(const SyntaxToken& token)
 	m_closeBracketToken = token;
 }
 
-std::wstring ArrayTypeSyntax::get_qualifier() const
+gmt::wstring ArrayTypeSyntax::get_qualifier() const
 {
 	if (m_underlayingType.is_null())
 		return L"";
 
-	return std::format(L"{}[]", m_underlayingType.as_ptr()->get_qualifier());
+	return gmt::wstring(std::format(L"{}[]", m_underlayingType.as_ptr()->get_qualifier()));
 }
 
 TextLocation ArrayTypeSyntax::get_location() const

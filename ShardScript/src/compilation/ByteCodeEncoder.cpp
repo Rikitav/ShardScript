@@ -10,32 +10,34 @@
 #include <shard/semantic/symbols/StructSymbol.hpp>
 
 #include <algorithm>
+#include <cstring>
 #include <cwchar>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
 
 #include <gmt/Allocator.hpp>
+#include <gmt/Containers.hpp>
 
 using namespace shard;
 
 namespace
 {
-	void append_data_string(std::vector<std::byte>& code, const wchar_t* string)
+	void append_data_string(gmt::vector<std::byte>& code, const wchar_t* string)
 	{
 		const std::size_t size = std::wcslen(string) * sizeof(wchar_t) + sizeof(wchar_t);
 		ByteCodeEncoder::append_data(code, string, size);
 	}
 
 	template <typename T>
-	void append_data_value(std::vector<std::byte>& code, const T& value)
+	void append_data_value(gmt::vector<std::byte>& code, const T& value)
 	{
 		static_assert(std::is_trivially_copyable_v<T>, "Type must be trivially copyable");
 		ByteCodeEncoder::append_data(code, &value, sizeof(T));
 	}
 
 	template <typename T>
-	void append_symbol_offset(std::vector<std::byte>& code, gmt::Ref<T> symbol)
+	void append_symbol_offset(gmt::vector<std::byte>& code, gmt::Ref<T> symbol)
 	{
 		const std::size_t offset = symbol.is_null() ? null_symbol_operand : symbol.get_offset();
 		append_data_value(code, offset);
@@ -46,7 +48,7 @@ ByteCodeEncoder::ByteCodeEncoder(VirtualProgramImage& image)
 	: m_image(image)
 { }
 
-void ByteCodeEncoder::paste_data(std::vector<std::byte>& code, std::size_t at, const void* data, std::size_t size)
+void ByteCodeEncoder::paste_data(gmt::vector<std::byte>& code, std::size_t at, const void* data, std::size_t size)
 {
 	if (at + size > code.size())
 		throw std::runtime_error("ByteCodeEncoder::paste_data: Out of bounds write!");
@@ -54,7 +56,7 @@ void ByteCodeEncoder::paste_data(std::vector<std::byte>& code, std::size_t at, c
 	std::memcpy(code.data() + at, data, size);
 }
 
-void ByteCodeEncoder::append_data(std::vector<std::byte>& code, const void* data, std::size_t size)
+void ByteCodeEncoder::append_data(gmt::vector<std::byte>& code, const void* data, std::size_t size)
 {
 	const std::size_t currentSize = code.size();
 	const std::size_t neededCapacity = currentSize + size;
@@ -225,7 +227,7 @@ void ByteCodeEncoder::emit_branch_null(std::size_t jump)
 	append_data_value(m_image.get_text_section(), jump);
 }
 
-void ByteCodeEncoder::emit_jump_table(const std::vector<std::size_t>& targets)
+void ByteCodeEncoder::emit_jump_table(const gmt::vector<std::size_t>& targets)
 {
 	append_data_value(m_image.get_text_section(), OpCode::JUMP_TABLE);
 	append_data_value(m_image.get_text_section(), static_cast<std::uint32_t>(targets.size()));

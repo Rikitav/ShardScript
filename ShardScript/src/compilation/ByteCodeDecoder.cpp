@@ -10,17 +10,19 @@
 #include <shard/semantic/symbols/MethodSymbol.hpp>
 #include <shard/semantic/symbols/StructSymbol.hpp>
 
+#include <cstring>
 #include <stdexcept>
 
-#include <gmt/Arena.hpp>
 #include <gmt/Allocator.hpp>
+#include <gmt/Arena.hpp>
+#include <gmt/Containers.hpp>
 
 using namespace shard;
 
 namespace
 {
 	template <typename T>
-	T absorb_value(const std::vector<std::byte>& code, std::size_t& ip, std::size_t end)
+	T absorb_value(const gmt::vector<std::byte>& code, std::size_t& ip, std::size_t end)
 	{
 		if (ip + sizeof(T) > end)
 			throw std::out_of_range("ByteCodeDecoder: Tried to read out of code boundaries");
@@ -55,7 +57,7 @@ namespace
 	}
 }
 
-ByteCodeDecoder::ByteCodeDecoder(const std::vector<std::byte>& code, const gmt::Arena& arena)
+ByteCodeDecoder::ByteCodeDecoder(const gmt::vector<std::byte>& code, const gmt::Arena& arena)
 	: m_arena(arena),
 	  m_code(code),
 	  m_base(0),
@@ -63,7 +65,7 @@ ByteCodeDecoder::ByteCodeDecoder(const std::vector<std::byte>& code, const gmt::
 	  m_ip(0)
 { }
 
-ByteCodeDecoder::ByteCodeDecoder(const std::vector<std::byte>& code, const gmt::Arena& arena, std::size_t start)
+ByteCodeDecoder::ByteCodeDecoder(const gmt::vector<std::byte>& code, const gmt::Arena& arena, std::size_t start)
 	: m_arena(arena),
 	  m_code(code),
 	  m_base(start),
@@ -74,7 +76,7 @@ ByteCodeDecoder::ByteCodeDecoder(const std::vector<std::byte>& code, const gmt::
 		throw std::out_of_range("ByteCodeDecoder: Method range out of code boundaries");
 }
 
-ByteCodeDecoder::ByteCodeDecoder(const std::vector<std::byte>& code, const gmt::Arena& arena, std::size_t start, std::size_t length)
+ByteCodeDecoder::ByteCodeDecoder(const gmt::vector<std::byte>& code, const gmt::Arena& arena, std::size_t start, std::size_t length)
 	: m_arena(arena),
 	  m_code(code),
 	  m_base(start),

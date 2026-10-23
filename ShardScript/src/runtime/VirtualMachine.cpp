@@ -27,6 +27,7 @@
 
 #include <gmt/Allocator.hpp>
 #include <gmt/Concat.hpp>
+#include <gmt/Containers.hpp>
 #include <gmt/InlineVector.hpp>
 #include <gmt/Strings.hpp>
 
@@ -445,7 +446,7 @@ ObjectInstance VirtualMachine::invoke_method(gmt::Ref<MethodSymbol> method, std:
 			break;
 	}
 
-	throw std::runtime_error("Method calling convention was 'None': " + std::string(method->get_name().begin(), method->get_name().end()));
+	throw std::runtime_error(("Method calling convention was 'None': " + gmt::string(method->get_name().begin(), method->get_name().end())).c_str());
 }
 
 ObjectInstance VirtualMachine::try_invoke_method(gmt::Ref<MethodSymbol> method, std::span<const ObjectInstance> arguments, ObjectInstance& outException)
@@ -469,7 +470,7 @@ ObjectInstance VirtualMachine::try_invoke_method(gmt::Ref<MethodSymbol> method, 
 
 bool VirtualMachine::handle_exception_in_frame(CallStackFrame* frame, ByteCodeDecoder& decoder)
 {
-	std::vector<ExceptionHandlerRecord>& handlers = frame->get_exception_handlers();
+	gmt::vector<ExceptionHandlerRecord>& handlers = frame->get_exception_handlers();
 	if (handlers.empty())
 	{
 		drain_defers(frame, decoder, frame->get_defer_stack().size());
@@ -501,7 +502,7 @@ void VirtualMachine::drain_defers(CallStackFrame* frame, ByteCodeDecoder& decode
 	InterruptionReason pending = frame->get_interruption();
 	frame->set_interruption(InterruptionReason::None);
 
-	std::vector<std::size_t>& defers = frame->get_defer_stack();
+	gmt::vector<std::size_t>& defers = frame->get_defer_stack();
 	for (std::size_t i = 0; i < count && !defers.empty(); ++i)
 	{
 		std::size_t target = defers.back();
@@ -589,10 +590,10 @@ ObjectInstance VirtualMachine::get_unhandled_exception() const
 	return m_unhandledException;
 }
 
-std::wstring VirtualMachine::get_unhandled_message() const
+gmt::wstring VirtualMachine::get_unhandled_message() const
 {
 	if (!m_hasUnhandledException)
-		return std::wstring();
+		return gmt::wstring();
 
 	// VM-raised exceptions are RuntimeException instances: surface their message
 	SymbolTable& table = m_model.get_table();
@@ -845,7 +846,7 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 
 				if (opcode == OpCode::MATH_ADDITION && (leftString || rightString))
 				{
-					std::wstring text = gmt::concat(PrimitiveMath::to_display_string(left), PrimitiveMath::to_display_string(right));
+					gmt::wstring text = gmt::concat(PrimitiveMath::to_display_string(left), PrimitiveMath::to_display_string(right));
 					ObjectInstance combined = create_string(text);
 					push_instance(frame, combined);
 					break;
@@ -1508,7 +1509,7 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 
 		default:
 		{
-			throw std::runtime_error(gmt::wide_to_utf8(gmt::concat(L"unsupported opcode ", std::to_wstring(static_cast<std::uint16_t>(opcode)))));
+			throw std::runtime_error(gmt::wide_to_utf8(gmt::concat(L"unsupported opcode ", std::to_wstring(static_cast<std::uint16_t>(opcode)))).c_str());
 		}
 	}
 }

@@ -2,12 +2,14 @@
 
 using namespace shard;
 
-ApplicationDomain::ApplicationDomain(std::unique_ptr<VirtualProgramImage> program, SemanticModel& model, PragmaticModel& pragmatic)
+ApplicationDomain::ApplicationDomain(gmt::unique_ptr<VirtualProgramImage> program, SemanticModel& model, PragmaticModel& pragmatic)
 	: m_program(std::move(program))
 	, m_model(model)
 	, m_pragmatic(pragmatic)
 	, m_machine(*m_program, model, pragmatic)
 { }
+
+ApplicationDomain::~ApplicationDomain() = default;
 
 VirtualProgramImage& ApplicationDomain::get_program() const
 {

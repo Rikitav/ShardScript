@@ -2,6 +2,7 @@
 #include <shard/parsing/SyntaxVisitor.hpp>
 
 #include <gmt/Arena.hpp>
+#include <gmt/Containers.hpp>
 
 #include <format>
 
@@ -30,12 +31,12 @@ void NullableTypeSyntax::set_question_token(const SyntaxToken& token)
 	m_questionToken = token;
 }
 
-std::wstring NullableTypeSyntax::get_qualifier() const
+gmt::wstring NullableTypeSyntax::get_qualifier() const
 {
 	if (m_underlayingType.is_null())
 		return L"";
 
-	return std::format(L"{}?", m_underlayingType.as_ptr()->get_qualifier());
+	return gmt::wstring(std::format(L"{}?", m_underlayingType.as_ptr()->get_qualifier()));
 }
 
 TextLocation NullableTypeSyntax::get_location() const

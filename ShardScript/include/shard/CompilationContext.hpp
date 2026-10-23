@@ -41,7 +41,7 @@ namespace shard
 		DiagnosticsContext m_diagnostics;
 		SemanticModel m_model;
 		PragmaticModel m_pragmatic;
-		std::unique_ptr<VirtualProgramImage> m_image;
+		gmt::unique_ptr<VirtualProgramImage> m_image;
 
 	public:
 		CompilationContext();
@@ -61,7 +61,7 @@ namespace shard
 
 		bool analyze_tree();
 		bool emit_program();
-		std::unique_ptr<ApplicationDomain> compile();
+		gmt::unique_ptr<ApplicationDomain> compile();
 
 		SyntaxTree& get_syntax_tree();
 		SemanticModel& get_semantic_model();

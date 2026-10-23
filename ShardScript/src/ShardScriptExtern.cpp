@@ -653,7 +653,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::ApplicationDomain>(*static_cast<const std::unique_ptr<shard::VirtualProgramImage>*>(p0), *p1, *p2);
+			auto* value = shard_make_new<shard::ApplicationDomain>(*static_cast<const gmt::unique_ptr<shard::VirtualProgramImage>*>(p0), *p1, *p2);
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -940,7 +940,7 @@ extern "C"
 		try
 		{
 			auto result = self->compile();
-			auto* boxed = shard_box_value<std::unique_ptr<shard::ApplicationDomain>>(std::move(result));
+			auto* boxed = shard_box_value<gmt::unique_ptr<shard::ApplicationDomain>>(std::move(result));
 			if (!boxed)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -56746,7 +56746,7 @@ extern "C"
 
 	SHARD_API void shard_dispose_std_unique_ptr_shard_applicationdomain(void* value)
 	{
-		shard_release<std::unique_ptr<shard::ApplicationDomain>>(static_cast<std::unique_ptr<shard::ApplicationDomain>*>(value));
+		shard_release<gmt::unique_ptr<shard::ApplicationDomain>>(static_cast<gmt::unique_ptr<shard::ApplicationDomain>*>(value));
 	}
 
 	SHARD_API void shard_dispose_std_vector_syntaxtoken_iterator(void* value)

@@ -1,37 +1,75 @@
 #pragma once
-#include <cstdint>
-#include <cstring>
+#include <shard/Definitions.hpp>
 
-#ifndef SHARD_NO_MIMALLOC
-	#include <mimalloc.h>
-#endif
+#include <cstddef>
+#include <cstring>
+#include <limits>
+#include <memory>
+#include <new>
+#include <type_traits>
 
 namespace gmt
 {
-	inline void* mem_alloc(size_t bytes)
+	SHARD_API void* mem_alloc(std::size_t bytes);
+	SHARD_API void* mem_alloc_aligned(std::size_t bytes, std::size_t alignment);
+	SHARD_API void* mem_realloc(void* block, std::size_t bytes);
+	SHARD_API void mem_free(void* ptr);
+
+	// STL allocator backed by the shared entry points above.
+	template<typename T>
+	struct SHARD_API allocator
 	{
-#ifdef SHARD_NO_MIMALLOC
-		return std::malloc(bytes);
-#else
-		return mi_malloc(bytes);
-#endif
+		using value_type = T;
+		using size_type = std::size_t;
+		using difference_type = std::ptrdiff_t;
+
+		using propagate_on_container_copy_assignment = std::true_type;
+		using propagate_on_container_move_assignment = std::true_type;
+		using propagate_on_container_swap = std::true_type;
+		using is_always_equal = std::true_type;
+
+		allocator() noexcept = default;
+		allocator(const allocator&) noexcept = default;
+
+		template<typename U>
+		allocator(const allocator<U>&) noexcept { }
+		allocator& operator=(const allocator& other) = default;
+
+		[[nodiscard]] T* allocate(std::size_t count)
+		{
+			if (count > max_size())
+				throw std::bad_array_new_length();
+
+			const std::size_t bytes = count * sizeof(T);
+			void* block = alignof(T) > alignof(std::max_align_t)
+				? mem_alloc_aligned(bytes, alignof(T))
+				: mem_alloc(bytes);
+			if (block == nullptr)
+				throw std::bad_alloc();
+
+			return static_cast<T*>(block);
+		}
+
+		void deallocate(T* ptr, std::size_t) noexcept
+		{
+			mem_free(ptr);
+		}
+
+		[[nodiscard]] std::size_t max_size() const noexcept
+		{
+			return (std::numeric_limits<std::size_t>::max)() / sizeof(T);
+		}
+	};
+
+	template<typename T, typename U>
+	bool operator==(const allocator<T>&, const allocator<U>&) noexcept
+	{
+		return true;
 	}
 
-	inline void* mem_realloc(void* block, size_t bytes)
+	template<typename T, typename U>
+	bool operator!=(const allocator<T>&, const allocator<U>&) noexcept
 	{
-#ifdef SHARD_NO_MIMALLOC
-		return std::realloc(block, bytes);
-#else
-		return mi_realloc(block, bytes);
-#endif
-	}
-
-	inline void mem_free(void* ptr)
-	{
-#ifdef SHARD_NO_MIMALLOC
-		return std::free(ptr);
-#else
-		return mi_free(ptr);
-#endif
+		return false;
 	}
 }
