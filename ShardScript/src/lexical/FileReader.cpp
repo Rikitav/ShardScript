@@ -2,6 +2,8 @@
 #include <shard/lexical/FileReader.hpp>
 #include <shard/parsing/TextLocation.hpp>
 
+#include <gmt/Containers.hpp>
+
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -11,7 +13,7 @@
 
 using namespace shard;
 
-FileReader::FileReader(const std::string& fileName) : SourceTextProvider()
+FileReader::FileReader(const gmt::string& fileName) : SourceTextProvider()
 {
     m_filename = std::filesystem::path(fileName);
     m_inputStream = std::wfstream(m_filename, std::ios::in);
@@ -21,7 +23,7 @@ FileReader::FileReader(const std::string& fileName) : SourceTextProvider()
         throw std::runtime_error("Cannot open file");
 }
 
-FileReader::FileReader(const std::wstring& fileName) : SourceTextProvider()
+FileReader::FileReader(const gmt::wstring& fileName) : SourceTextProvider()
 {
     m_filename = std::filesystem::path(fileName);
     m_inputStream = std::wfstream(m_filename, std::ios::in);
@@ -56,7 +58,7 @@ bool FileReader::peek_next(wchar_t& ch)
     return ch != WEOF;
 }
 
-std::wstring FileReader::get_name()
+gmt::wstring FileReader::get_name()
 {
-    return m_filename.generic_wstring();
+    return gmt::wstring(m_filename.c_str());
 }

@@ -1,6 +1,7 @@
 #pragma once
 #include <shard/Definitions.hpp>
 
+#include <gmt/Containers.hpp>
 #include <gmt/Ref.hpp>
 
 #include <cstddef>
@@ -29,12 +30,49 @@ namespace shard
 	private:
 		static constexpr std::size_t KeyChunkWords = 512;
 
-		std::vector<Entry> m_slots;
+		// Chunk storage is allocated and released through gmt::mem_* because
+		// header-defined containers may be destroyed by a different module
+		// than the one that created them.
+		struct KeyChunk
+		{
+			std::uint64_t* words = nullptr;
+
+			KeyChunk() = default;
+
+			explicit KeyChunk(std::size_t wordCount) :
+				words(static_cast<std::uint64_t*>(gmt::mem_alloc(wordCount * sizeof(std::uint64_t))))
+			{ }
+
+			~KeyChunk() { gmt::mem_free(words); }
+
+			KeyChunk(const KeyChunk&) = delete;
+			KeyChunk& operator=(const KeyChunk&) = delete;
+
+			KeyChunk(KeyChunk&& other) noexcept :
+				words(other.words)
+			{
+				other.words = nullptr;
+			}
+
+			KeyChunk& operator=(KeyChunk&& other) noexcept
+			{
+				if (this != &other)
+				{
+					gmt::mem_free(words);
+					words = other.words;
+					other.words = nullptr;
+				}
+
+				return *this;
+			}
+		};
+
+		gmt::vector<Entry> m_slots;
 		std::size_t m_count = 0;
 
 		// keys are copied into owned chunks: they must outlive every probe,
 		// and chunk arrays never move once allocated
-		std::vector<std::unique_ptr<std::uint64_t[]>> m_keyChunks;
+		gmt::vector<KeyChunk> m_keyChunks;
 		std::size_t m_keyChunkUsed = 0;
 
 		void grow();

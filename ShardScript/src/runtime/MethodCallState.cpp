@@ -228,6 +228,14 @@ void MethodCallState::set_return_integer(std::int64_t value)
 	m_returnValue = ObjectInstance(shape, m_returnBuffer);
 }
 
+void MethodCallState::set_return_nint(std::uintptr_t value)
+{
+	SymbolTable& table = m_vm.get_model().get_table();
+	const TypeShape* shape = m_vm.get_pragmatic().find_or_create_type_shape(m_vm.get_model(), table.get_nint_primitive());
+	std::memcpy(m_returnBuffer, &value, sizeof(std::uintptr_t));
+	m_returnValue = ObjectInstance(shape, m_returnBuffer);
+}
+
 void MethodCallState::set_return_double(double value)
 {
 	SymbolTable& table = m_vm.get_model().get_table();

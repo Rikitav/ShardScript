@@ -4,6 +4,7 @@
 #include <shard/parsing/SyntaxKind.hpp>
 #include <shard/parsing/SyntaxToken.hpp>
 #include <shard/parsing/SyntaxNode.hpp>
+
 #include <gmt/Span.hpp>
 
 namespace shard

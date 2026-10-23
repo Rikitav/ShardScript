@@ -1,5 +1,6 @@
 #include <shard/semantic/TypeBinder.hpp>
 
+#include <gmt/Containers.hpp>
 #include <gmt/InlineVector.hpp>
 
 #include <shard/parsing/SyntaxKind.hpp>
@@ -209,7 +210,7 @@ bool TypeBinder::is_ambiguous_name(std::wstring_view name)
 	return m_ambiguousNames.count(name) != 0;
 }
 
-void TypeBinder::bind_where_clauses(gmt::Ref<const WhereClausesListSyntax> clauses, const std::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters)
+void TypeBinder::bind_where_clauses(gmt::Ref<const WhereClausesListSyntax> clauses, const gmt::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters)
 {
 	if (clauses.is_null())
 		return;
@@ -233,7 +234,7 @@ void TypeBinder::bind_where_clauses(gmt::Ref<const WhereClausesListSyntax> claus
 
 		if (typeParameter.is_null())
 		{
-			get_diagnostics().report_error(clause->get_location(), L"Type parameter '" + std::wstring(parameterName) + L"' not found");
+			get_diagnostics().report_error(clause->get_location(), L"Type parameter '" + gmt::wstring(parameterName) + L"' not found");
 			continue;
 		}
 
@@ -242,7 +243,7 @@ void TypeBinder::bind_where_clauses(gmt::Ref<const WhereClausesListSyntax> claus
 			gmt::Ref<StructSymbol> constraint = resolve_type(constraintType);
 			if (constraint.is_null())
 			{
-				get_diagnostics().report_error(clause->get_location(), L"Could not resolve constraint type for type parameter '" + std::wstring(parameterName) + L"'");
+				get_diagnostics().report_error(clause->get_location(), L"Could not resolve constraint type for type parameter '" + gmt::wstring(parameterName) + L"'");
 				continue;
 			}
 
@@ -333,7 +334,7 @@ void TypeBinder::visit_using_directive(const UsingDirectiveSyntax* node)
 		gmt::Ref<NamespaceSymbol> next = current->lookup(token.get_lexeme());
 		if (next.is_null())
 		{
-			get_diagnostics().report_error(node->get_location(), L"Namespace '" + std::wstring(token.get_lexeme()) + L"' does not exist");
+			get_diagnostics().report_error(node->get_location(), L"Namespace '" + gmt::wstring(token.get_lexeme()) + L"' does not exist");
 			return;
 		}
 
@@ -864,7 +865,7 @@ void TypeBinder::visit_identifier_name_type(const IdentifierNameTypeSyntax* node
 	{
 		if (is_ambiguous_name(name))
 		{
-			get_diagnostics().report_error(node->get_location(), L"Ambiguous reference: '" + std::wstring(name) + L"' is defined in multiple imported namespaces");
+			get_diagnostics().report_error(node->get_location(), L"Ambiguous reference: '" + gmt::wstring(name) + L"' is defined in multiple imported namespaces");
 			return;
 		}
 
@@ -945,7 +946,7 @@ void TypeBinder::visit_qualified_name_type(const QualifiedNameTypeSyntax* node)
 		return;
 	}
 
-	get_diagnostics().report_error(node->get_location(), L"Type '" + std::wstring(node->get_identifier().get_lexeme()) + L"' not found in namespace");
+	get_diagnostics().report_error(node->get_location(), L"Type '" + gmt::wstring(node->get_identifier().get_lexeme()) + L"' not found in namespace");
 }
 
 void TypeBinder::visit_array_type(const ArrayTypeSyntax* node)
@@ -995,7 +996,7 @@ void TypeBinder::visit_generic_type(const GenericTypeSyntax* node)
 
 	if (argumentCount != parameterCount)
 	{
-		get_diagnostics().report_error(node->get_location(), L"Type requires " + std::to_wstring(parameterCount) + L" type arguments, but got " + std::to_wstring(argumentCount));
+		get_diagnostics().report_error(node->get_location(), gmt::wstring(L"Type requires " + std::to_wstring(parameterCount) + L" type arguments, but got " + std::to_wstring(argumentCount)));
 		return;
 	}
 
@@ -1014,7 +1015,7 @@ void TypeBinder::visit_generic_type(const GenericTypeSyntax* node)
 		gmt::Ref<StructSymbol> argument = arguments.get_vector()[i];
 		if (argument.is_null())
 		{
-			get_diagnostics().report_error(node->get_location(), L"Type argument " + std::to_wstring(i + 1) + L" could not be resolved");
+			get_diagnostics().report_error(node->get_location(), gmt::wstring(L"Type argument " + std::to_wstring(i + 1) + L" could not be resolved"));
 			continue;
 		}
 
@@ -1026,7 +1027,7 @@ void TypeBinder::visit_generic_type(const GenericTypeSyntax* node)
 
 			if (!get_model().type_satisfies_constraint(argument, constraint))
 			{
-				get_diagnostics().report_error(node->get_location(), L"Type argument '" + std::wstring(argument->get_name()) + L"' does not satisfy the constraint '" + std::wstring(constraint->get_name()) + L"' on type parameter '" + std::wstring(typeParameter->get_name()) + L"'");
+				get_diagnostics().report_error(node->get_location(), L"Type argument '" + gmt::wstring(argument->get_name()) + L"' does not satisfy the constraint '" + gmt::wstring(constraint->get_name()) + L"' on type parameter '" + gmt::wstring(typeParameter->get_name()) + L"'");
 			}
 		}
 	}

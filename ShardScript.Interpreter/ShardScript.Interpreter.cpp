@@ -247,7 +247,7 @@ int main(int argc, char* argv[])
 		if (argcScripts != 0 && !argShowDecompile)
 			std::wcout << L"warning: script arguments are not supported yet and will be ignored" << std::endl;
 
-		std::unique_ptr<ApplicationDomain> domain = context.compile();
+		gmt::unique_ptr<ApplicationDomain> domain = context.compile();
 		if (argShowDecompile)
 		{
 			ProgramDisassembler disassembler(*domain);

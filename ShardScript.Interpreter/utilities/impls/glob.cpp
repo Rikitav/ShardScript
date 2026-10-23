@@ -98,7 +98,7 @@ namespace glob {
 
     glob::glob(const gmt::string& pattern) :
         use_full_paths_(false),
-        impl_(std::make_unique<glob_impl>())
+        impl_(gmt::make_unique<glob_impl>())
     {
         open(pattern);
     }

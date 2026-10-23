@@ -2,6 +2,8 @@
 
 #include <shard/semantic/SyntaxSymbol.hpp>
 
+#include <gmt/Containers.hpp>
+
 using namespace shard;
 
 namespace
@@ -58,7 +60,7 @@ SymbolInterner::SymbolInterner()
 
 void SymbolInterner::grow()
 {
-	std::vector<Entry> old = std::move(m_slots);
+	gmt::vector<Entry> old = std::move(m_slots);
 	m_slots.clear();
 	m_slots.resize(old.size() * 2);
 
@@ -99,11 +101,11 @@ const std::uint64_t* SymbolInterner::store_key(const std::uint64_t* words, std::
 {
 	if (m_keyChunks.empty() || m_keyChunkUsed + count > KeyChunkWords)
 	{
-		m_keyChunks.push_back(std::make_unique<std::uint64_t[]>(KeyChunkWords));
+		m_keyChunks.emplace_back(KeyChunkWords);
 		m_keyChunkUsed = 0;
 	}
 
-	std::uint64_t* destination = m_keyChunks.back().get() + m_keyChunkUsed;
+	std::uint64_t* destination = m_keyChunks.back().words + m_keyChunkUsed;
 	std::copy(words, words + count, destination);
 	m_keyChunkUsed += count;
 	return destination;

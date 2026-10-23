@@ -2,6 +2,7 @@
 #include <shard/parsing/SyntaxVisitor.hpp>
 
 #include <gmt/Arena.hpp>
+#include <gmt/Containers.hpp>
 
 #include <sstream>
 
@@ -30,7 +31,7 @@ void GenericTypeSyntax::set_type_arguments(gmt::Ref<TypeArgumentsListSyntax> typ
 	m_typeArguments = typeArguments;
 }
 
-std::wstring GenericTypeSyntax::get_qualifier() const
+gmt::wstring GenericTypeSyntax::get_qualifier() const
 {
 	if (m_underlayingType.is_null())
 		return L"";
@@ -48,7 +49,7 @@ std::wstring GenericTypeSyntax::get_qualifier() const
 	}
 
 	qualifier << L">";
-	return qualifier.str();
+	return gmt::wstring(qualifier.str());
 }
 
 TextLocation GenericTypeSyntax::get_location() const

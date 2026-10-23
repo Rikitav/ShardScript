@@ -2,6 +2,7 @@
 #include <shard/parsing/SyntaxVisitor.hpp>
 
 #include <gmt/Arena.hpp>
+#include <gmt/Containers.hpp>
 
 #include <format>
 
@@ -40,12 +41,12 @@ void QualifiedNameTypeSyntax::set_identifier(const SyntaxToken& token)
 	m_identifierToken = token;
 }
 
-std::wstring QualifiedNameTypeSyntax::get_qualifier() const
+gmt::wstring QualifiedNameTypeSyntax::get_qualifier() const
 {
 	if (m_left.is_null())
-		return std::wstring(m_identifierToken.get_lexeme());
+		return gmt::wstring(m_identifierToken.get_lexeme());
 
-	return std::format(L"{}::{}", m_left.as_ptr()->get_qualifier(), m_identifierToken.get_lexeme());
+	return gmt::wstring(std::format(L"{}::{}", m_left.as_ptr()->get_qualifier(), m_identifierToken.get_lexeme()));
 }
 
 TextLocation QualifiedNameTypeSyntax::get_location() const

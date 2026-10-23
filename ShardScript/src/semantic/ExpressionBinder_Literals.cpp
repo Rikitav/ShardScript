@@ -7,6 +7,8 @@
 #include <shard/semantic/symbols/ArrayTypeSymbol.hpp>
 #include <shard/semantic/symbols/LiteralSymbol.hpp>
 
+#include <gmt/Containers.hpp>
+
 #include <cerrno>
 #include <charconv>
 #include <clocale>
@@ -31,7 +33,7 @@ namespace
 	struct NumericParseResult
 	{
 		bool success = false;
-		std::wstring error;
+		gmt::wstring error;
 	};
 
 	bool is_valid_integer_digit(wchar_t symbol, int base)
@@ -98,7 +100,7 @@ namespace
 		if (str.empty())
 			throw std::invalid_argument("wstod_independent: empty string");
 
-		std::wstring terminated(str);
+		gmt::wstring terminated(str);
 		wchar_t* endptr = nullptr;
 		const wchar_t* start = terminated.c_str();
 		errno = 0;
@@ -144,11 +146,11 @@ namespace
 				return { false, L"Invalid characters in number" };
 		}
 
-		std::wstring terminated(numPart);
+		gmt::wstring terminated(numPart);
 		try
 		{
 			std::size_t pos = 0;
-			long long raw = std::stoll(terminated, &pos, base);
+			long long raw = std::stoll(std::wstring(terminated.data(), terminated.size()), &pos, base);
 
 			if (pos != terminated.size())
 				return { false, L"Invalid number format" };

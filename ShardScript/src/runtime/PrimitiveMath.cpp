@@ -5,6 +5,7 @@
 #include <shard/semantic/symbols/StructSymbol.hpp>
 
 #include <gmt/Allocator.hpp>
+#include <gmt/Containers.hpp>
 
 #include <cmath>
 #include <cstdio>
@@ -267,7 +268,7 @@ PrimitiveStatus PrimitiveMath::convert(const PrimitiveShapes& shapes, ObjectInst
 	return PrimitiveStatus::NotPrimitive;
 }
 
-std::wstring PrimitiveMath::to_display_string(ObjectInstance value)
+gmt::wstring PrimitiveMath::to_display_string(ObjectInstance value)
 {
 	if (value.is_null())
 		return L"null";
@@ -283,23 +284,23 @@ std::wstring PrimitiveMath::to_display_string(ObjectInstance value)
 	std::wstring_view name = baseType->get_name();
 
 	if (name == L"string")
-		return std::wstring(string_view_of(value));
+		return gmt::wstring(string_view_of(value));
 
 	if (name == L"int" || name == L"nint" || name == L"byte")
-		return std::to_wstring(value.as_integer());
+		return gmt::wstring(std::to_wstring(value.as_integer()));
 
 	if (name == L"bool")
 		return value.as_boolean() ? L"true" : L"false";
 
 	if (name == L"char")
-		return std::wstring(1, value.as_char());
+		return gmt::wstring(1, value.as_char());
 
 	if (name == L"double")
 	{
 		wchar_t buffer[32];
 		std::swprintf(buffer, 32, L"%g", value.as_double());
-		return std::wstring(buffer);
+		return gmt::wstring(buffer);
 	}
 
-	return std::wstring(name);
+	return gmt::wstring(name);
 }

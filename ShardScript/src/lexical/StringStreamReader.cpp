@@ -2,6 +2,8 @@
 #include <shard/lexical/SourceProvider.hpp>
 #include <shard/parsing/TextLocation.hpp>
 
+#include <gmt/Containers.hpp>
+
 #include <sstream>
 #include <istream>
 #include <string>
@@ -10,8 +12,10 @@
 
 using namespace shard;
 
+StringStreamReader::~StringStreamReader() = default;
+
 StringStreamReader::StringStreamReader(
-	const std::wstring& name,
+	const gmt::wstring& name,
 	std::wstringstream& source
 ) :
 	SourceTextProvider(),
@@ -22,8 +26,8 @@ StringStreamReader::StringStreamReader(
 }
 
 StringStreamReader::StringStreamReader(
-	const std::wstring& name,
-	const std::wstring& source
+	const gmt::wstring& name,
+	const gmt::wstring& source
 ) :
 	SourceTextProvider(),
 	m_name(name)
@@ -33,14 +37,14 @@ StringStreamReader::StringStreamReader(
 }
 
 StringStreamReader::StringStreamReader(
-	const std::wstring& name,
+	const gmt::wstring& name,
 	string_t source,
 	std::size_t count
 ) :
 	SourceTextProvider(),
 	m_name(name)
 {
-	std::wstring srcStr = std::wstring(source, count);
+	gmt::wstring srcStr = gmt::wstring(source, count);
 	m_stringStream = std::wstringstream(srcStr);
 	m_stringStream.imbue(std::locale::classic());
 }
@@ -64,7 +68,7 @@ bool StringStreamReader::peek_next(wchar_t& ch)
 	return ch != WEOF;
 }
 
-std::wstring StringStreamReader::get_name()
+gmt::wstring StringStreamReader::get_name()
 {
 	return m_name;
 }

@@ -1,6 +1,7 @@
-#include <shard/parsing/nodes/directives/UsingDirectiveSyntax.hpp>
 #include <gmt/Arena.hpp>
+#include <gmt/Containers.hpp>
 #include <shard/parsing/SyntaxVisitor.hpp>
+#include <shard/parsing/nodes/directives/UsingDirectiveSyntax.hpp>
 
 #include <sstream>
 
@@ -14,7 +15,7 @@ gmt::Span<const SyntaxToken> UsingDirectiveSyntax::get_qualifier() const
 	return m_qualifier;
 }
 
-std::wstring UsingDirectiveSyntax::get_qualifier_string() const
+gmt::wstring UsingDirectiveSyntax::get_qualifier_string() const
 {
 	std::span<const SyntaxToken> qualifier = m_qualifier.as_span();
 	if (qualifier.empty())
@@ -25,7 +26,7 @@ std::wstring UsingDirectiveSyntax::get_qualifier_string() const
 		qualifierString << qualifier[i].get_lexeme() << L".";
 
 	qualifierString << qualifier.back().get_lexeme();
-	return qualifierString.str();
+	return gmt::wstring(qualifierString.str());
 }
 
 SyntaxToken UsingDirectiveSyntax::get_using_keyword() const

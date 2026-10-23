@@ -36,7 +36,7 @@ namespace glob {
 
     private:
         bool use_full_paths_;
-        std::unique_ptr<glob_impl> impl_;
+        gmt::unique_ptr<glob_impl> impl_;
     };
 
 } // namespace glob

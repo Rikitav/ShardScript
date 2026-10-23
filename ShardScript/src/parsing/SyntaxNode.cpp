@@ -1,5 +1,5 @@
-#include <shard/parsing/SyntaxNode.hpp>
 #include <gmt/Arena.hpp>
+#include <shard/parsing/SyntaxNode.hpp>
 
 using namespace shard;
 

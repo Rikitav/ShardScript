@@ -90,6 +90,7 @@ namespace shard
 		void set_return(ObjectInstance value);
 		void set_return_boolean(bool value);
 		void set_return_integer(std::int64_t value);
+		void set_return_nint(std::uintptr_t value);
 		void set_return_double(double value);
 		void set_return_char(wchar_t value);
 		void set_return_byte(std::uint8_t value);
