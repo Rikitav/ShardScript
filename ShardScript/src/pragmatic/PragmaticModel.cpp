@@ -168,6 +168,8 @@ FrameLayout& PragmaticModel::get_or_create_frame_layout(SemanticModel& model, gm
 		variableShapes.push_back(slotType.is_null() ? nullptr : find_or_create_type_shape(model, slotType));
 	}
 
+	layout.set_argument_shapes(gmt::vector<const TypeShape*>(argumentShapes.get_vector().begin(), argumentShapes.get_vector().end()));
+	layout.set_variable_shapes(gmt::vector<const TypeShape*>(variableShapes.get_vector().begin(), variableShapes.get_vector().end()));
 	layout.set_locals_bytes(layout.compute_locals_bytes(argumentShapes.get_vector(), variableShapes.get_vector()));
 	return layout;
 }

@@ -1,0 +1,50 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 30,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "x64-clang-release",
+      "displayName": "x64 clang-cl Release (AVX2, ThinLTO)",
+      "description": "Native x86-64 Windows Release build. Run from a Visual Studio developer environment (or use build_optimized.bat).",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/out/build/x64-clang-release-optimized",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_C_COMPILER": "clang-cl",
+        "CMAKE_CXX_COMPILER": "clang-cl",
+        "SHARD_ENABLE_AVX2": "ON",
+        "SHARD_ENABLE_LTO": "ON"
+      }
+    },
+    {
+      "name": "x64-clang-pgo",
+      "displayName": "x64 clang-cl Release (PGO, AVX2, ThinLTO)",
+      "description": "Release build using the merged LLVM profile in out/perf/pgo.profdata. Generate it with out/perf/build_pgo_instr.bat + run_pgo_workload.sh.",
+      "inherits": "x64-clang-release",
+      "binaryDir": "${sourceDir}/out/build/x64-clang-pgo-optimized",
+      "cacheVariables": {
+        "SHARD_PGO_PROFILE": "${sourceDir}/out/perf/pgo.profdata"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "x64-clang-release",
+      "configurePreset": "x64-clang-release",
+      "targets": [
+        "ShardScript.Interpreter"
+      ]
+    },
+    {
+      "name": "x64-clang-pgo",
+      "configurePreset": "x64-clang-pgo",
+      "targets": [
+        "ShardScript.Interpreter"
+      ]
+    }
+  ]
+}

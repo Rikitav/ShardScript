@@ -59,22 +59,11 @@ namespace shard
 		bool read_char_literal(gmt::wstring& word, bool notEcran, bool& wasClosed);
 		bool read_string_literal(gmt::wstring& word, bool notEcran, bool& wasClosed);
 
-		bool is_null_literal(gmt::wstring& word, TokenType& type);
-		bool is_boolean_literal(gmt::wstring& word, TokenType& type);
 		bool is_number_literal(TokenType& type) const;
 		bool is_char_literal(TokenType& type, bool& dontEcran);
 		bool is_string_literal(TokenType& type, bool& dontEcran);
 
 		bool is_punctuation(gmt::wstring& word, TokenType& type);
 		bool is_operator(gmt::wstring& word, TokenType& type);
-		bool is_word_operator(gmt::wstring& word, TokenType& type);
-		bool is_modifier(gmt::wstring& word, TokenType& type);
-		bool is_directive_decl(gmt::wstring& word, TokenType& type);
-		bool is_type_decl(gmt::wstring& word, TokenType& type);
-		bool is_type(gmt::wstring& word, TokenType& type);
-		bool is_keyword(gmt::wstring& word, TokenType& type);
-		bool is_loop_keyword(gmt::wstring& word, TokenType& type);
-		bool is_conditional_keyword(gmt::wstring& word, TokenType& type);
-		bool is_functional_keyword(gmt::wstring& word, TokenType& type);
 	};
 }

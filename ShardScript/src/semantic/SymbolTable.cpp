@@ -9,11 +9,44 @@
 
 using namespace shard;
 
+namespace
+{
+	// word-key layout: family tag, base symbol offset, then argument offsets
+	// (generics) or length (sized arrays); the interner copies keys into its
+	// own chunk storage, so stack-built keys are safe to pass
+	constexpr std::uint64_t ArrayFamilyTag = static_cast<std::uint64_t>(SyntaxKind::ArrayType);
+	constexpr std::uint64_t GenericFamilyTag = static_cast<std::uint64_t>(SyntaxKind::GenericType);
+	constexpr std::uint64_t NullableFamilyTag = static_cast<std::uint64_t>(SyntaxKind::NullableType);
+	constexpr std::uint64_t GenericMethodFamilyTag = ~static_cast<std::uint64_t>(0);
+	constexpr std::size_t InlineKeyWords = 8;
+
+	std::uint64_t* make_generic_key(std::uint64_t* inlineKey, std::pmr::vector<std::uint64_t>& spilledKey, std::uint64_t familyTag, std::size_t underlayingOffset, std::span<const gmt::Ref<StructSymbol>> typeArguments)
+	{
+		const std::size_t count = 2 + typeArguments.size();
+		std::uint64_t* key = inlineKey;
+
+		if (count > InlineKeyWords)
+		{
+			spilledKey.resize(count);
+			key = spilledKey.data();
+		}
+
+		key[0] = familyTag;
+		key[1] = underlayingOffset;
+		for (std::size_t i = 0; i < typeArguments.size(); ++i)
+			key[2 + i] = typeArguments[i].get_offset();
+
+		return key;
+	}
+}
+
 SymbolTable::SymbolTable()
 	: m_rootNamespace(m_arena.emplace<NamespaceSymbol>(L"", gmt::nullref))
 {
-	// component order matters: interfaces reference primitives, printables and
-	// enumerables implement interfaces, exceptions build on IThrowable
+	// component order matters:
+	// interfaces reference primitives,
+	// printables and enumerables implement interfaces,
+	// exceptions build on IThrowable
 	// (async components stay stubbed until the async TODO lands)
 	resolve_primitives();
 	resolve_interfaces();
@@ -62,37 +95,6 @@ std::span<const gmt::Ref<StructSymbol>> SymbolTable::lookup_type_arguments(gmt::
 		return {};
 
 	return choice->second;
-}
-
-namespace
-{
-	// word-key layout: family tag, base symbol offset, then argument offsets
-	// (generics) or length (sized arrays); the interner copies keys into its
-	// own chunk storage, so stack-built keys are safe to pass
-	constexpr std::uint64_t ArrayFamilyTag = static_cast<std::uint64_t>(SyntaxKind::ArrayType);
-	constexpr std::uint64_t GenericFamilyTag = static_cast<std::uint64_t>(SyntaxKind::GenericType);
-	constexpr std::uint64_t NullableFamilyTag = static_cast<std::uint64_t>(SyntaxKind::NullableType);
-	constexpr std::uint64_t GenericMethodFamilyTag = ~static_cast<std::uint64_t>(0);
-	constexpr std::size_t InlineKeyWords = 8;
-
-	std::uint64_t* make_generic_key(std::uint64_t* inlineKey, std::pmr::vector<std::uint64_t>& spilledKey, std::uint64_t familyTag, std::size_t underlayingOffset, std::span<const gmt::Ref<StructSymbol>> typeArguments)
-	{
-		const std::size_t count = 2 + typeArguments.size();
-		std::uint64_t* key = inlineKey;
-
-		if (count > InlineKeyWords)
-		{
-			spilledKey.resize(count);
-			key = spilledKey.data();
-		}
-
-		key[0] = familyTag;
-		key[1] = underlayingOffset;
-		for (std::size_t i = 0; i < typeArguments.size(); ++i)
-			key[2 + i] = typeArguments[i].get_offset();
-
-		return key;
-	}
 }
 
 gmt::Ref<ArrayTypeSymbol> SymbolTable::find_array_type(gmt::Ref<StructSymbol> underlaying) const
@@ -277,8 +279,10 @@ gmt::Ref<SyntaxSymbol> SymbolTable::get_standard_type(StandardTypes type)
 {
 	gmt::Ref<SyntaxSymbol>& slot = m_standardTypes[static_cast<std::size_t>(type)];
 
+	/*
 	if (slot.is_null())
 		slot = m_arena.emplace<StructSymbol>(L"", SyntaxKind::StructDeclaration, m_rootNamespace);
+	*/
 
 	return slot;
 }

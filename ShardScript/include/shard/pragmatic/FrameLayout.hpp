@@ -27,6 +27,14 @@ namespace shard
 	{
 		gmt::vector<FrameSlotRecipe> m_variableSlots;
 		gmt::vector<gmt::Ref<StructSymbol>> m_argumentTypes; // receiver first for instance methods, then parameters in order
+		// resolved once by the layout pass; CallStackFrame::create used to
+		// re-resolve every argument and local through the shape cache per call
+		gmt::vector<const TypeShape*> m_argumentShapes;
+		gmt::vector<const TypeShape*> m_variableShapes;
+		// resolved lazily on the first call, which keeps generic instantiations
+		// correct even when they share the open method's declaration layout
+		mutable const TypeShape* m_returnShape = nullptr;
+		mutable bool m_returnShapeResolved = false;
 		std::uint16_t m_argumentCount = 0; // eval-stack arguments, including the implicit 'this'
 		std::uint16_t m_variableCount = 0; // locals and compiler-generated temporaries
 		std::uint32_t m_maxEvalDepth = 0;
@@ -55,6 +63,17 @@ namespace shard
 		std::uint16_t get_argument_count() const;
 		std::uint16_t get_variable_count() const;
 		std::uint16_t get_local_count() const;
+
+		void set_argument_shapes(gmt::vector<const TypeShape*> shapes);
+		void set_variable_shapes(gmt::vector<const TypeShape*> shapes);
+		const TypeShape* get_argument_shape(std::size_t index) const;
+		const TypeShape* get_variable_shape(std::size_t index) const;
+		std::size_t get_argument_shape_count() const;
+		std::size_t get_variable_shape_count() const;
+
+		bool has_return_shape() const;
+		const TypeShape* get_return_shape() const;
+		void set_return_shape(const TypeShape* shape) const;
 
 		const gmt::vector<FrameSlotRecipe>& get_variable_slots() const;
 

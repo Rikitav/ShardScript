@@ -17,7 +17,7 @@ namespace gmt
 
 	// STL allocator backed by the shared entry points above.
 	template<typename T>
-	struct SHARD_API allocator
+	struct allocator
 	{
 		using value_type = T;
 		using size_type = std::size_t;
@@ -44,6 +44,7 @@ namespace gmt
 			void* block = alignof(T) > alignof(std::max_align_t)
 				? mem_alloc_aligned(bytes, alignof(T))
 				: mem_alloc(bytes);
+
 			if (block == nullptr)
 				throw std::bad_alloc();
 

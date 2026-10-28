@@ -1,8 +1,8 @@
 project(ShardScript)
 
-include(cmake/libuv.cmake)
-include(cmake/mimalloc.cmake)
-include(cmake/string-intern.cmake)
+include("cmake/libuv.cmake")
+include("cmake/mimalloc.cmake")
+include("cmake/string-intern.cmake")
 
 file(GLOB_RECURSE SHARDSCRIPT_SOURCES "src/*.cpp")
 file(GLOB_RECURSE SHARDSCRIPT_HEADERS "include/*.hpp")
@@ -22,6 +22,9 @@ set_source_files_properties(${STRING_INTERN_SOURCES} PROPERTIES COMPILE_FLAGS "-
 target_compile_definitions(${PROJECT_NAME} PRIVATE
     ${LIBUV_DEFINES}
     ${MIMALLOC_DEFINES}
+    "MI_SHARED_LIB"
+    "MI_SHARED_LIB_EXPORT"
+    "MI_WIN_NOREDIRECT"
     "SHARD_API_EXPORT"
     "UNICODE"
     "_UNICODE"

@@ -124,9 +124,18 @@ void LayoutGenerator::build_frame(gmt::Ref<MethodSymbol> method)
 
 	gmt::inline_vector<const TypeShape*, 8> variableShapes;
 
+	// hand the resolved shapes to the frame layout so materializing a frame
+	// never has to look them up again
+	auto publish_shapes = [&]()
+	{
+		layout.set_argument_shapes(gmt::vector<const TypeShape*>(argumentShapes.get_vector().begin(), argumentShapes.get_vector().end()));
+		layout.set_variable_shapes(gmt::vector<const TypeShape*>(variableShapes.get_vector().begin(), variableShapes.get_vector().end()));
+	};
+
 	const gmt::vector<gmt::Ref<SyntaxSymbol>>* order = m_pragmatic.get_local_order(method);
 	if (order == nullptr)
 	{
+		publish_shapes();
 		layout.set_locals_bytes(layout.compute_locals_bytes(argumentShapes.get_vector(), variableShapes.get_vector()));
 		return;
 	}
@@ -206,6 +215,7 @@ void LayoutGenerator::build_frame(gmt::Ref<MethodSymbol> method)
 		variableShapes.push_back(shape);
 	}
 
+	publish_shapes();
 	layout.set_locals_bytes(layout.compute_locals_bytes(argumentShapes.get_vector(), variableShapes.get_vector()));
 }
 

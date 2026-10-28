@@ -96,6 +96,52 @@ std::uint16_t FrameLayout::get_local_count() const
 	return m_argumentCount + m_variableCount;
 }
 
+void FrameLayout::set_argument_shapes(gmt::vector<const TypeShape*> shapes)
+{
+	m_argumentShapes = std::move(shapes);
+}
+
+void FrameLayout::set_variable_shapes(gmt::vector<const TypeShape*> shapes)
+{
+	m_variableShapes = std::move(shapes);
+}
+
+const TypeShape* FrameLayout::get_argument_shape(std::size_t index) const
+{
+	return index < m_argumentShapes.size() ? m_argumentShapes[index] : nullptr;
+}
+
+const TypeShape* FrameLayout::get_variable_shape(std::size_t index) const
+{
+	return index < m_variableShapes.size() ? m_variableShapes[index] : nullptr;
+}
+
+std::size_t FrameLayout::get_argument_shape_count() const
+{
+	return m_argumentShapes.size();
+}
+
+std::size_t FrameLayout::get_variable_shape_count() const
+{
+	return m_variableShapes.size();
+}
+
+bool FrameLayout::has_return_shape() const
+{
+	return m_returnShapeResolved;
+}
+
+const TypeShape* FrameLayout::get_return_shape() const
+{
+	return m_returnShape;
+}
+
+void FrameLayout::set_return_shape(const TypeShape* shape) const
+{
+	m_returnShape = shape;
+	m_returnShapeResolved = true;
+}
+
 const gmt::vector<FrameSlotRecipe>& FrameLayout::get_variable_slots() const
 {
 	return m_variableSlots;

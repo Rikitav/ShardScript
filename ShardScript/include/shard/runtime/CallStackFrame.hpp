@@ -39,6 +39,30 @@ namespace shard
 		std::byte* payloadAddress;
 	};
 
+	// Recycles frame blocks by power-of-two size class. Frames are the only
+	// per-call heap traffic left in the interpreter, and their sizes repeat
+	// per frame layout, so a one-block free list per class removes essentially
+	// all of it once the first call of each layout has run.
+	class SHARD_API FrameBlockPool
+	{
+		static constexpr std::size_t MaxClasses = 32;
+		std::byte* m_heads[MaxClasses] = {};
+
+	public:
+		FrameBlockPool() = default;
+		~FrameBlockPool();
+
+		FrameBlockPool(const FrameBlockPool&) = delete;
+		FrameBlockPool& operator=(const FrameBlockPool&) = delete;
+
+		std::byte* acquire(std::size_t bytes);
+		void release(std::byte* block, std::size_t bytes);
+		void release_all();
+
+	private:
+		static std::size_t class_of(std::size_t bytes);
+	};
+
 	class SHARD_API CallStackFrame
 	{
 	public:
@@ -63,8 +87,13 @@ namespace shard
 		bool m_hasExternalReturnSlot = false;
 
 		std::byte* m_localsRegion = nullptr;
-		gmt::vector<std::byte*> m_localAddresses;
-		gmt::vector<std::size_t> m_localPayloads;
+		// flat arrays carved out of the frame block; the old vectors each
+		// performed a heap allocation on every call
+		std::byte** m_localAddresses = nullptr;
+		std::size_t* m_localPayloads = nullptr;
+		std::uint16_t m_localCount = 0;
+		std::size_t m_blockBytes = 0;
+		const FrameLayout* m_layout = nullptr;
 
 		std::byte* m_evalRegion = nullptr;
 		std::size_t m_evalStride = 0;
@@ -82,8 +111,8 @@ namespace shard
 
 	public:
 		static FrameEntryView peek_entry(std::byte* entry);
-		static CallStackFrame* create(gmt::Ref<MethodSymbol> method, const FrameLayout* layout, SemanticModel& model, PragmaticModel& pragmatic, CallStackFrame* previous, std::byte* externalReturnEntry = nullptr, std::size_t externalReturnPayload = 0);
-		static void destroy(CallStackFrame* frame);
+		static CallStackFrame* create(gmt::Ref<MethodSymbol> method, const FrameLayout* layout, SemanticModel& model, PragmaticModel& pragmatic, CallStackFrame* previous, std::byte* externalReturnEntry = nullptr, std::size_t externalReturnPayload = 0, FrameBlockPool* pool = nullptr);
+		static void destroy(CallStackFrame* frame, FrameBlockPool* pool = nullptr);
 
 		CallStackFrame(const CallStackFrame&) = delete;
 		CallStackFrame& operator=(const CallStackFrame&) = delete;

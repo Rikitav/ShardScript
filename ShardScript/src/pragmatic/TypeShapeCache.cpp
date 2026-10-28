@@ -20,8 +20,6 @@ using namespace shard;
 
 namespace
 {
-	constexpr std::size_t NotAPrimitive = std::numeric_limits<std::size_t>::max();
-
 	gmt::Ref<StructSymbol> resolve_shape_key(SymbolTable& table, gmt::Ref<StructSymbol> baseType, std::span<const gmt::Ref<StructSymbol>> genericArgs, bool create)
 	{
 		if (baseType.is_null())
@@ -36,7 +34,7 @@ namespace
 		return table.find_generic_type(baseType, genericArgs);
 	}
 
-	std::size_t primitive_size(SymbolTable& table, gmt::Ref<StructSymbol> type)
+	std::optional<std::size_t> primitive_size(SymbolTable& table, gmt::Ref<StructSymbol> type)
 	{
 		if (type == table.get_boolean_primitive())
 			return 1;
@@ -59,7 +57,7 @@ namespace
 		if (type == table.get_void_primitive())
 			return 0;
 
-		return NotAPrimitive;
+		return std::nullopt;
 	}
 }
 
@@ -103,9 +101,9 @@ void TypeShapeCache::build(TypeShape* shape, SemanticModel& model)
 
 	// everything that is not a sized primitive or an enum is reference-stored;
 	// FrameLayout and the future GC maps consume this flag
-	bool isPrimitive = primitive_size(table, baseType) != NotAPrimitive;
+	std::optional<std::size_t> baseTypePrimitiveSize = primitive_size(table, baseType);
 	bool isEnum = baseType->get_kind() == SyntaxKind::EnumDeclaration;
-	shape->m_isReference = !isPrimitive && !isEnum;
+	shape->m_isReference = !baseTypePrimitiveSize.has_value() && !isEnum;
 
 	if (baseType->get_kind() == SyntaxKind::ArrayType)
 	{
@@ -158,16 +156,15 @@ void TypeShapeCache::build(TypeShape* shape, SemanticModel& model)
 		slot.offset = offset;
 		slot.fieldShape = find_or_create_type_shape(model, fieldType);
 
-		std::size_t size = primitive_size(table, fieldType);
-		offset += size != NotAPrimitive ? size : sizeof(void*);
+		std::optional<std::size_t> fieldTypeSize = primitive_size(table, fieldType);
+		offset += fieldTypeSize.has_value() ? fieldTypeSize.value() : sizeof(void*);
 
 		shape->m_slots.push_back(slot);
 	}
 
-	// a fieldless primitive keeps its intrinsic size
-	std::size_t basePrimitive = primitive_size(table, baseType);
-	if (offset == 0 && basePrimitive != NotAPrimitive)
-		shape->m_size = basePrimitive;
+	// a fieldless primitive keeps its intrinsic size; composites take the laid-out size
+	if (offset == 0)
+		shape->m_size = baseTypePrimitiveSize.has_value() ? baseTypePrimitiveSize.value() : offset;
 	else
 		shape->m_size = offset;
 }
