@@ -13,22 +13,22 @@ namespace shard
 	class SHARD_API RangeExpressionSyntax final : public ExpressionSyntax
 	{
 		SyntaxToken m_operatorToken;
-		gmt::Ref<ExpressionSyntax> m_left;
-		gmt::Ref<ExpressionSyntax> m_right;
+		ExpressionSyntax* m_left = nullptr;
+		ExpressionSyntax* m_right = nullptr;
 
 	public:
-		RangeExpressionSyntax(gmt::Ref<SyntaxNode> parent);
+		RangeExpressionSyntax(SyntaxNode* parent);
 		virtual ~RangeExpressionSyntax() = default;
 
 		SyntaxToken get_operator_token() const;
-		gmt::Ref<const ExpressionSyntax> get_left() const;
-		gmt::Ref<const ExpressionSyntax> get_right() const;
+		const ExpressionSyntax* get_left() const;
+		const ExpressionSyntax* get_right() const;
 
 		bool is_inclusive() const;
 
 		void set_operator_token(const SyntaxToken& token);
-		void set_left(gmt::Ref<ExpressionSyntax> left);
-		void set_right(gmt::Ref<ExpressionSyntax> right);
+		void set_left(ExpressionSyntax* left);
+		void set_right(ExpressionSyntax* right);
 
 		TextLocation get_location() const override;
 		void accept(SyntaxVisitor& visitor) const override;

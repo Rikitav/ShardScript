@@ -26,9 +26,9 @@ namespace gmt
 	}
 
 	template<typename T, std::size_t Capacity>
-	Span<T> inline_vector<T, Capacity>::commit_array(Arena& arena)
+	std::span<T> inline_vector<T, Capacity>::commit_array(Arena& arena)
 	{
-		Span<T> span = arena.emplace_array<T>(m_list.size());
+		std::span<T> span = arena.emplace_array<T>(m_list.size());
 		std::copy(m_list.begin(), m_list.end(), span.data());
 		return span;
 	}

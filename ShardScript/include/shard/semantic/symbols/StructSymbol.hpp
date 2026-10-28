@@ -25,18 +25,18 @@ namespace shard
 	class SHARD_API StructSymbol : public MemberSymbol
 	{
 	public:
-		gmt::vector<gmt::Ref<StructSymbol>> interfaces;
-		gmt::vector<gmt::Ref<TypeParameterSymbol>> type_parameters;
+		gmt::vector<StructSymbol*> interfaces;
+		gmt::vector<TypeParameterSymbol*> type_parameters;
 
-		gmt::vector<gmt::Ref<FieldSymbol>> fields;
-		gmt::vector<gmt::Ref<PropertySymbol>> properties;
-		gmt::vector<gmt::Ref<IndexatorSymbol>> indexators;
-		gmt::vector<gmt::Ref<ConstructorSymbol>> constructors;
-		gmt::vector<gmt::Ref<OperatorSymbol>> operators;
-		gmt::vector<gmt::Ref<MethodSymbol>> methods;
+		gmt::vector<FieldSymbol*> fields;
+		gmt::vector<PropertySymbol*> properties;
+		gmt::vector<IndexatorSymbol*> indexators;
+		gmt::vector<ConstructorSymbol*> constructors;
+		gmt::vector<OperatorSymbol*> operators;
+		gmt::vector<MethodSymbol*> methods;
 
-		StructSymbol(std::wstring_view name, const SyntaxKind kind, gmt::Ref<SyntaxSymbol> parent);
-		StructSymbol(gmt::StringReference name, const SyntaxKind kind, gmt::Ref<SyntaxSymbol> parent);
+		StructSymbol(std::wstring_view name, const SyntaxKind kind, SyntaxSymbol* parent);
+		StructSymbol(gmt::StringReference name, const SyntaxKind kind, SyntaxSymbol* parent);
 		virtual ~StructSymbol() = default;
 
 		StructSymbol(const StructSymbol& other) = delete;
@@ -46,6 +46,6 @@ namespace shard
 		StructSymbol& operator=(StructSymbol&& other) = delete;
 
 		bool is_type() const override;
-		void on_symbol_declared(gmt::Ref<SyntaxSymbol> symbol) override;
+		void on_symbol_declared(SyntaxSymbol* symbol) override;
 	};
 }

@@ -5,9 +5,7 @@
 
 namespace shard
 {
-	// symbol operands are encoded as raw arena offsets; nullref is a sentinel,
-	// since offset 0 is a valid allocation (the root namespace symbol)
-	inline constexpr std::size_t null_symbol_operand = (std::numeric_limits<std::size_t>::max)();
+	// symbol operands are encoded as raw symbol pointers; nullptr encodes as 0
 
 	// CALL_METHOD_INTO destination slot meaning "the current frame's own
 	// return slot", used to forward a tail call's result into the caller's

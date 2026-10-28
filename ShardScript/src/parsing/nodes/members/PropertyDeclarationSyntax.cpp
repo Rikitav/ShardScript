@@ -5,7 +5,7 @@
 
 using namespace shard;
 
-PropertyDeclarationSyntax::PropertyDeclarationSyntax(gmt::Ref<SyntaxNode> parent)
+PropertyDeclarationSyntax::PropertyDeclarationSyntax(SyntaxNode* parent)
 	: MemberDeclarationSyntax(SyntaxKind::PropertyDeclaration, parent) { }
 
 SyntaxToken PropertyDeclarationSyntax::get_arrow() const
@@ -13,7 +13,7 @@ SyntaxToken PropertyDeclarationSyntax::get_arrow() const
 	return m_arrowToken;
 }
 
-gmt::Ref<const TypeSyntax> PropertyDeclarationSyntax::get_type() const
+const TypeSyntax* PropertyDeclarationSyntax::get_type() const
 {
 	return m_type;
 }
@@ -23,12 +23,12 @@ SyntaxToken PropertyDeclarationSyntax::get_open_bracket() const
 	return m_openBracketToken;
 }
 
-gmt::Ref<const AccessorDeclarationSyntax> PropertyDeclarationSyntax::get_getter() const
+const AccessorDeclarationSyntax* PropertyDeclarationSyntax::get_getter() const
 {
 	return m_getter;
 }
 
-gmt::Ref<const AccessorDeclarationSyntax> PropertyDeclarationSyntax::get_setter() const
+const AccessorDeclarationSyntax* PropertyDeclarationSyntax::get_setter() const
 {
 	return m_setter;
 }
@@ -43,7 +43,7 @@ SyntaxToken PropertyDeclarationSyntax::get_assign_token() const
 	return m_assignToken;
 }
 
-gmt::Ref<const ExpressionSyntax> PropertyDeclarationSyntax::get_expression() const
+const ExpressionSyntax* PropertyDeclarationSyntax::get_expression() const
 {
 	return m_expression;
 }
@@ -58,7 +58,7 @@ void PropertyDeclarationSyntax::set_arrow(const SyntaxToken& token)
 	m_arrowToken = token;
 }
 
-void PropertyDeclarationSyntax::set_type(gmt::Ref<TypeSyntax> type)
+void PropertyDeclarationSyntax::set_type(TypeSyntax* type)
 {
 	m_type = type;
 }
@@ -68,12 +68,12 @@ void PropertyDeclarationSyntax::set_open_bracket(const SyntaxToken& token)
 	m_openBracketToken = token;
 }
 
-void PropertyDeclarationSyntax::set_getter(gmt::Ref<AccessorDeclarationSyntax> getter)
+void PropertyDeclarationSyntax::set_getter(AccessorDeclarationSyntax* getter)
 {
 	m_getter = getter;
 }
 
-void PropertyDeclarationSyntax::set_setter(gmt::Ref<AccessorDeclarationSyntax> setter)
+void PropertyDeclarationSyntax::set_setter(AccessorDeclarationSyntax* setter)
 {
 	m_setter = setter;
 }
@@ -88,7 +88,7 @@ void PropertyDeclarationSyntax::set_assign_token(const SyntaxToken& token)
 	m_assignToken = token;
 }
 
-void PropertyDeclarationSyntax::set_expression(gmt::Ref<ExpressionSyntax> expression)
+void PropertyDeclarationSyntax::set_expression(ExpressionSyntax* expression)
 {
 	m_expression = expression;
 }
@@ -108,8 +108,8 @@ TextLocation PropertyDeclarationSyntax::get_location() const
 	if (!m_closeBracketToken.is_missing())
 		return TextLocation(identifierToken, m_closeBracketToken);
 
-	if (!m_type.is_null())
-		return TextLocation(identifierToken, m_type.as_ptr()->get_location());
+	if (!(m_type == nullptr))
+		return TextLocation(identifierToken, m_type->get_location());
 
 	return identifierToken.get_location();
 }

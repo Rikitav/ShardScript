@@ -6,7 +6,7 @@
 
 using namespace shard;
 
-IdentifierNameTypeSyntax::IdentifierNameTypeSyntax(gmt::Ref<SyntaxNode> parent)
+IdentifierNameTypeSyntax::IdentifierNameTypeSyntax(SyntaxNode* parent)
 	: TypeSyntax(SyntaxKind::IdentifierNameType, parent) { }
 
 SyntaxToken IdentifierNameTypeSyntax::get_identifier() const

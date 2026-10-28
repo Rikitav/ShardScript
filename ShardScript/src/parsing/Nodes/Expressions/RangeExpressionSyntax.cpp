@@ -5,7 +5,7 @@
 
 using namespace shard;
 
-RangeExpressionSyntax::RangeExpressionSyntax(gmt::Ref<SyntaxNode> parent)
+RangeExpressionSyntax::RangeExpressionSyntax(SyntaxNode* parent)
 	: ExpressionSyntax(SyntaxKind::RangeExpression, parent) { }
 
 SyntaxToken RangeExpressionSyntax::get_operator_token() const
@@ -13,12 +13,12 @@ SyntaxToken RangeExpressionSyntax::get_operator_token() const
 	return m_operatorToken;
 }
 
-gmt::Ref<const ExpressionSyntax> RangeExpressionSyntax::get_left() const
+const ExpressionSyntax* RangeExpressionSyntax::get_left() const
 {
 	return m_left;
 }
 
-gmt::Ref<const ExpressionSyntax> RangeExpressionSyntax::get_right() const
+const ExpressionSyntax* RangeExpressionSyntax::get_right() const
 {
 	return m_right;
 }
@@ -33,23 +33,23 @@ void RangeExpressionSyntax::set_operator_token(const SyntaxToken& token)
 	m_operatorToken = token;
 }
 
-void RangeExpressionSyntax::set_left(gmt::Ref<ExpressionSyntax> left)
+void RangeExpressionSyntax::set_left(ExpressionSyntax* left)
 {
 	m_left = left;
 }
 
-void RangeExpressionSyntax::set_right(gmt::Ref<ExpressionSyntax> right)
+void RangeExpressionSyntax::set_right(ExpressionSyntax* right)
 {
 	m_right = right;
 }
 
 TextLocation RangeExpressionSyntax::get_location() const
 {
-	if (!m_left.is_null() && !m_right.is_null())
-		return TextLocation(m_left.as_ptr()->get_location(), m_right.as_ptr()->get_location());
+	if (!(m_left == nullptr) && !(m_right == nullptr))
+		return TextLocation(m_left->get_location(), m_right->get_location());
 
-	if (!m_left.is_null())
-		return m_left.as_ptr()->get_location();
+	if (!(m_left == nullptr))
+		return m_left->get_location();
 
 	return m_operatorToken.get_location();
 }

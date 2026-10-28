@@ -11,8 +11,8 @@ namespace shard
 	class SHARD_API InterfaceSymbol final : public StructSymbol
 	{
 	public:
-		InterfaceSymbol(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent);
-		InterfaceSymbol(gmt::StringReference name, gmt::Ref<SyntaxSymbol> parent);
+		InterfaceSymbol(std::wstring_view name, SyntaxSymbol* parent);
+		InterfaceSymbol(gmt::StringReference name, SyntaxSymbol* parent);
 		virtual ~InterfaceSymbol() = default;
 
 		InterfaceSymbol(const InterfaceSymbol& other) = delete;

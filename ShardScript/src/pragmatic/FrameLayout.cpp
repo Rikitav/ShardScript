@@ -10,16 +10,16 @@
 
 using namespace shard;
 
-FrameSlotRecipe FrameLayout::make_recipe(gmt::Ref<StructSymbol> type)
+FrameSlotRecipe FrameLayout::make_recipe(StructSymbol* type)
 {
 	FrameSlotRecipe recipe;
 
 	// type parameters resolve through the instantiation's combined type
 	// arguments (owner arguments first, then the method's own) when a
 	// concrete frame is materialized for a generic method instantiation
-	if (!type.is_null() && type->get_kind() == SyntaxKind::TypeParameter)
+	if (!(type == nullptr) && type->get_kind() == SyntaxKind::TypeParameter)
 	{
-		recipe.typeParameterIndex = static_cast<std::int16_t>(type.as<TypeParameterSymbol>()->get_type_argument_index());
+		recipe.typeParameterIndex = static_cast<std::int16_t>(static_cast<TypeParameterSymbol*>(type)->get_type_argument_index());
 		return recipe;
 	}
 
@@ -27,7 +27,7 @@ FrameSlotRecipe FrameLayout::make_recipe(gmt::Ref<StructSymbol> type)
 	return recipe;
 }
 
-std::uint16_t FrameLayout::add_variable(gmt::Ref<StructSymbol> type, PlacementVerdict verdict)
+std::uint16_t FrameLayout::add_variable(StructSymbol* type, PlacementVerdict verdict)
 {
 	FrameSlotRecipe recipe = make_recipe(type);
 	recipe.verdict = verdict;
@@ -36,20 +36,20 @@ std::uint16_t FrameLayout::add_variable(gmt::Ref<StructSymbol> type, PlacementVe
 	return m_variableCount++;
 }
 
-std::uint16_t FrameLayout::add_temporary(gmt::Ref<StructSymbol> type, const TypeShape* shape, PlacementVerdict verdict)
+std::uint16_t FrameLayout::add_temporary(StructSymbol* type, const TypeShape* shape, PlacementVerdict verdict)
 {
 	std::uint16_t variableIndex = add_variable(type, verdict);
 	m_localsBytes += entry_bytes(resolve_payload(shape, verdict));
 	return variableIndex;
 }
 
-bool FrameLayout::seal_variable(std::uint16_t variableIndex, gmt::Ref<StructSymbol> type, PlacementVerdict verdict)
+bool FrameLayout::seal_variable(std::uint16_t variableIndex, StructSymbol* type, PlacementVerdict verdict)
 {
 	if (variableIndex >= m_variableSlots.size())
 		return false;
 
 	FrameSlotRecipe& recipe = m_variableSlots[variableIndex];
-	if (!recipe.concreteType.is_null() || recipe.typeParameterIndex >= 0)
+	if (!(recipe.concreteType == nullptr) || recipe.typeParameterIndex >= 0)
 		return false;
 
 	recipe = make_recipe(type);
@@ -71,12 +71,12 @@ void FrameLayout::set_argument_count(std::uint16_t count)
 	m_argumentCount = count;
 }
 
-void FrameLayout::add_argument(gmt::Ref<StructSymbol> type)
+void FrameLayout::add_argument(StructSymbol* type)
 {
 	m_argumentTypes.push_back(type);
 }
 
-const gmt::vector<gmt::Ref<StructSymbol>>& FrameLayout::get_argument_types() const
+const gmt::vector<StructSymbol*>& FrameLayout::get_argument_types() const
 {
 	return m_argumentTypes;
 }

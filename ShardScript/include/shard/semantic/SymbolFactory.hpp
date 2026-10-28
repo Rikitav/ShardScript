@@ -44,7 +44,7 @@
 
 #include <gmt/Containers.hpp>
 #include <gmt/Ref.hpp>
-#include <gmt/Span.hpp>
+#include <span>
 
 #include <cstdint>
 #include <string_view>
@@ -57,73 +57,73 @@ namespace shard
 	{
 		SymbolTable* m_table;
 
-		void apply_modifiers(gmt::Span<const SyntaxToken> modifiers, MemberSymbol& symbol);
+		void apply_modifiers(std::span<const SyntaxToken> modifiers, MemberSymbol& symbol);
 
 	public:
 		SymbolFactory(SymbolTable* table)
 			: m_table(table) { }
 
-		gmt::Ref<NamespaceSymbol> create_namespace(gmt::Ref<const NamespaceDirectiveSyntax> node);
-		gmt::Ref<NamespaceSymbol> create_namespace(std::wstring_view qualifiedName);
+		NamespaceSymbol* create_namespace(const NamespaceDirectiveSyntax* node);
+		NamespaceSymbol* create_namespace(std::wstring_view qualifiedName);
 
-		gmt::Ref<StructSymbol> create_struct(gmt::Ref<const StructDeclarationSyntax> node, gmt::Ref<SyntaxSymbol> parent);
-		gmt::Ref<StructSymbol> create_struct(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent);
+		StructSymbol* create_struct(const StructDeclarationSyntax* node, SyntaxSymbol* parent);
+		StructSymbol* create_struct(std::wstring_view name, SyntaxSymbol* parent);
 
-		gmt::Ref<InterfaceSymbol> create_interface(gmt::Ref<const InterfaceDeclarationSyntax> node, gmt::Ref<SyntaxSymbol> parent);
-		gmt::Ref<InterfaceSymbol> create_interface(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent, SymbolAccesibility accesibility = ACS_PUBLIC);
+		InterfaceSymbol* create_interface(const InterfaceDeclarationSyntax* node, SyntaxSymbol* parent);
+		InterfaceSymbol* create_interface(std::wstring_view name, SyntaxSymbol* parent, SymbolAccesibility accesibility = ACS_PUBLIC);
 
-		gmt::Ref<EnumSymbol> create_enum(gmt::Ref<const EnumDeclarationSyntax> node, gmt::Ref<SyntaxSymbol> parent);
-		gmt::Ref<EnumSymbol> create_enum(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent, bool isFlags = false);
+		EnumSymbol* create_enum(const EnumDeclarationSyntax* node, SyntaxSymbol* parent);
+		EnumSymbol* create_enum(std::wstring_view name, SyntaxSymbol* parent, bool isFlags = false);
 
-		gmt::Ref<FieldSymbol> create_field(gmt::Ref<const FieldDeclarationSyntax> node, gmt::Ref<SyntaxSymbol> parent);
-		gmt::Ref<FieldSymbol> create_field(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent, gmt::Ref<StructSymbol> type = gmt::nullref, SymbolLinking linking = LINK_INSTANCE);
-		gmt::Ref<FieldSymbol> create_enum_field(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent, gmt::Ref<StructSymbol> enumType, std::int64_t value);
-		gmt::Ref<FieldSymbol> create_backing_field(gmt::Ref<PropertySymbol> property, gmt::Ref<SyntaxSymbol> parent);
+		FieldSymbol* create_field(const FieldDeclarationSyntax* node, SyntaxSymbol* parent);
+		FieldSymbol* create_field(std::wstring_view name, SyntaxSymbol* parent, StructSymbol* type = nullptr, SymbolLinking linking = LINK_INSTANCE);
+		FieldSymbol* create_enum_field(std::wstring_view name, SyntaxSymbol* parent, StructSymbol* enumType, std::int64_t value);
+		FieldSymbol* create_backing_field(PropertySymbol* property, SyntaxSymbol* parent);
 
-		gmt::Ref<PropertySymbol> create_property(gmt::Ref<const PropertyDeclarationSyntax> node, gmt::Ref<SyntaxSymbol> parent);
-		gmt::Ref<PropertySymbol> create_property(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent, gmt::Ref<StructSymbol> returnType = gmt::nullref, SymbolLinking linking = LINK_INSTANCE);
+		PropertySymbol* create_property(const PropertyDeclarationSyntax* node, SyntaxSymbol* parent);
+		PropertySymbol* create_property(std::wstring_view name, SyntaxSymbol* parent, StructSymbol* returnType = nullptr, SymbolLinking linking = LINK_INSTANCE);
 
-		gmt::Ref<MethodSymbol> create_method(gmt::Ref<const FunctionDeclarationSyntax> node, gmt::Ref<SyntaxSymbol> parent);
-		gmt::Ref<MethodSymbol> create_method(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent, gmt::Ref<StructSymbol> returnType = gmt::nullref, SymbolLinking linking = LINK_INSTANCE);
+		MethodSymbol* create_method(const FunctionDeclarationSyntax* node, SyntaxSymbol* parent);
+		MethodSymbol* create_method(std::wstring_view name, SyntaxSymbol* parent, StructSymbol* returnType = nullptr, SymbolLinking linking = LINK_INSTANCE);
 
-		gmt::Ref<OperatorSymbol> create_operator(gmt::Ref<const OperatorDeclarationSyntax> node, gmt::Ref<SyntaxSymbol> parent);
+		OperatorSymbol* create_operator(const OperatorDeclarationSyntax* node, SyntaxSymbol* parent);
 
-		gmt::Ref<ConstructorSymbol> create_constructor(gmt::Ref<const ConstructorDeclarationSyntax> node, gmt::Ref<SyntaxSymbol> parent);
-		gmt::Ref<ConstructorSymbol> create_constructor(gmt::Ref<SyntaxSymbol> parent, SymbolAccesibility accesibility);
+		ConstructorSymbol* create_constructor(const ConstructorDeclarationSyntax* node, SyntaxSymbol* parent);
+		ConstructorSymbol* create_constructor(SyntaxSymbol* parent, SymbolAccesibility accesibility);
 
-		gmt::Ref<AccessorSymbol> create_accessor(gmt::Ref<const AccessorDeclarationSyntax> node, gmt::Ref<PropertySymbol> property);
-		gmt::Ref<AccessorSymbol> create_getter(gmt::Ref<PropertySymbol> property);
-		gmt::Ref<AccessorSymbol> create_setter(gmt::Ref<PropertySymbol> property);
+		AccessorSymbol* create_accessor(const AccessorDeclarationSyntax* node, PropertySymbol* property);
+		AccessorSymbol* create_getter(PropertySymbol* property);
+		AccessorSymbol* create_setter(PropertySymbol* property);
 
-		gmt::Ref<IndexatorSymbol> create_indexator(gmt::Ref<const IndexatorDeclarationSyntax> node, gmt::Ref<SyntaxSymbol> parent);
-		gmt::Ref<IndexatorSymbol> create_indexator(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent, gmt::Ref<StructSymbol> returnType = gmt::nullref);
-		gmt::Ref<IndexatorSymbol> create_indexator(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent, gmt::Ref<StructSymbol> returnType, gmt::vector<gmt::Ref<ParameterSymbol>> parameters);
+		IndexatorSymbol* create_indexator(const IndexatorDeclarationSyntax* node, SyntaxSymbol* parent);
+		IndexatorSymbol* create_indexator(std::wstring_view name, SyntaxSymbol* parent, StructSymbol* returnType = nullptr);
+		IndexatorSymbol* create_indexator(std::wstring_view name, SyntaxSymbol* parent, StructSymbol* returnType, gmt::vector<ParameterSymbol*> parameters);
 
-		gmt::Ref<ParameterSymbol> create_parameter(gmt::Ref<const ParameterSyntax> node, gmt::Ref<SyntaxSymbol> parent);
-		gmt::Ref<ParameterSymbol> create_parameter(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent);
-		gmt::Ref<ParameterSymbol> create_parameter(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent, gmt::Ref<StructSymbol> type);
+		ParameterSymbol* create_parameter(const ParameterSyntax* node, SyntaxSymbol* parent);
+		ParameterSymbol* create_parameter(std::wstring_view name, SyntaxSymbol* parent);
+		ParameterSymbol* create_parameter(std::wstring_view name, SyntaxSymbol* parent, StructSymbol* type);
 
-		gmt::Ref<VariableSymbol> create_variable(gmt::Ref<const VariableStatementSyntax> node, gmt::Ref<SyntaxSymbol> parent);
-		gmt::Ref<VariableSymbol> create_variable(gmt::Ref<const ForInStatementSyntax> node, gmt::Ref<SyntaxSymbol> parent);
-		gmt::Ref<VariableSymbol> create_variable(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent);
-		gmt::Ref<VariableSymbol> create_variable(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent, gmt::Ref<StructSymbol> type);
+		VariableSymbol* create_variable(const VariableStatementSyntax* node, SyntaxSymbol* parent);
+		VariableSymbol* create_variable(const ForInStatementSyntax* node, SyntaxSymbol* parent);
+		VariableSymbol* create_variable(std::wstring_view name, SyntaxSymbol* parent);
+		VariableSymbol* create_variable(std::wstring_view name, SyntaxSymbol* parent, StructSymbol* type);
 
-		gmt::Ref<TypeParameterSymbol> create_type_parameter(std::wstring_view name, gmt::Ref<StructSymbol> parent);
-		gmt::Ref<TypeParameterSymbol> create_type_parameter(std::wstring_view name, gmt::Ref<MethodSymbol> parent);
+		TypeParameterSymbol* create_type_parameter(std::wstring_view name, StructSymbol* parent);
+		TypeParameterSymbol* create_type_parameter(std::wstring_view name, MethodSymbol* parent);
 
-		gmt::Ref<DelegateTypeSymbol> create_delegate(gmt::Ref<const DelegateDeclarationSyntax> node, gmt::Ref<SyntaxSymbol> parent);
-		gmt::Ref<DelegateTypeSymbol> create_delegate(gmt::Ref<MethodSymbol> method, gmt::Ref<SyntaxSymbol> parent);
-		gmt::Ref<DelegateTypeSymbol> create_delegate(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent, gmt::Ref<StructSymbol> returnType, gmt::vector<gmt::Ref<ParameterSymbol>> parameters);
+		DelegateTypeSymbol* create_delegate(const DelegateDeclarationSyntax* node, SyntaxSymbol* parent);
+		DelegateTypeSymbol* create_delegate(MethodSymbol* method, SyntaxSymbol* parent);
+		DelegateTypeSymbol* create_delegate(std::wstring_view name, SyntaxSymbol* parent, StructSymbol* returnType, gmt::vector<ParameterSymbol*> parameters);
 
-		gmt::Ref<ArrayTypeSymbol> create_array_type(gmt::Ref<const ArrayTypeSyntax> node, gmt::Ref<StructSymbol> underlayingType);
-		gmt::Ref<ArrayTypeSymbol> create_array_type(gmt::Ref<StructSymbol> underlayingType);
-		gmt::Ref<ArrayTypeSymbol> create_array_type(gmt::Ref<StructSymbol> underlayingType, std::size_t size);
+		ArrayTypeSymbol* create_array_type(const ArrayTypeSyntax* node, StructSymbol* underlayingType);
+		ArrayTypeSymbol* create_array_type(StructSymbol* underlayingType);
+		ArrayTypeSymbol* create_array_type(StructSymbol* underlayingType, std::size_t size);
 
-		gmt::Ref<NullableTypeSymbol> create_nullable_type(gmt::Ref<const NullableTypeSyntax> node, gmt::Ref<StructSymbol> underlayingType);
-		gmt::Ref<NullableTypeSymbol> create_nullable_type(gmt::Ref<StructSymbol> underlayingType);
+		NullableTypeSymbol* create_nullable_type(const NullableTypeSyntax* node, StructSymbol* underlayingType);
+		NullableTypeSymbol* create_nullable_type(StructSymbol* underlayingType);
 
-		gmt::Ref<GenericTypeSymbol> create_generic_type(gmt::Ref<const GenericTypeSyntax> node, gmt::Ref<StructSymbol> underlayingType);
-		gmt::Ref<GenericTypeSymbol> create_generic_type(gmt::Ref<StructSymbol> underlayingType);
-		gmt::Ref<GenericTypeSymbol> create_generic_type(gmt::Ref<StructSymbol> underlayingType, std::span<const gmt::Ref<StructSymbol>> typeArguments);
+		GenericTypeSymbol* create_generic_type(const GenericTypeSyntax* node, StructSymbol* underlayingType);
+		GenericTypeSymbol* create_generic_type(StructSymbol* underlayingType);
+		GenericTypeSymbol* create_generic_type(StructSymbol* underlayingType, std::span<StructSymbol* const> typeArguments);
 	};
 }

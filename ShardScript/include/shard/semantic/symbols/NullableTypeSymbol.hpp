@@ -11,10 +11,10 @@ namespace shard
 {
 	class SHARD_API NullableTypeSymbol final : public StructSymbol
 	{
-		gmt::Ref<StructSymbol> m_underlayingType;
+		StructSymbol* m_underlayingType = nullptr;
 
 	public:
-		NullableTypeSymbol(gmt::Ref<StructSymbol> underlaying_type, gmt::Ref<SyntaxSymbol> parent);
+		NullableTypeSymbol(StructSymbol* underlaying_type, SyntaxSymbol* parent);
 		virtual ~NullableTypeSymbol() = default;
 
 		NullableTypeSymbol(const NullableTypeSymbol& other) = delete;
@@ -23,6 +23,6 @@ namespace shard
 		NullableTypeSymbol(NullableTypeSymbol&& other) = delete;
 		NullableTypeSymbol& operator=(NullableTypeSymbol&& other) = delete;
 
-		gmt::Ref<StructSymbol> get_underlaying_type() const;
+		StructSymbol* get_underlaying_type() const;
 	};
 }

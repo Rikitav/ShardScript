@@ -8,17 +8,17 @@
 
 using namespace shard;
 
-NamespaceDirectiveSyntax::NamespaceDirectiveSyntax(gmt::Ref<SyntaxNode> parent)
+NamespaceDirectiveSyntax::NamespaceDirectiveSyntax(SyntaxNode* parent)
 	: SyntaxNode(SyntaxKind::NamespaceDirective, parent) { }
 
-gmt::Span<const SyntaxToken> NamespaceDirectiveSyntax::get_qualifier() const
+std::span<const SyntaxToken> NamespaceDirectiveSyntax::get_qualifier() const
 {
 	return m_qualifier;
 }
 
 gmt::wstring NamespaceDirectiveSyntax::get_qualifier_string() const
 {
-	std::span<const SyntaxToken> qualifier = m_qualifier.as_span();
+	std::span<const SyntaxToken> qualifier = m_qualifier;
 	if (qualifier.empty())
 		return L"";
 
@@ -40,7 +40,7 @@ SyntaxToken NamespaceDirectiveSyntax::get_namespace_keyword() const
 	return m_namespaceKeyword;
 }
 
-void NamespaceDirectiveSyntax::set_qualifier(gmt::Span<SyntaxToken> qualifier)
+void NamespaceDirectiveSyntax::set_qualifier(std::span<SyntaxToken> qualifier)
 {
 	m_qualifier = qualifier;
 }

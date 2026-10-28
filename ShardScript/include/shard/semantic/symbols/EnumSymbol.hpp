@@ -13,8 +13,8 @@ namespace shard
 		bool m_isFlags = false;
 
 	public:
-		EnumSymbol(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent);
-		EnumSymbol(gmt::StringReference name, gmt::Ref<SyntaxSymbol> parent);
+		EnumSymbol(std::wstring_view name, SyntaxSymbol* parent);
+		EnumSymbol(gmt::StringReference name, SyntaxSymbol* parent);
 		virtual ~EnumSymbol() = default;
 
 		EnumSymbol(const EnumSymbol& other) = delete;

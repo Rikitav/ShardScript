@@ -5,7 +5,7 @@
 
 using namespace shard;
 
-DeferStatementSyntax::DeferStatementSyntax(gmt::Ref<SyntaxNode> parent)
+DeferStatementSyntax::DeferStatementSyntax(SyntaxNode* parent)
 	: StatementSyntax(SyntaxKind::DeferStatement, parent) { }
 
 SyntaxToken DeferStatementSyntax::get_defer_keyword() const
@@ -13,7 +13,7 @@ SyntaxToken DeferStatementSyntax::get_defer_keyword() const
 	return m_deferKeywordToken;
 }
 
-gmt::Ref<const ExpressionSyntax> DeferStatementSyntax::get_expression() const
+const ExpressionSyntax* DeferStatementSyntax::get_expression() const
 {
 	return m_expression;
 }
@@ -28,7 +28,7 @@ void DeferStatementSyntax::set_defer_keyword(const SyntaxToken& token)
 	m_deferKeywordToken = token;
 }
 
-void DeferStatementSyntax::set_expression(gmt::Ref<ExpressionSyntax> expression)
+void DeferStatementSyntax::set_expression(ExpressionSyntax* expression)
 {
 	m_expression = expression;
 }

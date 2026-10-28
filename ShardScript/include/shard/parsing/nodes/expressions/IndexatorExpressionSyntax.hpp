@@ -13,21 +13,21 @@ namespace shard
 {
 	class SHARD_API IndexatorExpressionSyntax final : public ExpressionSyntax
 	{
-		gmt::Ref<ExpressionSyntax> m_previous;
+		ExpressionSyntax* m_previous = nullptr;
 		SyntaxToken m_delimeterToken;
-		gmt::Ref<ArgumentsListSyntax> m_arguments;
+		ArgumentsListSyntax* m_arguments = nullptr;
 
 	public:
-		IndexatorExpressionSyntax(gmt::Ref<SyntaxNode> parent);
+		IndexatorExpressionSyntax(SyntaxNode* parent);
 		virtual ~IndexatorExpressionSyntax() = default;
 
-		gmt::Ref<const ExpressionSyntax> get_previous() const;
+		const ExpressionSyntax* get_previous() const;
 		SyntaxToken get_delimeter_token() const;
-		gmt::Ref<const ArgumentsListSyntax> get_arguments() const;
+		const ArgumentsListSyntax* get_arguments() const;
 
-		void set_previous(gmt::Ref<ExpressionSyntax> previous);
+		void set_previous(ExpressionSyntax* previous);
 		void set_delimeter_token(const SyntaxToken& token);
-		void set_arguments(gmt::Ref<ArgumentsListSyntax> arguments);
+		void set_arguments(ArgumentsListSyntax* arguments);
 
 		TextLocation get_location() const override;
 		void accept(SyntaxVisitor& visitor) const override;

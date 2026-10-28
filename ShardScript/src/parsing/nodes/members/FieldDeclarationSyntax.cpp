@@ -5,7 +5,7 @@
 
 using namespace shard;
 
-FieldDeclarationSyntax::FieldDeclarationSyntax(gmt::Ref<SyntaxNode> parent)
+FieldDeclarationSyntax::FieldDeclarationSyntax(SyntaxNode* parent)
 	: MemberDeclarationSyntax(SyntaxKind::FieldDeclaration, parent) { }
 
 SyntaxToken FieldDeclarationSyntax::get_colon() const
@@ -13,7 +13,7 @@ SyntaxToken FieldDeclarationSyntax::get_colon() const
 	return m_colonToken;
 }
 
-gmt::Ref<const TypeSyntax> FieldDeclarationSyntax::get_type() const
+const TypeSyntax* FieldDeclarationSyntax::get_type() const
 {
 	return m_type;
 }
@@ -23,7 +23,7 @@ SyntaxToken FieldDeclarationSyntax::get_assign_token() const
 	return m_assignToken;
 }
 
-gmt::Ref<const ExpressionSyntax> FieldDeclarationSyntax::get_expression() const
+const ExpressionSyntax* FieldDeclarationSyntax::get_expression() const
 {
 	return m_expression;
 }
@@ -38,7 +38,7 @@ void FieldDeclarationSyntax::set_colon(const SyntaxToken& token)
 	m_colonToken = token;
 }
 
-void FieldDeclarationSyntax::set_type(gmt::Ref<TypeSyntax> type)
+void FieldDeclarationSyntax::set_type(TypeSyntax* type)
 {
 	m_type = type;
 }
@@ -48,7 +48,7 @@ void FieldDeclarationSyntax::set_assign_token(const SyntaxToken& token)
 	m_assignToken = token;
 }
 
-void FieldDeclarationSyntax::set_expression(gmt::Ref<ExpressionSyntax> expression)
+void FieldDeclarationSyntax::set_expression(ExpressionSyntax* expression)
 {
 	m_expression = expression;
 }
@@ -65,8 +65,8 @@ TextLocation FieldDeclarationSyntax::get_location() const
 	if (!m_semicolonToken.is_missing())
 		return TextLocation(identifierToken, m_semicolonToken);
 
-	if (!m_type.is_null())
-		return TextLocation(identifierToken, m_type.as_ptr()->get_location());
+	if (!(m_type == nullptr))
+		return TextLocation(identifierToken, m_type->get_location());
 
 	return identifierToken.get_location();
 }

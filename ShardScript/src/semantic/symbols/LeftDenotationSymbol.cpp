@@ -4,15 +4,15 @@
 
 using namespace shard;
 
-LeftDenotationSymbol::LeftDenotationSymbol(gmt::Ref<StructSymbol> expectedType, gmt::Ref<SyntaxSymbol> parent)
+LeftDenotationSymbol::LeftDenotationSymbol(StructSymbol* expectedType, SyntaxSymbol* parent)
 	: SyntaxSymbol(gmt::intern(L""), SyntaxKind::Argument, parent), m_expectedType(expectedType) { }
 
-gmt::Ref<StructSymbol> LeftDenotationSymbol::get_expected_type() const
+StructSymbol* LeftDenotationSymbol::get_expected_type() const
 {
 	return m_expectedType;
 }
 
-void LeftDenotationSymbol::set_expected_type(gmt::Ref<StructSymbol> expectedType)
+void LeftDenotationSymbol::set_expected_type(StructSymbol* expectedType)
 {
 	m_expectedType = expectedType;
 }

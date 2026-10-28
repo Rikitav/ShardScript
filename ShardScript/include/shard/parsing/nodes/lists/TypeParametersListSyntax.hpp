@@ -5,7 +5,7 @@
 #include <shard/parsing/SyntaxToken.hpp>
 
 #include <gmt/Ref.hpp>
-#include <gmt/Span.hpp>
+#include <span>
 
 namespace shard
 {
@@ -14,7 +14,7 @@ namespace shard
 		SyntaxToken m_identifierToken;
 
 	public:
-		TypeParameterSyntax(gmt::Ref<SyntaxNode> parent);
+		TypeParameterSyntax(SyntaxNode* parent);
 		virtual ~TypeParameterSyntax() = default;
 
 		SyntaxToken get_identifier() const;
@@ -26,20 +26,20 @@ namespace shard
 
 	class SHARD_API TypeParametersListSyntax final : public SyntaxNode
 	{
-		gmt::Span<gmt::Ref<TypeParameterSyntax>> m_parameters;
+		std::span<TypeParameterSyntax*> m_parameters;
 
 		SyntaxToken m_openToken;
 		SyntaxToken m_closeToken;
 
 	public:
-		TypeParametersListSyntax(gmt::Ref<SyntaxNode> parent);
+		TypeParametersListSyntax(SyntaxNode* parent);
 		virtual ~TypeParametersListSyntax() = default;
 
-		gmt::Span<const gmt::Ref<TypeParameterSyntax>> get_parameters() const;
+		std::span<TypeParameterSyntax* const> get_parameters() const;
 		SyntaxToken get_open_token() const;
 		SyntaxToken get_close_token() const;
 
-		void set_parameters(gmt::Span<gmt::Ref<TypeParameterSyntax>> parameters);
+		void set_parameters(std::span<TypeParameterSyntax*> parameters);
 		void set_open_token(const SyntaxToken& token);
 		void set_close_token(const SyntaxToken& token);
 

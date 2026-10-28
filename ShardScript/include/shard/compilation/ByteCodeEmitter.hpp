@@ -58,7 +58,7 @@ namespace shard
 		PragmaticModel& m_pragmatic;
 		ByteCodeEncoder m_encoder;
 
-		gmt::Ref<MethodSymbol> m_generatingFor;
+		MethodSymbol* m_generatingFor = nullptr;
 		FrameLayout* m_layout = nullptr;
 		std::size_t m_methodStart = 0;
 
@@ -71,79 +71,79 @@ namespace shard
 		std::size_t m_maxEvalPayload = 0;
 		bool m_evalPoisoned = false;
 
-		gmt::vector<gmt::Ref<MethodSymbol>> m_entryPointCandidates;
+		gmt::vector<MethodSymbol*> m_entryPointCandidates;
 
-		gmt::vector<std::pair<gmt::Ref<const LambdaExpressionSyntax>, gmt::Ref<MethodSymbol>>> m_pendingLambdaBodies;
+		gmt::vector<std::pair<const LambdaExpressionSyntax*, MethodSymbol*>> m_pendingLambdaBodies;
 
 		// generic instantiations are monomorphized: each (open method, concrete
 		// type arguments) pair gets its own emitted body and materialized layout
-		gmt::vector<gmt::Ref<GenericMethodSymbol>> m_pendingInstantiations;
+		gmt::vector<GenericMethodSymbol*> m_pendingInstantiations;
 		gmt::unordered_set<std::size_t> m_enqueuedInstantiations;
-		gmt::Ref<GenericMethodSymbol> m_currentInstantiation;
+		GenericMethodSymbol* m_currentInstantiation = nullptr;
 		std::size_t m_instantiationsCreated = 0;
 		bool m_instantiationLimitReported = false;
 
-		const TypeShape* shape_of(gmt::Ref<StructSymbol> type);
-		std::size_t payload_of(gmt::Ref<StructSymbol> type);
+		const TypeShape* shape_of(StructSymbol* type);
+		std::size_t payload_of(StructSymbol* type);
 
 		void eval_push(std::size_t payload);
-		void eval_push_type(gmt::Ref<StructSymbol> type);
+		void eval_push_type(StructSymbol* type);
 		void eval_pop(std::size_t count = 1);
 
 		std::size_t mark_position() const;
 		void patch_jump(std::size_t at);
 		void patch_target(std::size_t at, std::size_t target);
 
-		std::optional<std::uint16_t> slot_of(gmt::Ref<SyntaxSymbol> symbol) const;
-		std::optional<std::uint16_t> scalar_field_slot(gmt::Ref<SyntaxSymbol> variable, gmt::Ref<FieldSymbol> field) const;
-		std::uint16_t allocate_temporary(gmt::Ref<StructSymbol> type, PlacementVerdict verdict);
-		std::uint32_t field_slot_index(gmt::Ref<FieldSymbol> field) const;
-		PlacementVerdict local_verdict(gmt::Ref<SyntaxSymbol> symbol) const;
-		PlacementVerdict site_verdict(gmt::Ref<const ExpressionSyntax> site) const;
+		std::optional<std::uint16_t> slot_of(SyntaxSymbol* symbol) const;
+		std::optional<std::uint16_t> scalar_field_slot(SyntaxSymbol* variable, FieldSymbol* field) const;
+		std::uint16_t allocate_temporary(StructSymbol* type, PlacementVerdict verdict);
+		std::uint32_t field_slot_index(FieldSymbol* field) const;
+		PlacementVerdict local_verdict(SyntaxSymbol* symbol) const;
+		PlacementVerdict site_verdict(const ExpressionSyntax* site) const;
 
-		void begin_method(gmt::Ref<MethodSymbol> method);
+		void begin_method(MethodSymbol* method);
 		void end_method();
-		void emit_body(gmt::Ref<const BlockSyntax> body);
-		void emit_accessor_body(gmt::Ref<AccessorSymbol> symbol);
-		bool method_supported(gmt::Ref<MethodSymbol> method, gmt::Ref<const SyntaxNode> blame);
+		void emit_body(const BlockSyntax* body);
+		void emit_accessor_body(AccessorSymbol* symbol);
+		bool method_supported(MethodSymbol* method, const SyntaxNode* blame);
 
-		gmt::Ref<StructSymbol> substitute_type(gmt::Ref<StructSymbol> type);
-		static gmt::Ref<StructSymbol> owner_type_of(gmt::Ref<MethodSymbol> method);
-		static bool is_generic_definition(gmt::Ref<MethodSymbol> method);
-		gmt::Ref<MethodSymbol> resolve_call_target(gmt::Ref<const SyntaxNode> node, gmt::Ref<MethodSymbol> method, gmt::Ref<StructSymbol> receiverType);
-		bool enqueue_instantiation(gmt::Ref<GenericMethodSymbol> instantiation);
+		StructSymbol* substitute_type(StructSymbol* type);
+		static StructSymbol* owner_type_of(MethodSymbol* method);
+		static bool is_generic_definition(MethodSymbol* method);
+		MethodSymbol* resolve_call_target(const SyntaxNode* node, MethodSymbol* method, StructSymbol* receiverType);
+		bool enqueue_instantiation(GenericMethodSymbol* instantiation);
 		void emit_pending_instantiations();
-		void emit_instantiation_body(gmt::Ref<GenericMethodSymbol> instantiation);
+		void emit_instantiation_body(GenericMethodSymbol* instantiation);
 
 		void emit_defer_drain(std::size_t count);
 		void emit_scope_defers();
 		void emit_loop_defers();
 		void emit_all_defers();
 		void register_defer();
-		void emit_defer_region(gmt::Ref<const SyntaxNode> bodyNode);
+		void emit_defer_region(const SyntaxNode* bodyNode);
 
-		void emit_condition_jump(gmt::Ref<const ExpressionSyntax> condition, bool jumpWhenTrue);
+		void emit_condition_jump(const ExpressionSyntax* condition, bool jumpWhenTrue);
 		void emit_assignment(const BinaryExpressionSyntax* node);
 		void emit_store_to(const ExpressionSyntax* target);
 		void emit_compound_assignment(const BinaryExpressionSyntax* node, TokenType arithmetic);
-		void emit_identifier_load(gmt::Ref<const SyntaxNode> node, gmt::Ref<const ExpressionSyntax> previous);
+		void emit_identifier_load(const SyntaxNode* node, const ExpressionSyntax* previous);
 		static bool is_identifier_target(const ExpressionSyntax* expression);
-		void emit_instance_field_load(gmt::Ref<FieldSymbol> field, gmt::Ref<const ExpressionSyntax> previous);
-		gmt::Ref<FieldSymbol> capture_field_of(gmt::Ref<SyntaxSymbol> bound) const;
-		void emit_method_call(gmt::Ref<MethodSymbol> method, gmt::Ref<const ExpressionSyntax> receiver, const ArgumentsListSyntax* arguments, bool receiverFirst);
-		void emit_method_call_into(gmt::Ref<MethodSymbol> method, gmt::Ref<const ExpressionSyntax> receiver, const ArgumentsListSyntax* arguments, std::uint16_t slot);
-		bool is_extension_call(gmt::Ref<MethodSymbol> method, gmt::Ref<const ExpressionSyntax> receiver, const ArgumentsListSyntax* arguments);
-		gmt::Ref<MethodSymbol> into_call_method(gmt::Ref<const ExpressionSyntax> expression);
+		void emit_instance_field_load(FieldSymbol* field, const ExpressionSyntax* previous);
+		FieldSymbol* capture_field_of(SyntaxSymbol* bound) const;
+		void emit_method_call(MethodSymbol* method, const ExpressionSyntax* receiver, const ArgumentsListSyntax* arguments, bool receiverFirst);
+		void emit_method_call_into(MethodSymbol* method, const ExpressionSyntax* receiver, const ArgumentsListSyntax* arguments, std::uint16_t slot);
+		bool is_extension_call(MethodSymbol* method, const ExpressionSyntax* receiver, const ArgumentsListSyntax* arguments);
+		MethodSymbol* into_call_method(const ExpressionSyntax* expression);
 		void emit_arguments_reversed(const ArgumentsListSyntax* arguments);
 		void emit_object_construction(const ObjectExpressionSyntax* node, std::optional<std::uint16_t> directSlot = std::nullopt);
 		void emit_range_cursor(const ExpressionSyntax* rangeExpression, std::uint16_t slot);
 		bool emit_arithmetic_op(TokenType type);
-		void emit_field_initializers(gmt::Ref<StructSymbol> ownerType);
+		void emit_field_initializers(StructSymbol* ownerType);
 
 		void pick_entry_points();
-		bool is_entry_point_candidate(gmt::Ref<MethodSymbol> method);
+		bool is_entry_point_candidate(MethodSymbol* method);
 
-		void unsupported(gmt::Ref<const SyntaxNode> blame, const wchar_t* feature);
+		void unsupported(const SyntaxNode* blame, const wchar_t* feature);
 
 	public:
 		ByteCodeEmitter(VirtualProgramImage& image, SemanticModel& model, PragmaticModel& pragmatic, DiagnosticsContext& diagnostics);

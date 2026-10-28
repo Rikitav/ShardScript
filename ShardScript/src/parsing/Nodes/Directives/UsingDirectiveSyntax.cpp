@@ -7,17 +7,17 @@
 
 using namespace shard;
 
-UsingDirectiveSyntax::UsingDirectiveSyntax(gmt::Ref<SyntaxNode> parent)
+UsingDirectiveSyntax::UsingDirectiveSyntax(SyntaxNode* parent)
 	: SyntaxNode(SyntaxKind::UsingDirective, parent) {}
 
-gmt::Span<const SyntaxToken> UsingDirectiveSyntax::get_qualifier() const
+std::span<const SyntaxToken> UsingDirectiveSyntax::get_qualifier() const
 {
 	return m_qualifier;
 }
 
 gmt::wstring UsingDirectiveSyntax::get_qualifier_string() const
 {
-	std::span<const SyntaxToken> qualifier = m_qualifier.as_span();
+	std::span<const SyntaxToken> qualifier = m_qualifier;
 	if (qualifier.empty())
 		return L"";
 
@@ -39,7 +39,7 @@ SyntaxToken UsingDirectiveSyntax::get_semicolon() const
 	return m_semicolon;
 }
 
-void UsingDirectiveSyntax::set_qualifier(gmt::Span<SyntaxToken> qualifier)
+void UsingDirectiveSyntax::set_qualifier(std::span<SyntaxToken> qualifier)
 {
 	m_qualifier = qualifier;
 }

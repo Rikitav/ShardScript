@@ -5,10 +5,10 @@
 
 using namespace shard;
 
-InvokationExpressionSyntax::InvokationExpressionSyntax(gmt::Ref<SyntaxNode> parent)
+InvokationExpressionSyntax::InvokationExpressionSyntax(SyntaxNode* parent)
 	: ExpressionSyntax(SyntaxKind::InvokationExpression, parent) { }
 
-gmt::Ref<const ExpressionSyntax> InvokationExpressionSyntax::get_previous() const
+const ExpressionSyntax* InvokationExpressionSyntax::get_previous() const
 {
 	return m_previous;
 }
@@ -23,17 +23,17 @@ SyntaxToken InvokationExpressionSyntax::get_identifier() const
 	return m_identifierToken;
 }
 
-gmt::Ref<const ArgumentsListSyntax> InvokationExpressionSyntax::get_arguments() const
+const ArgumentsListSyntax* InvokationExpressionSyntax::get_arguments() const
 {
 	return m_arguments;
 }
 
-gmt::Ref<const TypeArgumentsListSyntax> InvokationExpressionSyntax::get_type_arguments() const
+const TypeArgumentsListSyntax* InvokationExpressionSyntax::get_type_arguments() const
 {
 	return m_typeArguments;
 }
 
-void InvokationExpressionSyntax::set_previous(gmt::Ref<ExpressionSyntax> previous)
+void InvokationExpressionSyntax::set_previous(ExpressionSyntax* previous)
 {
 	m_previous = previous;
 }
@@ -48,28 +48,28 @@ void InvokationExpressionSyntax::set_identifier(const SyntaxToken& token)
 	m_identifierToken = token;
 }
 
-void InvokationExpressionSyntax::set_type_arguments(gmt::Ref<TypeArgumentsListSyntax> typeArguments)
+void InvokationExpressionSyntax::set_type_arguments(TypeArgumentsListSyntax* typeArguments)
 {
 	m_typeArguments = typeArguments;
 }
 
-void InvokationExpressionSyntax::set_arguments(gmt::Ref<ArgumentsListSyntax> arguments)
+void InvokationExpressionSyntax::set_arguments(ArgumentsListSyntax* arguments)
 {
 	m_arguments = arguments;
 }
 
 TextLocation InvokationExpressionSyntax::get_location() const
 {
-	if (!m_previous.is_null())
+	if (!(m_previous == nullptr))
 	{
-		if (!m_arguments.is_null())
-			return TextLocation(m_previous.as_ptr()->get_location(), m_arguments.as_ptr()->get_close_token());
+		if (!(m_arguments == nullptr))
+			return TextLocation(m_previous->get_location(), m_arguments->get_close_token());
 
-		return TextLocation(m_previous.as_ptr()->get_location(), m_identifierToken);
+		return TextLocation(m_previous->get_location(), m_identifierToken);
 	}
 
-	if (!m_arguments.is_null())
-		return TextLocation(m_identifierToken, m_arguments.as_ptr()->get_location());
+	if (!(m_arguments == nullptr))
+		return TextLocation(m_identifierToken, m_arguments->get_location());
 
 	return m_identifierToken.get_location();
 }

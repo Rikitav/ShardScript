@@ -22,7 +22,7 @@ namespace shard
 	public:
 		struct Entry
 		{
-			gmt::Ref<SyntaxSymbol> symbol; // nullref marks an empty slot
+			SyntaxSymbol* symbol = nullptr; // nullref marks an empty slot
 			const std::uint64_t* words = nullptr;
 			std::uint16_t count = 0;
 		};
@@ -85,7 +85,7 @@ namespace shard
 		SymbolInterner(const SymbolInterner&) = delete;
 		SymbolInterner& operator=(const SymbolInterner&) = delete;
 
-		gmt::Ref<SyntaxSymbol> find(const std::uint64_t* words, std::uint16_t count) const;
-		void insert(const std::uint64_t* words, std::uint16_t count, gmt::Ref<SyntaxSymbol> symbol);
+		SyntaxSymbol* find(const std::uint64_t* words, std::uint16_t count) const;
+		void insert(const std::uint64_t* words, std::uint16_t count, SyntaxSymbol* symbol);
 	};
 }

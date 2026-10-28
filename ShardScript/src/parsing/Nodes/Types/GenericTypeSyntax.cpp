@@ -8,44 +8,44 @@
 
 using namespace shard;
 
-GenericTypeSyntax::GenericTypeSyntax(gmt::Ref<SyntaxNode> parent)
+GenericTypeSyntax::GenericTypeSyntax(SyntaxNode* parent)
 	: TypeSyntax(SyntaxKind::GenericType, parent) { }
 
-gmt::Ref<const TypeSyntax> GenericTypeSyntax::get_underlaying_type() const
+const TypeSyntax* GenericTypeSyntax::get_underlaying_type() const
 {
 	return m_underlayingType;
 }
 
-gmt::Ref<const TypeArgumentsListSyntax> GenericTypeSyntax::get_type_arguments() const
+const TypeArgumentsListSyntax* GenericTypeSyntax::get_type_arguments() const
 {
 	return m_typeArguments;
 }
 
-void GenericTypeSyntax::set_underlaying_type(gmt::Ref<TypeSyntax> underlayingType)
+void GenericTypeSyntax::set_underlaying_type(TypeSyntax* underlayingType)
 {
 	m_underlayingType = underlayingType;
 }
 
-void GenericTypeSyntax::set_type_arguments(gmt::Ref<TypeArgumentsListSyntax> typeArguments)
+void GenericTypeSyntax::set_type_arguments(TypeArgumentsListSyntax* typeArguments)
 {
 	m_typeArguments = typeArguments;
 }
 
 gmt::wstring GenericTypeSyntax::get_qualifier() const
 {
-	if (m_underlayingType.is_null())
+	if ((m_underlayingType == nullptr))
 		return L"";
 
 	std::wstringstream qualifier;
-	qualifier << m_underlayingType.as_ptr()->get_qualifier() << L"<";
+	qualifier << m_underlayingType->get_qualifier() << L"<";
 
-	std::span<const gmt::Ref<TypeSyntax>> arguments = m_typeArguments.as_ptr()->get_types().as_span();
+	std::span<TypeSyntax* const> arguments = m_typeArguments->get_types();
 	if (!arguments.empty())
 	{
 		for (std::size_t i = 0; i < arguments.size() - 1; ++i)
-			qualifier << arguments[i].as_ptr()->get_qualifier() << L", ";
+			qualifier << arguments[i]->get_qualifier() << L", ";
 
-		qualifier << arguments.back().as_ptr()->get_qualifier();
+		qualifier << arguments.back()->get_qualifier();
 	}
 
 	qualifier << L">";
@@ -54,12 +54,12 @@ gmt::wstring GenericTypeSyntax::get_qualifier() const
 
 TextLocation GenericTypeSyntax::get_location() const
 {
-	if (!m_underlayingType.is_null())
+	if (!(m_underlayingType == nullptr))
 	{
-		if (!m_typeArguments.is_null())
-			return TextLocation(m_underlayingType.as_ptr()->get_location(), m_typeArguments.as_ptr()->get_close_token());
+		if (!(m_typeArguments == nullptr))
+			return TextLocation(m_underlayingType->get_location(), m_typeArguments->get_close_token());
 
-		return m_underlayingType.as_ptr()->get_location();
+		return m_underlayingType->get_location();
 	}
 
 	return TextLocation();

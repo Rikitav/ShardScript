@@ -75,12 +75,12 @@ void ControlFlowAnalyzer::visit_function_declaration(const FunctionDeclarationSy
 	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<MethodSymbol> symbol = lookup_symbol<MethodSymbol>(*nodeRef);
-	if (symbol.is_null())
+	MethodSymbol* symbol = lookup_symbol<MethodSymbol>(*nodeRef);
+	if ((symbol == nullptr))
 		return;
 
-	gmt::Ref<const BlockSyntax> body = node->get_body();
-	if (body.is_null())
+	const BlockSyntax* body = node->get_body();
+	if ((body == nullptr))
 		return;
 
 	enter_member_body(symbol);
@@ -102,12 +102,12 @@ void ControlFlowAnalyzer::visit_operator_declaration(const OperatorDeclarationSy
 	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<MethodSymbol> symbol = lookup_symbol<MethodSymbol>(*nodeRef);
-	if (symbol.is_null())
+	MethodSymbol* symbol = lookup_symbol<MethodSymbol>(*nodeRef);
+	if ((symbol == nullptr))
 		return;
 
-	gmt::Ref<const BlockSyntax> body = node->get_body();
-	if (body.is_null())
+	const BlockSyntax* body = node->get_body();
+	if ((body == nullptr))
 		return;
 
 	enter_member_body(symbol);
@@ -129,12 +129,12 @@ void ControlFlowAnalyzer::visit_constructor_declaration(const ConstructorDeclara
 	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<ConstructorSymbol> symbol = lookup_symbol<ConstructorSymbol>(*nodeRef);
-	if (symbol.is_null())
+	ConstructorSymbol* symbol = lookup_symbol<ConstructorSymbol>(*nodeRef);
+	if ((symbol == nullptr))
 		return;
 
-	gmt::Ref<const BlockSyntax> body = node->get_body();
-	if (body.is_null())
+	const BlockSyntax* body = node->get_body();
+	if ((body == nullptr))
 		return;
 
 	enter_member_body(symbol);
@@ -154,15 +154,15 @@ void ControlFlowAnalyzer::visit_lambda_expression(const LambdaExpressionSyntax* 
 		return;
 
 	// the anonymous method symbol is bound to the lambda's parameters list node
-	gmt::Ref<MethodSymbol> symbol;
-	if (!node->get_parameters().is_null())
+	MethodSymbol* symbol = nullptr;
+	if (!(node->get_parameters() == nullptr))
 		symbol = lookup_symbol<MethodSymbol>(node->get_parameters());
 
-	if (symbol.is_null())
+	if ((symbol == nullptr))
 		return;
 
-	gmt::Ref<const BlockSyntax> body = node->get_body();
-	if (body.is_null())
+	const BlockSyntax* body = node->get_body();
+	if ((body == nullptr))
 		return;
 
 	enter_member_body(symbol);
@@ -175,12 +175,12 @@ void ControlFlowAnalyzer::visit_lambda_expression(const LambdaExpressionSyntax* 
 	leave_member_body(symbol);
 }
 
-void ControlFlowAnalyzer::declare_parameters(gmt::Ref<MethodSymbol> method)
+void ControlFlowAnalyzer::declare_parameters(MethodSymbol* method)
 {
-	for (const gmt::Ref<TypeParameterSymbol>& typeParameter : method->get_type_parameters())
+	for (TypeParameterSymbol* const& typeParameter : method->get_type_parameters())
 		get_current_scope()->declare_symbol(typeParameter);
 
-	for (const gmt::Ref<ParameterSymbol>& parameter : method->get_parameters())
+	for (ParameterSymbol* const& parameter : method->get_parameters())
 	{
 		get_current_scope()->declare_symbol(parameter);
 		mark_assigned(parameter);
@@ -191,9 +191,9 @@ void ControlFlowAnalyzer::declare_parameters(gmt::Ref<MethodSymbol> method)
 //  Body analysis
 // =====================================================================
 
-void ControlFlowAnalyzer::analyze_member_body(gmt::Ref<MethodSymbol> method, gmt::Ref<const BlockSyntax> body, const TextLocation& errorLocation)
+void ControlFlowAnalyzer::analyze_member_body(MethodSymbol* method, const BlockSyntax* body, const TextLocation& errorLocation)
 {
-	if (body.is_null())
+	if ((body == nullptr))
 		return;
 
 	bool wasAsync = m_currentMethodIsAsync;
@@ -211,8 +211,8 @@ void ControlFlowAnalyzer::analyze_member_body(gmt::Ref<MethodSymbol> method, gmt
 	if (method->get_is_async())
 		return;
 
-	gmt::Ref<StructSymbol> returnType = method->get_return_type();
-	if (returnType.is_null())
+	StructSymbol* returnType = method->get_return_type();
+	if ((returnType == nullptr))
 		return;
 
 	bool returnsVoid = returnType == get_symbol_table().get_void_primitive();
@@ -230,7 +230,7 @@ void ControlFlowAnalyzer::analyze_member_body(gmt::Ref<MethodSymbol> method, gmt
 	TextLocation location = errorLocation;
 	if (body->get_kind() == SyntaxKind::StatementsBlock)
 	{
-		gmt::Ref<const StatementsBlockSyntax> block = body.as<const StatementsBlockSyntax>();
+		const StatementsBlockSyntax* block = static_cast<const StatementsBlockSyntax*>(body);
 		if (block->get_close_bracket().get_type() == TokenType::CloseBrace)
 			location = block->get_close_bracket().get_location();
 	}
@@ -238,9 +238,9 @@ void ControlFlowAnalyzer::analyze_member_body(gmt::Ref<MethodSymbol> method, gmt
 	report_missing_return(location, returnType);
 }
 
-void ControlFlowAnalyzer::report_missing_return(const TextLocation& location, gmt::Ref<StructSymbol> returnType)
+void ControlFlowAnalyzer::report_missing_return(const TextLocation& location, StructSymbol* returnType)
 {
-	if (returnType.is_null())
+	if ((returnType == nullptr))
 	{
 		get_diagnostics().report_error(location, L"Method must return a value");
 		return;
@@ -290,18 +290,18 @@ ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::without_throws(FlowState sta
 	return result;
 }
 
-ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_statement(gmt::Ref<const StatementSyntax> node)
+ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_statement(const StatementSyntax* node)
 {
-	if (node.is_null())
+	if ((node == nullptr))
 		return FlowState::Normal;
 
 	switch (node->get_kind())
 	{
 		case SyntaxKind::ExpressionStatement:
 		{
-			gmt::Ref<const ExpressionStatementSyntax> statement = node.as<const ExpressionStatementSyntax>();
-			gmt::Ref<const ExpressionSyntax> expression = statement->get_expression();
-			if (!expression.is_null())
+			const ExpressionStatementSyntax* statement = static_cast<const ExpressionStatementSyntax*>(node);
+			const ExpressionSyntax* expression = statement->get_expression();
+			if (!(expression == nullptr))
 			{
 				analyze_expression_for_assignment(expression);
 				analyze_expression_for_use(expression);
@@ -313,8 +313,8 @@ ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_statement(gmt::Ref<c
 
 		case SyntaxKind::VariableStatement:
 		{
-			gmt::Ref<const VariableStatementSyntax> statement = node.as<const VariableStatementSyntax>();
-			if (!statement->get_expression().is_null())
+			const VariableStatementSyntax* statement = static_cast<const VariableStatementSyntax*>(node);
+			if (!(statement->get_expression() == nullptr))
 				scan_expression(statement->get_expression());
 
 			analyze_variable_statement(statement);
@@ -323,7 +323,7 @@ ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_statement(gmt::Ref<c
 
 		case SyntaxKind::BreakStatement:
 		{
-			gmt::Ref<const BreakStatementSyntax> statement = node.as<const BreakStatementSyntax>();
+			const BreakStatementSyntax* statement = static_cast<const BreakStatementSyntax*>(node);
 			if (m_loopDepth == 0)
 				get_diagnostics().report_error(statement->get_break_keyword(), L"Break statement must be inside a loop");
 
@@ -332,7 +332,7 @@ ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_statement(gmt::Ref<c
 
 		case SyntaxKind::ContinueStatement:
 		{
-			gmt::Ref<const ContinueStatementSyntax> statement = node.as<const ContinueStatementSyntax>();
+			const ContinueStatementSyntax* statement = static_cast<const ContinueStatementSyntax*>(node);
 			if (m_loopDepth == 0)
 				get_diagnostics().report_error(statement->get_continue_keyword(), L"Continue statement must be inside a loop");
 
@@ -341,9 +341,9 @@ ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_statement(gmt::Ref<c
 
 		case SyntaxKind::DeferStatement:
 		{
-			gmt::Ref<const DeferStatementSyntax> statement = node.as<const DeferStatementSyntax>();
-			gmt::Ref<const ExpressionSyntax> expression = statement->get_expression();
-			if (!expression.is_null())
+			const DeferStatementSyntax* statement = static_cast<const DeferStatementSyntax*>(node);
+			const ExpressionSyntax* expression = statement->get_expression();
+			if (!(expression == nullptr))
 			{
 				analyze_expression_for_assignment(expression);
 				analyze_expression_for_use(expression);
@@ -355,18 +355,18 @@ ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_statement(gmt::Ref<c
 
 		case SyntaxKind::DeferBlock:
 		{
-			gmt::Ref<const DeferBlockSyntax> statement = node.as<const DeferBlockSyntax>();
+			const DeferBlockSyntax* statement = static_cast<const DeferBlockSyntax*>(node);
 			analyze_statements_block(statement->get_block());
 			return FlowState::Normal;
 		}
 
 		case SyntaxKind::DeferVariable:
 		{
-			gmt::Ref<const DeferVariableSyntax> statement = node.as<const DeferVariableSyntax>();
-			gmt::Ref<const VariableStatementSyntax> variable = statement->get_variable();
-			if (!variable.is_null())
+			const DeferVariableSyntax* statement = static_cast<const DeferVariableSyntax*>(node);
+			const VariableStatementSyntax* variable = statement->get_variable();
+			if (!(variable == nullptr))
 			{
-				if (!variable->get_expression().is_null())
+				if (!(variable->get_expression() == nullptr))
 					scan_expression(variable->get_expression());
 
 				analyze_variable_statement(variable);
@@ -377,8 +377,8 @@ ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_statement(gmt::Ref<c
 
 		case SyntaxKind::WhileStatement:
 		{
-			gmt::Ref<const WhileStatementSyntax> statement = node.as<const WhileStatementSyntax>();
-			if (!statement->get_condition().is_null())
+			const WhileStatementSyntax* statement = static_cast<const WhileStatementSyntax*>(node);
+			if (!(statement->get_condition() == nullptr))
 				scan_expression(statement->get_condition());
 
 			analyze_loop_body(statement->get_block());
@@ -387,8 +387,8 @@ ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_statement(gmt::Ref<c
 
 		case SyntaxKind::UntilStatement:
 		{
-			gmt::Ref<const UntilStatementSyntax> statement = node.as<const UntilStatementSyntax>();
-			if (!statement->get_condition().is_null())
+			const UntilStatementSyntax* statement = static_cast<const UntilStatementSyntax*>(node);
+			if (!(statement->get_condition() == nullptr))
 				scan_expression(statement->get_condition());
 
 			analyze_loop_body(statement->get_block());
@@ -397,8 +397,8 @@ ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_statement(gmt::Ref<c
 
 		case SyntaxKind::ForInStatement:
 		{
-			gmt::Ref<const ForInStatementSyntax> statement = node.as<const ForInStatementSyntax>();
-			if (!statement->get_range_expression().is_null())
+			const ForInStatementSyntax* statement = static_cast<const ForInStatementSyntax*>(node);
+			if (!(statement->get_range_expression() == nullptr))
 				scan_expression(statement->get_range_expression());
 
 			// the loop variable is assigned by the enumeration itself
@@ -411,36 +411,36 @@ ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_statement(gmt::Ref<c
 		case SyntaxKind::IfStatement:
 		case SyntaxKind::UnlessStatement:
 		case SyntaxKind::ElseStatement:
-			return analyze_conditional_chain(node.as<const ConditionalClauseBaseSyntax>());
+			return analyze_conditional_chain(static_cast<const ConditionalClauseBaseSyntax*>(node));
 
 		case SyntaxKind::TryStatement:
-			return analyze_try_statement(node.as<const TryStatementSyntax>());
+			return analyze_try_statement(static_cast<const TryStatementSyntax*>(node));
 
 		case SyntaxKind::ReturnStatement:
 		{
-			gmt::Ref<const ReturnStatementSyntax> statement = node.as<const ReturnStatementSyntax>();
-			if (!statement->get_expression().is_null())
+			const ReturnStatementSyntax* statement = static_cast<const ReturnStatementSyntax*>(node);
+			if (!(statement->get_expression() == nullptr))
 				scan_expression(statement->get_expression());
 
 			return FlowState::Returns;
 		}
 
 		case SyntaxKind::ThrowStatement:
-			return analyze_throw_statement(node.as<const ThrowStatementSyntax>());
+			return analyze_throw_statement(static_cast<const ThrowStatementSyntax*>(node));
 
 		default:
 			return FlowState::Normal;
 	}
 }
 
-ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_statements_block(gmt::Ref<const StatementsBlockSyntax> node)
+ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_statements_block(const StatementsBlockSyntax* node)
 {
-	if (node.is_null())
+	if ((node == nullptr))
 		return FlowState::Normal;
 
 	FlowState combined = FlowState::Normal;
 
-	for (const gmt::Ref<StatementSyntax>& statement : node->get_statements().as_span())
+	for (StatementSyntax* const& statement : node->get_statements())
 	{
 		if (is_terminal(combined))
 		{
@@ -456,72 +456,72 @@ ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_statements_block(gmt
 	return combined;
 }
 
-ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_body(gmt::Ref<const BlockSyntax> body)
+ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_body(const BlockSyntax* body)
 {
-	if (body.is_null())
+	if ((body == nullptr))
 		return FlowState::Normal;
 
 	if (body->get_kind() == SyntaxKind::ArrowClause)
 	{
-		gmt::Ref<const ArrowClauseSyntax> arrow = body.as<const ArrowClauseSyntax>();
+		const ArrowClauseSyntax* arrow = static_cast<const ArrowClauseSyntax*>(body);
 		scan_expression(arrow->get_expression());
 		return FlowState::Normal;
 	}
 
-	return analyze_statements_block(body.as<const StatementsBlockSyntax>());
+	return analyze_statements_block(static_cast<const StatementsBlockSyntax*>(body));
 }
 
-ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_conditional_chain(gmt::Ref<const ConditionalClauseBaseSyntax> node)
+ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_conditional_chain(const ConditionalClauseBaseSyntax* node)
 {
-	if (node.is_null())
+	if ((node == nullptr))
 		return FlowState::Normal;
 
 	if (node->get_kind() == SyntaxKind::ElseStatement)
 	{
-		gmt::Ref<const ElseStatementSyntax> elseClause = node.as<const ElseStatementSyntax>();
+		const ElseStatementSyntax* elseClause = static_cast<const ElseStatementSyntax*>(node);
 
-		FlowState elseState = elseClause->get_block().is_null()
+		FlowState elseState = (elseClause->get_block() == nullptr)
 			? FlowState::Normal
 			: analyze_statements_block(elseClause->get_block());
 
-		if (!elseClause->get_next().is_null())
+		if (!(elseClause->get_next() == nullptr))
 			elseState = merge_branches(elseState, analyze_conditional_chain(elseClause->get_next()));
 
 		return elseState;
 	}
 
-	gmt::Ref<const ConditionalClauseSyntax> clause = node.as<const ConditionalClauseSyntax>();
-	if (!clause->get_condition().is_null())
+	const ConditionalClauseSyntax* clause = static_cast<const ConditionalClauseSyntax*>(node);
+	if (!(clause->get_condition() == nullptr))
 		scan_expression(clause->get_condition());
 
-	FlowState thenState = clause->get_block().is_null()
+	FlowState thenState = (clause->get_block() == nullptr)
 		? FlowState::Normal
 		: analyze_statements_block(clause->get_block());
 
 	FlowState elseState = FlowState::Normal;
-	if (!clause->get_next().is_null())
+	if (!(clause->get_next() == nullptr))
 		elseState = analyze_conditional_chain(clause->get_next());
 
 	return merge_branches(thenState, elseState);
 }
 
-ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_try_statement(gmt::Ref<const TryStatementSyntax> node)
+ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_try_statement(const TryStatementSyntax* node)
 {
-	if (node.is_null())
+	if ((node == nullptr))
 		return FlowState::Normal;
 
-	gmt::Span<const gmt::Ref<CatchClauseSyntax>> catchClauses = node->get_catch_clauses();
-	gmt::Ref<const StatementsBlockSyntax> tryBlock = node->get_try_block();
+	std::span<CatchClauseSyntax* const> catchClauses = node->get_catch_clauses();
+	const StatementsBlockSyntax* tryBlock = node->get_try_block();
 
-	bool hasCatch = catchClauses.length() > 0;
-	if (hasCatch && !tryBlock.is_null())
+	bool hasCatch = catchClauses.size() > 0;
+	if (hasCatch && !(tryBlock == nullptr))
 		push_try_catch(catchClauses);
 
-	FlowState tryState = tryBlock.is_null()
+	FlowState tryState = (tryBlock == nullptr)
 		? FlowState::Normal
 		: analyze_statements_block(tryBlock);
 
-	if (hasCatch && !tryBlock.is_null())
+	if (hasCatch && !(tryBlock == nullptr))
 		pop_try_catch();
 
 	if (!hasCatch)
@@ -534,9 +534,9 @@ ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_try_statement(gmt::R
 	FlowState catchState = FlowState::Normal;
 	bool firstCatch = true;
 
-	for (const gmt::Ref<CatchClauseSyntax>& clause : catchClauses.as_span())
+	for (CatchClauseSyntax* const& clause : catchClauses)
 	{
-		if (clause.is_null() || clause->get_body().is_null())
+		if ((clause == nullptr) || (clause->get_body() == nullptr))
 			continue;
 
 		// the catch variable is assigned by the runtime before the body runs
@@ -561,20 +561,20 @@ ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_try_statement(gmt::R
 	return merge_branches(tryState, catchState);
 }
 
-ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_throw_statement(gmt::Ref<const ThrowStatementSyntax> statement)
+ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_throw_statement(const ThrowStatementSyntax* statement)
 {
-	gmt::Ref<const ExpressionSyntax> expression = statement->get_expression();
-	if (!expression.is_null())
+	const ExpressionSyntax* expression = statement->get_expression();
+	if (!(expression == nullptr))
 		scan_expression(expression);
 
-	if (m_currentMethod.is_null())
+	if ((m_currentMethod == nullptr))
 		return FlowState::Throws;
 
 	MethodEffectSummary& effects = m_currentMethod->get_effect_summary();
 	effects.mayThrow = true;
 
-	gmt::Ref<StructSymbol> thrownType;
-	if (!expression.is_null())
+	StructSymbol* thrownType = nullptr;
+	if (!(expression == nullptr))
 	{
 		thrownType = get_model().get_expression_type(expression);
 	}
@@ -585,7 +585,7 @@ ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_throw_statement(gmt:
 	}
 
 	// thrown type is unknown; only the may-throw flag is recorded
-	if (thrownType.is_null())
+	if ((thrownType == nullptr))
 		return FlowState::Throws;
 
 	if (is_caught_by_active_try(thrownType))
@@ -599,23 +599,23 @@ ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_throw_statement(gmt:
 	return FlowState::Throws;
 }
 
-void ControlFlowAnalyzer::push_try_catch(gmt::Span<const gmt::Ref<CatchClauseSyntax>> clauses)
+void ControlFlowAnalyzer::push_try_catch(std::span<CatchClauseSyntax* const> clauses)
 {
 	TryCatchFrame frame;
 
-	for (const gmt::Ref<CatchClauseSyntax>& clause : clauses.as_span())
+	for (CatchClauseSyntax* const& clause : clauses)
 	{
-		if (clause.is_null())
+		if ((clause == nullptr))
 			continue;
 
-		if (clause->get_exception_type().is_null())
+		if ((clause->get_exception_type() == nullptr))
 		{
 			frame.catchesAll = true;
 			break;
 		}
 
-		gmt::Ref<StructSymbol> catchType = lookup_catch_type(clause);
-		if (catchType.is_null())
+		StructSymbol* catchType = lookup_catch_type(clause);
+		if ((catchType == nullptr))
 		{
 			// unresolved exception type; treat the clause as a catch-all
 			frame.catchesAll = true;
@@ -651,21 +651,21 @@ void ControlFlowAnalyzer::rebuild_effective_caught_types()
 		}
 		else
 		{
-			for (gmt::Ref<StructSymbol> type : frame.caughtTypes)
+			for (StructSymbol* type : frame.caughtTypes)
 				m_effectiveCaughtTypes.insert(type);
 		}
 	}
 }
 
-bool ControlFlowAnalyzer::is_caught_by_active_try(gmt::Ref<StructSymbol> thrownType)
+bool ControlFlowAnalyzer::is_caught_by_active_try(StructSymbol* thrownType)
 {
-	if (thrownType.is_null())
+	if ((thrownType == nullptr))
 		return false;
 
 	if (m_catchAllDepth > 0)
 		return true;
 
-	for (gmt::Ref<StructSymbol> catchType : m_effectiveCaughtTypes)
+	for (StructSymbol* catchType : m_effectiveCaughtTypes)
 	{
 		if (get_model().is_assignable_to(catchType, thrownType))
 			return true;
@@ -674,7 +674,7 @@ bool ControlFlowAnalyzer::is_caught_by_active_try(gmt::Ref<StructSymbol> thrownT
 	return false;
 }
 
-void ControlFlowAnalyzer::push_catch_exception(gmt::Ref<StructSymbol> type)
+void ControlFlowAnalyzer::push_catch_exception(StructSymbol* type)
 {
 	m_catchExceptionStack.push_back(type);
 }
@@ -685,26 +685,26 @@ void ControlFlowAnalyzer::pop_catch_exception()
 		m_catchExceptionStack.pop_back();
 }
 
-gmt::Ref<StructSymbol> ControlFlowAnalyzer::current_catch_exception_type() const
+StructSymbol* ControlFlowAnalyzer::current_catch_exception_type() const
 {
 	if (m_catchExceptionStack.empty())
-		return gmt::Ref<StructSymbol>();
+		return nullptr;
 
 	return m_catchExceptionStack.back();
 }
 
-gmt::Ref<StructSymbol> ControlFlowAnalyzer::lookup_catch_type(gmt::Ref<const CatchClauseSyntax> clause)
+StructSymbol* ControlFlowAnalyzer::lookup_catch_type(const CatchClauseSyntax* clause)
 {
-	gmt::Ref<const TypeSyntax> exceptionType = clause->get_exception_type();
-	if (exceptionType.is_null())
-		return gmt::Ref<StructSymbol>();
+	const TypeSyntax* exceptionType = clause->get_exception_type();
+	if ((exceptionType == nullptr))
+		return nullptr;
 
 	return lookup_symbol<StructSymbol>(exceptionType);
 }
 
-ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_loop_body(gmt::Ref<const StatementsBlockSyntax> body)
+ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_loop_body(const StatementsBlockSyntax* body)
 {
-	if (body.is_null())
+	if ((body == nullptr))
 		return FlowState::Normal;
 
 	++m_loopDepth;
@@ -717,65 +717,65 @@ ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_loop_body(gmt::Ref<c
 	return FlowState::Normal;
 }
 
-void ControlFlowAnalyzer::mark_assigned(gmt::Ref<SyntaxSymbol> variable)
+void ControlFlowAnalyzer::mark_assigned(SyntaxSymbol* variable)
 {
-	if (!variable.is_null())
+	if (!(variable == nullptr))
 		m_assignedVariables.insert(variable);
 }
 
-bool ControlFlowAnalyzer::is_assigned(gmt::Ref<SyntaxSymbol> variable) const
+bool ControlFlowAnalyzer::is_assigned(SyntaxSymbol* variable) const
 {
-	if (variable.is_null())
+	if ((variable == nullptr))
 		return false;
 
 	return m_assignedVariables.find(variable) != m_assignedVariables.end();
 }
 
-void ControlFlowAnalyzer::analyze_expression_for_assignment(gmt::Ref<const ExpressionSyntax> expression)
+void ControlFlowAnalyzer::analyze_expression_for_assignment(const ExpressionSyntax* expression)
 {
-	if (expression.is_null())
+	if ((expression == nullptr))
 		return;
 
 	if (expression->get_kind() != SyntaxKind::BinaryExpression)
 		return;
 
-	gmt::Ref<const BinaryExpressionSyntax> binary = expression.as<const BinaryExpressionSyntax>();
+	const BinaryExpressionSyntax* binary = static_cast<const BinaryExpressionSyntax*>(expression);
 	if (binary->get_operator_token().get_type() != TokenType::AssignOperator)
 		return;
 
-	gmt::Ref<const ExpressionSyntax> left = binary->get_left();
+	const ExpressionSyntax* left = binary->get_left();
 
 	// plain identifier targets are plain identifier type syntaxes
-	if (left.is_null() || left->get_kind() != SyntaxKind::IdentifierNameType)
+	if ((left == nullptr) || left->get_kind() != SyntaxKind::IdentifierNameType)
 		return;
 
-	gmt::Ref<SyntaxSymbol> symbol = get_symbol_table().lookup_symbol(left);
-	if (symbol.is_null())
+	SyntaxSymbol* symbol = get_symbol_table().lookup_symbol(left);
+	if ((symbol == nullptr))
 		return;
 
-	bool isLocal = !symbol.as<VariableSymbol>().is_null();
-	bool isParameter = !symbol.as<ParameterSymbol>().is_null();
+	bool isLocal = !(static_cast<VariableSymbol*>(symbol) == nullptr);
+	bool isParameter = !(static_cast<ParameterSymbol*>(symbol) == nullptr);
 	if (isLocal || isParameter)
 		mark_assigned(symbol);
 }
 
-void ControlFlowAnalyzer::analyze_expression_for_use(gmt::Ref<const ExpressionSyntax> expression)
+void ControlFlowAnalyzer::analyze_expression_for_use(const ExpressionSyntax* expression)
 {
-	if (expression.is_null())
+	if ((expression == nullptr))
 		return;
 
 	switch (expression->get_kind())
 	{
 		case SyntaxKind::IdentifierNameType:
 		{
-			gmt::Ref<const IdentifierNameTypeSyntax> identifier = expression.as<const IdentifierNameTypeSyntax>();
+			const IdentifierNameTypeSyntax* identifier = static_cast<const IdentifierNameTypeSyntax*>(expression);
 
-			gmt::Ref<SyntaxSymbol> symbol = get_symbol_table().lookup_symbol(identifier);
-			if (symbol.is_null())
+			SyntaxSymbol* symbol = get_symbol_table().lookup_symbol(identifier);
+			if ((symbol == nullptr))
 				break;
 
-			bool isLocal = !symbol.as<VariableSymbol>().is_null();
-			bool isParameter = !symbol.as<ParameterSymbol>().is_null();
+			bool isLocal = !(static_cast<VariableSymbol*>(symbol) == nullptr);
+			bool isParameter = !(static_cast<ParameterSymbol*>(symbol) == nullptr);
 			if (!isLocal && !isParameter)
 				break;
 
@@ -791,7 +791,7 @@ void ControlFlowAnalyzer::analyze_expression_for_use(gmt::Ref<const ExpressionSy
 
 		case SyntaxKind::BinaryExpression:
 		{
-			gmt::Ref<const BinaryExpressionSyntax> binary = expression.as<const BinaryExpressionSyntax>();
+			const BinaryExpressionSyntax* binary = static_cast<const BinaryExpressionSyntax*>(expression);
 			analyze_expression_for_use(binary->get_left());
 			analyze_expression_for_use(binary->get_right());
 			break;
@@ -802,46 +802,46 @@ void ControlFlowAnalyzer::analyze_expression_for_use(gmt::Ref<const ExpressionSy
 	}
 }
 
-void ControlFlowAnalyzer::analyze_variable_statement(gmt::Ref<const VariableStatementSyntax> node)
+void ControlFlowAnalyzer::analyze_variable_statement(const VariableStatementSyntax* node)
 {
-	if (node.is_null())
+	if ((node == nullptr))
 		return;
 
-	gmt::Ref<VariableSymbol> variable = lookup_symbol<VariableSymbol>(node);
-	if (variable.is_null())
+	VariableSymbol* variable = lookup_symbol<VariableSymbol>(node);
+	if ((variable == nullptr))
 		return;
 
-	if (node->get_expression().is_null())
+	if ((node->get_expression() == nullptr))
 		return;
 
 	analyze_expression_for_use(node->get_expression());
 	mark_assigned(variable);
 }
 
-void ControlFlowAnalyzer::enter_member_body(gmt::Ref<MethodSymbol> method)
+void ControlFlowAnalyzer::enter_member_body(MethodSymbol* method)
 {
 	m_methodStack.push_back(m_currentMethod);
 	m_currentMethod = method;
 
-	if (!method.is_null())
+	if (!(method == nullptr))
 		method->set_effects_computed(false);
 }
 
-void ControlFlowAnalyzer::leave_member_body(gmt::Ref<MethodSymbol> method)
+void ControlFlowAnalyzer::leave_member_body(MethodSymbol* method)
 {
-	if (!method.is_null())
+	if (!(method == nullptr))
 		method->set_effects_computed(true);
 
 	m_currentMethod = m_methodStack.back();
 	m_methodStack.pop_back();
 }
 
-void ControlFlowAnalyzer::scan_expression(gmt::Ref<const ExpressionSyntax> expression)
+void ControlFlowAnalyzer::scan_expression(const ExpressionSyntax* expression)
 {
-	if (expression.is_null())
+	if ((expression == nullptr))
 		return;
 
-	expression.as_ptr()->accept(*this);
+	expression->accept(*this);
 }
 
 bool ControlFlowAnalyzer::is_assignment_operator(TokenType type)
@@ -867,16 +867,16 @@ bool ControlFlowAnalyzer::is_increment_decrement_operator(TokenType type)
 	return type == TokenType::IncrementOperator || type == TokenType::DecrementOperator;
 }
 
-bool ControlFlowAnalyzer::is_this_expression(gmt::Ref<const ExpressionSyntax> expression)
+bool ControlFlowAnalyzer::is_this_expression(const ExpressionSyntax* expression)
 {
-	if (expression.is_null())
+	if ((expression == nullptr))
 		return false;
 
 	SyntaxKind kind = expression->get_kind();
 	if (kind == SyntaxKind::MemberAccessExpression)
 	{
-		gmt::Ref<const MemberAccessExpressionSyntax> memberAccess = expression.as<const MemberAccessExpressionSyntax>();
-		if (!memberAccess->get_previous().is_null())
+		const MemberAccessExpressionSyntax* memberAccess = static_cast<const MemberAccessExpressionSyntax*>(expression);
+		if (!(memberAccess->get_previous() == nullptr))
 			return false;
 	}
 	else if (kind != SyntaxKind::IdentifierNameType)
@@ -884,37 +884,37 @@ bool ControlFlowAnalyzer::is_this_expression(gmt::Ref<const ExpressionSyntax> ex
 		return false;
 	}
 
-	if (expression.is_null())
+	if ((expression == nullptr))
 		return false;
 
-	gmt::Ref<ParameterSymbol> parameter = lookup_symbol<ParameterSymbol>(expression);
-	return !parameter.is_null() && parameter->get_name() == L"this";
+	ParameterSymbol* parameter = lookup_symbol<ParameterSymbol>(expression);
+	return !(parameter == nullptr) && parameter->get_name() == L"this";
 }
 
-void ControlFlowAnalyzer::record_field_or_property_write(gmt::Ref<const MemberAccessExpressionSyntax> node)
+void ControlFlowAnalyzer::record_field_or_property_write(const MemberAccessExpressionSyntax* node)
 {
-	if (node.is_null() || m_currentMethod.is_null())
+	if ((node == nullptr) || (m_currentMethod == nullptr))
 		return;
 
-	gmt::Ref<SyntaxSymbol> bound = get_symbol_table().lookup_symbol(node);
-	if (bound.is_null())
+	SyntaxSymbol* bound = get_symbol_table().lookup_symbol(node);
+	if ((bound == nullptr))
 		return;
 
-	gmt::Ref<FieldSymbol> field = bound.as<FieldSymbol>();
-	gmt::Ref<PropertySymbol> property = bound.as<PropertySymbol>();
+	FieldSymbol* field = static_cast<FieldSymbol*>(bound);
+	PropertySymbol* property = static_cast<PropertySymbol*>(bound);
 
 	bool isStatic = false;
-	if (!field.is_null())
+	if (!(field == nullptr))
 		isStatic = field->get_linking() == LINK_STATIC;
-	else if (!property.is_null())
+	else if (!(property == nullptr))
 		isStatic = property->get_linking() == LINK_STATIC;
 
 	bool isThisReceiver = !isStatic;
-	isThisReceiver = isThisReceiver && (node->get_previous().is_null() || is_this_expression(node->get_previous()));
+	isThisReceiver = isThisReceiver && ((node->get_previous() == nullptr) || is_this_expression(node->get_previous()));
 
 	MethodEffectSummary& effects = m_currentMethod->get_effect_summary();
 
-	if (!field.is_null())
+	if (!(field == nullptr))
 	{
 		if (isStatic)
 		{
@@ -927,7 +927,7 @@ void ControlFlowAnalyzer::record_field_or_property_write(gmt::Ref<const MemberAc
 			effects.mayAssignInstanceFields.insert(field);
 		}
 	}
-	else if (!property.is_null())
+	else if (!(property == nullptr))
 	{
 		// a property write is a call to the setter accessor; record its effects
 		if (isStatic)
@@ -935,25 +935,25 @@ void ControlFlowAnalyzer::record_field_or_property_write(gmt::Ref<const MemberAc
 		else if (isThisReceiver)
 			effects.mutatesInstance = true;
 
-		gmt::Ref<AccessorSymbol> setter = property->get_setter();
-		if (!setter.is_null())
+		AccessorSymbol* setter = property->get_setter();
+		if (!(setter == nullptr))
 			record_callee_effects(setter, node->get_identifier());
 	}
 }
 
-void ControlFlowAnalyzer::record_indexator_write(gmt::Ref<const IndexatorExpressionSyntax> node)
+void ControlFlowAnalyzer::record_indexator_write(const IndexatorExpressionSyntax* node)
 {
-	if (node.is_null() || m_currentMethod.is_null())
+	if ((node == nullptr) || (m_currentMethod == nullptr))
 		return;
 
-	gmt::Ref<SyntaxSymbol> bound = get_symbol_table().lookup_symbol(node);
-	gmt::Ref<PropertySymbol> property = bound.as<PropertySymbol>();
+	SyntaxSymbol* bound = get_symbol_table().lookup_symbol(node);
+	PropertySymbol* property = static_cast<PropertySymbol*>(bound);
 
-	bool isStatic = !property.is_null();
+	bool isStatic = !(property == nullptr);
 	isStatic = isStatic && property->get_linking() == LINK_STATIC;
 
 	bool isThisReceiver = !isStatic;
-	isThisReceiver = isThisReceiver && (node->get_previous().is_null() || is_this_expression(node->get_previous()));
+	isThisReceiver = isThisReceiver && ((node->get_previous() == nullptr) || is_this_expression(node->get_previous()));
 
 	MethodEffectSummary& effects = m_currentMethod->get_effect_summary();
 
@@ -963,19 +963,19 @@ void ControlFlowAnalyzer::record_indexator_write(gmt::Ref<const IndexatorExpress
 		effects.mutatesInstance = true;
 
 	// merge setter effects if the indexer symbol is known
-	if (!property.is_null())
+	if (!(property == nullptr))
 	{
-		gmt::Ref<AccessorSymbol> setter = property->get_setter();
-		if (!setter.is_null())
+		AccessorSymbol* setter = property->get_setter();
+		if (!(setter == nullptr))
 			record_callee_effects(setter, node->get_delimeter_token());
 	}
 }
 
-void ControlFlowAnalyzer::record_callee_effects(gmt::Ref<MethodSymbol> callee, const SyntaxToken& callSite, bool isAwaited, bool isTryWrapped)
+void ControlFlowAnalyzer::record_callee_effects(MethodSymbol* callee, const SyntaxToken& callSite, bool isAwaited, bool isTryWrapped)
 {
 	// a null callee records an unknown call site (delegate or unresolved call)
 	// that still requires an explicit 'try' or an enclosing try-catch
-	if (m_currentMethod.is_null())
+	if ((m_currentMethod == nullptr))
 		return;
 
 	CallEdge edge;
@@ -989,17 +989,17 @@ void ControlFlowAnalyzer::record_callee_effects(gmt::Ref<MethodSymbol> callee, c
 	m_callGraph[m_currentMethod].push_back(std::move(edge));
 }
 
-bool ControlFlowAnalyzer::is_try_wrapped(gmt::Ref<const ExpressionSyntax> expression) const
+bool ControlFlowAnalyzer::is_try_wrapped(const ExpressionSyntax* expression) const
 {
 	return m_tryWrappedExpressions.find(expression) != m_tryWrappedExpressions.end();
 }
 
-void ControlFlowAnalyzer::add_thrown_type(gmt::unordered_set<gmt::Ref<StructSymbol>>& thrownTypes, gmt::Ref<StructSymbol> type)
+void ControlFlowAnalyzer::add_thrown_type(gmt::unordered_set<StructSymbol*>& thrownTypes, StructSymbol* type)
 {
-	if (type.is_null())
+	if ((type == nullptr))
 		return;
 
-	for (gmt::Ref<StructSymbol> existing : thrownTypes)
+	for (StructSymbol* existing : thrownTypes)
 	{
 		bool sameType = existing == type;
 
@@ -1013,15 +1013,15 @@ void ControlFlowAnalyzer::add_thrown_type(gmt::unordered_set<gmt::Ref<StructSymb
 	thrownTypes.insert(type);
 }
 
-bool ControlFlowAnalyzer::call_edge_catches(const CallEdge& edge, gmt::Ref<StructSymbol> thrownType)
+bool ControlFlowAnalyzer::call_edge_catches(const CallEdge& edge, StructSymbol* thrownType)
 {
-	if (thrownType.is_null())
+	if ((thrownType == nullptr))
 		return false;
 
 	if (edge.catchesAll)
 		return true;
 
-	for (gmt::Ref<StructSymbol> catchType : edge.caughtTypes)
+	for (StructSymbol* catchType : edge.caughtTypes)
 	{
 		if (get_model().is_assignable_to(catchType, thrownType))
 			return true;
@@ -1039,16 +1039,16 @@ void ControlFlowAnalyzer::propagate_effects()
 
 		for (auto& pair : m_callGraph)
 		{
-			gmt::Ref<MethodSymbol> caller = pair.first;
-			if (caller.is_null())
+			MethodSymbol* caller = pair.first;
+			if ((caller == nullptr))
 				continue;
 
 			MethodEffectSummary previous = caller->get_effect_summary();
 
 			for (const CallEdge& edge : pair.second)
 			{
-				gmt::Ref<MethodSymbol> callee = edge.callee;
-				if (callee.is_null())
+				MethodSymbol* callee = edge.callee;
+				if ((callee == nullptr))
 					continue;
 
 				MethodEffectSummary& callerEffects = caller->get_effect_summary();
@@ -1060,7 +1060,7 @@ void ControlFlowAnalyzer::propagate_effects()
 				callerEffects.mutatesArguments = callerEffects.mutatesArguments || calleeEffects.mutatesArguments;
 				callerEffects.hasUnknownSideEffects = callerEffects.hasUnknownSideEffects || calleeEffects.hasUnknownSideEffects;
 
-				gmt::unordered_set<gmt::Ref<StructSymbol>>* targetThrownSet = caller->get_is_async()
+				gmt::unordered_set<StructSymbol*>* targetThrownSet = caller->get_is_async()
 					? &callerEffects.asyncThrownTypes
 					: &callerEffects.thrownTypes;
 
@@ -1069,7 +1069,7 @@ void ControlFlowAnalyzer::propagate_effects()
 					// awaiting an async method surfaces the exceptions captured in its task
 					if (edge.isAwaited)
 					{
-						for (gmt::Ref<StructSymbol> thrownType : calleeEffects.asyncThrownTypes)
+						for (StructSymbol* thrownType : calleeEffects.asyncThrownTypes)
 						{
 							if (!call_edge_catches(edge, thrownType))
 							{
@@ -1084,7 +1084,7 @@ void ControlFlowAnalyzer::propagate_effects()
 				{
 					// only exception types that are not caught at the call site propagate;
 					// 'try'-wrapped calls inherit the callee's exceptions as their own effect
-					for (gmt::Ref<StructSymbol> thrownType : calleeEffects.thrownTypes)
+					for (StructSymbol* thrownType : calleeEffects.thrownTypes)
 					{
 						if (!call_edge_catches(edge, thrownType))
 						{
@@ -1102,7 +1102,7 @@ void ControlFlowAnalyzer::propagate_effects()
 
 	for (auto& pair : m_callGraph)
 	{
-		if (!pair.first.is_null())
+		if (!(pair.first == nullptr))
 			pair.first->set_effects_computed(true);
 	}
 
@@ -1117,7 +1117,7 @@ void ControlFlowAnalyzer::report_effect_diagnostics()
 		{
 			// the callee is unknown (delegate or unresolved call); such a call
 			// may throw as well, so it requires an explicit 'try' as well
-			if (edge.callee.is_null())
+			if ((edge.callee == nullptr))
 			{
 				if (!edge.isTryWrapped)
 					get_diagnostics().report_error(edge.callSite, L"Call may throw an exception");
@@ -1132,9 +1132,9 @@ void ControlFlowAnalyzer::report_effect_diagnostics()
 
 void ControlFlowAnalyzer::report_edge_diagnostics(const CallEdge& edge)
 {
-	gmt::Ref<MethodSymbol> callee = edge.callee;
+	MethodSymbol* callee = edge.callee;
 	const MethodEffectSummary& calleeEffects = callee->get_effect_summary();
-	gmt::unordered_set<gmt::Ref<StructSymbol>> reportedTypes;
+	gmt::unordered_set<StructSymbol*> reportedTypes;
 
 	// the 'try' operator explicitly allows the callee's exceptions to unwind
 	// further; they are inherited as the caller's own effects, so no diagnostic
@@ -1142,14 +1142,14 @@ void ControlFlowAnalyzer::report_edge_diagnostics(const CallEdge& edge)
 	{
 		if (edge.isAwaited)
 		{
-			for (gmt::Ref<StructSymbol> thrownType : calleeEffects.asyncThrownTypes)
+			for (StructSymbol* thrownType : calleeEffects.asyncThrownTypes)
 			{
 				bool alreadyReported = reportedTypes.find(thrownType) != reportedTypes.end();
 				if (!edge.isTryWrapped && !call_edge_catches(edge, thrownType) && !alreadyReported)
 				{
 					reportedTypes.insert(thrownType);
 
-					std::wstring_view typeName = thrownType.is_null() ? L"unknown" : thrownType->get_name();
+					std::wstring_view typeName = (thrownType == nullptr) ? L"unknown" : thrownType->get_name();
 					get_diagnostics().report_error(
 						edge.callSite,
 						gmt::concat(L"Await on '", callee->get_name(), L"' may throw '", typeName, L"'"));
@@ -1159,14 +1159,14 @@ void ControlFlowAnalyzer::report_edge_diagnostics(const CallEdge& edge)
 	}
 	else
 	{
-		for (gmt::Ref<StructSymbol> thrownType : calleeEffects.thrownTypes)
+		for (StructSymbol* thrownType : calleeEffects.thrownTypes)
 		{
 			bool alreadyReported = reportedTypes.find(thrownType) != reportedTypes.end();
 			if (!edge.isTryWrapped && !call_edge_catches(edge, thrownType) && !alreadyReported)
 			{
 				reportedTypes.insert(thrownType);
 
-				std::wstring_view typeName = thrownType.is_null() ? L"unknown" : thrownType->get_name();
+				std::wstring_view typeName = (thrownType == nullptr) ? L"unknown" : thrownType->get_name();
 				get_diagnostics().report_error(
 					edge.callSite,
 					gmt::concat(L"Call to '", callee->get_name(), L"' may throw '", typeName, L"'"));
@@ -1195,13 +1195,13 @@ void ControlFlowAnalyzer::visit_binary_expression(const BinaryExpressionSyntax* 
 		return;
 
 	bool isAssignment = is_assignment_operator(node->get_operator_token().get_type());
-	if (!m_currentMethod.is_null() && isAssignment && !node->get_left().is_null())
+	if (!(m_currentMethod == nullptr) && isAssignment && !(node->get_left() == nullptr))
 	{
-		gmt::Ref<const ExpressionSyntax> left = node->get_left();
+		const ExpressionSyntax* left = node->get_left();
 		if (left->get_kind() == SyntaxKind::MemberAccessExpression)
-			record_field_or_property_write(left.as<const MemberAccessExpressionSyntax>());
+			record_field_or_property_write(static_cast<const MemberAccessExpressionSyntax*>(left));
 		else if (left->get_kind() == SyntaxKind::IndexatorExpression)
-			record_indexator_write(left.as<const IndexatorExpressionSyntax>());
+			record_indexator_write(static_cast<const IndexatorExpressionSyntax*>(left));
 	}
 
 	SyntaxVisitor::visit_binary_expression(node);
@@ -1214,17 +1214,17 @@ void ControlFlowAnalyzer::visit_unary_expression(const UnaryExpressionSyntax* no
 
 	// 'try <invokation>' explicitly allows the callee's exceptions to unwind
 	// further; mark the operand so the invokation visit can recognize it
-	if (node->get_operator_token().get_type() == TokenType::TryKeyword && !node->get_operand().is_null())
+	if (node->get_operator_token().get_type() == TokenType::TryKeyword && !(node->get_operand() == nullptr))
 		m_tryWrappedExpressions.insert(node->get_operand());
 
 	bool isIncrement = is_increment_decrement_operator(node->get_operator_token().get_type());
-	if (!m_currentMethod.is_null() && isIncrement && !node->get_operand().is_null())
+	if (!(m_currentMethod == nullptr) && isIncrement && !(node->get_operand() == nullptr))
 	{
-		gmt::Ref<const ExpressionSyntax> operand = node->get_operand();
+		const ExpressionSyntax* operand = node->get_operand();
 		if (operand->get_kind() == SyntaxKind::MemberAccessExpression)
-			record_field_or_property_write(operand.as<const MemberAccessExpressionSyntax>());
+			record_field_or_property_write(static_cast<const MemberAccessExpressionSyntax*>(operand));
 		else if (operand->get_kind() == SyntaxKind::IndexatorExpression)
-			record_indexator_write(operand.as<const IndexatorExpressionSyntax>());
+			record_indexator_write(static_cast<const IndexatorExpressionSyntax*>(operand));
 	}
 
 	SyntaxVisitor::visit_unary_expression(node);
@@ -1235,9 +1235,9 @@ void ControlFlowAnalyzer::visit_invokation_expression(const InvokationExpression
 	if (node == nullptr)
 		return;
 
-	if (!m_currentMethod.is_null())
+	if (!(m_currentMethod == nullptr))
 	{
-		gmt::Ref<MethodSymbol> callee;
+		MethodSymbol* callee = nullptr;
 		bool isTryWrapped = false;
 
 		auto nodeRef = ref_from(node);
@@ -1245,14 +1245,14 @@ void ControlFlowAnalyzer::visit_invokation_expression(const InvokationExpression
 		{
 			// delegate invokations bind the callee variable or field rather
 			// than a method; those flow through the unknown-callee path below
-			gmt::Ref<SyntaxSymbol> bound = get_symbol_table().lookup_symbol(*nodeRef);
-			if (!bound.is_null() && bound->is_method())
-				callee = bound.as<MethodSymbol>();
+			SyntaxSymbol* bound = get_symbol_table().lookup_symbol(*nodeRef);
+			if (!(bound == nullptr) && bound->is_method())
+				callee = static_cast<MethodSymbol*>(bound);
 
 			isTryWrapped = is_try_wrapped(*nodeRef);
 		}
 
-		if (!callee.is_null())
+		if (!(callee == nullptr))
 		{
 			// async callees defer exceptions into the returned task; those are
 			// surfaced only when the call is awaited (handled in visit_await_expression)
@@ -1271,7 +1271,7 @@ void ControlFlowAnalyzer::visit_invokation_expression(const InvokationExpression
 			}
 			else if (nodeRef.has_value())
 			{
-				record_callee_effects(gmt::Ref<MethodSymbol>(), node->get_identifier());
+				record_callee_effects(nullptr, node->get_identifier());
 			}
 		}
 	}
@@ -1284,20 +1284,20 @@ void ControlFlowAnalyzer::visit_object_creation_expression(const ObjectExpressio
 	if (node == nullptr)
 		return;
 
-	if (!m_currentMethod.is_null())
+	if (!(m_currentMethod == nullptr))
 	{
-		gmt::Ref<ConstructorSymbol> ctor;
+		ConstructorSymbol* ctor = nullptr;
 		auto nodeRef = ref_from(node);
 		if (nodeRef.has_value())
 		{
 			// an unresolved constructor (value-initialization) leaves the created
 			// type bound to the node; only real constructors record a call edge
-			gmt::Ref<SyntaxSymbol> bound = get_symbol_table().lookup_symbol(*nodeRef);
-			if (!bound.is_null() && bound->is_method())
-				ctor = bound.as<ConstructorSymbol>();
+			SyntaxSymbol* bound = get_symbol_table().lookup_symbol(*nodeRef);
+			if (!(bound == nullptr) && bound->is_method())
+				ctor = static_cast<ConstructorSymbol*>(bound);
 		}
 
-		if (!ctor.is_null())
+		if (!(ctor == nullptr))
 			record_callee_effects(ctor, node->get_new_token());
 	}
 
@@ -1309,28 +1309,28 @@ void ControlFlowAnalyzer::visit_await_expression(const AwaitExpressionSyntax* no
 	if (node == nullptr)
 		return;
 
-	if (!m_currentMethod.is_null() && !node->get_expression().is_null())
+	if (!(m_currentMethod == nullptr) && !(node->get_expression() == nullptr))
 	{
-		gmt::Ref<const ExpressionSyntax> awaited = node->get_expression();
+		const ExpressionSyntax* awaited = node->get_expression();
 
 		// direct await of an async method call: record the await edge so the
 		// async callee's captured exceptions can propagate to this method
 		if (awaited->get_kind() == SyntaxKind::InvokationExpression)
 		{
-			gmt::Ref<const InvokationExpressionSyntax> invocation = awaited.as<const InvokationExpressionSyntax>();
+			const InvokationExpressionSyntax* invocation = static_cast<const InvokationExpressionSyntax*>(awaited);
 
-			gmt::Ref<MethodSymbol> callee = lookup_symbol<MethodSymbol>(invocation);
+			MethodSymbol* callee = lookup_symbol<MethodSymbol>(invocation);
 			bool isTryWrapped = is_try_wrapped(invocation);
 
-			bool isAsyncCallee = !callee.is_null() && callee->get_is_async();
+			bool isAsyncCallee = !(callee == nullptr) && callee->get_is_async();
 			if (isAsyncCallee)
 				record_callee_effects(callee, invocation->get_identifier(), true, isTryWrapped);
 		}
 
 		// awaiting an unknown or non-async expression that could hold a faulted task
 		// is treated conservatively as a potential throw
-		gmt::Ref<StructSymbol> awaitedType = get_model().get_expression_type(awaited);
-		if (!awaitedType.is_null() && get_model().is_task_or_task_like(awaitedType))
+		StructSymbol* awaitedType = get_model().get_expression_type(awaited);
+		if (!(awaitedType == nullptr) && get_model().is_task_or_task_like(awaitedType))
 		{
 			if (awaited->get_kind() != SyntaxKind::InvokationExpression)
 				m_currentMethod->get_effect_summary().mayThrow = true;

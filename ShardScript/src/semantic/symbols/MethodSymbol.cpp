@@ -8,16 +8,16 @@
 
 using namespace shard;
 
-MethodSymbol::MethodSymbol(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent)
+MethodSymbol::MethodSymbol(std::wstring_view name, SyntaxSymbol* parent)
 	: MethodSymbol(gmt::intern(name), parent) { }
 
-MethodSymbol::MethodSymbol(gmt::StringReference name, gmt::Ref<SyntaxSymbol> parent)
+MethodSymbol::MethodSymbol(gmt::StringReference name, SyntaxSymbol* parent)
 	: MemberSymbol(name, SyntaxKind::FunctionDeclaration, parent) { }
 
-MethodSymbol::MethodSymbol(std::wstring_view name, const SyntaxKind kind, gmt::Ref<SyntaxSymbol> parent)
+MethodSymbol::MethodSymbol(std::wstring_view name, const SyntaxKind kind, SyntaxSymbol* parent)
 	: MethodSymbol(gmt::intern(name), kind, parent) { }
 
-MethodSymbol::MethodSymbol(gmt::StringReference name, const SyntaxKind kind, gmt::Ref<SyntaxSymbol> parent)
+MethodSymbol::MethodSymbol(gmt::StringReference name, const SyntaxKind kind, SyntaxSymbol* parent)
 	: MemberSymbol(name, kind, parent) { }
 
 CallingConvention MethodSymbol::get_calling_convention() const
@@ -40,22 +40,22 @@ void MethodSymbol::set_function_pointer(void* functionPointer)
 	m_functionPointer = functionPointer;
 }
 
-gmt::Ref<StructSymbol> MethodSymbol::get_return_type() const
+StructSymbol* MethodSymbol::get_return_type() const
 {
 	return m_returnType;
 }
 
-void MethodSymbol::set_return_type(gmt::Ref<StructSymbol> returnType)
+void MethodSymbol::set_return_type(StructSymbol* returnType)
 {
 	m_returnType = returnType;
 }
 
-const gmt::vector<gmt::Ref<TypeParameterSymbol>>& MethodSymbol::get_type_parameters() const
+const gmt::vector<TypeParameterSymbol*>& MethodSymbol::get_type_parameters() const
 {
 	return m_typeParameters;
 }
 
-const gmt::vector<gmt::Ref<ParameterSymbol>>& MethodSymbol::get_parameters() const
+const gmt::vector<ParameterSymbol*>& MethodSymbol::get_parameters() const
 {
 	return m_parameters;
 }
@@ -110,19 +110,19 @@ bool MethodSymbol::get_is_generic_instantiation() const
 	return false;
 }
 
-void MethodSymbol::on_symbol_declared(gmt::Ref<SyntaxSymbol> symbol)
+void MethodSymbol::on_symbol_declared(SyntaxSymbol* symbol)
 {
 	switch (symbol->get_kind())
 	{
 		case SyntaxKind::TypeParameter:
 		{
-			m_typeParameters.push_back(symbol.as<TypeParameterSymbol>());
+			m_typeParameters.push_back(static_cast<TypeParameterSymbol*>(symbol));
 			break;
 		}
 
 		case SyntaxKind::Parameter:
 		{
-			m_parameters.push_back(symbol.as<ParameterSymbol>());
+			m_parameters.push_back(static_cast<ParameterSymbol*>(symbol));
 			break;
 		}
 

@@ -4,15 +4,15 @@
 
 using namespace shard;
 
-ConditionalClauseSyntax::ConditionalClauseSyntax(SyntaxKind kind, gmt::Ref<SyntaxNode> parent)
+ConditionalClauseSyntax::ConditionalClauseSyntax(SyntaxKind kind, SyntaxNode* parent)
 	: ConditionalClauseBaseSyntax(kind, parent) { }
 
-gmt::Ref<const ExpressionSyntax> ConditionalClauseSyntax::get_condition() const
+const ExpressionSyntax* ConditionalClauseSyntax::get_condition() const
 {
 	return m_condition;
 }
 
-void ConditionalClauseSyntax::set_condition(gmt::Ref<ExpressionSyntax> condition)
+void ConditionalClauseSyntax::set_condition(ExpressionSyntax* condition)
 {
 	m_condition = condition;
 }

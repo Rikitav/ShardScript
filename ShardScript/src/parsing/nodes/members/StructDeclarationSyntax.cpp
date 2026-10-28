@@ -5,7 +5,7 @@
 
 using namespace shard;
 
-StructDeclarationSyntax::StructDeclarationSyntax(gmt::Ref<SyntaxNode> parent)
+StructDeclarationSyntax::StructDeclarationSyntax(SyntaxNode* parent)
 	: TypeDeclarationSyntax(SyntaxKind::StructDeclaration, parent) { }
 
 TextLocation StructDeclarationSyntax::get_location() const

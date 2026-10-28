@@ -5,7 +5,7 @@
 
 using namespace shard;
 
-InterfaceDeclarationSyntax::InterfaceDeclarationSyntax(gmt::Ref<SyntaxNode> parent)
+InterfaceDeclarationSyntax::InterfaceDeclarationSyntax(SyntaxNode* parent)
 	: TypeDeclarationSyntax(SyntaxKind::InterfaceDeclaration, parent) { }
 
 TextLocation InterfaceDeclarationSyntax::get_location() const

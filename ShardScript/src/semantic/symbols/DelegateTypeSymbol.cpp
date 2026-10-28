@@ -5,38 +5,38 @@
 
 using namespace shard;
 
-DelegateTypeSymbol::DelegateTypeSymbol(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent)
+DelegateTypeSymbol::DelegateTypeSymbol(std::wstring_view name, SyntaxSymbol* parent)
 	: DelegateTypeSymbol(gmt::intern(name), parent) { }
 
-DelegateTypeSymbol::DelegateTypeSymbol(gmt::StringReference name, gmt::Ref<SyntaxSymbol> parent)
+DelegateTypeSymbol::DelegateTypeSymbol(gmt::StringReference name, SyntaxSymbol* parent)
 	: StructSymbol(name, SyntaxKind::DelegateType, parent) { }
 
-gmt::Ref<StructSymbol> DelegateTypeSymbol::get_return_type() const
+StructSymbol* DelegateTypeSymbol::get_return_type() const
 {
 	return m_returnType;
 }
 
-void DelegateTypeSymbol::set_return_type(gmt::Ref<StructSymbol> returnType)
+void DelegateTypeSymbol::set_return_type(StructSymbol* returnType)
 {
 	m_returnType = returnType;
 }
 
-const gmt::vector<gmt::Ref<ParameterSymbol>>& DelegateTypeSymbol::get_parameters() const
+const gmt::vector<ParameterSymbol*>& DelegateTypeSymbol::get_parameters() const
 {
 	return m_parameters;
 }
 
-void DelegateTypeSymbol::set_parameters(const gmt::vector<gmt::Ref<ParameterSymbol>>& parameters)
+void DelegateTypeSymbol::set_parameters(const gmt::vector<ParameterSymbol*>& parameters)
 {
 	m_parameters = parameters;
 }
 
-const gmt::vector<gmt::Ref<TypeParameterSymbol>>& DelegateTypeSymbol::get_type_parameters() const
+const gmt::vector<TypeParameterSymbol*>& DelegateTypeSymbol::get_type_parameters() const
 {
 	return type_parameters;
 }
 
-void DelegateTypeSymbol::set_type_parameters(const gmt::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters)
+void DelegateTypeSymbol::set_type_parameters(const gmt::vector<TypeParameterSymbol*>& typeParameters)
 {
 	type_parameters = typeParameters;
 }

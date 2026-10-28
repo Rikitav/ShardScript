@@ -4,5 +4,5 @@
 
 using namespace shard;
 
-TypeSyntax::TypeSyntax(const SyntaxKind kind, gmt::Ref<SyntaxNode> parent)
+TypeSyntax::TypeSyntax(const SyntaxKind kind, SyntaxNode* parent)
 	: ExpressionSyntax(kind, parent) { }

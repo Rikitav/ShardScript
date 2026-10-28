@@ -15,7 +15,7 @@ namespace shard
 		SyntaxToken m_semicolonToken;
 
 	public:
-		ContinueStatementSyntax(gmt::Ref<SyntaxNode> parent);
+		ContinueStatementSyntax(SyntaxNode* parent);
 		virtual ~ContinueStatementSyntax() = default;
 
 		SyntaxToken get_continue_keyword() const;

@@ -4,5 +4,5 @@
 
 using namespace shard;
 
-ConstructorSymbol::ConstructorSymbol(gmt::Ref<SyntaxSymbol> parent)
+ConstructorSymbol::ConstructorSymbol(SyntaxSymbol* parent)
 	: MethodSymbol(gmt::intern(L"new"), SyntaxKind::ConstructorDeclaration, parent) { }

@@ -30,7 +30,7 @@ namespace shard
 	{
 		gmt::vector<ParameterEscapeSummary> parameters;
 		ReturnDisposition returnDisposition = ReturnDisposition::Unknown;
-		gmt::Ref<StructSymbol> returnType;   // nullref when Unknown
+		StructSymbol* returnType = nullptr;   // nullref when Unknown
 		bool computed = false;               // false = conservative default (unknown callee)
 	};
 }

@@ -15,19 +15,19 @@ namespace shard
 	{
 		SyntaxToken m_identifierToken;
 		SyntaxToken m_assignToken;
-		gmt::Ref<ExpressionSyntax> m_expression;
+		ExpressionSyntax* m_expression = nullptr;
 
 	public:
-		EnumFieldDeclarationSyntax(gmt::Ref<SyntaxNode> parent);
+		EnumFieldDeclarationSyntax(SyntaxNode* parent);
 		virtual ~EnumFieldDeclarationSyntax() = default;
 
 		SyntaxToken get_identifier() const;
 		SyntaxToken get_assign_token() const;
-		gmt::Ref<const ExpressionSyntax> get_expression() const;
+		const ExpressionSyntax* get_expression() const;
 
 		void set_identifier(const SyntaxToken& token);
 		void set_assign_token(const SyntaxToken& token);
-		void set_expression(gmt::Ref<ExpressionSyntax> expression);
+		void set_expression(ExpressionSyntax* expression);
 
 		TextLocation get_location() const override;
 		void accept(SyntaxVisitor& visitor) const override;

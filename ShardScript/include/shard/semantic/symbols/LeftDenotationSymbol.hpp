@@ -13,10 +13,10 @@ namespace shard
 
 	class SHARD_API LeftDenotationSymbol final : public SyntaxSymbol
 	{
-		gmt::Ref<StructSymbol> m_expectedType;
+		StructSymbol* m_expectedType = nullptr;
 
 	public:
-		LeftDenotationSymbol(gmt::Ref<StructSymbol> expected_type, gmt::Ref<SyntaxSymbol> parent);
+		LeftDenotationSymbol(StructSymbol* expected_type, SyntaxSymbol* parent);
 		virtual ~LeftDenotationSymbol() = default;
 
 		LeftDenotationSymbol(const LeftDenotationSymbol& other) = delete;
@@ -25,7 +25,7 @@ namespace shard
 		LeftDenotationSymbol(LeftDenotationSymbol&& other) = delete;
 		LeftDenotationSymbol& operator=(LeftDenotationSymbol&& other) = delete;
 
-		gmt::Ref<StructSymbol> get_expected_type() const;
-		void set_expected_type(gmt::Ref<StructSymbol> expected_type);
+		StructSymbol* get_expected_type() const;
+		void set_expected_type(StructSymbol* expected_type);
 	};
 }

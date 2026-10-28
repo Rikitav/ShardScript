@@ -4,18 +4,18 @@
 
 using namespace shard;
 
-FieldSymbol::FieldSymbol(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent)
+FieldSymbol::FieldSymbol(std::wstring_view name, SyntaxSymbol* parent)
 	: FieldSymbol(gmt::intern(name), parent) { }
 
-FieldSymbol::FieldSymbol(gmt::StringReference name, gmt::Ref<SyntaxSymbol> parent)
+FieldSymbol::FieldSymbol(gmt::StringReference name, SyntaxSymbol* parent)
 	: MemberSymbol(name, SyntaxKind::FieldDeclaration, parent) { }
 
-gmt::Ref<StructSymbol> FieldSymbol::get_return_type() const
+StructSymbol* FieldSymbol::get_return_type() const
 {
 	return m_returnType;
 }
 
-void FieldSymbol::set_return_type(gmt::Ref<StructSymbol> returnType)
+void FieldSymbol::set_return_type(StructSymbol* returnType)
 {
 	m_returnType = returnType;
 }

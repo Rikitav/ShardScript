@@ -10,7 +10,7 @@ StringIntern& gmt::global_interner()
 
 StringReference gmt::intern(std::wstring_view text)
 {
-	return global_interner().Add(text.data(), text.length());
+	return global_interner().Add(text.data(), text.size());
 }
 
 std::wstring_view gmt::resolve(StringReference ref)

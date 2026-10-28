@@ -157,7 +157,7 @@ namespace shard::detail
 		else if constexpr (std::is_pointer_v<Storage>)
 		{
 			ObjectInstance value = state.get_argument(index);
-			if (value.is_null())
+			if ((value == nullptr))
 				return nullptr;
 
 			return reinterpret_cast<Storage>(value.as_pointer());

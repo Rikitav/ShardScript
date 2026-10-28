@@ -28,7 +28,7 @@ using namespace shard;
 namespace
 {
 	// lower is better; negative means no conversion
-	int numeric_rank(gmt::Ref<const StructSymbol> type, const SymbolTable& table)
+	int numeric_rank(const StructSymbol* type, const SymbolTable& table)
 	{
 		if (type == table.get_byte_primitive() || type == table.get_char_primitive() || type == table.get_nint_primitive())
 			return 0;
@@ -42,9 +42,9 @@ namespace
 		return -1;
 	}
 
-	bool is_reference_like(gmt::Ref<const StructSymbol> type)
+	bool is_reference_like(const StructSymbol* type)
 	{
-		if (type.is_null())
+		if ((type == nullptr))
 			return false;
 
 		switch (type->get_kind())
@@ -57,7 +57,7 @@ namespace
 
 			case SyntaxKind::GenericType:
 			{
-				gmt::Ref<StructSymbol> underlaying = type.as<GenericTypeSymbol>()->get_underlaying_type();
+				StructSymbol* underlaying = gmt::as<GenericTypeSymbol>(type)->get_underlaying_type();
 				return underlaying->get_kind() == SyntaxKind::InterfaceDeclaration;
 			}
 
@@ -66,25 +66,25 @@ namespace
 		}
 	}
 
-	gmt::Ref<DelegateTypeSymbol> get_delegate_type(gmt::Ref<const StructSymbol> type)
+	DelegateTypeSymbol* get_delegate_type(const StructSymbol* type)
 	{
-		if (type.is_null())
-			return gmt::nullref;
+		if ((type == nullptr))
+			return nullptr;
 
 		if (type->get_kind() == SyntaxKind::DelegateType)
-			return type.as<DelegateTypeSymbol>();
+			return gmt::as<DelegateTypeSymbol>(type);
 
 		if (type->get_kind() == SyntaxKind::GenericType)
 		{
-			gmt::Ref<StructSymbol> underlaying = type.as<GenericTypeSymbol>()->get_underlaying_type();
-			if (!underlaying.is_null() && underlaying->get_kind() == SyntaxKind::DelegateType)
-				return underlaying.as<DelegateTypeSymbol>();
+			StructSymbol* underlaying = gmt::as<GenericTypeSymbol>(type)->get_underlaying_type();
+			if (!(underlaying == nullptr) && underlaying->get_kind() == SyntaxKind::DelegateType)
+				return static_cast<DelegateTypeSymbol*>(underlaying);
 		}
 
-		return gmt::nullref;
+		return nullptr;
 	}
 
-	gmt::wstring format_argument_list(std::span<const gmt::Ref<StructSymbol>> argTypes, SemanticModel& model)
+	gmt::wstring format_argument_list(std::span<StructSymbol* const> argTypes, SemanticModel& model)
 	{
 		switch (argTypes.size())
 		{
@@ -92,7 +92,7 @@ namespace
 				return L"no arguments";
 
 			case 1:
-				return gmt::concat(L"argument (", argTypes[0].is_null() ? L"<error>" : model.get_type_display_name(argTypes[0]), L")");
+				return gmt::concat(L"argument (", (argTypes[0] == nullptr) ? L"<error>" : model.get_type_display_name(argTypes[0]), L")");
 
 			default:
 			{
@@ -107,13 +107,13 @@ namespace
 	}
 }
 
-int ExpressionBinder::conversion_score(gmt::Ref<const StructSymbol> parameter, gmt::Ref<const StructSymbol> argument)
+int ExpressionBinder::conversion_score(const StructSymbol* parameter, const StructSymbol* argument)
 {
-	if (parameter.is_null())
+	if ((parameter == nullptr))
 		return -1;
 
 	// null literal assignment
-	if (argument.is_null())
+	if ((argument == nullptr))
 		return is_reference_like(parameter) ? 1 : -1;
 
 	if (SemanticModel::are_types_equal(parameter, argument))
@@ -126,14 +126,14 @@ int ExpressionBinder::conversion_score(gmt::Ref<const StructSymbol> parameter, g
 
 	if (parameterNullable && !argumentNullable)
 	{
-		gmt::Ref<StructSymbol> underlaying = parameter.as<NullableTypeSymbol>()->get_underlaying_type();
+		StructSymbol* underlaying = gmt::as<NullableTypeSymbol>(parameter)->get_underlaying_type();
 		if (SemanticModel::are_types_equal(underlaying, argument))
 			return 2;
 	}
 
 	if (!parameterNullable && argumentNullable)
 	{
-		gmt::Ref<StructSymbol> underlaying = argument.as<NullableTypeSymbol>()->get_underlaying_type();
+		StructSymbol* underlaying = gmt::as<NullableTypeSymbol>(argument)->get_underlaying_type();
 		if (SemanticModel::are_types_equal(parameter, underlaying))
 			return 3;
 	}
@@ -154,19 +154,19 @@ void ExpressionBinder::report_no_matching_method(std::wstring_view methodName, S
 	get_diagnostics().report_error(blameToken, gmt::concat(L"No method named '", methodName, L"' exists in the current context"));
 }
 
-void ExpressionBinder::report_no_matching_overload(std::wstring_view methodName, std::span<const gmt::Ref<StructSymbol>> argTypes, SyntaxToken blameToken)
+void ExpressionBinder::report_no_matching_overload(std::wstring_view methodName, std::span<StructSymbol* const> argTypes, SyntaxToken blameToken)
 {
 	get_diagnostics().report_error(blameToken, gmt::concat(L"Method '", methodName, L"' does not have an overload that accepts the supplied arguments (", format_argument_list(argTypes, get_model()), L")"));
 }
 
-bool ExpressionBinder::collect_argument_types(const InvokationExpressionSyntax* node, std::pmr::vector<gmt::Ref<StructSymbol>>& outArgTypes)
+bool ExpressionBinder::collect_argument_types(const InvokationExpressionSyntax* node, std::pmr::vector<StructSymbol*>& outArgTypes)
 {
-	if (node->get_arguments().is_null())
+	if ((node->get_arguments() == nullptr))
 		return false;
 
-	for (const gmt::Ref<ArgumentSyntax>& argument : node->get_arguments()->get_arguments().as_span())
+	for (ArgumentSyntax* const& argument : node->get_arguments()->get_arguments())
 	{
-		if (argument.is_null() || argument->get_expression().is_null())
+		if ((argument == nullptr) || (argument->get_expression() == nullptr))
 			return false;
 
 		visit_expression(argument->get_expression());
@@ -176,18 +176,18 @@ bool ExpressionBinder::collect_argument_types(const InvokationExpressionSyntax* 
 	return true;
 }
 
-void ExpressionBinder::bind_pending_lambda_arguments(const InvokationExpressionSyntax* node, gmt::Ref<MethodSymbol> method, bool asExtension, gmt::Ref<GenericTypeSymbol> genericType, std::span<const gmt::Ref<StructSymbol>> candidateArgs, std::span<const gmt::Ref<StructSymbol>> explicitTypeArgs)
+void ExpressionBinder::bind_pending_lambda_arguments(const InvokationExpressionSyntax* node, MethodSymbol* method, bool asExtension, GenericTypeSymbol* genericType, std::span<StructSymbol* const> candidateArgs, std::span<StructSymbol* const> explicitTypeArgs)
 {
-	if (m_pendingLambdas.empty() || node->get_arguments().is_null())
+	if (m_pendingLambdas.empty() || (node->get_arguments() == nullptr))
 		return;
 
-	std::span<const gmt::Ref<ArgumentSyntax>> arguments = node->get_arguments()->get_arguments().as_span();
+	std::span<ArgumentSyntax* const> arguments = node->get_arguments()->get_arguments();
 	std::size_t parameterOffset = asExtension ? 1 : 0;
 
 	bool hasPendingArgument = false;
-	for (const gmt::Ref<ArgumentSyntax>& argument : arguments)
+	for (ArgumentSyntax* const& argument : arguments)
 	{
-		if (!argument.is_null() && is_pending_lambda(argument->get_expression()))
+		if (!(argument == nullptr) && is_pending_lambda(argument->get_expression()))
 		{
 			hasPendingArgument = true;
 			break;
@@ -197,12 +197,12 @@ void ExpressionBinder::bind_pending_lambda_arguments(const InvokationExpressionS
 	if (!hasPendingArgument)
 		return;
 
-	const gmt::vector<gmt::Ref<ParameterSymbol>>& parameters = method->get_parameters();
+	const gmt::vector<ParameterSymbol*>& parameters = method->get_parameters();
 
 	// partially infer method type arguments from the non-lambda arguments, so
 	// delegate parameter types that mention them can resolve to concrete types
 	bool generic = !method->get_type_parameters().empty();
-	std::pmr::vector<gmt::Ref<StructSymbol>> partialTypeArgs;
+	std::pmr::vector<StructSymbol*> partialTypeArgs;
 	if (generic)
 	{
 		if (!explicitTypeArgs.empty())
@@ -214,7 +214,7 @@ void ExpressionBinder::bind_pending_lambda_arguments(const InvokationExpressionS
 		}
 		else
 		{
-			partialTypeArgs.assign(method->get_type_parameters().size(), gmt::nullref);
+			partialTypeArgs.assign(method->get_type_parameters().size(), nullptr);
 			for (std::size_t i = 0; i < parameters.size() && i < candidateArgs.size(); i++)
 			{
 				// a position behind a pending lambda contributes nothing until
@@ -222,10 +222,10 @@ void ExpressionBinder::bind_pending_lambda_arguments(const InvokationExpressionS
 				// argument and always contributes
 				bool pendingPosition = i >= parameterOffset;
 				pendingPosition = pendingPosition && (i - parameterOffset) < arguments.size();
-				pendingPosition = pendingPosition && !arguments[i - parameterOffset].is_null();
+				pendingPosition = pendingPosition && !(arguments[i - parameterOffset] == nullptr);
 				pendingPosition = pendingPosition && is_pending_lambda(arguments[i - parameterOffset]->get_expression());
 
-				if (pendingPosition || candidateArgs[i].is_null())
+				if (pendingPosition || (candidateArgs[i] == nullptr))
 					continue;
 
 				try_infer_type_argument(parameters[i]->get_type(), candidateArgs[i], method, genericType, partialTypeArgs);
@@ -235,52 +235,52 @@ void ExpressionBinder::bind_pending_lambda_arguments(const InvokationExpressionS
 
 	for (std::size_t i = 0; i < arguments.size() && i + parameterOffset < parameters.size(); i++)
 	{
-		const gmt::Ref<ArgumentSyntax>& argument = arguments[i];
-		if (argument.is_null())
+		ArgumentSyntax* const& argument = arguments[i];
+		if ((argument == nullptr))
 			continue;
 
-		gmt::Ref<const ExpressionSyntax> expression = argument->get_expression();
+		const ExpressionSyntax* expression = argument->get_expression();
 		if (!is_pending_lambda(expression))
 			continue;
 
-		gmt::Ref<StructSymbol> expectedType = parameters[i + parameterOffset]->get_type();
+		StructSymbol* expectedType = parameters[i + parameterOffset]->get_type();
 		expectedType = generic
 			? substitute_type_parameters(expectedType, genericType, method, partialTypeArgs)
 			: substitute_type_parameters(expectedType, genericType);
 
-		try_bind_pending_lambda(expression.as<const LambdaExpressionSyntax>(), expectedType);
+		try_bind_pending_lambda(static_cast<const LambdaExpressionSyntax*>(expression), expectedType);
 	}
 }
 
-bool ExpressionBinder::match_method_arguments(SyntaxToken blameToken, std::span<const gmt::Ref<ParameterSymbol>> parameters, gmt::Span<const gmt::Ref<ArgumentSyntax>> arguments, gmt::Ref<GenericTypeSymbol> genericType, std::size_t parameterOffset)
+bool ExpressionBinder::match_method_arguments(SyntaxToken blameToken, std::span<ParameterSymbol* const> parameters, std::span<ArgumentSyntax* const> arguments, GenericTypeSymbol* genericType, std::size_t parameterOffset)
 {
 	if (parameterOffset > parameters.size())
 		parameterOffset = parameters.size();
 
 	std::size_t expectedArguments = parameters.size() - parameterOffset;
-	if (expectedArguments != arguments.as_span().size())
+	if (expectedArguments != arguments.size())
 	{
-		get_diagnostics().report_error(blameToken, gmt::concat(L"Method expects ", std::to_wstring(expectedArguments), L" arguments but got ", std::to_wstring(arguments.as_span().size())));
+		get_diagnostics().report_error(blameToken, gmt::concat(L"Method expects ", std::to_wstring(expectedArguments), L" arguments but got ", std::to_wstring(arguments.size())));
 		return false;
 	}
 
 	for (std::size_t i = parameterOffset; i < parameters.size(); i++)
 	{
-		gmt::Ref<ParameterSymbol> parameter = parameters[i];
-		gmt::Ref<ArgumentSyntax> argument = arguments.as_span()[i - parameterOffset];
+		ParameterSymbol* parameter = parameters[i];
+		ArgumentSyntax* argument = arguments[i - parameterOffset];
 
-		if (parameter.is_null() || argument.is_null() || argument->get_expression().is_null())
+		if ((parameter == nullptr) || (argument == nullptr) || (argument->get_expression() == nullptr))
 		{
 			get_diagnostics().report_error(blameToken, gmt::concat(L"Invalid argument at position ", std::to_wstring(i - parameterOffset)));
 			return false;
 		}
 
-		gmt::Ref<StructSymbol> argumentType = get_expression_type(argument->get_expression());
-		if (argumentType.is_null())
+		StructSymbol* argumentType = get_expression_type(argument->get_expression());
+		if ((argumentType == nullptr))
 			return false;
 
-		gmt::Ref<StructSymbol> parameterType = substitute_type_parameters(parameter->get_type(), genericType);
-		if (parameterType.is_null())
+		StructSymbol* parameterType = substitute_type_parameters(parameter->get_type(), genericType);
+		if ((parameterType == nullptr))
 			return false;
 
 		if (conversion_score(parameterType, argumentType) < 0)
@@ -293,21 +293,21 @@ bool ExpressionBinder::match_method_arguments(SyntaxToken blameToken, std::span<
 	return true;
 }
 
-bool ExpressionBinder::try_infer_type_argument(gmt::Ref<StructSymbol> pattern, gmt::Ref<StructSymbol> concrete, gmt::Ref<MethodSymbol> method, gmt::Ref<GenericTypeSymbol> genericType, std::pmr::vector<gmt::Ref<StructSymbol>>& outMethodTypeArgs)
+bool ExpressionBinder::try_infer_type_argument(StructSymbol* pattern, StructSymbol* concrete, MethodSymbol* method, GenericTypeSymbol* genericType, std::pmr::vector<StructSymbol*>& outMethodTypeArgs)
 {
-	if (pattern.is_null() || concrete.is_null())
+	if ((pattern == nullptr) || (concrete == nullptr))
 		return true;
 
-	if (!genericType.is_null() && pattern->get_kind() == SyntaxKind::TypeParameter)
+	if (!(genericType == nullptr) && pattern->get_kind() == SyntaxKind::TypeParameter)
 	{
-		gmt::Ref<StructSymbol> substituted = genericType->substitute_type_parameter(pattern.as<TypeParameterSymbol>());
-		if (!substituted.is_null())
+		StructSymbol* substituted = genericType->substitute_type_parameter(static_cast<TypeParameterSymbol*>(pattern));
+		if (!(substituted == nullptr))
 			pattern = substituted;
 	}
 
 	if (pattern->get_kind() == SyntaxKind::TypeParameter)
 	{
-		gmt::Ref<TypeParameterSymbol> typeParameter = pattern.as<TypeParameterSymbol>();
+		TypeParameterSymbol* typeParameter = static_cast<TypeParameterSymbol*>(pattern);
 		if (typeParameter->get_parent() != method)
 			return true;
 
@@ -315,7 +315,7 @@ bool ExpressionBinder::try_infer_type_argument(gmt::Ref<StructSymbol> pattern, g
 		{
 			if (method->get_type_parameters()[i] == typeParameter)
 			{
-				if (outMethodTypeArgs[i].is_null())
+				if ((outMethodTypeArgs[i] == nullptr))
 					outMethodTypeArgs[i] = concrete;
 				else if (!SemanticModel::are_types_equal(outMethodTypeArgs[i], concrete))
 					return false;
@@ -329,18 +329,18 @@ bool ExpressionBinder::try_infer_type_argument(gmt::Ref<StructSymbol> pattern, g
 
 	if (pattern->get_kind() == SyntaxKind::GenericType)
 	{
-		gmt::Ref<GenericTypeSymbol> patternGeneric = pattern.as<GenericTypeSymbol>();
-		gmt::Ref<StructSymbol> patternUnderlaying = patternGeneric->get_underlaying_type();
+		GenericTypeSymbol* patternGeneric = static_cast<GenericTypeSymbol*>(pattern);
+		StructSymbol* patternUnderlaying = patternGeneric->get_underlaying_type();
 
 		if (concrete->get_kind() == SyntaxKind::GenericType)
 		{
-			gmt::Ref<GenericTypeSymbol> concreteGeneric = concrete.as<GenericTypeSymbol>();
+			GenericTypeSymbol* concreteGeneric = static_cast<GenericTypeSymbol*>(concrete);
 			if (concreteGeneric->get_underlaying_type() == patternUnderlaying)
 			{
-				for (gmt::Ref<TypeParameterSymbol> parameter : patternUnderlaying->type_parameters)
+				for (TypeParameterSymbol* parameter : patternUnderlaying->type_parameters)
 				{
-					gmt::Ref<StructSymbol> patternArgument = patternGeneric->substitute_type_parameter(parameter);
-					gmt::Ref<StructSymbol> concreteArgument = concreteGeneric->substitute_type_parameter(parameter);
+					StructSymbol* patternArgument = patternGeneric->substitute_type_parameter(parameter);
+					StructSymbol* concreteArgument = concreteGeneric->substitute_type_parameter(parameter);
 					if (!try_infer_type_argument(patternArgument, concreteArgument, method, genericType, outMethodTypeArgs))
 						return false;
 				}
@@ -351,20 +351,20 @@ bool ExpressionBinder::try_infer_type_argument(gmt::Ref<StructSymbol> pattern, g
 			// a constructed type that implements the pattern's generic
 			// interface: the interface's arguments substitute through the
 			// construction before pairwise inference
-			for (gmt::Ref<StructSymbol> interfaceType : concreteGeneric->get_underlaying_type()->interfaces)
+			for (StructSymbol* interfaceType : concreteGeneric->get_underlaying_type()->interfaces)
 			{
-				if (interfaceType.is_null() || interfaceType->get_kind() != SyntaxKind::GenericType)
+				if ((interfaceType == nullptr) || interfaceType->get_kind() != SyntaxKind::GenericType)
 					continue;
 
-				gmt::Ref<GenericTypeSymbol> interfaceGeneric = interfaceType.as<GenericTypeSymbol>();
+				GenericTypeSymbol* interfaceGeneric = static_cast<GenericTypeSymbol*>(interfaceType);
 				if (interfaceGeneric->get_underlaying_type() != patternUnderlaying)
 					continue;
 
-				for (gmt::Ref<TypeParameterSymbol> parameter : patternUnderlaying->type_parameters)
+				for (TypeParameterSymbol* parameter : patternUnderlaying->type_parameters)
 				{
-					gmt::Ref<StructSymbol> patternArgument = patternGeneric->substitute_type_parameter(parameter);
-					gmt::Ref<StructSymbol> interfaceArgument = interfaceGeneric->substitute_type_parameter(parameter);
-					gmt::Ref<StructSymbol> concreteArgument = substitute_type_parameters(interfaceArgument, concreteGeneric);
+					StructSymbol* patternArgument = patternGeneric->substitute_type_parameter(parameter);
+					StructSymbol* interfaceArgument = interfaceGeneric->substitute_type_parameter(parameter);
+					StructSymbol* concreteArgument = substitute_type_parameters(interfaceArgument, concreteGeneric);
 					if (!try_infer_type_argument(patternArgument, concreteArgument, method, genericType, outMethodTypeArgs))
 						return false;
 				}
@@ -377,19 +377,19 @@ bool ExpressionBinder::try_infer_type_argument(gmt::Ref<StructSymbol> pattern, g
 
 		if (concrete->get_kind() == SyntaxKind::StructDeclaration || concrete->get_kind() == SyntaxKind::InterfaceDeclaration || concrete->get_kind() == SyntaxKind::EnumDeclaration)
 		{
-			for (gmt::Ref<StructSymbol> interfaceType : concrete->interfaces)
+			for (StructSymbol* interfaceType : concrete->interfaces)
 			{
-				if (interfaceType.is_null() || interfaceType->get_kind() != SyntaxKind::GenericType)
+				if ((interfaceType == nullptr) || interfaceType->get_kind() != SyntaxKind::GenericType)
 					continue;
 
-				gmt::Ref<GenericTypeSymbol> interfaceGeneric = interfaceType.as<GenericTypeSymbol>();
+				GenericTypeSymbol* interfaceGeneric = static_cast<GenericTypeSymbol*>(interfaceType);
 				if (interfaceGeneric->get_underlaying_type() != patternUnderlaying)
 					continue;
 
-				for (gmt::Ref<TypeParameterSymbol> parameter : patternUnderlaying->type_parameters)
+				for (TypeParameterSymbol* parameter : patternUnderlaying->type_parameters)
 				{
-					gmt::Ref<StructSymbol> patternArgument = patternGeneric->substitute_type_parameter(parameter);
-					gmt::Ref<StructSymbol> concreteArgument = interfaceGeneric->substitute_type_parameter(parameter);
+					StructSymbol* patternArgument = patternGeneric->substitute_type_parameter(parameter);
+					StructSymbol* concreteArgument = interfaceGeneric->substitute_type_parameter(parameter);
 					if (!try_infer_type_argument(patternArgument, concreteArgument, method, genericType, outMethodTypeArgs))
 						return false;
 				}
@@ -400,12 +400,12 @@ bool ExpressionBinder::try_infer_type_argument(gmt::Ref<StructSymbol> pattern, g
 
 		if (patternUnderlaying->get_kind() == SyntaxKind::DelegateType && concrete->get_kind() == SyntaxKind::DelegateType)
 		{
-			gmt::Ref<DelegateTypeSymbol> patternDelegate = patternUnderlaying.as<DelegateTypeSymbol>();
-			gmt::Ref<DelegateTypeSymbol> concreteDelegate = concrete.as<DelegateTypeSymbol>();
+			DelegateTypeSymbol* patternDelegate = static_cast<DelegateTypeSymbol*>(patternUnderlaying);
+			DelegateTypeSymbol* concreteDelegate = static_cast<DelegateTypeSymbol*>(concrete);
 
-			if (!patternDelegate->get_return_type().is_null() && !concreteDelegate->get_return_type().is_null())
+			if (!(patternDelegate->get_return_type() == nullptr) && !(concreteDelegate->get_return_type() == nullptr))
 			{
-				gmt::Ref<StructSymbol> returnPattern = substitute_type_parameters(patternDelegate->get_return_type(), patternGeneric);
+				StructSymbol* returnPattern = substitute_type_parameters(patternDelegate->get_return_type(), patternGeneric);
 				if (!try_infer_type_argument(returnPattern, concreteDelegate->get_return_type(), method, genericType, outMethodTypeArgs))
 					return false;
 			}
@@ -414,7 +414,7 @@ bool ExpressionBinder::try_infer_type_argument(gmt::Ref<StructSymbol> pattern, g
 			{
 				for (std::size_t i = 0; i < patternDelegate->get_parameters().size(); ++i)
 				{
-					gmt::Ref<StructSymbol> parameterPattern = substitute_type_parameters(patternDelegate->get_parameters()[i]->get_type(), patternGeneric);
+					StructSymbol* parameterPattern = substitute_type_parameters(patternDelegate->get_parameters()[i]->get_type(), patternGeneric);
 					if (!try_infer_type_argument(parameterPattern, concreteDelegate->get_parameters()[i]->get_type(), method, genericType, outMethodTypeArgs))
 						return false;
 				}
@@ -426,29 +426,29 @@ bool ExpressionBinder::try_infer_type_argument(gmt::Ref<StructSymbol> pattern, g
 
 	if (pattern->get_kind() == SyntaxKind::ArrayType && concrete->get_kind() == SyntaxKind::ArrayType)
 	{
-		return try_infer_type_argument(pattern.as<ArrayTypeSymbol>()->get_underlaying_type(), concrete.as<ArrayTypeSymbol>()->get_underlaying_type(), method, genericType, outMethodTypeArgs);
+		return try_infer_type_argument(static_cast<ArrayTypeSymbol*>(pattern)->get_underlaying_type(), static_cast<ArrayTypeSymbol*>(concrete)->get_underlaying_type(), method, genericType, outMethodTypeArgs);
 	}
 
 	return true;
 }
 
-bool ExpressionBinder::infer_method_type_arguments(gmt::Ref<MethodSymbol> method, std::span<const gmt::Ref<StructSymbol>> argTypes, gmt::Ref<GenericTypeSymbol> genericType, std::pmr::vector<gmt::Ref<StructSymbol>>& outMethodTypeArgs)
+bool ExpressionBinder::infer_method_type_arguments(MethodSymbol* method, std::span<StructSymbol* const> argTypes, GenericTypeSymbol* genericType, std::pmr::vector<StructSymbol*>& outMethodTypeArgs)
 {
-	outMethodTypeArgs.assign(method->get_type_parameters().size(), gmt::nullref);
+	outMethodTypeArgs.assign(method->get_type_parameters().size(), nullptr);
 
 	if (argTypes.size() != method->get_parameters().size())
 		return false;
 
 	for (std::size_t i = 0; i < method->get_parameters().size(); ++i)
 	{
-		gmt::Ref<StructSymbol> parameterType = method->get_parameters()[i]->get_type();
+		StructSymbol* parameterType = method->get_parameters()[i]->get_type();
 		if (!try_infer_type_argument(parameterType, argTypes[i], method, genericType, outMethodTypeArgs))
 			return false;
 	}
 
-	for (gmt::Ref<StructSymbol> type : outMethodTypeArgs)
+	for (StructSymbol* type : outMethodTypeArgs)
 	{
-		if (type.is_null())
+		if ((type == nullptr))
 			return false;
 	}
 
@@ -457,18 +457,18 @@ bool ExpressionBinder::infer_method_type_arguments(gmt::Ref<MethodSymbol> method
 
 namespace
 {
-	bool try_infer_class_type_argument(gmt::Ref<StructSymbol> pattern, gmt::Ref<StructSymbol> concrete, gmt::Ref<StructSymbol> classDef, gmt::vector<gmt::Ref<StructSymbol>>& outArgs)
+	bool try_infer_class_type_argument(StructSymbol* pattern, StructSymbol* concrete, StructSymbol* classDef, gmt::vector<StructSymbol*>& outArgs)
 	{
-		if (pattern.is_null() || concrete.is_null())
+		if ((pattern == nullptr) || (concrete == nullptr))
 			return true;
 
 		if (pattern->get_kind() == SyntaxKind::TypeParameter)
 		{
-			gmt::Ref<TypeParameterSymbol> typeParameter = pattern.as<TypeParameterSymbol>();
+			TypeParameterSymbol* typeParameter = static_cast<TypeParameterSymbol*>(pattern);
 			if (typeParameter->get_type_argument_index() < outArgs.size() && classDef->type_parameters[typeParameter->get_type_argument_index()] == typeParameter)
 			{
-				gmt::Ref<StructSymbol>& slot = outArgs[typeParameter->get_type_argument_index()];
-				if (slot.is_null())
+				StructSymbol*& slot = outArgs[typeParameter->get_type_argument_index()];
+				if ((slot == nullptr))
 					slot = concrete;
 				else if (!SemanticModel::are_types_equal(slot, concrete))
 					return false;
@@ -482,7 +482,7 @@ namespace
 			if (concrete->get_kind() != SyntaxKind::ArrayType)
 				return false;
 
-			return try_infer_class_type_argument(pattern.as<ArrayTypeSymbol>()->get_underlaying_type(), concrete.as<ArrayTypeSymbol>()->get_underlaying_type(), classDef, outArgs);
+			return try_infer_class_type_argument(static_cast<ArrayTypeSymbol*>(pattern)->get_underlaying_type(), static_cast<ArrayTypeSymbol*>(concrete)->get_underlaying_type(), classDef, outArgs);
 		}
 
 		if (pattern->get_kind() == SyntaxKind::GenericType)
@@ -490,15 +490,15 @@ namespace
 			if (concrete->get_kind() != SyntaxKind::GenericType)
 				return false;
 
-			gmt::Ref<GenericTypeSymbol> patternGeneric = pattern.as<GenericTypeSymbol>();
-			gmt::Ref<GenericTypeSymbol> concreteGeneric = concrete.as<GenericTypeSymbol>();
+			GenericTypeSymbol* patternGeneric = static_cast<GenericTypeSymbol*>(pattern);
+			GenericTypeSymbol* concreteGeneric = static_cast<GenericTypeSymbol*>(concrete);
 			if (patternGeneric->get_underlaying_type() != concreteGeneric->get_underlaying_type())
 				return false;
 
-			for (gmt::Ref<TypeParameterSymbol> parameter : patternGeneric->get_underlaying_type()->type_parameters)
+			for (TypeParameterSymbol* parameter : patternGeneric->get_underlaying_type()->type_parameters)
 			{
-				gmt::Ref<StructSymbol> patternArgument = patternGeneric->substitute_type_parameter(parameter);
-				gmt::Ref<StructSymbol> concreteArgument = concreteGeneric->substitute_type_parameter(parameter);
+				StructSymbol* patternArgument = patternGeneric->substitute_type_parameter(parameter);
+				StructSymbol* concreteArgument = concreteGeneric->substitute_type_parameter(parameter);
 				if (!try_infer_class_type_argument(patternArgument, concreteArgument, classDef, outArgs))
 					return false;
 			}
@@ -510,9 +510,9 @@ namespace
 	}
 }
 
-bool ExpressionBinder::infer_class_type_arguments(gmt::Ref<StructSymbol> classDef, gmt::Ref<MethodSymbol> method, std::span<const gmt::Ref<StructSymbol>> argTypes, gmt::vector<gmt::Ref<StructSymbol>>& outClassTypeArgs)
+bool ExpressionBinder::infer_class_type_arguments(StructSymbol* classDef, MethodSymbol* method, std::span<StructSymbol* const> argTypes, gmt::vector<StructSymbol*>& outClassTypeArgs)
 {
-	outClassTypeArgs.assign(classDef->type_parameters.size(), gmt::nullref);
+	outClassTypeArgs.assign(classDef->type_parameters.size(), nullptr);
 
 	if (argTypes.size() != method->get_parameters().size())
 		return false;
@@ -523,9 +523,9 @@ bool ExpressionBinder::infer_class_type_arguments(gmt::Ref<StructSymbol> classDe
 			return false;
 	}
 
-	for (gmt::Ref<StructSymbol> type : outClassTypeArgs)
+	for (StructSymbol* type : outClassTypeArgs)
 	{
-		if (type.is_null())
+		if ((type == nullptr))
 			return false;
 	}
 
@@ -533,9 +533,9 @@ bool ExpressionBinder::infer_class_type_arguments(gmt::Ref<StructSymbol> classDe
 }
 
 
-int ExpressionBinder::score_method_match(gmt::Ref<MethodSymbol> method, std::span<const gmt::Ref<StructSymbol>> argTypes, gmt::Ref<GenericTypeSymbol> genericType, std::pmr::vector<gmt::Ref<StructSymbol>>& outMethodTypeArgs, std::span<const gmt::Ref<StructSymbol>> explicitTypeArgs)
+int ExpressionBinder::score_method_match(MethodSymbol* method, std::span<StructSymbol* const> argTypes, GenericTypeSymbol* genericType, std::pmr::vector<StructSymbol*>& outMethodTypeArgs, std::span<StructSymbol* const> explicitTypeArgs)
 {
-	const gmt::vector<gmt::Ref<ParameterSymbol>>& parameters = method->get_parameters();
+	const gmt::vector<ParameterSymbol*>& parameters = method->get_parameters();
 	bool generic = !method->get_type_parameters().empty();
 
 	if (generic)
@@ -567,7 +567,7 @@ int ExpressionBinder::score_method_match(gmt::Ref<MethodSymbol> method, std::spa
 	int total = 0;
 	for (std::size_t i = 0; i < argTypes.size(); i++)
 	{
-		gmt::Ref<StructSymbol> parameterType = generic
+		StructSymbol* parameterType = generic
 			? substitute_type_parameters(parameters[i]->get_type(), genericType, method, outMethodTypeArgs)
 			: substitute_type_parameters(parameters[i]->get_type(), genericType);
 
@@ -581,21 +581,21 @@ int ExpressionBinder::score_method_match(gmt::Ref<MethodSymbol> method, std::spa
 	return total;
 }
 
-bool ExpressionBinder::check_method_type_constraints(gmt::Ref<MethodSymbol> method, std::span<const gmt::Ref<StructSymbol>> methodTypeArgs, SyntaxToken blameToken)
+bool ExpressionBinder::check_method_type_constraints(MethodSymbol* method, std::span<StructSymbol* const> methodTypeArgs, SyntaxToken blameToken)
 {
-	const gmt::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters = method->get_type_parameters();
+	const gmt::vector<TypeParameterSymbol*>& typeParameters = method->get_type_parameters();
 	bool satisfied = true;
 
 	for (std::size_t i = 0; i < typeParameters.size() && i < methodTypeArgs.size(); ++i)
 	{
-		gmt::Ref<TypeParameterSymbol> typeParameter = typeParameters[i];
-		gmt::Ref<StructSymbol> argument = methodTypeArgs[i];
-		if (argument.is_null())
+		TypeParameterSymbol* typeParameter = typeParameters[i];
+		StructSymbol* argument = methodTypeArgs[i];
+		if ((argument == nullptr))
 			continue;
 
-		for (const gmt::Ref<StructSymbol>& constraint : typeParameter->get_constraints())
+		for (StructSymbol* const& constraint : typeParameter->get_constraints())
 		{
-			if (constraint.is_null())
+			if ((constraint == nullptr))
 				continue;
 
 			if (get_model().type_satisfies_constraint(argument, constraint))
@@ -609,111 +609,111 @@ bool ExpressionBinder::check_method_type_constraints(gmt::Ref<MethodSymbol> meth
 	return satisfied;
 }
 
-bool ExpressionBinder::collect_explicit_type_arguments(const InvokationExpressionSyntax* node, std::pmr::vector<gmt::Ref<StructSymbol>>& outTypeArgs)
+bool ExpressionBinder::collect_explicit_type_arguments(const InvokationExpressionSyntax* node, std::pmr::vector<StructSymbol*>& outTypeArgs)
 {
 	outTypeArgs.clear();
-	gmt::Ref<const TypeArgumentsListSyntax> list = node->get_type_arguments();
-	if (list.is_null())
+	const TypeArgumentsListSyntax* list = node->get_type_arguments();
+	if ((list == nullptr))
 		return false;
 
-	for (const gmt::Ref<TypeSyntax>& argumentNode : list->get_types().as_span())
+	for (TypeSyntax* const& argumentNode : list->get_types())
 	{
-		gmt::Ref<StructSymbol> type = resolve_type_expression(argumentNode);
-		if (!type.is_null())
+		StructSymbol* type = resolve_type_expression(argumentNode);
+		if (!(type == nullptr))
 			outTypeArgs.push_back(type);
 	}
 
 	return true;
 }
 
-void ExpressionBinder::bind_invocation_type_arguments(gmt::Ref<const InvokationExpressionSyntax> node, gmt::Ref<MethodSymbol> method, gmt::Ref<GenericTypeSymbol> genericType, std::span<const gmt::Ref<StructSymbol>> methodTypeArgs)
+void ExpressionBinder::bind_invocation_type_arguments(const InvokationExpressionSyntax* node, MethodSymbol* method, GenericTypeSymbol* genericType, std::span<StructSymbol* const> methodTypeArgs)
 {
-	bool genericReceiver = !genericType.is_null();
+	bool genericReceiver = !(genericType == nullptr);
 	bool genericMethod = !method->get_type_parameters().empty();
 	if (!genericReceiver && !genericMethod)
 		return;
 
 	// combined index space: receiver type arguments first, then the method's
 	// own, matching TypeParameterSymbol::get_type_argument_index
-	gmt::inline_vector<gmt::Ref<StructSymbol>, 4> combined;
+	gmt::inline_vector<StructSymbol*, 4> combined;
 	if (genericReceiver)
 	{
-		for (gmt::Ref<TypeParameterSymbol> parameter : genericType->get_underlaying_type()->type_parameters)
+		for (TypeParameterSymbol* parameter : genericType->get_underlaying_type()->type_parameters)
 			combined.push_back(genericType->substitute_type_parameter(parameter));
 	}
 
-	for (gmt::Ref<StructSymbol> argument : methodTypeArgs)
+	for (StructSymbol* argument : methodTypeArgs)
 		combined.push_back(argument);
 
 	get_symbol_table().bind_type_arguments(node, combined.get_vector());
 }
 
-gmt::Ref<DelegateTypeSymbol> ExpressionBinder::try_resolve_delegate_invocation(const InvokationExpressionSyntax* node, gmt::Ref<SyntaxSymbol> lookup, gmt::Ref<GenericTypeSymbol>& outInstantiation)
+DelegateTypeSymbol* ExpressionBinder::try_resolve_delegate_invocation(const InvokationExpressionSyntax* node, SyntaxSymbol* lookup, GenericTypeSymbol*& outInstantiation)
 {
-	outInstantiation = gmt::nullref;
-	if (lookup.is_null())
-		return gmt::nullref;
+	outInstantiation = nullptr;
+	if ((lookup == nullptr))
+		return nullptr;
 
-	gmt::Ref<StructSymbol> delegateHolderType = gmt::nullref;
+	StructSymbol* delegateHolderType = nullptr;
 	switch (lookup->get_kind())
 	{
 		case SyntaxKind::VariableStatement:
-			delegateHolderType = lookup.as<VariableSymbol>()->get_type();
+			delegateHolderType = static_cast<VariableSymbol*>(lookup)->get_type();
 			break;
 
 		case SyntaxKind::Parameter:
-			delegateHolderType = lookup.as<ParameterSymbol>()->get_type();
+			delegateHolderType = static_cast<ParameterSymbol*>(lookup)->get_type();
 			break;
 
 		case SyntaxKind::FieldDeclaration:
-			delegateHolderType = lookup.as<FieldSymbol>()->get_return_type();
+			delegateHolderType = static_cast<FieldSymbol*>(lookup)->get_return_type();
 			break;
 
 		default:
-			return gmt::nullref;
+			return nullptr;
 	}
 
 	// a generic delegate instantiation substitutes the delegate's own type
 	// parameters with the holder's type arguments
-	if (!delegateHolderType.is_null() && delegateHolderType->get_kind() == SyntaxKind::GenericType)
-		outInstantiation = delegateHolderType.as<GenericTypeSymbol>();
+	if (!(delegateHolderType == nullptr) && delegateHolderType->get_kind() == SyntaxKind::GenericType)
+		outInstantiation = static_cast<GenericTypeSymbol*>(delegateHolderType);
 
 	return get_delegate_type(delegateHolderType);
 }
 
-gmt::Ref<MethodSymbol> ExpressionBinder::resolve_method(const InvokationExpressionSyntax* node, gmt::Ref<StructSymbol> currentType, std::pmr::vector<gmt::Ref<StructSymbol>>& outMethodTypeArgs, gmt::Ref<GenericTypeSymbol>& outGenericType)
+MethodSymbol* ExpressionBinder::resolve_method(const InvokationExpressionSyntax* node, StructSymbol* currentType, std::pmr::vector<StructSymbol*>& outMethodTypeArgs, GenericTypeSymbol*& outGenericType)
 {
 	std::wstring_view methodName = node->get_identifier().get_lexeme();
 
-	if (node->get_arguments().is_null())
+	if ((node->get_arguments() == nullptr))
 	{
 		get_diagnostics().report_error(node->get_identifier(), gmt::concat(L"Method '", methodName, L"' invocation has no arguments list"));
-		return gmt::nullref;
+		return nullptr;
 	}
 
-	gmt::inline_vector<gmt::Ref<StructSymbol>, 8> argTypes;
+	gmt::inline_vector<StructSymbol*, 8> argTypes;
 	if (!collect_argument_types(node, argTypes.get_vector()))
-		return gmt::nullref;
+		return nullptr;
 
-	gmt::inline_vector<gmt::Ref<StructSymbol>, 4> explicitTypeArgs;
+	gmt::inline_vector<StructSymbol*, 4> explicitTypeArgs;
 	bool hasExplicitTypeArgs = collect_explicit_type_arguments(node, explicitTypeArgs.get_vector());
 
 	bool staticContext = get_is_static_context(node->get_previous());
-	if (currentType.is_null() && is_ambiguous_name(methodName))
+	if ((currentType == nullptr) && is_ambiguous_name(methodName))
 	{
 		get_diagnostics().report_error(node->get_identifier(), gmt::concat(L"Ambiguous reference: '", methodName, L"' is defined in multiple imported namespaces"));
-		return gmt::nullref;
+		return nullptr;
 	}
 
-	gmt::Ref<GenericTypeSymbol> genericType = gmt::nullref;
-	if (!currentType.is_null() && currentType->get_kind() == SyntaxKind::GenericType)
-		genericType = currentType.as<GenericTypeSymbol>();
+	GenericTypeSymbol* genericType = nullptr;
+	if (!(currentType == nullptr) && currentType->get_kind() == SyntaxKind::GenericType)
+		genericType = static_cast<GenericTypeSymbol*>(currentType);
 
-	outGenericType = gmt::nullref;
+	outGenericType = nullptr;
 
 	// extension shape carries the receiver type as the first argument
-	gmt::inline_vector<gmt::Ref<StructSymbol>, 8> extensionArgs;
-	if (!currentType.is_null() && !staticContext)
+	gmt::inline_vector<StructSymbol*, 8> extensionArgs;
+	if (!(currentType == nullptr) && !staticContext)
 	{
 		extensionArgs.get_vector().reserve(argTypes.get_vector().size() + 1);
 		extensionArgs.push_back(currentType);
@@ -722,12 +722,12 @@ gmt::Ref<MethodSymbol> ExpressionBinder::resolve_method(const InvokationExpressi
 
 	struct candidate
 	{
-		gmt::Ref<MethodSymbol> method;
+		MethodSymbol* method = nullptr;
 		bool as_extension;
 	};
 
 	gmt::inline_vector<candidate, 8> candidates;
-	auto addCandidate = [&candidates](gmt::Ref<MethodSymbol> method, bool asExtension)
+	auto addCandidate = [&candidates](MethodSymbol* method, bool asExtension)
 	{
 		for (const candidate& existing : candidates.get_vector())
 		{
@@ -739,31 +739,31 @@ gmt::Ref<MethodSymbol> ExpressionBinder::resolve_method(const InvokationExpressi
 	};
 
 	// instance and static methods declared on the receiver type
-	gmt::Ref<StructSymbol> receiverType = currentType;
-	if (!receiverType.is_null() && receiverType->get_kind() == SyntaxKind::GenericType)
-		receiverType = receiverType.as<GenericTypeSymbol>()->get_underlaying_type();
+	StructSymbol* receiverType = currentType;
+	if (!(receiverType == nullptr) && receiverType->get_kind() == SyntaxKind::GenericType)
+		receiverType = static_cast<GenericTypeSymbol*>(receiverType)->get_underlaying_type();
 
-	if (!receiverType.is_null())
+	if (!(receiverType == nullptr))
 	{
 		if (receiverType->get_kind() == SyntaxKind::TypeParameter)
 		{
-			for (gmt::Ref<StructSymbol> constraint : receiverType.as<TypeParameterSymbol>()->get_constraints())
+			for (StructSymbol* constraint : static_cast<TypeParameterSymbol*>(receiverType)->get_constraints())
 			{
-				if (constraint.is_null())
+				if ((constraint == nullptr))
 					continue;
 
-				for (gmt::Ref<MethodSymbol> method : constraint->methods)
+				for (MethodSymbol* method : constraint->methods)
 				{
-					if (!method.is_null() && method->get_name() == methodName)
+					if (!(method == nullptr) && method->get_name() == methodName)
 						addCandidate(method, false);
 				}
 			}
 		}
 		else
 		{
-			for (gmt::Ref<MethodSymbol> method : receiverType->methods)
+			for (MethodSymbol* method : receiverType->methods)
 			{
-				if (!method.is_null() && method->get_name() == methodName)
+				if (!(method == nullptr) && method->get_name() == methodName)
 					addCandidate(method, false);
 			}
 		}
@@ -771,15 +771,15 @@ gmt::Ref<MethodSymbol> ExpressionBinder::resolve_method(const InvokationExpressi
 
 	// functions declared in the current scope: locals, top-level functions
 	// and members of imported namespaces
-	bool asExtension = !staticContext && !currentType.is_null();
-	gmt::Ref<SyntaxSymbol> scopeLookup = get_current_scope()->lookup(methodName);
-	if (!scopeLookup.is_null() && scopeLookup->get_kind() == SyntaxKind::FunctionDeclaration)
-		addCandidate(scopeLookup.as<MethodSymbol>(), asExtension);
+	bool asExtension = !staticContext && !(currentType == nullptr);
+	SyntaxSymbol* scopeLookup = get_current_scope()->lookup(methodName);
+	if (!(scopeLookup == nullptr) && scopeLookup->get_kind() == SyntaxKind::FunctionDeclaration)
+		addCandidate(static_cast<MethodSymbol*>(scopeLookup), asExtension);
 
-	for (const gmt::Ref<SyntaxSymbol>& overload : get_current_scope()->find_overloads(methodName))
+	for (SyntaxSymbol* const& overload : get_current_scope()->find_overloads(methodName))
 	{
-		if (!overload.is_null() && overload->get_kind() == SyntaxKind::FunctionDeclaration)
-			addCandidate(overload.as<MethodSymbol>(), asExtension);
+		if (!(overload == nullptr) && overload->get_kind() == SyntaxKind::FunctionDeclaration)
+			addCandidate(static_cast<MethodSymbol*>(overload), asExtension);
 	}
 
 	if (hasExplicitTypeArgs)
@@ -787,7 +787,7 @@ gmt::Ref<MethodSymbol> ExpressionBinder::resolve_method(const InvokationExpressi
 		bool arityAccepted = false;
 		for (const candidate& item : candidates.get_vector())
 		{
-			const gmt::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters = item.method->get_type_parameters();
+			const gmt::vector<TypeParameterSymbol*>& typeParameters = item.method->get_type_parameters();
 			if (!typeParameters.empty() && typeParameters.size() == explicitTypeArgs.get_vector().size())
 			{
 				arityAccepted = true;
@@ -798,32 +798,32 @@ gmt::Ref<MethodSymbol> ExpressionBinder::resolve_method(const InvokationExpressi
 		if (!arityAccepted)
 		{
 			get_diagnostics().report_error(node->get_identifier(), gmt::concat(L"Method '", methodName, L"' does not accept ", std::to_wstring(explicitTypeArgs.get_vector().size()), L" type argument(s)"));
-			return gmt::nullref;
+			return nullptr;
 		}
 	}
 
-	gmt::Ref<MethodSymbol> best = gmt::nullref;
-	std::pmr::vector<gmt::Ref<StructSymbol>> bestTypeArgs;
+	MethodSymbol* best = nullptr;
+	std::pmr::vector<StructSymbol*> bestTypeArgs;
 	bool bestExtension = false;
 	int bestScore = -1;
 	bool ambiguous = false;
 
 	for (const candidate& item : candidates.get_vector())
 	{
-		std::span<const gmt::Ref<StructSymbol>> candidateArgs = item.as_extension
-			? std::span<const gmt::Ref<StructSymbol>>(extensionArgs.get_vector())
-			: std::span<const gmt::Ref<StructSymbol>>(argTypes.get_vector());
+		std::span<StructSymbol* const> candidateArgs = item.as_extension
+			? std::span<StructSymbol* const>(extensionArgs.get_vector())
+			: std::span<StructSymbol* const>(argTypes.get_vector());
 
 		// bind untyped lambda arguments against this candidate's parameter
 		// types first, so scoring and type inference see complete delegates
 		bind_pending_lambda_arguments(node, item.method, item.as_extension, genericType, candidateArgs, explicitTypeArgs.get_vector());
 
-		gmt::inline_vector<gmt::Ref<StructSymbol>, 4> candidateTypeArgs;
+		gmt::inline_vector<StructSymbol*, 4> candidateTypeArgs;
 		int score = score_method_match(item.method, candidateArgs, genericType, candidateTypeArgs.get_vector(), explicitTypeArgs.get_vector());
 		if (score < 0)
 			continue;
 
-		if (best.is_null() || score < bestScore)
+		if ((best == nullptr) || score < bestScore)
 		{
 			best = item.method;
 			bestScore = score;
@@ -835,20 +835,20 @@ gmt::Ref<MethodSymbol> ExpressionBinder::resolve_method(const InvokationExpressi
 			ambiguous = true;
 	}
 
-	if (best.is_null())
+	if ((best == nullptr))
 	{
 		// explicit type arguments never apply to delegate-backed callees
 		if (hasExplicitTypeArgs)
 		{
 			report_no_matching_overload(methodName, argTypes.get_vector(), node->get_identifier());
-			return gmt::nullref;
+			return nullptr;
 		}
 
 		// a delegate-backed variable, parameter or field is not a method;
 		// the caller analyzes that shape separately, so stay silent here
-		gmt::Ref<SyntaxSymbol> lookup = get_current_scope()->lookup(methodName);
-		gmt::Ref<GenericTypeSymbol> delegateInstantiation = gmt::nullref;
-		if (try_resolve_delegate_invocation(node, lookup, delegateInstantiation).is_null())
+		SyntaxSymbol* lookup = get_current_scope()->lookup(methodName);
+		GenericTypeSymbol* delegateInstantiation = nullptr;
+		if ((try_resolve_delegate_invocation(node, lookup, delegateInstantiation) == nullptr))
 		{
 			if (candidates.get_vector().empty())
 				report_no_matching_method(methodName, node->get_identifier());
@@ -856,59 +856,59 @@ gmt::Ref<MethodSymbol> ExpressionBinder::resolve_method(const InvokationExpressi
 				report_no_matching_overload(methodName, argTypes.get_vector(), node->get_identifier());
 		}
 
-		return gmt::nullref;
+		return nullptr;
 	}
 
 	if (ambiguous)
 	{
 		get_diagnostics().report_error(node->get_identifier(), gmt::concat(L"The call to '", methodName, L"' is ambiguous between multiple overloads"));
-		return gmt::nullref;
+		return nullptr;
 	}
 
 	if (staticContext && best->get_linking() == LINK_INSTANCE)
 	{
 		get_diagnostics().report_error(node->get_identifier(), gmt::concat(L"Cannot call instance method '", methodName, L"' from type context"));
-		return gmt::nullref;
+		return nullptr;
 	}
 
 	if (!staticContext && best->get_linking() == LINK_STATIC && !bestExtension)
 	{
 		get_diagnostics().report_error(node->get_identifier(), gmt::concat(L"Cannot call static method '", methodName, L"' on instance reference"));
-		return gmt::nullref;
+		return nullptr;
 	}
 
 	if (!bestTypeArgs.empty() && !check_method_type_constraints(best, bestTypeArgs, node->get_identifier()))
-		return gmt::nullref;
+		return nullptr;
 
 	outMethodTypeArgs = std::move(bestTypeArgs);
 	outGenericType = genericType;
 	return best;
 }
 
-gmt::Ref<ConstructorSymbol> ExpressionBinder::resolve_constructor(const ObjectExpressionSyntax* node)
+ConstructorSymbol* ExpressionBinder::resolve_constructor(const ObjectExpressionSyntax* node)
 {
-	std::optional<gmt::Ref<const ObjectExpressionSyntax>> nodeRef = ref_from(node);
-	gmt::Ref<StructSymbol> createdType = nodeRef.has_value() ? lookup_symbol<StructSymbol>(*nodeRef) : gmt::nullref;
-	if (createdType.is_null())
-		return gmt::nullref;
+	std::optional<const ObjectExpressionSyntax*> nodeRef = ref_from(node);
+	StructSymbol* createdType = nodeRef.has_value() ? lookup_symbol<StructSymbol>(*nodeRef) : nullptr;
+	if ((createdType == nullptr))
+		return nullptr;
 
-	gmt::Ref<StructSymbol> searchType = createdType;
+	StructSymbol* searchType = createdType;
 	if (searchType->get_kind() == SyntaxKind::GenericType)
-		searchType = searchType.as<GenericTypeSymbol>()->get_underlaying_type();
+		searchType = static_cast<GenericTypeSymbol*>(searchType)->get_underlaying_type();
 
-	if (node->get_arguments().is_null())
-		return gmt::nullref;
+	if ((node->get_arguments() == nullptr))
+		return nullptr;
 
-	gmt::inline_vector<gmt::Ref<StructSymbol>, 8> argTypes;
-	for (const gmt::Ref<ArgumentSyntax>& argument : node->get_arguments()->get_arguments().as_span())
+	gmt::inline_vector<StructSymbol*, 8> argTypes;
+	for (ArgumentSyntax* const& argument : node->get_arguments()->get_arguments())
 	{
-		if (argument.is_null() || argument->get_expression().is_null())
-			return gmt::nullref;
+		if ((argument == nullptr) || (argument->get_expression() == nullptr))
+			return nullptr;
 
 		visit_expression(argument->get_expression());
-		gmt::Ref<StructSymbol> argumentType = get_expression_type(argument->get_expression());
-		if (argumentType.is_null())
-			return gmt::nullref;
+		StructSymbol* argumentType = get_expression_type(argument->get_expression());
+		if ((argumentType == nullptr))
+			return nullptr;
 
 		argTypes.push_back(argumentType);
 	}
@@ -916,21 +916,21 @@ gmt::Ref<ConstructorSymbol> ExpressionBinder::resolve_constructor(const ObjectEx
 	// a type without declared constructors value-initializes when no
 	// arguments are supplied
 	if (searchType->constructors.empty() && argTypes.get_vector().empty())
-		return gmt::nullref;
+		return nullptr;
 
-	gmt::Ref<ConstructorSymbol> best = gmt::nullref;
+	ConstructorSymbol* best = nullptr;
 	int bestScore = -1;
 
-	gmt::Ref<GenericTypeSymbol> construction = createdType->get_kind() == SyntaxKind::GenericType
-		? createdType.as<GenericTypeSymbol>()
-		: gmt::nullref;
+	GenericTypeSymbol* construction = createdType->get_kind() == SyntaxKind::GenericType
+		? static_cast<GenericTypeSymbol*>(createdType)
+		: nullptr;
 
-	for (gmt::Ref<ConstructorSymbol> constructor : searchType->constructors)
+	for (ConstructorSymbol* constructor : searchType->constructors)
 	{
-		if (constructor.is_null())
+		if ((constructor == nullptr))
 			continue;
 
-		const gmt::vector<gmt::Ref<ParameterSymbol>>& parameters = constructor->get_parameters();
+		const gmt::vector<ParameterSymbol*>& parameters = constructor->get_parameters();
 		if (parameters.size() != argTypes.get_vector().size())
 			continue;
 
@@ -938,8 +938,8 @@ gmt::Ref<ConstructorSymbol> ExpressionBinder::resolve_constructor(const ObjectEx
 		bool matches = true;
 		for (std::size_t i = 0; i < parameters.size(); i++)
 		{
-			gmt::Ref<StructSymbol> parameterType = parameters[i]->get_type();
-			if (!construction.is_null())
+			StructSymbol* parameterType = parameters[i]->get_type();
+			if (!(construction == nullptr))
 				parameterType = substitute_type_parameters(parameterType, construction);
 
 			int score = conversion_score(parameterType, argTypes.get_vector()[i]);
@@ -955,48 +955,48 @@ gmt::Ref<ConstructorSymbol> ExpressionBinder::resolve_constructor(const ObjectEx
 		if (!matches)
 			continue;
 
-		if (best.is_null() || total < bestScore)
+		if ((best == nullptr) || total < bestScore)
 		{
 			best = constructor;
 			bestScore = total;
 		}
 	}
 
-	if (best.is_null())
+	if ((best == nullptr))
 	{
 		get_diagnostics().report_error(node->get_new_token(), gmt::concat(L"No constructor of '", get_model().get_type_display_name(createdType), L"' accepts the supplied arguments (", format_argument_list(argTypes.get_vector(), get_model()), L")"));
-		return gmt::nullref;
+		return nullptr;
 	}
 
 	return best;
 }
 
-gmt::Ref<StructSymbol> ExpressionBinder::analyze_object_expression(const ObjectExpressionSyntax* node)
+StructSymbol* ExpressionBinder::analyze_object_expression(const ObjectExpressionSyntax* node)
 {
-	std::optional<gmt::Ref<const ObjectExpressionSyntax>> nodeRef = ref_from(node);
+	std::optional<const ObjectExpressionSyntax*> nodeRef = ref_from(node);
 
 	// expression nodes are analyzed repeatedly (member chains, overload
 	// resolution); once the constructor is bound the type is already resolved
 	if (nodeRef.has_value())
 	{
-		gmt::Ref<SyntaxSymbol> bound = get_symbol_table().lookup_symbol(*nodeRef);
-		if (!bound.is_null() && bound->get_kind() == SyntaxKind::ConstructorDeclaration)
+		SyntaxSymbol* bound = get_symbol_table().lookup_symbol(*nodeRef);
+		if (!(bound == nullptr) && bound->get_kind() == SyntaxKind::ConstructorDeclaration)
 			return get_expression_type(*nodeRef);
 	}
 
-	gmt::Ref<StructSymbol> createdType = nodeRef.has_value() ? lookup_symbol<StructSymbol>(*nodeRef) : gmt::nullref;
-	if (createdType.is_null())
-		return gmt::nullref;
+	StructSymbol* createdType = nodeRef.has_value() ? lookup_symbol<StructSymbol>(*nodeRef) : nullptr;
+	if ((createdType == nullptr))
+		return nullptr;
 
-	gmt::Ref<ConstructorSymbol> constructor = resolve_constructor(node);
-	if (constructor.is_null())
+	ConstructorSymbol* constructor = resolve_constructor(node);
+	if ((constructor == nullptr))
 		return createdType;
 
-	if (!node->get_arguments().is_null())
+	if (!(node->get_arguments() == nullptr))
 	{
-		gmt::Ref<GenericTypeSymbol> genericType = gmt::nullref;
+		GenericTypeSymbol* genericType = nullptr;
 		if (createdType->get_kind() == SyntaxKind::GenericType)
-			genericType = createdType.as<GenericTypeSymbol>();
+			genericType = static_cast<GenericTypeSymbol*>(createdType);
 
 		match_method_arguments(node->get_new_token(), constructor->get_parameters(), node->get_arguments()->get_arguments(), genericType);
 	}
@@ -1009,101 +1009,101 @@ gmt::Ref<StructSymbol> ExpressionBinder::analyze_object_expression(const ObjectE
 
 void ExpressionBinder::visit_object_creation_expression(const ObjectExpressionSyntax* node)
 {
-	std::optional<gmt::Ref<const ObjectExpressionSyntax>> nodeRef = ref_from(node);
+	std::optional<const ObjectExpressionSyntax*> nodeRef = ref_from(node);
 	if (!nodeRef.has_value())
 		return;
 
 	if (node->is_array_creation())
 	{
-		if (!node->get_array_size().is_null())
+		if (!(node->get_array_size() == nullptr))
 			visit_expression(node->get_array_size());
 
-		gmt::Ref<StructSymbol> elementType = lookup_symbol<StructSymbol>(*nodeRef);
-		if (elementType.is_null())
+		StructSymbol* elementType = lookup_symbol<StructSymbol>(*nodeRef);
+		if ((elementType == nullptr))
 			elementType = get_symbol_table().get_void_primitive();
 
-		if (!node->get_array_size().is_null())
+		if (!(node->get_array_size() == nullptr))
 		{
-			gmt::Ref<StructSymbol> sizeType = get_expression_type(node->get_array_size());
-			bool sizeIsInteger = !sizeType.is_null() && sizeType == get_symbol_table().get_integer_primitive();
+			StructSymbol* sizeType = get_expression_type(node->get_array_size());
+			bool sizeIsInteger = !(sizeType == nullptr) && sizeType == get_symbol_table().get_integer_primitive();
 			if (!sizeIsInteger)
 				get_diagnostics().report_error(node->get_new_token(), L"Array size must be an integer");
 		}
 
-		gmt::Ref<ArrayTypeSymbol> arrayType = m_factory.create_array_type(elementType);
+		ArrayTypeSymbol* arrayType = m_factory.create_array_type(elementType);
 		get_symbol_table().bind_symbol<ArrayTypeSymbol>(*nodeRef, arrayType);
 		set_expression_type(*nodeRef, arrayType);
 		return;
 	}
 
-	gmt::Ref<StructSymbol> type = analyze_object_expression(node);
+	StructSymbol* type = analyze_object_expression(node);
 	set_expression_type(*nodeRef, type);
 }
 
-gmt::Ref<NamespaceSymbol> ExpressionBinder::resolve_namespace_qualifier(gmt::Ref<const ExpressionSyntax> expression)
+NamespaceSymbol* ExpressionBinder::resolve_namespace_qualifier(const ExpressionSyntax* expression)
 {
-	if (expression.is_null())
-		return gmt::nullref;
+	if ((expression == nullptr))
+		return nullptr;
 
 	if (expression->get_kind() != SyntaxKind::MemberAccessExpression)
-		return gmt::nullref;
+		return nullptr;
 
-	gmt::Ref<const MemberAccessExpressionSyntax> member = expression.as<MemberAccessExpressionSyntax>();
-	if (member->get_previous().is_null())
+	const MemberAccessExpressionSyntax* member = gmt::as<MemberAccessExpressionSyntax>(expression);
+	if ((member->get_previous() == nullptr))
 	{
-		gmt::Ref<SyntaxSymbol> symbol = get_current_scope()->lookup(member->get_identifier().get_lexeme());
-		if (!symbol.is_null() && symbol->get_kind() == SyntaxKind::NamespaceDirective)
-			return symbol.as<NamespaceSymbol>();
+		SyntaxSymbol* symbol = get_current_scope()->lookup(member->get_identifier().get_lexeme());
+		if (!(symbol == nullptr) && symbol->get_kind() == SyntaxKind::NamespaceDirective)
+			return static_cast<NamespaceSymbol*>(symbol);
 
 		return get_symbol_table().get_root_namespace()->lookup(member->get_identifier().get_lexeme());
 	}
 
-	gmt::Ref<NamespaceSymbol> parentNamespace = resolve_namespace_qualifier(member->get_previous());
-	if (parentNamespace.is_null())
-		return gmt::nullref;
+	NamespaceSymbol* parentNamespace = resolve_namespace_qualifier(member->get_previous());
+	if ((parentNamespace == nullptr))
+		return nullptr;
 
 	return parentNamespace->lookup(member->get_identifier().get_lexeme());
 }
 
-gmt::Ref<StructSymbol> ExpressionBinder::analyze_qualified_invokation_expression(const InvokationExpressionSyntax* node, gmt::Ref<NamespaceSymbol> namespaceSymbol)
+StructSymbol* ExpressionBinder::analyze_qualified_invokation_expression(const InvokationExpressionSyntax* node, NamespaceSymbol* namespaceSymbol)
 {
 	std::wstring_view methodName = node->get_identifier().get_lexeme();
 
-	if (node->get_arguments().is_null())
+	if ((node->get_arguments() == nullptr))
 	{
 		get_diagnostics().report_error(node->get_identifier(), gmt::concat(L"Method '", methodName, L"' invocation has no arguments list"));
-		return gmt::nullref;
+		return nullptr;
 	}
 
-	gmt::inline_vector<gmt::Ref<StructSymbol>, 8> argTypes;
+	gmt::inline_vector<StructSymbol*, 8> argTypes;
 	if (!collect_argument_types(node, argTypes.get_vector()))
-		return gmt::nullref;
+		return nullptr;
 
-	gmt::inline_vector<gmt::Ref<StructSymbol>, 4> explicitTypeArgs;
+	gmt::inline_vector<StructSymbol*, 4> explicitTypeArgs;
 	collect_explicit_type_arguments(node, explicitTypeArgs.get_vector());
 
-	gmt::Ref<MethodSymbol> best = gmt::nullref;
-	std::pmr::vector<gmt::Ref<StructSymbol>> bestTypeArgs;
+	MethodSymbol* best = nullptr;
+	std::pmr::vector<StructSymbol*> bestTypeArgs;
 	int bestScore = -1;
 
-	for (gmt::Ref<SyntaxSymbol> member : namespaceSymbol->members)
+	for (SyntaxSymbol* member : namespaceSymbol->members)
 	{
-		if (member.is_null() || member->get_kind() != SyntaxKind::FunctionDeclaration)
+		if ((member == nullptr) || member->get_kind() != SyntaxKind::FunctionDeclaration)
 			continue;
 
-		gmt::Ref<MethodSymbol> method = member.as<MethodSymbol>();
+		MethodSymbol* method = static_cast<MethodSymbol*>(member);
 		if (method->get_name() != methodName)
 			continue;
 
 		if (method->get_linking() != LINK_STATIC)
 			continue;
 
-		gmt::inline_vector<gmt::Ref<StructSymbol>, 4> candidateTypeArgs;
-		int score = score_method_match(method, argTypes.get_vector(), gmt::nullref, candidateTypeArgs.get_vector(), explicitTypeArgs.get_vector());
+		gmt::inline_vector<StructSymbol*, 4> candidateTypeArgs;
+		int score = score_method_match(method, argTypes.get_vector(), nullptr, candidateTypeArgs.get_vector(), explicitTypeArgs.get_vector());
 		if (score < 0)
 			continue;
 
-		if (best.is_null() || score < bestScore)
+		if ((best == nullptr) || score < bestScore)
 		{
 			best = method;
 			bestScore = score;
@@ -1111,75 +1111,75 @@ gmt::Ref<StructSymbol> ExpressionBinder::analyze_qualified_invokation_expression
 		}
 	}
 
-	if (best.is_null())
+	if ((best == nullptr))
 	{
-		for (gmt::Ref<SyntaxSymbol> member : namespaceSymbol->members)
+		for (SyntaxSymbol* member : namespaceSymbol->members)
 		{
-			if (!member.is_null() && member->get_name() == methodName && member->is_type())
+			if (!(member == nullptr) && member->get_name() == methodName && member->is_type())
 			{
 				get_diagnostics().report_error(node->get_identifier(), gmt::concat(L"Use 'new ", methodName, L"()' instead of '", methodName, L"()' to construct a type"));
-				return gmt::nullref;
+				return nullptr;
 			}
 		}
 
-		if (!namespaceSymbol->lookup(methodName).is_null())
+		if (!(namespaceSymbol->lookup(methodName) == nullptr))
 		{
 			get_diagnostics().report_error(node->get_identifier(), gmt::concat(L"Cannot call namespace '", methodName, L"'; use '", methodName, L".Member()' to access its members"));
-			return gmt::nullref;
+			return nullptr;
 		}
 
 		report_no_matching_method(methodName, node->get_identifier());
-		return gmt::nullref;
+		return nullptr;
 	}
 
-	std::optional<gmt::Ref<const InvokationExpressionSyntax>> nodeRef = ref_from(node);
+	std::optional<const InvokationExpressionSyntax*> nodeRef = ref_from(node);
 	if (nodeRef.has_value())
 	{
-		gmt::Ref<const SyntaxNode> declaringNode = get_symbol_table().lookup_node(best);
+		const SyntaxNode* declaringNode = get_symbol_table().lookup_node(best);
 		if (!is_symbol_accessible(best, declaringNode, *nodeRef))
 		{
 			get_diagnostics().report_error(node->get_identifier(), gmt::concat(L"Method '", methodName, L"' is not accessible"));
-			return gmt::nullref;
+			return nullptr;
 		}
 
 		if (!bestTypeArgs.empty() && !check_method_type_constraints(best, bestTypeArgs, node->get_identifier()))
-			return gmt::nullref;
+			return nullptr;
 
 		get_symbol_table().bind_symbol<MethodSymbol>(*nodeRef, best);
-		bind_invocation_type_arguments(*nodeRef, best, gmt::nullref, bestTypeArgs);
+		bind_invocation_type_arguments(*nodeRef, best, nullptr, bestTypeArgs);
 	}
 
-	if (best->get_return_type().is_null())
+	if ((best->get_return_type() == nullptr))
 	{
 		get_diagnostics().report_error(node->get_identifier(), gmt::concat(L"Method '", methodName, L"' return type not resolved"));
-		return gmt::nullref;
+		return nullptr;
 	}
 
-	gmt::Ref<StructSymbol> type = substitute_type_parameters(best->get_return_type(), gmt::nullref, best, bestTypeArgs);
+	StructSymbol* type = substitute_type_parameters(best->get_return_type(), nullptr, best, bestTypeArgs);
 	return wrap_async_return_type(best, type);
 }
 
-gmt::Ref<StructSymbol> ExpressionBinder::analyze_invokation_expression(const InvokationExpressionSyntax* node, gmt::Ref<StructSymbol> currentType)
+StructSymbol* ExpressionBinder::analyze_invokation_expression(const InvokationExpressionSyntax* node, StructSymbol* currentType)
 {
 	std::wstring_view methodName = node->get_identifier().get_lexeme();
-	gmt::inline_vector<gmt::Ref<StructSymbol>, 4> methodTypeArgs;
-	gmt::Ref<GenericTypeSymbol> genericType = gmt::nullref;
-	gmt::Ref<MethodSymbol> method = resolve_method(node, currentType, methodTypeArgs.get_vector(), genericType);
-	std::optional<gmt::Ref<const InvokationExpressionSyntax>> nodeRef = ref_from(node);
+	gmt::inline_vector<StructSymbol*, 4> methodTypeArgs;
+	GenericTypeSymbol* genericType = nullptr;
+	MethodSymbol* method = resolve_method(node, currentType, methodTypeArgs.get_vector(), genericType);
+	std::optional<const InvokationExpressionSyntax*> nodeRef = ref_from(node);
 
-	if (method.is_null())
+	if ((method == nullptr))
 	{
 		// the callee may be a delegate-backed variable, parameter or field
-		gmt::Ref<SyntaxSymbol> lookup = get_current_scope()->lookup(methodName);
-		gmt::Ref<GenericTypeSymbol> delegateInstantiation = gmt::nullref;
-		gmt::Ref<DelegateTypeSymbol> delegate = try_resolve_delegate_invocation(node, lookup, delegateInstantiation);
-		if (delegate.is_null())
-			return gmt::nullref;
+		SyntaxSymbol* lookup = get_current_scope()->lookup(methodName);
+		GenericTypeSymbol* delegateInstantiation = nullptr;
+		DelegateTypeSymbol* delegate = try_resolve_delegate_invocation(node, lookup, delegateInstantiation);
+		if ((delegate == nullptr))
+			return nullptr;
 
-		if (!node->get_arguments().is_null())
+		if (!(node->get_arguments() == nullptr))
 			match_method_arguments(node->get_delimeter_token(), delegate->get_parameters(), node->get_arguments()->get_arguments(), delegateInstantiation);
 
-		gmt::Ref<StructSymbol> delegateReturn = substitute_type_parameters(delegate->get_return_type(), delegateInstantiation);
+		StructSymbol* delegateReturn = substitute_type_parameters(delegate->get_return_type(), delegateInstantiation);
 		if (nodeRef.has_value())
 		{
 			get_symbol_table().bind_symbol(*nodeRef, lookup);
@@ -1191,30 +1191,30 @@ gmt::Ref<StructSymbol> ExpressionBinder::analyze_invokation_expression(const Inv
 
 	if (nodeRef.has_value())
 	{
-		gmt::Ref<const SyntaxNode> declaringNode = get_symbol_table().lookup_node(method);
+		const SyntaxNode* declaringNode = get_symbol_table().lookup_node(method);
 		if (!is_symbol_accessible(method, declaringNode, *nodeRef))
 		{
 			get_diagnostics().report_error(node->get_identifier(), gmt::concat(L"Method '", methodName, L"' is not accessible"));
-			return gmt::nullref;
+			return nullptr;
 		}
 
 		get_symbol_table().bind_symbol<MethodSymbol>(*nodeRef, method);
 		bind_invocation_type_arguments(*nodeRef, method, genericType, methodTypeArgs.get_vector());
 	}
 
-	if (method->get_return_type().is_null())
+	if ((method->get_return_type() == nullptr))
 	{
 		get_diagnostics().report_error(node->get_identifier(), gmt::concat(L"Method '", methodName, L"' return type not resolved"));
-		return gmt::nullref;
+		return nullptr;
 	}
 
-	gmt::Ref<StructSymbol> type = substitute_type_parameters(method->get_return_type(), genericType, method, methodTypeArgs.get_vector());
+	StructSymbol* type = substitute_type_parameters(method->get_return_type(), genericType, method, methodTypeArgs.get_vector());
 	return wrap_async_return_type(method, type);
 }
 
-gmt::Ref<StructSymbol> ExpressionBinder::wrap_async_return_type(gmt::Ref<MethodSymbol> method, gmt::Ref<StructSymbol> type)
+StructSymbol* ExpressionBinder::wrap_async_return_type(MethodSymbol* method, StructSymbol* type)
 {
-	if (method.is_null() || !method->get_is_async() || type.is_null())
+	if ((method == nullptr) || !method->get_is_async() || (type == nullptr))
 		return type;
 
 	SymbolTable& table = get_symbol_table();
@@ -1223,49 +1223,49 @@ gmt::Ref<StructSymbol> ExpressionBinder::wrap_async_return_type(gmt::Ref<MethodS
 	// implied for invokations and materialized by the hoisting pass
 	if (type == table.get_void_primitive())
 	{
-		gmt::Ref<SyntaxSymbol> task = table.get_standard_type(StandardTypes::Task);
-		return task->get_kind() == SyntaxKind::StructDeclaration ? task.as<StructSymbol>() : type;
+		SyntaxSymbol* task = table.get_standard_type(StandardTypes::Task);
+		return task->get_kind() == SyntaxKind::StructDeclaration ? static_cast<StructSymbol*>(task) : type;
 	}
 
-	gmt::Ref<SyntaxSymbol> valueTask = table.get_standard_type(StandardTypes::ValueTask);
+	SyntaxSymbol* valueTask = table.get_standard_type(StandardTypes::ValueTask);
 	if (valueTask->get_kind() != SyntaxKind::StructDeclaration)
 		return type;
 
-	const gmt::Ref<StructSymbol> valueTaskArgs[] = { type };
-	return table.find_or_create_generic_type(valueTask.as<StructSymbol>(), std::span(valueTaskArgs));
+	StructSymbol* const valueTaskArgs[] = { type };
+	return table.find_or_create_generic_type(static_cast<StructSymbol*>(valueTask), std::span(valueTaskArgs));
 }
 
 void ExpressionBinder::visit_invokation_expression(const InvokationExpressionSyntax* node)
 {
-	std::optional<gmt::Ref<const InvokationExpressionSyntax>> nodeRef = ref_from(node);
-	gmt::Ref<const ExpressionSyntax> previous = node->get_previous();
+	std::optional<const InvokationExpressionSyntax*> nodeRef = ref_from(node);
+	const ExpressionSyntax* previous = node->get_previous();
 
 	// call of a direct callee expression: (callee)(arguments)
-	if (node->get_identifier().get_type() == TokenType::Unknown && !previous.is_null())
+	if (node->get_identifier().get_type() == TokenType::Unknown && !(previous == nullptr))
 	{
 		visit_expression(previous);
-		gmt::Ref<StructSymbol> calleeType = get_expression_type(previous);
-		gmt::Ref<DelegateTypeSymbol> delegate = get_delegate_type(calleeType);
+		StructSymbol* calleeType = get_expression_type(previous);
+		DelegateTypeSymbol* delegate = get_delegate_type(calleeType);
 
-		if (delegate.is_null())
+		if ((delegate == nullptr))
 		{
-			gmt::wstring calleeName = calleeType.is_null() ? L"<error>" : get_model().get_type_display_name(calleeType);
+			gmt::wstring calleeName = (calleeType == nullptr) ? L"<error>" : get_model().get_type_display_name(calleeType);
 			get_diagnostics().report_error(node->get_location(), gmt::concat(L"Cannot invoke expression of type '", calleeName, L"'"));
 
 			if (nodeRef.has_value())
-				set_expression_type(*nodeRef, gmt::nullref);
+				set_expression_type(*nodeRef, nullptr);
 
 			return;
 		}
 
-		gmt::Ref<GenericTypeSymbol> delegateInstantiation = !calleeType.is_null() && calleeType->get_kind() == SyntaxKind::GenericType
-			? calleeType.as<GenericTypeSymbol>()
-			: gmt::nullref;
+		GenericTypeSymbol* delegateInstantiation = !(calleeType == nullptr) && calleeType->get_kind() == SyntaxKind::GenericType
+			? static_cast<GenericTypeSymbol*>(calleeType)
+			: nullptr;
 
-		if (!node->get_arguments().is_null())
+		if (!(node->get_arguments() == nullptr))
 			match_method_arguments(node->get_delimeter_token(), delegate->get_parameters(), node->get_arguments()->get_arguments(), delegateInstantiation);
 
-		gmt::Ref<StructSymbol> delegateReturn = substitute_type_parameters(delegate->get_return_type(), delegateInstantiation);
+		StructSymbol* delegateReturn = substitute_type_parameters(delegate->get_return_type(), delegateInstantiation);
 		if (nodeRef.has_value())
 		{
 			get_symbol_table().bind_symbol<DelegateTypeSymbol>(*nodeRef, delegate);
@@ -1277,21 +1277,21 @@ void ExpressionBinder::visit_invokation_expression(const InvokationExpressionSyn
 
 	// namespace-qualified invocation: Foo::Bar(); namespaces are not
 	// expression values, so the qualifier chain resolves without visiting it
-	gmt::Ref<NamespaceSymbol> namespaceQualifier = resolve_namespace_qualifier(previous);
-	if (!namespaceQualifier.is_null())
+	NamespaceSymbol* namespaceQualifier = resolve_namespace_qualifier(previous);
+	if (!(namespaceQualifier == nullptr))
 	{
-		gmt::Ref<StructSymbol> type = analyze_qualified_invokation_expression(node, namespaceQualifier);
+		StructSymbol* type = analyze_qualified_invokation_expression(node, namespaceQualifier);
 		if (nodeRef.has_value())
 			set_expression_type(*nodeRef, type);
 
 		return;
 	}
 
-	if (!previous.is_null())
+	if (!(previous == nullptr))
 		visit_expression(previous);
 
-	gmt::Ref<StructSymbol> currentType = previous.is_null() ? get_owner_type() : get_expression_type(previous);
-	gmt::Ref<StructSymbol> type = analyze_invokation_expression(node, currentType);
+	StructSymbol* currentType = (previous == nullptr) ? get_owner_type() : get_expression_type(previous);
+	StructSymbol* type = analyze_invokation_expression(node, currentType);
 
 	if (nodeRef.has_value())
 		set_expression_type(*nodeRef, type);

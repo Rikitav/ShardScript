@@ -112,7 +112,7 @@ FrameEntryView CallStackFrame::peek_entry(std::byte* entry)
 	return view;
 }
 
-CallStackFrame* CallStackFrame::create(gmt::Ref<MethodSymbol> method, const FrameLayout* layout, SemanticModel& model, PragmaticModel& pragmatic, CallStackFrame* previous, std::byte* externalReturnEntry, std::size_t externalReturnPayload, FrameBlockPool* pool)
+CallStackFrame* CallStackFrame::create(MethodSymbol* method, const FrameLayout* layout, SemanticModel& model, PragmaticModel& pragmatic, CallStackFrame* previous, std::byte* externalReturnEntry, std::size_t externalReturnPayload, FrameBlockPool* pool)
 {
 	const TypeShape* returnShape = nullptr;
 	if (layout != nullptr && layout->has_return_shape())
@@ -121,7 +121,7 @@ CallStackFrame* CallStackFrame::create(gmt::Ref<MethodSymbol> method, const Fram
 	}
 	else
 	{
-		if (!method.is_null() && !method->get_return_type().is_null())
+		if (!(method == nullptr) && !(method->get_return_type() == nullptr))
 			returnShape = pragmatic.find_or_create_type_shape(model, method->get_return_type());
 
 		if (layout != nullptr)
@@ -154,7 +154,7 @@ CallStackFrame* CallStackFrame::create(gmt::Ref<MethodSymbol> method, const Fram
 			return layout->get_variable_shape(index - argumentCount);
 		}
 
-		gmt::Ref<StructSymbol> type;
+		StructSymbol* type = nullptr;
 		if (layout != nullptr)
 		{
 			type = index < argumentCount
@@ -162,7 +162,7 @@ CallStackFrame* CallStackFrame::create(gmt::Ref<MethodSymbol> method, const Fram
 				: layout->get_variable_slots()[index - argumentCount].concreteType;
 		}
 
-		if (type.is_null())
+		if ((type == nullptr))
 			return nullptr;
 
 		return pragmatic.find_or_create_type_shape(model, type);
@@ -304,7 +304,7 @@ void CallStackFrame::destroy(CallStackFrame* frame, FrameBlockPool* pool)
 		gmt::mem_free(frame);
 }
 
-gmt::Ref<MethodSymbol> CallStackFrame::get_method() const
+MethodSymbol* CallStackFrame::get_method() const
 {
 	return m_method;
 }

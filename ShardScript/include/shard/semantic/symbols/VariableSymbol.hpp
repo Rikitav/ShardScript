@@ -15,11 +15,11 @@ namespace shard
 
 	class SHARD_API VariableSymbol final : public SyntaxSymbol
 	{
-		gmt::Ref<StructSymbol> m_type;
+		StructSymbol* m_type = nullptr;
 
 	public:
-		VariableSymbol(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent);
-		VariableSymbol(gmt::StringReference name, gmt::Ref<SyntaxSymbol> parent);
+		VariableSymbol(std::wstring_view name, SyntaxSymbol* parent);
+		VariableSymbol(gmt::StringReference name, SyntaxSymbol* parent);
 		virtual ~VariableSymbol() = default;
 
 		VariableSymbol(const VariableSymbol& other) = delete;
@@ -28,7 +28,7 @@ namespace shard
 		VariableSymbol(VariableSymbol&& other) = delete;
 		VariableSymbol& operator=(VariableSymbol&& other) = delete;
 
-		gmt::Ref<StructSymbol> get_type() const;
-		void set_type(gmt::Ref<StructSymbol> type);
+		StructSymbol* get_type() const;
+		void set_type(StructSymbol* type);
 	};
 }

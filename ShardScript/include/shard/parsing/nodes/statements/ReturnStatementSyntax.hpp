@@ -14,19 +14,19 @@ namespace shard
 	class SHARD_API ReturnStatementSyntax final : public StatementSyntax
 	{
 		SyntaxToken m_returnKeywordToken;
-		gmt::Ref<ExpressionSyntax> m_expression;
+		ExpressionSyntax* m_expression = nullptr;
 		SyntaxToken m_semicolonToken;
 
 	public:
-		ReturnStatementSyntax(gmt::Ref<SyntaxNode> parent);
+		ReturnStatementSyntax(SyntaxNode* parent);
 		virtual ~ReturnStatementSyntax() = default;
 
 		SyntaxToken get_return_keyword() const;
-		gmt::Ref<const ExpressionSyntax> get_expression() const;
+		const ExpressionSyntax* get_expression() const;
 		SyntaxToken get_semicolon() const;
 
 		void set_return_keyword(const SyntaxToken& token);
-		void set_expression(gmt::Ref<ExpressionSyntax> expression);
+		void set_expression(ExpressionSyntax* expression);
 		void set_semicolon(const SyntaxToken& token);
 
 		TextLocation get_location() const override;

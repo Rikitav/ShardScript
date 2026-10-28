@@ -25,36 +25,36 @@ using namespace shard;
 
 void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 {
-	gmt::Ref<const ExpressionSyntax> target = node->get_left();
-	std::optional<gmt::Ref<const BinaryExpressionSyntax>> nodeRef = ref_from(node);
+	const ExpressionSyntax* target = node->get_left();
+	std::optional<const BinaryExpressionSyntax*> nodeRef = ref_from(node);
 
 	if (target->get_kind() == SyntaxKind::IndexatorExpression)
 	{
-		const IndexatorExpressionSyntax* indexator = static_cast<const IndexatorExpressionSyntax*>(target.as_ptr());
-		std::optional<gmt::Ref<const IndexatorExpressionSyntax>> indexatorRef = ref_from(indexator);
+		const IndexatorExpressionSyntax* indexator = static_cast<const IndexatorExpressionSyntax*>(target);
+		std::optional<const IndexatorExpressionSyntax*> indexatorRef = ref_from(indexator);
 
-		gmt::Ref<IndexatorSymbol> symbol = indexatorRef.has_value() ? lookup_symbol<IndexatorSymbol>(*indexatorRef) : gmt::nullref;
-		if (!symbol.is_null())
+		IndexatorSymbol* symbol = indexatorRef.has_value() ? lookup_symbol<IndexatorSymbol>(*indexatorRef) : nullptr;
+		if (!(symbol == nullptr))
 		{
-			gmt::Ref<MethodSymbol> setter = symbol->get_setter();
-			if (setter.is_null())
+			MethodSymbol* setter = symbol->get_setter();
+			if ((setter == nullptr))
 			{
 				unsupported(*nodeRef, L"indexator without a setter");
 				return;
 			}
 
-			gmt::Ref<StructSymbol> receiverType = indexator->get_previous().is_null() ? gmt::nullref : get_model().get_expression_type(indexator->get_previous());
+			StructSymbol* receiverType = (indexator->get_previous() == nullptr) ? nullptr : get_model().get_expression_type(indexator->get_previous());
 			setter = resolve_call_target(*nodeRef, setter, receiverType);
-			if (setter.is_null())
+			if ((setter == nullptr))
 				return;
 
-			node->get_right().as_ptr()->accept(*this);
+			node->get_right()->accept(*this);
 			m_encoder.emit_duplicate();
 			eval_push(sizeof(void*));
 
-			emit_arguments_reversed(indexator->get_arguments().as_ptr());
-			if (!indexator->get_previous().is_null())
-				indexator->get_previous().as_ptr()->accept(*this);
+			emit_arguments_reversed(indexator->get_arguments());
+			if (!(indexator->get_previous() == nullptr))
+				indexator->get_previous()->accept(*this);
 			else
 			{
 				m_encoder.emit_load_local(0);
@@ -66,20 +66,20 @@ void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 			return;
 		}
 
-		indexator->get_previous().as_ptr()->accept(*this);
+		indexator->get_previous()->accept(*this);
 
-		gmt::Span<const gmt::Ref<ArgumentSyntax>> arguments = indexator->get_arguments()->get_arguments();
-		if (!arguments.as_span().empty())
-			arguments.as_span().front()->get_expression().as_ptr()->accept(*this);
+		std::span<ArgumentSyntax* const> arguments = indexator->get_arguments()->get_arguments();
+		if (!arguments.empty())
+			arguments.front()->get_expression()->accept(*this);
 
-		node->get_right().as_ptr()->accept(*this);
+		node->get_right()->accept(*this);
 
-		gmt::Ref<StructSymbol> elementType = gmt::nullref;
-		if (!indexator->get_previous().is_null())
+		StructSymbol* elementType = nullptr;
+		if (!(indexator->get_previous() == nullptr))
 			elementType = get_model().get_expression_type(indexator->get_previous());
 
-		if (!elementType.is_null() && elementType->get_kind() == SyntaxKind::ArrayType)
-			elementType = elementType.as<ArrayTypeSymbol>()->get_underlaying_type();
+		if (!(elementType == nullptr) && elementType->get_kind() == SyntaxKind::ArrayType)
+			elementType = static_cast<ArrayTypeSymbol*>(elementType)->get_underlaying_type();
 
 		std::uint16_t temp = allocate_temporary(elementType, PlacementVerdict::Heap);
 		m_encoder.emit_duplicate();
@@ -95,18 +95,18 @@ void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 		return;
 	}
 
-	if (!is_identifier_target(target.as_ptr()))
+	if (!is_identifier_target(target))
 	{
 		unsupported(*nodeRef, L"this assignment target");
 		return;
 	}
 
-	gmt::Ref<const ExpressionSyntax> previous = gmt::nullref;
+	const ExpressionSyntax* previous = nullptr;
 	if (target->get_kind() == SyntaxKind::MemberAccessExpression)
-		previous = static_cast<const MemberAccessExpressionSyntax*>(target.as_ptr())->get_previous();
+		previous = static_cast<const MemberAccessExpressionSyntax*>(target)->get_previous();
 
-	gmt::Ref<SyntaxSymbol> bound = get_symbol_table().lookup_symbol(target);
-	if (bound.is_null())
+	SyntaxSymbol* bound = get_symbol_table().lookup_symbol(target);
+	if ((bound == nullptr))
 		return;
 
 	SyntaxKind kind = bound->get_kind();
@@ -115,7 +115,7 @@ void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 		std::optional<std::uint16_t> slot = slot_of(bound);
 		if (slot.has_value())
 		{
-			node->get_right().as_ptr()->accept(*this);
+			node->get_right()->accept(*this);
 			m_encoder.emit_duplicate();
 			eval_push(sizeof(void*));
 			m_encoder.emit_store_local(*slot);
@@ -123,14 +123,14 @@ void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 			return;
 		}
 
-		gmt::Ref<FieldSymbol> captureField = capture_field_of(bound);
-		if (!captureField.is_null())
+		FieldSymbol* captureField = capture_field_of(bound);
+		if (!(captureField == nullptr))
 		{
 			// the captured variable is a field of the box receiver (arg 0)
 			m_encoder.emit_load_local(0);
 			eval_push(sizeof(void*));
 
-			node->get_right().as_ptr()->accept(*this);
+			node->get_right()->accept(*this);
 
 			std::uint16_t temp = allocate_temporary(captureField->get_return_type(), PlacementVerdict::Heap);
 			m_encoder.emit_duplicate();
@@ -152,13 +152,13 @@ void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 
 	if (kind == SyntaxKind::FieldDeclaration)
 	{
-		gmt::Ref<FieldSymbol> field = bound.as<FieldSymbol>();
+		FieldSymbol* field = static_cast<FieldSymbol*>(bound);
 		if (field->get_is_enum_value())
 			return;
 
 		if (field->get_linking() == LINK_STATIC)
 		{
-			node->get_right().as_ptr()->accept(*this);
+			node->get_right()->accept(*this);
 			m_encoder.emit_duplicate();
 			eval_push(sizeof(void*));
 			m_encoder.emit_store_static_field(field);
@@ -166,15 +166,15 @@ void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 			return;
 		}
 
-		if (!previous.is_null() && is_identifier_target(previous.as_ptr()))
+		if (!(previous == nullptr) && is_identifier_target(previous))
 		{
-			gmt::Ref<SyntaxSymbol> previousBound = get_symbol_table().lookup_symbol(previous);
-			if (!previousBound.is_null() && local_verdict(previousBound) == PlacementVerdict::Scalar)
+			SyntaxSymbol* previousBound = get_symbol_table().lookup_symbol(previous);
+			if (!(previousBound == nullptr) && local_verdict(previousBound) == PlacementVerdict::Scalar)
 			{
 				std::optional<std::uint16_t> scalarSlot = scalar_field_slot(previousBound, field);
 				if (scalarSlot.has_value())
 				{
-					node->get_right().as_ptr()->accept(*this);
+					node->get_right()->accept(*this);
 					m_encoder.emit_duplicate();
 					eval_push(sizeof(void*));
 					m_encoder.emit_store_local(*scalarSlot);
@@ -184,15 +184,15 @@ void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 			}
 		}
 
-		if (!previous.is_null())
-			previous.as_ptr()->accept(*this);
+		if (!(previous == nullptr))
+			previous->accept(*this);
 		else
 		{
 			m_encoder.emit_load_local(0);
 			eval_push(sizeof(void*));
 		}
 
-		node->get_right().as_ptr()->accept(*this);
+		node->get_right()->accept(*this);
 
 		std::uint16_t temp = allocate_temporary(field->get_return_type(), PlacementVerdict::Heap);
 		m_encoder.emit_duplicate();
@@ -210,20 +210,20 @@ void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 
 	if (kind == SyntaxKind::PropertyDeclaration)
 	{
-		gmt::Ref<PropertySymbol> property = bound.as<PropertySymbol>();
-		gmt::Ref<MethodSymbol> setter = property->get_setter();
-		if (setter.is_null())
+		PropertySymbol* property = static_cast<PropertySymbol*>(bound);
+		MethodSymbol* setter = property->get_setter();
+		if ((setter == nullptr))
 		{
 			unsupported(*nodeRef, L"property without a setter");
 			return;
 		}
 
-		gmt::Ref<StructSymbol> receiverType = previous.is_null() ? gmt::nullref : get_model().get_expression_type(previous);
+		StructSymbol* receiverType = (previous == nullptr) ? nullptr : get_model().get_expression_type(previous);
 		setter = resolve_call_target(*nodeRef, setter, receiverType);
-		if (setter.is_null())
+		if ((setter == nullptr))
 			return;
 
-		node->get_right().as_ptr()->accept(*this);
+		node->get_right()->accept(*this);
 
 		std::uint16_t temp = allocate_temporary(property->get_return_type(), PlacementVerdict::Heap);
 		m_encoder.emit_duplicate();
@@ -231,8 +231,8 @@ void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 		m_encoder.emit_store_local(temp);
 		eval_pop();
 
-		if (!previous.is_null())
-			previous.as_ptr()->accept(*this);
+		if (!(previous == nullptr))
+			previous->accept(*this);
 		else
 		{
 			m_encoder.emit_load_local(0);
@@ -252,21 +252,21 @@ void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 
 void ByteCodeEmitter::emit_compound_assignment(const BinaryExpressionSyntax* node, TokenType arithmetic)
 {
-	gmt::Ref<const ExpressionSyntax> target = node->get_left();
-	std::optional<gmt::Ref<const BinaryExpressionSyntax>> nodeRef = ref_from(node);
+	const ExpressionSyntax* target = node->get_left();
+	std::optional<const BinaryExpressionSyntax*> nodeRef = ref_from(node);
 
-	if (!is_identifier_target(target.as_ptr()))
+	if (!is_identifier_target(target))
 	{
 		unsupported(*nodeRef, L"compound assignment on this target");
 		return;
 	}
 
-	gmt::Ref<const ExpressionSyntax> previous = gmt::nullref;
+	const ExpressionSyntax* previous = nullptr;
 	if (target->get_kind() == SyntaxKind::MemberAccessExpression)
-		previous = static_cast<const MemberAccessExpressionSyntax*>(target.as_ptr())->get_previous();
+		previous = static_cast<const MemberAccessExpressionSyntax*>(target)->get_previous();
 
-	gmt::Ref<SyntaxSymbol> bound = get_symbol_table().lookup_symbol(target);
-	if (bound.is_null())
+	SyntaxSymbol* bound = get_symbol_table().lookup_symbol(target);
+	if ((bound == nullptr))
 		return;
 
 	SyntaxKind kind = bound->get_kind();
@@ -278,7 +278,7 @@ void ByteCodeEmitter::emit_compound_assignment(const BinaryExpressionSyntax* nod
 			m_encoder.emit_load_local(*slot);
 			eval_push(sizeof(void*));
 
-			node->get_right().as_ptr()->accept(*this);
+			node->get_right()->accept(*this);
 			emit_arithmetic_op(arithmetic);
 			eval_pop();
 
@@ -289,8 +289,8 @@ void ByteCodeEmitter::emit_compound_assignment(const BinaryExpressionSyntax* nod
 			return;
 		}
 
-		gmt::Ref<FieldSymbol> captureField = capture_field_of(bound);
-		if (!captureField.is_null())
+		FieldSymbol* captureField = capture_field_of(bound);
+		if (!(captureField == nullptr))
 		{
 			m_encoder.emit_load_local(0);
 			eval_push(sizeof(void*));
@@ -301,7 +301,7 @@ void ByteCodeEmitter::emit_compound_assignment(const BinaryExpressionSyntax* nod
 			eval_push(payload_of(captureField->get_return_type()));
 			eval_pop();
 
-			node->get_right().as_ptr()->accept(*this);
+			node->get_right()->accept(*this);
 			emit_arithmetic_op(arithmetic);
 			eval_pop();
 
@@ -325,13 +325,13 @@ void ByteCodeEmitter::emit_compound_assignment(const BinaryExpressionSyntax* nod
 
 	if (kind == SyntaxKind::FieldDeclaration)
 	{
-		gmt::Ref<FieldSymbol> field = bound.as<FieldSymbol>();
+		FieldSymbol* field = static_cast<FieldSymbol*>(bound);
 		if (field->get_linking() == LINK_STATIC)
 		{
 			m_encoder.emit_load_static_field(field);
 			eval_push(sizeof(void*));
 
-			node->get_right().as_ptr()->accept(*this);
+			node->get_right()->accept(*this);
 			emit_arithmetic_op(arithmetic);
 			eval_pop();
 
@@ -342,8 +342,8 @@ void ByteCodeEmitter::emit_compound_assignment(const BinaryExpressionSyntax* nod
 			return;
 		}
 
-		if (!previous.is_null())
-			previous.as_ptr()->accept(*this);
+		if (!(previous == nullptr))
+			previous->accept(*this);
 		else
 		{
 			m_encoder.emit_load_local(0);
@@ -357,7 +357,7 @@ void ByteCodeEmitter::emit_compound_assignment(const BinaryExpressionSyntax* nod
 		eval_push(payload_of(field->get_return_type()));
 		eval_pop();
 
-		node->get_right().as_ptr()->accept(*this);
+		node->get_right()->accept(*this);
 		emit_arithmetic_op(arithmetic);
 		eval_pop();
 

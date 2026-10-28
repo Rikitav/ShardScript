@@ -15,19 +15,19 @@ namespace shard
 {
 	class SHARD_API ArrayTypeSyntax final : public TypeSyntax
 	{
-		gmt::Ref<TypeSyntax> m_underlayingType;
+		TypeSyntax* m_underlayingType = nullptr;
 		SyntaxToken m_openBracketToken;
 		SyntaxToken m_closeBracketToken;
 
 	public:
-		ArrayTypeSyntax(gmt::Ref<SyntaxNode> parent);
+		ArrayTypeSyntax(SyntaxNode* parent);
 		virtual ~ArrayTypeSyntax() = default;
 
-		gmt::Ref<const TypeSyntax> get_underlaying_type() const;
+		const TypeSyntax* get_underlaying_type() const;
 		SyntaxToken get_open_bracket() const;
 		SyntaxToken get_close_bracket() const;
 
-		void set_underlaying_type(gmt::Ref<TypeSyntax> underlayingType);
+		void set_underlaying_type(TypeSyntax* underlayingType);
 		void set_open_bracket(const SyntaxToken& token);
 		void set_close_bracket(const SyntaxToken& token);
 

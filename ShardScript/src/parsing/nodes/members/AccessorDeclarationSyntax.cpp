@@ -5,7 +5,7 @@
 
 using namespace shard;
 
-AccessorDeclarationSyntax::AccessorDeclarationSyntax(gmt::Ref<SyntaxNode> parent)
+AccessorDeclarationSyntax::AccessorDeclarationSyntax(SyntaxNode* parent)
 	: MemberDeclarationSyntax(SyntaxKind::AccessorDeclaration, parent) { }
 
 SyntaxToken AccessorDeclarationSyntax::get_keyword() const

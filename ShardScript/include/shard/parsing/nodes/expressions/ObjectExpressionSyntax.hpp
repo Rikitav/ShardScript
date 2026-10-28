@@ -15,25 +15,25 @@ namespace shard
 	class SHARD_API ObjectExpressionSyntax final : public ExpressionSyntax
 	{
 		SyntaxToken m_newToken;
-		gmt::Ref<TypeSyntax> m_type;
-		gmt::Ref<ArgumentsListSyntax> m_arguments;
-		gmt::Ref<ExpressionSyntax> m_arraySize;
+		TypeSyntax* m_type = nullptr;
+		ArgumentsListSyntax* m_arguments = nullptr;
+		ExpressionSyntax* m_arraySize = nullptr;
 
 	public:
-		ObjectExpressionSyntax(gmt::Ref<SyntaxNode> parent);
+		ObjectExpressionSyntax(SyntaxNode* parent);
 		virtual ~ObjectExpressionSyntax() = default;
 
 		SyntaxToken get_new_token() const;
-		gmt::Ref<const TypeSyntax> get_type() const;
-		gmt::Ref<const ArgumentsListSyntax> get_arguments() const;
-		gmt::Ref<const ExpressionSyntax> get_array_size() const;
+		const TypeSyntax* get_type() const;
+		const ArgumentsListSyntax* get_arguments() const;
+		const ExpressionSyntax* get_array_size() const;
 
 		bool is_array_creation() const;
 
 		void set_new_token(const SyntaxToken& token);
-		void set_type(gmt::Ref<TypeSyntax> type);
-		void set_arguments(gmt::Ref<ArgumentsListSyntax> arguments);
-		void set_array_size(gmt::Ref<ExpressionSyntax> arraySize);
+		void set_type(TypeSyntax* type);
+		void set_arguments(ArgumentsListSyntax* arguments);
+		void set_array_size(ExpressionSyntax* arraySize);
 
 		TextLocation get_location() const override;
 		void accept(SyntaxVisitor& visitor) const override;

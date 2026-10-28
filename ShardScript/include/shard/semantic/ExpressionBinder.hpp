@@ -84,86 +84,86 @@ namespace shard
 	{
 		SymbolFactory m_factory;
 		gmt::unordered_set<std::wstring_view> m_ambiguousNames;
-		gmt::unordered_set<gmt::Ref<const ExpressionSyntax>> m_staticContextExpressions;
+		gmt::unordered_set<const ExpressionSyntax*> m_staticContextExpressions;
 
 		// lambdas whose parameter types could not be resolved yet; they bind
 		// once an expected delegate type appears (overload resolution picks a
 		// method, or a denotation channel supplies a target type)
-		gmt::unordered_set<gmt::Ref<const LambdaExpressionSyntax>> m_pendingLambdas;
+		gmt::unordered_set<const LambdaExpressionSyntax*> m_pendingLambdas;
 
 		// collects value-returning expressions of a bound body so a return
 		// type can be inferred for declarations that omit one
 		class return_expression_collector;
 
-		void visit_expression(gmt::Ref<const ExpressionSyntax> expression);
+		void visit_expression(const ExpressionSyntax* expression);
 
-		gmt::Ref<StructSymbol> infer_return_type_from_body(gmt::Ref<const BlockSyntax> body);
+		StructSymbol* infer_return_type_from_body(const BlockSyntax* body);
 
-		void set_expression_type(gmt::Ref<const ExpressionSyntax> expression, gmt::Ref<StructSymbol> type);
-		gmt::Ref<StructSymbol> get_expression_type(gmt::Ref<const ExpressionSyntax> expression);
-		gmt::Ref<StructSymbol> find_target_return_type();
-		gmt::Ref<SyntaxSymbol> find_target_return_owner();
-		void apply_inferred_return_type(gmt::Ref<SyntaxSymbol> owner, gmt::Ref<StructSymbol> type);
-		gmt::Ref<StructSymbol> resolve_left_denotation();
-		bool get_is_static_context(gmt::Ref<const ExpressionSyntax> expression) const;
+		void set_expression_type(const ExpressionSyntax* expression, StructSymbol* type);
+		StructSymbol* get_expression_type(const ExpressionSyntax* expression);
+		StructSymbol* find_target_return_type();
+		SyntaxSymbol* find_target_return_owner();
+		void apply_inferred_return_type(SyntaxSymbol* owner, StructSymbol* type);
+		StructSymbol* resolve_left_denotation();
+		bool get_is_static_context(const ExpressionSyntax* expression) const;
 
-		gmt::Ref<StructSymbol> analyze_literal_expression(const LiteralExpressionSyntax* node);
-		gmt::Ref<StructSymbol> analyze_number_literal(const LiteralExpressionSyntax* node);
-		gmt::Ref<StructSymbol> analyze_double_literal(const LiteralExpressionSyntax* node);
-		gmt::Ref<StructSymbol> analyze_binary_expression(const BinaryExpressionSyntax* node);
-		gmt::Ref<StructSymbol> analyze_unary_expression(const UnaryExpressionSyntax* node);
-		gmt::Ref<StructSymbol> analyze_object_expression(const ObjectExpressionSyntax* node);
-		gmt::Ref<StructSymbol> analyze_collection_expression(const CollectionExpressionSyntax* node);
-		gmt::Ref<StructSymbol> analyze_member_access_expression(const MemberAccessExpressionSyntax* node, gmt::Ref<StructSymbol> currentType);
-		gmt::Ref<StructSymbol> analyze_identifier_expression(SyntaxToken identifier, const SyntaxNode* node, std::optional<gmt::Ref<const SyntaxNode>> nodeRef);
-		gmt::Ref<StructSymbol> resolve_symbol_type(gmt::Ref<SyntaxSymbol> symbol, SyntaxToken identifier, gmt::Ref<const ExpressionSyntax> previous, gmt::Ref<StructSymbol> currentType, std::optional<gmt::Ref<const SyntaxNode>> nodeRef, TextLocation location);
-		gmt::Ref<StructSymbol> analyze_property_access_expression(SyntaxToken identifier, bool assignmentContext, gmt::Ref<const SyntaxNode> callSite, gmt::Ref<const ExpressionSyntax> previous, gmt::Ref<PropertySymbol> property, gmt::Ref<StructSymbol> currentType);
-		gmt::Ref<StructSymbol> analyze_field_keyword_expression(const SyntaxNode* node);
-		gmt::Ref<StructSymbol> analyze_invokation_expression(const InvokationExpressionSyntax* node, gmt::Ref<StructSymbol> currentType);
-		gmt::Ref<StructSymbol> analyze_qualified_invokation_expression(const InvokationExpressionSyntax* node, gmt::Ref<NamespaceSymbol> namespaceSymbol);
-		gmt::Ref<StructSymbol> wrap_async_return_type(gmt::Ref<MethodSymbol> method, gmt::Ref<StructSymbol> type);
-		gmt::Ref<StructSymbol> analyze_indexator_expression(const IndexatorExpressionSyntax* node, gmt::Ref<StructSymbol> currentType);
+		StructSymbol* analyze_literal_expression(const LiteralExpressionSyntax* node);
+		StructSymbol* analyze_number_literal(const LiteralExpressionSyntax* node);
+		StructSymbol* analyze_double_literal(const LiteralExpressionSyntax* node);
+		StructSymbol* analyze_binary_expression(const BinaryExpressionSyntax* node);
+		StructSymbol* analyze_unary_expression(const UnaryExpressionSyntax* node);
+		StructSymbol* analyze_object_expression(const ObjectExpressionSyntax* node);
+		StructSymbol* analyze_collection_expression(const CollectionExpressionSyntax* node);
+		StructSymbol* analyze_member_access_expression(const MemberAccessExpressionSyntax* node, StructSymbol* currentType);
+		StructSymbol* analyze_identifier_expression(SyntaxToken identifier, const SyntaxNode* node, std::optional<const SyntaxNode*> nodeRef);
+		StructSymbol* resolve_symbol_type(SyntaxSymbol* symbol, SyntaxToken identifier, const ExpressionSyntax* previous, StructSymbol* currentType, std::optional<const SyntaxNode*> nodeRef, TextLocation location);
+		StructSymbol* analyze_property_access_expression(SyntaxToken identifier, bool assignmentContext, const SyntaxNode* callSite, const ExpressionSyntax* previous, PropertySymbol* property, StructSymbol* currentType);
+		StructSymbol* analyze_field_keyword_expression(const SyntaxNode* node);
+		StructSymbol* analyze_invokation_expression(const InvokationExpressionSyntax* node, StructSymbol* currentType);
+		StructSymbol* analyze_qualified_invokation_expression(const InvokationExpressionSyntax* node, NamespaceSymbol* namespaceSymbol);
+		StructSymbol* wrap_async_return_type(MethodSymbol* method, StructSymbol* type);
+		StructSymbol* analyze_indexator_expression(const IndexatorExpressionSyntax* node, StructSymbol* currentType);
 
-		gmt::Ref<ConstructorSymbol> resolve_constructor(const ObjectExpressionSyntax* node);
-		gmt::Ref<MethodSymbol> resolve_method(const InvokationExpressionSyntax* node, gmt::Ref<StructSymbol> currentType, std::pmr::vector<gmt::Ref<StructSymbol>>& outMethodTypeArgs, gmt::Ref<GenericTypeSymbol>& outGenericType);
-		gmt::Ref<NamespaceSymbol> resolve_namespace_qualifier(gmt::Ref<const ExpressionSyntax> expression);
-		gmt::Ref<IndexatorSymbol> resolve_indexator(const IndexatorExpressionSyntax* node, gmt::Ref<StructSymbol> currentType);
-		gmt::Ref<DelegateTypeSymbol> try_resolve_delegate_invocation(const InvokationExpressionSyntax* node, gmt::Ref<SyntaxSymbol> lookup, gmt::Ref<GenericTypeSymbol>& outInstantiation);
+		ConstructorSymbol* resolve_constructor(const ObjectExpressionSyntax* node);
+		MethodSymbol* resolve_method(const InvokationExpressionSyntax* node, StructSymbol* currentType, std::pmr::vector<StructSymbol*>& outMethodTypeArgs, GenericTypeSymbol*& outGenericType);
+		NamespaceSymbol* resolve_namespace_qualifier(const ExpressionSyntax* expression);
+		IndexatorSymbol* resolve_indexator(const IndexatorExpressionSyntax* node, StructSymbol* currentType);
+		DelegateTypeSymbol* try_resolve_delegate_invocation(const InvokationExpressionSyntax* node, SyntaxSymbol* lookup, GenericTypeSymbol*& outInstantiation);
 
-		gmt::Ref<StructSymbol> resolve_type_expression(gmt::Ref<const TypeSyntax> type);
-		gmt::Ref<StructSymbol> substitute_type_parameters(gmt::Ref<StructSymbol> type, gmt::Ref<GenericTypeSymbol> genericType);
-		gmt::Ref<StructSymbol> substitute_type_parameters(gmt::Ref<StructSymbol> type, gmt::Ref<GenericTypeSymbol> genericType, gmt::Ref<MethodSymbol> method, std::span<const gmt::Ref<StructSymbol>> methodTypeArgs);
-		gmt::Ref<StructSymbol> substitute_method_type_parameter(gmt::Ref<StructSymbol> type, gmt::Ref<MethodSymbol> method, std::span<const gmt::Ref<StructSymbol>> methodTypeArgs);
+		StructSymbol* resolve_type_expression(const TypeSyntax* type);
+		StructSymbol* substitute_type_parameters(StructSymbol* type, GenericTypeSymbol* genericType);
+		StructSymbol* substitute_type_parameters(StructSymbol* type, GenericTypeSymbol* genericType, MethodSymbol* method, std::span<StructSymbol* const> methodTypeArgs);
+		StructSymbol* substitute_method_type_parameter(StructSymbol* type, MethodSymbol* method, std::span<StructSymbol* const> methodTypeArgs);
 
-		bool try_infer_type_argument(gmt::Ref<StructSymbol> pattern, gmt::Ref<StructSymbol> concrete, gmt::Ref<MethodSymbol> method, gmt::Ref<GenericTypeSymbol> genericType, std::pmr::vector<gmt::Ref<StructSymbol>>& outMethodTypeArgs);
-		bool infer_method_type_arguments(gmt::Ref<MethodSymbol> method, std::span<const gmt::Ref<StructSymbol>> argTypes, gmt::Ref<GenericTypeSymbol> genericType, std::pmr::vector<gmt::Ref<StructSymbol>>& outMethodTypeArgs);
-		bool infer_class_type_arguments(gmt::Ref<StructSymbol> classDef, gmt::Ref<MethodSymbol> method, std::span<const gmt::Ref<StructSymbol>> argTypes, gmt::vector<gmt::Ref<StructSymbol>>& outClassTypeArgs);
+		bool try_infer_type_argument(StructSymbol* pattern, StructSymbol* concrete, MethodSymbol* method, GenericTypeSymbol* genericType, std::pmr::vector<StructSymbol*>& outMethodTypeArgs);
+		bool infer_method_type_arguments(MethodSymbol* method, std::span<StructSymbol* const> argTypes, GenericTypeSymbol* genericType, std::pmr::vector<StructSymbol*>& outMethodTypeArgs);
+		bool infer_class_type_arguments(StructSymbol* classDef, MethodSymbol* method, std::span<StructSymbol* const> argTypes, gmt::vector<StructSymbol*>& outClassTypeArgs);
 
-		int conversion_score(gmt::Ref<const StructSymbol> parameter, gmt::Ref<const StructSymbol> argument);
-		int score_method_match(gmt::Ref<MethodSymbol> method, std::span<const gmt::Ref<StructSymbol>> argTypes, gmt::Ref<GenericTypeSymbol> genericType, std::pmr::vector<gmt::Ref<StructSymbol>>& outMethodTypeArgs, std::span<const gmt::Ref<StructSymbol>> explicitTypeArgs = {});
-		bool check_method_type_constraints(gmt::Ref<MethodSymbol> method, std::span<const gmt::Ref<StructSymbol>> methodTypeArgs, SyntaxToken blameToken);
-		bool collect_explicit_type_arguments(const InvokationExpressionSyntax* node, std::pmr::vector<gmt::Ref<StructSymbol>>& outTypeArgs);
-		void bind_invocation_type_arguments(gmt::Ref<const InvokationExpressionSyntax> node, gmt::Ref<MethodSymbol> method, gmt::Ref<GenericTypeSymbol> genericType, std::span<const gmt::Ref<StructSymbol>> methodTypeArgs);
-		gmt::Ref<OperatorSymbol> resolve_operator_method(gmt::Ref<StructSymbol> ownerType, TokenType operatorToken, std::span<const gmt::Ref<StructSymbol>> parameterTypes);
+		int conversion_score(const StructSymbol* parameter, const StructSymbol* argument);
+		int score_method_match(MethodSymbol* method, std::span<StructSymbol* const> argTypes, GenericTypeSymbol* genericType, std::pmr::vector<StructSymbol*>& outMethodTypeArgs, std::span<StructSymbol* const> explicitTypeArgs = {});
+		bool check_method_type_constraints(MethodSymbol* method, std::span<StructSymbol* const> methodTypeArgs, SyntaxToken blameToken);
+		bool collect_explicit_type_arguments(const InvokationExpressionSyntax* node, std::pmr::vector<StructSymbol*>& outTypeArgs);
+		void bind_invocation_type_arguments(const InvokationExpressionSyntax* node, MethodSymbol* method, GenericTypeSymbol* genericType, std::span<StructSymbol* const> methodTypeArgs);
+		OperatorSymbol* resolve_operator_method(StructSymbol* ownerType, TokenType operatorToken, std::span<StructSymbol* const> parameterTypes);
 		
 		static bool is_assignment_operator(TokenType type);
 		static bool is_assignment_context(const IndexatorExpressionSyntax* expression);
 		
-		bool match_method_arguments(SyntaxToken blameToken, std::span<const gmt::Ref<ParameterSymbol>> parameters, gmt::Span<const gmt::Ref<ArgumentSyntax>> arguments, gmt::Ref<GenericTypeSymbol> genericType, std::size_t parameterOffset = 0);
-		bool collect_argument_types(const InvokationExpressionSyntax* node, std::pmr::vector<gmt::Ref<StructSymbol>>& outArgTypes);
+		bool match_method_arguments(SyntaxToken blameToken, std::span<ParameterSymbol* const> parameters, std::span<ArgumentSyntax* const> arguments, GenericTypeSymbol* genericType, std::size_t parameterOffset = 0);
+		bool collect_argument_types(const InvokationExpressionSyntax* node, std::pmr::vector<StructSymbol*>& outArgTypes);
 
-		bool is_pending_lambda(gmt::Ref<const ExpressionSyntax> expression) const;
-		bool try_bind_pending_lambda(gmt::Ref<const LambdaExpressionSyntax> node, gmt::Ref<StructSymbol> expectedType);
-		void bind_pending_lambda_arguments(const InvokationExpressionSyntax* node, gmt::Ref<MethodSymbol> method, bool asExtension, gmt::Ref<GenericTypeSymbol> genericType, std::span<const gmt::Ref<StructSymbol>> argTypes, std::span<const gmt::Ref<StructSymbol>> explicitTypeArgs);
-		void bind_lambda_body(const LambdaExpressionSyntax* node, gmt::Ref<const LambdaExpressionSyntax> nodeRef, gmt::Ref<DelegateTypeSymbol> delegateType, gmt::Ref<MethodSymbol> anonymousMethod);
+		bool is_pending_lambda(const ExpressionSyntax* expression) const;
+		bool try_bind_pending_lambda(const LambdaExpressionSyntax* node, StructSymbol* expectedType);
+		void bind_pending_lambda_arguments(const InvokationExpressionSyntax* node, MethodSymbol* method, bool asExtension, GenericTypeSymbol* genericType, std::span<StructSymbol* const> argTypes, std::span<StructSymbol* const> explicitTypeArgs);
+		void bind_lambda_body(const LambdaExpressionSyntax* node, const LambdaExpressionSyntax* nodeRef, DelegateTypeSymbol* delegateType, MethodSymbol* anonymousMethod);
 
-		void import_namespace(gmt::Ref<const UsingDirectiveSyntax> node, gmt::Ref<NamespaceSymbol> namespaceSymbol);
-		void visit_type_declaration(gmt::Ref<const TypeDeclarationSyntax> node);
+		void import_namespace(const UsingDirectiveSyntax* node, NamespaceSymbol* namespaceSymbol);
+		void visit_type_declaration(const TypeDeclarationSyntax* node);
 		bool is_ambiguous_name(std::wstring_view name) const;
-		gmt::Ref<NamespaceSymbol> find_namespace_by_name(gmt::Span<const SyntaxToken> name);
+		NamespaceSymbol* find_namespace_by_name(std::span<const SyntaxToken> name);
 
 		void report_no_matching_method(std::wstring_view methodName, SyntaxToken blameToken);
-		void report_no_matching_overload(std::wstring_view methodName, std::span<const gmt::Ref<StructSymbol>> argTypes, SyntaxToken blameToken);
+		void report_no_matching_overload(std::wstring_view methodName, std::span<StructSymbol* const> argTypes, SyntaxToken blameToken);
 
 	public:
 		ExpressionBinder(SemanticModel& model, DiagnosticsContext& diagnostics);

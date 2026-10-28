@@ -11,7 +11,7 @@ namespace shard
 	class SHARD_API ConstructorSymbol final : public MethodSymbol
 	{
 	public:
-		ConstructorSymbol(gmt::Ref<SyntaxSymbol> parent);
+		ConstructorSymbol(SyntaxSymbol* parent);
 		virtual ~ConstructorSymbol() = default;
 
 		ConstructorSymbol(const ConstructorSymbol& other) = delete;

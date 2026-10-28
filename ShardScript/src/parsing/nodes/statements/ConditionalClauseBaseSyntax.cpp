@@ -4,25 +4,25 @@
 
 using namespace shard;
 
-ConditionalClauseBaseSyntax::ConditionalClauseBaseSyntax(SyntaxKind kind, gmt::Ref<SyntaxNode> parent)
+ConditionalClauseBaseSyntax::ConditionalClauseBaseSyntax(SyntaxKind kind, SyntaxNode* parent)
 	: StatementSyntax(kind, parent) { }
 
-gmt::Ref<const StatementsBlockSyntax> ConditionalClauseBaseSyntax::get_block() const
+const StatementsBlockSyntax* ConditionalClauseBaseSyntax::get_block() const
 {
 	return m_block;
 }
 
-gmt::Ref<const ConditionalClauseBaseSyntax> ConditionalClauseBaseSyntax::get_next() const
+const ConditionalClauseBaseSyntax* ConditionalClauseBaseSyntax::get_next() const
 {
 	return m_next;
 }
 
-void ConditionalClauseBaseSyntax::set_block(gmt::Ref<StatementsBlockSyntax> block)
+void ConditionalClauseBaseSyntax::set_block(StatementsBlockSyntax* block)
 {
 	m_block = block;
 }
 
-void ConditionalClauseBaseSyntax::set_next(gmt::Ref<ConditionalClauseBaseSyntax> next)
+void ConditionalClauseBaseSyntax::set_next(ConditionalClauseBaseSyntax* next)
 {
 	m_next = next;
 }

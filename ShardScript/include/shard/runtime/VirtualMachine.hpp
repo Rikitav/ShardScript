@@ -45,10 +45,10 @@ namespace shard
 		FrameBlockPool m_framePool;
 		alignas(8) std::byte m_returnScratch[8] = {};
 
-		const TypeShape* resolve_shape(gmt::Ref<StructSymbol> type);
-		const TypeShape* resolve_operand_shape(gmt::Ref<SyntaxSymbol> symbol);
+		const TypeShape* resolve_shape(StructSymbol* type);
+		const TypeShape* resolve_operand_shape(SyntaxSymbol* symbol);
 
-		CallStackFrame* push_frame(gmt::Ref<MethodSymbol> method, const FrameLayout* layout = nullptr, std::byte* externalReturnEntry = nullptr, std::size_t externalReturnPayload = 0);
+		CallStackFrame* push_frame(MethodSymbol* method, const FrameLayout* layout = nullptr, std::byte* externalReturnEntry = nullptr, std::size_t externalReturnPayload = 0);
 		void pop_frame();
 
 		void execute_frame(CallStackFrame* frame);
@@ -57,17 +57,17 @@ namespace shard
 		void drain_defers(CallStackFrame* frame, ByteCodeDecoder& decoder, std::size_t count);
 		void run_defer_body(CallStackFrame* frame, ByteCodeDecoder& decoder, std::size_t target);
 
-		ObjectInstance invoke_managed(gmt::Ref<MethodSymbol> method, std::span<const ObjectInstance> arguments, const FrameLayout* layout = nullptr);
-		ObjectInstance invoke_native(gmt::Ref<MethodSymbol> method, std::span<const ObjectInstance> arguments);
-		void invoke_into(gmt::Ref<MethodSymbol> method, std::span<const ObjectInstance> arguments, std::byte* destinationEntry, const FrameLayout* layout = nullptr);
+		ObjectInstance invoke_managed(MethodSymbol* method, std::span<const ObjectInstance> arguments, const FrameLayout* layout = nullptr);
+		ObjectInstance invoke_native(MethodSymbol* method, std::span<const ObjectInstance> arguments);
+		void invoke_into(MethodSymbol* method, std::span<const ObjectInstance> arguments, std::byte* destinationEntry, const FrameLayout* layout = nullptr);
 		void write_entry_value(const FrameEntryView& view, std::size_t payloadBytes, ObjectInstance value);
 
 		void throw_value(CallStackFrame* frame, ObjectInstance value);
 		void propagate_exception(CallStackFrame* into, ObjectInstance exception);
 
 		void push_scalar(CallStackFrame* frame, const ScalarResult& result);
-		bool is_void_method(gmt::Ref<MethodSymbol> method) const;
-		bool is_instance_of(const TypeShape* objectShape, gmt::Ref<StructSymbol> targetType) const;
+		bool is_void_method(MethodSymbol* method) const;
+		bool is_instance_of(const TypeShape* objectShape, StructSymbol* targetType) const;
 
 	public:
 		VirtualMachine(VirtualProgramImage& program, SemanticModel& model, PragmaticModel& pragmatic);
@@ -77,8 +77,8 @@ namespace shard
 		VirtualMachine& operator=(const VirtualMachine&) = delete;
 
 		void run();
-		ObjectInstance invoke_method(gmt::Ref<MethodSymbol> method, std::span<const ObjectInstance> arguments, const FrameLayout* layout = nullptr);
-		ObjectInstance try_invoke_method(gmt::Ref<MethodSymbol> method, std::span<const ObjectInstance> arguments, ObjectInstance& outException);
+		ObjectInstance invoke_method(MethodSymbol* method, std::span<const ObjectInstance> arguments, const FrameLayout* layout = nullptr);
+		ObjectInstance try_invoke_method(MethodSymbol* method, std::span<const ObjectInstance> arguments, ObjectInstance& outException);
 
 		VirtualProgramImage& get_program() const;
 		SemanticModel& get_model() const;

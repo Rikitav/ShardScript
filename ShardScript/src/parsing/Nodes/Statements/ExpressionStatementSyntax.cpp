@@ -5,10 +5,10 @@
 
 using namespace shard;
 
-ExpressionStatementSyntax::ExpressionStatementSyntax(gmt::Ref<SyntaxNode> parent)
+ExpressionStatementSyntax::ExpressionStatementSyntax(SyntaxNode* parent)
 	: StatementSyntax(SyntaxKind::ExpressionStatement, parent) { }
 
-gmt::Ref<const ExpressionSyntax> ExpressionStatementSyntax::get_expression() const
+const ExpressionSyntax* ExpressionStatementSyntax::get_expression() const
 {
 	return m_expression;
 }
@@ -18,7 +18,7 @@ SyntaxToken ExpressionStatementSyntax::get_semicolon() const
 	return m_semicolonToken;
 }
 
-void ExpressionStatementSyntax::set_expression(gmt::Ref<ExpressionSyntax> expression)
+void ExpressionStatementSyntax::set_expression(ExpressionSyntax* expression)
 {
 	m_expression = expression;
 }
@@ -30,8 +30,8 @@ void ExpressionStatementSyntax::set_semicolon(const SyntaxToken& token)
 
 TextLocation ExpressionStatementSyntax::get_location() const
 {
-	if (!m_expression.is_null())
-		return TextLocation(m_expression.as_ptr()->get_location(), m_semicolonToken);
+	if (!(m_expression == nullptr))
+		return TextLocation(m_expression->get_location(), m_semicolonToken);
 
 	return m_semicolonToken.get_location();
 }

@@ -5,21 +5,21 @@
 
 using namespace shard;
 
-TypeParameterSymbol::TypeParameterSymbol(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent)
+TypeParameterSymbol::TypeParameterSymbol(std::wstring_view name, SyntaxSymbol* parent)
 	: TypeParameterSymbol(gmt::intern(name), parent) { }
 
-TypeParameterSymbol::TypeParameterSymbol(gmt::StringReference name, gmt::Ref<SyntaxSymbol> parent)
+TypeParameterSymbol::TypeParameterSymbol(gmt::StringReference name, SyntaxSymbol* parent)
 	: StructSymbol(name, SyntaxKind::TypeParameter, parent)
 {
 	set_accesibility(ACS_PUBLIC);
 }
 
-const gmt::vector<gmt::Ref<StructSymbol>>& TypeParameterSymbol::get_constraints() const
+const gmt::vector<StructSymbol*>& TypeParameterSymbol::get_constraints() const
 {
 	return m_constraints;
 }
 
-void TypeParameterSymbol::add_constraint(gmt::Ref<StructSymbol> constraint)
+void TypeParameterSymbol::add_constraint(StructSymbol* constraint)
 {
 	m_constraints.push_back(constraint);
 }

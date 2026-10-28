@@ -10,7 +10,7 @@ namespace shard
 	class SHARD_API InterfaceDeclarationSyntax final : public TypeDeclarationSyntax
 	{
 	public:
-		InterfaceDeclarationSyntax(gmt::Ref<SyntaxNode> parent);
+		InterfaceDeclarationSyntax(SyntaxNode* parent);
 		virtual ~InterfaceDeclarationSyntax() = default;
 
 		TextLocation get_location() const override;

@@ -55,9 +55,9 @@ namespace
 		std::wcout << (state.get_boolean_argument(0) ? L"true" : L"false") << std::endl;
 	}
 
-	gmt::Ref<MethodSymbol> register_native(SymbolTable& table, gmt::Ref<NamespaceSymbol> owner, const wchar_t* name, gmt::Ref<StructSymbol> parameterType, void (*callback)(MethodCallState&))
+	MethodSymbol* register_native(SymbolTable& table, NamespaceSymbol* owner, const wchar_t* name, StructSymbol* parameterType, void (*callback)(MethodCallState&))
 	{
-		gmt::Ref<MethodSymbol> method = table.emplace<MethodSymbol>(name, owner);
+		MethodSymbol* method = table.emplace<MethodSymbol>(name, owner);
 		method->set_calling_convention(CallingConvention::ShardDecl);
 		method->set_function_pointer(reinterpret_cast<void*>(callback));
 		method->set_return_type(table.get_void_primitive());
@@ -65,7 +65,7 @@ namespace
 		method->set_accesibility(ACS_PUBLIC);
 		method->set_effects_computed(true);
 
-		gmt::Ref<ParameterSymbol> parameter = table.emplace<ParameterSymbol>(L"value", method);
+		ParameterSymbol* parameter = table.emplace<ParameterSymbol>(L"value", method);
 		parameter->set_type(parameterType);
 		method->on_symbol_declared(parameter);
 
@@ -79,7 +79,7 @@ namespace shard::interpreter
 	void register_standard_library(SemanticModel& model)
 	{
 		SymbolTable& table = model.get_table();
-		gmt::Ref<NamespaceSymbol> stdio = table.get_root_namespace()->lookup_or_create(L"stdio", table);
+		NamespaceSymbol* stdio = table.get_root_namespace()->lookup_or_create(L"stdio", table);
 
 		register_native(table, stdio, L"print", table.get_integer_primitive(), &native_print_integer);
 		register_native(table, stdio, L"println", table.get_integer_primitive(), &native_println_integer);

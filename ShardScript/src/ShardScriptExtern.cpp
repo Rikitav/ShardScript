@@ -3513,7 +3513,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::AccessorDeclarationSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::AccessorDeclarationSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -3826,7 +3826,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::ArgumentSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::ArgumentSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -3921,7 +3921,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_expression();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -3985,7 +3985,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_expression(*static_cast<const gmt::Ref<shard::ExpressionSyntax>*>(p0));
+			self->set_expression(*static_cast<shard::ExpressionSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -4023,7 +4023,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::ArgumentsListSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::ArgumentsListSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -4123,7 +4123,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_arguments();
-			auto* boxed = shard_box_value<gmt::Span<const gmt::Ref<shard::ArgumentSyntax>>>(std::move(result));
+			auto* boxed = shard_box_value<std::span<shard::ArgumentSyntax* const>>(std::move(result));
 			if (!boxed)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -4309,7 +4309,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_arguments(*static_cast<const gmt::Span<gmt::Ref<shard::ArgumentSyntax>>*>(p0));
+			self->set_arguments(*static_cast<const std::span<shard::ArgumentSyntax*>*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -4421,7 +4421,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::ArrayTypeSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::ArrayTypeSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -4708,7 +4708,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_underlaying_type();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -4798,7 +4798,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_underlaying_type(*static_cast<const gmt::Ref<shard::TypeSyntax>*>(p0));
+			self->set_underlaying_type(*static_cast<shard::TypeSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -4836,7 +4836,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::ArrowClauseSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::ArrowClauseSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -4979,7 +4979,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_expression();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -5080,7 +5080,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_expression(*static_cast<const gmt::Ref<shard::ExpressionSyntax>*>(p0));
+			self->set_expression(*static_cast<shard::ExpressionSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -5118,7 +5118,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::AttributeSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::AttributeSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -5218,7 +5218,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_arguments();
-			auto* boxed = shard_box_value<gmt::Span<const shard::SyntaxToken>>(std::move(result));
+			auto* boxed = shard_box_value<std::span<const shard::SyntaxToken>>(std::move(result));
 			if (!boxed)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -5548,7 +5548,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_arguments(*static_cast<const gmt::Span<shard::SyntaxToken>*>(p0));
+			self->set_arguments(*static_cast<const std::span<shard::SyntaxToken>*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -5771,7 +5771,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::AttributesListSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::AttributesListSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -5871,7 +5871,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_attributes();
-			auto* boxed = shard_box_value<gmt::Span<const gmt::Ref<shard::AttributeSyntax>>>(std::move(result));
+			auto* boxed = shard_box_value<std::span<shard::AttributeSyntax* const>>(std::move(result));
 			if (!boxed)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -6057,7 +6057,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_attributes(*static_cast<const gmt::Span<gmt::Ref<shard::AttributeSyntax>>*>(p0));
+			self->set_attributes(*static_cast<const std::span<shard::AttributeSyntax*>*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -6169,7 +6169,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::AwaitExpressionSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::AwaitExpressionSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -6312,7 +6312,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_expression();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -6413,7 +6413,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_expression(*static_cast<const gmt::Ref<shard::ExpressionSyntax>*>(p0));
+			self->set_expression(*static_cast<shard::ExpressionSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -6451,7 +6451,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::BaseTypesListSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::BaseTypesListSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -6599,7 +6599,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_types();
-			auto* boxed = shard_box_value<gmt::Span<const gmt::Ref<shard::TypeSyntax>>>(std::move(result));
+			auto* boxed = shard_box_value<std::span<shard::TypeSyntax* const>>(std::move(result));
 			if (!boxed)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -6641,7 +6641,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_types(*static_cast<const gmt::Span<gmt::Ref<shard::TypeSyntax>>*>(p0));
+			self->set_types(*static_cast<const std::span<shard::TypeSyntax*>*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -6679,7 +6679,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::BinaryExpressionSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::BinaryExpressionSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -6774,7 +6774,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_left();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -6887,7 +6887,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_right();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -6903,7 +6903,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_left(*static_cast<const gmt::Ref<shard::ExpressionSyntax>*>(p0));
+			self->set_left(*static_cast<shard::ExpressionSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -6977,7 +6977,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_right(*static_cast<const gmt::Ref<shard::ExpressionSyntax>*>(p0));
+			self->set_right(*static_cast<shard::ExpressionSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -7015,7 +7015,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::BlockSyntax>(static_cast<shard::SyntaxKind>(p0), *static_cast<const gmt::Ref<shard::SyntaxNode>*>(p1));
+			auto* value = shard_make_new<shard::BlockSyntax>(static_cast<shard::SyntaxKind>(p0), *static_cast<shard::SyntaxNode* const*>(p1));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -7073,7 +7073,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::BreakStatementSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::BreakStatementSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -7471,7 +7471,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::CastExpressionSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::CastExpressionSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -7566,7 +7566,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_expression();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -7679,7 +7679,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_target_type();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -7695,7 +7695,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_expression(*static_cast<const gmt::Ref<shard::ExpressionSyntax>*>(p0));
+			self->set_expression(*static_cast<shard::ExpressionSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -7769,7 +7769,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_target_type(*static_cast<const gmt::Ref<shard::TypeSyntax>*>(p0));
+			self->set_target_type(*static_cast<shard::TypeSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -7807,7 +7807,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::CatchClauseSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::CatchClauseSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -7902,7 +7902,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_body();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -8015,7 +8015,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_exception_type();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -8127,7 +8127,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_body(*static_cast<const gmt::Ref<shard::StatementsBlockSyntax>*>(p0));
+			self->set_body(*static_cast<shard::StatementsBlockSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -8238,7 +8238,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_exception_type(*static_cast<const gmt::Ref<shard::TypeSyntax>*>(p0));
+			self->set_exception_type(*static_cast<shard::TypeSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -8313,7 +8313,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::CollectionExpressionSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::CollectionExpressionSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -8557,7 +8557,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_values();
-			auto* boxed = shard_box_value<gmt::Span<const gmt::Ref<shard::ExpressionSyntax>>>(std::move(result));
+			auto* boxed = shard_box_value<std::span<shard::ExpressionSyntax* const>>(std::move(result));
 			if (!boxed)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -8673,7 +8673,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_values(*static_cast<const gmt::Span<gmt::Ref<shard::ExpressionSyntax>>*>(p0));
+			self->set_values(*static_cast<const std::span<shard::ExpressionSyntax*>*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -8711,7 +8711,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::ConditionalClauseBaseSyntax>(static_cast<shard::SyntaxKind>(p0), *static_cast<const gmt::Ref<shard::SyntaxNode>*>(p1));
+			auto* value = shard_make_new<shard::ConditionalClauseBaseSyntax>(static_cast<shard::SyntaxKind>(p0), *static_cast<shard::SyntaxNode* const*>(p1));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -8769,7 +8769,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_block();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -8786,7 +8786,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_next();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -8802,7 +8802,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_block(*static_cast<const gmt::Ref<shard::StatementsBlockSyntax>*>(p0));
+			self->set_block(*static_cast<shard::StatementsBlockSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -8839,7 +8839,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_next(*static_cast<const gmt::Ref<shard::ConditionalClauseBaseSyntax>*>(p0));
+			self->set_next(*static_cast<shard::ConditionalClauseBaseSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -8877,7 +8877,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::ConditionalClauseSyntax>(static_cast<shard::SyntaxKind>(p0), *static_cast<const gmt::Ref<shard::SyntaxNode>*>(p1));
+			auto* value = shard_make_new<shard::ConditionalClauseSyntax>(static_cast<shard::SyntaxKind>(p0), *static_cast<shard::SyntaxNode* const*>(p1));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -8935,7 +8935,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_condition();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -8951,7 +8951,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_condition(*static_cast<const gmt::Ref<shard::ExpressionSyntax>*>(p0));
+			self->set_condition(*static_cast<shard::ExpressionSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -8989,7 +8989,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::ConstructorDeclarationSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::ConstructorDeclarationSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -9084,7 +9084,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_body();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -9149,7 +9149,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_parameters_list();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -9213,7 +9213,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_body(*static_cast<const gmt::Ref<shard::BlockSyntax>*>(p0));
+			self->set_body(*static_cast<shard::BlockSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -9250,7 +9250,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_parameters_list(*static_cast<const gmt::Ref<shard::ParametersListSyntax>*>(p0));
+			self->set_parameters_list(*static_cast<shard::ParametersListSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -9325,7 +9325,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::ContinueStatementSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::ContinueStatementSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -9723,7 +9723,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::DeferBlockSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::DeferBlockSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -9818,7 +9818,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_block();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -9930,7 +9930,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_block(*static_cast<const gmt::Ref<shard::StatementsBlockSyntax>*>(p0));
+			self->set_block(*static_cast<shard::StatementsBlockSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -10005,7 +10005,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::DeferStatementSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::DeferStatementSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -10148,7 +10148,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_expression();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -10297,7 +10297,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_expression(*static_cast<const gmt::Ref<shard::ExpressionSyntax>*>(p0));
+			self->set_expression(*static_cast<shard::ExpressionSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -10372,7 +10372,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::DeferVariableSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::DeferVariableSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -10563,7 +10563,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_variable();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -10616,7 +10616,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_variable(*static_cast<const gmt::Ref<shard::VariableStatementSyntax>*>(p0));
+			self->set_variable(*static_cast<shard::VariableStatementSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -10654,7 +10654,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::DelegateDeclarationSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::DelegateDeclarationSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -10797,7 +10797,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_parameters_list();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -10814,7 +10814,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_return_type();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -10878,7 +10878,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_parameters_list(*static_cast<const gmt::Ref<shard::ParametersListSyntax>*>(p0));
+			self->set_parameters_list(*static_cast<shard::ParametersListSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -10915,7 +10915,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_return_type(*static_cast<const gmt::Ref<shard::TypeSyntax>*>(p0));
+			self->set_return_type(*static_cast<shard::TypeSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -11582,7 +11582,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::ElseStatementSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::ElseStatementSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -11810,7 +11810,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::EnumDeclarationSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::EnumDeclarationSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -12006,7 +12006,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_fields();
-			auto* boxed = shard_box_value<gmt::Span<const gmt::Ref<shard::EnumFieldDeclarationSyntax>>>(std::move(result));
+			auto* boxed = shard_box_value<std::span<shard::EnumFieldDeclarationSyntax* const>>(std::move(result));
 			if (!boxed)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -12331,7 +12331,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_fields(*static_cast<const gmt::Span<gmt::Ref<shard::EnumFieldDeclarationSyntax>>*>(p0));
+			self->set_fields(*static_cast<const std::span<shard::EnumFieldDeclarationSyntax*>*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -12517,7 +12517,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::EnumFieldDeclarationSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::EnumFieldDeclarationSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -12660,7 +12660,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_expression();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -12809,7 +12809,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_expression(*static_cast<const gmt::Ref<shard::ExpressionSyntax>*>(p0));
+			self->set_expression(*static_cast<shard::ExpressionSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -12884,7 +12884,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::ExpressionStatementSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::ExpressionStatementSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -12979,7 +12979,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_expression();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -13091,7 +13091,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_expression(*static_cast<const gmt::Ref<shard::ExpressionSyntax>*>(p0));
+			self->set_expression(*static_cast<shard::ExpressionSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -13166,7 +13166,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::ExpressionSyntax>(static_cast<shard::SyntaxKind>(p0), *static_cast<const gmt::Ref<shard::SyntaxNode>*>(p1));
+			auto* value = shard_make_new<shard::ExpressionSyntax>(static_cast<shard::SyntaxKind>(p0), *static_cast<shard::SyntaxNode* const*>(p1));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -13224,7 +13224,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::FieldDeclarationSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::FieldDeclarationSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -13415,7 +13415,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_expression();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -13528,7 +13528,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_type();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -13618,7 +13618,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_expression(*static_cast<const gmt::Ref<shard::ExpressionSyntax>*>(p0));
+			self->set_expression(*static_cast<shard::ExpressionSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -13692,7 +13692,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_type(*static_cast<const gmt::Ref<shard::TypeSyntax>*>(p0));
+			self->set_type(*static_cast<shard::TypeSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -13730,7 +13730,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::ForInStatementSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::ForInStatementSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -13825,7 +13825,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_block();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -14034,7 +14034,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_range_expression();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -14050,7 +14050,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_block(*static_cast<const gmt::Ref<shard::StatementsBlockSyntax>*>(p0));
+			self->set_block(*static_cast<shard::StatementsBlockSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -14198,7 +14198,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_range_expression(*static_cast<const gmt::Ref<shard::ExpressionSyntax>*>(p0));
+			self->set_range_expression(*static_cast<shard::ExpressionSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -14236,7 +14236,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::FunctionDeclarationSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::FunctionDeclarationSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -14331,7 +14331,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_body();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -14396,7 +14396,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_parameters_list();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -14413,7 +14413,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_return_type();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -14429,7 +14429,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_body(*static_cast<const gmt::Ref<shard::BlockSyntax>*>(p0));
+			self->set_body(*static_cast<shard::BlockSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -14466,7 +14466,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_parameters_list(*static_cast<const gmt::Ref<shard::ParametersListSyntax>*>(p0));
+			self->set_parameters_list(*static_cast<shard::ParametersListSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -14503,7 +14503,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_return_type(*static_cast<const gmt::Ref<shard::TypeSyntax>*>(p0));
+			self->set_return_type(*static_cast<shard::TypeSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -14541,7 +14541,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::GenericTypeSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::GenericTypeSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -14732,7 +14732,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_type_arguments();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -14749,7 +14749,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_underlaying_type();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -14765,7 +14765,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_type_arguments(*static_cast<const gmt::Ref<shard::TypeArgumentsListSyntax>*>(p0));
+			self->set_type_arguments(*static_cast<shard::TypeArgumentsListSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -14802,7 +14802,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_underlaying_type(*static_cast<const gmt::Ref<shard::TypeSyntax>*>(p0));
+			self->set_underlaying_type(*static_cast<shard::TypeSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -14840,7 +14840,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::IdentifierNameTypeSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::IdentifierNameTypeSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -15116,7 +15116,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::IfExpressionSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::IfExpressionSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -15211,7 +15211,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_condition();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -15228,7 +15228,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_else_expression();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -15389,7 +15389,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_then_expression();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -15405,7 +15405,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_condition(*static_cast<const gmt::Ref<shard::ExpressionSyntax>*>(p0));
+			self->set_condition(*static_cast<shard::ExpressionSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -15442,7 +15442,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_else_expression(*static_cast<const gmt::Ref<shard::ExpressionSyntax>*>(p0));
+			self->set_else_expression(*static_cast<shard::ExpressionSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -15553,7 +15553,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_then_expression(*static_cast<const gmt::Ref<shard::ExpressionSyntax>*>(p0));
+			self->set_then_expression(*static_cast<shard::ExpressionSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -15591,7 +15591,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::IfStatementSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::IfStatementSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -15819,7 +15819,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::IndexatorDeclarationSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::IndexatorDeclarationSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -16010,7 +16010,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_getter();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -16123,7 +16123,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_parameters_list();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -16140,7 +16140,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_setter();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -16157,7 +16157,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_type();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -16247,7 +16247,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_getter(*static_cast<const gmt::Ref<shard::AccessorDeclarationSyntax>*>(p0));
+			self->set_getter(*static_cast<shard::AccessorDeclarationSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -16321,7 +16321,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_parameters_list(*static_cast<const gmt::Ref<shard::ParametersListSyntax>*>(p0));
+			self->set_parameters_list(*static_cast<shard::ParametersListSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -16358,7 +16358,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_setter(*static_cast<const gmt::Ref<shard::AccessorDeclarationSyntax>*>(p0));
+			self->set_setter(*static_cast<shard::AccessorDeclarationSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -16395,7 +16395,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_type(*static_cast<const gmt::Ref<shard::TypeSyntax>*>(p0));
+			self->set_type(*static_cast<shard::TypeSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -16433,7 +16433,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::IndexatorExpressionSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::IndexatorExpressionSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -16528,7 +16528,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_arguments();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -16641,7 +16641,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_previous();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -16657,7 +16657,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_arguments(*static_cast<const gmt::Ref<shard::ArgumentsListSyntax>*>(p0));
+			self->set_arguments(*static_cast<shard::ArgumentsListSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -16731,7 +16731,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_previous(*static_cast<const gmt::Ref<shard::ExpressionSyntax>*>(p0));
+			self->set_previous(*static_cast<shard::ExpressionSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -16769,7 +16769,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::InterfaceDeclarationSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::InterfaceDeclarationSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -16912,7 +16912,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::InvokationExpressionSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::InvokationExpressionSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -17007,7 +17007,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_arguments();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -17168,7 +17168,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_previous();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -17185,7 +17185,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_type_arguments();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -17201,7 +17201,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_arguments(*static_cast<const gmt::Ref<shard::ArgumentsListSyntax>*>(p0));
+			self->set_arguments(*static_cast<shard::ArgumentsListSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -17312,7 +17312,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_previous(*static_cast<const gmt::Ref<shard::ExpressionSyntax>*>(p0));
+			self->set_previous(*static_cast<shard::ExpressionSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -17349,7 +17349,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_type_arguments(*static_cast<const gmt::Ref<shard::TypeArgumentsListSyntax>*>(p0));
+			self->set_type_arguments(*static_cast<shard::TypeArgumentsListSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -17387,7 +17387,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::IsExpressionSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::IsExpressionSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -17482,7 +17482,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_expression();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -17595,7 +17595,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_target_type();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -17611,7 +17611,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_expression(*static_cast<const gmt::Ref<shard::ExpressionSyntax>*>(p0));
+			self->set_expression(*static_cast<shard::ExpressionSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -17685,7 +17685,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_target_type(*static_cast<const gmt::Ref<shard::TypeSyntax>*>(p0));
+			self->set_target_type(*static_cast<shard::TypeSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -17723,7 +17723,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::LambdaExpressionSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::LambdaExpressionSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -17818,7 +17818,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_body();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -17883,7 +17883,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_parameters();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -17899,7 +17899,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_body(*static_cast<const gmt::Ref<shard::BlockSyntax>*>(p0));
+			self->set_body(*static_cast<shard::BlockSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -17936,7 +17936,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_parameters(*static_cast<const gmt::Ref<shard::ParametersListSyntax>*>(p0));
+			self->set_parameters(*static_cast<shard::ParametersListSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -17974,7 +17974,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::LiteralExpressionSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::LiteralExpressionSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -18202,7 +18202,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::MemberAccessExpressionSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::MemberAccessExpressionSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -18441,7 +18441,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_previous();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -18531,7 +18531,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_previous(*static_cast<const gmt::Ref<shard::ExpressionSyntax>*>(p0));
+			self->set_previous(*static_cast<shard::ExpressionSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -18569,7 +18569,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::MemberDeclarationSyntax>(static_cast<shard::SyntaxKind>(p0), *static_cast<const gmt::Ref<shard::SyntaxNode>*>(p1));
+			auto* value = shard_make_new<shard::MemberDeclarationSyntax>(static_cast<shard::SyntaxKind>(p0), *static_cast<shard::SyntaxNode* const*>(p1));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -18627,7 +18627,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_attributes();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -18745,7 +18745,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_modifiers();
-			auto* boxed = shard_box_value<gmt::Span<const shard::SyntaxToken>>(std::move(result));
+			auto* boxed = shard_box_value<std::span<const shard::SyntaxToken>>(std::move(result));
 			if (!boxed)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -18787,7 +18787,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_attributes(*static_cast<const gmt::Ref<shard::AttributesListSyntax>*>(p0));
+			self->set_attributes(*static_cast<shard::AttributesListSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -18898,7 +18898,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_modifiers(*static_cast<const gmt::Span<shard::SyntaxToken>*>(p0));
+			self->set_modifiers(*static_cast<const std::span<shard::SyntaxToken>*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -18936,7 +18936,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::NamespaceDirectiveSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::NamespaceDirectiveSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -19132,7 +19132,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_qualifier();
-			auto* boxed = shard_box_value<gmt::Span<const shard::SyntaxToken>>(std::move(result));
+			auto* boxed = shard_box_value<std::span<const shard::SyntaxToken>>(std::move(result));
 			if (!boxed)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -19307,7 +19307,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_qualifier(*static_cast<const gmt::Span<shard::SyntaxToken>*>(p0));
+			self->set_qualifier(*static_cast<const std::span<shard::SyntaxToken>*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -19382,7 +19382,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::NullableTypeSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::NullableTypeSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -19621,7 +19621,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_underlaying_type();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -19674,7 +19674,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_underlaying_type(*static_cast<const gmt::Ref<shard::TypeSyntax>*>(p0));
+			self->set_underlaying_type(*static_cast<shard::TypeSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -19712,7 +19712,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::ObjectExpressionSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::ObjectExpressionSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -19807,7 +19807,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_arguments();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -19824,7 +19824,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_array_size();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -19937,7 +19937,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_type();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -19970,7 +19970,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_arguments(*static_cast<const gmt::Ref<shard::ArgumentsListSyntax>*>(p0));
+			self->set_arguments(*static_cast<shard::ArgumentsListSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -20007,7 +20007,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_array_size(*static_cast<const gmt::Ref<shard::ExpressionSyntax>*>(p0));
+			self->set_array_size(*static_cast<shard::ExpressionSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -20081,7 +20081,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_type(*static_cast<const gmt::Ref<shard::TypeSyntax>*>(p0));
+			self->set_type(*static_cast<shard::TypeSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -20119,7 +20119,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::OperatorDeclarationSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::OperatorDeclarationSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -20214,7 +20214,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_body();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -20327,7 +20327,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_parameters_list();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -20344,7 +20344,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_return_type();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -20408,7 +20408,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_body(*static_cast<const gmt::Ref<shard::BlockSyntax>*>(p0));
+			self->set_body(*static_cast<shard::BlockSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -20482,7 +20482,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_parameters_list(*static_cast<const gmt::Ref<shard::ParametersListSyntax>*>(p0));
+			self->set_parameters_list(*static_cast<shard::ParametersListSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -20519,7 +20519,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_return_type(*static_cast<const gmt::Ref<shard::TypeSyntax>*>(p0));
+			self->set_return_type(*static_cast<shard::TypeSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -20594,7 +20594,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::ParameterSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::ParameterSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -20785,7 +20785,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_type();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -20838,7 +20838,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_type(*static_cast<const gmt::Ref<shard::TypeSyntax>*>(p0));
+			self->set_type(*static_cast<shard::TypeSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -20876,7 +20876,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::ParametersListSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::ParametersListSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -21120,7 +21120,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_parameters();
-			auto* boxed = shard_box_value<gmt::Span<const gmt::Ref<shard::ParameterSyntax>>>(std::move(result));
+			auto* boxed = shard_box_value<std::span<shard::ParameterSyntax* const>>(std::move(result));
 			if (!boxed)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -21236,7 +21236,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_parameters(*static_cast<const gmt::Span<gmt::Ref<shard::ParameterSyntax>>*>(p0));
+			self->set_parameters(*static_cast<const std::span<shard::ParameterSyntax*>*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -21274,7 +21274,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::PredefinedTypeSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::PredefinedTypeSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -21550,7 +21550,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::PropertyDeclarationSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::PropertyDeclarationSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -21789,7 +21789,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_expression();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -21806,7 +21806,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_getter();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -21967,7 +21967,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_setter();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -21984,7 +21984,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_type();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -22111,7 +22111,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_expression(*static_cast<const gmt::Ref<shard::ExpressionSyntax>*>(p0));
+			self->set_expression(*static_cast<shard::ExpressionSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -22148,7 +22148,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_getter(*static_cast<const gmt::Ref<shard::AccessorDeclarationSyntax>*>(p0));
+			self->set_getter(*static_cast<shard::AccessorDeclarationSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -22259,7 +22259,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_setter(*static_cast<const gmt::Ref<shard::AccessorDeclarationSyntax>*>(p0));
+			self->set_setter(*static_cast<shard::AccessorDeclarationSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -22296,7 +22296,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_type(*static_cast<const gmt::Ref<shard::TypeSyntax>*>(p0));
+			self->set_type(*static_cast<shard::TypeSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -22334,7 +22334,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::QualifiedNameTypeSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::QualifiedNameTypeSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -22477,7 +22477,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_left();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -22674,7 +22674,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_left(*static_cast<const gmt::Ref<shard::TypeSyntax>*>(p0));
+			self->set_left(*static_cast<shard::TypeSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -22749,7 +22749,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::RangeExpressionSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::RangeExpressionSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -22844,7 +22844,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_left();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -22957,7 +22957,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_right();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -22990,7 +22990,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_left(*static_cast<const gmt::Ref<shard::ExpressionSyntax>*>(p0));
+			self->set_left(*static_cast<shard::ExpressionSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -23064,7 +23064,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_right(*static_cast<const gmt::Ref<shard::ExpressionSyntax>*>(p0));
+			self->set_right(*static_cast<shard::ExpressionSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -23102,7 +23102,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::ReturnStatementSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::ReturnStatementSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -23197,7 +23197,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_expression();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -23357,7 +23357,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_expression(*static_cast<const gmt::Ref<shard::ExpressionSyntax>*>(p0));
+			self->set_expression(*static_cast<shard::ExpressionSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -23721,7 +23721,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::StatementSyntax>(static_cast<shard::SyntaxKind>(p0), *static_cast<const gmt::Ref<shard::SyntaxNode>*>(p1));
+			auto* value = shard_make_new<shard::StatementSyntax>(static_cast<shard::SyntaxKind>(p0), *static_cast<shard::SyntaxNode* const*>(p1));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -23779,7 +23779,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::StatementsBlockSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::StatementsBlockSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -24023,7 +24023,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_statements();
-			auto* boxed = shard_box_value<gmt::Span<const gmt::Ref<shard::StatementSyntax>>>(std::move(result));
+			auto* boxed = shard_box_value<std::span<shard::StatementSyntax* const>>(std::move(result));
 			if (!boxed)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -24139,7 +24139,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_statements(*static_cast<const gmt::Span<gmt::Ref<shard::StatementSyntax>>*>(p0));
+			self->set_statements(*static_cast<const std::span<shard::StatementSyntax*>*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -24177,7 +24177,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::StructDeclarationSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::StructDeclarationSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -24325,7 +24325,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::SyntaxNode>(static_cast<shard::SyntaxKind>(p0), *static_cast<const gmt::Ref<shard::SyntaxNode>*>(p1));
+			auto* value = shard_make_new<shard::SyntaxNode>(static_cast<shard::SyntaxKind>(p0), *static_cast<shard::SyntaxNode* const*>(p1));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -24485,7 +24485,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_parent();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -24723,7 +24723,7 @@ extern "C"
 		}
 		try
 		{
-			self->add_unit(*static_cast<const gmt::Ref<shard::TranslationUnitSyntax>*>(p0));
+			self->add_unit(*static_cast<shard::TranslationUnitSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -24783,7 +24783,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_units();
-			auto* boxed = shard_box_value<std::span<const gmt::Ref<shard::TranslationUnitSyntax>>>(std::move(result));
+			auto* boxed = shard_box_value<std::span<shard::TranslationUnitSyntax* const>>(std::move(result));
 			if (!boxed)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -27527,7 +27527,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::ThrowStatementSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::ThrowStatementSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -27622,7 +27622,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_expression();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -27782,7 +27782,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_expression(*static_cast<const gmt::Ref<shard::ExpressionSyntax>*>(p0));
+			self->set_expression(*static_cast<shard::ExpressionSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -28047,7 +28047,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_members();
-			auto* boxed = shard_box_value<gmt::Span<const gmt::Ref<shard::MemberDeclarationSyntax>>>(std::move(result));
+			auto* boxed = shard_box_value<std::span<shard::MemberDeclarationSyntax* const>>(std::move(result));
 			if (!boxed)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -28090,7 +28090,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_namespace();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -28112,7 +28112,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_usings();
-			auto* boxed = shard_box_value<gmt::Span<const gmt::Ref<shard::UsingDirectiveSyntax>>>(std::move(result));
+			auto* boxed = shard_box_value<std::span<shard::UsingDirectiveSyntax* const>>(std::move(result));
 			if (!boxed)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -28178,7 +28178,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_members(*static_cast<const gmt::Span<gmt::Ref<shard::MemberDeclarationSyntax>>*>(p0));
+			self->set_members(*static_cast<const std::span<shard::MemberDeclarationSyntax*>*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -28215,7 +28215,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_namespace(*static_cast<const gmt::Ref<shard::NamespaceDirectiveSyntax>*>(p0));
+			self->set_namespace(*static_cast<shard::NamespaceDirectiveSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -28252,7 +28252,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_usings(*static_cast<const gmt::Span<gmt::Ref<shard::UsingDirectiveSyntax>>*>(p0));
+			self->set_usings(*static_cast<const std::span<shard::UsingDirectiveSyntax*>*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -28290,7 +28290,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::TryStatementSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::TryStatementSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -28390,7 +28390,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_catch_clauses();
-			auto* boxed = shard_box_value<gmt::Span<const gmt::Ref<shard::CatchClauseSyntax>>>(std::move(result));
+			auto* boxed = shard_box_value<std::span<shard::CatchClauseSyntax* const>>(std::move(result));
 			if (!boxed)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -28481,7 +28481,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_try_block();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -28545,7 +28545,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_catch_clauses(*static_cast<const gmt::Span<gmt::Ref<shard::CatchClauseSyntax>>*>(p0));
+			self->set_catch_clauses(*static_cast<const std::span<shard::CatchClauseSyntax*>*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -28582,7 +28582,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_try_block(*static_cast<const gmt::Ref<shard::StatementsBlockSyntax>*>(p0));
+			self->set_try_block(*static_cast<shard::StatementsBlockSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -28657,7 +28657,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::TypeArgumentsListSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::TypeArgumentsListSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -28901,7 +28901,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_types();
-			auto* boxed = shard_box_value<gmt::Span<const gmt::Ref<shard::TypeSyntax>>>(std::move(result));
+			auto* boxed = shard_box_value<std::span<shard::TypeSyntax* const>>(std::move(result));
 			if (!boxed)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -29017,7 +29017,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_types(*static_cast<const gmt::Span<gmt::Ref<shard::TypeSyntax>>*>(p0));
+			self->set_types(*static_cast<const std::span<shard::TypeSyntax*>*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -29055,7 +29055,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::TypeDeclarationSyntax>(static_cast<shard::SyntaxKind>(p0), *static_cast<const gmt::Ref<shard::SyntaxNode>*>(p1));
+			auto* value = shard_make_new<shard::TypeDeclarationSyntax>(static_cast<shard::SyntaxKind>(p0), *static_cast<shard::SyntaxNode* const*>(p1));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -29161,7 +29161,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_base_types();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -29231,7 +29231,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_members();
-			auto* boxed = shard_box_value<gmt::Span<const gmt::Ref<shard::MemberDeclarationSyntax>>>(std::move(result));
+			auto* boxed = shard_box_value<std::span<shard::MemberDeclarationSyntax* const>>(std::move(result));
 			if (!boxed)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -29370,7 +29370,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_type_parameters();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -29387,7 +29387,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_where_clauses();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -29440,7 +29440,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_base_types(*static_cast<const gmt::Ref<shard::BaseTypesListSyntax>*>(p0));
+			self->set_base_types(*static_cast<shard::BaseTypesListSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -29514,7 +29514,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_members(*static_cast<const gmt::Span<gmt::Ref<shard::MemberDeclarationSyntax>>*>(p0));
+			self->set_members(*static_cast<const std::span<shard::MemberDeclarationSyntax*>*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -29625,7 +29625,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_type_parameters(*static_cast<const gmt::Ref<shard::TypeParametersListSyntax>*>(p0));
+			self->set_type_parameters(*static_cast<shard::TypeParametersListSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -29662,7 +29662,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_where_clauses(*static_cast<const gmt::Ref<shard::WhereClausesListSyntax>*>(p0));
+			self->set_where_clauses(*static_cast<shard::WhereClausesListSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -29700,7 +29700,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::TypeParameterSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::TypeParameterSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -29928,7 +29928,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::TypeParametersListSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::TypeParametersListSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -30172,7 +30172,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_parameters();
-			auto* boxed = shard_box_value<gmt::Span<const gmt::Ref<shard::TypeParameterSyntax>>>(std::move(result));
+			auto* boxed = shard_box_value<std::span<shard::TypeParameterSyntax* const>>(std::move(result));
 			if (!boxed)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -30288,7 +30288,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_parameters(*static_cast<const gmt::Span<gmt::Ref<shard::TypeParameterSyntax>>*>(p0));
+			self->set_parameters(*static_cast<const std::span<shard::TypeParameterSyntax*>*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -30326,7 +30326,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::TypeSyntax>(static_cast<shard::SyntaxKind>(p0), *static_cast<const gmt::Ref<shard::SyntaxNode>*>(p1));
+			auto* value = shard_make_new<shard::TypeSyntax>(static_cast<shard::SyntaxKind>(p0), *static_cast<shard::SyntaxNode* const*>(p1));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -30432,7 +30432,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::UnaryExpressionSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::UnaryExpressionSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -30592,7 +30592,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_operand();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -30693,7 +30693,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_operand(*static_cast<const gmt::Ref<shard::ExpressionSyntax>*>(p0));
+			self->set_operand(*static_cast<shard::ExpressionSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -30768,7 +30768,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::UnlessStatementSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::UnlessStatementSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -30996,7 +30996,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::UntilStatementSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::UntilStatementSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -31091,7 +31091,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_block();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -31108,7 +31108,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_condition();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -31220,7 +31220,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_block(*static_cast<const gmt::Ref<shard::StatementsBlockSyntax>*>(p0));
+			self->set_block(*static_cast<shard::StatementsBlockSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -31257,7 +31257,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_condition(*static_cast<const gmt::Ref<shard::ExpressionSyntax>*>(p0));
+			self->set_condition(*static_cast<shard::ExpressionSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -31332,7 +31332,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::UsingDirectiveSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::UsingDirectiveSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -31480,7 +31480,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_qualifier();
-			auto* boxed = shard_box_value<gmt::Span<const shard::SyntaxToken>>(std::move(result));
+			auto* boxed = shard_box_value<std::span<const shard::SyntaxToken>>(std::move(result));
 			if (!boxed)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -31666,7 +31666,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_qualifier(*static_cast<const gmt::Span<shard::SyntaxToken>*>(p0));
+			self->set_qualifier(*static_cast<const std::span<shard::SyntaxToken>*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -31778,7 +31778,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::VariableStatementSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::VariableStatementSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -31921,7 +31921,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_expression();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -32082,7 +32082,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_type();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -32135,7 +32135,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_expression(*static_cast<const gmt::Ref<shard::ExpressionSyntax>*>(p0));
+			self->set_expression(*static_cast<shard::ExpressionSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -32246,7 +32246,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_type(*static_cast<const gmt::Ref<shard::TypeSyntax>*>(p0));
+			self->set_type(*static_cast<shard::TypeSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -32284,7 +32284,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::WhereClauseSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::WhereClauseSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -32432,7 +32432,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_constraint_types();
-			auto* boxed = shard_box_value<gmt::Span<const gmt::Ref<shard::TypeSyntax>>>(std::move(result));
+			auto* boxed = shard_box_value<std::span<shard::TypeSyntax* const>>(std::move(result));
 			if (!boxed)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -32655,7 +32655,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_constraint_types(*static_cast<const gmt::Span<gmt::Ref<shard::TypeSyntax>>*>(p0));
+			self->set_constraint_types(*static_cast<const std::span<shard::TypeSyntax*>*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -32767,7 +32767,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::WhereClausesListSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::WhereClausesListSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -32867,7 +32867,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_clauses();
-			auto* boxed = shard_box_value<gmt::Span<const gmt::Ref<shard::WhereClauseSyntax>>>(std::move(result));
+			auto* boxed = shard_box_value<std::span<shard::WhereClauseSyntax* const>>(std::move(result));
 			if (!boxed)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -32957,7 +32957,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_clauses(*static_cast<const gmt::Span<gmt::Ref<shard::WhereClauseSyntax>>*>(p0));
+			self->set_clauses(*static_cast<const std::span<shard::WhereClauseSyntax*>*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -32995,7 +32995,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::WhileStatementSyntax>(*static_cast<const gmt::Ref<shard::SyntaxNode>*>(p0));
+			auto* value = shard_make_new<shard::WhileStatementSyntax>(*static_cast<shard::SyntaxNode* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -33090,7 +33090,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_block();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -33107,7 +33107,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_condition();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -33219,7 +33219,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_block(*static_cast<const gmt::Ref<shard::StatementsBlockSyntax>*>(p0));
+			self->set_block(*static_cast<shard::StatementsBlockSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -33256,7 +33256,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_condition(*static_cast<const gmt::Ref<shard::ExpressionSyntax>*>(p0));
+			self->set_condition(*static_cast<shard::ExpressionSyntax* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -33702,7 +33702,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::AccessorSymbol>(std::wstring_view(p0 ? p0 : L""), *static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p1));
+			auto* value = shard_make_new<shard::AccessorSymbol>(std::wstring_view(p0 ? p0 : L""), *static_cast<shard::SyntaxSymbol* const*>(p1));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -33767,7 +33767,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::ArrayTypeSymbol>(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0), *static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p1));
+			auto* value = shard_make_new<shard::ArrayTypeSymbol>(*static_cast<shard::StructSymbol* const*>(p0), *static_cast<shard::SyntaxSymbol* const*>(p1));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -33842,7 +33842,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_underlaying_type();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -33908,7 +33908,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::ConstructorSymbol>(*static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p0));
+			auto* value = shard_make_new<shard::ConstructorSymbol>(*static_cast<shard::SyntaxSymbol* const*>(p0));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -34865,7 +34865,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::DelegateTypeSymbol>(std::wstring_view(p0 ? p0 : L""), *static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p1));
+			auto* value = shard_make_new<shard::DelegateTypeSymbol>(std::wstring_view(p0 ? p0 : L""), *static_cast<shard::SyntaxSymbol* const*>(p1));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -34957,7 +34957,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_return_type();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -35034,7 +35034,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_parameters(*static_cast<const gmt::vector<gmt::Ref<shard::ParameterSymbol>>*>(p0));
+			self->set_parameters(*static_cast<const gmt::vector<shard::ParameterSymbol*>*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -35071,7 +35071,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_return_type(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0));
+			self->set_return_type(*static_cast<shard::StructSymbol* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -35108,7 +35108,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_type_parameters(*static_cast<const gmt::vector<gmt::Ref<shard::TypeParameterSymbol>>*>(p0));
+			self->set_type_parameters(*static_cast<const gmt::vector<shard::TypeParameterSymbol*>*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -35146,7 +35146,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::EnumSymbol>(std::wstring_view(p0 ? p0 : L""), *static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p1));
+			auto* value = shard_make_new<shard::EnumSymbol>(std::wstring_view(p0 ? p0 : L""), *static_cast<shard::SyntaxSymbol* const*>(p1));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -37025,7 +37025,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::FieldSymbol>(std::wstring_view(p0 ? p0 : L""), *static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p1));
+			auto* value = shard_make_new<shard::FieldSymbol>(std::wstring_view(p0 ? p0 : L""), *static_cast<shard::SyntaxSymbol* const*>(p1));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -37117,7 +37117,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_return_type();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -37214,7 +37214,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_return_type(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0));
+			self->set_return_type(*static_cast<shard::StructSymbol* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -37252,7 +37252,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::GenericMethodSymbol>(*static_cast<const gmt::Ref<shard::MethodSymbol>*>(p0), *static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p1));
+			auto* value = shard_make_new<shard::GenericMethodSymbol>(*static_cast<shard::MethodSymbol* const*>(p0), *static_cast<shard::SyntaxSymbol* const*>(p1));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -37344,7 +37344,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_underlaying_method();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -37367,7 +37367,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_type_arguments(*static_cast<const std::span<const gmt::Ref<shard::StructSymbol>>*>(p0));
+			self->set_type_arguments(*static_cast<const std::span<shard::StructSymbol* const>*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -37405,7 +37405,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::GenericTypeSymbol>(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0), *static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p1));
+			auto* value = shard_make_new<shard::GenericTypeSymbol>(*static_cast<shard::StructSymbol* const*>(p0), *static_cast<shard::SyntaxSymbol* const*>(p1));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -37462,7 +37462,7 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->add_type_parameter(*static_cast<const gmt::Ref<shard::TypeParameterSymbol>*>(p0), *static_cast<const gmt::Ref<shard::StructSymbol>*>(p1));
+			auto result = self->add_type_parameter(*static_cast<shard::TypeParameterSymbol* const*>(p0), *static_cast<shard::StructSymbol* const*>(p1));
 			return (result ? 1 : 0);
 		}
 		catch (...)
@@ -37480,7 +37480,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_underlaying_type();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -37503,8 +37503,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->substitute_type_parameter(*static_cast<const gmt::Ref<shard::TypeParameterSymbol>*>(p0));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->substitute_type_parameter(*static_cast<shard::TypeParameterSymbol* const*>(p0));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -37521,7 +37521,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::IndexatorSymbol>(std::wstring_view(p0 ? p0 : L""), *static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p1));
+			auto* value = shard_make_new<shard::IndexatorSymbol>(std::wstring_view(p0 ? p0 : L""), *static_cast<shard::SyntaxSymbol* const*>(p1));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -37595,7 +37595,7 @@ extern "C"
 		}
 		try
 		{
-			self->on_symbol_declared(*static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p0));
+			self->on_symbol_declared(*static_cast<shard::SyntaxSymbol* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -37640,7 +37640,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::InterfaceSymbol>(std::wstring_view(p0 ? p0 : L""), *static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p1));
+			auto* value = shard_make_new<shard::InterfaceSymbol>(std::wstring_view(p0 ? p0 : L""), *static_cast<shard::SyntaxSymbol* const*>(p1));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -37705,7 +37705,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::LeftDenotationSymbol>(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0), *static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p1));
+			auto* value = shard_make_new<shard::LeftDenotationSymbol>(*static_cast<shard::StructSymbol* const*>(p0), *static_cast<shard::SyntaxSymbol* const*>(p1));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -37763,7 +37763,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_expected_type();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -37786,7 +37786,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_expected_type(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0));
+			self->set_expected_type(*static_cast<shard::StructSymbol* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -37856,7 +37856,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::LiteralSymbol>(static_cast<shard::TokenType>(p0), *static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p1));
+			auto* value = shard_make_new<shard::LiteralSymbol>(static_cast<shard::TokenType>(p0), *static_cast<shard::SyntaxSymbol* const*>(p1));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -37945,7 +37945,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_bound_type();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -38121,7 +38121,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_bound_type(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0));
+			self->set_bound_type(*static_cast<shard::StructSymbol* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -38307,7 +38307,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::MemberSymbol>(std::wstring_view(p0 ? p0 : L""), static_cast<shard::SyntaxKind>(p1), *static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p2));
+			auto* value = shard_make_new<shard::MemberSymbol>(std::wstring_view(p0 ? p0 : L""), static_cast<shard::SyntaxKind>(p1), *static_cast<shard::SyntaxSymbol* const*>(p2));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -38626,7 +38626,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::MethodSymbol>(std::wstring_view(p0 ? p0 : L""), *static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p1));
+			auto* value = shard_make_new<shard::MethodSymbol>(std::wstring_view(p0 ? p0 : L""), *static_cast<shard::SyntaxSymbol* const*>(p1));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -38820,7 +38820,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_return_type();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -38870,7 +38870,7 @@ extern "C"
 		}
 		try
 		{
-			self->on_symbol_declared(*static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p0));
+			self->on_symbol_declared(*static_cast<shard::SyntaxSymbol* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -39099,7 +39099,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_return_type(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0));
+			self->set_return_type(*static_cast<shard::StructSymbol* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -39137,7 +39137,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::NamespaceSymbol>(std::wstring_view(p0 ? p0 : L""), *static_cast<const gmt::Ref<shard::NamespaceSymbol>*>(p1));
+			auto* value = shard_make_new<shard::NamespaceSymbol>(std::wstring_view(p0 ? p0 : L""), *static_cast<shard::NamespaceSymbol* const*>(p1));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -39212,7 +39212,7 @@ extern "C"
 		try
 		{
 			auto result = self->lookup(std::wstring_view(p0 ? p0 : L""));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -39229,7 +39229,7 @@ extern "C"
 		try
 		{
 			auto result = self->lookup_or_create(std::wstring_view(p0 ? p0 : L""), *p1);
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -39245,7 +39245,7 @@ extern "C"
 		}
 		try
 		{
-			self->on_symbol_declared(*static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p0));
+			self->on_symbol_declared(*static_cast<shard::SyntaxSymbol* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -39290,7 +39290,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::NullableTypeSymbol>(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0), *static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p1));
+			auto* value = shard_make_new<shard::NullableTypeSymbol>(*static_cast<shard::StructSymbol* const*>(p0), *static_cast<shard::SyntaxSymbol* const*>(p1));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -39348,7 +39348,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_underlaying_type();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -39372,7 +39372,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::OperatorSymbol>(std::wstring_view(p0 ? p0 : L""), static_cast<shard::TokenType>(p1), *static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p2));
+			auto* value = shard_make_new<shard::OperatorSymbol>(std::wstring_view(p0 ? p0 : L""), static_cast<shard::TokenType>(p1), *static_cast<shard::SyntaxSymbol* const*>(p2));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -39491,7 +39491,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::ParameterSymbol>(std::wstring_view(p0 ? p0 : L""), *static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p1));
+			auto* value = shard_make_new<shard::ParameterSymbol>(std::wstring_view(p0 ? p0 : L""), *static_cast<shard::SyntaxSymbol* const*>(p1));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -39549,7 +39549,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_type();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -39572,7 +39572,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_type(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0));
+			self->set_type(*static_cast<shard::StructSymbol* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -39610,7 +39610,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::PropertySymbol>(std::wstring_view(p0 ? p0 : L""), static_cast<shard::SyntaxKind>(p1), *static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p2));
+			auto* value = shard_make_new<shard::PropertySymbol>(std::wstring_view(p0 ? p0 : L""), static_cast<shard::SyntaxKind>(p1), *static_cast<shard::SyntaxSymbol* const*>(p2));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -39668,7 +39668,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_backing_field();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -39685,7 +39685,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_getter();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -39702,7 +39702,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_return_type();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -39719,7 +39719,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_setter();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -39742,7 +39742,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_backing_field(*static_cast<const gmt::Ref<shard::FieldSymbol>*>(p0));
+			self->set_backing_field(*static_cast<shard::FieldSymbol* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -39779,7 +39779,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_getter(*static_cast<const gmt::Ref<shard::AccessorSymbol>*>(p0));
+			self->set_getter(*static_cast<shard::AccessorSymbol* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -39816,7 +39816,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_return_type(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0));
+			self->set_return_type(*static_cast<shard::StructSymbol* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -39853,7 +39853,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_setter(*static_cast<const gmt::Ref<shard::AccessorSymbol>*>(p0));
+			self->set_setter(*static_cast<shard::AccessorSymbol* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -40039,7 +40039,7 @@ extern "C"
 	{
 		try
 		{
-			auto result = shard::SemanticModel::are_types_equal(*static_cast<const gmt::Ref<const shard::StructSymbol>*>(p0), *static_cast<const gmt::Ref<const shard::StructSymbol>*>(p1));
+			auto result = shard::SemanticModel::are_types_equal(*static_cast<const shard::StructSymbol* const*>(p0), *static_cast<const shard::StructSymbol* const*>(p1));
 			return (result ? 1 : 0);
 		}
 		catch (...)
@@ -40056,8 +40056,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->find_field_by_name(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0), std::wstring_view(p1 ? p1 : L""));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->find_field_by_name(*static_cast<shard::StructSymbol* const*>(p0), std::wstring_view(p1 ? p1 : L""));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -40074,7 +40074,7 @@ extern "C"
 		try
 		{
 			auto result = self->find_type_by_name(std::wstring_view(p0 ? p0 : L""));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -40090,8 +40090,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->get_constructor_return_type(*static_cast<const gmt::Ref<shard::ConstructorSymbol>*>(p0), *static_cast<const gmt::Ref<shard::GenericTypeSymbol>*>(p1));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->get_constructor_return_type(*static_cast<shard::ConstructorSymbol* const*>(p0), *static_cast<shard::GenericTypeSymbol* const*>(p1));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -40107,8 +40107,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->get_expression_type(*static_cast<const gmt::Ref<const shard::ExpressionSyntax>*>(p0));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->get_expression_type(*static_cast<const shard::ExpressionSyntax* const*>(p0));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -40124,8 +40124,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->get_field_type(*static_cast<const gmt::Ref<shard::FieldSymbol>*>(p0), *static_cast<const gmt::Ref<shard::GenericTypeSymbol>*>(p1));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->get_field_type(*static_cast<shard::FieldSymbol* const*>(p0), *static_cast<shard::GenericTypeSymbol* const*>(p1));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -40141,8 +40141,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->get_method_return_type(*static_cast<const gmt::Ref<shard::MethodSymbol>*>(p0), *static_cast<const gmt::Ref<shard::GenericTypeSymbol>*>(p1));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->get_method_return_type(*static_cast<shard::MethodSymbol* const*>(p0), *static_cast<shard::GenericTypeSymbol* const*>(p1));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -40158,8 +40158,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->get_property_type(*static_cast<const gmt::Ref<shard::PropertySymbol>*>(p0), *static_cast<const gmt::Ref<shard::GenericTypeSymbol>*>(p1));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->get_property_type(*static_cast<shard::PropertySymbol* const*>(p0), *static_cast<shard::GenericTypeSymbol* const*>(p1));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -40209,7 +40209,7 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->get_type_display_name(*static_cast<const gmt::Ref<const shard::StructSymbol>*>(p0));
+			auto result = self->get_type_display_name(*static_cast<const shard::StructSymbol* const*>(p0));
 			std::wstring_view view(result);
 			if (out_len)
 			{
@@ -40257,7 +40257,7 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->is_assignable_to(*static_cast<const gmt::Ref<const shard::StructSymbol>*>(p0), *static_cast<const gmt::Ref<const shard::StructSymbol>*>(p1));
+			auto result = self->is_assignable_to(*static_cast<const shard::StructSymbol* const*>(p0), *static_cast<const shard::StructSymbol* const*>(p1));
 			return (result ? 1 : 0);
 		}
 		catch (...)
@@ -40274,7 +40274,7 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->is_primitive_type(*static_cast<const gmt::Ref<const shard::StructSymbol>*>(p0));
+			auto result = self->is_primitive_type(*static_cast<const shard::StructSymbol* const*>(p0));
 			return (result ? 1 : 0);
 		}
 		catch (...)
@@ -40291,7 +40291,7 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->is_task_or_task_like(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0));
+			auto result = self->is_task_or_task_like(*static_cast<shard::StructSymbol* const*>(p0));
 			return (result ? 1 : 0);
 		}
 		catch (...)
@@ -40315,7 +40315,7 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->resolve_indexable(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0), *static_cast<gmt::Ref<shard::PropertySymbol>*>(p1), *static_cast<gmt::Ref<shard::IndexatorSymbol>*>(p2));
+			auto result = self->resolve_indexable(*static_cast<shard::StructSymbol* const*>(p0), *static_cast<shard::PropertySymbol**>(p1), *static_cast<shard::IndexatorSymbol**>(p2));
 			return (result ? 1 : 0);
 		}
 		catch (...)
@@ -40332,8 +40332,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->resolve_runtime_type_argument(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0), *static_cast<const std::function<gmt::Ref<shard::StructSymbol>(gmt::Ref<shard::TypeParameterSymbol>)>*>(p1));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->resolve_runtime_type_argument(*static_cast<shard::StructSymbol* const*>(p0), *static_cast<const std::function<shard::StructSymbol*(shard::TypeParameterSymbol*)>*>(p1));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -40349,8 +40349,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->resolve_virtual_indexator(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0), *static_cast<const gmt::Ref<shard::IndexatorSymbol>*>(p1), *static_cast<const gmt::Ref<shard::GenericTypeSymbol>*>(p2));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->resolve_virtual_indexator(*static_cast<shard::StructSymbol* const*>(p0), *static_cast<shard::IndexatorSymbol* const*>(p1), *static_cast<shard::GenericTypeSymbol* const*>(p2));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -40366,8 +40366,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->resolve_virtual_property(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0), *static_cast<const gmt::Ref<shard::PropertySymbol>*>(p1), *static_cast<const gmt::Ref<shard::GenericTypeSymbol>*>(p2));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->resolve_virtual_property(*static_cast<shard::StructSymbol* const*>(p0), *static_cast<shard::PropertySymbol* const*>(p1), *static_cast<shard::GenericTypeSymbol* const*>(p2));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -40383,7 +40383,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_expression_type(*static_cast<const gmt::Ref<const shard::ExpressionSyntax>*>(p0), *static_cast<const gmt::Ref<shard::StructSymbol>*>(p1));
+			self->set_expression_type(*static_cast<const shard::ExpressionSyntax* const*>(p0), *static_cast<shard::StructSymbol* const*>(p1));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -40420,8 +40420,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->substitute_type(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0), *static_cast<const gmt::Ref<shard::GenericTypeSymbol>*>(p1));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->substitute_type(*static_cast<shard::StructSymbol* const*>(p0), *static_cast<shard::GenericTypeSymbol* const*>(p1));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -40437,7 +40437,7 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->try_resolve_generic_arguments(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0), *static_cast<const std::function<gmt::Ref<shard::StructSymbol>(gmt::Ref<shard::TypeParameterSymbol>)>*>(p1), *static_cast<gmt::Ref<shard::StructSymbol>*>(p2), *static_cast<gmt::vector<gmt::Ref<shard::StructSymbol>>*>(p3));
+			auto result = self->try_resolve_generic_arguments(*static_cast<shard::StructSymbol* const*>(p0), *static_cast<const std::function<shard::StructSymbol*(shard::TypeParameterSymbol*)>*>(p1), *static_cast<shard::StructSymbol**>(p2), *static_cast<gmt::vector<shard::StructSymbol*>*>(p3));
 			return (result ? 1 : 0);
 		}
 		catch (...)
@@ -40454,7 +40454,7 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->type_implements_interface(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0), *static_cast<const gmt::Ref<shard::InterfaceSymbol>*>(p1));
+			auto result = self->type_implements_interface(*static_cast<shard::StructSymbol* const*>(p0), *static_cast<shard::InterfaceSymbol* const*>(p1));
 			return (result ? 1 : 0);
 		}
 		catch (...)
@@ -40471,7 +40471,7 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->type_satisfies_constraint(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0), *static_cast<const gmt::Ref<shard::StructSymbol>*>(p1));
+			auto result = self->type_satisfies_constraint(*static_cast<shard::StructSymbol* const*>(p0), *static_cast<shard::StructSymbol* const*>(p1));
 			return (result ? 1 : 0);
 		}
 		catch (...)
@@ -40489,7 +40489,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::SemanticScope>(*static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p0), p1);
+			auto* value = shard_make_new<shard::SemanticScope>(*static_cast<shard::SyntaxSymbol* const*>(p0), p1);
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -40546,7 +40546,7 @@ extern "C"
 		}
 		try
 		{
-			self->add_imported_namespace(*static_cast<const gmt::Ref<shard::NamespaceSymbol>*>(p0));
+			self->add_imported_namespace(*static_cast<shard::NamespaceSymbol* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -40583,7 +40583,7 @@ extern "C"
 		}
 		try
 		{
-			self->declare_symbol(*static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p0));
+			self->declare_symbol(*static_cast<shard::SyntaxSymbol* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -40621,7 +40621,7 @@ extern "C"
 		try
 		{
 			auto result = self->find_local(*static_cast<const rs::stringintern::StringReference*>(p0));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -40643,7 +40643,7 @@ extern "C"
 		try
 		{
 			auto result = self->find_overloads(std::wstring_view(p0 ? p0 : L""));
-			auto* boxed = shard_box_value<std::span<const gmt::Ref<shard::SyntaxSymbol>>>(std::move(result));
+			auto* boxed = shard_box_value<std::span<shard::SyntaxSymbol* const>>(std::move(result));
 			if (!boxed)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -40703,7 +40703,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_namespace();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -40720,7 +40720,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_owner();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -40754,7 +40754,7 @@ extern "C"
 		try
 		{
 			auto result = self->lookup(*static_cast<const rs::stringintern::StringReference*>(p0));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -40777,7 +40777,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_namespace(*static_cast<const gmt::Ref<shard::NamespaceSymbol>*>(p0));
+			self->set_namespace(*static_cast<shard::NamespaceSymbol* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -40970,7 +40970,7 @@ extern "C"
 		}
 		try
 		{
-			self->push_scope(*static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p0));
+			self->push_scope(*static_cast<shard::SyntaxSymbol* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -41013,7 +41013,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::StructSymbol>(std::wstring_view(p0 ? p0 : L""), static_cast<shard::SyntaxKind>(p1), *static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p2));
+			auto* value = shard_make_new<shard::StructSymbol>(std::wstring_view(p0 ? p0 : L""), static_cast<shard::SyntaxKind>(p1), *static_cast<shard::SyntaxSymbol* const*>(p2));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -41087,7 +41087,7 @@ extern "C"
 		}
 		try
 		{
-			self->on_symbol_declared(*static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p0));
+			self->on_symbol_declared(*static_cast<shard::SyntaxSymbol* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -41194,8 +41194,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->create_accessor(*static_cast<const gmt::Ref<const shard::AccessorDeclarationSyntax>*>(p0), *static_cast<const gmt::Ref<shard::PropertySymbol>*>(p1));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->create_accessor(*static_cast<const shard::AccessorDeclarationSyntax* const*>(p0), *static_cast<shard::PropertySymbol* const*>(p1));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -41211,8 +41211,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->create_array_type(*static_cast<const gmt::Ref<const shard::ArrayTypeSyntax>*>(p0), *static_cast<const gmt::Ref<shard::StructSymbol>*>(p1));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->create_array_type(*static_cast<const shard::ArrayTypeSyntax* const*>(p0), *static_cast<shard::StructSymbol* const*>(p1));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -41228,8 +41228,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->create_backing_field(*static_cast<const gmt::Ref<shard::PropertySymbol>*>(p0), *static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p1));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->create_backing_field(*static_cast<shard::PropertySymbol* const*>(p0), *static_cast<shard::SyntaxSymbol* const*>(p1));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -41245,8 +41245,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->create_constructor(*static_cast<const gmt::Ref<const shard::ConstructorDeclarationSyntax>*>(p0), *static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p1));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->create_constructor(*static_cast<const shard::ConstructorDeclarationSyntax* const*>(p0), *static_cast<shard::SyntaxSymbol* const*>(p1));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -41262,8 +41262,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->create_delegate(*static_cast<const gmt::Ref<const shard::DelegateDeclarationSyntax>*>(p0), *static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p1));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->create_delegate(*static_cast<const shard::DelegateDeclarationSyntax* const*>(p0), *static_cast<shard::SyntaxSymbol* const*>(p1));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -41279,8 +41279,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->create_enum(*static_cast<const gmt::Ref<const shard::EnumDeclarationSyntax>*>(p0), *static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p1));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->create_enum(*static_cast<const shard::EnumDeclarationSyntax* const*>(p0), *static_cast<shard::SyntaxSymbol* const*>(p1));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -41296,8 +41296,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->create_enum_field(std::wstring_view(p0 ? p0 : L""), *static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p1), *static_cast<const gmt::Ref<shard::StructSymbol>*>(p2), static_cast<std::int64_t>(p3));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->create_enum_field(std::wstring_view(p0 ? p0 : L""), *static_cast<shard::SyntaxSymbol* const*>(p1), *static_cast<shard::StructSymbol* const*>(p2), static_cast<std::int64_t>(p3));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -41313,8 +41313,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->create_field(*static_cast<const gmt::Ref<const shard::FieldDeclarationSyntax>*>(p0), *static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p1));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->create_field(*static_cast<const shard::FieldDeclarationSyntax* const*>(p0), *static_cast<shard::SyntaxSymbol* const*>(p1));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -41330,8 +41330,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->create_generic_type(*static_cast<const gmt::Ref<const shard::GenericTypeSyntax>*>(p0), *static_cast<const gmt::Ref<shard::StructSymbol>*>(p1));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->create_generic_type(*static_cast<const shard::GenericTypeSyntax* const*>(p0), *static_cast<shard::StructSymbol* const*>(p1));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -41347,8 +41347,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->create_getter(*static_cast<const gmt::Ref<shard::PropertySymbol>*>(p0));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->create_getter(*static_cast<shard::PropertySymbol* const*>(p0));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -41364,8 +41364,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->create_indexator(*static_cast<const gmt::Ref<const shard::IndexatorDeclarationSyntax>*>(p0), *static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p1));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->create_indexator(*static_cast<const shard::IndexatorDeclarationSyntax* const*>(p0), *static_cast<shard::SyntaxSymbol* const*>(p1));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -41381,8 +41381,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->create_interface(*static_cast<const gmt::Ref<const shard::InterfaceDeclarationSyntax>*>(p0), *static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p1));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->create_interface(*static_cast<const shard::InterfaceDeclarationSyntax* const*>(p0), *static_cast<shard::SyntaxSymbol* const*>(p1));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -41398,8 +41398,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->create_method(*static_cast<const gmt::Ref<const shard::FunctionDeclarationSyntax>*>(p0), *static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p1));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->create_method(*static_cast<const shard::FunctionDeclarationSyntax* const*>(p0), *static_cast<shard::SyntaxSymbol* const*>(p1));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -41415,8 +41415,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->create_namespace(*static_cast<const gmt::Ref<const shard::NamespaceDirectiveSyntax>*>(p0));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->create_namespace(*static_cast<const shard::NamespaceDirectiveSyntax* const*>(p0));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -41432,8 +41432,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->create_nullable_type(*static_cast<const gmt::Ref<const shard::NullableTypeSyntax>*>(p0), *static_cast<const gmt::Ref<shard::StructSymbol>*>(p1));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->create_nullable_type(*static_cast<const shard::NullableTypeSyntax* const*>(p0), *static_cast<shard::StructSymbol* const*>(p1));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -41449,8 +41449,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->create_operator(*static_cast<const gmt::Ref<const shard::OperatorDeclarationSyntax>*>(p0), *static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p1));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->create_operator(*static_cast<const shard::OperatorDeclarationSyntax* const*>(p0), *static_cast<shard::SyntaxSymbol* const*>(p1));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -41466,8 +41466,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->create_parameter(*static_cast<const gmt::Ref<const shard::ParameterSyntax>*>(p0), *static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p1));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->create_parameter(*static_cast<const shard::ParameterSyntax* const*>(p0), *static_cast<shard::SyntaxSymbol* const*>(p1));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -41483,8 +41483,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->create_property(*static_cast<const gmt::Ref<const shard::PropertyDeclarationSyntax>*>(p0), *static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p1));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->create_property(*static_cast<const shard::PropertyDeclarationSyntax* const*>(p0), *static_cast<shard::SyntaxSymbol* const*>(p1));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -41500,8 +41500,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->create_setter(*static_cast<const gmt::Ref<shard::PropertySymbol>*>(p0));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->create_setter(*static_cast<shard::PropertySymbol* const*>(p0));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -41517,8 +41517,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->create_struct(*static_cast<const gmt::Ref<const shard::StructDeclarationSyntax>*>(p0), *static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p1));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->create_struct(*static_cast<const shard::StructDeclarationSyntax* const*>(p0), *static_cast<shard::SyntaxSymbol* const*>(p1));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -41534,8 +41534,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->create_type_parameter(std::wstring_view(p0 ? p0 : L""), *static_cast<const gmt::Ref<shard::StructSymbol>*>(p1));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->create_type_parameter(std::wstring_view(p0 ? p0 : L""), *static_cast<shard::StructSymbol* const*>(p1));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -41551,8 +41551,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->create_variable(*static_cast<const gmt::Ref<const shard::VariableStatementSyntax>*>(p0), *static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p1));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->create_variable(*static_cast<const shard::VariableStatementSyntax* const*>(p0), *static_cast<shard::SyntaxSymbol* const*>(p1));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -41685,7 +41685,7 @@ extern "C"
 		try
 		{
 			auto result = self->find(p0, static_cast<std::uint16_t>(p1));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -41701,7 +41701,7 @@ extern "C"
 		}
 		try
 		{
-			self->insert(p0, static_cast<std::uint16_t>(p1), *static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p2));
+			self->insert(p0, static_cast<std::uint16_t>(p1), *static_cast<shard::SyntaxSymbol* const*>(p2));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -41808,7 +41808,7 @@ extern "C"
 		}
 		try
 		{
-			self->bind_type_arguments(*static_cast<const gmt::Ref<const shard::SyntaxNode>*>(p0), *static_cast<const std::span<const gmt::Ref<shard::StructSymbol>>*>(p1));
+			self->bind_type_arguments(*static_cast<const shard::SyntaxNode* const*>(p0), *static_cast<const std::span<shard::StructSymbol* const>*>(p1));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -41845,8 +41845,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->find_array_type(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->find_array_type(*static_cast<shard::StructSymbol* const*>(p0));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -41862,8 +41862,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->find_generic_method(*static_cast<const gmt::Ref<shard::MethodSymbol>*>(p0), *static_cast<const std::span<const gmt::Ref<shard::StructSymbol>>*>(p1));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->find_generic_method(*static_cast<shard::MethodSymbol* const*>(p0), *static_cast<const std::span<shard::StructSymbol* const>*>(p1));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -41879,8 +41879,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->find_generic_type(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0), *static_cast<const std::span<const gmt::Ref<shard::StructSymbol>>*>(p1));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->find_generic_type(*static_cast<shard::StructSymbol* const*>(p0), *static_cast<const std::span<shard::StructSymbol* const>*>(p1));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -41896,8 +41896,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->find_nullable_type(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->find_nullable_type(*static_cast<shard::StructSymbol* const*>(p0));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -41913,8 +41913,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->find_or_create_array_type(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->find_or_create_array_type(*static_cast<shard::StructSymbol* const*>(p0));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -41930,8 +41930,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->find_or_create_generic_method(*static_cast<const gmt::Ref<shard::MethodSymbol>*>(p0), *static_cast<const std::span<const gmt::Ref<shard::StructSymbol>>*>(p1), *static_cast<const gmt::Ref<shard::StructSymbol>*>(p2));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->find_or_create_generic_method(*static_cast<shard::MethodSymbol* const*>(p0), *static_cast<const std::span<shard::StructSymbol* const>*>(p1), *static_cast<shard::StructSymbol* const*>(p2));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -41947,8 +41947,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->find_or_create_generic_type(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0), *static_cast<const std::span<const gmt::Ref<shard::StructSymbol>>*>(p1));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->find_or_create_generic_type(*static_cast<shard::StructSymbol* const*>(p0), *static_cast<const std::span<shard::StructSymbol* const>*>(p1));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -41964,8 +41964,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->find_or_create_nullable_type(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->find_or_create_nullable_type(*static_cast<shard::StructSymbol* const*>(p0));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -41999,7 +41999,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_array_primitive();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -42016,7 +42016,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_boolean_primitive();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -42033,7 +42033,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_byte_primitive();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -42050,7 +42050,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_char_primitive();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -42067,7 +42067,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_double_primitive();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -42084,7 +42084,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_integer_primitive();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -42101,7 +42101,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_nint_primitive();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -42118,7 +42118,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_root_namespace();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -42135,7 +42135,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_standard_type(static_cast<shard::StandardTypes>(p0));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -42152,7 +42152,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_string_primitive();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -42169,7 +42169,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_void_primitive();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -42185,8 +42185,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->lookup_node(*static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p0));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->lookup_node(*static_cast<shard::SyntaxSymbol* const*>(p0));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -42202,8 +42202,8 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->lookup_symbol(*static_cast<const gmt::Ref<const shard::SyntaxNode>*>(p0));
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			auto result = self->lookup_symbol(*static_cast<const shard::SyntaxNode* const*>(p0));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -42224,8 +42224,8 @@ extern "C"
 		*out_value = nullptr;
 		try
 		{
-			auto result = self->lookup_type_arguments(*static_cast<const gmt::Ref<const shard::SyntaxNode>*>(p0));
-			auto* boxed = shard_box_value<std::span<const gmt::Ref<shard::StructSymbol>>>(std::move(result));
+			auto result = self->lookup_type_arguments(*static_cast<const shard::SyntaxNode* const*>(p0));
+			auto* boxed = shard_box_value<std::span<shard::StructSymbol* const>>(std::move(result));
 			if (!boxed)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -42274,7 +42274,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_standard_type(static_cast<shard::StandardTypes>(p0), *static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p1));
+			self->set_standard_type(static_cast<shard::StandardTypes>(p0), *static_cast<shard::SyntaxSymbol* const*>(p1));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -42312,7 +42312,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::SyntaxSymbol>(std::wstring_view(p0 ? p0 : L""), static_cast<shard::SyntaxKind>(p1), *static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p2));
+			auto* value = shard_make_new<shard::SyntaxSymbol>(std::wstring_view(p0 ? p0 : L""), static_cast<shard::SyntaxKind>(p1), *static_cast<shard::SyntaxSymbol* const*>(p2));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -42531,7 +42531,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_parent();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -42598,7 +42598,7 @@ extern "C"
 		}
 		try
 		{
-			self->on_symbol_declared(*static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p0));
+			self->on_symbol_declared(*static_cast<shard::SyntaxSymbol* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -44070,7 +44070,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::TypeParameterSymbol>(std::wstring_view(p0 ? p0 : L""), *static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p1));
+			auto* value = shard_make_new<shard::TypeParameterSymbol>(std::wstring_view(p0 ? p0 : L""), *static_cast<shard::SyntaxSymbol* const*>(p1));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -44127,7 +44127,7 @@ extern "C"
 		}
 		try
 		{
-			self->add_constraint(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0));
+			self->add_constraint(*static_cast<shard::StructSymbol* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -44243,7 +44243,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::VariableSymbol>(std::wstring_view(p0 ? p0 : L""), *static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p1));
+			auto* value = shard_make_new<shard::VariableSymbol>(std::wstring_view(p0 ? p0 : L""), *static_cast<shard::SyntaxSymbol* const*>(p1));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -44301,7 +44301,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_type();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -44324,7 +44324,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_type(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0));
+			self->set_type(*static_cast<shard::StructSymbol* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -44971,7 +44971,7 @@ extern "C"
 		}
 		try
 		{
-			self->add_argument(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0));
+			self->add_argument(*static_cast<shard::StructSymbol* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -45008,7 +45008,7 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->add_temporary(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0), p1, static_cast<shard::PlacementVerdict>(p2));
+			auto result = self->add_temporary(*static_cast<shard::StructSymbol* const*>(p0), p1, static_cast<shard::PlacementVerdict>(p2));
 			return static_cast<std::uint16_t>(result);
 		}
 		catch (...)
@@ -45025,7 +45025,7 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->add_variable(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0), static_cast<shard::PlacementVerdict>(p1));
+			auto result = self->add_variable(*static_cast<shard::StructSymbol* const*>(p0), static_cast<shard::PlacementVerdict>(p1));
 			return static_cast<std::uint16_t>(result);
 		}
 		catch (...)
@@ -45282,7 +45282,7 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->seal_variable(static_cast<std::uint16_t>(p0), *static_cast<const gmt::Ref<shard::StructSymbol>*>(p1), static_cast<shard::PlacementVerdict>(p2));
+			auto result = self->seal_variable(static_cast<std::uint16_t>(p0), *static_cast<shard::StructSymbol* const*>(p1), static_cast<shard::PlacementVerdict>(p2));
 			return (result ? 1 : 0);
 		}
 		catch (...)
@@ -45766,7 +45766,7 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->find_frame_layout(*static_cast<const gmt::Ref<shard::MethodSymbol>*>(p0));
+			auto result = self->find_frame_layout(*static_cast<shard::MethodSymbol* const*>(p0));
 			return result;
 		}
 		catch (...)
@@ -45783,7 +45783,7 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->find_or_create_type_shape(*p0, *static_cast<const gmt::Ref<shard::StructSymbol>*>(p1), *static_cast<const std::span<const gmt::Ref<shard::StructSymbol>>*>(p2));
+			auto result = self->find_or_create_type_shape(*p0, *static_cast<shard::StructSymbol* const*>(p1), *static_cast<const std::span<shard::StructSymbol* const>*>(p2));
 			return result;
 		}
 		catch (...)
@@ -45800,7 +45800,7 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->find_type_shape(*p0, *static_cast<const gmt::Ref<shard::StructSymbol>*>(p1), *static_cast<const std::span<const gmt::Ref<shard::StructSymbol>>*>(p2));
+			auto result = self->find_type_shape(*p0, *static_cast<shard::StructSymbol* const*>(p1), *static_cast<const std::span<shard::StructSymbol* const>*>(p2));
 			return result;
 		}
 		catch (...)
@@ -45822,7 +45822,7 @@ extern "C"
 		*out_value = nullptr;
 		try
 		{
-			auto result = self->get_allocation_site_verdict(*static_cast<const gmt::Ref<const shard::ExpressionSyntax>*>(p0));
+			auto result = self->get_allocation_site_verdict(*static_cast<const shard::ExpressionSyntax* const*>(p0));
 			auto* boxed = shard_box_value<std::optional<shard::AllocationSiteVerdict>>(std::move(result));
 			if (!boxed)
 			{
@@ -45882,7 +45882,7 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->get_lambda_captures(*static_cast<const gmt::Ref<shard::MethodSymbol>*>(p0));
+			auto result = self->get_lambda_captures(*static_cast<shard::MethodSymbol* const*>(p0));
 			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
@@ -45899,7 +45899,7 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->get_local_order(*static_cast<const gmt::Ref<shard::MethodSymbol>*>(p0));
+			auto result = self->get_local_order(*static_cast<shard::MethodSymbol* const*>(p0));
 			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
@@ -45921,7 +45921,7 @@ extern "C"
 		*out_value = nullptr;
 		try
 		{
-			auto result = self->get_local_slot(*static_cast<const gmt::Ref<shard::MethodSymbol>*>(p0), *static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p1));
+			auto result = self->get_local_slot(*static_cast<shard::MethodSymbol* const*>(p0), *static_cast<shard::SyntaxSymbol* const*>(p1));
 			auto* boxed = shard_box_value<std::optional<unsigned short>>(std::move(result));
 			if (!boxed)
 			{
@@ -45969,7 +45969,7 @@ extern "C"
 		*out_value = nullptr;
 		try
 		{
-			auto result = self->get_local_verdict(*static_cast<const gmt::Ref<shard::MethodSymbol>*>(p0), *static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p1));
+			auto result = self->get_local_verdict(*static_cast<shard::MethodSymbol* const*>(p0), *static_cast<shard::SyntaxSymbol* const*>(p1));
 			auto* boxed = shard_box_value<shard::AllocationSiteVerdict>(std::move(result));
 			if (!boxed)
 			{
@@ -46012,7 +46012,7 @@ extern "C"
 		}
 		try
 		{
-			auto&& result = self->get_or_create_frame_layout(*static_cast<const gmt::Ref<shard::MethodSymbol>*>(p0));
+			auto&& result = self->get_or_create_frame_layout(*static_cast<shard::MethodSymbol* const*>(p0));
 			return std::addressof(result);
 		}
 		catch (...)
@@ -46029,7 +46029,7 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->get_promotion_points(*static_cast<const gmt::Ref<const shard::ExpressionSyntax>*>(p0));
+			auto result = self->get_promotion_points(*static_cast<const shard::ExpressionSyntax* const*>(p0));
 			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
@@ -46068,7 +46068,7 @@ extern "C"
 		*out_value = nullptr;
 		try
 		{
-			auto result = self->get_summary(*static_cast<const gmt::Ref<shard::MethodSymbol>*>(p0));
+			auto result = self->get_summary(*static_cast<shard::MethodSymbol* const*>(p0));
 			auto* boxed = shard_box_value<shard::EscapeSummary>(std::move(result));
 			if (!boxed)
 			{
@@ -46128,7 +46128,7 @@ extern "C"
 		}
 		try
 		{
-			auto&& result = self->lambda_captures_for(*static_cast<const gmt::Ref<shard::MethodSymbol>*>(p0));
+			auto&& result = self->lambda_captures_for(*static_cast<shard::MethodSymbol* const*>(p0));
 			return const_cast<void*>(static_cast<const void*>(std::addressof(result)));
 		}
 		catch (...)
@@ -46152,7 +46152,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_allocation_site_verdict(*static_cast<const gmt::Ref<const shard::ExpressionSyntax>*>(p0), *p1);
+			self->set_allocation_site_verdict(*static_cast<const shard::ExpressionSyntax* const*>(p0), *p1);
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -46189,7 +46189,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_local_order(*static_cast<const gmt::Ref<shard::MethodSymbol>*>(p0), *static_cast<const gmt::vector<gmt::Ref<shard::SyntaxSymbol>>*>(p1));
+			self->set_local_order(*static_cast<shard::MethodSymbol* const*>(p0), *static_cast<const gmt::vector<shard::SyntaxSymbol*>*>(p1));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -46226,7 +46226,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_local_slot(*static_cast<const gmt::Ref<shard::MethodSymbol>*>(p0), *static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p1), static_cast<std::uint16_t>(p2));
+			self->set_local_slot(*static_cast<shard::MethodSymbol* const*>(p0), *static_cast<shard::SyntaxSymbol* const*>(p1), static_cast<std::uint16_t>(p2));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -46263,7 +46263,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_local_verdict(*static_cast<const gmt::Ref<shard::MethodSymbol>*>(p0), *static_cast<const gmt::Ref<shard::SyntaxSymbol>*>(p1), *p2);
+			self->set_local_verdict(*static_cast<shard::MethodSymbol* const*>(p0), *static_cast<shard::SyntaxSymbol* const*>(p1), *p2);
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -46300,7 +46300,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_promotion_points(*static_cast<const gmt::Ref<const shard::ExpressionSyntax>*>(p0), *static_cast<const gmt::vector<gmt::Ref<const shard::ExpressionSyntax>>*>(p1));
+			self->set_promotion_points(*static_cast<const shard::ExpressionSyntax* const*>(p0), *static_cast<const gmt::vector<const shard::ExpressionSyntax*>*>(p1));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -46337,7 +46337,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_summary(*static_cast<const gmt::Ref<shard::MethodSymbol>*>(p0), *p1);
+			self->set_summary(*static_cast<shard::MethodSymbol* const*>(p0), *p1);
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -46437,7 +46437,7 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->find_or_create_type_shape(*p0, *static_cast<const gmt::Ref<shard::StructSymbol>*>(p1), *static_cast<const std::span<const gmt::Ref<shard::StructSymbol>>*>(p2));
+			auto result = self->find_or_create_type_shape(*p0, *static_cast<shard::StructSymbol* const*>(p1), *static_cast<const std::span<shard::StructSymbol* const>*>(p2));
 			return result;
 		}
 		catch (...)
@@ -46454,7 +46454,7 @@ extern "C"
 		}
 		try
 		{
-			auto result = self->find_type_shape(*p0, *static_cast<const gmt::Ref<shard::StructSymbol>*>(p1), *static_cast<const std::span<const gmt::Ref<shard::StructSymbol>>*>(p2));
+			auto result = self->find_type_shape(*p0, *static_cast<shard::StructSymbol* const*>(p1), *static_cast<const std::span<shard::StructSymbol* const>*>(p2));
 			return result;
 		}
 		catch (...)
@@ -46537,7 +46537,7 @@ extern "C"
 		*out_handle = nullptr;
 		try
 		{
-			auto* value = shard_make_new<shard::TypeShape>(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0), *static_cast<const std::span<const gmt::Ref<shard::StructSymbol>>*>(p1));
+			auto* value = shard_make_new<shard::TypeShape>(*static_cast<shard::StructSymbol* const*>(p0), *static_cast<const std::span<shard::StructSymbol* const>*>(p1));
 			if (!value)
 			{
 				return SHARD_STATUS_ERROR_UNSUPPORTED;
@@ -46595,7 +46595,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_base_type();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -46804,7 +46804,7 @@ extern "C"
 		try
 		{
 			auto result = self->absorb_array_symbol();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -46855,7 +46855,7 @@ extern "C"
 		try
 		{
 			auto result = self->absorb_constructor_symbol();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -46872,7 +46872,7 @@ extern "C"
 		try
 		{
 			auto result = self->absorb_delegate_type_symbol();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -46923,7 +46923,7 @@ extern "C"
 		try
 		{
 			auto result = self->absorb_field_symbol();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -46991,7 +46991,7 @@ extern "C"
 		try
 		{
 			auto result = self->absorb_method_symbol();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -47042,7 +47042,7 @@ extern "C"
 		try
 		{
 			auto result = self->absorb_symbol();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -47059,7 +47059,7 @@ extern "C"
 		try
 		{
 			auto result = self->absorb_type_symbol();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -48886,7 +48886,7 @@ extern "C"
 		}
 		try
 		{
-			self->emit_alloc_heap(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0));
+			self->emit_alloc_heap(*static_cast<shard::StructSymbol* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -48997,7 +48997,7 @@ extern "C"
 		}
 		try
 		{
-			self->emit_call_delegate(*static_cast<const gmt::Ref<shard::DelegateTypeSymbol>*>(p0));
+			self->emit_call_delegate(*static_cast<shard::DelegateTypeSymbol* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -49034,7 +49034,7 @@ extern "C"
 		}
 		try
 		{
-			self->emit_call_interface(*static_cast<const gmt::Ref<shard::MethodSymbol>*>(p0));
+			self->emit_call_interface(*static_cast<shard::MethodSymbol* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -49071,7 +49071,7 @@ extern "C"
 		}
 		try
 		{
-			self->emit_call_method_into(*static_cast<const gmt::Ref<shard::MethodSymbol>*>(p0), static_cast<std::uint16_t>(p1));
+			self->emit_call_method_into(*static_cast<shard::MethodSymbol* const*>(p0), static_cast<std::uint16_t>(p1));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -49108,7 +49108,7 @@ extern "C"
 		}
 		try
 		{
-			self->emit_call_method_symbol(*static_cast<const gmt::Ref<shard::MethodSymbol>*>(p0));
+			self->emit_call_method_symbol(*static_cast<shard::MethodSymbol* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -49145,7 +49145,7 @@ extern "C"
 		}
 		try
 		{
-			self->emit_cast(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0));
+			self->emit_cast(*static_cast<shard::StructSymbol* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -49182,7 +49182,7 @@ extern "C"
 		}
 		try
 		{
-			self->emit_cast_as(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0));
+			self->emit_cast_as(*static_cast<shard::StructSymbol* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -49219,7 +49219,7 @@ extern "C"
 		}
 		try
 		{
-			self->emit_cast_primitive(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0));
+			self->emit_cast_primitive(*static_cast<shard::StructSymbol* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -49478,7 +49478,7 @@ extern "C"
 		}
 		try
 		{
-			self->emit_create_range(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0));
+			self->emit_create_range(*static_cast<shard::StructSymbol* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -49515,7 +49515,7 @@ extern "C"
 		}
 		try
 		{
-			self->emit_default_value(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0), *p1);
+			self->emit_default_value(*static_cast<shard::StructSymbol* const*>(p0), *p1);
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -49811,7 +49811,7 @@ extern "C"
 		}
 		try
 		{
-			self->emit_is_instance(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0));
+			self->emit_is_instance(*static_cast<shard::StructSymbol* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -50440,7 +50440,7 @@ extern "C"
 		}
 		try
 		{
-			self->emit_load_enum_field(*static_cast<const gmt::Ref<shard::FieldSymbol>*>(p0));
+			self->emit_load_enum_field(*static_cast<shard::FieldSymbol* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -50588,7 +50588,7 @@ extern "C"
 		}
 		try
 		{
-			self->emit_load_static_field(*static_cast<const gmt::Ref<shard::FieldSymbol>*>(p0));
+			self->emit_load_static_field(*static_cast<shard::FieldSymbol* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -50625,7 +50625,7 @@ extern "C"
 		}
 		try
 		{
-			self->emit_load_type_argument(static_cast<std::uint16_t>(p0), *static_cast<const gmt::Ref<shard::StructSymbol>*>(p1));
+			self->emit_load_type_argument(static_cast<std::uint16_t>(p0), *static_cast<shard::StructSymbol* const*>(p1));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -51106,7 +51106,7 @@ extern "C"
 		}
 		try
 		{
-			self->emit_new_array(*static_cast<const gmt::Ref<shard::ArrayTypeSymbol>*>(p0));
+			self->emit_new_array(*static_cast<shard::ArrayTypeSymbol* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -51143,7 +51143,7 @@ extern "C"
 		}
 		try
 		{
-			self->emit_new_array_dynamic(*static_cast<const gmt::Ref<shard::ArrayTypeSymbol>*>(p0));
+			self->emit_new_array_dynamic(*static_cast<shard::ArrayTypeSymbol* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -51180,7 +51180,7 @@ extern "C"
 		}
 		try
 		{
-			self->emit_new_delegate(*static_cast<const gmt::Ref<shard::DelegateTypeSymbol>*>(p0), *static_cast<const gmt::Ref<shard::MethodSymbol>*>(p1));
+			self->emit_new_delegate(*static_cast<shard::DelegateTypeSymbol* const*>(p0), *static_cast<shard::MethodSymbol* const*>(p1));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -51587,7 +51587,7 @@ extern "C"
 		}
 		try
 		{
-			self->emit_store_static_field(*static_cast<const gmt::Ref<shard::FieldSymbol>*>(p0));
+			self->emit_store_static_field(*static_cast<shard::FieldSymbol* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -52055,7 +52055,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_entry_point();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -52095,7 +52095,7 @@ extern "C"
 		}
 		try
 		{
-			self->set_entry_point(*static_cast<const gmt::Ref<shard::MethodSymbol>*>(p0));
+			self->set_entry_point(*static_cast<shard::MethodSymbol* const*>(p0));
 			return SHARD_STATUS_OK;
 		}
 		catch (const std::invalid_argument&)
@@ -52189,7 +52189,7 @@ extern "C"
 	{
 		try
 		{
-			auto result = shard::CallStackFrame::create(*static_cast<const gmt::Ref<shard::MethodSymbol>*>(p0), p1, *p2, *p3, p4, reinterpret_cast<std::byte*>(p5), static_cast<std::size_t>(p6));
+			auto result = shard::CallStackFrame::create(*static_cast<shard::MethodSymbol* const*>(p0), p1, *p2, *p3, p4, reinterpret_cast<std::byte*>(p5), static_cast<std::size_t>(p6));
 			return result;
 		}
 		catch (...)
@@ -52588,7 +52588,7 @@ extern "C"
 		try
 		{
 			auto result = self->get_method();
-			return const_cast<void*>(static_cast<const void*>(result.as_ptr()));
+			return const_cast<void*>(static_cast<const void*>(result));
 		}
 		catch (...)
 		{
@@ -53870,7 +53870,7 @@ extern "C"
 		*out_value = nullptr;
 		try
 		{
-			auto result = self->get_static_storage(*static_cast<const gmt::Ref<shard::FieldSymbol>*>(p0));
+			auto result = self->get_static_storage(*static_cast<shard::FieldSymbol* const*>(p0));
 			auto* boxed = shard_box_value<shard::ObjectInstance>(std::move(result));
 			if (!boxed)
 			{
@@ -54640,7 +54640,7 @@ extern "C"
 		*out_value = nullptr;
 		try
 		{
-			auto result = self->get_property(*p0, *static_cast<const gmt::Ref<shard::PropertySymbol>*>(p1));
+			auto result = self->get_property(*p0, *static_cast<shard::PropertySymbol* const*>(p1));
 			auto* boxed = shard_box_value<shard::InvokeResult>(std::move(result));
 			if (!boxed)
 			{
@@ -54801,7 +54801,7 @@ extern "C"
 		*out_value = nullptr;
 		try
 		{
-			auto result = self->new_object(*static_cast<const gmt::Ref<shard::StructSymbol>*>(p0));
+			auto result = self->new_object(*static_cast<shard::StructSymbol* const*>(p0));
 			auto* boxed = shard_box_value<shard::InvokeResult>(std::move(result));
 			if (!boxed)
 			{
@@ -54886,7 +54886,7 @@ extern "C"
 		*out_value = nullptr;
 		try
 		{
-			auto result = self->set_property(*p0, *static_cast<const gmt::Ref<shard::PropertySymbol>*>(p1), *p2);
+			auto result = self->set_property(*p0, *static_cast<shard::PropertySymbol* const*>(p1), *p2);
 			auto* boxed = shard_box_value<shard::InvokeResult>(std::move(result));
 			if (!boxed)
 			{
@@ -55193,7 +55193,7 @@ extern "C"
 		*out_value = nullptr;
 		try
 		{
-			auto result = self->try_invoke_method(*static_cast<const gmt::Ref<shard::MethodSymbol>*>(p0), *static_cast<const std::span<const shard::ObjectInstance>*>(p1));
+			auto result = self->try_invoke_method(*static_cast<shard::MethodSymbol* const*>(p0), *static_cast<const std::span<const shard::ObjectInstance>*>(p1));
 			auto* boxed = shard_box_value<shard::InvokeResult>(std::move(result));
 			if (!boxed)
 			{
@@ -55872,7 +55872,7 @@ extern "C"
 	{
 		try
 		{
-			auto result = shard::PrimitiveMath::convert(*p0, *p1, *static_cast<const gmt::Ref<shard::StructSymbol>*>(p2), p3, *p4);
+			auto result = shard::PrimitiveMath::convert(*p0, *p1, *static_cast<shard::StructSymbol* const*>(p2), p3, *p4);
 			return static_cast<int>(result);
 		}
 		catch (...)
@@ -56393,7 +56393,7 @@ extern "C"
 		*out_value = nullptr;
 		try
 		{
-			auto result = self->invoke_method(*static_cast<const gmt::Ref<shard::MethodSymbol>*>(p0), *static_cast<const std::span<const shard::ObjectInstance>*>(p1));
+			auto result = self->invoke_method(*static_cast<shard::MethodSymbol* const*>(p0), *static_cast<const std::span<const shard::ObjectInstance>*>(p1));
 			auto* boxed = shard_box_value<shard::ObjectInstance>(std::move(result));
 			if (!boxed)
 			{
@@ -56559,7 +56559,7 @@ extern "C"
 		*out_value = nullptr;
 		try
 		{
-			auto result = self->try_invoke_method(*static_cast<const gmt::Ref<shard::MethodSymbol>*>(p0), *static_cast<const std::span<const shard::ObjectInstance>*>(p1), *p2);
+			auto result = self->try_invoke_method(*static_cast<shard::MethodSymbol* const*>(p0), *static_cast<const std::span<const shard::ObjectInstance>*>(p1), *p2);
 			auto* boxed = shard_box_value<shard::ObjectInstance>(std::move(result));
 			if (!boxed)
 			{
@@ -56636,67 +56636,67 @@ extern "C"
 
 	SHARD_API void shard_dispose_gmt_span_const_gmt_ref_shard_argumentsyntax(void* value)
 	{
-		shard_release<gmt::Span<const gmt::Ref<shard::ArgumentSyntax>>>(static_cast<gmt::Span<const gmt::Ref<shard::ArgumentSyntax>>*>(value));
+		shard_release<std::span<shard::ArgumentSyntax* const>>(static_cast<std::span<shard::ArgumentSyntax* const>*>(value));
 	}
 
 	SHARD_API void shard_dispose_gmt_span_const_gmt_ref_shard_attributesyntax(void* value)
 	{
-		shard_release<gmt::Span<const gmt::Ref<shard::AttributeSyntax>>>(static_cast<gmt::Span<const gmt::Ref<shard::AttributeSyntax>>*>(value));
+		shard_release<std::span<shard::AttributeSyntax* const>>(static_cast<std::span<shard::AttributeSyntax* const>*>(value));
 	}
 
 	SHARD_API void shard_dispose_gmt_span_const_gmt_ref_shard_catchclausesyntax(void* value)
 	{
-		shard_release<gmt::Span<const gmt::Ref<shard::CatchClauseSyntax>>>(static_cast<gmt::Span<const gmt::Ref<shard::CatchClauseSyntax>>*>(value));
+		shard_release<std::span<shard::CatchClauseSyntax* const>>(static_cast<std::span<shard::CatchClauseSyntax* const>*>(value));
 	}
 
 	SHARD_API void shard_dispose_gmt_span_const_gmt_ref_shard_enumfielddeclarationsyntax(void* value)
 	{
-		shard_release<gmt::Span<const gmt::Ref<shard::EnumFieldDeclarationSyntax>>>(static_cast<gmt::Span<const gmt::Ref<shard::EnumFieldDeclarationSyntax>>*>(value));
+		shard_release<std::span<shard::EnumFieldDeclarationSyntax* const>>(static_cast<std::span<shard::EnumFieldDeclarationSyntax* const>*>(value));
 	}
 
 	SHARD_API void shard_dispose_gmt_span_const_gmt_ref_shard_expressionsyntax(void* value)
 	{
-		shard_release<gmt::Span<const gmt::Ref<shard::ExpressionSyntax>>>(static_cast<gmt::Span<const gmt::Ref<shard::ExpressionSyntax>>*>(value));
+		shard_release<std::span<shard::ExpressionSyntax* const>>(static_cast<std::span<shard::ExpressionSyntax* const>*>(value));
 	}
 
 	SHARD_API void shard_dispose_gmt_span_const_gmt_ref_shard_memberdeclarationsyntax(void* value)
 	{
-		shard_release<gmt::Span<const gmt::Ref<shard::MemberDeclarationSyntax>>>(static_cast<gmt::Span<const gmt::Ref<shard::MemberDeclarationSyntax>>*>(value));
+		shard_release<std::span<shard::MemberDeclarationSyntax* const>>(static_cast<std::span<shard::MemberDeclarationSyntax* const>*>(value));
 	}
 
 	SHARD_API void shard_dispose_gmt_span_const_gmt_ref_shard_parametersyntax(void* value)
 	{
-		shard_release<gmt::Span<const gmt::Ref<shard::ParameterSyntax>>>(static_cast<gmt::Span<const gmt::Ref<shard::ParameterSyntax>>*>(value));
+		shard_release<std::span<shard::ParameterSyntax* const>>(static_cast<std::span<shard::ParameterSyntax* const>*>(value));
 	}
 
 	SHARD_API void shard_dispose_gmt_span_const_gmt_ref_shard_statementsyntax(void* value)
 	{
-		shard_release<gmt::Span<const gmt::Ref<shard::StatementSyntax>>>(static_cast<gmt::Span<const gmt::Ref<shard::StatementSyntax>>*>(value));
+		shard_release<std::span<shard::StatementSyntax* const>>(static_cast<std::span<shard::StatementSyntax* const>*>(value));
 	}
 
 	SHARD_API void shard_dispose_gmt_span_const_gmt_ref_shard_typeparametersyntax(void* value)
 	{
-		shard_release<gmt::Span<const gmt::Ref<shard::TypeParameterSyntax>>>(static_cast<gmt::Span<const gmt::Ref<shard::TypeParameterSyntax>>*>(value));
+		shard_release<std::span<shard::TypeParameterSyntax* const>>(static_cast<std::span<shard::TypeParameterSyntax* const>*>(value));
 	}
 
 	SHARD_API void shard_dispose_gmt_span_const_gmt_ref_shard_typesyntax(void* value)
 	{
-		shard_release<gmt::Span<const gmt::Ref<shard::TypeSyntax>>>(static_cast<gmt::Span<const gmt::Ref<shard::TypeSyntax>>*>(value));
+		shard_release<std::span<shard::TypeSyntax* const>>(static_cast<std::span<shard::TypeSyntax* const>*>(value));
 	}
 
 	SHARD_API void shard_dispose_gmt_span_const_gmt_ref_shard_usingdirectivesyntax(void* value)
 	{
-		shard_release<gmt::Span<const gmt::Ref<shard::UsingDirectiveSyntax>>>(static_cast<gmt::Span<const gmt::Ref<shard::UsingDirectiveSyntax>>*>(value));
+		shard_release<std::span<shard::UsingDirectiveSyntax* const>>(static_cast<std::span<shard::UsingDirectiveSyntax* const>*>(value));
 	}
 
 	SHARD_API void shard_dispose_gmt_span_const_gmt_ref_shard_whereclausesyntax(void* value)
 	{
-		shard_release<gmt::Span<const gmt::Ref<shard::WhereClauseSyntax>>>(static_cast<gmt::Span<const gmt::Ref<shard::WhereClauseSyntax>>*>(value));
+		shard_release<std::span<shard::WhereClauseSyntax* const>>(static_cast<std::span<shard::WhereClauseSyntax* const>*>(value));
 	}
 
 	SHARD_API void shard_dispose_gmt_span_const_shard_syntaxtoken(void* value)
 	{
-		shard_release<gmt::Span<const shard::SyntaxToken>>(static_cast<gmt::Span<const shard::SyntaxToken>*>(value));
+		shard_release<std::span<const shard::SyntaxToken>>(static_cast<std::span<const shard::SyntaxToken>*>(value));
 	}
 
 	SHARD_API void shard_dispose_rs_stringintern_stringreference(void* value)
@@ -56726,17 +56726,17 @@ extern "C"
 
 	SHARD_API void shard_dispose_std_span_const_gmt_ref_shard_structsymbol(void* value)
 	{
-		shard_release<std::span<const gmt::Ref<shard::StructSymbol>>>(static_cast<std::span<const gmt::Ref<shard::StructSymbol>>*>(value));
+		shard_release<std::span<shard::StructSymbol* const>>(static_cast<std::span<shard::StructSymbol* const>*>(value));
 	}
 
 	SHARD_API void shard_dispose_std_span_const_gmt_ref_shard_syntaxsymbol(void* value)
 	{
-		shard_release<std::span<const gmt::Ref<shard::SyntaxSymbol>>>(static_cast<std::span<const gmt::Ref<shard::SyntaxSymbol>>*>(value));
+		shard_release<std::span<shard::SyntaxSymbol* const>>(static_cast<std::span<shard::SyntaxSymbol* const>*>(value));
 	}
 
 	SHARD_API void shard_dispose_std_span_const_gmt_ref_shard_translationunitsyntax(void* value)
 	{
-		shard_release<std::span<const gmt::Ref<shard::TranslationUnitSyntax>>>(static_cast<std::span<const gmt::Ref<shard::TranslationUnitSyntax>>*>(value));
+		shard_release<std::span<shard::TranslationUnitSyntax* const>>(static_cast<std::span<shard::TranslationUnitSyntax* const>*>(value));
 	}
 
 	SHARD_API void shard_dispose_std_span_const_shard_diagnostic(void* value)

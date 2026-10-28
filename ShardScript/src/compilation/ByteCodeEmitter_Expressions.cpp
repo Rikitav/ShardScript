@@ -52,46 +52,46 @@ using namespace shard;
 
 namespace
 {
-	gmt::Ref<shard::DelegateTypeSymbol> unwrap_delegate_type(gmt::Ref<shard::StructSymbol> type)
+	shard::DelegateTypeSymbol* unwrap_delegate_type(shard::StructSymbol* type)
 	{
-		if (type.is_null())
-			return gmt::nullref;
+		if ((type == nullptr))
+			return nullptr;
 
 		if (type->get_kind() == shard::SyntaxKind::DelegateType)
-			return type.as<shard::DelegateTypeSymbol>();
+			return static_cast<shard::DelegateTypeSymbol*>(type);
 
 		if (type->get_kind() == shard::SyntaxKind::GenericType)
 		{
-			gmt::Ref<shard::StructSymbol> underlaying = type.as<shard::GenericTypeSymbol>()->get_underlaying_type();
-			if (!underlaying.is_null() && underlaying->get_kind() == shard::SyntaxKind::DelegateType)
-				return underlaying.as<shard::DelegateTypeSymbol>();
+			shard::StructSymbol* underlaying = static_cast<shard::GenericTypeSymbol*>(type)->get_underlaying_type();
+			if (!(underlaying == nullptr) && underlaying->get_kind() == shard::SyntaxKind::DelegateType)
+				return static_cast<shard::DelegateTypeSymbol*>(underlaying);
 		}
 
-		return gmt::nullref;
+		return nullptr;
 	}
 
 	class lambda_capture_checker final : public SemanticVisitor
 	{
-		gmt::Ref<StructSymbol> m_captureBox;
+		StructSymbol* m_captureBox = nullptr;
 		bool m_captured = false;
 
-		void check_bound(gmt::Ref<const SyntaxNode> node, gmt::Ref<const ExpressionSyntax> previous)
+		void check_bound(const SyntaxNode* node, const ExpressionSyntax* previous)
 		{
 			// variable and parameter captures resolve to capture box fields at
 			// emission. Only implicit-'this' members are unsupported: anything
 			// with an explicit receiver expression stays legal
-			if (!previous.is_null())
+			if (!(previous == nullptr))
 				return;
 
-			gmt::Ref<SyntaxSymbol> bound = get_symbol_table().lookup_symbol(node);
-			if (bound.is_null() || !bound->is_member())
+			SyntaxSymbol* bound = get_symbol_table().lookup_symbol(node);
+			if ((bound == nullptr) || !bound->is_member())
 				return;
 
-			if (bound.as<MemberSymbol>()->get_linking() == LINK_STATIC)
+			if (static_cast<MemberSymbol*>(bound)->get_linking() == LINK_STATIC)
 				return;
 
-			gmt::Ref<const SyntaxSymbol> parent = bound->get_parent();
-			if (parent.is_null() || !parent->is_type())
+			const SyntaxSymbol* parent = bound->get_parent();
+			if ((parent == nullptr) || !parent->is_type())
 				return;
 
 			if (parent != m_captureBox)
@@ -99,7 +99,7 @@ namespace
 		}
 
 	public:
-		lambda_capture_checker(SemanticModel& model, DiagnosticsContext& diagnostics, gmt::Ref<StructSymbol> captureBox)
+		lambda_capture_checker(SemanticModel& model, DiagnosticsContext& diagnostics, StructSymbol* captureBox)
 			: SemanticVisitor(model, diagnostics)
 			, m_captureBox(captureBox)
 		{ }
@@ -111,7 +111,7 @@ namespace
 
 		void visit_member_access_expression(const MemberAccessExpressionSyntax* node) override
 		{
-			std::optional<gmt::Ref<const MemberAccessExpressionSyntax>> nodeRef = ref_from(node);
+			std::optional<const MemberAccessExpressionSyntax*> nodeRef = ref_from(node);
 			if (nodeRef.has_value())
 				check_bound(*nodeRef, node->get_previous());
 
@@ -120,16 +120,16 @@ namespace
 
 		void visit_identifier_name_type(const IdentifierNameTypeSyntax* node) override
 		{
-			std::optional<gmt::Ref<const IdentifierNameTypeSyntax>> nodeRef = ref_from(node);
+			std::optional<const IdentifierNameTypeSyntax*> nodeRef = ref_from(node);
 			if (nodeRef.has_value())
-				check_bound(*nodeRef, gmt::nullref);
+				check_bound(*nodeRef, nullptr);
 
 			SyntaxVisitor::visit_identifier_name_type(node);
 		}
 
 		void visit_invokation_expression(const InvokationExpressionSyntax* node) override
 		{
-			std::optional<gmt::Ref<const InvokationExpressionSyntax>> nodeRef = ref_from(node);
+			std::optional<const InvokationExpressionSyntax*> nodeRef = ref_from(node);
 			if (nodeRef.has_value())
 				check_bound(*nodeRef, node->get_previous());
 
@@ -225,10 +225,10 @@ void ByteCodeEmitter::visit_literal_expression(const LiteralExpressionSyntax* no
 			// the binder already parsed and validated the value locale-independently;
 			// re-parsing the lexeme here would be sensitive to the process locale
 			double value = 0.0;
-			std::optional<gmt::Ref<const LiteralExpressionSyntax>> nodeRef = ref_from(node);
-			gmt::Ref<LiteralSymbol> symbol = nodeRef.has_value() ? lookup_symbol<LiteralSymbol>(*nodeRef) : gmt::nullref;
+			std::optional<const LiteralExpressionSyntax*> nodeRef = ref_from(node);
+			LiteralSymbol* symbol = nodeRef.has_value() ? lookup_symbol<LiteralSymbol>(*nodeRef) : nullptr;
 
-			if (!symbol.is_null())
+			if (!(symbol == nullptr))
 				value = symbol->get_double_value();
 			else
 				value = parse_double(literal.get_lexeme());
@@ -280,7 +280,7 @@ void ByteCodeEmitter::visit_binary_expression(const BinaryExpressionSyntax* node
 
 	if (op == TokenType::AndOperator || op == TokenType::OrOperator)
 	{
-		node->get_left().as_ptr()->accept(*this);
+		node->get_left()->accept(*this);
 		m_encoder.emit_duplicate();
 		eval_push(sizeof(bool));
 
@@ -294,24 +294,24 @@ void ByteCodeEmitter::visit_binary_expression(const BinaryExpressionSyntax* node
 		m_encoder.emit_pop();
 		eval_pop();
 
-		node->get_right().as_ptr()->accept(*this);
+		node->get_right()->accept(*this);
 		patch_jump(endAt);
 		return;
 	}
 
-	std::optional<gmt::Ref<const BinaryExpressionSyntax>> nodeRef = ref_from(node);
+	std::optional<const BinaryExpressionSyntax*> nodeRef = ref_from(node);
 	if (nodeRef.has_value())
 	{
-		gmt::Ref<OperatorSymbol> overload = lookup_symbol<OperatorSymbol>(*nodeRef);
-		if (!overload.is_null())
+		OperatorSymbol* overload = lookup_symbol<OperatorSymbol>(*nodeRef);
+		if (!(overload == nullptr))
 		{
-			gmt::Ref<StructSymbol> receiverType = get_model().get_expression_type(node->get_left());
-			gmt::Ref<MethodSymbol> target = resolve_call_target(*nodeRef, overload, receiverType);
-			if (target.is_null())
+			StructSymbol* receiverType = get_model().get_expression_type(node->get_left());
+			MethodSymbol* target = resolve_call_target(*nodeRef, overload, receiverType);
+			if ((target == nullptr))
 				return;
 
-			node->get_right().as_ptr()->accept(*this);
-			node->get_left().as_ptr()->accept(*this);
+			node->get_right()->accept(*this);
+			node->get_left()->accept(*this);
 
 			m_encoder.emit_call_method_symbol(target);
 			eval_pop(2);
@@ -320,8 +320,8 @@ void ByteCodeEmitter::visit_binary_expression(const BinaryExpressionSyntax* node
 		}
 	}
 
-	node->get_left().as_ptr()->accept(*this);
-	node->get_right().as_ptr()->accept(*this);
+	node->get_left()->accept(*this);
+	node->get_right()->accept(*this);
 
 	switch (op)
 	{
@@ -371,24 +371,24 @@ void ByteCodeEmitter::visit_unary_expression(const UnaryExpressionSyntax* node)
 		return;
 
 	TokenType op = node->get_operator_token().get_type();
-	std::optional<gmt::Ref<const UnaryExpressionSyntax>> nodeRef = ref_from(node);
+	std::optional<const UnaryExpressionSyntax*> nodeRef = ref_from(node);
 
 	if (op == TokenType::TryKeyword)
 	{
-		node->get_operand().as_ptr()->accept(*this);
+		node->get_operand()->accept(*this);
 		return;
 	}
 
 	if (op == TokenType::NotOperator)
 	{
-		node->get_operand().as_ptr()->accept(*this);
+		node->get_operand()->accept(*this);
 		m_encoder.emit_logical_not();
 		return;
 	}
 
 	if (op == TokenType::SubOperator)
 	{
-		node->get_operand().as_ptr()->accept(*this);
+		node->get_operand()->accept(*this);
 		m_encoder.emit_math_negative();
 		return;
 	}
@@ -396,7 +396,7 @@ void ByteCodeEmitter::visit_unary_expression(const UnaryExpressionSyntax* node)
 	if (op == TokenType::IncrementOperator || op == TokenType::DecrementOperator)
 	{
 		bool increment = op == TokenType::IncrementOperator;
-		const ExpressionSyntax* operand = node->get_operand().as_ptr();
+		const ExpressionSyntax* operand = node->get_operand();
 
 		if (!is_identifier_target(operand))
 		{
@@ -404,10 +404,10 @@ void ByteCodeEmitter::visit_unary_expression(const UnaryExpressionSyntax* node)
 			return;
 		}
 
-		gmt::Ref<SyntaxSymbol> bound = get_symbol_table().lookup_symbol(node->get_operand());
+		SyntaxSymbol* bound = get_symbol_table().lookup_symbol(node->get_operand());
 
 		std::optional<std::uint16_t> slot;
-		if (!bound.is_null() && (bound->get_kind() == SyntaxKind::VariableStatement || bound->get_kind() == SyntaxKind::Parameter))
+		if (!(bound == nullptr) && (bound->get_kind() == SyntaxKind::VariableStatement || bound->get_kind() == SyntaxKind::Parameter))
 			slot = slot_of(bound);
 
 		if (!slot.has_value())
@@ -455,7 +455,7 @@ void ByteCodeEmitter::visit_member_access_expression(const MemberAccessExpressio
 	if (node == nullptr)
 		return;
 
-	std::optional<gmt::Ref<const MemberAccessExpressionSyntax>> nodeRef = ref_from(node);
+	std::optional<const MemberAccessExpressionSyntax*> nodeRef = ref_from(node);
 	if (!nodeRef.has_value())
 		return;
 
@@ -467,11 +467,11 @@ void ByteCodeEmitter::visit_identifier_name_type(const IdentifierNameTypeSyntax*
 	if (node == nullptr)
 		return;
 
-	std::optional<gmt::Ref<const IdentifierNameTypeSyntax>> nodeRef = ref_from(node);
+	std::optional<const IdentifierNameTypeSyntax*> nodeRef = ref_from(node);
 	if (!nodeRef.has_value())
 		return;
 
-	emit_identifier_load(*nodeRef, gmt::nullref);
+	emit_identifier_load(*nodeRef, nullptr);
 }
 
 bool ByteCodeEmitter::is_identifier_target(const ExpressionSyntax* expression)
@@ -483,12 +483,12 @@ bool ByteCodeEmitter::is_identifier_target(const ExpressionSyntax* expression)
 	return kind == SyntaxKind::MemberAccessExpression || kind == SyntaxKind::IdentifierNameType;
 }
 
-void ByteCodeEmitter::emit_identifier_load(gmt::Ref<const SyntaxNode> node, gmt::Ref<const ExpressionSyntax> previous)
+void ByteCodeEmitter::emit_identifier_load(const SyntaxNode* node, const ExpressionSyntax* previous)
 {
-	gmt::Ref<SyntaxSymbol> bound = get_symbol_table().lookup_symbol(node);
-	if (bound.is_null())
+	SyntaxSymbol* bound = get_symbol_table().lookup_symbol(node);
+	if ((bound == nullptr))
 	{
-		if (!previous.is_null())
+		if (!(previous == nullptr))
 			return;
 
 		return;
@@ -513,10 +513,10 @@ void ByteCodeEmitter::emit_identifier_load(gmt::Ref<const SyntaxNode> node, gmt:
 
 			// the slot is absent from this method's frame: the reference
 			// belongs to an enclosing method and resolves to a capture box field
-			gmt::Ref<FieldSymbol> captureField = capture_field_of(bound);
-			if (!captureField.is_null())
+			FieldSymbol* captureField = capture_field_of(bound);
+			if (!(captureField == nullptr))
 			{
-				emit_instance_field_load(captureField, gmt::nullref);
+				emit_instance_field_load(captureField, nullptr);
 				return;
 			}
 
@@ -526,7 +526,7 @@ void ByteCodeEmitter::emit_identifier_load(gmt::Ref<const SyntaxNode> node, gmt:
 
 		case SyntaxKind::FieldDeclaration:
 		{
-			gmt::Ref<FieldSymbol> field = bound.as<FieldSymbol>();
+			FieldSymbol* field = static_cast<FieldSymbol*>(bound);
 			if (field->get_is_enum_value())
 			{
 				m_encoder.emit_load_enum_field(field);
@@ -547,22 +547,22 @@ void ByteCodeEmitter::emit_identifier_load(gmt::Ref<const SyntaxNode> node, gmt:
 
 		case SyntaxKind::PropertyDeclaration:
 		{
-			gmt::Ref<PropertySymbol> property = bound.as<PropertySymbol>();
-			gmt::Ref<MethodSymbol> getter = property->get_getter();
+			PropertySymbol* property = static_cast<PropertySymbol*>(bound);
+			MethodSymbol* getter = property->get_getter();
 
-			if (getter.is_null())
+			if ((getter == nullptr))
 			{
 				unsupported(node, L"property without a getter");
 				return;
 			}
 
-			gmt::Ref<StructSymbol> receiverType = previous.is_null() ? gmt::nullref : get_model().get_expression_type(previous);
+			StructSymbol* receiverType = (previous == nullptr) ? nullptr : get_model().get_expression_type(previous);
 			getter = resolve_call_target(node, getter, receiverType);
-			if (getter.is_null())
+			if ((getter == nullptr))
 				return;
 
-			if (!previous.is_null())
-				previous.as_ptr()->accept(*this);
+			if (!(previous == nullptr))
+				previous->accept(*this);
 			else
 			{
 				m_encoder.emit_load_local(0);
@@ -574,8 +574,8 @@ void ByteCodeEmitter::emit_identifier_load(gmt::Ref<const SyntaxNode> node, gmt:
 
 			// the binder's expression type carries the substituted value type;
 			// the open declared type can still be a type parameter
-			gmt::Ref<StructSymbol> valueType = get_model().get_expression_type(node.as<const ExpressionSyntax>());
-			eval_push_type(valueType.is_null() ? getter->get_return_type() : valueType);
+			StructSymbol* valueType = get_model().get_expression_type(static_cast<const ExpressionSyntax*>(node));
+			eval_push_type((valueType == nullptr) ? getter->get_return_type() : valueType);
 			return;
 		}
 
@@ -587,13 +587,13 @@ void ByteCodeEmitter::emit_identifier_load(gmt::Ref<const SyntaxNode> node, gmt:
 	}
 }
 
-void ByteCodeEmitter::emit_instance_field_load(gmt::Ref<FieldSymbol> field, gmt::Ref<const ExpressionSyntax> previous)
+void ByteCodeEmitter::emit_instance_field_load(FieldSymbol* field, const ExpressionSyntax* previous)
 {
 	// scalar locals are dematerialized: the field is a frame slot of its own
-	if (!previous.is_null() && is_identifier_target(previous.as_ptr()))
+	if (!(previous == nullptr) && is_identifier_target(previous))
 	{
-		gmt::Ref<SyntaxSymbol> previousBound = get_symbol_table().lookup_symbol(previous);
-		if (!previousBound.is_null() && local_verdict(previousBound) == PlacementVerdict::Scalar)
+		SyntaxSymbol* previousBound = get_symbol_table().lookup_symbol(previous);
+		if (!(previousBound == nullptr) && local_verdict(previousBound) == PlacementVerdict::Scalar)
 		{
 			std::optional<std::uint16_t> scalarSlot = scalar_field_slot(previousBound, field);
 			if (scalarSlot.has_value())
@@ -605,8 +605,8 @@ void ByteCodeEmitter::emit_instance_field_load(gmt::Ref<FieldSymbol> field, gmt:
 		}
 	}
 
-	if (!previous.is_null())
-		previous.as_ptr()->accept(*this);
+	if (!(previous == nullptr))
+		previous->accept(*this);
 	else
 	{
 		m_encoder.emit_load_local(0);
@@ -618,27 +618,27 @@ void ByteCodeEmitter::emit_instance_field_load(gmt::Ref<FieldSymbol> field, gmt:
 	eval_pop();
 }
 
-gmt::Ref<FieldSymbol> ByteCodeEmitter::capture_field_of(gmt::Ref<SyntaxSymbol> bound) const
+FieldSymbol* ByteCodeEmitter::capture_field_of(SyntaxSymbol* bound) const
 {
-	if (m_generatingFor.is_null())
-		return gmt::nullref;
+	if ((m_generatingFor == nullptr))
+		return nullptr;
 
-	const gmt::vector<gmt::Ref<SyntaxSymbol>>* captures = m_pragmatic.get_lambda_captures(m_generatingFor);
+	const gmt::vector<SyntaxSymbol*>* captures = m_pragmatic.get_lambda_captures(m_generatingFor);
 	if (captures == nullptr)
-		return gmt::nullref;
+		return nullptr;
 
-	gmt::Ref<const SyntaxSymbol> parent = m_generatingFor->get_parent();
-	if (parent.is_null() || !parent->is_type())
-		return gmt::nullref;
+	const SyntaxSymbol* parent = m_generatingFor->get_parent();
+	if ((parent == nullptr) || !parent->is_type())
+		return nullptr;
 
-	gmt::Ref<StructSymbol> captureBox = parent.as<StructSymbol>();
+	StructSymbol* captureBox = gmt::as<StructSymbol>(parent);
 	for (std::size_t i = 0; i < captures->size() && i < captureBox->fields.size(); ++i)
 	{
 		if ((*captures)[i] == bound)
 			return captureBox->fields[i];
 	}
 
-	return gmt::nullref;
+	return nullptr;
 }
 
 void ByteCodeEmitter::emit_arguments_reversed(const ArgumentsListSyntax* arguments)
@@ -646,48 +646,48 @@ void ByteCodeEmitter::emit_arguments_reversed(const ArgumentsListSyntax* argumen
 	if (arguments == nullptr)
 		return;
 
-	std::span<const gmt::Ref<ArgumentSyntax>> list = arguments->get_arguments().as_span();
+	std::span<ArgumentSyntax* const> list = arguments->get_arguments();
 	for (std::size_t i = list.size(); i-- > 0;)
 	{
-		const ArgumentSyntax* argument = list[i].as_ptr();
-		if (argument->get_expression().is_null())
+		const ArgumentSyntax* argument = list[i];
+		if ((argument->get_expression() == nullptr))
 			continue;
 
-		argument->get_expression().as_ptr()->accept(*this);
+		argument->get_expression()->accept(*this);
 	}
 }
 
-bool ByteCodeEmitter::is_extension_call(gmt::Ref<MethodSymbol> method, gmt::Ref<const ExpressionSyntax> receiver, const ArgumentsListSyntax* arguments)
+bool ByteCodeEmitter::is_extension_call(MethodSymbol* method, const ExpressionSyntax* receiver, const ArgumentsListSyntax* arguments)
 {
-	if (receiver.is_null() || method->get_linking() != LINK_STATIC)
+	if ((receiver == nullptr) || method->get_linking() != LINK_STATIC)
 		return false;
 
 	// the binder matches scope functions against the receiver prepended to
 	// the argument list, so a bound static callee with one more parameter
 	// than explicit arguments consumes the receiver as its first parameter
-	gmt::Ref<StructSymbol> receiverType = get_model().get_expression_type(receiver);
-	if (receiverType.is_null())
+	StructSymbol* receiverType = get_model().get_expression_type(receiver);
+	if ((receiverType == nullptr))
 		return false;
 
-	std::size_t explicitArguments = arguments == nullptr ? 0 : arguments->get_arguments().as_span().size();
+	std::size_t explicitArguments = arguments == nullptr ? 0 : arguments->get_arguments().size();
 	return method->get_parameters().size() == explicitArguments + 1;
 }
 
-void ByteCodeEmitter::emit_method_call(gmt::Ref<MethodSymbol> method, gmt::Ref<const ExpressionSyntax> receiver, const ArgumentsListSyntax* arguments, bool receiverFirst)
+void ByteCodeEmitter::emit_method_call(MethodSymbol* method, const ExpressionSyntax* receiver, const ArgumentsListSyntax* arguments, bool receiverFirst)
 {
 	bool isStatic = method->get_linking() == LINK_STATIC;
 	bool extension = is_extension_call(method, receiver, arguments);
 
-	gmt::Ref<const SyntaxSymbol> parent = method->get_parent();
-	bool interfaceDispatch = !parent.is_null() && parent->get_kind() == SyntaxKind::InterfaceDeclaration;
+	const SyntaxSymbol* parent = method->get_parent();
+	bool interfaceDispatch = !(parent == nullptr) && parent->get_kind() == SyntaxKind::InterfaceDeclaration;
 
 	emit_arguments_reversed(arguments);
 
 	std::size_t receiverEval = 0;
 	if (!isStatic || extension)
 	{
-		if (!receiver.is_null())
-			receiver.as_ptr()->accept(*this);
+		if (!(receiver == nullptr))
+			receiver->accept(*this);
 		else
 		{
 			m_encoder.emit_load_local(0);
@@ -707,11 +707,11 @@ void ByteCodeEmitter::emit_method_call(gmt::Ref<MethodSymbol> method, gmt::Ref<c
 	std::size_t argumentCount = method->get_parameters().size() + (extension ? 0 : receiverEval);
 	eval_pop(argumentCount);
 
-	if (!method->get_return_type().is_null() && method->get_return_type() != get_symbol_table().get_void_primitive())
+	if (!(method->get_return_type() == nullptr) && method->get_return_type() != get_symbol_table().get_void_primitive())
 		eval_push_type(method->get_return_type());
 }
 
-void ByteCodeEmitter::emit_method_call_into(gmt::Ref<MethodSymbol> method, gmt::Ref<const ExpressionSyntax> receiver, const ArgumentsListSyntax* arguments, std::uint16_t slot)
+void ByteCodeEmitter::emit_method_call_into(MethodSymbol* method, const ExpressionSyntax* receiver, const ArgumentsListSyntax* arguments, std::uint16_t slot)
 {
 	bool isStatic = method->get_linking() == LINK_STATIC;
 	bool extension = is_extension_call(method, receiver, arguments);
@@ -721,8 +721,8 @@ void ByteCodeEmitter::emit_method_call_into(gmt::Ref<MethodSymbol> method, gmt::
 	std::size_t receiverEval = 0;
 	if (!isStatic || extension)
 	{
-		if (!receiver.is_null())
-			receiver.as_ptr()->accept(*this);
+		if (!(receiver == nullptr))
+			receiver->accept(*this);
 		else
 		{
 			m_encoder.emit_load_local(0);
@@ -736,41 +736,41 @@ void ByteCodeEmitter::emit_method_call_into(gmt::Ref<MethodSymbol> method, gmt::
 	eval_pop(method->get_parameters().size() + (extension ? 0 : receiverEval));
 }
 
-gmt::Ref<MethodSymbol> ByteCodeEmitter::into_call_method(gmt::Ref<const ExpressionSyntax> expression)
+MethodSymbol* ByteCodeEmitter::into_call_method(const ExpressionSyntax* expression)
 {
-	if (expression.is_null() || expression->get_kind() != SyntaxKind::InvokationExpression)
-		return gmt::nullref;
+	if ((expression == nullptr) || expression->get_kind() != SyntaxKind::InvokationExpression)
+		return nullptr;
 
-	const InvokationExpressionSyntax* invokation = static_cast<const InvokationExpressionSyntax*>(expression.as_ptr());
-	std::optional<gmt::Ref<const InvokationExpressionSyntax>> invokationRef = ref_from(invokation);
+	const InvokationExpressionSyntax* invokation = static_cast<const InvokationExpressionSyntax*>(expression);
+	std::optional<const InvokationExpressionSyntax*> invokationRef = ref_from(invokation);
 	if (!invokationRef.has_value())
-		return gmt::nullref;
+		return nullptr;
 
-	gmt::Ref<SyntaxSymbol> bound = get_symbol_table().lookup_symbol(*invokationRef);
-	if (bound.is_null() || !bound->is_method())
-		return gmt::nullref;
+	SyntaxSymbol* bound = get_symbol_table().lookup_symbol(*invokationRef);
+	if ((bound == nullptr) || !bound->is_method())
+		return nullptr;
 
-	gmt::Ref<MethodSymbol> method = bound.as<MethodSymbol>();
+	MethodSymbol* method = static_cast<MethodSymbol*>(bound);
 
-	gmt::Ref<StructSymbol> receiverType = gmt::nullref;
-	if (!invokation->get_previous().is_null())
+	StructSymbol* receiverType = nullptr;
+	if (!(invokation->get_previous() == nullptr))
 		receiverType = get_model().get_expression_type(invokation->get_previous());
 
 	method = resolve_call_target(*invokationRef, method, receiverType);
-	if (method.is_null())
-		return gmt::nullref;
+	if ((method == nullptr))
+		return nullptr;
 
-	gmt::Ref<const SyntaxSymbol> parent = method->get_parent();
-	if (!parent.is_null() && parent->get_kind() == SyntaxKind::InterfaceDeclaration)
-		return gmt::nullref;
+	const SyntaxSymbol* parent = method->get_parent();
+	if (!(parent == nullptr) && parent->get_kind() == SyntaxKind::InterfaceDeclaration)
+		return nullptr;
 
-	gmt::Ref<StructSymbol> returnType = method->get_return_type();
-	if (returnType.is_null())
-		return gmt::nullref;
+	StructSymbol* returnType = method->get_return_type();
+	if ((returnType == nullptr))
+		return nullptr;
 
 	SyntaxKind returnKind = returnType->get_kind();
 	if (returnKind != SyntaxKind::StructDeclaration && returnKind != SyntaxKind::GenericType)
-		return gmt::nullref;
+		return nullptr;
 
 	return method;
 }
@@ -780,28 +780,28 @@ void ByteCodeEmitter::visit_invokation_expression(const InvokationExpressionSynt
 	if (node == nullptr)
 		return;
 
-	std::optional<gmt::Ref<const InvokationExpressionSyntax>> nodeRef = ref_from(node);
+	std::optional<const InvokationExpressionSyntax*> nodeRef = ref_from(node);
 	if (!nodeRef.has_value())
 		return;
 
 	// direct callee expression form: (callee)(arguments)
-	if (node->get_identifier().get_type() == TokenType::Unknown && !node->get_previous().is_null())
+	if (node->get_identifier().get_type() == TokenType::Unknown && !(node->get_previous() == nullptr))
 	{
-		gmt::Ref<StructSymbol> calleeType = get_model().get_expression_type(node->get_previous());
-		gmt::Ref<DelegateTypeSymbol> delegateType = unwrap_delegate_type(calleeType);
+		StructSymbol* calleeType = get_model().get_expression_type(node->get_previous());
+		DelegateTypeSymbol* delegateType = unwrap_delegate_type(calleeType);
 
-		if (delegateType.is_null())
+		if ((delegateType == nullptr))
 		{
 			unsupported(*nodeRef, L"invokation of a non-delegate expression");
 			return;
 		}
 
-		gmt::Ref<GenericTypeSymbol> instantiation = calleeType->get_kind() == SyntaxKind::GenericType
-			? calleeType.as<GenericTypeSymbol>()
-			: gmt::nullref;
+		GenericTypeSymbol* instantiation = calleeType->get_kind() == SyntaxKind::GenericType
+			? static_cast<GenericTypeSymbol*>(calleeType)
+			: nullptr;
 
-		emit_arguments_reversed(node->get_arguments().as_ptr());
-		node->get_previous().as_ptr()->accept(*this);
+		emit_arguments_reversed(node->get_arguments());
+		node->get_previous()->accept(*this);
 
 		m_encoder.emit_call_delegate(delegateType);
 
@@ -811,51 +811,51 @@ void ByteCodeEmitter::visit_invokation_expression(const InvokationExpressionSynt
 		return;
 	}
 
-	gmt::Ref<SyntaxSymbol> bound = get_symbol_table().lookup_symbol(*nodeRef);
-	if (bound.is_null())
+	SyntaxSymbol* bound = get_symbol_table().lookup_symbol(*nodeRef);
+	if ((bound == nullptr))
 		return;
 
 	if (bound->is_method())
 	{
-		gmt::Ref<MethodSymbol> method = bound.as<MethodSymbol>();
+		MethodSymbol* method = static_cast<MethodSymbol*>(bound);
 
-		gmt::Ref<StructSymbol> receiverType = gmt::nullref;
-		if (!node->get_previous().is_null())
+		StructSymbol* receiverType = nullptr;
+		if (!(node->get_previous() == nullptr))
 			receiverType = get_model().get_expression_type(node->get_previous());
 
 		method = resolve_call_target(*nodeRef, method, receiverType);
-		if (method.is_null())
+		if ((method == nullptr))
 			return;
 
-		emit_method_call(method, node->get_previous(), node->get_arguments().as_ptr(), false);
+		emit_method_call(method, node->get_previous(), node->get_arguments(), false);
 		return;
 	}
 
 	// delegate invocation through a variable, parameter or field
 	SyntaxKind kind = bound->get_kind();
-	gmt::Ref<StructSymbol> holderType = gmt::nullref;
+	StructSymbol* holderType = nullptr;
 
 	if (kind == SyntaxKind::VariableStatement)
-		holderType = bound.as<VariableSymbol>()->get_type();
+		holderType = static_cast<VariableSymbol*>(bound)->get_type();
 	else if (kind == SyntaxKind::Parameter)
-		holderType = bound.as<ParameterSymbol>()->get_type();
+		holderType = static_cast<ParameterSymbol*>(bound)->get_type();
 	else if (kind == SyntaxKind::FieldDeclaration)
-		holderType = bound.as<FieldSymbol>()->get_return_type();
+		holderType = static_cast<FieldSymbol*>(bound)->get_return_type();
 
-	gmt::Ref<DelegateTypeSymbol> delegateType = unwrap_delegate_type(holderType);
+	DelegateTypeSymbol* delegateType = unwrap_delegate_type(holderType);
 
-	if (delegateType.is_null())
+	if ((delegateType == nullptr))
 	{
 		unsupported(*nodeRef, L"this invokation shape");
 		return;
 	}
 
 	// the callee value loads like a member access over the same name, on top
-	emit_arguments_reversed(node->get_arguments().as_ptr());
+	emit_arguments_reversed(node->get_arguments());
 
 	if (kind == SyntaxKind::FieldDeclaration)
 	{
-		gmt::Ref<FieldSymbol> field = bound.as<FieldSymbol>();
+		FieldSymbol* field = static_cast<FieldSymbol*>(bound);
 		if (field->get_linking() == LINK_STATIC)
 		{
 			m_encoder.emit_load_static_field(field);
@@ -863,8 +863,8 @@ void ByteCodeEmitter::visit_invokation_expression(const InvokationExpressionSynt
 		}
 		else
 		{
-			if (!node->get_previous().is_null())
-				node->get_previous().as_ptr()->accept(*this);
+			if (!(node->get_previous() == nullptr))
+				node->get_previous()->accept(*this);
 			else
 			{
 				m_encoder.emit_load_local(0);
@@ -891,9 +891,9 @@ void ByteCodeEmitter::visit_invokation_expression(const InvokationExpressionSynt
 
 	m_encoder.emit_call_delegate(delegateType);
 
-	gmt::Ref<GenericTypeSymbol> instantiation = !holderType.is_null() && holderType->get_kind() == SyntaxKind::GenericType
-		? holderType.as<GenericTypeSymbol>()
-		: gmt::nullref;
+	GenericTypeSymbol* instantiation = !(holderType == nullptr) && holderType->get_kind() == SyntaxKind::GenericType
+		? static_cast<GenericTypeSymbol*>(holderType)
+		: nullptr;
 
 	std::size_t argumentCount = delegateType->get_parameters().size() + 1;
 	eval_pop(argumentCount);
@@ -905,28 +905,28 @@ void ByteCodeEmitter::visit_indexator_expression(const IndexatorExpressionSyntax
 	if (node == nullptr)
 		return;
 
-	std::optional<gmt::Ref<const IndexatorExpressionSyntax>> nodeRef = ref_from(node);
+	std::optional<const IndexatorExpressionSyntax*> nodeRef = ref_from(node);
 	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<IndexatorSymbol> indexator = lookup_symbol<IndexatorSymbol>(*nodeRef);
-	if (!indexator.is_null())
+	IndexatorSymbol* indexator = lookup_symbol<IndexatorSymbol>(*nodeRef);
+	if (!(indexator == nullptr))
 	{
-		gmt::Ref<MethodSymbol> getter = indexator->get_getter();
-		if (getter.is_null())
+		MethodSymbol* getter = indexator->get_getter();
+		if ((getter == nullptr))
 		{
 			unsupported(*nodeRef, L"indexator without a getter");
 			return;
 		}
 
-		gmt::Ref<StructSymbol> receiverType = node->get_previous().is_null() ? gmt::nullref : get_model().get_expression_type(node->get_previous());
+		StructSymbol* receiverType = (node->get_previous() == nullptr) ? nullptr : get_model().get_expression_type(node->get_previous());
 		getter = resolve_call_target(*nodeRef, getter, receiverType);
-		if (getter.is_null())
+		if ((getter == nullptr))
 			return;
 
-		emit_arguments_reversed(node->get_arguments().as_ptr());
-		if (!node->get_previous().is_null())
-			node->get_previous().as_ptr()->accept(*this);
+		emit_arguments_reversed(node->get_arguments());
+		if (!(node->get_previous() == nullptr))
+			node->get_previous()->accept(*this);
 		else
 		{
 			m_encoder.emit_load_local(0);
@@ -938,17 +938,17 @@ void ByteCodeEmitter::visit_indexator_expression(const IndexatorExpressionSyntax
 		std::size_t argumentCount = indexator->get_parameters().size() + 1;
 		eval_pop(argumentCount);
 
-		gmt::Ref<StructSymbol> valueType = get_model().get_expression_type(*nodeRef);
-		eval_push_type(valueType.is_null() ? getter->get_return_type() : valueType);
+		StructSymbol* valueType = get_model().get_expression_type(*nodeRef);
+		eval_push_type((valueType == nullptr) ? getter->get_return_type() : valueType);
 		return;
 	}
 
 	// array element access
-	node->get_previous().as_ptr()->accept(*this);
+	node->get_previous()->accept(*this);
 
-	gmt::Span<const gmt::Ref<ArgumentSyntax>> arguments = node->get_arguments()->get_arguments();
-	if (!arguments.as_span().empty())
-		arguments.as_span().front()->get_expression().as_ptr()->accept(*this);
+	std::span<ArgumentSyntax* const> arguments = node->get_arguments()->get_arguments();
+	if (!arguments.empty())
+		arguments.front()->get_expression()->accept(*this);
 
 	m_encoder.emit_load_array_element();
 	eval_pop();
@@ -959,17 +959,17 @@ void ByteCodeEmitter::visit_is_expression(const IsExpressionSyntax* node)
 	if (node == nullptr)
 		return;
 
-	gmt::Ref<StructSymbol> targetType;
-	if (!node->get_target_type().is_null())
+	StructSymbol* targetType = nullptr;
+	if (!(node->get_target_type() == nullptr))
 	{
-		gmt::Ref<SyntaxSymbol> bound = get_symbol_table().lookup_symbol(node->get_target_type());
-		if (!bound.is_null() && bound->is_type())
-			targetType = bound.as<StructSymbol>();
+		SyntaxSymbol* bound = get_symbol_table().lookup_symbol(node->get_target_type());
+		if (!(bound == nullptr) && bound->is_type())
+			targetType = static_cast<StructSymbol*>(bound);
 	}
 
 	targetType = substitute_type(targetType);
 
-	node->get_expression().as_ptr()->accept(*this);
+	node->get_expression()->accept(*this);
 	m_encoder.emit_is_instance(targetType);
 	eval_push(sizeof(bool));
 	eval_pop(2);
@@ -980,19 +980,19 @@ void ByteCodeEmitter::visit_cast_expression(const CastExpressionSyntax* node)
 	if (node == nullptr)
 		return;
 
-	gmt::Ref<StructSymbol> targetType;
-	if (!node->get_target_type().is_null())
+	StructSymbol* targetType = nullptr;
+	if (!(node->get_target_type() == nullptr))
 	{
-		gmt::Ref<SyntaxSymbol> bound = get_symbol_table().lookup_symbol(node->get_target_type());
-		if (!bound.is_null() && bound->is_type())
-			targetType = bound.as<StructSymbol>();
+		SyntaxSymbol* bound = get_symbol_table().lookup_symbol(node->get_target_type());
+		if (!(bound == nullptr) && bound->is_type())
+			targetType = static_cast<StructSymbol*>(bound);
 	}
 
 	targetType = substitute_type(targetType);
 
-	node->get_expression().as_ptr()->accept(*this);
+	node->get_expression()->accept(*this);
 
-	if (!targetType.is_null() && get_model().is_primitive_type(targetType))
+	if (!(targetType == nullptr) && get_model().is_primitive_type(targetType))
 		m_encoder.emit_cast_primitive(targetType);
 	else if (node->get_operator_token().get_type() == TokenType::AsOperator)
 		m_encoder.emit_cast_as(targetType);
@@ -1008,14 +1008,14 @@ void ByteCodeEmitter::visit_if_expression(const IfExpressionSyntax* node)
 	if (node == nullptr)
 		return;
 
-	node->get_condition().as_ptr()->accept(*this);
+	node->get_condition()->accept(*this);
 	eval_pop();
 
 	std::size_t elseAt = mark_position();
 	m_encoder.emit_jump_false(0);
 
 	std::int32_t armDepth = m_evalDepth;
-	node->get_then_expression().as_ptr()->accept(*this);
+	node->get_then_expression()->accept(*this);
 
 	std::size_t endAt = mark_position();
 	m_encoder.emit_jump(0);
@@ -1023,13 +1023,13 @@ void ByteCodeEmitter::visit_if_expression(const IfExpressionSyntax* node)
 	patch_jump(elseAt);
 	m_evalDepth = armDepth;
 
-	node->get_else_expression().as_ptr()->accept(*this);
+	node->get_else_expression()->accept(*this);
 	patch_jump(endAt);
 }
 
 void ByteCodeEmitter::visit_await_expression(const AwaitExpressionSyntax* node)
 {
-	std::optional<gmt::Ref<const AwaitExpressionSyntax>> nodeRef = ref_from(node);
+	std::optional<const AwaitExpressionSyntax*> nodeRef = ref_from(node);
 	if (nodeRef.has_value())
 		unsupported(*nodeRef, L"await expressions");
 }
@@ -1039,14 +1039,14 @@ void ByteCodeEmitter::visit_range_expression(const RangeExpressionSyntax* node)
 	if (node == nullptr)
 		return;
 
-	node->get_left().as_ptr()->accept(*this);
-	node->get_right().as_ptr()->accept(*this);
+	node->get_left()->accept(*this);
+	node->get_right()->accept(*this);
 
 	bool inclusive = node->get_operator_token().get_type() == TokenType::RangeInclusiveOperator;
 	m_encoder.emit_load_const_bool(inclusive);
 	eval_push(sizeof(bool));
 
-	gmt::Ref<StructSymbol> rangeType = get_symbol_table().get_standard_type(StandardTypes::RangeEnumerable).as<StructSymbol>();
+	StructSymbol* rangeType = static_cast<StructSymbol*>(get_symbol_table().get_standard_type(StandardTypes::RangeEnumerable));
 	m_encoder.emit_create_range(rangeType);
 	eval_pop(3);
 	eval_push(sizeof(void*));
@@ -1057,25 +1057,25 @@ void ByteCodeEmitter::visit_collection_expression(const CollectionExpressionSynt
 	if (node == nullptr)
 		return;
 
-	std::optional<gmt::Ref<const CollectionExpressionSyntax>> nodeRef = ref_from(node);
-	gmt::Ref<ArrayTypeSymbol> boundArray = nodeRef.has_value() ? lookup_symbol<ArrayTypeSymbol>(*nodeRef) : gmt::nullref;
+	std::optional<const CollectionExpressionSyntax*> nodeRef = ref_from(node);
+	ArrayTypeSymbol* boundArray = nodeRef.has_value() ? lookup_symbol<ArrayTypeSymbol>(*nodeRef) : nullptr;
 
-	gmt::Ref<StructSymbol> elementType = boundArray.is_null() ? gmt::nullref : boundArray->get_underlaying_type();
+	StructSymbol* elementType = (boundArray == nullptr) ? nullptr : boundArray->get_underlaying_type();
 	elementType = substitute_type(elementType);
-	if (elementType.is_null())
+	if ((elementType == nullptr))
 	{
 		unsupported(*nodeRef, L"collection expression without a bound element type");
 		return;
 	}
 
-	gmt::Span<const gmt::Ref<ExpressionSyntax>> values = node->get_values();
-	for (gmt::Ref<ExpressionSyntax> value : values.as_span())
-		value.as_ptr()->accept(*this);
+	std::span<ExpressionSyntax* const> values = node->get_values();
+	for (ExpressionSyntax* value : values)
+		value->accept(*this);
 
-	gmt::Ref<ArrayTypeSymbol> arrayType = get_symbol_table().find_or_create_array_type(elementType, values.as_span().size());
+	ArrayTypeSymbol* arrayType = get_symbol_table().find_or_create_array_type(elementType, values.size());
 	m_encoder.emit_new_array(arrayType);
 
-	eval_pop(values.as_span().size());
+	eval_pop(values.size());
 	eval_push(sizeof(void*));
 }
 
@@ -1084,25 +1084,25 @@ void ByteCodeEmitter::visit_object_creation_expression(const ObjectExpressionSyn
 	if (node == nullptr)
 		return;
 
-	std::optional<gmt::Ref<const ObjectExpressionSyntax>> nodeRef = ref_from(node);
+	std::optional<const ObjectExpressionSyntax*> nodeRef = ref_from(node);
 	if (!nodeRef.has_value())
 		return;
 
 	// fixed-size array creation: new Type[size]
-	if (!node->get_array_size().is_null())
+	if (!(node->get_array_size() == nullptr))
 	{
-		gmt::Ref<ArrayTypeSymbol> arrayType = lookup_symbol<ArrayTypeSymbol>(*nodeRef);
-		if (arrayType.is_null())
+		ArrayTypeSymbol* arrayType = lookup_symbol<ArrayTypeSymbol>(*nodeRef);
+		if ((arrayType == nullptr))
 		{
 			unsupported(*nodeRef, L"array creation without a bound type");
 			return;
 		}
 
-		gmt::Ref<StructSymbol> elementType = substitute_type(arrayType->get_underlaying_type());
+		StructSymbol* elementType = substitute_type(arrayType->get_underlaying_type());
 		if (elementType != arrayType->get_underlaying_type())
 			arrayType = get_symbol_table().find_or_create_array_type(elementType, arrayType->get_length());
 
-		node->get_array_size().as_ptr()->accept(*this);
+		node->get_array_size()->accept(*this);
 		m_encoder.emit_new_array_dynamic(arrayType);
 		eval_pop();
 		eval_push(sizeof(void*));
@@ -1114,31 +1114,31 @@ void ByteCodeEmitter::visit_object_creation_expression(const ObjectExpressionSyn
 
 void ByteCodeEmitter::emit_object_construction(const ObjectExpressionSyntax* node, std::optional<std::uint16_t> directSlot)
 {
-	std::optional<gmt::Ref<const ObjectExpressionSyntax>> nodeRef = ref_from(node);
+	std::optional<const ObjectExpressionSyntax*> nodeRef = ref_from(node);
 	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<SyntaxSymbol> boundSymbol = get_symbol_table().lookup_symbol(*nodeRef);
-	gmt::Ref<ConstructorSymbol> constructor = gmt::nullref;
-	if (!boundSymbol.is_null() && boundSymbol->get_kind() == SyntaxKind::ConstructorDeclaration)
-		constructor = boundSymbol.as<ConstructorSymbol>();
+	SyntaxSymbol* boundSymbol = get_symbol_table().lookup_symbol(*nodeRef);
+	ConstructorSymbol* constructor = nullptr;
+	if (!(boundSymbol == nullptr) && boundSymbol->get_kind() == SyntaxKind::ConstructorDeclaration)
+		constructor = static_cast<ConstructorSymbol*>(boundSymbol);
 
-	gmt::Ref<StructSymbol> type = get_model().get_expression_type(*nodeRef);
-	if (type.is_null() && !constructor.is_null())
-		type = constructor->get_parent().as<StructSymbol>();
+	StructSymbol* type = get_model().get_expression_type(*nodeRef);
+	if ((type == nullptr) && !(constructor == nullptr))
+		type = gmt::as<StructSymbol>(constructor->get_parent());
 
 	type = substitute_type(type);
-	if (type.is_null())
+	if ((type == nullptr))
 	{
 		unsupported(*nodeRef, L"object creation without a bound type");
 		return;
 	}
 
-	gmt::Ref<MethodSymbol> constructorCall = gmt::nullref;
-	if (!constructor.is_null())
+	MethodSymbol* constructorCall = nullptr;
+	if (!(constructor == nullptr))
 	{
 		constructorCall = resolve_call_target(*nodeRef, constructor, type);
-		if (constructorCall.is_null())
+		if ((constructorCall == nullptr))
 			return;
 	}
 
@@ -1149,12 +1149,12 @@ void ByteCodeEmitter::emit_object_construction(const ObjectExpressionSyntax* nod
 	{
 		std::uint16_t slot = direct ? *directSlot : allocate_temporary(type, PlacementVerdict::Stack);
 
-		emit_arguments_reversed(node->get_arguments().as_ptr());
+		emit_arguments_reversed(node->get_arguments());
 
 		m_encoder.emit_load_slot_addr(slot);
 		eval_push(sizeof(void*));
 
-		if (!constructorCall.is_null())
+		if (!(constructorCall == nullptr))
 		{
 			m_encoder.emit_call_method_symbol(constructorCall);
 			eval_pop(constructorCall->get_parameters().size() + 1);
@@ -1176,12 +1176,12 @@ void ByteCodeEmitter::emit_object_construction(const ObjectExpressionSyntax* nod
 	m_encoder.emit_store_local(temp);
 	eval_pop();
 
-	emit_arguments_reversed(node->get_arguments().as_ptr());
+	emit_arguments_reversed(node->get_arguments());
 
 	m_encoder.emit_load_local(temp);
 	eval_push(sizeof(void*));
 
-	if (!constructorCall.is_null())
+	if (!(constructorCall == nullptr))
 	{
 		m_encoder.emit_call_method_symbol(constructorCall);
 		eval_pop(constructorCall->get_parameters().size() + 1);
@@ -1196,36 +1196,36 @@ void ByteCodeEmitter::visit_lambda_expression(const LambdaExpressionSyntax* node
 	if (node == nullptr)
 		return;
 
-	std::optional<gmt::Ref<const LambdaExpressionSyntax>> nodeRef = ref_from(node);
+	std::optional<const LambdaExpressionSyntax*> nodeRef = ref_from(node);
 	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<DelegateTypeSymbol> delegateType = lookup_symbol<DelegateTypeSymbol>(*nodeRef);
-	if (delegateType.is_null())
+	DelegateTypeSymbol* delegateType = lookup_symbol<DelegateTypeSymbol>(*nodeRef);
+	if ((delegateType == nullptr))
 		return;
 
-	gmt::Ref<MethodSymbol> anonymousMethod = gmt::nullref;
-	if (!node->get_parameters().is_null())
+	MethodSymbol* anonymousMethod = nullptr;
+	if (!(node->get_parameters() == nullptr))
 		anonymousMethod = lookup_symbol<MethodSymbol>(node->get_parameters());
 
-	if (anonymousMethod.is_null())
+	if ((anonymousMethod == nullptr))
 		return;
 
-	gmt::Ref<const SyntaxSymbol> parent = anonymousMethod->get_parent();
-	gmt::Ref<StructSymbol> captureBox = parent.is_null() || !parent->is_type() ? gmt::nullref : parent.as<StructSymbol>();
-	if (captureBox.is_null())
+	const SyntaxSymbol* parent = anonymousMethod->get_parent();
+	StructSymbol* captureBox = (parent == nullptr) || !parent->is_type() ? nullptr : gmt::as<StructSymbol>(parent);
+	if ((captureBox == nullptr))
 		return;
 
 	// capture boxes are synthesized once for the open body: a lambda whose
 	// signature or captures mention a type parameter would need its own box
 	// per instantiation, which is out of scope for monomorphization
-	if (!m_currentInstantiation.is_null())
+	if (!(m_currentInstantiation == nullptr))
 	{
 		bool typeParameterBound = substitute_type(anonymousMethod->get_return_type()) != anonymousMethod->get_return_type();
 
 		if (!typeParameterBound)
 		{
-			for (gmt::Ref<ParameterSymbol> parameter : anonymousMethod->get_parameters())
+			for (ParameterSymbol* parameter : anonymousMethod->get_parameters())
 			{
 				if (substitute_type(parameter->get_type()) != parameter->get_type())
 				{
@@ -1237,7 +1237,7 @@ void ByteCodeEmitter::visit_lambda_expression(const LambdaExpressionSyntax* node
 
 		if (!typeParameterBound)
 		{
-			for (gmt::Ref<FieldSymbol> field : captureBox->fields)
+			for (FieldSymbol* field : captureBox->fields)
 			{
 				if (substitute_type(field->get_return_type()) != field->get_return_type())
 				{
@@ -1255,8 +1255,8 @@ void ByteCodeEmitter::visit_lambda_expression(const LambdaExpressionSyntax* node
 	}
 
 	lambda_capture_checker checker(get_model(), get_diagnostics(), captureBox);
-	if (!node->get_body().is_null())
-		node->get_body().as_ptr()->accept(checker);
+	if (!(node->get_body() == nullptr))
+		node->get_body()->accept(checker);
 
 	if (checker.get_captured())
 	{
@@ -1267,7 +1267,7 @@ void ByteCodeEmitter::visit_lambda_expression(const LambdaExpressionSyntax* node
 	m_pendingLambdaBodies.emplace_back(*nodeRef, anonymousMethod);
 
 	// construct the capture box and store the captured values into its fields
-	const gmt::vector<gmt::Ref<SyntaxSymbol>>* captures = m_pragmatic.get_lambda_captures(anonymousMethod);
+	const gmt::vector<SyntaxSymbol*>* captures = m_pragmatic.get_lambda_captures(anonymousMethod);
 
 	PlacementVerdict verdict = site_verdict(*nodeRef);
 	std::uint16_t boxSlot = allocate_temporary(captureBox, verdict);
@@ -1290,13 +1290,13 @@ void ByteCodeEmitter::visit_lambda_expression(const LambdaExpressionSyntax* node
 	{
 		for (std::size_t i = 0; i < captures->size() && i < captureBox->fields.size(); ++i)
 		{
-			gmt::Ref<FieldSymbol> field = captureBox->fields[i];
-			gmt::Ref<SyntaxSymbol> captured = (*captures)[i];
+			FieldSymbol* field = captureBox->fields[i];
+			SyntaxSymbol* captured = (*captures)[i];
 
 			std::optional<std::uint16_t> capturedSlot = slot_of(captured);
-			gmt::Ref<FieldSymbol> outerField = capturedSlot.has_value() ? gmt::nullref : capture_field_of(captured);
+			FieldSymbol* outerField = capturedSlot.has_value() ? nullptr : capture_field_of(captured);
 
-			if (!capturedSlot.has_value() && outerField.is_null())
+			if (!capturedSlot.has_value() && (outerField == nullptr))
 			{
 				unsupported(*nodeRef, L"unresolvable lambda capture");
 				return;

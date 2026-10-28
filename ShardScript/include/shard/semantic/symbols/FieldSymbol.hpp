@@ -16,13 +16,13 @@ namespace shard
 
 	class SHARD_API FieldSymbol final : public MemberSymbol
 	{
-		gmt::Ref<StructSymbol> m_returnType;
+		StructSymbol* m_returnType = nullptr;
 		bool m_isEnumValue = false;
 		std::int64_t m_enumValue = 0;
 
 	public:
-		FieldSymbol(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent);
-		FieldSymbol(gmt::StringReference name, gmt::Ref<SyntaxSymbol> parent);
+		FieldSymbol(std::wstring_view name, SyntaxSymbol* parent);
+		FieldSymbol(gmt::StringReference name, SyntaxSymbol* parent);
 		virtual ~FieldSymbol() = default;
 
 		FieldSymbol(const FieldSymbol& other) = delete;
@@ -31,8 +31,8 @@ namespace shard
 		FieldSymbol(FieldSymbol&& other) = delete;
 		FieldSymbol& operator=(FieldSymbol&& other) = delete;
 
-		gmt::Ref<StructSymbol> get_return_type() const;
-		void set_return_type(gmt::Ref<StructSymbol> return_type);
+		StructSymbol* get_return_type() const;
+		void set_return_type(StructSymbol* return_type);
 
 		bool get_is_enum_value() const;
 		void set_is_enum_value(bool is_enum_value);

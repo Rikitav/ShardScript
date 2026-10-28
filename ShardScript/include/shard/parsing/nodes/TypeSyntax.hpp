@@ -15,7 +15,7 @@ namespace shard
 	class SHARD_API TypeSyntax : public ExpressionSyntax
 	{
 	public:
-		TypeSyntax(const SyntaxKind kind, gmt::Ref<SyntaxNode> parent);
+		TypeSyntax(const SyntaxKind kind, SyntaxNode* parent);
 		virtual ~TypeSyntax() = default;
 
 		virtual gmt::wstring get_qualifier() const = 0;

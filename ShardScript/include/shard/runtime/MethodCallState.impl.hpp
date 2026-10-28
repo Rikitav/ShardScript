@@ -46,7 +46,7 @@ namespace shard::detail
 
 	inline std::wstring_view unwrap_string(ObjectInstance instance)
 	{
-		if (instance.is_null())
+		if ((instance == nullptr))
 			return std::wstring_view();
 
 		std::int64_t length = instance.as_integer();
@@ -72,7 +72,7 @@ namespace shard::detail
 	template<typename T>
 	inline T* unwrap_arg(ObjectInstance value, T**)
 	{
-		if (value.is_null())
+		if ((value == nullptr))
 			return nullptr;
 
 		return static_cast<T*>(value.as_pointer());

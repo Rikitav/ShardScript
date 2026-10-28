@@ -15,11 +15,11 @@ namespace shard
 
 	class SHARD_API GenericTypeSymbol final : public StructSymbol
 	{
-		gmt::Ref<StructSymbol> m_underlayingType;
-		gmt::FlatMap<gmt::StringReference, gmt::Ref<StructSymbol>> m_typeArguments;
+		StructSymbol* m_underlayingType = nullptr;
+		gmt::FlatMap<gmt::StringReference, StructSymbol*> m_typeArguments;
 
 	public:
-		GenericTypeSymbol(gmt::Ref<StructSymbol> underlaying_type, gmt::Ref<SyntaxSymbol> parent);
+		GenericTypeSymbol(StructSymbol* underlaying_type, SyntaxSymbol* parent);
 		virtual ~GenericTypeSymbol() = default;
 
 		GenericTypeSymbol(const GenericTypeSymbol& other) = delete;
@@ -28,9 +28,9 @@ namespace shard
 		GenericTypeSymbol(GenericTypeSymbol&& other) = delete;
 		GenericTypeSymbol& operator=(GenericTypeSymbol&& other) = delete;
 
-		gmt::Ref<StructSymbol> get_underlaying_type() const;
+		StructSymbol* get_underlaying_type() const;
 
-		bool add_type_parameter(gmt::Ref<TypeParameterSymbol> type_parameter, gmt::Ref<StructSymbol> argument_type);
-		gmt::Ref<StructSymbol> substitute_type_parameter(gmt::Ref<TypeParameterSymbol> type_parameter) const;
+		bool add_type_parameter(TypeParameterSymbol* type_parameter, StructSymbol* argument_type);
+		StructSymbol* substitute_type_parameter(TypeParameterSymbol* type_parameter) const;
 	};
 }

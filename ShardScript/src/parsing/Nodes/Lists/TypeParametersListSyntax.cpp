@@ -5,7 +5,7 @@
 
 using namespace shard;
 
-TypeParameterSyntax::TypeParameterSyntax(gmt::Ref<SyntaxNode> parent)
+TypeParameterSyntax::TypeParameterSyntax(SyntaxNode* parent)
 	: SyntaxNode(SyntaxKind::TypeParameter, parent) { }
 
 SyntaxToken TypeParameterSyntax::get_identifier() const
@@ -28,10 +28,10 @@ void TypeParameterSyntax::accept(SyntaxVisitor& visitor) const
 	visitor.visit_type_parameter(this);
 }
 
-TypeParametersListSyntax::TypeParametersListSyntax(gmt::Ref<SyntaxNode> parent)
+TypeParametersListSyntax::TypeParametersListSyntax(SyntaxNode* parent)
 	: SyntaxNode(SyntaxKind::TypeParametersList, parent) { }
 
-gmt::Span<const gmt::Ref<TypeParameterSyntax>> TypeParametersListSyntax::get_parameters() const
+std::span<TypeParameterSyntax* const> TypeParametersListSyntax::get_parameters() const
 {
 	return m_parameters;
 }
@@ -46,7 +46,7 @@ SyntaxToken TypeParametersListSyntax::get_close_token() const
 	return m_closeToken;
 }
 
-void TypeParametersListSyntax::set_parameters(gmt::Span<gmt::Ref<TypeParameterSyntax>> parameters)
+void TypeParametersListSyntax::set_parameters(std::span<TypeParameterSyntax*> parameters)
 {
 	m_parameters = parameters;
 }

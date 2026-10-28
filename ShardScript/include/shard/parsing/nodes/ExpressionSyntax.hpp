@@ -11,7 +11,7 @@ namespace shard
 	class SHARD_API ExpressionSyntax : public SyntaxNode
 	{
 	public:
-		ExpressionSyntax(const SyntaxKind kind, gmt::Ref<SyntaxNode> parent);
+		ExpressionSyntax(const SyntaxKind kind, SyntaxNode* parent);
 		virtual ~ExpressionSyntax() = default;
 	};
 }

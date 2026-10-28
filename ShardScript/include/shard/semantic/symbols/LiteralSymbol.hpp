@@ -28,10 +28,10 @@ namespace shard
 		};
 
 		const TokenType m_literalType;
-		gmt::Ref<StructSymbol> m_boundType;
+		StructSymbol* m_boundType = nullptr;
 
 	public:
-		LiteralSymbol(const TokenType literal_type, gmt::Ref<SyntaxSymbol> parent);
+		LiteralSymbol(const TokenType literal_type, SyntaxSymbol* parent);
 		virtual ~LiteralSymbol() = default;
 
 		LiteralSymbol(const LiteralSymbol& other) = delete;
@@ -57,7 +57,7 @@ namespace shard
 		gmt::StringReference get_string_value() const;
 		void set_string_value(gmt::StringReference value);
 
-		gmt::Ref<StructSymbol> get_bound_type() const;
-		void set_bound_type(gmt::Ref<StructSymbol> bound_type);
+		StructSymbol* get_bound_type() const;
+		void set_bound_type(StructSymbol* bound_type);
 	};
 }

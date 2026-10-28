@@ -5,35 +5,35 @@
 
 using namespace shard;
 
-LambdaExpressionSyntax::LambdaExpressionSyntax(gmt::Ref<SyntaxNode> parent)
+LambdaExpressionSyntax::LambdaExpressionSyntax(SyntaxNode* parent)
 	: ExpressionSyntax(SyntaxKind::LambdaExpression, parent) { }
 
-gmt::Ref<const ParametersListSyntax> LambdaExpressionSyntax::get_parameters() const
+const ParametersListSyntax* LambdaExpressionSyntax::get_parameters() const
 {
 	return m_parameters;
 }
 
-gmt::Ref<const BlockSyntax> LambdaExpressionSyntax::get_body() const
+const BlockSyntax* LambdaExpressionSyntax::get_body() const
 {
 	return m_body;
 }
 
-void LambdaExpressionSyntax::set_parameters(gmt::Ref<ParametersListSyntax> parameters)
+void LambdaExpressionSyntax::set_parameters(ParametersListSyntax* parameters)
 {
 	m_parameters = parameters;
 }
 
-void LambdaExpressionSyntax::set_body(gmt::Ref<BlockSyntax> body)
+void LambdaExpressionSyntax::set_body(BlockSyntax* body)
 {
 	m_body = body;
 }
 
 TextLocation LambdaExpressionSyntax::get_location() const
 {
-	if (!m_body.is_null())
-		return TextLocation(m_parameters.as_ptr()->get_open_token(), m_body.as_ptr()->get_location());
+	if (!(m_body == nullptr))
+		return TextLocation(m_parameters->get_open_token(), m_body->get_location());
 
-	return m_parameters.as_ptr()->get_location();
+	return m_parameters->get_location();
 }
 
 void LambdaExpressionSyntax::accept(SyntaxVisitor& visitor) const

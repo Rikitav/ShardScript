@@ -4,5 +4,5 @@
 
 using namespace shard;
 
-BlockSyntax::BlockSyntax(const SyntaxKind kind, gmt::Ref<SyntaxNode> parent)
+BlockSyntax::BlockSyntax(const SyntaxKind kind, SyntaxNode* parent)
 	: SyntaxNode(kind, parent) { }

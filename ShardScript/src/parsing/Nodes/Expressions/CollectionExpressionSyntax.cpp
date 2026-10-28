@@ -5,10 +5,10 @@
 
 using namespace shard;
 
-CollectionExpressionSyntax::CollectionExpressionSyntax(gmt::Ref<SyntaxNode> parent)
+CollectionExpressionSyntax::CollectionExpressionSyntax(SyntaxNode* parent)
 	: ExpressionSyntax(SyntaxKind::CollectionExpression, parent) { }
 
-gmt::Span<const gmt::Ref<ExpressionSyntax>> CollectionExpressionSyntax::get_values() const
+std::span<ExpressionSyntax* const> CollectionExpressionSyntax::get_values() const
 {
 	return m_values;
 }
@@ -23,7 +23,7 @@ SyntaxToken CollectionExpressionSyntax::get_close_bracket() const
 	return m_closeBracketToken;
 }
 
-void CollectionExpressionSyntax::set_values(gmt::Span<gmt::Ref<ExpressionSyntax>> values)
+void CollectionExpressionSyntax::set_values(std::span<ExpressionSyntax*> values)
 {
 	m_values = values;
 }

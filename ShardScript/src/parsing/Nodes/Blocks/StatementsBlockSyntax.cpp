@@ -5,10 +5,10 @@
 
 using namespace shard;
 
-StatementsBlockSyntax::StatementsBlockSyntax(gmt::Ref<SyntaxNode> parent)
+StatementsBlockSyntax::StatementsBlockSyntax(SyntaxNode* parent)
 	: BlockSyntax(SyntaxKind::StatementsBlock, parent) { }
 
-gmt::Span<const gmt::Ref<StatementSyntax>> StatementsBlockSyntax::get_statements() const
+std::span<StatementSyntax* const> StatementsBlockSyntax::get_statements() const
 {
 	return m_statements;
 }
@@ -23,7 +23,7 @@ SyntaxToken StatementsBlockSyntax::get_close_bracket() const
 	return m_closeBracketToken;
 }
 
-void StatementsBlockSyntax::set_statements(gmt::Span<gmt::Ref<StatementSyntax>> statements)
+void StatementsBlockSyntax::set_statements(std::span<StatementSyntax*> statements)
 {
 	m_statements = statements;
 }

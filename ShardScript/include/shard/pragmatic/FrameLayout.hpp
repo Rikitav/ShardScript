@@ -18,7 +18,7 @@ namespace shard
 
 	struct SHARD_API FrameSlotRecipe
 	{
-		gmt::Ref<StructSymbol> concreteType; // nullref => typeParameterIndex, or unknown
+		StructSymbol* concreteType = nullptr; // nullref => typeParameterIndex, or unknown
 		std::int16_t typeParameterIndex = -1;
 		PlacementVerdict verdict = PlacementVerdict::Heap; // stamped by the layout pass from the escape verdicts; the conservative default
 	};
@@ -26,7 +26,7 @@ namespace shard
 	class SHARD_API FrameLayout
 	{
 		gmt::vector<FrameSlotRecipe> m_variableSlots;
-		gmt::vector<gmt::Ref<StructSymbol>> m_argumentTypes; // receiver first for instance methods, then parameters in order
+		gmt::vector<StructSymbol*> m_argumentTypes; // receiver first for instance methods, then parameters in order
 		// resolved once by the layout pass; CallStackFrame::create used to
 		// re-resolve every argument and local through the shape cache per call
 		gmt::vector<const TypeShape*> m_argumentShapes;
@@ -42,7 +42,7 @@ namespace shard
 		std::size_t m_localsBytes = 0; // total frame bytes for arguments and locals; computed by the layout pass
 		bool m_isComplete = false;
 
-		static FrameSlotRecipe make_recipe(gmt::Ref<StructSymbol> type);
+		static FrameSlotRecipe make_recipe(StructSymbol* type);
 
 	public:
 		static constexpr std::size_t EntryHeaderSize = sizeof(void*);
@@ -52,14 +52,14 @@ namespace shard
 		FrameLayout(const FrameLayout&) = delete;
 		FrameLayout& operator=(const FrameLayout&) = delete;
 
-		std::uint16_t add_variable(gmt::Ref<StructSymbol> type, PlacementVerdict verdict = PlacementVerdict::Heap);
-		std::uint16_t add_temporary(gmt::Ref<StructSymbol> type, const TypeShape* shape, PlacementVerdict verdict);
-		bool seal_variable(std::uint16_t variableIndex, gmt::Ref<StructSymbol> type, PlacementVerdict verdict = PlacementVerdict::Heap);
+		std::uint16_t add_variable(StructSymbol* type, PlacementVerdict verdict = PlacementVerdict::Heap);
+		std::uint16_t add_temporary(StructSymbol* type, const TypeShape* shape, PlacementVerdict verdict);
+		bool seal_variable(std::uint16_t variableIndex, StructSymbol* type, PlacementVerdict verdict = PlacementVerdict::Heap);
 		bool set_variable_verdict(std::uint16_t variableIndex, PlacementVerdict verdict);
 
 		void set_argument_count(std::uint16_t count);
-		void add_argument(gmt::Ref<StructSymbol> type);
-		const gmt::vector<gmt::Ref<StructSymbol>>& get_argument_types() const;
+		void add_argument(StructSymbol* type);
+		const gmt::vector<StructSymbol*>& get_argument_types() const;
 		std::uint16_t get_argument_count() const;
 		std::uint16_t get_variable_count() const;
 		std::uint16_t get_local_count() const;

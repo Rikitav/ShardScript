@@ -5,7 +5,7 @@
 
 using namespace shard;
 
-EnumDeclarationSyntax::EnumDeclarationSyntax(gmt::Ref<SyntaxNode> parent)
+EnumDeclarationSyntax::EnumDeclarationSyntax(SyntaxNode* parent)
 	: MemberDeclarationSyntax(SyntaxKind::EnumDeclaration, parent)
 	, m_isFlags(false) { }
 
@@ -39,7 +39,7 @@ SyntaxToken EnumDeclarationSyntax::get_semicolon() const
 	return m_semicolonToken;
 }
 
-gmt::Span<const gmt::Ref<EnumFieldDeclarationSyntax>> EnumDeclarationSyntax::get_fields() const
+std::span<EnumFieldDeclarationSyntax* const> EnumDeclarationSyntax::get_fields() const
 {
 	return m_fields;
 }
@@ -74,7 +74,7 @@ void EnumDeclarationSyntax::set_semicolon(const SyntaxToken& token)
 	m_semicolonToken = token;
 }
 
-void EnumDeclarationSyntax::set_fields(gmt::Span<gmt::Ref<EnumFieldDeclarationSyntax>> fields)
+void EnumDeclarationSyntax::set_fields(std::span<EnumFieldDeclarationSyntax*> fields)
 {
 	m_fields = fields;
 }

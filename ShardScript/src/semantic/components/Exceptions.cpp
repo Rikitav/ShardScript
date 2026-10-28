@@ -16,7 +16,7 @@ namespace
 	static void read_reference_field(MethodCallState& context, StandardTypes fieldSlot)
 	{
 		SymbolTable& table = context.get_vm().get_model().get_table();
-		gmt::Ref<FieldSymbol> field = table.get_standard_type(fieldSlot).as<FieldSymbol>();
+		FieldSymbol* field = static_cast<FieldSymbol*>(table.get_standard_type(fieldSlot));
 
 		// get_field returns a view onto the slot storage; reference payloads
 		// are pointers and must be dereferenced before boxing the result
@@ -44,9 +44,9 @@ namespace
 		read_reference_field(context, StandardTypes::UndefinedBehaviour_StackTraceField);
 	}
 
-	static gmt::Ref<FieldSymbol> make_backing_field(SymbolTable& table, gmt::Ref<StructSymbol> owner, const wchar_t* name)
+	static FieldSymbol* make_backing_field(SymbolTable& table, StructSymbol* owner, const wchar_t* name)
 	{
-		gmt::Ref<FieldSymbol> field = table.emplace<FieldSymbol>(name, owner);
+		FieldSymbol* field = table.emplace<FieldSymbol>(name, owner);
 		field->set_return_type(table.get_string_primitive());
 		field->set_accesibility(ACS_PRIVATE);
 		field->set_linking(LINK_INSTANCE);
@@ -55,14 +55,14 @@ namespace
 		return field;
 	}
 
-	static void make_throwable_property(SymbolTable& table, gmt::Ref<StructSymbol> owner, const wchar_t* name, MethodSymbolDelegate getterCallback)
+	static void make_throwable_property(SymbolTable& table, StructSymbol* owner, const wchar_t* name, MethodSymbolDelegate getterCallback)
 	{
-		gmt::Ref<PropertySymbol> property = table.emplace<PropertySymbol>(name, SyntaxKind::PropertyDeclaration, owner);
+		PropertySymbol* property = table.emplace<PropertySymbol>(name, SyntaxKind::PropertyDeclaration, owner);
 		property->set_return_type(table.get_string_primitive());
 		property->set_accesibility(ACS_PUBLIC);
 		property->set_linking(LINK_INSTANCE);
 
-		gmt::Ref<AccessorSymbol> getter = table.emplace<AccessorSymbol>(L"get", property);
+		AccessorSymbol* getter = table.emplace<AccessorSymbol>(L"get", property);
 		getter->set_return_type(table.get_string_primitive());
 		getter->set_linking(LINK_INSTANCE);
 		getter->set_accesibility(ACS_PUBLIC);
@@ -77,15 +77,15 @@ namespace
 
 void SymbolTable::resolve_exceptions()
 {
-	gmt::Ref<StructSymbol> throwable = get_standard_type(StandardTypes::IThrowable).as<StructSymbol>();
+	StructSymbol* throwable = static_cast<StructSymbol*>(get_standard_type(StandardTypes::IThrowable));
 
 	// RuntimeException
 	{
-		gmt::Ref<StructSymbol> exception = m_arena.emplace<StructSymbol>(L"RuntimeException", SyntaxKind::StructDeclaration, m_rootNamespace);
+		StructSymbol* exception = m_arena.emplace<StructSymbol>(L"RuntimeException", SyntaxKind::StructDeclaration, m_rootNamespace);
 		exception->interfaces.push_back(throwable);
 
-		gmt::Ref<FieldSymbol> messageField = make_backing_field(*this, exception, L"_message");
-		gmt::Ref<FieldSymbol> stackTraceField = make_backing_field(*this, exception, L"_stackTrace");
+		FieldSymbol* messageField = make_backing_field(*this, exception, L"_message");
+		FieldSymbol* stackTraceField = make_backing_field(*this, exception, L"_stackTrace");
 
 		make_throwable_property(*this, exception, L"message", &runtime_exception_message_get);
 		make_throwable_property(*this, exception, L"stack_trace", &runtime_exception_stack_trace_get);
@@ -98,11 +98,11 @@ void SymbolTable::resolve_exceptions()
 
 	// UndefinedBehaviour — the managed face of native contract violations
 	{
-		gmt::Ref<StructSymbol> undefined = m_arena.emplace<StructSymbol>(L"UndefinedBehaviour", SyntaxKind::StructDeclaration, m_rootNamespace);
+		StructSymbol* undefined = m_arena.emplace<StructSymbol>(L"UndefinedBehaviour", SyntaxKind::StructDeclaration, m_rootNamespace);
 		undefined->interfaces.push_back(throwable);
 
-		gmt::Ref<FieldSymbol> messageField = make_backing_field(*this, undefined, L"_message");
-		gmt::Ref<FieldSymbol> stackTraceField = make_backing_field(*this, undefined, L"_stackTrace");
+		FieldSymbol* messageField = make_backing_field(*this, undefined, L"_message");
+		FieldSymbol* stackTraceField = make_backing_field(*this, undefined, L"_stackTrace");
 
 		make_throwable_property(*this, undefined, L"message", &undefined_behaviour_message_get);
 		make_throwable_property(*this, undefined, L"stack_trace", &undefined_behaviour_stack_trace_get);

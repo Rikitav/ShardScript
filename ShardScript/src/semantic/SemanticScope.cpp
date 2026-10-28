@@ -26,7 +26,7 @@ namespace
 	}
 }
 
-SemanticScope::SemanticScope(gmt::Ref<SyntaxSymbol> owner, SemanticScope* parent)
+SemanticScope::SemanticScope(SyntaxSymbol* owner, SemanticScope* parent)
 	: m_parent(parent), m_owner(owner)
 {
 	if (parent != nullptr)
@@ -38,63 +38,63 @@ SemanticScope* SemanticScope::get_parent() const
 	return m_parent;
 }
 
-gmt::Ref<SyntaxSymbol> SemanticScope::get_owner() const
+SyntaxSymbol* SemanticScope::get_owner() const
 {
 	return m_owner;
 }
 
-gmt::Ref<NamespaceSymbol> SemanticScope::get_namespace() const
+NamespaceSymbol* SemanticScope::get_namespace() const
 {
 	return m_namespace;
 }
 
-void SemanticScope::set_namespace(gmt::Ref<NamespaceSymbol> namespaceSymbol)
+void SemanticScope::set_namespace(NamespaceSymbol* namespaceSymbol)
 {
 	m_namespace = namespaceSymbol;
 }
 
-const gmt::unordered_set<gmt::Ref<NamespaceSymbol>>& SemanticScope::get_imported_namespaces() const
+const gmt::unordered_set<NamespaceSymbol*>& SemanticScope::get_imported_namespaces() const
 {
 	return m_importedNamespaces;
 }
 
-void SemanticScope::add_imported_namespace(gmt::Ref<NamespaceSymbol> namespaceSymbol)
+void SemanticScope::add_imported_namespace(NamespaceSymbol* namespaceSymbol)
 {
 	m_importedNamespaces.insert(namespaceSymbol);
 }
 
-gmt::Ref<SyntaxSymbol> SemanticScope::find_local(gmt::StringReference name) const
+SyntaxSymbol* SemanticScope::find_local(gmt::StringReference name) const
 {
 	return find_local(gmt::resolve(name));
 }
 
-gmt::Ref<SyntaxSymbol> SemanticScope::find_local(std::wstring_view name) const
+SyntaxSymbol* SemanticScope::find_local(std::wstring_view name) const
 {
 	const auto lookup = m_symbols.find(name);
 	if (lookup == m_symbols.end())
-		return gmt::nullref;
+		return nullptr;
 
 	return lookup->second;
 }
 
-gmt::Ref<SyntaxSymbol> SemanticScope::lookup(gmt::StringReference name) const
+SyntaxSymbol* SemanticScope::lookup(gmt::StringReference name) const
 {
 	return lookup(gmt::resolve(name));
 }
 
-gmt::Ref<SyntaxSymbol> SemanticScope::lookup(std::wstring_view name) const
+SyntaxSymbol* SemanticScope::lookup(std::wstring_view name) const
 {
-	gmt::Ref<SyntaxSymbol> local = find_local(name);
-	if (!local.is_null())
+	SyntaxSymbol* local = find_local(name);
+	if (!(local == nullptr))
 		return local;
 
 	if (m_parent != nullptr)
 		return m_parent->lookup(name);
 
-	return gmt::nullref;
+	return nullptr;
 }
 
-std::span<const gmt::Ref<SyntaxSymbol>> SemanticScope::find_overloads(std::wstring_view name) const
+std::span<SyntaxSymbol* const> SemanticScope::find_overloads(std::wstring_view name) const
 {
 	for (const SemanticScope* scope = this; scope != nullptr; scope = scope->m_parent)
 	{
@@ -112,9 +112,9 @@ std::span<const gmt::Ref<SyntaxSymbol>> SemanticScope::find_overloads(std::wstri
 	return {};
 }
 
-void SemanticScope::declare_symbol(gmt::Ref<SyntaxSymbol> symbol)
+void SemanticScope::declare_symbol(SyntaxSymbol* symbol)
 {
-	if (symbol.is_null())
+	if ((symbol == nullptr))
 		throw std::runtime_error("tried to declare null symbol");
 
 	const std::wstring_view name = symbol->get_name();

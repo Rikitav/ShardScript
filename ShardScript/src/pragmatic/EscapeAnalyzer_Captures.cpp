@@ -22,7 +22,7 @@
 
 using namespace shard;
 
-void EscapeAnalyzer::record_use(gmt::Ref<SyntaxSymbol> symbol)
+void EscapeAnalyzer::record_use(SyntaxSymbol* symbol)
 {
 	if (!in_frame())
 		return;
@@ -59,29 +59,29 @@ void EscapeAnalyzer::record_use(gmt::Ref<SyntaxSymbol> symbol)
 	add_event(ensure_local_id(symbol), EscapeLevel::GlobalEscape, EscapeChannel::Suspension);
 }
 
-gmt::Ref<SyntaxSymbol> EscapeAnalyzer::find_declared_local(std::wstring_view name) const
+SyntaxSymbol* EscapeAnalyzer::find_declared_local(std::wstring_view name) const
 {
 	for (int i = static_cast<int>(m_frameStack.size()) - 1; i >= 0; --i)
 	{
-		for (gmt::Ref<SyntaxSymbol> symbol : m_frameStack[i].declared)
+		for (SyntaxSymbol* symbol : m_frameStack[i].declared)
 		{
 			if (symbol->get_name() == name)
 				return symbol;
 		}
 	}
 
-	return gmt::Ref<SyntaxSymbol>();
+	return nullptr;
 }
 
-void EscapeAnalyzer::record_capture(gmt::Ref<SyntaxSymbol> symbol)
+void EscapeAnalyzer::record_capture(SyntaxSymbol* symbol)
 {
 	int frameIndex = find_declaring_frame(symbol);
 
 	// every enclosing closure captures the reference transitively
 	for (int i = frameIndex + 1; i < static_cast<int>(m_frameStack.size()); ++i)
 	{
-		gmt::Ref<const ExpressionSyntax> closureSite = m_frameStack[i].closureSite;
-		if (closureSite.is_null())
+		const ExpressionSyntax* closureSite = m_frameStack[i].closureSite;
+		if ((closureSite == nullptr))
 			continue;
 
 		add_edge(ensure_site_id(closureSite), ensure_local_id(symbol));
@@ -104,48 +104,48 @@ void EscapeAnalyzer::record_capture(gmt::Ref<SyntaxSymbol> symbol)
 		}
 	}
 
-	if (frame.closureSite.is_null() || (!pastSuspension && !insideSuspendingLoop))
+	if ((frame.closureSite == nullptr) || (!pastSuspension && !insideSuspendingLoop))
 		return;
 
 	add_event(ensure_site_id(frame.closureSite), EscapeLevel::GlobalEscape, EscapeChannel::Suspension);
 }
 
-void EscapeAnalyzer::materialize_capture(gmt::Ref<const ExpressionSyntax> closureSite, gmt::Ref<SyntaxSymbol> symbol)
+void EscapeAnalyzer::materialize_capture(const ExpressionSyntax* closureSite, SyntaxSymbol* symbol)
 {
-	if (closureSite.is_null() || closureSite->get_kind() != SyntaxKind::LambdaExpression)
+	if ((closureSite == nullptr) || closureSite->get_kind() != SyntaxKind::LambdaExpression)
 		return;
 
-	const LambdaExpressionSyntax* lambda = static_cast<const LambdaExpressionSyntax*>(closureSite.as_ptr());
-	if (lambda->get_parameters().is_null())
+	const LambdaExpressionSyntax* lambda = static_cast<const LambdaExpressionSyntax*>(closureSite);
+	if ((lambda->get_parameters() == nullptr))
 		return;
 
-	gmt::Ref<SyntaxSymbol> bound = get_symbol_table().lookup_symbol(lambda->get_parameters());
-	if (bound.is_null() || !bound->is_method())
+	SyntaxSymbol* bound = get_symbol_table().lookup_symbol(lambda->get_parameters());
+	if ((bound == nullptr) || !bound->is_method())
 		return;
 
-	gmt::Ref<MethodSymbol> anonymousMethod = bound.as<MethodSymbol>();
-	gmt::Ref<const SyntaxSymbol> parent = anonymousMethod->get_parent();
-	if (parent.is_null() || !parent->is_type())
+	MethodSymbol* anonymousMethod = static_cast<MethodSymbol*>(bound);
+	const SyntaxSymbol* parent = anonymousMethod->get_parent();
+	if ((parent == nullptr) || !parent->is_type())
 		return;
 
-	gmt::Ref<StructSymbol> captureBox = parent.as<StructSymbol>();
+	StructSymbol* captureBox = gmt::as<StructSymbol>(parent);
 
-	gmt::vector<gmt::Ref<SyntaxSymbol>>& captures = m_pragmatic.lambda_captures_for(anonymousMethod);
+	gmt::vector<SyntaxSymbol*>& captures = m_pragmatic.lambda_captures_for(anonymousMethod);
 	if (std::find(captures.begin(), captures.end(), symbol) != captures.end())
 		return;
 
 	captures.push_back(symbol);
 
-	gmt::Ref<StructSymbol> captureType;
+	StructSymbol* captureType = nullptr;
 	SyntaxKind symbolKind = symbol->get_kind();
 	if (symbolKind == SyntaxKind::VariableStatement)
-		captureType = symbol.as<VariableSymbol>()->get_type();
+		captureType = static_cast<VariableSymbol*>(symbol)->get_type();
 	else if (symbolKind == SyntaxKind::Parameter)
-		captureType = symbol.as<ParameterSymbol>()->get_type();
+		captureType = static_cast<ParameterSymbol*>(symbol)->get_type();
 
 	// primitives are snapshotted inline into the box; composites keep a
 	// reference slot, which is what shallow capture means for objects
-	gmt::Ref<FieldSymbol> field = get_symbol_table().emplace<FieldSymbol>(symbol->get_name(), captureBox);
+	FieldSymbol* field = get_symbol_table().emplace<FieldSymbol>(symbol->get_name(), captureBox);
 	field->set_return_type(captureType);
 	captureBox->on_symbol_declared(field);
 }
@@ -158,15 +158,15 @@ void EscapeAnalyzer::visit_lambda_expression(const LambdaExpressionSyntax* node)
 	register_allocation_site(node);
 
 	// the anonymous method symbol is bound to the lambda's parameters list node
-	gmt::Ref<MethodSymbol> symbol;
-	if (!node->get_parameters().is_null())
+	MethodSymbol* symbol = nullptr;
+	if (!(node->get_parameters() == nullptr))
 	{
-		gmt::Ref<SyntaxSymbol> bound = get_symbol_table().lookup_symbol(node->get_parameters());
-		if (!bound.is_null() && bound->is_method())
-			symbol = bound.as<MethodSymbol>();
+		SyntaxSymbol* bound = get_symbol_table().lookup_symbol(node->get_parameters());
+		if (!(bound == nullptr) && bound->is_method())
+			symbol = static_cast<MethodSymbol*>(bound);
 	}
 
-	gmt::Ref<const ExpressionSyntax> closureSite;
+	const ExpressionSyntax* closureSite = nullptr;
 	auto nodeRef = ref_from(node);
 	if (nodeRef.has_value())
 		closureSite = *nodeRef;
@@ -174,9 +174,9 @@ void EscapeAnalyzer::visit_lambda_expression(const LambdaExpressionSyntax* node)
 	enter_frame(symbol, closureSite);
 	declare_parameters(symbol);
 
-	gmt::Ref<const BlockSyntax> body = node->get_body();
-	if (!body.is_null())
-		body.as_ptr()->accept(*this);
+	const BlockSyntax* body = node->get_body();
+	if (!(body == nullptr))
+		body->accept(*this);
 
 	leave_frame();
 }
@@ -190,8 +190,8 @@ void EscapeAnalyzer::visit_identifier_name_type(const IdentifierNameTypeSyntax* 
 	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<SyntaxSymbol> symbol = get_symbol_table().lookup_symbol(*nodeRef);
-	if (symbol.is_null())
+	SyntaxSymbol* symbol = get_symbol_table().lookup_symbol(*nodeRef);
+	if ((symbol == nullptr))
 		return;
 
 	SyntaxKind kind = symbol->get_kind();

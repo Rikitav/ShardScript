@@ -13,17 +13,17 @@ namespace shard
 	class SHARD_API AwaitExpressionSyntax final : public ExpressionSyntax
 	{
 		SyntaxToken m_awaitKeywordToken;
-		gmt::Ref<ExpressionSyntax> m_expression;
+		ExpressionSyntax* m_expression = nullptr;
 
 	public:
-		AwaitExpressionSyntax(gmt::Ref<SyntaxNode> parent);
+		AwaitExpressionSyntax(SyntaxNode* parent);
 		virtual ~AwaitExpressionSyntax() = default;
 
 		SyntaxToken get_await_keyword() const;
-		gmt::Ref<const ExpressionSyntax> get_expression() const;
+		const ExpressionSyntax* get_expression() const;
 
 		void set_await_keyword(const SyntaxToken& token);
-		void set_expression(gmt::Ref<ExpressionSyntax> expression);
+		void set_expression(ExpressionSyntax* expression);
 
 		TextLocation get_location() const override;
 		void accept(SyntaxVisitor& visitor) const override;

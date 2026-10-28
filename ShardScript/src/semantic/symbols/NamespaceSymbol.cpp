@@ -6,53 +6,53 @@
 
 using namespace shard;
 
-NamespaceSymbol::NamespaceSymbol(std::wstring_view name, gmt::Ref<NamespaceSymbol> parent)
+NamespaceSymbol::NamespaceSymbol(std::wstring_view name, NamespaceSymbol* parent)
 	: SyntaxSymbol(name, SyntaxKind::NamespaceDirective, parent) { }
 
-NamespaceSymbol::NamespaceSymbol(gmt::StringReference name, gmt::Ref<NamespaceSymbol> parent)
+NamespaceSymbol::NamespaceSymbol(gmt::StringReference name, NamespaceSymbol* parent)
 	: SyntaxSymbol(name, SyntaxKind::NamespaceDirective, parent) { }
 
-void NamespaceSymbol::on_symbol_declared(gmt::Ref<SyntaxSymbol> symbol)
+void NamespaceSymbol::on_symbol_declared(SyntaxSymbol* symbol)
 {
 	if (symbol->is_type() || symbol->is_member())
 		members.push_back(symbol);
 }
 
-const gmt::FlatMap<gmt::StringReference, gmt::Ref<NamespaceSymbol>>& NamespaceSymbol::get_children() const
+const gmt::FlatMap<gmt::StringReference, NamespaceSymbol*>& NamespaceSymbol::get_children() const
 {
 	return m_children;
 }
 
-gmt::Ref<NamespaceSymbol> NamespaceSymbol::lookup(gmt::StringReference name) const
+NamespaceSymbol* NamespaceSymbol::lookup(gmt::StringReference name) const
 {
-	const gmt::Ref<NamespaceSymbol>* child = m_children.find(name);
+	NamespaceSymbol* const* child = m_children.find(name);
 	if (child == nullptr)
-		return gmt::nullref;
+		return nullptr;
 
 	return *child;
 }
 
-gmt::Ref<NamespaceSymbol> NamespaceSymbol::lookup(std::wstring_view name) const
+NamespaceSymbol* NamespaceSymbol::lookup(std::wstring_view name) const
 {
 	gmt::StringReference key = gmt::intern(name);
 	return lookup(key);
 }
 
-gmt::Ref<NamespaceSymbol> NamespaceSymbol::lookup_or_create(gmt::StringReference name, SymbolTable& table)
+NamespaceSymbol* NamespaceSymbol::lookup_or_create(gmt::StringReference name, SymbolTable& table)
 {
-	if (const gmt::Ref<NamespaceSymbol>* existing = m_children.find(name))
+	if (NamespaceSymbol* const* existing = m_children.find(name))
 		return *existing;
 
-	std::optional<gmt::Ref<NamespaceSymbol>> self = table.get_arena().ref_from_ptr(this);
+	std::optional<NamespaceSymbol*> self = table.get_arena().ref_from_ptr(this);
 	if (!self.has_value())
-		return gmt::nullref;
+		return nullptr;
 
-	gmt::Ref<NamespaceSymbol> child = table.emplace<NamespaceSymbol>(name, *self);
+	NamespaceSymbol* child = table.emplace<NamespaceSymbol>(name, *self);
 	m_children.try_emplace(name, child);
 	return child;
 }
 
-gmt::Ref<NamespaceSymbol> NamespaceSymbol::lookup_or_create(std::wstring_view name, SymbolTable& table)
+NamespaceSymbol* NamespaceSymbol::lookup_or_create(std::wstring_view name, SymbolTable& table)
 {
 	gmt::StringReference key = gmt::intern(name);
 	return lookup_or_create(key, table);

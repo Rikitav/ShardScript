@@ -31,9 +31,9 @@ namespace shard
 		CallingConvention m_callingConvention = CallingConvention::None;
 		void* m_functionPointer = nullptr;
 
-		gmt::Ref<StructSymbol> m_returnType;
-		gmt::vector<gmt::Ref<TypeParameterSymbol>> m_typeParameters;
-		gmt::vector<gmt::Ref<ParameterSymbol>> m_parameters;
+		StructSymbol* m_returnType = nullptr;
+		gmt::vector<TypeParameterSymbol*> m_typeParameters;
+		gmt::vector<ParameterSymbol*> m_parameters;
 
 		bool m_isVirtual = false;
 		bool m_isAsync = false;
@@ -42,8 +42,8 @@ namespace shard
 		bool m_effectsComputed = false;
 
 	public:
-		MethodSymbol(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent);
-		MethodSymbol(gmt::StringReference name, gmt::Ref<SyntaxSymbol> parent);
+		MethodSymbol(std::wstring_view name, SyntaxSymbol* parent);
+		MethodSymbol(gmt::StringReference name, SyntaxSymbol* parent);
 		virtual ~MethodSymbol() = default;
 
 		MethodSymbol(const MethodSymbol& other) = delete;
@@ -58,11 +58,11 @@ namespace shard
 		void* get_function_pointer() const;
 		void set_function_pointer(void* function_pointer);
 
-		gmt::Ref<StructSymbol> get_return_type() const;
-		void set_return_type(gmt::Ref<StructSymbol> return_type);
+		StructSymbol* get_return_type() const;
+		void set_return_type(StructSymbol* return_type);
 
-		const gmt::vector<gmt::Ref<TypeParameterSymbol>>& get_type_parameters() const;
-		const gmt::vector<gmt::Ref<ParameterSymbol>>& get_parameters() const;
+		const gmt::vector<TypeParameterSymbol*>& get_type_parameters() const;
+		const gmt::vector<ParameterSymbol*>& get_parameters() const;
 
 		bool get_is_virtual() const;
 		void set_is_virtual(bool is_virtual);
@@ -78,10 +78,10 @@ namespace shard
 
 		bool is_method() const override;
 		virtual bool get_is_generic_instantiation() const;
-		void on_symbol_declared(gmt::Ref<SyntaxSymbol> symbol) override;
+		void on_symbol_declared(SyntaxSymbol* symbol) override;
 
 	protected:
-		MethodSymbol(std::wstring_view name, const SyntaxKind kind, gmt::Ref<SyntaxSymbol> parent);
-		MethodSymbol(gmt::StringReference name, const SyntaxKind kind, gmt::Ref<SyntaxSymbol> parent);
+		MethodSymbol(std::wstring_view name, const SyntaxKind kind, SyntaxSymbol* parent);
+		MethodSymbol(gmt::StringReference name, const SyntaxKind kind, SyntaxSymbol* parent);
 	};
 }

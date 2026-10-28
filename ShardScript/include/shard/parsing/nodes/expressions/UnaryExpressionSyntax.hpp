@@ -13,19 +13,19 @@ namespace shard
 	class SHARD_API UnaryExpressionSyntax final : public ExpressionSyntax
 	{
 		SyntaxToken m_operatorToken;
-		gmt::Ref<ExpressionSyntax> m_operand;
+		ExpressionSyntax* m_operand = nullptr;
 		bool m_isPostfix;
 
 	public:
-		UnaryExpressionSyntax(gmt::Ref<SyntaxNode> parent);
+		UnaryExpressionSyntax(SyntaxNode* parent);
 		virtual ~UnaryExpressionSyntax() = default;
 
 		SyntaxToken get_operator_token() const;
-		gmt::Ref<const ExpressionSyntax> get_operand() const;
+		const ExpressionSyntax* get_operand() const;
 		bool get_is_postfix() const;
 
 		void set_operator_token(const SyntaxToken& token);
-		void set_operand(gmt::Ref<ExpressionSyntax> operand);
+		void set_operand(ExpressionSyntax* operand);
 		void set_is_postfix(bool isPostfix);
 
 		TextLocation get_location() const override;

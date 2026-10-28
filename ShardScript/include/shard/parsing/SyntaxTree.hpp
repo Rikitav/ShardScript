@@ -14,7 +14,7 @@ namespace shard
 	class SHARD_API SyntaxTree final
 	{
 		gmt::Arena m_arena;
-		gmt::vector<gmt::Ref<TranslationUnitSyntax>> m_units;
+		gmt::vector<TranslationUnitSyntax*> m_units;
 
 	public:
 		SyntaxTree() = default;
@@ -29,8 +29,8 @@ namespace shard
 		inline gmt::Arena& get_arena() { return m_arena; }
 		inline const gmt::Arena& get_arena() const { return m_arena; }
 
-		std::span<const gmt::Ref<TranslationUnitSyntax>> get_units() const;
+		std::span<TranslationUnitSyntax* const> get_units() const;
 
-		void add_unit(gmt::Ref<TranslationUnitSyntax> unit);
+		void add_unit(TranslationUnitSyntax* unit);
 	};
 }

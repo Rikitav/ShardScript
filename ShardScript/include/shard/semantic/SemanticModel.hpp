@@ -31,10 +31,10 @@ namespace shard
 		shard::SyntaxTree& m_tree;
 		shard::SymbolTable m_table;
 
-		gmt::unordered_map<gmt::Ref<const ExpressionSyntax>, gmt::Ref<StructSymbol>> m_expressionTypes;
+		gmt::unordered_map<const ExpressionSyntax*, StructSymbol*> m_expressionTypes;
 
 	public:
-		using TypeParameterResolver = std::function<gmt::Ref<StructSymbol>(gmt::Ref<TypeParameterSymbol>)>;
+		using TypeParameterResolver = std::function<StructSymbol*(TypeParameterSymbol*)>;
 
 		SemanticModel(shard::SyntaxTree& tree);
 
@@ -44,31 +44,31 @@ namespace shard
 		SyntaxTree& get_tree() const;
 		SymbolTable& get_table();
 
-		gmt::Ref<StructSymbol> get_expression_type(gmt::Ref<const ExpressionSyntax> expression) const;
-		void set_expression_type(gmt::Ref<const ExpressionSyntax> expression, gmt::Ref<StructSymbol> type);
+		StructSymbol* get_expression_type(const ExpressionSyntax* expression) const;
+		void set_expression_type(const ExpressionSyntax* expression, StructSymbol* type);
 
-		static bool are_types_equal(gmt::Ref<const StructSymbol> left, gmt::Ref<const StructSymbol> right);
-		bool is_assignable_to(gmt::Ref<const StructSymbol> target, gmt::Ref<const StructSymbol> source) const;
-		bool type_implements_interface(gmt::Ref<StructSymbol> type, gmt::Ref<InterfaceSymbol> interface) const;
-		bool type_satisfies_constraint(gmt::Ref<StructSymbol> typeArgument, gmt::Ref<StructSymbol> constraint) const;
-		bool is_primitive_type(gmt::Ref<const StructSymbol> type) const;
-		bool is_task_or_task_like(gmt::Ref<StructSymbol> type);
-		gmt::wstring get_type_display_name(gmt::Ref<const StructSymbol> type) const;
+		static bool are_types_equal(const StructSymbol* left, const StructSymbol* right);
+		bool is_assignable_to(const StructSymbol* target, const StructSymbol* source) const;
+		bool type_implements_interface(StructSymbol* type, InterfaceSymbol* interface) const;
+		bool type_satisfies_constraint(StructSymbol* typeArgument, StructSymbol* constraint) const;
+		bool is_primitive_type(const StructSymbol* type) const;
+		bool is_task_or_task_like(StructSymbol* type);
+		gmt::wstring get_type_display_name(const StructSymbol* type) const;
 
-		gmt::Ref<StructSymbol> substitute_type(gmt::Ref<StructSymbol> type, gmt::Ref<GenericTypeSymbol> within = gmt::nullref);
-		gmt::Ref<StructSymbol> substitute_type(gmt::Ref<StructSymbol> type, std::span<const gmt::Ref<StructSymbol>> typeArguments);
-		gmt::Ref<StructSymbol> get_field_type(gmt::Ref<FieldSymbol> field, gmt::Ref<GenericTypeSymbol> within = gmt::nullref);
-		gmt::Ref<StructSymbol> get_method_return_type(gmt::Ref<MethodSymbol> method, gmt::Ref<GenericTypeSymbol> within = gmt::nullref);
-		gmt::Ref<StructSymbol> get_property_type(gmt::Ref<PropertySymbol> property, gmt::Ref<GenericTypeSymbol> within = gmt::nullref);
-		gmt::Ref<StructSymbol> get_constructor_return_type(gmt::Ref<ConstructorSymbol> constructor, gmt::Ref<GenericTypeSymbol> within = gmt::nullref);
+		StructSymbol* substitute_type(StructSymbol* type, GenericTypeSymbol* within = nullptr);
+		StructSymbol* substitute_type(StructSymbol* type, std::span<StructSymbol* const> typeArguments);
+		StructSymbol* get_field_type(FieldSymbol* field, GenericTypeSymbol* within = nullptr);
+		StructSymbol* get_method_return_type(MethodSymbol* method, GenericTypeSymbol* within = nullptr);
+		StructSymbol* get_property_type(PropertySymbol* property, GenericTypeSymbol* within = nullptr);
+		StructSymbol* get_constructor_return_type(ConstructorSymbol* constructor, GenericTypeSymbol* within = nullptr);
 
-		gmt::Ref<StructSymbol> find_type_by_name(std::wstring_view fullName);
-		gmt::Ref<FieldSymbol> find_field_by_name(gmt::Ref<StructSymbol> type, std::wstring_view name) const;
-		bool resolve_indexable(gmt::Ref<StructSymbol> type, gmt::Ref<PropertySymbol>& outCount, gmt::Ref<IndexatorSymbol>& outIndexator);
-		gmt::Ref<PropertySymbol> resolve_virtual_property(gmt::Ref<StructSymbol> type, gmt::Ref<PropertySymbol> interfaceMember, gmt::Ref<GenericTypeSymbol> within);
-		gmt::Ref<IndexatorSymbol> resolve_virtual_indexator(gmt::Ref<StructSymbol> type, gmt::Ref<IndexatorSymbol> interfaceMember, gmt::Ref<GenericTypeSymbol> within);
+		StructSymbol* find_type_by_name(std::wstring_view fullName);
+		FieldSymbol* find_field_by_name(StructSymbol* type, std::wstring_view name) const;
+		bool resolve_indexable(StructSymbol* type, PropertySymbol*& outCount, IndexatorSymbol*& outIndexator);
+		PropertySymbol* resolve_virtual_property(StructSymbol* type, PropertySymbol* interfaceMember, GenericTypeSymbol* within);
+		IndexatorSymbol* resolve_virtual_indexator(StructSymbol* type, IndexatorSymbol* interfaceMember, GenericTypeSymbol* within);
 
-		gmt::Ref<StructSymbol> resolve_runtime_type_argument(gmt::Ref<StructSymbol> type, const TypeParameterResolver& resolveParameter);
-		bool try_resolve_generic_arguments(gmt::Ref<StructSymbol> type, const TypeParameterResolver& resolveParameter, gmt::Ref<StructSymbol>& baseType, gmt::vector<gmt::Ref<StructSymbol>>& genericArgs);
+		StructSymbol* resolve_runtime_type_argument(StructSymbol* type, const TypeParameterResolver& resolveParameter);
+		bool try_resolve_generic_arguments(StructSymbol* type, const TypeParameterResolver& resolveParameter, StructSymbol*& baseType, gmt::vector<StructSymbol*>& genericArgs);
 	};
 }

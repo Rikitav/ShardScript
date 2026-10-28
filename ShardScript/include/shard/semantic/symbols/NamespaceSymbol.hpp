@@ -18,13 +18,13 @@ namespace shard
 
 	class SHARD_API NamespaceSymbol : public SyntaxSymbol
 	{
-		gmt::FlatMap<gmt::StringReference, gmt::Ref<NamespaceSymbol>> m_children;
+		gmt::FlatMap<gmt::StringReference, NamespaceSymbol*> m_children;
 
 	public:
-		gmt::vector<gmt::Ref<SyntaxSymbol>> members;
+		gmt::vector<SyntaxSymbol*> members;
 
-		NamespaceSymbol(std::wstring_view name, gmt::Ref<NamespaceSymbol> parent);
-		NamespaceSymbol(gmt::StringReference name, gmt::Ref<NamespaceSymbol> parent);
+		NamespaceSymbol(std::wstring_view name, NamespaceSymbol* parent);
+		NamespaceSymbol(gmt::StringReference name, NamespaceSymbol* parent);
 		virtual ~NamespaceSymbol() = default;
 
 		NamespaceSymbol(const NamespaceSymbol& other) = delete;
@@ -33,13 +33,13 @@ namespace shard
 		NamespaceSymbol(NamespaceSymbol&& other) = delete;
 		NamespaceSymbol& operator=(NamespaceSymbol&& other) = delete;
 
-		void on_symbol_declared(gmt::Ref<SyntaxSymbol> symbol) override;
+		void on_symbol_declared(SyntaxSymbol* symbol) override;
 
-		const gmt::FlatMap<gmt::StringReference, gmt::Ref<NamespaceSymbol>>& get_children() const;
+		const gmt::FlatMap<gmt::StringReference, NamespaceSymbol*>& get_children() const;
 
-		gmt::Ref<NamespaceSymbol> lookup(std::wstring_view name) const;
-		gmt::Ref<NamespaceSymbol> lookup(gmt::StringReference name) const;
-		gmt::Ref<NamespaceSymbol> lookup_or_create(std::wstring_view name, SymbolTable& table);
-		gmt::Ref<NamespaceSymbol> lookup_or_create(gmt::StringReference, SymbolTable& table);
+		NamespaceSymbol* lookup(std::wstring_view name) const;
+		NamespaceSymbol* lookup(gmt::StringReference name) const;
+		NamespaceSymbol* lookup_or_create(std::wstring_view name, SymbolTable& table);
+		NamespaceSymbol* lookup_or_create(gmt::StringReference, SymbolTable& table);
 	};
 }

@@ -37,10 +37,11 @@ namespace
 	}
 
 	template <typename T>
-	void append_symbol_offset(gmt::vector<std::byte>& code, gmt::Ref<T> symbol)
+	void append_symbol_operand(gmt::vector<std::byte>& code, T* symbol)
 	{
-		const std::size_t offset = symbol.is_null() ? null_symbol_operand : symbol.get_offset();
-		append_data_value(code, offset);
+		// operands are raw symbol pointers; nullptr encodes as zero
+		const std::size_t operand = reinterpret_cast<std::size_t>(symbol);
+		append_data_value(code, operand);
 	}
 }
 
@@ -136,7 +137,7 @@ void ByteCodeEncoder::emit_load_const_string(const wchar_t* value)
 	append_data_value(m_image.get_text_section(), dataOrigin);
 }
 
-void ByteCodeEncoder::emit_default_value(gmt::Ref<StructSymbol> elementType, SymbolTable& table)
+void ByteCodeEncoder::emit_default_value(StructSymbol* elementType, SymbolTable& table)
 {
 	if (elementType == table.get_integer_primitive())
 	{
@@ -383,17 +384,17 @@ void ByteCodeEncoder::emit_logical_and()
 	append_data_value(m_image.get_text_section(), OpCode::LOGICAL_AND);
 }
 
-void ByteCodeEncoder::emit_alloc_heap(gmt::Ref<StructSymbol> type)
+void ByteCodeEncoder::emit_alloc_heap(StructSymbol* type)
 {
 	append_data_value(m_image.get_text_section(), OpCode::ALLOC_HEAP);
-	append_symbol_offset(m_image.get_text_section(), type);
+	append_symbol_operand(m_image.get_text_section(), type);
 }
 
-void ByteCodeEncoder::emit_new_delegate(gmt::Ref<DelegateTypeSymbol> type, gmt::Ref<MethodSymbol> method)
+void ByteCodeEncoder::emit_new_delegate(DelegateTypeSymbol* type, MethodSymbol* method)
 {
 	append_data_value(m_image.get_text_section(), OpCode::NEWDELEGATE);
-	append_symbol_offset(m_image.get_text_section(), type);
-	append_symbol_offset(m_image.get_text_section(), method);
+	append_symbol_operand(m_image.get_text_section(), type);
+	append_symbol_operand(m_image.get_text_section(), method);
 }
 
 void ByteCodeEncoder::emit_load_field(std::uint32_t slot)
@@ -408,22 +409,22 @@ void ByteCodeEncoder::emit_store_field(std::uint32_t slot)
 	append_data_value(m_image.get_text_section(), slot);
 }
 
-void ByteCodeEncoder::emit_new_array(gmt::Ref<ArrayTypeSymbol> type)
+void ByteCodeEncoder::emit_new_array(ArrayTypeSymbol* type)
 {
 	append_data_value(m_image.get_text_section(), OpCode::NEWARRAY);
-	append_symbol_offset(m_image.get_text_section(), type);
+	append_symbol_operand(m_image.get_text_section(), type);
 }
 
-void ByteCodeEncoder::emit_new_array_dynamic(gmt::Ref<ArrayTypeSymbol> type)
+void ByteCodeEncoder::emit_new_array_dynamic(ArrayTypeSymbol* type)
 {
 	append_data_value(m_image.get_text_section(), OpCode::NEWARRAY_DYNAMIC);
-	append_symbol_offset(m_image.get_text_section(), type);
+	append_symbol_operand(m_image.get_text_section(), type);
 }
 
-void ByteCodeEncoder::emit_create_range(gmt::Ref<StructSymbol> type)
+void ByteCodeEncoder::emit_create_range(StructSymbol* type)
 {
 	append_data_value(m_image.get_text_section(), OpCode::CREATERANGE);
-	append_symbol_offset(m_image.get_text_section(), type);
+	append_symbol_operand(m_image.get_text_section(), type);
 }
 
 void ByteCodeEncoder::emit_load_array_element()
@@ -441,41 +442,41 @@ void ByteCodeEncoder::emit_array_length()
 	append_data_value(m_image.get_text_section(), OpCode::ARRAYLENGTH);
 }
 
-void ByteCodeEncoder::emit_load_static_field(gmt::Ref<FieldSymbol> field)
+void ByteCodeEncoder::emit_load_static_field(FieldSymbol* field)
 {
 	append_data_value(m_image.get_text_section(), OpCode::LOADSTATICFIELD);
-	append_symbol_offset(m_image.get_text_section(), field);
+	append_symbol_operand(m_image.get_text_section(), field);
 }
 
-void ByteCodeEncoder::emit_store_static_field(gmt::Ref<FieldSymbol> field)
+void ByteCodeEncoder::emit_store_static_field(FieldSymbol* field)
 {
 	append_data_value(m_image.get_text_section(), OpCode::STORESTATICFIELD);
-	append_symbol_offset(m_image.get_text_section(), field);
+	append_symbol_operand(m_image.get_text_section(), field);
 }
 
-void ByteCodeEncoder::emit_load_enum_field(gmt::Ref<FieldSymbol> field)
+void ByteCodeEncoder::emit_load_enum_field(FieldSymbol* field)
 {
 	append_data_value(m_image.get_text_section(), OpCode::LOADENUMFIELD);
-	append_symbol_offset(m_image.get_text_section(), field);
+	append_symbol_operand(m_image.get_text_section(), field);
 }
 
-void ByteCodeEncoder::emit_load_type_argument(std::uint16_t index, gmt::Ref<StructSymbol> type)
+void ByteCodeEncoder::emit_load_type_argument(std::uint16_t index, StructSymbol* type)
 {
 	append_data_value(m_image.get_text_section(), OpCode::LOAD_TYPEARGUMENT);
 	append_data_value(m_image.get_text_section(), index);
-	append_symbol_offset(m_image.get_text_section(), type);
+	append_symbol_operand(m_image.get_text_section(), type);
 }
 
-void ByteCodeEncoder::emit_call_method_symbol(gmt::Ref<MethodSymbol> method)
+void ByteCodeEncoder::emit_call_method_symbol(MethodSymbol* method)
 {
 	append_data_value(m_image.get_text_section(), OpCode::CALLMETHODSYMBOL);
-	append_symbol_offset(m_image.get_text_section(), method);
+	append_symbol_operand(m_image.get_text_section(), method);
 }
 
-void ByteCodeEncoder::emit_call_method_into(gmt::Ref<MethodSymbol> method, std::uint16_t slot)
+void ByteCodeEncoder::emit_call_method_into(MethodSymbol* method, std::uint16_t slot)
 {
 	append_data_value(m_image.get_text_section(), OpCode::CALL_METHOD_INTO);
-	append_symbol_offset(m_image.get_text_section(), method);
+	append_symbol_operand(m_image.get_text_section(), method);
 	append_data_value(m_image.get_text_section(), slot);
 }
 
@@ -484,38 +485,38 @@ void ByteCodeEncoder::emit_return_placed()
 	append_data_value(m_image.get_text_section(), OpCode::RETURN_PLACED);
 }
 
-void ByteCodeEncoder::emit_call_delegate(gmt::Ref<DelegateTypeSymbol> type)
+void ByteCodeEncoder::emit_call_delegate(DelegateTypeSymbol* type)
 {
 	append_data_value(m_image.get_text_section(), OpCode::CALLDELEGATE);
-	append_symbol_offset(m_image.get_text_section(), type);
+	append_symbol_operand(m_image.get_text_section(), type);
 }
 
-void ByteCodeEncoder::emit_call_interface(gmt::Ref<MethodSymbol> interfaceMethod)
+void ByteCodeEncoder::emit_call_interface(MethodSymbol* interfaceMethod)
 {
 	append_data_value(m_image.get_text_section(), OpCode::CALLINTERFACE);
-	append_symbol_offset(m_image.get_text_section(), interfaceMethod);
+	append_symbol_operand(m_image.get_text_section(), interfaceMethod);
 }
 
-void ByteCodeEncoder::emit_is_instance(gmt::Ref<StructSymbol> type)
+void ByteCodeEncoder::emit_is_instance(StructSymbol* type)
 {
 	append_data_value(m_image.get_text_section(), OpCode::ISINSTANCE);
-	append_symbol_offset(m_image.get_text_section(), type);
+	append_symbol_operand(m_image.get_text_section(), type);
 }
 
-void ByteCodeEncoder::emit_cast_as(gmt::Ref<StructSymbol> type)
+void ByteCodeEncoder::emit_cast_as(StructSymbol* type)
 {
 	append_data_value(m_image.get_text_section(), OpCode::CAST_AS);
-	append_symbol_offset(m_image.get_text_section(), type);
+	append_symbol_operand(m_image.get_text_section(), type);
 }
 
-void ByteCodeEncoder::emit_cast(gmt::Ref<StructSymbol> type)
+void ByteCodeEncoder::emit_cast(StructSymbol* type)
 {
 	append_data_value(m_image.get_text_section(), OpCode::CAST);
-	append_symbol_offset(m_image.get_text_section(), type);
+	append_symbol_operand(m_image.get_text_section(), type);
 }
 
-void ByteCodeEncoder::emit_cast_primitive(gmt::Ref<StructSymbol> type)
+void ByteCodeEncoder::emit_cast_primitive(StructSymbol* type)
 {
 	append_data_value(m_image.get_text_section(), OpCode::CASTPRIMITIVE);
-	append_symbol_offset(m_image.get_text_section(), type);
+	append_symbol_operand(m_image.get_text_section(), type);
 }

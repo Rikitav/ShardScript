@@ -28,30 +28,30 @@ namespace shard
 	class SHARD_API SymbolTable
 	{
 		gmt::Arena m_arena;
-		gmt::Ref<NamespaceSymbol> m_rootNamespace;
+		NamespaceSymbol* m_rootNamespace = nullptr;
 
-		gmt::Ref<StructSymbol> m_void;
-		gmt::Ref<StructSymbol> m_boolean;
-		gmt::Ref<StructSymbol> m_integer;
-		gmt::Ref<StructSymbol> m_double;
-		gmt::Ref<StructSymbol> m_char;
-		gmt::Ref<StructSymbol> m_string;
-		gmt::Ref<StructSymbol> m_array;
-		gmt::Ref<StructSymbol> m_nativeInteger;
-		gmt::Ref<StructSymbol> m_byte;
+		StructSymbol* m_void = nullptr;
+		StructSymbol* m_boolean = nullptr;
+		StructSymbol* m_integer = nullptr;
+		StructSymbol* m_double = nullptr;
+		StructSymbol* m_char = nullptr;
+		StructSymbol* m_string = nullptr;
+		StructSymbol* m_array = nullptr;
+		StructSymbol* m_nativeInteger = nullptr;
+		StructSymbol* m_byte = nullptr;
 
-		gmt::unordered_map<gmt::Ref<const SyntaxNode>, gmt::Ref<SyntaxSymbol>> m_nodeToSymbolMap;
-		gmt::unordered_map<gmt::Ref<SyntaxSymbol>, gmt::Ref<const SyntaxNode>> m_symbolToNodeMap;
+		gmt::unordered_map<const SyntaxNode*, SyntaxSymbol*> m_nodeToSymbolMap;
+		gmt::unordered_map<SyntaxSymbol*, const SyntaxNode*> m_symbolToNodeMap;
 
 		// inferred or explicit call-site type arguments per invocation node.
 		// consumed by the emitter to build instantiations
-		gmt::unordered_map<gmt::Ref<const SyntaxNode>, gmt::vector<gmt::Ref<StructSymbol>>> m_nodeTypeArguments;
+		gmt::unordered_map<const SyntaxNode*, gmt::vector<StructSymbol*>> m_nodeTypeArguments;
 
 		// composite symbols registry
 		SymbolInterner m_interner;
 
 		// well-known standard library slots
-		std::array<gmt::Ref<SyntaxSymbol>, static_cast<std::size_t>(StandardTypes::Count)> m_standardTypes;
+		std::array<SyntaxSymbol*, static_cast<std::size_t>(StandardTypes::Count)> m_standardTypes;
 
 		// standard components resolvers
 		void resolve_primitives();
@@ -68,50 +68,50 @@ namespace shard
 		SymbolTable& operator=(const SymbolTable&) = delete;
 
 		gmt::Arena& get_arena();
-		gmt::Ref<NamespaceSymbol> get_root_namespace() const;
+		NamespaceSymbol* get_root_namespace() const;
 
 		template<typename T, typename... Args>
-		gmt::Ref<T> emplace(Args&&... args);
+		T* emplace(Args&&... args);
 
 		template<typename T>
-		gmt::Span<T> emplace_array(std::size_t count);
+		std::span<T> emplace_array(std::size_t count);
 
 		template<typename T, typename... Args> requires std::is_constructible_v<T, Args&&...>
-		gmt::Ref<T> bind_symbol(gmt::Ref<const SyntaxNode> node, Args&&... args);
+		T* bind_symbol(const SyntaxNode* node, Args&&... args);
 
 		template<typename T>
-		gmt::Ref<T> bind_symbol(gmt::Ref<const SyntaxNode> node, gmt::Ref<T> symbol);
+		T* bind_symbol(const SyntaxNode* node, T* symbol);
 
-		gmt::Ref<SyntaxSymbol> lookup_symbol(gmt::Ref<const SyntaxNode> node);
-		gmt::Ref<const SyntaxNode> lookup_node(gmt::Ref<SyntaxSymbol> symbol);
+		SyntaxSymbol* lookup_symbol(const SyntaxNode* node);
+		const SyntaxNode* lookup_node(SyntaxSymbol* symbol);
 
-		void bind_type_arguments(gmt::Ref<const SyntaxNode> node, std::span<const gmt::Ref<StructSymbol>> typeArguments);
-		std::span<const gmt::Ref<StructSymbol>> lookup_type_arguments(gmt::Ref<const SyntaxNode> node) const;
+		void bind_type_arguments(const SyntaxNode* node, std::span<StructSymbol* const> typeArguments);
+		std::span<StructSymbol* const> lookup_type_arguments(const SyntaxNode* node) const;
 
-		gmt::Ref<ArrayTypeSymbol> find_array_type(gmt::Ref<StructSymbol> underlaying) const;
-		gmt::Ref<ArrayTypeSymbol> find_array_type(gmt::Ref<StructSymbol> underlaying, std::size_t size) const;
-		gmt::Ref<GenericTypeSymbol> find_generic_type(gmt::Ref<StructSymbol> underlaying, std::span<const gmt::Ref<StructSymbol>> typeArguments) const;
-		gmt::Ref<GenericMethodSymbol> find_generic_method(gmt::Ref<MethodSymbol> underlaying, std::span<const gmt::Ref<StructSymbol>> typeArguments) const;
-		gmt::Ref<NullableTypeSymbol> find_nullable_type(gmt::Ref<StructSymbol> underlaying) const;
+		ArrayTypeSymbol* find_array_type(StructSymbol* underlaying) const;
+		ArrayTypeSymbol* find_array_type(StructSymbol* underlaying, std::size_t size) const;
+		GenericTypeSymbol* find_generic_type(StructSymbol* underlaying, std::span<StructSymbol* const> typeArguments) const;
+		GenericMethodSymbol* find_generic_method(MethodSymbol* underlaying, std::span<StructSymbol* const> typeArguments) const;
+		NullableTypeSymbol* find_nullable_type(StructSymbol* underlaying) const;
 
-		gmt::Ref<ArrayTypeSymbol> find_or_create_array_type(gmt::Ref<StructSymbol> underlaying);
-		gmt::Ref<ArrayTypeSymbol> find_or_create_array_type(gmt::Ref<StructSymbol> underlaying, std::size_t size);
-		gmt::Ref<GenericTypeSymbol> find_or_create_generic_type(gmt::Ref<StructSymbol> underlaying, std::span<const gmt::Ref<StructSymbol>> typeArguments);
-		gmt::Ref<GenericMethodSymbol> find_or_create_generic_method(gmt::Ref<MethodSymbol> underlaying, std::span<const gmt::Ref<StructSymbol>> typeArguments, gmt::Ref<StructSymbol> returnType);
-		gmt::Ref<NullableTypeSymbol> find_or_create_nullable_type(gmt::Ref<StructSymbol> underlaying);
+		ArrayTypeSymbol* find_or_create_array_type(StructSymbol* underlaying);
+		ArrayTypeSymbol* find_or_create_array_type(StructSymbol* underlaying, std::size_t size);
+		GenericTypeSymbol* find_or_create_generic_type(StructSymbol* underlaying, std::span<StructSymbol* const> typeArguments);
+		GenericMethodSymbol* find_or_create_generic_method(MethodSymbol* underlaying, std::span<StructSymbol* const> typeArguments, StructSymbol* returnType);
+		NullableTypeSymbol* find_or_create_nullable_type(StructSymbol* underlaying);
 
-		gmt::Ref<StructSymbol> get_void_primitive() const;
-		gmt::Ref<StructSymbol> get_boolean_primitive() const;
-		gmt::Ref<StructSymbol> get_integer_primitive() const;
-		gmt::Ref<StructSymbol> get_double_primitive() const;
-		gmt::Ref<StructSymbol> get_char_primitive() const;
-		gmt::Ref<StructSymbol> get_string_primitive() const;
-		gmt::Ref<StructSymbol> get_array_primitive() const;
-		gmt::Ref<StructSymbol> get_nint_primitive() const;
-		gmt::Ref<StructSymbol> get_byte_primitive() const;
+		StructSymbol* get_void_primitive() const;
+		StructSymbol* get_boolean_primitive() const;
+		StructSymbol* get_integer_primitive() const;
+		StructSymbol* get_double_primitive() const;
+		StructSymbol* get_char_primitive() const;
+		StructSymbol* get_string_primitive() const;
+		StructSymbol* get_array_primitive() const;
+		StructSymbol* get_nint_primitive() const;
+		StructSymbol* get_byte_primitive() const;
 
-		gmt::Ref<SyntaxSymbol> get_standard_type(StandardTypes type);
-		void set_standard_type(StandardTypes type, gmt::Ref<SyntaxSymbol> symbol);
+		SyntaxSymbol* get_standard_type(StandardTypes type);
+		void set_standard_type(StandardTypes type, SyntaxSymbol* symbol);
 	};
 }
 

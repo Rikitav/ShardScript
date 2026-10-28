@@ -13,7 +13,7 @@ namespace shard
 		SyntaxToken m_ifKeywordToken;
 
 	public:
-		IfStatementSyntax(gmt::Ref<SyntaxNode> parent);
+		IfStatementSyntax(SyntaxNode* parent);
 		virtual ~IfStatementSyntax() = default;
 
 		SyntaxToken get_if_keyword() const;

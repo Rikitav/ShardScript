@@ -13,17 +13,17 @@ namespace shard
 {
 	class SHARD_API ConditionalClauseBaseSyntax : public StatementSyntax
 	{
-		gmt::Ref<StatementsBlockSyntax> m_block;
-		gmt::Ref<ConditionalClauseBaseSyntax> m_next;
+		StatementsBlockSyntax* m_block = nullptr;
+		ConditionalClauseBaseSyntax* m_next = nullptr;
 
 	public:
-		ConditionalClauseBaseSyntax(SyntaxKind kind, gmt::Ref<SyntaxNode> parent);
+		ConditionalClauseBaseSyntax(SyntaxKind kind, SyntaxNode* parent);
 		virtual ~ConditionalClauseBaseSyntax() = default;
 
-		gmt::Ref<const StatementsBlockSyntax> get_block() const;
-		gmt::Ref<const ConditionalClauseBaseSyntax> get_next() const;
+		const StatementsBlockSyntax* get_block() const;
+		const ConditionalClauseBaseSyntax* get_next() const;
 
-		void set_block(gmt::Ref<StatementsBlockSyntax> block);
-		void set_next(gmt::Ref<ConditionalClauseBaseSyntax> next);
+		void set_block(StatementsBlockSyntax* block);
+		void set_next(ConditionalClauseBaseSyntax* next);
 	};
 }

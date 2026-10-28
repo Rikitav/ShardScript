@@ -16,7 +16,7 @@ namespace shard
 		const TypeShape* m_shape;
 		std::byte* m_memory;
 
-		static std::uint32_t resolve_field_slot(gmt::Ref<FieldSymbol> field);
+		static std::uint32_t resolve_field_slot(FieldSymbol* field);
 
 	public:
 		ObjectInstance();
@@ -25,13 +25,18 @@ namespace shard
 		static ObjectInstance null();
 
 		bool is_null() const;
+
+		friend bool operator==(const ObjectInstance& value, std::nullptr_t) noexcept { return value.is_null(); }
+		friend bool operator!=(const ObjectInstance& value, std::nullptr_t) noexcept { return !value.is_null(); }
+		friend bool operator==(std::nullptr_t, const ObjectInstance& value) noexcept { return value.is_null(); }
+		friend bool operator!=(std::nullptr_t, const ObjectInstance& value) noexcept { return !value.is_null(); }
 		const TypeShape* get_shape() const;
 		std::byte* get_memory() const;
 
 		ObjectInstance get_field(std::uint32_t slot) const;
-		ObjectInstance get_field(gmt::Ref<FieldSymbol> field) const;
+		ObjectInstance get_field(FieldSymbol* field) const;
 		void set_field(std::uint32_t slot, const ObjectInstance& value);
-		void set_field(gmt::Ref<FieldSymbol> field, const ObjectInstance& value);
+		void set_field(FieldSymbol* field, const ObjectInstance& value);
 
 		bool as_boolean() const;
 		std::int64_t as_integer() const;

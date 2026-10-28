@@ -13,7 +13,7 @@ namespace shard
 		SyntaxToken m_literalToken;
 
 	public:
-		LiteralExpressionSyntax(gmt::Ref<SyntaxNode> parent);
+		LiteralExpressionSyntax(SyntaxNode* parent);
 		virtual ~LiteralExpressionSyntax() = default;
 
 		SyntaxToken get_literal() const;

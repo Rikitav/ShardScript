@@ -10,7 +10,7 @@ namespace shard
 	class SHARD_API BlockSyntax : public SyntaxNode
 	{
 	public:
-		BlockSyntax(const SyntaxKind kind, gmt::Ref<SyntaxNode> parent);
+		BlockSyntax(const SyntaxKind kind, SyntaxNode* parent);
 		virtual ~BlockSyntax() = default;
 	};
 }

@@ -14,17 +14,17 @@ namespace shard
 	class SHARD_API DeferBlockSyntax final : public StatementSyntax
 	{
 		SyntaxToken m_deferKeywordToken;
-		gmt::Ref<StatementsBlockSyntax> m_block;
+		StatementsBlockSyntax* m_block = nullptr;
 
 	public:
-		DeferBlockSyntax(gmt::Ref<SyntaxNode> parent);
+		DeferBlockSyntax(SyntaxNode* parent);
 		virtual ~DeferBlockSyntax() = default;
 
 		SyntaxToken get_defer_keyword() const;
-		gmt::Ref<const StatementsBlockSyntax> get_block() const;
+		const StatementsBlockSyntax* get_block() const;
 
 		void set_defer_keyword(const SyntaxToken& token);
-		void set_block(gmt::Ref<StatementsBlockSyntax> block);
+		void set_block(StatementsBlockSyntax* block);
 
 		TextLocation get_location() const override;
 		void accept(SyntaxVisitor& visitor) const override;

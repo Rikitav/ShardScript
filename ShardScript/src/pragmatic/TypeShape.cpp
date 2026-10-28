@@ -8,18 +8,18 @@
 
 using namespace shard;
 
-TypeShape::TypeShape(gmt::Ref<StructSymbol> baseType, std::span<const gmt::Ref<StructSymbol>> genericArguments)
+TypeShape::TypeShape(StructSymbol* baseType, std::span<StructSymbol* const> genericArguments)
 	: m_baseType(baseType)
 {
 	m_genericArguments.assign(genericArguments.begin(), genericArguments.end());
 }
 
-gmt::Ref<StructSymbol> TypeShape::get_base_type() const
+StructSymbol* TypeShape::get_base_type() const
 {
 	return m_baseType;
 }
 
-const gmt::vector<gmt::Ref<StructSymbol>>& TypeShape::get_generic_arguments() const
+const gmt::vector<StructSymbol*>& TypeShape::get_generic_arguments() const
 {
 	return m_genericArguments;
 }

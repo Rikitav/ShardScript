@@ -17,24 +17,24 @@ namespace shard
 		SyntaxToken m_catchKeywordToken;
 		SyntaxToken m_identifierToken;
 		SyntaxToken m_colonToken;
-		gmt::Ref<TypeSyntax> m_exceptionType;
-		gmt::Ref<StatementsBlockSyntax> m_body;
+		TypeSyntax* m_exceptionType = nullptr;
+		StatementsBlockSyntax* m_body = nullptr;
 
 	public:
-		CatchClauseSyntax(gmt::Ref<SyntaxNode> parent);
+		CatchClauseSyntax(SyntaxNode* parent);
 		virtual ~CatchClauseSyntax() = default;
 
 		SyntaxToken get_catch_keyword() const;
 		SyntaxToken get_identifier() const;
 		SyntaxToken get_colon() const;
-		gmt::Ref<const TypeSyntax> get_exception_type() const;
-		gmt::Ref<const StatementsBlockSyntax> get_body() const;
+		const TypeSyntax* get_exception_type() const;
+		const StatementsBlockSyntax* get_body() const;
 
 		void set_catch_keyword(const SyntaxToken& token);
 		void set_identifier(const SyntaxToken& token);
 		void set_colon(const SyntaxToken& token);
-		void set_exception_type(gmt::Ref<TypeSyntax> exceptionType);
-		void set_body(gmt::Ref<StatementsBlockSyntax> body);
+		void set_exception_type(TypeSyntax* exceptionType);
+		void set_body(StatementsBlockSyntax* body);
 
 		TextLocation get_location() const override;
 		void accept(SyntaxVisitor& visitor) const override;

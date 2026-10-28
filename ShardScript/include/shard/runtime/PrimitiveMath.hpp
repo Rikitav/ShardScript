@@ -52,7 +52,7 @@ namespace shard
 		static PrimitiveStatus binary_math(OpCode op, const PrimitiveShapes& shapes, ObjectInstance left, ObjectInstance right, ScalarResult& result);
 		static PrimitiveStatus compare(OpCode op, const PrimitiveShapes& shapes, ObjectInstance left, ObjectInstance right, ScalarResult& result);
 		static PrimitiveStatus negate(const PrimitiveShapes& shapes, ObjectInstance value, ScalarResult& result);
-		static PrimitiveStatus convert(const PrimitiveShapes& shapes, ObjectInstance value, gmt::Ref<StructSymbol> targetType, const TypeShape* targetShape, ScalarResult& result);
+		static PrimitiveStatus convert(const PrimitiveShapes& shapes, ObjectInstance value, StructSymbol* targetType, const TypeShape* targetShape, ScalarResult& result);
 
 		static gmt::wstring to_display_string(ObjectInstance value);
 	};

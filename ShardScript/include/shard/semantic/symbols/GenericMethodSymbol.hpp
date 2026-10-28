@@ -17,14 +17,11 @@ namespace shard
 
 	class SHARD_API GenericMethodSymbol final : public MethodSymbol
 	{
-		gmt::Ref<MethodSymbol> m_underlayingMethod;
-
-		// combined index space: owner type arguments first, then the method's own
-		// type arguments; matches TypeParameterSymbol::get_type_argument_index
-		gmt::vector<gmt::Ref<StructSymbol>> m_typeArguments;
+		MethodSymbol* m_underlayingMethod = nullptr;
+		gmt::vector<StructSymbol*> m_typeArguments;
 
 	public:
-		GenericMethodSymbol(gmt::Ref<MethodSymbol> underlaying_method, gmt::Ref<SyntaxSymbol> parent);
+		GenericMethodSymbol(MethodSymbol* underlaying_method, SyntaxSymbol* parent);
 		virtual ~GenericMethodSymbol() = default;
 
 		GenericMethodSymbol(const GenericMethodSymbol& other) = delete;
@@ -33,11 +30,11 @@ namespace shard
 		GenericMethodSymbol(GenericMethodSymbol&& other) = delete;
 		GenericMethodSymbol& operator=(GenericMethodSymbol&& other) = delete;
 
-		gmt::Ref<MethodSymbol> get_underlaying_method() const;
+		MethodSymbol* get_underlaying_method() const;
 
 		bool get_is_generic_instantiation() const override;
 
-		const gmt::vector<gmt::Ref<StructSymbol>>& get_type_arguments() const;
-		void set_type_arguments(std::span<const gmt::Ref<StructSymbol>> type_arguments);
+		const gmt::vector<StructSymbol*>& get_type_arguments() const;
+		void set_type_arguments(std::span<StructSymbol* const> type_arguments);
 	};
 }

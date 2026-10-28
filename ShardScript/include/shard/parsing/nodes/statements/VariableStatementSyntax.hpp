@@ -17,24 +17,24 @@ namespace shard
 		SyntaxToken m_identifierToken;
 		SyntaxToken m_assignToken;
 		SyntaxToken m_semicolonToken;
-		gmt::Ref<TypeSyntax> m_type;
-		gmt::Ref<ExpressionSyntax> m_expression;
+		TypeSyntax* m_type = nullptr;
+		ExpressionSyntax* m_expression = nullptr;
 
 	public:
-		VariableStatementSyntax(gmt::Ref<SyntaxNode> parent);
+		VariableStatementSyntax(SyntaxNode* parent);
 		virtual ~VariableStatementSyntax() = default;
 
 		SyntaxToken get_identifier() const;
 		SyntaxToken get_assign_token() const;
 		SyntaxToken get_semicolon() const;
-		gmt::Ref<const TypeSyntax> get_type() const;
-		gmt::Ref<const ExpressionSyntax> get_expression() const;
+		const TypeSyntax* get_type() const;
+		const ExpressionSyntax* get_expression() const;
 
 		void set_identifier(const SyntaxToken& token);
 		void set_assign_token(const SyntaxToken& token);
 		void set_semicolon(const SyntaxToken& token);
-		void set_type(gmt::Ref<TypeSyntax> type);
-		void set_expression(gmt::Ref<ExpressionSyntax> expression);
+		void set_type(TypeSyntax* type);
+		void set_expression(ExpressionSyntax* expression);
 
 		TextLocation get_location() const override;
 		void accept(SyntaxVisitor& visitor) const override;

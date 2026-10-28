@@ -5,10 +5,10 @@
 
 using namespace shard;
 
-ParameterSyntax::ParameterSyntax(gmt::Ref<SyntaxNode> parent)
+ParameterSyntax::ParameterSyntax(SyntaxNode* parent)
 	: SyntaxNode(SyntaxKind::Parameter, parent) { }
 
-gmt::Ref<const TypeSyntax> ParameterSyntax::get_type() const
+const TypeSyntax* ParameterSyntax::get_type() const
 {
 	return m_type;
 }
@@ -18,7 +18,7 @@ SyntaxToken ParameterSyntax::get_identifier() const
 	return m_identifierToken;
 }
 
-void ParameterSyntax::set_type(gmt::Ref<TypeSyntax> type)
+void ParameterSyntax::set_type(TypeSyntax* type)
 {
 	m_type = type;
 }
@@ -30,8 +30,8 @@ void ParameterSyntax::set_identifier(const SyntaxToken& token)
 
 TextLocation ParameterSyntax::get_location() const
 {
-	if (!m_type.is_null())
-		return TextLocation(m_identifierToken, m_type.as_ptr()->get_location());
+	if (!(m_type == nullptr))
+		return TextLocation(m_identifierToken, m_type->get_location());
 
 	return m_identifierToken.get_location();
 }
@@ -41,10 +41,10 @@ void ParameterSyntax::accept(SyntaxVisitor& visitor) const
 	visitor.visit_parameter(this);
 }
 
-ParametersListSyntax::ParametersListSyntax(gmt::Ref<SyntaxNode> parent)
+ParametersListSyntax::ParametersListSyntax(SyntaxNode* parent)
 	: SyntaxNode(SyntaxKind::ParametersList, parent) { }
 
-gmt::Span<const gmt::Ref<ParameterSyntax>> ParametersListSyntax::get_parameters() const
+std::span<ParameterSyntax* const> ParametersListSyntax::get_parameters() const
 {
 	return m_parameters;
 }
@@ -59,7 +59,7 @@ SyntaxToken ParametersListSyntax::get_close_token() const
 	return m_closeToken;
 }
 
-void ParametersListSyntax::set_parameters(gmt::Span<gmt::Ref<ParameterSyntax>> parameters)
+void ParametersListSyntax::set_parameters(std::span<ParameterSyntax*> parameters)
 {
 	m_parameters = parameters;
 }

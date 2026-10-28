@@ -14,10 +14,10 @@ namespace shard
 	class SHARD_API SyntaxNode
 	{
 		SyntaxKind m_kind;
-		gmt::Ref<SyntaxNode> m_parent;
+		SyntaxNode* m_parent = nullptr;
 
 	public:
-		SyntaxNode(const SyntaxKind kind, gmt::Ref<SyntaxNode> parent);
+		SyntaxNode(const SyntaxKind kind, SyntaxNode* parent);
 		virtual ~SyntaxNode();
 
 		SyntaxNode(const SyntaxNode&) = delete;
@@ -27,7 +27,7 @@ namespace shard
 		SyntaxNode& operator=(SyntaxNode&&) = delete;
 
 		inline SyntaxKind get_kind() const { return m_kind; }
-		inline gmt::Ref<const SyntaxNode> get_parent() const { return m_parent; }
+		inline const SyntaxNode* get_parent() const { return m_parent; }
 
 		virtual TextLocation get_location() const = 0;
 		virtual void accept(SyntaxVisitor& visitor) const = 0;

@@ -10,22 +10,22 @@ void MethodEffectSummary::merge(const MethodEffectSummary& other)
 	mutatesArguments = mutatesArguments || other.mutatesArguments;
 	hasUnknownSideEffects = hasUnknownSideEffects || other.hasUnknownSideEffects;
 
-	for (gmt::Ref<StructSymbol> type : other.thrownTypes)
+	for (StructSymbol* type : other.thrownTypes)
 		thrownTypes.insert(type);
 
-	for (gmt::Ref<StructSymbol> type : other.asyncThrownTypes)
+	for (StructSymbol* type : other.asyncThrownTypes)
 		asyncThrownTypes.insert(type);
 
-	for (gmt::Ref<FieldSymbol> field : other.mayAssignInstanceFields)
+	for (FieldSymbol* field : other.mayAssignInstanceFields)
 		mayAssignInstanceFields.insert(field);
 
-	for (gmt::Ref<FieldSymbol> field : other.mayAssignStaticFields)
+	for (FieldSymbol* field : other.mayAssignStaticFields)
 		mayAssignStaticFields.insert(field);
 
-	for (gmt::Ref<FieldSymbol> field : other.definitelyAssignsInstanceFields)
+	for (FieldSymbol* field : other.definitelyAssignsInstanceFields)
 		definitelyAssignsInstanceFields.insert(field);
 
-	for (gmt::Ref<FieldSymbol> field : other.definitelyAssignsStaticFields)
+	for (FieldSymbol* field : other.definitelyAssignsStaticFields)
 		definitelyAssignsStaticFields.insert(field);
 }
 

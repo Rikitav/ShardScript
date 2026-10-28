@@ -8,10 +8,10 @@
 
 using namespace shard;
 
-ArrayTypeSyntax::ArrayTypeSyntax(gmt::Ref<SyntaxNode> parent)
+ArrayTypeSyntax::ArrayTypeSyntax(SyntaxNode* parent)
 	: TypeSyntax(SyntaxKind::ArrayType, parent) { }
 
-gmt::Ref<const TypeSyntax> ArrayTypeSyntax::get_underlaying_type() const
+const TypeSyntax* ArrayTypeSyntax::get_underlaying_type() const
 {
 	return m_underlayingType;
 }
@@ -26,7 +26,7 @@ SyntaxToken ArrayTypeSyntax::get_close_bracket() const
 	return m_closeBracketToken;
 }
 
-void ArrayTypeSyntax::set_underlaying_type(gmt::Ref<TypeSyntax> underlayingType)
+void ArrayTypeSyntax::set_underlaying_type(TypeSyntax* underlayingType)
 {
 	m_underlayingType = underlayingType;
 }
@@ -43,16 +43,16 @@ void ArrayTypeSyntax::set_close_bracket(const SyntaxToken& token)
 
 gmt::wstring ArrayTypeSyntax::get_qualifier() const
 {
-	if (m_underlayingType.is_null())
+	if ((m_underlayingType == nullptr))
 		return L"";
 
-	return gmt::wstring(std::format(L"{}[]", m_underlayingType.as_ptr()->get_qualifier()));
+	return gmt::wstring(std::format(L"{}[]", m_underlayingType->get_qualifier()));
 }
 
 TextLocation ArrayTypeSyntax::get_location() const
 {
-	if (!m_underlayingType.is_null())
-		return TextLocation(m_underlayingType.as_ptr()->get_location(), m_closeBracketToken);
+	if (!(m_underlayingType == nullptr))
+		return TextLocation(m_underlayingType->get_location(), m_closeBracketToken);
 
 	return m_openBracketToken.get_location();
 }

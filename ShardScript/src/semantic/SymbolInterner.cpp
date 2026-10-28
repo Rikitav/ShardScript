@@ -66,20 +66,20 @@ void SymbolInterner::grow()
 
 	for (const Entry& entry : old)
 	{
-		if (entry.symbol.is_null())
+		if ((entry.symbol == nullptr))
 			continue;
 
 		const std::size_t mask = m_slots.size() - 1;
 		std::size_t slot = hash_words(entry.words, entry.count) & mask;
 
-		while (!m_slots[slot].symbol.is_null())
+		while (!(m_slots[slot].symbol == nullptr))
 			slot = (slot + 1) & mask;
 
 		m_slots[slot] = entry;
 	}
 }
 
-gmt::Ref<SyntaxSymbol> SymbolInterner::find(const std::uint64_t* words, std::uint16_t count) const
+SyntaxSymbol* SymbolInterner::find(const std::uint64_t* words, std::uint16_t count) const
 {
 	const std::size_t mask = m_slots.size() - 1;
 	std::size_t slot = hash_words(words, count) & mask;
@@ -87,8 +87,8 @@ gmt::Ref<SyntaxSymbol> SymbolInterner::find(const std::uint64_t* words, std::uin
 	while (true)
 	{
 		const Entry& entry = m_slots[slot];
-		if (entry.symbol.is_null())
-			return gmt::nullref; // insertion-only table: an empty slot ends the probe
+		if ((entry.symbol == nullptr))
+			return nullptr; // insertion-only table: an empty slot ends the probe
 
 		if (same_words(entry, words, count))
 			return entry.symbol;
@@ -111,7 +111,7 @@ const std::uint64_t* SymbolInterner::store_key(const std::uint64_t* words, std::
 	return destination;
 }
 
-void SymbolInterner::insert(const std::uint64_t* words, std::uint16_t count, gmt::Ref<SyntaxSymbol> symbol)
+void SymbolInterner::insert(const std::uint64_t* words, std::uint16_t count, SyntaxSymbol* symbol)
 {
 	const std::uint64_t* storedWords = store_key(words, count);
 
@@ -121,7 +121,7 @@ void SymbolInterner::insert(const std::uint64_t* words, std::uint16_t count, gmt
 	const std::size_t mask = m_slots.size() - 1;
 	std::size_t slot = hash_words(storedWords, count) & mask;
 
-	while (!m_slots[slot].symbol.is_null())
+	while (!(m_slots[slot].symbol == nullptr))
 	{
 		if (same_words(m_slots[slot], storedWords, count))
 		{

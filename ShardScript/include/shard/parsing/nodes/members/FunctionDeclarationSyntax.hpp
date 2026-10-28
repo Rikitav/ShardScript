@@ -11,21 +11,21 @@ namespace shard
 {
 	class SHARD_API FunctionDeclarationSyntax final : public TypeDeclarationSyntax
 	{
-		gmt::Ref<BlockSyntax> m_body;
-		gmt::Ref<TypeSyntax> m_returnType;
-		gmt::Ref<ParametersListSyntax> m_parametersList;
+		BlockSyntax* m_body = nullptr;
+		TypeSyntax* m_returnType = nullptr;
+		ParametersListSyntax* m_parametersList = nullptr;
 
 	public:
-		FunctionDeclarationSyntax(gmt::Ref<SyntaxNode> parent);
+		FunctionDeclarationSyntax(SyntaxNode* parent);
 		virtual ~FunctionDeclarationSyntax() = default;
 
-		gmt::Ref<const BlockSyntax> get_body() const;
-		gmt::Ref<const TypeSyntax> get_return_type() const;
-		gmt::Ref<const ParametersListSyntax> get_parameters_list() const;
+		const BlockSyntax* get_body() const;
+		const TypeSyntax* get_return_type() const;
+		const ParametersListSyntax* get_parameters_list() const;
 
-		void set_body(gmt::Ref<BlockSyntax> body);
-		void set_return_type(gmt::Ref<TypeSyntax> returnType);
-		void set_parameters_list(gmt::Ref<ParametersListSyntax> parametersList);
+		void set_body(BlockSyntax* body);
+		void set_return_type(TypeSyntax* returnType);
+		void set_parameters_list(ParametersListSyntax* parametersList);
 
 		TextLocation get_location() const override;
 		void accept(SyntaxVisitor& visitor) const override;

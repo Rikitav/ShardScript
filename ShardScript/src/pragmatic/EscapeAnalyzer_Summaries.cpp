@@ -29,7 +29,7 @@ void EscapeAnalyzer::analyze(SyntaxTree& tree)
 		visit_syntax_tree(tree);
 		run_graph_fixpoint();
 
-		gmt::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary> summaries = derive_summaries();
+		gmt::unordered_map<MethodSymbol*, EscapeSummary> summaries = derive_summaries();
 		apply_call_exposures(summaries);
 		run_graph_fixpoint();
 
@@ -43,7 +43,7 @@ void EscapeAnalyzer::analyze(SyntaxTree& tree)
 	throw std::runtime_error("pragmatic escape analysis did not reach a stable fixpoint");
 }
 
-ParameterEscapeSummary EscapeAnalyzer::derive_parameter_summary(gmt::Ref<MethodSymbol> method, gmt::Ref<ParameterSymbol> parameter, bool isReceiver)
+ParameterEscapeSummary EscapeAnalyzer::derive_parameter_summary(MethodSymbol* method, ParameterSymbol* parameter, bool isReceiver)
 {
 	ParameterEscapeSummary summary;
 
@@ -88,14 +88,14 @@ ParameterEscapeSummary EscapeAnalyzer::derive_parameter_summary(gmt::Ref<MethodS
 	return summary;
 }
 
-gmt::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary> EscapeAnalyzer::derive_summaries()
+gmt::unordered_map<MethodSymbol*, EscapeSummary> EscapeAnalyzer::derive_summaries()
 {
-	gmt::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary> result;
+	gmt::unordered_map<MethodSymbol*, EscapeSummary> result;
 
 	for (const WalkedMethod& walked : m_walked)
 	{
-		gmt::Ref<MethodSymbol> method = walked.method;
-		if (method.is_null() || result.find(method) != result.end())
+		MethodSymbol* method = walked.method;
+		if ((method == nullptr) || result.find(method) != result.end())
 			continue;
 
 		EscapeSummary summary;
@@ -103,9 +103,9 @@ gmt::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary> EscapeAnalyzer::derive
 		summary.returnType = method->get_return_type();
 
 		if (method->get_linking() == LINK_INSTANCE)
-			summary.parameters.push_back(derive_parameter_summary(method, gmt::Ref<ParameterSymbol>(), true));
+			summary.parameters.push_back(derive_parameter_summary(method, nullptr, true));
 
-		for (gmt::Ref<ParameterSymbol> parameter : method->get_parameters())
+		for (ParameterSymbol* parameter : method->get_parameters())
 			summary.parameters.push_back(derive_parameter_summary(method, parameter, false));
 
 		result[method] = summary;
@@ -113,7 +113,7 @@ gmt::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary> EscapeAnalyzer::derive
 
 	for (const WalkedMethod& walked : m_walked)
 	{
-		if (walked.method.is_null())
+		if ((walked.method == nullptr))
 			continue;
 
 		result[walked.method].returnDisposition = classify_returns(walked, result);
@@ -122,7 +122,7 @@ gmt::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary> EscapeAnalyzer::derive
 	return result;
 }
 
-void EscapeAnalyzer::apply_call_exposures(const gmt::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries)
+void EscapeAnalyzer::apply_call_exposures(const gmt::unordered_map<MethodSymbol*, EscapeSummary>& summaries)
 {
 	for (const Graph::CallExposure& exposure : m_graph.callExposures)
 	{
@@ -154,7 +154,7 @@ void EscapeAnalyzer::apply_call_exposures(const gmt::unordered_map<gmt::Ref<Meth
 	}
 }
 
-bool EscapeAnalyzer::commit_summaries(const gmt::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries)
+bool EscapeAnalyzer::commit_summaries(const gmt::unordered_map<MethodSymbol*, EscapeSummary>& summaries)
 {
 	bool changed = false;
 
@@ -187,7 +187,7 @@ bool EscapeAnalyzer::commit_summaries(const gmt::unordered_map<gmt::Ref<MethodSy
 	return changed;
 }
 
-int EscapeAnalyzer::classify_local_roots(gmt::Ref<MethodSymbol> method, gmt::Ref<SyntaxSymbol> local)
+int EscapeAnalyzer::classify_local_roots(MethodSymbol* method, SyntaxSymbol* local)
 {
 	auto startIt = m_graph.localIds.find(local);
 	if (startIt == m_graph.localIds.end())
@@ -255,14 +255,14 @@ int EscapeAnalyzer::classify_local_roots(gmt::Ref<MethodSymbol> method, gmt::Ref
 	return mark;
 }
 
-int EscapeAnalyzer::classify_return_expression(gmt::Ref<MethodSymbol> method, gmt::Ref<const ExpressionSyntax> expression, const gmt::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries)
+int EscapeAnalyzer::classify_return_expression(MethodSymbol* method, const ExpressionSyntax* expression, const gmt::unordered_map<MethodSymbol*, EscapeSummary>& summaries)
 {
 	ExpressionRefs refs;
 	collect_expression_refs(expression, refs, false);
 
 	int mark = 0;
 
-	for (gmt::Ref<const ExpressionSyntax> site : refs.sites.get_vector())
+	for (const ExpressionSyntax* site : refs.sites.get_vector())
 	{
 		auto it = m_graph.siteIds.find(site);
 		if (it == m_graph.siteIds.end())
@@ -274,7 +274,7 @@ int EscapeAnalyzer::classify_return_expression(gmt::Ref<MethodSymbol> method, gm
 		mark |= 1;
 	}
 
-	for (gmt::Ref<SyntaxSymbol> local : refs.locals.get_vector())
+	for (SyntaxSymbol* local : refs.locals.get_vector())
 	{
 		int localMark = classify_local_roots(method, local);
 		if (localMark == 0)
@@ -287,15 +287,15 @@ int EscapeAnalyzer::classify_return_expression(gmt::Ref<MethodSymbol> method, gm
 	{
 		// transitive return-slot chaining (2.1e): a call to a Fresh-summary
 		// callee hands the caller a caller-placeable value without a local site
-		gmt::Ref<MethodSymbol> callee;
-		if (!expression.is_null())
+		MethodSymbol* callee = nullptr;
+		if (!(expression == nullptr))
 		{
-			gmt::Ref<SyntaxSymbol> bound = get_symbol_table().lookup_symbol(expression);
-			if (!bound.is_null() && bound->is_method())
-				callee = bound.as<MethodSymbol>();
+			SyntaxSymbol* bound = get_symbol_table().lookup_symbol(expression);
+			if (!(bound == nullptr) && bound->is_method())
+				callee = static_cast<MethodSymbol*>(bound);
 		}
 
-		if (!callee.is_null())
+		if (!(callee == nullptr))
 		{
 			auto it = summaries.find(callee);
 			if (it != summaries.end() && it->second.returnDisposition == ReturnDisposition::Fresh)
@@ -306,7 +306,7 @@ int EscapeAnalyzer::classify_return_expression(gmt::Ref<MethodSymbol> method, gm
 	return mark;
 }
 
-ReturnDisposition EscapeAnalyzer::classify_returns(const WalkedMethod& walked, const gmt::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries)
+ReturnDisposition EscapeAnalyzer::classify_returns(const WalkedMethod& walked, const gmt::unordered_map<MethodSymbol*, EscapeSummary>& summaries)
 {
 	if (walked.returnedExpressions.empty())
 		return ReturnDisposition::Unknown;
@@ -314,7 +314,7 @@ ReturnDisposition EscapeAnalyzer::classify_returns(const WalkedMethod& walked, c
 	int combinedMark = 0;
 	int contributions = 0;
 
-	for (gmt::Ref<const ExpressionSyntax> expression : walked.returnedExpressions)
+	for (const ExpressionSyntax* expression : walked.returnedExpressions)
 	{
 		int mark = classify_return_expression(walked.method, expression, summaries);
 		if (mark == 0)
@@ -336,13 +336,13 @@ ReturnDisposition EscapeAnalyzer::classify_returns(const WalkedMethod& walked, c
 	return ReturnDisposition::Unknown;
 }
 
-bool EscapeAnalyzer::is_caller_placeable(gmt::Ref<MethodSymbol> owner) const
+bool EscapeAnalyzer::is_caller_placeable(MethodSymbol* owner) const
 {
-	if (owner.is_null())
+	if ((owner == nullptr))
 		return false;
 
-	gmt::Ref<StructSymbol> returnType = owner->get_return_type();
-	if (returnType.is_null())
+	StructSymbol* returnType = owner->get_return_type();
+	if ((returnType == nullptr))
 		return false;
 
 	// concrete types only: interfaces (unknown size + vtable identity),
@@ -354,10 +354,10 @@ bool EscapeAnalyzer::is_caller_placeable(gmt::Ref<MethodSymbol> owner) const
 	if (returnType->get_kind() != SyntaxKind::GenericType)
 		return false;
 
-	return returnType.as<GenericTypeSymbol>()->get_underlaying_type()->get_kind() == SyntaxKind::StructDeclaration;
+	return static_cast<GenericTypeSymbol*>(returnType)->get_underlaying_type()->get_kind() == SyntaxKind::StructDeclaration;
 }
 
-bool EscapeAnalyzer::cone_closed(int id, const gmt::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries) const
+bool EscapeAnalyzer::cone_closed(int id, const gmt::unordered_map<MethodSymbol*, EscapeSummary>& summaries) const
 {
 	for (const Graph::CallExposure& exposure : m_graph.callExposures)
 	{
@@ -372,21 +372,21 @@ bool EscapeAnalyzer::cone_closed(int id, const gmt::unordered_map<gmt::Ref<Metho
 	return true;
 }
 
-bool EscapeAnalyzer::participates_in_reference_cycle(gmt::Ref<StructSymbol> type)
+bool EscapeAnalyzer::participates_in_reference_cycle(StructSymbol* type)
 {
-	gmt::unordered_set<gmt::Ref<StructSymbol>> visited;
-	gmt::inline_vector<gmt::Ref<StructSymbol>, 8> stack;
+	gmt::unordered_set<StructSymbol*> visited;
+	gmt::inline_vector<StructSymbol*, 8> stack;
 	stack.push_back(type);
 
 	while (!stack.get_vector().empty())
 	{
-		gmt::Ref<StructSymbol> current = stack.get_vector().back();
+		StructSymbol* current = stack.get_vector().back();
 		stack.get_vector().pop_back();
 
-		for (gmt::Ref<FieldSymbol> field : current->fields)
+		for (FieldSymbol* field : current->fields)
 		{
-			gmt::Ref<StructSymbol> fieldType = field->get_return_type();
-			if (fieldType.is_null() || fieldType->get_kind() != SyntaxKind::StructDeclaration)
+			StructSymbol* fieldType = field->get_return_type();
+			if ((fieldType == nullptr) || fieldType->get_kind() != SyntaxKind::StructDeclaration)
 				continue;
 
 			if (fieldType == type)
@@ -400,9 +400,9 @@ bool EscapeAnalyzer::participates_in_reference_cycle(gmt::Ref<StructSymbol> type
 	return false;
 }
 
-bool EscapeAnalyzer::is_scalar_eligible(gmt::Ref<StructSymbol> type)
+bool EscapeAnalyzer::is_scalar_eligible(StructSymbol* type)
 {
-	if (type.is_null())
+	if ((type == nullptr))
 		return false;
 
 	if (type->get_kind() != SyntaxKind::StructDeclaration)
@@ -414,10 +414,10 @@ bool EscapeAnalyzer::is_scalar_eligible(gmt::Ref<StructSymbol> type)
 
 	bool eligible = true;
 
-	for (gmt::Ref<FieldSymbol> field : type->fields)
+	for (FieldSymbol* field : type->fields)
 	{
-		gmt::Ref<StructSymbol> fieldType = field->get_return_type();
-		bool nullableField = !fieldType.is_null();
+		StructSymbol* fieldType = field->get_return_type();
+		bool nullableField = !(fieldType == nullptr);
 		nullableField = nullableField && fieldType->get_kind() == SyntaxKind::NullableType;
 
 		if (nullableField)
@@ -434,7 +434,7 @@ bool EscapeAnalyzer::is_scalar_eligible(gmt::Ref<StructSymbol> type)
 	return eligible;
 }
 
-AllocationSiteVerdict EscapeAnalyzer::classify_node(int id, gmt::Ref<StructSymbol> nodeType, const gmt::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries)
+AllocationSiteVerdict EscapeAnalyzer::classify_node(int id, StructSymbol* nodeType, const gmt::unordered_map<MethodSymbol*, EscapeSummary>& summaries)
 {
 	AllocationSiteVerdict verdict;
 	verdict.level = m_graph.levels[id];
@@ -481,11 +481,11 @@ AllocationSiteVerdict EscapeAnalyzer::classify_node(int id, gmt::Ref<StructSymbo
 	return verdict;
 }
 
-void EscapeAnalyzer::assign_verdicts(const gmt::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries)
+void EscapeAnalyzer::assign_verdicts(const gmt::unordered_map<MethodSymbol*, EscapeSummary>& summaries)
 {
 	for (const auto& pair : m_graph.siteIds)
 	{
-		gmt::Ref<StructSymbol> siteType = get_model().get_expression_type(pair.first);
+		StructSymbol* siteType = get_model().get_expression_type(pair.first);
 		m_pragmatic.set_allocation_site_verdict(pair.first, classify_node(pair.second, siteType, summaries));
 	}
 
@@ -493,12 +493,12 @@ void EscapeAnalyzer::assign_verdicts(const gmt::unordered_map<gmt::Ref<MethodSym
 	{
 		int id = pair.second;
 
-		gmt::Ref<StructSymbol> localType;
+		StructSymbol* localType = nullptr;
 		SyntaxKind localKind = pair.first->get_kind();
 		if (localKind == SyntaxKind::VariableStatement)
-			localType = pair.first.as<VariableSymbol>()->get_type();
+			localType = static_cast<VariableSymbol*>(pair.first)->get_type();
 		else if (localKind == SyntaxKind::Parameter)
-			localType = pair.first.as<ParameterSymbol>()->get_type();
+			localType = static_cast<ParameterSymbol*>(pair.first)->get_type();
 
 		m_pragmatic.set_local_verdict(m_graph.idOwners[id], pair.first, classify_node(id, localType, summaries));
 	}
