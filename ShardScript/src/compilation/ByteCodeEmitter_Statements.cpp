@@ -48,13 +48,13 @@ namespace
 {
 	// accessors belong to a property or indexator, so the declaring type sits
 	// one level above the accessor's direct parent
-	bool is_interface_accessor(gmt::Ref<MethodSymbol> accessor)
+	bool is_interface_accessor(MethodSymbol* accessor)
 	{
-		gmt::Ref<const SyntaxSymbol> owner = accessor->get_parent();
-		if (!owner.is_null() && (owner->get_kind() == SyntaxKind::PropertyDeclaration || owner->get_kind() == SyntaxKind::IndexatorDeclaration))
+		const SyntaxSymbol* owner = accessor->get_parent();
+		if (!(owner == nullptr) && (owner->get_kind() == SyntaxKind::PropertyDeclaration || owner->get_kind() == SyntaxKind::IndexatorDeclaration))
 			owner = owner->get_parent();
 
-		return !owner.is_null() && owner->get_kind() == SyntaxKind::InterfaceDeclaration;
+		return !(owner == nullptr) && owner->get_kind() == SyntaxKind::InterfaceDeclaration;
 	}
 }
 
@@ -105,7 +105,7 @@ void ByteCodeEmitter::register_defer()
 	++m_deferScopes.back();
 }
 
-void ByteCodeEmitter::emit_defer_region(gmt::Ref<const SyntaxNode> bodyNode)
+void ByteCodeEmitter::emit_defer_region(const SyntaxNode* bodyNode)
 {
 	register_defer();
 
@@ -116,7 +116,7 @@ void ByteCodeEmitter::emit_defer_region(gmt::Ref<const SyntaxNode> bodyNode)
 	m_encoder.emit_jump(0);
 
 	patch_jump(deferAt);
-	bodyNode.as_ptr()->accept(*this);
+	bodyNode->accept(*this);
 	m_encoder.emit_defer_break();
 
 	patch_jump(skipAt);
@@ -128,23 +128,23 @@ void ByteCodeEmitter::visit_statements_block(const StatementsBlockSyntax* node)
 		return;
 
 	m_deferScopes.push_back(0);
-	for (const gmt::Ref<StatementSyntax>& statement : node->get_statements().as_span())
-		statement.as_ptr()->accept(*this);
+	for (StatementSyntax* const& statement : node->get_statements())
+		statement->accept(*this);
 
 	emit_scope_defers();
 }
 
 void ByteCodeEmitter::visit_expression_statement(const ExpressionStatementSyntax* node)
 {
-	if (node == nullptr || node->get_expression().is_null())
+	if (node == nullptr || (node->get_expression() == nullptr))
 		return;
 
-	node->get_expression().as_ptr()->accept(*this);
+	node->get_expression()->accept(*this);
 
-	std::optional<gmt::Ref<const ExpressionSyntax>> expressionRef = ref_from(node->get_expression().as_ptr());
-	gmt::Ref<StructSymbol> type = expressionRef.has_value() ? get_model().get_expression_type(*expressionRef) : gmt::nullref;
+	std::optional<const ExpressionSyntax*> expressionRef = ref_from(node->get_expression());
+	StructSymbol* type = expressionRef.has_value() ? get_model().get_expression_type(*expressionRef) : nullptr;
 
-	bool discardable = !type.is_null() && type != get_symbol_table().get_void_primitive();
+	bool discardable = !(type == nullptr) && type != get_symbol_table().get_void_primitive();
 	if (discardable)
 	{
 		m_encoder.emit_pop();
@@ -157,14 +157,14 @@ void ByteCodeEmitter::visit_variable_statement(const VariableStatementSyntax* no
 	if (node == nullptr)
 		return;
 
-	std::optional<gmt::Ref<const VariableStatementSyntax>> nodeRef = ref_from(node);
-	gmt::Ref<VariableSymbol> symbol = nodeRef.has_value() ? lookup_symbol<VariableSymbol>(*nodeRef) : gmt::nullref;
+	std::optional<const VariableStatementSyntax*> nodeRef = ref_from(node);
+	VariableSymbol* symbol = nodeRef.has_value() ? lookup_symbol<VariableSymbol>(*nodeRef) : nullptr;
 
-	if (symbol.is_null())
+	if ((symbol == nullptr))
 	{
-		if (!node->get_expression().is_null())
+		if (!(node->get_expression() == nullptr))
 		{
-			node->get_expression().as_ptr()->accept(*this);
+			node->get_expression()->accept(*this);
 			eval_pop();
 		}
 
@@ -175,11 +175,11 @@ void ByteCodeEmitter::visit_variable_statement(const VariableStatementSyntax* no
 	if (!slot.has_value())
 		slot = allocate_temporary(symbol->get_type(), PlacementVerdict::Heap);
 
-	if (node->get_expression().is_null())
+	if ((node->get_expression() == nullptr))
 		return;
 
 	PlacementVerdict verdict = local_verdict(symbol);
-	gmt::Ref<const ExpressionSyntax> initializer = node->get_expression();
+	const ExpressionSyntax* initializer = node->get_expression();
 
 	if (verdict == PlacementVerdict::Scalar)
 	{
@@ -191,13 +191,13 @@ void ByteCodeEmitter::visit_variable_statement(const VariableStatementSyntax* no
 
 	if (stackPlaced && initializer->get_kind() == SyntaxKind::ObjectExpression)
 	{
-		emit_object_construction(initializer.as<ObjectExpressionSyntax>().as_ptr(), *slot);
+		emit_object_construction(gmt::as<ObjectExpressionSyntax>(initializer), *slot);
 		return;
 	}
 
 	if (stackPlaced && initializer->get_kind() == SyntaxKind::RangeExpression)
 	{
-		emit_range_cursor(initializer.as_ptr(), *slot);
+		emit_range_cursor(initializer, *slot);
 		return;
 	}
 
@@ -205,16 +205,16 @@ void ByteCodeEmitter::visit_variable_statement(const VariableStatementSyntax* no
 	// the chained return storage instead of bouncing a pointer off the heap
 	if (stackPlaced && initializer->get_kind() == SyntaxKind::InvokationExpression)
 	{
-		gmt::Ref<MethodSymbol> intoMethod = into_call_method(initializer);
-		if (!intoMethod.is_null())
+		MethodSymbol* intoMethod = into_call_method(initializer);
+		if (!(intoMethod == nullptr))
 		{
-			const InvokationExpressionSyntax* invokation = static_cast<const InvokationExpressionSyntax*>(initializer.as_ptr());
-			emit_method_call_into(intoMethod, invokation->get_previous(), invokation->get_arguments().as_ptr(), *slot);
+			const InvokationExpressionSyntax* invokation = static_cast<const InvokationExpressionSyntax*>(initializer);
+			emit_method_call_into(intoMethod, invokation->get_previous(), invokation->get_arguments(), *slot);
 			return;
 		}
 	}
 
-	initializer.as_ptr()->accept(*this);
+	initializer->accept(*this);
 	m_encoder.emit_store_local(*slot);
 	eval_pop();
 }
@@ -224,28 +224,28 @@ void ByteCodeEmitter::visit_return_statement(const ReturnStatementSyntax* node)
 	if (node == nullptr)
 		return;
 
-	gmt::Ref<const ExpressionSyntax> expression = node->get_expression();
+	const ExpressionSyntax* expression = node->get_expression();
 
 	// tail calls forward the current frame's return slot: the callee writes
 	// its result straight into the caller's chained return storage
-	gmt::Ref<MethodSymbol> intoMethod = into_call_method(expression);
-	if (!expression.is_null() && !intoMethod.is_null())
+	MethodSymbol* intoMethod = into_call_method(expression);
+	if (!(expression == nullptr) && !(intoMethod == nullptr))
 	{
-		const InvokationExpressionSyntax* invokation = static_cast<const InvokationExpressionSyntax*>(expression.as_ptr());
-		emit_method_call_into(intoMethod, invokation->get_previous(), invokation->get_arguments().as_ptr(), ReturnSlotSentinel);
+		const InvokationExpressionSyntax* invokation = static_cast<const InvokationExpressionSyntax*>(expression);
+		emit_method_call_into(intoMethod, invokation->get_previous(), invokation->get_arguments(), ReturnSlotSentinel);
 
 		emit_all_defers();
 		m_encoder.emit_return_placed();
 		return;
 	}
 
-	if (!expression.is_null())
-		expression.as_ptr()->accept(*this);
+	if (!(expression == nullptr))
+		expression->accept(*this);
 
 	emit_all_defers();
 	m_encoder.emit_return();
 
-	if (!expression.is_null())
+	if (!(expression == nullptr))
 		eval_pop();
 }
 
@@ -275,16 +275,16 @@ void ByteCodeEmitter::emit_conditional_chain(const ConditionalClauseBaseSyntax* 
 		SyntaxKind kind = clause->get_kind();
 		if (kind == SyntaxKind::ElseStatement)
 		{
-			if (!clause->get_block().is_null())
-				visit_statements_block(clause->get_block().as_ptr());
+			if (!(clause->get_block() == nullptr))
+				visit_statements_block(clause->get_block());
 
 			break;
 		}
 
 		const ConditionalClauseSyntax* conditional = static_cast<const ConditionalClauseSyntax*>(clause);
-		if (!conditional->get_condition().is_null())
+		if (!(conditional->get_condition() == nullptr))
 		{
-			conditional->get_condition().as_ptr()->accept(*this);
+			conditional->get_condition()->accept(*this);
 			eval_pop();
 		}
 
@@ -294,8 +294,8 @@ void ByteCodeEmitter::emit_conditional_chain(const ConditionalClauseBaseSyntax* 
 		else
 			m_encoder.emit_jump_false(0);
 
-		if (!conditional->get_block().is_null())
-			visit_statements_block(conditional->get_block().as_ptr());
+		if (!(conditional->get_block() == nullptr))
+			visit_statements_block(conditional->get_block());
 
 		std::size_t endAt = mark_position();
 		m_encoder.emit_jump(0);
@@ -303,8 +303,8 @@ void ByteCodeEmitter::emit_conditional_chain(const ConditionalClauseBaseSyntax* 
 
 		patch_jump(skipAt);
 
-		gmt::Ref<const ConditionalClauseBaseSyntax> next = conditional->get_next();
-		clause = next.is_null() ? nullptr : next.as_ptr();
+		const ConditionalClauseBaseSyntax* next = conditional->get_next();
+		clause = (next == nullptr) ? nullptr : next;
 	}
 
 	for (std::size_t at : endBacktracks)
@@ -320,9 +320,9 @@ void ByteCodeEmitter::visit_while_statement(const WhileStatementSyntax* node)
 	scope.deferScopeDepth = m_deferScopes.size();
 	scope.loopStart = mark_position();
 
-	if (!node->get_condition().is_null())
+	if (!(node->get_condition() == nullptr))
 	{
-		node->get_condition().as_ptr()->accept(*this);
+		node->get_condition()->accept(*this);
 		eval_pop();
 	}
 
@@ -331,8 +331,8 @@ void ByteCodeEmitter::visit_while_statement(const WhileStatementSyntax* node)
 	scope.loopEndBacktracks.push_back(exitAt);
 
 	m_loops.push_back(std::move(scope));
-	if (!node->get_block().is_null())
-		visit_statements_block(node->get_block().as_ptr());
+	if (!(node->get_block() == nullptr))
+		visit_statements_block(node->get_block());
 
 	loop_scope& active = m_loops.back();
 	std::size_t blockEnd = mark_position();
@@ -357,9 +357,9 @@ void ByteCodeEmitter::visit_until_statement(const UntilStatementSyntax* node)
 	scope.deferScopeDepth = m_deferScopes.size();
 	scope.loopStart = mark_position();
 
-	if (!node->get_condition().is_null())
+	if (!(node->get_condition() == nullptr))
 	{
-		node->get_condition().as_ptr()->accept(*this);
+		node->get_condition()->accept(*this);
 		eval_pop();
 	}
 
@@ -368,8 +368,8 @@ void ByteCodeEmitter::visit_until_statement(const UntilStatementSyntax* node)
 	scope.loopEndBacktracks.push_back(exitAt);
 
 	m_loops.push_back(std::move(scope));
-	if (!node->get_block().is_null())
-		visit_statements_block(node->get_block().as_ptr());
+	if (!(node->get_block() == nullptr))
+		visit_statements_block(node->get_block());
 
 	loop_scope& active = m_loops.back();
 	std::size_t blockEnd = mark_position();
@@ -399,16 +399,16 @@ void ByteCodeEmitter::emit_range_cursor(const ExpressionSyntax* rangeExpression,
 	SymbolTable& table = get_symbol_table();
 	const RangeExpressionSyntax* literal = static_cast<const RangeExpressionSyntax*>(rangeExpression);
 
-	std::uint32_t fromField = field_slot_index(table.get_standard_type(StandardTypes::RangeEnumerable_FromField).as<FieldSymbol>());
-	std::uint32_t toField = field_slot_index(table.get_standard_type(StandardTypes::RangeEnumerable_ToField).as<FieldSymbol>());
-	std::uint32_t currentField = field_slot_index(table.get_standard_type(StandardTypes::RangeEnumerable_CurrentField).as<FieldSymbol>());
+	std::uint32_t fromField = field_slot_index(static_cast<FieldSymbol*>(table.get_standard_type(StandardTypes::RangeEnumerable_FromField)));
+	std::uint32_t toField = field_slot_index(static_cast<FieldSymbol*>(table.get_standard_type(StandardTypes::RangeEnumerable_ToField)));
+	std::uint32_t currentField = field_slot_index(static_cast<FieldSymbol*>(table.get_standard_type(StandardTypes::RangeEnumerable_CurrentField)));
 
-	literal->get_left().as_ptr()->accept(*this);
+	literal->get_left()->accept(*this);
 	std::uint16_t lowerSlot = allocate_temporary(table.get_integer_primitive(), PlacementVerdict::Stack);
 	m_encoder.emit_store_local(lowerSlot);
 	eval_pop();
 
-	literal->get_right().as_ptr()->accept(*this);
+	literal->get_right()->accept(*this);
 	std::uint16_t upperSlot = allocate_temporary(table.get_integer_primitive(), PlacementVerdict::Stack);
 	m_encoder.emit_store_local(upperSlot);
 	eval_pop();
@@ -454,32 +454,32 @@ void ByteCodeEmitter::visit_for_in_statement(const ForInStatementSyntax* node)
 	if (node == nullptr)
 		return;
 
-	std::optional<gmt::Ref<const ForInStatementSyntax>> nodeRef = ref_from(node);
+	std::optional<const ForInStatementSyntax*> nodeRef = ref_from(node);
 	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<VariableSymbol> loopVariable = lookup_symbol<VariableSymbol>(*nodeRef);
-	gmt::Ref<StructSymbol> loopVariableType = loopVariable.is_null() ? gmt::nullref : loopVariable->get_type();
+	VariableSymbol* loopVariable = lookup_symbol<VariableSymbol>(*nodeRef);
+	StructSymbol* loopVariableType = (loopVariable == nullptr) ? nullptr : loopVariable->get_type();
 
 	std::optional<std::uint16_t> loopSlot;
-	if (!loopVariable.is_null())
+	if (!(loopVariable == nullptr))
 		loopSlot = slot_of(loopVariable);
 
 	if (!loopSlot.has_value())
 		loopSlot = allocate_temporary(loopVariableType, PlacementVerdict::Heap);
 
-	if (node->get_range_expression().is_null())
+	if ((node->get_range_expression() == nullptr))
 		return;
 
-	std::optional<gmt::Ref<const ExpressionSyntax>> rangeRef = ref_from(node->get_range_expression().as_ptr());
-	gmt::Ref<StructSymbol> rangeType = rangeRef.has_value() ? get_model().get_expression_type(*rangeRef) : gmt::nullref;
+	std::optional<const ExpressionSyntax*> rangeRef = ref_from(node->get_range_expression());
+	StructSymbol* rangeType = rangeRef.has_value() ? get_model().get_expression_type(*rangeRef) : nullptr;
 
 	SymbolTable& table = get_symbol_table();
-	bool isLazyRange = !rangeType.is_null() && rangeType == table.get_standard_type(StandardTypes::RangeEnumerable);
-	bool isArray = !rangeType.is_null() && rangeType->get_kind() == SyntaxKind::ArrayType;
+	bool isLazyRange = !(rangeType == nullptr) && rangeType == table.get_standard_type(StandardTypes::RangeEnumerable);
+	bool isArray = !(rangeType == nullptr) && rangeType->get_kind() == SyntaxKind::ArrayType;
 
-	gmt::Ref<PropertySymbol> countProperty = gmt::nullref;
-	gmt::Ref<IndexatorSymbol> indexator = gmt::nullref;
+	PropertySymbol* countProperty = nullptr;
+	IndexatorSymbol* indexator = nullptr;
 	bool isIndexable = false;
 	if (!isLazyRange && !isArray)
 		isIndexable = get_model().resolve_indexable(rangeType, countProperty, indexator);
@@ -488,8 +488,8 @@ void ByteCodeEmitter::visit_for_in_statement(const ForInStatementSyntax* node)
 	std::uint32_t toField = 0;
 	if (isLazyRange)
 	{
-		currentField = field_slot_index(table.get_standard_type(StandardTypes::RangeEnumerable_CurrentField).as<FieldSymbol>());
-		toField = field_slot_index(table.get_standard_type(StandardTypes::RangeEnumerable_ToField).as<FieldSymbol>());
+		currentField = field_slot_index(static_cast<FieldSymbol*>(table.get_standard_type(StandardTypes::RangeEnumerable_CurrentField)));
+		toField = field_slot_index(static_cast<FieldSymbol*>(table.get_standard_type(StandardTypes::RangeEnumerable_ToField)));
 	}
 
 	std::uint16_t rangeSlot = 0;
@@ -499,21 +499,21 @@ void ByteCodeEmitter::visit_for_in_statement(const ForInStatementSyntax* node)
 	{
 		// the cursor never escapes the loop, so it lives inline in the frame
 		rangeSlot = allocate_temporary(rangeType, PlacementVerdict::Stack);
-		emit_range_cursor(node->get_range_expression().as_ptr(), rangeSlot);
+		emit_range_cursor(node->get_range_expression(), rangeSlot);
 	}
 	else
 	{
-		gmt::Ref<MethodSymbol> intoMethod = into_call_method(node->get_range_expression());
-		if (isIndexable && !intoMethod.is_null())
+		MethodSymbol* intoMethod = into_call_method(node->get_range_expression());
+		if (isIndexable && !(intoMethod == nullptr))
 		{
 			// the collection constructs straight into the loop's stack temp
 			rangeSlot = allocate_temporary(rangeType, PlacementVerdict::Stack);
-			const InvokationExpressionSyntax* invokation = static_cast<const InvokationExpressionSyntax*>(node->get_range_expression().as_ptr());
-			emit_method_call_into(intoMethod, invokation->get_previous(), invokation->get_arguments().as_ptr(), rangeSlot);
+			const InvokationExpressionSyntax* invokation = static_cast<const InvokationExpressionSyntax*>(node->get_range_expression());
+			emit_method_call_into(intoMethod, invokation->get_previous(), invokation->get_arguments(), rangeSlot);
 		}
 		else
 		{
-			node->get_range_expression().as_ptr()->accept(*this);
+			node->get_range_expression()->accept(*this);
 
 			rangeSlot = allocate_temporary(rangeType, PlacementVerdict::Heap);
 			m_encoder.emit_store_local(rangeSlot);
@@ -562,7 +562,7 @@ void ByteCodeEmitter::visit_for_in_statement(const ForInStatementSyntax* node)
 	{
 		// an interface-typed range dispatches virtually: the abstract accessor
 		// carries no body, the runtime resolves the receiver's implementation
-		gmt::Ref<MethodSymbol> countGetter = countProperty->get_getter();
+		MethodSymbol* countGetter = countProperty->get_getter();
 
 		m_encoder.emit_load_local(indexSlot);
 		eval_push(sizeof(std::int64_t));
@@ -603,7 +603,7 @@ void ByteCodeEmitter::visit_for_in_statement(const ForInStatementSyntax* node)
 	}
 	else if (isIndexable)
 	{
-		gmt::Ref<MethodSymbol> indexGetter = indexator->get_getter();
+		MethodSymbol* indexGetter = indexator->get_getter();
 
 		m_encoder.emit_load_local(indexSlot);
 		eval_push(sizeof(std::int64_t));
@@ -630,8 +630,8 @@ void ByteCodeEmitter::visit_for_in_statement(const ForInStatementSyntax* node)
 	eval_pop();
 
 	m_loops.push_back(std::move(scope));
-	if (!node->get_block().is_null())
-		visit_statements_block(node->get_block().as_ptr());
+	if (!(node->get_block() == nullptr))
+		visit_statements_block(node->get_block());
 
 	loop_scope& active = m_loops.back();
 	std::size_t blockEnd = mark_position();
@@ -670,7 +670,7 @@ void ByteCodeEmitter::visit_break_statement(const BreakStatementSyntax* node)
 
 	if (node->get_tag().get_type() == TokenType::Identifier)
 	{
-		std::optional<gmt::Ref<const BreakStatementSyntax>> nodeRef = ref_from(node);
+		std::optional<const BreakStatementSyntax*> nodeRef = ref_from(node);
 		if (nodeRef.has_value())
 			unsupported(*nodeRef, L"labeled break");
 		return;
@@ -693,7 +693,7 @@ void ByteCodeEmitter::visit_continue_statement(const ContinueStatementSyntax* no
 
 	if (node->get_tag().get_type() == TokenType::Identifier)
 	{
-		std::optional<gmt::Ref<const ContinueStatementSyntax>> nodeRef = ref_from(node);
+		std::optional<const ContinueStatementSyntax*> nodeRef = ref_from(node);
 		if (nodeRef.has_value())
 			unsupported(*nodeRef, L"labeled continue");
 		return;
@@ -711,13 +711,13 @@ void ByteCodeEmitter::visit_throw_statement(const ThrowStatementSyntax* node)
 	if (node == nullptr)
 		return;
 
-	if (node->get_expression().is_null())
+	if ((node->get_expression() == nullptr))
 	{
 		m_encoder.emit_rethrow();
 		return;
 	}
 
-	node->get_expression().as_ptr()->accept(*this);
+	node->get_expression()->accept(*this);
 	m_encoder.emit_throw();
 	eval_pop();
 }
@@ -730,8 +730,8 @@ void ByteCodeEmitter::visit_try_statement(const TryStatementSyntax* node)
 	std::size_t enterAt = mark_position();
 	m_encoder.emit_enter_try(0);
 
-	if (!node->get_try_block().is_null())
-		visit_statements_block(node->get_try_block().as_ptr());
+	if (!(node->get_try_block() == nullptr))
+		visit_statements_block(node->get_try_block());
 
 	m_encoder.emit_leave_try();
 
@@ -742,25 +742,25 @@ void ByteCodeEmitter::visit_try_statement(const TryStatementSyntax* node)
 
 	patch_jump(enterAt);
 
-	gmt::Span<const gmt::Ref<CatchClauseSyntax>> clauses = node->get_catch_clauses();
-	if (!clauses.as_span().empty())
+	std::span<CatchClauseSyntax* const> clauses = node->get_catch_clauses();
+	if (!clauses.empty())
 		eval_push(sizeof(void*)); // the runtime places the exception on the eval stack
 
-	for (gmt::Ref<CatchClauseSyntax> clauseRef : clauses.as_span())
+	for (CatchClauseSyntax* clauseRef : clauses)
 	{
-		const CatchClauseSyntax* clause = clauseRef.as_ptr();
+		const CatchClauseSyntax* clause = clauseRef;
 
-		gmt::Ref<StructSymbol> exceptionType;
-		if (!clause->get_exception_type().is_null())
+		StructSymbol* exceptionType = nullptr;
+		if (!(clause->get_exception_type() == nullptr))
 		{
-			gmt::Ref<const TypeSyntax> typeNode = clause->get_exception_type();
-			gmt::Ref<SyntaxSymbol> bound = get_symbol_table().lookup_symbol(typeNode);
-			if (!bound.is_null() && bound->is_type())
-				exceptionType = bound.as<StructSymbol>();
+			const TypeSyntax* typeNode = clause->get_exception_type();
+			SyntaxSymbol* bound = get_symbol_table().lookup_symbol(typeNode);
+			if (!(bound == nullptr) && bound->is_type())
+				exceptionType = static_cast<StructSymbol*>(bound);
 		}
 
 		std::size_t nextAt = 0;
-		bool catchAll = exceptionType.is_null();
+		bool catchAll = (exceptionType == nullptr);
 		if (!catchAll)
 		{
 			m_encoder.emit_duplicate();
@@ -774,11 +774,11 @@ void ByteCodeEmitter::visit_try_statement(const TryStatementSyntax* node)
 			eval_pop();
 		}
 
-		std::optional<gmt::Ref<const CatchClauseSyntax>> clauseNodeRef = ref_from(clause);
-		gmt::Ref<VariableSymbol> variable = clauseNodeRef.has_value() ? lookup_symbol<VariableSymbol>(*clauseNodeRef) : gmt::nullref;
+		std::optional<const CatchClauseSyntax*> clauseNodeRef = ref_from(clause);
+		VariableSymbol* variable = clauseNodeRef.has_value() ? lookup_symbol<VariableSymbol>(*clauseNodeRef) : nullptr;
 
 		std::optional<std::uint16_t> slot;
-		if (!variable.is_null())
+		if (!(variable == nullptr))
 			slot = slot_of(variable);
 
 		if (slot.has_value())
@@ -792,8 +792,8 @@ void ByteCodeEmitter::visit_try_statement(const TryStatementSyntax* node)
 			eval_pop();
 		}
 
-		if (!clause->get_body().is_null())
-			visit_statements_block(clause->get_body().as_ptr());
+		if (!(clause->get_body() == nullptr))
+			visit_statements_block(clause->get_body());
 
 		std::size_t clauseEndAt = mark_position();
 		m_encoder.emit_jump(0);
@@ -814,7 +814,7 @@ void ByteCodeEmitter::visit_try_statement(const TryStatementSyntax* node)
 
 void ByteCodeEmitter::visit_defer_statement(const DeferStatementSyntax* node)
 {
-	if (node == nullptr || node->get_expression().is_null())
+	if (node == nullptr || (node->get_expression() == nullptr))
 		return;
 
 	register_defer();
@@ -826,12 +826,12 @@ void ByteCodeEmitter::visit_defer_statement(const DeferStatementSyntax* node)
 	m_encoder.emit_jump(0);
 
 	patch_jump(deferAt);
-	node->get_expression().as_ptr()->accept(*this);
+	node->get_expression()->accept(*this);
 
-	std::optional<gmt::Ref<const ExpressionSyntax>> expressionRef = ref_from(node->get_expression().as_ptr());
-	gmt::Ref<StructSymbol> type = expressionRef.has_value() ? get_model().get_expression_type(*expressionRef) : gmt::nullref;
+	std::optional<const ExpressionSyntax*> expressionRef = ref_from(node->get_expression());
+	StructSymbol* type = expressionRef.has_value() ? get_model().get_expression_type(*expressionRef) : nullptr;
 
-	bool discardable = !type.is_null() && type != get_symbol_table().get_void_primitive();
+	bool discardable = !(type == nullptr) && type != get_symbol_table().get_void_primitive();
 	if (discardable)
 	{
 		m_encoder.emit_pop();
@@ -844,7 +844,7 @@ void ByteCodeEmitter::visit_defer_statement(const DeferStatementSyntax* node)
 
 void ByteCodeEmitter::visit_defer_block(const DeferBlockSyntax* node)
 {
-	if (node == nullptr || node->get_block().is_null())
+	if (node == nullptr || (node->get_block() == nullptr))
 		return;
 
 	emit_defer_region(node->get_block());
@@ -852,20 +852,20 @@ void ByteCodeEmitter::visit_defer_block(const DeferBlockSyntax* node)
 
 void ByteCodeEmitter::visit_defer_variable(const DeferVariableSyntax* node)
 {
-	if (node == nullptr || node->get_variable().is_null())
+	if (node == nullptr || (node->get_variable() == nullptr))
 		return;
 
-	visit_variable_statement(node->get_variable().as_ptr());
+	visit_variable_statement(node->get_variable());
 
-	std::optional<gmt::Ref<const VariableStatementSyntax>> variableRef = ref_from(node->get_variable().as_ptr());
-	gmt::Ref<VariableSymbol> symbol = variableRef.has_value() ? lookup_symbol<VariableSymbol>(*variableRef) : gmt::nullref;
-	if (symbol.is_null() || symbol->get_type().is_null())
+	std::optional<const VariableStatementSyntax*> variableRef = ref_from(node->get_variable());
+	VariableSymbol* symbol = variableRef.has_value() ? lookup_symbol<VariableSymbol>(*variableRef) : nullptr;
+	if ((symbol == nullptr) || (symbol->get_type() == nullptr))
 		return;
 
-	gmt::Ref<MethodSymbol> dispose = gmt::nullref;
-	for (gmt::Ref<MethodSymbol> candidate : symbol->get_type()->methods)
+	MethodSymbol* dispose = nullptr;
+	for (MethodSymbol* candidate : symbol->get_type()->methods)
 	{
-		if (candidate.is_null() || candidate->get_name() != L"Dispose")
+		if ((candidate == nullptr) || candidate->get_name() != L"Dispose")
 			continue;
 
 		if (!candidate->get_parameters().empty())
@@ -875,7 +875,7 @@ void ByteCodeEmitter::visit_defer_variable(const DeferVariableSyntax* node)
 		break;
 	}
 
-	if (dispose.is_null())
+	if ((dispose == nullptr))
 		return;
 
 	std::optional<std::uint16_t> slot = slot_of(symbol);

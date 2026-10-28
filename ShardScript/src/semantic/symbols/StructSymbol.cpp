@@ -10,10 +10,10 @@
 
 using namespace shard;
 
-StructSymbol::StructSymbol(std::wstring_view name, const SyntaxKind kind, gmt::Ref<SyntaxSymbol> parent)
+StructSymbol::StructSymbol(std::wstring_view name, const SyntaxKind kind, SyntaxSymbol* parent)
 	: MemberSymbol(name, kind, parent) { }
 
-StructSymbol::StructSymbol(gmt::StringReference name, const SyntaxKind kind, gmt::Ref<SyntaxSymbol> parent)
+StructSymbol::StructSymbol(gmt::StringReference name, const SyntaxKind kind, SyntaxSymbol* parent)
 	: MemberSymbol(name, kind, parent) { }
 
 bool StructSymbol::is_type() const
@@ -21,49 +21,49 @@ bool StructSymbol::is_type() const
 	return true;
 }
 
-void StructSymbol::on_symbol_declared(gmt::Ref<SyntaxSymbol> symbol)
+void StructSymbol::on_symbol_declared(SyntaxSymbol* symbol)
 {
 	switch (symbol->get_kind())
 	{
 		case SyntaxKind::ConstructorDeclaration:
 		{
-			constructors.push_back(symbol.as<ConstructorSymbol>());
+			constructors.push_back(static_cast<ConstructorSymbol*>(symbol));
 			break;
 		}
 
 		case SyntaxKind::FunctionDeclaration:
 		{
-			methods.push_back(symbol.as<MethodSymbol>());
+			methods.push_back(static_cast<MethodSymbol*>(symbol));
 			break;
 		}
 
 		case SyntaxKind::OperatorDeclaration:
 		{
-			operators.push_back(symbol.as<OperatorSymbol>());
+			operators.push_back(static_cast<OperatorSymbol*>(symbol));
 			break;
 		}
 
 		case SyntaxKind::FieldDeclaration:
 		{
-			fields.push_back(symbol.as<FieldSymbol>());
+			fields.push_back(static_cast<FieldSymbol*>(symbol));
 			break;
 		}
 
 		case SyntaxKind::PropertyDeclaration:
 		{
-			properties.push_back(symbol.as<PropertySymbol>());
+			properties.push_back(static_cast<PropertySymbol*>(symbol));
 			break;
 		}
 
 		case SyntaxKind::IndexatorDeclaration:
 		{
-			indexators.push_back(symbol.as<IndexatorSymbol>());
+			indexators.push_back(static_cast<IndexatorSymbol*>(symbol));
 			break;
 		}
 
 		case SyntaxKind::TypeParameter:
 		{
-			type_parameters.push_back(symbol.as<TypeParameterSymbol>());
+			type_parameters.push_back(static_cast<TypeParameterSymbol*>(symbol));
 			break;
 		}
 

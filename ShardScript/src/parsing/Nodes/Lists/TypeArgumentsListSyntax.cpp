@@ -5,10 +5,10 @@
 
 using namespace shard;
 
-TypeArgumentsListSyntax::TypeArgumentsListSyntax(gmt::Ref<SyntaxNode> parent)
+TypeArgumentsListSyntax::TypeArgumentsListSyntax(SyntaxNode* parent)
 	: SyntaxNode(SyntaxKind::TypeArgumentsList, parent) { }
 
-gmt::Span<const gmt::Ref<TypeSyntax>> TypeArgumentsListSyntax::get_types() const
+std::span<TypeSyntax* const> TypeArgumentsListSyntax::get_types() const
 {
 	return m_types;
 }
@@ -23,7 +23,7 @@ SyntaxToken TypeArgumentsListSyntax::get_close_token() const
 	return m_closeToken;
 }
 
-void TypeArgumentsListSyntax::set_types(gmt::Span<gmt::Ref<TypeSyntax>> types)
+void TypeArgumentsListSyntax::set_types(std::span<TypeSyntax*> types)
 {
 	m_types = types;
 }

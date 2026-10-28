@@ -4,10 +4,10 @@
 
 using namespace shard;
 
-ArrayTypeSymbol::ArrayTypeSymbol(gmt::Ref<StructSymbol> underlayingType, gmt::Ref<SyntaxSymbol> parent)
+ArrayTypeSymbol::ArrayTypeSymbol(StructSymbol* underlayingType, SyntaxSymbol* parent)
 	: StructSymbol(gmt::intern(L"Array"), SyntaxKind::ArrayType, parent), m_underlayingType(underlayingType) { }
 
-gmt::Ref<StructSymbol> ArrayTypeSymbol::get_underlaying_type() const
+StructSymbol* ArrayTypeSymbol::get_underlaying_type() const
 {
 	return m_underlayingType;
 }

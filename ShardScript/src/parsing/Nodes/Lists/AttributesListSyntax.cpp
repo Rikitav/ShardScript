@@ -5,7 +5,7 @@
 
 using namespace shard;
 
-AttributeSyntax::AttributeSyntax(gmt::Ref<SyntaxNode> parent)
+AttributeSyntax::AttributeSyntax(SyntaxNode* parent)
 	: SyntaxNode(SyntaxKind::Attribute, parent) { }
 
 void AttributeSyntax::set_open_bracket(const SyntaxToken& token)
@@ -33,7 +33,7 @@ void AttributeSyntax::set_close_curl(const SyntaxToken& token)
 	m_closeCurlToken = token;
 }
 
-void AttributeSyntax::set_arguments(gmt::Span<SyntaxToken> arguments)
+void AttributeSyntax::set_arguments(std::span<SyntaxToken> arguments)
 {
 	m_arguments = arguments;
 }
@@ -63,7 +63,7 @@ SyntaxToken AttributeSyntax::get_close_curl() const
 	return m_closeCurlToken;
 }
 
-gmt::Span<const SyntaxToken> AttributeSyntax::get_arguments() const
+std::span<const SyntaxToken> AttributeSyntax::get_arguments() const
 {
 	return m_arguments;
 }
@@ -78,10 +78,10 @@ void AttributeSyntax::accept(SyntaxVisitor& visitor) const
 	visitor.visit_attribute(this);
 }
 
-AttributesListSyntax::AttributesListSyntax(gmt::Ref<SyntaxNode> parent)
+AttributesListSyntax::AttributesListSyntax(SyntaxNode* parent)
 	: SyntaxNode(SyntaxKind::AttributesList, parent) { }
 
-gmt::Span<const gmt::Ref<AttributeSyntax>> AttributesListSyntax::get_attributes() const
+std::span<AttributeSyntax* const> AttributesListSyntax::get_attributes() const
 {
 	return m_attributes;
 }
@@ -96,7 +96,7 @@ SyntaxToken AttributesListSyntax::get_close_token() const
 	return m_closeToken;
 }
 
-void AttributesListSyntax::set_attributes(gmt::Span<gmt::Ref<AttributeSyntax>> attributes)
+void AttributesListSyntax::set_attributes(std::span<AttributeSyntax*> attributes)
 {
 	m_attributes = attributes;
 }
@@ -113,10 +113,10 @@ void AttributesListSyntax::set_close_token(const SyntaxToken& token)
 
 TextLocation AttributesListSyntax::get_location() const
 {
-	if (!m_attributes.is_empty())
+	if (!m_attributes.empty())
 	{
-		std::span<const gmt::Ref<AttributeSyntax>> attributes = m_attributes.as_span();
-		return TextLocation(attributes.front().as_ptr()->get_location(), attributes.back().as_ptr()->get_location());
+		std::span<AttributeSyntax* const> attributes = m_attributes;
+		return TextLocation(attributes.front()->get_location(), attributes.back()->get_location());
 	}
 
 	return m_openToken.get_location();

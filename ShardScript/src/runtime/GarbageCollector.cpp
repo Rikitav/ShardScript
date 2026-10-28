@@ -246,9 +246,9 @@ ObjectInstance GarbageCollector::intern_string(std::wstring_view value)
 	return instance;
 }
 
-ObjectInstance GarbageCollector::get_static_storage(gmt::Ref<FieldSymbol> field)
+ObjectInstance GarbageCollector::get_static_storage(FieldSymbol* field)
 {
-	const std::size_t key = field.get_offset();
+	const std::size_t key = reinterpret_cast<std::size_t>(field);
 	auto existing = m_statics.find(key);
 	if (existing != m_statics.end())
 		return ObjectInstance(existing->second.shape, existing->second.storage);
@@ -321,8 +321,8 @@ void GarbageCollector::trace_object_fields(const TypeShape* shape, std::byte* pa
 	if (shape == nullptr)
 		return;
 
-	gmt::Ref<StructSymbol> baseType = shape->get_base_type();
-	if (baseType.is_null())
+	StructSymbol* baseType = shape->get_base_type();
+	if ((baseType == nullptr))
 		return;
 
 	SyntaxKind kind = baseType->get_kind();
@@ -331,7 +331,7 @@ void GarbageCollector::trace_object_fields(const TypeShape* shape, std::byte* pa
 
 	if (kind == SyntaxKind::ArrayType)
 	{
-		gmt::Ref<ArrayTypeSymbol> arrayType = baseType.as<ArrayTypeSymbol>();
+		ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(baseType);
 		const TypeShape* elementShape = m_pragmatic.find_or_create_type_shape(m_model, arrayType->get_underlaying_type());
 		if (!elementShape->is_reference())
 			return;

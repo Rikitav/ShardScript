@@ -42,7 +42,7 @@ namespace shard
 		void emit_load_const_double64(double value);
 		void emit_load_const_char16(wchar_t value);
 		void emit_load_const_string(const wchar_t* value);
-		void emit_default_value(gmt::Ref<StructSymbol> elementType, SymbolTable& table);
+		void emit_default_value(StructSymbol* elementType, SymbolTable& table);
 		void emit_duplicate();
 
 		void emit_load_local(std::uint16_t index);
@@ -91,31 +91,31 @@ namespace shard
 		void emit_logical_or();
 		void emit_logical_and();
 
-		void emit_alloc_heap(gmt::Ref<StructSymbol> type);
-		void emit_new_delegate(gmt::Ref<DelegateTypeSymbol> type, gmt::Ref<MethodSymbol> method);
+		void emit_alloc_heap(StructSymbol* type);
+		void emit_new_delegate(DelegateTypeSymbol* type, MethodSymbol* method);
 		void emit_load_field(std::uint32_t slot);
 		void emit_store_field(std::uint32_t slot);
 
-		void emit_new_array(gmt::Ref<ArrayTypeSymbol> type);
-		void emit_new_array_dynamic(gmt::Ref<ArrayTypeSymbol> type);
-		void emit_create_range(gmt::Ref<StructSymbol> type);
+		void emit_new_array(ArrayTypeSymbol* type);
+		void emit_new_array_dynamic(ArrayTypeSymbol* type);
+		void emit_create_range(StructSymbol* type);
 		void emit_load_array_element();
 		void emit_store_array_element();
 		void emit_array_length();
 
-		void emit_load_static_field(gmt::Ref<FieldSymbol> field);
-		void emit_store_static_field(gmt::Ref<FieldSymbol> field);
-		void emit_load_enum_field(gmt::Ref<FieldSymbol> field);
+		void emit_load_static_field(FieldSymbol* field);
+		void emit_store_static_field(FieldSymbol* field);
+		void emit_load_enum_field(FieldSymbol* field);
 
-		void emit_load_type_argument(std::uint16_t index, gmt::Ref<StructSymbol> type);
-		void emit_call_method_symbol(gmt::Ref<MethodSymbol> method);
-		void emit_call_method_into(gmt::Ref<MethodSymbol> method, std::uint16_t slot);
-		void emit_call_delegate(gmt::Ref<DelegateTypeSymbol> type);
-		void emit_call_interface(gmt::Ref<MethodSymbol> interfaceMethod);
+		void emit_load_type_argument(std::uint16_t index, StructSymbol* type);
+		void emit_call_method_symbol(MethodSymbol* method);
+		void emit_call_method_into(MethodSymbol* method, std::uint16_t slot);
+		void emit_call_delegate(DelegateTypeSymbol* type);
+		void emit_call_interface(MethodSymbol* interfaceMethod);
 		void emit_return_placed();
-		void emit_is_instance(gmt::Ref<StructSymbol> type);
-		void emit_cast_as(gmt::Ref<StructSymbol> type);
-		void emit_cast(gmt::Ref<StructSymbol> type);
-		void emit_cast_primitive(gmt::Ref<StructSymbol> type);
+		void emit_is_instance(StructSymbol* type);
+		void emit_cast_as(StructSymbol* type);
+		void emit_cast(StructSymbol* type);
+		void emit_cast_primitive(StructSymbol* type);
 	};
 }

@@ -14,17 +14,17 @@ namespace shard
 	class SHARD_API DeferVariableSyntax final : public StatementSyntax
 	{
 		SyntaxToken m_deferKeywordToken;
-		gmt::Ref<VariableStatementSyntax> m_variable;
+		VariableStatementSyntax* m_variable = nullptr;
 
 	public:
-		DeferVariableSyntax(gmt::Ref<SyntaxNode> parent);
+		DeferVariableSyntax(SyntaxNode* parent);
 		virtual ~DeferVariableSyntax() = default;
 
 		SyntaxToken get_defer_keyword() const;
-		gmt::Ref<const VariableStatementSyntax> get_variable() const;
+		const VariableStatementSyntax* get_variable() const;
 
 		void set_defer_keyword(const SyntaxToken& token);
-		void set_variable(gmt::Ref<VariableStatementSyntax> variable);
+		void set_variable(VariableStatementSyntax* variable);
 
 		TextLocation get_location() const override;
 		void accept(SyntaxVisitor& visitor) const override;

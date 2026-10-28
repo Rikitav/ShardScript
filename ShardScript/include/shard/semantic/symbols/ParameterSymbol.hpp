@@ -17,11 +17,11 @@ namespace shard
 
 	class SHARD_API ParameterSymbol : public SyntaxSymbol
 	{
-		gmt::Ref<StructSymbol> m_type;
+		StructSymbol* m_type = nullptr;
 
 	public:
-		ParameterSymbol(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent);
-		ParameterSymbol(gmt::StringReference name, gmt::Ref<SyntaxSymbol> parent);
+		ParameterSymbol(std::wstring_view name, SyntaxSymbol* parent);
+		ParameterSymbol(gmt::StringReference name, SyntaxSymbol* parent);
 		virtual ~ParameterSymbol() = default;
 
 		ParameterSymbol(const ParameterSymbol& other) = delete;
@@ -30,7 +30,7 @@ namespace shard
 		ParameterSymbol(ParameterSymbol&& other) = delete;
 		ParameterSymbol& operator=(ParameterSymbol&& other) = delete;
 
-		gmt::Ref<StructSymbol> get_type() const;
-		void set_type(gmt::Ref<StructSymbol> type);
+		StructSymbol* get_type() const;
+		void set_type(StructSymbol* type);
 	};
 }

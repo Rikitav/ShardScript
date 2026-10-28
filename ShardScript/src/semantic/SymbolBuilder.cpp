@@ -13,20 +13,20 @@ using namespace shard;
 // NamespaceSymbol
 // =========================================================================
 
-SymbolBuilder<NamespaceSymbol>::SymbolBuilder(SymbolTable& table, std::wstring_view name, gmt::Ref<NamespaceSymbol> parent)
+SymbolBuilder<NamespaceSymbol>::SymbolBuilder(SymbolTable& table, std::wstring_view name, NamespaceSymbol* parent)
 	: SymbolBuilderBase(table)
 {
-	gmt::Ref<NamespaceSymbol> anchor = parent;
-	if (anchor.is_null())
+	NamespaceSymbol* anchor = parent;
+	if ((anchor == nullptr))
 		anchor = table.get_root_namespace();
 
 	m_symbol = anchor->lookup_or_create(name, table);
 }
 
-SymbolBuilder<NamespaceSymbol>::SymbolBuilder(CompilationContext& context, std::wstring_view name, gmt::Ref<NamespaceSymbol> parent)
+SymbolBuilder<NamespaceSymbol>::SymbolBuilder(CompilationContext& context, std::wstring_view name, NamespaceSymbol* parent)
 	: SymbolBuilder(context.get_semantic_model().get_table(), name, parent) { }
 
-SymbolBuilder<MethodSymbol> SymbolBuilder<NamespaceSymbol>::add_method(std::wstring_view name, gmt::Ref<StructSymbol> returnType, SymbolLinking linking, SymbolAccesibility access)
+SymbolBuilder<MethodSymbol> SymbolBuilder<NamespaceSymbol>::add_method(std::wstring_view name, StructSymbol* returnType, SymbolLinking linking, SymbolAccesibility access)
 {
 	return SymbolBuilder<MethodSymbol>(*m_table, name, returnType, linking, access, m_symbol);
 }
@@ -62,26 +62,26 @@ SymbolBuilder<NamespaceSymbol> SymbolBuilder<NamespaceSymbol>::add_namespace(std
 // StructSymbol
 // =========================================================================
 
-SymbolBuilder<StructSymbol>::SymbolBuilder(SymbolTable& table, gmt::Ref<StructSymbol> symbol)
+SymbolBuilder<StructSymbol>::SymbolBuilder(SymbolTable& table, StructSymbol* symbol)
 	: SymbolBuilderBase(table)
 {
 	m_symbol = symbol;
 }
 
-SymbolBuilder<StructSymbol>::SymbolBuilder(CompilationContext& context, gmt::Ref<StructSymbol> symbol)
+SymbolBuilder<StructSymbol>::SymbolBuilder(CompilationContext& context, StructSymbol* symbol)
 	: SymbolBuilder(context.get_semantic_model().get_table(), symbol) { }
 
-SymbolBuilder<StructSymbol>::SymbolBuilder(SymbolTable& table, std::wstring_view name, gmt::Ref<SyntaxSymbol> parent)
+SymbolBuilder<StructSymbol>::SymbolBuilder(SymbolTable& table, std::wstring_view name, SyntaxSymbol* parent)
 	: SymbolBuilderBase(table)
 {
 	m_symbol = m_factory.create_struct(name, parent);
 	m_symbol->set_accesibility(ACS_PUBLIC);
 
-	if (!parent.is_null())
+	if (!(parent == nullptr))
 		parent->on_symbol_declared(m_symbol);
 }
 
-SymbolBuilder<StructSymbol>::SymbolBuilder(CompilationContext& context, std::wstring_view name, gmt::Ref<SyntaxSymbol> parent)
+SymbolBuilder<StructSymbol>::SymbolBuilder(CompilationContext& context, std::wstring_view name, SyntaxSymbol* parent)
 	: SymbolBuilder(context.get_semantic_model().get_table(), name, parent) { }
 
 SymbolBuilder<ConstructorSymbol> SymbolBuilder<StructSymbol>::add_init(SymbolAccesibility access)
@@ -89,22 +89,22 @@ SymbolBuilder<ConstructorSymbol> SymbolBuilder<StructSymbol>::add_init(SymbolAcc
 	return SymbolBuilder<ConstructorSymbol>(*m_table, access, m_symbol);
 }
 
-SymbolBuilder<MethodSymbol> SymbolBuilder<StructSymbol>::add_method(std::wstring_view name, gmt::Ref<StructSymbol> returnType, SymbolLinking linking, SymbolAccesibility access)
+SymbolBuilder<MethodSymbol> SymbolBuilder<StructSymbol>::add_method(std::wstring_view name, StructSymbol* returnType, SymbolLinking linking, SymbolAccesibility access)
 {
 	return SymbolBuilder<MethodSymbol>(*m_table, name, returnType, linking, access, m_symbol);
 }
 
-SymbolBuilder<FieldSymbol> SymbolBuilder<StructSymbol>::add_field(std::wstring_view name, gmt::Ref<StructSymbol> type, SymbolLinking linking, SymbolAccesibility access)
+SymbolBuilder<FieldSymbol> SymbolBuilder<StructSymbol>::add_field(std::wstring_view name, StructSymbol* type, SymbolLinking linking, SymbolAccesibility access)
 {
 	return SymbolBuilder<FieldSymbol>(*m_table, name, type, linking, access, m_symbol);
 }
 
-SymbolBuilder<PropertySymbol> SymbolBuilder<StructSymbol>::add_property(std::wstring_view name, gmt::Ref<StructSymbol> type, SymbolLinking linking, SymbolAccesibility access)
+SymbolBuilder<PropertySymbol> SymbolBuilder<StructSymbol>::add_property(std::wstring_view name, StructSymbol* type, SymbolLinking linking, SymbolAccesibility access)
 {
 	return SymbolBuilder<PropertySymbol>(*m_table, name, type, linking, access, m_symbol);
 }
 
-SymbolBuilder<IndexatorSymbol> SymbolBuilder<StructSymbol>::add_indexator(gmt::Ref<StructSymbol> type, SymbolLinking linking, SymbolAccesibility access)
+SymbolBuilder<IndexatorSymbol> SymbolBuilder<StructSymbol>::add_indexator(StructSymbol* type, SymbolLinking linking, SymbolAccesibility access)
 {
 	return SymbolBuilder<IndexatorSymbol>(*m_table, L"index", type, linking, access, m_symbol);
 }
@@ -114,17 +114,17 @@ SymbolBuilder<TypeParameterSymbol> SymbolBuilder<StructSymbol>::add_type_paramet
 	return SymbolBuilder<TypeParameterSymbol>(*m_table, name, m_symbol);
 }
 
-SymbolBuilder<OperatorSymbol> SymbolBuilder<StructSymbol>::add_operator(TokenType operatorToken, gmt::Ref<StructSymbol> returnType, SymbolLinking linking, SymbolAccesibility access)
+SymbolBuilder<OperatorSymbol> SymbolBuilder<StructSymbol>::add_operator(TokenType operatorToken, StructSymbol* returnType, SymbolLinking linking, SymbolAccesibility access)
 {
 	return SymbolBuilder<OperatorSymbol>(*m_table, operatorToken, returnType, linking, access, m_symbol);
 }
 
-SymbolBuilder<OperatorSymbol> SymbolBuilder<StructSymbol>::add_cast_operator(gmt::Ref<StructSymbol> targetType, SymbolLinking linking, SymbolAccesibility access)
+SymbolBuilder<OperatorSymbol> SymbolBuilder<StructSymbol>::add_cast_operator(StructSymbol* targetType, SymbolLinking linking, SymbolAccesibility access)
 {
 	return SymbolBuilder<OperatorSymbol>(*m_table, TokenType::AsOperator, targetType, linking, access, m_symbol);
 }
 
-SymbolBuilder<StructSymbol>& SymbolBuilder<StructSymbol>::implements(gmt::Ref<StructSymbol> interface)
+SymbolBuilder<StructSymbol>& SymbolBuilder<StructSymbol>::implements(StructSymbol* interface)
 {
 	m_symbol->interfaces.push_back(interface);
 	return *this;
@@ -140,29 +140,29 @@ SymbolBuilder<StructSymbol>& SymbolBuilder<StructSymbol>::declare_global()
 // InterfaceSymbol
 // =========================================================================
 
-SymbolBuilder<InterfaceSymbol>::SymbolBuilder(SymbolTable& table, std::wstring_view name, gmt::Ref<SyntaxSymbol> parent)
+SymbolBuilder<InterfaceSymbol>::SymbolBuilder(SymbolTable& table, std::wstring_view name, SyntaxSymbol* parent)
 	: SymbolBuilderBase(table)
 {
 	m_symbol = m_factory.create_interface(name, parent, ACS_PUBLIC);
 
-	if (!parent.is_null())
+	if (!(parent == nullptr))
 		parent->on_symbol_declared(m_symbol);
 }
 
-SymbolBuilder<InterfaceSymbol>::SymbolBuilder(CompilationContext& context, std::wstring_view name, gmt::Ref<SyntaxSymbol> parent)
+SymbolBuilder<InterfaceSymbol>::SymbolBuilder(CompilationContext& context, std::wstring_view name, SyntaxSymbol* parent)
 	: SymbolBuilder(context.get_semantic_model().get_table(), name, parent) { }
 
-SymbolBuilder<MethodSymbol> SymbolBuilder<InterfaceSymbol>::add_method(std::wstring_view name, gmt::Ref<StructSymbol> returnType, SymbolLinking linking, SymbolAccesibility access)
+SymbolBuilder<MethodSymbol> SymbolBuilder<InterfaceSymbol>::add_method(std::wstring_view name, StructSymbol* returnType, SymbolLinking linking, SymbolAccesibility access)
 {
 	return SymbolBuilder<MethodSymbol>(*m_table, name, returnType, linking, access, m_symbol);
 }
 
-SymbolBuilder<PropertySymbol> SymbolBuilder<InterfaceSymbol>::add_property(std::wstring_view name, gmt::Ref<StructSymbol> type, SymbolLinking linking, SymbolAccesibility access)
+SymbolBuilder<PropertySymbol> SymbolBuilder<InterfaceSymbol>::add_property(std::wstring_view name, StructSymbol* type, SymbolLinking linking, SymbolAccesibility access)
 {
 	return SymbolBuilder<PropertySymbol>(*m_table, name, type, linking, access, m_symbol);
 }
 
-SymbolBuilder<IndexatorSymbol> SymbolBuilder<InterfaceSymbol>::add_indexator(gmt::Ref<StructSymbol> type, SymbolLinking linking, SymbolAccesibility access)
+SymbolBuilder<IndexatorSymbol> SymbolBuilder<InterfaceSymbol>::add_indexator(StructSymbol* type, SymbolLinking linking, SymbolAccesibility access)
 {
 	return SymbolBuilder<IndexatorSymbol>(*m_table, L"index", type, linking, access, m_symbol);
 }
@@ -172,7 +172,7 @@ SymbolBuilder<TypeParameterSymbol> SymbolBuilder<InterfaceSymbol>::add_type_para
 	return SymbolBuilder<TypeParameterSymbol>(*m_table, name, m_symbol);
 }
 
-SymbolBuilder<InterfaceSymbol>& SymbolBuilder<InterfaceSymbol>::implements(gmt::Ref<StructSymbol> interface)
+SymbolBuilder<InterfaceSymbol>& SymbolBuilder<InterfaceSymbol>::implements(StructSymbol* interface)
 {
 	m_symbol->interfaces.push_back(interface);
 	return *this;
@@ -188,17 +188,17 @@ SymbolBuilder<InterfaceSymbol>& SymbolBuilder<InterfaceSymbol>::declare_global()
 // EnumSymbol
 // =========================================================================
 
-SymbolBuilder<EnumSymbol>::SymbolBuilder(SymbolTable& table, std::wstring_view name, bool isFlags, gmt::Ref<SyntaxSymbol> parent)
+SymbolBuilder<EnumSymbol>::SymbolBuilder(SymbolTable& table, std::wstring_view name, bool isFlags, SyntaxSymbol* parent)
 	: SymbolBuilderBase(table)
 {
 	m_symbol = m_factory.create_enum(name, parent, isFlags);
 	m_symbol->set_accesibility(ACS_PUBLIC);
 
-	if (!parent.is_null())
+	if (!(parent == nullptr))
 		parent->on_symbol_declared(m_symbol);
 }
 
-SymbolBuilder<EnumSymbol>::SymbolBuilder(CompilationContext& context, std::wstring_view name, bool isFlags, gmt::Ref<SyntaxSymbol> parent)
+SymbolBuilder<EnumSymbol>::SymbolBuilder(CompilationContext& context, std::wstring_view name, bool isFlags, SyntaxSymbol* parent)
 	: SymbolBuilder(context.get_semantic_model().get_table(), name, isFlags, parent) { }
 
 SymbolBuilder<EnumSymbol>& SymbolBuilder<EnumSymbol>::set_flags(bool value)
@@ -209,7 +209,7 @@ SymbolBuilder<EnumSymbol>& SymbolBuilder<EnumSymbol>::set_flags(bool value)
 
 SymbolBuilder<EnumSymbol>& SymbolBuilder<EnumSymbol>::add_value(std::wstring_view name, std::int64_t value)
 {
-	gmt::Ref<FieldSymbol> field = m_factory.create_enum_field(name, m_symbol, m_symbol, value);
+	FieldSymbol* field = m_factory.create_enum_field(name, m_symbol, m_symbol, value);
 	m_symbol->on_symbol_declared(field);
 	return *this;
 }
@@ -218,57 +218,57 @@ SymbolBuilder<EnumSymbol>& SymbolBuilder<EnumSymbol>::add_value(std::wstring_vie
 // FieldSymbol
 // =========================================================================
 
-SymbolBuilder<FieldSymbol>::SymbolBuilder(SymbolTable& table, gmt::Ref<FieldSymbol> symbol)
+SymbolBuilder<FieldSymbol>::SymbolBuilder(SymbolTable& table, FieldSymbol* symbol)
 	: SymbolBuilderBase(table)
 {
 	m_symbol = symbol;
 }
 
-SymbolBuilder<FieldSymbol>::SymbolBuilder(CompilationContext& context, gmt::Ref<FieldSymbol> symbol)
+SymbolBuilder<FieldSymbol>::SymbolBuilder(CompilationContext& context, FieldSymbol* symbol)
 	: SymbolBuilder(context.get_semantic_model().get_table(), symbol) { }
 
-SymbolBuilder<FieldSymbol>::SymbolBuilder(SymbolTable& table, std::wstring_view name, gmt::Ref<StructSymbol> type, SymbolLinking linking, SymbolAccesibility access, gmt::Ref<SyntaxSymbol> parent)
+SymbolBuilder<FieldSymbol>::SymbolBuilder(SymbolTable& table, std::wstring_view name, StructSymbol* type, SymbolLinking linking, SymbolAccesibility access, SyntaxSymbol* parent)
 	: SymbolBuilderBase(table)
 {
 	m_symbol = m_factory.create_field(name, parent, type, linking);
 	m_symbol->set_accesibility(access);
 
-	if (!parent.is_null())
+	if (!(parent == nullptr))
 		parent->on_symbol_declared(m_symbol);
 }
 
-SymbolBuilder<FieldSymbol>::SymbolBuilder(CompilationContext& context, std::wstring_view name, gmt::Ref<StructSymbol> type, SymbolLinking linking, SymbolAccesibility access, gmt::Ref<SyntaxSymbol> parent)
+SymbolBuilder<FieldSymbol>::SymbolBuilder(CompilationContext& context, std::wstring_view name, StructSymbol* type, SymbolLinking linking, SymbolAccesibility access, SyntaxSymbol* parent)
 	: SymbolBuilder(context.get_semantic_model().get_table(), name, type, linking, access, parent) { }
 
 // =========================================================================
 // MethodSymbol
 // =========================================================================
 
-SymbolBuilder<MethodSymbol>::SymbolBuilder(SymbolTable& table, gmt::Ref<MethodSymbol> symbol)
+SymbolBuilder<MethodSymbol>::SymbolBuilder(SymbolTable& table, MethodSymbol* symbol)
 	: SymbolBuilderBase(table)
 {
 	m_symbol = symbol;
 }
 
-SymbolBuilder<MethodSymbol>::SymbolBuilder(CompilationContext& context, gmt::Ref<MethodSymbol> symbol)
+SymbolBuilder<MethodSymbol>::SymbolBuilder(CompilationContext& context, MethodSymbol* symbol)
 	: SymbolBuilder(context.get_semantic_model().get_table(), symbol) { }
 
-SymbolBuilder<MethodSymbol>::SymbolBuilder(SymbolTable& table, std::wstring_view name, gmt::Ref<StructSymbol> returnType, SymbolLinking linking, SymbolAccesibility access, gmt::Ref<SyntaxSymbol> parent)
+SymbolBuilder<MethodSymbol>::SymbolBuilder(SymbolTable& table, std::wstring_view name, StructSymbol* returnType, SymbolLinking linking, SymbolAccesibility access, SyntaxSymbol* parent)
 	: SymbolBuilderBase(table)
 {
 	m_symbol = m_factory.create_method(name, parent, returnType, linking);
 	m_symbol->set_accesibility(access);
 
-	if (!parent.is_null())
+	if (!(parent == nullptr))
 		parent->on_symbol_declared(m_symbol);
 }
 
-SymbolBuilder<MethodSymbol>::SymbolBuilder(CompilationContext& context, std::wstring_view name, gmt::Ref<StructSymbol> returnType, SymbolLinking linking, SymbolAccesibility access, gmt::Ref<SyntaxSymbol> parent)
+SymbolBuilder<MethodSymbol>::SymbolBuilder(CompilationContext& context, std::wstring_view name, StructSymbol* returnType, SymbolLinking linking, SymbolAccesibility access, SyntaxSymbol* parent)
 	: SymbolBuilder(context.get_semantic_model().get_table(), name, returnType, linking, access, parent) { }
 
-SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::add_parameter(std::wstring_view name, gmt::Ref<StructSymbol> type)
+SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::add_parameter(std::wstring_view name, StructSymbol* type)
 {
-	gmt::Ref<ParameterSymbol> parameter = m_factory.create_parameter(name, m_symbol, type);
+	ParameterSymbol* parameter = m_factory.create_parameter(name, m_symbol, type);
 	m_symbol->on_symbol_declared(parameter);
 	return *this;
 }
@@ -301,9 +301,9 @@ SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::set_may_throw(bool val
 	return *this;
 }
 
-SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::set_throws_type(gmt::Ref<StructSymbol> type)
+SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::set_throws_type(StructSymbol* type)
 {
-	if (!type.is_null())
+	if (!(type == nullptr))
 	{
 		MethodEffectSummary& summary = m_symbol->get_effect_summary();
 		summary.mayThrow = true;
@@ -341,21 +341,21 @@ SymbolBuilder<MethodSymbol>& SymbolBuilder<MethodSymbol>::set_has_unknown_side_e
 // ConstructorSymbol
 // =========================================================================
 
-SymbolBuilder<ConstructorSymbol>::SymbolBuilder(SymbolTable& table, SymbolAccesibility access, gmt::Ref<SyntaxSymbol> parent)
+SymbolBuilder<ConstructorSymbol>::SymbolBuilder(SymbolTable& table, SymbolAccesibility access, SyntaxSymbol* parent)
 	: SymbolBuilderBase(table)
 {
 	m_symbol = m_factory.create_constructor(parent, access);
 
-	if (!parent.is_null())
+	if (!(parent == nullptr))
 		parent->on_symbol_declared(m_symbol);
 }
 
-SymbolBuilder<ConstructorSymbol>::SymbolBuilder(CompilationContext& context, SymbolAccesibility access, gmt::Ref<SyntaxSymbol> parent)
+SymbolBuilder<ConstructorSymbol>::SymbolBuilder(CompilationContext& context, SymbolAccesibility access, SyntaxSymbol* parent)
 	: SymbolBuilder(context.get_semantic_model().get_table(), access, parent) { }
 
-SymbolBuilder<ConstructorSymbol>& SymbolBuilder<ConstructorSymbol>::add_parameter(std::wstring_view name, gmt::Ref<StructSymbol> type)
+SymbolBuilder<ConstructorSymbol>& SymbolBuilder<ConstructorSymbol>::add_parameter(std::wstring_view name, StructSymbol* type)
 {
-	gmt::Ref<ParameterSymbol> parameter = m_factory.create_parameter(name, m_symbol, type);
+	ParameterSymbol* parameter = m_factory.create_parameter(name, m_symbol, type);
 	m_symbol->on_symbol_declared(parameter);
 	return *this;
 }
@@ -377,9 +377,9 @@ SymbolBuilder<ConstructorSymbol>& SymbolBuilder<ConstructorSymbol>::set_may_thro
 	return *this;
 }
 
-SymbolBuilder<ConstructorSymbol>& SymbolBuilder<ConstructorSymbol>::set_throws_type(gmt::Ref<StructSymbol> type)
+SymbolBuilder<ConstructorSymbol>& SymbolBuilder<ConstructorSymbol>::set_throws_type(StructSymbol* type)
 {
-	if (!type.is_null())
+	if (!(type == nullptr))
 	{
 		MethodEffectSummary& summary = m_symbol->get_effect_summary();
 		summary.mayThrow = true;
@@ -417,7 +417,7 @@ SymbolBuilder<ConstructorSymbol>& SymbolBuilder<ConstructorSymbol>::set_has_unkn
 // OperatorSymbol
 // =========================================================================
 
-SymbolBuilder<OperatorSymbol>::SymbolBuilder(SymbolTable& table, TokenType operatorToken, gmt::Ref<StructSymbol> returnType, SymbolLinking linking, SymbolAccesibility access, gmt::Ref<SyntaxSymbol> parent)
+SymbolBuilder<OperatorSymbol>::SymbolBuilder(SymbolTable& table, TokenType operatorToken, StructSymbol* returnType, SymbolLinking linking, SymbolAccesibility access, SyntaxSymbol* parent)
 	: SymbolBuilderBase(table)
 {
 	m_symbol = m_table->emplace<OperatorSymbol>(get_operator_method_name(operatorToken), operatorToken, parent);
@@ -425,16 +425,16 @@ SymbolBuilder<OperatorSymbol>::SymbolBuilder(SymbolTable& table, TokenType opera
 	m_symbol->set_linking(linking);
 	m_symbol->set_accesibility(access);
 
-	if (!parent.is_null())
+	if (!(parent == nullptr))
 		parent->on_symbol_declared(m_symbol);
 }
 
-SymbolBuilder<OperatorSymbol>::SymbolBuilder(CompilationContext& context, TokenType operatorToken, gmt::Ref<StructSymbol> returnType, SymbolLinking linking, SymbolAccesibility access, gmt::Ref<SyntaxSymbol> parent)
+SymbolBuilder<OperatorSymbol>::SymbolBuilder(CompilationContext& context, TokenType operatorToken, StructSymbol* returnType, SymbolLinking linking, SymbolAccesibility access, SyntaxSymbol* parent)
 	: SymbolBuilder(context.get_semantic_model().get_table(), operatorToken, returnType, linking, access, parent) { }
 
-SymbolBuilder<OperatorSymbol>& SymbolBuilder<OperatorSymbol>::add_parameter(std::wstring_view name, gmt::Ref<StructSymbol> type)
+SymbolBuilder<OperatorSymbol>& SymbolBuilder<OperatorSymbol>::add_parameter(std::wstring_view name, StructSymbol* type)
 {
-	gmt::Ref<ParameterSymbol> parameter = m_factory.create_parameter(name, m_symbol, type);
+	ParameterSymbol* parameter = m_factory.create_parameter(name, m_symbol, type);
 	m_symbol->on_symbol_declared(parameter);
 	return *this;
 }
@@ -456,9 +456,9 @@ SymbolBuilder<OperatorSymbol>& SymbolBuilder<OperatorSymbol>::set_may_throw(bool
 	return *this;
 }
 
-SymbolBuilder<OperatorSymbol>& SymbolBuilder<OperatorSymbol>::set_throws_type(gmt::Ref<StructSymbol> type)
+SymbolBuilder<OperatorSymbol>& SymbolBuilder<OperatorSymbol>::set_throws_type(StructSymbol* type)
 {
-	if (!type.is_null())
+	if (!(type == nullptr))
 	{
 		MethodEffectSummary& summary = m_symbol->get_effect_summary();
 		summary.mayThrow = true;
@@ -496,25 +496,25 @@ SymbolBuilder<OperatorSymbol>& SymbolBuilder<OperatorSymbol>::set_has_unknown_si
 // PropertySymbol
 // =========================================================================
 
-SymbolBuilder<PropertySymbol>::SymbolBuilder(SymbolTable& table, std::wstring_view name, gmt::Ref<StructSymbol> type, SymbolLinking linking, SymbolAccesibility access, gmt::Ref<SyntaxSymbol> parent)
+SymbolBuilder<PropertySymbol>::SymbolBuilder(SymbolTable& table, std::wstring_view name, StructSymbol* type, SymbolLinking linking, SymbolAccesibility access, SyntaxSymbol* parent)
 	: SymbolBuilderBase(table)
 {
 	m_symbol = m_factory.create_property(name, parent, type, linking);
 	m_symbol->set_accesibility(access);
 
-	if (!parent.is_null())
+	if (!(parent == nullptr))
 		parent->on_symbol_declared(m_symbol);
 }
 
-SymbolBuilder<PropertySymbol>::SymbolBuilder(CompilationContext& context, std::wstring_view name, gmt::Ref<StructSymbol> type, SymbolLinking linking, SymbolAccesibility access, gmt::Ref<SyntaxSymbol> parent)
+SymbolBuilder<PropertySymbol>::SymbolBuilder(CompilationContext& context, std::wstring_view name, StructSymbol* type, SymbolLinking linking, SymbolAccesibility access, SyntaxSymbol* parent)
 	: SymbolBuilder(context.get_semantic_model().get_table(), name, type, linking, access, parent) { }
 
 SymbolBuilder<FieldSymbol> SymbolBuilder<PropertySymbol>::add_backing_field()
 {
-	gmt::Ref<const SyntaxSymbol> constParent = m_symbol->get_parent();
-	std::optional<gmt::Ref<SyntaxSymbol>> parent = m_table->get_arena().ref_from_ptr(const_cast<SyntaxSymbol*>(constParent.as_ptr()));
+	const SyntaxSymbol* constParent = m_symbol->get_parent();
+	std::optional<SyntaxSymbol*> parent = m_table->get_arena().ref_from_ptr(const_cast<SyntaxSymbol*>(constParent));
 
-	gmt::Ref<FieldSymbol> field = m_factory.create_backing_field(m_symbol, parent.value_or(gmt::nullref));
+	FieldSymbol* field = m_factory.create_backing_field(m_symbol, parent.value_or(nullptr));
 	if (parent.has_value())
 		(*parent)->on_symbol_declared(field);
 
@@ -535,37 +535,37 @@ SymbolBuilder<AccessorSymbol> SymbolBuilder<PropertySymbol>::add_setter(SymbolAc
 // IndexatorSymbol
 // =========================================================================
 
-SymbolBuilder<IndexatorSymbol>::SymbolBuilder(SymbolTable& table, std::wstring_view name, gmt::Ref<StructSymbol> type, SymbolLinking linking, SymbolAccesibility access, gmt::Ref<SyntaxSymbol> parent)
+SymbolBuilder<IndexatorSymbol>::SymbolBuilder(SymbolTable& table, std::wstring_view name, StructSymbol* type, SymbolLinking linking, SymbolAccesibility access, SyntaxSymbol* parent)
 	: SymbolBuilderBase(table)
 {
 	m_symbol = m_factory.create_indexator(name, parent, type);
 	m_symbol->set_linking(linking);
 	m_symbol->set_accesibility(access);
 
-	if (!parent.is_null())
+	if (!(parent == nullptr))
 		parent->on_symbol_declared(m_symbol);
 }
 
-SymbolBuilder<IndexatorSymbol>::SymbolBuilder(CompilationContext& context, std::wstring_view name, gmt::Ref<StructSymbol> type, SymbolLinking linking, SymbolAccesibility access, gmt::Ref<SyntaxSymbol> parent)
+SymbolBuilder<IndexatorSymbol>::SymbolBuilder(CompilationContext& context, std::wstring_view name, StructSymbol* type, SymbolLinking linking, SymbolAccesibility access, SyntaxSymbol* parent)
 	: SymbolBuilder(context.get_semantic_model().get_table(), name, type, linking, access, parent) { }
 
-SymbolBuilder<IndexatorSymbol>& SymbolBuilder<IndexatorSymbol>::add_parameter(std::wstring_view name, gmt::Ref<StructSymbol> type)
+SymbolBuilder<IndexatorSymbol>& SymbolBuilder<IndexatorSymbol>::add_parameter(std::wstring_view name, StructSymbol* type)
 {
-	gmt::Ref<ParameterSymbol> parameter = m_factory.create_parameter(name, m_symbol, type);
+	ParameterSymbol* parameter = m_factory.create_parameter(name, m_symbol, type);
 	m_symbol->on_symbol_declared(parameter);
 	return *this;
 }
 
 SymbolBuilder<AccessorSymbol> SymbolBuilder<IndexatorSymbol>::add_getter(SymbolAccesibility access)
 {
-	gmt::Ref<AccessorSymbol> accessor = m_table->emplace<AccessorSymbol>(L"get", m_symbol);
+	AccessorSymbol* accessor = m_table->emplace<AccessorSymbol>(L"get", m_symbol);
 	accessor->set_return_type(m_symbol->get_return_type());
 	accessor->set_linking(m_symbol->get_linking());
 	accessor->set_accesibility(access);
 
-	for (gmt::Ref<ParameterSymbol> parameter : m_symbol->get_parameters())
+	for (ParameterSymbol* parameter : m_symbol->get_parameters())
 	{
-		gmt::Ref<ParameterSymbol> copy = m_factory.create_parameter(parameter->get_name(), accessor, parameter->get_type());
+		ParameterSymbol* copy = m_factory.create_parameter(parameter->get_name(), accessor, parameter->get_type());
 		accessor->on_symbol_declared(copy);
 	}
 
@@ -575,18 +575,18 @@ SymbolBuilder<AccessorSymbol> SymbolBuilder<IndexatorSymbol>::add_getter(SymbolA
 
 SymbolBuilder<AccessorSymbol> SymbolBuilder<IndexatorSymbol>::add_setter(SymbolAccesibility access)
 {
-	gmt::Ref<AccessorSymbol> accessor = m_table->emplace<AccessorSymbol>(L"set", m_symbol);
+	AccessorSymbol* accessor = m_table->emplace<AccessorSymbol>(L"set", m_symbol);
 	accessor->set_return_type(m_table->get_void_primitive());
 	accessor->set_linking(m_symbol->get_linking());
 	accessor->set_accesibility(access);
 
-	for (gmt::Ref<ParameterSymbol> parameter : m_symbol->get_parameters())
+	for (ParameterSymbol* parameter : m_symbol->get_parameters())
 	{
-		gmt::Ref<ParameterSymbol> copy = m_factory.create_parameter(parameter->get_name(), accessor, parameter->get_type());
+		ParameterSymbol* copy = m_factory.create_parameter(parameter->get_name(), accessor, parameter->get_type());
 		accessor->on_symbol_declared(copy);
 	}
 
-	gmt::Ref<ParameterSymbol> value = m_factory.create_parameter(L"value", accessor, m_symbol->get_return_type());
+	ParameterSymbol* value = m_factory.create_parameter(L"value", accessor, m_symbol->get_return_type());
 	accessor->on_symbol_declared(value);
 
 	m_symbol->set_setter(accessor);
@@ -597,16 +597,16 @@ SymbolBuilder<AccessorSymbol> SymbolBuilder<IndexatorSymbol>::add_setter(SymbolA
 // AccessorSymbol
 // =========================================================================
 
-SymbolBuilder<AccessorSymbol>::SymbolBuilder(SymbolTable& table, gmt::Ref<AccessorSymbol> symbol)
+SymbolBuilder<AccessorSymbol>::SymbolBuilder(SymbolTable& table, AccessorSymbol* symbol)
 	: SymbolBuilderBase(table)
 {
 	m_symbol = symbol;
 }
 
-SymbolBuilder<AccessorSymbol>::SymbolBuilder(CompilationContext& context, gmt::Ref<AccessorSymbol> symbol)
+SymbolBuilder<AccessorSymbol>::SymbolBuilder(CompilationContext& context, AccessorSymbol* symbol)
 	: SymbolBuilder(context.get_semantic_model().get_table(), symbol) { }
 
-SymbolBuilder<AccessorSymbol>::SymbolBuilder(SymbolTable& table, bool isGetter, SymbolAccesibility access, gmt::Ref<PropertySymbol> property)
+SymbolBuilder<AccessorSymbol>::SymbolBuilder(SymbolTable& table, bool isGetter, SymbolAccesibility access, PropertySymbol* property)
 	: SymbolBuilderBase(table)
 {
 	m_symbol = isGetter
@@ -616,12 +616,12 @@ SymbolBuilder<AccessorSymbol>::SymbolBuilder(SymbolTable& table, bool isGetter, 
 	m_symbol->set_accesibility(access);
 }
 
-SymbolBuilder<AccessorSymbol>::SymbolBuilder(CompilationContext& context, bool isGetter, SymbolAccesibility access, gmt::Ref<PropertySymbol> property)
+SymbolBuilder<AccessorSymbol>::SymbolBuilder(CompilationContext& context, bool isGetter, SymbolAccesibility access, PropertySymbol* property)
 	: SymbolBuilder(context.get_semantic_model().get_table(), isGetter, access, property) { }
 
-SymbolBuilder<AccessorSymbol>& SymbolBuilder<AccessorSymbol>::add_parameter(std::wstring_view name, gmt::Ref<StructSymbol> type)
+SymbolBuilder<AccessorSymbol>& SymbolBuilder<AccessorSymbol>::add_parameter(std::wstring_view name, StructSymbol* type)
 {
-	gmt::Ref<ParameterSymbol> parameter = m_factory.create_parameter(name, m_symbol, type);
+	ParameterSymbol* parameter = m_factory.create_parameter(name, m_symbol, type);
 	m_symbol->on_symbol_declared(parameter);
 	return *this;
 }
@@ -643,9 +643,9 @@ SymbolBuilder<AccessorSymbol>& SymbolBuilder<AccessorSymbol>::set_may_throw(bool
 	return *this;
 }
 
-SymbolBuilder<AccessorSymbol>& SymbolBuilder<AccessorSymbol>::set_throws_type(gmt::Ref<StructSymbol> type)
+SymbolBuilder<AccessorSymbol>& SymbolBuilder<AccessorSymbol>::set_throws_type(StructSymbol* type)
 {
-	if (!type.is_null())
+	if (!(type == nullptr))
 	{
 		MethodEffectSummary& summary = m_symbol->get_effect_summary();
 		summary.mayThrow = true;
@@ -683,27 +683,27 @@ SymbolBuilder<AccessorSymbol>& SymbolBuilder<AccessorSymbol>::set_has_unknown_si
 // TypeParameterSymbol
 // =========================================================================
 
-SymbolBuilder<TypeParameterSymbol>::SymbolBuilder(SymbolTable& table, std::wstring_view name, gmt::Ref<SyntaxSymbol> parent)
+SymbolBuilder<TypeParameterSymbol>::SymbolBuilder(SymbolTable& table, std::wstring_view name, SyntaxSymbol* parent)
 	: SymbolBuilderBase(table)
 {
-	bool isMethodParent = !parent.is_null() && parent->get_kind() == SyntaxKind::FunctionDeclaration;
-	bool isTypeParent = !parent.is_null() && parent->is_type();
+	bool isMethodParent = !(parent == nullptr) && parent->get_kind() == SyntaxKind::FunctionDeclaration;
+	bool isTypeParent = !(parent == nullptr) && parent->is_type();
 
 	if (isMethodParent)
-		m_symbol = m_factory.create_type_parameter(name, parent.as<MethodSymbol>());
+		m_symbol = m_factory.create_type_parameter(name, static_cast<MethodSymbol*>(parent));
 	else if (isTypeParent)
-		m_symbol = m_factory.create_type_parameter(name, parent.as<StructSymbol>());
+		m_symbol = m_factory.create_type_parameter(name, static_cast<StructSymbol*>(parent));
 
-	if (!m_symbol.is_null() && !parent.is_null())
+	if (!(m_symbol == nullptr) && !(parent == nullptr))
 		parent->on_symbol_declared(m_symbol);
 }
 
-SymbolBuilder<TypeParameterSymbol>::SymbolBuilder(CompilationContext& context, std::wstring_view name, gmt::Ref<SyntaxSymbol> parent)
+SymbolBuilder<TypeParameterSymbol>::SymbolBuilder(CompilationContext& context, std::wstring_view name, SyntaxSymbol* parent)
 	: SymbolBuilder(context.get_semantic_model().get_table(), name, parent) { }
 
-SymbolBuilder<TypeParameterSymbol>& SymbolBuilder<TypeParameterSymbol>::add_constraint(gmt::Ref<StructSymbol> constraint)
+SymbolBuilder<TypeParameterSymbol>& SymbolBuilder<TypeParameterSymbol>::add_constraint(StructSymbol* constraint)
 {
-	if (!constraint.is_null())
+	if (!(constraint == nullptr))
 		m_symbol->add_constraint(constraint);
 
 	return *this;

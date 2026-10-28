@@ -15,19 +15,19 @@ namespace shard
 {
 	class SHARD_API QualifiedNameTypeSyntax final : public TypeSyntax
 	{
-		gmt::Ref<TypeSyntax> m_left;
+		TypeSyntax* m_left = nullptr;
 		SyntaxToken m_qualifierToken;
 		SyntaxToken m_identifierToken;
 
 	public:
-		QualifiedNameTypeSyntax(gmt::Ref<SyntaxNode> parent);
+		QualifiedNameTypeSyntax(SyntaxNode* parent);
 		virtual ~QualifiedNameTypeSyntax() = default;
 
-		gmt::Ref<const TypeSyntax> get_left() const;
+		const TypeSyntax* get_left() const;
 		SyntaxToken get_qualifier_token() const;
 		SyntaxToken get_identifier() const;
 
-		void set_left(gmt::Ref<TypeSyntax> left);
+		void set_left(TypeSyntax* left);
 		void set_qualifier_token(const SyntaxToken& token);
 		void set_identifier(const SyntaxToken& token);
 

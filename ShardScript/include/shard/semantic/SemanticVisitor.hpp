@@ -41,7 +41,7 @@ namespace shard
 
 		SemanticScope* get_current_scope();
 		void pop_scope_stack();
-		void push_scope(gmt::Ref<SyntaxSymbol> symbol);
+		void push_scope(SyntaxSymbol* symbol);
 		void pop_scope();
 
 	protected:
@@ -50,21 +50,21 @@ namespace shard
 		SemanticModel& get_model();
 
 		template<typename T>
-		gmt::Ref<T> lookup_symbol(gmt::Ref<const SyntaxNode> node);
+		T* lookup_symbol(const SyntaxNode* node);
 
 		template<typename T>
-		std::optional<gmt::Ref<const T>> ref_from(const T* ptr);
+		std::optional<const T*> ref_from(const T* ptr);
 
-		virtual void declare(gmt::Ref<SyntaxSymbol> symbol);
+		virtual void declare(SyntaxSymbol* symbol);
 
 		virtual bool check_name_declared(std::wstring_view name);
-		virtual bool check_name_declared(gmt::Ref<SyntaxSymbol> symbol);
+		virtual bool check_name_declared(SyntaxSymbol* symbol);
 
-		gmt::Ref<SyntaxSymbol> get_owner_symbol();
-		gmt::Ref<StructSymbol> get_owner_type();
-		gmt::Ref<MethodSymbol> find_host_method_symbol();
+		SyntaxSymbol* get_owner_symbol();
+		StructSymbol* get_owner_type();
+		MethodSymbol* find_host_method_symbol();
 
-		bool is_symbol_accessible(gmt::Ref<SyntaxSymbol> symbol, gmt::Ref<const SyntaxNode> symbolDeclaringNode, gmt::Ref<const SyntaxNode> callSiteNode);
+		bool is_symbol_accessible(SyntaxSymbol* symbol, const SyntaxNode* symbolDeclaringNode, const SyntaxNode* callSiteNode);
 	};
 }
 

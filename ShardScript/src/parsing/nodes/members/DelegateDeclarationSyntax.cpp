@@ -5,15 +5,15 @@
 
 using namespace shard;
 
-DelegateDeclarationSyntax::DelegateDeclarationSyntax(gmt::Ref<SyntaxNode> parent)
+DelegateDeclarationSyntax::DelegateDeclarationSyntax(SyntaxNode* parent)
 	: TypeDeclarationSyntax(SyntaxKind::DelegateDeclaration, parent) { }
 
-gmt::Ref<const ParametersListSyntax> DelegateDeclarationSyntax::get_parameters_list() const
+const ParametersListSyntax* DelegateDeclarationSyntax::get_parameters_list() const
 {
 	return m_parametersList;
 }
 
-gmt::Ref<const TypeSyntax> DelegateDeclarationSyntax::get_return_type() const
+const TypeSyntax* DelegateDeclarationSyntax::get_return_type() const
 {
 	return m_returnType;
 }
@@ -23,12 +23,12 @@ SyntaxToken DelegateDeclarationSyntax::get_semicolon() const
 	return m_semicolonToken;
 }
 
-void DelegateDeclarationSyntax::set_parameters_list(gmt::Ref<ParametersListSyntax> parametersList)
+void DelegateDeclarationSyntax::set_parameters_list(ParametersListSyntax* parametersList)
 {
 	m_parametersList = parametersList;
 }
 
-void DelegateDeclarationSyntax::set_return_type(gmt::Ref<TypeSyntax> returnType)
+void DelegateDeclarationSyntax::set_return_type(TypeSyntax* returnType)
 {
 	m_returnType = returnType;
 }

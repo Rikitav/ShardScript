@@ -37,9 +37,9 @@ namespace
 		out.flags(oldFlags);
 	}
 
-	void write_symbol_name(std::wostream& out, gmt::Ref<SyntaxSymbol> symbol)
+	void write_symbol_name(std::wostream& out, SyntaxSymbol* symbol)
 	{
-		if (symbol.is_null())
+		if ((symbol == nullptr))
 		{
 			out << L"null";
 			return;
@@ -425,7 +425,7 @@ namespace
 	}
 }
 
-void ProgramDisassembler::disassemble_method(std::wostream& out, gmt::Ref<MethodSymbol> method)
+void ProgramDisassembler::disassemble_method(std::wostream& out, MethodSymbol* method)
 {
 	const BytecodeSection& text = m_domain.get_program().get_text_section();
 	const gmt::Arena& arena = m_domain.get_semantic_model().get_table().get_arena();
@@ -452,13 +452,13 @@ void ProgramDisassembler::disassemble_method(std::wostream& out, gmt::Ref<Method
 }
 
 template<typename T>
-inline gmt::Ref<T> ProgramDisassembler::lookup_symbol(const SyntaxNode* node)
+inline T* ProgramDisassembler::lookup_symbol(const SyntaxNode* node)
 {
-	std::optional<gmt::Ref<const SyntaxNode>> nodeRefOpt = m_domain.get_semantic_model().get_tree().get_arena().ref_from_ptr(node);
+	std::optional<const SyntaxNode*> nodeRefOpt = m_domain.get_semantic_model().get_tree().get_arena().ref_from_ptr(node);
 	if (!nodeRefOpt.has_value())
-		return gmt::nullref;
+		return nullptr;
 
-	return m_domain.get_semantic_model().get_table().lookup_symbol(nodeRefOpt.value()).as<T>();
+	return static_cast<T*>(m_domain.get_semantic_model().get_table().lookup_symbol(nodeRefOpt.value()));
 }
 
 void ProgramDisassembler::disassemble(std::wostream& out)
@@ -466,19 +466,19 @@ void ProgramDisassembler::disassemble(std::wostream& out)
 	if (m_foundMethods.empty())
 	{
 		m_foundMethods.clear();
-		for (gmt::Ref<const TranslationUnitSyntax> unit : m_domain.get_semantic_model().get_tree().get_units())
-			visit_translation_unit(unit.as_ptr());
+		for (const TranslationUnitSyntax* unit : m_domain.get_semantic_model().get_tree().get_units())
+			visit_translation_unit(unit);
 	}
 
-	gmt::Ref<MethodSymbol> entryPoint = m_domain.get_program().get_entry_point();
-	if (!entryPoint.is_null())
+	MethodSymbol* entryPoint = m_domain.get_program().get_entry_point();
+	if (!(entryPoint == nullptr))
 	{
 		disassemble_method(out, entryPoint);
 	}
 
-	for (gmt::Ref<MethodSymbol> method : m_foundMethods)
+	for (MethodSymbol* method : m_foundMethods)
 	{
-		if (method.is_null())
+		if ((method == nullptr))
 			continue;
 
 		std::size_t start = reinterpret_cast<std::size_t>(method->get_function_pointer());
@@ -496,13 +496,13 @@ ProgramDisassembler::ProgramDisassembler(const ApplicationDomain& domain)
 
 void ProgramDisassembler::visit_function_declaration(const FunctionDeclarationSyntax* node)
 {
-	gmt::Ref<MethodSymbol> method = lookup_symbol<MethodSymbol>(node);
-	if (!method.is_null() && method != m_domain.get_program().get_entry_point())
+	MethodSymbol* method = lookup_symbol<MethodSymbol>(node);
+	if (!(method == nullptr) && method != m_domain.get_program().get_entry_point())
 	{
 		std::size_t start = reinterpret_cast<std::size_t>(method->get_function_pointer());
 		auto it = std::lower_bound(
 			m_foundMethods.begin(), m_foundMethods.end(), start,
-			[&](gmt::Ref<MethodSymbol> methodF, std::size_t) -> bool
+			[&](MethodSymbol* methodF, std::size_t) -> bool
 			{
 				std::size_t startF = reinterpret_cast<std::size_t>(methodF->get_function_pointer());
 				return startF < start;

@@ -70,7 +70,7 @@ namespace shard
 		static constexpr std::uintptr_t ReferenceTag = 1;
 
 	private:
-		gmt::Ref<MethodSymbol> m_method;
+		MethodSymbol* m_method = nullptr;
 		CallStackFrame* m_previous = nullptr;
 		std::size_t m_instructionPointer = 0;
 		InterruptionReason m_interruption = InterruptionReason::None;
@@ -111,13 +111,13 @@ namespace shard
 
 	public:
 		static FrameEntryView peek_entry(std::byte* entry);
-		static CallStackFrame* create(gmt::Ref<MethodSymbol> method, const FrameLayout* layout, SemanticModel& model, PragmaticModel& pragmatic, CallStackFrame* previous, std::byte* externalReturnEntry = nullptr, std::size_t externalReturnPayload = 0, FrameBlockPool* pool = nullptr);
+		static CallStackFrame* create(MethodSymbol* method, const FrameLayout* layout, SemanticModel& model, PragmaticModel& pragmatic, CallStackFrame* previous, std::byte* externalReturnEntry = nullptr, std::size_t externalReturnPayload = 0, FrameBlockPool* pool = nullptr);
 		static void destroy(CallStackFrame* frame, FrameBlockPool* pool = nullptr);
 
 		CallStackFrame(const CallStackFrame&) = delete;
 		CallStackFrame& operator=(const CallStackFrame&) = delete;
 
-		gmt::Ref<MethodSymbol> get_method() const;
+		MethodSymbol* get_method() const;
 		CallStackFrame* get_previous() const;
 
 		std::size_t get_instruction_pointer() const;

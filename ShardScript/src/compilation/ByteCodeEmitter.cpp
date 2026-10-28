@@ -46,16 +46,16 @@ ByteCodeEmitter::ByteCodeEmitter(VirtualProgramImage& image, SemanticModel& mode
 	, m_encoder(image)
 { }
 
-const TypeShape* ByteCodeEmitter::shape_of(gmt::Ref<StructSymbol> type)
+const TypeShape* ByteCodeEmitter::shape_of(StructSymbol* type)
 {
-	if (type.is_null())
+	if ((type == nullptr))
 		return nullptr;
 
 	type = substitute_type(type);
 	return m_pragmatic.find_or_create_type_shape(get_model(), type);
 }
 
-std::size_t ByteCodeEmitter::payload_of(gmt::Ref<StructSymbol> type)
+std::size_t ByteCodeEmitter::payload_of(StructSymbol* type)
 {
 	const TypeShape* shape = shape_of(type);
 	if (shape == nullptr)
@@ -77,7 +77,7 @@ void ByteCodeEmitter::eval_push(std::size_t payload)
 	m_maxEvalPayload = (std::max)(m_maxEvalPayload, payload);
 }
 
-void ByteCodeEmitter::eval_push_type(gmt::Ref<StructSymbol> type)
+void ByteCodeEmitter::eval_push_type(StructSymbol* type)
 {
 	eval_push(payload_of(type));
 }
@@ -111,15 +111,15 @@ void ByteCodeEmitter::patch_target(std::size_t at, std::size_t target)
 	ByteCodeEncoder::paste_data(m_image.get_text_section(), at + sizeof(OpCode), &target, sizeof(std::size_t));
 }
 
-std::optional<std::uint16_t> ByteCodeEmitter::slot_of(gmt::Ref<SyntaxSymbol> symbol) const
+std::optional<std::uint16_t> ByteCodeEmitter::slot_of(SyntaxSymbol* symbol) const
 {
-	if (symbol.is_null() || m_generatingFor.is_null())
+	if ((symbol == nullptr) || (m_generatingFor == nullptr))
 		return std::nullopt;
 
 	if (symbol->get_kind() == SyntaxKind::Parameter)
 	{
 		std::uint16_t index = m_generatingFor->get_linking() == LINK_INSTANCE ? 1 : 0;
-		for (gmt::Ref<ParameterSymbol> parameter : m_generatingFor->get_parameters())
+		for (ParameterSymbol* parameter : m_generatingFor->get_parameters())
 		{
 			if (parameter == symbol)
 				return index;
@@ -145,20 +145,20 @@ std::optional<std::uint16_t> ByteCodeEmitter::slot_of(gmt::Ref<SyntaxSymbol> sym
 	return std::nullopt;
 }
 
-std::optional<std::uint16_t> ByteCodeEmitter::scalar_field_slot(gmt::Ref<SyntaxSymbol> variable, gmt::Ref<FieldSymbol> field) const
+std::optional<std::uint16_t> ByteCodeEmitter::scalar_field_slot(SyntaxSymbol* variable, FieldSymbol* field) const
 {
 	std::optional<std::uint16_t> base = m_pragmatic.get_local_slot(m_generatingFor, variable);
 	if (!base.has_value())
 		return std::nullopt;
 
-	gmt::Ref<StructSymbol> ownerType = field->get_parent().as<StructSymbol>();
-	if (ownerType.is_null())
+	StructSymbol* ownerType = gmt::as<StructSymbol>(field->get_parent());
+	if ((ownerType == nullptr))
 		return std::nullopt;
 
 	std::uint16_t ordinal = 0;
-	for (gmt::Ref<FieldSymbol> candidate : ownerType->fields)
+	for (FieldSymbol* candidate : ownerType->fields)
 	{
-		if (candidate.is_null() || candidate->get_return_type().is_null())
+		if ((candidate == nullptr) || (candidate->get_return_type() == nullptr))
 			continue;
 
 		if (candidate->get_linking() == LINK_STATIC)
@@ -173,23 +173,23 @@ std::optional<std::uint16_t> ByteCodeEmitter::scalar_field_slot(gmt::Ref<SyntaxS
 	return std::nullopt;
 }
 
-std::uint16_t ByteCodeEmitter::allocate_temporary(gmt::Ref<StructSymbol> type, PlacementVerdict verdict)
+std::uint16_t ByteCodeEmitter::allocate_temporary(StructSymbol* type, PlacementVerdict verdict)
 {
 	type = substitute_type(type);
 	std::uint16_t variableIndex = m_layout->add_temporary(type, shape_of(type), verdict);
 	return m_layout->get_argument_count() + variableIndex;
 }
 
-std::uint32_t ByteCodeEmitter::field_slot_index(gmt::Ref<FieldSymbol> field) const
+std::uint32_t ByteCodeEmitter::field_slot_index(FieldSymbol* field) const
 {
-	gmt::Ref<StructSymbol> ownerType = field->get_parent().as<StructSymbol>();
-	if (ownerType.is_null())
+	StructSymbol* ownerType = gmt::as<StructSymbol>(field->get_parent());
+	if ((ownerType == nullptr))
 		return 0;
 
 	std::uint32_t ordinal = 0;
-	for (gmt::Ref<FieldSymbol> candidate : ownerType->fields)
+	for (FieldSymbol* candidate : ownerType->fields)
 	{
-		if (candidate.is_null() || candidate->get_return_type().is_null())
+		if ((candidate == nullptr) || (candidate->get_return_type() == nullptr))
 			continue;
 
 		if (candidate->get_linking() == LINK_STATIC)
@@ -204,9 +204,9 @@ std::uint32_t ByteCodeEmitter::field_slot_index(gmt::Ref<FieldSymbol> field) con
 	return ordinal;
 }
 
-PlacementVerdict ByteCodeEmitter::local_verdict(gmt::Ref<SyntaxSymbol> symbol) const
+PlacementVerdict ByteCodeEmitter::local_verdict(SyntaxSymbol* symbol) const
 {
-	if (m_generatingFor.is_null())
+	if ((m_generatingFor == nullptr))
 		return PlacementVerdict::Heap;
 
 	// the frame layout is the post-demotion truth for slot placement
@@ -230,7 +230,7 @@ PlacementVerdict ByteCodeEmitter::local_verdict(gmt::Ref<SyntaxSymbol> symbol) c
 	return verdict.verdict;
 }
 
-PlacementVerdict ByteCodeEmitter::site_verdict(gmt::Ref<const ExpressionSyntax> site) const
+PlacementVerdict ByteCodeEmitter::site_verdict(const ExpressionSyntax* site) const
 {
 	std::optional<AllocationSiteVerdict> verdict = m_pragmatic.get_allocation_site_verdict(site);
 	if (!verdict.has_value())
@@ -250,7 +250,7 @@ PlacementVerdict ByteCodeEmitter::site_verdict(gmt::Ref<const ExpressionSyntax> 
 	return verdict->verdict;
 }
 
-void ByteCodeEmitter::begin_method(gmt::Ref<MethodSymbol> method)
+void ByteCodeEmitter::begin_method(MethodSymbol* method)
 {
 	m_generatingFor = method;
 	m_layout = m_pragmatic.find_frame_layout(method);
@@ -287,31 +287,31 @@ void ByteCodeEmitter::end_method()
 		end_method();
 	}
 
-	m_generatingFor = gmt::nullref;
+	m_generatingFor = nullptr;
 	m_layout = nullptr;
 }
 
-void ByteCodeEmitter::emit_body(gmt::Ref<const BlockSyntax> body)
+void ByteCodeEmitter::emit_body(const BlockSyntax* body)
 {
-	if (body.is_null())
+	if ((body == nullptr))
 		return;
 
 	if (body->get_kind() == SyntaxKind::ArrowClause)
 	{
-		const ArrowClauseSyntax* arrow = body.as<ArrowClauseSyntax>().as_ptr();
-		if (!arrow->get_expression().is_null())
+		const ArrowClauseSyntax* arrow = gmt::as<ArrowClauseSyntax>(body);
+		if (!(arrow->get_expression() == nullptr))
 		{
-			arrow->get_expression().as_ptr()->accept(*this);
+			arrow->get_expression()->accept(*this);
 			eval_pop();
 		}
 
 		return;
 	}
 
-	visit_statements_block(body.as<StatementsBlockSyntax>().as_ptr());
+	visit_statements_block(gmt::as<StatementsBlockSyntax>(body));
 }
 
-bool ByteCodeEmitter::method_supported(gmt::Ref<MethodSymbol> method, gmt::Ref<const SyntaxNode> blame)
+bool ByteCodeEmitter::method_supported(MethodSymbol* method, const SyntaxNode* blame)
 {
 	if (method->get_is_async())
 	{
@@ -322,69 +322,69 @@ bool ByteCodeEmitter::method_supported(gmt::Ref<MethodSymbol> method, gmt::Ref<c
 	return true;
 }
 
-gmt::Ref<StructSymbol> ByteCodeEmitter::substitute_type(gmt::Ref<StructSymbol> type)
+StructSymbol* ByteCodeEmitter::substitute_type(StructSymbol* type)
 {
-	if (type.is_null() || m_currentInstantiation.is_null())
+	if ((type == nullptr) || (m_currentInstantiation == nullptr))
 		return type;
 
 	return get_model().substitute_type(type, m_currentInstantiation->get_type_arguments());
 }
 
-gmt::Ref<StructSymbol> ByteCodeEmitter::owner_type_of(gmt::Ref<MethodSymbol> method)
+StructSymbol* ByteCodeEmitter::owner_type_of(MethodSymbol* method)
 {
 	// accessors are parented to their property, so walk to the enclosing type
-	gmt::Ref<const SyntaxSymbol> current = method->get_parent();
-	while (!current.is_null())
+	const SyntaxSymbol* current = method->get_parent();
+	while (!(current == nullptr))
 	{
 		if (current->is_type())
-			return current.as<StructSymbol>();
+			return gmt::as<StructSymbol>(current);
 
 		current = current->get_parent();
 	}
 
-	return gmt::nullref;
+	return nullptr;
 }
 
-bool ByteCodeEmitter::is_generic_definition(gmt::Ref<MethodSymbol> method)
+bool ByteCodeEmitter::is_generic_definition(MethodSymbol* method)
 {
-	if (method.is_null())
+	if ((method == nullptr))
 		return false;
 
 	if (!method->get_type_parameters().empty())
 		return true;
 
-	gmt::Ref<StructSymbol> ownerType = owner_type_of(method);
-	return !ownerType.is_null() && !ownerType->type_parameters.empty();
+	StructSymbol* ownerType = owner_type_of(method);
+	return !(ownerType == nullptr) && !ownerType->type_parameters.empty();
 }
 
-gmt::Ref<MethodSymbol> ByteCodeEmitter::resolve_call_target(gmt::Ref<const SyntaxNode> node, gmt::Ref<MethodSymbol> method, gmt::Ref<StructSymbol> receiverType)
+MethodSymbol* ByteCodeEmitter::resolve_call_target(const SyntaxNode* node, MethodSymbol* method, StructSymbol* receiverType)
 {
-	if (method.is_null() || method->get_is_generic_instantiation())
+	if ((method == nullptr) || method->get_is_generic_instantiation())
 		return method;
 
 	if (method->get_calling_convention() == CallingConvention::ShardDecl)
 		return method;
 
-	gmt::Ref<StructSymbol> ownerType = owner_type_of(method);
-	const bool ownerGeneric = !ownerType.is_null() && !ownerType->type_parameters.empty();
+	StructSymbol* ownerType = owner_type_of(method);
+	const bool ownerGeneric = !(ownerType == nullptr) && !ownerType->type_parameters.empty();
 	const bool methodGeneric = !method->get_type_parameters().empty();
 
 	if (!ownerGeneric && !methodGeneric)
 		return method;
 
-	bool interfaceOwner = !ownerType.is_null() && ownerType->get_kind() == SyntaxKind::InterfaceDeclaration;
+	bool interfaceOwner = !(ownerType == nullptr) && ownerType->get_kind() == SyntaxKind::InterfaceDeclaration;
 	if (interfaceOwner || method->get_is_virtual())
 	{
 		unsupported(node, L"virtual generic method invokations");
-		return gmt::nullref;
+		return nullptr;
 	}
 
 	// combined index space: owner type arguments first, then the method's own;
 	// matches TypeParameterSymbol::get_type_argument_index
-	gmt::inline_vector<gmt::Ref<StructSymbol>, 8> combinedStorage;
-	std::pmr::vector<gmt::Ref<StructSymbol>>& combined = combinedStorage.get_vector();
+	gmt::inline_vector<StructSymbol*, 8> combinedStorage;
+	std::pmr::vector<StructSymbol*>& combined = combinedStorage.get_vector();
 
-	std::span<const gmt::Ref<StructSymbol>> boundArguments = get_symbol_table().lookup_type_arguments(node);
+	std::span<StructSymbol* const> boundArguments = get_symbol_table().lookup_type_arguments(node);
 	if (!boundArguments.empty())
 	{
 		combined.assign(boundArguments.begin(), boundArguments.end());
@@ -392,46 +392,46 @@ gmt::Ref<MethodSymbol> ByteCodeEmitter::resolve_call_target(gmt::Ref<const Synta
 	else if (methodGeneric)
 	{
 		// no inference site reached the emitter; the binder already reported it
-		return gmt::nullref;
+		return nullptr;
 	}
-	else if (!receiverType.is_null() && receiverType->get_kind() == SyntaxKind::GenericType)
+	else if (!(receiverType == nullptr) && receiverType->get_kind() == SyntaxKind::GenericType)
 	{
-		gmt::Ref<GenericTypeSymbol> constructed = receiverType.as<GenericTypeSymbol>();
-		for (gmt::Ref<TypeParameterSymbol> parameter : ownerType->type_parameters)
+		GenericTypeSymbol* constructed = static_cast<GenericTypeSymbol*>(receiverType);
+		for (TypeParameterSymbol* parameter : ownerType->type_parameters)
 			combined.push_back(constructed->substitute_type_parameter(parameter));
 	}
 	else
 	{
 		// this-routed call inside a generic body: identity arguments that the
 		// enclosing instantiation context resolves below
-		for (gmt::Ref<TypeParameterSymbol> parameter : ownerType->type_parameters)
+		for (TypeParameterSymbol* parameter : ownerType->type_parameters)
 			combined.push_back(parameter);
 	}
 
-	for (gmt::Ref<StructSymbol>& argument : combined)
+	for (StructSymbol*& argument : combined)
 	{
 		argument = substitute_type(argument);
-		if (argument.is_null() || argument->get_kind() == SyntaxKind::TypeParameter)
-			return gmt::nullref;
+		if ((argument == nullptr) || argument->get_kind() == SyntaxKind::TypeParameter)
+			return nullptr;
 	}
 
-	std::span<const gmt::Ref<StructSymbol>> argumentsSpan(combined.data(), combined.size());
-	gmt::Ref<StructSymbol> returnType = get_model().substitute_type(method->get_return_type(), argumentsSpan);
+	std::span<StructSymbol* const> argumentsSpan(combined.data(), combined.size());
+	StructSymbol* returnType = get_model().substitute_type(method->get_return_type(), argumentsSpan);
 
-	gmt::Ref<GenericMethodSymbol> instantiation = get_symbol_table().find_or_create_generic_method(method, argumentsSpan, returnType);
-	if (instantiation.is_null())
-		return gmt::nullref;
+	GenericMethodSymbol* instantiation = get_symbol_table().find_or_create_generic_method(method, argumentsSpan, returnType);
+	if ((instantiation == nullptr))
+		return nullptr;
 
 	m_pragmatic.get_or_create_frame_layout(get_model(), instantiation);
 	if (!enqueue_instantiation(instantiation))
-		return gmt::nullref;
+		return nullptr;
 
 	return instantiation;
 }
 
-bool ByteCodeEmitter::enqueue_instantiation(gmt::Ref<GenericMethodSymbol> instantiation)
+bool ByteCodeEmitter::enqueue_instantiation(GenericMethodSymbol* instantiation)
 {
-	if (!m_enqueuedInstantiations.insert(instantiation.get_offset()).second)
+	if (!m_enqueuedInstantiations.insert(reinterpret_cast<std::size_t>(instantiation)).second)
 		return true;
 
 	constexpr std::size_t InstantiationLimit = 256;
@@ -463,15 +463,15 @@ void ByteCodeEmitter::emit_pending_instantiations()
 	m_enqueuedInstantiations.clear();
 }
 
-void ByteCodeEmitter::emit_instantiation_body(gmt::Ref<GenericMethodSymbol> instantiation)
+void ByteCodeEmitter::emit_instantiation_body(GenericMethodSymbol* instantiation)
 {
-	gmt::Ref<MethodSymbol> open = instantiation->get_underlaying_method();
-	gmt::Ref<const SyntaxNode> declaration = get_symbol_table().lookup_node(open);
+	MethodSymbol* open = instantiation->get_underlaying_method();
+	const SyntaxNode* declaration = get_symbol_table().lookup_node(open);
 
 	// the symbol-to-node map keeps the first binding: declared methods map to
 	// their declaration, synthesized constructors to an arbitrary construction
 	// site
-	const SyntaxKind declarationKind = declaration.is_null() ? SyntaxKind::Unknown : declaration->get_kind();
+	const SyntaxKind declarationKind = (declaration == nullptr) ? SyntaxKind::Unknown : declaration->get_kind();
 
 	// slot lookups stay keyed by the open method; only the layout and the
 	// substitution context come from the instantiation
@@ -483,24 +483,24 @@ void ByteCodeEmitter::emit_instantiation_body(gmt::Ref<GenericMethodSymbol> inst
 	{
 		case SyntaxKind::FunctionDeclaration:
 		{
-			const FunctionDeclarationSyntax* node = declaration.as<FunctionDeclarationSyntax>().as_ptr();
+			const FunctionDeclarationSyntax* node = gmt::as<FunctionDeclarationSyntax>(declaration);
 			emit_body(node->get_body());
 			break;
 		}
 
 		case SyntaxKind::OperatorDeclaration:
 		{
-			const OperatorDeclarationSyntax* node = declaration.as<OperatorDeclarationSyntax>().as_ptr();
+			const OperatorDeclarationSyntax* node = gmt::as<OperatorDeclarationSyntax>(declaration);
 			emit_body(node->get_body());
 			break;
 		}
 
 		case SyntaxKind::ConstructorDeclaration:
 		{
-			const ConstructorDeclarationSyntax* node = declaration.as<ConstructorDeclarationSyntax>().as_ptr();
-			gmt::Ref<const SyntaxSymbol> parent = open->get_parent();
-			if (!parent.is_null() && parent->is_type())
-				emit_field_initializers(parent.as<StructSymbol>());
+			const ConstructorDeclarationSyntax* node = gmt::as<ConstructorDeclarationSyntax>(declaration);
+			const SyntaxSymbol* parent = open->get_parent();
+			if (!(parent == nullptr) && parent->is_type())
+				emit_field_initializers(gmt::as<StructSymbol>(parent));
 
 			emit_body(node->get_body());
 			break;
@@ -508,8 +508,8 @@ void ByteCodeEmitter::emit_instantiation_body(gmt::Ref<GenericMethodSymbol> inst
 
 		case SyntaxKind::AccessorDeclaration:
 		{
-			gmt::Ref<AccessorSymbol> accessor = open.as<AccessorSymbol>();
-			if (!accessor.is_null())
+			AccessorSymbol* accessor = static_cast<AccessorSymbol*>(open);
+			if (!(accessor == nullptr))
 				emit_accessor_body(accessor);
 
 			break;
@@ -520,9 +520,9 @@ void ByteCodeEmitter::emit_instantiation_body(gmt::Ref<GenericMethodSymbol> inst
 			// synthesized implicit constructor: the body is field initializers only
 			if (open->get_kind() == SyntaxKind::ConstructorDeclaration)
 			{
-				gmt::Ref<const SyntaxSymbol> parent = open->get_parent();
-				if (!parent.is_null() && parent->is_type())
-					emit_field_initializers(parent.as<StructSymbol>());
+				const SyntaxSymbol* parent = open->get_parent();
+				if (!(parent == nullptr) && parent->is_type())
+					emit_field_initializers(gmt::as<StructSymbol>(parent));
 			}
 
 			break;
@@ -531,13 +531,13 @@ void ByteCodeEmitter::emit_instantiation_body(gmt::Ref<GenericMethodSymbol> inst
 
 	m_generatingFor = instantiation;
 	end_method();
-	m_currentInstantiation = gmt::nullref;
+	m_currentInstantiation = nullptr;
 }
 
-void ByteCodeEmitter::unsupported(gmt::Ref<const SyntaxNode> blame, const wchar_t* feature)
+void ByteCodeEmitter::unsupported(const SyntaxNode* blame, const wchar_t* feature)
 {
 	TextLocation location;
-	if (!blame.is_null())
+	if (!(blame == nullptr))
 		location = blame->get_location();
 
 	get_diagnostics().report_error(location, gmt::concat(feature, L" is not yet supported by the code generator"));
@@ -550,7 +550,7 @@ void ByteCodeEmitter::emit(SyntaxTree& tree)
 	pick_entry_points();
 }
 
-bool ByteCodeEmitter::is_entry_point_candidate(gmt::Ref<MethodSymbol> method)
+bool ByteCodeEmitter::is_entry_point_candidate(MethodSymbol* method)
 {
 	if (method->get_name() != L"Main")
 		return false;
@@ -586,18 +586,18 @@ void ByteCodeEmitter::visit_function_declaration(const FunctionDeclarationSyntax
 	if (node == nullptr)
 		return;
 
-	std::optional<gmt::Ref<const FunctionDeclarationSyntax>> nodeRef = ref_from(node);
+	std::optional<const FunctionDeclarationSyntax*> nodeRef = ref_from(node);
 	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<MethodSymbol> symbol = lookup_symbol<MethodSymbol>(*nodeRef);
-	if (symbol.is_null())
+	MethodSymbol* symbol = lookup_symbol<MethodSymbol>(*nodeRef);
+	if ((symbol == nullptr))
 		return;
 
 	if (is_entry_point_candidate(symbol))
 		m_entryPointCandidates.push_back(symbol);
 
-	if (node->get_body().is_null())
+	if ((node->get_body() == nullptr))
 		return;
 
 	// open generic definitions are emitted per instantiation, on demand
@@ -617,12 +617,12 @@ void ByteCodeEmitter::visit_operator_declaration(const OperatorDeclarationSyntax
 	if (node == nullptr)
 		return;
 
-	std::optional<gmt::Ref<const OperatorDeclarationSyntax>> nodeRef = ref_from(node);
+	std::optional<const OperatorDeclarationSyntax*> nodeRef = ref_from(node);
 	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<MethodSymbol> symbol = lookup_symbol<MethodSymbol>(*nodeRef);
-	if (symbol.is_null() || node->get_body().is_null())
+	MethodSymbol* symbol = lookup_symbol<MethodSymbol>(*nodeRef);
+	if ((symbol == nullptr) || (node->get_body() == nullptr))
 		return;
 
 	if (is_generic_definition(symbol))
@@ -641,12 +641,12 @@ void ByteCodeEmitter::visit_constructor_declaration(const ConstructorDeclaration
 	if (node == nullptr)
 		return;
 
-	std::optional<gmt::Ref<const ConstructorDeclarationSyntax>> nodeRef = ref_from(node);
+	std::optional<const ConstructorDeclarationSyntax*> nodeRef = ref_from(node);
 	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<ConstructorSymbol> symbol = lookup_symbol<ConstructorSymbol>(*nodeRef);
-	if (symbol.is_null() || node->get_body().is_null())
+	ConstructorSymbol* symbol = lookup_symbol<ConstructorSymbol>(*nodeRef);
+	if ((symbol == nullptr) || (node->get_body() == nullptr))
 		return;
 
 	if (is_generic_definition(symbol))
@@ -657,9 +657,9 @@ void ByteCodeEmitter::visit_constructor_declaration(const ConstructorDeclaration
 
 	begin_method(symbol);
 
-	gmt::Ref<const SyntaxSymbol> parent = symbol->get_parent();
-	if (!parent.is_null() && parent->is_type())
-		emit_field_initializers(parent.as<StructSymbol>());
+	const SyntaxSymbol* parent = symbol->get_parent();
+	if (!(parent == nullptr) && parent->is_type())
+		emit_field_initializers(gmt::as<StructSymbol>(parent));
 
 	emit_body(node->get_body());
 	end_method();
@@ -670,22 +670,22 @@ void ByteCodeEmitter::visit_struct_declaration(const StructDeclarationSyntax* no
 	if (node == nullptr)
 		return;
 
-	std::optional<gmt::Ref<const StructDeclarationSyntax>> nodeRef = ref_from(node);
-	gmt::Ref<StructSymbol> symbol = nodeRef.has_value() ? lookup_symbol<StructSymbol>(*nodeRef) : gmt::nullref;
+	std::optional<const StructDeclarationSyntax*> nodeRef = ref_from(node);
+	StructSymbol* symbol = nodeRef.has_value() ? lookup_symbol<StructSymbol>(*nodeRef) : nullptr;
 
 	// synthesized constructors are never visited by the member visitors: they
 	// own no ConstructorDeclaration node, so their body is field initializers
 	// only. The symbol-to-node map keeps the first binding, which for them is
 	// an arbitrary construction site, not a declaration
-	if (!symbol.is_null() && symbol->type_parameters.empty())
+	if (!(symbol == nullptr) && symbol->type_parameters.empty())
 	{
-		for (gmt::Ref<ConstructorSymbol> constructor : symbol->constructors)
+		for (ConstructorSymbol* constructor : symbol->constructors)
 		{
-			if (constructor.is_null() || constructor->get_calling_convention() != CallingConvention::None)
+			if ((constructor == nullptr) || constructor->get_calling_convention() != CallingConvention::None)
 				continue;
 
-			gmt::Ref<const SyntaxNode> declaration = get_symbol_table().lookup_node(constructor);
-			if (!declaration.is_null() && declaration->get_kind() == SyntaxKind::ConstructorDeclaration)
+			const SyntaxNode* declaration = get_symbol_table().lookup_node(constructor);
+			if (!(declaration == nullptr) && declaration->get_kind() == SyntaxKind::ConstructorDeclaration)
 				continue;
 
 			begin_method(constructor);
@@ -702,12 +702,12 @@ void ByteCodeEmitter::visit_accessor_declaration(const AccessorDeclarationSyntax
 	if (node == nullptr)
 		return;
 
-	std::optional<gmt::Ref<const AccessorDeclarationSyntax>> nodeRef = ref_from(node);
+	std::optional<const AccessorDeclarationSyntax*> nodeRef = ref_from(node);
 	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<AccessorSymbol> symbol = lookup_symbol<AccessorSymbol>(*nodeRef);
-	if (symbol.is_null())
+	AccessorSymbol* symbol = lookup_symbol<AccessorSymbol>(*nodeRef);
+	if ((symbol == nullptr))
 		return;
 
 	if (is_generic_definition(symbol))
@@ -721,14 +721,14 @@ void ByteCodeEmitter::visit_accessor_declaration(const AccessorDeclarationSyntax
 	end_method();
 }
 
-void ByteCodeEmitter::emit_accessor_body(gmt::Ref<AccessorSymbol> symbol)
+void ByteCodeEmitter::emit_accessor_body(AccessorSymbol* symbol)
 {
 	// accessors are semicolon-only: the body is synthesized over the backing field
-	gmt::Ref<const SyntaxSymbol> parent = symbol->get_parent();
-	gmt::Ref<PropertySymbol> property = parent.is_null() ? gmt::nullref : parent.as<PropertySymbol>();
-	gmt::Ref<FieldSymbol> backing = property.is_null() ? gmt::nullref : property->get_backing_field();
+	const SyntaxSymbol* parent = symbol->get_parent();
+	PropertySymbol* property = (parent == nullptr) ? nullptr : gmt::as<PropertySymbol>(parent);
+	FieldSymbol* backing = (property == nullptr) ? nullptr : property->get_backing_field();
 
-	if (!backing.is_null())
+	if (!(backing == nullptr))
 	{
 		std::uint32_t fieldSlot = field_slot_index(backing);
 		if (property->get_getter() == symbol)
@@ -751,25 +751,25 @@ void ByteCodeEmitter::emit_accessor_body(gmt::Ref<AccessorSymbol> symbol)
 	}
 }
 
-void ByteCodeEmitter::emit_field_initializers(gmt::Ref<StructSymbol> ownerType)
+void ByteCodeEmitter::emit_field_initializers(StructSymbol* ownerType)
 {
-	for (gmt::Ref<FieldSymbol> field : ownerType->fields)
+	for (FieldSymbol* field : ownerType->fields)
 	{
-		if (field.is_null() || field->get_linking() == LINK_STATIC)
+		if ((field == nullptr) || field->get_linking() == LINK_STATIC)
 			continue;
 
-		gmt::Ref<const SyntaxNode> declaration = get_symbol_table().lookup_node(field);
-		if (declaration.is_null() || declaration->get_kind() != SyntaxKind::FieldDeclaration)
+		const SyntaxNode* declaration = get_symbol_table().lookup_node(field);
+		if ((declaration == nullptr) || declaration->get_kind() != SyntaxKind::FieldDeclaration)
 			continue;
 
-		const FieldDeclarationSyntax* fieldNode = declaration.as<FieldDeclarationSyntax>().as_ptr();
-		if (fieldNode->get_expression().is_null())
+		const FieldDeclarationSyntax* fieldNode = gmt::as<FieldDeclarationSyntax>(declaration);
+		if ((fieldNode->get_expression() == nullptr))
 			continue;
 
 		m_encoder.emit_load_arg(0);
 		eval_push(sizeof(void*));
 
-		fieldNode->get_expression().as_ptr()->accept(*this);
+		fieldNode->get_expression()->accept(*this);
 
 		m_encoder.emit_store_field(field_slot_index(field));
 		eval_pop(2);

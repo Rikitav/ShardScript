@@ -5,25 +5,25 @@
 
 using namespace shard;
 
-BaseTypesListSyntax::BaseTypesListSyntax(gmt::Ref<SyntaxNode> parent)
+BaseTypesListSyntax::BaseTypesListSyntax(SyntaxNode* parent)
 	: SyntaxNode(SyntaxKind::BaseTypesList, parent) { }
 
-gmt::Span<const gmt::Ref<TypeSyntax>> BaseTypesListSyntax::get_types() const
+std::span<TypeSyntax* const> BaseTypesListSyntax::get_types() const
 {
 	return m_types;
 }
 
-void BaseTypesListSyntax::set_types(gmt::Span<gmt::Ref<TypeSyntax>> types)
+void BaseTypesListSyntax::set_types(std::span<TypeSyntax*> types)
 {
 	m_types = types;
 }
 
 TextLocation BaseTypesListSyntax::get_location() const
 {
-	if (!m_types.is_empty())
+	if (!m_types.empty())
 	{
-		std::span<const gmt::Ref<TypeSyntax>> types = m_types.as_span();
-		return TextLocation(types.front().as_ptr()->get_location(), types.back().as_ptr()->get_location());
+		std::span<TypeSyntax* const> types = m_types;
+		return TextLocation(types.front()->get_location(), types.back()->get_location());
 	}
 
 	return TextLocation();

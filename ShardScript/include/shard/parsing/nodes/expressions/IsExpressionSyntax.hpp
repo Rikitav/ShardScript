@@ -14,20 +14,20 @@ namespace shard
 	class SHARD_API IsExpressionSyntax final : public ExpressionSyntax
 	{
 		SyntaxToken m_operatorToken;
-		gmt::Ref<ExpressionSyntax> m_expression;
-		gmt::Ref<TypeSyntax> m_targetType;
+		ExpressionSyntax* m_expression = nullptr;
+		TypeSyntax* m_targetType = nullptr;
 
 	public:
-		IsExpressionSyntax(gmt::Ref<SyntaxNode> parent);
+		IsExpressionSyntax(SyntaxNode* parent);
 		virtual ~IsExpressionSyntax() = default;
 
 		SyntaxToken get_operator_token() const;
-		gmt::Ref<const ExpressionSyntax> get_expression() const;
-		gmt::Ref<const TypeSyntax> get_target_type() const;
+		const ExpressionSyntax* get_expression() const;
+		const TypeSyntax* get_target_type() const;
 
 		void set_operator_token(const SyntaxToken& token);
-		void set_expression(gmt::Ref<ExpressionSyntax> expression);
-		void set_target_type(gmt::Ref<TypeSyntax> targetType);
+		void set_expression(ExpressionSyntax* expression);
+		void set_target_type(TypeSyntax* targetType);
 
 		TextLocation get_location() const override;
 		void accept(SyntaxVisitor& visitor) const override;

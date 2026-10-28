@@ -5,7 +5,7 @@
 
 using namespace shard;
 
-BreakStatementSyntax::BreakStatementSyntax(gmt::Ref<SyntaxNode> parent)
+BreakStatementSyntax::BreakStatementSyntax(SyntaxNode* parent)
 	: StatementSyntax(SyntaxKind::BreakStatement, parent) { }
 
 SyntaxToken BreakStatementSyntax::get_break_keyword() const

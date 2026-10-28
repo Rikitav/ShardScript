@@ -65,17 +65,17 @@ namespace shard
 		SymbolFactory m_factory;
 		gmt::unordered_set<std::wstring_view> m_ambiguousNames;
 
-		void import_namespace(gmt::Ref<const UsingDirectiveSyntax> node, gmt::Ref<NamespaceSymbol> namespaceSymbol);
+		void import_namespace(const UsingDirectiveSyntax* node, NamespaceSymbol* namespaceSymbol);
 		bool is_ambiguous_name(std::wstring_view name);
 
-		gmt::Ref<NamespaceSymbol> resolve_namespace_type(gmt::Ref<const TypeSyntax> type);
-		gmt::Ref<StructSymbol> resolve_type(gmt::Ref<const TypeSyntax> node);
+		NamespaceSymbol* resolve_namespace_type(const TypeSyntax* type);
+		StructSymbol* resolve_type(const TypeSyntax* node);
 
-		void bind_expression(gmt::Ref<const ExpressionSyntax> expression);
-		void bind_arguments(gmt::Ref<const ArgumentsListSyntax> arguments);
+		void bind_expression(const ExpressionSyntax* expression);
+		void bind_arguments(const ArgumentsListSyntax* arguments);
 
-		void bind_where_clauses(gmt::Ref<const WhereClausesListSyntax> clauses, const gmt::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters);
-		void bind_base_types(gmt::Ref<StructSymbol> symbol, gmt::Ref<const BaseTypesListSyntax> baseTypes);
+		void bind_where_clauses(const WhereClausesListSyntax* clauses, const gmt::vector<TypeParameterSymbol*>& typeParameters);
+		void bind_base_types(StructSymbol* symbol, const BaseTypesListSyntax* baseTypes);
 
 	public:
 		TypeBinder(SemanticModel& model, DiagnosticsContext& diagnostics);

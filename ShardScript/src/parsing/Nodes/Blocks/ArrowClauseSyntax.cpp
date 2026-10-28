@@ -5,10 +5,10 @@
 
 using namespace shard;
 
-ArrowClauseSyntax::ArrowClauseSyntax(gmt::Ref<SyntaxNode> parent)
+ArrowClauseSyntax::ArrowClauseSyntax(SyntaxNode* parent)
 	: BlockSyntax(SyntaxKind::ArrowClause, parent) { }
 
-gmt::Ref<const ExpressionSyntax> ArrowClauseSyntax::get_expression() const
+const ExpressionSyntax* ArrowClauseSyntax::get_expression() const
 {
 	return m_expression;
 }
@@ -18,7 +18,7 @@ SyntaxToken ArrowClauseSyntax::get_arrow_token() const
 	return m_arrowToken;
 }
 
-void ArrowClauseSyntax::set_expression(gmt::Ref<ExpressionSyntax> expression)
+void ArrowClauseSyntax::set_expression(ExpressionSyntax* expression)
 {
 	m_expression = expression;
 }
@@ -30,8 +30,8 @@ void ArrowClauseSyntax::set_arrow_token(const SyntaxToken& token)
 
 TextLocation ArrowClauseSyntax::get_location() const
 {
-	if (!m_expression.is_null())
-		return TextLocation(m_arrowToken, m_expression.as_ptr()->get_location());
+	if (!(m_expression == nullptr))
+		return TextLocation(m_arrowToken, m_expression->get_location());
 
 	return m_arrowToken.get_location();
 }

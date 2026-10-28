@@ -64,14 +64,14 @@ void EscapeAnalyzer::visit_expression_statement(const ExpressionStatementSyntax*
 {
 	if (node != nullptr && m_inDefer == 0)
 	{
-		gmt::Ref<const ExpressionSyntax> expression = node->get_expression();
+		const ExpressionSyntax* expression = node->get_expression();
 
-		bool isInvokation = !expression.is_null();
+		bool isInvokation = !(expression == nullptr);
 		isInvokation = isInvokation && expression->get_kind() == SyntaxKind::InvokationExpression;
 
 		if (isInvokation)
 		{
-			gmt::Ref<StructSymbol> expressionType = get_model().get_expression_type(expression);
+			StructSymbol* expressionType = get_model().get_expression_type(expression);
 			bool isTaskLike = get_model().is_task_or_task_like(expressionType);
 
 			if (isTaskLike)
@@ -80,18 +80,18 @@ void EscapeAnalyzer::visit_expression_statement(const ExpressionStatementSyntax*
 				// the frame (E3 + E4 as one implicit channel)
 				EscapeChannel publication = EscapeChannel::Capture | EscapeChannel::Suspension;
 
-				gmt::Ref<const InvokationExpressionSyntax> invokation = expression.as<const InvokationExpressionSyntax>();
+				const InvokationExpressionSyntax* invokation = static_cast<const InvokationExpressionSyntax*>(expression);
 
-				gmt::Ref<const ExpressionSyntax> receiver = invokation->get_previous();
-				if (!receiver.is_null())
+				const ExpressionSyntax* receiver = invokation->get_previous();
+				if (!(receiver == nullptr))
 					expose_expression(receiver, EscapeLevel::GlobalEscape, publication, true);
 
-				gmt::Ref<const ArgumentsListSyntax> arguments = invokation->get_arguments();
-				if (!arguments.is_null())
+				const ArgumentsListSyntax* arguments = invokation->get_arguments();
+				if (!(arguments == nullptr))
 				{
-					for (const gmt::Ref<ArgumentSyntax>& argument : arguments->get_arguments().as_span())
+					for (ArgumentSyntax* const& argument : arguments->get_arguments())
 					{
-						if (!argument.is_null())
+						if (!(argument == nullptr))
 							expose_expression(argument->get_expression(), EscapeLevel::GlobalEscape, publication);
 					}
 				}

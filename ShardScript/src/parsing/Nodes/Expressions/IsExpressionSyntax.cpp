@@ -5,7 +5,7 @@
 
 using namespace shard;
 
-IsExpressionSyntax::IsExpressionSyntax(gmt::Ref<SyntaxNode> parent)
+IsExpressionSyntax::IsExpressionSyntax(SyntaxNode* parent)
 	: ExpressionSyntax(SyntaxKind::IsExpression, parent) { }
 
 SyntaxToken IsExpressionSyntax::get_operator_token() const
@@ -13,12 +13,12 @@ SyntaxToken IsExpressionSyntax::get_operator_token() const
 	return m_operatorToken;
 }
 
-gmt::Ref<const ExpressionSyntax> IsExpressionSyntax::get_expression() const
+const ExpressionSyntax* IsExpressionSyntax::get_expression() const
 {
 	return m_expression;
 }
 
-gmt::Ref<const TypeSyntax> IsExpressionSyntax::get_target_type() const
+const TypeSyntax* IsExpressionSyntax::get_target_type() const
 {
 	return m_targetType;
 }
@@ -28,24 +28,24 @@ void IsExpressionSyntax::set_operator_token(const SyntaxToken& token)
 	m_operatorToken = token;
 }
 
-void IsExpressionSyntax::set_expression(gmt::Ref<ExpressionSyntax> expression)
+void IsExpressionSyntax::set_expression(ExpressionSyntax* expression)
 {
 	m_expression = expression;
 }
 
-void IsExpressionSyntax::set_target_type(gmt::Ref<TypeSyntax> targetType)
+void IsExpressionSyntax::set_target_type(TypeSyntax* targetType)
 {
 	m_targetType = targetType;
 }
 
 TextLocation IsExpressionSyntax::get_location() const
 {
-	if (!m_expression.is_null())
+	if (!(m_expression == nullptr))
 	{
-		if (!m_targetType.is_null())
-			return TextLocation(m_expression.as_ptr()->get_location(), m_targetType.as_ptr()->get_location());
+		if (!(m_targetType == nullptr))
+			return TextLocation(m_expression->get_location(), m_targetType->get_location());
 
-		return m_expression.as_ptr()->get_location();
+		return m_expression->get_location();
 	}
 
 	return m_operatorToken.get_location();

@@ -17,8 +17,8 @@ SemanticAnalyzer::SemanticAnalyzer(DiagnosticsContext& diagnostics)
 void SemanticAnalyzer::analyze(SyntaxTree& tree, SemanticModel& model)
 {
 	DeclarationCollector collector(model, m_diagnostics);
-	for (const gmt::Ref<TranslationUnitSyntax>& unit : tree.get_units())
-		collector.visit_translation_unit(unit.as_ptr());
+	for (TranslationUnitSyntax* const& unit : tree.get_units())
+		collector.visit_translation_unit(unit);
 
 	/*
 	if (m_diagnostics.has_errors())
@@ -26,8 +26,8 @@ void SemanticAnalyzer::analyze(SyntaxTree& tree, SemanticModel& model)
 	*/
 
 	TypeBinder typeBinder(model, m_diagnostics);
-	for (const gmt::Ref<TranslationUnitSyntax>& unit : tree.get_units())
-		typeBinder.visit_translation_unit(unit.as_ptr());
+	for (TranslationUnitSyntax* const& unit : tree.get_units())
+		typeBinder.visit_translation_unit(unit);
 
 	/*
 	if (m_diagnostics.has_errors())
@@ -35,8 +35,8 @@ void SemanticAnalyzer::analyze(SyntaxTree& tree, SemanticModel& model)
 	*/
 
 	ExpressionBinder expressionBinder(model, m_diagnostics);
-	for (const gmt::Ref<TranslationUnitSyntax>& unit : tree.get_units())
-		expressionBinder.visit_translation_unit(unit.as_ptr());
+	for (TranslationUnitSyntax* const& unit : tree.get_units())
+		expressionBinder.visit_translation_unit(unit);
 
 	/*
 	if (m_diagnostics.has_errors())

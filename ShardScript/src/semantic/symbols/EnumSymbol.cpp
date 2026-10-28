@@ -4,10 +4,10 @@
 
 using namespace shard;
 
-EnumSymbol::EnumSymbol(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent)
+EnumSymbol::EnumSymbol(std::wstring_view name, SyntaxSymbol* parent)
 	: EnumSymbol(gmt::intern(name), parent) { }
 
-EnumSymbol::EnumSymbol(gmt::StringReference name, gmt::Ref<SyntaxSymbol> parent)
+EnumSymbol::EnumSymbol(gmt::StringReference name, SyntaxSymbol* parent)
 	: StructSymbol(name, SyntaxKind::EnumDeclaration, parent) { }
 
 bool EnumSymbol::get_is_flags() const

@@ -13,17 +13,17 @@ namespace shard
 {
 	class SHARD_API ExpressionStatementSyntax final : public StatementSyntax
 	{
-		gmt::Ref<ExpressionSyntax> m_expression;
+		ExpressionSyntax* m_expression = nullptr;
 		SyntaxToken m_semicolonToken;
 
 	public:
-		ExpressionStatementSyntax(gmt::Ref<SyntaxNode> parent);
+		ExpressionStatementSyntax(SyntaxNode* parent);
 		virtual ~ExpressionStatementSyntax() = default;
 
-		gmt::Ref<const ExpressionSyntax> get_expression() const;
+		const ExpressionSyntax* get_expression() const;
 		SyntaxToken get_semicolon() const;
 
-		void set_expression(gmt::Ref<ExpressionSyntax> expression);
+		void set_expression(ExpressionSyntax* expression);
 		void set_semicolon(const SyntaxToken& token);
 
 		TextLocation get_location() const override;

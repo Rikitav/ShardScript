@@ -62,12 +62,12 @@ namespace shard
 		std::uint32_t absorb_field_slot();
 		std::size_t absorb_jump();
 
-		gmt::Ref<SyntaxSymbol> absorb_symbol();
-		gmt::Ref<StructSymbol> absorb_type_symbol();
-		gmt::Ref<DelegateTypeSymbol> absorb_delegate_type_symbol();
-		gmt::Ref<FieldSymbol> absorb_field_symbol();
-		gmt::Ref<ArrayTypeSymbol> absorb_array_symbol();
-		gmt::Ref<MethodSymbol> absorb_method_symbol();
-		gmt::Ref<ConstructorSymbol> absorb_constructor_symbol();
+		SyntaxSymbol* absorb_symbol();
+		StructSymbol* absorb_type_symbol();
+		DelegateTypeSymbol* absorb_delegate_type_symbol();
+		FieldSymbol* absorb_field_symbol();
+		ArrayTypeSymbol* absorb_array_symbol();
+		MethodSymbol* absorb_method_symbol();
+		ConstructorSymbol* absorb_constructor_symbol();
 	};
 }

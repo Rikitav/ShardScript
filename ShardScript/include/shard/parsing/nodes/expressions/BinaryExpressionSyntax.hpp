@@ -13,20 +13,20 @@ namespace shard
 	class SHARD_API BinaryExpressionSyntax final : public ExpressionSyntax
 	{
 		SyntaxToken m_operatorToken;
-		gmt::Ref<ExpressionSyntax> m_left;
-		gmt::Ref<ExpressionSyntax> m_right;
+		ExpressionSyntax* m_left = nullptr;
+		ExpressionSyntax* m_right = nullptr;
 
 	public:
-		BinaryExpressionSyntax(gmt::Ref<SyntaxNode> parent);
+		BinaryExpressionSyntax(SyntaxNode* parent);
 		virtual ~BinaryExpressionSyntax() = default;
 
 		SyntaxToken get_operator_token() const;
-		gmt::Ref<const ExpressionSyntax> get_left() const;
-		gmt::Ref<const ExpressionSyntax> get_right() const;
+		const ExpressionSyntax* get_left() const;
+		const ExpressionSyntax* get_right() const;
 
 		void set_operator_token(const SyntaxToken& token);
-		void set_left(gmt::Ref<ExpressionSyntax> left);
-		void set_right(gmt::Ref<ExpressionSyntax> right);
+		void set_left(ExpressionSyntax* left);
+		void set_right(ExpressionSyntax* right);
 
 		TextLocation get_location() const override;
 		void accept(SyntaxVisitor& visitor) const override;

@@ -32,10 +32,10 @@ namespace shard
 	{
 		SymbolFactory m_factory;
 
-		void collect_type_parameters(gmt::Ref<StructSymbol> owner, gmt::Ref<const TypeParametersListSyntax> list, std::uint16_t ownerParameterOffset = 0);
-		void collect_type_parameters(gmt::Ref<MethodSymbol> owner, gmt::Ref<const TypeParametersListSyntax> list, std::uint16_t ownerParameterOffset = 0);
+		void collect_type_parameters(StructSymbol* owner, const TypeParametersListSyntax* list, std::uint16_t ownerParameterOffset = 0);
+		void collect_type_parameters(MethodSymbol* owner, const TypeParametersListSyntax* list, std::uint16_t ownerParameterOffset = 0);
 
-		gmt::Ref<SyntaxSymbol> get_declaration_parent();
+		SyntaxSymbol* get_declaration_parent();
 
 	public:
 		DeclarationCollector(SemanticModel& model, DiagnosticsContext& diagnostics);

@@ -11,8 +11,8 @@ namespace shard
 	class SHARD_API AccessorSymbol final : public MethodSymbol
 	{
 	public:
-		AccessorSymbol(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent);
-		AccessorSymbol(gmt::StringReference name, gmt::Ref<SyntaxSymbol> parent);
+		AccessorSymbol(std::wstring_view name, SyntaxSymbol* parent);
+		AccessorSymbol(gmt::StringReference name, SyntaxSymbol* parent);
 		virtual ~AccessorSymbol() = default;
 
 		AccessorSymbol(const AccessorSymbol& other) = delete;

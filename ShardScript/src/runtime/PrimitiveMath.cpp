@@ -35,7 +35,7 @@ bool PrimitiveMath::is_string(const PrimitiveShapes& shapes, const TypeShape* sh
 
 std::wstring_view PrimitiveMath::string_view_of(ObjectInstance value)
 {
-	if (value.is_null())
+	if ((value == nullptr))
 		return std::wstring_view();
 
 	std::int64_t length = value.as_integer();
@@ -210,9 +210,9 @@ PrimitiveStatus PrimitiveMath::negate(const PrimitiveShapes& shapes, ObjectInsta
 	return PrimitiveStatus::NotPrimitive;
 }
 
-PrimitiveStatus PrimitiveMath::convert(const PrimitiveShapes& shapes, ObjectInstance value, gmt::Ref<StructSymbol> targetType, const TypeShape* targetShape, ScalarResult& result)
+PrimitiveStatus PrimitiveMath::convert(const PrimitiveShapes& shapes, ObjectInstance value, StructSymbol* targetType, const TypeShape* targetShape, ScalarResult& result)
 {
-	if (targetShape == nullptr || targetType.is_null())
+	if (targetShape == nullptr || (targetType == nullptr))
 		return PrimitiveStatus::NotPrimitive;
 
 	if (targetShape == shapes.doubleReal)
@@ -270,15 +270,15 @@ PrimitiveStatus PrimitiveMath::convert(const PrimitiveShapes& shapes, ObjectInst
 
 gmt::wstring PrimitiveMath::to_display_string(ObjectInstance value)
 {
-	if (value.is_null())
+	if ((value == nullptr))
 		return L"null";
 
 	const TypeShape* shape = value.get_shape();
 	if (shape == nullptr)
 		return L"<void>";
 
-	gmt::Ref<StructSymbol> baseType = shape->get_base_type();
-	if (baseType.is_null())
+	StructSymbol* baseType = shape->get_base_type();
+	if ((baseType == nullptr))
 		return L"<unknown>";
 
 	std::wstring_view name = baseType->get_name();

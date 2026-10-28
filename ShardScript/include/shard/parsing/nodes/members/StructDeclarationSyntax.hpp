@@ -10,7 +10,7 @@ namespace shard
 	class SHARD_API StructDeclarationSyntax final : public TypeDeclarationSyntax
 	{
 	public:
-		StructDeclarationSyntax(gmt::Ref<SyntaxNode> parent);
+		StructDeclarationSyntax(SyntaxNode* parent);
 		virtual ~StructDeclarationSyntax() = default;
 
 		TextLocation get_location() const override;

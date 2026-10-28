@@ -14,7 +14,7 @@ namespace shard
 		SyntaxToken m_semicolonToken;
 
 	public:
-		AccessorDeclarationSyntax(gmt::Ref<SyntaxNode> parent);
+		AccessorDeclarationSyntax(SyntaxNode* parent);
 		virtual ~AccessorDeclarationSyntax() = default;
 
 		SyntaxToken get_keyword() const;

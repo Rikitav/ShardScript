@@ -4,8 +4,8 @@
 
 using namespace shard;
 
-InterfaceSymbol::InterfaceSymbol(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent)
+InterfaceSymbol::InterfaceSymbol(std::wstring_view name, SyntaxSymbol* parent)
 	: InterfaceSymbol(gmt::intern(name), parent) { }
 
-InterfaceSymbol::InterfaceSymbol(gmt::StringReference name, gmt::Ref<SyntaxSymbol> parent)
+InterfaceSymbol::InterfaceSymbol(gmt::StringReference name, SyntaxSymbol* parent)
 	: StructSymbol(name, SyntaxKind::InterfaceDeclaration, parent) { }

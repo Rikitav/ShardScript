@@ -12,16 +12,16 @@
 #include <shard/parsing/nodes/lists/WhereClausesListSyntax.hpp>
 
 #include <gmt/Ref.hpp>
-#include <gmt/Span.hpp>
+#include <span>
 
 namespace shard
 {
 	class SHARD_API TypeDeclarationSyntax : public MemberDeclarationSyntax
 	{
-		gmt::Ref<BaseTypesListSyntax> m_baseTypes;
-		gmt::Ref<TypeParametersListSyntax> m_typeParameters;
-		gmt::Ref<WhereClausesListSyntax> m_whereClauses;
-		gmt::Span<gmt::Ref<MemberDeclarationSyntax>> m_members;
+		BaseTypesListSyntax* m_baseTypes = nullptr;
+		TypeParametersListSyntax* m_typeParameters = nullptr;
+		WhereClausesListSyntax* m_whereClauses = nullptr;
+		std::span<MemberDeclarationSyntax*> m_members;
 
 		SyntaxToken m_openBracketToken;
 		SyntaxToken m_closeBracketToken;
@@ -29,7 +29,7 @@ namespace shard
 		SyntaxToken m_semicolonToken;
 
 	public:
-		TypeDeclarationSyntax(const SyntaxKind kind, gmt::Ref<SyntaxNode> parent);
+		TypeDeclarationSyntax(const SyntaxKind kind, SyntaxNode* parent);
 		virtual ~TypeDeclarationSyntax() = default;
 
 		SyntaxToken get_open_bracket() const;
@@ -37,19 +37,19 @@ namespace shard
 		SyntaxToken get_base_type_colon() const;
 		SyntaxToken get_semicolon() const;
 
-		gmt::Ref<const BaseTypesListSyntax> get_base_types() const;
-		gmt::Ref<const TypeParametersListSyntax> get_type_parameters() const;
-		gmt::Ref<const WhereClausesListSyntax> get_where_clauses() const;
-		gmt::Span<const gmt::Ref<MemberDeclarationSyntax>> get_members() const;
+		const BaseTypesListSyntax* get_base_types() const;
+		const TypeParametersListSyntax* get_type_parameters() const;
+		const WhereClausesListSyntax* get_where_clauses() const;
+		std::span<MemberDeclarationSyntax* const> get_members() const;
 
 		void set_open_bracket(const SyntaxToken& token);
 		void set_close_bracket(const SyntaxToken& token);
 		void set_base_type_colon(const SyntaxToken& token);
 		void set_semicolon(const SyntaxToken& token);
 
-		void set_base_types(gmt::Ref<BaseTypesListSyntax> baseTypes);
-		void set_type_parameters(gmt::Ref<TypeParametersListSyntax> typeParameters);
-		void set_where_clauses(gmt::Ref<WhereClausesListSyntax> whereClauses);
-		void set_members(gmt::Span<gmt::Ref<MemberDeclarationSyntax>> members);
+		void set_base_types(BaseTypesListSyntax* baseTypes);
+		void set_type_parameters(TypeParametersListSyntax* typeParameters);
+		void set_where_clauses(WhereClausesListSyntax* whereClauses);
+		void set_members(std::span<MemberDeclarationSyntax*> members);
 	};
 }

@@ -25,20 +25,20 @@ namespace shard
 		};
 
 	private:
-		gmt::Ref<StructSymbol> m_baseType;
-		gmt::vector<gmt::Ref<StructSymbol>> m_genericArguments;
+		StructSymbol* m_baseType = nullptr;
+		gmt::vector<StructSymbol*> m_genericArguments;
 		std::size_t m_size = 0;
 		bool m_isReference = false; // reference storage is the baseline (spec 1.7)
 		gmt::vector<SlotInfo> m_slots;
 
 	public:
-		TypeShape(gmt::Ref<StructSymbol> baseType, std::span<const gmt::Ref<StructSymbol>> genericArguments);
+		TypeShape(StructSymbol* baseType, std::span<StructSymbol* const> genericArguments);
 
 		TypeShape(const TypeShape&) = delete;
 		TypeShape& operator=(const TypeShape&) = delete;
 
-		gmt::Ref<StructSymbol> get_base_type() const;
-		const gmt::vector<gmt::Ref<StructSymbol>>& get_generic_arguments() const;
+		StructSymbol* get_base_type() const;
+		const gmt::vector<StructSymbol*>& get_generic_arguments() const;
 
 		std::size_t get_size() const;
 		bool is_reference() const;

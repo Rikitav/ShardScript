@@ -33,27 +33,23 @@ namespace
 		return value;
 	}
 
-	gmt::Ref<SyntaxSymbol> resolve_offset(const gmt::Arena& arena, std::size_t offset)
+	SyntaxSymbol* resolve_operand(std::size_t operand)
 	{
-		if (offset == null_symbol_operand)
-			return gmt::nullref;
-
-		// refs construct from a non-const arena handle; decoding only resolves
-		// symbol memory and never mutates the arena
-		return gmt::Ref<SyntaxSymbol>(const_cast<gmt::Arena&>(arena), offset);
+		// operands are raw symbol pointers stored by the emitter; zero is null
+		return reinterpret_cast<SyntaxSymbol*>(operand);
 	}
 
 	template <typename T>
-	gmt::Ref<T> resolve_as(const gmt::Arena& arena, std::size_t offset, SyntaxKind kind)
+	T* resolve_as(std::size_t operand, SyntaxKind kind)
 	{
-		gmt::Ref<SyntaxSymbol> symbol = resolve_offset(arena, offset);
-		if (symbol.is_null())
-			return gmt::nullref;
+		SyntaxSymbol* symbol = resolve_operand(operand);
+		if (symbol == nullptr)
+			return nullptr;
 
 		if (symbol->get_kind() != kind)
-			return gmt::nullref;
+			return nullptr;
 
-		return symbol.as<T>();
+		return static_cast<T*>(symbol);
 	}
 }
 
@@ -193,60 +189,60 @@ std::size_t ByteCodeDecoder::absorb_jump()
 	return absorb_value<std::size_t>(m_code, m_ip, m_end);
 }
 
-gmt::Ref<SyntaxSymbol> ByteCodeDecoder::absorb_symbol()
+SyntaxSymbol* ByteCodeDecoder::absorb_symbol()
 {
 	const std::size_t offset = absorb_value<std::size_t>(m_code, m_ip, m_end);
-	return resolve_offset(m_arena, offset);
+	return resolve_operand(offset);
 }
 
-gmt::Ref<StructSymbol> ByteCodeDecoder::absorb_type_symbol()
+StructSymbol* ByteCodeDecoder::absorb_type_symbol()
 {
 	const std::size_t offset = absorb_value<std::size_t>(m_code, m_ip, m_end);
 
-	gmt::Ref<SyntaxSymbol> symbol = resolve_offset(m_arena, offset);
-	if (symbol.is_null())
-		return gmt::nullref;
+	SyntaxSymbol* symbol = resolve_operand(offset);
+	if ((symbol == nullptr))
+		return nullptr;
 
 	if (!symbol->is_type())
-		return gmt::nullref;
+		return nullptr;
 
-	return symbol.as<StructSymbol>();
+	return static_cast<StructSymbol*>(symbol);
 }
 
-gmt::Ref<DelegateTypeSymbol> ByteCodeDecoder::absorb_delegate_type_symbol()
+DelegateTypeSymbol* ByteCodeDecoder::absorb_delegate_type_symbol()
 {
 	const std::size_t offset = absorb_value<std::size_t>(m_code, m_ip, m_end);
-	return resolve_as<DelegateTypeSymbol>(m_arena, offset, SyntaxKind::DelegateType);
+	return resolve_as<DelegateTypeSymbol>(offset, SyntaxKind::DelegateType);
 }
 
-gmt::Ref<FieldSymbol> ByteCodeDecoder::absorb_field_symbol()
+FieldSymbol* ByteCodeDecoder::absorb_field_symbol()
 {
 	const std::size_t offset = absorb_value<std::size_t>(m_code, m_ip, m_end);
-	return resolve_as<FieldSymbol>(m_arena, offset, SyntaxKind::FieldDeclaration);
+	return resolve_as<FieldSymbol>(offset, SyntaxKind::FieldDeclaration);
 }
 
-gmt::Ref<ArrayTypeSymbol> ByteCodeDecoder::absorb_array_symbol()
+ArrayTypeSymbol* ByteCodeDecoder::absorb_array_symbol()
 {
 	const std::size_t offset = absorb_value<std::size_t>(m_code, m_ip, m_end);
-	return resolve_as<ArrayTypeSymbol>(m_arena, offset, SyntaxKind::ArrayType);
+	return resolve_as<ArrayTypeSymbol>(offset, SyntaxKind::ArrayType);
 }
 
-gmt::Ref<MethodSymbol> ByteCodeDecoder::absorb_method_symbol()
+MethodSymbol* ByteCodeDecoder::absorb_method_symbol()
 {
 	const std::size_t offset = absorb_value<std::size_t>(m_code, m_ip, m_end);
 
-	gmt::Ref<SyntaxSymbol> symbol = resolve_offset(m_arena, offset);
-	if (symbol.is_null())
-		return gmt::nullref;
+	SyntaxSymbol* symbol = resolve_operand(offset);
+	if ((symbol == nullptr))
+		return nullptr;
 
 	if (!symbol->is_method())
-		return gmt::nullref;
+		return nullptr;
 
-	return symbol.as<MethodSymbol>();
+	return static_cast<MethodSymbol*>(symbol);
 }
 
-gmt::Ref<ConstructorSymbol> ByteCodeDecoder::absorb_constructor_symbol()
+ConstructorSymbol* ByteCodeDecoder::absorb_constructor_symbol()
 {
 	const std::size_t offset = absorb_value<std::size_t>(m_code, m_ip, m_end);
-	return resolve_as<ConstructorSymbol>(m_arena, offset, SyntaxKind::ConstructorDeclaration);
+	return resolve_as<ConstructorSymbol>(offset, SyntaxKind::ConstructorDeclaration);
 }

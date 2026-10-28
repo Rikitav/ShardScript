@@ -47,16 +47,16 @@ namespace
 // return statements, without side effects
 class ExpressionBinder::return_expression_collector final : public SyntaxVisitor
 {
-	std::pmr::vector<gmt::Ref<const ExpressionSyntax>>& m_expressions;
+	std::pmr::vector<const ExpressionSyntax*>& m_expressions;
 
 public:
-	explicit return_expression_collector(std::pmr::vector<gmt::Ref<const ExpressionSyntax>>& expressions)
+	explicit return_expression_collector(std::pmr::vector<const ExpressionSyntax*>& expressions)
 		: m_expressions(expressions)
 	{ }
 
 	void visit_return_statement(const ReturnStatementSyntax* node) override
 	{
-		if (!node->get_expression().is_null())
+		if (!(node->get_expression() == nullptr))
 			m_expressions.push_back(node->get_expression());
 
 		SyntaxVisitor::visit_return_statement(node);
@@ -66,52 +66,52 @@ public:
 ExpressionBinder::ExpressionBinder(SemanticModel& model, DiagnosticsContext& diagnostics)
 	: SemanticVisitor(model, diagnostics), m_factory(&model.get_table()) { }
 
-void ExpressionBinder::visit_expression(gmt::Ref<const ExpressionSyntax> expression)
+void ExpressionBinder::visit_expression(const ExpressionSyntax* expression)
 {
-	if (!expression.is_null())
-		expression.as_ptr()->accept(*this);
+	if (!(expression == nullptr))
+		expression->accept(*this);
 }
 
-void ExpressionBinder::set_expression_type(gmt::Ref<const ExpressionSyntax> expression, gmt::Ref<StructSymbol> type)
+void ExpressionBinder::set_expression_type(const ExpressionSyntax* expression, StructSymbol* type)
 {
 	get_model().set_expression_type(expression, type);
 }
 
-gmt::Ref<StructSymbol> ExpressionBinder::get_expression_type(gmt::Ref<const ExpressionSyntax> expression)
+StructSymbol* ExpressionBinder::get_expression_type(const ExpressionSyntax* expression)
 {
 	return get_model().get_expression_type(expression);
 }
 
 void ExpressionBinder::visit_translation_unit(const TranslationUnitSyntax* node)
 {
-	push_scope(gmt::nullref);
+	push_scope(nullptr);
 
-	for (const gmt::Ref<UsingDirectiveSyntax>& directive : node->get_usings().as_span())
-		visit_using_directive(directive.as_ptr());
+	for (UsingDirectiveSyntax* const& directive : node->get_usings())
+		visit_using_directive(directive);
 
 	if (node->has_namespace())
 	{
-		gmt::Ref<NamespaceSymbol> symbol = find_namespace_by_name(node->get_namespace()->get_qualifier());
-		if (!symbol.is_null())
+		NamespaceSymbol* symbol = find_namespace_by_name(node->get_namespace()->get_qualifier());
+		if (!(symbol == nullptr))
 		{
 			push_scope(symbol);
 			get_current_scope()->set_namespace(symbol);
 		}
 	}
 
-	for (const gmt::Ref<MemberDeclarationSyntax>& member : node->get_members().as_span())
+	for (MemberDeclarationSyntax* const& member : node->get_members())
 	{
-		gmt::Ref<SyntaxSymbol> symbol = get_symbol_table().lookup_symbol(member);
-		if (!symbol.is_null())
+		SyntaxSymbol* symbol = get_symbol_table().lookup_symbol(member);
+		if (!(symbol == nullptr))
 			declare(symbol);
 	}
 
-	for (const gmt::Ref<MemberDeclarationSyntax>& member : node->get_members().as_span())
+	for (MemberDeclarationSyntax* const& member : node->get_members())
 		member->accept(*this);
 
 	// lambdas still pending at this point never met an inferring point:
 	// strict typing requires an explicit signature or a target delegate type
-	for (gmt::Ref<const LambdaExpressionSyntax> pending : m_pendingLambdas)
+	for (const LambdaExpressionSyntax* pending : m_pendingLambdas)
 		get_diagnostics().report_error(pending->get_location(), L"Cannot infer lambda parameter types: specify parameter types explicitly or provide a target delegate type");
 
 	if (node->has_namespace())
@@ -122,19 +122,19 @@ void ExpressionBinder::visit_translation_unit(const TranslationUnitSyntax* node)
 
 void ExpressionBinder::visit_using_directive(const UsingDirectiveSyntax* node)
 {
-	gmt::Ref<NamespaceSymbol> symbol = find_namespace_by_name(node->get_qualifier());
-	if (symbol.is_null())
+	NamespaceSymbol* symbol = find_namespace_by_name(node->get_qualifier());
+	if ((symbol == nullptr))
 	{
 		get_diagnostics().report_error(node->get_location(), gmt::concat(L"Namespace '", node->get_qualifier_string(), L"' was not found"));
 		return;
 	}
 
-	std::optional<gmt::Ref<const UsingDirectiveSyntax>> nodeRef = ref_from(node);
+	std::optional<const UsingDirectiveSyntax*> nodeRef = ref_from(node);
 	if (nodeRef.has_value())
 		import_namespace(*nodeRef, symbol);
 }
 
-void ExpressionBinder::import_namespace(gmt::Ref<const UsingDirectiveSyntax> node, gmt::Ref<NamespaceSymbol> namespaceSymbol)
+void ExpressionBinder::import_namespace(const UsingDirectiveSyntax* node, NamespaceSymbol* namespaceSymbol)
 {
 	SemanticScope* scope = get_current_scope();
 	if (scope->get_imported_namespaces().count(namespaceSymbol) != 0)
@@ -145,13 +145,13 @@ void ExpressionBinder::import_namespace(gmt::Ref<const UsingDirectiveSyntax> nod
 
 	scope->add_imported_namespace(namespaceSymbol);
 
-	for (gmt::Ref<SyntaxSymbol> member : namespaceSymbol->members)
+	for (SyntaxSymbol* member : namespaceSymbol->members)
 	{
-		if (member.is_null())
+		if ((member == nullptr))
 			continue;
 
-		gmt::Ref<SyntaxSymbol> existing = scope->find_local(member->get_name_reference());
-		if (!existing.is_null() && existing != member)
+		SyntaxSymbol* existing = scope->find_local(member->get_name_reference());
+		if (!(existing == nullptr) && existing != member)
 		{
 			bool overloadablePair = is_overloadable_declaration(existing->get_kind()) && is_overloadable_declaration(member->get_kind());
 			if (overloadablePair)
@@ -177,14 +177,14 @@ bool ExpressionBinder::is_ambiguous_name(std::wstring_view name) const
 	return m_ambiguousNames.count(name) != 0;
 }
 
-gmt::Ref<NamespaceSymbol> ExpressionBinder::find_namespace_by_name(gmt::Span<const SyntaxToken> name)
+NamespaceSymbol* ExpressionBinder::find_namespace_by_name(std::span<const SyntaxToken> name)
 {
-	gmt::Ref<NamespaceSymbol> current = get_symbol_table().get_root_namespace();
-	for (const SyntaxToken& token : name.as_span())
+	NamespaceSymbol* current = get_symbol_table().get_root_namespace();
+	for (const SyntaxToken& token : name)
 	{
-		gmt::Ref<NamespaceSymbol> next = current->lookup(token.get_lexeme());
-		if (next.is_null())
-			return gmt::nullref;
+		NamespaceSymbol* next = current->lookup(token.get_lexeme());
+		if ((next == nullptr))
+			return nullptr;
 
 		current = next;
 	}
@@ -192,22 +192,22 @@ gmt::Ref<NamespaceSymbol> ExpressionBinder::find_namespace_by_name(gmt::Span<con
 	return current;
 }
 
-void ExpressionBinder::visit_type_declaration(gmt::Ref<const TypeDeclarationSyntax> node)
+void ExpressionBinder::visit_type_declaration(const TypeDeclarationSyntax* node)
 {
-	gmt::Ref<StructSymbol> symbol = lookup_symbol<StructSymbol>(node);
-	if (symbol.is_null())
+	StructSymbol* symbol = lookup_symbol<StructSymbol>(node);
+	if ((symbol == nullptr))
 		return;
 
 	push_scope(symbol);
 
-	for (const gmt::Ref<MemberDeclarationSyntax>& member : node->get_members().as_span())
+	for (MemberDeclarationSyntax* const& member : node->get_members())
 	{
-		gmt::Ref<SyntaxSymbol> memberSymbol = get_symbol_table().lookup_symbol(member);
-		if (!memberSymbol.is_null())
+		SyntaxSymbol* memberSymbol = get_symbol_table().lookup_symbol(member);
+		if (!(memberSymbol == nullptr))
 			get_current_scope()->declare_symbol(memberSymbol);
 	}
 
-	for (const gmt::Ref<MemberDeclarationSyntax>& member : node->get_members().as_span())
+	for (MemberDeclarationSyntax* const& member : node->get_members())
 		member->accept(*this);
 
 	pop_scope();
@@ -215,34 +215,34 @@ void ExpressionBinder::visit_type_declaration(gmt::Ref<const TypeDeclarationSynt
 
 void ExpressionBinder::visit_struct_declaration(const StructDeclarationSyntax* node)
 {
-	std::optional<gmt::Ref<const StructDeclarationSyntax>> nodeRef = ref_from(node);
+	std::optional<const StructDeclarationSyntax*> nodeRef = ref_from(node);
 	if (nodeRef.has_value())
 		visit_type_declaration(*nodeRef);
 }
 
 void ExpressionBinder::visit_interface_declaration(const InterfaceDeclarationSyntax* node)
 {
-	std::optional<gmt::Ref<const InterfaceDeclarationSyntax>> nodeRef = ref_from(node);
+	std::optional<const InterfaceDeclarationSyntax*> nodeRef = ref_from(node);
 	if (nodeRef.has_value())
 		visit_type_declaration(*nodeRef);
 }
 
 void ExpressionBinder::visit_enum_declaration(const EnumDeclarationSyntax* node)
 {
-	std::optional<gmt::Ref<const EnumDeclarationSyntax>> nodeRef = ref_from(node);
+	std::optional<const EnumDeclarationSyntax*> nodeRef = ref_from(node);
 	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<StructSymbol> symbol = lookup_symbol<StructSymbol>(*nodeRef);
-	if (symbol.is_null())
+	StructSymbol* symbol = lookup_symbol<StructSymbol>(*nodeRef);
+	if ((symbol == nullptr))
 		return;
 
 	push_scope(symbol);
 
-	for (const gmt::Ref<EnumFieldDeclarationSyntax>& field : node->get_fields().as_span())
+	for (EnumFieldDeclarationSyntax* const& field : node->get_fields())
 	{
-		gmt::Ref<SyntaxSymbol> fieldSymbol = get_symbol_table().lookup_symbol(field);
-		if (!fieldSymbol.is_null())
+		SyntaxSymbol* fieldSymbol = get_symbol_table().lookup_symbol(field);
+		if (!(fieldSymbol == nullptr))
 			get_current_scope()->declare_symbol(fieldSymbol);
 	}
 
@@ -251,76 +251,76 @@ void ExpressionBinder::visit_enum_declaration(const EnumDeclarationSyntax* node)
 
 void ExpressionBinder::visit_constructor_declaration(const ConstructorDeclarationSyntax* node)
 {
-	std::optional<gmt::Ref<const ConstructorDeclarationSyntax>> nodeRef = ref_from(node);
+	std::optional<const ConstructorDeclarationSyntax*> nodeRef = ref_from(node);
 	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<ConstructorSymbol> symbol = lookup_symbol<ConstructorSymbol>(*nodeRef);
-	if (symbol.is_null())
+	ConstructorSymbol* symbol = lookup_symbol<ConstructorSymbol>(*nodeRef);
+	if ((symbol == nullptr))
 		return;
 
-	gmt::Ref<const SyntaxSymbol> parent = symbol->get_parent();
-	if (parent.is_null() || !parent->is_type())
+	const SyntaxSymbol* parent = symbol->get_parent();
+	if ((parent == nullptr) || !parent->is_type())
 		return;
 
-	if (node->get_body().is_null())
+	if ((node->get_body() == nullptr))
 		return;
 
 	push_scope(symbol);
 
 	SemanticScope* scope = get_current_scope();
 
-	for (gmt::Ref<TypeParameterSymbol> typeParameter : symbol->get_type_parameters())
+	for (TypeParameterSymbol* typeParameter : symbol->get_type_parameters())
 		scope->declare_symbol(typeParameter);
 
 	if (symbol->get_linking() == LINK_INSTANCE)
 	{
-		gmt::Ref<StructSymbol> ownerType = parent.as<StructSymbol>();
+		StructSymbol* ownerType = gmt::as<StructSymbol>(parent);
 		scope->declare_symbol(m_factory.create_parameter(L"this", symbol, ownerType));
 	}
 
-	for (gmt::Ref<ParameterSymbol> parameter : symbol->get_parameters())
+	for (ParameterSymbol* parameter : symbol->get_parameters())
 		scope->declare_symbol(parameter);
 
-	node->get_body().as_ptr()->accept(*this);
+	node->get_body()->accept(*this);
 	pop_scope();
 }
 
 void ExpressionBinder::visit_function_declaration(const FunctionDeclarationSyntax* node)
 {
-	std::optional<gmt::Ref<const FunctionDeclarationSyntax>> nodeRef = ref_from(node);
+	std::optional<const FunctionDeclarationSyntax*> nodeRef = ref_from(node);
 	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<MethodSymbol> symbol = lookup_symbol<MethodSymbol>(*nodeRef);
-	if (symbol.is_null())
+	MethodSymbol* symbol = lookup_symbol<MethodSymbol>(*nodeRef);
+	if ((symbol == nullptr))
 		return;
 
-	gmt::Ref<const SyntaxSymbol> parent = symbol->get_parent();
-	bool instanceInType = !parent.is_null() && parent->is_type() && symbol->get_linking() == LINK_INSTANCE;
+	const SyntaxSymbol* parent = symbol->get_parent();
+	bool instanceInType = !(parent == nullptr) && parent->is_type() && symbol->get_linking() == LINK_INSTANCE;
 
 	push_scope(symbol);
 
 	SemanticScope* scope = get_current_scope();
 
-	for (gmt::Ref<TypeParameterSymbol> typeParameter : symbol->get_type_parameters())
+	for (TypeParameterSymbol* typeParameter : symbol->get_type_parameters())
 		scope->declare_symbol(typeParameter);
 
 	if (instanceInType)
 	{
-		gmt::Ref<StructSymbol> ownerType = parent.as<StructSymbol>();
+		StructSymbol* ownerType = gmt::as<StructSymbol>(parent);
 		scope->declare_symbol(m_factory.create_parameter(L"this", symbol, ownerType));
 	}
 
-	for (gmt::Ref<ParameterSymbol> parameter : symbol->get_parameters())
+	for (ParameterSymbol* parameter : symbol->get_parameters())
 		scope->declare_symbol(parameter);
 
 	// bodyless members (interface methods) have nothing to bind
-	if (!node->get_body().is_null())
+	if (!(node->get_body() == nullptr))
 	{
-		node->get_body().as_ptr()->accept(*this);
+		node->get_body()->accept(*this);
 
-		if (symbol->get_return_type().is_null() && node->get_body()->get_kind() == SyntaxKind::StatementsBlock)
+		if ((symbol->get_return_type() == nullptr) && node->get_body()->get_kind() == SyntaxKind::StatementsBlock)
 			symbol->set_return_type(infer_return_type_from_body(node->get_body()));
 	}
 
@@ -329,41 +329,41 @@ void ExpressionBinder::visit_function_declaration(const FunctionDeclarationSynta
 
 void ExpressionBinder::visit_operator_declaration(const OperatorDeclarationSyntax* node)
 {
-	std::optional<gmt::Ref<const OperatorDeclarationSyntax>> nodeRef = ref_from(node);
+	std::optional<const OperatorDeclarationSyntax*> nodeRef = ref_from(node);
 	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<MethodSymbol> symbol = lookup_symbol<MethodSymbol>(*nodeRef);
-	if (symbol.is_null())
+	MethodSymbol* symbol = lookup_symbol<MethodSymbol>(*nodeRef);
+	if ((symbol == nullptr))
 		return;
 
-	gmt::Ref<const SyntaxSymbol> parent = symbol->get_parent();
-	if (parent.is_null())
+	const SyntaxSymbol* parent = symbol->get_parent();
+	if ((parent == nullptr))
 	{
 		get_diagnostics().report_error(node->get_location(), L"Cannot find parent node of operator.");
 		return;
 	}
 
-	const gmt::vector<gmt::Ref<ParameterSymbol>>& parameters = symbol->get_parameters();
+	const gmt::vector<ParameterSymbol*>& parameters = symbol->get_parameters();
 
 	push_scope(symbol);
 
 	if (symbol->get_linking() == LINK_INSTANCE && parent->is_type())
 	{
-		gmt::Ref<StructSymbol> ownerType = parent.as<StructSymbol>();
+		StructSymbol* ownerType = gmt::as<StructSymbol>(parent);
 		get_current_scope()->declare_symbol(m_factory.create_parameter(L"this", symbol, ownerType));
 	}
 
-	for (gmt::Ref<ParameterSymbol> parameter : parameters)
+	for (ParameterSymbol* parameter : parameters)
 		get_current_scope()->declare_symbol(parameter);
 
-	if (node->get_body().is_null())
+	if ((node->get_body() == nullptr))
 	{
 		pop_scope();
 		return;
 	}
 
-	node->get_body().as_ptr()->accept(*this);
+	node->get_body()->accept(*this);
 
 	if (node->get_operator_token().get_type() == TokenType::Delimeter)
 	{
@@ -377,29 +377,29 @@ void ExpressionBinder::visit_operator_declaration(const OperatorDeclarationSynta
 
 void ExpressionBinder::visit_field_declaration(const FieldDeclarationSyntax* node)
 {
-	gmt::Ref<const ExpressionSyntax> initializer = node->get_expression();
+	const ExpressionSyntax* initializer = node->get_expression();
 	visit_expression(initializer);
 
-	std::optional<gmt::Ref<const FieldDeclarationSyntax>> nodeRef = ref_from(node);
+	std::optional<const FieldDeclarationSyntax*> nodeRef = ref_from(node);
 	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<FieldSymbol> symbol = lookup_symbol<FieldSymbol>(*nodeRef);
-	if (symbol.is_null() || initializer.is_null())
+	FieldSymbol* symbol = lookup_symbol<FieldSymbol>(*nodeRef);
+	if ((symbol == nullptr) || (initializer == nullptr))
 		return;
 
-	gmt::Ref<StructSymbol> initializerType = get_expression_type(initializer);
-	if (initializerType.is_null())
+	StructSymbol* initializerType = get_expression_type(initializer);
+	if ((initializerType == nullptr))
 	{
 		get_diagnostics().report_error(node->get_location(), L"Field initializer expression type could not be determined");
 		return;
 	}
 
 	TextLocation location = node->get_location();
-	gmt::Ref<StructSymbol> returnType = symbol->get_return_type();
+	StructSymbol* returnType = symbol->get_return_type();
 	SemanticModel& model = get_model();
 
-	if (returnType.is_null())
+	if ((returnType == nullptr))
 	{
 		get_diagnostics().report_error(location, L"Field return type not resolved");
 		return;
@@ -413,15 +413,15 @@ void ExpressionBinder::visit_field_declaration(const FieldDeclarationSyntax* nod
 
 void ExpressionBinder::visit_property_declaration(const PropertyDeclarationSyntax* node)
 {
-	std::optional<gmt::Ref<const PropertyDeclarationSyntax>> nodeRef = ref_from(node);
+	std::optional<const PropertyDeclarationSyntax*> nodeRef = ref_from(node);
 	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<PropertySymbol> symbol = lookup_symbol<PropertySymbol>(*nodeRef);
-	if (symbol.is_null())
+	PropertySymbol* symbol = lookup_symbol<PropertySymbol>(*nodeRef);
+	if ((symbol == nullptr))
 		return;
 
-	if (!symbol->get_parent().is_null() && !symbol->get_parent()->is_type())
+	if (!(symbol->get_parent() == nullptr) && !symbol->get_parent()->is_type())
 		return;
 
 	if (symbol->get_return_type() == get_symbol_table().get_void_primitive())
@@ -431,23 +431,23 @@ void ExpressionBinder::visit_property_declaration(const PropertyDeclarationSynta
 
 	push_scope(symbol);
 
-	if (!node->get_getter().is_null())
-		visit_accessor_declaration(node->get_getter().as_ptr());
+	if (!(node->get_getter() == nullptr))
+		visit_accessor_declaration(node->get_getter());
 
-	if (!node->get_setter().is_null())
-		visit_accessor_declaration(node->get_setter().as_ptr());
+	if (!(node->get_setter() == nullptr))
+		visit_accessor_declaration(node->get_setter());
 
 	pop_scope();
 }
 
 void ExpressionBinder::visit_indexator_declaration(const IndexatorDeclarationSyntax* node)
 {
-	std::optional<gmt::Ref<const IndexatorDeclarationSyntax>> nodeRef = ref_from(node);
+	std::optional<const IndexatorDeclarationSyntax*> nodeRef = ref_from(node);
 	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<IndexatorSymbol> symbol = lookup_symbol<IndexatorSymbol>(*nodeRef);
-	if (symbol.is_null())
+	IndexatorSymbol* symbol = lookup_symbol<IndexatorSymbol>(*nodeRef);
+	if ((symbol == nullptr))
 		return;
 
 	if (symbol->get_return_type() == get_symbol_table().get_void_primitive())
@@ -455,43 +455,43 @@ void ExpressionBinder::visit_indexator_declaration(const IndexatorDeclarationSyn
 
 	push_scope(symbol);
 
-	if (!node->get_getter().is_null())
-		visit_accessor_declaration(node->get_getter().as_ptr());
+	if (!(node->get_getter() == nullptr))
+		visit_accessor_declaration(node->get_getter());
 
-	if (!node->get_setter().is_null())
-		visit_accessor_declaration(node->get_setter().as_ptr());
+	if (!(node->get_setter() == nullptr))
+		visit_accessor_declaration(node->get_setter());
 
 	pop_scope();
 }
 
 void ExpressionBinder::visit_accessor_declaration(const AccessorDeclarationSyntax* node)
 {
-	std::optional<gmt::Ref<const AccessorDeclarationSyntax>> nodeRef = ref_from(node);
+	std::optional<const AccessorDeclarationSyntax*> nodeRef = ref_from(node);
 	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<AccessorSymbol> symbol = lookup_symbol<AccessorSymbol>(*nodeRef);
-	if (symbol.is_null())
+	AccessorSymbol* symbol = lookup_symbol<AccessorSymbol>(*nodeRef);
+	if ((symbol == nullptr))
 		return;
 
 	push_scope(symbol);
 
-	gmt::Ref<const SyntaxSymbol> parent = symbol->get_parent();
-	if (parent.is_null() || !parent->is_member())
+	const SyntaxSymbol* parent = symbol->get_parent();
+	if ((parent == nullptr) || !parent->is_member())
 	{
 		pop_scope();
 		return;
 	}
 
-	gmt::Ref<const SyntaxSymbol> owner = parent->get_parent();
-	bool isInstanceMember = symbol->get_linking() == LINK_INSTANCE && !owner.is_null();
+	const SyntaxSymbol* owner = parent->get_parent();
+	bool isInstanceMember = symbol->get_linking() == LINK_INSTANCE && !(owner == nullptr);
 	if (isInstanceMember && owner->is_type())
 	{
-		gmt::Ref<StructSymbol> ownerType = owner.as<StructSymbol>();
+		StructSymbol* ownerType = gmt::as<StructSymbol>(owner);
 		get_current_scope()->declare_symbol(m_factory.create_parameter(L"this", symbol, ownerType));
 	}
 
-	for (gmt::Ref<ParameterSymbol> parameter : symbol->get_parameters())
+	for (ParameterSymbol* parameter : symbol->get_parameters())
 		get_current_scope()->declare_symbol(parameter);
 
 	// auto-accessors carry no body
@@ -500,36 +500,36 @@ void ExpressionBinder::visit_accessor_declaration(const AccessorDeclarationSynta
 
 void ExpressionBinder::visit_variable_statement(const VariableStatementSyntax* node)
 {
-	std::optional<gmt::Ref<const VariableStatementSyntax>> nodeRef = ref_from(node);
+	std::optional<const VariableStatementSyntax*> nodeRef = ref_from(node);
 	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<VariableSymbol> symbol = lookup_symbol<VariableSymbol>(*nodeRef);
-	if (symbol.is_null())
+	VariableSymbol* symbol = lookup_symbol<VariableSymbol>(*nodeRef);
+	if ((symbol == nullptr))
 		return;
 
-	gmt::Ref<const ExpressionSyntax> expression = node->get_expression();
-	gmt::Ref<StructSymbol> symbolType = symbol->get_type();
+	const ExpressionSyntax* expression = node->get_expression();
+	StructSymbol* symbolType = symbol->get_type();
 	SemanticModel& model = get_model();
 
 	get_current_scope()->declare_symbol(symbol);
 
-	if (!expression.is_null())
+	if (!(expression == nullptr))
 	{
-		gmt::Ref<LeftDenotationSymbol> denotation = get_symbol_table().emplace<LeftDenotationSymbol>(symbolType, symbol);
+		LeftDenotationSymbol* denotation = get_symbol_table().emplace<LeftDenotationSymbol>(symbolType, symbol);
 		push_scope(denotation);
 		visit_expression(expression);
 		pop_scope();
 	}
 
-	if (expression.is_null())
+	if ((expression == nullptr))
 		return;
 
-	gmt::Ref<StructSymbol> expressionType = get_expression_type(expression);
-	if (expressionType.is_null())
+	StructSymbol* expressionType = get_expression_type(expression);
+	if ((expressionType == nullptr))
 		return;
 
-	if (symbolType.is_null())
+	if ((symbolType == nullptr))
 	{
 		symbol->set_type(expressionType);
 		return;
@@ -539,28 +539,28 @@ void ExpressionBinder::visit_variable_statement(const VariableStatementSyntax* n
 		get_diagnostics().report_error(node->get_location(), gmt::concat(L"Type mismatch: expected '", model.get_type_display_name(symbolType), L"' but got '", model.get_type_display_name(expressionType), L"'"));
 }
 
-gmt::Ref<StructSymbol> ExpressionBinder::infer_return_type_from_body(gmt::Ref<const BlockSyntax> body)
+StructSymbol* ExpressionBinder::infer_return_type_from_body(const BlockSyntax* body)
 {
-	gmt::inline_vector<gmt::Ref<const ExpressionSyntax>, 4> returns;
+	gmt::inline_vector<const ExpressionSyntax*, 4> returns;
 	return_expression_collector collector(returns.get_vector());
-	body.as_ptr()->accept(collector);
+	body->accept(collector);
 
-	for (gmt::Ref<const ExpressionSyntax> expression : returns.get_vector())
+	for (const ExpressionSyntax* expression : returns.get_vector())
 	{
-		gmt::Ref<StructSymbol> expressionType = get_expression_type(expression);
-		if (!expressionType.is_null())
+		StructSymbol* expressionType = get_expression_type(expression);
+		if (!(expressionType == nullptr))
 			return expressionType;
 	}
 
-	return gmt::nullref;
+	return nullptr;
 }
 
-gmt::Ref<SyntaxSymbol> ExpressionBinder::find_target_return_owner()
+SyntaxSymbol* ExpressionBinder::find_target_return_owner()
 {
 	for (SemanticScope* scope = get_current_scope(); scope != nullptr; scope = scope->get_parent())
 	{
-		gmt::Ref<SyntaxSymbol> owner = scope->get_owner();
-		if (owner.is_null())
+		SyntaxSymbol* owner = scope->get_owner();
+		if ((owner == nullptr))
 			continue;
 
 		switch (owner->get_kind())
@@ -579,10 +579,10 @@ gmt::Ref<SyntaxSymbol> ExpressionBinder::find_target_return_owner()
 		}
 	}
 
-	return gmt::nullref;
+	return nullptr;
 }
 
-void ExpressionBinder::apply_inferred_return_type(gmt::Ref<SyntaxSymbol> owner, gmt::Ref<StructSymbol> type)
+void ExpressionBinder::apply_inferred_return_type(SyntaxSymbol* owner, StructSymbol* type)
 {
 	switch (owner->get_kind())
 	{
@@ -590,16 +590,16 @@ void ExpressionBinder::apply_inferred_return_type(gmt::Ref<SyntaxSymbol> owner, 
 		case SyntaxKind::OperatorDeclaration:
 		case SyntaxKind::ConstructorDeclaration:
 		case SyntaxKind::AccessorDeclaration:
-			owner.as<MethodSymbol>()->set_return_type(type);
+			static_cast<MethodSymbol*>(owner)->set_return_type(type);
 			break;
 
 		case SyntaxKind::FieldDeclaration:
-			owner.as<FieldSymbol>()->set_return_type(type);
+			static_cast<FieldSymbol*>(owner)->set_return_type(type);
 			break;
 
 		case SyntaxKind::PropertyDeclaration:
 		case SyntaxKind::IndexatorDeclaration:
-			owner.as<PropertySymbol>()->set_return_type(type);
+			static_cast<PropertySymbol*>(owner)->set_return_type(type);
 			break;
 
 		default:
@@ -607,11 +607,11 @@ void ExpressionBinder::apply_inferred_return_type(gmt::Ref<SyntaxSymbol> owner, 
 	}
 }
 
-gmt::Ref<StructSymbol> ExpressionBinder::find_target_return_type()
+StructSymbol* ExpressionBinder::find_target_return_type()
 {
-	gmt::Ref<SyntaxSymbol> owner = find_target_return_owner();
-	if (owner.is_null())
-		return gmt::nullref;
+	SyntaxSymbol* owner = find_target_return_owner();
+	if ((owner == nullptr))
+		return nullptr;
 
 	switch (owner->get_kind())
 	{
@@ -619,49 +619,49 @@ gmt::Ref<StructSymbol> ExpressionBinder::find_target_return_type()
 		case SyntaxKind::OperatorDeclaration:
 		case SyntaxKind::ConstructorDeclaration:
 		case SyntaxKind::AccessorDeclaration:
-			return owner.as<MethodSymbol>()->get_return_type();
+			return static_cast<MethodSymbol*>(owner)->get_return_type();
 
 		case SyntaxKind::FieldDeclaration:
-			return owner.as<FieldSymbol>()->get_return_type();
+			return static_cast<FieldSymbol*>(owner)->get_return_type();
 
 		case SyntaxKind::PropertyDeclaration:
 		case SyntaxKind::IndexatorDeclaration:
-			return owner.as<PropertySymbol>()->get_return_type();
+			return static_cast<PropertySymbol*>(owner)->get_return_type();
 
 		default:
-			return gmt::nullref;
+			return nullptr;
 	}
 }
 
-gmt::Ref<StructSymbol> ExpressionBinder::resolve_left_denotation()
+StructSymbol* ExpressionBinder::resolve_left_denotation()
 {
 	for (SemanticScope* scope = get_current_scope(); scope != nullptr; scope = scope->get_parent())
 	{
-		gmt::Ref<SyntaxSymbol> owner = scope->get_owner();
-		if (owner.is_null())
+		SyntaxSymbol* owner = scope->get_owner();
+		if ((owner == nullptr))
 			continue;
 
 		if (owner->get_kind() == SyntaxKind::Argument)
-			return owner.as<LeftDenotationSymbol>()->get_expected_type();
+			return static_cast<LeftDenotationSymbol*>(owner)->get_expected_type();
 	}
 
-	return gmt::nullref;
+	return nullptr;
 }
 
 void ExpressionBinder::visit_return_statement(const ReturnStatementSyntax* node)
 {
 	TextLocation location = node->get_location();
-	gmt::Ref<const ExpressionSyntax> expression = node->get_expression();
+	const ExpressionSyntax* expression = node->get_expression();
 	SemanticModel& model = get_model();
 
-	gmt::Ref<SyntaxSymbol> returnOwner = find_target_return_owner();
-	gmt::Ref<StructSymbol> returnType = find_target_return_type();
-	if (returnType.is_null())
+	SyntaxSymbol* returnOwner = find_target_return_owner();
+	StructSymbol* returnType = find_target_return_type();
+	if ((returnType == nullptr))
 	{
 		// a function or lambda without a declared return type infers it from
 		// its returns after the body is bound: bind the expression so the
 		// inference can see its type, and check nothing yet
-		bool pendingInference = !returnOwner.is_null();
+		bool pendingInference = !(returnOwner == nullptr);
 		pendingInference = pendingInference && returnOwner->get_kind() == SyntaxKind::FunctionDeclaration;
 		if (!pendingInference)
 		{
@@ -669,7 +669,7 @@ void ExpressionBinder::visit_return_statement(const ReturnStatementSyntax* node)
 			return;
 		}
 
-		if (!expression.is_null())
+		if (!(expression == nullptr))
 			visit_expression(expression);
 
 		return;
@@ -677,7 +677,7 @@ void ExpressionBinder::visit_return_statement(const ReturnStatementSyntax* node)
 
 	if (returnType == get_symbol_table().get_void_primitive())
 	{
-		if (!expression.is_null())
+		if (!(expression == nullptr))
 		{
 			visit_expression(expression);
 			get_diagnostics().report_error(location, L"Void method cannot return a value");
@@ -686,15 +686,15 @@ void ExpressionBinder::visit_return_statement(const ReturnStatementSyntax* node)
 		return;
 	}
 
-	if (expression.is_null())
+	if ((expression == nullptr))
 	{
 		get_diagnostics().report_error(location, gmt::concat(L"Return statement must return a value of type '", model.get_type_display_name(returnType), L"'"));
 		return;
 	}
 
 	visit_expression(expression);
-	gmt::Ref<StructSymbol> expressionType = get_expression_type(expression);
-	if (expressionType.is_null())
+	StructSymbol* expressionType = get_expression_type(expression);
+	if ((expressionType == nullptr))
 	{
 		get_diagnostics().report_error(location, L"Return expression type could not be determined");
 	}
@@ -711,133 +711,133 @@ void ExpressionBinder::visit_expression_statement(const ExpressionStatementSynta
 
 void ExpressionBinder::visit_if_statement(const IfStatementSyntax* node)
 {
-	gmt::Ref<const ExpressionSyntax> condition = node->get_condition();
+	const ExpressionSyntax* condition = node->get_condition();
 
-	if (!condition.is_null())
+	if (!(condition == nullptr))
 	{
 		visit_expression(condition);
-		gmt::Ref<StructSymbol> conditionType = get_expression_type(condition);
+		StructSymbol* conditionType = get_expression_type(condition);
 
-		if (conditionType.is_null())
+		if ((conditionType == nullptr))
 			get_diagnostics().report_error(node->get_location(), L"If condition type could not be determined");
 		else if (conditionType != get_symbol_table().get_boolean_primitive())
 			get_diagnostics().report_error(node->get_location(), gmt::concat(L"If condition must be boolean, got '", get_model().get_type_display_name(conditionType), L"'"));
 	}
 
-	if (!node->get_block().is_null())
-		visit_statements_block(node->get_block().as_ptr());
+	if (!(node->get_block() == nullptr))
+		visit_statements_block(node->get_block());
 
-	if (!node->get_next().is_null())
-		node->get_next().as_ptr()->accept(*this);
+	if (!(node->get_next() == nullptr))
+		node->get_next()->accept(*this);
 }
 
 void ExpressionBinder::visit_unless_statement(const UnlessStatementSyntax* node)
 {
-	gmt::Ref<const ExpressionSyntax> condition = node->get_condition();
+	const ExpressionSyntax* condition = node->get_condition();
 
-	if (!condition.is_null())
+	if (!(condition == nullptr))
 	{
 		visit_expression(condition);
-		gmt::Ref<StructSymbol> conditionType = get_expression_type(condition);
+		StructSymbol* conditionType = get_expression_type(condition);
 
-		if (conditionType.is_null())
+		if ((conditionType == nullptr))
 			get_diagnostics().report_error(node->get_location(), L"Unless condition type could not be determined");
 		else if (conditionType != get_symbol_table().get_boolean_primitive())
 			get_diagnostics().report_error(node->get_location(), gmt::concat(L"Unless condition must be boolean, got '", get_model().get_type_display_name(conditionType), L"'"));
 	}
 
-	if (!node->get_block().is_null())
-		visit_statements_block(node->get_block().as_ptr());
+	if (!(node->get_block() == nullptr))
+		visit_statements_block(node->get_block());
 
-	if (!node->get_next().is_null())
-		node->get_next().as_ptr()->accept(*this);
+	if (!(node->get_next() == nullptr))
+		node->get_next()->accept(*this);
 }
 
 void ExpressionBinder::visit_else_statement(const ElseStatementSyntax* node)
 {
-	if (!node->get_block().is_null())
-		visit_statements_block(node->get_block().as_ptr());
+	if (!(node->get_block() == nullptr))
+		visit_statements_block(node->get_block());
 
-	if (!node->get_next().is_null())
-		node->get_next().as_ptr()->accept(*this);
+	if (!(node->get_next() == nullptr))
+		node->get_next()->accept(*this);
 }
 
 void ExpressionBinder::visit_while_statement(const WhileStatementSyntax* node)
 {
-	gmt::Ref<const ExpressionSyntax> condition = node->get_condition();
+	const ExpressionSyntax* condition = node->get_condition();
 
-	if (!condition.is_null())
+	if (!(condition == nullptr))
 	{
 		visit_expression(condition);
-		gmt::Ref<StructSymbol> conditionType = get_expression_type(condition);
+		StructSymbol* conditionType = get_expression_type(condition);
 
-		if (conditionType.is_null())
+		if ((conditionType == nullptr))
 			get_diagnostics().report_error(node->get_location(), L"While loop condition type could not be determined");
 		else if (conditionType != get_symbol_table().get_boolean_primitive())
 			get_diagnostics().report_error(node->get_location(), gmt::concat(L"While loop condition must be boolean, got '", get_model().get_type_display_name(conditionType), L"'"));
 	}
 
-	if (!node->get_block().is_null())
-		visit_statements_block(node->get_block().as_ptr());
+	if (!(node->get_block() == nullptr))
+		visit_statements_block(node->get_block());
 }
 
 void ExpressionBinder::visit_until_statement(const UntilStatementSyntax* node)
 {
-	gmt::Ref<const ExpressionSyntax> condition = node->get_condition();
+	const ExpressionSyntax* condition = node->get_condition();
 
-	if (!condition.is_null())
+	if (!(condition == nullptr))
 	{
 		visit_expression(condition);
-		gmt::Ref<StructSymbol> conditionType = get_expression_type(condition);
+		StructSymbol* conditionType = get_expression_type(condition);
 
-		if (conditionType.is_null())
+		if ((conditionType == nullptr))
 			get_diagnostics().report_error(node->get_location(), L"Until loop condition type could not be determined");
 		else if (conditionType != get_symbol_table().get_boolean_primitive())
 			get_diagnostics().report_error(node->get_location(), gmt::concat(L"Until loop condition must be boolean, got '", get_model().get_type_display_name(conditionType), L"'"));
 	}
 
-	if (!node->get_block().is_null())
-		visit_statements_block(node->get_block().as_ptr());
+	if (!(node->get_block() == nullptr))
+		visit_statements_block(node->get_block());
 }
 
 void ExpressionBinder::visit_for_in_statement(const ForInStatementSyntax* node)
 {
-	std::optional<gmt::Ref<const ForInStatementSyntax>> nodeRef = ref_from(node);
-	gmt::Ref<VariableSymbol> variable = nodeRef.has_value() ? gmt::Ref<VariableSymbol>(lookup_symbol<VariableSymbol>(*nodeRef)) : gmt::Ref<VariableSymbol>(gmt::nullref);
-	gmt::Ref<const ExpressionSyntax> rangeExpression = node->get_range_expression();
+	std::optional<const ForInStatementSyntax*> nodeRef = ref_from(node);
+	VariableSymbol* variable = nodeRef.has_value() ? static_cast<VariableSymbol*>(lookup_symbol<VariableSymbol>(*nodeRef)) : nullptr;
+	const ExpressionSyntax* rangeExpression = node->get_range_expression();
 
-	if (!rangeExpression.is_null())
+	if (!(rangeExpression == nullptr))
 	{
 		visit_expression(rangeExpression);
-		gmt::Ref<StructSymbol> rangeType = get_expression_type(rangeExpression);
-		gmt::Ref<StructSymbol> elementType = gmt::nullref;
+		StructSymbol* rangeType = get_expression_type(rangeExpression);
+		StructSymbol* elementType = nullptr;
 
-		if (!rangeType.is_null())
+		if (!(rangeType == nullptr))
 		{
 			SymbolTable& table = get_symbol_table();
 			if (rangeType->get_kind() == SyntaxKind::ArrayType)
-				elementType = rangeType.as<ArrayTypeSymbol>()->get_underlaying_type();
+				elementType = static_cast<ArrayTypeSymbol*>(rangeType)->get_underlaying_type();
 			else if (rangeType == table.get_standard_type(StandardTypes::RangeEnumerable))
 				elementType = table.get_integer_primitive();
 			else
 			{
-				gmt::Ref<PropertySymbol> countProperty = gmt::nullref;
-				gmt::Ref<IndexatorSymbol> indexator = gmt::nullref;
+				PropertySymbol* countProperty = nullptr;
+				IndexatorSymbol* indexator = nullptr;
 
 				if (get_model().resolve_indexable(rangeType, countProperty, indexator))
 				{
-					gmt::Ref<GenericTypeSymbol> genericType = gmt::nullref;
+					GenericTypeSymbol* genericType = nullptr;
 					if (rangeType->get_kind() == SyntaxKind::GenericType)
-						genericType = rangeType.as<GenericTypeSymbol>();
+						genericType = static_cast<GenericTypeSymbol*>(rangeType);
 
 					elementType = get_model().substitute_type(indexator->get_return_type(), genericType);
 				}
 			}
 		}
 
-		if (!elementType.is_null())
+		if (!(elementType == nullptr))
 		{
-			if (!variable.is_null() && variable->get_type().is_null())
+			if (!(variable == nullptr) && (variable->get_type() == nullptr))
 				variable->set_type(elementType);
 		}
 		else
@@ -846,26 +846,26 @@ void ExpressionBinder::visit_for_in_statement(const ForInStatementSyntax* node)
 		}
 	}
 
-	if (!variable.is_null())
+	if (!(variable == nullptr))
 	{
 		push_scope(variable);
 		get_current_scope()->declare_symbol(variable);
 	}
 
-	if (!node->get_block().is_null())
-		visit_statements_block(node->get_block().as_ptr());
+	if (!(node->get_block() == nullptr))
+		visit_statements_block(node->get_block());
 
-	if (!variable.is_null())
+	if (!(variable == nullptr))
 		pop_scope();
 }
 
 void ExpressionBinder::visit_try_statement(const TryStatementSyntax* node)
 {
-	if (!node->get_try_block().is_null())
-		visit_statements_block(node->get_try_block().as_ptr());
+	if (!(node->get_try_block() == nullptr))
+		visit_statements_block(node->get_try_block());
 
-	for (const gmt::Ref<CatchClauseSyntax>& clause : node->get_catch_clauses().as_span())
-		visit_catch_clause(clause.as_ptr());
+	for (CatchClauseSyntax* const& clause : node->get_catch_clauses())
+		visit_catch_clause(clause);
 }
 
 void ExpressionBinder::visit_throw_statement(const ThrowStatementSyntax* node)
@@ -873,41 +873,41 @@ void ExpressionBinder::visit_throw_statement(const ThrowStatementSyntax* node)
 	if (node == nullptr)
 		return;
 
-	gmt::Ref<const ExpressionSyntax> expression = node->get_expression();
+	const ExpressionSyntax* expression = node->get_expression();
 
 	// bare 'throw;' rethrows the in-flight exception
-	if (expression.is_null())
+	if ((expression == nullptr))
 		return;
 
 	visit_expression(expression);
 
-	gmt::Ref<StructSymbol> thrownType = get_expression_type(expression);
-	if (thrownType.is_null())
+	StructSymbol* thrownType = get_expression_type(expression);
+	if ((thrownType == nullptr))
 		return;
 
-	gmt::Ref<StructSymbol> throwable = get_symbol_table().get_standard_type(StandardTypes::IThrowable).as<StructSymbol>();
+	StructSymbol* throwable = static_cast<StructSymbol*>(get_symbol_table().get_standard_type(StandardTypes::IThrowable));
 	if (!get_model().is_assignable_to(throwable, thrownType))
 		get_diagnostics().report_error(expression->get_location(), L"Thrown expression must be assignable to IThrowable");
 }
 
 void ExpressionBinder::visit_catch_clause(const CatchClauseSyntax* node)
 {
-	std::optional<gmt::Ref<const CatchClauseSyntax>> clauseRef = ref_from(node);
+	std::optional<const CatchClauseSyntax*> clauseRef = ref_from(node);
 
-	gmt::Ref<VariableSymbol> variable = gmt::nullref;
+	VariableSymbol* variable = nullptr;
 	if (clauseRef.has_value())
 		variable = lookup_symbol<VariableSymbol>(*clauseRef);
 
-	if (!variable.is_null())
+	if (!(variable == nullptr))
 	{
 		get_current_scope()->declare_symbol(variable);
 		push_scope(variable);
 	}
 
-	if (!node->get_body().is_null())
-		visit_statements_block(node->get_body().as_ptr());
+	if (!(node->get_body() == nullptr))
+		visit_statements_block(node->get_body());
 
-	if (!variable.is_null())
+	if (!(variable == nullptr))
 		pop_scope();
 }
 
@@ -918,21 +918,21 @@ void ExpressionBinder::visit_defer_statement(const DeferStatementSyntax* node)
 
 void ExpressionBinder::visit_defer_block(const DeferBlockSyntax* node)
 {
-	if (!node->get_block().is_null())
-		visit_statements_block(node->get_block().as_ptr());
+	if (!(node->get_block() == nullptr))
+		visit_statements_block(node->get_block());
 }
 
 void ExpressionBinder::visit_defer_variable(const DeferVariableSyntax* node)
 {
-	if (!node->get_variable().is_null())
-		visit_variable_statement(node->get_variable().as_ptr());
+	if (!(node->get_variable() == nullptr))
+		visit_variable_statement(node->get_variable());
 }
 
 void ExpressionBinder::visit_statements_block(const StatementsBlockSyntax* node)
 {
-	push_scope(gmt::nullref);
+	push_scope(nullptr);
 
-	for (const gmt::Ref<StatementSyntax>& statement : node->get_statements().as_span())
+	for (StatementSyntax* const& statement : node->get_statements())
 		statement->accept(*this);
 
 	pop_scope();
@@ -940,22 +940,22 @@ void ExpressionBinder::visit_statements_block(const StatementsBlockSyntax* node)
 
 void ExpressionBinder::visit_arrow_clause(const ArrowClauseSyntax* node)
 {
-	gmt::Ref<StructSymbol> returnType = find_target_return_type();
+	StructSymbol* returnType = find_target_return_type();
 
 	visit_expression(node->get_expression());
 
 	// arrow bodies without an explicit return type infer it from the expression
-	if (returnType.is_null())
+	if ((returnType == nullptr))
 	{
-		gmt::Ref<StructSymbol> inferredType = get_expression_type(node->get_expression());
-		if (inferredType.is_null())
+		StructSymbol* inferredType = get_expression_type(node->get_expression());
+		if ((inferredType == nullptr))
 		{
 			get_diagnostics().report_error(node->get_location(), L"Expression body return type could not be determined");
 			return;
 		}
 
-		gmt::Ref<SyntaxSymbol> owner = find_target_return_owner();
-		if (!owner.is_null())
+		SyntaxSymbol* owner = find_target_return_owner();
+		if (!(owner == nullptr))
 			apply_inferred_return_type(owner, inferredType);
 
 		return;
@@ -965,8 +965,8 @@ void ExpressionBinder::visit_arrow_clause(const ArrowClauseSyntax* node)
 	if (returnType == get_symbol_table().get_void_primitive())
 		return;
 
-	gmt::Ref<StructSymbol> expressionType = get_expression_type(node->get_expression());
-	if (expressionType.is_null())
+	StructSymbol* expressionType = get_expression_type(node->get_expression());
+	if ((expressionType == nullptr))
 	{
 		get_diagnostics().report_error(node->get_location(), L"Expression body return type could not be determined");
 		return;
@@ -984,19 +984,19 @@ void ExpressionBinder::visit_if_expression(const IfExpressionSyntax* node)
 	visit_expression(node->get_then_expression());
 	visit_expression(node->get_else_expression());
 
-	std::optional<gmt::Ref<const IfExpressionSyntax>> nodeRef = ref_from(node);
+	std::optional<const IfExpressionSyntax*> nodeRef = ref_from(node);
 	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<StructSymbol> thenType = get_expression_type(node->get_then_expression());
-	gmt::Ref<StructSymbol> elseType = get_expression_type(node->get_else_expression());
+	StructSymbol* thenType = get_expression_type(node->get_then_expression());
+	StructSymbol* elseType = get_expression_type(node->get_else_expression());
 
-	gmt::Ref<StructSymbol> type = thenType;
-	if (type.is_null())
+	StructSymbol* type = thenType;
+	if ((type == nullptr))
 	{
 		type = elseType;
 	}
-	else if (!elseType.is_null() && !SemanticModel::are_types_equal(thenType, elseType))
+	else if (!(elseType == nullptr) && !SemanticModel::are_types_equal(thenType, elseType))
 	{
 		if (get_model().is_assignable_to(thenType, elseType))
 			type = elseType;

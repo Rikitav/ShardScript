@@ -5,7 +5,7 @@
 
 using namespace shard;
 
-WhereClauseSyntax::WhereClauseSyntax(gmt::Ref<SyntaxNode> parent)
+WhereClauseSyntax::WhereClauseSyntax(SyntaxNode* parent)
 	: SyntaxNode(SyntaxKind::WhereClause, parent) { }
 
 SyntaxToken WhereClauseSyntax::get_where_keyword() const
@@ -23,7 +23,7 @@ SyntaxToken WhereClauseSyntax::get_colon() const
 	return m_colonToken;
 }
 
-gmt::Span<const gmt::Ref<TypeSyntax>> WhereClauseSyntax::get_constraint_types() const
+std::span<TypeSyntax* const> WhereClauseSyntax::get_constraint_types() const
 {
 	return m_constraintTypes;
 }
@@ -43,17 +43,17 @@ void WhereClauseSyntax::set_colon(const SyntaxToken& token)
 	m_colonToken = token;
 }
 
-void WhereClauseSyntax::set_constraint_types(gmt::Span<gmt::Ref<TypeSyntax>> constraintTypes)
+void WhereClauseSyntax::set_constraint_types(std::span<TypeSyntax*> constraintTypes)
 {
 	m_constraintTypes = constraintTypes;
 }
 
 TextLocation WhereClauseSyntax::get_location() const
 {
-	if (!m_constraintTypes.is_empty())
+	if (!m_constraintTypes.empty())
 	{
-		std::span<const gmt::Ref<TypeSyntax>> constraints = m_constraintTypes.as_span();
-		return TextLocation(m_whereKeywordToken, constraints.back().as_ptr()->get_location());
+		std::span<TypeSyntax* const> constraints = m_constraintTypes;
+		return TextLocation(m_whereKeywordToken, constraints.back()->get_location());
 	}
 
 	return TextLocation(m_whereKeywordToken, m_identifierToken);
@@ -64,25 +64,25 @@ void WhereClauseSyntax::accept(SyntaxVisitor& visitor) const
 	visitor.visit_where_clause(this);
 }
 
-WhereClausesListSyntax::WhereClausesListSyntax(gmt::Ref<SyntaxNode> parent)
+WhereClausesListSyntax::WhereClausesListSyntax(SyntaxNode* parent)
 	: SyntaxNode(SyntaxKind::WhereClausesList, parent) { }
 
-gmt::Span<const gmt::Ref<WhereClauseSyntax>> WhereClausesListSyntax::get_clauses() const
+std::span<WhereClauseSyntax* const> WhereClausesListSyntax::get_clauses() const
 {
 	return m_clauses;
 }
 
-void WhereClausesListSyntax::set_clauses(gmt::Span<gmt::Ref<WhereClauseSyntax>> clauses)
+void WhereClausesListSyntax::set_clauses(std::span<WhereClauseSyntax*> clauses)
 {
 	m_clauses = clauses;
 }
 
 TextLocation WhereClausesListSyntax::get_location() const
 {
-	if (!m_clauses.is_empty())
+	if (!m_clauses.empty())
 	{
-		std::span<const gmt::Ref<WhereClauseSyntax>> clauses = m_clauses.as_span();
-		return TextLocation(clauses.front().as_ptr()->get_location(), clauses.back().as_ptr()->get_location());
+		std::span<WhereClauseSyntax* const> clauses = m_clauses;
+		return TextLocation(clauses.front()->get_location(), clauses.back()->get_location());
 	}
 
 	return TextLocation();

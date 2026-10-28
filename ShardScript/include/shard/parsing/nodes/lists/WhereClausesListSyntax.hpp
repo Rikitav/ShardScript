@@ -7,7 +7,7 @@
 #include <shard/parsing/nodes/TypeSyntax.hpp>
 
 #include <gmt/Ref.hpp>
-#include <gmt/Span.hpp>
+#include <span>
 
 namespace shard
 {
@@ -16,21 +16,21 @@ namespace shard
 		SyntaxToken m_whereKeywordToken;
 		SyntaxToken m_identifierToken;
 		SyntaxToken m_colonToken;
-		gmt::Span<gmt::Ref<TypeSyntax>> m_constraintTypes;
+		std::span<TypeSyntax*> m_constraintTypes;
 
 	public:
-		WhereClauseSyntax(gmt::Ref<SyntaxNode> parent);
+		WhereClauseSyntax(SyntaxNode* parent);
 		virtual ~WhereClauseSyntax() = default;
 
 		SyntaxToken get_where_keyword() const;
 		SyntaxToken get_identifier() const;
 		SyntaxToken get_colon() const;
-		gmt::Span<const gmt::Ref<TypeSyntax>> get_constraint_types() const;
+		std::span<TypeSyntax* const> get_constraint_types() const;
 
 		void set_where_keyword(const SyntaxToken& token);
 		void set_identifier(const SyntaxToken& token);
 		void set_colon(const SyntaxToken& token);
-		void set_constraint_types(gmt::Span<gmt::Ref<TypeSyntax>> constraintTypes);
+		void set_constraint_types(std::span<TypeSyntax*> constraintTypes);
 
 		TextLocation get_location() const override;
 		void accept(SyntaxVisitor& visitor) const override;
@@ -38,14 +38,14 @@ namespace shard
 
 	class SHARD_API WhereClausesListSyntax final : public SyntaxNode
 	{
-		gmt::Span<gmt::Ref<WhereClauseSyntax>> m_clauses;
+		std::span<WhereClauseSyntax*> m_clauses;
 
 	public:
-		WhereClausesListSyntax(gmt::Ref<SyntaxNode> parent);
+		WhereClausesListSyntax(SyntaxNode* parent);
 		virtual ~WhereClausesListSyntax() = default;
 
-		gmt::Span<const gmt::Ref<WhereClauseSyntax>> get_clauses() const;
-		void set_clauses(gmt::Span<gmt::Ref<WhereClauseSyntax>> clauses);
+		std::span<WhereClauseSyntax* const> get_clauses() const;
+		void set_clauses(std::span<WhereClauseSyntax*> clauses);
 
 		TextLocation get_location() const override;
 		void accept(SyntaxVisitor& visitor) const override;

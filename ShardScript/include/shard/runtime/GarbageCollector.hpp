@@ -134,7 +134,7 @@ namespace shard
 		ObjectInstance allocate_string(std::wstring_view value);
 		ObjectInstance intern_string(std::wstring_view value);
 
-		ObjectInstance get_static_storage(gmt::Ref<FieldSymbol> field);
+		ObjectInstance get_static_storage(FieldSymbol* field);
 
 		void register_frame(CallStackFrame* frame);
 		void unregister_frame(CallStackFrame* frame);

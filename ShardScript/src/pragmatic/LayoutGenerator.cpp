@@ -37,31 +37,31 @@ void LayoutGenerator::analyze(SyntaxTree& tree)
 	visit_syntax_tree(tree);
 }
 
-gmt::Ref<StructSymbol> LayoutGenerator::local_type(gmt::Ref<SyntaxSymbol> local) const
+StructSymbol* LayoutGenerator::local_type(SyntaxSymbol* local) const
 {
 	SyntaxKind kind = local->get_kind();
 	if (kind == SyntaxKind::VariableStatement)
-		return local.as<VariableSymbol>()->get_type();
+		return static_cast<VariableSymbol*>(local)->get_type();
 
 	if (kind == SyntaxKind::Parameter)
-		return local.as<ParameterSymbol>()->get_type();
+		return static_cast<ParameterSymbol*>(local)->get_type();
 
-	return gmt::nullref;
+	return nullptr;
 }
 
-void LayoutGenerator::expand_scalar_local(FrameLayout& layout, gmt::Ref<StructSymbol> type, std::pmr::vector<const TypeShape*>& variableShapes)
+void LayoutGenerator::expand_scalar_local(FrameLayout& layout, StructSymbol* type, std::pmr::vector<const TypeShape*>& variableShapes)
 {
 	SemanticModel& model = get_model();
 
-	for (gmt::Ref<FieldSymbol> field : type->fields)
+	for (FieldSymbol* field : type->fields)
 	{
-		if (field.is_null() || field->get_return_type().is_null())
+		if ((field == nullptr) || (field->get_return_type() == nullptr))
 			continue;
 
 		if (field->get_linking() == LINK_STATIC)
 			continue;
 
-		gmt::Ref<StructSymbol> fieldType = field->get_return_type();
+		StructSymbol* fieldType = field->get_return_type();
 		TypeShape* fieldShape = m_pragmatic.find_or_create_type_shape(model, fieldType);
 
 		PlacementVerdict fieldVerdict = fieldShape->is_reference() ? PlacementVerdict::Heap : PlacementVerdict::Stack;
@@ -70,27 +70,27 @@ void LayoutGenerator::expand_scalar_local(FrameLayout& layout, gmt::Ref<StructSy
 	}
 }
 
-void LayoutGenerator::build_frame(gmt::Ref<MethodSymbol> method)
+void LayoutGenerator::build_frame(MethodSymbol* method)
 {
-	if (method.is_null())
+	if ((method == nullptr))
 		return;
 
 	SemanticModel& model = get_model();
 	FrameLayout& layout = m_pragmatic.get_or_create_frame_layout(method);
 
-	gmt::inline_vector<gmt::Ref<StructSymbol>, 4> argumentTypes;
+	gmt::inline_vector<StructSymbol*, 4> argumentTypes;
 	if (method->get_linking() == LINK_INSTANCE)
 	{
 		// the receiver slot carries the owning type; accessors are parented to
 		// their property, so walk to the enclosing type. Top-level functions
 		// own no type and pass a null receiver
-		gmt::Ref<StructSymbol> receiverType;
-		gmt::Ref<const SyntaxSymbol> parent = method->get_parent();
-		while (!parent.is_null())
+		StructSymbol* receiverType = nullptr;
+		const SyntaxSymbol* parent = method->get_parent();
+		while (!(parent == nullptr))
 		{
 			if (parent->is_type())
 			{
-				receiverType = parent.as<StructSymbol>();
+				receiverType = gmt::as<StructSymbol>(parent);
 				break;
 			}
 
@@ -100,19 +100,19 @@ void LayoutGenerator::build_frame(gmt::Ref<MethodSymbol> method)
 		argumentTypes.push_back(receiverType);
 	}
 
-	for (gmt::Ref<ParameterSymbol> parameter : method->get_parameters())
+	for (ParameterSymbol* parameter : method->get_parameters())
 		argumentTypes.push_back(parameter->get_type());
 
-	for (gmt::Ref<StructSymbol> argumentType : argumentTypes.get_vector())
+	for (StructSymbol* argumentType : argumentTypes.get_vector())
 		layout.add_argument(argumentType);
 
 	const std::uint16_t argumentCount = static_cast<std::uint16_t>(argumentTypes.get_vector().size());
 	layout.set_argument_count(argumentCount);
 
 	gmt::inline_vector<const TypeShape*, 8> argumentShapes;
-	for (gmt::Ref<StructSymbol> argumentType : argumentTypes.get_vector())
+	for (StructSymbol* argumentType : argumentTypes.get_vector())
 	{
-		if (argumentType.is_null())
+		if ((argumentType == nullptr))
 		{
 			argumentShapes.push_back(nullptr);
 			continue;
@@ -132,7 +132,7 @@ void LayoutGenerator::build_frame(gmt::Ref<MethodSymbol> method)
 		layout.set_variable_shapes(gmt::vector<const TypeShape*>(variableShapes.get_vector().begin(), variableShapes.get_vector().end()));
 	};
 
-	const gmt::vector<gmt::Ref<SyntaxSymbol>>* order = m_pragmatic.get_local_order(method);
+	const gmt::vector<SyntaxSymbol*>* order = m_pragmatic.get_local_order(method);
 	if (order == nullptr)
 	{
 		publish_shapes();
@@ -140,9 +140,9 @@ void LayoutGenerator::build_frame(gmt::Ref<MethodSymbol> method)
 		return;
 	}
 
-	for (gmt::Ref<SyntaxSymbol> local : *order)
+	for (SyntaxSymbol* local : *order)
 	{
-		if (local.is_null())
+		if ((local == nullptr))
 			continue;
 
 		// parameters are caller-owned argument slots, not variable slots
@@ -150,11 +150,11 @@ void LayoutGenerator::build_frame(gmt::Ref<MethodSymbol> method)
 			continue;
 
 		AllocationSiteVerdict verdict = m_pragmatic.get_local_verdict(method, local);
-		gmt::Ref<StructSymbol> localType = local_type(local);
+		StructSymbol* localType = local_type(local);
 
 		// array slots cannot carry their elements inline: an unbounded array
 		// type has no fixed payload, so arrays always normalize to heap
-		if (!localType.is_null() && localType->get_kind() == SyntaxKind::ArrayType)
+		if (!(localType == nullptr) && localType->get_kind() == SyntaxKind::ArrayType)
 			verdict.verdict = PlacementVerdict::Heap;
 
 		// demote unconstructible scalars: dematerialized locals cannot run
@@ -162,17 +162,17 @@ void LayoutGenerator::build_frame(gmt::Ref<MethodSymbol> method)
 		// range-literal and call initializers degrade to plain stack placement
 		// instead; locals assigned a reference keep heap storage like any
 		// other composite
-		if (verdict.verdict == PlacementVerdict::Scalar && !localType.is_null() && !model.is_primitive_type(localType))
+		if (verdict.verdict == PlacementVerdict::Scalar && !(localType == nullptr) && !model.is_primitive_type(localType))
 		{
-			gmt::Ref<const SyntaxNode> declaration = get_symbol_table().lookup_node(local);
+			const SyntaxNode* declaration = get_symbol_table().lookup_node(local);
 			bool keepScalar = false;
 
-			if (!declaration.is_null() && declaration->get_kind() == SyntaxKind::VariableStatement)
+			if (!(declaration == nullptr) && declaration->get_kind() == SyntaxKind::VariableStatement)
 			{
-				const VariableStatementSyntax* variableNode = declaration.as<VariableStatementSyntax>().as_ptr();
-				gmt::Ref<const ExpressionSyntax> initializer = variableNode->get_expression();
+				const VariableStatementSyntax* variableNode = gmt::as<VariableStatementSyntax>(declaration);
+				const ExpressionSyntax* initializer = variableNode->get_expression();
 
-				if (initializer.is_null())
+				if ((initializer == nullptr))
 					keepScalar = true;
 				else if (initializer->get_kind() == SyntaxKind::ObjectExpression)
 					verdict.verdict = PlacementVerdict::Stack;
@@ -190,11 +190,11 @@ void LayoutGenerator::build_frame(gmt::Ref<MethodSymbol> method)
 
 		// primitives bypass placement machinery entirely: dematerialization is
 		// composite-only, so a dead primitive local still gets a plain stack slot
-		if (verdict.verdict == PlacementVerdict::Scalar && !localType.is_null() && model.is_primitive_type(localType))
+		if (verdict.verdict == PlacementVerdict::Scalar && !(localType == nullptr) && model.is_primitive_type(localType))
 			verdict.verdict = PlacementVerdict::Stack;
 
 		bool scalarLocal = verdict.verdict == PlacementVerdict::Scalar;
-		scalarLocal = scalarLocal && !localType.is_null();
+		scalarLocal = scalarLocal && !(localType == nullptr);
 		scalarLocal = scalarLocal && localType->get_kind() == SyntaxKind::StructDeclaration;
 		// primitives bypass placement machinery entirely: never dematerialized
 		scalarLocal = scalarLocal && !model.is_primitive_type(localType);
@@ -209,7 +209,7 @@ void LayoutGenerator::build_frame(gmt::Ref<MethodSymbol> method)
 		m_pragmatic.set_local_slot(method, local, argumentCount + variableIndex);
 
 		TypeShape* shape = nullptr;
-		if (!localType.is_null())
+		if (!(localType == nullptr))
 			shape = m_pragmatic.find_or_create_type_shape(model, localType);
 
 		variableShapes.push_back(shape);
@@ -228,8 +228,8 @@ void LayoutGenerator::visit_function_declaration(const FunctionDeclarationSyntax
 	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<MethodSymbol> symbol = lookup_symbol<MethodSymbol>(*nodeRef);
-	if (symbol.is_null())
+	MethodSymbol* symbol = lookup_symbol<MethodSymbol>(*nodeRef);
+	if ((symbol == nullptr))
 		return;
 
 	build_frame(symbol);
@@ -246,8 +246,8 @@ void LayoutGenerator::visit_operator_declaration(const OperatorDeclarationSyntax
 	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<MethodSymbol> symbol = lookup_symbol<MethodSymbol>(*nodeRef);
-	if (symbol.is_null())
+	MethodSymbol* symbol = lookup_symbol<MethodSymbol>(*nodeRef);
+	if ((symbol == nullptr))
 		return;
 
 	build_frame(symbol);
@@ -264,8 +264,8 @@ void LayoutGenerator::visit_constructor_declaration(const ConstructorDeclaration
 	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<ConstructorSymbol> symbol = lookup_symbol<ConstructorSymbol>(*nodeRef);
-	if (symbol.is_null())
+	ConstructorSymbol* symbol = lookup_symbol<ConstructorSymbol>(*nodeRef);
+	if ((symbol == nullptr))
 		return;
 
 	build_frame(symbol);
@@ -279,12 +279,12 @@ void LayoutGenerator::visit_lambda_expression(const LambdaExpressionSyntax* node
 		return;
 
 	// the anonymous method symbol is bound to the lambda's parameters list node
-	gmt::Ref<MethodSymbol> symbol;
-	if (!node->get_parameters().is_null())
+	MethodSymbol* symbol = nullptr;
+	if (!(node->get_parameters() == nullptr))
 	{
-		gmt::Ref<SyntaxSymbol> bound = get_symbol_table().lookup_symbol(node->get_parameters());
-		if (!bound.is_null() && bound->is_method())
-			symbol = bound.as<MethodSymbol>();
+		SyntaxSymbol* bound = get_symbol_table().lookup_symbol(node->get_parameters());
+		if (!(bound == nullptr) && bound->is_method())
+			symbol = static_cast<MethodSymbol*>(bound);
 	}
 
 	build_frame(symbol);
@@ -301,8 +301,8 @@ void LayoutGenerator::visit_accessor_declaration(const AccessorDeclarationSyntax
 	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<AccessorSymbol> symbol = lookup_symbol<AccessorSymbol>(*nodeRef);
-	if (!symbol.is_null())
+	AccessorSymbol* symbol = lookup_symbol<AccessorSymbol>(*nodeRef);
+	if (!(symbol == nullptr))
 		build_frame(symbol);
 }
 
@@ -321,17 +321,17 @@ void LayoutGenerator::visit_struct_declaration(const StructDeclarationSyntax* no
 	if (!nodeRef.has_value())
 		return;
 
-	gmt::Ref<StructSymbol> symbol = lookup_symbol<StructSymbol>(*nodeRef);
-	if (symbol.is_null())
+	StructSymbol* symbol = lookup_symbol<StructSymbol>(*nodeRef);
+	if ((symbol == nullptr))
 		return;
 
-	for (gmt::Ref<ConstructorSymbol> constructor : symbol->constructors)
+	for (ConstructorSymbol* constructor : symbol->constructors)
 	{
-		if (constructor.is_null())
+		if ((constructor == nullptr))
 			continue;
 
-		gmt::Ref<const SyntaxNode> declaration = get_symbol_table().lookup_node(constructor);
-		if (!declaration.is_null() && declaration->get_kind() == SyntaxKind::ConstructorDeclaration)
+		const SyntaxNode* declaration = get_symbol_table().lookup_node(constructor);
+		if (!(declaration == nullptr) && declaration->get_kind() == SyntaxKind::ConstructorDeclaration)
 			continue;
 
 		build_frame(constructor);

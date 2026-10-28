@@ -2,8 +2,40 @@
 #include <gmt/Allocator.hpp>
 
 #include <algorithm>
+#include <mutex>
 
 using namespace gmt;
+
+namespace
+{
+	struct DestructorRegistry
+	{
+		std::mutex mutex;
+		gmt::vector<gmt::detail::destructor_info> infos;
+	};
+
+	DestructorRegistry& destructor_registry()
+	{
+		// deliberately leaked: arenas may outlive static destruction order
+		static DestructorRegistry* registry = new DestructorRegistry();
+		return *registry;
+	}
+}
+
+std::uint32_t gmt::detail::register_destructor_type(void (*destroy)(void*), std::size_t size)
+{
+	DestructorRegistry& registry = destructor_registry();
+	std::lock_guard<std::mutex> lock(registry.mutex);
+	registry.infos.push_back(gmt::detail::destructor_info{ destroy, size });
+	return static_cast<std::uint32_t>(registry.infos.size() - 1);
+}
+
+gmt::detail::destructor_info gmt::detail::destructor_info_at(std::uint32_t type)
+{
+	DestructorRegistry& registry = destructor_registry();
+	std::lock_guard<std::mutex> lock(registry.mutex);
+	return registry.infos[type];
+}
 
 Arena::Arena() :
 	m_chunks(),
@@ -17,7 +49,15 @@ Arena::Arena() :
 Arena::~Arena()
 {
 	for (auto it = m_destructors.rbegin(); it != m_destructors.rend(); ++it)
-		it->destroy(resolve(it->offset));
+	{
+		const detail::destructor_info info = detail::destructor_info_at(it->type);
+		std::byte* base = static_cast<std::byte*>(resolve(it->offset));
+
+		// runs are contiguous in both offset and address space (a chunk
+		// boundary starts a new record), so walk the run backwards
+		for (std::uint32_t i = it->count; i > 0; --i)
+			info.destroy(base + static_cast<std::size_t>(i - 1) * info.size);
+	}
 
 	for (std::byte* chunk : m_chunks)
 		gmt::mem_free(chunk);
@@ -41,7 +81,7 @@ void Arena::grow(std::size_t required)
 void* Arena::resolve(std::size_t offset) const
 {
 	// chunk bases are sorted ascending and partition [0, capacity); the
-	// previous linear scan ran on every Ref<T>::operator-> and dominated
+	// previous linear scan ran on every T*::operator-> and dominated
 	// symbol-heavy work once the arena grew past a few chunks
 	if (offset >= m_capacity)
 		return nullptr;

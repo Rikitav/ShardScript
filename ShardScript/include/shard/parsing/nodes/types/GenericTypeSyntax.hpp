@@ -16,18 +16,18 @@ namespace shard
 {
 	class SHARD_API GenericTypeSyntax final : public TypeSyntax
 	{
-		gmt::Ref<TypeSyntax> m_underlayingType;
-		gmt::Ref<TypeArgumentsListSyntax> m_typeArguments;
+		TypeSyntax* m_underlayingType = nullptr;
+		TypeArgumentsListSyntax* m_typeArguments = nullptr;
 
 	public:
-		GenericTypeSyntax(gmt::Ref<SyntaxNode> parent);
+		GenericTypeSyntax(SyntaxNode* parent);
 		virtual ~GenericTypeSyntax() = default;
 
-		gmt::Ref<const TypeSyntax> get_underlaying_type() const;
-		gmt::Ref<const TypeArgumentsListSyntax> get_type_arguments() const;
+		const TypeSyntax* get_underlaying_type() const;
+		const TypeArgumentsListSyntax* get_type_arguments() const;
 
-		void set_underlaying_type(gmt::Ref<TypeSyntax> underlayingType);
-		void set_type_arguments(gmt::Ref<TypeArgumentsListSyntax> typeArguments);
+		void set_underlaying_type(TypeSyntax* underlayingType);
+		void set_type_arguments(TypeArgumentsListSyntax* typeArguments);
 
 		gmt::wstring get_qualifier() const override;
 

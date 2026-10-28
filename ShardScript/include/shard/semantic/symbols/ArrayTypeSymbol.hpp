@@ -13,11 +13,11 @@ namespace shard
 {
 	class SHARD_API ArrayTypeSymbol final : public StructSymbol
 	{
-		gmt::Ref<StructSymbol> m_underlayingType;
+		StructSymbol* m_underlayingType = nullptr;
 		std::size_t m_length = 0;
 
 	public:
-		ArrayTypeSymbol(gmt::Ref<StructSymbol> underlaying_type, gmt::Ref<SyntaxSymbol> parent);
+		ArrayTypeSymbol(StructSymbol* underlaying_type, SyntaxSymbol* parent);
 		virtual ~ArrayTypeSymbol() = default;
 
 		ArrayTypeSymbol(const ArrayTypeSymbol& other) = delete;
@@ -26,7 +26,7 @@ namespace shard
 		ArrayTypeSymbol(ArrayTypeSymbol&& other) = delete;
 		ArrayTypeSymbol& operator=(ArrayTypeSymbol&& other) = delete;
 
-		gmt::Ref<StructSymbol> get_underlaying_type() const;
+		StructSymbol* get_underlaying_type() const;
 
 		std::size_t get_length() const;
 		void set_length(std::size_t length);

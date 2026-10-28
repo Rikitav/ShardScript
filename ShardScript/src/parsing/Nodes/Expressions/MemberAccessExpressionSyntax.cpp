@@ -5,10 +5,10 @@
 
 using namespace shard;
 
-MemberAccessExpressionSyntax::MemberAccessExpressionSyntax(gmt::Ref<SyntaxNode> parent)
+MemberAccessExpressionSyntax::MemberAccessExpressionSyntax(SyntaxNode* parent)
 	: ExpressionSyntax(SyntaxKind::MemberAccessExpression, parent) { }
 
-gmt::Ref<const ExpressionSyntax> MemberAccessExpressionSyntax::get_previous() const
+const ExpressionSyntax* MemberAccessExpressionSyntax::get_previous() const
 {
 	return m_previous;
 }
@@ -23,7 +23,7 @@ SyntaxToken MemberAccessExpressionSyntax::get_identifier() const
 	return m_identifierToken;
 }
 
-void MemberAccessExpressionSyntax::set_previous(gmt::Ref<ExpressionSyntax> previous)
+void MemberAccessExpressionSyntax::set_previous(ExpressionSyntax* previous)
 {
 	m_previous = previous;
 }
@@ -40,8 +40,8 @@ void MemberAccessExpressionSyntax::set_identifier(const SyntaxToken& token)
 
 TextLocation MemberAccessExpressionSyntax::get_location() const
 {
-	if (!m_previous.is_null())
-		return TextLocation(m_previous.as_ptr()->get_location(), m_identifierToken);
+	if (!(m_previous == nullptr))
+		return TextLocation(m_previous->get_location(), m_identifierToken);
 
 	return m_identifierToken.get_location();
 }

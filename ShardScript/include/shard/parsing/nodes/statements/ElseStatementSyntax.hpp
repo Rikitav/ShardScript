@@ -13,7 +13,7 @@ namespace shard
 		SyntaxToken m_elseKeywordToken;
 
 	public:
-		ElseStatementSyntax(gmt::Ref<SyntaxNode> parent);
+		ElseStatementSyntax(SyntaxNode* parent);
 		virtual ~ElseStatementSyntax() = default;
 
 		SyntaxToken get_else_keyword() const;

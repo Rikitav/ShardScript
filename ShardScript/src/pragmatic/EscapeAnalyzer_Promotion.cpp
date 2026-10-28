@@ -11,7 +11,7 @@
 
 using namespace shard;
 
-void EscapeAnalyzer::record_cold_point(int id, gmt::Ref<const ExpressionSyntax> expression)
+void EscapeAnalyzer::record_cold_point(int id, const ExpressionSyntax* expression)
 {
 	m_coldPoints.emplace_back(id, expression);
 }
@@ -51,8 +51,8 @@ void EscapeAnalyzer::commit_promotion_points()
 		if (!verdict.has_value() || verdict->verdict != PlacementVerdict::Promote)
 			continue;
 
-		gmt::vector<gmt::Ref<const ExpressionSyntax>> points;
-		for (const std::pair<int, gmt::Ref<const ExpressionSyntax>>& point : m_coldPoints)
+		gmt::vector<const ExpressionSyntax*> points;
+		for (const std::pair<int, const ExpressionSyntax*>& point : m_coldPoints)
 		{
 			// a cold exposure is recorded against the local it names; the
 			// site it aliases (possibly transitively) inherits the point
@@ -60,7 +60,7 @@ void EscapeAnalyzer::commit_promotion_points()
 				continue;
 
 			bool duplicate = false;
-			for (gmt::Ref<const ExpressionSyntax> existing : points)
+			for (const ExpressionSyntax* existing : points)
 			{
 				if (existing == point.second)
 				{

@@ -25,27 +25,27 @@ namespace shard
 	{
 		struct ExpressionRefs
 		{
-			gmt::inline_vector<gmt::Ref<SyntaxSymbol>, 4> locals;
-			gmt::inline_vector<gmt::Ref<const ExpressionSyntax>, 4> sites;
+			gmt::inline_vector<SyntaxSymbol*, 4> locals;
+			gmt::inline_vector<const ExpressionSyntax*, 4> sites;
 		};
 
 		// copyable snapshot of ExpressionRefs for the memoization cache
 		// (inline_vector is immovable, so the map cannot store it directly)
 		struct CachedExpressionRefs
 		{
-			gmt::vector<gmt::Ref<SyntaxSymbol>> locals;
-			gmt::vector<gmt::Ref<const ExpressionSyntax>> sites;
+			gmt::vector<SyntaxSymbol*> locals;
+			gmt::vector<const ExpressionSyntax*> sites;
 		};
 
 		class reference_collector;
 
 		struct Frame
 		{
-			gmt::Ref<MethodSymbol> method;
-			gmt::Ref<const ExpressionSyntax> closureSite; // null for member bodies
-			gmt::unordered_set<gmt::Ref<SyntaxSymbol>> declared;
-			gmt::vector<gmt::Ref<SyntaxSymbol>> orderedLocals; // declaration order, persisted for the frame layout pass
-			gmt::vector<gmt::Ref<const ExpressionSyntax>> returnedExpressions;
+			MethodSymbol* method = nullptr;
+			const ExpressionSyntax* closureSite = nullptr; // null for member bodies
+			gmt::unordered_set<SyntaxSymbol*> declared;
+			gmt::vector<SyntaxSymbol*> orderedLocals; // declaration order, persisted for the frame layout pass
+			gmt::vector<const ExpressionSyntax*> returnedExpressions;
 			bool seenAwait = false;
 			gmt::vector<int> loopStack;
 			gmt::unordered_set<int> loopsWithAwait;
@@ -66,20 +66,20 @@ namespace shard
 			struct CallExposure
 			{
 				int nodeId;
-				gmt::Ref<MethodSymbol> callee;
+				MethodSymbol* callee = nullptr;
 				std::uint16_t parameterIndex; // 0-based into the callee summary (0 = receiver of an instance method)
 				bool receiver;
 				bool cold;
 			};
 
 			int nextId = 0;
-			gmt::unordered_map<gmt::Ref<SyntaxSymbol>, int> localIds;
-			gmt::unordered_map<gmt::Ref<const ExpressionSyntax>, int> siteIds;
+			gmt::unordered_map<SyntaxSymbol*, int> localIds;
+			gmt::unordered_map<const ExpressionSyntax*, int> siteIds;
 			gmt::vector<EscapeLevel> levels;
 			gmt::vector<EscapeChannel> channelSets;
 			gmt::vector<EscapeChannel> coldChannels; // cold upward flows only; parallel to levels
 			gmt::vector<bool> identityExposed;
-			gmt::vector<gmt::Ref<MethodSymbol>> idOwners;
+			gmt::vector<MethodSymbol*> idOwners;
 			gmt::vector<std::pair<int, int>> edges; // level[b] >= level[a]
 			gmt::vector<Event> events;
 
@@ -88,8 +88,8 @@ namespace shard
 
 		struct WalkedMethod
 		{
-			gmt::Ref<MethodSymbol> method;
-			gmt::vector<gmt::Ref<const ExpressionSyntax>> returnedExpressions;
+			MethodSymbol* method = nullptr;
+			gmt::vector<const ExpressionSyntax*> returnedExpressions;
 		};
 
 		PragmaticModel& m_pragmatic;
@@ -97,65 +97,65 @@ namespace shard
 		Graph m_graph;
 		gmt::vector<Frame> m_frameStack;
 		gmt::vector<WalkedMethod> m_walked;
-		gmt::unordered_map<gmt::Ref<StructSymbol>, bool> m_scalarCache;
-		gmt::unordered_map<gmt::Ref<const ExpressionSyntax>, CachedExpressionRefs> m_expressionRefs[2];
-		gmt::vector<std::pair<int, gmt::Ref<const ExpressionSyntax>>> m_coldPoints;
+		gmt::unordered_map<StructSymbol*, bool> m_scalarCache;
+		gmt::unordered_map<const ExpressionSyntax*, CachedExpressionRefs> m_expressionRefs[2];
+		gmt::vector<std::pair<int, const ExpressionSyntax*>> m_coldPoints;
 		int m_nextLoopId = 0;
 		int m_inDefer = 0;
 		int m_coldDepth = 0;
 
-		int ensure_local_id(gmt::Ref<SyntaxSymbol> symbol);
-		int ensure_site_id(gmt::Ref<const ExpressionSyntax> site);
+		int ensure_local_id(SyntaxSymbol* symbol);
+		int ensure_site_id(const ExpressionSyntax* site);
 		void add_edge(int from, int to);
 		void add_event(int id, EscapeLevel level, EscapeChannel channel, bool cold = false);
 		bool join_node(int id, EscapeLevel level, EscapeChannel channel);
 		bool join_cold(int id, EscapeChannel channel);
 		void clear_graph();
 
-		void enter_frame(gmt::Ref<MethodSymbol> method, gmt::Ref<const ExpressionSyntax> closureSite);
+		void enter_frame(MethodSymbol* method, const ExpressionSyntax* closureSite);
 		void leave_frame();
 		bool in_frame() const;
 		Frame& current_frame();
 
-		void declare_local(gmt::Ref<SyntaxSymbol> symbol);
-		int find_declaring_frame(gmt::Ref<SyntaxSymbol> symbol) const;
+		void declare_local(SyntaxSymbol* symbol);
+		int find_declaring_frame(SyntaxSymbol* symbol) const;
 
-		void record_use(gmt::Ref<SyntaxSymbol> symbol);
-		void record_capture(gmt::Ref<SyntaxSymbol> symbol);
-		void materialize_capture(gmt::Ref<const ExpressionSyntax> closureSite, gmt::Ref<SyntaxSymbol> symbol);
-		gmt::Ref<SyntaxSymbol> find_declared_local(std::wstring_view name) const;
+		void record_use(SyntaxSymbol* symbol);
+		void record_capture(SyntaxSymbol* symbol);
+		void materialize_capture(const ExpressionSyntax* closureSite, SyntaxSymbol* symbol);
+		SyntaxSymbol* find_declared_local(std::wstring_view name) const;
 
-		void collect_expression_refs(gmt::Ref<const ExpressionSyntax> expression, ExpressionRefs& refs, bool includeReceivers);
-		void expose_expression(gmt::Ref<const ExpressionSyntax> expression, EscapeLevel level, EscapeChannel channel, bool includeReceivers = false);
-		bool is_fresh_invokation(gmt::Ref<const ExpressionSyntax> expression);
-		void mark_identity(gmt::Ref<const ExpressionSyntax> expression, bool includeReceivers);
-		void record_call_exposure(gmt::Ref<const ExpressionSyntax> expression, gmt::Ref<MethodSymbol> callee, std::uint16_t parameterIndex, bool receiver);
-		void alias_into(gmt::Ref<SyntaxSymbol> target, gmt::Ref<const ExpressionSyntax> sourceExpression);
+		void collect_expression_refs(const ExpressionSyntax* expression, ExpressionRefs& refs, bool includeReceivers);
+		void expose_expression(const ExpressionSyntax* expression, EscapeLevel level, EscapeChannel channel, bool includeReceivers = false);
+		bool is_fresh_invokation(const ExpressionSyntax* expression);
+		void mark_identity(const ExpressionSyntax* expression, bool includeReceivers);
+		void record_call_exposure(const ExpressionSyntax* expression, MethodSymbol* callee, std::uint16_t parameterIndex, bool receiver);
+		void alias_into(SyntaxSymbol* target, const ExpressionSyntax* sourceExpression);
 
 		void register_allocation_site(const ExpressionSyntax* site);
 
-		void declare_parameters(gmt::Ref<MethodSymbol> method);
-		void analyze_member_body(gmt::Ref<MethodSymbol> method, gmt::Ref<const BlockSyntax> body);
+		void declare_parameters(MethodSymbol* method);
+		void analyze_member_body(MethodSymbol* method, const BlockSyntax* body);
 
 		void run_graph_fixpoint();
-		gmt::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary> derive_summaries();
-		void apply_call_exposures(const gmt::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries);
-		bool commit_summaries(const gmt::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries);
-		void assign_verdicts(const gmt::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries);
+		gmt::unordered_map<MethodSymbol*, EscapeSummary> derive_summaries();
+		void apply_call_exposures(const gmt::unordered_map<MethodSymbol*, EscapeSummary>& summaries);
+		bool commit_summaries(const gmt::unordered_map<MethodSymbol*, EscapeSummary>& summaries);
+		void assign_verdicts(const gmt::unordered_map<MethodSymbol*, EscapeSummary>& summaries);
 
-		ParameterEscapeSummary derive_parameter_summary(gmt::Ref<MethodSymbol> method, gmt::Ref<ParameterSymbol> parameter, bool isReceiver);
-		ReturnDisposition classify_returns(const WalkedMethod& walked, const gmt::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries);
-		int classify_return_expression(gmt::Ref<MethodSymbol> method, gmt::Ref<const ExpressionSyntax> expression, const gmt::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries);
-		int classify_local_roots(gmt::Ref<MethodSymbol> method, gmt::Ref<SyntaxSymbol> local);
+		ParameterEscapeSummary derive_parameter_summary(MethodSymbol* method, ParameterSymbol* parameter, bool isReceiver);
+		ReturnDisposition classify_returns(const WalkedMethod& walked, const gmt::unordered_map<MethodSymbol*, EscapeSummary>& summaries);
+		int classify_return_expression(MethodSymbol* method, const ExpressionSyntax* expression, const gmt::unordered_map<MethodSymbol*, EscapeSummary>& summaries);
+		int classify_local_roots(MethodSymbol* method, SyntaxSymbol* local);
 
-		bool is_caller_placeable(gmt::Ref<MethodSymbol> owner) const;
-		bool cone_closed(int id, const gmt::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries) const;
-		bool is_scalar_eligible(gmt::Ref<StructSymbol> type);
-		bool participates_in_reference_cycle(gmt::Ref<StructSymbol> type);
+		bool is_caller_placeable(MethodSymbol* owner) const;
+		bool cone_closed(int id, const gmt::unordered_map<MethodSymbol*, EscapeSummary>& summaries) const;
+		bool is_scalar_eligible(StructSymbol* type);
+		bool participates_in_reference_cycle(StructSymbol* type);
 
-		AllocationSiteVerdict classify_node(int id, gmt::Ref<StructSymbol> nodeType, const gmt::unordered_map<gmt::Ref<MethodSymbol>, EscapeSummary>& summaries);
+		AllocationSiteVerdict classify_node(int id, StructSymbol* nodeType, const gmt::unordered_map<MethodSymbol*, EscapeSummary>& summaries);
 
-		void record_cold_point(int id, gmt::Ref<const ExpressionSyntax> expression);
+		void record_cold_point(int id, const ExpressionSyntax* expression);
 		bool reaches_site(int from, int to) const;
 		void commit_promotion_points();
 

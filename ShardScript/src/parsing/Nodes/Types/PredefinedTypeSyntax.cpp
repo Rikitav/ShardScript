@@ -6,7 +6,7 @@
 
 using namespace shard;
 
-PredefinedTypeSyntax::PredefinedTypeSyntax(gmt::Ref<SyntaxNode> parent)
+PredefinedTypeSyntax::PredefinedTypeSyntax(SyntaxNode* parent)
 	: TypeSyntax(SyntaxKind::PredefinedType, parent) { }
 
 SyntaxToken PredefinedTypeSyntax::get_type_token() const

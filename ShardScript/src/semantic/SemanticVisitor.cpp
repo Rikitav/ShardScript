@@ -9,9 +9,9 @@ using namespace shard;
 
 namespace
 {
-	gmt::Ref<const SyntaxNode> get_compilation_unit(gmt::Ref<const SyntaxNode> node)
+	const SyntaxNode* get_compilation_unit(const SyntaxNode* node)
 	{
-		while (!node.is_null() && node->get_kind() != SyntaxKind::CompilationUnit)
+		while (!(node == nullptr) && node->get_kind() != SyntaxKind::CompilationUnit)
 			node = node->get_parent();
 
 		return node;
@@ -72,7 +72,7 @@ void SemanticVisitor::pop_scope_stack()
 	m_scopeStack.pop();
 }
 
-void SemanticVisitor::push_scope(gmt::Ref<SyntaxSymbol> symbol)
+void SemanticVisitor::push_scope(SyntaxSymbol* symbol)
 {
 	SemanticScope* parent = m_scopeStack.empty() ? nullptr : &m_scopeStack.top();
 	m_scopeStack.emplace(symbol, parent);
@@ -83,16 +83,16 @@ void SemanticVisitor::pop_scope()
 	m_scopeStack.pop();
 }
 
-void SemanticVisitor::declare(gmt::Ref<SyntaxSymbol> symbol)
+void SemanticVisitor::declare(SyntaxSymbol* symbol)
 {
 	SemanticScope* scope = get_current_scope();
 	scope->declare_symbol(symbol);
 
-	gmt::Ref<SyntaxSymbol> owner = scope->get_owner();
-	if (owner.is_null()) // Top-level scopes carry a nullref owner (the compilation unit is not a symbol)
+	SyntaxSymbol* owner = scope->get_owner();
+	if ((owner == nullptr)) // Top-level scopes carry a nullref owner (the compilation unit is not a symbol)
 		owner = scope->get_namespace();
 
-	if (!owner.is_null())
+	if (!(owner == nullptr))
 		owner->on_symbol_declared(symbol);
 }
 
@@ -100,73 +100,73 @@ bool SemanticVisitor::check_name_declared(const std::wstring_view name)
 {
 	for (SemanticScope* scope = get_current_scope(); scope != nullptr; scope = scope->get_parent())
 	{
-		if (!scope->find_local(name).is_null())
+		if (!(scope->find_local(name) == nullptr))
 			return true;
 	}
 
 	return false;
 }
 
-bool SemanticVisitor::check_name_declared(const gmt::Ref<SyntaxSymbol> symbol)
+bool SemanticVisitor::check_name_declared(SyntaxSymbol* const symbol)
 {
 	for (SemanticScope* scope = get_current_scope(); scope != nullptr; scope = scope->get_parent())
 	{
-		gmt::Ref<SyntaxSymbol> local = scope->find_local(symbol->get_name_reference());
-		if (!local.is_null() && local != symbol)
+		SyntaxSymbol* local = scope->find_local(symbol->get_name_reference());
+		if (!(local == nullptr) && local != symbol)
 			return true;
 	}
 
 	return false;
 }
 
-gmt::Ref<SyntaxSymbol> SemanticVisitor::get_owner_symbol()
+SyntaxSymbol* SemanticVisitor::get_owner_symbol()
 {
 	for (SemanticScope* scope = get_current_scope(); scope != nullptr; scope = scope->get_parent())
 	{
-		gmt::Ref<SyntaxSymbol> owner = scope->get_owner();
-		if (owner.is_null())
+		SyntaxSymbol* owner = scope->get_owner();
+		if ((owner == nullptr))
 			continue;
 
 		if (owner->is_member() || owner->is_type() || owner->get_kind() == SyntaxKind::NamespaceDirective)
 			return owner;
 	}
 
-	return gmt::nullref;
+	return nullptr;
 }
 
-gmt::Ref<StructSymbol> SemanticVisitor::get_owner_type()
+StructSymbol* SemanticVisitor::get_owner_type()
 {
 	for (SemanticScope* scope = get_current_scope(); scope != nullptr; scope = scope->get_parent())
 	{
-		gmt::Ref<SyntaxSymbol> owner = scope->get_owner();
-		if (owner.is_null())
+		SyntaxSymbol* owner = scope->get_owner();
+		if ((owner == nullptr))
 			continue;
 
 		if (owner->is_type())
-			return owner.as<StructSymbol>();
+			return static_cast<StructSymbol*>(owner);
 	}
 
-	return gmt::nullref;
+	return nullptr;
 }
 
-gmt::Ref<MethodSymbol> SemanticVisitor::find_host_method_symbol()
+MethodSymbol* SemanticVisitor::find_host_method_symbol()
 {
 	for (SemanticScope* scope = get_current_scope(); scope != nullptr; scope = scope->get_parent())
 	{
-		gmt::Ref<SyntaxSymbol> owner = scope->get_owner();
-		if (owner.is_null())
+		SyntaxSymbol* owner = scope->get_owner();
+		if ((owner == nullptr))
 			continue;
 
 		if (is_method_kind(owner->get_kind()))
-			return owner.as<MethodSymbol>();
+			return static_cast<MethodSymbol*>(owner);
 	}
 
-	return gmt::nullref;
+	return nullptr;
 }
 
-bool SemanticVisitor::is_symbol_accessible(gmt::Ref<SyntaxSymbol> symbol, gmt::Ref<const SyntaxNode> symbolDeclaringNode, gmt::Ref<const SyntaxNode> callSiteNode)
+bool SemanticVisitor::is_symbol_accessible(SyntaxSymbol* symbol, const SyntaxNode* symbolDeclaringNode, const SyntaxNode* callSiteNode)
 {
-	if (symbol.is_null())
+	if ((symbol == nullptr))
 		return true;
 
 	if (symbol->get_kind() == SyntaxKind::NamespaceDirective)
@@ -174,12 +174,12 @@ bool SemanticVisitor::is_symbol_accessible(gmt::Ref<SyntaxSymbol> symbol, gmt::R
 
 	if (symbol->is_member())
 	{
-		if (symbol.as<MemberSymbol>()->get_accesibility() == ACS_PUBLIC)
+		if (static_cast<MemberSymbol*>(symbol)->get_accesibility() == ACS_PUBLIC)
 			return true;
 	}
 
-	gmt::Ref<const SyntaxSymbol> parent = symbol->get_parent();
-	if (parent.is_null())
+	const SyntaxSymbol* parent = symbol->get_parent();
+	if ((parent == nullptr))
 	{
 		// unit-level symbols are only reachable from within the same unit
 		return true;
@@ -187,12 +187,12 @@ bool SemanticVisitor::is_symbol_accessible(gmt::Ref<SyntaxSymbol> symbol, gmt::R
 
 	if (parent->get_kind() == SyntaxKind::NamespaceDirective || parent->get_kind() == SyntaxKind::CompilationUnit)
 	{
-		if (callSiteNode.is_null())
+		if ((callSiteNode == nullptr))
 			return false;
 
-		gmt::Ref<const SyntaxNode> declarationFile = get_compilation_unit(symbolDeclaringNode);
-		gmt::Ref<const SyntaxNode> currentFile = get_compilation_unit(callSiteNode);
-		return !declarationFile.is_null() && declarationFile == currentFile;
+		const SyntaxNode* declarationFile = get_compilation_unit(symbolDeclaringNode);
+		const SyntaxNode* currentFile = get_compilation_unit(callSiteNode);
+		return !(declarationFile == nullptr) && declarationFile == currentFile;
 	}
 
 	for (SemanticScope* scope = get_current_scope(); scope != nullptr; scope = scope->get_parent())

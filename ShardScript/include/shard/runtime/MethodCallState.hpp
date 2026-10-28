@@ -29,8 +29,8 @@ namespace shard
 	public:
 		InvokeResult(ObjectInstance value, ObjectInstance exception);
 
-		explicit operator bool() const { return m_exception.is_null(); }
-		bool is_ok() const { return m_exception.is_null(); }
+		explicit operator bool() const { return (m_exception == nullptr); }
+		bool is_ok() const { return (m_exception == nullptr); }
 
 		ObjectInstance get_value() const;
 		ObjectInstance get_exception() const;
@@ -103,15 +103,15 @@ namespace shard
 		// continues in script code once the native returns.
 		void propagate(ObjectInstance exception);
 
-		InvokeResult try_invoke_method(gmt::Ref<MethodSymbol> method, std::span<const ObjectInstance> args);
-		InvokeResult try_invoke_method(gmt::Ref<MethodSymbol> method, std::initializer_list<ObjectInstance> args);
+		InvokeResult try_invoke_method(MethodSymbol* method, std::span<const ObjectInstance> args);
+		InvokeResult try_invoke_method(MethodSymbol* method, std::initializer_list<ObjectInstance> args);
 
-		InvokeResult new_object(gmt::Ref<StructSymbol> type);
-		InvokeResult new_object(gmt::Ref<StructSymbol> type, gmt::Ref<ConstructorSymbol> ctor, std::span<const ObjectInstance> args);
-		InvokeResult new_object(gmt::Ref<StructSymbol> type, gmt::Ref<ConstructorSymbol> ctor, std::initializer_list<ObjectInstance> args);
+		InvokeResult new_object(StructSymbol* type);
+		InvokeResult new_object(StructSymbol* type, ConstructorSymbol* ctor, std::span<const ObjectInstance> args);
+		InvokeResult new_object(StructSymbol* type, ConstructorSymbol* ctor, std::initializer_list<ObjectInstance> args);
 
-		InvokeResult get_property(ObjectInstance obj, gmt::Ref<PropertySymbol> property);
-		InvokeResult set_property(ObjectInstance obj, gmt::Ref<PropertySymbol> property, ObjectInstance value);
+		InvokeResult get_property(ObjectInstance obj, PropertySymbol* property);
+		InvokeResult set_property(ObjectInstance obj, PropertySymbol* property, ObjectInstance value);
 
 		DelegateRef wrap_delegate(ObjectInstance delegate);
 	};

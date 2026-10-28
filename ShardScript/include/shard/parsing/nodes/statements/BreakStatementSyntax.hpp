@@ -15,7 +15,7 @@ namespace shard
 		SyntaxToken m_semicolonToken;
 
 	public:
-		BreakStatementSyntax(gmt::Ref<SyntaxNode> parent);
+		BreakStatementSyntax(SyntaxNode* parent);
 		virtual ~BreakStatementSyntax() = default;
 
 		SyntaxToken get_break_keyword() const;

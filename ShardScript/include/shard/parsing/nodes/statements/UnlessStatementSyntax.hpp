@@ -13,7 +13,7 @@ namespace shard
 		SyntaxToken m_unlessKeywordToken;
 
 	public:
-		UnlessStatementSyntax(gmt::Ref<SyntaxNode> parent);
+		UnlessStatementSyntax(SyntaxNode* parent);
 		virtual ~UnlessStatementSyntax() = default;
 
 		SyntaxToken get_unless_keyword() const;

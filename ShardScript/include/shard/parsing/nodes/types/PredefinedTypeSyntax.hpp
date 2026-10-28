@@ -17,7 +17,7 @@ namespace shard
 		SyntaxToken m_typeToken;
 
 	public:
-		PredefinedTypeSyntax(gmt::Ref<SyntaxNode> parent);
+		PredefinedTypeSyntax(SyntaxNode* parent);
 		virtual ~PredefinedTypeSyntax() = default;
 
 		SyntaxToken get_type_token() const;

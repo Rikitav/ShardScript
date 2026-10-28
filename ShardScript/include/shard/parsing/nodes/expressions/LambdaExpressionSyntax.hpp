@@ -14,18 +14,18 @@ namespace shard
 {
 	class SHARD_API LambdaExpressionSyntax final : public ExpressionSyntax
 	{
-		gmt::Ref<ParametersListSyntax> m_parameters;
-		gmt::Ref<BlockSyntax> m_body;
+		ParametersListSyntax* m_parameters = nullptr;
+		BlockSyntax* m_body = nullptr;
 
 	public:
-		LambdaExpressionSyntax(gmt::Ref<SyntaxNode> parent);
+		LambdaExpressionSyntax(SyntaxNode* parent);
 		virtual ~LambdaExpressionSyntax() = default;
 
-		gmt::Ref<const ParametersListSyntax> get_parameters() const;
-		gmt::Ref<const BlockSyntax> get_body() const;
+		const ParametersListSyntax* get_parameters() const;
+		const BlockSyntax* get_body() const;
 
-		void set_parameters(gmt::Ref<ParametersListSyntax> parameters);
-		void set_body(gmt::Ref<BlockSyntax> body);
+		void set_parameters(ParametersListSyntax* parameters);
+		void set_body(BlockSyntax* body);
 
 		TextLocation get_location() const override;
 		void accept(SyntaxVisitor& visitor) const override;

@@ -14,12 +14,12 @@ namespace shard
 	class SHARD_API ProgramDisassembler final : private SyntaxVisitor
 	{
 		const ApplicationDomain& m_domain;
-		gmt::vector<gmt::Ref<MethodSymbol>> m_foundMethods;
+		gmt::vector<MethodSymbol*> m_foundMethods;
 
 		template<typename T>
-		gmt::Ref<T> lookup_symbol(const SyntaxNode* node);
+		T* lookup_symbol(const SyntaxNode* node);
 
-		void disassemble_method(std::wostream& out, gmt::Ref<MethodSymbol> method);
+		void disassemble_method(std::wostream& out, MethodSymbol* method);
 
 	public:
 		ProgramDisassembler(const ApplicationDomain& domain);

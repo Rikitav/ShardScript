@@ -16,11 +16,11 @@ namespace shard
 
 	class SHARD_API IndexatorSymbol final : public PropertySymbol
 	{
-		gmt::vector<gmt::Ref<ParameterSymbol>> m_parameters;
+		gmt::vector<ParameterSymbol*> m_parameters;
 
 	public:
-		IndexatorSymbol(std::wstring_view name, gmt::Ref<SyntaxSymbol> parent);
-		IndexatorSymbol(gmt::StringReference name, gmt::Ref<SyntaxSymbol> parent);
+		IndexatorSymbol(std::wstring_view name, SyntaxSymbol* parent);
+		IndexatorSymbol(gmt::StringReference name, SyntaxSymbol* parent);
 		virtual ~IndexatorSymbol() = default;
 
 		IndexatorSymbol(const IndexatorSymbol& other) = delete;
@@ -29,8 +29,8 @@ namespace shard
 		IndexatorSymbol(IndexatorSymbol&& other) = delete;
 		IndexatorSymbol& operator=(IndexatorSymbol&& other) = delete;
 
-		const gmt::vector<gmt::Ref<ParameterSymbol>>& get_parameters() const;
+		const gmt::vector<ParameterSymbol*>& get_parameters() const;
 
-		void on_symbol_declared(gmt::Ref<SyntaxSymbol> symbol) override;
+		void on_symbol_declared(SyntaxSymbol* symbol) override;
 	};
 }

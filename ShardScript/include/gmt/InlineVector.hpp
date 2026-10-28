@@ -1,6 +1,6 @@
 #pragma once
 #include <gmt/Ref.hpp>
-#include <gmt/Span.hpp>
+#include <span>
 
 #include <cstddef>
 #include <memory_resource>
@@ -25,11 +25,11 @@ namespace gmt
 		std::pmr::vector<T>& get_vector();
 		void push_back(const T& val);
 
-		Span<T> commit_array(Arena& arena);
+		std::span<T> commit_array(Arena& arena);
 	};
 
 	template<typename T, std::size_t Capacity>
-	using inline_ref_vector = inline_vector<Ref<T>, Capacity>;
+	using inline_ref_vector = inline_vector<T*, Capacity>;
 }
 
 #include <gmt/InlineVector.impl.hpp>

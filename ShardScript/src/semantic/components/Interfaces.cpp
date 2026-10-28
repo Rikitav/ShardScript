@@ -12,9 +12,9 @@ using namespace shard;
 
 namespace
 {
-	gmt::Ref<AccessorSymbol> make_virtual_getter(SymbolTable& table, gmt::Ref<PropertySymbol> property, gmt::Ref<StructSymbol> type)
+	AccessorSymbol* make_virtual_getter(SymbolTable& table, PropertySymbol* property, StructSymbol* type)
 	{
-		gmt::Ref<AccessorSymbol> getter = table.emplace<AccessorSymbol>(L"get", property);
+		AccessorSymbol* getter = table.emplace<AccessorSymbol>(L"get", property);
 		getter->set_return_type(type);
 		getter->set_linking(LINK_INSTANCE);
 		getter->set_accesibility(ACS_PUBLIC);
@@ -24,9 +24,9 @@ namespace
 		return getter;
 	}
 
-	gmt::Ref<MethodSymbol> make_virtual_method(SymbolTable& table, gmt::Ref<StructSymbol> owner, const wchar_t* name, gmt::Ref<StructSymbol> returnType)
+	MethodSymbol* make_virtual_method(SymbolTable& table, StructSymbol* owner, const wchar_t* name, StructSymbol* returnType)
 	{
-		gmt::Ref<MethodSymbol> method = table.emplace<MethodSymbol>(name, owner);
+		MethodSymbol* method = table.emplace<MethodSymbol>(name, owner);
 		method->set_return_type(returnType);
 		method->set_accesibility(ACS_PUBLIC);
 		method->set_linking(LINK_INSTANCE);
@@ -41,20 +41,20 @@ void SymbolTable::resolve_interfaces()
 {
 	// IThrowable
 	{
-		gmt::Ref<InterfaceSymbol> throwable = m_arena.emplace<InterfaceSymbol>(L"IThrowable", m_rootNamespace);
+		InterfaceSymbol* throwable = m_arena.emplace<InterfaceSymbol>(L"IThrowable", m_rootNamespace);
 
-		gmt::Ref<PropertySymbol> message = m_arena.emplace<PropertySymbol>(L"message", SyntaxKind::PropertyDeclaration, throwable);
+		PropertySymbol* message = m_arena.emplace<PropertySymbol>(L"message", SyntaxKind::PropertyDeclaration, throwable);
 		message->set_return_type(m_string);
 		message->set_accesibility(ACS_PUBLIC);
 		message->set_linking(LINK_INSTANCE);
 
-		gmt::Ref<PropertySymbol> stackTrace = m_arena.emplace<PropertySymbol>(L"stack_trace", SyntaxKind::PropertyDeclaration, throwable);
+		PropertySymbol* stackTrace = m_arena.emplace<PropertySymbol>(L"stack_trace", SyntaxKind::PropertyDeclaration, throwable);
 		stackTrace->set_return_type(m_string);
 		stackTrace->set_accesibility(ACS_PUBLIC);
 		stackTrace->set_linking(LINK_INSTANCE);
 
-		gmt::Ref<AccessorSymbol> messageGetter = make_virtual_getter(*this, message, m_string);
-		gmt::Ref<AccessorSymbol> stackTraceGetter = make_virtual_getter(*this, stackTrace, m_string);
+		AccessorSymbol* messageGetter = make_virtual_getter(*this, message, m_string);
+		AccessorSymbol* stackTraceGetter = make_virtual_getter(*this, stackTrace, m_string);
 
 		throwable->properties.push_back(message);
 		throwable->properties.push_back(stackTrace);
@@ -67,8 +67,8 @@ void SymbolTable::resolve_interfaces()
 
 	// IDisposable
 	{
-		gmt::Ref<InterfaceSymbol> disposable = m_arena.emplace<InterfaceSymbol>(L"IDisposable", m_rootNamespace);
-		gmt::Ref<MethodSymbol> dispose = make_virtual_method(*this, disposable, L"Dispose", m_void);
+		InterfaceSymbol* disposable = m_arena.emplace<InterfaceSymbol>(L"IDisposable", m_rootNamespace);
+		MethodSymbol* dispose = make_virtual_method(*this, disposable, L"Dispose", m_void);
 
 		m_rootNamespace->members.push_back(disposable);
 		set_standard_type(StandardTypes::IDisposable, disposable);
@@ -77,8 +77,8 @@ void SymbolTable::resolve_interfaces()
 
 	// IPrintable
 	{
-		gmt::Ref<InterfaceSymbol> printable = m_arena.emplace<InterfaceSymbol>(L"IPrintable", m_rootNamespace);
-		gmt::Ref<MethodSymbol> toString = make_virtual_method(*this, printable, L"ToString", m_string);
+		InterfaceSymbol* printable = m_arena.emplace<InterfaceSymbol>(L"IPrintable", m_rootNamespace);
+		MethodSymbol* toString = make_virtual_method(*this, printable, L"ToString", m_string);
 
 		m_rootNamespace->members.push_back(printable);
 		set_standard_type(StandardTypes::IPrintable, printable);
@@ -86,22 +86,22 @@ void SymbolTable::resolve_interfaces()
 	}
 
 	// IEnumerator<T>
-	gmt::Ref<InterfaceSymbol> enumerator;
-	gmt::Ref<TypeParameterSymbol> enumeratorT;
+	InterfaceSymbol* enumerator = nullptr;
+	TypeParameterSymbol* enumeratorT = nullptr;
 	{
 		enumerator = m_arena.emplace<InterfaceSymbol>(L"IEnumerator", m_rootNamespace);
 
 		enumeratorT = m_arena.emplace<TypeParameterSymbol>(L"T", enumerator);
 		enumerator->type_parameters.push_back(enumeratorT);
 
-		gmt::Ref<MethodSymbol> moveNext = make_virtual_method(*this, enumerator, L"MoveNext", m_boolean);
+		MethodSymbol* moveNext = make_virtual_method(*this, enumerator, L"MoveNext", m_boolean);
 
-		gmt::Ref<PropertySymbol> current = m_arena.emplace<PropertySymbol>(L"Current", SyntaxKind::PropertyDeclaration, enumerator);
+		PropertySymbol* current = m_arena.emplace<PropertySymbol>(L"Current", SyntaxKind::PropertyDeclaration, enumerator);
 		current->set_return_type(enumeratorT);
 		current->set_accesibility(ACS_PUBLIC);
 		current->set_linking(LINK_INSTANCE);
 
-		gmt::Ref<AccessorSymbol> currentGetter = make_virtual_getter(*this, current, enumeratorT);
+		AccessorSymbol* currentGetter = make_virtual_getter(*this, current, enumeratorT);
 		enumerator->properties.push_back(current);
 
 		m_rootNamespace->members.push_back(enumerator);
@@ -112,14 +112,14 @@ void SymbolTable::resolve_interfaces()
 
 	// IEnumerable<T>
 	{
-		gmt::Ref<InterfaceSymbol> enumerable = m_arena.emplace<InterfaceSymbol>(L"IEnumerable", m_rootNamespace);
+		InterfaceSymbol* enumerable = m_arena.emplace<InterfaceSymbol>(L"IEnumerable", m_rootNamespace);
 
-		gmt::Ref<TypeParameterSymbol> enumerableT = m_arena.emplace<TypeParameterSymbol>(L"T", enumerable);
+		TypeParameterSymbol* enumerableT = m_arena.emplace<TypeParameterSymbol>(L"T", enumerable);
 		enumerable->type_parameters.push_back(enumerableT);
 
-		std::array<gmt::Ref<StructSymbol>, 1> enumeratorArgs = { enumerableT };
-		gmt::Ref<GenericTypeSymbol> enumeratorType = find_or_create_generic_type(enumerator, enumeratorArgs);
-		gmt::Ref<MethodSymbol> getEnumerator = make_virtual_method(*this, enumerable, L"GetEnumerator", enumeratorType);
+		std::array<StructSymbol*, 1> enumeratorArgs = { enumerableT };
+		GenericTypeSymbol* enumeratorType = find_or_create_generic_type(enumerator, enumeratorArgs);
+		MethodSymbol* getEnumerator = make_virtual_method(*this, enumerable, L"GetEnumerator", enumeratorType);
 
 		m_rootNamespace->members.push_back(enumerable);
 		set_standard_type(StandardTypes::IEnumerable, enumerable);

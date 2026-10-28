@@ -20,7 +20,7 @@ namespace shard
 	{
 		DataSection m_dataSection;
 		BytecodeSection m_textSection;
-		gmt::Ref<MethodSymbol> m_entryPoint;
+		MethodSymbol* m_entryPoint = nullptr;
 
 	public:
 		VirtualProgramImage() = default;
@@ -33,7 +33,7 @@ namespace shard
 		DataSection& get_data_section();
 		const DataSection& get_data_section() const;
 
-		void set_entry_point(gmt::Ref<MethodSymbol> method);
-		gmt::Ref<MethodSymbol> get_entry_point() const;
+		void set_entry_point(MethodSymbol* method);
+		MethodSymbol* get_entry_point() const;
 	};
 }

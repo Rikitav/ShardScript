@@ -22,17 +22,17 @@ using namespace shard;
 
 namespace
 {
-	gmt::Ref<OperatorSymbol> find_operator(gmt::Ref<StructSymbol> owner, TokenType operatorToken, std::span<const gmt::Ref<StructSymbol>> parameterTypes)
+	OperatorSymbol* find_operator(StructSymbol* owner, TokenType operatorToken, std::span<StructSymbol* const> parameterTypes)
 	{
-		if (owner.is_null())
-			return gmt::nullref;
+		if ((owner == nullptr))
+			return nullptr;
 
-		for (gmt::Ref<OperatorSymbol> candidate : owner->operators)
+		for (OperatorSymbol* candidate : owner->operators)
 		{
-			if (candidate.is_null() || candidate->get_operator_token() != operatorToken)
+			if ((candidate == nullptr) || candidate->get_operator_token() != operatorToken)
 				continue;
 
-			const gmt::vector<gmt::Ref<ParameterSymbol>>& parameters = candidate->get_parameters();
+			const gmt::vector<ParameterSymbol*>& parameters = candidate->get_parameters();
 			if (parameters.size() != parameterTypes.size())
 				continue;
 
@@ -50,10 +50,10 @@ namespace
 				return candidate;
 		}
 
-		return gmt::nullref;
+		return nullptr;
 	}
 
-	static bool is_numeric_primitive(gmt::Ref<StructSymbol> type, const SymbolTable& table)
+	static bool is_numeric_primitive(StructSymbol* type, const SymbolTable& table)
 	{
 		if (type == table.get_integer_primitive())
 			return true;
@@ -70,7 +70,7 @@ namespace
 		return type == table.get_nint_primitive();
 	}
 
-	static bool is_integral_primitive(gmt::Ref<StructSymbol> type, const SymbolTable& table)
+	static bool is_integral_primitive(StructSymbol* type, const SymbolTable& table)
 	{
 		if (type == table.get_integer_primitive())
 			return true;
@@ -84,9 +84,9 @@ namespace
 		return type == table.get_nint_primitive();
 	}
 
-	static bool are_types_comparable(gmt::Ref<StructSymbol> leftType, gmt::Ref<StructSymbol> rightType, bool bothTypeParameters, const SymbolTable& table, const SemanticModel& model)
+	static bool are_types_comparable(StructSymbol* leftType, StructSymbol* rightType, bool bothTypeParameters, const SymbolTable& table, const SemanticModel& model)
 	{
-		if (leftType.is_null() || rightType.is_null())
+		if ((leftType == nullptr) || (rightType == nullptr))
 			return true;
 
 		if (bothTypeParameters)
@@ -135,53 +135,53 @@ bool ExpressionBinder::is_assignment_context(const IndexatorExpressionSyntax* ex
 	if (expression == nullptr)
 		return false;
 
-	gmt::Ref<const SyntaxNode> parent = expression->get_parent();
-	if (parent.is_null() || parent->get_kind() != SyntaxKind::BinaryExpression)
+	const SyntaxNode* parent = expression->get_parent();
+	if ((parent == nullptr) || parent->get_kind() != SyntaxKind::BinaryExpression)
 		return false;
 
-	gmt::Ref<const BinaryExpressionSyntax> binary = parent.as<BinaryExpressionSyntax>();
+	const BinaryExpressionSyntax* binary = gmt::as<BinaryExpressionSyntax>(parent);
 	if (!is_assignment_operator(binary->get_operator_token().get_type()))
 		return false;
 
-	return binary->get_left().as_ptr() == expression;
+	return binary->get_left() == expression;
 }
 
-gmt::Ref<OperatorSymbol> ExpressionBinder::resolve_operator_method(gmt::Ref<StructSymbol> ownerType, TokenType operatorToken, std::span<const gmt::Ref<StructSymbol>> parameterTypes)
+OperatorSymbol* ExpressionBinder::resolve_operator_method(StructSymbol* ownerType, TokenType operatorToken, std::span<StructSymbol* const> parameterTypes)
 {
-	if (ownerType.is_null() || !is_overloadable_operator(operatorToken))
-		return gmt::nullref;
+	if ((ownerType == nullptr) || !is_overloadable_operator(operatorToken))
+		return nullptr;
 
-	gmt::Ref<StructSymbol> searchType = ownerType;
+	StructSymbol* searchType = ownerType;
 	if (searchType->get_kind() == SyntaxKind::GenericType)
-		searchType = searchType.as<GenericTypeSymbol>()->get_underlaying_type();
+		searchType = static_cast<GenericTypeSymbol*>(searchType)->get_underlaying_type();
 
 	return find_operator(searchType, operatorToken, parameterTypes);
 }
 
-gmt::Ref<StructSymbol> ExpressionBinder::analyze_binary_expression(const BinaryExpressionSyntax* node)
+StructSymbol* ExpressionBinder::analyze_binary_expression(const BinaryExpressionSyntax* node)
 {
 	const TokenType op = node->get_operator_token().get_type();
 	SymbolTable& table = get_symbol_table();
 	SemanticModel& model = get_model();
 
 	visit_expression(node->get_left());
-	gmt::Ref<StructSymbol> leftType = get_expression_type(node->get_left());
+	StructSymbol* leftType = get_expression_type(node->get_left());
 
-	if (leftType.is_null() && op != TokenType::AssignOperator)
+	if ((leftType == nullptr) && op != TokenType::AssignOperator)
 	{
 		get_diagnostics().report_error(node->get_location(), L"Left operand type could not be determined");
-		return gmt::nullref;
+		return nullptr;
 	}
 
 	if (op == TokenType::AssignOperator)
 	{
-		gmt::Ref<LeftDenotationSymbol> denotation = table.emplace<LeftDenotationSymbol>(leftType, gmt::Ref<SyntaxSymbol>(gmt::nullref));
+		LeftDenotationSymbol* denotation = table.emplace<LeftDenotationSymbol>(leftType, nullptr);
 		push_scope(denotation);
 		visit_expression(node->get_right());
 		pop_scope();
 
-		gmt::Ref<StructSymbol> rightType = get_expression_type(node->get_right());
-		if (rightType.is_null())
+		StructSymbol* rightType = get_expression_type(node->get_right());
+		if ((rightType == nullptr))
 		{
 			get_diagnostics().report_error(node->get_location(), L"Right operand type could not be determined");
 			return leftType;
@@ -197,15 +197,15 @@ gmt::Ref<StructSymbol> ExpressionBinder::analyze_binary_expression(const BinaryE
 	}
 
 	bool enumBitwiseContext = false;
-	if (!leftType.is_null() && leftType->get_kind() == SyntaxKind::EnumDeclaration)
+	if (!(leftType == nullptr) && leftType->get_kind() == SyntaxKind::EnumDeclaration)
 		enumBitwiseContext = op == TokenType::OrOperator || op == TokenType::AndOperator;
 
 	if (enumBitwiseContext)
 	{
-		push_scope(gmt::nullref);
-		for (gmt::Ref<FieldSymbol> field : leftType.as<EnumSymbol>()->fields)
+		push_scope(nullptr);
+		for (FieldSymbol* field : static_cast<EnumSymbol*>(leftType)->fields)
 		{
-			if (!field.is_null() && field->get_is_enum_value())
+			if (!(field == nullptr) && field->get_is_enum_value())
 				get_current_scope()->declare_symbol(field);
 		}
 	}
@@ -215,16 +215,16 @@ gmt::Ref<StructSymbol> ExpressionBinder::analyze_binary_expression(const BinaryE
 	if (enumBitwiseContext)
 		pop_scope();
 
-	gmt::Ref<StructSymbol> rightType = get_expression_type(node->get_right());
+	StructSymbol* rightType = get_expression_type(node->get_right());
 
-	if (rightType.is_null())
+	if ((rightType == nullptr))
 	{
 		get_diagnostics().report_error(node->get_location(), L"Right operand type could not be determined");
 		return leftType;
 	}
 
-	bool leftIsNull = leftType.is_null();
-	bool rightIsNull = rightType.is_null();
+	bool leftIsNull = (leftType == nullptr);
+	bool rightIsNull = (rightType == nullptr);
 
 	bool bothPrimitive = false;
 	if (!leftIsNull && !rightIsNull)
@@ -244,11 +244,11 @@ gmt::Ref<StructSymbol> ExpressionBinder::analyze_binary_expression(const BinaryE
 
 	if (!isPrimitiveBinaryOp)
 	{
-		gmt::Ref<StructSymbol> parameterTypes[] = { leftType, rightType };
-		gmt::Ref<OperatorSymbol> operatorMethod = resolve_operator_method(leftType, op, parameterTypes);
-		if (!operatorMethod.is_null())
+		StructSymbol* parameterTypes[] = { leftType, rightType };
+		OperatorSymbol* operatorMethod = resolve_operator_method(leftType, op, parameterTypes);
+		if (!(operatorMethod == nullptr))
 		{
-			std::optional<gmt::Ref<const BinaryExpressionSyntax>> nodeRef = ref_from(node);
+			std::optional<const BinaryExpressionSyntax*> nodeRef = ref_from(node);
 			if (nodeRef.has_value())
 				table.bind_symbol<OperatorSymbol>(*nodeRef, operatorMethod);
 
@@ -260,7 +260,7 @@ gmt::Ref<StructSymbol> ExpressionBinder::analyze_binary_expression(const BinaryE
 		if (leftIsNonPrimitive && !operatorIsEquality)
 		{
 			get_diagnostics().report_error(node->get_location(), gmt::concat(L"Operator '", get_operator_method_name(op), L"' is not defined for type '", leftType->get_name(), L"'"));
-			return gmt::nullref;
+			return nullptr;
 		}
 	}
 
@@ -295,7 +295,7 @@ gmt::Ref<StructSymbol> ExpressionBinder::analyze_binary_expression(const BinaryE
 			if (!boolOp && !bitwiseOp)
 			{
 				get_diagnostics().report_error(node->get_location(), gmt::concat(L"Operator '", get_operator_method_name(op), L"' is not defined for type '", leftType->get_name(), L"'"));
-				return gmt::nullref;
+				return nullptr;
 			}
 
 			return boolOp ? table.get_boolean_primitive() : table.get_integer_primitive();
@@ -310,7 +310,7 @@ gmt::Ref<StructSymbol> ExpressionBinder::analyze_binary_expression(const BinaryE
 			if (!is_integral_primitive(leftType, table) || !is_integral_primitive(rightType, table))
 			{
 				get_diagnostics().report_error(node->get_location(), gmt::concat(L"Operator '", get_operator_method_name(op), L"' is not defined for type '", leftType->get_name(), L"'"));
-				return gmt::nullref;
+				return nullptr;
 			}
 
 			return table.get_integer_primitive();
@@ -327,7 +327,7 @@ gmt::Ref<StructSymbol> ExpressionBinder::analyze_binary_expression(const BinaryE
 			if (!is_numeric_primitive(leftType, table) || !is_numeric_primitive(rightType, table))
 			{
 				get_diagnostics().report_error(node->get_location(), gmt::concat(L"Type mismatch in addition: '", leftType->get_name(), L"' and '", rightType->get_name(), L"'"));
-				return gmt::nullref;
+				return nullptr;
 			}
 
 			if (leftType == table.get_double_primitive() || rightType == table.get_double_primitive())
@@ -348,7 +348,7 @@ gmt::Ref<StructSymbol> ExpressionBinder::analyze_binary_expression(const BinaryE
 			if (!is_numeric_primitive(leftType, table) || !is_numeric_primitive(rightType, table))
 			{
 				get_diagnostics().report_error(node->get_location(), gmt::concat(L"Type mismatch in arithmetic operation: '", leftType->get_name(), L"' and '", rightType->get_name(), L"'"));
-				return gmt::nullref;
+				return nullptr;
 			}
 
 			if (leftType == table.get_double_primitive() || rightType == table.get_double_primitive())
@@ -365,7 +365,7 @@ gmt::Ref<StructSymbol> ExpressionBinder::analyze_binary_expression(const BinaryE
 			if (!is_numeric_primitive(leftType, table) || !is_numeric_primitive(rightType, table))
 			{
 				get_diagnostics().report_error(node->get_location(), gmt::concat(L"Type mismatch in addition assignment: '", leftType->get_name(), L"' and '", rightType->get_name(), L"'"));
-				return gmt::nullref;
+				return nullptr;
 			}
 
 			if (leftType == table.get_double_primitive() || rightType == table.get_double_primitive())
@@ -383,7 +383,7 @@ gmt::Ref<StructSymbol> ExpressionBinder::analyze_binary_expression(const BinaryE
 			if (!is_numeric_primitive(leftType, table) || !is_numeric_primitive(rightType, table))
 			{
 				get_diagnostics().report_error(node->get_location(), gmt::concat(L"Type mismatch in arithmetic assignment: '", leftType->get_name(), L"' and '", rightType->get_name(), L"'"));
-				return gmt::nullref;
+				return nullptr;
 			}
 
 			if (leftType == table.get_double_primitive() || rightType == table.get_double_primitive())
@@ -399,23 +399,23 @@ gmt::Ref<StructSymbol> ExpressionBinder::analyze_binary_expression(const BinaryE
 
 void ExpressionBinder::visit_binary_expression(const BinaryExpressionSyntax* node)
 {
-	gmt::Ref<StructSymbol> type = analyze_binary_expression(node);
+	StructSymbol* type = analyze_binary_expression(node);
 
-	std::optional<gmt::Ref<const BinaryExpressionSyntax>> nodeRef = ref_from(node);
+	std::optional<const BinaryExpressionSyntax*> nodeRef = ref_from(node);
 	if (nodeRef.has_value())
 		set_expression_type(*nodeRef, type);
 }
 
-gmt::Ref<StructSymbol> ExpressionBinder::analyze_unary_expression(const UnaryExpressionSyntax* node)
+StructSymbol* ExpressionBinder::analyze_unary_expression(const UnaryExpressionSyntax* node)
 {
 	const TokenType op = node->get_operator_token().get_type();
 	SymbolTable& table = get_symbol_table();
 
-	gmt::Ref<StructSymbol> expressionType = get_expression_type(node->get_operand());
-	if (expressionType.is_null())
+	StructSymbol* expressionType = get_expression_type(node->get_operand());
+	if ((expressionType == nullptr))
 	{
 		get_diagnostics().report_error(node->get_location(), L"Operand type could not be determined");
-		return gmt::nullref;
+		return nullptr;
 	}
 
 	if (op == TokenType::TryKeyword)
@@ -426,11 +426,11 @@ gmt::Ref<StructSymbol> ExpressionBinder::analyze_unary_expression(const UnaryExp
 
 	if (tryOperatorMethod)
 	{
-		gmt::Ref<StructSymbol> parameterTypes[] = { expressionType };
-		gmt::Ref<OperatorSymbol> operatorMethod = resolve_operator_method(expressionType, op, parameterTypes);
-		if (!operatorMethod.is_null())
+		StructSymbol* parameterTypes[] = { expressionType };
+		OperatorSymbol* operatorMethod = resolve_operator_method(expressionType, op, parameterTypes);
+		if (!(operatorMethod == nullptr))
 		{
-			std::optional<gmt::Ref<const UnaryExpressionSyntax>> nodeRef = ref_from(node);
+			std::optional<const UnaryExpressionSyntax*> nodeRef = ref_from(node);
 			if (nodeRef.has_value())
 				table.bind_symbol<OperatorSymbol>(*nodeRef, operatorMethod);
 
@@ -438,13 +438,13 @@ gmt::Ref<StructSymbol> ExpressionBinder::analyze_unary_expression(const UnaryExp
 		}
 
 		get_diagnostics().report_error(node->get_location(), gmt::concat(L"Operator '", get_operator_method_name(op), L"' is not defined for type '", expressionType->get_name(), L"'"));
-		return gmt::nullref;
+		return nullptr;
 	}
 
 	if (!get_model().is_primitive_type(expressionType))
 	{
 		get_diagnostics().report_error(node->get_location(), gmt::concat(L"Operator '", get_operator_method_name(op), L"' is not defined for type '", expressionType->get_name(), L"'"));
-		return gmt::nullref;
+		return nullptr;
 	}
 
 	switch (op)
@@ -454,7 +454,7 @@ gmt::Ref<StructSymbol> ExpressionBinder::analyze_unary_expression(const UnaryExp
 			if (expressionType != table.get_boolean_primitive())
 			{
 				get_diagnostics().report_error(node->get_location(), gmt::concat(L"Logical NOT operator requires boolean type, got '", expressionType->get_name(), L"'"));
-				return gmt::nullref;
+				return nullptr;
 			}
 
 			return table.get_boolean_primitive();
@@ -468,7 +468,7 @@ gmt::Ref<StructSymbol> ExpressionBinder::analyze_unary_expression(const UnaryExp
 			if (expressionType != table.get_integer_primitive() && expressionType != table.get_double_primitive())
 			{
 				get_diagnostics().report_error(node->get_location(), gmt::concat(L"Arithmetic unary operator requires numeric type, got '", expressionType->get_name(), L"'"));
-				return gmt::nullref;
+				return nullptr;
 			}
 
 			return expressionType;
@@ -477,7 +477,7 @@ gmt::Ref<StructSymbol> ExpressionBinder::analyze_unary_expression(const UnaryExp
 		default:
 		{
 			get_diagnostics().report_error(node->get_location(), L"Unknown unary operator");
-			return gmt::nullref;
+			return nullptr;
 		}
 	}
 }
@@ -486,9 +486,9 @@ void ExpressionBinder::visit_unary_expression(const UnaryExpressionSyntax* node)
 {
 	visit_expression(node->get_operand());
 
-	gmt::Ref<StructSymbol> type = analyze_unary_expression(node);
+	StructSymbol* type = analyze_unary_expression(node);
 
-	std::optional<gmt::Ref<const UnaryExpressionSyntax>> nodeRef = ref_from(node);
+	std::optional<const UnaryExpressionSyntax*> nodeRef = ref_from(node);
 	if (nodeRef.has_value())
 		set_expression_type(*nodeRef, type);
 }

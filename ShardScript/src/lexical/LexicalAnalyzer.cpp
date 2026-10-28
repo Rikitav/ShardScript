@@ -353,7 +353,7 @@ bool LexicalAnalyzer::read_while_alpha(gmt::wstring& word)
 
 TextLocation LexicalAnalyzer::get_current_location(gmt::wstring& word)
 {
-	int length = static_cast<int>(word.length());
+	int length = static_cast<int>(word.size());
 	int startOffset = m_offset - length + 1;
 
 	if (startOffset < 1)

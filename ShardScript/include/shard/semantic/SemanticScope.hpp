@@ -18,39 +18,39 @@ namespace shard
 {
 	class SHARD_API SemanticScope
 	{
-		gmt::unordered_map<std::wstring_view, gmt::Ref<SyntaxSymbol>> m_symbols;
-		gmt::unordered_map<std::wstring_view, gmt::vector<gmt::Ref<SyntaxSymbol>>> m_overloads;
+		gmt::unordered_map<std::wstring_view, SyntaxSymbol*> m_symbols;
+		gmt::unordered_map<std::wstring_view, gmt::vector<SyntaxSymbol*>> m_overloads;
 
 		SemanticScope* m_parent;
-		gmt::Ref<SyntaxSymbol> m_owner;
-		gmt::Ref<NamespaceSymbol> m_namespace;
+		SyntaxSymbol* m_owner = nullptr;
+		NamespaceSymbol* m_namespace = nullptr;
 
-		gmt::unordered_set<gmt::Ref<NamespaceSymbol>> m_importedNamespaces;
+		gmt::unordered_set<NamespaceSymbol*> m_importedNamespaces;
 
 	public:
-		SemanticScope(gmt::Ref<SyntaxSymbol> owner, SemanticScope* parent);
+		SemanticScope(SyntaxSymbol* owner, SemanticScope* parent);
 
 		SemanticScope(const SemanticScope& other) = delete;
 		SemanticScope& operator=(const SemanticScope& other) = delete;
 
 		SemanticScope* get_parent() const;
-		gmt::Ref<SyntaxSymbol> get_owner() const;
+		SyntaxSymbol* get_owner() const;
 
-		gmt::Ref<NamespaceSymbol> get_namespace() const;
-		void set_namespace(gmt::Ref<NamespaceSymbol> namespaceSymbol);
+		NamespaceSymbol* get_namespace() const;
+		void set_namespace(NamespaceSymbol* namespaceSymbol);
 
-		const gmt::unordered_set<gmt::Ref<NamespaceSymbol>>& get_imported_namespaces() const;
-		void add_imported_namespace(gmt::Ref<NamespaceSymbol> namespaceSymbol);
+		const gmt::unordered_set<NamespaceSymbol*>& get_imported_namespaces() const;
+		void add_imported_namespace(NamespaceSymbol* namespaceSymbol);
 
-		gmt::Ref<SyntaxSymbol> find_local(gmt::StringReference name) const;
-		gmt::Ref<SyntaxSymbol> find_local(std::wstring_view name) const;
-		gmt::Ref<SyntaxSymbol> lookup(gmt::StringReference name) const;
-		gmt::Ref<SyntaxSymbol> lookup(std::wstring_view name) const;
+		SyntaxSymbol* find_local(gmt::StringReference name) const;
+		SyntaxSymbol* find_local(std::wstring_view name) const;
+		SyntaxSymbol* lookup(gmt::StringReference name) const;
+		SyntaxSymbol* lookup(std::wstring_view name) const;
 
 		// overloads declared in the same scope as the symbol that owns the
 		// name; empty when the name resolves to a single symbol
-		std::span<const gmt::Ref<SyntaxSymbol>> find_overloads(std::wstring_view name) const;
+		std::span<SyntaxSymbol* const> find_overloads(std::wstring_view name) const;
 
-		void declare_symbol(gmt::Ref<SyntaxSymbol> symbol);
+		void declare_symbol(SyntaxSymbol* symbol);
 	};
 }

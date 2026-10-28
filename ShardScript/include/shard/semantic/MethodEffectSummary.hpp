@@ -20,12 +20,12 @@ namespace shard
 		bool mutatesArguments = false;
 		bool hasUnknownSideEffects = false;
 
-		gmt::unordered_set<gmt::Ref<StructSymbol>> thrownTypes;
-		gmt::unordered_set<gmt::Ref<StructSymbol>> asyncThrownTypes;
-		gmt::unordered_set<gmt::Ref<FieldSymbol>> mayAssignInstanceFields;
-		gmt::unordered_set<gmt::Ref<FieldSymbol>> mayAssignStaticFields;
-		gmt::unordered_set<gmt::Ref<FieldSymbol>> definitelyAssignsInstanceFields;
-		gmt::unordered_set<gmt::Ref<FieldSymbol>> definitelyAssignsStaticFields;
+		gmt::unordered_set<StructSymbol*> thrownTypes;
+		gmt::unordered_set<StructSymbol*> asyncThrownTypes;
+		gmt::unordered_set<FieldSymbol*> mayAssignInstanceFields;
+		gmt::unordered_set<FieldSymbol*> mayAssignStaticFields;
+		gmt::unordered_set<FieldSymbol*> definitelyAssignsInstanceFields;
+		gmt::unordered_set<FieldSymbol*> definitelyAssignsStaticFields;
 
 		void merge(const MethodEffectSummary& other);
 

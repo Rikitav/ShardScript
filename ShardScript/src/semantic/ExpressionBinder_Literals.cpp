@@ -210,24 +210,24 @@ namespace
 	}
 }
 
-gmt::Ref<StructSymbol> ExpressionBinder::analyze_literal_expression(const LiteralExpressionSyntax* node)
+StructSymbol* ExpressionBinder::analyze_literal_expression(const LiteralExpressionSyntax* node)
 {
 	const SyntaxToken literal = node->get_literal();
 	SymbolTable& table = get_symbol_table();
 
-	std::optional<gmt::Ref<const LiteralExpressionSyntax>> nodeRef = ref_from(node);
+	std::optional<const LiteralExpressionSyntax*> nodeRef = ref_from(node);
 	if (!nodeRef.has_value())
-		return gmt::nullref;
+		return nullptr;
 
-	gmt::Ref<LiteralSymbol> symbol = lookup_symbol<LiteralSymbol>(*nodeRef);
-	if (symbol.is_null())
-		symbol = table.bind_symbol<LiteralSymbol>(*nodeRef, literal.get_type(), gmt::Ref<SyntaxSymbol>(gmt::nullref));
+	LiteralSymbol* symbol = lookup_symbol<LiteralSymbol>(*nodeRef);
+	if ((symbol == nullptr))
+		symbol = table.bind_symbol<LiteralSymbol>(*nodeRef, literal.get_type(), nullptr);
 
 	switch (literal.get_type())
 	{
 		case TokenType::NullLiteral:
 		{
-			return gmt::nullref;
+			return nullptr;
 		}
 
 		case TokenType::BooleanLiteral:
@@ -266,29 +266,29 @@ gmt::Ref<StructSymbol> ExpressionBinder::analyze_literal_expression(const Litera
 		}
 
 		default:
-			return gmt::nullref;
+			return nullptr;
 	}
 }
 
 void ExpressionBinder::visit_literal_expression(const LiteralExpressionSyntax* node)
 {
-	gmt::Ref<StructSymbol> type = analyze_literal_expression(node);
+	StructSymbol* type = analyze_literal_expression(node);
 
-	std::optional<gmt::Ref<const LiteralExpressionSyntax>> nodeRef = ref_from(node);
+	std::optional<const LiteralExpressionSyntax*> nodeRef = ref_from(node);
 	if (nodeRef.has_value())
 		set_expression_type(*nodeRef, type);
 
-	if (type.is_null() && node->get_literal().get_type() != TokenType::NullLiteral)
+	if ((type == nullptr) && node->get_literal().get_type() != TokenType::NullLiteral)
 		get_diagnostics().report_error(node->get_location(), L"Unsupported literal type");
 }
 
-gmt::Ref<StructSymbol> ExpressionBinder::analyze_number_literal(const LiteralExpressionSyntax* node)
+StructSymbol* ExpressionBinder::analyze_number_literal(const LiteralExpressionSyntax* node)
 {
 	SymbolTable& table = get_symbol_table();
 
-	std::optional<gmt::Ref<const LiteralExpressionSyntax>> nodeRef = ref_from(node);
-	gmt::Ref<LiteralSymbol> symbol = nodeRef.has_value() ? gmt::Ref<LiteralSymbol>(lookup_symbol<LiteralSymbol>(*nodeRef)) : gmt::Ref<LiteralSymbol>(gmt::nullref);
-	if (symbol.is_null())
+	std::optional<const LiteralExpressionSyntax*> nodeRef = ref_from(node);
+	LiteralSymbol* symbol = nodeRef.has_value() ? static_cast<LiteralSymbol*>(lookup_symbol<LiteralSymbol>(*nodeRef)) : nullptr;
+	if ((symbol == nullptr))
 		return table.get_integer_primitive();
 
 	std::int64_t value = 0;
@@ -298,11 +298,11 @@ gmt::Ref<StructSymbol> ExpressionBinder::analyze_number_literal(const LiteralExp
 	else
 		symbol->set_integer_value(value);
 
-	gmt::Ref<StructSymbol> expectedType = resolve_left_denotation();
+	StructSymbol* expectedType = resolve_left_denotation();
 	bool expectedIsByte = expectedType == table.get_byte_primitive();
 	bool expectedIsNint = expectedType == table.get_nint_primitive();
 	bool matchesExpectedType = expectedIsByte || expectedIsNint;
-	if (!expectedType.is_null() && matchesExpectedType)
+	if (!(expectedType == nullptr) && matchesExpectedType)
 	{
 		symbol->set_bound_type(expectedType);
 		return expectedType;
@@ -311,11 +311,11 @@ gmt::Ref<StructSymbol> ExpressionBinder::analyze_number_literal(const LiteralExp
 	return table.get_integer_primitive();
 }
 
-gmt::Ref<StructSymbol> ExpressionBinder::analyze_double_literal(const LiteralExpressionSyntax* node)
+StructSymbol* ExpressionBinder::analyze_double_literal(const LiteralExpressionSyntax* node)
 {
-	std::optional<gmt::Ref<const LiteralExpressionSyntax>> nodeRef = ref_from(node);
-	gmt::Ref<LiteralSymbol> symbol = nodeRef.has_value() ? gmt::Ref<LiteralSymbol>(lookup_symbol<LiteralSymbol>(*nodeRef)) : gmt::Ref<LiteralSymbol>(gmt::nullref);
-	if (symbol.is_null())
+	std::optional<const LiteralExpressionSyntax*> nodeRef = ref_from(node);
+	LiteralSymbol* symbol = nodeRef.has_value() ? static_cast<LiteralSymbol*>(lookup_symbol<LiteralSymbol>(*nodeRef)) : nullptr;
+	if ((symbol == nullptr))
 		return get_symbol_table().get_double_primitive();
 
 	double value = 0.0;
@@ -330,34 +330,34 @@ gmt::Ref<StructSymbol> ExpressionBinder::analyze_double_literal(const LiteralExp
 
 void ExpressionBinder::visit_collection_expression(const CollectionExpressionSyntax* node)
 {
-	const std::span<const gmt::Ref<ExpressionSyntax>> values = node->get_values().as_span();
+	const std::span<ExpressionSyntax* const> values = node->get_values();
 
-	for (const gmt::Ref<ExpressionSyntax>& value : values)
+	for (ExpressionSyntax* const& value : values)
 		visit_expression(value);
 
-	gmt::Ref<StructSymbol> elementType = gmt::nullref;
-	for (const gmt::Ref<ExpressionSyntax>& value : values)
+	StructSymbol* elementType = nullptr;
+	for (ExpressionSyntax* const& value : values)
 	{
-		if (elementType.is_null())
+		if ((elementType == nullptr))
 			elementType = get_expression_type(value);
 	}
 
-	for (const gmt::Ref<ExpressionSyntax>& value : values)
+	for (ExpressionSyntax* const& value : values)
 	{
-		gmt::Ref<StructSymbol> valueType = get_expression_type(value);
-		if (!valueType.is_null() && !SemanticModel::are_types_equal(valueType, elementType))
+		StructSymbol* valueType = get_expression_type(value);
+		if (!(valueType == nullptr) && !SemanticModel::are_types_equal(valueType, elementType))
 			get_diagnostics().report_error(node->get_location(), L"Element have type different from collection's target type");
 	}
 
-	std::optional<gmt::Ref<const CollectionExpressionSyntax>> nodeRef = ref_from(node);
-	if (elementType.is_null())
+	std::optional<const CollectionExpressionSyntax*> nodeRef = ref_from(node);
+	if ((elementType == nullptr))
 	{
 		if (nodeRef.has_value())
-			set_expression_type(*nodeRef, gmt::nullref);
+			set_expression_type(*nodeRef, nullptr);
 		return;
 	}
 
-	gmt::Ref<ArrayTypeSymbol> arrayType = m_factory.create_array_type(elementType, values.size());
+	ArrayTypeSymbol* arrayType = m_factory.create_array_type(elementType, values.size());
 	if (nodeRef.has_value())
 	{
 		get_symbol_table().bind_symbol<ArrayTypeSymbol>(*nodeRef, arrayType);
@@ -372,15 +372,15 @@ void ExpressionBinder::visit_range_expression(const RangeExpressionSyntax* node)
 	visit_expression(node->get_left());
 	visit_expression(node->get_right());
 
-	gmt::Ref<StructSymbol> leftType = get_expression_type(node->get_left());
-	gmt::Ref<StructSymbol> rightType = get_expression_type(node->get_right());
+	StructSymbol* leftType = get_expression_type(node->get_left());
+	StructSymbol* rightType = get_expression_type(node->get_right());
 
 	bool leftIsInteger = leftType == table.get_integer_primitive();
 	bool rightIsInteger = rightType == table.get_integer_primitive();
 	if (!leftIsInteger || !rightIsInteger)
 		get_diagnostics().report_error(node->get_location(), L"Range bounds must be integers");
 
-	std::optional<gmt::Ref<const RangeExpressionSyntax>> nodeRef = ref_from(node);
+	std::optional<const RangeExpressionSyntax*> nodeRef = ref_from(node);
 	if (nodeRef.has_value())
-		set_expression_type(*nodeRef, table.get_standard_type(StandardTypes::RangeEnumerable).as<StructSymbol>());
+		set_expression_type(*nodeRef, static_cast<StructSymbol*>(table.get_standard_type(StandardTypes::RangeEnumerable)));
 }

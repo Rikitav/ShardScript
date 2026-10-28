@@ -39,16 +39,16 @@ std::byte* ObjectInstance::get_memory() const
 	return m_memory;
 }
 
-std::uint32_t ObjectInstance::resolve_field_slot(gmt::Ref<FieldSymbol> field)
+std::uint32_t ObjectInstance::resolve_field_slot(FieldSymbol* field)
 {
-	gmt::Ref<StructSymbol> owner = field->get_parent().as<StructSymbol>();
-	if (owner.is_null())
+	StructSymbol* owner = gmt::as<StructSymbol>(field->get_parent());
+	if ((owner == nullptr))
 		return 0;
 
 	std::uint32_t ordinal = 0;
-	for (gmt::Ref<FieldSymbol> candidate : owner->fields)
+	for (FieldSymbol* candidate : owner->fields)
 	{
-		if (candidate.is_null() || candidate->get_return_type().is_null())
+		if ((candidate == nullptr) || (candidate->get_return_type() == nullptr))
 			continue;
 
 		if (candidate->get_linking() == LINK_STATIC)
@@ -69,7 +69,7 @@ ObjectInstance ObjectInstance::get_field(std::uint32_t slot) const
 	return ObjectInstance(info.fieldShape, m_memory + info.offset);
 }
 
-ObjectInstance ObjectInstance::get_field(gmt::Ref<FieldSymbol> field) const
+ObjectInstance ObjectInstance::get_field(FieldSymbol* field) const
 {
 	return get_field(resolve_field_slot(field));
 }
@@ -89,7 +89,7 @@ void ObjectInstance::set_field(std::uint32_t slot, const ObjectInstance& value)
 	std::memcpy(fieldAddress, value.get_memory(), info.fieldShape->get_size());
 }
 
-void ObjectInstance::set_field(gmt::Ref<FieldSymbol> field, const ObjectInstance& value)
+void ObjectInstance::set_field(FieldSymbol* field, const ObjectInstance& value)
 {
 	set_field(resolve_field_slot(field), value);
 }

@@ -5,7 +5,7 @@
 
 using namespace shard;
 
-EnumFieldDeclarationSyntax::EnumFieldDeclarationSyntax(gmt::Ref<SyntaxNode> parent)
+EnumFieldDeclarationSyntax::EnumFieldDeclarationSyntax(SyntaxNode* parent)
 	: SyntaxNode(SyntaxKind::EnumFieldDeclaration, parent) { }
 
 SyntaxToken EnumFieldDeclarationSyntax::get_identifier() const
@@ -18,7 +18,7 @@ SyntaxToken EnumFieldDeclarationSyntax::get_assign_token() const
 	return m_assignToken;
 }
 
-gmt::Ref<const ExpressionSyntax> EnumFieldDeclarationSyntax::get_expression() const
+const ExpressionSyntax* EnumFieldDeclarationSyntax::get_expression() const
 {
 	return m_expression;
 }
@@ -33,7 +33,7 @@ void EnumFieldDeclarationSyntax::set_assign_token(const SyntaxToken& token)
 	m_assignToken = token;
 }
 
-void EnumFieldDeclarationSyntax::set_expression(gmt::Ref<ExpressionSyntax> expression)
+void EnumFieldDeclarationSyntax::set_expression(ExpressionSyntax* expression)
 {
 	m_expression = expression;
 }
@@ -42,8 +42,8 @@ TextLocation EnumFieldDeclarationSyntax::get_location() const
 {
 	SyntaxToken identifierToken = get_identifier();
 
-	if (!m_expression.is_null())
-		return TextLocation(identifierToken, m_expression.as_ptr()->get_location());
+	if (!(m_expression == nullptr))
+		return TextLocation(identifierToken, m_expression->get_location());
 
 	if (!m_assignToken.is_missing())
 		return TextLocation(identifierToken, m_assignToken);

@@ -15,20 +15,20 @@ namespace shard
 	class SHARD_API WhileStatementSyntax final : public StatementSyntax
 	{
 		SyntaxToken m_whileKeywordToken;
-		gmt::Ref<ExpressionSyntax> m_condition;
-		gmt::Ref<StatementsBlockSyntax> m_block;
+		ExpressionSyntax* m_condition = nullptr;
+		StatementsBlockSyntax* m_block = nullptr;
 
 	public:
-		WhileStatementSyntax(gmt::Ref<SyntaxNode> parent);
+		WhileStatementSyntax(SyntaxNode* parent);
 		virtual ~WhileStatementSyntax() = default;
 
 		SyntaxToken get_while_keyword() const;
-		gmt::Ref<const ExpressionSyntax> get_condition() const;
-		gmt::Ref<const StatementsBlockSyntax> get_block() const;
+		const ExpressionSyntax* get_condition() const;
+		const StatementsBlockSyntax* get_block() const;
 
 		void set_while_keyword(const SyntaxToken& token);
-		void set_condition(gmt::Ref<ExpressionSyntax> condition);
-		void set_block(gmt::Ref<StatementsBlockSyntax> block);
+		void set_condition(ExpressionSyntax* condition);
+		void set_block(StatementsBlockSyntax* block);
 
 		TextLocation get_location() const override;
 		void accept(SyntaxVisitor& visitor) const override;

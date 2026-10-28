@@ -17,7 +17,7 @@ namespace shard
 		SyntaxToken m_identifierToken;
 
 	public:
-		IdentifierNameTypeSyntax(gmt::Ref<SyntaxNode> parent);
+		IdentifierNameTypeSyntax(SyntaxNode* parent);
 		virtual ~IdentifierNameTypeSyntax() = default;
 
 		SyntaxToken get_identifier() const;

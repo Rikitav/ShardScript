@@ -5,7 +5,7 @@
 
 using namespace shard;
 
-ThrowStatementSyntax::ThrowStatementSyntax(gmt::Ref<SyntaxNode> parent)
+ThrowStatementSyntax::ThrowStatementSyntax(SyntaxNode* parent)
 	: StatementSyntax(SyntaxKind::ThrowStatement, parent) { }
 
 SyntaxToken ThrowStatementSyntax::get_throw_keyword() const
@@ -13,7 +13,7 @@ SyntaxToken ThrowStatementSyntax::get_throw_keyword() const
 	return m_throwKeywordToken;
 }
 
-gmt::Ref<const ExpressionSyntax> ThrowStatementSyntax::get_expression() const
+const ExpressionSyntax* ThrowStatementSyntax::get_expression() const
 {
 	return m_expression;
 }
@@ -28,7 +28,7 @@ void ThrowStatementSyntax::set_throw_keyword(const SyntaxToken& token)
 	m_throwKeywordToken = token;
 }
 
-void ThrowStatementSyntax::set_expression(gmt::Ref<ExpressionSyntax> expression)
+void ThrowStatementSyntax::set_expression(ExpressionSyntax* expression)
 {
 	m_expression = expression;
 }
@@ -40,8 +40,8 @@ void ThrowStatementSyntax::set_semicolon(const SyntaxToken& token)
 
 TextLocation ThrowStatementSyntax::get_location() const
 {
-	if (!m_expression.is_null())
-		return TextLocation(m_throwKeywordToken, m_expression.as_ptr()->get_location());
+	if (!(m_expression == nullptr))
+		return TextLocation(m_throwKeywordToken, m_expression->get_location());
 
 	return TextLocation(m_throwKeywordToken, m_semicolonToken);
 }

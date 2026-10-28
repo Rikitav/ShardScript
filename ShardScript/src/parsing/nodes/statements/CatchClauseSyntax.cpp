@@ -5,7 +5,7 @@
 
 using namespace shard;
 
-CatchClauseSyntax::CatchClauseSyntax(gmt::Ref<SyntaxNode> parent)
+CatchClauseSyntax::CatchClauseSyntax(SyntaxNode* parent)
 	: SyntaxNode(SyntaxKind::CatchClause, parent) { }
 
 SyntaxToken CatchClauseSyntax::get_catch_keyword() const
@@ -23,12 +23,12 @@ SyntaxToken CatchClauseSyntax::get_colon() const
 	return m_colonToken;
 }
 
-gmt::Ref<const TypeSyntax> CatchClauseSyntax::get_exception_type() const
+const TypeSyntax* CatchClauseSyntax::get_exception_type() const
 {
 	return m_exceptionType;
 }
 
-gmt::Ref<const StatementsBlockSyntax> CatchClauseSyntax::get_body() const
+const StatementsBlockSyntax* CatchClauseSyntax::get_body() const
 {
 	return m_body;
 }
@@ -48,23 +48,23 @@ void CatchClauseSyntax::set_colon(const SyntaxToken& token)
 	m_colonToken = token;
 }
 
-void CatchClauseSyntax::set_exception_type(gmt::Ref<TypeSyntax> exceptionType)
+void CatchClauseSyntax::set_exception_type(TypeSyntax* exceptionType)
 {
 	m_exceptionType = exceptionType;
 }
 
-void CatchClauseSyntax::set_body(gmt::Ref<StatementsBlockSyntax> body)
+void CatchClauseSyntax::set_body(StatementsBlockSyntax* body)
 {
 	m_body = body;
 }
 
 TextLocation CatchClauseSyntax::get_location() const
 {
-	if (!m_body.is_null())
-		return TextLocation(m_catchKeywordToken, m_body.as_ptr()->get_location());
+	if (!(m_body == nullptr))
+		return TextLocation(m_catchKeywordToken, m_body->get_location());
 
-	if (!m_exceptionType.is_null())
-		return TextLocation(m_catchKeywordToken, m_exceptionType.as_ptr()->get_location());
+	if (!(m_exceptionType == nullptr))
+		return TextLocation(m_catchKeywordToken, m_exceptionType->get_location());
 
 	return m_catchKeywordToken.get_location();
 }

@@ -5,7 +5,7 @@
 
 using namespace shard;
 
-LiteralExpressionSyntax::LiteralExpressionSyntax(gmt::Ref<SyntaxNode> parent)
+LiteralExpressionSyntax::LiteralExpressionSyntax(SyntaxNode* parent)
 	: ExpressionSyntax(SyntaxKind::LiteralExpression, parent) { }
 
 SyntaxToken LiteralExpressionSyntax::get_literal() const

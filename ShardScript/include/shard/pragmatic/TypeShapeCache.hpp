@@ -29,7 +29,7 @@ namespace shard
 		TypeShapeCache(const TypeShapeCache&) = delete;
 		TypeShapeCache& operator=(const TypeShapeCache&) = delete;
 
-		TypeShape* find_type_shape(SemanticModel& model, gmt::Ref<StructSymbol> baseType, std::span<const gmt::Ref<StructSymbol>> genericArgs = {}) const;
-		TypeShape* find_or_create_type_shape(SemanticModel& model, gmt::Ref<StructSymbol> baseType, std::span<const gmt::Ref<StructSymbol>> genericArgs = {});
+		TypeShape* find_type_shape(SemanticModel& model, StructSymbol* baseType, std::span<StructSymbol* const> genericArgs = {}) const;
+		TypeShape* find_or_create_type_shape(SemanticModel& model, StructSymbol* baseType, std::span<StructSymbol* const> genericArgs = {});
 	};
 }

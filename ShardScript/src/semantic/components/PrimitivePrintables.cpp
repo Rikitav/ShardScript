@@ -48,9 +48,9 @@ namespace
 		context.set_return(context.get_argument(0));
 	}
 
-	static void make_printable(SymbolTable& table, gmt::Ref<StructSymbol> symbol, gmt::Ref<StructSymbol> printable, MethodSymbolDelegate callback)
+	static void make_printable(SymbolTable& table, StructSymbol* symbol, StructSymbol* printable, MethodSymbolDelegate callback)
 	{
-		gmt::Ref<MethodSymbol> toString = table.emplace<MethodSymbol>(L"ToString", symbol);
+		MethodSymbol* toString = table.emplace<MethodSymbol>(L"ToString", symbol);
 		toString->set_return_type(table.get_string_primitive());
 		toString->set_accesibility(ACS_PUBLIC);
 		toString->set_linking(LINK_INSTANCE);
@@ -65,7 +65,7 @@ namespace
 
 void SymbolTable::resolve_primitive_printables()
 {
-	gmt::Ref<StructSymbol> printable = get_standard_type(StandardTypes::IPrintable).as<StructSymbol>();
+	StructSymbol* printable = static_cast<StructSymbol*>(get_standard_type(StandardTypes::IPrintable));
 
 	make_printable(*this, m_boolean, printable, &primitive_boolean_to_string);
 	make_printable(*this, m_integer, printable, &primitive_integer_to_string);

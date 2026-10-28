@@ -20,10 +20,10 @@ using namespace shard;
 
 namespace
 {
-	gmt::Ref<StructSymbol> resolve_shape_key(SymbolTable& table, gmt::Ref<StructSymbol> baseType, std::span<const gmt::Ref<StructSymbol>> genericArgs, bool create)
+	StructSymbol* resolve_shape_key(SymbolTable& table, StructSymbol* baseType, std::span<StructSymbol* const> genericArgs, bool create)
 	{
-		if (baseType.is_null())
-			return gmt::nullref;
+		if ((baseType == nullptr))
+			return nullptr;
 
 		if (genericArgs.empty() || baseType->get_kind() == SyntaxKind::GenericType)
 			return baseType;
@@ -34,7 +34,7 @@ namespace
 		return table.find_generic_type(baseType, genericArgs);
 	}
 
-	std::optional<std::size_t> primitive_size(SymbolTable& table, gmt::Ref<StructSymbol> type)
+	std::optional<std::size_t> primitive_size(SymbolTable& table, StructSymbol* type)
 	{
 		if (type == table.get_boolean_primitive())
 			return 1;
@@ -61,26 +61,26 @@ namespace
 	}
 }
 
-TypeShape* TypeShapeCache::find_type_shape(SemanticModel& model, gmt::Ref<StructSymbol> baseType, std::span<const gmt::Ref<StructSymbol>> genericArgs) const
+TypeShape* TypeShapeCache::find_type_shape(SemanticModel& model, StructSymbol* baseType, std::span<StructSymbol* const> genericArgs) const
 {
-	gmt::Ref<StructSymbol> keyType = resolve_shape_key(model.get_table(), baseType, genericArgs, false);
-	if (keyType.is_null())
+	StructSymbol* keyType = resolve_shape_key(model.get_table(), baseType, genericArgs, false);
+	if ((keyType == nullptr))
 		return nullptr;
 
-	const auto choice = m_shapes.find(keyType.get_offset());
+	const auto choice = m_shapes.find(reinterpret_cast<std::uint64_t>(keyType));
 	if (choice == m_shapes.end())
 		return nullptr;
 
 	return const_cast<TypeShape*>(&choice->second);
 }
 
-TypeShape* TypeShapeCache::find_or_create_type_shape(SemanticModel& model, gmt::Ref<StructSymbol> baseType, std::span<const gmt::Ref<StructSymbol>> genericArgs)
+TypeShape* TypeShapeCache::find_or_create_type_shape(SemanticModel& model, StructSymbol* baseType, std::span<StructSymbol* const> genericArgs)
 {
-	gmt::Ref<StructSymbol> keyType = resolve_shape_key(model.get_table(), baseType, genericArgs, true);
-	if (keyType.is_null())
+	StructSymbol* keyType = resolve_shape_key(model.get_table(), baseType, genericArgs, true);
+	if ((keyType == nullptr))
 		throw std::runtime_error("cannot build a type shape for a null base type");
 
-	auto [choice, inserted] = m_shapes.try_emplace(keyType.get_offset(), keyType, genericArgs);
+	auto [choice, inserted] = m_shapes.try_emplace(reinterpret_cast<std::uint64_t>(keyType), keyType, genericArgs);
 	TypeShape& shape = choice->second;
 
 	if (inserted)
@@ -91,10 +91,10 @@ TypeShape* TypeShapeCache::find_or_create_type_shape(SemanticModel& model, gmt::
 
 void TypeShapeCache::build(TypeShape* shape, SemanticModel& model)
 {
-	gmt::Ref<StructSymbol> baseType = shape->m_baseType;
-	const gmt::vector<gmt::Ref<StructSymbol>>& genericArgs = shape->m_genericArguments;
+	StructSymbol* baseType = shape->m_baseType;
+	const gmt::vector<StructSymbol*>& genericArgs = shape->m_genericArguments;
 
-	if (baseType.is_null())
+	if ((baseType == nullptr))
 		throw std::runtime_error("cannot build a type shape for a null base type");
 
 	SymbolTable& table = model.get_table();
@@ -107,7 +107,7 @@ void TypeShapeCache::build(TypeShape* shape, SemanticModel& model)
 
 	if (baseType->get_kind() == SyntaxKind::ArrayType)
 	{
-		gmt::Ref<ArrayTypeSymbol> arrayType = baseType.as<ArrayTypeSymbol>();
+		ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(baseType);
 		TypeShape* elementShape = find_or_create_type_shape(model, arrayType->get_underlaying_type());
 
 		shape->m_size = sizeof(std::int64_t) + elementShape->get_size() * arrayType->get_length();
@@ -122,12 +122,12 @@ void TypeShapeCache::build(TypeShape* shape, SemanticModel& model)
 
 	// the substitution context for fields: a queried generic instance uses
 	// itself, a generic definition with provided arguments gets one created
-	gmt::Ref<GenericTypeSymbol> within = gmt::nullref;
-	gmt::Ref<StructSymbol> fieldOwner = baseType;
+	GenericTypeSymbol* within = nullptr;
+	StructSymbol* fieldOwner = baseType;
 
 	if (baseType->get_kind() == SyntaxKind::GenericType)
 	{
-		within = baseType.as<GenericTypeSymbol>();
+		within = static_cast<GenericTypeSymbol*>(baseType);
 		fieldOwner = within->get_underlaying_type();
 	}
 	else if (!baseType->type_parameters.empty() && !genericArgs.empty())
@@ -136,20 +136,20 @@ void TypeShapeCache::build(TypeShape* shape, SemanticModel& model)
 	}
 
 	std::size_t offset = 0;
-	for (gmt::Ref<FieldSymbol> field : fieldOwner->fields)
+	for (FieldSymbol* field : fieldOwner->fields)
 	{
-		if (field.is_null() || field->get_return_type().is_null())
+		if ((field == nullptr) || (field->get_return_type() == nullptr))
 			continue;
 
 		if (field->get_linking() == LINK_STATIC)
 			continue;
 
 		// substitution only matters for raw type parameters
-		gmt::Ref<StructSymbol> fieldType = field->get_return_type();
-		if (!within.is_null() && fieldType->get_kind() == SyntaxKind::TypeParameter)
-			fieldType = within->substitute_type_parameter(fieldType.as<TypeParameterSymbol>());
+		StructSymbol* fieldType = field->get_return_type();
+		if (!(within == nullptr) && fieldType->get_kind() == SyntaxKind::TypeParameter)
+			fieldType = within->substitute_type_parameter(static_cast<TypeParameterSymbol*>(fieldType));
 
-		if (fieldType.is_null())
+		if ((fieldType == nullptr))
 			continue;
 
 		TypeShape::SlotInfo slot{};

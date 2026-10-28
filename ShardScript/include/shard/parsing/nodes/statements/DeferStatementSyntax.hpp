@@ -14,19 +14,19 @@ namespace shard
 	class SHARD_API DeferStatementSyntax final : public StatementSyntax
 	{
 		SyntaxToken m_deferKeywordToken;
-		gmt::Ref<ExpressionSyntax> m_expression;
+		ExpressionSyntax* m_expression = nullptr;
 		SyntaxToken m_semicolonToken;
 
 	public:
-		DeferStatementSyntax(gmt::Ref<SyntaxNode> parent);
+		DeferStatementSyntax(SyntaxNode* parent);
 		virtual ~DeferStatementSyntax() = default;
 
 		SyntaxToken get_defer_keyword() const;
-		gmt::Ref<const ExpressionSyntax> get_expression() const;
+		const ExpressionSyntax* get_expression() const;
 		SyntaxToken get_semicolon() const;
 
 		void set_defer_keyword(const SyntaxToken& token);
-		void set_expression(gmt::Ref<ExpressionSyntax> expression);
+		void set_expression(ExpressionSyntax* expression);
 		void set_semicolon(const SyntaxToken& token);
 
 		TextLocation get_location() const override;

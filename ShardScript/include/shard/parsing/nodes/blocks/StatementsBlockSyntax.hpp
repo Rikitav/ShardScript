@@ -8,25 +8,25 @@
 #include <shard/parsing/nodes/StatementSyntax.hpp>
 
 #include <gmt/Ref.hpp>
-#include <gmt/Span.hpp>
+#include <span>
 
 namespace shard
 {
 	class SHARD_API StatementsBlockSyntax final : public BlockSyntax
 	{
-		gmt::Span<gmt::Ref<StatementSyntax>> m_statements;
+		std::span<StatementSyntax*> m_statements;
 		SyntaxToken m_openBracketToken;
 		SyntaxToken m_closeBracketToken;
 
 	public:
-		StatementsBlockSyntax(gmt::Ref<SyntaxNode> parent);
+		StatementsBlockSyntax(SyntaxNode* parent);
 		virtual ~StatementsBlockSyntax() = default;
 
-		gmt::Span<const gmt::Ref<StatementSyntax>> get_statements() const;
+		std::span<StatementSyntax* const> get_statements() const;
 		SyntaxToken get_open_bracket() const;
 		SyntaxToken get_close_bracket() const;
 
-		void set_statements(gmt::Span<gmt::Ref<StatementSyntax>> statements);
+		void set_statements(std::span<StatementSyntax*> statements);
 		void set_open_bracket(const SyntaxToken& token);
 		void set_close_bracket(const SyntaxToken& token);
 

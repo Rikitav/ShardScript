@@ -20,19 +20,19 @@ namespace shard
 
 	class SHARD_API ControlFlowAnalyzer : public SemanticVisitor
 	{
-		using AssignmentSet = gmt::unordered_set<gmt::Ref<SyntaxSymbol>>;
+		using AssignmentSet = gmt::unordered_set<SyntaxSymbol*>;
 
 		struct TryCatchFrame
 		{
-			gmt::unordered_set<gmt::Ref<StructSymbol>> caughtTypes;
+			gmt::unordered_set<StructSymbol*> caughtTypes;
 			bool catchesAll = false;
 		};
 
 		struct CallEdge
 		{
-			gmt::Ref<MethodSymbol> callee;
+			MethodSymbol* callee = nullptr;
 			SyntaxToken callSite;
-			gmt::unordered_set<gmt::Ref<StructSymbol>> caughtTypes;
+			gmt::unordered_set<StructSymbol*> caughtTypes;
 			bool catchesAll = false;
 			bool isAwaited = false;
 			bool isTryWrapped = false;
@@ -76,47 +76,47 @@ namespace shard
 		int m_loopDepth = 0;
 		bool m_currentMethodIsAsync = false;
 
-		gmt::Ref<MethodSymbol> m_currentMethod;
-		gmt::vector<gmt::Ref<MethodSymbol>> m_methodStack;
+		MethodSymbol* m_currentMethod = nullptr;
+		gmt::vector<MethodSymbol*> m_methodStack;
 
 		gmt::vector<TryCatchFrame> m_tryCatchStack;
-		gmt::vector<gmt::Ref<StructSymbol>> m_catchExceptionStack;
-		gmt::unordered_set<gmt::Ref<StructSymbol>> m_effectiveCaughtTypes;
+		gmt::vector<StructSymbol*> m_catchExceptionStack;
+		gmt::unordered_set<StructSymbol*> m_effectiveCaughtTypes;
 		int m_catchAllDepth = 0;
 
-		gmt::unordered_map<gmt::Ref<MethodSymbol>, gmt::vector<CallEdge>> m_callGraph;
-		gmt::unordered_set<gmt::Ref<const ExpressionSyntax>> m_tryWrappedExpressions;
+		gmt::unordered_map<MethodSymbol*, gmt::vector<CallEdge>> m_callGraph;
+		gmt::unordered_set<const ExpressionSyntax*> m_tryWrappedExpressions;
 
-		void enter_member_body(gmt::Ref<MethodSymbol> method);
-		void leave_member_body(gmt::Ref<MethodSymbol> method);
+		void enter_member_body(MethodSymbol* method);
+		void leave_member_body(MethodSymbol* method);
 
-		void scan_expression(gmt::Ref<const ExpressionSyntax> expression);
+		void scan_expression(const ExpressionSyntax* expression);
 
 		static bool is_increment_decrement_operator(TokenType type);
-		bool is_this_expression(gmt::Ref<const ExpressionSyntax> expression);
+		bool is_this_expression(const ExpressionSyntax* expression);
 
-		void record_field_or_property_write(gmt::Ref<const MemberAccessExpressionSyntax> node);
-		void record_indexator_write(gmt::Ref<const IndexatorExpressionSyntax> node);
-		void record_callee_effects(gmt::Ref<MethodSymbol> callee, const SyntaxToken& callSite, bool isAwaited = false, bool isTryWrapped = false);
+		void record_field_or_property_write(const MemberAccessExpressionSyntax* node);
+		void record_indexator_write(const IndexatorExpressionSyntax* node);
+		void record_callee_effects(MethodSymbol* callee, const SyntaxToken& callSite, bool isAwaited = false, bool isTryWrapped = false);
 
-		bool is_try_wrapped(gmt::Ref<const ExpressionSyntax> expression) const;
-		void add_thrown_type(gmt::unordered_set<gmt::Ref<StructSymbol>>& thrownTypes, gmt::Ref<StructSymbol> type);
-		bool call_edge_catches(const CallEdge& edge, gmt::Ref<StructSymbol> thrownType);
+		bool is_try_wrapped(const ExpressionSyntax* expression) const;
+		void add_thrown_type(gmt::unordered_set<StructSymbol*>& thrownTypes, StructSymbol* type);
+		bool call_edge_catches(const CallEdge& edge, StructSymbol* thrownType);
 
 		void propagate_effects();
 		void report_effect_diagnostics();
 		void report_edge_diagnostics(const CallEdge& edge);
 
-		void push_try_catch(gmt::Span<const gmt::Ref<CatchClauseSyntax>> clauses);
+		void push_try_catch(std::span<CatchClauseSyntax* const> clauses);
 		void pop_try_catch();
-		bool is_caught_by_active_try(gmt::Ref<StructSymbol> thrownType);
+		bool is_caught_by_active_try(StructSymbol* thrownType);
 		void rebuild_effective_caught_types();
 
-		void push_catch_exception(gmt::Ref<StructSymbol> type);
+		void push_catch_exception(StructSymbol* type);
 		void pop_catch_exception();
-		gmt::Ref<StructSymbol> current_catch_exception_type() const;
+		StructSymbol* current_catch_exception_type() const;
 
-		gmt::Ref<StructSymbol> lookup_catch_type(gmt::Ref<const CatchClauseSyntax> clause);
+		StructSymbol* lookup_catch_type(const CatchClauseSyntax* clause);
 
 		static FlowState merge_branches(FlowState a, FlowState b);
 		static FlowState without_breaks_and_continues(FlowState state);
@@ -126,24 +126,24 @@ namespace shard
 		static bool is_assignment_operator(TokenType type);
 
 	private:
-		FlowState analyze_statement(gmt::Ref<const StatementSyntax> node);
-		FlowState analyze_statements_block(gmt::Ref<const StatementsBlockSyntax> node);
-		FlowState analyze_body(gmt::Ref<const BlockSyntax> body);
-		FlowState analyze_conditional_chain(gmt::Ref<const ConditionalClauseBaseSyntax> node);
-		FlowState analyze_try_statement(gmt::Ref<const TryStatementSyntax> node);
-		FlowState analyze_throw_statement(gmt::Ref<const ThrowStatementSyntax> statement);
-		FlowState analyze_loop_body(gmt::Ref<const StatementsBlockSyntax> body);
+		FlowState analyze_statement(const StatementSyntax* node);
+		FlowState analyze_statements_block(const StatementsBlockSyntax* node);
+		FlowState analyze_body(const BlockSyntax* body);
+		FlowState analyze_conditional_chain(const ConditionalClauseBaseSyntax* node);
+		FlowState analyze_try_statement(const TryStatementSyntax* node);
+		FlowState analyze_throw_statement(const ThrowStatementSyntax* statement);
+		FlowState analyze_loop_body(const StatementsBlockSyntax* body);
 
-		void analyze_member_body(gmt::Ref<MethodSymbol> method, gmt::Ref<const BlockSyntax> body, const TextLocation& errorLocation);
-		void report_missing_return(const TextLocation& location, gmt::Ref<StructSymbol> returnType);
+		void analyze_member_body(MethodSymbol* method, const BlockSyntax* body, const TextLocation& errorLocation);
+		void report_missing_return(const TextLocation& location, StructSymbol* returnType);
 
-		void declare_parameters(gmt::Ref<MethodSymbol> method);
+		void declare_parameters(MethodSymbol* method);
 
-		void mark_assigned(gmt::Ref<SyntaxSymbol> variable);
-		bool is_assigned(gmt::Ref<SyntaxSymbol> variable) const;
-		void analyze_expression_for_assignment(gmt::Ref<const ExpressionSyntax> expression);
-		void analyze_expression_for_use(gmt::Ref<const ExpressionSyntax> expression);
-		void analyze_variable_statement(gmt::Ref<const VariableStatementSyntax> node);
+		void mark_assigned(SyntaxSymbol* variable);
+		bool is_assigned(SyntaxSymbol* variable) const;
+		void analyze_expression_for_assignment(const ExpressionSyntax* expression);
+		void analyze_expression_for_use(const ExpressionSyntax* expression);
+		void analyze_variable_statement(const VariableStatementSyntax* node);
 
 	public:
 		ControlFlowAnalyzer(SemanticModel& model, DiagnosticsContext& diagnostics);

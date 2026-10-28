@@ -22,12 +22,12 @@ const DataSection& VirtualProgramImage::get_data_section() const
 	return m_dataSection;
 }
 
-void VirtualProgramImage::set_entry_point(gmt::Ref<MethodSymbol> method)
+void VirtualProgramImage::set_entry_point(MethodSymbol* method)
 {
 	m_entryPoint = method;
 }
 
-gmt::Ref<MethodSymbol> VirtualProgramImage::get_entry_point() const
+MethodSymbol* VirtualProgramImage::get_entry_point() const
 {
 	return m_entryPoint;
 }

@@ -15,17 +15,17 @@ namespace shard
 {
 	class SHARD_API NullableTypeSyntax final : public TypeSyntax
 	{
-		gmt::Ref<TypeSyntax> m_underlayingType;
+		TypeSyntax* m_underlayingType = nullptr;
 		SyntaxToken m_questionToken;
 
 	public:
-		NullableTypeSyntax(gmt::Ref<SyntaxNode> parent);
+		NullableTypeSyntax(SyntaxNode* parent);
 		virtual ~NullableTypeSyntax() = default;
 
-		gmt::Ref<const TypeSyntax> get_underlaying_type() const;
+		const TypeSyntax* get_underlaying_type() const;
 		SyntaxToken get_question_token() const;
 
-		void set_underlaying_type(gmt::Ref<TypeSyntax> underlayingType);
+		void set_underlaying_type(TypeSyntax* underlayingType);
 		void set_question_token(const SyntaxToken& token);
 
 		gmt::wstring get_qualifier() const override;

@@ -20,7 +20,7 @@ namespace
 	constexpr std::uint64_t GenericMethodFamilyTag = ~static_cast<std::uint64_t>(0);
 	constexpr std::size_t InlineKeyWords = 8;
 
-	std::uint64_t* make_generic_key(std::uint64_t* inlineKey, std::pmr::vector<std::uint64_t>& spilledKey, std::uint64_t familyTag, std::size_t underlayingOffset, std::span<const gmt::Ref<StructSymbol>> typeArguments)
+	std::uint64_t* make_generic_key(std::uint64_t* inlineKey, std::pmr::vector<std::uint64_t>& spilledKey, std::uint64_t familyTag, std::size_t underlayingOffset, std::span<StructSymbol* const> typeArguments)
 	{
 		const std::size_t count = 2 + typeArguments.size();
 		std::uint64_t* key = inlineKey;
@@ -34,14 +34,14 @@ namespace
 		key[0] = familyTag;
 		key[1] = underlayingOffset;
 		for (std::size_t i = 0; i < typeArguments.size(); ++i)
-			key[2 + i] = typeArguments[i].get_offset();
+			key[2 + i] = reinterpret_cast<std::uint64_t>(typeArguments[i]);
 
 		return key;
 	}
 }
 
 SymbolTable::SymbolTable()
-	: m_rootNamespace(m_arena.emplace<NamespaceSymbol>(L"", gmt::nullref))
+	: m_rootNamespace(m_arena.emplace<NamespaceSymbol>(L"", nullptr))
 {
 	// component order matters:
 	// interfaces reference primitives,
@@ -60,35 +60,35 @@ gmt::Arena& SymbolTable::get_arena()
 	return m_arena;
 }
 
-gmt::Ref<NamespaceSymbol> SymbolTable::get_root_namespace() const
+NamespaceSymbol* SymbolTable::get_root_namespace() const
 {
 	return m_rootNamespace;
 }
 
-gmt::Ref<SyntaxSymbol> SymbolTable::lookup_symbol(gmt::Ref<const SyntaxNode> node)
+SyntaxSymbol* SymbolTable::lookup_symbol(const SyntaxNode* node)
 {
 	auto choice = m_nodeToSymbolMap.find(node);
 	if (choice == m_nodeToSymbolMap.end())
-		return gmt::nullref; // no symbol bound to this node
+		return nullptr; // no symbol bound to this node
 
 	return choice->second;
 }
 
-gmt::Ref<const SyntaxNode> SymbolTable::lookup_node(gmt::Ref<SyntaxSymbol> symbol)
+const SyntaxNode* SymbolTable::lookup_node(SyntaxSymbol* symbol)
 {
 	auto choice = m_symbolToNodeMap.find(symbol);
 	if (choice == m_symbolToNodeMap.end())
-		return gmt::nullref; // no symbol bound to this node
+		return nullptr; // no symbol bound to this node
 
 	return choice->second;
 }
 
-void SymbolTable::bind_type_arguments(gmt::Ref<const SyntaxNode> node, std::span<const gmt::Ref<StructSymbol>> typeArguments)
+void SymbolTable::bind_type_arguments(const SyntaxNode* node, std::span<StructSymbol* const> typeArguments)
 {
 	m_nodeTypeArguments[node].assign(typeArguments.begin(), typeArguments.end());
 }
 
-std::span<const gmt::Ref<StructSymbol>> SymbolTable::lookup_type_arguments(gmt::Ref<const SyntaxNode> node) const
+std::span<StructSymbol* const> SymbolTable::lookup_type_arguments(const SyntaxNode* node) const
 {
 	auto choice = m_nodeTypeArguments.find(node);
 	if (choice == m_nodeTypeArguments.end())
@@ -97,95 +97,95 @@ std::span<const gmt::Ref<StructSymbol>> SymbolTable::lookup_type_arguments(gmt::
 	return choice->second;
 }
 
-gmt::Ref<ArrayTypeSymbol> SymbolTable::find_array_type(gmt::Ref<StructSymbol> underlaying) const
+ArrayTypeSymbol* SymbolTable::find_array_type(StructSymbol* underlaying) const
 {
 	return find_array_type(underlaying, 0);
 }
 
-gmt::Ref<ArrayTypeSymbol> SymbolTable::find_array_type(gmt::Ref<StructSymbol> underlaying, std::size_t size) const
+ArrayTypeSymbol* SymbolTable::find_array_type(StructSymbol* underlaying, std::size_t size) const
 {
-	const std::uint64_t key[3] = { ArrayFamilyTag, underlaying.get_offset(), size };
-	gmt::Ref<SyntaxSymbol> symbol = m_interner.find(key, 3);
+	const std::uint64_t key[3] = { ArrayFamilyTag, reinterpret_cast<std::uint64_t>(underlaying), size };
+	SyntaxSymbol* symbol = m_interner.find(key, 3);
 
-	if (symbol.is_null() || symbol->get_kind() != SyntaxKind::ArrayType)
-		return gmt::nullref;
+	if ((symbol == nullptr) || symbol->get_kind() != SyntaxKind::ArrayType)
+		return nullptr;
 
-	return symbol.as<ArrayTypeSymbol>();
+	return static_cast<ArrayTypeSymbol*>(symbol);
 }
 
-gmt::Ref<GenericTypeSymbol> SymbolTable::find_generic_type(gmt::Ref<StructSymbol> underlaying, std::span<const gmt::Ref<StructSymbol>> typeArguments) const
-{
-	std::uint64_t inlineKey[InlineKeyWords];
-	gmt::inline_vector<std::uint64_t, 8> spilledKey;
-	const std::uint64_t* key = make_generic_key(inlineKey, spilledKey.get_vector(), GenericFamilyTag, underlaying.get_offset(), typeArguments);
-
-	gmt::Ref<SyntaxSymbol> symbol = m_interner.find(key, static_cast<std::uint16_t>(2 + typeArguments.size()));
-	if (symbol.is_null() || symbol->get_kind() != SyntaxKind::GenericType)
-		return gmt::nullref;
-
-	return symbol.as<GenericTypeSymbol>();
-}
-
-gmt::Ref<GenericMethodSymbol> SymbolTable::find_generic_method(gmt::Ref<MethodSymbol> underlaying, std::span<const gmt::Ref<StructSymbol>> typeArguments) const
+GenericTypeSymbol* SymbolTable::find_generic_type(StructSymbol* underlaying, std::span<StructSymbol* const> typeArguments) const
 {
 	std::uint64_t inlineKey[InlineKeyWords];
 	gmt::inline_vector<std::uint64_t, 8> spilledKey;
-	const std::uint64_t* key = make_generic_key(inlineKey, spilledKey.get_vector(), GenericMethodFamilyTag, underlaying.get_offset(), typeArguments);
+	const std::uint64_t* key = make_generic_key(inlineKey, spilledKey.get_vector(), GenericFamilyTag, reinterpret_cast<std::uint64_t>(underlaying), typeArguments);
 
-	gmt::Ref<SyntaxSymbol> symbol = m_interner.find(key, static_cast<std::uint16_t>(2 + typeArguments.size()));
-	if (symbol.is_null())
-		return gmt::nullref;
+	SyntaxSymbol* symbol = m_interner.find(key, static_cast<std::uint16_t>(2 + typeArguments.size()));
+	if ((symbol == nullptr) || symbol->get_kind() != SyntaxKind::GenericType)
+		return nullptr;
 
-	return symbol.as<GenericMethodSymbol>();
+	return static_cast<GenericTypeSymbol*>(symbol);
 }
 
-gmt::Ref<ArrayTypeSymbol> SymbolTable::find_or_create_array_type(gmt::Ref<StructSymbol> underlaying)
+GenericMethodSymbol* SymbolTable::find_generic_method(MethodSymbol* underlaying, std::span<StructSymbol* const> typeArguments) const
+{
+	std::uint64_t inlineKey[InlineKeyWords];
+	gmt::inline_vector<std::uint64_t, 8> spilledKey;
+	const std::uint64_t* key = make_generic_key(inlineKey, spilledKey.get_vector(), GenericMethodFamilyTag, reinterpret_cast<std::uint64_t>(underlaying), typeArguments);
+
+	SyntaxSymbol* symbol = m_interner.find(key, static_cast<std::uint16_t>(2 + typeArguments.size()));
+	if ((symbol == nullptr))
+		return nullptr;
+
+	return static_cast<GenericMethodSymbol*>(symbol);
+}
+
+ArrayTypeSymbol* SymbolTable::find_or_create_array_type(StructSymbol* underlaying)
 {
 	return find_or_create_array_type(underlaying, 0);
 }
 
-gmt::Ref<ArrayTypeSymbol> SymbolTable::find_or_create_array_type(gmt::Ref<StructSymbol> underlaying, std::size_t size)
+ArrayTypeSymbol* SymbolTable::find_or_create_array_type(StructSymbol* underlaying, std::size_t size)
 {
-	gmt::Ref<ArrayTypeSymbol> existing = find_array_type(underlaying, size);
-	if (!existing.is_null())
+	ArrayTypeSymbol* existing = find_array_type(underlaying, size);
+	if (!(existing == nullptr))
 		return existing;
 
-	gmt::Ref<ArrayTypeSymbol> symbol = m_arena.emplace<ArrayTypeSymbol>(underlaying, m_rootNamespace);
+	ArrayTypeSymbol* symbol = m_arena.emplace<ArrayTypeSymbol>(underlaying, m_rootNamespace);
 	symbol->set_length(size);
 
-	const std::uint64_t key[3] = { ArrayFamilyTag, underlaying.get_offset(), size };
+	const std::uint64_t key[3] = { ArrayFamilyTag, reinterpret_cast<std::uint64_t>(underlaying), size };
 	m_interner.insert(key, 3, symbol);
 	return symbol;
 }
 
-gmt::Ref<GenericTypeSymbol> SymbolTable::find_or_create_generic_type(gmt::Ref<StructSymbol> underlaying, std::span<const gmt::Ref<StructSymbol>> typeArguments)
+GenericTypeSymbol* SymbolTable::find_or_create_generic_type(StructSymbol* underlaying, std::span<StructSymbol* const> typeArguments)
 {
-	gmt::Ref<GenericTypeSymbol> existing = find_generic_type(underlaying, typeArguments);
-	if (!existing.is_null())
+	GenericTypeSymbol* existing = find_generic_type(underlaying, typeArguments);
+	if (!(existing == nullptr))
 		return existing;
 
-	gmt::Ref<GenericTypeSymbol> symbol = m_arena.emplace<GenericTypeSymbol>(underlaying, m_rootNamespace);
+	GenericTypeSymbol* symbol = m_arena.emplace<GenericTypeSymbol>(underlaying, m_rootNamespace);
 
-	const gmt::vector<gmt::Ref<TypeParameterSymbol>>& typeParameters = underlaying->type_parameters;
+	const gmt::vector<TypeParameterSymbol*>& typeParameters = underlaying->type_parameters;
 	for (std::size_t i = 0; i < typeParameters.size() && i < typeArguments.size(); ++i)
 		symbol->add_type_parameter(typeParameters[i], typeArguments[i]);
 
 	std::uint64_t inlineKey[InlineKeyWords];
 	gmt::inline_vector<std::uint64_t, 8> spilledKey;
-	const std::uint64_t* key = make_generic_key(inlineKey, spilledKey.get_vector(), GenericFamilyTag, underlaying.get_offset(), typeArguments);
+	const std::uint64_t* key = make_generic_key(inlineKey, spilledKey.get_vector(), GenericFamilyTag, reinterpret_cast<std::uint64_t>(underlaying), typeArguments);
 
 	m_interner.insert(key, static_cast<std::uint16_t>(2 + typeArguments.size()), symbol);
 	return symbol;
 }
 
-gmt::Ref<GenericMethodSymbol> SymbolTable::find_or_create_generic_method(gmt::Ref<MethodSymbol> underlaying, std::span<const gmt::Ref<StructSymbol>> typeArguments, gmt::Ref<StructSymbol> returnType)
+GenericMethodSymbol* SymbolTable::find_or_create_generic_method(MethodSymbol* underlaying, std::span<StructSymbol* const> typeArguments, StructSymbol* returnType)
 {
-	gmt::Ref<GenericMethodSymbol> existing = find_generic_method(underlaying, typeArguments);
-	if (!existing.is_null())
+	GenericMethodSymbol* existing = find_generic_method(underlaying, typeArguments);
+	if (!(existing == nullptr))
 		return existing;
 
-	gmt::Ref<const SyntaxSymbol> parent = underlaying->get_parent();
-	gmt::Ref<GenericMethodSymbol> symbol = m_arena.emplace<GenericMethodSymbol>(underlaying, gmt::Ref<SyntaxSymbol>(m_arena, parent.get_offset()));
+	const SyntaxSymbol* parent = underlaying->get_parent();
+	GenericMethodSymbol* symbol = m_arena.emplace<GenericMethodSymbol>(underlaying, const_cast<SyntaxSymbol*>(parent));
 	symbol->set_type_arguments(typeArguments);
 	symbol->set_return_type(returnType);
 	symbol->set_is_virtual(underlaying->get_is_virtual());
@@ -195,99 +195,99 @@ gmt::Ref<GenericMethodSymbol> SymbolTable::find_or_create_generic_method(gmt::Re
 
 	// parameter symbols stay shared with the open method: the call protocol
 	// only needs their count and order, types substitute per instantiation
-	for (gmt::Ref<ParameterSymbol> parameter : underlaying->get_parameters())
+	for (ParameterSymbol* parameter : underlaying->get_parameters())
 		symbol->on_symbol_declared(parameter);
 
 	std::uint64_t inlineKey[InlineKeyWords];
 	gmt::inline_vector<std::uint64_t, 8> spilledKey;
-	const std::uint64_t* key = make_generic_key(inlineKey, spilledKey.get_vector(), GenericMethodFamilyTag, underlaying.get_offset(), typeArguments);
+	const std::uint64_t* key = make_generic_key(inlineKey, spilledKey.get_vector(), GenericMethodFamilyTag, reinterpret_cast<std::uint64_t>(underlaying), typeArguments);
 
 	m_interner.insert(key, static_cast<std::uint16_t>(2 + typeArguments.size()), symbol);
 	return symbol;
 }
 
-gmt::Ref<NullableTypeSymbol> SymbolTable::find_nullable_type(gmt::Ref<StructSymbol> underlaying) const
+NullableTypeSymbol* SymbolTable::find_nullable_type(StructSymbol* underlaying) const
 {
-	const std::uint64_t key[2] = { NullableFamilyTag, underlaying.get_offset() };
-	gmt::Ref<SyntaxSymbol> symbol = m_interner.find(key, 2);
+	const std::uint64_t key[2] = { NullableFamilyTag, reinterpret_cast<std::uint64_t>(underlaying) };
+	SyntaxSymbol* symbol = m_interner.find(key, 2);
 
-	if (symbol.is_null() || symbol->get_kind() != SyntaxKind::NullableType)
-		return gmt::nullref;
+	if ((symbol == nullptr) || symbol->get_kind() != SyntaxKind::NullableType)
+		return nullptr;
 
-	return symbol.as<NullableTypeSymbol>();
+	return static_cast<NullableTypeSymbol*>(symbol);
 }
 
-gmt::Ref<NullableTypeSymbol> SymbolTable::find_or_create_nullable_type(gmt::Ref<StructSymbol> underlaying)
+NullableTypeSymbol* SymbolTable::find_or_create_nullable_type(StructSymbol* underlaying)
 {
-	gmt::Ref<NullableTypeSymbol> existing = find_nullable_type(underlaying);
-	if (!existing.is_null())
+	NullableTypeSymbol* existing = find_nullable_type(underlaying);
+	if (!(existing == nullptr))
 		return existing;
 
-	gmt::Ref<NullableTypeSymbol> symbol = m_arena.emplace<NullableTypeSymbol>(underlaying, m_rootNamespace);
+	NullableTypeSymbol* symbol = m_arena.emplace<NullableTypeSymbol>(underlaying, m_rootNamespace);
 
-	const std::uint64_t key[2] = { NullableFamilyTag, underlaying.get_offset() };
+	const std::uint64_t key[2] = { NullableFamilyTag, reinterpret_cast<std::uint64_t>(underlaying) };
 	m_interner.insert(key, 2, symbol);
 	return symbol;
 }
 
-gmt::Ref<StructSymbol> SymbolTable::get_void_primitive() const
+StructSymbol* SymbolTable::get_void_primitive() const
 {
 	return m_void;
 }
 
-gmt::Ref<StructSymbol> SymbolTable::get_boolean_primitive() const
+StructSymbol* SymbolTable::get_boolean_primitive() const
 {
 	return m_boolean;
 }
 
-gmt::Ref<StructSymbol> SymbolTable::get_integer_primitive() const
+StructSymbol* SymbolTable::get_integer_primitive() const
 {
 	return m_integer;
 }
 
-gmt::Ref<StructSymbol> SymbolTable::get_double_primitive() const
+StructSymbol* SymbolTable::get_double_primitive() const
 {
 	return m_double;
 }
 
-gmt::Ref<StructSymbol> SymbolTable::get_char_primitive() const
+StructSymbol* SymbolTable::get_char_primitive() const
 {
 	return m_char;
 }
 
-gmt::Ref<StructSymbol> SymbolTable::get_string_primitive() const
+StructSymbol* SymbolTable::get_string_primitive() const
 {
 	return m_string;
 }
 
-gmt::Ref<StructSymbol> SymbolTable::get_array_primitive() const
+StructSymbol* SymbolTable::get_array_primitive() const
 {
 	return m_array;
 }
 
-gmt::Ref<StructSymbol> SymbolTable::get_nint_primitive() const
+StructSymbol* SymbolTable::get_nint_primitive() const
 {
 	return m_nativeInteger;
 }
 
-gmt::Ref<StructSymbol> SymbolTable::get_byte_primitive() const
+StructSymbol* SymbolTable::get_byte_primitive() const
 {
 	return m_byte;
 }
 
-gmt::Ref<SyntaxSymbol> SymbolTable::get_standard_type(StandardTypes type)
+SyntaxSymbol* SymbolTable::get_standard_type(StandardTypes type)
 {
-	gmt::Ref<SyntaxSymbol>& slot = m_standardTypes[static_cast<std::size_t>(type)];
+	SyntaxSymbol*& slot = m_standardTypes[static_cast<std::size_t>(type)];
 
 	/*
-	if (slot.is_null())
+	if ((slot == nullptr))
 		slot = m_arena.emplace<StructSymbol>(L"", SyntaxKind::StructDeclaration, m_rootNamespace);
 	*/
 
 	return slot;
 }
 
-void SymbolTable::set_standard_type(StandardTypes type, gmt::Ref<SyntaxSymbol> symbol)
+void SymbolTable::set_standard_type(StandardTypes type, SyntaxSymbol* symbol)
 {
 	m_standardTypes[static_cast<std::size_t>(type)] = symbol;
 }

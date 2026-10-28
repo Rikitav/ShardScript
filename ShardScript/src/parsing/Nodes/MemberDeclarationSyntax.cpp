@@ -4,15 +4,15 @@
 
 using namespace shard;
 
-MemberDeclarationSyntax::MemberDeclarationSyntax(const SyntaxKind kind, gmt::Ref<SyntaxNode> parent)
+MemberDeclarationSyntax::MemberDeclarationSyntax(const SyntaxKind kind, SyntaxNode* parent)
 	: SyntaxNode(kind, parent) { }
 
-void MemberDeclarationSyntax::set_attributes(gmt::Ref<AttributesListSyntax> attributes)
+void MemberDeclarationSyntax::set_attributes(AttributesListSyntax* attributes)
 {
 	m_attributes = attributes;
 }
 
-void MemberDeclarationSyntax::set_modifiers(gmt::Span<SyntaxToken> modifiers)
+void MemberDeclarationSyntax::set_modifiers(std::span<SyntaxToken> modifiers)
 {
 	m_modifiers = modifiers;
 }
@@ -27,12 +27,12 @@ void MemberDeclarationSyntax::set_declare_token(const SyntaxToken& declare)
 	m_declareToken = declare;
 }
 
-gmt::Ref<AttributesListSyntax> MemberDeclarationSyntax::get_attributes() const
+AttributesListSyntax* MemberDeclarationSyntax::get_attributes() const
 {
 	return m_attributes;
 }
 
-gmt::Span<const SyntaxToken> MemberDeclarationSyntax::get_modifiers() const
+std::span<const SyntaxToken> MemberDeclarationSyntax::get_modifiers() const
 {
 	return m_modifiers;
 }

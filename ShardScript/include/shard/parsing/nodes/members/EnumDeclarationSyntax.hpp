@@ -8,7 +8,7 @@
 #include <shard/parsing/nodes/members/EnumFieldDeclarationSyntax.hpp>
 
 #include <gmt/Ref.hpp>
-#include <gmt/Span.hpp>
+#include <span>
 
 namespace shard
 {
@@ -22,10 +22,10 @@ namespace shard
 		SyntaxToken m_closeBracketToken;
 		SyntaxToken m_semicolonToken;
 
-		gmt::Span<gmt::Ref<EnumFieldDeclarationSyntax>> m_fields;
+		std::span<EnumFieldDeclarationSyntax*> m_fields;
 
 	public:
-		EnumDeclarationSyntax(gmt::Ref<SyntaxNode> parent);
+		EnumDeclarationSyntax(SyntaxNode* parent);
 		virtual ~EnumDeclarationSyntax() = default;
 
 		SyntaxToken get_colon() const;
@@ -34,7 +34,7 @@ namespace shard
 		SyntaxToken get_open_bracket() const;
 		SyntaxToken get_close_bracket() const;
 		SyntaxToken get_semicolon() const;
-		gmt::Span<const gmt::Ref<EnumFieldDeclarationSyntax>> get_fields() const;
+		std::span<EnumFieldDeclarationSyntax* const> get_fields() const;
 
 		void set_colon(const SyntaxToken& token);
 		void set_underlying_type(const SyntaxToken& token);
@@ -42,7 +42,7 @@ namespace shard
 		void set_open_bracket(const SyntaxToken& token);
 		void set_close_bracket(const SyntaxToken& token);
 		void set_semicolon(const SyntaxToken& token);
-		void set_fields(gmt::Span<gmt::Ref<EnumFieldDeclarationSyntax>> fields);
+		void set_fields(std::span<EnumFieldDeclarationSyntax*> fields);
 
 		TextLocation get_location() const override;
 		void accept(SyntaxVisitor& visitor) const override;

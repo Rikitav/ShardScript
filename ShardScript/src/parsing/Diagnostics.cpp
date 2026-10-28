@@ -261,11 +261,11 @@ void DiagnosticsContext::write_diagnostic_pretty(std::wostream& out, const Diagn
 	int start = (std::max)(0, location.get_offset() - 1);
 	int length = (std::max)(1, location.get_length());
 
-	if (start > static_cast<int>(sourceLine.length()))
-		start = static_cast<int>(sourceLine.length());
+	if (start > static_cast<int>(sourceLine.size()))
+		start = static_cast<int>(sourceLine.size());
 
-	if (start + length > static_cast<int>(sourceLine.length()))
-		length = static_cast<int>(sourceLine.length()) - start;
+	if (start + length > static_cast<int>(sourceLine.size()))
+		length = static_cast<int>(sourceLine.size()) - start;
 
 	// if the source line is extremely long, show only a window around the diagnostic so the output stays readable
 	gmt::wstring displayedLine = sourceLine;
@@ -273,10 +273,10 @@ void DiagnosticsContext::write_diagnostic_pretty(std::wostream& out, const Diagn
 	bool trimmedPrefix = false;
 	bool trimmedSuffix = false;
 
-	if (static_cast<int>(sourceLine.length()) > MaxVisibleLineLength)
+	if (static_cast<int>(sourceLine.size()) > MaxVisibleLineLength)
 	{
 		int windowStart = (std::max)(0, start - CaretWindowRadius);
-		int windowEnd = (std::min)(static_cast<int>(sourceLine.length()), start + length + CaretWindowRadius);
+		int windowEnd = (std::min)(static_cast<int>(sourceLine.size()), start + length + CaretWindowRadius);
 
 		if (windowStart > 0)
 		{
@@ -284,10 +284,10 @@ void DiagnosticsContext::write_diagnostic_pretty(std::wostream& out, const Diagn
 			windowStart = (std::max)(0, windowStart - 4);
 		}
 
-		if (windowEnd < static_cast<int>(sourceLine.length()))
+		if (windowEnd < static_cast<int>(sourceLine.size()))
 		{
 			trimmedSuffix = true;
-			windowEnd = (std::min)(static_cast<int>(sourceLine.length()), windowEnd + 4);
+			windowEnd = (std::min)(static_cast<int>(sourceLine.size()), windowEnd + 4);
 		}
 
 		displayedLine = sourceLine.substr(windowStart, windowEnd - windowStart);

@@ -2,60 +2,20 @@
 
 #include <gmt/NullRef.hpp>
 
-#include <memory>
 #include <cstddef>
-#include <type_traits>
-
-namespace std
-{
-	template<typename>
-	struct hash;
-}
 
 namespace gmt
 {
-	class Arena;
+	// Arena objects are addressed with raw pointers. Chunks are never
+	// relocated once allocated, so a pointer remains valid for the arena's
+	// lifetime; the old offset-based Ref type is gone.
 
-	template<typename T>
-	class Ref
+	// Trusted downcast matching the historical Ref::as<>() behaviour; the
+	// caller has already checked the dynamic kind, and constness is dropped
+	// exactly as the offset-based handle did.
+	template<typename U, typename T>
+	[[nodiscard]] constexpr U* as(T* ptr) noexcept
 	{
-		template<typename U>
-		friend class Ref;
-
-		template<typename>
-		friend struct ::std::hash;
-
-		Arena* m_arena;
-		std::size_t m_offset;
-
-	public:
-		Ref();
-		Ref(Arena& arena, std::size_t offset);
-		Ref(nullref_t);
-
-		template<typename U> requires std::is_convertible_v<U*, T*>
-		Ref(const Ref<U>& other);
-		
-		template<typename U> requires std::is_base_of_v<T, U>
-		Ref<U> as() const;
-		
-		Ref(const Ref&) = default;
-		Ref& operator=(const Ref&) = default;
-
-		T& operator*() const;
-		T* operator->() const;
-
-		bool is_null() const;
-
-		template<typename U>
-		bool operator==(const Ref<U>& other) const;
-
-		template<typename U>
-		bool operator!=(const Ref<U>& other) const;
-
-		std::size_t get_offset() const;
-		Arena& get_arena() const;
-
-		T* as_ptr() const;
-	};
+		return const_cast<U*>(static_cast<const U*>(ptr));
+	}
 }

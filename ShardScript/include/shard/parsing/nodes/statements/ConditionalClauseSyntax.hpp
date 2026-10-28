@@ -10,13 +10,13 @@ namespace shard
 {
 	class SHARD_API ConditionalClauseSyntax : public ConditionalClauseBaseSyntax
 	{
-		gmt::Ref<ExpressionSyntax> m_condition;
+		ExpressionSyntax* m_condition = nullptr;
 
 	public:
-		ConditionalClauseSyntax(SyntaxKind kind, gmt::Ref<SyntaxNode> parent);
+		ConditionalClauseSyntax(SyntaxKind kind, SyntaxNode* parent);
 		virtual ~ConditionalClauseSyntax() = default;
 
-		gmt::Ref<const ExpressionSyntax> get_condition() const;
-		void set_condition(gmt::Ref<ExpressionSyntax> condition);
+		const ExpressionSyntax* get_condition() const;
+		void set_condition(ExpressionSyntax* condition);
 	};
 }

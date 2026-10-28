@@ -4,7 +4,7 @@
 #include <gmt/Alignment.hpp>
 #include <gmt/Containers.hpp>
 #include <gmt/Ref.hpp>
-#include <gmt/Span.hpp>
+#include <span>
 
 #include <cstddef>
 #include <limits>
@@ -17,21 +17,54 @@
 
 namespace gmt::detail
 {
+	// one record covers a run of contiguous same-type objects
 	struct destructor_entry
 	{
 		std::size_t offset;
-		void(*destroy)(void*);
+		std::uint32_t count;
+		std::uint32_t type;
 	};
 
-	static constexpr void* resolve(std::byte* m_buffer, std::size_t offset)
+	struct destructor_info
 	{
-		return m_buffer + offset;
-	}
+		void (*destroy)(void*);
+		std::size_t size;
+	};
 
 	template<typename T>
 	static void destroy_object(void* ptr)
 	{
 		static_cast<T*>(ptr)->~T();
+	}
+
+	SHARD_API std::uint32_t register_destructor_type(void (*destroy)(void*), std::size_t size);
+	SHARD_API destructor_info destructor_info_at(std::uint32_t type);
+
+	template<typename T>
+	std::uint32_t destructor_type_index()
+	{
+		static const std::uint32_t index = register_destructor_type(&destroy_object<T>, sizeof(T));
+		return index;
+	}
+
+	inline void register_destructor(gmt::vector<destructor_entry>& entries, std::size_t offset, std::uint32_t type, std::size_t size, bool startedNewChunk)
+	{
+		if (!startedNewChunk && !entries.empty())
+		{
+			destructor_entry& last = entries.back();
+			if (last.type == type && last.offset + static_cast<std::size_t>(last.count) * size == offset)
+			{
+				++last.count;
+				return;
+			}
+		}
+
+		entries.push_back(destructor_entry{ offset, 1, type });
+	}
+
+	static constexpr void* resolve(std::byte* m_buffer, std::size_t offset)
+	{
+		return m_buffer + offset;
 	}
 }
 
@@ -59,13 +92,13 @@ namespace gmt
 		Arena& operator=(Arena&&) = delete;
 
 		template<typename T, typename... Args>
-		inline Ref<T> emplace(Args&&... args);
+		inline T* emplace(Args&&... args);
 
 		template<typename T>
-		inline Span<T> emplace_array(std::size_t count);
+		inline std::span<T> emplace_array(std::size_t count);
 
 		template<typename T>
-		inline std::optional<Ref<T>> ref_from_ptr(T* ptr);
+		inline std::optional<T*> ref_from_ptr(T* ptr);
 
 		inline std::size_t get_cursor() const { return m_cursor; }
 		inline std::size_t get_capacity() const { return m_capacity; }
@@ -81,7 +114,7 @@ namespace gmt
 namespace gmt
 {
 	template<typename T, typename... Args>
-	inline Ref<T> Arena::emplace(Args&&... args)
+	inline T* Arena::emplace(Args&&... args)
 	{
 		static_assert(!std::is_abstract_v<T>, "arena object must not be abstract");
 		static_assert(!std::is_copy_constructible_v<T>, "arena objects must not be copyable");
@@ -90,31 +123,34 @@ namespace gmt
 		static_assert(!std::is_move_assignable_v<T>, "arena objects must not be movable");
 
 		std::size_t aligned = align_up(m_cursor, alignof(T));
+		bool startedNewChunk = false;
 		if (aligned + sizeof(T) > m_capacity)
 		{
 			// the object must not straddle a chunk boundary: the tail of the
 			// previous chunk stays unused and the object lands in the new chunk
 			grow(m_capacity + sizeof(T));
 			aligned = align_up(m_chunkBases.back(), alignof(T));
+			startedNewChunk = true;
 		}
 
-		static_cast<void>(new (resolve(aligned)) T(std::forward<Args>(args)...));
+		void* address = resolve(aligned);
+		static_cast<void>(new (address) T(std::forward<Args>(args)...));
 		m_cursor = aligned + sizeof(T);
 
 		if constexpr (!std::is_trivially_destructible_v<T>)
-			m_destructors.push_back(detail::destructor_entry{ aligned, &detail::destroy_object<T> });
+			detail::register_destructor(m_destructors, aligned, detail::destructor_type_index<T>(), sizeof(T), startedNewChunk);
 
-		return Ref<T>(*this, aligned);
+		return static_cast<T*>(address);
 	}
 
 	template<typename T>
-	Span<T> Arena::emplace_array(std::size_t count)
+	std::span<T> Arena::emplace_array(std::size_t count)
 	{
 		static_assert(std::is_trivially_destructible_v<T>, "arena array elements must be trivially destructible");
 		static_assert(std::is_trivially_copyable_v<T>, "arena array elements must be safe to relocate");
 
 		if (count == 0)
-			return Span<T>();
+			return std::span<T>();
 
 		if (count > std::numeric_limits<std::uint32_t>::max())
 			throw std::length_error("arena array exceeds the 32-bit span capacity");
@@ -127,13 +163,13 @@ namespace gmt
 			aligned = align_up(m_chunkBases.back(), alignof(T));
 		}
 
-		Span<T> span(*this, static_cast<std::uint32_t>(aligned), static_cast<std::uint32_t>(count));
+		std::span<T> span(static_cast<T*>(resolve(aligned)), count);
 		m_cursor = aligned + count * sizeof(T);
 		return span;
 	}
 
 	template<typename T>
-	std::optional<Ref<T>> Arena::ref_from_ptr(T* ptr)
+	std::optional<T*> Arena::ref_from_ptr(T* ptr)
 	{
 		if (ptr == nullptr)
 			return std::nullopt;
@@ -145,12 +181,10 @@ namespace gmt
 			if (address < chunk || address >= chunk + m_chunkSizes[i])
 				continue;
 
-			return Ref<T>(*this, m_chunkBases[i] + static_cast<std::size_t>(address - chunk));
+			return static_cast<T*>(ptr);
 		}
 
 		return std::nullopt;
 	}
 }
 
-#include <gmt/Ref.impl.hpp>
-#include <gmt/Span.impl.hpp>

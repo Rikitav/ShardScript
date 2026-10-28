@@ -14,8 +14,8 @@ namespace shard
 		TokenType m_operatorToken;
 
 	public:
-		OperatorSymbol(std::wstring_view name, const TokenType operator_token, gmt::Ref<SyntaxSymbol> parent);
-		OperatorSymbol(gmt::StringReference name, const TokenType operator_token, gmt::Ref<SyntaxSymbol> parent);
+		OperatorSymbol(std::wstring_view name, const TokenType operator_token, SyntaxSymbol* parent);
+		OperatorSymbol(gmt::StringReference name, const TokenType operator_token, SyntaxSymbol* parent);
 		virtual ~OperatorSymbol() = default;
 
 		OperatorSymbol(const OperatorSymbol& other) = delete;

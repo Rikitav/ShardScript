@@ -5,7 +5,7 @@
 
 using namespace shard;
 
-ContinueStatementSyntax::ContinueStatementSyntax(gmt::Ref<SyntaxNode> parent)
+ContinueStatementSyntax::ContinueStatementSyntax(SyntaxNode* parent)
 	: StatementSyntax(SyntaxKind::ContinueStatement, parent) { }
 
 SyntaxToken ContinueStatementSyntax::get_continue_keyword() const
