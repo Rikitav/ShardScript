@@ -1,4 +1,5 @@
 #include <gmt/Allocator.hpp>
+#include <libuv/include/uv.h>
 
 #include <cstdlib>
 

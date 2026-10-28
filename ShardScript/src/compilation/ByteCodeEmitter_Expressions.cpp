@@ -195,7 +195,7 @@ void ByteCodeEmitter::visit_literal_expression(const LiteralExpressionSyntax* no
 		return;
 
 	SyntaxToken literal = node->get_literal();
-	SymbolTable& table = get_symbol_table();
+	//SymbolTable& table = get_symbol_table();
 
 	switch (literal.get_type())
 	{
@@ -959,7 +959,6 @@ void ByteCodeEmitter::visit_is_expression(const IsExpressionSyntax* node)
 	if (node == nullptr)
 		return;
 
-	std::optional<gmt::Ref<const IsExpressionSyntax>> nodeRef = ref_from(node);
 	gmt::Ref<StructSymbol> targetType;
 	if (!node->get_target_type().is_null())
 	{
@@ -981,7 +980,6 @@ void ByteCodeEmitter::visit_cast_expression(const CastExpressionSyntax* node)
 	if (node == nullptr)
 		return;
 
-	std::optional<gmt::Ref<const CastExpressionSyntax>> nodeRef = ref_from(node);
 	gmt::Ref<StructSymbol> targetType;
 	if (!node->get_target_type().is_null())
 	{

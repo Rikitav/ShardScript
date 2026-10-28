@@ -13,9 +13,63 @@
 #include <gmt/Containers.hpp>
 
 #include <algorithm>
+#include <bit>
 #include <stdexcept>
 
 using namespace shard;
+
+std::size_t FrameBlockPool::class_of(std::size_t bytes)
+{
+	if (bytes <= 16)
+		return 4;
+
+	const std::size_t exponent = std::bit_width(bytes - 1);
+	return exponent < MaxClasses ? exponent : MaxClasses - 1;
+}
+
+std::byte* FrameBlockPool::acquire(std::size_t bytes)
+{
+	const std::size_t cls = class_of(bytes);
+	std::byte* block = m_heads[cls];
+	if (block != nullptr)
+	{
+		m_heads[cls] = *reinterpret_cast<std::byte**>(block);
+		return block;
+	}
+
+	return static_cast<std::byte*>(gmt::mem_alloc(std::size_t{ 1 } << cls));
+}
+
+void FrameBlockPool::release(std::byte* block, std::size_t bytes)
+{
+	if (block == nullptr)
+		return;
+
+	const std::size_t cls = class_of(bytes);
+	*reinterpret_cast<std::byte**>(block) = m_heads[cls];
+	m_heads[cls] = block;
+}
+
+void FrameBlockPool::release_all()
+{
+	for (std::size_t cls = 0; cls < MaxClasses; ++cls)
+	{
+		std::byte* block = m_heads[cls];
+		while (block != nullptr)
+		{
+			std::byte* next = *reinterpret_cast<std::byte**>(block);
+			gmt::mem_free(block);
+			block = next;
+		}
+
+		m_heads[cls] = nullptr;
+	}
+}
+
+FrameBlockPool::~FrameBlockPool()
+{
+	release_all();
+}
 
 std::uintptr_t CallStackFrame::pack_header(const TypeShape* shape, bool isReferenceStorage)
 {
@@ -58,11 +112,21 @@ FrameEntryView CallStackFrame::peek_entry(std::byte* entry)
 	return view;
 }
 
-CallStackFrame* CallStackFrame::create(gmt::Ref<MethodSymbol> method, const FrameLayout* layout, SemanticModel& model, PragmaticModel& pragmatic, CallStackFrame* previous, std::byte* externalReturnEntry, std::size_t externalReturnPayload)
+CallStackFrame* CallStackFrame::create(gmt::Ref<MethodSymbol> method, const FrameLayout* layout, SemanticModel& model, PragmaticModel& pragmatic, CallStackFrame* previous, std::byte* externalReturnEntry, std::size_t externalReturnPayload, FrameBlockPool* pool)
 {
 	const TypeShape* returnShape = nullptr;
-	if (!method.is_null() && !method->get_return_type().is_null())
-		returnShape = pragmatic.find_or_create_type_shape(model, method->get_return_type());
+	if (layout != nullptr && layout->has_return_shape())
+	{
+		returnShape = layout->get_return_shape();
+	}
+	else
+	{
+		if (!method.is_null() && !method->get_return_type().is_null())
+			returnShape = pragmatic.find_or_create_type_shape(model, method->get_return_type());
+
+		if (layout != nullptr)
+			layout->set_return_shape(returnShape);
+	}
 
 	bool returnReference = returnShape != nullptr && returnShape->is_reference();
 	std::size_t returnPayload = 0;
@@ -71,61 +135,72 @@ CallStackFrame* CallStackFrame::create(gmt::Ref<MethodSymbol> method, const Fram
 
 	const std::size_t returnEntryBytes = EntryHeaderSize + gmt::align_up(returnPayload, sizeof(void*));
 
-	std::uint16_t argumentCount = layout != nullptr ? layout->get_argument_count() : 0;
-	std::uint16_t variableCount = layout != nullptr ? layout->get_variable_count() : 0;
+	const std::uint16_t argumentCount = layout != nullptr ? layout->get_argument_count() : 0;
+	const std::uint16_t variableCount = layout != nullptr ? layout->get_variable_count() : 0;
+	const std::uint16_t localCount = static_cast<std::uint16_t>(argumentCount + variableCount);
 
-	gmt::vector<std::byte*> localAddresses;
-	gmt::vector<std::size_t> localPayloads;
-	gmt::vector<const TypeShape*> localShapes;
-	gmt::vector<bool> localReferences;
+	// the layout pass resolved these once; fall back to the pragmatic cache
+	// when a layout predates the cached lists
+	const bool cachedShapes = layout != nullptr
+		&& layout->get_argument_shape_count() == argumentCount
+		&& layout->get_variable_shape_count() == variableCount;
 
-	localAddresses.reserve(static_cast<std::size_t>(argumentCount) + variableCount);
-	localPayloads.reserve(static_cast<std::size_t>(argumentCount) + variableCount);
-	localShapes.reserve(static_cast<std::size_t>(argumentCount) + variableCount);
-	localReferences.reserve(static_cast<std::size_t>(argumentCount) + variableCount);
-
-	std::size_t cursor = 0;
-	if (layout != nullptr)
+	auto local_shape = [&](std::size_t index) -> const TypeShape*
 	{
-		for (gmt::Ref<StructSymbol> argumentType : layout->get_argument_types())
+		if (cachedShapes)
 		{
-			const TypeShape* shape = nullptr;
-			if (!argumentType.is_null())
-				shape = pragmatic.find_or_create_type_shape(model, argumentType);
-
-			localAddresses.push_back(nullptr);
-			localPayloads.push_back(sizeof(void*));
-			localShapes.push_back(shape);
-			localReferences.push_back(shape == nullptr || shape->is_reference());
-			cursor += EntryHeaderSize + gmt::align_up(sizeof(void*), sizeof(void*));
+			if (index < argumentCount)
+				return layout->get_argument_shape(index);
+			return layout->get_variable_shape(index - argumentCount);
 		}
 
-		for (const FrameSlotRecipe& recipe : layout->get_variable_slots())
+		gmt::Ref<StructSymbol> type;
+		if (layout != nullptr)
 		{
-			const TypeShape* shape = nullptr;
-			if (!recipe.concreteType.is_null())
-				shape = pragmatic.find_or_create_type_shape(model, recipe.concreteType);
-
-			// Primitives are always stored inline, whatever the escape verdict;
-			// Reference storage is meaningful for composites only.
-			// A zero-size reference shape (string, delegates, interfaces) names a variable-size heap object that can never be inlined: it is pointer-stored whatever the verdict
-			bool reference = recipe.typeParameterIndex >= 0 || recipe.verdict == PlacementVerdict::Heap;
-			if (shape != nullptr && !shape->is_reference())
-				reference = false;
-
-			if (shape != nullptr && shape->is_reference() && shape->get_size() == 0)
-				reference = true;
-
-			std::size_t payload = sizeof(void*);
-			if (!reference && shape != nullptr)
-				payload = shape->get_size();
-
-			localAddresses.push_back(nullptr);
-			localPayloads.push_back(payload);
-			localShapes.push_back(shape);
-			localReferences.push_back(reference);
-			cursor += EntryHeaderSize + gmt::align_up(payload, sizeof(void*));
+			type = index < argumentCount
+				? layout->get_argument_types()[index]
+				: layout->get_variable_slots()[index - argumentCount].concreteType;
 		}
+
+		if (type.is_null())
+			return nullptr;
+
+		return pragmatic.find_or_create_type_shape(model, type);
+	};
+
+	auto local_reference = [&](std::size_t index, const TypeShape* shape) -> bool
+	{
+		if (index < argumentCount)
+			return shape == nullptr || shape->is_reference();
+
+		// Primitives are always stored inline, whatever the escape verdict;
+		// Reference storage is meaningful for composites only.
+		// A zero-size reference shape (string, delegates, interfaces) names a variable-size heap object that can never be inlined: it is pointer-stored whatever the verdict
+		const FrameSlotRecipe& recipe = layout->get_variable_slots()[index - argumentCount];
+		bool reference = recipe.typeParameterIndex >= 0 || recipe.verdict == PlacementVerdict::Heap;
+		if (shape != nullptr && !shape->is_reference())
+			reference = false;
+
+		if (shape != nullptr && shape->is_reference() && shape->get_size() == 0)
+			reference = true;
+
+		return reference;
+	};
+
+	auto local_payload = [&](std::size_t index, const TypeShape* shape, bool reference) -> std::size_t
+	{
+		if (index < argumentCount)
+			return sizeof(void*);
+
+		return !reference && shape != nullptr ? shape->get_size() : sizeof(void*);
+	};
+
+	std::size_t localsBytes = 0;
+	for (std::size_t i = 0; i < localCount; ++i)
+	{
+		const TypeShape* shape = local_shape(i);
+		const bool reference = local_reference(i, shape);
+		localsBytes += EntryHeaderSize + gmt::align_up(local_payload(i, shape, reference), sizeof(void*));
 	}
 
 	std::size_t evalSlotPayload = layout != nullptr ? layout->get_eval_slot_payload() : 0;
@@ -136,20 +211,29 @@ CallStackFrame* CallStackFrame::create(gmt::Ref<MethodSymbol> method, const Fram
 		evalCapacity = (std::max)(static_cast<std::size_t>(layout->get_max_eval_depth()), static_cast<std::size_t>(8));
 
 	const std::size_t objectBytes = gmt::align_up(sizeof(CallStackFrame), sizeof(void*));
-	const std::size_t totalBytes = objectBytes + returnEntryBytes + cursor + evalStride * evalCapacity;
+	const std::size_t metadataBytes = static_cast<std::size_t>(localCount) * (sizeof(std::byte*) + sizeof(std::size_t));
+	const std::size_t totalBytes = objectBytes + returnEntryBytes + metadataBytes + localsBytes + evalStride * evalCapacity;
 
-	std::byte* block = static_cast<std::byte*>(gmt::mem_alloc(totalBytes));
+	std::byte* block = pool != nullptr
+		? pool->acquire(totalBytes)
+		: static_cast<std::byte*>(gmt::mem_alloc(totalBytes));
 	CallStackFrame* frame = new (block) CallStackFrame();
 
+	frame->m_blockBytes = totalBytes;
+	frame->m_layout = layout;
 	frame->m_method = method;
 	frame->m_previous = previous;
 	frame->m_argumentCount = argumentCount;
 	frame->m_variableCount = variableCount;
+	frame->m_localCount = localCount;
 
-	frame->m_localsRegion = block + objectBytes + returnEntryBytes;
-	frame->m_localPayloads = std::move(localPayloads);
+	// payload and address tables live inside the frame block: on the old
+	// design every call allocated two more vectors just to describe locals
+	frame->m_localPayloads = reinterpret_cast<std::size_t*>(block + objectBytes + returnEntryBytes);
+	frame->m_localAddresses = reinterpret_cast<std::byte**>(frame->m_localPayloads + localCount);
+	frame->m_localsRegion = reinterpret_cast<std::byte*>(frame->m_localAddresses + localCount);
 
-	frame->m_evalRegion = frame->m_localsRegion + cursor;
+	frame->m_evalRegion = frame->m_localsRegion + localsBytes;
 	frame->m_evalStride = evalStride;
 	frame->m_evalCapacity = evalCapacity;
 
@@ -169,29 +253,32 @@ CallStackFrame* CallStackFrame::create(gmt::Ref<MethodSymbol> method, const Fram
 		frame->m_returnPayloadBytes = returnPayload;
 	}
 
-	cursor = 0;
-	std::size_t recipeIndex = 0;
-	for (std::size_t i = 0; i < localShapes.size(); ++i)
+	std::size_t cursor = 0;
+	for (std::size_t i = 0; i < localCount; ++i)
 	{
+		const TypeShape* shape = local_shape(i);
+		const bool reference = local_reference(i, shape);
+		const std::size_t payload = local_payload(i, shape, reference);
+
+		frame->m_localPayloads[i] = payload;
+
 		bool mappable = chained && i >= argumentCount;
 		if (mappable)
 		{
-			const FrameSlotRecipe& recipe = layout->get_variable_slots()[recipeIndex++];
-			mappable = recipe.verdict == PlacementVerdict::StackReturn && localShapes[i] != nullptr && localShapes[i]->is_reference();
+			const FrameSlotRecipe& recipe = layout->get_variable_slots()[i - argumentCount];
+			mappable = recipe.verdict == PlacementVerdict::StackReturn && shape != nullptr && shape->is_reference();
 		}
 
-		if (mappable)
-			localAddresses[i] = frame->m_returnSlot;
-		else
-			localAddresses[i] = frame->m_localsRegion + cursor;
+		std::byte* address = mappable ? frame->m_returnSlot : frame->m_localsRegion + cursor;
+		frame->m_localAddresses[i] = address;
 
-		cursor += EntryHeaderSize + gmt::align_up(frame->m_localPayloads[i], sizeof(void*));
+		cursor += EntryHeaderSize + gmt::align_up(payload, sizeof(void*));
 
 		if (mappable)
 			continue;
 
-		std::uintptr_t header = pack_header(localShapes[i], localReferences[i]);
-		std::memcpy(localAddresses[i], &header, EntryHeaderSize);
+		std::uintptr_t header = pack_header(shape, reference);
+		std::memcpy(address, &header, EntryHeaderSize);
 	}
 
 	if (!chained)
@@ -200,17 +287,21 @@ CallStackFrame* CallStackFrame::create(gmt::Ref<MethodSymbol> method, const Fram
 		std::memcpy(frame->m_returnSlot, &returnHeader, EntryHeaderSize);
 	}
 
-	frame->m_localAddresses = std::move(localAddresses);
 	return frame;
 }
 
-void CallStackFrame::destroy(CallStackFrame* frame)
+void CallStackFrame::destroy(CallStackFrame* frame, FrameBlockPool* pool)
 {
 	if (frame == nullptr)
 		return;
 
+	const std::size_t bytes = frame->m_blockBytes;
 	frame->~CallStackFrame();
-	gmt::mem_free(frame);
+
+	if (pool != nullptr)
+		pool->release(reinterpret_cast<std::byte*>(frame), bytes);
+	else
+		gmt::mem_free(frame);
 }
 
 gmt::Ref<MethodSymbol> CallStackFrame::get_method() const
@@ -453,7 +544,7 @@ void CallStackFrame::for_each_live_entry(const std::function<void(const FrameEnt
 	if (returnView.shape != nullptr)
 		visitor(returnView);
 
-	for (std::size_t i = 0; i < m_localAddresses.size(); ++i)
+	for (std::size_t i = 0; i < m_localCount; ++i)
 	{
 		FrameEntryView view = entry_view(m_localAddresses[i]);
 		if (view.shape != nullptr)

@@ -22,6 +22,128 @@
 
 using namespace shard;
 
+std::byte* const GarbageCollector::HeapTable::Tombstone = reinterpret_cast<std::byte*>(static_cast<std::uintptr_t>(1));
+
+GarbageCollector::HeapTable::HeapTable()
+	: m_slots(64, nullptr)
+{ }
+
+std::size_t GarbageCollector::HeapTable::home(std::byte* value) const
+{
+	const std::uintptr_t raw = reinterpret_cast<std::uintptr_t>(value) >> 3;
+	const std::uint64_t mixed = static_cast<std::uint64_t>(raw) * 0x9E3779B97F4A7C15ull;
+	return static_cast<std::size_t>(mixed) & (m_slots.size() - 1);
+}
+
+std::size_t GarbageCollector::HeapTable::locate(std::byte* value) const
+{
+	const std::size_t mask = m_slots.size() - 1;
+	std::size_t slot = home(value);
+
+	while (true)
+	{
+		std::byte* current = m_slots[slot];
+		if (current == value)
+			return slot;
+
+		if (current == nullptr)
+			return m_slots.size();
+
+		slot = (slot + 1) & mask;
+	}
+}
+
+void GarbageCollector::HeapTable::rehash(std::size_t capacity)
+{
+	gmt::vector<std::byte*> fresh(capacity, nullptr);
+	const std::size_t mask = capacity - 1;
+
+	for (std::byte* slot : m_slots)
+	{
+		if (slot == nullptr || slot == Tombstone)
+			continue;
+
+		const std::uintptr_t raw = reinterpret_cast<std::uintptr_t>(slot) >> 3;
+		std::size_t index = static_cast<std::size_t>(static_cast<std::uint64_t>(raw) * 0x9E3779B97F4A7C15ull) & mask;
+		while (fresh[index] != nullptr)
+			index = (index + 1) & mask;
+
+		fresh[index] = slot;
+	}
+
+	m_slots = std::move(fresh);
+	m_tombstones = 0;
+}
+
+void GarbageCollector::HeapTable::insert(std::byte* value)
+{
+	if ((m_size + m_tombstones + 1) * 10 >= m_slots.size() * 7)
+	{
+		// grow only when live objects alone need the room; otherwise a rehash
+		// at the same capacity clears the tombstones left by a sweep
+		const std::size_t capacity = (m_size + 1) * 10 >= m_slots.size() * 7
+			? m_slots.size() * 2
+			: m_slots.size();
+		rehash(capacity);
+	}
+
+	const std::size_t mask = m_slots.size() - 1;
+	std::size_t slot = home(value);
+	std::size_t tombstone = m_slots.size();
+
+	while (true)
+	{
+		std::byte* current = m_slots[slot];
+		if (current == value)
+			return;
+
+		if (current == nullptr)
+			break;
+
+		if (current == Tombstone && tombstone == m_slots.size())
+			tombstone = slot;
+
+		slot = (slot + 1) & mask;
+	}
+
+	if (tombstone != m_slots.size())
+		slot = tombstone;
+
+	m_slots[slot] = value;
+	++m_size;
+}
+
+bool GarbageCollector::HeapTable::erase(std::byte* value)
+{
+	const std::size_t slot = locate(value);
+	if (slot == m_slots.size())
+		return false;
+
+	m_slots[slot] = Tombstone;
+	--m_size;
+	++m_tombstones;
+	return true;
+}
+
+bool GarbageCollector::HeapTable::contains(std::byte* value) const
+{
+	return locate(value) != m_slots.size();
+}
+
+void GarbageCollector::HeapTable::clear()
+{
+	for (std::byte*& slot : m_slots)
+		slot = nullptr;
+
+	m_size = 0;
+	m_tombstones = 0;
+}
+
+std::size_t GarbageCollector::HeapTable::size() const
+{
+	return m_size;
+}
+
 GarbageCollector::GarbageCollector(SemanticModel& model, PragmaticModel& pragmatic)
 	: m_model(model)
 	, m_pragmatic(pragmatic)
@@ -149,6 +271,14 @@ void GarbageCollector::register_frame(CallStackFrame* frame)
 
 void GarbageCollector::unregister_frame(CallStackFrame* frame)
 {
+	// frames unwind strictly LIFO, so the common case is a tail pop; keep
+	// the search as a fallback for any non-stack-disciplined teardown
+	if (!m_frames.empty() && m_frames.back() == frame)
+	{
+		m_frames.pop_back();
+		return;
+	}
+
 	auto choice = std::find(m_frames.begin(), m_frames.end(), frame);
 	if (choice != m_frames.end())
 		m_frames.erase(choice);
@@ -262,20 +392,19 @@ void GarbageCollector::trace_frame(CallStackFrame* frame)
 void GarbageCollector::sweep()
 {
 	std::size_t liveBytes = 0;
-	for (auto choice = m_heap.begin(); choice != m_heap.end();)
+	m_heap.sweep([&](std::byte* payload)
 	{
-		GcHeader* header = get_header(*choice);
+		GcHeader* header = get_header(payload);
 		if (header->marked == 0)
 		{
 			gmt::mem_free(header);
-			choice = m_heap.erase(choice);
-			continue;
+			return true;
 		}
 
 		header->marked = 0;
 		liveBytes += sizeof(GcHeader) + header->payloadBytes;
-		++choice;
-	}
+		return false;
+	});
 
 	m_allocatedSinceCollection = liveBytes;
 	m_collectionThreshold = (std::max)(m_collectionThreshold, liveBytes * 2);
@@ -318,9 +447,10 @@ void GarbageCollector::collect()
 
 void GarbageCollector::terminate()
 {
-	for (std::byte* payload : m_heap)
+	m_heap.for_each([](std::byte* payload)
+	{
 		gmt::mem_free(get_header(payload));
-
+	});
 	m_heap.clear();
 
 	for (auto& [key, storage] : m_statics)

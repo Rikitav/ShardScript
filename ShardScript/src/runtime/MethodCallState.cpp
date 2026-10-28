@@ -191,6 +191,11 @@ double MethodCallState::get_double_argument(std::size_t index) const
 	return get_argument(index).as_double();
 }
 
+std::uintptr_t MethodCallState::get_nint_argument(std::size_t index) const
+{
+	return get_argument(index).as_nint();
+}
+
 wchar_t MethodCallState::get_char_argument(std::size_t index) const
 {
 	return get_argument(index).as_char();

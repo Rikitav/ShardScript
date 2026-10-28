@@ -9,10 +9,138 @@
 
 #include <cctype>
 #include <cwctype>
+#include <iterator>
 #include <string>
 #include <stdexcept>
+#include <string_view>
+#include <unordered_map>
 
 using namespace shard;
+
+namespace
+{
+	// ASCII is the overwhelmingly common case; only fall back to the
+	// locale-aware cwctype calls for non-ASCII code points
+	bool is_space_character(wchar_t ch)
+	{
+		if (ch == L' ' || (ch >= L'\t' && ch <= L'\r'))
+			return true;
+
+		return ch > 0x7F && std::iswspace(static_cast<wint_t>(ch)) != 0;
+	}
+
+	bool is_word_character(wchar_t ch)
+	{
+		if ((ch >= L'a' && ch <= L'z') || (ch >= L'A' && ch <= L'Z') ||
+			(ch >= L'0' && ch <= L'9') || ch == L'_')
+			return true;
+
+		return ch > 0x7F && std::iswalnum(static_cast<wint_t>(ch)) != 0;
+	}
+
+	struct KeywordEntry
+	{
+		std::wstring_view text;
+		TokenType type;
+	};
+
+	// every word token the lexer classifies, in one table; classification
+	// used to run up to eight sequential scans over separate literal lists
+	constexpr KeywordEntry KeywordTable[] =
+	{
+		{ L"true", TokenType::BooleanLiteral },
+		{ L"false", TokenType::BooleanLiteral },
+		{ L"null", TokenType::NullLiteral },
+		{ L"nil", TokenType::NullLiteral },
+
+		{ L"using", TokenType::UsingKeyword },
+		{ L"namespace", TokenType::NamespaceKeyword },
+
+		{ L"method", TokenType::MethodKeyword },
+		{ L"class", TokenType::ClassKeyword },
+		{ L"struct", TokenType::StructKeyword },
+		{ L"interface", TokenType::InterfaceKeyword },
+		{ L"enum", TokenType::EnumKeyword },
+
+		{ L"public", TokenType::PublicKeyword },
+		{ L"private", TokenType::PrivateKeyword },
+		{ L"protected", TokenType::ProtectedKeyword },
+		{ L"internal", TokenType::InternalKeyword },
+		{ L"static", TokenType::StaticKeyword },
+		{ L"async", TokenType::AsyncKeyword },
+
+		{ L"and", TokenType::AndOperator },
+		{ L"or", TokenType::OrOperator },
+		{ L"not", TokenType::NotOperator },
+
+		{ L"void", TokenType::VoidKeyword },
+		{ L"var", TokenType::VarKeyword },
+		{ L"bool", TokenType::BooleanKeyword },
+		{ L"string", TokenType::StringKeyword },
+		{ L"double", TokenType::DoubleKeyword },
+		{ L"int", TokenType::IntegerKeyword },
+		{ L"char", TokenType::CharKeyword },
+		{ L"byte", TokenType::ByteKeyword },
+		{ L"nint", TokenType::NativeIntegerKeyword },
+		{ L"lambda", TokenType::LambdaKeyword },
+		{ L"delegate", TokenType::DelegateKeyword },
+		{ L"flags", TokenType::FlagsKeyword },
+
+		{ L"if", TokenType::IfKeyword },
+		{ L"unless", TokenType::UnlessKeyword },
+		{ L"else", TokenType::ElseKeyword },
+		{ L"switch", TokenType::SwitchKeyword },
+		{ L"case", TokenType::CaseKeyword },
+		{ L"default", TokenType::DefaultKeyword },
+
+		{ L"return", TokenType::ReturnKeyword },
+		{ L"continue", TokenType::ContinueKeyword },
+		{ L"break", TokenType::BreakKeyword },
+		{ L"throw", TokenType::ThrowKeyword },
+		{ L"try", TokenType::TryKeyword },
+		{ L"catch", TokenType::CatchKeyword },
+		{ L"await", TokenType::AwaitKeyword },
+
+		{ L"for", TokenType::ForKeyword },
+		{ L"while", TokenType::WhileKeyword },
+		{ L"until", TokenType::UntilKeyword },
+		{ L"do", TokenType::DoKeyword },
+		{ L"foreach", TokenType::ForeachKeyword },
+		{ L"in", TokenType::InKeyword },
+
+		{ L"new", TokenType::NewKeyword },
+		{ L"get", TokenType::GetKeyword },
+		{ L"set", TokenType::SetKeyword },
+		{ L"this", TokenType::ThisKeyword },
+		{ L"self", TokenType::SelfKeyword },
+		{ L"field", TokenType::FieldKeyword },
+		{ L"indexer", TokenType::IndexerKeyword },
+		{ L"defer", TokenType::DeferKeyword },
+		{ L"where", TokenType::WhereKeyword },
+		{ L"const", TokenType::ConstKeyword },
+		{ L"func", TokenType::FunctionKeyword },
+		{ L"init", TokenType::InitKeyword },
+		{ L"operator", TokenType::OperatorKeyword },
+		{ L"value", TokenType::ValueKeyword },
+		{ L"is", TokenType::IsOperator },
+		{ L"as", TokenType::AsOperator },
+	};
+
+	TokenType classify_word(std::wstring_view word)
+	{
+		static const std::unordered_map<std::wstring_view, TokenType> table = []
+		{
+			std::unordered_map<std::wstring_view, TokenType> entries;
+			entries.reserve(std::size(KeywordTable));
+			for (const KeywordEntry& entry : KeywordTable)
+				entries.emplace(entry.text, entry.type);
+			return entries;
+		}();
+
+		const auto choice = table.find(word);
+		return choice != table.end() ? choice->second : TokenType::Identifier;
+	}
+}
 
 bool LexicalAnalyzer::advance(wchar_t& ch)
 {
@@ -196,7 +324,7 @@ bool LexicalAnalyzer::read_next_real()
 
 			default:
 			{
-				if (!std::iswspace(static_cast<wint_t>(m_symbol)))
+				if (!is_space_character(m_symbol))
 					return true;
 
 				continue;
@@ -213,7 +341,7 @@ bool LexicalAnalyzer::read_while_alpha(gmt::wstring& word)
 	word += m_symbol;
 	while (m_sourceText->peek_next(m_peekSymbol))
 	{
-		if (!std::iswalnum(static_cast<wint_t>(m_peekSymbol)) && m_peekSymbol != '_')
+		if (!is_word_character(m_peekSymbol))
 			break;
 
 		advance(m_symbol);
@@ -300,31 +428,7 @@ bool LexicalAnalyzer::read_next_word(gmt::wstring& word, TokenType& type)
 	if (!read_while_alpha(word))
 		return false;
 
-	if (is_boolean_literal(word, type))
-		return true;
-
-	if (is_null_literal(word, type))
-		return true;
-
-	if (is_directive_decl(word, type))
-		return true;
-
-	if (is_type_decl(word, type))
-		return true;
-
-	if (is_modifier(word, type))
-		return true;
-
-	if (is_word_operator(word, type))
-		return true;
-
-	if (is_type(word, type))
-		return true;
-
-	if (is_keyword(word, type))
-		return true;
-
-	type = TokenType::Identifier;
+	type = classify_word(word);
 	return true;
 }
 
@@ -719,30 +823,6 @@ bool LexicalAnalyzer::is_punctuation(gmt::wstring& word, TokenType& type)
 	}
 }
 
-bool LexicalAnalyzer::is_word_operator(gmt::wstring& word, TokenType& type)
-{
-	// Just because my friend asked this
-	if (word == L"and")
-	{
-		type = TokenType::AndOperator;
-		return true;
-	}
-	else if (word == L"or")
-	{
-		type = TokenType::OrOperator;
-		return true;
-	}
-	else if (word == L"not")
-	{
-		type = TokenType::NotOperator;
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-}
-
 bool LexicalAnalyzer::is_operator(gmt::wstring& word, TokenType& type)
 {
 	switch (m_symbol)
@@ -1037,42 +1117,6 @@ bool LexicalAnalyzer::is_operator(gmt::wstring& word, TokenType& type)
 	}
 }
 
-bool LexicalAnalyzer::is_null_literal(gmt::wstring& word, TokenType& type)
-{
-	if (word == L"null")
-	{
-		type = TokenType::NullLiteral;
-		return true;
-	}
-	else if (word == L"nil")
-	{
-		type = TokenType::NullLiteral;
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-}
-
-bool LexicalAnalyzer::is_boolean_literal(gmt::wstring& word, TokenType& type)
-{
-	if (word == L"true")
-	{
-		type = TokenType::BooleanLiteral;
-		return true;
-	}
-	else if (word == L"false")
-	{
-		type = TokenType::BooleanLiteral;
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-}
-
 bool LexicalAnalyzer::is_number_literal(TokenType& type) const
 {
 	if (m_symbol >= L'0' && m_symbol <= L'9')
@@ -1126,386 +1170,5 @@ bool LexicalAnalyzer::is_string_literal(TokenType& type, bool& dontEcran)
 
 		default:
 			return false;
-	}
-}
-
-bool LexicalAnalyzer::is_modifier(gmt::wstring& word, TokenType& type)
-{
-	if (word == L"public")
-	{
-		type = TokenType::PublicKeyword;
-		return true;
-	}
-	else if (word == L"private")
-	{
-		type = TokenType::PrivateKeyword;
-		return true;
-	}
-	else if (word == L"protected")
-	{
-		type = TokenType::ProtectedKeyword;
-		return true;
-	}
-	else if (word == L"internal")
-	{
-		type = TokenType::InternalKeyword;
-		return true;
-	}
-	else if (word == L"static")
-	{
-		type = TokenType::StaticKeyword;
-		return true;
-	}
-	else if (word == L"async")
-	{
-		type = TokenType::AsyncKeyword;
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-}
-
-bool LexicalAnalyzer::is_directive_decl(gmt::wstring& word, TokenType& type)
-{
-	if (word == L"using")
-	{
-		type = TokenType::UsingKeyword;
-		return true;
-	}
-	else if (word == L"namespace")
-	{
-		type = TokenType::NamespaceKeyword;
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-}
-
-bool LexicalAnalyzer::is_type_decl(gmt::wstring& word, TokenType& type)
-{
-	if (word == L"method")
-	{
-		type = TokenType::MethodKeyword;
-		return true;
-	}
-	else if (word == L"class")
-	{
-		type = TokenType::ClassKeyword;
-		return true;
-	}
-	else if (word == L"struct")
-	{
-		type = TokenType::StructKeyword;
-		return true;
-	}
-	else if (word == L"interface")
-	{
-		type = TokenType::InterfaceKeyword;
-		return true;
-	}
-	else if (word == L"enum")
-	{
-		type = TokenType::EnumKeyword;
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-}
-
-bool LexicalAnalyzer::is_type(gmt::wstring& word, TokenType& type)
-{
-	if (word == L"void")
-	{
-		type = TokenType::VoidKeyword;
-		return true;
-	}
-	else if (word == L"var")
-	{
-		type = TokenType::VarKeyword;
-		return true;
-	}
-	else if (word == L"bool")
-	{
-		type = TokenType::BooleanKeyword;
-		return true;
-	}
-	else if (word == L"string")
-	{
-		type = TokenType::StringKeyword;
-		return true;
-	}
-	else if (word == L"double")
-	{
-		type = TokenType::DoubleKeyword;
-		return true;
-	}
-	else if (word == L"int")
-	{
-		type = TokenType::IntegerKeyword;
-		return true;
-	}
-	else if (word == L"char")
-	{
-		type = TokenType::CharKeyword;
-		return true;
-	}
-	else if (word == L"byte")
-	{
-		type = TokenType::ByteKeyword;
-		return true;
-	}
-	else if (word == L"nint")
-	{
-		type = TokenType::NativeIntegerKeyword;
-		return true;
-	}
-	else if (word == L"lambda")
-	{
-		type = TokenType::LambdaKeyword;
-		return true;
-	}
-	else if (word == L"delegate")
-	{
-		type = TokenType::DelegateKeyword;
-		return true;
-	}
-	else if (word == L"flags")
-	{
-		type = TokenType::FlagsKeyword;
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-}
-
-bool LexicalAnalyzer::is_keyword(gmt::wstring& word, TokenType& type)
-{
-	if (is_conditional_keyword(word, type))
-		return true;
-
-	if (is_functional_keyword(word, type))
-		return true;
-
-	if (is_loop_keyword(word, type))
-		return true;
-
-	if (word == L"new")
-	{
-		type = TokenType::NewKeyword;
-		return true;
-	}
-	else if (word == L"get")
-	{
-		type = TokenType::GetKeyword;
-		return true;
-	}
-	else if (word == L"set")
-	{
-		type = TokenType::SetKeyword;
-		return true;
-	}
-	else if (word == L"this")
-	{
-		type = TokenType::ThisKeyword;
-		return true;
-	}
-	else if (word == L"self")
-	{
-		type = TokenType::SelfKeyword;
-		return true;
-	}
-	else if (word == L"field")
-	{
-		type = TokenType::FieldKeyword;
-		return true;
-	}
-	else if (word == L"indexer")
-	{
-		type = TokenType::IndexerKeyword;
-		return true;
-	}
-	else if (word == L"try")
-	{
-		type = TokenType::TryKeyword;
-		return true;
-	}
-	else if (word == L"catch")
-	{
-		type = TokenType::CatchKeyword;
-		return true;
-	}
-	else if (word == L"defer")
-	{
-		type = TokenType::DeferKeyword;
-		return true;
-	}
-	else if (word == L"where")
-	{
-		type = TokenType::WhereKeyword;
-		return true;
-	}
-	else if (word == L"const")
-	{
-		type = TokenType::ConstKeyword;
-		return true;
-	}
-	else if (word == L"func")
-	{
-		type = TokenType::FunctionKeyword;
-		return true;
-	}
-	else if (word == L"init")
-	{
-		type = TokenType::InitKeyword;
-		return true;
-	}
-	else if (word == L"operator")
-	{
-		type = TokenType::OperatorKeyword;
-		return true;
-	}
-	else if (word == L"value")
-	{
-		type = TokenType::ValueKeyword;
-		return true;
-	}
-	else if (word == L"is")
-	{
-		type = TokenType::IsOperator;
-		return true;
-	}
-	else if (word == L"as")
-	{
-		type = TokenType::AsOperator;
-		return true;
-	}
-
-	return false;
-}
-
-bool LexicalAnalyzer::is_conditional_keyword(gmt::wstring& word, TokenType& type)
-{
-	if (word == L"if")
-	{
-		type = TokenType::IfKeyword;
-		return true;
-	}
-	else if (word == L"unless")
-	{
-		type = TokenType::UnlessKeyword;
-		return true;
-	}
-	else if (word == L"else")
-	{
-		type = TokenType::ElseKeyword;
-		return true;
-	}
-	else if (word == L"switch")
-	{
-		type = TokenType::SwitchKeyword;
-		return true;
-	}
-	else if (word == L"case")
-	{
-		type = TokenType::CaseKeyword;
-		return true;
-	}
-	else if (word == L"default")
-	{
-		type = TokenType::DefaultKeyword;
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-}
-
-bool LexicalAnalyzer::is_loop_keyword(gmt::wstring& word, TokenType& type)
-{
-	if (word == L"for")
-	{
-		type = TokenType::ForKeyword;
-		return true;
-	}
-	else if (word == L"while")
-	{
-		type = TokenType::WhileKeyword;
-		return true;
-	}
-	else if (word == L"until")
-	{
-		type = TokenType::UntilKeyword;
-		return true;
-	}
-	else if (word == L"do")
-	{
-		type = TokenType::DoKeyword;
-		return true;
-	}
-	else if (word == L"foreach")
-	{
-		type = TokenType::ForeachKeyword;
-		return true;
-	}
-	else if (word == L"in")
-	{
-		type = TokenType::InKeyword;
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-}
-
-bool LexicalAnalyzer::is_functional_keyword(gmt::wstring& word, TokenType& type)
-{
-	if (word == L"return")
-	{
-		type = TokenType::ReturnKeyword;
-		return true;
-	}
-	else if (word == L"continue")
-	{
-		type = TokenType::ContinueKeyword;
-		return true;
-	}
-	else if (word == L"break")
-	{
-		type = TokenType::BreakKeyword;
-		return true;
-	}
-	else if (word == L"throw")
-	{
-		type = TokenType::ThrowKeyword;
-		return true;
-	}
-	else if (word == L"try")
-	{
-		type = TokenType::TryKeyword;
-		return true;
-	}
-	else if (word == L"catch")
-	{
-		type = TokenType::CatchKeyword;
-		return true;
-	}
-	else if (word == L"await")
-	{
-		type = TokenType::AwaitKeyword;
-		return true;
-	}
-	else
-	{
-		return false;
 	}
 }

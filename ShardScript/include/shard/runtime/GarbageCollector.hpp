@@ -44,10 +44,64 @@ namespace shard
 			std::byte* storage;
 		};
 
+		// Open-addressed live-object table. The previous std::unordered_set
+		// allocated a list node for every GC object, doubling the allocator
+		// traffic of allocate_block; slots make insert/erase allocation-free
+		// between rehashes.
+		class HeapTable
+		{
+			static std::byte* const Tombstone;
+
+			gmt::vector<std::byte*> m_slots;
+			std::size_t m_size = 0;
+			std::size_t m_tombstones = 0;
+
+			std::size_t home(std::byte* value) const;
+			std::size_t locate(std::byte* value) const;
+			void rehash(std::size_t capacity);
+
+		public:
+			HeapTable();
+
+			void insert(std::byte* value);
+			bool erase(std::byte* value);
+			bool contains(std::byte* value) const;
+			void clear();
+			std::size_t size() const;
+
+			template<typename F>
+			void for_each(F&& visitor) const
+			{
+				for (std::byte* slot : m_slots)
+				{
+					if (slot != nullptr && slot != Tombstone)
+						visitor(slot);
+				}
+			}
+
+			// calls free_block(payload); removing the payload when it returns true
+			template<typename F>
+			void sweep(F&& free_block)
+			{
+				for (std::byte*& slot : m_slots)
+				{
+					if (slot == nullptr || slot == Tombstone)
+						continue;
+
+					if (free_block(slot))
+					{
+						slot = Tombstone;
+						--m_size;
+						++m_tombstones;
+					}
+				}
+			}
+		};
+
 		SemanticModel& m_model;
 		PragmaticModel& m_pragmatic;
 
-		gmt::unordered_set<std::byte*> m_heap;
+		HeapTable m_heap;
 		gmt::unordered_map<std::size_t, StaticStorage> m_statics;
 		gmt::map<gmt::wstring, ObjectInstance, std::less<>> m_internedStrings;
 		gmt::vector<CallStackFrame*> m_frames;

@@ -122,6 +122,13 @@ wchar_t ObjectInstance::as_char() const
 	return value;
 }
 
+std::uintptr_t ObjectInstance::as_nint() const
+{
+	std::uintptr_t value;
+	std::memcpy(&value, m_memory, sizeof(std::uintptr_t));
+	return value;
+}
+
 std::byte* ObjectInstance::as_pointer() const
 {
 	std::byte* value;

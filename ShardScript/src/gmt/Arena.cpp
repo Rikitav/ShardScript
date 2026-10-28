@@ -1,6 +1,8 @@
 #include <gmt/Arena.hpp>
 #include <gmt/Allocator.hpp>
 
+#include <algorithm>
+
 using namespace gmt;
 
 Arena::Arena() :
@@ -23,8 +25,10 @@ Arena::~Arena()
 
 void Arena::grow(std::size_t required)
 {
-	std::size_t lastSize = m_chunkSizes.empty() ? 0 : m_chunkSizes.back();
-	std::size_t chunkSize = lastSize != 0 ? lastSize : initial_capacity;
+	// double the previous chunk so the chunk count stays logarithmic; the
+	// old code reused the previous size, so a large arena degenerated into
+	// hundreds of 16 KB chunks and made resolve() linear in chunk count
+	std::size_t chunkSize = m_chunkSizes.empty() ? initial_capacity : m_chunkSizes.back() * 2;
 	while (m_capacity + chunkSize < required)
 		chunkSize *= 2;
 
@@ -36,13 +40,13 @@ void Arena::grow(std::size_t required)
 
 void* Arena::resolve(std::size_t offset) const
 {
-	for (std::size_t i = m_chunks.size(); i-- > 0; )
-	{
-		if (offset < m_chunkBases[i])
-			continue;
+	// chunk bases are sorted ascending and partition [0, capacity); the
+	// previous linear scan ran on every Ref<T>::operator-> and dominated
+	// symbol-heavy work once the arena grew past a few chunks
+	if (offset >= m_capacity)
+		return nullptr;
 
-		return m_chunks[i] + (offset - m_chunkBases[i]);
-	}
-
-	return nullptr;
+	const auto it = std::upper_bound(m_chunkBases.begin(), m_chunkBases.end(), offset);
+	const std::size_t index = static_cast<std::size_t>(it - m_chunkBases.begin()) - 1;
+	return m_chunks[index] + (offset - m_chunkBases[index]);
 }

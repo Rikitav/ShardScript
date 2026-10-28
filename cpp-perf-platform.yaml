@@ -1,0 +1,9 @@
+# cpp-perf target platform: native x86-64 Windows (local execution)
+platforms:
+  local-win-x64:
+    arch: x86_64
+    compiler: clang-cl
+    compiler_flags: "/O2 /DNDEBUG /arch:AVX2"
+    local: true
+    work_dir: out/perf
+    profile: x86-zen3plus
