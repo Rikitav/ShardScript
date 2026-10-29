@@ -341,8 +341,15 @@ void GarbageCollector::trace_object_fields(const TypeShape* shape, std::byte* pa
 
 	if (kind == SyntaxKind::ArrayType)
 	{
-		ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(baseType);
-		const TypeShape* elementShape = m_pragmatic.find_or_create_type_shape(m_model, arrayType->get_underlaying_type());
+		// the element shape is cached on the array shape at build time; the
+		// fallback only covers shapes constructed before the cache existed
+		const TypeShape* elementShape = shape->get_element_shape();
+		if (elementShape == nullptr)
+		{
+			ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(baseType);
+			elementShape = m_pragmatic.find_or_create_type_shape(m_model, arrayType->get_underlaying_type());
+		}
+
 		if (!elementShape->is_reference())
 			return;
 
