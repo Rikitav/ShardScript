@@ -130,11 +130,16 @@ void ByteCodeEncoder::emit_load_const_char16(wchar_t value)
 
 void ByteCodeEncoder::emit_load_const_string(const wchar_t* value)
 {
+	const std::size_t length = std::wcslen(value);
 	const std::size_t dataOrigin = m_image.get_data_section().size();
 	append_data_string(m_image.get_data_section(), value);
 
+	// the literal table keeps the length, so the runtime never scans the
+	// data section with wcslen and can cache the interned instance per id
+	const std::uint32_t literal = m_image.add_string_literal(dataOrigin, length);
+
 	append_data_value(m_image.get_text_section(), OpCode::LOADCONST_STRING);
-	append_data_value(m_image.get_text_section(), dataOrigin);
+	append_data_value(m_image.get_text_section(), literal);
 }
 
 void ByteCodeEncoder::emit_default_value(StructSymbol* elementType, SymbolTable& table)

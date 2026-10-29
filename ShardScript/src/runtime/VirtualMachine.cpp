@@ -805,10 +805,23 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 
 		case OpCode::LOADCONST_STRING:
 		{
-			std::size_t offset = decoder.absorb_string();
-			const wchar_t* text = reinterpret_cast<const wchar_t*>(m_program.get_data_section().data() + offset);
-			ObjectInstance instance = m_collector.intern_string(text);
-			push_instance(frame, instance);
+			const std::uint32_t literalIndex = decoder.absorb_uint32();
+			const std::size_t literalCount = m_program.get_string_literal_count();
+			if (literalIndex >= literalCount)
+				throw std::runtime_error("ByteCodeDecoder: invalid string literal index");
+
+			if (m_stringLiterals.size() < literalCount)
+				m_stringLiterals.resize(literalCount, ObjectInstance::null());
+
+			ObjectInstance& literalInstance = m_stringLiterals[literalIndex];
+			if (literalInstance == nullptr)
+			{
+				const VirtualProgramImage::StringLiteral& literal = m_program.get_string_literal(literalIndex);
+				const wchar_t* text = reinterpret_cast<const wchar_t*>(m_program.get_data_section().data() + literal.offset);
+				literalInstance = m_collector.intern_string(std::wstring_view(text, literal.length));
+			}
+
+			push_instance(frame, literalInstance);
 			break;
 		}
 

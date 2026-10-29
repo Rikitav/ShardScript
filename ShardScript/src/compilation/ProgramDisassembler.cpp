@@ -149,8 +149,8 @@ namespace
 			case OpCode::LOADCONST_STRING:
 			{
 				opcode = L"ldstr";
-				const std::size_t dataOffset = decoder.absorb_string();
-				args << L"pool[" << dataOffset << L"]";
+				const std::uint32_t literal = decoder.absorb_uint32();
+				args << L"literal[" << literal << L"]";
 				break;
 			}
 
