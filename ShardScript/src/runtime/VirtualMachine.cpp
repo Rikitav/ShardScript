@@ -1086,9 +1086,7 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 		{
 			ArrayTypeSymbol* arrayType = decoder.absorb_array_symbol();
 			const TypeShape* arrayShape = resolve_shape(arrayType);
-			const TypeShape* elementShape = arrayShape->get_element_shape();
-			if (elementShape == nullptr)
-				elementShape = resolve_shape(arrayType->get_underlaying_type());
+			const TypeShape* elementShape = resolve_shape(arrayType->get_underlaying_type());
 
 			std::int64_t count = static_cast<std::int64_t>(arrayType->get_length());
 			ObjectInstance instance = m_collector.allocate_array(arrayShape, elementShape, count);
@@ -1119,9 +1117,7 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 		{
 			ArrayTypeSymbol* arrayType = decoder.absorb_array_symbol();
 			const TypeShape* arrayShape = resolve_shape(arrayType);
-			const TypeShape* elementShape = arrayShape->get_element_shape();
-			if (elementShape == nullptr)
-				elementShape = resolve_shape(arrayType->get_underlaying_type());
+			const TypeShape* elementShape = resolve_shape(arrayType->get_underlaying_type());
 
 			std::int64_t count = frame->pop_entry().as_integer();
 			ObjectInstance instance = m_collector.allocate_array(arrayShape, elementShape, count);

@@ -46,8 +46,3 @@ const TypeShape::SlotInfo& TypeShape::get_slot(std::uint32_t slotIndex) const
 
 	return m_slots[slotIndex];
 }
-
-const TypeShape* TypeShape::get_element_shape() const
-{
-	return m_elementShape;
-}
