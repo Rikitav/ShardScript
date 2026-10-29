@@ -313,7 +313,17 @@ void GarbageCollector::trace_pointer(std::byte* pointer)
 		return;
 
 	header->marked = 1;
-	trace_object_fields(header->shape, pointer);
+	m_markStack.push_back(pointer);
+}
+
+void GarbageCollector::drain_mark_stack()
+{
+	while (!m_markStack.empty())
+	{
+		std::byte* payload = m_markStack.back();
+		m_markStack.pop_back();
+		trace_object_fields(get_header(payload)->shape, payload);
+	}
 }
 
 void GarbageCollector::trace_object_fields(const TypeShape* shape, std::byte* payload)
@@ -413,6 +423,7 @@ void GarbageCollector::sweep()
 void GarbageCollector::collect()
 {
 	++m_totalCollections;
+	m_markStack.clear();
 
 	for (CallStackFrame* frame : m_frames)
 		trace_frame(frame);
@@ -441,6 +452,10 @@ void GarbageCollector::collect()
 		if (pinned.get_shape() != nullptr && pinned.get_shape()->is_reference())
 			trace_pointer(pinned.get_memory());
 	}
+
+	// roots only enqueue their heap children; drain iteratively instead of
+	// recursing through trace_pointer -> trace_object_fields
+	drain_mark_stack();
 
 	sweep();
 }

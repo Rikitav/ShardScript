@@ -133,7 +133,10 @@ namespace gmt
 			startedNewChunk = true;
 		}
 
-		void* address = resolve(aligned);
+		// the cursor only moves forward and grow() only appends chunks, so the
+		// new object always lands in the last chunk; resolve() is only needed
+		// for offsets that may belong to older chunks
+		void* address = m_chunks.back() + (aligned - m_chunkBases.back());
 		static_cast<void>(new (address) T(std::forward<Args>(args)...));
 		m_cursor = aligned + sizeof(T);
 
@@ -163,7 +166,7 @@ namespace gmt
 			aligned = align_up(m_chunkBases.back(), alignof(T));
 		}
 
-		std::span<T> span(static_cast<T*>(resolve(aligned)), count);
+		std::span<T> span(reinterpret_cast<T*>(m_chunks.back() + (aligned - m_chunkBases.back())), count);
 		m_cursor = aligned + count * sizeof(T);
 		return span;
 	}

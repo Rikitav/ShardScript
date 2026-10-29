@@ -114,9 +114,15 @@ namespace shard
 		std::size_t m_totalAllocatedBytes = 0;
 		std::size_t m_totalCollections = 0;
 
+		// Explicit mark stack. The previous recursive walk overflowed the
+		// native stack on a retained chain of ~11k objects (STATUS_STACK_OVERFLOW);
+		// a worklist has no depth limit and keeps marking iterative.
+		gmt::vector<std::byte*> m_markStack;
+
 		ObjectInstance allocate_block(const TypeShape* shape, std::size_t payloadBytes);
 		void mark_object(std::byte* payload);
 		void trace_pointer(std::byte* pointer);
+		void drain_mark_stack();
 		void trace_object_fields(const TypeShape* shape, std::byte* payload);
 		void trace_frame(CallStackFrame* frame);
 		void sweep();

@@ -8,7 +8,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <vector>
 
 namespace shard
@@ -70,35 +69,45 @@ namespace shard
 		static constexpr std::uintptr_t ReferenceTag = 1;
 
 	private:
+		// Per-opcode state. FrameBlockPool returns 64-byte-aligned blocks, so
+		// everything up to m_localCount stays inside the first cache line:
+		// push/pop_entry and execute_frame touch only this line, not the tail
+		// of the 184-byte object.
 		MethodSymbol* m_method = nullptr;
 		CallStackFrame* m_previous = nullptr;
-		std::size_t m_instructionPointer = 0;
+
+		std::byte* m_evalRegion = nullptr;
+		std::size_t m_evalStride = 0;
+		std::uint32_t m_evalCapacity = 0;
+		std::uint32_t m_evalDepth = 0;
 		InterruptionReason m_interruption = InterruptionReason::None;
+		std::uint16_t m_argumentCount = 0;
+		std::uint16_t m_variableCount = 0;
+
+		// Flat local metadata carved out of the frame block; the old vectors
+		// each performed a heap allocation on every call. Address and payload
+		// are consumed together by push_local/set_local, so one array of
+		// 16-byte entries beats two parallel arrays (one line instead of two).
+		struct LocalSlot
+		{
+			std::byte* address = nullptr;
+			std::size_t payload = 0;
+		};
+
+		LocalSlot* m_localSlots = nullptr;
+		std::uint16_t m_localCount = 0;
+
+		std::byte* m_localsRegion = nullptr;
+		std::byte* m_returnSlot = nullptr;
+		std::size_t m_returnPayloadBytes = 0;
+		std::size_t m_blockBytes = 0;
+		const FrameLayout* m_layout = nullptr;
+		std::size_t m_instructionPointer = 0;
+		bool m_hasExternalReturnSlot = false;
 		ObjectInstance m_currentException;
 
 		gmt::vector<std::size_t> m_deferStack;
 		gmt::vector<ExceptionHandlerRecord> m_exceptionHandlers;
-
-		std::uint16_t m_argumentCount = 0;
-		std::uint16_t m_variableCount = 0;
-
-		std::byte* m_returnSlot = nullptr;
-		std::size_t m_returnPayloadBytes = 0;
-		bool m_hasExternalReturnSlot = false;
-
-		std::byte* m_localsRegion = nullptr;
-		// flat arrays carved out of the frame block; the old vectors each
-		// performed a heap allocation on every call
-		std::byte** m_localAddresses = nullptr;
-		std::size_t* m_localPayloads = nullptr;
-		std::uint16_t m_localCount = 0;
-		std::size_t m_blockBytes = 0;
-		const FrameLayout* m_layout = nullptr;
-
-		std::byte* m_evalRegion = nullptr;
-		std::size_t m_evalStride = 0;
-		std::size_t m_evalCapacity = 0;
-		std::uint32_t m_evalDepth = 0;
 
 		CallStackFrame() = default;
 
@@ -156,6 +165,26 @@ namespace shard
 		std::size_t get_return_payload_bytes() const;
 		bool has_external_return_slot() const;
 
-		void for_each_live_entry(const std::function<void(const FrameEntryView&)>& visitor);
+		template<typename F>
+		void for_each_live_entry(F&& visitor)
+		{
+			FrameEntryView returnView = entry_view(m_returnSlot);
+			if (returnView.shape != nullptr)
+				visitor(returnView);
+
+			for (std::size_t i = 0; i < m_localCount; ++i)
+			{
+				FrameEntryView view = entry_view(m_localSlots[i].address);
+				if (view.shape != nullptr)
+					visitor(view);
+			}
+
+			for (std::uint32_t i = 0; i < m_evalDepth; ++i)
+			{
+				FrameEntryView view = entry_view(m_evalRegion + m_evalStride * i);
+				if (view.shape != nullptr)
+					visitor(view);
+			}
+		}
 	};
 }
