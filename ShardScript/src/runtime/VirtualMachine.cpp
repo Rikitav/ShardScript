@@ -1358,7 +1358,7 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 			// the eval entry carries the static interface shape; the concrete
 			// type comes from the object's own header when it is heap-backed
 			const TypeShape* receiverShape = receiver.get_shape();
-			if (GarbageCollector::is_heap_pointer(receiver.get_memory()))
+			if (m_collector.is_heap_backed(receiver.get_memory()))
 				receiverShape = GarbageCollector::get_header(receiver.get_memory())->shape;
 
 			StructSymbol* receiverType = receiverShape->get_base_type();
@@ -1488,7 +1488,7 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 			// the eval entry may carry the slot's delegate type, so the true
 			// box type comes from the object's own header when it is heap-backed
 			const TypeShape* boxShape = delegate.get_shape();
-			if (GarbageCollector::is_heap_pointer(delegate.get_memory()))
+			if (m_collector.is_heap_backed(delegate.get_memory()))
 				boxShape = GarbageCollector::get_header(delegate.get_memory())->shape;
 
 			StructSymbol* boxType = boxShape->get_base_type();
