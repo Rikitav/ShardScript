@@ -129,7 +129,7 @@ ObjectInstance DelegateRef::operator()(std::initializer_list<ObjectInstance> arg
 	// lambda body, invoked with the box itself as the receiver. the true box
 	// type comes from the object's header when it is heap-backed
 	const TypeShape* boxShape = m_delegate.get_shape();
-	if (GarbageCollector::is_heap_pointer(m_delegate.get_memory()))
+	if (m_vm->get_collector().is_heap_backed(m_delegate.get_memory()))
 		boxShape = GarbageCollector::get_header(m_delegate.get_memory())->shape;
 
 	StructSymbol* boxType = boxShape->get_base_type();
