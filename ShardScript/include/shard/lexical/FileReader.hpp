@@ -14,7 +14,10 @@ namespace shard
 	class SHARD_API FileReader : public SourceTextProvider
 	{
 		std::filesystem::path m_filename;
-		std::wfstream m_inputStream;
+		// the whole source is decoded once; the previous wfstream performed a
+		// streambuf peek/get for every character the lexer consumed
+		gmt::wstring m_text;
+		std::size_t m_index = 0;
 
 	public:
 		FileReader(const gmt::string& fileName);
