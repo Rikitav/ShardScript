@@ -268,6 +268,40 @@ PrimitiveStatus PrimitiveMath::convert(const PrimitiveShapes& shapes, ObjectInst
 	return PrimitiveStatus::NotPrimitive;
 }
 
+gmt::wstring PrimitiveMath::to_display_string(const PrimitiveShapes& shapes, ObjectInstance value)
+{
+	if ((value == nullptr))
+		return L"null";
+
+	const TypeShape* shape = value.get_shape();
+	if (shape == nullptr)
+		return L"<void>";
+
+	// identity checks first: primitives have canonical shapes, so this avoids
+	// up to six wide-string comparisons per operand
+	if (shape == shapes.string)
+		return gmt::wstring(string_view_of(value));
+
+	if (shape == shapes.integer || shape == shapes.nint || shape == shapes.byte)
+		return gmt::wstring(std::to_wstring(value.as_integer()));
+
+	if (shape == shapes.boolean)
+		return value.as_boolean() ? L"true" : L"false";
+
+	if (shape == shapes.character)
+		return gmt::wstring(1, value.as_char());
+
+	if (shape == shapes.doubleReal)
+	{
+		wchar_t buffer[32];
+		std::swprintf(buffer, 32, L"%g", value.as_double());
+		return gmt::wstring(buffer);
+	}
+
+	// enums and custom display names keep the name-based path
+	return to_display_string(value);
+}
+
 gmt::wstring PrimitiveMath::to_display_string(ObjectInstance value)
 {
 	if ((value == nullptr))
