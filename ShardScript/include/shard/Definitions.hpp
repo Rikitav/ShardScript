@@ -1,7 +1,5 @@
 #pragma once
 
-#include <string_view>
-
 #if defined(SHARDSCRIPT_STATIC)
 	#define SHARD_API
 #else

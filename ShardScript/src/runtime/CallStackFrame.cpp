@@ -37,7 +37,8 @@ std::byte* FrameBlockPool::acquire(std::size_t bytes)
 		return block;
 	}
 
-	return static_cast<std::byte*>(gmt::mem_alloc(std::size_t{ 1 } << cls));
+	// the frame header's hot fields are laid out to fit one cache line
+	return static_cast<std::byte*>(gmt::mem_alloc_aligned(std::size_t{ 1 } << cls, 64));
 }
 
 void FrameBlockPool::release(std::byte* block, std::size_t bytes)
@@ -92,7 +93,7 @@ bool CallStackFrame::unpack_is_reference(std::uintptr_t header)
 
 std::byte* CallStackFrame::local_entry(std::uint16_t slot) const
 {
-	return m_localAddresses[slot];
+	return m_localSlots[slot].address;
 }
 
 FrameEntryView CallStackFrame::entry_view(std::byte* entry) const
@@ -211,7 +212,7 @@ CallStackFrame* CallStackFrame::create(MethodSymbol* method, const FrameLayout* 
 		evalCapacity = (std::max)(static_cast<std::size_t>(layout->get_max_eval_depth()), static_cast<std::size_t>(8));
 
 	const std::size_t objectBytes = gmt::align_up(sizeof(CallStackFrame), sizeof(void*));
-	const std::size_t metadataBytes = static_cast<std::size_t>(localCount) * (sizeof(std::byte*) + sizeof(std::size_t));
+	const std::size_t metadataBytes = static_cast<std::size_t>(localCount) * sizeof(CallStackFrame::LocalSlot);
 	const std::size_t totalBytes = objectBytes + returnEntryBytes + metadataBytes + localsBytes + evalStride * evalCapacity;
 
 	std::byte* block = pool != nullptr
@@ -229,13 +230,12 @@ CallStackFrame* CallStackFrame::create(MethodSymbol* method, const FrameLayout* 
 
 	// payload and address tables live inside the frame block: on the old
 	// design every call allocated two more vectors just to describe locals
-	frame->m_localPayloads = reinterpret_cast<std::size_t*>(block + objectBytes + returnEntryBytes);
-	frame->m_localAddresses = reinterpret_cast<std::byte**>(frame->m_localPayloads + localCount);
-	frame->m_localsRegion = reinterpret_cast<std::byte*>(frame->m_localAddresses + localCount);
+	frame->m_localSlots = reinterpret_cast<LocalSlot*>(block + objectBytes + returnEntryBytes);
+	frame->m_localsRegion = reinterpret_cast<std::byte*>(frame->m_localSlots + localCount);
 
 	frame->m_evalRegion = frame->m_localsRegion + localsBytes;
 	frame->m_evalStride = evalStride;
-	frame->m_evalCapacity = evalCapacity;
+	frame->m_evalCapacity = static_cast<std::uint32_t>(evalCapacity);
 
 	// when the caller chains its return storage in, StackReturn-verdict locals
 	// map straight into it: the callee constructs the return value directly
@@ -260,7 +260,8 @@ CallStackFrame* CallStackFrame::create(MethodSymbol* method, const FrameLayout* 
 		const bool reference = local_reference(i, shape);
 		const std::size_t payload = local_payload(i, shape, reference);
 
-		frame->m_localPayloads[i] = payload;
+		LocalSlot& localSlot = frame->m_localSlots[i];
+		localSlot.payload = payload;
 
 		bool mappable = chained && i >= argumentCount;
 		if (mappable)
@@ -270,7 +271,7 @@ CallStackFrame* CallStackFrame::create(MethodSymbol* method, const FrameLayout* 
 		}
 
 		std::byte* address = mappable ? frame->m_returnSlot : frame->m_localsRegion + cursor;
-		frame->m_localAddresses[i] = address;
+		localSlot.address = address;
 
 		cursor += EntryHeaderSize + gmt::align_up(payload, sizeof(void*));
 
@@ -467,7 +468,7 @@ void CallStackFrame::set_local(std::uint16_t slot, ObjectInstance value)
 		return;
 	}
 
-	std::memcpy(view.payloadAddress, value.get_memory(), m_localPayloads[slot]);
+	std::memcpy(view.payloadAddress, value.get_memory(), m_localSlots[slot].payload);
 }
 
 void CallStackFrame::push_local(std::uint16_t slot)
@@ -486,7 +487,7 @@ void CallStackFrame::push_local(std::uint16_t slot)
 		return;
 	}
 
-	push_entry(view.shape, false, view.payloadAddress, m_localPayloads[slot]);
+	push_entry(view.shape, false, view.payloadAddress, m_localSlots[slot].payload);
 }
 
 ObjectInstance CallStackFrame::get_local_address(std::uint16_t slot) const
@@ -538,23 +539,3 @@ bool CallStackFrame::has_external_return_slot() const
 	return m_hasExternalReturnSlot;
 }
 
-void CallStackFrame::for_each_live_entry(const std::function<void(const FrameEntryView&)>& visitor)
-{
-	FrameEntryView returnView = entry_view(m_returnSlot);
-	if (returnView.shape != nullptr)
-		visitor(returnView);
-
-	for (std::size_t i = 0; i < m_localCount; ++i)
-	{
-		FrameEntryView view = entry_view(m_localAddresses[i]);
-		if (view.shape != nullptr)
-			visitor(view);
-	}
-
-	for (std::uint32_t i = 0; i < m_evalDepth; ++i)
-	{
-		FrameEntryView view = entry_view(m_evalRegion + m_evalStride * i);
-		if (view.shape != nullptr)
-			visitor(view);
-	}
-}
