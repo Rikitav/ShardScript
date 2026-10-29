@@ -45,6 +45,20 @@ namespace shard
 		FrameBlockPool m_framePool;
 		alignas(8) std::byte m_returnScratch[8] = {};
 
+		// Interface calls repeat the same (concrete receiver type, interface
+		// method) pair in hot loops. Resolution is content-based and stable
+		// after the semantic phase, so a direct-mapped cache removes the
+		// per-call scan of the receiver's member lists.
+		struct InterfaceDispatchEntry
+		{
+			StructSymbol* receiverType = nullptr;
+			MethodSymbol* interfaceMethod = nullptr;
+			MethodSymbol* implementation = nullptr;
+		};
+
+		static constexpr std::size_t InterfaceDispatchCacheSize = 256;
+		InterfaceDispatchEntry m_interfaceDispatch[InterfaceDispatchCacheSize] = {};
+
 		const TypeShape* resolve_shape(StructSymbol* type);
 		const TypeShape* resolve_operand_shape(SyntaxSymbol* symbol);
 

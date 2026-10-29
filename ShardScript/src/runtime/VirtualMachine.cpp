@@ -1321,51 +1321,69 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 
 			MethodSymbol* implementation = nullptr;
 
-			// accessors resolve through their owning member: the receiver's
-			// property or indexator that matches the interface member's owner
-			const SyntaxSymbol* interfaceOwner = interfaceMethod->get_parent();
-			SyntaxKind interfaceOwnerKind = (interfaceOwner == nullptr) ? SyntaxKind::Unknown : interfaceOwner->get_kind();
+			const std::size_t dispatchIndex =
+				((reinterpret_cast<std::uintptr_t>(receiverType) >> 4) ^
+					(reinterpret_cast<std::uintptr_t>(interfaceMethod) * 0x9E3779B97F4A7C15ull)) &
+				(InterfaceDispatchCacheSize - 1);
+			InterfaceDispatchEntry& dispatch = m_interfaceDispatch[dispatchIndex];
+			if (dispatch.receiverType == receiverType && dispatch.interfaceMethod == interfaceMethod)
+				implementation = dispatch.implementation;
 
-			if (interfaceOwnerKind == SyntaxKind::PropertyDeclaration)
+			if ((implementation == nullptr))
 			{
-				const PropertySymbol* interfaceProperty = gmt::as<PropertySymbol>(interfaceOwner);
-				bool asGetter = interfaceProperty->get_getter() == interfaceMethod;
+				// accessors resolve through their owning member: the receiver's
+				// property or indexator that matches the interface member's owner
+				const SyntaxSymbol* interfaceOwner = interfaceMethod->get_parent();
+				SyntaxKind interfaceOwnerKind = (interfaceOwner == nullptr) ? SyntaxKind::Unknown : interfaceOwner->get_kind();
 
-				for (PropertySymbol* property : receiverType->properties)
+				if (interfaceOwnerKind == SyntaxKind::PropertyDeclaration)
 				{
-					if ((property == nullptr) || property->get_name() != interfaceProperty->get_name())
-						continue;
+					const PropertySymbol* interfaceProperty = gmt::as<PropertySymbol>(interfaceOwner);
+					bool asGetter = interfaceProperty->get_getter() == interfaceMethod;
 
-					implementation = asGetter ? static_cast<MethodSymbol*>(property->get_getter()) : static_cast<MethodSymbol*>(property->get_setter());
-					break;
+					for (PropertySymbol* property : receiverType->properties)
+					{
+						if ((property == nullptr) || property->get_name() != interfaceProperty->get_name())
+							continue;
+
+						implementation = asGetter ? static_cast<MethodSymbol*>(property->get_getter()) : static_cast<MethodSymbol*>(property->get_setter());
+						break;
+					}
 				}
-			}
-			else if (interfaceOwnerKind == SyntaxKind::IndexatorDeclaration)
-			{
-				const IndexatorSymbol* interfaceIndexator = gmt::as<IndexatorSymbol>(interfaceOwner);
-				bool asGetter = interfaceIndexator->get_getter() == interfaceMethod;
-
-				for (IndexatorSymbol* indexator : receiverType->indexators)
+				else if (interfaceOwnerKind == SyntaxKind::IndexatorDeclaration)
 				{
-					if ((indexator == nullptr) || indexator->get_parameters().size() != interfaceIndexator->get_parameters().size())
-						continue;
+					const IndexatorSymbol* interfaceIndexator = gmt::as<IndexatorSymbol>(interfaceOwner);
+					bool asGetter = interfaceIndexator->get_getter() == interfaceMethod;
 
-					implementation = asGetter ? static_cast<MethodSymbol*>(indexator->get_getter()) : static_cast<MethodSymbol*>(indexator->get_setter());
-					break;
+					for (IndexatorSymbol* indexator : receiverType->indexators)
+					{
+						if ((indexator == nullptr) || indexator->get_parameters().size() != interfaceIndexator->get_parameters().size())
+							continue;
+
+						implementation = asGetter ? static_cast<MethodSymbol*>(indexator->get_getter()) : static_cast<MethodSymbol*>(indexator->get_setter());
+						break;
+					}
 				}
-			}
-			else
-			{
-				for (MethodSymbol* candidate : receiverType->methods)
+				else
 				{
-					if ((candidate == nullptr) || candidate->get_name() != interfaceMethod->get_name())
-						continue;
+					for (MethodSymbol* candidate : receiverType->methods)
+					{
+						if ((candidate == nullptr) || candidate->get_name() != interfaceMethod->get_name())
+							continue;
 
-					if (candidate->get_parameters().size() != interfaceMethod->get_parameters().size())
-						continue;
+						if (candidate->get_parameters().size() != interfaceMethod->get_parameters().size())
+							continue;
 
-					implementation = candidate;
-					break;
+						implementation = candidate;
+						break;
+					}
+				}
+
+				if (!(implementation == nullptr))
+				{
+					dispatch.receiverType = receiverType;
+					dispatch.interfaceMethod = interfaceMethod;
+					dispatch.implementation = implementation;
 				}
 			}
 
