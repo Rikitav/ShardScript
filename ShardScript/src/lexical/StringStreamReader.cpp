@@ -5,10 +5,7 @@
 #include <gmt/Containers.hpp>
 
 #include <sstream>
-#include <istream>
 #include <string>
-#include <codecvt>
-#include <locale>
 
 using namespace shard;
 
@@ -19,22 +16,18 @@ StringStreamReader::StringStreamReader(
 	std::wstringstream& source
 ) :
 	SourceTextProvider(),
-	m_name(name)
-{
-	m_stringStream = std::wstringstream(source.str());
-	m_stringStream.imbue(source.getloc());
-}
+	m_name(name),
+	m_text(source.str())
+{ }
 
 StringStreamReader::StringStreamReader(
 	const gmt::wstring& name,
 	const gmt::wstring& source
 ) :
 	SourceTextProvider(),
-	m_name(name)
-{
-	m_stringStream = std::wstringstream(source);
-	m_stringStream.imbue(std::locale::classic());
-}
+	m_name(name),
+	m_text(source)
+{ }
 
 StringStreamReader::StringStreamReader(
 	const gmt::wstring& name,
@@ -42,30 +35,26 @@ StringStreamReader::StringStreamReader(
 	std::size_t count
 ) :
 	SourceTextProvider(),
-	m_name(name)
-{
-	gmt::wstring srcStr = gmt::wstring(source, count);
-	m_stringStream = std::wstringstream(srcStr);
-	m_stringStream.imbue(std::locale::classic());
-}
+	m_name(name),
+	m_text(source, count)
+{ }
 
 bool StringStreamReader::read_next(wchar_t& ch)
 {
-	wchar_t PeekSymbol = m_stringStream.peek();
-	if (PeekSymbol == WEOF)
+	if (m_index >= m_text.size())
 		return false;
 
-	m_stringStream.get(ch);
-	if (ch == WEOF)
-		return false;
-
+	ch = m_text[m_index++];
 	return true;
 }
 
 bool StringStreamReader::peek_next(wchar_t& ch)
 {
-	ch = m_stringStream.peek();
-	return ch != WEOF;
+	if (m_index >= m_text.size())
+		return false;
+
+	ch = m_text[m_index];
+	return true;
 }
 
 gmt::wstring StringStreamReader::get_name()

@@ -13,7 +13,10 @@ namespace shard
 	class SHARD_API StringStreamReader : public SourceTextProvider
 	{
 		gmt::wstring m_name;
-		std::wstringstream m_stringStream;
+		// the source is already wide; keep it in memory and index it instead
+		// of paying a stringstream sentry/streambuf operation per character
+		gmt::wstring m_text;
+		std::size_t m_index = 0;
 
 	public:
 		StringStreamReader(const gmt::wstring& name, std::wstringstream& source);
