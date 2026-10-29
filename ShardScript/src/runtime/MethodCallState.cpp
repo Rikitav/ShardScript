@@ -219,48 +219,42 @@ void MethodCallState::set_return(ObjectInstance value)
 
 void MethodCallState::set_return_boolean(bool value)
 {
-	SymbolTable& table = m_vm.get_model().get_table();
-	const TypeShape* shape = m_vm.get_pragmatic().find_or_create_type_shape(m_vm.get_model(), table.get_boolean_primitive());
+	const TypeShape* shape = m_vm.get_primitive_shapes().boolean;
 	std::memcpy(m_returnBuffer, &value, sizeof(bool));
 	m_returnValue = ObjectInstance(shape, m_returnBuffer);
 }
 
 void MethodCallState::set_return_integer(std::int64_t value)
 {
-	SymbolTable& table = m_vm.get_model().get_table();
-	const TypeShape* shape = m_vm.get_pragmatic().find_or_create_type_shape(m_vm.get_model(), table.get_integer_primitive());
+	const TypeShape* shape = m_vm.get_primitive_shapes().integer;
 	std::memcpy(m_returnBuffer, &value, sizeof(std::int64_t));
 	m_returnValue = ObjectInstance(shape, m_returnBuffer);
 }
 
 void MethodCallState::set_return_nint(std::uintptr_t value)
 {
-	SymbolTable& table = m_vm.get_model().get_table();
-	const TypeShape* shape = m_vm.get_pragmatic().find_or_create_type_shape(m_vm.get_model(), table.get_nint_primitive());
+	const TypeShape* shape = m_vm.get_primitive_shapes().nint;
 	std::memcpy(m_returnBuffer, &value, sizeof(std::uintptr_t));
 	m_returnValue = ObjectInstance(shape, m_returnBuffer);
 }
 
 void MethodCallState::set_return_double(double value)
 {
-	SymbolTable& table = m_vm.get_model().get_table();
-	const TypeShape* shape = m_vm.get_pragmatic().find_or_create_type_shape(m_vm.get_model(), table.get_double_primitive());
+	const TypeShape* shape = m_vm.get_primitive_shapes().doubleReal;
 	std::memcpy(m_returnBuffer, &value, sizeof(double));
 	m_returnValue = ObjectInstance(shape, m_returnBuffer);
 }
 
 void MethodCallState::set_return_char(wchar_t value)
 {
-	SymbolTable& table = m_vm.get_model().get_table();
-	const TypeShape* shape = m_vm.get_pragmatic().find_or_create_type_shape(m_vm.get_model(), table.get_char_primitive());
+	const TypeShape* shape = m_vm.get_primitive_shapes().character;
 	std::memcpy(m_returnBuffer, &value, sizeof(wchar_t));
 	m_returnValue = ObjectInstance(shape, m_returnBuffer);
 }
 
 void MethodCallState::set_return_byte(std::uint8_t value)
 {
-	SymbolTable& table = m_vm.get_model().get_table();
-	const TypeShape* shape = m_vm.get_pragmatic().find_or_create_type_shape(m_vm.get_model(), table.get_byte_primitive());
+	const TypeShape* shape = m_vm.get_primitive_shapes().byte;
 	std::memcpy(m_returnBuffer, &value, sizeof(std::uint8_t));
 	m_returnValue = ObjectInstance(shape, m_returnBuffer);
 }

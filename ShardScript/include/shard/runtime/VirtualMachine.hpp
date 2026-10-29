@@ -60,6 +60,9 @@ namespace shard
 		InterfaceDispatchEntry m_interfaceDispatch[InterfaceDispatchCacheSize] = {};
 
 		const TypeShape* resolve_shape(StructSymbol* type);
+		// pointer-identity fast path for the canonical primitive shapes;
+		// returns null for composites and void
+		const TypeShape* primitive_shape(StructSymbol* type) const;
 		const TypeShape* resolve_operand_shape(SyntaxSymbol* symbol);
 
 		CallStackFrame* push_frame(MethodSymbol* method, const FrameLayout* layout = nullptr, std::byte* externalReturnEntry = nullptr, std::size_t externalReturnPayload = 0);
