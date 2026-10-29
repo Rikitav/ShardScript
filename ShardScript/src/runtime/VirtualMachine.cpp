@@ -179,6 +179,30 @@ const TypeShape* VirtualMachine::resolve_shape(StructSymbol* type)
 	return m_pragmatic.find_or_create_type_shape(m_model, type);
 }
 
+const TypeShape* VirtualMachine::primitive_shape(StructSymbol* type) const
+{
+	if ((type == nullptr))
+		return nullptr;
+
+	SymbolTable& table = m_model.get_table();
+	if (type == table.get_boolean_primitive())
+		return m_primitiveShapes.boolean;
+	if (type == table.get_integer_primitive())
+		return m_primitiveShapes.integer;
+	if (type == table.get_double_primitive())
+		return m_primitiveShapes.doubleReal;
+	if (type == table.get_char_primitive())
+		return m_primitiveShapes.character;
+	if (type == table.get_nint_primitive())
+		return m_primitiveShapes.nint;
+	if (type == table.get_byte_primitive())
+		return m_primitiveShapes.byte;
+	if (type == table.get_string_primitive())
+		return m_primitiveShapes.string;
+
+	return nullptr;
+}
+
 const TypeShape* VirtualMachine::resolve_operand_shape(SyntaxSymbol* symbol)
 {
 	if ((symbol == nullptr) || !symbol->is_type())
@@ -373,10 +397,20 @@ void VirtualMachine::write_entry_value(const FrameEntryView& view, std::size_t p
 
 void VirtualMachine::invoke_into(MethodSymbol* method, std::span<const ObjectInstance> arguments, std::byte* destinationEntry, const FrameLayout* layout)
 {
-	const TypeShape* returnShape = resolve_shape(method->get_return_type());
+	const CallingConvention convention = method->get_calling_convention();
+	StructSymbol* returnType = method->get_return_type();
+
+	// native methods overwhelmingly return primitives; the canonical shapes
+	// are already cached, so skip the shape-cache lookup for them
+	const TypeShape* returnShape = convention == CallingConvention::ShardDecl
+		? primitive_shape(returnType)
+		: nullptr;
+	if (returnShape == nullptr)
+		returnShape = resolve_shape(returnType);
+
 	std::size_t returnPayload = returnShape != nullptr ? returnShape->get_size() : 0;
 
-	if (method->get_calling_convention() == CallingConvention::ShardDecl)
+	if (convention == CallingConvention::ShardDecl)
 	{
 		ObjectInstance result = invoke_native(method, arguments);
 		FrameEntryView view = CallStackFrame::peek_entry(destinationEntry);
