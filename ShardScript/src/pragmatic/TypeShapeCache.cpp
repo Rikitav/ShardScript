@@ -110,7 +110,6 @@ void TypeShapeCache::build(TypeShape* shape, SemanticModel& model)
 		ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(baseType);
 		TypeShape* elementShape = find_or_create_type_shape(model, arrayType->get_underlaying_type());
 
-		shape->m_elementShape = elementShape;
 		shape->m_size = sizeof(std::int64_t) + elementShape->get_size() * arrayType->get_length();
 		return;
 	}

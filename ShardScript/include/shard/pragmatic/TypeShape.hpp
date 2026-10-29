@@ -30,7 +30,6 @@ namespace shard
 		std::size_t m_size = 0;
 		bool m_isReference = false; // reference storage is the baseline (spec 1.7)
 		gmt::vector<SlotInfo> m_slots;
-		const TypeShape* m_elementShape = nullptr; // array element shape
 
 	public:
 		TypeShape(StructSymbol* baseType, std::span<StructSymbol* const> genericArguments);
@@ -45,8 +44,5 @@ namespace shard
 		bool is_reference() const;
 		std::size_t get_slot_count() const;
 		const SlotInfo& get_slot(std::uint32_t slotIndex) const;
-
-		// null for non-array shapes
-		const TypeShape* get_element_shape() const;
 	};
 }
