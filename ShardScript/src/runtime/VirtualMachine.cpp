@@ -706,10 +706,10 @@ gmt::wstring VirtualMachine::get_unhandled_message() const
 		ObjectInstance slot = m_unhandledException.get_field(messageField);
 		ObjectInstance message(slot.get_shape(), slot.as_pointer());
 		if (!(message == nullptr))
-			return PrimitiveMath::to_display_string(message);
+			return PrimitiveMath::to_display_string(m_primitiveShapes, message);
 	}
 
-	return PrimitiveMath::to_display_string(m_unhandledException);
+	return PrimitiveMath::to_display_string(m_primitiveShapes, m_unhandledException);
 }
 
 namespace
@@ -954,7 +954,7 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 
 				if (opcode == OpCode::MATH_ADDITION && (leftString || rightString))
 				{
-					gmt::wstring text = gmt::concat(PrimitiveMath::to_display_string(left), PrimitiveMath::to_display_string(right));
+					gmt::wstring text = gmt::concat(PrimitiveMath::to_display_string(m_primitiveShapes, left), PrimitiveMath::to_display_string(m_primitiveShapes, right));
 					ObjectInstance combined = create_string(text);
 					push_instance(frame, combined);
 					break;

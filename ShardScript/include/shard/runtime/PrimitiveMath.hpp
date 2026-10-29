@@ -54,6 +54,9 @@ namespace shard
 		static PrimitiveStatus negate(const PrimitiveShapes& shapes, ObjectInstance value, ScalarResult& result);
 		static PrimitiveStatus convert(const PrimitiveShapes& shapes, ObjectInstance value, StructSymbol* targetType, const TypeShape* targetShape, ScalarResult& result);
 
+		// canonical primitive shapes are compared by identity; the
+		// one-argument form is the name-based fallback used by the C API
+		static gmt::wstring to_display_string(const PrimitiveShapes& shapes, ObjectInstance value);
 		static gmt::wstring to_display_string(ObjectInstance value);
 	};
 }
