@@ -481,64 +481,6 @@ extern "C"
 		}
 	}
 
-	SHARD_API shard_status_t gmt_nullref_t_nullref_t_create(int p0, shard_gmt_nullref_t_t* out_handle)
-	{
-		if (!out_handle)
-		{
-			return SHARD_STATUS_ERROR_NULL_POINTER;
-		}
-		*out_handle = nullptr;
-		try
-		{
-			auto* value = shard_make_new<gmt::nullref_t>(static_cast<int>(p0));
-			if (!value)
-			{
-				return SHARD_STATUS_ERROR_UNSUPPORTED;
-			}
-			*out_handle = value;
-			return SHARD_STATUS_OK;
-		}
-		catch (const std::invalid_argument&)
-		{
-			return SHARD_STATUS_ERROR_INVALID_ARGUMENT;
-		}
-		catch (const std::out_of_range&)
-		{
-			return SHARD_STATUS_ERROR_INDEX_OUT_OF_BOUNDS;
-		}
-		catch (const std::length_error&)
-		{
-			return SHARD_STATUS_ERROR_LENGTH_EXCEEDED;
-		}
-		catch (const std::bad_alloc&)
-		{
-			return SHARD_STATUS_ERROR_OUT_OF_MEMORY;
-		}
-		catch (const std::exception&)
-		{
-			return SHARD_STATUS_ERROR_EXECUTION_FAILED;
-		}
-		catch (...)
-		{
-			return SHARD_STATUS_ERROR_UNHANDLED_EXCEPTION;
-		}
-	}
-
-	SHARD_API void gmt_nullref_t_nullref_t_destroy(shard_gmt_nullref_t_t self)
-	{
-		if (!self)
-		{
-			return;
-		}
-		try
-		{
-			shard_release<gmt::nullref_t>(self);
-		}
-		catch (...)
-		{
-		}
-	}
-
 	SHARD_API wchar_t* gmt_resolve(const void* p0)
 	{
 		try

@@ -35,7 +35,7 @@ bool PrimitiveMath::is_string(const PrimitiveShapes& shapes, const TypeShape* sh
 
 std::wstring_view PrimitiveMath::string_view_of(ObjectInstance value)
 {
-	if ((value == nullptr))
+	if (value == nullptr)
 		return std::wstring_view();
 
 	std::int64_t length = value.as_integer();
@@ -270,7 +270,7 @@ PrimitiveStatus PrimitiveMath::convert(const PrimitiveShapes& shapes, ObjectInst
 
 gmt::wstring PrimitiveMath::to_display_string(const PrimitiveShapes& shapes, ObjectInstance value)
 {
-	if ((value == nullptr))
+	if (value == nullptr)
 		return L"null";
 
 	const TypeShape* shape = value.get_shape();
@@ -304,7 +304,7 @@ gmt::wstring PrimitiveMath::to_display_string(const PrimitiveShapes& shapes, Obj
 
 gmt::wstring PrimitiveMath::to_display_string(ObjectInstance value)
 {
-	if ((value == nullptr))
+	if (value == nullptr)
 		return L"null";
 
 	const TypeShape* shape = value.get_shape();
@@ -312,7 +312,7 @@ gmt::wstring PrimitiveMath::to_display_string(ObjectInstance value)
 		return L"<void>";
 
 	StructSymbol* baseType = shape->get_base_type();
-	if ((baseType == nullptr))
+	if (baseType == nullptr)
 		return L"<unknown>";
 
 	std::wstring_view name = baseType->get_name();

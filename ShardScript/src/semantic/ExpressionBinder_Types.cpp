@@ -25,7 +25,7 @@ namespace
 {
 	bool is_scalar_primitive(StructSymbol* type, const SymbolTable& table)
 	{
-		if ((type == nullptr))
+		if (type == nullptr)
 			return false;
 
 		if (type == table.get_boolean_primitive() || type == table.get_integer_primitive())
@@ -95,7 +95,7 @@ namespace
 
 StructSymbol* ExpressionBinder::resolve_type_expression(const TypeSyntax* type)
 {
-	if ((type == nullptr))
+	if (type == nullptr)
 		return nullptr;
 
 	// type syntaxes were resolved and bound by the type binder already
@@ -128,7 +128,7 @@ StructSymbol* ExpressionBinder::substitute_method_type_parameter(StructSymbol* t
 
 StructSymbol* ExpressionBinder::substitute_type_parameters(StructSymbol* type, GenericTypeSymbol* genericType, MethodSymbol* method, std::span<StructSymbol* const> methodTypeArgs)
 {
-	if ((type == nullptr))
+	if (type == nullptr)
 		return nullptr;
 
 	if (type->get_kind() == SyntaxKind::TypeParameter)
@@ -193,7 +193,7 @@ void ExpressionBinder::visit_cast_expression(const CastExpressionSyntax* node)
 
 	std::optional<const CastExpressionSyntax*> nodeRef = ref_from(node);
 	StructSymbol* targetType = resolve_type_expression(node->get_target_type());
-	if ((targetType == nullptr))
+	if (targetType == nullptr)
 	{
 		if (nodeRef.has_value())
 			set_expression_type(*nodeRef, nullptr);

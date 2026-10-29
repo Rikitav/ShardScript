@@ -338,11 +338,11 @@ ReturnDisposition EscapeAnalyzer::classify_returns(const WalkedMethod& walked, c
 
 bool EscapeAnalyzer::is_caller_placeable(MethodSymbol* owner) const
 {
-	if ((owner == nullptr))
+	if (owner == nullptr)
 		return false;
 
 	StructSymbol* returnType = owner->get_return_type();
-	if ((returnType == nullptr))
+	if (returnType == nullptr)
 		return false;
 
 	// concrete types only: interfaces (unknown size + vtable identity),
@@ -402,7 +402,7 @@ bool EscapeAnalyzer::participates_in_reference_cycle(StructSymbol* type)
 
 bool EscapeAnalyzer::is_scalar_eligible(StructSymbol* type)
 {
-	if ((type == nullptr))
+	if (type == nullptr)
 		return false;
 
 	if (type->get_kind() != SyntaxKind::StructDeclaration)

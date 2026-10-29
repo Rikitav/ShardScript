@@ -39,7 +39,6 @@ extern "C"
 	// ========================================================================
 	// Opaque handles
 	// ========================================================================
-	typedef gmt::nullref_t* shard_gmt_nullref_t_t;
 	typedef gmt::detail::destructor_entry* shard_gmt_detail_destructor_entry_t;
 	typedef gmt::Arena* shard_gmt_Arena_t;
 	typedef gmt::SharedLibrary* shard_gmt_SharedLibrary_t;
@@ -228,8 +227,6 @@ extern "C"
 	SHARD_API void gmt_detail_destructor_entry_destructor_entry_destroy(shard_gmt_detail_destructor_entry_t self);
 	SHARD_API void* gmt_global_interner(void);
 	SHARD_API void* gmt_intern(const wchar_t* p0);
-	SHARD_API shard_status_t gmt_nullref_t_nullref_t_create(int p0, shard_gmt_nullref_t_t* out_handle);
-	SHARD_API void gmt_nullref_t_nullref_t_destroy(shard_gmt_nullref_t_t self);
 	SHARD_API wchar_t* gmt_resolve(const void* p0);
 	SHARD_API wchar_t* gmt_utf16_to_wide(const void* p0);
 	SHARD_API wchar_t* gmt_utf8_to_wide(const char* p0);

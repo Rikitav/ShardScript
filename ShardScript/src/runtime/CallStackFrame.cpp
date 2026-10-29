@@ -163,7 +163,7 @@ CallStackFrame* CallStackFrame::create(MethodSymbol* method, const FrameLayout* 
 				: layout->get_variable_slots()[index - argumentCount].concreteType;
 		}
 
-		if ((type == nullptr))
+		if (type == nullptr)
 			return nullptr;
 
 		return pragmatic.find_or_create_type_shape(model, type);

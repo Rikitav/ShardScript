@@ -46,9 +46,8 @@
 #include <gmt/Alignment.hpp>
 #include <gmt/Containers.hpp>
 #include <gmt/Allocator.hpp>
-#include <gmt/NullRef.hpp>
 #include <gmt/Ref.hpp>
-#include <span>
+#include <gmt/Span.hpp>
 #include <gmt/Arena.hpp>
 #include <gmt/FlatMap.hpp>
 #include <gmt/InlineVector.hpp>

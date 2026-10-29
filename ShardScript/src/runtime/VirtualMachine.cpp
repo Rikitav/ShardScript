@@ -173,7 +173,7 @@ VirtualMachine::~VirtualMachine()
 
 const TypeShape* VirtualMachine::resolve_shape(StructSymbol* type)
 {
-	if ((type == nullptr))
+	if (type == nullptr)
 		return nullptr;
 
 	return m_pragmatic.find_or_create_type_shape(m_model, type);
@@ -181,7 +181,7 @@ const TypeShape* VirtualMachine::resolve_shape(StructSymbol* type)
 
 const TypeShape* VirtualMachine::primitive_shape(StructSymbol* type) const
 {
-	if ((type == nullptr))
+	if (type == nullptr)
 		return nullptr;
 
 	SymbolTable& table = m_model.get_table();
@@ -257,7 +257,7 @@ bool VirtualMachine::is_instance_of(const TypeShape* objectShape, StructSymbol* 
 
 	for (StructSymbol* interfaceType : baseType->interfaces)
 	{
-		if ((interfaceType == nullptr))
+		if (interfaceType == nullptr)
 			continue;
 
 		StructSymbol* candidate = interfaceType;
@@ -346,7 +346,7 @@ void VirtualMachine::execute_frame(CallStackFrame* frame)
 {
 	MethodSymbol* method = frame->get_method();
 	std::size_t start = reinterpret_cast<std::size_t>(method->get_function_pointer());
-	ByteCodeDecoder decoder(m_program.get_text_section(), m_model.get_table().get_arena(), start);
+	ByteCodeDecoder decoder(m_program.get_text_section(), start);
 
 	while (true)
 	{
@@ -639,7 +639,7 @@ void VirtualMachine::run_defer_body(CallStackFrame* frame, ByteCodeDecoder& deco
 void VirtualMachine::run()
 {
 	MethodSymbol* entryPoint = m_program.get_entry_point();
-	if ((entryPoint == nullptr))
+	if (entryPoint == nullptr)
 		throw std::runtime_error("program image has no entry point");
 
 	invoke_method(entryPoint, {});
@@ -1046,7 +1046,7 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 			std::uint32_t slot = decoder.absorb_field_slot();
 			ObjectInstance instance = frame->pop_entry();
 
-			if ((instance == nullptr))
+			if (instance == nullptr)
 			{
 				raise_runtime_exception(L"NullReferenceException");
 				break;
@@ -1072,7 +1072,7 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 			ObjectInstance value = frame->pop_entry();
 			ObjectInstance instance = frame->pop_entry();
 
-			if ((instance == nullptr))
+			if (instance == nullptr)
 			{
 				raise_runtime_exception(L"NullReferenceException");
 				break;
@@ -1130,7 +1130,7 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 			std::int64_t index = frame->pop_entry().as_integer();
 			ObjectInstance instance = frame->pop_entry();
 
-			if ((instance == nullptr))
+			if (instance == nullptr)
 			{
 				raise_runtime_exception(L"NullReferenceException");
 				break;
@@ -1167,7 +1167,7 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 			std::int64_t index = frame->pop_entry().as_integer();
 			ObjectInstance instance = frame->pop_entry();
 
-			if ((instance == nullptr))
+			if (instance == nullptr)
 			{
 				raise_runtime_exception(L"NullReferenceException");
 				break;
@@ -1200,7 +1200,7 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 		case OpCode::ARRAYLENGTH:
 		{
 			ObjectInstance instance = frame->pop_entry();
-			if ((instance == nullptr))
+			if (instance == nullptr)
 			{
 				raise_runtime_exception(L"NullReferenceException");
 				break;
@@ -1345,7 +1345,7 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 				arguments.push_back(frame->pop_entry());
 
 			ObjectInstance receiver = arguments.view().front();
-			if ((receiver == nullptr))
+			if (receiver == nullptr)
 			{
 				raise_runtime_exception(L"NullReferenceException");
 				break;
@@ -1372,11 +1372,12 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 				((reinterpret_cast<std::uintptr_t>(receiverType) >> 4) ^
 					(reinterpret_cast<std::uintptr_t>(interfaceMethod) * 0x9E3779B97F4A7C15ull)) &
 				(InterfaceDispatchCacheSize - 1);
+
 			InterfaceDispatchEntry& dispatch = m_interfaceDispatch[dispatchIndex];
 			if (dispatch.receiverType == receiverType && dispatch.interfaceMethod == interfaceMethod)
 				implementation = dispatch.implementation;
 
-			if ((implementation == nullptr))
+			if (implementation == nullptr)
 			{
 				// accessors resolve through their owning member: the receiver's
 				// property or indexator that matches the interface member's owner
@@ -1434,7 +1435,7 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 				}
 			}
 
-			if ((implementation == nullptr))
+			if (implementation == nullptr)
 			{
 				raise_runtime_exception(gmt::concat(L"interface method '", interfaceMethod->get_name(), L"' is not implemented"));
 				break;
@@ -1473,7 +1474,7 @@ void VirtualMachine::process_code(CallStackFrame* frame, ByteCodeDecoder& decode
 			DelegateTypeSymbol* delegateType = decoder.absorb_delegate_type_symbol();
 			ObjectInstance delegate = frame->pop_entry();
 
-			if ((delegate == nullptr))
+			if (delegate == nullptr)
 			{
 				raise_runtime_exception(L"NullReferenceException");
 				break;

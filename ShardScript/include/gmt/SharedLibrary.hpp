@@ -1,8 +1,6 @@
 #pragma once
 #include <shard/Definitions.hpp>
 
-#include <gmt/NullRef.hpp>
-
 #include <filesystem>
 
 namespace gmt
@@ -15,10 +13,10 @@ namespace gmt
 
 	public:
 		SharedLibrary() = default;
-		SharedLibrary(nullref_t);
+		~SharedLibrary();
+		
 		explicit SharedLibrary(const std::filesystem::path& path);
 		explicit SharedLibrary(LibraryHandle handle);
-		~SharedLibrary();
 
 		SharedLibrary(const SharedLibrary&) = delete;
 		SharedLibrary& operator=(const SharedLibrary&) = delete;

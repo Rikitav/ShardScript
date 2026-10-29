@@ -22,7 +22,7 @@ namespace
 {
 	StructSymbol* resolve_shape_key(SymbolTable& table, StructSymbol* baseType, std::span<StructSymbol* const> genericArgs, bool create)
 	{
-		if ((baseType == nullptr))
+		if (baseType == nullptr)
 			return nullptr;
 
 		if (genericArgs.empty() || baseType->get_kind() == SyntaxKind::GenericType)
@@ -64,7 +64,7 @@ namespace
 TypeShape* TypeShapeCache::find_type_shape(SemanticModel& model, StructSymbol* baseType, std::span<StructSymbol* const> genericArgs) const
 {
 	StructSymbol* keyType = resolve_shape_key(model.get_table(), baseType, genericArgs, false);
-	if ((keyType == nullptr))
+	if (keyType == nullptr)
 		return nullptr;
 
 	const auto choice = m_shapes.find(reinterpret_cast<std::uint64_t>(keyType));
@@ -77,7 +77,7 @@ TypeShape* TypeShapeCache::find_type_shape(SemanticModel& model, StructSymbol* b
 TypeShape* TypeShapeCache::find_or_create_type_shape(SemanticModel& model, StructSymbol* baseType, std::span<StructSymbol* const> genericArgs)
 {
 	StructSymbol* keyType = resolve_shape_key(model.get_table(), baseType, genericArgs, true);
-	if ((keyType == nullptr))
+	if (keyType == nullptr)
 		throw std::runtime_error("cannot build a type shape for a null base type");
 
 	auto [choice, inserted] = m_shapes.try_emplace(reinterpret_cast<std::uint64_t>(keyType), keyType, genericArgs);
@@ -94,7 +94,7 @@ void TypeShapeCache::build(TypeShape* shape, SemanticModel& model)
 	StructSymbol* baseType = shape->m_baseType;
 	const gmt::vector<StructSymbol*>& genericArgs = shape->m_genericArguments;
 
-	if ((baseType == nullptr))
+	if (baseType == nullptr)
 		throw std::runtime_error("cannot build a type shape for a null base type");
 
 	SymbolTable& table = model.get_table();
@@ -149,7 +149,7 @@ void TypeShapeCache::build(TypeShape* shape, SemanticModel& model)
 		if (!(within == nullptr) && fieldType->get_kind() == SyntaxKind::TypeParameter)
 			fieldType = within->substitute_type_parameter(static_cast<TypeParameterSymbol*>(fieldType));
 
-		if ((fieldType == nullptr))
+		if (fieldType == nullptr)
 			continue;
 
 		TypeShape::SlotInfo slot{};

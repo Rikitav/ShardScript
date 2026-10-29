@@ -44,7 +44,7 @@ namespace
 
 	bool is_reference_like(const StructSymbol* type)
 	{
-		if ((type == nullptr))
+		if (type == nullptr)
 			return false;
 
 		switch (type->get_kind())
@@ -68,7 +68,7 @@ namespace
 
 	DelegateTypeSymbol* get_delegate_type(const StructSymbol* type)
 	{
-		if ((type == nullptr))
+		if (type == nullptr)
 			return nullptr;
 
 		if (type->get_kind() == SyntaxKind::DelegateType)
@@ -109,11 +109,11 @@ namespace
 
 int ExpressionBinder::conversion_score(const StructSymbol* parameter, const StructSymbol* argument)
 {
-	if ((parameter == nullptr))
+	if (parameter == nullptr)
 		return -1;
 
 	// null literal assignment
-	if ((argument == nullptr))
+	if (argument == nullptr)
 		return is_reference_like(parameter) ? 1 : -1;
 
 	if (SemanticModel::are_types_equal(parameter, argument))
@@ -236,7 +236,7 @@ void ExpressionBinder::bind_pending_lambda_arguments(const InvokationExpressionS
 	for (std::size_t i = 0; i < arguments.size() && i + parameterOffset < parameters.size(); i++)
 	{
 		ArgumentSyntax* const& argument = arguments[i];
-		if ((argument == nullptr))
+		if (argument == nullptr)
 			continue;
 
 		const ExpressionSyntax* expression = argument->get_expression();
@@ -276,11 +276,11 @@ bool ExpressionBinder::match_method_arguments(SyntaxToken blameToken, std::span<
 		}
 
 		StructSymbol* argumentType = get_expression_type(argument->get_expression());
-		if ((argumentType == nullptr))
+		if (argumentType == nullptr)
 			return false;
 
 		StructSymbol* parameterType = substitute_type_parameters(parameter->get_type(), genericType);
-		if ((parameterType == nullptr))
+		if (parameterType == nullptr)
 			return false;
 
 		if (conversion_score(parameterType, argumentType) < 0)
@@ -315,7 +315,7 @@ bool ExpressionBinder::try_infer_type_argument(StructSymbol* pattern, StructSymb
 		{
 			if (method->get_type_parameters()[i] == typeParameter)
 			{
-				if ((outMethodTypeArgs[i] == nullptr))
+				if (outMethodTypeArgs[i] == nullptr)
 					outMethodTypeArgs[i] = concrete;
 				else if (!SemanticModel::are_types_equal(outMethodTypeArgs[i], concrete))
 					return false;
@@ -448,7 +448,7 @@ bool ExpressionBinder::infer_method_type_arguments(MethodSymbol* method, std::sp
 
 	for (StructSymbol* type : outMethodTypeArgs)
 	{
-		if ((type == nullptr))
+		if (type == nullptr)
 			return false;
 	}
 
@@ -468,7 +468,7 @@ namespace
 			if (typeParameter->get_type_argument_index() < outArgs.size() && classDef->type_parameters[typeParameter->get_type_argument_index()] == typeParameter)
 			{
 				StructSymbol*& slot = outArgs[typeParameter->get_type_argument_index()];
-				if ((slot == nullptr))
+				if (slot == nullptr)
 					slot = concrete;
 				else if (!SemanticModel::are_types_equal(slot, concrete))
 					return false;
@@ -525,7 +525,7 @@ bool ExpressionBinder::infer_class_type_arguments(StructSymbol* classDef, Method
 
 	for (StructSymbol* type : outClassTypeArgs)
 	{
-		if ((type == nullptr))
+		if (type == nullptr)
 			return false;
 	}
 
@@ -590,12 +590,12 @@ bool ExpressionBinder::check_method_type_constraints(MethodSymbol* method, std::
 	{
 		TypeParameterSymbol* typeParameter = typeParameters[i];
 		StructSymbol* argument = methodTypeArgs[i];
-		if ((argument == nullptr))
+		if (argument == nullptr)
 			continue;
 
 		for (StructSymbol* const& constraint : typeParameter->get_constraints())
 		{
-			if ((constraint == nullptr))
+			if (constraint == nullptr)
 				continue;
 
 			if (get_model().type_satisfies_constraint(argument, constraint))
@@ -613,7 +613,7 @@ bool ExpressionBinder::collect_explicit_type_arguments(const InvokationExpressio
 {
 	outTypeArgs.clear();
 	const TypeArgumentsListSyntax* list = node->get_type_arguments();
-	if ((list == nullptr))
+	if (list == nullptr)
 		return false;
 
 	for (TypeSyntax* const& argumentNode : list->get_types())
@@ -651,7 +651,7 @@ void ExpressionBinder::bind_invocation_type_arguments(const InvokationExpression
 DelegateTypeSymbol* ExpressionBinder::try_resolve_delegate_invocation(const InvokationExpressionSyntax* node, SyntaxSymbol* lookup, GenericTypeSymbol*& outInstantiation)
 {
 	outInstantiation = nullptr;
-	if ((lookup == nullptr))
+	if (lookup == nullptr)
 		return nullptr;
 
 	StructSymbol* delegateHolderType = nullptr;
@@ -749,7 +749,7 @@ MethodSymbol* ExpressionBinder::resolve_method(const InvokationExpressionSyntax*
 		{
 			for (StructSymbol* constraint : static_cast<TypeParameterSymbol*>(receiverType)->get_constraints())
 			{
-				if ((constraint == nullptr))
+				if (constraint == nullptr)
 					continue;
 
 				for (MethodSymbol* method : constraint->methods)
@@ -831,11 +831,12 @@ MethodSymbol* ExpressionBinder::resolve_method(const InvokationExpressionSyntax*
 			bestExtension = item.as_extension;
 			ambiguous = false;
 		}
+
 		else if (score == bestScore)
 			ambiguous = true;
 	}
 
-	if ((best == nullptr))
+	if (best  == nullptr)
 	{
 		// explicit type arguments never apply to delegate-backed callees
 		if (hasExplicitTypeArgs)
@@ -889,7 +890,7 @@ ConstructorSymbol* ExpressionBinder::resolve_constructor(const ObjectExpressionS
 {
 	std::optional<const ObjectExpressionSyntax*> nodeRef = ref_from(node);
 	StructSymbol* createdType = nodeRef.has_value() ? lookup_symbol<StructSymbol>(*nodeRef) : nullptr;
-	if ((createdType == nullptr))
+	if (createdType == nullptr)
 		return nullptr;
 
 	StructSymbol* searchType = createdType;
@@ -907,7 +908,7 @@ ConstructorSymbol* ExpressionBinder::resolve_constructor(const ObjectExpressionS
 
 		visit_expression(argument->get_expression());
 		StructSymbol* argumentType = get_expression_type(argument->get_expression());
-		if ((argumentType == nullptr))
+		if (argumentType == nullptr)
 			return nullptr;
 
 		argTypes.push_back(argumentType);
@@ -927,7 +928,7 @@ ConstructorSymbol* ExpressionBinder::resolve_constructor(const ObjectExpressionS
 
 	for (ConstructorSymbol* constructor : searchType->constructors)
 	{
-		if ((constructor == nullptr))
+		if (constructor == nullptr)
 			continue;
 
 		const gmt::vector<ParameterSymbol*>& parameters = constructor->get_parameters();
@@ -962,7 +963,7 @@ ConstructorSymbol* ExpressionBinder::resolve_constructor(const ObjectExpressionS
 		}
 	}
 
-	if ((best == nullptr))
+	if (best == nullptr)
 	{
 		get_diagnostics().report_error(node->get_new_token(), gmt::concat(L"No constructor of '", get_model().get_type_display_name(createdType), L"' accepts the supplied arguments (", format_argument_list(argTypes.get_vector(), get_model()), L")"));
 		return nullptr;
@@ -985,11 +986,11 @@ StructSymbol* ExpressionBinder::analyze_object_expression(const ObjectExpression
 	}
 
 	StructSymbol* createdType = nodeRef.has_value() ? lookup_symbol<StructSymbol>(*nodeRef) : nullptr;
-	if ((createdType == nullptr))
+	if (createdType == nullptr)
 		return nullptr;
 
 	ConstructorSymbol* constructor = resolve_constructor(node);
-	if ((constructor == nullptr))
+	if (constructor == nullptr)
 		return createdType;
 
 	if (!(node->get_arguments() == nullptr))
@@ -1019,7 +1020,7 @@ void ExpressionBinder::visit_object_creation_expression(const ObjectExpressionSy
 			visit_expression(node->get_array_size());
 
 		StructSymbol* elementType = lookup_symbol<StructSymbol>(*nodeRef);
-		if ((elementType == nullptr))
+		if (elementType == nullptr)
 			elementType = get_symbol_table().get_void_primitive();
 
 		if (!(node->get_array_size() == nullptr))
@@ -1042,7 +1043,7 @@ void ExpressionBinder::visit_object_creation_expression(const ObjectExpressionSy
 
 NamespaceSymbol* ExpressionBinder::resolve_namespace_qualifier(const ExpressionSyntax* expression)
 {
-	if ((expression == nullptr))
+	if (expression == nullptr)
 		return nullptr;
 
 	if (expression->get_kind() != SyntaxKind::MemberAccessExpression)
@@ -1059,7 +1060,7 @@ NamespaceSymbol* ExpressionBinder::resolve_namespace_qualifier(const ExpressionS
 	}
 
 	NamespaceSymbol* parentNamespace = resolve_namespace_qualifier(member->get_previous());
-	if ((parentNamespace == nullptr))
+	if (parentNamespace == nullptr)
 		return nullptr;
 
 	return parentNamespace->lookup(member->get_identifier().get_lexeme());
@@ -1111,7 +1112,7 @@ StructSymbol* ExpressionBinder::analyze_qualified_invokation_expression(const In
 		}
 	}
 
-	if ((best == nullptr))
+	if (best == nullptr)
 	{
 		for (SyntaxSymbol* member : namespaceSymbol->members)
 		{
@@ -1167,13 +1168,13 @@ StructSymbol* ExpressionBinder::analyze_invokation_expression(const InvokationEx
 	MethodSymbol* method = resolve_method(node, currentType, methodTypeArgs.get_vector(), genericType);
 	std::optional<const InvokationExpressionSyntax*> nodeRef = ref_from(node);
 
-	if ((method == nullptr))
+	if (method == nullptr)
 	{
 		// the callee may be a delegate-backed variable, parameter or field
 		SyntaxSymbol* lookup = get_current_scope()->lookup(methodName);
 		GenericTypeSymbol* delegateInstantiation = nullptr;
 		DelegateTypeSymbol* delegate = try_resolve_delegate_invocation(node, lookup, delegateInstantiation);
-		if ((delegate == nullptr))
+		if (delegate == nullptr)
 			return nullptr;
 
 		if (!(node->get_arguments() == nullptr))
@@ -1247,7 +1248,7 @@ void ExpressionBinder::visit_invokation_expression(const InvokationExpressionSyn
 		StructSymbol* calleeType = get_expression_type(previous);
 		DelegateTypeSymbol* delegate = get_delegate_type(calleeType);
 
-		if ((delegate == nullptr))
+		if (delegate == nullptr)
 		{
 			gmt::wstring calleeName = (calleeType == nullptr) ? L"<error>" : get_model().get_type_display_name(calleeType);
 			get_diagnostics().report_error(node->get_location(), gmt::concat(L"Cannot invoke expression of type '", calleeName, L"'"));

@@ -53,31 +53,37 @@ namespace
 	}
 }
 
-ByteCodeDecoder::ByteCodeDecoder(const gmt::vector<std::byte>& code, const gmt::Arena& arena)
-	: m_arena(arena),
-	  m_code(code),
-	  m_base(0),
-	  m_end(m_code.size()),
-	  m_ip(0)
+ByteCodeDecoder::ByteCodeDecoder(
+	const gmt::vector<std::byte>& code
+) :
+	m_code(code),
+	m_base(0),
+	m_end(m_code.size()),
+	m_ip(0)
 { }
 
-ByteCodeDecoder::ByteCodeDecoder(const gmt::vector<std::byte>& code, const gmt::Arena& arena, std::size_t start)
-	: m_arena(arena),
-	  m_code(code),
-	  m_base(start),
-	  m_end(m_code.size()),
-	  m_ip(start)
+ByteCodeDecoder::ByteCodeDecoder(
+	const gmt::vector<std::byte>& code,
+	std::size_t start
+) :
+	m_code(code),
+	m_base(start),
+	m_end(m_code.size()),
+	m_ip(start)
 {
 	if (m_base > m_end)
 		throw std::out_of_range("ByteCodeDecoder: Method range out of code boundaries");
 }
 
-ByteCodeDecoder::ByteCodeDecoder(const gmt::vector<std::byte>& code, const gmt::Arena& arena, std::size_t start, std::size_t length)
-	: m_arena(arena),
-	  m_code(code),
-	  m_base(start),
-	  m_end(start + length),
-	  m_ip(start)
+ByteCodeDecoder::ByteCodeDecoder(
+	const gmt::vector<std::byte>& code,
+	std::size_t start,
+	std::size_t length
+) :
+	m_code(code),
+	m_base(start),
+	m_end(start + length),
+	m_ip(start)
 {
 	if (m_end > m_code.size() || m_base > m_end)
 		throw std::out_of_range("ByteCodeDecoder: Method range out of code boundaries");
@@ -200,7 +206,7 @@ StructSymbol* ByteCodeDecoder::absorb_type_symbol()
 	const std::size_t offset = absorb_value<std::size_t>(m_code, m_ip, m_end);
 
 	SyntaxSymbol* symbol = resolve_operand(offset);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 		return nullptr;
 
 	if (!symbol->is_type())
@@ -232,7 +238,7 @@ MethodSymbol* ByteCodeDecoder::absorb_method_symbol()
 	const std::size_t offset = absorb_value<std::size_t>(m_code, m_ip, m_end);
 
 	SyntaxSymbol* symbol = resolve_operand(offset);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 		return nullptr;
 
 	if (!symbol->is_method())

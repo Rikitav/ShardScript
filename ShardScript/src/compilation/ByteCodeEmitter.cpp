@@ -48,7 +48,7 @@ ByteCodeEmitter::ByteCodeEmitter(VirtualProgramImage& image, SemanticModel& mode
 
 const TypeShape* ByteCodeEmitter::shape_of(StructSymbol* type)
 {
-	if ((type == nullptr))
+	if (type == nullptr)
 		return nullptr;
 
 	type = substitute_type(type);
@@ -152,7 +152,7 @@ std::optional<std::uint16_t> ByteCodeEmitter::scalar_field_slot(SyntaxSymbol* va
 		return std::nullopt;
 
 	StructSymbol* ownerType = gmt::as<StructSymbol>(field->get_parent());
-	if ((ownerType == nullptr))
+	if (ownerType == nullptr)
 		return std::nullopt;
 
 	std::uint16_t ordinal = 0;
@@ -183,7 +183,7 @@ std::uint16_t ByteCodeEmitter::allocate_temporary(StructSymbol* type, PlacementV
 std::uint32_t ByteCodeEmitter::field_slot_index(FieldSymbol* field) const
 {
 	StructSymbol* ownerType = gmt::as<StructSymbol>(field->get_parent());
-	if ((ownerType == nullptr))
+	if (ownerType == nullptr)
 		return 0;
 
 	std::uint32_t ordinal = 0;
@@ -206,7 +206,7 @@ std::uint32_t ByteCodeEmitter::field_slot_index(FieldSymbol* field) const
 
 PlacementVerdict ByteCodeEmitter::local_verdict(SyntaxSymbol* symbol) const
 {
-	if ((m_generatingFor == nullptr))
+	if (m_generatingFor == nullptr)
 		return PlacementVerdict::Heap;
 
 	// the frame layout is the post-demotion truth for slot placement
@@ -293,7 +293,7 @@ void ByteCodeEmitter::end_method()
 
 void ByteCodeEmitter::emit_body(const BlockSyntax* body)
 {
-	if ((body == nullptr))
+	if (body == nullptr)
 		return;
 
 	if (body->get_kind() == SyntaxKind::ArrowClause)
@@ -347,7 +347,7 @@ StructSymbol* ByteCodeEmitter::owner_type_of(MethodSymbol* method)
 
 bool ByteCodeEmitter::is_generic_definition(MethodSymbol* method)
 {
-	if ((method == nullptr))
+	if (method == nullptr)
 		return false;
 
 	if (!method->get_type_parameters().empty())
@@ -419,7 +419,7 @@ MethodSymbol* ByteCodeEmitter::resolve_call_target(const SyntaxNode* node, Metho
 	StructSymbol* returnType = get_model().substitute_type(method->get_return_type(), argumentsSpan);
 
 	GenericMethodSymbol* instantiation = get_symbol_table().find_or_create_generic_method(method, argumentsSpan, returnType);
-	if ((instantiation == nullptr))
+	if (instantiation == nullptr)
 		return nullptr;
 
 	m_pragmatic.get_or_create_frame_layout(get_model(), instantiation);
@@ -591,7 +591,7 @@ void ByteCodeEmitter::visit_function_declaration(const FunctionDeclarationSyntax
 		return;
 
 	MethodSymbol* symbol = lookup_symbol<MethodSymbol>(*nodeRef);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 		return;
 
 	if (is_entry_point_candidate(symbol))
@@ -707,7 +707,7 @@ void ByteCodeEmitter::visit_accessor_declaration(const AccessorDeclarationSyntax
 		return;
 
 	AccessorSymbol* symbol = lookup_symbol<AccessorSymbol>(*nodeRef);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 		return;
 
 	if (is_generic_definition(symbol))

@@ -50,7 +50,7 @@ TypeBinder::TypeBinder(SemanticModel& model, DiagnosticsContext& diagnostics)
 
 StructSymbol* TypeBinder::resolve_type(const TypeSyntax* node)
 {
-	if ((node == nullptr))
+	if (node == nullptr)
 		return nullptr;
 
 	node->accept(*this);
@@ -59,7 +59,7 @@ StructSymbol* TypeBinder::resolve_type(const TypeSyntax* node)
 
 void TypeBinder::bind_arguments(const ArgumentsListSyntax* arguments)
 {
-	if ((arguments == nullptr))
+	if (arguments == nullptr)
 		return;
 
 	for (ArgumentSyntax* const& argument : arguments->get_arguments())
@@ -68,7 +68,7 @@ void TypeBinder::bind_arguments(const ArgumentsListSyntax* arguments)
 
 void TypeBinder::bind_expression(const ExpressionSyntax* expression)
 {
-	if ((expression == nullptr))
+	if (expression == nullptr)
 		return;
 
 	switch (expression->get_kind())
@@ -183,7 +183,7 @@ void TypeBinder::import_namespace(const UsingDirectiveSyntax* node, NamespaceSym
 	// already resolves to a different symbol is ambiguous from now on
 	for (SyntaxSymbol* const& member : namespaceSymbol->members)
 	{
-		if ((member == nullptr))
+		if (member == nullptr)
 			continue;
 
 		SyntaxSymbol* existing = current->find_local(member->get_name());
@@ -212,12 +212,12 @@ bool TypeBinder::is_ambiguous_name(std::wstring_view name)
 
 void TypeBinder::bind_where_clauses(const WhereClausesListSyntax* clauses, const gmt::vector<TypeParameterSymbol*>& typeParameters)
 {
-	if ((clauses == nullptr))
+	if (clauses == nullptr)
 		return;
 
 	for (WhereClauseSyntax* const& clause : clauses->get_clauses())
 	{
-		if ((clause == nullptr))
+		if (clause == nullptr)
 			continue;
 
 		const std::wstring_view parameterName = clause->get_identifier().get_lexeme();
@@ -232,7 +232,7 @@ void TypeBinder::bind_where_clauses(const WhereClausesListSyntax* clauses, const
 			}
 		}
 
-		if ((typeParameter == nullptr))
+		if (typeParameter == nullptr)
 		{
 			get_diagnostics().report_error(clause->get_location(), L"Type parameter '" + gmt::wstring(parameterName) + L"' not found");
 			continue;
@@ -241,7 +241,7 @@ void TypeBinder::bind_where_clauses(const WhereClausesListSyntax* clauses, const
 		for (TypeSyntax* const& constraintType : clause->get_constraint_types())
 		{
 			StructSymbol* constraint = resolve_type(constraintType);
-			if ((constraint == nullptr))
+			if (constraint == nullptr)
 			{
 				get_diagnostics().report_error(clause->get_location(), L"Could not resolve constraint type for type parameter '" + gmt::wstring(parameterName) + L"'");
 				continue;
@@ -254,13 +254,13 @@ void TypeBinder::bind_where_clauses(const WhereClausesListSyntax* clauses, const
 
 void TypeBinder::bind_base_types(StructSymbol* symbol, const BaseTypesListSyntax* baseTypes)
 {
-	if ((baseTypes == nullptr))
+	if (baseTypes == nullptr)
 		return;
 
 	for (TypeSyntax* const& baseType : baseTypes->get_types())
 	{
 		StructSymbol* baseSymbol = resolve_type(baseType);
-		if ((baseSymbol == nullptr))
+		if (baseSymbol == nullptr)
 			continue;
 
 		if (baseSymbol->get_kind() == SyntaxKind::InterfaceDeclaration)
@@ -295,7 +295,7 @@ void TypeBinder::visit_translation_unit(const TranslationUnitSyntax* node)
 		const NamespaceDirectiveSyntax* directive = node->get_namespace();
 		NamespaceSymbol* namespaceSymbol = lookup_symbol<NamespaceSymbol>(directive);
 
-		if ((namespaceSymbol == nullptr))
+		if (namespaceSymbol == nullptr)
 			throw std::runtime_error("namespace symbol not found");
 
 		push_scope(namespaceSymbol);
@@ -332,7 +332,7 @@ void TypeBinder::visit_using_directive(const UsingDirectiveSyntax* node)
 	for (const SyntaxToken& token : node->get_qualifier())
 	{
 		NamespaceSymbol* next = current->lookup(token.get_lexeme());
-		if ((next == nullptr))
+		if (next == nullptr)
 		{
 			get_diagnostics().report_error(node->get_location(), L"Namespace '" + gmt::wstring(token.get_lexeme()) + L"' does not exist");
 			return;
@@ -354,7 +354,7 @@ void TypeBinder::visit_struct_declaration(const StructDeclarationSyntax* node)
 		return;
 
 	StructSymbol* symbol = lookup_symbol<StructSymbol>(*nodeRef);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 		throw std::runtime_error("struct symbol not found");
 
 	push_scope(symbol);
@@ -385,7 +385,7 @@ void TypeBinder::visit_interface_declaration(const InterfaceDeclarationSyntax* n
 		return;
 
 	InterfaceSymbol* symbol = lookup_symbol<InterfaceSymbol>(*nodeRef);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 		throw std::runtime_error("interface symbol not found");
 
 	push_scope(symbol);
@@ -415,7 +415,7 @@ void TypeBinder::visit_delegate_declaration(const DelegateDeclarationSyntax* nod
 		return;
 
 	DelegateTypeSymbol* symbol = lookup_symbol<DelegateTypeSymbol>(*nodeRef);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 		throw std::runtime_error("delegate symbol not found");
 
 	push_scope(symbol);
@@ -439,7 +439,7 @@ void TypeBinder::visit_enum_declaration(const EnumDeclarationSyntax* node)
 		return;
 
 	EnumSymbol* symbol = lookup_symbol<EnumSymbol>(*nodeRef);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 		throw std::runtime_error("enum symbol not found");
 
 	push_scope(symbol);
@@ -457,7 +457,7 @@ void TypeBinder::visit_constructor_declaration(const ConstructorDeclarationSynta
 		return;
 
 	ConstructorSymbol* symbol = lookup_symbol<ConstructorSymbol>(*nodeRef);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 		throw std::runtime_error("constructor symbol not found");
 
 	push_scope(symbol);
@@ -478,7 +478,7 @@ void TypeBinder::visit_function_declaration(const FunctionDeclarationSyntax* nod
 		return;
 
 	MethodSymbol* symbol = lookup_symbol<MethodSymbol>(*nodeRef);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 		throw std::runtime_error("method symbol not found");
 
 	push_scope(symbol);
@@ -507,7 +507,7 @@ void TypeBinder::visit_operator_declaration(const OperatorDeclarationSyntax* nod
 		return;
 
 	OperatorSymbol* symbol = lookup_symbol<OperatorSymbol>(*nodeRef);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 		throw std::runtime_error("operator symbol not found");
 
 	push_scope(symbol);
@@ -540,7 +540,7 @@ void TypeBinder::visit_field_declaration(const FieldDeclarationSyntax* node)
 		return;
 
 	FieldSymbol* symbol = lookup_symbol<FieldSymbol>(*nodeRef);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 		throw std::runtime_error("field symbol not found");
 
 	if (!(node->get_type() == nullptr))
@@ -556,7 +556,7 @@ void TypeBinder::visit_property_declaration(const PropertyDeclarationSyntax* nod
 		return;
 
 	PropertySymbol* symbol = lookup_symbol<PropertySymbol>(*nodeRef);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 		throw std::runtime_error("property symbol not found");
 
 	if ((node->get_type() == nullptr))
@@ -597,7 +597,7 @@ void TypeBinder::visit_indexator_declaration(const IndexatorDeclarationSyntax* n
 		return;
 
 	IndexatorSymbol* symbol = lookup_symbol<IndexatorSymbol>(*nodeRef);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 		throw std::runtime_error("indexator symbol not found");
 
 	push_scope(symbol);
@@ -635,7 +635,7 @@ void TypeBinder::visit_accessor_declaration(const AccessorDeclarationSyntax* nod
 		return;
 
 	AccessorSymbol* symbol = lookup_symbol<AccessorSymbol>(*nodeRef);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 		throw std::runtime_error("accessor symbol not found");
 
 	const SyntaxNode* parentNode = node->get_parent();
@@ -666,7 +666,7 @@ void TypeBinder::visit_variable_statement(const VariableStatementSyntax* node)
 		return;
 
 	VariableSymbol* symbol = lookup_symbol<VariableSymbol>(*nodeRef);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 		throw std::runtime_error("variable symbol not found");
 
 	if (!(node->get_type() == nullptr))
@@ -716,7 +716,7 @@ void TypeBinder::visit_lambda_expression(const LambdaExpressionSyntax* node)
 	for (ParameterSyntax* const& parameter : node->get_parameters()->get_parameters())
 	{
 		ParameterSymbol* symbol = lookup_symbol<ParameterSymbol>(parameter);
-		if ((symbol == nullptr))
+		if (symbol == nullptr)
 			continue;
 
 		if (!(parameter->get_type() == nullptr))
@@ -726,7 +726,7 @@ void TypeBinder::visit_lambda_expression(const LambdaExpressionSyntax* node)
 	// the body belongs to the expression binder for values, but type syntaxes
 	// inside it (and signatures of nested lambdas) are bound here
 	MethodSymbol* anonymousMethod = lookup_symbol<MethodSymbol>(node->get_parameters());
-	if ((anonymousMethod == nullptr))
+	if (anonymousMethod == nullptr)
 		return;
 
 	push_scope(anonymousMethod);
@@ -764,7 +764,7 @@ void TypeBinder::visit_parameter(const ParameterSyntax* node)
 		return;
 
 	ParameterSymbol* symbol = lookup_symbol<ParameterSymbol>(*nodeRef);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 		throw std::runtime_error("parameter symbol not found");
 
 	if (!(node->get_type() == nullptr))
@@ -804,7 +804,7 @@ void TypeBinder::visit_predefined_type(const PredefinedTypeSyntax* node)
 		}
 	}
 
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 	{
 		get_diagnostics().report_error(node->get_location(), L"Primitive type wasn't resolved");
 		return;
@@ -849,7 +849,7 @@ void TypeBinder::visit_identifier_name_type(const IdentifierNameTypeSyntax* node
 
 	// types declared in the global namespace are always visible, like C#'s
 	// global:: scope; locals and imports shadow them by resolving first
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 	{
 		for (SyntaxSymbol* member : get_symbol_table().get_root_namespace()->members)
 		{
@@ -861,7 +861,7 @@ void TypeBinder::visit_identifier_name_type(const IdentifierNameTypeSyntax* node
 		}
 	}
 
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 	{
 		if (is_ambiguous_name(name))
 		{
@@ -899,7 +899,7 @@ void TypeBinder::visit_identifier_name_type(const IdentifierNameTypeSyntax* node
 
 NamespaceSymbol* TypeBinder::resolve_namespace_type(const TypeSyntax* type)
 {
-	if ((type == nullptr))
+	if (type == nullptr)
 		return nullptr;
 
 	if (type->get_kind() == SyntaxKind::IdentifierNameType)
@@ -912,7 +912,7 @@ NamespaceSymbol* TypeBinder::resolve_namespace_type(const TypeSyntax* type)
 	{
 		const QualifiedNameTypeSyntax* qualified = gmt::as<QualifiedNameTypeSyntax>(type);
 		NamespaceSymbol* parentNamespace = resolve_namespace_type(qualified->get_left());
-		if ((parentNamespace == nullptr))
+		if (parentNamespace == nullptr)
 			return nullptr;
 
 		return parentNamespace->lookup(qualified->get_identifier().get_lexeme());
@@ -928,7 +928,7 @@ void TypeBinder::visit_qualified_name_type(const QualifiedNameTypeSyntax* node)
 		return;
 
 	NamespaceSymbol* namespaceSymbol = resolve_namespace_type(node->get_left());
-	if ((namespaceSymbol == nullptr))
+	if (namespaceSymbol == nullptr)
 	{
 		get_diagnostics().report_error(node->get_location(), L"Left side of qualified type name must be a namespace");
 		return;
@@ -956,7 +956,7 @@ void TypeBinder::visit_array_type(const ArrayTypeSyntax* node)
 		return;
 
 	StructSymbol* underlaying = resolve_type(node->get_underlaying_type());
-	if ((underlaying == nullptr))
+	if (underlaying == nullptr)
 		return;
 
 	// the registry makes every reoccurring 'int[]' share one symbol
@@ -981,7 +981,7 @@ void TypeBinder::visit_generic_type(const GenericTypeSyntax* node)
 		return;
 
 	StructSymbol* underlaying = resolve_type(node->get_underlaying_type());
-	if ((underlaying == nullptr))
+	if (underlaying == nullptr)
 		return;
 
 	if ((node->get_type_arguments() == nullptr) || node->get_type_arguments()->get_types().empty())
@@ -1013,7 +1013,7 @@ void TypeBinder::visit_generic_type(const GenericTypeSyntax* node)
 	for (std::size_t i = 0; i < argumentCount; ++i)
 	{
 		StructSymbol* argument = arguments.get_vector()[i];
-		if ((argument == nullptr))
+		if (argument == nullptr)
 		{
 			get_diagnostics().report_error(node->get_location(), gmt::wstring(L"Type argument " + std::to_wstring(i + 1) + L" could not be resolved"));
 			continue;
@@ -1022,7 +1022,7 @@ void TypeBinder::visit_generic_type(const GenericTypeSyntax* node)
 		TypeParameterSymbol* typeParameter = underlaying->type_parameters[i];
 		for (StructSymbol* const& constraint : typeParameter->get_constraints())
 		{
-			if ((constraint == nullptr))
+			if (constraint == nullptr)
 				continue;
 
 			if (!get_model().type_satisfies_constraint(argument, constraint))

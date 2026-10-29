@@ -41,7 +41,7 @@ SymbolTable& SemanticModel::get_table()
 
 StructSymbol* SemanticModel::get_expression_type(const ExpressionSyntax* expression) const
 {
-	if ((expression == nullptr))
+	if (expression == nullptr)
 		return nullptr;
 
 	auto it = m_expressionTypes.find(expression);
@@ -147,12 +147,12 @@ bool SemanticModel::are_types_equal(const StructSymbol* left, const StructSymbol
 
 static void collect_all_interfaces(const StructSymbol* type, gmt::vector<const StructSymbol*>& out, gmt::unordered_set<const StructSymbol*>& visited)
 {
-	if ((type == nullptr))
+	if (type == nullptr)
 		return;
 
 	for (StructSymbol* interface : type->interfaces)
 	{
-		if ((interface == nullptr))
+		if (interface == nullptr)
 			continue;
 
 		const StructSymbol* constInterface = interface;
@@ -345,7 +345,7 @@ bool SemanticModel::is_assignable_to(const StructSymbol* target, const StructSym
 
 gmt::wstring SemanticModel::get_type_display_name(const StructSymbol* type) const
 {
-	if ((type == nullptr))
+	if (type == nullptr)
 		return L"<error>";
 
 	if (type->get_kind() == SyntaxKind::GenericType)
@@ -396,7 +396,7 @@ bool SemanticModel::type_implements_interface(StructSymbol* type, InterfaceSymbo
 
 	for (StructSymbol* const& interfaceType : type->interfaces)
 	{
-		if ((interfaceType == nullptr))
+		if (interfaceType == nullptr)
 			continue;
 
 		if (interfaceType == interfaceSymbol)
@@ -437,7 +437,7 @@ bool SemanticModel::is_primitive_type(const StructSymbol* type) const
 
 bool SemanticModel::is_task_or_task_like(StructSymbol* type)
 {
-	if ((type == nullptr))
+	if (type == nullptr)
 		return false;
 
 	if (type == m_table.get_standard_type(StandardTypes::Task))
@@ -452,7 +452,7 @@ bool SemanticModel::is_task_or_task_like(StructSymbol* type)
 
 StructSymbol* SemanticModel::substitute_type(StructSymbol* type, GenericTypeSymbol* within)
 {
-	if ((type == nullptr))
+	if (type == nullptr)
 		return nullptr;
 
 	switch (type->get_kind())
@@ -471,16 +471,16 @@ StructSymbol* SemanticModel::substitute_type(StructSymbol* type, GenericTypeSymb
 			ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(type);
 			StructSymbol* underlayingType = arrayType->get_underlaying_type();
 
-			if ((underlayingType == nullptr))
+			if (underlayingType == nullptr)
 				throw std::runtime_error("cannot resolve underlaying type of array");
 
 			if (underlayingType->get_kind() == SyntaxKind::TypeParameter)
 			{
-				if ((within == nullptr))
+				if (within == nullptr)
 					return type;
 
 				underlayingType = within->substitute_type_parameter(static_cast<TypeParameterSymbol*>(underlayingType));
-				if ((underlayingType == nullptr))
+				if (underlayingType == nullptr)
 					throw std::runtime_error("cannot resolve underlaying type of array");
 
 				return m_table.find_or_create_array_type(underlayingType, arrayType->get_length());
@@ -491,7 +491,7 @@ StructSymbol* SemanticModel::substitute_type(StructSymbol* type, GenericTypeSymb
 
 		case SyntaxKind::TypeParameter:
 		{
-			if ((within == nullptr))
+			if (within == nullptr)
 				return type;
 
 			StructSymbol* resolvedType = within->substitute_type_parameter(static_cast<TypeParameterSymbol*>(type));
@@ -545,7 +545,7 @@ StructSymbol* SemanticModel::get_constructor_return_type(ConstructorSymbol* cons
 
 static StructSymbol* find_type_in_namespace(NamespaceSymbol* scope, std::wstring_view name)
 {
-	if ((scope == nullptr))
+	if (scope == nullptr)
 		return nullptr;
 
 	for (SyntaxSymbol* member : scope->members)
@@ -618,7 +618,7 @@ StructSymbol* SemanticModel::find_type_by_name(std::wstring_view fullName)
 
 FieldSymbol* SemanticModel::find_field_by_name(StructSymbol* type, std::wstring_view name) const
 {
-	if ((type == nullptr))
+	if (type == nullptr)
 		return nullptr;
 
 	for (FieldSymbol* field : type->fields)
@@ -635,11 +635,11 @@ bool SemanticModel::resolve_indexable(StructSymbol* type, PropertySymbol*& outCo
 	outCount = nullptr;
 	outIndexator = nullptr;
 
-	if ((type == nullptr))
+	if (type == nullptr)
 		return false;
 
 	StructSymbol* indexableTrait = static_cast<StructSymbol*>(m_table.get_standard_type(StandardTypes::IIndexable));
-	if ((indexableTrait == nullptr))
+	if (indexableTrait == nullptr)
 		return false;
 
 	StructSymbol* searchType = type;
@@ -655,14 +655,14 @@ bool SemanticModel::resolve_indexable(StructSymbol* type, PropertySymbol*& outCo
 	for (PropertySymbol* property : indexableTrait->properties)
 	{
 		outCount = resolve_virtual_property(searchType, property, within);
-		if ((outCount == nullptr))
+		if (outCount == nullptr)
 			return false;
 	}
 
 	for (IndexatorSymbol* indexator : indexableTrait->indexators)
 	{
 		outIndexator = resolve_virtual_indexator(searchType, indexator, within);
-		if ((outIndexator == nullptr))
+		if (outIndexator == nullptr)
 			return false;
 	}
 
@@ -730,7 +730,7 @@ IndexatorSymbol* SemanticModel::resolve_virtual_indexator(StructSymbol* type, In
 
 StructSymbol* SemanticModel::resolve_runtime_type_argument(StructSymbol* type, const TypeParameterResolver& resolveParameter)
 {
-	if ((type == nullptr))
+	if (type == nullptr)
 		return type;
 
 	if (type->get_kind() == SyntaxKind::TypeParameter)
@@ -809,7 +809,7 @@ StructSymbol* SemanticModel::substitute_type(StructSymbol* type, std::span<Struc
 
 bool SemanticModel::try_resolve_generic_arguments(StructSymbol* type, const TypeParameterResolver& resolveParameter, StructSymbol*& baseType, gmt::vector<StructSymbol*>& genericArgs)
 {
-	if ((type == nullptr))
+	if (type == nullptr)
 		return false;
 
 	if (type->get_kind() == SyntaxKind::TypeParameter)

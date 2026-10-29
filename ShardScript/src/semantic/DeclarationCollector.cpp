@@ -29,7 +29,7 @@ namespace
 
 	inline bool has_access_operator(StructSymbol* const type)
 	{
-		if ((type == nullptr))
+		if (type == nullptr)
 			return false;
 		
 		return std::ranges::any_of(type->operators,
@@ -149,7 +149,7 @@ SyntaxSymbol* DeclarationCollector::get_declaration_parent()
 
 void DeclarationCollector::collect_type_parameters(StructSymbol* owner, const TypeParametersListSyntax* list, std::uint16_t ownerParameterOffset)
 {
-	if ((list == nullptr))
+	if (list == nullptr)
 		return;
 
 	if (owner->type_parameters.empty())
@@ -173,7 +173,7 @@ void DeclarationCollector::collect_type_parameters(StructSymbol* owner, const Ty
 
 void DeclarationCollector::collect_type_parameters(MethodSymbol* owner, const TypeParametersListSyntax* list, std::uint16_t ownerParameterOffset)
 {
-	if ((list == nullptr))
+	if (list == nullptr)
 		return;
 
 	if (owner->get_type_parameters().empty())
@@ -209,7 +209,7 @@ void DeclarationCollector::visit_translation_unit(const TranslationUnitSyntax* n
 		const NamespaceDirectiveSyntax* namespaceDirective = node->get_namespace();
 		NamespaceSymbol* namespaceSymbol = lookup_symbol<NamespaceSymbol>(namespaceDirective);
 
-		if ((namespaceSymbol == nullptr))
+		if (namespaceSymbol == nullptr)
 		{
 			namespaceSymbol = m_factory.create_namespace(namespaceDirective);
 			get_symbol_table().bind_symbol<NamespaceSymbol>(namespaceDirective, namespaceSymbol);
@@ -264,7 +264,7 @@ void DeclarationCollector::visit_interface_declaration(const InterfaceDeclaratio
 		return;
 
 	InterfaceSymbol* symbol = lookup_symbol<InterfaceSymbol>(*nodeRef);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 	{
 		symbol = m_factory.create_interface(*nodeRef, get_declaration_parent());
 		declare(symbol);
@@ -285,7 +285,7 @@ void DeclarationCollector::visit_interface_declaration(const InterfaceDeclaratio
 	for (MemberDeclarationSyntax* const& member : node->get_members())
 	{
 		SyntaxSymbol* memberSymbol = lookup_symbol<SyntaxSymbol>(member);
-		if ((memberSymbol == nullptr))
+		if (memberSymbol == nullptr)
 			continue;
 
 		if (memberSymbol->is_member())
@@ -324,7 +324,7 @@ void DeclarationCollector::visit_delegate_declaration(const DelegateDeclarationS
 		return;
 
 	DelegateTypeSymbol* symbol = lookup_symbol<DelegateTypeSymbol>(*nodeRef);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 	{
 		symbol = m_factory.create_delegate(*nodeRef, get_declaration_parent());
 		declare(symbol);
@@ -355,7 +355,7 @@ void DeclarationCollector::visit_enum_declaration(const EnumDeclarationSyntax* n
 		return;
 
 	EnumSymbol* symbol = lookup_symbol<EnumSymbol>(*nodeRef);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 	{
 		symbol = m_factory.create_enum(*nodeRef, get_declaration_parent());
 		declare(symbol);
@@ -420,7 +420,7 @@ void DeclarationCollector::visit_field_declaration(const FieldDeclarationSyntax*
 		return;
 
 	FieldSymbol* symbol = lookup_symbol<FieldSymbol>(*nodeRef);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 	{
 		symbol = m_factory.create_field(*nodeRef, get_declaration_parent());
 		declare(symbol);
@@ -464,7 +464,7 @@ void DeclarationCollector::visit_function_declaration(const FunctionDeclarationS
 		return;
 
 	MethodSymbol* symbol = lookup_symbol<MethodSymbol>(*nodeRef);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 	{
 		symbol = m_factory.create_method(*nodeRef, get_declaration_parent());
 		declare(symbol);
@@ -548,7 +548,7 @@ void DeclarationCollector::visit_operator_declaration(const OperatorDeclarationS
 		return;
 
 	OperatorSymbol* symbol = lookup_symbol<OperatorSymbol>(*nodeRef);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 	{
 		symbol = m_factory.create_operator(*nodeRef, get_declaration_parent());
 		declare(symbol);
@@ -574,7 +574,7 @@ void DeclarationCollector::visit_operator_declaration(const OperatorDeclarationS
 	}
 
 	const SyntaxSymbol* parent = symbol->get_parent();
-	if ((parent == nullptr))
+	if (parent == nullptr)
 	{
 		get_diagnostics().report_error(node->get_location(), L"Cannot resolve Operators' owner Type");
 	}
@@ -641,7 +641,7 @@ void DeclarationCollector::visit_constructor_declaration(const ConstructorDeclar
 		return;
 
 	ConstructorSymbol* symbol = lookup_symbol<ConstructorSymbol>(*nodeRef);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 	{
 		symbol = m_factory.create_constructor(*nodeRef, get_declaration_parent());
 		declare(symbol);
@@ -657,7 +657,7 @@ void DeclarationCollector::visit_constructor_declaration(const ConstructorDeclar
 	}
 
 	const SyntaxSymbol* parent = symbol->get_parent();
-	if ((parent == nullptr))
+	if (parent == nullptr)
 	{
 		get_diagnostics().report_error(node->get_location(), L"Cannot resolve Constructors' owner Type");
 	}
@@ -693,7 +693,7 @@ void DeclarationCollector::visit_property_declaration(const PropertyDeclarationS
 		return;
 
 	PropertySymbol* symbol = lookup_symbol<PropertySymbol>(*nodeRef);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 	{
 		symbol = m_factory.create_property(*nodeRef, get_declaration_parent());
 		declare(symbol);
@@ -738,7 +738,7 @@ void DeclarationCollector::visit_indexator_declaration(const IndexatorDeclaratio
 		return;
 
 	IndexatorSymbol* symbol = lookup_symbol<IndexatorSymbol>(*nodeRef);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 	{
 		symbol = m_factory.create_indexator(*nodeRef, get_declaration_parent());
 		declare(symbol);
@@ -754,7 +754,7 @@ void DeclarationCollector::visit_indexator_declaration(const IndexatorDeclaratio
 	}
 
 	const SyntaxSymbol* parent = symbol->get_parent();
-	if ((parent == nullptr))
+	if (parent == nullptr)
 	{
 		get_diagnostics().report_error(node->get_location(), L"Cannot resolve Indexators' owner Type");
 	}
@@ -809,11 +809,11 @@ void DeclarationCollector::visit_accessor_declaration(const AccessorDeclarationS
 			propertySymbol = indexator;
 	}
 
-	if ((propertySymbol == nullptr))
+	if (propertySymbol == nullptr)
 		return;
 
 	AccessorSymbol* symbol = lookup_symbol<AccessorSymbol>(*nodeRef);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 	{
 		symbol = m_factory.create_accessor(*nodeRef, propertySymbol);
 		declare(symbol);
@@ -838,7 +838,7 @@ void DeclarationCollector::visit_variable_statement(const VariableStatementSynta
 		return;
 
 	VariableSymbol* symbol = lookup_symbol<VariableSymbol>(*nodeRef);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 	{
 		symbol = m_factory.create_variable(*nodeRef, get_owner_symbol());
 		declare(symbol);
@@ -859,7 +859,7 @@ void DeclarationCollector::visit_for_in_statement(const ForInStatementSyntax* no
 		return;
 
 	VariableSymbol* symbol = lookup_symbol<VariableSymbol>(*nodeRef);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 		symbol = m_factory.create_variable(*nodeRef, get_owner_symbol());
 
 	// the loop variable is scoped to the loop itself, so sibling loops may
@@ -895,7 +895,7 @@ void DeclarationCollector::visit_try_statement(const TryStatementSyntax* node)
 		}
 
 		VariableSymbol* symbol = lookup_symbol<VariableSymbol>(clause);
-		if ((symbol == nullptr))
+		if (symbol == nullptr)
 		{
 			symbol = m_factory.create_variable(clause->get_identifier().get_lexeme(), get_owner_symbol());
 			declare(symbol);

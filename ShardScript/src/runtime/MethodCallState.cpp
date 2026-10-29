@@ -36,7 +36,7 @@ namespace
 	ConstructorSymbol* find_parameterless_constructor(StructSymbol* type)
 	{
 		StructSymbol* definition = constructed_definition(type);
-		if ((definition == nullptr))
+		if (definition == nullptr)
 			return nullptr;
 
 		for (ConstructorSymbol* ctor : definition->constructors)
@@ -204,7 +204,7 @@ wchar_t MethodCallState::get_char_argument(std::size_t index) const
 std::wstring_view MethodCallState::get_string_argument(std::size_t index) const
 {
 	ObjectInstance instance = get_argument(index);
-	if ((instance == nullptr))
+	if (instance == nullptr)
 		return std::wstring_view();
 
 	std::int64_t length = instance.as_integer();
@@ -289,7 +289,7 @@ InvokeResult MethodCallState::try_invoke_method(MethodSymbol* method, std::initi
 InvokeResult MethodCallState::new_object(StructSymbol* type)
 {
 	ConstructorSymbol* ctor = find_parameterless_constructor(type);
-	if ((ctor == nullptr))
+	if (ctor == nullptr)
 	{
 		const TypeShape* shape = m_vm.get_pragmatic().find_or_create_type_shape(m_vm.get_model(), type);
 		ObjectInstance instance = m_vm.get_collector().allocate_instance(shape);
@@ -326,7 +326,7 @@ InvokeResult MethodCallState::new_object(StructSymbol* type, ConstructorSymbol* 
 InvokeResult MethodCallState::get_property(ObjectInstance obj, PropertySymbol* property)
 {
 	AccessorSymbol* getter = property->get_getter();
-	if ((getter == nullptr))
+	if (getter == nullptr)
 		throw std::invalid_argument("property has no getter");
 
 	const ObjectInstance args[1] = { obj };
@@ -336,7 +336,7 @@ InvokeResult MethodCallState::get_property(ObjectInstance obj, PropertySymbol* p
 InvokeResult MethodCallState::set_property(ObjectInstance obj, PropertySymbol* property, ObjectInstance value)
 {
 	AccessorSymbol* setter = property->get_setter();
-	if ((setter == nullptr))
+	if (setter == nullptr)
 		throw std::invalid_argument("property has no setter");
 
 	const ObjectInstance args[2] = { obj, value };

@@ -81,7 +81,7 @@ void EscapeAnalyzer::record_capture(SyntaxSymbol* symbol)
 	for (int i = frameIndex + 1; i < static_cast<int>(m_frameStack.size()); ++i)
 	{
 		const ExpressionSyntax* closureSite = m_frameStack[i].closureSite;
-		if ((closureSite == nullptr))
+		if (closureSite == nullptr)
 			continue;
 
 		add_edge(ensure_site_id(closureSite), ensure_local_id(symbol));
@@ -191,7 +191,7 @@ void EscapeAnalyzer::visit_identifier_name_type(const IdentifierNameTypeSyntax* 
 		return;
 
 	SyntaxSymbol* symbol = get_symbol_table().lookup_symbol(*nodeRef);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 		return;
 
 	SyntaxKind kind = symbol->get_kind();

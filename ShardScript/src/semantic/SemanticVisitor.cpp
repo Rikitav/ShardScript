@@ -89,7 +89,7 @@ void SemanticVisitor::declare(SyntaxSymbol* symbol)
 	scope->declare_symbol(symbol);
 
 	SyntaxSymbol* owner = scope->get_owner();
-	if ((owner == nullptr)) // Top-level scopes carry a nullref owner (the compilation unit is not a symbol)
+	if (owner == nullptr) // Top-level scopes carry a nullref owner (the compilation unit is not a symbol)
 		owner = scope->get_namespace();
 
 	if (!(owner == nullptr))
@@ -124,7 +124,7 @@ SyntaxSymbol* SemanticVisitor::get_owner_symbol()
 	for (SemanticScope* scope = get_current_scope(); scope != nullptr; scope = scope->get_parent())
 	{
 		SyntaxSymbol* owner = scope->get_owner();
-		if ((owner == nullptr))
+		if (owner == nullptr)
 			continue;
 
 		if (owner->is_member() || owner->is_type() || owner->get_kind() == SyntaxKind::NamespaceDirective)
@@ -139,7 +139,7 @@ StructSymbol* SemanticVisitor::get_owner_type()
 	for (SemanticScope* scope = get_current_scope(); scope != nullptr; scope = scope->get_parent())
 	{
 		SyntaxSymbol* owner = scope->get_owner();
-		if ((owner == nullptr))
+		if (owner == nullptr)
 			continue;
 
 		if (owner->is_type())
@@ -154,7 +154,7 @@ MethodSymbol* SemanticVisitor::find_host_method_symbol()
 	for (SemanticScope* scope = get_current_scope(); scope != nullptr; scope = scope->get_parent())
 	{
 		SyntaxSymbol* owner = scope->get_owner();
-		if ((owner == nullptr))
+		if (owner == nullptr)
 			continue;
 
 		if (is_method_kind(owner->get_kind()))
@@ -166,7 +166,7 @@ MethodSymbol* SemanticVisitor::find_host_method_symbol()
 
 bool SemanticVisitor::is_symbol_accessible(SyntaxSymbol* symbol, const SyntaxNode* symbolDeclaringNode, const SyntaxNode* callSiteNode)
 {
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 		return true;
 
 	if (symbol->get_kind() == SyntaxKind::NamespaceDirective)
@@ -179,7 +179,7 @@ bool SemanticVisitor::is_symbol_accessible(SyntaxSymbol* symbol, const SyntaxNod
 	}
 
 	const SyntaxSymbol* parent = symbol->get_parent();
-	if ((parent == nullptr))
+	if (parent == nullptr)
 	{
 		// unit-level symbols are only reachable from within the same unit
 		return true;
@@ -187,7 +187,7 @@ bool SemanticVisitor::is_symbol_accessible(SyntaxSymbol* symbol, const SyntaxNod
 
 	if (parent->get_kind() == SyntaxKind::NamespaceDirective || parent->get_kind() == SyntaxKind::CompilationUnit)
 	{
-		if ((callSiteNode == nullptr))
+		if (callSiteNode == nullptr)
 			return false;
 
 		const SyntaxNode* declarationFile = get_compilation_unit(symbolDeclaringNode);
