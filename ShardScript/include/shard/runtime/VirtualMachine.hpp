@@ -37,6 +37,10 @@ namespace shard
 		GarbageCollector m_collector;
 		PrimitiveShapes m_primitiveShapes;
 
+		// interned instance per LOADCONST_STRING literal id; intern_string
+		// already deduplicates by content, this only skips the lookup
+		gmt::vector<ObjectInstance> m_stringLiterals;
+
 		bool m_hasUnhandledException = false;
 		ObjectInstance m_unhandledException;
 		ObjectInstance* m_exceptionCapture = nullptr;
