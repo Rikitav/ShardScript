@@ -133,7 +133,7 @@ GenericMethodSymbol* SymbolTable::find_generic_method(MethodSymbol* underlaying,
 	const std::uint64_t* key = make_generic_key(inlineKey, spilledKey.get_vector(), GenericMethodFamilyTag, reinterpret_cast<std::uint64_t>(underlaying), typeArguments);
 
 	SyntaxSymbol* symbol = m_interner.find(key, static_cast<std::uint16_t>(2 + typeArguments.size()));
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 		return nullptr;
 
 	return static_cast<GenericMethodSymbol*>(symbol);
@@ -280,7 +280,7 @@ SyntaxSymbol* SymbolTable::get_standard_type(StandardTypes type)
 	SyntaxSymbol*& slot = m_standardTypes[static_cast<std::size_t>(type)];
 
 	/*
-	if ((slot == nullptr))
+	if (slot == nullptr)
 		slot = m_arena.emplace<StructSymbol>(L"", SyntaxKind::StructDeclaration, m_rootNamespace);
 	*/
 

@@ -160,7 +160,7 @@ void ByteCodeEmitter::visit_variable_statement(const VariableStatementSyntax* no
 	std::optional<const VariableStatementSyntax*> nodeRef = ref_from(node);
 	VariableSymbol* symbol = nodeRef.has_value() ? lookup_symbol<VariableSymbol>(*nodeRef) : nullptr;
 
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 	{
 		if (!(node->get_expression() == nullptr))
 		{
@@ -875,7 +875,7 @@ void ByteCodeEmitter::visit_defer_variable(const DeferVariableSyntax* node)
 		break;
 	}
 
-	if ((dispose == nullptr))
+	if (dispose == nullptr)
 		return;
 
 	std::optional<std::uint16_t> slot = slot_of(symbol);

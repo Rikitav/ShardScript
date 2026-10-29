@@ -43,7 +43,7 @@ void QualifiedNameTypeSyntax::set_identifier(const SyntaxToken& token)
 
 gmt::wstring QualifiedNameTypeSyntax::get_qualifier() const
 {
-	if ((m_left == nullptr))
+	if (m_left == nullptr)
 		return gmt::wstring(m_identifierToken.get_lexeme());
 
 	return gmt::wstring(std::format(L"{}::{}", m_left->get_qualifier(), m_identifierToken.get_lexeme()));

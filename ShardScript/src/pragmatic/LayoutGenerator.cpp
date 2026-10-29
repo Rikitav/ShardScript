@@ -72,7 +72,7 @@ void LayoutGenerator::expand_scalar_local(FrameLayout& layout, StructSymbol* typ
 
 void LayoutGenerator::build_frame(MethodSymbol* method)
 {
-	if ((method == nullptr))
+	if (method == nullptr)
 		return;
 
 	SemanticModel& model = get_model();
@@ -112,7 +112,7 @@ void LayoutGenerator::build_frame(MethodSymbol* method)
 	gmt::inline_vector<const TypeShape*, 8> argumentShapes;
 	for (StructSymbol* argumentType : argumentTypes.get_vector())
 	{
-		if ((argumentType == nullptr))
+		if (argumentType == nullptr)
 		{
 			argumentShapes.push_back(nullptr);
 			continue;
@@ -142,7 +142,7 @@ void LayoutGenerator::build_frame(MethodSymbol* method)
 
 	for (SyntaxSymbol* local : *order)
 	{
-		if ((local == nullptr))
+		if (local == nullptr)
 			continue;
 
 		// parameters are caller-owned argument slots, not variable slots
@@ -172,7 +172,7 @@ void LayoutGenerator::build_frame(MethodSymbol* method)
 				const VariableStatementSyntax* variableNode = gmt::as<VariableStatementSyntax>(declaration);
 				const ExpressionSyntax* initializer = variableNode->get_expression();
 
-				if ((initializer == nullptr))
+				if (initializer == nullptr)
 					keepScalar = true;
 				else if (initializer->get_kind() == SyntaxKind::ObjectExpression)
 					verdict.verdict = PlacementVerdict::Stack;
@@ -229,7 +229,7 @@ void LayoutGenerator::visit_function_declaration(const FunctionDeclarationSyntax
 		return;
 
 	MethodSymbol* symbol = lookup_symbol<MethodSymbol>(*nodeRef);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 		return;
 
 	build_frame(symbol);
@@ -247,7 +247,7 @@ void LayoutGenerator::visit_operator_declaration(const OperatorDeclarationSyntax
 		return;
 
 	MethodSymbol* symbol = lookup_symbol<MethodSymbol>(*nodeRef);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 		return;
 
 	build_frame(symbol);
@@ -265,7 +265,7 @@ void LayoutGenerator::visit_constructor_declaration(const ConstructorDeclaration
 		return;
 
 	ConstructorSymbol* symbol = lookup_symbol<ConstructorSymbol>(*nodeRef);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 		return;
 
 	build_frame(symbol);
@@ -322,12 +322,12 @@ void LayoutGenerator::visit_struct_declaration(const StructDeclarationSyntax* no
 		return;
 
 	StructSymbol* symbol = lookup_symbol<StructSymbol>(*nodeRef);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 		return;
 
 	for (ConstructorSymbol* constructor : symbol->constructors)
 	{
-		if ((constructor == nullptr))
+		if (constructor == nullptr)
 			continue;
 
 		const SyntaxNode* declaration = get_symbol_table().lookup_node(constructor);

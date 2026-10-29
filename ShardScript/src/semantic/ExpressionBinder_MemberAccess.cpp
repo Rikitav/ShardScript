@@ -28,7 +28,7 @@ using namespace shard;
 
 bool ExpressionBinder::get_is_static_context(const ExpressionSyntax* expression) const
 {
-	if ((expression == nullptr))
+	if (expression == nullptr)
 		return true;
 
 	// an identifier marks itself as static context when it resolves to a
@@ -50,7 +50,7 @@ static StructSymbol* unwrap_nullable(StructSymbol* type)
 
 static StructSymbol* search_type_of(SymbolTable& table, StructSymbol* type)
 {
-	if ((type == nullptr))
+	if (type == nullptr)
 		return type;
 
 	if (type->get_kind() == SyntaxKind::GenericType)
@@ -107,10 +107,10 @@ StructSymbol* ExpressionBinder::analyze_member_access_expression(const MemberAcc
 	std::wstring_view memberName = identifier.get_lexeme();
 	SyntaxSymbol* symbol = nullptr;
 
-	if ((previous == nullptr))
+	if (previous == nullptr)
 		return analyze_identifier_expression(identifier, node, nodeRef);
 
-	if ((currentType == nullptr))
+	if (currentType == nullptr)
 		return nullptr;
 
 	currentType = unwrap_nullable(currentType);
@@ -126,13 +126,13 @@ StructSymbol* ExpressionBinder::analyze_member_access_expression(const MemberAcc
 		TypeParameterSymbol* typeParameter = static_cast<TypeParameterSymbol*>(currentType);
 		for (StructSymbol* constraint : typeParameter->get_constraints())
 		{
-			if ((constraint == nullptr))
+			if (constraint == nullptr)
 				continue;
 
 			symbol = find_property_on(table, constraint, memberName);
-			if ((symbol == nullptr))
+			if (symbol == nullptr)
 				symbol = find_field_on(table, constraint, memberName);
-			if ((symbol == nullptr))
+			if (symbol == nullptr)
 				symbol = find_method_on(table, constraint, memberName);
 
 			if (!(symbol == nullptr))
@@ -143,15 +143,15 @@ StructSymbol* ExpressionBinder::analyze_member_access_expression(const MemberAcc
 		}
 	}
 
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 	{
 		symbol = find_property_on(table, currentType, memberName);
-		if ((symbol == nullptr))
+		if (symbol == nullptr)
 			symbol = find_field_on(table, currentType, memberName);
-		if ((symbol == nullptr))
+		if (symbol == nullptr)
 			symbol = find_method_on(table, currentType, memberName);
 
-		if ((symbol == nullptr))
+		if (symbol == nullptr)
 		{
 			StructSymbol* accessParameters[] = { table.get_string_primitive() };
 			OperatorSymbol* accessOperator = resolve_operator_method(currentType, TokenType::Delimeter, accessParameters);
@@ -214,7 +214,7 @@ StructSymbol* ExpressionBinder::resolve_symbol_type(SyntaxSymbol* symbol, Syntax
 			FieldSymbol* field = static_cast<FieldSymbol*>(symbol);
 			StructSymbol* fieldType = field->get_return_type();
 
-			if ((fieldType == nullptr))
+			if (fieldType == nullptr)
 			{
 				diagnostics.report_error(location, gmt::concat(L"Field '", memberName, L"' type not resolved"));
 				return nullptr;
@@ -303,7 +303,7 @@ StructSymbol* ExpressionBinder::analyze_identifier_expression(SyntaxToken identi
 	}
 
 	SyntaxSymbol* symbol = get_current_scope()->lookup(memberName);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 	{
 		if (is_ambiguous_name(memberName))
 		{
@@ -330,7 +330,7 @@ StructSymbol* ExpressionBinder::analyze_identifier_expression(SyntaxToken identi
 			}
 		}
 
-		if ((symbol == nullptr))
+		if (symbol == nullptr)
 		{
 			diagnostics.report_error(location, gmt::concat(L"Symbol '", memberName, L"' not found in current scope"));
 			return nullptr;
@@ -420,7 +420,7 @@ StructSymbol* ExpressionBinder::analyze_property_access_expression(SyntaxToken i
 	bool requiresSetter = assignmentContext;
 	AccessorSymbol* accessor = requiresSetter ? property->get_setter() : property->get_getter();
 
-	if ((accessor == nullptr))
+	if (accessor == nullptr)
 	{
 		diagnostics.report_error(location, gmt::concat(L"Property '", memberName, L"' does not have a ", requiresSetter ? L"set" : L"get", L" accessor"));
 		return nullptr;
@@ -456,7 +456,7 @@ StructSymbol* ExpressionBinder::analyze_field_keyword_expression(const SyntaxNod
 	for (SemanticScope* scope = get_current_scope(); scope != nullptr; scope = scope->get_parent())
 	{
 		SyntaxSymbol* owner = scope->get_owner();
-		if ((owner == nullptr))
+		if (owner == nullptr)
 			continue;
 
 		if (owner->is_type())
@@ -469,7 +469,7 @@ StructSymbol* ExpressionBinder::analyze_field_keyword_expression(const SyntaxNod
 		break;
 	}
 
-	if ((propertySymbol == nullptr))
+	if (propertySymbol == nullptr)
 	{
 		get_diagnostics().report_error(node->get_location(), L"Keyword 'field' can only be used in property accessors");
 		return nullptr;
@@ -525,13 +525,13 @@ StructSymbol* ExpressionBinder::analyze_indexator_expression(const IndexatorExpr
 	}
 
 	IndexatorSymbol* indexator = resolve_indexator(node, currentType);
-	if ((indexator == nullptr))
+	if (indexator == nullptr)
 		return nullptr;
 
 	std::optional<const IndexatorExpressionSyntax*> nodeRef = ref_from(node);
 	StructSymbol* resultType = analyze_property_access_expression(node->get_delimeter_token(), is_assignment_context(node), nodeRef.has_value() ? *nodeRef : nullptr, previous, indexator, currentType);
 
-	if ((resultType == nullptr))
+	if (resultType == nullptr)
 		return nullptr;
 
 	AccessorSymbol* accessor = is_assignment_context(node) ? indexator->get_setter() : indexator->get_getter();
@@ -563,7 +563,7 @@ IndexatorSymbol* ExpressionBinder::resolve_indexator(const IndexatorExpressionSy
 		{
 			visit_expression(argument->get_expression());
 			StructSymbol* argumentType = get_expression_type(argument->get_expression());
-			if ((argumentType == nullptr))
+			if (argumentType == nullptr)
 				return nullptr;
 
 			argumentTypes.push_back(argumentType);
@@ -576,7 +576,7 @@ IndexatorSymbol* ExpressionBinder::resolve_indexator(const IndexatorExpressionSy
 
 	for (IndexatorSymbol* candidate : searchType->indexators)
 	{
-		if ((candidate == nullptr))
+		if (candidate == nullptr)
 			continue;
 
 		const gmt::vector<ParameterSymbol*>& parameters = candidate->get_parameters();
@@ -616,7 +616,7 @@ IndexatorSymbol* ExpressionBinder::resolve_indexator(const IndexatorExpressionSy
 		}
 	}
 
-	if ((selected == nullptr))
+	if (selected == nullptr)
 	{
 		diagnostics.report_error(location, gmt::concat(L"No indexators for type '", currentType->get_name(), L"' found that accept the supplied arguments"));
 		return nullptr;

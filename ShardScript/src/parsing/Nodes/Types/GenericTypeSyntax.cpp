@@ -33,7 +33,7 @@ void GenericTypeSyntax::set_type_arguments(TypeArgumentsListSyntax* typeArgument
 
 gmt::wstring GenericTypeSyntax::get_qualifier() const
 {
-	if ((m_underlayingType == nullptr))
+	if (m_underlayingType == nullptr)
 		return L"";
 
 	std::wstringstream qualifier;

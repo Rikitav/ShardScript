@@ -12,6 +12,7 @@
 
 #include <shard/semantic/SemanticModel.hpp>
 #include <shard/semantic/SymbolTable.hpp>
+
 #include <shard/semantic/symbols/AccessorSymbol.hpp>
 #include <shard/semantic/symbols/ArrayTypeSymbol.hpp>
 #include <shard/semantic/symbols/FieldSymbol.hpp>
@@ -37,7 +38,7 @@ void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 		if (!(symbol == nullptr))
 		{
 			MethodSymbol* setter = symbol->get_setter();
-			if ((setter == nullptr))
+			if (setter == nullptr)
 			{
 				unsupported(*nodeRef, L"indexator without a setter");
 				return;
@@ -45,7 +46,7 @@ void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 
 			StructSymbol* receiverType = (indexator->get_previous() == nullptr) ? nullptr : get_model().get_expression_type(indexator->get_previous());
 			setter = resolve_call_target(*nodeRef, setter, receiverType);
-			if ((setter == nullptr))
+			if (setter == nullptr)
 				return;
 
 			node->get_right()->accept(*this);
@@ -106,7 +107,7 @@ void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 		previous = static_cast<const MemberAccessExpressionSyntax*>(target)->get_previous();
 
 	SyntaxSymbol* bound = get_symbol_table().lookup_symbol(target);
-	if ((bound == nullptr))
+	if (bound == nullptr)
 		return;
 
 	SyntaxKind kind = bound->get_kind();
@@ -212,7 +213,7 @@ void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 	{
 		PropertySymbol* property = static_cast<PropertySymbol*>(bound);
 		MethodSymbol* setter = property->get_setter();
-		if ((setter == nullptr))
+		if (setter == nullptr)
 		{
 			unsupported(*nodeRef, L"property without a setter");
 			return;
@@ -220,7 +221,7 @@ void ByteCodeEmitter::emit_assignment(const BinaryExpressionSyntax* node)
 
 		StructSymbol* receiverType = (previous == nullptr) ? nullptr : get_model().get_expression_type(previous);
 		setter = resolve_call_target(*nodeRef, setter, receiverType);
-		if ((setter == nullptr))
+		if (setter == nullptr)
 			return;
 
 		node->get_right()->accept(*this);
@@ -266,7 +267,7 @@ void ByteCodeEmitter::emit_compound_assignment(const BinaryExpressionSyntax* nod
 		previous = static_cast<const MemberAccessExpressionSyntax*>(target)->get_previous();
 
 	SyntaxSymbol* bound = get_symbol_table().lookup_symbol(target);
-	if ((bound == nullptr))
+	if (bound == nullptr)
 		return;
 
 	SyntaxKind kind = bound->get_kind();

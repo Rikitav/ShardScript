@@ -43,7 +43,7 @@ void ArrayTypeSyntax::set_close_bracket(const SyntaxToken& token)
 
 gmt::wstring ArrayTypeSyntax::get_qualifier() const
 {
-	if ((m_underlayingType == nullptr))
+	if (m_underlayingType == nullptr)
 		return L"";
 
 	return gmt::wstring(std::format(L"{}[]", m_underlayingType->get_qualifier()));

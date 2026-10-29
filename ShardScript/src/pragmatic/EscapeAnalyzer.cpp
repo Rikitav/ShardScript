@@ -86,7 +86,7 @@ public:
 			return;
 
 		SyntaxSymbol* symbol = m_table.lookup_symbol(*nodeRef);
-		if ((symbol == nullptr))
+		if (symbol == nullptr)
 			return;
 
 		SyntaxKind kind = symbol->get_kind();
@@ -316,7 +316,7 @@ int EscapeAnalyzer::find_declaring_frame(SyntaxSymbol* symbol) const
 
 void EscapeAnalyzer::collect_expression_refs(const ExpressionSyntax* expression, ExpressionRefs& refs, bool includeReceivers)
 {
-	if ((expression == nullptr))
+	if (expression == nullptr)
 		return;
 
 	// the collector's result depends only on the syntax tree and the bound
@@ -392,7 +392,7 @@ bool EscapeAnalyzer::is_fresh_invokation(const ExpressionSyntax* expression)
 			callee = static_cast<MethodSymbol*>(bound);
 	}
 
-	if ((callee == nullptr))
+	if (callee == nullptr)
 		return false;
 
 	// a Fresh-summary callee returns a value it created: its arguments do
@@ -403,7 +403,7 @@ bool EscapeAnalyzer::is_fresh_invokation(const ExpressionSyntax* expression)
 
 void EscapeAnalyzer::mark_identity(const ExpressionSyntax* expression, bool includeReceivers)
 {
-	if ((expression == nullptr))
+	if (expression == nullptr)
 		return;
 
 	ExpressionRefs refs;
@@ -464,7 +464,7 @@ void EscapeAnalyzer::register_allocation_site(const ExpressionSyntax* site)
 
 void EscapeAnalyzer::declare_parameters(MethodSymbol* method)
 {
-	if ((method == nullptr))
+	if (method == nullptr)
 		return;
 
 	for (ParameterSymbol* const& parameter : method->get_parameters())
@@ -473,7 +473,7 @@ void EscapeAnalyzer::declare_parameters(MethodSymbol* method)
 
 void EscapeAnalyzer::analyze_member_body(MethodSymbol* method, const BlockSyntax* body)
 {
-	if ((body == nullptr))
+	if (body == nullptr)
 		return;
 
 	enter_frame(method, nullptr);
@@ -572,7 +572,7 @@ void EscapeAnalyzer::visit_function_declaration(const FunctionDeclarationSyntax*
 		return;
 
 	MethodSymbol* symbol = lookup_symbol<MethodSymbol>(*nodeRef);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 		return;
 
 	analyze_member_body(symbol, node->get_body());
@@ -588,7 +588,7 @@ void EscapeAnalyzer::visit_operator_declaration(const OperatorDeclarationSyntax*
 		return;
 
 	MethodSymbol* symbol = lookup_symbol<MethodSymbol>(*nodeRef);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 		return;
 
 	analyze_member_body(symbol, node->get_body());
@@ -604,7 +604,7 @@ void EscapeAnalyzer::visit_constructor_declaration(const ConstructorDeclarationS
 		return;
 
 	ConstructorSymbol* symbol = lookup_symbol<ConstructorSymbol>(*nodeRef);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 		return;
 
 	analyze_member_body(symbol, node->get_body());
@@ -622,7 +622,7 @@ void EscapeAnalyzer::visit_variable_statement(const VariableStatementSyntax* nod
 		return;
 
 	VariableSymbol* variable = lookup_symbol<VariableSymbol>(*nodeRef);
-	if ((variable == nullptr))
+	if (variable == nullptr)
 		return;
 
 	declare_local(variable);
@@ -798,7 +798,7 @@ void EscapeAnalyzer::visit_invokation_expression(const InvokationExpressionSynta
 			for (std::size_t i = 0; i < argumentNodes.size(); ++i)
 			{
 				ArgumentSyntax* const& argument = argumentNodes[i];
-				if ((argument == nullptr))
+				if (argument == nullptr)
 					continue;
 
 				const ExpressionSyntax* argumentExpression = argument->get_expression();
@@ -857,7 +857,7 @@ void EscapeAnalyzer::visit_object_creation_expression(const ObjectExpressionSynt
 			for (std::size_t i = 0; i < argumentNodes.size(); ++i)
 			{
 				ArgumentSyntax* const& argument = argumentNodes[i];
-				if ((argument == nullptr))
+				if (argument == nullptr)
 					continue;
 
 				const ExpressionSyntax* argumentExpression = argument->get_expression();

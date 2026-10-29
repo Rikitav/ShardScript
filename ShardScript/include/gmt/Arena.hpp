@@ -190,4 +190,3 @@ namespace gmt
 		return std::nullopt;
 	}
 }
-

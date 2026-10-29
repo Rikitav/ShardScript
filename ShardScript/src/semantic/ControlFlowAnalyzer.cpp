@@ -76,11 +76,11 @@ void ControlFlowAnalyzer::visit_function_declaration(const FunctionDeclarationSy
 		return;
 
 	MethodSymbol* symbol = lookup_symbol<MethodSymbol>(*nodeRef);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 		return;
 
 	const BlockSyntax* body = node->get_body();
-	if ((body == nullptr))
+	if (body == nullptr)
 		return;
 
 	enter_member_body(symbol);
@@ -103,11 +103,11 @@ void ControlFlowAnalyzer::visit_operator_declaration(const OperatorDeclarationSy
 		return;
 
 	MethodSymbol* symbol = lookup_symbol<MethodSymbol>(*nodeRef);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 		return;
 
 	const BlockSyntax* body = node->get_body();
-	if ((body == nullptr))
+	if (body == nullptr)
 		return;
 
 	enter_member_body(symbol);
@@ -130,11 +130,11 @@ void ControlFlowAnalyzer::visit_constructor_declaration(const ConstructorDeclara
 		return;
 
 	ConstructorSymbol* symbol = lookup_symbol<ConstructorSymbol>(*nodeRef);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 		return;
 
 	const BlockSyntax* body = node->get_body();
-	if ((body == nullptr))
+	if (body == nullptr)
 		return;
 
 	enter_member_body(symbol);
@@ -158,11 +158,11 @@ void ControlFlowAnalyzer::visit_lambda_expression(const LambdaExpressionSyntax* 
 	if (!(node->get_parameters() == nullptr))
 		symbol = lookup_symbol<MethodSymbol>(node->get_parameters());
 
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 		return;
 
 	const BlockSyntax* body = node->get_body();
-	if ((body == nullptr))
+	if (body == nullptr)
 		return;
 
 	enter_member_body(symbol);
@@ -193,7 +193,7 @@ void ControlFlowAnalyzer::declare_parameters(MethodSymbol* method)
 
 void ControlFlowAnalyzer::analyze_member_body(MethodSymbol* method, const BlockSyntax* body, const TextLocation& errorLocation)
 {
-	if ((body == nullptr))
+	if (body == nullptr)
 		return;
 
 	bool wasAsync = m_currentMethodIsAsync;
@@ -212,7 +212,7 @@ void ControlFlowAnalyzer::analyze_member_body(MethodSymbol* method, const BlockS
 		return;
 
 	StructSymbol* returnType = method->get_return_type();
-	if ((returnType == nullptr))
+	if (returnType == nullptr)
 		return;
 
 	bool returnsVoid = returnType == get_symbol_table().get_void_primitive();
@@ -240,7 +240,7 @@ void ControlFlowAnalyzer::analyze_member_body(MethodSymbol* method, const BlockS
 
 void ControlFlowAnalyzer::report_missing_return(const TextLocation& location, StructSymbol* returnType)
 {
-	if ((returnType == nullptr))
+	if (returnType == nullptr)
 	{
 		get_diagnostics().report_error(location, L"Method must return a value");
 		return;
@@ -292,7 +292,7 @@ ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::without_throws(FlowState sta
 
 ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_statement(const StatementSyntax* node)
 {
-	if ((node == nullptr))
+	if (node == nullptr)
 		return FlowState::Normal;
 
 	switch (node->get_kind())
@@ -435,7 +435,7 @@ ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_statement(const Stat
 
 ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_statements_block(const StatementsBlockSyntax* node)
 {
-	if ((node == nullptr))
+	if (node == nullptr)
 		return FlowState::Normal;
 
 	FlowState combined = FlowState::Normal;
@@ -458,7 +458,7 @@ ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_statements_block(con
 
 ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_body(const BlockSyntax* body)
 {
-	if ((body == nullptr))
+	if (body == nullptr)
 		return FlowState::Normal;
 
 	if (body->get_kind() == SyntaxKind::ArrowClause)
@@ -473,7 +473,7 @@ ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_body(const BlockSynt
 
 ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_conditional_chain(const ConditionalClauseBaseSyntax* node)
 {
-	if ((node == nullptr))
+	if (node == nullptr)
 		return FlowState::Normal;
 
 	if (node->get_kind() == SyntaxKind::ElseStatement)
@@ -507,7 +507,7 @@ ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_conditional_chain(co
 
 ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_try_statement(const TryStatementSyntax* node)
 {
-	if ((node == nullptr))
+	if (node == nullptr)
 		return FlowState::Normal;
 
 	std::span<CatchClauseSyntax* const> catchClauses = node->get_catch_clauses();
@@ -567,7 +567,7 @@ ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_throw_statement(cons
 	if (!(expression == nullptr))
 		scan_expression(expression);
 
-	if ((m_currentMethod == nullptr))
+	if (m_currentMethod == nullptr)
 		return FlowState::Throws;
 
 	MethodEffectSummary& effects = m_currentMethod->get_effect_summary();
@@ -585,7 +585,7 @@ ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_throw_statement(cons
 	}
 
 	// thrown type is unknown; only the may-throw flag is recorded
-	if ((thrownType == nullptr))
+	if (thrownType == nullptr)
 		return FlowState::Throws;
 
 	if (is_caught_by_active_try(thrownType))
@@ -605,7 +605,7 @@ void ControlFlowAnalyzer::push_try_catch(std::span<CatchClauseSyntax* const> cla
 
 	for (CatchClauseSyntax* const& clause : clauses)
 	{
-		if ((clause == nullptr))
+		if (clause == nullptr)
 			continue;
 
 		if ((clause->get_exception_type() == nullptr))
@@ -615,7 +615,7 @@ void ControlFlowAnalyzer::push_try_catch(std::span<CatchClauseSyntax* const> cla
 		}
 
 		StructSymbol* catchType = lookup_catch_type(clause);
-		if ((catchType == nullptr))
+		if (catchType == nullptr)
 		{
 			// unresolved exception type; treat the clause as a catch-all
 			frame.catchesAll = true;
@@ -659,7 +659,7 @@ void ControlFlowAnalyzer::rebuild_effective_caught_types()
 
 bool ControlFlowAnalyzer::is_caught_by_active_try(StructSymbol* thrownType)
 {
-	if ((thrownType == nullptr))
+	if (thrownType == nullptr)
 		return false;
 
 	if (m_catchAllDepth > 0)
@@ -696,7 +696,7 @@ StructSymbol* ControlFlowAnalyzer::current_catch_exception_type() const
 StructSymbol* ControlFlowAnalyzer::lookup_catch_type(const CatchClauseSyntax* clause)
 {
 	const TypeSyntax* exceptionType = clause->get_exception_type();
-	if ((exceptionType == nullptr))
+	if (exceptionType == nullptr)
 		return nullptr;
 
 	return lookup_symbol<StructSymbol>(exceptionType);
@@ -704,7 +704,7 @@ StructSymbol* ControlFlowAnalyzer::lookup_catch_type(const CatchClauseSyntax* cl
 
 ControlFlowAnalyzer::FlowState ControlFlowAnalyzer::analyze_loop_body(const StatementsBlockSyntax* body)
 {
-	if ((body == nullptr))
+	if (body == nullptr)
 		return FlowState::Normal;
 
 	++m_loopDepth;
@@ -725,7 +725,7 @@ void ControlFlowAnalyzer::mark_assigned(SyntaxSymbol* variable)
 
 bool ControlFlowAnalyzer::is_assigned(SyntaxSymbol* variable) const
 {
-	if ((variable == nullptr))
+	if (variable == nullptr)
 		return false;
 
 	return m_assignedVariables.find(variable) != m_assignedVariables.end();
@@ -733,7 +733,7 @@ bool ControlFlowAnalyzer::is_assigned(SyntaxSymbol* variable) const
 
 void ControlFlowAnalyzer::analyze_expression_for_assignment(const ExpressionSyntax* expression)
 {
-	if ((expression == nullptr))
+	if (expression == nullptr)
 		return;
 
 	if (expression->get_kind() != SyntaxKind::BinaryExpression)
@@ -750,7 +750,7 @@ void ControlFlowAnalyzer::analyze_expression_for_assignment(const ExpressionSynt
 		return;
 
 	SyntaxSymbol* symbol = get_symbol_table().lookup_symbol(left);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 		return;
 
 	bool isLocal = !(static_cast<VariableSymbol*>(symbol) == nullptr);
@@ -761,7 +761,7 @@ void ControlFlowAnalyzer::analyze_expression_for_assignment(const ExpressionSynt
 
 void ControlFlowAnalyzer::analyze_expression_for_use(const ExpressionSyntax* expression)
 {
-	if ((expression == nullptr))
+	if (expression == nullptr)
 		return;
 
 	switch (expression->get_kind())
@@ -771,7 +771,7 @@ void ControlFlowAnalyzer::analyze_expression_for_use(const ExpressionSyntax* exp
 			const IdentifierNameTypeSyntax* identifier = static_cast<const IdentifierNameTypeSyntax*>(expression);
 
 			SyntaxSymbol* symbol = get_symbol_table().lookup_symbol(identifier);
-			if ((symbol == nullptr))
+			if (symbol == nullptr)
 				break;
 
 			bool isLocal = !(static_cast<VariableSymbol*>(symbol) == nullptr);
@@ -804,11 +804,11 @@ void ControlFlowAnalyzer::analyze_expression_for_use(const ExpressionSyntax* exp
 
 void ControlFlowAnalyzer::analyze_variable_statement(const VariableStatementSyntax* node)
 {
-	if ((node == nullptr))
+	if (node == nullptr)
 		return;
 
 	VariableSymbol* variable = lookup_symbol<VariableSymbol>(node);
-	if ((variable == nullptr))
+	if (variable == nullptr)
 		return;
 
 	if ((node->get_expression() == nullptr))
@@ -838,7 +838,7 @@ void ControlFlowAnalyzer::leave_member_body(MethodSymbol* method)
 
 void ControlFlowAnalyzer::scan_expression(const ExpressionSyntax* expression)
 {
-	if ((expression == nullptr))
+	if (expression == nullptr)
 		return;
 
 	expression->accept(*this);
@@ -869,7 +869,7 @@ bool ControlFlowAnalyzer::is_increment_decrement_operator(TokenType type)
 
 bool ControlFlowAnalyzer::is_this_expression(const ExpressionSyntax* expression)
 {
-	if ((expression == nullptr))
+	if (expression == nullptr)
 		return false;
 
 	SyntaxKind kind = expression->get_kind();
@@ -884,7 +884,7 @@ bool ControlFlowAnalyzer::is_this_expression(const ExpressionSyntax* expression)
 		return false;
 	}
 
-	if ((expression == nullptr))
+	if (expression == nullptr)
 		return false;
 
 	ParameterSymbol* parameter = lookup_symbol<ParameterSymbol>(expression);
@@ -897,7 +897,7 @@ void ControlFlowAnalyzer::record_field_or_property_write(const MemberAccessExpre
 		return;
 
 	SyntaxSymbol* bound = get_symbol_table().lookup_symbol(node);
-	if ((bound == nullptr))
+	if (bound == nullptr)
 		return;
 
 	FieldSymbol* field = static_cast<FieldSymbol*>(bound);
@@ -975,7 +975,7 @@ void ControlFlowAnalyzer::record_callee_effects(MethodSymbol* callee, const Synt
 {
 	// a null callee records an unknown call site (delegate or unresolved call)
 	// that still requires an explicit 'try' or an enclosing try-catch
-	if ((m_currentMethod == nullptr))
+	if (m_currentMethod == nullptr)
 		return;
 
 	CallEdge edge;
@@ -996,7 +996,7 @@ bool ControlFlowAnalyzer::is_try_wrapped(const ExpressionSyntax* expression) con
 
 void ControlFlowAnalyzer::add_thrown_type(gmt::unordered_set<StructSymbol*>& thrownTypes, StructSymbol* type)
 {
-	if ((type == nullptr))
+	if (type == nullptr)
 		return;
 
 	for (StructSymbol* existing : thrownTypes)
@@ -1015,7 +1015,7 @@ void ControlFlowAnalyzer::add_thrown_type(gmt::unordered_set<StructSymbol*>& thr
 
 bool ControlFlowAnalyzer::call_edge_catches(const CallEdge& edge, StructSymbol* thrownType)
 {
-	if ((thrownType == nullptr))
+	if (thrownType == nullptr)
 		return false;
 
 	if (edge.catchesAll)
@@ -1040,7 +1040,7 @@ void ControlFlowAnalyzer::propagate_effects()
 		for (auto& pair : m_callGraph)
 		{
 			MethodSymbol* caller = pair.first;
-			if ((caller == nullptr))
+			if (caller == nullptr)
 				continue;
 
 			MethodEffectSummary previous = caller->get_effect_summary();
@@ -1048,7 +1048,7 @@ void ControlFlowAnalyzer::propagate_effects()
 			for (const CallEdge& edge : pair.second)
 			{
 				MethodSymbol* callee = edge.callee;
-				if ((callee == nullptr))
+				if (callee == nullptr)
 					continue;
 
 				MethodEffectSummary& callerEffects = caller->get_effect_summary();

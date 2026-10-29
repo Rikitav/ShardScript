@@ -42,7 +42,7 @@ std::byte* ObjectInstance::get_memory() const
 std::uint32_t ObjectInstance::resolve_field_slot(FieldSymbol* field)
 {
 	StructSymbol* owner = gmt::as<StructSymbol>(field->get_parent());
-	if ((owner == nullptr))
+	if (owner == nullptr)
 		return 0;
 
 	std::uint32_t ordinal = 0;

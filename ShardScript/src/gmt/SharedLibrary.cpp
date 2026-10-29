@@ -47,10 +47,6 @@ namespace
 #endif
 }
 
-SharedLibrary::SharedLibrary(nullref_t)
-	: m_handle(nullptr)
-{ }
-
 SharedLibrary::SharedLibrary(const std::filesystem::path& path)
 {
 	load(path);

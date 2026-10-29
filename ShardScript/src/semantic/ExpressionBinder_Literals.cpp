@@ -220,7 +220,7 @@ StructSymbol* ExpressionBinder::analyze_literal_expression(const LiteralExpressi
 		return nullptr;
 
 	LiteralSymbol* symbol = lookup_symbol<LiteralSymbol>(*nodeRef);
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 		symbol = table.bind_symbol<LiteralSymbol>(*nodeRef, literal.get_type(), nullptr);
 
 	switch (literal.get_type())
@@ -288,7 +288,7 @@ StructSymbol* ExpressionBinder::analyze_number_literal(const LiteralExpressionSy
 
 	std::optional<const LiteralExpressionSyntax*> nodeRef = ref_from(node);
 	LiteralSymbol* symbol = nodeRef.has_value() ? static_cast<LiteralSymbol*>(lookup_symbol<LiteralSymbol>(*nodeRef)) : nullptr;
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 		return table.get_integer_primitive();
 
 	std::int64_t value = 0;
@@ -315,7 +315,7 @@ StructSymbol* ExpressionBinder::analyze_double_literal(const LiteralExpressionSy
 {
 	std::optional<const LiteralExpressionSyntax*> nodeRef = ref_from(node);
 	LiteralSymbol* symbol = nodeRef.has_value() ? static_cast<LiteralSymbol*>(lookup_symbol<LiteralSymbol>(*nodeRef)) : nullptr;
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 		return get_symbol_table().get_double_primitive();
 
 	double value = 0.0;
@@ -338,7 +338,7 @@ void ExpressionBinder::visit_collection_expression(const CollectionExpressionSyn
 	StructSymbol* elementType = nullptr;
 	for (ExpressionSyntax* const& value : values)
 	{
-		if ((elementType == nullptr))
+		if (elementType == nullptr)
 			elementType = get_expression_type(value);
 	}
 
@@ -350,7 +350,7 @@ void ExpressionBinder::visit_collection_expression(const CollectionExpressionSyn
 	}
 
 	std::optional<const CollectionExpressionSyntax*> nodeRef = ref_from(node);
-	if ((elementType == nullptr))
+	if (elementType == nullptr)
 	{
 		if (nodeRef.has_value())
 			set_expression_type(*nodeRef, nullptr);

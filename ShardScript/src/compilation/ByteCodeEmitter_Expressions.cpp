@@ -54,7 +54,7 @@ namespace
 {
 	shard::DelegateTypeSymbol* unwrap_delegate_type(shard::StructSymbol* type)
 	{
-		if ((type == nullptr))
+		if (type == nullptr)
 			return nullptr;
 
 		if (type->get_kind() == shard::SyntaxKind::DelegateType)
@@ -307,7 +307,7 @@ void ByteCodeEmitter::visit_binary_expression(const BinaryExpressionSyntax* node
 		{
 			StructSymbol* receiverType = get_model().get_expression_type(node->get_left());
 			MethodSymbol* target = resolve_call_target(*nodeRef, overload, receiverType);
-			if ((target == nullptr))
+			if (target == nullptr)
 				return;
 
 			node->get_right()->accept(*this);
@@ -486,7 +486,7 @@ bool ByteCodeEmitter::is_identifier_target(const ExpressionSyntax* expression)
 void ByteCodeEmitter::emit_identifier_load(const SyntaxNode* node, const ExpressionSyntax* previous)
 {
 	SyntaxSymbol* bound = get_symbol_table().lookup_symbol(node);
-	if ((bound == nullptr))
+	if (bound == nullptr)
 	{
 		if (!(previous == nullptr))
 			return;
@@ -550,7 +550,7 @@ void ByteCodeEmitter::emit_identifier_load(const SyntaxNode* node, const Express
 			PropertySymbol* property = static_cast<PropertySymbol*>(bound);
 			MethodSymbol* getter = property->get_getter();
 
-			if ((getter == nullptr))
+			if (getter == nullptr)
 			{
 				unsupported(node, L"property without a getter");
 				return;
@@ -558,7 +558,7 @@ void ByteCodeEmitter::emit_identifier_load(const SyntaxNode* node, const Express
 
 			StructSymbol* receiverType = (previous == nullptr) ? nullptr : get_model().get_expression_type(previous);
 			getter = resolve_call_target(node, getter, receiverType);
-			if ((getter == nullptr))
+			if (getter == nullptr)
 				return;
 
 			if (!(previous == nullptr))
@@ -620,7 +620,7 @@ void ByteCodeEmitter::emit_instance_field_load(FieldSymbol* field, const Express
 
 FieldSymbol* ByteCodeEmitter::capture_field_of(SyntaxSymbol* bound) const
 {
-	if ((m_generatingFor == nullptr))
+	if (m_generatingFor == nullptr)
 		return nullptr;
 
 	const gmt::vector<SyntaxSymbol*>* captures = m_pragmatic.get_lambda_captures(m_generatingFor);
@@ -666,7 +666,7 @@ bool ByteCodeEmitter::is_extension_call(MethodSymbol* method, const ExpressionSy
 	// the argument list, so a bound static callee with one more parameter
 	// than explicit arguments consumes the receiver as its first parameter
 	StructSymbol* receiverType = get_model().get_expression_type(receiver);
-	if ((receiverType == nullptr))
+	if (receiverType == nullptr)
 		return false;
 
 	std::size_t explicitArguments = arguments == nullptr ? 0 : arguments->get_arguments().size();
@@ -757,7 +757,7 @@ MethodSymbol* ByteCodeEmitter::into_call_method(const ExpressionSyntax* expressi
 		receiverType = get_model().get_expression_type(invokation->get_previous());
 
 	method = resolve_call_target(*invokationRef, method, receiverType);
-	if ((method == nullptr))
+	if (method == nullptr)
 		return nullptr;
 
 	const SyntaxSymbol* parent = method->get_parent();
@@ -765,7 +765,7 @@ MethodSymbol* ByteCodeEmitter::into_call_method(const ExpressionSyntax* expressi
 		return nullptr;
 
 	StructSymbol* returnType = method->get_return_type();
-	if ((returnType == nullptr))
+	if (returnType == nullptr)
 		return nullptr;
 
 	SyntaxKind returnKind = returnType->get_kind();
@@ -790,7 +790,7 @@ void ByteCodeEmitter::visit_invokation_expression(const InvokationExpressionSynt
 		StructSymbol* calleeType = get_model().get_expression_type(node->get_previous());
 		DelegateTypeSymbol* delegateType = unwrap_delegate_type(calleeType);
 
-		if ((delegateType == nullptr))
+		if (delegateType == nullptr)
 		{
 			unsupported(*nodeRef, L"invokation of a non-delegate expression");
 			return;
@@ -812,7 +812,7 @@ void ByteCodeEmitter::visit_invokation_expression(const InvokationExpressionSynt
 	}
 
 	SyntaxSymbol* bound = get_symbol_table().lookup_symbol(*nodeRef);
-	if ((bound == nullptr))
+	if (bound == nullptr)
 		return;
 
 	if (bound->is_method())
@@ -824,7 +824,7 @@ void ByteCodeEmitter::visit_invokation_expression(const InvokationExpressionSynt
 			receiverType = get_model().get_expression_type(node->get_previous());
 
 		method = resolve_call_target(*nodeRef, method, receiverType);
-		if ((method == nullptr))
+		if (method == nullptr)
 			return;
 
 		emit_method_call(method, node->get_previous(), node->get_arguments(), false);
@@ -844,7 +844,7 @@ void ByteCodeEmitter::visit_invokation_expression(const InvokationExpressionSynt
 
 	DelegateTypeSymbol* delegateType = unwrap_delegate_type(holderType);
 
-	if ((delegateType == nullptr))
+	if (delegateType == nullptr)
 	{
 		unsupported(*nodeRef, L"this invokation shape");
 		return;
@@ -913,7 +913,7 @@ void ByteCodeEmitter::visit_indexator_expression(const IndexatorExpressionSyntax
 	if (!(indexator == nullptr))
 	{
 		MethodSymbol* getter = indexator->get_getter();
-		if ((getter == nullptr))
+		if (getter == nullptr)
 		{
 			unsupported(*nodeRef, L"indexator without a getter");
 			return;
@@ -921,7 +921,7 @@ void ByteCodeEmitter::visit_indexator_expression(const IndexatorExpressionSyntax
 
 		StructSymbol* receiverType = (node->get_previous() == nullptr) ? nullptr : get_model().get_expression_type(node->get_previous());
 		getter = resolve_call_target(*nodeRef, getter, receiverType);
-		if ((getter == nullptr))
+		if (getter == nullptr)
 			return;
 
 		emit_arguments_reversed(node->get_arguments());
@@ -1062,7 +1062,7 @@ void ByteCodeEmitter::visit_collection_expression(const CollectionExpressionSynt
 
 	StructSymbol* elementType = (boundArray == nullptr) ? nullptr : boundArray->get_underlaying_type();
 	elementType = substitute_type(elementType);
-	if ((elementType == nullptr))
+	if (elementType == nullptr)
 	{
 		unsupported(*nodeRef, L"collection expression without a bound element type");
 		return;
@@ -1092,7 +1092,7 @@ void ByteCodeEmitter::visit_object_creation_expression(const ObjectExpressionSyn
 	if (!(node->get_array_size() == nullptr))
 	{
 		ArrayTypeSymbol* arrayType = lookup_symbol<ArrayTypeSymbol>(*nodeRef);
-		if ((arrayType == nullptr))
+		if (arrayType == nullptr)
 		{
 			unsupported(*nodeRef, L"array creation without a bound type");
 			return;
@@ -1128,7 +1128,7 @@ void ByteCodeEmitter::emit_object_construction(const ObjectExpressionSyntax* nod
 		type = gmt::as<StructSymbol>(constructor->get_parent());
 
 	type = substitute_type(type);
-	if ((type == nullptr))
+	if (type == nullptr)
 	{
 		unsupported(*nodeRef, L"object creation without a bound type");
 		return;
@@ -1138,7 +1138,7 @@ void ByteCodeEmitter::emit_object_construction(const ObjectExpressionSyntax* nod
 	if (!(constructor == nullptr))
 	{
 		constructorCall = resolve_call_target(*nodeRef, constructor, type);
-		if ((constructorCall == nullptr))
+		if (constructorCall == nullptr)
 			return;
 	}
 
@@ -1201,19 +1201,19 @@ void ByteCodeEmitter::visit_lambda_expression(const LambdaExpressionSyntax* node
 		return;
 
 	DelegateTypeSymbol* delegateType = lookup_symbol<DelegateTypeSymbol>(*nodeRef);
-	if ((delegateType == nullptr))
+	if (delegateType == nullptr)
 		return;
 
 	MethodSymbol* anonymousMethod = nullptr;
 	if (!(node->get_parameters() == nullptr))
 		anonymousMethod = lookup_symbol<MethodSymbol>(node->get_parameters());
 
-	if ((anonymousMethod == nullptr))
+	if (anonymousMethod == nullptr)
 		return;
 
 	const SyntaxSymbol* parent = anonymousMethod->get_parent();
 	StructSymbol* captureBox = (parent == nullptr) || !parent->is_type() ? nullptr : gmt::as<StructSymbol>(parent);
-	if ((captureBox == nullptr))
+	if (captureBox == nullptr)
 		return;
 
 	// capture boxes are synthesized once for the open body: a lambda whose

@@ -17,7 +17,7 @@ SymbolBuilder<NamespaceSymbol>::SymbolBuilder(SymbolTable& table, std::wstring_v
 	: SymbolBuilderBase(table)
 {
 	NamespaceSymbol* anchor = parent;
-	if ((anchor == nullptr))
+	if (anchor == nullptr)
 		anchor = table.get_root_namespace();
 
 	m_symbol = anchor->lookup_or_create(name, table);

@@ -24,7 +24,7 @@ namespace
 {
 	OperatorSymbol* find_operator(StructSymbol* owner, TokenType operatorToken, std::span<StructSymbol* const> parameterTypes)
 	{
-		if ((owner == nullptr))
+		if (owner == nullptr)
 			return nullptr;
 
 		for (OperatorSymbol* candidate : owner->operators)
@@ -181,7 +181,7 @@ StructSymbol* ExpressionBinder::analyze_binary_expression(const BinaryExpression
 		pop_scope();
 
 		StructSymbol* rightType = get_expression_type(node->get_right());
-		if ((rightType == nullptr))
+		if (rightType == nullptr)
 		{
 			get_diagnostics().report_error(node->get_location(), L"Right operand type could not be determined");
 			return leftType;
@@ -217,7 +217,7 @@ StructSymbol* ExpressionBinder::analyze_binary_expression(const BinaryExpression
 
 	StructSymbol* rightType = get_expression_type(node->get_right());
 
-	if ((rightType == nullptr))
+	if (rightType == nullptr)
 	{
 		get_diagnostics().report_error(node->get_location(), L"Right operand type could not be determined");
 		return leftType;
@@ -412,7 +412,7 @@ StructSymbol* ExpressionBinder::analyze_unary_expression(const UnaryExpressionSy
 	SymbolTable& table = get_symbol_table();
 
 	StructSymbol* expressionType = get_expression_type(node->get_operand());
-	if ((expressionType == nullptr))
+	if (expressionType == nullptr)
 	{
 		get_diagnostics().report_error(node->get_location(), L"Operand type could not be determined");
 		return nullptr;

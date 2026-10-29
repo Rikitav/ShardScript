@@ -1819,7 +1819,7 @@ BaseTypesListSyntax* SourceParser::read_base_types(SourceProvider& reader, Synta
 			break;
 
 		TypeSyntax* baseType = read_type(reader, syntax);
-		if ((baseType == nullptr))
+		if (baseType == nullptr)
 			break;
 
 		baseTypes.push_back(baseType);
@@ -1859,7 +1859,7 @@ WhereClauseSyntax* SourceParser::read_where_clause(SourceProvider& reader, Synta
 			break;
 
 		TypeSyntax* constraintType = read_type(reader, syntax);
-		if ((constraintType == nullptr))
+		if (constraintType == nullptr)
 			break;
 
 		constraintTypes.push_back(constraintType);
@@ -2415,7 +2415,7 @@ ExpressionSyntax* SourceParser::read_expression(SourceProvider& reader, SyntaxNo
 			reader.consume();
 
 			TypeSyntax* targetType = read_type(reader, parent);
-			if ((targetType == nullptr))
+			if (targetType == nullptr)
 				break;
 
 			if (operationType == TokenType::AsOperator)
@@ -2444,7 +2444,7 @@ ExpressionSyntax* SourceParser::read_expression(SourceProvider& reader, SyntaxNo
 			reader.consume();
 
 			ExpressionSyntax* right = read_expression(reader, parent, 0);
-			if ((right == nullptr))
+			if (right == nullptr)
 				break;
 
 			auto assignment = arena.emplace<BinaryExpressionSyntax>(parent);
@@ -2465,7 +2465,7 @@ ExpressionSyntax* SourceParser::read_expression(SourceProvider& reader, SyntaxNo
 		reader.consume();
 
 		ExpressionSyntax* right = read_expression(reader, parent, precedence);
-		if ((right == nullptr))
+		if (right == nullptr)
 			break;
 
 		if (operationType == TokenType::RangeOperator || operationType == TokenType::RangeInclusiveOperator)

@@ -39,7 +39,7 @@ namespace
 
 	void write_symbol_name(std::wostream& out, SyntaxSymbol* symbol)
 	{
-		if ((symbol == nullptr))
+		if (symbol == nullptr)
 		{
 			out << L"null";
 			return;
@@ -428,7 +428,6 @@ namespace
 void ProgramDisassembler::disassemble_method(std::wostream& out, MethodSymbol* method)
 {
 	const BytecodeSection& text = m_domain.get_program().get_text_section();
-	const gmt::Arena& arena = m_domain.get_semantic_model().get_table().get_arena();
 	const std::size_t start = reinterpret_cast<std::size_t>(method->get_function_pointer());
 
 	out << L"; ============================================================\n";
@@ -438,7 +437,7 @@ void ProgramDisassembler::disassemble_method(std::wostream& out, MethodSymbol* m
 	out << L"; Offset           Opcode Arguments\n";
 	out << L"; -------- -------------- -----------------------------------------\n";
 
-	ByteCodeDecoder decoder(text, arena, start);
+	ByteCodeDecoder decoder(text, start);
 	while (!decoder.is_eof())
 	{
 		const OpCode op = decoder.absorb_opcode();
@@ -478,7 +477,7 @@ void ProgramDisassembler::disassemble(std::wostream& out)
 
 	for (MethodSymbol* method : m_foundMethods)
 	{
-		if ((method == nullptr))
+		if (method == nullptr)
 			continue;
 
 		std::size_t start = reinterpret_cast<std::size_t>(method->get_function_pointer());

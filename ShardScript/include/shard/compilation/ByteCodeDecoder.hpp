@@ -1,21 +1,12 @@
 #pragma once
 #include <shard/Definitions.hpp>
-
 #include <shard/compilation/OperationCode.hpp>
-
 #include <shard/semantic/SyntaxSymbol.hpp>
-
 #include <gmt/Containers.hpp>
-#include <gmt/Ref.hpp>
 
 #include <cstddef>
 #include <cstdint>
 #include <vector>
-
-namespace gmt
-{
-	class Arena;
-}
 
 namespace shard
 {
@@ -28,16 +19,15 @@ namespace shard
 
 	class SHARD_API ByteCodeDecoder
 	{
-		const gmt::Arena& m_arena;
 		const gmt::vector<std::byte>& m_code;
 		std::size_t m_base;
 		std::size_t m_end;
 		std::size_t m_ip = 0;
 
 	public:
-		ByteCodeDecoder(const gmt::vector<std::byte>& code, const gmt::Arena& arena);
-		ByteCodeDecoder(const gmt::vector<std::byte>& code, const gmt::Arena& arena, std::size_t start);
-		ByteCodeDecoder(const gmt::vector<std::byte>& code, const gmt::Arena& arena, std::size_t start, std::size_t length);
+		ByteCodeDecoder(const gmt::vector<std::byte>& code);
+		ByteCodeDecoder(const gmt::vector<std::byte>& code, std::size_t start);
+		ByteCodeDecoder(const gmt::vector<std::byte>& code, std::size_t start, std::size_t length);
 
 		bool is_eof() const;
 		std::size_t index() const;

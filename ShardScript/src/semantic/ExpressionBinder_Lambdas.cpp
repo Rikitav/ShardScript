@@ -20,7 +20,7 @@ namespace
 	DelegateTypeSymbol* unwrap_expected_delegate(StructSymbol* type, GenericTypeSymbol*& outInstantiation)
 	{
 		outInstantiation = nullptr;
-		if ((type == nullptr))
+		if (type == nullptr)
 			return nullptr;
 
 		if (type->get_kind() == SyntaxKind::DelegateType)
@@ -72,7 +72,7 @@ void ExpressionBinder::bind_lambda_body(const LambdaExpressionSyntax* node, cons
 	else if (!(body == nullptr))
 		returnType = infer_return_type_from_body(body);
 
-	if ((returnType == nullptr))
+	if (returnType == nullptr)
 		returnType = get_symbol_table().get_void_primitive();
 
 	anonymousMethod->set_return_type(returnType);
@@ -87,11 +87,11 @@ bool ExpressionBinder::try_bind_pending_lambda(const LambdaExpressionSyntax* nod
 {
 	GenericTypeSymbol* instantiation = nullptr;
 	DelegateTypeSymbol* expected = unwrap_expected_delegate(expectedType, instantiation);
-	if ((expected == nullptr))
+	if (expected == nullptr)
 		return false;
 
 	DelegateTypeSymbol* delegateType = lookup_symbol<DelegateTypeSymbol>(node);
-	if ((delegateType == nullptr))
+	if (delegateType == nullptr)
 		return false;
 
 	const LambdaExpressionSyntax* nodePtr = node;
@@ -99,7 +99,7 @@ bool ExpressionBinder::try_bind_pending_lambda(const LambdaExpressionSyntax* nod
 	if (!(nodePtr->get_parameters() == nullptr))
 		anonymousMethod = lookup_symbol<MethodSymbol>(nodePtr->get_parameters());
 
-	if ((anonymousMethod == nullptr))
+	if (anonymousMethod == nullptr)
 		return false;
 
 	const gmt::vector<ParameterSymbol*>& parameters = anonymousMethod->get_parameters();
@@ -141,7 +141,7 @@ void ExpressionBinder::visit_lambda_expression(const LambdaExpressionSyntax* nod
 		return;
 
 	DelegateTypeSymbol* delegateType = lookup_symbol<DelegateTypeSymbol>(*nodeRef);
-	if ((delegateType == nullptr))
+	if (delegateType == nullptr)
 		return;
 
 	// the anonymous method is bound to the parameters list node by the declaration collector
@@ -149,7 +149,7 @@ void ExpressionBinder::visit_lambda_expression(const LambdaExpressionSyntax* nod
 	if (!(node->get_parameters() == nullptr))
 		anonymousMethod = lookup_symbol<MethodSymbol>(node->get_parameters());
 
-	if ((anonymousMethod == nullptr))
+	if (anonymousMethod == nullptr)
 	{
 		// fallback for a lambda that was not collected (should not happen)
 		anonymousMethod = m_factory.create_method(L"Lambda", get_current_scope()->get_owner(), nullptr, LINK_STATIC);
@@ -203,7 +203,7 @@ void ExpressionBinder::visit_await_expression(const AwaitExpressionSyntax* node)
 	}
 
 	StructSymbol* awaitedType = get_expression_type(node->get_expression());
-	if ((awaitedType == nullptr))
+	if (awaitedType == nullptr)
 	{
 		if (nodeRef.has_value())
 			set_expression_type(*nodeRef, nullptr);

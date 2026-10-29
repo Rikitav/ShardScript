@@ -114,7 +114,7 @@ std::span<SyntaxSymbol* const> SemanticScope::find_overloads(std::wstring_view n
 
 void SemanticScope::declare_symbol(SyntaxSymbol* symbol)
 {
-	if ((symbol == nullptr))
+	if (symbol == nullptr)
 		throw std::runtime_error("tried to declare null symbol");
 
 	const std::wstring_view name = symbol->get_name();

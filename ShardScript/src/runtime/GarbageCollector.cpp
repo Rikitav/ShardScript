@@ -332,7 +332,7 @@ void GarbageCollector::trace_object_fields(const TypeShape* shape, std::byte* pa
 		return;
 
 	StructSymbol* baseType = shape->get_base_type();
-	if ((baseType == nullptr))
+	if (baseType == nullptr)
 		return;
 
 	SyntaxKind kind = baseType->get_kind();
