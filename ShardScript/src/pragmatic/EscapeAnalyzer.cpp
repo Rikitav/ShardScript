@@ -486,34 +486,78 @@ void EscapeAnalyzer::analyze_member_body(MethodSymbol* method, const BlockSyntax
 
 void EscapeAnalyzer::run_graph_fixpoint()
 {
-	bool changed = true;
-	while (changed)
-	{
-		changed = false;
+	// Worklist form of the monotone constraint system. The previous loop
+	// rescanned every edge and event until a full pass made no change; here a
+	// node is revisited only when a predecessor actually raised its level,
+	// channels or identity exposure.
+	const std::size_t nodeCount = static_cast<std::size_t>(m_graph.nextId);
 
-		for (const std::pair<int, int>& edge : m_graph.edges)
+	gmt::vector<gmt::vector<int>> successors(nodeCount);
+	for (const std::pair<int, int>& edge : m_graph.edges)
+	{
+		if (edge.first >= 0 && static_cast<std::size_t>(edge.first) < nodeCount)
+			successors[edge.first].push_back(edge.second);
+	}
+
+	gmt::vector<int> work;
+	work.reserve(nodeCount);
+	gmt::vector<char> queued(nodeCount, 0);
+
+	auto enqueue = [&](int id)
+	{
+		if (id < 0 || static_cast<std::size_t>(id) >= nodeCount)
+			return;
+
+		if (!queued[id])
 		{
-			changed |= join_node(edge.second, m_graph.levels[edge.first], m_graph.channelSets[edge.first]);
+			queued[id] = 1;
+			work.push_back(id);
+		}
+	};
+
+	// events are constant seeds; applying them once is equivalent to
+	// re-joining them on every pass
+	for (const Graph::Event& event : m_graph.events)
+	{
+		const bool changed = event.cold
+			? join_cold(event.id, event.channel)
+			: join_node(event.id, event.level, event.channel);
+
+		if (changed)
+			enqueue(event.id);
+	}
+
+	// identity exposure is also set directly on alias/parameter nodes
+	for (std::size_t id = 0; id < nodeCount; ++id)
+	{
+		if (m_graph.identityExposed[id])
+			enqueue(static_cast<int>(id));
+	}
+
+	while (!work.empty())
+	{
+		const int id = work.back();
+		work.pop_back();
+		queued[id] = 0;
+
+		for (int successor : successors[id])
+		{
+			bool changed = join_node(successor, m_graph.levels[id], m_graph.channelSets[id]);
 
 			// identity is shared along alias edges: a copy of an
 			// identity-exposed value is identity-exposed itself
-			if (m_graph.identityExposed[edge.first] && !m_graph.identityExposed[edge.second])
+			if (m_graph.identityExposed[id] && !m_graph.identityExposed[successor])
 			{
-				m_graph.identityExposed[edge.second] = true;
+				m_graph.identityExposed[successor] = true;
 				changed = true;
 			}
 
 			// cold channels propagate the same way: an escaping alias takes
 			// the cold flows of whatever it names along
-			changed |= join_cold(edge.second, m_graph.coldChannels[edge.first]);
-		}
+			changed |= join_cold(successor, m_graph.coldChannels[id]);
 
-		for (const Graph::Event& event : m_graph.events)
-		{
-			if (event.cold)
-				changed |= join_cold(event.id, event.channel);
-			else
-				changed |= join_node(event.id, event.level, event.channel);
+			if (changed)
+				enqueue(successor);
 		}
 	}
 }
