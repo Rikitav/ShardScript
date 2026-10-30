@@ -300,6 +300,36 @@ void GarbageCollector::unpin(std::size_t count)
 	m_pinned.resize(m_pinned.size() - count);
 }
 
+void GarbageCollector::add_root(ObjectInstance instance)
+{
+	if (instance == nullptr)
+		return;
+
+	for (const ObjectInstance& existing : m_roots)
+	{
+		if (existing.get_memory() == instance.get_memory())
+			return;
+	}
+
+	m_roots.push_back(instance);
+}
+
+void GarbageCollector::remove_root(ObjectInstance instance)
+{
+	if (instance == nullptr)
+		return;
+
+	for (std::size_t i = 0; i < m_roots.size(); ++i)
+	{
+		if (m_roots[i].get_memory() != instance.get_memory())
+			continue;
+
+		m_roots[i] = m_roots.back();
+		m_roots.pop_back();
+		return;
+	}
+}
+
 void GarbageCollector::trace_pointer(std::byte* pointer)
 {
 	if (pointer == nullptr)
@@ -451,6 +481,12 @@ void GarbageCollector::collect()
 	{
 		if (pinned.get_shape() != nullptr && pinned.get_shape()->is_reference())
 			trace_pointer(pinned.get_memory());
+	}
+
+	for (const ObjectInstance& root : m_roots)
+	{
+		if (root.get_shape() != nullptr && root.get_shape()->is_reference())
+			trace_pointer(root.get_memory());
 	}
 
 	// roots only enqueue their heap children; drain iteratively instead of

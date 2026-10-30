@@ -106,6 +106,7 @@ namespace shard
 		gmt::map<gmt::wstring, ObjectInstance, std::less<>> m_internedStrings;
 		gmt::vector<CallStackFrame*> m_frames;
 		gmt::vector<ObjectInstance> m_pinned;
+		gmt::vector<ObjectInstance> m_roots;
 
 		std::size_t m_allocatedSinceCollection = 0;
 		std::size_t m_collectionThreshold = 256 * 1024;
@@ -147,6 +148,11 @@ namespace shard
 
 		void pin(ObjectInstance instance);
 		void unpin(std::size_t count);
+
+		// persistent roots for objects whose lifetime the VM tracks outside
+		// any frame or static slot (pending task states, continuations)
+		void add_root(ObjectInstance instance);
+		void remove_root(ObjectInstance instance);
 
 		void collect();
 		void terminate();

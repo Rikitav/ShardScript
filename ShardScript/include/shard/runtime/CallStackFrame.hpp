@@ -21,7 +21,8 @@ namespace shard
 	{
 		None,
 		ValueReturned,
-		ExceptionRaised
+		ExceptionRaised,
+		Awaiting
 	};
 
 	struct ExceptionHandlerRecord
@@ -106,6 +107,13 @@ namespace shard
 		bool m_hasExternalReturnSlot = false;
 		ObjectInstance m_currentException;
 
+		// async suspension state; zero for synchronous frames
+		std::uint32_t m_pendingChildren = 0;
+		std::byte* m_asyncState = nullptr;
+		std::byte* m_awaitedState = nullptr;
+		bool m_suspendedAtReturn = false;
+		bool m_runnable = false;
+
 		gmt::vector<std::size_t> m_deferStack;
 		gmt::vector<ExceptionHandlerRecord> m_exceptionHandlers;
 
@@ -143,6 +151,22 @@ namespace shard
 
 		std::uint16_t get_argument_count() const;
 		std::uint16_t get_variable_count() const;
+
+		std::uint32_t get_pending_children() const;
+		void increment_pending_children();
+		void decrement_pending_children();
+
+		std::byte* get_async_state() const;
+		void set_async_state(std::byte* state);
+
+		std::byte* get_awaited_state() const;
+		void set_awaited_state(std::byte* state);
+
+		bool get_suspended_at_return() const;
+		void set_suspended_at_return(bool value);
+
+		bool get_is_runnable() const;
+		void set_is_runnable(bool value);
 
 		void push_entry(const TypeShape* shape, bool isReferenceStorage, const void* payload, std::size_t payloadBytes);
 		ObjectInstance pop_entry();
