@@ -440,75 +440,80 @@ bool SemanticModel::is_task_or_task_like(StructSymbol* type)
 	if (type == nullptr)
 		return false;
 
-	if (type == m_table.get_standard_type(StandardTypes::Task))
+	SyntaxSymbol* task = m_table.get_standard_type(StandardTypes::Task);
+	if (!(task == nullptr) && type == task)
 		return true;
 
 	if (type->get_kind() != SyntaxKind::GenericType)
 		return false;
 
 	StructSymbol* underlaying = static_cast<GenericTypeSymbol*>(type)->get_underlaying_type();
-	return underlaying == m_table.get_standard_type(StandardTypes::ValueTask);
+
+	SyntaxSymbol* genericTask = m_table.get_standard_type(StandardTypes::Task_T);
+	if (underlaying == genericTask)
+		return true;
+
+	SyntaxSymbol* valueTask = m_table.get_standard_type(StandardTypes::ValueTask);
+	return underlaying == valueTask;
 }
 
-StructSymbol* SemanticModel::substitute_type(StructSymbol* type, GenericTypeSymbol* within)
+StructSymbol* SemanticModel::get_async_call_type(StructSymbol* resultType)
+{
+	if (resultType == nullptr)
+		return nullptr;
+
+	SyntaxSymbol* task = m_table.get_standard_type(StandardTypes::Task);
+	if ((task == nullptr) || !task->is_type())
+		return resultType;
+
+	if (resultType == m_table.get_void_primitive())
+		return static_cast<StructSymbol*>(task);
+
+	SyntaxSymbol* genericTask = m_table.get_standard_type(StandardTypes::Task_T);
+	if ((genericTask == nullptr) || !genericTask->is_type())
+		return resultType;
+
+	StructSymbol* arguments[1] = { resultType };
+	return m_table.find_or_create_generic_type(static_cast<StructSymbol*>(genericTask), std::span<StructSymbol* const>(arguments, 1));
+}
+
+StructSymbol* SemanticModel::get_await_result_type(StructSymbol* type)
 {
 	if (type == nullptr)
 		return nullptr;
 
-	switch (type->get_kind())
+	SyntaxSymbol* task = m_table.get_standard_type(StandardTypes::Task);
+	if (!(task == nullptr) && type == task)
+		return m_table.get_void_primitive();
+
+	if (type->get_kind() != SyntaxKind::GenericType)
+		return nullptr;
+
+	GenericTypeSymbol* generic = static_cast<GenericTypeSymbol*>(type);
+	StructSymbol* underlaying = generic->get_underlaying_type();
+	if (underlaying == nullptr)
+		return nullptr;
+
+	SyntaxSymbol* genericTask = m_table.get_standard_type(StandardTypes::Task_T);
+	SyntaxSymbol* valueTask = m_table.get_standard_type(StandardTypes::ValueTask);
+	bool isAwaitable = underlaying == genericTask || underlaying == valueTask;
+	if (!isAwaitable || underlaying->type_parameters.empty())
+		return nullptr;
+
+	return generic->substitute_type_parameter(underlaying->type_parameters.front());
+}
+
+StructSymbol* SemanticModel::substitute_type(StructSymbol* type, GenericTypeSymbol* within)
+{
+	if ((type == nullptr) || (within == nullptr))
+		return type;
+
+	const TypeParameterResolver resolver = [within](TypeParameterSymbol* parameter) -> StructSymbol*
 	{
-		default:
-			throw std::runtime_error("unknown syntax kind to substitute");
+		return within->substitute_type_parameter(parameter);
+	};
 
-		case SyntaxKind::StructDeclaration:
-		case SyntaxKind::InterfaceDeclaration:
-		case SyntaxKind::EnumDeclaration:
-		case SyntaxKind::DelegateType:
-			return type;
-
-		case SyntaxKind::ArrayType:
-		{
-			ArrayTypeSymbol* arrayType = static_cast<ArrayTypeSymbol*>(type);
-			StructSymbol* underlayingType = arrayType->get_underlaying_type();
-
-			if (underlayingType == nullptr)
-				throw std::runtime_error("cannot resolve underlaying type of array");
-
-			if (underlayingType->get_kind() == SyntaxKind::TypeParameter)
-			{
-				if (within == nullptr)
-					return type;
-
-				underlayingType = within->substitute_type_parameter(static_cast<TypeParameterSymbol*>(underlayingType));
-				if (underlayingType == nullptr)
-					throw std::runtime_error("cannot resolve underlaying type of array");
-
-				return m_table.find_or_create_array_type(underlayingType, arrayType->get_length());
-			}
-
-			return arrayType;
-		}
-
-		case SyntaxKind::TypeParameter:
-		{
-			if (within == nullptr)
-				return type;
-
-			StructSymbol* resolvedType = within->substitute_type_parameter(static_cast<TypeParameterSymbol*>(type));
-			return !(resolvedType == nullptr) ? resolvedType : type;
-		}
-
-		case SyntaxKind::NullableType:
-		{
-			NullableTypeSymbol* nullable = static_cast<NullableTypeSymbol*>(type);
-			StructSymbol* underlaying = substitute_type(nullable->get_underlaying_type(), within);
-
-			if ((underlaying == nullptr) || underlaying == nullable->get_underlaying_type())
-				return type;
-
-			return m_table.find_or_create_nullable_type(underlaying);
-		}
-	}
+	return resolve_runtime_type_argument(type, resolver);
 }
 
 StructSymbol* SemanticModel::get_field_type(FieldSymbol* field, GenericTypeSymbol* within)

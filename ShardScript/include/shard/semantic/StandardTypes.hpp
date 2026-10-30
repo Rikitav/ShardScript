@@ -20,7 +20,28 @@ namespace shard
 		IAwaiter_GetResult,
 
 		Task,
+		Task_T,
 		Task_StateField,
+		TaskT_StateField,
+		Task_Delay,
+		Task_ContinueWith,
+		TaskT_ContinueWith,
+
+		TaskState,
+		TaskState_T,
+		TaskState_StatusField,
+		TaskState_ExceptionField,
+		TaskState_ResultField,
+
+		TaskCompletionSource_T,
+		TaskCompletionSource_StateField,
+		TaskCompletionSource_Constructor,
+		TaskCompletionSource_SetResult,
+		TaskCompletionSource_SetException,
+		TaskCompletionSource_Task_get,
+
+		AsyncAction,
+
 		Task_ContinuationField,
 		Task_ExceptionField,
 		Task_MoveNext,
@@ -31,7 +52,6 @@ namespace shard
 		Task_Complete,
 		Task_SetException,
 		Task_InternalRoot,
-		Task_Delay,
 		Task_Shoot,
 		Task_ShootGeneric,
 		Task_Wait,

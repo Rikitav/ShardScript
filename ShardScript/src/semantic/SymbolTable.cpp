@@ -46,13 +46,14 @@ SymbolTable::SymbolTable()
 	// component order matters:
 	// interfaces reference primitives,
 	// printables and enumerables implement interfaces,
-	// exceptions build on IThrowable
-	// (async components stay stubbed until the async TODO lands)
+	// exceptions build on IThrowable,
+	// async types build on the exception surface
 	resolve_primitives();
 	resolve_interfaces();
 	resolve_primitive_printables();
 	resolve_enumerables();
 	resolve_exceptions();
+	resolve_async_types();
 }
 
 gmt::Arena& SymbolTable::get_arena()
