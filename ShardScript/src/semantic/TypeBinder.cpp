@@ -8,8 +8,10 @@
 #include <shard/semantic/SymbolTable.hpp>
 #include <shard/semantic/symbols/EnumSymbol.hpp>
 #include <shard/semantic/symbols/MethodSymbol.hpp>
+#include <shard/semantic/symbols/NamespaceSymbol.hpp>
 #include <shard/semantic/symbols/OperatorSymbol.hpp>
 #include <shard/semantic/symbols/PropertySymbol.hpp>
+#include <shard/semantic/symbols/StructSymbol.hpp>
 #include <shard/semantic/symbols/VariableSymbol.hpp>
 
 #include <shard/parsing/nodes/expressions/AwaitExpressionSyntax.hpp>
@@ -42,6 +44,35 @@ namespace
 			default:
 				return false;
 		}
+	}
+
+	// A name can be declared once per arity, like 'Task' and 'Task<T>'.
+	// Resolution of the bare name in the underlying type node picks the first
+	// declaration, so a generic use retries the lookup by argument count.
+	StructSymbol* find_type_with_arity(SymbolTable& table, StructSymbol* original, std::size_t arity)
+	{
+		if (original == nullptr)
+			return nullptr;
+
+		const auto matches = [original, arity](SyntaxSymbol* candidate) -> StructSymbol*
+		{
+			if ((candidate == nullptr) || !candidate->is_type())
+				return nullptr;
+
+			if (candidate->get_name() != original->get_name())
+				return nullptr;
+
+			StructSymbol* type = static_cast<StructSymbol*>(candidate);
+			return type->type_parameters.size() == arity ? type : nullptr;
+		};
+
+		for (SyntaxSymbol* member : table.get_root_namespace()->members)
+		{
+			if (StructSymbol* match = matches(member))
+				return match;
+		}
+
+		return nullptr;
 	}
 }
 
@@ -992,6 +1023,20 @@ void TypeBinder::visit_generic_type(const GenericTypeSyntax* node)
 
 	const auto argumentNodes = node->get_type_arguments()->get_types();
 	const std::size_t argumentCount = argumentNodes.size();
+
+	// the same name can name both 'Task' and 'Task<T>'; prefer the declaration
+	// whose arity matches the use
+	if (underlaying->type_parameters.size() != argumentCount)
+	{
+		StructSymbol* alternative = find_type_with_arity(get_symbol_table(), underlaying, argumentCount);
+		if (!(alternative == nullptr))
+		{
+			underlaying = alternative;
+			if (!(node->get_underlaying_type() == nullptr))
+				get_symbol_table().bind_symbol(node->get_underlaying_type(), alternative);
+		}
+	}
+
 	const std::size_t parameterCount = underlaying->type_parameters.size();
 
 	if (argumentCount != parameterCount)

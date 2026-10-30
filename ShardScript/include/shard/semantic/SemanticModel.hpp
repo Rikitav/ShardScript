@@ -53,6 +53,8 @@ namespace shard
 		bool type_satisfies_constraint(StructSymbol* typeArgument, StructSymbol* constraint) const;
 		bool is_primitive_type(const StructSymbol* type) const;
 		bool is_task_or_task_like(StructSymbol* type);
+		StructSymbol* get_async_call_type(StructSymbol* resultType);
+		StructSymbol* get_await_result_type(StructSymbol* type);
 		gmt::wstring get_type_display_name(const StructSymbol* type) const;
 
 		StructSymbol* substitute_type(StructSymbol* type, GenericTypeSymbol* within = nullptr);

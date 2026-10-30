@@ -144,10 +144,11 @@ void TypeShapeCache::build(TypeShape* shape, SemanticModel& model)
 		if (field->get_linking() == LINK_STATIC)
 			continue;
 
-		// substitution only matters for raw type parameters
+		// full recursive substitution matters for nested constructions such
+		// as '__TaskState<T>' fields quoted by 'Task<T>'
 		StructSymbol* fieldType = field->get_return_type();
-		if (!(within == nullptr) && fieldType->get_kind() == SyntaxKind::TypeParameter)
-			fieldType = within->substitute_type_parameter(static_cast<TypeParameterSymbol*>(fieldType));
+		if (!(within == nullptr))
+			fieldType = model.substitute_type(fieldType, within);
 
 		if (fieldType == nullptr)
 			continue;

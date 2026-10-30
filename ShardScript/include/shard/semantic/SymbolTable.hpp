@@ -51,7 +51,7 @@ namespace shard
 		SymbolInterner m_interner;
 
 		// well-known standard library slots
-		std::array<SyntaxSymbol*, static_cast<std::size_t>(StandardTypes::Count)> m_standardTypes;
+		std::array<SyntaxSymbol*, static_cast<std::size_t>(StandardTypes::Count)> m_standardTypes{};
 
 		// standard components resolvers
 		void resolve_primitives();
@@ -59,6 +59,7 @@ namespace shard
 		void resolve_primitive_printables();
 		void resolve_enumerables();
 		void resolve_exceptions();
+		void resolve_async_types();
 
 	public:
 		SymbolTable();
