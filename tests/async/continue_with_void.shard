@@ -1,0 +1,9 @@
+using stdio;
+
+func Main() -> void
+{
+    task := Task.Delay(1);
+    chained := task.ContinueWith(| | => println(4));
+    await chained;
+    println(5);
+}

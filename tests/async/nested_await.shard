@@ -1,0 +1,19 @@
+using stdio;
+
+async func Nested(value: int) -> int
+{
+    await Task.Delay(5);
+    return value + 1;
+}
+
+async func Outer() -> int
+{
+    first := await Nested(1);
+    second := await Nested(first);
+    return second;
+}
+
+func Main() -> void
+{
+    println(await Outer());
+}

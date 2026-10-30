@@ -1,0 +1,23 @@
+using stdio;
+
+async func Produce() -> int
+{
+    return 20;
+}
+
+func Wait(task: Task<int>) -> int
+{
+    return await task;
+}
+
+func Main() -> void
+{
+    try
+    {
+        println(Wait(Produce()));
+    }
+    catch error: RuntimeException
+    {
+        println(0);
+    }
+}

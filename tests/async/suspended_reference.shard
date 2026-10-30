@@ -1,0 +1,19 @@
+using stdio;
+
+struct Counter
+{
+    number: int;
+}
+
+async func Get(counter: Counter) -> int
+{
+    await Task.Delay(1);
+    return counter.number;
+}
+
+func Main() -> void
+{
+    counter := new Counter();
+    counter.number = 33;
+    println(await Get(counter));
+}

@@ -1,0 +1,15 @@
+using stdio;
+
+async func CompleteLater(source: TaskCompletionSource<int>) -> void
+{
+    await Task.Delay(10);
+    source.SetResult(77);
+}
+
+func Main() -> void
+{
+    source := new TaskCompletionSource<int>();
+    producer := CompleteLater(source);
+    println(await source.task);
+    await producer;
+}

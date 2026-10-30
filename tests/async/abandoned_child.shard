@@ -1,0 +1,28 @@
+using stdio;
+
+async func Slow() -> void
+{
+    await Task.Delay(20);
+    println(99);
+}
+
+func Boom() -> void
+{
+    Slow();
+    throw new RuntimeException();
+}
+
+func Main() -> void
+{
+    try
+    {
+        Boom();
+    }
+    catch error: RuntimeException
+    {
+        println(1);
+    }
+
+    await Task.Delay(60);
+    println(2);
+}

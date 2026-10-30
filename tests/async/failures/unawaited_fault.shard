@@ -1,0 +1,12 @@
+using stdio;
+
+async func Boom() -> void
+{
+    throw new RuntimeException();
+}
+
+func Main() -> void
+{
+    Boom();
+    println(1);
+}

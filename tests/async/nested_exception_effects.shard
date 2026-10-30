@@ -1,0 +1,23 @@
+using stdio;
+
+async func Inner() -> int
+{
+    throw new RuntimeException();
+}
+
+async func Outer() -> int
+{
+    return try await Inner();
+}
+
+func Main() -> void
+{
+    try
+    {
+        println(await Outer());
+    }
+    catch error: RuntimeException
+    {
+        println(9);
+    }
+}

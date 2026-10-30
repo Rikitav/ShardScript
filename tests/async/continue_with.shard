@@ -1,0 +1,13 @@
+using stdio;
+
+async func Produce() -> int
+{
+    return 10;
+}
+
+func Main() -> void
+{
+    task := Produce();
+    chained := task.ContinueWith(| | => println(3));
+    println(await chained);
+}
