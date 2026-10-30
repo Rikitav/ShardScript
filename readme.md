@@ -8,6 +8,7 @@ Rewrite progression :
 - [x] Wipe
 - [x] Tokenization
 - [x] Syntax Nodes
+- [ ] Switch expression
 - [x] HUGE MILESTONE: AST Parsing
 - [x] Syntax Symbols
 - [x] Semantic toolkit
@@ -30,7 +31,10 @@ Rewrite progression :
 - [x] Primitive math
 - [x] Virtual machine and method invokation
 - [x] Symbol building
-- [x] CallState 
+- [x] CallState
+- [x] Async standard types
+- [x] Async functions
+- [ ] STD libraries
 - [ ] ...
 
 **ShardScript** is an embeddable, scripting, compiled, programming language with strict static typing, developed in C++. The project features a custom lexer/parser, semantic analyzer, bytecode compiler, stack virtual machine, and a standard library framework.
