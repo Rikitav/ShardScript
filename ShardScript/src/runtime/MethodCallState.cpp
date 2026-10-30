@@ -347,3 +347,38 @@ DelegateRef MethodCallState::wrap_delegate(ObjectInstance delegate)
 {
 	return DelegateRef(m_vm, delegate);
 }
+
+ObjectInstance MethodCallState::launch_async(MethodSymbol* method, std::span<const ObjectInstance> args)
+{
+	return m_vm.launch_async_method(method, args);
+}
+
+ObjectInstance MethodCallState::launch_async(MethodSymbol* method, std::initializer_list<ObjectInstance> args)
+{
+	return launch_async(method, std::span<const ObjectInstance>(args.begin(), args.size()));
+}
+
+ObjectInstance MethodCallState::await(ObjectInstance task)
+{
+	return m_vm.await_task(task);
+}
+
+bool MethodCallState::is_task_completed(ObjectInstance task)
+{
+	return m_vm.is_task_completed(task);
+}
+
+void MethodCallState::complete(ObjectInstance task, ObjectInstance result)
+{
+	m_vm.complete_task(task, result);
+}
+
+void MethodCallState::complete(ObjectInstance task)
+{
+	m_vm.complete_task(task);
+}
+
+void MethodCallState::fail(ObjectInstance task, ObjectInstance exception)
+{
+	m_vm.fail_task(task, exception);
+}
