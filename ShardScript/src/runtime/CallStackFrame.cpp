@@ -365,6 +365,62 @@ std::uint16_t CallStackFrame::get_variable_count() const
 	return m_variableCount;
 }
 
+std::uint32_t CallStackFrame::get_pending_children() const
+{
+	return m_pendingChildren;
+}
+
+void CallStackFrame::increment_pending_children()
+{
+	++m_pendingChildren;
+}
+
+void CallStackFrame::decrement_pending_children()
+{
+	if (m_pendingChildren > 0)
+		--m_pendingChildren;
+}
+
+std::byte* CallStackFrame::get_async_state() const
+{
+	return m_asyncState;
+}
+
+void CallStackFrame::set_async_state(std::byte* state)
+{
+	m_asyncState = state;
+}
+
+std::byte* CallStackFrame::get_awaited_state() const
+{
+	return m_awaitedState;
+}
+
+void CallStackFrame::set_awaited_state(std::byte* state)
+{
+	m_awaitedState = state;
+}
+
+bool CallStackFrame::get_suspended_at_return() const
+{
+	return m_suspendedAtReturn;
+}
+
+void CallStackFrame::set_suspended_at_return(bool value)
+{
+	m_suspendedAtReturn = value;
+}
+
+bool CallStackFrame::get_is_runnable() const
+{
+	return m_runnable;
+}
+
+void CallStackFrame::set_is_runnable(bool value)
+{
+	m_runnable = value;
+}
+
 void CallStackFrame::push_entry(const TypeShape* shape, bool isReferenceStorage, const void* payload, std::size_t payloadBytes)
 {
 	if (m_evalDepth >= m_evalCapacity)
