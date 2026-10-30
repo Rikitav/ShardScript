@@ -432,7 +432,7 @@ bool LexicalAnalyzer::read_next_word(gmt::wstring& word, TokenType& type)
 	return true;
 }
 
-bool LexicalAnalyzer::read_char_literal(gmt::wstring& word, bool notEcran, bool& wasClosed)
+bool LexicalAnalyzer::read_char_literal(gmt::wstring& word, [[maybe_unused]] bool notEcran, bool& wasClosed)
 {
 	bool ecran = false;
 
@@ -1130,7 +1130,7 @@ bool LexicalAnalyzer::is_number_literal(TokenType& type) const
 	}
 }
 
-bool LexicalAnalyzer::is_char_literal(TokenType& type, bool& dontEcran)
+bool LexicalAnalyzer::is_char_literal(TokenType& type, [[maybe_unused]] bool& dontEcran)
 {
 	switch (m_symbol)
 	{

@@ -12,6 +12,7 @@ namespace gmt
 {
 	SHARD_API void* mem_alloc(std::size_t bytes);
 	SHARD_API void* mem_alloc_aligned(std::size_t bytes, std::size_t alignment);
+	SHARD_API void* mem_calloc(std::size_t count, std::size_t bytes);
 	SHARD_API void* mem_realloc(void* block, std::size_t bytes);
 	SHARD_API void mem_free(void* ptr);
 

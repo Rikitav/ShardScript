@@ -23,6 +23,8 @@
 **/
 
 #include "string_page_nursery.h"
+
+#include "string_allocator.h"
 #include "string_page_sizes.h"
 
 #include <algorithm>
@@ -83,8 +85,8 @@ rs::stringintern::StringPagePtr rs::stringintern::StringPageNursery::Next(Iterat
     }
 }
 
-std::vector<rs::stringintern::StringPagePtr> rs::stringintern::StringPageNursery::GetPages(rowcount_t row) const {
-    std::vector<StringPagePtr> pages;
+rs::stringintern::StringVector<rs::stringintern::StringPagePtr> rs::stringintern::StringPageNursery::GetPages(rowcount_t row) const {
+    StringVector<StringPagePtr> pages;
     
     auto cols = counters_[row].load(std::memory_order_relaxed);
     cols = cols > cols_ ? cols_ : cols;
@@ -98,8 +100,8 @@ std::vector<rs::stringintern::StringPagePtr> rs::stringintern::StringPageNursery
     return pages;
 }
 
-std::vector<rs::stringintern::StringPage::entrycount_t> rs::stringintern::StringPageNursery::GetPageEntryCounts(rowcount_t row) const {
-    std::vector<StringPage::entrycount_t> entries;
+rs::stringintern::StringVector<rs::stringintern::StringPage::entrycount_t> rs::stringintern::StringPageNursery::GetPageEntryCounts(rowcount_t row) const {
+    StringVector<StringPage::entrycount_t> entries;
     
     auto pages = GetPages(row);
     for (auto page : pages) {

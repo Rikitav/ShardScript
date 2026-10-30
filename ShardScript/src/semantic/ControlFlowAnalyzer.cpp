@@ -1117,7 +1117,7 @@ void ControlFlowAnalyzer::report_effect_diagnostics()
 		{
 			// the callee is unknown (delegate or unresolved call); such a call
 			// may throw as well, so it requires an explicit 'try' as well
-			if ((edge.callee == nullptr))
+			if (edge.callee == nullptr)
 			{
 				if (!edge.isTryWrapped)
 					get_diagnostics().report_error(edge.callSite, L"Call may throw an exception");

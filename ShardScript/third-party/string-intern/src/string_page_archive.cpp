@@ -24,6 +24,8 @@
 
 #include "string_page_archive.h"
 
+#include "string_allocator.h"
+
 #include <thread>
 
 rs::stringintern::StringPageArchive::StringPageArchive(std::size_t entries) : 

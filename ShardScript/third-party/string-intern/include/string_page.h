@@ -27,6 +27,8 @@
 
 #include <atomic>
 #include <vector>
+
+#include "string_allocator.h"
 #include <cstddef>
 #include <memory>
 
@@ -97,7 +99,7 @@ private:
     const entrycount_t maxEntryCount_;
     const bool freeBuffer_;
 
-    std::vector<Entry> entries_;
+    StringVector<Entry> entries_;
     std::atomic<entrycount_t> count_;
     bufferptr_t ptr_;
     
@@ -106,7 +108,9 @@ private:
     refcount_t DecRef() const noexcept { 
         auto count = refCount_.fetch_sub(1, std::memory_order_relaxed) - 1; 
         if (count == 0) {
-            delete this;
+            auto self = const_cast<StringPage*>(this);
+            self->~StringPage();
+            Deallocate(self);
         }
         return count;
     }

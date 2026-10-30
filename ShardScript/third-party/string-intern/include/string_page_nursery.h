@@ -26,6 +26,8 @@
 #define	RS_LIBSTRINGINTERN_STRING_PAGE_NURSERY_H
 
 #include <atomic>
+
+#include "string_allocator.h"
 #include <functional>
 #include <cstddef>
 
@@ -100,8 +102,8 @@ public:
     inline rowcount_t Rows() const noexcept { return rows_; }
     inline colcount_t Cols() const noexcept { return cols_; }
     
-    std::vector<StringPagePtr> GetPages(rowcount_t) const;
-    std::vector<StringPage::entrycount_t> GetPageEntryCounts(rowcount_t) const;
+    StringVector<StringPagePtr> GetPages(rowcount_t) const;
+    StringVector<StringPage::entrycount_t> GetPageEntryCounts(rowcount_t) const;
     
 private:
     
@@ -110,8 +112,8 @@ private:
     
     NewPageFunc newPageFunc_;
     
-    std::vector<std::atomic<rowcount_t>> counters_;
-    std::vector<StringPagePtr> data_;
+    StringVector<std::atomic<rowcount_t>> counters_;
+    StringVector<StringPagePtr> data_;
     
     const colcount_t cols_;
     const rowcount_t rows_;

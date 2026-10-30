@@ -1,9 +1,8 @@
 #pragma once
 #include <shard/Definitions.hpp>
+#include <string-intern/include/string_intern.h>
 
 #include <string_view>
-
-#include <string_intern.h>
 
 namespace gmt
 {
