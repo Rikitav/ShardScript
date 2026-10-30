@@ -490,6 +490,11 @@ void ByteCodeEncoder::emit_return_placed()
 	append_data_value(m_image.get_text_section(), OpCode::RETURN_PLACED);
 }
 
+void ByteCodeEncoder::emit_await()
+{
+	append_data_value(m_image.get_text_section(), OpCode::AWAIT);
+}
+
 void ByteCodeEncoder::emit_call_delegate(DelegateTypeSymbol* type)
 {
 	append_data_value(m_image.get_text_section(), OpCode::CALLDELEGATE);

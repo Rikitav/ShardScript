@@ -302,7 +302,12 @@ void ByteCodeEmitter::emit_body(const BlockSyntax* body)
 		if (!(arrow->get_expression() == nullptr))
 		{
 			arrow->get_expression()->accept(*this);
-			eval_pop();
+
+			// an expression body yields its value; end_method's RETURN pops it
+			StructSymbol* returnType = (m_generatingFor == nullptr) ? nullptr : m_generatingFor->get_return_type();
+			bool dropsResult = (returnType == nullptr) || returnType == get_symbol_table().get_void_primitive();
+			if (dropsResult)
+				eval_pop();
 		}
 
 		return;
@@ -311,14 +316,10 @@ void ByteCodeEmitter::emit_body(const BlockSyntax* body)
 	visit_statements_block(gmt::as<StatementsBlockSyntax>(body));
 }
 
-bool ByteCodeEmitter::method_supported(MethodSymbol* method, const SyntaxNode* blame)
+bool ByteCodeEmitter::method_supported([[maybe_unused]] MethodSymbol* method, [[maybe_unused]] const SyntaxNode* blame)
 {
-	if (method->get_is_async())
-	{
-		unsupported(blame, L"async methods");
-		return false;
-	}
-
+	// async methods run through the ordinary bytecode; their invocation
+	// boundary creates the Task wrapper instead of rewriting the body
 	return true;
 }
 
@@ -575,6 +576,12 @@ void ByteCodeEmitter::pick_entry_points()
 	if (m_entryPointCandidates.size() > 1)
 	{
 		get_diagnostics().report_error(TextLocation(), L"program has multiple entry points named Main");
+		return;
+	}
+
+	if (m_entryPointCandidates.front()->get_is_async())
+	{
+		get_diagnostics().report_error(TextLocation(), L"entry point 'Main' cannot be async");
 		return;
 	}
 

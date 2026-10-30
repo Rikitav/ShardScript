@@ -707,8 +707,13 @@ void ByteCodeEmitter::emit_method_call(MethodSymbol* method, const ExpressionSyn
 	std::size_t argumentCount = method->get_parameters().size() + (extension ? 0 : receiverEval);
 	eval_pop(argumentCount);
 
-	if (!(method->get_return_type() == nullptr) && method->get_return_type() != get_symbol_table().get_void_primitive())
-		eval_push_type(method->get_return_type());
+	bool isAsync = method->get_is_async();
+	StructSymbol* resultType = method->get_return_type();
+	if (isAsync)
+		resultType = get_model().get_async_call_type(resultType);
+
+	if (isAsync || (!(resultType == nullptr) && resultType != get_symbol_table().get_void_primitive()))
+		eval_push_type(resultType);
 }
 
 void ByteCodeEmitter::emit_method_call_into(MethodSymbol* method, const ExpressionSyntax* receiver, const ArgumentsListSyntax* arguments, std::uint16_t slot)
@@ -766,6 +771,11 @@ MethodSymbol* ByteCodeEmitter::into_call_method(const ExpressionSyntax* expressi
 
 	StructSymbol* returnType = method->get_return_type();
 	if (returnType == nullptr)
+		return nullptr;
+
+	// async calls hand back a Task wrapper, never the plain declared result,
+	// so they can never be written into a caller slot of the plain type
+	if (method->get_is_async())
 		return nullptr;
 
 	SyntaxKind returnKind = returnType->get_kind();
@@ -1029,9 +1039,21 @@ void ByteCodeEmitter::visit_if_expression(const IfExpressionSyntax* node)
 
 void ByteCodeEmitter::visit_await_expression(const AwaitExpressionSyntax* node)
 {
+	if (node == nullptr || node->get_expression() == nullptr)
+		return;
+
+	node->get_expression()->accept(*this);
+
+	m_encoder.emit_await();
+	eval_pop();
+
+	StructSymbol* resultType = nullptr;
 	std::optional<const AwaitExpressionSyntax*> nodeRef = ref_from(node);
 	if (nodeRef.has_value())
-		unsupported(*nodeRef, L"await expressions");
+		resultType = get_model().get_expression_type(*nodeRef);
+
+	if (!(resultType == nullptr) && resultType != get_symbol_table().get_void_primitive())
+		eval_push_type(resultType);
 }
 
 void ByteCodeEmitter::visit_range_expression(const RangeExpressionSyntax* node)

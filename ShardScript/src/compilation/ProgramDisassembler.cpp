@@ -365,6 +365,12 @@ namespace
 				break;
 			}
 
+			case OpCode::AWAIT:
+			{
+				opcode = L"await";
+				break;
+			}
+
 			case OpCode::CALLDELEGATE:
 			{
 				opcode = L"calldelegate";
